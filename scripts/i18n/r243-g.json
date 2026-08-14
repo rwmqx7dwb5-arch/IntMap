@@ -1,0 +1,16 @@
+{
+ "_": "the tuples #R243 converted from {en,jp} objects to pickArgs() calls — de/ru/es are the call's own arguments, fr/ko/zh land in the inline tables",
+ "Nine-dash line (S. China Sea)": ["Neun-Striche-Linie (Südchinesisches Meer)", "Линия из девяти пунктиров (Южно-Китайское море)", "Línea de nueve puntos (mar de China Meridional)", "Ligne en neuf traits (mer de Chine méridionale)", "구단선 (남중국해)", "九段線（南海）"],
+ "Ukraine front line (approx.)": ["Frontlinie Ukraine (ungefähr)", "Линия фронта в Украине (примерно)", "Frente de Ucrania (aprox.)", "Ligne de front en Ukraine (approx.)", "우크라이나 전선 (개략)", "烏克蘭前線（概略）"],
+ "Kashmir Line of Control": ["Kaschmir-Kontrolllinie", "Линия контроля в Кашмире", "Línea de Control de Cachemira", "Ligne de contrôle au Cachemire", "카슈미르 통제선", "喀什米爾控制線"],
+ "Korean DMZ": ["Koreanische DMZ", "Корейская ДМЗ", "Zona desmilitarizada de Corea", "Zone démilitarisée coréenne", "한반도 군사분계선", "朝鮮半島軍事分界線"],
+ "Taiwan Strait median line": ["Mittellinie der Taiwanstraße", "Срединная линия Тайваньского пролива", "Línea media del estrecho de Taiwán", "Ligne médiane du détroit de Taïwan", "대만해협 중간선", "臺灣海峽中線"],
+ "General": ["Allgemein", "Общее", "General", "Général", "일반", "一般"],
+ "Feature idea": ["Funktionswunsch", "Пожелание", "Sugerencia", "Idée de fonctionnalité", "기능 제안", "功能建議"],
+ "Bug": ["Fehler", "Ошибка", "Error", "Bogue", "버그", "錯誤"],
+ "Influenza": ["Influenza", "Грипп", "Gripe", "Grippe", "인플루엔자", "流行性感冒"],
+ "COVID-19": ["COVID-19", "COVID-19", "COVID-19", "COVID-19", "코로나19", "COVID-19"],
+ "SARS": ["SARS", "ТОРС", "SARS", "SRAS", "사스", "SARS"],
+ "Ebola": ["Ebola", "Эбола", "Ébola", "Ebola", "에볼라 출혈열", "伊波拉出血熱"],
+ "Measles": ["Masern", "Корь", "Sarampión", "Rougeole", "홍역", "麻疹"]
+}

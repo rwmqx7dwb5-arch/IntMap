@@ -28,6 +28,10 @@ window.IntMapModules.playground=function(HOST){
   const loadCountryData=HOST.loadCountryData, imToast=HOST.imToast, countryStats=HOST.countryStats;
   (function(){
     const jp=()=>HOST.lang==='jp';
+    /* (#R243) …and the tuples this file holds AS DATA go through the same resolver — see pickArgs()
+       in js/lang-registry.js. A {en,jp} object is the seventh shape #R241 named and is invisible to
+       every instrument; written as a call it is measured like any other call site. */
+    const L=window.IntMapLang.pick(()=>HOST.lang), LA=window.IntMapLang.pickArgs();
     const haversine=(a,b)=>{ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
     function ensureCountries(cb){ try{ if(window.countryGeo&&window.countryGeo.features){ cb(); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(()=>cb()); } else cb(); }catch(_){ cb(); } }
     // ---- shared modal shell ----
@@ -43,8 +47,8 @@ window.IntMapModules.playground=function(HOST){
       try{ document.getElementById('settings-modal')&&(document.getElementById('settings-modal').style.display='none'); }catch(_){}
       const {ov,card}=shell(560); card.appendChild(xbtn(()=>ov.remove()));
       const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:10px;margin:0 0 4px;';
-      const t=document.createElement('h3'); t.textContent=jp()?'プレイグラウンド':'Playground'; t.style.cssText='margin:0;font-size:21px;'; h.appendChild(t); h.appendChild(pill('beta','#ff9500')); card.appendChild(h);
-      const sub=document.createElement('p'); sub.textContent=jp()?'実データを使った実験的なインタラクティブモード。':'Experimental interactive modes built on real data.'; sub.style.cssText='margin:0 0 16px;color:var(--text-muted);font-size:13px;'; card.appendChild(sub);
+      const t=document.createElement('h3'); t.textContent=window.IntMapLang.t(HOST.lang,"Playground","プレイグラウンド","Spielwiese","Песочница","Zona de pruebas"); t.style.cssText='margin:0;font-size:21px;'; h.appendChild(t); h.appendChild(pill('beta','#ff9500')); card.appendChild(h);
+      const sub=document.createElement('p'); sub.textContent=window.IntMapLang.t(HOST.lang,"Experimental interactive modes built on real data.","実データを使った実験的なインタラクティブモード。","Experimentelle interaktive Modi auf Basis echter Daten.","Экспериментальные интерактивные режимы на реальных данных.","Modos interactivos experimentales basados en datos reales."); sub.style.cssText='margin:0 0 16px;color:var(--text-muted);font-size:13px;'; card.appendChild(sub);
       /* (#R30) Clean SF-Symbol-style SVG tile icons (no emojis). Quiz mode moved IN here; Nation Sim
          renamed "Statecraft". */
       const SV={
@@ -57,10 +61,10 @@ window.IntMapModules.playground=function(HOST){
       };
       /* (#R32) Statecraft & World Sandbox ABOLISHED per request — removed from the hub. */
       const modes=[
-        {svg:SV.globe,bg:'linear-gradient(135deg,#0a84ff,#34c759)',t:(window.IntMapLang.t(HOST.lang,'Satellite Drop','サテライトドロップ','Satellite Drop','Satellite Drop','Satellite Drop')),d:(window.IntMapLang.t(HOST.lang,'A satellite where-am-I geography game — dropped somewhere on Earth, guess your location.','衛星写真からスタート地点を推理する地理ゲーム。ランダムな地点へ飛び、現在地を当てる。','Ein Satelliten-Geografiespiel: irgendwo auf der Erde abgesetzt — errate deinen Standort.','Географическая игра «где я»: вас забрасывает в случайную точку Земли по спутниковому снимку — угадайте, где вы.','Un juego de geografía «dónde estoy»: te suelta en algún punto de la Tierra a partir de una imagen satelital — adivina tu ubicación.')),go:()=>{ ov.remove(); window._pgWorldExplorer&&window._pgWorldExplorer(); }},
-        {svg:SV.plane,bg:'linear-gradient(135deg,#5e5ce6,#0a84ff)',t:jp()?'フライトシミュレーター':'Flight Simulator',d:jp()?'6自由度の本格フライトモデル。機体と空港を選び、実際の地形の上を滑走路から離陸・着陸。':'A full 6-DOF flight model — pick an aircraft and airport, then take off and land over the real 3-D terrain.',go:()=>{ ov.remove(); window.IntMapLazy.need('flightSim').then(()=>{ try{ window.IntMapFlightSim&&window.IntMapFlightSim.setup&&window.IntMapFlightSim.setup(); }catch(_){} }); }},
-        {svg:SV.virus,bg:'linear-gradient(135deg,#ff3b30,#ff9500)',t:jp()?'パンデミック・シミュレーター':'Pandemic Simulator',d:jp()?'感染源を置き、交通網で世界へ広がる感染症を科学的に可視化。ワクチン開発まで。':'Seed an outbreak and watch a scientific model spread it across real countries until a vaccine arrives.',go:()=>{ ov.remove(); window._pgPandemic&&window._pgPandemic(); }},
-        {svg:SV.cap,bg:'linear-gradient(135deg,#34c759,#0a84ff)',t:jp()?'クイズモード':'Quiz mode',d:jp()?'国旗・首都・地図・シルエットなど、世界地理クイズで腕試し。':'Test your world geography: flags, capitals, map-clicks, silhouettes & duels.',go:()=>{ ov.remove();
+        {svg:SV.globe,bg:'linear-gradient(135deg,#0a84ff,#34c759)',t:(window.IntMapLang.t(HOST.lang,'Satellite Drop','サテライトドロップ','Satelliten-Absprung','Спутниковый десант','Salto por satélite')),d:(window.IntMapLang.t(HOST.lang,'A satellite where-am-I geography game — dropped somewhere on Earth, guess your location.','衛星写真からスタート地点を推理する地理ゲーム。ランダムな地点へ飛び、現在地を当てる。','Ein Satelliten-Geografiespiel: irgendwo auf der Erde abgesetzt — errate deinen Standort.','Географическая игра «где я»: вас забрасывает в случайную точку Земли по спутниковому снимку — угадайте, где вы.','Un juego de geografía «dónde estoy»: te suelta en algún punto de la Tierra a partir de una imagen satelital — adivina tu ubicación.')),go:()=>{ ov.remove(); window._pgWorldExplorer&&window._pgWorldExplorer(); }},
+        {svg:SV.plane,bg:'linear-gradient(135deg,#5e5ce6,#0a84ff)',t:window.IntMapLang.t(HOST.lang,"Flight Simulator","フライトシミュレーター","Flugsimulator","Авиасимулятор","Simulador de vuelo"),d:window.IntMapLang.t(HOST.lang,"A full 6-DOF flight model — pick an aircraft and airport, then take off and land over the real 3-D terrain.","6自由度の本格フライトモデル。機体と空港を選び、実際の地形の上を滑走路から離陸・着陸。","Ein vollständiges 6-DOF-Flugmodell — Flugzeug und Flughafen wählen, dann über echtem 3-D-Gelände starten und landen.","Полная модель полёта с 6 степенями свободы — выберите самолёт и аэропорт, взлетайте и садитесь над настоящим 3-D-рельефом.","Un modelo de vuelo completo de 6 grados de libertad: elija avión y aeropuerto y despegue y aterrice sobre el relieve 3-D real."),go:()=>{ ov.remove(); window.IntMapLazy.need('flightSim').then(()=>{ try{ window.IntMapFlightSim&&window.IntMapFlightSim.setup&&window.IntMapFlightSim.setup(); }catch(_){} }); }},
+        {svg:SV.virus,bg:'linear-gradient(135deg,#ff3b30,#ff9500)',t:window.IntMapLang.t(HOST.lang,"Pandemic Simulator","パンデミック・シミュレーター","Pandemie-Simulator","Симулятор пандемии","Simulador de pandemia"),d:window.IntMapLang.t(HOST.lang,"Seed an outbreak and watch a scientific model spread it across real countries until a vaccine arrives.","感染源を置き、交通網で世界へ広がる感染症を科学的に可視化。ワクチン開発まで。","Setzen Sie einen Ausbruch und sehen Sie zu, wie ein wissenschaftliches Modell ihn über echte Länder verbreitet, bis ein Impfstoff kommt.","Задайте очаг вспышки и смотрите, как научная модель разносит её по реальным странам, пока не появится вакцина.","Siembre un brote y observe cómo un modelo científico lo extiende por países reales hasta que llega una vacuna."),go:()=>{ ov.remove(); window._pgPandemic&&window._pgPandemic(); }},
+        {svg:SV.cap,bg:'linear-gradient(135deg,#34c759,#0a84ff)',t:window.IntMapLang.t(HOST.lang,"Quiz mode","クイズモード","Quizmodus","Режим викторины","Modo cuestionario"),d:window.IntMapLang.t(HOST.lang,"Test your world geography: flags, capitals, map-clicks, silhouettes & duels.","国旗・首都・地図・シルエットなど、世界地理クイズで腕試し。","Testen Sie Ihre Weltgeografie: Flaggen, Hauptstädte, Kartenklicks, Umrisse und Duelle.","Проверьте знание географии мира: флаги, столицы, клики по карте, силуэты и дуэли.","Ponga a prueba su geografía mundial: banderas, capitales, clics en el mapa, siluetas y duelos."),go:()=>{ ov.remove();
           /* (#R33) Close the layer-selection panel/sheet when entering Quiz mode. */
           try{ const dd=document.getElementById('layer-dropdown'); if(dd) dd.classList.remove('show'); document.querySelectorAll('.m-sheet.show,#mo-sheet.show,#tools-sheet.show,.m-scrim.show').forEach(s=>s.classList.remove('show')); }catch(_){}
           try{ window.IntMapEdu&&window.IntMapEdu.open(); }catch(_){} }}
@@ -74,7 +78,7 @@ window.IntMapModules.playground=function(HOST){
     /* ===================== floating toast / breaking-news ===================== */
     function pgNews(html, kind){ let host=document.getElementById('pg-news-host'); if(!host){ host=document.createElement('div'); host.id='pg-news-host'; host.style.cssText='position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:6200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(440px,92vw);'; document.body.appendChild(host); }
       const n=document.createElement('div'); n.style.cssText='pointer-events:auto;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-left:4px solid '+(kind==='alert'?'#ff3b30':kind==='good'?'#34c759':'#0a84ff')+';border-radius:12px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:10px 14px;font-size:12.5px;line-height:1.4;opacity:0;transform:translateY(-8px);transition:opacity .3s,transform .3s;max-width:100%;';
-      n.innerHTML='<b style="font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:'+(kind==='alert'?'#ff3b30':kind==='good'?'#34c759':'#0a84ff')+';">'+(jp()?'速報':'Breaking')+'</b><br>'+html;
+      n.innerHTML='<b style="font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:'+(kind==='alert'?'#ff3b30':kind==='good'?'#34c759':'#0a84ff')+';">'+(window.IntMapLang.t(HOST.lang,"Breaking","速報","Eilmeldung","Срочно","Última hora"))+'</b><br>'+html;
       host.appendChild(n); requestAnimationFrame(()=>{ n.style.opacity='1'; n.style.transform='none'; }); setTimeout(()=>{ n.style.opacity='0'; n.style.transform='translateY(-8px)'; setTimeout(()=>n.remove(),350); }, 5200);
     }
     window._pgNews=pgNews;
@@ -121,7 +125,7 @@ window.IntMapModules.playground=function(HOST){
       if(!GE().hasRenderer()){ try{ imToast('Map not ready'); }catch(_){} return; }
       _pgWeStyle();
       ensureCountries(()=>{
-        const feats=(window.countryGeo&&window.countryGeo.features)||[]; if(!feats.length){ try{ imToast(jp()?'国境データを読み込めません':'Country data unavailable'); }catch(_){} return; }
+        const feats=(window.countryGeo&&window.countryGeo.features)||[]; if(!feats.length){ try{ imToast(window.IntMapLang.t(HOST.lang,"Country data unavailable","国境データを読み込めません","Länderdaten nicht verfügbar","Данные по странам недоступны","Datos de países no disponibles")); }catch(_){} return; }
         /* (#R30) TRULY RANDOM land point — area-weighted uniform over the sphere (lat=asin(U), lng uniform),
            accepted only when it falls on land. The old per-feature pick clustered on a handful of countries
            ("毎回似たような場所に行く"). A bbox pre-reject keeps the point-in-polygon scan cheap. */
@@ -131,7 +135,7 @@ window.IntMapModules.playground=function(HOST){
           const lat=Math.asin(Math.random()*2-1)*180/Math.PI, lng=Math.random()*360-180;
           for(let i=0;i<feats.length;i++){ const bb=bbs[i]; if(lng<bb[0]||lng>bb[2]||lat<bb[1]||lat>bb[3]) continue; if(pig(lng,lat,feats[i].geometry)){ target={lng,lat,country:cName(feats[i])}; break; } }
         }
-        if(!target){ try{ imToast(jp()?'地点を選べませんでした':'Could not pick a spot'); }catch(_){} return; }
+        if(!target){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not pick a spot","地点を選べませんでした","Es konnte kein Ort gewählt werden","Не удалось выбрать точку","No se pudo elegir un punto")); }catch(_){} return; }
         const START_Z=15.4; let minZoom=START_Z;
         const sbEl=document.getElementById('sidebar');
         const saved={ c:GE().camera.getCenter(), z:GE().camera.getZoom(), proj:(typeof HOST.proj!=='undefined'?HOST.proj:'globe'), mt:(typeof HOST.mapType!=='undefined'?HOST.mapType:'map'), names:(typeof HOST.namesOn!=='undefined'?HOST.namesOn:true), borders:(typeof HOST.bordersOn!=='undefined'?HOST.bordersOn:false), mode:(typeof HOST.mode!=='undefined'?HOST.mode:null), sbCol:(sbEl?sbEl.classList.contains('collapsed'):true) };
@@ -145,7 +149,7 @@ window.IntMapModules.playground=function(HOST){
         /* (#R31) Don't pop the satellite controller panel each round ("毎回satelliteのポップアップが出るのを辞めて"). */
         try{ if(typeof HOST.satPanelDismissed!=='undefined') HOST.satPanelDismissed=true; const sp=document.getElementById('sat-controller'); if(sp) sp.style.display='none'; }catch(_){}
         const black=document.createElement('div'); black.style.cssText='position:fixed;inset:0;z-index:5800;background:#000;transition:opacity .6s;'; document.body.appendChild(black);
-        const bt=document.createElement('div'); bt.textContent=jp()?'どこかへ移動中…':'Dropping you somewhere…'; bt.style.cssText='position:fixed;inset:0;z-index:5801;display:flex;align-items:center;justify-content:center;color:#fff;font:600 15px system-ui;'; document.body.appendChild(bt);
+        const bt=document.createElement('div'); bt.textContent=window.IntMapLang.t(HOST.lang,"Dropping you somewhere…","どこかへ移動中…","Sie werden irgendwohin gesetzt…","Переносим вас куда-нибудь…","Le dejamos en algún lugar…"); bt.style.cssText='position:fixed;inset:0;z-index:5801;display:flex;align-items:center;justify-content:center;color:#fff;font:600 15px system-ui;'; document.body.appendChild(bt);
         let pin=null; const onZoom=()=>{ try{ minZoom=Math.min(minZoom, GE().camera.getZoom()); }catch(_){} };
         setTimeout(()=>{ try{ GE().camera.jumpTo({center:[target.lng,target.lat],zoom:START_Z,bearing:0,pitch:0}); }catch(_){}
           /* (#R34) RE-ASSERT satellite after the drop — World Explorer is a satellite where-am-I game, but a
@@ -158,10 +162,10 @@ window.IntMapModules.playground=function(HOST){
           setTimeout(()=>{ black.style.opacity='0'; bt.remove(); setTimeout(()=>black.remove(),650); }, 900); }, 250);
         const panel=document.createElement('div'); panel.id='pg-we-panel';
         panel.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(20px,env(safe-area-inset-bottom));z-index:5810;display:flex;gap:8px;align-items:center;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:8px 10px 8px 16px;font-size:13px;font-weight:600;max-width:calc(100vw - 24px);';
-        const lab=document.createElement('span'); lab.textContent=jp()?'ここはどこ？':'Where are you?'; panel.appendChild(lab);
-        const homeB=document.createElement('button'); homeB.title=jp()?'開始地点へ戻る':'Back to start'; homeB.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.7-6-10a6 6 0 0 1 12 0c0 4.3-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg>'; homeB.style.cssText='border:none;border-radius:50%;width:34px;height:34px;background:var(--input-bg);color:var(--text-main);cursor:pointer;display:flex;align-items:center;justify-content:center;'; homeB.onclick=()=>{ try{ GE().camera.flyTo({center:[target.lng,target.lat],zoom:START_Z,duration:700}); }catch(_){} }; panel.appendChild(homeB);
-        const guessB=document.createElement('button'); guessB.textContent=jp()?'回答する':'Make a guess'; guessB.style.cssText='border:none;border-radius:999px;background:var(--primary-color);color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;cursor:pointer;'; panel.appendChild(guessB);
-        const exitB=document.createElement('button'); exitB.textContent='✕'; exitB.title=jp()?'終了':'Exit'; exitB.style.cssText='border:none;border-radius:50%;width:30px;height:30px;background:var(--input-bg);color:var(--text-main);font-size:14px;cursor:pointer;'; panel.appendChild(exitB);
+        const lab=document.createElement('span'); lab.textContent=window.IntMapLang.t(HOST.lang,"Where are you?","ここはどこ？","Wo sind Sie?","Где вы?","¿Dónde está?"); panel.appendChild(lab);
+        const homeB=document.createElement('button'); homeB.title=window.IntMapLang.t(HOST.lang,"Back to start","開始地点へ戻る","Zurück zum Start","Вернуться к началу","Volver al inicio"); homeB.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.7-6-10a6 6 0 0 1 12 0c0 4.3-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg>'; homeB.style.cssText='border:none;border-radius:50%;width:34px;height:34px;background:var(--input-bg);color:var(--text-main);cursor:pointer;display:flex;align-items:center;justify-content:center;'; homeB.onclick=()=>{ try{ GE().camera.flyTo({center:[target.lng,target.lat],zoom:START_Z,duration:700}); }catch(_){} }; panel.appendChild(homeB);
+        const guessB=document.createElement('button'); guessB.textContent=window.IntMapLang.t(HOST.lang,"Make a guess","回答する","Tippen abgeben","Сделать предположение","Adivinar"); guessB.style.cssText='border:none;border-radius:999px;background:var(--primary-color);color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;cursor:pointer;'; panel.appendChild(guessB);
+        const exitB=document.createElement('button'); exitB.textContent='✕'; exitB.title=window.IntMapLang.t(HOST.lang,"Exit","終了","Beenden","Выход","Salir"); exitB.style.cssText='border:none;border-radius:50%;width:30px;height:30px;background:var(--input-bg);color:var(--text-main);font-size:14px;cursor:pointer;'; panel.appendChild(exitB);
         (document.getElementById('map-container')||document.body).appendChild(panel);
         function restore(){ try{ panel.remove(); }catch(_){} try{ black.remove(); }catch(_){} try{ GE().events.off('zoom',onZoom); }catch(_){} try{ pin&&pin.remove(); }catch(_){}
           try{ document.body.classList.remove('pg-we'); }catch(_){}
@@ -176,11 +180,11 @@ window.IntMapModules.playground=function(HOST){
     };
     function openGuess(target,restore,roundInfo){
       const {ov,card}=shell(560); card.appendChild(xbtn(()=>ov.remove()));
-      const t=document.createElement('h3'); t.textContent=jp()?'現在地はどこ？地図をタップ':'Click the map to drop your guess'; t.style.cssText='margin:0 0 4px;font-size:16px;'; card.appendChild(t);
-      const hint=document.createElement('div'); hint.style.cssText='margin:0 0 10px;font-size:11.5px;color:var(--text-muted);'; hint.textContent=jp()?'ズームアウトせずに当てるほど高得点（最小ズームで減点）。':'The less you zoom out, the higher your score (min zoom is penalised).'; card.appendChild(hint);
+      const t=document.createElement('h3'); t.textContent=window.IntMapLang.t(HOST.lang,"Click the map to drop your guess","現在地はどこ？地図をタップ","Zum Tippen auf die Karte klicken","Кликните по карте, чтобы поставить догадку","Haga clic en el mapa para colocar su respuesta"); t.style.cssText='margin:0 0 4px;font-size:16px;'; card.appendChild(t);
+      const hint=document.createElement('div'); hint.style.cssText='margin:0 0 10px;font-size:11.5px;color:var(--text-muted);'; hint.textContent=window.IntMapLang.t(HOST.lang,"The less you zoom out, the higher your score (min zoom is penalised).","ズームアウトせずに当てるほど高得点（最小ズームで減点）。","Je weniger Sie herauszoomen, desto höher die Punktzahl (minimaler Zoom wird bestraft).","Чем меньше вы отдаляете карту, тем выше счёт (минимальный зум штрафуется).","Cuanto menos aleje el mapa, mayor será su puntuación (el zoom mínimo penaliza)."); card.appendChild(hint);
       const mapDiv=document.createElement('div'); mapDiv.id='pg-guess-map'; mapDiv.style.cssText='width:100%;height:300px;border-radius:12px;overflow:hidden;background:var(--input-bg);'; card.appendChild(mapDiv);
       const result=document.createElement('div'); result.style.cssText='margin-top:12px;font-size:13.5px;line-height:1.6;'; card.appendChild(result);
-      const answerB=document.createElement('button'); answerB.textContent=jp()?'回答':'Answer'; answerB.disabled=true; answerB.style.cssText='width:100%;margin-top:12px;padding:12px;border:none;border-radius:11px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;opacity:0.5;'; card.appendChild(answerB);
+      const answerB=document.createElement('button'); answerB.textContent=window.IntMapLang.t(HOST.lang,"Answer","回答","Antwort","Ответ","Respuesta"); answerB.disabled=true; answerB.style.cssText='width:100%;margin-top:12px;padding:12px;border:none;border-radius:11px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;opacity:0.5;'; card.appendChild(answerB);
       let gmap=null, guess=null, gmarker=null, answered=false;
       try{
         gmap=GE().ui.createSubView({container:'pg-guess-map',style:{version:8,sources:{c:{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OSM'}},layers:[{id:'c',type:'raster',source:'c'}]},center:[10,25],zoom:0.35,attributionControl:{compact:true},renderWorldCopies:false});
@@ -198,10 +202,10 @@ window.IntMapModules.playground=function(HOST){
         try{ const el=document.createElement('div'); el.style.cssText='width:18px;height:18px;border-radius:50%;background:#34c759;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; gmap.ui.addMarker({element:el},[target.lng,target.lat]);
           gmap.camera.fitBounds([[Math.min(guess[0],target.lng),Math.min(guess[1],target.lat)],[Math.max(guess[0],target.lng),Math.max(guess[1],target.lat)]],{padding:60,maxZoom:6,duration:800}); }catch(_){}
         result.innerHTML='<b style="font-size:22px;color:var(--primary-color);">'+score+' / 1000</b><br>'
-          +(jp()?'距離: ':'Distance: ')+Math.round(dist).toLocaleString()+' km'+(target.country?' · '+(jp()?'正解: ':'Actual: ')+target.country:'')
-          +'<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">'+(jp()?'基本点 ':'Base ')+base
-          +(penalty>0?(' · '+(jp()?'ズームアウト減点 −':'Zoom-out −')+penalty+' ('+(jp()?'最小ズーム ':'min zoom ')+mz.toFixed(1)+')'):' · <span style="color:#34c759;">'+(jp()?'ズームアウトなし！':'no zoom-out!')+'</span>')+'</div>';
-        const again=document.createElement('button'); again.textContent=jp()?'もう一度':'Play again'; again.style.cssText='width:100%;margin-top:12px;padding:11px;border:none;border-radius:11px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:700;cursor:pointer;'; card.appendChild(again);
+          +(window.IntMapLang.t(HOST.lang,"Distance: ","距離: ","Entfernung: ","Расстояние: ","Distancia: "))+Math.round(dist).toLocaleString()+' km'+(target.country?' · '+(window.IntMapLang.t(HOST.lang,"Actual: ","正解: ","Tatsächlich: ","На самом деле: ","Real: "))+target.country:'')
+          +'<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">'+(window.IntMapLang.t(HOST.lang,"Base ","基本点 ","Grundpunkte ","Базовые ","Base "))+base
+          +(penalty>0?(' · '+(window.IntMapLang.t(HOST.lang,"Zoom-out −","ズームアウト減点 −","Herauszoomen −","Отдаление −","Alejamiento −"))+penalty+' ('+(window.IntMapLang.t(HOST.lang,"min zoom ","最小ズーム ","min. Zoom ","мин. зум ","zoom mínimo "))+mz.toFixed(1)+')'):' · <span style="color:#34c759;">'+(window.IntMapLang.t(HOST.lang,"no zoom-out!","ズームアウトなし！","kein Herauszoomen!","без отдаления!","¡sin alejar!"))+'</span>')+'</div>';
+        const again=document.createElement('button'); again.textContent=window.IntMapLang.t(HOST.lang,"Play again","もう一度","Noch einmal","Сыграть ещё","Jugar otra vez"); again.style.cssText='width:100%;margin-top:12px;padding:11px;border:none;border-radius:11px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:700;cursor:pointer;'; card.appendChild(again);
         again.onclick=()=>{ try{ gmap&&gmap.destroy(); }catch(_){} ov.remove(); try{ restore&&restore(); }catch(_){} window._pgWorldExplorer&&window._pgWorldExplorer(); };
       };
       ov.addEventListener('click',e=>{ if(e.target===ov){ try{ gmap&&gmap.destroy(); }catch(_){} } });
@@ -215,17 +219,17 @@ window.IntMapModules.playground=function(HOST){
        "everyone dies" curve. Spread shows as RED CASE DOTS that multiply & spread (no country-wide red
        fill, per spec). Vaccine + treatment arrive on a luck-driven timeline. */
     const PG_PRESETS={
-      flu:{ n:{en:'Influenza',jp:'インフルエンザ'}, r0:1.4, inc:2, inf:5, ifr:0.001, immMo:8, seas:0.35 },
-      covid:{ n:{en:'COVID-19',jp:'COVID-19'}, r0:3.2, inc:5, inf:9, ifr:0.007, immMo:9, seas:0.18 },
-      sars:{ n:{en:'SARS',jp:'SARS'}, r0:2.6, inc:5, inf:10, ifr:0.1, immMo:36, seas:0.12 },
-      ebola:{ n:{en:'Ebola',jp:'エボラ出血熱'}, r0:1.9, inc:9, inf:10, ifr:0.5, immMo:120, seas:0 },
-      measles:{ n:{en:'Measles',jp:'麻疹'}, r0:14, inc:11, inf:8, ifr:0.002, immMo:600, seas:0.05 }
+      flu:{ n:LA('Influenza','インフルエンザ','Influenza','Грипп','Gripe'), r0:1.4, inc:2, inf:5, ifr:0.001, immMo:8, seas:0.35 },
+      covid:{ n:LA('COVID-19','COVID-19','COVID-19','COVID-19','COVID-19'), r0:3.2, inc:5, inf:9, ifr:0.007, immMo:9, seas:0.18 },
+      sars:{ n:LA('SARS','SARS','SARS','ТОРС','SARS'), r0:2.6, inc:5, inf:10, ifr:0.1, immMo:36, seas:0.12 },
+      ebola:{ n:LA('Ebola','エボラ出血熱','Ebola','Эбола','Ébola'), r0:1.9, inc:9, inf:10, ifr:0.5, immMo:120, seas:0 },
+      measles:{ n:LA('Measles','麻疹','Masern','Корь','Sarampión'), r0:14, inc:11, inf:8, ifr:0.002, immMo:600, seas:0.05 }
     };
     window._pgPandemic=function(){
       if(!GE().hasRenderer()){ try{ imToast('Map not ready'); }catch(_){} return; }
       _pgWeStyle();
       ensureCountries(()=>{
-        const feats=(window.countryGeo&&window.countryGeo.features)||[]; if(!feats.length){ try{ imToast(jp()?'国境データを読み込めません':'Country data unavailable'); }catch(_){} return; }
+        const feats=(window.countryGeo&&window.countryGeo.features)||[]; if(!feats.length){ try{ imToast(window.IntMapLang.t(HOST.lang,"Country data unavailable","国境データを読み込めません","Länderdaten nicht verfügbar","Данные по странам недоступны","Datos de países no disponibles")); }catch(_){} return; }
         /* (#R30) hide the mobile bottom-sheet / FABs so the HUD + map aren't covered ("ボタンがボトムシートに隠れる"). */
         try{ document.body.classList.add('pg-sim'); }catch(_){}
         const cs=(typeof countryStats!=='undefined'&&countryStats)||{};
@@ -301,16 +305,16 @@ window.IntMapModules.playground=function(HOST){
             news((jp()?('新変異株（'+gl+'）を'+(best>=0?nm[best]:'?')+'で確認。'+(moreInf?'感染力が上昇。':'')):('New variant ('+gl+') detected in '+(best>=0?nm[best]:'?')+'.'+(moreInf?' More transmissible.':''))),'alert');
           }
           const T=totals();
-          if(!hit10 && T.aff>=10){ hit10=true; news((jp()?'感染が10カ国に拡大。':'Outbreak has reached 10 countries.'),'alert'); }
-          if(!pheic && (T.I+T.R+T.D)>3e6){ pheic=true; news((jp()?'WHOが「国際的に懸念される公衆衛生上の緊急事態（PHEIC）」を宣言。':'WHO declares a global health emergency (PHEIC).'),'alert'); }
-          if(!treat && totI>2e6 && Math.random()<0.0009*speed){ treat=true; news((jp()?'有効な治療法が確立。致死率が低下します。':'An effective treatment is found — fatality rate falls.'),'good'); }
-          if(!d1m && T.D>1e6){ d1m=true; news((jp()?'世界の死者が100万人を突破。':'Global death toll passes 1 million.'),'alert'); }
-          if(!d10m && T.D>1e7){ d10m=true; news((jp()?'世界の死者が1000万人を突破。':'Global death toll passes 10 million.'),'alert'); }
+          if(!hit10 && T.aff>=10){ hit10=true; news((window.IntMapLang.t(HOST.lang,"Outbreak has reached 10 countries.","感染が10カ国に拡大。","Der Ausbruch hat 10 Länder erreicht.","Вспышка достигла 10 стран.","El brote ha llegado a 10 países.")),'alert'); }
+          if(!pheic && (T.I+T.R+T.D)>3e6){ pheic=true; news((window.IntMapLang.t(HOST.lang,"WHO declares a global health emergency (PHEIC).","WHOが「国際的に懸念される公衆衛生上の緊急事態（PHEIC）」を宣言。","Die WHO erklärt eine gesundheitliche Notlage internationaler Tragweite (PHEIC).","ВОЗ объявляет чрезвычайную ситуацию в области общественного здравоохранения, имеющую международное значение (PHEIC).","La OMS declara una emergencia de salud pública de importancia internacional (ESPII).")),'alert'); }
+          if(!treat && totI>2e6 && Math.random()<0.0009*speed){ treat=true; news((window.IntMapLang.t(HOST.lang,"An effective treatment is found — fatality rate falls.","有効な治療法が確立。致死率が低下します。","Eine wirksame Behandlung wird gefunden — die Sterblichkeit sinkt.","Найдено эффективное лечение — летальность снижается.","Se encuentra un tratamiento eficaz: la letalidad cae.")),'good'); }
+          if(!d1m && T.D>1e6){ d1m=true; news((window.IntMapLang.t(HOST.lang,"Global death toll passes 1 million.","世界の死者が100万人を突破。","Die weltweite Zahl der Todesopfer übersteigt 1 Million.","Число погибших в мире превысило 1 миллион.","El número global de muertes supera el millón.")),'alert'); }
+          if(!d10m && T.D>1e7){ d10m=true; news((window.IntMapLang.t(HOST.lang,"Global death toll passes 10 million.","世界の死者が1000万人を突破。","Die weltweite Zahl der Todesopfer übersteigt 10 Millionen.","Число погибших в мире превысило 10 миллионов.","El número global de muertes supera los 10 millones.")),'alert'); }
           const now=Date.now(); if(now-lastDots>140){ lastDots=now; buildDots(); } updateHud(T);
           /* (#R32) richer, VARIED end states ("オチが毎回同じ…をやめて") with the final toll + attack rate. */
           const attack=WORLDPOP?((T.R+T.D+T.I)/WORLDPOP):0;
           if(day>40 && totI<150 && T.aff<=1 && day<300){ buildDots(); stop(); news((jp()?('封じ込め成功 — 死者'+fmt(T.D)+'。世界的流行には至りませんでした。'):('Contained — '+fmt(T.D)+' deaths; it never became a pandemic.')),'good'); renderRun(true); }
-          else if(day>40 && totI<200){ buildDots(); stop(); const verdict=attack<0.05?(jp()?'小規模な流行で終息':'a minor outbreak'):attack<0.25?(jp()?'流行は終息':'the outbreak has ended'):(jp()?'壊滅的な大流行を経て終息':'a devastating pandemic, now over'); news((jp()?(verdict+' — 累計死者'+fmt(T.D)+'（世界の'+(attack*100).toFixed(1)+'%が感染）。'):('It was '+verdict+' — '+fmt(T.D)+' deaths, '+(attack*100).toFixed(1)+'% of the world infected.')),attack<0.25?'good':'alert'); renderRun(true); }
+          else if(day>40 && totI<200){ buildDots(); stop(); const verdict=attack<0.05?(window.IntMapLang.t(HOST.lang,"a minor outbreak","小規模な流行で終息","ein kleinerer Ausbruch","небольшая вспышка","un brote menor")):attack<0.25?(window.IntMapLang.t(HOST.lang,"the outbreak has ended","流行は終息","der Ausbruch ist vorbei","вспышка закончилась","el brote ha terminado")):(window.IntMapLang.t(HOST.lang,"a devastating pandemic, now over","壊滅的な大流行を経て終息","eine verheerende Pandemie, jetzt vorbei","разрушительная пандемия, теперь завершившаяся","una pandemia devastadora, ya terminada")); news((jp()?(verdict+' — 累計死者'+fmt(T.D)+'（世界の'+(attack*100).toFixed(1)+'%が感染）。'):('It was '+verdict+' — '+fmt(T.D)+' deaths, '+(attack*100).toFixed(1)+'% of the world infected.')),attack<0.25?'good':'alert'); renderRun(true); }
           else if(day>365*8){ stop(); news((jp()?('風土病として定着（長期均衡）。累計死者'+fmt(T.D)+'。'):('Now endemic (long-run equilibrium) — '+fmt(T.D)+' cumulative deaths.')),'info'); renderRun(true); }
         }
         /* (#R32) Dots now scale with the ACTUAL case count ("感染者の人数単位で") — each dot ≈ `perDot`
@@ -335,36 +339,36 @@ window.IntMapModules.playground=function(HOST){
         (document.getElementById('map-container')||document.body).appendChild(hud);
         function fmt(n){ n=Math.round(n); if(n>=1e9)return (n/1e9).toFixed(2)+'B'; if(n>=1e6)return (n/1e6).toFixed(2)+'M'; if(n>=1e3)return (n/1e3).toFixed(1)+'k'; return ''+n; }
         function updateHud(T){ const el=hud.querySelector('#pg-pan-stats'); if(!el) return; const vpct=WORLDPOP?Math.round(T.V/WORLDPOP*100):0;
-          el.innerHTML='<span style="color:#f03b20;">'+(jp()?'感染':'Infected')+' <b>'+fmt(T.I)+'</b></span> · '+
-          '<span style="color:#7a0010;">'+(jp()?'死亡':'Dead')+' <b>'+fmt(T.D)+'</b></span> · '+
-          '<span style="color:#2ca25f;">'+(jp()?'回復':'Recovered')+' <b>'+fmt(T.R)+'</b></span> · '+
-          '<span style="color:#0a84ff;">'+(jp()?'接種':'Vaccinated')+' <b>'+vpct+'%</b></span><br>'+
-          '<span>'+(jp()?'国':'Countries')+' <b>'+T.aff+'</b></span> · '+(jp()?'経過':'Day')+' <b>'+day+'</b>'+(variants?' · '+(jp()?'変異株':'variants')+' <b>'+variants+'</b>':'')+(vaxDay>=0?' · 💉':(vaxProg>0?' · '+(jp()?'ワクチン開発':'vaccine R&D')+' '+Math.round(Math.min(1,vaxProg/vaxDifficulty,day/VAX_MIN_DAY)*100)+'%':'')); }   /* (#R35) progress also bounded by the realistic time floor */
+          el.innerHTML='<span style="color:#f03b20;">'+(window.IntMapLang.t(HOST.lang,"Infected","感染","Infiziert","Заражено","Infectados"))+' <b>'+fmt(T.I)+'</b></span> · '+
+          '<span style="color:#7a0010;">'+(window.IntMapLang.t(HOST.lang,"Dead","死亡","Tote","Умерло","Fallecidos"))+' <b>'+fmt(T.D)+'</b></span> · '+
+          '<span style="color:#2ca25f;">'+(window.IntMapLang.t(HOST.lang,"Recovered","回復","Genesen","Выздоровело","Recuperados"))+' <b>'+fmt(T.R)+'</b></span> · '+
+          '<span style="color:#0a84ff;">'+(window.IntMapLang.t(HOST.lang,"Vaccinated","接種","Geimpft","Вакцинировано","Vacunados"))+' <b>'+vpct+'%</b></span><br>'+
+          '<span>'+(window.IntMapLang.t(HOST.lang,"Countries","国","Länder","Страны","Países"))+' <b>'+T.aff+'</b></span> · '+(window.IntMapLang.t(HOST.lang,"Day","経過","Tag","День","Día"))+' <b>'+day+'</b>'+(variants?' · '+(window.IntMapLang.t(HOST.lang,"variants","変異株","Varianten","варианты","variantes"))+' <b>'+variants+'</b>':'')+(vaxDay>=0?' · 💉':(vaxProg>0?' · '+(window.IntMapLang.t(HOST.lang,"vaccine R&D","ワクチン開発","Impfstoffentwicklung","разработка вакцины","I+D de vacunas"))+' '+Math.round(Math.min(1,vaxProg/vaxDifficulty,day/VAX_MIN_DAY)*100)+'%':'')); }   /* (#R35) progress also bounded by the realistic time floor */
         function mk(lab,val,min,max,stp,fmtv,set){ const w=document.createElement('div'); w.style.cssText='display:flex;align-items:center;gap:8px;margin:5px 0;font-size:11.5px;'; const l=document.createElement('span'); l.textContent=lab; l.style.cssText='flex:0 0 104px;color:var(--text-muted);'; const r=document.createElement('input'); r.type='range'; r.min=min; r.max=max; r.step=stp; r.value=val; r.style.cssText='flex:1;accent-color:var(--primary-color);'; const v=document.createElement('b'); v.textContent=fmtv(+val); v.style.cssText='flex:0 0 50px;text-align:right;'; r.oninput=()=>{ v.textContent=fmtv(+r.value); set(+r.value); }; w.appendChild(l); w.appendChild(r); w.appendChild(v); hud.appendChild(w); }
         function renderConfig(){ hud.innerHTML='';
-          const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;'; const tt=document.createElement('b'); tt.textContent=jp()?'パンデミック設定':'Outbreak setup'; tt.style.fontSize='14px'; h.appendChild(tt); h.appendChild(pill('beta','#ff9500')); const sp=document.createElement('span'); sp.style.flex='1'; h.appendChild(sp); const ex=document.createElement('button'); ex.textContent='✕'; ex.style.cssText='border:none;border-radius:50%;width:28px;height:28px;background:var(--input-bg);color:var(--text-main);cursor:pointer;'; ex.onclick=exit; h.appendChild(ex); hud.appendChild(h);
+          const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;'; const tt=document.createElement('b'); tt.textContent=window.IntMapLang.t(HOST.lang,"Outbreak setup","パンデミック設定","Ausbruch einrichten","Настройка вспышки","Configuración del brote"); tt.style.fontSize='14px'; h.appendChild(tt); h.appendChild(pill('beta','#ff9500')); const sp=document.createElement('span'); sp.style.flex='1'; h.appendChild(sp); const ex=document.createElement('button'); ex.textContent='✕'; ex.style.cssText='border:none;border-radius:50%;width:28px;height:28px;background:var(--input-bg);color:var(--text-main);cursor:pointer;'; ex.onclick=exit; h.appendChild(ex); hud.appendChild(h);
           const presetRow=document.createElement('div'); presetRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px;';
-          Object.keys(PG_PRESETS).forEach(k=>{ const pr=PG_PRESETS[k]; const on=(P.n&&P.n.en)===pr.n.en; const b=document.createElement('button'); b.textContent=pr.n[jp()?'jp':'en']; b.style.cssText='border:1px solid rgba(128,128,128,0.3);background:'+(on?'var(--primary-color)':'var(--input-bg)')+';color:'+(on?'#fff':'var(--text-main)')+';border-radius:999px;padding:6px 11px;font-size:11.5px;font-weight:600;cursor:pointer;'; b.onclick=()=>{ P=Object.assign({},pr); immMo=P.immMo; seasAmp=P.seas; renderConfig(); }; presetRow.appendChild(b); }); hud.appendChild(presetRow);
-          mk(jp()?'基本再生産数R₀':'Infectivity R₀',P.r0,0.6,18,0.1,v=>v.toFixed(1),v=>P.r0=v);
-          mk(jp()?'致死率(IFR)%':'Lethality %',+(P.ifr*100).toFixed(1),0,60,0.1,v=>v+'%',v=>P.ifr=v/100);
-          mk(jp()?'潜伏(日)':'Incubation (d)',P.inc,0,21,1,v=>''+v,v=>P.inc=v);
-          mk(jp()?'感染期(日)':'Infectious (d)',P.inf,1,21,1,v=>''+v,v=>P.inf=v);
-          mk(jp()?'免疫(月)':'Immunity (mo)',Math.min(120,immMo),0,120,1,v=>v>=120?'∞':(''+v),v=>immMo=(v>=120?600:v));
-          const hint=document.createElement('div'); hint.style.cssText='margin-top:9px;font-size:12px;color:var(--primary-color);font-weight:600;'; hint.textContent=jp()?'▶ 地図で感染源となる国をタップ':'▶ Tap a country on the map to place patient zero'; hud.appendChild(hint);
+          Object.keys(PG_PRESETS).forEach(k=>{ const pr=PG_PRESETS[k]; const on=(P.n&&P.n[0])===pr.n[0]; const b=document.createElement('button'); b.textContent=L.arr(pr.n); b.style.cssText='border:1px solid rgba(128,128,128,0.3);background:'+(on?'var(--primary-color)':'var(--input-bg)')+';color:'+(on?'#fff':'var(--text-main)')+';border-radius:999px;padding:6px 11px;font-size:11.5px;font-weight:600;cursor:pointer;'; b.onclick=()=>{ P=Object.assign({},pr); immMo=P.immMo; seasAmp=P.seas; renderConfig(); }; presetRow.appendChild(b); }); hud.appendChild(presetRow);
+          mk(window.IntMapLang.t(HOST.lang,"Infectivity R₀","基本再生産数R₀","Basisreproduktionszahl R₀","Базовое репродуктивное число R₀","Número reproductivo básico R₀"),P.r0,0.6,18,0.1,v=>v.toFixed(1),v=>P.r0=v);
+          mk(window.IntMapLang.t(HOST.lang,"Lethality %","致死率(IFR)%","Letalität %","Летальность %","Letalidad %"),+(P.ifr*100).toFixed(1),0,60,0.1,v=>v+'%',v=>P.ifr=v/100);
+          mk(window.IntMapLang.t(HOST.lang,"Incubation (d)","潜伏(日)","Inkubation (T)","Инкубация (дн.)","Incubación (d)"),P.inc,0,21,1,v=>''+v,v=>P.inc=v);
+          mk(window.IntMapLang.t(HOST.lang,"Infectious (d)","感染期(日)","Ansteckend (T)","Заразность (дн.)","Contagiosidad (d)"),P.inf,1,21,1,v=>''+v,v=>P.inf=v);
+          mk(window.IntMapLang.t(HOST.lang,"Immunity (mo)","免疫(月)","Immunität (Mon.)","Иммунитет (мес.)","Inmunidad (meses)"),Math.min(120,immMo),0,120,1,v=>v>=120?'∞':(''+v),v=>immMo=(v>=120?600:v));
+          const hint=document.createElement('div'); hint.style.cssText='margin-top:9px;font-size:12px;color:var(--primary-color);font-weight:600;'; hint.textContent=window.IntMapLang.t(HOST.lang,"▶ Tap a country on the map to place patient zero","▶ 地図で感染源となる国をタップ","▶ Auf der Karte ein Land antippen, um Patient null zu setzen","▶ Нажмите страну на карте, чтобы поместить нулевого пациента","▶ Toque un país en el mapa para colocar al paciente cero"); hud.appendChild(hint);
         }
         function renderRun(ended){ hud.innerHTML='';
           const stats=document.createElement('div'); stats.id='pg-pan-stats'; stats.style.cssText='margin-bottom:7px;line-height:1.65;'; hud.appendChild(stats);
           const evt=document.createElement('div'); evt.id='pg-evt'; evt.style.cssText='font-size:11px;color:var(--text-muted);margin-bottom:8px;min-height:14px;line-height:1.35;'; evt.textContent=lastEvt.replace(/<[^>]+>/g,''); hud.appendChild(evt);
           const row=document.createElement('div'); row.style.cssText='display:flex;gap:8px;align-items:center;';
-          if(ended){ const again=document.createElement('button'); again.textContent=jp()?'もう一度':'New outbreak'; again.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-color);color:#fff;padding:10px;font-weight:700;cursor:pointer;'; again.onclick=()=>{ exit(); setTimeout(()=>window._pgPandemic&&window._pgPandemic(),120); }; row.appendChild(again); }
-          else { const play=document.createElement('button'); const setPlay=()=>play.textContent=running?(jp()?'⏸ 一時停止':'⏸ Pause'):(jp()?'▶ 再開':'▶ Play'); play.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-color);color:#fff;padding:9px;font-weight:700;cursor:pointer;'; play.onclick=()=>{ if(running) stop(); else start(); setPlay(); }; setPlay(); row.appendChild(play);
+          if(ended){ const again=document.createElement('button'); again.textContent=window.IntMapLang.t(HOST.lang,"New outbreak","もう一度","Neuer Ausbruch","Новая вспышка","Nuevo brote"); again.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-color);color:#fff;padding:10px;font-weight:700;cursor:pointer;'; again.onclick=()=>{ exit(); setTimeout(()=>window._pgPandemic&&window._pgPandemic(),120); }; row.appendChild(again); }
+          else { const play=document.createElement('button'); const setPlay=()=>play.textContent=running?(window.IntMapLang.t(HOST.lang,"⏸ Pause","⏸ 一時停止","⏸ Pause","⏸ Пауза","⏸ Pausa")):(window.IntMapLang.t(HOST.lang,"▶ Play","▶ 再開","▶ Abspielen","▶ Воспроизвести","▶ Reproducir")); play.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-color);color:#fff;padding:9px;font-weight:700;cursor:pointer;'; play.onclick=()=>{ if(running) stop(); else start(); setPlay(); }; setPlay(); row.appendChild(play);
             const spd=document.createElement('button'); spd.textContent='⏩ x'+speed; spd.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;font-weight:700;cursor:pointer;'; spd.onclick=()=>{ speed=speed>=8?1:speed*2; spd.textContent='⏩ x'+speed; }; row.appendChild(spd); }
           const ex=document.createElement('button'); ex.textContent='✕'; ex.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;cursor:pointer;'; ex.onclick=exit; row.appendChild(ex);
           hud.appendChild(row); updateHud(totals());
         }
         function onPick(e){ if(!picking) return; let hit=null; for(let i=0;i<N;i++){ if(pig(e.lngLat.lng,e.lngLat.lat,feats[i].geometry)){ hit=i; break; } }
           if(hit==null) return; picking=false; R0_BASE=P.r0; seed(hit,Math.max(60,pop[hit]*2e-6)); buildDots(); renderRun(false); start();
-          news((jp()?'最初の感染者が確認されました — ':'Patient zero confirmed in ')+nm[hit]+'.','alert');
+          news((window.IntMapLang.t(HOST.lang,"Patient zero confirmed in ","最初の感染者が確認されました — ","Patient null bestätigt in ","Нулевой пациент подтверждён в ","Paciente cero confirmado en "))+nm[hit]+'.','alert');
         }
         GE().events.on('click',onPick);
         function exit(){ stop(); try{ GE().events.off('click',onPick); }catch(_){} try{ ['pg-dots','pg-dots-glow'].forEach(id=>{ if(GE().layers.has(id))GE().layers.remove(id); }); if(GE().layers.hasSource('pg-dots'))GE().layers.removeSource('pg-dots'); }catch(_){} try{ hud.remove(); }catch(_){} try{ document.body.classList.remove('pg-sim'); }catch(_){} }

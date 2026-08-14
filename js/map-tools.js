@@ -258,11 +258,11 @@ window.IntMapModules.drawTool=function(HOST){
                    ? (_coarse ? _L5('Lift your finger to finish','指を離すと確定','Finger anheben zum Abschließen','Поднимите палец, чтобы завершить','Levanta el dedo para finalizar')
                               : _L5('Move the cursor to trace → click to finish','カーソルを動かして描画 → クリックで確定','Cursor bewegen zum Zeichnen → Klick zum Abschließen','Двигайте курсор для обводки → клик для завершения','Mueve el cursor para trazar → clic para finalizar'))
                  : _L5('Done — use Redraw to start over','完了。「やり直し」で再描画','Fertig — „Neu zeichnen“ zum Neustart','Готово — «Перерисовать», чтобы начать заново','Listo — usa Redibujar para empezar de nuevo');
-      p.innerHTML=`<div class="tp-header"><span class="tp-title">✏️ ${jp()?'描画測定':'Draw / trace'}</span><button class="tp-close" title="${t('close')}">✕</button></div>`+
-        `<div class="tp-row"><span>${jp()?'距離':'Length'}</span><b>${distHTML(lengthKm)}</b></div>`+
-        `<div class="tp-row"><span>${jp()?'面積（閉領域）':'Area (loops)'}</span><b>${lockedArea>0?areaHTML(lockedArea):'—'}</b></div>`+
-        `<div class="tp-row"><span>${jp()?'点数（簡略/元）':'Points (simpl/raw)'}</span><b>${simplified.length}/${raw.length}</b></div>`+
-        `<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:5px;"><span>${jp()?'解像度（平滑化）':'Resolution (smoothing)'}</span>`+
+      p.innerHTML=`<div class="tp-header"><span class="tp-title">✏️ ${window.IntMapLang.t(HOST.lang,"Draw / trace","描画測定","Zeichnen / nachzeichnen","Рисование и трассировка","Dibujar / trazar")}</span><button class="tp-close" title="${t('close')}">✕</button></div>`+
+        `<div class="tp-row"><span>${window.IntMapLang.t(HOST.lang,"Length","距離","Länge","Длина","Longitud")}</span><b>${distHTML(lengthKm)}</b></div>`+
+        `<div class="tp-row"><span>${window.IntMapLang.t(HOST.lang,"Area (loops)","面積（閉領域）","Fläche (geschlossen)","Площадь (замкнутые)","Superficie (cerrado)")}</span><b>${lockedArea>0?areaHTML(lockedArea):'—'}</b></div>`+
+        `<div class="tp-row"><span>${window.IntMapLang.t(HOST.lang,"Points (simpl/raw)","点数（簡略/元）","Punkte (vereinfacht/roh)","Точки (упрощ./исходн.)","Puntos (simplif./bruto)")}</span><b>${simplified.length}/${raw.length}</b></div>`+
+        `<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:5px;"><span>${window.IntMapLang.t(HOST.lang,"Resolution (smoothing)","解像度（平滑化）","Auflösung (Glättung)","Разрешение (сглаживание)","Resolución (suavizado)")}</span>`+
           `<input type="range" id="draw-res" min="0" max="100" step="1" value="${smoothing}" style="width:100%;accent-color:var(--primary-color);"></div>`+
         `<div class="tp-hint">${hint}</div>`+
         /* (#R123) POPULATION inside the drawn loop(s) — same WorldPop 100m grid as the measure/radius tools, now
@@ -272,8 +272,8 @@ window.IntMapModules.drawTool=function(HOST){
            Elevation profileを使えるように"). Profiles the traced path (simplified, raw fallback). */
         ((simplified.length>=2) ? `<button class="ai-action-btn" id="draw-profile" style="margin-top:6px;">📈 ${t('elevProfile')}</button>` : '')+
         `<div style="display:flex;gap:6px;margin-top:8px;">`+
-          `<button class="tp-clear" id="draw-finish" style="flex:1;">${jp()?'地図に残す':'Keep on map'}</button>`+
-          `<button class="tp-clear" id="draw-redo" style="flex:1;">${jp()?'やり直し':'Redraw'}</button>`+
+          `<button class="tp-clear" id="draw-finish" style="flex:1;">${window.IntMapLang.t(HOST.lang,"Keep on map","地図に残す","Auf der Karte behalten","Оставить на карте","Mantener en el mapa")}</button>`+
+          `<button class="tp-clear" id="draw-redo" style="flex:1;">${window.IntMapLang.t(HOST.lang,"Redraw","やり直し","Neu zeichnen","Перерисовать","Redibujar")}</button>`+
         `</div>`;
       p.querySelector('.tp-close').onclick=()=>api.exit();
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
@@ -336,10 +336,10 @@ window.IntMapModules.drawTool=function(HOST){
     function keepOnMap(){
       if(state==='drawing') finish();
       try{
-        (loopRings||[]).forEach(r=>{ if(r&&r.length>=4){ try{ window.IntMapAnnotations.add({type:'Polygon',coordinates:[r]},{color:'#ffcc00',op:0.22,name:(jp()?'描画範囲':'Drawn area'),value:(lockedArea>0?areaHTML(lockedArea):'')}); }catch(_){} } });
+        (loopRings||[]).forEach(r=>{ if(r&&r.length>=4){ try{ window.IntMapAnnotations.add({type:'Polygon',coordinates:[r]},{color:'#ffcc00',op:0.22,name:(window.IntMapLang.t(HOST.lang,"Drawn area","描画範囲","Gezeichneter Bereich","Нарисованная область","Área dibujada")),value:(lockedArea>0?areaHTML(lockedArea):'')}); }catch(_){} } });
         const ln=(simplified&&simplified.length>=2)?simplified:((raw&&raw.length>=2)?raw:null);
-        if(ln){ try{ window.IntMapAnnotations.add({type:'LineString',coordinates:ln},{color:'#ff9500',name:(jp()?'描画':'Drawing'),value:(lengthKm>0?distHTML(lengthKm):'')}); }catch(_){} }
-        try{ if(typeof imToast==='function') imToast(jp()?'地図に残しました':'Kept on the map'); }catch(_){}   /* (#R149) imToast is closure-scoped, not on window */
+        if(ln){ try{ window.IntMapAnnotations.add({type:'LineString',coordinates:ln},{color:'#ff9500',name:(window.IntMapLang.t(HOST.lang,"Drawing","描画","Zeichnen","Рисование","Dibujando")),value:(lengthKm>0?distHTML(lengthKm):'')}); }catch(_){} }
+        try{ if(typeof imToast==='function') imToast(window.IntMapLang.t(HOST.lang,"Kept on the map","地図に残しました","Auf der Karte behalten","Оставлено на карте","Mantenido en el mapa")); }catch(_){}   /* (#R149) imToast is closure-scoped, not on window */
       }catch(_){}
       api.exit();
     }
@@ -446,7 +446,7 @@ window.IntMapModules.isolate=function(HOST){
              applies — until a reload warms the cache. POLL instead (reliable regardless of render state), with
              the idle listener kept as a last-resort. */
           if(tries++<60){ setTimeout(apply,120); } else { try{ GE().events.once('idle',apply); }catch(_){} } return; }
-        if(!feat){ try{ imToast(jp()?'国境データが見つかりません':'Country border not found'); }catch(_){} return; }
+        if(!feat){ try{ imToast(window.IntMapLang.t(HOST.lang,"Country border not found","国境データが見つかりません","Landesgrenze nicht gefunden","Границы страны не найдены","No se ha encontrado la frontera del país")); }catch(_){} return; }
         try{ GE().layers.setSourceData('iso-src',maskFC(feat)); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); toTop(); }catch(_){}
         /* (#R107) auto-clear any place highlight / blue boundary outline on isolate — a historical-country click
            draws the era outline (IntMapOutline) + place-hl, which otherwise linger on top of the isolated view
@@ -458,7 +458,7 @@ window.IntMapModules.isolate=function(HOST){
            fight the isolate mask ("isolateを押したらCountries (info)は選択解除"). Dispatch change so the
            checkbox, the map layer and the Active-layers list all update together. */
         try{ const cc=document.getElementById('cb-countries'); if(cc&&cc.checked){ cc.checked=false; cc.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){}
-        active=true; const b=exitBtn(); b.textContent='✕ '+(jp()?'全体表示に戻る':'Exit country view'); b.style.display='block';
+        active=true; const b=exitBtn(); b.textContent='✕ '+(window.IntMapLang.t(HOST.lang,"Exit country view","全体表示に戻る","Länderansicht verlassen","Выйти из вида страны","Salir de la vista del país")); b.style.display='block';
         try{ const bb=bbox(feat); if(bb[0][0]>-179&&bb[1][0]<179){ GE().camera.fitBounds(bb,{padding:60,duration:800});
           /* (#R11) Restrict panning to roughly the country's extent so you can only roam that country. */
           const padX=(bb[1][0]-bb[0][0])*0.18+0.6, padY=(bb[1][1]-bb[0][1])*0.18+0.6;
@@ -611,14 +611,14 @@ window.IntMapModules.seaRoute=function(HOST){
     function compute(){ if(!start||!end||busy) return; busy=true;
       if(pureDist){ let line; try{ line=turf.greatCircle(turf.point(start),turf.point(end),{npoints:128}); }catch(_){ line=null; }
         const coords=line?(line.geometry.type==='MultiLineString'?[].concat(...line.geometry.coordinates):line.geometry.coordinates):[start,end];
-        draw(coords); const km=hav(start,end); setBody((jp()?'直線距離（最短）: ':'Straight-line (shortest): ')+'<b>'+km.toFixed(0)+' km</b>'); busy=false; return; }
-      setBody(jp()?'航路を計算中…':'Computing sea route…');
+        draw(coords); const km=hav(start,end); setBody((window.IntMapLang.t(HOST.lang,"Straight-line (shortest): ","直線距離（最短）: ","Luftlinie (kürzeste): ","По прямой (кратчайшее): ","En línea recta (la más corta): "))+'<b>'+km.toFixed(0)+' km</b>'); busy=false; return; }
+      setBody(window.IntMapLang.t(HOST.lang,"Computing sea route…","航路を計算中…","Seeroute wird berechnet…","Расчёт морского маршрута…","Calculando la ruta marítima…"));
       setTimeout(()=>{ try{
-        if(!buildMask()){ setBody(jp()?'国境データ読み込み待ち…再試行してください':'Country data still loading — try again.'); busy=false; return; }
+        if(!buildMask()){ setBody(window.IntMapLang.t(HOST.lang,"Country data still loading — try again.","国境データ読み込み待ち…再試行してください","Länderdaten werden noch geladen — bitte erneut versuchen.","Данные по странам ещё загружаются — попробуйте снова.","Los datos de países aún se están cargando; inténtelo de nuevo.")); busy=false; return; }
         const s=snapSea(start[0],start[1]), e=snapSea(end[0],end[1]);
-        if(!s||!e){ setBody(jp()?'海上の点が見つかりません（陸地の可能性）':'No sea cell found near a point (is it on land?).'); busy=false; return; }
+        if(!s||!e){ setBody(window.IntMapLang.t(HOST.lang,"No sea cell found near a point (is it on land?).","海上の点が見つかりません（陸地の可能性）","In der Nähe eines Punktes wurde keine Seezelle gefunden (liegt er an Land?).","Рядом с точкой не найдено морской ячейки (она на суше?).","No se ha encontrado celda marina cerca de un punto (¿está en tierra?).")); busy=false; return; }
         let path=astar(s,e);
-        if(!path){ setBody(jp()?'航路が見つかりません（封鎖/到達不可）':'No sea route found (blocked or unreachable).'); busy=false; return; }
+        if(!path){ setBody(window.IntMapLang.t(HOST.lang,"No sea route found (blocked or unreachable).","航路が見つかりません（封鎖/到達不可）","Keine Seeroute gefunden (blockiert oder unerreichbar).","Морской маршрут не найден (заблокирован или недостижим).","No se ha encontrado ruta marítima (bloqueada o inalcanzable).")); busy=false; return; }
         /* (#R14) if the click landed on a coastal/shallow cell the mask reads as land, anchor the drawn route
            at the nearest navigable water (the snapped cell) rather than drawing a leg across land or failing —
            this is what lets the user start/end at ports & shallows. A water click keeps its exact point. */
@@ -628,21 +628,21 @@ window.IntMapModules.seaRoute=function(HOST){
         const pulled=stringPull(path);
         let km=0; for(let i=1;i<pulled.length;i++){ if(Math.abs(pulled[i][0]-pulled[i-1][0])<180) km+=hav(pulled[i-1],pulled[i]); }
         draw(pulled);
-        setBody((jp()?'航路距離: ':'Sea route: ')+'<b>'+km.toFixed(0)+' km</b> · '+pulled.length+(jp()?' 点':' pts')+(noGo.length?(jp()?(' · 禁止域 '+noGo.length):(' · '+noGo.length+' no-go')):''));
-      }catch(err){ setBody((jp()?'エラー: ':'Error: ')+err); } busy=false; },30);
+        setBody((window.IntMapLang.t(HOST.lang,"Sea route: ","航路距離: ","Seeroute: ","Морской маршрут: ","Ruta marítima: "))+'<b>'+km.toFixed(0)+' km</b> · '+pulled.length+(window.IntMapLang.t(HOST.lang," pts"," 点"," Pkt."," точек"," ptos"))+(noGo.length?(jp()?(' · 禁止域 '+noGo.length):(' · '+noGo.length+' no-go')):''));
+      }catch(err){ setBody((window.IntMapLang.t(HOST.lang,"Error: ","エラー: ","Fehler: ","Ошибка: ","Error: "))+err); } busy=false; },30);
     }
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='route-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function refreshPanel(){ const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:248px;';
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🚢 '+(jp()?'洋上ルート':'Sea route')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🚢 '+(window.IntMapLang.t(HOST.lang,"Sea route","洋上ルート","Seeroute","Морской маршрут","Ruta marítima"))+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
         +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;font-size:12px;">'
-        +'<div>'+(jp()?'始点':'Start')+': <b>'+(start?fmtLL(start[0],start[1]):'—')+'</b></div>'
-        +'<div>'+(jp()?'終点':'End')+': <b>'+(end?fmtLL(end[0],end[1]):'—')+'</b></div>'
-        +'<label style="display:flex;align-items:center;gap:7px;color:var(--text-muted);"><input type="checkbox" id="route-pure"'+(pureDist?' checked':'')+'> '+(jp()?'純粋な最短距離（陸地無視）':'Pure shortest distance (ignore land)')+'</label>'
-        +'<label style="display:flex;align-items:center;gap:7px;color:var(--text-muted);"><input type="checkbox" id="route-nogo-add"'+(addNoGoMode?' checked':'')+'> '+(jp()?'地図クリックで禁止域を追加':'Click map to add a no-go zone')+'</label>'
+        +'<div>'+(window.IntMapLang.t(HOST.lang,"Start","始点","Start","Начало","Inicio"))+': <b>'+(start?fmtLL(start[0],start[1]):'—')+'</b></div>'
+        +'<div>'+(window.IntMapLang.t(HOST.lang,"End","終点","Ziel","Конец","Fin"))+': <b>'+(end?fmtLL(end[0],end[1]):'—')+'</b></div>'
+        +'<label style="display:flex;align-items:center;gap:7px;color:var(--text-muted);"><input type="checkbox" id="route-pure"'+(pureDist?' checked':'')+'> '+(window.IntMapLang.t(HOST.lang,"Pure shortest distance (ignore land)","純粋な最短距離（陸地無視）","Reine kürzeste Distanz (Land ignorieren)","Чистое кратчайшее расстояние (игнорируя сушу)","Distancia más corta pura (ignorar la tierra)"))+'</label>'
+        +'<label style="display:flex;align-items:center;gap:7px;color:var(--text-muted);"><input type="checkbox" id="route-nogo-add"'+(addNoGoMode?' checked':'')+'> '+(window.IntMapLang.t(HOST.lang,"Click map to add a no-go zone","地図クリックで禁止域を追加","Karte anklicken, um eine Sperrzone hinzuzufügen","Кликните по карте, чтобы добавить запретную зону","Haga clic en el mapa para añadir una zona prohibida"))+'</label>'
         +'</div>'
-        +'<button class="tp-clear" id="route-go" style="width:100%;margin-top:6px;">'+(jp()?'ルート計算':'Compute route')+'</button>'
-        +'<button class="tp-clear" id="route-clr" style="width:100%;margin-top:6px;">'+(jp()?'消去':'Clear')+'</button>'
-        +'<div id="route-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(jp()?'海上の2点を選びます。右クリック→「始点/終点に設定」、または計算を押す。':'Pick two sea points (right-click → set start/end), then Compute.')+'</div>';
+        +'<button class="tp-clear" id="route-go" style="width:100%;margin-top:6px;">'+(window.IntMapLang.t(HOST.lang,"Compute route","ルート計算","Route berechnen","Рассчитать маршрут","Calcular la ruta"))+'</button>'
+        +'<button class="tp-clear" id="route-clr" style="width:100%;margin-top:6px;">'+(window.IntMapLang.t(HOST.lang,"Clear","消去","Löschen","Очистить","Borrar"))+'</button>'
+        +'<div id="route-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(window.IntMapLang.t(HOST.lang,"Pick two sea points (right-click → set start/end), then Compute.","海上の2点を選びます。右クリック→「始点/終点に設定」、または計算を押す。","Zwei Seepunkte wählen (Rechtsklick → Start/Ziel festlegen), dann Berechnen.","Выберите две морские точки (правый клик → задать начало/конец), затем нажмите «Рассчитать».","Elija dos puntos marinos (clic derecho → fijar inicio/fin) y pulse Calcular."))+'</div>';
       /* ✕ now clears the drawn route + no-go zones too — the "can't remove it once used" bug was that
          closing the panel left everything painted with the Clear button no longer reachable. */
       p.querySelector('.tp-close').onclick=()=>{ clear(); p.style.display='none'; };
@@ -660,7 +660,7 @@ window.IntMapModules.seaRoute=function(HOST){
        menu, so normal clicks/measure tools aren't hijacked). */
     GE().events.on('click',(e)=>{ if(!panel||panel.style.display==='none'||!addNoGoMode) return;
       noGo.push({lng:e.lngLat.lng,lat:e.lngLat.lat,km:120}); draw(null);
-      const b=panel.querySelector('#route-body'); if(b) b.innerHTML=(jp()?'禁止域を追加（計500km毎に120km円）。「ルート計算」を押す。':'No-go added (120 km circle). Press Compute route.'); });
+      const b=panel.querySelector('#route-body'); if(b) b.innerHTML=(window.IntMapLang.t(HOST.lang,"No-go added (120 km circle). Press Compute route.","禁止域を追加（計500km毎に120km円）。「ルート計算」を押す。","Sperrzone hinzugefügt (120-km-Kreis). „Route berechnen“ drücken.","Запретная зона добавлена (круг 120 км). Нажмите «Рассчитать маршрут».","Zona prohibida añadida (círculo de 120 km). Pulse «Calcular la ruta».")); });
     GE().events.on('styledata',()=>{ if(panel&&panel.style.display!=='none'){ setTimeout(()=>{ if(ensureLayers()) draw(null); },80); } });
     return { open, setStart, setEnd, clear, active:()=>!!(panel&&panel.style.display!=='none'), _astar:()=>({buildMask, snapSea, astar, stringPull}) };
   })();

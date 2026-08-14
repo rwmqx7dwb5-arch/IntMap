@@ -642,7 +642,7 @@ window.IntMapModules.newsUi=function(HOST){
 
   function readerBar(item,mode){
     const back=window.IntMapLang.t(HOST.lang,'Back','戻る','Zurück','Назад','Atrás');
-    const other=mode==='reader'?(window.IntMapLang.t(HOST.lang,'🌐 Web','🌐 ページ表示','🌐 Web','🌐 Веб','🌐 Web')):(window.IntMapLang.t(HOST.lang,'📖 Reader','📖 リーダー','📖 Reader','📖 Читалка','📖 Lector'));
+    const other=mode==='reader'?(window.IntMapLang.t(HOST.lang,'🌐 Web','🌐 ページ表示','🌐 Web','🌐 Веб','🌐 Web')):(window.IntMapLang.t(HOST.lang,'📖 Reader','📖 リーダー','📖 Leseansicht','📖 Читалка','📖 Lector'));
     return `<div class="nrp-bar"><button class="nrp-back" id="nrp-back-btn">‹ ${back}</button><button class="nrp-mode" id="nrp-mode-btn">${other}</button>${mode==='reader'?`<button class="nrp-mode" id="nrp-translate-btn">✨ ${HOST.t('aiTranslate')}</button>`:''}<span class="nrp-src">${HOST.escForReader(item.publisher)}</span></div>`;
   }
 

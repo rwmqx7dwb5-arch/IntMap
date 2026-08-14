@@ -712,6 +712,10 @@ window.IntMapModules.seismic=function(HOST){
        (a text ▶/⏸ renders at a different baseline in every font, which is what the old row did). */
     const SVG_PLAY='<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true" style="margin-left:2px;"><path d="M7 4.5v15a1 1 0 0 0 1.53.85l12-7.5a1 1 0 0 0 0-1.7l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>';
     const SVG_PAUSE='<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" rx="1.4"/><rect x="13.5" y="4" width="4.5" height="16" rx="1.4"/></svg>';
+    /* (#R243) the two jump glyphs of the transport — same 24-box, same `currentColor`, so they take
+       the button's own tint and scale with it exactly as the play/pause pair do. */
+    const SVG_START='<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="2.6" height="14" rx="1.1"/><path d="M19.4 5.6v12.8a1 1 0 0 1-1.53.85l-9.6-6.4a1 1 0 0 1 0-1.7l9.6-6.4a1 1 0 0 1 1.53.85z"/></svg>';
+    const SVG_END='<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><rect x="16.4" y="5" width="2.6" height="14" rx="1.1"/><path d="M4.6 5.6v12.8a1 1 0 0 0 1.53.85l9.6-6.4a1 1 0 0 0 0-1.7l-9.6-6.4A1 1 0 0 0 4.6 5.6z"/></svg>';
     const MAXT=2400;
     /* (#R189) 「時刻の送りは等倍に。そして速度は変えられるように。」 — the default playback is REAL
        TIME (the old loop ran ~111× and nothing said so), and the rate is a visible control. */
@@ -2707,13 +2711,27 @@ window.IntMapModules.seismic=function(HOST){
            A round accent play/pause, a scrubber whose elapsed half is filled, the two times under its
            ends, and the rate as a segmented pill. `accent-color` paints the native range's fill in
            Chromium/Safari/Firefox alike; the thumb is styled for the two engines that need it. */
-        '.sq-player{display:flex;flex-direction:column;gap:10px;}',
-        '.sq-pl-top{display:flex;align-items:center;gap:12px;}',
-        '.sq-play{flex:0 0 auto;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;'
+        '.sq-player{display:flex;flex-direction:column;gap:9px;}',
+        /* (#R243) the line that says what the transport plays — 「わかりやすい」 half of the report */
+        '.sq-pl-cap{font-size:'+FS_S+';color:var(--text-muted);letter-spacing:.01em;}',
+        /* …and the cluster: centred, the disc in the middle, the two jumps at arm’s length */
+        '.sq-pl-top{display:flex;align-items:center;justify-content:center;gap:26px;padding:1px 0 2px;}',
+        '.sq-play{flex:0 0 auto;width:58px;height:58px;border-radius:50%;border:none;cursor:pointer;'
           +'background:var(--primary-color);color:#fff;display:flex;align-items:center;justify-content:center;'
-          +'box-shadow:0 2px 8px rgba(0,0,0,0.16);transition:transform .12s ease,filter .12s ease;padding:0;}',
-        '.sq-play:active{transform:scale(0.94);}',
-        '.sq-play:hover{filter:brightness(1.06);}',
+          +'box-shadow:0 6px 18px color-mix(in srgb, var(--primary-color) 40%, transparent),0 1px 2px rgba(0,0,0,0.18);'
+          +'transition:transform .14s cubic-bezier(0.2,0.7,0.2,1),filter .12s ease;padding:0;}',
+        '.sq-play svg{width:24px;height:24px;}',
+        '.sq-play:active{transform:scale(0.93);}',
+        '.sq-play:hover{filter:brightness(1.07);}',
+        /* the ring: an iOS transport reads as a disc INSIDE a track, not as a lone circle */
+        '.sq-play::after{content:"";position:absolute;width:74px;height:74px;border-radius:50%;'
+          +'border:1.5px solid color-mix(in srgb, var(--primary-color) 26%, transparent);pointer-events:none;}',
+        '.sq-play{position:relative;}',
+        '.sq-pl-jump{flex:0 0 auto;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;padding:0;'
+          +'background:var(--input-bg);color:var(--text-main);display:flex;align-items:center;justify-content:center;'
+          +'transition:transform .14s ease,background .12s ease;}',
+        '.sq-pl-jump:hover{background:color-mix(in srgb, var(--text-main) 10%, var(--input-bg));}',
+        '.sq-pl-jump:active{transform:scale(0.92);}',
         '.sq-pl-bar{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}',
         '.sq-pl-bar input[type=range]{width:100%;margin:0;height:22px;background:transparent;'
           +'accent-color:var(--primary-color);cursor:pointer;-webkit-appearance:none;appearance:none;}',
@@ -3007,18 +3025,34 @@ window.IntMapModules.seismic=function(HOST){
     /* ⚠ (#R242) 「✓Rupture area✓HypocenterIntensityのチェック画面？はいらない。」 — the tick track
        #R240 put in this footer is gone. What the footer is FOR stays: the one line naming the next
        action, and the primary button, still pinned outside the scroller so it is always reachable. */
+    /* ══ ⚠⚠ (#R243) THE PROGRESS BAR LIVES UNDER THE BUTTON THAT STARTS IT ══════════════════════════
+       「震度分布を計算ボタンの下に計算進捗ボタンが出現するように。」
+       `.sq-prog` was built in card 4, several screens up: press the pinned button and the only thing
+       that moves is a bar the reader cannot see. It is now a SECOND `.sq-prog` inside this footer,
+       and `_setProg()` writes to BOTH (`querySelectorAll`), so there is still one progress state with
+       two readouts rather than two mechanisms. It appears when a solve starts and goes when it ends —
+       exactly the display rule `_setProg` already had.
+       ⚠ AND THE 「完了しました」 LINE IS GONE. 「これはいらない」. When there IS something to do the
+       footer says what; when the answer is on screen it says nothing and just offers the recompute. */
+    function _progHTML(cls){
+      return '<div class="sq-prog '+cls+'" style="display:none;">'
+        +'<div class="sq-progl" style="margin-bottom:4px;font-size:'+FS+';color:var(--text-main);"></div>'
+        +'<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;">'
+        +'<i class="sq-progb" style="display:block;height:100%;width:0%;background:var(--prog-grad);transition:width 0.15s;"></i></div></div>';
+    }
     function _flowFoot(){
       const st=_flowStep();
       const hint=st==='epi'
         ? L('Tap the map to place the hypocenter. Drawing a rupture area first is optional.','地図をタップして震央を置いてください。先に震源域を描くこともできます（任意）。','Tippen Sie auf die Karte, um das Hypozentrum zu setzen. Eine Bruchfläche vorher zu zeichnen ist optional.','Нажмите на карту, чтобы поставить гипоцентр. Очаг можно обвести заранее — это необязательно.','Toque el mapa para colocar el hipocentro. Dibujar antes la ruptura es opcional.')
         : (st==='run'
           ? L('Press to solve the intensity field for this source.','この震源で震度分布を計算します。','Für diesen Herd das Intensitätsfeld berechnen.','Рассчитать поле интенсивности для этого очага.','Calcule el campo de intensidad para esta fuente.')
-          : L('Done — press ▶ above to watch the waves, or change anything and recompute.','完了しました。上の ▶ で波の伝播を再生できます。条件を変えると再計算できます。','Fertig — oben mit ▶ die Wellen abspielen, oder etwas ändern und neu rechnen.','Готово — нажмите ▶ выше, чтобы посмотреть волны, или измените параметры и пересчитайте.','Listo — pulse ▶ arriba para ver las ondas, o cambie algo y recalcule.'));
+          : '');
       const btn=(st==='epi')
         ? '<button class="sq-go-epi sq-btn sq-btn-wide sq-btn-accent">② '+L('Place the hypocenter','震央を置く','Hypozentrum setzen','Поставить гипоцентр','Colocar el hipocentro')+'</button>'
         : '<button class="'+_runBtnClass()+'">'+_runBtnLabel()+'</button>';
       return '<div class="sq-foot"'+(minimised?' style="display:none;"':'')+'>'
-        +'<div class="sq-fhint">'+hint+'</div>'+btn+'</div>';
+        +(hint?('<div class="sq-fhint">'+hint+'</div>'):'')+btn
+        +'<div class="sq-foot-prog" style="margin-top:9px;">'+_progHTML('sq-prog-foot')+'</div></div>';
     }
     function render(){ if(!panel) return; _ensureCss();
       /* (#R239) the on-map HUD is a readout of the same three states this function is about to draw
@@ -3089,6 +3123,24 @@ window.IntMapModules.seismic=function(HOST){
         +'</div>'
         +(evNow?('<div class="sq-ev-obs sq-blk" style="font-size:'+FS_S+';line-height:1.55;color:var(--text-main);border-left:2px solid var(--primary-color);">'+evObsHtml(evNow)+'</div>'):'')
         +'</div></div>'
+        /* ══ ⚠⚠⚠ (#R243) A LOADED EARTHQUAKE IS NOT A THING YOU CONFIGURE ══════════════════════════
+           「過去・最近の地震から選択した場合、ユーザーが自ら設定する類のUiは全部消すように。」
+           Confirmed with the reader: 「震度階級の選択以外、2,3は隠す」.
+
+           Cards 2 (震源を作る — the rupture outline, the hypocentre, the observation points) and 3
+           (パラメータ — depth, magnitude, 詳細設定) exist so a reader can BUILD a source. When one is
+           loaded from the catalogue or the USGS feed, every one of those numbers is already the
+           published value for a real earthquake (js/seismic-events.js: hypocentre, depth, magnitude,
+           focal mechanism, the finite-fault outline and the nucleation point), so offering the
+           controls invites the reader to overwrite a measurement with a guess and makes the panel
+           look like a form when it is a result.
+           ⚠ THE ONE EXCEPTION IS 震度階級, which is not a property of the earthquake: MMI or JMA is
+           how the READER wants the answer spelled, and it stays available for a loaded event exactly
+           as it is for a drawn one.
+           ⚠ AND THIS IS A DISPLAY RULE, NOT A DELETION. `evNow` is cleared by the ✕ beside the list
+           and by picking the empty option (#R242), and both re-render — so the controls come back
+           whole, with their state untouched, the moment the earthquake is unloaded. */
+        +(evNow?'':(''
         /* CARD 2 — 震源を作る: the three steps, the instruction for whichever is armed, and what the
            drawn rupture turned out to be. One card because they are one task. */
         +'<div><div class="sq-cap">'+L('Build the source','震源を作る','Herd aufbauen','Задать очаг','Definir la fuente')+'</div><div class="sq-card">'
@@ -3219,6 +3271,16 @@ window.IntMapModules.seismic=function(HOST){
            lost and nothing is in the way. */
         +_advHTML()
         +'</div></div>'
+        ))
+        /* ⚠ (#R243) …AND 震度階級 IS THE EXCEPTION THE READER NAMED, so with an earthquake loaded it
+           gets its own one-row card rather than dragging the rest of パラメータ back with it. Same
+           class, same handler, same `scale` state — this is where the control is drawn, not a copy. */
+        +(evNow?('<div><div class="sq-cap">'+L('Display','表示','Anzeige','Отображение','Visualización')+'</div><div class="sq-card">'
+          +'<label class="sq-row">'+L('Intensity scale','震度階級','Intensitätsskala','Шкала интенсивности','Escala de intensidad')
+          +'<select class="sq-scale sq-sel" style="width:132px;">'
+          +'<option value="mmi"'+(scale==='mmi'?' selected':'')+'>MMI</option>'
+          +'<option value="jma"'+(scale==='jma'?' selected':'')+'>'+L('JMA (shindo)','気象庁震度','JMA (Shindo)','JMA (синдо)','JMA (shindo)')+'</option>'
+          +'</select></label></div></div>'):'')
         /* CARD 4 — 計算と再生: the one button that computes, the bar that says how far it got, and
            the transport that moves time. They are one card because they are one loop. */
         +'<div><div class="sq-cap">'+L('Run and playback','計算と再生','Rechnen und Wiedergabe','Расчёт и воспроизведение','Cálculo y reproducción')+'</div><div class="sq-card">'
@@ -3243,10 +3305,7 @@ window.IntMapModules.seismic=function(HOST){
            `_needsRun` so they cannot disagree — which is the defect #R206 wrote up for this panel. */
         /* (#R240) the button itself now lives in the panel's pinned footer — see `_flowFoot()`. What
            stays in this card is the progress bar it drives and the transport, which are readouts. */
-        +'<div class="sq-prog sq-blk" style="display:none;">'
-          +'<div class="sq-progl" style="margin-bottom:4px;font-size:'+FS+';color:var(--text-main);"></div>'
-          +'<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;">'
-          +'<i class="sq-progb" style="display:block;height:100%;width:0%;background:var(--prog-grad);transition:width 0.15s;"></i></div></div>'
+        +_progHTML('sq-blk')   /* (#R243) one builder, two places — the other is the pinned footer */
         /* ══ ⚠⚠ (#R242) THE TRANSPORT IS A PLAYER, NOT FOUR CONTROLS IN A ROW ═══════════════════════
            「時刻バーとか再生機構はもっとわかりやすい洗練されたiOS風のUIにしろ。」
            It was a 36 px ▶, a bare `input[type=range]`, a `<select>` reading ×1 and a right-aligned
@@ -3257,13 +3316,25 @@ window.IntMapModules.seismic=function(HOST){
            chip rather than a dropdown. ⚠ SAME classes, same events, same `MAXT`/`SPEEDS`/`fmtT` —
            `.sq-t` is still the range the playback loop writes to, `.sq-spd` is still what the speed
            handler reads. This is a re-dress of the same mechanism, not a second one. */
+        /* ══ ⚠⚠ (#R243) 「再生ボタンはもっとわかりやすい洗練されたiOS風のUIにしろ。」 ═══════════════
+           #R242 turned four widgets into a transport and the report came back, so the thing that was
+           unclear was not the ARRANGEMENT — it was that a 40 px circle beside a slider does not say
+           WHAT it plays. The transport now reads top-down like the one in Podcasts: a line naming
+           what is about to happen, the scrubber with its two times, and a CENTRED control cluster
+           whose middle element is a 58 px accent disc with a ring, flanked by 「頭出し」 and 「最後へ」.
+           ⚠ `.sq-play`, `.sq-t`, `.sq-spd` and `.sq-tv` keep their classes and their handlers; the two
+           new buttons write to the SAME `tl` input and fire its `input` event, so they go through the
+           one scrub path rather than moving time themselves. */
         +'<div class="sq-player sq-blk">'
+          +'<div class="sq-pl-cap">'+L('Wave propagation','波の伝播','Wellenausbreitung','Распространение волн','Propagación de las ondas')+'</div>'
+          +'<div class="sq-pl-bar">'
+            +'<input type="range" class="sq-t" min="0" max="'+MAXT+'" step="0.01" value="'+tSec+'" aria-label="'+L('Time since the rupture began','破壊開始からの経過時間','Zeit seit Bruchbeginn','Время от начала разрыва','Tiempo desde el inicio de la ruptura')+'">'
+            +'<div class="sq-pl-times"><span class="sq-tv">'+fmtT(tSec)+'</span><span class="sq-pl-tot">'+fmtT(MAXT)+'</span></div>'
+          +'</div>'
           +'<div class="sq-pl-top">'
+            +'<button class="sq-pl-jump sq-pl-start" data-to="0" aria-label="'+L('Back to the start','先頭に戻す','Zum Anfang','К началу','Al principio')+'" title="'+L('Back to the start','先頭に戻す','Zum Anfang','К началу','Al principio')+'">'+SVG_START+'</button>'
             +'<button class="sq-play" aria-label="'+L('Play','再生','Abspielen','Воспроизвести','Reproducir')+'" title="'+L('Play','再生','Abspielen','Воспроизвести','Reproducir')+'">'+SVG_PLAY+'</button>'
-            +'<div class="sq-pl-bar">'
-              +'<input type="range" class="sq-t" min="0" max="'+MAXT+'" step="0.01" value="'+tSec+'" aria-label="'+L('Time since the rupture began','破壊開始からの経過時間','Zeit seit Bruchbeginn','Время от начала разрыва','Tiempo desde el inicio de la ruptura')+'">'
-              +'<div class="sq-pl-times"><span class="sq-tv">'+fmtT(tSec)+'</span><span class="sq-pl-tot">'+fmtT(MAXT)+'</span></div>'
-            +'</div>'
+            +'<button class="sq-pl-jump sq-pl-end" data-to="'+MAXT+'" aria-label="'+L('Jump to the end','最後へ','Zum Ende','В конец','Al final')+'" title="'+L('Jump to the end','最後へ','Zum Ende','В конец','Al final')+'">'+SVG_END+'</button>'
           +'</div>'
           +'<div class="sq-pl-spd" role="group" aria-label="'+L('Playback speed','再生速度','Wiedergabegeschwindigkeit','Скорость воспроизведения','Velocidad de reproducción')+'">'
             +'<span class="sq-pl-spdl">'+L('Speed','速度','Tempo','Скорость','Velocidad')+'</span>'
@@ -3289,7 +3360,7 @@ window.IntMapModules.seismic=function(HOST){
            on: js/sims.js's `tsunami` hazard has been removed. The estimated wave height shown on the
            button is from the screening (Abe's tsunami-magnitude relation), not from the model. */
         +(function(){ const t=tsunamiCase(); return t?('<div class="sq-blk"><button class="sq-tsu">'
-          +'<span class="sq-tsu-ic" aria-hidden="true">🌊</span>'
+          +'<span class="sq-tsu-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8.5c2.2 0 2.2 2 4.4 2s2.2-2 4.4-2 2.2 2 4.4 2 2.2-2 4.4-2"/><path d="M2 14c2.2 0 2.2 2 4.4 2s2.2-2 4.4-2 2.2 2 4.4 2 2.2-2 4.4-2"/></svg></span>'
           +'<span class="sq-tsu-t"><b>'+L('Open the tsunami simulator','津波シミュレーターを開く','Tsunami-Simulator öffnen','Открыть симулятор цунами','Abrir el simulador de tsunami')+'</b>'
           +'<span>'+L('est. wave','推定波高','geschätzt','оценка','estim.')+' ~'+t.waveM+' m</span></span>'
           +'<span class="sq-tsu-go" aria-hidden="true">›</span></button>'
@@ -3445,6 +3516,12 @@ window.IntMapModules.seismic=function(HOST){
             tl.value=tSec; panel.querySelector('.sq-tv').textContent=fmtT(tSec); drawFronts();
             const R=RT(); if(R&&R.frame) R.frame('seismic:play',step); else { playing=0; _pbIcon(0); } };
           const R=RT(); if(R&&R.frame) R.frame('seismic:play',step); else { playing=0; _pbIcon(0); } } };
+      /* (#R243) the two jumps write the SAME range the scrubber does and fire its own event, so the
+         one `input` handler below moves time — nothing here touches `tSec` or the fronts directly. */
+      panel.querySelectorAll('.sq-pl-jump').forEach(b=>{ b.onclick=()=>{ try{
+        if(playing){ _stop(); _pbIcon(0); }
+        tl.value=b.dataset.to; tl.dispatchEvent(new Event('input',{bubbles:true}));
+      }catch(_){} }; });
       /* (#R236) `.sq-real` / `.sq-real-sel` are gone — both halves are the one picker at the top of
          the panel now, wired beside `.sq-ev` above. ⚠ The old lines were an unguarded
          `querySelector('.sq-real').onclick`, which on a panel without that button throws inside
@@ -3459,14 +3536,21 @@ window.IntMapModules.seismic=function(HOST){
       report();
     }
     /* (#R190) the LOS-style progress readout (a real percentage and a bar), driven by buildField */
+    /* ⚠ (#R243) EVERY `.sq-prog` IN THE PANEL, not the first one. There are two now — the one in card
+       4 and the one under the button in the pinned footer (see `_flowFoot`) — and they are two
+       READOUTS of one state, so they are written in one pass and can never disagree. */
     function _setProg(){ if(!panel) return;
-      const box=panel.querySelector('.sq-prog'), bar=panel.querySelector('.sq-progb'), lbl=panel.querySelector('.sq-progl');
-      if(!box) return;
-      if(!fldBusy){ box.style.display='none'; return; }
-      box.style.display='block';
-      if(bar) bar.style.width=fldPct+'%';
-      if(lbl) lbl.innerHTML=L('Computing the intensity map','震度分布を計算中','Intensitätskarte wird berechnet','Расчёт поля интенсивности','Calculando el mapa de intensidad')
-        +' <b style="color:var(--text-main);">'+fldPct+'%</b>';
+      const boxes=panel.querySelectorAll('.sq-prog');
+      if(!boxes.length) return;
+      const txt=fldBusy?(L('Computing the intensity map','震度分布を計算中','Intensitätskarte wird berechnet','Расчёт поля интенсивности','Calculando el mapa de intensidad')
+        +' <b style="color:var(--text-main);">'+fldPct+'%</b>'):'';
+      boxes.forEach(box=>{
+        if(!fldBusy){ box.style.display='none'; return; }
+        box.style.display='block';
+        const bar=box.querySelector('.sq-progb'), lbl=box.querySelector('.sq-progl');
+        if(bar) bar.style.width=fldPct+'%';
+        if(lbl) lbl.innerHTML=txt;
+      });
     }
     /* ══ (#R190) IS THIS EVENT TSUNAMIGENIC? ══════════════════════════════════════════════════════
        「津波が発生するとされるような地震だった場合、津波シミュレーターも使えるように。」
@@ -3667,7 +3751,6 @@ window.IntMapModules.seismic=function(HOST){
     function report(){ const o=panel&&panel.querySelector('.sq-out'); if(!o) return;
       _setProg();
       if(!epi){ o.innerHTML=L('Place an epicenter to begin.','震源地を設置してください。','Epizentrum setzen.','Укажите эпицентр.','Coloque un epicentro.'); return; }
-      const s=source(mw);
       /* ⚠ (#R235) DE/RU/ES said 「—」 here — an em-dash is not a translation of "not felt", it is the
          absence of one, and it collided with the 「—」 this table already prints for a missing number
          (see fmtT). Part of the DE/RU/ES sweep this round. */
@@ -3756,48 +3839,30 @@ window.IntMapModules.seismic=function(HOST){
           +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;">'+fmtT(a.durS)+'</td>'
           +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;">'+(a.pgv>=0.05?a.pgv.toFixed(1):'—')+'</td>'
           +'<td style="padding:3px 0 3px 4px;text-align:right;">'+iCell(a,CW)+'</td></tr>'; }).join('');
-      o.innerHTML='<div><b>M'+mw.toFixed(1)+'</b> · '+L('depth','深さ','Tiefe','глубина','prof.')+' '+depthKm+' km · M<sub>0</sub> '+s.M0.toExponential(2)+' N·m'
-        +' · f<sub>c</sub> '+s.fc.toFixed(3)+' Hz · '+(fault
-          ?(L('rupture','震源域','Bruch','очаг','ruptura')+' '+Math.round(fault.areaKm2).toLocaleString()+' km²')
-          :(L('rupture radius','破壊半径','Bruchradius','радиус разрыва','radio de ruptura')+' '+s.rupKm.toFixed(1)+' km'))+'</div>'
-        /* (#R190) the painted field says what it is standing on — or that it is out of date and the
-           ▶ button is what brings it back (the progress bar itself lives above, .sq-prog). */
-        +(fldBusy?''
+      /* ══ ⚠⚠ (#R243) THE RESULT CARD OPENS WITH THE ANSWER, NOT WITH THE MODEL'S DIARY ═════════
+         「地震シミュレータの「M7.0 · 深さ 10 km · M0 3.98e+19 N·m · fc 0.072 Hz · 破壊半径 18.0 km
+           震度分布：実DEMの地形勾配からVs30推定（Wald & Allen 2007） · z8 (555 m → 勾配基線 900 m) ·
+           1,595,318/6,553,600 セル · 到達範囲 1,661 km … · 5059 ms」これはいらない。」
+         Two lines, both removed: the source restated (M, depth, M0, fc, rupture size — every one of
+         which is a control the reader set, or the fault readout in card 2) and the SOLVER'S OWN
+         TELEMETRY (tile zoom, cell counts, slope baseline, extrapolated cells, milliseconds). The
+         card is for what the earthquake DOES; the method belongs in 「Method & sources」 below it,
+         which is where it already is.
+         ⚠ WHAT STAYS is what the reader has to ACT on or would otherwise MISREAD, and there are two:
+         the 「設定を変更しました。▶ を押すと…」 instruction, and the two ⚠ lines that say the painted
+         field is NOT what it looks like — 「標高タイルが届かず一様地盤」 and 「この範囲では地形が粗く
+         一様地盤」. Those are the #R190/#R221 contract (tests/r189-checks: 「an unusable site term is
+         declared, not hidden」): without them a distance-only ring pattern is indistinguishable from a
+         terrain solution, which is the one way this panel can lie. They appear only in the failure
+         cases; the normal case — the line the instruction quotes — now says nothing at all. */
+      const _siteWarn=(fld&&fld.stats&&!fld.stats.terrain&&!(fld.stats.bulkSite>0))
+        ? ('<div style="color:#ffd23f;">⚠ '+(fld.stats.slopeUsable
+            ? L('Elevation tiles did not arrive — uniform site class, so the field is distance alone','標高タイルが届かず一様地盤で計算（距離だけの分布になります）','Höhenkacheln kamen nicht an — einheitlicher Untergrund','Тайлы рельефа не пришли — однородный грунт','No llegaron los mosaicos de elevación — terreno uniforme')
+            : L('Terrain too coarse here — uniform site class used','この範囲では地形が粗く一様地盤で表示','Gelände zu grob — einheitlicher Untergrund','Рельеф слишком грубый — однородный грунт','Terreno demasiado grueso — terreno uniforme'))+'</div>')
+        : '';
+      o.innerHTML=(fldBusy?''
           :(fldStale?('<div style="color:#ffd23f;">'+L('The parameters changed — press ▶ to recompute the intensity map.','設定を変更しました。▶ を押すと震度分布を再計算します。','Parameter geändert — ▶ drücken, um neu zu rechnen.','Параметры изменены — нажмите ▶ для пересчёта.','Los parámetros cambiaron — pulse ▶ para recalcular.')+'</div>')
-          :(fld&&fld.stats?('<div style="font-size:'+FS_S+';">'
-            /* ⚠ (#R221) WHEN THE SITE TERM IS UNIFORM, THE FIELD IS RINGS — SO SAY WHICH OF THE TWO
-               REASONS IT IS. "Terrain too coarse" was printed for both, and only one of them was
-               true: the common case was that the DEM tiles had been EVICTED (see the warm-up), which
-               is a fetch that did not finish, not a landscape the model cannot resolve. Naming it
-               separately is what makes the difference visible if it ever comes back. */
-            /* (#R223) …and there is now a THIRD answer, which is the common one when the DEM cannot
-               reach: the bundled 0.25° Vs30 raster. It is not "uniform" and it is not the real DEM,
-               so it says which of the three the picture is actually made of. */
-            +(fld.stats.terrain
-              ?L('Intensity field: slope-based Vs30 (Wald & Allen 2007) on real DEM','震度分布：実DEMの地形勾配からVs30推定（Wald & Allen 2007）','Intensitätsfeld: Vs30 aus Hangneigung, echtes DEM','Поле интенсивности: Vs30 по уклону, реальный DEM','Campo de intensidad: Vs30 por pendiente, DEM real')
-              :(fld.stats.bulkSite>0
-                ?L('Intensity field: bundled 0.25° Vs30 where the DEM could not reach — the ground still varies','震度分布：DEMが届かない範囲は同梱の0.25° Vs30（地盤は一様ではありません）','Intensitätsfeld: mitgeliefertes 0,25°-Vs30, wo das DEM nicht reicht','Поле интенсивности: встроенный Vs30 0,25° там, где DEM не достаёт','Campo de intensidad: Vs30 de 0,25° incluido donde el DEM no llega')
-              :(fld.stats.slopeUsable
-                ?('⚠ '+L('Elevation tiles did not arrive — uniform site class, so the field is distance alone','標高タイルが届かず一様地盤で計算（距離だけの分布になります）','Höhenkacheln kamen nicht an — einheitlicher Untergrund','Тайлы рельефа не пришли — однородный грунт','No llegaron los mosaicos de elevación — terreno uniforme'))
-                :('⚠ '+L('Terrain too coarse here — uniform site class used','この範囲では地形が粗く一様地盤で表示','Gelände zu grob — einheitlicher Untergrund','Рельеф слишком грубый — однородный грунт','Terreno demasiado grueso — terreno uniforme')))))
-            +' · z'+fld.stats.z+' ('+fld.stats.demSpacingM.toLocaleString()+' m'
-            /* (#R190) the slope baseline actually used, because the Vs30 proxy is calibrated at ~900 m
-               and a field wider than the DEM can resolve does not get to pretend otherwise */
-            +(fld.stats.slopeUsable?(' → '+L('slope over','勾配基線','Neigung über','уклон на','pendiente en')+' '+fld.stats.slopeBaselineM.toLocaleString()+' m'):'')+')'
-            +' · '+fld.stats.painted.toLocaleString()+'/'+fld.stats.cells.toLocaleString()+' '+L('cells','セル','Zellen','ячеек','celdas')
-            +' · '+L('out to','到達範囲','bis','до','hasta')+' '+fld.stats.rEdgeKm.toLocaleString()+' km'
-            /* (#R191) …and how much of that is the terrain-free far annulus, so "the picture stops
-               following the ground here" is a stated fact rather than something to be inferred */
-            +(fldFar?(' ('+L('terrain to','地形は','Gelände bis','рельеф до','terreno hasta')+' '+fldFar.rFineKm.toLocaleString()+' km · '
-              +L('distance only beyond','以遠は距離のみ','danach nur Distanz','дальше только расстояние','más allá sólo distancia')+')'):'')
-            /* (#R190) the paint reaches the end of the scale; past the calibrated range it says so */
-            +(fld.stats.beyondCalib?(' · <span style="color:#ffd23f;">'+fld.stats.beyondCalib.toLocaleString()+' '
-              +L('cells beyond the calibrated '+fld.stats.calibKm+' km (extrapolated)','セルは較正範囲 '+fld.stats.calibKm+' km 超（外挿）',
-                 'Zellen jenseits '+fld.stats.calibKm+' km (extrapoliert)','ячеек дальше '+fld.stats.calibKm+' км (экстраполяция)',
-                 'celdas más allá de '+fld.stats.calibKm+' km (extrapolado)')+'</span>'):'')
-            +(fld.stats.noDem?(' · '+fld.stats.noDem.toLocaleString()+' '+L('no DEM','DEM欠損','ohne DEM','без DEM','sin DEM')):'')
-            +(fld.stats.coarse?(' · '+fld.stats.coarse.toLocaleString()+' '+L('unresolved slope','勾配不明','Neigung unbestimmt','уклон не определён','pendiente sin resolver')):'')
-            +' · '+fld.stats.ms+' ms</div>'):'')))
+          :_siteWarn))
         /* (#R234) one size for the table, and the head is not grey — see the note by FS / ROW. */
         /* ══ ⚠⚠⚠ (#R241) THE TABLE GETS ITS OWN HORIZONTAL SCROLLER ═══════════════════════════════════
            「地震シミュレータの地点表が左右方向にスクロールできなくなっている。」

@@ -354,25 +354,25 @@ window.IntMapModules.weatherEC=function(HOST){
       loadSDK().then(()=>{ if(!registerProto()) return;
         const go=()=>{ if(!_imCanDraw()){ GE().events.once('idle',go); return; } if(on){ if(!fetched){ fetchMeta().then(()=>{ fetched=true; if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } updateTimeLabel(); }); } else { if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } } } else { setVis(cfg,false); } };
         go();
-      }).catch(()=>{ try{ satToast(jp()?'ECMWFデータを読み込めませんでした':'Could not load ECMWF weather'); }catch(_){} try{ state[id].on=false; }catch(_){}   /* (#R154) also clear the STATE, not just the checkbox — otherwise the on('styledata') re-attach + applyTime re-show a layer whose box is OFF after a load failure */ const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } });
+      }).catch(()=>{ try{ satToast(window.IntMapLang.t(HOST.lang,"Could not load ECMWF weather","ECMWFデータを読み込めませんでした","ECMWF-Wetterdaten konnten nicht geladen werden","Не удалось загрузить данные ECMWF","No se pudieron cargar los datos meteorológicos del ECMWF")); }catch(_){} try{ state[id].on=false; }catch(_){}   /* (#R154) also clear the STATE, not just the checkbox — otherwise the on('styledata') re-attach + applyTime re-show a layer whose box is OFF after a load failure */ const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } });
     }
     window.toggleWeatherLayer=toggle;
     let fetched=false;
     /* Rebuild all active sources when the valid-time changes. */
     function applyTime(){ LAYERS.forEach(cfg=>{ if(state[cfg.id].on){ removeLayer(cfg); if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } } }); updateTimeLabel(); }
-    function fmtVT(iso){ if(!iso) return ''; try{ let tz; if(typeof HOST.userTZ!=='undefined'&&HOST.userTZ&&HOST.userTZ!=='auto') tz=HOST.userTZ; return new Date(iso.replace('Z','')+'Z').toLocaleString(jp()?'ja-JP':'en-GB',{timeZone:tz,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; } }
-    function updateTimeLabel(){ const el=document.getElementById('ec-validtime'); if(el) el.textContent=(jp()?'ECMWF 有効時刻: ':'ECMWF valid: ')+(validTimes.length?fmtVT(validTimes[timeIdx]):(jp()?'最新':'latest')); const sl=document.getElementById('ec-time'); if(sl){ sl.max=Math.max(0,validTimes.length-1); sl.value=timeIdx; } }
+    function fmtVT(iso){ if(!iso) return ''; try{ let tz; if(typeof HOST.userTZ!=='undefined'&&HOST.userTZ&&HOST.userTZ!=='auto') tz=HOST.userTZ; return new Date(iso.replace('Z','')+'Z').toLocaleString(window.IntMapLang.locale(HOST.lang,'en-GB'),{timeZone:tz,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; } }
+    function updateTimeLabel(){ const el=document.getElementById('ec-validtime'); if(el) el.textContent=(window.IntMapLang.t(HOST.lang,"ECMWF valid: ","ECMWF 有効時刻: ","ECMWF gültig: ","ECMWF действительно на: ","ECMWF válido: "))+(validTimes.length?fmtVT(validTimes[timeIdx]):(window.IntMapLang.t(HOST.lang,"latest","最新","aktuellste","последние","más reciente"))); const sl=document.getElementById('ec-time'); if(sl){ sl.max=Math.max(0,validTimes.length-1); sl.value=timeIdx; } }
     /* re-attach after a style swap */
     GE().events.on('styledata',()=>{ if(LAYERS.some(l=>state[l.id].on)){ setTimeout(()=>{ if(!_imCanDraw())return; LAYERS.forEach(cfg=>{ if(state[cfg.id].on){ if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } } }); },80); } });
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='ec-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function refreshPanel(){ const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:260px;max-height:78vh;overflow-y:auto;';
       const rows=LAYERS.map(l=>'<div class="lyr-row'+(state[l.id].on?' on':'')+'" style="margin:2px 0;"><label class="layer-option" style="display:flex;align-items:center;gap:7px;"><input type="checkbox" id="'+l.id+'-cb"'+(state[l.id].on?' checked':'')+'> <span>'+ecLbl(l)+'</span></label><input type="range" class="ec-op" data-for="'+l.id+'" min="0" max="1" step="0.05" value="'+state[l.id].op+'" style="width:100%;accent-color:var(--primary-color);'+(state[l.id].on?'':'display:none;')+'"></div>').join('');
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🌦 '+(jp()?'ECMWF 気象':'ECMWF weather')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
-        +'<div style="font-size:11px;color:var(--text-muted);margin:2px 0 6px;">'+(jp()?'Open-Meteo ECMWF IFS（1時間毎）':'Open-Meteo ECMWF IFS (hourly)')+'</div>'
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🌦 '+(window.IntMapLang.t(HOST.lang,"ECMWF weather","ECMWF 気象","ECMWF-Wetter","Погода ECMWF","Meteorología ECMWF"))+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
+        +'<div style="font-size:11px;color:var(--text-muted);margin:2px 0 6px;">'+(window.IntMapLang.t(HOST.lang,"Open-Meteo ECMWF IFS (hourly)","Open-Meteo ECMWF IFS（1時間毎）","Open-Meteo ECMWF IFS (stündlich)","Open-Meteo ECMWF IFS (почасово)","Open-Meteo ECMWF IFS (horario)"))+'</div>'
         +rows
         +'<div style="border-top:1px solid rgba(128,128,128,0.18);margin-top:8px;padding-top:7px;">'
         +'<input type="range" id="ec-time" min="0" max="0" step="1" value="0" style="width:100%;accent-color:var(--primary-color);">'
-        +'<div id="ec-validtime" style="font-size:11px;color:var(--text-main);font-weight:600;margin-top:3px;text-align:center;">'+(jp()?'最新':'latest')+'</div></div>';
+        +'<div id="ec-validtime" style="font-size:11px;color:var(--text-main);font-weight:600;margin-top:3px;text-align:center;">'+(window.IntMapLang.t(HOST.lang,"latest","最新","aktuellste","последние","más reciente"))+'</div></div>';
       p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
       p.querySelectorAll('input[id$="-cb"]').forEach(cb=>{ cb.onchange=()=>{ const id=cb.id.replace(/-cb$/,''); const row=cb.closest('.lyr-row'); if(row) row.classList.toggle('on',cb.checked); const op=row&&row.querySelector('.ec-op'); if(op) op.style.display=cb.checked?'block':'none'; toggle(id,cb.checked); }; });
       p.querySelectorAll('.ec-op').forEach(sl=>{ sl.oninput=()=>{ const id=sl.getAttribute('data-for'); state[id].op=+sl.value; const cfg=LAYERS.find(l=>l.id===id); if(cfg) setOp(cfg,+sl.value); }; });
@@ -407,10 +407,10 @@ window.IntMapModules.weatherEC=function(HOST){
       if(document.getElementById('data-legend-ecmwf')) return;
       const mc=document.getElementById('map-container')||document.body;
       const el=document.createElement('div'); el.className='data-legend'; el.id='data-legend-ecmwf'; el.style.bottom='140px';
-      el.innerHTML='<span class="dl-drag" title="'+(jp()?'ドラッグして移動':'Drag to move')+'">⋮⋮</span><button class="layer-popup-x" id="ec-legend-x" title="'+t('close')+'">✕</button><h4>'+(jp()?'ECMWF 気象':'ECMWF weather')+'</h4>'
-        +'<div class="ec-time-cap" style="font-size:10.5px;color:var(--text-muted);margin:0 0 4px;">'+(jp()?'時刻（1時間毎）':'Valid time (hourly)')+'</div>'
+      el.innerHTML='<span class="dl-drag" title="'+(window.IntMapLang.t(HOST.lang,"Drag to move","ドラッグして移動","Zum Verschieben ziehen","Потяните, чтобы переместить","Arrastre para mover"))+'">⋮⋮</span><button class="layer-popup-x" id="ec-legend-x" title="'+t('close')+'">✕</button><h4>'+(window.IntMapLang.t(HOST.lang,"ECMWF weather","ECMWF 気象","ECMWF-Wetter","Погода ECMWF","Meteorología ECMWF"))+'</h4>'
+        +'<div class="ec-time-cap" style="font-size:10.5px;color:var(--text-muted);margin:0 0 4px;">'+(window.IntMapLang.t(HOST.lang,"Valid time (hourly)","時刻（1時間毎）","Gültigkeitszeit (stündlich)","Время действия (почасово)","Hora de validez (horaria)"))+'</div>'
         +'<input type="range" id="ec-time" min="0" max="0" step="1" value="0" style="width:100%;accent-color:var(--primary-color);">'
-        +'<div id="ec-validtime" style="font-size:10.5px;color:var(--text-main);font-weight:600;margin-top:3px;text-align:center;">'+(jp()?'最新':'latest')+'</div>';
+        +'<div id="ec-validtime" style="font-size:10.5px;color:var(--text-main);font-weight:600;margin-top:3px;text-align:center;">'+(window.IntMapLang.t(HOST.lang,"latest","最新","aktuellste","последние","más reciente"))+'</div>';
       mc.appendChild(el);
       const ts=el.querySelector('#ec-time'); ts.oninput=()=>{ timeIdx=+ts.value; updateTimeLabel(); clearTimeout(window._ecTimeT); window._ecTimeT=setTimeout(applyTime,250); };
       el.querySelector('#ec-legend-x').onclick=()=>{ el.style.display='none'; };

@@ -51,58 +51,58 @@ window.IntMapModules.widgets=function(HOST){
        Seeded ONCE (flagged) so the new defaults also appear for existing users; after that the
        user's own add/remove choices win. */
     try{ if(!localStorage.getItem('intmap_widgets_def21')){
-      ['clock','fx','featured','country','otd'].forEach(tp=>{ if(!active.some(e=>e.t===tp)) active.push({u:'w'+Math.random().toString(36).slice(2,8),t:tp,cfg:(tp==='fx'?{base:'USD',quote:(window.IntMapLang.t(HOST.lang,'EUR','JPY'))}:{})}); });
+      ['clock','fx','featured','country','otd'].forEach(tp=>{ if(!active.some(e=>e.t===tp)) active.push({u:'w'+Math.random().toString(36).slice(2,8),t:tp,cfg:(tp==='fx'?{base:'USD',quote:(DEF_FX[window.IntMapLang.normalise(HOST.lang)]||'EUR')}:{})}); });
       localStorage.setItem('intmap_widgets_def21','1'); save();
     }}catch(_){}
     const FX_CCY=['USD','JPY','EUR','GBP','CNY','KRW','CHF','AUD','CAD','NZD','SGD','HKD','TWD','INR','BRL','MXN','RUB','TRY','ZAR','SEK','NOK','PLN','THB','IDR','PHP','VND','SAR','AED','ILS','EGP'];
     /* multi: more than one instance allowed (different pairs / countdowns) */
     const DEFS={
-      clock:    { nm:()=>jp()?'時計':'Clock', ic:'🕐', desc:()=>jp()?'現在時刻と日付':'Time & date' },
-      aclock:   { nm:()=>jp()?'アナログ時計':'Analog clock', ic:'🕰', desc:()=>jp()?'アナログ文字盤':'An analog clock face' },
-      weather:  { nm:()=>jp()?'天気':'Weather', ic:'🌤', desc:()=>jp()?'現在地の天気（追加時に位置情報の許可を求めます）':'Weather at your location (asks for location permission when added)' },
-      fx:       { nm:()=>jp()?'為替レート':'FX rate', ic:'💱', desc:()=>jp()?'好きな通貨ペアを選択':'Pick any currency pair', multi:true },
-      crypto:   { nm:()=>jp()?'暗号資産（BTC・ETH）':'Crypto (BTC·ETH)', ic:'📈', desc:()=>jp()?'価格と24h変動':'Price & 24h change' },
-      cryptocap:{ nm:()=>jp()?'暗号資産時価総額':'Crypto market cap', ic:'🪙', desc:()=>jp()?'総時価総額とBTCドミナンス':'Total cap & BTC dominance' },
-      fng:      { nm:()=>jp()?'Fear & Greed指数':'Fear & Greed', ic:'🌡', desc:()=>jp()?'暗号資産市場の心理指数':'Crypto market sentiment index' },
-      gold:     { nm:()=>jp()?'金（ゴールド）':'Gold', ic:'🥇', desc:()=>jp()?'金スポット価格 (USD/oz)':'Gold spot (USD/oz)' },
-      silver:   { nm:()=>jp()?'銀（シルバー）':'Silver', ic:'🥈', desc:()=>jp()?'銀スポット価格 (USD/oz)':'Silver spot (USD/oz)' },
-      quake:    { nm:()=>jp()?'直近の地震':'Recent earthquakes', ic:'🌐', desc:()=>jp()?'直近24時間のM上位3（USGS）':'Top-3 magnitude, last 24 h (USGS)' },
-      otd:      { nm:()=>jp()?'今日は何の日':'On this day', ic:'📅', desc:()=>jp()?'歴史上の今日の出来事':'A historical event from this date' },
-      featured: { nm:()=>jp()?'おすすめレイヤー':'Featured layer', ic:'✨', desc:()=>jp()?'ランダムに紹介。押すと表示':'Random pick — tap to show it' },
-      country:  { nm:()=>jp()?'ランダムな国':'Random country', ic:'🌍', desc:()=>jp()?'国旗と基礎データ':'Flag & key facts' },
-      countdown:{ nm:()=>jp()?'カウントダウン':'Countdown', ic:'⏳', desc:()=>jp()?'日付と題名を設定':'Set a date & title', multi:true },
+      clock:    { nm:()=>window.IntMapLang.t(HOST.lang,"Clock","時計","Uhr","Часы","Reloj"), ic:'🕐', desc:()=>window.IntMapLang.t(HOST.lang,"Time & date","現在時刻と日付","Uhrzeit & Datum","Время и дата","Hora y fecha") },
+      aclock:   { nm:()=>window.IntMapLang.t(HOST.lang,"Analog clock","アナログ時計","Analoguhr","Аналоговые часы","Reloj analógico"), ic:'🕰', desc:()=>window.IntMapLang.t(HOST.lang,"An analog clock face","アナログ文字盤","Ein analoges Zifferblatt","Аналоговый циферблат","Una esfera analógica") },
+      weather:  { nm:()=>window.IntMapLang.t(HOST.lang,"Weather","天気","Wetter","Погода","Tiempo"), ic:'🌤', desc:()=>window.IntMapLang.t(HOST.lang,"Weather at your location (asks for location permission when added)","現在地の天気（追加時に位置情報の許可を求めます）","Wetter an Ihrem Standort (fragt beim Hinzufügen nach der Standortfreigabe)","Погода в вашем местоположении (при добавлении запрашивает разрешение на геолокацию)","El tiempo en su ubicación (pide permiso de ubicación al añadirlo)") },
+      fx:       { nm:()=>window.IntMapLang.t(HOST.lang,"FX rate","為替レート","Wechselkurs","Курс валют","Tipo de cambio"), ic:'💱', desc:()=>window.IntMapLang.t(HOST.lang,"Pick any currency pair","好きな通貨ペアを選択","Beliebiges Währungspaar wählen","Выберите любую валютную пару","Elija cualquier par de divisas"), multi:true },
+      crypto:   { nm:()=>window.IntMapLang.t(HOST.lang,"Crypto (BTC·ETH)","暗号資産（BTC・ETH）","Krypto (BTC·ETH)","Криптовалюты (BTC·ETH)","Cripto (BTC·ETH)"), ic:'📈', desc:()=>window.IntMapLang.t(HOST.lang,"Price & 24h change","価格と24h変動","Kurs & 24-h-Änderung","Цена и изменение за 24 ч","Precio y variación en 24 h") },
+      cryptocap:{ nm:()=>window.IntMapLang.t(HOST.lang,"Crypto market cap","暗号資産時価総額","Krypto-Marktkapitalisierung","Капитализация крипторынка","Capitalización del mercado cripto"), ic:'🪙', desc:()=>window.IntMapLang.t(HOST.lang,"Total cap & BTC dominance","総時価総額とBTCドミナンス","Gesamtkapitalisierung & BTC-Dominanz","Общая капитализация и доминирование BTC","Capitalización total y dominancia de BTC") },
+      fng:      { nm:()=>window.IntMapLang.t(HOST.lang,"Fear & Greed","Fear & Greed指数","Fear & Greed","Fear & Greed","Fear & Greed"), ic:'🌡', desc:()=>window.IntMapLang.t(HOST.lang,"Crypto market sentiment index","暗号資産市場の心理指数","Stimmungsindex des Kryptomarkts","Индекс настроений крипторынка","Índice de sentimiento del mercado cripto") },
+      gold:     { nm:()=>window.IntMapLang.t(HOST.lang,"Gold","金（ゴールド）","Gold","Золото","Oro"), ic:'🥇', desc:()=>window.IntMapLang.t(HOST.lang,"Gold spot (USD/oz)","金スポット価格 (USD/oz)","Gold-Spotpreis (USD/oz)","Спот-цена золота (USD/унция)","Precio al contado del oro (USD/oz)") },
+      silver:   { nm:()=>window.IntMapLang.t(HOST.lang,"Silver","銀（シルバー）","Silber","Серебро","Plata"), ic:'🥈', desc:()=>window.IntMapLang.t(HOST.lang,"Silver spot (USD/oz)","銀スポット価格 (USD/oz)","Silber-Spotpreis (USD/oz)","Спот-цена серебра (USD/унция)","Precio al contado de la plata (USD/oz)") },
+      quake:    { nm:()=>window.IntMapLang.t(HOST.lang,"Recent earthquakes","直近の地震","Aktuelle Erdbeben","Недавние землетрясения","Terremotos recientes"), ic:'🌐', desc:()=>window.IntMapLang.t(HOST.lang,"Top-3 magnitude, last 24 h (USGS)","直近24時間のM上位3（USGS）","Die drei stärksten der letzten 24 h (USGS)","Три сильнейших за последние 24 ч (USGS)","Los tres de mayor magnitud en 24 h (USGS)") },
+      otd:      { nm:()=>window.IntMapLang.t(HOST.lang,"On this day","今日は何の日","An diesem Tag","В этот день","Tal día como hoy"), ic:'📅', desc:()=>window.IntMapLang.t(HOST.lang,"A historical event from this date","歴史上の今日の出来事","Ein historisches Ereignis von diesem Datum","Историческое событие этого дня","Un acontecimiento histórico de esta fecha") },
+      featured: { nm:()=>window.IntMapLang.t(HOST.lang,"Featured layer","おすすめレイヤー","Empfohlene Ebene","Рекомендуемый слой","Capa destacada"), ic:'✨', desc:()=>window.IntMapLang.t(HOST.lang,"Random pick — tap to show it","ランダムに紹介。押すと表示","Zufällige Auswahl — antippen zum Anzeigen","Случайный выбор — нажмите, чтобы показать","Selección aleatoria: toque para mostrarla") },
+      country:  { nm:()=>window.IntMapLang.t(HOST.lang,"Random country","ランダムな国","Zufälliges Land","Случайная страна","País aleatorio"), ic:'🌍', desc:()=>window.IntMapLang.t(HOST.lang,"Flag & key facts","国旗と基礎データ","Flagge & Eckdaten","Флаг и ключевые факты","Bandera y datos clave") },
+      countdown:{ nm:()=>window.IntMapLang.t(HOST.lang,"Countdown","カウントダウン","Countdown","Обратный отсчёт","Cuenta atrás"), ic:'⏳', desc:()=>window.IntMapLang.t(HOST.lang,"Set a date & title","日付と題名を設定","Datum und Titel festlegen","Задайте дату и название","Fije una fecha y un título"), multi:true },
       /* (#R21) Board expansion — sun, moon, air quality, ISS, world clocks, year progress,
          Wikipedia featured article, live world-population estimate. */
       /* (#R210) `noHead` — the card carries no title row. The two words that the title
          used to spend live next to the two times instead (refreshSun below), which is
          what the label was for in the first place. The name is still needed by the
          picker and by the add/remove lists, so it stays on the def. */
-      sun:      { nm:()=>jp()?'日の出・日の入り':'Sunrise & sunset', ic:'🌅', noHead:true, desc:()=>jp()?'現在地（許可時）または地図中心':'At your location (if allowed) or map center' },
-      moon:     { nm:()=>jp()?'月相':'Moon phase', ic:'🌖', desc:()=>jp()?'今夜の月の満ち欠け':'Tonight’s phase & illumination' },
+      sun:      { nm:()=>window.IntMapLang.t(HOST.lang,"Sunrise & sunset","日の出・日の入り","Sonnenauf- & -untergang","Восход и закат","Amanecer y atardecer"), ic:'🌅', noHead:true, desc:()=>window.IntMapLang.t(HOST.lang,"At your location (if allowed) or map center","現在地（許可時）または地図中心","An Ihrem Standort (falls erlaubt) oder in der Kartenmitte","В вашем местоположении (если разрешено) или в центре карты","En su ubicación (si lo permite) o en el centro del mapa") },
+      moon:     { nm:()=>window.IntMapLang.t(HOST.lang,"Moon phase","月相","Mondphase","Фаза Луны","Fase lunar"), ic:'🌖', desc:()=>window.IntMapLang.t(HOST.lang,"Tonight’s phase & illumination","今夜の月の満ち欠け","Phase und Beleuchtung heute Nacht","Сегодняшняя фаза и освещённость","Fase e iluminación de esta noche") },
       /* (#R210) No icon: the requested glyph was dropped and no substitute was invented
          (STANDING R108 — do not add emoji that were not asked for). renderCard() and the
          picker row both omit the icon span entirely when `ic` is empty, so the header
          collapses to the name instead of leaving a hole. */
-      aqi:      { nm:()=>jp()?'大気質（AQI）':'Air quality (AQI)', ic:'', desc:()=>jp()?'US AQIとPM2.5':'US AQI & PM2.5' },
-      iss:      { nm:()=>jp()?'国際宇宙ステーション':'ISS tracker', ic:'🛰', desc:()=>jp()?'ISSの現在位置。タップで地図へ':'Live ISS position — tap to fly there' },
-      worldclock:{ nm:()=>jp()?'世界時計':'World clock', ic:'🌐', desc:()=>jp()?'好きな都市の現在時刻':'Pick a city / timezone', multi:true },
-      yearprog: { nm:()=>jp()?'今年の進捗':'Year progress', ic:'📆', desc:()=>jp()?'今年が何%過ぎたか':'How far through the year we are' },
-      wikifeat: { nm:()=>jp()?'今日の注目記事':'Featured article', ic:'📖', desc:()=>jp()?'Wikipediaの本日の注目記事':'Wikipedia’s article of the day' },
-      pop:      { nm:()=>jp()?'世界人口時計':'World population', ic:'👥', desc:()=>jp()?'国連推計ベースのライブ推定':'Live estimate (UN-based)' },
+      aqi:      { nm:()=>window.IntMapLang.t(HOST.lang,"Air quality (AQI)","大気質（AQI）","Luftqualität (AQI)","Качество воздуха (AQI)","Calidad del aire (AQI)"), ic:'', desc:()=>window.IntMapLang.t(HOST.lang,"US AQI & PM2.5","US AQIとPM2.5","US-AQI & PM2,5","US AQI и PM2.5","AQI de EE. UU. y PM2,5") },
+      iss:      { nm:()=>window.IntMapLang.t(HOST.lang,"ISS tracker","国際宇宙ステーション","ISS-Tracker","Отслеживание МКС","Rastreador de la ISS"), ic:'🛰', desc:()=>window.IntMapLang.t(HOST.lang,"Live ISS position — tap to fly there","ISSの現在位置。タップで地図へ","Live-Position der ISS — antippen, um hinzufliegen","Текущее положение МКС — нажмите, чтобы перелететь","Posición en vivo de la ISS: toque para volar allí") },
+      worldclock:{ nm:()=>window.IntMapLang.t(HOST.lang,"World clock","世界時計","Weltzeituhr","Мировые часы","Reloj mundial"), ic:'🌐', desc:()=>window.IntMapLang.t(HOST.lang,"Pick a city / timezone","好きな都市の現在時刻","Stadt / Zeitzone wählen","Выберите город / часовой пояс","Elija una ciudad o zona horaria"), multi:true },
+      yearprog: { nm:()=>window.IntMapLang.t(HOST.lang,"Year progress","今年の進捗","Jahresfortschritt","Прогресс года","Progreso del año"), ic:'📆', desc:()=>window.IntMapLang.t(HOST.lang,"How far through the year we are","今年が何%過ぎたか","Wie weit das Jahr fortgeschritten ist","Насколько прошёл год","Cuánto ha avanzado el año") },
+      wikifeat: { nm:()=>window.IntMapLang.t(HOST.lang,"Featured article","今日の注目記事","Artikel des Tages","Избранная статья","Artículo destacado"), ic:'📖', desc:()=>window.IntMapLang.t(HOST.lang,"Wikipedia’s article of the day","Wikipediaの本日の注目記事","Der Wikipedia-Artikel des Tages","Статья дня в Википедии","El artículo del día de Wikipedia") },
+      pop:      { nm:()=>window.IntMapLang.t(HOST.lang,"World population","世界人口時計","Weltbevölkerung","Население мира","Población mundial"), ic:'👥', desc:()=>window.IntMapLang.t(HOST.lang,"Live estimate (UN-based)","国連推計ベースのライブ推定","Live-Schätzung (auf UN-Basis)","Оценка в реальном времени (по данным ООН)","Estimación en vivo (basada en la ONU)") },
       /* (#R22) Board expansion #2 — all keyless + CORS-verified live sources. */
-      uv:       { nm:()=>jp()?'UV指数':'UV index', ic:'🔆', desc:()=>jp()?'現在地の紫外線指数':'UV index at your location' },
-      kp:       { nm:()=>jp()?'地磁気・オーロラ':'Aurora (Kp)', ic:'🌌', desc:()=>jp()?'地磁気活動（NOAA SWPC）':'Geomagnetic activity (NOAA SWPC)' },
-      hn:       { nm:()=>jp()?'Hacker News':'Hacker News', ic:'💻', desc:()=>jp()?'技術系トップ記事':'Top technology story' },
-      holiday:  { nm:()=>jp()?'次の祝日':'Next holiday', ic:'🎌', desc:()=>jp()?'指定国の次の祝日':'Next public holiday (pick a country)', multi:true },
-      launch:   { nm:()=>jp()?'次のロケット打上げ':'Next rocket launch', ic:'🚀', desc:()=>jp()?'世界の次の打上げ予定':'The next spaceflight launch' },
-      btc:      { nm:()=>jp()?'ビットコイン網':'Bitcoin network', ic:'₿', desc:()=>jp()?'ブロック高と手数料':'Block height & fees' },
+      uv:       { nm:()=>window.IntMapLang.t(HOST.lang,"UV index","UV指数","UV-Index","УФ-индекс","Índice UV"), ic:'🔆', desc:()=>window.IntMapLang.t(HOST.lang,"UV index at your location","現在地の紫外線指数","UV-Index an Ihrem Standort","УФ-индекс в вашем местоположении","Índice UV en su ubicación") },
+      kp:       { nm:()=>window.IntMapLang.t(HOST.lang,"Aurora (Kp)","地磁気・オーロラ","Polarlicht (Kp)","Полярные сияния (Kp)","Auroras (Kp)"), ic:'🌌', desc:()=>window.IntMapLang.t(HOST.lang,"Geomagnetic activity (NOAA SWPC)","地磁気活動（NOAA SWPC）","Geomagnetische Aktivität (NOAA SWPC)","Геомагнитная активность (NOAA SWPC)","Actividad geomagnética (NOAA SWPC)") },
+      hn:       { nm:()=>'Hacker News', ic:'💻', desc:()=>window.IntMapLang.t(HOST.lang,"Top technology story","技術系トップ記事","Top-Technikmeldung","Главная новость технологий","Noticia tecnológica destacada") },
+      holiday:  { nm:()=>window.IntMapLang.t(HOST.lang,"Next holiday","次の祝日","Nächster Feiertag","Ближайший праздник","Próximo festivo"), ic:'🎌', desc:()=>window.IntMapLang.t(HOST.lang,"Next public holiday (pick a country)","指定国の次の祝日","Nächster gesetzlicher Feiertag (Land wählen)","Ближайший государственный праздник (выберите страну)","Próximo día festivo oficial (elija un país)"), multi:true },
+      launch:   { nm:()=>window.IntMapLang.t(HOST.lang,"Next rocket launch","次のロケット打上げ","Nächster Raketenstart","Ближайший запуск ракеты","Próximo lanzamiento espacial"), ic:'🚀', desc:()=>window.IntMapLang.t(HOST.lang,"The next spaceflight launch","世界の次の打上げ予定","Der nächste Raumflugstart weltweit","Ближайший космический запуск в мире","El próximo lanzamiento espacial del mundo") },
+      btc:      { nm:()=>window.IntMapLang.t(HOST.lang,"Bitcoin network","ビットコイン網","Bitcoin-Netzwerk","Сеть Bitcoin","Red de Bitcoin"), ic:'₿', desc:()=>window.IntMapLang.t(HOST.lang,"Block height & fees","ブロック高と手数料","Blockhöhe & Gebühren","Высота блока и комиссии","Altura de bloque y comisiones") },
       /* (#R40) Board expansion #3 — pure-computation widgets (no network, always work). */
-      dayprog:  { nm:()=>jp()?'今日の進捗':'Day progress', ic:'⏱', desc:()=>jp()?'今日が何%過ぎたか':'How far through today we are' },
-      season:   { nm:()=>jp()?'季節':'Season', ic:'🍂', desc:()=>jp()?'現在の季節（半球対応）':'Current season (hemisphere-aware)' },
-      weeknum:  { nm:()=>jp()?'週番号':'Week number', ic:'🗓', desc:()=>jp()?'ISO週番号・通算日・残り日数':'ISO week, day-of-year & days left' },
-      unixclock:{ nm:()=>jp()?'Unix時刻':'Unix time', ic:'⏲', desc:()=>jp()?'現在のUnixタイムスタンプ':'Live Unix timestamp' },
-      mapcenter:{ nm:()=>jp()?'地図の中心':'Map center', ic:'🎯', desc:()=>jp()?'表示中心の座標とズーム':'Center coordinates & zoom' },
-      fullmoon: { nm:()=>jp()?'次の満月':'Next full moon', ic:'🌕', desc:()=>jp()?'次の満月までの日数':'Days until the next full moon' },
+      dayprog:  { nm:()=>window.IntMapLang.t(HOST.lang,"Day progress","今日の進捗","Tagesfortschritt","Прогресс дня","Progreso del día"), ic:'⏱', desc:()=>window.IntMapLang.t(HOST.lang,"How far through today we are","今日が何%過ぎたか","Wie weit der heutige Tag fortgeschritten ist","Насколько прошёл сегодняшний день","Cuánto ha avanzado el día de hoy") },
+      season:   { nm:()=>window.IntMapLang.t(HOST.lang,"Season","季節","Jahreszeit","Время года","Estación"), ic:'🍂', desc:()=>window.IntMapLang.t(HOST.lang,"Current season (hemisphere-aware)","現在の季節（半球対応）","Aktuelle Jahreszeit (halbkugelabhängig)","Текущее время года (с учётом полушария)","Estación actual (según el hemisferio)") },
+      weeknum:  { nm:()=>window.IntMapLang.t(HOST.lang,"Week number","週番号","Kalenderwoche","Номер недели","Número de semana"), ic:'🗓', desc:()=>window.IntMapLang.t(HOST.lang,"ISO week, day-of-year & days left","ISO週番号・通算日・残り日数","ISO-Woche, Tag des Jahres & verbleibende Tage","Неделя по ISO, день года и остаток дней","Semana ISO, día del año y días restantes") },
+      unixclock:{ nm:()=>window.IntMapLang.t(HOST.lang,"Unix time","Unix時刻","Unix-Zeit","Unix-время","Tiempo Unix"), ic:'⏲', desc:()=>window.IntMapLang.t(HOST.lang,"Live Unix timestamp","現在のUnixタイムスタンプ","Aktueller Unix-Zeitstempel","Текущая метка Unix-времени","Marca de tiempo Unix en vivo") },
+      mapcenter:{ nm:()=>window.IntMapLang.t(HOST.lang,"Map center","地図の中心","Kartenmitte","Центр карты","Centro del mapa"), ic:'🎯', desc:()=>window.IntMapLang.t(HOST.lang,"Center coordinates & zoom","表示中心の座標とズーム","Koordinaten der Mitte & Zoom","Координаты центра и зум","Coordenadas del centro y zoom") },
+      fullmoon: { nm:()=>window.IntMapLang.t(HOST.lang,"Next full moon","次の満月","Nächster Vollmond","Ближайшее полнолуние","Próxima luna llena"), ic:'🌕', desc:()=>window.IntMapLang.t(HOST.lang,"Days until the next full moon","次の満月までの日数","Tage bis zum nächsten Vollmond","Дней до следующего полнолуния","Días hasta la próxima luna llena") },
       /* (#R41) Board expansion #4 — map-aware + pure-computation widgets (5-lang names). */
       mapweather:{ nm:()=>({en:'Map weather',jp:'地図中心の天気',de:'Karten-Wetter',ru:'Погода по центру',es:'Clima del mapa'})[HOST.lang]||'Map weather', ic:'🗺', desc:()=>({en:'Live weather at the map center (no location permission)',jp:'地図中心の現在の天気（位置情報不要）',de:'Wetter in der Kartenmitte (keine Standortfreigabe)',ru:'Погода в центре карты (без доступа к геолокации)',es:'Tiempo en el centro del mapa (sin permiso de ubicación)'})[HOST.lang]||'Live weather at the map center' },
       daylength:{ nm:()=>({en:'Day length',jp:'昼の長さ',de:'Tageslänge',ru:'Долгота дня',es:'Duración del día'})[HOST.lang]||'Day length', ic:'🌞', desc:()=>({en:'Daylight hours at the map-center latitude',jp:'地図中心の緯度での日照時間',de:'Tageslichtstunden auf Breite der Kartenmitte',ru:'Часы светового дня на широте центра карты',es:'Horas de luz en la latitud del centro'})[HOST.lang]||'Daylight hours' },
@@ -230,17 +230,28 @@ window.IntMapModules.widgets=function(HOST){
            grip handle (the whole card is draggable) replaces them ("↓↑ではなく、ドラッグアンドドロップで"). */
         /* (#R33) iOS home-screen style: the whole card is draggable (no separate grip), and the delete badge
            is a minus in a dark circle at the top-left ("iPhoneのホーム画面のように / 削除ボタンをiOS風に"). */
-        topright='<button class="wgt-del" data-u="'+e.u+'" title="'+(jp()?'削除':'Remove')+'" aria-label="'+(jp()?'削除':'Remove')+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 12h12"/></svg></button>';
+        topright='<button class="wgt-del" data-u="'+e.u+'" title="'+(window.IntMapLang.t(HOST.lang,"Remove","削除","Entfernen","Удалить","Quitar"))+'" aria-label="'+(window.IntMapLang.t(HOST.lang,"Remove","削除","Entfernen","Удалить","Quitar"))+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 12h12"/></svg></button>';
       } else if(e.t==='fx'||e.t==='countdown'||e.t==='worldclock'||e.t==='holiday'){
         /* (#R31) cleaner SF-Symbol-style gear (the old ⚙ glyph looked "ダサい"). */
-        topright='<button class="wgt-cfg" data-u="'+e.u+'" title="'+(jp()?'設定':'Configure')+'"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></button>';
+        topright='<button class="wgt-cfg" data-u="'+e.u+'" title="'+(window.IntMapLang.t(HOST.lang,"Configure","設定","Einstellen","Настроить","Configurar"))+'"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></button>';
       }
       return '<div class="wgt-card'+(editing?' editing':'')+'" data-u="'+e.u+'" data-w="'+e.t+'">'+topright+
         (d.noHead?'':'<div class="wgt-h">'+(d.ic?'<span>'+d.ic+'</span>':'')+'<span class="wgt-nm">'+d.nm()+'</span></div>')+'<div class="wgt-v" id="wgtv-'+e.u+'">···</div><div class="wgt-s" id="wgts-'+e.u+'"></div><div class="wgt-cfgbox" id="wgtc-'+e.u+'" style="display:none;margin-top:7px;"></div></div>'; }
     function moveWidget(u,dir){ const i=active.findIndex(e=>e.u===u); if(i<0) return; const j=i+dir; if(j<0||j>=active.length) return;
       const tmp=active[i]; active[i]=active[j]; active[j]=tmp; save(); render(); }
+    /* ══ ⚠ (#R243) A DEFAULT IS NOT A TRANSLATION, AND IT IS STILL A LANGUAGE GAP ═══════════════════
+       These two were `jp() ? 'JPY' : 'EUR'` and `jp() ? 'JP' : 'US'` — the currency a new FX widget
+       opens on and the country a new Holiday widget opens on. They are NOT strings a translator may
+       touch (a locale file that could change a currency code would be deciding what is fetched), so
+       they never belonged in the `L(…)` table; but two branches meant a Korean reader got EUR and a
+       Chinese reader got US holidays, which is the same defect wearing a different hat. A table keyed
+       by the language code, with the English default underneath, answers both: no ternary left for
+       the audit to count, and every language gets a sensible first value it can still change in ⚙. */
+    const DEF_FX={ jp:'JPY', ko:'KRW', zh:'TWD', 'zh-hans':'CNY', de:'EUR', fr:'EUR', es:'EUR', ru:'RUB' };
+    const DEF_CC={ jp:'JP',  ko:'KR',  zh:'TW',  'zh-hans':'CN',  de:'DE',  fr:'FR',  es:'ES',  ru:'RU' };
     function doAdd(k){ if(!k||!DEFS[k]) return; if(!DEFS[k].multi&&hasType(k)) return;
-      const e={u:'w'+Math.random().toString(36).slice(2,8),t:k,cfg:(k==='fx'?{base:'USD',quote:jp()?'JPY':'EUR'}:k==='worldclock'?{tz:'Asia/Tokyo'}:k==='holiday'?{cc:(jp()?'JP':'US')}:{})};
+      const _lc=window.IntMapLang.normalise?window.IntMapLang.normalise(HOST.lang):HOST.lang;
+      const e={u:'w'+Math.random().toString(36).slice(2,8),t:k,cfg:(k==='fx'?{base:'USD',quote:(DEF_FX[_lc]||'EUR')}:k==='worldclock'?{tz:'Asia/Tokyo'}:k==='holiday'?{cc:(DEF_CC[_lc]||'US')}:{})};
       active.push(e); save(); gallery=false; render();
       /* (#R25) Request the location permission for EVERY widget that uses widgetLoc() on add — UV index
          was missing, so it silently fell back to map center ("位置情報を使用するウィジェットは追加時に許可を求めて"). */
@@ -251,19 +262,19 @@ window.IntMapModules.widgets=function(HOST){
       const cards=active.map(card).join('');
       const addable=Object.keys(DEFS).filter(k=>DEFS[k].multi||!hasType(k));
       /* (#R22) An "Edit" button (top-right of the board) drives reorder/remove — no more per-card ✕. */
-      const editBtn=active.length?'<button id="wgt-edit" class="wgt-edit-btn'+(editing?' on':'')+'">'+(editing?(jp()?'完了':'Done'):(jp()?'編集':'Edit'))+'</button>':'';
+      const editBtn=active.length?'<button id="wgt-edit" class="wgt-edit-btn'+(editing?' on':'')+'">'+(editing?(window.IntMapLang.t(HOST.lang,"Done","完了","Fertig","Готово","Hecho")):(window.IntMapLang.t(HOST.lang,"Edit","編集","Bearbeiten","Изменить","Editar")))+'</button>':'';
       let addCell='';
       if(!editing && addable.length){
         /* (#R22) Mobile: the Add tile is an iOS-native <select> wheel overlaid on the tile. Desktop keeps the gallery. */
-        addCell='<div class="wgt-add" id="wgt-add"><span class="plus">＋</span>'+(jp()?'ウィジェットを追加':'Add widget')+
-          (isMob?('<select id="wgt-add-sel" aria-label="'+(jp()?'ウィジェットを追加':'Add widget')+'" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;">'+
-            '<option value="">'+(jp()?'追加するウィジェット…':'Add a widget…')+'</option>'+
+        addCell='<div class="wgt-add" id="wgt-add"><span class="plus">＋</span>'+(window.IntMapLang.t(HOST.lang,"Add widget","ウィジェットを追加","Widget hinzufügen","Добавить виджет","Añadir widget"))+
+          (isMob?('<select id="wgt-add-sel" aria-label="'+(window.IntMapLang.t(HOST.lang,"Add widget","ウィジェットを追加","Widget hinzufügen","Добавить виджет","Añadir widget"))+'" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;">'+
+            '<option value="">'+(window.IntMapLang.t(HOST.lang,"Add a widget…","追加するウィジェット…","Ein Widget hinzufügen…","Добавить виджет…","Añadir un widget…"))+'</option>'+
             addable.map(k=>'<option value="'+k+'">'+DEFS[k].nm()+'</option>').join('')+'</select>'):'')+'</div>';
       }
-      b.innerHTML='<div class="wgt-title-row"><span class="wgt-title" style="margin:0;">'+(jp()?'ウィジェット':'Widgets')+'</span>'+editBtn+'</div>'+
+      b.innerHTML='<div class="wgt-title-row"><span class="wgt-title" style="margin:0;">'+(window.IntMapLang.t(HOST.lang,"Widgets","ウィジェット","Widgets","Виджеты","Widgets"))+'</span>'+editBtn+'</div>'+
         '<div class="wgt-grid">'+cards+addCell+'</div>'+
-        (!isMob&&gallery&&!editing&&addable.length?('<div class="wgt-gallery"><h5 style="display:flex;align-items:center;">'+(jp()?'追加できるウィジェット':'Available widgets')+
-          '<button id="wgt-g-close" title="'+(jp()?'閉じる':'Close')+'" style="margin-left:auto;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.22);color:var(--text-main);font-size:13px;line-height:1;cursor:pointer;">✕</button></h5>'+
+        (!isMob&&gallery&&!editing&&addable.length?('<div class="wgt-gallery"><h5 style="display:flex;align-items:center;">'+(window.IntMapLang.t(HOST.lang,"Available widgets","追加できるウィジェット","Verfügbare Widgets","Доступные виджеты","Widgets disponibles"))+
+          '<button id="wgt-g-close" title="'+(window.IntMapLang.t(HOST.lang,"Close","閉じる","Schließen","Закрыть","Cerrar"))+'" style="margin-left:auto;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.22);color:var(--text-main);font-size:13px;line-height:1;cursor:pointer;">✕</button></h5>'+
           addable.map(k=>'<div class="wgt-g-row" data-add="'+k+'"><span class="gi">'+DEFS[k].ic+'</span><span><div class="gn">'+DEFS[k].nm()+'</div><div class="gd">'+DEFS[k].desc()+'</div></span><span class="ga">＋</span></div>').join('')+'</div>'):'');
       const eb=b.querySelector('#wgt-edit'); if(eb) eb.onclick=()=>{ editing=!editing; gallery=false; render(); };
       const add=b.querySelector('#wgt-add'); if(add && !isMob) add.onclick=()=>{ gallery=!gallery; render(); };
@@ -396,7 +407,7 @@ window.IntMapModules.widgets=function(HOST){
       return {col:'#af52de',label:_WL('Extreme','極端','Extrem','Экстремальный','Extremo')}; }
     /* "as of" stamp — every financial/data widget states WHEN its numbers are from (#R20). */
     function asOf(ts){ try{ const d=(ts instanceof Date)?ts:new Date(ts); if(isNaN(d.getTime())) return '';
-      return (jp()?'取得時点 ':'as of ')+d.toLocaleString(jp()?'ja-JP':'en-GB',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return ''; } }
+      return (window.IntMapLang.t(HOST.lang,"as of ","取得時点 ","Stand ","по состоянию на ","actualizado "))+d.toLocaleString(window.IntMapLang.locale(HOST.lang,'en-GB'),{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return ''; } }
     function openCfg(u){ const e=entry(u); if(!e) return; const box=document.getElementById('wgtc-'+u); if(!box) return;
       const open=box.style.display!=='none'; if(open){ box.style.display='none'; return; }
       box.style.display='block';
@@ -409,7 +420,7 @@ window.IntMapModules.widgets=function(HOST){
         box.querySelector('.fxok').onclick=()=>{ e.cfg.base=box.querySelector('.fxb').value; e.cfg.quote=box.querySelector('.fxq').value; save(); box.style.display='none'; refreshOne(e); };
       } else if(e.t==='countdown'){
         box.innerHTML='<div style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--text-muted);">'+
-          '<input class="cdt" type="text" maxlength="40" placeholder="'+(jp()?'題名（例: オリンピック開幕）':'Title (e.g. Olympics opening)')+'" value="'+String(e.cfg.title||'').replace(/"/g,'&quot;')+'" style="'+selStyle+'width:100%;box-sizing:border-box;">'+
+          '<input class="cdt" type="text" maxlength="40" placeholder="'+(window.IntMapLang.t(HOST.lang,"Title (e.g. Olympics opening)","題名（例: オリンピック開幕）","Titel (z. B. Eröffnung der Olympischen Spiele)","Название (напр. открытие Олимпиады)","Título (p. ej. inauguración de los Juegos)"))+'" value="'+String(e.cfg.title||'').replace(/"/g,'&quot;')+'" style="'+selStyle+'width:100%;box-sizing:border-box;">'+
           '<div style="display:flex;gap:6px;"><input class="cdd" type="date" value="'+(e.cfg.date||'')+'" style="'+selStyle+'flex:1;">'+
           '<button class="cdok" style="'+selStyle+'cursor:pointer;font-weight:600;">OK</button></div></div>';
         box.querySelector('.cdok').onclick=()=>{ e.cfg.title=box.querySelector('.cdt').value.trim(); e.cfg.date=box.querySelector('.cdd').value; save(); box.style.display='none'; refreshOne(e); };
@@ -431,8 +442,8 @@ window.IntMapModules.widgets=function(HOST){
       let tz; try{ if(typeof HOST.userTZ!=='undefined'&&HOST.userTZ&&HOST.userTZ!=='auto') tz=HOST.userTZ; }catch(_){}
       const now=new Date();
       active.filter(e=>e.t==='clock').forEach(e=>{ let tstr,dstr;
-        try{ tstr=now.toLocaleTimeString(jp()?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:tz}); }catch(_){ tstr=now.toLocaleTimeString(); }
-        try{ dstr=now.toLocaleDateString(jp()?'ja-JP':'en-GB',{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
+        try{ tstr=now.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,'en-GB'),{hour:'2-digit',minute:'2-digit',timeZone:tz}); }catch(_){ tstr=now.toLocaleTimeString(); }
+        try{ dstr=now.toLocaleDateString(window.IntMapLang.locale(HOST.lang,'en-GB'),{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
         setV(e.u,'<span style="font-size:26px;">'+tstr+'</span>', dstr+(tz?' · '+tz:'')); });
       /* (#R33) Analog clock widget. */
       /* (#R36) ROOT CAUSE of "アナログ時計が動かない" AND "some widgets are too slow to update": this block
@@ -441,7 +452,7 @@ window.IntMapModules.widgets=function(HOST){
          tickClock, freezing every locally-ticked widget after it (countdown / world clock / population / year
          progress). Compute dstr locally + wrap each block so one bad widget can never freeze the others. */
       active.filter(e=>e.t==='aclock').forEach(e=>{ try{ let d=now; try{ if(tz) d=new Date(now.toLocaleString('en-US',{timeZone:tz})); }catch(_){}
-        let dstr=''; try{ dstr=now.toLocaleDateString(jp()?'ja-JP':'en-GB',{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=''; }
+        let dstr=''; try{ dstr=now.toLocaleDateString(window.IntMapLang.locale(HOST.lang,'en-GB'),{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=''; }
         const h=d.getHours()%12, mi=d.getMinutes(), se=d.getSeconds();
         const hand=(ang,len,w,col)=>{ const a=(ang-90)*Math.PI/180; return '<line x1="50" y1="50" x2="'+(50+len*Math.cos(a)).toFixed(1)+'" y2="'+(50+len*Math.sin(a)).toFixed(1)+'" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round"/>'; };
         let ticks=''; for(let i=0;i<12;i++){ const a=(i*30-90)*Math.PI/180; ticks+='<line x1="'+(50+40*Math.cos(a)).toFixed(1)+'" y1="'+(50+40*Math.sin(a)).toFixed(1)+'" x2="'+(50+45.5*Math.cos(a)).toFixed(1)+'" y2="'+(50+45.5*Math.sin(a)).toFixed(1)+'" stroke="var(--text-muted)" stroke-width="'+(i%3===0?2.4:1.2)+'"/>'; }
@@ -450,12 +461,12 @@ window.IntMapModules.widgets=function(HOST){
       active.filter(e=>e.t==='countdown').forEach(e=>{ try{ refreshCountdown(e); }catch(_){} });
       /* (#R21) Locally-computed widgets ride the clock tick so they're always current. */
       active.filter(e=>e.t==='worldclock').forEach(e=>{ try{ const z=(e.cfg&&e.cfg.tz)||'Asia/Tokyo'; let ts,ds;
-        try{ ts=now.toLocaleTimeString(jp()?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:z}); ds=now.toLocaleDateString(jp()?'ja-JP':'en-GB',{weekday:'short',timeZone:z}); }catch(_){ ts='—'; ds=''; }
+        try{ ts=now.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,'en-GB'),{hour:'2-digit',minute:'2-digit',timeZone:z}); ds=now.toLocaleDateString(window.IntMapLang.locale(HOST.lang,'en-GB'),{weekday:'short',timeZone:z}); }catch(_){ ts='—'; ds=''; }
         setV(e.u,'<span style="font-size:24px;">'+ts+'</span>', ds+' · '+z.split('/').pop().replace(/_/g,' '));
-        const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(jp()?'世界時計 ':'World clock ')+z.split('/').pop().replace(/_/g,' '); }catch(_){} });
+        const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(window.IntMapLang.t(HOST.lang,"World clock ","世界時計 ","Weltzeituhr ","Мировые часы ","Reloj mundial "))+z.split('/').pop().replace(/_/g,' '); }catch(_){} });
       active.filter(e=>e.t==='pop').forEach(e=>{ try{ /* UN WPP 2024: ~8.231B at mid-2025, ≈ +2.17 persons/sec */
         const v=8.231e9+(Date.now()-Date.UTC(2025,6,1))/1000*2.17;
-        setV(e.u,(v/1e9).toFixed(6)+' <span style="font-size:13px;">B</span>', (jp()?'国連推計ベースのライブ推定':'live estimate, UN-based')); }catch(_){} });
+        setV(e.u,(v/1e9).toFixed(6)+' <span style="font-size:13px;">B</span>', (window.IntMapLang.t(HOST.lang,"live estimate, UN-based","国連推計ベースのライブ推定","Live-Schätzung auf UN-Basis","оценка в реальном времени по данным ООН","estimación en vivo basada en la ONU"))); }catch(_){} });
       active.filter(e=>e.t==='yearprog').forEach(e=>{ try{ const y=now.getFullYear(); const a=new Date(y,0,1), b=new Date(y+1,0,1);
         const fr=Math.min(1,Math.max(0,(now-a)/(b-a))); const day=Math.ceil((now-a)/864e5);
         setV(e.u,(fr*100).toFixed(1)+'%<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);margin-top:7px;overflow:hidden;"><div style="height:100%;width:'+(fr*100).toFixed(1)+'%;background:var(--primary-color);border-radius:4px;"></div></div>', y+' · '+(jp()?day+'日目':'day '+day)); }catch(_){} });
@@ -466,26 +477,26 @@ window.IntMapModules.widgets=function(HOST){
         const nSeason=['winter','winter','spring','spring','spring','summer','summer','summer','autumn','autumn','autumn','winter'][mo];
         const seas=(lat<0)?({winter:'summer',summer:'winter',spring:'autumn',autumn:'spring'})[nSeason]:nSeason;
         const ICON={winter:'❄️',spring:'🌸',summer:'☀️',autumn:'🍂'}, NMjp={winter:'冬',spring:'春',summer:'夏',autumn:'秋'}, NMen={winter:'Winter',spring:'Spring',summer:'Summer',autumn:'Autumn'};
-        setV(e.u, ICON[seas]+' '+(jp()?NMjp[seas]:NMen[seas]), (lat<0?(jp()?'南半球':'Southern Hemisphere'):(jp()?'北半球':'Northern Hemisphere'))); }catch(_){} });
+        setV(e.u, ICON[seas]+' '+(jp()?NMjp[seas]:NMen[seas]), (lat<0?(window.IntMapLang.t(HOST.lang,"Southern Hemisphere","南半球","Südhalbkugel","Южное полушарие","Hemisferio sur")):(window.IntMapLang.t(HOST.lang,"Northern Hemisphere","北半球","Nordhalbkugel","Северное полушарие","Hemisferio norte")))); }catch(_){} });
       active.filter(e=>e.t==='weeknum').forEach(e=>{ try{ const d=new Date(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())); const dn=(d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-dn+3); const ft=new Date(Date.UTC(d.getUTCFullYear(),0,4)); const wk=1+Math.round(((d-ft)/864e5-3+((ft.getUTCDay()+6)%7))/7);
         const y0=new Date(now.getFullYear(),0,0); const doy=Math.floor((now-y0)/864e5); const left=Math.ceil((new Date(now.getFullYear(),11,31,23,59,59)-now)/864e5);
         setV(e.u,'W'+wk, (jp()?('第'+doy+'日 · 残り'+left+'日'):('day '+doy+' · '+left+' left'))); }catch(_){} });
       active.filter(e=>e.t==='unixclock').forEach(e=>{ try{ const s=Math.floor(Date.now()/1000);
-        setV(e.u,'<span style="font-size:19px;">'+s.toLocaleString()+'</span>', (jp()?'秒（1970-01-01 UTCから）':'seconds since 1970-01-01 UTC')); }catch(_){} });
-      active.filter(e=>e.t==='mapcenter').forEach(e=>{ try{ const c=camCentre(); if(c){ const _z=camZoom(); setV(e.u,'<span style="font-size:16px;">'+c.lat.toFixed(3)+'°, '+c.lng.toFixed(3)+'°</span>', (jp()?'ズーム ':'zoom ')+(_z!=null?_z.toFixed(1):'')); } }catch(_){} });
+        setV(e.u,'<span style="font-size:19px;">'+s.toLocaleString()+'</span>', (window.IntMapLang.t(HOST.lang,"seconds since 1970-01-01 UTC","秒（1970-01-01 UTCから）","Sekunden seit 1970-01-01 UTC","секунд с 1970-01-01 UTC","segundos desde 1970-01-01 UTC"))); }catch(_){} });
+      active.filter(e=>e.t==='mapcenter').forEach(e=>{ try{ const c=camCentre(); if(c){ const _z=camZoom(); setV(e.u,'<span style="font-size:16px;">'+c.lat.toFixed(3)+'°, '+c.lng.toFixed(3)+'°</span>', (window.IntMapLang.t(HOST.lang,"zoom ","ズーム ","Zoom ","зум ","zoom "))+(_z!=null?_z.toFixed(1):'')); } }catch(_){} });
       active.filter(e=>e.t==='fullmoon').forEach(e=>{ try{ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14); const phase=((((Date.now()-ref)/864e5)%syn)+syn)%syn; const toFull=((syn/2)-phase+syn)%syn; const days=Math.round(toFull);
-        setV(e.u, days===0?(jp()?'今夜！':'Tonight!'):('🌕 '+days+(jp()?'日後':'d')), (jp()?'次の満月まで':'until the next full moon')); }catch(_){} });
+        setV(e.u, days===0?(window.IntMapLang.t(HOST.lang,"Tonight!","今夜！","Heute Nacht!","Сегодня ночью!","¡Esta noche!")):('🌕 '+days+(window.IntMapLang.t(HOST.lang,"d","日後","T","дн","d"))), (window.IntMapLang.t(HOST.lang,"until the next full moon","次の満月まで","bis zum nächsten Vollmond","до следующего полнолуния","hasta la próxima luna llena"))); }catch(_){} });
       /* (#R41) pure-computation map-aware widgets */
       active.filter(e=>e.t==='newmoon').forEach(e=>{ try{ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14); const phase=((((Date.now()-ref)/864e5)%syn)+syn)%syn; const toNew=(syn-phase)%syn; const days=Math.round(toNew);
-        setV(e.u, days===0?(jp()?'今夜！':'Tonight!'):('🌑 '+days+(jp()?'日後':'d')), (jp()?'次の新月まで':'until the next new moon')); }catch(_){} });
+        setV(e.u, days===0?(window.IntMapLang.t(HOST.lang,"Tonight!","今夜！","Heute Nacht!","Сегодня ночью!","¡Esta noche!")):('🌑 '+days+(window.IntMapLang.t(HOST.lang,"d","日後","T","дн","d"))), (window.IntMapLang.t(HOST.lang,"until the next new moon","次の新月まで","bis zum nächsten Neumond","до следующего новолуния","hasta la próxima luna nueva"))); }catch(_){} });
       active.filter(e=>e.t==='daylength').forEach(e=>{ try{ const _c1=camCentre(); const lat=_c1?_c1.lat:35; const st=new Date(now.getFullYear(),0,0); const doy=Math.floor((now-st)/864e5);
         const decl=-23.44*Math.cos((360/365)*(doy+10)*Math.PI/180); const cosH=-Math.tan(lat*Math.PI/180)*Math.tan(decl*Math.PI/180);
         let hrs; if(cosH<=-1) hrs=24; else if(cosH>=1) hrs=0; else hrs=(2*Math.acos(cosH)*180/Math.PI)/15; const h=Math.floor(hrs), m=Math.round((hrs-h)*60);
-        setV(e.u,'🌞 '+h+'h '+(m<10?'0':'')+m+'m', (jp()?'緯度 ':'lat ')+lat.toFixed(1)+'° · '+(jp()?'日照':'daylight')); }catch(_){} });
+        setV(e.u,'🌞 '+h+'h '+(m<10?'0':'')+m+'m', (window.IntMapLang.t(HOST.lang,"lat ","緯度 ","Breite ","широта ","lat "))+lat.toFixed(1)+'° · '+(window.IntMapLang.t(HOST.lang,"daylight","日照","Tageslicht","световой день","luz diurna"))); }catch(_){} });
       active.filter(e=>e.t==='mapscale').forEach(e=>{ try{ const _c2=camCentre(), _z2=camZoom(); if(!_c2||_z2==null) return; const lat=_c2.lat, z=_z2;
         const mpp=156543.03392*Math.cos(lat*Math.PI/180)/Math.pow(2,z); const v=(mpp>=1000)?((mpp/1000).toFixed(1)+' km/px'):(mpp>=1?Math.round(mpp)+' m/px':(mpp*100).toFixed(0)+' cm/px');
         const bar=mpp*100, barStr=bar>=1000?(bar/1000).toFixed(1)+' km':Math.round(bar)+' m';
-        setV(e.u,'<span style="font-size:18px;">'+v+'</span>', (jp()?'100pxバー ≈ ':'100-px bar ≈ ')+barStr+' · z'+z.toFixed(1)); }catch(_){} });
+        setV(e.u,'<span style="font-size:18px;">'+v+'</span>', (window.IntMapLang.t(HOST.lang,"100-px bar ≈ ","100pxバー ≈ ","100-px-Balken ≈ ","полоса 100 px ≈ ","barra de 100 px ≈ "))+barStr+' · z'+z.toFixed(1)); }catch(_){} });
       active.filter(e=>e.t==='calendar').forEach(e=>{ try{ const y=now.getFullYear(), mo=now.getMonth(), today=now.getDate(); const startDow=(new Date(y,mo,1).getDay()+6)%7, dim=new Date(y,mo+1,0).getDate();
         const dn=jp()?['月','火','水','木','金','土','日']:['M','T','W','T','F','S','S'];
         let html='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:9px;text-align:center;line-height:14px;">';
@@ -493,10 +504,10 @@ window.IntMapModules.widgets=function(HOST){
         for(let i=0;i<startDow;i++) html+='<span></span>';
         for(let d2=1;d2<=dim;d2++){ const is=d2===today; html+='<span style="'+(is?'background:var(--primary-color);color:#fff;border-radius:50%;font-weight:700;':'color:var(--text-main);')+'display:inline-block;width:14px;height:14px;">'+d2+'</span>'; }
         html+='</div>';
-        setV(e.u, html, ''); try{ const es=document.getElementById('wgts-'+e.u); if(es) es.textContent=now.toLocaleDateString(jp()?'ja-JP':(HOST.lang==='en'?'en-US':HOST.lang),{month:'long',year:'numeric'}); }catch(_){} }catch(_){} });
+        setV(e.u, html, ''); try{ const es=document.getElementById('wgts-'+e.u); if(es) es.textContent=now.toLocaleDateString(window.IntMapLang.locale(HOST.lang,'en-US'),{month:'long',year:'numeric'}); }catch(_){} }catch(_){} });
     }
     const wIco=(c)=>{ if(c==null)return '🌡'; if(c===0)return '☀️'; if(c<=3)return '⛅'; if(c<=48)return '🌫'; if(c<=67)return '🌧'; if(c<=77)return '❄️'; if(c<=82)return '🌦'; if(c<=99)return '⛈'; return '🌡'; };
-    const una=()=>jp()?'取得できません':'unavailable';
+    const una=()=>window.IntMapLang.t(HOST.lang,"unavailable","取得できません","nicht verfügbar","недоступно","no disponible");
     /* (#R21) Geolocation for the weather/AQI/sun widgets. The permission PROMPT fires only when a
        weather widget is added (reqGeo); other paths use the position only if already granted. */
     let geoPos=null, geoDenied=false;
@@ -506,7 +517,7 @@ window.IntMapModules.widgets=function(HOST){
           ()=>{ geoDenied=true; cb&&cb(); },
           {enableHighAccuracy:true,maximumAge:0,timeout:20000}); }catch(_){ cb&&cb(); } }   /* (#R170) high accuracy, fresh fix; geoPos is still reused for 10 min by widgetLoc() so this asks the device once */
     async function widgetLoc(){
-      const mine=()=>({lat:geoPos.lat,lng:geoPos.lng,lbl:jp()?'現在地':'my location'});
+      const mine=()=>({lat:geoPos.lat,lng:geoPos.lng,lbl:window.IntMapLang.t(HOST.lang,"my location","現在地","mein Standort","моё местоположение","mi ubicación")});
       if(geoPos&&Date.now()-geoPos.ts<10*60*1000) return mine();
       /* (#R22) "Weather shows map center despite my location" root cause: Safari/iOS has no
          navigator.permissions for geolocation, so the old `permissions.query` threw and we fell
@@ -521,12 +532,12 @@ window.IntMapModules.widgets=function(HOST){
          and the widget shows an "Allow location" button (works across devices: a new device re-prompts). */
       return null;
     }
-    function wgtLocPrompt(e){ const msg=jp()?'位置情報が必要です':'Location needed';
-      setV(e.u, '<button class="wgt-loc-btn" data-u="'+e.u+'" style="background:var(--primary-color);color:#fff;border:none;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:400;cursor:pointer;">'+(jp()?'位置情報を許可':'Allow location')+'</button>', msg);
+    function wgtLocPrompt(e){ const msg=window.IntMapLang.t(HOST.lang,"Location needed","位置情報が必要です","Standort erforderlich","Нужно местоположение","Se necesita la ubicación");
+      setV(e.u, '<button class="wgt-loc-btn" data-u="'+e.u+'" style="background:var(--primary-color);color:#fff;border:none;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:400;cursor:pointer;">'+(window.IntMapLang.t(HOST.lang,"Allow location","位置情報を許可","Standort erlauben","Разрешить геолокацию","Permitir la ubicación"))+'</button>', msg);
       /* (#R130) One grant now dismisses EVERY location widget's button, not just this one. reqGeo populates the
          SHARED geoPos cache, so re-rendering all weather/aqi/sun/uv widgets lets them consume the cached coords and
          overwrite their own prompt buttons — "他のウィジェットのボタンも全部それぞれ押さなくていいように". */
-      setTimeout(()=>{ const b=document.querySelector('.wgt-loc-btn[data-u="'+e.u+'"]'); if(b) b.onclick=()=>{ geoDenied=false; b.textContent=jp()?'取得中…':'Locating…'; reqGeo(()=>{ try{ active.forEach(w=>{ if(['weather','aqi','sun','uv'].includes(w.t)) refreshOne(w); }); }catch(_){ try{ refreshOne(e); }catch(__){} } }); }; },0); }
+      setTimeout(()=>{ const b=document.querySelector('.wgt-loc-btn[data-u="'+e.u+'"]'); if(b) b.onclick=()=>{ geoDenied=false; b.textContent=window.IntMapLang.t(HOST.lang,"Locating…","取得中…","Standort wird ermittelt…","Определение местоположения…","Localizando…"); reqGeo(()=>{ try{ active.forEach(w=>{ if(['weather','aqi','sun','uv'].includes(w.t)) refreshOne(w); }); }catch(_){ try{ refreshOne(e); }catch(__){} } }); }; },0); }
     /* (#R183) 「UV Indexとweatherのウィジェットが更新されない。」 ROOT CAUSE, reproduced in the browser:
        api.open-meteo.com was answering 429 {"error":true,"reason":"Daily API request limit exceeded"},
        and this function did `await r.json()` with NO `r.ok` test — an error body is perfectly good JSON,
@@ -563,7 +574,7 @@ window.IntMapModules.widgets=function(HOST){
         const cu=j.current||{}, dy=j.daily||{};
         const tmp=(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C');
         const hi=dy.temperature_2m_max&&dy.temperature_2m_max[0], lo=dy.temperature_2m_min&&dy.temperature_2m_min[0];
-        setV(e.u, wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+(jp()?'地図中心':'map center')+_wxSrc(j)); }catch(_){ setV(e.u,'—', una()); } }
+        setV(e.u, wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+(window.IntMapLang.t(HOST.lang,"map center","地図中心","Kartenmitte","центр карты","centro del mapa"))+_wxSrc(j)); }catch(_){ setV(e.u,'—', una()); } }
     /* (#R21) FX freshness: fxratesapi.com (keyless, CORS*, minute-fresh — curl-verified) is primary;
        open.er-api.com (daily) stays as the fallback. */
     async function refreshFx(e){ try{ const base=(e.cfg&&e.cfg.base)||'USD', quote=(e.cfg&&e.cfg.quote)||'JPY';
@@ -574,7 +585,7 @@ window.IntMapModules.widgets=function(HOST){
           v=j.rates&&j.rates[quote]; when=asOf(j.time_last_update_utc); src='ER-API'; }
         const f=(x)=>x==null?'—':(x<0.01?(+x).toFixed(6):x<10?(+x).toFixed(4):(+x).toFixed(2));
         setV(e.u, base+'/'+quote+'<br><span style="font-size:24px;">'+f(v)+'</span>', when+' · '+src);
-        const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(jp()?'為替 ':'FX ')+base+'/'+quote;
+        const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(window.IntMapLang.t(HOST.lang,"FX ","為替 ","Devisen ","Валюта ","Divisas "))+base+'/'+quote;
       }catch(_){ setV(e.u,'—', una()); } }
     /* (#R183) Sunrise/sunset used to be a forecast-host request for something that is pure astronomy —
        so the quota outage that killed the weather and UV cards took this one down too, for no reason at
@@ -582,14 +593,14 @@ window.IntMapModules.widgets=function(HOST){
        js/wx-source.js), which means it cannot be rate-limited, needs no network, and works offline.
        Times are rendered in the user's clock (HOST.userTZ when set), and the poles get the honest
        answer instead of a blank: at 78°N in July the sun does not set. */
-    function refreshSun(e){ try{ const c0=geoPos&&(Date.now()-geoPos.ts<10*60*1000)?{lat:geoPos.lat,lng:geoPos.lng,lbl:jp()?'現在地':'my location'}:null;
+    function refreshSun(e){ try{ const c0=geoPos&&(Date.now()-geoPos.ts<10*60*1000)?{lat:geoPos.lat,lng:geoPos.lng,lbl:window.IntMapLang.t(HOST.lang,"my location","現在地","mein Standort","моё местоположение","mi ubicación")}:null;
         if(!c0){ widgetLoc().then(c=>{ if(!c) wgtLocPrompt(e); else _paintSun(e,c); }); return; }
         _paintSun(e,c0);
       }catch(_){ setV(e.u,'—', una()); } }
     function _paintSun(e,c){ try{
         const s=window.IntMapWx.sunTimes(c.lat,c.lng);
         let tz; try{ if(HOST.userTZ&&HOST.userTZ!=='auto') tz=HOST.userTZ; }catch(_){}
-        const hm=d=>{ try{ return d.toLocaleTimeString(jp()?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:tz}); }catch(_){ return '—'; } };
+        const hm=d=>{ try{ return d.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,'en-GB'),{hour:'2-digit',minute:'2-digit',timeZone:tz}); }catch(_){ return '—'; } };
         if(s.polar==='day'){ setV(e.u,'<span style="font-size:17px;">☀️ '+_WL('Midnight sun','白夜','Mitternachtssonne','Полярный день','Sol de medianoche')+'</span>',
             _WL('the sun does not set today','今日は日没がありません','die Sonne geht heute nicht unter','сегодня солнце не заходит','hoy el sol no se pone')+_locLine(c.lbl)); return; }
         if(s.polar==='night'){ setV(e.u,'<span style="font-size:17px;">🌑 '+_WL('Polar night','極夜','Polarnacht','Полярная ночь','Noche polar')+'</span>',
@@ -608,7 +619,7 @@ window.IntMapModules.widgets=function(HOST){
         setV(e.u,'<div style="display:flex;flex-direction:column;gap:2px;font-size:17px;line-height:1.25;">'
           +'<div>🌅 <span class="wgt-sl">'+_WL('Sunrise','日の出','Aufgang','Восход','Amanecer')+'</span> '+hm(s.sunrise)+'</div>'
           +'<div>🌇 <span class="wgt-sl">'+_WL('Sunset','日の入り','Untergang','Закат','Ocaso')+'</span> '+hm(s.sunset)+'</div></div>',
-          (dl?((jp()?'昼の長さ ':'daylight ')+dlTxt):'')+_locLine(c.lbl));
+          (dl?((window.IntMapLang.t(HOST.lang,"daylight ","昼の長さ ","Tageslänge ","долгота дня ","duración del día "))+dlTxt):'')+_locLine(c.lbl));
       }catch(_){ setV(e.u,'—', una()); } }
     function refreshMoon(e){ try{ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14)/864e5;
         let age=(Date.now()/864e5-ref)%syn; if(age<0)age+=syn; const ph=age/syn;
@@ -617,7 +628,7 @@ window.IntMapModules.widgets=function(HOST){
         const nmE=['New moon','Waxing crescent','First quarter','Waxing gibbous','Full moon','Waning gibbous','Last quarter','Waning crescent'];
         const nmJ=['新月','三日月','上弦の月','十三夜月','満月','寝待月','下弦の月','有明月'];
         const illum=Math.round((1-Math.cos(ph*2*Math.PI))/2*100);
-        setV(e.u,ic+' <span style="font-size:15px;">'+(jp()?nmJ[idx]:nmE[idx])+'</span>',(jp()?'月齢 ':'age ')+age.toFixed(1)+(jp()?'日':' d')+' · '+illum+'% '+(jp()?'照度':'lit'));
+        setV(e.u,ic+' <span style="font-size:15px;">'+(jp()?nmJ[idx]:nmE[idx])+'</span>',(window.IntMapLang.t(HOST.lang,"age ","月齢 ","Mondalter ","возраст Луны ","edad lunar "))+age.toFixed(1)+(window.IntMapLang.t(HOST.lang," d","日"," T"," дн"," d"))+' · '+illum+'% '+(window.IntMapLang.t(HOST.lang,"lit","照度","beleuchtet","освещ.","iluminada")));
       }catch(_){ setV(e.u,'—',''); } }
     async function refreshAqi(e){ try{ const c=await widgetLoc(); if(!c){ wgtLocPrompt(e); return; }
         const r=await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=us_aqi,pm2_5');
@@ -628,7 +639,7 @@ window.IntMapModules.widgets=function(HOST){
       }catch(_){ _wgtColor(e.u,null); setV(e.u,'—', una()); } }
     async function refreshIss(e){ try{ const r=await fetch('https://api.wheretheiss.at/v1/satellites/25544'); const j=await r.json();
         setV(e.u,'🛰 '+(+j.latitude).toFixed(1)+'°, '+(+j.longitude).toFixed(1)+'°',
-          '<span class="iss-fly" style="color:var(--primary-color);cursor:pointer;font-weight:600;">'+(jp()?'地図で見る →':'Fly there →')+'</span> · '+Math.round(j.altitude)+' km · '+asOf((j.timestamp||0)*1000));
+          '<span class="iss-fly" style="color:var(--primary-color);cursor:pointer;font-weight:600;">'+(window.IntMapLang.t(HOST.lang,"Fly there →","地図で見る →","Dorthin fliegen →","Перелететь туда →","Volar allí →"))+'</span> · '+Math.round(j.altitude)+' km · '+asOf((j.timestamp||0)*1000));
         const fl=document.querySelector('#wgts-'+e.u+' .iss-fly'); if(fl) fl.onclick=()=>{ camFly({center:[+j.longitude,+j.latitude],zoom:3}); };
       }catch(_){ setV(e.u,'—', una()); } }
     async function refreshWikiFeat(e){ try{ const now=new Date();
@@ -650,7 +661,7 @@ window.IntMapModules.widgets=function(HOST){
         const cap=j.total_market_cap&&j.total_market_cap.usd, dom=j.market_cap_percentage&&j.market_cap_percentage.btc, chg=j.market_cap_change_percentage_24h_usd;
         const capS=cap==null?'—':('$'+(cap/1e12).toFixed(2)+'T');
         const pc=(v)=>v==null?'':(' <span style="color:'+(v>=0?'#34c759':'#ff3b30')+';font-size:13px;">'+(v>=0?'+':'')+v.toFixed(1)+'%</span>');
-        setV(e.u,capS+pc(chg),'BTC '+(jp()?'ドミナンス':'dominance')+' '+(dom!=null?dom.toFixed(1)+'%':'—')+' · '+asOf((j.updated_at||0)*1000)+' · CoinGecko');
+        setV(e.u,capS+pc(chg),'BTC '+(window.IntMapLang.t(HOST.lang,"dominance","ドミナンス","Dominanz","доминирование","dominancia"))+' '+(dom!=null?dom.toFixed(1)+'%':'—')+' · '+asOf((j.updated_at||0)*1000)+' · CoinGecko');
       }catch(_){ setV(e.u,'—', una()); } }
     async function refreshFng(e){ try{ const r=await fetch('https://api.alternative.me/fng/'); const j=await r.json(); const d=(j.data||[])[0]||{};
         const v=+d.value; const col=v>=55?'#34c759':v<=45?'#ff3b30':'#ff9500';
@@ -662,7 +673,7 @@ window.IntMapModules.widgets=function(HOST){
       }catch(_){ setV(e.u,'—', una()); } }
     async function refreshQuake(e){ try{ const r=await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson'); const j=await r.json();
         const qs=(j.features||[]).filter(f=>f.properties&&f.properties.mag!=null).sort((a,b)=>b.properties.mag-a.properties.mag).slice(0,3);
-        if(!qs.length){ setV(e.u,'—', jp()?'M2.5以上なし（24h）':'None ≥ M2.5 (24 h)'); return; }
+        if(!qs.length){ setV(e.u,'—', window.IntMapLang.t(HOST.lang,"None ≥ M2.5 (24 h)","M2.5以上なし（24h）","Keines ≥ M2,5 (24 h)","Нет ≥ M2.5 (24 ч)","Ninguno ≥ M2,5 (24 h)")); return; }
         const row=(f,big)=>{ const p=f.properties, c=f.geometry.coordinates;
           const ago=Math.max(0,Math.round((Date.now()-p.time)/36e5));
           return '<div class="wq-row" data-ll="'+c[0]+','+c[1]+'" style="cursor:pointer;'+(big?'':'font-size:12px;color:var(--text-muted);')+'margin-top:'+(big?'0':'3px')+';">'+
@@ -683,7 +694,7 @@ window.IntMapModules.widgets=function(HOST){
         if(!otdList||!otdList.length){ setV(e.u,'—', una()); return; }
         const pick=otdList[Math.floor(Math.random()*otdList.length)];
         setV(e.u,'<span style="font-size:13px;line-height:1.45;font-weight:600;">'+pick.year+' — '+String(pick.text||'').slice(0,150)+'</span>',
-          (jp()?'タップで別の出来事':'Tap for another')+' · Wikipedia');
+          (window.IntMapLang.t(HOST.lang,"Tap for another","タップで別の出来事","Für ein anderes antippen","Нажмите, чтобы увидеть другое","Toque para ver otro"))+' · Wikipedia');
         const ev=document.getElementById('wgtv-'+e.u); if(ev){ ev.style.cursor='pointer'; ev.onclick=()=>refreshOtd(e); }
       }catch(_){ setV(e.u,'—', una()); } }
     /* Featured layer — random pick from the REGULAR layer rows; tap turns it on (#R20).
@@ -697,20 +708,20 @@ window.IntMapModules.widgets=function(HOST){
         if(!avail.length){ setV(e.u,'—',''); return; }
         const cb=avail[Math.floor(Math.random()*avail.length)];
         const lab=cb.closest('label'); const sp=lab&&lab.querySelector('span:not(.lyr-sw):not(.lsr-thumb)'); const name=((sp?sp.textContent:'')||cb.id).trim();
-        setV(e.u,'<span style="font-size:15px;font-weight:700;">'+name+'</span>','<span style="color:var(--primary-color);font-weight:600;cursor:pointer;">'+(jp()?'タップして地図に表示 →':'Tap to show on the map →')+'</span>');
+        setV(e.u,'<span style="font-size:15px;font-weight:700;">'+name+'</span>','<span style="color:var(--primary-color);font-weight:600;cursor:pointer;">'+(window.IntMapLang.t(HOST.lang,"Tap to show on the map →","タップして地図に表示 →","Antippen, um es auf der Karte zu zeigen →","Нажмите, чтобы показать на карте →","Toque para mostrarlo en el mapa →"))+'</span>');
         const ev=document.getElementById('wgtv-'+e.u), es=document.getElementById('wgts-'+e.u);
-        const act=()=>{ try{ if(!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } try{ imToast((jp()?'レイヤーを表示: ':'Layer on: ')+name); }catch(_){} }catch(_){} };
+        const act=()=>{ try{ if(!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } try{ imToast((window.IntMapLang.t(HOST.lang,"Layer on: ","レイヤーを表示: ","Ebene eingeschaltet: ","Слой включён: ","Capa activada: "))+name); }catch(_){} }catch(_){} };
         [ev,es].forEach(x=>{ if(x){ x.style.cursor='pointer'; x.onclick=act; } });
       }catch(_){ setV(e.u,'—',''); } }
     function refreshCountry(e){ try{
         /* (#R23) only real sovereign states — skip uninhabited reefs/banks/ice fields (sov===false or pop 0) */
         const all=Object.values((typeof countryStats!=='undefined'&&countryStats)||{}).filter(s=>s&&s.nameEn&&s.sov!==false&&s.pop>0);
-        if(!all.length){ setV(e.u,'…', jp()?'国データ読込中':'loading country data'); setTimeout(()=>refreshCountry(e),2500); return; }
+        if(!all.length){ setV(e.u,'…', window.IntMapLang.t(HOST.lang,"loading country data","国データ読込中","Länderdaten werden geladen","загрузка данных по странам","cargando datos de países")); setTimeout(()=>refreshCountry(e),2500); return; }
         const s=all[Math.floor(Math.random()*all.length)];
         const nm=jp()?(s.nameJp||s.nameEn):s.nameEn;
         const fm=(v)=>{ if(v==null) return '—'; if(v>=1e9) return (v/1e9).toFixed(2)+'B'; if(v>=1e6) return (v/1e6).toFixed(1)+'M'; if(v>=1e3) return (v/1e3).toFixed(0)+'K'; return String(v); };
-        setV(e.u,'<span class="wc-go" style="cursor:pointer;" title="'+(jp()?'この国へ移動':'Fly to this country')+'">'+window.imFlagHTML(s.flag,22)+' <span style="font-size:15px;font-weight:700;">'+nm+'</span></span>',
-          (jp()?'人口 ':'Pop ')+fm(s.pop)+(s.gdp!=null?' · GDP '+(typeof fmtMoney==='function'?fmtMoney(s.gdp):'$'+s.gdp+'B'):'')+(s.area!=null?' · '+fm(s.area)+' km²':'')+'<br><span style="color:var(--primary-color);cursor:pointer;font-weight:600;" class="wc-next">'+(jp()?'別の国 ↻':'Another ↻')+'</span>');
+        setV(e.u,'<span class="wc-go" style="cursor:pointer;" title="'+(window.IntMapLang.t(HOST.lang,"Fly to this country","この国へ移動","Zu diesem Land fliegen","Перелететь в эту страну","Volar a este país"))+'">'+window.imFlagHTML(s.flag,22)+' <span style="font-size:15px;font-weight:700;">'+nm+'</span></span>',
+          (window.IntMapLang.t(HOST.lang,"Pop ","人口 ","Bev. ","Нас. ","Pobl. "))+fm(s.pop)+(s.gdp!=null?' · GDP '+(typeof fmtMoney==='function'?fmtMoney(s.gdp):'$'+s.gdp+'B'):'')+(s.area!=null?' · '+fm(s.area)+' km²':'')+'<br><span style="color:var(--primary-color);cursor:pointer;font-weight:600;" class="wc-next">'+(window.IntMapLang.t(HOST.lang,"Another ↻","別の国 ↻","Anderes ↻","Другая ↻","Otro ↻"))+'</span>');
         const nx=document.querySelector('#wgts-'+e.u+' .wc-next'); if(nx) nx.onclick=(ev)=>{ ev.stopPropagation(); refreshCountry(e); };
         /* (#R34) Tap the country → fit the WHOLE country. The old flyTo used zoom:Math.max(map.getZoom(),4.2),
            so if you were already zoomed in it stayed city-close ("zoomed too close. Show an entire country").
@@ -735,13 +746,13 @@ window.IntMapModules.widgets=function(HOST){
         }catch(_){} };
       }catch(_){ setV(e.u,'—',''); } }
     function refreshCountdown(e){ try{
-        if(!e.cfg||!e.cfg.date){ setV(e.u,'<span style="font-size:13px;color:var(--text-muted);">'+(jp()?'⚙ から日付と題名を設定':'Set date & title via ⚙')+'</span>',''); return; }
+        if(!e.cfg||!e.cfg.date){ setV(e.u,'<span style="font-size:13px;color:var(--text-muted);">'+(window.IntMapLang.t(HOST.lang,"Set date & title via ⚙","⚙ から日付と題名を設定","Datum und Titel über ⚙ festlegen","Задайте дату и название через ⚙","Fije la fecha y el título con ⚙"))+'</span>',''); return; }
         const tgt=new Date(e.cfg.date+'T00:00:00'); const now=new Date();
         const days=Math.ceil((tgt-now)/864e5);
-        const title=e.cfg.title||(jp()?'カウントダウン':'Countdown');
+        const title=e.cfg.title||(window.IntMapLang.t(HOST.lang,"Countdown","カウントダウン","Countdown","Обратный отсчёт","Cuenta atrás"));
         if(isNaN(days)){ setV(e.u,'—',''); return; }
-        const v=days>0?('<span style="font-size:26px;">'+days+'</span> '+(jp()?'日':'days'))
-               :days===0?(jp()?'<span style="font-size:20px;">今日！🎉</span>':'<span style="font-size:20px;">Today! 🎉</span>')
+        const v=days>0?('<span style="font-size:26px;">'+days+'</span> '+(window.IntMapLang.t(HOST.lang,"days","日","Tage","дн.","días")))
+               :days===0?(window.IntMapLang.t(HOST.lang,"<span style=\"font-size:20px;\">Today! 🎉</span>","<span style=\"font-size:20px;\">今日！🎉</span>","<span style=\"font-size:20px;\">Heute! 🎉</span>","<span style=\"font-size:20px;\">Сегодня! 🎉</span>","<span style=\"font-size:20px;\">¡Hoy! 🎉</span>"))
                :('<span style="font-size:18px;">'+(jp()?(-days)+'日前':Math.abs(days)+' days ago')+'</span>');
         setV(e.u,v,'<b style="color:var(--text-main);">'+String(title).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</b> · '+e.cfg.date);
       }catch(_){ setV(e.u,'—',''); } }
@@ -760,13 +771,32 @@ window.IntMapModules.widgets=function(HOST){
         const mx=allSky?(dy.uv_index_max&&dy.uv_index_max[0]):(dy.uv_index_clear_sky_max&&dy.uv_index_clear_sky_max[0]);
         const cat=_uvCat(uv);   /* (#R154) colour-fill */
         _wgtColor(e.u, cat.col);
-        const clearNote=(uv!=null&&!allSky)?(_WL('clear sky','快晴時','klarer Himmel','ясное небо','cielo despejado')+' · '):'';
         /* "today's max" is only true of a whole-day aggregate. The fallback's first bucket starts at the
            current hour (dy._partialFirstDay), so it is the peak still to come — said as such. */
-        const mxLbl=dy._partialFirstDay?_WL('peak ahead ','この先の最大 ','Spitze voraus ','пик впереди ','pico próximo ')
-                                       :_WL('max ','本日最大 ','max ','макс. ','máx ');
+        const mxLbl=dy._partialFirstDay?_WL('peak ahead','この先の最大','Spitze voraus','пик впереди','pico próximo')
+                                       :_WL('max','最大','max','макс.','máx');
+        /* ══ ⚠ (#R243) 「UVIウィジェットは、最大 0.0 / 8/14 23:00 /（現在地、快晴時）という感じのテキスト
+              部分にしろ。細かいことは任せる。」 ═══════════════════════════════════════════════════════
+           The sub-line was one interpunct-separated run — 「快晴時 · 本日最大 0.0 · 取得時点 8月14日
+           23:00 · 現在地 · Open-Meteo」 — five facts of three different kinds in one sentence, which at
+           this card's width wraps wherever it happens to run out. Now it is three lines, each of which
+           answers one question: WHAT the number will reach, WHEN this reading is from, and WHOSE sky
+           and under what assumption it is. `_locLine` already did exactly this for 「現在地」 alone
+           (#R214); this is that idea applied to the whole block.
+           ⚠ The qualifiers are one parenthesis, not two clauses, and the brackets follow the script —
+           full-width for Japanese and Chinese, ASCII for the rest — because a half-width parenthesis
+           inside Japanese text is the same kind of wrong as 「（English）」. */
+        const qual=[]; if(c.lbl) qual.push(String(c.lbl));
+        if(uv!=null&&!allSky) qual.push(_WL('clear sky','快晴時','klarer Himmel','ясное небо','cielo despejado'));
+        const _lc=window.IntMapLang.normalise(HOST.lang);
+        const wide=(_lc==='jp'||_lc==='zh'||_lc==='zh-hans');
+        const esc=(s)=>String(s).replace(/[&<>]/g,(x)=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[x]));
+        const lines=[];
+        if(mx!=null) lines.push('<b style="color:var(--text-main);">'+mxLbl+' '+(+mx).toFixed(1)+'</b>');
+        if(cu.time) lines.push(esc(asOf(cu.time)));
+        if(qual.length) lines.push(esc((wide?'（':'(')+qual.join(wide?'、':', ')+(wide?'）':')')));
         setV(e.u, _wgtBig(uv!=null?(+uv).toFixed(1):'—','UV', cat.label),
-          clearNote+((mx!=null?(mxLbl+(+mx).toFixed(1)+' · '):''))+(cu.time?asOf(cu.time):'')+_locLine(c.lbl)+_wxSrc(j));   /* (#R146) reading date/time via asOf() */
+          lines.map(t=>'<div>'+t+'</div>').join('')+(j&&j._src?('<div style="opacity:.75;">'+esc(j._src)+'</div>'):''));   /* (#R146) reading date/time via asOf() */
       }catch(_){ _wgtColor(e.u,null); setV(e.u,'—', una()); } }
     async function refreshKp(e){ try{ const r=await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json');
         /* (#R33) NOAA changed this feed from array-rows to an array of OBJECTS ({time_tag,Kp,…}) — the old
@@ -776,7 +806,7 @@ window.IntMapModules.widgets=function(HOST){
           if(last&&typeof last==='object'&&!Array.isArray(last)){ kp=parseFloat(last.Kp!=null?last.Kp:last.kp_index); when=last.time_tag||''; }
           else { const rows=a.slice(1); const lr=rows[rows.length-1]||[]; kp=parseFloat(lr[1]); when=(lr[0]||'').replace(' ','T'); } }
         const col=kp>=7?'#af52de':kp>=5?'#ff3b30':kp>=4?'#ff9500':'#34c759';
-        const note=kp>=5?(jp()?'地磁気嵐（オーロラの可能性）':'Storm — aurora likely'):kp>=4?(jp()?'活発':'Active'):(jp()?'静穏':'Quiet');
+        const note=kp>=5?(window.IntMapLang.t(HOST.lang,"Storm — aurora likely","地磁気嵐（オーロラの可能性）","Sturm — Polarlicht wahrscheinlich","Буря — вероятно полярное сияние","Tormenta: aurora probable")):kp>=4?(window.IntMapLang.t(HOST.lang,"Active","活発","Aktiv","Активно","Activo")):(window.IntMapLang.t(HOST.lang,"Quiet","静穏","Ruhig","Спокойно","Tranquilo"));
         setV(e.u,'Kp <span style="color:'+col+';">'+(isNaN(kp)?'—':kp.toFixed(0))+'</span>', note+' · '+asOf(when)+' · NOAA');
       }catch(_){ setV(e.u,'—', una()); } }
     async function refreshHn(e){ try{ const ids=await (await fetch('https://hacker-news.firebaseio.com/v0/topstories.json')).json();
@@ -787,24 +817,24 @@ window.IntMapModules.widgets=function(HOST){
       }catch(_){ setV(e.u,'—', una()); } }
     let holCache={};
     async function refreshHoliday(e){ try{ const cc=(e.cfg&&e.cfg.cc)||'US';
-        const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(jp()?'次の祝日 ':'Next holiday ')+cc;
+        const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(window.IntMapLang.t(HOST.lang,"Next holiday ","次の祝日 ","Nächster Feiertag ","Ближайший праздник ","Próximo festivo "))+cc;
         let list=holCache[cc];
         if(!list||Date.now()-list.ts>6*3600*1000){ const r=await fetch('https://date.nager.at/api/v3/NextPublicHolidays/'+cc); list={data:await r.json(),ts:Date.now()}; holCache[cc]=list; }
         const h=(list.data||[])[0]; if(!h){ setV(e.u,'—', una()); return; }
         const d=new Date(h.date+'T00:00:00'); const days=Math.ceil((d-new Date())/864e5);
-        setV(e.u,'<span style="font-size:15px;font-weight:700;">'+(h.localName||h.name)+'</span>', h.date+' · '+(days<=0?(jp()?'本日':'today'):(jp()?('あと'+days+'日'):('in '+days+' days'))));
+        setV(e.u,'<span style="font-size:15px;font-weight:700;">'+(h.localName||h.name)+'</span>', h.date+' · '+(days<=0?(window.IntMapLang.t(HOST.lang,"today","本日","heute","сегодня","hoy")):(jp()?('あと'+days+'日'):('in '+days+' days'))));
       }catch(_){ setV(e.u,'—', una()); } }
     let launchCache=null;
     async function refreshLaunch(e){ try{
         if(!launchCache||Date.now()-launchCache.ts>30*60*1000){ const r=await fetch('https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=1&mode=list'); const j=await r.json(); launchCache={data:(j.results||[])[0],ts:Date.now()}; }
         const L=launchCache.data; if(!L){ setV(e.u,'—', una()); return; }
         const net=L.net?new Date(L.net):null; const days=net?Math.ceil((net-new Date())/864e5):null;
-        setV(e.u,'🚀 <span style="font-size:14px;font-weight:700;">'+String(L.name||'').slice(0,70)+'</span>',(net?net.toLocaleDateString(jp()?'ja-JP':'en-GB',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'')+(days!=null&&days>=0?' · '+(jp()?('あと'+days+'日'):('in '+days+' d')):'')+' · LL2');
+        setV(e.u,'🚀 <span style="font-size:14px;font-weight:700;">'+String(L.name||'').slice(0,70)+'</span>',(net?net.toLocaleDateString(window.IntMapLang.locale(HOST.lang,'en-GB'),{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'')+(days!=null&&days>=0?' · '+(jp()?('あと'+days+'日'):('in '+days+' d')):'')+' · LL2');
       }catch(_){ setV(e.u,'—', una()); } }
     async function refreshBtc(e){ try{
         const h=await (await fetch('https://mempool.space/api/blocks/tip/height')).json();
         let fee=null; try{ fee=await (await fetch('https://mempool.space/api/v1/fees/recommended')).json(); }catch(_){}
-        setV(e.u,'₿ <span style="font-size:18px;">#'+(+h).toLocaleString()+'</span>',(fee?((jp()?'手数料 ':'fee ')+fee.fastestFee+' sat/vB · '):'')+(jp()?'ブロック高':'block height')+' · mempool.space');
+        setV(e.u,'₿ <span style="font-size:18px;">#'+(+h).toLocaleString()+'</span>',(fee?((window.IntMapLang.t(HOST.lang,"fee ","手数料 ","Gebühr ","комиссия ","comisión "))+fee.fastestFee+' sat/vB · '):'')+(window.IntMapLang.t(HOST.lang,"block height","ブロック高","Blockhöhe","высота блока","altura de bloque"))+' · mempool.space');
       }catch(_){ setV(e.u,'—', una()); } }
     function refreshOne(e){ if(!e) return;
       switch(e.t){ case 'clock': tickClock(); break; case 'weather': refreshWeather(e); break; case 'fx': refreshFx(e); break;

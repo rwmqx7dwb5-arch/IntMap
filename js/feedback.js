@@ -18,10 +18,14 @@ window.IntMapModules.feedback=function(HOST){
      donation ask (Stripe link, fully declinable); 1–3 stars → a plain thank-you. ===== */
   (function(){
     const jp=()=>HOST.lang==='jp';
+    /* (#R243) …and the tuples this file holds AS DATA go through the same resolver — see pickArgs()
+       in js/lang-registry.js. A {en,jp} object is the seventh shape #R241 named and is invisible to
+       every instrument; written as a call it is measured like any other call site. */
+    const L=window.IntMapLang.pick(()=>HOST.lang), LA=window.IntMapLang.pickArgs();
     let modal=null, rating=0, cat='general';
     /* (#R30) feedback categories — make every note actionable. Bug → offer the diagnostic Bug Reporter. */
     /* (#R33) "Praise" category removed; category is now an iOS pulldown (chips truncated on mobile). */
-    const CATS=[['general',{en:'General',jp:'全般'}],['idea',{en:'Feature idea',jp:'要望'}],['bug',{en:'Bug',jp:'不具合'}]];
+    const CATS=[['general',LA('General','全般','Allgemein','Общее','General')],['idea',LA('Feature idea','要望','Funktionswunsch','Пожелание','Sugerencia')],['bug',LA('Bug','不具合','Fehler','Ошибка','Error')]];
     function ensure(){ if(modal) return modal;
       modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='feedback-modal';
       modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:5200;align-items:center;justify-content:center;padding:20px;';
@@ -32,18 +36,18 @@ window.IntMapModules.feedback=function(HOST){
     function star(n){ return '<button class="fb-star" data-n="'+n+'" style="background:none;border:none;font-size:30px;cursor:pointer;padding:2px 3px;line-height:1;color:'+(n<=rating?'#ffcc00':'rgba(128,128,128,0.45)')+';">'+(n<=rating?'★':'☆')+'</button>'; }
     function renderForm(){ const c=modal.querySelector('#fb-card'); const loggedOut=!(typeof HOST.user!=='undefined'&&HOST.user);
       c.innerHTML='<button id="fb-x" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">✕</button>'+
-        '<h3 style="margin:0 0 6px;font-size:17px;">'+(jp()?'フィードバックを送る':'Send feedback')+'</h3>'+
-        '<p style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;">'+(jp()?'IntMapの評価と、ご意見・ご要望をお聞かせください。':'Rate IntMap and tell us what to improve.')+'</p>'+
-        '<div style="font-size:11.5px;font-weight:600;color:var(--text-muted);margin:0 0 6px;">'+(jp()?'種類':'Type')+'</div>'+
-        '<select id="fb-cat" style="width:100%;box-sizing:border-box;margin-bottom:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;">'+CATS.map(([k,l])=>'<option value="'+k+'"'+(cat===k?' selected':'')+'>'+l[jp()?'jp':'en']+'</option>').join('')+'</select>'+
-        (cat==='bug'?'<div id="fb-bughint" style="background:rgba(255,149,0,0.12);border:1px solid rgba(255,149,0,0.3);border-radius:9px;padding:9px 11px;margin-bottom:12px;font-size:11.5px;line-height:1.45;">'+(jp()?'不具合は、診断情報を自動添付する<b>バグレポート</b>からの送信がおすすめです。':'For bugs, the <b>Bug Reporter</b> auto-attaches diagnostics.')+' <button id="fb-openbug" style="border:none;background:none;color:var(--primary-color);font-weight:700;cursor:pointer;padding:0;font-size:11.5px;">'+(jp()?'開く →':'Open it →')+'</button></div>':'')+
-        '<div style="font-size:11.5px;font-weight:600;color:var(--text-muted);margin:0 0 4px;">'+(jp()?'評価':'Rating')+'</div>'+
+        '<h3 style="margin:0 0 6px;font-size:17px;">'+(window.IntMapLang.t(HOST.lang,"Send feedback","フィードバックを送る","Feedback senden","Отправить отзыв","Enviar comentarios"))+'</h3>'+
+        '<p style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;">'+(window.IntMapLang.t(HOST.lang,"Rate IntMap and tell us what to improve.","IntMapの評価と、ご意見・ご要望をお聞かせください。","Bewerten Sie IntMap und sagen Sie uns, was wir verbessern sollen.","Оцените IntMap и расскажите, что улучшить.","Valore IntMap y díganos qué mejorar."))+'</p>'+
+        '<div style="font-size:11.5px;font-weight:600;color:var(--text-muted);margin:0 0 6px;">'+(window.IntMapLang.t(HOST.lang,"Type","種類","Art","Тип","Tipo"))+'</div>'+
+        '<select id="fb-cat" style="width:100%;box-sizing:border-box;margin-bottom:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;">'+CATS.map(([k,l])=>'<option value="'+k+'"'+(cat===k?' selected':'')+'>'+L.arr(l)+'</option>').join('')+'</select>'+
+        (cat==='bug'?'<div id="fb-bughint" style="background:rgba(255,149,0,0.12);border:1px solid rgba(255,149,0,0.3);border-radius:9px;padding:9px 11px;margin-bottom:12px;font-size:11.5px;line-height:1.45;">'+(window.IntMapLang.t(HOST.lang,"For bugs, the <b>Bug Reporter</b> auto-attaches diagnostics.","不具合は、診断情報を自動添付する<b>バグレポート</b>からの送信がおすすめです。","Für Fehler hängt der <b>Fehlerbericht</b> Diagnosedaten automatisch an.","Для ошибок <b>отчёт об ошибке</b> автоматически прикладывает диагностику.","Para errores, el <b>informe de errores</b> adjunta diagnósticos automáticamente."))+' <button id="fb-openbug" style="border:none;background:none;color:var(--primary-color);font-weight:700;cursor:pointer;padding:0;font-size:11.5px;">'+(window.IntMapLang.t(HOST.lang,"Open it →","開く →","Öffnen →","Открыть →","Abrir →"))+'</button></div>':'')+
+        '<div style="font-size:11.5px;font-weight:600;color:var(--text-muted);margin:0 0 4px;">'+(window.IntMapLang.t(HOST.lang,"Rating","評価","Bewertung","Оценка","Valoración"))+'</div>'+
         '<div id="fb-stars" style="display:flex;justify-content:center;margin-bottom:12px;">'+[1,2,3,4,5].map(star).join('')+'</div>'+
-        '<textarea id="fb-text" maxlength="3000" placeholder="'+(jp()?'ご意見・ご要望（任意）':'Comments (optional)')+'" style="width:100%;box-sizing:border-box;min-height:96px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;font-family:inherit;"></textarea>'+
+        '<textarea id="fb-text" maxlength="3000" placeholder="'+(window.IntMapLang.t(HOST.lang,"Comments (optional)","ご意見・ご要望（任意）","Kommentare (optional)","Комментарии (необязательно)","Comentarios (opcional)"))+'" style="width:100%;box-sizing:border-box;min-height:96px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;font-family:inherit;"></textarea>'+
         (loggedOut?'<input id="fb-email" type="email" placeholder="'+/* (#R210) "for a reply" / 「返信用」promised something this form does not
            guarantee. The field stays optional; the label no longer implies an answer. */
-          (jp()?'メール（任意）':'Email (optional)')+'" style="width:100%;box-sizing:border-box;margin-top:9px;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;">':'')+
-        '<button id="fb-send" style="width:100%;margin-top:12px;padding:11px;border:none;border-radius:10px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">'+(jp()?'送信':'Submit')+'</button>'+
+          (window.IntMapLang.t(HOST.lang,"Email (optional)","メール（任意）","E-Mail (optional)","E-mail (необязательно)","Correo electrónico (opcional)"))+'" style="width:100%;box-sizing:border-box;margin-top:9px;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;">':'')+
+        '<button id="fb-send" style="width:100%;margin-top:12px;padding:11px;border:none;border-radius:10px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">'+(window.IntMapLang.t(HOST.lang,"Submit","送信","Senden","Отправить","Enviar"))+'</button>'+
         '<p id="fb-msg" style="margin:10px 0 0;font-size:12px;color:var(--text-muted);min-height:14px;text-align:center;"></p>';
       c.querySelector('#fb-x').onclick=closeM;
       { const cs=c.querySelector('#fb-cat'); if(cs) cs.onchange=()=>{ cat=cs.value; renderForm(); }; }
@@ -51,32 +55,32 @@ window.IntMapModules.feedback=function(HOST){
       c.querySelectorAll('.fb-star').forEach(b=>b.onclick=()=>{ rating=+b.getAttribute('data-n'); renderForm(); });
       c.querySelector('#fb-send').onclick=submit; }
     async function submit(){ const c=modal.querySelector('#fb-card'); const msg=c.querySelector('#fb-msg');
-      if(!rating){ msg.textContent=jp()?'星の数を選んでください。':'Please pick a star rating.'; return; }
+      if(!rating){ msg.textContent=window.IntMapLang.t(HOST.lang,"Please pick a star rating.","星の数を選んでください。","Bitte eine Sternebewertung wählen.","Пожалуйста, поставьте оценку звёздами.","Elija una valoración con estrellas."); return; }
       const text=(c.querySelector('#fb-text').value||'').trim();
       const emailIn=c.querySelector('#fb-email'); const enteredEmail=emailIn?(emailIn.value||'').trim():'';
       const catEN=(CATS.find(x=>x[0]===cat)||[,{en:'General'}])[1].en;
       const comment=('['+catEN+'] '+text).trim();   /* category embedded so it stores without a schema change */
-      const btn=c.querySelector('#fb-send'); btn.disabled=true; btn.textContent=jp()?'送信中…':'Sending…';
+      const btn=c.querySelector('#fb-send'); btn.disabled=true; btn.textContent=window.IntMapLang.t(HOST.lang,"Sending…","送信中…","Wird gesendet…","Отправка…","Enviando…");
       let ok=false;
       try{ if(typeof HOST.DB!=='undefined'&&HOST.DB){
         const row={ rating, comment:comment||null, lang:HOST.lang, ua:(navigator.userAgent||'').slice(0,250), page:location.pathname };
         try{ if(typeof HOST.user!=='undefined'&&HOST.user){ row.user_id=HOST.user.id; row.email=HOST.user.email||null; } else if(enteredEmail) row.email=enteredEmail; }catch(_){}
         const {error}=await HOST.DB.from('feedback').insert(row); ok=!error;
       } }catch(_){}
-      if(!ok){ btn.disabled=false; btn.textContent=jp()?'送信':'Submit'; msg.textContent=jp()?'送信できませんでした。時間をおいてもう一度お試しください。':'Could not send — please try again later.'; return; }
+      if(!ok){ btn.disabled=false; btn.textContent=window.IntMapLang.t(HOST.lang,"Submit","送信","Senden","Отправить","Enviar"); msg.textContent=window.IntMapLang.t(HOST.lang,"Could not send — please try again later.","送信できませんでした。時間をおいてもう一度お試しください。","Senden fehlgeschlagen — bitte später erneut versuchen.","Не удалось отправить — попробуйте позже.","No se pudo enviar; inténtelo de nuevo más tarde."); return; }
       if(rating>=4) renderThanksHigh(); else renderThanksLow(); }
     function renderThanksLow(){ const c=modal.querySelector('#fb-card');
       c.innerHTML='<div style="text-align:center;padding:8px 0 2px;"><div style="font-size:34px;margin-bottom:8px;">🙏</div>'+
-        '<h3 style="margin:0 0 8px;font-size:17px;">'+(jp()?'フィードバックありがとうございます':'Thank you for your feedback')+'</h3>'+
-        '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(jp()?'いただいたご意見は今後の改善に役立てます。':'We read every note and use it to improve IntMap.')+'</p>'+
-        '<button id="fb-done" style="padding:10px 26px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:600;cursor:pointer;">'+(jp()?'閉じる':'Close')+'</button></div>';
+        '<h3 style="margin:0 0 8px;font-size:17px;">'+(window.IntMapLang.t(HOST.lang,"Thank you for your feedback","フィードバックありがとうございます","Vielen Dank für Ihr Feedback","Спасибо за отзыв","Gracias por sus comentarios"))+'</h3>'+
+        '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(window.IntMapLang.t(HOST.lang,"We read every note and use it to improve IntMap.","いただいたご意見は今後の改善に役立てます。","Wir lesen jede Nachricht und nutzen sie, um IntMap zu verbessern.","Мы читаем каждое сообщение и используем его для улучшения IntMap.","Leemos todos los mensajes y los usamos para mejorar IntMap."))+'</p>'+
+        '<button id="fb-done" style="padding:10px 26px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:600;cursor:pointer;">'+(window.IntMapLang.t(HOST.lang,"Close","閉じる","Schließen","Закрыть","Cerrar"))+'</button></div>';
       c.querySelector('#fb-done').onclick=closeM; }
     function renderThanksHigh(){ const c=modal.querySelector('#fb-card');
       c.innerHTML='<div style="text-align:center;padding:8px 0 2px;"><div style="font-size:34px;margin-bottom:8px;">💙</div>'+
-        '<h3 style="margin:0 0 8px;font-size:17px;">'+(jp()?'ありがとうございます！':'Thank you!')+'</h3>'+
-        '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(jp()?'高い評価をいただき励みになります。もしよろしければ、IntMapの開発・運営をご支援いただけると嬉しいです。':'Your high rating means a lot. If you enjoy IntMap, you can support its development — entirely optional.')+'</p>'+
-        '<a id="fb-donate" href="'+window.stripeDonateURL()+'" target="_blank" rel="noopener" style="display:block;padding:12px;border-radius:10px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-bottom:8px;">'+(jp()?'支援する':'Support IntMap')+'</a>'+
-        '<button id="fb-later" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;">'+(jp()?'また今度':'Maybe later')+'</button></div>';
+        '<h3 style="margin:0 0 8px;font-size:17px;">'+(window.IntMapLang.t(HOST.lang,"Thank you!","ありがとうございます！","Vielen Dank!","Спасибо!","¡Gracias!"))+'</h3>'+
+        '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(window.IntMapLang.t(HOST.lang,"Your high rating means a lot. If you enjoy IntMap, you can support its development — entirely optional.","高い評価をいただき励みになります。もしよろしければ、IntMapの開発・運営をご支援いただけると嬉しいです。","Ihre gute Bewertung bedeutet uns viel. Wenn Ihnen IntMap gefällt, können Sie die Entwicklung unterstützen — ganz freiwillig.","Ваша высокая оценка много значит. Если вам нравится IntMap, вы можете поддержать разработку — полностью по желанию.","Su alta valoración significa mucho. Si disfruta de IntMap, puede apoyar su desarrollo; es totalmente opcional."))+'</p>'+
+        '<a id="fb-donate" href="'+window.stripeDonateURL()+'" target="_blank" rel="noopener" style="display:block;padding:12px;border-radius:10px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-bottom:8px;">'+(window.IntMapLang.t(HOST.lang,"Support IntMap","支援する","IntMap unterstützen","Поддержать IntMap","Apoyar IntMap"))+'</a>'+
+        '<button id="fb-later" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;">'+(window.IntMapLang.t(HOST.lang,"Maybe later","また今度","Vielleicht später","Может быть, позже","Quizá más tarde"))+'</button></div>';
       c.querySelector('#fb-later').onclick=closeM;
       const dn=c.querySelector('#fb-donate');
       if(dn) dn.addEventListener('click',()=>{ try{ if(typeof HOST.DB!=='undefined'&&HOST.DB&&typeof HOST.user!=='undefined'&&HOST.user){ HOST.DB.from('donations').insert({user_id:HOST.user.id,email:HOST.user.email||null,locale:HOST.lang,source:'feedback_upsell',status:'initiated'}); } }catch(_){} setTimeout(closeM,400); }); }
@@ -116,17 +120,17 @@ window.IntMapModules.feedback=function(HOST){
       : [['ui','UI / display'],['map','Map & layers'],['news','News'],['ai','AI features'],['account','Account / login'],['perf','Performance / crash'],['other','Other']]; }
     function renderForm(){ const c=modal.querySelector('#bug-card'); const diag=_imDiag();
       c.innerHTML='<button id="bug-x" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">✕</button>'+
-        '<h3 style="margin:0 0 6px;font-size:17px;">🐞 '+(jp()?'バグを報告':'Report a bug')+'</h3>'+
-        '<p style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;">'+(jp()?'不具合の内容をできるだけ具体的に教えてください。再現手順があると助かります。':'Describe what went wrong — steps to reproduce help a lot.')+'</p>'+
+        '<h3 style="margin:0 0 6px;font-size:17px;">🐞 '+(window.IntMapLang.t(HOST.lang,"Report a bug","バグを報告","Fehler melden","Сообщить об ошибке","Informar de un error"))+'</h3>'+
+        '<p style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;">'+(window.IntMapLang.t(HOST.lang,"Describe what went wrong — steps to reproduce help a lot.","不具合の内容をできるだけ具体的に教えてください。再現手順があると助かります。","Beschreiben Sie, was schiefgelaufen ist — Schritte zum Nachstellen helfen sehr.","Опишите, что пошло не так — шаги воспроизведения очень помогают.","Describa qué ha fallado; los pasos para reproducirlo ayudan mucho."))+'</p>'+
         '<select id="bug-cat" style="width:100%;box-sizing:border-box;margin-bottom:10px;padding:9px 11px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;">'+cats().map(c=>'<option value="'+c[0]+'">'+c[1]+'</option>').join('')+'</select>'+
-        '<textarea id="bug-text" maxlength="3000" placeholder="'+(jp()?'例: モバイルで○○を押すと△△になる…':'e.g. On mobile, tapping X causes Y…')+'" style="width:100%;box-sizing:border-box;min-height:110px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;font-family:inherit;"></textarea>'+
-        '<details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12px;color:var(--text-muted);">'+(jp()?'添付される診断情報':'Diagnostics attached')+'</summary>'+
+        '<textarea id="bug-text" maxlength="3000" placeholder="'+(window.IntMapLang.t(HOST.lang,"e.g. On mobile, tapping X causes Y…","例: モバイルで○○を押すと△△になる…","z. B. Auf dem Handy führt Tippen auf X zu Y…","напр. на телефоне нажатие X приводит к Y…","p. ej. En el móvil, al tocar X ocurre Y…"))+'" style="width:100%;box-sizing:border-box;min-height:110px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;font-family:inherit;"></textarea>'+
+        '<details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12px;color:var(--text-muted);">'+(window.IntMapLang.t(HOST.lang,"Diagnostics attached","添付される診断情報","Angehängte Diagnosedaten","Прилагаемая диагностика","Diagnósticos adjuntos"))+'</summary>'+
           '<pre style="white-space:pre-wrap;word-break:break-word;font-size:10.5px;color:var(--text-muted);background:var(--input-bg);border-radius:8px;padding:9px;margin:8px 0 0;max-height:150px;overflow:auto;">'+escapeHtml(JSON.stringify(diag,null,1))+'</pre></details>'+
-        '<button id="bug-send" style="width:100%;margin-top:12px;padding:11px;border:none;border-radius:10px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">'+(jp()?'送信':'Submit report')+'</button>'+
-        '<button id="bug-copy" style="width:100%;margin-top:8px;padding:9px;border:1px solid rgba(128,128,128,0.25);border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:12.5px;font-weight:600;cursor:pointer;">'+(jp()?'内容をコピー':'Copy report to clipboard')+'</button>'+
+        '<button id="bug-send" style="width:100%;margin-top:12px;padding:11px;border:none;border-radius:10px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">'+(window.IntMapLang.t(HOST.lang,"Submit report","送信","Bericht senden","Отправить отчёт","Enviar informe"))+'</button>'+
+        '<button id="bug-copy" style="width:100%;margin-top:8px;padding:9px;border:1px solid rgba(128,128,128,0.25);border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:12.5px;font-weight:600;cursor:pointer;">'+(window.IntMapLang.t(HOST.lang,"Copy report to clipboard","内容をコピー","Bericht in die Zwischenablage kopieren","Скопировать отчёт в буфер обмена","Copiar el informe al portapapeles"))+'</button>'+
         '<p id="bug-msg" style="margin:10px 0 0;font-size:12px;color:var(--text-muted);min-height:14px;text-align:center;"></p>';
       c.querySelector('#bug-x').onclick=close;
-      c.querySelector('#bug-copy').onclick=()=>{ const payload=buildRow(); try{ navigator.clipboard.writeText(JSON.stringify(payload,null,2)); c.querySelector('#bug-msg').textContent=jp()?'コピーしました。':'Copied.'; }catch(_){ c.querySelector('#bug-msg').textContent=jp()?'コピーできませんでした。':'Could not copy.'; } };
+      c.querySelector('#bug-copy').onclick=()=>{ const payload=buildRow(); try{ navigator.clipboard.writeText(JSON.stringify(payload,null,2)); c.querySelector('#bug-msg').textContent=window.IntMapLang.t(HOST.lang,"Copied.","コピーしました。","Kopiert.","Скопировано.","Copiado."); }catch(_){ c.querySelector('#bug-msg').textContent=window.IntMapLang.t(HOST.lang,"Could not copy.","コピーできませんでした。","Kopieren fehlgeschlagen.","Не удалось скопировать.","No se pudo copiar."); } };
       c.querySelector('#bug-send').onclick=submit; }
     function buildRow(){ const c=modal.querySelector('#bug-card');
       const cat=c?c.querySelector('#bug-cat').value:'other'; const text=c?(c.querySelector('#bug-text').value||'').trim():'';
@@ -135,8 +139,8 @@ window.IntMapModules.feedback=function(HOST){
       return row; }
     async function submit(){ const c=modal.querySelector('#bug-card'); const msg=c.querySelector('#bug-msg');
       const text=(c.querySelector('#bug-text').value||'').trim();
-      if(text.length<5){ msg.textContent=jp()?'不具合の内容を入力してください。':'Please describe the bug.'; return; }
-      const btn=c.querySelector('#bug-send'); btn.disabled=true; btn.textContent=jp()?'送信中…':'Sending…';
+      if(text.length<5){ msg.textContent=window.IntMapLang.t(HOST.lang,"Please describe the bug.","不具合の内容を入力してください。","Bitte beschreiben Sie den Fehler.","Пожалуйста, опишите ошибку.","Describa el error, por favor."); return; }
+      const btn=c.querySelector('#bug-send'); btn.disabled=true; btn.textContent=window.IntMapLang.t(HOST.lang,"Sending…","送信中…","Wird gesendet…","Отправка…","Enviando…");
       const row=buildRow(); let ok=false;
       try{ if(typeof HOST.DB!=='undefined'&&HOST.DB){ const {error}=await HOST.DB.from('bug_reports').insert(row); ok=!error; } }catch(_){}
       if(!ok){ /* graceful fallback — never lose the report */
@@ -146,9 +150,9 @@ window.IntMapModules.feedback=function(HOST){
       renderThanks(ok); }
     function renderThanks(sent){ const c=modal.querySelector('#bug-card');
       c.innerHTML='<div style="text-align:center;padding:8px 0 2px;"><div style="font-size:34px;margin-bottom:8px;">'+(sent?'✅':'📋')+'</div>'+
-        '<h3 style="margin:0 0 8px;font-size:17px;">'+(sent?(jp()?'レポートを送信しました':'Report sent'):(jp()?'レポートを保存しました':'Report saved'))+'</h3>'+
-        '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(sent?(jp()?'ご報告ありがとうございます。確認して対応します。':'Thank you — we will look into it.'):(jp()?'オフラインのため端末に保存し、内容をクリップボードにコピーしました。':'Saved on this device and copied to your clipboard (offline).'))+'</p>'+
-        '<button id="bug-done" style="padding:10px 26px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:600;cursor:pointer;">'+(jp()?'閉じる':'Close')+'</button></div>';
+        '<h3 style="margin:0 0 8px;font-size:17px;">'+(sent?(window.IntMapLang.t(HOST.lang,"Report sent","レポートを送信しました","Bericht gesendet","Отчёт отправлен","Informe enviado")):(window.IntMapLang.t(HOST.lang,"Report saved","レポートを保存しました","Bericht gespeichert","Отчёт сохранён","Informe guardado")))+'</h3>'+
+        '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(sent?(window.IntMapLang.t(HOST.lang,"Thank you — we will look into it.","ご報告ありがとうございます。確認して対応します。","Vielen Dank — wir sehen uns das an.","Спасибо — мы разберёмся.","Gracias; lo revisaremos.")):(window.IntMapLang.t(HOST.lang,"Saved on this device and copied to your clipboard (offline).","オフラインのため端末に保存し、内容をクリップボードにコピーしました。","Auf diesem Gerät gespeichert und in die Zwischenablage kopiert (offline).","Сохранено на этом устройстве и скопировано в буфер обмена (офлайн).","Guardado en este dispositivo y copiado al portapapeles (sin conexión).")))+'</p>'+
+        '<button id="bug-done" style="padding:10px 26px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:600;cursor:pointer;">'+(window.IntMapLang.t(HOST.lang,"Close","閉じる","Schließen","Закрыть","Cerrar"))+'</button></div>';
       c.querySelector('#bug-done').onclick=close; }
     function open(){ ensure(); renderForm(); modal.style.display='flex'; }
     function close(){ if(modal) modal.style.display='none'; }
