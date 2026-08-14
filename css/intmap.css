@@ -1462,7 +1462,12 @@
     .m-fab-stack, .m-sheet, .m-scrim, .bm-square, .bm-pop{ display:none; }  /* mobile-only chrome */
 
     @media(max-width:768px){
-      :root{ --sidebar-w:100vw; --sheet-ease:cubic-bezier(0.32,0.72,0,1); --peek-h:196px; }
+      /* ⚠ (#R240) 「モバイル版のニュース企業国別統計Atlasパネルの縦幅をもう少し短く。」 — the sheet's
+         full height was 92dvh, written twice (here and in the default transform below), and
+         js/mobile-ui.js `detents()` derives peek/half/mini from `sidebar.offsetHeight`. It is ONE
+         token now, so the two cannot drift and the detents follow it. 92 → 86 dvh: the sheet still
+         clears the tab row and the feed by a wide margin, and 6 % of the screen goes back to the map. */
+      :root{ --sidebar-w:100vw; --sheet-ease:cubic-bezier(0.32,0.72,0,1); --peek-h:196px; --sheet-h:86dvh; }
       html,body{ overscroll-behavior:none; }
       *{ -webkit-tap-highlight-color:transparent; }
       .operation-room{ display:block; position:relative; height:100dvh; }
@@ -1472,7 +1477,7 @@
       .sidebar{
         position:fixed; left:0; right:0; bottom:0; top:auto;
         width:100%; max-width:100%;
-        height:92dvh; max-height:calc(100dvh - env(safe-area-inset-top) - 4px);
+        height:var(--sheet-h); max-height:calc(100dvh - env(safe-area-inset-top) - 4px);
         margin:0 !important; padding:0 16px; box-sizing:border-box;
         border:none; border-top:0.5px solid rgba(128,128,128,0.18);
         border-radius:16px 16px 0 0;
@@ -1481,7 +1486,7 @@
         z-index:1100; min-height:0; overflow:hidden;
         /* (#R15d) Default to the PEEK position (~196px of sheet visible) BEFORE JS computes the exact
            detent — was 42dvh (~half), which is the "最初は真ん中で始まる" flash the user saw. */
-        transform:translateY(var(--sheet-ty,calc(92dvh - 196px)));
+        transform:translateY(var(--sheet-ty,calc(var(--sheet-h) - 196px)));
         transition:transform 0.46s var(--sheet-ease); will-change:transform;
       }
       .sidebar.sheet-dragging{ transition:none; }
@@ -3017,5 +3022,35 @@
    wrong shape twice over: a scroller inside a scroller, and a panel that stays 74vh tall when it
    holds two rows. Docked, the list is simply as tall as the objects in it and the panels below it
    move up when one is deleted. Same for any legend that scrolls its own body. */
-.im-docked .iol-body, .im-docked .kl-scroll{ max-height:none !important; overflow:visible !important; flex:0 0 auto !important; }
+/* ══ ⚠⚠ (#R240) …AND THAT HAS TO BE EVERY INNER SCROLLER, NOT TWO OF THEM ═══════════════════════
+   「サイドバーのパネル内のポップアップやウィンドウ等は、スクロールをしなくていいように一番下まで
+     広げて。」 #R239 named `.iol-body` and `.kl-scroll` because those were the two it had in front
+   of it. A docked panel that scrolls INSIDE a column that also scrolls is the defect whichever
+   class the inner box happens to carry, so the rule is stated over the whole set the app actually
+   has (grepped out of js/, not remembered) plus the two naming conventions every panel in this app
+   follows for its own scroll body.
+   ⚠ `overflow:visible`, NOT `auto`: the point is that the box grows to its content so the column
+   below moves down and the reader scrolls ONE thing — the column — instead of hunting for the
+   inner rail. A panel that writes its cap inline (js/map-tools.js writes `max-height:74vh` on the
+   element) is covered by `.im-docked` itself, whose geometry the dock already strips. */
+.im-docked .iol-body, .im-docked .kl-scroll, .im-docked .lsr-body,
+.im-docked .wgt-board, .im-docked .atl-chat, .im-docked .atl-ex, .im-docked .ppm-card,
+.im-docked [class$="-scroll"], .im-docked [class$="-body"], .im-docked [class$="-list"]{
+  max-height:none !important; overflow:visible !important; flex:0 0 auto !important; }
+.im-docked{ overflow-y:visible !important; }
 #docked-feed .dock-empty{ padding:36px 16px; }
+
+/* ══ ⚠⚠ (#R240) ON A PHONE THE COLUMN IS THE SCREEN, EDGE TO EDGE ══════════════════════════════
+   「モバイル版ではパネル自体のスクロールバーがポップアップや凡例と被ってしまっている。つまりモバイル
+     版では、パネルは画面の左右いっぱいをつかえということ。」
+   The sheet carries `padding:0 16px` (see the phone block below), so a docked panel is inset 16 px
+   on each side and the column's own scrollbar is drawn INSIDE that inset — on top of the panel,
+   which is the report. The feed cancels the sheet's padding so a panel runs the full width of the
+   screen, and the rail itself goes: a bottom sheet is dragged, and an overlay scrollbar sitting
+   over a legend was the only thing it was doing. */
+@media(max-width:768px){
+  #docked-feed{ margin-left:-16px; margin-right:-16px; padding-left:0; padding-right:0;
+    scrollbar-width:none; -ms-overflow-style:none; }
+  #docked-feed::-webkit-scrollbar{ width:0; height:0; }
+  #docked-feed > .im-docked{ border-radius:0 !important; border-left:none !important; border-right:none !important; }
+}

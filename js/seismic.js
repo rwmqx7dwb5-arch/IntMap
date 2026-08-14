@@ -689,7 +689,18 @@ window.IntMapModules.seismic=function(HOST){
        epicentre, the default and the report) or 'station' (add a row to the table). Declared HERE with
        the rest of the panel state rather than next to onClick: #R200 lost a whole boot to a `let` that
        render() could reach before its declaration had been evaluated. */
-    let clickMode='epi';
+    /* ══ ⚠⚠⚠ (#R240) NOTHING IS ARMED UNTIL THE READER ARMS IT ═══════════════════════════════════════
+       「手順や流れが全く理解できない。フローが破綻している。」 — the fourth round of this instruction.
+       Screenshotted on the shipped build: the panel opens with step ② ALREADY ARMED. Its button says
+       「解除」(Cancel), a banner under it says 「地図をタップして震源地を置いてください」, and the map
+       carries a HUD saying the same — while the row directly above prints the coordinates of the
+       hypocentre that is already there. So the first thing the panel says is «cancel the thing you
+       have not started», about a step that is already done, before it has said what steps ① and ③
+       are for. That is the broken flow, and it is one initialiser: this was 'epi'.
+       ⚠ IT IS STILL 'epi' WHEN THERE IS NOTHING TO POINT AT — see `open()`. Opening the simulator on
+       an empty map arms the one gesture there is, which is help; opening it on a loaded earthquake
+       arms nothing, which is also help. */
+    let clickMode='none';
     /* (#R236) set when a hypocentre click landed outside the drawn rupture — the banner says so, and
        it is cleared by the next accepted click or by clearing the rupture. */
     let _epiOutside=0;
@@ -787,7 +798,15 @@ window.IntMapModules.seismic=function(HOST){
        DERIVED, NOT TYPED: the JMA labels come from JMA_CLASSES and the MMI ones from ROMAN, so a
        class added to either is measured too and nothing here has to be remembered. */
     let _cwCache=null;
-    function _chipW(){
+    /* ══ ⚠ (#R240) ONE WIDTH PER SCALE, NOT ONE WIDTH FOR BOTH ═════════════════════════════════════
+       「各地の表内のJMAの背景の四角は、JMAで大きさをそろえるように。MMIはまた別の幅。」
+       #R237/#R238 made every chip one box — right, and measured across BOTH scales' labels at once,
+       so a 震度 table was padded out to the width of 「MMI VIII」 for no reason a reader can see. The
+       table only ever prints one scale at a time, so the box is measured against the labels THAT
+       scale can print: every JMA chip equals every other JMA chip, every MMI chip equals every other
+       MMI chip, and the two are different numbers. The invariant #R238 pinned — a column of chips is
+       one width — is unchanged; what changed is which set the maximum is taken over. */
+    function _chipW(jma){
       try{
         const fs=String(FS_H);
         const probe=document.createElement('span');
@@ -795,20 +814,20 @@ window.IntMapModules.seismic=function(HOST){
           +'font-size:'+fs+';font-weight:400;line-height:1.35;';
         document.body.appendChild(probe);
         const fam=getComputedStyle(probe).fontFamily||'';
-        const key=fs+'|'+fam;
-        if(_cwCache&&_cwCache.key===key){ probe.remove(); return _cwCache.w; }
+        const key=(jma?'jma|':'mmi|')+fs+'|'+fam;
+        if(_cwCache&&_cwCache[key]!=null){ probe.remove(); return _cwCache[key]; }
         const labels=[];
-        try{ JMA_CLASSES.forEach(c=>labels.push('JMA '+c.id)); }catch(_){}
-        try{ for(let i=1;i<=12;i++) labels.push('MMI '+ROMAN[i]); }catch(_){}
-        if(!labels.length) labels.push('MMI VIII');
+        if(jma){ try{ JMA_CLASSES.forEach(c=>labels.push('JMA '+c.id)); }catch(_){} }
+        else { try{ for(let i=1;i<=12;i++) labels.push('MMI '+ROMAN[i]); }catch(_){} }
+        if(!labels.length) labels.push(jma?'JMA 5-':'MMI VIII');
         let w=0;
         labels.forEach(t=>{ probe.textContent=t; const r=probe.getBoundingClientRect().width; if(r>w) w=r; });
         probe.remove();
         /* + the chip's own horizontal padding (3px 6px), and a whole pixel so nothing ever clips */
         w=Math.ceil(w)+12+1;
-        _cwCache={key,w};
+        (_cwCache||(_cwCache={}))[key]=w;
         return w;
-      }catch(_){ return 62; }                    /* #R237's measurement, as the floor if DOM is absent */
+      }catch(_){ return jma?52:62; }              /* #R237's measurement, as the floor if DOM is absent */
     }
     /* (#R192) each scale's LOWEST class, in the quantity that scale is computed from — inverted from
        the relations above rather than written out again (#R190's lesson: two copies of one number
@@ -1322,8 +1341,17 @@ window.IntMapModules.seismic=function(HOST){
     function _runBtnLabel(){ return '▶ '+(_needsRun()
       ?L('Compute the intensity map','震度分布を計算','Intensitätskarte berechnen','Рассчитать поле интенсивности','Calcular el mapa de intensidad')
       :L('Recompute the intensity map','震度分布を再計算','Intensitätskarte neu berechnen','Пересчитать поле интенсивности','Recalcular el mapa de intensidad')); }
-    function _paintRunBtn(){ try{ const b=panel&&panel.querySelector('.sq-run'); if(!b) return;
-      b.className=_runBtnClass(); b.innerHTML=_runBtnLabel(); }catch(_){} }
+    /* (#R240) the run button lives in the pinned footer now, and its label, its colour AND the
+       three-step track beside it are all functions of the same state — so one repaint does all of
+       them. See `_flowFoot`. It replaces the footer element rather than editing it in place because
+       the primary verb itself changes identity (place-the-hypocentre → compute → recompute). */
+    function _paintFoot(){ try{ if(!panel) return; const f=panel.querySelector('.sq-foot'); if(!f) return;
+      const t=document.createElement('div'); t.innerHTML=_flowFoot();
+      const nf=t.firstElementChild; if(!nf) return; f.replaceWith(nf);
+      const run=panel.querySelector('.sq-run'); if(run) run.onclick=()=>{ if(!epi){ report(); return; } buildField(); };
+      const ge=panel.querySelector('.sq-go-epi'); if(ge) ge.onclick=()=>{ setClickMode('epi'); };
+    }catch(_){} }
+    function _paintRunBtn(){ _paintFoot(); }
     function markStale(){ fldStale=true; if(opened){ report(); _paintRunBtn(); } }
     function schedField(){ clearTimeout(fldT); fldT=setTimeout(()=>{ buildField(); },260); }
     async function buildField(){
@@ -1841,8 +1869,10 @@ window.IntMapModules.seismic=function(HOST){
          hue as its own leading edge at just over half the width, so the pair reads as ONE wave with
          a front and a back rather than as eight rings. Both exist only when a rupture is drawn —
          see `train()` in drawFronts. */
+      /* (#R240) `o` is the arc's own opacity — the directivity weight, see emitFrontArcs. A ring
+         emitted whole (no rupture drawn) carries o = 0.92, which is the constant this used to be. */
       if(!GE().layers.has('seis-ring')) GE().layers.add({id:'seis-ring',type:'line',source:SRC,filter:['==',['get','kind'],'ring'],
-        paint:{'line-color':['get','col'],'line-width':['get','w'],'line-opacity':0.92}});
+        paint:{'line-color':['get','col'],'line-width':['get','w'],'line-opacity':['coalesce',['get','o'],0.92]}});
       if(!GE().layers.has('seis-ring-back')) GE().layers.add({id:'seis-ring-back',type:'line',source:SRC,filter:['==',['get','kind'],'ringBack'],
         paint:{'line-color':['get','col'],'line-width':['get','w'],'line-opacity':0.62,'line-dasharray':[3,2]}});
       /* (#R210) 「観測地点の点には番号を振るように。そうじゃないとどれがどの観測地点と対応しているのか
@@ -2220,7 +2250,46 @@ window.IntMapModules.seismic=function(HOST){
       let windows=null;
       try{ const w=HOST._splitLineToWindows(ringPts); if(w&&w.length) windows=w; }catch(_){}
       if(!windows) windows=[ringPts.map(p=>[((p[0]+540)%360)-180,p[1]])];
-      return { ring:ringPts, windows };
+      return { ring:ringPts, windows, steps:NB2 };
+    }
+    /* ══ ⚠⚠⚠ (#R240) WHAT A FINITE FAULT DOES TO A WAVEFRONT IS AMPLITUDE, NOT SHAPE ═══════════════
+       「地震シミュレータの地震波伝播は断層破壊を考慮していない。震央からほぼ同心円状に広がるだけ。」
+
+       #R238 proved the first-arrival isochron is EXACTLY a circle whenever Vr ≤ V, and that proof is
+       not going to stop being true. What is different about a wave from a 500 km fault and a wave
+       from a point is how much energy leaves in each direction: Ben-Menahem's apparent source
+       duration T(θ) = T₀·Fd compresses the whole radiated pulse into a shorter window ahead of the
+       rupture, so the peak goes as ≈1/√Fd — ×1.83 in the direction the break ran and ×0.76 behind
+       it. This panel already computes Fd for every azimuth (`fdAt`, and the 24-bin `profBank` the
+       intensity field is painted from); the wavefronts were the one place still drawing a rupture as
+       though it had no direction.
+
+       So each front is emitted as arcs, and each arc carries the weight and the opacity its own
+       azimuth earns. The reader sees the ring run bright and thick where the fault threw its energy
+       and fade to a hairline behind the nucleation point — which is the rupture, in the picture, at
+       t = 0, and it is the same quantity the table's 継続時間 column and the painted field are using.
+       ⚠ WITH NO RUPTURE DRAWN `fdAt` returns 1 at every azimuth, so every arc gets weight 1 and the
+       ring is byte-for-byte the circle it was. */
+    const _FRONT_ARCS=36;
+    function emitFrontArcs(feats,r,col,w){
+      const ring=r.ring, n=ring.length-1;                 /* last point repeats the first */
+      if(!(n>8)) return false;
+      const wrap=(pt)=>[((pt[0]+540)%360)-180,pt[1]];
+      const per=Math.max(2,Math.round(n/_FRONT_ARCS));
+      for(let s=0;s<n;s+=per){
+        const e=Math.min(n,s+per);
+        const seg=ring.slice(s,e+1); if(seg.length<2) continue;
+        /* the arc's own azimuth, and the amplitude the fault sends that way */
+        const brg=((s+e)/2)*360/n;
+        const p=destAng(epi,brg,0.5);
+        let fd=1; try{ fd=fdAt(p[0],p[1]); }catch(_){}
+        const g=Math.max(0.45,Math.min(2.0,1/Math.sqrt(Math.max(0.05,fd))));
+        let out=null; try{ out=HOST._splitLineToWindows(seg); }catch(_){ out=null; }
+        (out&&out.length?out:[seg.map(wrap)]).forEach(sg=>feats.push({type:'Feature',
+          geometry:{type:'LineString',coordinates:sg},
+          properties:{kind:'ring',col,w:+(w*g).toFixed(2),o:+Math.max(0.30,Math.min(1,0.92*g)).toFixed(3)}}));
+      }
+      return true;
     }
     function faultFrontLines(rFor){ const r=faultRing(rFor,'front'); return r?r.windows:null; }
     /* the wavefront features alone — cheap enough for a real-time tick (the intensity field and the
@@ -2261,6 +2330,10 @@ window.IntMapModules.seismic=function(HOST){
          nucleation point, which is the case for a rectangle, an ellipse and every published finite-
          fault model. For an outline hooked back on itself it is a first-order answer, and the
          envelope below (which does not make that assumption) is unaffected either way. */
+      /* ⚠ (#R240) the broken part of the fault is needed TWICE — once as the rupture's own fill, and
+         once as the inner boundary of the shaking band below, which is what makes the fault's shape
+         visible from the first second instead of six minutes in. See `train()`. */
+      let brokeRing=null;
       if(fault&&fault.ring&&fault.ring.length>=3&&tSec>0){
         const rB=(VRUP_KMS*tSec)/(D*RE);                     /* how far the break has run, in degrees */
         const R2=fault.ring, brokePts=[], edge=[]; let done=true, prev=null, run=null;
@@ -2278,7 +2351,8 @@ window.IntMapModules.seismic=function(HOST){
         if(run&&run.length>1) edge.push(run);
         if(brokePts.length>2){
           const wrap=(pt)=>[((pt[0]+540)%360)-180,pt[1]];
-          feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[brokePts.concat([brokePts[0]]).map(wrap)]},
+          brokeRing=brokePts.concat([brokePts[0]]);     /* continuous longitudes — the band wants those */
+          feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[brokeRing.map(wrap)]},
             properties:{kind:'rup'}});
           /* once the whole fault has broken there is no front left — the fill stays, the edge goes */
           if(!done) edge.forEach(seg=>{ let out=null;
@@ -2299,6 +2373,30 @@ window.IntMapModules.seismic=function(HOST){
          ⚠ THE POLYGON KEEPS CONTINUOUS LONGITUDES (the ring as built, before the seam split) while
          the two outlines use the split windows: a fill that has been wrapped into [−180,180] tears
          itself in half across the antimeridian, a line that has NOT been split does. */
+      /* ══ ⚠⚠⚠ (#R240) …AND THE BAND HAS TO EXIST WHILE THE FAULT IS STILL TEARING ═══════════════════
+         「震源域描いた時にちゃんとできてないから言ってるんだわ。そもそもできてないってことだわ」
+
+         MEASURED on a 500 km drawn rupture, counting the features this function emits:
+
+             t =  30 s   ring×4                                    ← circles, and nothing else
+             t =  90 s   ring×4
+             t = 200 s   ring×4
+             t = 400 s   ring×4  band×4  ringBack×4                ← the fault finally appears
+
+         #R239 shipped the band and then made it unreachable for the first six minutes, which is the
+         whole of the animation anybody watches. The cause is stated in `_envRmin`'s own note and was
+         read as a feature: T_last(x) = max over the fault of (off/Vr + dist/V) does not exist
+         anywhere until the LAST piece of the fault has broken, so the trailing edge is null and this
+         drew nothing at all — including no band.
+
+         ⚠ «NO TRAILING EDGE YET» IS NOT «NOTHING IS SHAKING». It is the opposite: before the rupture
+         has finished, NOWHERE has stopped, so the shaking region runs from the leading edge all the
+         way back to the source. Its inner boundary in that interval is the source — the part of the
+         fault that has broken — which is precisely the outline the reader drew, growing along itself
+         at Vr. So the band is drawn from t = 0, and the shape bounding it from the inside is the
+         fault. The two regimes join continuously: at the instant the last sub-fault breaks, the
+         T_last isochron IS the fault outline (zero distance, zero extra travel), and from there it
+         detaches and runs outward as the wave train's back. */
       const hasRupture=!!(fault&&fault.ring&&fault.ring.length>=3);
       const train=(rad,col,w)=>{
         const front=faultRing(rad,'front'); if(!front) return null;
@@ -2309,9 +2407,18 @@ window.IntMapModules.seismic=function(HOST){
               geometry:{type:'Polygon',coordinates:[front.ring,back.ring.slice().reverse()]},
               properties:{kind:'band',col}});
             emit(back.windows,{kind:'ringBack',col,w:Math.max(0.9,w*0.55)});
+          } else if(brokeRing&&brokeRing.length>3){
+            /* still tearing: the hole is the broken fault itself. Reversed for the same reason the
+               T_last ring is — a GeoJSON hole runs against its outer ring. */
+            feats.push({type:'Feature',
+              geometry:{type:'Polygon',coordinates:[front.ring,brokeRing.slice().reverse()]},
+              properties:{kind:'band',col}});
           }
         }
-        emit(front.windows,{kind:'ring',col,w});
+        /* (#R240) with a rupture the ring is emitted arc by arc so its weight can carry the
+           directivity — see `emitFrontArcs`. Without one there is no direction to have, and the
+           whole ring is one feature exactly as before. */
+        if(!(hasRupture&&emitFrontArcs(feats,front,col,w))) emit(front.windows,{kind:'ring',col,w,o:0.92});
         return front;
       };
       /* (#R232) …and the NAME of the front, on the front. The anchor is the ring's own north-east
@@ -2482,6 +2589,22 @@ window.IntMapModules.seismic=function(HOST){
           +'background:var(--input-bg);color:var(--text-main);font-size:'+FS+';cursor:pointer;}',
         '.sq-btn-wide{width:100%;min-height:40px;border-radius:12px;font-weight:600;}',
         '.sq-btn-accent{background:var(--primary-color);color:#fff;border-color:transparent;}',
+        /* ══ ⚠⚠ (#R240) THE PINNED FOOTER — the flow, and the one verb ═══════════════════════════════
+           Outside `.sq-body`, so it never scrolls away: 「フローが破綻している」 is in large part
+           that the button which produces the answer was the fifth control in the fourth card. */
+        '.sq-foot{flex:0 0 auto;padding:9px 12px calc(11px + env(safe-area-inset-bottom,0px));'
+          +'border-top:1px solid var(--glass-border,rgba(128,128,128,0.22));background:var(--input-bg);}',
+        '.sq-track{display:flex;align-items:center;gap:4px;margin-bottom:7px;}',
+        '.sq-tk{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:4px;'
+          +'font-size:'+FS_S+';font-weight:600;color:var(--text-main);opacity:0.5;white-space:nowrap;overflow:hidden;'
+          +'text-overflow:ellipsis;padding:4px 2px;border-radius:8px;}',
+        '.sq-tk.done{opacity:1;}',
+        '.sq-tk.now{opacity:1;background:var(--primary-color);color:#fff;}',
+        '.sq-fkdot{flex:0 0 auto;width:13px;height:13px;border-radius:50%;border:1.5px solid currentColor;'
+          +'background:transparent;font-size:9px;line-height:10px;text-align:center;font-style:normal;opacity:0.75;}',
+        '.sq-fkdot.on{background:var(--primary-color);border-color:transparent;color:#fff;opacity:1;}',
+        '.sq-tk.now .sq-fkdot{border-color:#fff;}',
+        '.sq-fhint{font-size:'+FS_S+';color:var(--text-main);line-height:1.45;margin-bottom:8px;}',
         /* the instruction banner keeps #R234's shape and moves inside the card it belongs to */
         '.sq-banner{padding:8px 10px;border-radius:9px;background:var(--input-bg);'
           +'border-left:3px solid var(--primary-color);color:var(--text-main);font-size:'+FS_S+';line-height:1.6;}',
@@ -2659,6 +2782,57 @@ window.IntMapModules.seismic=function(HOST){
     }
     function refresh(){ draw(); warmEpi(); schedField(); syncTsunamiSource(); }
     function touch(){ draw(); warmEpi(); markStale(); syncTsunamiSource(); }
+    /* ══ ⚠⚠⚠ (#R240) THE FLOW, SAID ONCE, WHERE IT CANNOT SCROLL AWAY ══════════════════════════════
+       「手順や流れが全く理解できない。フローが破綻している。」
+
+       Three rounds have改善ed the CONTROLS — #R236 put them in work order, #R238 made them numbered
+       steps with their own state, #R239 put the armed instruction on the map. Measured against the
+       shipped build, what is still missing is the thing all three assumed the reader already had:
+
+         · nothing on screen says the panel HAS a sequence, or where in it you are. Six cards, in a
+           column, all the same weight — 「地震を読み込む」 and 「震源を作る」 read as alternatives.
+         · the one button that produces the answer is the 5th thing in the 4th card. On a 900 px
+           screen it is BELOW THE FOLD of the panel's own scroller, so the reader scrolls the panel
+           looking for a verb, and the map has already painted a field, so it is not even clear that
+           pressing anything is required.
+         · and the panel opened with a step armed and 「解除」 on it — see `clickMode`.
+
+       So the panel gets a FOOTER, outside the scroller, pinned: the three steps as a track with the
+       done ones ticked and the current one lit, one line naming what to do next, and the primary
+       action — which is the SAME `.sq-run` button, moved here rather than copied, because two
+       buttons that compute would be two sources of truth ([[intmap-recurring-lessons]] G). What the
+       footer's verb is depends on the state, and there is exactly one at a time:
+
+           no epicentre        →  ② 震央を置く            (arms the map, and the HUD says so)
+           epicentre, stale    →  ▶ 震度分布を計算
+           computed            →  ▶ 震度分布を再計算 …and the transport above it is live
+
+       ⚠ The track is a READOUT of `fault` / `epi` / `fldStale`; pressing a step is the same handler
+       the step row uses. Nothing here is a second mechanism. */
+    function _flowStep(){
+      if(!epi) return 'epi';
+      if(_needsRun()||fldBusy) return 'run';
+      return 'done';
+    }
+    function _flowFoot(){
+      const st=_flowStep();
+      const tick=(on)=>on?'<i class="sq-fkdot on">✓</i>':'<i class="sq-fkdot"></i>';
+      const track='<div class="sq-track">'
+        +'<span class="sq-tk'+(fault?' done':'')+'">'+tick(!!fault)+L('Rupture area','震源域','Bruchfläche','Очаг','Ruptura')+'</span>'
+        +'<span class="sq-tk'+(epi?' done':(st==='epi'?' now':''))+'">'+tick(!!epi)+L('Hypocenter','震央','Hypozentrum','Гипоцентр','Hipocentro')+'</span>'
+        +'<span class="sq-tk'+(st==='done'?' done':(st==='run'?' now':''))+'">'+tick(st==='done')+L('Intensity','震度分布','Intensität','Интенсивность','Intensidad')+'</span>'
+        +'</div>';
+      const hint=st==='epi'
+        ? L('Tap the map to place the hypocenter. Drawing a rupture area first is optional.','地図をタップして震央を置いてください。先に震源域を描くこともできます（任意）。','Tippen Sie auf die Karte, um das Hypozentrum zu setzen. Eine Bruchfläche vorher zu zeichnen ist optional.','Нажмите на карту, чтобы поставить гипоцентр. Очаг можно обвести заранее — это необязательно.','Toque el mapa para colocar el hipocentro. Dibujar antes la ruptura es opcional.')
+        : (st==='run'
+          ? L('Press to solve the intensity field for this source.','この震源で震度分布を計算します。','Für diesen Herd das Intensitätsfeld berechnen.','Рассчитать поле интенсивности для этого очага.','Calcule el campo de intensidad para esta fuente.')
+          : L('Done — press ▶ above to watch the waves, or change anything and recompute.','完了しました。上の ▶ で波の伝播を再生できます。条件を変えると再計算できます。','Fertig — oben mit ▶ die Wellen abspielen, oder etwas ändern und neu rechnen.','Готово — нажмите ▶ выше, чтобы посмотреть волны, или измените параметры и пересчитайте.','Listo — pulse ▶ arriba para ver las ondas, o cambie algo y recalcule.'));
+      const btn=(st==='epi')
+        ? '<button class="sq-go-epi sq-btn sq-btn-wide sq-btn-accent">② '+L('Place the hypocenter','震央を置く','Hypozentrum setzen','Поставить гипоцентр','Colocar el hipocentro')+'</button>'
+        : '<button class="'+_runBtnClass()+'">'+_runBtnLabel()+'</button>';
+      return '<div class="sq-foot"'+(minimised?' style="display:none;"':'')+'>'+track
+        +'<div class="sq-fhint">'+hint+'</div>'+btn+'</div>';
+    }
     function render(){ if(!panel) return; _ensureCss();
       /* (#R239) the on-map HUD is a readout of the same three states this function is about to draw
          rows for, so it is refreshed from exactly here and from nowhere else. */
@@ -2679,7 +2853,9 @@ window.IntMapModules.seismic=function(HOST){
            `…;display:flex;…`, so CSS's last-declaration-wins put the body straight back. MEASURED: the
            glyph flipped to ▢ and `getComputedStyle(.sq-body).display` stayed `flex`. One property, one
            declaration. */
-        +'<div class="sq-body" style="padding:11px 12px 13px;display:'+(minimised?'none':'flex')+';flex-direction:column;gap:13px;max-height:min(72vh,640px);overflow-y:auto;">'
+        /* (#R240) `flex:1 1 auto; min-height:0` rather than a max-height of its own — see the panel's
+           cssText: the SCREEN is the bound, and the footer under this box has to keep its room. */
+        +'<div class="sq-body" style="padding:11px 12px 13px;display:'+(minimised?'none':'flex')+';flex:1 1 auto;min-height:0;flex-direction:column;gap:13px;overflow-y:auto;">'
         /* CARD 1 — 地震を選ぶ */
         +'<div><div class="sq-cap">'+L('Load an earthquake','地震を読み込む','Beben laden','Загрузить землетрясение','Cargar un terremoto')+'</div><div class="sq-card">'
         /* ══ (#R232) 「過去の地震を選べる機能を付け、選んだら当時と同じ条件や震源域を精密に入力し、その
@@ -2871,7 +3047,8 @@ window.IntMapModules.seismic=function(HOST){
 
            ⚠ ONE PREDICATE, READ IN TWO PLACES. The wording and the colour come from the same
            `_needsRun` so they cannot disagree — which is the defect #R206 wrote up for this panel. */
-        +'<div class="sq-blk"><button class="'+_runBtnClass()+'">'+_runBtnLabel()+'</button></div>'
+        /* (#R240) the button itself now lives in the panel's pinned footer — see `_flowFoot()`. What
+           stays in this card is the progress bar it drives and the transport, which are readouts. */
         +'<div class="sq-prog sq-blk" style="display:none;">'
           +'<div class="sq-progl" style="margin-bottom:4px;font-size:'+FS+';color:var(--text-main);"></div>'
           +'<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;">'
@@ -2950,7 +3127,8 @@ window.IntMapModules.seismic=function(HOST){
            'Solange der Bruch langsamer läuft als die Welle, bleibt die Ersteinsatz-Wellenfront eines endlichen Herdes ein Kreis um das Hypozentrum — der erste Einsatz kommt immer vom Startpunkt des Bruchs. Die gezeichnete Form erscheint deshalb als BRUCHFRONT, die darüber läuft (gefüllte Fläche und helle Kante), nicht als Delle in den Ringen. Was die Ringe verbiegt, ist die durchquerte Kruste: die Laufzeit der Raumwellen wird über ihren Krustenanteil korrigiert, die Gruppengeschwindigkeit der Oberflächenwellen entlang jedes Großkreises integriert.',
            'Пока разрыв идёт медленнее волны, фронт первого вступления от конечного очага остаётся окружностью вокруг гипоцентра — первое вступление всегда приходит из точки начала разрыва. Нарисованная форма появляется как ФРОНТ РАЗРЫВА, бегущий по ней, а не как вмятина в кольцах. Кольца искривляет кора: время пробега объёмных волн корректируется на коровую долю, а групповая скорость поверхностных волн интегрируется вдоль большого круга.',
            'Mientras la ruptura avance más despacio que la onda, el frente de primera llegada de una fuente finita sigue siendo un círculo en torno al hipocentro: la primera llegada procede siempre del punto donde empezó la rotura. Por eso la forma que ha dibujado aparece como FRENTE DE RUPTURA recorriéndola (área rellena y borde brillante), no como una hendidura en los anillos. Lo que sí curva los anillos es la corteza que atraviesan: el tiempo de viaje de las ondas de cuerpo se corrige según su tramo cortical y la velocidad de grupo de las superficiales se integra a lo largo de cada círculo máximo.')
-        +'</div></details></div></div>';
+        +'</div></details></div></div>'
+        +_flowFoot();
       /* ══ (#R236) THE ONE PICKER: the switch chooses the SOURCE, the list chooses the earthquake ═══
          Each half keeps the handler it already had — `applyEvent` for the curated catalogue,
          `applyReal` for a USGS feature — so neither path changed, only where you reach it from. */
@@ -3011,6 +3189,9 @@ window.IntMapModules.seismic=function(HOST){
       if(op) op.oninput=e=>{ const v=setFieldOpacity((+e.target.value||85)/100);
         const b=panel.querySelector('.sq-opv'); if(b) b.textContent=Math.round(v*100)+'%'; };
       const run=panel.querySelector('.sq-run'); if(run) run.onclick=()=>{ if(!epi){ report(); return; } buildField(); };
+      /* (#R240) the footer's own verb while there is nothing to compute yet — it arms the SAME mode
+         step ② arms, so there is one place that decides what a map tap means. */
+      { const ge=panel.querySelector('.sq-go-epi'); if(ge) ge.onclick=()=>{ setClickMode('epi'); }; }
       const tsu=panel.querySelector('.sq-tsu'); if(tsu) tsu.onclick=()=>openTsunami();
       const sc=panel.querySelector('.sq-scale'); if(sc){ sc.onchange=e=>{ pickScale(e.target.value==='jma'?'jma':'mmi'); legend(); touch(); }; }
       const sel=panel.querySelector('.sq-site'); if(sel){ sel.value=siteId; sel.onchange=e=>{ siteId=e.target.value; touch(); }; }
@@ -3308,7 +3489,7 @@ window.IntMapModules.seismic=function(HOST){
            it measured for. So the boxes are equal by construction rather than by a constant that was
            true once, a new scale needs no edit here, and tests/r238 checks the RELATION (all chips
            one width) instead of the number. */
-        return '<span style="display:inline-block;box-sizing:border-box;width:'+_chipW()+'px;padding:3px 6px;'
+        return '<span style="display:inline-block;box-sizing:border-box;width:'+_chipW(jp)+'px;padding:3px 6px;'
           +'text-align:center;border-radius:0;background:'+col
           +';color:'+_chipInk(col)+';font-size:'+FS_H+';font-weight:400;line-height:1.35;white-space:nowrap;">'+txt+'</span>'; };
       const rows=nearby().map(c=>{ const a=at(c.lng,c.lat); if(!a) return '';
@@ -3738,7 +3919,10 @@ window.IntMapModules.seismic=function(HOST){
       const p=[e.lngLat.lng,e.lngLat.lat];
       if(fault&&fault.ring&&fault.ring.length>=3&&!_inRing(p,fault.ring)){ _epiOutside=1; render(); return; }
       _epiOutside=0;
-      setEpi(p); refresh(); }
+      /* (#R240) the first placement changes the FLOW step (there is now something to compute), and
+         the step rows above print the coordinates — so this is a full redraw, not a field refresh. */
+      const first=!epi;
+      setEpi(p); refresh(); if(first) render(); else _paintFoot(); }
     /* ray casting in the ring's own longitude frame — the ring is stored as drawn, so a stroke that
        crossed the antimeridian keeps its continuous longitudes and the test has to be asked in the
        same frame rather than in wrapped degrees (#R189's seam rule, applied to a point query). */
@@ -3827,11 +4011,20 @@ window.IntMapModules.seismic=function(HOST){
       if(!panel){ panel=document.createElement('div'); panel.id='sq-panel';
         /* (#R189) 「ポップアップは透過するな」 — --card-bg is opaque in BOTH themes (#fff / #1c1c1e);
            --popup-bg was rgba with no backdrop-filter, so the map showed through under the table. */
-        panel.style.cssText='position:fixed;left:16px;top:80px;width:min(360px,94vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+        /* ⚠ (#R240) THE PANEL IS BOUNDED BY THE SCREEN, and the body is what gives way. Before the
+           pinned footer the body's own `max-height` was the whole bound; with a footer under it the
+           two added up past the viewport and the primary button was cut off at the bottom — which is
+           the defect the footer exists to fix, one layer down. The panel caps itself, the body flexes
+           inside that cap, and the footer is `flex:0 0 auto`, so the verb is on screen at any height. */
+        panel.style.cssText='position:fixed;left:16px;top:80px;width:min(360px,94vw);max-height:calc(100dvh - 96px);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
         document.body.appendChild(panel); }
       panel.style.display='flex'; opened=true; render();
       if(o&&o.lng!=null){ setEpi([o.lng,o.lat]); if(o.depth!=null) depthKm=Math.max(0,+o.depth); if(o.mw!=null&&!fault) mw=Math.max(3,Math.min(9.6,+o.mw)); render(); refresh(); }
       else refresh();
+      /* (#R240) the one exception to «nothing is armed» — see `clickMode`. With no epicentre there is
+         exactly one thing to do and the map is where it is done, so the tap is live and the HUD says
+         so. With one already placed, the panel opens quiet and the reader chooses. */
+      if(!epi&&clickMode==='none'){ setClickMode('epi'); }
       return true; }
     function close(){ opened=false; endPick(); if(playing){ playing=0; }
       if(_fDrawing){ try{ window.DrawTool&&window.DrawTool.exit&&window.DrawTool.exit(); }catch(_){} _fDrawing=false; }

@@ -146,9 +146,23 @@ test('R215 ④b: the secondary queries are rate-limited and each failure is its 
    「設定から、昼夜を表示するのをオフに…（追記：オフにしてもオフにならない。MapLibre。）」 */
 test('R215 ⑤: with the day/night display off, the Sun is not aimed on ANY engine', () => {
   const ts = read('js/theme-sky.js');
-  const aim = ts.slice(ts.indexOf('function _aimSun()'), ts.indexOf('function _aimSun()') + 420);
+  const aim = ts.slice(ts.indexOf('function _aimSun()'), ts.indexOf('function _aimSun()') + 700);
   assert.match(aim, /_nightSideOff\(\)/, 'the switch is read before the Sun is aimed, not after (#R214)');
-  assert.match(aim, /setSunDirection\(null\)/, 'off means the light stops following the Sun');
+  /* ══ ⚠⚠⚠ (#R240) «OFF» MEANS «NO TERMINATOR», NOT «NO SUN» — AND THAT DISTINCTION IS THE BUG ════
+     This asserted `setSunDirection(null)`, i.e. hand the light back to maplibre's default. Measured
+     this round, that default is `{anchor:'viewport',position:[1.15,210,30]}` — a sun fixed at a low
+     angle in SCREEN space while the scattering integral marches in PLANET space — and maplibre's
+     globe atmosphere takes `u_sun_pos` from `style.light` and from nowhere else. Same camera, same
+     build, only the light changed: Congo [71,112,77] → [35,62,13], Atlantic [44,105,134] → [2,51,72].
+     So switching the day/night side off switched THE ATMOSPHERE off with it, and on the vector
+     basemap `_nightSideOff()` is always true — 「そもそも前作った大気がなくなってる」.
+     The requirement this test exists for is unchanged and is still asserted: with the switch off no
+     light/dark division may appear. It is met by aiming the sun at the point the camera is looking
+     at, which puts the terminator 90° away from the centre of the view at every zoom. */
+  assert.doesNotMatch(aim, /setSunDirection\(null\)/,
+    'the default light is a sun in the wrong frame — it takes the atmosphere with it (#R240)');
+  assert.match(aim, /camera\.getCenter\(\)/, 'off aims the Sun at the sub-camera point instead');
+  assert.match(aim, /setSunDirection\(\{lng:c\.lng,lat:c\.lat\}\)/, '…so there is no terminator on screen');
   assert.equal(/_rendererLightsTheGlobe/.test(aim), false,
     'no engine is excused — maplibre-gl’s own atmosphere pass reads style.light for u_sun_pos');
   /* and the sky must stop reporting which side is night, or the terminator is still on screen */

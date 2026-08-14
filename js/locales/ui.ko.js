@@ -12,6 +12,39 @@
  *  SOURCE STRING. A missing entry falls back to English PER STRING — never per screen.
  * ========================================================================== */
 window.IntMapLang.define('ko', { ui: {
+      /* ══ (#R240) THE SIXTH SURFACE — title / aria-label / placeholder, which had no key at all
+         and were therefore English in every language however complete this table looked. See
+         scripts/i18n-attr-audit.mjs, the gate that now measures «is this string in the system».  */
+      ttl3dTerrain:"3D 지형",
+      ttlCompass:"나침반",
+      ttlVol3d:"실제 크기의 3D 입체를 공중에 그리기",
+      ttlDrawTrace:"자유 그리기 및 따라 그리기",
+      accGraphite:"그래파이트",
+      accGreen:"그린",
+      accIndigo:"인디고",
+      accOrange:"오렌지",
+      accPink:"핑크",
+      accPurple:"퍼플",
+      accRed:"레드",
+      accTeal:"틸",
+      ttlGridLabels:"격자와 라벨",
+      ttlMapLayers:"지도와 레이어",
+      ttlMapOptions:"지도 옵션",
+      ttlPinPos:"지도 핀 위치",
+      ttlMapTools:"지도 도구",
+      ttlMeasureDA:"거리·면적 측정",
+      ttlMeasureTools:"측정 도구",
+      ttlMyLocation:"내 위치",
+      ttlObjects:"개체",
+      ttlRemove:"삭제",
+      ttlResetNorth:"북쪽으로 되돌리기",
+      ttlResetBearing:"방위 초기화",
+      ttlSearchNews:"입력이 있으면 검색하고, 없으면 현재 뉴스 설정으로 다시 불러옵니다",
+      phPostBody:"관찰, 질문, 가설을 공유해 보세요…",
+      phPostTitle:"제목",
+      ttlToggleSidebar:"사이드바 표시 전환",
+      ttlTools:"도구",
+      phAisKey:"aisstream.io API 키",
       lnkTerms:"이용약관", lnkPrivacy:"개인정보 처리방침", legalTabTerms:"약관", legalTabPrivacy:"개인정보", commAddImage:"이미지 추가",
       tabNews:"뉴스", tabSaved:"★ 저장됨", tabInfo:"정보", tabCompanies:"기업", tabStats:"국가", tabCommunity:"커뮤니티",
       searchPh:"뉴스 / 장소 검색...", filterCountriesPh:"국가 필터...", filterCompaniesPh:"기업 필터...", pickCountryMap:"지도에서 국가 선택", searchBtn:"검색", searchLoadBtn:"검색 / 불러오기", loading:"기사를 불러오는 중...",
@@ -2320,4 +2353,8 @@ window.IntMapLang.define('ko', { ui: {
   "zonal": "동서류",
   "Zonal — within ±0.6 K of the sea it flows through": "동서류 — 통과하는 바다와 ±0.6 K 이내",
   "Zoom in / out": "확대 / 축소",
-  "ρ = Spearman rank correlation, r = Pearson (log scale where the metric is log-distributed). Correlation is NOT causation — third factors (income, region) can drive both sides; the listed exception countries are good places to test any explanation.": "ρ는 스피어만 순위 상관, r은 피어슨 상관입니다 (지표가 로그 분포를 따르는 경우 로그 축을 씁니다). 상관관계는 인과관계가 아닙니다. 소득이나 지역 같은 제3의 요인이 양쪽을 함께 움직일 수 있습니다. 목록에 있는 예외 국가들은 어떤 설명이든 검증해 보기 좋은 사례입니다.",} });
+  "ρ = Spearman rank correlation, r = Pearson (log scale where the metric is log-distributed). Correlation is NOT causation — third factors (income, region) can drive both sides; the listed exception countries are good places to test any explanation.": "ρ는 스피어만 순위 상관, r은 피어슨 상관입니다 (지표가 로그 분포를 따르는 경우 로그 축을 씁니다). 상관관계는 인과관계가 아닙니다. 소득이나 지역 같은 제3의 요인이 양쪽을 함께 움직일 수 있습니다. 목록에 있는 예외 국가들은 어떤 설명이든 검증해 보기 좋은 사례입니다.",
+  "Intensity": "진도 분포",
+  "Tap the map to place the hypocenter. Drawing a rupture area first is optional.": "지도를 탭해 진원을 놓으세요. 먼저 진원역을 그리는 것은 선택 사항입니다.",
+  "Press to solve the intensity field for this source.": "이 진원에 대한 진도 분포를 계산합니다.",
+  "Done — press ▶ above to watch the waves, or change anything and recompute.": "완료되었습니다 — 위의 ▶ 로 파동을 재생하거나, 조건을 바꿔 다시 계산하세요.",} });

@@ -199,7 +199,15 @@ test('④ every string the HUD prints is translated in all nine languages', () =
 
 /* ══ ⑤ THE BUILD STAMPS (#R234/#R236 — they only ever fail after the notes are written) ══════════ */
 test('⑤ both build stamps name this round', () => {
+  /* ⚠ (#R240) NOT OLDER THAN R239, rather than exactly R239 — the shape #R203 ⑦ and #R204 ⑦b already
+     use. A hard pin here is a test that fails on the FOLLOWING round for doing the right thing, and
+     the assertion it was making («the stamps were bumped») is kept by the floor. The two must still
+     agree with each other, and tests/r207 ⑬ separately requires them to name the newest round in
+     DEV-NOTES, so nothing is lost by loosening this one. */
   const h = R('index.html');
-  assert.match(h, /__imBuild='R239'/, 'the short stamp');
-  assert.match(h, /INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R239'/, 'and the dated one');
+  const a = /__imBuild='R(\d+)'/.exec(h), b = /INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R(\d+)'/.exec(h);
+  assert.ok(a, 'the short stamp');
+  assert.ok(b, 'and the dated one');
+  assert.equal(a[1], b[1], 'the two stamps must name the same round');
+  assert.ok(+a[1] >= 239, `the stamps name R${a[1]} — older than the round that wrote this test`);
 });
