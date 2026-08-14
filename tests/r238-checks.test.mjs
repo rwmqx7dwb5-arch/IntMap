@@ -203,14 +203,18 @@ test('R238 panel: the instruction banner is emitted once, inside the armed step'
 test('R238 chips: the width is measured at run time, not a constant in the markup', () => {
   const s = code(read('js/seismic.js'));
   assert.doesNotMatch(s, /min-width:62px;padding:3px 6px/, '#R237\'s hard-coded box must be gone');
-  assert.match(s, /width:'\+_chipW\(\)\+'px/, 'the chip takes its width from the measurement');
-  assert.match(s, /function\s+_chipW\s*\(\)/, 'and the measurement exists');
+  /* (#R240) the measurement is now per SCALE — `_chipW(jp)` — because a 震度 column was being padded
+     out to the width of 「MMI VIII」. The claim this test makes is unchanged: the width is measured
+     at run time against the labels that can actually appear, and cached against the font. */
+  assert.match(s, /width:'\+_chipW\(jp\)\+'px/, 'the chip takes its width from the measurement');
+  assert.match(s, /function\s+_chipW\s*\(jma\)/, 'and the measurement exists, per scale');
   const i = s.indexOf('function _chipW');
-  const body = s.slice(i, i + 1400);
+  const body = s.slice(i, i + 1600);
   /* ⚠ DERIVED, NOT TYPED: a list of labels here would go stale the moment a class is added */
   assert.match(body, /JMA_CLASSES\.forEach/, 'the JMA labels come from the class table');
   assert.match(body, /ROMAN\[i\]/, 'and the MMI labels from the numeral table');
-  assert.match(body, /_cwCache&&_cwCache\.key===key/, 'the answer is cached against the font it measured');
+  assert.match(body, /_cwCache&&_cwCache\[key\]!=null/, 'the answer is cached against the font it measured');
+  assert.match(body, /const\s+key=\(jma\?'jma\|':'mmi\|'\)/, '…and the cache key names which scale it is for');
 });
 
 /* ── 8 · ④ the dock — every floating thing, and only the floating things ────────────────────────── */

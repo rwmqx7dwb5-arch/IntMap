@@ -128,7 +128,13 @@ test('R187 atmosphere: the limb is blended thinner than saturation', () => {
      what #R187 and #R205 measured, unchanged, and that is what is read here. */
   const blend = /'atmosphere-blend':\((?:limb\?0:\()?sat[\s\S]{0,800}?\)\}\);/.exec(src);
   assert.ok(blend, 'the atmosphere-blend expression must still be there');
-  const all = [...blend[0].matchAll(/\['interpolate',\['linear'\],\['zoom'\],0,([0-9.]+),4,/g)].map((x) => +x[1]);
+  /* ⚠ (#R240) THE SECOND STOP IS NO LONGER z4. maplibre multiplies this property by globeness, which
+     is already 0 by z12, so the ramp's OWN taper was a second one — measured, it halved the air on
+     screen between z4 and z11 while the reader was zooming in, which is 「ある程度までズームインすると
+     途端に見えなくなってしまう」. The middle of the curve is flat now and the tail past z13 remains.
+     What this test is about is the z0 STRENGTH of each ramp — #R187's and #R205's measured values —
+     so it reads the first stop and stops caring which zoom the second one is at. */
+  const all = [...blend[0].matchAll(/\['interpolate',\['linear'\],\['zoom'\],0,([0-9.]+),/g)].map((x) => +x[1]);
   assert.ok(all.length >= 2, 'both atmosphere ramps must still be there');
   assert.match(src, /'atmosphere-blend':\((?:limb\?0:\()?sat/, 'the strength is chosen by basemap');
   const sat = all[0], map = Math.max(...all.slice(1));

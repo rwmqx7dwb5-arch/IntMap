@@ -344,8 +344,11 @@ test('⑧ both seismic click modes turn off when pressed again, and an unarmed m
   assert.match(s, /if\(clickMode==='epi'\) setClickMode\('none'\)/, 'the epicentre segment has no off state');
   assert.match(s, /setClickMode\(clickMode==='station'\?'none':'station'\)/, 'the place segment has no off state');
   /* (#R236) the slice ends at the epicentre branch, whose spelling changed when the containment
-     test went in front of it — take it to `setEpi(...)` either way. */
-  const oc = /function onClick\(e\)\{[\s\S]*?setEpi\((?:\[e\.lngLat\.lng,e\.lngLat\.lat\]|p)\); refresh\(\); \}/.exec(s)[0];
+     test went in front of it — take it to `setEpi(...)` either way.
+     (#R240) …and it changed again: placing the FIRST epicentre moves the panel to a different step
+     of its flow, so that branch now redraws the panel as well as the field. The claim this test
+     makes — the armed test comes before the claim — is untouched; only where the slice ends moved. */
+  const oc = /function onClick\(e\)\{[\s\S]*?setEpi\((?:\[e\.lngLat\.lng,e\.lngLat\.lat\]|p)\); refresh\(\);/.exec(s)[0];
   assert.ok(oc.indexOf("clickMode==='none'") < oc.indexOf('claimClick'),
     'the panel claims the tap before deciding whether it wants it');
 });

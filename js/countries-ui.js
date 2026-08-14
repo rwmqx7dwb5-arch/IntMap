@@ -10,6 +10,38 @@
  *  references to closure variables became HOST.<member> reads (Architecture.md §3.1). The
  *  extraction was done by script and reversed byte-for-byte against the original text.
  * ==========================================================================*/
+/* ══ ⚠⚠⚠ (#R240) A COUNTRY'S NAME IN THE READER'S LANGUAGE, FROM CLDR ══════════════════════════════
+   「簡体、繁体、フランス語、韓国語、ドイツ語、ロシア語、スペイン語について、すべての面において対応が
+     完璧かどうか最終点検し、未了点があれば修正して。（まだある）」
+
+   The runtime sweep found the Countries tab printing 「Afghanistan」「Albania」「Algeria」… in every
+   language but Japanese. `cName` (js/app-body.js) had exactly two branches — `nameJp` for jp,
+   `nameEn` for everyone else — so the one screen whose entire content is names was 200 rows of
+   English in seven of the nine languages, while every translation instrument read 100 %.
+
+   ⚠ AND THE ANSWER IS NOT A TABLE OF 200 × 8 STRINGS. `Intl.DisplayNames` reads the browser's own
+   CLDR data, which is where the canonical translation of every ISO 3166-1 region already lives; it
+   is right for languages this app has not added yet and it cannot go stale. The curated `nameJp`
+   still wins for Japanese — that is the app's own editorial choice (「アメリカ合衆国」 rather than
+   CLDR's 「米国」) — and English falls back to `nameEn`, which carries Natural Earth's long forms.
+   ⚠ ONE INSTANCE PER LANGUAGE, built lazily: constructing a DisplayNames costs about a millisecond
+   and this is called once per row of a 200-row list on every re-sort.
+   ⚠ IT LIVES HERE, NOT IN js/app-body.js: tests/r168 #8 budgets the app shell at 8,200 lines and the
+   rule it states is that the ceiling follows the floor DOWN. A new mechanism goes where its feature
+   is. `window._imCldrRegion` is the whole surface app-body reaches for. */
+/* ⚠ the cache hangs off the function itself — tests/r175 ③ refuses an unexported top-level
+   declaration in js/, and this file has exactly one thing to publish. */
+window._imCldrRegion=function(a2,lang){
+  try{
+    if(!a2||a2.length!==2) return '';
+    const tag=(window.IntMapLang&&window.IntMapLang.htmlTag)?window.IntMapLang.htmlTag(lang):'';
+    if(!tag||tag==='en') return '';
+    const c=window._imCldrRegion._c||(window._imCldrRegion._c={});
+    let dn=c[tag];
+    if(dn===undefined){ try{ dn=new Intl.DisplayNames([tag],{type:'region',fallback:'none'}); }catch(_){ dn=null; } c[tag]=dn; }
+    return (dn&&dn.of(a2.toUpperCase()))||'';
+  }catch(_){ return ''; }
+};
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.countriesUi=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -103,6 +135,10 @@ window.IntMapModules.countriesUi=function(HOST){
                  The geometry that answers this is already in hand here — one pass over the winning
                  feature's rings, done once per country at load. */
               bbox:_bboxOf(f),
+              /* (#R240) the ISO 3166-1 alpha-2 is KEPT, not just used for the flag: it is the key
+                 Intl.DisplayNames needs to name this country in the reader's own language — see
+                 `cName` in js/app-body.js. Without it every language but Japanese read English. */
+              a2:a2||'',
               capital:CAPITAL[code]||'', latlng:(p.LABEL_Y!=null&&p.LABEL_X!=null)?[+p.LABEL_Y,+p.LABEL_X]:null, flag:flagFromISO2(a2),
               currency:CURRENCY[code]||'', languages:LANGS[code]||'', gdp, gdppc:(gdp&&pop)?(gdp*1e9/pop):null,
               hdi:HDI[code]||null, dem:DEM[code]||null, milSpend:MILSPEND[code]||null, lifeExp:LIFE[code]||null, internet:INTERNET[code]||null };

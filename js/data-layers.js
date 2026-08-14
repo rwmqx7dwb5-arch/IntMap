@@ -229,8 +229,15 @@ window.IntMapModules.dataLayers=function(HOST){
         .data-legend .legend-min:active, .koppen-legend .legend-min:active{ background:var(--input-bg); color:var(--text-main); }
         .data-legend .dl-drag, .koppen-legend .kl-drag{ top:10px !important; left:8px !important; font-size:13px !important; }
         .koppen-legend h4, .data-legend h4{ padding:0 78px 0 24px !important; min-height:32px !important; }
-        /* (#R10) Mobile Köppen legend ≈ square (width ≈ height) and the climate rows slide inside it. */
-        .koppen-legend{ width:min(66vw,252px) !important; right:12px !important; height:auto !important; min-height:0 !important; max-height:min(72vw,330px) !important; resize:none !important; }
+        /* (#R10) Mobile Köppen legend ≈ square (width ≈ height) and the climate rows slide inside it.
+           ⚠ (#R240) …WHILE IT IS FLOATING OVER THE MAP. This rule is written at run time, so it lands
+           after css/intmap.css and its !important width beat the dock's width:100% at equal
+           specificity — measured on a phone, the docked legend came out 252 px inside a 390 px
+           column, which is the 「画面の左右いっぱいをつかえ」 report from the other side. :not(.im-docked)
+           is the whole fix: over the map it is still a 66 vw square, in the column it is the column.
+           ⚠⚠ AND NO BACKTICK MAY APPEAR IN THIS COMMENT — it is inside a template literal, and one
+           backtick here ends the CSS string and blanks the site. See [[intmap-template-literal-css-backtick]]. */
+        .koppen-legend:not(.im-docked){ width:min(66vw,252px) !important; right:12px !important; height:auto !important; min-height:0 !important; max-height:min(72vw,330px) !important; resize:none !important; }
         .koppen-legend .kl-scroll{ max-height:none !important; }
       }`;
     document.head.appendChild(style);
@@ -2230,14 +2237,32 @@ window.IntMapModules.dataLayers=function(HOST){
       if(!b){ b=document.createElement('button'); b.className='legend-min'; b.onclick=(e)=>{ e.stopPropagation(); toggleLegendMin(el); }; el.appendChild(b); }
       const collapsed=el.classList.contains('legend-collapsed');
       b.textContent=collapsed?'▢':'–'; b.title=collapsed?(window.IntMapLang.t(HOST.lang,'Expand','展開','Ausklappen','Развернуть','Expandir')):(window.IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar'));
-      /* On phones, start minimized so the legend never covers the map on open. */
-      if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches && !el.dataset.minInit){ el.dataset.minInit='1'; if(!collapsed) toggleLegendMin(el); }
+      /* On phones, start minimized so the legend never covers the map on open.
+         ⚠⚠ (#R240) …EXCEPT IN THE SIDEBAR, WHERE THERE IS NOTHING TO COVER ═══════════════════════
+         「パネル内のポップアップや凡例は最小化された状態でスタートしないように。」 Measured on a
+         phone: the Köppen legend is 488 px tall docked on a desktop and 95 px — header only — in the
+         phone's sheet, because this line runs whatever the legend is parented to. The reason it
+         exists is that a legend floating OVER THE MAP on a small screen hides the map; a legend in
+         the sidebar column hides nothing, and arriving collapsed just means every panel has to be
+         opened by hand before the tab shows anything. So the auto-collapse is scoped to the case it
+         was written for. */
+      const inDock=(window.imDockPanels==='on')||!!(el.classList&&el.classList.contains('im-docked'));
+      if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches && !inDock && !el.dataset.minInit){ el.dataset.minInit='1'; if(!collapsed) toggleLegendMin(el); }
     }
     window._ensureLegendMinimize=ensureLegendMinimize;
+    /* (#R240) the dock calls this on the way in, so a legend that was auto-collapsed while it floated
+       over the map arrives in the column open. It is the panel's OWN toggle — nothing is
+       re-implemented, and switching the mode off leaves the legend exactly as the reader last set it. */
+    window._legendExpand=function(el){
+      try{ if(el&&el.classList&&el.classList.contains('legend-collapsed')) toggleLegendMin(el); }catch(_){}
+    };
     /* Collapse every open, expanded legend (used when a phone user taps the map outside a legend, #29). */
     window._minimizeOpenLegends=function(){
       [document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat]
-        .forEach(el=>{ if(el && (el.style.display==='block'||el.style.display==='flex') && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); }catch(_){} } });
+        /* (#R240) a DOCKED legend is not over the map, so tapping the map has no reason to collapse
+           it — and doing so is the other half of 「最小化された状態でスタートしないように」: the
+           reader taps the map once and every panel in the sidebar shuts. */
+        .forEach(el=>{ if(el && (el.style.display==='block'||el.style.display==='flex') && !el.classList.contains('im-docked') && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); }catch(_){} } });
     };
     function tileLegends(){
       const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind')].concat([...document.querySelectorAll('.data-legend.generic-legend')]);

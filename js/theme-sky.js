@@ -229,10 +229,43 @@ export function makeThemeSky(HOST, CTX) {
      So the switch reaches the LIGHT on every engine, not on every engine except this one. What
      `setSunDirection(null)` restores is the app's default viewport-anchored light — buildings keep
      their shading, the atmosphere keeps its halo, and neither follows the Sun any more. */
+  /* ══ ⚠⚠⚠ (#R240) «NO DAY/NIGHT» IS NOT «NO SUN» — AND THAT IS WHERE THE AIR WENT ═══════════════
+     「MapLibreの地球周辺の大気は…（追記：そもそも消えてしまっている）（追記：いやだからなんで前まで
+       あった大気が消えとんねんって言ってんねん）」「そもそも前作った大気がなくなってる」 — reported
+     for the fourth round, and #R238b's answer (restore `atmosphere-blend`) was necessary and not
+     sufficient, because the property was never the thing that had gone.
+
+     ⚠ MEASURED, and the control is exact. maplibre's globe atmosphere takes its sun from
+     `style.light` and from nowhere else (`drawAtmosphere` → `getSunPos(light, transform)`), so the
+     light IS the atmosphere's brightness. This function called `setSunDirection(null)` whenever the
+     day/night side was off, and `null` means «maplibre's own default», which is
+     `{anchor:'viewport', position:[1.15,210,30]}` — a sun fixed at a shallow angle behind the
+     reader's left shoulder, in VIEW space, while the scattering integral marches in PLANET space.
+     Same camera, same build, only the light changed:
+
+         place        sun aimed (map anchor)      light = maplibre's default
+         Congo        [ 71,112, 77]               [ 35, 62, 13]
+         Atlantic     [ 44,105,134]               [  2, 51, 72]
+         Indian       [ 44,111,141]               [  1, 56, 75]
+         Sahara       [255,251,227]               [248,217,171]
+
+     That second column is a globe with no air on it, and it is byte-for-byte what the #R226 build
+     renders when it is handed the same light — i.e. nothing about the atmosphere pass regressed;
+     the app simply stopped telling it where the Sun is. Switching the day/night layer off turned
+     the atmosphere off with it, and on the vector basemap `_nightSideOff()` is ALWAYS true.
+
+     ⚠ SO «OFF» NOW MEANS «NO TERMINATOR», WHICH IS WHAT WAS ASKED FOR, RATHER THAN «NO SUN».
+     The sun is aimed at the point the camera is looking at, so the visible disc is lit from
+     straight on: there is no light/dark division anywhere on screen — 「昼夜を表示するのをオフに」
+     and 「Mapではなにも無し」 are both satisfied — and the scattering integral still has a sun in
+     the right frame, so the air is on the globe. It follows the camera through the same settle
+     this file already runs, so panning cannot bring a terminator into view. */
   function _aimSun(){ if(_sunSimOwnsLight()||_skyIsOwnedElsewhere()) return false;
     if(_nightSideOff()){
-      try{ GE().scene.setSunDirection(null); }catch(_){}
-      return false;
+      /* the sub-camera point: sun overhead where the reader is looking ⇒ no terminator on screen */
+      let c=null; try{ c=GE().camera.getCenter(); }catch(_){}
+      if(!(c&&isFinite(c.lng)&&isFinite(c.lat))) return false;
+      try{ return GE().scene.setSunDirection({lng:c.lng,lat:c.lat}); }catch(_){ return false; }
     }
     const p=_sunOverheadPoint(); if(!p) return false;
     try{ return GE().scene.setSunDirection(p); }catch(_){ return false; } }
@@ -822,11 +855,23 @@ export function makeThemeSky(HOST, CTX) {
            is exactly what #R227 avoided — and avoiding it is not a decision this file gets to make
            on its own. If the sum is too strong, that is a number to bring to the reader, not a
            feature to delete. */
+        /* ══ ⚠ (#R240) THE STRENGTHS ARE #R187's AND #R205's; THE ZOOM TAPER IS NOT ═══════════════════
+           「ある程度までズームインすると途端に見えなくなってしまう」. Measured over a zoom sweep with
+           the sun aimed, the air on screen fell 43.7 → 38.5 → 32.3 → 25.6 → 23.9 from z4 to z11 and
+           then to 0.00 at z12. Half of that fall was this ramp and it is redundant: maplibre
+           multiplies the blend by `projectionTransition`, i.e. by globeness, which is already 0 by
+           z12 — the taper was written when the pass covered the whole screen and had to get out of
+           the way of a street, and the projection now does that on its own. Holding the value flat
+           to z11 is what stops the air thinning out as the reader comes in.
+           ⚠ THE z0 NUMBERS ARE UNTOUCHED — 0.55 satellite (#R187), 0.80 dark map, 0.15 light map
+           (#R205). Those were swept against real screenshots for clipping over bright surfaces and
+           this round has no measurement that argues with them. Only the middle of the curve moved,
+           and the tail past z13 stays as a backstop for a renderer that does not apply globeness. */
         'atmosphere-blend':(sat
-          ?['interpolate',['linear'],['zoom'],0,0.55,4,0.48,7,0.32,10,0.14,13,0.035,15,0]
+          ?['interpolate',['linear'],['zoom'],0,0.55,8,0.52,11,0.45,13,0.10,15,0]
           :(_mapIsLight()
-            ?['interpolate',['linear'],['zoom'],0,0.15,4,0.13,7,0.086,10,0.038,13,0.009,15,0]
-            :['interpolate',['linear'],['zoom'],0,0.80,4,0.70,7,0.46,10,0.20,13,0.05,15,0]))});
+            ?['interpolate',['linear'],['zoom'],0,0.15,8,0.142,11,0.123,13,0.027,15,0]
+            :['interpolate',['linear'],['zoom'],0,0.80,8,0.76,11,0.66,13,0.15,15,0]))});
       _aimSun();
     }catch(_){}
   }
@@ -847,6 +892,17 @@ export function makeThemeSky(HOST, CTX) {
          climbs out of the atmosphere without the Sun moving still hands the band over. Comparing
          only the colours would leave maplibre's own halo drawn under ours, or ours switched off. */
       const limb=_limbOwnsRim();
+      /* ⚠ (#R240) …and with the day/night side OFF the sun is aimed at the SUB-CAMERA POINT (see
+         `_aimSun`), so a pan is exactly what moves it. Nothing else in the comparison below notices
+         a pure pan — the colours are a function of the Sun's elevation at the centre, which barely
+         changes when the sun IS the centre — so panning would leave the light behind the reader and
+         a terminator would walk into view. Re-aim on a moved centre; that is one setLight, not a
+         re-parse of the sky block, so it is cheap enough for the per-frame camera hook. */
+      if(_nightSideOff()){
+        try{ const c=GE().camera.getCenter(), p=_aimSun._at;
+          if(c&&isFinite(c.lng)&&(!p||Math.abs(c.lng-p.lng)>0.25||Math.abs(c.lat-p.lat)>0.25)){
+            _aimSun._at={lng:c.lng,lat:c.lat}; _aimSun(); } }catch(_){}
+      } else { _aimSun._at=null; }
       if(hz===_applySkyAtmosphere._hz&&sc===_applySkyAtmosphere._sc
          &&fg.ground===of.ground&&fg.horizon===of.horizon&&limb===_applySkyAtmosphere._limb) return;
       _applySkyAtmosphere(HOST.mapType==='sat');

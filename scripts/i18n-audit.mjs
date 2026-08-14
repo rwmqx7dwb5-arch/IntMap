@@ -54,6 +54,13 @@ const keyed = run('i18n-keyed-audit.mjs');
 const pages = run('i18n-pages-audit.mjs');
 const pos = run('i18n-positional-audit.mjs');
 const two = run('i18n-two-branch-audit.mjs');
+/* ══ ⚠⚠⚠ (#R240) THE SIXTH SURFACE — «is this string in the system at all» ═════════════════════════
+   Every instrument above measures HOW MUCH OF THE TABLE a language has. None of them can see a
+   string that was never given a key, and 49 of those were shipping: every `title`, `aria-label` and
+   `placeholder` in index.html was a bare literal, i.e. English on nine languages while all five
+   percentages read 100 %. That is 「まだある」, and it is a different question, so it is a new
+   surface HERE rather than a sixth free-standing instrument. */
+const attrs = run('i18n-attr-audit.mjs');
 const orphanKeys = keyed.undeclared;
 
 const keyedBy = new Map(keyed.rows.map((r) => [r.code, r]));
@@ -84,7 +91,7 @@ const shortOf = (r) => (r.keyed[0] < r.keyed[1]) || (r.inline && r.inline[0] < r
   || (r.positional && r.positional[0] < r.positional[1]) || (r.pages[0] < r.pages[1]);
 
 if (process.argv.includes('--json')) {
-  console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short }));
+  console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short, unkeyedAttrs: attrs.total }));
   process.exit(0);
 }
 
@@ -116,7 +123,11 @@ for (const r of rows) {
 console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.total}`
   + `\ncall sites with fewer than five positional arguments: ${pos.shortSites ?? pos.short}`
   + `\ndata-i18n keys in HTML that NO language declares: ${orphanKeys.length}`
-  + (orphanKeys.length ? '\n    ' + orphanKeys.join('\n    ') : ''));
+  + (orphanKeys.length ? '\n    ' + orphanKeys.join('\n    ') : '')
+  /* (#R240) the sixth surface — see the note by `attrs` above */
+  + `\ntitle / aria-label / placeholder / alt with NO key at all: ${attrs.total}`
+  + (attrs.total ? '\n    ' + [...new Set(attrs.findings.map((f) => f.text))].slice(0, 20).join('\n    ')
+      + '\n    (node scripts/i18n-attr-audit.mjs lists every one, with its line)' : ''));
 
 if (process.argv.includes('--gate')) {
   const bad = rows.filter(shortOf).map((r) => r.code);
@@ -125,6 +136,7 @@ if (process.argv.includes('--gate')) {
   if (two.total) problems.push(`${two.total} two-branch ternary/ies carrying prose`);
   if ((pos.short ?? 0) > 0) problems.push(`${pos.short} L(…) site(s) with fewer than five arguments`);
   if (orphanKeys.length) problems.push(`${orphanKeys.length} data-i18n key(s) with no English entry`);
+  if (attrs.total) problems.push(`${attrs.total} user-visible attribute(s) with no translation key — run scripts/i18n-attr-audit.mjs`);
   if (problems.length) {
     console.error('\n✖ i18n gate: ' + problems.join('; '));
     console.error('  `node scripts/i18n-audit.mjs --todo <code>` prints the commands that close each gap.');

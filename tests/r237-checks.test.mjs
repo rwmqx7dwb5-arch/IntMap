@@ -91,7 +91,13 @@ test('R237 seismic: every intensity chip is the same box, whatever is written in
      every chip is one box, and a shorter label is centred in it rather than shrinking it — written
      against the mechanism instead of against the constant, per #R203. The measurement itself is
      checked in tests/r238-checks. */
-  assert.match(cell, /width:'\+_chipW\(\)\+'px/, 'the box has one width for every class');
+  /* ══ ⚠ (#R240) …AND THE SPELLING MOVED AGAIN, FOR THE SAME REASON AND WITH THE SAME CLAIM ════════
+     「各地の表内のJMAの背景の四角は、JMAで大きさをそろえるように。MMIはまた別の幅。」 The maximum is
+     now taken over the labels of the SCALE BEING PRINTED rather than over both scales at once, so a
+     震度 table is no longer padded out to the width of 「MMI VIII」. Every chip in a column is still
+     exactly one box — which is what this test has always asserted — and `_chipW(jp)` is where that
+     one box comes from. */
+  assert.match(cell, /width:'\+_chipW\(jp\)\+'px/, 'the box has one width for every class of the scale in use');
   assert.doesNotMatch(cell, /min-width:\d+px/, 'and it is not a min-width a longer label can push past');
   assert.match(cell, /text-align:center/, '…and a shorter label is centred in it');
   assert.match(cell, /box-sizing:border-box/, 'so the padding is inside the width, not added to it');
