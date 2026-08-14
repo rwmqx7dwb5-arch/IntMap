@@ -260,6 +260,13 @@ let __winZ=4300;
       el.classList.add('im-docked');
       _flatten(el);
       host.appendChild(el);
+      /* ⚠ (#R240) 「パネル内のポップアップや凡例は最小化された状態でスタートしないように。」 — a legend
+         that was auto-collapsed while it floated over a phone's map (js/data-layers.js
+         `ensureLegendMinimize`) must arrive in the column OPEN. This calls the panel's own toggle;
+         nothing here re-implements it, and it is deliberately NOT undone on the way out — how a
+         panel is left is the reader's, not this file's. */
+      try{ window._legendExpand&&window._legendExpand(el); }catch(_){}
+      try{ if(el.classList.contains('tp-collapsed')){ const b=el.querySelector('.tp-min-btn'); if(b) b.click(); } }catch(_){}
       return true;
     }catch(_){ __docked.delete(el); return false; }
   }

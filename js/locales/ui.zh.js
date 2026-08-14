@@ -11,6 +11,39 @@
 window.IntMapLang.define('zh', {
   /* ① the keyed table — Settings, tabs, layer names, the static UI */
   ui: {
+      /* ══ (#R240) THE SIXTH SURFACE — title / aria-label / placeholder, which had no key at all
+         and were therefore English in every language however complete this table looked. See
+         scripts/i18n-attr-audit.mjs, the gate that now measures «is this string in the system».  */
+      "ttl3dTerrain":"3D 地形",
+      "ttlCompass":"羅盤",
+      "ttlVol3d":"在空中繪製實際尺寸的立體",
+      "ttlDrawTrace":"手繪與描圖",
+      "accGraphite":"石墨灰",
+      "accGreen":"綠色",
+      "accIndigo":"靛藍",
+      "accOrange":"橙色",
+      "accPink":"粉紅",
+      "accPurple":"紫色",
+      "accRed":"紅色",
+      "accTeal":"藍綠",
+      "ttlGridLabels":"格線與標註",
+      "ttlMapLayers":"地圖與圖層",
+      "ttlMapOptions":"地圖選項",
+      "ttlPinPos":"地圖圖釘位置",
+      "ttlMapTools":"地圖工具",
+      "ttlMeasureDA":"測量距離／面積",
+      "ttlMeasureTools":"測量工具",
+      "ttlMyLocation":"我的位置",
+      "ttlObjects":"物件",
+      "ttlRemove":"移除",
+      "ttlResetNorth":"回正北方",
+      "ttlResetBearing":"重設方位",
+      "ttlSearchNews":"欄位有文字時搜尋，否則依目前的新聞設定重新載入",
+      "phPostBody":"分享觀察、問題或推論…",
+      "phPostTitle":"標題",
+      "ttlToggleSidebar":"切換側邊欄",
+      "ttlTools":"工具",
+      "phAisKey":"aisstream.io API 金鑰",
     "lnkTerms":"服務條款",
     "lnkPrivacy":"隱私權政策",
     "legalTabTerms":"條款",
@@ -2416,5 +2449,9 @@ window.IntMapLang.define('zh', {
   "Tap each corner on the map, then press Done.": "在地圖上依序點選各個角，然後按「完成」。",
   "Tap inside the rupture area — this is where the rupture starts.": "請點選震源域內側——這裡就是破裂的起點。",
   "Tap the map. Tapping again moves it.": "點一下地圖即可放置；再點一下會移到新位置。",
+  "Intensity": "震度分佈",
+  "Tap the map to place the hypocenter. Drawing a rupture area first is optional.": "點一下地圖放置震源。先繪製震源域為選用步驟。",
+  "Press to solve the intensity field for this source.": "按下即可計算此震源的震度分佈。",
+  "Done — press ▶ above to watch the waves, or change anything and recompute.": "已完成 — 按上方的 ▶ 播放波動，或修改條件後重新計算。",
   }
 });

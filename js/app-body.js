@@ -448,6 +448,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     document.querySelectorAll('[data-i18n]').forEach(el=>{ if(d[el.getAttribute('data-i18n')]!==undefined) el.innerText=d[el.getAttribute('data-i18n')]; });
     document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ if(d[el.getAttribute('data-i18n-ph')]!==undefined) el.placeholder=d[el.getAttribute('data-i18n-ph')]; });
     document.querySelectorAll('[data-i18n-title]').forEach(el=>{ if(d[el.getAttribute('data-i18n-title')]!==undefined) el.title=d[el.getAttribute('data-i18n-title')]; });
+    /* ⚠⚠ (#R240) THE FOURTH ATTRIBUTE — `aria-label`. It had no key at all, so every screen-reader
+       label and every icon-only control's accessible name was English in all nine languages. It is
+       the same one-line mechanism as the three above; what was missing was the line.
+       See scripts/i18n-attr-audit.mjs, which is the gate that stops a fifth one being forgotten. */
+    document.querySelectorAll('[data-i18n-aria]').forEach(el=>{ if(d[el.getAttribute('data-i18n-aria')]!==undefined) el.setAttribute('aria-label',d[el.getAttribute('data-i18n-aria')]); });
+    document.querySelectorAll('[data-i18n-alt]').forEach(el=>{ if(d[el.getAttribute('data-i18n-alt')]!==undefined) el.setAttribute('alt',d[el.getAttribute('data-i18n-alt')]); });
     document.getElementById('text-settings').innerText=d.settings; document.getElementById('modal-title').innerText=d.modalTitle;
     document.getElementById('lbl-theme').innerText=d.lblTheme; document.getElementById('lbl-tz').innerText=d.lblTz;
     { const tzs=document.getElementById('setting-tz-search'); if(tzs) tzs.placeholder=d.tzSearch||'Search timezone…'; }
@@ -1216,7 +1222,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     GE().layers.setLayout('country-fill','visibility',v); GE().layers.setLayout('country-line','visibility',v); }
   const fmtMoney=(b)=>!b?'—':(b>=1000?'$'+(b/1000).toFixed(2)+'T':'$'+b.toFixed(0)+'B');
   const fmtPc=(v)=>v?'$'+Math.round(v).toLocaleString():'—';
-  const cName=(s,f)=>(currentLang==='jp'&&s&&s.nameJp)?s.nameJp:(s&&s.nameEn)||f||'—';
+  /* (#R240) a country's name in the reader's language. The MECHANISM is in js/countries-ui.js
+     (`window._imCldrRegion`) rather than here: tests/r168 #8 budgets this shell at 8,200 lines and
+     the rule that test states is that the ceiling follows the floor DOWN — so a new mechanism goes
+     where the feature lives, never into the shell. See there for why it is CLDR and not a table. */
+  const cName=(s,f)=>{
+    if(currentLang==='jp'&&s&&s.nameJp) return s.nameJp;
+    if(currentLang!=='en'&&s&&s.a2&&window._imCldrRegion){ const n=window._imCldrRegion(s.a2,currentLang); if(n) return n; }
+    return (s&&s.nameEn)||f||'—';
+  };
   function hideCountryInfo(){ document.getElementById('country-info').style.display='none'; }
   function resolveCountryId(feat){
     const p=(feat&&feat.properties)||{};

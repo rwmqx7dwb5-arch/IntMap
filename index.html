@@ -35,7 +35,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R240';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +50,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-14-R239';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-14-R240';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -331,8 +331,8 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
     </div>
     <div class="search-bar" id="sidebar-search-bar">
       <input type="text" id="search-input" class="search-input" placeholder="Search..." data-i18n-ph="searchPh">
-      <button class="search-btn" id="btn-search" data-i18n="searchLoadBtn" title="Search if the box has text, otherwise reload with the current news settings">Search / Load</button>
-      <button class="csearch-pickbtn" id="csearch-pick" type="button" data-i18n-title="pickCountryMap" title="Pick a country on the map" aria-label="Pick a country on the map"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/></svg></button>
+      <button class="search-btn" id="btn-search" data-i18n="searchLoadBtn" title="Search if the box has text, otherwise reload with the current news settings" data-i18n-title="ttlSearchNews">Search / Load</button>
+      <button class="csearch-pickbtn" id="csearch-pick" type="button" data-i18n-title="pickCountryMap" title="Pick a country on the map" aria-label="Pick a country on the map" data-i18n-aria="pickCountryMap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/></svg></button>
     </div>
     <!-- (#R30) All/Saved AND Subject/Publisher share ONE row ("Newsのall/saved, subject/publisher locationは
          一列に"). News location is pre-analysed server-side (refresh-news → current_news); no client AI-locate. -->
@@ -342,7 +342,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
           <button class="ios-segment-btn active" id="newsfilter-all">All</button>
           <button class="ios-segment-btn" id="newsfilter-saved">★ Saved</button>
         </div>
-        <div class="ios-segment" id="news-pinmode-seg" role="tablist" title="Map pin position">
+        <div class="ios-segment" id="news-pinmode-seg" role="tablist" title="Map pin position" data-i18n-title="ttlPinPos">
           <button class="ios-segment-btn active" id="pinmode-loc" data-i18n="pinModeLoc">Subject</button>
           <button class="ios-segment-btn" id="pinmode-pub" data-i18n="pinModePub">Publisher</button>
         </div>
@@ -358,7 +358,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
          windows, so Countries can no longer borrow the shared #sidebar-search-bar (which lives in News). -->
     <div class="search-bar" id="countries-search-bar" style="display:none;">
       <input type="text" id="countries-search-input" class="search-input" placeholder="Filter countries…" data-i18n-ph="filterCountriesPh">
-      <button class="csearch-pickbtn on-tab" id="csearch-pick-ws" type="button" data-i18n-title="pickCountryMap" title="Pick a country on the map" aria-label="Pick a country on the map"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/></svg></button>
+      <button class="csearch-pickbtn on-tab" id="csearch-pick-ws" type="button" data-i18n-title="pickCountryMap" title="Pick a country on the map" aria-label="Pick a country on the map" data-i18n-aria="pickCountryMap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/></svg></button>
     </div>
     <div class="content-area" id="countries-feed" style="display:none;"></div><!-- (#R78e) Countries gets its OWN feed so News & Countries can be separate workspace windows -->
     <div class="search-bar" id="info-search-bar" style="display:none;"><!-- (#R153) Companies own filter box → workspace-mode Companies window can filter, mirroring #countries-search-bar (Countries parity) -->
@@ -379,7 +379,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
   </div>
 
   <div class="map-container" id="map-container">
-    <button class="btn-toggle-sidebar" id="btn-toggle-sidebar" title="Toggle Sidebar"><span class="chev"></span></button>
+    <button class="btn-toggle-sidebar" id="btn-toggle-sidebar" title="Toggle Sidebar" data-i18n-title="ttlToggleSidebar"><span class="chev"></span></button>
     <div class="map-search" id="map-search">
       <input id="ms-input" type="text" placeholder="Search any place on Earth..." data-i18n-ph="msPh">
       <!-- (#R231) 「地名検索ボタンの🔍絵文字は、絵文字ではなく独自のシンプルなアイコンに置換して。」
@@ -389,7 +389,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
            one 3.7-long handle at 45°, drawn with the same 2 px round-cap stroke as every other icon in
            this chrome (the compass, the locate arrow, the map/tools FABs) — so it is OUR line weight and
            OUR colour (currentColor) instead of a vendor-drawn colour emoji that ignored both. -->
-      <button id="ms-btn" title="Search"><span class="ms-btn-t" data-i18n="searchBtn">Search</span><svg class="ms-ico" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m15.7 15.7 4.1 4.1"/></svg></button>
+      <button id="ms-btn" title="Search" data-i18n-title="searchBtn"><span class="ms-btn-t" data-i18n="searchBtn">Search</span><svg class="ms-ico" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m15.7 15.7 4.1 4.1"/></svg></button>
       <div class="map-search-results" id="ms-results"></div>
     </div>
     <div class="map-controls-top">
@@ -403,8 +403,8 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
       <div class="map-view-group">
         <button class="view-btn" id="btn-view-flat" data-i18n="flat">Flat</button>
         <button class="view-btn active" id="btn-view-globe" data-i18n="globe">Globe</button>
-        <button class="view-btn" id="btn-view-3d" data-i18n="threeD" title="3D terrain">⛰️ 3D</button>
-        <button class="view-btn compass-btn" id="btn-compass" title="Reset North">
+        <button class="view-btn" id="btn-view-3d" data-i18n="threeD" title="3D terrain" data-i18n-title="ttl3dTerrain">⛰️ 3D</button>
+        <button class="view-btn compass-btn" id="btn-compass" title="Reset North" data-i18n-title="ttlResetNorth">
           <svg class="compass-svg" width="34" height="34" viewBox="0 0 24 24">
             <polygon points="12,2 9,12 12,9.5 15,12" fill="#ff3b30"/>
             <polygon points="12,22 9,12 12,14.5 15,12" fill="#9aa0a6"/>
@@ -412,7 +412,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
         </button>
       </div>
       <div class="map-view-group" id="map-tools-group">
-        <button class="view-btn" id="btn-tool-grid" data-i18n="gridBtn" title="Grid + Labels" style="display:none;">🌐 Grid</button>
+        <button class="view-btn" id="btn-tool-grid" data-i18n="gridBtn" title="Grid + Labels" data-i18n-title="ttlGridLabels" style="display:none;">🌐 Grid</button>
         <!-- (#R130) Objects manager moved OFF the bottom-left FAB (which read as "in the sidebar") INTO the top-right
              toolbar. Shown only when >=1 map object exists (same visibility as the old FAB); wired + counted by
              IntMapObjects.tickFab. On mobile the toolbar is hidden, so the FAB stays.
@@ -420,14 +420,14 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
              it sat between the Measure menu and the Share menu; it belongs to the LEFT of Measure. Markup order is
              the whole change: .map-view-group is a plain flex row with no first/last-child styling, and the panel
              follows the button on its own (IntMapObjects._placePanel anchors under #btn-tool-objects' own rect). -->
-        <button class="view-btn" id="btn-tool-objects" title="Objects" style="display:none;"><span data-i18n="objectsBtn">🗂 Objects</span><span id="tool-objects-n" style="margin-left:5px;font-weight:700;opacity:0.85;"></span></button>
+        <button class="view-btn" id="btn-tool-objects" title="Objects" data-i18n-title="ttlObjects" style="display:none;"><span data-i18n="objectsBtn">🗂 Objects</span><span id="tool-objects-n" style="margin-left:5px;font-weight:700;opacity:0.85;"></span></button>
         <div class="measure-menu-container">
-          <button class="view-btn" id="btn-measure-menu" title="Measurement tools">📐 <span data-i18n="measureMenuBtn">Measure</span> <span class="caret-sm">▾</span></button>
+          <button class="view-btn" id="btn-measure-menu" title="Measurement tools" data-i18n-title="ttlMeasureTools">📐 <span data-i18n="measureMenuBtn">Measure</span> <span class="caret-sm">▾</span></button>
           <div class="measure-dropdown" id="measure-dropdown">
-            <button class="view-btn" id="btn-tool-measure" data-i18n="measureDistBtn" title="Measure distance / area">📏 Distance / area</button>
-            <button class="view-btn" id="btn-tool-draw" data-i18n="drawBtn" title="Freehand draw & trace">✏️ Draw</button>
-            <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button><!-- (#R151) Radius folded INTO the Measure menu (Distance/area · Draw · Radius) per request -->
-            <button class="view-btn" id="btn-tool-volume" data-i18n="vol3dBtn" title="Draw a real-scale 3-D volume in the air">🧊 3-D volume</button><!-- (#R170) 3-D volume: footprint + an altitude band, extruded at true scale -->
+            <button class="view-btn" id="btn-tool-measure" data-i18n="measureDistBtn" title="Measure distance / area" data-i18n-title="ttlMeasureDA">📏 Distance / area</button>
+            <button class="view-btn" id="btn-tool-draw" data-i18n="drawBtn" title="Freehand draw & trace" data-i18n-title="ttlDrawTrace">✏️ Draw</button>
+            <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius" data-i18n-title="radius">⭕ Radius</button><!-- (#R151) Radius folded INTO the Measure menu (Distance/area · Draw · Radius) per request -->
+            <button class="view-btn" id="btn-tool-volume" data-i18n="vol3dBtn" title="Draw a real-scale 3-D volume in the air" data-i18n-title="ttlVol3d">🧊 3-D volume</button><!-- (#R170) 3-D volume: footprint + an altitude band, extruded at true scale -->
             <!-- (#R176) 「DronesはMeasureに置くな。どこにも置くな。」 — the 🛸 Drone button is gone from this menu
                  and from the mobile Tools sheet. The planner itself (js/drone-nav.js) is untouched and still
                  answers the Atlas `drone` action; only its place in the toolbar was wrong. -->
@@ -435,7 +435,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
         </div>
         <!-- (#R151) Screenshot + link folded INTO one Share menu per request -->
         <div class="share-menu-container">
-          <button class="view-btn" id="btn-share-menu" title="Share"><span aria-hidden="true">🔗</span> <span data-i18n="shareMenuBtn">Share</span> <span class="caret-sm">▾</span></button>
+          <button class="view-btn" id="btn-share-menu" title="Share" data-i18n-title="shareMenuBtn"><span aria-hidden="true">🔗</span> <span data-i18n="shareMenuBtn">Share</span> <span class="caret-sm">▾</span></button>
           <div class="share-dropdown" id="share-dropdown">
             <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot">📷 <span data-i18n="mScreenshot">Screenshot</span></button>
             <button class="view-btn" id="btn-share" data-i18n-title="shareView" title="Share this view">🔗 <span data-i18n="shareLinkBtn">Share / copy link</span></button>
@@ -497,7 +497,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
          era marks, and a "What's applied" chip row. Closes when the user operates elsewhere on the map. -->
     <div id="news-timeline" class="news-timeline collapsed">
       <!-- (#R102/#27) collapsed = the labeled "See the past world / 1900 to present" button (per the attached mock) -->
-      <button class="ntl-open" id="ntl-toggle" type="button" title="Time machine">
+      <button class="ntl-open" id="ntl-toggle" type="button" title="Time machine" data-i18n-title="tlMachine">
         <span class="ntl-open-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l2.5 1.7"/></svg></span>
         <span class="ntl-open-txt"><b id="ntl-open-t">See the past world</b><small id="ntl-open-s">1900 to present</small></span>
       </button>
@@ -505,7 +505,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
         <div class="ntl-title-row">
           <div class="ntl-title" id="ntl-title" data-i18n="tlMachine">Time machine</div>
           <span class="ntl-badge" id="ntl-badge"></span>
-          <button class="ntl-x" id="ntl-x" type="button" aria-label="Close" title="Close">×</button>
+          <button class="ntl-x" id="ntl-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close">×</button>
         </div>
         <div class="ntl-modes" id="ntl-modes">
           <button class="ntl-mode on" id="ntl-mode-year" type="button" data-mode="year"></button>
@@ -528,7 +528,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
 
 <div class="modal-overlay" id="settings-modal">
   <div class="modal-content" style="position:relative;">
-    <button id="settings-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
+    <button id="settings-close-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <!-- (#R39) The settings body scrolls inside .settings-scroll so the scrollbar gutter lives INSIDE the
          scroll area, not beside the sticky footer. That removes the ~11px gap to the right of the Apply
          footer's rounded corner ("Apply UIの右下が角丸で隙間がある"). The footer is now a flush flex child. -->
@@ -552,14 +552,14 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
     <div class="setting-group"><label data-i18n="lblAccent">Accent color</label>
       <div class="accent-picker" id="accent-picker">
         <button type="button" class="accent-sw" data-accent="default" style="--sw:#0a84ff" data-i18n-title="accentDefault" title="Default"></button>
-        <button type="button" class="accent-sw" data-accent="#5e5ce6" style="--sw:#5e5ce6" title="Indigo"></button>
-        <button type="button" class="accent-sw" data-accent="#af52de" style="--sw:#af52de" title="Purple"></button>
-        <button type="button" class="accent-sw" data-accent="#ff2d55" style="--sw:#ff2d55" title="Pink"></button>
-        <button type="button" class="accent-sw" data-accent="#ff3b30" style="--sw:#ff3b30" title="Red"></button>
-        <button type="button" class="accent-sw" data-accent="#ff9500" style="--sw:#ff9500" title="Orange"></button>
-        <button type="button" class="accent-sw" data-accent="#34c759" style="--sw:#34c759" title="Green"></button>
-        <button type="button" class="accent-sw" data-accent="#30b0c7" style="--sw:#30b0c7" title="Teal"></button>
-        <button type="button" class="accent-sw" data-accent="#8e8e93" style="--sw:#8e8e93" title="Graphite"></button>
+        <button type="button" class="accent-sw" data-accent="#5e5ce6" style="--sw:#5e5ce6" title="Indigo" data-i18n-title="accIndigo"></button>
+        <button type="button" class="accent-sw" data-accent="#af52de" style="--sw:#af52de" title="Purple" data-i18n-title="accPurple"></button>
+        <button type="button" class="accent-sw" data-accent="#ff2d55" style="--sw:#ff2d55" title="Pink" data-i18n-title="accPink"></button>
+        <button type="button" class="accent-sw" data-accent="#ff3b30" style="--sw:#ff3b30" title="Red" data-i18n-title="accRed"></button>
+        <button type="button" class="accent-sw" data-accent="#ff9500" style="--sw:#ff9500" title="Orange" data-i18n-title="accOrange"></button>
+        <button type="button" class="accent-sw" data-accent="#34c759" style="--sw:#34c759" title="Green" data-i18n-title="accGreen"></button>
+        <button type="button" class="accent-sw" data-accent="#30b0c7" style="--sw:#30b0c7" title="Teal" data-i18n-title="accTeal"></button>
+        <button type="button" class="accent-sw" data-accent="#8e8e93" style="--sw:#8e8e93" title="Graphite" data-i18n-title="accGraphite"></button>
         <label class="accent-custom" data-i18n-title="accentCustom" title="Custom color"><input type="color" id="setting-accent-custom" value="#007aff"></label>
       </div>
     </div>
@@ -627,7 +627,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
     
     <div class="setting-group"><label id="lbl-tz">Timezone Setting</label>
       <div class="tz-combo" id="tz-combo" style="position:relative;">
-        <input type="text" id="setting-tz-search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" placeholder="Search timezone…">
+        <input type="text" id="setting-tz-search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" placeholder="Search timezone…" data-i18n-ph="tzSearch">
         <div class="tz-results" id="tz-results"></div>
         <select id="setting-tz" size="1" style="display:none;" aria-hidden="true"></select>
       </div>
@@ -682,7 +682,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
     <div class="setting-group" id="ais-key-group">
       <label data-i18n="aisKeyLabel">Live ship traffic (AISstream key)</label>
       <div class="sat-keys-hint" data-i18n="aisKeyHint">Get a free key at aisstream.io and paste it here to see live ship traffic. Stored only in this browser.</div>
-      <input type="text" id="setting-ais-key" placeholder="aisstream.io API key" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.18);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;">
+      <input type="text" id="setting-ais-key" placeholder="aisstream.io API key" data-i18n-ph="phAisKey" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.18);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;">
     </div>
     </div>
     <div class="settings-sech" data-i18n="setSecAbout">About &amp; support</div>
@@ -749,7 +749,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
 <!-- (#R9) Support / "Buy me a blueberry" -->
 <div class="modal-overlay" id="blueberry-modal">
   <div class="modal-content" style="position:relative;max-width:440px;text-align:center;">
-    <button id="blueberry-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
+    <button id="blueberry-close-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <div id="blueberry-emoji" style="display:none;font-size:46px;line-height:1;margin:6px 0 12px;"></div>
     <h3 id="blueberry-title" style="margin:0 0 12px;font-size:17px;font-weight:500;">Support IntMap</h3>
     <p id="blueberry-body" style="font-size:13.5px;line-height:1.65;color:var(--text-main);white-space:pre-line;margin:0 0 18px;"></p>
@@ -761,7 +761,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
 <!-- Terms of Service / Privacy Policy -->
 <div class="modal-overlay" id="legal-modal">
   <div class="modal-content" style="position:relative;max-width:560px;max-height:86vh;overflow-y:auto;">
-    <button id="legal-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
+    <button id="legal-close-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <div style="display:flex;gap:6px;margin:0 0 14px;">
       <button id="legal-tab-terms" class="ios-segment-btn" data-i18n="legalTabTerms" style="flex:1;">Terms</button>
       <button id="legal-tab-privacy" class="ios-segment-btn" data-i18n="legalTabPrivacy" style="flex:1;">Privacy</button>
@@ -777,7 +777,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
        WIDER than its width — so the modal was 340 px no matter what this said. That is the report
        「データ出典のポップアップが小さすぎる」: a list of ~90 sources in a 340 px column. -->
   <div class="modal-content" style="position:relative;overflow-y:auto;">
-    <button id="sources-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
+    <button id="sources-close-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <h3 style="margin:0 0 6px 0; font-size:18px;" id="sources-title">Data sources</h3>
     <p style="margin:0 0 8px;color:var(--text-muted);font-size:12px;line-height:1.5;" id="sources-sub"></p>
     <!-- (#R212) the full page: the same registry, grouped, with licences, live-vs-bundled and the
@@ -787,7 +787,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
   </div>
 </div>
 <div class="country-popup" id="country-popup">
-  <button class="country-popup-close" id="cp-close" title="Close">✕</button>
+  <button class="country-popup-close" id="cp-close" title="Close" data-i18n-title="close">✕</button>
   <div class="country-popup-header"><h3 id="cp-title"></h3></div>
   <div id="cp-body"></div>
 </div>
@@ -797,14 +797,14 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
 <div class="compose-modal" id="compose-modal">
   <div class="compose-content">
     <h3 id="compose-title">New post</h3>
-    <input type="text" id="compose-post-title" placeholder="Title" maxlength="80">
-    <textarea id="compose-post-body" placeholder="Share an observation, question, or theory..." maxlength="800"></textarea>
+    <input type="text" id="compose-post-title" placeholder="Title" data-i18n-ph="phPostTitle" maxlength="80">
+    <textarea id="compose-post-body" placeholder="Share an observation, question, or theory..." data-i18n-ph="phPostBody" maxlength="800"></textarea>
     <div class="compose-cat-label" id="compose-cat-label">Category</div>
     <div class="comm-cat-row compose-cats" id="compose-cats"></div>
     <div class="compose-img-row">
       <label class="compose-img-btn" for="compose-img">🖼 <span id="compose-img-label" data-i18n="commAddImage">Add image</span></label>
       <input type="file" id="compose-img" accept="image/*" style="display:none;">
-      <div class="compose-img-preview" id="compose-img-preview"><img id="compose-img-thumb" alt=""><button type="button" class="compose-img-remove" id="compose-img-remove" title="Remove">×</button></div>
+      <div class="compose-img-preview" id="compose-img-preview"><img id="compose-img-thumb" alt=""><button type="button" class="compose-img-remove" id="compose-img-remove" title="Remove" data-i18n-title="ttlRemove">×</button></div>
     </div>
     <div class="coord-hint" id="compose-coord-hint">Click anywhere on the map to set a location, then return here.</div>
     <button type="button" id="compose-place" style="width:100%;background:var(--input-bg);color:var(--text-main);border:none;padding:9px;border-radius:9px;font-weight:600;font-size:12.5px;cursor:pointer;margin-bottom:10px;">📍 <span id="compose-place-label">Move pin on map</span></button>
@@ -817,18 +817,18 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
 
 <!-- ===================== iOS mobile chrome (phones only; CSS-hidden on desktop) ===================== -->
 <div class="m-fab-stack" id="m-fab-stack">
-  <button class="m-fab" id="m-fab-map" type="button" aria-label="Map & layers" title="Map">
+  <button class="m-fab" id="m-fab-map" type="button" aria-label="Map & layers" data-i18n-aria="ttlMapLayers" title="Map" data-i18n-title="viewMap">
     <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 7.7l9 4.7 9-4.7L12 3Z"/><path d="m3 12 9 4.7L21 12"/><path d="m3 16.3 9 4.7 9-4.7"/></svg>
   </button>
-  <button class="m-fab" id="m-fab-tools" type="button" aria-label="Map tools" title="Tools">
+  <button class="m-fab" id="m-fab-tools" type="button" aria-label="Map tools" data-i18n-aria="ttlMapTools" title="Tools" data-i18n-title="ttlTools">
     <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 3.3a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4L8.6 21 3 21l0-5.6L14.7 3.3Z"/><path d="m11.5 6.5 6 6M8 10l2 2M5.5 12.5l2 2"/></svg>
   </button>
-  <button class="m-fab m-fab-compass" id="m-fab-compass" type="button" aria-label="Reset bearing" title="Compass">
+  <button class="m-fab m-fab-compass" id="m-fab-compass" type="button" aria-label="Reset bearing" data-i18n-aria="ttlResetBearing" title="Compass" data-i18n-title="ttlCompass">
     <svg class="m-compass-svg" viewBox="0 0 24 24" width="38" height="38"><polygon points="12,3 9.4,12 12,9.9 14.6,12" fill="#ff3b30"/><polygon points="12,21 9.4,12 12,14.1 14.6,12" fill="#9aa0a6"/></svg>
   </button>
   <!-- (#R137) "Go to my location" FAB — same UI as the three above; sits directly under the compass. Flies to the
        user's position and shows an accent dot + accuracy circle that follow them (see window.IntMapLocate). -->
-  <button class="m-fab m-fab-locate" id="m-fab-locate" type="button" aria-label="My location" title="My location">
+  <button class="m-fab m-fab-locate" id="m-fab-locate" type="button" aria-label="My location" data-i18n-aria="ttlMyLocation" title="My location" data-i18n-title="ttlMyLocation">
     <!-- (#R231) 「現在地移動ボタンは現在のアイコンから、現在地表示によくあるシンプルなブーメラン型四角形
          アイコンに。」 The dart every map app uses for "where I am": four points — the tip, the two wings
          and the notch between them — pointing north-east.
@@ -841,7 +841,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
 </div>
 <div class="m-scrim" id="m-scrim"></div>
 
-<div class="m-sheet" id="mo-sheet" role="dialog" aria-modal="true" aria-label="Map options">
+<div class="m-sheet" id="mo-sheet" role="dialog" aria-modal="true" aria-label="Map options" data-i18n-aria="ttlMapOptions">
   <div class="m-sheet-grip"></div>
   <div class="m-sheet-head"><span class="m-sheet-title" id="mo-title" data-i18n="mTitleMap">Map</span><button class="m-sheet-done" id="mo-done" type="button" data-i18n="mDone">Done</button></div>
   <div class="m-sheet-scroll">
@@ -857,7 +857,7 @@ window.__imBuild='R239';/* (#R121) build marker — bump when verifying that a r
   </div>
 </div>
 
-<div class="m-sheet" id="tools-sheet" role="dialog" aria-modal="true" aria-label="Map tools">
+<div class="m-sheet" id="tools-sheet" role="dialog" aria-modal="true" aria-label="Map tools" data-i18n-aria="ttlMapTools">
   <div class="m-sheet-grip"></div>
   <div class="m-sheet-head"><span class="m-sheet-title" data-i18n="mTitleTools">Tools</span><button class="m-sheet-done" id="tools-done" type="button" data-i18n="mDone">Done</button></div>
   <div class="m-sheet-scroll">

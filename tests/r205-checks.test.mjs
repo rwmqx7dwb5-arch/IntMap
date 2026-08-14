@@ -46,10 +46,23 @@ test('R205 ① a layer can keep its text opaque while its fill follows the opaci
 /* ── ② 「地震シミュレータは、別の震源地を選びなおせない。地図に白い丸が出るだけ」 ────────────── */
 test('R205 ② the map click has a stated owner and it defaults to the epicentre', () => {
   const s = rd('js/seismic.js');
-  assert.match(s, /let clickMode='epi';/, "the default must be the epicentre, and must be declared with the panel state");
+  /* ══ ⚠⚠ (#R240) THE DEFAULT IS NOW 'none', AND THAT IS THIS TEST'S OWN ARGUMENT KEPT ═══════════
+     #R205's finding was 「地震シミュレータは、別の震源地を選びなおせない」 — a map click had to MEAN
+     something, and the epicentre is what it should mean. That still holds and is unchanged: when the
+     panel opens with no epicentre, `open()` arms 'epi' (asserted below), so the one gesture there is
+     to make is live and the map HUD says so.
+     What changed is the case #R205 did not have: opening onto an earthquake that is ALREADY loaded.
+     Measured on the shipped build, the panel came up with step ② armed, its button reading 「解除」,
+     a banner saying 「地図をタップして震源地を置いてください」 and the row above it printing the
+     coordinates of the hypocentre that was already there — 「手順や流れが全く理解できない。フローが
+     破綻している。」 So the declaration is 'none' and the ARMING is a decision `open()` makes from
+     state, which is what this pair of assertions now pins. */
+  assert.match(s, /let clickMode='none';/, "the declared default arms nothing — see open()");
+  assert.match(s, /if\(!epi&&clickMode==='none'\)\{ setClickMode\('epi'\); \}/,
+    "…and opening with no epicentre still arms the epicentre, which is #R205's finding");
   /* ⚠ declared with the rest of the panel state, ABOVE render() — #R200 lost a whole boot to a `let`
      that a function could reach before its declaration had been evaluated */
-  assert.ok(s.indexOf("let clickMode='epi';") < s.indexOf('function render()'),
+  assert.ok(s.indexOf("let clickMode='none';") < s.indexOf('function render()'),
     'clickMode must be declared before render() reads it');
   const oc = /function onClick\(e\)\{[\s\S]*?GE\(\)\.events\.on\('click',onClick\);/.exec(s);
   assert.ok(oc, 'onClick was not found');
@@ -116,8 +129,16 @@ test('R205 ③ the light basemap gets its own, much weaker atmosphere — and th
     assert.ok(light[z] <= dark[z], `light z${z} (${light[z]}) must not exceed dark (${dark[z]})`);
   }
   assert.ok(light[0] <= 0.16, `the light z0 strength is ${light[0]}; 0.20 already put 69 % of the globe above luminance 235`);
-  /* the ramp keeps its shape rather than being flattened to a constant */
-  assert.ok(light[0] > light[4] && light[4] > light[7] && light[15] === 0);
+  /* the ramp keeps its shape rather than being flattened to a constant
+     ⚠ (#R240) THE STOPS MOVED, THE SHAPE DID NOT. maplibre multiplies this property by globeness,
+     which is 0 by z12, so the ramp's own mid-zoom taper was a SECOND one and it was halving the air
+     on screen between z4 and z11 while the reader zoomed in — 「ある程度までズームインすると途端に
+     見えなくなってしまう」. The middle is flat now and the fall happens where the projection does.
+     What this line has always asserted is that the ramp still FALLS and still reaches zero, so it
+     is written against the first, a middle and the last stop rather than against z4 and z7. */
+  const lz = Object.keys(light).map(Number).sort((a, b) => a - b);
+  assert.ok(light[lz[0]] > light[lz[lz.length - 2]], 'the light ramp still falls with zoom');
+  assert.equal(light[lz[lz.length - 1]], 0, 'and still reaches zero');
 });
 
 /* ── ④ 「ライトモード時に表示する読み込み画面でのロゴはIntMap.Icon_BW-inverted.pngに」 ───────── */

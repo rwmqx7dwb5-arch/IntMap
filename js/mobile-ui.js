@@ -158,7 +158,9 @@ window.IntMapModules.mobileUI=function(HOST){
     let currentDetent='peek';
     function curTy(){ return parseFloat(getComputedStyle(sidebar).getPropertyValue('--sheet-ty'))||0; }
     function detents(){
-      const H=sidebar.offsetHeight||Math.round(window.innerHeight*0.92);
+      /* (#R240) the fallback follows `--sheet-h` (was a second copy of the old 0.92) — the sheet's
+         height has one owner in the stylesheet and this is the only place that has to guess. */
+      const H=sidebar.offsetHeight||Math.round(window.innerHeight*0.86);
       /* Peek collapses the sheet down to JUST BELOW the News/Information tab row, so everything
          beneath the tabs (pin toggle, filters, the feed) hides away — maximising the map. */
       const tabs=sidebar.querySelector('.control-panel');

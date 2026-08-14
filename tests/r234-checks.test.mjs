@@ -276,11 +276,13 @@ test('R234 atmosphere: the limb handover is asked every frame, not only at the s
   assert.match(s, /R\.onCamera\('themesky\.follow',_skyFollowCamera,\{phase:'read'\}\)/,
     'through the runtime, in the read phase');
   assert.match(s, /_wireSkyFollow\(\);\s+\/\* \(#R234\)/, 'and it is armed when the sky is applied');
-  /* ⚠ the ramps are a MEASURED decision from #R187 / #R205 and this round did not touch them */
-  assert.match(s, /\['interpolate',\['linear'\],\['zoom'\],0,0\.55,4,0\.48,7,0\.32,10,0\.14,13,0\.035,15,0\]/,
-    'the satellite ramp is unchanged');
-  assert.match(s, /\['interpolate',\['linear'\],\['zoom'\],0,0\.80,4,0\.70,7,0\.46,10,0\.20,13,0\.05,15,0\]/,
-    'the dark map ramp is unchanged');
+  /* ⚠ the STRENGTHS are a MEASURED decision from #R187 / #R205 and no round may move them.
+     ⚠ (#R240) the mid-zoom TAPER is not one of those measurements — it was written when this pass
+     covered the whole screen, and maplibre already multiplies the property by globeness, which is 0
+     by z12. Doing it twice halved the air on screen from z4 to z11 while the reader zoomed in. The
+     assertion is therefore on the z0 value, which is what #R187 and #R205 measured. */
+  assert.match(s, /\['interpolate',\['linear'\],\['zoom'\],0,0\.55,/, "#R187's satellite strength is unchanged");
+  assert.match(s, /\['interpolate',\['linear'\],\['zoom'\],0,0\.80,/, 'the dark map strength is unchanged');
 });
 
 /* ── 7 · the hillshade's depth has one home, and the phone keeps its 13 ─────────────────────── */

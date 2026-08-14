@@ -20,6 +20,39 @@
  *  prints exactly how much of each table is done.
  * ========================================================================== */
 window.IntMapLang.define('fr', { ui: {
+      /* ══ (#R240) THE SIXTH SURFACE — title / aria-label / placeholder, which had no key at all
+         and were therefore English in every language however complete this table looked. See
+         scripts/i18n-attr-audit.mjs, the gate that now measures «is this string in the system».  */
+      ttl3dTerrain:"Relief 3D",
+      ttlCompass:"Boussole",
+      ttlVol3d:"Dessiner dans les airs un volume 3-D à l’échelle réelle",
+      ttlDrawTrace:"Dessin à main levée et calque",
+      accGraphite:"Graphite",
+      accGreen:"Vert",
+      accIndigo:"Indigo",
+      accOrange:"Orange",
+      accPink:"Rose",
+      accPurple:"Violet",
+      accRed:"Rouge",
+      accTeal:"Turquoise",
+      ttlGridLabels:"Grille et libellés",
+      ttlMapLayers:"Carte et calques",
+      ttlMapOptions:"Options de la carte",
+      ttlPinPos:"Position du repère sur la carte",
+      ttlMapTools:"Outils de carte",
+      ttlMeasureDA:"Mesurer distance / surface",
+      ttlMeasureTools:"Outils de mesure",
+      ttlMyLocation:"Ma position",
+      ttlObjects:"Objets",
+      ttlRemove:"Supprimer",
+      ttlResetNorth:"Orienter vers le nord",
+      ttlResetBearing:"Réinitialiser l’orientation",
+      ttlSearchNews:"Rechercher si le champ contient du texte, sinon recharger avec les réglages d’actualités actuels",
+      phPostBody:"Partagez une observation, une question ou une théorie…",
+      phPostTitle:"Titre",
+      ttlToggleSidebar:"Afficher ou masquer la barre latérale",
+      ttlTools:"Outils",
+      phAisKey:"Clé d’API aisstream.io",
       lnkTerms:"Conditions d'utilisation", lnkPrivacy:"Politique de confidentialité", legalTabTerms:"Conditions", legalTabPrivacy:"Confidentialité", commAddImage:"Ajouter une image",
       tabNews:"Actualités", tabSaved:"★ Enregistrés", tabInfo:"Informations", tabCompanies:"Entreprises", tabStats:"Pays", tabCommunity:"Communauté",
       searchPh:"Rechercher actualités / lieux...", filterCountriesPh:"Filtrer les pays...", filterCompaniesPh:"Filtrer les entreprises...", pickCountryMap:"Choisir un pays sur la carte", searchBtn:"Rechercher", searchLoadBtn:"Rechercher / Charger", loading:"Chargement des articles...",
@@ -2330,4 +2363,8 @@ window.IntMapLang.define('fr', { ui: {
   "zonal": "zonal",
   "Zonal — within ±0.6 K of the sea it flows through": "Zonal — à ±0,6 K près de la mer qu'il traverse",
   "Zoom in / out": "Zoom avant / arrière",
-  "ρ = Spearman rank correlation, r = Pearson (log scale where the metric is log-distributed). Correlation is NOT causation — third factors (income, region) can drive both sides; the listed exception countries are good places to test any explanation.": "ρ = corrélation des rangs de Spearman, r = Pearson (échelle logarithmique lorsque l'indicateur suit une loi log-normale). Corrélation n'est PAS causalité — des facteurs tiers (revenu, région) peuvent agir des deux côtés ; les pays d'exception listés sont de bons cas pour éprouver une explication.",} });
+  "ρ = Spearman rank correlation, r = Pearson (log scale where the metric is log-distributed). Correlation is NOT causation — third factors (income, region) can drive both sides; the listed exception countries are good places to test any explanation.": "ρ = corrélation des rangs de Spearman, r = Pearson (échelle logarithmique lorsque l'indicateur suit une loi log-normale). Corrélation n'est PAS causalité — des facteurs tiers (revenu, région) peuvent agir des deux côtés ; les pays d'exception listés sont de bons cas pour éprouver une explication.",
+  "Intensity": "Intensité",
+  "Tap the map to place the hypocenter. Drawing a rupture area first is optional.": "Touchez la carte pour placer l’hypocentre. Dessiner d’abord une zone de rupture est facultatif.",
+  "Press to solve the intensity field for this source.": "Appuyez pour calculer le champ d’intensité de cette source.",
+  "Done — press ▶ above to watch the waves, or change anything and recompute.": "Terminé — appuyez sur ▶ ci-dessus pour voir les ondes, ou modifiez un réglage et recalculez.",} });
