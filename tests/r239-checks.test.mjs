@@ -124,6 +124,16 @@ test('② membership is «switched on», in both directions', () => {
   assert.match(wm, /_dockables\(\)\{[\s\S]*_isOn\(el\)/, 'only switched-on things are collected');
   assert.match(wm, /if\(!_isOn\(el\)\)\s*_undockOne\(el\)/, 'and switching one off takes it back out');
   assert.match(wm, /attributeFilter:\['style','class','hidden'\]/, 'watched by attribute, not by polling');
+  /* ⚠⚠ (#R239b) MEASURED ON PRODUCTION: a legend that was already switched on when the mode was
+     turned on stayed in the tab after its layer was switched off, because `setDocked(true)` docked
+     everything first and armed the observer second — by then those elements were in #docked-feed,
+     where neither `mc.querySelectorAll(DOCK_SEL)` nor `__winReg` finds them. The watch therefore
+     happens in `_dockOne`, which is the one place that sees every docked element, and the observer
+     is armed before the first pass. */
+  assert.match(wm, /_watchEl\(el\);[\s\S]{0,8}el\.classList\.add\('im-docked'\)/,
+    'every docked element is watched, at the moment it is docked');
+  assert.match(wm, /if\(on\) _dockWatch\(true\);[\s\S]{0,8}if\(on\)\{ _dockables\(\)\.forEach\(_dockOne\)/,
+    'and the observer exists before the first pass runs');
   assert.match(wm, /__attrBusy/, 'and the observer does not react to its own writes');
 });
 
