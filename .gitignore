@@ -46,3 +46,6 @@ dist/
 # scripts/frame-profile.mjs answers every external request from here so an A/B
 # compares identical bytes. Recorded third-party tiles — never committed.
 .frame-cache/
+
+# (#R243) round scratch — screenshots and one-off probes, never shipped
+/x/

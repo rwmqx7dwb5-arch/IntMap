@@ -150,11 +150,15 @@ console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.tot
   + `\ntranslation tuples held as data instead of as a call: ${arrays.hits.length}`
   + (arrays.hits.length ? '\n    ' + arrays.hits.slice(0, 20).map((h) => `${h.file}:${h.line}  ${h.text}`).join('\n    ')
       + '\n    (node scripts/i18n-positional-array-audit.mjs lists every one)' : '')
-  /* (#R242) the ninth surface — see the note by `helper` above. ⚠ It is printed and NOT counted in
-     the percentages, because it is a known open gap with a number rather than a silent absence. */
-  + (helper.sites ? `\n\n⚠ OPEN GAP (#R242) — two-language strings behind a helper (\`jp() ? … : …\`): `
-      + `${helper.sites} sites, ${helper.distinct} distinct strings, English in de/ru/es/fr/ko/zh/zh-hans.`
-      + '\n    NOT counted in the percentages above. node scripts/i18n-helper-ternary-audit.mjs' : ''));
+  /* ══ ⚠ (#R243) THE NINTH SURFACE IS A GATE NOW, AND THE OPEN GAP IS CLOSED ══════════════════════
+     #R242 found this shape, could not convert 486 call sites in the round that found it, and wrote
+     down the exact condition for promoting it: 「The moment the count reaches zero, delete the `soft`
+     flag in i18n-audit.mjs and this becomes a gate like the others.」 It is zero (467 sites converted
+     by scripts/helper-ternary-codemod.mjs, 11 locale tags moved to `IntMapLang.locale()`, three
+     {en,jp} tables moved to `pickArgs()`, two defaults moved to a language-keyed table), so the line
+     below counts like every other row instead of printing a number nobody has to act on. */
+  + `\ntwo-language strings behind a helper (\`jp() ? … : …\`): ${helper.sites}`
+  + (helper.sites ? '\n    node scripts/i18n-helper-ternary-audit.mjs --list' : ''));
 
 if (process.argv.includes('--gate')) {
   const bad = rows.filter(shortOf).map((r) => r.code);
@@ -165,6 +169,8 @@ if (process.argv.includes('--gate')) {
   if (orphanKeys.length) problems.push(`${orphanKeys.length} data-i18n key(s) with no English entry`);
   if (attrs.total) problems.push(`${attrs.total} user-visible attribute(s) with no translation key — run scripts/i18n-attr-audit.mjs`);
   if (arrays.hits.length) problems.push(`${arrays.hits.length} translation tuple(s) held as data — run scripts/i18n-positional-array-audit.mjs`);
+  /* (#R243) the ninth surface, promoted from a printed number to a gate — see the note above */
+  if (helper.sites) problems.push(`${helper.sites} two-language string(s) behind a helper — run scripts/helper-ternary-codemod.mjs`);
   if (problems.length) {
     console.error('\n✖ i18n gate: ' + problems.join('; '));
     console.error('  `node scripts/i18n-audit.mjs --todo <code>` prints the commands that close each gap.');

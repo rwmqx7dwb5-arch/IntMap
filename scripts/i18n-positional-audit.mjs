@@ -69,8 +69,32 @@ const NEUTRAL = new Set([
   'Revolution', 'HDI', 'Sorghum', 'Olive', 'Textiles', 'Total',
   /* generic single tokens */
   'OK', 'ID', 'URL', 'CSV', 'JSON', 'PNG', 'Beta', 'beta', 'Info', 'Q', 'P', 'S', 'Alpha',
+  /* ⚠ (#R243) …and the twenty-two the TENTH surface brought in with it. Every one was read against
+     a dictionary before it was written here, exactly as the note above requires. They are the German
+     and/or Spanish word, a proper noun, or a source citation:
+       de — Aerosol, Sat(-Schüssel), Sync, Filter, Tanker, Status, Code, Radius, Web, AUTO, Influenza,
+            Pause, Countdown, «USD, nominal», «Wind 10 m», «2022 UNDP» (a citation).
+       es — Capital, «Error: », General, Civil, Imperial, «Base », «zoom », «lat », AUTO.
+       de/ru/es — COVID-19, SARS, Ebola, «Fear & Greed» (the index's published name). */
+  'Aerosol (AOD)', 'Sync', 'Filter', 'Tanker', 'Status', 'Radius (mi)', 'Radius (km)', '🌐 Web',
+  'AUTO', 'Influenza', 'COVID-19', 'SARS', 'Ebola', '⏸ Pause', 'Fear & Greed', 'Countdown',
+  'USD, nominal', 'Wind 10 m', '2022 UNDP', 'Capital', 'General', 'Civil', 'Imperial (mi/ft)',
+  'Base', 'zoom', 'lat', 'Error:', 'Sat', 'Code',
 ]);
 const hasLetter = (s) => /\p{L}/u.test(s);
+/* ══ ⚠ (#R243) A MODEL INSTRUCTION IS NOT A SCREEN ═══════════════════════════════════════════════
+   Two call sites in js/app-body.js carry the SYSTEM PROMPT for the imagery-comparison and the
+   news-cluster analyses. They are never rendered; they are sent to the model, and the language the
+   READER sees is set by `window._aiLangLine()`, which is appended to both and names the current
+   language for all nine. So a prompt that exists in English and Japanese is not a missing
+   translation — it is one instruction with a second draft — and giving it eight more drafts would
+   multiply a maintenance surface no reader can see while changing nothing on screen.
+   ⚠ Listed by their opening words, so adding one is a decision somebody made on purpose. */
+const PROMPTS = [
+  'You are a satellite-imagery analyst comparing two images',
+  'You are a geopolitical analyst. Below are news headlines',
+];
+const isPrompt = (s) => PROMPTS.some((p) => s.startsWith(p));
 
 const files = readdirSync(JS).filter((f) => f.endsWith('.js')).sort();
 const LANGS = [{ i: 2, code: 'de' }, { i: 3, code: 'ru' }, { i: 4, code: 'es' }];
@@ -99,18 +123,41 @@ for (const f of files) {
       if (/IntMapLang\s*\.\s*pick(?:Args)?\s*\(/.test(t)) names.add(n.id.name);
     },
   });
-  if (!names.size) continue;
+  /* ══ ⚠⚠⚠ (#R243) THE TENTH BLIND SPOT — `IntMapLang.t(lang, …)` WAS NEVER IN THIS UNIVERSE ══════
+     「いつまでたっても言語対応の漏れが見つかることは許されない。」
+
+     This audit is the ONLY instrument that answers 「is the German argument actually German?」, and
+     for four rounds it has looked at exactly one shape: a CallExpression whose callee is an
+     IDENTIFIER bound to `pick()`. #R231 converted 281 hand-written language chains to
+     `IntMapLang.t(lang, en, jp, de, ru, es)` — a MemberExpression callee — and scripts/i18n-report.mjs
+     was taught to read both shapes so fr/ko/zh stayed measured. This file was not, so those sites
+     have been outside the de/ru/es measurement ever since while the table printed 100 %.
+     #R243 then converted 467 MORE sites into the same shape, which would have taken the unmeasured
+     body of text from 281 to 748 — the exact failure this family of instruments exists to stop
+     ([[intmap-recurring-lessons]] B). Both shapes are read here now; `t()`'s first argument is the
+     language, so its English string is at index 1 and every language index shifts by one. */
+  const shape = (n) => {
+    if (n.callee.type === 'Identifier' && names.has(n.callee.name)) return 0;
+    if (n.callee.type === 'MemberExpression' && !n.callee.computed
+      && n.callee.property && n.callee.property.name === 't'
+      && /IntMapLang$/.test(src.slice(n.callee.object.start, n.callee.object.end))) return 1;
+    return -1;
+  };
 
   walk.simple(ast, {
     CallExpression(n) {
-      if (n.callee.type !== 'Identifier' || !names.has(n.callee.name)) return;
-      const args = n.arguments;
+      const off = shape(n);
+      if (off < 0) return;
+      const args = n.arguments.slice(off);        /* drop `lang` for the t() shape */
       if (!args.length || args[0].type !== 'Literal' || typeof args[0].value !== 'string') return;
       if (!args.every((a) => a.type === 'Literal' && typeof a.value === 'string')) return;
       sites++;
       const en = args[0].value;
       const where = `${relative(ROOT, join(JS, f)).replace(/\\/g, '/')}:${n.loc.start.line}`;
-      if (args.length < 5) { short.push({ where, en, n: args.length }); return; }
+      /* ⚠ (#R243) a string with NO LETTERS is an affix, not a sentence — `' '`, `''`, `')'`, `'年'`'s
+         empty English counterpart. Five arguments cannot help it (its English key is empty, so the
+         inline table has nowhere to hang a row either) and it says nothing a reader could read. */
+      if (args.length < 5) { if (hasLetter(en) && !isPrompt(en)) short.push({ where, en, n: args.length }); return; }
       if (!hasLetter(en) || NEUTRAL.has(en.trim())) return;
       for (const { i, code } of LANGS) if (args[i].value === en) same[code].push({ where, en });
     },

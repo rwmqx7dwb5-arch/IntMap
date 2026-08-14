@@ -2993,7 +2993,30 @@
    untouched — js/window-manager.js removes the GEOMETRY properties from the inline style instead
    of deleting the whole attribute, which is why the `!important`s that remain here are only the
    ones overriding #R47's inline `left/top/width/height`. */
-.im-docked{
+/* ══ ⚠⚠⚠ (#R243) IT IS `#docked-feed .im-docked`, AND THE ID IS THE WHOLE FIX ═══════════════════
+   「サイドバーのパネル内モバイル版で、左にあるスクロールバー分の隙間をあけていないから右側が
+     スクロールバーと被りかけている。」 — re-sent, because #R242 answered it with `padding-right:10px`
+   on the feed and the panel was never inside the feed's content box to begin with.
+
+   MEASURED on the shipped build (390 px viewport, Köppen legend docked): the feed spans 0…390 with a
+   content box of 0…380, and the panel sat at 6…386 — six pixels PAST the rail on the right and six
+   short of the edge on the left — with `getComputedStyle(panel).top` reading **64px**. Both numbers
+   come from one rule 1,000 lines above this one, inside the phone block:
+
+       .koppen-legend:not([data-dragged]), .data-legend:not([data-dragged]){
+         bottom:auto !important; top:64px !important; left:6px !important; right:auto !important; }
+
+   That is where a legend FLOATS over a phone's map, and it is specificity (0,2,0) against
+   `.im-docked`'s (0,1,0) — so for `!important` declarations of the same origin it WINS, and every
+   `.koppen-legend` / `.data-legend` in the column was being pushed 64 px down and 6 px right of the
+   slot the column gave it. (The same arithmetic hands `.data-legend.legend-collapsed`'s
+   `width:auto !important` to a collapsed docked legend.)
+   ⚠ THE ANSWER IS NOT A THIRD RULE FOR THE TWO CLASSES THAT LOSE — that is the shape this file has
+   already paid for twice: a stylesheet that catalogues its own exceptions is a list that will be
+   incomplete the next time a legend class is added. A docked panel is ALWAYS a child of
+   `#docked-feed`, so scoping the reset to that id gives it (1,1,0), which beats any class-based rule
+   in this sheet — the ones that exist and the ones that do not exist yet. */
+#docked-feed .im-docked{
   position:relative !important; left:auto !important; top:auto !important; right:auto !important;
   bottom:auto !important; inset:auto !important; transform:none !important;
   width:100% !important; max-width:100% !important; min-width:0 !important;
@@ -3003,20 +3026,20 @@
 }
 /* a docked panel is inside the sidebar's own surface, so it drops the floating chrome that only
    made sense over the map — one border stays so two panels in a row are still two panels */
-.im-docked{ box-shadow:none !important; border-radius:12px !important; }
+#docked-feed .im-docked{ box-shadow:none !important; border-radius:12px !important; }
 /* ⚠ (#R239) 「中で左右に動かせないようにきちんと幅を左右詰めて固定して。」 — the drag and the
    edge-resize are refused in js/window-manager.js, which is what actually moves a panel; this is the
    other half, so that nothing INSIDE one can push the column sideways either. A wide child (a table,
    a long readout) scrolls in its own box; the panel never does. */
-.im-docked{ overflow-x:hidden !important; }
-.im-docked > *{ max-width:100% !important; }
+#docked-feed .im-docked{ overflow-x:hidden !important; }
+#docked-feed .im-docked > *{ max-width:100% !important; }
 /* ⚠ the drag handle is still there and still says «this is the title bar»; it simply has nowhere to
    drag to. `cursor:default` is what stops it claiming otherwise. */
-.im-docked .panel-head, .im-docked [class$="-head"], .im-docked .iol-head, .im-docked .kl-drag, .im-docked .dl-drag{ cursor:default !important; }
+#docked-feed .im-docked .panel-head, #docked-feed .im-docked [class$="-head"], #docked-feed .im-docked .iol-head, #docked-feed .im-docked .kl-drag, #docked-feed .im-docked .dl-drag{ cursor:default !important; }
 /* the ✕ stays — 「パネル内のポップアップや凡例は×可能」 — so nothing here touches it.
    The ⋮⋮ grip does not: it is the affordance for a gesture that is now refused, and an affordance
    that lies is worse than none. (The header keeps its own padding, so nothing reflows.) */
-.im-docked .kl-drag, .im-docked .dl-drag{ display:none !important; }
+#docked-feed .im-docked .kl-drag, #docked-feed .im-docked .dl-drag{ display:none !important; }
 
 /* ══ ⚠ (#R239) THE OBJECT LIST IS OPEN, AND THE COLUMN TAKES UP THE SLACK ══════════════════════
    「オブジェクト一覧は展開された状態で置き、変化に応じて上下は詰めるように。」
@@ -3040,11 +3063,11 @@
    Atlas has had its own sidebar tab since #R112 and must never arrive here (js/atlas-console.js writes
    `data-nodock` on the panel as it is created). Naming its scrollers here made the wrong state look
    catered for; the two selectors are gone with the state that produced them. */
-.im-docked .iol-body, .im-docked .kl-scroll, .im-docked .lsr-body,
-.im-docked .wgt-board, .im-docked .ppm-card,
-.im-docked [class$="-scroll"], .im-docked [class$="-body"], .im-docked [class$="-list"]{
+#docked-feed .im-docked .iol-body, #docked-feed .im-docked .kl-scroll, #docked-feed .im-docked .lsr-body,
+#docked-feed .im-docked .wgt-board, #docked-feed .im-docked .ppm-card,
+#docked-feed .im-docked [class$="-scroll"], #docked-feed .im-docked [class$="-body"], #docked-feed .im-docked [class$="-list"]{
   max-height:none !important; overflow:visible !important; flex:0 0 auto !important; }
-.im-docked{ overflow-y:visible !important; }
+#docked-feed .im-docked{ overflow-y:visible !important; }
 #docked-feed .dock-empty{ padding:36px 16px; }
 
 /* ══ ⚠⚠ (#R240) ON A PHONE THE COLUMN IS THE SCREEN, EDGE TO EDGE ══════════════════════════════

@@ -223,6 +223,20 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     ⚠ 最初の版は CJK に3文字の下限を付けていて「軍用」「速力」「種別」など**2文字の見出し15件を
     見落とした**——日本語のUI文字列の大半がその長さである。下限は外した。
     `tests/r237-checks.test.mjs` が同じ形を検査している。
+  - ⚠⚠⚠ (#R243) **9つ目の面は閉じ、10個目の盲点は塞いだ。**
+    ① **9つ目の面**（#R242 が計測だけして OPEN GAP と書いた `jp() ? '日本語' : 'English'`）は **0 件**。
+    `scripts/helper-ternary-codemod.mjs` が **467 か所**を `window.IntMapLang.t(lang, en, jp, de, ru, es)` へ
+    書き換え、ロケール符号 11 か所は `IntMapLang.locale()` へ、`{en,jp}` の表 3 本（`DISPUTES`／
+    `CATS`／`PG_PRESETS`）は `pickArgs()` へ、既定通貨・既定国の 2 か所は**言語キーの表**へ移した。
+    `scripts/i18n-audit.mjs --gate` はこの数を**印字するだけでなく落とす**（#R242 が昇格の条件として
+    書き残したとおり）。
+    ② **10個目の盲点**＝`scripts/i18n-positional-audit.mjs` が `IntMapLang.t(lang, …)` を**一度も見て
+    いなかった**こと。#R231 が 281 か所をその形へ変換して以来、de/ru/es の「引数は本当にドイツ語か」は
+    その全部が**測定の宇宙の外**にあり、表は 100% と出していた。両方の形を読むようにして宇宙は
+    **2,422 → 3,204 サイト**になり、そのうえで de/ru/es とも **0 件**。
+    ③ **辞書は1本・6列**（`scripts/i18n/r243-*.json` ＝ `"English": [de, ru, es, fr, ko, zh-Hant]`）。
+    最初の3列は call site の引数へ、後の3列は inline 表へ（`node scripts/i18n-apply-inline.mjs`）、
+    `ui.zh-hans.js` はそこから生成。**同じ訳を2箇所に書く形を作らない**。
   - ⚠ (#R235) **inline への追記は `scripts/i18n-append-inline.mjs` を使う**（既存の `inline` に挿入するだけ・既存キーには触らない）。`scripts/build-ui-zh.mjs` が文書化している「`rm ui.zh.js` → `--template` → rebuild」は**非可逆に壊れる**——`scripts/zh/*.json` は `ui.zh.js` の完全な出所ではなく、実行すると実訳が **2,082 → 1,877（205 件消失）**する（#R235 で実測・取り消し済み）。⚠ `ui.zh-hans.js` は**手で書かない**（`tests/r224 ④`・`tests/r231`）——繁体を直してから `node scripts/zh-hans.mjs`。
 
 ---
@@ -1059,6 +1073,11 @@ js/
   widgets.js                        (#R164) `IntMapWidgets2`（ウィジェットボード：FX/金属/暗号資産/地震/今日は何の日 等）。79KB
   wb-layers.js                      (#R164) `IntMapWB`（世界銀行指標のキャッシュ付き取得＋WDIコロプレス＋Stats最新化）。39KB
   beta-overlays.js                  (#R164) `IntMapBeta`（ウクライナ前線 DeepState・3D建物・歴史国境スナップ・火山）。30KB
+  us-elections.js                   (#R243) `IntMapUSElections`（**アメリカ大統領選挙 1789–2024 の全60回**。州は
+                                    「その州の選挙人票を得た候補」で塗り分け、凡例の中に年セレクタと
+                                    選挙人票＋全国得票率のバーチャート。データは `data/us-elections.json` と
+                                    `data/us-states.json`＝`scripts/build-us-elections.mjs` が書く。レイヤー行は
+                                    `dl-uselect`、`lyrGrpGeoPol` に所属）。14KB
   cameras.js                        (#R164) ライブカメラレイヤー（Overpass webcams＋TfL/Caltrans等・`#dl-webcams` 行）。27KB。
                                     **唯一 window.* を公開しないモジュール**＝prod-smoke はDOM行 `#dl-webcams` で検証
   atlas-console.js                  (#R165) **Atlasカーネル `window.IntMapConsole`**（NLコンソール＝意図ディスパッチ・

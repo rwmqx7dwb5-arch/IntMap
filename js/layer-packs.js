@@ -116,7 +116,7 @@ window.IntMapModules.earthSky=function(HOST){
       const co=j.coordinates||[], feats=[];
       for(let i=0;i<co.length;i+=2){ const c=co[i]; if(!c) continue; const a=c[2]; if(a<8) continue; let lng=c[0]; if(lng>180) lng-=360; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lng,c[1]]},properties:{a:a}}); }
       if(GE().layers.hasSource('l9-aurora')) GE().layers.setSourceData('l9-aurora',{type:'FeatureCollection',features:feats});
-    }catch(e){ try{ imToast(jp()?'オーロラ予測を取得できませんでした':'Aurora forecast unavailable'); }catch(_){} } }
+    }catch(e){ try{ imToast(window.IntMapLang.t(HOST.lang,"Aurora forecast unavailable","オーロラ予測を取得できませんでした","Polarlicht-Vorhersage nicht verfügbar","Прогноз полярных сияний недоступен","Previsión de auroras no disponible")); }catch(_){} } }
     const SETS={dams:['l9-dams-pt','l9-dams-lbl'],volcanoes:['l9-volc-pt','l9-volc-lbl'],adiz:['l9-adiz-fill','l9-adiz-line','l9-adiz-lbl'],aurora:['l9-aurora-heat','l9-aurora-glow'],seaice:['l9-seaice']};
     let auroraTimer=null;
     function toggle(which,on){ state[which]=on;
@@ -128,7 +128,7 @@ window.IntMapModules.earthSky=function(HOST){
     const L9LBL={dams:LA('Major dams','主要ダム・水インフラ','Große Talsperren','Крупные плотины','Grandes presas'),volcanoes:LA('Active volcanoes','活火山','Aktive Vulkane','Действующие вулканы','Volcanes activos'),aurora:LA('Aurora forecast (NOAA)','オーロラ予測（NOAA）','Polarlicht-Vorhersage (NOAA)','Прогноз полярных сияний (NOAA)','Pronóstico de auroras (NOAA)'),seaice:LA('Sea ice (Arctic/Antarctic)','海氷（北極・南極）','Meereis (Arktis/Antarktis)','Морской лёд (Арктика/Антарктика)','Hielo marino (Ártico/Antártico)'),adiz:LA('Air-defense zones (ADIZ ≈)','防空識別圏 (ADIZ ≈)','Luftverteidigungszonen (ADIZ ≈)','Зоны ПВО (ADIZ ≈)','Zonas de defensa aérea (ADIZ ≈)')};
     const l9Lbl=(k)=>LPK.arr(L9LBL[k]);
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('l9-dl-dams')) return;
-      const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-l9head','1'); head.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; dd.appendChild(head);
+      const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-l9head','1'); head.textContent=window.IntMapLang.t(HOST.lang,"Earth, sky & airspace","地球・大気・空域","Erde, Himmel & Luftraum","Земля, небо и воздушное пространство","Tierra, cielo y espacio aéreo"); dd.appendChild(head);
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
       /* (#R20) the curated 42-point volcano layer is REMOVED ("現状を削除したうえで新規追加して") —
          replaced by the full Smithsonian GVP Holocene layer (1,215 volcanoes) in the beta module below. */
@@ -232,7 +232,7 @@ window.IntMapModules.landCover=function(HOST){
        code — plus the boundary types that touch it, counted from the boundary file that is already
        loaded. No invented tectonics (標準指示 4). */
     function platePopup(lngLat,p){
-      const nm=plateName(p)||(jp()?'（名称なし）':'(unnamed)');
+      const nm=plateName(p)||(window.IntMapLang.t(HOST.lang,"(unnamed)","（名称なし）","(ohne Namen)","(без названия)","(sin nombre)"));
       const code=String(p.Code||p.code||'').trim();
       /* ⚠ `IntMapSafe.html` — the project's ONE sanitizer (#R138). The first draft of this line called
          an `escapeHtml` that does not exist on it: it threw, the catch returned '', and the popup
@@ -289,7 +289,7 @@ window.IntMapModules.landCover=function(HOST){
            same fact from the one place that always knows it. */
         try{ if(state.plates) setVis(SETS.plates,true); }catch(_){}
         cb(true);
-      }).catch(()=>{ platesLoading=false; try{ imToast(jp()?'プレートデータを取得できませんでした':'Could not load plate data'); }catch(_){} cb(false); }); }
+      }).catch(()=>{ platesLoading=false; try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load plate data","プレートデータを取得できませんでした","Plattendaten konnten nicht geladen werden","Не удалось загрузить данные о плитах","No se pudieron cargar los datos de placas")); }catch(_){} cb(false); }); }
     /* ---- Ecoregions (PMTiles vector) ---- */
     let pmReady=false, pmLoading=false; const pmQ=[];
     function loadPMTiles(cb){ if(pmReady){ cb(true); return; } pmQ.push(cb); if(pmLoading) return; pmLoading=true;
@@ -320,7 +320,7 @@ window.IntMapModules.landCover=function(HOST){
       document.head.appendChild(s);
     };
     function ensureEco(cb){ if(GE().layers.hasSource('eco-regions')){ cb(true); return; }
-      window.__loadEcoregions(gj=>{ if(!gj){ try{ imToast(jp()?'生態地域データを読み込めませんでした':'Could not load ecoregions'); }catch(_){} cb(false); return; } addEcoLayers(gj); cb(true); }); }
+      window.__loadEcoregions(gj=>{ if(!gj){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load ecoregions","生態地域データを読み込めませんでした","Ökoregionen konnten nicht geladen werden","Не удалось загрузить экорегионы","No se pudieron cargar las ecorregiones")); }catch(_){} cb(false); return; } addEcoLayers(gj); cb(true); }); }
     function addEcoLayers(gj){ window._ecoGJ=gj; if(ecoBuilt||GE().layers.hasSource('eco-regions')) return; ecoBuilt=true;
       try{ const before=ecoBefore();
         GE().layers.addSource('eco-regions',{type:'geojson',data:gj,attribution:'RESOLVE/WWF Ecoregions 2017'});
@@ -332,7 +332,7 @@ window.IntMapModules.landCover=function(HOST){
         GE().events.onLayer('mouseenter','eco-regions-fill',()=>{ GE().render.canvas().style.cursor='pointer'; });
         GE().events.onLayer('mouseleave','eco-regions-fill',()=>{ GE().render.canvas().style.cursor=''; });
         GE().events.onLayer('click','eco-regions-fill',(e)=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
-          const html='<div style="font-size:12px;line-height:1.5;"><b>'+(p.ECO_NAME||'')+'</b><br>'+(jp()?'バイオーム: ':'Biome: ')+(p.BIOME_NAME||'—')+'</div>';
+          const html='<div style="font-size:12px;line-height:1.5;"><b>'+(p.ECO_NAME||'')+'</b><br>'+(window.IntMapLang.t(HOST.lang,"Biome: ","バイオーム: ","Biom: ","Биом: ","Bioma: "))+(p.BIOME_NAME||'—')+'</div>';
           GE().ui.attach(window._ecoPop.setLngLat(e.lngLat).setHTML(html)); });
       }catch(e){ try{ console.warn('ecoregions add failed',e); }catch(_){} } }
     const SETS={worldcover:['eco-worldcover'],plates:['eco-plates-fill','eco-plates-line','eco-plates-lbl'],ecoregions:['eco-regions-fill','eco-regions-line']};
@@ -347,9 +347,9 @@ window.IntMapModules.landCover=function(HOST){
       if(show){
         if(!lg){ lg=document.createElement('div'); lg.className='data-legend'; lg.id='data-legend-worldcover'; lg.style.bottom='140px';
           (document.getElementById('map-container')||document.body).appendChild(lg); }
-        const dragT=jp()?'ドラッグして移動':'Drag to move';
+        const dragT=window.IntMapLang.t(HOST.lang,"Drag to move","ドラッグして移動","Zum Verschieben ziehen","Потяните, чтобы переместить","Arrastre para mover");
         lg.innerHTML='<span class="dl-drag" title="'+dragT+'">⋮⋮</span><button class="layer-popup-x" title="'+(t('close'))+'">✕</button>'+
-          '<h4>'+(jp()?'土地被覆 (ESA 2021)':'Land cover (ESA 2021)')+'</h4>'+
+          '<h4>'+(window.IntMapLang.t(HOST.lang,"Land cover (ESA 2021)","土地被覆 (ESA 2021)","Landbedeckung (ESA 2021)","Земной покров (ESA 2021)","Cobertura del suelo (ESA 2021)"))+'</h4>'+
           '<div style="display:flex;flex-direction:column;gap:3px;margin-top:4px;">'+
           WC_CLASSES.map(([c,en,ja])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:13px;height:13px;border-radius:3px;flex:none;border:1px solid rgba(128,128,128,0.4);background:'+c+';"></span><span>'+(jp()?ja:en)+'</span></div>').join('')+
           '</div>';
@@ -389,7 +389,7 @@ window.IntMapModules.landCover=function(HOST){
     const ECLBL={worldcover:LA('Land cover (ESA 2021)','土地被覆 (ESA 2021)','Bodenbedeckung (ESA 2021)','Земной покров (ESA 2021)','Cobertura del suelo (ESA 2021)'),ecoregions:LA('Ecoregions (WWF/RESOLVE)','生態地域 (WWF/RESOLVE)','Ökoregionen (WWF/RESOLVE)','Экорегионы (WWF/RESOLVE)','Ecorregiones (WWF/RESOLVE)'),plates:LA('Tectonic plates','プレート境界','Tektonische Platten','Тектонические плиты','Placas tectónicas')};
     const ecoLbl=(k)=>LPK.arr(ECLBL[k]);
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('eco-dl-worldcover')) return;
-      const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-ecohead','1'); head.textContent=jp()?'土地被覆・地球科学':'Land cover & earth science'; dd.appendChild(head);
+      const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-ecohead','1'); head.textContent=window.IntMapLang.t(HOST.lang,"Land cover & earth science","土地被覆・地球科学","Landbedeckung & Geowissenschaft","Земной покров и науки о Земле","Cobertura del suelo y ciencias de la Tierra"); dd.appendChild(head);
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
       [['worldcover','#4caf50'],['ecoregions','#2f9e44'],['plates','#e8590c']].forEach(([k,sw])=>{ const cb=row('eco-dl-'+k, ecoLbl(k), sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked); }); });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
@@ -443,7 +443,7 @@ window.IntMapModules.betaPack2=function(HOST){
       if(key==='dc'){ cache.dc=fcPoints(DC,d=>DC_COL[d[3]]||'#5e8bff'); cb(cache.dc); }
       else if(key==='pharma'){ cache.pharma=fcPoints(PH,()=> '#2bb3a3'); cb(cache.pharma); }
       else if(key==='rail'){ fetch('data/railways_gauge.json').then(r=>r.json()).then(j=>{ if(!j||!Array.isArray(j.features)) return;
-        j.features.forEach(f=>{ f.properties.col=RAIL_COL[f.properties.g]||RAIL_COL[0]; }); cache.rail=j; cb(j); }).catch(()=>{ try{ imToast(jp()?'鉄道データを読み込めませんでした':'Could not load railway data'); }catch(_){} }); }
+        j.features.forEach(f=>{ f.properties.col=RAIL_COL[f.properties.g]||RAIL_COL[0]; }); cache.rail=j; cb(j); }).catch(()=>{ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load railway data","鉄道データを読み込めませんでした","Eisenbahndaten konnten nicht geladen werden","Не удалось загрузить данные о железных дорогах","No se pudieron cargar los datos ferroviarios")); }catch(_){} }); }
     }
     function clickPop(layerId){
       GE().events.onLayer('click',layerId,e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
@@ -471,7 +471,7 @@ window.IntMapModules.betaPack2=function(HOST){
       a();
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('dc2',['Data centers & AI infra','データセンター・AIインフラ'],['dc-pt','dc-lbl'],'beta-dl-dc');
             if(el&&!el.querySelector('.dc-key')){ const k=document.createElement('div'); k.className='dc-key'; k.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
-              k.innerHTML=[['aws','AWS'],['azure','Azure'],['gcp','Google Cloud'],['ai',jp()?'AIスーパークラスター':'AI superclusters']].map(([t,l])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:6px;flex:none;background:'+DC_COL[t]+';"></span>'+l+'</div>').join('');
+              k.innerHTML=[['aws','AWS'],['azure','Azure'],['gcp','Google Cloud'],['ai',window.IntMapLang.t(HOST.lang,"AI superclusters","AIスーパークラスター","KI-Supercluster","ИИ-суперкластеры","Superclústeres de IA")]].map(([t,l])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:6px;flex:none;background:'+DC_COL[t]+';"></span>'+l+'</div>').join('');
               el.appendChild(k); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('dc2'); }catch(_){}
     }
@@ -480,7 +480,7 @@ window.IntMapModules.betaPack2=function(HOST){
         load('pharma',fc=>{ try{ GE().layers.setSourceData('ph-src',fc); }catch(_){} }); setVis(['ph-pt','ph-lbl'],on); };
       a();
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('ph2',['Pharma manufacturing hubs','製薬・医薬品製造拠点'],['ph-pt','ph-lbl'],'beta-dl-pharma');
-            if(el&&!el.querySelector('.ph-note')){ const d=document.createElement('div'); d.className='ph-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=jp()?'主要な製薬企業の本社・製造クラスター（代表地点）。平均寿命レイヤーと併用を。':'Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.'; el.appendChild(d); } }
+            if(el&&!el.querySelector('.ph-note')){ const d=document.createElement('div'); d.className='ph-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=window.IntMapLang.t(HOST.lang,"Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.","主要な製薬企業の本社・製造クラスター（代表地点）。平均寿命レイヤーと併用を。","Zentralen und Produktionscluster großer Pharmaunternehmen (repräsentative Standorte). Passt zur Ebene Lebenserwartung.","Штаб-квартиры и производственные кластеры крупных фармкомпаний (репрезентативные точки). Хорошо сочетается со слоем ожидаемой продолжительности жизни.","Sedes y clústeres de fabricación de las grandes farmacéuticas (puntos representativos). Combina con la capa de esperanza de vida."); el.appendChild(d); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('ph2'); }catch(_){}
     }
     function railEnsure(){ if(GE().layers.hasSource('rail-src')) return true; if(!_imCanDraw()) return false;
@@ -500,7 +500,7 @@ window.IntMapModules.betaPack2=function(HOST){
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('rail2',['World railways (by gauge)','世界の鉄道（軌間別）'],['rail-ln'],'beta-dl-rail');
             if(el&&!el.querySelector('.rail-key')){ const k=document.createElement('div'); k.className='rail-key'; k.style.cssText='display:flex;flex-direction:column;gap:3px;margin-top:6px;font-size:11px;color:var(--text-main);';
               k.innerHTML=RAIL_LBL.map(([g,ja,en])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:3px;border-radius:2px;flex:none;background:'+RAIL_COL[g]+';"></span>'+(jp()?ja:en)+'</div>').join('')+
-                '<div style="font-size:10px;color:var(--text-muted);margin-top:3px;">'+(jp()?'各国の主流軌間で分類（Natural Earth 10m）':'Classified by each country’s predominant gauge (Natural Earth 10m)')+'</div>';
+                '<div style="font-size:10px;color:var(--text-muted);margin-top:3px;">'+(window.IntMapLang.t(HOST.lang,"Classified by each country’s predominant gauge (Natural Earth 10m)","各国の主流軌間で分類（Natural Earth 10m）","Nach der vorherrschenden Spurweite je Land klassifiziert (Natural Earth 10m)","Классифицировано по преобладающей колее каждой страны (Natural Earth 10m)","Clasificado por el ancho de vía predominante de cada país (Natural Earth 10m)"))+'</div>';
               el.appendChild(k); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('rail2'); }catch(_){}
     }
@@ -511,28 +511,28 @@ window.IntMapModules.betaPack2=function(HOST){
         ramp:['interpolate',['linear'],['get','s'],10,'#a50026',30,'#f46d43',50,'#fee08b',70,'#74c476',90,'#1a9850'],
         score:v=>Math.max(0,Math.min(100,v)),
         nm:['Corruption (control, WGI)','汚職・腐敗指標（世界銀行WGI）'],
-        note:()=>jp()?'世界銀行ガバナンス指標「腐敗の統制」スコア（0–100、高い=クリーン）。TIのCPIに相当する公開API系指標。':'World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.'},
+        note:()=>window.IntMapLang.t(HOST.lang,"World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.","世界銀行ガバナンス指標「腐敗の統制」スコア（0–100、高い=クリーン）。TIのCPIに相当する公開API系指標。","Weltbank-WGI-Wert „Korruptionskontrolle“ (0–100, höher = sauberer) — das Open-API-Gegenstück zum CPI von TI.","Показатель Всемирного банка WGI «Контроль коррупции» (0–100, выше = чище) — аналог CPI от TI с открытым API.","Puntuación WGI del Banco Mundial «Control de la corrupción» (0–100, más alto = más limpio): el equivalente con API abierta al IPC de TI.")},
       lifeexp:{ind:'SP.DYN.LE00.IN',date:'2022',q:'',ids:['wb-le-f','wb-le-l'],src:'wb-le',
         ramp:['interpolate',['linear'],['get','s'],52,'#a50026',62,'#f46d43',70,'#fee08b',78,'#74add1',85,'#313695'],
         score:v=>v,
         nm:['Life expectancy (years)','平均寿命（年）'],
-        note:()=>jp()?'出生時平均余命（世界銀行 2022）。':'Life expectancy at birth (World Bank, 2022).'},
+        note:()=>window.IntMapLang.t(HOST.lang,"Life expectancy at birth (World Bank, 2022).","出生時平均余命（世界銀行 2022）。","Lebenserwartung bei Geburt (Weltbank, 2022).","Ожидаемая продолжительность жизни при рождении (Всемирный банк, 2022).","Esperanza de vida al nacer (Banco Mundial, 2022).")},
       /* (#R22) New beta choropleths — all live World Bank, keyless + CORS, latest value per country. */
       unemp:{ind:'SL.UEM.TOTL.ZS',date:'',q:'&mrnev=1',ids:['wb-unemp-f','wb-unemp-l'],src:'wb-unemp',
         ramp:['interpolate',['linear'],['get','s'],2,'#1a9850',5,'#a6d96a',9,'#fee08b',15,'#f46d43',25,'#a50026'],
         score:v=>v, fmt:v=>(+v).toFixed(1)+'%',
         nm:['Unemployment rate (%)','失業率（%）'],
-        note:()=>jp()?'失業率（労働力人口比、ILO推計・世界銀行、最新年）。':'Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).'},
+        note:()=>window.IntMapLang.t(HOST.lang,"Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).","失業率（労働力人口比、ILO推計・世界銀行、最新年）。","Arbeitslosenquote insgesamt (% der Erwerbsbevölkerung; ILO-Modellrechnung / Weltbank, letztes Jahr).","Уровень безработицы, всего (% рабочей силы; модель МОТ / Всемирный банк, последний год).","Desempleo total (% de la población activa; estimación modelada OIT / Banco Mundial, último año).")},
       internet:{ind:'IT.NET.USER.ZS',date:'',q:'&mrnev=1',ids:['wb-internet-f','wb-internet-l'],src:'wb-internet',
         ramp:['interpolate',['linear'],['get','s'],10,'#a50026',30,'#f46d43',55,'#fee08b',75,'#74c476',95,'#1a9850'],
         score:v=>v, fmt:v=>(+v).toFixed(1)+'%',
         nm:['Internet users (%)','インターネット普及率（%）'],
-        note:()=>jp()?'人口に占めるインターネット利用者の割合（世界銀行、最新年）。':'Individuals using the Internet (% of population; World Bank, latest year).'},
+        note:()=>window.IntMapLang.t(HOST.lang,"Individuals using the Internet (% of population; World Bank, latest year).","人口に占めるインターネット利用者の割合（世界銀行、最新年）。","Internetnutzer (% der Bevölkerung; Weltbank, letztes Jahr).","Пользователи интернета (% населения; Всемирный банк, последний год).","Personas que usan Internet (% de la población; Banco Mundial, último año).")},
       precip:{ind:'AG.LND.PRCP.MM',date:'',q:'&mrnev=1',ids:['wb-precip-f','wb-precip-l'],src:'wb-precip',
         ramp:['interpolate',['linear'],['get','s'],100,'#f6e8c3',400,'#c7eae5',800,'#80cdc1',1500,'#35978f',2800,'#01665e'],
         score:v=>v, fmt:v=>Math.round(v)+' mm',
         nm:['Annual precipitation (mm)','年降水量（mm）'],
-        note:()=>jp()?'年間平均降水量（深さmm、長期平均・世界銀行）。':'Average annual precipitation (depth in mm, long-term; World Bank).'}};
+        note:()=>window.IntMapLang.t(HOST.lang,"Average annual precipitation (depth in mm, long-term; World Bank).","年間平均降水量（深さmm、長期平均・世界銀行）。","Durchschnittlicher Jahresniederschlag (Höhe in mm, langjährig; Weltbank).","Среднегодовое количество осадков (в мм, многолетнее; Всемирный банк).","Precipitación media anual (altura en mm, a largo plazo; Banco Mundial).")}};
     function wbToggle(key,on){ state[key]=on; const W=WB[key];
       const show=()=>setVis(W.ids,on);
       if(!on){ show(); try{ window._hideGenericLegend&&window._hideGenericLegend('wb-'+key); }catch(_){} return; }
@@ -546,7 +546,7 @@ window.IntMapModules.betaPack2=function(HOST){
           try{ const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+W.ind+'?format=json&per_page=400'+(W.date?('&date='+W.date):'')+(W.q||''));
             const j=await r.json(); (j&&j[1]||[]).forEach(row=>{ if(row&&row.value!=null){ const iso=row.countryiso3code||(row.country&&row.country.id); if(iso&&iso.length===3) vals[iso]=+row.value; } });
           }catch(_){}
-          if(!Object.keys(vals).length){ try{ imToast(jp()?'データを取得できませんでした':'Could not load the data'); }catch(_){} return; }
+          if(!Object.keys(vals).length){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load the data","データを取得できませんでした","Daten konnten nicht geladen werden","Не удалось загрузить данные","No se pudieron cargar los datos")); }catch(_){} return; }
           cache['wb_'+key]=vals;
         }
         try{
@@ -554,7 +554,7 @@ window.IntMapModules.betaPack2=function(HOST){
           GE().layers.addSource(W.src,{type:'geojson',data:{type:'FeatureCollection',features:feats},attribution:'World Bank'});
           GE().layers.add({id:W.ids[0],type:'fill',source:W.src,layout:{visibility:'none'},paint:{'fill-color':W.ramp,'fill-opacity':0.68}},before());
           GE().layers.add({id:W.ids[1],type:'line',source:W.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
-          const _valOf=(p)=>W.fmt?W.fmt(p.raw):((key==='cpi')?(Math.round(p.s)+' / 100'):((+p.raw).toFixed(1)+(jp()?' 年':' yrs')));
+          const _valOf=(p)=>W.fmt?W.fmt(p.raw):((key==='cpi')?(Math.round(p.s)+' / 100'):((+p.raw).toFixed(1)+(window.IntMapLang.t(HOST.lang," yrs"," 年"," J."," лет"," años"))));
           const _nmOf=(p)=>{ let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){} return nm; };
           /* (#R25) Only show the TAP popup on touch devices. On a hover device the mousemove tooltip below
              already shows the exact same value, so a click popup was redundant ("ホバーでポップアップが出る

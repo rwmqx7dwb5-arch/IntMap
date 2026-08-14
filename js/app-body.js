@@ -2616,6 +2616,20 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     return OS;
   })();
   /* map basemap — TRUE kernel commands (logic lives here; button + Atlas both call the SAME command). */
+  /* ══ (#R243) 「自動で左サイドバーをあける動作もやれ」 — one action, not a second mechanism ═══════
+     js/window-manager.js has to open this column when a panel arrives in it while the dock mode is
+     on, and the only way to do that up to now was to poke `sidebar.classList` from another file —
+     which would have skipped `applySidebarStyle`, the resize event and the session save, i.e. three
+     of the four things the toggle above exists to keep in step. Registered as an OS action so the
+     command palette and Atlas reach it too (Architecture.md §3: everything the app can do is an
+     action). It OPENS; it never closes, because nothing here knows why a reader collapsed it. */
+  IntMapOS.register('ui.sidebar.open', ()=>{ try{
+      if(!sidebar.classList.contains('collapsed')) return false;
+      sidebar.classList.remove('collapsed');
+      try{ applySidebarStyle(false); }catch(_){}
+      try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){}
+      try{ window._imSaveSession&&window._imSaveSession(); }catch(_){}
+      return true; }catch(_){ return false; } }, {label:'Open the left sidebar', group:'view'});
   IntMapOS.register('view.base.map', ()=>{ currentMapType='map'; document.getElementById('btn-view-map').classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); if(GE().hasRenderer()) GE().events.once('idle',()=>{ try{ if(currentMapType==='map') applyTheme(); }catch(_){} }); _reassertBase('map'); }, {label:'Map basemap', btn:'btn-view-map', group:'view'});
   /* (#R101) switching to Satellite no longer force-opens the provider/date panel (satPanelDismissed stays true on
      desktop). The panel is rendered ready; it opens only when the user re-clicks the active Satellite button. */
@@ -3655,6 +3669,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
   window.IntMapModules.betaPack2(IM_HOST);
 
+  /* ===== (#R243) 「それまでのアメリカ大統領選挙の結果をすべて見れるレイヤーを作れ。」 — all sixty
+     elections 1789–2024, states coloured by who took their electoral votes, with the year picker
+     and the electoral-vote / popular-vote bar chart in the layer's own legend. See
+     js/us-elections.js and scripts/build-us-elections.mjs. ===== */
+  window.IntMapModules.usElections(IM_HOST);
+
   /* ===== (#R22) Religion & language distribution — categorical country choropleths (beta). Each
      country is shaded by its DOMINANT religion / PRIMARY official language (well-established facts;
      ISO-3 keyed; countries without an entry stay neutral gray — real data, nothing fabricated). ===== */
@@ -3692,24 +3712,24 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     function chk(k,label){ return '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-w="'+k+'" '+(cfg[k]?'checked':'')+'> '+label+'</label>'; }
     function render(){ const p=ensure();
       p.style.cssText='display:block;position:absolute;top:70px;right:24px;left:auto;bottom:auto;z-index:1500;width:240px;';
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🧩 '+(jp()?'ウィジェット':'Widgets')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🧩 '+(window.IntMapLang.t(currentLang,"Widgets","ウィジェット","Widgets","Виджеты","Widgets"))+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
         +'<div id="wdg-clock" style="'+(cfg.clock?'':'display:none;')+'margin-bottom:7px;"></div>'
-        +'<div id="wdg-weather" style="'+(cfg.weather?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(jp()?'天気を取得中…':'Loading weather…')+'</div>'
-        +'<div id="wdg-fx" style="'+(cfg.fx?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(jp()?'為替を取得中…':'Loading FX…')+'</div>'
-        +'<div style="border-top:1px solid rgba(128,128,128,0.18);padding-top:7px;display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--text-muted);">'+chk('clock',jp()?'時計':'Clock')+chk('weather',jp()?'天気':'Weather')+chk('fx',jp()?'為替':'FX')+'</div>';
+        +'<div id="wdg-weather" style="'+(cfg.weather?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(window.IntMapLang.t(currentLang,"Loading weather…","天気を取得中…","Wetter wird geladen…","Загрузка погоды…","Cargando el tiempo…"))+'</div>'
+        +'<div id="wdg-fx" style="'+(cfg.fx?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(window.IntMapLang.t(currentLang,"Loading FX…","為替を取得中…","Wechselkurse werden geladen…","Загрузка курсов валют…","Cargando tipos de cambio…"))+'</div>'
+        +'<div style="border-top:1px solid rgba(128,128,128,0.18);padding-top:7px;display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--text-muted);">'+chk('clock',window.IntMapLang.t(currentLang,"Clock","時計","Uhr","Часы","Reloj"))+chk('weather',window.IntMapLang.t(currentLang,"Weather","天気","Wetter","Погода","Tiempo"))+chk('fx',window.IntMapLang.t(currentLang,"FX","為替","Devisen","Валюта","Divisas"))+'</div>';
       p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       p.querySelectorAll('input[data-w]').forEach(c=>c.onchange=()=>{ cfg[c.getAttribute('data-w')]=c.checked; save(); render(); });
       updateClock(); refreshData(); }
     function updateClock(){ const el=panel&&panel.querySelector('#wdg-clock'); if(!el||!cfg.clock||(panel&&panel.style.display==='none')) return; const now=new Date(); let tz; try{ if(typeof userTZ!=='undefined'&&userTZ&&userTZ!=='auto') tz=userTZ; }catch(_){}
-      let tstr,dstr; try{ tstr=now.toLocaleTimeString(jp()?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:tz}); }catch(_){ tstr=now.toLocaleTimeString(); }
-      try{ dstr=now.toLocaleDateString(jp()?'ja-JP':'en-GB',{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
+      let tstr,dstr; try{ tstr=now.toLocaleTimeString(window.IntMapLang.locale(currentLang,'en-GB'),{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:tz}); }catch(_){ tstr=now.toLocaleTimeString(); }
+      try{ dstr=now.toLocaleDateString(window.IntMapLang.locale(currentLang,'en-GB'),{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
       el.innerHTML='<div style="font-size:27px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-main);line-height:1.1;">'+tstr+'</div><div style="font-size:11px;color:var(--text-muted);">'+dstr+(tz?' · '+tz:'')+'</div>'; }
     function wIcon(c){ if(c==null) return '🌡'; if(c===0) return '☀️'; if(c<=3) return '⛅'; if(c<=48) return '🌫'; if(c<=67) return '🌧'; if(c<=77) return '❄️'; if(c<=82) return '🌦'; if(c<=99) return '⛈'; return '🌡'; }
     function fxF(v){ return v==null?'—':(v<10?(+v).toFixed(3):(+v).toFixed(2)); }
     async function refreshData(){
-      if(cfg.weather && panel){ try{ const c=GE().hasRenderer()?GE().camera.getCenter():{lat:35.68,lng:139.76}; const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m'); const j=await r.json(); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(jp()?'風 ':'wind ')+Math.round(cu.wind_speed_10m)+' km/h · '+(jp()?'地図中心':'map center')+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=jp()?'天気を取得できません':'Weather unavailable'; } }
-      if(cfg.fx && panel){ try{ const r=await fetch('https://open.er-api.com/v6/latest/USD'); const j=await r.json(); const rt=j.rates||{}; const el=panel.querySelector('#wdg-fx'); if(el) el.innerHTML='<b style="color:var(--text-main);">USD</b> → JPY '+fxF(rt.JPY)+' · EUR '+fxF(rt.EUR)+' · CNY '+fxF(rt.CNY)+' · GBP '+fxF(rt.GBP); }catch(_){ const el=panel.querySelector('#wdg-fx'); if(el) el.textContent=jp()?'為替を取得できません':'FX unavailable'; } }
+      if(cfg.weather && panel){ try{ const c=GE().hasRenderer()?GE().camera.getCenter():{lat:35.68,lng:139.76}; const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m'); const j=await r.json(); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(window.IntMapLang.t(currentLang,"wind ","風 ","Wind ","ветер ","viento "))+Math.round(cu.wind_speed_10m)+' km/h · '+(window.IntMapLang.t(currentLang,"map center","地図中心","Kartenmitte","центр карты","centro del mapa"))+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=window.IntMapLang.t(currentLang,"Weather unavailable","天気を取得できません","Wetter nicht verfügbar","Погода недоступна","Tiempo no disponible"); } }
+      if(cfg.fx && panel){ try{ const r=await fetch('https://open.er-api.com/v6/latest/USD'); const j=await r.json(); const rt=j.rates||{}; const el=panel.querySelector('#wdg-fx'); if(el) el.innerHTML='<b style="color:var(--text-main);">USD</b> → JPY '+fxF(rt.JPY)+' · EUR '+fxF(rt.EUR)+' · CNY '+fxF(rt.CNY)+' · GBP '+fxF(rt.GBP); }catch(_){ const el=panel.querySelector('#wdg-fx'); if(el) el.textContent=window.IntMapLang.t(currentLang,"FX unavailable","為替を取得できません","Wechselkurse nicht verfügbar","Курсы валют недоступны","Tipos de cambio no disponibles"); } }
     }
     function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display){ render(); if(!tick) tick=setInterval(updateClock,1000); if(!dataTick) dataTick=setInterval(()=>{ if(panel&&panel.style.display!=='none') refreshData(); },300000); } else { p.style.display='none'; } }
     function wire(){ const b=document.getElementById('btn-widgets'); if(b) b.onclick=toggle; }   /* mobile m-tool proxy clicks btn-widgets directly */
@@ -3921,7 +3941,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
           'circle-color':['coalesce',['get','col'],'#ff3b30'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.88}},before);
         GE().events.onLayer('click','acled-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
           try{ GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'300px'}).setLngLat(f.geometry.coordinates)
-            .setHTML('<div style="min-width:170px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(p.tp)+'</div><div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">'+esc(p.d)+' · '+esc(p.loc)+', '+esc(p.cty)+(p.fat>0?(' · '+(jp()?'死者 ':'fatalities ')+p.fat):'')+'</div>'+(p.notes?'<div style="font-size:11px;color:var(--text-main);margin-top:5px;line-height:1.5;">'+esc(String(p.notes).slice(0,220))+'…</div>':'')+'</div>')); }catch(_){}
+            .setHTML('<div style="min-width:170px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(p.tp)+'</div><div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">'+esc(p.d)+' · '+esc(p.loc)+', '+esc(p.cty)+(p.fat>0?(' · '+(window.IntMapLang.t(currentLang,"fatalities ","死者 ","Todesopfer ","погибшие ","víctimas mortales "))+p.fat):'')+'</div>'+(p.notes?'<div style="font-size:11px;color:var(--text-main);margin-top:5px;line-height:1.5;">'+esc(String(p.notes).slice(0,220))+'…</div>':'')+'</div>')); }catch(_){}
         });
         GE().events.onLayer('mouseenter','acled-pt',()=>{ GE().render.canvas().style.cursor='pointer'; });
         GE().events.onLayer('mouseleave','acled-pt',()=>{ GE().render.canvas().style.cursor=''; });
@@ -3933,8 +3953,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       setPins(pinsOn); }; a(); }
     async function loadEvents(){
       const st=card.querySelector('#acled-status'); const list=card.querySelector('#acled-list');
-      if(!cred.email||!cred.key){ st.textContent=jp()?'メールとAPIキーを入力してください（acleddata.comで無料登録）。':'Enter your email + API key (free registration at acleddata.com).'; return; }
-      st.textContent=jp()?'取得中…':'Loading…'; list.innerHTML='';
+      if(!cred.email||!cred.key){ st.textContent=window.IntMapLang.t(currentLang,"Enter your email + API key (free registration at acleddata.com).","メールとAPIキーを入力してください（acleddata.comで無料登録）。","E-Mail und API-Schlüssel eingeben (kostenlose Registrierung auf acleddata.com).","Введите e-mail и API-ключ (бесплатная регистрация на acleddata.com).","Introduzca su correo y su clave de API (registro gratuito en acleddata.com)."); return; }
+      st.textContent=window.IntMapLang.t(currentLang,"Loading…","取得中…","Wird geladen…","Загрузка…","Cargando…"); list.innerHTML='';
       const d2=new Date(), d1=new Date(Date.now()-14*864e5);
       const f=(d)=>d.toISOString().slice(0,10);
       const url='https://api.acleddata.com/acled/read?key='+encodeURIComponent(cred.key)+'&email='+encodeURIComponent(cred.email)+
@@ -3946,12 +3966,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
         if(!r.ok) continue; j=await r.json(); if(j&&(j.data||j.success!==undefined)) break;
       }catch(_){} }
       const rows=(j&&j.data)||[];
-      if(!rows.length){ st.textContent=(j&&j.error)?((jp()?'エラー: ':'Error: ')+esc(j.error.message||JSON.stringify(j.error)).slice(0,160)):(jp()?'取得できませんでした。キー・メール・利用枠を確認してください。':'Nothing returned — check the key, email and your API quota.'); return; }
+      if(!rows.length){ st.textContent=(j&&j.error)?((window.IntMapLang.t(currentLang,"Error: ","エラー: ","Fehler: ","Ошибка: ","Error: "))+esc(j.error.message||JSON.stringify(j.error)).slice(0,160)):(window.IntMapLang.t(currentLang,"Nothing returned — check the key, email and your API quota.","取得できませんでした。キー・メール・利用枠を確認してください。","Nichts zurückgeliefert — Schlüssel, E-Mail und API-Kontingent prüfen.","Ничего не получено — проверьте ключ, e-mail и квоту API.","No se ha devuelto nada: compruebe la clave, el correo y su cuota de API.")); return; }
       events=rows.filter(ev=>ev&&ev.latitude&&ev.longitude);
       st.textContent=(jp()?('直近14日間: '+events.length+'件 · ACLED'):(events.length+' events, last 14 days · ACLED'));
       const fmt=events.slice(0,40).map(ev=>'<div class="acled-row" data-ll="'+(+ev.longitude)+','+(+ev.latitude)+'" style="display:flex;gap:7px;align-items:flex-start;padding:6px 4px;border-bottom:1px solid rgba(128,128,128,0.12);cursor:pointer;font-size:11.5px;line-height:1.45;">'+
         '<span style="width:9px;height:9px;border-radius:5px;flex:none;margin-top:3px;background:'+(TYPE_COL[ev.event_type]||'#ff3b30')+';"></span>'+
-        '<span><b style="color:var(--text-main);">'+esc(ev.event_type)+'</b> · '+esc(ev.event_date)+'<br><span style="color:var(--text-muted);">'+esc(ev.location)+', '+esc(ev.country)+(+ev.fatalities>0?(' · '+(jp()?'死者 ':'†')+ev.fatalities):'')+'</span></span></div>').join('');
+        '<span><b style="color:var(--text-main);">'+esc(ev.event_type)+'</b> · '+esc(ev.event_date)+'<br><span style="color:var(--text-muted);">'+esc(ev.location)+', '+esc(ev.country)+(+ev.fatalities>0?(' · '+(window.IntMapLang.t(currentLang,"†","死者 ","†","†","†"))+ev.fatalities):'')+'</span></span></div>').join('');
       list.innerHTML=fmt;
       list.querySelectorAll('.acled-row').forEach(rw=>rw.onclick=()=>{ try{ const [lng,lat]=rw.getAttribute('data-ll').split(',').map(Number); GE().camera.flyTo({center:[lng,lat],zoom:7}); }catch(_){} });
       pushPins();
@@ -3967,15 +3987,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }
     function render(){
       if(!card) return;
-      card.innerHTML='<div id="acled-head" style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text-main);">⚔ '+(jp()?'紛争イベント（ACLED）':'Conflict events (ACLED)')+'<span style="margin-left:auto;font-size:10px;color:var(--text-muted);">beta</span><span style="opacity:0.6;font-size:10px;">'+(open?'▾':'▸')+'</span></div>'+
+      card.innerHTML='<div id="acled-head" style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text-main);">⚔ '+(window.IntMapLang.t(currentLang,"Conflict events (ACLED)","紛争イベント（ACLED）","Konfliktereignisse (ACLED)","События конфликтов (ACLED)","Eventos de conflicto (ACLED)"))+'<span style="margin-left:auto;font-size:10px;color:var(--text-muted);">beta</span><span style="opacity:0.6;font-size:10px;">'+(open?'▾':'▸')+'</span></div>'+
         (open?('<div style="margin-top:8px;">'+
           '<div style="display:flex;gap:6px;margin-bottom:6px;">'+
           '<input id="acled-email" type="email" placeholder="email" value="'+esc(cred.email)+'" style="flex:1;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;">'+
           '<input id="acled-key" type="password" placeholder="API key" value="'+esc(cred.key)+'" style="flex:1;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;"></div>'+
           '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">'+
-          '<button id="acled-load" class="ai-test-btn" style="flex:1;">'+(jp()?'直近14日間を取得':'Load last 14 days')+'</button>'+
-          '<label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);cursor:pointer;"><input id="acled-pins" type="checkbox" '+(pinsOn?'checked':'')+'>'+(jp()?'ピン':'Pins')+'</label></div>'+
-          '<div id="acled-status" style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+(jp()?'ACLED（武力紛争位置・事件データ）。無料登録のメール+APIキーが必要です。':'Armed Conflict Location & Event Data. Needs the free-registration email + API key.')+'</div>'+
+          '<button id="acled-load" class="ai-test-btn" style="flex:1;">'+(window.IntMapLang.t(currentLang,"Load last 14 days","直近14日間を取得","Letzte 14 Tage laden","Загрузить за последние 14 дней","Cargar los últimos 14 días"))+'</button>'+
+          '<label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);cursor:pointer;"><input id="acled-pins" type="checkbox" '+(pinsOn?'checked':'')+'>'+(window.IntMapLang.t(currentLang,"Pins","ピン","Pins","Метки","Marcadores"))+'</label></div>'+
+          '<div id="acled-status" style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+(window.IntMapLang.t(currentLang,"Armed Conflict Location & Event Data. Needs the free-registration email + API key.","ACLED（武力紛争位置・事件データ）。無料登録のメール+APIキーが必要です。","Armed Conflict Location & Event Data. Benötigt E-Mail und API-Schlüssel aus der kostenlosen Registrierung.","Armed Conflict Location & Event Data. Требуются e-mail и API-ключ из бесплатной регистрации.","Armed Conflict Location & Event Data. Requiere el correo y la clave de API del registro gratuito."))+'</div>'+
           '<div id="acled-list" style="max-height:230px;overflow-y:auto;"></div></div>'):'');
       card.querySelector('#acled-head').onclick=()=>{ open=!open; render(); };
       if(open){

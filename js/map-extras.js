@@ -177,7 +177,7 @@ window.IntMapModules.annotations=function(HOST){
     function openPop(id, ll){ const it=items.find(x=>x.id===id); if(!it) return; try{ if(popup) popup.remove(); }catch(_){}
       const at=ll||repr(it.geom);
       const valHtml = it.value ? '<div style="font-size:13px;color:var(--primary-color);font-weight:700;margin:0 0 6px;">'+it.value+'</div>' : '';
-      const html='<div style="min-width:172px;">'+valHtml+'<input class="annot-name" value="'+String(it.name).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;font-weight:700;font-size:13px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.25);border-radius:7px;color:var(--text-main);padding:5px 7px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><input type="color" class="annot-color" value="'+it.color+'"><span style="font-size:11px;color:var(--text-muted);">'+(jp()?'色':'Color')+'</span><button class="annot-del" style="margin-left:auto;background:var(--info-mil);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">'+(jp()?'削除':'Delete')+'</button></div></div>';
+      const html='<div style="min-width:172px;">'+valHtml+'<input class="annot-name" value="'+String(it.name).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;font-weight:700;font-size:13px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.25);border-radius:7px;color:var(--text-main);padding:5px 7px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><input type="color" class="annot-color" value="'+it.color+'"><span style="font-size:11px;color:var(--text-muted);">'+(window.IntMapLang.t(HOST.lang,"Color","色","Farbe","Цвет","Color"))+'</span><button class="annot-del" style="margin-left:auto;background:var(--info-mil);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">'+(window.IntMapLang.t(HOST.lang,"Delete","削除","Löschen","Удалить","Eliminar"))+'</button></div></div>';
       popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:false,className:'plc-popup',maxWidth:'260px'}).setLngLat(at).setHTML(html));
       setTimeout(()=>{ const el=popup&&popup.getElement&&popup.getElement(); if(!el) return;
         const nm=el.querySelector('.annot-name'); if(nm) nm.oninput=()=>{ it.name=nm.value; };
@@ -187,7 +187,7 @@ window.IntMapModules.annotations=function(HOST){
     }
     /* (#R11) No auto-popup on finalize — the shape just stays on the map; clicking it later opens the
        dismissable popup with the measured value + rename/recolor/delete. */
-    function add(geom,opts){ opts=opts||{}; const id='an'+(++seq); items.push({id,geom,color:opts.color||'#ff9500',op:(opts.op!=null?opts.op:0.16),name:opts.name||((jp()?'注記 ':'Annotation ')+seq),value:opts.value||''}); refresh(); return id; }
+    function add(geom,opts){ opts=opts||{}; const id='an'+(++seq); items.push({id,geom,color:opts.color||'#ff9500',op:(opts.op!=null?opts.op:0.16),name:opts.name||((window.IntMapLang.t(HOST.lang,"Annotation ","注記 ","Anmerkung ","Аннотация ","Anotación "))+seq),value:opts.value||''}); refresh(); return id; }
     function remove(id){ const i=items.findIndex(x=>x.id===id); if(i>=0){ items.splice(i,1); refresh(); } if(popup){ try{popup.remove();}catch(_){} popup=null; } }
     return { add, remove, refresh, clear:()=>{ items.length=0; refresh(); }, open:openPop, _items:items };   /* (#R88) expose refresh so the Object List can recolour an annotation live */
   })();
@@ -278,11 +278,11 @@ window.IntMapModules.layerSearch=function(HOST){
         box.style.cssText='position:relative;z-index:6;padding:2px 0 7px;';
         box.innerHTML='<input id="layer-search" type="search" autocomplete="off" style="width:100%;box-sizing:border-box;padding:7px 11px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;">';
         const inp=box.querySelector('input');
-        inp.placeholder=jp()?'レイヤーを検索…':'Search layers…';
+        inp.placeholder=window.IntMapLang.t(HOST.lang,"Search layers…","レイヤーを検索…","Ebenen suchen…","Поиск слоёв…","Buscar capas…");
         inp.addEventListener('input',()=>filter(inp.value));
         inp.addEventListener('click',e=>e.stopPropagation());
         inp.addEventListener('keydown',e=>e.stopPropagation());
-        window.addEventListener('intmap-lang',()=>{ inp.placeholder=jp()?'レイヤーを検索…':'Search layers…'; });
+        window.addEventListener('intmap-lang',()=>{ inp.placeholder=window.IntMapLang.t(HOST.lang,"Search layers…","レイヤーを検索…","Ebenen suchen…","Поиск слоёв…","Buscar capas…"); });
       }
       /* (#R65) the Active-layers bar owns the very top (sticky) — the search box slots in right below it */
       { const act=document.getElementById('layer-active-section');
@@ -355,18 +355,21 @@ window.IntMapModules.runwaySearch=function(HOST){
       return res; }
     /* (#R9/#47) Airport/runway popup with key info + a Wikipedia link. Opened from a list row OR a pin. */
     let rwyPopup=null;
-    function wikiLink(name){ const w=jp()?'ja':'en'; return 'https://'+w+'.wikipedia.org/wiki/Special:Search?search='+encodeURIComponent(name||''); }
+    /* (#R243) the Wikipedia a reader can actually read: the registry's BCP-47 tag, minus the script
+       subtag (zh-Hant / zh-Hans are both `zh.wikipedia.org`). Was `jp()?'ja':'en'`, i.e. English for
+       every language but Japanese. */
+    function wikiLink(name){ const w=String(window.IntMapLang.htmlTag(HOST.lang)||'en').split('-')[0]; return 'https://'+w+'.wikipedia.org/wiki/Special:Search?search='+encodeURIComponent(name||''); }
     function showRwyPopup(d){
       try{ if(rwyPopup) rwyPopup.remove(); }catch(_){}
       const title=esc(d.name||d.apt||'Airport'), rws=[];
-      if(d.apt) rws.push((jp()?'コード':'Code')+': <b>'+esc(d.apt)+'</b>');
-      if(d.muni) rws.push((jp()?'所在地':'Municipality')+': <b>'+esc(d.muni)+'</b>');
-      rws.push((jp()?'種別':'Type')+': <b>'+(d.mil?(jp()?'軍用':'Military'):(jp()?'民間':'Civil'))+'</b>');
-      if(d.len) rws.push((jp()?'最長滑走路':'Longest runway')+': <b>'+lenFmt(d.len)+'</b>');
-      if(d.n) rws.push((jp()?'滑走路数':'Runways')+': <b>'+d.n+'</b>');
-      if(d.rwy) rws.push((jp()?'滑走路':'Runway')+': <b>'+esc(d.rwy)+'</b>');
-      rws.push((jp()?'座標':'Coords')+': <b>'+(+d.coords[1]).toFixed(4)+', '+(+d.coords[0]).toFixed(4)+'</b>');
-      const html='<div style="min-width:170px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:6px;">'+(d.mil?'🪖':'🛬')+' '+title+'</div><div style="font-size:12px;color:var(--text-main);line-height:1.65;">'+rws.join('<br>')+'</div><a href="'+wikiLink(d.name||d.apt)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:var(--primary-color);font-weight:600;font-size:12px;text-decoration:none;">📖 '+(jp()?'Wikipediaで見る ↗':'Read on Wikipedia ↗')+'</a></div>';
+      if(d.apt) rws.push((window.IntMapLang.t(HOST.lang,"Code","コード","Code","Код","Código"))+': <b>'+esc(d.apt)+'</b>');
+      if(d.muni) rws.push((window.IntMapLang.t(HOST.lang,"Municipality","所在地","Gemeinde","Муниципалитет","Municipio"))+': <b>'+esc(d.muni)+'</b>');
+      rws.push((window.IntMapLang.t(HOST.lang,"Type","種別","Art","Тип","Tipo"))+': <b>'+(d.mil?(window.IntMapLang.t(HOST.lang,"Military","軍用","Militärisch","Военный","Militar")):(window.IntMapLang.t(HOST.lang,"Civil","民間","Zivil","Гражданский","Civil")))+'</b>');
+      if(d.len) rws.push((window.IntMapLang.t(HOST.lang,"Longest runway","最長滑走路","Längste Start-/Landebahn","Самая длинная ВПП","Pista más larga"))+': <b>'+lenFmt(d.len)+'</b>');
+      if(d.n) rws.push((window.IntMapLang.t(HOST.lang,"Runways","滑走路数","Start-/Landebahnen","ВПП","Pistas"))+': <b>'+d.n+'</b>');
+      if(d.rwy) rws.push((window.IntMapLang.t(HOST.lang,"Runway","滑走路","Start-/Landebahn","ВПП","Pista"))+': <b>'+esc(d.rwy)+'</b>');
+      rws.push((window.IntMapLang.t(HOST.lang,"Coords","座標","Koordinaten","Координаты","Coordenadas"))+': <b>'+(+d.coords[1]).toFixed(4)+', '+(+d.coords[0]).toFixed(4)+'</b>');
+      const html='<div style="min-width:170px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:6px;">'+(d.mil?'🪖':'🛬')+' '+title+'</div><div style="font-size:12px;color:var(--text-main);line-height:1.65;">'+rws.join('<br>')+'</div><a href="'+wikiLink(d.name||d.apt)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:var(--primary-color);font-weight:600;font-size:12px;text-decoration:none;">📖 '+(window.IntMapLang.t(HOST.lang,"Read on Wikipedia ↗","Wikipediaで見る ↗","Auf Wikipedia lesen ↗","Читать в Википедии ↗","Leer en Wikipedia ↗"))+'</a></div>';
       try{ rwyPopup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,maxWidth:'280px',className:'plc-popup'}).setLngLat(d.coords).setHTML(html)); }catch(_){}
     }
     function ensureLayers(){ if(GE().layers.hasSource(SRC)) return; try{ GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
@@ -379,10 +382,10 @@ window.IntMapModules.runwaySearch=function(HOST){
     function renderMarks(res,mode){ ensureLayers(); const feats=res.slice(0,600).map(r=>({type:'Feature',geometry:{type:'Point',coordinates:[r.lo,r.la]},properties:{mil:!!r.mil,t:mode==='airport'?r.name:(r.apt+' '+r.rwy),name:r.name||'',apt:r.apt||'',muni:r.muni||'',len:(mode==='airport'?r.maxLen:r.lenM)||0,n:(mode==='airport'?(r.n||0):0),rwy:(mode==='runway'?(r.rwy||''):'')}})); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){} }
     function run(){ const p=panel; const im=imp(); const rIn=+p.querySelector('#rwy-radius').value||(im?186:300), lIn=+p.querySelector('#rwy-len').value||0, use=p.querySelector('#rwy-use').value, mode=p.querySelector('#rwy-mode').value;
       const radiusKm=im?rIn*1.60934:rIn, minLenM=im?lIn*0.3048:lIn;
-      const list=p.querySelector('#rwy-list'); list.innerHTML=jp()?'読み込み中…':'Loading…';
-      load().then(d=>{ if(!d){ list.innerHTML=jp()?'データを取得できませんでした':'Could not load data'; return; }
+      const list=p.querySelector('#rwy-list'); list.innerHTML=window.IntMapLang.t(HOST.lang,"Loading…","読み込み中…","Wird geladen…","Загрузка…","Cargando…");
+      load().then(d=>{ if(!d){ list.innerHTML=window.IntMapLang.t(HOST.lang,"Could not load data","データを取得できませんでした","Daten konnten nicht geladen werden","Не удалось загрузить данные","No se pudieron cargar los datos"); return; }
         const res=search({center:center,radiusKm:radiusKm,use:use,minLenM:minLenM,mode:mode}); renderMarks(res,mode);
-        if(!res.length){ list.innerHTML=jp()?'該当なし':'No matches'; return; }
+        if(!res.length){ list.innerHTML=window.IntMapLang.t(HOST.lang,"No matches","該当なし","Keine Treffer","Совпадений нет","Sin resultados"); return; }
         const shown=res.slice(0,120);
         list.innerHTML=shown.map((r,idx)=>{ const dd=distFmtKm(r._d), len=lenFmt(mode==='airport'?r.maxLen:r.lenM), nm=esc(mode==='airport'?r.name:(r.apt+' '+r.rwy)), extra=mode==='airport'?(jp()?(r.n+'本'):(r.n+' rwy')):'', flag=r.mil?'🪖':'🛬';
           return '<div class="rwy-item" data-idx="'+idx+'" style="display:flex;justify-content:space-between;gap:8px;padding:5px 4px;border-radius:6px;cursor:pointer;"><span>'+flag+' '+nm+'</span><span style="color:var(--text-muted);white-space:nowrap;">'+len+' · '+dd+' '+extra+'</span></div>'; }).join('');
@@ -391,19 +394,19 @@ window.IntMapModules.runwaySearch=function(HOST){
     }
     function open(lngLat){ center=[lngLat.lng,lngLat.lat]; if(!panel){ panel=document.createElement('div'); panel.className='tool-panel'; panel.id='rwy-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); } const p=panel; p.style.display='block';
       const im0=isImp();
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🛬 '+(jp()?'滑走路検索':'Runway search')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🛬 '+(window.IntMapLang.t(HOST.lang,"Runway search","滑走路検索","Bahnsuche","Поиск ВПП","Búsqueda de pistas"))+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
         '<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'+
-          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'単位':'Units')+' <select id="rwy-unit"><option value="met"'+(im0?'':' selected')+'>'+(jp()?'メートル法 (km/m)':'Metric (km/m)')+'</option><option value="imp"'+(im0?' selected':'')+'>'+(jp()?'ヤード・ポンド (mi/ft)':'Imperial (mi/ft)')+'</option></select></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(window.IntMapLang.t(HOST.lang,"Units","単位","Einheiten","Единицы","Unidades"))+' <select id="rwy-unit"><option value="met"'+(im0?'':' selected')+'>'+(window.IntMapLang.t(HOST.lang,"Metric (km/m)","メートル法 (km/m)","Metrisch (km/m)","Метрические (км/м)","Métrico (km/m)"))+'</option><option value="imp"'+(im0?' selected':'')+'>'+(window.IntMapLang.t(HOST.lang,"Imperial (mi/ft)","ヤード・ポンド (mi/ft)","Angloamerikanisch (mi/ft)","Имперские (мили/футы)","Imperial (mi/ft)"))+'</option></select></label>'+
           '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;"><span class="rwy-ulabel-r"></span> <input id="rwy-radius" type="number" value="'+(im0?186:300)+'" min="1" style="width:74px;"></label>'+
           '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;"><span class="rwy-ulabel-l"></span> <input id="rwy-len" type="number" value="'+(im0?6500:2000)+'" min="0" step="'+(im0?500:100)+'" style="width:74px;"></label>'+
-          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'種別':'Use')+' <select id="rwy-use"><option value="all">'+(jp()?'すべて':'All')+'</option><option value="mil">'+(jp()?'軍用':'Military')+'</option><option value="civ">'+(jp()?'民間':'Civil')+'</option></select></label>'+
-          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'表示':'View')+' <select id="rwy-mode"><option value="airport">'+(jp()?'空港単位':'By airport')+'</option><option value="runway">'+(jp()?'滑走路単位':'By runway')+'</option></select></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(window.IntMapLang.t(HOST.lang,"Use","種別","Nutzung","Назначение","Uso"))+' <select id="rwy-use"><option value="all">'+(window.IntMapLang.t(HOST.lang,"All","すべて","Alle","Все","Todos"))+'</option><option value="mil">'+(window.IntMapLang.t(HOST.lang,"Military","軍用","Militärisch","Военный","Militar"))+'</option><option value="civ">'+(window.IntMapLang.t(HOST.lang,"Civil","民間","Zivil","Гражданский","Civil"))+'</option></select></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(window.IntMapLang.t(HOST.lang,"View","表示","Ansicht","Вид","Vista"))+' <select id="rwy-mode"><option value="airport">'+(window.IntMapLang.t(HOST.lang,"By airport","空港単位","Nach Flughafen","По аэропортам","Por aeropuerto"))+'</option><option value="runway">'+(window.IntMapLang.t(HOST.lang,"By runway","滑走路単位","Nach Bahn","По ВПП","Por pista"))+'</option></select></label>'+
         '</div>'+
-        '<button class="tp-clear" id="rwy-go" style="width:100%;margin-top:6px;">'+(jp()?'検索（初回データ取得）':'Search (loads data 1st run)')+'</button>'+
+        '<button class="tp-clear" id="rwy-go" style="width:100%;margin-top:6px;">'+(window.IntMapLang.t(HOST.lang,"Search (loads data 1st run)","検索（初回データ取得）","Suchen (lädt beim ersten Mal die Daten)","Поиск (при первом запуске загружает данные)","Buscar (la primera vez descarga los datos)"))+'</button>'+
         '<div id="rwy-list" style="margin-top:8px;max-height:230px;overflow:auto;font-size:12.5px;"></div>';
       const relabelUnits=()=>{ const im=imp(); const rl=p.querySelector('.rwy-ulabel-r'), ll=p.querySelector('.rwy-ulabel-l');
-        if(rl) rl.textContent=im?(jp()?'半径 (mi)':'Radius (mi)'):(jp()?'半径 (km)':'Radius (km)');
-        if(ll) ll.textContent=im?(jp()?'最小長 (ft)':'Min length (ft)'):(jp()?'最小長 (m)':'Min length (m)'); };
+        if(rl) rl.textContent=im?(window.IntMapLang.t(HOST.lang,"Radius (mi)","半径 (mi)","Radius (mi)","Радиус (мили)","Radio (mi)")):(window.IntMapLang.t(HOST.lang,"Radius (km)","半径 (km)","Radius (km)","Радиус (км)","Radio (km)"));
+        if(ll) ll.textContent=im?(window.IntMapLang.t(HOST.lang,"Min length (ft)","最小長 (ft)","Mindestlänge (ft)","Мин. длина (футы)","Longitud mínima (ft)")):(window.IntMapLang.t(HOST.lang,"Min length (m)","最小長 (m)","Mindestlänge (m)","Мин. длина (м)","Longitud mínima (m)")); };
       relabelUnits();
       p.querySelector('#rwy-unit').onchange=()=>{ const im=imp(); const ri=p.querySelector('#rwy-radius'), li=p.querySelector('#rwy-len'); if(ri) ri.value=im?186:300; if(li){ li.value=im?6500:2000; li.step=im?500:100; } relabelUnits(); };
       p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} };

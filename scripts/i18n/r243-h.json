@@ -1,0 +1,20 @@
+{
+ "_": "strings this round ADDED (the seismic transport, the layer-panel tool row, the US election layer, the UV widget)",
+ "Wave propagation": ["Wellenausbreitung", "Распространение волн", "Propagación de las ondas", "Propagation des ondes", "파동 전파", "波的傳播"],
+ "Back to the start": ["Zum Anfang", "К началу", "Al principio", "Revenir au début", "처음으로", "回到開頭"],
+ "Jump to the end": ["Zum Ende", "В конец", "Al final", "Aller à la fin", "끝으로", "跳到結尾"],
+ "Display": ["Anzeige", "Отображение", "Visualización", "Affichage", "표시", "顯示"],
+ "peak ahead": ["Spitze voraus", "пик впереди", "pico próximo", "pic à venir", "이후 최대", "稍後最高"],
+ "max": ["max", "макс.", "máx", "max", "최대", "最高"],
+ "Place a source and watch the shaking spread": ["Herd setzen und die Erschütterung verfolgen", "Задайте очаг и смотрите, как расходятся колебания", "Coloque una fuente y vea propagarse el temblor", "Placez une source et regardez les secousses se propager", "진원을 놓고 흔들림이 퍼지는 모습을 보세요", "設置震源，觀看搖晃如何擴散"],
+ "U.S. presidential elections": ["US-Präsidentschaftswahlen", "Президентские выборы в США", "Elecciones presidenciales de EE. UU.", "Élections présidentielles américaines", "미국 대통령 선거", "美國總統選舉"],
+ "Electoral votes": ["Wahlmännerstimmen", "Голоса выборщиков", "Votos electorales", "Grands électeurs", "선거인단 표", "選舉人票"],
+ "majority": ["Mehrheit", "большинство", "mayoría", "majorité", "과반", "過半數"],
+ "of the popular vote": ["der Wählerstimmen", "голосов избирателей", "del voto popular", "des voix", "일반 득표율", "普選得票率"],
+ "Earlier election": ["Frühere Wahl", "Предыдущие выборы", "Elección anterior", "Élection précédente", "이전 선거", "上一次選舉"],
+ "Later election": ["Spätere Wahl", "Следующие выборы", "Elección siguiente", "Élection suivante", "다음 선거", "下一次選舉"],
+ "Split districts": ["Geteilte Distrikte", "Разделённые округа", "Distritos divididos", "Districts partagés", "분할된 선거구", "分割的選區"],
+ "Colour = who received the state’s electoral votes.": ["Farbe = wer die Wahlmännerstimmen des Staates erhielt.", "Цвет — кто получил голоса выборщиков штата.", "El color indica quién obtuvo los votos electorales del estado.", "La couleur indique qui a obtenu les grands électeurs de l’État.", "색은 그 주의 선거인단 표를 얻은 후보를 나타냅니다.", "顏色代表取得該州選舉人票的候選人。"],
+ "Source: National Archives · American Presidency Project": ["Quelle: National Archives · American Presidency Project", "Источник: Национальный архив США · American Presidency Project", "Fuente: Archivos Nacionales · American Presidency Project", "Source : National Archives · American Presidency Project", "출처: 미국 국립문서기록관리청 · American Presidency Project", "來源：美國國家檔案館 · American Presidency Project"],
+ "Could not load the election data": ["Wahldaten konnten nicht geladen werden", "Не удалось загрузить данные о выборах", "No se pudieron cargar los datos electorales", "Impossible de charger les données électorales", "선거 데이터를 불러오지 못했습니다", "無法載入選舉資料"]
+}

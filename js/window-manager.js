@@ -293,14 +293,44 @@ let __winZ=4300;
      at it, and yanking the tab forward there would fight the tab they just pressed.
      ⚠ The tab is opened through the OS action (#R150), not by poking `currentMode`, so the button
      state, the sheet detent and the save all happen exactly once and in one place. */
+  /* ══ ⚠⚠⚠ (#R243) …AND THE TAB BEING SELECTED IS NOT THE SIDEBAR BEING OPEN ══════════════════════
+     「追記：あらたなポップアップを開いたときは自動で左サイドバーをあける動作もやれ。モバイル版では
+       ボトムシートを半上げ」 — re-sent, and this is why. #R242 wrote the three lines below and every
+     one of them assumed the sidebar was already on screen: `tab.docked` SELECTS a tab
+     (js/app-body.js `setMode` toggles a class on a button and calls renderUI — it has never touched
+     `sidebar.collapsed`), and the detent was only raised when the tab was not already the current
+     one. So for the two states a reader is actually in — a collapsed desktop sidebar, or a phone
+     whose sheet is at `peek` with the Panels tab already selected — switching a layer on still
+     LOOKED LIKE NOTHING HAPPENED, which is the whole report.
+     ⚠ The two are now unconditional and independent of `already`: whether the right tab is up and
+     whether the column is visible at all are different questions, and only the second one is what
+     「自動で左サイドバーをあける」 asks about.
+     ⚠ Scope confirmed with the reader: 「パネルモードON時のみ」 — with the dock off a popup appears
+     over the map and there is nothing in the sidebar to reveal, so `__dockOn` above is the gate. */
+  /* ⚠ (#R243) …AND A PANEL THAT ARRIVES DURING BOOT IS NOT A POPUP SOMEBODY OPENED. The legends for
+     the layers a restored session switches back on are created a second or two after load, one at a
+     time, through the same observer a reader's toggle goes through — so on the first build of this
+     the phone booted with the column scrolled 38 px down and the first panel's title cut in half.
+     The instruction is 「あらたなポップアップを開いたとき」, and «opened» is a thing a reader does, so
+     the reveal arms on the first input rather than after a timeout somebody has to tune. */
+  let __revealArmed=false, __armWired=false;
+  function _armReveal(){
+    if(__armWired) return; __armWired=true;
+    const arm=()=>{ __revealArmed=true; };
+    try{ document.addEventListener('pointerdown',arm,{once:true,capture:true});
+      document.addEventListener('keydown',arm,{once:true,capture:true}); }catch(_){ __revealArmed=true; }
+  }
   function _reveal(el){
     try{
-      if(!__dockOn||!el) return;
+      if(!__dockOn||!el||!__revealArmed) return;
       const OS=window.IntMapOS;
       const already=(__dockOps&&__dockOps.mode&&__dockOps.mode()==='docked');
       if(!already&&OS&&OS.exec) OS.exec('tab.docked',{source:'auto'});
+      const phone=!!(window.matchMedia&&window.matchMedia('(max-width:768px)').matches);
       /* a phone's sheet is at 'peek' most of the time; a panel behind it is not visible either */
-      try{ if(!already&&window.matchMedia&&window.matchMedia('(max-width:768px)').matches&&window.__setDetent) window.__setDetent('half'); }catch(_){}
+      if(phone){ try{ if(window.__setDetent) window.__setDetent('half'); }catch(_){} }
+      /* …and on a desktop the sidebar is a column that can be collapsed away entirely */
+      else { try{ if(OS&&OS.exec&&OS.has&&OS.has('ui.sidebar.open')) OS.exec('ui.sidebar.open',{source:'auto'}); }catch(_){} }
       setTimeout(()=>{ try{
         const host=_dockHost(); if(!host||!el.isConnected||el.parentNode!==host) return;
         const hr=host.getBoundingClientRect(), er=el.getBoundingClientRect();
@@ -308,9 +338,42 @@ let __winZ=4300;
       }catch(_){} },260);
     }catch(_){}
   }
-  /* the empty line belongs to whoever knows the COUNT; the words belong to whoever knows the
-     language (js/news-ui.js registers `_dockEmptyRender`). One trigger, one text. */
-  function _dockEmptySync(){ try{ window._dockEmptyRender&&window._dockEmptyRender(__docked.size); }catch(_){} }
+  /* ══ ⚠⚠ (#R243) THE COUNT IS THE COLUMN, NOT A MAP THAT CAN GO STALE ═══════════════════════════
+     「Legends and tool windows will appear here instead of over the map. は全部凡例やポップアップを
+       消した後も出せ。」 — re-sent after #R242 wired this to `__docked.size`.
+     Every path that goes through `_undockOne` does keep that Map honest, and both of them were
+     verified this round (the panel's own ✕, and a layer switched off from the Layers panel). What is
+     NOT honest is a panel that is REMOVED from the DOM while docked: the attribute observer watches
+     `style`/`class`/`hidden` on the element and the childList observer watches the MAP CONTAINER, so
+     a `.remove()` from inside the column is seen by neither, the entry survives in `__docked`, and
+     the count never reaches zero however many panels the reader closes. `_sweep()` already knows how
+     to drop those; it simply was not on this path.
+     ⚠ So the readout is derived from the DOM every time it is asked, and #docked-feed's own
+     childList is watched — which makes the line correct BY CONSTRUCTION rather than correct for the
+     paths somebody thought of ([[intmap-recurring-lessons]] B). The words still belong to whoever
+     knows the language (js/news-ui.js registers `_dockEmptyRender`). One trigger, one text. */
+  let __emptyBusy=false;
+  function _dockEmptySync(){
+    if(__emptyBusy) return;              /* `_dockEmptyRender` mutates the column it is counting */
+    __emptyBusy=true;
+    try{
+      try{ _sweep(); }catch(_){}
+      let n=__docked.size;
+      try{ const host=_dockHost(); if(host) n=host.querySelectorAll(':scope > .im-docked').length; }catch(_){}
+      try{ window._dockEmptyRender&&window._dockEmptyRender(n); }catch(_){}
+    } finally { __emptyBusy=false; }
+  }
+  /* the column's own membership, watched — a panel that leaves by any route puts the line back */
+  let __feedObs=null;
+  function _feedWatch(on){
+    try{
+      if(!on){ if(__feedObs){ __feedObs.disconnect(); __feedObs=null; } return; }
+      if(__feedObs||!window.MutationObserver) return;
+      const host=_dockHost(); if(!host) return;
+      __feedObs=new MutationObserver(()=>{ if(__dockOn) _dockEmptySync(); });
+      __feedObs.observe(host,{childList:true});
+    }catch(_){}
+  }
   /* ⚠⚠ (#R239) UNDOCKING IS THE EXACT INVERSE OF `_flatten`, AND IT HAS TO BE. The first cut put the
      stored style string back whole, which was right while docking removed the string whole — and
      wrong the moment docking started REMOVING ONLY THE GEOMETRY. Measured: switching a docked layer
@@ -347,9 +410,14 @@ let __winZ=4300;
        register with. Turning the mode off still tears it down after the panels have gone home. */
     __dockBulk=true;   /* (#R242) the reader asked for THIS pass; `_reveal` stays out of it */
     try{
+      if(on){ _feedWatch(true); _armReveal(); }   /* (#R243) …and the column's own membership — see `_dockEmptySync` */
+      /* ⚠ (#R239b) THIS PAIR STAYS ADJACENT — the observer is armed BEFORE the first pass, or a legend
+         that was already on when the mode was switched on can never be found again (it is in
+         #docked-feed, not under the map container, and a legend is not in `__winReg`). tests/r239
+         matches the two lines together for exactly that reason, so anything new goes ABOVE them. */
       if(on) _dockWatch(true);
       if(on){ _dockables().forEach(_dockOne); }
-      else { Array.from(__docked.keys()).forEach(_undockOne); _dockWatch(false); }
+      else { Array.from(__docked.keys()).forEach(_undockOne); _dockWatch(false); _feedWatch(false); }
     } finally { __dockBulk=false; }
     _sweep();
     _dockEmptySync();

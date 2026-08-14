@@ -231,8 +231,18 @@ function buildRange(font, start, fallback) {
     const w = Math.ceil(bb.x2) - x0, h = Math.ceil(bb.y2) - y0;
     const bw = w + 2 * BUFFER, bh = h + 2 * BUFFER;
     const cov = rasterise(flatten(path), bw, bh, x0 - BUFFER, y0 - BUFFER);
+    /* ══ ⚠⚠⚠ (#R243) `top` IS THE TOP OF THE BOX, AND #R242 WROTE THE BOTTOM ═══════════════════════
+       「キリル文字、ラテン文字の地名ラベルの文字がガタガタになっている」 — and this one line is the
+       whole of it. MapLibre places a glyph quad at `y1 = (−metrics.top − border)·scale`
+       (maplibre-gl-dev.js, getGlyphQuads), so `top` MUST be the distance from the baseline UP to the
+       top edge of the bitmap. `-y0 - h` is `-ceil(bb.y2)` — the distance to the BOTTOM edge — so
+       every glyph was drawn its OWN HEIGHT too low, and «its own height» is different for every
+       letter. MEASURED at 24 px: H and L got top 0 instead of 18, x got 0 instead of 14, the hyphen
+       got 6 instead of 9. A cap therefore sank 18 px, an x-height letter 14 and a hyphen 3 — which
+       on screen is a line of type where the capitals sit low and the hyphens float. Exactly 「ガタガタ」.
+       ⚠ tests/r243-checks asserts this against the font, so the metric cannot silently drift again. */
     glyphs.push({ id: cp, bitmap: sdf(cov, bw, bh), width: w, height: h,
-      left: x0, top: -y0 - h, advance });                     /* `top` is measured up from the baseline */
+      left: x0, top: -y0, advance });                         /* `top` is measured up from the baseline */
     have.add(cp);
   }
   let filled = 0;
@@ -268,9 +278,18 @@ for (const start of RANGES) {
   if (CHECK) {
     if (!existsSync(out)) { console.error('  ✗ missing ' + name + '.pbf'); bad++; continue; }
     const got = decode(readFileSync(out));
-    const ours = new Set(glyphs.map((g) => g.id));
-    const missing = [...ours].filter((id) => !got.some((g) => g.id === id));
+    const byId = new Map(got.map((g) => [g.id, g]));
+    const missing = glyphs.filter((g) => !byId.has(g.id));
+    /* ⚠ (#R243) …AND THE METRICS, NOT ONLY THE CODEPOINTS. #R242's check asked «is this character in
+       the file», which a committed atlas with every glyph placed at the wrong `top` passes without a
+       word. The four numbers that POSITION a glyph are what a reader sees, so they are what is
+       compared. (The SDF bytes are not: they are re-derived here and a rounding difference between
+       two Node versions would make this fail for no reader-visible reason.) */
+    const wrong = glyphs.filter((g) => { const o = byId.get(g.id); return o &&
+      (o.width !== g.width || o.height !== g.height || (o.left | 0) !== g.left || (o.top | 0) !== g.top || o.advance !== g.advance); });
     if (missing.length) { console.error('  ✗ ' + name + ': ' + missing.length + ' codepoint(s) not in the committed atlas'); bad++; }
+    else if (wrong.length) { console.error('  ✗ ' + name + ': ' + wrong.length + ' glyph(s) with different metrics — e.g. U+'
+      + wrong[0].id.toString(16).toUpperCase() + ' committed top ' + byId.get(wrong[0].id).top + ', font says ' + wrong[0].top); bad++; }
     else console.log('  ✓ ' + name + ' — ' + got.length + ' glyphs');
   } else {
     writeFileSync(out, buf);
