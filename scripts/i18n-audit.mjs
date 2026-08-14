@@ -71,6 +71,14 @@ const attrs = run('i18n-attr-audit.mjs');
    surface is what stops the shape coming back. Like the one above it is a NEW QUESTION, so it is a
    line in this gate rather than a seventh free-standing instrument (#R239's rule). */
 const arrays = run('i18n-positional-array-audit.mjs');
+/* ⚠⚠⚠ (#R242) THE NINTH SURFACE, AND THE ONLY ONE HERE THAT DOES NOT FAIL THE BUILD.
+   `jp() ? '日本語' : 'English'` — #R237's two-branch audit cannot see it because the test is a CALL
+   rather than a comparison against a language code. 486 sites, 432 distinct strings, every one of
+   them English in de/ru/es/fr/ko/zh/zh-Hans. #R242 found the shape and could not convert 486 call
+   sites in the round that found it, so the number is PRINTED below rather than quietly absent: no
+   round after this one can read this report and believe the translation is finished.
+   ⚠ When it reaches zero, move it into `problems` and delete this note. */
+const helper = run('i18n-helper-ternary-audit.mjs');
 const orphanKeys = keyed.undeclared;
 
 const keyedBy = new Map(keyed.rows.map((r) => [r.code, r]));
@@ -141,7 +149,12 @@ console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.tot
   /* (#R241) the seventh surface — see the note by `arrays` above */
   + `\ntranslation tuples held as data instead of as a call: ${arrays.hits.length}`
   + (arrays.hits.length ? '\n    ' + arrays.hits.slice(0, 20).map((h) => `${h.file}:${h.line}  ${h.text}`).join('\n    ')
-      + '\n    (node scripts/i18n-positional-array-audit.mjs lists every one)' : ''));
+      + '\n    (node scripts/i18n-positional-array-audit.mjs lists every one)' : '')
+  /* (#R242) the ninth surface — see the note by `helper` above. ⚠ It is printed and NOT counted in
+     the percentages, because it is a known open gap with a number rather than a silent absence. */
+  + (helper.sites ? `\n\n⚠ OPEN GAP (#R242) — two-language strings behind a helper (\`jp() ? … : …\`): `
+      + `${helper.sites} sites, ${helper.distinct} distinct strings, English in de/ru/es/fr/ko/zh/zh-hans.`
+      + '\n    NOT counted in the percentages above. node scripts/i18n-helper-ternary-audit.mjs' : ''));
 
 if (process.argv.includes('--gate')) {
   const bad = rows.filter(shortOf).map((r) => r.code);

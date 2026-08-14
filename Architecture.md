@@ -2013,6 +2013,15 @@ js/
                                     （REF＝PLACE の各点最大）。⚠ 返すのは必ず**ズームが最外側**の
                                     `interpolate`（#R73 で入れ子が addLayer を黙って落とした）。DOM も
                                     レンダラも触らないので Node で検証（`tests/r198-checks.test.mjs`）。
+  map-typography.js                 (#R242) **アプリの文字**（`window.IntMapMapTypography`）。①`cjkFamily()`＝
+                                    MapLibre の `localIdeographFontFamily` に渡す CJK/ハングルの書体（UI と同じ
+                                    ものを言語別に）／`glyphRewrite(url,type)`＝Latin・キリルの `{range}.pbf` を
+                                    同梱の `fonts/Inter Regular/` へ差し替える `transformRequest`（Inter を配る
+                                    公開グリフサーバが存在しないため自前生成。`scripts/build-glyphs.mjs`）。
+                                    ②`bandBox(txt)`＝ニュース帯の実寸（`text-max-width:14em` の折返しを canvas で
+                                    実測）と `declutterNewsBands(feats)`＝重なり回避。③`installFlagFont()`＝
+                                    国旗 webfont（#R79e から移設。`var(--im-font)` を前置するので言語切替に追随）。
+                                    どれも js/app-body.js の上限（tests/r168 #8・tests/r200 ⑤）の外へ出したもの。
   window-manager.js                 (#R169) フローティングパネルの共通機構（`makeDraggable`／`addEdgeResize`／
                                     `registerWindow`／`bringToFront`）。11KB
   search-geocode.js                 (#R169) 検索ボックス（自然文の前処理・ローカル地名のあいまい一致・

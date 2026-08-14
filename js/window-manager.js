@@ -100,6 +100,9 @@ let __winZ=4300;
      rather than re-derived, which is the only way a window comes back exactly where it was left. */
   const __docked=new Map();      /* el -> { parent, next, css } */
   let __dockOn=false, __dockObs=null;
+  /* (#R242) `__dockBulk` is «this dock is part of a sweep the reader asked for», and `__dockOps` is
+     the app-side glue `wireDock` was handed — both are read by `_reveal` below. */
+  let __dockBulk=false, __dockOps=null;
   function _dockHost(){ try{ return document.getElementById('docked-feed'); }catch(_){ return null; } }
   /* ══ ⚠⚠ (#R238) …AND THE LEGENDS, WHICH ARE NOT WINDOWS ═══════════════════════════════════════════
      Measured on the first build of this feature: with the dock on, `iol-panel` and `sq-panel` moved
@@ -259,6 +262,12 @@ let __winZ=4300;
       _watchEl(el);
       el.classList.add('im-docked');
       _flatten(el);
+      /* ⚠ (#R242) 「凡例やポップアップは一番上に詰めてパネルに表示しろ。（最初のうちは上に詰められて
+         いないことがある）」 — the "first few" case is the EMPTY LINE: #R238 created it in
+         js/news-ui.js's renderUI and removed it there too, so a panel that arrived while the tab was
+         already open was appended AFTER it and the column started with 114 px of «nothing here yet».
+         `_dockEmptySync()` runs on every membership change, so the line is present exactly when the
+         count is zero and the first panel is always the first child. */
       host.appendChild(el);
       /* ⚠ (#R240) 「パネル内のポップアップや凡例は最小化された状態でスタートしないように。」 — a legend
          that was auto-collapsed while it floated over a phone's map (js/data-layers.js
@@ -267,9 +276,41 @@ let __winZ=4300;
          panel is left is the reader's, not this file's. */
       try{ window._legendExpand&&window._legendExpand(el); }catch(_){}
       try{ if(el.classList.contains('tp-collapsed')){ const b=el.querySelector('.tp-min-btn'); if(b) b.click(); } }catch(_){}
+      _dockEmptySync();
+      if(!__dockBulk) _reveal(el);
       return true;
     }catch(_){ __docked.delete(el); return false; }
   }
+  /* ══ ⚠⚠ (#R242) A PANEL THAT APPEARS HAS TO BE SOMEWHERE THE READER IS LOOKING ══════════════════
+     「新たなポップアップが出現したときは、自動的にサイドバーのパネルを開き、該当ポップアップが見える
+       ようにそこまでスクロール。（設定でパネルを選択時の話）」
+     With the mode on, a legend or tool window no longer appears over the map — so unless the reader
+     already happens to be on the Panels tab, switching a layer on now LOOKS LIKE NOTHING HAPPENED.
+     This is the other half of the mode: the tab comes forward and the column scrolls to the panel
+     that just arrived.
+     ⚠ ONLY for a panel that arrives ON ITS OWN — the bulk passes (`setDocked`, `dockRefresh`) set
+     `__dockBulk`, because switching the mode on, or opening the tab, is already the reader looking
+     at it, and yanking the tab forward there would fight the tab they just pressed.
+     ⚠ The tab is opened through the OS action (#R150), not by poking `currentMode`, so the button
+     state, the sheet detent and the save all happen exactly once and in one place. */
+  function _reveal(el){
+    try{
+      if(!__dockOn||!el) return;
+      const OS=window.IntMapOS;
+      const already=(__dockOps&&__dockOps.mode&&__dockOps.mode()==='docked');
+      if(!already&&OS&&OS.exec) OS.exec('tab.docked',{source:'auto'});
+      /* a phone's sheet is at 'peek' most of the time; a panel behind it is not visible either */
+      try{ if(!already&&window.matchMedia&&window.matchMedia('(max-width:768px)').matches&&window.__setDetent) window.__setDetent('half'); }catch(_){}
+      setTimeout(()=>{ try{
+        const host=_dockHost(); if(!host||!el.isConnected||el.parentNode!==host) return;
+        const hr=host.getBoundingClientRect(), er=el.getBoundingClientRect();
+        if(er.top<hr.top||er.bottom>hr.bottom) host.scrollTop+=(er.top-hr.top)-8;
+      }catch(_){} },260);
+    }catch(_){}
+  }
+  /* the empty line belongs to whoever knows the COUNT; the words belong to whoever knows the
+     language (js/news-ui.js registers `_dockEmptyRender`). One trigger, one text. */
+  function _dockEmptySync(){ try{ window._dockEmptyRender&&window._dockEmptyRender(__docked.size); }catch(_){} }
   /* ⚠⚠ (#R239) UNDOCKING IS THE EXACT INVERSE OF `_flatten`, AND IT HAS TO BE. The first cut put the
      stored style string back whole, which was right while docking removed the string whole — and
      wrong the moment docking started REMOVING ONLY THE GEOMETRY. Measured: switching a docked layer
@@ -294,6 +335,7 @@ let __winZ=4300;
       _restoreGeom(el,s.css);
       if(!el.getAttribute('style')) el.removeAttribute('style');
       if(s.parent&&s.parent.isConnected){ s.parent.insertBefore(el,(s.next&&s.next.parentNode===s.parent)?s.next:null); }
+      _dockEmptySync();   /* (#R242) 「全部凡例やポップアップを消した後も出せ」— the last one leaving puts the line back */
       return true;
     }catch(_){ return false; }
   }
@@ -303,10 +345,14 @@ let __winZ=4300;
     on=!!on; __dockOn=on;
     /* (#R239b) …and the observer is armed BEFORE the first pass, so `_dockOne` above has one to
        register with. Turning the mode off still tears it down after the panels have gone home. */
-    if(on) _dockWatch(true);
-    if(on){ _dockables().forEach(_dockOne); }
-    else { Array.from(__docked.keys()).forEach(_undockOne); _dockWatch(false); }
+    __dockBulk=true;   /* (#R242) the reader asked for THIS pass; `_reveal` stays out of it */
+    try{
+      if(on) _dockWatch(true);
+      if(on){ _dockables().forEach(_dockOne); }
+      else { Array.from(__docked.keys()).forEach(_undockOne); _dockWatch(false); }
+    } finally { __dockBulk=false; }
     _sweep();
+    _dockEmptySync();
     try{ document.body.classList.toggle('im-dock-mode',on); }catch(_){}
     return __docked.size;
   }
@@ -319,8 +365,12 @@ let __winZ=4300;
   function dockRefresh(){ if(!__dockOn) return 0;
     /* (#R239) a panel switched OFF while another tab was up leaves the list too — the sweep runs in
        both directions, exactly like the observer, so what the tab shows is what is switched on. */
-    try{ Array.from(__docked.keys()).forEach(el=>{ if(!_isOn(el)) _undockOne(el); }); }catch(_){}
-    _dockables().forEach(el=>{ _watchEl(el); _dockOne(el); }); return dockedCount(); }
+    __dockBulk=true;   /* (#R242) opening the tab IS the reader looking; `_reveal` would fight the press */
+    try{
+      try{ Array.from(__docked.keys()).forEach(el=>{ if(!_isOn(el)) _undockOne(el); }); }catch(_){}
+      _dockables().forEach(el=>{ _watchEl(el); _dockOne(el); });
+    } finally { __dockBulk=false; }
+    const n=dockedCount(); _dockEmptySync(); return n; }
   function addEdgeResize(panel,opts){ opts=opts||{}; if(!panel||panel.dataset.edgeResize) return; panel.dataset.edgeResize='1';
     const M=9, minW=(opts.min&&opts.min[0])||220, minH=(opts.min&&opts.min[1])||130;
     const CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
@@ -372,9 +422,15 @@ let __winZ=4300;
      it would put a tab inside a tab. */
   function wireDock(ops){
     ops=ops||{};
+    __dockOps=ops;   /* (#R242) `_reveal` asks it which tab is up before pulling the Panels tab forward */
     const applyDockMode=()=>{
       const on=(window.imDockPanels==='on');
-      try{ const ap=document.getElementById('atlas-panel'); if(ap) ap.dataset.nodock='1'; }catch(_){}
+      /* ⚠⚠⚠ (#R242) THE ATLAS OPT-OUT USED TO BE WRITTEN HERE, AND THAT WAS THE BUG. This function
+         runs from loadSettings() at boot; Atlas is lazy, so `getElementById('atlas-panel')` was null
+         for exactly the reader whose saved setting is already 「on」 — the flag was never written and
+         the panel was docked the first time it was opened (measured: parent `docked-feed`, class
+         `atl-tab im-docked`). `data-nodock` is now set where the panel is CREATED, in
+         js/atlas-console.js's `ensure()`, so no ordering can miss it. Nothing to do here. */
       let n=0; try{ n=setDocked(on); }catch(_){}
       try{ const b=document.getElementById('btn-docked'); if(b) b.style.display=on?'':'none'; }catch(_){}
       /* ⚠ the tab row is FIVE buttons wide now, and #R122's auto-fit only ran on load, on resize and

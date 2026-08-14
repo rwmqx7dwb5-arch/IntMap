@@ -68,22 +68,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      data-i18n), and loadSettings() only ran AFTER they were built — so a Japanese user saw English in
      those spots. Seeding currentLang here makes everything build in the right language from the start. */
   try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&window.IntMapLang.has(_s0.lang)) currentLang=_s0.lang; }catch(_){}   /* (#R38) seed ALL FOUR UI languages up-front. RU was missing here, so a saved Russian setting fell back to English in every construction-time-baked surface until loadSettings re-ran — a real DE/RU "別の言語が混じる" source. */
-  /* (#R79e) Country flag emoji ("スマホでは国旗が出るがパソコンでは出ない"): Windows ships NO flag glyphs in its
-     emoji font — regional-indicator pairs render as letter boxes ("US"), never a flag. Ship the Twemoji Country
-     Flags webfont (self-hosted, ~78 KB) scoped by unicode-range to ONLY the flag codepoints, so it touches flag
-     glyphs and nothing else. Applied only where the platform can't render flags natively → phones/Macs keep
-     their own flags. */
-  (function(){ try{
-    var ff=document.createElement('style');
-    ff.textContent='@font-face{font-family:"Twemoji Country Flags";unicode-range:U+1F1E6-1F1FF,U+1F3F4,U+E0062-E0063,U+E0065,U+E0067,U+E006C,U+E006E,U+E0073-E0074,U+E0077,U+E007F;src:url("TwemojiCountryFlags.woff2") format("woff2");font-display:swap;}';
-    document.head.appendChild(ff);
-    function nativeFlags(){ try{ var c=document.createElement('canvas'); c.width=c.height=16; var x=c.getContext('2d'); if(!x) return true; x.textBaseline='top'; x.font='16px sans-serif'; x.fillStyle='#000'; x.fillText('🇨🇦',0,0); /* 🇨🇦 (red+white) — a real flag paints colour, letter-box fallback stays monochrome */
-      var d=x.getImageData(0,0,16,16).data; for(var i=0;i<d.length;i+=4){ if(d[i+3]>0 && (Math.abs(d[i]-d[i+1])>28||Math.abs(d[i+1]-d[i+2])>28||Math.abs(d[i]-d[i+2])>28)) return true; } return false; }catch(_){ return true; } }
-    var ok=nativeFlags(); window.__flagFont={native:ok,applied:false};
-    var apply=function(){ try{ var b=document.body; if(!b) return false; var cur=getComputedStyle(b).fontFamily||'sans-serif'; if(cur.indexOf('Twemoji Country Flags')<0) b.style.fontFamily='"Twemoji Country Flags", '+cur; window.__flagFont.applied=true; return true; }catch(_){ return false; } };
-    window.__applyFlagFont=apply;   /* exposed so it can be forced if the canvas probe is unreliable */
-    if(!ok){ if(!apply()) document.addEventListener('DOMContentLoaded',apply); }
-  }catch(_){} })();
+  /* (#R242) the app's text — the face, a news band's width, the flag webfont — is js/map-typography.js */
+  function MT(){ return window.IntMapMapTypography; }
   let isGridOn=false, toolMode=null, measurePoints=[];
   let namesOn=true, countryInfoOn=false, geoLabelsOn=true, poiOn=true;   /* (#R211) 「既定でオン」 — shop/facility/company names are on from the start. Not persisted anywhere, so this literal IS the default (like currentMapType, #R207). It costs nothing below z12: the gate admits only tier 1 there. */  /* (#R41) water/terrain labels now toggle SEPARATELY from place names */   /* (#R186) …and the shop/facility names are a third, independent set (cb-poi) */
   let map=null, markersArray=[], forceHoverLayers=new Set();
@@ -842,6 +828,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
         return [lim,lim];
       })(),
       glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+      /* ⚠⚠⚠ (#R242) 「地名ラベルも例外ではない」 — the map's typeface, both halves, in js/map-typography.js */
+      localIdeographFontFamily:MT().cjkFamily(),
+      transformRequest:MT().glyphRewrite,
       /* (#R19) Desktop maxZoom 18→19: Esri World Imagery serves real z19 tiles over most urban areas,
          so 3D/satellite close-ups gain a full extra level of native detail (no upscaling). Phones stay
          at 18 — the extra tile set is pure GPU/RAM cost there ("ブラウザが落ちることがないように"). */
@@ -2036,33 +2025,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      dense clusters stay dots until there's room; and because it never recomputes mid-gesture, the bands never
      blink. Visibility is applied via the `bnd` feature-state the layer's opacity reads. */
   let _ndcT=null;
-  function _declutterNewsBands(){
-    try{
-      /* (#R161 MapLibre reduction, Phase 3) the whole news-pin overlay now talks to
-         IntMapGeoEngine instead of the raw map — projection, surface size and
-         feature-state are all renderer-agnostic operations. */
-      const GE=window.IntMapGeoEngine; if(!GE) return;
-      if(!GE.layers.hasSource('news-points')||!GE.layers.has('news-labels')) return;
-      const feats=newsFeatures||[]; if(!feats.length) return;
-      const sz=GE.render.size(); const W=sz.width, H=sz.height;
-      const M=48;   /* off-screen margin: keep a band as the pin scrolls just past the edge */
-      const items=[];
-      for(const f of feats){
-        const g=f.geometry, p=f.properties||{}; const fid=p.fid; if(!g||g.type!=='Point'||fid==null) continue;
-        let pt; try{ pt=GE.coords.project(g.coordinates); }catch(_){ continue; }
-        if(!pt) continue;
-        if(pt.x<-M||pt.x>W+M||pt.y<-M||pt.y>H+M){ items.push({fid,off:true}); continue; }
-        const txt=String(p.short||p.title||''); const w=Math.min(txt.length,16)*6.4+28;   /* ≈ pill width */
-        const pr=(p.mapped==='true')?0:(p.mapped==='publisher')?1:2;
-        items.push({fid,x:pt.x,y:pt.y,w,h:19,pr});
-      }
-      const vis=items.filter(i=>!i.off).sort((a,b)=> a.pr-b.pr || a.y-b.y || a.x-b.x);
-      const claimed=[]; const win=new Set();
-      const hit=(r)=>{ for(const c of claimed){ if(r.x<c.x+c.w && r.x+r.w>c.x && r.y<c.y+c.h && r.y+r.h>c.y) return true; } return false; };
-      for(const it of vis){ const r={x:it.x+9,y:it.y-10,w:it.w,h:it.h}; if(!hit(r)){ claimed.push(r); win.add(it.fid); } }
-      for(const it of items){ try{ GE.layers.setFeatureState({source:'news-points',id:it.fid},{bnd:win.has(it.fid)}); }catch(_){} }
-    }catch(_){}
-  }
+  /* (#R242) …and which bands win the room: a text measurement, so it moved with bandBox */
+  function _declutterNewsBands(){ try{ MT().declutterNewsBands(newsFeatures); }catch(_){} }
   window._declutterNewsBands=_declutterNewsBands;
   function scheduleNewsDeclutter(){ if(_ndcT) clearTimeout(_ndcT); _ndcT=setTimeout(()=>{ _ndcT=null; _declutterNewsBands(); },90); }
   window.scheduleNewsDeclutter=scheduleNewsDeclutter;
@@ -2715,7 +2679,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        entering the tab nor auto-disabled on leaving it. The checkbox in the Layers panel still works as always. */
     function _setCountriesInfo(on){ try{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==on){ cb.checked=on; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} }
   /* (#R238) the dock's glue is in js/window-manager.js beside the mechanism (`wireDock`) — which is also what keeps this file and the SHELL under tests/r200 ⑤ and tests/r168 #8. */
-  const applyDockMode=IM_HOST.applyDockMode=IM_WINMGR.wireDock({ setMode, renderUI, saveSettings, clearMode:()=>{ currentMode=null; }, mode:()=>currentMode });   IM_HOST.dockRefresh=()=>{ try{ return IM_WINMGR.dockRefresh(); }catch(_){ return 0; } };
+  /* (#R242) 「地震シミュレータはレイヤー欄からも開けるように」 — the Layers button, the palette and Atlas, one command (the module is lazy) */
+  IntMapOS.register('sim.seismic', (ctx)=>window.IntMapLazy.need('seismic').then(()=>{ try{ return !!(window.IntMapSeismic&&window.IntMapSeismic.open(((ctx&&ctx.params)||{}).at||{})); }catch(_){ return false; } }),
+    {label:'Seismic wave simulator', btn:'btn-seismic-sim', group:'sim'});
+  const applyDockMode=IM_HOST.applyDockMode=IM_WINMGR.wireDock({ setMode, renderUI, saveSettings, clearMode:()=>{ currentMode=null; }, mode:()=>currentMode });   IM_HOST.dockRefresh=()=>{ try{ return IM_WINMGR.dockRefresh(); }catch(_){ return 0; } };   IM_HOST.dockedCount=()=>{ try{ return IM_WINMGR.dockedCount(); }catch(_){ return 0; } };   /* (#R242) the empty line is a readout of this */
   function setMode(mode,btnId){
     if(currentMode===mode){ currentMode=null; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); renderUI(); return; }
     currentMode=mode; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); document.getElementById(btnId).classList.add('active');
