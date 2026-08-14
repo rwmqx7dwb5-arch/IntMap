@@ -3666,9 +3666,12 @@ window.IntMapModules.seismic=function(HOST){
         +'box-shadow:0 0 0 0 var(--primary-color);animation:sqhPulse 1.8s ease-out infinite;}'
         +'@keyframes sqhPulse{0%{box-shadow:0 0 0 0 rgba(10,132,255,0.55);}70%{box-shadow:0 0 0 9px rgba(10,132,255,0);}100%{box-shadow:0 0 0 0 rgba(10,132,255,0);}}'
         +'#sq-hud .sqh-txt{flex:1 1 auto;min-width:0;}'
-        +'#sq-hud .sqh-t{display:block;font-size:13px;font-weight:700;color:var(--text-main);line-height:1.25;}'
-        +'#sq-hud .sqh-s{display:block;font-size:11.5px;color:var(--text-muted);line-height:1.35;margin-top:1px;}'
-        +'#sq-hud button{flex:0 0 auto;border:none;border-radius:16px;height:32px;padding:0 15px;font-size:13px;'
+        /* ⚠ (#R239) ONE TYPE SCALE. #R234's rule (and tests/r234-checks) is that this panel has three
+           sizes — FS / FS_S / FS_H — and no raw px anywhere else; the HUD is part of the panel even
+           though it is drawn on the map, so it interpolates the same three constants. */
+        +'#sq-hud .sqh-t{display:block;font-size:'+FS_H+';font-weight:700;color:var(--text-main);line-height:1.25;}'
+        +'#sq-hud .sqh-s{display:block;font-size:'+FS_S+';color:var(--text-muted);line-height:1.35;margin-top:1px;}'
+        +'#sq-hud button{flex:0 0 auto;border:none;border-radius:16px;height:32px;padding:0 15px;font-size:'+FS_H+';'
         +'font-weight:700;cursor:pointer;background:var(--primary-color);color:#fff;}'
         +'#sq-hud button.sqh-2{background:var(--input-bg);color:var(--text-main);}'
         +'@media(prefers-reduced-motion:reduce){#sq-hud .sqh-dot{animation:none;}}';

@@ -134,7 +134,9 @@ test('R235 wavefronts: surface-wave group velocity is a path integral over the c
     'the surface-wave radius is a function of that bearing');
   /* ⚠ and a POINT source must go through the per-bearing builder too — `ringLines` takes one radius,
      so routing the no-fault case through it would silently discard the integral again */
-  assert.match(s, /const lines=faultFrontLines\(rad\);/,
+  /* ⚠ (#R239) via `train()`, which asks `faultRing()` for the leading edge (and, with a rupture,
+     the trailing one). The per-bearing property this line protects is unchanged. */
+  assert.match(s, /train\(rad,sw\.col,1\.8\)/,
     'surface fronts always use the per-bearing builder, fault or not');
   /* ══ ⚠⚠ (#R238) THE BODY WAVES NO LONGER KEEP THE CIRCULAR HELPER, AND THAT IS THE FIX ═══════════
      This asserted that P and S go through `ringLines` because 「they have no lateral model, so they

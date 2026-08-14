@@ -237,8 +237,15 @@ test('R234 seismic panel: one type scale, and grey only on the window chrome', (
   /* ⚠ (#R237) THE CLAIM IS «GREY ONLY ON THE CHROME», WHICH IS A CEILING, NOT AN EXACT COUNT. The
      iOS restyle moved declarations out of inline strings into the panel's sheet, so an exact 2 is a
      count of a spelling. What must stay true is that grey never lands on content. */
+  /* ⚠ (#R239) THE CEILING IS 3 NOW, AND THE THIRD SITE IS NAMED. The on-map step HUD's second line
+     is an instruction — «tap each corner, then press Done» — which is chrome in exactly the sense
+     this rule protects: it is not a measurement, an intensity or a place name. The claim is still
+     «grey never lands on content», and the number still catches a fourth site. The three are: the
+     ✕/— window glyphs, 「無感」, and `#sq-hud .sqh-s`. */
   const muted = s.split('color:var(--text-muted)').length - 1;
-  assert.ok(muted <= 2, 'grey is left on the window-chrome glyphs and nowhere else (found ' + muted + ')');
+  assert.ok(muted <= 3, 'grey is left on the window-chrome glyphs and nowhere else (found ' + muted + ')');
+  assert.ok(s.includes("#sq-hud .sqh-s{display:block;font-size:'+FS_S+';color:var(--text-muted)"),
+    'the third is the HUD instruction line');
   const t = read('js/tsunami.js');
   for (const px of ['9.5px', '10px', '10.5px', '11px', '11.5px']) {
     assert.ok(!t.includes('font-size:' + px), 'the tsunami panel shares the scale (' + px + ')');

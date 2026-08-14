@@ -129,7 +129,8 @@ test('R224 ③ the fault solver recovers real earthquakes from their footprints'
 /* ── ④ THE SEVENTH LANGUAGE IS DERIVED, NOT COPIED ────────────────────────────────────────────── */
 test('R224 ④ Simplified Chinese is registered and regenerates byte-for-byte', () => {
   const reg = read('js/lang-registry.js');
-  assert.match(reg, /\{ code: 'zh-hans', label: '简体中文 \(beta\)', html: 'zh-Hans', pill: '简',/);
+  /* ⚠ (#R239) …and the same for Simplified — see the note in tests/r223-checks. */
+  assert.match(reg, /\{ code: 'zh-hans', label: '简体中文', html: 'zh-Hans', pill: '简',/);
   assert.match(reg, /alias: \['zh-hans', 'zh-cn', 'zh-sg', 'zh-my', 'hans'\]/, 'the Simplified tags only');
   assert.ok(!/'zh-tw'[^\]]*zh-hans/.test(reg), 'zh-TW must stay with Traditional');
   assert.match(reg, /b\.textContent = l\.pill \|\| l\.code\.toUpperCase\(\);/, 'a code is not always a pill');

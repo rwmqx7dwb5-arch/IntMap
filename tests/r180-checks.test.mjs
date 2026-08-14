@@ -289,13 +289,15 @@ test('R180 ③: every new user-visible string exists in all five languages', () 
   /* (#R200) the late Object.assign(i18n.xx,{…}) tail left js/app-body.js for js/i18n-late.js — a real
      ES module app-body imports by name. The question is unchanged (does every string exist in five
      languages?); only the file that answers it moved, and asking THAT file is the stricter form. */
-  const body = R('js/i18n-late.js'), i18n = R('js/i18n.js');
-  /* en + jp live with the other Map-behaviour strings; de/ru/es in js/i18n.js */
+  /* ⚠ (#R239) SAME CLAIM, NEW HOME — every keyed string moved into js/locales/ui.<code>.js.
+     The `Object.assign(i18n.en…es,{…})` shape this test read was five languages by
+     construction, and fr/ko/zh fell back to English for ~170 keys declared that way
+     (scripts/i18n-keyed-audit.mjs). Nine locale files is the stricter form of the same
+     question. (#R203: move the assertion, say why.) */
   for (const k of KEYS) {
-    const inBody = [...body.matchAll(new RegExp(`\\b${k}\\s*:`, 'g'))].length;
-    const inI18n = [...i18n.matchAll(new RegExp(`\\b${k}\\s*:`, 'g'))].length;
-    assert.equal(inBody, 2, `${k} must be defined for en AND jp (found ${inBody})`);
-    assert.equal(inI18n, 3, `${k} must be defined for de, ru AND es (found ${inI18n})`);
+    for (const c of ['en', 'jp', 'de', 'ru', 'es', 'fr', 'ko', 'zh', 'zh-hans']) {
+      assert.ok((() => { const t = R('js/locales/ui.' + c + '.js'); return t.includes(k + ':') || t.includes('"' + k + '":'); })(), `${k} must be defined for ${c}`);
+    }
   }
   /* and the markup references them rather than hard-coding English */
   const html = R('index.html');

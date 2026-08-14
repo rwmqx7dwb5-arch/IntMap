@@ -178,7 +178,12 @@ test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the 
      argument order of 2,238 L(…) call sites) and that new languages are APPENDED; the count is not. */
   assert.deepEqual(rows.slice(0, 6), ['en', 'jp', 'de', 'ru', 'es', 'zh'],
     'order is load-bearing — never reordered, only appended to');
-  assert.match(reg, /label: '繁體中文 \(beta\)'/);
+  /* ⚠ (#R239) the explicit «(beta)» is gone. #R232 made the mark MEASURED (scripts/i18n-langs.mjs)
+     and kept a typed one here only because 「their reading pages are still partial even though the
+     app is at 100%」 — pages.zh-hant.js is 287/287 now, so that sentence is no longer true and the
+     mark would be telling a reader something false. The label itself is still asserted. */
+  assert.match(reg, /label: '繁體中文'/);
+  assert.doesNotMatch(reg, /繁體中文 \(beta\)/, 'a mark that is no longer true is not kept');
   assert.match(reg, /html: 'zh-Hant'/);
   assert.match(reg, /alias: \['zh-hant', 'zh-tw', 'zh-hk', 'zh-mo'\]/, 'the script tags, not a bare zh');
   /* (#R232) src/main.js no longer names any locale but English — src/locale-boot.js globs the
