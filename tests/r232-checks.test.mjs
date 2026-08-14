@@ -95,7 +95,17 @@ test('R232 i18n: (beta) is MEASURED, and DE/RU/ES no longer wear it', () => {
   assert.match(gen, /window\.IntMapLangBeta\s*=/, 'the beta list is generated, not typed');
   const beta = JSON.parse(gen.slice(gen.indexOf('IntMapLangBeta')).match(/\[[^\]]*\]/)[0]);
   for (const c of ['en', 'jp', 'de', 'ru', 'es']) assert.ok(!beta.includes(c), `${c} is positional — never beta`);
-  for (const c of ['fr', 'ko']) assert.ok(beta.includes(c), `${c} is young — it must say so`);
+  /* ⚠ (#R239) fr and ko were 25 % when this line was written and are 100 % on every surface now, so
+     the measured list is empty — which is the POINT of measuring it rather than typing it. What is
+     load-bearing is that the mark follows the measurement in both directions, and that is what is
+     asserted: a language below the threshold must wear it, one at or above it must not. */
+  const rep = JSON.parse(execFileSync(process.execPath,
+    [new URL('scripts/i18n-report.mjs', ROOT).pathname.replace(/^\/([A-Za-z]:)/, '$1'), '--json'], { encoding: 'utf8', maxBuffer: 64e6 }));
+  for (const r of rep.rows) {
+    if (r.positional) continue;
+    const done = r.inline >= 0.98 * rep.inlineWant;
+    assert.equal(!beta.includes(r.code), done, `${r.code}: the (beta) mark must follow the measurement`);
+  }
   /* the ES pill's tooltip was the last (beta) mark on the five */
   assert.doesNotMatch(noHtml(read('index.html')), /Español \(beta\)/, 'Spanish is complete');
 });

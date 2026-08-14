@@ -21,8 +21,8 @@ export function makeWheelZoom(HOST, CTX) {
      back as the single wheel path. On top of it, a user-tunable NAVIGATION SENSITIVITY (Settings →
      "Map navigation"): zoom multiplies the wheel/pinch rates, pan scales the drag inertia. Defaults
      (1.0×) reproduce the long-standing feel exactly. */
-  try{ Object.assign(i18n.en,{ lblNavSens:'Map navigation sensitivity', lblNavZoom:'Zoom', lblNavPan:'Pan', lblNavInertia:'Inertia' });
-       Object.assign(i18n.jp,{ lblNavSens:'地図操作の感度', lblNavZoom:'ズーム', lblNavPan:'移動（パン）', lblNavInertia:'慣性（0で無効）' }); }catch(_){}
+  try{
+}catch(_){}
   if(GE().hasRenderer()){
     window.imNavZoomSens = window.imNavZoomSens || 1;
     window.imNavPanSens  = window.imNavPanSens  || 1;

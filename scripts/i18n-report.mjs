@@ -193,6 +193,27 @@ function main() {
     return;
   }
 
+  /* ⚠ (#R239) …AND THE SAME TWO NUMBERS, FOR A MACHINE. `scripts/i18n-audit.mjs` is the ONE gate
+     that every translatable surface answers to, and it must not carry a second copy of the parsers
+     above — two copies of one measurement is [[intmap-recurring-lessons]] G, and the copy that
+     drifts is always the one nobody runs. So the audit spawns this file with `--json` and reads
+     these rows. The human table below stays exactly as it was. */
+  if (process.argv.includes('--json')) {
+    console.log(JSON.stringify({
+      surface: 'app', keyedWant: en.size, inlineWant: inline.size,
+      rows: rows.map((r, idx) => {
+        const k = keyedTable(r.code); const i = inlineTable(r.code);
+        return {
+          code: r.code,
+          keyed: r.code === 'en' ? en.size : (k ? [...k].filter((x) => en.has(x)).length : 0),
+          positional: idx < 5,
+          inline: idx < 5 ? null : [...inline.keys()].filter((s) => i.has(s)).length,
+        };
+      }),
+    }));
+    return;
+  }
+
   console.log(`Inline L(…) strings in js/: ${inline.size}`);
   console.log(`Keyed UI strings (English): ${en.size}\n`);
   console.log('code   keyed          inline');

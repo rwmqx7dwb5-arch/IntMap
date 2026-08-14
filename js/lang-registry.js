@@ -108,7 +108,13 @@ window.IntMapLang = (function () {
        of fact goes in META; everything else needs no entry anywhere.
        ⚠ AND THE FIRST FIVE STAY IN THIS ORDER FOREVER — it is the ARGUMENT ORDER of every L(…) /
        t(…) call site in the app (see pick() below). Discovery only ever APPENDS. */
-    { code: 'zh', label: '繁體中文 (beta)', html: 'zh-Hant', pill: '繁', alias: ['zh-hant', 'zh-tw', 'zh-hk', 'zh-mo'] },
+    /* ⚠ (#R239) THE TWO EXPLICIT (beta) MARKS ARE GONE, and the reason they existed is the reason
+       they are gone: scripts/i18n-langs.mjs computes the mark from coverage and would have dropped
+       it long ago, but an explicit label wins, and #R232 kept one here because 「their reading pages
+       are still partial even though the app is at 100%」. As of this round pages.zh-hant.js is
+       287/287 (`node scripts/i18n-pages-audit.mjs`), so the sentence that justified the mark is no
+       longer true and the mark would be telling a reader something false. */
+    { code: 'zh', label: '繁體中文', html: 'zh-Hant', pill: '繁', alias: ['zh-hant', 'zh-tw', 'zh-hk', 'zh-mo'] },
     /* ══ (#R224) THE SEVENTH — 「簡体を追加して。(beta)」 ═══════════════════════════════════════════
        ⚠ IT IS A DERIVED FILE, NOT A SECOND TRANSLATION. js/locales/ui.zh-hans.js is generated from
        ui.zh.js by scripts/zh-hans.mjs — the Taiwan→mainland WORD table first (網路→网络, 資訊→信息,
@@ -120,7 +126,7 @@ window.IntMapLang = (function () {
        the earlier row and `normalise` falls back to the two-letter prefix) — #R223's argument, which
        is that handing one script's reader the other because the first two letters match is a guess.
        zh-CN / zh-SG / zh-MY / zh-Hans land here, zh-TW / zh-HK / zh-MO stay above. */
-    { code: 'zh-hans', label: '简体中文 (beta)', html: 'zh-Hans', pill: '简',
+    { code: 'zh-hans', label: '简体中文', html: 'zh-Hans', pill: '简',
       alias: ['zh-hans', 'zh-cn', 'zh-sg', 'zh-my', 'hans'] }
   ];
   var FALLBACK = 'en';

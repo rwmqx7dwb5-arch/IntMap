@@ -132,7 +132,15 @@ test('R238 fronts: P and S go through the per-bearing builder and the crustal co
   const blk = s.slice(i, i + 700);
   assert.doesNotMatch(blk, /fault\?faultFrontLines\(rad\):\(\(rad\(null\)/,
     'the point-source shortcut that ignored the bearing must be gone');
-  assert.match(blk, /const\s+lines\s*=\s*faultFrontLines\(rad\)/, 'both body waves use the per-bearing builder');
+  /* ⚠ (#R239) SAME CLAIM, NEW SPELLING. #R238 wrote `const lines = faultFrontLines(rad)`; #R239 gave
+     each phase a leading edge, a trailing edge and the band between them, so the call is
+     `train(rad, …)` — which builds BOTH rings through `faultRing()`, i.e. through the per-bearing
+     builder this test is about. The property being asserted is unchanged: no phase gets a
+     bearing-independent shortcut. (#R203's rule: move the assertion, say why.) */
+  assert.match(blk, /train\(rad,ph\.col,ph\.w\)/, 'both body waves go through the per-bearing builder');
+  assert.match(s, /function faultRing\(rFor,side\)/, 'and that builder is one function for both edges');
+  assert.match(s, /function faultFrontLines\(rFor\)\{\s*const r=faultRing\(rFor,'front'\)/,
+    'the old entry point is still there, as the leading edge of that one builder');
 });
 
 /* the correction is bounded — it must never turn into a decorative wobble, and the prune below
@@ -222,7 +230,18 @@ test('R238 dock: what is moved is restored exactly, including the dragged geomet
   const s = code(read('js/window-manager.js'));
   assert.match(s, /__docked\.set\(el,\{\s*parent:el\.parentNode,\s*next:el\.nextSibling,\s*css:el\.getAttribute\('style'\)\|\|''\s*\}\)/,
     'the parent, the sibling AND the inline geometry are remembered');
-  assert.match(s, /if\(s\.css\)\s*el\.setAttribute\('style',s\.css\)/, 'and the geometry is put back');
+  /* ⚠⚠ (#R239) THE RESTORE IS NARROWER NOW, AND THAT IS THE FIX, NOT A REGRESSION. #R238 docked a
+     panel by deleting its whole inline style and undocked it by writing the stored string back.
+     Both halves were wrong once membership came to mean «switched on»: the strip took the
+     `display:flex` a legend is opened with (its opacity slider was then cropped by
+     `display:block !important`), and the restore put an old `display` back — so switching a docked
+     layer OFF undocked it, revived it, and the observer docked it again. Only the GEOMETRY moves in
+     either direction now. The claim this test makes — that what was moved comes back exactly where
+     it was — is unchanged, and `_restoreGeom` reads it out of the same stored string. */
+  assert.match(s, /function _restoreGeom\(el,css\)/, 'and the geometry is put back');
+  assert.match(s, /_restoreGeom\(el,s\.css\)/, 'from that stored string');
+  assert.doesNotMatch(s, /el\.setAttribute\('style',\s*s\.css\)/,
+    'but NOT the whole style — that resurrected panels the reader had switched off');
   assert.match(s, /el\.classList\.remove\('im-docked'\)/, 'the flattening class comes off');
 });
 
@@ -249,17 +268,17 @@ test('R238 dock: it is a saved setting, off by default, with a tab that only exi
    #R231/#R232/#R236/#R237 each found a shape the audit could not see. This checks the KEYS added
    this round, in the table each language actually reads. */
 test('R238 i18n: the dock strings are present in all nine languages', () => {
+  /* ⚠ (#R239) THE CLAIM IS UNCHANGED; THE PLACE IT IS MADE MOVED. These five keys used to live in
+     js/i18n-late.js as `Object.assign(i18n.en,{…})` / `Object.assign(i18n.jp,{…})`, and this test
+     read that file for en and jp. #R239 moved every keyed string into js/locales/ui.<code>.js —
+     because that file shape is five languages by construction, and fr/ko/zh were silently falling
+     back to English for ~170 keys declared that way (scripts/i18n-keyed-audit.mjs). So the loop is
+     now nine locale files, and the en/jp occurrence-count check is gone with the shared file that
+     made it necessary. #R203's rule: move the assertion, say why. */
   const keys = ['tabDocked', 'lblDockPanels', 'dockPanelsOff', 'dockPanelsOn', 'dockPanelsHint'];
-  const files = { en: 'js/i18n-late.js', jp: 'js/i18n-late.js' };
-  for (const c of ['de', 'ru', 'es', 'fr', 'ko', 'zh', 'zh-hans']) files[c] = 'js/locales/ui.' + c + '.js';
-  for (const [langCode, f] of Object.entries(files)) {
+  for (const c of ['en', 'jp', 'de', 'ru', 'es', 'fr', 'ko', 'zh', 'zh-hans']) {
+    const f = 'js/locales/ui.' + c + '.js';
     const s = read(f);
-    for (const k of keys) assert.ok(s.indexOf(k + ':') >= 0, langCode + ' is missing ' + k + ' (' + f + ')');
-  }
-  /* ⚠ en and jp share one file, so the count is what proves BOTH were written, not just one */
-  const late = read('js/i18n-late.js');
-  for (const k of keys) {
-    assert.equal((late.match(new RegExp('\\b' + k + ':', 'g')) || []).length, 2,
-      k + ' must appear once for English and once for Japanese');
+    for (const k of keys) assert.ok(s.indexOf(k + ':') >= 0, c + ' is missing ' + k + ' (' + f + ')');
   }
 });

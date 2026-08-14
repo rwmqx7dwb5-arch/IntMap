@@ -183,12 +183,15 @@ test('the tilt ceiling is a real setting, wired both ways, in five languages', (
   assert.match(INDEX, /id="setting-tilt-limit"/, 'the Settings row exists');
   assert.match(INDEX, /tl\.value=window\.IntMapTilt\.isUnlimited\(\)\?'unlimited':'standard'/, 'opening Settings reflects the saved state');
   assert.match(INDEX, /window\.IntMapTilt\.set\(tl\.value==='unlimited'\)/, 'Apply commits it');
-  const i18n = R('js/i18n.js');
-  /* (#R200) the en/jp tables for these keys are in js/i18n-late.js now — see tests/r200-checks ①. */
-  const LATE = R('js/i18n-late.js');
+  /* ⚠ (#R239) SAME CLAIM, NEW HOME. Every keyed string moved into js/locales/ui.<code>.js
+     — the `Object.assign(i18n.en…es,{…})` shape these tests read was five languages by
+     construction, and fr/ko/zh were silently falling back to English for ~170 keys declared
+     that way (scripts/i18n-keyed-audit.mjs). Asking all NINE locale files is the stricter
+     form of the same question. (#R203: move the assertion, say why.) */
   for (const k of ['lblTiltLimit', 'tiltStandard', 'tiltUnlimited', 'tiltHint']) {
-    assert.ok(INDEX.includes(k + ':') || LATE.includes(k + ':'), `${k} missing from the en/jp tables`);
-    assert.equal((i18n.match(new RegExp('\\b' + k + ':', 'g')) || []).length, 3, `${k} must exist in de, ru and es`);
+    for (const c of ['en', 'jp', 'de', 'ru', 'es', 'fr', 'ko', 'zh', 'zh-hans']) {
+      assert.ok((() => { const t = R('js/locales/ui.' + c + '.js'); return t.includes(k + ':') || t.includes('"' + k + '":'); })(), `${k} missing from ${c}`);
+    }
   }
 });
 
@@ -206,11 +209,12 @@ test('the tilt ceiling is the RENDERER\'s, never a literal', () => {
 test('the viewpoint-altitude readout is a real setting, in five languages, and shows up in the readout', () => {
   assert.match(INDEX, /id="setting-eye-alt"/, 'the Settings row exists');
   assert.match(INDEX, /window\.IntMapEyeAlt\.set\(ea\.value==='on'\)/, 'Apply commits it');
-  const i18n = R('js/i18n.js');
+  /* ⚠ (#R239) same move as above — every keyed string lives in js/locales/ui.<code>.js now. */
   for (const k of ['lblEyeAlt', 'eyeAltOff', 'eyeAltOn']) {
-    /* (#R200) …in js/i18n-late.js now, with the rest of the late keys. */
-    assert.ok(INDEX.includes(k + ':') || R('js/i18n-late.js').includes(k + ':'), `${k} missing from the en/jp tables`);
-    assert.equal((i18n.match(new RegExp('\\b' + k + ':', 'g')) || []).length, 3, `${k} must exist in de, ru and es`);
+    for (const c of ['en', 'jp', 'de', 'ru', 'es', 'fr', 'ko', 'zh', 'zh-hans']) {
+      const t = R('js/locales/ui.' + c + '.js');
+      assert.ok(t.includes(k + ':') || t.includes('"' + k + '":'), `${k} missing from ${c}`);
+    }
   }
   const readout = stripComments(R('js/map-readout.js'));
   assert.match(readout, /window\.IntMapEyeAlt\.text\(\)/, 'the readout asks the module for its chip');

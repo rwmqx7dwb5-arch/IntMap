@@ -138,7 +138,6 @@ window.IntMapPageI18N.define('es', {
         id: 'elevation', nav: 'Datos de elevación', h: 'Datos de elevación — la base de todo cálculo de relieve',
         blocks: [
           ['p', 'Todas las funciones de relieve comparten un mismo muestreador de elevación. Los datos son teselas RGB de elevación codificadas en Terrarium, donde el color del píxel <em>es</em> la altura.'],
-          ['eq', 'elevación (m) = (R &times; 256 + G + B / 256) &minus; 32768'],
           ['p', 'La elevación de un punto se <b>interpola bilinealmente</b> a partir de las cuatro muestras que lo rodean; el vecino más próximo convertiría los píxeles de la tesela en escalones falsos y estropearía las respuestas de pendiente y de flujo. El espaciado sobre el terreno de una muestra en el nivel z es:'],
           ['tex', 'h \\;=\\; \\bigl(R \\cdot 256 + G + B/256\\bigr) - 32768 \\quad [\\mathrm{m}]'],
           ['tex', '\\Delta(z) \\;=\\; \\frac{40\\,075\\,017 \\, \\cos\\varphi}{2^{z} \\cdot 256} \\quad [\\mathrm{m\\;per\\;pixel}]'],

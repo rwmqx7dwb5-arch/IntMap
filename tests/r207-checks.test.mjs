@@ -138,13 +138,15 @@ test('R207 ⑧ the outlet filter defaults to "everything" and the country picker
 
 /* ── ⑨ every new user-facing string exists in all five languages ───────────────────────────────── */
 test('R207 ⑨ the new settings strings are translated into EN/JP/DE/RU/ES', () => {
-  const s = read('js/i18n-late.js');
+  /* ⚠ (#R239) SAME CLAIM, NEW HOME — every keyed string moved into js/locales/ui.<code>.js.
+     The `Object.assign(i18n.en…es,{…})` shape this test read was five languages by
+     construction, and fr/ko/zh fell back to English for ~170 keys declared that way
+     (scripts/i18n-keyed-audit.mjs). Nine locale files is the stricter form of the same
+     question. (#R203: move the assertion, say why.) */
   const keys = ['newsCountryOff', 'newsCountryMultiSel', 'lblNewsSources', 'newsSourceAll', 'newsSourceMultiSel', 'newsSourcesHint'];
-  for (const lang of ['en', 'jp', 'de', 'ru', 'es']) {
-    const m = new RegExp(`Object\\.assign\\(i18n\\.${lang},\\{[^}]*\\}\\)`, 'g');
-    const blocks = s.match(m) || [];
-    const joined = blocks.join('\n');
-    for (const k of keys) assert.ok(joined.includes(k + ':'), `${lang} defines ${k}`);
+  for (const c of ['en', 'jp', 'de', 'ru', 'es', 'fr', 'ko', 'zh', 'zh-hans']) {
+    const t = read('js/locales/ui.' + c + '.js');
+    for (const k of keys) assert.ok((t.includes(k + ':') || t.includes('"' + k + '":')), `${c} defines ${k}`);
   }
 });
 
