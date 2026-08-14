@@ -130,8 +130,14 @@ test('R235 wavefronts: surface-wave group velocity is a path integral over the c
      direction: measured on Tōhoku at t = 400 s, east and west were both 1441 km, ratio 1.000.
      A circle wearing a path integral's clothes. Both halves of the wiring are asserted. */
   assert.match(s, /const k=K\[i\], r=rFor\(k,b\);/, '_envR passes the RAY bearing into the radius function');
-  assert.match(s, /const rad=\(k,b\)=>\{ const d=_pathDeg\(sw\.v\*Math\.max\(0,tSec-\(\(k&&k\.delay\)\|\|0\)\),b\|\|0\);/,
+  /* ⚠ (#R241) the ELAPSED TIME moved out of this expression into `_frontT(k)` — the front now leaves
+     the broken fault rather than the hypocentre, so «has this piece broken yet» and «how long has it
+     been radiating» are two questions and only the first is a per-point one. What this line asserts
+     is unchanged and is the whole of its subject: the radius is still a function of the RAY bearing
+     `b`, not of the source point's own azimuth. */
+  assert.match(s, /const d=_pathDeg\(sw\.v\*_frontT\(k\),b\|\|0\);/,
     'the surface-wave radius is a function of that bearing');
+  assert.match(s, /function _frontT\(k\)\{/, '…and the elapsed time has one owner');
   /* ⚠ and a POINT source must go through the per-bearing builder too — `ringLines` takes one radius,
      so routing the no-fault case through it would silently discard the integral again */
   /* ⚠ (#R239) via `train()`, which asks `faultRing()` for the leading edge (and, with a rupture,

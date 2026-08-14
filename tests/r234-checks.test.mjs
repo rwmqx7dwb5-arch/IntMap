@@ -276,13 +276,14 @@ test('R234 atmosphere: the limb handover is asked every frame, not only at the s
   assert.match(s, /R\.onCamera\('themesky\.follow',_skyFollowCamera,\{phase:'read'\}\)/,
     'through the runtime, in the read phase');
   assert.match(s, /_wireSkyFollow\(\);\s+\/\* \(#R234\)/, 'and it is armed when the sky is applied');
-  /* ⚠ the STRENGTHS are a MEASURED decision from #R187 / #R205 and no round may move them.
-     ⚠ (#R240) the mid-zoom TAPER is not one of those measurements — it was written when this pass
-     covered the whole screen, and maplibre already multiplies the property by globeness, which is 0
-     by z12. Doing it twice halved the air on screen from z4 to z11 while the reader zoomed in. The
-     assertion is therefore on the z0 value, which is what #R187 and #R205 measured. */
-  assert.match(s, /\['interpolate',\['linear'\],\['zoom'\],0,0\.55,/, "#R187's satellite strength is unchanged");
-  assert.match(s, /\['interpolate',\['linear'\],\['zoom'\],0,0\.80,/, 'the dark map strength is unchanged');
+  /* ⚠ THE STRENGTHS WERE A MEASURED DECISION FROM #R187 / #R205 — and (#R241) the reader has since
+     overruled both of them in words: 「大気にもやがかかりすぎ。地図をちゃんと見せろ」 and
+     「衛生写真ではあっても、標準マップでは大気はなし」. A measurement answers 「どれくらい」, never
+     「要るのか」. So the dark-map assertion is gone (the map basemap has no air at all now) and the
+     satellite one asks what THIS test is really about — that the pass is still ON and still chosen
+     by basemap. The numbers live in tests/r241-checks ④, with the screenshots that moved them. */
+  assert.match(s, /'atmosphere-blend':\(sat\?_airRamp\(/, 'satellite still gets the renderer’s pass…');
+  assert.match(s, /:0\)\}\);/, '…and the vector basemap gets none, by the reader’s instruction');
 });
 
 /* ── 7 · the hillshade's depth has one home, and the phone keeps its 13 ─────────────────────── */

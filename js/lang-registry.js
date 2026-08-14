@@ -242,7 +242,7 @@ window.IntMapLang = (function () {
      helper closed over `HOST.lang` / `currentLang` through a live accessor for exactly this reason:
      the app reassigns the current language at runtime and a captured value never changes. */
   function pick(getLang) {
-    return function () {
+    var fn = function () {
       var n = arguments.length;
       if (!n) return '';
       var code;
@@ -259,6 +259,46 @@ window.IntMapLang = (function () {
       }
       return arguments[0];
     };
+    /* (#R241) the same resolution for a tuple held as data — see `pickArgs` below. ⚠ ONE rule: this
+       IS `fn`, applied, so the positional slots and the inline-table fallback cannot drift apart. */
+    fn.arr = function (a) { return Array.isArray(a) ? fn.apply(null, a) : (a == null ? '' : String(a)); };
+    return fn;
+  }
+
+  /* ══ ⚠⚠⚠ (#R241) `pickArgs()` — THE SAME TRANSLATIONS, HELD AS DATA ═════════════════════════════
+     「簡体、繁体、フランス語、韓国語、ドイツ語、ロシア語、スペイン語について、すべての面において対応が
+       完璧かどうか点検し、未了点があれば修正して。いつまでたっても言語対応の漏れが見つかることは
+       許されない。」 — and #R240 §8 had already named where the next gap was: a SEVENTH shape.
+
+     Half a dozen tables in js/ hold their translations as a plain array and index it by the
+     language's position:
+
+         {id:'ec-temp', label:['Temperature 2 m (ECMWF)','気温 2m（ECMWF）','Temperatur 2 m …','…']}
+         const ecLbl=(l)=>l.label[IntMapLang.index(HOST.lang)]||l.label[0];
+
+     Every one of those is a `L(…)` call that has been written as data so it can be resolved LATER
+     (the language changes while the table stays), and that is legitimate — but it costs three
+     things, all of them measured:
+       ① `arr[i]||arr[0]` has NO inline-table fallback, so a language past the arguments given gets
+          index 0 — English — for ever, whatever its ui.<code>.js says;
+       ② most of those arrays are FOUR long (en/jp/de/ru) or TWO (en/jp), so even Spanish, which is
+          positional, fell to English;
+       ③ and none of it is visible to any instrument: an array literal is not a call, so the inline
+          report, the positional audit and the two-branch audit all count zero of it and print 100 %.
+     That is [[intmap-recurring-lessons]] B for the sixth time, and #R239's rule says the answer is
+     not a seventh instrument — it is to stop the seventh SHAPE existing.
+
+     ⚠ SO THE ARRAY IS WRITTEN AS A CALL. `LA('Temperature 2 m (ECMWF)','気温 2m（ECMWF）',…)`
+     returns exactly the array it was given, so nothing about the data changes; what changes is that
+     the file now contains a CallExpression whose callee is bound to `IntMapLang.pick…`, which is the
+     one thing scripts/i18n-report.mjs and scripts/i18n-positional-audit.mjs look for. Both of them
+     pick these up with no edit at all — the gate's universe grew by ~120 strings the moment the
+     first table was converted, and it grew LOUDLY (they were all short).
+     ⚠ AND RESOLUTION GOES THROUGH `pick()` ITSELF — `L.arr(x.label)` below — so a language past the
+     arguments gets the inline table keyed by the English string, exactly like every other call site.
+     There is no second fallback rule to keep in step. */
+  function pickArgs() {
+    return function () { return Array.prototype.slice.call(arguments); };
   }
 
   /* ══ (#R231) `t(lang, …)` — pick(), FOR THE 281 PLACES THAT NEVER HAD A HELPER ════════════════
@@ -381,7 +421,7 @@ window.IntMapLang = (function () {
   try { if (typeof window !== 'undefined' && window.IntMapLangCodes) declare(window.IntMapLangCodes); } catch (e) {}
 
   return { LANGS: LANG_ROWS, FALLBACK: FALLBACK, list: list, codes: codes, syncChrome: syncChrome,
-           define: define, pick: pick, keyed: keyed, t: t, locale: locale,
+           define: define, pick: pick, pickArgs: pickArgs, keyed: keyed, t: t, locale: locale,
            normalise: normalise, has: has, index: index, htmlTag: htmlTag,
            /* (#R232) discovery + lazy loading */
            declare: declare, ensure: ensure, isLoaded: isLoaded, onDefine: onDefine,

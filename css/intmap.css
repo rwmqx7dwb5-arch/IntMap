@@ -3046,11 +3046,25 @@
    The sheet carries `padding:0 16px` (see the phone block below), so a docked panel is inset 16 px
    on each side and the column's own scrollbar is drawn INSIDE that inset — on top of the panel,
    which is the report. The feed cancels the sheet's padding so a panel runs the full width of the
-   screen, and the rail itself goes: a bottom sheet is dragged, and an overlay scrollbar sitting
-   over a legend was the only thing it was doing. */
+   screen.
+   ══ ⚠⚠⚠ (#R241) …AND #R240 THEN DELETED THE RAIL AS WELL, WHICH WAS NOT ASKED FOR ═══════════════
+   「サイドバーのパネル内モバイル版で、左に合ったスクロールバーが消えているから、つけて。」
+   Cancelling the inset is what fixed the overlap — the rail then rides the screen edge, not the
+   panel. Removing the rail on top of that was a second change with no report behind it, and it took
+   away the only thing telling a reader that the column has more below it. It is back, and it is the
+   app's own thin auto-hiding scrollbar (`html.custom-scrollbars`), not a second design.
+   ⚠ `overflow-y:auto` + `overscroll-behavior:contain` so a flick inside the column does not drag
+   the sheet itself away underneath it. */
 @media(max-width:768px){
   #docked-feed{ margin-left:-16px; margin-right:-16px; padding-left:0; padding-right:0;
-    scrollbar-width:none; -ms-overflow-style:none; }
-  #docked-feed::-webkit-scrollbar{ width:0; height:0; }
+    scrollbar-width:thin; scrollbar-color:rgba(140,142,150,0.5) transparent; overscroll-behavior:contain; }
+  #docked-feed::-webkit-scrollbar{ width:10px; }
+  #docked-feed::-webkit-scrollbar-track{ background:transparent; }
+  /* ⚠ NOT the auto-hiding thumb here. A phone has no hover, so `*:hover::-webkit-scrollbar-thumb`
+     never fires and the rail would be invisible except during the flick that JS marks `.sb-on` —
+     which is indistinguishable from the rail #R240 deleted. On the sheet it is drawn. */
+  #docked-feed::-webkit-scrollbar-thumb{ background:rgba(140,142,150,0.5); border-radius:8px;
+    border:2.5px solid transparent; background-clip:padding-box; }
+  [data-theme="dark"] #docked-feed::-webkit-scrollbar-thumb{ background:rgba(170,172,180,0.45); background-clip:padding-box; }
   #docked-feed > .im-docked{ border-radius:0 !important; border-left:none !important; border-right:none !important; }
 }

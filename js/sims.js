@@ -46,11 +46,12 @@ window.IntMapModules.radiation=function(HOST){
     ];
     function resolveSite(q){ q=String(q||'').trim(); if(!q) return null; for(const s of SITES){ if(s.re.test(q)) return {lng:s.ll[0],lat:s.ll[1],name:s.n}; } return null; }
     /* Cs-137 ground-deposition zones — the real Chernobyl thresholds (Ci/km² → kBq/m²): 40/15/5/1 */
-    const ZONES=[ {min:1480,c:'#8a0f0f',n:['Exclusion — permanent resettlement','立入禁止（強制移住）','Sperrzone','Зона отчуждения','Exclusión'],mSv:'>5'},
-      {min:555,c:'#ff453a',n:['Mandatory evacuation','義務的避難','Zwangsumsiedlung','Обязательное отселение','Evacuación obligatoria'],mSv:'1–5'},
-      {min:185,c:'#ff9f0a',n:['Relocation right / monitoring','移住権・要監視','Umsiedlungsrecht','Право на отселение','Reubicación'],mSv:'0.5–1'},
-      {min:37,c:'#ffd60a',n:['Enhanced monitoring','要観察','Verstärkte Überwachung','Усиленный контроль','Vigilancia'],mSv:'0.1–0.5'},
-      {min:2,c:'#b7f7b0',n:['Trace deposition','微量沈着','Spuren','Следы','Trazas'],mSv:'<0.1'} ];
+    const LA=window.IntMapLang.pickArgs();   /* (#R241) see `pickArgs` in js/lang-registry.js */
+    const ZONES=[ {min:1480,c:'#8a0f0f',n:LA('Exclusion — permanent resettlement','立入禁止（強制移住）','Sperrzone','Зона отчуждения','Exclusión'),mSv:'>5'},
+      {min:555,c:'#ff453a',n:LA('Mandatory evacuation','義務的避難','Zwangsumsiedlung','Обязательное отселение','Evacuación obligatoria'),mSv:'1–5'},
+      {min:185,c:'#ff9f0a',n:LA('Relocation right / monitoring','移住権・要監視','Umsiedlungsrecht','Право на отселение','Reubicación'),mSv:'0.5–1'},
+      {min:37,c:'#ffd60a',n:LA('Enhanced monitoring','要観察','Verstärkte Überwachung','Усиленный контроль','Vigilancia'),mSv:'0.1–0.5'},
+      {min:2,c:'#b7f7b0',n:LA('Trace deposition','微量沈着','Spuren','Следы','Trazas'),mSv:'<0.1'} ];
     async function fetchJSON(url){ const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
       for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok) return await r.json(); }catch(_){} } return null; }
     function ensureLayers(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;

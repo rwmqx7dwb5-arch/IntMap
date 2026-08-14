@@ -206,8 +206,12 @@ test('R238 chips: the width is measured at run time, not a constant in the marku
   /* (#R240) the measurement is now per SCALE — `_chipW(jp)` — because a 震度 column was being padded
      out to the width of 「MMI VIII」. The claim this test makes is unchanged: the width is measured
      at run time against the labels that can actually appear, and cached against the font. */
-  assert.match(s, /width:'\+_chipW\(jp\)\+'px/, 'the chip takes its width from the measurement');
-  assert.match(s, /function\s+_chipW\s*\(jma\)/, 'and the measurement exists, per scale');
+  /* (#R241) the cell is handed the width the whole table resolved (`cw`), because the maximum is
+     now over the labels this render prints — see tests/r241 ⑤. Both ends are asserted here so the
+     width cannot become a literal again by either route. */
+  assert.match(s, /width:'\+cw\+'px/, 'the chip takes its width from the measurement');
+  assert.match(s, /const CW=_chipW\(jp,/, 'and the table resolves it once, from _chipW');
+  assert.match(s, /function\s+_chipW\s*\(jma,labels\)/, 'and the measurement exists, per scale');
   const i = s.indexOf('function _chipW');
   const body = s.slice(i, i + 1600);
   /* ⚠ DERIVED, NOT TYPED: a list of labels here would go stale the moment a class is added */

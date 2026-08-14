@@ -589,15 +589,11 @@ export function makeThemeSky(HOST, CTX) {
       return '#'+[0,1,2].map(i=>Math.max(c[i],f[i]).toString(16).padStart(2,'0')).join('');
     }catch(_){ return _SKY_SPACE; }
   }
-  /* (#R205) is the MAP basemap the light one? Same rule applyTheme uses for `mapLight` — the map
-     colour setting wins, and 'auto' follows the UI theme. Written once, read from both callers
-     (applyTheme and _skyFollowCamera), because a second copy of this rule is how the two disagree. */
-  function _mapIsLight(){
-    try{ const mc=(window.imMapColor||'auto');
-      if(mc==='light') return true; if(mc==='dark') return false;
-      return (HOST.userTheme==='light')||(HOST.userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches);
-    }catch(_){ return false; }
-  }
+  /* ⚠ (#R241) `_mapIsLight()` stood here (#R205). Its ONE reader was the light-map branch of the
+     `atmosphere-blend` ramp, and the Map basemap now has no air at either brightness — 「標準マップ
+     では大気はなし」 — so the branch is gone and so is the predicate. It is not being kept "in case":
+     an unread rule is a rule nothing keeps true (#R236 I). applyTheme computes the same answer
+     inline for the basemap layers, which is where it belongs. */
   /* ══ ⚠⚠ (#R227) WHO DRAWS THE EARTH'S EDGE ═════════════════════════════════════════════════════
      「MapLibreの地球大気の描写をもっとリアルで忠実で美しく。」 (confirmed: 宇宙から見た地球の縁.)
 
@@ -675,8 +671,49 @@ export function makeThemeSky(HOST, CTX) {
      that turned out to be wrong. 0.20 is #R237's value, swept and shipped, and it is what the
      reader had before today. The thing that was MISSING is restored above, where it was taken. */
   function _discStrength(){ return 0.20; }
+  /* ══ ⚠⚠⚠ (#R241) ONE ZOOM CURVE FOR THE AIR, AND IT REACHES ZERO BEFORE THE GLOBE DOES ═════════════
+     「ある程度までズームしたらいきなりもやが消えるものさらに不自然」 — and this time the mechanism is
+     known rather than guessed. MapLibre's `globe` projection IS
+        ['interpolate',['linear'],['zoom'], 11,'vertical-perspective', 12,'mercator']
+     (maplibre-gl 5.24, `case 'globe'` in the projection factory), so `projectionTransition` — the
+     globeness that `atmosphere-blend` is multiplied by inside maplibre, AND that js/geo-engine.js
+     multiplies this app's own limb strength by — falls 1 → 0 across ONE zoom level. Whatever the air
+     is worth at z11, all of it is gone at z12.
+
+     ⚠ #R240 MADE THAT WORSE while trying to fix this same report: it held the ramp FLAT to z11
+     (0.45 satellite), so the step at the transition went from 0.24→0 to 0.45→0. Measured this round
+     with real screenshots: the z11 frame is milky white over the Sahara and the z12 frame is the raw
+     imagery — one zoom level apart. Holding the value up is the opposite of the fix.
+
+     So there is ONE curve, in one place, and it is 0 at z11: by the time maplibre cuts the globe
+     there is nothing left to cut. `SKY` reads it as a maplibre expression, `at()` reads the same
+     stops in JS for the limb layer's own strength — two readers, one table
+     ([[intmap-recurring-lessons]] G). */
+  const AIR_Z=[0,1, 1.5,0.92, 3,0.62, 5,0.34, 7,0.16, 9,0.06, 10.5,0.015, 11,0];
+  function _airAtZoom(z){
+    if(!isFinite(z)) return 1;
+    if(z<=AIR_Z[0]) return AIR_Z[1];
+    for(let i=2;i<AIR_Z.length;i+=2){
+      if(z<=AIR_Z[i]){ const z0=AIR_Z[i-2],v0=AIR_Z[i-1],z1=AIR_Z[i],v1=AIR_Z[i+1];
+        return v0+(v1-v0)*((z-z0)/(z1-z0)); }
+    }
+    return 0;
+  }
+  function _airRamp(peak){ const out=['interpolate',['linear'],['zoom']];
+    for(let i=0;i<AIR_Z.length;i+=2){ out.push(AIR_Z[i], +(AIR_Z[i+1]*peak).toFixed(4)); }
+    return out; }
+  /* ══ ⚠⚠⚠ (#R241) THE STANDARD MAP HAS NO AIR AT ALL ════════════════════════════════════════════
+     「衛生写真ではあっても、標準マップでは大気はなしって言ってるだろうがクソが」 — and asked again
+     this round: 「Mapでは大気ゼロ（縁の帯も消す）」. So it is BOTH owners, not just maplibre's pass:
+     `atmosphere-blend` is 0 and js/limb-layer.js is not switched on either. #R240 gave the vector
+     basemap a sun so that maplibre's scattering integral had somewhere to point — that made the Map
+     globe grow an atmosphere it had never had, which is the thing being objected to. The sun still
+     points (the shading and the limb of the SATELLITE globe need it); what changed is that nothing
+     draws air over a vector basemap. */
+  function _airOn(){ try{ return HOST.mapType==='sat'; }catch(_){ return false; } }
   function _limbOwnsRim(){
     try{
+      if(!_airOn()) return false;             /* (#R241) 「Mapでは大気ゼロ」 — including the rim */
       if(_applyLimb._refused) return false;   /* the engine already said it cannot draw it — see below */
       if(_skyIsOwnedElsewhere()||_sunSimOwnsLight()) return false;
       /* ══ ⚠⚠ (#R237) «IS THERE A GLOBE», NOT «IS THE EYE ABOVE 100 km» ═════════════════════════════
@@ -762,7 +799,12 @@ export function makeThemeSky(HOST, CTX) {
          asking again on every settle would re-run the whole sky block for ever — the wish would say
          yes, the answer would say no, and `_skyFollowCamera`'s comparison would never match. */
       if(want&&!there) _applyLimb._refused=true;
-      GE().layers.setLimb(_LIMB_ID,{on:!!(want&&there), disc:_discStrength()});
+      /* (#R241) the layer's own strength rides the SAME zoom curve the sky block does, so the two
+         owners of the air fade together and neither of them is still at full value when maplibre
+         cuts the globe at z11→z12. `_skyFollowCamera` re-pushes it as the camera moves. */
+      let az=1; try{ az=_airAtZoom(GE().camera.getZoom()); }catch(_){}
+      _applyLimb._az=az;
+      GE().layers.setLimb(_LIMB_ID,{on:!!(want&&there), strength:az, disc:_discStrength()*az});
       if(want&&there) _armLimbWatch();
       return !!(want&&there);
     }catch(_){ return false; }
@@ -855,23 +897,20 @@ export function makeThemeSky(HOST, CTX) {
            is exactly what #R227 avoided — and avoiding it is not a decision this file gets to make
            on its own. If the sum is too strong, that is a number to bring to the reader, not a
            feature to delete. */
-        /* ══ ⚠ (#R240) THE STRENGTHS ARE #R187's AND #R205's; THE ZOOM TAPER IS NOT ═══════════════════
-           「ある程度までズームインすると途端に見えなくなってしまう」. Measured over a zoom sweep with
-           the sun aimed, the air on screen fell 43.7 → 38.5 → 32.3 → 25.6 → 23.9 from z4 to z11 and
-           then to 0.00 at z12. Half of that fall was this ramp and it is redundant: maplibre
-           multiplies the blend by `projectionTransition`, i.e. by globeness, which is already 0 by
-           z12 — the taper was written when the pass covered the whole screen and had to get out of
-           the way of a street, and the projection now does that on its own. Holding the value flat
-           to z11 is what stops the air thinning out as the reader comes in.
-           ⚠ THE z0 NUMBERS ARE UNTOUCHED — 0.55 satellite (#R187), 0.80 dark map, 0.15 light map
-           (#R205). Those were swept against real screenshots for clipping over bright surfaces and
-           this round has no measurement that argues with them. Only the middle of the curve moved,
-           and the tail past z13 stays as a backstop for a renderer that does not apply globeness. */
-        'atmosphere-blend':(sat
-          ?['interpolate',['linear'],['zoom'],0,0.55,8,0.52,11,0.45,13,0.10,15,0]
-          :(_mapIsLight()
-            ?['interpolate',['linear'],['zoom'],0,0.15,8,0.142,11,0.123,13,0.027,15,0]
-            :['interpolate',['linear'],['zoom'],0,0.80,8,0.76,11,0.66,13,0.15,15,0]))});
+        /* ══ ⚠⚠⚠ (#R241) TWO CHANGES, BOTH ASKED FOR IN WORDS ═══════════════════════════════════════
+           「MapLibreで大気にもやがかかりすぎ。地図をちゃんと見せろ。」 and
+           「衛生写真ではあっても、標準マップでは大気はなしって言ってるだろうがクソが」
+
+           ① THE MAP BASEMAP GETS ZERO. Not 0.80 dark / 0.15 light — zero, at every zoom, and the
+              app's own limb is not switched on over it either (see `_airOn`). #R187's and #R205's
+              measurements were of a picture the reader has now said they do not want; they are not
+              being re-swept, they are being switched off, which is what was asked.
+           ② SATELLITE KEEPS AIR, WEAKER, AND FALLING TO ZERO BY z11. The peak is 0.45 (was 0.55) and
+              the shape is `AIR_Z` — the one curve both owners read. Measured against this round's
+              screenshots: at z4 the imagery was carrying 0.52 of blend and reads as milk over the
+              Sahara; the same frame is 0.24 now. The taper is not there to save fill rate, it is
+              there so that the z11→z12 projection transition has nothing left to take away. */
+        'atmosphere-blend':(sat?_airRamp(0.45):0)});
       _aimSun();
     }catch(_){}
   }
@@ -892,6 +931,17 @@ export function makeThemeSky(HOST, CTX) {
          climbs out of the atmosphere without the Sun moving still hands the band over. Comparing
          only the colours would leave maplibre's own halo drawn under ours, or ours switched off. */
       const limb=_limbOwnsRim();
+      /* ⚠⚠ (#R241) …and the LIMB'S OWN STRENGTH is a function of zoom now (see `AIR_Z`), which
+         nothing in the comparison below notices: a pure zoom moves neither colour, neither fog term
+         nor the ownership boolean, so the layer would keep whatever strength it was given the last
+         time a colour happened to change — i.e. full air all the way in, which is the cliff this
+         round is closing. This is `setLimb` (two numbers into an object), NOT a re-parse of the sky
+         block, so it is cheap enough for the per-frame camera hook. The sky block's own ramp is a
+         maplibre expression and follows the zoom on its own. */
+      if(limb){ try{ const az=_airAtZoom(GE().camera.getZoom());
+        if(!(Math.abs(az-(_applyLimb._az==null?-1:_applyLimb._az))<0.002)){
+          _applyLimb._az=az;
+          GE().layers.setLimb(_LIMB_ID,{on:true,strength:az,disc:_discStrength()*az}); } }catch(_){} }
       /* ⚠ (#R240) …and with the day/night side OFF the sun is aimed at the SUB-CAMERA POINT (see
          `_aimSun`), so a pan is exactly what moves it. Nothing else in the comparison below notices
          a pure pan — the colours are a function of the Sun's elevation at the centre, which barely

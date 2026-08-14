@@ -58,6 +58,15 @@ const NEUTRAL = new Set([
   'Error', 'error', 'No', 'base', 'global', 'total', 'penumbral', 'positive', 'negative', 'vs',
   'auto', '(auto)', 'live', '(live)', 'Live', '↻ live', 'Top', 'Top ', 'in ', 'Elevation',
   'Elongation', 'Asteroid', 'Feedback', 'in',
+  /* (#R241) …and seven more the widened universe surfaced, each checked one at a time. They are the
+     German or Spanish word, not an untranslated English one:
+       Revolution  de — «Revolution» is the German noun.
+       HDI         de — the German abbreviation for the Human Development Index is HDI.
+       Sorghum     de — the German name of the cereal (Sorghumhirse is the long form).
+       Olive       de — the German noun.
+       Textiles    es — the Spanish plural noun.
+       Total       es — the Spanish noun, and the label the GAEZ panel prints. */
+  'Revolution', 'HDI', 'Sorghum', 'Olive', 'Textiles', 'Total',
   /* generic single tokens */
   'OK', 'ID', 'URL', 'CSV', 'JSON', 'PNG', 'Beta', 'beta', 'Info', 'Q', 'P', 'S', 'Alpha',
 ]);
@@ -75,13 +84,19 @@ for (const f of files) {
   try { ast = parse(src, { ecmaVersion: 2022, sourceType: 'script', locations: true }); }
   catch { try { ast = parse(src, { ecmaVersion: 2022, sourceType: 'module', locations: true }); } catch { continue; } }
 
-  /* which local names are bound to IntMapLang.pick() in THIS file */
+  /* which local names are bound to IntMapLang.pick() in THIS file
+     ⚠ (#R241) …AND TO `pickArgs()`, WHICH THIS REGEX WOULD OTHERWISE MISS. `pickArgs` returns the
+     tuple it is handed, so `LA('English','日本語','Deutsch','Русский','Español')` is the same five
+     positional arguments as an `L(…)` call — that is the whole reason it is written as a call (see
+     the header of js/lang-registry.js). `pick\s*\(` does not match `pickArgs(`, so 90 new sites
+     would have been silently outside this audit's universe while it printed 100 % — which is the
+     defect this round exists to close, one level up. */
   const names = new Set();
   walk.simple(ast, {
     VariableDeclarator(n) {
       if (n.id.type !== 'Identifier' || !n.init) return;
       const t = src.slice(n.init.start, n.init.end);
-      if (/IntMapLang\s*\.\s*pick\s*\(/.test(t)) names.add(n.id.name);
+      if (/IntMapLang\s*\.\s*pick(?:Args)?\s*\(/.test(t)) names.add(n.id.name);
     },
   });
   if (!names.size) continue;
