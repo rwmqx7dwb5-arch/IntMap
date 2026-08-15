@@ -10,6 +10,8 @@
 
 /* (#R62) FIXED sea/ocean/gulf label gazetteer — one stable point per water body (fixes the per-tile label drift),
    5 languages, clickable like place labels. [lng, lat, minzoom, en, jp, de, ru, es] */
+/* @i18n-entity-data  sea and ocean NAMES, one row per water body, pinned by [lng,lat]  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
+   against the row carrying a coordinate / ISO code / ticker / domain) */
 window.SEA_LABELS=[
   [-160,32,0.5,'North Pacific Ocean','北太平洋','Nordpazifik','Северная часть Тихого океана','Océano Pacífico Norte'],
   [-125,-30,0.5,'South Pacific Ocean','南太平洋','Südpazifik','Южная часть Тихого океана','Océano Pacífico Sur'],
@@ -188,6 +190,8 @@ window.IntMapTables=(function(){
      also names a real city/country pins THERE, while a headline naming only the org still gets placed.
      Row = [[match terms…], lng, lat, nameEn, nameJp]. Avoids acronyms that collide with common English
      words (no bare "WHO"/"US" here). */
+  /* @i18n-entity-data  organisation names and their HQ coordinates  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
+     against the row carrying a coordinate / ISO code / ticker / domain) */
   const _ORG_GZ=[
     /* international institutions → HQ */
     [['United Nations','U.N.','国連','国際連合'],-73.97,40.75,'United Nations','国連'],
@@ -222,6 +226,8 @@ window.IntMapTables=(function(){
      representative point. They are flagged demonym:true and scored a notch BELOW an explicit place name
      (see scoreGeo) so precision is preserved — an explicit city/country in the headline always wins, and
      a demonym only places a story that would otherwise be "location unknown". Big coverage + accuracy gain. */
+  /* @i18n-entity-data  demonyms and the country they resolve to, by coordinate  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
+     against the row carrying a coordinate / ISO code / ticker / domain) */
   const _DEMONYM_GZ=[
     ['Ukrainian',30.52,50.45,'Ukraine','ウクライナ'],['Russian',37.62,55.75,'Russia','ロシア'],
     ['Israeli',35.21,31.77,'Israel','イスラエル'],['Palestinian',34.47,31.50,'Palestinian territories','パレスチナ'],
@@ -318,6 +324,8 @@ window.IntMapTables=(function(){
      EN/JP ("ドイツ語、ロシア語でも追加して。同じ品質で"). German = full exonyms; Russian = STEMS (the Cyrillic
      matcher appends ≤4 inflectional letters: «Москв» → Москва/Москве/Москвы/Москву). Coords = capital/city.
      Mirrors the entry shape [type,[terms],lng,lat,en,jp]; merged below alongside the built-ins. */
+  /* @i18n-entity-data  DE/RU place-name spellings and the place they resolve to  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
+     against the row carrying a coordinate / ISO code / ticker / domain) */
   const _DERU_GZ=[
     ['country',['Deutschland','Герман'],13.40,52.52,'Germany','ドイツ'],
     ['country',['Russland','Росси','РФ'],37.62,55.75,'Russia','ロシア'],
@@ -405,6 +413,8 @@ window.IntMapTables=(function(){
     ['city',['Chartum','Хартум'],32.53,15.50,'Khartoum','ハルツーム']
   ];
   /* Russian demonym/adjective stems → docked country entries (the Cyrillic matcher handles -ий/-ая/-ое/-их). */
+  /* @i18n-entity-data  DE/RU demonyms and the country they resolve to  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
+     against the row carrying a coordinate / ISO code / ticker / domain) */
   const _DERU_DEM=[
     ['Российск',37.62,55.75,'Russia','ロシア'],['Украинск',30.52,50.45,'Ukraine','ウクライナ'],
     ['Американск',-77.04,38.91,'United States','アメリカ'],['Китайск',116.40,39.90,'China','中国'],
@@ -416,6 +426,8 @@ window.IntMapTables=(function(){
   ];
   /* (#R40) Spanish exonyms for the non-AI locator (Latin script → the standard word-boundary matcher works,
      no Cyrillic special-casing needed). Same [type,terms,lng,lat,en,jp] shape as _DERU_GZ. */
+  /* @i18n-entity-data  ES place-name spellings and the place they resolve to  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
+     against the row carrying a coordinate / ISO code / ticker / domain) */
   const _ES_GZ=[
     ['country',['Estados Unidos','EE.UU.','EEUU'],-77.04,38.91,'United States','アメリカ'],
     ['country',['Reino Unido','Gran Bretaña','Inglaterra'],-0.13,51.51,'United Kingdom','イギリス'],
@@ -493,6 +505,8 @@ window.IntMapTables=(function(){
     ['city',['Jartum'],32.53,15.50,'Khartoum','ハルツーム']
   ];
   /* Spanish demonym/adjective forms → low-confidence country entries (docked below explicit places). */
+  /* @i18n-entity-data  ES demonyms and the country they resolve to  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
+     against the row carrying a coordinate / ISO code / ticker / domain) */
   const _ES_DEM=[
     ['ruso',37.62,55.75,'Russia','ロシア'],['rusa',37.62,55.75,'Russia','ロシア'],
     ['ucraniano',30.52,50.45,'Ukraine','ウクライナ'],['ucraniana',30.52,50.45,'Ukraine','ウクライナ'],

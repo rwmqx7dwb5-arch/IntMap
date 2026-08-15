@@ -1219,6 +1219,13 @@ window.IntMapModules.seismic=function(HOST){
        rasters tile exactly. A local `const NF` inside buildFar was fine while nobody else needed the
        number, and it stopped being fine the moment the seam had to be exact. */
     const FAR_N=()=>((typeof isMobile==='function'&&isMobile())?640:1408);
+    /* ⚠ (#R249) THE CEILING ON THE FAR RASTER, IN CELLS — see farWindow. It is the transient RGBA
+       canvas (4 bytes a cell) and nothing else: the far field retains no arrays at all, unlike the
+       fine field's 10 bytes a cell. 12 M is 48 MB transient on desktop against the fine field's own
+       26.2 MB, and it covers every event up to about M9.2 at the fine cell exactly; past that the
+       cell is raised and `state().far.step` says by how much. The phone keeps a tab-sized ceiling
+       (#R20: its limit is memory, not patience) — 1.6 M cells is 6.6 MB. */
+    const FAR_MAX_CELLS=()=>((typeof isMobile==='function'&&isMobile())?1.6e6:12e6);
     /* ══ ⚠⚠⚠ (#R248) THE FAR RASTER COVERS THE FIELD, NOT THE PLANET ═══════════════════════════════
        「地震シミュレータでJMA震度分布をある程度の範囲までいったら、そこから解像度が劇的に悪くなる。」
 
@@ -1252,7 +1259,7 @@ window.IntMapModules.seismic=function(HOST){
        ⚠ THE MAXIMUM LONGITUDE OF A CAP IS NOT r/(111·cos φ). It is asin(sin ρ / cos φ₀), attained at
        the tangent parallel and not at the centre's own — the linear form under-reads it, and an
        under-read window would clip the field it exists to draw. */
-    function farWindow(C0,rKm){
+    function farWindow(C0,rKm,wantCellKm){
       const NF=FAR_N(), Y85=mY(85), YS85=mY(-85);
       const la0=C0[1]*D, rho=Math.min(Math.PI,Math.max(1,rKm)/RE);
       let full=(Math.abs(la0)+rho>=Math.PI/2-1e-9), dLng=180;
@@ -1263,12 +1270,31 @@ window.IntMapModules.seismic=function(HOST){
       const yc=mY(Math.max(-84.9,Math.min(84.9,C0[1])));
       const yN=mY(Math.min(85,C0[1]+latPad)), yS=mY(Math.max(-85,C0[1]-latPad));
       const sx=full?1:(2*dLng/360), sy=Math.max(1e-6,yS-yN);
-      /* (sx/cell)·(sy/cell) = NF² …⚠ WITH A CEILING ON EITHER SIDE. A field that crosses ±180 keeps
-         the whole 360° in x while its y extent may be a few hundred km, and the square-cell rule
-         would then answer with tens of thousands of columns — past what a canvas can be. Raising the
-         cell until neither side exceeds 4·NF keeps the cells SQUARE (a non-square cell draws the
-         field as horizontal streaks) and simply spends fewer of the budget's cells. */
-      const cell=Math.max(Math.sqrt(sx*sy)/NF, sx/(4*NF), sy/(4*NF));
+      /* ══ ⚠⚠⚠ (#R249) THE CELL IS THE FINE FIELD'S, NOT A BUDGET ═══════════════════════════════════
+         #R248 spent this budget on the field's own extent instead of the planet's, which took the
+         cell from 22.4 km to 2.62 km — and left a 2.24× STEP at the seam, because the fine field's
+         cell is 1.17 km. The reader sees the ratio, so the ratio is what has to go.
+         `wantCellKm` is `spanKm0/N` from buildField: one picture, one cell, step 1.00× by
+         construction. ⚠ Converted through the SAME expression `cellKm` is reported by, so the two
+         cannot drift (a cell in normalised Mercator x is 40,075·cos φ₀ km on the ground).
+         ⚠ NEVER COARSER THAN #R248's BUDGET — `Math.min` — so a field whose fine cell is the wider
+         of the two (the phone at a small span) still gets the finer far raster it gets today. */
+      const kmPerUnit=40075.017*Math.max(0.05,Math.cos(la0));
+      const cellWant=(wantCellKm>0)?(wantCellKm/kmPerUnit):Infinity;
+      let cell=Math.min(Math.sqrt(sx*sy)/NF, cellWant);
+      /* ⚠⚠ AND IT IS BOUNDED BY THE TRANSIENT CANVAS, which is 4 bytes a cell and is what a tab dies
+         of. Matching a 1.17 km cell over an M9.1's window is 1,392·1,431 → 3,110·3,197 = 9.9 M cells
+         = 39.8 MB, against the fine field's own 2,560² = 26.2 MB transient — affordable, and it does
+         not scale for ever: the window grows as r², so an M9.5 would ask for ~19 M. Past the ceiling
+         the cell is raised until it fits and `step` below reports what was actually achieved. */
+      const maxCells=FAR_MAX_CELLS();
+      if(sx*sy/(cell*cell)>maxCells) cell=Math.sqrt(sx*sy/maxCells);
+      /* ⚠ WITH A CEILING ON EITHER SIDE (#R248). A field that crosses ±180 keeps the whole 360° in x
+         while its y extent may be a few hundred km, and the square-cell rule would then answer with
+         tens of thousands of columns — past what a canvas can be. Raising the cell until neither side
+         exceeds 4·NF keeps the cells SQUARE (a non-square cell draws the field as horizontal streaks)
+         and simply spends fewer of the budget's cells. */
+      cell=Math.max(cell, sx/(4*NF), sy/(4*NF));
       const nx=full?Math.max(16,Math.round(1/cell)):Math.max(16,2*(Math.ceil((dLng/360)/cell)+1));
       const dx=full?(360/nx):(cell*360);
       const W=full?-180:(C0[0]-nx/2*dx);
@@ -1276,9 +1302,14 @@ window.IntMapModules.seismic=function(HOST){
       if(yT<Y85) yT=yc-Math.floor((yc-Y85)/cell)*cell;
       if(yB>YS85) yB=yc+Math.floor((YS85-yc)/cell)*cell;
       const ny=Math.max(16,Math.round((yB-yT)/cell)), dy=(yB-yT)/ny;
+      const cellKm=+(cell*kmPerUnit).toFixed(3);
       return { full, W, E:W+nx*dx, dx, nx, y0:yT, dy, ny,
-               Nn:latOfY(yT), Ss:latOfY(yT+ny*dy),
-               cellKm:+(cell*40075.017*Math.max(0.05,Math.cos(la0))).toFixed(2) };
+               Nn:latOfY(yT), Ss:latOfY(yT+ny*dy), cellKm,
+               /* (#R249) what the seam actually came out at. 1.00 means the two rasters share a cell
+                  and there is no step; anything above it is the ceiling binding, and it is PRINTED
+                  rather than assumed so that this report cannot come back invisibly. */
+               wantCellKm:(wantCellKm>0)?+wantCellKm.toFixed(3):null,
+               step:(wantCellKm>0)?+(cellKm/wantCellKm).toFixed(2):null };
     }
     let fldFar=null;
     function paintFar(){
@@ -1555,6 +1586,8 @@ window.IntMapModules.seismic=function(HOST){
          same numbers buildField snapped the fine box onto, so the two rasters still tile exactly. */
       fldFar={ url:_uf, coords:[[win.W,win.Nn],[win.E,win.Nn],[win.E,win.Ss],[win.W,win.Ss]],
                N:NF, nx:NX, ny:NY, cellKm:win.cellKm, whole:!!win.full,
+               /* (#R249) the seam's ratio — 1.00 is "no step". See farWindow. */
+               fineCellKm:win.wantCellKm, step:win.step,
                winW:+win.W.toFixed(3), winE:+win.E.toFixed(3), winN:+win.Nn.toFixed(3), winS:+win.Ss.toFixed(3),
                painted, extrap, sea:seaSkipped, landMask:!!land, landSource:'bundled',
                landCellKm:(land.state?land.state().cellKm:null),
@@ -1692,9 +1725,40 @@ window.IntMapModules.seismic=function(HOST){
            fine box and the far window are padded by one number rather than by two spellings of it. */
         let rupMaxKm=0; if(fault) fault.ring.forEach(p=>{ const d2=gcDelta(C0,p)*D*RE; if(d2>rupMaxKm) rupMaxKm=d2; });
         const halfKm=rFine+rupMaxKm;
+        /* ══ ⚠⚠⚠ (#R249) THE FINE GRID IS SOLVED FIRST, BECAUSE THE FAR RASTER COPIES ITS CELL ═══════
+           「地震シミュレータで震度分布をある程度の範囲までいったら、そこから解像度が劇的に悪くなる。」
+           — re-sent after #R248, and confirmed with the reader as the seam itself: desktop, M8.5+,
+           past 1,500 km from the source.
+
+           #R248 read 「解像度」 as the far raster's CELL and shrank it from the planet-divided-by-budget
+           22.4 km to 2.62 km by fitting the window to the field. That was right and it was not
+           enough, because the number the eye actually reads at the seam is the RATIO, and the ratio
+           was still 2.24× (measured this round: fine 1.172 km │ far 2.62 km at M9.1, 2.01× at M8.8).
+           A step of 2.24× at one radius, all the way round the fine image, is what 「そこから」 names.
+
+           ⚠ SO THE FAR CELL STOPS BEING A BUDGET AND BECOMES A COPY. One picture has one cell: the
+           fine grid is solved here, and `farWindow` is handed `spanKm0/N` as the cell to hit. The
+           step at the seam is then 1.00× BY CONSTRUCTION rather than by tuning, and no later round
+           can drift the two apart by moving one of them — there is only one number now.
+           ⚠ IT IS BOUNDED, and the bound is the transient RGBA canvas rather than a taste: past
+           FAR_MAX_CELLS the cell is raised until it fits, the step is whatever it is, and
+           `state().far.step` prints it (see farWindow). A ceiling that is silently exceeded is how
+           this report comes back a fourth time.
+           ⚠ THE ORDER IS THE WHOLE POINT. `N` depends only on `halfKm`, which is known here; the far
+           window depends on `N`; and the fine BOX is then snapped onto the far window's grid (#R245).
+           Solving them in any other order needs the same rule written twice, which is
+           [[intmap-recurring-lessons]] G — two copies of one quantity means one of them is stale. */
+        const spanKm0=2*halfKm, _mob=(typeof isMobile==='function'&&isMobile());
+        /* the phone keeps #R204's cell, named rather than inlined — see the ⚠ above for why it does
+           not move this round. The line below stays the one place the grid rule is declared, which is
+           what #R202/#R203/#R204's checks read. */
+        const CELL_KM_MOB=1.5;
+        const CELL_KM=1.0, N_MIN=(_mob?288:640), N_MAX=(_mob?640:2560);
+        const N=Math.max(N_MIN,Math.min(N_MAX,Math.round(spanKm0/(_mob?CELL_KM_MOB:CELL_KM))));
         /* (#R248) the far raster's window — declared HERE because the fine box is snapped onto its
-           grid below and buildFar walks it, and one object is what keeps the seam exact. */
-        const farWin=farWindow(C0,rEdgeSurf+rupMaxKm);
+           grid below and buildFar walks it, and one object is what keeps the seam exact.
+           (#R249) …and it is handed the fine field's own cell, which is what removes the step. */
+        const farWin=farWindow(C0,rEdgeSurf+rupMaxKm,spanKm0/N);
         const cosC=Math.max(0.1,Math.cos(C0[1]*D));
         const dLng=halfKm/(111.32*cosC), dLat=halfKm/110.574;
         /* ══ ⚠⚠⚠ (#R245) THE BOX IS SNAPPED TO THE FAR RASTER'S OWN CELL GRID ═════════════════════════
@@ -1845,13 +1909,9 @@ window.IntMapModules.seismic=function(HOST){
            ⚠ AND THE PHONE DOES NOT MOVE. Its ceiling is the tab, not patience (#R20), the reader
            chose not to raise it, and this round is also answering 「モバイル版がまだ劇的に遅い」 —
            raising the phone's grid would work against that instruction. 288…640 is unchanged. */
-        const spanKm0=2*halfKm, _mob=(typeof isMobile==='function'&&isMobile());
-        /* the phone keeps #R204's cell, named rather than inlined — see the ⚠ above for why it does
-           not move this round. The line below stays the one place the grid rule is declared, which is
-           what #R202/#R203/#R204's checks read. */
-        const CELL_KM_MOB=1.5;
-        const CELL_KM=1.0, N_MIN=(_mob?288:640), N_MAX=(_mob?640:2560);
-        const N=Math.max(N_MIN,Math.min(N_MAX,Math.round(spanKm0/(_mob?CELL_KM_MOB:CELL_KM))));
+        /* (#R249) the grid rule itself is SOLVED ABOVE, before the far window, because the far raster
+           now copies this cell — see the ⚠⚠⚠ note there. The declaration has not moved out of this
+           function and is still the one place the rule is written (#R202/#R203/#R226 read the line). */
         const y0=mY(Nn), y1=mY(Ss), dy=(y1-y0)/N, dx=(E-W)/N;
         const spanKm=2*halfKm;
         let z=Math.max(4,Math.min(12,(_demZoomForSpan?_demZoomForSpan(Math.max(1,spanKm)):7)+1));
@@ -2165,7 +2225,7 @@ window.IntMapModules.seismic=function(HOST){
                      must be whole, because that is precisely what makes the two rasters tile (#R245)
                      — and a seam is not something to re-verify by eye (#R247 §6). */
                   snapCols:+(((W-farWin.W)/farWin.dx).toFixed(6)), snapRows:+(((mY(Nn)-farWin.y0)/farWin.dy).toFixed(6)),
-                  farCellKm:farWin.cellKm, farWhole:!!farWin.full,
+                  farCellKm:farWin.cellKm, farWhole:!!farWin.full, farStep:farWin.step,   /* (#R249) 1.00 = no step at the seam */
                   demTiles:snap?snap.have:null, demTilesMissing:snap?snap.missing:null,
                   terrain:(noDem+coarse)<N*N*0.5, ms:Math.round(performance.now()-t0) } };
         paintField();
@@ -4933,6 +4993,8 @@ window.IntMapModules.seismic=function(HOST){
         /* (#R248) nx/ny/cellKm/whole say what EXTENT the annulus was rasterised over — the number the
            「解像度が劇的に悪くなる」 report is actually about (see farWindow). */
         far:fldFar?{ N:fldFar.N, nx:fldFar.nx, ny:fldFar.ny, cellKm:fldFar.cellKm, whole:fldFar.whole,
+          /* (#R249) the seam's ratio against the fine field — 1.00 is "the two rasters share a cell" */
+          fineCellKm:fldFar.fineCellKm, step:fldFar.step,
           win:[fldFar.winW,fldFar.winE,fldFar.winS,fldFar.winN],
           painted:fldFar.painted, extrapolated:fldFar.extrap, sea:fldFar.sea, landMask:fldFar.landMask, landSource:fldFar.landSource, landCellKm:fldFar.landCellKm, rFineKm:fldFar.rFineKm, rEdgeKm:fldFar.rEdgeKm }:null,
         scaleSet, terrainKm:MMI_TERRAIN_KM, maxKm:MMI_MAX_KM,

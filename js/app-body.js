@@ -443,6 +443,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        See scripts/i18n-attr-audit.mjs, which is the gate that stops a fifth one being forgotten. */
     document.querySelectorAll('[data-i18n-aria]').forEach(el=>{ if(d[el.getAttribute('data-i18n-aria')]!==undefined) el.setAttribute('aria-label',d[el.getAttribute('data-i18n-aria')]); });
     document.querySelectorAll('[data-i18n-alt]').forEach(el=>{ if(d[el.getAttribute('data-i18n-alt')]!==undefined) el.setAttribute('alt',d[el.getAttribute('data-i18n-alt')]); });
+    /* (#R249) the fifteenth surface — the document's own <title>/<meta description>. The whole of it
+       lives in js/lang-registry.js's syncDocument (that file already owns `lang` and the keyed
+       table, and this file has a ceiling — [[intmap-recurring-lessons]] K). */
+    try{ window.IntMapLang.syncDocument(currentLang); }catch(_){}
     document.getElementById('text-settings').innerText=d.settings; document.getElementById('modal-title').innerText=d.modalTitle;
     document.getElementById('lbl-theme').innerText=d.lblTheme; document.getElementById('lbl-tz').innerText=d.lblTz;
     { const tzs=document.getElementById('setting-tz-search'); if(tzs) tzs.placeholder=d.tzSearch||'Search timezone…'; }

@@ -12,6 +12,8 @@ window.IntMapGazetteer=(function(){
      in rebuildGeoIndex (Supabase entries are layered on top). Row = [type, [match terms…], lng, lat,
      nameEn, nameJp]. Flashpoints outrank cities outrank countries (see TYPE_SCORE/TYPE_LOCAL), so a
      headline naming "Gaza" pins to Gaza rather than the whole of Israel. */
+  /* @i18n-entity-data  PLACE names, pinned by [lng,lat] — the news locator matches on them  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
+     against the row carrying a coordinate / ISO code / ticker / domain) */
   const _BUILTIN_GZ=[
     /* current flashpoints / contested zones */
     ['flashpoint',['Gaza','ガザ'],34.47,31.50,'Gaza','ガザ'],
@@ -173,6 +175,8 @@ window.IntMapGazetteer=(function(){
      metonyms (Kremlin, Pentagon, White House, Downing Street…). Same row format as _BUILTIN_GZ:
      [type, [match terms…], lng, lat, nameEn, nameJp]. Government seats are type 'city' (a precise location
      reference). Word boundaries (Latin) / substring (CJK) are compiled in rebuildGeoIndex. */
+  /* @i18n-entity-data  PLACE names, pinned by [lng,lat] — the news locator matches on them  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
+     against the row carrying a coordinate / ISO code / ticker / domain) */
   const _EXTRA_GZ=[
     /* — Europe (secondary metros not already covered) — */
     ['city',['Amsterdam','アムステルダム'],4.90,52.37,'Amsterdam','アムステルダム'],
