@@ -115,13 +115,17 @@ test('r244 ⑧ the civil-aircraft colour is 山吹色 and lives in one constant'
 });
 
 /* ⑨ 「Stand and look upは視界部分とパネル部分が重ならないように。視界部分のほうを画面の上側に。」
-   The two boxes are bands that cannot intersect: the lens is `height:VIEW_VH vh` from the top, the
-   panel starts at exactly `VIEW_VH vh`. */
+   The two boxes are bands that cannot intersect — and as of #R245 that is a FLEX COLUMN rather than a
+   constant split, so they also leave no gap: the panel is `flex:0 0 auto` (its content decides) and
+   the lens is `flex:1 1 auto` (everything left). The contract this test is about — lens above, panel
+   below, never overlapping — is stronger under flex than it was under `VIEW_VH`. */
 test('r244 ⑨ the standing sky view and its panel are disjoint bands', () => {
   const src = code('js/night-sky.js');
-  assert.ok(/const VIEW_VH = 60;/.test(src), 'the share of the viewport the lens keeps');
-  assert.ok(/top:0;height:' \+ VIEW_VH \+ 'vh/.test(src), 'the lens is the TOP band');
-  assert.ok(/top:' \+ VIEW_VH \+ 'vh/.test(src), 'the panel starts where the lens ends');
+  assert.ok(/root\.style\.display = stand \? 'flex' : 'block'/.test(src), 'the standing overlay is a flex column');
+  assert.ok(/flex:1 1 auto;min-height:0/.test(src), 'the lens is the elastic band');
+  assert.ok(/flex:0 0 auto/.test(src), 'the panel takes only the height its controls need');
+  /* the lens comes FIRST in the DOM, so a column puts it at the top */
+  assert.ok(src.indexOf("class=\"ns-wrap\"") < src.indexOf("class=\"ns-panel\""), 'the lens is above the panel');
 });
 
 /* ⑩ 「アメリカ大統領選挙レイヤーは、操作時に凡例が上に伸びるのではなく下に伸びるように。」 */

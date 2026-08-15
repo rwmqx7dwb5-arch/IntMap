@@ -182,7 +182,9 @@ test('R203 ⑥ the shaking mesh is finer than the round before, on both classes 
      (see js/seismic.js). "Finer than the round before" is a claim about the FLOOR — the coarsest
      grid the code can pick — which is what #R203's single number was. */
   const fine = /const CELL_KM=[\d.]+, N_MIN=\(_mob\?(\d+):(\d+)\), N_MAX=\(_mob\?(\d+):(\d+)\);/.exec(s);
-  const far = /const NF=\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+);/.exec(s);
+  /* (#R245) the far grid is declared once, beside the layer, because buildField now snaps its box
+     onto it — same numbers, hoisted out of buildFar so two functions can agree on them. */
+  const far = /const FAR_N=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+)\);/.exec(s);
   assert.ok(fine && far, 'both grids are still declared where they were');
   assert.ok(Number(fine[2]) >= 640, `desktop fine mesh floor is ${fine[2]}, #R203 shipped 640`);
   assert.ok(Number(fine[1]) >= 288, `mobile fine mesh floor is ${fine[1]}, #R203 shipped 288`);

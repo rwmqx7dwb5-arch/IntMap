@@ -195,16 +195,21 @@ test('R232 seismic: the wavefronts are named, and the observation points are cit
 });
 
 test('R232 seismic + tsunami: the method folds away, the warning does not', () => {
+  /* ⚠ (#R245) the SENTENCE is the reader's, not this test's — 「これは文言を整えて」 reworded the
+     seismic panel's line, and a test that pins prose it does not own turns an editorial change into a
+     failure. What this test is about is WHERE the line is (above the fold), so each file names its own
+     opening words and the position check is unchanged. */
+  const OPENER = { 'js/seismic.js': 'An educational model. In a real emergency,',
+                   'js/tsunami.js': 'Educational model — in a real emergency follow the official authorities.' };
   for (const f of ['js/seismic.js', 'js/tsunami.js']) {
     const s = read(f);
     assert.match(s, /<details class="(?:sq|tsu)-meth"/, `${f} folds its method + sources`);
     assert.match(s, /Method & sources/, `${f} names the fold`);
-    assert.match(s, /Educational model — in a real emergency follow the official authorities\./,
-      `${f} keeps the safety line OUTSIDE the fold`);
+    assert.ok(s.includes(OPENER[f]), `${f} keeps the safety line OUTSIDE the fold`);
     /* the safety line must not be inside the <details> */
     /* ⚠ against the METHOD fold specifically — the seismic panel has an earlier <details> of its
        own (the fault-geometry overrides), and matching the first one made this pass for the wrong reason. */
-    const i = s.indexOf('Educational model — in a real emergency');
+    const i = s.indexOf(OPENER[f]);
     const j = s.search(/<details class="(?:sq|tsu)-meth"/);
     assert.ok(i > 0 && j > 0 && i < j, `${f}: the warning is above the fold, not in it`);
   }

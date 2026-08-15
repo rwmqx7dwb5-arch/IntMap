@@ -328,19 +328,19 @@ window.IntMapModules.dataLayers=function(HOST){
     /* (#R79g) restored per-type colour coding (flattening it to one colour was wrong) — but now each type is a
        BRIGHT line for visibility. Colours here MUST match EEZ_STYLE in addEEZ. */
     const EEZ_CATS=[
-      {c:'#39FF6A',n:{en:'EEZ — 200 NM',jp:'EEZ（200海里）',de:'AWZ — 200 sm',ru:'ИЭЗ — 200 миль',es:'ZEE — 200 mn'}},
-      {c:'#12E3D6',n:{en:'Territorial sea — 12 NM',jp:'領海（12海里）',de:'Küstenmeer — 12 sm',ru:'Терр. море — 12 миль',es:'Mar territorial — 12 mn'}},
-      {c:'#4D8BFF',n:{en:'Treaty boundary',jp:'条約による境界',de:'Vertragsgrenze',ru:'Договорная граница',es:'Límite por tratado'}},
-      {c:'#B6FF3A',n:{en:'Median line',jp:'中間線',de:'Mittellinie',ru:'Срединная линия',es:'Línea media'}},
-      {c:'#FFC21A',n:{en:'Court ruling',jp:'司法判断による境界',de:'Gerichtsurteil',ru:'Судебное решение',es:'Fallo judicial'}},
-      {c:'#FF9E3D',n:{en:'Joint regime',jp:'共同管理水域',de:'Gemeinsames Regime',ru:'Совместный режим',es:'Régimen conjunto'}},
-      {c:'#E64DFF',n:{en:'Unilateral claim (undisputed)',jp:'一方的主張（係争なし）',de:'Einseitiger Anspruch',ru:'Односторонняя претензия',es:'Reclamación unilateral'}},
-      {c:'#FF4D4D',d:1,n:{en:'Unsettled / disputed',jp:'未確定・係争中',de:'Ungeklärt / strittig',ru:'Не урегулировано / спор',es:'Sin resolver / disputa'}},
-      {c:'#FF7A3D',d:1,n:{en:'Unsettled median line',jp:'未確定の中間線',de:'Ungeklärte Mittellinie',ru:'Неурег. срединная линия',es:'Línea media sin resolver'}},
-      {c:'#E6ECF2',d:1,n:{en:'Baselines (archipelagic / straight / normal)',jp:'基線（群島・直線・通常）',de:'Basislinien',ru:'Исходные линии',es:'Líneas de base'}},
-      {c:'#C8D0D8',n:{en:'Connection line',jp:'接続線',de:'Verbindungslinie',ru:'Соединительная линия',es:'Línea de conexión'}}
+      {c:'#39FF6A',n:LA('EEZ — 200 NM','EEZ（200海里）','AWZ — 200 sm','ИЭЗ — 200 миль','ZEE — 200 mn')},
+      {c:'#12E3D6',n:LA('Territorial sea — 12 NM','領海（12海里）','Küstenmeer — 12 sm','Терр. море — 12 миль','Mar territorial — 12 mn')},
+      {c:'#4D8BFF',n:LA('Treaty boundary','条約による境界','Vertragsgrenze','Договорная граница','Límite por tratado')},
+      {c:'#B6FF3A',n:LA('Median line','中間線','Mittellinie','Срединная линия','Línea media')},
+      {c:'#FFC21A',n:LA('Court ruling','司法判断による境界','Gerichtsurteil','Судебное решение','Fallo judicial')},
+      {c:'#FF9E3D',n:LA('Joint regime','共同管理水域','Gemeinsames Regime','Совместный режим','Régimen conjunto')},
+      {c:'#E64DFF',n:LA('Unilateral claim (undisputed)','一方的主張（係争なし）','Einseitiger Anspruch','Односторонняя претензия','Reclamación unilateral')},
+      {c:'#FF4D4D',d:1,n:LA('Unsettled / disputed','未確定・係争中','Ungeklärt / strittig','Не урегулировано / спор','Sin resolver / disputa')},
+      {c:'#FF7A3D',d:1,n:LA('Unsettled median line','未確定の中間線','Ungeklärte Mittellinie','Неурег. срединная линия','Línea media sin resolver')},
+      {c:'#E6ECF2',d:1,n:LA('Baselines (archipelagic / straight / normal)','基線（群島・直線・通常）','Basislinien','Исходные линии','Líneas de base')},
+      {c:'#C8D0D8',n:LA('Connection line','接続線','Verbindungslinie','Соединительная линия','Línea de conexión')}
     ];
-    const eezRows=EEZ_CATS.map(cat=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:1.5px 0;"><span style="display:inline-block;width:26px;height:0;border-top:3px ${cat.d?'dashed':'solid'} ${cat.c};box-shadow:0 0 4px ${cat.c};flex-shrink:0;"></span><span>${cat.n[HOST.lang]||cat.n.en}</span></div>`).join('');
+    const eezRows=EEZ_CATS.map(cat=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:1.5px 0;"><span style="display:inline-block;width:26px;height:0;border-top:3px ${cat.d?'dashed':'solid'} ${cat.c};box-shadow:0 0 4px ${cat.c};flex-shrink:0;"></span><span>${LDL.arr(cat.n)}</span></div>`).join('');
     lgdEEZ.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Maritime zones','海洋管轄区域','Meereszonen','Морские зоны','Zonas marítimas')}</h4>
       <div style="max-height:34vh; overflow-y:auto; margin:2px 0 4px; padding-right:2px;">${eezRows}</div>
       <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${window.IntMapLang.t(HOST.lang,'EEZ = Exclusive Economic Zone (to 200 nm). Line color = boundary type (bright colors for visibility); overlaps flag disputed claims.','EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け（視認性のため明るい配色）。重なりは領有権紛争の目安。','AWZ = Ausschließliche Wirtschaftszone (bis 200 sm). Linienfarbe = Grenztyp (helle Farben für bessere Sichtbarkeit); Überlappungen = Streitfälle.','ИЭЗ = исключительная экономическая зона (до 200 миль). Цвет линий — тип границы (яркие цвета для читаемости); наложения — споры.','ZEE = Zona Económica Exclusiva (hasta 200 mn). Color de línea = tipo de límite (colores vivos para visibilidad); solapamientos = disputas.')}</div>
@@ -1571,15 +1571,55 @@ window.IntMapModules.dataLayers=function(HOST){
     window.KCOORDS=[[-180,KOPPEN_LATMAX],[180,KOPPEN_LATMAX],[180,-KOPPEN_LATMAX],[-180,-KOPPEN_LATMAX]];
     const KCOORDS=window.KCOORDS;
     window.KCOL=[['Af',[0,0,255]],['Am',[0,120,255]],['Aw',[70,170,250]],['BWh',[255,0,0]],['BWk',[255,150,150]],['BSh',[245,165,0]],['BSk',[255,220,100]],['Csa',[255,255,0]],['Csb',[200,200,0]],['Csc',[150,150,0]],['Cwa',[150,255,150]],['Cwb',[100,200,100]],['Cwc',[50,150,50]],['Cfa',[200,255,80]],['Cfb',[100,255,80]],['Cfc',[50,200,0]],['Dsa',[255,0,255]],['Dsb',[200,0,200]],['Dsc',[150,50,150]],['Dsd',[150,100,150]],['Dwa',[170,175,255]],['Dwb',[90,120,220]],['Dwc',[75,80,180]],['Dwd',[50,0,135]],['Dfa',[0,255,255]],['Dfb',[55,200,255]],['Dfc',[0,125,125]],['Dfd',[0,70,95]],['ET',[178,178,178]],['EF',[102,102,102]]];
-    window.KNAME={Af:{en:'Tropical rainforest',jp:'熱帯雨林'},Am:{en:'Tropical monsoon',jp:'熱帯モンスーン'},Aw:{en:'Savanna',jp:'サバナ'},BWh:{en:'Hot desert',jp:'砂漠(高温)'},BWk:{en:'Cold desert',jp:'砂漠(寒冷)'},BSh:{en:'Hot steppe',jp:'ステップ(高温)'},BSk:{en:'Cold steppe',jp:'ステップ(寒冷)'},Csa:{en:'Mediterranean, hot summer',jp:'地中海性(高温夏)'},Csb:{en:'Mediterranean, warm summer',jp:'地中海性(温暖夏)'},Csc:{en:'Mediterranean, cold summer',jp:'地中海性(冷涼夏)'},Cwa:{en:'Humid subtropical, dry winter',jp:'温暖冬季少雨'},Cwb:{en:'Subtropical highland',jp:'温帯高地'},Cwc:{en:'Subtropical highland, dry winter',jp:'温帯高地(冬季少雨)'},Cfa:{en:'Humid subtropical',jp:'温暖湿潤'},Cfb:{en:'Oceanic',jp:'西岸海洋性'},Cfc:{en:'Subpolar oceanic',jp:'亜寒帯海洋性'},Dsa:{en:'Continental, dry-hot summer',jp:'大陸性夏季少雨(高温)'},Dsb:{en:'Continental, dry-warm summer',jp:'大陸性夏季少雨(温暖)'},Dsc:{en:'Continental, dry summer (cold)',jp:'大陸性夏季少雨(冷涼)'},Dsd:{en:'Continental, dry summer (severe)',jp:'大陸性夏季少雨(厳寒)'},Dwa:{en:'Continental, dry winter (hot summer)',jp:'大陸性冬季少雨(高温夏)'},Dwb:{en:'Continental, dry winter (warm summer)',jp:'大陸性冬季少雨(温暖夏)'},Dwc:{en:'Subarctic, dry winter',jp:'亜寒帯冬季少雨'},Dwd:{en:'Subarctic, dry winter (severe)',jp:'亜寒帯冬季少雨(厳寒)'},Dfa:{en:'Humid continental, hot summer',jp:'亜寒帯湿潤(高温夏)'},Dfb:{en:'Humid continental, warm summer',jp:'亜寒帯湿潤(温暖夏)'},Dfc:{en:'Subarctic',jp:'亜寒帯'},Dfd:{en:'Subarctic, severe winter',jp:'亜寒帯(厳寒)'},ET:{en:'Tundra',jp:'ツンドラ'},EF:{en:'Ice cap',jp:'氷雪'}};
-    /* (#R32b) German Köppen climate names ("ケッペンでは気候名が書かれていない" — DE showed undefined). */
-    try{ const _kde={Af:'Tropischer Regenwald',Am:'Tropisches Monsunklima',Aw:'Savanne',BWh:'Heißwüste',BWk:'Kaltwüste',BSh:'Heiße Steppe',BSk:'Kalte Steppe',Csa:'Mediterran, heißer Sommer',Csb:'Mediterran, warmer Sommer',Csc:'Mediterran, kühler Sommer',Cwa:'Feuchtsubtropisch, trockener Winter',Cwb:'Subtropisches Hochland',Cwc:'Subtropisches Hochland, trockener Winter',Cfa:'Feuchtsubtropisch',Cfb:'Ozeanisch',Cfc:'Subpolar-ozeanisch',Dsa:'Kontinental, trocken-heißer Sommer',Dsb:'Kontinental, trocken-warmer Sommer',Dsc:'Kontinental, trockener Sommer (kühl)',Dsd:'Kontinental, trockener Sommer (streng)',Dwa:'Kontinental, trockener Winter (heißer Sommer)',Dwb:'Kontinental, trockener Winter (warmer Sommer)',Dwc:'Subarktisch, trockener Winter',Dwd:'Subarktisch, trockener Winter (streng)',Dfa:'Feuchtkontinental, heißer Sommer',Dfb:'Feuchtkontinental, warmer Sommer',Dfc:'Subarktisch',Dfd:'Subarktisch, strenger Winter',ET:'Tundra',EF:'Eiskappe'}; for(const k in _kde){ if(window.KNAME[k]) window.KNAME[k].de=_kde[k]; } }catch(_){}
-    /* (#R153) Russian + Spanish Köppen climate names — previously absent from KNAME, so RU/ES users saw the ENGLISH fallback (violates the 5-language rule). Standard Köppen–Geiger terminology in each language. */
-    try{ const _kru={Af:'Влажный тропический лес',Am:'Тропический муссонный',Aw:'Саванна',BWh:'Жаркая пустыня',BWk:'Холодная пустыня',BSh:'Жаркая степь',BSk:'Холодная степь',Csa:'Средиземноморский, жаркое лето',Csb:'Средиземноморский, тёплое лето',Csc:'Средиземноморский, прохладное лето',Cwa:'Влажный субтропический, сухая зима',Cwb:'Субтропическое нагорье',Cwc:'Субтропическое нагорье, сухая зима',Cfa:'Влажный субтропический',Cfb:'Океанический',Cfc:'Субполярный океанический',Dsa:'Континентальный, сухое жаркое лето',Dsb:'Континентальный, сухое тёплое лето',Dsc:'Континентальный, сухое лето (холодный)',Dsd:'Континентальный, сухое лето (суровый)',Dwa:'Континентальный, сухая зима (жаркое лето)',Dwb:'Континентальный, сухая зима (тёплое лето)',Dwc:'Субарктический, сухая зима',Dwd:'Субарктический, сухая зима (суровый)',Dfa:'Влажный континентальный, жаркое лето',Dfb:'Влажный континентальный, тёплое лето',Dfc:'Субарктический',Dfd:'Субарктический, суровая зима',ET:'Тундра',EF:'Ледниковый'}; for(const k in _kru){ if(window.KNAME[k]) window.KNAME[k].ru=_kru[k]; } }catch(_){}
-    try{ const _kes={Af:'Selva tropical',Am:'Monzónico tropical',Aw:'Sabana',BWh:'Desierto cálido',BWk:'Desierto frío',BSh:'Estepa cálida',BSk:'Estepa fría',Csa:'Mediterráneo, verano caluroso',Csb:'Mediterráneo, verano templado',Csc:'Mediterráneo, verano fresco',Cwa:'Subtropical húmedo, invierno seco',Cwb:'Tierras altas subtropicales',Cwc:'Tierras altas subtropicales, invierno seco',Cfa:'Subtropical húmedo',Cfb:'Oceánico',Cfc:'Oceánico subpolar',Dsa:'Continental, verano seco y caluroso',Dsb:'Continental, verano seco y templado',Dsc:'Continental, verano seco (frío)',Dsd:'Continental, verano seco (severo)',Dwa:'Continental, invierno seco (verano caluroso)',Dwb:'Continental, invierno seco (verano templado)',Dwc:'Subártico, invierno seco',Dwd:'Subártico, invierno seco (severo)',Dfa:'Continental húmedo, verano caluroso',Dfb:'Continental húmedo, verano templado',Dfc:'Subártico',Dfd:'Subártico, invierno severo',ET:'Tundra',EF:'Casquete glaciar'}; for(const k in _kes){ if(window.KNAME[k]) window.KNAME[k].es=_kes[k]; } }catch(_){}
+    /* ══ ⚠⚠⚠ (#R245) ONE TABLE, AND IT IS A CALL — THE ELEVENTH SHAPE, CLOSED HERE ═══════════════════
+       「全ての言語について、すべての面において対応が完璧かどうか点検し、未了点があれば修正して。」
+       The thirty climate names were FOUR tables: `{en,jp}` literals here, then `_kde`, `_kru` and
+       `_kes` patched onto them at load. That is [[intmap-recurring-lessons]] G — one quantity in four
+       places — and it is also the eleventh translation shape (#R244): a language-keyed OBJECT is
+       invisible to every instrument, so the audit saw thirty `{en,jp}` pairs and every gauge printed
+       100 % while fr / ko / zh / zh-Hans read the ENGLISH climate name in the legend the reader has
+       just been looking at.
+       ⚠ WRITTEN AS `LA(…)` — `IntMapLang.pickArgs()`, which returns the array it is given — the data
+       does not change but the file now contains an ordinary CALL, so the inline report and the
+       positional audit read all 150 strings with no edit, and `L.arr()` resolves a language past the
+       five arguments through the inline table keyed by the English name. Nothing is patched on
+       afterwards, and there is no second copy to keep in step. */
+    window.KNAME={
+      Af:LA('Tropical rainforest','熱帯雨林','Tropischer Regenwald','Влажный тропический лес','Selva tropical'),
+      Am:LA('Tropical monsoon','熱帯モンスーン','Tropisches Monsunklima','Тропический муссонный','Monzónico tropical'),
+      Aw:LA('Savanna','サバナ','Savanne','Саванна','Sabana'),
+      BWh:LA('Hot desert','砂漠(高温)','Heißwüste','Жаркая пустыня','Desierto cálido'),
+      BWk:LA('Cold desert','砂漠(寒冷)','Kaltwüste','Холодная пустыня','Desierto frío'),
+      BSh:LA('Hot steppe','ステップ(高温)','Heiße Steppe','Жаркая степь','Estepa cálida'),
+      BSk:LA('Cold steppe','ステップ(寒冷)','Kalte Steppe','Холодная степь','Estepa fría'),
+      Csa:LA('Mediterranean, hot summer','地中海性(高温夏)','Mediterran, heißer Sommer','Средиземноморский, жаркое лето','Mediterráneo, verano caluroso'),
+      Csb:LA('Mediterranean, warm summer','地中海性(温暖夏)','Mediterran, warmer Sommer','Средиземноморский, тёплое лето','Mediterráneo, verano templado'),
+      Csc:LA('Mediterranean, cold summer','地中海性(冷涼夏)','Mediterran, kühler Sommer','Средиземноморский, прохладное лето','Mediterráneo, verano fresco'),
+      Cwa:LA('Humid subtropical, dry winter','温暖冬季少雨','Feuchtsubtropisch, trockener Winter','Влажный субтропический, сухая зима','Subtropical húmedo, invierno seco'),
+      Cwb:LA('Subtropical highland','温帯高地','Subtropisches Hochland','Субтропическое нагорье','Tierras altas subtropicales'),
+      Cwc:LA('Subtropical highland, dry winter','温帯高地(冬季少雨)','Subtropisches Hochland, trockener Winter','Субтропическое нагорье, сухая зима','Tierras altas subtropicales, invierno seco'),
+      Cfa:LA('Humid subtropical','温暖湿潤','Feuchtsubtropisch','Влажный субтропический','Subtropical húmedo'),
+      Cfb:LA('Oceanic','西岸海洋性','Ozeanisch','Океанический','Oceánico'),
+      Cfc:LA('Subpolar oceanic','亜寒帯海洋性','Subpolar-ozeanisch','Субполярный океанический','Oceánico subpolar'),
+      Dsa:LA('Continental, dry-hot summer','大陸性夏季少雨(高温)','Kontinental, trocken-heißer Sommer','Континентальный, сухое жаркое лето','Continental, verano seco y caluroso'),
+      Dsb:LA('Continental, dry-warm summer','大陸性夏季少雨(温暖)','Kontinental, trocken-warmer Sommer','Континентальный, сухое тёплое лето','Continental, verano seco y templado'),
+      Dsc:LA('Continental, dry summer (cold)','大陸性夏季少雨(冷涼)','Kontinental, trockener Sommer (kühl)','Континентальный, сухое лето (холодный)','Continental, verano seco (frío)'),
+      Dsd:LA('Continental, dry summer (severe)','大陸性夏季少雨(厳寒)','Kontinental, trockener Sommer (streng)','Континентальный, сухое лето (суровый)','Continental, verano seco (severo)'),
+      Dwa:LA('Continental, dry winter (hot summer)','大陸性冬季少雨(高温夏)','Kontinental, trockener Winter (heißer Sommer)','Континентальный, сухая зима (жаркое лето)','Continental, invierno seco (verano caluroso)'),
+      Dwb:LA('Continental, dry winter (warm summer)','大陸性冬季少雨(温暖夏)','Kontinental, trockener Winter (warmer Sommer)','Континентальный, сухая зима (тёплое лето)','Continental, invierno seco (verano templado)'),
+      Dwc:LA('Subarctic, dry winter','亜寒帯冬季少雨','Subarktisch, trockener Winter','Субарктический, сухая зима','Subártico, invierno seco'),
+      Dwd:LA('Subarctic, dry winter (severe)','亜寒帯冬季少雨(厳寒)','Subarktisch, trockener Winter (streng)','Субарктический, сухая зима (суровый)','Subártico, invierno seco (severo)'),
+      Dfa:LA('Humid continental, hot summer','亜寒帯湿潤(高温夏)','Feuchtkontinental, heißer Sommer','Влажный континентальный, жаркое лето','Continental húmedo, verano caluroso'),
+      Dfb:LA('Humid continental, warm summer','亜寒帯湿潤(温暖夏)','Feuchtkontinental, warmer Sommer','Влажный континентальный, тёплое лето','Continental húmedo, verano templado'),
+      Dfc:LA('Subarctic','亜寒帯','Subarktisch','Субарктический','Subártico'),
+      Dfd:LA('Subarctic, severe winter','亜寒帯(厳寒)','Subarktisch, strenger Winter','Субарктический, суровая зима','Subártico, invierno severo'),
+      ET:LA('Tundra','ツンドラ','Tundra','Тундра','Tundra'),
+      EF:LA('Ice cap','氷雪','Eiskappe','Ледниковый','Casquete glaciar')
+    };
     const KCOL=window.KCOL, KNAME=window.KNAME;
-    /* safe name lookup: current language → English fallback (never "undefined") */
-    window.kName=function(code){ const e=window.KNAME&&window.KNAME[code]; return e?(e[HOST.lang]||e.en||code):code; };
+    /* THE one name lookup — every reader goes through it (js/map-ui.js, js/map-readout.js and the two
+       in this file), so a climate name is resolved in exactly one place and never «undefined». */
+    window.kName=function(code){ const e=window.KNAME&&window.KNAME[code]; return e?(LDL.arr(e)||code):code; };
     const kSelected=window.kSelected||(window.kSelected=new Set());
     window.kSelected=kSelected;
     /* === Köppen image → hidden canvas
@@ -2007,7 +2047,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const periodSel=`<div class="kl-period"><label>${perLabel}</label><select id="kl-period">`+window.KOPPEN_PERIODS.map(([p])=>`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`).join('')+`</select></div>`;
       /* (#R23) Click a class = highlight just that climate on the map (RESTORED). Selected rows get the
          .sel outline + a Clear button; long-press (mobile) / right-click (desktop) shows the criteria. */
-      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>{ const _knm=KNAME[code]?(KNAME[code][HOST.lang]||KNAME[code].en):''; return `<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}" title="${code}${_knm?' · '+_knm:''}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span><span class="kl-code">${code}</span>${_knm?`<span class="kl-nm"> · ${_knm}</span>`:''}</div>`; }).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(window.IntMapLang.t(HOST.lang,'Tap to highlight • long-press for criteria','タップでその気候だけ強調 / 長押しで定義','Tippen: Klima hervorheben • lange drücken: Kriterien','Касание — выделить климат • долгое нажатие — критерии','Toca para resaltar el clima • mantén pulsado para criterios')):(window.IntMapLang.t(HOST.lang,'Click to highlight • right-click for criteria','クリックでその気候だけ強調 / 右クリックで定義','Klick: Klima hervorheben • Rechtsklick: Kriterien','Клик — выделить климат • правый клик — критерии','Clic: resaltar clima • clic derecho: criterios'))}</div>`;
+      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>{ const _kn=window.kName(code), _knm=(_kn===code?'':_kn); return `<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}" title="${code}${_knm?' · '+_knm:''}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span><span class="kl-code">${code}</span>${_knm?`<span class="kl-nm"> · ${_knm}</span>`:''}</div>`; }).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(window.IntMapLang.t(HOST.lang,'Tap to highlight • long-press for criteria','タップでその気候だけ強調 / 長押しで定義','Tippen: Klima hervorheben • lange drücken: Kriterien','Касание — выделить климат • долгое нажатие — критерии','Toca para resaltar el clima • mantén pulsado para criterios')):(window.IntMapLang.t(HOST.lang,'Click to highlight • right-click for criteria','クリックでその気候だけ強調 / 右クリックで定義','Klick: Klima hervorheben • Rechtsklick: Kriterien','Клик — выделить климат • правый клик — критерии','Clic: resaltar clima • clic derecho: criterios'))}</div>`;
       const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
       const clr=lg.querySelector('#kl-clear'); if(clr) clr.onclick=()=>{ kSelected.clear(); buildLegend(); if(window._refreshKoppenImage) window._refreshKoppenImage(); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
@@ -2117,7 +2157,7 @@ window.IntMapModules.dataLayers=function(HOST){
       return out;
     }
     function showKoppenInfo(code,x,y){
-      const info=koppenCriteria(code), nm=KNAME[code]?(KNAME[code][HOST.lang]||KNAME[code].en):code;
+      const info=koppenCriteria(code), nm=window.kName(code);   /* (#R245) the one lookup */
       const lines=info.map(s=>`<li>${convTempText(s)}</li>`).join('');   /* (#R236) already in the reader's language */
       const col=(KCOL.find(k=>k[0]===code)||[,[150,150,150]])[1];
       let pop=document.getElementById('koppen-info-pop');
@@ -2782,7 +2822,19 @@ window.IntMapModules.dataLayers=function(HOST){
         if(k) await sleep(PLANE_GAP_MS);
         const good=await one(circles[k][0],circles[k][1],circles[k][2]);
         if(good) ok++; else { fail++; missed.push(circles[k]); }
-        if(ok>0&&Date.now()-lastPub>=PLANE_PUBLISH_MS) publish(false);
+        /* ══ ⚠⚠ (#R245) THE FIRST ANSWER IS DRAWN THE MOMENT IT ARRIVES ═══════════════════════════
+           「Live aircraft trafficで航空機が表示されるまでが遅い。」
+           `lastPub` starts at the sweep's own start, so the in-loop publish could not fire until
+           PLANE_PUBLISH_MS (4 s) had passed — i.e. until the FIFTH circle on a multi-circle sweep,
+           at 1.2 s spacing. The centre circle answers in a fraction of a second and #R188 already
+           sorts the lattice centre-first, so the aircraft the reader is looking at were sitting in
+           `byHex` for four seconds with nothing on screen. The first success now publishes
+           immediately and the 4 s cadence takes over from there.
+           ⚠ NOTHING ABOUT THE REQUEST RATE MOVES. `PLANE_GAP_MS` is the measured limit (#R186/#R188)
+           and this changes only when what has already arrived is DRAWN.
+           ⚠ A ONE-CIRCLE SWEEP STILL PUBLISHES ONCE, at the end — that is what `circles.length>1`
+           preserves, and it is the case the note above `lastPub` is about. */
+        if(ok>0&&(published===0 ? circles.length>1 : Date.now()-lastPub>=PLANE_PUBLISH_MS)) publish(false);
       }
       /* One retry pass for the circles that came back empty-handed, at the same pace. A failed circle
          is a HOLE in the sky, not a slightly smaller answer, so it is worth 1.2 s to fill it. */

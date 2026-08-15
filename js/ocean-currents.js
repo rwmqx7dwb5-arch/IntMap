@@ -122,11 +122,13 @@ window.IntMapModules.oceanCurrents=function(HOST){
     /* (#R222) the field, the months, and which plane is being shown. `month` is 0 for the
        climatological mean and 1…12 for a calendar month. */
     let field=null, fieldState='idle', months=null, monthState='idle', month=0, lastBox=null, lastStride=0;
+    /* (#R245) the panel's names are a tuple held as data — see IntMapLang.pickArgs() */
+    const LA=window.IntMapLang.pickArgs();
     const FLD=()=>window.IntMapCurrentField;
 
     const panel=makePanel('oc-panel',()=>'🌊 '+L('Ocean currents','海流','Meeresströmungen','Морские течения','Corrientes marinas'),'wp-dl-currents',
       { legendId:'wpcurrents', layers:()=>ALL.slice(),
-        names:()=>({en:'🌊 Ocean currents',jp:'🌊 海流（暖流・寒流）',de:'🌊 Meeresströmungen',ru:'🌊 Морские течения',es:'🌊 Corrientes marinas'}) });
+        names:()=>(LA('🌊 Ocean currents','🌊 海流（暖流・寒流）','🌊 Meeresströmungen','🌊 Морские течения','🌊 Corrientes marinas')) });
 
     /* ── the arrowhead, drawn once and registered as an image ─────────────────────────────────────
        ⚠ IT POINTS RIGHT, NOT UP, and that is load-bearing twice over. With `symbol-placement:'line'`
