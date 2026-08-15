@@ -163,8 +163,14 @@ test('R240 ⑤ a country is named in the reader’s language, from CLDR rather t
   const ab = code(R('js/app-body.js'));
   assert.match(ab, /window\._imCldrRegion\(s\.a2,currentLang\)/, 'cName asks it');
   assert.match(ab, /currentLang==='jp'&&s&&s\.nameJp/, "…and Japanese keeps the app's own editorial name");
-  /* ⚠ the mechanism may NOT live in the shell — tests/r168 #8 budgets it and the ceiling only falls */
-  assert.doesNotMatch(ab, /Intl\.DisplayNames/, 'the shell holds no new mechanism');
+  /* ⚠ the COUNTRY mechanism may not live in the shell — tests/r168 #8 budgets it and the ceiling
+     only falls — so app-body asks `window._imCldrRegion` rather than building a DisplayNames.
+     ⚠ (#R246) The one DisplayNames the shell does hold is for LANGUAGE names, and it REPLACED a
+     table (eleven `{en:'English',jp:'英語'}` objects), so the shell got smaller, not bigger. It is
+     named here so that a THIRD one cannot arrive without somebody deciding to edit this line. */
+  assert.equal((ab.match(/Intl\.DisplayNames/g) || []).length, 1, 'the shell holds one CLDR lookup');
+  assert.match(ab, /_nlDN\[tag\]=new Intl\.DisplayNames\(\[tag\],\{type:'language'\}\)/,
+    '…and it is the news-language names, which used to be a table');
 });
 
 /* ══ ⑥ THE BUILD STAMPS ════════════════════════════════════════════════════════════════════════ */

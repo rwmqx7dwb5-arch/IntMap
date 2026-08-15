@@ -184,7 +184,9 @@ test('R189 seismic: JMA scale as a labelled conversion, MMI honesty intact', () 
      computation. The claim the test is really about — that the panel STATES what the number is —
      is unchanged. */
   assert.match(src, /震度は換算ではなく気象庁「計測震度の算出方法」そのものです/, 'the JMA view says what it is');
-  const refs = read('js/reference-data.js');
+  /* (#R246) the registry's descriptions moved to js/locales/pages.<code>.js `sourceUse`; the credit
+     is the same sentence, in the file that now holds the English original. */
+  const refs = read('js/locales/pages.en.js');
   assert.ok(refs.includes('Fujimoto & Midorikawa (2005)'), 'credited');
   assert.ok(refs.includes('Wald & Allen (2007)'), 'and the Vs30 proxy too');
 });

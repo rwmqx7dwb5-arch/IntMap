@@ -122,7 +122,7 @@ window.IntMapModules.newsUi=function(HOST){
 
   function formatCustomDate(s){ const d=HOST.parseDate(s),tz=tzOpt(),now=new Date(); const a=ymd(d,tz),today=ymd(now,tz),yest=ymd(new Date(now.getTime()-864e5),tz),time=hm(d,tz);
     /* (#R37) localize "today"/"yesterday" for ALL four languages — the old en?…:… else-branch showed Japanese to DE/RU. */
-    const TODAY=({en:'today',jp:'今日',de:'heute',ru:'сегодня'})[HOST.lang]||'today', YEST=({en:'yesterday',jp:'昨日',de:'gestern',ru:'вчера'})[HOST.lang]||'yesterday';
+    const TODAY=window.IntMapLang.t(HOST.lang,'today','今日','heute','сегодня','hoy'), YEST=window.IntMapLang.t(HOST.lang,'yesterday','昨日','gestern','вчера','ayer');
     if(a===today)return `${TODAY} ${time}`; if(a===yest)return `${YEST} ${time}`; const[,M,D]=a.split('-'); return `${+M}/${+D} ${time}`; }
 
   let hoveredNewsId=null, hoveredDashId=null;

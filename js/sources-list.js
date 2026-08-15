@@ -35,11 +35,13 @@ window.IntMapSourcesList = (function () {
   ];
   var ORDER = GROUPS.map(function (g) { return g[0]; }).concat(['other']);
 
-  /* the page's language code → the registry's key for the same language */
-  var USE_KEY = { ja: 'jp', en: 'en', de: 'de', ru: 'ru', es: 'es' };
+  /* ⚠ (#R246) THE REGISTRY NO LONGER CARRIES PROSE. Every language's description — English and
+     Japanese included — is `sourceUse` in its own js/locales/pages.<code>.js, which is the file this
+     page already loads for the language it is showing (plus English, always, as page-i18n's
+     FALLBACK). js/reference-data.js is back to the name and the URL. */
 
   function classify(s) {
-    var t = (s.n || '') + ' ' + ((s.use && s.use.en) || '') + ' ' + ((s.use && s.use.jp) || '');
+    var t = (s.n || '') + ' ' + useIn(s, 'en');
     for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i][1].test(t)) return GROUPS[i][0];
     return 'other';
   }
@@ -48,19 +50,14 @@ window.IntMapSourcesList = (function () {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
     });
   }
+  /* ⚠ (#R246) ONE IMPLEMENTATION, and it is the registry's: js/reference-data.js `useText` already
+     resolves a description with a per-KEY fallback to English — the same rule the prose above uses
+     (js/page-i18n.js `pick`) — and the in-app Sources dialog calls exactly that. A copy here would be
+     the same lookup in two places ([[intmap-recurring-lessons]] G). */
   function useText(s, lang) {
-    if (!s || !s.n) return '';
-    /* the registry itself carries en + jp; de/ru/es live in js/locales/pages.<lang>.js under
-       `sourceUse`, keyed by the entry's name. Per-key fallback, same rule as the prose. */
-    try {
-      var doc = window.IntMapPageI18N && window.IntMapPageI18N.doc && window.IntMapPageI18N.doc(lang);
-      var t = doc && doc.sourceUse && doc.sourceUse[s.n];
-      if (t) return t;
-    } catch (e) {}
-    if (!s.use) return '';
-    var k = USE_KEY[lang] || 'en';
-    return s.use[k] || s.use.en || s.use.jp || '';
+    try { return (s && s.n && window.IntMapRefData.useText(s.n, lang)) || ''; } catch (e) { return ''; }
   }
+  var useIn = useText;
 
   var lang = 'en';
 
@@ -80,8 +77,8 @@ window.IntMapSourcesList = (function () {
 
     var bins = Object.create(null);
     list.forEach(function (s) {
-      var text = ((s.n || '') + ' ' + (s.u || '') + ' ' + ((s.use && s.use.en) || '') + ' '
-                + ((s.use && s.use.jp) || '') + ' ' + useText(s, lang)).toLowerCase();
+      var text = ((s.n || '') + ' ' + (s.u || '') + ' ' + useIn(s, 'en') + ' '
+                + useText(s, lang)).toLowerCase();
       if (q && text.indexOf(q) < 0) return;
       var k = classify(s);
       (bins[k] = bins[k] || []).push(s);

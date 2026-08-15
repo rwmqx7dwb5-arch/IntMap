@@ -249,8 +249,13 @@ window.IntMapModules.routing=function(HOST){
        estimates (headway/2 boarding wait), NEVER invented clock times, and the reply says so. The drawn intercity
        line passes through the real stations it stops at (the alignment BETWEEN stations is schematic — labelled,
        not passed off as track geometry; the R122 rule against fake OSM-graph passenger routes stands). */
+    /* ⚠ (#R246) THE LINE NAMES ARE A CALL. `{jp:…,en:…}` read as `jpn?Ln.jp:Ln.en` gave every
+       language but Japanese the English (the eleventh shape; scripts/i18n-langmap-audit.mjs).
+       `LA(…)` is IntMapLang.pickArgs() — the same data as an ordinary call site, resolved by
+       `LSH.arr()` through pick() itself. */
+    const LA=window.IntMapLang.pickArgs(), LSH=window.IntMapLang.pick(()=>HOST.lang);
     const _SHINK=[
-      {jp:'東海道・山陽新幹線',en:'Tokaido–Sanyo Shinkansen',head:8,st:[
+      {nm:LA('Tokaido–Sanyo Shinkansen','東海道・山陽新幹線','Tōkaidō-Sanyō-Shinkansen','Синкансэн Токайдо-Санъё','Shinkansen Tokaido-Sanyo'),head:8,st:[
         ['東京','Tokyo',139.7671,35.6812,0],['品川','Shinagawa',139.7387,35.6284,7],['新横浜','Shin-Yokohama',139.6178,35.5093,18],
         ['小田原','Odawara',139.1557,35.2565,34],['熱海','Atami',139.0776,35.1039,44],['三島','Mishima',138.9109,35.1265,52],
         ['静岡','Shizuoka',138.3890,34.9719,66],['浜松','Hamamatsu',137.7345,34.7038,88],['豊橋','Toyohashi',137.3820,34.7629,97],
@@ -259,21 +264,21 @@ window.IntMapModules.routing=function(HOST){
         ['姫路','Himeji',134.6903,34.8290,180],['岡山','Okayama',133.9184,34.6669,201],['福山','Fukuyama',133.3627,34.4877,217],
         ['広島','Hiroshima',132.4753,34.3979,237],['徳山','Tokuyama',131.8065,34.0522,261],['新山口','Shin-Yamaguchi',131.3963,34.0938,273],
         ['小倉','Kokura',130.8823,33.8870,288],['博多','Hakata',130.4207,33.5902,304]]},
-      {jp:'東北新幹線',en:'Tohoku Shinkansen',head:14,st:[
+      {nm:LA('Tohoku Shinkansen','東北新幹線','Tōhoku-Shinkansen','Синкансэн Тохоку','Shinkansen Tohoku'),head:14,st:[
         ['東京','Tokyo',139.7671,35.6812,0],['上野','Ueno',139.7770,35.7138,6],['大宮','Omiya',139.6236,35.9064,25],
         ['宇都宮','Utsunomiya',139.8987,36.5594,49],['郡山','Koriyama',140.3889,37.3986,78],['福島','Fukushima',140.4590,37.7541,92],
         ['仙台','Sendai',140.8824,38.2600,112],['盛岡','Morioka',141.1367,39.7015,154],['八戸','Hachinohe',141.4883,40.5123,183],
         ['新青森','Shin-Aomori',140.6932,40.8272,209]]},
-      {jp:'上越新幹線',en:'Joetsu Shinkansen',head:18,st:[
+      {nm:LA('Joetsu Shinkansen','上越新幹線','Jōetsu-Shinkansen','Синкансэн Дзёэцу','Shinkansen Joetsu'),head:18,st:[
         ['東京','Tokyo',139.7671,35.6812,0],['大宮','Omiya',139.6236,35.9064,25],['高崎','Takasaki',139.0128,36.3229,50],
         ['越後湯沢','Echigo-Yuzawa',138.8087,36.9351,71],['長岡','Nagaoka',138.8513,37.4468,89],['新潟','Niigata',139.0614,37.9124,104]]},
-      {jp:'北陸新幹線',en:'Hokuriku Shinkansen',head:22,st:[
+      {nm:LA('Hokuriku Shinkansen','北陸新幹線','Hokuriku-Shinkansen','Синкансэн Хокурику','Shinkansen Hokuriku'),head:22,st:[
         ['東京','Tokyo',139.7671,35.6812,0],['大宮','Omiya',139.6236,35.9064,25],['高崎','Takasaki',139.0128,36.3229,50],
         ['軽井沢','Karuizawa',138.6356,36.3428,66],['長野','Nagano',138.1889,36.6433,84],['富山','Toyama',137.2137,36.7008,130],
         ['金沢','Kanazawa',136.6576,36.5783,149],['福井','Fukui',136.2237,36.0621,172],['敦賀','Tsuruga',136.0553,35.6453,189]]},
-      {jp:'九州新幹線',en:'Kyushu Shinkansen',head:22,st:[
+      {nm:LA('Kyushu Shinkansen','九州新幹線','Kyūshū-Shinkansen','Синкансэн Кюсю','Shinkansen Kyushu'),head:22,st:[
         ['博多','Hakata',130.4207,33.5902,0],['熊本','Kumamoto',130.6884,32.7900,35],['鹿児島中央','Kagoshima-Chuo',130.5427,31.5838,78]]},
-      {jp:'北海道新幹線',en:'Hokkaido Shinkansen',head:60,st:[
+      {nm:LA('Hokkaido Shinkansen','北海道新幹線','Hokkaidō-Shinkansen','Синкансэн Хоккайдо','Shinkansen Hokkaido'),head:60,st:[
         ['新青森','Shin-Aomori',140.6932,40.8272,0],['新函館北斗','Shin-Hakodate-Hokuto',140.6488,41.9054,58]]}
     ];
     let _jrG=null;
@@ -329,7 +334,7 @@ window.IntMapModules.routing=function(HOST){
       legs.push.apply(legs,acc.legs); lines.push.apply(lines,acc.lines); stops.push.apply(stops,acc.stops);
       jr.segs.forEach(seg=>{ const st0=seg.stops[0].s, st1=seg.stops[seg.stops.length-1].s;
         const min=Math.abs(st1[4]-st0[4]); waitMin+=seg.Ln.head/2;
-        legs.push({mode:'HIGHSPEED_RAIL',walk:0,route:jpn?seg.Ln.jp:seg.Ln.en,headsign:jpn?st1[0]:st1[1],from:jpn?st0[0]:st0[1],to:jpn?st1[0]:st1[1],duration:min*60,color:_modeColor('HIGHSPEED')});
+        legs.push({mode:'HIGHSPEED_RAIL',walk:0,route:LSH.arr(seg.Ln.nm),headsign:jpn?st1[0]:st1[1],from:jpn?st0[0]:st0[1],to:jpn?st1[0]:st1[1],duration:min*60,color:_modeColor('HIGHSPEED')});
         lines.push({coords:seg.stops.map(n=>[n.s[2],n.s[3]]),walk:0,col:_modeColor('HIGHSPEED')});
         seg.stops.forEach(n=>stops.push([n.s[2],n.s[3]])); });
       legs.push.apply(legs,egr.legs); lines.push.apply(lines,egr.lines); stops.push.apply(stops,egr.stops);

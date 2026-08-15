@@ -351,15 +351,21 @@ test('R213 ⑨: the horizon band keeps the measured daylight colour and gains a 
 test('R213 ⑩: the four new data sources are registered with their attribution and their limits', () => {
   const w = {}; new Function('window', read('js/reference-data.js'))(w);
   const list = w.IntMapRefData.dataSources;
+  /* (#R246) one reader for the descriptions, which now live in js/locales/pages.<code>.js */
+  const docs = {}; const P = { define: (c, d) => { docs[c] = d; } };
+  for (const c of ['en', 'ja']) new Function('window', read(`js/locales/pages.${c}.js`))({ IntMapPageI18N: P });
+  const use = (s, c) => (docs[c] && docs[c].sourceUse && docs[c].sourceUse[s.n]) || '';
   const has = (re) => list.find(s => re.test(s.n));
   const horizons = has(/Horizons/i), sbdb = has(/Small-Body/i), simbad = has(/SIMBAD/i);
   assert.ok(horizons && sbdb && simbad, 'Horizons, SBDB and SIMBAD are all registered');
   for (const s of [horizons, sbdb, simbad]) {
     assert.ok(s.u && /^https:\/\//.test(s.u), s.n + ' links to its source');
-    for (const lang of ['en', 'jp']) assert.ok((s.use[lang] || '').length > 200, s.n + ' explains itself in ' + lang);
+    /* (#R246) the descriptions live in js/locales/pages.<code>.js `sourceUse`, keyed by the registry
+       name — the registry itself is back to the name and the URL. `use(s, code)` reads them. */
+    for (const c of ['en', 'ja']) assert.ok(use(s, c).length > 200, s.n + ' explains itself in ' + c);
   }
   /* the two limits that would otherwise be assumed away */
-  assert.match(horizons.use.en, /not telemetry/i, 'the trajectory/telemetry distinction is written down');
-  assert.match(sbdb.use.en, /not good enough to point a telescope/i, 'so is the accuracy of a two-body propagation');
-  assert.match(simbad.use.en, /without depth/i, 'and so is what happens to an object with no published distance');
+  assert.match(use(horizons, 'en'), /not telemetry/i, 'the trajectory/telemetry distinction is written down');
+  assert.match(use(sbdb, 'en'), /not good enough to point a telescope/i, 'so is the accuracy of a two-body propagation');
+  assert.match(use(simbad, 'en'), /without depth/i, 'and so is what happens to an object with no published distance');
 });

@@ -62,31 +62,34 @@ window.IntMapModules.industryWeb = function (HOST) {
        ⚠ Each `q` below was probed against the live endpoint for how many companies actually carry
        it WITH headquarters coordinates; an industry that returns nothing is not offered, because a
        menu entry that always draws an empty map is a worse answer than no entry. */
+    /* ⚠ (#R246) THE NAMES ARE A CALL. They were `{en,ja,de,ru,es}` read by a four-step `HOST.lang===`
+       chain, which is the eleventh shape with a hand-written resolver bolted on: fr/ko/zh/zh-Hans hit
+       the final `: i.en` and read English for ever. `LA(…)` is IntMapLang.pickArgs() — same data, and
+       `L.arr()` resolves it through pick() itself, so those four reach the inline table. */
+    const LA = window.IntMapLang.pickArgs();
     const INDUSTRIES = [
-      { q: 'Q190117', en: 'Automotive', ja: '自動車', de: 'Automobil', ru: 'Автомобильная', es: 'Automoción' },
-      { q: 'Q507443', en: 'Pharmaceuticals', ja: '医薬品', de: 'Pharma', ru: 'Фармацевтика', es: 'Farmacéutica' },
-      { q: 'Q11661', en: 'Information technology', ja: '情報技術', de: 'Informationstechnik', ru: 'ИТ', es: 'Tecnologías de la información' },
-      { q: 'Q806718', en: 'Banking', ja: '銀行', de: 'Bankwesen', ru: 'Банковское дело', es: 'Banca' },
-      { q: 'Q44497', en: 'Mining', ja: '鉱業', de: 'Bergbau', ru: 'Горное дело', es: 'Minería' },
-      { q: 'Q1058314', en: 'Software', ja: 'ソフトウェア', de: 'Software', ru: 'Программное обеспечение', es: 'Software' },
-      { q: 'Q1663017', en: 'Chemicals', ja: '化学', de: 'Chemie', ru: 'Химическая', es: 'Química' },
-      { q: 'Q3591124', en: 'Aerospace', ja: '航空宇宙', de: 'Luft- und Raumfahrt', ru: 'Аэрокосмическая', es: 'Aeroespacial' },
-      { q: 'Q188572', en: 'Telecommunications', ja: '電気通信', de: 'Telekommunikation', ru: 'Телекоммуникации', es: 'Telecomunicaciones' },
-      { q: 'Q216107', en: 'Insurance', ja: '保険', de: 'Versicherung', ru: 'Страхование', es: 'Seguros' },
-      { q: 'Q638608', en: 'Food industry', ja: '食品', de: 'Lebensmittel', ru: 'Пищевая', es: 'Alimentación' },
-      { q: 'Q11451', en: 'Agriculture', ja: '農業', de: 'Landwirtschaft', ru: 'Сельское хозяйство', es: 'Agricultura' },
-      { q: 'Q881531', en: 'Energy', ja: 'エネルギー', de: 'Energie', ru: 'Энергетика', es: 'Energía' },
-      { q: 'Q1420', en: 'Motor vehicle manufacturing', ja: '自動車製造', de: 'Kfz-Bau', ru: 'Автопроизводство', es: 'Fabricación de vehículos' },
+      { q: 'Q190117', nm: LA('Automotive', '自動車', 'Automobil', 'Автомобильная', 'Automoción') },
+      { q: 'Q507443', nm: LA('Pharmaceuticals', '医薬品', 'Pharma', 'Фармацевтика', 'Farmacéutica') },
+      { q: 'Q11661', nm: LA('Information technology', '情報技術', 'Informationstechnik', 'ИТ', 'Tecnologías de la información') },
+      { q: 'Q806718', nm: LA('Banking', '銀行', 'Bankwesen', 'Банковское дело', 'Banca') },
+      { q: 'Q44497', nm: LA('Mining', '鉱業', 'Bergbau', 'Горное дело', 'Minería') },
+      { q: 'Q1058314', nm: LA('Software', 'ソフトウェア', 'Software', 'Программное обеспечение', 'Software') },
+      { q: 'Q1663017', nm: LA('Chemicals', '化学', 'Chemie', 'Химическая', 'Química') },
+      { q: 'Q3591124', nm: LA('Aerospace', '航空宇宙', 'Luft- und Raumfahrt', 'Аэрокосмическая', 'Aeroespacial') },
+      { q: 'Q188572', nm: LA('Telecommunications', '電気通信', 'Telekommunikation', 'Телекоммуникации', 'Telecomunicaciones') },
+      { q: 'Q216107', nm: LA('Insurance', '保険', 'Versicherung', 'Страхование', 'Seguros') },
+      { q: 'Q638608', nm: LA('Food industry', '食品', 'Lebensmittel', 'Пищевая', 'Alimentación') },
+      { q: 'Q11451', nm: LA('Agriculture', '農業', 'Landwirtschaft', 'Сельское хозяйство', 'Agricultura') },
+      { q: 'Q881531', nm: LA('Energy', 'エネルギー', 'Energie', 'Энергетика', 'Energía') },
+      { q: 'Q1420', nm: LA('Motor vehicle manufacturing', '自動車製造', 'Kfz-Bau', 'Автопроизводство', 'Fabricación de vehículos') },
     ];
-    const indName = (i) => HOST.lang === 'jp' ? i.ja : HOST.lang === 'de' ? i.de : HOST.lang === 'ru' ? i.ru : HOST.lang === 'es' ? i.es : i.en;
+    const indName = (i) => L.arr(i.nm);
 
     const SRC_NODE = 'iw-nodes', SRC_EDGE = 'iw-edges';
     const LYR = ['iw-edge-line', 'iw-node-halo', 'iw-node', 'iw-label'];
 
     let on = false, qid = INDUSTRIES[0].q, status = 'idle', err = null, moneyErr = [], edgeErr = false;
     let nodes = [], edges = [], sel = null, ctrl = null;
-    /* (#R245) the panel's names are a tuple held as data — see IntMapLang.pickArgs() */
-    const LA = window.IntMapLang.pickArgs();
     const cache = {};
     /* (#R215) one box, and it is the app's own legend — see js/world-packs.js `makePanel`. */
     const panel = makePanel('iw-panel', () => '🕸 ' + L('Industry web', '業界の相関', 'Branchennetz', 'Отраслевая сеть', 'Red del sector'), 'wp-dl-industry',

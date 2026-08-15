@@ -32,6 +32,7 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
      ⚠ A FREE REFERENCE HERE WOULD BE A SILENT NO-OP, which is exactly the failure #R194 built that
      gate against: the picker would build zero rows and nothing would say why. */
   const NEWS_COUNTRY_FEEDS=(DEPS&&DEPS.NEWS_COUNTRY_FEEDS)||{};
+  const LNS=window.IntMapLang.pick(()=>HOST.lang);   /* (#R246) the feed names are tuples held as data — see IntMapLang.pickArgs() */
 
   window.IntMapNewsSources=(function(){
     'use strict';
@@ -114,7 +115,7 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
     function countryLabel(){
       const sel=(window.imNewsCountries||[]);
       if(!sel.length) return L('None (default feeds only)','未選択（標準のニュースのみ）','Keine (nur Standard-Feeds)','Не выбрано (только стандартные ленты)','Ninguno (solo fuentes predeterminadas)');
-      return sel.map(c=>{ const f=NEWS_COUNTRY_FEEDS[c]; return f?(f.flag+' '+(f.name[HOST.lang]||f.name.en)):c; }).join(', ');
+      return sel.map(c=>{ const f=NEWS_COUNTRY_FEEDS[c]; return f?(f.flag+' '+LNS.arr(f.name)):c; }).join(', ');
     }
     function syncCountryLabel(){ const el=document.getElementById('newscountry-dd-label'); if(el) el.textContent=countryLabel(); }
     function renderCountries(){
@@ -125,11 +126,11 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
         /* the button summary follows the ticks live; the selection itself commits on Apply */
         wrap.addEventListener('change',()=>{ const tmp=Array.from(wrap.querySelectorAll('input:checked')).map(c=>c.value);
           const el=document.getElementById('newscountry-dd-label');
-          if(el) el.textContent=tmp.length?tmp.map(c=>{ const f=NEWS_COUNTRY_FEEDS[c]; return f?(f.flag+' '+(f.name[HOST.lang]||f.name.en)):c; }).join(', ')
+          if(el) el.textContent=tmp.length?tmp.map(c=>{ const f=NEWS_COUNTRY_FEEDS[c]; return f?(f.flag+' '+LNS.arr(f.name)):c; }).join(', ')
             :L('None (default feeds only)','未選択（標準のニュースのみ）','Keine (nur Standard-Feeds)','Не выбрано (только стандартные ленты)','Ninguno (solo fuentes predeterminadas)'); });
       }
       wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked=(window.imNewsCountries||[]).includes(cb.value); });
-      wrap.querySelectorAll('.ncx').forEach(s=>{ const c=s.getAttribute('data-code'); const f=NEWS_COUNTRY_FEEDS[c]; if(f) s.textContent=f.name[HOST.lang]||f.name.en; });
+      wrap.querySelectorAll('.ncx').forEach(s=>{ const c=s.getAttribute('data-code'); const f=NEWS_COUNTRY_FEEDS[c]; if(f) s.textContent=LNS.arr(f.name); });
       syncCountryLabel();
       const sel=document.getElementById('setting-newscountry'), dd=document.getElementById('newscountry-dd'), hint=document.getElementById('newscountry-hint');
       if(sel){

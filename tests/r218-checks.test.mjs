@@ -212,30 +212,41 @@ test('⑤ …the two pages carry no prose of their own any more', () => {
   assert.match(sl, /window\.IntMapRefData && window\.IntMapRefData\.dataSources/);
   assert.equal(/dataSources\s*=\s*\[/.test(sl), false, 'the page carries its own copy of the list');
 });
-test('⑤ …and every registry entry has a description in all five languages', async () => {
+/* ⚠ (#R246) FIVE LANGUAGES BECAME NINE, AND THE ENGLISH MOVED. The registry used to carry
+   `use:{en,jp}` and the other three lived in pages.<lg>.js — which meant the ENGLISH text was
+   outside the document scripts/i18n-pages-audit.mjs measures against, so the de/ru/es translations
+   were uncounted and the total ABSENCE of fr/ko/zh/zh-Hans read as 287/287, 100 %. Every language's
+   description is now `sourceUse` in its own lazily-loaded pages file, English included, and the
+   registry carries only the name and the URL (~50 kB out of the eager bundle). */
+test('⑤ …and every registry entry has a description in all nine languages', async () => {
   const ctx = { console };
   ctx.window = ctx; vm.createContext(ctx);
-  for (const f of ['js/reference-data.js', 'js/locales/pages.de.js', 'js/locales/pages.ru.js', 'js/locales/pages.es.js'])
-    vm.runInContext(read(f), ctx, { filename: f });
+  const CODES = ['en', 'ja', 'de', 'ru', 'es', 'fr', 'ko', 'zh-hant', 'zh-hans'];
+  vm.runInContext(read('js/reference-data.js'), ctx, { filename: 'js/reference-data.js' });
+  for (const c of CODES) vm.runInContext(read(`js/locales/pages.${c}.js`), ctx, { filename: c });
   const list = ctx.window.IntMapRefData.dataSources;
   assert.ok(list.length > 80, 'the registry shrank');
   for (const s of list) {
-    assert.ok(s.use && s.use.en && s.use.jp, `${s.n} is missing its en/jp description`);
-    for (const c of ['de', 'ru', 'es']) {
+    assert.equal(s.use, undefined, `${s.n} still carries prose in the eager registry`);
+    for (const c of CODES) {
       const doc = ctx.window.IntMapPageI18N._d[c];
       assert.ok(doc.sourceUse && doc.sourceUse[s.n], `${s.n} has no ${c} description`);
     }
   }
   /* …and nothing translated that is no longer in the registry */
   const names = new Set(list.map((s) => s.n));
-  for (const c of ['de', 'ru', 'es'])
+  for (const c of CODES)
     for (const k of Object.keys(ctx.window.IntMapPageI18N._d[c].sourceUse))
       assert.ok(names.has(k), `${c} describes "${k}", which is not in the registry`);
 });
 test('⑤ …and the app fetches those descriptions only when it needs them', () => {
   const s = code('js/app-body.js');
-  assert.match(s, /\['de','ru','es'\]\.includes\(currentLang\)&&!_pgDoc\(currentLang\)/,
+  /* (#R246) the fetch moved to js/reference-data.js `ensureDocs`, so the in-app dialog and
+     sources.html share ONE implementation; app-body just asks for it when the dialog opens. */
+  assert.match(s, /window\.IntMapRefData\.ensureDocs\(currentLang,paint\)/,
     'the Sources dialog does not lazily load the translated descriptions');
+  assert.match(code('js/reference-data.js'), /sc\.src='\.\/js\/locales\/pages\.'\+c\+'\.js'/,
+    'and the loader is the registry\'s');
   assert.equal(/import .*locales\/pages/.test(read('src/main.js')), false,
     'a locale file is in the eager bundle — the five-language registry must cost a phone nothing at start-up');
 });
@@ -316,8 +327,9 @@ test('⑦ the currents are the bundled, measured dataset (#R219 replaced the liv
 test('⑦ …and the marine model + Wikidata are still both declared', () => {
   const r = read('js/reference-data.js');
   assert.match(r, /Open-Meteo Marine/);
-  assert.match(r, /ocean-current velocity and direction/);
-  assert.match(r, /ocean currents with their published coordinates/);
+  /* (#R246) the prose moved to js/locales/pages.en.js `sourceUse`, keyed by the registry name */
+  assert.match(read('js/locales/pages.en.js'), /ocean-current velocity and direction/);
+  assert.match(read('js/locales/pages.en.js'), /ocean currents with their published coordinates/);
 });
 
 /* ── ⑧ the smaller wirings: trade, tides, crops, seismic click mode, flight sim, rivers ─── */

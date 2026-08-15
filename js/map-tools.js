@@ -42,13 +42,20 @@ window.IntMapModules.projView=function(HOST){
     function mollTheta(phi){ if(Math.abs(phi)>=Math.PI/2-1e-9) return phi>0?Math.PI/2:-Math.PI/2; let t=phi; for(let i=0;i<10;i++){ const d=(2*t+Math.sin(2*t)-Math.PI*Math.sin(phi))/(2+2*Math.cos(2*t)); t-=d; if(Math.abs(d)<1e-7) break; } return t; }
     const ROBX=[1,0.9986,0.9954,0.99,0.9822,0.973,0.96,0.9427,0.9216,0.8962,0.8679,0.835,0.7986,0.7597,0.7186,0.6732,0.6213,0.5722,0.5322];
     const ROBY=[0,0.062,0.124,0.186,0.248,0.31,0.372,0.434,0.4958,0.5571,0.6176,0.6769,0.7346,0.7903,0.8435,0.8936,0.9394,0.9761,1];
+    /* ⚠ (#R246) THE PROJECTION NAMES ARE A CALL, NOT AN OBJECT. They were `{en:…,jp:…}` read as
+       `name[HOST.lang]||name.en`, so every language but Japanese saw the English (the eleventh
+       shape — scripts/i18n-langmap-audit.mjs). `LA(…)` is IntMapLang.pickArgs(), which returns the
+       array it is handed, so the DATA is unchanged; what changes is that this is now a call site the
+       positional audit reads, and `LP.arr()` resolves it through `pick()` itself — de/ru/es
+       positionally, fr/ko/zh/zh-Hans from the inline table keyed by the English name. */
+    const LA=window.IntMapLang.pickArgs(), LP=window.IntMapLang.pick(()=>HOST.lang);
     const PROJS={
-      equalEarth:{name:{en:'Equal Earth',jp:'イコールアース図法'}, fn(loD,laD){ const l=loD*RAD,p=laD*RAD,M=Math.sqrt(3)/2,A1=1.340264,A2=-0.081106,A3=0.000893,A4=0.003796; const th=Math.asin(M*Math.sin(p)),t2=th*th,t6=t2*t2*t2; return [l*Math.cos(th)/(M*(A1+3*A2*t2+t6*(7*A3+9*A4*t2))), th*(A1+A2*t2+t6*(A3+A4*t2))]; }},
-      robinson:{name:{en:'Robinson',jp:'ロビンソン図法'}, fn(loD,laD){ const a=Math.min(17.9999,Math.abs(laD)/5),i=Math.floor(a),f=a-i; const xl=ROBX[i]+(ROBX[i+1]-ROBX[i])*f, yl=ROBY[i]+(ROBY[i+1]-ROBY[i])*f; return [0.8487*xl*loD*RAD, 1.3523*yl*(laD<0?-1:1)]; }},
-      winkel:{name:{en:'Winkel Tripel',jp:'ヴィンケル第三図法'}, fn(loD,laD){ const l=loD*RAD,p=laD*RAD,p1=Math.acos(2/Math.PI); const al=Math.acos(Math.max(-1,Math.min(1,Math.cos(p)*Math.cos(l/2)))),sc=sinc(al); return [0.5*(l*Math.cos(p1)+2*Math.cos(p)*Math.sin(l/2)/sc), 0.5*(p+Math.sin(p)/sc)]; }},
-      mollweide:{name:{en:'Mollweide',jp:'モルワイデ図法'}, fn(loD,laD){ const l=loD*RAD,th=mollTheta(laD*RAD); return [(2*Math.SQRT2/Math.PI)*l*Math.cos(th), Math.SQRT2*Math.sin(th)]; }},
-      equirect:{name:{en:'Equirectangular',jp:'正距円筒図法'}, fn(loD,laD){ return [loD*RAD, laD*RAD]; }},
-      azimuthal:{name:{en:'Azimuthal equidistant',jp:'正距方位図法'}, azim:true, fn(loD,laD,c){ const l=loD*RAD,p=laD*RAD,l0=c[0]*RAD,p1=c[1]*RAD; let cc=Math.sin(p1)*Math.sin(p)+Math.cos(p1)*Math.cos(p)*Math.cos(l-l0); cc=Math.max(-1,Math.min(1,cc)); if(cc<-0.99996) return null; const C=Math.acos(cc); if(C<1e-9) return [0,0]; const k=C/Math.sin(C); return [k*Math.cos(p)*Math.sin(l-l0), k*(Math.cos(p1)*Math.sin(p)-Math.sin(p1)*Math.cos(p)*Math.cos(l-l0))]; }}
+      equalEarth:{name:LA('Equal Earth','イコールアース図法','Equal-Earth-Projektion','Проекция Equal Earth','Proyección Equal Earth'), fn(loD,laD){ const l=loD*RAD,p=laD*RAD,M=Math.sqrt(3)/2,A1=1.340264,A2=-0.081106,A3=0.000893,A4=0.003796; const th=Math.asin(M*Math.sin(p)),t2=th*th,t6=t2*t2*t2; return [l*Math.cos(th)/(M*(A1+3*A2*t2+t6*(7*A3+9*A4*t2))), th*(A1+A2*t2+t6*(A3+A4*t2))]; }},
+      robinson:{name:LA('Robinson','ロビンソン図法','Robinson-Projektion','Проекция Робинсона','Proyección de Robinson'), fn(loD,laD){ const a=Math.min(17.9999,Math.abs(laD)/5),i=Math.floor(a),f=a-i; const xl=ROBX[i]+(ROBX[i+1]-ROBX[i])*f, yl=ROBY[i]+(ROBY[i+1]-ROBY[i])*f; return [0.8487*xl*loD*RAD, 1.3523*yl*(laD<0?-1:1)]; }},
+      winkel:{name:LA('Winkel Tripel','ヴィンケル第三図法','Winkel-Tripel-Projektion','Проекция Винкеля III','Proyección Winkel Tripel'), fn(loD,laD){ const l=loD*RAD,p=laD*RAD,p1=Math.acos(2/Math.PI); const al=Math.acos(Math.max(-1,Math.min(1,Math.cos(p)*Math.cos(l/2)))),sc=sinc(al); return [0.5*(l*Math.cos(p1)+2*Math.cos(p)*Math.sin(l/2)/sc), 0.5*(p+Math.sin(p)/sc)]; }},
+      mollweide:{name:LA('Mollweide','モルワイデ図法','Mollweide-Projektion','Проекция Мольвейде','Proyección de Mollweide'), fn(loD,laD){ const l=loD*RAD,th=mollTheta(laD*RAD); return [(2*Math.SQRT2/Math.PI)*l*Math.cos(th), Math.SQRT2*Math.sin(th)]; }},
+      equirect:{name:LA('Equirectangular','正距円筒図法','Plattkarte (äquidistant)','Равнопромежуточная цилиндрическая','Proyección equirrectangular'), fn(loD,laD){ return [loD*RAD, laD*RAD]; }},
+      azimuthal:{name:LA('Azimuthal equidistant','正距方位図法','Azimutale Äquidistantprojektion','Азимутальная равнопромежуточная','Proyección azimutal equidistante'), azim:true, fn(loD,laD,c){ const l=loD*RAD,p=laD*RAD,l0=c[0]*RAD,p1=c[1]*RAD; let cc=Math.sin(p1)*Math.sin(p)+Math.cos(p1)*Math.cos(p)*Math.cos(l-l0); cc=Math.max(-1,Math.min(1,cc)); if(cc<-0.99996) return null; const C=Math.acos(cc); if(C<1e-9) return [0,0]; const k=C/Math.sin(C); return [k*Math.cos(p)*Math.sin(l-l0), k*(Math.cos(p1)*Math.sin(p)-Math.sin(p1)*Math.cos(p)*Math.cos(l-l0))]; }}
     };
     const projRaw=(lo,la)=>PROJS[cur].fn(lo,la,center);
     const toScreen=(px,py)=>({x:_ox+_S*px+panx, y:_oy-_S*py+pany});
@@ -101,7 +108,7 @@ window.IntMapModules.projView=function(HOST){
     }
     function scheduleRender(){ if(raf) return; raf=requestAnimationFrame(()=>{ raf=0; render(); }); }
     function resize(){ if(!host) return; dpr=Math.min(2,window.devicePixelRatio||1); cssW=host.clientWidth; cssH=host.clientHeight; cv.width=cssW*dpr; cv.height=cssH*dpr; cv.style.width=cssW+'px'; cv.style.height=cssH+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); render(); }
-    function updateTitle(){ if(!titleEl) return; const nm=(PROJS[cur].name[HOST.lang]||PROJS[cur].name.en); titleEl.textContent = PROJS[cur].azim ? (nm+' · '+center[1].toFixed(1)+'°, '+center[0].toFixed(1)+'°') : nm; }
+    function updateTitle(){ if(!titleEl) return; const nm=LP.arr(PROJS[cur].name); titleEl.textContent = PROJS[cur].azim ? (nm+' · '+center[1].toFixed(1)+'°, '+center[0].toFixed(1)+'°') : nm; }
     function ensureDOM(){
       if(host) return;
       const st=document.createElement('style'); st.textContent=`
@@ -123,7 +130,7 @@ window.IntMapModules.projView=function(HOST){
       const bar=document.createElement('div'); bar.className='proj-bar';
       titleEl=document.createElement('span'); titleEl.className='proj-title';
       sel=document.createElement('select');
-      sel.innerHTML=Object.keys(PROJS).map(k=>`<option value="${k}">${PROJS[k].name[HOST.lang]||PROJS[k].name.en}</option>`).join('');
+      sel.innerHTML=Object.keys(PROJS).map(k=>`<option value="${k}">${LP.arr(PROJS[k].name)}</option>`).join('');
       sel.onchange=()=>{ cur=sel.value; zoom=1;panx=0;pany=0; if(entry)entry.value=cur; updateTitle(); render(); };
       const zin=document.createElement('button'); zin.textContent='＋'; zin.onclick=()=>{ zoom=Math.min(8,zoom*1.25); render(); };
       const zout=document.createElement('button'); zout.textContent='－'; zout.onclick=()=>{ zoom=Math.max(0.5,zoom/1.25); render(); };

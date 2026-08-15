@@ -108,10 +108,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   let newsPinMode='location'; /* 'location' or 'publisher' */
   let aiLocateMode=localStorage.getItem('intmap_ai_locate')||'manual'; /* 'manual' | 'auto' */
   let newsLangMode=localStorage.getItem('intmap_news_lang')||'ui';     /* 'ui' | 'multi' */
-  /* Individually-selectable news languages (used when newsLangMode==='multi'). */
-  const NEWS_LANG_NAMES={ en:{en:'English',jp:'英語'}, ja:{en:'Japanese',jp:'日本語'}, fr:{en:'French',jp:'フランス語'}, de:{en:'German',jp:'ドイツ語'}, es:{en:'Spanish',jp:'スペイン語'}, pt:{en:'Portuguese',jp:'ポルトガル語'}, it:{en:'Italian',jp:'イタリア語'}, ar:{en:'Arabic',jp:'アラビア語'}, ru:{en:'Russian',jp:'ロシア語'}, zh:{en:'Chinese',jp:'中国語'}, ko:{en:'Korean',jp:'韓国語'} };
+  /* Individually-selectable news languages (multi mode). ⚠ (#R246) THE NAMES ARE NOT A TABLE: eleven
+     `{en:'English',jp:'英語'}` objects made fr/ko/zh/zh-Hans read English for ever (the eleventh shape).
+     A language's name in another language is CLDR data the browser already ships — `Intl.DisplayNames`,
+     as js/countries-ui.js does for countries — so there is nothing left here to maintain. */
+  const NEWS_LANG_CODES=['en','ja','fr','de','es','pt','it','ar','ru','zh','ko'];
   let newsLangs; try{ newsLangs=JSON.parse(localStorage.getItem('intmap_news_langs')||'null'); }catch(_){ newsLangs=null; }
-  if(!Array.isArray(newsLangs)||!newsLangs.length) newsLangs=Object.keys(NEWS_LANG_NAMES);   /* default: all */
+  if(!Array.isArray(newsLangs)||!newsLangs.length) newsLangs=NEWS_LANG_CODES.slice();   /* default: all */
   const KM2MI=0.621371;
   /* (#R22) Fall back to English when a key is missing in the active language (so newly-added DE/RU,
      which only translate the static UI, never render `undefined`). */
@@ -2728,7 +2731,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   { const le=document.getElementById('lang-es'); if(le) le.onclick=()=>setLang('es'); }   /* (#R40) Spanish (beta) */
   { const sl=document.getElementById('setting-lang'); if(sl) sl.addEventListener('change',e=>setLang(e.target.value)); }
   /* Multi-select news languages (shown when "Multiple languages…" is chosen in Settings). */
-  function newsLangNameOf(c){ return (NEWS_LANG_NAMES[c]&&(NEWS_LANG_NAMES[c][currentLang]||NEWS_LANG_NAMES[c].en))||c; }
+  const _nlDN={};   /* (#R246) one Intl.DisplayNames per UI language, built on demand */
+  function newsLangNameOf(c){ try{ const tag=window.IntMapLang.locale(currentLang);
+      if(_nlDN[tag]===undefined){ try{ _nlDN[tag]=new Intl.DisplayNames([tag],{type:'language'}); }catch(_){ _nlDN[tag]=null; } }
+      const n=_nlDN[tag]&&_nlDN[tag].of(c); if(n&&n!==c) return n; }catch(_){} return c; }
   function updateNewsLangLabel(){ const lbl=document.getElementById('newslang-dd-label'); if(!lbl) return;
     const sel=newsLangs||[]; lbl.textContent = sel.length? sel.map(newsLangNameOf).join(', ') : (window.IntMapLang.t(currentLang,'None selected','未選択','Nichts ausgewählt','Не выбрано','Nada seleccionado')); }
   function renderNewsLangChecks(){
@@ -2737,7 +2743,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const show=(sel.value==='multi');
     if(dd) dd.style.display=show?'block':'none'; if(hint) hint.style.display=show?'block':'none';
     if(!wrap.dataset.built){
-      wrap.innerHTML=Object.keys(NEWS_LANG_NAMES).map(code=>`<label><input type="checkbox" value="${code}"> <span class="nlx" data-code="${code}"></span></label>`).join('');
+      wrap.innerHTML=NEWS_LANG_CODES.map(code=>`<label><input type="checkbox" value="${code}"> <span class="nlx" data-code="${code}"></span></label>`).join('');
       wrap.dataset.built='1';
       /* (#R33) The checked boxes are the SINGLE SOURCE OF TRUTH for newsLangs — update + persist on every
          change so the saved set always equals exactly what the user ticked (fixes the desync where other
@@ -3436,15 +3442,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* ---------- Data sources & attribution modal (#37) ---------- */  /* (#R162) the list moved to js/reference-data.js — see Architecture.md "File layout". */
   const DATA_SOURCES=window.IntMapRefData.dataSources;
-  /* (#R218) DE/RU/ES descriptions live in js/locales/pages.<lang>.js (`sourceUse`) — the same file sources.html reads — fetched ONLY when this dialog opens in one of those languages, so the five-language registry costs a phone nothing at start-up. Per-key fallback to en/jp. */
-  const _pgDoc=(l)=>{ try{ return window.IntMapPageI18N&&window.IntMapPageI18N.doc&&window.IntMapPageI18N.doc(l); }catch(_){ return null; } };
+  /* (#R246) the descriptions are `sourceUse` in js/locales/pages.<code>.js, lazily fetched, and the lookup
+     lives with the registry (js/reference-data.js `useText`/`ensureDocs`) — one implementation, not a copy. */
   function openSourcesModal(){
     const m=document.getElementById('sources-modal'); if(!m) return;
     document.getElementById('sources-title').textContent=t('srcModalTitle'); document.getElementById('sources-sub').textContent=t('srcModalSub');
-    const use=(s)=>{ const d=_pgDoc(currentLang); return (d&&d.sourceUse&&d.sourceUse[s.n])||s.use[currentLang]||s.use.en; };
+    const use=(s)=>window.IntMapRefData.useText(s.n,currentLang);
     const paint=()=>{ document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>`<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(use(s))}</span><br><a href="${s.u}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`).join(''); };
     paint(); m.style.display='flex';
-    if(['de','ru','es'].includes(currentLang)&&!_pgDoc(currentLang)){ const sc=document.createElement('script'); sc.src='./js/locales/pages.'+currentLang+'.js'; sc.async=true; sc.onload=paint; document.head.appendChild(sc); } }
+    window.IntMapRefData.ensureDocs(currentLang,paint); }
   { window.imOpenSources=openSourcesModal;   /* (#R215) Settings offers the PAGE, not a lesser in-app copy beside it (see index.html) — the dialog is kept reachable by name rather than deleted, so its markup and its ~90-entry renderer are not dead code */
     const x=document.getElementById('sources-close-x'); if(x) x.onclick=()=>{ document.getElementById('sources-modal').style.display='none'; };
     const m=document.getElementById('sources-modal'); if(m) m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); }   /* (#R218) folded onto one line: tests/r200 ⑤ ratchets this file and the Sources dialog's language fetch cost it two */

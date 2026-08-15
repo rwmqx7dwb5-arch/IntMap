@@ -26,7 +26,9 @@ test('R187 aircraft: the glyph is the original outline, stroke and size ramp', (
   /* a flat fill and a 1.6 px white line — no drop shadow, no white rim, no dark hairline */
   const fn = /function ensurePlaneIcons\(\)\{[\s\S]*?\n    \}/.exec(src);
   assert.ok(fn, 'ensurePlaneIcons must exist');
-  assert.match(fn[0], /lineWidth=1\.6/, 'the original 1.6 px stroke');
+  /* (#R246) 「両方とも：より太いアウトライン」 — the width is `PLANE_STROKE` now, a constant the flat
+     glyph AND the lifted 3-D body read, so thickening it cannot make the two renderings disagree. */
+  assert.match(fn[0], /lineWidth=PLANE_STROKE/, 'the stroke is the one shared constant');
   assert.match(fn[0], /const s=44\b/, 'the original 44-unit artwork');
   assert.ok(!/shadowBlur/.test(fn[0]), 'the #R183 drop shadow is gone');
   assert.ok(!/lineWidth=2\.6/.test(fn[0]), 'the #R183 white rim is gone');

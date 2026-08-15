@@ -40,79 +40,80 @@ window.IntMapModules.wbLayers=function(HOST){
     /* (#R40) expose the WB indicator fetch (cached, latest value per country) so the Correlation/Scatter tool
        can offer the full World-Bank indicator set as axes ("対応する項目を大幅に増やして"). */
     try{ window.IntMapWB={ fetch:wbFetch, get:(code)=>wbCache[code]||null }; }catch(_){}
+    const LA=window.IntMapLang.pickArgs(), LWB=window.IntMapLang.pick(()=>HOST.lang);
     const WB=[
-      {id:'wbco2', code:'EN.GHG.CO2.PC.CE.AR5', n:{en:'CO₂ per capita',jp:'1人当たりCO₂排出'}, ramp:[0,'#1a9850',2,'#a6d96a',5,'#fee08b',10,'#f46d43',20,'#a50026'], unit:' t'},   /* (#R32) old EN.ATM.CO2E.PC was discontinued by the World Bank (returned 0 rows) → current AR5 per-capita series */
-      {id:'wburb', code:'SP.URB.TOTL.IN.ZS', n:{en:'Urban population %',jp:'都市人口率'}, ramp:[20,'#fee08b',40,'#a6d96a',60,'#66bd63',80,'#1a9850',95,'#006837'], unit:'%'},
-      {id:'wbelec', code:'EG.ELC.ACCS.ZS', n:{en:'Electricity access %',jp:'電力アクセス率'}, ramp:[20,'#a50026',50,'#f46d43',80,'#fee08b',95,'#a6d96a',100,'#1a9850'], unit:'%'},
-      {id:'wbhealth', code:'SH.XPD.CHEX.GD.ZS', n:{en:'Health spend %GDP',jp:'医療支出 対GDP'}, ramp:[2,'#fff7ec',4,'#fdd49e',8,'#fc8d59',12,'#d7301f',18,'#7f0000'], unit:'%'},
-      {id:'wbforest', code:'AG.LND.FRST.ZS', n:{en:'Forest area %',jp:'森林面積率'}, ramp:[5,'#f6e8c3',20,'#c7eae5',40,'#80cdc1',60,'#35978f',80,'#01665e'], unit:'%'},
-      {id:'wbrenew', code:'EG.FEC.RNEW.ZS', n:{en:'Renewable energy %',jp:'再エネ比率'}, ramp:[5,'#fff7ec',20,'#fdd49e',40,'#a6d96a',60,'#66bd63',85,'#006837'], unit:'%'},
-      {id:'wbmobile', code:'IT.CEL.SETS.P2', n:{en:'Mobile subs /100',jp:'携帯契約 /100人'}, ramp:[30,'#fee08b',80,'#a6d96a',110,'#66bd63',140,'#1a9850',180,'#006837'], unit:''},
-      {id:'wbinfl', code:'FP.CPI.TOTL.ZG', n:{en:'Inflation % (CPI)',jp:'インフレ率 (CPI)'}, ramp:[0,'#1a9850',3,'#a6d96a',6,'#fee08b',15,'#f46d43',40,'#a50026'], unit:'%'},
+      {id:'wbco2', code:'EN.GHG.CO2.PC.CE.AR5', n:LA('CO₂ per capita','1人当たりCO₂排出','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita'), ramp:[0,'#1a9850',2,'#a6d96a',5,'#fee08b',10,'#f46d43',20,'#a50026'], unit:' t'},   /* (#R32) old EN.ATM.CO2E.PC was discontinued by the World Bank (returned 0 rows) → current AR5 per-capita series */
+      {id:'wburb', code:'SP.URB.TOTL.IN.ZS', n:LA('Urban population %','都市人口率','Stadtbevölkerung %','Городское население %','Población urbana %'), ramp:[20,'#fee08b',40,'#a6d96a',60,'#66bd63',80,'#1a9850',95,'#006837'], unit:'%'},
+      {id:'wbelec', code:'EG.ELC.ACCS.ZS', n:LA('Electricity access %','電力アクセス率','Stromzugang %','Доступ к электричеству %','Acceso a electricidad %'), ramp:[20,'#a50026',50,'#f46d43',80,'#fee08b',95,'#a6d96a',100,'#1a9850'], unit:'%'},
+      {id:'wbhealth', code:'SH.XPD.CHEX.GD.ZS', n:LA('Health spend %GDP','医療支出 対GDP','Gesundheitsausgaben % BIP','Расходы на здравоохранение % ВВП','Gasto en salud % PIB'), ramp:[2,'#fff7ec',4,'#fdd49e',8,'#fc8d59',12,'#d7301f',18,'#7f0000'], unit:'%'},
+      {id:'wbforest', code:'AG.LND.FRST.ZS', n:LA('Forest area %','森林面積率','Waldfläche %','Площадь лесов %','Superficie forestal %'), ramp:[5,'#f6e8c3',20,'#c7eae5',40,'#80cdc1',60,'#35978f',80,'#01665e'], unit:'%'},
+      {id:'wbrenew', code:'EG.FEC.RNEW.ZS', n:LA('Renewable energy %','再エネ比率','Erneuerbare Energie %','Возобновляемая энергия %','Energía renovable %'), ramp:[5,'#fff7ec',20,'#fdd49e',40,'#a6d96a',60,'#66bd63',85,'#006837'], unit:'%'},
+      {id:'wbmobile', code:'IT.CEL.SETS.P2', n:LA('Mobile subs /100','携帯契約 /100人','Mobilfunkverträge /100','Моб. абоненты /100','Líneas móviles /100'), ramp:[30,'#fee08b',80,'#a6d96a',110,'#66bd63',140,'#1a9850',180,'#006837'], unit:''},
+      {id:'wbinfl', code:'FP.CPI.TOTL.ZG', n:LA('Inflation % (CPI)','インフレ率 (CPI)','Inflation % (VPI)','Инфляция % (ИПЦ)','Inflación % (IPC)'), ramp:[0,'#1a9850',3,'#a6d96a',6,'#fee08b',15,'#f46d43',40,'#a50026'], unit:'%'},
       /* (#R33) +16 NEW beta choropleths (World Bank, latest value per country) — "最低20レイヤーをβに追加". */
-      {id:'wbinfmort', code:'SP.DYN.IMRT.IN', n:{en:'Infant mortality /1k',jp:'乳児死亡率 /1k'}, ramp:[2,'#1a9850',8,'#a6d96a',25,'#fee08b',50,'#f46d43',90,'#a50026'], unit:''},
-      {id:'wbgdpgrow', code:'NY.GDP.MKTP.KD.ZG', n:{en:'GDP growth %',jp:'GDP成長率 %'}, ramp:[-6,'#a50026',-1,'#f46d43',2,'#fee08b',5,'#a6d96a',9,'#1a9850'], unit:'%'},
-      {id:'wblit', code:'SE.ADT.LITR.ZS', n:{en:'Literacy rate %',jp:'識字率 %'}, ramp:[40,'#a50026',60,'#f46d43',80,'#fee08b',92,'#a6d96a',100,'#1a9850'], unit:'%'},
-      {id:'wbwater', code:'SH.H2O.SMDW.ZS', n:{en:'Safe water access %',jp:'安全な水 %'}, ramp:[30,'#a50026',55,'#f46d43',75,'#fee08b',90,'#a6d96a',100,'#1a9850'], unit:'%'},
-      {id:'wbsan', code:'SH.STA.SMSS.ZS', n:{en:'Sanitation access %',jp:'衛生設備 %'}, ramp:[20,'#a50026',45,'#f46d43',70,'#fee08b',90,'#a6d96a',100,'#1a9850'], unit:'%'},
-      {id:'wbpov', code:'SI.POV.DDAY', n:{en:'Extreme poverty %',jp:'極度の貧困 %'}, ramp:[0,'#1a9850',2,'#a6d96a',10,'#fee08b',30,'#f46d43',60,'#a50026'], unit:'%'},
-      {id:'wbgini', code:'SI.POV.GINI', n:{en:'Income inequality (Gini)',jp:'所得格差 (ジニ)'}, ramp:[25,'#1a9850',32,'#a6d96a',38,'#fee08b',45,'#f46d43',60,'#a50026'], unit:''},
-      {id:'wbtrade', code:'NE.TRD.GNFS.ZS', n:{en:'Trade % of GDP',jp:'貿易 対GDP %'}, ramp:[20,'#fff7ec',50,'#fdd49e',90,'#fc8d59',150,'#d7301f',300,'#7f0000'], unit:'%'},
-      {id:'wbtax', code:'GC.TAX.TOTL.GD.ZS', n:{en:'Tax revenue % GDP',jp:'税収 対GDP %'}, ramp:[5,'#fff7ec',12,'#fdd49e',20,'#a6d96a',30,'#66bd63',45,'#006837'], unit:'%'},
-      {id:'wbagri', code:'AG.LND.AGRI.ZS', n:{en:'Agricultural land %',jp:'農地率 %'}, ramp:[5,'#f6e8c3',25,'#dfc27d',45,'#c7eae5',65,'#80cdc1',85,'#01665e'], unit:'%'},
-      {id:'wbphys', code:'SH.MED.PHYS.ZS', n:{en:'Physicians /1k',jp:'医師 /1k人'}, ramp:[0.1,'#a50026',0.5,'#f46d43',1.5,'#fee08b',3,'#a6d96a',6,'#1a9850'], unit:''},
-      {id:'wbschool', code:'SE.SEC.ENRR', n:{en:'Secondary enrollment %',jp:'中等教育就学 %'}, ramp:[30,'#a50026',55,'#f46d43',80,'#fee08b',100,'#a6d96a',130,'#1a9850'], unit:'%'},
-      {id:'wbelecuse', code:'EG.USE.ELEC.KH.PC', n:{en:'Electricity use /capita (kWh)',jp:'電力消費 /人 (kWh)'}, ramp:[100,'#fff7ec',1000,'#fdd49e',4000,'#fc8d59',10000,'#d7301f',20000,'#7f0000'], unit:''},
-      {id:'wbrenelec', code:'EG.ELC.RNEW.ZS', n:{en:'Renewable electricity %',jp:'再エネ電力 %'}, ramp:[5,'#fff7ec',25,'#fdd49e',50,'#a6d96a',75,'#66bd63',100,'#006837'], unit:'%'},
-      {id:'wbfdi', code:'BX.KLT.DINV.WD.GD.ZS', n:{en:'FDI inflow % GDP',jp:'対内直接投資 対GDP %'}, ramp:[-2,'#a50026',1,'#fee08b',4,'#a6d96a',8,'#66bd63',15,'#006837'], unit:'%'},
-      {id:'wbmilppl', code:'MS.MIL.TOTL.P1', n:{en:'Armed forces personnel',jp:'軍人数'}, ramp:[5000,'#fff7ec',50000,'#fdd49e',200000,'#fc8d59',800000,'#d7301f',2000000,'#7f0000'], unit:''},
+      {id:'wbinfmort', code:'SP.DYN.IMRT.IN', n:LA('Infant mortality /1k','乳児死亡率 /1k','Säuglingssterblichkeit /1k','Младенческая смертность /1k','Mortalidad infantil /1k'), ramp:[2,'#1a9850',8,'#a6d96a',25,'#fee08b',50,'#f46d43',90,'#a50026'], unit:''},
+      {id:'wbgdpgrow', code:'NY.GDP.MKTP.KD.ZG', n:LA('GDP growth %','GDP成長率 %','BIP-Wachstum %','Рост ВВП %','Crecimiento del PIB %'), ramp:[-6,'#a50026',-1,'#f46d43',2,'#fee08b',5,'#a6d96a',9,'#1a9850'], unit:'%'},
+      {id:'wblit', code:'SE.ADT.LITR.ZS', n:LA('Literacy rate %','識字率 %','Alphabetisierungsrate %','Уровень грамотности %','Tasa de alfabetización %'), ramp:[40,'#a50026',60,'#f46d43',80,'#fee08b',92,'#a6d96a',100,'#1a9850'], unit:'%'},
+      {id:'wbwater', code:'SH.H2O.SMDW.ZS', n:LA('Safe water access %','安全な水 %','Zugang zu sauberem Wasser %','Доступ к чистой воде %','Acceso a agua potable %'), ramp:[30,'#a50026',55,'#f46d43',75,'#fee08b',90,'#a6d96a',100,'#1a9850'], unit:'%'},
+      {id:'wbsan', code:'SH.STA.SMSS.ZS', n:LA('Sanitation access %','衛生設備 %','Sanitärversorgung %','Доступ к санитарии %','Acceso a saneamiento %'), ramp:[20,'#a50026',45,'#f46d43',70,'#fee08b',90,'#a6d96a',100,'#1a9850'], unit:'%'},
+      {id:'wbpov', code:'SI.POV.DDAY', n:LA('Extreme poverty %','極度の貧困 %','Extreme Armut %','Крайняя бедность %','Pobreza extrema %'), ramp:[0,'#1a9850',2,'#a6d96a',10,'#fee08b',30,'#f46d43',60,'#a50026'], unit:'%'},
+      {id:'wbgini', code:'SI.POV.GINI', n:LA('Income inequality (Gini)','所得格差 (ジニ)','Einkommensungleichheit (Gini)','Неравенство доходов (Джини)','Desigualdad de ingresos (Gini)'), ramp:[25,'#1a9850',32,'#a6d96a',38,'#fee08b',45,'#f46d43',60,'#a50026'], unit:''},
+      {id:'wbtrade', code:'NE.TRD.GNFS.ZS', n:LA('Trade % of GDP','貿易 対GDP %','Handel % des BIP','Торговля % ВВП','Comercio % del PIB'), ramp:[20,'#fff7ec',50,'#fdd49e',90,'#fc8d59',150,'#d7301f',300,'#7f0000'], unit:'%'},
+      {id:'wbtax', code:'GC.TAX.TOTL.GD.ZS', n:LA('Tax revenue % GDP','税収 対GDP %','Steuereinnahmen % BIP','Налоговые доходы % ВВП','Ingresos fiscales % PIB'), ramp:[5,'#fff7ec',12,'#fdd49e',20,'#a6d96a',30,'#66bd63',45,'#006837'], unit:'%'},
+      {id:'wbagri', code:'AG.LND.AGRI.ZS', n:LA('Agricultural land %','農地率 %','Landwirtschaftsfläche %','Сельхозземли %','Tierras agrícolas %'), ramp:[5,'#f6e8c3',25,'#dfc27d',45,'#c7eae5',65,'#80cdc1',85,'#01665e'], unit:'%'},
+      {id:'wbphys', code:'SH.MED.PHYS.ZS', n:LA('Physicians /1k','医師 /1k人','Ärzte /1k','Врачи /1k','Médicos /1k'), ramp:[0.1,'#a50026',0.5,'#f46d43',1.5,'#fee08b',3,'#a6d96a',6,'#1a9850'], unit:''},
+      {id:'wbschool', code:'SE.SEC.ENRR', n:LA('Secondary enrollment %','中等教育就学 %','Sekundarschulquote %','Охват средним образованием %','Matrícula secundaria %'), ramp:[30,'#a50026',55,'#f46d43',80,'#fee08b',100,'#a6d96a',130,'#1a9850'], unit:'%'},
+      {id:'wbelecuse', code:'EG.USE.ELEC.KH.PC', n:LA('Electricity use /capita (kWh)','電力消費 /人 (kWh)','Stromverbrauch /Kopf (kWh)','Потребление электроэнергии /чел (кВт·ч)','Consumo eléctrico /cápita (kWh)'), ramp:[100,'#fff7ec',1000,'#fdd49e',4000,'#fc8d59',10000,'#d7301f',20000,'#7f0000'], unit:''},
+      {id:'wbrenelec', code:'EG.ELC.RNEW.ZS', n:LA('Renewable electricity %','再エネ電力 %','Erneuerbarer Strom %','Возобновляемое электричество %','Electricidad renovable %'), ramp:[5,'#fff7ec',25,'#fdd49e',50,'#a6d96a',75,'#66bd63',100,'#006837'], unit:'%'},
+      {id:'wbfdi', code:'BX.KLT.DINV.WD.GD.ZS', n:LA('FDI inflow % GDP','対内直接投資 対GDP %','ADI-Zufluss % BIP','Приток ПИИ % ВВП','Entrada de IED % PIB'), ramp:[-2,'#a50026',1,'#fee08b',4,'#a6d96a',8,'#66bd63',15,'#006837'], unit:'%'},
+      {id:'wbmilppl', code:'MS.MIL.TOTL.P1', n:LA('Armed forces personnel','軍人数','Streitkräftepersonal','Численность вооружённых сил','Personal de fuerzas armadas'), ramp:[5000,'#fff7ec',50000,'#fdd49e',200000,'#fc8d59',800000,'#d7301f',2000000,'#7f0000'], unit:''},
       /* (#R34) +8 more beta choropleths (World Bank) — same resilient mrnev+range fetch, hover values + source note. */
-      {id:'wblife', code:'SP.DYN.LE00.IN', n:{en:'Life expectancy',jp:'平均寿命'}, ramp:[50,'#a50026',60,'#f46d43',70,'#fee08b',78,'#a6d96a',85,'#1a9850'], unit:' yr'},
-      {id:'wbunemp', code:'SL.UEM.TOTL.ZS', n:{en:'Unemployment %',jp:'失業率 %'}, ramp:[2,'#1a9850',5,'#a6d96a',10,'#fee08b',20,'#f46d43',35,'#a50026'], unit:'%'},
-      {id:'wbnet', code:'IT.NET.USER.ZS', n:{en:'Internet users %',jp:'インターネット利用率 %'}, ramp:[10,'#a50026',30,'#f46d43',55,'#fee08b',80,'#a6d96a',98,'#1a9850'], unit:'%'},
-      {id:'wbdebt', code:'GC.DOD.TOTL.GD.ZS', n:{en:'Govt debt % GDP',jp:'政府債務 対GDP %'}, ramp:[20,'#1a9850',45,'#a6d96a',70,'#fee08b',110,'#f46d43',180,'#a50026'], unit:'%'},
-      {id:'wbmanuf', code:'NV.IND.MANF.ZS', n:{en:'Manufacturing % GDP',jp:'製造業 対GDP %'}, ramp:[5,'#fff7ec',12,'#fdd49e',20,'#fc8d59',28,'#d7301f',40,'#7f0000'], unit:'%'},
-      {id:'wbu5mort', code:'SH.DYN.MORT', n:{en:'Under-5 mortality /1k',jp:'5歳未満死亡率 /1k'}, ramp:[3,'#1a9850',10,'#a6d96a',30,'#fee08b',70,'#f46d43',120,'#a50026'], unit:''},
-      {id:'wbpopgrow', code:'SP.POP.GROW', n:{en:'Population growth %',jp:'人口増加率 %'}, ramp:[-1,'#2c7fb8',0,'#7fcdbb',1.5,'#ffffb2',3,'#fe9929',5,'#cc4c02'], unit:'%'},
-      {id:'wbenergy', code:'EG.USE.PCAP.KG.OE', n:{en:'Energy use /capita',jp:'エネルギー消費 /人'}, ramp:[200,'#fff7ec',1000,'#fdd49e',3000,'#fc8d59',6000,'#d7301f',12000,'#7f0000'], unit:''},
+      {id:'wblife', code:'SP.DYN.LE00.IN', n:LA('Life expectancy','平均寿命','Lebenserwartung','Продолжительность жизни','Esperanza de vida'), ramp:[50,'#a50026',60,'#f46d43',70,'#fee08b',78,'#a6d96a',85,'#1a9850'], unit:' yr'},
+      {id:'wbunemp', code:'SL.UEM.TOTL.ZS', n:LA('Unemployment %','失業率 %','Arbeitslosigkeit %','Безработица %','Desempleo %'), ramp:[2,'#1a9850',5,'#a6d96a',10,'#fee08b',20,'#f46d43',35,'#a50026'], unit:'%'},
+      {id:'wbnet', code:'IT.NET.USER.ZS', n:LA('Internet users %','インターネット利用率 %','Internetnutzer %','Пользователи интернета %','Usuarios de internet %'), ramp:[10,'#a50026',30,'#f46d43',55,'#fee08b',80,'#a6d96a',98,'#1a9850'], unit:'%'},
+      {id:'wbdebt', code:'GC.DOD.TOTL.GD.ZS', n:LA('Govt debt % GDP','政府債務 対GDP %','Staatsverschuldung % BIP','Госдолг % ВВП','Deuda pública % PIB'), ramp:[20,'#1a9850',45,'#a6d96a',70,'#fee08b',110,'#f46d43',180,'#a50026'], unit:'%'},
+      {id:'wbmanuf', code:'NV.IND.MANF.ZS', n:LA('Manufacturing % GDP','製造業 対GDP %','Verarbeitendes Gewerbe % BIP','Обрабатывающая пром. % ВВП','Manufactura % PIB'), ramp:[5,'#fff7ec',12,'#fdd49e',20,'#fc8d59',28,'#d7301f',40,'#7f0000'], unit:'%'},
+      {id:'wbu5mort', code:'SH.DYN.MORT', n:LA('Under-5 mortality /1k','5歳未満死亡率 /1k','Sterblichkeit unter 5 J. /1k','Смертность до 5 лет /1k','Mortalidad de menores de 5 /1k'), ramp:[3,'#1a9850',10,'#a6d96a',30,'#fee08b',70,'#f46d43',120,'#a50026'], unit:''},
+      {id:'wbpopgrow', code:'SP.POP.GROW', n:LA('Population growth %','人口増加率 %','Bevölkerungswachstum %','Прирост населения %','Crecimiento demográfico %'), ramp:[-1,'#2c7fb8',0,'#7fcdbb',1.5,'#ffffb2',3,'#fe9929',5,'#cc4c02'], unit:'%'},
+      {id:'wbenergy', code:'EG.USE.PCAP.KG.OE', n:LA('Energy use /capita','エネルギー消費 /人','Energieverbrauch /Kopf','Потребление энергии /чел','Consumo de energía /cápita'), ramp:[200,'#fff7ec',1000,'#fdd49e',3000,'#fc8d59',6000,'#d7301f',12000,'#7f0000'], unit:''},
       /* (#R122) +6 NEW beta choropleths (World Bank, latest value per country — same resilient mrnev fetch, hover values + source note). */
-      {id:'wbrnd', code:'GB.XPD.RSDV.GD.ZS', n:{en:'R&D spending % GDP',jp:'研究開発費 対GDP %',de:'F&E-Ausgaben % BIP',ru:'Расходы на НИОКР % ВВП'}, ramp:[0.1,'#fff7ec',0.5,'#fdd49e',1.5,'#a6d96a',2.5,'#66bd63',4.5,'#006837'], unit:'%'},
-      {id:'wbtour', code:'ST.INT.ARVL', n:{en:'Intl. tourist arrivals',jp:'外国人観光客数',de:'Touristenankünfte',ru:'Прибытия туристов'}, ramp:[500000,'#fff7ec',3000000,'#fdd49e',10000000,'#fc8d59',40000000,'#d7301f',90000000,'#7f0000'], unit:''},
-      {id:'wbref', code:'SM.POP.REFG', n:{en:'Refugees hosted',jp:'難民受入数',de:'Aufgenommene Flüchtlinge',ru:'Принято беженцев'}, ramp:[1000,'#fff7ec',20000,'#fee08b',100000,'#fc8d59',500000,'#d7301f',2000000,'#7f0000'], unit:''},
-      {id:'wbco2t', code:'EN.GHG.CO2.MT.CE.AR5', n:{en:'CO₂ emissions (Mt)',jp:'CO₂排出量（百万t）',de:'CO₂-Emissionen (Mt)',ru:'Выбросы CO₂ (млн т)'}, ramp:[5,'#1a9850',50,'#a6d96a',300,'#fee08b',1500,'#f46d43',10000,'#a50026'], unit:' Mt'},
-      {id:'wbpatent', code:'IP.PAT.RESD', n:{en:'Patent applications (resident)',jp:'特許出願数（居住者）',de:'Patentanmeldungen',ru:'Патентные заявки'}, ramp:[10,'#fff7ec',500,'#fdd49e',5000,'#fc8d59',50000,'#d7301f',500000,'#7f0000'], unit:''},
-      {id:'wbwomparl', code:'SG.GEN.PARL.ZS', n:{en:'Women in parliament %',jp:'女性議員比率 %',de:'Frauen im Parlament %',ru:'Женщины в парламенте %'}, ramp:[5,'#a50026',15,'#f46d43',30,'#fee08b',45,'#a6d96a',60,'#1a9850'], unit:'%'},
+      {id:'wbrnd', code:'GB.XPD.RSDV.GD.ZS', n:LA('R&D spending % GDP','研究開発費 対GDP %','F&E-Ausgaben % BIP','Расходы на НИОКР % ВВП','Gasto en I+D % PIB'), ramp:[0.1,'#fff7ec',0.5,'#fdd49e',1.5,'#a6d96a',2.5,'#66bd63',4.5,'#006837'], unit:'%'},
+      {id:'wbtour', code:'ST.INT.ARVL', n:LA('Intl. tourist arrivals','外国人観光客数','Touristenankünfte','Прибытия туристов','Llegadas de turistas int.'), ramp:[500000,'#fff7ec',3000000,'#fdd49e',10000000,'#fc8d59',40000000,'#d7301f',90000000,'#7f0000'], unit:''},
+      {id:'wbref', code:'SM.POP.REFG', n:LA('Refugees hosted','難民受入数','Aufgenommene Flüchtlinge','Принято беженцев','Refugiados acogidos'), ramp:[1000,'#fff7ec',20000,'#fee08b',100000,'#fc8d59',500000,'#d7301f',2000000,'#7f0000'], unit:''},
+      {id:'wbco2t', code:'EN.GHG.CO2.MT.CE.AR5', n:LA('CO₂ emissions (Mt)','CO₂排出量（百万t）','CO₂-Emissionen (Mt)','Выбросы CO₂ (млн т)','Emisiones de CO₂ (Mt)'), ramp:[5,'#1a9850',50,'#a6d96a',300,'#fee08b',1500,'#f46d43',10000,'#a50026'], unit:' Mt'},
+      {id:'wbpatent', code:'IP.PAT.RESD', n:LA('Patent applications (resident)','特許出願数（居住者）','Patentanmeldungen','Патентные заявки','Solicitudes de patentes (residentes)'), ramp:[10,'#fff7ec',500,'#fdd49e',5000,'#fc8d59',50000,'#d7301f',500000,'#7f0000'], unit:''},
+      {id:'wbwomparl', code:'SG.GEN.PARL.ZS', n:LA('Women in parliament %','女性議員比率 %','Frauen im Parlament %','Женщины в парламенте %','Mujeres en el parlamento %'), ramp:[5,'#a50026',15,'#f46d43',30,'#fee08b',45,'#a6d96a',60,'#1a9850'], unit:'%'},
       /* (#R123) +8 NEW beta choropleths (World Bank, latest value per country — same resilient mrnev fetch, hover
          values + source note; auto-wired into the layer list, Others(beta), Atlas layer-data + point sampling). */
-      {id:'wbpm25', code:'EN.ATM.PM25.MC.M3', n:{en:'PM2.5 air pollution (µg/m³)',jp:'PM2.5大気汚染（µg/m³）',de:'PM2,5-Luftverschmutzung (µg/m³)',ru:'Загрязнение PM2.5 (мкг/м³)'}, ramp:[5,'#1a9850',10,'#a6d96a',25,'#fee08b',50,'#f46d43',100,'#a50026'], unit:' µg/m³'},
-      {id:'wbcook', code:'EG.CFT.ACCS.ZS', n:{en:'Clean cooking fuel access %',jp:'クリーン調理燃料 普及率 %',de:'Zugang zu sauberem Kochbrennstoff %',ru:'Доступ к чистому топливу для готовки %'}, ramp:[10,'#a50026',40,'#f46d43',70,'#fee08b',90,'#a6d96a',100,'#1a9850'], unit:'%'},
-      {id:'wbflfp', code:'SL.TLF.CACT.FE.ZS', n:{en:'Female labor participation %',jp:'女性労働参加率 %',de:'Frauenerwerbsquote %',ru:'Участие женщин в раб. силе %'}, ramp:[15,'#a50026',30,'#f46d43',45,'#fee08b',60,'#a6d96a',80,'#1a9850'], unit:'%'},
-      {id:'wbtert', code:'SE.TER.ENRR', n:{en:'Tertiary enrollment %',jp:'高等教育就学率 %',de:'Hochschulquote %',ru:'Охват высшим образованием %'}, ramp:[5,'#fff7ec',20,'#fdd49e',40,'#fc8d59',65,'#66bd63',95,'#006837'], unit:'%'},
-      {id:'wbrural', code:'SP.RUR.TOTL.ZS', n:{en:'Rural population %',jp:'農村人口比率 %',de:'Landbevölkerung %',ru:'Сельское население %'}, ramp:[10,'#2c7fb8',30,'#7fcdbb',50,'#ffffb2',70,'#fe9929',90,'#cc4c02'], unit:'%'},
-      {id:'wbgni', code:'NY.GNP.PCAP.CD', n:{en:'GNI per capita (Atlas, US$)',jp:'一人当たりGNI（アトラス法, US$）',de:'BNE pro Kopf (Atlas, US$)',ru:'ВНД на душу (Атлас, US$)'}, ramp:[1000,'#fff7ec',5000,'#fdd49e',15000,'#fc8d59',40000,'#66bd63',90000,'#006837'], unit:''},
-      {id:'wbunder', code:'SN.ITK.DEFC.ZS', n:{en:'Undernourishment %',jp:'栄養不足人口比率 %',de:'Unterernährung %',ru:'Недоедание %'}, ramp:[2.5,'#1a9850',10,'#a6d96a',25,'#fee08b',40,'#f46d43',60,'#a50026'], unit:'%'},
-      {id:'wbhitech', code:'TX.VAL.TECH.MF.ZS', n:{en:'High-tech exports %',jp:'ハイテク製品輸出比率 %',de:'Hightech-Exporte %',ru:'Высокотехнологичный экспорт %'}, ramp:[1,'#fff7ec',5,'#fdd49e',15,'#fc8d59',30,'#66bd63',50,'#006837'], unit:'%'},
+      {id:'wbpm25', code:'EN.ATM.PM25.MC.M3', n:LA('PM2.5 air pollution (µg/m³)','PM2.5大気汚染（µg/m³）','PM2,5-Luftverschmutzung (µg/m³)','Загрязнение PM2.5 (мкг/м³)','Contaminación por PM2,5 (µg/m³)'), ramp:[5,'#1a9850',10,'#a6d96a',25,'#fee08b',50,'#f46d43',100,'#a50026'], unit:' µg/m³'},
+      {id:'wbcook', code:'EG.CFT.ACCS.ZS', n:LA('Clean cooking fuel access %','クリーン調理燃料 普及率 %','Zugang zu sauberem Kochbrennstoff %','Доступ к чистому топливу для готовки %','Acceso a cocina limpia %'), ramp:[10,'#a50026',40,'#f46d43',70,'#fee08b',90,'#a6d96a',100,'#1a9850'], unit:'%'},
+      {id:'wbflfp', code:'SL.TLF.CACT.FE.ZS', n:LA('Female labor participation %','女性労働参加率 %','Frauenerwerbsquote %','Участие женщин в раб. силе %','Participación laboral femenina %'), ramp:[15,'#a50026',30,'#f46d43',45,'#fee08b',60,'#a6d96a',80,'#1a9850'], unit:'%'},
+      {id:'wbtert', code:'SE.TER.ENRR', n:LA('Tertiary enrollment %','高等教育就学率 %','Hochschulquote %','Охват высшим образованием %','Matrícula terciaria %'), ramp:[5,'#fff7ec',20,'#fdd49e',40,'#fc8d59',65,'#66bd63',95,'#006837'], unit:'%'},
+      {id:'wbrural', code:'SP.RUR.TOTL.ZS', n:LA('Rural population %','農村人口比率 %','Landbevölkerung %','Сельское население %','Población rural %'), ramp:[10,'#2c7fb8',30,'#7fcdbb',50,'#ffffb2',70,'#fe9929',90,'#cc4c02'], unit:'%'},
+      {id:'wbgni', code:'NY.GNP.PCAP.CD', n:LA('GNI per capita (Atlas, US$)','一人当たりGNI（アトラス法, US$）','BNE pro Kopf (Atlas, US$)','ВНД на душу (Атлас, US$)','INB per cápita (Atlas, US$)'), ramp:[1000,'#fff7ec',5000,'#fdd49e',15000,'#fc8d59',40000,'#66bd63',90000,'#006837'], unit:''},
+      {id:'wbunder', code:'SN.ITK.DEFC.ZS', n:LA('Undernourishment %','栄養不足人口比率 %','Unterernährung %','Недоедание %','Subalimentación %'), ramp:[2.5,'#1a9850',10,'#a6d96a',25,'#fee08b',40,'#f46d43',60,'#a50026'], unit:'%'},
+      {id:'wbhitech', code:'TX.VAL.TECH.MF.ZS', n:LA('High-tech exports %','ハイテク製品輸出比率 %','Hightech-Exporte %','Высокотехнологичный экспорт %','Exportaciones de alta tecnología %'), ramp:[1,'#fff7ec',5,'#fdd49e',15,'#fc8d59',30,'#66bd63',50,'#006837'], unit:'%'},
       /* (#R124) +6 more beta choropleths (World Bank, latest value per country — auto-wired like the rest). */
-      {id:'wbbbnd', code:'IT.NET.BBND.P2', n:{en:'Fixed broadband /100',jp:'固定ブロードバンド /100人',de:'Festnetz-Breitband /100',ru:'Фикс. широкополосный /100'}, ramp:[1,'#a50026',5,'#f46d43',15,'#fee08b',30,'#a6d96a',45,'#1a9850'], unit:''},
-      {id:'wbaging', code:'SP.POP.65UP.TO.ZS', n:{en:'Population 65+ %',jp:'65歳以上人口比率 %',de:'Bevölkerung 65+ %',ru:'Население 65+ %'}, ramp:[2,'#fff7ec',7,'#fdd49e',14,'#fc8d59',21,'#d7301f',30,'#7f0000'], unit:'%'},
-      {id:'wbadofert', code:'SP.ADO.TFRT', n:{en:'Adolescent fertility /1k',jp:'思春期出生率 /1k',de:'Teenager-Geburtenrate /1k',ru:'Подростковая рождаемость /1k'}, ramp:[2,'#1a9850',15,'#a6d96a',40,'#fee08b',80,'#f46d43',130,'#a50026'], unit:''},
-      {id:'wbbeds', code:'SH.MED.BEDS.ZS', n:{en:'Hospital beds /1k',jp:'病床数 /1k人',de:'Krankenhausbetten /1k',ru:'Больничные койки /1k'}, ramp:[0.5,'#a50026',2,'#f46d43',4,'#fee08b',8,'#a6d96a',13,'#1a9850'], unit:''},
-      {id:'wbresearch', code:'SP.POP.SCIE.RD.P6', n:{en:'Researchers /million',jp:'研究者数 /100万人',de:'Forscher /Mio.',ru:'Исследователи /млн'}, ramp:[50,'#fff7ec',500,'#fdd49e',2000,'#fc8d59',5000,'#66bd63',8000,'#006837'], unit:''},
-      {id:'wboverwt', code:'SH.STA.OWAD.ZS', n:{en:'Overweight adults %',jp:'成人過体重率 %',de:'Übergewichtige Erwachsene %',ru:'Избыточный вес у взрослых %'}, ramp:[10,'#1a9850',25,'#a6d96a',40,'#fee08b',55,'#f46d43',70,'#a50026'], unit:'%'},
+      {id:'wbbbnd', code:'IT.NET.BBND.P2', n:LA('Fixed broadband /100','固定ブロードバンド /100人','Festnetz-Breitband /100','Фикс. широкополосный /100','Banda ancha fija /100'), ramp:[1,'#a50026',5,'#f46d43',15,'#fee08b',30,'#a6d96a',45,'#1a9850'], unit:''},
+      {id:'wbaging', code:'SP.POP.65UP.TO.ZS', n:LA('Population 65+ %','65歳以上人口比率 %','Bevölkerung 65+ %','Население 65+ %','Población de 65+ %'), ramp:[2,'#fff7ec',7,'#fdd49e',14,'#fc8d59',21,'#d7301f',30,'#7f0000'], unit:'%'},
+      {id:'wbadofert', code:'SP.ADO.TFRT', n:LA('Adolescent fertility /1k','思春期出生率 /1k','Teenager-Geburtenrate /1k','Подростковая рождаемость /1k','Fecundidad adolescente /1k'), ramp:[2,'#1a9850',15,'#a6d96a',40,'#fee08b',80,'#f46d43',130,'#a50026'], unit:''},
+      {id:'wbbeds', code:'SH.MED.BEDS.ZS', n:LA('Hospital beds /1k','病床数 /1k人','Krankenhausbetten /1k','Больничные койки /1k','Camas hospitalarias /1k'), ramp:[0.5,'#a50026',2,'#f46d43',4,'#fee08b',8,'#a6d96a',13,'#1a9850'], unit:''},
+      {id:'wbresearch', code:'SP.POP.SCIE.RD.P6', n:LA('Researchers /million','研究者数 /100万人','Forscher /Mio.','Исследователи /млн','Investigadores /millón'), ramp:[50,'#fff7ec',500,'#fdd49e',2000,'#fc8d59',5000,'#66bd63',8000,'#006837'], unit:''},
+      {id:'wboverwt', code:'SH.STA.OWAD.ZS', n:LA('Overweight adults %','成人過体重率 %','Übergewichtige Erwachsene %','Избыточный вес у взрослых %','Adultos con sobrepeso %'), ramp:[10,'#1a9850',25,'#a6d96a',40,'#fee08b',55,'#f46d43',70,'#a50026'], unit:'%'},
       /* (#R125) +6 more beta choropleths (World Bank, latest value per country — auto-wired like the rest). */
-      {id:'wburban', code:'SP.URB.TOTL.IN.ZS', n:{en:'Urban population %',jp:'都市人口比率 %',de:'Stadtbevölkerung %',ru:'Городское население %'}, ramp:[20,'#edf8e9',40,'#bae4b3',60,'#74c476',80,'#31a354',95,'#006d2c'], unit:'%'},
-      {id:'wbtourism', code:'ST.INT.ARVL', n:{en:'Tourist arrivals',jp:'外国人観光客数',de:'Touristenankünfte',ru:'Прибытия туристов'}, ramp:[100000,'#fff7fb',1000000,'#d0d1e6',5000000,'#74a9cf',20000000,'#0570b0',60000000,'#023858'], unit:''},
-      {id:'wbremit', code:'BX.TRF.PWKR.DT.GD.ZS', n:{en:'Remittances % GDP',jp:'海外送金受取 %GDP',de:'Rücküberweisungen % BIP',ru:'Денежные переводы % ВВП'}, ramp:[0.5,'#fff7ec',2,'#fdd49e',5,'#fc8d59',12,'#d7301f',25,'#7f0000'], unit:'%'},
-      {id:'wbsuicide', code:'SH.STA.SUIC.P5', n:{en:'Suicide rate /100k',jp:'自殺率 /10万人',de:'Suizidrate /100k',ru:'Уровень суицида /100k'}, ramp:[3,'#1a9850',7,'#a6d96a',12,'#fee08b',20,'#f46d43',30,'#a50026'], unit:''},
-      {id:'wbalcohol', code:'SH.ALC.PCAP.LI', n:{en:'Alcohol per capita L',jp:'一人当たり飲酒量 L',de:'Alkohol pro Kopf L',ru:'Алкоголь на душу, л'}, ramp:[1,'#fff7ec',4,'#fdd49e',7,'#fc8d59',10,'#d7301f',14,'#7f0000'], unit:' L'},
-      {id:'wbhomicide', code:'VC.IHR.PSRC.P5', n:{en:'Homicide rate /100k',jp:'殺人発生率 /10万人',de:'Mordrate /100k',ru:'Убийства /100k'}, ramp:[1,'#1a9850',3,'#a6d96a',8,'#fee08b',20,'#f46d43',40,'#a50026'], unit:''},
+      {id:'wburban', code:'SP.URB.TOTL.IN.ZS', n:LA('Urban population %','都市人口比率 %','Stadtbevölkerung %','Городское население %','Población urbana %'), ramp:[20,'#edf8e9',40,'#bae4b3',60,'#74c476',80,'#31a354',95,'#006d2c'], unit:'%'},
+      {id:'wbtourism', code:'ST.INT.ARVL', n:LA('Tourist arrivals','外国人観光客数','Touristenankünfte','Прибытия туристов','Llegadas de turistas'), ramp:[100000,'#fff7fb',1000000,'#d0d1e6',5000000,'#74a9cf',20000000,'#0570b0',60000000,'#023858'], unit:''},
+      {id:'wbremit', code:'BX.TRF.PWKR.DT.GD.ZS', n:LA('Remittances % GDP','海外送金受取 %GDP','Rücküberweisungen % BIP','Денежные переводы % ВВП','Remesas % PIB'), ramp:[0.5,'#fff7ec',2,'#fdd49e',5,'#fc8d59',12,'#d7301f',25,'#7f0000'], unit:'%'},
+      {id:'wbsuicide', code:'SH.STA.SUIC.P5', n:LA('Suicide rate /100k','自殺率 /10万人','Suizidrate /100k','Уровень суицида /100k','Tasa de suicidio /100k'), ramp:[3,'#1a9850',7,'#a6d96a',12,'#fee08b',20,'#f46d43',30,'#a50026'], unit:''},
+      {id:'wbalcohol', code:'SH.ALC.PCAP.LI', n:LA('Alcohol per capita L','一人当たり飲酒量 L','Alkohol pro Kopf L','Алкоголь на душу, л','Alcohol per cápita L'), ramp:[1,'#fff7ec',4,'#fdd49e',7,'#fc8d59',10,'#d7301f',14,'#7f0000'], unit:' L'},
+      {id:'wbhomicide', code:'VC.IHR.PSRC.P5', n:LA('Homicide rate /100k','殺人発生率 /10万人','Mordrate /100k','Убийства /100k','Tasa de homicidios /100k'), ramp:[1,'#1a9850',3,'#a6d96a',8,'#fee08b',20,'#f46d43',40,'#a50026'], unit:''},
       /* (#R126) +6 more beta choropleths (World Bank, latest value per country — auto-wired like the rest). */
-      {id:'wbmilgdp', code:'MS.MIL.XPND.GD.ZS', n:{en:'Military spending % GDP',jp:'軍事費 %GDP',de:'Militärausgaben % BIP',ru:'Военные расходы % ВВП'}, ramp:[0.5,'#1a9850',1.5,'#a6d96a',2.5,'#fee08b',4,'#f46d43',8,'#a50026'], unit:'%'},
-      {id:'wbfert', code:'SP.DYN.TFRT.IN', n:{en:'Fertility rate (births/woman)',jp:'合計特殊出生率',de:'Geburtenrate (Kinder/Frau)',ru:'Суммарный коэфф. рождаемости'}, ramp:[1.2,'#2c7fb8',1.8,'#7fcdbb',2.5,'#ffffb2',4,'#fe9929',6,'#cc4c02'], unit:''},
-      {id:'wbdensity', code:'EN.POP.DNST', n:{en:'Population density /km²',jp:'人口密度 /km²',de:'Bevölkerungsdichte /km²',ru:'Плотность населения /км²'}, ramp:[5,'#fff7ec',25,'#fdd49e',100,'#fc8d59',300,'#d7301f',1000,'#7f0000'], unit:'/km²'},
-      {id:'wbedu', code:'SE.XPD.TOTL.GD.ZS', n:{en:'Education spending % GDP',jp:'教育支出 %GDP',de:'Bildungsausgaben % BIP',ru:'Расходы на образование % ВВП'}, ramp:[2,'#a50026',3,'#f46d43',4.5,'#fee08b',6,'#a6d96a',8,'#1a9850'], unit:'%'},
-      {id:'wbsmoke', code:'SH.PRV.SMOK', n:{en:'Smoking prevalence %',jp:'喫煙率 %',de:'Raucherquote %',ru:'Распространённость курения %'}, ramp:[8,'#1a9850',15,'#a6d96a',22,'#fee08b',30,'#f46d43',40,'#a50026'], unit:'%'},
-      {id:'wbagremp', code:'SL.AGR.EMPL.ZS', n:{en:'Employment in agriculture %',jp:'農業就業率 %',de:'Beschäftigung Landwirtschaft %',ru:'Занятость в сельском хоз-ве %'}, ramp:[2,'#fff7ec',10,'#fdd49e',25,'#fc8d59',45,'#d7301f',70,'#7f0000'], unit:'%'}
+      {id:'wbmilgdp', code:'MS.MIL.XPND.GD.ZS', n:LA('Military spending % GDP','軍事費 %GDP','Militärausgaben % BIP','Военные расходы % ВВП','Gasto militar % PIB'), ramp:[0.5,'#1a9850',1.5,'#a6d96a',2.5,'#fee08b',4,'#f46d43',8,'#a50026'], unit:'%'},
+      {id:'wbfert', code:'SP.DYN.TFRT.IN', n:LA('Fertility rate (births/woman)','合計特殊出生率','Geburtenrate (Kinder/Frau)','Суммарный коэфф. рождаемости','Tasa de fecundidad (hijos/mujer)'), ramp:[1.2,'#2c7fb8',1.8,'#7fcdbb',2.5,'#ffffb2',4,'#fe9929',6,'#cc4c02'], unit:''},
+      {id:'wbdensity', code:'EN.POP.DNST', n:LA('Population density /km²','人口密度 /km²','Bevölkerungsdichte /km²','Плотность населения /км²','Densidad de población /km²'), ramp:[5,'#fff7ec',25,'#fdd49e',100,'#fc8d59',300,'#d7301f',1000,'#7f0000'], unit:'/km²'},
+      {id:'wbedu', code:'SE.XPD.TOTL.GD.ZS', n:LA('Education spending % GDP','教育支出 %GDP','Bildungsausgaben % BIP','Расходы на образование % ВВП','Gasto en educación % PIB'), ramp:[2,'#a50026',3,'#f46d43',4.5,'#fee08b',6,'#a6d96a',8,'#1a9850'], unit:'%'},
+      {id:'wbsmoke', code:'SH.PRV.SMOK', n:LA('Smoking prevalence %','喫煙率 %','Raucherquote %','Распространённость курения %','Prevalencia de tabaquismo %'), ramp:[8,'#1a9850',15,'#a6d96a',22,'#fee08b',30,'#f46d43',40,'#a50026'], unit:'%'},
+      {id:'wbagremp', code:'SL.AGR.EMPL.ZS', n:LA('Employment in agriculture %','農業就業率 %','Beschäftigung Landwirtschaft %','Занятость в сельском хоз-ве %','Empleo en agricultura %'), ramp:[2,'#fff7ec',10,'#fdd49e',25,'#fc8d59',45,'#d7301f',70,'#7f0000'], unit:'%'}
     ];
     /* (#R32) Hover tooltip for every beta choropleth ("ホバーして数値が出るように") — reuses the shared map
        tooltip so it matches HDI/pop. Shows the country name, the metric and its value. */
@@ -148,7 +149,7 @@ window.IntMapModules.wbLayers=function(HOST){
         GE().layers.add({id:line,type:'line',source:src,paint:{'line-color':'rgba(0,0,0,0.16)','line-width':0.3}}); _wbHover(L,fill); } }catch(_){}
       const cb=document.getElementById('bx-'+L.id), on=cb?cb.checked:true;
       [fill,line].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
-      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity(L.id,[L.n.en,L.n.jp],[fill,line],'bx-'+L.id); if(el){ const ramp=L.ramp,parts=[]; for(let i=0;i<ramp.length;i+=2) parts.push('<span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:11px;height:11px;border-radius:2px;background:'+ramp[i+1]+';"></span>'+ramp[i]+L.unit+'</span>'); let kk=el.querySelector('.bx-key'); if(!kk){ kk=document.createElement('div'); kk.className='bx-key'; kk.style.cssText='display:flex;flex-wrap:wrap;gap:7px;font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(kk); } kk.innerHTML=parts.join('');
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity(L.id,L.n,[fill,line],'bx-'+L.id); if(el){ const ramp=L.ramp,parts=[]; for(let i=0;i<ramp.length;i+=2) parts.push('<span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:11px;height:11px;border-radius:2px;background:'+ramp[i+1]+';"></span>'+ramp[i]+L.unit+'</span>'); let kk=el.querySelector('.bx-key'); if(!kk){ kk=document.createElement('div'); kk.className='bx-key'; kk.style.cssText='display:flex;flex-wrap:wrap;gap:7px;font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(kk); } kk.innerHTML=parts.join('');
         /* (#R34) State the DATA SOURCE + PERIOD on every World Bank choropleth ("Inflation % (CPI)→データの
            出典と時期を記載しろ"). The period is the actual span of years present in the fetched data (each country
            shows its most-recent available year). */
@@ -192,48 +193,15 @@ window.IntMapModules.wbLayers=function(HOST){
     function heatOff(){ try{ if(GE().layers.has('heat-h')) GE().layers.setLayout('heat-h','visibility','none'); }catch(_){} try{ window._hideGenericLegend&&window._hideGenericLegend('heat'); }catch(_){} }
 
     const ALL=WB.map(L=>({id:L.id,n:L.n,on:()=>choroOn(L),off:()=>choroOff(L)}))
-      .concat([{id:'eq',n:{en:'Earthquakes (live + history)',jp:'地震（ライブ＋過去）'},on:eqOn,off:eqOff},
-               {id:'heat',n:{en:'Heat of Attention',jp:'注目度ヒートマップ'},on:heatOn,off:heatOff}]);
-    /* (#R38) Full DE/RU labels for every beta layer row (was English-only in DE/RU — the user's "ドイツ語設定
-       にしても英語になっている箇所がある"). One compact map keyed by the English label keeps the source rows
-       unchanged; bxLabel() picks the active language and falls back to English only if truly absent. */
-    const BX_TR={
-      'CO₂ per capita':{de:'CO₂ pro Kopf',ru:'CO₂ на душу'},
-      'Urban population %':{de:'Stadtbevölkerung %',ru:'Городское население %'},
-      'Electricity access %':{de:'Stromzugang %',ru:'Доступ к электричеству %'},
-      'Health spend %GDP':{de:'Gesundheitsausgaben % BIP',ru:'Расходы на здравоохранение % ВВП'},
-      'Forest area %':{de:'Waldfläche %',ru:'Площадь лесов %'},
-      'Renewable energy %':{de:'Erneuerbare Energie %',ru:'Возобновляемая энергия %'},
-      'Mobile subs /100':{de:'Mobilfunkverträge /100',ru:'Моб. абоненты /100'},
-      'Inflation % (CPI)':{de:'Inflation % (VPI)',ru:'Инфляция % (ИПЦ)'},
-      'Infant mortality /1k':{de:'Säuglingssterblichkeit /1k',ru:'Младенческая смертность /1k'},
-      'GDP growth %':{de:'BIP-Wachstum %',ru:'Рост ВВП %'},
-      'Literacy rate %':{de:'Alphabetisierungsrate %',ru:'Уровень грамотности %'},
-      'Safe water access %':{de:'Zugang zu sauberem Wasser %',ru:'Доступ к чистой воде %'},
-      'Sanitation access %':{de:'Sanitärversorgung %',ru:'Доступ к санитарии %'},
-      'Extreme poverty %':{de:'Extreme Armut %',ru:'Крайняя бедность %'},
-      'Income inequality (Gini)':{de:'Einkommensungleichheit (Gini)',ru:'Неравенство доходов (Джини)'},
-      'Trade % of GDP':{de:'Handel % des BIP',ru:'Торговля % ВВП'},
-      'Tax revenue % GDP':{de:'Steuereinnahmen % BIP',ru:'Налоговые доходы % ВВП'},
-      'Agricultural land %':{de:'Landwirtschaftsfläche %',ru:'Сельхозземли %'},
-      'Physicians /1k':{de:'Ärzte /1k',ru:'Врачи /1k'},
-      'Secondary enrollment %':{de:'Sekundarschulquote %',ru:'Охват средним образованием %'},
-      'Electricity use /capita (kWh)':{de:'Stromverbrauch /Kopf (kWh)',ru:'Потребление электроэнергии /чел (кВт·ч)'},
-      'Renewable electricity %':{de:'Erneuerbarer Strom %',ru:'Возобновляемое электричество %'},
-      'FDI inflow % GDP':{de:'ADI-Zufluss % BIP',ru:'Приток ПИИ % ВВП'},
-      'Armed forces personnel':{de:'Streitkräftepersonal',ru:'Численность вооружённых сил'},
-      'Life expectancy':{de:'Lebenserwartung',ru:'Продолжительность жизни'},
-      'Unemployment %':{de:'Arbeitslosigkeit %',ru:'Безработица %'},
-      'Internet users %':{de:'Internetnutzer %',ru:'Пользователи интернета %'},
-      'Govt debt % GDP':{de:'Staatsverschuldung % BIP',ru:'Госдолг % ВВП'},
-      'Manufacturing % GDP':{de:'Verarbeitendes Gewerbe % BIP',ru:'Обрабатывающая пром. % ВВП'},
-      'Under-5 mortality /1k':{de:'Sterblichkeit unter 5 J. /1k',ru:'Смертность до 5 лет /1k'},
-      'Population growth %':{de:'Bevölkerungswachstum %',ru:'Прирост населения %'},
-      'Energy use /capita':{de:'Energieverbrauch /Kopf',ru:'Потребление энергии /чел'},
-      'Earthquakes (live + history)':{de:'Erdbeben (live + Verlauf)',ru:'Землетрясения (онлайн + история)'},
-      'Heat of Attention':{de:'Aufmerksamkeits-Heatmap',ru:'Карта внимания'}
-    };
-    const bxLabel=(L)=> (L.n[HOST.lang]) || (BX_TR[L.n.en]&&BX_TR[L.n.en][HOST.lang]) || L.n.en;
+      .concat([{id:'eq',n:LA('Earthquakes (live + history)','地震（ライブ＋過去）','Erdbeben (live + Verlauf)','Землетрясения (онлайн + история)','Terremotos (en vivo + histórico)'),on:eqOn,off:eqOff},
+               {id:'heat',n:LA('Heat of Attention','注目度ヒートマップ','Aufmerksamkeits-Heatmap','Карта внимания','Mapa de calor de atención'),on:heatOn,off:heatOff}]);
+    /* ⚠ (#R246) ONE NAME, ONE PLACE. (#R38) gave every beta row a German and Russian label. Every indicator's name was an `{en,jp}` object with a SECOND
+       table (`BX_TR`, 34 entries keyed by the English string) bolted on for de/ru — the same quantity
+       in two homes ([[intmap-recurring-lessons]] G), no Spanish anywhere, and nothing at all for
+       fr/ko/zh/zh-Hans, which read the English. `LA(…)` is IntMapLang.pickArgs(): both tables are now
+       ONE call per indicator, and `LWB.arr()` resolves it through pick() itself — de/ru/es from the
+       arguments, the rest from the inline table keyed by the English name. BX_TR is gone. */
+    const bxLabel=(L)=> LWB.arr(L.n);
     /* (#R121) point-value hooks for the layer-data contract (IntMapLayers 'choropleth'): the value of every
        VISIBLE bx World-Bank choropleth at (lng,lat), read from the layer's OWN painted source data by
        point-in-polygon — works on- and off-screen. Registered here because this module owns these layers. */

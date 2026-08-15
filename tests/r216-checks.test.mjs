@@ -251,8 +251,11 @@ test('⑪ …and its arrow image is registered on the object that actually has a
 test('⑪ …and both of its sources are in the registry', () => {
   const r = read('js/reference-data.js');
   assert.match(r, /Open-Meteo Marine/, 'the marine model is not registered');
-  assert.match(r, /ocean-current velocity and direction/, 'what it is used for is not stated');
-  assert.match(r, /ocean currents with their published coordinates/, 'the Wikidata use is not stated');
+  /* (#R246) what each source is USED FOR is `sourceUse` in js/locales/pages.<code>.js now — the
+     registry carries the name and the URL, and the English original lives with the translations. */
+  const en = read('js/locales/pages.en.js');
+  assert.match(en, /ocean-current velocity and direction/, 'what it is used for is not stated');
+  assert.match(en, /ocean currents with their published coordinates/, 'the Wikidata use is not stated');
 });
 
 /* ── ⑫ the atmosphere has air in it ─────────────────────────────────────────────────── */
