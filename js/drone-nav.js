@@ -58,6 +58,15 @@ window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.droneNav=function(HOST){
   const GE=()=>window.IntMapGeoEngine;
   const L=window.IntMapLang.pick(()=>HOST.lang);
+  /* ⚠⚠⚠ (#R248) THE FOURTEENTH SHAPE — this file held FOUR readers that turned the language into
+     an ARRAY POSITION with a ternary chain ending in `:0`, i.e. a language→POSITION map written as
+     an EXPRESSION rather than as the object scripts/i18n-langmap-audit.mjs looks for, so no
+     instrument in this repository counted one of them. Because the final arm is `0`, every aircraft
+     spec, preset name and check label in the drone planner was ENGLISH for fr / ko / zh / zh-Hans —
+     and unlike a short `L(…)` call there was no inline-table fallback to save it. All four now go
+     through `L.arr()`, which IS `pick()` applied to the array (js/lang-registry.js), and the tuples
+     themselves are `LA(…)` calls so that the gate can see them at all. */
+  const LA=window.IntMapLang.pickArgs();
 
   /* ---- geodesy (spherical; the same radius the rest of the app measures with) ---------------- */
   const R_EARTH=6371008.8, D2R=Math.PI/180, R2D=180/Math.PI;
@@ -84,27 +93,27 @@ window.IntMapModules.droneNav=function(HOST){
      model's specification as fact is exactly the kind of fabrication this project forbids, and the point
      of the panel is that you type in the numbers from your own aircraft's manual. */
   const SPEC_FIELDS=[
-    { k:'cruiseSpeed', unit:'m/s', min:1,   max:120,  step:0.5, lbl:['Cruise speed','巡航速度','Reisegeschw.','Крейсерская скорость','Velocidad de crucero'] },
-    { k:'maxSpeed',    unit:'m/s', min:1,   max:200,  step:0.5, lbl:['Max speed','最大速度','Höchstgeschw.','Макс. скорость','Velocidad máxima'] },
-    { k:'maxAgl',      unit:'m',   min:5,   max:12000,step:5,   lbl:['Max altitude (AGL)','最大飛行高度（対地）','Max. Höhe (über Grund)','Макс. высота (над землёй)','Altitud máx. (sobre el suelo)'] },
-    { k:'minAgl',      unit:'m',   min:0,   max:2000, step:1,   lbl:['Min ground clearance (AGL)','最低地上高（対地）','Min. Bodenabstand','Мин. высота над землёй','Altura mínima sobre el suelo'] },
-    { k:'rangeKm',     unit:'km',  min:0.1, max:2000, step:0.5, lbl:['Range','航続距離','Reichweite','Дальность','Alcance'] },
-    { k:'batteryWh',   unit:'Wh',  min:1,   max:20000,step:5,   lbl:['Battery capacity','バッテリー容量','Akkukapazität','Ёмкость батареи','Capacidad de batería'] },
-    { k:'cruisePowerW',unit:'W',   min:5,   max:20000,step:5,   lbl:['Cruise power draw','巡航時消費電力','Leistung im Reiseflug','Мощность в крейсере','Potencia en crucero'] },
-    { k:'massKg',      unit:'kg',  min:0.05,max:600,  step:0.05,lbl:['Empty mass','機体重量','Leermasse','Масса пустого','Masa en vacío'] },
-    { k:'payloadKg',   unit:'kg',  min:0,   max:300,  step:0.05,lbl:['Payload','積載重量','Nutzlast','Полезная нагрузка','Carga útil'] },
-    { k:'climbRate',   unit:'m/s', min:0.1, max:40,   step:0.1, lbl:['Climb rate','上昇速度','Steigrate','Скороподъёмность','Velocidad de ascenso'] },
-    { k:'descentRate', unit:'m/s', min:0.1, max:40,   step:0.1, lbl:['Descent rate','下降速度','Sinkrate','Скорость снижения','Velocidad de descenso'] },
-    { k:'reservePct',  unit:'%',   min:0,   max:60,   step:1,   lbl:['Battery reserve','バッテリー予備率','Akkureserve','Резерв батареи','Reserva de batería'] }
+    { k:'cruiseSpeed', unit:'m/s', min:1,   max:120,  step:0.5, lbl:LA('Cruise speed','巡航速度','Reisegeschw.','Крейсерская скорость','Velocidad de crucero') },
+    { k:'maxSpeed',    unit:'m/s', min:1,   max:200,  step:0.5, lbl:LA('Max speed','最大速度','Höchstgeschw.','Макс. скорость','Velocidad máxima') },
+    { k:'maxAgl',      unit:'m',   min:5,   max:12000,step:5,   lbl:LA('Max altitude (AGL)','最大飛行高度（対地）','Max. Höhe (über Grund)','Макс. высота (над землёй)','Altitud máx. (sobre el suelo)') },
+    { k:'minAgl',      unit:'m',   min:0,   max:2000, step:1,   lbl:LA('Min ground clearance (AGL)','最低地上高（対地）','Min. Bodenabstand','Мин. высота над землёй','Altura mínima sobre el suelo') },
+    { k:'rangeKm',     unit:'km',  min:0.1, max:2000, step:0.5, lbl:LA('Range','航続距離','Reichweite','Дальность','Alcance') },
+    { k:'batteryWh',   unit:'Wh',  min:1,   max:20000,step:5,   lbl:LA('Battery capacity','バッテリー容量','Akkukapazität','Ёмкость батареи','Capacidad de batería') },
+    { k:'cruisePowerW',unit:'W',   min:5,   max:20000,step:5,   lbl:LA('Cruise power draw','巡航時消費電力','Leistung im Reiseflug','Мощность в крейсере','Potencia en crucero') },
+    { k:'massKg',      unit:'kg',  min:0.05,max:600,  step:0.05,lbl:LA('Empty mass','機体重量','Leermasse','Масса пустого','Masa en vacío') },
+    { k:'payloadKg',   unit:'kg',  min:0,   max:300,  step:0.05,lbl:LA('Payload','積載重量','Nutzlast','Полезная нагрузка','Carga útil') },
+    { k:'climbRate',   unit:'m/s', min:0.1, max:40,   step:0.1, lbl:LA('Climb rate','上昇速度','Steigrate','Скороподъёмность','Velocidad de ascenso') },
+    { k:'descentRate', unit:'m/s', min:0.1, max:40,   step:0.1, lbl:LA('Descent rate','下降速度','Sinkrate','Скорость снижения','Velocidad de descenso') },
+    { k:'reservePct',  unit:'%',   min:0,   max:60,   step:1,   lbl:LA('Battery reserve','バッテリー予備率','Akkureserve','Резерв батареи','Reserva de batería') }
   ];
   const PRESETS=[
-    { id:'micro', name:['Sub-250 g class quadcopter','250g未満クラス マルチコプター','Klasse unter 250 g','Класс до 250 г','Clase de menos de 250 g'],
+    { id:'micro', name:LA('Sub-250 g class quadcopter','250g未満クラス マルチコプター','Klasse unter 250 g','Класс до 250 г','Clase de menos de 250 g'),
       spec:{ cruiseSpeed:10, maxSpeed:16, maxAgl:120, minAgl:5, rangeKm:6, batteryWh:19, cruisePowerW:42, massKg:0.25, payloadKg:0, climbRate:5, descentRate:3.5, reservePct:20 } },
-    { id:'prosumer', name:['Prosumer quadcopter (~1 kg)','業務用マルチコプター（約1kg）','Profi-Quadrocopter (~1 kg)','Профессиональный квадрокоптер (~1 кг)','Cuadricóptero profesional (~1 kg)'],
+    { id:'prosumer', name:LA('Prosumer quadcopter (~1 kg)','業務用マルチコプター（約1kg）','Profi-Quadrocopter (~1 kg)','Профессиональный квадрокоптер (~1 кг)','Cuadricóptero profesional (~1 kg)'),
       spec:{ cruiseSpeed:15, maxSpeed:21, maxAgl:120, minAgl:10, rangeKm:15, batteryWh:77, cruisePowerW:150, massKg:0.9, payloadKg:0, climbRate:6, descentRate:4, reservePct:20 } },
-    { id:'heavylift', name:['Heavy-lift multirotor','重量物運搬マルチローター','Schwerlast-Multikopter','Тяжёлый мультикоптер','Multirrotor de carga pesada'],
+    { id:'heavylift', name:LA('Heavy-lift multirotor','重量物運搬マルチローター','Schwerlast-Multikopter','Тяжёлый мультикоптер','Multirrotor de carga pesada'),
       spec:{ cruiseSpeed:12, maxSpeed:20, maxAgl:120, minAgl:15, rangeKm:12, batteryWh:900, cruisePowerW:2400, massKg:12, payloadKg:6, climbRate:5, descentRate:3, reservePct:25 } },
-    { id:'fixedwing', name:['Fixed-wing / VTOL survey aircraft','固定翼・VTOL測量機','Starrflügler / VTOL','Самолётного типа / VTOL','Ala fija / VTOL'],
+    { id:'fixedwing', name:LA('Fixed-wing / VTOL survey aircraft','固定翼・VTOL測量機','Starrflügler / VTOL','Самолётного типа / VTOL','Ala fija / VTOL'),
       spec:{ cruiseSpeed:22, maxSpeed:30, maxAgl:400, minAgl:30, rangeKm:60, batteryWh:400, cruisePowerW:220, massKg:3.5, payloadKg:1, climbRate:4, descentRate:4, reservePct:20 } }
   ];
   const DEFAULT_SPEC=()=>Object.assign({},PRESETS[1].spec);
@@ -575,8 +584,8 @@ window.IntMapModules.droneNav=function(HOST){
      innerHTML, so they go through it like every other user string in the app. */
   function esc(s){ try{ return window.IntMapSafe.html(String(s)); }
     catch(_){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); } }
-  function specLabel(f){ return f.lbl[HOST.lang==='jp'?1:HOST.lang==='de'?2:HOST.lang==='ru'?3:HOST.lang==='es'?4:0]; }
-  function presetName(p){ return p.name[HOST.lang==='jp'?1:HOST.lang==='de'?2:HOST.lang==='ru'?3:HOST.lang==='es'?4:0]; }
+  function specLabel(f){ return L.arr(f.lbl); }
+  function presetName(p){ return L.arr(p.name); }
 
   function ensurePanel(){
     if(panel) return panel;
@@ -655,13 +664,13 @@ window.IntMapModules.droneNav=function(HOST){
   let opsOut=null, opsBusy='';
   const OPS=()=>window.IntMapDroneOps;
   const CHECKS=[
-    { k:'wind',    lbl:['Wind at altitude','高度別の風','Wind in Flughöhe','Ветер на высоте','Viento en altitud'] },
-    { k:'link',    lbl:['Radio link & line of sight','無線リンクと視通','Funk & Sicht','Радиосвязь и видимость','Radio y visión'] },
-    { k:'nofly',   lbl:['Restricted areas','飛行制限区域','Sperrgebiete','Запретные зоны','Zonas restringidas'] },
-    { k:'reserve', lbl:['Battery for the return','帰投分の電池','Akku für den Rückflug','Заряд на возврат','Batería para volver'] },
-    { k:'sites',   lbl:['Emergency landing sites','緊急着陸地点','Notlandeplätze','Места аварийной посадки','Lugares de aterrizaje'] }
+    { k:'wind',    lbl:LA('Wind at altitude','高度別の風','Wind in Flughöhe','Ветер на высоте','Viento en altitud') },
+    { k:'link',    lbl:LA('Radio link & line of sight','無線リンクと視通','Funk & Sicht','Радиосвязь и видимость','Radio y visión') },
+    { k:'nofly',   lbl:LA('Restricted areas','飛行制限区域','Sperrgebiete','Запретные зоны','Zonas restringidas') },
+    { k:'reserve', lbl:LA('Battery for the return','帰投分の電池','Akku für den Rückflug','Заряд на возврат','Batería para volver') },
+    { k:'sites',   lbl:LA('Emergency landing sites','緊急着陸地点','Notlandeplätze','Места аварийной посадки','Lugares de aterrizaje') }
   ];
-  const cLbl=(c)=>c.lbl[HOST.lang==='jp'?1:HOST.lang==='de'?2:HOST.lang==='ru'?3:HOST.lang==='es'?4:0];
+  const cLbl=(c)=>L.arr(c.lbl);
   function opsSection(){
     const O=OPS(); if(!O) return '';
     const st=O.state(), en=st.enabled, R=st.link;
@@ -728,30 +737,30 @@ window.IntMapModules.droneNav=function(HOST){
     else opsBusy='';
   }
   function kindLabel(k){
-    const M={ 'terrain-collision':['Terrain','地形との接触','Gelände','Рельеф','Terreno'],
-      'min-clearance':['Ground clearance','最低地上高','Bodenabstand','Высота над землёй','Altura sobre el suelo'],
-      'max-altitude':['Altitude limit','最大高度','Höhengrenze','Предел высоты','Límite de altitud'],
-      'range':['Range','航続距離','Reichweite','Дальность','Alcance'],
-      'battery':['Battery','バッテリー','Akku','Батарея','Batería'],
-      'speed':['Speed','速度','Geschwindigkeit','Скорость','Velocidad'],
-      'dem':['Elevation data','標高データ','Höhendaten','Данные о высоте','Datos de elevación'],
-      'climb-limited':['Climb-limited','上昇律速','Steigbegrenzt','Ограничение набора','Limitado por ascenso'],
+    const M={ 'terrain-collision':LA('Terrain','地形との接触','Gelände','Рельеф','Terreno'),
+      'min-clearance':LA('Ground clearance','最低地上高','Bodenabstand','Высота над землёй','Altura sobre el suelo'),
+      'max-altitude':LA('Altitude limit','最大高度','Höhengrenze','Предел высоты','Límite de altitud'),
+      'range':LA('Range','航続距離','Reichweite','Дальность','Alcance'),
+      'battery':LA('Battery','バッテリー','Akku','Батарея','Batería'),
+      'speed':LA('Speed','速度','Geschwindigkeit','Скорость','Velocidad'),
+      'dem':LA('Elevation data','標高データ','Höhendaten','Данные о высоте','Datos de elevación'),
+      'climb-limited':LA('Climb-limited','上昇律速','Steigbegrenzt','Ограничение набора','Limitado por ascenso'),
       /* (#R184) the kinds js/drone-ops.js contributes through the hazard seam. They are named here
          rather than in that file because this is the ONE table the panel reads — a source that
          invented its own label would print a raw slug next to translated ones. */
-      'wind':['Wind','風','Wind','Ветер','Viento'],
-      'wind-limit':['Wind limit','風速限界','Windgrenze','Предел ветра','Límite de viento'],
-      'crosswind':['Crosswind','横風','Seitenwind','Боковой ветер','Viento cruzado'],
-      'wind-level':['Wind data','風のデータ','Winddaten','Данные о ветре','Datos de viento'],
-      'wind-data':['Wind data','風のデータ','Winddaten','Данные о ветре','Datos de viento'],
-      'link-los':['Radio line of sight','無線の視通','Funksicht','Радиовидимость','Visión radio'],
-      'link-range':['Radio range','通信可能範囲','Funkreichweite','Дальность связи','Alcance de radio'],
-      'link-ok':['Radio link','無線リンク','Funkverbindung','Радиосвязь','Enlace de radio'],
-      'nofly':['Restricted area','飛行制限区域','Sperrgebiet','Запретная зона','Zona restringida'],
-      'nofly-data':['Restricted areas','飛行制限区域','Sperrgebiete','Запретные зоны','Zonas restringidas'],
-      'return':['Return to launch','帰投','Rückflug','Возврат','Regreso'] };
+      'wind':LA('Wind','風','Wind','Ветер','Viento'),
+      'wind-limit':LA('Wind limit','風速限界','Windgrenze','Предел ветра','Límite de viento'),
+      'crosswind':LA('Crosswind','横風','Seitenwind','Боковой ветер','Viento cruzado'),
+      'wind-level':LA('Wind data','風のデータ','Winddaten','Данные о ветре','Datos de viento'),
+      'wind-data':LA('Wind data','風のデータ','Winddaten','Данные о ветре','Datos de viento'),
+      'link-los':LA('Radio line of sight','無線の視通','Funksicht','Радиовидимость','Visión radio'),
+      'link-range':LA('Radio range','通信可能範囲','Funkreichweite','Дальность связи','Alcance de radio'),
+      'link-ok':LA('Radio link','無線リンク','Funkverbindung','Радиосвязь','Enlace de radio'),
+      'nofly':LA('Restricted area','飛行制限区域','Sperrgebiet','Запретная зона','Zona restringida'),
+      'nofly-data':LA('Restricted areas','飛行制限区域','Sperrgebiete','Запретные зоны','Zonas restringidas'),
+      'return':LA('Return to launch','帰投','Rückflug','Возврат','Regreso') };
     const a=M[k]; if(!a) return k;
-    return a[HOST.lang==='jp'?1:HOST.lang==='de'?2:HOST.lang==='ru'?3:HOST.lang==='es'?4:0]; }
+    return L.arr(a); }
 
   /* the altitude profile: the terrain silhouette with the flight path over it, plus the minimum-clearance
      envelope, so "why is this leg red" is answerable at a glance */

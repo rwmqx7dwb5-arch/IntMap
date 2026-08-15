@@ -156,9 +156,19 @@ test('R191 seismic: the field is painted to the end of the lowest class', () => 
   assert.match(s, /const rFine=Math\.min\(rEdgeSurf,MMI_TERRAIN_KM\);/, 'the fine box is bounded by the terrain');
   /* (#R232) it takes the azimuth-indexed profile PICKER now, not a single profile — see the
      directivity note in js/seismic.js. Its own pass is what is being pinned. */
-  assert.match(s, /async function buildFar\(prof(?:At)?,box,rFine,rEdge,seq\)/, 'the annulus has its own pass');
-  assert.match(s, /coords:\[\[-180,85\],\[180,85\],\[180,-85\],\[-180,-85\]\]/,
-    'drawn as a WHOLE-WORLD raster, so no box can wrap the antimeridian or degenerate at a pole');
+  assert.match(s, /async function buildFar\(prof(?:At)?,box,rFine,rEdge,seq,win\)/, 'the annulus has its own pass');
+  /* ⚠ (#R248) UPDATED, AND THE FACT IT PINNED HAS CHANGED ON PURPOSE. This used to require
+     `coords:[[-180,85],[180,85],[180,-85],[-180,-85]]` — a WHOLE-WORLD raster, which #R191 chose so
+     that no box could wrap the antimeridian or degenerate at a pole. The cost was that the cell is
+     the planet divided by the budget whatever the field's size: measured at 22.4 km beside a fine
+     field of 1.17 km, i.e. 「解像度が劇的に悪くなる」 at exactly r = 1,500 km. #R248 sizes the raster
+     to the field instead and keeps #R191's two failures away by MEASURING for them — a cap that
+     contains a pole or crosses ±180 still gets the whole 360° in x. What is pinned now is that the
+     placement is the WINDOW's own edges, so the image can never be placed anywhere else. */
+  assert.match(s, /coords:\[\[win\.W,win\.Nn\],\[win\.E,win\.Nn\],\[win\.E,win\.Ss\],\[win\.W,win\.Ss\]\]/,
+    'the image is placed at the window it was computed on, and the window keeps the whole world in x when the cap wraps or holds a pole');
+  assert.match(s, /if\(!full&&\(C0\[0\]-dLng<-180\|\|C0\[0\]\+dLng>180\)\) full=true;/,
+    'the antimeridian case is decided by measurement, not by hoping');
   /* (#R192) …and the land test is no longer a DEM read at all — a mask that half-arrives is what
      painted the ocean. It is the bundled raster, and a missing one means no annulus rather than a
      painted sea. See tests/r192-checks. */

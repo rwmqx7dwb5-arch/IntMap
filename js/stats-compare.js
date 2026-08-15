@@ -75,10 +75,10 @@ window.IntMapModules.statsCompare=function(HOST){
       debt:'fis',cab:'fis',exp:'fis',fdi:'fis',
       pop:'soc',life:'soc',tfr:'soc',net:'soc',urban:'soc',health:'soc',edu:'soc',rnd:'soc',hom:'soc',hdi:'soc',demi:'soc',
       co2:'env',renew:'env',forest:'env', area:'base',mil:'base',milb:'base'};
-    const CATL={eco:['Economy','経済','Wirtschaft','Экономика','Economía'],fis:['Fiscal & trade','財政・貿易','Fiskal & Handel','Финансы и торговля','Fiscal y comercio'],
-      soc:['People & society','人口・社会','Bevölkerung & Gesellschaft','Население и общество','Población y sociedad'],
-      env:['Environment & energy','環境・エネルギー','Umwelt & Energie','Экология и энергия','Medio ambiente y energía'],
-      base:['Reference','基礎・参照','Referenz','Справочные','Referencia']};
+    const CATL={eco:LA('Economy','経済','Wirtschaft','Экономика','Economía'),fis:LA('Fiscal & trade','財政・貿易','Fiskal & Handel','Финансы и торговля','Fiscal y comercio'),
+      soc:LA('People & society','人口・社会','Bevölkerung & Gesellschaft','Население и общество','Población y sociedad'),
+      env:LA('Environment & energy','環境・エネルギー','Umwelt & Energie','Экология и энергия','Medio ambiente y energía'),
+      base:LA('Reference','基礎・参照','Referenz','Справочные','Referencia')};
     const CATORD=['eco','fis','soc','env','base'];
     const SIGNED={growth:1,cab:1,fdi:1};
     const REFV={gdp:s=>s.gdp,gdppc:s=>s.gdppc,pop:s=>s.pop,life:s=>s.lifeExp,net:s=>s.internet};

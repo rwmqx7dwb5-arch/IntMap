@@ -58,6 +58,12 @@ const NEUTRAL = new Set([
   'Error', 'error', 'No', 'base', 'global', 'total', 'penumbral', 'positive', 'negative', 'vs',
   'auto', '(auto)', 'live', '(live)', 'Live', '↻ live', 'Top', 'Top ', 'in ', 'Elevation',
   'Elongation', 'Asteroid', 'Feedback', 'in',
+  /* (#R248) three more the twelfth shape's conversion surfaced, each checked one at a time — the
+     word really is the same, and a row here is a claim that it is right (see the ⚠ above):
+       Islam       — German has no other word for it (Duden: «Islam»); the article differs, the noun does not.
+       Melanesia   — Spanish spells the Oceanian subregion exactly so (RAE / DPD), as does English.
+       Micronesia  — likewise, and it is also the country's Spanish short name. */
+  'Islam', 'Melanesia', 'Micronesia',
   /* (#R241) …and seven more the widened universe surfaced, each checked one at a time. They are the
      German or Spanish word, not an untranslated English one:
        Revolution  de — «Revolution» is the German noun.

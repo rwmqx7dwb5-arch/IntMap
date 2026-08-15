@@ -1219,6 +1219,67 @@ window.IntMapModules.seismic=function(HOST){
        rasters tile exactly. A local `const NF` inside buildFar was fine while nobody else needed the
        number, and it stopped being fine the moment the seam had to be exact. */
     const FAR_N=()=>((typeof isMobile==='function'&&isMobile())?640:1408);
+    /* ══ ⚠⚠⚠ (#R248) THE FAR RASTER COVERS THE FIELD, NOT THE PLANET ═══════════════════════════════
+       「地震シミュレータでJMA震度分布をある程度の範囲までいったら、そこから解像度が劇的に悪くなる。」
+
+       MEASURED, M9.1 point source at 143 E / 38.3 N, 震度 scale: the fine image spans 3,000 km at
+       2,560² = a **1.17 km** cell, and at exactly r = MMI_TERRAIN_KM (1,500 km) the picture hands over
+       to this raster — which covered the WHOLE WORLD at 1,408², i.e. 40,075·cos(38.3°)/1,408 = a
+       **22.4 km** cell. The step is 19×, at one radius, all the way round the fine image. That is
+       「ある程度の範囲までいったら、そこから解像度が劇的に悪くなる」, and it is a property of the
+       raster's EXTENT rather than of its budget.
+
+       ⚠ THE WHOLE-WORLD EXTENT WAS NEVER ABOUT THE FIELD. #R191 chose it so that a box could not wrap
+       the antimeridian and could not degenerate at a pole — both real failures (#R189 documents them
+       for wavefronts) — and its answer was to have no box at all. The cost is that the cell is the
+       planet divided by a MEMORY budget, whatever size the field happens to be.
+
+       So the budget is kept (FAR_N()² cells, one 7.9 MB canvas, unchanged) and spent on the disc the
+       field actually reaches. The window is the spherical cap's own bounding box and the grid is
+       SQUARE IN MERCATOR — equal Δx and Δy in normalised world units, which in a conformal projection
+       is what makes the cells square on the ground — so `nx` and `ny` follow the window's shape
+       instead of both being FAR_N. Measured on the same event: 1,386 × 1,435 cells, **2.60 km**.
+       The seam's ratio goes 19× → 2.2×, and rEdge, the fine box, its span and its cell do not move
+       by one byte (#R247's rule: know what the edge decides before touching it).
+
+       ⚠ AND #R191'S TWO FAILURES ARE STILL AVOIDED — by MEASURING the cap, not by hoping. A cap that
+       contains a pole, or whose longitude reach crosses ±180, sets `full` and keeps the whole 360°
+       in x exactly as today. The Y extent still shrinks there, and the square-cell rule spends the
+       freed cells on x, so even the wrapped case is finer than it was (a 1,800 km cap at 55 N:
+       4,443 × 445 instead of 1,408², a 9.0 km cell).
+       ⚠ ONE CELL OF MARGIN on every side, because the fine image's box is snapped OUTWARD onto this
+       grid (#R245) and must land strictly inside the window it is snapped to.
+       ⚠ THE MAXIMUM LONGITUDE OF A CAP IS NOT r/(111·cos φ). It is asin(sin ρ / cos φ₀), attained at
+       the tangent parallel and not at the centre's own — the linear form under-reads it, and an
+       under-read window would clip the field it exists to draw. */
+    function farWindow(C0,rKm){
+      const NF=FAR_N(), Y85=mY(85), YS85=mY(-85);
+      const la0=C0[1]*D, rho=Math.min(Math.PI,Math.max(1,rKm)/RE);
+      let full=(Math.abs(la0)+rho>=Math.PI/2-1e-9), dLng=180;
+      if(!full){ const s=Math.sin(rho)/Math.max(1e-9,Math.cos(la0));
+        if(s>=1) full=true; else dLng=Math.asin(s)/D; }
+      if(!full&&(C0[0]-dLng<-180||C0[0]+dLng>180)) full=true;      /* the seam — keep #R191's answer */
+      const latPad=Math.max(rKm,1)/110.574;
+      const yc=mY(Math.max(-84.9,Math.min(84.9,C0[1])));
+      const yN=mY(Math.min(85,C0[1]+latPad)), yS=mY(Math.max(-85,C0[1]-latPad));
+      const sx=full?1:(2*dLng/360), sy=Math.max(1e-6,yS-yN);
+      /* (sx/cell)·(sy/cell) = NF² …⚠ WITH A CEILING ON EITHER SIDE. A field that crosses ±180 keeps
+         the whole 360° in x while its y extent may be a few hundred km, and the square-cell rule
+         would then answer with tens of thousands of columns — past what a canvas can be. Raising the
+         cell until neither side exceeds 4·NF keeps the cells SQUARE (a non-square cell draws the
+         field as horizontal streaks) and simply spends fewer of the budget's cells. */
+      const cell=Math.max(Math.sqrt(sx*sy)/NF, sx/(4*NF), sy/(4*NF));
+      const nx=full?Math.max(16,Math.round(1/cell)):Math.max(16,2*(Math.ceil((dLng/360)/cell)+1));
+      const dx=full?(360/nx):(cell*360);
+      const W=full?-180:(C0[0]-nx/2*dx);
+      let yT=yc-(Math.ceil((yc-yN)/cell)+1)*cell, yB=yc+(Math.ceil((yS-yc)/cell)+1)*cell;
+      if(yT<Y85) yT=yc-Math.floor((yc-Y85)/cell)*cell;
+      if(yB>YS85) yB=yc+Math.floor((YS85-yc)/cell)*cell;
+      const ny=Math.max(16,Math.round((yB-yT)/cell)), dy=(yB-yT)/ny;
+      return { full, W, E:W+nx*dx, dx, nx, y0:yT, dy, ny,
+               Nn:latOfY(yT), Ss:latOfY(yT+ny*dy),
+               cellKm:+(cell*40075.017*Math.max(0.05,Math.cos(la0))).toFixed(2) };
+    }
     let fldFar=null;
     function paintFar(){
       try{
@@ -1296,7 +1357,7 @@ window.IntMapModules.seismic=function(HOST){
       return out;
     }
     /* (#R232)  rather than one profile — the directivity bank, indexed by azimuth. */
-    async function buildFar(profAt,box,rFine,rEdge,seq){
+    async function buildFar(profAt,box,rFine,rEdge,seq,win){
       fldFar=null;
       if(!epi){ paintFar(); return; }
       const C0=fault?fault.centroid:epi;
@@ -1321,10 +1382,13 @@ window.IntMapModules.seismic=function(HOST){
       /* (#R204) …and again, for the same reason and at the same price: this grid covers the WHOLE
          world, so 1,024 is a 39 km cell at the equator against the fine field's 1.5 km. 1,408 is a
          28 km cell for 1.9× of an arithmetic cost #R191 measured at ~40 ms for the entire globe. */
-      const NF=FAR_N();
-      const yT=mY(85), yB=mY(-85), dyF=(yB-yT)/NF, dxF=360/NF;
-      const cv=document.createElement('canvas'); cv.width=NF; cv.height=NF;
-      const ctx=cv.getContext('2d'), im=ctx.createImageData(NF,NF), px=im.data;
+      /* (#R248) the grid is the WINDOW's, not the planet's — see farWindow. `win` is the same object
+         buildField snapped its box onto, passed rather than recomputed: two copies of this arithmetic
+         is how a seam stops being exact ([[intmap-recurring-lessons]] G). */
+      const NF=FAR_N(), NX=win.nx, NY=win.ny;
+      const yT=win.y0, dyF=win.dy, dxF=win.dx, W0=win.W, wrap=!!win.full;
+      const cv=document.createElement('canvas'); cv.width=NX; cv.height=NY;
+      const ctx=cv.getContext('2d'), im=ctx.createImageData(NX,NY), px=im.data;
       const hx=(h)=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
       /* ⚠ (#R191) AND IT MUST NOT PAINT THE SEA, BECAUSE THE FINE FIELD DOES NOT.
          The first version skipped the land test — there is no DEM at this scale — and the result was a
@@ -1367,8 +1431,8 @@ window.IntMapModules.seismic=function(HOST){
          ground enters as a ratio against it, exactly as the fine field does it (#R189). */
       const ampRef=siteAmp();
       const la0=C0[1]*D, sinA=Math.sin(la0), cosA=Math.cos(la0);
-      const cosDL=new Float64Array(NF);
-      for(let i=0;i<NF;i++) cosDL[i]=Math.cos((-180+(i+0.5)*dxF-C0[0])*D);
+      const cosDL=new Float64Array(NX);
+      for(let i=0;i<NX;i++) cosDL[i]=Math.cos((W0+(i+0.5)*dxF-C0[0])*D);
       let painted=0, extrap=0, seaSkipped=0, ampCells=0;
       /* ══ ⚠ (#R218) THE ANNULUS IS SOLVED FOR, NOT SEARCHED FOR ════════════════════════════════════
          「震源分布の計算速度が遅いから爆速に。（品質に一切影響を及ばさないように。）」 This raster covers
@@ -1393,10 +1457,10 @@ window.IntMapModules.seismic=function(HOST){
          limit has to be widened by the reach or the forward end of the rupture would be clipped. */
       const cosEdge=Math.cos(Math.min(Math.PI,(rEdge+maxReach)/RE));
       const _cut=rupCutKm();   /* (#R223) hoisted: the implied rupture radius is a constant over the raster */
-      const iOfLng=(l)=>(l+180)/dxF-0.5;
+      const iOfLng=(l)=>(l-W0)/dxF-0.5;
       const _farRGB=[0,0,0,0];   /* (#R224) one scratch RGBA — (#R247) the ALPHA is a result too, see fieldPx */
       let _lastYield=performance.now();
-      for(let j=0;j<NF;j++){
+      for(let j=0;j<NY;j++){
         const la=latOfY(yT+(j+0.5)*dyF), lb=la*D, sinB=Math.sin(lb), cosB=Math.cos(lb);
         const den=cosA*cosB;
         /* the Δλ half-width at which the distance is exactly rEdge; NaN/out-of-range
@@ -1423,13 +1487,29 @@ window.IntMapModules.seismic=function(HOST){
         /* walk the band, wrapped: the epicentre may sit near ±180 and the band crosses the seam.
            ⚠ A band wider than the world must be walked ONCE — the wrap would otherwise visit the same
            column from both sides and double-count `painted` / `seaSkipped`, which the panel prints. */
-        const full=(2*halfI>=NF-1);
-        const sLo=full?0:Math.ceil(i0-halfI), sHi=full?NF-1:Math.floor(i0+halfI);
+        /* ⚠ (#R248) WRAPPING IS ONLY LEGAL WHEN THE WINDOW IS THE WHOLE WORLD. On a sub-window the
+           columns outside it are not «the other side of the seam», they are OUTSIDE THE PICTURE, so
+           the band is CLAMPED there instead of being wound round — winding it would paint the field's
+           east flank onto its west edge. A band that reaches past a sub-window's edge cannot exist
+           anyway: a field that far round the globe sets `full` in farWindow. */
+        const full=wrap&&(2*halfI>=NX-1);
+        let sLo=full?0:Math.ceil(i0-halfI), sHi=full?NX-1:Math.floor(i0+halfI);
+        if(!wrap){ if(sLo<0) sLo=0; if(sHi>NX-1) sHi=NX-1; }
         for(let s=sLo;s<=sHi;s++){
-          const i=((s%NF)+NF)%NF;
+          const i=wrap?(((s%NX)+NX)%NX):s;
+          const lo=W0+(i+0.5)*dxF;
+          /* ⚠ (#R245) THE FINE IMAGE OWNS THIS — AND ITS BOX IS SNAPPED TO **THIS** GRID, so a cell is
+             either wholly inside it or wholly outside it and the two images tile exactly: no cell is
+             dropped by both (a gap) and none is drawn by both (a double-painted band). See the note
+             by `snapFar` in buildField, and the one above `raster-resampling` in paintFar.
+             ⚠ (#R248) …and this test is now taken BEFORE the acos. It was below it only because the
+             loop was ordered by the old whole-world raster's arithmetic; with the window shrunk to
+             the field, the fine image owns most of what the band walks, and four comparisons are
+             cheaper than a transcendental for every one of them. It is the same set of cells either
+             way — both branches `continue`, and neither touches a counter. */
+          if(lo>=box.W&&lo<=box.E&&la>=box.Ss&&la<=box.Nn) continue;
           const c=Math.max(-1,Math.min(1,sinA*sinB+cosA*cosB*cosDL[i]));
           const kmC=Math.acos(c)*RE;
-          const lo=-180+(i+0.5)*dxF;
           /* ⚠ (#R244) THE SAME SURFACE DISTANCE THE FINE FIELD USES — Rrup, not the centroid range.
              See rupReach: the bearing's reach is what the rupture puts between its centroid and this
              site, and subtracting it is what makes the two images agree where they meet. */
@@ -1437,11 +1517,6 @@ window.IntMapModules.seismic=function(HOST){
           if(reach){ const b=bearingTo(C0,[lo,la])*D;
             km=Math.max(0,kmC-reach[((Math.floor(b*RBIN)%REACH_BINS)+REACH_BINS)%REACH_BINS]); }
           if(km>rEdge) continue;   /* (#R247) `rEdge` here is the SURFACE limit — see rEdgeSurf */
-          /* ⚠ (#R245) THE FINE IMAGE OWNS THIS — AND ITS BOX IS SNAPPED TO **THIS** GRID, so a cell is
-             either wholly inside it or wholly outside it and the two images tile exactly: no cell is
-             dropped by both (a gap) and none is drawn by both (a double-painted band). See the note
-             by `snapFar` in buildField, and the one above `raster-resampling` in paintFar. */
-          if(lo>=box.W&&lo<=box.E&&la>=box.Ss&&la<=box.Nn) continue;
           if(land.isLand(lo,la)!==true){ seaSkipped++; continue; }
           const rM=srcDistM(km,_cut);   /* (#R223) the one conversion — see srcDistM */
           /* (#R192) each scale from its own quantity.
@@ -1456,7 +1531,7 @@ window.IntMapModules.seismic=function(HOST){
              (#R247) …and the colour AND the alpha both come from `fieldPx`, which is the ONE place
              the lowest class's fade is written — see it for why the edge stopped being a cliff. */
           const rgb=fieldPx(I,_farRGB); if(!rgb) continue;
-          const o=(j*NF+i)*4;
+          const o=(j*NX+i)*4;
           px[o]=rgb[0]; px[o+1]=rgb[1]; px[o+2]=rgb[2]; px[o+3]=rgb[3]; painted++;
           if(km>MMI_CALIB_KM) extrap++;
         }
@@ -1465,12 +1540,23 @@ window.IntMapModules.seismic=function(HOST){
             if(seq!==fldSeq) return; } }
       }
       if(seq!==fldSeq) return;
+      /* ⚠ (#R248) AN EMPTY IMAGE IS NOT AN IMAGE. The guard above asks whether the disc can reach
+         outside the fine image's box — a question about geometry — and the answer is yes for most
+         events, because the box is built with a linear cos(φ) half-width while the cap's true reach
+         is asin(sin ρ / cos φ₀) (#R247's flanks). The sliver that opens is often entirely sea or
+         entirely below the lowest class, so nothing is drawn; encoding a fully transparent 8 MB PNG
+         and handing it to the renderer is pure cost. Measured: an M7.5 over Japan paints 0. */
+      if(!painted){ _revoke(fldFar&&fldFar.url); fldFar=null; paintFar(); return; }
       ctx.putImageData(im,0,0);
       const _uf=await pngURL(cv);
       if(seq!==fldSeq){ _revoke(_uf); return; }
       _revoke(fldFar&&fldFar.url);
-      fldFar={ url:_uf, coords:[[-180,85],[180,85],[180,-85],[-180,-85]],
-               N:NF, painted, extrap, sea:seaSkipped, landMask:!!land, landSource:'bundled',
+      /* (#R248) the image is placed at the WINDOW, and the window's edges are the grid's own — the
+         same numbers buildField snapped the fine box onto, so the two rasters still tile exactly. */
+      fldFar={ url:_uf, coords:[[win.W,win.Nn],[win.E,win.Nn],[win.E,win.Ss],[win.W,win.Ss]],
+               N:NF, nx:NX, ny:NY, cellKm:win.cellKm, whole:!!win.full,
+               winW:+win.W.toFixed(3), winE:+win.E.toFixed(3), winN:+win.Nn.toFixed(3), winS:+win.Ss.toFixed(3),
+               painted, extrap, sea:seaSkipped, landMask:!!land, landSource:'bundled',
                landCellKm:(land.state?land.state().cellKm:null),
                /* (#R223) how much of the annulus carries its OWN ground rather than the reference —
                   the number that says whether this picture is rings or terrain */
@@ -1601,7 +1687,14 @@ window.IntMapModules.seismic=function(HOST){
            Everything past it is the far field, which needs no DEM and is drawn by buildFar(). */
         const rFine=Math.min(rEdgeSurf,MMI_TERRAIN_KM);
         const C0=fault?fault.centroid:epi;
-        let halfKm=rFine; if(fault){ let mx=0; fault.ring.forEach(p=>{ const d2=gcDelta(C0,p)*D*RE; if(d2>mx) mx=d2; }); halfKm+=mx; }
+        /* how far the rupture itself carries the picture past its centroid — the SAME quantity
+           buildFar's `maxReach` is (the support function's maximum is attained at a vertex), so the
+           fine box and the far window are padded by one number rather than by two spellings of it. */
+        let rupMaxKm=0; if(fault) fault.ring.forEach(p=>{ const d2=gcDelta(C0,p)*D*RE; if(d2>rupMaxKm) rupMaxKm=d2; });
+        const halfKm=rFine+rupMaxKm;
+        /* (#R248) the far raster's window — declared HERE because the fine box is snapped onto its
+           grid below and buildFar walks it, and one object is what keeps the seam exact. */
+        const farWin=farWindow(C0,rEdgeSurf+rupMaxKm);
         const cosC=Math.max(0.1,Math.cos(C0[1]*D));
         const dLng=halfKm/(111.32*cosC), dLat=halfKm/110.574;
         /* ══ ⚠⚠⚠ (#R245) THE BOX IS SNAPPED TO THE FAR RASTER'S OWN CELL GRID ═════════════════════════
@@ -1649,12 +1742,17 @@ window.IntMapModules.seismic=function(HOST){
            MercatorCoordinate agrees), and every alternative measured worse: a one-cell overlap makes a
            15/255 double-painted band 92 pixels wide at the same zoom, and `linear` makes the fade this
            round removed. Written down rather than left to be re-discovered. */
-        const _fN=FAR_N(), _fdx=360/_fN, _fy0=mY(85), _fdy=(mY(-85)-_fy0)/_fN;
-        const snapLngFar=(v,out)=>{ const k=(v+180)/_fdx; return -180+(out<0?Math.floor(k):Math.ceil(k))*_fdx; };
+        /* (#R248) …onto the WINDOW's grid, which is what the far raster now walks (see farWindow).
+           The rule is unchanged — snap OUTWARD to a cell boundary — only the grid it snaps to has
+           stopped being the whole planet divided by FAR_N. */
+        const _fdx=farWin.dx, _fy0=farWin.y0, _fdy=farWin.dy, _fnx=farWin.nx, _fny=farWin.ny;
+        const snapLngFar=(v,out)=>{ const k=(v-farWin.W)/_fdx;
+          const c=Math.max(0,Math.min(_fnx,out<0?Math.floor(k):Math.ceil(k)));
+          return farWin.W+c*_fdx; };
         /* mercator y grows SOUTHWARD, so the northern edge floors its row index and the southern one
-           ceils it; both are clamped to the raster's own ±85° extent. */
+           ceils it; both are clamped to the raster's own extent. */
         const snapLatFar=(v,out)=>{ const k=(mY(Math.max(-85,Math.min(85,v)))-_fy0)/_fdy;
-          const r=Math.max(0,Math.min(_fN,out>0?Math.floor(k):Math.ceil(k)));
+          const r=Math.max(0,Math.min(_fny,out>0?Math.floor(k):Math.ceil(k)));
           return latOfY(_fy0+r*_fdy); };
         const W=snapLngFar(C0[0]-dLng,-1), E=snapLngFar(C0[0]+dLng,+1);
         const Nn=snapLatFar(Math.min(85,C0[1]+dLat),+1), Ss=snapLatFar(Math.max(-85,C0[1]-dLat),-1);
@@ -2062,11 +2160,17 @@ window.IntMapModules.seismic=function(HOST){
                   /* (#R247) the SURFACE radius the field reaches — the number this panel means by
                      「どこまで」, and the one both rasters now stop at. See rEdgeSurf above. */
                   spanKm:Math.round(spanKm), rEdgeKm:Math.round(rEdgeSurf), rFineKm:Math.round(rFine),
+                  /* (#R248) the SNAP, as a number rather than as an argument: how many far cells the
+                     fine box's west edge and north edge sit from the far window's own origin. Both
+                     must be whole, because that is precisely what makes the two rasters tile (#R245)
+                     — and a seam is not something to re-verify by eye (#R247 §6). */
+                  snapCols:+(((W-farWin.W)/farWin.dx).toFixed(6)), snapRows:+(((mY(Nn)-farWin.y0)/farWin.dy).toFixed(6)),
+                  farCellKm:farWin.cellKm, farWhole:!!farWin.full,
                   demTiles:snap?snap.have:null, demTilesMissing:snap?snap.missing:null,
                   terrain:(noDem+coarse)<N*N*0.5, ms:Math.round(performance.now()-t0) } };
         paintField();
         /* (#R191) …and the annulus the terrain cannot reach, out to the end of the lowest class */
-        await buildFar(profAt,{W,E,Ss,Nn},rFine,rEdgeSurf,seq);
+        await buildFar(profAt,{W,E,Ss,Nn},rFine,rEdgeSurf,seq,farWin);
         if(fld&&fld.stats) fld.stats.ms=Math.round(performance.now()-t0);
         prog(100);
       } finally { try{ HOST.releaseDEMHold(); }catch(_){}   /* (#R221) the pin is for THIS build only */
@@ -4826,7 +4930,11 @@ window.IntMapModules.seismic=function(HOST){
         fault:faultGeom(),
         field:(fld&&fld.stats)?fld.stats:null, fieldBusy:fldBusy,
         /* (#R191) the terrain-free annulus that carries the lowest class to its end */
-        far:fldFar?{ N:fldFar.N, painted:fldFar.painted, extrapolated:fldFar.extrap, sea:fldFar.sea, landMask:fldFar.landMask, landSource:fldFar.landSource, landCellKm:fldFar.landCellKm, rFineKm:fldFar.rFineKm, rEdgeKm:fldFar.rEdgeKm }:null,
+        /* (#R248) nx/ny/cellKm/whole say what EXTENT the annulus was rasterised over — the number the
+           「解像度が劇的に悪くなる」 report is actually about (see farWindow). */
+        far:fldFar?{ N:fldFar.N, nx:fldFar.nx, ny:fldFar.ny, cellKm:fldFar.cellKm, whole:fldFar.whole,
+          win:[fldFar.winW,fldFar.winE,fldFar.winS,fldFar.winN],
+          painted:fldFar.painted, extrapolated:fldFar.extrap, sea:fldFar.sea, landMask:fldFar.landMask, landSource:fldFar.landSource, landCellKm:fldFar.landCellKm, rFineKm:fldFar.rFineKm, rEdgeKm:fldFar.rEdgeKm }:null,
         scaleSet, terrainKm:MMI_TERRAIN_KM, maxKm:MMI_MAX_KM,
         stations:stations.length, mmiRings:mmiRings().map(r=>({I:r.I,km:Math.round(r.km)})) }) };
   })();
