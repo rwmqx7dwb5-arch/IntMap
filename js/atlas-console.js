@@ -493,25 +493,25 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* localized display labels for the M49 region keys (the resolver works in lowercase English keys; the reply
        should read in the user's language — 「西ヨーロッパ」 not "western europe"). Non-M49 names pass through unchanged. */
     const M49_LABELS={
-      'western europe':['Western Europe','西ヨーロッパ','Westeuropa','Западная Европа','Europa Occidental'],
-      'eastern europe':['Eastern Europe','東ヨーロッパ','Osteuropa','Восточная Европа','Europa Oriental'],
-      'southern europe':['Southern Europe','南ヨーロッパ','Südeuropa','Южная Европа','Europa Meridional'],
-      'northern europe':['Northern Europe','北ヨーロッパ','Nordeuropa','Северная Европа','Europa Septentrional'],
-      'europe':['Europe','ヨーロッパ','Europa','Европа','Europa'],
-      'north america':['Northern America','北アメリカ','Nordamerika','Северная Америка','América del Norte'],
-      'south america':['South America','南アメリカ','Südamerika','Южная Америка','América del Sur'],
-      'caribbean':['Caribbean','カリブ','Karibik','Карибский бассейн','Caribe'],
-      'north africa':['Northern Africa','北アフリカ','Nordafrika','Северная Африка','África del Norte'],
-      'west africa':['Western Africa','西アフリカ','Westafrika','Западная Африка','África Occidental'],
-      'east africa':['Eastern Africa','東アフリカ','Ostafrika','Восточная Африка','África Oriental'],
-      'central africa':['Middle Africa','中部アフリカ','Zentralafrika','Центральная Африка','África Central'],
-      'southern africa':['Southern Africa','南部アフリカ','Südliches Afrika','Южная Африка','África Austral'],
-      'western asia':['Western Asia','西アジア','Vorderasien','Западная Азия','Asia Occidental'],
-      'oceania':['Oceania','オセアニア','Ozeanien','Океания','Oceanía'],
-      'melanesia':['Melanesia','メラネシア','Melanesien','Меланезия','Melanesia'],
-      'micronesia':['Micronesia','ミクロネシア','Mikronesien','Микронезия','Micronesia'],
-      'polynesia':['Polynesia','ポリネシア','Polynesien','Полинезия','Polinesia'],
-      'australia and new zealand':['Australia & New Zealand','オーストラリア・ニュージーランド','Australien & Neuseeland','Австралия и Новая Зеландия','Australia y Nueva Zelanda'] };
+      'western europe':LA('Western Europe','西ヨーロッパ','Westeuropa','Западная Европа','Europa Occidental'),
+      'eastern europe':LA('Eastern Europe','東ヨーロッパ','Osteuropa','Восточная Европа','Europa Oriental'),
+      'southern europe':LA('Southern Europe','南ヨーロッパ','Südeuropa','Южная Европа','Europa Meridional'),
+      'northern europe':LA('Northern Europe','北ヨーロッパ','Nordeuropa','Северная Европа','Europa Septentrional'),
+      'europe':LA('Europe','ヨーロッパ','Europa','Европа','Europa'),
+      'north america':LA('Northern America','北アメリカ','Nordamerika','Северная Америка','América del Norte'),
+      'south america':LA('South America','南アメリカ','Südamerika','Южная Америка','América del Sur'),
+      'caribbean':LA('Caribbean','カリブ','Karibik','Карибский бассейн','Caribe'),
+      'north africa':LA('Northern Africa','北アフリカ','Nordafrika','Северная Африка','África del Norte'),
+      'west africa':LA('Western Africa','西アフリカ','Westafrika','Западная Африка','África Occidental'),
+      'east africa':LA('Eastern Africa','東アフリカ','Ostafrika','Восточная Африка','África Oriental'),
+      'central africa':LA('Middle Africa','中部アフリカ','Zentralafrika','Центральная Африка','África Central'),
+      'southern africa':LA('Southern Africa','南部アフリカ','Südliches Afrika','Южная Африка','África Austral'),
+      'western asia':LA('Western Asia','西アジア','Vorderasien','Западная Азия','Asia Occidental'),
+      'oceania':LA('Oceania','オセアニア','Ozeanien','Океания','Oceanía'),
+      'melanesia':LA('Melanesia','メラネシア','Melanesien','Меланезия','Melanesia'),
+      'micronesia':LA('Micronesia','ミクロネシア','Mikronesien','Микронезия','Micronesia'),
+      'polynesia':LA('Polynesia','ポリネシア','Polynesien','Полинезия','Polinesia'),
+      'australia and new zealand':LA('Australia & New Zealand','オーストラリア・ニュージーランド','Australien & Neuseeland','Австралия и Новая Зеландия','Australia y Nueva Zelanda') };
     function _regionLabel(nm){ try{ const e=M49_LABELS[_lnorm(nm)]; return e?L(e[0],e[1],e[2],e[3],e[4]):String(nm||''); }catch(_){ return String(nm||''); } }
     /* colour-swatch legend for a multi-region highlight (凡例) */
     function _hlLegendHtml(groups){ try{ if(!groups||!groups.length) return '';
@@ -2956,7 +2956,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(!c||!c.code||!countryStats[c.code]) return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.place||a.name||'')));
           const s=countryStats[c.code]; const mk=String(a.metric||a.what||'').trim();
           try{ highlight([c.code]); fitTo([c.code]); }catch(_){}
-          const TXTF={capital:['Capital','首都','Hauptstadt','Столица','Capital'],currency:['Currency','通貨','Währung','Валюта','Moneda'],languages:['Languages','言語','Sprachen','Языки','Idiomas'],flag:['Flag','国旗','Flagge','Флаг','Bandera']};
+          const TXTF={capital:LA('Capital','首都','Hauptstadt','Столица','Capital'),currency:LA('Currency','通貨','Währung','Валюта','Moneda'),languages:LA('Languages','言語','Sprachen','Языки','Idiomas'),flag:LA('Flag','国旗','Flagge','Флаг','Bandera')};
           if(TXTF[mk]){ const v=s[mk]; return R(v!=null&&v!=='', '<div style="font-size:12.5px;line-height:1.6;"><b>'+esc(c.name)+'</b> — '+esc(lx(TXTF[mk]))+': <b>'+esc(v||'—')+'</b></div>'); }
           if(METRICS[mk]){ const v=METRICS[mk].get(s); if(v==null||isNaN(v)) return R(false, warn('⚠ '+esc(c.name)+': '+L('no data for this metric','この指標のデータがありません','keine Daten für diese Kennzahl','нет данных по показателю','sin datos para esta métrica')));
             return R(true,'<div style="font-size:12.5px;line-height:1.6;"><b>'+esc(c.name)+'</b> — '+esc(lx(METRICS[mk].label))+': <b>'+esc(fmtVal(mk,v))+'</b></div>'); }

@@ -52,7 +52,9 @@ test('r247 ② the far field stops at a SURFACE radius, converted through srcDis
   const s = code(read('js/seismic.js'));
   assert.match(s, /const rEdgeSurf=Math\.min\(MMI_MAX_KM,_cutEdge\+Math\.sqrt\(Math\.max\(0,rEdge\*rEdge-depthKm\*depthKm\)\)\)/,
     'the inverse of srcDistM, stated once');
-  assert.match(s, /await buildFar\(profAt,\{W,E,Ss,Nn\},rFine,rEdgeSurf,seq\)/, 'and it is what buildFar is given');
+  /* (#R248) …and buildFar is now also given the WINDOW it rasterises into — the same object the
+     fine image's box was snapped onto, passed rather than recomputed so the seam stays exact. */
+  assert.match(s, /await buildFar\(profAt,\{W,E,Ss,Nn\},rFine,rEdgeSurf,seq,farWin\)/, 'and it is what buildFar is given');
   assert.match(s, /const rFine=Math\.min\(rEdgeSurf,MMI_TERRAIN_KM\)/, 'the fine box is bounded by the same surface radius');
 });
 

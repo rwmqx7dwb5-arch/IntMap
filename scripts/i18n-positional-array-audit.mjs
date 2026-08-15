@@ -91,6 +91,31 @@ for (const f of readdirSync(JS).filter((n) => n.endsWith('.js'))) {
           text: src.slice(n.start, Math.min(n.end, n.start + 90)) });
       }
     },
+    /* ══ ⚠⚠⚠ ③ (#R248) THE FOURTEENTH SHAPE — THE SAME MAP, WRITTEN AS AN EXPRESSION ═════════════
+       ② above is the language→POSITION map this file exists for, and it looks for an OBJECT whose
+       values are numbers. The map does not have to be an object:
+
+           lbl[ HOST.lang==='jp'?1 : HOST.lang==='de'?2 : HOST.lang==='ru'?3 : HOST.lang==='es'?4 : 0 ]
+
+       is the identical table with the braces taken off, and it walked past every instrument in this
+       repository — six of them, in js/analysis-panels.js (62 metric labels), js/data-layers.js
+       (every layer's legend description) and js/drone-nav.js (four readers: aircraft specs, preset
+       names, check labels, hazard names). The last arm is `0`, so fr / ko / zh / zh-Hans read
+       ENGLISH, and unlike a short `L(…)` call there is no inline-table fallback down this path at
+       all: the array is subscripted directly, so the registry is never asked.
+       ⚠ The test is a CHAIN, not a single ternary — `a==='jp'?x:y` with numeric arms is common and
+       innocent (an offset, a column count). What makes it a language table is a comparison against a
+       language code whose arms are integers AND a second such ternary hanging off it. */
+    ConditionalExpression(n) {
+      const intish = (x) => x && x.type === 'Literal' && typeof x.value === 'number' && Number.isInteger(x.value);
+      const langTest = (x) => x && x.type === 'BinaryExpression' && (x.operator === '===' || x.operator === '==')
+        && [x.left, x.right].some((s) => s.type === 'Literal' && typeof s.value === 'string' && CODES.has(s.value));
+      if (!langTest(n.test) || !intish(n.consequent)) return;
+      const alt = n.alternate;
+      if (!(alt && alt.type === 'ConditionalExpression' && langTest(alt.test) && intish(alt.consequent))) return;
+      hits.push({ file: f, line: n.loc.start.line, kind: 'index-chain',
+        text: src.slice(n.start, Math.min(n.end, n.start + 110)).replace(/\s+/g, ' ') });
+    },
   });
 }
 
