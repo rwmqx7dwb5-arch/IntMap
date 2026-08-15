@@ -14,6 +14,18 @@
 window.IntMapLang.define('zh-hans', {
   /* ① the keyed table — Settings, tabs, layer names, the static UI */
   ui: {
+      /* ══ ⚠⚠⚠ (#R249) THE FIFTEENTH SURFACE — THE DOCUMENT'S OWN METADATA ═══════════════════════
+         「全ての言语について、すべての面において対応が完璧かどうか点検し、未了点があれば修正して。」
+         index.html's <title> and <meta name="description"> were literals in the markup, so the
+         browser tab, the bookmark and every shared link said 「Explore the world. Ask the map.」 in
+         all nine languages — while every instrument printed 100 %, because no instrument looked at
+         the document itself. sources.html and science.html had localised both since #R239
+         (js/page-i18n.js), which is what made the gap invisible: the mechanism existed and the
+         application page simply never used it. scripts/i18n-doc-audit.mjs is the gate that stops a
+         sixteenth one being forgotten. */
+      docTitle:"IntMap — 探索世界，向地图提问。",
+      docDesc:"IntMap 是一款互动式世界地图，可探索地理、气候、历史、人口与全球时事等，并支持由 Atlas 提供的自然语言操作。",
+
       /* ══ (#R240) THE SIXTH SURFACE — title / aria-label / placeholder, which had no key at all
          and were therefore English in every language however complete this table looked. See
          scripts/i18n-attr-audit.mjs, the gate that now measures «is this string in the system».  */

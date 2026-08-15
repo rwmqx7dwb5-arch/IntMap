@@ -254,6 +254,10 @@ window.IntMapModules.routing=function(HOST){
        `LA(…)` is IntMapLang.pickArgs() — the same data as an ordinary call site, resolved by
        `LSH.arr()` through pick() itself. */
     const LA=window.IntMapLang.pickArgs(), LSH=window.IntMapLang.pick(()=>HOST.lang);
+    /* @i18n-entity-data  railway STATION names, each row pinned by [lng,lat] and a distance
+       (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs against the coordinate).
+       ⚠ These rows are written [ja, en, lng, lat, km] — Japanese FIRST. #R248 broke three arrays
+       by assuming slot 0 is always English; nothing here may assume an order either. */
     const _SHINK=[
       {nm:LA('Tokaido–Sanyo Shinkansen','東海道・山陽新幹線','Tōkaidō-Sanyō-Shinkansen','Синкансэн Токайдо-Санъё','Shinkansen Tokaido-Sanyo'),head:8,st:[
         ['東京','Tokyo',139.7671,35.6812,0],['品川','Shinagawa',139.7387,35.6284,7],['新横浜','Shin-Yokohama',139.6178,35.5093,18],

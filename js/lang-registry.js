@@ -369,6 +369,44 @@ window.IntMapLang = (function () {
     return o;
   }
 
+  /* ══ ⚠⚠⚠ (#R249) THE FIFTEENTH SURFACE — THE DOCUMENT'S OWN METADATA ═══════════════════════════
+     「全ての言語について、すべての面において対応が完璧かどうか点検し、未了点があれば修正して。」
+
+     Every i18n mechanism in this app walks ELEMENTS — `data-i18n`, `data-i18n-title`,
+     `data-i18n-aria`, and the tables behind them. `<title>` and `<meta name="description">` are
+     neither: they are the DOCUMENT's own metadata, nobody's innerText and nobody's attribute-key.
+     In index.html both were literals in the markup, so the browser tab, the window list, the
+     bookmark and every shared link read 「IntMap — Explore the world. Ask the map.」 in all nine
+     languages — while every row of scripts/i18n-audit.mjs's matrix printed 100 %, because no
+     instrument was looking at the document. Measured before the fix: switching the app to jp and
+     then to zh left `document.title` byte-identical.
+
+     ⚠ THE MECHANISM ALREADY EXISTED. js/page-i18n.js has localised exactly these two fields for
+     sources.html and science.html since #R239. Only the application page never used it — which is
+     [[intmap-recurring-lessons]] G (one behaviour, two implementations, the gap in the uninstrumented
+     one) rather than a missing translation.
+
+     ⚠ IT LIVES HERE, beside `syncChrome`, for the reason that function already gives: js/app-body.js
+     has a line ceiling whose whole point is that a new subject goes to its own file (#R199/#R200,
+     and [[intmap-recurring-lessons]] K — the ceiling comes DOWN, never up), and «make the document
+     reflect the language» is the language subject. It is also where `htmlTag` and the keyed table
+     already are, so the three things the document has to be told are told from one place.
+     ⚠ `og:` / `twitter:` ARE DELIBERATELY NOT TOUCHED — a social-card crawler does not run this
+     script, so writing them here changes nothing a crawler sees and only makes the markup disagree
+     with itself. That is a BUILD-time question. scripts/i18n-doc-audit.mjs records the decision. */
+  function syncDocument(code) {
+    try {
+      var c = normalise(code == null
+        ? ((window.IntMapI18N && window.IntMapI18N.lang) ? window.IntMapI18N.lang() : FALLBACK)
+        : code);
+      document.documentElement.setAttribute('lang', htmlTag(c));
+      var d = keyed(c);
+      if (d && d.docTitle) document.title = d.docTitle;
+      var md = document.querySelector('meta[name="description"]');
+      if (md && d && d.docDesc) md.setAttribute('content', d.docDesc);
+    } catch (e) {}
+  }
+
   /* used by the settings picker and by anything that has to enumerate languages */
   function list() { return LANG_ROWS.map(function (l) { return { code: l.code, label: l.label, html: l.html, pill: l.pill || l.code.toUpperCase() }; }); }
   function htmlTag(code) { var l = byCode[normalise(code)]; return l ? l.html : 'en'; }
@@ -388,8 +426,9 @@ window.IntMapLang = (function () {
        line-breaking rules, the wrong voice in a screen reader, the wrong `:lang()` matching, and English
        labels in js/night-sky.js, which falls back to this attribute. Here because this file is the one
        that knows the tag, and syncChrome is already the boot-time «build the chrome from the list» pass. */
-    try { var _cur = (window.IntMapI18N && window.IntMapI18N.lang) ? window.IntMapI18N.lang() : FALLBACK;
-      document.documentElement.setAttribute('lang', htmlTag(_cur)); } catch (e) {}
+    /* (#R249) …and the document's TITLE and DESCRIPTION with it — one function tells the document
+       everything it has to know about the language. See syncDocument for why they were English. */
+    syncDocument(null);
     try {
       var bar = document.querySelector('.lang-toggle');
       var sel = document.getElementById('setting-lang');
@@ -422,7 +461,7 @@ window.IntMapLang = (function () {
 
   return { LANGS: LANG_ROWS, FALLBACK: FALLBACK, list: list, codes: codes, syncChrome: syncChrome,
            define: define, pick: pick, pickArgs: pickArgs, keyed: keyed, t: t, locale: locale,
-           normalise: normalise, has: has, index: index, htmlTag: htmlTag,
+           normalise: normalise, has: has, index: index, htmlTag: htmlTag, syncDocument: syncDocument,
            /* (#R232) discovery + lazy loading */
            declare: declare, ensure: ensure, isLoaded: isLoaded, onDefine: onDefine,
            /* for the coverage report and the tests */

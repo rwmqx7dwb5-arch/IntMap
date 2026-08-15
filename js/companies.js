@@ -14,6 +14,8 @@ window.IntMapModules.companies=function(HOST){
   return (function(){
     /* rows: [ ticker, name, nameJP(''=use EN), countryISO3, sectorKey, domain, founded, employees, revenueB, netIncomeB,
        sharesOutB (0 = non-US → use snapshot, no live calc), marketCapSnapshotB ]. Money & shares in BILLIONS. */
+    /* @i18n-entity-data  COMPANY names, keyed by ticker / ISO3 / domain  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
+       against the row carrying a coordinate / ISO code / ticker / domain) */
     const RAW=[
       ['AAPL','Apple','アップル','USA','tech','apple.com',1976,164000,391,94,15.1,3400],
       ['MSFT','Microsoft','マイクロソフト','USA','software','microsoft.com',1975,228000,245,88,7.43,3300],

@@ -138,10 +138,18 @@ test('#R248 ① every LA( reference resolves to a binding IN SCOPE, not merely e
 
 test('#R248 ② the far raster is sized to the field, and the fine box snaps onto THAT grid', () => {
   const s = code(read('js/seismic.js'));
-  assert.match(s, /function farWindow\(C0,rKm\)/, 'the far raster has a window');
+  /* ⚠ (#R249) UPDATED, AND WHY. This asserted `farWindow(C0,rKm)` — the signature, not the
+     property. #R249 hands the function a THIRD argument (the fine field's cell) because #R248's
+     window fixed the far raster's EXTENT and left a 2.24× step at the seam, which is the number the
+     reader was actually reporting. The property #R248 was protecting — the window is the FIELD's,
+     never the planet's — is unchanged and still asserted below; only the arity moved.
+     ⚠ The cell EXPRESSION also moved (it is now `min(budget, wanted)` then bounded by a cell count,
+     then the 4·NF guard), so the assertion is on the guard that #R248 owns rather than on the whole
+     line. tests/r249-checks ① pins the new half. */
+  assert.match(s, /function farWindow\(C0,\s*rKm,\s*wantCellKm\)/, 'the far raster has a window');
   /* square in Mercator = square on the ground; both sides capped so a wrapped field cannot ask for
      a canvas that cannot exist */
-  assert.match(s, /Math\.max\(Math\.sqrt\(sx\*sy\)\/NF, sx\/\(4\*NF\), sy\/\(4\*NF\)\)/,
+  assert.match(s, /Math\.max\(cell,\s*sx\/\(4\*NF\),\s*sy\/\(4\*NF\)\)/,
     'the cell is square and neither side may exceed 4·FAR_N');
   /* the cap's true longitude reach, not the linear approximation that under-reads it */
   assert.match(s, /Math\.asin\(s\)\/D/, 'max Δλ of a spherical cap is asin(sin ρ / cos φ₀)');

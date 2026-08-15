@@ -38,6 +38,32 @@ window.IntMapModules.widgets=function(HOST){
        Storage: intmap_widgets3 = [{u,t,cfg}]; v2 string entries migrate automatically. */
     const KEY='intmap_widgets3';
     const jp=()=>HOST.lang==='jp';
+    /* ══ ⚠⚠⚠ (#R249) A COUNTRY NAME IS DATA — CLDR HAS IT, IN EVERY LANGUAGE ═══════════════════════
+       「全ての言語について、すべての面において対応が完璧かどうか点検し、未了点があれば修正して。」
+
+       The holiday widget's country picker was `[cc, en, ja]` read as `jp() ? c[2] : c[1]`, so the
+       list of countries a reader chooses from was ENGLISH in de / ru / es / fr / ko / zh / zh-Hans.
+       No instrument could see it: the pair audit's exemption is per FILE and this is a ternary whose
+       arms are member expressions, so neither the two-branch nor the helper-ternary audit reads it —
+       [[intmap-recurring-lessons]] B once more, in a shape none of the twelve had.
+
+       ⚠ AND THE ANSWER IS NOT TO TYPE SEVEN MORE COLUMNS. #R240 already wrote the rule for exactly
+       this («国名のようなデータは表を書かずに Intl.DisplayNames（CLDR）へ») and #R246 applied it to
+       the news-language names. The ISO-3166 code is ALREADY slot 0 of every row, so the table
+       carries its own key to CLDR and the English/Japanese columns become a FALLBACK for a runtime
+       without Intl.DisplayNames rather than the source of truth. A language added after this one
+       gets all thirty names with no edit at all, which is what 「一発で済む」 means.
+       ⚠ One DisplayNames per UI language, built on demand — #R246's shape, for the same reason. */
+    const _ccDN={};
+    function _ccName(row){
+      try{
+        const tag=window.IntMapLang.locale(HOST.lang);
+        if(_ccDN[tag]===undefined){ try{ _ccDN[tag]=new Intl.DisplayNames([tag],{type:'region'}); }catch(_){ _ccDN[tag]=null; } }
+        const n=_ccDN[tag]&&_ccDN[tag].of(row[0]);
+        if(n&&n!==row[0]) return n;
+      }catch(_){}
+      return jp()?row[2]:row[1];   /* the bundled pair, only where CLDR cannot answer */
+    }
     /* ⚠ (#R247) WHICH WIKIPEDIA THIS READER GETS. Two widgets asked `jp() ? ['ja','en'] : ['en']`,
        so 「featured article」 and 「on this day」 were the ENGLISH Wikipedia's for German, Russian,
        Spanish, French, Korean and both Chinese readers — a two-language answer to a question that has
@@ -444,7 +470,7 @@ window.IntMapModules.widgets=function(HOST){
       } else if(e.t==='holiday'){
         const HC=[['US','United States','アメリカ'],['JP','Japan','日本'],['GB','United Kingdom','イギリス'],['DE','Germany','ドイツ'],['FR','France','フランス'],['CA','Canada','カナダ'],['AU','Australia','オーストラリア'],['IN','India','インド'],['BR','Brazil','ブラジル'],['MX','Mexico','メキシコ'],['IT','Italy','イタリア'],['ES','Spain','スペイン'],['NL','Netherlands','オランダ'],['SE','Sweden','スウェーデン'],['PL','Poland','ポーランド'],['RU','Russia','ロシア'],['KR','South Korea','韓国'],['CN','China','中国'],['SG','Singapore','シンガポール'],['NZ','New Zealand','ニュージーランド'],['ZA','South Africa','南アフリカ'],['AR','Argentina','アルゼンチン'],['TR','Turkey','トルコ'],['CH','Switzerland','スイス'],['AT','Austria','オーストリア'],['IE','Ireland','アイルランド'],['NO','Norway','ノルウェー'],['FI','Finland','フィンランド'],['PT','Portugal','ポルトガル'],['BE','Belgium','ベルギー']];
         box.innerHTML='<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);">'+
-          '<select class="hcc" style="'+selStyle+'flex:1;min-width:0;">'+HC.map(c=>'<option value="'+c[0]+'"'+(c[0]===(e.cfg.cc||'US')?' selected':'')+'>'+(jp()?c[2]:c[1])+'</option>').join('')+'</select>'+
+          '<select class="hcc" style="'+selStyle+'flex:1;min-width:0;">'+HC.map(c=>'<option value="'+c[0]+'"'+(c[0]===(e.cfg.cc||'US')?' selected':'')+'>'+_ccName(c)+'</option>').join('')+'</select>'+
           '<button class="hcok" style="'+selStyle+'cursor:pointer;font-weight:600;">OK</button></div>';
         box.querySelector('.hcok').onclick=()=>{ e.cfg.cc=box.querySelector('.hcc').value; save(); box.style.display='none'; refreshOne(e); };
       }
