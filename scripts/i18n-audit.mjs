@@ -79,6 +79,19 @@ const arrays = run('i18n-positional-array-audit.mjs');
    round after this one can read this report and believe the translation is finished.
    ⚠ When it reaches zero, move it into `problems` and delete this note. */
 const helper = run('i18n-helper-ternary-audit.mjs');
+/* ══ ⚠⚠⚠ (#R244) THE ELEVENTH SHAPE, AND THE ONLY ONE HERE THAT DOES NOT FAIL THE BUILD ═══════════
+   `{en:'Tibet', jp:'チベット', de:'Tibet', ru:'Тибет'}` read as `nm[lg] || nm.en` — a tuple of
+   translations keyed by LANGUAGE CODE rather than by position. #R241 closed the ARRAY form and left
+   an audit that watches for a language→POSITION map (values are NUMBERS, by construction), so the
+   object form walked straight past it: 728 objects in 23 files, none of them visible to any of the
+   percentages above, none of them with an inline-table fallback, and most of them naming four or
+   five languages — so fr / ko / zh / zh-Hans were English there by construction.
+   This round converts what it can and PRINTS the rest, per the rule #R242 wrote for exactly this
+   situation: a gate that fails on a number nobody can reach in one round gets deleted by the next
+   round, so the number goes in the report as an OPEN GAP instead, is not counted in any percentage,
+   and no round after this one can read this output and believe the translation is finished.
+   ⚠ When it reaches zero, move it into `problems` below and delete this note. */
+const langmap = run('i18n-langmap-audit.mjs');
 const orphanKeys = keyed.undeclared;
 
 const keyedBy = new Map(keyed.rows.map((r) => [r.code, r]));
@@ -109,7 +122,7 @@ const shortOf = (r) => (r.keyed[0] < r.keyed[1]) || (r.inline && r.inline[0] < r
   || (r.positional && r.positional[0] < r.positional[1]) || (r.pages[0] < r.pages[1]);
 
 if (process.argv.includes('--json')) {
-  console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short, unkeyedAttrs: attrs.total, positionalArrays: arrays.hits.length }));
+  console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short, unkeyedAttrs: attrs.total, positionalArrays: arrays.hits.length, langMaps: langmap.total }));
   process.exit(0);
 }
 
@@ -158,7 +171,15 @@ console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.tot
      {en,jp} tables moved to `pickArgs()`, two defaults moved to a language-keyed table), so the line
      below counts like every other row instead of printing a number nobody has to act on. */
   + `\ntwo-language strings behind a helper (\`jp() ? … : …\`): ${helper.sites}`
-  + (helper.sites ? '\n    node scripts/i18n-helper-ternary-audit.mjs --list' : ''));
+  + (helper.sites ? '\n    node scripts/i18n-helper-ternary-audit.mjs --list' : '')
+  /* (#R244) the eleventh shape — see the note by `langmap` above. OPEN GAP: printed, not counted. */
+  + `\n\n⚠ OPEN GAP — translation tuples held as an OBJECT keyed by language code: ${langmap.total}`
+  + (langmap.total
+    ? '\n    ' + langmap.files.map((f) => String(f.n).padStart(4) + '  ' + f.file).join('\n    ')
+      + '\n    (node scripts/i18n-langmap-audit.mjs --list lists every one, with its line)'
+      + '\n    These are NOT counted in any percentage above. They have no inline-table fallback, so'
+      + '\n    every language the object does not name reads English there. Convert with pickArgs().'
+    : ''));
 
 if (process.argv.includes('--gate')) {
   const bad = rows.filter(shortOf).map((r) => r.code);

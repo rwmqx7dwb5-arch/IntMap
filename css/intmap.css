@@ -2164,7 +2164,14 @@
     .layer-dropdown,.tool-panel,.hover-tooltip,.country-info,.coord-readout,.sat-controller,
     .ctx-menu,.news-timeline,.country-popup,.pin-popup,.map-tooltip,.search-result-card,
     .map-search-results,.layer-ctrl,.koppen-legend,.data-legend,.map-view-group,.map-search,
-    .ai-view-summary-btn,.btn-toggle-sidebar,.stats-compare-fixed,.m-sheet,.m-fab{
+    /* ⚠ (#R244) …AND THAT INCLUDES THE RIGHT SIDEBAR'S HANDLE. 「左右のサイドバーの開閉持ち手部分の
+       色味が統一されていないのが気になる。」 MEASURED, same theme, same moment: the left handle
+       computed to `rgb(28,28,30)` with `saturate(1.5) blur(16px)`, the right one to
+       `rgba(28,28,30,0.85)` with `blur(20px)` — because this list, which is what makes every floating
+       surface ONE material, named `.btn-toggle-sidebar` and not `#lsr-toggle`. The right handle was
+       written later (#R63) as a mirror of the left one and kept its own `var(--sidebar-bg)`, so it
+       never joined the material. It is the same control on the other edge; it reads the same token. */
+    .ai-view-summary-btn,.btn-toggle-sidebar,#lsr-toggle,.stats-compare-fixed,.m-sheet,.m-fab{
       background-color:var(--glass-fill) !important;
       backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)) !important;
       -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)) !important;

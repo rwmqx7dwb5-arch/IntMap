@@ -506,7 +506,7 @@ window.IntMapModules.companiesUi=function(HOST){
     });
     cards+='</div>';
     /* (#R20) top-level Places | Events switch, then the existing category nav */
-    const seg=`<div class="dash-nav"><button class="dash-nav-btn active" onclick="_setDashView('places')">${({en:'📍 Places',jp:'📍 場所',de:'📍 Orte',ru:'📍 Места',es:'📍 Lugares'})[HOST.lang]||'📍 Places'}</button><button class="dash-nav-btn" onclick="_setDashView('events')">${({en:'🗓 Events',jp:'🗓 出来事',de:'🗓 Ereignisse',ru:'🗓 События',es:'🗓 Eventos'})[HOST.lang]||'🗓 Events'}</button></div>`;
+    const seg=`<div class="dash-nav"><button class="dash-nav-btn active" onclick="_setDashView('places')">${window.IntMapLang.t(HOST.lang,'📍 Places','📍 場所','📍 Orte','📍 Места','📍 Lugares')}</button><button class="dash-nav-btn" onclick="_setDashView('events')">${window.IntMapLang.t(HOST.lang,'🗓 Events','🗓 出来事','🗓 Ereignisse','🗓 События','🗓 Eventos')}</button></div>`;
     const nav=`<div class="dash-nav" id="dash-nav"><button class="dash-nav-btn ${HOST.activeDashCategories.has('mil')?'active':''}" onclick="toggleDashCat('mil')">${dict.dashCatMil}</button><button class="dash-nav-btn ${HOST.activeDashCategories.has('tech')?'active':''}" onclick="toggleDashCat('tech')">${dict.dashCatTech}</button><button class="dash-nav-btn ${HOST.activeDashCategories.has('maritime')?'active':''}" onclick="toggleDashCat('maritime')">${dict.dashCatMar}</button><button class="dash-nav-btn ${HOST.activeDashCategories.has('geo')?'active':''}" onclick="toggleDashCat('geo')">${dict.dashCatGeo}</button></div>`;
     dash.innerHTML=seg+nav+cards;
     /* Mouse wheel → horizontal scroll on the category nav */

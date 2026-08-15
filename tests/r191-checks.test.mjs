@@ -36,7 +36,12 @@ test('R191 aircraft: the lifted mark carries the glyph colour and the glyph stro
   assert.match(paint, /'fill-extrusion-color':_feRamp\(/, 'the lifted body asks the ramp for its colours');
   assert.ok(!/(^|[^(])'#1e90ff'/.test(paint.replace(/_feHex\('#[0-9a-f]{6}'/g, '_feHex(X')),
     'and no colour on this layer is declared raw — every one goes through _feHex');
-  assert.match(paint, /_feHex\('#1e90ff',d\)/, 'it asks for the colour that COMES OUT as the glyph colour');
+  /* ⚠ (#R244) the colour itself moved — 「Live aircraft trafficの民間機の色は山吹色に」 — and with it
+     the point this line has always made: the lifted body must ask for THE SAME colour the flat glyph
+     is drawn in. That is now a shared constant rather than a repeated literal (which is the stronger
+     form of the same invariant: #R173's drift is impossible when there is one name), so this checks
+     the name reaches the ramp and tests/r244 ⑧ checks what the name is worth. */
+  assert.match(paint, /_feHex\(PLANE_CIV,d\)/, 'it asks for the colour that COMES OUT as the glyph colour');
   assert.match(paint, /\['==',\['get','part'\],'rim'\],_feHex\('#ffffff',d\)/, 'and the stroke is white');
   /* the stroke is the glyph's own 1.6-px stroke, mitred — not #R185's scaled plate */
   assert.match(src, /const _PLANE_STROKE=0\.8;/, 'half of ensurePlaneIcons’ 1.6-px line');
