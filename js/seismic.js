@@ -1452,12 +1452,57 @@ window.IntMapModules.seismic=function(HOST){
          M8+ that annulus is most of what the reader sees.
          js/vs30-mask.js is the site term for exactly this case: the mean Vs30 of each 0.25° cell's
          land, computed offline from the same Wald & Allen proxy at 1,223 m and averaged AFTER the
-         conversion (scripts/build-vs30.mjs). 0.25° is 28 km, which is this raster's own cell — the
-         resolution matches the picture instead of being invented for it.
-         ⚠ It is a fallback with a fallback: a cell the raster has no land for keeps `ampRef`. */
+         conversion (scripts/build-vs30.mjs).
+         ⚠ It is a fallback with a fallback: a cell the raster has no land for keeps `ampRef`.
+         ⚠⚠⚠ (#R250) …AND 0.25° STOPPED BEING «THIS RASTER'S OWN CELL» — see the ⚠⚠⚠ block below. */
       let vsm=null;
       try{ const VM=window.IntMapVs30;
         if(VM){ await VM.warm(); if(seq!==fldSeq) return; if(VM.ready()) vsm=VM; } }catch(_){}
+      /* ══ ⚠⚠⚠ (#R250) ONE PICTURE, ONE **GRAIN** — THE CELL WAS NEVER THE THING THE EYE READS ══════
+         「地震シミュレータで震度分布をある程度の範囲までいったら、そこから解像度が劇的に悪くなる。」
+         — the SAME sentence for the third round running. #R248 read 「解像度」 as this raster's EXTENT
+         and took its cell 22.4 → 2.62 km. #R249 read it as the RATIO of the two cells and took the
+         step 2.24 → 1.00× by handing this window the fine field's own cell. Both were right, both
+         shipped, and the report came back — because both of them measured the CANVAS, and what the
+         reader looks at is the picture's DETAIL. A raster's detail is bounded by its INPUTS, not by
+         its cell, and after #R249 this raster drew 1.17 km cells out of two inputs that had been
+         chosen when its cell was 28 km:
+
+           MEASURED, M9.1 at 143 E / 38.3 N, over 150 km of land on five bearings that cross r=1,500 km
+           (the numbers are how many times the site term CHANGES over 128 consecutive 1.172 km cells):
+
+               inside the seam — DEM slope, 960 m …… 126–127 changes / 128 cells
+               outside the seam — bundled 0.25° ……… 6–8 changes / 128 cells        ⇒ ~17–21× coarser
+
+           and the LAND TEST, over a 600 km patch of the Korea/China coast at this raster's own cell:
+               5,317 of 262,144 cells (2.03 %) differ between the 19.6 km bundled mask and the 1.14 km
+               10 m outline — all of them ON the coast, i.e. a 19.6 km staircase drawn at 1.17 km.
+
+         So at exactly r = MMI_TERRAIN_KM, all the way round the fine image, the coastline coarsens
+         by ~17× and the ground texture by ~21×, while `state().far.step` says 1.00 and every
+         instrument in this file agrees. THAT is 「そこから解像度が劇的に悪くなる」.
+
+         ⚠ THE RULE THIS ROUND ADDS: a raster may not be built FINER THAN ITS INPUTS without saying
+         so. Both inputs are therefore answered at THIS grid — the coastline from the same
+         js/coast-mask.js the fine field uses (#R215's 「大きなタイルでごまかすな」, which was answered
+         for the fine field and never for this one), and the site term from the same DEM slope the
+         fine field reads, with the bundled 0.25° raster kept as the per-cell fallback exactly as it
+         is today. ⚠ Nothing is coarsened to achieve it and no constant is tuned: where the tiles are
+         not affordable the picture is EXACTLY what it is today, and `state().far.siteSource` /
+         `landSource` / `siteSpacingM` print which answer each cell actually got.
+         ⚠ THE FINE FIELD IS NOT TOUCHED. #R247's rule — know what the edge decides before moving it —
+         applies with full force: rEdge, the fine box, its span and its cell do not move by one byte. */
+      let coastFar=null, coastSrcFar=null, coastKmFar=null;
+      try{ const CM=window.IntMapCoastMask;
+        if(CM&&CM.ready()){ try{ if(window._imFlushCountryGeo) window._imFlushCountryGeo(); }catch(_){}
+          coastFar=CM.rasterize({west:W0,y0:yT,dx:dxF,dy:dyF,nx:NX,ny:NY});
+          if(coastFar){ coastSrcFar=CM.source();
+            coastKmFar=CM.cellKm({west:W0,y0:yT,dx:dxF,dy:dyF,nx:NX,ny:NY}); } } }catch(_){ coastFar=null; }
+      if(seq!==fldSeq) return;
+      /* land at (i,j): this raster's own 1.14 km answer when there is one, the bundled 19.6 km
+         majority when there is not. ⚠ The bundled branch is the SHIPPED behaviour, unchanged — a
+         session with no country outline loaded draws exactly the picture it draws today. */
+      const landAtFar=(k,lo,la)=>(coastFar?(coastFar[k]===1):(land.isLand(lo,la)===true));
       /* the site the PROFILE was computed for — `motion()` bakes `siteAmp()` in, so a cell's own
          ground enters as a ratio against it, exactly as the fine field does it (#R189). */
       const ampRef=siteAmp();
@@ -1489,6 +1534,69 @@ window.IntMapModules.seismic=function(HOST){
       const cosEdge=Math.cos(Math.min(Math.PI,(rEdge+maxReach)/RE));
       const _cut=rupCutKm();   /* (#R223) hoisted: the implied rupture radius is a constant over the raster */
       const iOfLng=(l)=>(l-W0)/dxF-0.5;
+      /* ══ ⚠⚠⚠ (#R250) THE SITE TERM, FROM THE SAME DEM THE FINE FIELD READS ═══════════════════════
+         The second half of 「解像度が劇的に悪くなる」 (see the ⚠⚠⚠ block by `coastFar`): this raster's
+         ground texture changed 6–8 times per 128 cells where the fine field's changes 126–127 times,
+         because it read a 0.25° raster into a 1.17 km cell. So it now reads the SAME Wald & Allen
+         slope proxy off the SAME terrarium tiles through the SAME `vs30FromSlope` table — the fine
+         field's own path, applied to the annulus — and keeps the bundled raster as the PER-CELL
+         fallback, which is what makes this additive: a tile that does not arrive leaves that cell
+         exactly as it is drawn today.
+
+         ⚠ THE TILES IT ASKS FOR ARE THE ANNULUS'S, NOT THE WINDOW'S. The window is the disc's
+         bounding box and the fine image owns most of it, so a tile is skipped when it is wholly
+         inside the fine box (already drawn), wholly past rEdge (never drawn) or wholly sea (never
+         painted — #R223's filter, reused verbatim). MEASURED on the M9.1 above: 3,108 × 3,198 cells
+         over a 41.7° × 32.6° window, of which the annulus's land asks for a few dozen tiles.
+         ⚠ AND THE BUDGET IS THIS RASTER'S OWN, well under the fine field's. A pinned tile is 256 kB
+         (#R223), the fine field is holding its own set at this moment, and 「ブラウザが落ちる」 is in
+         #R223's report — so the ceiling here is 512 on desktop and 128 on a phone, and where it
+         binds the cell falls back to the bundled raster rather than the picture being degraded.
+         ⚠ `slopeUsable` IS THE SAME RULE (#R190): a slope measured finer than the data is a
+         fictional slope biased toward the softest bin, so a spacing coarser than 2 km does not
+         pretend — those cells take the bundled term, and `siteSpacingM` prints what was achieved. */
+      const _mobF=(typeof isMobile==='function'&&isMobile());
+      const winW=W0, winE=W0+NX*dxF, winN=latOfY(yT), winS=latOfY(yT+NY*dyF);
+      const cosCF=Math.max(0.1,Math.cos(C0[1]*D)), spanFarKm=2*(rEdge+maxReach);
+      let zF=Math.max(4,Math.min(12,(_demZoomForSpan?_demZoomForSpan(Math.max(1,spanFarKm)):7)+1));
+      const estF=(zz)=>{ const tk=40075*cosCF/Math.pow(2,zz); const nn=spanFarKm/tk+1; return nn*nn*0.85; };
+      const TILE_BUDGET_FAR=_mobF?128:512;
+      while(zF>4&&estF(zF)>TILE_BUDGET_FAR) zF--;
+      const demSpacingFarM=40075017*cosCF/(Math.pow(2,zF)*256);
+      const slopeUsableFar=demSpacingFarM<=2000;
+      const dsFarM=Math.max(900,demSpacingFarM*1.25);
+      const dLngFarS=dsFarM/(111320*cosCF), dLatFarS=dsFarM/110574;
+      /* a tile is worth fetching only if some of the ANNULUS's land is in it */
+      const _farKeep=(lo,la,hLo,hLa)=>{
+        /* wholly inside the fine image's box → the fine field already drew it */
+        if(lo-hLo>=box.W&&lo+hLo<=box.E&&la-hLa>=box.Ss&&la+hLa<=box.Nn) return false;
+        /* wholly past the painted radius → nothing here is ever drawn */
+        const dLo=Math.max(0,Math.abs(((lo-C0[0]+540)%360)-180)-hLo), dLa=Math.max(0,Math.abs(la-C0[1])-hLa);
+        if(Math.hypot(dLo*111.32*Math.max(0.05,Math.cos(la*D)),dLa*110.574)>rEdge+maxReach) return false;
+        /* wholly sea → never painted (#R223's sampled footprint, at the mask's own grain) */
+        if(land&&land.ready&&land.ready()){
+          const stepLo=Math.max(0.176,2*hLo/12), stepLa=Math.max(0.176,2*hLa/12);
+          for(let d2=-hLa-0.2; d2<=hLa+0.2+1e-9; d2+=stepLa)
+            for(let d1=-hLo-0.2; d1<=hLo+0.2+1e-9; d1+=stepLo)
+              if(land.isLand(lo+d1,Math.max(-85,Math.min(85,la+d2)))===true) return true;
+          return false; }
+        return true; };
+      let snapFar=null, farTiles=0;
+      if(slopeUsableFar){
+        try{
+          const warmF=HOST.demTilePoints(winW,winS,winE,winN,zF,_farKeep);
+          farTiles=warmF.length;
+          if(farTiles){
+            const msF=Math.max(8000,Math.min(30000,600*Math.sqrt(farTiles)*1.6));
+            await warmDEMTiles(warmF,zF,msF,null,true);
+            if(seq!==fldSeq) return;
+            snapFar=(typeof demSnapshot==='function')?demSnapshot(winW,winS,winE,winN,zF,_farKeep):null;
+          }
+        }catch(_){ snapFar=null; }
+      }
+      if(seq!==fldSeq) return;
+      const _rowFar=(snapFar&&snapFar.rowSampler)?((la)=>snapFar.rowSampler(la)):null;
+      let demSiteCells=0, bulkSiteCells=0;
       const _farRGB=[0,0,0,0];   /* (#R224) one scratch RGBA — (#R247) the ALPHA is a result too, see fieldPx */
       let _lastYield=performance.now();
       for(let j=0;j<NY;j++){
@@ -1515,6 +1623,9 @@ window.IntMapModules.seismic=function(HOST){
            exact), and the disc it replaces was only ever an optimisation. */
         const halfI=dl/D/dxF;
         const i0=iOfLng(C0[0]);
+        /* (#R250) ONE SAMPLER PER ROW (#R226's rule), and built LAZILY — most rows of a bounding box
+           paint no land at all, and a row that paints none must not pay for two samplers. */
+        let _hereFar=null, _northFar=null, _rowReady=false;
         /* walk the band, wrapped: the epicentre may sit near ±180 and the band crosses the seam.
            ⚠ A band wider than the world must be walked ONCE — the wrap would otherwise visit the same
            column from both sides and double-count `painted` / `seaSkipped`, which the panel prints. */
@@ -1548,15 +1659,29 @@ window.IntMapModules.seismic=function(HOST){
           if(reach){ const b=bearingTo(C0,[lo,la])*D;
             km=Math.max(0,kmC-reach[((Math.floor(b*RBIN)%REACH_BINS)+REACH_BINS)%REACH_BINS]); }
           if(km>rEdge) continue;   /* (#R247) `rEdge` here is the SURFACE limit — see rEdgeSurf */
-          if(land.isLand(lo,la)!==true){ seaSkipped++; continue; }
+          /* (#R250) …at THIS raster's cell, not at 19.6 km — see the ⚠⚠⚠ block by `coastFar` */
+          const kIdx=j*NX+i;
+          if(!landAtFar(kIdx,lo,la)){ seaSkipped++; continue; }
           const rM=srcDistM(km,_cut);   /* (#R223) the one conversion — see srcDistM */
           /* (#R192) each scale from its own quantity.
-             (#R223) …and the site term is this cell's own, from the bundled 0.25° Vs30 raster —
-             both quantities are LINEAR in the amplification, which is what lets one profile still
-             serve every cell (#R189's argument, applied out here for the first time). */
+             (#R223) …and the site term is this cell's own rather than one class for the whole
+             annulus — both quantities are LINEAR in the amplification, which is what lets one
+             profile still serve every cell (#R189's argument, applied out here for the first time).
+             (#R250) …and it is read from the DEM first, at this raster's own grain, exactly as the
+             fine field reads it; the bundled 0.25° raster is the per-cell fallback it always was. */
           const b2=profAt(lo,la).both(rM);   /* (#R232) the directivity bank — see the note where it is built */
-          let g=1;
-          if(vsm){ const v=vsm.at(lo,la); if(v){ g=ampOf(v)/ampRef; ampCells++; } }
+          let g=1, gotSite=false;
+          if(_rowFar){
+            if(!_rowReady){ _hereFar=_rowFar(la);
+              _northFar=_rowFar(Math.max(-85,Math.min(85,la+dLatFarS))); _rowReady=true; }
+            const e0=_hereFar?_hereFar(lo):null;
+            if(e0!=null){
+              let ex=_hereFar(lo+dLngFarS); if(ex==null) ex=e0;
+              let ey=_northFar?_northFar(lo):null; if(ey==null) ey=e0;
+              g=ampOf(vs30FromSlope(Math.hypot(ex-e0,ey-e0)/dsFarM))/ampRef;
+              demSiteCells++; ampCells++; gotSite=true; }
+          }
+          if(!gotSite&&vsm){ const v=vsm.at(lo,la); if(v){ g=ampOf(v)/ampRef; bulkSiteCells++; ampCells++; } }
           const I=(scale==='jma')?jmaOfA0(b2[1]*g):mmiOf(b2[0]*g);
           /* (#R224) MMI is a CONTINUOUS ramp now (see MMI_RAMP); 震度 keeps its published bands.
              (#R247) …and the colour AND the alpha both come from `fieldPx`, which is the ONE place
@@ -1589,11 +1714,23 @@ window.IntMapModules.seismic=function(HOST){
                /* (#R249) the seam's ratio — 1.00 is "no step". See farWindow. */
                fineCellKm:win.wantCellKm, step:win.step,
                winW:+win.W.toFixed(3), winE:+win.E.toFixed(3), winN:+win.Nn.toFixed(3), winS:+win.Ss.toFixed(3),
-               painted, extrap, sea:seaSkipped, landMask:!!land, landSource:'bundled',
-               landCellKm:(land.state?land.state().cellKm:null),
+               painted, extrap, sea:seaSkipped, landMask:!!land,
+               /* ⚠ (#R250) WHICH ANSWER EACH INPUT ACTUALLY GAVE, printed rather than assumed —
+                  the whole of this round's defect was that `cellKm` said 1.17 while these two said
+                  19.6 and 28, and nothing put the three numbers next to each other. */
+               landSource:(coastFar?coastSrcFar:'bundled'),
+               landCellKm:(coastFar?(coastKmFar!=null?+coastKmFar.toFixed(2):null)
+                                   :(land.state?land.state().cellKm:null)),
                /* (#R223) how much of the annulus carries its OWN ground rather than the reference —
-                  the number that says whether this picture is rings or terrain */
-               siteCells:ampCells, siteSource:(vsm?'bundled-vs30-0.25deg':null),
+                  the number that says whether this picture is rings or terrain.
+                  (#R250) …and now ALSO whether that ground is the DEM's or the 0.25° fallback's,
+                  because those two differ by ~21× in grain and only one of them matches the cell. */
+               siteCells:ampCells,
+               siteSource:(demSiteCells?(bulkSiteCells?'dem-slope+bundled-vs30-0.25deg':'dem-slope')
+                                       :(vsm?'bundled-vs30-0.25deg':null)),
+               demSiteCells, bulkSiteCells, demTiles:farTiles, demZ:zF,
+               siteSpacingM:(demSiteCells?Math.round(demSpacingFarM):(vsm?27800:null)),
+               slopeUsable:slopeUsableFar,
                rFineKm:Math.round(rFine), rEdgeKm:Math.round(rEdge) };
       paintFar();
     }
@@ -4996,7 +5133,14 @@ window.IntMapModules.seismic=function(HOST){
           /* (#R249) the seam's ratio against the fine field — 1.00 is "the two rasters share a cell" */
           fineCellKm:fldFar.fineCellKm, step:fldFar.step,
           win:[fldFar.winW,fldFar.winE,fldFar.winS,fldFar.winN],
-          painted:fldFar.painted, extrapolated:fldFar.extrap, sea:fldFar.sea, landMask:fldFar.landMask, landSource:fldFar.landSource, landCellKm:fldFar.landCellKm, rFineKm:fldFar.rFineKm, rEdgeKm:fldFar.rEdgeKm }:null,
+          painted:fldFar.painted, extrapolated:fldFar.extrap, sea:fldFar.sea, landMask:fldFar.landMask, landSource:fldFar.landSource, landCellKm:fldFar.landCellKm,
+          /* ⚠ (#R250) THE GRAIN OF THE TWO INPUTS, BESIDE THE CELL. `cellKm` alone said 1.17 for two
+             rounds while the coastline was 19.6 km and the ground 28 km — the step the reader was
+             reporting was in these, and no instrument printed them next to each other. */
+          siteSource:fldFar.siteSource, siteSpacingM:fldFar.siteSpacingM,
+          demSiteCells:fldFar.demSiteCells, bulkSiteCells:fldFar.bulkSiteCells,
+          demTiles:fldFar.demTiles, demZ:fldFar.demZ, slopeUsable:fldFar.slopeUsable,
+          rFineKm:fldFar.rFineKm, rEdgeKm:fldFar.rEdgeKm }:null,
         scaleSet, terrainKm:MMI_TERRAIN_KM, maxKm:MMI_MAX_KM,
         stations:stations.length, mmiRings:mmiRings().map(r=>({I:r.I,km:Math.round(r.km)})) }) };
   })();
