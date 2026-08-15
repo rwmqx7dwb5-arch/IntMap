@@ -55,6 +55,11 @@ const STACK = 'Inter Regular';
 export const RANGES = [0, 256, 512, 768, 1024, 1280, 7680, 8192, 8448, 8704];
 
 const SIZE = 24, BUFFER = 3, RADIUS = 8, CUTOFF = 0.25;
+/* (#R247) how far above the alphabetic baseline the `top` origin sits in a SERVER font. MapLibre
+   calls the same number `topAdjustment = 27.5` where it converts TinySDF metrics into this
+   convention; measured against tiles.openfreemap.org's own Noto Sans Regular it is exactly 27 for
+   every glyph compared. See the note by `top:` in buildRange for what it cost to have it wrong. */
+const TOP_ORIGIN = 27;
 
 /* ── a scanline rasteriser over the flattened outline, 4× supersampled ────────────────────────── */
 function flatten(path) {
@@ -241,8 +246,32 @@ function buildRange(font, start, fallback) {
        got 6 instead of 9. A cap therefore sank 18 px, an x-height letter 14 and a hyphen 3 — which
        on screen is a line of type where the capitals sit low and the hyphens float. Exactly 「ガタガタ」.
        ⚠ tests/r243-checks asserts this against the font, so the metric cannot silently drift again. */
+    /* ══ ⚠⚠⚠ (#R247) …AND `top` IS NOT MEASURED FROM THE BASELINE — IT IS 27 UNITS ABOVE IT ═════════
+       「ニュースピンの帯から文字位置がずれてはみ出ている。」
+
+       #R243 got the SIGN and the EDGE right and the ORIGIN wrong, and the difference is invisible on
+       a place label and unmissable inside a box. MapLibre says it in its own source
+       (src/render/glyph_manager.ts, the TinySDF branch):
+
+           «TinySDF's "top" is the distance from the alphabetic baseline to the top of the glyph.
+            SERVER-GENERATED FONTS SPECIFY "top" RELATIVE TO AN ORIGIN ABOVE THE EM BOX … To
+            approximately align TinySDF glyphs with server-provided glyphs we use this baseline
+            adjustment factor»   const topAdjustment = 27.5;
+
+       This atlas IS a server font — `glyphRewrite` serves it where «Noto Sans Regular» was asked for
+       (js/map-typography.js) — so it has to speak the server convention. MEASURED against the very
+       font it replaces (tiles.openfreemap.org/fonts/Noto Sans Regular/0-255.pbf), our `top` was
+       exactly 27 units high on every glyph checked: H 18 vs −9, x 14 vs −13, g 14 vs −13, A 18 vs
+       −9, o 14 vs −13. 27 units of a 24-unit em is 1.125 em, and the two places it showed are the
+       two places something else is on the same line:
+         · the news band — the pill is fitted to the SHAPING box, which is metric-independent, so the
+           type floated up out of a pill that stayed put («帯から文字位置がずれてはみ出ている»);
+         · any line mixing Latin with CJK, because CJK comes from the browser through TinySDF, which
+           applies the −27.5 above. The two scripts sat 1.1 em apart.
+       A line that is ALL atlas simply shifts as a whole, which is why 「ガタガタ」 was fixed by #R243
+       and this was not: a uniform shift has nothing to be ragged against. */
     glyphs.push({ id: cp, bitmap: sdf(cov, bw, bh), width: w, height: h,
-      left: x0, top: -y0, advance });                         /* `top` is measured up from the baseline */
+      left: x0, top: -y0 - TOP_ORIGIN, advance });            /* the box top, from the server origin */
     have.add(cp);
   }
   let filled = 0;

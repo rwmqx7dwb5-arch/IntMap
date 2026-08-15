@@ -68,22 +68,45 @@ for (const f of readdirSync(JS).filter((n) => n.endsWith('.js'))) {
          which is the same defect and is counted separately so the fix can be planned. */
       if (lit(n.consequent) && lit(n.alternate)) hits.push({ file: f, line: n.loc.start.line, kind: 'pair', en: n.alternate.value });
       else if (lit(n.consequent) || lit(n.alternate)) hits.push({ file: f, line: n.loc.start.line, kind: 'partial', en: '' });
+      /* ══ ⚠⚠⚠ (#R247) THE THIRTEENTH SHAPE — THE SAME TERNARY, ONE CONTAINER DEEP ═══════════════
+         「全ての言語について、すべての面において対応が完璧かどうか点検し、未了点があれば修正して。」
+         Both arms of the test above have to be STRINGS. js/feedback.js's bug-report categories are
+         the same statement written as two ARRAYS:
+             return jp() ? [['ui','UI・表示'],…] : [['ui','UI / display'],…]
+         — seven whole languages missing, from a list a reader has to choose from before they can
+         file a report, and not one instrument in this repository counted a single string of it: the
+         pair audit wants literal arms, the positional audit wants a call, the langmap audit wants
+         language-coded keys and the adjacent-pair audit exempts nothing here because there is no
+         Japanese string ADJACENT to an English one — they are in different arms.
+         ⚠ COUNTED AS STRINGS, NOT AS SITES: one ternary can hide a whole menu, and the number that
+         matters to a reader of Korean is how many words they see in English. */
+      else if (n.consequent && n.alternate
+        && (n.consequent.type === 'ArrayExpression' || n.consequent.type === 'ObjectExpression')
+        && n.consequent.type === n.alternate.type) {
+        let n_ = 0;
+        walk.simple(n.alternate, { Literal(l) { if (typeof l.value === 'string' && l.value.trim()) n_++; } });
+        if (n_) hits.push({ file: f, line: n.loc.start.line, kind: 'container', en: '', strings: n_ });
+      }
     },
   });
 }
 
 const pairs = hits.filter((h) => h.kind === 'pair');
+const conts = hits.filter((h) => h.kind === 'container');
+const contStrings = conts.reduce((a, h) => a + h.strings, 0);
 const distinct = new Set(pairs.map((h) => h.en));
 if (process.argv.includes('--json')) {
-  process.stdout.write(JSON.stringify({ sites: hits.length, pairs: pairs.length, distinct: distinct.size }));
+  process.stdout.write(JSON.stringify({ sites: hits.length, pairs: pairs.length, distinct: distinct.size,
+    containers: conts.length, containerStrings: contStrings }));
 } else {
   console.log('\nIntMap · helper-ternary audit — a two-language string is seven languages missing  (#R242)\n');
   if (!hits.length) { console.log('  ✓ no `jp() ? … : …` translation pairs left in js/'); process.exit(0); }
   const per = {};
   for (const h of hits) per[h.file] = (per[h.file] || 0) + 1;
   for (const f of Object.keys(per).sort((a, b) => per[b] - per[a])) console.log(`  ${String(per[f]).padStart(4)}  ${f}`);
-  console.log(`\n  ${hits.length} site(s): ${pairs.length} literal pairs (${distinct.size} distinct English strings)`
-    + ` and ${hits.length - pairs.length} with an interpolation.`);
+  console.log(`\n  ${hits.length} site(s): ${pairs.length} literal pairs (${distinct.size} distinct English strings),`
+    + ` ${conts.length} whole CONTAINERS holding ${contStrings} strings (#R247),`
+    + ` and ${hits.length - pairs.length - conts.length} with an interpolation.`);
   console.log('  Each one is English in de, ru, es, fr, ko, zh and zh-Hans. Rewrite as');
   console.log("      L('English', '日本語', 'Deutsch', 'Русский', 'Español')");
   console.log('  and add the fr/ko/zh entries with scripts/i18n-append-inline.mjs.\n');

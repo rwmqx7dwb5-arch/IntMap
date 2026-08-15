@@ -38,6 +38,17 @@ window.IntMapModules.widgets=function(HOST){
        Storage: intmap_widgets3 = [{u,t,cfg}]; v2 string entries migrate automatically. */
     const KEY='intmap_widgets3';
     const jp=()=>HOST.lang==='jp';
+    /* ⚠ (#R247) WHICH WIKIPEDIA THIS READER GETS. Two widgets asked `jp() ? ['ja','en'] : ['en']`,
+       so 「featured article」 and 「on this day」 were the ENGLISH Wikipedia's for German, Russian,
+       Spanish, French, Korean and both Chinese readers — a two-language answer to a question that has
+       as many answers as there are languages. The registry already carries every language's BCP-47
+       tag, and a Wikipedia subdomain is its primary subtag, so this needs no table and no upkeep:
+       a language added tomorrow gets its own Wikipedia with nothing edited here.
+       ⚠ English stays as the FALLBACK behind every other language — these feeds are not published in
+       every edition on every day, and the widget answering in English beats it answering 「—」. */
+    const wikiLangs=()=>{ let t='en';
+      try{ t=String(window.IntMapLang.htmlTag(HOST.lang)||'en').toLowerCase().split('-')[0]; }catch(_){}
+      return t==='en'?['en']:[t,'en']; };
     let active=[];
     try{
       const s3=JSON.parse(localStorage.getItem(KEY)||'null');
@@ -498,7 +509,17 @@ window.IntMapModules.widgets=function(HOST){
         const bar=mpp*100, barStr=bar>=1000?(bar/1000).toFixed(1)+' km':Math.round(bar)+' m';
         setV(e.u,'<span style="font-size:18px;">'+v+'</span>', (window.IntMapLang.t(HOST.lang,"100-px bar ≈ ","100pxバー ≈ ","100-px-Balken ≈ ","полоса 100 px ≈ ","barra de 100 px ≈ "))+barStr+' · z'+z.toFixed(1)); }catch(_){} });
       active.filter(e=>e.t==='calendar').forEach(e=>{ try{ const y=now.getFullYear(), mo=now.getMonth(), today=now.getDate(); const startDow=(new Date(y,mo,1).getDay()+6)%7, dim=new Date(y,mo+1,0).getDate();
-        const dn=jp()?['月','火','水','木','金','土','日']:['M','T','W','T','F','S','S'];
+        /* ⚠ (#R247) the weekday initials come from CLDR, not from a two-armed table. This was
+           `jp() ? ['月',…] : ['M','T','W','T','F','S','S']`, so a German, Russian, Spanish, French,
+           Korean or Chinese reader got the ENGLISH initials in an otherwise translated calendar —
+           the thirteenth shape (a ternary whose arms are arrays; see js/feedback.js and
+           scripts/i18n-helper-ternary-audit.mjs). `Intl` answers for every language there will ever
+           be, which is the same reason #R246 replaced the news-language table with DisplayNames.
+           ⚠ 2024-01-01 IS A MONDAY, which is the day this grid starts on (`startDow` above). */
+        const dn=(()=>{ try{
+          const f=new Intl.DateTimeFormat(window.IntMapLang.locale(HOST.lang),{weekday:'narrow',timeZone:'UTC'});
+          return Array.from({length:7},(_,i)=>f.format(new Date(Date.UTC(2024,0,1+i))));
+        }catch(_){ return ['M','T','W','T','F','S','S']; } })();
         let html='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:9px;text-align:center;line-height:14px;">';
         dn.forEach(x=>html+='<span style="color:var(--text-muted);font-weight:700;">'+x+'</span>');
         for(let i=0;i<startDow;i++) html+='<span></span>';
@@ -645,7 +666,7 @@ window.IntMapModules.widgets=function(HOST){
     async function refreshWikiFeat(e){ try{ const now=new Date();
         const ymd=now.getFullYear()+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+String(now.getDate()).padStart(2,'0');
         let tfa=null;
-        for(const wl of (jp()?['ja','en']:['en'])){ try{ const r=await fetch('https://api.wikimedia.org/feed/v1/wikipedia/'+wl+'/featured/'+ymd); if(r.ok){ const j=await r.json(); if(j&&j.tfa){ tfa=j.tfa; break; } } }catch(_){} }
+        for(const wl of wikiLangs()){ try{ const r=await fetch('https://api.wikimedia.org/feed/v1/wikipedia/'+wl+'/featured/'+ymd); if(r.ok){ const j=await r.json(); if(j&&j.tfa){ tfa=j.tfa; break; } } }catch(_){} }
         if(!tfa){ setV(e.u,'—', una()); return; }
         const url=(tfa.content_urls&&tfa.content_urls.desktop&&tfa.content_urls.desktop.page)||'';
         setV(e.u,'<span style="font-size:14px;line-height:1.4;font-weight:700;">'+String(tfa.normalizedtitle||tfa.title||'').slice(0,60)+'</span>',
@@ -688,7 +709,7 @@ window.IntMapModules.widgets=function(HOST){
         if(!otdList||otdDay!==key){
           const mm=String(now.getMonth()+1).padStart(2,'0'), dd=String(now.getDate()).padStart(2,'0');
           let j=null;
-          for(const wl of (jp()?['ja','en']:['en'])){ try{ const r=await fetch('https://api.wikimedia.org/feed/v1/wikipedia/'+wl+'/onthisday/events/'+mm+'/'+dd); if(r.ok){ j=await r.json(); if(j&&j.events&&j.events.length) break; } }catch(_){} }
+          for(const wl of wikiLangs()){ try{ const r=await fetch('https://api.wikimedia.org/feed/v1/wikipedia/'+wl+'/onthisday/events/'+mm+'/'+dd); if(r.ok){ j=await r.json(); if(j&&j.events&&j.events.length) break; } }catch(_){} }
           if(j&&j.events&&j.events.length){ otdList=j.events; otdDay=key; }
         }
         if(!otdList||!otdList.length){ setV(e.u,'—', una()); return; }

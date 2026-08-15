@@ -29,9 +29,17 @@ test('R243 ① every committed glyph carries the metrics the font says, `top` in
 
 test('R243 ① the builder writes `top` as the distance to the TOP of the box', () => {
   const c = code(read('scripts/build-glyphs.mjs'));
-  assert.ok(/left:\s*x0,\s*top:\s*-y0,/.test(c),
-    '`top: -y0 - h` is the distance to the glyph BOTTOM — MapLibre places the quad at (−top − border), '
-    + 'so every glyph was drawn its own height too low');
+  /* ⚠ (#R247) the EDGE is still the top of the box (that is what this test was written for) — what
+     changed is the ORIGIN it is measured from. A server font's `top` is relative to a point 27 units
+     ABOVE the alphabetic baseline, not to the baseline itself (MapLibre calls the same number
+     `topAdjustment = 27.5` where it converts TinySDF metrics into this convention). Writing it from
+     the baseline drew every Latin glyph 1.125 em high, which is invisible on a bare place label and
+     is why the news band's pill and its text came apart. */
+  assert.ok(/left:\s*x0,\s*top:\s*-y0\s*-\s*TOP_ORIGIN,/.test(c),
+    '`top: -y0 - h` is the distance to the glyph BOTTOM and `-y0` alone is measured from the wrong '
+    + 'origin — MapLibre places the quad at (−top − border) in the SERVER convention');
+  assert.ok(/const TOP_ORIGIN\s*=\s*27\b/.test(c),
+    'and the origin is 27 units above the baseline — measured against the font this atlas replaces');
   assert.ok(/o\.top\s*\|\s*0\)\s*!==\s*g\.top/.test(c) || /o\.top\s*!==\s*g\.top/.test(c),
     '--check must compare `top`, or a wrong metric can be committed again');
 });

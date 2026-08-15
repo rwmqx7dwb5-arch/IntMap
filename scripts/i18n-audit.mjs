@@ -184,7 +184,14 @@ console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.tot
      by scripts/helper-ternary-codemod.mjs, 11 locale tags moved to `IntMapLang.locale()`, three
      {en,jp} tables moved to `pickArgs()`, two defaults moved to a language-keyed table), so the line
      below counts like every other row instead of printing a number nobody has to act on. */
+  /* ⚠ (#R247) `sites` NOW INCLUDES THE THIRTEENTH SHAPE — the same ternary with ARRAY arms
+     (`jp() ? [['ui','UI・表示'],…] : [['ui','UI / display'],…]`). It hid a whole bug-report menu, the
+     calendar's weekday initials and which Wikipedia two widgets read, in seven languages, and it hid
+     from EVERY instrument here: the pair audit wants literal arms, and the adjacent-pair audit needs
+     the two languages NEXT TO each other, which they are not — they are in different arms. Counted
+     as CONTAINERS and as the strings inside them, because one ternary can hide a whole menu. */
   + `\ntwo-language strings behind a helper (\`jp() ? … : …\`): ${helper.sites}`
+    + (helper.containers ? ` (of which ${helper.containers} whole container(s), ${helper.containerStrings} strings)` : '')
   + (helper.sites ? '\n    node scripts/i18n-helper-ternary-audit.mjs --list' : '')
   /* (#R244) the eleventh shape, closed by #R246 — it is a gate now, and stays printed at 0. */
   + `\ntranslation tuples held as an OBJECT keyed by language code: ${langmap.total}`

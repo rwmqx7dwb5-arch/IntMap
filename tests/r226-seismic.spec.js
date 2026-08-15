@@ -70,9 +70,16 @@ test('R226 seismic: a 1.0 km cell at a 2,560 ceiling, painted with exactly one t
   expect(r.n, 'and this is the desktop grid, not the phone one').toBeGreaterThanOrEqual(640);
   expect(r.painted, 'and it painted something').toBeGreaterThan(1000);
 
-  /* ── ② the PNG's own alpha: 0 or 255, never a second hidden transparency */
+  /* ── ② the PNG's own alpha: the slider is the ONLY transparency the body of the field carries.
+     ⚠ (#R247) THE OUTERMOST HALF-CLASS IS NOW A DELIBERATE RAMP, so «partial === 0» stopped being
+     the right way to say that. The defect this pinned was a SECOND, hidden transparency baked into
+     the raster underneath the slider (#R226's 「不透明度100%は全然100%ではない」); the fade is the
+     opposite — a declared ramp at the field's own edge, which is what stopped it ending in a cliff
+     (see fieldPx in js/seismic.js). What still has to be true is that the field's BODY is fully
+     opaque, i.e. the great majority of painted pixels are 255 and the partial ones are the margin. */
   test.skip(!r.px, 'the image source did not expose its URL in this build');
   expect(r.px.opaque, 'the raster painted something').toBeGreaterThan(1000);
-  expect(r.px.partial, 'no painted pixel carries a second, hidden transparency').toBe(0);
+  expect(r.px.opaque, 'and the BODY of the field carries no transparency of its own')
+    .toBeGreaterThan(r.px.partial);
   expect(r.layerOp, 'the slider at 100 % really is 1.0 on the layer').toBe(1);
 });

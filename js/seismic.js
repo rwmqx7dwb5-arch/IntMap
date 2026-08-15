@@ -1131,6 +1131,48 @@ window.IntMapModules.seismic=function(HOST){
        ⚠ BOTH RASTERS. The fine field and the far annulus are one picture under one slider (#R191),
        so they share the constant rather than each carrying a literal. */
     const FIELD_ALPHA=255;
+    /* ══ ⚠⚠⚠ (#R247) THE FIELD ENDS IN A FADE, NOT IN A CLIFF ═══════════════════════════════════════
+       「地震シミュレータで震度分布をある程度の範囲までいったら、線状にそこから計算されなくなる。」
+       ——「いやJMA震度のほうだわ。直線状の崖」
+
+       MEASURED before this: the outermost painted pixel of the 震度 field is #F2F2FF at FULL opacity
+       and the next cell out is alpha 0. Nothing is painted below the scale's lowest class
+       (`jmaClass()` returns null under 計測震度 0.5, `I<2` for MMI), so the lowest class's own
+       ISOLINE is drawn as a step of 255 — and an isoline near its east or west extremity runs almost
+       north-south, which is the 「直線状の崖」. The same edge is in the MMI raster at rgb(191,204,255).
+
+       ⚠ THE CLIFF IS THE DRAWING, NOT THE MODEL. Below the lowest class the model has an answer, it
+       is simply an answer the scale does not name — 「not felt」. So the class floor stops being an
+       ALPHA boundary and becomes the bottom of a RAMP: full opacity at the floor, nothing half a
+       class below it, the class's own colour throughout. The bands, their colours and the legend are
+       untouched (#R224's 「連続塗り、離散凡例」 and 震度's published bands both still hold) — what
+       changes is that the picture stops being there instead of stopping dead.
+
+       ⚠⚠ THE RAMP GOES **INWARD**, AND THAT IS THE WHOLE OF WHY NOTHING ELSE MOVED. The obvious
+       shape is to carry the field half a class FURTHER out and fade to nothing there — and it was
+       measured, and it is wrong: `rEdge` is what the fine image's box is built from, the box is what
+       the 2,560 ceiling divides into cells, so extending the field COARSENS THE CELL. Measured on
+       tests/r226-seismic's own M6.4: span 2,700 → 2,892 km and the cell 1.05 → 1.13 km, against a
+       1.0 km target three rounds (#R202 / #R203 / #R204) were spent reaching. Fading inward instead
+       leaves `rEdge`, the box, the span and the cell BYTE-IDENTICAL: the outermost isoline is where
+       it always was, and what changes is that the field arrives at it transparent instead of at full
+       opacity. ⚠ The visible cost is honest and bounded — the last half-class is dimmer than it was.
+
+       ⚠ ONE FUNCTION, BOTH RASTERS. `fieldPx` is what buildField and buildFar each write into their
+       ImageData — the colour AND the alpha — because a fade computed twice is [[G]] again: the fine
+       image and the far annulus would end at different transparencies and put a ring at the seam. */
+    const FADE_I=0.5;
+    const _clsRGB=(cl)=>cl._rgb||(cl._rgb=[parseInt(cl.col.slice(1,3),16),parseInt(cl.col.slice(3,5),16),parseInt(cl.col.slice(5,7),16)]);
+    /* fills out[0..3] and returns it, or null when this cell is below the fade's own floor */
+    function fieldPx(I,out){
+      const lo=(scale==='jma')?JMA_CLASSES[0].min:2;
+      if(!(I>=lo)) return null;                       /* the class floor — the edge did not move */
+      if(scale==='jma'){ const rgb=_clsRGB(jmaClass(I)); out[0]=rgb[0]; out[1]=rgb[1]; out[2]=rgb[2]; }
+      else mmiRGB(I,out);
+      out[3]=(I>=lo+FADE_I) ? FIELD_ALPHA
+        : Math.max(1,Math.round(FIELD_ALPHA*(I-lo)/FADE_I));
+      return out;
+    }
     /* ══ ⚠ (#R226) A YIELD THAT COSTS 4 ms IS NOT A FREE YIELD ══════════════════════════════════════
        「地震と津波の計算速度は品質を下げない範囲で爆速に。」 Both rasters below hand the event loop back
        on a 12 ms budget so the page stays responsive while they compute — with `setTimeout(…,0)`, which
@@ -1256,8 +1298,23 @@ window.IntMapModules.seismic=function(HOST){
     /* (#R232)  rather than one profile — the directivity bank, indexed by azimuth. */
     async function buildFar(profAt,box,rFine,rEdge,seq){
       fldFar=null;
-      if(!epi||!(rEdge>rFine+1)){ paintFar(); return; }
+      if(!epi){ paintFar(); return; }
       const C0=fault?fault.centroid:epi;
+      /* ⚠ (#R247) THE TEST IS «IS THE DISC INSIDE THE BOX», NOT «IS rEdge PAST rFine».
+         The old guard asked whether there was an ANNULUS to draw, which is one of the two ways the
+         far raster is needed; the other is the slivers along the box's flanks (see the note in the
+         row loop). Both are the same question asked once: the disc of radius rEdge is covered by the
+         fine image iff every point of the box's BOUNDARY is at least rEdge away. Sampling the
+         boundary is exact enough at a 28 km cell and costs ~700 acos, against the 7.9 MB canvas and
+         the PNG encode this skips when the answer is no. */
+      let boxMin=Infinity;
+      for(let t=0;t<=180;t++){
+        const f=t/180, lo=box.W+(box.E-box.W)*f, la=box.Ss+(box.Nn-box.Ss)*f;
+        const d=(p)=>gcDelta(C0,p)*D*RE;
+        const m=Math.min(d([lo,box.Nn]),d([lo,box.Ss]),d([box.W,la]),d([box.E,la]));
+        if(m<boxMin) boxMin=m;
+      }
+      if(!(boxMin<rEdge-1)){ paintFar(); return; }
       /* (#R203) the FAR field is the same picture at the same request, and it is pure arithmetic —
          #R191 measured the whole world at ~40 ms — so it gets the same step up: 1,024² is ~1.8 M cells
          at two multiplies and one acos each. Phones 384 → 512. */
@@ -1334,16 +1391,15 @@ window.IntMapModules.seismic=function(HOST){
       const RBIN=REACH_BINS/(2*Math.PI);
       /* ⚠ the BAND is solved on the centroid distance (#R218) while the PAINT is Rrup, so the outer
          limit has to be widened by the reach or the forward end of the rupture would be clipped. */
-      const cosEdge=Math.cos(Math.min(Math.PI,(rEdge+maxReach)/RE)), cosFine=Math.cos(Math.min(Math.PI,rFine/RE));
+      const cosEdge=Math.cos(Math.min(Math.PI,(rEdge+maxReach)/RE));
       const _cut=rupCutKm();   /* (#R223) hoisted: the implied rupture radius is a constant over the raster */
       const iOfLng=(l)=>(l+180)/dxF-0.5;
-      const rgbOfFar=(cl)=>cl._rgb||(cl._rgb=hx(cl.col));
-      const _farRGB=[0,0,0];   /* (#R224) one scratch triple for the continuous MMI ramp — see mmiRGB */
+      const _farRGB=[0,0,0,0];   /* (#R224) one scratch RGBA — (#R247) the ALPHA is a result too, see fieldPx */
       let _lastYield=performance.now();
       for(let j=0;j<NF;j++){
         const la=latOfY(yT+(j+0.5)*dyF), lb=la*D, sinB=Math.sin(lb), cosB=Math.cos(lb);
         const den=cosA*cosB;
-        /* the Δλ half-width at which the distance is exactly rEdge (and rFine); NaN/out-of-range
+        /* the Δλ half-width at which the distance is exactly rEdge; NaN/out-of-range
            means "this row never reaches that circle", handled by the clamps below */
         let dl=Math.PI;
         if(Math.abs(den)>1e-12){
@@ -1351,12 +1407,18 @@ window.IntMapModules.seismic=function(HOST){
           if(cx>1) continue;                     /* the whole row is outside rEdge */
           dl=(cx<-1)?Math.PI:Math.acos(cx);
         } else if(cosEdge>sinA*sinB+1e-12) continue;
-        let inner=-1;
-        if(Math.abs(den)>1e-12){
-          const cf=(cosFine-sinA*sinB)/den;
-          if(cf<=1&&cf>=-1) inner=Math.acos(cf);  /* inside this the FINE image owns the cells */
-        }
-        const halfI=dl/D/dxF, innerI=(inner>=0)?inner/D/dxF:-1;
+        /* ⚠⚠ (#R247) THERE IS NO INNER RADIUS ANY MORE — OWNERSHIP IS THE BOX, AND ONLY THE BOX.
+           #R218's band solve also carved out a disc of radius rFine on the argument that «inside this
+           the FINE image owns the cells». It does not: the fine image is the disc's BOUNDING BOX, and
+           a lat/lng box is not a disc. Along its east and west edges, away from the epicentre's own
+           latitude, the box edge is NEARER than rFine — so a cell there is outside the box (the fine
+           image never drew it) and inside rFine (the far loop skipped it). Both rasters dropped it.
+           MEASURED on the geometry alone: 0 such cells at 45 N, 21 at 50 N, 192 at 60 N and 2,734 at
+           70 N, in runs up to 3 cells (≈43 km) either side — a thin line of missing field down the
+           box's flanks, at exactly the latitudes where a 1,500 km box is widest in degrees.
+           The box test below is the whole of the answer (#R245 snapped the box to THIS grid so it is
+           exact), and the disc it replaces was only ever an optimisation. */
+        const halfI=dl/D/dxF;
         const i0=iOfLng(C0[0]);
         /* walk the band, wrapped: the epicentre may sit near ±180 and the band crosses the seam.
            ⚠ A band wider than the world must be walked ONCE — the wrap would otherwise visit the same
@@ -1364,7 +1426,6 @@ window.IntMapModules.seismic=function(HOST){
         const full=(2*halfI>=NF-1);
         const sLo=full?0:Math.ceil(i0-halfI), sHi=full?NF-1:Math.floor(i0+halfI);
         for(let s=sLo;s<=sHi;s++){
-          if(innerI>=0&&Math.abs(s-i0)<innerI-1) continue;   /* wholly inside the fine radius */
           const i=((s%NF)+NF)%NF;
           const c=Math.max(-1,Math.min(1,sinA*sinB+cosA*cosB*cosDL[i]));
           const kmC=Math.acos(c)*RE;
@@ -1375,7 +1436,7 @@ window.IntMapModules.seismic=function(HOST){
           let km=kmC;
           if(reach){ const b=bearingTo(C0,[lo,la])*D;
             km=Math.max(0,kmC-reach[((Math.floor(b*RBIN)%REACH_BINS)+REACH_BINS)%REACH_BINS]); }
-          if(km<=rFine||km>rEdge) continue;
+          if(km>rEdge) continue;   /* (#R247) `rEdge` here is the SURFACE limit — see rEdgeSurf */
           /* ⚠ (#R245) THE FINE IMAGE OWNS THIS — AND ITS BOX IS SNAPPED TO **THIS** GRID, so a cell is
              either wholly inside it or wholly outside it and the two images tile exactly: no cell is
              dropped by both (a gap) and none is drawn by both (a double-painted band). See the note
@@ -1392,12 +1453,11 @@ window.IntMapModules.seismic=function(HOST){
           if(vsm){ const v=vsm.at(lo,la); if(v){ g=ampOf(v)/ampRef; ampCells++; } }
           const I=(scale==='jma')?jmaOfA0(b2[1]*g):mmiOf(b2[0]*g);
           /* (#R224) MMI is a CONTINUOUS ramp now (see MMI_RAMP); 震度 keeps its published bands.
-             `mmiClass` is still what decides whether anything is painted at all — the II floor. */
-          let rgb;
-          if(scale==='jma'){ const cl=jmaClass(I); if(!cl) continue; rgb=rgbOfFar(cl); }
-          else { if(I<2) continue; rgb=mmiRGB(I,_farRGB); }
+             (#R247) …and the colour AND the alpha both come from `fieldPx`, which is the ONE place
+             the lowest class's fade is written — see it for why the edge stopped being a cliff. */
+          const rgb=fieldPx(I,_farRGB); if(!rgb) continue;
           const o=(j*NF+i)*4;
-          px[o]=rgb[0]; px[o+1]=rgb[1]; px[o+2]=rgb[2]; px[o+3]=FIELD_ALPHA; painted++;
+          px[o]=rgb[0]; px[o+1]=rgb[1]; px[o+2]=rgb[2]; px[o+3]=rgb[3]; painted++;
           if(km>MMI_CALIB_KM) extrap++;
         }
         if((j&63)===63){ const t=performance.now();
@@ -1505,14 +1565,41 @@ window.IntMapModules.seismic=function(HOST){
            instead of repeating two of its constants. (#R192) …and it now walks the profile the ACTIVE
            scale is computed from — a₀ for 震度, PGV for MMI. */
         const jmaScale=(scale==='jma');
+        /* ⚠ (#R247) THE FLOOR IS STILL THE CLASS'S, and that is deliberate: the fade added by this
+           round runs INWARD from this radius (see fieldPx), so the edge — and therefore the fine
+           image's box, its span and its cell size — is exactly where it was. */
         const arr=jmaScale?profEdge.a0s:profEdge.out, floor=jmaScale?A0_FLOOR_JMA:PGV_FLOOR_MMI;   /* (#R232) the forward lobe sets the edge */
         const ampMax=ampOf(180);
         let rEdge=30;
         for(let k=profEdge.rr.length-1;k>=0;k--){ if(arr[k]*(ampMax/ampRef)>=floor){ rEdge=Math.max(30,profEdge.rr[k]); break; } }
         rEdge=Math.min(rEdge,MMI_MAX_KM);
+        /* ══ ⚠⚠⚠ (#R247) …AND `rEdge` IS A **SOURCE** DISTANCE, WHICH IS NOT WHAT `buildFar` COMPARES ═══
+           「地震シミュレータで震度分布をある程度の範囲までいったら、線状にそこから計算されなくなる。」
+
+           `profEdge.rr` is the grid `motion()` is evaluated on — the distance `srcDistM()` PRODUCES,
+           not the surface distance it is given. `buildFar` then wrote `if(km>rEdge) continue` with a
+           SURFACE `km`, so the annulus stopped one whole implied-rupture radius short of where the
+           field actually reaches. It is the same defect #R244 found one level up («the far field was
+           handing srcDistM the wrong surface distance»), and `srcDistM`'s own header says why it
+           keeps happening: ONE CONVERSION, FOUR READERS — a limit derived from its OUTPUT has to be
+           carried back through it before it can be compared with its INPUT.
+
+           MEASURED, M9.1 point source at 38.3 N / 143 E, 震度 scale: rEdge = 1,658 km, and the far
+           raster's outermost painted cell sat at 1,662 km — while the FINE raster, which has no such
+           test at all (only the class test and MMI_MAX_KM), painted on to ~1,798 km. The fine image
+           is a lat/lng BOX, so between those two radii the only thing that stopped the field was the
+           box's own straight edge: a vertical cliff at 125.795 E from 30 N to 54 N, with 震度 1
+           (242,242,255) on one side and nothing on the other. ⚠ THE GAP IS THE IMPLIED RUPTURE
+           RADIUS, so it grows with magnitude — 5 km at M6, 44 at M8, 140 at M9.1, 213 at M9.5 —
+           which is exactly 「ある程度の範囲までいったら」. And it is ZERO whenever a rupture is drawn
+           or loaded (`rupCutKm()` returns 0 there), which is why it never showed on a past earthquake.
+
+           The inverse of `srcDistM` is exact: r = √((surf−cut)² + depth²) ⇒ surf = cut + √(r² − depth²). */
+        const _cutEdge=rupCutKm();
+        const rEdgeSurf=Math.min(MMI_MAX_KM,_cutEdge+Math.sqrt(Math.max(0,rEdge*rEdge-depthKm*depthKm)));
         /* (#R191) the FINE field is bounded by the terrain, not by the class — see MMI_TERRAIN_KM.
            Everything past it is the far field, which needs no DEM and is drawn by buildFar(). */
-        const rFine=Math.min(rEdge,MMI_TERRAIN_KM);
+        const rFine=Math.min(rEdgeSurf,MMI_TERRAIN_KM);
         const C0=fault?fault.centroid:epi;
         let halfKm=rFine; if(fault){ let mx=0; fault.ring.forEach(p=>{ const d2=gcDelta(C0,p)*D*RE; if(d2>mx) mx=d2; }); halfKm+=mx; }
         const cosC=Math.max(0.1,Math.cos(C0[1]*D));
@@ -1873,8 +1960,7 @@ window.IntMapModules.seismic=function(HOST){
         }
         /* the class colours, parsed ONCE. `hex()` was three slice+parseInt pairs per PAINTED cell —
            on a continental field that is a million string operations for eleven distinct colours. */
-        const _rgbOf=(cls)=>cls._rgb||(cls._rgb=hex(cls.col));
-        const _fineRGB=[0,0,0];   /* (#R224) scratch triple for the continuous MMI ramp — see mmiRGB */
+        const _fineRGB=[0,0,0,0];   /* (#R224) scratch RGBA — (#R247) the ALPHA is a result too, see fieldPx */
         /* (#R218) yielding on a TIME budget rather than every eight rows. `setTimeout(…,0)` is clamped
            to ~4 ms once nested, so 1,792 rows / 8 was 224 forced waits ≈ 0.9 s of pure timer latency
            inside a build the panel reports as computation. The point of the yield is that the page
@@ -1937,12 +2023,12 @@ window.IntMapModules.seismic=function(HOST){
             const pgv=b2[0]*g, a0=b2[1]*g;
             pgvArr[k]=pgv; a0Arr[k]=a0;
             const I=(scale==='jma')?jmaOfA0(a0):mmiOf(pgv);
-            /* (#R224) the same split as buildFar: continuous ramp for MMI, published bands for 震度 */
-            let c;
-            if(scale==='jma'){ const cls=jmaClass(I); if(!cls) continue; c=_rgbOf(cls); }
-            else { if(I<2) continue; c=mmiRGB(I,_fineRGB); }
+            /* (#R224) the same split as buildFar: continuous ramp for MMI, published bands for 震度.
+               (#R247) …through the SAME `fieldPx` the far annulus uses, so the two rasters cannot end
+               at different transparencies and put a ring at the seam. */
+            const c=fieldPx(I,_fineRGB); if(!c) continue;
             if(km>MMI_CALIB_KM) beyondCalib++;   /* (#R190) drawn, and declared as extrapolated */
-            px[o]=c[0]; px[o+1]=c[1]; px[o+2]=c[2]; px[o+3]=FIELD_ALPHA; painted++;
+            px[o]=c[0]; px[o+1]=c[1]; px[o+2]=c[2]; px[o+3]=c[3]; painted++;
           }
           if((j&7)===7){ prog(40+58*(j+1)/N);
             const t=performance.now();
@@ -1973,12 +2059,14 @@ window.IntMapModules.seismic=function(HOST){
                   /* (#R215) WHICH coastline decided the coast, and how fine it was — declared, not implied */
                   coastSource:coastSrc, coastCellKm:(coastKm!=null?+coastKm.toFixed(2):null),
                   slopeBaselineM:Math.round(dsM), slopeUsable,
-                  spanKm:Math.round(spanKm), rEdgeKm:Math.round(rEdge), rFineKm:Math.round(rFine),
+                  /* (#R247) the SURFACE radius the field reaches — the number this panel means by
+                     「どこまで」, and the one both rasters now stop at. See rEdgeSurf above. */
+                  spanKm:Math.round(spanKm), rEdgeKm:Math.round(rEdgeSurf), rFineKm:Math.round(rFine),
                   demTiles:snap?snap.have:null, demTilesMissing:snap?snap.missing:null,
                   terrain:(noDem+coarse)<N*N*0.5, ms:Math.round(performance.now()-t0) } };
         paintField();
         /* (#R191) …and the annulus the terrain cannot reach, out to the end of the lowest class */
-        await buildFar(profAt,{W,E,Ss,Nn},rFine,rEdge,seq);
+        await buildFar(profAt,{W,E,Ss,Nn},rFine,rEdgeSurf,seq);
         if(fld&&fld.stats) fld.stats.ms=Math.round(performance.now()-t0);
         prog(100);
       } finally { try{ HOST.releaseDEMHold(); }catch(_){}   /* (#R221) the pin is for THIS build only */

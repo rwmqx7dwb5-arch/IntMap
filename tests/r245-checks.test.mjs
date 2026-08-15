@@ -93,8 +93,16 @@ test('r245 ④ the intensity field has one boundary, on the grid, with no fade a
   assert.ok(/snapLngFar/.test(src) && /snapLatFar/.test(src), 'the fine box is snapped to that grid');
   assert.ok(/const W=snapLngFar\(/.test(src) && /const Nn=snapLatFar\(/.test(src), '…and the snap is what W/E/Nn/Ss are');
   assert.ok(/'raster-resampling':'nearest'/.test(src), 'the far layer does not interpolate towards its transparent cells');
-  /* and the seam must stay a partition: no margin, no overlap */
-  assert.ok(/if\(km<=rFine\|\|km>rEdge\) continue;/.test(src), 'the inner limit is rFine itself');
+  /* and the seam must stay a partition: no margin, no overlap.
+     ⚠ (#R247) THE INNER LIMIT IS GONE, AND THAT MAKES THE PARTITION *MORE* EXACT, NOT LESS. #R245's
+     point is that every far cell must be wholly inside the box (skipped) or wholly outside it
+     (painted). A SECOND inner test — `km<=rFine` — could not agree with the box, because the box is
+     the BOUNDING BOX of the disc of radius rFine and not the disc: along its east and west flanks
+     the box edge is nearer than rFine, so those cells were outside the box AND inside rFine and
+     neither raster drew them (measured on the geometry alone: 192 cells at 60 N, 2,734 at 70 N).
+     The box test below is now the whole of ownership, which is what «a partition» means. */
+  assert.ok(/if\(km>rEdge\) continue;/.test(src), 'the only radial limit is the outer one');
+  assert.ok(!/km<=rFine/.test(src), 'the inner radius no longer competes with the box');
   assert.ok(/if\(lo>=box\.W&&lo<=box\.E&&la>=box\.Ss&&la<=box\.Nn\) continue;/.test(src),
     'and the box test is the box, not the box plus or minus a margin');
 });

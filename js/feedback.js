@@ -25,7 +25,32 @@ window.IntMapModules.feedback=function(HOST){
     let modal=null, rating=0, cat='general';
     /* (#R30) feedback categories — make every note actionable. Bug → offer the diagnostic Bug Reporter. */
     /* (#R33) "Praise" category removed; category is now an iOS pulldown (chips truncated on mobile). */
-    const CATS=[['general',LA('General','全般','Allgemein','Общее','General')],['idea',LA('Feature idea','要望','Funktionswunsch','Пожелание','Sugerencia')],['bug',LA('Bug','不具合','Fehler','Ошибка','Error')]];
+    /* ══ (#R247) 「Feedbackの選べるtypeの種類が少なすぎる。」 ════════════════════════════════════════
+       Three choices — General / Feature idea / Bug — sorted nothing: every note about the map, the
+       news, a simulator, a translation or the speed of the thing arrived as 「General」, which is the
+       same as arriving unsorted. The list is now the SUBJECTS this app actually has, and it is the
+       same vocabulary the bug reporter's own list uses (see `cats()` below) so a reader who files in
+       one place and then the other is not asked to learn two taxonomies.
+       ⚠ THE ID IS THE STORED VALUE. `submit()` embeds the English label in the comment (there is no
+       column for it — see there), so ids may be APPENDED but never renamed: an old row's 「[Bug]」
+       has to keep meaning what it meant. */
+    const CATS=[
+      ['general',LA('General','全般','Allgemein','Общее','General')],
+      ['idea',   LA('Feature idea','機能の要望','Funktionswunsch','Пожелание','Sugerencia')],
+      ['bug',    LA('Bug','不具合','Fehler','Ошибка','Error')],
+      ['map',    LA('Map & layers','地図・レイヤー','Karte & Ebenen','Карта и слои','Mapa y capas')],
+      ['data',   LA('Data accuracy','データの正確さ','Datengenauigkeit','Точность данных','Exactitud de los datos')],
+      ['news',   LA('News','ニュース','Nachrichten','Новости','Noticias')],
+      ['ai',     LA('AI & Atlas','AI・Atlas','KI & Atlas','ИИ и Atlas','IA y Atlas')],
+      ['sim',    LA('Simulators','シミュレータ','Simulationen','Симуляторы','Simuladores')],
+      ['space',  LA('Space & sky','宇宙・天体','Weltraum & Himmel','Космос и небо','Espacio y cielo')],
+      ['design', LA('Design & layout','デザイン・レイアウト','Design & Layout','Дизайн и вёрстка','Diseño y disposición')],
+      ['perf',   LA('Performance','動作の速さ','Leistung','Быстродействие','Rendimiento')],
+      ['mobile', LA('Mobile','スマートフォン','Mobilgeräte','Мобильные устройства','Móvil')],
+      ['lang',   LA('Translation & language','翻訳・言語','Übersetzung & Sprache','Перевод и язык','Traducción e idioma')],
+      ['account',LA('Account & sign-in','アカウント・ログイン','Konto & Anmeldung','Аккаунт и вход','Cuenta e inicio de sesión')],
+      ['access', LA('Accessibility','アクセシビリティ','Barrierefreiheit','Доступность','Accesibilidad')],
+      ['other',  LA('Other','その他','Sonstiges','Другое','Otro')]];
     function ensure(){ if(modal) return modal;
       modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='feedback-modal';
       modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:5200;align-items:center;justify-content:center;padding:20px;';
@@ -58,7 +83,11 @@ window.IntMapModules.feedback=function(HOST){
       if(!rating){ msg.textContent=window.IntMapLang.t(HOST.lang,"Please pick a star rating.","星の数を選んでください。","Bitte eine Sternebewertung wählen.","Пожалуйста, поставьте оценку звёздами.","Elija una valoración con estrellas."); return; }
       const text=(c.querySelector('#fb-text').value||'').trim();
       const emailIn=c.querySelector('#fb-email'); const enteredEmail=emailIn?(emailIn.value||'').trim():'';
-      const catEN=(CATS.find(x=>x[0]===cat)||[,{en:'General'}])[1].en;
+      /* ⚠ (#R247) `[1][0]`, NOT `[1].en`. #R243 turned these tuples from `{en,jp}` objects into
+         `LA(…)` CALLS — which return an ARRAY — and left this reader on the object shape, so every
+         feedback row since has been stored as 「[undefined] …」 and the category was lost. That is
+         [[intmap-recurring-lessons]] B7 exactly: converting the data is half the job. */
+      const catEN=(CATS.find(x=>x[0]===cat)||[,['General']])[1][0];
       const comment=('['+catEN+'] '+text).trim();   /* category embedded so it stores without a schema change */
       const btn=c.querySelector('#fb-send'); btn.disabled=true; btn.textContent=window.IntMapLang.t(HOST.lang,"Sending…","送信中…","Wird gesendet…","Отправка…","Enviando…");
       let ok=false;
@@ -106,7 +135,9 @@ window.IntMapModules.feedback=function(HOST){
     return d;
   }
   (function(){
-    const jp=()=>HOST.lang==='jp';
+    /* (#R247) the `jp()` helper this closure had went with the two-armed category list below — the
+       reason it existed. A helper that answers 「is this Japanese?」 is a two-language question and
+       leaving it declared is an invitation to ask it again. */
     let modal=null;
     function ensure(){ if(modal) return modal;
       modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='bug-modal';
@@ -115,9 +146,25 @@ window.IntMapModules.feedback=function(HOST){
       document.body.appendChild(modal);
       modal.addEventListener('click',(e)=>{ if(e.target===modal) close(); });
       return modal; }
-    function cats(){ return jp()
-      ? [['ui','UI・表示'],['map','地図・レイヤー'],['news','ニュース'],['ai','AI機能'],['account','アカウント・ログイン'],['perf','動作が重い・落ちる'],['other','その他']]
-      : [['ui','UI / display'],['map','Map & layers'],['news','News'],['ai','AI features'],['account','Account / login'],['perf','Performance / crash'],['other','Other']]; }
+    /* ══ ⚠⚠⚠ (#R247) THE THIRTEENTH SHAPE — A TERNARY WHOSE ARMS ARE ARRAYS ═══════════════════════
+       This list was `jp() ? [ … ] : [ … ]`, i.e. the ninth shape #R242 closed, written one container
+       deeper — and therefore invisible to every instrument in the repository: the helper-ternary
+       audit wanted LITERAL arms, the adjacent-pair audit needs a Japanese string NEXT TO an English
+       one and here they are in different arms, and nothing else looks at a ternary at all. Seven
+       languages read this menu in English, and it is the first thing a reader has to answer before
+       they can report anything. `scripts/i18n-helper-ternary-audit.mjs` counts the shape now.
+       ⚠ THE IDS ARE THE STORED `category` COLUMN (supabase_bug_reports.sql, and admin.html filters on
+       it) — the labels are translated, the ids are untouched. */
+    const LA=window.IntMapLang.pickArgs(), L=window.IntMapLang.pick(()=>HOST.lang);
+    const BUG_CATS=[
+      ['ui',     LA('UI / display','UI・表示','UI / Anzeige','Интерфейс / отображение','Interfaz / visualización')],
+      ['map',    LA('Map & layers','地図・レイヤー','Karte & Ebenen','Карта и слои','Mapa y capas')],
+      ['news',   LA('News','ニュース','Nachrichten','Новости','Noticias')],
+      ['ai',     LA('AI features','AI機能','KI-Funktionen','Функции ИИ','Funciones de IA')],
+      ['account',LA('Account / login','アカウント・ログイン','Konto / Anmeldung','Аккаунт / вход','Cuenta / inicio de sesión')],
+      ['perf',   LA('Performance / crash','動作が重い・落ちる','Leistung / Absturz','Производительность / сбой','Rendimiento / bloqueo')],
+      ['other',  LA('Other','その他','Sonstiges','Другое','Otro')]];
+    function cats(){ return BUG_CATS.map(([id,tuple])=>[id,L.arr(tuple)]); }
     function renderForm(){ const c=modal.querySelector('#bug-card'); const diag=_imDiag();
       c.innerHTML='<button id="bug-x" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">✕</button>'+
         '<h3 style="margin:0 0 6px;font-size:17px;">🐞 '+(window.IntMapLang.t(HOST.lang,"Report a bug","バグを報告","Fehler melden","Сообщить об ошибке","Informar de un error"))+'</h3>'+
