@@ -2326,7 +2326,33 @@ window.IntMapModules.dataLayers=function(HOST){
         visible.forEach(el=>{ el.style.top=top+'px'; el.style.bottom='auto'; el.style.left='6px'; el.style.right='auto'; top += el.getBoundingClientRect().height+8; });
       } else {
         let bottom=140;
-        visible.forEach(el=>{ el.style.bottom=bottom+'px'; el.style.top='auto'; el.style.left=leftBase+'px'; el.style.right='auto'; bottom += el.getBoundingClientRect().height+10; });
+        /* ══ ⚠ (#R244) A LEGEND MAY ASK TO GROW DOWNWARD ═════════════════════════════════════════════
+           「アメリカ大統領選挙レイヤーは、操作時に凡例が上に伸びるのではなく下に伸びるように。」
+           Desktop legends are anchored by `bottom`, so a legend that gets TALLER grows out of its top
+           edge — and the U.S. election legend re-renders its whole body on every year change (a year
+           with three candidates is two rows taller than one with two), which walks the year selector
+           the reader is pointing at up the screen under their cursor.
+           A legend that declares `data-grow-down` is placed by its TOP instead. The stack maths is
+           unchanged — the same `bottom` cursor decides where it sits — so it lands in exactly the
+           same place and only its GROWTH direction differs. */
+        const mcH=(()=>{ try{ const mc=document.getElementById('map-container'); return (mc&&mc.getBoundingClientRect().height)||window.innerHeight; }catch(_){ return window.innerHeight; } })();
+        visible.forEach((el,idx)=>{ el.style.left=leftBase+'px'; el.style.right='auto';
+          const h=el.getBoundingClientRect().height;
+          if(el.dataset.growDown==='1'){
+            /* ⚠ WRITING `top` IS NOT ENOUGH — `top = mcH − bottom − h` is the bottom-anchored place
+               expressed as a top, so it still moves when `h` changes. Measured on the election
+               legend: 2020 → top 233, 1912 → 211, 1860 → 152, bottom pinned at 580, i.e. exactly the
+               upward growth the report is about. The top is therefore REMEMBERED: the stack decides
+               it once (so the legend still lands in its slot, and still moves when another legend
+               opens or closes — `gdKey` is its position in the stack), and a re-render that only
+               changes the CONTENT keeps it. */
+            const key=visible.length+':'+idx;
+            let top=+el.dataset.gdTop;
+            if(el.dataset.gdKey!==key||!isFinite(top)){ top=Math.max(8,mcH-bottom-h); el.dataset.gdKey=key; el.dataset.gdTop=String(top); }
+            el.style.top=top+'px'; el.style.bottom='auto';
+          }
+          else { el.style.bottom=bottom+'px'; el.style.top='auto'; }
+          bottom += h+10; });
       }
     }
     /* Mark a legend as user-dragged so tileLegends() leaves it alone. */
@@ -3436,6 +3462,7 @@ window.IntMapModules.dataLayers=function(HOST){
        GPU upscaled it on every HiDPI screen. That is a defect, not a design: drawing the same 44-unit
        artwork at devicePixelRatio and declaring it produces the SAME on-screen size, just not blurred.
        Reverting it would restore a bug rather than an appearance. */
+    const PLANE_CIV='#f8b500';   /* (#R244) 山吹色 — the civil-aircraft colour, written once */
     function ensurePlaneIcons(){
       if(!GE().hasRenderer()) return;
       const dpr=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1)));
@@ -3448,7 +3475,13 @@ window.IntMapModules.dataLayers=function(HOST){
         return { data:ctx.getImageData(0,0,s*dpr,s*dpr), pixelRatio:dpr };
       };
       const add=(id,color)=>{ try{ if(!GE().scene.hasImage(id)){ const m=make(color); GE().scene.addImage(id,m.data,{pixelRatio:m.pixelRatio}); } }catch(_){} };
-      add('plane-civ','#1e90ff');
+      /* ══ ⚠ (#R244) CIVIL AIRCRAFT ARE 山吹色 ═══════════════════════════════════════════════════
+         「Live aircraft trafficの民間機の色は山吹色に。」 #F8B500 is the JIS 山吹色, and it is the
+         ONE place the civil colour is written for the flat glyph; the two extrusion cases below
+         read the same constant so the 2-D mark and the 3-D body can never disagree (they did in
+         #R173, which is why _feHex exists). ⚠ It is deliberately deeper than the selected-aircraft
+         yellow #ffd23f, which still has to read as 「this is the one you clicked」 beside it. */
+      add('plane-civ',PLANE_CIV);
       add('plane-mil','#ff3b30');
       add('plane-sel','#ffd23f');   /* (#R173) the clicked aircraft */
     }
@@ -3529,7 +3562,7 @@ window.IntMapModules.dataLayers=function(HOST){
         if(!GE().layers.hasSource(PLANE3D_SRC)) GE().layers.addSource(PLANE3D_SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         if(!GE().layers.has(PLANE3D_POST)) GE().layers.add({id:PLANE3D_POST,type:'fill-extrusion',source:PLANE3D_SRC,
           filter:['==',['get','post'],1], layout:{visibility:'none'},
-          paint:{ 'fill-extrusion-color':_feRamp(d=>['match',['get','type'],'military',_feHex('#ff3b30',d),_feHex('#1e90ff',d)]),
+          paint:{ 'fill-extrusion-color':_feRamp(d=>['match',['get','type'],'military',_feHex('#ff3b30',d),_feHex(PLANE_CIV,d)]),
             'fill-extrusion-opacity':Math.min(0.5,opacities.planes*0.5),
             'fill-extrusion-base':['get','alt'], 'fill-extrusion-height':['get','top'] }},beforeId);
         if(!GE().layers.has(PLANE3D_LYR)) GE().layers.add({id:PLANE3D_LYR,type:'fill-extrusion',source:PLANE3D_SRC,
@@ -3543,7 +3576,7 @@ window.IntMapModules.dataLayers=function(HOST){
                      colour rather than the shader's idea of it. */
             'fill-extrusion-color':_feRamp(d=>['case',
               ['==',['get','part'],'rim'],_feHex('#ffffff',d),
-              ['==',['get','sel'],1],_feHex('#ffd23f',d),['match',['get','type'],'military',_feHex('#ff3b30',d),_feHex('#1e90ff',d)]]),
+              ['==',['get','sel'],1],_feHex('#ffd23f',d),['match',['get','type'],'military',_feHex('#ff3b30',d),_feHex(PLANE_CIV,d)]]),
             'fill-extrusion-opacity':opacities.planes,
             'fill-extrusion-base':['get','alt'], 'fill-extrusion-height':['get','top'] }},beforeId);
         /* (#R173) the clicked aircraft's observed track — a flat line on the ground, and the same fixes as

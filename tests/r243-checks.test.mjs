@@ -101,7 +101,12 @@ test('R243 ⑤ the result card no longer restates the source or the solver telem
 test('R243 ⑤ the progress bar appears under the button that starts it', () => {
   const c = code(read('js/seismic.js'));
   assert.ok(/function _progHTML\(/.test(c), 'one builder for the bar');
-  assert.equal((c.match(/_progHTML\(/g) || []).length, 3, 'declared once, used in card 4 and in the pinned footer');
+  /* ⚠ (#R244) 「計算進捗ボタンが二つあるから下部のものだけにしろ。」 — two bars moving for one solve is
+     what the reader saw, and the one that answers 「押したものは動いているか」 is the one under the
+     pinned button. The card-4 copy is deleted, so this is declared once and used once. What the
+     round-243 report was actually about — the bar being where the button is — is unchanged and is
+     the line below it. */
+  assert.equal((c.match(/_progHTML\(/g) || []).length, 2, 'declared once, used once — in the pinned footer');
   assert.ok(/panel\.querySelectorAll\('\.sq-prog'\)/.test(c),
     '_setProg must write EVERY .sq-prog — two readouts of one state cannot be allowed to disagree');
   assert.ok(!/Done — press ▶ above to watch the waves/.test(c), '「完了しました」 line is gone');

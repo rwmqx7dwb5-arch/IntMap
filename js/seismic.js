@@ -1192,6 +1192,48 @@ window.IntMapModules.seismic=function(HOST){
         try{ GE().layers.setPaint(LYR_FAR,'raster-opacity',fldOpacity); }catch(_){}
       }catch(_){}
     }
+    /* ══ ⚠⚠⚠ (#R244) THE RUPTURE'S REACH BY BEARING — WHY THE FAR FIELD HAD A SQUARE IN IT ═══════════
+       「MMIで震度分布を計算したときに、震源の外側に数千キロ規模の四角形の線がありそこで震度分布が
+         断絶している。やめて。」
+
+       MEASURED as a distance defect, not a drawing one. `srcDistM` says of itself 「ONE CONVERSION,
+       FOUR READERS … writing it four times is how the rings and the paint drift apart」 — and
+       `buildFar` was handing it the WRONG surface distance. The fine field passes Rrup (the distance
+       to the nearest point of the rupture, `distKmTo`); the far field passed the great-circle
+       distance to the rupture's CENTROID. With a rupture drawn or loaded the two differ by the
+       rupture's own extent toward the site — 250 km along strike for Tōhoku's 500 km plane — so at
+       the seam between the two images the SAME place was 1,750 km away on one side of the line and
+       1,500 km away on the other. The seam is the fine image's box, which is a lat/lng rectangle
+       ~3,500 km across: that is the 四角形, and 断絶 is the intensity step across it.
+       Without a rupture the two distances are identical, which is exactly why a point source never
+       showed the line and only a loaded past earthquake did.
+
+       ⚠ THE FIX IS THE DISTANCE, NOT THE BOX. `faultDistKm` is a local planar projection — right at
+       the source, meaningless at 8,000 km — so the far field cannot simply call it. Instead the
+       rupture's REACH toward a bearing is tabulated once per build: for a site far away, the nearest
+       point of the rupture lies at the vertex whose offset from the centroid projects farthest
+       toward it, i.e. the polygon's support function, which for a ring is attained at a vertex. The
+       error against the exact Rrup is O(r²/2D) — under 1 % at the 1,500 km handover — while the
+       thing it removes is a 14 % step. `Math.max(0, …)` keeps a site over the rupture at zero.
+       ⚠ TABULATED, NOT COMPUTED PER CELL: d·cos(θ−b) = (d cos θ)·cos b + (d sin θ)·sin b, so the
+       whole ring collapses to two sums per bearing bin and a cell costs one array read. */
+    const REACH_BINS=720;
+    function rupReach(C0){
+      if(!fault||!fault.ring||fault.ring.length<3) return null;
+      const xs=[],ys=[];
+      for(const p of fault.ring){
+        const d=gcDelta(C0,p)*D*RE; if(!(d>0)) continue;
+        const th=bearingTo(C0,p)*D; xs.push(d*Math.cos(th)); ys.push(d*Math.sin(th));
+      }
+      if(!xs.length) return null;
+      const out=new Float64Array(REACH_BINS);
+      for(let b=0;b<REACH_BINS;b++){
+        const t=(b+0.5)*2*Math.PI/REACH_BINS, cb=Math.cos(t), sb=Math.sin(t);
+        let m=0; for(let i=0;i<xs.length;i++){ const v=xs[i]*cb+ys[i]*sb; if(v>m) m=v; }
+        out[b]=m;
+      }
+      return out;
+    }
     /* (#R232)  rather than one profile — the directivity bank, indexed by azimuth. */
     async function buildFar(profAt,box,rFine,rEdge,seq){
       fldFar=null;
@@ -1266,7 +1308,14 @@ window.IntMapModules.seismic=function(HOST){
          ⚠ THE TWO LIMITS ARE cos(), WHICH IS DECREASING, so the INNER radius gives the UPPER bound on
          cos Δλ and the outer gives the lower one — the band is an annulus in Δλ only when the inner
          circle also crosses this row, which is why both roots are taken and the two arcs are walked. */
-      const cosEdge=Math.cos(Math.min(Math.PI,rEdge/RE)), cosFine=Math.cos(Math.min(Math.PI,rFine/RE));
+      /* (#R244) the rupture's reach by bearing — see rupReach above. `null` (no rupture) means the
+         far field's distance IS the epicentral one, which is what the fine field uses too. */
+      const reach=rupReach(C0);
+      let maxReach=0; if(reach) for(let b=0;b<reach.length;b++) if(reach[b]>maxReach) maxReach=reach[b];
+      const RBIN=REACH_BINS/(2*Math.PI);
+      /* ⚠ the BAND is solved on the centroid distance (#R218) while the PAINT is Rrup, so the outer
+         limit has to be widened by the reach or the forward end of the rupture would be clipped. */
+      const cosEdge=Math.cos(Math.min(Math.PI,(rEdge+maxReach)/RE)), cosFine=Math.cos(Math.min(Math.PI,rFine/RE));
       const _cut=rupCutKm();   /* (#R223) hoisted: the implied rupture radius is a constant over the raster */
       const iOfLng=(l)=>(l+180)/dxF-0.5;
       const rgbOfFar=(cl)=>cl._rgb||(cl._rgb=hx(cl.col));
@@ -1299,9 +1348,15 @@ window.IntMapModules.seismic=function(HOST){
           if(innerI>=0&&Math.abs(s-i0)<innerI-1) continue;   /* wholly inside the fine radius */
           const i=((s%NF)+NF)%NF;
           const c=Math.max(-1,Math.min(1,sinA*sinB+cosA*cosB*cosDL[i]));
-          const km=Math.acos(c)*RE;
-          if(km<=rFine||km>rEdge) continue;
+          const kmC=Math.acos(c)*RE;
           const lo=-180+(i+0.5)*dxF;
+          /* ⚠ (#R244) THE SAME SURFACE DISTANCE THE FINE FIELD USES — Rrup, not the centroid range.
+             See rupReach: the bearing's reach is what the rupture puts between its centroid and this
+             site, and subtracting it is what makes the two images agree where they meet. */
+          let km=kmC;
+          if(reach){ const b=bearingTo(C0,[lo,la])*D;
+            km=Math.max(0,kmC-reach[((Math.floor(b*RBIN)%REACH_BINS)+REACH_BINS)%REACH_BINS]); }
+          if(km<=rFine||km>rEdge) continue;
           if(lo>=box.W&&lo<=box.E&&la>=box.Ss&&la<=box.Nn) continue;   /* the fine image owns this */
           if(land.isLand(lo,la)!==true){ seaSkipped++; continue; }
           const rM=srcDistM(km,_cut);   /* (#R223) the one conversion — see srcDistM */
@@ -2683,6 +2738,16 @@ window.IntMapModules.seismic=function(HOST){
         '.sq-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;'
           +'padding:7px 11px;font-size:'+FS+';color:var(--text-main);box-sizing:border-box;}',
         '.sq-row+.sq-row,.sq-row+.sq-blk,.sq-blk+.sq-row,.sq-blk+.sq-blk{border-top:1px solid var(--glass-border,rgba(128,128,128,0.16));}',
+        /* ══ ⚠ (#R244) THE FOLD CARRIES THE CARD'S INSET, so its marker is not against the border ═════
+           「「詳細設定」の左の▲・▶が微妙にUIに隠れている。」 The `<details>` was a direct child of
+           `.sq-card` with no padding of its own: measured, its `<summary>` box began at x=30 with the
+           card's border at x=29, and `.sq-card{overflow:hidden}` clipped the marker's outer edge —
+           while every `.sq-row` beside it sits 11 px in. The inset moves to the fold itself and the
+           rows INSIDE it drop their own horizontal padding, so nothing is indented twice and the
+           heading rows (`.sq-advh`, the explanatory line, the `<hr>`) line up with everything else
+           for the first time. */
+        '.sq-adv-box{padding:0 11px 7px;box-sizing:border-box;}',
+        '.sq-adv-box .sq-row{padding-left:0;padding-right:0;}',
         '.sq-blk{padding:9px 11px;font-size:'+FS+';color:var(--text-main);box-sizing:border-box;}',
         '.sq-row>span:first-child,.sq-row>label:first-child{flex:0 1 auto;min-width:0;}',
         /* the value side of a row: right-aligned, the way a grouped list puts it */
@@ -2714,23 +2779,27 @@ window.IntMapModules.seismic=function(HOST){
         '.sq-player{display:flex;flex-direction:column;gap:9px;}',
         /* (#R243) the line that says what the transport plays — 「わかりやすい」 half of the report */
         '.sq-pl-cap{font-size:'+FS_S+';color:var(--text-muted);letter-spacing:.01em;}',
-        /* …and the cluster: centred, the disc in the middle, the two jumps at arm’s length */
-        '.sq-pl-top{display:flex;align-items:center;justify-content:center;gap:26px;padding:1px 0 2px;}',
-        '.sq-play{flex:0 0 auto;width:58px;height:58px;border-radius:50%;border:none;cursor:pointer;'
+        /* ══ ⚠ (#R244) 「再生ボタンはもっとシンプルな洗練されたUIにしろ。」 ═══════════════════════════
+           #R242 made it a 40 px disc, #R243 made it 58 px with a 74 px ring and a coloured glow —
+           each round added weight to the same control, and the report now asks for the opposite.
+           What is left is what the transport actually needs: ONE flat accent disc at 46 px, the two
+           jumps as bare glyphs rather than filled pills, and no ring, no drop shadow, no glow. The
+           cluster keeps its geometry and every class and handler is untouched — this is a lighter
+           skin on the same three buttons, not a different transport. */
+        '.sq-pl-top{display:flex;align-items:center;justify-content:center;gap:22px;padding:1px 0 2px;}',
+        '.sq-play{flex:0 0 auto;width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;'
           +'background:var(--primary-color);color:#fff;display:flex;align-items:center;justify-content:center;'
-          +'box-shadow:0 6px 18px color-mix(in srgb, var(--primary-color) 40%, transparent),0 1px 2px rgba(0,0,0,0.18);'
           +'transition:transform .14s cubic-bezier(0.2,0.7,0.2,1),filter .12s ease;padding:0;}',
-        '.sq-play svg{width:24px;height:24px;}',
+        '.sq-play svg{width:20px;height:20px;}',
         '.sq-play:active{transform:scale(0.93);}',
         '.sq-play:hover{filter:brightness(1.07);}',
-        /* the ring: an iOS transport reads as a disc INSIDE a track, not as a lone circle */
-        '.sq-play::after{content:"";position:absolute;width:74px;height:74px;border-radius:50%;'
-          +'border:1.5px solid color-mix(in srgb, var(--primary-color) 26%, transparent);pointer-events:none;}',
-        '.sq-play{position:relative;}',
-        '.sq-pl-jump{flex:0 0 auto;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;padding:0;'
-          +'background:var(--input-bg);color:var(--text-main);display:flex;align-items:center;justify-content:center;'
-          +'transition:transform .14s ease,background .12s ease;}',
-        '.sq-pl-jump:hover{background:color-mix(in srgb, var(--text-main) 10%, var(--input-bg));}',
+        /* ⚠ NOT `--text-muted`. #R234's rule — 「必須ではない限り灰色を使わないように」 — is a ratchet
+           on the number of grey sites in this panel, and a transport button is not window chrome.
+           The lighter weight the simpler look wants is the SAME ink at less opacity. */
+        '.sq-pl-jump{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;padding:0;'
+          +'background:transparent;color:var(--text-main);opacity:.55;display:flex;align-items:center;justify-content:center;'
+          +'transition:transform .14s ease,opacity .12s ease;}',
+        '.sq-pl-jump:hover{opacity:1;}',
         '.sq-pl-jump:active{transform:scale(0.92);}',
         '.sq-pl-bar{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}',
         '.sq-pl-bar input[type=range]{width:100%;margin:0;height:22px;background:transparent;'
@@ -2791,8 +2860,7 @@ window.IntMapModules.seismic=function(HOST){
           +'box-shadow:0 4px 14px rgba(10,132,255,0.34);transition:transform .12s ease,box-shadow .12s ease;}',
         '.sq-tsu:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(10,132,255,0.42);}',
         '.sq-tsu:active{transform:translateY(0);}',
-        '.sq-tsu-ic{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.22);'
-          +'display:flex;align-items:center;justify-content:center;font-size:16px;}',
+        /* (#R244) `.sq-tsu-ic` is gone with the glyph it held — 「マークを使うな」 */
         '.sq-tsu-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}',
         '.sq-tsu-t b{font-size:'+FS+';font-weight:600;line-height:1.3;}',
         '.sq-tsu-t span{font-size:'+FS_S+';opacity:0.9;line-height:1.3;}',
@@ -2884,8 +2952,14 @@ window.IntMapModules.seismic=function(HOST){
        ⚠ Every control keeps its class, so nothing about the handlers below changes. */
     function _advHTML(){
       const f=_faultAdvHTML();
+      /* ══ ⚠ (#R244) THE DISCLOSURE TRIANGLE NEEDS THE SAME INSET EVERY OTHER ROW HAS ═══════════════
+         「「詳細設定」の左の▲・▶が微妙にUIに隠れている。」 Measured: the `<details>` is a direct child
+         of `.sq-card` with NO padding of its own, so the summary box started at x=30 while the card's
+         border sits at x=29 — the marker was pressed against the border, and `.sq-card` is
+         `overflow:hidden`, so its outer edge was clipped. Every sibling in that card is a `.sq-row`
+         with `padding:7px 11px`; this row now carries the same 11 px, and the marker sits in it. */
       return '<details class="sq-adv-box"'+(_advOpen?' open':'')+' style="margin-top:-2px;">'
-        +'<summary style="cursor:pointer;font-size:'+FS+';color:var(--text-main);padding:2px 0;">'
+        +'<summary style="cursor:pointer;font-size:'+FS+';color:var(--text-main);padding:5px 0;">'
         +L('Advanced settings','詳細設定','Erweiterte Einstellungen','Расширенные настройки','Ajustes avanzados')
         +'</summary><div style="display:flex;flex-direction:column;gap:8px;padding:7px 0 2px;">'
         +f+(f?'<hr style="border:0;border-top:1px solid var(--glass-border,rgba(128,128,128,0.18));margin:2px 0;">':'')
@@ -3305,7 +3379,13 @@ window.IntMapModules.seismic=function(HOST){
            `_needsRun` so they cannot disagree — which is the defect #R206 wrote up for this panel. */
         /* (#R240) the button itself now lives in the panel's pinned footer — see `_flowFoot()`. What
            stays in this card is the progress bar it drives and the transport, which are readouts. */
-        +_progHTML('sq-blk')   /* (#R243) one builder, two places — the other is the pinned footer */
+        /* ══ ⚠ (#R244) ONE PROGRESS READOUT, AND IT IS THE ONE UNDER THE BUTTON ════════════════════
+           「計算進捗ボタンが二つあるから下部のものだけにしろ。」 #R243 added a SECOND `.sq-prog` in the
+           pinned footer because the one built here, five controls up card 4, is below the fold while
+           the button that starts it is pinned — and left both, so a solve moved two identical bars.
+           The footer's is the one that answers 「押したものは動いているか」, so it is the one that
+           stays; this one is deleted rather than hidden. `_setProg()` already writes to every
+           `.sq-prog` it finds, so it needs no edit and there is still exactly one progress STATE. */
         /* ══ ⚠⚠ (#R242) THE TRANSPORT IS A PLAYER, NOT FOUR CONTROLS IN A ROW ═══════════════════════
            「時刻バーとか再生機構はもっとわかりやすい洗練されたiOS風のUIにしろ。」
            It was a 36 px ▶, a bare `input[type=range]`, a `<select>` reading ×1 and a right-aligned
@@ -3359,8 +3439,11 @@ window.IntMapModules.seismic=function(HOST){
            propagation simulator (js/tsunami.js). ⚠ (#R197) it no longer has an alternative to fall back
            on: js/sims.js's `tsunami` hazard has been removed. The estimated wave height shown on the
            button is from the screening (Abe's tsunami-magnitude relation), not from the model. */
+        /* ⚠ (#R244) 「Open the tsunami simulatorにはマークを使うな。」 The glyph in its translucent
+           disc — a 🌊 in #R242, redrawn as an SVG in #R243 — is gone. The button keeps everything
+           that makes it the one filled element in the card (the ocean gradient, the 52 px target,
+           the estimate on its own line) and says what it does in words alone. */
         +(function(){ const t=tsunamiCase(); return t?('<div class="sq-blk"><button class="sq-tsu">'
-          +'<span class="sq-tsu-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8.5c2.2 0 2.2 2 4.4 2s2.2-2 4.4-2 2.2 2 4.4 2 2.2-2 4.4-2"/><path d="M2 14c2.2 0 2.2 2 4.4 2s2.2-2 4.4-2 2.2 2 4.4 2 2.2-2 4.4-2"/></svg></span>'
           +'<span class="sq-tsu-t"><b>'+L('Open the tsunami simulator','津波シミュレーターを開く','Tsunami-Simulator öffnen','Открыть симулятор цунами','Abrir el simulador de tsunami')+'</b>'
           +'<span>'+L('est. wave','推定波高','geschätzt','оценка','estim.')+' ~'+t.waveM+' m</span></span>'
           +'<span class="sq-tsu-go" aria-hidden="true">›</span></button>'
@@ -3381,8 +3464,17 @@ window.IntMapModules.seismic=function(HOST){
            ⚠ THE SAFETY LINE STAYS OUTSIDE THE FOLD, which is the second half of the instruction. A
            notice that can be collapsed is a notice that will be missed, and this one is the only
            sentence in the panel that matters in a real emergency. */
+        /* ══ ⚠ (#R244) …AND IT SAYS WHAT THE NUMBER IS NOT ═══════════════════════════════════════════
+           「これらのシミュレーションは被害がある/ないを予想するものではありません。いずれにせよ普段から
+             必要な備えをしておきましょう。という趣旨も盛り込んで。」 An intensity map invites exactly
+           the reading it cannot support — 「うちは VI だから大丈夫」 — so the notice now denies the
+           forecast outright and says the one thing that is true either way. */
         +'<div style="font-size:'+FS_S+';color:#ffd23f;line-height:1.5;">⚠ '
-        +L('Educational model — in a real emergency follow the official authorities.','教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。','Bildungsmodell — im Ernstfall den Behörden folgen.','Учебная модель — в реальной ситуации следуйте указаниям властей.','Modelo educativo — en una emergencia real siga a las autoridades.')
+        +L('Educational model — in a real emergency follow the official authorities. These simulations do not predict whether damage will or will not occur; either way, keep the preparations you would need ready as a matter of routine.',
+           '教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。これらのシミュレーションは被害がある／ないを予想するものではありません。いずれにせよ、普段から必要な備えをしておきましょう。',
+           'Bildungsmodell — im Ernstfall den Behörden folgen. Diese Simulationen sagen nicht voraus, ob Schäden entstehen oder nicht; treffen Sie in jedem Fall im Alltag die nötigen Vorkehrungen.',
+           'Учебная модель — в реальной ситуации следуйте указаниям властей. Эти расчёты не предсказывают, будут разрушения или нет; в любом случае держите необходимые запасы и план наготове.',
+           'Modelo educativo — en una emergencia real siga a las autoridades. Estas simulaciones no predicen si habrá daños o no; en cualquier caso, mantenga siempre preparado lo necesario.')
         +'</div>'
         +'<div class="sq-card"><details class="sq-meth" style="font-size:'+FS_S+';color:var(--text-main);line-height:1.5;">'
         +'<summary style="cursor:pointer;color:var(--text-main);font-size:'+FS_S+';list-style:revert;">'
@@ -3432,7 +3524,28 @@ window.IntMapModules.seismic=function(HOST){
            button is gone, its body is loadReal()). */
         if(rec) rec.onclick=()=>{ if(evSrc!=='recent'){ evSrc='recent'; render(); }
           if(!_realFeats.length&&!_realBusy) loadReal(); }; }
-      panel.querySelector('.sq-close').onclick=()=>close();
+      /* ══ ⚠⚠⚠ (#R244) EVERY LOOKUP IN THIS BLOCK IS GUARDED, BECAUSE THE PANEL IS CONDITIONAL ═══════
+         「過去の地震の震源域などの精度が落ちている。さっきまでちゃんとしてた。」
+
+         MEASURED, and it is not the geometry. #R243 stopped rendering cards ② and ③ when an
+         earthquake is LOADED (a published event is not a form), and the three lines below still
+         wrote `.onclick` / `.onchange` onto the result of a bare `querySelector` for controls that
+         live in those cards — `.sq-fdraw`, `.sq-d`, `.sq-m`, `.sq-sd`. With one loaded, the first of
+         them threw `Cannot set properties of null`, which:
+           · aborted the REST of the wiring — measured on the shipped build, `.sq-play`, `.sq-t`,
+             `.sq-scale`, `.sq-op`, `.sq-spdc` and the two jumps had NO handler at all;
+           · and, because `render()` is called from `applyEvent()` BEFORE the published finite-fault
+             outline is fetched, threw out of `applyEvent` too — so `fetchRuptureRing()` was never
+             called and the map kept the offline RECTANGLE instead of the published outline. Measured:
+             zero requests to earthquake.usgs.gov after picking an event, and the drawn ring starting
+             at the rectangle's own corner (143.526, 40.361) for Tōhoku.
+         That is 「震源域の精度が落ちている」 exactly, and 「など」 is the dead transport.
+
+         ⚠ This is [[intmap-recurring-lessons]] I for the second time — #R236 wrote it up for
+         `querySelector('.sq-real').onclick` — so the fix is not "guard these three", it is that NO
+         lookup here may assume its control was rendered. A panel that draws different cards in
+         different states cannot have a wiring block that assumes one of them. */
+      { const c=panel.querySelector('.sq-close'); if(c) c.onclick=()=>close(); }
       { const mb=panel.querySelector('.sq-min'); if(mb) mb.onclick=()=>{ minimised=!minimised; render(); }; }   /* (#R210) */
       { const a=panel.querySelector('.sq-cm-epi'), b=panel.querySelector('.sq-cm-sta');
         /* one press: this is what a map click means AND arm the pick (#R212 — see the note above).
@@ -3443,7 +3556,7 @@ window.IntMapModules.seismic=function(HOST){
            too — see onClick). `clickMode` now has a third value, `'none'`, and both buttons toggle. */
         if(a) a.onclick=()=>{ if(clickMode==='epi') setClickMode('none'); else { setClickMode('epi'); startPick(); } };
         if(b) b.onclick=()=>setClickMode(clickMode==='station'?'none':'station'); }
-      panel.querySelector('.sq-fdraw').onclick=()=>{ toggleFaultDraw(); };
+      { const fd=panel.querySelector('.sq-fdraw'); if(fd) fd.onclick=()=>{ toggleFaultDraw(); }; }
       const fc=panel.querySelector('.sq-fclear'); if(fc) fc.onclick=()=>{ faultClear(); render(); refresh(); };
       /* ══ (#R224) THE ADVANCED GEOMETRY — every field is an OVERRIDE, and blank means "back to auto"
          An empty box is not "zero", it is "you decide", which is the only way one control can express
@@ -3466,9 +3579,9 @@ window.IntMapModules.seismic=function(HOST){
       /* (#R234) …and the same for the model-assumption box, or opening it and touching a spinner
          (which re-renders) would close it under the reader's hand. */
       
-      panel.querySelector('.sq-d').onchange=e=>{ depthKm=Math.max(0,Math.min(700,+e.target.value||10)); render(); touch(); };
-      panel.querySelector('.sq-m').onchange=e=>{ if(!fault){ mw=Math.max(3,Math.min(9.6,+e.target.value||7)); render(); touch(); } };
-      panel.querySelector('.sq-sd').onchange=e=>{ stressDropMPa=Math.max(0.3,Math.min(30,+e.target.value||3)); touch(); };
+      { const d=panel.querySelector('.sq-d'); if(d) d.onchange=e=>{ depthKm=Math.max(0,Math.min(700,+e.target.value||10)); render(); touch(); }; }
+      { const m=panel.querySelector('.sq-m'); if(m) m.onchange=e=>{ if(!fault){ mw=Math.max(3,Math.min(9.6,+e.target.value||7)); render(); touch(); } }; }
+      { const sd=panel.querySelector('.sq-sd'); if(sd) sd.onchange=e=>{ stressDropMPa=Math.max(0.3,Math.min(30,+e.target.value||3)); touch(); }; }
       const q0=panel.querySelector('.sq-q0'); if(q0) q0.onchange=e=>{ QS0=Math.max(30,Math.min(2000,+e.target.value||180)); touch(); };
       const qe=panel.querySelector('.sq-qe'); if(qe) qe.onchange=e=>{ QETA=Math.max(0,Math.min(1,+e.target.value)); touch(); };
       /* (#R235) …and this one invalidates the PATH TABLE rather than the intensity field: the fronts
@@ -3484,7 +3597,7 @@ window.IntMapModules.seismic=function(HOST){
       const tsu=panel.querySelector('.sq-tsu'); if(tsu) tsu.onclick=()=>openTsunami();
       const sc=panel.querySelector('.sq-scale'); if(sc){ sc.onchange=e=>{ pickScale(e.target.value==='jma'?'jma':'mmi'); legend(); touch(); }; }
       const sel=panel.querySelector('.sq-site'); if(sel){ sel.value=siteId; sel.onchange=e=>{ siteId=e.target.value; touch(); }; }
-      const tl=panel.querySelector('.sq-t'); tl.oninput=()=>{ tSec=+tl.value; panel.querySelector('.sq-tv').textContent=fmtT(tSec); drawFronts(); };
+      const tl=panel.querySelector('.sq-t'); if(tl) tl.oninput=()=>{ tSec=+tl.value; const tv=panel.querySelector('.sq-tv'); if(tv) tv.textContent=fmtT(tSec); drawFronts(); };
       const sp=panel.querySelector('.sq-spd'); if(sp){ sp.onchange=e=>{ speed=Math.max(1,+e.target.value||1); }; }
       /* (#R242) the segmented rate writes to that same <select> and fires its change — the chips are
          a skin over the control, never a second place the speed is stored. */
@@ -3508,18 +3621,19 @@ window.IntMapModules.seismic=function(HOST){
       const RT=()=>window.IntMapRuntime;
       const _stop=()=>{ playing=0; try{ const R=RT(); R&&R.frame&&R.frame('seismic:play',()=>{}); }catch(_){} };
       const pb=panel.querySelector('.sq-play'); const _pbIcon=(on)=>{ try{ pb.innerHTML=on?SVG_PAUSE:SVG_PLAY; pb.classList.toggle('on',!!on); }catch(_){} };
-      pb.onclick=()=>{ if(playing){ _stop(); _pbIcon(0); }
+      if(pb&&tl) pb.onclick=()=>{ if(playing){ _stop(); _pbIcon(0); }
         else { _pbIcon(1); let last=performance.now(); playing=1;
           const step=()=>{ if(!playing||!opened) return;
             const now=performance.now();
             tSec=(tSec+(now-last)/1000*speed)%MAXT; last=now;
-            tl.value=tSec; panel.querySelector('.sq-tv').textContent=fmtT(tSec); drawFronts();
+            tl.value=tSec; { const tv=panel.querySelector('.sq-tv'); if(tv) tv.textContent=fmtT(tSec); } drawFronts();
             const R=RT(); if(R&&R.frame) R.frame('seismic:play',step); else { playing=0; _pbIcon(0); } };
           const R=RT(); if(R&&R.frame) R.frame('seismic:play',step); else { playing=0; _pbIcon(0); } } };
       /* (#R243) the two jumps write the SAME range the scrubber does and fire its own event, so the
          one `input` handler below moves time — nothing here touches `tSec` or the fronts directly. */
       panel.querySelectorAll('.sq-pl-jump').forEach(b=>{ b.onclick=()=>{ try{
         if(playing){ _stop(); _pbIcon(0); }
+        if(!tl) return;
         tl.value=b.dataset.to; tl.dispatchEvent(new Event('input',{bubbles:true}));
       }catch(_){} }; });
       /* (#R236) `.sq-real` / `.sq-real-sel` are gone — both halves are the one picker at the top of

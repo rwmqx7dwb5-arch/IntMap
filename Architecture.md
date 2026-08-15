@@ -237,6 +237,21 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     ③ **辞書は1本・6列**（`scripts/i18n/r243-*.json` ＝ `"English": [de, ru, es, fr, ko, zh-Hant]`）。
     最初の3列は call site の引数へ、後の3列は inline 表へ（`node scripts/i18n-apply-inline.mjs`）、
     `ui.zh-hans.js` はそこから生成。**同じ訳を2箇所に書く形を作らない**。
+  - ⚠⚠⚠ (#R244) **11個目の形＝「言語コードをキーにしたオブジェクト」**。
+    `nm:{en:'Tibet',jp:'チベット',de:'Tibet',ru:'Тибет'}` を `nm[lg]||nm.en` で読む形。#R241 が閉じたのは
+    **配列**の形で、その番人（`i18n-positional-array-audit.mjs`）は「言語→**位置**の表」＝値が**数値**の
+    ものしか見ないので、兄弟であるこの形は素通りしていた。**どの計器からも見えず**、
+    **inline 表へのフォールバックが無い**ので、そのオブジェクトが名前を挙げていない言語は
+    **構造的に英語**になる（多くが4〜5言語しか挙げていない＝fr/ko/zh/zh-Hans は必ず英語）。
+    · 計器 `scripts/i18n-langmap-audit.mjs`（構文・文字列ではない）を新設し、`i18n-audit.mjs --gate` の
+      **OPEN GAP** として印字する（#R242 が定めた作法：1ラウンドで閉じられない量は門にせず、**数字を
+      常設出力に**する。百分率には数えない）。`tests/r244 ⑬` が**数はもう増えない**ことをラチェットする。
+    · 変換は `scripts/langmap-codemod.mjs`（`obj[lang]||fallback` を `IntMapLang.t(lang,…)` へ）。
+      ⚠ **5言語すべて揃っている site しか触らない**——`t()` は位置引数で、4引数の call site は門に落ちる。
+      ⚠ **散文かコードかを判定する**（初版は Atlas の同義語表 `{english:'en',deutsch:'de',…}` を書き換えて
+      機能を壊し、Google News の `hl=…&gl=…&ceid=…` を翻訳表に入れた。両方とも取り消した）。
+    · **#R244 時点：17 サイト変換／残り 713 サイト・20 ファイル**（`time-borders.js` 276・`wb-layers.js` 100・
+      `reference-data.js` 87・`tables.js` 54・`data-layers.js` 41・`history.js` 39・`atlas-console.js` 34 ほか）。
   - ⚠ (#R235) **inline への追記は `scripts/i18n-append-inline.mjs` を使う**（既存の `inline` に挿入するだけ・既存キーには触らない）。`scripts/build-ui-zh.mjs` が文書化している「`rm ui.zh.js` → `--template` → rebuild」は**非可逆に壊れる**——`scripts/zh/*.json` は `ui.zh.js` の完全な出所ではなく、実行すると実訳が **2,082 → 1,877（205 件消失）**する（#R235 で実測・取り消し済み）。⚠ `ui.zh-hans.js` は**手で書かない**（`tests/r224 ④`・`tests/r231`）——繁体を直してから `node scripts/zh-hans.mjs`。
 
 ---

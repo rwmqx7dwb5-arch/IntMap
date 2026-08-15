@@ -134,6 +134,12 @@ window.IntMapModules.usElections=function(HOST){
   }
   function renderPanel(){
     const el=document.getElementById('data-legend-uselect'); if(!el||!data) return;
+    /* ⚠ (#R244) 「操作時に凡例が上に伸びるのではなく下に伸びるように。」 This legend rebuilds its whole
+       body on every year change and the row count varies with the number of candidates, so a
+       bottom-anchored box grows upward — out from under the very selector being operated. The flag
+       is read by tileLegends() in js/data-layers.js, which places a flagged legend by its top; the
+       stack order and the resting position are unchanged. */
+    el.dataset.growDown='1';
     _css();
     let box=el.querySelector('.usel-box');
     if(!box){ box=document.createElement('div'); box.className='usel-box';

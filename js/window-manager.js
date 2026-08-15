@@ -520,6 +520,36 @@ let __winZ=4300;
       const b=document.getElementById('btn-docked');
       if(b) b.addEventListener('click',()=>OS.exec('tab.docked',{source:'ui'}));
     }catch(_){}
+    /* ══ ⚠⚠⚠ (#R244) A LAYER SWITCH IS WHEN A LEGEND APPEARS, SO IT IS WHEN THE COLUMN IS RE-CHECKED
+       「ケッペンの気候区分レイヤの凡例はパネルにいかない。全凡例はパネルにいくように。（パネル設定時）」
+
+       Everything above this line is CORRECT and was measured working on desktop and at 375 px — the
+       legend docks at boot, on switch-on, on switch-off-then-on, and when the tab is opened. And the
+       reader says there is an environment where it still does not, which means the membership must
+       not depend on a MutationObserver having been armed at the right moment at all.
+
+       So the answer is not a sixth wire into the observer, it is a SECOND, INDEPENDENT PATH: every
+       change of a layer checkbox re-runs the same sweep the Panels tab runs. `dockRefresh()` is
+       idempotent (it docks what is on, undocks what is not, and `_dockOne` returns early for
+       anything already docked), it is the same one function rather than a copy of the decision
+       ([[intmap-recurring-lessons]] G), and it costs one `querySelectorAll` per toggle — a gesture,
+       not a frame. Whatever the missed signal is, the next layer the reader touches repairs the
+       column, and the one they JUST touched repairs it immediately.
+       ⚠ The timer coalesces the burst a single toggle produces (a layer writes `display`, then its
+       opacity row, then `tileLegends`), and it is deliberately longer than the legend's own
+       double-rAF fit so the panel is measured after it has its size. */
+    try{
+      let _t=null;
+      document.addEventListener('change',(e)=>{
+        try{
+          if(window.imDockPanels!=='on') return;
+          const el=e&&e.target; if(!el||el.type!=='checkbox') return;
+          const id=el.id||'';
+          if(!/^(dl-|gx-|eco-dl-|l9-dl-|beta-dl-|wp-dl-|r7-dl-|cb-)/.test(id)) return;
+          clearTimeout(_t); _t=setTimeout(()=>{ try{ dockRefresh(); }catch(_){} },260);
+        }catch(_){}
+      },true);
+    }catch(_){}
     return applyDockMode;
   }
   return { addEdgeResize, bringToFront, makeDraggable, registerWindow,

@@ -523,6 +523,10 @@ window.IntMapNightSky = (function () {
       + (vis.length ? '<div class="ns-sub">' + vis.map((m) => esc(m.name) + ' ' + m.alt.toFixed(0) + '°').join(' · ') + '</div>' : '');
   }
 
+  /* (#R244) the panel's material, shared by both placements — see applyChrome() */
+  const PANEL_CSS = 'position:absolute;box-sizing:border-box;background:rgba(12,16,26,0.92);'
+    + 'border:1px solid rgba(255,255,255,0.14);border-radius:12px;padding:10px 12px;color:#e8eef8;'
+    + 'font:13px/1.45 system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.5);';
   function ensureDOM() {
     if (root) return;
     root = document.createElement('div');
@@ -535,9 +539,9 @@ window.IntMapNightSky = (function () {
     document.body.appendChild(root);
     cv = root.querySelector('.ns-cv'); ctx = cv.getContext('2d');
     panel = root.querySelector('.ns-panel');
-    panel.style.cssText = 'position:absolute;left:12px;top:12px;max-width:min(420px,92vw);background:rgba(12,16,26,0.92);'
-      + 'border:1px solid rgba(255,255,255,0.14);border-radius:12px;padding:10px 12px;color:#e8eef8;'
-      + 'font:13px/1.45 system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.5);';
+    /* (#R244) the material of the panel, without its PLACE — applyChrome() decides where it goes,
+       because that is what differs between the two views (see the note there). */
+    panel.style.cssText = PANEL_CSS + 'left:12px;top:12px;max-width:min(420px,92vw);';
     panel.innerHTML =
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
       + '<strong class="ns-title" style="flex:1"></strong>'
@@ -642,11 +646,30 @@ window.IntMapNightSky = (function () {
   }
 
   /* the frame the two modes want are different shapes: a disc wants a square, a lens wants a window */
+  /* ══ ⚠⚠ (#R244) IN THE STANDING VIEW THE SKY IS ABOVE THE PANEL, NOT UNDER IT ═════════════════════
+     「Stand and look upは視界部分とパネル部分が重ならないように。視界部分のほうを画面の上側にもって
+       きて。」 The all-sky chart is a disc in the middle of the screen with the panel in a corner it
+     does not reach, and #R214 gave the standing view a `min(96vw,1680px)` lens WITHOUT moving the
+     panel — so the controls sat ON the horizon, over the part of the picture the view is about.
+     The two are laid out as bands now: the lens owns the top of the screen, the panel owns the
+     bottom, and neither can reach the other because their boxes do not intersect (the lens's band is
+     `height:VIEW_VH`, the panel starts at exactly `VIEW_VH`). The all-sky chart is untouched — it
+     never had the problem, and its corner panel is what leaves the disc whole. */
+  const VIEW_VH = 60;   /* the share of the viewport the standing lens keeps; the panel has the rest */
   function applyChrome() {
     if (!cv) return;
-    cv.style.cssText = (mode === 'stand')
-      ? 'width:min(96vw,1680px);height:min(76vh,880px);border-radius:14px;cursor:grab;display:block;touch-action:none;'
+    const stand = (mode === 'stand');
+    cv.style.cssText = stand
+      ? 'width:min(96vw,1680px);height:calc(' + VIEW_VH + 'vh - 20px);border-radius:14px;cursor:grab;display:block;touch-action:none;'
       : 'width:min(88vmin,88vw);height:min(88vmin,88vh);display:block;touch-action:none;';
+    const wrap = root && root.querySelector('.ns-wrap');
+    if (wrap) wrap.style.cssText = stand
+      ? 'position:absolute;left:0;right:0;top:0;height:' + VIEW_VH + 'vh;display:flex;align-items:center;justify-content:center;'
+      : 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;';
+    if (panel) panel.style.cssText = PANEL_CSS + (stand
+      ? 'left:50%;transform:translateX(-50%);top:' + VIEW_VH + 'vh;width:min(1080px,96vw);max-width:none;'
+        + 'max-height:calc(' + (100 - VIEW_VH) + 'vh - 16px);overflow:auto;'
+      : 'left:12px;top:12px;max-width:min(420px,92vw);');
   }
   function setMode(m) {
     m = (m === 'stand') ? 'stand' : 'dome';

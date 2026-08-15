@@ -2955,4 +2955,16 @@ window.IntMapLang.define('ko', { ui: {
   "Split districts": "분할된 선거구",
   "Colour = who received the state’s electoral votes.": "색은 그 주의 선거인단 표를 얻은 후보를 나타냅니다.",
   "Source: National Archives · American Presidency Project": "출처: 미국 국립문서기록관리청 · American Presidency Project",
-  "Could not load the election data": "선거 데이터를 불러오지 못했습니다",} });
+  "Could not load the election data": "선거 데이터를 불러오지 못했습니다",
+  "Map weather": "지도 중심 날씨",
+  "Live weather at the map center (no location permission)": "지도 중심의 현재 날씨 (위치 권한 불필요)",
+  "Day length": "낮의 길이",
+  "Daylight hours at the map-center latitude": "지도 중심 위도의 일조 시간",
+  "Map scale": "지도 축척",
+  "Scale at the current zoom": "현재 확대 수준의 축척",
+  "Calendar": "달력",
+  "This month, today highlighted": "이번 달, 오늘 표시",
+  "Next new moon": "다음 삭(신월)",
+  "Days until the next new moon": "다음 신월까지 남은 일수",
+  "Time zones (live clock)": "시간대 (실시간 시계)",
+  "Educational model — in a real emergency follow the official authorities. These simulations do not predict whether damage will or will not occur; either way, keep the preparations you would need ready as a matter of routine.": "교육용 모델입니다 — 실제 재난 시에는 공식 기관의 지시를 따르세요. 이 시뮬레이션은 피해가 발생할지 여부를 예측하지 않습니다. 어느 쪽이든 평소에 필요한 대비를 갖춰 두세요.",} });

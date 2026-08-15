@@ -737,7 +737,7 @@ window.IntMapModules.timeZones=function(HOST){
     if(!GE().hasRenderer()) return;
     const TZURL='https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_10m_time_zones.geojson';
     let on=false, geo=null, loading=false, timer=null;
-    const lbl=()=>({en:'Time zones (live clock)',jp:'タイムゾーン（現在時刻）',de:'Zeitzonen (Uhr)',ru:'Часовые пояса (время)',es:'Husos horarios (hora)'})[HOST.lang]||'Time zones';
+    const lbl=()=>window.IntMapLang.t(HOST.lang,'Time zones (live clock)','タイムゾーン（現在時刻）','Zeitzonen (Uhr)','Часовые пояса (время)','Husos horarios (hora)');
     const T=window.IntMapLang.pick(()=>HOST.lang);
     function zoneTime(off){ const n=new Date(); const z=new Date(n.getTime()+n.getTimezoneOffset()*60000+off*3600000); const h=z.getHours(),m=z.getMinutes(); return (h<10?'0':'')+h+':'+(m<10?'0':'')+m; }
     function offLabel(off){ const s=off<0?'−':'+'; const a=Math.abs(off); const hh=Math.floor(a); const mm=Math.round((a-hh)*60); return 'UTC'+s+hh+(mm?(':'+(mm<10?'0':'')+mm):''); }

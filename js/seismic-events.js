@@ -308,6 +308,48 @@ export function momentOf(mw) { return Math.pow(10, 1.5 * mw + 9.1); }
    carry the plane's own top and bottom, so `zTopKm`/`zBotKm` come off the model instead of being
    estimated from the outline. */
 export function fetchRuptureRing(ev, fetchImpl) {
+  /* ══ ⚠⚠ (#R244) THE PUBLISHED OUTLINE GETS THE SAME SAMPLING THE RECTANGLE ALREADY HAD ═══════════
+     「過去の地震の震源域などの精度が落ちている。」 #R234 walked the fallback rectangle's perimeter at
+     one vertex per ~50 km, for two reasons it wrote down: a 500 km edge is not straight on a sphere,
+     and every cell of the intensity field measures its distance to THESE vertices. #R235 then made
+     the published ShakeMap outline the answer — and handed it through verbatim. Measured on Tōhoku:
+     the fallback rectangle is 29 points, the published model is FOUR, so the better data was drawn
+     and measured more coarsely than the guess it replaced. Same rule, same reason, now applied to
+     both: any edge longer than `maxKm` is walked along its great circle.
+     ⚠ IT ADDS POINTS, IT NEVER MOVES ONE. Every original vertex survives at its own index, so the
+     published corners — including their depth ordinates, which are read before this runs — are
+     untouched, and a ring that is already fine (Kahramanmaraş's bent trace, Wenchuan's 15 points)
+     passes through unchanged.
+     ⚠ NESTED, not a module-level helper: tests/r175 ③ forbids an unexported top-level declaration
+     and an export nothing imports, and this has exactly one caller. */
+  const densifyRing = (ring, maxKm) => {
+    const D = Math.PI / 180, RE = 6371.0088, lim = Math.max(5, +maxKm || 50);
+    if (!Array.isArray(ring) || ring.length < 3) return ring;
+    const gc = (a, b) => {
+      const p1 = a[1] * D, p2 = b[1] * D, dp = (b[1] - a[1]) * D, dl = (b[0] - a[0]) * D;
+      const h = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
+      return 2 * RE * Math.asin(Math.min(1, Math.sqrt(h)));
+    };
+    /* spherical linear interpolation — the point at fraction t along the great circle a→b */
+    const slerp = (a, b, t) => {
+      const toV = (p) => { const la = p[1] * D, lo = p[0] * D, c = Math.cos(la); return [c * Math.cos(lo), c * Math.sin(lo), Math.sin(la)]; };
+      const u = toV(a), v = toV(b);
+      const dot = Math.max(-1, Math.min(1, u[0] * v[0] + u[1] * v[1] + u[2] * v[2]));
+      const om = Math.acos(dot);
+      if (!(om > 1e-9)) return [a[0], a[1]];
+      const s1 = Math.sin((1 - t) * om) / Math.sin(om), s2 = Math.sin(t * om) / Math.sin(om);
+      const w = [u[0] * s1 + v[0] * s2, u[1] * s1 + v[1] * s2, u[2] * s1 + v[2] * s2];
+      return [Math.atan2(w[1], w[0]) / D, Math.atan2(w[2], Math.hypot(w[0], w[1])) / D];
+    };
+    const out = [];
+    for (let i = 0; i < ring.length; i++) {
+      const a = ring[i], b = ring[(i + 1) % ring.length];
+      out.push([+a[0], +a[1]]);
+      const n = Math.min(24, Math.ceil(gc(a, b) / lim));
+      for (let k = 1; k < n; k++) out.push(slerp(a, b, k / n));
+    }
+    return out;
+  };
   /* ⚠ the memo hangs off the function, not off a module-level `const`: tests/r175 ③ forbids an
      UNEXPORTED top-level declaration in js/, and exporting a cache would be exporting an internal. */
   const cache = fetchRuptureRing._cache || (fetchRuptureRing._cache = Object.create(null));
@@ -356,7 +398,10 @@ export function fetchRuptureRing(ev, fetchImpl) {
       if (ring.length > 2 && Math.abs(ring[0][0] - ring[ring.length - 1][0]) < 1e-9
           && Math.abs(ring[0][1] - ring[ring.length - 1][1]) < 1e-9) ring.pop();
       if (ring.length < 3) throw new Error('degenerate ring');
-      return { ring, segments: rings.length,
+      /* (#R244) …and it is sampled like the rectangle it replaced — see densifyRing above. The depth
+         ordinates were read from the ORIGINAL corners a few lines up, so nothing about the plane's
+         top and bottom depends on this. */
+      return { ring: densifyRing(ring, 50), segments: rings.length,
         zTopKm: isFinite(zTop) ? zTop : null, zBotKm: isFinite(zBot) ? zBot : null,
         ref: (g && g.metadata && g.metadata.reference) ? String(g.metadata.reference) : null };
     })

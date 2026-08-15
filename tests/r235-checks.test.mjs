@@ -192,7 +192,15 @@ test('R235 rupture: the outline is fetched from the published finite-fault model
   const got = await fetchRuptureRing({ usgs: 'testevent1' }, fake);
   assert.ok(got, 'a well-formed model produces a ring');
   assert.equal(got.segments, 2, 'it reports how many segments the published model had');
-  assert.equal(got.ring.length, 5, 'the largest ring is used and its closing repeat is dropped');
+  /* ⚠ (#R244) the published ring is now DENSIFIED along its great circles — one vertex per ~50 km,
+     the same rule #R234 gave the fallback rectangle, because a 500 km edge is not straight on a
+     sphere and every cell of the intensity field measures its distance to these vertices. So the
+     count is no longer the vertex count of the file; what this pins is what it always meant — the
+     LARGEST ring was taken, its closing repeat was dropped, and no original vertex moved. */
+  assert.ok(got.ring.length >= 5, 'the largest ring is used (' + got.ring.length + ' points after densifying)');
+  assert.ok(got.ring.some((p) => p[0] === 1 && p[1] === 0), 'an original vertex survives untouched');
+  assert.ok(!got.ring.some((p) => p[0] === 10), 'and the small decoy ring is not the one that was taken');
+  assert.notDeepEqual(got.ring[got.ring.length - 1], got.ring[0], 'the closing repeat is dropped');
   assert.deepEqual(got.ring[0], [0, 0], 'coordinates are (lng, lat) — the depth ordinate is not a coordinate');
   assert.equal(got.zTopKm, 5, 'the top of the plane comes off the polygon');
   assert.equal(got.zBotKm, 25, 'and so does the bottom');

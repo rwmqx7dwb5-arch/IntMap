@@ -147,6 +147,11 @@ window.IntMapModules.searchGeocode=function(HOST){
   function closeSearchCard(){
     if(HOST.searchMarker){ HOST.searchMarker.remove(); HOST.searchMarker=null; }
     if(searchCardEl){ searchCardEl.remove(); searchCardEl=null; }
+    /* ⚠ (#R244) ONE ✕ CLEARS BOTH, which is the whole point of #R59: the place popup owns its
+       boundary and closing it takes the boundary with it. The search card now owns one too, so it
+       has to be the same contract — otherwise a postcode outline outlives the card that drew it and
+       there is no control left that removes it. */
+    try{ window.IntMapOutline && window.IntMapOutline.clear && window.IntMapOutline.clear(); }catch(_){}
     /* (#R171) events / camera / projection through IntMapGeoEngine — this file no longer names the renderer. */
     if(searchCardOnMove){ try{ const E=window.IntMapGeoEngine; if(E) E.events.off('move',searchCardOnMove); }catch(_){} searchCardOnMove=null; }
     searchCardData=null;
@@ -157,6 +162,48 @@ window.IntMapModules.searchGeocode=function(HOST){
     const pt=E.coords.project([searchCardData.lng,searchCardData.lat]); if(!pt) return;
     searchCardEl.style.left=pt.x+'px';
     searchCardEl.style.top=pt.y+'px';
+  }
+  /* ── (#R244) postcode → its own boundary ─────────────────────────────────────────────────────
+     `_looksPostal` asks the RESULT first (Nominatim types a postcode as `postcode` / `postal_code`,
+     which is the answer with no guessing in it) and only falls back to the shape of the string when
+     the provider said nothing — Open-Meteo and Photon do not carry the type. The pattern is
+     deliberately the intersection of the world's postal formats rather than a per-country table:
+     digits, at most one space or hyphen, 3–10 characters, at most two leading letters (GB/NL/CA). */
+  const POSTAL_RE=/^[A-Za-z]{0,2}\d[A-Za-z0-9]{1,4}(?:[ -]?[A-Za-z0-9]{1,4})?$/;
+  function _looksPostal(label,raw){
+    try{
+      const ty=String((raw&&(raw.type||raw.osm_value))||'').toLowerCase();
+      if(ty==='postcode'||ty==='postal_code') return true;
+      if(ty&&ty!=='') return false;   /* the provider typed it as something else — believe it */
+      const head=String(label||'').split(',')[0].trim();
+      return /\d/.test(head)&&POSTAL_RE.test(head);
+    }catch(_){ return false; }
+  }
+  async function _outlinePostcode(label,raw,lng,lat){
+    try{
+      const OT=window.IntMapOutline; if(!OT||!OT.show) return;
+      const code=String(label||'').split(',')[0].trim(); if(!code) return;
+      /* ⚠ BOUNDED TO WHERE THE SEARCH LANDED, NOT «the first five worldwide». A postcode is shared
+         across countries — measured, `postalcode=10115` with `limit=5` returns Zagreb, Manhattan,
+         Gimpo and Bouira and never reaches Berlin, so the Berlin result the reader just picked had
+         no boundary to find. `viewbox` + `bounded=1` around the point that was actually flown to
+         returns the ONE postcode area the reader is looking at (measured: 1 result, a Polygon).
+         ⚠ 1.5° is comfortably larger than any postal area and small enough to exclude a namesake in
+         the next country; the sort below still breaks a tie by distance. */
+      const d=1.5;
+      const u='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&polygon_geojson=1'
+        +'&polygon_threshold=0.0003&bounded=1&viewbox='+(lng-d)+','+(lat+d)+','+(lng+d)+','+(lat-d)
+        +'&postalcode='+encodeURIComponent(code);
+      const r=await fetch(u,{headers:{Accept:'application/json'}}); if(!r.ok) return;
+      const j=await r.json(); if(!Array.isArray(j)||!j.length) return;
+      const polys=j.filter(o=>o&&o.geojson&&/Polygon/.test(o.geojson.type||''));
+      if(!polys.length) return;   /* ⚠ no real boundary → draw NOTHING, exactly like a place label (#R59) */
+      /* nearest to where the search actually landed, so a code shared across countries cannot win */
+      polys.sort((a,b)=>(Math.hypot(+a.lon-lng,+a.lat-lat))-(Math.hypot(+b.lon-lng,+b.lat-lat)));
+      const best=polys[0];
+      try{ if(OT.setColor){ const ac=(window.imAccent&&/^#[0-9a-fA-F]{6}$/.test(window.imAccent))?window.imAccent:'#0a84ff'; OT.setColor(ac); } }catch(_){}
+      OT.show(code,{geojson:best.geojson,lng,lat,fit:false});
+    }catch(_){}
   }
   async function gotoPlace(lng,lat,displayName,raw,localKind){
     const GEO=window.IntMapGeoEngine; if(!GEO)return;
@@ -226,6 +273,18 @@ window.IntMapModules.searchGeocode=function(HOST){
       if(_scRAF) return; _scRAF=requestAnimationFrame(()=>{ _scRAF=0; try{ positionSearchCard(); }catch(_){} }); };
     GEO.events.on('move',searchCardOnMove);
     positionSearchCard();
+    /* ══ ⚠⚠ (#R244) A POSTCODE SEARCH OUTLINES ITS AREA ═══════════════════════════════════════════
+       「郵便番号で地点検索したら、その範囲が、地名ラベルをクリックした時みたいにハイライトされるように。」
+       A place label already does this — js/map-ui.js's popup calls `IntMapOutline.show`, which draws
+       the REAL OSM boundary and nothing at all when there is none (#R59: 「領域がわからない地名は
+       全部長方形になるとかクソ」). A postcode goes through the same renderer for the same reason, so
+       the two look identical and there is one boundary mechanism rather than two.
+       ⚠ THE QUERY IS `postalcode=`, NOT `q=`. Nominatim's free-text search resolves «10115» to the
+       postcode POINT; the structured parameter is what reaches the `boundary=postal_code` relation
+       and returns its polygon (measured: 10115 → Polygon, and the free-text form → Point).
+       ⚠ AND IT IS FIRE-AND-FORGET. The fly, the pin and the card are the answer to the search; this
+       arrives when the network does, and a failure leaves the search exactly as it is today. */
+    if(_looksPostal(displayName,raw)) _outlinePostcode(displayName,raw,lng,lat);
     /* Async elevation / depth */
     try{
       const r=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}`);
