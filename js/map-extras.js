@@ -447,6 +447,8 @@ window.IntMapModules.terrain=function(HOST){
 };
 
 window.IntMapModules.railSeaOverlays=function(HOST){
+  /* (#R245) the two layer labels and the zoom hint are tuples held as data — see pickArgs() */
+  const LA=window.IntMapLang.pickArgs();
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
@@ -460,12 +462,14 @@ window.IntMapModules.railSeaOverlays=function(HOST){
     if(!GE().hasRenderer()) return;
     const LIST=[
       {id:'oxrail', tiles:['https://a.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png','https://b.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png','https://c.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png'], max:19, sw:'#7b1fa2', attr:'© OpenRailwayMap · OSM',
-        label:{en:'Rail infrastructure (OpenRailwayMap)',jp:'鉄道インフラ (OpenRailwayMap)',de:'Eisenbahninfrastruktur (OpenRailwayMap)',ru:'Ж/д инфраструктура (OpenRailwayMap)',es:'Infraestructura ferroviaria (OpenRailwayMap)'}},
+        label:LA('Rail infrastructure (OpenRailwayMap)','鉄道インフラ (OpenRailwayMap)','Eisenbahninfrastruktur (OpenRailwayMap)','Ж/д инфраструктура (OpenRailwayMap)','Infraestructura ferroviaria (OpenRailwayMap)')},
       {id:'oxsea', tiles:['https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'], max:18, sw:'#0277bd', attr:'© OpenSeaMap · OSM',
-        label:{en:'Nautical seamarks (OpenSeaMap)',jp:'航海用海図記号 (OpenSeaMap)',de:'Seezeichen (OpenSeaMap)',ru:'Морские знаки (OpenSeaMap)',es:'Señales náuticas (OpenSeaMap)'}}
+        label:LA('Nautical seamarks (OpenSeaMap)','航海用海図記号 (OpenSeaMap)','Seezeichen (OpenSeaMap)','Морские знаки (OpenSeaMap)','Señales náuticas (OpenSeaMap)')}
     ];
     const state={}; LIST.forEach(L=>state[L.id]=false);
-    const lbl=(L)=>L.label[HOST.lang]||L.label.en;
+    /* (#R245) the labels are tuples held as data — resolved through pick() itself */
+    const LMX=window.IntMapLang.pick(()=>HOST.lang);
+    const lbl=(L)=>LMX.arr(L.label);
     const beforeLabels=()=>['ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
     function ensure(L){ try{ if(!_imCanDraw()) return false;
       if(!GE().layers.hasSource('ox-'+L.id)) GE().layers.addSource('ox-'+L.id,{type:'raster',tiles:L.tiles,tileSize:256,maxzoom:L.max,attribution:L.attr});
@@ -477,7 +481,7 @@ window.IntMapModules.railSeaOverlays=function(HOST){
         /* (#R41) OpenSeaMap seamarks are a SPARSE transparent overlay — empty over open ocean / at world zoom, so
            it looked "broken" ("OpenSeaMapが動作しない"). It DOES load (tiles verified 200/png); tell the user the
            marks only appear when zoomed into a coast or harbour. */
-        if(L.id==='oxsea'){ try{ if(GE().camera.getZoom()<9){ const h={en:'Seamarks (buoys, lights, depths) appear when you zoom into a coast or harbor.',jp:'海図記号（ブイ・灯台・水深など）は海岸や港に拡大すると表示されます。',de:'Seezeichen (Bojen, Feuer, Tiefen) erscheinen beim Hineinzoomen an Küsten/Häfen.',ru:'Морские знаки (буи, огни, глубины) видны при приближении к берегу или порту.',es:'Las señales náuticas (boyas, luces, profundidades) aparecen al acercarte a una costa o puerto.'}; satToast(h[HOST.lang]||h.en); } }catch(_){} } }
+        if(L.id==='oxsea'){ try{ if(GE().camera.getZoom()<9){ const h=LA('Seamarks (buoys, lights, depths) appear when you zoom into a coast or harbor.','海図記号（ブイ・灯台・水深など）は海岸や港に拡大すると表示されます。','Seezeichen (Bojen, Feuer, Tiefen) erscheinen beim Hineinzoomen an Küsten/Häfen.','Морские знаки (буи, огни, глубины) видны при приближении к берегу или порту.','Las señales náuticas (boyas, luces, profundidades) aparecen al acercarte a una costa o puerto.'); satToast(LMX.arr(h)); } }catch(_){} } }
       else { try{ window._hideGenericLegend&&window._hideGenericLegend('ox-'+L.id); }catch(_){} } };
       apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
     GE().events.on('styledata',()=>{ if(LIST.some(L=>state[L.id])) setTimeout(()=>{ LIST.forEach(L=>{ if(state[L.id]&&ensure(L)){ try{ GE().layers.setLayout('oxl-'+L.id,'visibility','visible'); }catch(_){} } }); },80); });

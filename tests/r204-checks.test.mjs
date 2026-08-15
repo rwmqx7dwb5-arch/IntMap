@@ -110,7 +110,8 @@ test('R204 ④ the intensity mesh is finer than #R203 at its coarsest, and finer
   assert.ok(2000 / N < 3.1, `a 2,000 km field gets ${(2000 / N).toFixed(2)} km cells; #R203 gave 3.1`);
   /* …and a narrow field is NOT made finer for nothing — the floor still governs it */
   assert.equal(Math.max(Number(deskMin), Math.min(Number(deskMax), Math.round(200 / Number(cell)))), Number(deskMin));
-  const far = /const NF=\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+);/.exec(s);
+  /* (#R245) hoisted to FAR_N so buildField can snap its box onto this grid — same numbers */
+  const far = /const FAR_N=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+)\);/.exec(s);
   assert.ok(Number(far[2]) >= 1024 && Number(far[1]) >= 512, 'the far field is no coarser than #R203');
 });
 

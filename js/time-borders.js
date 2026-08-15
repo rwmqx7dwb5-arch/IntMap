@@ -15,6 +15,13 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.timeBorders=function(HOST){
+  /* ⚠ (#R245) THE HISTORICAL NAMES THIS FILE HOLDS ARE TUPLES, AND THEY GO THROUGH THE REGISTRY.
+     `LA` is `IntMapLang.pickArgs()` — it returns the array it is given, so the data is unchanged and
+     the file now contains ordinary CALLS that every translation instrument reads; `_LTB.arr(x)` is
+     `pick()` itself, so a language past the five positional slots reaches its inline table keyed by
+     the English name instead of falling to English for ever (#R244's eleventh shape). */
+  const LA=window.IntMapLang.pickArgs();
+  const _LTB=window.IntMapLang.pick(()=>HOST.lang);
   /* (#R178) module state, not renderer state — it was map.__imtbClick (see data-layers.js) */
   let _clickWired=false;
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -163,21 +170,21 @@ window.IntMapModules.timeBorders=function(HOST){
     /* (#R136) Union Jack — the OFFICIAL flag of the Dominion of Newfoundland (1931–1949) before it joined Canada. */
     const F_UNIONJACK=_vflag('<rect width="30" height="20" fill="#012169"/><path d="M0,0 30,20 M30,0 0,20" stroke="#fff" stroke-width="4.4"/><path d="M0,0 30,20 M30,0 0,20" stroke="#C8102E" stroke-width="1.8"/><rect x="11.4" width="7.2" height="20" fill="#fff"/><rect y="6.4" width="30" height="7.2" fill="#fff"/><rect x="12.75" width="4.5" height="20" fill="#C8102E"/><rect y="7.75" width="30" height="4.5" fill="#C8102E"/>');
     const _VANISHED=[
-      {re:/^\s*(tibet|xizang|thibet)\s*$/i, nm:{en:'Tibet',jp:'チベット',de:'Tibet',ru:'Тибет',es:'Tíbet'}, wiki:'Tibet_(1912%E2%80%931951)', flag:F_TIBET},
-      {re:/^\s*(east[ -]?turkest(an|än)|uygh?ur(istan)?|sinkiang|kashgaria|(first|second) east turkestan republic)\s*$/i, nm:{en:'East Turkestan',jp:'東トルキスタン',de:'Ostturkestan',ru:'Восточный Туркестан',es:'Turkestán Oriental'}, wiki:'East_Turkestan', flag:F_ETRK},
-      {re:/^\s*(manchukuo|manchoukuo|manchuria)\s*$/i, nm:{en:'Manchukuo',jp:'満洲国',de:'Mandschukuo',ru:'Маньчжоу-го',es:'Manchukuo'}, wiki:'Manchukuo', flag:F_MANK},
+      {re:/^\s*(tibet|xizang|thibet)\s*$/i, nm:LA('Tibet','チベット','Tibet','Тибет','Tíbet'), wiki:'Tibet_(1912%E2%80%931951)', flag:F_TIBET},
+      {re:/^\s*(east[ -]?turkest(an|än)|uygh?ur(istan)?|sinkiang|kashgaria|(first|second) east turkestan republic)\s*$/i, nm:LA('East Turkestan','東トルキスタン','Ostturkestan','Восточный Туркестан','Turkestán Oriental'), wiki:'East_Turkestan', flag:F_ETRK},
+      {re:/^\s*(manchukuo|manchoukuo|manchuria)\s*$/i, nm:LA('Manchukuo','満洲国','Mandschukuo','Маньчжоу-го','Manchukuo'), wiki:'Manchukuo', flag:F_MANK},
       /* (#R130) states CShapes draws as their OWN polygon (gw265/817/680/291) but _GW2ISO folded into a modern carrier,
          so a click resolved to the modern country + its (wrong) era article/flag. Placed here (step 2b) so they win
          over the gwcode step. No stats carrier exists (their territory has no separate modern successor), so — like
          Tibet/Manchukuo — they surface identity/flag/Wikipedia honestly without comparable numbers. */
-      {re:/^\s*(east germany|german democratic republic|d\.?\s?d\.?\s?r\.?|deutsche demokratische republik)\s*$/i, nm:{en:'East Germany',jp:'東ドイツ',de:'Deutsche Demokratische Republik',ru:'ГДР',es:'Alemania Oriental'}, wiki:'East_Germany', flag:F_DDR},
-      {re:/^\s*(south vietnam|republic of vietnam)\s*$/i, nm:{en:'South Vietnam',jp:'南ベトナム',de:'Südvietnam',ru:'Южный Вьетнам',es:'Vietnam del Sur'}, wiki:'South_Vietnam', flag:F_RVN},
-      {re:/^\s*(south yemen|people'?s democratic republic of yemen|p\.?d\.?r\.?y\.?)\s*$/i, nm:{en:'South Yemen',jp:'南イエメン',de:'Südjemen',ru:'Южный Йемен',es:'Yemen del Sur'}, wiki:'South_Yemen', flag:F_PDRY},
-      {re:/^\s*(danzig|free city of danzig)\s*$/i, nm:{en:'Free City of Danzig',jp:'ダンツィヒ自由市',de:'Freie Stadt Danzig',ru:'Вольный город Данциг',es:'Ciudad Libre de Dánzig'}, wiki:'Free_City_of_Danzig', flag:F_DANZIG},
+      {re:/^\s*(east germany|german democratic republic|d\.?\s?d\.?\s?r\.?|deutsche demokratische republik)\s*$/i, nm:LA('East Germany','東ドイツ','Deutsche Demokratische Republik','ГДР','Alemania Oriental'), wiki:'East_Germany', flag:F_DDR},
+      {re:/^\s*(south vietnam|republic of vietnam)\s*$/i, nm:LA('South Vietnam','南ベトナム','Südvietnam','Южный Вьетнам','Vietnam del Sur'), wiki:'South_Vietnam', flag:F_RVN},
+      {re:/^\s*(south yemen|people'?s democratic republic of yemen|p\.?d\.?r\.?y\.?)\s*$/i, nm:LA('South Yemen','南イエメン','Südjemen','Южный Йемен','Yemen del Sur'), wiki:'South_Yemen', flag:F_PDRY},
+      {re:/^\s*(danzig|free city of danzig)\s*$/i, nm:LA('Free City of Danzig','ダンツィヒ自由市','Freie Stadt Danzig','Вольный город Данциг','Ciudad Libre de Dánzig'), wiki:'Free_City_of_Danzig', flag:F_DANZIG},
       /* (#R136) the Dominion of Newfoundland was a self-governing British dominion until it joined Canada in 1949 —
          _GW2ISO(21) folded it into modern CANADA, so a click showed Canada's flag/article. Restore its own identity
          (no separate Maddison series → honest name/flag/Wikipedia without comparable numbers, like Danzig). */
-      {re:/^\s*(newfoundland|dominion of newfoundland)\s*$/i, nm:{en:'Dominion of Newfoundland',jp:'ニューファンドランド自治領',de:'Dominion Neufundland',ru:'Доминион Ньюфаундленд',es:'Dominio de Terranova'}, wiki:'Dominion_of_Newfoundland', flag:F_UNIONJACK}
+      {re:/^\s*(newfoundland|dominion of newfoundland)\s*$/i, nm:LA('Dominion of Newfoundland','ニューファンドランド自治領','Dominion Neufundland','Доминион Ньюфаундленд','Dominio de Terranova'), wiki:'Dominion_of_Newfoundland', flag:F_UNIONJACK}
     ];
     /* (#R105) correct a KNOWN anachronism in the aourednik data: it draws "Tibet" (and East Turkestan) as an
        INDEPENDENT country in the 1960 snapshot even though the PRC annexed Tibet in 1951 / East Turkestan by 1949.
@@ -590,14 +597,14 @@ window.IntMapModules.timeBorders=function(HOST){
         const HS=window.IntMapHistStates; if(HS&&HS.STATES){ let pick=null, matched=false, y=null;
           try{ if(window.IntMapTime&&window.IntMapTime.year&&(!window.IntMapTime.isLive||!window.IntMapTime.isLive())) y=window.IntMapTime.year(); }catch(_){}
           for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(!(re&&re.test(low))) continue; matched=true;
-            const n=S.name&&(S.name[lg]||S.name.en); if(!(n&&n!==low)) continue;
+            const n=S.name&&_LTB.arr(S.name); if(!(n&&n!==low)) continue;
             if(y!=null&&S.from&&S.to){ const a=+new Date(S.from+'T00:00:00Z'),b=+new Date(S.to+'T23:59:59Z'),t=+new Date(y+'-07-01T00:00:00Z'); if(isFinite(t)&&t>=a&&t<=b) return n; }   /* era-correct wins outright */
             if(!pick) pick=n; }
           if(pick) return pick;   /* else first regex match (legacy behaviour) */ }
-        for(const V of _VANISHED){ if(V.re.test(low)){ const n=V.nm&&(V.nm[lg]||V.nm.en); if(n&&n!==low) return n; } }
+        for(const V of _VANISHED){ if(V.re.test(low)){ const n=V.nm&&_LTB.arr(V.nm); if(n&&n!==low) return n; } }
         for(const E of _ERA_LOC){ if(E[0].test(low)){ const n=E[1][lg]; if(n&&n!==low) return n; } }
         const cm=_COLONIZER[_normNm(low)]; if(cm&&cm[lg]) return cm[lg];   /* the major powers double as country-name localizations (Germany/Japan… occupation-zone bases) */
-        try{ if(typeof countryStats!=='undefined'&&countryStats){ const key=_normNm(low); for(const c in countryStats){ const s=countryStats[c]; if(s&&s.nameEn&&_normNm(s.nameEn)===key){ const d=(s.name&&(s.name[lg]||s.name.en))||((lg==='jp'&&s.nameJp)?s.nameJp:s.nameEn); if(d&&d!==low) return d; } } } }catch(_){}   /* modern base (Algeria, Syria…) → its localized present-day name (JP via nameJp, matching tagSame; DE/RU/ES keep the English base as elsewhere on the era map) */
+        try{ if(typeof countryStats!=='undefined'&&countryStats){ const key=_normNm(low); for(const c in countryStats){ const s=countryStats[c]; if(s&&s.nameEn&&_normNm(s.nameEn)===key){ const d=(s.name&&_LTB.arr(s.name))||((lg==='jp'&&s.nameJp)?s.nameJp:s.nameEn); if(d&&d!==low) return d; } } } }catch(_){}   /* modern base (Algeria, Syria…) → its localized present-day name (JP via nameJp, matching tagSame; DE/RU/ES keep the English base as elsewhere on the era map) */
         return null; };
       const direct=_loc1(low0); if(direct) return direct;
       /* "(Coloniser)" / occupation suffix → localize the BASE + append the localized possessor (e.g. アルジェリア（フランス）) */
@@ -610,7 +617,7 @@ window.IntMapModules.timeBorders=function(HOST){
          EXISTING label, e.g. "フランス" for a JP user — "国名が変わってない国は既存の国名ラベルのまま"). */
       const cur=new Map();
       try{ if(typeof countryStats!=='undefined'&&countryStats){ Object.values(countryStats).forEach(s=>{ if(s&&s.sov!==false){
-        const disp=(s.name&&(s.name[lg]||s.name.en))||((lg==='jp'&&s.nameJp)?s.nameJp:s.nameEn)||s.nameEn||'';
+        const disp=(s.name&&_LTB.arr(s.name))||((lg==='jp'&&s.nameJp)?s.nameJp:s.nameEn)||s.nameEn||'';
         if(s.nameEn) cur.set(_normNm(s.nameEn),disp); if(s.nameJp) cur.set(_normNm(s.nameJp),disp); } }); } }catch(_){}
       /* (#R109) HistId single-country renamings (Germany→Weimar/Nazi/Empire, China→Qing/ROC, Italy, Persia, Siam, Dutch
          East Indies): the aourednik polygon keeps the MODERN name ("Germany") but countryStats is renamed to the era
@@ -618,7 +625,7 @@ window.IntMapModules.timeBorders=function(HOST){
          modern one. Only when HistId actually renamed the entry this era (s._histId). */
       try{ const MODNM={CHN:['China'],DEU:['Germany'],ITA:['Italy'],IRN:['Iran','Persia'],THA:['Thailand','Siam'],IDN:['Indonesia','Dutch East Indies'],JPN:['Japan'],RUS:['Russia'],GBR:['United Kingdom'],ESP:['Spain'],PRT:['Portugal'],BRA:['Brazil'],EGY:['Egypt'],FRA:['France'],HUN:['Hungary']};   /* (#R117/#R118) expanded identities */
         for(const code in MODNM){ const s=(typeof countryStats!=='undefined')&&countryStats[code]; if(!s||s._histHidden||!s._histId) continue;
-          const disp=(s.name&&(s.name[lg]||s.name.en))||s.nameEn; if(!disp) continue; MODNM[code].forEach(mn=>cur.set(_normNm(mn),disp)); } }catch(_){}
+          const disp=(s.name&&_LTB.arr(s.name))||s.nameEn; if(!disp) continue; MODNM[code].forEach(mn=>cur.set(_normNm(mn),disp)); } }catch(_){}
       if(!cur.size) return fc;
       fc.features.forEach(f=>{ try{ f.properties=f.properties||{};
         if(f.properties._corrected){ return; }   /* (#R105) _correctEra already set _same/_modName (Tibet→China, label suppressed) — don't re-tag */
@@ -794,7 +801,7 @@ window.IntMapModules.timeBorders=function(HOST){
         if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(!re||!(re.test(nm)||re.test(nmBare))) continue;
           let act=true; try{ if(when){ const t=+when,a=+new Date(S.from+'T00:00:00Z'),b=+new Date(S.to+'T23:59:59Z'); if(isFinite(t)) act=(t>=a&&t<=b); } }catch(_){}
           if(!act) continue;
-          empire=true; const nmS=(S.name&&(S.name[lg]||S.name.en))||S.name; if(nmS) out.name=nmS; if(S.wiki) out.wiki=S.wiki;
+          empire=true; const nmS=(S.name&&_LTB.arr(S.name))||S.name; if(nmS) out.name=nmS; if(S.wiki) out.wiki=S.wiki;
           if(S.flag) out.flag=S.flag;   /* (#R127) registry flag — shows even for a data-less empire (Ottoman 1914) not yet in countryStats */
           if(countryStats[S.code]&&!countryStats[S.code]._histHidden){ code=S.code; out.code=S.code; }
           break; } } }catch(_){}
@@ -805,7 +812,7 @@ window.IntMapModules.timeBorders=function(HOST){
            point-in-polygon catch-all below would wrongly resolve them to the modern country (Tibet / East Turkestan →
            PRC, "PRCかROC扱いになる"). Keep THEIR OWN identity + Wikipedia (post-annexation years are already merged into
            China by _correctEra, so this only fires while the era polygon still carries the historical name). */
-        if(!code){ const vlow=String(nm||'').trim(); for(const V of _VANISHED){ if(V.re.test(vlow)){ out.name=(V.nm[lg]||V.nm.en); out.wiki=V.wiki; if(V.flag) out.flag=V.flag; out.code=null; return out; } } }   /* (#R128) pass the vanished-state flag to the click popup */
+        if(!code){ const vlow=String(nm||'').trim(); for(const V of _VANISHED){ if(V.re.test(vlow)){ out.name=_LTB.arr(V.nm); out.wiki=V.wiki; if(V.flag) out.flag=V.flag; out.code=null; return out; } } }   /* (#R128) pass the vanished-state flag to the click popup */
         /* (#R128) 2.4) DETERMINISTIC gwcode → modern carrier. The era feature's own CShapes _gw is authoritative and
            border/name-independent, so it resolves the entire renamed/RESIZED/colonial long tail WITHOUT depending on
            the modern point-in-polygon fallback (step 3) that grabbed whatever present-day country sat under the cursor
@@ -849,7 +856,7 @@ window.IntMapModules.timeBorders=function(HOST){
               let act=true; try{ if(when2){ const t=+when2,a2=+new Date(S.from+'T00:00:00Z'),b2=+new Date(S.to+'T23:59:59Z'); if(isFinite(t)) act=(t>=a2&&t<=b2); } }catch(_){}
               if(!act||!countryStats[S.code]||countryStats[S.code]._histHidden) continue;
               code=S.code; break; } } }catch(_){} } } }catch(_){} }
-        if(code){ const s=countryStats[code]; if(s){ out.code=code; const nm2=(s.name&&(s.name[lg]||s.name.en))||s.nameEn; if(nm2) out.name=nm2; if(s.wiki) out.wiki=s.wiki; } }
+        if(code){ const s=countryStats[code]; if(s){ out.code=code; const nm2=(s.name&&_LTB.arr(s.name))||s.nameEn; if(nm2) out.name=nm2; if(s.wiki) out.wiki=s.wiki; } }
         /* (#R116) ERA-SPECIFIC Wikipedia for SAME-NAME countries ("国名に変化がない国は特に、その時代の国の
            Wikipediaに飛ばしてもらえない"): a country that kept its label (France, China, Italy…) resolved to the
            MODERN article. When the clock is in a curated era range, link that era's own article instead (the

@@ -25,130 +25,34 @@
  * ==========================================================================*/
 (function (root) {
   'use strict';
+  /* ⚠ (#R245) the rung labels are tuples held as data — see IntMapLang.pickArgs().
+     This module is evaluated at import time, which in some entry orders is BEFORE
+     js/lang-registry.js has run; `pickArgs()` only ever returns «the arguments as an array», so the
+     fallback below is the same function rather than a stub, and the audits read the initialiser
+     either way (they match the text `IntMapLang.pick…` in the declaration). */
+  var LA = (root.IntMapLang && root.IntMapLang.pickArgs()) || function () { return Array.prototype.slice.call(arguments); };
   var AU_PER_LY = 63241.077;
   var AU_PER_PC = 206264.806;
 
   /* [key, radius in AU, {en,ja,de,ru,es}, source]  — ordered outward, and every number published. */
   var RUNGS = [
-    ['kuiper', 50 * 1, {
-      en: 'Kuiper belt — the outer edge of the classical belt',
-      ja: 'カイパーベルト — 古典的帯の外縁',
-      de: 'Kuipergürtel — Außenrand',
-      ru: 'Пояс Койпера — внешний край',
-      es: 'Cinturón de Kuiper — borde exterior'
-    }, '50 AU (the classical Kuiper cliff)'],
-    ['heliopause', 123, {
-      en: 'Heliopause — where Voyager 1 measured the solar wind stop',
-      ja: 'ヘリオポーズ — ボイジャー1号が太陽風の停止を実測した場所',
-      de: 'Heliopause — von Voyager 1 gemessen',
-      ru: 'Гелиопауза — измерена «Вояджером-1»',
-      es: 'Heliopausa — medida por la Voyager 1'
-    }, 'Voyager 1 crossing, 2012-08-25 (Gurnett et al. 2013)'],
-    ['oort', 100000, {
-      en: 'Oort cloud — the outer boundary inferred from long-period comets',
-      ja: 'オールトの雲 — 長周期彗星から推定される外縁',
-      de: 'Oortsche Wolke — äußere Grenze',
-      ru: 'Облако Оорта — внешняя граница',
-      es: 'Nube de Oort — límite exterior'
-    }, 'long-period comet aphelia, ~1.5 ly'],
-    ['proxima', 4.2465 * AU_PER_LY, {
-      en: 'Proxima Centauri — the nearest star',
-      ja: 'プロキシマ・ケンタウリ — 最も近い恒星',
-      de: 'Proxima Centauri — nächster Stern',
-      ru: 'Проксима Центавра — ближайшая звезда',
-      es: 'Próxima Centauri — la estrella más cercana'
-    }, 'Gaia DR3 parallax 768.07 mas'],
-    ['sirius', 8.6 * AU_PER_LY, {
-      en: 'Sirius — the brightest star in the sky',
-      ja: 'シリウス — 全天で最も明るい恒星',
-      de: 'Sirius — hellster Stern am Himmel',
-      ru: 'Сириус — ярчайшая звезда неба',
-      es: 'Sirio — la estrella más brillante del cielo'
-    }, 'Gaia/Hipparcos parallax, 8.60 ly'],
-    ['pleiades', 136.2 * AU_PER_PC, {
-      en: 'The Pleiades — the nearest bright open cluster',
-      ja: 'プレアデス星団（すばる） — 最も近い明るい散開星団',
-      de: 'Plejaden — nächster heller offener Haufen',
-      ru: 'Плеяды — ближайшее яркое рассеянное скопление',
-      es: 'Las Pléyades — el cúmulo abierto brillante más cercano'
-    }, 'Gaia DR2 VLBI-consistent distance, 136.2 pc'],
-    ['orion', 412 * AU_PER_PC, {
-      en: 'The Orion Nebula — the nearest region forming massive stars',
-      ja: 'オリオン大星雲 — 最も近い大質量星の形成領域',
-      de: 'Orionnebel',
-      ru: 'Туманность Ориона',
-      es: 'La Nebulosa de Orión'
-    }, 'VLBA parallax, 412 ± 12 pc (Reid et al. 2007)'],
-    ['gc', 8178 * AU_PER_PC, {
-      en: 'Centre of the Milky Way',
-      ja: '天の川銀河の中心',
-      de: 'Zentrum der Milchstraße',
-      ru: 'Центр Млечного Пути',
-      es: 'Centro de la Vía Láctea'
-    }, 'GRAVITY Collaboration 2019: 8178 ± 26 pc'],
-    ['mwedge', 26000 * AU_PER_PC, {
-      en: 'Edge of the Milky Way’s stellar disc',
-      ja: '天の川銀河の星円盤の外縁',
-      de: 'Rand der Milchstraßenscheibe',
-      ru: 'Край звёздного диска Галактики',
-      es: 'Borde del disco estelar de la Vía Láctea'
-    }, 'stellar disc radius ~26 kpc'],
-    ['lmc', 49.97e3 * AU_PER_PC, {
-      en: 'The Large Magellanic Cloud — a satellite galaxy',
-      ja: '大マゼラン雲 — 銀河系の伴銀河',
-      de: 'Große Magellansche Wolke',
-      ru: 'Большое Магелланово Облако',
-      es: 'La Gran Nube de Magallanes'
-    }, 'eclipsing binaries, 49.97 ± 0.19 kpc (Pietrzynski et al. 2019)'],
-    ['m31', 0.765e6 * AU_PER_PC, {
-      en: 'Andromeda (M31) — the nearest large galaxy',
-      ja: 'アンドロメダ銀河（M31） — 最も近い大型銀河',
-      de: 'Andromeda (M31)',
-      ru: 'Туманность Андромеды (M31)',
-      es: 'Andrómeda (M31)'
-    }, '765 kpc (Cepheid + TRGB mean)'],
-    ['virgo', 16.5e6 * AU_PER_PC, {
-      en: 'Virgo cluster — the centre of our supercluster',
-      ja: 'おとめ座銀河団 — 所属する超銀河団の中心',
-      de: 'Virgo-Haufen',
-      ru: 'Скопление Девы',
-      es: 'Cúmulo de Virgo'
-    }, '16.5 Mpc (Mei et al. 2007)'],
-    ['coma', 99e6 * AU_PER_PC, {
-      en: 'The Coma cluster — a thousand galaxies bound together',
-      ja: 'かみのけ座銀河団 — 千個規模の銀河の集団',
-      de: 'Coma-Haufen',
-      ru: 'Скопление Волос Вероники',
-      es: 'El cúmulo de Coma'
-    }, '99 Mpc (SBF / Tully-Fisher mean)'],
-    ['3c273', 749e6 * AU_PER_PC, {
-      en: '3C 273 — the first quasar ever identified',
-      ja: '3C 273 — 最初に同定されたクエーサー',
-      de: '3C 273 — der erste identifizierte Quasar',
-      ru: '3C 273 — первый отождествлённый квазар',
-      es: '3C 273 — el primer cuásar identificado'
-    }, 'z = 0.158, 749 Mpc comoving'],
-    ['gnz11', 32e9 * AU_PER_LY, {
-      en: 'GN-z11 — one of the most distant galaxies measured (z = 10.6), comoving',
-      ja: 'GN-z11 — 実測で最も遠い銀河のひとつ（z = 10.6、共動距離）',
-      de: 'GN-z11 (z = 10,6), mitbewegt',
-      ru: 'GN-z11 (z = 10,6), сопутствующее расстояние',
-      es: 'GN-z11 (z = 10,6), distancia comóvil'
-    }, 'z = 10.603 (JWST/NIRSpec 2023) → 32 Gly comoving'],
-    ['cmb', 45.6e9 * AU_PER_LY, {
-      en: 'The cosmic microwave background — the oldest light there is (z ≈ 1100)',
-      ja: '宇宙マイクロ波背景放射 — 存在する最も古い光（z ≈ 1100）',
-      de: 'Kosmischer Mikrowellenhintergrund (z ≈ 1100)',
-      ru: 'Реликтовое излучение (z ≈ 1100)',
-      es: 'Fondo cósmico de microondas (z ≈ 1100)'
-    }, 'last-scattering surface, comoving 45.6 Gly (Planck 2018 parameters)'],
-    ['horizon', 46.5e9 * AU_PER_LY, {
-      en: 'The particle horizon — the edge of the observable universe',
-      ja: '粒子的地平面 — 観測可能な宇宙の果て',
-      de: 'Teilchenhorizont — Rand des beobachtbaren Universums',
-      ru: 'Горизонт частиц — край наблюдаемой Вселенной',
-      es: 'Horizonte de partículas — el borde del universo observable'
-    }, 'comoving 46.5 Gly (Planck 2018 parameters)']
+    ['kuiper', 50 * 1, LA('Kuiper belt — the outer edge of the classical belt','カイパーベルト — 古典的帯の外縁','Kuipergürtel — Außenrand','Пояс Койпера — внешний край','Cinturón de Kuiper — borde exterior'), '50 AU (the classical Kuiper cliff)'],
+    ['heliopause', 123, LA('Heliopause — where Voyager 1 measured the solar wind stop','ヘリオポーズ — ボイジャー1号が太陽風の停止を実測した場所','Heliopause — von Voyager 1 gemessen','Гелиопауза — измерена «Вояджером-1»','Heliopausa — medida por la Voyager 1'), 'Voyager 1 crossing, 2012-08-25 (Gurnett et al. 2013)'],
+    ['oort', 100000, LA('Oort cloud — the outer boundary inferred from long-period comets','オールトの雲 — 長周期彗星から推定される外縁','Oortsche Wolke — äußere Grenze','Облако Оорта — внешняя граница','Nube de Oort — límite exterior'), 'long-period comet aphelia, ~1.5 ly'],
+    ['proxima', 4.2465 * AU_PER_LY, LA('Proxima Centauri — the nearest star','プロキシマ・ケンタウリ — 最も近い恒星','Proxima Centauri — nächster Stern','Проксима Центавра — ближайшая звезда','Próxima Centauri — la estrella más cercana'), 'Gaia DR3 parallax 768.07 mas'],
+    ['sirius', 8.6 * AU_PER_LY, LA('Sirius — the brightest star in the sky','シリウス — 全天で最も明るい恒星','Sirius — hellster Stern am Himmel','Сириус — ярчайшая звезда неба','Sirio — la estrella más brillante del cielo'), 'Gaia/Hipparcos parallax, 8.60 ly'],
+    ['pleiades', 136.2 * AU_PER_PC, LA('The Pleiades — the nearest bright open cluster','プレアデス星団（すばる） — 最も近い明るい散開星団','Plejaden — nächster heller offener Haufen','Плеяды — ближайшее яркое рассеянное скопление','Las Pléyades — el cúmulo abierto brillante más cercano'), 'Gaia DR2 VLBI-consistent distance, 136.2 pc'],
+    ['orion', 412 * AU_PER_PC, LA('The Orion Nebula — the nearest region forming massive stars','オリオン大星雲 — 最も近い大質量星の形成領域','Orionnebel','Туманность Ориона','La Nebulosa de Orión'), 'VLBA parallax, 412 ± 12 pc (Reid et al. 2007)'],
+    ['gc', 8178 * AU_PER_PC, LA('Centre of the Milky Way','天の川銀河の中心','Zentrum der Milchstraße','Центр Млечного Пути','Centro de la Vía Láctea'), 'GRAVITY Collaboration 2019: 8178 ± 26 pc'],
+    ['mwedge', 26000 * AU_PER_PC, LA('Edge of the Milky Way’s stellar disc','天の川銀河の星円盤の外縁','Rand der Milchstraßenscheibe','Край звёздного диска Галактики','Borde del disco estelar de la Vía Láctea'), 'stellar disc radius ~26 kpc'],
+    ['lmc', 49.97e3 * AU_PER_PC, LA('The Large Magellanic Cloud — a satellite galaxy','大マゼラン雲 — 銀河系の伴銀河','Große Magellansche Wolke','Большое Магелланово Облако','La Gran Nube de Magallanes'), 'eclipsing binaries, 49.97 ± 0.19 kpc (Pietrzynski et al. 2019)'],
+    ['m31', 0.765e6 * AU_PER_PC, LA('Andromeda (M31) — the nearest large galaxy','アンドロメダ銀河（M31） — 最も近い大型銀河','Andromeda (M31)','Туманность Андромеды (M31)','Andrómeda (M31)'), '765 kpc (Cepheid + TRGB mean)'],
+    ['virgo', 16.5e6 * AU_PER_PC, LA('Virgo cluster — the centre of our supercluster','おとめ座銀河団 — 所属する超銀河団の中心','Virgo-Haufen','Скопление Девы','Cúmulo de Virgo'), '16.5 Mpc (Mei et al. 2007)'],
+    ['coma', 99e6 * AU_PER_PC, LA('The Coma cluster — a thousand galaxies bound together','かみのけ座銀河団 — 千個規模の銀河の集団','Coma-Haufen','Скопление Волос Вероники','El cúmulo de Coma'), '99 Mpc (SBF / Tully-Fisher mean)'],
+    ['3c273', 749e6 * AU_PER_PC, LA('3C 273 — the first quasar ever identified','3C 273 — 最初に同定されたクエーサー','3C 273 — der erste identifizierte Quasar','3C 273 — первый отождествлённый квазар','3C 273 — el primer cuásar identificado'), 'z = 0.158, 749 Mpc comoving'],
+    ['gnz11', 32e9 * AU_PER_LY, LA('GN-z11 — one of the most distant galaxies measured (z = 10.6), comoving','GN-z11 — 実測で最も遠い銀河のひとつ（z = 10.6、共動距離）','GN-z11 (z = 10,6), mitbewegt','GN-z11 (z = 10,6), сопутствующее расстояние','GN-z11 (z = 10,6), distancia comóvil'), 'z = 10.603 (JWST/NIRSpec 2023) → 32 Gly comoving'],
+    ['cmb', 45.6e9 * AU_PER_LY, LA('The cosmic microwave background — the oldest light there is (z ≈ 1100)','宇宙マイクロ波背景放射 — 存在する最も古い光（z ≈ 1100）','Kosmischer Mikrowellenhintergrund (z ≈ 1100)','Реликтовое излучение (z ≈ 1100)','Fondo cósmico de microondas (z ≈ 1100)'), 'last-scattering surface, comoving 45.6 Gly (Planck 2018 parameters)'],
+    ['horizon', 46.5e9 * AU_PER_LY, LA('The particle horizon — the edge of the observable universe','粒子的地平面 — 観測可能な宇宙の果て','Teilchenhorizont — Rand des beobachtbaren Universums','Горизонт частиц — край наблюдаемой Вселенной','Horizonte de partículas — el borde del universo observable'), 'comoving 46.5 Gly (Planck 2018 parameters)']
   ];
 
   /* A human distance, in the unit that fits it — AU inside the solar system, light years out to the
@@ -207,9 +111,11 @@
     RUNGS: RUNGS,
     HORIZON_AU: RUNGS[RUNGS.length - 1][1],
     fmt: fmt, visible: visible, ring: ring,
+    /* (#R245) the rung label is a tuple held as data; resolving it through `pick()` itself is what
+       lets a language past the five positional slots reach its inline table keyed by the English. */
     label: function (rung, lang) {
-      var k = { jp: 'ja', ja: 'ja', de: 'de', ru: 'ru', es: 'es' }[lang] || 'en';
-      return (rung && rung.label && (rung.label[k] || rung.label.en)) || '';
+      if (!rung || !rung.label) return '';
+      return root.IntMapLang.pick(function () { return lang; }).arr(rung.label) || '';
     }
   };
 })(typeof window !== 'undefined' ? window : globalThis);

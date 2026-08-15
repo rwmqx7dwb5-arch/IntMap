@@ -33,6 +33,10 @@
  * ==========================================================================*/
 window.IntMapEngineSelect=(function(){
   'use strict';
+  /* ⚠ (#R245) the two engine names are a tuple held as data — see IntMapLang.pickArgs(). This module
+     runs at import time, before js/lang-registry.js in some entry orders; `pickArgs()` only ever
+     returns «the arguments as an array», so the fallback is the same function, not a stub. */
+  const LA=(window.IntMapLang&&window.IntMapLang.pickArgs())||function(){ return Array.prototype.slice.call(arguments); };
   const KEY='intmap_engine';
   const VALID=['maplibre','cesium'];
 
@@ -96,12 +100,9 @@ window.IntMapEngineSelect=(function(){
     /* the label the UI shows, in the five languages the standing instructions
        require every user-visible string to exist in */
     label(id,lang){
-      const L={ maplibre:{ en:'MapLibre (default)', jp:'MapLibre（既定）', de:'MapLibre (Standard)',
-                           ru:'MapLibre (по умолчанию)', es:'MapLibre (predeterminado)' },
-                cesium:{ en:'Cesium — true 3-D globe', jp:'Cesium — 真の3D地球儀',
-                         de:'Cesium — echter 3-D-Globus', ru:'Cesium — настоящий 3D-глобус',
-                         es:'Cesium — globo 3-D real' } }[id]||{};
-      return L[lang]||L.en||id;
+      const L={ maplibre:LA('MapLibre (default)','MapLibre（既定）','MapLibre (Standard)','MapLibre (по умолчанию)','MapLibre (predeterminado)'),
+                cesium:LA('Cesium — true 3-D globe','Cesium — 真の3D地球儀','Cesium — echter 3-D-Globus','Cesium — настоящий 3D-глобус','Cesium — globo 3-D real') }[id];
+      return (Array.isArray(L)&&L.length)?(window.IntMapLang.pick(()=>lang).arr(L)||id):id;   /* (#R245) */
     } };
   api.begin();
   return api;

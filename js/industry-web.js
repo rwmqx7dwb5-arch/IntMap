@@ -85,11 +85,13 @@ window.IntMapModules.industryWeb = function (HOST) {
 
     let on = false, qid = INDUSTRIES[0].q, status = 'idle', err = null, moneyErr = [], edgeErr = false;
     let nodes = [], edges = [], sel = null, ctrl = null;
+    /* (#R245) the panel's names are a tuple held as data — see IntMapLang.pickArgs() */
+    const LA = window.IntMapLang.pickArgs();
     const cache = {};
     /* (#R215) one box, and it is the app's own legend — see js/world-packs.js `makePanel`. */
     const panel = makePanel('iw-panel', () => '🕸 ' + L('Industry web', '業界の相関', 'Branchennetz', 'Отраслевая сеть', 'Red del sector'), 'wp-dl-industry',
       { legendId: 'wpindustry', layers: () => LYR.slice(),
-        names: () => ({ en: '🕸 Industry web', jp: '🕸 業界の相関', de: '🕸 Branchennetz', ru: '🕸 Отраслевая сеть', es: '🕸 Red del sector' }) });
+        names: () => (LA('🕸 Industry web','🕸 業界の相関','🕸 Branchennetz','🕸 Отраслевая сеть','🕸 Red del sector')) });
 
     /* ── THE QUERIES ──────────────────────────────────────────────────────────────────────────────
        TWO, run together, because they are two different shapes. WHO is one row per company and can

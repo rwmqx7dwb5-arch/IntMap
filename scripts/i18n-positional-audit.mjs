@@ -80,6 +80,15 @@ const NEUTRAL = new Set([
   'AUTO', 'Influenza', 'COVID-19', 'SARS', 'Ebola', '⏸ Pause', 'Fear & Greed', 'Countdown',
   'USD, nominal', 'Wind 10 m', '2022 UNDP', 'Capital', 'General', 'Civil', 'Imperial (mi/ft)',
   'Base', 'zoom', 'lat', 'Error:', 'Sat', 'Code',
+  /* ⚠ (#R245) …and the three the ELEVENTH surface brought in when #R244's language-keyed objects
+     became calls. Each was read against a dictionary, as the note above requires, and each is the
+     German or Spanish word rather than an untranslated English one:
+       Tundra     de/es — «Tundra» is the German AND the Spanish name of the biome.
+       Tibet      de    — the German exonym for 西藏 is Tibet (Duden).
+       Manchukuo  es    — the Spanish name of the state is Manchukuo (RAE-style transliteration).
+       Siam       de/es — the German and Spanish name of the historical kingdom is Siam.
+       Persia     es    — the Spanish name of the historical state is Persia. */
+  'Tundra', 'Tibet', 'Manchukuo', 'Siam', 'Persia',
 ]);
 const hasLetter = (s) => /\p{L}/u.test(s);
 /* ══ ⚠ (#R243) A MODEL INSTRUCTION IS NOT A SCREEN ═══════════════════════════════════════════════
