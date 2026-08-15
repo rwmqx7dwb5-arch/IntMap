@@ -463,7 +463,7 @@ window.IntMapModules.companiesUi=function(HOST){
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   const {_DASH_BADGE}=window.IntMapTables;
 
-  function dashBadgeLabel(b){ if(!b||HOST.lang==='en') return b||''; const e=_DASH_BADGE[b]; return (e&&e[HOST.lang])||b; }
+  function dashBadgeLabel(b){ if(!b||HOST.lang==='en') return b||''; const e=_DASH_BADGE[b]; return (e&&window.IntMapLang.pick(()=>HOST.lang).arr(e))||b; }
 
   function renderDashboard(){
     /* (#R139) The Information dashboard was RETIRED — the "info" tab is now COMPANIES. Every renderDashboard() call

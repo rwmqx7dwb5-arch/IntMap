@@ -142,37 +142,45 @@ window.IntMapTables=(function(){
    *  (3) Sat-Controller panel, capture-date overlay, settings API-key management.
    *  Every free endpoint below was verified to return real tiles (HTTP 200 image/*).
    *  ============================================================================= */
+  /* ⚠ (#R246) EVERY TRANSLATION TUPLE IN THIS FILE IS A CALL. They were `{en:…,jp:…}` objects read
+     by `x[HOST.lang]||x.en` at half a dozen call sites, which is the eleventh shape
+     (scripts/i18n-langmap-audit.mjs): invisible to every instrument, and English for every language
+     the object does not name — here that was de/ru/es/fr/ko/zh/zh-Hans, all of them. `LA(…)` is
+     IntMapLang.pickArgs(): the SAME array, written as a call, resolved by `L.arr()` through pick()
+     itself. ⚠ One radius group read `grp.g[HOST.lang]` with no `||` fallback at all, so the German,
+     Russian, Spanish, French, Korean and Chinese optgroup labels rendered the string 「undefined」. */
+  const LA=window.IntMapLang.pickArgs();
   const SAT_PROVIDERS=[
-    { id:'esri', tier:'free', short:'Esri', name:{en:'Esri World Imagery',jp:'Esri 衛星画像'},
+    { id:'esri', tier:'free', short:'Esri', name:LA('Esri World Imagery','Esri 衛星画像','Esri Satellitenbilder','Спутниковые снимки Esri','Imágenes satelitales de Esri'),
       dated:false, maxzoom:19, attribution:'Imagery © Esri, Maxar, Earthstar Geographics',
       /* Two host aliases serving the SAME World_Imagery tiles — MapLibre round-robins across them, so
          the browser's per-host connection cap no longer throttles high-res imagery in 3D (#2,#18). */
       tiles:()=>['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] },
-    { id:'gibs-modis', tier:'free', short:'MODIS Terra', name:{en:'NASA GIBS · MODIS Terra',jp:'NASA GIBS · MODIS Terra'},
+    { id:'gibs-modis', tier:'free', short:'MODIS Terra', name:LA('NASA GIBS · MODIS Terra','NASA GIBS · MODIS Terra','NASA GIBS · MODIS Terra','NASA GIBS · MODIS Terra','NASA GIBS · MODIS Terra'),
       dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — MODIS Terra true color',
       tiles:(d)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/'+d+'/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg'] },
-    { id:'gibs-viirs', tier:'free', short:'VIIRS SNPP', name:{en:'NASA GIBS · VIIRS (SNPP)',jp:'NASA GIBS · VIIRS (SNPP)'},
+    { id:'gibs-viirs', tier:'free', short:'VIIRS SNPP', name:LA('NASA GIBS · VIIRS (SNPP)','NASA GIBS · VIIRS (SNPP)','NASA GIBS · VIIRS (SNPP)','NASA GIBS · VIIRS (SNPP)','NASA GIBS · VIIRS (SNPP)'),
       dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — VIIRS SNPP true color',
       tiles:(d)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/'+d+'/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg'] },
-    { id:'gibs-viirs-n20', tier:'free', short:'VIIRS N20', name:{en:'NASA GIBS · VIIRS (NOAA-20)',jp:'NASA GIBS · VIIRS (NOAA-20)'},
+    { id:'gibs-viirs-n20', tier:'free', short:'VIIRS N20', name:LA('NASA GIBS · VIIRS (NOAA-20)','NASA GIBS · VIIRS (NOAA-20)','NASA GIBS · VIIRS (NOAA-20)','NASA GIBS · VIIRS (NOAA-20)','NASA GIBS · VIIRS (NOAA-20)'),
       dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — VIIRS NOAA-20 true color',
       tiles:(d)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/'+d+'/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg'] },
-    { id:'s2cloudless', tier:'free', short:'Sentinel-2', name:{en:'Sentinel-2 cloudless (EOX)',jp:'Sentinel-2 雲なし (EOX)'},
+    { id:'s2cloudless', tier:'free', short:'Sentinel-2', name:LA('Sentinel-2 cloudless (EOX)','Sentinel-2 雲なし (EOX)','Sentinel-2 wolkenfrei (EOX)','Sentinel-2 без облаков (EOX)','Sentinel-2 sin nubes (EOX)'),
       dated:true, dateMode:'year', years:[2024,2023,2022,2021,2020,2019,2018,2017], maxzoom:16,
       attribution:'Sentinel-2 cloudless — EOX IT Services GmbH (CC BY-NC-SA 4.0)',
       tiles:(y)=>['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-'+y+'_3857/default/g/{z}/{y}/{x}.jpg'] },
     /* --- Pro / BYOK: selectable only after the user registers an API key in Settings --- */
-    { id:'sentinelhub', tier:'pro', keyName:'sentinelhub', short:'Sentinel Hub', name:{en:'Sentinel Hub (S2 / Landsat)',jp:'Sentinel Hub (S2 / Landsat)'},
+    { id:'sentinelhub', tier:'pro', keyName:'sentinelhub', short:'Sentinel Hub', name:LA('Sentinel Hub (S2 / Landsat)','Sentinel Hub (S2 / Landsat)','Sentinel Hub (S2 / Landsat)','Sentinel Hub (S2 / Landsat)','Sentinel Hub (S2 / Landsat)'),
       dated:true, dateMode:'day', maxzoom:16, attribution:'Sentinel Hub by Sinergise',
-      keyLabel:{en:'Sentinel Hub instance ID',jp:'Sentinel Hub インスタンスID'}, keyPh:'xxxxxxxx-xxxx-xxxx-xxxx',
+      keyLabel:LA('Sentinel Hub instance ID','Sentinel Hub インスタンスID','Sentinel-Hub-Instanz-ID','Идентификатор экземпляра Sentinel Hub','ID de instancia de Sentinel Hub'), keyPh:'xxxxxxxx-xxxx-xxxx-xxxx',
       tiles:(d,k)=>['https://services.sentinel-hub.com/ogc/wmts/'+encodeURIComponent(k)+'?service=WMTS&request=GetTile&version=1.0.0&tilematrixset=PopularWebMercator256&layer=TRUE-COLOR-S2L2A&tilematrix={z}&tilerow={y}&tilecol={x}&format=image/jpeg&time='+d] },
-    { id:'mapbox', tier:'pro', keyName:'mapbox', short:'Mapbox', name:{en:'Mapbox Satellite',jp:'Mapbox Satellite'},
+    { id:'mapbox', tier:'pro', keyName:'mapbox', short:'Mapbox', name:LA('Mapbox Satellite','Mapbox Satellite','Mapbox Satellite','Mapbox Satellite','Mapbox Satellite'),
       dated:false, maxzoom:22, attribution:'© Mapbox © Maxar',
-      keyLabel:{en:'Mapbox access token',jp:'Mapbox アクセストークン'}, keyPh:'pk.eyJ1Ijoi…',
+      keyLabel:LA('Mapbox access token','Mapbox アクセストークン','Mapbox-Zugriffstoken','Токен доступа Mapbox','Token de acceso de Mapbox'), keyPh:'pk.eyJ1Ijoi…',
       tiles:(d,k)=>['https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg90?access_token='+encodeURIComponent(k)] },
-    { id:'custom', tier:'pro', keyName:'custom', short:'Custom', name:{en:'Custom XYZ source',jp:'カスタム XYZ ソース'},
+    { id:'custom', tier:'pro', keyName:'custom', short:'Custom', name:LA('Custom XYZ source','カスタム XYZ ソース','Eigene XYZ-Quelle','Свой источник XYZ','Fuente XYZ personalizada'),
       dated:false, maxzoom:22, attribution:'User-supplied XYZ tile source',
-      keyLabel:{en:'XYZ URL template — use {z}/{x}/{y}',jp:'XYZ URLテンプレート — {z}/{x}/{y} を使用'}, keyPh:'https://…/{z}/{x}/{y}.jpg?key=…',
+      keyLabel:LA('XYZ URL template — use {z}/{x}/{y}','XYZ URLテンプレート — {z}/{x}/{y} を使用','XYZ-URL-Vorlage — {z}/{x}/{y} verwenden','Шаблон URL XYZ — используйте {z}/{x}/{y}','Plantilla de URL XYZ — use {z}/{x}/{y}'), keyPh:'https://…/{z}/{x}/{y}.jpg?key=…',
       tiles:(d,k)=>[k] }
   ];
   /* (#R28) ORGANIZATIONS / INSTITUTIONS / militant & political GROUPS → a representative location.
@@ -535,10 +543,10 @@ window.IntMapTables=(function(){
   const CURRENCY={USA:"USD",CHN:"CNY",JPN:"JPY",DEU:"EUR",IND:"INR",GBR:"GBP",FRA:"EUR",ITA:"EUR",BRA:"BRL",CAN:"CAD",RUS:"RUB",MEX:"MXN",AUS:"AUD",KOR:"KRW",ESP:"EUR",IDN:"IDR",TUR:"TRY",NLD:"EUR",SAU:"SAR",CHE:"CHF",POL:"PLN",TWN:"TWD",BEL:"EUR",SWE:"SEK",ARG:"ARS",IRL:"EUR",NOR:"NOK",AUT:"EUR",ISR:"ILS",ARE:"AED",THA:"THB",SGP:"SGD",BGD:"BDT",PHL:"PHP",VNM:"VND",DNK:"DKK",MYS:"MYR",HKG:"HKD",EGY:"EGP",IRN:"IRR",ZAF:"ZAR",COL:"COP",ROU:"RON",CHL:"CLP",CZE:"CZK",FIN:"EUR",PRT:"EUR",PER:"PEN",IRQ:"IQD",KAZ:"KZT",NZL:"NZD",GRC:"EUR",QAT:"QAR",DZA:"DZD",HUN:"HUF",UKR:"UAH",KWT:"KWD",ETH:"ETB",MAR:"MAD",SVK:"EUR",ECU:"USD",KEN:"KES",OMN:"OMR",GTM:"GTQ",BGR:"BGN",VEN:"VES",CRI:"CRC",LUX:"EUR",PAN:"PAB / USD",CIV:"XOF",HRV:"EUR",LTU:"EUR",UZB:"UZS",TZA:"TZS",GHA:"GHS",SRB:"RSD",LKA:"LKR",BLR:"BYN",SVN:"EUR",COD:"CDF",MMR:"MMK",TKM:"TMT",JOR:"JOD",CMR:"XAF",UGA:"UGX",TUN:"TND",BOL:"BOB",LBY:"LYD",PRY:"PYG",NPL:"NPR",ZWE:"ZWG",CYP:"EUR",ISL:"ISK",GEO:"GEL",SEN:"XOF",KHM:"KHR / USD",PNG:"PGK",ZMB:"ZMW",BIH:"BAM",ARM:"AMD",LBN:"LBP",ALB:"ALL",HTI:"HTG",MOZ:"MZN",YEM:"YER",GAB:"XAF",BWA:"BWP",MLT:"EUR",BFA:"XOF",MLI:"XOF",BEN:"XOF",PRK:"KPW",MNG:"MNT",NIC:"NIO",NER:"XOF",MDG:"MGA",MDA:"MDL",LAO:"LAK",BRN:"BND",MUS:"MUR",AFG:"AFN",RWA:"RWF",MWI:"MWK",TCD:"XAF",KGZ:"KGS",TJK:"TJS",NAM:"NAD",SOM:"SOS",CUB:"CUP",SDN:"SDG",FJI:"FJD",PAK:"PKR",SYR:"SYP",NGA:"NGN",AZE:"AZN",ERI:"ERN",SSD:"SSP",EST:"EUR",LVA:"EUR",MKD:"MKD",MNE:"EUR",HND:"HNL",SLV:"USD",BLZ:"BZD",JAM:"JMD",URY:"UYU",GUY:"GYD",SUR:"SRD",MDV:"MVR",BTN:"BTN",TLS:"USD",VUT:"VUV"};
   const LANGS={USA:"English",CHN:"Mandarin",JPN:"Japanese",DEU:"German",IND:"Hindi, English",GBR:"English",FRA:"French",ITA:"Italian",BRA:"Portuguese",CAN:"English, French",RUS:"Russian",MEX:"Spanish",AUS:"English",KOR:"Korean",ESP:"Spanish",IDN:"Indonesian",TUR:"Turkish",NLD:"Dutch",SAU:"Arabic",CHE:"German, French, Italian",POL:"Polish",TWN:"Mandarin",BEL:"Dutch, French, German",SWE:"Swedish",ARG:"Spanish",IRL:"English, Irish",NOR:"Norwegian",AUT:"German",ISR:"Hebrew, Arabic",ARE:"Arabic",THA:"Thai",SGP:"English, Malay, Mandarin, Tamil",BGD:"Bengali",PHL:"Filipino, English",VNM:"Vietnamese",DNK:"Danish",MYS:"Malay",HKG:"Cantonese, English",EGY:"Arabic",IRN:"Persian",ZAF:"11 official langs",COL:"Spanish",ROU:"Romanian",CHL:"Spanish",CZE:"Czech",FIN:"Finnish, Swedish",PRT:"Portuguese",PER:"Spanish",IRQ:"Arabic, Kurdish",KAZ:"Kazakh, Russian",NZL:"English, Māori",GRC:"Greek",QAT:"Arabic",DZA:"Arabic, Berber",HUN:"Hungarian",UKR:"Ukrainian",KWT:"Arabic",ETH:"Amharic",MAR:"Arabic, Berber",SVK:"Slovak",ECU:"Spanish",KEN:"Swahili, English",OMN:"Arabic",GTM:"Spanish",BGR:"Bulgarian",VEN:"Spanish",CRI:"Spanish",LUX:"Luxembourgish, French, German",PAN:"Spanish",CIV:"French",HRV:"Croatian",LTU:"Lithuanian",UZB:"Uzbek",TZA:"Swahili, English",GHA:"English",SRB:"Serbian",LKA:"Sinhala, Tamil",BLR:"Belarusian, Russian",SVN:"Slovene",COD:"French",MMR:"Burmese",TKM:"Turkmen",JOR:"Arabic",CMR:"French, English",UGA:"English, Swahili",TUN:"Arabic",BOL:"Spanish",LBY:"Arabic",PRY:"Spanish, Guaraní",NPL:"Nepali",ZWE:"English + 15 official",CYP:"Greek, Turkish",ISL:"Icelandic",GEO:"Georgian",SEN:"French",KHM:"Khmer",PNG:"Tok Pisin, English",ZMB:"English",BIH:"Bosnian, Croatian, Serbian",ARM:"Armenian",LBN:"Arabic",ALB:"Albanian",HTI:"French, Creole",MOZ:"Portuguese",YEM:"Arabic",GAB:"French",BWA:"English, Setswana",MLT:"Maltese, English",BFA:"French",MLI:"French",BEN:"French",PRK:"Korean",MNG:"Mongolian",NIC:"Spanish",NER:"French",MDG:"Malagasy, French",MDA:"Romanian",LAO:"Lao",BRN:"Malay",MUS:"English, French",AFG:"Pashto, Dari",RWA:"Kinyarwanda, English, French",MWI:"English, Chichewa",TCD:"French, Arabic",KGZ:"Kyrgyz, Russian",TJK:"Tajik",NAM:"English",SOM:"Somali, Arabic",CUB:"Spanish",SDN:"Arabic, English",FJI:"English, Fijian, Hindi",PAK:"Urdu, English",SYR:"Arabic",NGA:"English",AZE:"Azerbaijani",ERI:"Tigrinya, Arabic, English",SSD:"English"};
   const RADIUS_PRESETS=[
-    {g:{en:"Aircraft (combat radius)",jp:"航空機(行動半径)"},items:[["F-16",550],["F-35A",1100],["F-22",850],["Su-57",1500],["B-2 Spirit",11100],["B-52 (range)",14000],["H-6K",3500]]},
-    {g:{en:"Cruise missiles",jp:"巡航ミサイル"},items:[["Tomahawk",1600],["Storm Shadow",550],["Kalibr",2000],["Kh-101",2500],["Kinzhal",2000]]},
-    {g:{en:"Ballistic missiles",jp:"弾道ミサイル"},items:[["ATACMS",300],["Iskander",500],["DF-21D",1500],["DF-26",4000],["Minuteman III",13000],["Trident II",12000]]},
-    {g:{en:"Air defense",jp:"防空"},items:[["Patriot PAC-3",35],["THAAD",200],["S-400",400]]}
+    {g:LA("Aircraft (combat radius)","航空機(行動半径)","Flugzeuge (Einsatzradius)","Самолёты (боевой радиус)","Aeronaves (radio de combate)"),items:[["F-16",550],["F-35A",1100],["F-22",850],["Su-57",1500],["B-2 Spirit",11100],["B-52 (range)",14000],["H-6K",3500]]},
+    {g:LA("Cruise missiles","巡航ミサイル","Marschflugkörper","Крылатые ракеты","Misiles de crucero"),items:[["Tomahawk",1600],["Storm Shadow",550],["Kalibr",2000],["Kh-101",2500],["Kinzhal",2000]]},
+    {g:LA("Ballistic missiles","弾道ミサイル","Ballistische Raketen","Баллистические ракеты","Misiles balísticos"),items:[["ATACMS",300],["Iskander",500],["DF-21D",1500],["DF-26",4000],["Minuteman III",13000],["Trident II",12000]]},
+    {g:LA("Air defense","防空","Luftverteidigung","Противовоздушная оборона","Defensa aérea"),items:[["Patriot PAC-3",35],["THAAD",200],["S-400",400]]}
   ];
   /* ============================================================================================
    *  (#R139) COMPANIES — replaces the retired Information tab. A Countries-style, sortable ranking of the world's
@@ -573,21 +581,21 @@ window.IntMapTables=(function(){
   /* (#R41) Localize the repeated Information-card badges in DE/RU/ES (acronyms like USN/NATO pass through). The
      curated card bodies stay English/Japanese where no translation exists, but the recurring chrome localizes. */
   const _DASH_BADGE={
-    'Chokepoint':{jp:'要衝',de:'Engstelle',ru:'Узкое место',es:'Punto crítico'},
-    'Port':{jp:'港',de:'Hafen',ru:'Порт',es:'Puerto'},
-    'Route':{jp:'航路',de:'Route',ru:'Маршрут',es:'Ruta'},
-    'Strait':{jp:'海峡',de:'Meerenge',ru:'Пролив',es:'Estrecho'},
-    'Canal':{jp:'運河',de:'Kanal',ru:'Канал',es:'Canal'},
-    'Naval base':{jp:'海軍基地',de:'Marinestützpunkt',ru:'Военно-морская база',es:'Base naval'},
-    'Air base':{jp:'空軍基地',de:'Luftwaffenbasis',ru:'Авиабаза',es:'Base aérea'},
-    'Base':{jp:'基地',de:'Stützpunkt',ru:'База',es:'Base'},
-    'Hub':{jp:'拠点',de:'Drehkreuz',ru:'Узел',es:'Centro'},
-    'Tech hub':{jp:'技術拠点',de:'Technologiezentrum',ru:'Техноцентр',es:'Centro tecnológico'},
-    'Spaceport':{jp:'宇宙基地',de:'Weltraumbahnhof',ru:'Космодром',es:'Puerto espacial'},
-    'Dam':{jp:'ダム',de:'Staudamm',ru:'Плотина',es:'Presa'},
-    'Pipeline':{jp:'パイプライン',de:'Pipeline',ru:'Трубопровод',es:'Oleoducto'},
-    'Nuclear':{jp:'原子力',de:'Nuklear',ru:'Ядерный',es:'Nuclear'},
-    'Border':{jp:'国境',de:'Grenze',ru:'Граница',es:'Frontera'}
+    'Chokepoint':LA('Chokepoint','要衝','Engstelle','Узкое место','Punto crítico'),
+    'Port':LA('Port','港','Hafen','Порт','Puerto'),
+    'Route':LA('Route','航路','Route','Маршрут','Ruta'),
+    'Strait':LA('Strait','海峡','Meerenge','Пролив','Estrecho'),
+    'Canal':LA('Canal','運河','Kanal','Канал','Canal'),
+    'Naval base':LA('Naval base','海軍基地','Marinestützpunkt','Военно-морская база','Base naval'),
+    'Air base':LA('Air base','空軍基地','Luftwaffenbasis','Авиабаза','Base aérea'),
+    'Base':LA('Base','基地','Stützpunkt','База','Base'),
+    'Hub':LA('Hub','拠点','Drehkreuz','Узел','Centro'),
+    'Tech hub':LA('Tech hub','技術拠点','Technologiezentrum','Техноцентр','Centro tecnológico'),
+    'Spaceport':LA('Spaceport','宇宙基地','Weltraumbahnhof','Космодром','Puerto espacial'),
+    'Dam':LA('Dam','ダム','Staudamm','Плотина','Presa'),
+    'Pipeline':LA('Pipeline','パイプライン','Pipeline','Трубопровод','Oleoducto'),
+    'Nuclear':LA('Nuclear','原子力','Nuklear','Ядерный','Nuclear'),
+    'Border':LA('Border','国境','Grenze','Граница','Frontera')
   };
   /* Google News editions. In multi-language mode we pull several foreign editions too, so the
      feed includes non-UI-language headlines (which the AI then translates onto the cards). */
@@ -611,24 +619,24 @@ window.IntMapTables=(function(){
   };
   /* Post categories — drive the composer chips, feed filter, card chip and pin color. */
   const COMM_CATEGORIES=[
-    { id:'general',  emoji:'💬', color:'#8e8e93', label:{en:'General',  jp:'全般'} },
-    { id:'conflict', emoji:'⚔️', color:'#ff3b30', label:{en:'Conflict', jp:'紛争'} },
-    { id:'military', emoji:'🛡️', color:'#ff9500', label:{en:'Military', jp:'軍事'} },
-    { id:'maritime', emoji:'⚓', color:'#30b0c7', label:{en:'Maritime', jp:'海事'} },
-    { id:'economy',  emoji:'📈', color:'#34c759', label:{en:'Economy',  jp:'経済'} },
-    { id:'cyber',    emoji:'🖧', color:'#5856d6', label:{en:'Cyber',    jp:'サイバー'} },
-    { id:'question', emoji:'❓', color:'#007aff', label:{en:'Question', jp:'質問'} },
-    { id:'analysis', emoji:'🔍', color:'#af52de', label:{en:'Analysis', jp:'分析'} }
+    { id:'general',  emoji:'💬', color:'#8e8e93', label:LA('General','全般','Allgemein','Общее','General') },
+    { id:'conflict', emoji:'⚔️', color:'#ff3b30', label:LA('Conflict','紛争','Konflikt','Конфликт','Conflicto') },
+    { id:'military', emoji:'🛡️', color:'#ff9500', label:LA('Military','軍事','Militär','Военное','Militar') },
+    { id:'maritime', emoji:'⚓', color:'#30b0c7', label:LA('Maritime','海事','Maritim','Морское','Marítimo') },
+    { id:'economy',  emoji:'📈', color:'#34c759', label:LA('Economy','経済','Wirtschaft','Экономика','Economía') },
+    { id:'cyber',    emoji:'🖧', color:'#5856d6', label:LA('Cyber','サイバー','Cyber','Кибер','Ciber') },
+    { id:'question', emoji:'❓', color:'#007aff', label:LA('Question','質問','Frage','Вопрос','Pregunta') },
+    { id:'analysis', emoji:'🔍', color:'#af52de', label:LA('Analysis','分析','Analyse','Анализ','Análisis') }
   ];
   const NEWS_COUNTRY_FEEDS={
-    us:{name:{en:'United States',jp:'アメリカ'},flag:'🇺🇸'}, gb:{name:{en:'United Kingdom',jp:'イギリス'},flag:'🇬🇧'},
-    jp:{name:{en:'Japan',jp:'日本'},flag:'🇯🇵'}, fr:{name:{en:'France',jp:'フランス'},flag:'🇫🇷'},
-    de:{name:{en:'Germany',jp:'ドイツ'},flag:'🇩🇪'}, cn:{name:{en:'China',jp:'中国'},flag:'🇨🇳'},
-    ru:{name:{en:'Russia',jp:'ロシア'},flag:'🇷🇺'}, in:{name:{en:'India',jp:'インド'},flag:'🇮🇳'},
-    kr:{name:{en:'South Korea',jp:'韓国'},flag:'🇰🇷'}, il:{name:{en:'Israel',jp:'イスラエル'},flag:'🇮🇱'},
-    ua:{name:{en:'Ukraine',jp:'ウクライナ'},flag:'🇺🇦'}, br:{name:{en:'Brazil',jp:'ブラジル'},flag:'🇧🇷'},
-    au:{name:{en:'Australia',jp:'オーストラリア'},flag:'🇦🇺'}, sa:{name:{en:'Saudi Arabia',jp:'サウジ'},flag:'🇸🇦'},
-    tr:{name:{en:'Türkiye',jp:'トルコ'},flag:'🇹🇷'}, eg:{name:{en:'Egypt',jp:'エジプト'},flag:'🇪🇬'}
+    us:{name:LA('United States','アメリカ','Vereinigte Staaten','США','Estados Unidos'),flag:'🇺🇸'}, gb:{name:LA('United Kingdom','イギリス','Vereinigtes Königreich','Великобритания','Reino Unido'),flag:'🇬🇧'},
+    jp:{name:LA('Japan','日本','Japan','Япония','Japón'),flag:'🇯🇵'}, fr:{name:LA('France','フランス','Frankreich','Франция','Francia'),flag:'🇫🇷'},
+    de:{name:LA('Germany','ドイツ','Deutschland','Германия','Alemania'),flag:'🇩🇪'}, cn:{name:LA('China','中国','China','Китай','China'),flag:'🇨🇳'},
+    ru:{name:LA('Russia','ロシア','Russland','Россия','Rusia'),flag:'🇷🇺'}, in:{name:LA('India','インド','Indien','Индия','India'),flag:'🇮🇳'},
+    kr:{name:LA('South Korea','韓国','Südkorea','Южная Корея','Corea del Sur'),flag:'🇰🇷'}, il:{name:LA('Israel','イスラエル','Israel','Израиль','Israel'),flag:'🇮🇱'},
+    ua:{name:LA('Ukraine','ウクライナ','Ukraine','Украина','Ucrania'),flag:'🇺🇦'}, br:{name:LA('Brazil','ブラジル','Brasilien','Бразилия','Brasil'),flag:'🇧🇷'},
+    au:{name:LA('Australia','オーストラリア','Australien','Австралия','Australia'),flag:'🇦🇺'}, sa:{name:LA('Saudi Arabia','サウジ','Saudi-Arabien','Саудовская Аравия','Arabia Saudí'),flag:'🇸🇦'},
+    tr:{name:LA('Türkiye','トルコ','Türkei','Турция','Turquía'),flag:'🇹🇷'}, eg:{name:LA('Egypt','エジプト','Ägypten','Египет','Egipto'),flag:'🇪🇬'}
   };
   return {SAT_PROVIDERS,_ORG_GZ,_DEMONYM_GZ,sourceDict,_DERU_GZ,_DERU_DEM,_ES_GZ,_ES_DEM,GDP,HDI,DEM,MILSPEND,LIFE,INTERNET,CAPITAL,CURRENCY,LANGS,RADIUS_PRESETS,CO_SECTORS,CO_CC,_DASH_BADGE,NEWS_EDITIONS_MULTI,NEWS_COUNTRY_EDITIONS,COMM_CATEGORIES,NEWS_COUNTRY_FEEDS};
 })();

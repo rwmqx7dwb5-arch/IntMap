@@ -162,7 +162,7 @@ window.IntMapModules.toolPanel=function(HOST){
         +`<div id="v3d-objs"></div>`;
     } else if(HOST.toolMode==='radius'){
       let opts=`<option value="">${HOST.t('presetNone')}</option>`;
-      RADIUS_PRESETS.forEach(grp=>{ opts+=`<optgroup label="${grp.g[HOST.lang]}">`+grp.items.map(it=>`<option value="${it[1]}">${it[0]} — ${it[1]} km</option>`).join('')+`</optgroup>`; });
+      RADIUS_PRESETS.forEach(grp=>{ opts+=`<optgroup label="${window.IntMapLang.pick(()=>HOST.lang).arr(grp.g)}">`+grp.items.map(it=>`<option value="${it[1]}">${it[0]} — ${it[1]} km</option>`).join('')+`</optgroup>`; });
       let list='';
       if(HOST.radiusItems.length){
         list=`<div class="tp-sub">${HOST.radiusItems.length} ${HOST.t('radius')}</div><div class="radius-list">`+HOST.radiusItems.map((c,i)=>`<div class="radius-list-item"><span class="rl-sw" style="background:${c.color}"></span><span class="rl-main">${c.radiusKm} km · ${c.center[1].toFixed(2)}°,${c.center[0].toFixed(2)}°</span><button class="rl-del" onclick="removeRadiusItem('${c.id}')">✕</button></div>`).join('')+`</div><button class="tp-clear" onclick="clearAllRadius()" style="margin-top:6px;">${HOST.t('removeAll')}</button>`;

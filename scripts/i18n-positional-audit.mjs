@@ -90,6 +90,58 @@ const NEUTRAL = new Set([
        Persia     es    — the Spanish name of the historical state is Persia. */
   'Tundra', 'Tibet', 'Manchukuo', 'Siam', 'Persia',
 ]);
+/* ══ ⚠⚠⚠ (#R246) …AND THE CLAIM «THIS WORD IS THE SAME» BELONGS TO ONE LANGUAGE, NOT TO ALL THREE
+   The set above is GLOBAL, which was fine while its members were units and product names. It stops
+   being fine the moment the universe contains proper nouns: putting 'Japan' in it to excuse German
+   would also excuse Russian, where the word is «Япония» — i.e. the instrument would go green over a
+   real gap, which is [[intmap-recurring-lessons]] B in the one file whose job is to prevent it.
+   scripts/i18n-pages-audit.mjs already solved this (`SAME_AS_EN`, per language); this is the same
+   rule for this surface. ⚠ Every entry below was read against a dictionary or an atlas one at a
+   time, and each is a claim about ONE language:
+     de  — the German exonym IS the English string: Ceylon, Formosa, Zaire, Dahomey, Basutoland,
+           Kamerun (the German colony's own name), Togoland, Transvaal, Natal, Zululand, Buganda,
+           Bunyoro, Oyo; the country names Japan, China, Israel, Ukraine; the loanwords Software,
+           Pipeline, Cyber; the planets Venus, Mars, Jupiter, Saturn, Uranus (Duden); and the US
+           place disambiguations Atlas prints, which are American toponyms and are not translated.
+     es  — Formosa, Zaire, Bohemia, Mesopotamia, Dahomey, Kampuchea, Gran Colombia, Manchuria,
+           Transvaal, Natal, Buganda, Bunyoro, Oyo, Kanem-Bornu, Annam, Arabia, Angola, Congo,
+           Madagascar, Mozambique, Eritrea, Jamaica, Yemen; the country names China, India, Israel,
+           Australia; Canal, Nuclear, Software, Venus; and the Spanish-language toponyms Atlas
+           prints, which are already Spanish (Córdoba, Argentina — Valencia, Venezuela — …).
+     de/ru/es — the five satellite PRODUCT names in js/tables.js, which no operator translates. */
+const SAME_AS_EN = {
+  de: new Set([
+    'Athens, Georgia (USA)', 'Paris, Texas (USA)', 'Cambridge, Massachusetts (USA)',
+    'Naples, Florida (USA)', 'Alexandria, Virginia (USA)', 'Valencia, Venezuela',
+    'San José, Costa Rica', 'St. Petersburg, Florida (USA)', 'Birmingham, Alabama (USA)',
+    'Manchester, New Hampshire (USA)',
+    'Software', 'Pipeline', 'Cyber', 'Japan', 'China', 'Israel', 'Ukraine',
+    'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus',
+    'Ceylon', 'Formosa', 'Zaire', 'Dahomey', 'Basutoland', 'Kamerun', 'Togoland',
+    'Transvaal', 'Natal', 'Zululand', 'Buganda', 'Bunyoro', 'Oyo',
+  ]),
+  ru: new Set([]),
+  es: new Set([
+    'Córdoba, Argentina', 'Valencia, Venezuela', 'San José, Costa Rica', 'Perth, Australia',
+    'Software', 'Venus', 'Canal', 'Nuclear', 'China', 'India', 'Israel', 'Australia',
+    'Formosa', 'Zaire', 'Bohemia', 'Mesopotamia', 'Dahomey', 'Kampuchea', 'Gran Colombia',
+    'Manchuria', 'Transvaal', 'Natal', 'Buganda', 'Bunyoro', 'Oyo', 'Kanem-Bornu', 'Annam',
+    'Arabia', 'Angola', 'Congo', 'Madagascar', 'Mozambique', 'Eritrea', 'Jamaica', 'Yemen',
+  ]),
+};
+/* ⚠ …and the polity names the ERA MAP prints that carry no exonym in either language. Sub-Saharan
+   kingdoms and peoples (Lozi, Luba, Lunda, Ngwato, Ovimbundu, Yeke…), the Pacific and Caribbean
+   territories (Rapa Nui, Trinidad, Puerto Rico, Inini), and the places whose German or Spanish form
+   IS the English string (Danzig is already German; Portugal is already Spanish). Read one at a
+   time against the German and Spanish Wikipedia article titles for the same entity. */
+for (const p of ['Barotse', 'Calabar', 'Futa Toro', 'Imerina', 'Kong', 'Kuba', 'Lagos', 'Lozi', 'Luba', 'Lunda', 'Mbailundu', 'Ndebele', 'Nguni', 'Ngwato', 'Opobo', 'Ovimbundu', 'Shona', 'Teke', 'Yaka', 'Yeke', 'Ruanda-Urundi', 'Karafuto', 'Inini', 'Alaska', 'Puerto Rico', 'Gaza', 'Portugal', 'Joseon', 'Trinidad', 'Rapa Nui', 'Hail']) { SAME_AS_EN.de.add(p); SAME_AS_EN.es.add(p); }
+for (const p of ['Kanem-Bornu', 'Malaya', 'Annam', 'Tonkin', 'Danzig', 'Xinjiang', 'Angola', 'Eritrea', 'Guinea-Bissau', 'Martinique', 'Guadeloupe', 'Korea', 'Saipan', 'Māori', 'Accra', 'Cotonou', 'Griqualand West', 'Ibadan', 'Papua', 'Straits Settlements', 'Aden', 'Hawaii', 'Réunion']) SAME_AS_EN.de.add(p);
+for (const p of ['Tripolitania', 'Indonesia']) SAME_AS_EN.es.add(p);
+/* the satellite product names, which are the same in all three */
+for (const p of ['NASA GIBS · MODIS Terra', 'NASA GIBS · VIIRS (SNPP)', 'NASA GIBS · VIIRS (NOAA-20)',
+  'Sentinel Hub (S2 / Landsat)', 'Mapbox Satellite']) {
+  SAME_AS_EN.de.add(p); SAME_AS_EN.ru.add(p); SAME_AS_EN.es.add(p);
+}
 const hasLetter = (s) => /\p{L}/u.test(s);
 /* ══ ⚠ (#R243) A MODEL INSTRUCTION IS NOT A SCREEN ═══════════════════════════════════════════════
    Two call sites in js/app-body.js carry the SYSTEM PROMPT for the imagery-comparison and the
@@ -168,7 +220,11 @@ for (const f of files) {
          inline table has nowhere to hang a row either) and it says nothing a reader could read. */
       if (args.length < 5) { if (hasLetter(en) && !isPrompt(en)) short.push({ where, en, n: args.length }); return; }
       if (!hasLetter(en) || NEUTRAL.has(en.trim())) return;
-      for (const { i, code } of LANGS) if (args[i].value === en) same[code].push({ where, en });
+      for (const { i, code } of LANGS) {
+        if (args[i].value !== en) continue;
+        if (SAME_AS_EN[code] && SAME_AS_EN[code].has(en.trim())) continue;   /* (#R246) per-language */
+        same[code].push({ where, en });
+      }
     },
   });
 }

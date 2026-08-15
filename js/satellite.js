@@ -19,7 +19,10 @@ window.IntMapModules.satellite=function(HOST){
   /* BYOK/paid satellite providers require Pro AND a saved key; free providers are always usable. */
   const satHasKey=(p)=>p.tier==='free' || (HOST.imIsPro() && !!(HOST.satKeys[p.keyName]&&String(HOST.satKeys[p.keyName]).trim()));
   const satMaxDay=()=>new Date().toISOString().slice(0,10);
-  function satMsg(key,p){ return String(HOST.t(key)||'').replace('{provider}',(p&&(p.name[HOST.lang]||p.name.en||p.short))||''); }
+  /* (#R246) the provider names are tuples held as data — see IntMapLang.pickArgs(). ⚠ BUILT ON FIRST
+     USE, not at factory level: tests/r169 #4 requires a factory body to DECLARE and never to run. */
+  let _LS=null; const LS=()=>(_LS||(_LS=window.IntMapLang.pick(()=>HOST.lang)));
+  function satMsg(key,p){ return String(HOST.t(key)||'').replace('{provider}',(p&&(LS().arr(p.name)||p.short))||''); }
   function satCaptureLabel(p){ if(!p) return ''; if(!p.dated) return HOST.t('satLatest'); if(p.dateMode==='year') return HOST.satState.year+' '+HOST.t('satMosaicSuffix'); return HOST.satState.day; }
   function satChipHTML(){ const p=satProviderById(HOST.satState.providerId); if(!p) return ''; return `<span class="cr-sat">📡 ${p.short} · ${satCaptureLabel(p)}</span>`; }
   function satRefreshReadout(){ try{ HOST.renderCoordReadout(); }catch(_){} }
@@ -126,7 +129,7 @@ window.IntMapModules.satellite=function(HOST){
     const p=satProviderById(HOST.satState.providerId)||HOST.SAT_PROVIDERS[0];
     let opts='';
     HOST.SAT_PROVIDERS.forEach(pr=>{
-      const sel=pr.id===HOST.satState.providerId?' selected':'', nm=pr.name[HOST.lang]||pr.name.en;
+      const sel=pr.id===HOST.satState.providerId?' selected':'', nm=LS().arr(pr.name);
       if(pr.tier==='free') opts+=`<option value="${pr.id}"${sel}>${nm}</option>`;
       else { const has=satHasKey(pr); opts+=`<option value="${pr.id}"${sel}${has?'':' disabled'}>${has?'':'🔒 '}${nm}${has?'':' — '+HOST.t('satLocked')}</option>`; }
     });
@@ -165,7 +168,7 @@ window.IntMapModules.satellite=function(HOST){
     }
     wrap.innerHTML=HOST.SAT_PROVIDERS.filter(p=>p.tier==='pro').map(p=>{
       const v=HOST.satKeys[p.keyName]||'', on=!!String(v).trim();
-      const nm=(p.keyLabel&&(p.keyLabel[HOST.lang]||p.keyLabel.en))||(p.name[HOST.lang]||p.name.en);
+      const nm=(p.keyLabel&&LS().arr(p.keyLabel))||LS().arr(p.name);
       return `<div class="sat-key-row"><div class="sat-key-top"><span class="sat-key-name">${nm}</span>`+
         `<span class="sat-key-status ${on?'on':''}">${on?'● '+HOST.t('satKeyConnected'):'○ '+HOST.t('satKeyNone')}</span></div>`+
         `<input type="text" class="sat-key-input" data-keyname="${p.keyName}" value="${String(v).replace(/"/g,'&quot;')}" placeholder="${String(p.keyPh||'').replace(/"/g,'&quot;')}" autocomplete="off" autocapitalize="off" spellcheck="false"></div>`;

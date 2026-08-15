@@ -90,8 +90,22 @@ const helper = run('i18n-helper-ternary-audit.mjs');
    situation: a gate that fails on a number nobody can reach in one round gets deleted by the next
    round, so the number goes in the report as an OPEN GAP instead, is not counted in any percentage,
    and no round after this one can read this output and believe the translation is finished.
-   ⚠ When it reaches zero, move it into `problems` below and delete this note. */
+   ⚠ (#R246) IT REACHED ZERO. All 590 remaining objects became `pickArgs()` calls this round, so
+   this line is now a gate below like every other surface, and the OPEN GAP slot it occupied is
+   taken by the TWELFTH shape (see next). Its output stays in the report at 0 rather than being
+   deleted: a surface that is measured and empty is the only evidence that it is still watched. */
 const langmap = run('i18n-langmap-audit.mjs');
+/* ══ ⚠⚠⚠ (#R246) THE TWELFTH SHAPE — A TUPLE HELD AS ADJACENT DATA, AND THE NEW OPEN GAP ═════════
+   `['North Pacific Ocean','北太平洋','Nordpazifik',…]` inside a row that also carries a longitude,
+   `_dc(…,'Ramstein Air Base','ラムシュタイン空軍基地',…)`, `lbl:['Population','人口',…]`. Nothing
+   indexes these by language at all — which slot is which is knowledge held in whatever reads the
+   row — so the langmap audit (keys), the positional-array audit (a language→position map) and the
+   positional audit (a callee bound to IntMapLang) each count ZERO of them.
+   MEASURED THIS ROUND: 2,262 containers in 37 files. That is more than one round can convert, and
+   #R242's rule for exactly this situation is that the number goes in the report as an OPEN GAP —
+   printed, never counted in a percentage — rather than into a gate that the next round deletes.
+   ⚠ When it reaches zero, move it into `problems` below and delete this note. */
+const pairs = run('i18n-pair-audit.mjs');
 const orphanKeys = keyed.undeclared;
 
 const keyedBy = new Map(keyed.rows.map((r) => [r.code, r]));
@@ -122,7 +136,7 @@ const shortOf = (r) => (r.keyed[0] < r.keyed[1]) || (r.inline && r.inline[0] < r
   || (r.positional && r.positional[0] < r.positional[1]) || (r.pages[0] < r.pages[1]);
 
 if (process.argv.includes('--json')) {
-  console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short, unkeyedAttrs: attrs.total, positionalArrays: arrays.hits.length, langMaps: langmap.total }));
+  console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short, unkeyedAttrs: attrs.total, positionalArrays: arrays.hits.length, langMaps: langmap.total, pairs: pairs.total }));
   process.exit(0);
 }
 
@@ -172,13 +186,18 @@ console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.tot
      below counts like every other row instead of printing a number nobody has to act on. */
   + `\ntwo-language strings behind a helper (\`jp() ? … : …\`): ${helper.sites}`
   + (helper.sites ? '\n    node scripts/i18n-helper-ternary-audit.mjs --list' : '')
-  /* (#R244) the eleventh shape — see the note by `langmap` above. OPEN GAP: printed, not counted. */
-  + `\n\n⚠ OPEN GAP — translation tuples held as an OBJECT keyed by language code: ${langmap.total}`
-  + (langmap.total
-    ? '\n    ' + langmap.files.map((f) => String(f.n).padStart(4) + '  ' + f.file).join('\n    ')
-      + '\n    (node scripts/i18n-langmap-audit.mjs --list lists every one, with its line)'
-      + '\n    These are NOT counted in any percentage above. They have no inline-table fallback, so'
-      + '\n    every language the object does not name reads English there. Convert with pickArgs().'
+  /* (#R244) the eleventh shape, closed by #R246 — it is a gate now, and stays printed at 0. */
+  + `\ntranslation tuples held as an OBJECT keyed by language code: ${langmap.total}`
+  + (langmap.total ? '\n    node scripts/i18n-langmap-audit.mjs --list' : '')
+  /* (#R246) the twelfth shape — see the note by `pairs` above. OPEN GAP: printed, not counted. */
+  + `\n\n⚠ OPEN GAP — translation tuples held as ADJACENT DATA SLOTS: ${pairs.total}`
+  + (pairs.total
+    ? '\n    ' + pairs.files.slice(0, 12).map((f) => String(f.n).padStart(4) + '  ' + f.file).join('\n    ')
+      + (pairs.files.length > 12 ? `\n    …and ${pairs.files.length - 12} more file(s)` : '')
+      + '\n    (node scripts/i18n-pair-audit.mjs --list lists every one, with its line)'
+      + '\n    These are NOT counted in any percentage above. Nothing indexes them by language, so no'
+      + '\n    instrument here sees them and every language the row does not list reads English.'
+      + '\n    Convert with pickArgs(), the same answer the seventh and eleventh shapes got.'
     : ''));
 
 if (process.argv.includes('--gate')) {
@@ -192,6 +211,8 @@ if (process.argv.includes('--gate')) {
   if (arrays.hits.length) problems.push(`${arrays.hits.length} translation tuple(s) held as data — run scripts/i18n-positional-array-audit.mjs`);
   /* (#R243) the ninth surface, promoted from a printed number to a gate — see the note above */
   if (helper.sites) problems.push(`${helper.sites} two-language string(s) behind a helper — run scripts/helper-ternary-codemod.mjs`);
+  /* (#R246) the eleventh surface, promoted from a printed number to a gate — it reached zero */
+  if (langmap.total) problems.push(`${langmap.total} translation tuple(s) held as a language-keyed object — run scripts/langmap-codemod.mjs`);
   if (problems.length) {
     console.error('\n✖ i18n gate: ' + problems.join('; '));
     console.error('  `node scripts/i18n-audit.mjs --todo <code>` prints the commands that close each gap.');

@@ -105,13 +105,16 @@ test('r244 ⑦ both sidebar handles read the one glass material', () => {
   assert.ok(/\.btn-toggle-sidebar/.test(decl), '…and so is the left one');
 });
 
-/* ⑧ 「Live aircraft trafficの民間機の色は山吹色に。」 — and it is written ONCE: the flat glyph and the
-   two extrusion cases drifted apart in #R173, which is why `_feHex` exists. */
-test('r244 ⑧ the civil-aircraft colour is 山吹色 and lives in one constant', () => {
+/* ⑧ 「Live aircraft trafficで航空機の色は以下に。民間機：シアン #00D9FF 軍用機：鮮赤 #FF3040
+      両方とも：より太いアウトライン」 (#R246, superseding #R244's 山吹色) — and each is written ONCE:
+   the flat glyph and the two extrusion cases drifted apart in #R173, which is why `_feHex` exists. */
+test('r244 ⑧ the two aircraft colours each live in one constant', () => {
   const src = code('js/data-layers.js');
-  assert.ok(/const PLANE_CIV='#f8b500';/.test(src), 'the JIS 山吹色, declared once');
-  assert.ok(!/#1e90ff/.test(src), 'no dodger-blue civil aircraft left anywhere');
+  assert.ok(/const PLANE_CIV='#00D9FF';/.test(src), 'civil is cyan, declared once');
+  assert.ok(/const PLANE_MIL='#FF3040';/.test(src), 'military is the vivid red, declared once');
+  assert.ok(!/#1e90ff/.test(src) && !/#f8b500/.test(src), 'no earlier civil colour left anywhere');
   assert.equal((src.match(/PLANE_CIV/g) || []).length, 4, 'the declaration plus the glyph and the two extrusion cases');
+  assert.equal((src.match(/PLANE_MIL/g) || []).length, 4, '…and the same for the military colour');
 });
 
 /* ⑨ 「Stand and look upは視界部分とパネル部分が重ならないように。視界部分のほうを画面の上側に。」
@@ -162,13 +165,18 @@ test('r244 ⑫ a layer toggle re-runs the dock sweep', () => {
 test('r244 ⑬ the language-keyed-object surface is in the one gate', () => {
   const src = read('scripts/i18n-audit.mjs');
   assert.ok(/i18n-langmap-audit\.mjs/.test(src), 'the gate spawns the instrument');
-  assert.ok(/OPEN GAP — translation tuples held as an OBJECT/.test(src), 'and prints the number');
+  /* ⚠ (#R246) IT REACHED ZERO, so it is a GATE now rather than a printed OPEN GAP — #R244's own
+     note said to move it the moment it did. The report still prints the line at 0: a surface that
+     is measured and empty is the only evidence that it is still being watched. */
+  assert.ok(/translation tuples held as an OBJECT keyed by language code/.test(src), 'and prints the number');
+  assert.ok(/problems\.push\(`\$\{langmap\.total\} translation tuple\(s\) held as a language-keyed object/.test(src),
+    'and fails the build if one comes back');
   const out = execFileSync(process.execPath, [join(ROOT, 'scripts', 'i18n-langmap-audit.mjs'), '--json'],
     { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
   const j = JSON.parse(out);
   assert.ok(typeof j.total === 'number', 'it answers with a number');
-  /* ⚠ THE RATCHET: this number only ever goes DOWN. #R244 measured 713 after converting 15 sites. */
-  assert.ok(j.total <= 713, `the open gap grew to ${j.total} — a new language-keyed object was added; write it as pickArgs() instead`);
+  /* ⚠ THE RATCHET: this number only ever goes DOWN. #R244 measured 713, #R245 590, #R246 zero. */
+  assert.equal(j.total, 0, `the open gap grew to ${j.total} — a new language-keyed object was added; write it as pickArgs() instead`);
 });
 
 /* ⑭ 「詳細設定」の左の▲・▶が微妙にUIに隠れている — the fold carries the card's own inset now. */

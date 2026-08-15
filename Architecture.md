@@ -250,10 +250,22 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
       ⚠ **5言語すべて揃っている site しか触らない**——`t()` は位置引数で、4引数の call site は門に落ちる。
       ⚠ **散文かコードかを判定する**（初版は Atlas の同義語表 `{english:'en',deutsch:'de',…}` を書き換えて
       機能を壊し、Google News の `hl=…&gl=…&ceid=…` を翻訳表に入れた。両方とも取り消した）。
-    · **#R245 時点：残り 590 サイト・12 ファイル**（`time-borders.js` 268・`wb-layers.js` 100・
-      `reference-data.js` 87・`tables.js` 54・`atlas-console.js` 34・`industry-web.js` 14・`app-body.js` 11・
-      `night-sky.js` 7・`map-tools.js` 6・`routing.js` 6・`news-ui.js` 2・`news-feed.js` 1）。
-      `tests/r245 ⑧b` がラチェットなので**この数字は上がれない**。
+    · **#R246 で 0 になった。** 残っていた 590 サイト・12ファイルを全部 `pickArgs()` の呼び出しにし、
+      読み出し側も `pick().arr()` に揃えた（データを直すだけでは足りない——読み出しが `x[lang]||x.en` の
+      ままなら計器は緑・画面は英語）。`js/wb-layers.js` の第2表 `BX_TR`（de/ru 用34件）は**削除**して
+      指標名を1呼び出しに統合し、`js/app-body.js` のニュース言語名は**表を消して `Intl.DisplayNames`** へ。
+      0 になったので **OPEN GAP から `problems` へ昇格**（#R244 の注記が定めた条件）。`tests/r246 ①`。
+  - ⚠⚠⚠ (#R246) **12個目の形＝「隣り合ったデータ枠に置かれた翻訳」（OPEN GAP・2,262件）**。
+    `_dc(…,'Ramstein Air Base','ラムシュタイン空軍基地',…)`／`['Light (< 7 t)','小型機（7 t 未満）',…]`／
+    `[-160,32,0.5,'North Pacific Ocean','北太平洋',…]`。**言語で添字されていない**ので、11個目（鍵）と
+    7個目（位置の表）を見る計器はどちらも 0 と数える。計器 `scripts/i18n-pair-audit.mjs` は
+    「1つの配列／1つの呼び出しの引数列の中で、隣り合う2つの文字列リテラルのうち**片方だけが日本語**」を
+    **容器ごとに1件**数える（5言語の行は「直すもの1つ」）。
+    · ⚠ **免除はファイルから解決する**——`IntMapLang.pick()/.pickArgs()/.t` に束ねた名前、world-packs の
+      `_ui` から分割代入した名前、そして**本体に `IntMapLang` と書いてある関数**（`_authL` のような
+      各ファイル自前のラッパ）。名前の一覧にすると、その一覧の維持という新しい仕事が生まれる。
+    · 1ラウンドで閉じられない量なので **OPEN GAP**（印字のみ・百分率に数えない・門は落とさない）。
+      `tests/r246 ②` がラチェット。0 になったら `problems` へ昇格する。
     · ⚠ (#R245) **9ファイルを閉じた**（`data-layers.js` 41・`history.js` 39・`space-cosmos.js` 17・
       `time-borders.js` 8・`flight-sim.js` 6・`world-packs.js` 5・`map-extras.js` 3・`engine-select.js` 2・
       `ocean-currents.js` 1）。**変換の形は `IntMapLang.pickArgs()`**（渡された配列をそのまま返すので
@@ -1053,9 +1065,12 @@ js/
                                     アプリ側（Sources ダイアログ）が翻訳済み説明文を読むための入口。
   sources-list.js                   (#R218) `sources.html` の出典一覧の描画（分類・絞り込み）。`IntMapSourcesList`。
                                     分類の正規表現は**レジストリ自身の文（en/jp）**に当てる（読者の言語ではない）。
-  locales/pages.{en,ja,de,ru,es}.js (#R218) 独立ページ2枚の全文＋出典説明文（`sourceUse`）。一言語＝一ファイル。
+  locales/pages.<code>.js           (#R218) 独立ページ2枚の全文＋出典説明文（`sourceUse`）。一言語＝一ファイル。
+                                    ⚠ (#R246) `sourceUse` は**全9言語**にある（英語原文も含む）。
   reference-data.js                 (#R162) ダッシュボードカード（`DEFAULT_DASH_CARDS`＋`_dc`）とデータ出典表
-                                    （`DATA_SOURCES`）。`window.IntMapRefData`。
+                                    （`DATA_SOURCES` ＝名前とURLだけ）。`window.IntMapRefData`。
+                                    ⚠ (#R246) 説明文の読み出しは `useText`/`ensureDocs` の**1実装**で、
+                                    アプリ内ダイアログと `sources.html` の両方がこれを呼ぶ。
   layer-previews.js                 (#R162) `IntMapLayerPreviews`。ファクトリ引数＝(countryStats, geoLayersDB, loadCountryData)
   history.js                        (#R162) `IntMapMaddison` / `IntMapHistStates` / `IntMapHistId`（歴史GDP・旧国家・旧国名）
   monitors.js                       (#R162) `IntMapMonitors`（Area Monitors）。ファクトリ引数＝(map, HOST)。§3.1 参照
@@ -3454,9 +3469,12 @@ fr/ko/zh/zh-hans はすべて外れた。）
   `js/sources-list.js`（出典レジストリの描画）で出来ている。
   ⚠ **言語を1つ足すコストは「locale ファイル1つ＋`LANGS` に1行」**（HTML は触らない）。
   ⚠ フォールバックは**鍵ごと**（未訳の文だけ英語になり、ページ全体が英語に落ちない）。節は id で突き合わせる。
-  ⚠ 出典レジストリ85件の説明文の DE/RU/ES は locale ファイルの `sourceUse` にあり、**その言語で
-  Sources ダイアログを開いたときだけ**取得する（起動時のバンドルには入らない）。en/jp は
-  `js/reference-data.js` の `use:{en,jp}` のまま——**一覧そのものは1つ**である。
+  ⚠⚠⚠ (#R246) 出典レジストリ87件の説明文は **全9言語とも** locale ファイルの `sourceUse` にあり、
+  Sources ダイアログを開いたときだけ取得する（起動時のバンドルには入らない）。**英語原文もここにある**——
+  これが要点で、`scripts/i18n-pages-audit.mjs` は各言語を「**英語文書の全文字列パス**」に対して測るので、
+  英語が `js/reference-data.js` の `use:{en,jp}` にあった間は de/ru/es の翻訳は数えられず、
+  **fr/ko/zh/zh-Hans の完全な不在が 287/287＝100%** と出ていた。宇宙は **287 → 374** になった。
+  副産物として起動バンドルから約 50 kB の散文が消えた（`js/reference-data.js` は eager import）。
   ⚠ `js/page-i18n.js` / `js/sources-list.js` は `index.html` から辿れないので、到達性の検査
   （`scripts/static-checks.mjs` と `tests/r175-checks`）は**独立ページの `<script src>` も読む**。
 - Atlasの応答は**ユーザーのメッセージの言語をミラー**（`_replyLang`、#R64）。UI言語はフォールバック。
