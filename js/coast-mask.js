@@ -30,9 +30,20 @@
  *  from then on by Natural Earth's own ~1 km vertex spacing rather than by this app.
  *
  *  ⚠ IT IS NOT A REPLACEMENT FOR js/land-mask.js. That module answers a POINT anywhere on Earth with
- *  no country geometry loaded and no network, which is what the 52 km far field and the tide layer
- *  need; it stays exactly as it is and is the fallback here. This module answers a GRID, finely, and
- *  says which of the two answered (`source`) so a caller can report it rather than imply it.
+ *  no country geometry loaded and no network, which is what the tide layer needs; it stays exactly as
+ *  it is and is the fallback here. This module answers a GRID, finely, and says which of the two
+ *  answered (`source`) so a caller can report it rather than imply it.
+ *
+ *  ══ (#R250) …AND THE FAR FIELD IS A CALLER NOW, BECAUSE ITS CELL STOPPED BEING 28 km ═════════════
+ *  「地震シミュレータで震度分布をある程度の範囲までいったら、そこから解像度が劇的に悪くなる。」
+ *  When this module was written the seismic FAR raster's cell really was 28–52 km, so answering its
+ *  land test from a 19.6 km raster was the finer of the two and the line above said so. #R248 and
+ *  #R249 then took that cell to the fine field's own 1.17 km — and left the land test where it was,
+ *  so past 1,500 km the coastline became a staircase of 19.6 km blocks drawn at 1.17 km with
+ *  `nearest`. MEASURED over a 600 km patch of the Korea/China coast at the far raster's cell:
+ *  5,317 of 262,144 cells (2.03 %) answer differently here than they do from the bundled raster,
+ *  and every one of them is on the coast. That is the SAME 大きなタイル this module was written to
+ *  remove, one raster over.
  *
  *  ⚠ HOLES ARE HOLES. Country polygons are drawn with the even-odd rule, so an interior ring — the
  *  Caspian in Kazakhstan's outline, Lesotho inside South Africa — is a hole in the fill and comes
@@ -87,28 +98,36 @@ window.IntMapCoastMask=(function(){
 
   /* ── the grid answer ──────────────────────────────────────────────────────────────────────────
      west/y0/dx/dy/N describe the caller's grid exactly as it builds it: cell (i,j) is centred at
-     lng = west+(i+0.5)*dx and mercator-y = y0+(j+0.5)*dy. Returns a Uint8Array(N*N) of 1 = land, or
-     null when there is no country geometry to rasterise. */
+     lng = west+(i+0.5)*dx and mercator-y = y0+(j+0.5)*dy. Returns a Uint8Array(nx*ny) of 1 = land, or
+     null when there is no country geometry to rasterise.
+     ⚠ (#R250) THE GRID MAY BE OBLONG. `N` describes a square and is what the seismic FINE field
+     builds; the FAR raster's grid is `nx × ny` and follows the window's own shape (see farWindow in
+     js/seismic.js), so both spellings are accepted and `N` remains the default for either side. A
+     caller that passes only `N` gets exactly what it got before this round. */
+  function dims(o){ const N=o.N|0;
+    const nx=(o.nx|0)||N, ny=(o.ny|0)||N;
+    return (nx>0&&ny>0)?[nx,ny]:null; }
   function rasterize(o){
     const g=geo(); if(!g) return null;
-    const N=o.N|0; if(!(N>0)) return null;
+    const wh=dims(o); if(!wh) return null;
+    const nx=wh[0], ny=wh[1];
     const west=+o.west, dx=+o.dx, y0=+o.y0, dy=+o.dy;
     if(!(isFinite(west)&&isFinite(dx)&&isFinite(y0)&&isFinite(dy))||dx===0||dy===0) return null;
     let cv,ct;
-    try{ cv=document.createElement('canvas'); cv.width=N; cv.height=N;
+    try{ cv=document.createElement('canvas'); cv.width=nx; cv.height=ny;
       ct=cv.getContext('2d',{alpha:false,willReadFrequently:true}); }catch(_){ return null; }
     if(!ct) return null;
-    ct.fillStyle='#000'; ct.fillRect(0,0,N,N);
+    ct.fillStyle='#000'; ct.fillRect(0,0,nx,ny);
     /* the window in longitude, so a field that crosses the antimeridian still receives the polygons
        on the other side of it — each ring is drawn at every 360° offset the window can see */
-    const east=west+dx*N;
+    const east=west+dx*nx;
     const offs=[];
     for(let k=-2;k<=2;k++){ const lo=west-k*360, hi=east-k*360; if(hi>-190&&lo<190) offs.push(k*360); }
     if(!offs.length) offs.push(0);
     const R=rings(g), BB=boxes(g);
     /* the window in lat/lng, for the box test — y0/dy are mercator-y, so invert the two edges */
     const latOfY=(y)=>360/Math.PI*Math.atan(Math.exp((180-y*360)*D))-90;
-    const yA=y0, yB=y0+dy*N;
+    const yA=y0, yB=y0+dy*ny;
     const latN=Math.max(latOfY(yA),latOfY(yB)), latS=Math.min(latOfY(yA),latOfY(yB));
     const lngW=Math.min(west,east), lngE=Math.max(west,east);
     let drawn=0;
@@ -127,17 +146,26 @@ window.IntMapCoastMask=(function(){
     rasterize._drawn=drawn; rasterize._rings=R.length;
     /* ONE fill for every ring at once (see the ⚠ about holes in the header) */
     ct.fill('evenodd');
-    let d; try{ d=ct.getImageData(0,0,N,N).data; }catch(_){ cv.width=cv.height=1; return null; }
-    const out=new Uint8Array(N*N);
-    for(let k=0,n=N*N;k<n;k++) out[k]=(d[k*4]>127)?1:0;
+    const n=nx*ny;
+    const out=new Uint8Array(n);
+    /* ⚠ (#R250) READ IT IN STRIPS. The far raster's grid is ~10 M cells, and one getImageData over
+       all of it is a 40 MB intermediate held beside the 40 MB the caller is already filling. A strip
+       is bounded no matter how big the grid gets, and the answer is identical. */
+    const ROWS=Math.max(1,Math.min(ny,Math.ceil(4e6/Math.max(1,nx))));
+    try{
+      for(let j0=0;j0<ny;j0+=ROWS){ const h=Math.min(ROWS,ny-j0);
+        const d=ct.getImageData(0,j0,nx,h).data;
+        for(let k=0,m=nx*h;k<m;k++) out[j0*nx+k]=(d[k*4]>127)?1:0; }
+    }catch(_){ cv.width=cv.height=1; return null; }
     cv.width=cv.height=1;
     return out; }
 
   /* how fine the answer just produced actually is, in km, at the middle of the window — for the
      caller to PRINT rather than for anybody to assume (#R185: no silent caps) */
   function cellKm(o){
-    try{ const N=o.N|0, dx=+o.dx, y0=+o.y0, dy=+o.dy;
-      const latMid=360/Math.PI*Math.atan(Math.exp((180-(y0+dy*N/2)*360)*D))-90;
+    try{ const wh=dims(o); if(!wh) return null;
+      const dx=+o.dx, y0=+o.y0, dy=+o.dy;
+      const latMid=360/Math.PI*Math.atan(Math.exp((180-(y0+dy*wh[1]/2)*360)*D))-90;
       return Math.abs(dx)*111.32*Math.cos(Math.max(-85,Math.min(85,latMid))*D); }catch(_){ return null; } }
 
   /* ── the point answer, finest first ───────────────────────────────────────────────────────────

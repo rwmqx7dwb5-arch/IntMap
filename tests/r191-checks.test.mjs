@@ -172,8 +172,16 @@ test('R191 seismic: the field is painted to the end of the lowest class', () => 
   /* (#R192) …and the land test is no longer a DEM read at all — a mask that half-arrives is what
      painted the ocean. It is the bundled raster, and a missing one means no annulus rather than a
      painted sea. See tests/r192-checks. */
-  assert.match(s, /if\(land\.isLand\(lo,la\)!==true\)\{ seaSkipped\+\+; continue; \}/,
+  /* ⚠ (#R250) THE RULE IS «NO SEA», NOT «THIS SPELLING». The far raster's land test used to be
+     `land.isLand(lo,la)!==true` — the bundled 19.6 km majority — which was the finer of the two
+     while this raster's cell was 28–52 km. #R248/#R249 took the cell to 1.17 km and left the test
+     at 19.6 km, so the coastline past 1,500 km became a 19.6 km staircase (measured: 2.03 % of the
+     cells over a 600 km patch answer differently). It now asks js/coast-mask.js at THIS grid and
+     falls back to exactly the old call, so the assertion pins the INTENT and both branches. */
+  assert.match(s, /if\(!landAtFar\(kIdx,lo,la\)\)\{ seaSkipped\+\+; continue; \}/,
     'and it does not paint the sea, because the fine field does not either');
+  assert.match(s, /const landAtFar=\(k,lo,la\)=>\(coastFar\?\(coastFar\[k\]===1\):\(land\.isLand\(lo,la\)===true\)\)/,
+    'the land answer must still fall back to the bundled mask when no country outline has arrived');
   assert.ok(/the far field is not drawn rather than painted over the sea/.test(s),
     'and with no mask at all it draws nothing — it never falls back to painting everything');
 });
