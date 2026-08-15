@@ -3216,17 +3216,32 @@ window.IntMapModules.dataLayers=function(HOST){
        SILHOUETTE and stopped there, so the two renderings still drew different marks — measured over
        866 aircraft at z10.5: the flat glyph carries 0.037 white-outline pixels per body pixel and the
        lifted body 0.012. The original mark is not a bare blue shape: `ensurePlaneIcons` fills it and
-       then strokes it with 1.6 px of white on a 44-unit canvas whose half-length is 19, i.e. a stroke
-       that straddles the path by 0.8 units either side. That stroke is half the mark's identity.
+       then strokes it with `PLANE_STROKE` px of white on a 44-unit canvas whose half-length is 19,
+       i.e. a stroke that straddles the path by half that either side. That stroke is half the mark's
+       identity — and (#R246) it is now the WIDTH the reader asked to be thicker, so it is a constant
+       both renderings read rather than a number written twice.
        An extrusion has no stroke, so it is drawn as its own polygon (see refreshPlanes3D:
        `part:'rim'`) — (#R192) a RING, outer boundary _PLANE_RIM and inner boundary _PLANE_CORE, which
        is exactly the annulus `ctx.stroke()` paints and shares no surface with the body.
        ⚠ MITRED, NOT SCALED. #R185's rim was the whole plan-form grown about its centre, which puts
        more outset at the nose and the wingtips than beside the fuselage — a scaled copy, not a
-       stroke. This offsets each vertex along the mitre of its two edge normals, so the band is 0.8
-       units wide everywhere, exactly as the canvas stroke is. The mitre is limited at 2.6 units so
-       the 2.2-unit-wide fuselage notches cannot spike. */
-    const _PLANE_STROKE=0.8;                                  /* half of ensurePlaneIcons' 1.6-px stroke */
+       stroke. This offsets each vertex along the mitre of its two edge normals, so the band is
+       `_PLANE_STROKE` units wide everywhere, exactly as the canvas stroke is. The mitre is limited at
+       3.25× that so the 2.2-unit-wide fuselage notches cannot spike. */
+    /* ══ ⚠ (#R246) THE TWO AIRCRAFT COLOURS AND THE OUTLINE WIDTH, EACH WRITTEN ONCE ════════════
+       「Live aircraft trafficで航空機の色は以下に。民間機：シアン #00D9FF 軍用機：鮮赤 #FF3040
+         両方とも：より太いアウトライン」
+       All three are read by the flat glyph (`ensurePlaneIcons`) AND by the lifted 3-D body below, so
+       the 2-D mark and the 3-D one cannot disagree — they did in #R173, which is what `_feHex` and
+       the `part:'rim'` ring exist to keep true. ⚠ THIS IS WHY THEY ARE DECLARED HERE, ABOVE
+       `_PLANE_RIM`: the ring's half-width is derived from the stroke rather than typed again, so
+       thickening the outline thickens the lifted mark's white band by exactly the same amount.
+       ⚠ The military red is deliberately not the app's --info-mil #ff3b30 any more: beside cyan the
+       warmer, more saturated #FF3040 is what tells the two apart at a glance. */
+    const PLANE_CIV='#00D9FF';                                /* civil — cyan */
+    const PLANE_MIL='#FF3040';                                /* military — vivid red */
+    const PLANE_STROKE=2.6;                                   /* the white outline, in the glyph's 44-unit space */
+    const _PLANE_STROKE=PLANE_STROKE/2;                       /* half of ensurePlaneIcons' stroke */
     function _outsetRing(pts,w){
       const n=pts.length, area=(()=>{ let a=0; for(let i=0,j=n-1;i<n;j=i++) a+=(pts[j][0]*pts[i][1]-pts[i][0]*pts[j][1]); return a; })();
       const sgn=area>0?1:-1;                                  /* so the offset always goes OUTWARD */
@@ -3243,10 +3258,12 @@ window.IntMapModules.dataLayers=function(HOST){
         out.push([pts[i][0]+ox*s, pts[i][1]+oy*s]); }
       return out;
     }
-    /* `ctx.fill()` then `ctx.stroke()` puts HALF the 1.6-px line inside the path and half outside, so the
-       glyph's blue ends 0.8 units short of the outline and its white ring is 1.6 units wide. The lifted
-       mark is built the same way round: the body is the outline INSET by 0.8, the stroke is it OUTSET by
-       0.8, and the mark's overall size is unchanged (the ring reaches exactly where the canvas one does). */
+    /* `ctx.fill()` then `ctx.stroke()` puts HALF the line inside the path and half outside, so the
+       glyph's fill ends `_PLANE_STROKE` units short of the outline and its white ring is `PLANE_STROKE`
+       units wide. The lifted mark is built the same way round: the body is the outline INSET by
+       `_PLANE_STROKE`, the stroke is it OUTSET by the same, and the mark's overall size is unchanged
+       (the ring reaches exactly where the canvas one does — which is why #R246's thicker outline
+       widens the band inward and outward equally in both renderings, from one number). */
     const _PLANE_RIM=_outsetRing(_PLANE_OUTLINE,_PLANE_STROKE);
     const _PLANE_CORE=_outsetRing(_PLANE_OUTLINE,-_PLANE_STROKE);
     /* ══ (#R191) A `fill-extrusion` NEVER RENDERS THE COLOUR IT IS GIVEN ═══════════════════════════
@@ -3514,27 +3531,30 @@ window.IntMapModules.dataLayers=function(HOST){
        GPU upscaled it on every HiDPI screen. That is a defect, not a design: drawing the same 44-unit
        artwork at devicePixelRatio and declaring it produces the SAME on-screen size, just not blurred.
        Reverting it would restore a bug rather than an appearance. */
-    const PLANE_CIV='#f8b500';   /* (#R244) 山吹色 — the civil-aircraft colour, written once */
+    /* ══ ⚠ (#R246) THE TWO AIRCRAFT COLOURS AND THE OUTLINE, EACH WRITTEN ONCE ═══════════════════
+       「Live aircraft trafficで航空機の色は以下に。民間機：シアン #00D9FF 軍用機：鮮赤 #FF3040
+         両方とも：より太いアウトライン」
+       Both constants are read by the flat glyph AND by the two fill-extrusion cases below, so the
+       2-D mark and the 3-D body cannot disagree (they did in #R173, which is why _feHex exists).
+       ⚠ The military red is deliberately NOT the app's --info-mil #ff3b30 any more: beside cyan the
+       warmer, more saturated #FF3040 is what separates the two at a glance, which is the point of
+       having two colours at all. ⚠ And the outline is a CONSTANT rather than a number typed into
+       the one place that strokes: 1.6 → 2.6 units of the 44-unit artwork, drawn at devicePixelRatio
+       like the rest of the glyph (see the note above), so it thickens on every screen equally. */
     function ensurePlaneIcons(){
       if(!GE().hasRenderer()) return;
       const dpr=Math.max(1,Math.min(3,Math.round(window.devicePixelRatio||1)));
       const make=(color)=>{
         const s=44, cv=document.createElement('canvas'); cv.width=s*dpr; cv.height=s*dpr;
         const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr); ctx.translate(s/2,s/2);
-        ctx.fillStyle=color; ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=1.6; ctx.lineJoin='round';
+        ctx.fillStyle=color; ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=PLANE_STROKE; ctx.lineJoin='round';
         ctx.beginPath(); _PLANE_ORIG.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath();
         ctx.fill(); ctx.stroke();
         return { data:ctx.getImageData(0,0,s*dpr,s*dpr), pixelRatio:dpr };
       };
       const add=(id,color)=>{ try{ if(!GE().scene.hasImage(id)){ const m=make(color); GE().scene.addImage(id,m.data,{pixelRatio:m.pixelRatio}); } }catch(_){} };
-      /* ══ ⚠ (#R244) CIVIL AIRCRAFT ARE 山吹色 ═══════════════════════════════════════════════════
-         「Live aircraft trafficの民間機の色は山吹色に。」 #F8B500 is the JIS 山吹色, and it is the
-         ONE place the civil colour is written for the flat glyph; the two extrusion cases below
-         read the same constant so the 2-D mark and the 3-D body can never disagree (they did in
-         #R173, which is why _feHex exists). ⚠ It is deliberately deeper than the selected-aircraft
-         yellow #ffd23f, which still has to read as 「this is the one you clicked」 beside it. */
       add('plane-civ',PLANE_CIV);
-      add('plane-mil','#ff3b30');
+      add('plane-mil',PLANE_MIL);
       add('plane-sel','#ffd23f');   /* (#R173) the clicked aircraft */
     }
     function fmtClock(ms){ try{ return new Date(ms).toLocaleTimeString(window.IntMapLang.locale(HOST.lang)); }catch(_){ return ''; } }
@@ -3614,7 +3634,7 @@ window.IntMapModules.dataLayers=function(HOST){
         if(!GE().layers.hasSource(PLANE3D_SRC)) GE().layers.addSource(PLANE3D_SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         if(!GE().layers.has(PLANE3D_POST)) GE().layers.add({id:PLANE3D_POST,type:'fill-extrusion',source:PLANE3D_SRC,
           filter:['==',['get','post'],1], layout:{visibility:'none'},
-          paint:{ 'fill-extrusion-color':_feRamp(d=>['match',['get','type'],'military',_feHex('#ff3b30',d),_feHex(PLANE_CIV,d)]),
+          paint:{ 'fill-extrusion-color':_feRamp(d=>['match',['get','type'],'military',_feHex(PLANE_MIL,d),_feHex(PLANE_CIV,d)]),
             'fill-extrusion-opacity':Math.min(0.5,opacities.planes*0.5),
             'fill-extrusion-base':['get','alt'], 'fill-extrusion-height':['get','top'] }},beforeId);
         if(!GE().layers.has(PLANE3D_LYR)) GE().layers.add({id:PLANE3D_LYR,type:'fill-extrusion',source:PLANE3D_SRC,
@@ -3628,7 +3648,7 @@ window.IntMapModules.dataLayers=function(HOST){
                      colour rather than the shader's idea of it. */
             'fill-extrusion-color':_feRamp(d=>['case',
               ['==',['get','part'],'rim'],_feHex('#ffffff',d),
-              ['==',['get','sel'],1],_feHex('#ffd23f',d),['match',['get','type'],'military',_feHex('#ff3b30',d),_feHex(PLANE_CIV,d)]]),
+              ['==',['get','sel'],1],_feHex('#ffd23f',d),['match',['get','type'],'military',_feHex(PLANE_MIL,d),_feHex(PLANE_CIV,d)]]),
             'fill-extrusion-opacity':opacities.planes,
             'fill-extrusion-base':['get','alt'], 'fill-extrusion-height':['get','top'] }},beforeId);
         /* (#R173) the clicked aircraft's observed track — a flat line on the ground, and the same fixes as

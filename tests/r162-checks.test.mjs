@@ -199,7 +199,10 @@ test('R162 #7 the data survived the move intact (all 5 languages, real row count
   assert.match(gz, /return \{[^}]*\bextra:_EXTRA_GZ\b/, 'gazetteer still exports the extra array');
   const ref = rd('js/reference-data.js');
   assert.ok((ref.match(/_dc\(/g) || []).length > 100, 'dashboard cards survived');
-  assert.ok(ref.includes('return { dashCards:DEFAULT_DASH_CARDS, dataSources:DATA_SOURCES };'), 'reference-data exports both tables');
+  /* (#R246) …plus the ONE resolver for the registry's descriptions, which moved to
+     js/locales/pages.<code>.js so that the pages audit measures them. Both tables still leave here. */
+  assert.ok(ref.includes('return { dashCards:DEFAULT_DASH_CARDS, dataSources:DATA_SOURCES, useText, ensureDocs };'),
+    'reference-data exports both tables');
 });
 
 test('R162 #8 index.html actually shrank and the CSS really moved', () => {

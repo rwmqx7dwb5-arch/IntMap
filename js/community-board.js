@@ -21,7 +21,7 @@ window.IntMapModules.communityBoard=function(HOST){
      isStyleLoaded() test only if the host is somehow absent. */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const commCatById=(id)=>HOST.COMM_CATEGORIES.find(c=>c.id===id)||HOST.COMM_CATEGORIES[0];
-  const commCatLabel=(id)=>{ const c=commCatById(id); return c.label[HOST.lang]||c.label.en; };
+  const commCatLabel=(id)=>{ const c=commCatById(id); return window.IntMapLang.pick(()=>HOST.lang).arr(c.label); };
   /* Deterministic avatar (colored initial) from a display name. */
   function commAvatar(name){
     const s=(name||'?').trim(); let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0;

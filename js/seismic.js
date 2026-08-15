@@ -3196,9 +3196,15 @@ window.IntMapModules.seismic=function(HOST){
       const btn=(st==='epi')
         ? '<button class="sq-go-epi sq-btn sq-btn-wide sq-btn-accent">② '+L('Place the hypocenter','震央を置く','Hypozentrum setzen','Поставить гипоцентр','Colocar el hipocentro')+'</button>'
         : '<button class="'+_runBtnClass()+'">'+_runBtnLabel()+'</button>';
+      /* ⚠ (#R246) THE PROGRESS SITS ABOVE THE BUTTON. 「計算進捗は「震度分布を計算」の下ではなく上に。」
+         #R243 put it under the button because that is where the bar the reader could not see used to
+         be (card 4, several screens up); the pinned footer is at the BOTTOM of the panel, so a bar
+         below the button is the last row on screen and the button — the thing being pressed — jumps
+         down by the bar's height the moment a solve starts. Above it, the button keeps its position
+         and the bar grows into the footer instead. One `.sq-prog`, one `_setProg()`, moved not copied. */
       return '<div class="sq-foot"'+(minimised?' style="display:none;"':'')+'>'
-        +(hint?('<div class="sq-fhint">'+hint+'</div>'):'')+btn
-        +'<div class="sq-foot-prog" style="margin-top:9px;">'+_progHTML('sq-prog-foot')+'</div></div>';
+        +(hint?('<div class="sq-fhint">'+hint+'</div>'):'')
+        +'<div class="sq-foot-prog" style="margin-bottom:9px;">'+_progHTML('sq-prog-foot')+'</div>'+btn+'</div>';
     }
     function render(){ if(!panel) return; _ensureCss();
       /* (#R239) the on-map HUD is a readout of the same three states this function is about to draw

@@ -149,7 +149,7 @@ window.IntMapModules.newsFeed=function(HOST){
        undated items too — so the feed shows genuine period news around that date, or NOTHING (never latest-as-past). */
     try{ if(typeof HOST.newsDate!=='undefined' && HOST.newsDate){ const t0=HOST.newsDate.getTime(), win=8*864e5;   /* ±8 days (the fetch query uses ±3; allow timezone slack) */
       uniq=uniq.filter(it=>{ const pd=HOST.parseDate(it.pubDate); return pd && isFinite(pd) && Math.abs(pd-t0)<=win; }); } }catch(_){}
-    return uniq.slice(0,150).map(it=>{ const sp=it.title.split(' - '); const publisher=sp.length>1?sp.pop():(({en:'News',jp:'報道',de:'Nachrichten',ru:'Новости'})[HOST.lang]||'News'); const title=sp.join(' - '); const desc=it.desc||''; return { title, publisher, link:it.link, pubDate:it.pubDate, desc, analysis:HOST.analyzeContext(title,publisher,it.link,desc) }; });
+    return uniq.slice(0,150).map(it=>{ const sp=it.title.split(' - '); const publisher=sp.length>1?sp.pop():window.IntMapLang.t(HOST.lang,'News','報道','Nachrichten','Новости','Noticias'); const title=sp.join(' - '); const desc=it.desc||''; return { title, publisher, link:it.link, pubDate:it.pubDate, desc, analysis:HOST.analyzeContext(title,publisher,it.link,desc) }; });
   }
   /* ===== Server-baked news (FAST PATH) =====
      The `refresh-news` Edge Function pre-fetches + pre-analyses the default feeds every

@@ -244,14 +244,21 @@ window.IntMapNightSky = (function () {
   }
 
   /* ── the drawing ────────────────────────────────────────────────────────────────────────── */
+  /* ⚠ (#R246) THE PLANET NAMES ARE A CALL, NOT AN `{en,jp}` OBJECT. They were read as
+     `lang()==='jp' ? pl.jp : pl.en` — a ternary that names two languages and hands the other seven
+     the English (the eleventh shape; scripts/i18n-langmap-audit.mjs). `LA(…)` is
+     IntMapLang.pickArgs(), which returns the array it is given, so the DATA is unchanged; `L.arr()`
+     resolves it through pick() itself — de/ru/es from the arguments, fr/ko/zh/zh-Hans from the
+     inline table keyed by the English name. */
+  const LA = window.IntMapLang.pickArgs();
   const PLANETS = [
-    { id: 'mercury', en: 'Mercury', jp: '水星', c: '#c9c0b4' },
-    { id: 'venus', en: 'Venus', jp: '金星', c: '#f5e6c8' },
-    { id: 'mars', en: 'Mars', jp: '火星', c: '#e2725b' },
-    { id: 'jupiter', en: 'Jupiter', jp: '木星', c: '#e6d3a3' },
-    { id: 'saturn', en: 'Saturn', jp: '土星', c: '#e3d6a8' },
-    { id: 'uranus', en: 'Uranus', jp: '天王星', c: '#a8dce3' },
-    { id: 'neptune', en: 'Neptune', jp: '海王星', c: '#7b96e0' },
+    { id: 'mercury', nm: LA('Mercury', '水星', 'Merkur', 'Меркурий', 'Mercurio'), c: '#c9c0b4' },
+    { id: 'venus', nm: LA('Venus', '金星', 'Venus', 'Венера', 'Venus'), c: '#f5e6c8' },
+    { id: 'mars', nm: LA('Mars', '火星', 'Mars', 'Марс', 'Marte'), c: '#e2725b' },
+    { id: 'jupiter', nm: LA('Jupiter', '木星', 'Jupiter', 'Юпитер', 'Júpiter'), c: '#e6d3a3' },
+    { id: 'saturn', nm: LA('Saturn', '土星', 'Saturn', 'Сатурн', 'Saturno'), c: '#e3d6a8' },
+    { id: 'uranus', nm: LA('Uranus', '天王星', 'Uranus', 'Уран', 'Urano'), c: '#a8dce3' },
+    { id: 'neptune', nm: LA('Neptune', '海王星', 'Neptun', 'Нептун', 'Neptuno'), c: '#7b96e0' },
   ];
 
   function draw() {
@@ -332,7 +339,7 @@ window.IntMapNightSky = (function () {
       const m = E.equatorial('moon', jd); put('moon', L('Moon', '月', 'Mond', 'Луна', 'Luna'), '#e8e6df', m.raDeg, m.decDeg, 6);
       for (const pl of PLANETS) {
         const e = E.equatorial(pl.id, jd); if (!e) continue;
-        put(pl.id, lang() === 'jp' ? pl.jp : pl.en, pl.c, e.raDeg, e.decDeg, 3);
+        put(pl.id, L.arr(pl.nm), pl.c, e.raDeg, e.decDeg, 3);
       }
     } catch (_) { }
 
@@ -440,7 +447,7 @@ window.IntMapNightSky = (function () {
       const E = EPH();
       const s = E.equatorial('sun', jd); put('sun', L('Sun', '太陽', 'Sonne', 'Солнце', 'Sol'), '#ffd75e', s.raDeg, s.decDeg, 7);
       const m = E.equatorial('moon', jd); put('moon', L('Moon', '月', 'Mond', 'Луна', 'Luna'), '#e8e6df', m.raDeg, m.decDeg, 6);
-      for (const pl of PLANETS) { const e = E.equatorial(pl.id, jd); if (!e) continue; put(pl.id, lang() === 'jp' ? pl.jp : pl.en, pl.c, e.raDeg, e.decDeg, 3); }
+      for (const pl of PLANETS) { const e = E.equatorial(pl.id, jd); if (!e) continue; put(pl.id, L.arr(pl.nm), pl.c, e.raDeg, e.decDeg, 3); }
     } catch (_) { }
 
     /* ── the ground ───────────────────────────────────────────────────────────────────────────

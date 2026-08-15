@@ -44,7 +44,9 @@ test('R191 aircraft: the lifted mark carries the glyph colour and the glyph stro
   assert.match(paint, /_feHex\(PLANE_CIV,d\)/, 'it asks for the colour that COMES OUT as the glyph colour');
   assert.match(paint, /\['==',\['get','part'\],'rim'\],_feHex\('#ffffff',d\)/, 'and the stroke is white');
   /* the stroke is the glyph's own 1.6-px stroke, mitred — not #R185's scaled plate */
-  assert.match(src, /const _PLANE_STROKE=0\.8;/, 'half of ensurePlaneIcons’ 1.6-px line');
+  /* (#R246) …and it is DERIVED from that constant rather than typed again, so #R246's thicker
+     outline widened the lifted mark's white band by exactly the same amount. */
+  assert.match(src, /const _PLANE_STROKE=PLANE_STROKE\/2;/, 'half of ensurePlaneIcons’ line, derived');
   assert.match(src, /function _outsetRing\(pts,w\)/, 'a real offset, not a scale about the centre');
   assert.match(src, /const _PLANE_RIM=_outsetRing\(_PLANE_OUTLINE,_PLANE_STROKE\);/, 'outward half');
   assert.match(src, /const _PLANE_CORE=_outsetRing\(_PLANE_OUTLINE,-_PLANE_STROKE\);/, 'inward half');

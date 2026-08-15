@@ -203,25 +203,25 @@ window.IntMapModules.atlasConsole=function(HOST){
        (Georgia the country vs the US state; Athens Greece vs Athens GA; Paris France vs Paris TX). After Atlas
        resolves such a name it states WHICH one it mapped and offers the alternatives, so a wrong same-name guess
        is caught and correctable instead of silently wrong. Fires only when the resolved point is confidently one
-       of the known candidates (≤250 km), so it never nags on unambiguous places. */
+       of the known candidates (≤250 km), so it never nags on unambiguous places. ⚠ (#R246) EACH CANDIDATE'S NAME IS A CALL: `{en:…,jp:…,lng,lat}` read by `_mirrorLang()==='jp'?o.jp:o.en` was the eleventh shape with two coordinates mixed in, so every language but Japanese was told about an ambiguous place IN ENGLISH. `LA(…)` is IntMapLang.pickArgs(); `lx()` resolves it through pick() itself. */
     const AMBIG={
-      georgia:[{en:'Georgia (the country)',jp:'ジョージア（国）',lng:43.4,lat:42.2},{en:'Georgia, USA (the state)',jp:'ジョージア州（米国）',lng:-83.5,lat:32.9}],
-      athens:[{en:'Athens, Greece',jp:'アテネ（ギリシャ）',lng:23.73,lat:37.98},{en:'Athens, Georgia (USA)',jp:'アセンズ（米ジョージア州）',lng:-83.38,lat:33.96}],
-      paris:[{en:'Paris, France',jp:'パリ（フランス）',lng:2.35,lat:48.85},{en:'Paris, Texas (USA)',jp:'パリス（米テキサス州）',lng:-95.56,lat:33.66}],
-      cambridge:[{en:'Cambridge, UK',jp:'ケンブリッジ（英国）',lng:0.12,lat:52.2},{en:'Cambridge, Massachusetts (USA)',jp:'ケンブリッジ（米マサチューセッツ州）',lng:-71.11,lat:42.37}],
-      naples:[{en:'Naples, Italy',jp:'ナポリ（イタリア）',lng:14.27,lat:40.85},{en:'Naples, Florida (USA)',jp:'ネイプルズ（米フロリダ州）',lng:-81.79,lat:26.14}],
-      alexandria:[{en:'Alexandria, Egypt',jp:'アレクサンドリア（エジプト）',lng:29.92,lat:31.2},{en:'Alexandria, Virginia (USA)',jp:'アレクサンドリア（米バージニア州）',lng:-77.05,lat:38.8}],
-      tripoli:[{en:'Tripoli, Libya',jp:'トリポリ（リビア）',lng:13.19,lat:32.89},{en:'Tripoli, Lebanon',jp:'トリポリ（レバノン）',lng:35.84,lat:34.44}],
-      cordoba:[{en:'Córdoba, Spain',jp:'コルドバ（スペイン）',lng:-4.78,lat:37.89},{en:'Córdoba, Argentina',jp:'コルドバ（アルゼンチン）',lng:-64.18,lat:-31.42}],
-      valencia:[{en:'Valencia, Spain',jp:'バレンシア（スペイン）',lng:-0.38,lat:39.47},{en:'Valencia, Venezuela',jp:'バレンシア（ベネズエラ）',lng:-68.0,lat:10.16}],
-      santiago:[{en:'Santiago, Chile',jp:'サンティアゴ（チリ）',lng:-70.67,lat:-33.45},{en:'Santiago de Compostela, Spain',jp:'サンティアゴ・デ・コンポステーラ（スペイン）',lng:-8.54,lat:42.88}],
-      sanjose:[{en:'San José, Costa Rica',jp:'サンホセ（コスタリカ）',lng:-84.08,lat:9.93},{en:'San Jose, California (USA)',jp:'サンノゼ（米カリフォルニア州）',lng:-121.89,lat:37.34}],
-      sydney:[{en:'Sydney, Australia',jp:'シドニー（豪）',lng:151.21,lat:-33.87},{en:'Sydney, Nova Scotia (Canada)',jp:'シドニー（カナダ・ノバスコシア）',lng:-60.19,lat:46.14}],
-      guadalajara:[{en:'Guadalajara, Mexico',jp:'グアダラハラ（メキシコ）',lng:-103.35,lat:20.67},{en:'Guadalajara, Spain',jp:'グアダラハラ（スペイン）',lng:-3.16,lat:40.63}],
-      stpetersburg:[{en:'Saint Petersburg, Russia',jp:'サンクトペテルブルク（ロシア）',lng:30.34,lat:59.93},{en:'St. Petersburg, Florida (USA)',jp:'セントピーターズバーグ（米フロリダ州）',lng:-82.64,lat:27.77}],
-      birmingham:[{en:'Birmingham, UK',jp:'バーミンガム（英国）',lng:-1.9,lat:52.48},{en:'Birmingham, Alabama (USA)',jp:'バーミングハム（米アラバマ州）',lng:-86.81,lat:33.52}],
-      manchester:[{en:'Manchester, UK',jp:'マンチェスター（英国）',lng:-2.24,lat:53.48},{en:'Manchester, New Hampshire (USA)',jp:'マンチェスター（米ニューハンプシャー州）',lng:-71.46,lat:42.99}],
-      perth:[{en:'Perth, Australia',jp:'パース（豪）',lng:115.86,lat:-31.95},{en:'Perth, Scotland (UK)',jp:'パース（スコットランド）',lng:-3.43,lat:56.4}]
+      georgia:[{n:LA('Georgia (the country)','ジョージア（国）','Georgien (das Land)','Грузия (страна)','Georgia (el país)'),lng:43.4,lat:42.2},{n:LA('Georgia, USA (the state)','ジョージア州（米国）','Georgia, USA (der Bundesstaat)','Джорджия, США (штат)','Georgia, EE. UU. (el estado)'),lng:-83.5,lat:32.9}],
+      athens:[{n:LA('Athens, Greece','アテネ（ギリシャ）','Athen, Griechenland','Афины, Греция','Atenas, Grecia'),lng:23.73,lat:37.98},{n:LA('Athens, Georgia (USA)','アセンズ（米ジョージア州）','Athens, Georgia (USA)','Атенс, Джорджия (США)','Athens, Georgia (EE. UU.)'),lng:-83.38,lat:33.96}],
+      paris:[{n:LA('Paris, France','パリ（フランス）','Paris, Frankreich','Париж, Франция','París, Francia'),lng:2.35,lat:48.85},{n:LA('Paris, Texas (USA)','パリス（米テキサス州）','Paris, Texas (USA)','Пэрис, Техас (США)','Paris, Texas (EE. UU.)'),lng:-95.56,lat:33.66}],
+      cambridge:[{n:LA('Cambridge, UK','ケンブリッジ（英国）','Cambridge, Vereinigtes Königreich','Кембридж, Великобритания','Cambridge, Reino Unido'),lng:0.12,lat:52.2},{n:LA('Cambridge, Massachusetts (USA)','ケンブリッジ（米マサチューセッツ州）','Cambridge, Massachusetts (USA)','Кеймбридж, Массачусетс (США)','Cambridge, Massachusetts (EE. UU.)'),lng:-71.11,lat:42.37}],
+      naples:[{n:LA('Naples, Italy','ナポリ（イタリア）','Neapel, Italien','Неаполь, Италия','Nápoles, Italia'),lng:14.27,lat:40.85},{n:LA('Naples, Florida (USA)','ネイプルズ（米フロリダ州）','Naples, Florida (USA)','Нейплс, Флорида (США)','Naples, Florida (EE. UU.)'),lng:-81.79,lat:26.14}],
+      alexandria:[{n:LA('Alexandria, Egypt','アレクサンドリア（エジプト）','Alexandria, Ägypten','Александрия, Египет','Alejandría, Egipto'),lng:29.92,lat:31.2},{n:LA('Alexandria, Virginia (USA)','アレクサンドリア（米バージニア州）','Alexandria, Virginia (USA)','Александрия, Виргиния (США)','Alexandria, Virginia (EE. UU.)'),lng:-77.05,lat:38.8}],
+      tripoli:[{n:LA('Tripoli, Libya','トリポリ（リビア）','Tripolis, Libyen','Триполи, Ливия','Trípoli, Libia'),lng:13.19,lat:32.89},{n:LA('Tripoli, Lebanon','トリポリ（レバノン）','Tripoli, Libanon','Триполи, Ливан','Trípoli, Líbano'),lng:35.84,lat:34.44}],
+      cordoba:[{n:LA('Córdoba, Spain','コルドバ（スペイン）','Córdoba, Spanien','Кордова, Испания','Córdoba, España'),lng:-4.78,lat:37.89},{n:LA('Córdoba, Argentina','コルドバ（アルゼンチン）','Córdoba, Argentinien','Кордова, Аргентина','Córdoba, Argentina'),lng:-64.18,lat:-31.42}],
+      valencia:[{n:LA('Valencia, Spain','バレンシア（スペイン）','Valencia, Spanien','Валенсия, Испания','Valencia, España'),lng:-0.38,lat:39.47},{n:LA('Valencia, Venezuela','バレンシア（ベネズエラ）','Valencia, Venezuela','Валенсия, Венесуэла','Valencia, Venezuela'),lng:-68.0,lat:10.16}],
+      santiago:[{n:LA('Santiago, Chile','サンティアゴ（チリ）','Santiago de Chile','Сантьяго, Чили','Santiago de Chile'),lng:-70.67,lat:-33.45},{n:LA('Santiago de Compostela, Spain','サンティアゴ・デ・コンポステーラ（スペイン）','Santiago de Compostela, Spanien','Сантьяго-де-Компостела, Испания','Santiago de Compostela, España'),lng:-8.54,lat:42.88}],
+      sanjose:[{n:LA('San José, Costa Rica','サンホセ（コスタリカ）','San José, Costa Rica','Сан-Хосе, Коста-Рика','San José, Costa Rica'),lng:-84.08,lat:9.93},{n:LA('San Jose, California (USA)','サンノゼ（米カリフォルニア州）','San José, Kalifornien (USA)','Сан-Хосе, Калифорния (США)','San José, California (EE. UU.)'),lng:-121.89,lat:37.34}],
+      sydney:[{n:LA('Sydney, Australia','シドニー（豪）','Sydney, Australien','Сидней, Австралия','Sídney, Australia'),lng:151.21,lat:-33.87},{n:LA('Sydney, Nova Scotia (Canada)','シドニー（カナダ・ノバスコシア）','Sydney, Nova Scotia (Kanada)','Сидни, Новая Шотландия (Канада)','Sídney, Nueva Escocia (Canadá)'),lng:-60.19,lat:46.14}],
+      guadalajara:[{n:LA('Guadalajara, Mexico','グアダラハラ（メキシコ）','Guadalajara, Mexiko','Гвадалахара, Мексика','Guadalajara, México'),lng:-103.35,lat:20.67},{n:LA('Guadalajara, Spain','グアダラハラ（スペイン）','Guadalajara, Spanien','Гвадалахара, Испания','Guadalajara, España'),lng:-3.16,lat:40.63}],
+      stpetersburg:[{n:LA('Saint Petersburg, Russia','サンクトペテルブルク（ロシア）','Sankt Petersburg, Russland','Санкт-Петербург, Россия','San Petersburgo, Rusia'),lng:30.34,lat:59.93},{n:LA('St. Petersburg, Florida (USA)','セントピーターズバーグ（米フロリダ州）','St. Petersburg, Florida (USA)','Сент-Питерсберг, Флорида (США)','St. Petersburg, Florida (EE. UU.)'),lng:-82.64,lat:27.77}],
+      birmingham:[{n:LA('Birmingham, UK','バーミンガム（英国）','Birmingham, Vereinigtes Königreich','Бирмингем, Великобритания','Birmingham, Reino Unido'),lng:-1.9,lat:52.48},{n:LA('Birmingham, Alabama (USA)','バーミングハム（米アラバマ州）','Birmingham, Alabama (USA)','Бирмингем, Алабама (США)','Birmingham, Alabama (EE. UU.)'),lng:-86.81,lat:33.52}],
+      manchester:[{n:LA('Manchester, UK','マンチェスター（英国）','Manchester, Vereinigtes Königreich','Манчестер, Великобритания','Mánchester, Reino Unido'),lng:-2.24,lat:53.48},{n:LA('Manchester, New Hampshire (USA)','マンチェスター（米ニューハンプシャー州）','Manchester, New Hampshire (USA)','Манчестер, Нью-Гэмпшир (США)','Manchester, Nuevo Hampshire (EE. UU.)'),lng:-71.46,lat:42.99}],
+      perth:[{n:LA('Perth, Australia','パース（豪）','Perth, Australien','Перт, Австралия','Perth, Australia'),lng:115.86,lat:-31.95},{n:LA('Perth, Scotland (UK)','パース（スコットランド）','Perth, Schottland (UK)','Перт, Шотландия (Великобритания)','Perth, Escocia (Reino Unido)'),lng:-3.43,lat:56.4}]
     };
     const _ambNorm=s=>{ try{ return String(s==null?'':s).normalize('NFD').replace(new RegExp('['+String.fromCharCode(0x300)+'-'+String.fromCharCode(0x36f)+']','g'),'').toLowerCase().replace(/^(the|el|la)\s+/,'').replace(/[^a-z0-9]+/g,''); }catch(_){ return String(s==null?'':s).toLowerCase().replace(/[^a-z0-9]+/g,''); } };
     function _ambigNote(rawName,lng,lat){ try{ if(lng==null||lat==null||!isFinite(lng)||!isFinite(lat)) return '';
@@ -229,7 +229,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       const km=(a,b,c,d)=>{ const x=(a-c)*Math.cos((b+d)/2*Math.PI/180), y=(b-d); return Math.hypot(x,y)*111; };
       let best=-1,bd=1e9; cands.forEach((c,i)=>{ const d=km(+lng,+lat,c.lng,c.lat); if(d<bd){ bd=d; best=i; } });
       if(best<0||bd>250) return '';   /* only when we are confident WHICH candidate is shown */
-      const pick=o=>_mirrorLang()==='jp'?o.jp:o.en;
+      const pick=o=>lx(o.n);
       const shown=pick(cands[best]); const others=cands.filter((_,i)=>i!==best).map(pick);
       return '<div style="font-size:11px;color:var(--text-muted);margin:3px 0;line-height:1.5;border-left:2px solid var(--primary-color);padding-left:7px;">ℹ '
         +L('“'+esc(rawName)+'” is an ambiguous name — I showed '+esc(shown)+'. Also possible: '+others.map(esc).join(', ')+'. Say e.g. “'+esc(others[0])+'” if you meant that one.',
