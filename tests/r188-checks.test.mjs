@@ -45,8 +45,11 @@ test('R188 aircraft: the lattice is triangular, so each request covers 1.36× th
 test('R188 aircraft: a 154-second sweep publishes as it goes, centre first', () => {
   const src = read('js/data-layers.js');
   assert.match(src, /const PLANE_PUBLISH_MS=4000;/, 'the sweep publishes every few seconds');
-  assert.match(src, /if\(ok>0&&Date\.now\(\)-lastPub>=PLANE_PUBLISH_MS\) publish\(false\);/,
-    '…from inside the circle loop, not only at the end');
+  /* ⚠ (#R245) …and the FIRST success publishes without waiting for that interval — `lastPub` starts
+     at the sweep's own start, so the centre circle's aircraft used to sit in `byHex` for four
+     seconds with nothing on screen (「表示されるまでが遅い」). The cadence after it is unchanged. */
+  assert.match(src, /if\(ok>0&&\(published===0 \? circles\.length>1 : Date\.now\(\)-lastPub>=PLANE_PUBLISH_MS\)\) publish\(false\);/,
+    '…from inside the circle loop, first success immediately, then every PLANE_PUBLISH_MS');
   /* a carried-over aircraft is dropped only once the sweep has RE-ASKED about its patch of sky */
   assert.match(src, /function planeCellOf\(lat,lng\)\{/, 'the lattice must answer "which cell is this"');
   assert.match(src, /if\(cell!=null&&swept\.has\(cell\)\) continue;/,

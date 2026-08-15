@@ -547,7 +547,18 @@ window.IntMapNightSky = (function () {
       + '<strong class="ns-title" style="flex:1"></strong>'
       + '<button class="ns-close" title="' + esc(L('Close', '閉じる', 'Schließen', 'Закрыть', 'Cerrar')) + '" '
       + 'style="background:none;border:0;color:#e8eef8;font-size:16px;cursor:pointer;">✕</button></div>'
-      + '<div class="ns-read" style="margin-bottom:8px;"></div>'
+      /* ══ ⚠ (#R245) THE CONTROLS ARE THREE GROUPS, NOT SIX STACKED ROWS ══════════════════════════
+         「Stand and look upはパネル部分をもう少しパネルの領域範囲を整理して。」 In the standing view
+         #R244 gave the panel a 1,080 px band across the bottom and left the controls as the SIX
+         full-width rows the corner panel had — measured at 1280 × 720: every row 1,054 px wide with
+         its content at the left end, the whole stack 236 px tall. That is the band being spent on
+         nothing. The rows are grouped by what they answer — what the sky is doing, where you are
+         looking, and when — and `.ns-cols` lays those three side by side in the standing view and
+         keeps them stacked in the corner panel, where the width is not there to use. */
+      + '<div class="ns-cols">'
+      + '<div class="ns-col">'
+      + '<div class="ns-read" style="margin-bottom:8px;"></div></div>'
+      + '<div class="ns-col">'
       /* (#R214) the two views of the same sky — a chart of the whole hemisphere, or standing in it */
       + '<div class="ns-modes" style="display:flex;margin-bottom:8px;border:1px solid rgba(255,255,255,.18);'
       + 'border-radius:8px;overflow:hidden;width:max-content;">'
@@ -561,7 +572,8 @@ window.IntMapNightSky = (function () {
       + '<button class="ns-face" data-az="180" style="border:1px solid rgba(255,255,255,.2);background:#1b2233;color:#e8eef8;border-radius:6px;padding:2px 7px;cursor:pointer;font:inherit;">S</button>'
       + '<button class="ns-face" data-az="270" style="border:1px solid rgba(255,255,255,.2);background:#1b2233;color:#e8eef8;border-radius:6px;padding:2px 7px;cursor:pointer;font:inherit;">W</button>'
       + '<button class="ns-zenith" style="border:1px solid rgba(255,255,255,.2);background:#1b2233;color:#e8eef8;border-radius:6px;padding:2px 7px;cursor:pointer;font:inherit;"></button>'
-      + '</div>'
+      + '</div></div>'
+      + '<div class="ns-col">'
       + '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">'
       + '<input class="ns-when" type="datetime-local" step="60" style="background:#1b2233;color:#e8eef8;border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:4px 6px;font:inherit;">'
       + '<button class="ns-now" style="border:1px solid rgba(255,255,255,.2);background:#1b2233;color:#e8eef8;border-radius:8px;padding:4px 9px;cursor:pointer;font:inherit;"></button>'
@@ -569,10 +581,19 @@ window.IntMapNightSky = (function () {
       + '<select class="ns-rate" style="background:#1b2233;color:#e8eef8;border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:4px 6px;font:inherit;">'
       + '<option value="60">1 min/s</option><option value="600">10 min/s</option>'
       + '<option value="3600" selected>1 h/s</option><option value="86400">1 day/s</option></select>'
+      + '</div></div>'
       + '</div>'
       + '<div class="ns-sub ns-attr" style="opacity:.62;margin-top:8px;font-size:11px;"></div>';
     const st = document.createElement('style');
-    st.textContent = '#night-sky .ns-sub{opacity:.78;font-size:12px}';
+    /* (#R245) `.ns-cols` is a plain block in the corner panel (the dome view keeps its narrow stack)
+       and a three-column grid in the standing band, which is the only place there is width to use.
+       Below 860 px there is not, so it stacks again — a phone gets the #R244 layout, correctly. */
+    st.textContent = '#night-sky .ns-sub{opacity:.78;font-size:12px}'
+      + '#night-sky.ns-stand .ns-cols{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1.1fr);'
+      + 'gap:0 18px;align-items:start;}'
+      + '#night-sky.ns-stand .ns-col>*:last-child{margin-bottom:0}'
+      + '@media(max-width:860px){#night-sky.ns-stand .ns-cols{display:block}'
+      + '#night-sky.ns-stand .ns-col>*:last-child{margin-bottom:8px}}';
     root.appendChild(st);
 
     panel.querySelector('.ns-close').onclick = () => close();
@@ -655,20 +676,39 @@ window.IntMapNightSky = (function () {
      bottom, and neither can reach the other because their boxes do not intersect (the lens's band is
      `height:VIEW_VH`, the panel starts at exactly `VIEW_VH`). The all-sky chart is untouched — it
      never had the problem, and its corner panel is what leaves the disc whole. */
-  const VIEW_VH = 60;   /* the share of the viewport the standing lens keeps; the panel has the rest */
+  /* ══ ⚠⚠ (#R245) THE TWO BANDS TILE THE SCREEN — THE PANEL TAKES WHAT IT NEEDS, THE LENS THE REST ══
+     「Stand and look upはパネル部分をもう少しパネルの領域範囲を整理して。」
+     #R244 split the viewport at a CONSTANT (`VIEW_VH = 60`), which is why the panel band was wrong in
+     both directions at once: 236 px of stacked rows inside a 288 px band, so 52 px of the screen
+     belonged to neither box, and the lens was capped at 60 % whatever the controls actually needed.
+     A constant cannot be right — the panel's height depends on the language, the font size and
+     whether the direction row is shown at all.
+     So the split is not a number any more: in the standing view the overlay is a FLEX COLUMN, the
+     panel is `flex:0 0 auto` (its content decides), and the lens is `flex:1 1 auto; min-height:0`
+     (everything left). The two still cannot intersect — that is what a flex column means — and now
+     they also leave nothing between them. `draw()` reads `cv.clientWidth/Height`, so the canvas
+     follows with no measurement here.
+     ⚠ THE PANEL KEEPS A CEILING (`max-height:46vh`, `overflow:auto`): a very small viewport must not
+     be allowed to squeeze the picture the view is about down to nothing.
+     ⚠ THE ALL-SKY CHART IS UNTOUCHED — it is a disc with a corner panel, which has never had this
+     problem, and `position:absolute; inset:0` is what leaves the disc whole. */
+  const VIEW_MIN_VH = 46;   /* the lens never gives up more than this much of the screen to the panel */
   function applyChrome() {
     if (!cv) return;
     const stand = (mode === 'stand');
+    try { root.classList.toggle('ns-stand', stand); } catch (_) { }
+    if (open) root.style.display = stand ? 'flex' : 'block';
+    if (stand) root.style.flexDirection = 'column'; else root.style.removeProperty('flex-direction');
     cv.style.cssText = stand
-      ? 'width:min(96vw,1680px);height:calc(' + VIEW_VH + 'vh - 20px);border-radius:14px;cursor:grab;display:block;touch-action:none;'
+      ? 'width:min(96vw,1680px);height:100%;border-radius:14px;cursor:grab;display:block;touch-action:none;'
       : 'width:min(88vmin,88vw);height:min(88vmin,88vh);display:block;touch-action:none;';
     const wrap = root && root.querySelector('.ns-wrap');
     if (wrap) wrap.style.cssText = stand
-      ? 'position:absolute;left:0;right:0;top:0;height:' + VIEW_VH + 'vh;display:flex;align-items:center;justify-content:center;'
+      ? 'position:relative;flex:1 1 auto;min-height:0;padding:10px 0 0;display:flex;align-items:center;justify-content:center;'
       : 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;';
     if (panel) panel.style.cssText = PANEL_CSS + (stand
-      ? 'left:50%;transform:translateX(-50%);top:' + VIEW_VH + 'vh;width:min(1080px,96vw);max-width:none;'
-        + 'max-height:calc(' + (100 - VIEW_VH) + 'vh - 16px);overflow:auto;'
+      ? 'position:relative;flex:0 0 auto;margin:10px auto calc(12px + env(safe-area-inset-bottom,0px));'
+        + 'width:min(96vw,1680px);max-width:none;max-height:' + (100 - VIEW_MIN_VH) + 'vh;overflow:auto;'
       : 'left:12px;top:12px;max-width:min(420px,92vw);');
   }
   function setMode(m) {
@@ -735,7 +775,7 @@ window.IntMapNightSky = (function () {
     if (!ll || !isFinite(ll.lng) || !isFinite(ll.lat)) return false;
     ensureDOM();
     site = { lng: +ll.lng, lat: +ll.lat, elevM: null, demZ: null };
-    open = true; root.style.display = 'block';
+    open = true; root.style.display = 'block';   /* (#R245) applyChrome() below re-decides flex vs block */
     live = (ll.when == null); playing = false;
     whenMs = (ll.when == null) ? mapClock() : +new Date(ll.when);
     horizon = null; horizonErr = null; skyCache = null;

@@ -1172,6 +1172,11 @@ window.IntMapModules.seismic=function(HOST){
        The cells the FINE image owns are skipped, both inside its radius and inside its box, so this
        never shows through the holes the fine field leaves over the sea. */
     const SRC_FAR='seis-far-img', LYR_FAR='seis-mmi-far';
+    /* ⚠ (#R245) THE FAR GRID IS DECLARED HERE BECAUSE TWO FUNCTIONS HAVE TO AGREE ON IT. `buildFar`
+       walks it; `buildField` SNAPS the fine image's box to it (see `snapFar` there) so that the two
+       rasters tile exactly. A local `const NF` inside buildFar was fine while nobody else needed the
+       number, and it stopped being fine the moment the seam had to be exact. */
+    const FAR_N=()=>((typeof isMobile==='function'&&isMobile())?640:1408);
     let fldFar=null;
     function paintFar(){
       try{
@@ -1185,8 +1190,22 @@ window.IntMapModules.seismic=function(HOST){
         if(!GE().layers.hasSource(SRC_FAR)){
           GE().layers.addSource(SRC_FAR,{type:'image',url:fldFar.url,coordinates:fldFar.coords});
           /* under the fine field, which is added before it and therefore sits above */
+          /* ══ ⚠⚠ (#R245) `nearest`, AND THE REASON IS THE SEAM ══════════════════════════════════════
+             MapLibre's default is `linear`, which interpolates a screen pixel from the four nearest
+             texels — INCLUDING the transparent ones this raster holds wherever the fine image owns
+             the ground. Along the fine image's box that ramps the alpha from 0 to 255 across one 28 km
+             cell, and the basemap shows through the ramp: the 「四角形の線」, measured five device
+             pixels wide at z3 (see the note in buildField). With the box snapped to this raster's own
+             cell grid the two images tile exactly, and `nearest` is what makes the tiling hold on
+             screen instead of being smeared back into a gap.
+             ⚠ IT IS ALSO WHAT THIS RASTER IS: past MMI_TERRAIN_KM the field is a function of distance
+             and the bundled 0.25° site term, i.e. a genuinely discrete 28 km field. Drawing each cell
+             as the value it is, is what #R202 already said the fine field does («every square IS one
+             computed value, which is the honest way to draw a discrete field»). ⚠ The FINE layer is
+             deliberately NOT changed: its cell is 1–1.5 km, its edges are the image's own (clamped,
+             never faded), and its look is not what this report is about. */
           GE().layers.add({id:LYR_FAR,type:'raster',source:SRC_FAR,
-            paint:{'raster-opacity':fldOpacity,'raster-fade-duration':0}},
+            paint:{'raster-opacity':fldOpacity,'raster-fade-duration':0,'raster-resampling':'nearest'}},
             GE().layers.has(LYR_IMG)?LYR_IMG:(GE().layers.has('seis-ring')?'seis-ring':undefined));
         }
         try{ GE().layers.setPaint(LYR_FAR,'raster-opacity',fldOpacity); }catch(_){}
@@ -1245,7 +1264,7 @@ window.IntMapModules.seismic=function(HOST){
       /* (#R204) …and again, for the same reason and at the same price: this grid covers the WHOLE
          world, so 1,024 is a 39 km cell at the equator against the fine field's 1.5 km. 1,408 is a
          28 km cell for 1.9× of an arithmetic cost #R191 measured at ~40 ms for the entire globe. */
-      const NF=(typeof isMobile==='function'&&isMobile())?640:1408;
+      const NF=FAR_N();
       const yT=mY(85), yB=mY(-85), dyF=(yB-yT)/NF, dxF=360/NF;
       const cv=document.createElement('canvas'); cv.width=NF; cv.height=NF;
       const ctx=cv.getContext('2d'), im=ctx.createImageData(NF,NF), px=im.data;
@@ -1357,7 +1376,11 @@ window.IntMapModules.seismic=function(HOST){
           if(reach){ const b=bearingTo(C0,[lo,la])*D;
             km=Math.max(0,kmC-reach[((Math.floor(b*RBIN)%REACH_BINS)+REACH_BINS)%REACH_BINS]); }
           if(km<=rFine||km>rEdge) continue;
-          if(lo>=box.W&&lo<=box.E&&la>=box.Ss&&la<=box.Nn) continue;   /* the fine image owns this */
+          /* ⚠ (#R245) THE FINE IMAGE OWNS THIS — AND ITS BOX IS SNAPPED TO **THIS** GRID, so a cell is
+             either wholly inside it or wholly outside it and the two images tile exactly: no cell is
+             dropped by both (a gap) and none is drawn by both (a double-painted band). See the note
+             by `snapFar` in buildField, and the one above `raster-resampling` in paintFar. */
+          if(lo>=box.W&&lo<=box.E&&la>=box.Ss&&la<=box.Nn) continue;
           if(land.isLand(lo,la)!==true){ seaSkipped++; continue; }
           const rM=srcDistM(km,_cut);   /* (#R223) the one conversion — see srcDistM */
           /* (#R192) each scale from its own quantity.
@@ -1494,8 +1517,60 @@ window.IntMapModules.seismic=function(HOST){
         let halfKm=rFine; if(fault){ let mx=0; fault.ring.forEach(p=>{ const d2=gcDelta(C0,p)*D*RE; if(d2>mx) mx=d2; }); halfKm+=mx; }
         const cosC=Math.max(0.1,Math.cos(C0[1]*D));
         const dLng=halfKm/(111.32*cosC), dLat=halfKm/110.574;
-        const W=C0[0]-dLng, E=C0[0]+dLng;
-        const Nn=Math.min(85,C0[1]+dLat), Ss=Math.max(-85,C0[1]-dLat);
+        /* ══ ⚠⚠⚠ (#R245) THE BOX IS SNAPPED TO THE FAR RASTER'S OWN CELL GRID ═════════════════════════
+           「MMIで震度分布を計算したときに、震源の外側に数千キロ規模の四角形の線がありそこで震度分布が
+             断絶している。やめて。」 — re-sent after #R244 made the two images agree on the DISTANCE.
+
+           MEASURED on the composited frame this time (`gl.readPixels` inside `map.on('render')`, which
+           is the only place this environment returns real pixels — M9 at 100 E / 45 N, z3, the box's
+           east edge at device x=1296):
+
+               …1294 (139,255,255) │ 1296 (116,171,254) → 1300 (141,249,255) │ 1302 (143,252,255)
+                  fine field       │   five pixels of BASEMAP showing through │      far field
+
+           The two rasters agree to within 4/255 either side. What draws the line is that the far
+           raster is TRANSPARENT wherever the fine image owns, and a raster layer is sampled with
+           `raster-resampling: linear` (MapLibre's default; no layer here overrode it). Bilinear
+           filtering ramps its ALPHA from 0 to 255 across one 28 km cell all the way round the
+           rectangle — a fading gap between the two images. That is the 四角形の線, and 断絶 is the
+           field genuinely missing inside it.
+
+           ⚠ AND THE FIRST FIX FOR IT WAS WORSE, WHICH IS WHY THIS ONE IS SHAPED LIKE THIS. Making the
+           far field paint two cells PAST the boundary (into the box, under the fine image) closed the
+           gap — and produced a band where BOTH rasters are painted. Two layers at `raster-opacity`
+           0.85 compose to 1−0.15² = 0.9775, so the overlap is a different transparency from either
+           side of it. MEASURED at z6.5 across the same edge: far-only 119…120, fine-only 120…121,
+           BOTH 133…136 — a 15/255 step, i.e. a fainter rectangle in place of the first one.
+           With two layers there is no third option: a partial overlap is a double-painted band and a
+           partial gap is a transparent one. The boundary has to be EXACT.
+
+           So the fine image's box is snapped OUTWARD onto the far raster's cell boundaries. Every far
+           cell is then wholly inside the box (skipped, the fine image draws it) or wholly outside
+           (painted) — the union is a tiling, with no cell drawn twice and none dropped. The box grows
+           by at most one 28 km cell, which only means a little more terrain-driven field.
+           ⚠ THE OTHER HALF OF THIS IS `raster-resampling:'nearest'` ON THE FAR LAYER (see paintFar):
+           an exact tiling still fades if the sampler interpolates towards the transparent texel.
+
+           MEASURED AFTER, same transect, z3:  …141,254,255 │ 142,253,255 │ 144,251,255…  — the largest
+           step anywhere across the seam is 2/255 and no basemap shows through. At z6.5 the two rasters
+           were also isolated layer by layer: north of the edge only the far paints, south of it only
+           the fine, and there is no band where both do.
+           ⚠ HONEST RESIDUAL: on the NORTH and SOUTH edges only (the east/west seam is exact at every
+           zoom) MapLibre draws this raster about 0.18 of a texel high, which leaves a hairline of
+           ~1.4 km — 1 device pixel at z4, 17 at z8. It is a sub-texel registration in the renderer, not
+           in the data (the snap is exact: `(mY(Nn)-mY(85))/dyF` = 418.000, and MapLibre's own
+           MercatorCoordinate agrees), and every alternative measured worse: a one-cell overlap makes a
+           15/255 double-painted band 92 pixels wide at the same zoom, and `linear` makes the fade this
+           round removed. Written down rather than left to be re-discovered. */
+        const _fN=FAR_N(), _fdx=360/_fN, _fy0=mY(85), _fdy=(mY(-85)-_fy0)/_fN;
+        const snapLngFar=(v,out)=>{ const k=(v+180)/_fdx; return -180+(out<0?Math.floor(k):Math.ceil(k))*_fdx; };
+        /* mercator y grows SOUTHWARD, so the northern edge floors its row index and the southern one
+           ceils it; both are clamped to the raster's own ±85° extent. */
+        const snapLatFar=(v,out)=>{ const k=(mY(Math.max(-85,Math.min(85,v)))-_fy0)/_fdy;
+          const r=Math.max(0,Math.min(_fN,out>0?Math.floor(k):Math.ceil(k)));
+          return latOfY(_fy0+r*_fdy); };
+        const W=snapLngFar(C0[0]-dLng,-1), E=snapLngFar(C0[0]+dLng,+1);
+        const Nn=snapLatFar(Math.min(85,C0[1]+dLat),+1), Ss=snapLatFar(Math.max(-85,C0[1]-dLat),-1);
         /* (#R190) MORE CELLS. 176 across a 2,000 km field is an 11 km cell, which is coarser than the
            terrain the site term is read off — the picture was quantised well below the information in
            it. 288 on desktop is 2.7× the cells for 2.7× the work, which the ms figure in the panel
@@ -2776,44 +2851,42 @@ window.IntMapModules.seismic=function(HOST){
            A round accent play/pause, a scrubber whose elapsed half is filled, the two times under its
            ends, and the rate as a segmented pill. `accent-color` paints the native range's fill in
            Chromium/Safari/Firefox alike; the thumb is styled for the two engines that need it. */
-        '.sq-player{display:flex;flex-direction:column;gap:9px;}',
-        /* (#R243) the line that says what the transport plays — 「わかりやすい」 half of the report */
-        '.sq-pl-cap{font-size:'+FS_S+';color:var(--text-muted);letter-spacing:.01em;}',
-        /* ══ ⚠ (#R244) 「再生ボタンはもっとシンプルな洗練されたUIにしろ。」 ═══════════════════════════
-           #R242 made it a 40 px disc, #R243 made it 58 px with a 74 px ring and a coloured glow —
-           each round added weight to the same control, and the report now asks for the opposite.
-           What is left is what the transport actually needs: ONE flat accent disc at 46 px, the two
-           jumps as bare glyphs rather than filled pills, and no ring, no drop shadow, no glow. The
-           cluster keeps its geometry and every class and handler is untouched — this is a lighter
-           skin on the same three buttons, not a different transport. */
-        '.sq-pl-top{display:flex;align-items:center;justify-content:center;gap:22px;padding:1px 0 2px;}',
-        '.sq-play{flex:0 0 auto;width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;'
-          +'background:var(--primary-color);color:#fff;display:flex;align-items:center;justify-content:center;'
-          +'transition:transform .14s cubic-bezier(0.2,0.7,0.2,1),filter .12s ease;padding:0;}',
-        '.sq-play svg{width:20px;height:20px;}',
-        '.sq-play:active{transform:scale(0.93);}',
-        '.sq-play:hover{filter:brightness(1.07);}',
-        /* ⚠ NOT `--text-muted`. #R234's rule — 「必須ではない限り灰色を使わないように」 — is a ratchet
-           on the number of grey sites in this panel, and a transport button is not window chrome.
-           The lighter weight the simpler look wants is the SAME ink at less opacity. */
-        '.sq-pl-jump{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;padding:0;'
-          +'background:transparent;color:var(--text-main);opacity:.55;display:flex;align-items:center;justify-content:center;'
-          +'transition:transform .14s ease,opacity .12s ease;}',
+        /* ══ ⚠⚠⚠ (#R245) 「再生ボタンは音楽プレーヤー風ではなく、もっとシンプルな洗練されたUIにしろ。」
+           Three rounds styled the SAME media transport (#R242 Music, #R243 Podcasts, #R244 a lighter
+           disc inside it). The idiom itself is what is being rejected, so the geometry goes: no
+           centred ⏮ ▶ ⏭ cluster, no filled accent disc, no chip strip. One row — a 32 px glyph
+           button, the scrubber, the time — then a quiet meta line and the panel's own segmented
+           control for the rate. Every class and handler is unchanged (see the note in render()). */
+        '.sq-player{display:flex;flex-direction:column;gap:7px;}',
+        '.sq-pl-row{display:flex;align-items:center;gap:10px;}',
+        /* ⚠ NOT `--text-muted`, and not a filled disc. #R234's rule 「必須ではない限り灰色を使わない」
+           still holds, and the accent belongs to the button that COMPUTES (the pinned footer); a
+           playback toggle is the same ink at a lighter weight. */
+        '.sq-play{flex:0 0 auto;width:32px;height:32px;border-radius:9px;border:none;cursor:pointer;'
+          +'background:var(--input-bg);color:var(--text-main);display:flex;align-items:center;justify-content:center;'
+          +'transition:transform .12s ease,background .12s ease;padding:0;}',
+        '.sq-play svg{width:15px;height:15px;}',
+        '.sq-play.on{background:var(--primary-color);color:#fff;}',
+        '.sq-play:active{transform:scale(0.94);}',
+        '.sq-pl-meta{display:flex;align-items:center;gap:8px;font-size:'+FS_S+';}',
+        '.sq-pl-cap{flex:1;min-width:0;color:var(--text-muted);letter-spacing:.01em;}',
+        '.sq-pl-jumps{flex:0 0 auto;display:flex;gap:6px;}',
+        /* a WORD, not a transport glyph — this is the line that stops the block reading as a player */
+        '.sq-pl-jump{border:none;background:transparent;color:var(--text-main);opacity:.6;cursor:pointer;'
+          +'font-size:'+FS_S+';padding:2px 0;line-height:1.2;}',
+        '.sq-pl-jump+.sq-pl-jump{border-left:1px solid var(--glass-border,rgba(128,128,128,0.28));padding-left:8px;}',
         '.sq-pl-jump:hover{opacity:1;}',
-        '.sq-pl-jump:active{transform:scale(0.92);}',
-        '.sq-pl-bar{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}',
-        '.sq-pl-bar input[type=range]{width:100%;margin:0;height:22px;background:transparent;'
+        '.sq-pl-row input[type=range]{flex:1;min-width:0;margin:0;height:22px;background:transparent;'
           +'accent-color:var(--primary-color);cursor:pointer;-webkit-appearance:none;appearance:none;}',
-        '.sq-pl-bar input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;'
+        '.sq-pl-row input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;'
           +'background:rgba(128,128,128,0.28);}',
-        '.sq-pl-bar input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;'
-          +'width:15px;height:15px;border-radius:50%;background:#fff;border:none;margin-top:-5px;'
-          +'box-shadow:0 1px 4px rgba(0,0,0,0.32);}',
-        '.sq-pl-bar input[type=range]::-moz-range-track{height:5px;border-radius:3px;background:rgba(128,128,128,0.28);}',
-        '.sq-pl-bar input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-radius:50%;'
-          +'background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.32);}',
-        '.sq-pl-times{display:flex;justify-content:space-between;font-size:'+FS_S+';'
-          +'font-variant-numeric:tabular-nums;color:var(--text-muted);}',
+        '.sq-pl-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;'
+          +'width:14px;height:14px;border-radius:50%;background:#fff;border:none;margin-top:-5px;'
+          +'box-shadow:0 1px 3px rgba(0,0,0,0.3);}',
+        '.sq-pl-row input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:rgba(128,128,128,0.28);}',
+        '.sq-pl-row input[type=range]::-moz-range-thumb{width:14px;height:14px;border:none;border-radius:50%;'
+          +'background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);}',
+        '.sq-pl-times{flex:0 0 auto;font-size:'+FS_S+';font-variant-numeric:tabular-nums;color:var(--text-muted);}',
         '.sq-pl-times .sq-tv{color:var(--text-main);font-weight:600;}',
         '.sq-sites{border-collapse:collapse;width:100%;table-layout:auto;}',
         '.sq-sites th,.sq-sites td{padding:1px 3px;}',
@@ -2843,12 +2916,11 @@ window.IntMapModules.seismic=function(HOST){
           +'font-variant-numeric:tabular-nums;box-sizing:border-box;}',
         '.sq-pl-spd{display:flex;align-items:center;gap:8px;}',
         '.sq-pl-spdl{flex:0 0 auto;font-size:'+FS_S+';color:var(--text-muted);}',
-        '.sq-pl-chips{flex:1;min-width:0;display:flex;gap:3px;background:var(--input-bg);border-radius:9px;'
-          +'padding:3px;overflow-x:auto;scrollbar-width:none;}',
-        '.sq-pl-chips::-webkit-scrollbar{display:none;}',
-        '.sq-spdc{flex:1 0 auto;border:none;background:transparent;color:var(--text-main);cursor:pointer;'
-          +'font-size:'+FS_S+';font-variant-numeric:tabular-nums;padding:5px 8px;border-radius:7px;line-height:1.2;}',
-        '.sq-spdc.on{background:var(--primary-color);color:#fff;font-weight:600;}',
+        /* (#R245) the rate rides the panel's OWN segmented control (`.sq-segwrap`/`.sq-seg`) — the
+           bespoke chip strip was the last media-player part of this block. Only the numerals need
+           anything of their own. */
+        '.sq-pl-chips{flex:1;min-width:0;}',
+        '.sq-spdc{font-variant-numeric:tabular-nums;}',
         /* ══ (#R242) 「Open the tsunami simulatorを（洗練されたボタンを保ちながら）もっと目立たせろ」 ═════
            It was a tinted outline among five other tinted rows. Now it is the only FILLED element in
            the result card — the ocean gradient, a 48 px target, its own glyph in a translucent disc,
@@ -3196,7 +3268,18 @@ window.IntMapModules.seismic=function(HOST){
         +(evNow?('<button class="sq-ev-x" title="'+L('Clear the loaded earthquake','読み込んだ地震を解除','Geladenes Beben entfernen','Убрать загруженное землетрясение','Quitar el terremoto cargado')+'" aria-label="'+L('Clear the loaded earthquake','読み込んだ地震を解除','Geladenes Beben entfernen','Убрать загруженное землетрясение','Quitar el terremoto cargado')+'">✕</button>'):'')
         +'</div>'
         +(evNow?('<div class="sq-ev-obs sq-blk" style="font-size:'+FS_S+';line-height:1.55;color:var(--text-main);border-left:2px solid var(--primary-color);">'+evObsHtml(evNow)+'</div>'):'')
-        +'</div></div>'
+        /* ══ ⚠⚠⚠ (#R245) THREE CLOSERS, NOT TWO — THIS IS WHY THE FOOTER WAS NEVER PINNED ═══════════
+           「ポップアップ時に震度分布を計算が下部スティックになっていない。」
+           Card 1 opens THREE boxes — its own wrapper, `.sq-card`, and `.sq-ev-wrap` — and closed two.
+           An unbalanced innerHTML does not throw: the parser simply keeps card 1's wrapper open, so
+           cards 2…6 were nested INSIDE card 1, and the final `</div>` at the end of card 6 (which was
+           written for `.sq-body`) closed that wrapper instead. `.sq-body` therefore never closed
+           either, and `_flowFoot()` — the whole point of which is that it sits OUTSIDE the scroller
+           (#R240) — was appended INTO it. MEASURED on the shipped build (desktop, 720 px tall):
+           panel 80…706, `.sq-body` 121…705, `.sq-foot` **1510…1580** — 800 px below the panel, i.e.
+           it scrolled with the cards exactly like every other row. The pinned footer has never been
+           pinned since #R240 created it; it is one `</div>`. */
+        +'</div></div></div>'
         /* ══ ⚠⚠⚠ (#R243) A LOADED EARTHQUAKE IS NOT A THING YOU CONFIGURE ══════════════════════════
            「過去・最近の地震から選択した場合、ユーザーが自ら設定する類のUiは全部消すように。」
            Confirmed with the reader: 「震度階級の選択以外、2,3は隠す」.
@@ -3405,20 +3488,39 @@ window.IntMapModules.seismic=function(HOST){
            ⚠ `.sq-play`, `.sq-t`, `.sq-spd` and `.sq-tv` keep their classes and their handlers; the two
            new buttons write to the SAME `tl` input and fire its `input` event, so they go through the
            one scrub path rather than moving time themselves. */
+        /* ══ ⚠⚠⚠ (#R245) NOT A MEDIA PLAYER — 「再生ボタンは音楽プレーヤー風ではなく、もっとシンプルな
+              洗練されたUIにしろ。」 ══════════════════════════════════════════════════════════════════
+           #R242 built «the transport in Music», #R243 rebuilt it as «the transport in Podcasts», and
+           #R244 flattened the disc inside that same arrangement. All three kept the IDIOM the report
+           now names: a caption over a scrubber with a time at each end, a CENTRED ⏮ ▶ ⏭ cluster, and
+           the rate as media-player chips. That cluster is what «音楽プレーヤー風» is; making the disc
+           lighter cannot stop a three-button transport reading as one.
+           So the arrangement goes back to what this panel uses for everything else — a labelled row
+           in a grouped inset card:
+             · ONE line: a 32 px play/pause with no filled disc, the scrubber, and the elapsed time;
+             · the caption and the two jumps as small TEXT buttons (a word is not a transport glyph);
+             · the rate on `.sq-segwrap`, the segmented control every other row in this panel uses,
+               instead of a bespoke chip strip.
+           ⚠ EVERY CLASS AND HANDLER IS UNCHANGED — `.sq-play`, `.sq-t`, `.sq-tv`, `.sq-pl-jump`
+           (with its `data-to`), `.sq-spdc` and the hidden `.sq-spd` select are all still here and
+           still wired by the same block below. This is the same mechanism in the panel's own
+           vocabulary, not a second one. */
         +'<div class="sq-player sq-blk">'
-          +'<div class="sq-pl-cap">'+L('Wave propagation','波の伝播','Wellenausbreitung','Распространение волн','Propagación de las ondas')+'</div>'
-          +'<div class="sq-pl-bar">'
-            +'<input type="range" class="sq-t" min="0" max="'+MAXT+'" step="0.01" value="'+tSec+'" aria-label="'+L('Time since the rupture began','破壊開始からの経過時間','Zeit seit Bruchbeginn','Время от начала разрыва','Tiempo desde el inicio de la ruptura')+'">'
-            +'<div class="sq-pl-times"><span class="sq-tv">'+fmtT(tSec)+'</span><span class="sq-pl-tot">'+fmtT(MAXT)+'</span></div>'
-          +'</div>'
-          +'<div class="sq-pl-top">'
-            +'<button class="sq-pl-jump sq-pl-start" data-to="0" aria-label="'+L('Back to the start','先頭に戻す','Zum Anfang','К началу','Al principio')+'" title="'+L('Back to the start','先頭に戻す','Zum Anfang','К началу','Al principio')+'">'+SVG_START+'</button>'
+          +'<div class="sq-pl-row">'
             +'<button class="sq-play" aria-label="'+L('Play','再生','Abspielen','Воспроизвести','Reproducir')+'" title="'+L('Play','再生','Abspielen','Воспроизвести','Reproducir')+'">'+SVG_PLAY+'</button>'
-            +'<button class="sq-pl-jump sq-pl-end" data-to="'+MAXT+'" aria-label="'+L('Jump to the end','最後へ','Zum Ende','В конец','Al final')+'" title="'+L('Jump to the end','最後へ','Zum Ende','В конец','Al final')+'">'+SVG_END+'</button>'
+            +'<input type="range" class="sq-t" min="0" max="'+MAXT+'" step="0.01" value="'+tSec+'" aria-label="'+L('Time since the rupture began','破壊開始からの経過時間','Zeit seit Bruchbeginn','Время от начала разрыва','Tiempo desde el inicio de la ruptura')+'">'
+            +'<span class="sq-pl-times"><b class="sq-tv">'+fmtT(tSec)+'</b> / <span class="sq-pl-tot">'+fmtT(MAXT)+'</span></span>'
+          +'</div>'
+          +'<div class="sq-pl-meta">'
+            +'<span class="sq-pl-cap">'+L('Wave propagation','波の伝播','Wellenausbreitung','Распространение волн','Propagación de las ondas')+'</span>'
+            +'<span class="sq-pl-jumps">'
+              +'<button class="sq-pl-jump sq-pl-start" data-to="0">'+L('Back to the start','先頭に戻す','Zum Anfang','К началу','Al principio')+'</button>'
+              +'<button class="sq-pl-jump sq-pl-end" data-to="'+MAXT+'">'+L('Jump to the end','最後へ','Zum Ende','В конец','Al final')+'</button>'
+            +'</span>'
           +'</div>'
           +'<div class="sq-pl-spd" role="group" aria-label="'+L('Playback speed','再生速度','Wiedergabegeschwindigkeit','Скорость воспроизведения','Velocidad de reproducción')+'">'
             +'<span class="sq-pl-spdl">'+L('Speed','速度','Tempo','Скорость','Velocidad')+'</span>'
-            +'<div class="sq-pl-chips">'+SPEEDS.map(v=>'<button class="sq-spdc'+(v===speed?' on':'')+'" data-spd="'+v+'">×'+v+'</button>').join('')+'</div>'
+            +'<div class="sq-segwrap sq-pl-chips">'+SPEEDS.map(v=>'<button class="sq-seg sq-spdc'+(v===speed?' on':'')+'" data-spd="'+v+'">×'+v+'</button>').join('')+'</div>'
           +'</div>'
           /* the <select> the handler below reads stays, hidden — one source of truth for the rate */
           +'<select class="sq-spd" style="display:none;">'+SPEEDS.map(v=>'<option value="'+v+'"'+(v===speed?' selected':'')+'>×'+v+'</option>').join('')+'</select>'
@@ -3469,12 +3571,22 @@ window.IntMapModules.seismic=function(HOST){
              必要な備えをしておきましょう。という趣旨も盛り込んで。」 An intensity map invites exactly
            the reading it cannot support — 「うちは VI だから大丈夫」 — so the notice now denies the
            forecast outright and says the one thing that is true either way. */
+        /* ══ ⚠ (#R245) THE SAME FOUR THINGS, SAID IN FOUR SHORT SENTENCES ═══════════════════════════
+           「…これは文言を整えて。」 #R244 wrote the third clause as 「これらのシミュレーションは被害が
+           ある／ないを予想するものではありません。いずれにせよ、…」 — a subject that names the machinery
+           rather than the reading it is denying, an ある／ない that has to be parsed, and a filler
+           connective. Four flat sentences instead: what this is, what to do in a real emergency, what
+           the picture is NOT, and the one thing that is true either way. Nothing is dropped.
+           ⚠ THE ENGLISH STRING IS THE KEY the inline tables are stored under (js/locales/ui.*.js), so
+           rewording it silently drops fr/ko/zh/zh-Hans back to English unless they are re-keyed in the
+           same change — they are (scripts/i18n/r245-a.json). #R235 wrote that warning; this is the
+           first round to change the sentence since. */
         +'<div style="font-size:'+FS_S+';color:#ffd23f;line-height:1.5;">⚠ '
-        +L('Educational model — in a real emergency follow the official authorities. These simulations do not predict whether damage will or will not occur; either way, keep the preparations you would need ready as a matter of routine.',
-           '教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。これらのシミュレーションは被害がある／ないを予想するものではありません。いずれにせよ、普段から必要な備えをしておきましょう。',
-           'Bildungsmodell — im Ernstfall den Behörden folgen. Diese Simulationen sagen nicht voraus, ob Schäden entstehen oder nicht; treffen Sie in jedem Fall im Alltag die nötigen Vorkehrungen.',
-           'Учебная модель — в реальной ситуации следуйте указаниям властей. Эти расчёты не предсказывают, будут разрушения или нет; в любом случае держите необходимые запасы и план наготове.',
-           'Modelo educativo — en una emergencia real siga a las autoridades. Estas simulaciones no predicen si habrá daños o no; en cualquier caso, mantenga siempre preparado lo necesario.')
+        +L('An educational model. In a real emergency, follow the instructions of the official authorities. It does not predict whether damage will occur. Keep your everyday preparations ready.',
+           '教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。被害の有無を予測するものではありません。日ごろから備えておきましょう。',
+           'Ein Bildungsmodell. Folgen Sie im Ernstfall den Anweisungen der Behörden. Es sagt nicht voraus, ob Schäden entstehen. Treffen Sie im Alltag die nötigen Vorkehrungen.',
+           'Учебная модель. В реальной ситуации следуйте указаниям официальных служб. Она не предсказывает, будут ли разрушения. Держите повседневные запасы наготове.',
+           'Un modelo educativo. En una emergencia real, siga las indicaciones de las autoridades oficiales. No predice si habrá daños. Mantenga preparado a diario lo necesario.')
         +'</div>'
         +'<div class="sq-card"><details class="sq-meth" style="font-size:'+FS_S+';color:var(--text-main);line-height:1.5;">'
         +'<summary style="cursor:pointer;color:var(--text-main);font-size:'+FS_S+';list-style:revert;">'

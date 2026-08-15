@@ -115,8 +115,12 @@ test('R242 ④ the observation cities are drawn on the map', () => {
 
 test('R242 ④ the transport is a player and the tsunami hand-off is the loud thing in the card', () => {
   const c = code(read('js/seismic.js'));
-  assert.ok(/class="sq-player/.test(c) && /SVG_PLAY/.test(c) && /class="sq-spdc/.test(c),
-    'round play/pause, a real scrubber and a segmented rate');
+  /* ⚠ (#R245) 「再生ボタンは音楽プレーヤー風ではなく…」 — the three-button transport cluster is gone and
+     the rate rides the panel's own `.sq-segwrap`, so the classes moved. What this line has always
+     been about survives and is what is checked: ONE play/pause with a real glyph, a real scrubber,
+     and a segmented rate rather than a dropdown. */
+  assert.ok(/class="sq-player/.test(c) && /SVG_PLAY/.test(c) && /sq-seg sq-spdc/.test(c),
+    'one play/pause, a real scrubber and a segmented rate');
   assert.ok(!/class="sq-play sq-btn"/.test(c), 'the old 36 px text button must be gone');
   /* ⚠ (#R244) 「Open the tsunami simulatorにはマークを使うな。」 — the glyph in its translucent disc is
      gone (tests/r244 ④ pins that it stays gone). What THIS line has always been about survives: the
