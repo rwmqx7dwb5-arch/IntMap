@@ -15,7 +15,9 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 test('R192 aircraft: one size ramp, read by the glyph and by the lifted body', () => {
   const s = read('js/data-layers.js');
   /* the ramp is stated ONCE — the defect was two independent numbers that drifted */
-  assert.match(s, /const _PLANE_SIZE=\[\[2,0\.4\],\[5,0\.58\],\[9,0\.78\]\];/, 'the original ramp, as data');
+  /* (#R247) the same three stops, scaled 1.25x — see tests/r187-checks. What this file pins is that
+     there is exactly ONE table and that both renderings read it, which is unaffected by its scale. */
+  assert.match(s, /const _PLANE_SIZE=\[\[2,0\.5\],\[5,0\.725\],\[9,0\.975\]\];/, 'the ramp, as data');
   assert.match(s, /'icon-size':_planeIconSizeExpr\(\)/, 'the symbol layer builds its expression from it');
   assert.match(s, /const iconHalfPx=19\*_planeIconSize\(GE\(\)\.camera\.getZoom\(\)\);/,
     'and the lifted body evaluates the same ramp at the same zoom');

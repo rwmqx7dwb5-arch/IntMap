@@ -3202,7 +3202,12 @@ window.IntMapModules.dataLayers=function(HOST){
        This is the ramp — the original one, restored by #R187 — stated ONCE: the symbol layer builds
        its `icon-size` expression from it and the extrusion evaluates it at the current zoom, so
        "the same mark" is true by construction rather than by two matching constants. */
-    const _PLANE_SIZE=[[2,0.4],[5,0.58],[9,0.78]];
+    /* ⚠ (#R247) 「Live aircraft trafficで航空機の大きさを少し大きく。」 — 1.25× at every stop, so the
+       ramp's SHAPE (how the mark grows with zoom) is untouched and only its scale moves. Because
+       both renderings read this one table — the symbol layer builds `icon-size` from it and the
+       lifted body evaluates it for its metres of ground — the flat glyph and the 3-D body grow by
+       exactly the same factor, which is the whole reason #R192 stated the ramp once. */
+    const _PLANE_SIZE=[[2,0.5],[5,0.725],[9,0.975]];
     function _planeIconSize(z){
       const t=_PLANE_SIZE; const zz=(+z||0);
       if(zz<=t[0][0]) return t[0][1];
