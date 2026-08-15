@@ -245,6 +245,10 @@ for (const [full, rel] of files) {
       const en = aJa ? b.value : a.value, ja = aJa ? a.value : b.value;
       if (!isProse(en)) continue;
       const rec = { file: rel, line: node.loc.start.line, what,
+        /* (#R250) `text` is for the terminal and is TRUNCATED; `en`/`ja` are the strings themselves,
+           for a caller that has to translate them. The two were one field, and the one field was cut
+           at 110 characters — so every prose string longer than that came out of --json unusable. */
+        en, ja,
         text: (JSON.stringify(en) + ', ' + JSON.stringify(ja)).slice(0, 110) };
       /* ⚠⚠ (#R249) A MATCH-TERM LIST IS NOT UI, AND IT IS NOT ALWAYS SLOT 0. #R248 wrote this
          exemption for `_ORG_GZ` — `[[…terms…], lng, lat, nameEn, nameJp]` — and checked only
@@ -281,7 +285,11 @@ if (process.argv.includes('--json')) {
   process.stdout.write(JSON.stringify({
     total: hits.length,
     files: [...byFile.entries()].sort((a, b) => b[1] - a[1]).map(([f, n]) => ({ file: f, n })),
-    hits: hits.slice(0, 400),
+    /* ⚠ (#R250) NOT TRUNCATED. This was `hits.slice(0, 400)` — a silent cap on the very list a
+       round is supposed to work through, in a file whose own header says an exemption nobody can
+       see is an exemption nobody re-examines (#R249). 696 hits came back as 400 and the difference
+       was invisible. #R185's rule: no silent caps. */
+    hits,
     /* (#R249) never gated, ALWAYS printed — an exemption nobody can see is an exemption nobody
        re-examines, which is how a matcher list became «2,031 strings to translate». */
     exempt: exempt.length,
