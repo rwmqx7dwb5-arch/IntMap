@@ -187,10 +187,17 @@ test('R236 i18n: the Köppen criteria are given in all five languages', () => {
   assert.doesNotMatch(s, /HOST\.lang==='jp'\?info\.jp:info\.en/, 'the two-language pick is gone');
   assert.match(s, /function koppenCriteria\(code\)\{[\s\S]*?const T5=\(a\)=>window\.IntMapLang\.t\(/,
     'the criteria go through the registry');
-  /* all nineteen rows carry five columns */
+  /* all nineteen rows carry five columns.
+     ⚠ (#R248) UPDATED FOR THE CONTAINER, NOT FOR THE COUNT. These rows were array LITERALS; the
+     twelfth shape's codemod rewrote each one as `LA(…)` — byte-identical data (pickArgs returns its
+     arguments) that is also an ordinary call site, which is what lets the inline table reach
+     fr/ko/zh/zh-Hans. The thing this test is about — nineteen rows, five languages each — is
+     unchanged and still asserted; only the brackets moved. */
   const body = s.slice(s.indexOf('function koppenCriteria'), s.indexOf('function showKoppenInfo'));
-  const rows = [...body.matchAll(/\[('(?:[^'\\]|\\.)*'\s*,\s*){4}'(?:[^'\\]|\\.)*'\]/g)];
+  const rows = [...body.matchAll(/LA\(('(?:[^'\\]|\\.)*'\s*,\s*){4}'(?:[^'\\]|\\.)*'\)/g)];
   assert.equal(rows.length, 19, 'five main classes and fourteen sub-codes, five languages each');
+  assert.doesNotMatch(body, /\[('(?:[^'\\]|\\.)*'\s*,\s*){4}'(?:[^'\\]|\\.)*'\]/,
+    'and none of them is a bare array any more, or no instrument would see it');
 });
 
 /* ── 5 · one picker, two sources ─────────────────────────────────────────────────────────────── */

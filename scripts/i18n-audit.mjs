@@ -173,8 +173,12 @@ console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.tot
   + `\ntitle / aria-label / placeholder / alt with NO key at all: ${attrs.total}`
   + (attrs.total ? '\n    ' + [...new Set(attrs.findings.map((f) => f.text))].slice(0, 20).join('\n    ')
       + '\n    (node scripts/i18n-attr-audit.mjs lists every one, with its line)' : '')
-  /* (#R241) the seventh surface — see the note by `arrays` above */
-  + `\ntranslation tuples held as data instead of as a call: ${arrays.hits.length}`
+  /* (#R241) the seventh surface — see the note by `arrays` above.
+     (#R248) …and the FOURTEENTH shape now reports here too, because it is the same table: a
+     language→POSITION map written as a ternary chain rather than as an object. Six readers in three
+     files were reading tuples that way, i.e. subscripting the array directly and never asking the
+     registry, so fr/ko/zh/zh-Hans took arm `0` — English — with no inline fallback possible. */
+  + `\ntranslation tuples held as data instead of as a call (incl. language→index chains): ${arrays.hits.length}`
   + (arrays.hits.length ? '\n    ' + arrays.hits.slice(0, 20).map((h) => `${h.file}:${h.line}  ${h.text}`).join('\n    ')
       + '\n    (node scripts/i18n-positional-array-audit.mjs lists every one)' : '')
   /* ══ ⚠ (#R243) THE NINTH SURFACE IS A GATE NOW, AND THE OPEN GAP IS CLOSED ══════════════════════

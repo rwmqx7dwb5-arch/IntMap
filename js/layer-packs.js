@@ -469,7 +469,7 @@ window.IntMapModules.betaPack2=function(HOST){
       const a=()=>{ if(!ptEnsure('dc','dc-src',['dc-pt','dc-lbl'])){ GE().events.once('idle',a); return; }
         load('dc',fc=>{ try{ GE().layers.setSourceData('dc-src',fc); }catch(_){} }); setVis(['dc-pt','dc-lbl'],on); };
       a();
-      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('dc2',['Data centers & AI infra','データセンター・AIインフラ'],['dc-pt','dc-lbl'],'beta-dl-dc');
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('dc2',LA('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infraestructura de IA'),['dc-pt','dc-lbl'],'beta-dl-dc');
             if(el&&!el.querySelector('.dc-key')){ const k=document.createElement('div'); k.className='dc-key'; k.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
               k.innerHTML=[['aws','AWS'],['azure','Azure'],['gcp','Google Cloud'],['ai',window.IntMapLang.t(HOST.lang,"AI superclusters","AIスーパークラスター","KI-Supercluster","ИИ-суперкластеры","Superclústeres de IA")]].map(([t,l])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:6px;flex:none;background:'+DC_COL[t]+';"></span>'+l+'</div>').join('');
               el.appendChild(k); } }
@@ -479,7 +479,7 @@ window.IntMapModules.betaPack2=function(HOST){
       const a=()=>{ if(!ptEnsure('pharma','ph-src',['ph-pt','ph-lbl'])){ GE().events.once('idle',a); return; }
         load('pharma',fc=>{ try{ GE().layers.setSourceData('ph-src',fc); }catch(_){} }); setVis(['ph-pt','ph-lbl'],on); };
       a();
-      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('ph2',['Pharma manufacturing hubs','製薬・医薬品製造拠点'],['ph-pt','ph-lbl'],'beta-dl-pharma');
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('ph2',LA('Pharma manufacturing hubs','製薬・医薬品製造拠点','Pharma-Produktionsstandorte','Центры фармацевтического производства','Centros de fabricación farmacéutica'),['ph-pt','ph-lbl'],'beta-dl-pharma');
             if(el&&!el.querySelector('.ph-note')){ const d=document.createElement('div'); d.className='ph-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=window.IntMapLang.t(HOST.lang,"Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.","主要な製薬企業の本社・製造クラスター（代表地点）。平均寿命レイヤーと併用を。","Zentralen und Produktionscluster großer Pharmaunternehmen (repräsentative Standorte). Passt zur Ebene Lebenserwartung.","Штаб-квартиры и производственные кластеры крупных фармкомпаний (репрезентативные точки). Хорошо сочетается со слоем ожидаемой продолжительности жизни.","Sedes y clústeres de fabricación de las grandes farmacéuticas (puntos representativos). Combina con la capa de esperanza de vida."); el.appendChild(d); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('ph2'); }catch(_){}
     }
@@ -497,7 +497,7 @@ window.IntMapModules.betaPack2=function(HOST){
       /* (#R21) phones: toggling OFF releases the ~25k-feature parsed geojson + source copy (same
          OOM-pressure policy as ecoregions); it lazily re-fetches on the next toggle. */
       if(!on&&typeof isMobile==='function'&&isMobile()){ try{ if(GE().layers.has('rail-ln')) GE().layers.remove('rail-ln'); if(GE().layers.hasSource('rail-src')) GE().layers.removeSource('rail-src'); }catch(_){} cache.rail=null; }
-      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('rail2',['World railways (by gauge)','世界の鉄道（軌間別）'],['rail-ln'],'beta-dl-rail');
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('rail2',LA('World railways (by gauge)','世界の鉄道（軌間別）','Eisenbahnen weltweit (nach Spurweite)','Железные дороги мира (по колее)','Ferrocarriles del mundo (por ancho de vía)'),['rail-ln'],'beta-dl-rail');
             if(el&&!el.querySelector('.rail-key')){ const k=document.createElement('div'); k.className='rail-key'; k.style.cssText='display:flex;flex-direction:column;gap:3px;margin-top:6px;font-size:11px;color:var(--text-main);';
               k.innerHTML=RAIL_LBL.map(([g,ja,en])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:3px;border-radius:2px;flex:none;background:'+RAIL_COL[g]+';"></span>'+(jp()?ja:en)+'</div>').join('')+
                 '<div style="font-size:10px;color:var(--text-muted);margin-top:3px;">'+(window.IntMapLang.t(HOST.lang,"Classified by each country’s predominant gauge (Natural Earth 10m)","各国の主流軌間で分類（Natural Earth 10m）","Nach der vorherrschenden Spurweite je Land klassifiziert (Natural Earth 10m)","Классифицировано по преобладающей колее каждой страны (Natural Earth 10m)","Clasificado por el ancho de vía predominante de cada país (Natural Earth 10m)"))+'</div>';
@@ -510,28 +510,28 @@ window.IntMapModules.betaPack2=function(HOST){
     const WB={cpi:{ind:'GOV_WGI_CC.SC',date:'2023',q:'&source=3',ids:['wb-cpi-f','wb-cpi-l'],src:'wb-cpi',
         ramp:['interpolate',['linear'],['get','s'],10,'#a50026',30,'#f46d43',50,'#fee08b',70,'#74c476',90,'#1a9850'],
         score:v=>Math.max(0,Math.min(100,v)),
-        nm:['Corruption (control, WGI)','汚職・腐敗指標（世界銀行WGI）'],
+        nm:LA('Corruption (control, WGI)','汚職・腐敗指標（世界銀行WGI）','Korruptionskontrolle (WGI)','Контроль коррупции (WGI)','Control de la corrupción (WGI)'),
         note:()=>window.IntMapLang.t(HOST.lang,"World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.","世界銀行ガバナンス指標「腐敗の統制」スコア（0–100、高い=クリーン）。TIのCPIに相当する公開API系指標。","Weltbank-WGI-Wert „Korruptionskontrolle“ (0–100, höher = sauberer) — das Open-API-Gegenstück zum CPI von TI.","Показатель Всемирного банка WGI «Контроль коррупции» (0–100, выше = чище) — аналог CPI от TI с открытым API.","Puntuación WGI del Banco Mundial «Control de la corrupción» (0–100, más alto = más limpio): el equivalente con API abierta al IPC de TI.")},
       lifeexp:{ind:'SP.DYN.LE00.IN',date:'2022',q:'',ids:['wb-le-f','wb-le-l'],src:'wb-le',
         ramp:['interpolate',['linear'],['get','s'],52,'#a50026',62,'#f46d43',70,'#fee08b',78,'#74add1',85,'#313695'],
         score:v=>v,
-        nm:['Life expectancy (years)','平均寿命（年）'],
+        nm:LA('Life expectancy (years)','平均寿命（年）','Lebenserwartung (Jahre)','Ожидаемая продолжительность жизни (лет)','Esperanza de vida (años)'),
         note:()=>window.IntMapLang.t(HOST.lang,"Life expectancy at birth (World Bank, 2022).","出生時平均余命（世界銀行 2022）。","Lebenserwartung bei Geburt (Weltbank, 2022).","Ожидаемая продолжительность жизни при рождении (Всемирный банк, 2022).","Esperanza de vida al nacer (Banco Mundial, 2022).")},
       /* (#R22) New beta choropleths — all live World Bank, keyless + CORS, latest value per country. */
       unemp:{ind:'SL.UEM.TOTL.ZS',date:'',q:'&mrnev=1',ids:['wb-unemp-f','wb-unemp-l'],src:'wb-unemp',
         ramp:['interpolate',['linear'],['get','s'],2,'#1a9850',5,'#a6d96a',9,'#fee08b',15,'#f46d43',25,'#a50026'],
         score:v=>v, fmt:v=>(+v).toFixed(1)+'%',
-        nm:['Unemployment rate (%)','失業率（%）'],
+        nm:LA('Unemployment rate (%)','失業率（%）','Arbeitslosenquote (%)','Уровень безработицы (%)','Tasa de desempleo (%)'),
         note:()=>window.IntMapLang.t(HOST.lang,"Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).","失業率（労働力人口比、ILO推計・世界銀行、最新年）。","Arbeitslosenquote insgesamt (% der Erwerbsbevölkerung; ILO-Modellrechnung / Weltbank, letztes Jahr).","Уровень безработицы, всего (% рабочей силы; модель МОТ / Всемирный банк, последний год).","Desempleo total (% de la población activa; estimación modelada OIT / Banco Mundial, último año).")},
       internet:{ind:'IT.NET.USER.ZS',date:'',q:'&mrnev=1',ids:['wb-internet-f','wb-internet-l'],src:'wb-internet',
         ramp:['interpolate',['linear'],['get','s'],10,'#a50026',30,'#f46d43',55,'#fee08b',75,'#74c476',95,'#1a9850'],
         score:v=>v, fmt:v=>(+v).toFixed(1)+'%',
-        nm:['Internet users (%)','インターネット普及率（%）'],
+        nm:LA('Internet users (%)','インターネット普及率（%）','Internetnutzer (%)','Пользователи интернета (%)','Usuarios de internet (%)'),
         note:()=>window.IntMapLang.t(HOST.lang,"Individuals using the Internet (% of population; World Bank, latest year).","人口に占めるインターネット利用者の割合（世界銀行、最新年）。","Internetnutzer (% der Bevölkerung; Weltbank, letztes Jahr).","Пользователи интернета (% населения; Всемирный банк, последний год).","Personas que usan Internet (% de la población; Banco Mundial, último año).")},
       precip:{ind:'AG.LND.PRCP.MM',date:'',q:'&mrnev=1',ids:['wb-precip-f','wb-precip-l'],src:'wb-precip',
         ramp:['interpolate',['linear'],['get','s'],100,'#f6e8c3',400,'#c7eae5',800,'#80cdc1',1500,'#35978f',2800,'#01665e'],
         score:v=>v, fmt:v=>Math.round(v)+' mm',
-        nm:['Annual precipitation (mm)','年降水量（mm）'],
+        nm:LA('Annual precipitation (mm)','年降水量（mm）','Jahresniederschlag (mm)','Годовое количество осадков (мм)','Precipitación anual (mm)'),
         note:()=>window.IntMapLang.t(HOST.lang,"Average annual precipitation (depth in mm, long-term; World Bank).","年間平均降水量（深さmm、長期平均・世界銀行）。","Durchschnittlicher Jahresniederschlag (Höhe in mm, langjährig; Weltbank).","Среднегодовое количество осадков (в мм, многолетнее; Всемирный банк).","Precipitación media anual (altura en mm, a largo plazo; Banco Mundial).")}};
     function wbToggle(key,on){ state[key]=on; const W=WB[key];
       const show=()=>setVis(W.ids,on);
@@ -634,6 +634,13 @@ window.IntMapModules.religionLang=function(HOST){
   (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
+    /* ⚠ (#R248) THIS IIFE HAD NO LANGUAGE HELPER OF ITS OWN. The three siblings above each declare
+       their own `LPK`/`LA`; a `const` in a sibling IIFE is not in scope here, so the tuples below
+       threw `ReferenceError: LA is not defined` at module evaluation and took the whole religion /
+       language pack down with them. Declared at the TOP of the scope on purpose — [[intmap-recurring-lessons]]
+       L: a binding added in the middle puts everything above it in the temporal dead zone. */
+    const LPK=window.IntMapLang.pick(()=>HOST.lang);
+    const LA=window.IntMapLang.pickArgs();
     const before=()=>GE().layers.has('tool-poly')?'tool-poly':undefined;
     const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
     let pop=null;
@@ -648,7 +655,7 @@ window.IntMapModules.religionLang=function(HOST){
       unaffiliated:'CHN KOR PRK CZE EST NLD SWE'
     });
     const REL_COL={christian:'#4e79a7',muslim:'#59a14f',hindu:'#e15759',buddhist:'#f0a93b',jewish:'#76b7b2',unaffiliated:'#9aa0a6'};
-    const REL_LBL={christian:['Christianity','キリスト教'],muslim:['Islam','イスラム教'],hindu:['Hinduism','ヒンドゥー教'],buddhist:['Buddhism','仏教'],jewish:['Judaism','ユダヤ教'],unaffiliated:['Unaffiliated','無宗教']};
+    const REL_LBL={christian:LA('Christianity','キリスト教','Christentum','Христианство','Cristianismo'),muslim:LA('Islam','イスラム教','Islam','Ислам','Islam'),hindu:LA('Hinduism','ヒンドゥー教','Hinduismus','Индуизм','Hinduismo'),buddhist:LA('Buddhism','仏教','Buddhismus','Буддизм','Budismo'),jewish:LA('Judaism','ユダヤ教','Judentum','Иудаизм','Judaísmo'),unaffiliated:LA('Unaffiliated','無宗教','Konfessionslos','Не религиозные','Sin religión')};
     /* primary official / most-used language */
     const LANG=expand({
       english:'USA GBR CAN AUS NZL IRL NGA GHA KEN UGA ZAF ZWE ZMB BWA NAM SSD LBR SLE GMB MWI PNG FJI JAM TTO GUY',
@@ -669,10 +676,26 @@ window.IntMapModules.religionLang=function(HOST){
       italian:'ITA'
     });
     const LANG_COL={english:'#4e79a7',spanish:'#f28e2b',arabic:'#59a14f',chinese:'#e15759',french:'#76b7b2',portuguese:'#edc948',russian:'#b07aa1',hindi:'#ff9da7',bengali:'#9c755f',german:'#bab0ac',japanese:'#86bcb6',korean:'#d37295',turkish:'#a0cbe8',persian:'#8cd17d',malay:'#e377c2',italian:'#79706e'};
-    const LANG_LBL={english:['English','英語'],spanish:['Spanish','スペイン語'],arabic:['Arabic','アラビア語'],chinese:['Chinese','中国語'],french:['French','フランス語'],portuguese:['Portuguese','ポルトガル語'],russian:['Russian','ロシア語'],hindi:['Hindi','ヒンディー語'],bengali:['Bengali','ベンガル語'],german:['German','ドイツ語'],japanese:['Japanese','日本語'],korean:['Korean','韓国語'],turkish:['Turkish','トルコ語'],persian:['Persian','ペルシャ語'],malay:['Malay/Indonesian','マレー・インドネシア語'],italian:['Italian','イタリア語']};
+    /* ⚠⚠ (#R248) THE LANGUAGE LEGEND IS NOT A TRANSLATION TABLE — IT IS CLDR.
+       These sixteen labels were `LA('English','英語')` … i.e. en+jp only, which is de/ru/es/fr/ko/zh in
+       English on a legend whose whole subject is languages. Writing the other seven by hand would be
+       126 strings to maintain and one more list to forget when a tenth language is added. The name of
+       a language IN a language is exactly what `Intl.DisplayNames` answers from CLDR, so the source
+       changes instead of the table growing (#R247's rule, after 曜日頭文字 and the Wikipedia edition).
+       ⚠ The keys stay the app's own category ids (they index LANG / LANG_COL); the BCP-47 tag is what
+       CLDR is asked with, and 'ms' deliberately answers 'Malay' — the Indonesian half of the category
+       is kept by the parenthesis, which IS translated through the ordinary table. */
+    const LANG_TAG={english:'en',spanish:'es',arabic:'ar',chinese:'zh',french:'fr',portuguese:'pt',russian:'ru',hindi:'hi',bengali:'bn',german:'de',japanese:'ja',korean:'ko',turkish:'tr',persian:'fa',malay:'ms',italian:'it'};
+    function langLabel(cat){
+      const tag=LANG_TAG[cat]; if(!tag) return cat;
+      let nm=null;
+      try{ nm=new Intl.DisplayNames([window.IntMapLang.htmlTag(HOST.lang)],{type:'language'}).of(tag); }catch(_){}
+      if(!nm||nm===tag) nm=cat.charAt(0).toUpperCase()+cat.slice(1);
+      return cat==='malay'?(nm+' / '+LPK('Indonesian','インドネシア語','Indonesisch','Индонезийский','Indonesio')):nm;
+    }
     const CFG={
-      religion:{map:REL,col:REL_COL,lbl:REL_LBL,ids:['cat-rel-f','cat-rel-l'],src:'cat-rel',nm:['Dominant religion','宗教分布（主流）']},
-      language:{map:LANG,col:LANG_COL,lbl:LANG_LBL,ids:['cat-lang-f','cat-lang-l'],src:'cat-lang',nm:['Primary language','言語分布（主要）']}
+      religion:{map:REL,col:REL_COL,lbl:REL_LBL,ids:['cat-rel-f','cat-rel-l'],src:'cat-rel',nm:LA('Dominant religion','宗教分布（主流）','Vorherrschende Religion','Преобладающая религия','Religión predominante')},
+      language:{map:LANG,col:LANG_COL,lbl:null,ids:['cat-lang-f','cat-lang-l'],src:'cat-lang',nm:LA('Primary language','言語分布（主要）','Vorherrschende Sprache','Основной язык','Idioma principal')}   /* (#R248) lbl:null = «ask CLDR» — see langLabel */
     };
     const state={religion:false,language:false};
     function colorExpr(C){ const e=['match',['get','cat']]; Object.keys(C.col).forEach(cat=>{ e.push(cat, C.col[cat]); }); e.push('#9aa0a6'); return e; }
@@ -688,7 +711,9 @@ window.IntMapModules.religionLang=function(HOST){
         GE().layers.add({id:C.ids[1],type:'line',source:C.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
         GE().events.onLayer('click',C.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
           let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){}
-          const catLbl=(C.lbl[p.cat]?(jp()?C.lbl[p.cat][1]:C.lbl[p.cat][0]):p.cat);
+          /* (#R248) `jp()?a[1]:a[0]` reached NO language but the two it names — see the note by
+             LANG_TAG. `catLbl` is the ONE resolver both the map label and the key below use. */
+          const catLbl=C.lbl?(C.lbl[p.cat]?LPK.arr(C.lbl[p.cat]):p.cat):langLabel(p.cat);
           try{ if(pop) pop.remove(); }catch(_){}
           try{ pop=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?C.nm[1]:C.nm[0])+': <b style="color:var(--text-main);">'+esc(catLbl)+'</b></div>')); }catch(_){}
         });
@@ -702,7 +727,7 @@ window.IntMapModules.religionLang=function(HOST){
       try{ if(!window._registerLayerOpacity) return;
         const el=window._registerLayerOpacity('cat-'+key,[C.nm[0],C.nm[1]],C.ids,'beta-dl-cat-'+key);
         if(el&&!el.querySelector('.cat-key')){ const k=document.createElement('div'); k.className='cat-key'; k.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;margin-top:6px;font-size:10.5px;color:var(--text-main);';
-          k.innerHTML=Object.keys(C.col).map(cat=>'<div style="display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;flex:none;background:'+C.col[cat]+';"></span>'+(jp()?C.lbl[cat][1]:C.lbl[cat][0])+'</div>').join('');
+          k.innerHTML=Object.keys(C.col).map(cat=>'<div style="display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;flex:none;background:'+C.col[cat]+';"></span>'+(C.lbl?LPK.arr(C.lbl[cat]):langLabel(cat))+'</div>').join('');
           el.appendChild(k); }
       }catch(_){} }
     function toggle(key,on){ state[key]=on;

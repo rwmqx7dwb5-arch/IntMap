@@ -1049,11 +1049,18 @@ window.IntMapModules.objectList=function(HOST){
          semi-transparent --popup-bg (0.72/0.74 alpha) with NO backdrop blur, so the map showed straight through.
          Use the solid --card-bg (#fff / #1c1c1e). */
       panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);max-height:74vh;z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
-      panel.innerHTML='<div class="iol-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🗂 '+esc(OL('Objects','オブジェクト一覧','Objekte','Объекты','Objetos'))+'</span><button class="iol-clear" style="border:none;background:transparent;color:var(--info-mil,#ff3b30);font-size:11px;font-weight:700;cursor:pointer;">'+esc(OL('Clear all','全消去','Alles löschen','Очистить','Borrar todo'))+'</button><button class="iol-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
+      /* ⚠ (#R248) 「ポップアップの上部の帯の高さを短く」 — the band is SIZED HERE, inline, and that is why
+         the numbers are here rather than in the stylesheet below: an inline `padding` beats any rule
+         #iol-css could add, so a shorter band written there would have been silently ignored (the
+         defect shape #R243 spent a round on). Measured: 9 px padding + a 16 px ✕ on its default
+         line-height made a 37 px band; 4 px padding, a 12.5 px title and `line-height:1` on the two
+         buttons (below) make it 25 px, and the head is still the drag handle it always was. */
+      panel.innerHTML='<div class="iol-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:4px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:12.5px;font-weight:700;color:var(--text-main);">🗂 '+esc(OL('Objects','オブジェクト一覧','Objekte','Объекты','Objetos'))+'</span><button class="iol-clear" style="border:none;background:transparent;color:var(--info-mil,#ff3b30);font-size:10.5px;font-weight:700;cursor:pointer;">'+esc(OL('Clear all','全消去','Alles löschen','Очистить','Borrar todo'))+'</button><button class="iol-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;">✕</button></div>'
         +'<div class="iol-body" style="flex:1 1 auto;overflow-y:auto;padding:6px 10px 12px;"></div>';
       document.body.appendChild(panel);
       if(!document.getElementById('iol-css')){ const st=document.createElement('style'); st.id='iol-css';
-        st.textContent='#iol-panel .iol-grp{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--text-main);text-transform:uppercase;letter-spacing:.03em;padding:9px 3px 4px;}'
+        st.textContent='#iol-panel .iol-head button{line-height:1;padding:0;}'   /* (#R248) the ✕ and 全消去 stop setting the band’s height — see the note by the markup */
+          +'#iol-panel .iol-grp{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--text-main);text-transform:uppercase;letter-spacing:.03em;padding:9px 3px 4px;}'
           +'#iol-panel .iol-row{display:flex;align-items:center;gap:6px;padding:4px 3px;border-top:1px solid rgba(128,128,128,0.12);}'
           +'#iol-panel .iol-dot{flex:0 0 auto;width:11px;height:11px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.15);}'
           +'#iol-panel .iol-name{flex:1;min-width:0;font-size:12.5px;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}'
@@ -1103,8 +1110,21 @@ window.IntMapModules.objectList=function(HOST){
       if(fb&&fb.offsetParent!==null){ const r=fb.getBoundingClientRect();
         panel.style.left='16px'; panel.style.right='auto'; panel.style.top='auto'; panel.style.bottom=Math.round(Math.max(6, window.innerHeight-r.top+8))+'px'; return; }
       panel.style.left='16px'; panel.style.right='auto'; panel.style.top='80px'; panel.style.bottom='auto'; }catch(_){} }
-    function open(){ ensurePanel(); renderList(); _placePanel(); panel.style.display='flex'; openState=true; tickFab(); }
-    function close(){ if(panel) panel.style.display='none'; openState=false; tickFab(); }
+    /* ══ (#R248) 「Objectsポップアップは、地図上をクリックしたら格納されるように」 ═══════════════════
+       The SAME idiom the layer sidebar has had since #R72 (js/map-ui.js `open._mapCloser`), not a
+       second implementation of it — [[intmap-recurring-lessons]] G is about exactly that. The
+       handler is bound when the panel opens and removed when it closes, so its lifetime is the
+       lifetime of the thing it guards (#R245's rule): a listener left on a closed panel would fire
+       for every map click for the rest of the session.
+       ⚠ It listens to the RENDERER's click, not to document — so a click on the panel itself, on the
+       toolbar button that toggles it, or on any other chrome is not a map click and does nothing. */
+    let _mapCloser=null;
+    function _bindMapClose(){ try{ if(!GE().hasRenderer()) return;
+      if(!_mapCloser) _mapCloser=()=>{ try{ if(openState) close(); }catch(_){} };
+      GE().events.off('click',_mapCloser); GE().events.on('click',_mapCloser); }catch(_){} }
+    function _unbindMapClose(){ try{ if(_mapCloser&&GE().hasRenderer()) GE().events.off('click',_mapCloser); }catch(_){} }
+    function open(){ ensurePanel(); renderList(); _placePanel(); panel.style.display='flex'; openState=true; _bindMapClose(); tickFab(); }
+    function close(){ if(panel) panel.style.display='none'; openState=false; _unbindMapClose(); tickFab(); }
     function toggle(){ (openState&&panel&&panel.style.display!=='none')?close():open(); }
     function refresh(){ if(openState) renderList(); tickFab(); }
     setInterval(tickFab, 2200); setTimeout(tickFab, 1500);

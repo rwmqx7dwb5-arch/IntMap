@@ -556,26 +556,26 @@ window.IntMapTables=(function(){
    *  and the latest reported snapshot for the rest (non-US listings, honestly labelled). A company logo loads where
    *  the country flag sat in Countries. Wired into Atlas via IntMapOS ('tab.companies'). ======================== */
   const CO_SECTORS={
-    tech:['Technology','テクノロジー','Technologie','Технологии','Tecnología'],
-    semi:['Semiconductors','半導体','Halbleiter','Полупроводники','Semiconductores'],
-    software:['Software','ソフトウェア','Software','ПО','Software'],
-    internet:['Internet & Media','インターネット・メディア','Internet & Medien','Интернет и медиа','Internet y medios'],
-    ecommerce:['E-commerce','Eコマース','E-Commerce','Электронная торговля','Comercio electrónico'],
-    finance:['Financials','金融','Finanzen','Финансы','Finanzas'],
-    bank:['Banking','銀行','Banken','Банки','Banca'],
-    payments:['Payments','決済','Zahlungen','Платежи','Pagos'],
-    health:['Healthcare','ヘルスケア','Gesundheit','Здравоохранение','Salud'],
-    pharma:['Pharmaceuticals','製薬','Pharma','Фармацевтика','Farmacéutica'],
-    energy:['Energy','エネルギー','Energie','Энергетика','Energía'],
-    consumer:['Consumer','消費財','Konsumgüter','Потреб. товары','Consumo'],
-    retail:['Retail','小売','Einzelhandel','Розничная торговля','Minorista'],
-    auto:['Automotive','自動車','Automobil','Автопром','Automoción'],
-    industrial:['Industrials','資本財','Industrie','Промышленность','Industria'],
-    telecom:['Telecom','通信','Telekom','Телеком','Telecom'],
-    media:['Media','メディア','Medien','Медиа','Medios'],
-    aerospace:['Aerospace & Defense','航空宇宙・防衛','Luft- & Raumfahrt','Аэрокосмос','Aeroespacial'],
-    materials:['Materials','素材','Werkstoffe','Материалы','Materiales'],
-    staples:['Consumer Staples','生活必需品','Basiskonsumgüter','Товары первой необходимости','Bienes básicos']
+    tech:LA('Technology','テクノロジー','Technologie','Технологии','Tecnología'),
+    semi:LA('Semiconductors','半導体','Halbleiter','Полупроводники','Semiconductores'),
+    software:LA('Software','ソフトウェア','Software','ПО','Software'),
+    internet:LA('Internet & Media','インターネット・メディア','Internet & Medien','Интернет и медиа','Internet y medios'),
+    ecommerce:LA('E-commerce','Eコマース','E-Commerce','Электронная торговля','Comercio electrónico'),
+    finance:LA('Financials','金融','Finanzen','Финансы','Finanzas'),
+    bank:LA('Banking','銀行','Banken','Банки','Banca'),
+    payments:LA('Payments','決済','Zahlungen','Платежи','Pagos'),
+    health:LA('Healthcare','ヘルスケア','Gesundheit','Здравоохранение','Salud'),
+    pharma:LA('Pharmaceuticals','製薬','Pharma','Фармацевтика','Farmacéutica'),
+    energy:LA('Energy','エネルギー','Energie','Энергетика','Energía'),
+    consumer:LA('Consumer','消費財','Konsumgüter','Потреб. товары','Consumo'),
+    retail:LA('Retail','小売','Einzelhandel','Розничная торговля','Minorista'),
+    auto:LA('Automotive','自動車','Automobil','Автопром','Automoción'),
+    industrial:LA('Industrials','資本財','Industrie','Промышленность','Industria'),
+    telecom:LA('Telecom','通信','Telekom','Телеком','Telecomunicaciones'),
+    media:LA('Media','メディア','Medien','Медиа','Medios'),
+    aerospace:LA('Aerospace & Defense','航空宇宙・防衛','Luft- & Raumfahrt','Аэрокосмос','Aeroespacial'),
+    materials:LA('Materials','素材','Werkstoffe','Материалы','Materiales'),
+    staples:LA('Consumer Staples','生活必需品','Basiskonsumgüter','Товары первой необходимости','Bienes básicos')
   };
   const CO_CC={ USA:['United States','アメリカ','🇺🇸'], CHN:['China','中国','🇨🇳'], TWN:['Taiwan','台湾','🇹🇼'], KOR:['South Korea','韓国','🇰🇷'], JPN:['Japan','日本','🇯🇵'], DEU:['Germany','ドイツ','🇩🇪'], FRA:['France','フランス','🇫🇷'], GBR:['United Kingdom','イギリス','🇬🇧'], CHE:['Switzerland','スイス','🇨🇭'], NLD:['Netherlands','オランダ','🇳🇱'], DNK:['Denmark','デンマーク','🇩🇰'], SWE:['Sweden','スウェーデン','🇸🇪'], CAN:['Canada','カナダ','🇨🇦'], AUS:['Australia','オーストラリア','🇦🇺'], SAU:['Saudi Arabia','サウジアラビア','🇸🇦'], IRL:['Ireland','アイルランド','🇮🇪'], IND:['India','インド','🇮🇳'], BRA:['Brazil','ブラジル','🇧🇷'], ESP:['Spain','スペイン','🇪🇸'], ITA:['Italy','イタリア','🇮🇹'], SGP:['Singapore','シンガポール','🇸🇬'], ARG:['Argentina','アルゼンチン','🇦🇷'], MEX:['Mexico','メキシコ','🇲🇽'], BEL:['Belgium','ベルギー','🇧🇪'] };
   /* (#R41) Localize the repeated Information-card badges in DE/RU/ES (acronyms like USN/NATO pass through). The

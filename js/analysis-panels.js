@@ -344,70 +344,82 @@ window.IntMapModules.correlate=function(HOST){
     if(typeof countryStats==='undefined') return;
     const L=()=>HOST.lang;
     const tr=window.IntMapLang.pick(()=>L());
+    /* ⚠⚠⚠ (#R248) THE FOURTEENTH SHAPE — A LANGUAGE→POSITION CHAIN WRITTEN AS A TERNARY ═══════
+       `ml` below used to turn the language into an ARRAY POSITION with a ternary chain ending in
+       `:0`. It is the eleventh shape's sibling one container further out: #R241 closed the tuple
+       held as an ARRAY, #R246 the tuple held as an OBJECT keyed by language code, and this is the
+       tuple read through a language→POSITION map that is not a map — it is an EXPRESSION, so
+       scripts/i18n-langmap-audit.mjs (which looks for an object whose values are numbers) counted
+       zero of it, and so did every other instrument. The consequence is not subtle: the last arm is
+       `0`, so fr / ko / zh / zh-Hans took ENGLISH for all 62 metric labels in the Countries panel,
+       permanently, with no inline-table fallback to reach for.
+       `tr.arr()` IS `pick()` applied to the array (js/lang-registry.js), so the five positional
+       slots and the inline table stay the one rule they are everywhere else. */
+    const LA=window.IntMapLang.pickArgs();
     function compact(v){ v=+v; const a=Math.abs(v); if(a>=1e12)return (v/1e12).toFixed(1)+'T'; if(a>=1e9)return (v/1e9).toFixed(1)+'B'; if(a>=1e6)return (v/1e6).toFixed(1)+'M'; if(a>=1e3)return (v/1e3).toFixed(1)+'k'; return ''+Math.round(v); }
     const METRICS=[
-      {id:'pop',      get:s=>s.pop,      log:true,  fmt:v=>compact(v),       lbl:['Population','人口','Bevölkerung','Население','Población']},
-      {id:'density',  get:s=>s.density,  log:true,  fmt:v=>Math.round(v).toLocaleString()+' /km²', lbl:['Pop. density','人口密度','Bevölkerungsdichte','Плотность нас.','Densidad de pob.']},
-      {id:'area',     get:s=>s.area,     log:true,  fmt:v=>compact(v)+' km²', lbl:['Area','面積','Fläche','Площадь','Superficie']},
-      {id:'gdp',      get:s=>s.gdp,      log:true,  fmt:v=>'$'+compact(v*1e9), lbl:['GDP (nominal)','GDP(名目)','BIP (nominal)','ВВП (номинал)','PIB (nominal)']},   /* s.gdp is in $B → ×1e9 for the T/B label */
-      {id:'gdppc',    get:s=>s.gdppc,    log:true,  fmt:v=>'$'+compact(v),   lbl:['GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу','PIB per cápita']},
-      {id:'gdppcPPP', get:s=>s.gdppcPPP, log:true,  fmt:v=>'$'+compact(v),   lbl:['GDP/capita (PPP)','1人当たりGDP(PPP)','BIP pro Kopf (KKP)','ВВП на душу (ППС)','PIB per cápita (PPA)']},
+      {id:'pop',      get:s=>s.pop,      log:true,  fmt:v=>compact(v),       lbl:LA('Population','人口','Bevölkerung','Население','Población')},
+      {id:'density',  get:s=>s.density,  log:true,  fmt:v=>Math.round(v).toLocaleString()+' /km²', lbl:LA('Pop. density','人口密度','Bevölkerungsdichte','Плотность нас.','Densidad de pob.')},
+      {id:'area',     get:s=>s.area,     log:true,  fmt:v=>compact(v)+' km²', lbl:LA('Area','面積','Fläche','Площадь','Superficie')},
+      {id:'gdp',      get:s=>s.gdp,      log:true,  fmt:v=>'$'+compact(v*1e9), lbl:LA('GDP (nominal)','GDP(名目)','BIP (nominal)','ВВП (номинал)','PIB (nominal)')},   /* s.gdp is in $B → ×1e9 for the T/B label */
+      {id:'gdppc',    get:s=>s.gdppc,    log:true,  fmt:v=>'$'+compact(v),   lbl:LA('GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу','PIB per cápita')},
+      {id:'gdppcPPP', get:s=>s.gdppcPPP, log:true,  fmt:v=>'$'+compact(v),   lbl:LA('GDP/capita (PPP)','1人当たりGDP(PPP)','BIP pro Kopf (KKP)','ВВП на душу (ППС)','PIB per cápita (PPA)')},
       {id:'hdi',      get:s=>s.hdi,      log:false, fmt:v=>v.toFixed(3),     lbl:['HDI','HDI','HDI','ИЧР','IDH']},
-      {id:'dem',      get:s=>s.dem,      log:false, fmt:v=>v.toFixed(2),     lbl:['Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice de democracia']},
-      {id:'milSpend', get:s=>s.milSpend, log:true,  fmt:v=>'$'+v+'B',        lbl:['Mil. spending','国防費','Militärausgaben','Военные расходы','Gasto militar']},
-      {id:'milGDP',   get:s=>(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null, log:false, fmt:v=>v.toFixed(2)+'%', lbl:['Mil. spend (% GDP)','国防費(対GDP%)','Militärausg. (% BIP)','Воен. расходы (% ВВП)','Gasto mil. (% PIB)']},
-      {id:'tfr',      get:s=>s.tfr,      log:false, fmt:v=>v.toFixed(2),     lbl:['Fertility rate','合計特殊出生率','Geburtenrate','Рождаемость','Tasa de fecundidad']},
-      {id:'lifeExp',  get:s=>s.lifeExp,  log:false, fmt:v=>v.toFixed(1)+' yr', lbl:['Life expectancy','平均寿命','Lebenserwartung','Прод. жизни','Esperanza de vida']},
-      {id:'internet', get:s=>s.internet, log:false, fmt:v=>v+'%',            lbl:['Internet users','ネット利用率','Internetnutzer','Интернет-польз.','Usuarios de Internet']},
+      {id:'dem',      get:s=>s.dem,      log:false, fmt:v=>v.toFixed(2),     lbl:LA('Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice de democracia')},
+      {id:'milSpend', get:s=>s.milSpend, log:true,  fmt:v=>'$'+v+'B',        lbl:LA('Mil. spending','国防費','Militärausgaben','Военные расходы','Gasto militar')},
+      {id:'milGDP',   get:s=>(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null, log:false, fmt:v=>v.toFixed(2)+'%', lbl:LA('Mil. spend (% GDP)','国防費(対GDP%)','Militärausg. (% BIP)','Воен. расходы (% ВВП)','Gasto mil. (% PIB)')},
+      {id:'tfr',      get:s=>s.tfr,      log:false, fmt:v=>v.toFixed(2),     lbl:LA('Fertility rate','合計特殊出生率','Geburtenrate','Рождаемость','Tasa de fecundidad')},
+      {id:'lifeExp',  get:s=>s.lifeExp,  log:false, fmt:v=>v.toFixed(1)+' yr', lbl:LA('Life expectancy','平均寿命','Lebenserwartung','Прод. жизни','Esperanza de vida')},
+      {id:'internet', get:s=>s.internet, log:false, fmt:v=>v+'%',            lbl:LA('Internet users','ネット利用率','Internetnutzer','Интернет-польз.','Usuarios de Internet')},
       {id:'gdpPPP',   get:s=>s.gdpPPP,   log:true,  fmt:v=>'$'+compact(v*1e9), lbl:['GDP (PPP)','GDP(PPP)','BIP (KKP)','ВВП (ППС)','PIB (PPA)']}
     ];
     /* (#R40) World-Bank-backed axes — greatly expands the metric list ("対応する項目を大幅に増やして").
        Loaded on demand (cached) via window.IntMapWB; get(s,code) reads the latest value for that ISO3. */
     let WBV={};
-    [['EN.GHG.CO2.PC.CE.AR5',false,v=>v.toFixed(1)+' t',['CO₂ per capita','1人当たりCO₂排出','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita']],
-     ['SP.URB.TOTL.IN.ZS',false,v=>Math.round(v)+'%',['Urban population %','都市人口率','Stadtbevölkerung %','Городское нас. %','Población urbana %']],
-     ['EG.ELC.ACCS.ZS',false,v=>Math.round(v)+'%',['Electricity access %','電力アクセス率','Stromzugang %','Доступ к электр. %','Acceso a electricidad %']],
-     ['SH.XPD.CHEX.GD.ZS',false,v=>v.toFixed(1)+'%',['Health spend %GDP','医療支出 対GDP','Gesundheitsausg. %BIP','Расходы на здрав. %ВВП','Gasto en salud %PIB']],
-     ['AG.LND.FRST.ZS',false,v=>Math.round(v)+'%',['Forest area %','森林面積率','Waldfläche %','Лесная площадь %','Superficie forestal %']],
-     ['EG.FEC.RNEW.ZS',false,v=>Math.round(v)+'%',['Renewable energy %','再エネ比率','Erneuerbare Energie %','Возобн. энергия %','Energía renovable %']],
-     ['IT.CEL.SETS.P2',false,v=>Math.round(v),['Mobile subs /100','携帯契約 /100人','Mobilfunk /100','Моб. связь /100','Móviles /100']],
-     ['FP.CPI.TOTL.ZG',false,v=>v.toFixed(1)+'%',['Inflation % (CPI)','インフレ率','Inflation % (VPI)','Инфляция % (ИПЦ)','Inflación % (IPC)']],
-     ['SE.ADT.LITR.ZS',false,v=>Math.round(v)+'%',['Literacy rate %','識字率','Alphabetisierung %','Грамотность %','Alfabetización %']],
-     ['SI.POV.GINI',false,v=>v.toFixed(1),['Income inequality (Gini)','所得格差(ジニ)','Ungleichheit (Gini)','Неравенство (Джини)','Desigualdad (Gini)']],
-     ['NE.TRD.GNFS.ZS',true,v=>Math.round(v)+'%',['Trade % of GDP','貿易 対GDP','Handel % BIP','Торговля % ВВП','Comercio % PIB']],
-     ['SL.UEM.TOTL.ZS',false,v=>v.toFixed(1)+'%',['Unemployment %','失業率','Arbeitslosigkeit %','Безработица %','Desempleo %']],
-     ['GC.DOD.TOTL.GD.ZS',false,v=>Math.round(v)+'%',['Govt debt % GDP','政府債務 対GDP','Staatsschulden % BIP','Госдолг % ВВП','Deuda púb. % PIB']],
-     ['SH.DYN.MORT',true,v=>Math.round(v),['Under-5 mortality /1k','5歳未満死亡率','Kindersterblichkeit /1k','Смертн. до 5 лет /1k','Mortalidad <5 /1k']],
-     ['EG.USE.ELEC.KH.PC',true,v=>compact(v)+' kWh',['Electricity use /capita','電力消費 /人','Stromverbrauch /Kopf','Потр. электр. /чел','Consumo eléctrico /cápita']],
-     ['BX.KLT.DINV.WD.GD.ZS',false,v=>v.toFixed(1)+'%',['FDI inflow % GDP','対内直接投資 %','ADI-Zufluss % BIP','ПИИ % ВВП','IED entrante % PIB']],
-     ['NV.IND.MANF.ZS',false,v=>v.toFixed(1)+'%',['Manufacturing % GDP','製造業 対GDP','Verarb. Gewerbe % BIP','Промышл. % ВВП','Manufactura % PIB']],
-     ['SE.SEC.ENRR',false,v=>Math.round(v)+'%',['Secondary enrollment %','中等教育就学率','Sekundarschulrate %','Среднее образ. %','Matrícula secundaria %']],
-     ['SH.MED.PHYS.ZS',false,v=>v.toFixed(2),['Physicians /1k','医師 /1k人','Ärzte /1k','Врачи /1k','Médicos /1k']],
+    [['EN.GHG.CO2.PC.CE.AR5',false,v=>v.toFixed(1)+' t',LA('CO₂ per capita','1人当たりCO₂排出','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita')],
+     ['SP.URB.TOTL.IN.ZS',false,v=>Math.round(v)+'%',LA('Urban population %','都市人口率','Stadtbevölkerung %','Городское нас. %','Población urbana %')],
+     ['EG.ELC.ACCS.ZS',false,v=>Math.round(v)+'%',LA('Electricity access %','電力アクセス率','Stromzugang %','Доступ к электр. %','Acceso a electricidad %')],
+     ['SH.XPD.CHEX.GD.ZS',false,v=>v.toFixed(1)+'%',LA('Health spend %GDP','医療支出 対GDP','Gesundheitsausg. %BIP','Расходы на здрав. %ВВП','Gasto en salud %PIB')],
+     ['AG.LND.FRST.ZS',false,v=>Math.round(v)+'%',LA('Forest area %','森林面積率','Waldfläche %','Лесная площадь %','Superficie forestal %')],
+     ['EG.FEC.RNEW.ZS',false,v=>Math.round(v)+'%',LA('Renewable energy %','再エネ比率','Erneuerbare Energie %','Возобн. энергия %','Energía renovable %')],
+     ['IT.CEL.SETS.P2',false,v=>Math.round(v),LA('Mobile subs /100','携帯契約 /100人','Mobilfunk /100','Моб. связь /100','Móviles /100')],
+     ['FP.CPI.TOTL.ZG',false,v=>v.toFixed(1)+'%',LA('Inflation % (CPI)','インフレ率','Inflation % (VPI)','Инфляция % (ИПЦ)','Inflación % (IPC)')],
+     ['SE.ADT.LITR.ZS',false,v=>Math.round(v)+'%',LA('Literacy rate %','識字率','Alphabetisierung %','Грамотность %','Alfabetización %')],
+     ['SI.POV.GINI',false,v=>v.toFixed(1),LA('Income inequality (Gini)','所得格差(ジニ)','Ungleichheit (Gini)','Неравенство (Джини)','Desigualdad (Gini)')],
+     ['NE.TRD.GNFS.ZS',true,v=>Math.round(v)+'%',LA('Trade % of GDP','貿易 対GDP','Handel % BIP','Торговля % ВВП','Comercio % PIB')],
+     ['SL.UEM.TOTL.ZS',false,v=>v.toFixed(1)+'%',LA('Unemployment %','失業率','Arbeitslosigkeit %','Безработица %','Desempleo %')],
+     ['GC.DOD.TOTL.GD.ZS',false,v=>Math.round(v)+'%',LA('Govt debt % GDP','政府債務 対GDP','Staatsschulden % BIP','Госдолг % ВВП','Deuda púb. % PIB')],
+     ['SH.DYN.MORT',true,v=>Math.round(v),LA('Under-5 mortality /1k','5歳未満死亡率','Kindersterblichkeit /1k','Смертн. до 5 лет /1k','Mortalidad <5 /1k')],
+     ['EG.USE.ELEC.KH.PC',true,v=>compact(v)+' kWh',LA('Electricity use /capita','電力消費 /人','Stromverbrauch /Kopf','Потр. электр. /чел','Consumo eléctrico /cápita')],
+     ['BX.KLT.DINV.WD.GD.ZS',false,v=>v.toFixed(1)+'%',LA('FDI inflow % GDP','対内直接投資 %','ADI-Zufluss % BIP','ПИИ % ВВП','IED entrante % PIB')],
+     ['NV.IND.MANF.ZS',false,v=>v.toFixed(1)+'%',LA('Manufacturing % GDP','製造業 対GDP','Verarb. Gewerbe % BIP','Промышл. % ВВП','Manufactura % PIB')],
+     ['SE.SEC.ENRR',false,v=>Math.round(v)+'%',LA('Secondary enrollment %','中等教育就学率','Sekundarschulrate %','Среднее образ. %','Matrícula secundaria %')],
+     ['SH.MED.PHYS.ZS',false,v=>v.toFixed(2),LA('Physicians /1k','医師 /1k人','Ärzte /1k','Врачи /1k','Médicos /1k')],
      /* (#R41) greatly expanded set ("対応する項目を大幅に増やして") — all live, latest-value World Bank, full 5-lang */
-     ['SP.POP.GROW',false,v=>v.toFixed(1)+'%',['Population growth %','人口増加率','Bevölkerungswachstum %','Рост населения %','Crecimiento pob. %']],
-     ['SP.RUR.TOTL.ZS',false,v=>Math.round(v)+'%',['Rural population %','農村人口率','Landbevölkerung %','Сельское нас. %','Población rural %']],
-     ['NY.GNP.PCAP.CD',true,v=>'$'+compact(v),['GNI per capita','1人当たりGNI','BNE pro Kopf','ВНД на душу','INB per cápita']],
-     ['AG.LND.AGRI.ZS',false,v=>Math.round(v)+'%',['Agricultural land %','農地率','Landw. Fläche %','С/х земли %','Tierra agrícola %']],
-     ['EN.ATM.PM25.MC.M3',false,v=>v.toFixed(1)+' µg/m³',['PM2.5 air pollution','PM2.5大気汚染','PM2.5-Belastung','PM2.5 загрязн.','Contaminación PM2.5']],
-     ['VC.IHR.PSRC.P5',true,v=>v.toFixed(1),['Homicide rate /100k','殺人率 /10万','Tötungsrate /100k','Убийства /100k','Homicidios /100k']],
-     ['SE.XPD.TOTL.GD.ZS',false,v=>v.toFixed(1)+'%',['Education spend %GDP','教育支出 対GDP','Bildungsausg. %BIP','Расходы на образ. %ВВП','Gasto educación %PIB']],
-     ['SH.H2O.BASW.ZS',false,v=>Math.round(v)+'%',['Basic water access %','基本的飲料水 %','Wasserzugang %','Доступ к воде %','Acceso a agua %']],
-     ['SH.STA.BASS.ZS',false,v=>Math.round(v)+'%',['Basic sanitation %','基本的衛生 %','Sanitärzugang %','Санитария %','Saneamiento %']],
-     ['GB.XPD.RSDV.GD.ZS',false,v=>v.toFixed(2)+'%',['R&D spend %GDP','研究開発費 対GDP','F&E-Ausgaben %BIP','НИОКР %ВВП','Gasto I+D %PIB']],
-     ['SL.TLF.CACT.FE.ZS',false,v=>Math.round(v)+'%',['Female labor force %','女性労働参加率','Frauenerwerbsquote %','Жен. занятость %','Mujeres en fuerza lab. %']],
-     ['ST.INT.ARVL',true,v=>compact(v),['Tourist arrivals','外国人観光客数','Touristenankünfte','Турист. прибытия','Llegadas turísticas']],
-     ['TX.VAL.TECH.MF.ZS',false,v=>v.toFixed(1)+'%',['High-tech exports %','ハイテク輸出 %','Hightech-Exporte %','Высокотех. экспорт %','Exp. alta tecnología %']],
-     ['MS.MIL.TOTL.P1',true,v=>compact(v),['Armed forces','軍人数','Streitkräfte','Военнослужащие','Fuerzas armadas']],
-     ['SH.DYN.AIDS.ZS',false,v=>v.toFixed(1)+'%',['HIV prevalence %','HIV有病率','HIV-Prävalenz %','Распр. ВИЧ %','Prevalencia VIH %']],
-     ['NY.GDP.MKTP.KD.ZG',false,v=>v.toFixed(1)+'%',['GDP growth %','GDP成長率','BIP-Wachstum %','Рост ВВП %','Crecimiento PIB %']],
-     ['SH.XPD.OOPC.CH.ZS',false,v=>v.toFixed(1)+'%',['Out-of-pocket health %','自己負担医療費 %','Selbstzahlerquote %','Личные расходы %','Gasto de bolsillo %']],
-     ['AG.LND.ARBL.ZS',false,v=>v.toFixed(1)+'%',['Arable land %','耕地率','Ackerland %','Пашня %','Tierra cultivable %']]
+     ['SP.POP.GROW',false,v=>v.toFixed(1)+'%',LA('Population growth %','人口増加率','Bevölkerungswachstum %','Рост населения %','Crecimiento pob. %')],
+     ['SP.RUR.TOTL.ZS',false,v=>Math.round(v)+'%',LA('Rural population %','農村人口率','Landbevölkerung %','Сельское нас. %','Población rural %')],
+     ['NY.GNP.PCAP.CD',true,v=>'$'+compact(v),LA('GNI per capita','1人当たりGNI','BNE pro Kopf','ВНД на душу','INB per cápita')],
+     ['AG.LND.AGRI.ZS',false,v=>Math.round(v)+'%',LA('Agricultural land %','農地率','Landw. Fläche %','С/х земли %','Tierra agrícola %')],
+     ['EN.ATM.PM25.MC.M3',false,v=>v.toFixed(1)+' µg/m³',LA('PM2.5 air pollution','PM2.5大気汚染','PM2.5-Belastung','PM2.5 загрязн.','Contaminación PM2.5')],
+     ['VC.IHR.PSRC.P5',true,v=>v.toFixed(1),LA('Homicide rate /100k','殺人率 /10万','Tötungsrate /100k','Убийства /100k','Homicidios /100k')],
+     ['SE.XPD.TOTL.GD.ZS',false,v=>v.toFixed(1)+'%',LA('Education spend %GDP','教育支出 対GDP','Bildungsausg. %BIP','Расходы на образ. %ВВП','Gasto educación %PIB')],
+     ['SH.H2O.BASW.ZS',false,v=>Math.round(v)+'%',LA('Basic water access %','基本的飲料水 %','Wasserzugang %','Доступ к воде %','Acceso a agua %')],
+     ['SH.STA.BASS.ZS',false,v=>Math.round(v)+'%',LA('Basic sanitation %','基本的衛生 %','Sanitärzugang %','Санитария %','Saneamiento %')],
+     ['GB.XPD.RSDV.GD.ZS',false,v=>v.toFixed(2)+'%',LA('R&D spend %GDP','研究開発費 対GDP','F&E-Ausgaben %BIP','НИОКР %ВВП','Gasto I+D %PIB')],
+     ['SL.TLF.CACT.FE.ZS',false,v=>Math.round(v)+'%',LA('Female labor force %','女性労働参加率','Frauenerwerbsquote %','Жен. занятость %','Mujeres en fuerza lab. %')],
+     ['ST.INT.ARVL',true,v=>compact(v),LA('Tourist arrivals','外国人観光客数','Touristenankünfte','Турист. прибытия','Llegadas turísticas')],
+     ['TX.VAL.TECH.MF.ZS',false,v=>v.toFixed(1)+'%',LA('High-tech exports %','ハイテク輸出 %','Hightech-Exporte %','Высокотех. экспорт %','Exp. alta tecnología %')],
+     ['MS.MIL.TOTL.P1',true,v=>compact(v),LA('Armed forces','軍人数','Streitkräfte','Военнослужащие','Fuerzas armadas')],
+     ['SH.DYN.AIDS.ZS',false,v=>v.toFixed(1)+'%',LA('HIV prevalence %','HIV有病率','HIV-Prävalenz %','Распр. ВИЧ %','Prevalencia VIH %')],
+     ['NY.GDP.MKTP.KD.ZG',false,v=>v.toFixed(1)+'%',LA('GDP growth %','GDP成長率','BIP-Wachstum %','Рост ВВП %','Crecimiento PIB %')],
+     ['SH.XPD.OOPC.CH.ZS',false,v=>v.toFixed(1)+'%',LA('Out-of-pocket health %','自己負担医療費 %','Selbstzahlerquote %','Личные расходы %','Gasto de bolsillo %')],
+     ['AG.LND.ARBL.ZS',false,v=>v.toFixed(1)+'%',LA('Arable land %','耕地率','Ackerland %','Пашня %','Tierra cultivable %')]
     ].forEach(arr=>{ const code=arr[0]; METRICS.push({id:'wb:'+code,wb:code,log:arr[1],fmt:arr[2],lbl:arr[3],get:(s,c)=>{ const m=WBV[code]; return (m&&c&&m[c])?m[c].v:null; }}); });
     function ensureWB(){ try{ const need=[xId,yId].map(id=>METRICS.find(m=>m.id===id)).filter(m=>m&&m.wb&&!WBV[m.wb]);
       if(!need.length||!window.IntMapWB||!window.IntMapWB.fetch) return Promise.resolve();
       return Promise.all(need.map(m=>window.IntMapWB.fetch(m.wb).then(d=>{ WBV[m.wb]=d||{}; }).catch(()=>{ WBV[m.wb]={}; }))); }catch(_){ return Promise.resolve(); } }
     function reRender(){ if(!ov) return; try{ const need=[xId,yId].map(id=>METRICS.find(m=>m.id===id)).some(m=>m&&m.wb&&!WBV[m.wb]); if(need){ const w=ov.querySelector('.corr-svg-wrap'); if(w) w.innerHTML='<div style="padding:46px;text-align:center;color:var(--text-muted);">'+t('loadingData')+'</div>'; } }catch(_){} ensureWB().then(render); }
-    const ml=m=>{ const i=L()==='jp'?1:L()==='de'?2:L()==='ru'?3:L()==='es'?4:0; return m.lbl[i]||m.lbl[0]; };
+    const ml=m=>tr.arr(m.lbl);   /* (#R248) see the note by `LA` above — this was the fourteenth shape */
     function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
     function pear(xs,ys){ const n=xs.length; if(n<3)return null; let sx=0,sy=0,sxx=0,syy=0,sxy=0; for(let i=0;i<n;i++){const x=xs[i],y=ys[i]; sx+=x;sy+=y;sxx+=x*x;syy+=y*y;sxy+=x*y;} const dx=n*sxx-sx*sx,dy=n*syy-sy*sy; if(dx<=0||dy<=0)return null; return (n*sxy-sx*sy)/Math.sqrt(dx*dy); }
     function ranks(a){ const idx=a.map((v,i)=>[v,i]).sort((p,q)=>p[0]-q[0]); const r=new Array(a.length); let i=0; while(i<idx.length){ let j=i; while(j+1<idx.length&&idx[j+1][0]===idx[i][0])j++; const avg=(i+j)/2+1; for(let k=i;k<=j;k++)r[idx[k][1]]=avg; i=j+1; } return r; }
