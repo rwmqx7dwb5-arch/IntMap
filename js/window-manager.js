@@ -180,17 +180,34 @@ let __winZ=4300;
      below drops the records this module caused. Without it, docking one panel re-enters the
      observer, which is the shape of every runaway MutationObserver ever written. */
   let __attrBusy=false;
+  /* ══ ⚠⚠⚠ (#R245) THE «ALREADY WATCHED» SET LIVES AND DIES WITH THE OBSERVER ═════════════════════
+     「ケッペンの気候区分レイヤの凡例はパネルにいかない。全凡例はパネルにいくように。（パネル設定時）」
+     — re-sent, and this is the environment #R244 could not find. It is not an environment at all: it
+     is a SEQUENCE, and any reader who has turned the setting off and on again in one session is in it.
+
+     The flag used to be a property ON THE ELEMENT (`el.__imDockWatched`), and `_dockWatch(false)`
+     cleared it only for the members of `__winReg` — which by construction NEVER holds a legend
+     (that is the whole reason `DOCK_SEL` exists, see the note above it). So after mode-off → mode-on
+     the observer is a NEW MutationObserver while every legend still carries the OLD one's flag:
+     `_watchEl` returns early for all of them and the new observer never observes a single legend.
+     MEASURED on the shipped build, one page load, dock mode on:
+       · switch Köppen off  → the legend STAYS in the column (nothing sees the `display:none`);
+       · `view.dock.off` then `view.dock.on`, then switch a legend on → it stays ON THE MAP for ever.
+     ⚠ THE FIX IS NOT TO CLEAR MORE FLAGS — a list of «everything that might carry one» is the same
+     two-lists defect ([[intmap-recurring-lessons]] G) one level down, and it would go stale the next
+     time a panel type is added. The invariant is «watched BY THIS observer», so the set is created
+     with the observer and thrown away with it, and there is nothing left to forget to clear. */
+  let __dockWatched=null;
   function _watchEl(el){
-    try{ if(!__dockObs||!el||el.__imDockWatched) return; el.__imDockWatched=1;
+    try{ if(!__dockObs||!__dockWatched||!el||__dockWatched.has(el)) return; __dockWatched.add(el);
       __dockObs.observe(el,{attributes:true,attributeFilter:['style','class','hidden']}); }catch(_){}
   }
   function _dockWatch(on){
     try{
-      if(!on){ if(__dockObs){ __dockObs.disconnect(); __dockObs=null; }
-        try{ __winReg.forEach(el=>{ try{ delete el.__imDockWatched; }catch(_){} }); }catch(_){}
-        return; }
+      if(!on){ if(__dockObs){ __dockObs.disconnect(); __dockObs=null; } __dockWatched=null; return; }
       if(__dockObs) return;
       const mc=document.getElementById('map-container'); if(!mc||!window.MutationObserver) return;
+      __dockWatched=new WeakSet();
       /* ⚠ childList on the CONTAINER ONLY (no subtree): the set this watches is «direct children of
          the map container», which is exactly what `_dockables` matches, and a subtree observer would
          fire on every tile, marker and popup the renderer creates. */

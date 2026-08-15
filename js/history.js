@@ -25,6 +25,10 @@ window.IntMapModules.maddison=function(){
 };
 
 window.IntMapModules.histStates=function(countryStats){
+    /* (#R245) the former-state names are tuples held as data — see IntMapLang.pickArgs(). They are
+       READ through `pick()` itself in js/time-borders.js, so a language past the five positional
+       slots reaches its inline table keyed by the English name rather than falling to English. */
+    const LA=window.IntMapLang.pickArgs();
     const svgU=(inner)=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20">'+inner+'</svg>';
     const STAR=(cx,cy,s,fill,stroke)=>'<g transform="translate('+cx+','+cy+') scale('+s+')"><path d="M0,-1 0.2245,-0.309 0.951,-0.309 0.363,0.118 0.588,0.809 0,0.382 -0.588,0.809 -0.363,0.118 -0.951,-0.309 -0.2245,-0.309Z" fill="'+fill+'"'+(stroke?(' stroke="'+stroke+'" stroke-width="0.09"'):'')+'/></g>';
     const flag=(inner)=>'<img class="hist-flag" alt="" src="data:image/svg+xml,'+encodeURIComponent(svgU(inner))+'">';
@@ -54,7 +58,7 @@ window.IntMapModules.histStates=function(countryStats){
     /* code = synthetic ISO-like id · from/to = real lifespan · succ = modern ISO3 successors to aggregate & hide */
     const STATES=[
       { code:'SUN', from:'1922-12-30', to:'1991-12-26', flag:F_SUN, region:'Eurasia', wiki:'Soviet Union',
-        name:{en:'Soviet Union',jp:'ソビエト連邦',de:'Sowjetunion',ru:'СССР',es:'Unión Soviética'},
+        name:LA('Soviet Union','ソビエト連邦','Sowjetunion','СССР','Unión Soviética'),
         succ:['RUS','UKR','BLR','UZB','KAZ','GEO','AZE','LTU','MDA','LVA','KGZ','TJK','ARM','TKM','EST'],
         /* World Bank nominal-USD GDP for the Soviet command economy is a known official-exchange-rate artifact
            (successor sum ≈ $0.69T in 1990, mostly Russia), which buries a genuine #2–3 world economy. Use the
@@ -62,7 +66,7 @@ window.IntMapModules.histStates=function(countryStats){
            the late-Soviet window; earlier than that WB has no republic data, so GDP is honestly blank. */
         gdpEst:2660, gdpEstFrom:1985, estSrc:'CIA World Factbook 1990 / Maddison' },
       { code:'YUG', from:'1945-11-29', to:'1992-04-27', flag:F_YUG, region:'Europe', wiki:'Socialist Federal Republic of Yugoslavia',
-        name:{en:'Yugoslavia (SFRY)',jp:'ユーゴスラビア（社会主義連邦共和国）',de:'Jugoslawien (SFRJ)',ru:'Югославия (СФРЮ)',es:'Yugoslavia (RFSY)'},
+        name:LA('Yugoslavia (SFRY)','ユーゴスラビア（社会主義連邦共和国）','Jugoslawien (SFRJ)','Югославия (СФРЮ)','Yugoslavia (RFSY)'),
         succ:['SVN','HRV','BIH','MKD','SRB','MNE','XKX'] },
       /* (#R129) INTERWAR Kingdom of Yugoslavia (1918–1941) — CShapes draws it as one polygon "Yugoslavia" (gwcode 345),
          but it had no registry entry, so a map click FRAGMENTED it into modern Serbia/Croatia/Slovenia/… under the
@@ -72,30 +76,30 @@ window.IntMapModules.histStates=function(countryStats){
          separate pre-war data. Temporally disjoint from the SFRY entry above (to 1945-11-28 vs from 1945-11-29), so the
          duplicate-name never collides — activeAt() returns only one for any given date. */
       { code:'YGK', madCode:'YUG', from:'1918-12-01', to:'1945-11-28', flag:F_YUGK, region:'Europe', wiki:'Kingdom of Yugoslavia',
-        name:{en:'Kingdom of Yugoslavia',jp:'ユーゴスラビア王国',de:'Königreich Jugoslawien',ru:'Королевство Югославия',es:'Reino de Yugoslavia'},
+        name:LA('Kingdom of Yugoslavia','ユーゴスラビア王国','Königreich Jugoslawien','Королевство Югославия','Reino de Yugoslavia'),
         succ:['SVN','HRV','BIH','MKD','SRB','MNE'], popEst:15400000, gdpEst:32, estSrc:'1931 census ~13.9M → 1941 ~15.9M / Maddison YUG' },
       { code:'SCG', from:'1992-04-27', to:'2006-06-05', flag:F_SCG, region:'Europe', wiki:'Serbia and Montenegro',
-        name:{en:'Serbia and Montenegro',jp:'セルビア・モンテネグロ',de:'Serbien und Montenegro',ru:'Сербия и Черногория',es:'Serbia y Montenegro'},
+        name:LA('Serbia and Montenegro','セルビア・モンテネグロ','Serbien und Montenegro','Сербия и Черногория','Serbia y Montenegro'),
         succ:['SRB','MNE','XKX'] },
       { code:'CSK', from:'1918-10-28', to:'1992-12-31', flag:F_CSK, region:'Europe', wiki:'Czechoslovakia',
-        name:{en:'Czechoslovakia',jp:'チェコスロバキア',de:'Tschechoslowakei',ru:'Чехословакия',es:'Checoslovaquia'},
+        name:LA('Czechoslovakia','チェコスロバキア','Tschechoslowakei','Чехословакия','Checoslovaquia'),
         succ:['CZE','SVK'] },
       { code:'UAR', from:'1958-02-22', to:'1961-09-28', flag:F_UAR, region:'Middle East', wiki:'United Arab Republic',
-        name:{en:'United Arab Republic',jp:'アラブ連合共和国',de:'Vereinigte Arabische Republik',ru:'Объединённая Арабская Республика',es:'República Árabe Unida'},
+        name:LA('United Arab Republic','アラブ連合共和国','Vereinigte Arabische Republik','Объединённая Арабская Республика','República Árabe Unida'),
         succ:['EGY','SYR'] },
       /* pre-secession configurations — WB tracks each successor separately back to 1960 (complementary split),
          so summing is clean (e.g. Pakistan 60 M + Bangladesh 69 M = 129 M in 1970). */
       { code:'PKU', from:'1947-08-14', to:'1971-12-16', flag:F_PAK, region:'South Asia', wiki:'East Pakistan',
-        name:{en:'Pakistan (incl. East Pakistan)',jp:'パキスタン（東パキスタン含む）',de:'Pakistan (mit Ostpakistan)',ru:'Пакистан (с Восточным Пакистаном)',es:'Pakistán (con Pakistán Oriental)'},
+        name:LA('Pakistan (incl. East Pakistan)','パキスタン（東パキスタン含む）','Pakistan (mit Ostpakistan)','Пакистан (с Восточным Пакистаном)','Pakistán (con Pakistán Oriental)'),
         succ:['PAK','BGD'] },
       { code:'SDU', from:'1956-01-01', to:'2011-07-09', flag:F_SDN, region:'Africa', wiki:'Sudan',
-        name:{en:'Sudan (incl. South Sudan)',jp:'スーダン（南スーダン含む）',de:'Sudan (mit Südsudan)',ru:'Судан (с Южным Суданом)',es:'Sudán (con Sudán del Sur)'},
+        name:LA('Sudan (incl. South Sudan)','スーダン（南スーダン含む）','Sudan (mit Südsudan)','Судан (с Южным Суданом)','Sudán (con Sudán del Sur)'),
         succ:['SDN','SSD'] },
       { code:'ETU', from:'1952-09-15', to:'1993-05-24', flag:F_ETH, region:'Africa', wiki:'Ethiopia',
-        name:{en:'Ethiopia (incl. Eritrea)',jp:'エチオピア（エリトリア含む）',de:'Äthiopien (mit Eritrea)',ru:'Эфиопия (с Эритреей)',es:'Etiopía (con Eritrea)'},
+        name:LA('Ethiopia (incl. Eritrea)','エチオピア（エリトリア含む）','Äthiopien (mit Eritrea)','Эфиопия (с Эритреей)','Etiopía (con Eritrea)'),
         succ:['ETH','ERI'] },
       { code:'IDU', from:'1976-07-17', to:'2002-05-20', flag:F_IDN, region:'Southeast Asia', wiki:'Indonesian occupation of East Timor',
-        name:{en:'Indonesia (incl. East Timor)',jp:'インドネシア（東ティモール含む）',de:'Indonesien (mit Osttimor)',ru:'Индонезия (с Восточным Тимором)',es:'Indonesia (con Timor Oriental)'},
+        name:LA('Indonesia (incl. East Timor)','インドネシア（東ティモール含む）','Indonesien (mit Osttimor)','Индонезия (с Восточным Тимором)','Indonesia (con Timor Oriental)'),
         succ:['IDN','TLS'] },
       /* (#R94k) pre-WWI / interwar EMPIRES — the multi-nation states that dominated the early 20th century */
       /* (#R109) EMPIRE-WIDE population/GDP estimates: Maddison has NO single entity for these multi-nation empires, so
@@ -104,19 +108,19 @@ window.IntMapModules.histStates=function(countryStats){
          billions of 2011 int$ (successor GDPpc × the full population). Used by agg + the time-series when Maddison
          lacks the entity (see agg). */
       { code:'AUH', from:'1867-06-08', to:'1918-11-11', flag:F_AUH, region:'Europe', wiki:'Austria-Hungary',
-        name:{en:'Austria-Hungary',jp:'オーストリア＝ハンガリー帝国',de:'Österreich-Ungarn',ru:'Австро-Венгрия',es:'Austria-Hungría'},
+        name:LA('Austria-Hungary','オーストリア＝ハンガリー帝国','Österreich-Ungarn','Австро-Венгрия','Austria-Hungría'),
         succ:['AUT','HUN','CZE','SVK','SVN','HRV','BIH'], popEst:52800000, gdpEst:190, estSrc:'A-H census 1910 (~51.4M) / Maddison GDPpc' },
       { code:'OTT', from:'1876-01-01', to:'1922-11-01', flag:F_OTT, region:'Middle East', wiki:'Ottoman Empire',
-        name:{en:'Ottoman Empire',jp:'オスマン帝国',de:'Osmanisches Reich',ru:'Османская империя',es:'Imperio otomano'},
+        name:LA('Ottoman Empire','オスマン帝国','Osmanisches Reich','Османская империя','Imperio otomano'),
         succ:['TUR','SYR','LBN','IRQ','JOR','ISR','PSE'], popEst:23000000, gdpEst:35, estSrc:'Ottoman census ~1914 / Maddison GDPpc' },
       { code:'RUE', from:'1800-01-01', to:'1917-11-07', flag:F_RUE, region:'Eurasia', wiki:'Russian Empire',
-        name:{en:'Russian Empire',jp:'ロシア帝国',de:'Russisches Kaiserreich',ru:'Российская империя',es:'Imperio ruso'},
+        name:LA('Russian Empire','ロシア帝国','Russisches Kaiserreich','Российская империя','Imperio ruso'),
         succ:['RUS','UKR','BLR','LTU','LVA','EST','MDA','GEO','ARM','AZE','KAZ','UZB','TKM','KGZ','TJK','FIN','POL'], popEst:166000000, gdpEst:435, estSrc:'Russian Empire census 1897/1914 (~166M) / Maddison GDPpc' },
       { code:'RAJ', from:'1858-06-28', to:'1947-08-15', flag:F_RAJ, region:'South Asia', wiki:'British Raj',
-        name:{en:'British Raj (British India)',jp:'イギリス領インド帝国',de:'Britisch-Indien',ru:'Британская Индия',es:'India británica'},
+        name:LA('British Raj (British India)','イギリス領インド帝国','Britisch-Indien','Британская Индия','India británica'),
         succ:['IND','PAK','BGD'], popEst:305000000, gdpEst:300, estSrc:'India census 1911 (~315M) / Maddison GDPpc' },
       { code:'JEM', from:'1910-08-29', to:'1945-09-02', flag:F_JEM, region:'East Asia', wiki:'Empire of Japan',
-        name:{en:'Empire of Japan',jp:'大日本帝国',de:'Japanisches Kaiserreich',ru:'Японская империя',es:'Imperio del Japón'},
+        name:LA('Empire of Japan','大日本帝国','Japanisches Kaiserreich','Японская империя','Imperio del Japón'),
         /* (#R128) Empire of Japan c.1940 ≈ 105M incl. colonies (Japan ~73M + Korea ~24M + Taiwan ~6M + Karafuto/
            Kwantung). Maddison lacks pre-1945 Korea/Taiwan, so the raw successor-sum collapsed to ~Japan-only; the
            documented empire figure keeps the pre-1945 aggregate honest (same override as AUH/OTT/RUE/RAJ). */
@@ -201,6 +205,8 @@ window.IntMapModules.histStates=function(countryStats){
 };
 
 window.IntMapModules.histId=function(countryStats){
+    /* (#R245) the renamed-state names are tuples held as data — see IntMapLang.pickArgs() */
+    const LA=window.IntMapLang.pickArgs();
     const svgU=(inner)=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20">'+inner+'</svg>';
     const flag=(inner)=>'<img class="hist-flag" alt="" src="data:image/svg+xml,'+encodeURIComponent(svgU(inner))+'">';
     const F_GEMP=flag('<rect width="30" height="6.667" fill="#000000"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#DD0000"/>');
@@ -233,38 +239,38 @@ window.IntMapModules.histId=function(countryStats){
     const F_IRPAHL=flag('<rect width="30" height="6.667" fill="#239F40"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#DA0000"/><g transform="translate(15,10)" stroke="#B8860B" stroke-width="0.4"><line x1="0" y1="-3.4" x2="0" y2="-2.2"/><line x1="0" y1="3.4" x2="0" y2="2.2"/><line x1="-3.4" y1="0" x2="-2.2" y2="0"/><line x1="3.4" y1="0" x2="2.2" y2="0"/><line x1="-2.4" y1="-2.4" x2="-1.6" y2="-1.6"/><line x1="2.4" y1="-2.4" x2="1.6" y2="-1.6"/><line x1="-2.4" y1="2.4" x2="-1.6" y2="1.6"/><line x1="2.4" y1="2.4" x2="1.6" y2="1.6"/></g><circle cx="15" cy="10" r="2.1" fill="#E8B800"/>');
     const F_ESPF=flag('<rect width="30" height="20" fill="#AA151B"/><rect y="5" width="30" height="10" fill="#F1BF00"/><g transform="translate(11,10)"><path d="M-4.4,-3 Q-1.2,-1.2 0,-3.8 Q1.2,-1.2 4.4,-3 Q2.8,0 3.2,2.4 L-3.2,2.4 Q-2.8,0 -4.4,-3 Z" fill="#1a1a1a"/><rect x="-1.5" y="-1.6" width="3" height="3.9" rx="0.4" fill="#F1BF00" stroke="#AA151B" stroke-width="0.35"/></g>');
     const ID={
-      CHN:[{from:1636,to:1912,name:{en:'Qing Empire',jp:'清',de:'Qing-Reich',ru:'Империя Цин',es:'Imperio Qing'},flag:F_QING,wiki:'Qing dynasty'},
-           {from:1912,to:1949,name:{en:'Republic of China',jp:'中華民国',de:'Republik China',ru:'Китайская Республика',es:'República de China'},flag:F_ROC,wiki:'Republic of China (1912–1949)'}],
-      DEU:[{from:1871,to:1918,name:{en:'German Empire',jp:'ドイツ帝国',de:'Deutsches Kaiserreich',ru:'Германская империя',es:'Imperio alemán'},flag:F_GEMP,wiki:'German Empire'},
-           {from:1919,to:1932,name:{en:'Weimar Republic',jp:'ヴァイマル共和政',de:'Weimarer Republik',ru:'Веймарская республика',es:'República de Weimar'},flag:F_WEIMAR,wiki:'Weimar Republic'},
-           {from:1933,to:1945,name:{en:'Nazi Germany',jp:'ナチス・ドイツ',de:'Deutsches Reich (1933–1945)',ru:'Нацистская Германия',es:'Alemania nazi'},flag:F_GEMP,wiki:'Nazi Germany'},
+      CHN:[{from:1636,to:1912,name:LA('Qing Empire','清','Qing-Reich','Империя Цин','Imperio Qing'),flag:F_QING,wiki:'Qing dynasty'},
+           {from:1912,to:1949,name:LA('Republic of China','中華民国','Republik China','Китайская Республика','República de China'),flag:F_ROC,wiki:'Republic of China (1912–1949)'}],
+      DEU:[{from:1871,to:1918,name:LA('German Empire','ドイツ帝国','Deutsches Kaiserreich','Германская империя','Imperio alemán'),flag:F_GEMP,wiki:'German Empire'},
+           {from:1919,to:1932,name:LA('Weimar Republic','ヴァイマル共和政','Weimarer Republik','Веймарская республика','República de Weimar'),flag:F_WEIMAR,wiki:'Weimar Republic'},
+           {from:1933,to:1945,name:LA('Nazi Germany','ナチス・ドイツ','Deutsches Reich (1933–1945)','Нацистская Германия','Alemania nazi'),flag:F_GEMP,wiki:'Nazi Germany'},
            /* (#R130) West Germany 1949–1990 (DEU carrier). East Germany is a separate CShapes polygon resolved via
               _VANISHED; the flag is the modern black-red-gold, correct for the FRG, so no era flag needed. */
-           {from:1949,to:1990,name:{en:'West Germany',jp:'西ドイツ',de:'Bundesrepublik Deutschland (1949–1990)',ru:'ФРГ',es:'Alemania Occidental'},wiki:'West Germany'}],
-      ITA:[{from:1861,to:1946,name:{en:'Kingdom of Italy',jp:'イタリア王国',de:'Königreich Italien',ru:'Королевство Италия',es:'Reino de Italia'},flag:F_ITK,wiki:'Kingdom of Italy'}],
-      IRN:[{from:1800,to:1925,name:{en:'Persia',jp:'ペルシャ',de:'Persien',ru:'Персия',es:'Persia'},flag:F_PERSIA,wiki:'Qajar Iran'},
+           {from:1949,to:1990,name:LA('West Germany','西ドイツ','Bundesrepublik Deutschland (1949–1990)','ФРГ','Alemania Occidental'),wiki:'West Germany'}],
+      ITA:[{from:1861,to:1946,name:LA('Kingdom of Italy','イタリア王国','Königreich Italien','Королевство Италия','Reino de Italia'),flag:F_ITK,wiki:'Kingdom of Italy'}],
+      IRN:[{from:1800,to:1925,name:LA('Persia','ペルシャ','Persien','Персия','Persia'),flag:F_PERSIA,wiki:'Qajar Iran'},
            /* (#R130) Pahlavi era 1925–1979 — was wrongly showing "Iran" + the modern Islamic-Republic flag. */
-           {from:1925,to:1979,name:{en:'Imperial State of Iran',jp:'パフレヴィー朝イラン',de:'Kaiserreich Iran',ru:'Пехлевийский Иран',es:'Estado Imperial de Irán'},flag:F_IRPAHL,wiki:'Pahlavi Iran'}],
-      THA:[{from:1800,to:1939,name:{en:'Siam',jp:'シャム',de:'Siam',ru:'Сиам',es:'Siam'},flag:F_SIAM,wiki:'Rattanakosin Kingdom'}],
-      IDN:[{from:1800,to:1945,name:{en:'Dutch East Indies',jp:'オランダ領東インド',de:'Niederländisch-Indien',ru:'Голландская Ост-Индия',es:'Indias Orientales Neerlandesas'},flag:F_NLD,wiki:'Dutch East Indies'}],
+           {from:1925,to:1979,name:LA('Imperial State of Iran','パフレヴィー朝イラン','Kaiserreich Iran','Пехлевийский Иран','Estado Imperial de Irán'),flag:F_IRPAHL,wiki:'Pahlavi Iran'}],
+      THA:[{from:1800,to:1939,name:LA('Siam','シャム','Siam','Сиам','Siam'),flag:F_SIAM,wiki:'Rattanakosin Kingdom'}],
+      IDN:[{from:1800,to:1945,name:LA('Dutch East Indies','オランダ領東インド','Niederländisch-Indien','Голландская Ост-Индия','Indias Orientales Neerlandesas'),flag:F_NLD,wiki:'Dutch East Indies'}],
       /* (#R117) 歴史国家拡充 — more per-era identities (era name + era flag + era Wikipedia on the country card) */
-      JPN:[{from:1868,to:1946,name:{en:'Empire of Japan',jp:'大日本帝国',de:'Japanisches Kaiserreich',ru:'Японская империя',es:'Imperio del Japón'},wiki:'Empire of Japan'}],   /* 日章旗 = the modern flag — keep it */
-      RUS:[{from:1721,to:1917,name:{en:'Russian Empire',jp:'ロシア帝国',de:'Russisches Kaiserreich',ru:'Российская империя',es:'Imperio ruso'},flag:F_RUEH,wiki:'Russian Empire'},
-           {from:1918,to:1922,name:{en:'Soviet Russia (RSFSR)',jp:'ソビエト・ロシア（ロシアSFSR）',de:'Sowjetrussland (RSFSR)',ru:'Советская Россия (РСФСР)',es:'Rusia soviética (RSFSR)'},flag:F_RSFSR,wiki:'Russian Soviet Federative Socialist Republic'}],
-      GBR:[{from:1801,to:1926,name:{en:'United Kingdom of Great Britain and Ireland',jp:'グレートブリテン・アイルランド連合王国',de:'Vereinigtes Königreich Großbritannien und Irland',ru:'Соединённое Королевство Великобритании и Ирландии',es:'Reino Unido de Gran Bretaña e Irlanda'},wiki:'United Kingdom of Great Britain and Ireland'}],
-      ESP:[{from:1931,to:1939,name:{en:'Spanish Republic',jp:'スペイン第二共和政',de:'Zweite Spanische Republik',ru:'Вторая Испанская Республика',es:'Segunda República Española'},flag:F_ESP2,wiki:'Second Spanish Republic'},
+      JPN:[{from:1868,to:1946,name:LA('Empire of Japan','大日本帝国','Japanisches Kaiserreich','Японская империя','Imperio del Japón'),wiki:'Empire of Japan'}],   /* 日章旗 = the modern flag — keep it */
+      RUS:[{from:1721,to:1917,name:LA('Russian Empire','ロシア帝国','Russisches Kaiserreich','Российская империя','Imperio ruso'),flag:F_RUEH,wiki:'Russian Empire'},
+           {from:1918,to:1922,name:LA('Soviet Russia (RSFSR)','ソビエト・ロシア（ロシアSFSR）','Sowjetrussland (RSFSR)','Советская Россия (РСФСР)','Rusia soviética (RSFSR)'),flag:F_RSFSR,wiki:'Russian Soviet Federative Socialist Republic'}],
+      GBR:[{from:1801,to:1926,name:LA('United Kingdom of Great Britain and Ireland','グレートブリテン・アイルランド連合王国','Vereinigtes Königreich Großbritannien und Irland','Соединённое Королевство Великобритании и Ирландии','Reino Unido de Gran Bretaña e Irlanda'),wiki:'United Kingdom of Great Britain and Ireland'}],
+      ESP:[{from:1931,to:1939,name:LA('Spanish Republic','スペイン第二共和政','Zweite Spanische Republik','Вторая Испанская Республика','Segunda República Española'),flag:F_ESP2,wiki:'Second Spanish Republic'},
            /* (#R130) Francoist Spain 1939–1975 — rojigualda with the eagle of St John (modern Spain shows a different coat of arms). */
-           {from:1939,to:1975,name:{en:'Francoist Spain',jp:'フランコ体制期のスペイン',de:'Spanien unter Franco',ru:'Франкистская Испания',es:'España franquista'},flag:F_ESPF,wiki:'Francoist Spain'}],
-      PRT:[{from:1800,to:1910,name:{en:'Kingdom of Portugal',jp:'ポルトガル王国',de:'Königreich Portugal',ru:'Королевство Португалия',es:'Reino de Portugal'},flag:F_PTK,wiki:'Kingdom of Portugal'}],
-      BRA:[{from:1822,to:1889,name:{en:'Empire of Brazil',jp:'ブラジル帝国',de:'Kaiserreich Brasilien',ru:'Бразильская империя',es:'Imperio del Brasil'},flag:F_BRE,wiki:'Empire of Brazil'}],
-      EGY:[{from:1922,to:1952,name:{en:'Kingdom of Egypt',jp:'エジプト王国',de:'Königreich Ägypten',ru:'Королевство Египет',es:'Reino de Egipto'},flag:F_EGYK,wiki:'Kingdom of Egypt'}],
+           {from:1939,to:1975,name:LA('Francoist Spain','フランコ体制期のスペイン','Spanien unter Franco','Франкистская Испания','España franquista'),flag:F_ESPF,wiki:'Francoist Spain'}],
+      PRT:[{from:1800,to:1910,name:LA('Kingdom of Portugal','ポルトガル王国','Königreich Portugal','Королевство Португалия','Reino de Portugal'),flag:F_PTK,wiki:'Kingdom of Portugal'}],
+      BRA:[{from:1822,to:1889,name:LA('Empire of Brazil','ブラジル帝国','Kaiserreich Brasilien','Бразильская империя','Imperio del Brasil'),flag:F_BRE,wiki:'Empire of Brazil'}],
+      EGY:[{from:1922,to:1952,name:LA('Kingdom of Egypt','エジプト王国','Königreich Ägypten','Королевство Египет','Reino de Egipto'),flag:F_EGYK,wiki:'Kingdom of Egypt'}],
       /* (#R118) further era identities — era Wikipedia + era name (flags unchanged where the flag was the same) */
-      FRA:[{from:1870,to:1940,name:{en:'French Third Republic',jp:'フランス第三共和政',de:'Dritte Französische Republik',ru:'Третья французская республика',es:'Tercera República Francesa'},wiki:'French Third Republic'}],
-      HUN:[{from:1920,to:1946,name:{en:'Kingdom of Hungary',jp:'ハンガリー王国',de:'Königreich Ungarn',ru:'Королевство Венгрия',es:'Reino de Hungría'},flag:F_HUNK,wiki:'Kingdom of Hungary (1920–1946)'}],
+      FRA:[{from:1870,to:1940,name:LA('French Third Republic','フランス第三共和政','Dritte Französische Republik','Третья французская республика','Tercera República Francesa'),wiki:'French Third Republic'}],
+      HUN:[{from:1920,to:1946,name:LA('Kingdom of Hungary','ハンガリー王国','Königreich Ungarn','Королевство Венгрия','Reino de Hungría'),flag:F_HUNK,wiki:'Kingdom of Hungary (1920–1946)'}],
       /* (#R128) more per-era identities so the card shows the era name/flag (not the modern "South Korea"/"Ethiopia").
          KOR keeps the Taegukgi (historically continuous); imperial Ethiopia uses the plain tricolor (F_ETHIMP). */
-      KOR:[{from:1897,to:1910,name:{en:'Korean Empire',jp:'大韓帝国',de:'Kaiserreich Korea',ru:'Корейская империя',es:'Imperio coreano'},wiki:'Korean Empire'}],
-      ETH:[{from:1855,to:1974,name:{en:'Ethiopian Empire',jp:'エチオピア帝国',de:'Kaiserreich Abessinien',ru:'Эфиопская империя',es:'Imperio etíope'},flag:F_ETHIMP,wiki:'Ethiopian Empire'}]
+      KOR:[{from:1897,to:1910,name:LA('Korean Empire','大韓帝国','Kaiserreich Korea','Корейская империя','Imperio coreano'),wiki:'Korean Empire'}],
+      ETH:[{from:1855,to:1974,name:LA('Ethiopian Empire','エチオピア帝国','Kaiserreich Abessinien','Эфиопская империя','Imperio etíope'),flag:F_ETHIMP,wiki:'Ethiopian Empire'}]
     };
     function at(code,year){ const arr=ID[code]; if(!arr||!year) return null; for(const e of arr){ if(year>=e.from&&year<=e.to) return e; } return null; }
     let _applied=null;

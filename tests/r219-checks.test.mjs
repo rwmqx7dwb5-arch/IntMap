@@ -107,7 +107,12 @@ test('R219 ③ the distance ladder is strictly increasing and ends at the partic
   /* every rung carries all five languages and a source — standing rule 3 and rule 4 */
   for (const [key, au, lbl, src] of C.RUNGS) {
     assert.ok(au > 0 && isFinite(au), key + ' has no radius');
-    for (const l of ['en', 'ja', 'de', 'ru', 'es']) assert.ok(lbl[l] && lbl[l].length > 2, key + ' is missing ' + l);
+    /* ⚠ (#R245) the label is a TUPLE HELD AS DATA now (IntMapLang.pickArgs()), not an object keyed
+       by language code — the eleventh shape #R244 measured, which no instrument could see and which
+       had no inline-table fallback, so fr/ko/zh read the English rung label for ever. Same five
+       strings, same order as every L(…) call site in the app: en, jp, de, ru, es. */
+    assert.ok(Array.isArray(lbl), key + ' holds its label as a tuple, not a language-keyed object');
+    ['en', 'jp', 'de', 'ru', 'es'].forEach((l, i) => assert.ok(lbl[i] && lbl[i].length > 2, key + ' is missing ' + l));
     assert.ok(src && src.length > 4, key + ' has no source');
   }
   /* the horizon: 46.5 Gly comoving, in AU. ⚠ NOT 13.8 Gly — the light travel time is not the radius. */

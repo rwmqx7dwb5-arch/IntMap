@@ -562,7 +562,8 @@ const _wxCache=new Map();
       HOST.lastLayerVal = cv||''; return; }
     if(lyr==='climate'){ let code=null; try{ code=window.sampleKoppenAt&&window.sampleKoppenAt(lng,lat); }catch(_){}
       /* no leading emoji on the layer value (#34) */
-      HOST.lastLayerVal = code ? (code+(window.KNAME&&window.KNAME[code]?' · '+(window.KNAME[code][HOST.lang]||window.KNAME[code].en):'')) : ''; return; }
+      /* (#R245) one climate-name lookup for the whole app — see window.kName in js/data-layers.js */
+      HOST.lastLayerVal = code ? (code+((window.kName&&window.kName(code)!==code)?' · '+window.kName(code):'')) : ''; return; }
     /* (#R27) Cache on a COARSER 0.25° grid (was 0.1°). SST / air-temp barely change over ~28 km, so a
        coarser grid means the cursor lands on an ALREADY-cached cell far more often → the value is shown
        instantly (no fetch) across a whole local area, and far fewer network calls fire. This is the main

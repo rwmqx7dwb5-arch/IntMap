@@ -24,8 +24,13 @@ test('R153 #1 Köppen legend dynamic per-language width + shorter rows + RU/ES n
   assert.match(html, /\.koppen-legend\{[^}]*width:220px; min-width:180px; max-width:460px;/, 'R154: dynamic per-language width (clamped 172–340), replacing the fixed 264px lock');
   assert.match(html, /lg\.style\.width=w\+'px';/, 'R154: _fitKoppenLegend measures the widest row and sets the exact width');
   assert.match(html, /\.kl-item\{[^}]*padding:0 4px;[^}]*line-height:1\.2;/, 'row block shortened (padding 0, line-height 1.2) so the last zone is reachable');
-  assert.match(html, /window\.KNAME\[k\]\.ru=_kru\[k\]/, 'Russian climate names applied to KNAME');
-  assert.match(html, /window\.KNAME\[k\]\.es=_kes\[k\]/, 'Spanish climate names applied to KNAME');
+  /* ⚠ (#R245) the four tables became ONE. `_kru`/`_kes` were patch passes over an `{en,jp}` literal —
+     the two-lists defect and #R244's eleventh translation shape at the same time. What this test is
+     about is that Russian and Spanish climate names EXIST and reach the reader, so it now asks the
+     one table for them. */
+  assert.match(html, /Cfb:LA\('Oceanic','西岸海洋性','Ozeanisch','Океанический','Oceánico'\)/,
+    'one table, five languages per climate');
+  assert.match(html, /window\.kName=function\(code\)/, 'and one accessor every reader goes through');
   assert.match(html, /Влажный тропический лес/, 'a real Russian climate name is present');
   assert.match(html, /Selva tropical/, 'a real Spanish climate name is present');
 });

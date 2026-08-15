@@ -23,6 +23,8 @@ window.IntMapModules.flightSim=function(HOST){
   return (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { start(){}, stop(){}, active:()=>false };
     const LL=window.IntMapLang.pick(()=>HOST.lang);
+    /* (#R245) the aircraft names are tuples held as data — see IntMapLang.pickArgs() */
+    const LA=window.IntMapLang.pickArgs();
     let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false; const keys={};
     /* (#R175) SPAWN CLEARANCE, in one place. An airborne start is normally lifted to ground +1,500 m and
        held above ground +1,200 m until the DEM has settled (#R95) — the pre-flight card gives no altitude,
@@ -58,28 +60,28 @@ window.IntMapModules.flightSim=function(HOST){
        published C172 dataset; the others are scaled to distinct, realistic handling. */
     const _DRV={ Cyb:-0.31, Clb:-0.089, Clp:-0.47, Clr:0.096, Cma:-0.89, Cmq:-12.4, Cm0:0.04, Cnb:0.065, Cnr:-0.099, Cnda:-0.053 };
     const AIRCRAFT={
-      cessna:{ name:{en:'Cessna 172 · trainer',jp:'セスナ172 · 練習機',de:'Cessna 172 · Schulflugzeug',ru:'Cessna 172 · учебный',es:'Cessna 172 · escuela'}, icon:'🛩',
+      cessna:{ name:LA('Cessna 172 · trainer','セスナ172 · 練習機','Cessna 172 · Schulflugzeug','Cessna 172 · учебный','Cessna 172 · escuela'), icon:'🛩',
         m:1043, S:16.2, b:11.0, c:1.49, Ix:1290, Iy:1825, Iz:2670, Hp:24, propTq:0.9,
         CL0:0.31, CLa:5.14, aStall:0.30, CD0:0.031, k:0.054, Tmax:3400, prop:true, Vne:87, Vstall:27, Vcruise:57, ceil:4100, gLim:4.4, ab:false,
         Clda:0.088, Cmde:-1.12, Cndr:-0.072, drv:{} },
-      warbird:{ name:{en:'P-51 Mustang · warbird',jp:'P-51 マスタング · 大戦機',de:'P-51 Mustang',ru:'P-51 Mustang',es:'P-51 Mustang'}, icon:'✈',
+      warbird:{ name:LA('P-51 Mustang · warbird','P-51 マスタング · 大戦機','P-51 Mustang','P-51 Mustang','P-51 Mustang'), icon:'✈',
         m:4300, S:21.8, b:11.3, c:2.0, Ix:9200, Iy:11000, Iz:19000, Hp:150, propTq:1.6,
         CL0:0.24, CLa:5.6, aStall:0.28, CD0:0.025, k:0.05, Tmax:16000, prop:true, Vne:220, Vstall:43, Vcruise:150, ceil:12700, gLim:8, ab:false,
         Clda:0.06, Cmde:-1.25, Cndr:-0.085, drv:{Cma:-0.9,Cmq:-11,Clp:-0.5,Cnb:0.08,Cnr:-0.12,Cyb:-0.4} },
-      airliner:{ name:{en:'Airliner A320 · jet',jp:'旅客機 A320 · ジェット',de:'Verkehrsjet A320',ru:'Авиалайнер A320',es:'Avión A320'}, icon:'🛫',
+      airliner:{ name:LA('Airliner A320 · jet','旅客機 A320 · ジェット','Verkehrsjet A320','Авиалайнер A320','Avión A320'), icon:'🛫',
         m:64000, S:122, b:34, c:4.3, Ix:1.3e6, Iy:3.3e6, Iz:4.5e6, Hp:0, propTq:0,
         CL0:0.22, CLa:5.4, aStall:0.27, CD0:0.021, k:0.043, Tmax:220000, prop:false, Vne:265, Vstall:64, Vcruise:175, ceil:12500, gLim:2.5, ab:false,
         Clda:0.028, Cmde:-1.0, Cndr:-0.08, drv:{Cma:-1.2,Cmq:-18,Clp:-0.45,Cnb:0.12,Cnr:-0.20,Cyb:-0.6,Cnda:-0.02} },
-      fighter:{ name:{en:'F-16 · fighter',jp:'F-16 · 戦闘機',de:'F-16 · Jäger',ru:'F-16 · истребитель',es:'F-16 · caza'}, icon:'🚀',
+      fighter:{ name:LA('F-16 · fighter','F-16 · 戦闘機','F-16 · Jäger','F-16 · истребитель','F-16 · caza'), icon:'🚀',
         m:9500, S:27, b:9.4, c:3.45, Ix:12800, Iy:75000, Iz:85000, Hp:0, propTq:0,
         CL0:0.10, CLa:5.2, aStall:0.42, CD0:0.020, k:0.09, Tmax:76000, abMax:127000, prop:false, Vne:600, Vstall:60, Vcruise:230, ceil:15200, gLim:9, ab:true,
         Clda:0.033, Cmde:-1.6, Cndr:-0.09, drv:{Cma:-0.35,Cmq:-5,Clp:-0.35,Cnb:0.09,Cnr:-0.35,Cyb:-1.0,Cnda:-0.004} },
-      glider:{ name:{en:'Glider · sailplane',jp:'グライダー · 滑空機',de:'Segelflugzeug',ru:'Планёр',es:'Planeador'}, icon:'🪂',
+      glider:{ name:LA('Glider · sailplane','グライダー · 滑空機','Segelflugzeug','Планёр','Planeador'), icon:'🪂',
         m:600, S:15, b:18, c:0.83, Ix:2500, Iy:1150, Iz:3500, Hp:0, propTq:0,
         CL0:0.35, CLa:5.9, aStall:0.30, CD0:0.011, k:0.026, Tmax:0, prop:false, Vne:75, Vstall:19, Vcruise:33, ceil:8000, gLim:5.3, ab:false,
         Clda:0.13, Cmde:-1.4, Cndr:-0.08, drv:{Cma:-1.0,Cmq:-14,Clp:-0.55,Cnb:0.05,Cnr:-0.08,Cyb:-0.3} },
       /* (#R96) F-35A Lightning II — real-ish figures: ~15 t, S 42.7 m², F135 125 kN dry / 191 kN wet, 9 g, M1.6, high-alpha. */
-      f35:{ name:{en:'F-35 Lightning II · stealth fighter',jp:'F-35 ライトニングII · ステルス戦闘機',de:'F-35 · Tarnkappenjäger',ru:'F-35 · истребитель-невидимка',es:'F-35 · caza furtivo'}, icon:'⚡',
+      f35:{ name:LA('F-35 Lightning II · stealth fighter','F-35 ライトニングII · ステルス戦闘機','F-35 · Tarnkappenjäger','F-35 · истребитель-невидимка','F-35 · caza furtivo'), icon:'⚡',
         m:15000, S:42.7, b:10.7, c:4.3, Ix:18000, Iy:190000, Iz:200000, Hp:0, propTq:0,
         CL0:0.06, CLa:4.9, aStall:0.44, CD0:0.022, k:0.11, Tmax:125000, abMax:191000, prop:false, Vne:590, Vstall:68, Vcruise:240, ceil:15240, gLim:9, ab:true,
         Clda:0.032, Cmde:-1.5, Cndr:-0.085, drv:{Cma:-0.4,Cmq:-6,Clp:-0.4,Cnb:0.10,Cnr:-0.4,Cyb:-1.0,Cnda:-0.004} }
@@ -654,7 +656,7 @@ window.IntMapModules.flightSim=function(HOST){
     /* (#R94p) refresh the non-numeric HUD chrome (aircraft name, flap/gear/camera chips, button highlights) —
        called on build and whenever an action key/button changes a discrete state. */
     function syncHUDChrome(){ if(!hud||!st) return; const ac=AC(), q=s=>hud.querySelector(s);
-      const nm=(ac.name&&(ac.name[HOST.lang]||ac.name.en))||acKey; const nEl=q('.fs-acname'); if(nEl) nEl.textContent=(ac.icon?ac.icon+' ':'')+nm;
+      const nm=(ac.name&&LL.arr(ac.name))||acKey; const nEl=q('.fs-acname'); if(nEl) nEl.textContent=(ac.icon?ac.icon+' ':'')+nm;
       const mc=q('.fs-mach'); if(mc) mc.textContent=(!ac.prop&&st.V>120)?('M'+(st.V/300).toFixed(2)):'';
       const upL=LL('UP','格納','EIN','УБР','ARR');
       const fl=q('.fs-cfg-flaps'); if(fl){ const p=st.flaps>0.99?'FULL':st.flaps>0.5?'②':st.flaps>0.1?'①':upL; fl.textContent=LL('FLAPS','フラップ','KLAPPEN','ЗАКРЫЛКИ','FLAPS')+' '+p; fl.classList.toggle('on',st.flaps>0.05); }
@@ -1015,7 +1017,7 @@ window.IntMapModules.flightSim=function(HOST){
           +'.fss-go{flex:1;font-size:15px;font-weight:800;letter-spacing:.06em;color:#fff;background:linear-gradient(135deg,#0a84ff,#34c759);border:none;border-radius:11px;padding:12px;cursor:pointer;}';
         document.head.appendChild(s); }
       const selAc=(opts.aircraft&&AIRCRAFT[opts.aircraft])?opts.aircraft:acKey;
-      const acRows=AKEYS.map(k=>{ const a=AIRCRAFT[k], nm=((a.name&&(a.name[HOST.lang]||a.name.en))||k).split('·')[0].trim(); return '<button class="fss-ac'+(k===selAc?' on':'')+'" data-ac="'+k+'">'+(a.icon?a.icon+' ':'')+nm+'</button>'; }).join('');
+      const acRows=AKEYS.map(k=>{ const a=AIRCRAFT[k], nm=((a.name&&LL.arr(a.name))||k).split('·')[0].trim(); return '<button class="fss-ac'+(k===selAc?' on':'')+'" data-ac="'+k+'">'+(a.icon?a.icon+' ':'')+nm+'</button>'; }).join('');
       /* (#R170) the previous flight's end point is a first-class start location, listed first and preselected
          when we got here from "Fly again" — that IS 「終了地点から再飛行」. It is offered on a fresh launch too
          (it persists), so "carry on from where I came down" doesn't require going through the result screen. */

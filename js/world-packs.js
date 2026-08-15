@@ -219,7 +219,9 @@ window.IntMapModules.worldPacks=function(HOST){
        ⚠ `_registerLayerOpacity` must be called with the layer ids, and again when they change —
        for the raster families the layer does not exist until the first image lands, so `open()`
        takes a THUNK for the ids and re-registers on every render. */
-    function panelNames(o){ return [o.en,o.jp||o.en,o.de||o.en,o.ru||o.en,o.es||o.en]; }
+    /* (#R245) `names()` returns what `IntMapLang.pickArgs()` returns — the tuple as an ARRAY, which
+       is already this shape. The object form is kept for anything that has not been converted yet. */
+    function panelNames(o){ return Array.isArray(o)?o:[o.en,o.jp||o.en,o.de||o.en,o.ru||o.en,o.es||o.en]; }
     function makePanel(id,title,cbId,opt){
       opt=opt||{};
       const LID=opt.legendId||id;                 /* the legend id === the opacity id (#R19) */
@@ -349,7 +351,7 @@ window.IntMapModules.worldPacks=function(HOST){
       let on=false, dir='X', section='', topN=15, iso=null, rows=null, year=null, busy=false, pop=null;
       const panel=makePanel('wp-trade-panel',()=>'🚢 '+L('Trade flows','貿易フロー','Handelsströme','Торговые потоки','Flujos comerciales'),'wp-dl-trade',
         { legendId:'wptrade', layers:()=>['wp-trade-fill'].concat(LYR),
-          names:()=>({en:'🚢 Trade flows',jp:'🚢 貿易フロー',de:'🚢 Handelsströme',ru:'🚢 Торговые потоки',es:'🚢 Flujos comerciales'}) });
+          names:()=>(LA('🚢 Trade flows','🚢 貿易フロー','🚢 Handelsströme','🚢 Торговые потоки','🚢 Flujos comerciales')) });
 
       /* ══ (#R212) THEY ARE ARROWS. 「いや矢印って言ってんだろうが。」 ═══════════════════════════════
          A trade flow has a direction and a bare line does not carry one. Two flat-coloured icons
@@ -606,7 +608,7 @@ window.IntMapModules.worldPacks=function(HOST){
       let on=false, iso=null, kind='elec';
       const panel=makePanel('wp-energy-panel',()=>'⚡ '+L('Energy mix','エネルギー構成','Energiemix','Энергобаланс','Mezcla energética'),'wp-dl-energy',
         { legendId:'wpenergy', layers:()=>[fillId('elec'),fillId('prim')],
-          names:()=>({en:'⚡ Energy mix',jp:'⚡ エネルギー構成',de:'⚡ Energiemix',ru:'⚡ Энергобаланс',es:'⚡ Mezcla energética'}) });
+          names:()=>(LA('⚡ Energy mix','⚡ エネルギー構成','⚡ Energiemix','⚡ Энергобаланс','⚡ Mezcla energética')) });
       const partName=(p)=>HOST.lang==='jp'?p[2]:p[1];
 
       function fillId(k){ return 'wp-'+k+'-fill'; }
@@ -770,7 +772,7 @@ window.IntMapModules.worldPacks=function(HOST){
       let lastAt=0;
       const panel=makePanel('wp-alert-panel',()=>'⚠ '+L('Warnings','気象・災害警報','Warnungen','Предупреждения','Avisos'),'wp-dl-alerts',
         { legendId:'wpalerts', layers:()=>LYR.concat([CHORO]),
-          names:()=>({en:'⚠ Weather & disaster warnings',jp:'⚠ 気象・災害警報',de:'⚠ Wetter- und Katastrophenwarnungen',ru:'⚠ Метеопредупреждения',es:'⚠ Avisos meteorológicos'}) });
+          names:()=>(LA('⚠ Weather & disaster warnings','⚠ 気象・災害警報','⚠ Wetter- und Katastrophenwarnungen','⚠ Метеопредупреждения','⚠ Avisos meteorológicos')) });
       /* JMA warning codes → the kind of hazard, and the tier the code belongs to.
          Tier comes from the code range JMA publishes: 3x = 特別警報, 0x/1x = 警報, 2x = 注意報. */
       const JMA_KIND={'02':['暴風雪','Snowstorm'],'03':['大雨','Heavy rain'],'04':['洪水','Flood'],'05':['暴風','Storm'],
@@ -1075,7 +1077,7 @@ window.IntMapModules.worldPacks=function(HOST){
       let playTmr=0, playStep=20*60e3, floodTick=0;
       const panel=makePanel('wp-tide-panel',()=>'🌊 '+L('Tides','潮汐','Gezeiten','Приливы','Mareas'),'wp-dl-tides',
         { legendId:'wptides', layers:()=>[LYR,PT,SEL,LBL,SELLBL],
-          names:()=>({en:'🌊 Tides',jp:'🌊 潮汐（満潮・干潮）',de:'🌊 Gezeiten',ru:'🌊 Приливы',es:'🌊 Mareas'}) });
+          names:()=>(LA('🌊 Tides','🌊 潮汐（満潮・干潮）','🌊 Gezeiten','🌊 Приливы','🌊 Mareas')) });
       function ensureLayers(){ if(!_imCanDraw()) return false; try{
         if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         if(!GE().layers.has(PT)) GE().layers.add({id:PT,type:'circle',source:SRC,layout:{visibility:'none'},
@@ -1511,7 +1513,7 @@ window.IntMapModules.worldPacks=function(HOST){
       let on=false, crop='Wheat', variable='Harvested area', supply='Total', busy=false, drawKey='', lastMeta=null;
       const panel=makePanel('wp-crop-panel',()=>'🌾 '+L('Crop cultivation','作物の栽培','Feldfrüchte','Сельхозкультуры','Cultivos'),'wp-dl-crops',
         { legendId:'wpcrop', layers:()=>[LYR],
-          names:()=>({en:'🌾 Crop cultivation',jp:'🌾 作物の栽培',de:'🌾 Feldfrüchte',ru:'🌾 Сельхозкультуры',es:'🌾 Cultivos'}) });
+          names:()=>(LA('🌾 Crop cultivation','🌾 作物の栽培','🌾 Feldfrüchte','🌾 Сельхозкультуры','🌾 Cultivos')) });
       /* ⚠ (#R241) this was `HOST.lang==='jp' ? r[1] : k` — thirty-one crop names in English on
          every language but Japanese, in a shape no instrument reads (the two-branch audit sees
          `jp ? 'literal' : 'literal'`, and both arms here are variables). */

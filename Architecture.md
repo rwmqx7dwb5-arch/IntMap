@@ -250,8 +250,22 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
       ⚠ **5言語すべて揃っている site しか触らない**——`t()` は位置引数で、4引数の call site は門に落ちる。
       ⚠ **散文かコードかを判定する**（初版は Atlas の同義語表 `{english:'en',deutsch:'de',…}` を書き換えて
       機能を壊し、Google News の `hl=…&gl=…&ceid=…` を翻訳表に入れた。両方とも取り消した）。
-    · **#R244 時点：17 サイト変換／残り 713 サイト・20 ファイル**（`time-borders.js` 276・`wb-layers.js` 100・
-      `reference-data.js` 87・`tables.js` 54・`data-layers.js` 41・`history.js` 39・`atlas-console.js` 34 ほか）。
+    · **#R245 時点：残り 590 サイト・12 ファイル**（`time-borders.js` 268・`wb-layers.js` 100・
+      `reference-data.js` 87・`tables.js` 54・`atlas-console.js` 34・`industry-web.js` 14・`app-body.js` 11・
+      `night-sky.js` 7・`map-tools.js` 6・`routing.js` 6・`news-ui.js` 2・`news-feed.js` 1）。
+      `tests/r245 ⑧b` がラチェットなので**この数字は上がれない**。
+    · ⚠ (#R245) **9ファイルを閉じた**（`data-layers.js` 41・`history.js` 39・`space-cosmos.js` 17・
+      `time-borders.js` 8・`flight-sim.js` 6・`world-packs.js` 5・`map-extras.js` 3・`engine-select.js` 2・
+      `ocean-currents.js` 1）。**変換の形は `IntMapLang.pickArgs()`**（渡された配列をそのまま返すので
+      データは不変、ファイルにはふつうの CallExpression が現れる）、**読み出しは `pick()` 自身
+      （`L.arr(x)`）**——位置引数を越えた言語は英語をキーに inline 表へ届く。
+      ⚠⚠ **ケッペンの気候名は「4つの表」だった**（`{en,jp}` リテラル＋`_kde`/`_kru`/`_kes` を起動時に
+      patch）。1つの表・1つのアクセサ `window.kName()` にし、`js/map-ui.js` と `js/map-readout.js` も
+      それを訊く。⚠ **計器の宇宙が2度広がった**（inline 2,726→2,848／位置引数 3,226→3,347）——
+      露出した 122 文字列を fr/ko/zh へ書き、zh-Hans は生成。`Tundra`/`Tibet`/`Manchukuo`/`Siam`/`Persia`
+      はその言語の語なので `NEUTRAL` に理由付きで登録した。
+      ⚠ 新しいスコープに `LA` を宣言し忘れた3ファイルは `scripts/static-checks.mjs` の
+      **`split-scope`** が捕まえた（＝本物のスコープバグ。2ラウンド連続でこの検査が効いている）。
   - ⚠ (#R235) **inline への追記は `scripts/i18n-append-inline.mjs` を使う**（既存の `inline` に挿入するだけ・既存キーには触らない）。`scripts/build-ui-zh.mjs` が文書化している「`rm ui.zh.js` → `--template` → rebuild」は**非可逆に壊れる**——`scripts/zh/*.json` は `ui.zh.js` の完全な出所ではなく、実行すると実訳が **2,082 → 1,877（205 件消失）**する（#R235 で実測・取り消し済み）。⚠ `ui.zh-hans.js` は**手で書かない**（`tests/r224 ④`・`tests/r231`）——繁体を直してから `node scripts/zh-hans.mjs`。
 
 ---
@@ -1322,6 +1336,17 @@ js/
                                     log₁₀A = −3.49+0.91·M、M7.5 で 2,163 km²・等価半径26 km）として扱われ、距離は
                                     max(0, R_epi − a) を震源深さと合成したものになる。擬似深さは**両方から**消えた。
                                     ⚠ 距離の変換は `srcDistM()` **1か所**（buildField・buildFar・mmiRings・at() の4人が通る）。
+                                    ⚠⚠⚠ (#R245) **細密画像と遠方環状は「厳密なタイリング」で、継ぎ目に補間が無い。**
+                                    細密画像の箱（`W/E/Nn/Ss`）は遠方ラスタのセル境界へ**外向きに吸着**され
+                                    （`snapLngFar`/`snapLatFar`・`FAR_N()` は両方が読む1つの宣言）、
+                                    どの遠方セルも箱の完全な内側か完全な外側になる——**二重に描かれるセルも、
+                                    どちらにも描かれないセルも無い**。そのうえで遠方層だけ
+                                    `raster-resampling:'nearest'`。既定の `linear` は透明セルへ向けてアルファを
+                                    1セル（28 km）かけて溶かし、**長方形に沿って基図が透ける線**を作っていた
+                                    （#R244 の距離修正の後も残っていた「四角形の線」の正体。合成フレームで実測5画素）。
+                                    ⚠ 重ねる（＝両方が塗る帯を作る）のは**不可**：`raster-opacity` 0.85 の2層は
+                                    1−0.15²=0.9775 に合成されるので、重なりは両隣と違う透明度になる（実測 15/255）。
+                                    ⚠ 残る副画素ずれ：南北の端のみ約 1.4 km（描画側。データの吸着は厳密）。
                                     ⚠⚠ (#R223) **場址項は DEM が届かない場所でも一様にならない**——`js/vs30-mask.js` の
                                     同梱 0.25° Vs30 が、遠方場（28 kmセル）・タイル欠損セル・勾配基線が粗いセルを埋める。
                                     3ラウンド続いた「震度分布が同心円」の最後の扉。パネルの表示も3択になった
@@ -3040,6 +3065,12 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
   レンダラが座標に括り付ける**地名クリックのポップアップは対象外**（`makeDraggable` を通らない）。
   戻すときのために `parent` / `nextSibling` / **インラインstyleの文字列**を覚えている。
   Atlas パネルは `data-nodock` で除外（既に `atl-tab` でサイドバーに住む）。
+  ⚠⚠⚠ (#R245) **「どの要素を監視済みか」の集合はオブザーバと同じ寿命**（`__dockWatched` は `WeakSet`、
+  `_dockWatch(true)` で作られ `_dockWatch(false)` で捨てられる）。以前は印が**要素のプロパティ**にあり、
+  `__winReg` の要素についてしか消していなかった——`__winReg` は構造上**凡例を持たない**ので、
+  モードを一度切って戻すと**新しいオブザーバが凡例を一つも監視しない**状態になった。
+  これが #R244 で再現できなかった「ケッペン凡例がパネルに入らない環境」の正体で、環境ではなく**順序**。
+  ⚠ #R244 が足した2本目の経路（レイヤーのチェックボックスが変わるたびに `dockRefresh()`）はそのまま残る。
 - **設定モーダル**：言語・タイムゾーン・単位・テーマ・ニュース言語・衛星鍵(任意)・AI利用状況・出典・規約/プライバシー。
   **「地図の動作」セクション**には (#R171) **地図の傾きの上限**（標準78° / 無制限＝レンダラーの全域 0–180°）と
   **常時表示欄に視点の高度**（既定オフ）が入る。どちらも Atlas からも操作できる（`tiltLimit` / `eyeAltitude`）。
