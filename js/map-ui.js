@@ -1182,6 +1182,32 @@ window.IntMapModules.viewHash=function(HOST){
   (function(){
     if(!GE().hasRenderer()) return;
     let restoring=false, t=null;
+    /* ══ ⚠⚠⚠ (#R244) THE URL THE READER OPENED IS READ ONCE, BEFORE ANYTHING CAN OVERWRITE IT ═══════
+       「再読み込み時に情報が保持されなくなっている。」
+
+       MEASURED: open `…#v=2.3522,48.8566,6.00,0,0,g&l=dl-subcables`, and one second later the address
+       bar reads `#v=-84.7787,20.0000,1.70,0,0,g&l=…` — the DEFAULT view — and the map is at the
+       default. `sessionStorage.intmap_restore_try`, which `markAttempt` writes from inside
+       `restore()`, held the DEFAULT hash too: by the time the restorer looked, the hash it was
+       supposed to restore was already gone.
+
+       The writer is `save()` in this same closure. It is armed on `moveend` with a 400 ms timer,
+       and the restorer waits for the renderer — `GE().events.on('load',restore)` — so on any load
+       where the initial camera settles before the style finishes, the sequence is
+           moveend → save() (writes the DEFAULT camera over the hash) → load → restore() (reads it).
+       `restoring` cannot help: it is only set once `restore` has started, i.e. after the damage.
+       That is [[intmap-recurring-lessons]] G one level up — TWO things own the hash, and the one
+       that writes runs first.
+
+       ⚠ TWO LATCHES, AND THE FIRST ONE IS THE FIX. `BOOT_HASH` is the address the document was
+       opened with, captured at evaluation time, and it is what a boot restore parses — so even a
+       writer that beats the restorer cannot cost the reader their state. `booted` then says 「the
+       boot restore has had its turn」, and nothing is written to the address bar before it is true,
+       so the URL a reader shares is never a default that overwrote their own. The backstop timer
+       exists because `load` may already have fired when this module is evaluated, in which case
+       `on('load',…)` never calls back and the hash would freeze for the whole session. */
+    const BOOT_HASH=(function(){ try{ return location.hash||''; }catch(_){ return ''; } })();
+    let booted=false, bootDone=false, bootRan=false;
     /* (#R42b) Per-TAB flag: true on the FIRST load of a tab (a fresh open / a shared link / a copied address
        bar opened on another device), false on a plain RELOAD of the same tab. sessionStorage survives reload
        but is absent in a new tab. This lets a shared/opened URL restore the FULL state while a reload of your
@@ -1274,29 +1300,35 @@ window.IntMapModules.viewHash=function(HOST){
        the FULL state straight to the address bar — so the URL is itself a complete copy-and-share link — while
        the SAME reload-clean behaviour is preserved via the per-tab `firstLoad` sessionStorage flag (a reload of
        your own tab restores the view only; a fresh open / shared link / same-tab paste restores everything). */
-    function save(){ if(restoring || window._imDemoActive) return; const h=encode(); if(!h) return; try{ history.replaceState(null,'',location.pathname+location.search+h); }catch(_){} }
+    /* (#R244) …and nothing is written until the boot restore has had its turn — see BOOT_HASH */
+    function save(){ if(!booted || restoring || window._imDemoActive) return; const h=encode(); if(!h) return; try{ history.replaceState(null,'',location.pathname+location.search+h); }catch(_){} }
     /* (#R42b) restore. The VIEW (center/zoom/bearing/pitch/projection) is ALWAYS restored. The FULL state
        (layers + time-travel + compare + base map, EXACTLY) is restored when this is a shared/explicit open —
        i.e. a hashchange navigation (opts.shared, e.g. pasting a link in the same tab) OR the first load of the
        tab (firstLoad: a new tab / another device / a copied link). A plain RELOAD of the same tab restores the
        view only (R33). Legacy self=1 links still fully restore (firstLoad handles them). */
-    function restore(opts){ const m=/[#&]v=([^&]+)/.exec(location.hash); if(!m) return; restoring=true;
+    function restore(opts){
+      /* ⚠ (#R244) THE BOOT PASS PARSES THE ADDRESS THE DOCUMENT WAS OPENED WITH, not whatever is in
+         the bar by the time the renderer got round to calling back — see BOOT_HASH above. A hash
+         NAVIGATION (`opts.shared`) is a new intention and reads the live value, as it must. */
+      const H=(opts&&opts.shared===true)?location.hash:(bootDone?location.hash:BOOT_HASH);
+      const m=/[#&]v=([^&]+)/.exec(H); if(!m){ booted=true; return; } restoring=true;
       /* (#R211) a plain reload restores everything too — unless the previous attempt at this very
          hash did not survive, in which case only the view comes back (see `crashed` above). */
       const full = (!!(opts&&opts.shared===true) || firstLoad!==false || !crashed);
-      if(full) markAttempt(location.hash);
+      if(full) markAttempt(H);
       try{ const p=decodeURIComponent(m[1]).split(','); const lng=+p[0],lat=+p[1],z=+p[2],br=+p[3]||0,pi=+p[4]||0,proj=p[5];
         if(proj==='f'&&HOST.proj!=='flat'){ const b=document.getElementById('btn-view-flat'); if(b) b.click(); }
         else if(proj==='g'&&HOST.proj!=='globe'){ const b=document.getElementById('btn-view-globe'); if(b) b.click(); }
         if(isFinite(lng)&&isFinite(lat)) GE().camera.jumpTo({center:[lng,lat],zoom:isFinite(z)?z:2,bearing:br,pitch:pi});
         /* satellite base view: switch ON if wanted; on a FULL restore also switch back to Map if NOT wanted (so a
            shared link reproduces the base exactly, e.g. pasting a no-sat link over a satellite session). */
-        try{ const wantSat=/[#&]sat=1/.test(location.hash);
+        try{ const wantSat=/[#&]sat=1/.test(H);
           if(wantSat){ const sb=document.getElementById('btn-view-sat'); if(sb&&typeof HOST.mapType!=='undefined'&&HOST.mapType!=='sat') setTimeout(()=>{ try{ sb.click(); }catch(_){} },300); }
           else if(full){ const mb=document.getElementById('btn-view-map'); if(mb&&typeof HOST.mapType!=='undefined'&&HOST.mapType==='sat') setTimeout(()=>{ try{ mb.click(); }catch(_){} },300); } }catch(_){}
       }catch(_){}
       if(full){
-        const lm=/[#&]l=([^&]+)/.exec(location.hash);
+        const lm=/[#&]l=([^&]+)/.exec(H);
         const want=lm?decodeURIComponent(lm[1]).split(','):[]; const wantSet=new Set(want);
         const DATASEL='input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, input[id^="wp-dl-"]:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked';
         const apply=()=>{
@@ -1313,23 +1345,24 @@ window.IntMapModules.viewHash=function(HOST){
         [700,1800,3200].forEach(ms=>setTimeout(apply,ms));
         /* (#R101) restore time-travel via the kernel (mode-independent). `tt`=ISO instant; keep `ts` (old day-based
            links) for backward compatibility. */
-        const tt=/[#&]tt=([^&]+)/.exec(location.hash);
+        const tt=/[#&]tt=([^&]+)/.exec(H);
         if(tt){ setTimeout(()=>{ try{ const d=new Date(decodeURIComponent(tt[1])); if(!isNaN(d.getTime())&&window.IntMapTime) window.IntMapTime.set(d,{source:'ui'}); }catch(_){} },900); }
-        else { const tm=/[#&]ts=(\d+)/.exec(location.hash);
+        else { const tm=/[#&]ts=(\d+)/.exec(H);
           if(tm){ setTimeout(()=>{ try{ if(window.IntMapTime) window.IntMapTime.setDaysAgo(3650-parseInt(tm[1],10),{source:'ui'}); }catch(_){} },900); } }
         /* (#R211) 3-D terrain, then the simulators' own numbers. The sims go LAST and late: several
            of them are lazy modules that are only fetched when their layer or panel is asked for, so
            applying at 900 ms would reach a module that does not exist yet. Each `set` is expected to
            no-op safely when its module is absent (they all guard). */
-        try{ if(/[#&]t3=1/.test(location.hash)){ const tb=document.getElementById('btn-terrain-3d')||document.getElementById('setting-terrain-3d');
+        try{ if(/[#&]t3=1/.test(H)){ const tb=document.getElementById('btn-terrain-3d')||document.getElementById('setting-terrain-3d');
           if(tb) setTimeout(()=>{ try{ if(tb.type==='checkbox'){ if(!tb.checked){ tb.checked=true; tb.dispatchEvent(new Event('change',{bubbles:true})); } } else tb.click(); }catch(_){} },1200); } }catch(_){}
-        const sm=/[#&]s=([^&]+)/.exec(location.hash);
+        const sm=/[#&]s=([^&]+)/.exec(H);
         if(sm){ const obj=unpackSims(sm[1]);
           if(obj) [1500,4000].forEach(ms=>setTimeout(()=>{ try{ window.IntMapShareState.apply(obj); }catch(_){} },ms)); }
-        const cm2=/[#&]cmp=([^&]+)/.exec(location.hash);
+        const cm2=/[#&]cmp=([^&]+)/.exec(H);
         if(cm2){ setTimeout(()=>{ try{ window.IntMapCompare&&window.IntMapCompare.open(); if(cm2[1]==='x'){ setTimeout(()=>{ const xb=Array.from(document.querySelectorAll('#compare-window .cmp-btn')).find(b=>/x-ray/i.test(b.textContent)); if(xb) xb.click(); },700); } }catch(_){} },1300); }
       }
       setTimeout(()=>{ restoring=false; },3500);
+      booted=true;   /* (#R244) the boot restore has read the address — the bar may be written now */
     }
     GE().events.on('moveend',()=>{ clearTimeout(t); t=setTimeout(save,400); });
     /* (#R42b) ROOT CAUSE of "コピーしたリンクを開いてもそのままにならない": pasting a link into the SAME tab is a
@@ -1341,7 +1374,12 @@ window.IntMapModules.viewHash=function(HOST){
        ("表示を辞めたはずのレイヤーが残り続ける"). Persist the hash on EVERY layer change so the restored set
        always matches what's actually on. */
     document.addEventListener('change',(e)=>{ const el=e.target; if(el && (el.id&&/^dl-/.test(el.id) || (el.classList&&el.classList.contains('geo-layer-cb')))){ clearTimeout(t); t=setTimeout(save,300); } });
-    if(_imCanDraw()) restore(); else GE().events.on('load',restore);
+    /* ⚠ (#R244) ONE boot pass, whichever way the renderer becomes ready — and a backstop, because
+       `load` may already have fired when this module is evaluated, in which case `on('load',…)`
+       never calls back and `booted` would stay false for the whole session (the address bar would
+       stop following the map). `bootDone` makes the three entries idempotent. */
+    const _boot=()=>{ if(bootRan) return; bootRan=true; try{ restore(); }catch(_){} bootDone=true; booted=true; };
+    if(_imCanDraw()) _boot(); else { GE().events.on('load',_boot); setTimeout(_boot,8000); }
     window.IntMapBookmark={ link:()=>location.origin+location.pathname+location.search+encode(), save:save, restore:restore };
   })();
 };

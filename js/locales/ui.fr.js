@@ -2965,4 +2965,16 @@ window.IntMapLang.define('fr', { ui: {
   "Split districts": "Districts partagés",
   "Colour = who received the state’s electoral votes.": "La couleur indique qui a obtenu les grands électeurs de l’État.",
   "Source: National Archives · American Presidency Project": "Source : National Archives · American Presidency Project",
-  "Could not load the election data": "Impossible de charger les données électorales",} });
+  "Could not load the election data": "Impossible de charger les données électorales",
+  "Map weather": "Météo de la carte",
+  "Live weather at the map center (no location permission)": "Météo actuelle au centre de la carte (sans autorisation de localisation)",
+  "Day length": "Durée du jour",
+  "Daylight hours at the map-center latitude": "Heures de clarté à la latitude du centre de la carte",
+  "Map scale": "Échelle de la carte",
+  "Scale at the current zoom": "Échelle au niveau de zoom actuel",
+  "Calendar": "Calendrier",
+  "This month, today highlighted": "Le mois en cours, aujourd’hui mis en évidence",
+  "Next new moon": "Prochaine nouvelle lune",
+  "Days until the next new moon": "Jours avant la prochaine nouvelle lune",
+  "Time zones (live clock)": "Fuseaux horaires (horloge en direct)",
+  "Educational model — in a real emergency follow the official authorities. These simulations do not predict whether damage will or will not occur; either way, keep the preparations you would need ready as a matter of routine.": "Modèle pédagogique — en cas d’urgence réelle, suivez les autorités officielles. Ces simulations ne prédisent pas s’il y aura ou non des dégâts ; dans tous les cas, tenez toujours prêt le nécessaire.",} });

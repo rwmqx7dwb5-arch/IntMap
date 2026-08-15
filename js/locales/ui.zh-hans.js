@@ -3054,5 +3054,17 @@ window.IntMapLang.define('zh-hans', {
   "Colour = who received the state’s electoral votes.": "颜色代表取得该州选舉人票的候选人。",
   "Source: National Archives · American Presidency Project": "来源：美国国家文件館 · American Presidency Project",
   "Could not load the election data": "无法加载选舉数据",
+  "Map weather": "地图中心天气",
+  "Live weather at the map center (no location permission)": "地图中心的实时天气（不需位置权限）",
+  "Day length": "昼长",
+  "Daylight hours at the map-center latitude": "地图中心纬度的日照时数",
+  "Map scale": "地图比例尺",
+  "Scale at the current zoom": "目前缩放层级的比例尺",
+  "Calendar": "行事历",
+  "This month, today highlighted": "本月，并标示今天",
+  "Next new moon": "下一次新月",
+  "Days until the next new moon": "距离下次新月的天数",
+  "Time zones (live clock)": "时区（实时时钟）",
+  "Educational model — in a real emergency follow the official authorities. These simulations do not predict whether damage will or will not occur; either way, keep the preparations you would need ready as a matter of routine.": "教育用模型 — 实际灾害时请遵循官方机关的指示。这些模拟并非预测是否会造成灾害；无论如何，请平时就做好必要的准备。",
   }
 });

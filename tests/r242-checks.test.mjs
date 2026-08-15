@@ -118,8 +118,13 @@ test('R242 ④ the transport is a player and the tsunami hand-off is the loud th
   assert.ok(/class="sq-player/.test(c) && /SVG_PLAY/.test(c) && /class="sq-spdc/.test(c),
     'round play/pause, a real scrubber and a segmented rate');
   assert.ok(!/class="sq-play sq-btn"/.test(c), 'the old 36 px text button must be gone');
-  assert.ok(/class="sq-tsu"/.test(c) && /sq-tsu-ic/.test(c) && /linear-gradient\(135deg,#0a84ff/.test(c),
+  /* ⚠ (#R244) 「Open the tsunami simulatorにはマークを使うな。」 — the glyph in its translucent disc is
+     gone (tests/r244 ④ pins that it stays gone). What THIS line has always been about survives: the
+     button is still the only FILLED element in the result card, which is the 「もっと目立たせろ」 of
+     #R242, and it now says what it does in words alone. */
+  assert.ok(/class="sq-tsu"/.test(c) && /linear-gradient\(135deg,#0a84ff/.test(c),
     'the tsunami button is the only filled element in the result card');
+  assert.ok(!/sq-tsu-ic/.test(c), 'and it carries no mark');
 });
 
 /* ── ⑤ the seismic simulator is reachable from the Layers panel ───────────────────────────────── */

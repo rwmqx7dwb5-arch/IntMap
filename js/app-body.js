@@ -582,7 +582,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      EN/JP branches, so German/Russian users got English answers ("AI Briefがドイツ語・ロシア語では英語になる").
      Appended to the SYSTEM prompt of the free-TEXT generators ONLY — never the JSON geocoders (place names
      must stay canonical) nor the connectivity test. Harmless/​reinforcing for EN/JP. */
-  function _aiLangName(){ return ({en:'English',jp:'Japanese',de:'German',ru:'Russian',es:'Spanish'})[currentLang]||'English'; }
+  function _aiLangName(){ return window.IntMapLang.t(currentLang,'English','Japanese','German','Russian','Spanish'); }
   window._aiLangLine=function(){ const L=_aiLangName(); return ' IMPORTANT: Write your ENTIRE response in '+L+' only — every sentence, heading and bullet must be in '+L+', regardless of the language of the input or these instructions. Do not reply in English unless '+L+' is English.'+(L==='Japanese'?' When writing in Japanese, use polite form (です・ます／敬語) by default unless the user is clearly casual or explicitly asks for plain/casual speech.':''); };   /* (#R147) Japanese default = keigo */
   /* (#R169) moved verbatim to js/ai-core.js — see Architecture.md §3.1. */
   window.aiRenderSettings=aiRenderSettings;
