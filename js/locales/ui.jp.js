@@ -11,6 +11,18 @@
  *  it has one and English only where it does not. Nothing has to be kept in sync by hand.
  * ========================================================================== */
 window.IntMapLang.define('jp', { ui: {
+      /* ══ ⚠⚠⚠ (#R249) THE FIFTEENTH SURFACE — THE DOCUMENT'S OWN METADATA ═══════════════════════
+         「全ての言語について、すべての面において対応が完璧かどうか点検し、未了点があれば修正して。」
+         index.html's <title> and <meta name="description"> were literals in the markup, so the
+         browser tab, the bookmark and every shared link said 「Explore the world. Ask the map.」 in
+         all nine languages — while every instrument printed 100 %, because no instrument looked at
+         the document itself. sources.html and science.html had localised both since #R239
+         (js/page-i18n.js), which is what made the gap invisible: the mechanism existed and the
+         application page simply never used it. scripts/i18n-doc-audit.mjs is the gate that stops a
+         sixteenth one being forgotten. */
+      docTitle:"IntMap — 世界を旅する。地図に訊く。",
+      docDesc:"IntMap は、地理・気候・歴史・人口・世界の出来事などを探索できるインタラクティブな世界地図です。Atlas による自然言語操作に対応しています。",
+
       /* ══ (#R240) THE SIXTH SURFACE — title / aria-label / placeholder, which had no key at all
          and were therefore English in every language however complete this table looked. See
          scripts/i18n-attr-audit.mjs, the gate that now measures «is this string in the system».  */

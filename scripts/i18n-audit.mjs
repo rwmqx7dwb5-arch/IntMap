@@ -106,6 +106,16 @@ const langmap = run('i18n-langmap-audit.mjs');
    printed, never counted in a percentage — rather than into a gate that the next round deletes.
    ⚠ When it reaches zero, move it into `problems` below and delete this note. */
 const pairs = run('i18n-pair-audit.mjs');
+/* ══ ⚠⚠⚠ (#R249) THE FIFTEENTH SURFACE — THE DOCUMENT'S OWN METADATA ═══════════════════════════
+   Every surface above walks ELEMENTS or the tables behind them. `<title>` and
+   `<meta name="description">` are neither, so index.html's browser tab, bookmark and every shared
+   link were English in all nine languages while every row of the matrix below read 100 %. That is
+   [[intmap-recurring-lessons]] B for the eighth time, and — exactly as in #R240 — the answer is a
+   NEW QUESTION asked here rather than a new free-standing percentage. It is a GATE from the day it
+   is added, because unlike the shape audits there is nothing to migrate: three documents, two
+   fields each. See scripts/i18n-doc-audit.mjs for what is measured and what is excluded on
+   purpose (og:/twitter: cards, admin.html). */
+const docs = run('i18n-doc-audit.mjs');
 const orphanKeys = keyed.undeclared;
 
 const keyedBy = new Map(keyed.rows.map((r) => [r.code, r]));
@@ -136,7 +146,7 @@ const shortOf = (r) => (r.keyed[0] < r.keyed[1]) || (r.inline && r.inline[0] < r
   || (r.positional && r.positional[0] < r.positional[1]) || (r.pages[0] < r.pages[1]);
 
 if (process.argv.includes('--json')) {
-  console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short, unkeyedAttrs: attrs.total, positionalArrays: arrays.hits.length, langMaps: langmap.total, pairs: pairs.total }));
+  console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short, unkeyedAttrs: attrs.total, positionalArrays: arrays.hits.length, langMaps: langmap.total, pairs: pairs.total, unlocalisedDocs: docs.bad }));
   process.exit(0);
 }
 
@@ -200,7 +210,21 @@ console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.tot
   /* (#R244) the eleventh shape, closed by #R246 — it is a gate now, and stays printed at 0. */
   + `\ntranslation tuples held as an OBJECT keyed by language code: ${langmap.total}`
   + (langmap.total ? '\n    node scripts/i18n-langmap-audit.mjs --list' : '')
+  /* (#R249) the fifteenth surface — see the note by `docs` above */
+  + `\nreader-facing documents whose <title>/<meta description> are NOT localised: ${docs.bad.length}`
+  + (docs.bad.length ? '\n    ' + docs.bad.join('\n    ') + '\n    (node scripts/i18n-doc-audit.mjs)' : '')
   /* (#R246) the twelfth shape — see the note by `pairs` above. OPEN GAP: printed, not counted. */
+  /* ⚠⚠⚠ (#R249) THE EXEMPTION IS PRINTED ON EVERY RUN. 「固有名詞は構造的に除外し、UI文だけ全言語化」
+     — and an exemption nobody can see is an exemption nobody re-examines. #R248's matcher rule
+     checked slot 0 only, so 328 match-term lists in js/gazetteer.js sat inside the OPEN GAP as
+     «strings somebody must translate» for two rounds. The number below is what is NOT being asked
+     for, beside the number that is. */
+  + `\n\nexempt — proper-noun records and match-term lists, NOT text the app wrote: ${pairs.exempt}`
+  + (pairs.exemptFiles && pairs.exemptFiles.length
+    ? '\n    ' + pairs.exemptFiles.slice(0, 6).map((f) => String(f.n).padStart(4) + '  ' + f.file).join('\n    ')
+      + (pairs.exemptFiles.length > 6 ? `\n    …and ${pairs.exemptFiles.length - 6} more file(s)` : '')
+      + '\n    Declared with `@i18n-entity-data` and VALIDATED against the row carrying a coordinate /'
+      + '\n    ISO code / ticker / domain, so the marker cannot be used to silence UI prose.' : '')
   + `\n\n⚠ OPEN GAP — translation tuples held as ADJACENT DATA SLOTS: ${pairs.total}`
   + (pairs.total
     ? '\n    ' + pairs.files.slice(0, 12).map((f) => String(f.n).padStart(4) + '  ' + f.file).join('\n    ')
@@ -224,6 +248,16 @@ if (process.argv.includes('--gate')) {
   if (helper.sites) problems.push(`${helper.sites} two-language string(s) behind a helper — run scripts/helper-ternary-codemod.mjs`);
   /* (#R246) the eleventh surface, promoted from a printed number to a gate — it reached zero */
   if (langmap.total) problems.push(`${langmap.total} translation tuple(s) held as a language-keyed object — run scripts/langmap-codemod.mjs`);
+  /* (#R249) the fifteenth surface — a gate from the day it was added: three documents, two fields */
+  if (docs.bad.length) problems.push(`${docs.bad.length} document(s) with unlocalised <title>/<meta description> — run scripts/i18n-doc-audit.mjs`);
+  /* ⚠⚠⚠ (#R249) A MISAPPLIED EXEMPTION IS A HARD FAILURE, and it is the only part of the twelfth
+     shape that IS gated. The OPEN GAP itself may not be gated (#R242's rule: a gate nobody can
+     reach in one round gets deleted by the next), but `@i18n-entity-data` on something that is not
+     entity data would let any round go green by declaring its prose to be proper nouns — which is
+     the one way this whole family of instruments can be defeated. The audit validates every marker
+     against the row's coordinate / ISO code / ticker / domain; this makes a failed validation stop
+     the build rather than print a line nobody reads. */
+  if (pairs.badMarkers && pairs.badMarkers.length) problems.push(`${pairs.badMarkers.length} misapplied @i18n-entity-data marker(s) — run scripts/i18n-pair-audit.mjs`);
   if (problems.length) {
     console.error('\n✖ i18n gate: ' + problems.join('; '));
     console.error('  `node scripts/i18n-audit.mjs --todo <code>` prints the commands that close each gap.');
