@@ -28,12 +28,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Supabase CLI
         # (#R138 SEC) third-party action pinned to a full commit SHA (supply-chain: a moveable tag could be
         # repointed to malicious code). Dependabot (github-actions ecosystem) proposes SHA bumps. v1 = ab05898.
-        uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520
         with:
           version: 2.106.0
 
