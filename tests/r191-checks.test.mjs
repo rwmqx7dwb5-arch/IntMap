@@ -120,6 +120,9 @@ test('R191 seismic: the ground-motion chain names its models and uses their numb
      lobe rather than the azimuth average — taking the edge from the average would clip the one
      direction the directivity term exists to draw. The scale-picks-its-own-quantity rule is what is
      being pinned, and it stands. */
+  /* (#R247) unchanged, and deliberately so: the fade that round added to the lowest class runs
+     INWARD from this radius (see fieldPx in js/seismic.js), so the floor the edge is solved for is
+     still each scale's own class floor — and the box, the span and the cell are untouched. */
   assert.match(s, /const arr=jmaScale\?prof(?:Edge)?\.a0s:prof(?:Edge)?\.out, floor=jmaScale\?A0_FLOOR_JMA:PGV_FLOOR_MMI;/,
     'and the paint edge walks whichever profile the active scale reads');
   /* ⚠ (#R223) THE NEAR-FIELD SATURATION MOVED FROM A PSEUDO-DEPTH TO THE GEOMETRY, and the
@@ -149,7 +152,8 @@ test('R191 seismic: the field is painted to the end of the lowest class', () => 
   assert.match(s, /const MMI_CALIB_KM=1000;/, 'where the law is calibrated — unchanged');
   assert.match(s, /const MMI_TERRAIN_KM=1500;/, 'how far the terrain-driven fine field goes');
   assert.match(s, /const MMI_MAX_KM=8000;/, 'and where the lowest class finally ends');
-  assert.match(s, /const rFine=Math\.min\(rEdge,MMI_TERRAIN_KM\);/, 'the fine box is bounded by the terrain');
+  /* (#R247) …against the SURFACE edge — see the note in tests/r190-checks. */
+  assert.match(s, /const rFine=Math\.min\(rEdgeSurf,MMI_TERRAIN_KM\);/, 'the fine box is bounded by the terrain');
   /* (#R232) it takes the azimuth-indexed profile PICKER now, not a single profile — see the
      directivity note in js/seismic.js. Its own pass is what is being pinned. */
   assert.match(s, /async function buildFar\(prof(?:At)?,box,rFine,rEdge,seq\)/, 'the annulus has its own pass');

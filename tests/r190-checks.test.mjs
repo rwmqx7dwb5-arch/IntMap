@@ -198,7 +198,11 @@ test('R190 seismic: the field reaches the end of the lowest class and declares i
      goes" from "where the lowest class ends" — the second was what the report was about, and it is
      MMI_MAX_KM. The rest of this test is unchanged and still passes. */
   assert.match(src, /const MMI_TERRAIN_KM=1500;/, 'and where the terrain-driven paint stops (measured: 3,000 km was 71 % no-DEM)');
-  assert.match(src, /const rFine=Math\.min\(rEdge,MMI_TERRAIN_KM\);/, 'the fine field is bounded by it');
+  /* ⚠ (#R247) `rEdge` → `rEdgeSurf`. What this line pins — «the fine field is bounded by the terrain
+     statement, not by the class» — is unchanged; the OTHER operand is. `rEdge` is read off the
+     profile's own radius grid, which is the distance srcDistM() PRODUCES, and every use of it as a
+     limit on a SURFACE distance was short by the implied rupture radius (140 km at M9.1). */
+  assert.match(src, /const rFine=Math\.min\(rEdgeSurf,MMI_TERRAIN_KM\);/, 'the fine field is bounded by it');
   assert.match(src, /const inRange=rKm<=MMI_CALIB_KM;/,
     'the TABLE still refuses to print an intensity outside the calibrated range');
   assert.match(src, /if\(km>MMI_CALIB_KM\) beyondCalib\+\+;/, 'and the painted cells beyond it are counted');

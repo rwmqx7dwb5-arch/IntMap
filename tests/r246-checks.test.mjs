@@ -68,7 +68,8 @@ test('r246 ② the adjacent-pair surface is measured and printed as an OPEN GAP'
      more than one round can convert — and #R242's rule for that situation is that the number is
      PRINTED rather than gated, because a gate nobody can reach gets deleted by the next round.
      It may only go DOWN. When it reaches zero, promote it to `problems` in scripts/i18n-audit.mjs. */
-  assert.ok(j.total <= 2262, `the open gap grew to ${j.total} — write the new tuple as pickArgs() instead`);
+  /* (#R247) 2,262 → 2,255. The ratchet only ever moves down; pin it to what the tree measures now. */
+  assert.ok(j.total <= 2255, `the open gap grew to ${j.total} — write the new tuple as pickArgs() instead`);
   /* …and it must not be able to go green by mistaking a translation call for data */
   assert.match(read('scripts/i18n-pair-audit.mjs'), /function langNames\(ast, src\)/, 'the exemption is resolved per file');
 });

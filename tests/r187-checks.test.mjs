@@ -34,9 +34,12 @@ test('R187 aircraft: the glyph is the original outline, stroke and size ramp', (
   assert.ok(!/lineWidth=2\.6/.test(fn[0]), 'the #R183 white rim is gone');
   /* the original size ramp */
   /* (#R192) the ramp is stated once, in _PLANE_SIZE, and BOTH renderings read it — see
-     tests/r192-checks. The numbers are the same original ones. */
-  assert.match(src, /const _PLANE_SIZE=\[\[2,0\.4\],\[5,0\.58\],\[9,0\.78\]\];/,
-    'the original icon-size ramp');
+     tests/r192-checks.
+     ⚠ (#R247) the STOPS are the original ones scaled by 1.25 —「航空機の大きさを少し大きく」. What this
+     test is for is that there is ONE table and that its shape (three stops, at z2/z5/z9) is the
+     original ramp's; the scale is the reader's to ask about. */
+  assert.match(src, /const _PLANE_SIZE=\[\[2,0\.5\],\[5,0\.725\],\[9,0\.975\]\];/,
+    'the icon-size ramp — the original stops at 1.25x (#R247)');
   /* …and the flat glyph is what a default profile SEES: #R185 measured that the lifted 3-D body is
      shown instead of it, so restoring the glyph without this changes nothing on screen. */
   /* (#R189) the key is generation-bumped so a '1' stored under the R172–R186 default-TRUE era can

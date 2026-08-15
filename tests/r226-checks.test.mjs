@@ -18,9 +18,20 @@ const read = (p) => readFileSync(new URL(p, root), 'utf8');
 test('R226 ① the intensity raster carries exactly one transparency', () => {
   const s = read('js/seismic.js');
   assert.match(s, /const FIELD_ALPHA=255;/, 'the painted pixel is opaque');
-  const uses = s.match(/px\[o\+3\]=FIELD_ALPHA;/g) || [];
-  assert.equal(uses.length, 2, 'and BOTH rasters — the fine field and the far annulus — use the constant');
+  /* ⚠ (#R247) THE ALPHA IS A RESULT NOW, AND STILL ONLY EVER THIS CONSTANT OR A RAMP DOWN FROM IT.
+     #R226's defect was a SECOND transparency baked under the slider (235/255 in every pixel), and
+     what stopped it was that one named constant is the only thing either writer puts in the alpha
+     channel. That is still exactly true — it just moved into `fieldPx`, the one function both
+     rasters now get their colour AND their alpha from, because the field's outermost half-class
+     fades instead of ending in a cliff. Two writers reading one function is stronger than two
+     writers repeating one constant, so this asserts BOTH. */
+  const uses = s.match(/FIELD_ALPHA/g) || [];
+  assert.ok(uses.length >= 3, 'the constant is declared and used');
   assert.ok(!/px\[o\+3\]=\d+;/.test(s), 'no literal alpha survives anywhere in the two writers');
+  assert.match(s, /out\[3\]=\(I>=lo\+FADE_I\) \? FIELD_ALPHA/,
+    'full opacity above the fade band is the constant itself');
+  assert.equal((s.match(/const (?:c|rgb)=fieldPx\(I,_(?:fine|far)RGB\)/g) || []).length, 2,
+    'and BOTH rasters — the fine field and the far annulus — get it from the one function');
   /* the slider is still the one owner of the transparency */
   assert.match(s, /setPaint\(LYR_IMG,'raster-opacity',fldOpacity\)/);
   assert.match(s, /setPaint\(LYR_FAR,'raster-opacity',fldOpacity\)/);

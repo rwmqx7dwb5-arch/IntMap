@@ -47,10 +47,17 @@ test('R224 ② MMI is painted with the ShakeMap ramp, continuously', async () =>
   assert.ok(m, 'the ramp is declared once');
   const got = [...m[1].matchAll(/\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/g)].map((x) => x.slice(1).map(Number));
   assert.deepEqual(got, want, 'the anchors are the ones measured out of the PDF');
-  /* the fill is the ramp, per cell, in BOTH painters — and 震度 keeps its published bands */
-  assert.match(s, /c=mmiRGB\(I,_fineRGB\)/, 'the fine field interpolates');
-  assert.match(s, /rgb=mmiRGB\(I,_farRGB\)/, 'and so does the far field');
-  assert.match(s, /const cls=jmaClass\(I\); if\(!cls\) continue; c=_rgbOf\(cls\)/, 'JMA is untouched and still banded');
+  /* the fill is the ramp, per cell, in BOTH painters — and 震度 keeps its published bands.
+     ⚠ (#R247) BOTH PAINTERS NOW CALL ONE FUNCTION. `fieldPx(I,out)` is where the ramp is evaluated
+     and where the lowest class's fade is applied, and the fine field and the far annulus each write
+     what it returns — which is the same statement this test has always made («the fill is the ramp
+     in BOTH painters»), enforced by construction instead of by two matching call sites. 震度 is
+     still banded inside it: `jmaClass(I)` picks the class and only the ALPHA ramps at the floor. */
+  assert.match(s, /function fieldPx\(I,out\)/, 'one painter for both rasters');
+  assert.match(s, /else mmiRGB\(I,out\);/, 'the MMI fill is the ramp, per cell');
+  assert.match(s, /const c=fieldPx\(I,_fineRGB\)/, 'the fine field goes through it');
+  assert.match(s, /const rgb=fieldPx\(I,_farRGB\)/, 'and so does the far field');
+  assert.match(s, /const rgb=_clsRGB\(jmaClass\(I\)\);/, 'JMA is untouched and still banded');
   /* the legend's class colours are DERIVED from the ramp — never a second copy of a hex */
   assert.match(s, /\}\ \]\.map\(k=>Object\.assign\(k,\{ col:_mmiHex\(k\.min\) \}\)\);/,
     'MMI_CLASSES takes its colours from the ramp');
