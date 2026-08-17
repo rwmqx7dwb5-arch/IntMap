@@ -37,7 +37,13 @@ window.IntMapModules.compare=function(HOST){
        map's) doubled GPU memory and OOM-crashed iPhone Safari ("iPhoneでcompare viewでケッペン…ブラウザが落ちる"). */
     function koppenUrl(){ try{ const p=(window.KOPPEN_PERIODS||[]).find(x=>x[0]===window._koppenPeriod); let u=p?p[1]:'koppen_mercator_1991-2020.png'; if(typeof isMobile==='function'&&isMobile()) u=u.replace(/\.png$/,'_4k.png'); return u; }catch(_){ return 'koppen_mercator_1991-2020.png'; } }
     function injectCSS(){ if(document.getElementById('cmp-css')) return; const st=document.createElement('style'); st.id='cmp-css'; st.textContent=
-      '#compare-window{position:fixed;right:24px;bottom:24px;width:440px;height:340px;min-width:260px;min-height:200px;z-index:4000;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,0.4);overflow:hidden;resize:none;display:flex;flex-direction:column;}'+
+      /* ⚠ (#R258) 2200, NOT 4000 — the card band css/intmap.css §「WHO IS IN FRONT」 defines. This is a
+         window the reader reaches into, so it has to obey the same rule every other one does: an open
+         sidebar (2600) covers it, and touching it raises it above the sidebar (`.im-front`, 2650).
+         At 4000 it sat permanently in front of BOTH sidebars and clicking the left sidebar could not
+         bring it forward, which is the half of that instruction that kept coming back. The MOBILE
+         rule below is untouched: the band is desktop-only (the phone's sheet has its own order). */
+      '#compare-window{position:fixed;right:24px;bottom:24px;width:440px;height:340px;min-width:260px;min-height:200px;z-index:2200;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,0.4);overflow:hidden;resize:none;display:flex;flex-direction:column;}'+
       '#compare-window.cmp-min{height:auto !important;min-height:0;resize:none;}'+
       /* (#R36) Minimise must VISIBLY collapse to just the title bar — hide the map body AND the layer-picker row
          ("最小化したときにもUIが変わらず分かりにくい"). */

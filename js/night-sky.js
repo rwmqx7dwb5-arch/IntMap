@@ -83,8 +83,12 @@ window.IntMapNightSky = (function () {
   let horizon = null, horizonBusy = false, horizonErr = null;   /* Float32Array(AZ_N) of degrees, or null */
   let whenMs = null, live = true, playing = false, rate = 0;    /* rate: simulated seconds per real second */
   let raf = 0, lastTick = 0, lastDraw = null, dpr = 1;
-  /* (#R214) the standing view. `mode` is the only switch; everything else here is the camera. */
-  let mode = 'dome';                                            /* 'dome' = the all-sky chart, 'stand' = first person */
+  /* (#R214) the standing view. `mode` is the only switch; everything else here is the camera.
+     ⚠ (#R258) 「Night skyはStanding hereをデフォルトに。」 — the FIRST view is the one a person
+     standing at the point actually has; the all-sky chart is the abstraction, one click away. The
+     variable is module-level, so a reader who switches to the chart keeps it for the session, and
+     `openAt`'s explicit `mode`/`view`/`stand` argument still overrides either way. */
+  let mode = 'stand';                                           /* 'dome' = the all-sky chart, 'stand' = first person */
   let lookAz = 180, lookAlt = 12, fovDeg = 65;                  /* looking south, a little above the skyline */
   let drag = null, dragged = false, skyCache = null;
 

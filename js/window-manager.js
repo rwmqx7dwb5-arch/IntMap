@@ -71,8 +71,33 @@ window.IntMapModules.windowManager=function(HOST){
          replacing the native bottom-right-only `resize:both` grab-mark.
      makeDraggable auto-registers its panel; bigger windows (Atlas, Compare) also add edge-resize. ================= */
   const __winReg=new Set();
-let __winZ=4300;
-  function bringToFront(el){ if(!el) return; try{ let mx=4300; __winReg.forEach(w=>{ if(w===el||!w.isConnected) return; const z=parseInt(w.style.zIndex,10)||0; if(z>mx&&z<6000) mx=z; }); __winZ=Math.min(5999,Math.max(__winZ,mx)+1); el.style.zIndex=String(__winZ); }catch(_){} }
+  /* ══ ⚠⚠⚠ (#R258) THIS IS WHY THE SIDEBAR COULD NOT COME BACK TO THE FRONT ════════════════════════
+     「ポップアップ内でなんらかの操作したら、ポップアップが前部に来るように。左サイドバー内をクリック
+       した場合はまた左サイドバーを前部に。」— reported in #R253, #R254, #R255 and again now. The
+     `.im-front` machinery those rounds built is measured to work end to end. What defeats it is
+     HERE: #R47's window manager wrote an INLINE `z-index` starting at **4300** onto every managed
+     floating window the moment you touched it — and every draggable panel in this app is managed
+     (`makeDraggable` registers it; 33 call sites across 22 files). So:
+
+         touch a window   → .im-front (2650, !important) wins over the inline 4301 → correct
+         click the sidebar → .im-front is removed → the inline **4301** takes over → the window is
+                             in front of the sidebar again, permanently, for the rest of the session
+
+     MEASURED on the shipped build with the compare window dragged over the open left sidebar:
+     after a pointerdown on the sidebar, `#compare-window` computes **4301** against the sidebar's
+     2600, and `elementFromPoint` over the overlap still returns the window's own control.
+
+     ⚠ WHAT #R47 ACTUALLY ASKED FOR IS UNCHANGED. Its instruction was 「前後位置が切り替わらない／触れた
+     ものを全面に」 — the ORDER OF THE WINDOWS AMONG THEMSELVES. That is a relative order, and it
+     belongs INSIDE the band css/intmap.css §「WHO IS IN FRONT」 defines (cards 2200, sidebars 2600,
+     the panel being used 2650, modals 9999+), not above it. So the counter starts in the card band
+     and is capped just under the sidebar: windows still stack over each other in the order they are
+     touched, and an open sidebar still covers all of them until you reach into one.
+     ⚠ The phone is unaffected: the band is desktop-only, and the bottom sheet (1700) was already
+     below 4300 as it is below 2599. */
+  const WIN_Z_BASE=2200, WIN_Z_CAP=2599;
+  let __winZ=WIN_Z_BASE;
+  function bringToFront(el){ if(!el) return; try{ let mx=WIN_Z_BASE; __winReg.forEach(w=>{ if(w===el||!w.isConnected) return; const z=parseInt(w.style.zIndex,10)||0; if(z>mx&&z<=WIN_Z_CAP) mx=z; }); __winZ=Math.min(WIN_Z_CAP,Math.max(__winZ,mx)+1); el.style.zIndex=String(__winZ); }catch(_){} }
   function registerWindow(el){ if(!el||__winReg.has(el)) return; __winReg.add(el); try{ el.addEventListener('pointerdown',()=>bringToFront(el),true); }catch(_){ try{ el.addEventListener('mousedown',()=>bringToFront(el),true); }catch(__){} }
     /* (#R238) a window that appears while the dock is on goes straight into it — see below.
        (#R239) …and is watched, so that switching it off later takes it back out again. */

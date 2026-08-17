@@ -135,6 +135,7 @@ window.IntMapLang.define('zh', {
     "lyrGrpSecurity":"國防與安全",
     "lyrGrpHealth":"醫療與衛生",
     "lyrGrpTech":"科技與基礎設施",
+    "lyrGrpEnergy":"能源與資源",   /* (#R258) */
     "lyrGrpHazard":"災害與夜空",
     "lyrGrpIndic":"指標與疊圖",
     "lyrGrpMaritime":"海洋與海事",
@@ -1696,7 +1697,48 @@ window.IntMapLang.define('zh', {
     'See the past world': "看看過去的世界",   /* news-timeline.js */
     'seismic waves': "地震波",   /* atlas-console.js */
     'Seismic waves': "地震波",   /* atlas-console.js seismic.js */
-    'Seismic waves (set as epicentre)': "地震波（設為震央）",   /* tool-panel.js */
+    "About this model": "關於此模型",   /* (#R258) */
+    "Coal / oil / gas": "煤炭／石油／天然氣",   /* (#R258) */
+    "Crest above ground": "堤頂高（地面以上）",   /* (#R258) */
+    "Depth per stroke": "每一筆的深度",   /* (#R258) */
+    "Discharge": "流量",   /* (#R258) */
+    "Disperse a release on the live wind field": "在實際風場中擴散排放",   /* (#R258) */
+    "Elapsed": "已經過",   /* (#R258) */
+    "Flow arrows": "流向箭頭",   /* (#R258) */
+    "Fuel / source": "燃料／能源",   /* (#R258) */
+    "Height per stroke": "每一筆的高度",   /* (#R258) */
+    "How far you get in a given time": "在指定時間內能走多遠",   /* (#R258) */
+    "Inflow": "注入量",   /* (#R258) */
+    "Method": "方式",   /* (#R258) */
+    "Mine / shaft": "礦場／豎坑",   /* (#R258) */
+    "Mines, quarries & wells": "礦場、採石場與油氣井",   /* (#R258) */
+    "Night sky from here": "此地的夜空",   /* (#R258) */
+    "Oil or gas well": "油井／氣井",   /* (#R258) */
+    "Other / biomass": "其他／生質能",   /* (#R258) */
+    "Output": "出力",   /* (#R258) */
+    "Place water on the map first": "請先在地圖上放置水",   /* (#R258) */
+    "Power plants & grid": "發電廠與輸變電設施",   /* (#R258) */
+    "Quarry": "採石場",   /* (#R258) */
+    "Radioactive plume simulator": "放射性煙羽擴散模擬器",   /* (#R258) */
+    "Rainfall": "降水量",   /* (#R258) */
+    "Resource": "資源",   /* (#R258) */
+    "Sculpt the ground, pour water, build a levee": "塑形地形、注水、築堤",   /* (#R258) */
+    "Solve the wave from a sea-floor rupture": "由海底斷層求解波浪",   /* (#R258) */
+    "Source & notes": "來源與註記",   /* (#R258) */
+    "Substation": "變電所",   /* (#R258) */
+    "Terrain & water simulator": "地形與水流模擬器",   /* (#R258) */
+    "The sky a person standing here has": "站在此地所見的天空",   /* (#R258) */
+    "Tool": "工具",   /* (#R258) */
+    "Tsunami simulator": "海嘯模擬器",   /* (#R258) */
+    "Voltage": "電壓",   /* (#R258) */
+    "Volume per click": "每次點擊的水量",   /* (#R258) */
+    "What the terrain hides from a point": "地形從某點遮蔽了什麼",   /* (#R258) */
+    "Where the sun reaches, hour by hour": "逐小時的日照範圍",   /* (#R258) */
+    "Width": "寬度",   /* (#R258) */
+    "Mines, quarries, mine shafts and oil or gas wells mapped in OpenStreetMap for the current view — the places raw material physically leaves the ground. Click any point for the resource and operator as tagged.": "目前檢視範圍內 OpenStreetMap 所登錄的礦場、採石場、豎坑與油氣井，也就是原料實際離開地面的地點。點擊任一點可看到標籤中的資源與營運者。",   /* (#R258) */
+    "Power stations, substations, wind turbines and solar farms mapped in OpenStreetMap for the current view — where the electricity is actually generated and stepped up, not a national average. Click any point for its output, fuel and operator as tagged.": "目前檢視範圍內 OpenStreetMap 所登錄的發電廠、變電所、風力機組與太陽能電廠——電力實際產生與升壓的地點，而非全國平均值。點擊任一點可看到標籤中的出力、燃料與營運者。",   /* (#R258) */
+    "Arrow width is proportional to the SQUARE ROOT of the value (a flow-map convention — the eye compares area, and a stroke’s area is width × length), and the arrow points the way the goods move. Hover any arrow for the exact figure; nothing here rescales the amounts. Source: BACI (CEPII) via OEC, HS 6-digit, year ": "箭頭寬度與金額的平方根成正比（流線圖慣例：眼睛比較的是面積，而線條面積為寬×長），箭頭指向貨物流動的方向。將游標移到箭頭上可看到確切金額；此處不對金額做任何縮放。來源：BACI (CEPII) / OEC，HS 6 位碼，年份 ",   /* (#R258) */
+    'Earthquake simulator (set as epicentre)': "地震模擬器（設為震央）",   /* tool-panel.js */
     'Select a radius, draw an area, or resolve a region first — then say “monitor this area”.': "請先選定半徑、畫出範圍或指定地區 — 然後說「監看這個區域」。",   /* atlas-console.js */
     'Select at least one indicator.': "請至少選擇一項指標。",   /* stats-compare.js */
     'Selected': "已選取",   /* atlas-console.js world-packs.js */
@@ -2688,7 +2730,7 @@ window.IntMapLang.define('zh', {
   "Play": "播放",
   "Playback speed": "播放速度",
   "Rupture size": "震源域大小",
-  "Seismic wave simulator": "地震波模擬器",
+  "Earthquake simulator": "地震模擬器",
   "Strike / dip / rake": "走向／傾角／滑移角",
   "Time since the rupture began": "自破裂開始經過的時間",
   "When": "發生時間",

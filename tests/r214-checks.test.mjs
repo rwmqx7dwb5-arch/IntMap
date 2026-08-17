@@ -139,7 +139,10 @@ test('R214 ②d: nothing behind the eye is drawn in front of it', () => {
 
 test('R214 ③: the camera clamps where the geometry needs it to, and the mode is switchable', () => {
   const NS = nightSky();
-  assert.equal(NS.mode(), 'dome', 'the chart is still the default view');
+  /* ⚠ (#R258) 「Night skyはStanding hereをデフォルトに。」 — the FIRST view is the one a person
+     standing at the point actually has. The switch itself, which is what this test is for, is
+     unchanged in both directions. */
+  assert.equal(NS.mode(), 'stand', 'the standing view is the default');
   assert.equal(NS.setMode('stand'), 'stand');
   assert.equal(NS.mode(), 'stand');
   assert.equal(NS.setMode('nonsense'), 'dome', 'anything that is not the standing view is the chart');
