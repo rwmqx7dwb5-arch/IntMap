@@ -37,7 +37,7 @@ window.IntMapModules.compare=function(HOST){
        map's) doubled GPU memory and OOM-crashed iPhone Safari ("iPhoneでcompare viewでケッペン…ブラウザが落ちる"). */
     function koppenUrl(){ try{ const p=(window.KOPPEN_PERIODS||[]).find(x=>x[0]===window._koppenPeriod); let u=p?p[1]:'koppen_mercator_1991-2020.png'; if(typeof isMobile==='function'&&isMobile()) u=u.replace(/\.png$/,'_4k.png'); return u; }catch(_){ return 'koppen_mercator_1991-2020.png'; } }
     function injectCSS(){ if(document.getElementById('cmp-css')) return; const st=document.createElement('style'); st.id='cmp-css'; st.textContent=
-      /* ⚠ (#R256) 2200, NOT 4000 — the card band css/intmap.css §「WHO IS IN FRONT」 defines. This is a
+      /* ⚠ (#R258) 2200, NOT 4000 — the card band css/intmap.css §「WHO IS IN FRONT」 defines. This is a
          window the reader reaches into, so it has to obey the same rule every other one does: an open
          sidebar (2600) covers it, and touching it raises it above the sidebar (`.im-front`, 2650).
          At 4000 it sat permanently in front of BOTH sidebars and clicking the left sidebar could not

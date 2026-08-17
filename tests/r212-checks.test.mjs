@@ -17,7 +17,7 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* ── 1. the trade flow is an ARROW, and it points the way the goods move ───────────────────────── */
 test('R212 ①: trade arcs carry direction — an icon layer along the line, and imports run partner→home', () => {
   const s = read('js/world-packs.js');
-  /* ⚠⚠ (#R256) REPLACED, BY INSTRUCTION, NOT BY DRIFT. 「誰が線に複数矢印つけろって言ってんねん。」
+  /* ⚠⚠ (#R258) REPLACED, BY INSTRUCTION, NOT BY DRIFT. 「誰が線に複数矢印つけろって言ってんねん。」
      — #R212 read 「矢印にしろ」 as «put arrowheads on the line» and placed one every 110 px. The
      round that asked for it says that is not what it meant: the flow is ONE arrow. So the
      along-the-line repeater is gone and what this test pins is what makes the picture an arrow —

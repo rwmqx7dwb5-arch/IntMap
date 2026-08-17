@@ -282,7 +282,7 @@ window.IntMapModules.worldPacks=function(HOST){
         +L('no data','データなし','keine Daten','нет данных','sin datos')+'</span></div>'
         +(note?('<div style="font-size:9.5px;color:var(--text-muted);margin-top:1px;">'+esc(note)+'</div>'):'')+'</div>'; }
 
-    /* ══ (#R256) A LONG NOTE IS FOLDED, NOT DELETED ═══════════════════════════════════════════════
+    /* ══ (#R258) A LONG NOTE IS FOLDED, NOT DELETED ═══════════════════════════════════════════════
        「凡例に書いてある注意書きが長すぎ。せめて隠すとかしろ。」 The provenance paragraph under a legend
        is the thing that makes the picture checkable (standing rule 4: say where the numbers come
        from), so it cannot go — but it was six lines of prose above a three-line panel. `<details>`
@@ -341,7 +341,7 @@ window.IntMapModules.worldPacks=function(HOST){
      *  hover away — the picture is compressed, the number never is.
      * ════════════════════════════════════════════════════════════════════════════════════════════*/
     (function trade(){
-      const SRC='wp-trade', LYR=['wp-trade-arc','wp-trade-tip','wp-trade-lbl'];   /* (#R254) `wp-trade-pt` (the country pins) removed — see ensureLayers. (#R256) `wp-trade-arrow` (the repeater along the shaft) removed; the arrow is `arc`+`tip`. */
+      const SRC='wp-trade', LYR=['wp-trade-arc','wp-trade-tip','wp-trade-lbl'];   /* (#R254) `wp-trade-pt` (the country pins) removed — see ensureLayers. (#R258) `wp-trade-arrow` (the repeater along the shaft) removed; the arrow is `arc`+`tip`. */
       /* BACI HS revisions, newest first — one cube covers 1995‑2024 and the newer ones are finer */
       const CUBE=(y)=>(y>=2022?'trade_i_baci_a_22':y>=2018?'trade_i_baci_a_17':y>=2012?'trade_i_baci_a_12':y>=2008?'trade_i_baci_a_07':y>=2003?'trade_i_baci_a_02':'trade_i_baci_a_92');
       const YMIN=1995, YMAX=2024;
@@ -363,7 +363,7 @@ window.IntMapModules.worldPacks=function(HOST){
       let on=false, dir='X', section='', topN=15, iso=null, rows=null, year=null, busy=false, pop=null;
       /* (#R254) 「矢印の有無はトグルでオンオフできるようにしろ。」 — a switch of its own, in the panel
          beside the direction and the commodity.
-         ⚠ (#R256) 「矢印だけオンオフしてどないすんねん線もやろがい。」 — it took the heads off and left
+         ⚠ (#R258) 「矢印だけオンオフしてどないすんねん線もやろがい。」 — it took the heads off and left
          the shafts standing, which is a picture of flows with no direction in it. The switch is over
          the WHOLE arrow now (shaft, head and the partner's name); the country shading is what stays,
          so turning the arrows off leaves the choropleth answer 「誰と、どれだけ」 on the map. */
@@ -416,7 +416,7 @@ window.IntMapModules.worldPacks=function(HOST){
          which is what makes the whole flow read as an arrow rather than as a decorated line.
          ⚠ Two plain images per direction rather than SDF: `icon-color` only applies to SDF sprites,
          and an SDF built from a hard-edged triangle is a blurred triangle (#R212). */
-      /* ══ ⚠⚠⚠ (#R256) THE FLOW **IS** AN ARROW. IT IS NOT A LINE WITH ARROWS PUT ON IT ═════════════
+      /* ══ ⚠⚠⚠ (#R258) THE FLOW **IS** AN ARROW. IT IS NOT A LINE WITH ARROWS PUT ON IT ═════════════
          「貿易レイヤーは、矢印にしろ。…（追記：ふざけんじゃねーよ。誰が線に複数矢印つけろって言ってん
            ねん。それに矢印だけオンオフしてどないすんねん線もやろがい。…矢印を後付けであきらかに浮いた
            形にするな。意図を理解しろ。）」
@@ -480,7 +480,7 @@ window.IntMapModules.worldPacks=function(HOST){
         const y=Math.sin(dl)*Math.cos(f2), x=Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl);
         return (Math.atan2(y,x)*180/Math.PI+360)%360; }
 
-      /* ⚠ (#R256) THE CUT IS MEASURED IN THE RENDERER'S OWN PROJECTION, NOT IN MERCATOR METRES.
+      /* ⚠ (#R258) THE CUT IS MEASURED IN THE RENDERER'S OWN PROJECTION, NOT IN MERCATOR METRES.
          The first version of this round did the arithmetic in Mercator metres, which is exact only
          where the theoretical and the drawn scale agree. MEASURED at z4 in GLOBE projection with
          Japan's exports on: at the map centre the two agree to 1 part in 5,000 (4,892.9 vs 4,892.0
@@ -549,7 +549,7 @@ window.IntMapModules.worldPacks=function(HOST){
       function ensureLayers(){ if(!_imCanDraw()) return false; try{
         if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         ensureArrows();
-        /* (#R256) 「誰が線に複数矢印つけろって言ってんねん。」 — the along-the-shaft repeater is gone,
+        /* (#R258) 「誰が線に複数矢印つけろって言ってんねん。」 — the along-the-shaft repeater is gone,
            and removed from a style that still carries it rather than merely left empty. */
         try{ if(GE().layers.has('wp-trade-arrow')) GE().layers.remove('wp-trade-arrow'); }catch(_){}
         /* the SHAFT of the arrow. Butt cap, because its flat end is what the head's base sits against
@@ -601,7 +601,7 @@ window.IntMapModules.worldPacks=function(HOST){
               const w=1.2+11.8*Math.sqrt(Math.max(0,d.v)/Math.max(1,vmax));
               /* the arc IS the direction: exports leave home, imports arrive at it (#R212) */
               const line=(dir==='X')?greatCircle(home,c,56):greatCircle(c,home,56);
-              /* (#R256) ONE arrow: the shaft is cut back by exactly the head's length, so the two
+              /* (#R258) ONE arrow: the shaft is cut back by exactly the head's length, so the two
                  primitives meet edge to edge instead of one lying on top of the other. */
               const asz=headSize(w);
               const cut=trimEnd(line,headLenPx(w));
@@ -632,7 +632,7 @@ window.IntMapModules.worldPacks=function(HOST){
             +'<select class="wp-sec" style="'+SEL+'">'+SECTIONS.map(s=>'<option value="'+s[0]+'"'+(s[0]===section?' selected':'')+'>'+esc(secLabel(s[0]))+'</option>').join('')+'</select></label>'
           +'<div style="'+ROW+'">'+L('Partners shown','表示する相手国','Angezeigte Partner','Показано партнёров','Socios mostrados')
             +'<span style="display:flex;gap:4px;">'+[10,20,999].map(n=>'<button class="wp-n" data-n="'+n+'" style="'+BTN+'padding:4px 7px;">'+(n>=999?L('All','すべて','Alle','Все','Todos'):n)+'</button>').join('')+'</span></div>'
-          /* (#R254/#R256) the switch is over the whole arrow — shaft, head and label together */
+          /* (#R254/#R258) the switch is over the whole arrow — shaft, head and label together */
           +'<label style="'+ROW+'cursor:pointer;">'+L('Flow arrows','フローの矢印','Strompfeile','Стрелки потоков','Flechas de flujo')
             +'<input type="checkbox" class="wp-arr"'+(arrows?' checked':'')+' style="width:16px;height:16px;accent-color:var(--primary-color);cursor:pointer;"></label>'
           +rampLegend(TRADE_RAMP.map(x=>[x[0]+'%',x[1]]),
@@ -722,7 +722,7 @@ window.IntMapModules.worldPacks=function(HOST){
 
       /* a basemap swap drops every added layer — put them back if this one is on (#R72) */
       onRestyle(()=>{ if(on) whenDrawable(()=>{ if(ensureLayers()) draw(); }); });
-      /* ⚠ (#R256) THE SHAFT IS CUT BACK BY A NUMBER OF PIXELS, SO THE CUT MOVES WITH THE CAMERA. The
+      /* ⚠ (#R258) THE SHAFT IS CUT BACK BY A NUMBER OF PIXELS, SO THE CUT MOVES WITH THE CAMERA. The
          head keeps its size on screen; the ground distance it covers halves with every zoom step, and
          in globe projection it also depends on WHERE on the disc the arc ends. If the geometry were
          built once, zooming in would leave the shaft short of the head (a gap) and zooming out would
@@ -1931,7 +1931,7 @@ window.IntMapModules.worldPacks=function(HOST){
           +(st?rampLegend(CROP_RAMP.map(s=>[fmt(st.min+(st.max-st.min)*s[0]),s[1]]),
               varName(variable)+' — '+un+' '+L('per 5-arcminute cell (~9 km)','（5分メッシュ＝約9km 四方あたり）','pro 5-Bogenminuten-Zelle','на ячейку 5′','por celda de 5′')):'')
           +'<div class="wp-c-stat" style="font-size:11.5px;color:var(--text-main);min-height:15px;"></div>'
-          /* (#R256) 「凡例に書いてある注意書きが長すぎ。せめて隠すとかしろ。」 — folded, see noteBlock() */
+          /* (#R258) 「凡例に書いてある注意書きが長すぎ。せめて隠すとかしろ。」 — folded, see noteBlock() */
           +noteBlock(
            L('Source: FAO GAEZ v4, theme «Area, Yield and Production» — a 5-arcminute grid of where each crop is actually grown, for the reference years 2000 and 2010 (the clock picks the nearer one; this view is '+(lastMeta?lastMeta.year:'2010')+'). The color scale is fixed to this raster’s own measured minimum and maximum, so the same color means the same number wherever you pan. Tap the map for the value in that cell.',
              '出典: FAO GAEZ v4「面積・収量・生産量」——各作物が実際に栽培されている場所の5分メッシュ格子（基準年 2000 / 2010。時計が近い方を選びます。現在の表示は '+(lastMeta?lastMeta.year:'2010')+' 年）。色階はこのラスタ自身の実測の最小・最大に固定してあるので、同じ色はどこへ動かしても同じ値です。地図をタップするとそのセルの値が出ます。',
@@ -1964,7 +1964,7 @@ window.IntMapModules.worldPacks=function(HOST){
         render(); paint(true); }
 
       try{ GE().events.on('moveend',()=>{ if(on) setTimeout(()=>paint(false),200); }); }catch(_){}
-      /* ══ ⚠⚠⚠ (#R256) THE LAYER WAS RESTYLING ITSELF, AT ABOUT 9 Hz ═══════════════════════════════
+      /* ══ ⚠⚠⚠ (#R258) THE LAYER WAS RESTYLING ITSELF, AT ABOUT 9 Hz ═══════════════════════════════
          「作物を栽培は激しく点滅する。」 MEASURED on the shipped build with the layer on and the camera
          perfectly still: **88 remove/addSource/add cycles in 10 s**, and `styledata` fires **28 times
          in 3 s with this layer on and 0 times with it off**. It is a closed loop, and this line was

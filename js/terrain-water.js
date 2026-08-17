@@ -86,7 +86,7 @@ window.IntMapModules.terrainWater=function(HOST){
         pourSimS+=dt*timeScale;
         sources[sources.length-1].m3+=pourRate*dt*timeScale;
         solve();                       /* redraws and re-reports; _retrace() stays debounced out */
-        try{ syncFoot(); }catch(_){}   /* (#R256) the footer clock ticks with the simulation */
+        try{ syncFoot(); }catch(_){}   /* (#R258) the footer clock ticks with the simulation */
       },220);
       return true; }
     function pourStop(){ if(pourT){ clearInterval(pourT); pourT=null; if(opened){ report(); try{ syncFoot(); }catch(_){} } } return false; }
@@ -283,7 +283,7 @@ window.IntMapModules.terrainWater=function(HOST){
       editDirty(); }
     /* A levee is a ridge whose crest follows the drawn line — stamped into the SAME height field, so
        the solver has no idea it is man-made and treats it exactly like ground. */
-    /* ══ ⚠⚠⚠ (#R256) THE WATER WENT THROUGH THE DAM, AND THE CROSS-SECTION IS WHY ═══════════════════
+    /* ══ ⚠⚠⚠ (#R258) THE WATER WENT THROUGH THE DAM, AND THE CROSS-SECTION IS WHY ═══════════════════
        「堤防・ダムも同様。水面より高いはずの場所をすり抜ける。どないなっとんねん。」 Reproduced from the
        arithmetic, and there are two independent faults in these four lines:
 
@@ -422,7 +422,7 @@ window.IntMapModules.terrainWater=function(HOST){
         return { data: await blob.arrayBuffer() };
       }); }catch(e){ try{ console.warn('sculpted terrain protocol could not be registered',e); }catch(_){} }
       return _demProtoOn; }
-    /* ══ ⚠⚠⚠ (#R256) ONE SOURCE, RE-TILED — NOT A NEW SOURCE PER STROKE ═════════════════════════════
+    /* ══ ⚠⚠⚠ (#R258) ONE SOURCE, RE-TILED — NOT A NEW SOURCE PER STROKE ═════════════════════════════
        「盛る、削るやった瞬間3D表示が毎回リセットされるのを辞めろ。堤防・ダムも同様。」
        #R255 built a BRAND-NEW `raster-dem` source (`tw-dem-1`, `tw-dem-2`, …) on every edit and
        called `setTerrain` on it. Attaching a different terrain source makes the renderer throw the
@@ -842,7 +842,7 @@ window.IntMapModules.terrainWater=function(HOST){
 
        ⚠ Returns `null` when the flat fills the whole window — then there is nothing outside it to
        compare, and the caller must widen instead of guessing. That is what the ladder is for. */
-    /* ══ ⚠⚠ (#R256) …AND IT RETURNS THE WAY ACROSS, NOT ONLY THE FAR SIDE ═══════════════════════════
+    /* ══ ⚠⚠ (#R258) …AND IT RETURNS THE WAY ACROSS, NOT ONLY THE FAR SIDE ═══════════════════════════
        「たまに、直線で地形を完全無視するクソ区間がある。」 That section is HERE. When the walk crossed a
        lake wider than its window, the escape below pushed exactly ONE point — the outlet — so the
        course jumped from the shore it entered on to the shore it leaves by in a single leg, and the
@@ -1288,7 +1288,7 @@ window.IntMapModules.terrainWater=function(HOST){
               if(usable){
                 escal++; escaped=true; escalMult=mult;
                 const p=fo.at;
-                /* (#R256) the CROSSING, cell by cell — not a chord from one shore to the other. The
+                /* (#R258) the CROSSING, cell by cell — not a chord from one shore to the other. The
                    fallback is the single leg only when the fill could not hand a path back. */
                 const walk=(fo.path&&fo.path.length>1)?fo.path.slice(1):[{at:p,e:fo.outElev}];
                 let pv=[lng,lat];
@@ -1745,7 +1745,7 @@ window.IntMapModules.terrainWater=function(HOST){
         +'<br><b>'+L('Overtopping','決壊・越流','Überströmen','Перелив','Desbordamiento')+':</b> '
         +(result.breaches.length?(result.breaches.length+' '+L('spill points','箇所','Stellen','точек','puntos'))
           :L('none — everything is held','なし（すべて湛水）','keines','нет','ninguno'))
-        /* (#R256) the pouring volume and the elapsed clock moved to the footer — see syncFoot() */
+        /* (#R258) the pouring volume and the elapsed clock moved to the footer — see syncFoot() */
         );
       try{ syncFoot(); }catch(_){}
       setMore('<b>'+L('Ponded','湛水','Aufgestaut','Затоплено','Embalsado')+':</b> '+fmtM3(result.storedM3)
@@ -1777,7 +1777,7 @@ window.IntMapModules.terrainWater=function(HOST){
       if(s<172800) return (s/3600).toFixed(1)+' '+L('h','時間','h','ч','h');
       return (s/86400).toFixed(1)+' '+L('d','日','T','сут','d'); }
 
-    /* ══ ⚠⚠ (#R256) THE PANEL IS THE SAME GROUPED INSET LIST THE EARTHQUAKE SIMULATOR IS ═══════════
+    /* ══ ⚠⚠ (#R258) THE PANEL IS THE SAME GROUPED INSET LIST THE EARTHQUAKE SIMULATOR IS ═══════════
        「UIも総じてくそ。全面改修しろ。上流のものに合わせろ。時間は下部スティックしろ。」
 
        What was here: one flat column of `display:flex;gap:9px` rows — four tool buttons, then
@@ -1820,7 +1820,7 @@ window.IntMapModules.terrainWater=function(HOST){
         '.tw-seg{flex:1;min-width:0;border:none;background:transparent;color:var(--text-main);font-size:'+TW_FS+';'
           +'font-weight:500;padding:7px 6px;border-radius:8px;cursor:pointer;line-height:1.25;white-space:nowrap;}',
         '.tw-seg.on{background:var(--primary-color);color:#fff;font-weight:600;}',
-        /* ⚠ (#R256) THE TOOL PICKER IS 2×2, NOT A FOUR-WAY STRIP. Measured in this panel: the strip
+        /* ⚠ (#R258) THE TOOL PICKER IS 2×2, NOT A FOUR-WAY STRIP. Measured in this panel: the strip
            gives each segment 73 px while 「🧱 堤防・ダム」 needs 96 and 「💧 ここに水」 88 — two of the
            four labels were clipped. Four names do not fit across 306 px, so they go two by two. */
         '.tw-modes{display:grid;grid-template-columns:1fr 1fr;}',
@@ -1890,7 +1890,7 @@ window.IntMapModules.terrainWater=function(HOST){
         +'<details class="tw-more tw-note" style="font-size:'+TW_FS_S+';color:var(--text-main);line-height:1.55;">'
           +'<summary>'+L('Show details','詳細情報を表示','Details anzeigen','Подробнее','Ver detalles')+'</summary>'
           +'<div class="tw-more-body" style="margin-top:5px;"></div></details>'
-        /* ⑤ what the model is and is not — folded, like every other long note (#R256) */
+        /* ⑤ what the model is and is not — folded, like every other long note (#R258) */
         +'<details class="tw-note" style="line-height:1.5;">'
           +'<summary>'+L('About this model','このモデルについて','Über dieses Modell','Об этой модели','Sobre este modelo')+'</summary>'
           +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:4px;">'
@@ -1902,7 +1902,7 @@ window.IntMapModules.terrainWater=function(HOST){
           +'</div></details>'
         +'</div>'
         +'<div class="tw-foot" style="flex:0 0 auto;position:sticky;bottom:0;padding:8px 12px calc(10px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;background:var(--card-bg,#1c1c1e);border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));">'
-        /* ══ (#R256) 「時間は下部スティックしろ。」 — the transport, the multiplier and the clock ═══════ */
+        /* ══ (#R258) 「時間は下部スティックしろ。」 — the transport, the multiplier and the clock ═══════ */
         +'<div style="display:flex;align-items:center;gap:8px;">'
           +'<button class="tw-play tw-pp" aria-label="'+L('Pour','注水','Zulauf','Наполнение','Verter')+'">▶</button>'
           +'<div class="tw-segwrap" style="flex:1 1 auto;">'+[1,10,60,600].map(s=>'<button class="tw-seg tw-ts" data-s="'+s+'">'+(s>=60?(s/60)+'m':s+'s')+'</button>').join('')+'</div>'
@@ -1926,7 +1926,7 @@ window.IntMapModules.terrainWater=function(HOST){
       panel.querySelector('.tw-close').onclick=()=>close();
       panel.querySelectorAll('.tw-m').forEach(b=>b.onclick=()=>{ setMode(b.getAttribute('data-m')); });
       panel.querySelector('.tw-rain').onchange=e=>{ pushUndo(); rainMm=Math.max(0,+e.target.value||0); solve(); };
-      /* (#R256) the clock belongs to the simulation, so its controls are wired from here and stay
+      /* (#R258) the clock belongs to the simulation, so its controls are wired from here and stay
          live in every tool — including when no tool at all is selected. */
       panel.querySelectorAll('.tw-ts').forEach(b=>b.onclick=()=>{ timeScale=+b.getAttribute('data-s'); syncFoot(); });
       panel.querySelector('.tw-pp').onclick=()=>{ if(pourT) pourStop(); else { pourMode='cont'; pourStart(); } syncFoot(); renderParams(); };
@@ -1943,7 +1943,7 @@ window.IntMapModules.terrainWater=function(HOST){
     }
     function syncMode(){ if(!panel) return; panel.querySelectorAll('.tw-m').forEach(b=>{
       b.classList.toggle('on',b.getAttribute('data-m')===mode); }); }
-    /* ══ (#R256) THE FOOTER IS THE SIMULATION'S CLOCK ═══════════════════════════════════════════════
+    /* ══ (#R258) THE FOOTER IS THE SIMULATION'S CLOCK ═══════════════════════════════════════════════
        Repainted without rebuilding the panel, so it can be called from the pour's own interval. The
        transport is disabled — visibly, not silently — until there is water to pour into. */
     function syncFoot(){ if(!panel) return;
@@ -1977,7 +1977,7 @@ window.IntMapModules.terrainWater=function(HOST){
           b.onclick=()=>{ brushM=v; renderParams(); }; });
         p.querySelector('.tw-bs').onchange=e=>brushStrength=Math.max(1,+e.target.value||20);
       } else if(mode==='levee'){
-        /* (#R256) …and it says when the grid cannot carry the width that was typed (see stampLevees) */
+        /* (#R258) …and it says when the grid cannot carry the width that was typed (see stampLevees) */
         const thin=(leveeWidth/2/((G&&G.cellM)||1))<1.5;
         p.innerHTML=cap(L('Levee / dam','堤防・ダム','Deich / Damm','Дамба','Dique / presa'))
           +card('<div class="tw-blk" style="color:var(--text-muted);font-size:'+TW_FS_S+';">'+L('Click along the line, double-click to finish.','線に沿ってクリック、ダブルクリックで確定。','Entlang der Linie klicken, Doppelklick beendet.','Кликайте по линии, двойной клик — конец.','Haga clic a lo largo; doble clic para terminar.')+'</div>'
@@ -2002,7 +2002,7 @@ window.IntMapModules.terrainWater=function(HOST){
            re-runs, which is the quasi-static filling sequence a reservoir study actually draws.
            The panel prints the simulated time alongside the volume so the two are never confused,
            and the speed control multiplies simulated time, not the frame rate. */
-        /* ⚠ (#R256) THE TRANSPORT AND THE SPEED ARE NOT HERE ANY MORE — they are in the footer, which
+        /* ⚠ (#R258) THE TRANSPORT AND THE SPEED ARE NOT HERE ANY MORE — they are in the footer, which
            is what 「時間は下部スティックしろ」 asks for and what stops them vanishing when the reader
            picks up the brush while a pour is running. What stays is what the TOOL decides: whether a
            click drops a fixed volume or opens a tap, how much, and the channel discharge. */
@@ -2118,7 +2118,7 @@ window.IntMapModules.terrainWater=function(HOST){
          even after the tool-switch stop was removed. */
       if(pourMode==='cont'){ if(!pourT) pourSimS=0; solve(); pourStart(); if(panel) renderParams(); }
       else solve();
-      try{ syncFoot(); }catch(_){}      /* (#R256) the transport is live the moment there is water */
+      try{ syncFoot(); }catch(_){}      /* (#R258) the transport is live the moment there is water */
       traceDownstream(lng,lat); }
     function onClick(e){ if(!opened) return;
       try{ GE().events.claimClick&&GE().events.claimClick(e); }catch(_){}   /* (#R210) the brush owns the tap while this tool is open */
@@ -2201,7 +2201,7 @@ window.IntMapModules.terrainWater=function(HOST){
             levees.push({pts:l[2].map(p=>[+p[0],+p[1]]),crest:Math.max(1,+l[0]||leveeCrest),width:Math.max(10,+l[1]||leveeWidth)}); });
           if(Array.isArray(v.src)){ sources=v.src.map(s=>({lng:+s[0],lat:+s[1],m3:Math.max(0,+s[2]||0)})); }
           if(v.m) setMode(String(v.m));
-          editDirty();          /* (#R256) a restored levee is a change to the ground — see addLevee */
+          editDirty();          /* (#R258) a restored levee is a change to the ground — see addLevee */
           solve();
           if(sources.length) traceDownstream(sources[0].lng,sources[0].lat);
           if(opened) render();
@@ -2297,7 +2297,7 @@ window.IntMapModules.terrainWater=function(HOST){
                  q:[q(0),q(0.25),q(0.5),q(0.75),q(1)], drops, flats,
                  escal:trace.escal, escalMult:trace.escalMult, windows:trace.windows }; },
       clearTrace,
-      /* ⚠ (#R256) `editDirty()` — WITHOUT IT THIS DOOR BUILDS NOTHING. MEASURED: adding a levee through
+      /* ⚠ (#R258) `editDirty()` — WITHOUT IT THIS DOOR BUILDS NOTHING. MEASURED: adding a levee through
          this call and then sampling `IntMapElevEdit` along its own centreline returned **0.00 m at
          every point**. `editField()` is memoised on `editStamp`, and only `editDirty()` bumps it, so
          the levee never reached the solver, the readout or the 3-D relief — the water went straight

@@ -14,6 +14,11 @@ _thumb_*.png
 settings.local.json
 supabase/functions/ai-proxy/supabase/
 
+# ── (#R257) Claude Code のローカル上書き ─────────────────────────────────────
+# CLAUDE.md（追跡対象）は恒久指示。CLAUDE.local.md はこのマシン固有の情報と
+# 資格情報を持つ。このリポジトリは public なので、絶対に追跡してはならない。
+CLAUDE.local.md
+
 # ── Ops / test tooling (added R133) ──────────────────────────────────────────
 # Dev/test dependencies and their build artifacts. The IntMap app itself ships
 # NO node_modules — these exist only for CI and local testing.

@@ -71,7 +71,7 @@ window.IntMapModules.windowManager=function(HOST){
          replacing the native bottom-right-only `resize:both` grab-mark.
      makeDraggable auto-registers its panel; bigger windows (Atlas, Compare) also add edge-resize. ================= */
   const __winReg=new Set();
-  /* ══ ⚠⚠⚠ (#R256) THIS IS WHY THE SIDEBAR COULD NOT COME BACK TO THE FRONT ════════════════════════
+  /* ══ ⚠⚠⚠ (#R258) THIS IS WHY THE SIDEBAR COULD NOT COME BACK TO THE FRONT ════════════════════════
      「ポップアップ内でなんらかの操作したら、ポップアップが前部に来るように。左サイドバー内をクリック
        した場合はまた左サイドバーを前部に。」— reported in #R253, #R254, #R255 and again now. The
      `.im-front` machinery those rounds built is measured to work end to end. What defeats it is

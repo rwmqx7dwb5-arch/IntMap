@@ -201,7 +201,7 @@ window.IntMapLang.define('ru', { ui: {
       lyrGrpSecurity:"Оборона и безопасность",
       lyrGrpHealth:"Здоровье и санитария",
       lyrGrpTech:"Технологии и инфраструктура",
-      lyrGrpEnergy:"Энергетика и ресурсы",   /* (#R256) */
+      lyrGrpEnergy:"Энергетика и ресурсы",   /* (#R258) */
       lyrGrpMaritime:"Океаны и море",
       lyrGrpTerrain:"Рельеф и высота",
       lyrGrpIndic:"Индикаторы и слои",

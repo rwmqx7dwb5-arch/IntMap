@@ -16,7 +16,7 @@ const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.
 test('#R255 ① trade arrows: the head is derived from the line width and every arc ends in one', () => {
   const wp = code(read('js/world-packs.js'));
   /* the whole defect was a head sized independently of the line it sits on.
-     ⚠ (#R256) renamed `arrowSize` → `headBasePx`/`headSize`, because the head's BASE is now the
+     ⚠ (#R258) renamed `arrowSize` → `headBasePx`/`headSize`, because the head's BASE is now the
      number that matters (the shaft is trimmed by its length). Still a function of `w`. */
   assert.match(wp, /const headBasePx=\(w\)=>Math\.max\(10,2\.8\*w\);/, 'the arrowhead size is no longer a function of the line width');
   assert.ok(!/asz:Math\.max\(0\.34,Math\.min\(0\.92,0\.30\+0\.62\*Math\.sqrt/.test(wp),
@@ -26,7 +26,7 @@ test('#R255 ① trade arrows: the head is derived from the line width and every 
   /* it must follow the arrows toggle, not the layer */
   assert.match(wp, /function applyVis\(\)\{ setVis\(LYR,on&&arrows\); \}/,
     'the terminal head does not follow the 「矢印の有無」 toggle');
-  /* ⚠⚠ (#R256) THE OUTLINE IS DELIBERATELY GONE. #R255 added it so a head could be told apart from a
+  /* ⚠⚠ (#R258) THE OUTLINE IS DELIBERATELY GONE. #R255 added it so a head could be told apart from a
      stroke of its own colour it was lying ON TOP OF. The round that followed says the head must not
      look pasted on — so the shaft now STOPS at the head's base (trimEnd) and there is nothing to
      separate it from: one colour, one opacity, one object. An outline would put the seam back. */
@@ -148,7 +148,7 @@ test('#R255 ⑦e sculpting reaches the real elevation and the 3-D terrain', () =
   assert.match(tw, /window\.IntMapElevEdit=/, 'the elevation hook is not published');
   assert.match(tw, /function editDeltaAt\(lng,lat\)/, 'there is no geographic read of the sculpted delta');
   assert.match(tw, /addProtocol\(DEM_PROTO/, 'the sculpted DEM tiles are gone');
-  /* ⚠ (#R256) the local was `id`; the source is created ONCE now and kept in `_demSrcId`, because a
+  /* ⚠ (#R258) the local was `id`; the source is created ONCE now and kept in `_demSrcId`, because a
      new source per edit re-attached the terrain and that is what reset the 3-D view on every brush
      stroke. What this test is about — the terrain really is pointed at the sculpted DEM — is
      unchanged; tests/r256 ④ pins the once-only part. */

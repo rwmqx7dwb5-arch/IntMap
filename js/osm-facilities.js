@@ -136,7 +136,7 @@ window.IntMapModules.facilities=function(HOST){
       fields:(t)=>[['operator',t['operator']||t['owner']||''],['height',t['height']?(t['height']+' m'):''],
                    ['addr',_addr(t)],['web',t['website']||'']]
     },
-    /* ══ (#R256) THE FIFTH AND SIXTH SETS — A NEW CATEGORY THAT IS NOT A CHOROPLETH ════════════════
+    /* ══ (#R258) THE FIFTH AND SIXTH SETS — A NEW CATEGORY THAT IS NOT A CHOROPLETH ════════════════
        「追加すべきと思うレイヤーカテゴリはありますか？あれば作り…新レイヤー（国単位で塗るだけのやつじゃ
          なくて、モノホンのやつ。）」
        Energy and extraction was the largest subject this map had no shelf for: the only energy rows
@@ -214,7 +214,7 @@ window.IntMapModules.facilities=function(HOST){
     speciality:()=>L('Speciality','診療科','Fachrichtung','Специализация','Especialidad'),
     emergency:()=>L('Emergency','救急','Notaufnahme','Неотложная помощь','Urgencias'),
     height:()=>L('Height','高さ','Höhe','Высота','Altura'),
-    /* (#R256) the energy / extraction fields */
+    /* (#R258) the energy / extraction fields */
     output:()=>L('Output','出力','Leistung','Мощность','Potencia'),
     fuel:()=>L('Fuel / source','燃料・エネルギー源','Brennstoff / Quelle','Топливо / источник','Combustible / fuente'),
     method:()=>L('Method','方式','Verfahren','Способ','Método'),

@@ -166,7 +166,7 @@ window.IntMapLang.define('ko', { ui: {
       lyrGrpSecurity:"국방·안보",
       lyrGrpHealth:"보건·위생",
       lyrGrpTech:"기술·인프라",
-      lyrGrpEnergy:"에너지·자원",   /* (#R256) */
+      lyrGrpEnergy:"에너지·자원",   /* (#R258) */
       lyrGrpHazard:"재해·밤하늘",
       lyrGrpIndic:"지표·오버레이",
       lyrGrpMaritime:"해양·해운",
@@ -727,47 +727,47 @@ window.IntMapLang.define('ko', { ui: {
   "historical map": "과거 지도",
   "terrain & water": "지형과 물",
   "seismic waves": "지진파",
-  "About this model": "이 모델에 대하여",   /* (#R256) */
-  "Coal / oil / gas": "석탄·석유·가스",   /* (#R256) */
-  "Crest above ground": "제방 마루 높이(지상)",   /* (#R256) */
-  "Depth per stroke": "1획당 깊이",   /* (#R256) */
-  "Discharge": "유량",   /* (#R256) */
-  "Disperse a release on the live wind field": "실제 바람장에서 방출을 확산시킵니다",   /* (#R256) */
-  "Elapsed": "경과 시간",   /* (#R256) */
-  "Flow arrows": "흐름 화살표",   /* (#R256) */
-  "Fuel / source": "연료·에너지원",   /* (#R256) */
-  "Height per stroke": "1획당 높이",   /* (#R256) */
-  "How far you get in a given time": "정해진 시간에 어디까지 갈 수 있는가",   /* (#R256) */
-  "Inflow": "유입량",   /* (#R256) */
-  "Method": "방식",   /* (#R256) */
-  "Mine / shaft": "광산·수직갱",   /* (#R256) */
-  "Mines, quarries & wells": "광산·채석장·유정",   /* (#R256) */
-  "Night sky from here": "이곳에서 보는 밤하늘",   /* (#R256) */
-  "Oil or gas well": "유정·가스정",   /* (#R256) */
-  "Other / biomass": "기타·바이오매스",   /* (#R256) */
-  "Output": "출력",   /* (#R256) */
-  "Place water on the map first": "먼저 지도에 물을 놓으세요",   /* (#R256) */
-  "Power plants & grid": "발전소·송변전 설비",   /* (#R256) */
-  "Quarry": "채석장",   /* (#R256) */
-  "Radioactive plume simulator": "방사성 플룸 확산 시뮬레이터",   /* (#R256) */
-  "Rainfall": "강수량",   /* (#R256) */
-  "Resource": "자원",   /* (#R256) */
-  "Sculpt the ground, pour water, build a levee": "지형을 깎고 쌓고, 물을 붓고, 제방을 세웁니다",   /* (#R256) */
-  "Solve the wave from a sea-floor rupture": "해저 단층에서 파를 계산합니다",   /* (#R256) */
-  "Source & notes": "출처·주석",   /* (#R256) */
-  "Substation": "변전소",   /* (#R256) */
-  "Terrain & water simulator": "지형·수류 시뮬레이터",   /* (#R256) */
-  "The sky a person standing here has": "이곳에 선 사람이 보는 하늘",   /* (#R256) */
-  "Tool": "도구",   /* (#R256) */
-  "Tsunami simulator": "쓰나미 시뮬레이터",   /* (#R256) */
-  "Voltage": "전압",   /* (#R256) */
-  "Volume per click": "클릭당 수량",   /* (#R256) */
-  "What the terrain hides from a point": "한 지점에서 지형이 가리는 범위",   /* (#R256) */
-  "Where the sun reaches, hour by hour": "시간대별로 해가 드는 곳",   /* (#R256) */
-  "Width": "폭",   /* (#R256) */
-  "Mines, quarries, mine shafts and oil or gas wells mapped in OpenStreetMap for the current view — the places raw material physically leaves the ground. Click any point for the resource and operator as tagged.": "현재 표시 범위에서 OpenStreetMap에 등록된 광산·채석장·수직갱·유정/가스정입니다. 원자재가 실제로 땅에서 나오는 장소 그 자체입니다. 점을 클릭하면 태그에 기록된 자원과 운영자가 표시됩니다.",   /* (#R256) */
-  "Power stations, substations, wind turbines and solar farms mapped in OpenStreetMap for the current view — where the electricity is actually generated and stepped up, not a national average. Click any point for its output, fuel and operator as tagged.": "현재 표시 범위에서 OpenStreetMap에 등록된 발전소·변전소·풍력 발전기·태양광 발전소입니다. 국가 평균이 아니라 실제로 전기가 생산되고 승압되는 장소입니다. 점을 클릭하면 태그에 기록된 출력·연료·운영자가 표시됩니다.",   /* (#R256) */
-  "Arrow width is proportional to the SQUARE ROOT of the value (a flow-map convention — the eye compares area, and a stroke’s area is width × length), and the arrow points the way the goods move. Hover any arrow for the exact figure; nothing here rescales the amounts. Source: BACI (CEPII) via OEC, HS 6-digit, year ": "화살표의 굵기는 금액의 제곱근에 비례합니다(유동도의 관례. 눈은 면적을 비교하며 선의 면적은 폭×길이입니다). 화살표는 물자가 움직이는 방향을 가리킵니다. 화살표에 마우스를 올리면 정확한 금액이 나오며, 금액 자체는 전혀 가공하지 않습니다. 출처: BACI(CEPII)/OEC, HS 6자리, ",   /* (#R256) */
+  "About this model": "이 모델에 대하여",   /* (#R258) */
+  "Coal / oil / gas": "석탄·석유·가스",   /* (#R258) */
+  "Crest above ground": "제방 마루 높이(지상)",   /* (#R258) */
+  "Depth per stroke": "1획당 깊이",   /* (#R258) */
+  "Discharge": "유량",   /* (#R258) */
+  "Disperse a release on the live wind field": "실제 바람장에서 방출을 확산시킵니다",   /* (#R258) */
+  "Elapsed": "경과 시간",   /* (#R258) */
+  "Flow arrows": "흐름 화살표",   /* (#R258) */
+  "Fuel / source": "연료·에너지원",   /* (#R258) */
+  "Height per stroke": "1획당 높이",   /* (#R258) */
+  "How far you get in a given time": "정해진 시간에 어디까지 갈 수 있는가",   /* (#R258) */
+  "Inflow": "유입량",   /* (#R258) */
+  "Method": "방식",   /* (#R258) */
+  "Mine / shaft": "광산·수직갱",   /* (#R258) */
+  "Mines, quarries & wells": "광산·채석장·유정",   /* (#R258) */
+  "Night sky from here": "이곳에서 보는 밤하늘",   /* (#R258) */
+  "Oil or gas well": "유정·가스정",   /* (#R258) */
+  "Other / biomass": "기타·바이오매스",   /* (#R258) */
+  "Output": "출력",   /* (#R258) */
+  "Place water on the map first": "먼저 지도에 물을 놓으세요",   /* (#R258) */
+  "Power plants & grid": "발전소·송변전 설비",   /* (#R258) */
+  "Quarry": "채석장",   /* (#R258) */
+  "Radioactive plume simulator": "방사성 플룸 확산 시뮬레이터",   /* (#R258) */
+  "Rainfall": "강수량",   /* (#R258) */
+  "Resource": "자원",   /* (#R258) */
+  "Sculpt the ground, pour water, build a levee": "지형을 깎고 쌓고, 물을 붓고, 제방을 세웁니다",   /* (#R258) */
+  "Solve the wave from a sea-floor rupture": "해저 단층에서 파를 계산합니다",   /* (#R258) */
+  "Source & notes": "출처·주석",   /* (#R258) */
+  "Substation": "변전소",   /* (#R258) */
+  "Terrain & water simulator": "지형·수류 시뮬레이터",   /* (#R258) */
+  "The sky a person standing here has": "이곳에 선 사람이 보는 하늘",   /* (#R258) */
+  "Tool": "도구",   /* (#R258) */
+  "Tsunami simulator": "쓰나미 시뮬레이터",   /* (#R258) */
+  "Voltage": "전압",   /* (#R258) */
+  "Volume per click": "클릭당 수량",   /* (#R258) */
+  "What the terrain hides from a point": "한 지점에서 지형이 가리는 범위",   /* (#R258) */
+  "Where the sun reaches, hour by hour": "시간대별로 해가 드는 곳",   /* (#R258) */
+  "Width": "폭",   /* (#R258) */
+  "Mines, quarries, mine shafts and oil or gas wells mapped in OpenStreetMap for the current view — the places raw material physically leaves the ground. Click any point for the resource and operator as tagged.": "현재 표시 범위에서 OpenStreetMap에 등록된 광산·채석장·수직갱·유정/가스정입니다. 원자재가 실제로 땅에서 나오는 장소 그 자체입니다. 점을 클릭하면 태그에 기록된 자원과 운영자가 표시됩니다.",   /* (#R258) */
+  "Power stations, substations, wind turbines and solar farms mapped in OpenStreetMap for the current view — where the electricity is actually generated and stepped up, not a national average. Click any point for its output, fuel and operator as tagged.": "현재 표시 범위에서 OpenStreetMap에 등록된 발전소·변전소·풍력 발전기·태양광 발전소입니다. 국가 평균이 아니라 실제로 전기가 생산되고 승압되는 장소입니다. 점을 클릭하면 태그에 기록된 출력·연료·운영자가 표시됩니다.",   /* (#R258) */
+  "Arrow width is proportional to the SQUARE ROOT of the value (a flow-map convention — the eye compares area, and a stroke’s area is width × length), and the arrow points the way the goods move. Hover any arrow for the exact figure; nothing here rescales the amounts. Source: BACI (CEPII) via OEC, HS 6-digit, year ": "화살표의 굵기는 금액의 제곱근에 비례합니다(유동도의 관례. 눈은 면적을 비교하며 선의 면적은 폭×길이입니다). 화살표는 물자가 움직이는 방향을 가리킵니다. 화살표에 마우스를 올리면 정확한 금액이 나오며, 금액 자체는 전혀 가공하지 않습니다. 출처: BACI(CEPII)/OEC, HS 6자리, ",   /* (#R258) */
   "sun & shadow": "태양과 그림자",
   "line of sight": "가시선",
   "Nothing to clear for": "지울 것이 없습니다:",

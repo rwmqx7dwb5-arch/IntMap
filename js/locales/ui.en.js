@@ -151,7 +151,7 @@ window.IntMapLang.define('en', { ui: {
       lyrGrpSecurity:"Defense & security",
       lyrGrpHealth:"Health & sanitation",
       lyrGrpTech:"Technology & infrastructure",
-      lyrGrpEnergy:"Energy & resources",   /* (#R256) */
+      lyrGrpEnergy:"Energy & resources",   /* (#R258) */
       lyrGrpOthers:"Beta",
       lyrGrpOthersReal:"Others",
       lyrGrpOrbit:"Space & orbit",

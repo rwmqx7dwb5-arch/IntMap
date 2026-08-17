@@ -344,7 +344,7 @@ window.IntMapModules.dataCenters=function(HOST){
     [116.40,39.90,'National Supercomputing Center, Wuxi/Beijing','hpc','hpc','',null,2016,SRC_TOP500],
     [77.59,12.97,'C-DAC Pune — PARAM','hpc','hpc','',null,2020,SRC_TOP500],
     [151.21,-33.87,'NCI Australia — Gadi','hpc','hpc','',null,2019,SRC_TOP500],
-    /* ══ (#R256) 「データセンター、AIインフラレイヤーを爆発的に強化。」 ═══════════════════════════════
+    /* ══ (#R258) 「データセンター、AIインフラレイヤーを爆発的に強化。」 ═══════════════════════════════
        The table was 215 cloud REGIONS against 16 AI campuses, 14 TOP500 sites and 15 carrier
        hotels — i.e. the half the layer is named for («AIインフラ») was the thinnest part of it. What
        follows roughly triples the three non-cloud families, and six existing entries had their
@@ -422,7 +422,7 @@ window.IntMapModules.dataCenters=function(HOST){
   /* ─── the merged feature collection ───────────────────────────────────────────────────────────── */
   const colOf=(op)=>((OP[op]||OP.osm)[1]);
   const R_OF={ai:8.5,cloud:7,colo:6,hpc:6.5,other:5};
-  /* ⚠ (#R256) A PUBLISHED CAPACITY IS DRAWN, AND ONLY A PUBLISHED ONE. Where the operator states an
+  /* ⚠ (#R258) A PUBLISHED CAPACITY IS DRAWN, AND ONLY A PUBLISHED ONE. Where the operator states an
      IT/critical load the dot carries it — √MW, because the eye compares AREA and a disc's area is
      πr² (the same convention the trade arrows use for dollars). Where no figure is published the dot
      stays at its class's own size, so a big dot always means «this much is published», never «this
@@ -625,7 +625,7 @@ window.IntMapModules.dataCenters=function(HOST){
     const a=()=>{ if(!ensure()){ try{ GE().events.once('idle',a); }catch(_){} return; } wire(); setVis(true); refresh(); };
     a(); }
 
-  /* ══ (#R256) THE KEY IS A FILTER ═════════════════════════════════════════════════════════════════
+  /* ══ (#R258) THE KEY IS A FILTER ═════════════════════════════════════════════════════════════════
      With the table three times the size it was, «show me only the AI campuses» is the question the
      legend was already half-answering: it lists the classes and their colours. Clicking a row now
      takes that class off the map. The filter is one expression on the layer — no second copy of the
@@ -650,13 +650,13 @@ window.IntMapModules.dataCenters=function(HOST){
     [PT,LBL].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setFilter(id,f); }catch(_){} });
   }
   window.IntMapDataCenters={ toggle, refresh, count:()=>DC.length, operators:()=>OP, kinds:()=>KIND,
-    /* (#R256) the legend's rows drive this — see js/layer-packs.js */
+    /* (#R258) the legend's rows drive this — see js/layer-packs.js */
     toggleKey(k){ if(hidden.has(k)) hidden.delete(k); else hidden.add(k); applyFilter(); return !hidden.has(k); },
     keyOn:(k)=>!hidden.has(k),
     /* the curated half as a FeatureCollection — js/compare.js draws this in its second map through
        `IntMapBeta2.load('dc')`, and there must be exactly one copy of the table (#R213's rule). */
     features:()=>({type:'FeatureCollection',features:curatedFC()}),
     /* the legend key, built here so the colours and the layer cannot disagree.
-       (#R256) …and it carries the class id, so the row can switch that class off. */
+       (#R258) …and it carries the class id, so the row can switch that class off. */
     key:()=>KEY_ROWS().map(([k,lbl])=>[colOf(k),lbl,k]) };
 };

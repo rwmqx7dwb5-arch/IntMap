@@ -243,7 +243,7 @@ window.IntMapModules.layerSidebar=function(HOST){
           shell that is not itself positioned and not under the canvas therefore resolved to the SHELL,
           and marking that `.im-front` puts the whole map (and every sidebar inside `.operation-room`)
           into one 2650 box. The walk now refuses the shell by name as well as the canvas. */
-    /* ══ ⚠ (#R256) …AND A PANEL THAT SITS ABOVE THE BAND CAN NEVER BE COVERED BY THE SIDEBAR ════════
+    /* ══ ⚠ (#R258) …AND A PANEL THAT SITS ABOVE THE BAND CAN NEVER BE COVERED BY THE SIDEBAR ════════
        「ポップアップ内でなんらかの操作したら、ポップアップが前部に来るように。左サイドバー内をクリック
          した場合はまた左サイドバーを前部に。」— a FOURTH time. MEASURED on this build, the mechanism
        #R254/#R255 built does work end to end: a pointerdown inside `#country-popup` takes it
@@ -288,7 +288,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       document.addEventListener('pointerdown',(e)=>{ try{ act(e.target,true); }catch(_){} },true);
       document.addEventListener('wheel',(e)=>{ try{ act(e.target,false); }catch(_){} },{capture:true,passive:true});
       document.addEventListener('focusin',(e)=>{ try{ act(e.target,false); }catch(_){} },true);
-      document.addEventListener('keydown',(e)=>{ try{ act(e.target,false); }catch(_){} },true);   /* (#R256) typing is an operation */
+      document.addEventListener('keydown',(e)=>{ try{ act(e.target,false); }catch(_){} },true);   /* (#R258) typing is an operation */
     }
     const T=window.IntMapLang.pick(()=>HOST.lang);
     /* (#R70) REBUILT FROM SCRATCH ("単にデフォルトの Layers選択欄を移植するな。一から同じ機能かつ洗練された
@@ -572,7 +572,7 @@ window.IntMapModules.layerSidebar=function(HOST){
        this array and nothing else. The glyph is inline SVG rather than an emoji (standing rule: no
        decorative emoji), and the press goes through `IntMapOS` so the palette, the map's right-click
        menu, the classic dropdown's button and this row are ONE path.
-       ══ (#R256) …AND THE OTHER SIMULATIONS ARE ROWS IN IT ══════════════════════════════════════════
+       ══ (#R258) …AND THE OTHER SIMULATIONS ARE ROWS IN IT ══════════════════════════════════════════
        「シミュレーション系のもので、レイヤーではないものは、地震波シミュレーターのようにツール欄に追加
          して。」 Everything below already existed and was reachable ONLY from the map's right-click
        menu — i.e. you had to know to right-click the ground to discover that this app can route
