@@ -282,6 +282,18 @@ window.IntMapModules.worldPacks=function(HOST){
         +L('no data','データなし','keine Daten','нет данных','sin datos')+'</span></div>'
         +(note?('<div style="font-size:9.5px;color:var(--text-muted);margin-top:1px;">'+esc(note)+'</div>'):'')+'</div>'; }
 
+    /* ══ (#R256) A LONG NOTE IS FOLDED, NOT DELETED ═══════════════════════════════════════════════
+       「凡例に書いてある注意書きが長すぎ。せめて隠すとかしろ。」 The provenance paragraph under a legend
+       is the thing that makes the picture checkable (standing rule 4: say where the numbers come
+       from), so it cannot go — but it was six lines of prose above a three-line panel. `<details>`
+       lets the BROWSER own the open/closed state, so it survives a re-render of the panel body the
+       way #R211's 「詳細情報を表示」 does, and one line of summary is what is left on screen. */
+    function noteBlock(text){ if(!text) return '';
+      return '<details class="wp-note" style="margin-top:2px;">'
+        +'<summary style="cursor:pointer;font-size:9.5px;color:var(--text-muted);list-style:revert;">'
+        +esc(L('Source & notes','出典・注記','Quelle & Hinweise','Источник и примечания','Fuente y notas'))+'</summary>'
+        +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:3px;">'+esc(text)+'</div></details>'; }
+
     /* the layer rows all five families add, under one heading */
     function ensureHead(){ const dd=document.getElementById('layer-dropdown'); if(!dd) return null;
       if(!document.getElementById('wp-head')){ const h=document.createElement('div'); h.className='lyr-head'; h.id='wp-head';
@@ -329,7 +341,7 @@ window.IntMapModules.worldPacks=function(HOST){
      *  hover away — the picture is compressed, the number never is.
      * ════════════════════════════════════════════════════════════════════════════════════════════*/
     (function trade(){
-      const SRC='wp-trade', LYR=['wp-trade-arc','wp-trade-arrow','wp-trade-tip','wp-trade-lbl'];   /* (#R254) `wp-trade-pt` (the country pins) removed — see ensureLayers. (#R255) +the terminal arrowhead. */
+      const SRC='wp-trade', LYR=['wp-trade-arc','wp-trade-tip','wp-trade-lbl'];   /* (#R254) `wp-trade-pt` (the country pins) removed — see ensureLayers. (#R256) `wp-trade-arrow` (the repeater along the shaft) removed; the arrow is `arc`+`tip`. */
       /* BACI HS revisions, newest first — one cube covers 1995‑2024 and the newer ones are finer */
       const CUBE=(y)=>(y>=2022?'trade_i_baci_a_22':y>=2018?'trade_i_baci_a_17':y>=2012?'trade_i_baci_a_12':y>=2008?'trade_i_baci_a_07':y>=2003?'trade_i_baci_a_02':'trade_i_baci_a_92');
       const YMIN=1995, YMAX=2024;
@@ -349,11 +361,14 @@ window.IntMapModules.worldPacks=function(HOST){
         ['19',LA('Arms','武器','Waffen','Оружие','Armas')]];
       const secLabel=(s)=>{ const r=SECTIONS.find(x=>x[0]===s); return r?L.arr(r[1]):s; };
       let on=false, dir='X', section='', topN=15, iso=null, rows=null, year=null, busy=false, pop=null;
-      /* (#R254) 「矢印の有無はトグルでオンオフできるようにしろ。」 — the arrowheads are a switch of their
-         own, in the panel beside the direction and the commodity. The arcs and the country shading are
-         unaffected by it; only `wp-trade-arrow` follows. */
+      /* (#R254) 「矢印の有無はトグルでオンオフできるようにしろ。」 — a switch of its own, in the panel
+         beside the direction and the commodity.
+         ⚠ (#R256) 「矢印だけオンオフしてどないすんねん線もやろがい。」 — it took the heads off and left
+         the shafts standing, which is a picture of flows with no direction in it. The switch is over
+         the WHOLE arrow now (shaft, head and the partner's name); the country shading is what stays,
+         so turning the arrows off leaves the choropleth answer 「誰と、どれだけ」 on the map. */
       let arrows=true;
-      function applyVis(){ setVis(['wp-trade-arc','wp-trade-lbl'],on); setVis(['wp-trade-arrow','wp-trade-tip'],on&&arrows); }
+      function applyVis(){ setVis(LYR,on&&arrows); }
       const panel=makePanel('wp-trade-panel',()=>'🚢 '+L('Trade flows','貿易フロー','Handelsströme','Торговые потоки','Flujos comerciales'),'wp-dl-trade',
         { legendId:'wptrade', layers:()=>['wp-trade-fill'].concat(LYR),
           names:()=>(LA('🚢 Trade flows','🚢 貿易フロー','🚢 Handelsströme','🚢 Торговые потоки','🚢 Flujos comerciales')) });
@@ -401,29 +416,100 @@ window.IntMapModules.worldPacks=function(HOST){
          which is what makes the whole flow read as an arrow rather than as a decorated line.
          ⚠ Two plain images per direction rather than SDF: `icon-color` only applies to SDF sprites,
          and an SDF built from a hard-edged triangle is a blurred triangle (#R212). */
+      /* ══ ⚠⚠⚠ (#R256) THE FLOW **IS** AN ARROW. IT IS NOT A LINE WITH ARROWS PUT ON IT ═════════════
+         「貿易レイヤーは、矢印にしろ。…（追記：ふざけんじゃねーよ。誰が線に複数矢印つけろって言ってん
+           ねん。それに矢印だけオンオフしてどないすんねん線もやろがい。…矢印を後付けであきらかに浮いた
+           形にするな。意図を理解しろ。）」
+
+         Three concrete faults, all of them real, all of them in what #R212–#R255 built:
+
+           ① `wp-trade-arrow` placed a head every 110 px ALONG the shaft (`symbol-placement:'line'`).
+              Nobody asked for a decorated line. **That layer is deleted**, and removed from the style
+              if a running session still has it, the way #R212 retired `tw-breach`.
+           ② The switch turned the heads off and left the shafts. A flow you cannot see the direction
+              of is not half a flow, it is a different picture — **the switch now takes the whole
+              arrow**: shaft, head and partner label together.
+           ③ The head was PASTED ON: a dark outline round it, `icon-opacity` 0.98 over a shaft at
+              `line-opacity` 0.78, and the shaft running underneath it to the same endpoint. Three
+              different ways of saying «two objects». Now: **one colour, one opacity (1), and the
+              shaft STOPS where the head begins**, so what is drawn is a single continuous arrow —
+              flat shaft end butted against the base of the triangle, nothing overlapping.
+
+         ⚠ WHERE THE SHAFT STOPS IS A NUMBER OF PIXELS, SO IT DEPENDS ON THE CAMERA. The head is
+         sized in CSS px (it has to stay legible from z1 to z8), so the length to cut off the arc is
+         asked of the RENDERER'S OWN PROJECTION — see `trimEnd`, which walks the arc's vertices in
+         screen space — and the geometry is rebuilt on `moveend` (zoom, pan and rotation all move
+         it in globe view). The Mercator arithmetic below survives only as the fallback for the
+         moment before the camera exists. */
       const ARROW={X:'#ff9f0a',M:'#32d0ff'};
-      const ARROW_PX=44;               /* the canvas; at pixelRatio 2 that is 22 CSS px at icon-size 1 */
-      const ARROW_CSS=ARROW_PX/2;
+      /* the head image: tip at the TOP of the canvas, base along the bottom, so `icon-anchor:'top'`
+         puts the tip exactly on the arc's last vertex and the body extends back down the shaft.
+         64 px canvas at pixelRatio 2 → 32 CSS px; the triangle is 24 CSS wide and 30 CSS long, so
+         `icon-size = base/24`. No outline: an arrowhead is part of the arrow, not a sticker on it. */
+      const ARROW_PX=64, HEAD_BASE_CSS=24, HEAD_LEN_CSS=30;
       function arrowImg(hex){ const S=ARROW_PX, c=document.createElement('canvas'); c.width=c.height=S;
         const g=c.getContext('2d');
-        const path=()=>{ g.beginPath(); g.moveTo(S*0.94,S*0.5); g.lineTo(S*0.12,S*0.10);
-          g.lineTo(S*0.34,S*0.5); g.lineTo(S*0.12,S*0.90); g.closePath(); };
-        /* the outline first, so a head on a stroke of its own colour still has an edge */
-        path(); g.lineJoin='round'; g.lineWidth=S*0.11; g.strokeStyle='rgba(4,10,22,0.85)'; g.stroke();
-        path(); g.fillStyle=hex; g.fill();
+        g.beginPath(); g.moveTo(S*0.5,S*0.03); g.lineTo(S*0.875,S*0.97); g.lineTo(S*0.125,S*0.97);
+        g.closePath(); g.fillStyle=hex; g.fill();
         return g.getImageData(0,0,S,S); }
       let _arrowWarned=false;
       function ensureArrows(){ try{ Object.keys(ARROW).forEach(k=>{ const id='wp-arrow-'+k;
         if(!GE().scene.hasImage(id)) GE().scene.addImage(id,arrowImg(ARROW[k]),{pixelRatio:2}); }); }catch(e){
         if(!_arrowWarned){ _arrowWarned=true; try{ console.warn('trade arrowheads could not be registered',e); }catch(_){} } } }
-      /* the head has to be visibly WIDER than the shaft it rides on, at every value — the triangle is
-         0.8 of the image tall, so this solves `0.8·22·size ≥ 2.6·w` and clamps to something legible. */
-      const arrowSize=(w)=>Math.max(0.42,Math.min(1.35,(2.6*w)/(0.8*ARROW_CSS)));
-      /* the compass bearing of the last leg of an arc, for the terminal head (icon-rotate is clockwise
-         from north when icon-rotation-alignment is 'map') */
-      function bearingOf(a,b){ const φ1=a[1]*Math.PI/180, φ2=b[1]*Math.PI/180, Δλ=(b[0]-a[0])*Math.PI/180;
-        const y=Math.sin(Δλ)*Math.cos(φ2), x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+      /* the head is the arrow's point, so it is set by the shaft it terminates: 2.8× its width, and
+         never so small that the triangle stops reading as one (10 CSS px of base is the floor). */
+      const headBasePx=(w)=>Math.max(10,2.8*w);
+      const headSize=(w)=>headBasePx(w)/HEAD_BASE_CSS;
+      const headLenPx=(w)=>headSize(w)*HEAD_LEN_CSS;
+
+      /* ── Mercator, in metres, which is the space one screen pixel is constant in ─────────────── */
+      const MERC_R=6378137, MERC_HALF=Math.PI*MERC_R;
+      const mercX=(lng)=>lng*MERC_HALF/180;
+      const mercY=(lat)=>{ const p=Math.max(-85.05112878,Math.min(85.05112878,lat));
+        return Math.log(Math.tan(Math.PI/4+p*D/2))*MERC_R; };
+      const unMercX=(x)=>x*180/MERC_HALF;
+      const unMercY=(y)=>(2*Math.atan(Math.exp(y/MERC_R))-Math.PI/2)/D;
+      /* MapLibre's zoom is defined against a 512-px world tile */
+      const metrePerPx=()=>{ let z=2; try{ z=GE().camera.getZoom(); }catch(_){}
+        if(!isFinite(z)) z=2; return (2*MERC_HALF)/(512*Math.pow(2,z)); }
+
+      /* the initial great-circle bearing a→b, clockwise from north — the local heading, which is what
+         `icon-rotate` measures when `icon-rotation-alignment` is 'map' (and it is a property of the
+         two points, not of the projection, so it is right in globe view as well as flat) */
+      function bearingOf(a,b){ const f1=a[1]*D, f2=b[1]*D, dl=(b[0]-a[0])*D;
+        const y=Math.sin(dl)*Math.cos(f2), x=Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl);
         return (Math.atan2(y,x)*180/Math.PI+360)%360; }
+
+      /* ⚠ (#R256) THE CUT IS MEASURED IN THE RENDERER'S OWN PROJECTION, NOT IN MERCATOR METRES.
+         The first version of this round did the arithmetic in Mercator metres, which is exact only
+         where the theoretical and the drawn scale agree. MEASURED at z4 in GLOBE projection with
+         Japan's exports on: at the map centre the two agree to 1 part in 5,000 (4,892.9 vs 4,892.0
+         m/px), but the shaft-to-tip gap came out **10.1 px for a 45.5 px head** (USA, far off-centre)
+         and 23.7 px for a 43 px head (China) — the globe compresses towards the limb, and every arc
+         ENDS off-centre by construction. Asking `GE().coords.project` where the vertices actually
+         land removes the whole class of error and costs one projection per vertex.
+         The Mercator estimate stays as the fallback for the moment before the camera exists. */
+      function trimEnd(line,headPx){
+        let P=null;
+        try{ const pr=GE().coords&&GE().coords.project;
+          if(typeof pr==='function'){ P=[];
+            for(const p of line){ const q=pr(p);
+              if(!q||!isFinite(q.x)||!isFinite(q.y)){ P=null; break; } P.push([q.x,q.y]); } } }catch(_){ P=null; }
+        let cut=headPx;
+        if(!P){ P=line.map(p=>[mercX(p[0]),mercY(p[1])]); cut=headPx*metrePerPx(); }
+        let acc=0, i=P.length-1, f=0;
+        for(;i>0;i--){ const a=P[i-1], b=P[i], d=Math.hypot(b[0]-a[0],b[1]-a[1]);
+          if(acc+d>=cut){ f=(cut-acc)/(d||1); break; }
+          acc+=d; }
+        const tip=line[line.length-1];
+        if(i<=0) return { shaft:null, brg:bearingOf(line[Math.max(0,line.length-2)],tip) };
+        /* the neck, interpolated in GEOGRAPHIC coordinates on the segment the cut fell in — the arc is
+           sampled finely enough (56 legs) that a linear step inside one leg is under a pixel */
+        const a=line[i-1], b=line[i];
+        const neck=[b[0]+(a[0]-b[0])*f, b[1]+(a[1]-b[1])*f];
+        const shaft=line.slice(0,i).concat([neck]);
+        return { shaft:(shaft.length>=2?shaft:null), brg:bearingOf(neck,tip) };
+      }
 
       /* ══ (#R215) 「貿易レイヤーは該当国がぬられるように」 — AND NO COUNTRY WAS PAINTED AT ALL ══════
          The layer drew arcs, arrowheads, partner dots and their labels; the countries themselves were
@@ -463,20 +549,20 @@ window.IntMapModules.worldPacks=function(HOST){
       function ensureLayers(){ if(!_imCanDraw()) return false; try{
         if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         ensureArrows();
+        /* (#R256) 「誰が線に複数矢印つけろって言ってんねん。」 — the along-the-shaft repeater is gone,
+           and removed from a style that still carries it rather than merely left empty. */
+        try{ if(GE().layers.has('wp-trade-arrow')) GE().layers.remove('wp-trade-arrow'); }catch(_){}
+        /* the SHAFT of the arrow. Butt cap, because its flat end is what the head's base sits against
+           — a round cap would bulge out past the triangle and read as two objects again. */
         if(!GE().layers.has('wp-trade-arc')) GE().layers.add({id:'wp-trade-arc',type:'line',source:SRC,filter:['==',['get','kind'],'arc'],
-          layout:{visibility:'none','line-cap':'round','line-join':'round'},
-          paint:{'line-color':['get','col'],'line-width':['get','w'],'line-opacity':0.78,'line-blur':0.3}});
-        if(!GE().layers.has('wp-trade-arrow')) GE().layers.add({id:'wp-trade-arrow',type:'symbol',source:SRC,filter:['==',['get','kind'],'arc'],
-          layout:{visibility:'none','symbol-placement':'line','symbol-spacing':110,'icon-image':['get','ai'],
-            'icon-size':['get','asz'],'icon-rotation-alignment':'map','icon-allow-overlap':true,'icon-ignore-placement':true,'icon-padding':0},
-          paint:{'icon-opacity':0.98}});
-        /* (#R255) the head at the end the goods ARRIVE at — one per arc, half again as large as the
-           ones riding the shaft, rotated to the arc's own final bearing. This is the part that makes
-           the flow read as an arrow instead of as a line with texture on it. */
+          layout:{visibility:'none','line-cap':'butt','line-join':'round'},
+          paint:{'line-color':['get','col'],'line-width':['get','w'],'line-opacity':1}});
+        /* the POINT of the same arrow: one per flow, at the end the goods arrive at, in the shaft's
+           own colour and opacity, its tip on the arc's last vertex (`icon-anchor:'top'`). */
         if(!GE().layers.has('wp-trade-tip')) GE().layers.add({id:'wp-trade-tip',type:'symbol',source:SRC,filter:['==',['get','kind'],'tip'],
           layout:{visibility:'none','icon-image':['get','ai'],'icon-size':['get','asz'],
             'icon-rotate':['get','brg'],'icon-rotation-alignment':'map','icon-allow-overlap':true,
-            'icon-ignore-placement':true,'icon-padding':0,'icon-anchor':'center'},
+            'icon-ignore-placement':true,'icon-padding':0,'icon-anchor':'top'},
           paint:{'icon-opacity':1}});
         /* ⚠ (#R254) 「国にピンを置くな」 — the circle markers this layer dropped on every partner's
            centroid (and the white r=7 disc on the selected country) are gone. The countries themselves
@@ -515,18 +601,15 @@ window.IntMapModules.worldPacks=function(HOST){
               const w=1.2+11.8*Math.sqrt(Math.max(0,d.v)/Math.max(1,vmax));
               /* the arc IS the direction: exports leave home, imports arrive at it (#R212) */
               const line=(dir==='X')?greatCircle(home,c,56):greatCircle(c,home,56);
-              /* (#R255) the head is sized FROM the shaft — see arrowSize() for why it cannot be an
-                 independent number and stay visible */
-              const asz=arrowSize(w);
-              feats.push({type:'Feature',geometry:{type:'LineString',coordinates:line},
-                properties:{kind:'arc',col,w,v:d.v,iso:d.iso,name:d.name,
-                  ai:'wp-arrow-'+dir, asz,
-                  vShort:usdShort(d.v),vExact:usdExact(d.v)}});
-              /* the terminal head, at the arc's last vertex and along its last bearing */
-              if(line.length>1){ const a=line[line.length-2], t=line[line.length-1];
-                feats.push({type:'Feature',geometry:{type:'Point',coordinates:t},
-                  properties:{kind:'tip',col,ai:'wp-arrow-'+dir,asz:asz*1.5,brg:bearingOf(a,t)-90,
-                    v:d.v,iso:d.iso,name:d.name,vShort:usdShort(d.v),vExact:usdExact(d.v)}}); }
+              /* (#R256) ONE arrow: the shaft is cut back by exactly the head's length, so the two
+                 primitives meet edge to edge instead of one lying on top of the other. */
+              const asz=headSize(w);
+              const cut=trimEnd(line,headLenPx(w));
+              const props={col,v:d.v,iso:d.iso,name:d.name,vShort:usdShort(d.v),vExact:usdExact(d.v)};
+              if(cut.shaft) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:cut.shaft},
+                properties:Object.assign({kind:'arc',w},props)});
+              feats.push({type:'Feature',geometry:{type:'Point',coordinates:line[line.length-1]},
+                properties:Object.assign({kind:'tip',ai:'wp-arrow-'+dir,asz,brg:cut.brg},props)});
               feats.push({type:'Feature',geometry:{type:'Point',coordinates:c},
                 properties:{kind:'node',col,r:2.5+5.5*Math.sqrt(Math.max(0,d.v)/Math.max(1,vmax)),name:d.name,
                   v:d.v,vShort:usdShort(d.v),vExact:usdExact(d.v)}}); });
@@ -549,8 +632,8 @@ window.IntMapModules.worldPacks=function(HOST){
             +'<select class="wp-sec" style="'+SEL+'">'+SECTIONS.map(s=>'<option value="'+s[0]+'"'+(s[0]===section?' selected':'')+'>'+esc(secLabel(s[0]))+'</option>').join('')+'</select></label>'
           +'<div style="'+ROW+'">'+L('Partners shown','表示する相手国','Angezeigte Partner','Показано партнёров','Socios mostrados')
             +'<span style="display:flex;gap:4px;">'+[10,20,999].map(n=>'<button class="wp-n" data-n="'+n+'" style="'+BTN+'padding:4px 7px;">'+(n>=999?L('All','すべて','Alle','Все','Todos'):n)+'</button>').join('')+'</span></div>'
-          /* (#R254) 「矢印の有無はトグルでオンオフできるようにしろ。」 */
-          +'<label style="'+ROW+'cursor:pointer;">'+L('Direction arrows','方向の矢印','Richtungspfeile','Стрелки направления','Flechas de dirección')
+          /* (#R254/#R256) the switch is over the whole arrow — shaft, head and label together */
+          +'<label style="'+ROW+'cursor:pointer;">'+L('Flow arrows','フローの矢印','Strompfeile','Стрелки потоков','Flechas de flujo')
             +'<input type="checkbox" class="wp-arr"'+(arrows?' checked':'')+' style="width:16px;height:16px;accent-color:var(--primary-color);cursor:pointer;"></label>'
           +rampLegend(TRADE_RAMP.map(x=>[x[0]+'%',x[1]]),
               L('Share of the selected country’s total trade (the white country is the one selected)',
@@ -559,8 +642,8 @@ window.IntMapModules.worldPacks=function(HOST){
           +'<div class="wp-stat" style="font-size:11.5px;color:var(--text-main);line-height:1.55;min-height:16px;"></div>'
           +'<div class="wp-list" style="font-size:11.5px;color:var(--text-main);"></div>'
           +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-          +L('Line width is proportional to the SQUARE ROOT of the value (a flow-map convention — the eye compares area, and a stroke’s area is width × length). Hover any arc for the exact figure; nothing here rescales the amounts. Source: BACI (CEPII) via OEC, HS 6-digit, year ',
-             '線の太さは金額の平方根に比例します（流動図の慣例。目は面積を比べるため、線の面積は幅×長さ）。実額は円弧にホバーすると出ます。表示は圧縮しても金額そのものは一切加工していません。出典: BACI (CEPII) / OEC、HS6桁、',
+          +L('Arrow width is proportional to the SQUARE ROOT of the value (a flow-map convention — the eye compares area, and a stroke’s area is width × length), and the arrow points the way the goods move. Hover any arrow for the exact figure; nothing here rescales the amounts. Source: BACI (CEPII) via OEC, HS 6-digit, year ',
+             '矢印の太さは金額の平方根に比例します（流動図の慣例。目は面積を比べるため、線の面積は幅×長さ）。矢印は物が動く向きを指しています。実額は矢印にホバーすると出ます。表示は圧縮しても金額そのものは一切加工していません。出典: BACI (CEPII) / OEC、HS6桁、',
              'Die Linienbreite folgt der QUADRATWURZEL des Werts. Genaue Zahl beim Hover. Quelle: BACI (CEPII) via OEC, ',
              'Ширина линии пропорциональна КОРНЮ из суммы. Точная цифра — при наведении. Источник: BACI (CEPII) / OEC, ',
              'El ancho sigue la RAÍZ CUADRADA del valor. Cifra exacta al pasar el cursor. Fuente: BACI (CEPII) vía OEC, ')
@@ -639,6 +722,18 @@ window.IntMapModules.worldPacks=function(HOST){
 
       /* a basemap swap drops every added layer — put them back if this one is on (#R72) */
       onRestyle(()=>{ if(on) whenDrawable(()=>{ if(ensureLayers()) draw(); }); });
+      /* ⚠ (#R256) THE SHAFT IS CUT BACK BY A NUMBER OF PIXELS, SO THE CUT MOVES WITH THE CAMERA. The
+         head keeps its size on screen; the ground distance it covers halves with every zoom step, and
+         in globe projection it also depends on WHERE on the disc the arc ends. If the geometry were
+         built once, zooming in would leave the shaft short of the head (a gap) and zooming out would
+         run it through the head (the overlap #R255 shipped). Rebuilt on `moveend` — which covers
+         zoom, pan and rotation — debounced, and only while there is something drawn.
+         ⚠ `draw()` ends in `setSourceData` + `setVis`, neither of which restyles when nothing
+         changes (MapLibre's `setLayoutProperty` returns early on an equal value), so this cannot
+         become the self-restyling loop the crop layer had. */
+      { let _zt=null;
+        try{ GE().events.on('moveend',()=>{ if(!(on&&rows&&iso)) return;
+          if(_zt) clearTimeout(_zt); _zt=setTimeout(()=>{ _zt=null; try{ draw(); }catch(_){} },150); }); }catch(_){} }
       mapClick((e)=>{ if(!on) return false;
         const c=countryAt(e.lngLat.lng,e.lngLat.lat); if(!c) return false;
         load(c,true); if(!panel.shown()) render(); return true; });
@@ -1836,12 +1931,13 @@ window.IntMapModules.worldPacks=function(HOST){
           +(st?rampLegend(CROP_RAMP.map(s=>[fmt(st.min+(st.max-st.min)*s[0]),s[1]]),
               varName(variable)+' — '+un+' '+L('per 5-arcminute cell (~9 km)','（5分メッシュ＝約9km 四方あたり）','pro 5-Bogenminuten-Zelle','на ячейку 5′','por celda de 5′')):'')
           +'<div class="wp-c-stat" style="font-size:11.5px;color:var(--text-main);min-height:15px;"></div>'
-          +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-          +L('Source: FAO GAEZ v4, theme «Area, Yield and Production» — a 5-arcminute grid of where each crop is actually grown, for the reference years 2000 and 2010 (the clock picks the nearer one; this view is '+(lastMeta?lastMeta.year:'2010')+'). The color scale is fixed to this raster’s own measured minimum and maximum, so the same color means the same number wherever you pan. Tap the map for the value in that cell.',
+          /* (#R256) 「凡例に書いてある注意書きが長すぎ。せめて隠すとかしろ。」 — folded, see noteBlock() */
+          +noteBlock(
+           L('Source: FAO GAEZ v4, theme «Area, Yield and Production» — a 5-arcminute grid of where each crop is actually grown, for the reference years 2000 and 2010 (the clock picks the nearer one; this view is '+(lastMeta?lastMeta.year:'2010')+'). The color scale is fixed to this raster’s own measured minimum and maximum, so the same color means the same number wherever you pan. Tap the map for the value in that cell.',
              '出典: FAO GAEZ v4「面積・収量・生産量」——各作物が実際に栽培されている場所の5分メッシュ格子（基準年 2000 / 2010。時計が近い方を選びます。現在の表示は '+(lastMeta?lastMeta.year:'2010')+' 年）。色階はこのラスタ自身の実測の最小・最大に固定してあるので、同じ色はどこへ動かしても同じ値です。地図をタップするとそのセルの値が出ます。',
              'Quelle: FAO GAEZ v4 («Fläche, Ertrag, Produktion»), 5-Bogenminuten-Raster, Referenzjahre 2000/2010.',
              'Источник: FAO GAEZ v4 («Площадь, урожайность, производство»), сетка 5′, 2000/2010.',
-             'Fuente: FAO GAEZ v4 («Superficie, rendimiento y producción»), malla de 5′, años 2000/2010.')+'</div>');
+             'Fuente: FAO GAEZ v4 («Superficie, rendimiento y producción»), malla de 5′, años 2000/2010.')));
         b.querySelector('.wp-crop').onchange=(e)=>{ crop=e.target.value; lastMeta=null; paint(true); };
         b.querySelector('.wp-cvar').onchange=(e)=>{ variable=e.target.value; lastMeta=null; paint(true); };
         b.querySelector('.wp-csup').onchange=(e)=>{ supply=e.target.value; lastMeta=null; paint(true); };
@@ -1868,7 +1964,26 @@ window.IntMapModules.worldPacks=function(HOST){
         render(); paint(true); }
 
       try{ GE().events.on('moveend',()=>{ if(on) setTimeout(()=>paint(false),200); }); }catch(_){}
-      onRestyle(()=>{ if(on){ drawKey=''; whenDrawable(()=>paint(true)); } });
+      /* ══ ⚠⚠⚠ (#R256) THE LAYER WAS RESTYLING ITSELF, AT ABOUT 9 Hz ═══════════════════════════════
+         「作物を栽培は激しく点滅する。」 MEASURED on the shipped build with the layer on and the camera
+         perfectly still: **88 remove/addSource/add cycles in 10 s**, and `styledata` fires **28 times
+         in 3 s with this layer on and 0 times with it off**. It is a closed loop, and this line was
+         both halves of it:
+
+             paint() removes the source and adds it again  →  the renderer fires `styledata`
+             onRestyle clears `drawKey` and calls paint(true)  →  paint() removes and adds again …
+
+         With `raster-fade-duration:180` the picture never finishes fading in before it is torn down,
+         which is exactly 「激しく点滅」. Every other pack survives its own `styledata` because their
+         handlers call `ensureLayers()`, which returns without touching the style when the layer is
+         already there; only this one unconditionally rebuilt.
+         ⚠ THE #R72 REPAIR IS THE POINT OF THE HANDLER AND IT STAYS. A basemap swap really does drop
+         every added layer — so the rebuild still runs, but only when the layer is actually GONE,
+         which is the condition #R72 was about. A restyle that left the layer standing is not a
+         reason to redraw it. */
+      onRestyle(()=>{ if(!on) return;
+        try{ if(GE().layers.has(LYR)&&GE().layers.hasSource(IMG)) return; }catch(_){}
+        drawKey=''; whenDrawable(()=>paint(true)); });
       mapClick((e)=>{ if(!on) return false; identify(e.lngLat.lng,e.lngLat.lat); return true; });
       onYear(()=>{ if(on){ lastMeta=null; paint(true); } });
       STATE.crops=()=>({ on, crop, variable, supply, year:gaezYear(),

@@ -306,13 +306,13 @@ window.IntMapModules.dataCenters=function(HOST){
     [-93.62,41.59,'Microsoft AI — West Des Moines, Iowa','ai','ai','',null,2023,SRC_AZ],
     [-112.30,33.42,'Microsoft AI — Goodyear, Arizona','ai','ai','',null,2024,SRC_AZ],
     [-87.63,42.58,'Microsoft AI — Mount Pleasant, Wisconsin','ai','ai','',null,2025,SRC_AZ],
-    [5.47,59.30,'Nscale / hydro-powered AI cluster — Glomfjord, Norway','ai','ai','',null,2024,'https://www.nscale.com/'],
-    [-3.53,56.02,'AI Growth Zone — Ravenscraig, Scotland','ai','ai','',null,2025,'https://www.gov.uk/government/publications/ai-opportunities-action-plan'],
-    [2.35,48.86,'Mistral / Eclairion AI campus — Essonne, France','ai','ai','',null,2025,'https://mistral.ai/'],
+    [13.98,66.81,'Nscale / hydro-powered AI cluster — Glomfjord, Norway','ai','ai','',null,2024,'https://www.nscale.com/'],
+    [-3.97,55.79,'AI Growth Zone — Ravenscraig, Scotland','ai','ai','',null,2025,'https://www.gov.uk/government/publications/ai-opportunities-action-plan'],
+    [2.24,48.63,'Mistral / Eclairion AI campus — Essonne, France','ai','ai','',null,2025,'https://mistral.ai/'],
     [11.58,48.14,'NVIDIA Industrial AI Cloud — Germany','ai','ai','',null,2025,'https://nvidianews.nvidia.com/'],
-    [55.27,25.20,'G42 / Core42 AI campus — Abu Dhabi','ai','ai','',null,2024,'https://www.g42.ai/'],
-    [139.69,35.69,'SoftBank / SB Intuitions AI DC — Sakai, Japan','ai','ai','',null,2025,'https://www.softbank.jp/en/corp/'],
-    [126.98,37.57,'Naver Cloud Gak Sejong','ai','ai','',null,2023,'https://www.navercloudcorp.com/'],
+    [54.37,24.47,'G42 / Core42 AI campus — Abu Dhabi','ai','ai','',null,2024,'https://www.g42.ai/'],
+    [135.47,34.57,'SoftBank / SB Intuitions AI DC — Sakai, Japan','ai','ai','',null,2025,'https://www.softbank.jp/en/corp/'],
+    [127.29,36.48,'Naver Cloud Gak Sejong','ai','ai','',null,2023,'https://www.navercloudcorp.com/'],
     /* ── Colocation / carrier hotels (the buildings the internet actually meets in) ──────────── */
     [-77.49,39.04,'Equinix Ashburn DC campus','colo','colo','',null,1999,'https://www.equinix.com/data-centers'],
     [-87.64,41.88,'Equinix Chicago CH1/CH2 (350 E Cermak)','colo','colo','',null,1999,'https://www.equinix.com/data-centers'],
@@ -343,15 +343,95 @@ window.IntMapModules.dataCenters=function(HOST){
     [135.17,34.65,'RIKEN Kobe — Fugaku','hpc','hpc','',null,2020,SRC_TOP500],
     [116.40,39.90,'National Supercomputing Center, Wuxi/Beijing','hpc','hpc','',null,2016,SRC_TOP500],
     [77.59,12.97,'C-DAC Pune — PARAM','hpc','hpc','',null,2020,SRC_TOP500],
-    [151.21,-33.87,'NCI Australia — Gadi','hpc','hpc','',null,2019,SRC_TOP500]
+    [151.21,-33.87,'NCI Australia — Gadi','hpc','hpc','',null,2019,SRC_TOP500],
+    /* ══ (#R256) 「データセンター、AIインフラレイヤーを爆発的に強化。」 ═══════════════════════════════
+       The table was 215 cloud REGIONS against 16 AI campuses, 14 TOP500 sites and 15 carrier
+       hotels — i.e. the half the layer is named for («AIインフラ») was the thinnest part of it. What
+       follows roughly triples the three non-cloud families, and six existing entries had their
+       coordinates corrected to the published SITE rather than the nearest large city (SoftBank was
+       plotted in Tokyo instead of Sakai, Naver Gak Sejong in Seoul, Nscale Glomfjord near
+       Stavanger, G42 in Dubai, Eclairion in central Paris, the Scottish AI Growth Zone 30 km east
+       of Ravenscraig).
+       ⚠ THE MW COLUMN STAYS `null` UNLESS THE OPERATOR PUBLISHES ONE. A capacity figure is the
+       number people quote out of a map like this, and inventing one is exactly what standing rule 4
+       forbids; an announced project with no published critical load gets a location, a year and a
+       source, and no capacity. Same for the year. */
+    /* ── AI compute campuses ─────────────────────────────────────────────────────────────────── */
+    [-86.51,41.71,'Amazon / Anthropic «Project Rainier» — New Carlisle, Indiana','ai','ai','',null,2025,'https://www.aboutamazon.com/'],
+    [-91.90,32.42,'Meta «Hyperion» — Richland Parish, Louisiana','ai','ai','',null,2025,SRC_META],
+    [-106.49,31.76,'Meta AI data centre — El Paso, Texas','ai','ai','',null,2025,SRC_META],
+    [-84.39,33.75,'Microsoft «Fairwater» — Atlanta, Georgia','ai','ai','',null,2025,SRC_AZ],
+    [-95.32,31.31,'Stargate — Milam County, Texas (OpenAI / Oracle)','ai','ai','',null,2025,'https://openai.com/index/announcing-the-stargate-project/'],
+    [-106.63,32.35,'Stargate — Doña Ana County, New Mexico','ai','ai','',null,2025,'https://openai.com/index/announcing-the-stargate-project/'],
+    [-80.85,41.24,'Stargate — Lordstown, Ohio','ai','ai','',null,2025,'https://openai.com/index/announcing-the-stargate-project/'],
+    [-99.33,32.75,'Stargate — Shackelford County, Texas','ai','ai','',null,2025,'https://openai.com/index/announcing-the-stargate-project/'],
+    [25.32,60.63,'Nebius AI cluster — Mäntsälä, Finland','ai','ai','',null,2024,'https://nebius.com/'],
+    [-94.58,39.10,'Nebius AI cluster — Kansas City, Missouri','ai','ai','',null,2025,'https://nebius.com/'],
+    [-95.20,29.55,'CoreWeave Houston, Texas','ai','ai','',null,2024,'https://www.coreweave.com/data-centers'],
+    [-115.14,36.17,'CoreWeave Las Vegas, Nevada','ai','ai','',null,2024,'https://www.coreweave.com/data-centers'],
+    [-95.14,29.70,'Crusoe Energy AI campus — Texas','ai','ai','',null,2024,'https://www.crusoe.ai/'],
+    [141.30,43.19,'Sakura Internet Ishikari AI cloud — Hokkaido','ai','ai','',null,2024,'https://www.sakura.ad.jp/'],
+    [139.97,35.90,'AIST ABCI — Kashiwa, Japan','ai','ai','',null,2018,'https://abci.ai/'],
+    [126.75,37.47,'SK Telecom «Haein» AI DC — Gasan, Korea','ai','ai','',null,2024,'https://www.sktelecom.com/'],
+    [103.85,1.29,'Singapore national AI compute — Singapore','ai','ai','',null,2024,'https://www.nscc.sg/'],
+    [4.90,52.37,'Nebius / Netherlands AI cluster — Amsterdam','ai','ai','',null,2024,'https://nebius.com/'],
+    [16.37,48.21,'AI Factory Austria — Vienna','ai','ai','',null,2025,'https://eurohpc-ju.europa.eu/'],
+    [-8.29,41.44,'AI Factory Portugal — Guimarães','ai','ai','',null,2025,'https://eurohpc-ju.europa.eu/'],
+    /* ── TOP500 / national supercomputing ─────────────────────────────────────────────────────── */
+    [-122.25,37.88,'NERSC — Perlmutter (Berkeley Lab)','hpc','hpc','',null,2021,SRC_TOP500],
+    [-106.30,35.88,'Los Alamos — Venado','hpc','hpc','',null,2024,SRC_TOP500],
+    [-106.54,35.05,'Sandia National Laboratories','hpc','hpc','',null,2016,SRC_TOP500],
+    [-88.21,40.11,'NCSA Urbana — Delta','hpc','hpc','',null,2022,SRC_TOP500],
+    [-97.72,30.39,'TACC Austin — Frontera / Vista','hpc','hpc','',null,2019,SRC_TOP500],
+    [39.10,22.31,'KAUST Thuwal — Shaheen III','hpc','hpc','',null,2023,SRC_TOP500],
+    [8.85,45.10,'Eni Green Data Center — HPC5, Ferrera Erbognone','hpc','hpc','',null,2020,SRC_TOP500],
+    [2.26,48.60,'CEA TGCC — Bruyères-le-Châtel','hpc','hpc','',null,2018,SRC_TOP500],
+    [2.17,48.71,'IDRIS Orsay — Jean Zay','hpc','hpc','',null,2019,SRC_TOP500],
+    [15.65,46.56,'IZUM Maribor — Vega','hpc','hpc','',null,2021,SRC_TOP500],
+    [18.29,49.83,'IT4Innovations Ostrava — Karolina','hpc','hpc','',null,2021,SRC_TOP500],
+    [23.32,42.70,'Sofia Tech Park — Discoverer','hpc','hpc','',null,2021,SRC_TOP500],
+    [6.07,49.79,'LuxProvide Bissen — MeluXina','hpc','hpc','',null,2021,SRC_TOP500],
+    [-8.29,41.44,'MACC Guimarães — Deucalion','hpc','hpc','',null,2023,SRC_TOP500],
+    [127.38,36.35,'KISTI Daejeon — Nurion','hpc','hpc','',null,2018,SRC_TOP500],
+    [120.99,24.80,'NCHC Hsinchu — Taiwania','hpc','hpc','',null,2018,SRC_TOP500],
+    [-3.19,55.95,'EPCC Edinburgh — ARCHER2','hpc','hpc','',null,2021,SRC_TOP500],
+    [-2.60,51.46,'University of Bristol — Isambard-AI','hpc','hpc','',null,2024,SRC_TOP500],
+    [139.94,35.90,'University of Tokyo Kashiwa — Wisteria / Miyabi','hpc','hpc','',null,2021,SRC_TOP500],
+    [139.63,35.46,'JAMSTEC Yokohama — Earth Simulator','hpc','hpc','',null,2002,SRC_TOP500],
+    [-43.18,-22.51,'LNCC Petrópolis — Santos Dumont','hpc','hpc','',null,2016,SRC_TOP500],
+    [115.86,-31.95,'Pawsey Perth — Setonix','hpc','hpc','',null,2022,SRC_TOP500],
+    /* ── carrier hotels and internet exchanges ────────────────────────────────────────────────── */
+    [-80.19,25.78,'NAP of the Americas, Miami','colo','colo','',null,2001,'https://www.equinix.com/data-centers'],
+    [-96.81,32.79,'Infomart Dallas','colo','colo','',null,1985,'https://en.wikipedia.org/wiki/Infomart'],
+    [-122.40,37.78,'Digital Realty 365 Main, San Francisco','colo','colo','',null,2001,'https://www.digitalrealty.com/'],
+    [-122.33,47.60,'Westin Building Exchange, Seattle','colo','colo','',null,1981,'https://www.westinbldg.com/'],
+    [37.53,55.75,'MSK-IX / M9, Moscow','colo','colo','',null,1995,'https://www.msk-ix.ru/'],
+    [139.76,35.69,'JPNAP / Otemachi, Tokyo','colo','colo','',null,2001,'https://www.jpnap.net/'],
+    [114.21,22.42,'HKIX, Hong Kong','colo','colo','',null,1995,'https://www.hkix.net/'],
+    [126.90,37.48,'KINX / Gasan, Seoul','colo','colo','',null,2000,'https://www.kinx.net/'],
+    [-46.63,-23.55,'IX.br São Paulo (PTT Metro)','colo','colo','',null,2004,'https://ix.br/'],
+    [36.82,-1.29,'Africa Data Centres, Nairobi','colo','colo','',null,2010,'https://www.africadatacentres.com/'],
+    [3.35,6.44,'Rack Centre / IXPN, Lagos','colo','colo','',null,2013,'https://rackcentre.com/'],
+    [55.27,25.20,'Equinix DX1 / UAE-IX, Dubai','colo','colo','',null,2012,'https://www.equinix.com/data-centers'],
+    [-99.13,19.43,'KIO Networks / IXSY, Mexico City','colo','colo','',null,2006,'https://www.kionetworks.com/'],
+    [8.54,47.38,'Interxion ZUR, Zurich','colo','colo','',null,2011,'https://www.digitalrealty.com/'],
+    [12.57,55.68,'Digital Realty CPH, Copenhagen','colo','colo','',null,2015,'https://www.digitalrealty.com/'],
+    [24.94,60.17,'Equinix HE Helsinki','colo','colo','',null,2011,'https://www.equinix.com/data-centers']
   ];
 
   /* ─── the merged feature collection ───────────────────────────────────────────────────────────── */
   const colOf=(op)=>((OP[op]||OP.osm)[1]);
   const R_OF={ai:8.5,cloud:7,colo:6,hpc:6.5,other:5};
+  /* ⚠ (#R256) A PUBLISHED CAPACITY IS DRAWN, AND ONLY A PUBLISHED ONE. Where the operator states an
+     IT/critical load the dot carries it — √MW, because the eye compares AREA and a disc's area is
+     πr² (the same convention the trade arrows use for dollars). Where no figure is published the dot
+     stays at its class's own size, so a big dot always means «this much is published», never «this
+     is probably large». */
+  const rFor=(k,mw)=>{ const base=R_OF[k]||5;
+    return (mw>0)?Math.min(base*2.4, base*(1+0.055*Math.sqrt(mw))):base; };
   function curatedFC(){ return DC.map(d=>({type:'Feature',geometry:{type:'Point',coordinates:[d[0],d[1]]},
     properties:{ n:d[2], op:d[3], k:d[4], code:d[5]||'', mw:(d[6]==null?'':d[6]), yr:(d[7]==null?'':d[7]),
-      src:d[8]||'', col:colOf(d[3]), r:(R_OF[d[4]]||5), origin:'curated' }})); }
+      src:d[8]||'', col:colOf(d[3]), r:rFor(d[4],+d[6]||0), origin:'curated' }})); }
 
   /* ══ OPENSTREETMAP — the other 4,600 ═════════════════════════════════════════════════════════════
      Raced mirrors with a hard abort, the shape js/atlas-sources.js uses; a silent 504 from one
@@ -545,15 +625,38 @@ window.IntMapModules.dataCenters=function(HOST){
     const a=()=>{ if(!ensure()){ try{ GE().events.once('idle',a); }catch(_){} return; } wire(); setVis(true); refresh(); };
     a(); }
 
+  /* ══ (#R256) THE KEY IS A FILTER ═════════════════════════════════════════════════════════════════
+     With the table three times the size it was, «show me only the AI campuses» is the question the
+     legend was already half-answering: it lists the classes and their colours. Clicking a row now
+     takes that class off the map. The filter is one expression on the layer — no second copy of the
+     feature collection, so the OSM half and the curated half obey it together. */
+  const hidden=new Set();
+  const KEY_ROWS=()=>[['aws','AWS'],['azure','Azure'],['gcp','Google Cloud'],['oracle','Oracle'],['alibaba','Alibaba'],
+    ['meta','Meta'],['ai',L('AI compute','AI計算基盤','KI-Rechenzentrum','ИИ-вычисления','Cómputo de IA')],
+    ['colo',L('Colocation','コロケーション','Colocation-Standorte','Колокация','Colocación')],
+    ['hpc',L('Supercomputing','スーパーコンピュータ','HPC','Суперкомпьютеры','Supercomputación')],
+    ['osm',L('Other (OpenStreetMap)','その他（OpenStreetMap）','Sonstige (OpenStreetMap)','Прочие (OpenStreetMap)','Otros (OpenStreetMap)')]];
+  function applyFilter(){
+    /* the rows the key does NOT name (ibm, tencent, huawei, apple) ride with `osm`'s «other» row, so
+       a filter is expressed on the OPERATOR of every hidden row plus that catch-all */
+    const named=KEY_ROWS().map(r=>r[0]);
+    const outOps=[]; let hideOther=false;
+    hidden.forEach(k=>{ if(k==='osm') hideOther=true; else outOps.push(k); });
+    let f=null;
+    const clauses=[];
+    if(outOps.length) clauses.push(['!',['in',['get','op'],['literal',outOps]]]);
+    if(hideOther) clauses.push(['in',['get','op'],['literal',named.filter(x=>x!=='osm')]]);
+    if(clauses.length) f=(clauses.length===1)?clauses[0]:['all'].concat(clauses);
+    [PT,LBL].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setFilter(id,f); }catch(_){} });
+  }
   window.IntMapDataCenters={ toggle, refresh, count:()=>DC.length, operators:()=>OP, kinds:()=>KIND,
+    /* (#R256) the legend's rows drive this — see js/layer-packs.js */
+    toggleKey(k){ if(hidden.has(k)) hidden.delete(k); else hidden.add(k); applyFilter(); return !hidden.has(k); },
+    keyOn:(k)=>!hidden.has(k),
     /* the curated half as a FeatureCollection — js/compare.js draws this in its second map through
        `IntMapBeta2.load('dc')`, and there must be exactly one copy of the table (#R213's rule). */
     features:()=>({type:'FeatureCollection',features:curatedFC()}),
-    /* the legend key, built here so the colours and the layer cannot disagree */
-    key:()=>[['aws','AWS'],['azure','Azure'],['gcp','Google Cloud'],['oracle','Oracle'],['alibaba','Alibaba'],
-      ['meta','Meta'],['ai',L('AI compute','AI計算基盤','KI-Rechenzentrum','ИИ-вычисления','Cómputo de IA')],
-      ['colo',L('Colocation','コロケーション','Colocation-Standorte','Колокация','Colocación')],
-      ['hpc',L('Supercomputing','スーパーコンピュータ','HPC','Суперкомпьютеры','Supercomputación')],
-      ['osm',L('Other (OpenStreetMap)','その他（OpenStreetMap）','Sonstige (OpenStreetMap)','Прочие (OpenStreetMap)','Otros (OpenStreetMap)')]]
-      .map(([k,lbl])=>[colOf(k),lbl]) };
+    /* the legend key, built here so the colours and the layer cannot disagree.
+       (#R256) …and it carries the class id, so the row can switch that class off. */
+    key:()=>KEY_ROWS().map(([k,lbl])=>[colOf(k),lbl,k]) };
 };

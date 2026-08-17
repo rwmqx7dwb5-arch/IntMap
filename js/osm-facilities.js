@@ -135,6 +135,69 @@ window.IntMapModules.facilities=function(HOST){
         return 'other'; },
       fields:(t)=>[['operator',t['operator']||t['owner']||''],['height',t['height']?(t['height']+' m'):''],
                    ['addr',_addr(t)],['web',t['website']||'']]
+    },
+    /* ══ (#R256) THE FIFTH AND SIXTH SETS — A NEW CATEGORY THAT IS NOT A CHOROPLETH ════════════════
+       「追加すべきと思うレイヤーカテゴリはありますか？あれば作り…新レイヤー（国単位で塗るだけのやつじゃ
+         なくて、モノホンのやつ。）」
+       Energy and extraction was the largest subject this map had no shelf for: the only energy rows
+       were the country-level energy MIX (a choropleth, and one the reader placed in 人口・経済 by
+       name in #R254) and CO₂ in Climate. Where the electricity is actually MADE, and where the
+       material comes out of the ground, were nowhere — and both are surveyed objects with their own
+       tags, which is what the instruction asks for. Same engine, two more tag sets. */
+    power:{
+      id:'osmpower', row:'fac-dl-osmpower', zoom:6,
+      name:()=>LA('Power plants & grid','発電所・送変電設備','Kraftwerke & Netz','Электростанции и сети','Centrales eléctricas y red'),
+      note:()=>L('Power stations, substations, wind turbines and solar farms mapped in OpenStreetMap for the current view — where the electricity is actually generated and stepped up, not a national average. Click any point for its output, fuel and operator as tagged.',
+                 '現在の表示範囲について OpenStreetMap に登録されている発電所・変電所・風力発電機・太陽光発電所です。国別平均ではなく、実際に発電・変電している場所そのものです。点をクリックすると出力・燃料・運営者が出ます。',
+                 'Kraftwerke, Umspannwerke, Windräder und Solarparks aus OpenStreetMap für den aktuellen Ausschnitt.',
+                 'Электростанции, подстанции, ветрогенераторы и солнечные парки из OpenStreetMap для текущего вида.',
+                 'Centrales, subestaciones, aerogeneradores y plantas solares de OpenStreetMap para la vista actual.'),
+      q:['nwr["power"="plant"]','nwr["power"="substation"]','nwr["power"="generator"]["generator:source"~"^(wind|solar|nuclear|hydro|geothermal)$"]'],
+      buckets:{
+        nuclear:['#af52de',LA('Nuclear','原子力','Kernkraft','АЭС','Nuclear')],
+        fossil:['#ff9f0a',LA('Coal / oil / gas','石炭・石油・ガス','Kohle / Öl / Gas','Уголь / нефть / газ','Carbón / petróleo / gas')],
+        hydro:['#0a84ff',LA('Hydro','水力','Wasserkraft','ГЭС','Hidroeléctrica')],
+        wind:['#64d2ff',LA('Wind','風力','Wind','Ветер','Eólica')],
+        solar:['#ffd60a',LA('Solar','太陽光','Solarenergie','Солнечная','Solar')],
+        grid:['#8e8e93',LA('Substation','変電所','Umspannwerk','Подстанция','Subestación')],
+        other:['#30d158',LA('Other / biomass','その他・バイオマス','Sonstige / Biomasse','Прочие / биомасса','Otras / biomasa')] },
+      kind:(t)=>{ if(t['power']==='substation') return 'grid';
+        const s=String(t['plant:source']||t['generator:source']||'').toLowerCase();
+        if(/nuclear/.test(s)) return 'nuclear';
+        if(/coal|oil|gas|diesel|fossil|waste/.test(s)) return 'fossil';
+        if(/hydro|tidal|wave/.test(s)) return 'hydro';
+        if(/wind/.test(s)) return 'wind';
+        if(/solar|photovoltaic/.test(s)) return 'solar';
+        return 'other'; },
+      fields:(t)=>[['operator',t['operator']||t['owner']||''],
+                   ['output',t['plant:output:electricity']||t['generator:output:electricity']||''],
+                   ['fuel',t['plant:source']||t['generator:source']||''],
+                   ['method',t['plant:method']||t['generator:method']||''],
+                   ['voltage',t['voltage']?(String(t['voltage']).split(';')[0]+' V'):''],
+                   ['start',t['start_date']||''],['addr',_addr(t)],['web',t['website']||'']]
+    },
+    extract:{
+      id:'osmextract', row:'fac-dl-osmextract', zoom:7,
+      name:()=>LA('Mines, quarries & wells','鉱山・採石場・油井','Bergbau, Steinbrüche & Bohrungen','Шахты, карьеры и скважины','Minas, canteras y pozos'),
+      note:()=>L('Mines, quarries, mine shafts and oil or gas wells mapped in OpenStreetMap for the current view — the places raw material physically leaves the ground. Click any point for the resource and operator as tagged.',
+                 '現在の表示範囲について OpenStreetMap に登録されている鉱山・採石場・立坑・油井／ガス井です。資源が実際に地面から出てくる場所そのものです。点をクリックすると資源名・運営者が出ます。',
+                 'Bergwerke, Steinbrüche, Schächte sowie Öl- und Gasbohrungen aus OpenStreetMap für den aktuellen Ausschnitt.',
+                 'Шахты, карьеры, стволы и нефтегазовые скважины из OpenStreetMap для текущего вида.',
+                 'Minas, canteras, pozos mineros y pozos de petróleo o gas de OpenStreetMap para la vista actual.'),
+      q:['nwr["landuse"="quarry"]','nwr["man_made"="mineshaft"]','nwr["man_made"="adit"]','nwr["industrial"="mine"]',
+         'nwr["man_made"="petroleum_well"]','nwr["man_made"="water_well"]["pump"]'],
+      buckets:{
+        quarry:['#c9a227',LA('Quarry','採石場','Steinbruch','Карьер','Cantera')],
+        mine:['#ff6b35',LA('Mine / shaft','鉱山・立坑','Bergwerk / Schacht','Шахта / ствол','Mina / pozo')],
+        well:['#7d8590',LA('Oil or gas well','油井・ガス井','Öl- oder Gasbohrung','Нефтегазовая скважина','Pozo de petróleo o gas')],
+        other:['#a0a6b0',LA('Other','その他','Sonstige','Прочее','Otros')] },
+      kind:(t)=>{ if(t['man_made']==='petroleum_well') return 'well';
+        if(t['landuse']==='quarry') return 'quarry';
+        if(t['man_made']==='mineshaft'||t['man_made']==='adit'||t['industrial']==='mine') return 'mine';
+        return 'other'; },
+      fields:(t)=>[['operator',t['operator']||t['owner']||''],
+                   ['resource',t['resource']||t['mineral']||t['raw_material']||''],
+                   ['start',t['start_date']||''],['addr',_addr(t)],['web',t['website']||'']]
     }
   };
   function _addr(t){ const a=[t['addr:housenumber'],t['addr:street'],t['addr:city']].filter(Boolean).join(' ');
@@ -151,6 +214,13 @@ window.IntMapModules.facilities=function(HOST){
     speciality:()=>L('Speciality','診療科','Fachrichtung','Специализация','Especialidad'),
     emergency:()=>L('Emergency','救急','Notaufnahme','Неотложная помощь','Urgencias'),
     height:()=>L('Height','高さ','Höhe','Высота','Altura'),
+    /* (#R256) the energy / extraction fields */
+    output:()=>L('Output','出力','Leistung','Мощность','Potencia'),
+    fuel:()=>L('Fuel / source','燃料・エネルギー源','Brennstoff / Quelle','Топливо / источник','Combustible / fuente'),
+    method:()=>L('Method','方式','Verfahren','Способ','Método'),
+    voltage:()=>L('Voltage','電圧','Spannung','Напряжение','Tensión'),
+    start:()=>L('In service','稼働開始','In Betrieb','В эксплуатации','En servicio'),
+    resource:()=>L('Resource','資源','Rohstoff','Ресурс','Recurso'),
     web:()=>L('Website','ウェブサイト','Website','Сайт','Sitio web')
   };
 
@@ -327,7 +397,7 @@ window.IntMapModules.facilities=function(HOST){
      (#R70): the tile sidebar, the phone sheet, Active layers, the share link and Atlas all read from
      it, so a row created here is a layer everywhere without any of them being told. The ids are
      `fac-dl-<id>`, and js/data-layers.js's `rowFor()` knows that prefix. */
-  const SW={diplo:'#5ac8fa',mil:'#ff453a',health:'#30d158',telecom:'#af52de'};
+  const SW={diplo:'#5ac8fa',mil:'#ff453a',health:'#30d158',telecom:'#af52de',power:'#ffd60a',extract:'#c9a227'};
   function buildRows(){
     const dd=document.getElementById('layer-dropdown'); if(!dd){ setTimeout(buildRows,400); return; }
     Object.keys(SETS).forEach(k=>{

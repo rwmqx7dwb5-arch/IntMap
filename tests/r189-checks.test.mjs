@@ -128,7 +128,9 @@ test('R189 water: the course follows the talweg, at a resolution ladder, with a 
   assert.match(src, /const zWant=zFor\(distM\); if\(zWant!==z\)\{ z=zWant; warmC=null; \}/, 'stepped per window');
   /* the discharge control (#R189 「水の水流は設定可能に」) */
   assert.match(src, /let flowM3s=null; const CHEZY_K=40;/, 'a discharge state with a physical speed law');
-  assert.match(src, /class="tw-fq"/, 'and its input in the source-mode panel');
+  /* ⚠ (#R256) the panel is a grouped inset list now, so the box is `class="tw-num tw-fq"` — the
+     control is the same control and this test is about its EXISTENCE, not about its styling. */
+  assert.match(src, /class="tw-num tw-fq"/, 'and its input in the source-mode panel');
   assert.match(src, /setFlow\(m3s\)\{/, 'and its API');
   const atlas = read('js/atlas-console.js');
   assert.ok(atlas.includes('"flowM3s"?:num'), 'and the SYS catalogue advertises it (#R115)');

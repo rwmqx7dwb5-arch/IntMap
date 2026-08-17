@@ -243,14 +243,38 @@ window.IntMapModules.layerSidebar=function(HOST){
           shell that is not itself positioned and not under the canvas therefore resolved to the SHELL,
           and marking that `.im-front` puts the whole map (and every sidebar inside `.operation-room`)
           into one 2650 box. The walk now refuses the shell by name as well as the canvas. */
-    const _NOT_PANEL='#map,#map-container,.operation-room,.maplibregl-map,.maplibregl-canvas-container,.maplibregl-control-container,canvas';
+    /* ══ ⚠ (#R256) …AND A PANEL THAT SITS ABOVE THE BAND CAN NEVER BE COVERED BY THE SIDEBAR ════════
+       「ポップアップ内でなんらかの操作したら、ポップアップが前部に来るように。左サイドバー内をクリック
+         した場合はまた左サイドバーを前部に。」— a FOURTH time. MEASURED on this build, the mechanism
+       #R254/#R255 built does work end to end: a pointerdown inside `#country-popup` takes it
+       `auto → .im-front → 2650` with the sidebar at 1000; a pointerdown in the left sidebar puts it
+       back (`popup 2200 / sidebar 2600`, and `elementFromPoint` over the overlap returns the
+       sidebar's row); a wheel inside the popup raises it again. What it cannot do is cover a panel
+       whose own z-index is ABOVE the band, and there was one: **`#compare-window` at 4000** — a
+       draggable, resizable window, i.e. exactly the kind of thing one «reaches into», sitting
+       permanently in front of both sidebars. It is in the card band (2200) now, so the sidebar
+       covers it and `.im-front` raises it, like every other panel. See js/compare.js.
+       Two more holes closed here:
+       ① `keydown` counts as an operation. `focusin` fires once; a panel re-rendered under the
+          caret (the trade / crop panels rebuild their body on every change) leaves the reader
+          typing into something that never announced itself.
+       ② A panel positioned `relative`/`sticky` WITH A Z-INDEX OF ITS OWN is a panel. `panelOf`
+          only accepted `absolute`/`fixed`, so a pointerdown inside such a panel found nothing and
+          took the DEMOTE branch — it pushed the panel being used behind the sidebar. A plain flow
+          element has `z-index:auto` and is still skipped, which is what keeps this narrow.
+          ⚠ Both sidebars are `relative` + `z-index:2600`, so they are named in `_NOT_PANEL` as
+          well as in `_FRONT_SIDE`: they are the shell this band is measured against, never a
+          panel inside it. */
+    const _NOT_PANEL='#map,#map-container,.operation-room,.maplibregl-map,.maplibregl-canvas-container,'
+      +'.maplibregl-control-container,canvas,.sidebar,#sidebar,#layer-sidebar-r';
     function _wireFrontMost(){ if(window.__imFrontMostWired) return; window.__imFrontMostWired=1;
       /* the floating panel an event landed in — the first positioned ancestor, asked of the LAYOUT
          rather than of a list of selectors (#R253). The map's own canvas is explicitly not one. */
       const panelOf=(el)=>{ for(let n=el; n&&n!==document.body; n=n.parentElement){
           if(n.matches&&n.matches(_NOT_PANEL)) return null;
-          let p=''; try{ p=getComputedStyle(n).position; }catch(_){}
-          if(p==='absolute'||p==='fixed') return n; }
+          let p='',z=''; try{ const cs=getComputedStyle(n); p=cs.position; z=cs.zIndex; }catch(_){}
+          if(p==='absolute'||p==='fixed') return n;
+          if((p==='relative'||p==='sticky')&&z&&z!=='auto') return n; }
         return null; };
       const raise=(el)=>{ try{ document.querySelectorAll('.im-front').forEach(n=>{ if(n!==el) n.classList.remove('im-front'); }); }catch(_){}
         if(el) el.classList.add('im-front'); };
@@ -264,6 +288,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       document.addEventListener('pointerdown',(e)=>{ try{ act(e.target,true); }catch(_){} },true);
       document.addEventListener('wheel',(e)=>{ try{ act(e.target,false); }catch(_){} },{capture:true,passive:true});
       document.addEventListener('focusin',(e)=>{ try{ act(e.target,false); }catch(_){} },true);
+      document.addEventListener('keydown',(e)=>{ try{ act(e.target,false); }catch(_){} },true);   /* (#R256) typing is an operation */
     }
     const T=window.IntMapLang.pick(()=>HOST.lang);
     /* (#R70) REBUILT FROM SCRATCH ("単にデフォルトの Layers選択欄を移植するな。一から同じ機能かつ洗練された
@@ -546,12 +571,78 @@ window.IntMapModules.layerSidebar=function(HOST){
        One entry today — the seismic-wave simulator — declared as data so a second one is a row in
        this array and nothing else. The glyph is inline SVG rather than an emoji (standing rule: no
        decorative emoji), and the press goes through `IntMapOS` so the palette, the map's right-click
-       menu, the classic dropdown's button and this row are ONE path. */
-    const SVG_QUAKE='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 13h3.2l2.1-6.4 3 12.2 2.6-9.1 1.9 3.3H22"/></svg>';
-    const TOOLS=[{ id:'sim.seismic', ic:SVG_QUAKE,
-      label:()=>T('Seismic wave simulator','地震波シミュレーター','Seismische-Wellen-Simulator','Симулятор сейсмических волн','Simulador de ondas sísmicas'),
-      hint:()=>T('Place a source and watch the shaking spread','震源を置いて揺れの広がりを見る','Herd setzen und die Erschütterung verfolgen','Задайте очаг и смотрите, как расходятся колебания','Coloque una fuente y vea propagarse el temblor') }];
-    function toolsBlock(){
+       menu, the classic dropdown's button and this row are ONE path.
+       ══ (#R256) …AND THE OTHER SIMULATIONS ARE ROWS IN IT ══════════════════════════════════════════
+       「シミュレーション系のもので、レイヤーではないものは、地震波シミュレーターのようにツール欄に追加
+         して。」 Everything below already existed and was reachable ONLY from the map's right-click
+       menu — i.e. you had to know to right-click the ground to discover that this app can route
+       water, propagate a tsunami or measure a radar shadow. They are not layers (nothing to switch
+       on over the map; each opens a panel and owns the pointer), so the tools list is where they
+       belong, exactly as #R243 put the earthquake simulator there.
+       ⚠ EACH IS AN `IntMapOS` ACTION, REGISTERED HERE. #R242's rule is that a feature has one door
+       and every UI presses the same one; the registration lives beside the row that needs it because
+       js/app-body.js is at the tests/r200 ⑤ line ceiling (4,400) with 22 lines of headroom, and the
+       standing lesson from #R253 ⑥ / #R254 ⑨ is that a dependency goes to the CONSUMER.
+       ⚠ A TOOL OPENED FROM A LIST HAS NO POINT UNDER THE CURSOR. The right-click menu hands each of
+       these the coordinate it was opened on; from here the subject is «where I am looking», so the
+       camera's own centre is passed. That is a real answer, not a placeholder — it is the same
+       point the coordinate readout is describing. */
+    const _svg=(d)=>'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
+    const SVG_QUAKE=_svg('<path d="M2 13h3.2l2.1-6.4 3 12.2 2.6-9.1 1.9 3.3H22"/>');
+    const SVG_WAVE=_svg('<path d="M2 8c2.5 0 2.5 2.4 5 2.4S9.5 8 12 8s2.5 2.4 5 2.4S19.5 8 22 8"/><path d="M2 15c2.5 0 2.5 2.4 5 2.4s2.5-2.4 5-2.4 2.5 2.4 5 2.4 2.5-2.4 5-2.4"/>');
+    const SVG_TERR=_svg('<path d="M2 19l6-9 4 5.5 3-4L22 19z"/><path d="M2 19h20"/>');
+    const SVG_LOS=_svg('<path d="M3 20V9"/><path d="M3 9l16 5"/><circle cx="20" cy="14.5" r="1.8"/><path d="M3 5v2"/>');
+    const SVG_REACH=_svg('<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/>');
+    const SVG_SUN=_svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>');
+    const SVG_STAR=_svg('<path d="M12 3l1.9 4.6 5 .4-3.8 3.3 1.2 4.9L12 13.6 7.7 16.2l1.2-4.9L5.1 8l5-.4z"/>');
+    const SVG_PLUME=_svg('<path d="M4 20c0-5 3-6 3-9a3 3 0 016 0c0 4 4 3 4 7"/><path d="M3 20h18"/>');
+    /* the camera's centre, as the coordinate a point tool needs when it is opened from a list */
+    const _hereLL=()=>{ try{ const c=GE().camera.getCenter(); return { lng:c.lng, lat:c.lat }; }catch(_){ return { lng:0, lat:0 }; } };
+    const _lazy=(name,fn)=>()=>window.IntMapLazy.need(name).then(()=>{ try{ return !!fn(); }catch(_){ return false; } });
+    const SIM_TOOLS=[
+      { id:'sim.seismic', ic:SVG_QUAKE, run:null,   /* registered in js/app-body.js beside the OS kernel */
+        label:()=>T('Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos'),
+        hint:()=>T('Place a source and watch the shaking spread','震源を置いて揺れの広がりを見る','Herd setzen und die Erschütterung verfolgen','Задайте очаг и смотрите, как расходятся колебания','Coloque una fuente y vea propagarse el temblor') },
+      { id:'sim.tsunami', ic:SVG_WAVE, en:'Tsunami simulator',
+        run:_lazy('tsunami',()=>window.IntMapTsunami&&window.IntMapTsunami.open(_hereLL())),
+        label:()=>T('Tsunami simulator','津波シミュレーター','Tsunami-Simulator','Симулятор цунами','Simulador de tsunamis'),
+        hint:()=>T('Solve the wave from a sea-floor rupture','海底の断層から波を解く','Welle aus einem Seebeben lösen','Волна от подводного разрыва','Resuelve la ola de una ruptura submarina') },
+      { id:'sim.terrainWater', ic:SVG_TERR, en:'Terrain & water simulator',
+        run:_lazy('terrainWater',()=>window.IntMapTerrainWater&&window.IntMapTerrainWater.open(_hereLL())),
+        label:()=>T('Terrain & water simulator','地形編集・水流シミュレーター','Gelände- & Wasser-Simulator','Симулятор рельефа и водотока','Simulador de terreno y agua'),
+        hint:()=>T('Sculpt the ground, pour water, build a levee','地形を盛る・削る、水を流す、堤防を引く','Gelände formen, Wasser gießen, Deich ziehen','Лепите рельеф, лейте воду, стройте дамбу','Modele el terreno, vierta agua, trace un dique') },
+      { id:'sim.radiation', ic:SVG_PLUME, en:'Radioactive plume simulator',
+        run:()=>{ try{ return !!(window.IntMapRadiation&&window.IntMapRadiation.openPanel()); }catch(_){ return false; } },
+        label:()=>T('Radioactive plume simulator','放射性プルーム拡散シミュレーター','Simulator radioaktiver Fahnen','Симулятор радиоактивного шлейфа','Simulador de pluma radiactiva'),
+        hint:()=>T('Disperse a release on the live wind field','実際の風の場で放出を拡散させる','Freisetzung im realen Windfeld ausbreiten','Выброс в реальном поле ветра','Dispersa una emisión con el viento real') },
+      { id:'sim.los', ic:SVG_LOS, en:'Line of sight (radar shadow)',
+        run:_lazy('los',()=>window.IntMapLOS&&window.IntMapLOS.open(_hereLL())),
+        label:()=>T('Line of sight (radar shadow)','見通し線解析（レーダー死角）','Sichtlinie (Radarschatten)','Линия видимости (радиотень)','Línea de visión (sombra de radar)'),
+        hint:()=>T('What the terrain hides from a point','ある地点から地形が隠すもの','Was das Gelände von einem Punkt verbirgt','Что рельеф скрывает от точки','Lo que el terreno oculta desde un punto') },
+      { id:'sim.reach', ic:SVG_REACH, en:'Reachable area',
+        run:()=>{ try{ return !!(window.IntMapIsochrone&&window.IntMapIsochrone.open(_hereLL())); }catch(_){ return false; } },
+        label:()=>T('Reachable area (drive/walk/cycle)','到達圏（車・徒歩・自転車）','Erreichbarkeit (Auto/Fuß/Rad)','Зона доступности (авто/пешком/вело)','Área alcanzable (coche/pie/bici)'),
+        hint:()=>T('How far you get in a given time','決めた時間でどこまで行けるか','Wie weit man in einer Zeit kommt','Как далеко можно уехать за время','Hasta dónde se llega en un tiempo') },
+      { id:'sim.sun', ic:SVG_SUN, en:'Sunlight hours & shade',
+        run:()=>{ try{ if(!window.IntMapSun) return false; window.IntMapSun.open();
+          const ll=_hereLL(); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(ll.lng,ll.lat); return true; }catch(_){ return false; } },
+        label:()=>T('Sunlight hours & shade','日照時間・影の解析','Sonnenstunden & Schatten','Часы солнца и тени','Horas de sol y sombra'),
+        hint:()=>T('Where the sun reaches, hour by hour','時間ごとに日が当たる場所','Wo die Sonne stündlich hinkommt','Куда солнце попадает по часам','Dónde llega el sol, hora a hora') },
+      { id:'sim.nightSky', ic:SVG_STAR, en:'Night sky from here',
+        run:_lazy('nightSky',()=>window.IntMapNightSky&&window.IntMapNightSky.open(_hereLL())),
+        label:()=>T('Night sky from here','ここからの星空','Sternhimmel von hier','Ночное небо отсюда','El cielo nocturno desde aquí'),
+        hint:()=>T('The sky a person standing here has','ここに立つ人に見える空','Der Himmel, den man hier hat','Небо, которое видно отсюда','El cielo que se ve desde aquí') },
+    ];
+    /* one door per tool — the palette, Atlas and this row all press the same one (#R242).
+       ⚠ CALLED FROM `toolsBlock()`, not from the factory body: this module is constructed during
+       boot and `window.IntMapOS` is built later in js/app-body.js, so a registration at load time
+       would be a silent no-op (#R200 ⑥'s shape, in a different file). The tile browser is assembled
+       long after both exist, and `OS.has` keeps it idempotent. */
+    function registerSimTools(){ try{ const OS=window.IntMapOS; if(!OS||!OS.register) return;
+      SIM_TOOLS.forEach(t=>{ if(!t.run) return; try{ if(OS.has&&OS.has(t.id)) return;
+        OS.register(t.id,()=>Promise.resolve(t.run()),{label:t.en,group:'sim'}); }catch(_){} }); }catch(_){} }
+    const TOOLS=SIM_TOOLS;
+    function toolsBlock(){ registerSimTools();
       const wrap=document.createElement('div'); wrap.className='lst-tools';
       const h=document.createElement('div'); h.className='lst-sech';
       const tt=document.createElement('span'); tt.textContent=T('Tools','ツール','Werkzeuge','Инструменты','Herramientas'); h.appendChild(tt);

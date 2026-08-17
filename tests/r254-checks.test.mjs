@@ -120,7 +120,10 @@ test('#R254 ⑤ the trade arrowheads exist, the pins do not, and the arrows have
      COLOUR on a line up to 13 px wide. So the head is sized from the shaft now and every arc ends in
      one big head at its destination. Both symbol layers must follow the 「矢印の有無」 switch, which
      is what this assertion has always been for. */
-  assert.match(wp, /setVis\(\['wp-trade-arrow','wp-trade-tip'\],\s*on\s*&&\s*arrows\)/, 'the arrow layers no longer follow the switch');
+  /* ⚠ (#R256) 「矢印だけオンオフしてどないすんねん線もやろがい。」 — the switch took the heads off and
+     left the shafts standing, which is a picture of flows with no direction in it. It is over the
+     WHOLE arrow now (shaft, head and the partner's name), which is what this assertion is for. */
+  assert.match(wp, /function applyVis\(\)\{ setVis\(LYR,on&&arrows\); \}/, 'the arrow layers no longer follow the switch');
 });
 
 /* ── ⑥ THE CROP RASTER ───────────────────────────────────────────────────────────────────────── */

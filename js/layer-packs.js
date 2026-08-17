@@ -495,8 +495,9 @@ window.IntMapModules.betaPack2=function(HOST){
       DCM.toggle(on);
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('dc2',LA('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infraestructura de IA'),['dc-pt','dc-lbl'],'beta-dl-dc');
             if(el&&!el.querySelector('.dc-key')){ const k=document.createElement('div'); k.className='dc-key'; k.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
-              /* the key is asked of the layer, so a colour cannot be right in one place and wrong here */
-              k.innerHTML=DCM.key().map(([c,l])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:6px;flex:none;background:'+c+';"></span>'+l+'</div>').join('')
+              /* the key is asked of the layer, so a colour cannot be right in one place and wrong here.
+                 (#R256) each row is a SWITCH for its own class — see IntMapDataCenters.toggleKey. */
+              k.innerHTML=DCM.key().map(([c,l,id])=>'<button type="button" class="dc-keyrow" data-k="'+(id||'')+'" style="display:flex;align-items:center;gap:7px;border:none;background:none;color:inherit;font:inherit;padding:1px 0;cursor:pointer;text-align:left;"><span style="width:11px;height:11px;border-radius:6px;flex:none;background:'+c+';"></span>'+l+'</button>').join('')
                 +'<div style="font-size:10px;color:var(--text-muted);margin-top:4px;line-height:1.5;">'
                 +window.IntMapLang.t(HOST.lang,
                   'Published cloud regions, AI campuses, carrier hotels and TOP500 sites, plus every data centre mapped in OpenStreetMap for the current view (zoom in past z6). Click any point for the full record.',
@@ -505,7 +506,12 @@ window.IntMapModules.betaPack2=function(HOST){
                   'Опубликованные облачные регионы, ИИ-кампусы, точки обмена и объекты TOP500, плюс все дата-центры OpenStreetMap в текущем виде (от z6). Нажмите точку для полной карточки.',
                   'Regiones de nube publicadas, campus de IA, hoteles de operadores y sitios TOP500, más todos los centros de datos de OpenStreetMap en la vista (desde z6). Haga clic en un punto para la ficha completa.')
                 +'</div>';
-              el.appendChild(k); } }
+              el.appendChild(k);
+              /* (#R256) the row is a class switch; a switched-off class is dimmed rather than removed,
+                 so the reader can always see what has been taken off the map */
+              k.querySelectorAll('.dc-keyrow').forEach(b=>{ const id=b.getAttribute('data-k'); if(!id) return;
+                b.onclick=()=>{ let on2=true; try{ on2=DCM.toggleKey(id); }catch(_){}
+                  b.style.opacity=on2?'1':'0.38'; b.style.textDecoration=on2?'':'line-through'; }; }); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('dc2'); }catch(_){}
     }
     function phToggle(on){ state.pharma=on;
