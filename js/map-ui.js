@@ -30,7 +30,16 @@ window.IntMapModules.layerRegistry=function(HOST){
   const demElevAt=HOST.demElevAt;
   window.IntMapLayers=(function(){
     const REG={};
-    const L5=(en,jp2,de,ru,es)=>({en,jp:jp2,de,ru,es})[typeof HOST.lang!=='undefined'?HOST.lang:'en']||en;
+    /* ⚠⚠⚠ (#R251) THIS WAS A PRIVATE FIVE-LANGUAGE HELPER, AND FIVE IS NOT NINE.
+       `const L5=(en,jp2,de,ru,es)=>({en,jp:jp2,de,ru,es})[HOST.lang]||en;` built a language-keyed
+       object and subscripted it, so every one of the 36 readout labels below was ENGLISH for
+       fr / ko / zh / zh-Hans — and invisible while it happened: the callee is not bound to the
+       registry, so scripts/i18n-report.mjs never put the strings in the inline universe, and the
+       langmap audit never saw the object because it is BUILT from parameters rather than written
+       as a literal (the same blindness #R250 found in `_dc(…,en,jp,…)` → `title:{en,jp}`).
+       `pick()` IS this function, minus the ceiling: positional for the first five, the inline table
+       keyed by the English string for the rest, English underneath both. */
+    const L5=window.IntMapLang.pick(()=>HOST.lang);
     const isOn=id=>{ const cb=document.getElementById('dl-'+id)||document.getElementById(id); return !!(cb&&cb.checked); };
     const _numCache=new Map();   /* per (kind,0.25°cell) numeric cache shared by all Open-Meteo samplers */
     async function _om(kind,lng,lat){ const q=v=>Math.round(v*4)/4, qla=q(lat), qlo=q(lng), key=kind+':'+qla+','+qlo;

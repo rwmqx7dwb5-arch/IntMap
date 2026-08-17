@@ -68,6 +68,8 @@ const JA = /[぀-ヿ㐀-鿿！-｠]/;
    word beside it — «Coal», «Gas», «Oil» — is a translation and not a code. Keeping the strict rule
    made this file measure three of those rows by their COLOUR instead of by their label. */
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
+/* a letter of some alphabet the app's nine languages are written in — Latin, Cyrillic or Greek */
+const LETTERED = /[A-Za-zÀ-ÖØ-öø-ÿĀ-ſЀ-ӿΆ-ώ]/;
 const KEYISH = /^[a-z0-9]+([_.][a-z0-9]+)+$/;              /* coal_share_of_electricity__pct */
 const FILEISH = /^[\w./-]+\.(png|jpg|jpeg|svg|gz|json|js|css|webp|bin|tle)$/i;
 const URLISH = /^[^\s]*[=&?][^\s]*$/;
@@ -121,6 +123,19 @@ function hasEntityKey(node) {
     ArrayExpression(n) { if (scanKeys(n.elements)) found = true; },
     CallExpression(n) { if (scanKeys(n.arguments)) found = true; },
     NewExpression(n) { if (scanKeys(n.arguments)) found = true; },
+    /* ⚠ (#R251) …AND A CONTAINER WHOSE OWN PROPERTY KEYS ARE THE ENTITY CODES. js/tables.js's
+       `CO_CC={ USA:[…], CHN:[…], TWN:[…] }` carries its ISO-3166 alpha-3 key as the PROPERTY NAME,
+       not as a slot in the row, so every rule above looked straight past it. ⚠ Three or more, and
+       UPPER CASE, on purpose: `{en:…, jp:…}` is the ELEVENTH shape and must never be excused here,
+       and language codes are lower case throughout this repository. */
+    ObjectExpression(n) {
+      let k = 0;
+      for (const p of n.properties) {
+        const key = p.key && (p.key.name || p.key.value);
+        if (typeof key === 'string' && ISOISH.test(key)) k++;
+      }
+      if (k >= 3) found = true;
+    },
   });
   return found;
 }
@@ -308,8 +323,39 @@ for (const [full, rel] of files) {
         const xJa = JA.test(x.value), yJa = JA.test(y.value);
         if (xJa === yJa) continue;
         if (!isProse(xJa ? y.value : x.value)) continue;
+        /* ⚠⚠⚠ (#R251) …AND THE THREE SLOTS AFTER IT, WHEN THEY ARE ALREADY de/ru/es.
+           js/seismic-events.js writes `name:['2011 Tōhoku…','東日本大震災…','2011 Tōhoku (Großes…',
+           'Тохоку 2011…','Tōhoku 2011…']` — a complete five-language tuple that is merely not a
+           CALL. A rewriter that replaced only the (en, ja) pair would produce
+           `[LA(en,ja,de,ru,es), 'de…', 'ru…', 'es…']` — the row silently grown by three stale
+           copies. The three following slots qualify only if ALL THREE are prose in a non-Japanese
+           script, which is what separates a five-language tuple from `_dc(…,en,ja,bodyEn,bodyJa,…)`
+           (whose next-but-one slot is Japanese) and from `['coal_twh','Coal','石炭','#6b6b6b']`
+           (whose next slot is a colour). Where they qualify, THE SOURCE WINS over the dictionary:
+           those translations were authored in an earlier round and are already on screen. */
+        const tail = [];
+        for (let m = k + 2; m < k + 5 && m < list.length; m++) {
+          const z = list[m];
+          if (!z || z.type !== 'Literal' || typeof z.value !== 'string') break;
+          /* ⚠ NOT `isProse` — that asks «is this ENGLISH prose?» and requires a Latin letter, so
+             'Тохоку 2011 (Великое восточнояпонское)' failed it and every Russian slot ended the
+             scan. The question here is «is this a translation in SOME alphabet the app writes?» */
+          if (JA.test(z.value) || !LETTERED.test(z.value) || HEX.test(z.value)
+            || KEYISH.test(z.value) || FILEISH.test(z.value) || URLISH.test(z.value)) break;
+          tail.push(z.value);
+        }
+        const ok3 = tail.length === 3;
+        /* ⚠ AND WHETHER THE TUPLE *IS* THE WHOLE ARRAY. `name:['…','…','…','…','…']` collapses to
+           `name:LA(…)`, not to `name:[LA(…)]` — the reader is `L.arr(e.name)`, i.e. `pick()` applied
+           to the row, and handing it a one-element array containing the row makes the first argument
+           an ARRAY. The brackets can only go when the pair (plus any tail) covers every element. */
+        const span = ok3 ? 5 : 2;
+        const whole = what === 'array' && k === 0 && list.length === span
+          && node.type === 'ArrayExpression' ? { start: node.start, end: node.end } : null;
         pairs.push({ file: rel, en: xJa ? y.value : x.value, ja: xJa ? x.value : y.value,
-          start: x.start, end: y.end });
+          start: whole ? whole.start : x.start, end: whole ? whole.end : (ok3 ? list[k + 4].end : y.end),
+          have: ok3 ? tail : null });
+        if (ok3) k += 3;
         k++;
       }
       return;                       /* ⚠ ONE finding per container */

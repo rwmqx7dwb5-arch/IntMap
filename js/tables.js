@@ -591,6 +591,10 @@ window.IntMapTables=(function(){
     materials:LA('Materials','素材','Werkstoffe','Материалы','Materiales'),
     staples:LA('Consumer Staples','生活必需品','Basiskonsumgüter','Товары первой необходимости','Bienes básicos')
   };
+  /* @i18n-entity-data  ISO-3166 country records for the Companies table. The NAME comes from CLDR
+     (`_coCountry` in js/companies-ui.js, #R251); slots 0–1 are the offline fallback, slot 2 is the
+     flag — which is also the alpha-2 key CLDR is asked with, since a flag emoji IS its two regional
+     indicator letters. Adding a language needs no row here. (#R251) */
   const CO_CC={ USA:['United States','アメリカ','🇺🇸'], CHN:['China','中国','🇨🇳'], TWN:['Taiwan','台湾','🇹🇼'], KOR:['South Korea','韓国','🇰🇷'], JPN:['Japan','日本','🇯🇵'], DEU:['Germany','ドイツ','🇩🇪'], FRA:['France','フランス','🇫🇷'], GBR:['United Kingdom','イギリス','🇬🇧'], CHE:['Switzerland','スイス','🇨🇭'], NLD:['Netherlands','オランダ','🇳🇱'], DNK:['Denmark','デンマーク','🇩🇰'], SWE:['Sweden','スウェーデン','🇸🇪'], CAN:['Canada','カナダ','🇨🇦'], AUS:['Australia','オーストラリア','🇦🇺'], SAU:['Saudi Arabia','サウジアラビア','🇸🇦'], IRL:['Ireland','アイルランド','🇮🇪'], IND:['India','インド','🇮🇳'], BRA:['Brazil','ブラジル','🇧🇷'], ESP:['Spain','スペイン','🇪🇸'], ITA:['Italy','イタリア','🇮🇹'], SGP:['Singapore','シンガポール','🇸🇬'], ARG:['Argentina','アルゼンチン','🇦🇷'], MEX:['Mexico','メキシコ','🇲🇽'], BEL:['Belgium','ベルギー','🇧🇪'] };
   /* (#R41) Localize the repeated Information-card badges in DE/RU/ES (acronyms like USN/NATO pass through). The
      curated card bodies stay English/Japanese where no translation exists, but the recurring chrome localizes. */

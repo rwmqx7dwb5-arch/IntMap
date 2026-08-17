@@ -468,6 +468,9 @@ window.IntMapModules.widgets=function(HOST){
           '<button class="wcok" style="'+selStyle+'cursor:pointer;font-weight:600;">OK</button></div>';
         box.querySelector('.wcok').onclick=()=>{ e.cfg.tz=box.querySelector('.wctz').value; save(); box.style.display='none'; tickClock(); };
       } else if(e.t==='holiday'){
+        /* @i18n-entity-data  ISO-3166 country records. The NAME comes from CLDR (`_ccName` above,
+           #R247); the English/Japanese slots are the offline fallback for a runtime without
+           Intl.DisplayNames, not the translation. Adding a language needs no row here. (#R251) */
         const HC=[['US','United States','アメリカ'],['JP','Japan','日本'],['GB','United Kingdom','イギリス'],['DE','Germany','ドイツ'],['FR','France','フランス'],['CA','Canada','カナダ'],['AU','Australia','オーストラリア'],['IN','India','インド'],['BR','Brazil','ブラジル'],['MX','Mexico','メキシコ'],['IT','Italy','イタリア'],['ES','Spain','スペイン'],['NL','Netherlands','オランダ'],['SE','Sweden','スウェーデン'],['PL','Poland','ポーランド'],['RU','Russia','ロシア'],['KR','South Korea','韓国'],['CN','China','中国'],['SG','Singapore','シンガポール'],['NZ','New Zealand','ニュージーランド'],['ZA','South Africa','南アフリカ'],['AR','Argentina','アルゼンチン'],['TR','Turkey','トルコ'],['CH','Switzerland','スイス'],['AT','Austria','オーストリア'],['IE','Ireland','アイルランド'],['NO','Norway','ノルウェー'],['FI','Finland','フィンランド'],['PT','Portugal','ポルトガル'],['BE','Belgium','ベルギー']];
         box.innerHTML='<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);">'+
           '<select class="hcc" style="'+selStyle+'flex:1;min-width:0;">'+HC.map(c=>'<option value="'+c[0]+'"'+(c[0]===(e.cfg.cc||'US')?' selected':'')+'>'+_ccName(c)+'</option>').join('')+'</select>'+

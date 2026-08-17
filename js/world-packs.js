@@ -589,27 +589,30 @@ window.IntMapModules.worldPacks=function(HOST){
     (function energy(){
       const SRCS={
         elec:{ slug:'share-elec-by-source', unit:'%',
-          parts:[['coal_share_of_electricity__pct','Coal','石炭','#6b6b6b'],
-                 ['gas_share_of_electricity__pct','Gas','ガス','#c78a4b'],
-                 ['oil_share_of_electricity__pct','Oil','石油','#8b5a3c'],
-                 ['nuclear_share_of_electricity__pct','Nuclear','原子力','#b455ff'],
-                 ['hydro_share_of_electricity__pct','Hydro','水力','#2f7fe0'],
-                 ['wind_share_of_electricity__pct','Wind','風力','#3fd1c7'],
-                 ['solar_share_of_electricity__pct','Solar','太陽光','#ffd23f'],
-                 ['bioenergy_share_of_electricity__pct','Bioenergy','バイオ','#7cb342'],
-                 ['other_renewables_excluding_bioenergy_share_of_electricity__pct','Other renewables','その他再エネ','#26a69a']],
+          parts:[['coal_share_of_electricity__pct',LA('Coal','石炭','Kohle','Уголь','Carbón'),'#6b6b6b'],
+                 ['gas_share_of_electricity__pct',LA('Gas','ガス','Gas','Газ','Gas'),'#c78a4b'],
+                 ['oil_share_of_electricity__pct',LA('Oil','石油','Öl','Нефть','Petróleo'),'#8b5a3c'],
+                 ['nuclear_share_of_electricity__pct',LA('Nuclear','原子力','Kernkraft','Атомная','Nuclear'),'#b455ff'],
+                 ['hydro_share_of_electricity__pct',LA('Hydro','水力','Wasserkraft','ГЭС','Hidráulica'),'#2f7fe0'],
+                 ['wind_share_of_electricity__pct',LA('Wind','風力','Wind','Ветер','Viento'),'#3fd1c7'],
+                 ['solar_share_of_electricity__pct',LA('Solar','太陽光','Solar','Солнечная','Solar'),'#ffd23f'],
+                 ['bioenergy_share_of_electricity__pct',LA('Bioenergy','バイオ','Bioenergie','Биоэнергия','Bioenergía'),'#7cb342'],
+                 ['other_renewables_excluding_bioenergy_share_of_electricity__pct',LA('Other renewables','その他再エネ','Sonstige Erneuerbare','Прочие ВИЭ','Otras renovables'),'#26a69a']],
           clean:['nuclear_share_of_electricity__pct','hydro_share_of_electricity__pct','wind_share_of_electricity__pct','solar_share_of_electricity__pct','bioenergy_share_of_electricity__pct','other_renewables_excluding_bioenergy_share_of_electricity__pct'] },
         prim:{ slug:'primary-energy-source-bar', unit:'TWh',
-          parts:[['coal_twh','Coal','石炭','#6b6b6b'],['oil_twh','Oil','石油','#8b5a3c'],['gas_twh','Gas','ガス','#c78a4b'],
-                 ['nuclear_twh','Nuclear','原子力','#b455ff'],['hydro_twh','Hydro','水力','#2f7fe0'],
-                 ['wind_twh','Wind','風力','#3fd1c7'],['solar_twh','Solar','太陽光','#ffd23f'],
-                 ['other_renewables_twh','Other renewables','その他再エネ','#26a69a']],
+          parts:[['coal_twh',LA('Coal','石炭','Kohle','Уголь','Carbón'),'#6b6b6b'],['oil_twh',LA('Oil','石油','Öl','Нефть','Petróleo'),'#8b5a3c'],['gas_twh',LA('Gas','ガス','Gas','Газ','Gas'),'#c78a4b'],
+                 ['nuclear_twh',LA('Nuclear','原子力','Kernkraft','Атомная','Nuclear'),'#b455ff'],['hydro_twh',LA('Hydro','水力','Wasserkraft','ГЭС','Hidráulica'),'#2f7fe0'],
+                 ['wind_twh',LA('Wind','風力','Wind','Ветер','Viento'),'#3fd1c7'],['solar_twh',LA('Solar','太陽光','Solar','Солнечная','Solar'),'#ffd23f'],
+                 ['other_renewables_twh',LA('Other renewables','その他再エネ','Sonstige Erneuerbare','Прочие ВИЭ','Otras renovables'),'#26a69a']],
           clean:['nuclear_twh','hydro_twh','wind_twh','solar_twh','other_renewables_twh'] } };
       let on=false, iso=null, kind='elec';
       const panel=makePanel('wp-energy-panel',()=>'⚡ '+L('Energy mix','エネルギー構成','Energiemix','Энергобаланс','Mezcla energética'),'wp-dl-energy',
         { legendId:'wpenergy', layers:()=>[fillId('elec'),fillId('prim')],
           names:()=>(LA('⚡ Energy mix','⚡ エネルギー構成','⚡ Energiemix','⚡ Энергобаланс','⚡ Mezcla energética')) });
-      const partName=(p)=>HOST.lang==='jp'?p[2]:p[1];
+      /* ⚠ (#R251) the two name slots collapsed into ONE tuple, so the row is [key, name, colour]
+         and the colour moved from p[3] to p[2]. Resolved through pick() itself — `L.arr` — so a
+         language past the five arguments reaches the inline table instead of falling to English. */
+      const partName=(p)=>L.arr(p[1]);
 
       function fillId(k){ return 'wp-'+k+'-fill'; }
       function ensureChoro(k){ const id=fillId(k); if(GE().layers.has(id)) return true; if(!_imCanDraw()||!GE().layers.hasSource('countries')) return false;
@@ -658,10 +661,10 @@ window.IntMapModules.worldPacks=function(HOST){
         let tot=0; parts.forEach(p=>{ const v=rec[p[0]]; if(isFinite(v)&&v>0) tot+=v; });
         if(!(tot>0)) return '<div style="color:var(--text-muted);">'+L('no data','データなし','keine Daten','нет данных','sin datos')+'</div>';
         const seg=parts.map(p=>{ const v=rec[p[0]]; if(!(isFinite(v)&&v>0)) return '';
-          return '<div title="'+esc(partName(p))+'" style="width:'+(v/tot*100).toFixed(2)+'%;background:'+p[3]+';"></div>'; }).join('');
+          return '<div title="'+esc(partName(p))+'" style="width:'+(v/tot*100).toFixed(2)+'%;background:'+p[2]+';"></div>'; }).join('');
         const leg=parts.map(p=>{ const v=rec[p[0]]; if(!(isFinite(v)&&v>0)) return '';
           return '<div style="display:flex;align-items:center;gap:6px;padding:1.5px 0;">'
-            +'<span style="width:10px;height:10px;border-radius:2px;background:'+p[3]+';flex:none;"></span>'
+            +'<span style="width:10px;height:10px;border-radius:2px;background:'+p[2]+';flex:none;"></span>'
             +'<span style="flex:1;">'+esc(partName(p))+'</span>'
             +'<b>'+(unit==='%'?pct(v):(Math.round(v).toLocaleString()+' TWh'))+'</b>'
             /* (#R211) …and the share ONLY when it is a different number. For the electricity mix the
@@ -775,14 +778,14 @@ window.IntMapModules.worldPacks=function(HOST){
           names:()=>(LA('⚠ Weather & disaster warnings','⚠ 気象・災害警報','⚠ Wetter- und Katastrophenwarnungen','⚠ Метеопредупреждения','⚠ Avisos meteorológicos')) });
       /* JMA warning codes → the kind of hazard, and the tier the code belongs to.
          Tier comes from the code range JMA publishes: 3x = 特別警報, 0x/1x = 警報, 2x = 注意報. */
-      const JMA_KIND={'02':['暴風雪','Snowstorm'],'03':['大雨','Heavy rain'],'04':['洪水','Flood'],'05':['暴風','Storm'],
-        '06':['大雪','Heavy snow'],'07':['波浪','High waves'],'08':['高潮','Storm surge'],'10':['大雨','Heavy rain'],
-        '12':['暴風雪','Snowstorm'],'13':['大雨','Heavy rain'],'14':['洪水','Flood'],'15':['暴風','Storm'],
-        '16':['大雪','Heavy snow'],'17':['波浪','High waves'],'18':['高潮','Storm surge'],'19':['雷','Thunderstorm'],
-        '20':['濃霧','Dense fog'],'21':['乾燥','Dry air'],'22':['なだれ','Avalanche'],'23':['低温','Low temperature'],
-        '24':['霜','Frost'],'25':['着雪','Snow accretion'],'26':['融雪','Snowmelt'],'27':['その他','Other'],
-        '32':['暴風雪','Snowstorm'],'33':['大雨','Heavy rain'],'35':['暴風','Storm'],'36':['大雪','Heavy snow'],
-        '37':['波浪','High waves'],'38':['高潮','Storm surge']};
+      const JMA_KIND={'02':LA('Snowstorm','暴風雪','Schneesturm','Метель','Ventisca'),'03':LA('Heavy rain','大雨','Starkregen','Сильный дождь','Lluvia intensa'),'04':LA('Flood','洪水','Hochwasser','Наводнение','Inundación'),'05':LA('Storm','暴風','Sturm','Шторм','Tormenta'),
+        '06':LA('Heavy snow','大雪','Starker Schneefall','Сильный снегопад','Nevada intensa'),'07':LA('High waves','波浪','Hoher Seegang','Высокие волны','Oleaje fuerte'),'08':LA('Storm surge','高潮','Sturmflut','Штормовой нагон','Marea de tormenta'),'10':LA('Heavy rain','大雨','Starkregen','Сильный дождь','Lluvia intensa'),
+        '12':LA('Snowstorm','暴風雪','Schneesturm','Метель','Ventisca'),'13':LA('Heavy rain','大雨','Starkregen','Сильный дождь','Lluvia intensa'),'14':LA('Flood','洪水','Hochwasser','Наводнение','Inundación'),'15':LA('Storm','暴風','Sturm','Шторм','Tormenta'),
+        '16':LA('Heavy snow','大雪','Starker Schneefall','Сильный снегопад','Nevada intensa'),'17':LA('High waves','波浪','Hoher Seegang','Высокие волны','Oleaje fuerte'),'18':LA('Storm surge','高潮','Sturmflut','Штормовой нагон','Marea de tormenta'),'19':LA('Thunderstorm','雷','Gewitter','Гроза','Tormenta eléctrica'),
+        '20':LA('Dense fog','濃霧','Dichter Nebel','Густой туман','Niebla densa'),'21':LA('Dry air','乾燥','Trockene Luft','Сухой воздух','Aire seco'),'22':LA('Avalanche','なだれ','Lawine','Лавина','Avalancha'),'23':LA('Low temperature','低温','Tiefe Temperaturen','Низкая температура','Baja temperatura'),
+        '24':LA('Frost','霜','Frost','Заморозки','Helada'),'25':LA('Snow accretion','着雪','Schneeanhaftung','Налипание снега','Acumulación de nieve'),'26':LA('Snowmelt','融雪','Schneeschmelze','Таяние снега','Deshielo'),'27':LA('Other','その他','Sonstiges','Прочее','Otros'),
+        '32':LA('Snowstorm','暴風雪','Schneesturm','Метель','Ventisca'),'33':LA('Heavy rain','大雨','Starkregen','Сильный дождь','Lluvia intensa'),'35':LA('Storm','暴風','Sturm','Шторм','Tormenta'),'36':LA('Heavy snow','大雪','Starker Schneefall','Сильный снегопад','Nevada intensa'),
+        '37':LA('High waves','波浪','Hoher Seegang','Высокие волны','Oleaje fuerte'),'38':LA('Storm surge','高潮','Sturmflut','Штормовой нагон','Marea de tormenta')};
       const tierOf=(code)=>{ const n=parseInt(code,10);
         if(n>=32&&n<=38) return 3;                 /* 特別警報 */
         if(n>=19&&n<=27) return 1;                 /* 注意報 */
@@ -896,8 +899,8 @@ window.IntMapModules.worldPacks=function(HOST){
          and a wash over every country the event's own `affectedcountries` list names. That is a
          weaker statement than JMA's issuing units, and the legend says which one a country is on. */
       const GDACS_TIER={Red:3,Orange:2,Green:1};
-      const GDACS_KIND={EQ:['地震','Earthquake'],TC:['熱帯低気圧','Tropical cyclone'],FL:['洪水','Flood'],
-        VO:['火山','Volcano'],DR:['干ばつ','Drought'],WF:['森林火災','Wildfire']};
+      const GDACS_KIND={EQ:LA('Earthquake','地震','Erdbeben','Землетрясение','Terremoto'),TC:LA('Tropical cyclone','熱帯低気圧','Tropischer Wirbelsturm','Тропический циклон','Ciclón tropical'),FL:LA('Flood','洪水','Hochwasser','Наводнение','Inundación'),
+        VO:LA('Volcano','火山','Vulkan','Вулкан','Volcán'),DR:LA('Drought','干ばつ','Dürre','Засуха','Sequía'),WF:LA('Wildfire','森林火災','Waldbrand','Природный пожар','Incendio forestal')};
       let gCountries=Object.create(null);
       async function loadGDACS(){
         const r=await fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP?alertlevel=Green;Orange;Red&eventlist=EQ;TC;FL;VO;DR;WF');

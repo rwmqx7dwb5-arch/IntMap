@@ -87,8 +87,12 @@ for (const [f, list] of [...byFile.entries()].sort()) {
   let out = '', at = 0, n = 0;
   for (const p of list) {
     if (p.start < at) continue;                       /* overlapping pair — one rewrite per slot */
-    const row = dict[p.en];
-    if (!row || row.length !== 6 || row.some((v) => typeof v !== 'string' || !v.length)) {
+    /* ⚠ THE SOURCE WINS WHERE IT ALREADY ANSWERS. `have` is the three de/ru/es slots the audit
+       found sitting after the pair (a five-language tuple that is merely not a call). Preferring the
+       dictionary there would silently REPLACE translations authored in an earlier round with this
+       round's wording — a diff that looks like progress and is churn. */
+    const row = p.have || dict[p.en];
+    if (!row || row.length < 3 || row.slice(0, 3).some((v) => typeof v !== 'string' || !v.length)) {
       if (!missing.has(p.en)) missing.set(p.en, { ja: p.ja, files: [] });
       const m = missing.get(p.en); if (m.files.indexOf(f) < 0) m.files.push(f);
       continue;

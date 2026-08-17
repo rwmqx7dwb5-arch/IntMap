@@ -29,151 +29,160 @@
  *  ⚠ DEPTH IS THE HYPOCENTRE'S; `zTopKm` IS THE TOP OF THE RUPTURE PLANE. They are different
  *  numbers and conflating them is what makes a subduction event look like a crustal one.
  * ==========================================================================*/
+/* ⚠ (#R251) the ARRAY form of the language helper — see `pickArgs` in js/lang-registry.js. The
+   event names below were bare five-element arrays: complete for the positional five and English for
+   fr / ko / zh / zh-Hans for ever, because an array literal is not a call and no instrument could
+   put the ten names into the inline universe. ⚠ GUARDED, like js/space-cosmos.js's: this module is
+   an ES module that other modules import, so it can evaluate before js/lang-registry.js has run.
+   `pickArgs()` only ever returns «the arguments as an array», so the fallback is the same function. */
+const LA = (typeof window !== 'undefined' && window.IntMapLang && window.IntMapLang.pickArgs())
+  || function () { return Array.prototype.slice.call(arguments); };
+
 export const QUAKE_EVENTS = [
   {
     id: 'tohoku2011', usgs: 'official20110311054624120_30',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
     /* the name is a proper noun in every language that has one for it; L() takes the first five
        positionally and the registry's inline table answers for the rest (js/lang-registry.js). */
-    name: ['2011 Tōhoku (Great East Japan)', '東日本大震災（2011 東北地方太平洋沖地震）', '2011 Tōhoku (Großes Ostjapan-Beben)', 'Тохоку 2011 (Великое восточнояпонское)', 'Tōhoku 2011 (Gran terremoto del este de Japón)'],
+    name: LA('2011 Tōhoku (Great East Japan)','東日本大震災（2011 東北地方太平洋沖地震）','2011 Tōhoku (Großes Ostjapan-Beben)','Тохоку 2011 (Великое восточнояпонское)','Tōhoku 2011 (Gran terremoto del este de Japón)'),
     when: '2011-03-11T05:46:24Z',
     lat: 38.297, lng: 142.373, depthKm: 29, mw: 9.1,
     strike: 203, dip: 10, rake: 88,
     lenKm: 500, widKm: 200, zTopKm: 5, nucAlong: 0.5,
     src: 'USGS NEIC / Global CMT; finite-fault dimensions after Ide et al. (2011) and Ozawa et al. (2011)',
     obs: {
-      intensity: ['JMA 7 (Kurihara, Miyagi)', 'JMA震度7（宮城県栗原市）', 'JMA 7 (Kurihara)', 'JMA 7 (Курихара)', 'JMA 7 (Kurihara)'],
+      intensity: LA('JMA 7 (Kurihara, Miyagi)','JMA震度7（宮城県栗原市）','JMA 7 (Kurihara)','JMA 7 (Курихара)','JMA 7 (Kurihara)'),
       slipM: 'peak ≈ 50 m near the trench; mean ≈ 10 m',
       tsunamiM: 'run-up to 40.1 m (Ōfunato); 9.3 m tide-gauge (Sōma)',
       deaths: '19,759 dead, 2,553 missing (NPA, 2021)',
-      note: ['Moment magnitude 9.0 (JMA) to 9.1 (USGS).', '気象庁 Mw9.0、USGS Mw9.1。', 'Mw 9,0 (JMA) bis 9,1 (USGS).', 'Mw 9,0 (JMA) — 9,1 (USGS).', 'Mw 9,0 (JMA) a 9,1 (USGS).']
+      note: LA('Moment magnitude 9.0 (JMA) to 9.1 (USGS).','気象庁 Mw9.0、USGS Mw9.1。','Mw 9,0 (JMA) bis 9,1 (USGS).','Mw 9,0 (JMA) — 9,1 (USGS).','Mw 9,0 (JMA) a 9,1 (USGS).')
     }
   },
   {
     id: 'valdivia1960', usgs: 'official19600522191120_30',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
-    name: ['1960 Valdivia (Great Chilean)', '1960年 チリ地震（バルディビア地震）', '1960 Valdivia (Großes Chile-Beben)', 'Вальдивия 1960 (Великое чилийское)', 'Valdivia 1960 (Gran terremoto de Chile)'],
+    name: LA('1960 Valdivia (Great Chilean)','1960年 チリ地震（バルディビア地震）','1960 Valdivia (Großes Chile-Beben)','Вальдивия 1960 (Великое чилийское)','Valdivia 1960 (Gran terremoto de Chile)'),
     when: '1960-05-22T19:11:14Z',
     lat: -38.29, lng: -73.05, depthKm: 25, mw: 9.5,
     strike: 7, dip: 20, rake: 90,
     lenKm: 850, widKm: 200, zTopKm: 5, nucAlong: 0.15,
     src: 'Kanamori (1977) Mw 9.5; rupture extent after Plafker & Savage (1970) and Barrientos & Ward (1990)',
     obs: {
-      intensity: ['MMI XI–XII (Valdivia · Puerto Montt)', '改正メルカリ XI〜XII（バルディビア／プエルトモント）', 'MMI XI–XII', 'MMI XI–XII', 'MMI XI–XII'],
+      intensity: LA('MMI XI–XII (Valdivia · Puerto Montt)','改正メルカリ XI〜XII（バルディビア／プエルトモント）','MMI XI–XII','MMI XI–XII','MMI XI–XII'),
       slipM: 'mean ≈ 20 m, peak ≈ 30–40 m',
       tsunamiM: '25 m locally; 10.7 m at Hilo, Hawaiʻi (15 h later); 6 m in Japan (22 h later)',
       deaths: '1,000–6,000 (estimates differ widely)',
-      note: ['The largest earthquake ever instrumentally recorded.', '観測史上最大の地震。', 'Das stärkste je instrumentell gemessene Beben.', 'Сильнейшее землетрясение за всю историю наблюдений.', 'El mayor terremoto jamás registrado instrumentalmente.']
+      note: LA('The largest earthquake ever instrumentally recorded.','観測史上最大の地震。','Das stärkste je instrumentell gemessene Beben.','Сильнейшее землетрясение за всю историю наблюдений.','El mayor terremoto jamás registrado instrumentalmente.')
     }
   },
   {
     id: 'alaska1964', usgs: 'official19640328033616_30',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
-    name: ['1964 Great Alaska (Prince William Sound)', '1964年 アラスカ地震（プリンスウィリアム湾）', '1964 Alaska (Prince-William-Sund)', 'Аляска 1964 (залив Принца Уильяма)', 'Alaska 1964 (Estrecho del Príncipe Guillermo)'],
+    name: LA('1964 Great Alaska (Prince William Sound)','1964年 アラスカ地震（プリンスウィリアム湾）','1964 Alaska (Prince-William-Sund)','Аляска 1964 (залив Принца Уильяма)','Alaska 1964 (Estrecho del Príncipe Guillermo)'),
     when: '1964-03-28T03:36:14Z',
     lat: 60.908, lng: -147.339, depthKm: 25, mw: 9.2,
     strike: 246, dip: 10, rake: 90,
     lenKm: 800, widKm: 250, zTopKm: 4, nucAlong: 0.2,
     src: 'USGS; rupture area and slip after Plafker (1969), Johnson et al. (1996)',
     obs: {
-      intensity: ['MMI XI (Anchorage · Valdez · Seward)', '改正メルカリ XI（アンカレジ／バルディーズ／スワード）', 'MMI XI', 'MMI XI', 'MMI XI'],
+      intensity: LA('MMI XI (Anchorage · Valdez · Seward)','改正メルカリ XI（アンカレジ／バルディーズ／スワード）','MMI XI','MMI XI','MMI XI'),
       slipM: 'mean ≈ 18 m on the main asperity',
       tsunamiM: 'local wave to 67 m (Valdez Arm); 4.5 m at Crescent City, California',
       deaths: '131 (9 from shaking, 122 from the tsunami)',
-      note: ['The second-largest earthquake ever instrumentally recorded.', '観測史上2番目に大きい地震。', 'Das zweitstärkste je gemessene Beben.', 'Второе по силе землетрясение за историю наблюдений.', 'El segundo mayor terremoto jamás registrado.']
+      note: LA('The second-largest earthquake ever instrumentally recorded.','観測史上2番目に大きい地震。','Das zweitstärkste je gemessene Beben.','Второе по силе землетрясение за историю наблюдений.','El segundo mayor terremoto jamás registrado.')
     }
   },
   {
     id: 'sumatra2004', usgs: 'official20041226005853450_30',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
-    name: ['2004 Sumatra–Andaman (Indian Ocean)', '2004年 スマトラ島沖地震（インド洋大津波）', '2004 Sumatra–Andamanen', 'Суматра–Андаманы 2004', 'Sumatra–Andamán 2004'],
+    name: LA('2004 Sumatra–Andaman (Indian Ocean)','2004年 スマトラ島沖地震（インド洋大津波）','2004 Sumatra–Andamanen','Суматра–Андаманы 2004','Sumatra–Andamán 2004'),
     when: '2004-12-26T00:58:53Z',
     lat: 3.316, lng: 95.854, depthKm: 30, mw: 9.1,
     strike: 329, dip: 8, rake: 110,
     lenKm: 1300, widKm: 170, zTopKm: 5, nucAlong: 0.05,
     src: 'USGS NEIC / Global CMT; rupture length after Ammon et al. (2005), Lay et al. (2005)',
     obs: {
-      intensity: ['MMI IX (Banda Aceh)', '改正メルカリ IX（バンダ・アチェ）', 'MMI IX (Banda Aceh)', 'MMI IX (Банда-Ачех)', 'MMI IX (Banda Aceh)'],
+      intensity: LA('MMI IX (Banda Aceh)','改正メルカリ IX（バンダ・アチェ）','MMI IX (Banda Aceh)','MMI IX (Банда-Ачех)','MMI IX (Banda Aceh)'),
       slipM: 'mean ≈ 5–10 m, peak ≈ 20 m',
       tsunamiM: 'run-up to 30–51 m (northern Sumatra); 2–10 m across the Indian Ocean',
       deaths: '≈ 227,900 dead or missing across 14 countries',
-      note: ['Rupture ran roughly 1,300 km northward over about 10 minutes.', '破壊は約10分かけて北へ約1,300km進行。', 'Der Bruch lief in ~10 Minuten rund 1.300 km nach Norden.', 'Разрыв прошёл ~1 300 км на север примерно за 10 минут.', 'La ruptura avanzó ~1.300 km hacia el norte en unos 10 minutos.']
+      note: LA('Rupture ran roughly 1,300 km northward over about 10 minutes.','破壊は約10分かけて北へ約1,300km進行。','Der Bruch lief in ~10 Minuten rund 1.300 km nach Norden.','Разрыв прошёл ~1 300 км на север примерно за 10 минут.','La ruptura avanzó ~1.300 km hacia el norte en unos 10 minutos.')
     }
   },
   {
     id: 'kobe1995',
-    name: ['1995 Kobe (Great Hanshin-Awaji)', '阪神・淡路大震災（1995 兵庫県南部地震）', '1995 Kobe (Hanshin-Awaji)', 'Кобе 1995 (Хансин-Авадзи)', 'Kobe 1995 (Gran Hanshin-Awaji)'],
+    name: LA('1995 Kobe (Great Hanshin-Awaji)','阪神・淡路大震災（1995 兵庫県南部地震）','1995 Kobe (Hanshin-Awaji)','Кобе 1995 (Хансин-Авадзи)','Kobe 1995 (Gran Hanshin-Awaji)'),
     when: '1995-01-17T05:46:52+09:00',
     lat: 34.59, lng: 135.07, depthKm: 16, mw: 6.9,
     strike: 233, dip: 85, rake: 168,
     lenKm: 60, widKm: 20, zTopKm: 1, nucAlong: 0.45,
     src: 'JMA Mj 7.3 / USGS Mw 6.9; Nojima-fault mechanism after Kikuchi & Kanamori (1996)',
     obs: {
-      intensity: ['JMA 7 — the first time the class was ever assigned', 'JMA震度7（震度7が初めて適用された地震）', 'JMA 7 — erstmals vergeben', 'JMA 7 — впервые присвоена', 'JMA 7 — asignada por primera vez'],
+      intensity: LA('JMA 7 — the first time the class was ever assigned','JMA震度7（震度7が初めて適用された地震）','JMA 7 — erstmals vergeben','JMA 7 — впервые присвоена','JMA 7 — asignada por primera vez'),
       slipM: 'mean ≈ 1.5–2 m, right-lateral strike-slip',
       tsunamiM: 'none of consequence (inland strike-slip)',
       deaths: '6,434 dead, 43,792 injured',
-      note: ['A shallow crustal strike-slip event directly beneath a city — small moment, extreme local intensity.', '都市直下の浅い横ずれ断層。規模は小さいが局所の震度は極めて大きい。', 'Flaches Blattverschiebungsbeben direkt unter einer Stadt.', 'Мелкофокусный сдвиг прямо под городом.', 'Falla de desgarre somera justo bajo una ciudad.']
+      note: LA('A shallow crustal strike-slip event directly beneath a city — small moment, extreme local intensity.','都市直下の浅い横ずれ断層。規模は小さいが局所の震度は極めて大きい。','Flaches Blattverschiebungsbeben direkt unter einer Stadt.','Мелкофокусный сдвиг прямо под городом.','Falla de desgarre somera justo bajo una ciudad.')
     }
   },
   {
     id: 'kanto1923', usgs: 'iscgem911526',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
-    name: ['1923 Great Kantō', '関東大震災（1923 関東地震）', '1923 Großes Kantō-Beben', 'Великое землетрясение Канто 1923', 'Gran terremoto de Kantō de 1923'],
+    name: LA('1923 Great Kantō','関東大震災（1923 関東地震）','1923 Großes Kantō-Beben','Великое землетрясение Канто 1923','Gran terremoto de Kantō de 1923'),
     when: '1923-09-01T11:58:32+09:00',
     lat: 35.33, lng: 139.13, depthKm: 23, mw: 7.9,
     strike: 290, dip: 25, rake: 140,
     lenKm: 130, widKm: 70, zTopKm: 3, nucAlong: 0.35,
     src: 'JMA Mj 7.9; Sagami-trough rupture model after Kanamori (1971) and Matsu’ura et al. (2007)',
     obs: {
-      intensity: ['JMA 6 on the scale of the day (Sagami Bay coast, Tokyo lowlands)', '当時の階級で震度6（相模湾岸・東京低地）', 'JMA 6 (Skala von 1923)', 'JMA 6 (по шкале того времени)', 'JMA 6 (escala de la época)'],
+      intensity: LA('JMA 6 on the scale of the day (Sagami Bay coast, Tokyo lowlands)','当時の階級で震度6（相模湾岸・東京低地）','JMA 6 (Skala von 1923)','JMA 6 (по шкале того времени)','JMA 6 (escala de la época)'),
       slipM: 'mean ≈ 4–6 m on the Sagami trough',
       tsunamiM: 'up to 12 m at Atami; 6 m along the Bōsō coast',
       deaths: '≈ 105,000 dead or missing — most of them in the firestorms that followed',
-      note: ['Most of the loss came from fire, not from shaking: the simulator models the shaking only.', '被害の大半は地震動ではなく火災による。本シミュレータが計算するのは揺れのみ。', 'Der Großteil der Opfer entstand durch Feuer, nicht durch Erschütterung.', 'Большая часть жертв — от пожаров, а не от сотрясений.', 'La mayoría de las víctimas se debió a los incendios, no al temblor.']
+      note: LA('Most of the loss came from fire, not from shaking: the simulator models the shaking only.','被害の大半は地震動ではなく火災による。本シミュレータが計算するのは揺れのみ。','Der Großteil der Opfer entstand durch Feuer, nicht durch Erschütterung.','Большая часть жертв — от пожаров, а не от сотрясений.','La mayoría de las víctimas se debió a los incendios, no al temblor.')
     }
   },
   {
     id: 'turkiye2023', usgs: 'us6000jllz',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
-    name: ['2023 Kahramanmaraş (Türkiye–Syria)', '2023年 トルコ・シリア地震（カフラマンマラシュ）', '2023 Kahramanmaraş (Türkei–Syrien)', 'Кахраманмараш 2023 (Турция–Сирия)', 'Kahramanmaraş 2023 (Turquía–Siria)'],
+    name: LA('2023 Kahramanmaraş (Türkiye–Syria)','2023年 トルコ・シリア地震（カフラマンマラシュ）','2023 Kahramanmaraş (Türkei–Syrien)','Кахраманмараш 2023 (Турция–Сирия)','Kahramanmaraş 2023 (Turquía–Siria)'),
     when: '2023-02-06T01:17:35Z',
     lat: 37.226, lng: 37.014, depthKm: 10, mw: 7.8,
     strike: 228, dip: 89, rake: 1,
     lenKm: 350, widKm: 20, zTopKm: 0, nucAlong: 0.45,
     src: 'USGS NEIC / Global CMT; East Anatolian Fault rupture length after Melgar et al. (2023)',
     obs: {
-      intensity: ['MMI XI–XII (Antakya · Kahramanmaraş)', '改正メルカリ XI〜XII（アンタキヤ／カフラマンマラシュ）', 'MMI XI–XII', 'MMI XI–XII', 'MMI XI–XII'],
+      intensity: LA('MMI XI–XII (Antakya · Kahramanmaraş)','改正メルカリ XI〜XII（アンタキヤ／カフラマンマラシュ）','MMI XI–XII','MMI XI–XII','MMI XI–XII'),
       slipM: 'peak ≈ 8 m left-lateral on the East Anatolian Fault',
       tsunamiM: 'minor (≈ 0.2 m, İskenderun)',
       deaths: '≈ 53,500 in Türkiye and ≈ 8,500 in Syria',
-      note: ['A second Mw 7.5 event on the Çardak fault followed nine hours later; only the first is modelled here.', '9時間後にチャルダク断層でMw7.5が発生（本シミュレーションは第1震のみ）。', 'Neun Stunden später folgte ein Mw 7,5 auf der Çardak-Verwerfung.', 'Через девять часов последовало событие Mw 7,5 на разломе Чардак.', 'Nueve horas después siguió un Mw 7,5 en la falla de Çardak.']
+      note: LA('A second Mw 7.5 event on the Çardak fault followed nine hours later; only the first is modelled here.','9時間後にチャルダク断層でMw7.5が発生（本シミュレーションは第1震のみ）。','Neun Stunden später folgte ein Mw 7,5 auf der Çardak-Verwerfung.','Через девять часов последовало событие Mw 7,5 на разломе Чардак.','Nueve horas después siguió un Mw 7,5 en la falla de Çardak.')
     }
   },
   {
     id: 'wenchuan2008', usgs: 'usp000g650',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
-    name: ['2008 Wenchuan (Sichuan)', '四川大地震（2008 汶川地震）', '2008 Wenchuan (Sichuan)', 'Вэньчуань 2008 (Сычуань)', 'Wenchuan 2008 (Sichuan)'],
+    name: LA('2008 Wenchuan (Sichuan)','四川大地震（2008 汶川地震）','2008 Wenchuan (Sichuan)','Вэньчуань 2008 (Сычуань)','Wenchuan 2008 (Sichuan)'),
     when: '2008-05-12T06:28:01Z',
     lat: 31.002, lng: 103.322, depthKm: 19, mw: 7.9,
     strike: 229, dip: 33, rake: 141,
     lenKm: 300, widKm: 40, zTopKm: 0, nucAlong: 0.1,
     src: 'USGS NEIC / Global CMT; Longmenshan rupture after Shen et al. (2009), Xu et al. (2009)',
     obs: {
-      intensity: ['CSIS XI (Yingxiu · Beichuan) ≈ MMI XI', '中国震度階 XI（映秀・北川）≒ 改正メルカリ XI', 'CSIS XI ≈ MMI XI', 'CSIS XI ≈ MMI XI', 'CSIS XI ≈ MMI XI'],
+      intensity: LA('CSIS XI (Yingxiu · Beichuan) ≈ MMI XI','中国震度階 XI（映秀・北川）≒ 改正メルカリ XI','CSIS XI ≈ MMI XI','CSIS XI ≈ MMI XI','CSIS XI ≈ MMI XI'),
       slipM: 'peak ≈ 9 m, oblique thrust with a dextral component',
       tsunamiM: 'none (inland)',
       deaths: '69,227 dead, 17,923 missing, 374,643 injured',
-      note: ['The rupture ran ~300 km northeast along the Longmenshan thrust — strongly unilateral.', '龍門山断層に沿って北東へ約300km、強い一方向性の破壊。', 'Der Bruch lief ~300 km nach Nordosten — stark unilateral.', 'Разрыв прошёл ~300 км на северо-восток — резко односторонний.', 'La ruptura avanzó ~300 km al noreste — marcadamente unilateral.']
+      note: LA('The rupture ran ~300 km northeast along the Longmenshan thrust — strongly unilateral.','龍門山断層に沿って北東へ約300km、強い一方向性の破壊。','Der Bruch lief ~300 km nach Nordosten — stark unilateral.','Разрыв прошёл ~300 км на северо-восток — резко односторонний.','La ruptura avanzó ~300 km al noreste — marcadamente unilateral.')
     }
   },
   {
     id: 'haiti2010', usgs: 'usp000h60h',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
-    name: ['2010 Haiti (Léogâne)', '2010年 ハイチ地震（レオガン）', '2010 Haiti (Léogâne)', 'Гаити 2010 (Леоган)', 'Haití 2010 (Léogâne)'],
+    name: LA('2010 Haiti (Léogâne)','2010年 ハイチ地震（レオガン）','2010 Haiti (Léogâne)','Гаити 2010 (Леоган)','Haití 2010 (Léogâne)'),
     when: '2010-01-12T21:53:10Z',
     lat: 18.443, lng: -72.571, depthKm: 13, mw: 7.0,
     strike: 251, dip: 70, rake: 28,
     lenKm: 50, widKm: 15, zTopKm: 1, nucAlong: 0.5,
     src: 'USGS NEIC / Global CMT; Enriquillo–Plantain Garden / Léogâne fault geometry after Calais et al. (2010), Hayes et al. (2010)',
     obs: {
-      intensity: ['MMI IX (Port-au-Prince · Léogâne)', '改正メルカリ IX（ポルトープランス／レオガン）', 'MMI IX', 'MMI IX', 'MMI IX'],
+      intensity: LA('MMI IX (Port-au-Prince · Léogâne)','改正メルカリ IX（ポルトープランス／レオガン）','MMI IX','MMI IX','MMI IX'),
       slipM: 'mean ≈ 2–4 m, oblique left-lateral with a reverse component',
       tsunamiM: 'local waves to 3 m (Petit-Goâve, Jacmel)',
       deaths: '100,000 – 316,000 (published estimates differ by a factor of three)',
-      note: ['Most of the slip was on a blind thrust beside the Enriquillo fault, not on the fault itself.', 'すべりの大半はエンリキヨ断層そのものではなく、隣接する伏在逆断層で起きた。', 'Der Großteil des Versatzes lag auf einer blinden Aufschiebung neben der Enriquillo-Störung.', 'Основная подвижка произошла на скрытом взбросе рядом с разломом Энрикильо.', 'La mayor parte del desplazamiento ocurrió en un cabalgamiento ciego junto a la falla de Enriquillo.']
+      note: LA('Most of the slip was on a blind thrust beside the Enriquillo fault, not on the fault itself.','すべりの大半はエンリキヨ断層そのものではなく、隣接する伏在逆断層で起きた。','Der Großteil des Versatzes lag auf einer blinden Aufschiebung neben der Enriquillo-Störung.','Основная подвижка произошла на скрытом взбросе рядом с разломом Энрикильо.','La mayor parte del desplazamiento ocurrió en un cabalgamiento ciego junto a la falla de Enriquillo.')
     }
   },
   /* ══ (#R236) 「また、能登半島地震も追加して。」 ═══════════════════════════════════════════════════
@@ -194,18 +203,18 @@ export const QUAKE_EVENTS = [
      records do not show. */
   {
     id: 'noto2024', usgs: 'us6000m0xl',   /* ShakeMap rupture.json — the published finite-fault outline */
-    name: ['2024 Noto Peninsula', '2024年 能登半島地震', '2024 Noto-Halbinsel', 'Полуостров Ното, 2024', 'Península de Noto 2024'],
+    name: LA('2024 Noto Peninsula','2024年 能登半島地震','2024 Noto-Halbinsel','Полуостров Ното, 2024','Península de Noto 2024'),
     when: '2024-01-01T07:10:09Z',
     lat: 37.49, lng: 137.27, depthKm: 10, mw: 7.5,
     strike: 55, dip: 28, rake: 102,
     lenKm: 150, widKm: 40, zTopKm: 1, nucAlong: 0.5,
     src: 'USGS ShakeMap us6000m0xl v10 (M7.5, 37.49°N 137.27°E, 10.0 km, 2024-01-01 07:10:09 UTC); JMA Mj 7.6, 最大震度7; rupture extent after the JMA aftershock distribution and the GSI GNSS/InSAR coseismic field',
     obs: {
-      intensity: ['JMA 7 (Shika, Ishikawa); MMI IX', 'JMA震度7（石川県志賀町）／改正メルカリ IX', 'JMA 7 (Shika); MMI IX', 'JMA 7 (Сика); MMI IX', 'JMA 7 (Shika); MMI IX'],
+      intensity: LA('JMA 7 (Shika, Ishikawa); MMI IX','JMA震度7（石川県志賀町）／改正メルカリ IX','JMA 7 (Shika); MMI IX','JMA 7 (Сика); MMI IX','JMA 7 (Shika); MMI IX'),
       slipM: 'peak ≈ 4–6 m on the shallow part of the plane; coastal uplift to ≈ 4 m near Wajima (GSI)',
       tsunamiM: 'run-up to ≈ 4–5 m on the peninsula (Suzu · Noto); ~80 cm at Toyama',
       deaths: '504 dead incl. disaster-related, 3 missing (Ishikawa Pref., 2024)',
-      note: ['A reverse-fault rupture on the peninsula’s north coast that lifted the coastline out of the sea — the ground itself rose, so several fishing harbours were left dry.', '半島北岸の逆断層による破壊で、海岸線そのものが隆起した——地盤が持ち上がったため、いくつもの漁港が干上がった。', 'Ein Aufschiebungsbruch an der Nordküste hob die Küstenlinie aus dem Meer — mehrere Fischereihäfen fielen trocken.', 'Взбросовый разрыв у северного побережья поднял береговую линию из моря — несколько рыбацких портов осушились.', 'Una ruptura inversa en la costa norte levantó la línea de costa fuera del mar — varios puertos pesqueros quedaron en seco.']
+      note: LA('A reverse-fault rupture on the peninsula’s north coast that lifted the coastline out of the sea — the ground itself rose, so several fishing harbours were left dry.','半島北岸の逆断層による破壊で、海岸線そのものが隆起した——地盤が持ち上がったため、いくつもの漁港が干上がった。','Ein Aufschiebungsbruch an der Nordküste hob die Küstenlinie aus dem Meer — mehrere Fischereihäfen fielen trocken.','Взбросовый разрыв у северного побережья поднял береговую линию из моря — несколько рыбацких портов осушились.','Una ruptura inversa en la costa norte levantó la línea de costa fuera del mar — varios puertos pesqueros quedaron en seco.')
     }
   }
 ];
