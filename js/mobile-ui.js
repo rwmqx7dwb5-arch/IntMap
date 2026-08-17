@@ -466,7 +466,12 @@ window.IntMapModules.layoutReflow=function(HOST){
         +'@media(max-width:768px){ #sb-resizer{ display:none; } }'; };
       styleEl.textContent='@media(max-width:768px){ #sb-resizer{ display:none; } }';
       try{ const w=parseInt(localStorage.getItem('intmap_sidebar_w')||'',10); if(w>=320&&w<=Math.max(760,window.innerWidth-60)) setW(w); }catch(_){}   /* (#R62) may span almost the full window */
-      const h=document.createElement('div'); h.id='sb-resizer'; h.title='Drag to resize';
+      /* ⚠ (#R251) this title was a bare English literal, so it read the same in all nine languages;
+         and it is set ONCE on an element that outlives the language, so it also has to follow it.
+         Found by tests/r251.spec.js, which reads `title` as well as text. */
+      const h=document.createElement('div'); h.id='sb-resizer';
+      const _ht=()=>{ h.title=window.IntMapLang.t(HOST.lang,'Drag to resize','高さを調節','Zum Ändern der Höhe ziehen','Потяните, чтобы изменить размер','Arrastra para redimensionar'); };
+      _ht(); window.addEventListener('intmap-lang',()=>setTimeout(_ht,30));
       h.style.cssText='position:absolute;top:0;right:-3px;width:8px;height:100%;cursor:col-resize;z-index:1200;touch-action:none;';
       sb.appendChild(h);
       let drag=false,sx=0,sw=0;

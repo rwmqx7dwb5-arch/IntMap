@@ -37,6 +37,10 @@ window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.aircraftDetail=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const L=window.IntMapLang.pick(()=>HOST.lang);
+  /* (#R251) …and the ARRAY form, for the emitter-category table below — see `pickArgs` in
+     js/lang-registry.js. `CAT` held its five languages as a bare array literal, which is not a call,
+     so none of its sixteen rows was in the inline universe and fr/ko/zh/zh-hans read English. */
+  const LA=window.IntMapLang.pickArgs();
   const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
   const U=(v)=>{ try{ return window.IntMapSafe.url(String(v||'')); }catch(_){ return ''; } };
   const KT=0.514444, FT=3.28084;
@@ -52,25 +56,28 @@ window.IntMapModules.aircraftDetail=function(HOST){
          great many transponders report A0, which means "no information" — printing "A0" as if it were a
          fact is worse than printing nothing, so the card shows the meaning and drops the empty ones. */
   const CAT={
-    A1:['Light (< 7 t)','小型機（7 t 未満）','Leicht (< 7 t)','Лёгкий (< 7 т)','Ligero (< 7 t)'],
-    A2:['Small (7–34 t)','中型機（7〜34 t）','Klein (7–34 t)','Малый (7–34 т)','Pequeño (7–34 t)'],
-    A3:['Large (34–136 t)','大型機（34〜136 t）','Groß (34–136 t)','Крупный (34–136 т)','Grande (34–136 t)'],
-    A4:['High-vortex large (B757)','大型・高後方乱気流（B757）','Große Wirbelschleppe (B757)','Крупный, сильный след (B757)','Gran estela (B757)'],
-    A5:['Heavy (> 136 t)','超大型機（136 t 超）','Schwer (> 136 t)','Тяжёлый (> 136 т)','Pesado (> 136 t)'],
-    A6:['High performance (> 5 g, > 400 kn)','高性能機（5 g・400 kn 超）','Hochleistung (> 5 g, > 400 kn)','Высокоманёвренный (> 5 g, > 400 уз)','Alto rendimiento (> 5 g, > 400 kn)'],
-    A7:['Rotorcraft','回転翼機','Drehflügler','Винтокрылый','Aeronave de alas giratorias'],
-    B1:['Glider / sailplane','グライダー','Segelflugzeug','Планёр','Planeador'],
-    B2:['Lighter-than-air','軽航空機（気球・飛行船）','Leichter als Luft','Легче воздуха','Más ligero que el aire'],
-    B3:['Parachutist','パラシュート','Fallschirmspringer','Парашютист','Paracaidista'],
-    B4:['Ultralight / paraglider','超軽量動力機・パラグライダー','Ultraleicht / Gleitschirm','Сверхлёгкий / параплан','Ultraligero / parapente'],
-    B6:['Unmanned aircraft','無人航空機','Unbemannt','Беспилотник','No tripulado'],
-    B7:['Space / trans-atmospheric','宇宙機・大気圏往還機','Raumfahrzeug','Космический аппарат','Vehículo espacial'],
-    C1:['Surface — emergency vehicle','地上車両（緊急）','Bodenfahrzeug (Einsatz)','Наземный транспорт (экстренный)','Vehículo de emergencia'],
-    C2:['Surface — service vehicle','地上車両（作業）','Bodenfahrzeug (Dienst)','Наземный транспорт (служебный)','Vehículo de servicio'],
-    C3:['Point obstacle','点状障害物','Punkthindernis','Точечное препятствие','Obstáculo puntual']
+    A1:LA('Light (< 7 t)','小型機（7 t 未満）','Leicht (< 7 t)','Лёгкий (< 7 т)','Ligero (< 7 t)'),
+    A2:LA('Small (7–34 t)','中型機（7〜34 t）','Klein (7–34 t)','Малый (7–34 т)','Pequeño (7–34 t)'),
+    A3:LA('Large (34–136 t)','大型機（34〜136 t）','Groß (34–136 t)','Крупный (34–136 т)','Grande (34–136 t)'),
+    A4:LA('High-vortex large (B757)','大型・高後方乱気流（B757）','Große Wirbelschleppe (B757)','Крупный, сильный след (B757)','Gran estela (B757)'),
+    A5:LA('Heavy (> 136 t)','超大型機（136 t 超）','Schwer (> 136 t)','Тяжёлый (> 136 т)','Pesado (> 136 t)'),
+    A6:LA('High performance (> 5 g, > 400 kn)','高性能機（5 g・400 kn 超）','Hochleistung (> 5 g, > 400 kn)','Высокоманёвренный (> 5 g, > 400 уз)','Alto rendimiento (> 5 g, > 400 kn)'),
+    A7:LA('Rotorcraft','回転翼機','Drehflügler','Винтокрылый','Aeronave de alas giratorias'),
+    B1:LA('Glider / sailplane','グライダー','Segelflugzeug','Планёр','Planeador'),
+    B2:LA('Lighter-than-air','軽航空機（気球・飛行船）','Leichter als Luft','Легче воздуха','Más ligero que el aire'),
+    B3:LA('Parachutist','パラシュート','Fallschirmspringer','Парашютист','Paracaidista'),
+    B4:LA('Ultralight / paraglider','超軽量動力機・パラグライダー','Ultraleicht / Gleitschirm','Сверхлёгкий / параплан','Ultraligero / parapente'),
+    B6:LA('Unmanned aircraft','無人航空機','Unbemannt','Беспилотник','No tripulado'),
+    B7:LA('Space / trans-atmospheric','宇宙機・大気圏往還機','Raumfahrzeug','Космический аппарат','Vehículo espacial'),
+    C1:LA('Surface — emergency vehicle','地上車両（緊急）','Bodenfahrzeug (Einsatz)','Наземный транспорт (экстренный)','Vehículo de emergencia'),
+    C2:LA('Surface — service vehicle','地上車両（作業）','Bodenfahrzeug (Dienst)','Наземный транспорт (служебный)','Vehículo de servicio'),
+    C3:LA('Point obstacle','点状障害物','Punkthindernis','Точечное препятствие','Obstáculo puntual')
   };
+  /* ⚠ (#R251) RESOLVED THROUGH `pick()` ITSELF — `L.arr()` — not by subscripting the row. Spelling
+     out `L(a[0],…,a[4])` gave the first five languages the right word and every language past them
+     English for ever, because the inline table is only consulted by `pick()`. */
   function catTxt(c){ const k=String(c||'').toUpperCase(), a=CAT[k]; if(!a) return '';
-    return L(a[0],a[1],a[2],a[3],a[4])+' ('+k+')'; }
+    return L.arr(a)+' ('+k+')'; }
 
   /* ─── WHICH SIMULATOR AIRCRAFT. A ladder over what the feed actually knows, most reliable first:
          ① the DO-260B emitter category, when the transponder reports a real one;

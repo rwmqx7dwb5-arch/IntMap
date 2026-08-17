@@ -46,8 +46,31 @@ import { execFileSync } from 'node:child_process';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LOCALES = join(ROOT, 'js', 'locales');
-const run = (f, ...a) => JSON.parse(execFileSync(process.execPath, [join(ROOT, 'scripts', f), '--json', ...a],
-  { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
+/* ⚠⚠⚠ (#R251) AN INSTRUMENT THAT CANNOT SAY WHICH CHILD FAILED IS THE DEFECT IT EXISTS TO FIND.
+   This was a bare `JSON.parse(execFileSync(…))`, and when a child died on CI the whole gate printed
+   one line — `<anonymous_script>:1` — with no file name, no exit code and no stderr, because the
+   child's own error went nowhere and the parse then failed on an empty string. Three CI runs were
+   spent guessing. The child's stderr is INHERITED (so it lands in the log where it happened), the
+   exit status is reported with the script that produced it, and a parse failure says which file
+   returned unreadable JSON and how much of it there was. */
+const run = (f, ...a) => {
+  let out;
+  try {
+    out = execFileSync(process.execPath, [join(ROOT, 'scripts', f), '--json', ...a],
+      { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, stdio: ['ignore', 'pipe', 'inherit'] });
+  } catch (e) {
+    console.error(`
+✗ scripts/${f} --json ${a.join(' ')} failed: ${e.status != null ? 'exit ' + e.status : e.code || e.message}`);
+    process.exit(1);
+  }
+  try { return JSON.parse(out); }
+  catch (e) {
+    console.error(`
+✗ scripts/${f} --json ${a.join(' ')} returned ${out.length} byte(s) that are not JSON: ${e.message}`);
+    console.error(out.slice(0, 400));
+    process.exit(1);
+  }
+};
 
 const app = run('i18n-report.mjs');
 const keyed = run('i18n-keyed-audit.mjs');
@@ -135,6 +158,16 @@ const rows = app.rows.map((r) => {
     /* one of the two is `n/a` for every language, by construction: the first five carry their
        translations as ARGUMENTS at the call site, the rest carry them in an `inline` table. */
     inline: r.positional ? null : [r.inline, app.inlineWant],
+    /* ⚠⚠⚠ (#R251) HOW MANY INLINE ROWS ARE STILL THE ENGLISH STRING. #R239 wrote the rule after an
+       instrument it had just written called an English copy 100 % — 「被覆は『存在する』でなく
+       『英語と違う』」 — and applied it to the reading pages. The inline table still counted
+       PRESENCE, and `node scripts/i18n-new-language.mjs it` writes 3,576 rows whose value IS the
+       key, on purpose, so the language is readable from its first commit. The column above then
+       said 100.0 % and `--todo it` named only the 367 page strings. Printed, not subtracted: a row
+       that equals its key is often right (「Satellite」, 「Zoom」, 「Distance」 and 「Atlas」 are
+       French; 「km」 and 「UTC」 are everybody's), and certifying 213 of those as reviewed is a claim
+       no instrument here has earned. The NUMBER is the signal, and --todo now says it. */
+    identical: r.positional ? null : (r.identical || 0),
     positional: ps ? [pos.sites - ps.same, pos.sites] : null,
     pages: [pg.have, pg.want],
     pagesFile: pg.file !== false,
@@ -142,8 +175,14 @@ const rows = app.rows.map((r) => {
 });
 
 const pct = (p) => (p ? `${String(p[0]).padStart(5)}/${String(p[1]).padEnd(5)} ${(100 * p[0] / Math.max(1, p[1])).toFixed(1).padStart(5)}%` : '        n/a        ');
+/* ⚠ (#R251) …and «=EN» counts. A language every one of whose inline rows is still the English
+   string is not translated, whatever the presence column says — that is the whole point of the
+   column. The threshold is HALF the table rather than zero, because a handful of rows legitimately
+   equal their key in any language (units, product names, cognates) and the four shipping languages
+   sit at 11–213 of 3,576. A skeleton sits at 3,576. */
 const shortOf = (r) => (r.keyed[0] < r.keyed[1]) || (r.inline && r.inline[0] < r.inline[1])
-  || (r.positional && r.positional[0] < r.positional[1]) || (r.pages[0] < r.pages[1]);
+  || (r.positional && r.positional[0] < r.positional[1]) || (r.pages[0] < r.pages[1])
+  || (r.inline && r.identical > r.inline[1] / 2);
 
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short, unkeyedAttrs: attrs.total, positionalArrays: arrays.hits.length, langMaps: langmap.total, pairs: pairs.total, unlocalisedDocs: docs.bad }));
@@ -160,6 +199,7 @@ if (wantTodo >= 0) {
   console.log(`# what is left for «${code}»`);
   if (r.keyed[0] < r.keyed[1]) console.log(`node scripts/i18n-keyed-audit.mjs --missing ${code}   # ${r.keyed[1] - r.keyed[0]} keyed strings`);
   if (r.inline && r.inline[0] < r.inline[1]) console.log(`node scripts/i18n-report.mjs --missing ${code}   # ${r.inline[1] - r.inline[0]} inline strings`);
+  if (r.identical) console.log(`node scripts/i18n-report.mjs --identical ${code}   # ${r.identical} inline rows are still the English string`);
   if (pg && !pg.file) console.log(`node scripts/i18n-pages-audit.mjs --template ${pg.html}   # the reading pages do not exist`);
   else if (pg && pg.have < pg.want) console.log(`node scripts/i18n-pages-audit.mjs --missing ${pg.html}   # ${pg.want - pg.have} reading-page strings`);
   if (r.positional && r.positional[0] < r.positional[1]) console.log(`node scripts/i18n-positional-audit.mjs --all   # ${r.positional[1] - r.positional[0]} call-site arguments still English`);
@@ -168,11 +208,12 @@ if (wantTodo >= 0) {
 }
 
 console.log('IntMap · translation coverage — every surface, every language  (#R239)\n');
-console.log('lang      keyed  ui table       inline L(…) table    positional L(…) args   reading pages');
+console.log('lang      keyed  ui table       inline L(…) table    positional L(…) args   reading pages        =EN');
 for (const r of rows) {
   console.log(r.code.padEnd(9)
     + pct(r.keyed) + '  ' + pct(r.inline) + '  ' + pct(r.positional) + '  '
     + (r.pagesFile ? pct(r.pages) : '   NO pages.*.js FILE')
+    + (r.identical == null ? '      n/a' : String(r.identical).padStart(9))
     + (shortOf(r) ? '   ⚠' : ''));
 }
 console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.total}`

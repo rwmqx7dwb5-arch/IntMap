@@ -9,11 +9,19 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.mapReadout=function(HOST){
+  /* (#R251) the module's language helper. It used to be bound INSIDE `tropicLabel()` only, so the
+     tsunami readout below — which this round moved off a private two-language helper — referenced a
+     free identifier; scripts/static-checks.mjs `split-scope` caught that before a browser did.
+     ⚠ LAZY, because tests/r169 #4 holds this repo to «a factory body does nothing while it runs» —
+     a module factory may DECLARE, never CALL, and `IntMapLang.pick()` is a call. Binding on first
+     use also means it is bound after the registry exists, which is the ordering every module here
+     already relies on. */
+  let _L=null;
+  const L=(...a)=>{ if(!_L) _L=window.IntMapLang.pick(()=>HOST.lang); return _L(...a); };
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* ===== Grid (zoom-adaptive, red equator, 山吹色 tropics) ===== */
   const TROPIC_LAT=23.4362;   /* (#R210) mean obliquity of the ecliptic, this epoch — not 23.5 */
   function tropicLabel(side){
-    const L=window.IntMapLang.pick(()=>HOST.lang);
     return side==='n'
       ? L('Tropic of Cancer','北回帰線','Wendekreis des Krebses','Северный тропик','Trópico de Cáncer')
       : L('Tropic of Capricorn','南回帰線','Wendekreis des Steinbocks','Южный тропик','Trópico de Capricornio');
@@ -551,10 +559,13 @@ const _wxCache=new Map();
             ? Math.round(p.arrivalS/60)+' min'
             : Math.floor(p.arrivalS/3600)+' h '+Math.round((p.arrivalS%3600)/60)+' min');
           const h=(p.maxM==null)?null:(Math.abs(p.maxM)>=0.1?p.maxM.toFixed(2):p.maxM.toFixed(3))+' m';
-          const L5=(en,jp)=>HOST.lang==='jp'?jp:en;
-          HOST.lastLayerVal='🌊 '+(t?(L5('arrives','到達')+' '+t):L5('no arrival','未到達'))
-            +(h?(' · '+L5('max','最大波高')+' '+h):'')
-            +((p.coastalM!=null)?(' · '+L5('coast','沿岸')+' '+p.coastalM.toFixed(1)+' m'):'');
+          /* ⚠⚠ (#R251) `const L5=(en,jp)=>HOST.lang==='jp'?jp:en;` WAS THE WHOLE TRANSLATION
+             MECHANISM FOR THIS READOUT — a private two-language helper, so the tsunami readout was
+             English in seven of the nine languages, and invisible to every instrument: the
+             two-branch audit wants a ternary between two LITERALS, and these are parameters. */
+          HOST.lastLayerVal='🌊 '+(t?(L('arrives','到達','Ankunft','приход','llegada')+' '+t):L('no arrival','未到達','keine Ankunft','нет прихода','sin llegada'))
+            +(h?(' · '+L('max','最大波高','max. Höhe','макс.','máx.')+' '+h):'')
+            +((p.coastalM!=null)?(' · '+L('coast','沿岸','Küste','побережье','costa')+' '+p.coastalM.toFixed(1)+' m'):'');
           return; } } }catch(_){}
     const lyr=activeWxLayer();
     if(!lyr){ /* no weather layer → show the active numeric choropleth's value at the cursor (#R13c) */

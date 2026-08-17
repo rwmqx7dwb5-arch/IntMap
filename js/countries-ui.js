@@ -44,6 +44,29 @@ window._imCldrRegion=function(a2,lang){
 };
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.countriesUi=function(HOST){
+  /* (#R251) the seven continent names the country table carries in `region`, as calls.
+     ⚠ BUILT ON FIRST USE, NOT AT FACTORY LEVEL. tests/r168 #4 holds this repo to «a factory body
+     does nothing while it runs» — a module factory may DECLARE, never CALL — and both
+     `IntMapLang.pick()` and `LA(…)` are calls. Lazy also means the table is built after the
+     registry exists, which is the ordering every other module relies on. */
+  let _REGIONS=null, _LR=null;
+  function _regionName(r){
+    if(!r) return r;
+    if(!_REGIONS){
+      _LR=window.IntMapLang.pick(()=>HOST.lang);
+      const A=window.IntMapLang.pickArgs();
+      _REGIONS={
+        'Africa':A('Africa','アフリカ','Afrika','Африка','África'),
+        'Asia':A('Asia','アジア','Asien','Азия','Asia'),
+        'Europe':A('Europe','ヨーロッパ','Europa','Европа','Europa'),
+        'North America':A('North America','北アメリカ','Nordamerika','Северная Америка','América del Norte'),
+        'South America':A('South America','南アメリカ','Südamerika','Южная Америка','América del Sur'),
+        'Oceania':A('Oceania','オセアニア','Ozeanien','Океания','Oceanía'),
+        'Antarctica':A('Antarctica','南極','Antarktika','Антарктида','Antártida'),
+      };
+    }
+    const t=_REGIONS[r]; return t?_LR.arr(t):r;
+  }
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R172) THROUGH IntMapGeoEngine — this module no longer names the renderer. */
@@ -545,7 +568,11 @@ window.IntMapModules.countriesUi=function(HOST){
     arr.forEach((s,i)=>{
       const active=HOST.compareSet.has(s.code)?'compare-on':'';
       /* (#R102) region / capital separated by a SLASH (was a middot); the value column shows the number only. */
-      const subline=`${s.region||''}${(s.region&&s.capital)?' / ':''}${s.capital||''}`;
+      /* ⚠ (#R251) THE CONTINENT WAS PRINTED RAW. `s.region` is English in the table, so the sub-line
+         under every country name read «Europe / Berlin» in all nine languages — found by
+         tests/r251.spec.js, which reads the rendered DOM rather than the source. The seven regions
+         are a closed set, so they are a table of calls; the capital is a place name and stays. */
+      const subline=`${s.region?_regionName(s.region):''}${(s.region&&s.capital)?' / ':''}${s.capital||''}`;
       const rankHTML=_showRank?`<span class="stat-rank">${_rankOf.get(s.code)||'—'}</span>`:'';
       /* (#R115) native hover tooltip = the FULL country name (the .stat-name is ellipsized on narrow cards). */
       html+=`<div class="stat-row ${active}" data-ccn="${s.code}" title="${String(HOST.cName(s)||'').replace(/"/g,'&quot;')}">${rankHTML}<span class="stat-flag">${s.flag||'🏳️'}</span><div class="stat-main"><div class="stat-name">${HOST.cName(s)}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;

@@ -48,7 +48,9 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
+import { exposedHelpers, context } from './i18n-helpers.mjs';
 
+const EXPOSED = exposedHelpers();
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const JS = join(ROOT, 'js');
 /* the registry owns the language machinery; the locale files ARE the tables this is about */
@@ -66,6 +68,8 @@ const JA = /[぀-ヿ㐀-鿿！-｠]/;
    word beside it — «Coal», «Gas», «Oil» — is a translation and not a code. Keeping the strict rule
    made this file measure three of those rows by their COLOUR instead of by their label. */
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
+/* a letter of some alphabet the app's nine languages are written in — Latin, Cyrillic or Greek */
+const LETTERED = /[A-Za-zÀ-ÖØ-öø-ÿĀ-ſЀ-ӿΆ-ώ]/;
 const KEYISH = /^[a-z0-9]+([_.][a-z0-9]+)+$/;              /* coal_share_of_electricity__pct */
 const FILEISH = /^[\w./-]+\.(png|jpg|jpeg|svg|gz|json|js|css|webp|bin|tle)$/i;
 const URLISH = /^[^\s]*[=&?][^\s]*$/;
@@ -101,6 +105,16 @@ const MARKER = /@i18n-entity-data\b/;
 const ISOISH = /^[A-Z]{2,3}$/;                               /* US, USA, JPN — ISO-3166 / ticker */
 const TICKER = /^[A-Z][A-Z0-9.\-]{0,5}$/;                    /* AAPL, BRK.B, 7203.T */
 const DOMAIN = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i;               /* apple.com */
+/* ⚠⚠ (#R251) …AND A PACKED RECORD, WHICH IS THE FOURTH NON-LINGUISTIC KEY. js/newsgeo.js's two
+   matcher tables hold ONE STRING PER ENTITY with its spellings and its flags packed into fields:
+       'MM|Nay Pyi Taw;Naypyitaw'                                        (iso2 | aliases)
+       'New York Times;NY Times;NYT;ニューヨークタイムズ;…|x||'          (aliases | kind | | )
+   Those are 35 pairs of the OPEN GAP, and translating them is not merely wasted — it would BREAK
+   the matcher, which compares incoming headlines against exactly these spellings. They carry no
+   separate ISO/ticker/coordinate slot to validate against, because the key is INSIDE the string.
+   A `|` field separator is the structural signal: a sentence the app wrote never contains one, so
+   this cannot be used to silence prose (which is what the whole marker mechanism is guarding). */
+const PACKED = /^[^|\r\n]{1,200}\|[^|\r\n]*(\||$)/;
 /* a coordinate PAIR: two numbers in range, at least one of which is not a small integer (a year,
    a count and a percentage are all small integers; a longitude almost never is) */
 function hasEntityKey(node) {
@@ -109,6 +123,19 @@ function hasEntityKey(node) {
     ArrayExpression(n) { if (scanKeys(n.elements)) found = true; },
     CallExpression(n) { if (scanKeys(n.arguments)) found = true; },
     NewExpression(n) { if (scanKeys(n.arguments)) found = true; },
+    /* ⚠ (#R251) …AND A CONTAINER WHOSE OWN PROPERTY KEYS ARE THE ENTITY CODES. js/tables.js's
+       `CO_CC={ USA:[…], CHN:[…], TWN:[…] }` carries its ISO-3166 alpha-3 key as the PROPERTY NAME,
+       not as a slot in the row, so every rule above looked straight past it. ⚠ Three or more, and
+       UPPER CASE, on purpose: `{en:…, jp:…}` is the ELEVENTH shape and must never be excused here,
+       and language codes are lower case throughout this repository. */
+    ObjectExpression(n) {
+      let k = 0;
+      for (const p of n.properties) {
+        const key = p.key && (p.key.name || p.key.value);
+        if (typeof key === 'string' && ISOISH.test(key)) k++;
+      }
+      if (k >= 3) found = true;
+    },
   });
   return found;
 }
@@ -123,7 +150,7 @@ function scanKeys(list) {
   }
   for (const e of list) {
     if (!e || e.type !== 'Literal' || typeof e.value !== 'string') continue;
-    if (ISOISH.test(e.value) || TICKER.test(e.value) || DOMAIN.test(e.value)) return true;
+    if (ISOISH.test(e.value) || TICKER.test(e.value) || DOMAIN.test(e.value) || PACKED.test(e.value)) return true;
   }
   return false;
 }
@@ -183,6 +210,7 @@ function langNames(ast, src) {
 }
 
 const hits = [];
+const pairs = [];                  /* (#R251) every pair of every reported container, with offsets */
 const exempt = [];                 /* counted, printed, never gated */
 const badMarkers = [];             /* a marker on something that is not entity data — an ERROR */
 for (const [full, rel] of files) {
@@ -220,11 +248,28 @@ for (const [full, rel] of files) {
     ranges.push([owner.start, owner.end]);
   }
   const marked = (n) => ranges.some(([s, e]) => n.start >= s && n.end <= e);
-  const LANG = langNames(ast, src);
+  /* ⚠⚠ (#R251) …AND THE LOCAL NAMES COME FROM THE SAME PLACE AS THE PROPERTY NAMES.
+     `langNames()` below walked a binding's initialiser through `LogicalExpression → right`, so
+     js/space-cosmos.js's and js/engine-select.js's deliberately guarded binding —
+     `var LA = (root.IntMapLang && root.IntMapLang.pickArgs()) || function(){…}`, written that way
+     because those two modules evaluate before js/lang-registry.js in some entry orders — resolved to
+     the FALLBACK function and matched nothing. Both files are already fully converted, and all 19 of
+     their call sites were reported as an OPEN GAP. Reading the binding correctly is one question, so
+     it is asked once, in scripts/i18n-helpers.mjs. */
+  const LANG = context(rel.replace(/^js\//, ''), 'loose').names;
   const isLangCall = (c) => {
     if (c.type === 'Identifier') return LANG.has(c.name);
     if (c.type !== 'MemberExpression' || c.computed) return false;
     const p = c.property.name;
+    /* ⚠⚠⚠ (#R251) THE SIXTEENTH SHAPE — A HELPER REACHED THROUGH A PROPERTY OF ANOTHER MODULE.
+       `HOST._coL('Market cap','時価総額','Marktkap.','Капитализация','Cap. bursátil')` is a complete
+       five-language call, and this file reported all 55 of js/companies-ui.js's as an OPEN GAP for
+       five rounds — because «already a translation call» was resolved from the file being read, and
+       `_coL` is bound in js/app-body.js. Crying wolf is the milder half of that bug: the same
+       per-file question left those 65 sites out of the inline universe entirely, so fr/ko/zh/zh-hans
+       had no row for them. The property names are resolved repo-wide, once, in
+       scripts/i18n-helpers.mjs, which the report and the positional audit read too. */
+    if (EXPOSED.has(p)) return true;
     if (p === 'arr' || p === 'apply' || p === 'call') return isLangCall(c.object) || c.object.type === 'MemberExpression';
     /* window.IntMapLang.t(…) and friends */
     let cur = c.object, s = p;
@@ -265,6 +310,54 @@ for (const [full, rel] of files) {
       if (isMatcher) { exempt.push({ ...rec, why: 'match-term list' }); return; }
       if (marked(node)) { exempt.push({ ...rec, why: 'entity data (@i18n-entity-data)' }); return; }
       hits.push(rec);
+      /* ⚠⚠⚠ (#R251) …AND EVERY PAIR OF THE CONTAINER, WITH ITS BYTE OFFSETS, FOR THE REWRITER.
+         The finding above is deliberately ONE PER CONTAINER — a five-language row is one thing to
+         fix. But scripts/i18n-pair-apply.mjs has to rewrite EVERY pair, and a container routinely
+         holds two (`_dc(…, title_en, title_ja, body_en, body_ja, …)`); a rewriter that re-derived
+         «which pairs count» would be a second copy of the exemption rules above, and the first
+         thing it would get wrong is `@i18n-entity-data`. So the owner of the question answers it. */
+      for (let k = i; k + 1 < list.length; k++) {
+        const x = list[k], y = list[k + 1];
+        if (!x || !y || x.type !== 'Literal' || y.type !== 'Literal') continue;
+        if (typeof x.value !== 'string' || typeof y.value !== 'string') continue;
+        const xJa = JA.test(x.value), yJa = JA.test(y.value);
+        if (xJa === yJa) continue;
+        if (!isProse(xJa ? y.value : x.value)) continue;
+        /* ⚠⚠⚠ (#R251) …AND THE THREE SLOTS AFTER IT, WHEN THEY ARE ALREADY de/ru/es.
+           js/seismic-events.js writes `name:['2011 Tōhoku…','東日本大震災…','2011 Tōhoku (Großes…',
+           'Тохоку 2011…','Tōhoku 2011…']` — a complete five-language tuple that is merely not a
+           CALL. A rewriter that replaced only the (en, ja) pair would produce
+           `[LA(en,ja,de,ru,es), 'de…', 'ru…', 'es…']` — the row silently grown by three stale
+           copies. The three following slots qualify only if ALL THREE are prose in a non-Japanese
+           script, which is what separates a five-language tuple from `_dc(…,en,ja,bodyEn,bodyJa,…)`
+           (whose next-but-one slot is Japanese) and from `['coal_twh','Coal','石炭','#6b6b6b']`
+           (whose next slot is a colour). Where they qualify, THE SOURCE WINS over the dictionary:
+           those translations were authored in an earlier round and are already on screen. */
+        const tail = [];
+        for (let m = k + 2; m < k + 5 && m < list.length; m++) {
+          const z = list[m];
+          if (!z || z.type !== 'Literal' || typeof z.value !== 'string') break;
+          /* ⚠ NOT `isProse` — that asks «is this ENGLISH prose?» and requires a Latin letter, so
+             'Тохоку 2011 (Великое восточнояпонское)' failed it and every Russian slot ended the
+             scan. The question here is «is this a translation in SOME alphabet the app writes?» */
+          if (JA.test(z.value) || !LETTERED.test(z.value) || HEX.test(z.value)
+            || KEYISH.test(z.value) || FILEISH.test(z.value) || URLISH.test(z.value)) break;
+          tail.push(z.value);
+        }
+        const ok3 = tail.length === 3;
+        /* ⚠ AND WHETHER THE TUPLE *IS* THE WHOLE ARRAY. `name:['…','…','…','…','…']` collapses to
+           `name:LA(…)`, not to `name:[LA(…)]` — the reader is `L.arr(e.name)`, i.e. `pick()` applied
+           to the row, and handing it a one-element array containing the row makes the first argument
+           an ARRAY. The brackets can only go when the pair (plus any tail) covers every element. */
+        const span = ok3 ? 5 : 2;
+        const whole = what === 'array' && k === 0 && list.length === span
+          && node.type === 'ArrayExpression' ? { start: node.start, end: node.end } : null;
+        pairs.push({ file: rel, en: xJa ? y.value : x.value, ja: xJa ? x.value : y.value,
+          start: whole ? whole.start : x.start, end: whole ? whole.end : (ok3 ? list[k + 4].end : y.end),
+          have: ok3 ? tail : null });
+        if (ok3) k += 3;
+        k++;
+      }
       return;                       /* ⚠ ONE finding per container */
     }
   };
@@ -285,6 +378,7 @@ if (process.argv.includes('--json')) {
   process.stdout.write(JSON.stringify({
     total: hits.length,
     files: [...byFile.entries()].sort((a, b) => b[1] - a[1]).map(([f, n]) => ({ file: f, n })),
+    pairs,                          /* (#R251) every pair of every reported container, with byte offsets */
     /* ⚠ (#R250) NOT TRUNCATED. This was `hits.slice(0, 400)` — a silent cap on the very list a
        round is supposed to work through, in a file whose own header says an exemption nobody can
        see is an exemption nobody re-examines (#R249). 696 hits came back as 400 and the difference
@@ -293,11 +387,24 @@ if (process.argv.includes('--json')) {
     /* (#R249) never gated, ALWAYS printed — an exemption nobody can see is an exemption nobody
        re-examines, which is how a matcher list became «2,031 strings to translate». */
     exempt: exempt.length,
+    /* (#R251) the exempt ROWS as well as their count — tests/r250-checks ④ measures the
+       untruncated `en`/`ja` fields across hits AND exemptions, so the assertion survives the gap
+       shrinking (every remaining hit is short; the exempt list still carries long prose). */
+    exemptList: exempt,
     exemptFiles: [...exemptByFile.entries()].sort((a, b) => b[1] - a[1]).map(([f, n]) => ({ file: f, n })),
     badMarkers,
   }));
-  process.exit(0);
-}
+  /* ⚠⚠⚠ (#R251) `process.exit(0)` HERE TRUNCATED THIS FILE'S OWN ANSWER — ON LINUX ONLY.
+     stdout to a PIPE is asynchronous on POSIX and synchronous on Windows, so `process.exit()`
+     immediately after a large `write()` discards whatever is still buffered. It worked for as long
+     as the payload fitted the 64 KB pipe buffer; #R251 added `pairs` and `exemptList` and the answer
+     came back CUT AT 123,393 OF 366,105 BYTES — mid-string, so `JSON.parse` threw and the whole
+     gate died with one unattributed line. Locally: green. That is #R250's defect exactly one layer
+     down (an instrument silently capping its own answer), and it is the reason #R185's rule has to
+     be «no silent caps» rather than «no `slice`».
+     Setting `exitCode` lets Node exit NATURALLY, after the stream has drained. */
+  process.exitCode = 0;
+} else {
 
 console.log('\nIntMap · adjacent-pair audit — a translation tuple must be a CALL, not two data slots  (#R246)\n');
 if (badMarkers.length) {
@@ -328,3 +435,4 @@ console.log('      const LA = window.IntMapLang.pickArgs();     // once per scop
 console.log("      nm: LA('Tokyo','東京','Tokio','Токио','Tokio')");
 console.log('      …and resolve it with L.arr(x.nm), which is pick() itself, so fr/ko/zh reach the inline table.\n');
 process.exit(1);
+}

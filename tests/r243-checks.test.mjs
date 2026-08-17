@@ -201,9 +201,20 @@ test('R243 ⑨ the ninth surface is a gate now, and it is at zero', () => {
 });
 
 test('R243 ⑨ the positional audit reads `IntMapLang.t(lang, …)` too — the tenth blind spot', () => {
+  /* ⚠ (#R251) THE SHAPE MOVED, THE QUESTION DID NOT. This used to grep
+     scripts/i18n-positional-audit.mjs for `property.name === 't'`. #R251 resolved «which calls are
+     translation calls» ONCE, repo-wide, in scripts/i18n-helpers.mjs — because the same question was
+     answered three times, per file, and all three were wrong about a helper reached through a
+     property. Asserting on the old ADDRESS would now fail while the capability is intact, so the
+     assertion is on the capability: the shared resolver still knows `t()`, and the audit still uses
+     the shared resolver rather than growing a fourth private copy. */
   const c = code(read('scripts/i18n-positional-audit.mjs'));
-  assert.ok(/property\.name === 't'/.test(c) && /IntMapLang\$/.test(c),
-    'de/ru/es were unmeasured at every `t()` site, and this round converted 467 more into that shape');
+  const h = code(read('scripts/i18n-helpers.mjs'));
+  assert.ok(/property\.name === 't'/.test(h) && /IntMapLang\$/.test(h),
+    'de/ru/es were unmeasured at every `t()` site, and #R243 converted 467 more into that shape');
+  assert.ok(/from '\.\/i18n-helpers\.mjs'/.test(c) && /shapeOf\(/.test(c),
+    'the positional audit must ask the shared resolver, not carry its own — three private copies is '
+    + 'how #R251 found 65 five-language call sites outside every measurement');
   const out = node('scripts/i18n-positional-audit.mjs');
   assert.ok(/total outstanding: 0/.test(out), out.slice(0, 1200));
   const sites = +((/call sites parsed: (\d+)/.exec(out) || [])[1] || 0);

@@ -43,6 +43,7 @@ window.IntMapModules.monitors=function(HOST){
     const S=(v)=>{ try{ return window.IntMapSafe? window.IntMapSafe.html(v==null?'':String(v)) : String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }catch(_){ return ''; } };
     const URLS=(v)=>{ try{ return window.IntMapSafe? window.IntMapSafe.url(v) : (/^https?:\/\//i.test(String(v||''))?String(v):'#'); }catch(_){ return '#'; } };
     const ML=window.IntMapLang.pick(()=>HOST.lang||'en');
+    const MLA=window.IntMapLang.pickArgs();   /* (#R251) the ARRAY form — see `pickArgs` in js/lang-registry.js */
     const _loggedIn=()=> !!HOST.user;
     const _promptLogin=()=>{ try{ if(typeof requireLogin==='function') return requireLogin(); if(typeof openAuthModal==='function') openAuthModal(); }catch(_){} };
 
@@ -343,7 +344,10 @@ window.IntMapModules.monitors=function(HOST){
         +(rep.metrics.new_clusters!=null?'<div class="mon-metric"><span>'+S(ML('New event clusters','新規クラスター','Neue Cluster','Новые кластеры','Nuevos grupos'))+'</span><b>'+S(rep.metrics.new_clusters)+'</b></div>':'')
         +(rep.metrics.publishers?'<div class="mon-metric"><span>'+S(ML('Publishers','媒体数','Quellen','Источники','Fuentes'))+'</span><b>'+S(rep.metrics.publishers.prev)+' → '+S(rep.metrics.publishers.cur)+'</b></div>':'')
         +'</div>'):'';
-      const list=(arr,titleEn,titleJp,titleDe,titleRu,titleEs)=>{ if(!arr||!arr.length) return ''; return '<h4 class="mon-h4">'+S(ML(titleEn,titleJp,titleDe,titleRu,titleEs))+'</h4><ul class="mon-ul">'+arr.map(x=>'<li>'+S(x)+'</li>').join('')+'</ul>'; };
+      /* ⚠ (#R251) THE TITLE ARRIVES AS ONE TUPLE, NOT AS FIVE PARAMETERS. Spread across `list`'s
+         own parameters, the five strings were arguments of `list` rather than of `ML`, so the inline
+         report counted none of the three headings and fr/ko/zh/zh-hans rendered them in English. */
+      const list=(arr,title)=>{ if(!arr||!arr.length) return ''; return '<h4 class="mon-h4">'+S(ML.arr(title))+'</h4><ul class="mon-ul">'+arr.map(x=>'<li>'+S(x)+'</li>').join('')+'</ul>'; };
       const evCards=ev.map(e=>'<div class="mon-evcard" id="mon-ev-'+S(e.ev_key)+'"><div class="mon-evk">'+S(e.ev_key)+'</div><div class="mon-evb">'
         +'<div class="mon-evtitle">'+(e.source_url?'<a href="'+URLS(e.source_url)+'" target="_blank" rel="noopener">'+S(e.title||e.source_url)+'</a>':S(e.title||'—'))+'</div>'
         +'<div class="mon-evmeta">'+S(e.source_name||'')+(e.observed_at?' · '+S(new Date(e.observed_at).toLocaleString()):'')+((e.payload&&e.payload.subject)?' · '+S(e.payload.subject):'')+' · <span class="mon-evkind mon-evkind-'+S(e.change_kind||'')+'">'+S(e.change_kind||'')+'</span></div>'
@@ -354,9 +358,9 @@ window.IntMapModules.monitors=function(HOST){
         +metrics
         +(changes?'<h4 class="mon-h4">'+S(ML('Key changes','主な変化','Wichtige Änderungen','Основные изменения','Cambios clave'))+'</h4><ul class="mon-changes">'+changes+'</ul>':'')
         +(ev.length?'<button class="mon-viewbtn" id="mon-rep-map">◎ '+S(ML('Show change points on map','変化地点を地図に表示','Auf Karte zeigen','Показать на карте','Mostrar en el mapa'))+'</button>':'')
-        +list(rep.unchanged,'Unchanged / not confirmed','変化なし・未確認','Unverändert','Без изменений','Sin cambios')
-        +list(rep.data_gaps,'Data gaps','取得できなかったデータ','Datenlücken','Пробелы в данных','Lagunas de datos')
-        +list(rep.limitations,'Limitations','制約・不確実性','Einschränkungen','Ограничения','Limitaciones')
+        +list(rep.unchanged,MLA('Unchanged / not confirmed','変化なし・未確認','Unverändert','Без изменений','Sin cambios'))
+        +list(rep.data_gaps,MLA('Data gaps','取得できなかったデータ','Datenlücken','Пробелы в данных','Lagunas de datos'))
+        +list(rep.limitations,MLA('Limitations','制約・不確実性','Einschränkungen','Ограничения','Limitaciones'))
         +'<h4 class="mon-h4">'+S(ML('Evidence','根拠','Belege','Доказательства','Evidencia'))+' ('+ev.length+')</h4><div class="mon-evlist">'+(evCards||('<div class="mon-empty">'+S(ML('No evidence stored.','根拠が保存されていません。','Keine Belege.','Нет данных.','Sin evidencia.'))+'</div>'))+'</div>'
         +'<div class="mon-repfoot">'+S(ML('Generated','生成','Erstellt','Создано','Generado'))+': '+S(_fmtWhen(rep.created_at))+(rep.ai_model?' · '+S(rep.ai_model):'')+'</div>';
       const ov=_overlay(inner,'mon-ov-report');

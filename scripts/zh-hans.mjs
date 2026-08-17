@@ -84,30 +84,35 @@ export const WORDS = [
 ];
 
 /* ── ③ TRADITIONAL → SIMPLIFIED CHARACTERS ───────────────────────────────────────────────────────
-   Only characters that actually DIFFER, and only the ones this app's strings contain (plus the ones
-   the word table above can introduce). Pairs, T then S. A one-to-many character never appears here;
-   it is resolved in ② while its context is still readable. */
-export const CHARS = (
-  '並并亞亚來来個个們们偵侦備备傳传傷伤傾倾僅仅價价儀仪億亿優优儲储兩两冊册別别刪删剛刚劃划劇剧劑剂' +
-  '動动務务勢势勻匀區区協协參参員员問问啟启嗎吗嘯啸嚴严國国圍围園园圓圆圖图團团執执堅坚報报場场塊块' +
-  '墜坠壓压壩坝壽寿夠够夥伙奧奥學学實实寧宁寫写寬宽將将專专尋寻對对導导層层屬属島岛帳帐帶带幣币幫帮' +
-  '幹干幾几庫库廠厂廣广廳厅張张強强彈弹彎弯彙汇後后徑径從从復复恆恒態态慣惯憑凭應应戰战戲戏拋抛捲卷' +
-  '掃扫採采換换損损擇择擊击擋挡據据擬拟擴扩擷撷擾扰師师攝摄敗败敘叙數数斷断於于時时晝昼暫暂曆历會会東东' +
-  '桿杆條条業业極极構构樂乐標标樣样橢椭橫横機机檔档檢检檻槛欄栏權权歐欧歡欢歷历歸归殘残殼壳毀毁氣气' +
-  '決决沒没沖冲況况洩泄淨净淺浅減减測测準准溫温滾滚滿满漸渐潰溃濕湿濟济濾滤瀏浏灣湾災灾為为無无煙烟' +
-  '熱热燈灯燒烧營营爭争爾尔狀状獄狱獨独現现環环產产畫画異异當当疊叠療疗發发盡尽監监盤盘眾众確确碼码' +
-  '磚砖礙碍稜棱種种稱称積积穩稳窪洼筆笔節节範范築筑篩筛簡简紀纪約约紅红純纯級级細细終终組组結结絕绝' +
-  '給给統统經经綠绿維维網网緊紧緒绪線线緣缘編编緩缓緯纬緻致縣县縮缩總总繞绕繪绘繫系繼继續续纜缆羅罗' +
-  '義义聞闻聯联膠胶與与艙舱蒐搜蓋盖藍蓝蘊蕴處处虛虚號号螢萤衛卫衝冲補补裡里製制複复見见規规視视親亲' +
-  '覺觉覽览觀观觸触訂订計计訊讯討讨記记訪访設设許许訴诉註注評评詢询試试話话該该詳详認认語语誤误說说' +
-  '誰谁調调請请論论諾诺證证識识譜谱譯译議议護护讀读變变讓让負负貨货買买費费貼贴貿贸資资質质購购賽赛' +
-  '贊赞趨趋跡迹蹤踪躍跃車车軌轨軍军軟软軸轴較较載载輕轻輪轮輯辑輸输輻辐轉转農农迴回這这連连週周進进' +
-  '遊游運运過过達达遙遥遞递遠远適适選选還还邊边邏逻鄰邻醫医釋释釘钉鈕钮銀银銫铯錄录錨锚錯错鍵键鎖锁' +
-  '鎮镇鏈链鏡镜鐘钟鐵铁鑰钥鑲镶長长門门閉闭開开間间閱阅闊阔關关陣阵陰阴陸陆陽阳階阶際际隨随險险隱隐' +
-  '雙双雜杂離离難难雲云電电霧雾靈灵靜静響响頁页頂顶項项順顺預预領领頭头頻频顆颗題题額额顏颜願愿類类' +
-  '顧顾顯显風风飛飞餘余饋馈馬马駐驻駛驶驅驱驗验髒脏體体麥麦麼么黃黄點点齊齐齡龄佈布佔占併并側侧係系' +
-  '內内則则匯汇乾干絡络賬账戶户'
-);
+   ⚠⚠⚠ (#R251) THIS WAS 440 HAND-TYPED PAIRS, AND IT COVERED 439 OF THE 1,529 HAN CHARACTERS
+   ui.zh.js ACTUALLY USES. Everything outside it passed through unchanged, so the SIMPLIFIED file
+   shipped Traditional characters inside Simplified sentences — 「烏克蘭前线」, 「貪腐指标」,
+   「紐芬蘭自治领」, 「制藥生产基地」, 「樹木覆盖」, 「苔蘚与地衣」 — for as long as the table has
+   existed. Nobody forgot anything: a hand-maintained character map has no way to say what it is
+   MISSING, so each round added the characters that round happened to introduce and the gap grew in
+   silence. That is [[intmap-recurring-lessons]] G in its purest form, and the same defect this
+   round found in the translation instruments — a table of ours standing in for a published fact.
+
+   ⚠ SO THE CHARACTERS ARE NOT OUR TABLE ANY MORE. OpenCC is the reference implementation of Han
+   orthography conversion; opencc-js is its pure-JS port, and it is a BUILD-TIME devDependency —
+   nothing new ships to the browser, because this script runs at build time and writes a file.
+   `tw → cn` is the ORTHOGRAPHY, and it resolves every one-to-many case this file used to pin by
+   hand: 著名 keeps 著, 着色 takes 着, 乾坤 keeps 乾, 乾燥 takes 干. That is precisely the knowledge
+   the ⚠ notes above describe as the hard part, and it is published data.
+
+   ⚠ NOT `twp`, WHICH CONVERTS THE VOCABULARY A SECOND TIME. The phrase-aware variant also rewrites
+   Taiwanese TERMS into mainland ones — and the WORD table below has already done exactly that, in
+   Traditional characters. Running both turned 檔案 into 文件 (the table, correctly) and then 文件
+   into 文档 (OpenCC, reading our mainland word as a Taiwanese one). MEASURED: 「十年時光回溯檔案」
+   came out as 「十年时光回溯文档」, and tests/r224 ④ caught it. One layer owns the vocabulary, the
+   other owns the orthography.
+
+   ⚠ THE WORD TABLE ABOVE STILL RUNS FIRST, AND STILL WINS. Those are this project's own choices
+   about mainland vocabulary, reviewed one at a time over several rounds. OpenCC agrees with almost
+   all of them; where the app wants a particular word regardless, the table is where that is said.
+   What has been deleted is only the part that was standing in for a published mapping. */
+import * as OpenCC from 'opencc-js';
+const toSimplifiedChars = OpenCC.Converter({ from: 'tw', to: 'cn' });
 
 export function toHans(text) {
   let s = String(text);
@@ -121,12 +126,8 @@ export function toHans(text) {
   /* unpin BEFORE the character map — the pinned words still need their own characters converting
      (顯著 → 显著), they just must not have 著 turned into 着 on the way. */
   for (const [w, g] of guard) s = s.split(g).join(w);
-  /* ③ characters */
-  const map = new Map();
-  for (let i = 0; i + 1 < CHARS.length; i += 2) map.set(CHARS[i], CHARS[i + 1]);
-  let out = '';
-  for (const ch of s) out += map.get(ch) || ch;
-  return out;
+  /* ③ characters — OpenCC, not a table of ours (see the ⚠⚠⚠ note above) */
+  return toSimplifiedChars(s);
 }
 
 const HEAD = `/* ============================================================================
@@ -134,9 +135,10 @@ const HEAD = `/* ===============================================================
  * ----------------------------------------------------------------------------
  *  「簡体を追加して。(beta)」 (#R224)
  *
- *  Produced from js/locales/ui.zh.js by scripts/zh-hans.mjs: the Taiwan→mainland WORD table first
- *  (網路→网络, 資訊→信息, 螢幕→屏幕, 檔案→文件, 預設→默认, 選單→菜单, 使用者→用户 …), then the
- *  Traditional→Simplified character map. Fix a string in ui.zh.js and re-run the script; editing
+ *  Produced from js/locales/ui.zh.js by scripts/zh-hans.mjs: this project’s Taiwan→mainland WORD
+ *  table first (its own reviewed choices), then OpenCC twp→cn for the orthography itself (#R251 —
+ *  the 440-pair map it replaced covered 439 of the 1,529 characters in use). Fix a string in
+ *  ui.zh.js and re-run the script; editing
  *  this file directly is undone by the next run, and tests/r224-checks.test.mjs fails if the two
  *  ever disagree.
  *
