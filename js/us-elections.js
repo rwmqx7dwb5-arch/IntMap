@@ -24,6 +24,8 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.usElections=function(HOST){
+  /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js. The tuples below were bare array literals, which no instrument can see, so every language past the two they listed read English. */
+  const LA=window.IntMapLang.pickArgs();
   const GE=()=>window.IntMapGeoEngine;
   const L=window.IntMapLang.pick(()=>HOST.lang);
   const IDS=['usel-fill','usel-line'];
@@ -195,7 +197,7 @@ window.IntMapModules.usElections=function(HOST){
     if(!ensure()) return false;
     setVis(true);
     try{ window._registerLayerOpacity&&window._registerLayerOpacity('uselect',
-      ['U.S. presidential elections','アメリカ大統領選挙','US-Präsidentschaftswahlen','Президентские выборы в США','Elecciones presidenciales de EE. UU.'],
+      LA('U.S. presidential elections','アメリカ大統領選挙','US-Präsidentschaftswahlen','Президентские выборы в США','Elecciones presidenciales de EE. UU.'),
       IDS,'dl-uselect'); }catch(_){}
     apply();
     /* the layer is about one country, so the first switch-on flies to it */

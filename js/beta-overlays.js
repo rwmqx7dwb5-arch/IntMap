@@ -13,7 +13,10 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.betaOverlays=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js. The tuples below were bare array literals, which no instrument can see, so every language past the two they listed read English. */
+  const L=window.IntMapLang.pick(()=>HOST.lang), LA=window.IntMapLang.pickArgs();
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -118,7 +121,7 @@ window.IntMapModules.betaOverlays=function(HOST){
       if(on){ if(!ukrTimer) ukrTimer=setInterval(()=>{ if(state.ukr) ukrLoad(true); },10*60*1000); }   /* refresh every 10 min while on */
       else if(ukrTimer){ clearInterval(ukrTimer); ukrTimer=null; }
       try{ if(on&&window._registerLayerOpacity){
-            const el=window._registerLayerOpacity('ukrfront',['Ukraine frontline (DeepState)','ウクライナ前線（DeepState）'],UKR_IDS,'beta-dl-ukrfront');
+            const el=window._registerLayerOpacity('ukrfront',LA('Ukraine frontline (DeepState)','ウクライナ前線（DeepState）','Ukraine-Frontlinie (DeepState)','Линия фронта в Украине (DeepState)','Frente de Ucrania (DeepState)'),UKR_IDS,'beta-dl-ukrfront');
             /* (#R20) proper LEGEND ("Ukraine frontlineは、凡例を作って") — color key for the DeepState classes */
             if(el&&!el.querySelector('.ukr-key')){
               const key=document.createElement('div'); key.className='ukr-key'; key.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
@@ -148,7 +151,7 @@ window.IntMapModules.betaOverlays=function(HOST){
     function bldgToggle(on){ state.bldg=on;
       const a=()=>{ if(!bldgEnsure()){ GE().events.once('idle',a); return; } setVis(['ofm-bldg-3d'],on); };
       a();
-      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('bldg3d',['3D buildings (cities)','3D建物（都市）'],['ofm-bldg-3d'],'beta-dl-bldg3d');
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('bldg3d',LA('3D buildings (cities)','3D建物（都市）','3D-Gebäude (Städte)','3D-здания (города)','Edificios 3D (ciudades)'),['ofm-bldg-3d'],'beta-dl-bldg3d');
              if(el&&!el.querySelector('.bldg-hint')){ const d=document.createElement('div'); d.className='bldg-hint'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=window.IntMapLang.t(HOST.lang,"Shows from zoom 14. Tilt (3D button / right-drag) to see depth.","ズーム14以上で表示。3D/ドラッグ右クリックで傾けると立体に。","Ab Zoomstufe 14 sichtbar. Neigen (3D-Schaltfläche / Rechtsziehen) zeigt die Tiefe.","Показывается с 14-го зума. Наклоните (кнопка 3D / перетаскивание правой кнопкой), чтобы увидеть объём.","Se muestra a partir del zoom 14. Incline (botón 3D / arrastrar con el botón derecho) para ver el relieve."); el.appendChild(d); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('bldg3d'); }catch(_){}
     }
@@ -217,7 +220,7 @@ window.IntMapModules.betaOverlays=function(HOST){
       a();
       try{
         if(on&&window._registerLayerOpacity){
-          const el=window._registerLayerOpacity('histb',['Historical borders','過去の国境'],HB_IDS,'beta-dl-histb');
+          const el=window._registerLayerOpacity('histb',LA('Historical borders','過去の国境','Historische Grenzen','Исторические границы','Fronteras históricas'),HB_IDS,'beta-dl-histb');
           if(el&&!el.querySelector('.hb-year-row')){
             const row=document.createElement('div'); row.className='hb-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:6px;display:flex;align-items:center;gap:7px;';
             const note=document.createElement('div'); note.className='hb-note'; note.style.cssText='font-size:10px;color:var(--text-muted);margin-top:8px;';
@@ -291,7 +294,7 @@ window.IntMapModules.betaOverlays=function(HOST){
       const a=()=>{ if(!volcEnsure()){ GE().events.once('idle',a); return; } setVis(VL_IDS,on); if(on) volcLoad(); };
       a();
       try{ if(on&&window._registerLayerOpacity){
-            const el=window._registerLayerOpacity('volc2',['Volcanoes (GVP Holocene)','火山（GVP完新世）'],VL_IDS,'beta-dl-volc2');
+            const el=window._registerLayerOpacity('volc2',LA('Volcanoes (GVP Holocene)','火山（GVP完新世）','Vulkane (GVP, Holozän)','Вулканы (GVP, голоцен)','Volcanes (GVP, Holoceno)'),VL_IDS,'beta-dl-volc2');
             if(el&&!el.querySelector('.volc-key')){
               const key=document.createElement('div'); key.className='volc-key'; key.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
               const dot=(c)=>'<span style="width:11px;height:11px;border-radius:50%;flex:none;background:'+c+';border:1px solid rgba(255,255,255,0.5);"></span>';
@@ -307,11 +310,15 @@ window.IntMapModules.betaOverlays=function(HOST){
 
     /* ---------- rows in the Layers panel (histb/ukrfront now file into "Strategic geography" via
        reorganizeLayerPanel — promoted out of beta (#R20); bldg3d + volc2 stay in Others(beta)) ---------- */
-    const BLBL={ukrfront:['ウクライナ前線（リアルタイム）','Ukraine frontline (live)'],bldg3d:['3D建物（都市）','3D buildings (cities)'],histb:['過去の国境','Historical borders'],volc2:['火山（GVP完新世・全1,215座）','Volcanoes (GVP Holocene, all 1,215)']};
+    /* ⚠ (#R251) ENGLISH FIRST, AND RESOLVED THROUGH pick(). These four were `[ja, en]` read by
+       `jp()?BLBL[k][0]:BLBL[k][1]` — the English string was in slot 1, so even the positional
+       languages could not have been added without reversing the row, and the inline table is keyed
+       by the English source string, which was not in slot 0. */
+    const BLBL={ukrfront:LA('Ukraine frontline (live)','ウクライナ前線（リアルタイム）','Ukraine-Frontlinie (live)','Линия фронта в Украине (в реальном времени)','Frente de Ucrania (en vivo)'),bldg3d:LA('3D buildings (cities)','3D建物（都市）','3D-Gebäude (Städte)','3D-здания (города)','Edificios 3D (ciudades)'),histb:LA('Historical borders','過去の国境','Historische Grenzen','Исторические границы','Fronteras históricas'),volc2:LA('Volcanoes (GVP Holocene, all 1,215)','火山（GVP完新世・全1,215座）','Vulkane (GVP, Holozän, alle 1.215)','Вулканы (GVP, голоцен, все 1215)','Volcanes (GVP, Holoceno, los 1215)')};
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('beta-dl-ukrfront')) return;
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
       [['ukrfront','#d62b2b',ukrToggle],['bldg3d','#8794ad',bldgToggle],['volc2','#ff6a3d',volcToggle]].forEach(([k,sw,fn])=>{   /* (#R122) 'histb' (Historical borders overlay) removed per request — the time-machine's own past-year borders remain */
-        const cb=row('beta-dl-'+k, jp()?BLBL[k][0]:BLBL[k][1], sw);
+        const cb=row('beta-dl-'+k, L.arr(BLBL[k]), sw);
         cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); fn(e.target.checked); });
       });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}

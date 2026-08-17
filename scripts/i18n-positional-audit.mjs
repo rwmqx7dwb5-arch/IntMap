@@ -138,6 +138,9 @@ const SAME_AS_EN = {
          Mai, Okt, Dez) are translated at the same call sites, which is what makes this a claim
          about the word rather than about a forgotten argument. */
     'warm', 'zonal', 'Neutral', 'Jan', 'Feb', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Nov',
+    /* …and the dwarf planet, surfaced when js/space.js's body names became calls: Duden spells it
+       «Pluto», exactly as English does (the other ten differ, and are translated at the same site). */
+    'Pluto',
   ]),
   ru: new Set([]),
   es: new Set([

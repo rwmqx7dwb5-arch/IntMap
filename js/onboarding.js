@@ -28,7 +28,10 @@ window.IntMapModules.onboarding=function(HOST){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     try{ const old=document.getElementById('im-demo-pill'); if(old) old.remove(); }catch(_){}
     const jp=()=>HOST.lang==='jp';
-    const SHOW=[['dl-climate','Köppen climate','ケッペン気候区分'],['dl-nightsat','Night lights','夜間光（衛星）'],['dl-relief','Elevation relief','標高（段彩）'],['dl-popgrid','Population density (1 km grid)','人口密度（1kmグリッド）']];
+    /* ⚠ (#R251) the tour's four captions were `[id, en, ja]` read by `jp()?s[2]:s[1]`, so the
+       tutorial narrated itself in English to seven of the nine languages. */
+    const LA=window.IntMapLang.pickArgs(), LT=window.IntMapLang.pick(()=>HOST.lang);
+    const SHOW=[['dl-climate',LA('Köppen climate','ケッペン気候区分','Köppen-Klima','Климат Кёппена','Clima de Köppen')],['dl-nightsat',LA('Night lights','夜間光（衛星）','Nachtlichter','Ночные огни','Luces nocturnas')],['dl-relief',LA('Elevation relief','標高（段彩）','Höhenrelief','Рельеф высот','Relieve altimétrico')],['dl-popgrid',LA('Population density (1 km grid)','人口密度（1kmグリッド）','Bevölkerungsdichte (1-km-Raster)','Плотность населения (сетка 1 км)','Densidad de población (malla de 1 km)')]];
     /* don't start if a thematic layer is already on */
     if(!force && document.querySelectorAll('#layer-dropdown .lyr-row.on, #layer-dropdown input.geo-layer-cb:checked').length) return;
     let idx=-1,timer=null,paused=false,demoToggling=false,done=false,curId=null;
@@ -55,7 +58,7 @@ window.IntMapModules.onboarding=function(HOST){
        + paint than the instant Köppen image, so at 6.5s they were toggled OFF before they finished loading
        ("night lights と elevation relief が表示されない"). 9s gives every showcase layer time to appear. */
     function schedule(){ clearTimeout(timer); timer=setTimeout(next,9000); }
-    function next(){ if(done||paused) return; try{ setOff(curId); idx=(idx+1)%SHOW.length; const s=SHOW[idx]; curId=s[0]; setOn(curId); render(jp()?s[2]:s[1]); }catch(_){} schedule(); }
+    function next(){ if(done||paused) return; try{ setOff(curId); idx=(idx+1)%SHOW.length; const s=SHOW[idx]; curId=s[0]; setOn(curId); render(LT.arr(s[1])); }catch(_){} schedule(); }
     /* (#R25) Pressing the × on ANY layer legend ends the demo too ("どれかのレイヤの凡例の×を押せばintro demoも
        終了"). Some legend ×'s only hide the legend without firing a checkbox change, so the dropdown-change
        listener below wouldn't catch them — hook the close controls explicitly (capture phase). */

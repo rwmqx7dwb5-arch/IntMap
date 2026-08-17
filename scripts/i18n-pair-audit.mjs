@@ -103,6 +103,16 @@ const MARKER = /@i18n-entity-data\b/;
 const ISOISH = /^[A-Z]{2,3}$/;                               /* US, USA, JPN — ISO-3166 / ticker */
 const TICKER = /^[A-Z][A-Z0-9.\-]{0,5}$/;                    /* AAPL, BRK.B, 7203.T */
 const DOMAIN = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i;               /* apple.com */
+/* ⚠⚠ (#R251) …AND A PACKED RECORD, WHICH IS THE FOURTH NON-LINGUISTIC KEY. js/newsgeo.js's two
+   matcher tables hold ONE STRING PER ENTITY with its spellings and its flags packed into fields:
+       'MM|Nay Pyi Taw;Naypyitaw'                                        (iso2 | aliases)
+       'New York Times;NY Times;NYT;ニューヨークタイムズ;…|x||'          (aliases | kind | | )
+   Those are 35 pairs of the OPEN GAP, and translating them is not merely wasted — it would BREAK
+   the matcher, which compares incoming headlines against exactly these spellings. They carry no
+   separate ISO/ticker/coordinate slot to validate against, because the key is INSIDE the string.
+   A `|` field separator is the structural signal: a sentence the app wrote never contains one, so
+   this cannot be used to silence prose (which is what the whole marker mechanism is guarding). */
+const PACKED = /^[^|\r\n]{1,200}\|[^|\r\n]*(\||$)/;
 /* a coordinate PAIR: two numbers in range, at least one of which is not a small integer (a year,
    a count and a percentage are all small integers; a longitude almost never is) */
 function hasEntityKey(node) {
@@ -125,7 +135,7 @@ function scanKeys(list) {
   }
   for (const e of list) {
     if (!e || e.type !== 'Literal' || typeof e.value !== 'string') continue;
-    if (ISOISH.test(e.value) || TICKER.test(e.value) || DOMAIN.test(e.value)) return true;
+    if (ISOISH.test(e.value) || TICKER.test(e.value) || DOMAIN.test(e.value) || PACKED.test(e.value)) return true;
   }
   return false;
 }
@@ -185,6 +195,7 @@ function langNames(ast, src) {
 }
 
 const hits = [];
+const pairs = [];                  /* (#R251) every pair of every reported container, with offsets */
 const exempt = [];                 /* counted, printed, never gated */
 const badMarkers = [];             /* a marker on something that is not entity data — an ERROR */
 for (const [full, rel] of files) {
@@ -284,6 +295,23 @@ for (const [full, rel] of files) {
       if (isMatcher) { exempt.push({ ...rec, why: 'match-term list' }); return; }
       if (marked(node)) { exempt.push({ ...rec, why: 'entity data (@i18n-entity-data)' }); return; }
       hits.push(rec);
+      /* ⚠⚠⚠ (#R251) …AND EVERY PAIR OF THE CONTAINER, WITH ITS BYTE OFFSETS, FOR THE REWRITER.
+         The finding above is deliberately ONE PER CONTAINER — a five-language row is one thing to
+         fix. But scripts/i18n-pair-apply.mjs has to rewrite EVERY pair, and a container routinely
+         holds two (`_dc(…, title_en, title_ja, body_en, body_ja, …)`); a rewriter that re-derived
+         «which pairs count» would be a second copy of the exemption rules above, and the first
+         thing it would get wrong is `@i18n-entity-data`. So the owner of the question answers it. */
+      for (let k = i; k + 1 < list.length; k++) {
+        const x = list[k], y = list[k + 1];
+        if (!x || !y || x.type !== 'Literal' || y.type !== 'Literal') continue;
+        if (typeof x.value !== 'string' || typeof y.value !== 'string') continue;
+        const xJa = JA.test(x.value), yJa = JA.test(y.value);
+        if (xJa === yJa) continue;
+        if (!isProse(xJa ? y.value : x.value)) continue;
+        pairs.push({ file: rel, en: xJa ? y.value : x.value, ja: xJa ? x.value : y.value,
+          start: x.start, end: y.end });
+        k++;
+      }
       return;                       /* ⚠ ONE finding per container */
     }
   };
@@ -304,6 +332,7 @@ if (process.argv.includes('--json')) {
   process.stdout.write(JSON.stringify({
     total: hits.length,
     files: [...byFile.entries()].sort((a, b) => b[1] - a[1]).map(([f, n]) => ({ file: f, n })),
+    pairs,                          /* (#R251) every pair of every reported container, with byte offsets */
     /* ⚠ (#R250) NOT TRUNCATED. This was `hits.slice(0, 400)` — a silent cap on the very list a
        round is supposed to work through, in a file whose own header says an exemption nobody can
        see is an exemption nobody re-examines (#R249). 696 hits came back as 400 and the difference
