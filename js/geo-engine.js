@@ -1474,6 +1474,17 @@ function _m(){ return window.__imap||null; }
        during a gesture and all of them on the frame the gesture lands on. */
     getRenderScale(){ const m=_m(); try{ return (m&&m.getPixelRatio)?m.getPixelRatio():null; }catch(_){ return null; } },
     setRenderScale(r){ const m=_m(); try{ if(m&&m.setPixelRatio&&isFinite(r)&&r>0){ m.setPixelRatio(r); return true; } }catch(_){} return false; },
+    /* ⚠ (#R252) WHICH FACE DRAWS CJK — CHANGEABLE, NOT FROZEN AT CREATE TIME. `localIdeographFontFamily`
+       is a CONSTRUCTOR option, so the per-language family was handed over once; js/map-typography.js holds
+       the measurement and the reason. `setGlyphs()` with the URL the style already has is THE PUBLIC WAY to
+       say «the glyphs changed»: it empties the glyph cache (the TinySDF built from the OLD family included)
+       and reloads every glyph-dependent tile, so ALL symbol layers re-lay out — not the ones a caller
+       remembers. `_localIdeographFontFamily` goes with it so a later setStyle() keeps today's face. */
+    setCjkFontFamily(fam){ const m=_m(); try{ const gm=m&&m.style&&m.style.glyphManager;
+      if(!fam||!gm||gm.localIdeographFontFamily===fam||typeof m.setGlyphs!=='function') return false;   /* same family → never pay for a reload */
+      const u=(typeof m.getGlyphs==='function')?m.getGlyphs():null; if(!u) return false;
+      gm.localIdeographFontFamily=fam; m._localIdeographFontFamily=fam; m.setGlyphs(u); return true;
+    }catch(_){ return false; } },
     /* ══ (#R225) THE FRAME'S OWN COST, AND WHAT THE SCENE COSTS IT ══════════════════════════════════
        「スマホでの地図スクロール、ズームが壊滅的に遅いです」 — four rounds have argued about this and
        three measured the wrong machine, so js/perf-hud.js exists to take the number ON THE DEVICE.
@@ -2117,6 +2128,8 @@ function _m(){ return window.__imap||null; }
       setTerrain:t=>A().setTerrain(t), getTerrain:()=>A().getTerrain(),
       addImage:(id,img,o)=>A().addImage(id,img,o), hasImage:id=>A().hasImage(id), removeImage:id=>A().removeImage(id),
       addProtocol:(n,fn)=>A().addProtocol(n,fn), setImageConcurrency:n=>A().setImageConcurrency(n),
+      /* (#R252) the CSS family the renderer rasterises CJK/Hangul from — the glyph source, hence here */
+      setCjkFontFamily:f=>A().setCjkFontFamily?A().setCjkFontFamily(f):false,
       /* (#R179) contour tiles derived from a DEM — the last thing that needed the library by name */
       demContourSource:o=>A().demContourSource?A().demContourSource(o):null },
     /* (#R178) RENDERER-OWNED UI + a SECOND VIEW. `new maplibregl.Popup/Marker/Map` were the last

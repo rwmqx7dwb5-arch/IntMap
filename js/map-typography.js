@@ -60,6 +60,24 @@ window.IntMapMapTypography = (function () {
     if (l === 'ko') return ko + ',' + jp + ',' + tc + ',' + sc + tail;
     return jp + ',' + tc + ',' + sc + ',' + ko + tail;   /* jp, and the default for a Latin UI */
   }
+  /* ══ ⚠⚠⚠ (#R252) …AND THE RENDERER IS TOLD, EVERY TIME THE LANGUAGE CHANGES ═══════════════════
+     `cjkFamily()` has answered correctly since #R242 and was asked exactly once — in the map's
+     constructor options (js/app-body.js). So a reader who SWITCHED to 简体中文 (the only way to get
+     there; nothing auto-detects) kept the boot language's stack, and the browser's per-character
+     fallback split every Japanese place name across two faces: the kanji Japanese shares came from
+     Noto Sans JP, the simplified-only characters from Noto Sans SC. That is 「簡体字に変換した部分
+     だけ別のフォントになって浮く」, and it applies to every language pair, not just this one.
+     ⚠ IDEMPOTENT AND FREE WHEN NOTHING CHANGED — the adapter returns early when the family is
+     already the one asked for, so the boot language never pays for a glyph reload. */
+  function syncCjkFamily() {
+    try {
+      var GE = window.IntMapGeoEngine;
+      if (!GE || !GE.scene || !GE.scene.setCjkFontFamily) return false;
+      return !!GE.scene.setCjkFontFamily(cjkFamily());
+    } catch (_) { return false; }
+  }
+  try { window.addEventListener('intmap-lang', syncCjkFamily); } catch (_) { }
+
   function glyphRewrite(url, type) {
     try {
       if (type !== 'Glyphs' || typeof url !== 'string') return undefined;
@@ -181,5 +199,5 @@ window.IntMapMapTypography = (function () {
   }
   installFlagFont();
 
-  return { GLYPH_RANGES, GLYPH_STACK, cjkFamily, glyphRewrite, bandBox, declutterNewsBands, installFlagFont };
+  return { GLYPH_RANGES, GLYPH_STACK, cjkFamily, syncCjkFamily, glyphRewrite, bandBox, declutterNewsBands, installFlagFont };
 })();
