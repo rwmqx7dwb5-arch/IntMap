@@ -394,8 +394,17 @@ if (process.argv.includes('--json')) {
     exemptFiles: [...exemptByFile.entries()].sort((a, b) => b[1] - a[1]).map(([f, n]) => ({ file: f, n })),
     badMarkers,
   }));
-  process.exit(0);
-}
+  /* ⚠⚠⚠ (#R251) `process.exit(0)` HERE TRUNCATED THIS FILE'S OWN ANSWER — ON LINUX ONLY.
+     stdout to a PIPE is asynchronous on POSIX and synchronous on Windows, so `process.exit()`
+     immediately after a large `write()` discards whatever is still buffered. It worked for as long
+     as the payload fitted the 64 KB pipe buffer; #R251 added `pairs` and `exemptList` and the answer
+     came back CUT AT 123,393 OF 366,105 BYTES — mid-string, so `JSON.parse` threw and the whole
+     gate died with one unattributed line. Locally: green. That is #R250's defect exactly one layer
+     down (an instrument silently capping its own answer), and it is the reason #R185's rule has to
+     be «no silent caps» rather than «no `slice`».
+     Setting `exitCode` lets Node exit NATURALLY, after the stream has drained. */
+  process.exitCode = 0;
+} else {
 
 console.log('\nIntMap · adjacent-pair audit — a translation tuple must be a CALL, not two data slots  (#R246)\n');
 if (badMarkers.length) {
@@ -426,3 +435,4 @@ console.log('      const LA = window.IntMapLang.pickArgs();     // once per scop
 console.log("      nm: LA('Tokyo','東京','Tokio','Токио','Tokio')");
 console.log('      …and resolve it with L.arr(x.nm), which is pick() itself, so fr/ko/zh reach the inline table.\n');
 process.exit(1);
+}

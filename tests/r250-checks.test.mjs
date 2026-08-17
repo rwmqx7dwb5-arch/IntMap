@@ -110,6 +110,19 @@ test('#R250 ④ the pair audit reports every hit, and the strings themselves', (
     'the pair audit is truncating its own --json list again — 696 hits came back as 400 and the '
     + 'difference was invisible (#R185: no silent caps)');
 
+  /* ⚠⚠⚠ (#R251) …AND IT MUST NOT EXIT BEFORE THE ANSWER HAS LEFT THE PROCESS.
+     `process.exit(0)` right after a large `process.stdout.write()` truncates it whenever stdout is
+     a PIPE and the platform's pipe writes are asynchronous — i.e. on Linux, and not on Windows.
+     MEASURED: 366,105 bytes came back as 123,393, cut mid-string, so `JSON.parse` threw and the
+     whole gate died on CI with one unattributed line while `npm test` was green locally. The
+     round-trip assertion below WOULD catch it on Linux; this one catches it everywhere, which is
+     the point of a guard against a platform-specific silent cap. */
+  const jsonBranch = code(a).slice(code(a).indexOf("includes('--json')"));
+  const firstExit = jsonBranch.indexOf('process.exit(');
+  const firstCode = jsonBranch.indexOf('process.exitCode');
+  assert.ok(firstCode >= 0 && (firstExit < 0 || firstCode < firstExit),
+    'the --json branch must set process.exitCode and let node drain stdout, never process.exit()');
+
   const j = json('i18n-pair-audit.mjs');
   assert.equal(j.hits.length, j.total,
     `--json returned ${j.hits.length} of ${j.total} hits — the list a round works through may not be capped`);
