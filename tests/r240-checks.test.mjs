@@ -95,7 +95,13 @@ test('R240 ③ the simulator opens with nothing armed, and the verb is pinned be
   assert.match(s, /\+_flowFoot\(\);/, 'and it is appended OUTSIDE the scrolling body');
   const body = s.indexOf('class="sq-body"');
   assert.ok(body > 0 && s.indexOf('+_flowFoot();') > body, 'after the body, not inside it');
-  assert.match(s, /max-height:calc\(100dvh - 96px\)/, 'the panel is bounded by the screen so the footer fits');
+  /* ⚠ (#R252) THE PROPERTY, NOT THE CONSTANT. What this line guards is «the panel is bounded by the
+     viewport, so the pinned footer is always on screen». #R252 moved the default box up and to the
+     right of the coord readout and the sidebar handle, which made the subtrahend a desktop/phone pair
+     (52/58/148 vs 16/80/96 — see tests/r252-checks ⑧). A test that pinned the old literal would have
+     forbidden that move while asserting nothing extra about the footer. */
+  assert.match(s, /max-height:calc\(100dvh - '\+\(_wide\?\d+:\d+\)\+'px\)/,
+    'the panel is bounded by the screen so the footer fits');
 });
 
 test('R240 ③ the intensity chip is one width PER SCALE', () => {

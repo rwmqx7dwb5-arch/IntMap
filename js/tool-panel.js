@@ -207,10 +207,29 @@ window.IntMapModules.toolPanel=function(HOST){
          to a REAL LINEAR fraction the moment one exists — a large area that must be TILED reports tiles-done/total,
          and multiple radius circles advance per finished circle (each circle's own tiling fills its band). */
       const _progLbl=()=>window.IntMapLang.t(HOST.lang,'Summing the WorldPop population grid…','WorldPop人口グリッドを集計中…','WorldPop-Bevölkerungsraster wird summiert…','Суммирование сетки населения WorldPop…','Sumando la cuadrícula de población WorldPop…');
+      /* ══ ⚠⚠ (#R252) THE BAR WAS BEING INSERTED INTO A THREE-COLUMN GRID ═══════════════════════════
+         「Summing the WorldPop population grid…の進捗バーがおかしい。」 The anchor was `#tp-pop-btn`, and
+         since #R146 that button is one of three `.rad-act` children of `.rad-actions`, which is
+         `display:grid; grid-template-columns:repeat(3,1fr)` (css/intmap.css). So `insertBefore` did not
+         put the bar UNDER the button — it made it the second CELL of that grid. Measured in the shipped
+         build at the panel's real 282 px width: the progress box came out 90 px wide (one third), sat
+         between the first and second buttons, and pushed the third button onto a second row (its top
+         went 8 → 96). The label 「Summing the WorldPop population grid…」 then ellipsised to nothing in
+         90 px, which is the whole of the report.
+         ⚠ THE ANCHOR IS THE GRID, NOT THE BUTTON. The bar is a full-width readout, so it belongs after
+         the whole action row; `closest('.rad-actions')` finds it in the radius panel and falls back to
+         the button itself everywhere the button is a plain block child (js/map-tools.js's draw panel
+         uses an `.ai-action-btn` in normal flow and was never affected). */
       const _mkProg=()=>{ let box=p.querySelector('.tp-prog'); if(!box){ box=document.createElement('div'); box.className='tp-prog'; box.style.cssText='margin:7px 0 2px;';
           box.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text-muted);margin-bottom:3px;"><span class="tp-prog-lbl" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><b class="tp-prog-pct" style="flex:0 0 auto;">0%</b></div><div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div class="tp-prog-fill" style="height:100%;width:0%;background:var(--prog-grad);transition:width .2s;"></div></div>';
-          if(pb2&&pb2.parentNode) pb2.parentNode.insertBefore(box,pb2.nextSibling); else p.appendChild(box); }
-        box.querySelector('.tp-prog-lbl').textContent=_progLbl(); box.classList.remove('indet'); box.style.display='block'; return box; };
+          const anchor=(pb2&&pb2.closest&&pb2.closest('.rad-actions'))||pb2;
+          if(anchor&&anchor.parentNode) anchor.parentNode.insertBefore(box,anchor.nextSibling); else p.appendChild(box); }
+        /* a REUSED box still carries the previous run's fill/percentage — start every run from zero
+           (the controller's own `shown` does, so leaving the DOM at 100 % showed a full bar for the
+           first instant of the next summation). */
+        box.querySelector('.tp-prog-lbl').textContent=_progLbl(); box.classList.remove('indet');
+        { const f=box.querySelector('.tp-prog-fill'); if(f) f.style.width='0%'; const c=box.querySelector('.tp-prog-pct'); if(c) c.textContent='0%'; }
+        box.style.display='block'; return box; };
       if(pb2) pb2.onclick=async()=>{ const box=_mkProg(); const P=window._imProgCtl(box); P.busy();
         const onProg=(f)=>P.set(f);   /* fires only when the area is large enough to be TILED → real tiles-done fraction */
         try{

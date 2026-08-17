@@ -303,7 +303,16 @@ window.IntMapModules.layerSidebar=function(HOST){
            (it turns into clutter as layers pile up — "選択レイヤーが増加すると煩雑"); the counter + List
            overlay + Clear-all carry the same functions in one constant-height row. */
         /* (#R102) tighten the always-shown ACTIVE-LAYERS bar's LEFT + BOTTOM gap a little more (kept non-flush) */
-        +'#layer-sidebar-r #layer-active-section{position:sticky;top:0;bottom:auto;background:var(--card-bg);z-index:6;margin:0 -8px 1px;padding:5px 7px 3px;border-radius:0;}'   /* (#R115) opaque — never transparent */
+        /* ⚠ (#R252) THE BAR READS THE PANEL'S OWN BACKGROUND VARIABLE, NOT A SECOND ONE.
+           「LayersのActive layersの背景が、Layersの背景の色と微妙に違う。合わせて。」 — and it was, by
+           exactly one elevation step: this rule painted `--card-bg` while the rule 60 lines above paints
+           the sidebar `--panel-bg` in the default (solid) appearance. Measured on the shipped build:
+           dark rgb(28,28,30) on rgb(20,20,22), light rgb(255,255,255) on rgb(233,235,239) — the light
+           pair is plainly visible. It is the same `var(--panel-bg,var(--card-bg))` the sidebar itself
+           uses, so the two can no longer disagree, and in the two FROSTED appearances `--panel-bg` is
+           undefined and the fallback keeps #R115's rule («Active layers is OPAQUE — never transparent»)
+           byte-for-byte. */
+        +'#layer-sidebar-r #layer-active-section{position:sticky;top:0;bottom:auto;background:var(--panel-bg,var(--card-bg));z-index:6;margin:0 -8px 1px;padding:5px 7px 3px;border-radius:0;}'   /* (#R115) opaque — never transparent */
         +'#layer-sidebar-r #layer-active-section .active-lyr-chips{display:none;}'
         +'#layer-sidebar-r .lsr-body{padding-top:0;}'   /* (#R106) flush the Search box to the Active-layers bar (was a 2px see-through seam) */
         /* (#R63) left-style edge toggle — mirrors .btn-toggle-sidebar */
@@ -947,7 +956,11 @@ window.IntMapModules.labelPopup=function(HOST){
       /* (#R59) the place popup now OWNS the boundary outline (#R8c popup + IntMapOutline unified) — closing/clearing
          the popup (×, click-away, or a new label) also clears the blue boundary, so it can never linger. */
       try{ window.IntMapOutline && window.IntMapOutline.clear && window.IntMapOutline.clear(); }catch(_){} }
-    function showPopup(lngLat,name,isCountry,opts){ opts=opts||{}; if(popup){ try{popup.remove();}catch(_){} } const jp=HOST.lang==='jp', safe=String(name).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    /* ⚠ (#R252) `opts.title` is the HEADING ONLY. `name` stays the place's identity — it is what Copy
+       writes, what the Wikipedia probe and the AI brief are asked about, and what IntMapOutline looks
+       the boundary up by — so the two must not be confused: 「大阪府 (Osaka Prefecture)」 is a caption,
+       not a query. See `_bothNames` below for what builds it. */
+    function showPopup(lngLat,name,isCountry,opts){ opts=opts||{}; if(popup){ try{popup.remove();}catch(_){} } const jp=HOST.lang==='jp', safe=String(opts.title||name).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
       /* (#R22) Cleaner layout: name on its own line, then an even button row (equal widths on desktop,
          stacked vertically on mobile via .plc-acts — "ボタンの配置が不格好／モバイルでは縦に三つ"). */
       /* (#R210) 「地名ラベルクリック時のポップアップをすこし小さくして」— one step down across the
@@ -1085,15 +1098,50 @@ window.IntMapModules.labelPopup=function(HOST){
       const claimed=()=>{ try{ return !!(GE().events.clickClaimed&&GE().events.clickClaimed(e)); }catch(_){ return false; } };
       Promise.resolve().then(()=>{ if(claimed()) return; try{ fn(); }catch(_){} });
     }
+    /* ══ ⚠⚠⚠ (#R252) THE POPUP NAMES THE PLACE TWICE: LOCALLY, AND AS THE MAP DREW IT ═══════════════
+       「地名ラベルをクリックしたときに出るポップアップには、現地名に()で地名ラベルに表示されていた
+         名前を併記して」
+
+       The popup has always shown `name` — the OpenMapTiles LOCAL name — while the label beside it is
+       drawn from whatever `text-field` js/place-labels.js resolved for the reader's language and
+       「地名ラベル」 setting. So an English reader tapped 「Osaka Prefecture」 and got 「大阪府」, with
+       nothing on screen connecting the two.
+
+       ⚠ THE SECOND NAME IS COMPUTED FROM THE RENDERER'S OWN RULE, not from a copy of it. `applyLabelLang`
+       builds `text-field` as `coalesce(OSM_NAME_KEYS(lang)…, name)` for the 「ui」 setting, a fixed
+       en/latin/int chain for 「英語で」, and bare `name` for 「現地表記で」; `_labelShown` asks that same
+       exported key list (`window.IntMapOsmNameKeys`) of ONE feature's properties. A second list of
+       languages here is exactly the shape this project keeps paying for.
+       ⚠ AND IT NEVER PRINTS A NAME TWICE. 「現地表記で」, a Japanese reader in Japan, or any place whose
+       localised name IS its local name resolves to one string and the parentheses do not appear. */
+    function _labelShown(p){
+      try{
+        const mode=window.imLabelLang||'ui';
+        if(mode==='local') return String(p.name||'');
+        const keys=(mode==='en')?['name:en','name:latin','name_int']
+          :((window.IntMapOsmNameKeys&&window.IntMapOsmNameKeys(HOST.lang))||['name:en','name:latin','name_int']);
+        for(let i=0;i<keys.length;i++){ const v=p[keys[i]]; if(v) return String(v); }
+      }catch(_){}
+      return String(p.name||'');
+    }
+    function _bothNames(p,name){
+      try{ const local=String((p&&p.name)||''), shown=_labelShown(p||{});
+        if(local&&shown&&shown!==local) return local+' ('+shown+')';
+        return local||shown||name;
+      }catch(_){ return name; }
+    }
     function onLabel(isCountry){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const p=e.features[0].properties||{}; const name=p.name||p['name:en']||p['name_en']||p.name_en||''; if(!name) return;
       /* (#R9/#12) The red area/dot highlight was unwanted — only the copyable popup remains. */
       const f=e.features[0];
-      _deferLabel(e,()=>showPopup(labelAnchor(f,e),name,isCountry)); }; }
+      _deferLabel(e,()=>showPopup(labelAnchor(f,e),name,isCountry,{title:_bothNames(p,name)})); }; }
     /* (#R62) water / terrain labels are now clickable too (popup with Copy/Wikipedia/AI brief; NO highlight). */
     function onGeoLabel(){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const f=e.features[0]; const p=f.properties||{};
       const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
       const name=(f.layer&&f.layer.id==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||''); if(!name) return;
-      _deferLabel(e,()=>{ showPopup(labelAnchor(f,e),name,false,{noOutline:true,noAreaTools:true});
+      /* (#R252) the curated sea gazetteer has no endonym column, so only the tile-sourced water /
+         river / peak labels can carry both names — those are `name` + the same `name:*` fields. */
+      const both=(f.layer&&f.layer.id==='geo-sea')?name:_bothNames(p,name);
+      _deferLabel(e,()=>{ showPopup(labelAnchor(f,e),name,false,{noOutline:true,noAreaTools:true,title:both});
         /* (#R217) the whole property bag, not the one name the popup shows — see js/river-course.js */
         if(f.layer&&f.layer.id==='ofm-river') highlightRiver(p,e.lngLat); }); }; }   /* (#R123) water/terrain = no area → no Isolate/Move */
     /* ══ (#R201) THE ADMIN-1 LABEL IS A PLACE LABEL, SO IT IS ONE HERE TOO ═══════════════════════════
@@ -1132,7 +1180,9 @@ window.IntMapModules.labelPopup=function(HOST){
           if(near.length){ const lid=(near[0].layer&&near[0].layer.id)||''; const p=near[0].properties||{}; const geoLbl=/^(geo-sea|ofm-water|ofm-river|ofm-peak)$/.test(lid);
             const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
             const nm=(lid==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||p['name_en']||'');
-            if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true}:undefined);
+            /* (#R252) the padded tap is the same click, so it gets the same two-name heading */
+            const ttl=(lid==='geo-sea')?nm:_bothNames(p,nm);
+            if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true,title:ttl}:{title:ttl});
               if(lid==='ofm-river') highlightRiver(p,e.lngLat);   /* (#R210) the padded tap is the same click */
               return; } }
         }

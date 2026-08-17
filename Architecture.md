@@ -364,6 +364,11 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 - **テーマ (Theme)** — System / Light / Dark（スキンテーマ群は#R33で廃止）＋**アクセントカラー**（#R114、アカウント同期）。
 - **設定ページ（#R118で再構成）** — 全モード（通常/モバイル/ワークスペース）共通のモーダルを**8セクションのiOS風グループ**に再編：外観／レイアウトとパネル／地図の動作／単位と時刻／ニュースとティッカー／AI／連携・キー／情報とサポート（5言語見出し `setSec*`）。
 - **範囲人口（#R118 / #R123 / #R124）** — 面積測定・半径円・**自由描画(Draw)ツール**のパネル、およびAtlas `population` アクションから、**WorldPop 100mグリッド(2020)** の実グリッド集計で「囲んだ範囲の人口」を算出（`IntMapPopArea`、リング80頂点に間引き、非同期タスクAPI）。#R123: ポーリングを~2分・バックオフ・errorステータス即中断へ延長。Drawの閉領域(loopRings)はMultiPolygonで合算。**#R124: WorldPopは1リクエスト上限100,000km²**（超過は"area was too large"エラー）→ `estimate`が上限超を**turf.bboxClipでサブ上限セルにタイル分割→ポリゴンにクリップ→合算**（緯度別セルサイズで最少化・4並列・80セル上限）。measure/Drawパネルはタイル毎の実Progress表示。実測: 380k km²→56,444,422人（6タイル）。
+  ⚠ **(#R252) 進捗バーは行の「下」で、行の「中」ではない**——アンカーが `#tp-pop-btn` だったので、
+  `.rad-actions{display:grid;grid-template-columns:repeat(3,1fr)}`（#R146 の3ボタン行）の**2番目のセル**として
+  挿入されていた。実測（パネル実寸282px）: 幅**90px**・3つ目のボタンが2行目へ（top 8→96）・ラベルは省略記号だけ。
+  `closest('.rad-actions')` ＝行そのものをアンカーにする（`js/map-tools.js` の描画ツール側は素のブロック要素なので
+  元から無傷）。再表示時は fill/％も 0 に戻す。
 - **Playground (beta)** — 設定ではなく **Layers ▸ Tools**（旧Quizモードの場所）から起動。5モード（実データ）:
   World Explorer（衛星GeoGuessr。完全ランダム陸地・ズームアウト減点・開始地点ピン・回答地図はglobe・起動時に
   サイドバー収納/タブ解除）/ Pandemic Simulator（国別 SEIR メタ個体群＝実在都市に症例ドット・交通網拡散・自動
@@ -559,6 +564,15 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     「地図が覆われる」は構造的に発生しない（最悪は空の帯）。開時に `--lsr-w` を実測計算し**地図に最低320pxを
     確保**（パネル最小280px）。ms-narrowウォッチャーは幅0でも実rectを使用＋使える帯が無ければ `body.ms-hide`
     でピル自体を非表示、CSSの `max-width:calc(...)` で古い変数でもサイドバーを越えられない。
+  - ⚠⚠ **#R252 ピルは「動き終わった座標」で置く**: #R160 以降このパネルは地図を**覆う**ので
+    `.map-container` は寸法が変わらず、ResizeObserver も `resize` も鳴らない。`open()`/`close()` は
+    `intmap-sidebar-resize` を投げるが、HUD 自身の `transition:right .38s` の **t=0 に同期的に**投げるので、
+    唯一の再計算がスライド前の `.map-controls-top` を読み、`--ms-left`/`--ms-right` を**去っていく側の状態**に
+    固定していた（実測: 閉じた直後も 120 ms 後も `[436,666]`＝開いていたときの座標）。
+    `js/mobile-ui.js` は `.map-controls-top` の `transitionend`／`transitioncancel`
+    （`propertyName==='right'`）でも再計算する——**測っている物が止まったときに測る**ので、
+    スタイルシートの秒数を写したタイマーと違い `prefers-reduced-motion` でも正しい。開始時の同期
+    dispatch は残す（アニメーション開始と同時にピルが動くのはそれ）。
   - **#R67 山岳ラベル位置ずれの最終決着（自己修正）**: R64/R66の山岳ピン留めが**ずれの原因そのもの**だった。
     山頂は正確な**ポイントノード**で、タイル量子化誤差は表示ズームのタイルでは常にサブピクセル（誤差と画素サイズが
     同率で縮む）→ **タイル直描画が本質的にドリフトフリー**。ピン留めは低ズームタイルの粗い座標を固定し（山頂から
@@ -1320,6 +1334,13 @@ js/
                                     （追加であって依存ではない）。⚠ 複数セグメントのモデルは**最大の環**を使い、
                                     セグメント数をパネルに明記する。出典は `ev.src`（数値の出所）とは**別の行**で、
                                     取得できなかったときは1行も書かない。
+  seismic.js                        (#R252) **パネルの既定位置**は `left:52 / top:58 / max-height:calc(100dvh − 148px)`
+                                    （デスクトップ）。以前の `16 / 80 / −96px` は、左サイドバーを畳んだ状態で
+                                    実測 `[16,80,378,786]` となり `#coord-readout [9,760,333,791]` を幅いっぱいに、
+                                    `.btn-toggle-sidebar [0,368,22,442]` を 6px 覆っていた。⚠ 移動だけでは下端が
+                                    座標欄に届いたままなので **cap も下げる**（下端が座標欄の約50px上で止まる）。
+                                    ⚠ **≤768px は従来の数値のまま**（ハンドルは `display:none`、幅は 94vw なので
+                                    右へ寄せると画面外に出る）。tests/r252 ⑧ が両方の値と障害物の位置を見る。
   seismic.js                        ⚠⚠⚠ (#R240) **描いた震源域は t=0 から波の絵に届く。**
                                     #R239 の帯（T_first と T_last の間）は、`T_last = max(off/Vr + dist/V)` が
                                     **断層の最後の一片が破壊し終えるまでどこにも存在しない**ため、500 km の震源域では
@@ -2222,6 +2243,11 @@ js/
   place-labels.js                   (#R169) 地名/海洋ラベル（`ensurePlaceLabels`＝`ofm-*` シンボル群の生成・
                                     安定ラベルの収穫・`applyLabelLang`＝`name:<lang>` 切替・地理レイヤー）。28KB
                                     (#R198) `ofm-admin1`（州・省・県）を追加。サイズは全て `js/label-scale.js` から。
+                                    (#R252) `ofm-other` に市区町村より下の5クラスを追加（`neighbourhood` ほか）、
+                                    `ofm-admin1` は境界線と同じ色に、`OSM_NAME_KEYS` を
+                                    `window.IntMapOsmNameKeys` として公開（ポップアップの2つ目の名前）、
+                                    水域ラベル索引の診断 `window._imLabelStats` を js/app-body.js から引き取った
+                                    （シェルの行数上限＝tests/r168 #8 の下では、主題は自分のファイルへ出る）。
   label-scale.js                    (#R198) **地図上の全テキストサイズの唯一の出所** `window.IntMapLabelScale`。
                                     `place(kind)`＝地名ラベルの階段（country/admin1/city/other/era）、
                                     `sub(w)`／`subCase(cond,a,b)`＝地名以外（`w ≤ 1` はクランプ）。
@@ -2243,6 +2269,19 @@ js/
                                     合わせて置かれるので、帯だけ取り残されて文字がはみ出していた。CJK は
                                     `localIdeographFontFamily`＝TinySDF 経由で正しく変換されるため、
                                     **Latin と CJK が混じる1行は 1.1 em ぶん割れていた**。`tests/r247 ①`。
+                                    ⚠⚠⚠ (#R252) **`cjkFamily()` は正しく答えていたが、訊かれるのは地図生成の
+                                    1回だけだった**——`localIdeographFontFamily` はコンストラクタ引数なので、
+                                    言語を切り替えても起動時の書体スタックのままだった。実測：简体に切り替えた
+                                    直後、`cjkFamily()` は SC 先頭・`glyphManager.localIdeographFontFamily` は
+                                    **JP 先頭**。JP が先頭だとブラウザの1文字ごとのフォールバックが働き、
+                                    `县`・`岛`・`东`・`宫` は **Noto Sans JP に存在しない**ので SC へ落ちる
+                                    ＝「宫城县」が SC|JP|SC＝**1つのラベルの中で2書体**（＝報告そのもの）。
+                                    `syncCjkFamily()` が `intmap-lang` のたびに
+                                    `IntMapGeoEngine.scene.setCjkFontFamily(cjkFamily())` を呼ぶ。再ラスタライズは
+                                    アダプタ側で**公開 API の `setGlyphs()`**（既にあるURLを渡す）を通す＝古い family で
+                                    作られた TinySDF ごとキャッシュが空になり、グリフに依存する全タイルが再レイアウト
+                                    されるので「このレイヤーを忘れていた」が原理的に起きない。family が同じなら
+                                    早期 return なので、起動言語のままの人はグリフ再読込を払わない。
                                     ②`bandBox(txt)`＝ニュース帯の実寸（`text-max-width:14em` の折返しを canvas で
                                     実測）と `declutterNewsBands(feats)`＝重なり回避。③`installFlagFont()`＝
                                     国旗 webfont（#R79e から移設。`var(--im-font)` を前置するので言語切替に追随）。
@@ -3097,13 +3136,35 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
     という理由で昇格させた世界銀行の18指標と国別 `pop` は **beta へ降格**（行・データ・凡例は不変）。
 - **投影**：Flat(mercator)/Globe。3D地形は terrarium DEM（複数ホストで並列フェッチ、モバイルは maxzoom 13 でRAM安全）。
 - **地名ラベル**：`ensurePlaceLabels()` が `ofm` の `place` レイヤから `ofm-country/city/other` を生成（冪等）。`cb-names`(既定ON)で表示。
+  ⚠ **(#R252) 市区町村より下の階層は `ofm-other`**：`village`/`suburb`/`hamlet` に加えて
+  **`borough`/`quarter`/`neighbourhood`/`isolated_dwelling`/`farm`**。⚠ 綴りは **`neighbourhood`**——
+  OpenMapTiles のスキーマ値であり（`sports_centre` と同じ理由・#R211）、US綴りの `neighborhood` は
+  **書かれた日から1件もマッチしていなかった**。クラスを3段に分け（1: village/suburb/hamlet ＝ 従来どおり
+  minzoom 7 から無条件、2: borough/quarter、3: neighbourhood/isolated_dwelling/farm）、
+  `['step',['zoom'],1, 13,2, 14,3]` で開く。⚠ **段は整数**（`['zoom']` はフィルタ内では整数ズームでしか
+  再評価されない・#R198 が同じ罠を踏んでいる）で、これはタイルの中身と一致する（実測：suburb は z12 から、
+  neighbourhood/quarter/borough は z14 タイルにしかない。大阪 z14 = neighbourhood 452、東京 = 378＋quarter 63、
+  ベルリン = 13＋quarter 14＋borough 2、パリ = 5＋quarter 8）。1タイル400件超が来るので
+  `symbol-sort-key` は **階層優先＋タイル自身の `rank`**（`ofm-poi` と同じ規則）。
+- **ラベルのポップアップは名前を2つ出す (#R252)**：「現地名（地図がそう描いた名前）」。
+  `showPopup(…,{title})` は**見出しだけ**を差し替え、`name`（＝コピー・Wikipedia 照会・AI ブリーフ・
+  `IntMapOutline` の境界検索が使う識別子）はタイルの `name` のまま。2つ目の名前は
+  `applyLabelLang()` が `text-field` を組むのと**同じ** `OSM_NAME_KEYS(lang)`（`window.IntMapOsmNameKeys`
+  として `ensurePlaceLabels()` から公開）を1つの feature に適用して求めるので、`js/map-ui.js` に
+  2つ目の言語一覧は無い。「現地表記で」設定・現地語＝UI言語のときは1つに解決するので括弧は出ない。
+  3つの入口（ラベルクリック／水・地形ラベル／パディング付きタップ）すべてに付く。
 - **地方行政区分ラベル (#R198)**：同じ `place` レイヤの **`state` / `province`** クラスから `ofm-admin1`。
   実測でこの2クラスが日本の都道府県（`province`・rank 5）・アメリカの州（`state`・rank 1）・中国の省
   （rank 2）・ドイツ／オーストラリアの州（rank 3）を持つ。⚠ `poi.rank`（#R187 で通し番号と実測）と違い
   ここでの `rank` は**面積で世界規模にそろった順序**なので、ズームの階段は国別ではなく rank 別
   （z3.2→1・3.8→2・4.6→3・5.3→4・6.0→5・6.8→6、maxzoom 9）。`cb-names` に属し、`applyLabelLang` が
-  5言語と明暗を与え、時間旅行中は `ofm-country` と同じ理由で隠れる。ラベルの STACK では `ofm-city` の**下**
+  言語を与え、時間旅行中は `ofm-country` と同じ理由で隠れる。ラベルの STACK では `ofm-city` の**下**
   （＝都市名が衝突に勝つ）。
+  ⚠ **(#R252) 色は「その区分を描いている線の色」**＝`js/border-style.js` の `ADMIN1_COLOR`（`#cba6f7`、
+  明暗共通）を**そのモジュールから読む**ので、`ref-admin1` の破線とラベルが二度と食い違わない
+  （`js/place-labels.js` の literal は同モジュール未評価時の到達不能な保険で、tests/r252 ⑤ が両者の一致を見る）。
+  ⚠ ハローは**両基図で暗色**——`#cba6f7` は輝度 0.72 で、明るい基図の白ハローの上では自分の縁取りに対して
+  約 1.4:1 になり消える。コントラストはハローの仕事（#R210 の言葉）。
   ⚠ **(#R201) クリック／ホバーの一覧に入っている**。#R198 は「名前だけの要求」として意図的に外し、
   その判断をコメントに残していた——返ってきたのは「クリック可能ではない！ほかの地名ラベルと違う挙動に
   するな！」。地図の上では都市名と見分けがつかないので、答えないラベルは**小さい機能ではなく壊れた機能**。
@@ -3158,6 +3219,11 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
   `お気に入り → 4ユーティリティ(地名/国境/グリッド/Countries) → Active layers → 6テーマ群 → Others(beta) → Tools(compare/upload)`。
   グループは折り畳み可（デスクトップ）。モバイルは **Others(beta) だけ**プルダウン、他は常時展開。
 - **Active layers**：`_refreshActiveLayers()` がオン中のレイヤーをチップ表示。常に上部。トグル時はスクロールを補正して**行が動かない**ようにする。
+  ⚠ **(#R252) 背景はパネル自身と同じ式**＝`var(--panel-bg,var(--card-bg))`。右サイドバーは既定（不透過）で
+  `--panel-bg` を塗るのに帯だけ `--card-bg` を塗っており、1段ぶんの高低差がそのまま見えていた
+  （実測 dark `rgb(28,28,30)` on `rgb(20,20,22)`／light `rgb(255,255,255)` on `rgb(233,235,239)`）。
+  フロストの2モードでは `--panel-bg` が未定義でフォールバックが効くので、#R115 の
+  「Active layers は絶対に透過させない」は不変。
 - **Globe専用**：`updateOcclusion()` で裏面ピンを隠す。
 - **ウィジェット**：サイドバーのカード群（`intmap_widgets3` に定義保存）。FX・ランダム国など。「Add widget」で追加。
 - **レイヤー・データ契約 `window.IntMapLayers`**（#R119 導入 / #R120・#R121 拡張。#R169 で §5 からここへ移設）
