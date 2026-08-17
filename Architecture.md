@@ -1046,6 +1046,13 @@ sw.js                           Service Worker（タイル等のキャッシュ�
                                 既存の汚染が全端末で次の訪問に流れる）②placeholder は**保存しない**
                                 ③保存に `x-im-cached` を書き、期限切れは**まず古い方を返してから裏で取り直す**
                                 （openfreemap/carto 7日・不変の画像/DEM 60日。**再訪の速さは一切失わない**）。
+CLAUDE.md                       (#R257) Claude Code が**毎セッション自動で読む**恒久指示（作業の進め方・
+                                ワークフロー・確認要件・報告要件）。それまでユーザーが毎回チャットに貼っていた
+                                「IntMap 定例指示」の内容がここに移った。⚠ 秘密情報を書いてはならない
+                                （このリポジトリは public）。
+CLAUDE.local.md                 (#R257) 同じ機構のローカル上書き。**追跡対象外**（.gitignore ＋
+                                .git/info/exclude）。Claude 用 Google アカウントの資格情報など、
+                                公開できない情報だけを置く。
 CONSTITUTION.md                 標準指示（最優先のルール集）
 Architecture.md                 本ファイル（現状仕様書）
 DEV-NOTES.md                    日記形式の開発記録（ラウンドごとの根本原因と修正の記録）
