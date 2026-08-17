@@ -1,0 +1,8 @@
+{
+  "_": "(#R251) Found by tests/r251.spec.js reading the RENDERED DOM: the country list printed its continent sub-line in English in all nine languages, and two sidebar resizers carried a bare English title. Columns: de, ru, es, fr, ko, zh-Hant.",
+
+  "Africa": ["Afrika", "Африка", "África", "Afrique", "아프리카", "非洲"],
+  "Asia": ["Asien", "Азия", "Asia", "Asie", "아시아", "亞洲"],
+  "North America": ["Nordamerika", "Северная Америка", "América del Norte", "Amérique du Nord", "북아메리카", "北美洲"],
+  "Drag to resize": ["Zum Ändern der Höhe ziehen", "Потяните, чтобы изменить размер", "Arrastra para redimensionar", "Faites glisser pour redimensionner", "드래그하여 크기 조절", "拖曳可調整大小"]
+}

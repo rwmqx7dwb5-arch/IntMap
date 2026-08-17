@@ -79,18 +79,34 @@ test('R161 (B) analyzeContext uses the engine and yields a usable pin in every U
   expect(res.pinned[0]).toBeCloseTo(36.23, 1);
 
   // a subject NAME must be present for every UI language — de/ru/es used to render `undefined`
-  const names = await page.evaluate(() => {
+  const names = await page.evaluate(async () => {
     const out = {};
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    /* ⚠ (#R251) THIS LOOP USED TO SWITCH NOTHING. It read
+       `window.setLanguage ? window.setLanguage(lang) : null` — and there is no `window.setLanguage`;
+       the switch is `setLang()`, a closure in js/app-body.js wired to `#lang-<code>`. The guard made
+       it a silent no-op, so five iterations all measured English and the assertion below could not
+       have failed for de/ru/es — the exact defect it was written for. Switch the way a reader does,
+       and wait for the table (#R249: the <html lang> attribute lands before the strings do). */
     for (const lang of ['en', 'jp', 'de', 'ru', 'es']) {
-      try { window.setLanguage ? window.setLanguage(lang) : null; } catch { /* ignore */ }
-      const a = window._imAnalyzeContext('Deadly floods hit Rio de Janeiro state in Brazil', 'AP', 'y', '');
-      out[lang] = a.subjectName;
+      const btn = document.getElementById('lang-' + lang);
+      if (btn) {
+        btn.click();
+        const tag = window.IntMapLang.htmlTag(lang);
+        for (let i = 0; i < 100; i++) {
+          if (window.IntMapLang.isLoaded(lang) && document.documentElement.getAttribute('lang') === tag) break;
+          await sleep(50);
+        }
+      }
+      out[lang] = { name: window._imAnalyzeContext('Deadly floods hit Rio de Janeiro state in Brazil', 'AP', 'y', '').subjectName,
+        switched: !!btn && document.documentElement.getAttribute('lang') === window.IntMapLang.htmlTag(lang) };
     }
     return out;
   });
   for (const lang of Object.keys(names)) {
-    expect(typeof names[lang], `subjectName for ${lang}`).toBe('string');
-    expect(names[lang].length, `subjectName for ${lang}`).toBeGreaterThan(0);
+    expect(names[lang].switched, `the ${lang} pill actually switched the language`).toBe(true);
+    expect(typeof names[lang].name, `subjectName for ${lang}`).toBe('string');
+    expect(names[lang].name.length, `subjectName for ${lang}`).toBeGreaterThan(0);
   }
 });
 

@@ -466,7 +466,7 @@ window.IntMapModules.layoutReflow=function(HOST){
         +'@media(max-width:768px){ #sb-resizer{ display:none; } }'; };
       styleEl.textContent='@media(max-width:768px){ #sb-resizer{ display:none; } }';
       try{ const w=parseInt(localStorage.getItem('intmap_sidebar_w')||'',10); if(w>=320&&w<=Math.max(760,window.innerWidth-60)) setW(w); }catch(_){}   /* (#R62) may span almost the full window */
-      const h=document.createElement('div'); h.id='sb-resizer'; h.title='Drag to resize';
+      const h=document.createElement('div'); h.id='sb-resizer'; h.title=window.IntMapLang.t(HOST.lang,'Drag to resize','高さを調節','Zum Ändern der Höhe ziehen','Потяните, чтобы изменить размер','Arrastra para redimensionar');   /* (#R251) was a bare English literal */
       h.style.cssText='position:absolute;top:0;right:-3px;width:8px;height:100%;cursor:col-resize;z-index:1200;touch-action:none;';
       sb.appendChild(h);
       let drag=false,sx=0,sw=0;

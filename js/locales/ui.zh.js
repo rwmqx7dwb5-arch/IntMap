@@ -3928,5 +3928,8 @@ window.IntMapLang.define('zh', {
   "Atlas AI & country data": "Atlas AI 與國家資料",
   "Ask in plain language, compare countries, even fly a jet": "用日常語言提問、比較國家，甚至駕駛噴射機",
   "Start exploring": "開始探索",
+  "Africa": "非洲",
+  "Asia": "亞洲",
+  "North America": "北美洲",
   }
 });

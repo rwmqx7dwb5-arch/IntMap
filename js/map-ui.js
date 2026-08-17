@@ -40,6 +40,16 @@ window.IntMapModules.layerRegistry=function(HOST){
        `pick()` IS this function, minus the ceiling: positional for the first five, the inline table
        keyed by the English string for the rest, English underneath both. */
     const L5=window.IntMapLang.pick(()=>HOST.lang);
+
+    /* ⚠ (#R251) THE MAP CANVAS NAMES ITSELF, AND IT NAMES ITSELF IN ENGLISH. MapLibre writes
+       `aria-label="Map"` on its canvas, so a screen-reader user in any of the other eight languages
+       is told 「Map」 — the one string on the screen that only a blind reader ever meets, which is
+       exactly why nothing had noticed it. Found by tests/r251.spec.js, which reads attributes as
+       well as text. Re-applied on `intmap-lang` because the canvas outlives the language. */
+    const _nameCanvas=()=>{ try{ const cv=GE().render.canvas&&GE().render.canvas();
+      if(cv) cv.setAttribute('aria-label', L5('Map','地図','Karte','Карта','Mapa')); }catch(_){} };
+    try{ _nameCanvas(); }catch(_){}
+    window.addEventListener('intmap-lang', ()=>setTimeout(_nameCanvas, 30));
     const isOn=id=>{ const cb=document.getElementById('dl-'+id)||document.getElementById(id); return !!(cb&&cb.checked); };
     const _numCache=new Map();   /* per (kind,0.25°cell) numeric cache shared by all Open-Meteo samplers */
     async function _om(kind,lng,lat){ const q=v=>Math.round(v*4)/4, qla=q(lat), qlo=q(lng), key=kind+':'+qla+','+qlo;
@@ -314,7 +324,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       (document.querySelector('.operation-room')||document.body).appendChild(sb);
       /* (#R154) drag-to-resize handle on the LEFT edge (the right sidebar grows as the cursor moves left).
          Persists to intmap_lsr_w; open() honours the saved width instead of the auto-formula. Desktop only. */
-      (function(){ const rh=document.createElement('div'); rh.className='lsr-resizer'; rh.title='Drag to resize'; sb.appendChild(rh);
+      (function(){ const rh=document.createElement('div'); rh.className='lsr-resizer'; rh.title=L5('Drag to resize','高さを調節','Zum Ändern der Höhe ziehen','Потяните, чтобы изменить размер','Arrastra para redimensionar');   /* (#R251) was a bare English literal — found by tests/r251.spec.js reading the rendered DOM */ sb.appendChild(rh);
         let rdrag=false, rsx=0, rsw=0;
         rh.addEventListener('pointerdown',e=>{ if(isMob()) return; rdrag=true; rsx=e.clientX; rsw=sb.offsetWidth; try{ rh.setPointerCapture(e.pointerId); }catch(_){} document.body.style.userSelect='none'; sb.style.transition='none'; e.preventDefault(); e.stopPropagation(); });
         rh.addEventListener('pointermove',e=>{ if(!rdrag) return; const ls=document.getElementById('sidebar'); const lw=(ls&&!ls.classList.contains('collapsed'))?ls.getBoundingClientRect().width:0;

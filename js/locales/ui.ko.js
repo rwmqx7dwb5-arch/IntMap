@@ -3832,4 +3832,7 @@ window.IntMapLang.define('ko', { ui: {
   "3D terrain, real imagery, and travel back to 1900": "3D 지형과 실제 위성 영상, 1900년까지 거슬러",
   "Atlas AI & country data": "Atlas AI·국가 데이터",
   "Ask in plain language, compare countries, even fly a jet": "일상 언어로 묻고, 나라를 비교하고, 비행기까지 조종",
-  "Start exploring": "시작하기",} });
+  "Start exploring": "시작하기",
+  "Africa": "아프리카",
+  "Asia": "아시아",
+  "North America": "북아메리카",} });

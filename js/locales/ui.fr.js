@@ -3842,4 +3842,7 @@ window.IntMapLang.define('fr', { ui: {
   "3D terrain, real imagery, and travel back to 1900": "Relief 3D, imagerie réelle et retour jusqu’en 1900",
   "Atlas AI & country data": "Atlas IA et données par pays",
   "Ask in plain language, compare countries, even fly a jet": "Posez vos questions en langage courant, comparez des pays, pilotez même un avion",
-  "Start exploring": "Commencer l’exploration",} });
+  "Start exploring": "Commencer l’exploration",
+  "Africa": "Afrique",
+  "Asia": "Asie",
+  "North America": "Amérique du Nord",} });

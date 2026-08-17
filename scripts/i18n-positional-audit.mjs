@@ -168,6 +168,9 @@ const SAME_AS_EN = {
        Spanish words (RAE), capitalised here as chart labels, and «MMI IX (Banda Aceh)» is an
        intensity-scale designation with an Indonesian place name. */
     'Gas', 'Solar', 'MMI IX (Banda Aceh)',
+    /* (#R251) …and the continent: «Asia» is the Spanish name of the continent (RAE), spelled
+       exactly as in English; the other six regions differ and are translated at the same site. */
+    'Asia',
   ]),
 };
 /* ⚠ …and the polity names the ERA MAP prints that carry no exonym in either language. Sub-Saharan
