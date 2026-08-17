@@ -46,8 +46,31 @@ import { execFileSync } from 'node:child_process';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LOCALES = join(ROOT, 'js', 'locales');
-const run = (f, ...a) => JSON.parse(execFileSync(process.execPath, [join(ROOT, 'scripts', f), '--json', ...a],
-  { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
+/* ⚠⚠⚠ (#R251) AN INSTRUMENT THAT CANNOT SAY WHICH CHILD FAILED IS THE DEFECT IT EXISTS TO FIND.
+   This was a bare `JSON.parse(execFileSync(…))`, and when a child died on CI the whole gate printed
+   one line — `<anonymous_script>:1` — with no file name, no exit code and no stderr, because the
+   child's own error went nowhere and the parse then failed on an empty string. Three CI runs were
+   spent guessing. The child's stderr is INHERITED (so it lands in the log where it happened), the
+   exit status is reported with the script that produced it, and a parse failure says which file
+   returned unreadable JSON and how much of it there was. */
+const run = (f, ...a) => {
+  let out;
+  try {
+    out = execFileSync(process.execPath, [join(ROOT, 'scripts', f), '--json', ...a],
+      { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, stdio: ['ignore', 'pipe', 'inherit'] });
+  } catch (e) {
+    console.error(`
+✗ scripts/${f} --json ${a.join(' ')} failed: ${e.status != null ? 'exit ' + e.status : e.code || e.message}`);
+    process.exit(1);
+  }
+  try { return JSON.parse(out); }
+  catch (e) {
+    console.error(`
+✗ scripts/${f} --json ${a.join(' ')} returned ${out.length} byte(s) that are not JSON: ${e.message}`);
+    console.error(out.slice(0, 400));
+    process.exit(1);
+  }
+};
 
 const app = run('i18n-report.mjs');
 const keyed = run('i18n-keyed-audit.mjs');
