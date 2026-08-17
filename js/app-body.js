@@ -2689,7 +2689,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R238) the dock's glue is in js/window-manager.js beside the mechanism (`wireDock`) — which is also what keeps this file and the SHELL under tests/r200 ⑤ and tests/r168 #8. */
   /* (#R242) 「地震シミュレータはレイヤー欄からも開けるように」 — the Layers button, the palette and Atlas, one command (the module is lazy) */
   IntMapOS.register('sim.seismic', (ctx)=>window.IntMapLazy.need('seismic').then(()=>{ try{ return !!(window.IntMapSeismic&&window.IntMapSeismic.open(((ctx&&ctx.params)||{}).at||{})); }catch(_){ return false; } }),
-    {label:'Seismic wave simulator', btn:'btn-seismic-sim', group:'sim'});
+    {label:'Earthquake simulator', btn:'btn-seismic-sim', group:'sim'});
   const applyDockMode=IM_HOST.applyDockMode=IM_WINMGR.wireDock({ setMode, renderUI, saveSettings, clearMode:()=>{ currentMode=null; }, mode:()=>currentMode });   IM_HOST.dockRefresh=()=>{ try{ return IM_WINMGR.dockRefresh(); }catch(_){ return 0; } };   IM_HOST.dockedCount=()=>{ try{ return IM_WINMGR.dockedCount(); }catch(_){ return 0; } };   /* (#R242) the empty line is a readout of this */
   function setMode(mode,btnId){
     if(currentMode===mode){ currentMode=null; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); renderUI(); return; }

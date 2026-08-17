@@ -17,8 +17,14 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* ── 1. the trade flow is an ARROW, and it points the way the goods move ───────────────────────── */
 test('R212 ①: trade arcs carry direction — an icon layer along the line, and imports run partner→home', () => {
   const s = read('js/world-packs.js');
-  assert.match(s, /id:'wp-trade-arrow'[\s\S]{0,320}'symbol-placement':\s*'line'/,
-    'the arrows are placed ALONG the arc, not at a point');
+  /* ⚠⚠ (#R258) REPLACED, BY INSTRUCTION, NOT BY DRIFT. 「誰が線に複数矢印つけろって言ってんねん。」
+     — #R212 read 「矢印にしろ」 as «put arrowheads on the line» and placed one every 110 px. The
+     round that asked for it says that is not what it meant: the flow is ONE arrow. So the
+     along-the-line repeater is gone and what this test pins is what makes the picture an arrow —
+     a head at the destination, in the shaft's colour, with the shaft stopping at its base. */
+  assert.doesNotMatch(s, /id:'wp-trade-arrow'/, 'the along-the-line repeater is back');
+  assert.match(s, /id:'wp-trade-tip'[\s\S]{0,400}'icon-anchor':'top'/,
+    'the single head is anchored by its TIP, on the arc’s last vertex');
   assert.match(s, /'icon-image':\['get','ai'\]/, 'the icon comes from the feature, so both directions can coexist');
   /* the coordinate order IS the direction: exports leave home, imports arrive at it */
   assert.match(s, /dir==='X'\)\?greatCircle\(home,c,\d+\):greatCircle\(c,home,\d+\)/,

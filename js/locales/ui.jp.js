@@ -151,6 +151,7 @@ window.IntMapLang.define('jp', { ui: {
       lyrGrpSecurity:"軍事・安全保障",
       lyrGrpHealth:"医療・衛生",
       lyrGrpTech:"IT・技術インフラ",
+      lyrGrpEnergy:"エネルギー・資源",   /* (#R258) */
       lyrGrpOthers:"ベータ",
       lyrGrpOthersReal:"その他",
       lyrGrpOrbit:"宇宙・軌道",

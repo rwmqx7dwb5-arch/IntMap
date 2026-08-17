@@ -174,6 +174,7 @@ window.IntMapLang.define('fr', { ui: {
       lyrGrpSecurity:"Défense et sécurité",
       lyrGrpHealth:"Santé et assainissement",
       lyrGrpTech:"Technologie et infrastructures",
+      lyrGrpEnergy:"Énergie et ressources",   /* (#R258) */
       lyrGrpHazard:"Risques et ciel nocturne",
       lyrGrpIndic:"Indicateurs et surcouches",
       lyrGrpMaritime:"Océans et maritime",
@@ -736,6 +737,47 @@ window.IntMapLang.define('fr', { ui: {
   "historical map": "carte historique",
   "terrain & water": "relief et eau",
   "seismic waves": "ondes sismiques",
+  "About this model": "À propos de ce modèle",   /* (#R258) */
+  "Coal / oil / gas": "Charbon / pétrole / gaz",   /* (#R258) */
+  "Crest above ground": "Hauteur de crête (au-dessus du sol)",   /* (#R258) */
+  "Depth per stroke": "Profondeur par trait",   /* (#R258) */
+  "Discharge": "Débit",   /* (#R258) */
+  "Disperse a release on the live wind field": "Disperser un rejet dans le champ de vent réel",   /* (#R258) */
+  "Elapsed": "Écoulé",   /* (#R258) */
+  "Flow arrows": "Flèches de flux",   /* (#R258) */
+  "Fuel / source": "Combustible / source",   /* (#R258) */
+  "Height per stroke": "Hauteur par trait",   /* (#R258) */
+  "How far you get in a given time": "Jusqu'où l'on va en un temps donné",   /* (#R258) */
+  "Inflow": "Apport",   /* (#R258) */
+  "Method": "Méthode",   /* (#R258) */
+  "Mine / shaft": "Mine / puits",   /* (#R258) */
+  "Mines, quarries & wells": "Mines, carrières et puits",   /* (#R258) */
+  "Night sky from here": "Ciel nocturne d'ici",   /* (#R258) */
+  "Oil or gas well": "Puits de pétrole ou de gaz",   /* (#R258) */
+  "Other / biomass": "Autre / biomasse",   /* (#R258) */
+  "Output": "Puissance",   /* (#R258) */
+  "Place water on the map first": "Placez d'abord de l'eau sur la carte",   /* (#R258) */
+  "Power plants & grid": "Centrales électriques et réseau",   /* (#R258) */
+  "Quarry": "Carrière",   /* (#R258) */
+  "Radioactive plume simulator": "Simulateur de panache radioactif",   /* (#R258) */
+  "Rainfall": "Précipitations",   /* (#R258) */
+  "Resource": "Ressource",   /* (#R258) */
+  "Sculpt the ground, pour water, build a levee": "Modeler le terrain, verser de l'eau, bâtir une digue",   /* (#R258) */
+  "Solve the wave from a sea-floor rupture": "Calculer la vague d'une rupture sous-marine",   /* (#R258) */
+  "Source & notes": "Source et notes",   /* (#R258) */
+  "Substation": "Poste électrique",   /* (#R258) */
+  "Terrain & water simulator": "Simulateur de terrain et d'eau",   /* (#R258) */
+  "The sky a person standing here has": "Le ciel vu par une personne debout ici",   /* (#R258) */
+  "Tool": "Outil",   /* (#R258) */
+  "Tsunami simulator": "Simulateur de tsunami",   /* (#R258) */
+  "Voltage": "Tension",   /* (#R258) */
+  "Volume per click": "Volume par clic",   /* (#R258) */
+  "What the terrain hides from a point": "Ce que le relief masque depuis un point",   /* (#R258) */
+  "Where the sun reaches, hour by hour": "Où le soleil arrive, heure par heure",   /* (#R258) */
+  "Width": "Largeur",   /* (#R258) */
+  "Mines, quarries, mine shafts and oil or gas wells mapped in OpenStreetMap for the current view — the places raw material physically leaves the ground. Click any point for the resource and operator as tagged.": "Mines, carrières, puits de mine et puits de pétrole ou de gaz cartographiés dans OpenStreetMap pour la vue actuelle — les lieux où la matière première sort physiquement du sol. Cliquez sur un point pour la ressource et l'exploitant tels qu'ils sont étiquetés.",   /* (#R258) */
+  "Power stations, substations, wind turbines and solar farms mapped in OpenStreetMap for the current view — where the electricity is actually generated and stepped up, not a national average. Click any point for its output, fuel and operator as tagged.": "Centrales, postes, éoliennes et fermes solaires cartographiés dans OpenStreetMap pour la vue actuelle — là où l'électricité est réellement produite et transformée, et non une moyenne nationale. Cliquez sur un point pour sa puissance, son combustible et son exploitant tels qu'ils sont étiquetés.",   /* (#R258) */
+  "Arrow width is proportional to the SQUARE ROOT of the value (a flow-map convention — the eye compares area, and a stroke’s area is width × length), and the arrow points the way the goods move. Hover any arrow for the exact figure; nothing here rescales the amounts. Source: BACI (CEPII) via OEC, HS 6-digit, year ": "La largeur de la flèche est proportionnelle à la RACINE CARRÉE de la valeur (convention des cartes de flux — l'œil compare les aires, et l'aire d'un trait vaut largeur × longueur) et la flèche indique le sens des marchandises. Survolez une flèche pour le chiffre exact ; rien ici ne remet les montants à l'échelle. Source : BACI (CEPII) via OEC, SH 6 chiffres, année ",   /* (#R258) */
   "sun & shadow": "soleil et ombre",
   "line of sight": "ligne de visée",
   "Nothing to clear for": "Rien à effacer pour",
@@ -1997,7 +2039,7 @@ window.IntMapLang.define('fr', { ui: {
   "Searching the next 24 hours…": "Recherche dans les 24 prochaines heures…",
   "See IntMap Pro": "Découvrir IntMap Pro",
   "See the past world": "Voir le monde d'autrefois",
-  "Seismic waves (set as epicentre)": "Ondes sismiques (définir comme épicentre)",
+  "Earthquake simulator (set as epicentre)": "Simulateur de séismes (définir comme épicentre)",
   "Select at least one indicator.": "Sélectionnez au moins un indicateur.",
   "Selected": "Sélectionné",
   "Semi-major axis": "Demi-grand axe",
@@ -2602,7 +2644,7 @@ window.IntMapLang.define('fr', { ui: {
   "Play": "Lecture",
   "Playback speed": "Vitesse de lecture",
   "Rupture size": "Dimensions de la rupture",
-  "Seismic wave simulator": "Simulateur d’ondes sismiques",
+  "Earthquake simulator": "Simulateur de séismes",
   "Strike / dip / rake": "Azimut / pendage / glissement",
   "Time since the rupture began": "Temps écoulé depuis le début de la rupture",
   "When": "Date et heure",

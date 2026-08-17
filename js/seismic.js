@@ -3618,7 +3618,7 @@ window.IntMapModules.seismic=function(HOST){
       panel.innerHTML='<div class="sq-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;">'
         /* (#R232) 「地震シミュレータから🌐の絵文字を削除。」 A globe glyph in front of a panel that is
            already the earthquake panel said nothing, and the standing rule is no decorative emoji. */
-        +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">'+L('Seismic waves','地震波シミュレーター','Seismische Wellen','Сейсмические волны','Ondas sísmicas')+'</span>'
+        +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">'+L('Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos')+'</span>'
         /* (#R210) 「地震・津波シミュレータウィンドウは最小化可能に。」 A long solve is worth watching the
            map during; closing the panel throws the run away, so the third state is "keep everything,
            give the map back its pixels". The header stays (it is also the drag handle), the body is

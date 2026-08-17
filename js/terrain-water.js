@@ -86,9 +86,10 @@ window.IntMapModules.terrainWater=function(HOST){
         pourSimS+=dt*timeScale;
         sources[sources.length-1].m3+=pourRate*dt*timeScale;
         solve();                       /* redraws and re-reports; _retrace() stays debounced out */
+        try{ syncFoot(); }catch(_){}   /* (#R258) the footer clock ticks with the simulation */
       },220);
       return true; }
-    function pourStop(){ if(pourT){ clearInterval(pourT); pourT=null; if(opened) report(); } return false; }
+    function pourStop(){ if(pourT){ clearInterval(pourT); pourT=null; if(opened){ report(); try{ syncFoot(); }catch(_){} } } return false; }
 
     /* ---- layers ------------------------------------------------------------------------------- */
     function ensureVec(){ try{ if(!_imCanDraw()) return false;
@@ -282,18 +283,46 @@ window.IntMapModules.terrainWater=function(HOST){
       editDirty(); }
     /* A levee is a ridge whose crest follows the drawn line — stamped into the SAME height field, so
        the solver has no idea it is man-made and treats it exactly like ground. */
+    /* ══ ⚠⚠⚠ (#R258) THE WATER WENT THROUGH THE DAM, AND THE CROSS-SECTION IS WHY ═══════════════════
+       「堤防・ダムも同様。水面より高いはずの場所をすり抜ける。どないなっとんねん。」 Reproduced from the
+       arithmetic, and there are two independent faults in these four lines:
+
+       ① THE CREST WAS ONLY THE CREST ON THE CENTRELINE. `add = crest·(1 − d²)` with d the distance
+          from the line in half-widths is a parabola that reaches ZERO at the levee's own edge. So
+          「天端高 8 m」 produced 8 m at one point of the cross-section and less than that everywhere
+          else — and the solver reads CELLS, not the continuous shape, so a cell whose centre falls
+          at d = 0.7 was raised 4.1 m, not 8. The water then quite correctly went over the part that
+          was not 8 m high. A levee has a FLAT crest at the height it is built to; the taper belongs
+          on its outer shoulders.
+       ② A RIDGE ONE CELL WIDE LEAKS DIAGONALLY. `halfW` floors at **1** cell, and the default width
+          is 60 m against a cell that is 156 m over a 60 km view — so a diagonal run of the line
+          stamped a chain of cells touching only at their CORNERS, while `routeWater`'s flood is
+          8-connected (NB has eight entries): the water simply steps between the corners. The floor
+          is 1.5 cells now, which is the smallest half-width that leaves no corner-only gap.
+
+       ⚠ AND WHEN THE GRID CANNOT CARRY THE WIDTH THAT WAS ASKED FOR, IT SAYS SO — `leveeThin` is
+       reported in the panel rather than silently widening the structure (#R185's rule). */
+    let leveeThin=0;
     function stampLevees(out){ if(!G||!levees.length) return;
-      const halfW=(w)=>Math.max(1,(w||leveeWidth)/2/G.cellM);
+      leveeThin=0;
+      const MIN_HW=1.5;                       /* cells — under this an 8-connected flood finds a corner */
       levees.forEach(lv=>{ const pts=lv.pts.map(p=>{ const c=cellOf(p[0],p[1]); return c?[c.i,c.j]:null; }).filter(Boolean);
-        if(pts.length<2) return; const hw=halfW(lv.width), crest=lv.crest;
+        if(pts.length<2) return;
+        const want=(lv.width||leveeWidth)/2/G.cellM;
+        if(want<MIN_HW) leveeThin++;
+        const hw=Math.max(MIN_HW,want), crest=lv.crest;
+        /* flat to 65 % of the half-width, then a shoulder down to nothing at the edge */
+        const FLAT=0.65;
         for(let s=0;s<pts.length-1;s++){ const [x0,y0]=pts[s], [x1,y1]=pts[s+1];
-          const n=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)));
+          /* ⚠ the sampling step is a fraction of a CELL: at one step per cell a diagonal segment
+             skips the cells between two samples, which is the same corner-gap by another route. */
+          const n=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)*3));
           for(let t=0;t<=n;t++){ const cx=x0+(x1-x0)*t/n, cy=y0+(y1-y0)*t/n;
             const r=Math.ceil(hw);
             for(let dj=-r;dj<=r;dj++){ const j=Math.round(cy)+dj; if(j<0||j>=G.NY) continue;
               for(let di=-r;di<=r;di++){ const i=Math.round(cx)+di; if(i<0||i>=G.NX) continue;
                 const d=Math.hypot(Math.round(cx)+di-cx,Math.round(cy)+dj-cy)/hw; if(d>1) continue;
-                const add=crest*(1-d*d);                       /* parabolic cross-section */
+                const add=crest*Math.min(1,Math.max(0,(1-d)/(1-FLAT)));
                 const k=j*G.NX+i; if(add>out[k]) out[k]=add; } } } } }); }
     function surface(){ const n=G.NX*G.NY, s=new Float32Array(n);
       for(let k=0;k<n;k++) s[k]=G.base[k]+editField()[k];
@@ -355,7 +384,7 @@ window.IntMapModules.terrainWater=function(HOST){
        app's own `terrain-dem` exactly as before. */
     const DEM_PROTO='imapterr';
     const _demBase=new Map();   /* z/x/y → Float32Array(256·256), the untouched terrarium tile */
-    let _demProtoOn=false, _demSrcN=0, _demSrcId=null, _demPrev=null;
+    let _demProtoOn=false, _demSrcN=0, _demSrcId=null, _demPrev=null, _demTileV=-1;
     const _demHosts=['https://s3.amazonaws.com/elevation-tiles-prod/terrarium',
       'https://elevation-tiles-prod.s3.amazonaws.com/terrarium',
       'https://elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com/terrarium',
@@ -393,12 +422,22 @@ window.IntMapModules.terrainWater=function(HOST){
         return { data: await blob.arrayBuffer() };
       }); }catch(e){ try{ console.warn('sculpted terrain protocol could not be registered',e); }catch(_){} }
       return _demProtoOn; }
-    /* put the sculpted DEM under the camera, or hand the app's own back */
+    /* ══ ⚠⚠⚠ (#R258) ONE SOURCE, RE-TILED — NOT A NEW SOURCE PER STROKE ═════════════════════════════
+       「盛る、削るやった瞬間3D表示が毎回リセットされるのを辞めろ。堤防・ダムも同様。」
+       #R255 built a BRAND-NEW `raster-dem` source (`tw-dem-1`, `tw-dem-2`, …) on every edit and
+       called `setTerrain` on it. Attaching a different terrain source makes the renderer throw the
+       whole elevation mesh away, re-derive the transform's centre elevation and rebuild — which is
+       the reset: the relief flattens, the camera's zoom is recalculated under it, and the tiles come
+       back one by one. Once per brush stroke.
+       The source is created ONCE now and `setTerrain` is called ONCE. An edit only changes the tile
+       TEMPLATE (`…?v=<editStamp>`), which re-fetches the squares through the protocol while the
+       terrain attachment, the mesh binding and the camera stay exactly where they are. */
+    function demTiles(){ return [DEM_PROTO+'://{z}/{x}/{y}?v='+editStamp]; }
     function syncTerrain(){
       let cur=null; try{ cur=GE().scene.getTerrain(); }catch(_){ return; }
       const want=opened&&hasEdits();
       if(!want){
-        if(_demSrcId){ const old=_demSrcId; _demSrcId=null;
+        if(_demSrcId){ const old=_demSrcId; _demSrcId=null; _demTileV=-1;
           try{ if(cur&&cur.source===old) GE().scene.setTerrain(_demPrev||{source:'terrain-dem',exaggeration:1.0}); }catch(_){}
           try{ if(GE().layers.hasSource(old)) GE().layers.removeSource(old); }catch(_){} }
         return; }
@@ -406,13 +445,16 @@ window.IntMapModules.terrainWater=function(HOST){
       if(cur&&cur.source!==_demSrcId) _demPrev=cur;
       if(!ensureDemProto()) return;
       const mz=(window.IntMapDem&&window.IntMapDem.maxZoom)?window.IntMapDem.maxZoom():14;
-      const id='tw-dem-'+(++_demSrcN);
       try{
-        GE().layers.addSource(id,{type:'raster-dem',tiles:[DEM_PROTO+'://{z}/{x}/{y}'],
-          encoding:'terrarium',tileSize:256,maxzoom:mz});
-        GE().scene.setTerrain({source:id,exaggeration:(_demPrev&&_demPrev.exaggeration)||1.0});
-        const old=_demSrcId; _demSrcId=id;
-        if(old) setTimeout(()=>{ try{ if(GE().layers.hasSource(old)) GE().layers.removeSource(old); }catch(_){} },600);
+        if(!_demSrcId||!GE().layers.hasSource(_demSrcId)){
+          _demSrcId='tw-dem-'+(++_demSrcN);          /* still unique per OPEN, so a stale one cannot be inherited */
+          GE().layers.addSource(_demSrcId,{type:'raster-dem',tiles:demTiles(),
+            encoding:'terrarium',tileSize:256,maxzoom:mz});
+          GE().scene.setTerrain({source:_demSrcId,exaggeration:(_demPrev&&_demPrev.exaggeration)||1.0});
+          _demTileV=editStamp; return; }
+        if(_demTileV!==editStamp){ _demTileV=editStamp;
+          /* re-tile IN PLACE: same source id, so the terrain is never detached */
+          GE().layers.setSourceTiles(_demSrcId,demTiles()); }
       }catch(_){ }
     }
     /* the terrain is re-meshed when a stroke ENDS, not on every frame of it — one encode per edit */
@@ -800,22 +842,40 @@ window.IntMapModules.terrainWater=function(HOST){
 
        ⚠ Returns `null` when the flat fills the whole window — then there is nothing outside it to
        compare, and the caller must widen instead of guessing. That is what the ladder is for. */
+    /* ══ ⚠⚠ (#R258) …AND IT RETURNS THE WAY ACROSS, NOT ONLY THE FAR SIDE ═══════════════════════════
+       「たまに、直線で地形を完全無視するクソ区間がある。」 That section is HERE. When the walk crossed a
+       lake wider than its window, the escape below pushed exactly ONE point — the outlet — so the
+       course jumped from the shore it entered on to the shore it leaves by in a single leg, and the
+       renderer drew a straight line between them, over whatever the ground does in between (across a
+       peninsula, over a ridge, through a town). The water does not go that way; it goes across the
+       water. The fill is breadth-first now and keeps a parent link, so the cells the crossing
+       actually passes through come back with it and the drawn course follows the lake. */
     function flatOutlet(W,k0,tolM){
       const n=W.n, N=W.N, surf=W.surf, lv=surf[k0], tol=(tolM==null?1.0:tolM);
       if(!isFinite(lv)) return null;
-      const inR=new Uint8Array(N), st=new Int32Array(N); let sp=0, cells=0;
+      const inR=new Uint8Array(N), st=new Int32Array(N), par=new Int32Array(N).fill(-1);
+      let sp=0, head=0, cells=0;
       const NB=[-1,1,-n,n,-n-1,-n+1,n-1,n+1];
-      let best=-1, bestE=Infinity, touchedEdge=false;
+      let best=-1, bestE=Infinity, bestFrom=-1, touchedEdge=false;
       st[sp++]=k0; inR[k0]=1;
-      while(sp){ const k=st[--sp]; cells++;
+      /* BREADTH-first: the parent tree is then a shortest-hop path across the flat, which is the
+         crossing to draw. A depth-first tree reaches the same outlet by a wandering route. */
+      while(head<sp){ const k=st[head++]; cells++;
         const ki=k%n, kj=(k/n)|0;
         if(ki===0||kj===0||ki===n-1||kj===n-1) touchedEdge=true;
         for(let d=0;d<8;d++){ const nk=k+NB[d]; if(nk<0||nk>=N) continue;
           const ni=nk%n, nj=(nk/n)|0; if(Math.abs(ni-ki)>1||Math.abs(nj-kj)>1) continue;
           if(inR[nk]) continue;
           const e=surf[nk]; if(!isFinite(e)) continue;
-          if(Math.abs(e-lv)<=tol){ inR[nk]=1; st[sp++]=nk; }
-          else if(e<bestE){ bestE=e; best=nk; } } }
+          if(Math.abs(e-lv)<=tol){ inR[nk]=1; par[nk]=k; st[sp++]=nk; }
+          else if(e<bestE){ bestE=e; best=nk; bestFrom=k; } } }
+      /* the crossing itself: k0 → … → the in-region cell the outlet was seen from → the outlet */
+      let path=null;
+      if(best>=0&&bestFrom>=0){ const chain=[]; let g=0;
+        for(let k=bestFrom;k>=0&&g++<N;k=par[k]) chain.push(k);
+        chain.reverse();
+        if(chain.length&&chain[0]===k0){ chain.push(best);
+          path=chain.map(k=>{ const p=W.ll(k); return { at:p, e:surf[k] }; }); } }
       /* ⚠ `touchedEdge` IS REPORTED, NOT ACTED ON HERE. The caller decides, because the two cases
          it separates are decided by whether a usable spill was ALSO found:
            · flat runs off the window AND nothing lower was seen → this window cannot answer, widen;
@@ -826,7 +886,7 @@ window.IntMapModules.terrainWater=function(HOST){
          Measured before this distinction existed: five escalations, every one at the 3× rung,
          because the talweg branch 'succeeded' on the lake every time and the wider rungs that would
          have contained it were never reached. */
-      return { touchedEdge, cells, outlet:best, outElev:bestE, level:lv,
+      return { touchedEdge, cells, outlet:best, outElev:bestE, level:lv, path,
                areaKm2:cells*W.cellAreaM2/1e6, at:(best>=0?W.ll(best):null) };
     }
     /* ⚠ (#R186) ONE PIT, ANSWERED — AND WHY IT CANNOT ASK "AM I IN A PIT?".
@@ -1227,8 +1287,13 @@ window.IntMapModules.terrainWater=function(HOST){
               if(!usable&&fo&&fo.touchedEdge){ escalMult=mult; continue; }
               if(usable){
                 escal++; escaped=true; escalMult=mult;
-                const p=fo.at; distM+=gcM([lng,lat],p);
-                path.push(p); elev.push(fo.outElev); spac.push(V3.spacingM); pts++;
+                const p=fo.at;
+                /* (#R258) the CROSSING, cell by cell — not a chord from one shore to the other. The
+                   fallback is the single leg only when the fill could not hand a path back. */
+                const walk=(fo.path&&fo.path.length>1)?fo.path.slice(1):[{at:p,e:fo.outElev}];
+                let pv=[lng,lat];
+                walk.forEach(step=>{ distM+=gcM(pv,step.at); pv=step.at;
+                  path.push(step.at); elev.push(step.e); spac.push(V3.spacingM); pts++; });
                 lakes.push({ at:[lng,lat], depthM:0, areaKm2:fo.areaKm2 });   /* the lake it crossed, and how big */
                 { const dx=(p[0]-lng)*Math.cos(p[1]*D), dy=p[1]-lat, m=Math.hypot(dx,dy);
                   if(m>1e-9){ headX=dx/m; headY=dy/m; } }
@@ -1680,8 +1745,9 @@ window.IntMapModules.terrainWater=function(HOST){
         +'<br><b>'+L('Overtopping','決壊・越流','Überströmen','Перелив','Desbordamiento')+':</b> '
         +(result.breaches.length?(result.breaches.length+' '+L('spill points','箇所','Stellen','точек','puntos'))
           :L('none — everything is held','なし（すべて湛水）','keines','нет','ninguno'))
-        +(pourT?('<br><b>'+L('Pouring','注水中','Zulauf','Наполнение','Vertido')+':</b> '+fmtM3(pourTotal())
-          +' · '+L('elapsed','経過','vergangen','прошло','transcurrido')+' '+fmtDur(pourSimS)+' ('+timeScale+'×)'):''));
+        /* (#R258) the pouring volume and the elapsed clock moved to the footer — see syncFoot() */
+        );
+      try{ syncFoot(); }catch(_){}
       setMore('<b>'+L('Ponded','湛水','Aufgestaut','Затоплено','Embalsado')+':</b> '+fmtM3(result.storedM3)
         +' · '+n(result.floodKm2,2)+' km² · '+L('max depth','最大水深','max. Tiefe','макс. глубина','prof. máx')+' '+n(result.maxDepth,1)+' m'
         +(result.breaches.length?('<br><b>'+L('Largest spill','最大の越流','Größter Überlauf','Наибольший перелив','Mayor desbordamiento')+':</b> '+fmtM3(result.breaches[0].over)):'')
@@ -1711,9 +1777,70 @@ window.IntMapModules.terrainWater=function(HOST){
       if(s<172800) return (s/3600).toFixed(1)+' '+L('h','時間','h','ч','h');
       return (s/86400).toFixed(1)+' '+L('d','日','T','сут','d'); }
 
-    const BTN='padding:5px 7px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;white-space:nowrap;';
-    const NUM='width:78px;height:26px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;box-sizing:border-box;';
-    const ROW='font-size:11.5px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;gap:8px;';
+    /* ══ ⚠⚠ (#R258) THE PANEL IS THE SAME GROUPED INSET LIST THE EARTHQUAKE SIMULATOR IS ═══════════
+       「UIも総じてくそ。全面改修しろ。上流のものに合わせろ。時間は下部スティックしろ。」
+
+       What was here: one flat column of `display:flex;gap:9px` rows — four tool buttons, then
+       whichever parameters that tool has, then a `<details>`, then a paragraph, then a footer with
+       the rainfall box and three reset buttons. Nothing said where one subject ended and the next
+       began, the number boxes were 26 px tall against a 40 px touch target everywhere else in this
+       app, and 「1ストロークの高さ」 sat at the same level as 「リセット」.
+
+       This app already decided what a simulator's panel looks like: #R237/#R240/#R242/#R244 rebuilt
+       the earthquake simulator as a grouped inset list — a titled card per subject, hairlines inside
+       a card and none between cards, one row per control with the label left and the value right, a
+       40 px row, and a PINNED footer holding the thing you keep coming back to. That is the shape
+       this panel takes now, with the same measurements (`FS`/`FS_S`/`FS_H`, 40 px rows, the
+       segmented control carrying the accent on the chosen segment).
+
+       ⚠ THE CLOCK IS IN THE FOOTER, NOT IN A TOOL. 「時間は下部スティックしろ。」 ▶/⏸, the time
+       multiplier and the elapsed simulated time used to live inside the 「ここに水」 tool's parameter
+       block — i.e. they scrolled away, and they DISAPPEARED entirely as soon as you picked up the
+       brush, while the pour they control kept running (#R255 made sure of that). The pour is the
+       simulation's, so its controls belong to the panel and not to a pointer mode: the footer
+       carries the transport, the speed and the elapsed clock in every mode.
+       ⚠ Every class name the handlers bind to is unchanged, and `.tw-foot` is still a SIBLING of
+       `.tw-body` closed in the order it is opened (tests/r255 asserts its parent is the panel — the
+       one unbalanced `</div>` that broke #R245's pinned footer). */
+    const TW_FS='12px', TW_FS_S='11px';
+    function _ensureCss(){
+      if(document.getElementById('tw-ios-css')) return;
+      const s=document.createElement('style'); s.id='tw-ios-css';
+      s.textContent=[
+        '.tw-card{background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.16));border-radius:12px;overflow:hidden;}',
+        '.tw-cap{font-size:'+TW_FS_S+';font-weight:600;letter-spacing:.01em;color:var(--text-main);padding:0 3px 5px;}',
+        '.tw-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;'
+          +'padding:7px 11px;font-size:'+TW_FS+';color:var(--text-main);box-sizing:border-box;}',
+        '.tw-row+.tw-row,.tw-row+.tw-blk,.tw-blk+.tw-row,.tw-blk+.tw-blk{border-top:1px solid var(--glass-border,rgba(128,128,128,0.16));}',
+        '.tw-blk{padding:9px 11px;font-size:'+TW_FS+';color:var(--text-main);box-sizing:border-box;}',
+        '.tw-val{margin-left:auto;display:flex;align-items:center;gap:7px;flex:0 0 auto;}',
+        '.tw-num{width:82px;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
+          +'background:var(--input-bg);color:var(--text-main);font-size:'+TW_FS+';padding:0 7px;box-sizing:border-box;text-align:right;}',
+        '.tw-segwrap{display:flex;gap:3px;background:var(--input-bg);border-radius:10px;padding:3px;}',
+        '.tw-seg{flex:1;min-width:0;border:none;background:transparent;color:var(--text-main);font-size:'+TW_FS+';'
+          +'font-weight:500;padding:7px 6px;border-radius:8px;cursor:pointer;line-height:1.25;white-space:nowrap;}',
+        '.tw-seg.on{background:var(--primary-color);color:#fff;font-weight:600;}',
+        /* ⚠ (#R258) THE TOOL PICKER IS 2×2, NOT A FOUR-WAY STRIP. Measured in this panel: the strip
+           gives each segment 73 px while 「🧱 堤防・ダム」 needs 96 and 「💧 ここに水」 88 — two of the
+           four labels were clipped. Four names do not fit across 306 px, so they go two by two. */
+        '.tw-modes{display:grid;grid-template-columns:1fr 1fr;}',
+        '.tw-modes .tw-seg{overflow:hidden;text-overflow:ellipsis;}',
+        '.tw-btn{padding:8px 10px;border-radius:10px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
+          +'background:var(--input-bg);color:var(--text-main);font-size:'+TW_FS+';cursor:pointer;}',
+        /* the transport: a round accent button, the way the other simulator's player is (#R242) */
+        '.tw-play{width:38px;height:38px;flex:0 0 auto;border-radius:19px;border:none;background:var(--primary-color);'
+          +'color:#fff;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}',
+        '.tw-play:disabled{opacity:.42;cursor:default;}',
+        '.tw-clock{font-variant-numeric:tabular-nums;font-size:'+TW_FS+';color:var(--text-main);white-space:nowrap;}',
+        '.tw-note summary{cursor:pointer;font-size:'+TW_FS_S+';color:var(--text-main);list-style:revert;}',
+      ].join('\n');
+      document.head.appendChild(s);
+    }
+    const cap=(t)=>'<div class="tw-cap">'+t+'</div>';
+    const card=(inner)=>'<div class="tw-card">'+inner+'</div>';
+    /* kept for the few places that still write an inline control (the params block builds rows) */
+    const NUM='';
+    const ROW='';
     /* ══ (#R211) NO "PAN" BUTTON, AND EVERY BUTTON RELEASES ITSELF ═══════════════════════════════
        「移動ボタンを削除し各ボタンは再クリックで選択解除」
        'pan' was a tool you had to select in order to stop using a tool — i.e. the panel made the
@@ -1730,6 +1857,7 @@ window.IntMapModules.terrainWater=function(HOST){
        the tests are unaffected; this is the human end of the same number. */
     const PEN=[[150,L('Fine','細','Fein','Тонкая','Fina')],[400,L('Medium','中','Mittel','Средняя','Media')],[1200,L('Broad','太','Breit','Широкая','Ancha')]];
     function render(){ if(!panel) return;
+      _ensureCss();
       panel.innerHTML='<div class="tw-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;">'
         +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">⛰💧 '+L('Terrain &amp; water','地形編集・水流','Gelände &amp; Wasser','Рельеф и вода','Terreno y agua')+'</span>'
         +'<button class="tw-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
@@ -1746,29 +1874,46 @@ window.IntMapModules.terrainWater=function(HOST){
            re-parents the footer inside the scroller, where `position:sticky` is a no-op. Body and
            footer are siblings here, closed in the order they are opened, and tests/r255 asserts that
            `.tw-foot`'s parent is the panel itself. */
-        +'<div class="tw-body" style="padding:10px 12px 4px;display:flex;flex-direction:column;gap:9px;flex:1 1 auto;min-height:0;overflow-y:auto;">'
-        +'<div class="tw-modes" style="display:flex;flex-wrap:wrap;gap:5px;">'+modes().map(m=>'<button class="tw-m" data-m="'+m[0]+'" style="'+BTN+'flex:1 1 auto;">'+m[1]+'</button>').join('')+'</div>'
+        +'<div class="tw-body" style="padding:10px 12px 4px;display:flex;flex-direction:column;gap:11px;flex:1 1 auto;min-height:0;overflow-y:auto;">'
+        /* ① the tool — a segmented control, because exactly one of them is in the pointer's hand */
+        +'<div>'+cap(L('Tool','ツール','Werkzeug','Инструмент','Herramienta'))
+          +'<div class="tw-segwrap tw-modes">'+modes().map(m=>'<button class="tw-seg tw-m" data-m="'+m[0]+'">'+m[1]+'</button>').join('')+'</div></div>'
+        /* ② whatever that tool is set by */
         +'<div class="tw-params"></div>'
-        /* (#R211) 「専門統計は「詳細情報を表示」で隠す」 — <details> so the browser owns the state */
-        +'<details class="tw-more" style="font-size:11.5px;color:var(--text-main);line-height:1.55;">'
-          +'<summary style="cursor:pointer;font-size:11px;color:var(--text-muted);">'+L('Show details','詳細情報を表示','Details anzeigen','Подробнее','Ver detalles')+'</summary>'
+        /* ③ the one condition that applies to the whole rectangle whichever tool is out */
+        +'<div>'+cap(L('Weather','気象','Wetter','Погода','Meteorología'))
+          +card('<label class="tw-row">'+L('Rainfall','降水量','Niederschlag','Осадки','Lluvia')
+            /* ⚠ (#R237) ONE `class` attribute per tag — a second one is silently discarded */
+            +'<span class="tw-val"><input class="tw-num tw-rain" type="number" min="0" max="2000" step="10" value="'+rainMm+'"><span style="opacity:.7;">mm</span></span></label>')
+        +'</div>'
+        /* ④ (#R211) 「専門統計は「詳細情報を表示」で隠す」 — <details> so the browser owns the state */
+        +'<details class="tw-more tw-note" style="font-size:'+TW_FS_S+';color:var(--text-main);line-height:1.55;">'
+          +'<summary>'+L('Show details','詳細情報を表示','Details anzeigen','Подробнее','Ver detalles')+'</summary>'
           +'<div class="tw-more-body" style="margin-top:5px;"></div></details>'
-        +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-        +L('Real terrarium elevation, sculpted by you. Water is routed by priority-flood depression filling and downslope volume accounting — it answers where the water stands and which way it leaves, not how fast the front travels.',
-           '実際の標高データを編集しています。水はプライオリティフラッド（窪地充填）と流下方向への体積集積で解いています。「どこに溜まり、どちらへ抜けるか」を答えるモデルで、波の到達速度は扱いません。',
-           'Echte Höhendaten. Wasser über Priority-Flood und Volumenrouting — wo es steht und wohin es abfließt, nicht wie schnell die Front läuft.',
-           'Реальные высоты. Вода — priority-flood и маршрутизация объёма: где стоит и куда уходит, но не скорость фронта.',
-           'Elevación real. El agua se resuelve con priority-flood y enrutamiento de volumen: dónde queda y por dónde sale, no la velocidad del frente.')
+        /* ⑤ what the model is and is not — folded, like every other long note (#R258) */
+        +'<details class="tw-note" style="line-height:1.5;">'
+          +'<summary>'+L('About this model','このモデルについて','Über dieses Modell','Об этой модели','Sobre este modelo')+'</summary>'
+          +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:4px;">'
+          +L('Real terrarium elevation, sculpted by you. Water is routed by priority-flood depression filling and downslope volume accounting — it answers where the water stands and which way it leaves, not how fast the front travels.',
+             '実際の標高データを編集しています。水はプライオリティフラッド（窪地充填）と流下方向への体積集積で解いています。「どこに溜まり、どちらへ抜けるか」を答えるモデルで、波の到達速度は扱いません。',
+             'Echte Höhendaten. Wasser über Priority-Flood und Volumenrouting — wo es steht und wohin es abfließt, nicht wie schnell die Front läuft.',
+             'Реальные высоты. Вода — priority-flood и маршрутизация объёма: где стоит и куда уходит, но не скорость фронта.',
+             'Elevación real. El agua se resuelve con priority-flood y enrutamiento de volumen: dónde queda y por dónde sale, no la velocidad del frente.')
+          +'</div></details>'
         +'</div>'
+        +'<div class="tw-foot" style="flex:0 0 auto;position:sticky;bottom:0;padding:8px 12px calc(10px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;background:var(--card-bg,#1c1c1e);border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));">'
+        /* ══ (#R258) 「時間は下部スティックしろ。」 — the transport, the multiplier and the clock ═══════ */
+        +'<div style="display:flex;align-items:center;gap:8px;">'
+          +'<button class="tw-play tw-pp" aria-label="'+L('Pour','注水','Zulauf','Наполнение','Verter')+'">▶</button>'
+          +'<div class="tw-segwrap" style="flex:1 1 auto;">'+[1,10,60,600].map(s=>'<button class="tw-seg tw-ts" data-s="'+s+'">'+(s>=60?(s/60)+'m':s+'s')+'</button>').join('')+'</div>'
         +'</div>'
-        +'<div class="tw-foot" style="flex:0 0 auto;position:sticky;bottom:0;padding:8px 12px 10px;display:flex;flex-direction:column;gap:8px;background:var(--card-bg,#1c1c1e);border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));">'
-        +'<label style="'+ROW+'">'+L('Rainfall (mm)','降水量 (mm)','Niederschlag (mm)','Осадки (мм)','Lluvia (mm)')+'<input class="tw-rain" type="number" min="0" max="2000" step="10" value="'+rainMm+'" style="'+NUM+'"></label>'
+        +'<div class="tw-clock" style="display:flex;justify-content:space-between;gap:8px;"><span class="tw-elapsed"></span><span class="tw-vol" style="opacity:.72;"></span></div>'
         +'<div style="display:flex;gap:5px;flex-wrap:wrap;">'
-          +'<button class="tw-undo" style="'+BTN+'flex:1 1 46%;">↩ '+L('Undo','元に戻す','Rückgängig','Отменить','Deshacer')+'</button>'
+          +'<button class="tw-btn tw-undo" style="flex:1 1 46%;">↩ '+L('Undo','元に戻す','Rückgängig','Отменить','Deshacer')+'</button>'
           /* (#R211) 「配置した水は残して地形だけ戻す「地形をリセット」を追加」 */
-          +'<button class="tw-resetT" style="'+BTN+'flex:1 1 46%;">⛰ '+L('Reset terrain','地形をリセット','Gelände zurücksetzen','Сбросить рельеф','Reiniciar terreno')+'</button>'
+          +'<button class="tw-btn tw-resetT" style="flex:1 1 46%;">⛰ '+L('Reset terrain','地形をリセット','Gelände zurücksetzen','Сбросить рельеф','Reiniciar terreno')+'</button>'
           /* (#R211) 「全消去→リセットに改名」 — 全消去 read as "delete everything on the map" */
-          +'<button class="tw-reset" style="'+BTN+'flex:1 1 100%;">✖ '+L('Reset','リセット','Zurücksetzen','Сброс','Reiniciar')+'</button>'
+          +'<button class="tw-btn tw-reset" style="flex:1 1 100%;">✖ '+L('Reset','リセット','Zurücksetzen','Сброс','Reiniciar')+'</button>'
         +'</div>'
         /* (#R211) the progress bar — hidden until something is actually computing */
         +'<div class="tw-prog" style="display:none;">'
@@ -1776,11 +1921,15 @@ window.IntMapModules.terrainWater=function(HOST){
             +'<div class="tw-prog-bar" style="height:100%;width:0%;background:var(--prog-grad);transition:width .18s linear;"></div></div>'   /* (#R212) the accent, like every other bar */
           +'<div class="tw-prog-txt" style="font-size:10px;color:var(--text-muted);margin-top:3px;"></div>'
         +'</div>'
-        +'<div class="tw-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;line-height:1.55;"></div>'
+        +'<div class="tw-stat" style="font-size:'+TW_FS_S+';color:var(--text-main);min-height:16px;line-height:1.55;"></div>'
         +'</div>';
       panel.querySelector('.tw-close').onclick=()=>close();
       panel.querySelectorAll('.tw-m').forEach(b=>b.onclick=()=>{ setMode(b.getAttribute('data-m')); });
       panel.querySelector('.tw-rain').onchange=e=>{ pushUndo(); rainMm=Math.max(0,+e.target.value||0); solve(); };
+      /* (#R258) the clock belongs to the simulation, so its controls are wired from here and stay
+         live in every tool — including when no tool at all is selected. */
+      panel.querySelectorAll('.tw-ts').forEach(b=>b.onclick=()=>{ timeScale=+b.getAttribute('data-s'); syncFoot(); });
+      panel.querySelector('.tw-pp').onclick=()=>{ if(pourT) pourStop(); else { pourMode='cont'; pourStart(); } syncFoot(); renderParams(); };
       panel.querySelector('.tw-undo').onclick=()=>undo();
       /* (#R211) 「配置した水は残して地形だけ戻す」 — the sculpt and the levees go, the water stays put
          and is re-solved on the ORIGINAL ground, which is the comparison the button exists for. */
@@ -1789,33 +1938,61 @@ window.IntMapModules.terrainWater=function(HOST){
       panel.querySelector('.tw-reset').onclick=()=>{ if(!G) return; pourStop(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; sources=[]; rainMm=0; pourSimS=0; editDirty(); clearTrace();
         const r=panel.querySelector('.tw-rain'); if(r) r.value=0; undoStack=[]; solve(); terrainSoon(); };
       try{ makeDraggable(panel,panel.querySelector('.tw-head')); }catch(_){}
-      syncMode(); renderParams();
+      syncMode(); renderParams(); syncFoot();
       if(result) report();
     }
-    function syncMode(){ if(!panel) return; panel.querySelectorAll('.tw-m').forEach(b=>{ const on=b.getAttribute('data-m')===mode;
-      b.style.background=on?'var(--primary-color)':'var(--input-bg)'; b.style.color=on?'#fff':'var(--text-main)'; }); }
+    function syncMode(){ if(!panel) return; panel.querySelectorAll('.tw-m').forEach(b=>{
+      b.classList.toggle('on',b.getAttribute('data-m')===mode); }); }
+    /* ══ (#R258) THE FOOTER IS THE SIMULATION'S CLOCK ═══════════════════════════════════════════════
+       Repainted without rebuilding the panel, so it can be called from the pour's own interval. The
+       transport is disabled — visibly, not silently — until there is water to pour into. */
+    function syncFoot(){ if(!panel) return;
+      const pp=panel.querySelector('.tw-pp'); if(!pp) return;
+      pp.textContent=pourT?'⏸':'▶';
+      pp.disabled=!sources.length;
+      pp.title=sources.length
+        ? (pourT?L('Pause','一時停止','Pause','Пауза','Pausa'):L('Pour','注水開始','Zulauf starten','Начать','Verter'))
+        : L('Place water on the map first','先に地図へ水を配置してください','Zuerst Wasser platzieren','Сначала разместите воду','Coloque agua primero');
+      panel.querySelectorAll('.tw-ts').forEach(b=>b.classList.toggle('on',+b.getAttribute('data-s')===timeScale));
+      const el=panel.querySelector('.tw-elapsed');
+      if(el) el.textContent=L('Elapsed','経過時間','Vergangen','Прошло','Transcurrido')+' '+fmtDur(pourSimS)+' ('+timeScale+'×)';
+      const vo=panel.querySelector('.tw-vol');
+      if(vo) vo.textContent=sources.length?fmtM3(pourTotal()):''; }
     function renderParams(){ if(!panel) return; const p=panel.querySelector('.tw-params'); if(!p) return;
       if(mode==='raise'||mode==='lower'){
         /* (#R211) three named pen widths, and the height/depth box labelled for what this tool does
            to the ground (盛る → 高さ, 削る → 深さ) rather than one word for both. */
-        p.innerHTML='<div style="'+ROW+'">'+L('Pen width','ペンの太さ','Pinselbreite','Ширина пера','Grosor')
-            +'<span class="tw-pen" style="display:flex;gap:4px;">'+PEN.map(([m2,lb])=>'<button class="tw-pw" data-m="'+m2+'" style="'+BTN+'padding:4px 8px;">'+lb+'</button>').join('')+'</span></div>'
-          +'<label style="'+ROW+'margin-top:6px;">'+(mode==='raise'
-              ?L('Height per stroke (m)','1ストロークの高さ (m)','Höhe je Strich (m)','Высота за мазок (м)','Altura por trazo (m)')
-              :L('Depth per stroke (m)','1ストロークの深さ (m)','Tiefe je Strich (m)','Глубина за мазок (м)','Profundidad por trazo (m)'))
-            +'<input class="tw-bs" type="number" min="1" max="500" step="5" value="'+brushStrength+'" style="'+NUM+'"></label>'
-          +'<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">'+L('Radius','半径','Radius','Радиус','Radio')+' '+Math.round(brushM)+' m</div>';
+        p.innerHTML=cap(mode==='raise'?L('Raise','盛る','Anheben','Поднять','Elevar'):L('Lower','削る','Abtragen','Срезать','Rebajar'))
+          +card('<div class="tw-row">'+L('Pen width','ペンの太さ','Pinselbreite','Ширина пера','Grosor')
+            +'<span class="tw-val" style="flex:1 1 auto;max-width:180px;"><span class="tw-segwrap tw-pen" style="flex:1 1 auto;">'
+              +PEN.map(([m2,lb])=>'<button class="tw-seg tw-pw" data-m="'+m2+'">'+lb+'</button>').join('')+'</span></span></div>'
+          +'<label class="tw-row">'+(mode==='raise'
+              ?L('Height per stroke','1ストロークの高さ','Höhe je Strich','Высота за мазок','Altura por trazo')
+              :L('Depth per stroke','1ストロークの深さ','Tiefe je Strich','Глубина за мазок','Profundidad por trazo'))
+            +'<span class="tw-val"><input class="tw-num tw-bs" type="number" min="1" max="500" step="5" value="'+brushStrength+'"><span style="opacity:.7;">m</span></span></label>'
+          +'<div class="tw-row" style="color:var(--text-muted);">'+L('Radius','半径','Radius','Радиус','Radio')
+            +'<span class="tw-val">'+Math.round(brushM)+' m</span></div>');
         p.querySelectorAll('.tw-pw').forEach(b=>{ const v=+b.getAttribute('data-m');
-          const on=Math.abs(brushM-v)<1e-6;
-          b.style.background=on?'var(--primary-color)':'var(--input-bg)'; b.style.color=on?'#fff':'var(--text-main)';
+          b.classList.toggle('on',Math.abs(brushM-v)<1e-6);
           b.onclick=()=>{ brushM=v; renderParams(); }; });
         p.querySelector('.tw-bs').onchange=e=>brushStrength=Math.max(1,+e.target.value||20);
       } else if(mode==='levee'){
-        p.innerHTML='<div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;">'+L('Click along the line, double-click to finish.','線に沿ってクリック、ダブルクリックで確定。','Entlang der Linie klicken, Doppelklick beendet.','Кликайте по линии, двойной клик — конец.','Haga clic a lo largo; doble clic para terminar.')+'</div>'
-          +'<label style="'+ROW+'">'+L('Crest above ground (m)','天端高 (地上, m)','Kronenhöhe (m)','Высота гребня (м)','Coronación (m)')+'<input class="tw-lc" type="number" min="1" max="300" step="1" value="'+leveeCrest+'" style="'+NUM+'"></label>'
-          +'<label style="'+ROW+'margin-top:6px;">'+L('Width (m)','幅 (m)','Breite (m)','Ширина (м)','Ancho (m)')+'<input class="tw-lw" type="number" min="10" max="2000" step="10" value="'+leveeWidth+'" style="'+NUM+'"></label>';
-        p.querySelector('.tw-lc').onchange=e=>leveeCrest=Math.max(1,+e.target.value||8);
-        p.querySelector('.tw-lw').onchange=e=>leveeWidth=Math.max(10,+e.target.value||60);
+        /* (#R258) …and it says when the grid cannot carry the width that was typed (see stampLevees) */
+        const thin=(leveeWidth/2/((G&&G.cellM)||1))<1.5;
+        p.innerHTML=cap(L('Levee / dam','堤防・ダム','Deich / Damm','Дамба','Dique / presa'))
+          +card('<div class="tw-blk" style="color:var(--text-muted);font-size:'+TW_FS_S+';">'+L('Click along the line, double-click to finish.','線に沿ってクリック、ダブルクリックで確定。','Entlang der Linie klicken, Doppelklick beendet.','Кликайте по линии, двойной клик — конец.','Haga clic a lo largo; doble clic para terminar.')+'</div>'
+          +'<label class="tw-row">'+L('Crest above ground','天端高（地上）','Kronenhöhe','Высота гребня','Coronación')
+            +'<span class="tw-val"><input class="tw-num tw-lc" type="number" min="1" max="300" step="1" value="'+leveeCrest+'"><span style="opacity:.7;">m</span></span></label>'
+          +'<label class="tw-row">'+L('Width','幅','Breite','Ширина','Ancho')
+            +'<span class="tw-val"><input class="tw-num tw-lw" type="number" min="10" max="2000" step="10" value="'+leveeWidth+'"><span style="opacity:.7;">m</span></span></label>'
+          +((G&&thin)?('<div class="tw-blk" style="color:var(--text-muted);font-size:'+TW_FS_S+';">⚠ '
+              +L('Thinner than the solver grid ('+Math.round(G.cellM)+' m cells) — it is built '+Math.round(G.cellM*3)+' m wide so the water cannot pass between the cells.',
+                 '解像度（'+Math.round(G.cellM)+' m セル）より細いため、セルの隙間を水が抜けないよう幅 '+Math.round(G.cellM*3)+' m で構築します。',
+                 'Dünner als das Rechengitter ('+Math.round(G.cellM)+' m) — gebaut mit '+Math.round(G.cellM*3)+' m.',
+                 'Тоньше расчётной сетки ('+Math.round(G.cellM)+' м) — строится шириной '+Math.round(G.cellM*3)+' м.',
+                 'Más fino que la malla ('+Math.round(G.cellM)+' m) — se construye de '+Math.round(G.cellM*3)+' m.')+'</div>'):''));
+        p.querySelector('.tw-lc').onchange=e=>{ leveeCrest=Math.max(1,+e.target.value||8); renderParams(); };
+        p.querySelector('.tw-lw').onchange=e=>{ leveeWidth=Math.max(10,+e.target.value||60); renderParams(); };
       } else if(mode==='source'){
         /* ══ (#R211) ONE POUR, OR A TAP LEFT RUNNING ═══════════════════════════════════════════════
            「連続注水アニメーション（1回きりの一定量 or 継続注水を選択、時間速度も調節可）」
@@ -1825,32 +2002,32 @@ window.IntMapModules.terrainWater=function(HOST){
            re-runs, which is the quasi-static filling sequence a reservoir study actually draws.
            The panel prints the simulated time alongside the volume so the two are never confused,
            and the speed control multiplies simulated time, not the frame rate. */
-        p.innerHTML='<div style="'+ROW+'">'+L('Pour','注水','Zulauf','Наполнение','Vertido')
-            +'<span style="display:flex;gap:4px;">'
-              +'<button class="tw-pm" data-p="once" style="'+BTN+'padding:4px 8px;">'+L('One shot','1回きり','Einmalig','Разово','Una vez')+'</button>'
-              +'<button class="tw-pm" data-p="cont" style="'+BTN+'padding:4px 8px;">'+L('Continuous','継続','Dauernd','Непрерывно','Continuo')+'</button>'
-            +'</span></div>'
+        /* ⚠ (#R258) THE TRANSPORT AND THE SPEED ARE NOT HERE ANY MORE — they are in the footer, which
+           is what 「時間は下部スティックしろ」 asks for and what stops them vanishing when the reader
+           picks up the brush while a pour is running. What stays is what the TOOL decides: whether a
+           click drops a fixed volume or opens a tap, how much, and the channel discharge. */
+        p.innerHTML=cap(L('Water here','ここに水','Wasser hier','Вода здесь','Agua aquí'))
+          +card('<div class="tw-row">'+L('Pour','注水','Zulauf','Наполнение','Vertido')
+            +'<span class="tw-val" style="flex:1 1 auto;max-width:190px;"><span class="tw-segwrap" style="flex:1 1 auto;">'
+              +'<button class="tw-seg tw-pm" data-p="once">'+L('One shot','1回きり','Einmalig','Разово','Una vez')+'</button>'
+              +'<button class="tw-seg tw-pm" data-p="cont">'+L('Continuous','継続','Dauernd','Непрерывно','Continuo')+'</button>'
+            +'</span></span></div>'
           +(pourMode==='once'
-            ?'<label style="'+ROW+'margin-top:6px;">'+L('Volume per click (m³)','1クリックの水量 (m³)','Volumen je Klick (m³)','Объём за клик (м³)','Volumen por clic (m³)')+'<input class="tw-sv" type="number" min="1" step="100000" value="'+srcM3+'" style="'+NUM+'"></label>'
-            :'<label style="'+ROW+'margin-top:6px;">'+L('Inflow (m³/s)','注水量 (m³/s)','Zulauf (m³/s)','Приток (м³/с)','Aporte (m³/s)')+'<input class="tw-pr" type="number" min="1" step="1000" value="'+pourRate+'" style="'+NUM+'"></label>'
-             +'<div style="'+ROW+'margin-top:6px;">'+L('Time speed','時間の速さ','Zeitraffer','Скорость времени','Velocidad')
-               +'<span style="display:flex;gap:4px;">'+[1,10,60,600].map(s=>'<button class="tw-ts" data-s="'+s+'" style="'+BTN+'padding:4px 6px;">'+(s>=60?(s/60)+'m':s+'s')+'</button>').join('')+'</span></div>'
-             +'<button class="tw-pp" style="'+BTN+'width:100%;margin-top:6px;">'+(pourT?('⏸ '+L('Pause','一時停止','Pause','Пауза','Pausa')):('▶ '+L('Pour','注水開始','Zulauf starten','Начать','Verter')))+'</button>')
+            ?'<label class="tw-row">'+L('Volume per click','1クリックの水量','Volumen je Klick','Объём за клик','Volumen por clic')
+              +'<span class="tw-val"><input class="tw-num tw-sv" type="number" min="1" step="100000" value="'+srcM3+'"><span style="opacity:.7;">m³</span></span></label>'
+            :'<label class="tw-row">'+L('Inflow','注水量','Zulauf','Приток','Aporte')
+              +'<span class="tw-val"><input class="tw-num tw-pr" type="number" min="1" step="1000" value="'+pourRate+'"><span style="opacity:.7;">m³/s</span></span></label>')
           /* (#R189) 「水の水流は設定可能に」 — empty = the volume-continuity behaviour (#R188) */
-          +'<label style="'+ROW+'margin-top:6px;">'+L('Discharge (m³/s)','流量 (m³/s)','Durchfluss (m³/s)','Расход (м³/с)','Caudal (m³/s)')+'<input class="tw-fq" type="number" min="0" step="50" value="'+(flowM3s!=null?flowM3s:'')+'" placeholder="'+L('auto','自動','auto','авто','auto')+'" style="'+NUM+'"></label>';
-        p.querySelectorAll('.tw-pm').forEach(b=>{ const on=b.getAttribute('data-p')===pourMode;
-          b.style.background=on?'var(--primary-color)':'var(--input-bg)'; b.style.color=on?'#fff':'var(--text-main)';
-          b.onclick=()=>{ pourMode=b.getAttribute('data-p'); if(pourMode==='once') pourStop(); renderParams(); }; });
+          +'<label class="tw-row">'+L('Discharge','流量','Durchfluss','Расход','Caudal')
+            +'<span class="tw-val"><input class="tw-num tw-fq" type="number" min="0" step="50" value="'+(flowM3s!=null?flowM3s:'')+'" placeholder="'+L('auto','自動','auto','авто','auto')+'"><span style="opacity:.7;">m³/s</span></span></label>');
+        p.querySelectorAll('.tw-pm').forEach(b=>{ b.classList.toggle('on',b.getAttribute('data-p')===pourMode);
+          b.onclick=()=>{ pourMode=b.getAttribute('data-p'); if(pourMode==='once') pourStop(); renderParams(); syncFoot(); }; });
         const sv=p.querySelector('.tw-sv'); if(sv) sv.onchange=e=>srcM3=Math.max(1,+e.target.value||1e6);
         const pr=p.querySelector('.tw-pr'); if(pr) pr.onchange=e=>pourRate=Math.max(1,+e.target.value||20000);
-        p.querySelectorAll('.tw-ts').forEach(b=>{ const on=+b.getAttribute('data-s')===timeScale;
-          b.style.background=on?'var(--primary-color)':'var(--input-bg)'; b.style.color=on?'#fff':'var(--text-main)';
-          b.onclick=()=>{ timeScale=+b.getAttribute('data-s'); renderParams(); }; });
-        const pp=p.querySelector('.tw-pp'); if(pp) pp.onclick=()=>{ if(pourT) pourStop(); else pourStart(); renderParams(); };
         p.querySelector('.tw-fq').onchange=e=>{ const v=parseFloat(e.target.value);
           flowM3s=(isFinite(v)&&v>0)?v:null;
           if(trace){ try{ trace.section=channelSections(trace); }catch(_){} draw(); report(); } };
-      } else p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+L('Drag the map normally. Pick a tool above to edit.','通常どおり地図を操作できます。編集は上のツールを選んでください。','Karte normal bewegen. Oben ein Werkzeug wählen.','Карта работает как обычно. Выберите инструмент выше.','Mueva el mapa normalmente. Elija una herramienta arriba.')+'</div>';
+      } else p.innerHTML=card('<div class="tw-blk" style="color:var(--text-muted);font-size:'+TW_FS_S+';">'+L('Drag the map normally. Pick a tool above to edit.','通常どおり地図を操作できます。編集は上のツールを選んでください。','Karte normal bewegen. Oben ein Werkzeug wählen.','Карта работает как обычно. Выберите инструмент выше.','Mueva el mapa normalmente. Elija una herramienta arriba.')+'</div>');
     }
     /* (#R211) re-selecting the active tool releases it — see modes(). 'pan' remains the idle state
        the map's own gestures belong to; it is simply no longer something you have to find. */
@@ -1941,6 +2118,7 @@ window.IntMapModules.terrainWater=function(HOST){
          even after the tool-switch stop was removed. */
       if(pourMode==='cont'){ if(!pourT) pourSimS=0; solve(); pourStart(); if(panel) renderParams(); }
       else solve();
+      try{ syncFoot(); }catch(_){}      /* (#R258) the transport is live the moment there is water */
       traceDownstream(lng,lat); }
     function onClick(e){ if(!opened) return;
       try{ GE().events.claimClick&&GE().events.claimClick(e); }catch(_){}   /* (#R210) the brush owns the tap while this tool is open */
@@ -2023,6 +2201,7 @@ window.IntMapModules.terrainWater=function(HOST){
             levees.push({pts:l[2].map(p=>[+p[0],+p[1]]),crest:Math.max(1,+l[0]||leveeCrest),width:Math.max(10,+l[1]||leveeWidth)}); });
           if(Array.isArray(v.src)){ sources=v.src.map(s=>({lng:+s[0],lat:+s[1],m3:Math.max(0,+s[2]||0)})); }
           if(v.m) setMode(String(v.m));
+          editDirty();          /* (#R258) a restored levee is a change to the ground — see addLevee */
           solve();
           if(sources.length) traceDownstream(sources[0].lng,sources[0].lat);
           if(opened) render();
@@ -2118,8 +2297,17 @@ window.IntMapModules.terrainWater=function(HOST){
                  q:[q(0),q(0.25),q(0.5),q(0.75),q(1)], drops, flats,
                  escal:trace.escal, escalMult:trace.escalMult, windows:trace.windows }; },
       clearTrace,
+      /* ⚠ (#R258) `editDirty()` — WITHOUT IT THIS DOOR BUILDS NOTHING. MEASURED: adding a levee through
+         this call and then sampling `IntMapElevEdit` along its own centreline returned **0.00 m at
+         every point**. `editField()` is memoised on `editStamp`, and only `editDirty()` bumps it, so
+         the levee never reached the solver, the readout or the 3-D relief — the water went straight
+         through a dam that, as far as every consumer was concerned, did not exist. The double-click
+         that builds one from the map has called `editDirty()` since #R255; this door was left out,
+         which is the exact shape of the #R255 note above `editDirty` («hanging the re-mesh off the
+         individual UI handlers is how `brush()` from Atlas sculpted nothing»). */
       addLevee(pts,crest,width){ if(!Array.isArray(pts)||pts.length<2) return false; pushUndo();
-        levees.push({pts:pts.slice(),crest:Math.max(1,+crest||leveeCrest),width:Math.max(10,+width||leveeWidth)}); solve(); return true; },
+        levees.push({pts:pts.slice(),crest:Math.max(1,+crest||leveeCrest),width:Math.max(10,+width||leveeWidth)});
+        editDirty(); solve(); return true; },
       clearWater(){ pushUndo(); pourStop(); sources=[]; rainMm=0; const r=panel&&panel.querySelector('.tw-rain'); if(r) r.value=0; return solve(); },
       /* (#R211) 「配置した水は残して地形だけ戻す」 — the button's other half, as a call */
       resetTerrain(){ if(!G) return false; pushUndo(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; editDirty(); solve(); terrainSoon(); return true; },

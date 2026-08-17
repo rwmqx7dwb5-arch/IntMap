@@ -1047,6 +1047,17 @@ window.IntMapModules.dataLayers=function(HOST){
           ['lyrGrpSecurity',['milSpend','milSpendGDP','nato','ukrfront','wbmilgdp','wbmilppl','wbhomicide','osmmil']],
           ['lyrGrpHealth',['wbhealth','wbphys','wbbeds','wbinfmort','wbu5mort','wblife','wbwater','wbsan','wbpm25','wbcook','wbsmoke','wbalcohol','wbsuicide','wboverwt','wbunder','wbadofert','wbfert','osmhealth']],
           ['lyrGrpTech',['dc','subcables','rail','wbnet','wbmobile','wbbbnd','wbhitech','wbrnd','wbresearch','wbpatent','osmtelecom']],
+          /* ══ (#R258) A FIFTH NEW CATEGORY — WHERE THE ENERGY AND THE MATERIAL COME FROM ═════════════
+             「追加すべきと思うレイヤーカテゴリはありますか？あれば作り…新レイヤー（国単位で塗るだけの
+               やつじゃなくて、モノホンのやつ。）」 The map had no shelf for energy at all: the country
+             energy MIX is a choropleth the reader filed under 人口・経済 by name (#R254) and CO₂ is
+             in Climate, so there was nowhere that answers 「この発電所は何を燃やしているのか」. Both
+             rows here are surveyed OSM objects for the current view (js/osm-facilities.js), not a
+             country painted a colour.
+             ⚠ NOTHING IS MOVED INTO IT. Every existing row stays where it is: #R233's seven and
+             #R254's sixty-one were named one by one by the reader, and 「再編」 is not a licence to
+             overturn a list somebody wrote out by hand (the same reasoning as the ⚠⚠ note above). */
+          ['lyrGrpEnergy',['osmpower','osmextract']],
           ['lyrGrpIndic',['tz']],   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
           /* ══ ⚠ (#R254) "OTHERS" IS A REAL CATEGORY NOW, AND "BETA" MEANS BETA ═══════════════════════
              「以下のレイヤーは、Others(beta) layersから移動し、新たなカテゴリであるOthersにおくこと。
@@ -1105,7 +1116,7 @@ window.IntMapModules.dataLayers=function(HOST){
            `btn-correlate` have, so `reorganizeLayerPanel` moves it rather than duplicating it. */
         const _seisBtn=()=>{
           let b=document.getElementById('btn-seismic-sim');
-          const lbl=window.IntMapLang.t(lang,'Seismic wave simulator','地震波シミュレーター','Seismische-Wellen-Simulator','Симулятор сейсмических волн','Simulador de ondas sísmicas');
+          const lbl=window.IntMapLang.t(lang,'Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos');
           if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=lbl; return b; }
           b=document.createElement('button'); b.id='btn-seismic-sim'; b.type='button'; b.className='ai-test-btn';
           b.style.cssText='width:100%;text-align:center;margin:6px 0 0;';
