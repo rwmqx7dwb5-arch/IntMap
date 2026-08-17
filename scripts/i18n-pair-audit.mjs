@@ -48,7 +48,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
-import { exposedHelpers } from './i18n-helpers.mjs';
+import { exposedHelpers, context } from './i18n-helpers.mjs';
 
 const EXPOSED = exposedHelpers();
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -222,7 +222,15 @@ for (const [full, rel] of files) {
     ranges.push([owner.start, owner.end]);
   }
   const marked = (n) => ranges.some(([s, e]) => n.start >= s && n.end <= e);
-  const LANG = langNames(ast, src);
+  /* ⚠⚠ (#R251) …AND THE LOCAL NAMES COME FROM THE SAME PLACE AS THE PROPERTY NAMES.
+     `langNames()` below walked a binding's initialiser through `LogicalExpression → right`, so
+     js/space-cosmos.js's and js/engine-select.js's deliberately guarded binding —
+     `var LA = (root.IntMapLang && root.IntMapLang.pickArgs()) || function(){…}`, written that way
+     because those two modules evaluate before js/lang-registry.js in some entry orders — resolved to
+     the FALLBACK function and matched nothing. Both files are already fully converted, and all 19 of
+     their call sites were reported as an OPEN GAP. Reading the binding correctly is one question, so
+     it is asked once, in scripts/i18n-helpers.mjs. */
+  const LANG = context(rel.replace(/^js\//, ''), 'loose').names;
   const isLangCall = (c) => {
     if (c.type === 'Identifier') return LANG.has(c.name);
     if (c.type !== 'MemberExpression' || c.computed) return false;
