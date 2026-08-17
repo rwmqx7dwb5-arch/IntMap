@@ -25,6 +25,10 @@
  *  `window.IntMapModules.dataCenters` exists before this file's body runs.
  * ==========================================================================*/
 import './datacenters.js';
+/* (#R255) …and the four surveyed-facility layers (js/osm-facilities.js), for the same reason: the
+   shell's line budget is a real check (tests/r168 #8) and an import belongs beside a consumer
+   rather than in src/main.js. This file is where the extra layer rows those four sit beside live. */
+import './osm-facilities.js';
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.earthSky=function(HOST){

@@ -329,7 +329,7 @@ window.IntMapModules.worldPacks=function(HOST){
      *  hover away — the picture is compressed, the number never is.
      * ════════════════════════════════════════════════════════════════════════════════════════════*/
     (function trade(){
-      const SRC='wp-trade', LYR=['wp-trade-arc','wp-trade-arrow','wp-trade-lbl'];   /* (#R254) `wp-trade-pt` (the country pins) removed — see ensureLayers */
+      const SRC='wp-trade', LYR=['wp-trade-arc','wp-trade-arrow','wp-trade-tip','wp-trade-lbl'];   /* (#R254) `wp-trade-pt` (the country pins) removed — see ensureLayers. (#R255) +the terminal arrowhead. */
       /* BACI HS revisions, newest first — one cube covers 1995‑2024 and the newer ones are finer */
       const CUBE=(y)=>(y>=2022?'trade_i_baci_a_22':y>=2018?'trade_i_baci_a_17':y>=2012?'trade_i_baci_a_12':y>=2008?'trade_i_baci_a_07':y>=2003?'trade_i_baci_a_02':'trade_i_baci_a_92');
       const YMIN=1995, YMAX=2024;
@@ -353,7 +353,7 @@ window.IntMapModules.worldPacks=function(HOST){
          own, in the panel beside the direction and the commodity. The arcs and the country shading are
          unaffected by it; only `wp-trade-arrow` follows. */
       let arrows=true;
-      function applyVis(){ setVis(['wp-trade-arc','wp-trade-lbl'],on); setVis(['wp-trade-arrow'],on&&arrows); }
+      function applyVis(){ setVis(['wp-trade-arc','wp-trade-lbl'],on); setVis(['wp-trade-arrow','wp-trade-tip'],on&&arrows); }
       const panel=makePanel('wp-trade-panel',()=>'🚢 '+L('Trade flows','貿易フロー','Handelsströme','Торговые потоки','Flujos comerciales'),'wp-dl-trade',
         { legendId:'wptrade', layers:()=>['wp-trade-fill'].concat(LYR),
           names:()=>(LA('🚢 Trade flows','🚢 貿易フロー','🚢 Handelsströme','🚢 Торговые потоки','🚢 Flujos comerciales')) });
@@ -380,15 +380,50 @@ window.IntMapModules.worldPacks=function(HOST){
          `layers` (#R216): `GE().layers.addImage` is simply undefined» — the same mistake, found in
          that file two rounds after it was made here, and never re-checked against this one.
          ⚠ THE CATCH STAYS, BUT IT NO LONGER HIDES THIS: a missing image is now reported once. */
+      /* ══ ⚠⚠⚠ (#R255) THE ARROWHEADS WERE DRAWN, AND COULD NOT BE SEEN ═════════════════════════════
+         「貿易レイヤーは、矢印にしろ。…矢印はただの線ではなくちゃんと方向に対応した矢印にしろ。矢印にしろ。」
+         — a third time, and #R254's fix was real: MEASURED on this build with Japan's exports loaded,
+         `scene.hasImage('wp-arrow-X')` is **true** and `queryRenderedFeatures('wp-trade-arrow')`
+         returns **20** symbols. They reach the screen. They are simply invisible, and the arithmetic
+         says why:
+
+             head    22 px image at pixelRatio 2 = 11 CSS px, × icon-size 0.34–0.92  →  3.7–10.1 px
+             shaft   line-width 1.2 + 11.8·√share                                    →  1.2–13.0 px
+             colour  head #ff9f0a          shaft #ff9f0a                             →  THE SAME
+
+         The largest partner's arrowhead is 10 px of orange laid on a 13 px orange line: narrower than
+         the thing it sits on, in its own colour. There is no arrow to see — 「ただの線」, exactly, and
+         for the third round in a row the picture was right about that.
+
+         So the head is now sized FROM the shaft rather than independently of it (always ≥ 2.6× the
+         line's width), it is drawn with a dark outline so its edges separate from the stroke beneath,
+         and every arc additionally carries ONE BIG TERMINAL HEAD at the end the goods arrive at —
+         which is what makes the whole flow read as an arrow rather than as a decorated line.
+         ⚠ Two plain images per direction rather than SDF: `icon-color` only applies to SDF sprites,
+         and an SDF built from a hard-edged triangle is a blurred triangle (#R212). */
       const ARROW={X:'#ff9f0a',M:'#32d0ff'};
-      function arrowImg(hex){ const S=22, c=document.createElement('canvas'); c.width=c.height=S;
-        const g=c.getContext('2d'); g.fillStyle=hex;
-        g.beginPath(); g.moveTo(S*0.86,S*0.5); g.lineTo(S*0.20,S*0.14); g.lineTo(S*0.36,S*0.5); g.lineTo(S*0.20,S*0.86); g.closePath(); g.fill();
+      const ARROW_PX=44;               /* the canvas; at pixelRatio 2 that is 22 CSS px at icon-size 1 */
+      const ARROW_CSS=ARROW_PX/2;
+      function arrowImg(hex){ const S=ARROW_PX, c=document.createElement('canvas'); c.width=c.height=S;
+        const g=c.getContext('2d');
+        const path=()=>{ g.beginPath(); g.moveTo(S*0.94,S*0.5); g.lineTo(S*0.12,S*0.10);
+          g.lineTo(S*0.34,S*0.5); g.lineTo(S*0.12,S*0.90); g.closePath(); };
+        /* the outline first, so a head on a stroke of its own colour still has an edge */
+        path(); g.lineJoin='round'; g.lineWidth=S*0.11; g.strokeStyle='rgba(4,10,22,0.85)'; g.stroke();
+        path(); g.fillStyle=hex; g.fill();
         return g.getImageData(0,0,S,S); }
       let _arrowWarned=false;
       function ensureArrows(){ try{ Object.keys(ARROW).forEach(k=>{ const id='wp-arrow-'+k;
         if(!GE().scene.hasImage(id)) GE().scene.addImage(id,arrowImg(ARROW[k]),{pixelRatio:2}); }); }catch(e){
         if(!_arrowWarned){ _arrowWarned=true; try{ console.warn('trade arrowheads could not be registered',e); }catch(_){} } } }
+      /* the head has to be visibly WIDER than the shaft it rides on, at every value — the triangle is
+         0.8 of the image tall, so this solves `0.8·22·size ≥ 2.6·w` and clamps to something legible. */
+      const arrowSize=(w)=>Math.max(0.42,Math.min(1.35,(2.6*w)/(0.8*ARROW_CSS)));
+      /* the compass bearing of the last leg of an arc, for the terminal head (icon-rotate is clockwise
+         from north when icon-rotation-alignment is 'map') */
+      function bearingOf(a,b){ const φ1=a[1]*Math.PI/180, φ2=b[1]*Math.PI/180, Δλ=(b[0]-a[0])*Math.PI/180;
+        const y=Math.sin(Δλ)*Math.cos(φ2), x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+        return (Math.atan2(y,x)*180/Math.PI+360)%360; }
 
       /* ══ (#R215) 「貿易レイヤーは該当国がぬられるように」 — AND NO COUNTRY WAS PAINTED AT ALL ══════
          The layer drew arcs, arrowheads, partner dots and their labels; the countries themselves were
@@ -432,9 +467,17 @@ window.IntMapModules.worldPacks=function(HOST){
           layout:{visibility:'none','line-cap':'round','line-join':'round'},
           paint:{'line-color':['get','col'],'line-width':['get','w'],'line-opacity':0.78,'line-blur':0.3}});
         if(!GE().layers.has('wp-trade-arrow')) GE().layers.add({id:'wp-trade-arrow',type:'symbol',source:SRC,filter:['==',['get','kind'],'arc'],
-          layout:{visibility:'none','symbol-placement':'line','symbol-spacing':92,'icon-image':['get','ai'],
+          layout:{visibility:'none','symbol-placement':'line','symbol-spacing':110,'icon-image':['get','ai'],
             'icon-size':['get','asz'],'icon-rotation-alignment':'map','icon-allow-overlap':true,'icon-ignore-placement':true,'icon-padding':0},
-          paint:{'icon-opacity':0.95}});
+          paint:{'icon-opacity':0.98}});
+        /* (#R255) the head at the end the goods ARRIVE at — one per arc, half again as large as the
+           ones riding the shaft, rotated to the arc's own final bearing. This is the part that makes
+           the flow read as an arrow instead of as a line with texture on it. */
+        if(!GE().layers.has('wp-trade-tip')) GE().layers.add({id:'wp-trade-tip',type:'symbol',source:SRC,filter:['==',['get','kind'],'tip'],
+          layout:{visibility:'none','icon-image':['get','ai'],'icon-size':['get','asz'],
+            'icon-rotate':['get','brg'],'icon-rotation-alignment':'map','icon-allow-overlap':true,
+            'icon-ignore-placement':true,'icon-padding':0,'icon-anchor':'center'},
+          paint:{'icon-opacity':1}});
         /* ⚠ (#R254) 「国にピンを置くな」 — the circle markers this layer dropped on every partner's
            centroid (and the white r=7 disc on the selected country) are gone. The countries themselves
            are shaded by `wp-trade-fill` (#R215) and the arcs carry the amounts, so the dots were a
@@ -472,10 +515,18 @@ window.IntMapModules.worldPacks=function(HOST){
               const w=1.2+11.8*Math.sqrt(Math.max(0,d.v)/Math.max(1,vmax));
               /* the arc IS the direction: exports leave home, imports arrive at it (#R212) */
               const line=(dir==='X')?greatCircle(home,c,56):greatCircle(c,home,56);
+              /* (#R255) the head is sized FROM the shaft — see arrowSize() for why it cannot be an
+                 independent number and stay visible */
+              const asz=arrowSize(w);
               feats.push({type:'Feature',geometry:{type:'LineString',coordinates:line},
                 properties:{kind:'arc',col,w,v:d.v,iso:d.iso,name:d.name,
-                  ai:'wp-arrow-'+dir, asz:Math.max(0.34,Math.min(0.92,0.30+0.62*Math.sqrt(Math.max(0,d.v)/Math.max(1,vmax)))),
+                  ai:'wp-arrow-'+dir, asz,
                   vShort:usdShort(d.v),vExact:usdExact(d.v)}});
+              /* the terminal head, at the arc's last vertex and along its last bearing */
+              if(line.length>1){ const a=line[line.length-2], t=line[line.length-1];
+                feats.push({type:'Feature',geometry:{type:'Point',coordinates:t},
+                  properties:{kind:'tip',col,ai:'wp-arrow-'+dir,asz:asz*1.5,brg:bearingOf(a,t)-90,
+                    v:d.v,iso:d.iso,name:d.name,vShort:usdShort(d.v),vExact:usdExact(d.v)}}); }
               feats.push({type:'Feature',geometry:{type:'Point',coordinates:c},
                 properties:{kind:'node',col,r:2.5+5.5*Math.sqrt(Math.max(0,d.v)/Math.max(1,vmax)),name:d.name,
                   v:d.v,vShort:usdShort(d.v),vExact:usdExact(d.v)}}); });
@@ -561,7 +612,9 @@ window.IntMapModules.worldPacks=function(HOST){
       /* hover: the compact figure AND the exact one — never a rescaled number */
       let wired=false;
       function wire(){ if(wired) return; wired=true;
-        ['wp-trade-arc'].forEach(id=>{   /* (#R254) the pin layer it also hovered is gone; the arc carries the figure */
+        /* (#R255) …and the terminal head, which is the largest thing on the arc and therefore the one
+           a reader is most likely to point at. It carries the same properties as its own arc. */
+        ['wp-trade-arc','wp-trade-tip'].forEach(id=>{   /* (#R254) the pin layer it also hovered is gone; the arc carries the figure */
           GE().events.onLayer('mousemove',id,e=>{ if(!on||!e.features.length) return;
             const p=e.features[0].properties; if(!p||!p.vShort) return;
             const el=HOST.ensureMapTooltip(); el.style.display='block';
@@ -1541,7 +1594,7 @@ window.IntMapModules.worldPacks=function(HOST){
         LA('Production','生産量','Produktion','Производство','Producción')];
       const SUPPLY=[LA('Total','合計','Gesamt','Всего','Total'),LA('Rainfed','天水','Regenfeld','Богарное','Secano'),
         LA('Irrigated','灌漑','Bewässert','Орошаемое','Regadío')];
-      let on=false, crop='Wheat', variable='Harvested area', supply='Total', busy=false, drawKey='', lastMeta=null;
+      let on=false, crop='Wheat', variable='Harvested area', supply='Total', busy=false, drawKey='', lastMeta=null, srcGen=0;
       /* (#R254) 「作物の栽培に絵文字はいらない。」 — the panel title and the legend name carried a 🌾 that
          nothing else about this layer needs; the row in the layer list never had one. */
       const panel=makePanel('wp-crop-panel',()=>L('Crop cultivation','作物の栽培','Feldfrüchte','Сельхозкультуры','Cultivos'),'wp-dl-crops',
@@ -1556,11 +1609,10 @@ window.IntMapModules.worldPacks=function(HOST){
       /* the reference years GAEZ publishes; the clock picks the nearer one and the panel says which */
       const gaezYear=()=>(nowYear()<2005?'2000':'2010');
 
+      /* (#R255) the Web-Mercator half-extent, which is all the tile scheme needs. The lng/lat ↔ metre
+         helpers this block used to carry went with the single stretched image they served — a tile's
+         box comes from its own z/x/y (see tileBox), never from the viewport. */
       const R=6378137, HALF=Math.PI*R;
-      const mercX=(lng)=>lng*HALF/180;
-      const mercY=(lat)=>{ const l=Math.max(-85.05112878,Math.min(85.05112878,lat));
-        return Math.log(Math.tan(Math.PI/4+l*Math.PI/360))*R; };
-      const invY=(y)=>(2*Math.atan(Math.exp(y/R))-Math.PI/2)*180/Math.PI;
 
       /* ══ ⚠ (#R219) A CACHED REJECTION IS A LAYER THAT NEVER WORKS AGAIN ═══════════════════════════
          「作物栽培レイヤーで、読み込み時間が長い…（追記：まったく何も起こらなくなってしまった）」
@@ -1594,14 +1646,39 @@ window.IntMapModules.worldPacks=function(HOST){
           return { min:+s.min, max:+s.max, mean:+s.mean }; })().catch(e=>{ delete _stats[oid]; throw e; });
         return _stats[oid]; }
 
-      /* grey → the ramp, with nothing drawn where there is no crop */
-      function recolor(img,W,H){
-        const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
-        const ct=cv.getContext('2d'); ct.drawImage(img,0,0,W,H);
-        let d; try{ d=ct.getImageData(0,0,W,H); }catch(_){ return null; }
-        const px=d.data;
-        /* the ramp, expanded to 256 entries once per repaint rather than per pixel */
-        const lut=new Uint8Array(256*3);
+      /* ══ ⚠⚠⚠ (#R255) A MAP LAYER IS TILES. ONE STRETCHED PICTURE IS WHY IT WENT BLACK ═══════════════
+         「作物を栽培をオンにしている際、挙動が非常に不安定。移動やズームですぐに描画がずれたり地図が黒に
+           おかしくなる。」 — the third round on this layer's stability, and the first two treated the
+         symptom because they accepted its shape. MEASURED on the shipped build, wheeling in over the
+         sea north-east of Japan with the layer on (`x/cg-06`, `x/cg-07`):
+
+             immediately after the wheel   the whole map is rgb ≈ (5,20,12) — SOLID BLACK
+             2 s later                     still solid black
+             10 s later                    correct
+
+         and, jumping from a world view to z6 over India, `wp-crop-src.coordinates` stayed
+         `[[-180,83]…[180,-58]]` — the WHOLE WORLD — for five seconds, drawing a 2048-px world raster
+         across a 12°-wide viewport as ~50-px blocks (`x/crop-4-back.png`).
+
+         Both pictures are the same defect, and it is structural. The layer was ONE `image` source
+         covering a quadtree cell, re-fetched whenever the cell changed. Between the move and the new
+         picture arriving, the old one is still there — geographically correct and at the WRONG SCALE.
+         Magnify a world raster to a city and one source pixel covers the screen; when that pixel is
+         at the top of the ramp (`#03230f`, rgb 3/35/15 — the near-black end) the screen is black. The
+         reader is not looking at a slow layer, they are looking at one pixel.
+
+         So it is a RASTER TILE SOURCE now, like every other raster in this app. MapLibre asks for the
+         tiles that cover the view at the zoom it is at, keeps the parent tile only until the child
+         arrives, and never stretches a z0 tile across a z14 screen. `maxzoom` is 5 because the GAEZ
+         grid is 5 arc-minutes (~9 km) and a 512-px tile at z5 is 2.4 km/px — past that there is
+         nothing further to ask for, so zooming in costs NO requests at all and the picture is the
+         data's own resolution rather than a server-side resample of it.
+         ⚠ The tile is fetched, recoloured and handed back as an ImageBitmap by a PROTOCOL handler —
+         the same contract js/sat-proto.js uses (`scene.addProtocol`), so the renderer owns the
+         scheduling, the abort on pan, the cache and the fade, and this file owns only the colours. */
+      const CROP_PROTO='imapcrop';
+      /* the ramp expanded once — 256 RGB entries, shared by every tile */
+      const _lut=(()=>{ const lut=new Uint8Array(256*3);
         for(let i=0;i<256;i++){ const t=i/255; let a=CROP_RAMP[0], b=CROP_RAMP[CROP_RAMP.length-1];
           for(let k=0;k<CROP_RAMP.length-1;k++){ if(t>=CROP_RAMP[k][0]&&t<=CROP_RAMP[k+1][0]){ a=CROP_RAMP[k]; b=CROP_RAMP[k+1]; break; } }
           const f=(b[0]-a[0]>1e-9)?(t-a[0])/(b[0]-a[0]):0;
@@ -1609,161 +1686,142 @@ window.IntMapModules.worldPacks=function(HOST){
           lut[i*3]=Math.round(((ca>>16)&255)*(1-f)+((cb>>16)&255)*f);
           lut[i*3+1]=Math.round(((ca>>8)&255)*(1-f)+((cb>>8)&255)*f);
           lut[i*3+2]=Math.round((ca&255)*(1-f)+(cb&255)*f); }
-        let n=0;
+        return lut; })();
+      /* grey → the ramp, with nothing drawn where there is no crop. Unchanged in what it decides:
+         ⚠ (#R216) A DATA CELL IS OPAQUE — the value is the COLOUR, and the one opacity control the
+         reader holds is `raster-opacity`. Baking `0.30+0.70·value` into the alpha channel is what
+         made 「透明度100%が全然100%ではない」 true, and no-crop (grey 0) stays transparent because
+         that is absence of data rather than a small value. */
+      function recolorTile(src,N){
+        const cv=document.createElement('canvas'); cv.width=N; cv.height=N;
+        const ct=cv.getContext('2d',{willReadFrequently:true}); ct.drawImage(src,0,0,N,N);
+        let d; try{ d=ct.getImageData(0,0,N,N); }catch(_){ return null; }
+        const px=d.data;
         for(let i=0;i<px.length;i+=4){
           const g=px[i], al=px[i+3];
           if(al<8||g===0){ px[i+3]=0; continue; }
-          px[i]=lut[g*3]; px[i+1]=lut[g*3+1]; px[i+2]=lut[g*3+2];
-          /* ══ ⚠ (#R216) A DATA CELL IS OPAQUE. THE VALUE IS THE COLOUR. ═══════════════════════════
-             「作物栽培レイヤーは透明度100%が全然100%ではない。」 — and it could not be: this line used
-             to bake `0.30 + 0.70·value` into the PNG's own alpha channel, so a low-value cell was 30 %
-             transparent BEFORE `raster-opacity` was applied. Dragging the shared slider to 100 % set
-             the layer to 1.0 over an image that was already see-through, and the reader was right that
-             it never got there. It is the same defect #R215 removed from the energy choropleth (a
-             `['case', …]` in `fill-opacity` competing with the one slider that owns opacity), one
-             layer down: the ramp above already says what the number is, so opacity says nothing and
-             belongs entirely to the control the reader is holding. No-crop (g===0) stays transparent
-             — that is absence of data, not a small value. */
-          px[i+3]=255;
-          n++; }
+          px[i]=_lut[g*3]; px[i+1]=_lut[g*3+1]; px[i+2]=_lut[g*3+2];
+          px[i+3]=255; }
         ct.putImageData(d,0,0);
-        /* ══ ⚠ (#R254) A BLOB, NOT A 650 KB BASE-64 STRING ═══════════════════════════════════════════
-           MEASURED on the shipped build: the URL this returned was `data:image/p…` and **654,722
-           characters** long, produced by a synchronous `toDataURL` over a canvas up to 2048×2048.
-           `toBlob` does the same encode off the main thread and hands back a reference instead of a
-           third copy of the pixels (the ImageData, the base-64 text, and then the parsed image).
-           ⚠ THE CACHE WAS ALREADY WRITTEN FOR THIS: `_cachePut` revokes `blob:` URLs when it evicts,
-           which nothing could ever have hit while this line produced data: URLs. */
-        return new Promise(res=>{
-          try{ cv.toBlob(b2=>{ if(b2) res({ url:URL.createObjectURL(b2), n }); else res({ url:cv.toDataURL('image/png'), n }); },'image/png'); }
-          catch(_){ try{ res({ url:cv.toDataURL('image/png'), n }); }catch(__){ res(null); } } }); }
+        return cv; }
 
-      /* ══ ⚠ (#R218) THE TILE THE VIEW SITS IN, NOT THE VIEW ═══════════════════════════════════════
-         「作物栽培レイヤーで、読み込み時間が長い。いちいち地図の見る場所を変えるたびに、読み込みまで
-          待たないといけないのは不便。」 The request was the VIEWPORT'S EXACT BOX, so every pan — every
-         one, of any size — produced a key nothing had seen before, and the layer went back to FAO for
-         a picture that overlapped the one already on screen by 95 %.
-         The box is now snapped to a quadtree cell whose size is chosen to be about a viewport wide,
-         and the answer is KEPT. Panning inside that cell costs nothing at all; crossing its edge costs
-         one request; and coming back to somewhere already visited is instant, because the cache is
-         keyed by (crop, variable, supply, year, cell) and a cell is a place rather than a moment.
-         ⚠ The picture is not coarser for it: the request's pixel count scales with the box, so one
-         screen pixel still carries what it carried — see PW below. The FAO grid itself is ~9 km, so
-         both are well past what the data can say either way. */
-      const _cache=new Map(); const CACHE_MAX=14;
-      function _cacheGet(k){ const v=_cache.get(k); if(v){ _cache.delete(k); _cache.set(k,v); } return v; }
-      function _cachePut(k,v){ _cache.set(k,v);
-        while(_cache.size>CACHE_MAX){ const first=_cache.keys().next().value; const o=_cache.get(first);
-          _cache.delete(first); try{ if(o&&o.url&&o.url.indexOf('blob:')===0) URL.revokeObjectURL(o.url); }catch(_){} } }
-      /* the quadtree cell covering the view, in Mercator metres, aligned so it is the same cell for
-         every camera inside it */
-      function _cellBox(W,E,S,N){
-        const x0=mercX(W), x1=mercX(E), y0=mercY(S), y1=mercY(N);
-        const world=2*HALF, vw=Math.max(1,x1-x0);
-        const lvl=Math.max(0,Math.min(14,Math.round(Math.log2(world/vw))));
-        const step=world/Math.pow(2,lvl);
-        const q=(v,dir)=>(dir<0?Math.floor(v/step):Math.ceil(v/step))*step;
-        const X0=Math.max(-HALF,q(x0,-1)), X1=Math.min(HALF,q(x1,1));
-        const Y0=Math.max(mercY(-58),q(y0,-1)), Y1=Math.min(mercY(83),q(y1,1));
-        return { X0, X1, Y0, Y1, lvl, vw };
-      }
-      /* ══ ⚠⚠⚠ (#R254) A MOVE THAT ARRIVES DURING A FETCH USED TO BE THROWN AWAY, FOR EVER ═══════════
-         「移動やズームですぐに描画がずれたり地図がおかしくなる。戻るまで時間がかかる。」
+      /* the Web-Mercator extent of an XYZ tile, in metres — the scheme's own square, ±HALF on both axes */
+      function tileBox(z,x,y){ const world=2*HALF, s=world/Math.pow(2,z);
+        const x0=-HALF+x*s, y1=HALF-y*s; return [x0,y1-s,x0+s,y1]; }
 
-         MEASURED in a real browser: with the layer on, jump to (−95, 40) and then, 600 ms later, to
-         (77, 26). Twenty seconds after everything settles the map is over India — and the image
-         source's own `coordinates` are [[−180, 66.5] … [0, 0]], i.e. the WESTERN HEMISPHERE. Nothing
-         is drawn over India, and nothing ever will be: the screenshot at x/crop-6-double-pan.png is
-         a completely empty crop layer under an open crop panel.
+      /* ══ (#R255) A TILE IS FETCHED FROM FAO ONCE PER SESSION ═════════════════════════════════════
+         MapLibre evicts tiles from its own cache as the camera moves and asks for them again when it
+         comes back; MEASURED over one scripted zoom-out / drag / zoom-in that is 930 requests to
+         gaez-services for a few dozen distinct tiles. The RECOLOURED png is kept here instead —
+         ~20-80 KB apiece, so 240 of them is single-digit megabytes and covers far more than a session
+         ever revisits. A hit costs one `createImageBitmap` and no network at all.
+         ⚠ Keyed by the RASTER as well as the tile: a different crop, measure, water supply or
+         reference year is a different picture of the same square. */
+      const _tiles=new Map(), _inflight=new Map(), TILE_CACHE_MAX=240;
+      function _tileGet(k){ const v=_tiles.get(k); if(v){ _tiles.delete(k); _tiles.set(k,v); } return v; }
+      function _tilePut(k,v){ _tiles.set(k,v); while(_tiles.size>TILE_CACHE_MAX) _tiles.delete(_tiles.keys().next().value); }
+      const _toBlob=(cv)=>new Promise(res=>{ try{ cv.toBlob(b2=>res(b2||null),'image/png'); }catch(_){ res(null); } });
+      let _protoOn=false, _protoWarned=false;
+      function ensureProto(){ if(_protoOn) return true;
+        try{
+          /* ⚠ the renderer's AbortController is deliberately not taken — see the in-flight note below */
+          const ok=GE().scene.addProtocol(CROP_PROTO, async (params)=>{
+            const u=String((params&&params.url)||'');
+            const m=/^imapcrop:\/\/(\d+)\/(\d+)\/(\d+)\?(.*)$/.exec(u);
+            if(!m) throw new Error('bad imapcrop url');
+            const z=+m[1], x=+m[2], y=+m[3], q=new URLSearchParams(m[4]);
+            const oid=q.get('oid'), mn=+q.get('mn'), mx=+q.get('mx'), N=+q.get('n')||512;
+            const ck=oid+'|'+N+'|'+z+'/'+x+'/'+y;
+            const hit=_tileGet(ck);
+            if(hit) return { data: await createImageBitmap(hit) };
+            /* ⚠ (#R255) ONE FETCH PER TILE, AND IT IS NOT ABORTED. MEASURED before this: 98 requests
+               to FAO during one settle for **11 distinct tiles** — the renderer asks for the same
+               square from several places at once and cancels freely as the camera moves, and every
+               cancelled request is work already done that is then done again. The whole source is at
+               most 341 tiles (z0–z4), so letting an in-flight one finish and land in the cache is
+               strictly less traffic than cancelling it and asking again. Concurrent askers share the
+               one promise. */
+            const flight=_inflight.get(ck);
+            if(flight) return { data: await createImageBitmap(await flight) };
+            const [x0,y0,x1,y1]=tileBox(z,x,y);
+            const mr=encodeURIComponent(JSON.stringify({mosaicMethod:'esriMosaicNone',where:'OBJECTID='+oid}));
+            const rr=encodeURIComponent(JSON.stringify({rasterFunction:'Stretch',rasterFunctionArguments:{
+              StretchType:5, Statistics:[[mn,mx,(mn+mx)/2,1]], DRA:false, UseGamma:false, Min:0, Max:255 }}));
+            const url=GAEZ+'/exportImage?bbox='+[x0,y0,x1,y1].join(',')+'&bboxSR=3857&imageSR=3857&size='+N+','+N
+              +'&format=png32&f=image&interpolation=RSP_NearestNeighbor&mosaicRule='+mr+'&renderingRule='+rr;
+            const job=(async()=>{
+              const r=await fetch(url);
+              if(!r.ok) throw new Error('gaez tile '+r.status);
+              const bmp=await createImageBitmap(await r.blob());
+              const cv=recolorTile(bmp,N);
+              try{ bmp.close&&bmp.close(); }catch(_){}
+              if(!cv) throw new Error('canvas');
+              const out=await _toBlob(cv);
+              if(out) _tilePut(ck,out);
+              return out;
+            })();
+            _inflight.set(ck,job);
+            let out=null;
+            try{ out=await job; } finally { _inflight.delete(ck); }
+            if(!out) throw new Error('canvas');
+            return { data: await createImageBitmap(out) };
+          });
+          _protoOn=!!ok;
+        }catch(e){ if(!_protoWarned){ _protoWarned=true; try{ console.warn('crop tile protocol could not be registered',e); }catch(_){} } }
+        return _protoOn; }
 
-         The mechanism was this line. `if(!on||busy) return;` dropped the second move outright, and
-         the first fetch then latched `drawKey` to the cell IT had asked for — so the guard at the
-         bottom (`key===drawKey → return`) is satisfied for a key that has nothing to do with where
-         the reader is looking, and `moveend` never fires again because the map is already still.
-         That is the reported 「戻るまで時間がかかる」 with no upper bound on the time.
+      /* ⚠ (#R219) A CACHED REJECTION IS A LAYER THAT NEVER WORKS AGAIN — see catalog()/statsFor()
+         above; both forget a rejection. What used to also be needed here (releasing a latched
+         `drawKey` on failure) has no equivalent any more: a tile that fails is retried by the
+         renderer when it is next needed, and one failed tile is one blank square rather than a layer
+         that never draws again. */
 
-         A busy paint now REMEMBERS that the view moved and runs again the moment it is free. */
-      let _dirty=false, _dirtyForce=false;
+      /* ══ (#R255) BUILD / REBUILD THE SOURCE ═════════════════════════════════════════════════════════
+         The raster IDENTITY is (crop, variable, supply, year). When it changes the source is replaced,
+         which is also what discards every tile of the previous crop — there is no per-view key to
+         latch and nothing to go stale, so #R254's `_dirty`/`_dirtyForce` bookkeeping and the whole
+         `moveend` → refetch path are gone with the defect they were compensating for. */
+      /* ⚠ (#R255) `maxzoom` IS SET BY THE DATA, NOT BY THE SCREEN. GAEZ is a 5-arcminute grid (~9 km);
+         a 512-px tile at z4 is 0.044°/px = 2.6 arcmin, already twice as fine as anything the raster
+         can say. Asking for z5 or deeper would be four times the requests for pixels FAO would have
+         to invent, so the source stops here and the renderer overzooms — which is the honest picture
+         of a 9 km cell and, unlike #R254's single stretched image, is the RIGHT cell for the place. */
+      const TILE_N=512, TILE_MAXZ=4;
       async function paint(force){
         if(!on) return;
-        if(busy){ _dirty=true; _dirtyForce=_dirtyForce||!!force; return; }
-        let b,z; try{ b=GE().camera.getBounds(); z=GE().camera.getZoom(); }catch(_){ return; }
-        if(!b) return;
-        const W=Math.max(-180,b.getWest()), E=Math.min(180,b.getEast()), S=Math.max(-58,b.getSouth()), N=Math.min(83,b.getNorth());
-        if(!(E>W&&N>S)) return;
         const yr=gaezYear();
-        const cell=_cellBox(W,E,S,N);
-        if(!(cell.X1>cell.X0&&cell.Y1>cell.Y0)) return;
-        const key=[crop,variable,supply,yr,cell.lvl,Math.round(cell.X0),Math.round(cell.Y0),Math.round(cell.X1),Math.round(cell.Y1)].join('|');
-        if(!force&&key===drawKey) return;
-        /* a cell this session has already fetched goes straight to the map — no request, no wait */
-        const hit=_cacheGet(key);
-        if(hit&&!force){ drawKey=key; lastMeta=hit.meta;
-          whenDrawable(()=>{ try{
-            if(GE().layers.hasSource(IMG)) GE().layers.updateImage(IMG,{url:hit.url,coordinates:hit.coords});
-            else { GE().layers.addSource(IMG,{type:'image',url:hit.url,coordinates:hit.coords});
-              GE().layers.add({id:LYR,type:'raster',source:IMG,
-                paint:{'raster-opacity':0.85,'raster-fade-duration':0,'raster-resampling':'nearest'}},
-                GE().layers.has('tool-poly')?'tool-poly':undefined); }
-            panel.claim(); setVis([LYR],on); }catch(_){} });
-          render(); return; }
-        drawKey=key; busy=true;
-        /* ⚠ (#R220) 「「FAO のグリッドを取得中…」という文言はいらない。」 — and it is not needed for
-           anything: the line was a progress report for a fetch the reader did not ask for by name,
-           printed in the one slot this panel uses to answer 「この地点は何が穫れるのか」 (the cell
-           readout below). Clearing it is what a silent fetch looks like; the FAILURE line stays,
-           because "nothing arrived" is an answer and needs saying. */
-        stat('');
+        const key=[crop,variable,supply,yr].join('|');
+        if(!force&&key===drawKey&&GE().layers.hasSource(IMG)) return;
+        if(!ensureProto()){ stat('⚠ '+L('This crop layer could not start.','この作物レイヤーを開始できませんでした。','Diese Ebene konnte nicht starten.','Не удалось запустить слой.','No se pudo iniciar esta capa.')); return; }
+        drawKey=key; busy=true; stat('');
+        const gen=++srcGen;
         try{
           const cat=await catalog();
           const rec=cat[[crop,yr,variable,supply].join('|')];
           if(!rec) throw new Error('no such raster');
           const st=await statsFor(rec.OBJECTID);
-          const x0=cell.X0, x1=cell.X1, y0=cell.Y0, y1=cell.Y1;
-          const aspect=(x1-x0)/Math.max(1,(y1-y0));
-          /* the same pixels per screen pixel the viewport request had, over a box that is bigger than
-             the viewport — so nothing is softer than it was, and the ceiling is what the service and
-             the canvas will carry */
-          const PW=Math.max(320,Math.min(2048,Math.round((window.innerWidth||1200)*1.25*(x1-x0)/Math.max(1,cell.vw))));
-          const PH=Math.max(200,Math.min(2048,Math.round(PW/Math.max(0.05,aspect))));
-          const mr=encodeURIComponent(JSON.stringify({mosaicMethod:'esriMosaicNone',where:'OBJECTID='+rec.OBJECTID}));
-          const rr=encodeURIComponent(JSON.stringify({rasterFunction:'Stretch',rasterFunctionArguments:{
-            StretchType:5, Statistics:[[st.min,st.max,st.mean,1]], DRA:false, UseGamma:false, Min:0, Max:255 }}));
-          const u=GAEZ+'/exportImage?bbox='+[x0,y0,x1,y1].join(',')+'&bboxSR=3857&imageSR=3857&size='+PW+','+PH
-            +'&format=png32&f=image&interpolation=RSP_NearestNeighbor&mosaicRule='+mr+'&renderingRule='+rr;
-          const img=await new Promise((res,rej)=>{ const im=new Image(); im.crossOrigin='anonymous';
-            im.onload=()=>res(im); im.onerror=()=>rej(new Error('image')); im.src=u; });
-          const out=await recolor(img,PW,PH);   /* (#R254) toBlob — see recolor */
-          if(!out) throw new Error('canvas');
-          /* ⚠ the corners come from THE BOX THAT WAS REQUESTED, not from the viewport — that is the
-             whole point of the cell, and reading `W`/`E` here (as the viewport request did) would put
-             a wider picture inside a narrower frame and shift every crop east. */
-          const lngOf=(x)=>x/HALF*180;
-          const coords=[[lngOf(x0),invY(y1)],[lngOf(x1),invY(y1)],[lngOf(x1),invY(y0)],[lngOf(x0),invY(y0)]];
-          const meta={ st, units:rec.units, year:yr, oid:rec.OBJECTID };
-          _cachePut(key,{ url:out.url, coords, meta });
+          if(gen!==srcGen||!on){ busy=false; return; }
+          lastMeta={ st, units:rec.units, year:yr, oid:rec.OBJECTID };
+          const tiles=[CROP_PROTO+'://{z}/{x}/{y}?oid='+encodeURIComponent(rec.OBJECTID)
+            +'&mn='+encodeURIComponent(st.min)+'&mx='+encodeURIComponent(st.max)+'&n='+TILE_N];
           whenDrawable(()=>{ try{
-            if(GE().layers.hasSource(IMG)) GE().layers.updateImage(IMG,{url:out.url,coordinates:coords});
-            else { GE().layers.addSource(IMG,{type:'image',url:out.url,coordinates:coords});
-              GE().layers.add({id:LYR,type:'raster',source:IMG,
-                paint:{'raster-opacity':0.85,'raster-fade-duration':0,'raster-resampling':'nearest'}},
-                GE().layers.has('tool-poly')?'tool-poly':undefined);
-              panel.claim(); }
-            panel.claim();
-            setVis([LYR],on); }catch(_){} });
-          lastMeta=meta;
+            if(gen!==srcGen||!on) return;
+            clearImg(true);
+            GE().layers.addSource(IMG,{type:'raster',tiles,tileSize:TILE_N,minzoom:0,maxzoom:TILE_MAXZ,
+              attribution:'FAO GAEZ v4'});
+            GE().layers.add({id:LYR,type:'raster',source:IMG,
+              paint:{'raster-opacity':0.85,'raster-fade-duration':180,'raster-resampling':'nearest'}},
+              GE().layers.has('tool-poly')?'tool-poly':undefined);
+            panel.claim(); setVis([LYR],on);
+          }catch(_){} });
           render();
         }catch(e){ console.warn('crops',e);
-          /* ⚠ release the key, or a pan back to this cell is a silent no-op for ever (see above) */
           drawKey='';
           stat('⚠ '+L('This crop and variable could not be fetched from GAEZ — it will be tried again when the map moves.','この作物・指標を GAEZ から取得できませんでした（地図を動かすと再試行します）。','Nicht abrufbar — beim nächsten Verschieben wird es erneut versucht.','Не удалось получить — повторим при перемещении карты.','No se pudo obtener; se reintentará al mover el mapa.')); }
-        busy=false;
-        /* (#R254) the view moved while this request was in flight — go again for where the reader
-           actually is. Without this the layer stays on the cell whose fetch happened to win. */
-        if(_dirty&&on){ const f=_dirtyForce; _dirty=false; _dirtyForce=false; setTimeout(()=>paint(f),0); } }
+        busy=false; }
 
-      function clearImg(){ try{ if(GE().layers.has(LYR)) GE().layers.remove(LYR); }catch(_){}
-        try{ if(GE().layers.hasSource(IMG)) GE().layers.removeSource(IMG); }catch(_){} drawKey=''; }
+      function clearImg(keepKey){ try{ if(GE().layers.has(LYR)) GE().layers.remove(LYR); }catch(_){}
+        try{ if(GE().layers.hasSource(IMG)) GE().layers.removeSource(IMG); }catch(_){} if(!keepKey) drawKey=''; }
 
       function render(){
         const st=lastMeta&&lastMeta.st, un=lastMeta?lastMeta.units:'';

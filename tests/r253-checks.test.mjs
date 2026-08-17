@@ -85,8 +85,17 @@ test('#R253 ④ an open sidebar out-ranks the floating panels, and the pointer m
     'the band is not scoped to desktop — on a phone the bottom sheet (1700) has to stay above the panel');
 
   const ui = code(read('js/map-ui.js'));
-  assert.match(ui, /addEventListener\('pointerdown'[\s\S]{0,400}im-float-front/,
+  /* ⚠ (#R255) the pointerdown handler delegates to `act()`, which `wheel` and `focusin` also call
+     — scrolling or typing inside a panel is 「なんらかの操作」 too and used to raise nothing. The
+     property #R253 asserted is unchanged: a pointer gesture is what sets and clears the class. */
+  assert.match(ui, /addEventListener\('pointerdown',\(e\)=>\{ try\{ act\(e\.target,true\)/,
     'nothing toggles im-float-front on a pointer, so the class can never change');
+  assert.match(ui, /im-float-front/, 'the demotion class is gone entirely');
+  /* ⚠ (#R255) …and the exclusion is a NAMED LIST now, because the canvas was not the only trap:
+     #map / #map-container / .operation-room are position:relative, so anything inside the map shell
+     that is not itself positioned resolved to the SHELL — marking that .im-front lifts the whole map
+     (and the sidebars inside .operation-room) into one 2650 box. */
+  assert.match(ui, /_NOT_PANEL=/, 'the map shell exclusion list is gone');
   assert.match(ui, /maplibregl-canvas-container/,
     'the map canvas is not excluded — clicking the map would raise the map itself over the sidebar');
   assert.match(ui, /,\s*true\s*\)/, 'the listener is not in the capture phase — a handler that stops propagation would hide the gesture');

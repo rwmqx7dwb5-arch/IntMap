@@ -131,6 +131,10 @@ window.IntMapLang.define('zh', {
     "lyrGrpDemo":"人口與經濟",
     "lyrGrpGeo":"戰略地理",
     "lyrGrpGeoPol":"地緣政治與國防",
+    "lyrGrpPolitics":"政治與治理",
+    "lyrGrpSecurity":"國防與安全",
+    "lyrGrpHealth":"醫療與衛生",
+    "lyrGrpTech":"科技與基礎設施",
     "lyrGrpHazard":"災害與夜空",
     "lyrGrpIndic":"指標與疊圖",
     "lyrGrpMaritime":"海洋與海事",
@@ -3953,5 +3957,40 @@ window.IntMapLang.define('zh', {
   "Africa": "非洲",
   "Asia": "亞洲",
   "North America": "北美洲",
+    "Address": "地址",   /* (#R255) */
+    "Airfields, naval bases, barracks, ranges and danger areas tagged military in OpenStreetMap for the current view. The public record only — nothing here is inferred from imagery.": "目前視野範圍內 OpenStreetMap 標記為 military 的機場、海軍基地、營區、靶場與危險區域。僅為公開紀錄，未包含任何影像判讀推估。",   /* (#R255) */
+    "Base / barracks": "基地／營區",   /* (#R255) */
+    "Beds": "病床數",   /* (#R255) */
+    "Clear search": "清除搜尋",   /* (#R255) */
+    "Clinic": "診所",   /* (#R255) */
+    "Communication tower / mast": "通訊塔／天線桿",   /* (#R255) */
+    "Consulate": "領事館",   /* (#R255) */
+    "Diplomatic missions": "外交館舍",   /* (#R255) */
+    "Doctors": "醫師診間",   /* (#R255) */
+    "Embassies, consulates and other diplomatic missions mapped in OpenStreetMap for the current view. Click any point for the record.": "目前視野範圍內 OpenStreetMap 上的大使館、領事館等外交館舍。點選任一點位可查看紀錄。",   /* (#R255) */
+    "Embassy": "大使館",   /* (#R255) */
+    "Emergency": "急診",   /* (#R255) */
+    "Health facilities": "醫療機構",   /* (#R255) */
+    "Height": "高度",   /* (#R255) */
+    "Hospital": "醫院",   /* (#R255) */
+    "Hospitals, clinics, doctors and pharmacies mapped in OpenStreetMap for the current view. Click any point for beds, speciality, operator and opening hours where the object carries them.": "目前視野範圍內 OpenStreetMap 上的醫院、診所與藥局。病床數、科別、經營者與看診時間僅在該物件本身帶有標籤時顯示。",   /* (#R255) */
+    "Internet exchange": "網際網路交換中心",   /* (#R255) */
+    "Internet exchanges, telephone exchanges, communication masts and towers mapped in OpenStreetMap for the current view — the physical plant the network actually runs on.": "目前視野範圍內 OpenStreetMap 上的網際網路交換中心、電話交換局與通訊塔——網路實際運行所依附的實體設施。",   /* (#R255) */
+    "Military sites": "軍事設施",   /* (#R255) */
+    "objects in view": "筆（視野範圍內）",   /* (#R255) */
+    "Opening hours": "看診時間",   /* (#R255) */
+    "Other military site": "其他軍事設施",   /* (#R255) */
+    "Other mission": "其他館舍",   /* (#R255) */
+    "Pharmacy": "藥局",   /* (#R255) */
+    "Phone": "電話",   /* (#R255) */
+    "Range / danger area": "靶場／危險區域",   /* (#R255) */
+    "Represents": "派遣國",   /* (#R255) */
+    "Service": "所屬軍種",   /* (#R255) */
+    "Speciality": "科別",   /* (#R255) */
+    "Surveyed in OpenStreetMap. Every field above is that object’s own tag; nothing is inferred, and a field the object does not carry is left out rather than estimated.": "OpenStreetMap 的實測資料。上述欄位皆為該物件自身的標籤，未做任何推論；物件未帶有的欄位一律略過，不做估算。",   /* (#R255) */
+    "Telecom & internet infrastructure": "電信與網際網路基礎設施",   /* (#R255) */
+    "Telephone exchange": "電話交換局",   /* (#R255) */
+    "This crop layer could not start.": "無法啟動此作物圖層。",   /* (#R255) */
+    "Zoom in to load this view": "請放大以載入此範圍",   /* (#R255) */
   }
 });

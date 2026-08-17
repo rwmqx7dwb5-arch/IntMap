@@ -171,6 +171,11 @@ const SAME_AS_EN = {
     /* (#R251) …and the continent: «Asia» is the Spanish name of the continent (RAE), spelled
        exactly as in English; the other six regions differ and are translated at the same site. */
     'Asia',
+    /* (#R255) …and the building: the Spanish noun IS «hospital» (RAE), capitalised here as the
+       legend row for the OSM `amenity=hospital` bucket. The other four buckets at that call site
+       (Clínica, Consultorio, Farmacia, Otros) differ, which is what makes this a claim about the
+       word rather than a forgotten argument. */
+    'Hospital',
   ]),
 };
 /* ⚠ …and the polity names the ERA MAP prints that carry no exonym in either language. Sub-Saharan

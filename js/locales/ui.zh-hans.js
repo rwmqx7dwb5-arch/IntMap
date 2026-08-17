@@ -135,6 +135,10 @@ window.IntMapLang.define('zh-hans', {
     "lyrGrpDemo":"人口与经济",
     "lyrGrpGeo":"战略地理",
     "lyrGrpGeoPol":"地缘政治与国防",
+    "lyrGrpPolitics":"政治与治理",
+    "lyrGrpSecurity":"国防与安全",
+    "lyrGrpHealth":"医疗与卫生",
+    "lyrGrpTech":"科技与基础设施",
     "lyrGrpHazard":"灾害与夜空",
     "lyrGrpIndic":"指标与叠图",
     "lyrGrpMaritime":"海洋与海事",
@@ -3957,5 +3961,40 @@ window.IntMapLang.define('zh-hans', {
   "Africa": "非洲",
   "Asia": "亚洲",
   "North America": "北美洲",
+    "Address": "地址",   /* (#R255) */
+    "Airfields, naval bases, barracks, ranges and danger areas tagged military in OpenStreetMap for the current view. The public record only — nothing here is inferred from imagery.": "目前视野范围内 OpenStreetMap 标记为 military 的机场、海军基地、营区、靶场与危险区域。仅为公开纪录，未包含任何影像判读推估。",   /* (#R255) */
+    "Base / barracks": "基地／营区",   /* (#R255) */
+    "Beds": "病床数",   /* (#R255) */
+    "Clear search": "清除搜索",   /* (#R255) */
+    "Clinic": "诊所",   /* (#R255) */
+    "Communication tower / mast": "通讯塔／天线杆",   /* (#R255) */
+    "Consulate": "领事馆",   /* (#R255) */
+    "Diplomatic missions": "外交馆舍",   /* (#R255) */
+    "Doctors": "医师诊间",   /* (#R255) */
+    "Embassies, consulates and other diplomatic missions mapped in OpenStreetMap for the current view. Click any point for the record.": "目前视野范围内 OpenStreetMap 上的大使馆、领事馆等外交馆舍。点击任一点位可查看纪录。",   /* (#R255) */
+    "Embassy": "大使馆",   /* (#R255) */
+    "Emergency": "急诊",   /* (#R255) */
+    "Health facilities": "医疗机构",   /* (#R255) */
+    "Height": "高度",   /* (#R255) */
+    "Hospital": "医院",   /* (#R255) */
+    "Hospitals, clinics, doctors and pharmacies mapped in OpenStreetMap for the current view. Click any point for beds, speciality, operator and opening hours where the object carries them.": "目前视野范围内 OpenStreetMap 上的医院、诊所与药局。病床数、科别、经营者与看诊时间仅在该对象本身带有标签时显示。",   /* (#R255) */
+    "Internet exchange": "互联网交换中心",   /* (#R255) */
+    "Internet exchanges, telephone exchanges, communication masts and towers mapped in OpenStreetMap for the current view — the physical plant the network actually runs on.": "目前视野范围内 OpenStreetMap 上的互联网交换中心、电话交换局与通讯塔——网络实际运行所依附的实体设施。",   /* (#R255) */
+    "Military sites": "军事设施",   /* (#R255) */
+    "objects in view": "笔（视野范围内）",   /* (#R255) */
+    "Opening hours": "看诊时间",   /* (#R255) */
+    "Other military site": "其他军事设施",   /* (#R255) */
+    "Other mission": "其他馆舍",   /* (#R255) */
+    "Pharmacy": "药局",   /* (#R255) */
+    "Phone": "电话",   /* (#R255) */
+    "Range / danger area": "靶场／危险区域",   /* (#R255) */
+    "Represents": "派遣国",   /* (#R255) */
+    "Service": "所属军种",   /* (#R255) */
+    "Speciality": "科别",   /* (#R255) */
+    "Surveyed in OpenStreetMap. Every field above is that object’s own tag; nothing is inferred, and a field the object does not carry is left out rather than estimated.": "OpenStreetMap 的实测数据。上述栏位皆为该对象自身的标签，未做任何推论；对象未带有的栏位一律略过，不做估算。",   /* (#R255) */
+    "Telecom & internet infrastructure": "电信与互联网基础设施",   /* (#R255) */
+    "Telephone exchange": "电话交换局",   /* (#R255) */
+    "This crop layer could not start.": "无法启动此作物图层。",   /* (#R255) */
+    "Zoom in to load this view": "请放大以加载此范围",   /* (#R255) */
   }
 });

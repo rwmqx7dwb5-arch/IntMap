@@ -346,10 +346,21 @@ test('⑧ the tide shading is painted from the scan, before anything is tapped',
 });
 test('⑧ the crop raster is fetched per quadtree cell and kept', () => {
   const s = code('js/world-packs.js');
-  assert.match(s, /function _cellBox\(W,E,S,N\)/, 'the request is still the raw viewport');
-  assert.match(s, /const hit=_cacheGet\(key\);/, 'nothing is cached');
-  assert.match(s, /_cachePut\(key,\{ url:out\.url, coords, meta \}\);/);
-  assert.match(s, /const lngOf=\(x\)=>x\/HALF\*180;/, 'the image corners are not taken from the requested box');
+  /* ══ ⚠⚠ (#R255) THE CELL WAS THE FIX FOR ONE DEFECT AND THE CAUSE OF THE NEXT ═════════════════
+     #R218 stopped the layer re-fetching a picture of the viewport on every pan by snapping the
+     request to a quadtree cell and keeping the answer — and that is why 「移動やズームですぐに描画が
+     ずれたり地図が黒におかしくなる」: between the move and the new picture, the OLD one is still on
+     screen, geographically correct and at the wrong SCALE. Magnified from a world cell to a city,
+     one source pixel covers the screen; at the dark end of the ramp the screen is black (measured:
+     mean luminance 8.3). The layer is a raster TILE source now, so the renderer asks for the tiles
+     that cover the view at the zoom it is at and never stretches one across another.
+     What #R218 was really asserting — that panning does not re-fetch what is already held — is
+     asserted here against the tile cache that now holds it (measured: 98 requests for 11 tiles
+     before it, 8 after; a pan back costs none). */
+  assert.match(s, /const _tiles=new Map\(\), _inflight=new Map\(\)/, 'the crop tiles are not kept');
+  assert.match(s, /function _tileGet\(k\)/, 'nothing is cached');
+  assert.match(s, /if\(out\) _tilePut\(ck,out\);/, 'a fetched tile is not put in the cache');
+  assert.match(s, /function tileBox\(z,x,y\)/, 'the request box is not taken from the tile itself');
 });
 test('⑧ both seismic click modes turn off when pressed again, and an unarmed map is not claimed', () => {
   const s = code('js/seismic.js');

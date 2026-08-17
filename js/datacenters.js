@@ -471,7 +471,7 @@ window.IntMapModules.dataCenters=function(HOST){
     const isCur=(p.origin==='curated');
     el.innerHTML='<button class="cp-close" aria-label="close" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border:none;border-radius:50%;background:var(--input-bg);color:var(--text-main);font-size:15px;cursor:pointer;">✕</button>'
       +'<div style="padding:16px 18px 18px;">'
-      +'<div style="display:flex;align-items:center;gap:9px;margin-bottom:3px;padding-right:32px;">'
+      +'<div class="dc-drag" style="display:flex;align-items:center;gap:9px;margin-bottom:3px;padding-right:32px;cursor:move;user-select:none;">'
       +'<span style="width:12px;height:12px;border-radius:7px;flex:none;background:'+S((OP[p.op]||OP.osm)[1])+';"></span>'
       +'<span style="font-weight:700;font-size:15px;color:var(--text-main);">'+S(p.n)+'</span></div>'
       +'<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px;">'+S(subtitle)+'</div>'
@@ -500,6 +500,35 @@ window.IntMapModules.dataCenters=function(HOST){
             'Registrado en OpenStreetMap. Todos los campos provienen de las etiquetas de ese objeto.'))
       +'</div></div>';
     document.body.appendChild(el); card=el;
+    /* ══ ⚠⚠⚠ (#R255) THE CARD WAS BUILT, ATTACHED, AND DRAWN OFF THE BOTTOM OF THE PAGE ═══════════
+       「押しても詳細が出ない」 — and #R254 verified «the card really opens» by asking whether the
+       element existed, which it always did. MEASURED on the shipped build, clicking the Equinix
+       Ashburn campus at z9 in a 1600×900 window: `#dc-detail` exists, `display:block`, `z-index:2200`
+       — and its rectangle is **x 0, y 900, 426×275**, i.e. its top edge sits exactly ON the bottom of
+       the viewport. `.country-popup` is `position:absolute` with NO `left`/`top` of its own, so an
+       element appended to <body> takes its STATIC position: the end of the document flow, below every
+       panel in it. Nothing was ever visible; only the phone reached it, because the mobile rule at
+       css/intmap.css:1993 forces `position:fixed;bottom:0`.
+       ⚠ The card this file copied its shell from already had the answer: js/aircraft-detail.js sets
+       `left`/`top` itself and makes the header a drag handle. Placing it is part of using that shell,
+       not something the shell does for you — so this does the same thing, through the same helper. */
+    try{
+      const vw=window.innerWidth||1200, vh=window.innerHeight||800;
+      const w=el.offsetWidth||380, h=el.offsetHeight||300;
+      /* beside the point that was clicked when there is room, clamped into the window; the sidebars
+         overlay the map (#R160), so the right edge is kept clear of the layer panel's strip */
+      const rs=(()=>{ try{ const s=document.getElementById('layer-sidebar-r');
+        return (s&&document.body.classList.contains('lsr-open'))?s.getBoundingClientRect().width:0; }catch(_){ return 0; } })();
+      /* ⚠ `project()` is CANVAS-relative (#R252); the card is placed in PAGE coordinates, so the
+         canvas's own offset — the left sidebar's 400 px, when it is open — has to be added back. */
+      const px=(()=>{ try{ const p=GE().coords.project({lng:+lngLat.lng,lat:+lngLat.lat});
+        const r=GE().render.canvas().getBoundingClientRect(); return r.left+p.x; }catch(_){ return null; } })();
+      let left=(px!=null)?(px+18):(vw-rs-w-24);
+      left=Math.max(12,Math.min(left,vw-rs-w-12));
+      el.style.left=Math.round(Math.max(12,left))+'px';
+      el.style.top=Math.round(Math.max(12,Math.min(96,vh-h-16)))+'px';
+    }catch(_){ el.style.left='16px'; el.style.top='96px'; }
+    try{ HOST.makeDraggable&&HOST.makeDraggable(el,el.querySelector('.dc-drag')); }catch(_){}
     try{ el.querySelector('.cp-close').onclick=closeCard; }catch(_){}
   }
 

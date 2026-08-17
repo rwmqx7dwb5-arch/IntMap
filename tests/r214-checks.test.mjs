@@ -259,7 +259,15 @@ test('R214 ⑤: turning the day/night side off reaches the renderer that owns it
 });
 
 test('R214 ④c: the standing view is reachable by hand and by Atlas, and the planner knows the parameters', () => {
-  assert.ok(/mode:'stand'/.test(read('js/tool-panel.js')), 'the right-click menu opens it directly');
+  /* ⚠ (#R255) 「星空を見ると立って星空を見るは同じものに統合しろ。切り替えボタンで切り替わるように。」
+     — the two right-click items became ONE. The standing VIEW is untouched; what went is the second
+     door to it, because the panel has carried a labelled dome/stand switch since #R214 itself. So
+     this asserts what #R214 was really protecting — that the view is reachable by hand — against the
+     panel's own control rather than against a menu entry that no longer exists. */
+  assert.ok(/IntMapNightSky&&window\.IntMapNightSky\.open/.test(read('js/tool-panel.js')),
+    'the right-click menu no longer opens the night sky at all');
+  assert.ok(/class="ns-mode" data-m="stand"/.test(read('js/night-sky.js')),
+    'the standing view is not reachable by hand — the panel has no switch to it');
   const atlas = read('js/atlas-console.js');
   assert.ok(/case 'standHere':/.test(atlas), 'Atlas has an action for it');
   /* ⚠ #R115: a parameter the SYS catalogue does not name DOES NOT EXIST to the planner. */

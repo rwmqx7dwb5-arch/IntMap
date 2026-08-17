@@ -170,6 +170,10 @@ window.IntMapLang.define('fr', { ui: {
       lyrGrpClimate:"Climat et météo",
       lyrGrpDemo:"Population et économie",
       lyrGrpGeoPol:"Géopolitique et défense",
+      lyrGrpPolitics:"Politique et gouvernance",
+      lyrGrpSecurity:"Défense et sécurité",
+      lyrGrpHealth:"Santé et assainissement",
+      lyrGrpTech:"Technologie et infrastructures",
       lyrGrpHazard:"Risques et ciel nocturne",
       lyrGrpIndic:"Indicateurs et surcouches",
       lyrGrpMaritime:"Océans et maritime",
@@ -3866,4 +3870,40 @@ window.IntMapLang.define('fr', { ui: {
   "Start exploring": "Commencer l’exploration",
   "Africa": "Afrique",
   "Asia": "Asie",
-  "North America": "Amérique du Nord",} });
+  "North America": "Amérique du Nord",
+  "Address": "Adresse",   /* (#R255) */
+  "Airfields, naval bases, barracks, ranges and danger areas tagged military in OpenStreetMap for the current view. The public record only — nothing here is inferred from imagery.": "Aérodromes, bases navales, casernes, champs de tir et zones dangereuses marqués « military » dans OpenStreetMap pour la vue actuelle. Uniquement le registre public — rien ici n’est déduit d’images.",   /* (#R255) */
+  "Base / barracks": "Base / caserne",   /* (#R255) */
+  "Beds": "Lits",   /* (#R255) */
+  "Clear search": "Effacer la recherche",   /* (#R255) */
+  "Clinic": "Clinique",   /* (#R255) */
+  "Communication tower / mast": "Tour / pylône de communication",   /* (#R255) */
+  "Consulate": "Consulat",   /* (#R255) */
+  "Diplomatic missions": "Missions diplomatiques",   /* (#R255) */
+  "Doctors": "Cabinet médical",   /* (#R255) */
+  "Embassies, consulates and other diplomatic missions mapped in OpenStreetMap for the current view. Click any point for the record.": "Ambassades, consulats et autres missions diplomatiques cartographiés dans OpenStreetMap pour la vue actuelle. Cliquez sur un point pour voir la fiche.",   /* (#R255) */
+  "Embassy": "Ambassade",   /* (#R255) */
+  "Emergency": "Urgences",   /* (#R255) */
+  "Health facilities": "Établissements de santé",   /* (#R255) */
+  "Height": "Hauteur",   /* (#R255) */
+  "Hospital": "Hôpital",   /* (#R255) */
+  "Hospitals, clinics, doctors and pharmacies mapped in OpenStreetMap for the current view. Click any point for beds, speciality, operator and opening hours where the object carries them.": "Hôpitaux, cliniques, cabinets et pharmacies cartographiés dans OpenStreetMap pour la vue actuelle. Cliquez sur un point pour les lits, la spécialité, l’exploitant et les horaires, lorsque l’objet les porte.",   /* (#R255) */
+  "Internet exchange": "Point d’échange Internet",   /* (#R255) */
+  "Internet exchanges, telephone exchanges, communication masts and towers mapped in OpenStreetMap for the current view — the physical plant the network actually runs on.": "Points d’échange Internet, centraux téléphoniques, pylônes et tours de communication cartographiés dans OpenStreetMap pour la vue actuelle — les installations physiques sur lesquelles le réseau fonctionne réellement.",   /* (#R255) */
+  "Military sites": "Sites militaires",   /* (#R255) */
+  "objects in view": "objets dans la vue",   /* (#R255) */
+  "Opening hours": "Horaires",   /* (#R255) */
+  "Other military site": "Autre site militaire",   /* (#R255) */
+  "Other mission": "Autre mission",   /* (#R255) */
+  "Pharmacy": "Pharmacie",   /* (#R255) */
+  "Phone": "Téléphone",   /* (#R255) */
+  "Range / danger area": "Champ de tir / zone dangereuse",   /* (#R255) */
+  "Represents": "Représente",   /* (#R255) */
+  "Service": "Armée",   /* (#R255) */
+  "Speciality": "Spécialité",   /* (#R255) */
+  "Surveyed in OpenStreetMap. Every field above is that object’s own tag; nothing is inferred, and a field the object does not carry is left out rather than estimated.": "Relevé dans OpenStreetMap. Chaque champ ci-dessus est une étiquette de l’objet lui-même ; rien n’est déduit, et un champ que l’objet ne porte pas est omis plutôt qu’estimé.",   /* (#R255) */
+  "Telecom & internet infrastructure": "Infrastructures télécoms et Internet",   /* (#R255) */
+  "Telephone exchange": "Central téléphonique",   /* (#R255) */
+  "This crop layer could not start.": "Cette couche de cultures n’a pas pu démarrer.",   /* (#R255) */
+  "Zoom in to load this view": "Zoomez pour charger cette vue",   /* (#R255) */
+} });

@@ -526,11 +526,16 @@ window.IntMapModules.toolPanel=function(HOST){
       {label:`🌇 ${L('Sunlight hours & shade','日照時間・影を解析','Sonnenstunden & Schatten','Часы солнца и тени','Horas de sol y sombra')}`, action:()=>{ try{ if(window.IntMapSun){ window.IntMapSun.open(); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(lngLat.lng,lngLat.lat); } }catch(_){} }},
       /* (#R208) 「ある地点からの星空」— the all-sky view a person standing here has, with the skyline
          measured off the DEM so the ground really does hide the part of the sky it hides. */
-      {label:`✨ ${L('Night sky','星空を見る','Sternhimmel','Звёздное небо','El cielo nocturno')}`, action:()=>{ window.IntMapLazy.need('nightSky').then(()=>{ try{ window.IntMapNightSky&&window.IntMapNightSky.open({lng:lngLat.lng,lat:lngLat.lat,mode:'dome'}); }catch(_){} }); }},
-      /* (#R214) 「実際にその地点に立ったように見れるモードも追加して。」 — the same sky and the same
-         measured skyline, through a lens instead of onto a chart. A separate entry because the whole
-         point of it is the first-person view, and a mode hidden inside a panel is not that. */
-      {label:`🧍 ${L('Stand and look up','立って空を見上げる','Stehen und hinaufsehen','Встать и посмотреть вверх','Ponerse de pie y mirar arriba')}`, action:()=>{ window.IntMapLazy.need('nightSky').then(()=>{ try{ window.IntMapNightSky&&window.IntMapNightSky.open({lng:lngLat.lng,lat:lngLat.lat,mode:'stand'}); }catch(_){} }); }},
+      /* ══ (#R255) ONE ENTRY, TWO VIEWS — THE SWITCH IS THE PANEL'S OWN ══════════════════════════════
+         「星空を見ると立って星空を見るは同じものに統合しろ。切り替えボタンで切り替わるように。」
+         #R214 added the standing view as a SECOND menu item on the argument that «a mode hidden
+         inside a panel is not the point». The panel has carried a labelled dome/stand segmented
+         control in its header ever since (js/night-sky.js, `.ns-modes`), so the second entry was two
+         doors into one room — and the room already had the switch.
+         ⚠ NOTHING IS REMOVED. Both views, the keyboard controls, `IntMapNightSky.setMode` and Atlas's
+         `standHere` / `skyStanding` spellings are untouched; only the duplicate door is. The panel
+         opens in whichever view was last used, so «stand» is one click away and stays chosen. */
+      {label:`✨ ${L('Night sky','星空を見る','Sternhimmel','Звёздное небо','El cielo nocturno')}`, action:()=>{ window.IntMapLazy.need('nightSky').then(()=>{ try{ window.IntMapNightSky&&window.IntMapNightSky.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
       /* (#R15c) Sea-route feature removed per request — repeatedly mis-routed (shallow endpoints / linear /
          cut across land). The IntMapRoute engine stays defined but is no longer reachable from the UI. */
       ...(HOST.userPins.length?[{divider:true},{label:`🗑 ${HOST.t('ctxClearPins')} (${HOST.userPins.length})`, action:HOST.clearAllPins}]:[])
