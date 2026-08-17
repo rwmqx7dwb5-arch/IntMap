@@ -31,28 +31,16 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
-/* ── ① THE SWEEP CAN ACTUALLY MOVE ───────────────────────────────────────────────────────────── */
-test('#R253 ① the indeterminate bar is declared so that its animation outranks the rule', () => {
-  const css = code(read('css/intmap.css'));
-  const rule = /\.tp-prog\.indet\s+\.tp-prog-fill\{([^}]*)\}/.exec(css);
-  assert.ok(rule, 'the indeterminate rule is gone — if the bar changed shape, re-derive this check');
-  const body = rule[1];
-
-  /* THE PROPERTY: no important declaration in this rule may reset `background-position`, because an
-     important author declaration ranks above CSS animations and the keyframes only move that one
-     longhand. The `background` SHORTHAND resets it; the longhands do not. */
-  assert.doesNotMatch(body, /(^|;)\s*background\s*:[^;]*!important/,
-    'the shorthand is back: `background: … !important` resets background-position as an important '
-    + 'declaration, which outranks the @keyframes and freezes the sweep at 0 %');
-  assert.doesNotMatch(body, /background-position\s*:/,
-    'this rule sets background-position itself — the animation is the only thing that may');
-  assert.match(body, /background-image\s*:\s*var\(--prog-sweep\)/, 'the sweep gradient is no longer applied');
-  /* …and the colour has to be cleared, or the fill paints solid accent behind the moving band */
-  assert.match(body, /background-color\s*:\s*transparent/,
-    'the inline `background:var(--prog-grad)` colour is not cleared — the whole bar reads as full');
-  assert.match(body, /animation\s*:\s*imProgSweep/, 'the sweep animation is not applied');
-  assert.match(css, /@keyframes imProgSweep\{[^}]*background-position/, 'the keyframes no longer move the band');
-});
+/* ── ① THE SWEEP ────────────────────────────────────────────────────────────────────────────────
+   ⚠ (#R254) THIS CHECK GUARDED A MODE THAT NO LONGER EXISTS. #R253 measured that the indeterminate
+   band was frozen because `background: … !important` outranks a CSS animation, and asserted the
+   longhands that unfroze it. The NEXT report was 「勝手にほかの進捗バーと違うUIにするな」 — a bar
+   nothing else in the app looks like is the defect whether it moves or not — so #R254 removed the
+   mode outright (js/sims.js tiles every WorldPop sum, which gives the bar a real fraction for every
+   area). The property worth keeping is therefore the OPPOSITE one, and it is asserted in
+   tests/r254-checks.test.mjs ①: no `.indet` rule, no sweep keyframes, no `.indet` class from the
+   controller. Nothing about #R253's finding is lost — the cascade rule it discovered is written
+   down where the rule used to be. */
 
 /* ── ② THE SMALL PLACE IS ASKED FOR WHERE IT IS ──────────────────────────────────────────────── */
 test('#R253 ② the boundary lookup asks the neighbourhood before it asks the planet', () => {

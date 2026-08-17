@@ -3663,7 +3663,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      live) · Globe tour (slow auto-rotation). All rows land in "Others (beta)" via the
      reorganize sweep; data is lazy-loaded on first toggle and exposed through
      window.IntMapBeta2.load(key,cb) so the Compare view reuses the same FeatureCollections. ===== */
-  /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
+  /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. (#R254) js/datacenters.js owns the data-center row's layer and is IMPORTED by layer-packs.js (its consumer); the CALL is here, where every factory call in this app lives, and before betaPack2 because `dcToggle` delegates to it. */
+  window.IntMapModules.dataCenters(IM_HOST);
   window.IntMapModules.betaPack2(IM_HOST);
 
   /* ===== (#R243) 「それまでのアメリカ大統領選挙の結果をすべて見れるレイヤーを作れ。」 — all sixty

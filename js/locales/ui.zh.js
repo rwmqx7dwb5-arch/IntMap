@@ -135,7 +135,8 @@ window.IntMapLang.define('zh', {
     "lyrGrpIndic":"指標與疊圖",
     "lyrGrpMaritime":"海洋與海事",
     "lyrGrpOrbit":"太空與軌道",
-    "lyrGrpOthers":"其他（beta）",
+    "lyrGrpOthers":"Beta",
+    "lyrGrpOthersReal":"其他",
     "lyrGrpStrat":"戰略網路",
     "lyrGrpTerrain":"地形與高程",
     "lyrGrpWeather":"天氣與環境",
@@ -1433,6 +1434,26 @@ window.IntMapLang.define('zh', {
     'partial': "偏食",   /* space.js */
     'Partial': "部分",   /* monitors.js */
     'partners': "夥伴",   /* world-packs.js */
+    'Direction arrows': "方向箭頭",   /* world-packs.js */
+    "A published cloud region or campus. The point is the location the operator publishes (a city or county), not a surveyed building; fields the operator does not publish are left out rather than estimated.": "已公布的雲端區域或園區。點位是營運者公布的地點（城市或郡），並非實測建物；營運者未公布的欄位一律略過，不做估算。",   /* datacenters.js */
+    "AI compute": "AI 運算",   /* datacenters.js */
+    "AI compute campus": "AI 運算園區",   /* datacenters.js */
+    "Cloud region": "雲端區域",   /* datacenters.js */
+    "Colocation": "主機代管",   /* datacenters.js */
+    "Colocation / carrier hotel": "主機代管／電信匯集點",   /* datacenters.js */
+    "Country": "國家",   /* datacenters.js */
+    "Data center": "資料中心",   /* datacenters.js */
+    "HPC / research computing": "HPC／研究運算",   /* datacenters.js */
+    "In service": "啟用時間",   /* datacenters.js */
+    "IT capacity": "IT 容量",   /* datacenters.js */
+    "Operator’s own page": "營運者官方頁面",   /* datacenters.js */
+    "OSM object": "OSM 物件",   /* datacenters.js */
+    "Other (OpenStreetMap)": "其他（OpenStreetMap）",   /* datacenters.js */
+    "Power": "電力",   /* datacenters.js */
+    "Published cloud regions, AI campuses, carrier hotels and TOP500 sites, plus every data centre mapped in OpenStreetMap for the current view (zoom in past z6). Click any point for the full record.": "已公布的雲端區域、AI 園區、電信匯集點與 TOP500 設施，加上目前視野內 OpenStreetMap 上所有的資料中心（z6 以上）。點選任一點位可看完整資料。",   /* datacenters.js */
+    "Region code": "區域代碼",   /* datacenters.js */
+    "Supercomputing": "超級電腦",   /* datacenters.js */
+    "Surveyed in OpenStreetMap. Every field above comes from that object’s own tags; nothing is inferred.": "OpenStreetMap 的實測資料。以上欄位皆為該物件自身的標籤，未做任何推論。",   /* datacenters.js */
     'Partners shown': "顯示的夥伴",   /* world-packs.js */
     'Pass in progress': "通過中",   /* satellite-detail.js */
     'past 30 days': "過去 30 天",   /* monitors.js */

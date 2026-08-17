@@ -324,10 +324,10 @@ window.IntMapModules.drawTool=function(HOST){
         box.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text-muted);margin-bottom:3px;"><span class="tp-prog-lbl" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><b class="tp-prog-pct" style="flex:0 0 auto;">0%</b></div><div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div class="tp-prog-fill" style="height:100%;width:0%;background:var(--prog-grad);transition:width .2s;"></div></div>';
         if(btn.parentNode) btn.parentNode.insertBefore(box, btn.nextSibling); else p.appendChild(box); }
       const lbl=window.IntMapLang.t(HOST.lang,'Summing the WorldPop population grid…','WorldPop人口グリッドを集計中…','WorldPop-Bevölkerungsraster wird summiert…','Суммирование сетки населения WorldPop…','Sumando la cuadrícula de población WorldPop…');
-      box.querySelector('.tp-prog-lbl').textContent=lbl; box.classList.remove('indet'); box.style.display='block';
-      /* (#R139) HONEST progress (shared window._imProgCtl): indeterminate animated sweep while WorldPop reports no
-         real fraction, switching to a real linear fraction the moment the area is large enough to be TILED. No more
-         fake decelerating ease-out. */
+      box.querySelector('.tp-prog-lbl').textContent=lbl; box.style.display='block';
+      /* (#R139) HONEST progress (shared window._imProgCtl): a real, monotonic fraction, never a fake decelerating
+         ease-out. (#R254) js/sims.js tiles EVERY area, so that fraction exists from the first cell for any size —
+         which is what removed this bar's indeterminate mode and made it look like every other bar in the app. */
       const P=window._imProgCtl(box); P.busy();
       const onProg=(f)=>P.set(f);
       btn.disabled=true; const orig=btn.textContent; btn.textContent=t('popCalcing');
@@ -721,6 +721,37 @@ window.IntMapModules.outline=function(HOST){
     function _pipGeo(x,y,gj){ try{ if(!gj) return false; if(gj.type==='Polygon') return _pipPoly(x,y,gj.coordinates); if(gj.type==='MultiPolygon') return gj.coordinates.some(p=>_pipPoly(x,y,p)); }catch(_){} return false; }
     function _bboxArea(gj){ const bb=bboxOf(gj); return bb?((bb[1][0]-bb[0][0])*(bb[1][1]-bb[0][1])):Infinity; }
     function _bboxHas(gj,x,y){ const bb=bboxOf(gj); return !!(bb&&x>=bb[0][0]&&x<=bb[1][0]&&y>=bb[0][1]&&y<=bb[1][1]); }
+    /* (#R254) the OSM object with THIS name AROUND THIS POINT, then its polygon through the same
+       Nominatim geometry endpoint every other outline uses. Mirrors raced with a hard abort, exactly
+       as js/atlas-sources.js does — a silent 504 from one endpoint must not become a dead click. */
+    const _OP_EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+    async function _overpassArea(q,lng,lat){
+      const safe=String(q).replace(/["\\]/g,'').trim(); if(!safe) return null;
+      const d=0.03, bb='('+(lat-d).toFixed(4)+','+(lng-d).toFixed(4)+','+(lat+d).toFixed(4)+','+(lng+d).toFixed(4)+')';
+      const ql='[out:json][timeout:20];(way["name"="'+safe+'"]'+bb+';relation["name"="'+safe+'"]'+bb+';);out ids 6;';
+      const ctls=[];
+      const tryEp=ep=>new Promise(res=>{ let c=null; try{ c=new AbortController(); ctls.push(c); }catch(_){}
+        const tm=setTimeout(()=>{ try{ c&&c.abort(); }catch(_){} },14000);
+        fetch(ep,Object.assign({method:'POST',body:'data='+encodeURIComponent(ql)},c?{signal:c.signal}:{}))
+          .then(r=>r.ok?r.json():null).then(j=>{ clearTimeout(tm); res((j&&Array.isArray(j.elements))?j.elements:null); })
+          .catch(()=>{ clearTimeout(tm); res(null); }); });
+      const els=await new Promise(res=>{ let pending=_OP_EPS.length, done=false;
+        _OP_EPS.forEach(ep=>{ tryEp(ep).then(x=>{ if(done) return; if(x){ done=true; ctls.forEach(c=>{ try{ c.abort(); }catch(_){} }); res(x); } else if(--pending<=0) res(null); }); }); });
+      if(!els||!els.length) return null;
+      /* relations first — a 丁目 / Kiez / quartier boundary is usually one */
+      const ids=els.slice().sort((a,b)=>(a.type==='relation'?0:1)-(b.type==='relation'?0:1))
+        .slice(0,4).map(e=>(e.type==='relation'?'R':'W')+e.id).join(',');
+      try{
+        const r=await fetch('https://nominatim.openstreetmap.org/lookup?osm_ids='+encodeURIComponent(ids)
+          +'&polygon_geojson=1&polygon_threshold=0.0003&format=jsonv2',{headers:{Accept:'application/json'}});
+        const j=await r.json(); if(!Array.isArray(j)) return null;
+        const polys=j.filter(o=>o.geojson&&/Polygon/.test(o.geojson.type||''));
+        if(!polys.length) return null;
+        const inside=polys.filter(o=>_pipGeo(lng,lat,o.geojson));
+        const pick=(inside.length?inside:polys).sort((a,b)=>_bboxArea(a.geojson)-_bboxArea(b.geojson))[0];
+        if(!pick) return null;
+        return { name:(pick.display_name||q).split(',')[0], geojson:pick.geojson, lng:+pick.lon, lat:+pick.lat };
+      }catch(_){ return null; } }
     async function fetchPolygon(name, ctx){ const q=String(name||'').trim(); if(!q) return null;
       const thr=(ctx&&ctx.threshold!=null)?ctx.threshold:0.0003;   /* (#R54) high-res shape, not 9 straight points */
       const located=!!(ctx&&isFinite(ctx.lng)&&isFinite(ctx.lat));
@@ -750,7 +781,26 @@ window.IntMapModules.outline=function(HOST){
          with no polygon at all. #R59's rule stands — no boundary means nothing is drawn, never a
          rectangle around a point. */
       if(located){ const t=0.06; const tight=await _ask('&bounded=1&viewbox='+(ctx.lng-t)+','+(ctx.lat+t)+','+(ctx.lng+t)+','+(ctx.lat-t));
-        const hit=_pick(tight); if(hit) return { name:(hit.display_name||q).split(',')[0], geojson:hit.geojson, lng:+hit.lon, lat:+hit.lat }; }
+        const hit=_pick(tight); if(hit) return { name:(hit.display_name||q).split(',')[0], geojson:hit.geojson, lng:+hit.lon, lat:+hit.lat };
+        /* ══ ⚠⚠ (#R254) NOMINATIM'S SEARCH RANKS; OVERPASS ANSWERS «WHAT IS HERE, CALLED THIS» ═══════
+           「○○台×丁目のような細かい地名ラベルをクリックした際にも、範囲がハイライトされるように。」
+           #R253's tight `bounded=1` pass fixed most of this: MEASURED against 24 real `ofm-other`
+           labels taken from the app's own tiles over Nerima / Setagaya / Aoba-ku / Suita (twelve of
+           them ×丁目), it resolves **20 of 24**. What it cannot do is find an object Nominatim's
+           SEARCH index does not surface for that string — and for the misses that is exactly what
+           happens. 江原町三丁目: the tight search returns **0 results**, the wide one returns a
+           namesake 700 km away — while Overpass, asked for a way or relation with that name inside
+           ±0.03°, returns **relation/18636850, `boundary=administrative`, `admin_level=10`**: the
+           丁目's real polygon, present in OSM the whole time.
+           So when the search has nothing, ask the DATABASE instead of ranking harder. Overpass gives
+           the id; the polygon comes back through Nominatim's `lookup` endpoint, so the geometry this
+           function returns is built by the same code path (and the same `polygon_threshold`) as
+           every other outline — no second GeoJSON assembler for relation members.
+           ⚠ IT ONLY RUNS WHEN THE SEARCH FOUND NOTHING, so an ordinary click still costs one
+           request, and a place with no area anywhere still draws NOTHING (#R59's rule stands — the
+           remaining misses, 東泉丘四丁目 and 長野西, are place NODES in OSM and Overpass agrees). */
+        const viaOsm=await _overpassArea(q, ctx.lng, ctx.lat);
+        if(viaOsm) return viaOsm; }
       const d=8, vb=located?('&viewbox='+(ctx.lng-d)+','+(ctx.lat+d)+','+(ctx.lng+d)+','+(ctx.lat-d)):'';
       const best=_pick(await _ask(vb));
       if(!best) return null;

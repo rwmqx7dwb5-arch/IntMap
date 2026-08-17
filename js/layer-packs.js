@@ -15,7 +15,16 @@
  *
  *  Every factory is called at the exact spot its block used to occupy, so execution order is
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
+ *
+ *  ⚠ (#R254) THE DATA-CENTER LAYER IS IMPORTED HERE, NOT FROM src/main.js. `betaPack2`'s `dcToggle`
+ *  delegates to js/datacenters.js and instantiates it below, so the dependency belongs beside the
+ *  consumer — and the shell (index.html + src/main.js + js/app-body.js + …) is BUDGETED at 8,200
+ *  lines by tests/r168 #8. Routing the import and the instantiation through the shell cost it seven
+ *  lines and tripped that budget, which is the tripwire doing its job: the shell is not where a
+ *  module's dependencies go. Nothing about load order is lost — an ES import is hoisted, so
+ *  `window.IntMapModules.dataCenters` exists before this file's body runs.
  * ==========================================================================*/
+import './datacenters.js';
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.earthSky=function(HOST){
@@ -427,13 +436,11 @@ window.IntMapModules.betaPack2=function(HOST){
     let pop2=null;
     const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
     /* ---------- curated datasets (city-level coordinates) ---------- */
-    const DC_COL={aws:'#ff9900',azure:'#0078d4',gcp:'#34a853',ai:'#af52de'};
-    const DC=[
-      [-77.49,39.04,'AWS us-east-1 · N. Virginia (Ashburn)','aws'],[-83.0,40.0,'AWS us-east-2 · Ohio','aws'],[-121.9,37.35,'AWS us-west-1 · N. California','aws'],[-119.7,45.84,'AWS us-west-2 · Oregon (Boardman)','aws'],[-73.57,45.5,'AWS ca-central-1 · Montréal','aws'],[-114.07,51.05,'AWS ca-west-1 · Calgary','aws'],[-46.63,-23.55,'AWS sa-east-1 · São Paulo','aws'],[-6.26,53.35,'AWS eu-west-1 · Dublin','aws'],[-0.1,51.5,'AWS eu-west-2 · London','aws'],[2.35,48.86,'AWS eu-west-3 · Paris','aws'],[8.68,50.11,'AWS eu-central-1 · Frankfurt','aws'],[8.54,47.37,'AWS eu-central-2 · Zürich','aws'],[18.07,59.33,'AWS eu-north-1 · Stockholm','aws'],[9.19,45.46,'AWS eu-south-1 · Milan','aws'],[-0.88,41.65,'AWS eu-south-2 · Spain (Aragón)','aws'],[50.58,26.23,'AWS me-south-1 · Bahrain','aws'],[54.37,24.45,'AWS me-central-1 · UAE','aws'],[34.78,32.08,'AWS il-central-1 · Tel Aviv','aws'],[18.42,-33.93,'AWS af-south-1 · Cape Town','aws'],[72.88,19.08,'AWS ap-south-1 · Mumbai','aws'],[78.49,17.38,'AWS ap-south-2 · Hyderabad','aws'],[103.85,1.29,'AWS ap-southeast-1 · Singapore','aws'],[151.21,-33.87,'AWS ap-southeast-2 · Sydney','aws'],[106.85,-6.21,'AWS ap-southeast-3 · Jakarta','aws'],[144.96,-37.81,'AWS ap-southeast-4 · Melbourne','aws'],[139.76,35.68,'AWS ap-northeast-1 · Tokyo','aws'],[126.98,37.57,'AWS ap-northeast-2 · Seoul','aws'],[135.5,34.69,'AWS ap-northeast-3 · Osaka','aws'],[114.17,22.32,'AWS ap-east-1 · Hong Kong','aws'],[116.4,39.9,'AWS cn-north-1 · Beijing','aws'],[106.27,38.47,'AWS cn-northwest-1 · Ningxia','aws'],
-      [-93.6,41.6,'Azure Central US · Iowa','azure'],[-119.85,47.23,'Azure West US 2 · Washington (Quincy)','azure'],[-98.49,29.42,'Azure South Central US · Texas','azure'],[-112.07,33.45,'Azure West US 3 · Arizona','azure'],[4.9,52.37,'Azure West Europe · Amsterdam','azure'],[17.14,60.67,'Azure Sweden Central · Gävle','azure'],[10.75,59.91,'Azure Norway East · Oslo','azure'],[21.01,52.23,'Azure Poland Central · Warsaw','azure'],[-3.7,40.42,'Azure Spain Central · Madrid','azure'],[55.27,25.2,'Azure UAE North · Dubai','azure'],[51.53,25.29,'Azure Qatar Central · Doha','azure'],[28.05,-26.2,'Azure South Africa North · Johannesburg','azure'],[73.86,18.52,'Azure Central India · Pune','azure'],[80.27,13.08,'Azure South India · Chennai','azure'],[129.07,35.18,'Azure Korea South · Busan','azure'],[149.13,-35.28,'Azure Australia Central · Canberra','azure'],[-100.39,20.59,'Azure Mexico Central · Querétaro','azure'],[121.47,31.23,'Azure China East · Shanghai','azure'],
-      [-95.86,41.26,'Google Cloud · Council Bluffs, Iowa','gcp'],[-121.18,45.59,'Google Cloud · The Dalles, Oregon','gcp'],[-81.54,35.91,'Google Cloud · Lenoir, N. Carolina','gcp'],[-80.06,33.06,'Google Cloud · Berkeley County, S. Carolina','gcp'],[-95.31,36.3,'Google Cloud · Pryor, Oklahoma','gcp'],[-115.0,36.04,'Google Cloud · Henderson, Nevada','gcp'],[-79.38,43.65,'Google Cloud · Toronto','gcp'],[-70.67,-33.45,'Google Cloud · Santiago','gcp'],[3.82,50.45,'Google Cloud · St-Ghislain, Belgium','gcp'],[27.2,60.57,'Google Cloud · Hamina, Finland','gcp'],[6.83,53.43,'Google Cloud · Eemshaven, Netherlands','gcp'],[50.1,26.43,'Google Cloud · Dammam, Saudi Arabia','gcp'],[77.1,28.7,'Google Cloud · Delhi NCR','gcp'],[120.43,24.08,'Google Cloud · Changhua, Taiwan','gcp'],
-      [-90.05,35.15,'xAI Colossus · Memphis, Tennessee','ai'],[-99.73,32.45,'Stargate (OpenAI/Oracle) · Abilene, Texas','ai'],[-120.8,44.3,'Meta · Prineville, Oregon','ai'],[-91.79,32.35,'Meta AI DC · Richland Parish, Louisiana','ai'],[-97.74,30.27,'Tesla Cortex · Austin, Texas','ai'],[-96.7,33.02,'CoreWeave · Plano, Texas','ai'],[-93.62,41.59,'Microsoft AI · West Des Moines, Iowa','ai'],[5.47,59.3,'AI DC cluster · Norway (hydro-powered)','ai']
-    ];
+    /* (#R254) the data-center table left this file with the layer — js/datacenters.js. What was
+       here was 73 rows of [lng, lat, name, kind]; the module that replaced it carries the operator,
+       the region code, the published capacity and commissioning year, the source, and OpenStreetMap.
+       `load('dc')` below asks that module for its curated FeatureCollection, so js/compare.js keeps
+       drawing the SAME table in its second map rather than a second copy of it. */
     const PH=[
       [7.59,47.56,'Basel — Novartis / Roche HQ & plants'],[6.99,51.03,'Leverkusen — Bayer'],[8.06,49.97,'Ingelheim — Boehringer Ingelheim'],[12.45,55.76,'Copenhagen — Novo Nordisk'],[11.09,55.68,'Kalundborg — Novo Nordisk API site'],[-0.31,51.48,'London/Brentford — GSK'],[0.13,52.2,'Cambridge — AstraZeneca'],[2.35,48.86,'Paris — Sanofi'],[-86.16,39.77,'Indianapolis — Eli Lilly'],[-74.45,40.49,'New Brunswick — Johnson & Johnson'],[-73.97,40.75,'New York — Pfizer HQ'],[-74.29,40.68,'Rahway/Kenilworth — Merck & Co.'],[-87.86,42.33,'North Chicago — AbbVie'],[-118.84,34.18,'Thousand Oaks — Amgen'],[-122.4,37.65,'South San Francisco — Genentech'],[-8.47,51.9,'Cork — Irish pharma cluster'],[103.64,1.32,'Singapore Tuas — biologics plants'],[78.6,17.6,'Hyderabad — Genome Valley (vaccines)'],[72.88,19.08,'Mumbai — Sun Pharma'],[72.57,23.02,'Ahmedabad — Zydus / Torrent'],[83.3,17.69,'Visakhapatnam — API hub'],[-66.54,18.45,'Barceloneta — Puerto Rico pharma'],[139.76,35.68,'Tokyo — Takeda / Astellas'],[135.5,34.69,'Osaka — Shionogi / Takeda'],[116.4,39.9,'Beijing — Sinopharm'],[121.47,31.23,'Shanghai — Fosun Pharma'],[126.64,37.39,'Songdo — Samsung Biologics'],[34.89,32.09,'Petah Tikva — Teva'],[-46.63,-23.55,'São Paulo — EMS / Eurofarma'],[28.05,-26.2,'Johannesburg — Aspen Pharmacare']
     ];
@@ -442,7 +449,8 @@ window.IntMapModules.betaPack2=function(HOST){
     function fcPoints(arr,colFn){ return {type:'FeatureCollection',features:arr.map(d=>({type:'Feature',geometry:{type:'Point',coordinates:[d[0],d[1]]},properties:{n:d[2],k:d[3]||'',col:colFn(d)}}))}; }
     function load(key,cb){
       if(cache[key]){ cb(cache[key]); return; }
-      if(key==='dc'){ cache.dc=fcPoints(DC,d=>DC_COL[d[3]]||'#5e8bff'); cb(cache.dc); }
+      if(key==='dc'){ const M=window.IntMapDataCenters; if(!M||!M.features) return;   /* (#R254) one table, in js/datacenters.js */
+        cache.dc=M.features(); cb(cache.dc); }
       else if(key==='pharma'){ cache.pharma=fcPoints(PH,()=> '#2bb3a3'); cb(cache.pharma); }
       else if(key==='rail'){ fetch('data/railways_gauge.json').then(r=>r.json()).then(j=>{ if(!j||!Array.isArray(j.features)) return;
         j.features.forEach(f=>{ f.properties.col=RAIL_COL[f.properties.g]||RAIL_COL[0]; }); cache.rail=j; cb(j); }).catch(()=>{ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load railway data","鉄道データを読み込めませんでした","Eisenbahndaten konnten nicht geladen werden","Не удалось загрузить данные о железных дорогах","No se pudieron cargar los datos ferroviarios")); }catch(_){} }); }
@@ -467,13 +475,32 @@ window.IntMapModules.betaPack2=function(HOST){
         clickPop(ids[0]);
         return true;
       }catch(_){ return false; } }
+    /* ══ ⚠ (#R254) THE DATA-CENTER LAYER MOVED OUT — THIS IS THE ROW, NOT THE LAYER ═════════════════
+       「データセンター、AIインフラレイヤーを爆発的に強化し、クリックすれば詳細情報まで見れるように。」
+       What lived here was a 73-entry array of `[lng, lat, name, kind]` painted as flat dots with a
+       two-line popup. The layer is now js/datacenters.js — a curated table with operator / region
+       code / capacity / commissioning year / source per entry, OpenStreetMap's own 4,703 surveyed
+       data centres for the current view, and a detail card behind the click. The layer IDS are
+       unchanged (`dc-pt` / `dc-lbl`), because the session restore, the opacity registration and
+       Atlas's `beta-dl-dc` mapping all name them.
+       ⚠ IF THE MODULE IS ABSENT THIS SAYS SO rather than silently drawing nothing — the shape this
+       project keeps paying for is a toggle that looks alive and does nothing. */
     function dcToggle(on){ state.dc=on;
-      const a=()=>{ if(!ptEnsure('dc','dc-src',['dc-pt','dc-lbl'])){ GE().events.once('idle',a); return; }
-        load('dc',fc=>{ try{ GE().layers.setSourceData('dc-src',fc); }catch(_){} }); setVis(['dc-pt','dc-lbl'],on); };
-      a();
+      const DCM=window.IntMapDataCenters;
+      if(!DCM||!DCM.toggle){ try{ console.warn('IntMapDataCenters is not loaded — the data-center layer cannot draw'); }catch(_){} return; }
+      DCM.toggle(on);
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('dc2',LA('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infraestructura de IA'),['dc-pt','dc-lbl'],'beta-dl-dc');
             if(el&&!el.querySelector('.dc-key')){ const k=document.createElement('div'); k.className='dc-key'; k.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
-              k.innerHTML=[['aws','AWS'],['azure','Azure'],['gcp','Google Cloud'],['ai',window.IntMapLang.t(HOST.lang,"AI superclusters","AIスーパークラスター","KI-Supercluster","ИИ-суперкластеры","Superclústeres de IA")]].map(([t,l])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:6px;flex:none;background:'+DC_COL[t]+';"></span>'+l+'</div>').join('');
+              /* the key is asked of the layer, so a colour cannot be right in one place and wrong here */
+              k.innerHTML=DCM.key().map(([c,l])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:6px;flex:none;background:'+c+';"></span>'+l+'</div>').join('')
+                +'<div style="font-size:10px;color:var(--text-muted);margin-top:4px;line-height:1.5;">'
+                +window.IntMapLang.t(HOST.lang,
+                  'Published cloud regions, AI campuses, carrier hotels and TOP500 sites, plus every data centre mapped in OpenStreetMap for the current view (zoom in past z6). Click any point for the full record.',
+                  '公表されているクラウドリージョン・AI拠点・接続拠点・TOP500施設に加え、表示範囲の OpenStreetMap に登録された全データセンター（z6 以上で取得）。点をクリックすると詳細が出ます。',
+                  'Veröffentlichte Cloud-Regionen, KI-Campus, Carrier-Hotels und TOP500-Standorte plus alle in OpenStreetMap erfassten Rechenzentren im Ausschnitt (ab z6). Punkt anklicken für den vollen Datensatz.',
+                  'Опубликованные облачные регионы, ИИ-кампусы, точки обмена и объекты TOP500, плюс все дата-центры OpenStreetMap в текущем виде (от z6). Нажмите точку для полной карточки.',
+                  'Regiones de nube publicadas, campus de IA, hoteles de operadores y sitios TOP500, más todos los centros de datos de OpenStreetMap en la vista (desde z6). Haga clic en un punto para la ficha completa.')
+                +'</div>';
               el.appendChild(k); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('dc2'); }catch(_){}
     }
@@ -555,7 +582,27 @@ window.IntMapModules.betaPack2=function(HOST){
           cache['wb_'+key]=vals;
         }
         try{
-          const feats=HOST.countryGeo.features.filter(f=>f.id!=null&&vals[f.id]!=null).map(f=>({type:'Feature',geometry:f.geometry,properties:{s:W.score(vals[f.id]),raw:vals[f.id],iso:f.id}}));
+          /* ══ ⚠⚠ (#R254) …AND THIS FAMILY MAKES ITS OWN COPY OF THE BORDERS ═══════════════════════
+             「以下のレイヤーは国境線が雑い（…汚職・腐敗指標…）。勝手に解像度の低い国境線に変えるな。」
+             These five choropleths do not use the shared `countries` source; each builds a GeoJSON of
+             its own out of `HOST.countryGeo.features` and hands it to the renderer ONCE (the
+             `hasSource` early-return above means it is never rebuilt). js/countries-ui.js boots on
+             Natural Earth 110 m and REPLACES `countryGeo` with the 10 m collection 4-15 s later, so
+             whichever of the two happened to be in place at the moment the reader ticked the row is
+             the border this layer keeps for the whole session — measured, Japan at 65 vertices
+             against 6,952.
+             The build takes whatever is current, and then WATCHES for the replacement: `countryGeo`
+             is a new OBJECT when the fine one lands (countries-ui assigns, it does not mutate), so
+             identity is the signal — no new global, no second copy of the timing rules. */
+          const geoOf=()=>HOST.countryGeo;
+          let usedGeo=geoOf();
+          const featsFrom=(g)=>g.features.filter(f=>f.id!=null&&vals[f.id]!=null).map(f=>({type:'Feature',geometry:f.geometry,properties:{s:W.score(vals[f.id]),raw:vals[f.id],iso:f.id}}));
+          const feats=featsFrom(usedGeo);
+          (function watchHiRes(n){ n=n||0;
+            if(geoOf()!==usedGeo){ usedGeo=geoOf();
+              try{ GE().layers.setSourceData(W.src,{type:'FeatureCollection',features:featsFrom(usedGeo)}); }catch(_){}
+              return; }
+            if(n<20) setTimeout(()=>watchHiRes(n+1),1500); })();
           GE().layers.addSource(W.src,{type:'geojson',data:{type:'FeatureCollection',features:feats},attribution:'World Bank'});
           GE().layers.add({id:W.ids[0],type:'fill',source:W.src,layout:{visibility:'none'},paint:{'fill-color':W.ramp,'fill-opacity':0.68}},before());
           GE().layers.add({id:W.ids[1],type:'line',source:W.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
@@ -579,7 +626,33 @@ window.IntMapModules.betaPack2=function(HOST){
           show(); legend();
         }catch(_){}
       };
+      /* ══ ⚠⚠ (#R254) THE BOX WAS THERE; THE LEGEND WAS NOT ═══════════════════════════════════════════
+         「平均寿命レイヤーに凡例がない。（凡例自体はある）」 — exactly right, and the parenthesis is the
+         whole diagnosis. MEASURED on the shipped build: `#data-legend-wb-lifeexp` exists and is
+         displayed, and it contains a title, an opacity slider and the source sentence — and no colour
+         scale at all (`querySelector('[style*=linear-gradient]')` → null). Every core choropleth beside
+         it has one (`data-legend-hdi` prints 0.45 → 0.95 under its ramp), so a country painted blue
+         answers nothing here: there is no way to read a colour back into a number.
+         ⚠ THE SCALE IS GENERATED FROM THE LAYER'S OWN `ramp`, never typed a second time. `W.ramp` is
+         the renderer expression `['interpolate',['linear'],['get','s'], v,c, v,c …]`; the pairs after
+         index 3 ARE the legend, so the two cannot drift apart. All five layers in this family get it
+         (corruption / life expectancy / unemployment / internet / precipitation) — the reader named
+         one, but they are one mechanism and the other four were equally blind. */
+      function rampKey(){
+        const st=[]; try{ for(let i=3;i+1<W.ramp.length;i+=2) st.push([W.ramp[i],W.ramp[i+1]]); }catch(_){}
+        if(st.length<2) return null;
+        const grad=st.map((s,i)=>s[1]+' '+(i/(st.length-1)*100).toFixed(1)+'%').join(',');
+        const num=(v)=>{ try{ return W.fmt?W.fmt(v):String(Math.round(v*10)/10); }catch(_){ return String(v); } };
+        const d=document.createElement('div'); d.className='wb-key'; d.style.cssText='margin-top:6px;';
+        d.innerHTML='<div style="height:11px;border-radius:4px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:linear-gradient(90deg,'+grad+');"></div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);margin-top:2px;">'
+          +st.map(s=>'<span>'+esc(num(s[0]))+'</span>').join('')+'</div>'
+          +'<div style="font-size:9.5px;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:5px;">'
+          +'<span style="width:9px;height:9px;border-radius:2px;background:#9aa0a6;opacity:.55;flex:none;"></span>'
+          +esc(window.IntMapLang.t(HOST.lang,'no data','データなし','keine Daten','нет данных','sin datos'))+'</div>';
+        return d; }
       function legend(){ try{ if(window._registerLayerOpacity){ const el=window._registerLayerOpacity('wb-'+key,[W.nm[0],W.nm[1]],W.ids,'beta-dl-'+key);
+        if(el&&!el.querySelector('.wb-key')){ const k=rampKey(); if(k) el.appendChild(k); }
         if(el&&!el.querySelector('.wb-note')){ const d=document.createElement('div'); d.className='wb-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.5;'; d.textContent=W.note(); el.appendChild(d); } } }catch(_){} }
       build();
     }
@@ -618,7 +691,8 @@ window.IntMapModules.betaPack2=function(HOST){
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));
     /* self-heal across basemap swaps */
     GE().events.on('styledata',()=>{ if(state.dc||state.pharma||state.rail||state.cpi||state.lifeexp||state.unemp||state.internet||state.precip){ setTimeout(()=>{
-      if(state.dc&&ptEnsure('dc','dc-src',['dc-pt','dc-lbl'])){ setVis(['dc-pt','dc-lbl'],true); load('dc',fc=>{ try{ GE().layers.setSourceData('dc-src',fc); }catch(_){} }); }
+      /* (#R254) the data-center layer rebuilds itself — its module owns the source, the OSM half and the card */
+      if(state.dc){ try{ window.IntMapDataCenters&&window.IntMapDataCenters.toggle(true); }catch(_){} }
       if(state.pharma&&ptEnsure('pharma','ph-src',['ph-pt','ph-lbl'])){ setVis(['ph-pt','ph-lbl'],true); load('pharma',fc=>{ try{ GE().layers.setSourceData('ph-src',fc); }catch(_){} }); }
       if(state.rail&&railEnsure()){ setVis(['rail-ln'],true); if(cache.rail){ try{ GE().layers.setSourceData('rail-src',cache.rail); }catch(_){} } }
       ['cpi','lifeexp','unemp','internet','precip'].forEach(k=>{ if(state[k]) wbToggle(k,true); });   /* (#R22) new WB choropleths self-heal too */

@@ -219,6 +219,19 @@ window.IntMapModules.popArea=function(HOST){
       const opt=ctl?{signal:ctl.signal}:{};
       if(ctl) timer=setTimeout(()=>{ try{ ctl.abort(); }catch(_){} }, ms||28000);
       return fetch(url,opt).finally(()=>{ if(timer) clearTimeout(timer); }); }
+    /* ══ ⚠ (#R254) THE WORLDPOP TASK ENDPOINT APPENDS PHP WARNINGS TO ITS JSON ═══════════════════════
+       MEASURED this round while checking the tiling change (curl, content-type `application/json`):
+           {  "status": "created", … }<br /><b>Warning</b>: Trying to access array offset on value of
+           type bool in /srv/www/api.worldpop.org/html/app/TasksController.php on line 40 …
+       749 bytes, of which the last ~470 are HTML. `response.json()` throws on that, and the polling
+       loop below treats a throw as «transient, poll again» — so a body that DID carry the answer
+       would be retried until the deadline and reported as a timeout. Read the text and take the JSON
+       object out of it; a body with no object at all still throws, as it should. */
+    async function _json(r){ const t=await r.text();
+      try{ return JSON.parse(t); }catch(_){}
+      const i=t.indexOf('{'), k=t.lastIndexOf('}');
+      if(i>=0&&k>i) return JSON.parse(t.slice(i,k+1));
+      throw new Error('WorldPop: unparseable response'); }
     /* one WorldPop request for a single (sub-limit) polygon → total_population number. `deadlineMs` bounds the WHOLE
        call (create + polling); each individual fetch aborts well inside it (a ≤90k km² tile normally finishes in
        seconds; a single free-form polygon keeps the full ~2 min). */
@@ -226,7 +239,7 @@ window.IntMapModules.popArea=function(HOST){
       const t0=Date.now(), DEADLINE=deadlineMs||125000;
       const fc={type:'FeatureCollection',features:[{type:'Feature',geometry:g,properties:{}}]};
       const u='https://api.worldpop.org/v1/services/stats?dataset=wpgppop&year=2020&geojson='+encodeURIComponent(JSON.stringify(fc));
-      const r=await _fetchT(u, Math.min(30000, DEADLINE)); const j=await r.json();
+      const r=await _fetchT(u, Math.min(30000, DEADLINE)); const j=await _json(r);
       if(j&&j.error&&!j.taskid) throw new Error(String(j.error_message||'WorldPop error'));
       let data=j&&j.data&&j.data.total_population!=null?j.data:null;
       if(!data&&j&&j.taskid){
@@ -234,7 +247,7 @@ window.IntMapModules.popArea=function(HOST){
            break IMMEDIATELY on a real task error; ignore a transient hiccup. */
         let iv=1200;
         while(Date.now()-t0<DEADLINE){ await new Promise(rs=>setTimeout(rs,iv)); iv=Math.min(4000,iv+250);
-          let j2=null; try{ const r2=await _fetchT('https://api.worldpop.org/v1/tasks/'+encodeURIComponent(j.taskid), 18000); j2=await r2.json(); }catch(_){ continue; }
+          let j2=null; try{ const r2=await _fetchT('https://api.worldpop.org/v1/tasks/'+encodeURIComponent(j.taskid), 18000); j2=await _json(r2); }catch(_){ continue; }
           if(!j2) continue;
           if(j2.status==='finished'){ if(j2.error) throw new Error(String(j2.error_message||'WorldPop task error')); data=j2.data; break; }
           if(j2.status==='error'){ throw new Error(String(j2.error_message||'WorldPop task error')); } }
@@ -267,15 +280,36 @@ window.IntMapModules.popArea=function(HOST){
       const cLat=(bb[1]<=0&&bb[3]>=0)?0:Math.min(Math.abs(bb[1]),Math.abs(bb[3]));
       const cosl=Math.max(0.15,Math.cos(cLat*Math.PI/180));
       let d=Math.sqrt(90000/(12392*cosl)); d=Math.max(0.35,d);   /* cell side (deg) */
+      /* ══ (#R254) EVERY SUM IS TILED, SO EVERY SUM HAS A REAL FRACTION ══════════════════════════
+         「勝手にほかの進捗バーと違うUIにするな。」 The bar was the app's only INDETERMINATE one — a
+         moving band with no percentage — and it was indeterminate because a sub-cap polygon is ONE
+         WorldPop request and one request has no fraction to report. Tiling is what creates the
+         fraction: the cell side is now also capped so that the bbox is divided into ABOUT FOUR
+         cells even when the whole area would fit in a single request, and `done/cells.length` is
+         then a measured quantity for every area, not just continental ones.
+         ⚠ For a large area this line changes nothing: `sqrt(area/4)` is far bigger than the
+         ≤90,000 km² cell the cap already chose, so the min() keeps the cap's own value.
+         ⚠ The cost is stated rather than hidden: a small area now costs ~4 WorldPop requests
+         instead of 1, which is the trade the instruction accepted. The pieces PARTITION the
+         polygon (turf.bboxClip, disjoint boxes), so the sum is the same quantity as before. */
+      { const wSpan=Math.max(1e-9,bb[2]-bb[0]), hSpan=Math.max(1e-9,bb[3]-bb[1]);
+        d=Math.min(d, Math.sqrt(wSpan*hSpan/4)); }
       const cells=[];
       for(let x=bb[0]; x<bb[2]-1e-9; x+=d){ for(let y=bb[1]; y<bb[3]-1e-9; y+=d){
         const box=[x,y,Math.min(x+d,bb[2]),Math.min(y+d,bb[3])]; let piece=null; try{ piece=turf.bboxClip(feat,box); }catch(_){}
         const gm=piece&&piece.geometry; if(!gm||!gm.coordinates||!gm.coordinates.length) continue;
         /* (#R128) skip a degenerate clip-sliver (< 0.05 km²) — for a jagged coastline the bbox spawns many near-zero
            edge tiles that hold ~0 people yet each cost a full (slow) request; dropping only numerical noise cuts the
-           request count sharply for irregular shapes without measurably affecting the sum. */
-        try{ if((turf.area(piece)/1e6)<0.05) continue; }catch(_){}
+           request count sharply for irregular shapes without measurably affecting the sum.
+           ⚠ (#R254) …AND «NOISE» IS RELATIVE TO THE SHAPE. Now that every area is tiled, a genuinely small
+           selection (a 150 m radius circle is 0.07 km²) reaches this line, and an absolute 0.05 km² floor would
+           discard the ONLY cell it has and throw «empty area». The floor applies to shapes big enough for it to
+           mean «sliver»; below that, every piece is kept. */
+        try{ if(areaKm2>1 && (turf.area(piece)/1e6)<0.05) continue; }catch(_){}
         if((gm.type==='Polygon'&&gm.coordinates[0]&&gm.coordinates[0].length>=4)||(gm.type==='MultiPolygon'&&gm.coordinates.length)){ const pg=_prep(gm); if(pg) cells.push(pg); } } }
+      /* (#R254) a clip that produced nothing usable is not a reason to refuse the question — fall back to the
+         polygon itself as a single cell (which is exactly what this function replaced). */
+      if(!cells.length){ const pg=_prep(g); if(pg) cells.push(pg); }
       if(!cells.length) throw new Error('WorldPop: empty area');
       /* (#R127) ~90k km²/cell → 340 cells ≈ 30M km², larger than any single country; only a near-hemispheric
          selection exceeds it (and that genuinely can't be summed precisely at 100m). */
@@ -296,17 +330,21 @@ window.IntMapModules.popArea=function(HOST){
       /* HONEST accounting: an ocean/edge tile returns a real number (usually 0) — it is NOT a failure. A failure
          means the request itself errored after retries; never pretend those tiles are empty. */
       if(ok===0) throw new Error('WorldPop: no tiles could be fetched (service busy) — try again');
-      const out={ pop:Math.round(total), year:2020, src:'WorldPop (100m grid, '+cells.length+' tiles)', tiles:cells.length, tilesOk:ok };
+      /* ⚠ (#R254) THE PROVENANCE LINE NAMES THE DATA, NOT THE TRANSPORT. Every sum is tiled now, so
+         «4 tiles» would be printed beside every answer the app has ever given — a number about HTTP,
+         in the slot that says where the population figure came from. It stays what it was; the tile
+         count is still reported when it changes the ANSWER (a partial sum, below) and on the object. */
+      const out={ pop:Math.round(total), year:2020, src:'WorldPop (100m grid)', tiles:cells.length, tilesOk:ok };
       if(failed>0){ out.partial=true; out.tilesFailed=failed; out.src='WorldPop (100m grid, '+ok+'/'+cells.length+' tiles, '+failed+' unavailable)'; }
       return out; }
     async function estimate(geom, onProgress){ const g=_prep(geom); if(!g) throw new Error('polygon required');
       const key=JSON.stringify(g); if(cache.has(key)) return cache.get(key);
       let areaKm2=0; try{ areaKm2=turf.area({type:'Feature',geometry:g,properties:{}})/1e6; }catch(_){}
-      let out;
-      if(areaKm2>95000){ out=await _estimateTiled(g, areaKm2, onProgress); }   /* over the per-request cap → tile + sum */
-      /* (#R128) even a SINGLE sub-cap request now goes through the retry wrapper — a lone stalled connection used to
-         hang the panel on "Calculating…" forever; now it aborts and retries, so a transient WorldPop hiccup recovers. */
-      else { const rr=await _tileWithRetry(g, 3); if(!rr.ok) throw new Error(rr.err||'WorldPop failed'); out={ pop:Math.round(rr.v), year:2020, src:'WorldPop (100m grid)' }; }
+      /* (#R128) even a SINGLE sub-cap request goes through the retry wrapper — a lone stalled connection used to
+         hang the panel on "Calculating…" forever; now it aborts and retries, so a transient WorldPop hiccup recovers.
+         (#R254) …and there is no longer a separate "single request" branch: EVERY area is tiled, because that is
+         where the progress fraction comes from (see _estimateTiled). `_tileWithRetry` is still what runs per cell. */
+      const out=await _estimateTiled(g, areaKm2, onProgress);
       if(!out.partial) cache.set(key,out); return out; }   /* never cache a partial (undercounted) sum */
     function circleGeom(center,km){ try{ if(typeof turf!=='undefined'&&turf.circle){ return turf.circle(center,km,{units:'kilometers',steps:48}).geometry; } }catch(_){}
       const lat=center[1]*Math.PI/180; const dLat=km/111.32, dLng=km/(111.32*Math.cos(lat)||1);

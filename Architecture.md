@@ -378,6 +378,20 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   ロングハンド（`background-image` ＋ `background-color:transparent`）に直すと実測 `-42% → 5.5% → 53% → 100.5% → -42%`。
   `background-color` を明示的に消すのは、インラインの `background:var(--prog-grad)` が残ると帯の裏に**全幅の
   アクセント色**が塗られるため。
+  ⚠⚠ **(#R254) その不確定モードごと廃止した**——「勝手にほかの進捗バーと違うUIにするな」。動く/動かない以前に、
+  **アプリで唯一このバーだけ形が違った**（他は地震 `sq-progb`・地形と水 `tw-prog-bar`・可視領域のいずれも
+  「`var(--prog-grad)` の塗り幅＝割合＋％表示」）。違っていた理由は本物だった——上限以下の面積は WorldPop
+  **1リクエスト**で、1リクエストに割合は存在しない。**だから直しは UI ではなく上流**: `_estimateTiled` のセル辺を
+  「bbox を約2×2に割る大きさ」でも頭打ちにし、`estimate` は**面積によらず常にタイル分割**する。これで
+  `done/cells.length` が全ての面積で実測値になり、`_imProgCtl` は `busy()`＝0%・`set(f)`・`done()` の3状態だけの
+  **他と同一の確定バー**になった（`.indet` クラス・`@keyframes imProgSweep`・`--prog-sweep` は削除）。
+  ⚠ 代償は明示する: 小さい面積は 1 → 約4リクエストになる（利用者の選択）。分割片は `turf.bboxClip` の**互いに
+  素な箱**なので合計は同じ量。⚠ 0.05km² 未満の破片除去は**面積 > 1km² のときだけ**——常時タイル化後は
+  「半径150mの円」自体が 0.07km² でここに来るため、絶対値の床は唯一のセルを捨てて「empty area」になる。
+  ⚠ **WorldPop のタスクAPIは JSON の後ろに PHP 警告を混ぜてくる**（実測: `application/json` で 749 バイト中
+  後半 ~470 バイトが `<b>Warning</b>: … TasksController.php on line 40`）。`response.json()` はこれで throw し、
+  ポーリングは throw を「まだ終わっていない」として扱うので、**答えを載せた応答でも締切まで再試行され
+  タイムアウトとして報告される**。テキストで受けて JSON オブジェクトだけ取り出す（`_json`）。
 - **Playground (beta)** — 設定ではなく **Layers ▸ Tools**（旧Quizモードの場所）から起動。5モード（実データ）:
   World Explorer（衛星GeoGuessr。完全ランダム陸地・ズームアウト減点・開始地点ピン・回答地図はglobe・起動時に
   サイドバー収納/タブ解除）/ Pandemic Simulator（国別 SEIR メタ個体群＝実在都市に症例ドット・交通網拡散・自動
@@ -1079,6 +1093,11 @@ js/
                                     streetView / nightSky / atlasConsole）。⚠ 指定子はすべてリテラル。
   world-base.js                     (#R186) 全球衛星ベース `window.IntMapWorldBase`。
   world-packs.js                    (#R211) 世界データ層（貿易・エネルギー・警報・潮汐・作物）。160 KB。
+                                    ⚠ (#R254) 貿易＝**矢印は `scene.addImage`**（`layers.addImage` は
+                                    契約に存在せず throw → catch に飲まれ、#R212 以来アイコンは一度も
+                                    登録されていなかった）。**国のピン `wp-trade-pt` は廃止**（国は塗り
+                                    分けで示す）、相手国名ラベルは残す。**矢印はパネルのトグルで on/off**
+                                    （`applyVis()`。共有状態 `t.a` にも載る）。
   space.js                          (#R197) 宇宙エクスプローラ `window.IntMapSpace`（220 KB）。
   space-bodies.js                   (#R213) 探査機・小惑星・太陽系外 `window.IntMapSpaceBodies`。
   space-events.js                   (#R212) 天文現象 `window.IntMapSpaceEvents`。
@@ -1695,6 +1714,21 @@ js/
                                     地球・大気・空域（ダム/火山/オーロラ/ADIZ）`IntMapLayers9`・土地被覆
                                     /エコリージョン/プレート・ベータパック2 `IntMapBeta2`・宗教/言語コロプレス・
                                     実タイムゾーン境界＋現地時刻・NASA GIBS 科学ラスター。91KB
+                                    ⚠ (#R254) **データセンター行はここから `js/datacenters.js` へ移した**——
+                                    `dcToggle` は委譲だけを行い、モジュールが無ければ黙って何も描かずに
+                                    警告を出す。`import './datacenters.js'` は**この**ファイルの先頭にある
+                                    （シェルは tests/r168 #8 が 8,200 行で予算管理しているため）。
+  datacenters.js                    (#R254) 「データセンター・AIインフラ」レイヤー `IntMapDataCenters`。
+                                    ①**内蔵表 260 件**——公表されたクラウドリージョン（AWS/Azure/GCP/OCI/IBM/
+                                    Alibaba/Tencent/Huawei）・自社キャンパス（Meta/Apple）・AI計算基盤・
+                                    コロケーション拠点・TOP500 施設。各行が [運営者・種別・リージョンコード・
+                                    公表IT容量MW・稼働年・出典URL]を持ち、**公表されていない欄は null**
+                                    （推定しない）。②**OpenStreetMap**（`telecom=data_center` ほか、実測
+                                    4,703件／ODbL）を z6 以上で表示範囲ごとに Overpass から取得しセルで
+                                    キャッシュ、内蔵表から約2km以内のものは重複として落とす。
+                                    ③**クリックで詳細カード**（`.country-popup`、値はすべて `IntMapSafe`）。
+                                    レイヤーIDは `dc-pt` / `dc-lbl` のまま（セッション復元・不透明度登録・
+                                    Atlas の `beta-dl-dc` がこの名前を参照する）。
   analysis-panels.js                (#R166) 解析パネル 5本。時系列チャート `IntMapTimeSeries`・AIリサーチ
                                     `IntMapAIResearch`・2レイヤー相関/散布図・世界史イベント年表・地理クイズ
                                     `IntMapEdu`。95KB
@@ -1753,6 +1787,19 @@ js/
   countries-ui.js                   (#R168) Countries タブの主題。国境/統計ローダ `loadCountryData`（Natural Earth 10m→
                                     50m→110m）・地図の国レイヤー `addCountryLayers`・順位付き国リスト `renderStats`・
                                     国カードと詳細本文・Wikipedia 概要キャッシュ。38KB／15文。
+                                    ⚠⚠⚠ **(#R254) 国境の解像度は「誰が描くか」ではなく「誰が要求するか」**——
+                                    #R195 は起動を軽くするため 110m で立ち上げ、10m は idle で取ってきて
+                                    `window._imCountryGeoPending` に**置いたまま**にする（描く物が無いのに
+                                    548,000 頂点を渡すと CI が2回落ちた）。#R216 が `_imFlushCountryGeo(true)`
+                                    を足し `js/world-packs.js` で使ったが、**`js/data-layers.js` の
+                                    `withCountries()`——全 `dl-*` コロプレスが通る門——には付いていなかった**。
+                                    実測: 1人当たりGDPだけを ON にした状態で `countries` ソース内の日本は
+                                    **65 頂点**、`window.countryGeo` は **6,952 頂点**（107倍）。
+                                    いま `withCountries` は cb の**前に**flush し、遅れて届く 10m を
+                                    `_hiResCountries()` が最大30秒監視して flush → `_imReapplyChoros()` で
+                                    塗り直す（`setSourceData` は feature-state を消すため）。
+                                    ⚠ `js/layer-packs.js` の世界銀行コロプレス5種は**自前の GeoJSON を1回だけ**
+                                    作るので、`HOST.countryGeo` の**オブジェクト同一性**が変わったら作り直す。
                                     シム5本（renderStats/showCountryDetail/renderCountryDetailBody/
                                     loadCountryData/addCountryLayers）。RW 3（countryGeo/countryDataLoaded/
                                     countryDataPromise）
@@ -3185,6 +3232,17 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
   - ⚠ (#R233) **人口・経済は7つだけ**: `popgrid`（人口密度1kmグリッド）/ `gdppc` / `tfr` / `hdi` /
     `dem`（民主主義指数）/ `cpi`（汚職・腐敗）/ `lifeexp`（平均寿命）。#R39/#R40 が「客観的で出典がある」
     という理由で昇格させた世界銀行の18指標と国別 `pop` は **beta へ降格**（行・データ・凡例は不変）。
+    - ⚠ (#R254) …に **`energy`（エネルギー構成）が加わった**（「エネルギー構成レイヤーは昇格」。
+      どのカテゴリかは利用者が選択）。世界データ層の行なので `rowFor()` の接頭辞に **`wp-dl-`** を追加。
+  - ⚠⚠ (#R254) **「Others」は本物のカテゴリになり、「ベータ」はベータだけを意味する**——
+    「以下のレイヤーは、Others(beta) layersから移動し、新たなカテゴリであるOthersにおくこと。
+    Others(beta)は単にベータとすること。」 新グループ **`lyrGrpOthersReal`（Others / その他）**は
+    #R233 が降格させた**世界銀行指標の行そのもの**61件（`bx-wb*`。利用者が列挙した順）。
+    列挙に無い `bx-wb*` は `wbco2`/`wbforest`/`wbagri` の3つだけで、それらは既に気候・地形へ昇格済み——
+    つまりこの一覧は恣意的な部分集合ではなく「世界銀行指標の一族」であり、ずれようがない。
+    ⚠ **`lyrGrpOthers` はキーを変えずに文言だけ「ベータ」にした**。このキーは
+    `js/map-ui.js`（タイルのbeta判定）と `js/layer-dropdown.js`（携帯での折りたたみ）が名指しで
+    使っているので、改名すると**携帯でベータ節が畳まれなくなる**。
 - **投影**：Flat(mercator)/Globe。3D地形は terrarium DEM（複数ホストで並列フェッチ、モバイルは maxzoom 13 でRAM安全）。
 - **地名ラベル**：`ensurePlaceLabels()` が `ofm` の `place` レイヤから `ofm-country/city/other` を生成（冪等）。`cb-names`(既定ON)で表示。
   ⚠ **(#R252) 市区町村より下の階層は `ofm-other`**：`village`/`suburb`/`hamlet` に加えて
@@ -3549,6 +3607,17 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
   - **作物レイヤーは「場所」を鍵にする**。要求 bbox をビューポートそのものにすると、どんな小さなパンでも
     未知の鍵になり95%重なった絵を取り直す。**約1ビューポートの四分木セルにスナップ**して保持する
     （実測：6°の視野を0.05°ずつ40回パン → **40リクエストが1リクエスト**）。
+    - ⚠⚠⚠ **(#R254) 取得中に届いた移動は、永久に捨てられていた**——「移動やズームですぐに描画がずれたり
+      地図がおかしくなる。戻るまで時間がかかる。」 実測: (−95,40) へ跳び、600ms 後に (77,26) へ跳ぶと、
+      20秒待っても画像ソースの `coordinates` は **[[−180,66.5]…[0,0]]＝西半球**のままで、インド上空には
+      **何も描かれない**（`x/crop-6-double-pan.png`）。原因は `if(!on||busy) return;` ——2つ目の移動が
+      その場で捨てられ、先に走っていた取得が `drawKey` を**自分が要求したセル**に latch するので、
+      下の `key===drawKey` ガードが「見ている場所と無関係な鍵」で成立し、地図は既に静止しているので
+      `moveend` も二度と来ない。**busy 中の移動は記録して、終わった瞬間にやり直す**（`_dirty`）。
+    - ⚠ **書き出しは `toBlob`**。実測でこのレイヤーの画像URLは `data:image/p…` の **654,722 文字**で、
+      最大 2048² のキャンバスから同期 base64 で作られていた（`_cachePut` は `blob:` を revoke する
+      コードを持っており、data: URL では一度も発火し得なかった）。
+    - ⚠ **パネル名の 🌾 は削除**（「作物の栽培に絵文字はいらない」）。
   - **震源分布**：距離の haversine を格子上で因数分解（`A(行)+B(行)·C(列)`）、プロファイル参照を閉形式に、
     クラス色の `parseInt` を1回に、全球ラスタは**輪を解いて経度の帯だけ**歩く、譲りは**12 ms の予算**で
     （`setTimeout(…,0)` の 4 ms 丸めが 224 回＝0.9 秒だった）、書き出しは `toBlob`（base64 を作らない）。

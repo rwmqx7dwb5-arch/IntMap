@@ -1002,19 +1002,37 @@ window.IntMapModules.dataLayers=function(HOST){
              category reads as a curated set. Nothing is deleted and nothing is unreachable: a row that
              leaves a GROUP falls through the safety sweep below into Others (beta), which is exactly
              where 'beta に降格' puts it — same row, same data, same legend, one section lower. */
-          ['lyrGrpDemo',['popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp']],
+          /* (#R254) 「エネルギー構成レイヤーは昇格」 — out of the beta sweep and into the curated set,
+             beside the other per-country statistics (confirmed: 人口・経済). It is the world-packs row
+             `wp-dl-energy`; see rowFor's prefix list. */
+          ['lyrGrpDemo',['popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','energy']],
           /* (#R233) 'nightside' LEFT this group — 「昼夜の表示はレイヤー選択欄の基本表示カテゴリです。」
              It is not a hazard overlay, it is which half of the planet the Sun is on, so it belongs with
              the other always-there view switches (place names, borders, roads, grid) at the top of the
              panel. Moved by name into that list below, not duplicated: one row, one owner. */
           ['lyrGrpHazard',['thermal','aurora','nightsat','volc2','eq']],   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
           ['lyrGrpGeoPol',['milSpend','milSpendGDP','nato','eu','ukrfront','rail','uselect']],   /* (#R26) EU members layer added beside NATO; (#R122) fsu + histb removed per request */
-          ['lyrGrpIndic',['tz']]   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
+          ['lyrGrpIndic',['tz']],   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
+          /* ══ ⚠ (#R254) "OTHERS" IS A REAL CATEGORY NOW, AND "BETA" MEANS BETA ═══════════════════════
+             「以下のレイヤーは、Others(beta) layersから移動し、新たなカテゴリであるOthersにおくこと。
+               Others(beta)は単にベータとすること。」 The sixty-one rows named in that instruction are
+             EXACTLY the World-Bank indicator rows that #R233 demoted (`bx-wb*`, ids without the
+             prefix here — the row wrapper is `lyrrow-<id>`); the only three `bx-wb*` rows NOT in the
+             reader's list are wbco2 / wbforest / wbagri, and those three are already filed in Climate
+             and Terrain above. So this list is not a hand-picked subset that will drift: it is «the
+             World-Bank indicator family», and the demoted-vs-promoted split is now a category rather
+             than a beta warning. The group is ordered exactly as the instruction listed them.
+             ⚠ `lyrGrpOthers` keeps its KEY and loses its «(beta)» wording in all nine languages — the
+             key is what js/map-ui.js and js/layer-dropdown.js use to find the collapsible beta group
+             on mobile, and renaming it would silently un-collapse that section. */
+          ['lyrGrpOthersReal',['wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl','wbinfmort','wbgdpgrow','wblit','wbwater','wbsan','wbpov','wbgini','wbtrade','wbtax','wbphys','wbschool','wbelecuse','wbrenelec','wbfdi','wbmilppl','wblife','wbunemp','wbnet','wbdebt','wbmanuf','wbu5mort','wbpopgrow','wbenergy','wbrnd','wbtour','wbref','wbco2t','wbpatent','wbwomparl','wbpm25','wbcook','wbflfp','wbtert','wbrural','wbgni','wbunder','wbhitech','wbbbnd','wbaging','wbadofert','wbbeds','wbresearch','wboverwt','wburban','wbtourism','wbremit','wbsuicide','wbalcohol','wbhomicide','wbmilgdp','wbfert','wbdensity','wbedu','wbsmoke','wbagremp']]
         ];
         /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */
         const OTHERS_IDS=['ec-temp','temp','ec-precip','precip','ec-wind','ec-dew','ec-isobars','ec-slp','ec-cape','ec-sst','ships','dams'];   /* (#R225) the nine geopolitics keys left this list with the layers themselves */
         const rowFor=(id)=>{ let el=document.getElementById('lyrrow-'+id); if(el) return el;
-          el=document.getElementById('eco-dl-'+id)||document.getElementById('l9-dl-'+id)||document.getElementById('beta-dl-'+id); if(el) return el.closest('.lyr-row')||el.closest('label');   /* (#R20) beta-dl- so promoted ex-beta layers (histb, ukrfront) can be filed into a real group */
+          /* (#R20) beta-dl- so promoted ex-beta layers (histb, ukrfront) can be filed into a real group.
+             (#R254) …and wp-dl- for the same reason, so a world-packs row (energy mix) can be too. */
+          el=document.getElementById('eco-dl-'+id)||document.getElementById('l9-dl-'+id)||document.getElementById('beta-dl-'+id)||document.getElementById('wp-dl-'+id); if(el) return el.closest('.lyr-row')||el.closest('label');
           el=dd.querySelector('input[data-layer="'+id+'"]'); if(el) return el.closest('.lyr-row')||el.closest('label');
           return null; };
         const lang=(typeof HOST.lang!=='undefined')?HOST.lang:'en';
@@ -1145,6 +1163,38 @@ window.IntMapModules.dataLayers=function(HOST){
     /* BUG FIX: previous version polled for the 'countries' source but never created it
        if the style finished loading after countryData arrived. Now we explicitly add
        the source/layers whenever we are ready and it is missing. */
+    /* ══ ⚠⚠⚠ (#R254) EVERY COUNTRY LAYER GETS THE 10 m OUTLINE — NOT ONLY THE COUNTRIES TAB ═════════
+       「以下のレイヤーは国境線が雑い…勝手に解像度の低い国境線に変えるな。いつもにすればいいだけ。
+         これは今後の国境線を使用するものすべてに言える。」
+
+       MEASURED on the shipped build with only 1人当たりGDP switched on: Japan's polygon in the
+       `countries` SOURCE carried **65 vertices**, while `window.countryGeo` already held the 10 m
+       outline at **6,952** — 107× more, sitting in `window._imCountryGeoPending` and never handed to
+       the renderer. Switching Countries(info) on flushed it and the same border became the fine one,
+       which is exactly the reader's 「いつもの」.
+
+       WHY. js/countries-ui.js boots on Natural Earth 110 m so the Countries tab can list its rows
+       without waiting on 4.3 MB, then parks the 10 m collection until something is about to DRAW it
+       (#R195 — pushing 548,000 vertices at a hidden layer cost two CI runs). #R216 gave
+       `_imFlushCountryGeo` a `force` flag and used it in js/world-packs.js. This gate — the one every
+       `dl-*` choropleth in this file goes through — was never given it, so gdppc / tfr / hdi / dem /
+       milSpend / milSpendGDP / pop all painted the 110 m stand-in for the whole session.
+
+       ⚠ `setSourceData` CLEARS FEATURE STATE, and these layers ARE feature state. So the flush is
+       asked for BEFORE the paint, and again while the upgrade is still in flight (it lands 4-15 s
+       after boot, later on a phone) — and when a late one succeeds, every visible choropleth is
+       repainted through `_imReapplyChoros`. One poller for the whole module, not one per layer. */
+    let _hiResPolling=false;
+    function _hiResCountries(){
+      try{ if(window._imFlushCountryGeo&&window._imFlushCountryGeo(true)){ try{ window._imReapplyChoros&&window._imReapplyChoros(); }catch(_){} return; } }catch(_){}
+      if(_hiResPolling) return; _hiResPolling=true;
+      let n=0;
+      (function t(){
+        try{ if(window._imFlushCountryGeo&&window._imFlushCountryGeo(true)){ _hiResPolling=false;
+          try{ window._imReapplyChoros&&window._imReapplyChoros(); }catch(_){} return; } }catch(_){}
+        if(n++<20) setTimeout(t,1500); else _hiResPolling=false;
+      })();
+    }
     function withCountries(cb){
       loadCountryData().then(()=>{
         function tryAdd(){
@@ -1155,7 +1205,11 @@ window.IntMapModules.dataLayers=function(HOST){
         tryAdd();
         let n=0;
         (function w(){
-          if(GE().layers.hasSource('countries')&&HOST.countryGeo){ try{ cb(); }catch(e){ console.warn('withCountries cb failed',e); } return; }
+          if(GE().layers.hasSource('countries')&&HOST.countryGeo){
+            try{ if(window._imFlushCountryGeo) window._imFlushCountryGeo(true); }catch(_){}   /* (#R254) fine borders BEFORE the paint */
+            try{ cb(); }catch(e){ console.warn('withCountries cb failed',e); }
+            _hiResCountries();                                                               /* (#R254) …and again when the late upgrade lands */
+            return; }
           /* Wait MUCH longer (200 tries × 200ms = 40 s) to survive slow CDN style loads. */
           if(n++<200){ tryAdd(); setTimeout(w,200); }
           else console.warn('withCountries: gave up waiting for country source');

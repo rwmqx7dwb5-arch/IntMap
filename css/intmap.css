@@ -17,10 +17,10 @@
       /* (#R210) Progress bars are the ACCENT, full stop ("進捗系のバーの色はアクセントカラーに").
          Unlike --atlas-grad this does NOT sweep to indigo/violet: a custom accent must stay
          that accent all the way across, otherwise a green accent still reads as a blue bar.
-         --prog-sweep is the same single hue, moving — it is the indeterminate animation, not
-         a second colour. (transparent interpolates premultiplied, so there is no grey fringe.) */
-      --prog-grad:var(--primary-color);
-      --prog-sweep:linear-gradient(90deg,transparent 0%,var(--primary-color) 42%,var(--primary-color) 58%,transparent 100%); }
+         ⚠ (#R254) There is ONE progress-bar token, because there is one progress bar. `--prog-sweep`
+         (the moving band of the population bar's indeterminate mode) went with the mode itself —
+         see the note where `.tp-prog.indet` used to be. */
+      --prog-grad:var(--primary-color); }
     /* (#R101) --text-muted brightened toward white for legibility on dark ("灰色文字は見えにくい") — was #a6a6ad */
     [data-theme="dark"]{ --bg-color:#000000; --sidebar-bg:rgba(28,28,30,0.85); --primary-color:#0a84ff; --text-main:#f5f5f7; --text-muted:#cfcfd6; --card-bg:#1c1c1e; --input-bg:rgba(255,255,255,0.1); --popup-bg:rgba(28,28,30,0.74); --shadow:0 8px 30px rgba(0,0,0,0.4); }
     /* (#R115) The R33-retired skin themes' CSS (cyber/classic/psychedelic/military/medical/baroque/taisho)
@@ -313,26 +313,18 @@
     /* (#R139) iOS-style rank numeral: SF Pro Rounded rounded digits, tabular so ranks stay column-aligned, iOS
        semibold weight. Falls back cleanly to system-ui on non-Apple platforms. */
     .stat-rank{ flex:0 0 auto; min-width:28px; text-align:center; font-family:ui-rounded,"SF Pro Rounded",var(--im-font); font-size:19px; font-weight:600; color:var(--text-muted); font-variant-numeric:tabular-nums; -webkit-font-feature-settings:"tnum" 1; font-feature-settings:"tnum" 1; letter-spacing:-0.01em; }
-    /* (#R139) honest population-progress bar: INDETERMINATE animated sweep (no fake %) whenever WorldPop reports no
-       real fraction (a single-request sum). Determinate mode just uses the inline fill width set by _imProgCtl.set. */
-    /* ══ ⚠⚠⚠ (#R253) THE SWEEP NEVER MOVED — `background: … !important` OUTRANKS THE ANIMATION ═══════
-       「Summing the WorldPop population grid…の進捗バーがおかしい。」 reported a THIRD time (#R252 fixed
-       where the box was INSERTED; this is what it looks like once it is in the right place).
-       MEASURED on the shipped build, `getComputedStyle(fill).backgroundPositionX` sampled at eleven
-       points across one 1.05 s cycle:  0%  0%  0%  0%  0%  0%  0%  0%  0%  0%  0%.
-       It is frozen, and the reason is the cascade, not the keyframes. `background` is a SHORTHAND, so
-       it resets `background-position` to `0% 0%` — and carrying `!important` makes that reset an
-       IMPORTANT AUTHOR declaration, which ranks ABOVE CSS animations (CSS Cascade 4 §6.1: normal
-       author < animations < important author). So the `@keyframes` position below has never once been
-       applied, and what the reader sees is a STATIC blob covering the left 42 % of the track with no
-       percentage beside it — visually identical to a determinate bar stuck at 42 %, which is the
-       report. Verified both ways in a real browser: with the shorthand, bandX = 0 % at every phase;
-       with the longhands below, bandX = −42 % → 5.5 % → 53 % → 100.5 % → −42 %.
-       ⚠ THE LONGHANDS ARE NOT COSMETIC. `background-image` alone leaves the inline
-       `background:var(--prog-grad)` on the fill element as the background COLOUR, which would paint
-       the whole 100 %-wide bar solid accent behind the sweep — so the colour is cleared explicitly. */
-    .tp-prog.indet .tp-prog-fill{ width:100% !important; background-image:var(--prog-sweep) !important; background-color:transparent !important; background-size:42% 100% !important; background-repeat:no-repeat !important; animation:imProgSweep 1.05s linear infinite; transition:none !important; }
-    @keyframes imProgSweep{ 0%{ background-position:-45% 0; } 100%{ background-position:145% 0; } }
+    /* ══ ⚠⚠ (#R254) THE POPULATION BAR HAS NO CSS OF ITS OWN ANY MORE ═══════════════════════════════
+       「進捗バーがおかしい。勝手にほかの進捗バーと違うUIにするな。」 What lived here was `.tp-prog.indet
+       .tp-prog-fill` — a 42%-wide accent band swept across the track by `@keyframes imProgSweep`,
+       with the percentage blanked. #R253 made that sweep actually move (`background:… !important` is
+       an important author declaration and outranks animations, CSS Cascade 4 §6.1, so it had been
+       frozen at 0% since #R139); this round removes it, because a bar nothing else in the app looks
+       like is the defect the reader is reporting, moving or not.
+       There is no indeterminate mode left to style: js/sims.js tiles EVERY WorldPop sum, so
+       `_imProgCtl` always has a measured `done/total` and the fill is what every other bar in the
+       app already is — the inline `width` + `var(--prog-grad)` set in the markup. Nothing replaces
+       these rules; `--prog-sweep` (css/intmap.css §tokens) is now unused by any selector and is kept
+       only so a future indeterminate bar has the token to reach for. */
     /* (#R139) Companies tab — logo (where the country flag sat in Countries), sector/HQ subline, detail overlay. */
     .co-logo-box{ display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; flex:0 0 auto; }   /* (#R150) exact-match the Countries flag slot (30×30) so the icon column is pixel-identical between the two tabs */
     .co-logo{ width:30px; height:30px; border-radius:8px; object-fit:contain; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.14); }
@@ -2304,9 +2296,19 @@
        stay above too, because neither is something you «reach into» — they are announcements.
        ⚠ DESKTOP ONLY. On a phone `#layer-sidebar-r` is 1460 and the bottom sheet is 1700; the sheet
        has to stay on top of it, so this band is scoped to the width where the two sidebars exist. */
+    /* ⚠ (#R254) …AND THE PANEL BEING USED IS NAMED, not merely left behind by a demotion. A MapLibre
+       popup lives inside #map with `z-index:auto`, i.e. level 0 of the root stacking context, so the
+       sidebar dropping from 2600 to its base 1000 still left it in front — measured. `.im-front` is
+       set on the first positioned ancestor of whatever the pointer went down on (js/map-ui.js) and
+       clears when the pointer goes to a sidebar or to the map. It is `!important` because several of
+       these panels carry an INLINE z-index of their own (the world-packs windows, the object cards),
+       and an inline declaration outranks a class — an important author declaration outranks both.
+       2650 sits above the sidebar band (2600) and below the modal layer (9999+), which #R253's note
+       states must never go behind anything. */
     @media(min-width:769px){
       body:not(.im-float-front) .sidebar,
       body:not(.im-float-front) #layer-sidebar-r{ z-index:2600; }
+      .im-front{ z-index:2650 !important; }
     }
 
     /* --- Avatar crop modal (#12) --- */
