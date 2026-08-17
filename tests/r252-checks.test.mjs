@@ -174,24 +174,36 @@ test('#R252 ⑥ the search-pill watcher re-runs when the right panel has finishe
 /* ── ⑧ THE SEISMIC PANEL OPENS CLEAR OF THE TWO THINGS THAT LIVE THERE ───────────────────────── */
 test('#R252 ⑧ the seismic panel’s default box clears the coord readout and the sidebar handle', () => {
   const sq = code(read('js/seismic.js'));
-  const m = /left:'\+\(_wide\?(\d+):(\d+)\)\+'px;top:'\+\(_wide\?(\d+):(\d+)\)\+'px;width:min\(360px,94vw\);max-height:calc\(100dvh - '\+\(_wide\?(\d+):(\d+)\)\+'px\)/.exec(sq);
-  assert.ok(m, 'the seismic panel’s default geometry is no longer the desktop/phone pair — re-derive this check');
-  const [, dLeft, mLeft, dTop, mTop, dCap, mCap] = m.map(Number);
-
-  /* the two obstacles, as MEASURED at 1100×800 with the left sidebar collapsed */
-  const css = code(read('css/intmap.css'));
-  assert.match(css, /\.sidebar\.collapsed ~ \.map-container \.btn-toggle-sidebar \{ left:0; \}/,
-    'the collapsed sidebar handle no longer sits at x=0 — re-derive the clearance below');
-  assert.match(css, /\.btn-toggle-sidebar\{[^}]*width:22px/, 'the sidebar handle is no longer 22 px wide');
-  assert.match(css, /\.coord-readout\{[^}]*bottom:9px; left:9px/, 'the coord readout moved — re-derive the clearance below');
-
-  assert.ok(dLeft > 22 + 8, `the panel opens at x=${dLeft}, over the 0–22 px sidebar handle`);
-  /* bottom = top + (100dvh − cap) = 100dvh − (cap − top); the readout's top edge is 100dvh − 40 */
+  assert.match(sq, /if\(window\.innerWidth<=768\) return \{ left:16, top:80, cut:96 \};/,
+    'the phone default changed — nothing about the report is a phone (94vw + a shift right runs off the edge)');
+  const d = /return \{ left, top:(\d+), cut:(\d+) \};/.exec(sq);
+  assert.ok(d, 'the desktop default box is no longer a {left,top,cut} — re-derive this check');
+  const [, dTop, dCap] = d.map(Number);
+  assert.ok(dTop < 80, `the desktop default did not move UP (top=${dTop})`);
+  /* bottom = top + (100dvh − cut) = 100dvh − (cut − top); the readout's top edge is 100dvh − 40 */
   assert.ok(dCap - dTop > 40 + 20,
     `the panel’s bottom edge lands ${dCap - dTop} px above the window foot — the readout occupies the last 40`);
-  assert.ok(dLeft > mLeft && dTop < mTop, 'the desktop default did not move up and to the right');
-  /* ⚠ phones keep the old numbers: 94vw + a 36 px shift would run off the right edge */
-  assert.deepEqual([mLeft, mTop, mCap], [16, 80, 96], 'the phone default changed — nothing about the report is a phone');
+
+  /* ⚠⚠ `left` IS MEASURED, NOT TYPED. Production verification caught the constant version clipping the
+     OPEN sidebar's handle at 400–422 while clearing the collapsed one at 0–22 — one number cannot
+     answer both, and `--sidebar-w` is user-resizable. */
+  assert.match(sq, /const tg=document\.querySelector\('\.btn-toggle-sidebar'\), r=tg&&tg\.getBoundingClientRect\(\);/,
+    'the default left is not read off the sidebar handle — a constant cannot clear both of its positions');
+  assert.match(sq, /if\(r&&r\.width>0&&r\.right<60\) left=Math\.round\(r\.right\+30\);/,
+    'the clearance rule changed — it must place the panel to the RIGHT of a handle that hugs the left edge');
+  assert.match(sq, /if\(!panel\|\|panel\.hasAttribute\('data-dragged'\)\) return;/,
+    'the default box would overwrite a position the reader dragged');
+  assert.match(sq, /_applyDefBox\(\);\s*\n\s*panel\.style\.display='flex'/,
+    'the default box is not re-applied on open — collapsing the sidebar later would bring the overlap back');
+
+  /* the obstacles, as MEASURED at 1100×800 */
+  const css = code(read('css/intmap.css'));
+  assert.match(css, /\.sidebar\.collapsed ~ \.map-container \.btn-toggle-sidebar \{ left:0; \}/,
+    'the collapsed sidebar handle no longer sits at x=0 — re-derive the clearance above');
+  assert.match(css, /\.btn-toggle-sidebar\{[^}]*left:var\(--sidebar-w\)/,
+    'the OPEN sidebar handle no longer sits at --sidebar-w — re-derive the clearance above');
+  assert.match(css, /\.btn-toggle-sidebar\{[^}]*width:22px/, 'the sidebar handle is no longer 22 px wide');
+  assert.match(css, /\.coord-readout\{[^}]*bottom:9px; left:9px/, 'the coord readout moved — re-derive the clearance above');
 });
 
 /* ── ⑦ THE MAP’S CJK FACE FOLLOWS THE LANGUAGE ─────────────────────────────────────────────── */
