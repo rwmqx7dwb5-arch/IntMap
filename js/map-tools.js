@@ -722,21 +722,39 @@ window.IntMapModules.outline=function(HOST){
     function _bboxArea(gj){ const bb=bboxOf(gj); return bb?((bb[1][0]-bb[0][0])*(bb[1][1]-bb[0][1])):Infinity; }
     function _bboxHas(gj,x,y){ const bb=bboxOf(gj); return !!(bb&&x>=bb[0][0]&&x<=bb[1][0]&&y>=bb[0][1]&&y<=bb[1][1]); }
     async function fetchPolygon(name, ctx){ const q=String(name||'').trim(); if(!q) return null;
-      let vb=''; if(ctx&&isFinite(ctx.lng)&&isFinite(ctx.lat)){ const d=8; vb='&viewbox='+(ctx.lng-d)+','+(ctx.lat+d)+','+(ctx.lng+d)+','+(ctx.lat-d); }
       const thr=(ctx&&ctx.threshold!=null)?ctx.threshold:0.0003;   /* (#R54) high-res shape, not 9 straight points */
-      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&polygon_geojson=1&polygon_threshold='+thr+'&q='+encodeURIComponent(q)+vb,{headers:{Accept:'application/json'}}); const j=await r.json(); if(!Array.isArray(j)||!j.length) return null;
-        const polys=j.filter(o=>o.geojson&&/Polygon/.test(o.geojson.type||''));
+      const located=!!(ctx&&isFinite(ctx.lng)&&isFinite(ctx.lat));
+      const _ask=async(vb)=>{ try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&polygon_geojson=1&polygon_threshold='+thr+'&q='+encodeURIComponent(q)+vb,{headers:{Accept:'application/json'}}); const j=await r.json(); return Array.isArray(j)?j:[]; }catch(_){ return []; } };
+      /* pick THIS place's boundary out of an answer — identical rule for both passes */
+      const _pick=(j)=>{ const polys=j.filter(o=>o.geojson&&/Polygon/.test(o.geojson.type||''));
         if(!polys.length) return null;   /* (#R59) NO rectangle fallback — if there is no real boundary, draw NOTHING */
-        let best=null;
-        if(ctx&&isFinite(ctx.lng)&&isFinite(ctx.lat)){
-          const inside=polys.filter(o=>_pipGeo(ctx.lng,ctx.lat,o.geojson));
-          if(inside.length){ inside.sort((a,b)=>_bboxArea(a.geojson)-_bboxArea(b.geojson)); best=inside[0]; }   /* smallest containing = most specific */
-          else { const bx=polys.filter(o=>_bboxHas(o.geojson,ctx.lng,ctx.lat)); if(bx.length){ bx.sort((a,b)=>_bboxArea(a.geojson)-_bboxArea(b.geojson)); best=bx[0]; } }   /* tap just off the glyph */
-          if(!best) return null;   /* the tapped place has no boundary here → null (never a far namesake, never a box) */
-        } else { best=polys.slice().sort((x,y)=>(+y.importance||0)-(+x.importance||0))[0]; }
-        if(!best) return null;
-        return { name:(best.display_name||q).split(',')[0], geojson:best.geojson, lng:+best.lon, lat:+best.lat };
-      }catch(_){ return null; } }
+        if(!located) return polys.slice().sort((x,y)=>(+y.importance||0)-(+x.importance||0))[0];
+        const inside=polys.filter(o=>_pipGeo(ctx.lng,ctx.lat,o.geojson));
+        if(inside.length){ inside.sort((a,b)=>_bboxArea(a.geojson)-_bboxArea(b.geojson)); return inside[0]; }   /* smallest containing = most specific */
+        const bx=polys.filter(o=>_bboxHas(o.geojson,ctx.lng,ctx.lat)); if(bx.length){ bx.sort((a,b)=>_bboxArea(a.geojson)-_bboxArea(b.geojson)); return bx[0]; }   /* tap just off the glyph */
+        return null;   /* the tapped place has no boundary here → null (never a far namesake, never a box) */ };
+      /* ══ ⚠⚠ (#R253) A SMALL PLACE LOSES ITS OWN SEARCH TO ITS FAMOUS NAMESAKES ═══════════════════
+         「細かい地名ラベルをクリックした際にも、範囲がハイライトされるように。」
+         MEASURED on the shipped build over 24 real `ofm-other` labels (neighbourhood / quarter /
+         suburb) taken from the tiles in Tokyo, Osaka, Berlin, Paris and London: 10 highlighted,
+         14 drew nothing. The ±8° viewbox below is only a HINT to Nominatim — it re-ranks, it does
+         not restrict — so a district called 錦町 or Reuilly is asked for against the whole planet
+         and the ten slots come back full of bigger namesakes; the local object, which does have a
+         polygon, is never in the answer to be chosen from.
+         ⚠ SO ASK THE NEIGHBOURHOOD FIRST. `bounded=1` with a ±0.06° box (≈ ±6.7 km) restricts the
+         answer to the clicked area, where a 丁目 is the only thing with that name. The wide pass is
+         kept UNCHANGED as the fallback, so nothing that resolves today stops resolving — and it only
+         runs when the tight pass found nothing, so the ordinary click still costs one request.
+         ⚠ AND THE REST IS NOT A BUG. Of the 14, most (Berlin's Kiez names, Bastille, Seven Dials,
+         East Marylebone) are mapped in OSM as place NODES: measured, Nominatim returns the object
+         with no polygon at all. #R59's rule stands — no boundary means nothing is drawn, never a
+         rectangle around a point. */
+      if(located){ const t=0.06; const tight=await _ask('&bounded=1&viewbox='+(ctx.lng-t)+','+(ctx.lat+t)+','+(ctx.lng+t)+','+(ctx.lat-t));
+        const hit=_pick(tight); if(hit) return { name:(hit.display_name||q).split(',')[0], geojson:hit.geojson, lng:+hit.lon, lat:+hit.lat }; }
+      const d=8, vb=located?('&viewbox='+(ctx.lng-d)+','+(ctx.lat+d)+','+(ctx.lng+d)+','+(ctx.lat-d)):'';
+      const best=_pick(await _ask(vb));
+      if(!best) return null;
+      return { name:(best.display_name||q).split(',')[0], geojson:best.geojson, lng:+best.lon, lat:+best.lat }; }
     async function show(name, ctx){ ctx=ctx||{}; const myseq=++_seq;   /* generation token — a later show()/clear() invalidates this one */
       try{ let geo=(ctx.geojson&&/Polygon/.test(ctx.geojson.type||''))?ctx.geojson:null, disp=name||'';
         if(!geo){ const r=await fetchPolygon(name, ctx); if(myseq!==_seq) return false; if(r&&r.geojson){ disp=r.name||disp; geo=r.geojson; } }

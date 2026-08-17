@@ -203,6 +203,30 @@ window.IntMapModules.layerSidebar=function(HOST){
   window.IntMapLayerSidebar=(function(){
     let sb=null,built=false;
     const isMob=()=>window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
+    /* ══ ⚠ (#R253) FRONT-MOST FOLLOWS THE POINTER, NOT THE STYLESHEET ═══════════════════════════════
+       「サイドバーをあけたときに、ポップアップ等がサイドバーの後ろに隠れるように。ポップアップ内で
+         なんらかの操作したら、ポップアップが前部に来るように。サイドバー内をクリックした場合はまた
+         サイドバーを前部に。」 The z-index band itself is in css/intmap.css beside the other
+         `body.lsr-open` rules; this is the one bit of state it reads.
+       ⚠ «A FLOATING PANEL» IS ASKED OF THE LAYOUT, NOT OF A LIST OF SELECTORS. Walking up for the
+       first positioned ancestor catches every panel this app has and every one a later module adds —
+       a hand-written list would be one more place to forget, which is the shape this project keeps
+       paying for. The map's own canvas container is positioned too and is explicitly NOT a panel:
+       clicking the map is what OPENS a popup, and the report says a fresh popup belongs BEHIND the
+       sidebar. Capture phase, so a handler that stops propagation cannot hide the gesture. */
+    const _FRONT_SIDE='.sidebar,#layer-sidebar-r,.btn-toggle-sidebar,#lsr-toggle';
+    function _wireFrontMost(){ if(window.__imFrontMostWired) return; window.__imFrontMostWired=1;
+      const isPanel=(el)=>{ for(let n=el; n&&n!==document.body; n=n.parentElement){
+          if(n.matches&&n.matches('.maplibregl-canvas-container,.maplibregl-control-container,canvas')) return false;
+          let p=''; try{ p=getComputedStyle(n).position; }catch(_){}
+          if(p==='absolute'||p==='fixed') return true; }
+        return false; };
+      document.addEventListener('pointerdown',(e)=>{ try{
+        const t=e.target; if(!t||!t.closest) return;
+        if(t.closest(_FRONT_SIDE)){ document.body.classList.remove('im-float-front'); return; }
+        document.body.classList.toggle('im-float-front', isPanel(t));
+      }catch(_){} },true);
+    }
     const T=window.IntMapLang.pick(()=>HOST.lang);
     /* (#R70) REBUILT FROM SCRATCH ("単にデフォルトの Layers選択欄を移植するな。一から同じ機能かつ洗練された
        UIで作り直せ。タイル形式にして"): the sidebar no longer adopts/reparents #layer-dropdown. It is its own
@@ -376,6 +400,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       const tg=document.createElement('button'); tg.id='lsr-toggle'; tg.title='Layers'; tg.innerHTML='<span class="chev"></span>';
       tg.addEventListener('click',e=>{ e.stopPropagation(); toggle(); });
       document.body.appendChild(tg); }
+    _wireFrontMost();
     /* ---- (#R70) tile-grid builder: the classic dropdown is the data source, never the UI ---- */
     function rowsFromDropdown(){ const dd=document.getElementById('layer-dropdown'); const out=[]; if(!dd) return out;
       let sec='', secBeta=false;   /* (#R101) track the beta section by data-i18n, not translated text */
@@ -529,6 +554,7 @@ window.IntMapModules.layerSidebar=function(HOST){
         const w=(saved>=260)?Math.min(saved,cap):Math.max(280,Math.min(300, Math.round(window.innerWidth-lw-320)));   /* (#R154/#R159/#R160) default cap 430→380→340→300 (smaller) */
         document.documentElement.style.setProperty('--lsr-w', w+'px'); } }catch(_){}
       sb.classList.add('open'); document.body.classList.add('lsr-open');
+      document.body.classList.remove('im-float-front');   /* (#R253) 「サイドバーをあけたときに」— opening puts it in front, whatever was raised before */
       /* (#R73) fire any lazy previews that IO missed while the panel was prebuilt off-screen */
       setTimeout(()=>{ try{ window.IntMapLayerPreviews&&window.IntMapLayerPreviews.kick&&window.IntMapLayerPreviews.kick(sb); }catch(_){} },450);
       /* (#R66) INLINE, decoupled: the MAP cedes the strip via its own margin (one line, no cascade, no flex
@@ -986,7 +1012,7 @@ window.IntMapModules.labelPopup=function(HOST){
          popup shows it too — previously the flag only appeared in the full country card, never here ("国旗…まだ詰め
          られる箇所が大量にある"). Modern place labels pass no flag, so their popup is unchanged. */
       const flagHtml=(opts&&opts.flag)?('<span class="plc-flag" style="flex:0 0 auto;line-height:0;display:inline-flex;align-items:center;font-size:19px;">'+opts.flag+'</span>'):'';
-      const html=`<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;padding-right:30px;display:flex;align-items:center;gap:7px;">${flagHtml}<span>${safe}</span></div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${de?'Kopieren':window.IntMapLang.t(HOST.lang,'Copy','コピー','Kopieren','Копировать','Copiar')}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':window.IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Kurzbericht','Обзор ИИ','Informe de IA')}</button>${isoBtn}${moveBtn}</div></div>`;
+      const html=`<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;padding-right:30px;display:flex;align-items:center;gap:7px;">${flagHtml}<span>${safe}</span></div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${window.IntMapLang.t(HOST.lang,'Copy name','地名をコピー','Namen kopieren','Копировать название','Copiar el nombre')}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':window.IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Kurzbericht','Обзор ИИ','Informe de IA')}</button>${isoBtn}${moveBtn}</div></div>`;
       try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:false,maxWidth:'268px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html));
         /* (#R59) draw this place's REAL boundary as a polygon (cities/towns/regions; NOT countries). IntMapOutline
            uses point-in-polygon (no fixed threshold → no far same-named place) and draws NOTHING if there is no real

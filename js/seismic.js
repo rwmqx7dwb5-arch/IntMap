@@ -3282,11 +3282,27 @@ window.IntMapModules.seismic=function(HOST){
         '.sq-sites th:first-child,.sq-sites td:first-child{padding-left:0;}',
         /* the classic auto-layout squeeze: `width:100%;max-width:0` makes THIS the only elastic
            column, so the six numeric columns keep their natural width and the name truncates. */
-        '.sq-st-nm{padding:2px 5px 2px 0 !important;width:100%;max-width:0;'
-          +'overflow-wrap:anywhere;line-height:1.3;}',
+        /* ══ ⚠ (#R253) ONE ROW IS ONE LINE ══════════════════════════════════════════════════════════
+           「place名が一行に収まっていないことを修正して。」 #R242 chose `overflow-wrap:anywhere` over an
+           ellipsis on the argument that 「an ellipsis hides the very thing the row is about」 — but the
+           column it wraps inside is the SQUEEZED one, so a three-word place name took two or three
+           lines and every other cell in that row (distance, intensity, arrivals) floated against a
+           row twice as tall as its neighbours. The reader asked for the line back. The full name is
+           not lost: every cell already carries it as `title`, and the table's own horizontal scroller
+           (#R241) still reaches the columns beyond the fold.
+           ⚠⚠ AND `nowrap` ALONE MADE IT WORSE, WHICH IS WHY THERE IS A FLOOR. `width:100%;max-width:0`
+           makes this the only compressible column, so it absorbs the WHOLE deficit: measured at the
+           panel's 312 px table width, the six numeric columns want 281 px (Δ 35, intensity 68, P 46,
+           S 49, shaking 52, PGV 31) and the name was left **35 px** — every row an ellipsis and
+           nothing else. A minimum turns the deficit back into what the scroller beside it is for. */
+        '.sq-st-nm{padding:2px 5px 2px 0 !important;width:100%;max-width:0;min-width:84px;'
+          +'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}',
         '.sq-tbl{position:relative;}',
         '.sq-ev-row{display:flex;align-items:center;gap:6px;}',
-        '.sq-ev-x{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--glass-border,rgba(128,128,128,0.24));'
+        /* (#R253) 「Clear the loaded earthquakeボタンは丸ではなく四角に。」 — a square. The corner is
+           8 px because that is what `.sq-ev` (the catalogue select it stands beside in `.sq-ev-row`)
+           and `.sq-num` already use: the two controls on that row now share one shape. */
+        '.sq-ev-x{flex:0 0 auto;width:30px;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.24));'
           +'background:var(--input-bg);color:var(--text-muted);font-size:13px;line-height:1;cursor:pointer;padding:0;}',
         '.sq-ev-x:hover{color:var(--text-main);}',
         '.sq-obs-h{font-weight:600;color:var(--text-main);margin-bottom:5px;}',
@@ -4453,13 +4469,17 @@ window.IntMapModules.seismic=function(HOST){
            well-known cities the table adds for context are not numbered because they are not
            placed and there is nothing on the map to match them to. */
         const badge=c.n?('<span style="display:inline-block;min-width:15px;height:15px;line-height:15px;text-align:center;border-radius:50%;background:var(--text-main);color:var(--bg-color);font-size:'+FS_S+';font-weight:700;margin-right:5px;">'+c.n+'</span>'):'';
+        /* ⚠ (#R253) THE INTENSITY COLUMN SITS BESIDE THE DISTANCE — 「MMI/JMAをΔ kmの右に配置し」.
+           It is the answer the table exists to give, and it was the SEVENTH column: the two numbers a
+           reader compares (how far, how hard) were at opposite ends of a row that scrolls. Header and
+           body are reordered together; nothing else about a cell changes. */
         return '<tr><td class="sq-st-nm" title="'+HOST.escapeHtml(String(c.name||''))+'">'+badge+c.name+'</td>'
           +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;">'+Math.round(a.km).toLocaleString()+'</td>'   /* (#R242) the unit is in the header — six characters of every row back for the place name */
+          +'<td style="padding:3px 4px 3px 4px;text-align:right;">'+iCell(a,CW)+'</td>'
           +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;color:#ff6b6b;">'+fmtT(a.tP)+'</td>'
           +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;color:#ffb020;">'+fmtT(a.tS)+'</td>'
           +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;">'+fmtT(a.durS)+'</td>'
-          +'<td style="padding:1px 3px;text-align:right;white-space:nowrap;">'+(a.pgv>=0.05?a.pgv.toFixed(1):'—')+'</td>'
-          +'<td style="padding:3px 0 3px 4px;text-align:right;">'+iCell(a,CW)+'</td></tr>'; }).join('');
+          +'<td style="padding:1px 3px 1px 0;text-align:right;white-space:nowrap;">'+(a.pgv>=0.05?a.pgv.toFixed(1):'—')+'</td></tr>'; }).join('');
       /* ══ ⚠⚠ (#R243) THE RESULT CARD OPENS WITH THE ANSWER, NOT WITH THE MODEL'S DIARY ═════════
          「地震シミュレータの「M7.0 · 深さ 10 km · M0 3.98e+19 N·m · fc 0.072 Hz · 破壊半径 18.0 km
            震度分布：実DEMの地形勾配からVs30推定（Wald & Allen 2007） · z8 (555 m → 勾配基線 900 m) ·
@@ -4521,11 +4541,12 @@ window.IntMapModules.seismic=function(HOST){
         +'<div class="sq-tbl" style="margin-top:8px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;">'
         +'<table class="sq-sites" style="font-size:'+FS+';"><thead><tr style="color:var(--text-main);">'
         +'<th style="text-align:left;font-weight:600;">'+L('Place','地点','Ort','Место','Lugar')+'</th>'
-        +'<th style="text-align:right;font-weight:600;white-space:nowrap;">Δ <span style="opacity:.65;font-weight:400;">km</span></th><th style="text-align:right;font-weight:600;color:#ff6b6b;">P</th>'
+        +'<th style="text-align:right;font-weight:600;white-space:nowrap;">Δ <span style="opacity:.65;font-weight:400;">km</span></th>'
+        +'<th style="text-align:right;font-weight:600;">'+(jp?L('Shindo','震度','Shindo','Синдо','Shindo'):'MMI')+'</th>'
+        +'<th style="text-align:right;font-weight:600;color:#ff6b6b;">P</th>'
         +'<th style="text-align:right;font-weight:600;color:#ffb020;">S</th>'
         +'<th style="text-align:right;font-weight:600;">'+L('shaking','継続','Dauer','длит.','durac.')+'</th>'
-        +'<th style="text-align:right;font-weight:600;">PGV</th>'
-        +'<th style="text-align:right;font-weight:600;">'+(jp?L('Shindo','震度','Shindo','Синдо','Shindo'):'MMI')+'</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+        +'<th style="text-align:right;font-weight:600;">PGV</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
         /* (#R205) …and this line no longer claims the click unconditionally: it says so only while the
            switch at the top of the panel is on 観測地点, and names the switch when it is not. */
         +'<div style="margin-top:5px;opacity:0.75;">'+(clickMode==='station'
@@ -4598,6 +4619,15 @@ window.IntMapModules.seismic=function(HOST){
       const ev=QUAKE_EVENTS.find(e=>e.id===id)||null;
       evId=ev?ev.id:''; evNow=ev; evPub=null;
       if(!ev){ render(); return; }
+      /* ══ ⚠ (#R253) A DIFFERENT EARTHQUAKE STARTS AT t = 0 ═══════════════════════════════════════
+         「地震シミュレータで地震を変更したら、経過時間はリセットされるように。」 `clearEvent` has zeroed
+         `tSec` since #R242 and `applyReal` (the USGS feed) since #R210 — loading from the CATALOGUE
+         was the one way in that did not, so picking a second earthquake left the clock wherever the
+         first one had been scrubbed to, and the wavefronts opened mid-flight for a rupture that had
+         only just begun. `playing` is left alone deliberately: the reader's play/pause is a setting
+         about the panel, not about which earthquake is loaded. The slider itself is rewritten by the
+         `render()` below, which prints `value="'+tSec+'"`. */
+      tSec=0;
       try{
         depthKm=ev.depthKm;
         setEpi([ev.lng,ev.lat]);

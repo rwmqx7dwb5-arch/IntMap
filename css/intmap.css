@@ -315,7 +315,23 @@
     .stat-rank{ flex:0 0 auto; min-width:28px; text-align:center; font-family:ui-rounded,"SF Pro Rounded",var(--im-font); font-size:19px; font-weight:600; color:var(--text-muted); font-variant-numeric:tabular-nums; -webkit-font-feature-settings:"tnum" 1; font-feature-settings:"tnum" 1; letter-spacing:-0.01em; }
     /* (#R139) honest population-progress bar: INDETERMINATE animated sweep (no fake %) whenever WorldPop reports no
        real fraction (a single-request sum). Determinate mode just uses the inline fill width set by _imProgCtl.set. */
-    .tp-prog.indet .tp-prog-fill{ width:100% !important; background:var(--prog-sweep) !important; background-size:42% 100% !important; background-repeat:no-repeat !important; animation:imProgSweep 1.05s linear infinite; transition:none !important; }
+    /* ══ ⚠⚠⚠ (#R253) THE SWEEP NEVER MOVED — `background: … !important` OUTRANKS THE ANIMATION ═══════
+       「Summing the WorldPop population grid…の進捗バーがおかしい。」 reported a THIRD time (#R252 fixed
+       where the box was INSERTED; this is what it looks like once it is in the right place).
+       MEASURED on the shipped build, `getComputedStyle(fill).backgroundPositionX` sampled at eleven
+       points across one 1.05 s cycle:  0%  0%  0%  0%  0%  0%  0%  0%  0%  0%  0%.
+       It is frozen, and the reason is the cascade, not the keyframes. `background` is a SHORTHAND, so
+       it resets `background-position` to `0% 0%` — and carrying `!important` makes that reset an
+       IMPORTANT AUTHOR declaration, which ranks ABOVE CSS animations (CSS Cascade 4 §6.1: normal
+       author < animations < important author). So the `@keyframes` position below has never once been
+       applied, and what the reader sees is a STATIC blob covering the left 42 % of the track with no
+       percentage beside it — visually identical to a determinate bar stuck at 42 %, which is the
+       report. Verified both ways in a real browser: with the shorthand, bandX = 0 % at every phase;
+       with the longhands below, bandX = −42 % → 5.5 % → 53 % → 100.5 % → −42 %.
+       ⚠ THE LONGHANDS ARE NOT COSMETIC. `background-image` alone leaves the inline
+       `background:var(--prog-grad)` on the fill element as the background COLOUR, which would paint
+       the whole 100 %-wide bar solid accent behind the sweep — so the colour is cleared explicitly. */
+    .tp-prog.indet .tp-prog-fill{ width:100% !important; background-image:var(--prog-sweep) !important; background-color:transparent !important; background-size:42% 100% !important; background-repeat:no-repeat !important; animation:imProgSweep 1.05s linear infinite; transition:none !important; }
     @keyframes imProgSweep{ 0%{ background-position:-45% 0; } 100%{ background-position:145% 0; } }
     /* (#R139) Companies tab — logo (where the country flag sat in Countries), sector/HQ subline, detail overlay. */
     .co-logo-box{ display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; flex:0 0 auto; }   /* (#R150) exact-match the Countries flag slot (30×30) so the icon column is pixel-identical between the two tabs */
@@ -2270,6 +2286,27 @@
       body.lsr-open:not(.ws-mode) .map-controls-top{ right:calc(var(--lsr-w) + 10px); }
       body.lsr-open:not(.ws-mode) #tool-panel, body.lsr-open:not(.ws-mode) #sat-controller{ right:calc(var(--lsr-w) + 24px); }
       body.lsr-open:not(.ws-mode) .news-timeline{ right:calc(var(--lsr-w) + 10px); }
+    }
+
+    /* ══ ⚠ (#R253) WHO IS IN FRONT — THE SIDEBAR, OR THE THING YOU JUST REACHED INTO ══════════════
+       「サイドバーをあけたときに、ポップアップ等がサイドバーの後ろに隠れるように。ポップアップ内で
+         なんらかの操作したら、ポップアップが前部に来るように。サイドバー内をクリックした場合はまた
+         サイドバーを前部に。」
+       Both sidebars sit at z-index 1000 and every floating panel on the map is at or above it —
+       measured: legends and the news timeline 1100, the pin/search/measure popovers 1300–1500,
+       the country / aircraft / satellite cards 2200–2210, the context menu 2500. Since #R160 the
+       right panel OVERLAYS the map rather than pushing it, so all of those paint straight through an
+       open panel. Opening a sidebar now puts it above that whole band; `body.im-float-front` (set on
+       pointerdown inside a floating panel, cleared on pointerdown inside a sidebar, on its handle, or
+       on the map itself — see js/map-ui.js) drops it back so the panel being used is on top.
+       ⚠ THE BAND STOPS BELOW THE MODAL LAYER. Settings / lightbox / crop / the company card live at
+       9999+ and must never go behind a sidebar; the toast (3000) and the compass entry popover (4000)
+       stay above too, because neither is something you «reach into» — they are announcements.
+       ⚠ DESKTOP ONLY. On a phone `#layer-sidebar-r` is 1460 and the bottom sheet is 1700; the sheet
+       has to stay on top of it, so this band is scoped to the width where the two sidebars exist. */
+    @media(min-width:769px){
+      body:not(.im-float-front) .sidebar,
+      body:not(.im-float-front) #layer-sidebar-r{ z-index:2600; }
     }
 
     /* --- Avatar crop modal (#12) --- */

@@ -277,7 +277,7 @@ window.IntMapLang.define('ko', { ui: {
     "Close":"닫기", "Cancel":"취소", "Save":"저장", "Delete":"삭제", "Remove":"제거",
     "Apply":"적용", "Reset":"초기화", "Search":"검색", "Loading…":"불러오는 중…",
     "Layers":"레이어", "Settings":"설정", "Map":"지도", "Satellite":"위성", "Globe":"지구본",
-    "Flat":"평면", "Minimize":"최소화", "Send":"보내기", "Copy":"복사", "Open":"열기", "Back":"뒤로",
+    "Flat":"평면", "Minimize":"최소화", "Send":"보내기", "Copy":"복사", "Copy name":"지명 복사", "Open":"열기", "Back":"뒤로",
     "Sources":"출처", "Related articles":"관련 기사", "Cited sources":"인용 출처",
     "Web-verified sources":"웹으로 확인된 출처", "Data used":"사용한 데이터", "As of":"기준일",
     "live web search":"실시간 웹 검색", "Stopped":"중지됨", "Voice input":"음성 입력",
