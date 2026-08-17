@@ -329,7 +329,7 @@ window.IntMapModules.worldPacks=function(HOST){
      *  hover away — the picture is compressed, the number never is.
      * ════════════════════════════════════════════════════════════════════════════════════════════*/
     (function trade(){
-      const SRC='wp-trade', LYR=['wp-trade-arc','wp-trade-arrow','wp-trade-pt','wp-trade-lbl'];
+      const SRC='wp-trade', LYR=['wp-trade-arc','wp-trade-arrow','wp-trade-lbl'];   /* (#R254) `wp-trade-pt` (the country pins) removed — see ensureLayers */
       /* BACI HS revisions, newest first — one cube covers 1995‑2024 and the newer ones are finer */
       const CUBE=(y)=>(y>=2022?'trade_i_baci_a_22':y>=2018?'trade_i_baci_a_17':y>=2012?'trade_i_baci_a_12':y>=2008?'trade_i_baci_a_07':y>=2003?'trade_i_baci_a_02':'trade_i_baci_a_92');
       const YMIN=1995, YMAX=2024;
@@ -349,6 +349,11 @@ window.IntMapModules.worldPacks=function(HOST){
         ['19',LA('Arms','武器','Waffen','Оружие','Armas')]];
       const secLabel=(s)=>{ const r=SECTIONS.find(x=>x[0]===s); return r?L.arr(r[1]):s; };
       let on=false, dir='X', section='', topN=15, iso=null, rows=null, year=null, busy=false, pop=null;
+      /* (#R254) 「矢印の有無はトグルでオンオフできるようにしろ。」 — the arrowheads are a switch of their
+         own, in the panel beside the direction and the commodity. The arcs and the country shading are
+         unaffected by it; only `wp-trade-arrow` follows. */
+      let arrows=true;
+      function applyVis(){ setVis(['wp-trade-arc','wp-trade-lbl'],on); setVis(['wp-trade-arrow'],on&&arrows); }
       const panel=makePanel('wp-trade-panel',()=>'🚢 '+L('Trade flows','貿易フロー','Handelsströme','Торговые потоки','Flujos comerciales'),'wp-dl-trade',
         { legendId:'wptrade', layers:()=>['wp-trade-fill'].concat(LYR),
           names:()=>(LA('🚢 Trade flows','🚢 貿易フロー','🚢 Handelsströme','🚢 Торговые потоки','🚢 Flujos comerciales')) });
@@ -361,13 +366,29 @@ window.IntMapModules.worldPacks=function(HOST){
          reversing the array is what makes every arrowhead point the right way at once.
          ⚠ Two plain images rather than one SDF: `icon-color` only applies to SDF sprites, and an SDF
          built from a hard-edged triangle is a blurred triangle. Two images cost nothing. */
+      /* ══ ⚠⚠⚠ (#R254) THE ARROWHEADS WERE NEVER REGISTERED — WRONG NAMESPACE, SWALLOWED BY A CATCH ══
+         「矢印はただの線ではなくちゃんと方向に対応した矢印にしろ。」 They were supposed to exist since
+         #R212 and they never have. MEASURED in a real browser with the layer on and Japan's flows
+         loaded: `GE().scene.hasImage('wp-arrow-X')` → **false**, `hasImage('wp-arrow-M')` → **false**,
+         while `wp-trade-arrow` itself is present and `visibility:visible`. A symbol layer whose
+         `icon-image` names an unregistered image draws NOTHING, so what reached the screen was the
+         `wp-trade-arc` line and nothing else — 「ただの線」, exactly.
+         THE CAUSE IS ONE WORD. The renderer contract puts the sprite atlas under `scene`, not under
+         `layers`: `typeof GE().layers.hasImage` is **undefined**, so calling it throws a TypeError,
+         and the whole body sits inside `try{…}catch(_){}` — the failure had no way to be seen. This
+         project has written that fact down before: js/ocean-currents.js carries «⚠ IT IS `scene`, NOT
+         `layers` (#R216): `GE().layers.addImage` is simply undefined» — the same mistake, found in
+         that file two rounds after it was made here, and never re-checked against this one.
+         ⚠ THE CATCH STAYS, BUT IT NO LONGER HIDES THIS: a missing image is now reported once. */
       const ARROW={X:'#ff9f0a',M:'#32d0ff'};
       function arrowImg(hex){ const S=22, c=document.createElement('canvas'); c.width=c.height=S;
         const g=c.getContext('2d'); g.fillStyle=hex;
         g.beginPath(); g.moveTo(S*0.86,S*0.5); g.lineTo(S*0.20,S*0.14); g.lineTo(S*0.36,S*0.5); g.lineTo(S*0.20,S*0.86); g.closePath(); g.fill();
         return g.getImageData(0,0,S,S); }
+      let _arrowWarned=false;
       function ensureArrows(){ try{ Object.keys(ARROW).forEach(k=>{ const id='wp-arrow-'+k;
-        if(!GE().layers.hasImage(id)) GE().layers.addImage(id,arrowImg(ARROW[k]),{pixelRatio:2}); }); }catch(_){} }
+        if(!GE().scene.hasImage(id)) GE().scene.addImage(id,arrowImg(ARROW[k]),{pixelRatio:2}); }); }catch(e){
+        if(!_arrowWarned){ _arrowWarned=true; try{ console.warn('trade arrowheads could not be registered',e); }catch(_){} } } }
 
       /* ══ (#R215) 「貿易レイヤーは該当国がぬられるように」 — AND NO COUNTRY WAS PAINTED AT ALL ══════
          The layer drew arcs, arrowheads, partner dots and their labels; the countries themselves were
@@ -414,11 +435,13 @@ window.IntMapModules.worldPacks=function(HOST){
           layout:{visibility:'none','symbol-placement':'line','symbol-spacing':92,'icon-image':['get','ai'],
             'icon-size':['get','asz'],'icon-rotation-alignment':'map','icon-allow-overlap':true,'icon-ignore-placement':true,'icon-padding':0},
           paint:{'icon-opacity':0.95}});
-        if(!GE().layers.has('wp-trade-pt')) GE().layers.add({id:'wp-trade-pt',type:'circle',source:SRC,filter:['==',['get','kind'],'node'],
-          layout:{visibility:'none'},
-          paint:{'circle-radius':['get','r'],'circle-color':['get','col'],'circle-stroke-color':'rgba(0,0,0,0.55)','circle-stroke-width':1,'circle-opacity':0.9}});
+        /* ⚠ (#R254) 「国にピンを置くな」 — the circle markers this layer dropped on every partner's
+           centroid (and the white r=7 disc on the selected country) are gone. The countries themselves
+           are shaded by `wp-trade-fill` (#R215) and the arcs carry the amounts, so the dots were a
+           third statement of the same thing sitting on top of the map. The `node` FEATURES stay:
+           they are what places the partner NAME, which the reader kept. */
         if(!GE().layers.has('wp-trade-lbl')) GE().layers.add({id:'wp-trade-lbl',type:'symbol',source:SRC,filter:['==',['get','kind'],'node'],
-          layout:{visibility:'none','text-field':['get','name'],'text-size':window.IntMapLabelScale.sub(0.86),'text-offset':[0,1.05],'text-anchor':'top','text-allow-overlap':false},
+          layout:{visibility:'none','text-field':['get','name'],'text-size':window.IntMapLabelScale.sub(0.86),'text-offset':[0,0.2],'text-anchor':'top','text-allow-overlap':false},
           paint:{'text-color':'#eaf2ff','text-halo-color':'rgba(0,10,25,0.85)','text-halo-width':1.4}});
         return true; }catch(_){ return false; } }
 
@@ -460,7 +483,7 @@ window.IntMapModules.worldPacks=function(HOST){
               properties:{kind:'node',col:'#ffffff',r:7,name:countryName(iso),v:0,vShort:'',vExact:''}});
           }
         }
-        whenDrawable(()=>{ if(ensureLayers()){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,on); }
+        whenDrawable(()=>{ if(ensureLayers()){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); applyVis(); }
           withCountrySource().then(()=>{ try{ if(window._imFlushCountryGeo) window._imFlushCountryGeo(true); }catch(_){}
             if(ensureChoro()){ paintCountries(); setVis([CHORO],on); panel.claim(); } }); }); }
 
@@ -475,6 +498,9 @@ window.IntMapModules.worldPacks=function(HOST){
             +'<select class="wp-sec" style="'+SEL+'">'+SECTIONS.map(s=>'<option value="'+s[0]+'"'+(s[0]===section?' selected':'')+'>'+esc(secLabel(s[0]))+'</option>').join('')+'</select></label>'
           +'<div style="'+ROW+'">'+L('Partners shown','表示する相手国','Angezeigte Partner','Показано партнёров','Socios mostrados')
             +'<span style="display:flex;gap:4px;">'+[10,20,999].map(n=>'<button class="wp-n" data-n="'+n+'" style="'+BTN+'padding:4px 7px;">'+(n>=999?L('All','すべて','Alle','Все','Todos'):n)+'</button>').join('')+'</span></div>'
+          /* (#R254) 「矢印の有無はトグルでオンオフできるようにしろ。」 */
+          +'<label style="'+ROW+'cursor:pointer;">'+L('Direction arrows','方向の矢印','Richtungspfeile','Стрелки направления','Flechas de dirección')
+            +'<input type="checkbox" class="wp-arr"'+(arrows?' checked':'')+' style="width:16px;height:16px;accent-color:var(--primary-color);cursor:pointer;"></label>'
           +rampLegend(TRADE_RAMP.map(x=>[x[0]+'%',x[1]]),
               L('Share of the selected country’s total trade (the white country is the one selected)',
                 '選択した国の貿易額全体に占める割合（白い国が選択中の国）',
@@ -507,6 +533,7 @@ window.IntMapModules.worldPacks=function(HOST){
         b.querySelector('.wp-m').onclick=()=>{ dir='M'; render(); load(iso,true); };
         b.querySelector('.wp-sec').onchange=(e)=>{ section=e.target.value; load(iso,true); };
         b.querySelectorAll('.wp-n').forEach(x=>x.onclick=()=>{ topN=+x.getAttribute('data-n'); draw(); render(); });
+        { const a=b.querySelector('.wp-arr'); if(a) a.onchange=(e)=>{ arrows=!!e.target.checked; applyVis(); }; }   /* (#R254) */
         stat(); }
 
       function stat(){ const b=panel.body(); if(!b) return;
@@ -534,7 +561,7 @@ window.IntMapModules.worldPacks=function(HOST){
       /* hover: the compact figure AND the exact one — never a rescaled number */
       let wired=false;
       function wire(){ if(wired) return; wired=true;
-        ['wp-trade-arc','wp-trade-pt'].forEach(id=>{
+        ['wp-trade-arc'].forEach(id=>{   /* (#R254) the pin layer it also hovered is gone; the arc carries the figure */
           GE().events.onLayer('mousemove',id,e=>{ if(!on||!e.features.length) return;
             const p=e.features[0].properties; if(!p||!p.vShort) return;
             const el=HOST.ensureMapTooltip(); el.style.display='block';
@@ -549,10 +576,11 @@ window.IntMapModules.worldPacks=function(HOST){
         whenDrawable(()=>{ if(ensureLayers()) wire(); draw(); }); render(); hiResCountries(()=>{ if(on) draw(); });
         withCountryGeo().then(()=>{ if(on&&iso) load(iso,true); });
         try{ HOST.imToast(L('Tap a country to see who it trades with.','国をタップすると相手国別の貿易が出ます。','Land antippen.','Нажмите страну.','Toque un país.')); }catch(_){} }
-      STATE.trade=()=>({ on, dir, section, topN, iso, year, partners:rows?rows.length:0,
+      STATE.trade=()=>({ on, dir, section, topN, iso, year, arrows, partners:rows?rows.length:0,
         top:rows?rows.slice(0,3).map(d=>({iso:d.iso,v:d.v})):[] });
       STATE.tradeLoad=(code,o)=>{ o=o||{}; if(o.dir) dir=(o.dir==='M'||o.dir==='imports')?'M':'X';
         if(o.section!=null) section=String(o.section); if(o.topN) topN=+o.topN;
+        if(o.arrows!=null){ arrows=!!o.arrows; applyVis(); }   /* (#R254) the arrow switch travels with the rest of the choice */
         return load(String(code||'').toUpperCase(),true); };
       STATE.tradeToggle=(v)=>{ const cb=document.getElementById('wp-dl-trade'); if(cb){ cb.checked=!!v; cb.dispatchEvent(new Event('change',{bubbles:true})); } else toggle(!!v); return !!v; };
 
@@ -1514,9 +1542,11 @@ window.IntMapModules.worldPacks=function(HOST){
       const SUPPLY=[LA('Total','合計','Gesamt','Всего','Total'),LA('Rainfed','天水','Regenfeld','Богарное','Secano'),
         LA('Irrigated','灌漑','Bewässert','Орошаемое','Regadío')];
       let on=false, crop='Wheat', variable='Harvested area', supply='Total', busy=false, drawKey='', lastMeta=null;
-      const panel=makePanel('wp-crop-panel',()=>'🌾 '+L('Crop cultivation','作物の栽培','Feldfrüchte','Сельхозкультуры','Cultivos'),'wp-dl-crops',
+      /* (#R254) 「作物の栽培に絵文字はいらない。」 — the panel title and the legend name carried a 🌾 that
+         nothing else about this layer needs; the row in the layer list never had one. */
+      const panel=makePanel('wp-crop-panel',()=>L('Crop cultivation','作物の栽培','Feldfrüchte','Сельхозкультуры','Cultivos'),'wp-dl-crops',
         { legendId:'wpcrop', layers:()=>[LYR],
-          names:()=>(LA('🌾 Crop cultivation','🌾 作物の栽培','🌾 Feldfrüchte','🌾 Сельхозкультуры','🌾 Cultivos')) });
+          names:()=>(LA('Crop cultivation','作物の栽培','Feldfrüchte','Сельхозкультуры','Cultivos')) });
       /* ⚠ (#R241) this was `HOST.lang==='jp' ? r[1] : k` — thirty-one crop names in English on
          every language but Japanese, in a shape no instrument reads (the two-branch audit sees
          `jp ? 'literal' : 'literal'`, and both arms here are variables). */
@@ -1597,7 +1627,16 @@ window.IntMapModules.worldPacks=function(HOST){
           px[i+3]=255;
           n++; }
         ct.putImageData(d,0,0);
-        return { url:cv.toDataURL('image/png'), n }; }
+        /* ══ ⚠ (#R254) A BLOB, NOT A 650 KB BASE-64 STRING ═══════════════════════════════════════════
+           MEASURED on the shipped build: the URL this returned was `data:image/p…` and **654,722
+           characters** long, produced by a synchronous `toDataURL` over a canvas up to 2048×2048.
+           `toBlob` does the same encode off the main thread and hands back a reference instead of a
+           third copy of the pixels (the ImageData, the base-64 text, and then the parsed image).
+           ⚠ THE CACHE WAS ALREADY WRITTEN FOR THIS: `_cachePut` revokes `blob:` URLs when it evicts,
+           which nothing could ever have hit while this line produced data: URLs. */
+        return new Promise(res=>{
+          try{ cv.toBlob(b2=>{ if(b2) res({ url:URL.createObjectURL(b2), n }); else res({ url:cv.toDataURL('image/png'), n }); },'image/png'); }
+          catch(_){ try{ res({ url:cv.toDataURL('image/png'), n }); }catch(__){ res(null); } } }); }
 
       /* ══ ⚠ (#R218) THE TILE THE VIEW SITS IN, NOT THE VIEW ═══════════════════════════════════════
          「作物栽培レイヤーで、読み込み時間が長い。いちいち地図の見る場所を変えるたびに、読み込みまで
@@ -1628,8 +1667,26 @@ window.IntMapModules.worldPacks=function(HOST){
         const Y0=Math.max(mercY(-58),q(y0,-1)), Y1=Math.min(mercY(83),q(y1,1));
         return { X0, X1, Y0, Y1, lvl, vw };
       }
+      /* ══ ⚠⚠⚠ (#R254) A MOVE THAT ARRIVES DURING A FETCH USED TO BE THROWN AWAY, FOR EVER ═══════════
+         「移動やズームですぐに描画がずれたり地図がおかしくなる。戻るまで時間がかかる。」
+
+         MEASURED in a real browser: with the layer on, jump to (−95, 40) and then, 600 ms later, to
+         (77, 26). Twenty seconds after everything settles the map is over India — and the image
+         source's own `coordinates` are [[−180, 66.5] … [0, 0]], i.e. the WESTERN HEMISPHERE. Nothing
+         is drawn over India, and nothing ever will be: the screenshot at x/crop-6-double-pan.png is
+         a completely empty crop layer under an open crop panel.
+
+         The mechanism was this line. `if(!on||busy) return;` dropped the second move outright, and
+         the first fetch then latched `drawKey` to the cell IT had asked for — so the guard at the
+         bottom (`key===drawKey → return`) is satisfied for a key that has nothing to do with where
+         the reader is looking, and `moveend` never fires again because the map is already still.
+         That is the reported 「戻るまで時間がかかる」 with no upper bound on the time.
+
+         A busy paint now REMEMBERS that the view moved and runs again the moment it is free. */
+      let _dirty=false, _dirtyForce=false;
       async function paint(force){
-        if(!on||busy) return;
+        if(!on) return;
+        if(busy){ _dirty=true; _dirtyForce=_dirtyForce||!!force; return; }
         let b,z; try{ b=GE().camera.getBounds(); z=GE().camera.getZoom(); }catch(_){ return; }
         if(!b) return;
         const W=Math.max(-180,b.getWest()), E=Math.min(180,b.getEast()), S=Math.max(-58,b.getSouth()), N=Math.min(83,b.getNorth());
@@ -1676,7 +1733,7 @@ window.IntMapModules.worldPacks=function(HOST){
             +'&format=png32&f=image&interpolation=RSP_NearestNeighbor&mosaicRule='+mr+'&renderingRule='+rr;
           const img=await new Promise((res,rej)=>{ const im=new Image(); im.crossOrigin='anonymous';
             im.onload=()=>res(im); im.onerror=()=>rej(new Error('image')); im.src=u; });
-          const out=recolor(img,PW,PH);
+          const out=await recolor(img,PW,PH);   /* (#R254) toBlob — see recolor */
           if(!out) throw new Error('canvas');
           /* ⚠ the corners come from THE BOX THAT WAS REQUESTED, not from the viewport — that is the
              whole point of the cell, and reading `W`/`E` here (as the viewport request did) would put
@@ -1700,7 +1757,10 @@ window.IntMapModules.worldPacks=function(HOST){
           /* ⚠ release the key, or a pan back to this cell is a silent no-op for ever (see above) */
           drawKey='';
           stat('⚠ '+L('This crop and variable could not be fetched from GAEZ — it will be tried again when the map moves.','この作物・指標を GAEZ から取得できませんでした（地図を動かすと再試行します）。','Nicht abrufbar — beim nächsten Verschieben wird es erneut versucht.','Не удалось получить — повторим при перемещении карты.','No se pudo obtener; se reintentará al mover el mapa.')); }
-        busy=false; }
+        busy=false;
+        /* (#R254) the view moved while this request was in flight — go again for where the reader
+           actually is. Without this the layer stays on the cell whose fetch happened to win. */
+        if(_dirty&&on){ const f=_dirtyForce; _dirty=false; _dirtyForce=false; setTimeout(()=>paint(f),0); } }
 
       function clearImg(){ try{ if(GE().layers.has(LYR)) GE().layers.remove(LYR); }catch(_){}
         try{ if(GE().layers.hasSource(IMG)) GE().layers.removeSource(IMG); }catch(_){} drawKey=''; }
@@ -1791,14 +1851,14 @@ window.IntMapModules.worldPacks=function(HOST){
        checkboxes themselves travel in the `l=` list already; this is only what they are set to. */
     try{ window.IntMapShareState&&window.IntMapShareState.register('world',{
       get(){ const o={}, t=STATE.trade&&STATE.trade(), e=STATE.energy&&STATE.energy(), c=STATE.crops&&STATE.crops();
-        if(t&&t.on) o.t={d:t.dir,s:t.section,n:t.topN,i:t.iso||''};
+        if(t&&t.on) o.t={d:t.dir,s:t.section,n:t.topN,i:t.iso||'',a:t.arrows?1:0};   /* (#R254) +arrows */
         if(e&&e.on) o.e={k:e.kind,i:e.iso||''};
         if(c&&c.on) o.c=[c.crop,c.variable,c.supply];
         return Object.keys(o).length?o:null; },
       set(v){ if(!v||typeof v!=='object') return;
         try{ if(v.c&&STATE.cropSet) STATE.cropSet.apply(null,[].concat(v.c)); }catch(_){}
         try{ if(v.e&&v.e.k&&STATE.energyKind) STATE.energyKind(v.e.k); }catch(_){}
-        try{ if(v.t&&STATE.tradeLoad&&v.t.i) STATE.tradeLoad(v.t.i,{dir:v.t.d,section:v.t.s,topN:v.t.n}); }catch(_){}
+        try{ if(v.t&&STATE.tradeLoad&&v.t.i) STATE.tradeLoad(v.t.i,{dir:v.t.d,section:v.t.s,topN:v.t.n,arrows:(v.t.a==null?null:!!+v.t.a)}); }catch(_){}
         try{ if(v.e&&STATE.energyShow&&v.e.i) STATE.energyShow(v.e.i,v.e.k); }catch(_){} } }); }catch(_){}
 
     /* ══ (#R213) THE TOOLKIT, PUBLISHED ONCE ═════════════════════════════════════════════════════

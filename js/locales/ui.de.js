@@ -89,7 +89,7 @@ window.IntMapLang.define('de', { ui: {
       blueberryBtn:"Unterstützen", borders:"Ländergrenzen", countries:"Länder (Info)", placeNames:"Ortsnamen", geoLabels:"Gewässer- & Geländenamen", adminBounds:"Bundesland-/Provinzgrenzen", roadsLayer:"Straßen", railLayer:"Eisenbahnen", favLayers:"★ Favoriten",
       measureMenuBtn:"Messen", measureDistBtn:"📏 Distanz / Fläche", drawBtn:"✏️ Zeichnen", vol3dBtn:"🧊 3-D-Volumen", droneBtn:"🛸 Drohne", radiusBtn:"⭕ Radius", objectsBtn:"🗂 Objekte", mScreenshot:"Karten-Screenshot", shareMenuBtn:"Teilen", shareLinkBtn:"Teilen / Link", screenshotBtn:"Karten-Screenshot (blendet Bedienelemente aus, behält Legenden)", layersBtn:"Ebenen ▾", uploadGeoJSON:"GeoJSON hochladen",
       lblDataSources:"Datenquellen", viewDataSources:"Kurzliste in der App", lblScience:"Wissenschaft & Logik", viewScience:"Wie jede Simulation rechnet ↗", lblSourcesPage:"Datenquellen", viewSourcesPage:"Datenquellen-Seite öffnen ↗", lblNewsCountries:"Nachrichten-Länder", newsCountriesHint:"Lassen Sie das Feld leer für weltweite Nachrichten.",
-      lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpOthers:"Weitere (Beta)",
+      lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpOthers:"Beta", lyrGrpOthersReal:"Weitere",
       filtCiv:"Zivil", filtMil:"Militär", filtAll:"Alle", thermWin24:"Letzte 24 Std", thermWin48:"Letzte 48 Std", thermWin72:"Letzte 72 Std",
       tlTitle:"Zeitmaschine", tlMachine:"Zeitmaschine", tlToday:"Heute", tl10y:"−10 J", tl5y:"−5 J", tlNow:"Jetzt",
       lblPinMode:"Nachrichten-Pin-Position", pinModeLoc:"Ort des Themas", pinModePub:"Ort des Herausgebers",

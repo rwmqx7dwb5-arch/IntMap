@@ -200,12 +200,13 @@ window.IntMapModules.toolPanel=function(HOST){
       const pbL=(txt)=>{ if(!pb2) return; const l=pb2.querySelector('.ra-l'); if(l) l.textContent=txt; else pb2.textContent=txt; };   /* (#R146) label lives in a .ra-l span (grid ellipsis) — update the span, not the button */
       const showRes=(popv,yr,src,multi)=>{ const row=p.querySelector('#tp-pop-row'), val=p.querySelector('#tp-pop-val');
         if(row&&val){ row.style.display=''; val.innerHTML=Number(popv).toLocaleString()+' <span style="font-size:10px;color:var(--text-muted);">('+src+' '+yr+(multi?' · Σ':'')+')</span>'; } };
-      /* (#R122/#R139) PROGRESS BAR — the WorldPop summation runs as a server-side task (~10-30 s). WorldPop gives NO
-         true % for a single request (its task API only reports created/finished), so the old time-based ease-out that
-         DECELERATED toward 92% and snapped to 100% read as meaningless ("100%に近づくほど遅くなる／グラフの意味を成さない").
-         Now HONEST (see window._imProgCtl): an INDETERMINATE animated sweep while there is no real fraction, switching
-         to a REAL LINEAR fraction the moment one exists — a large area that must be TILED reports tiles-done/total,
-         and multiple radius circles advance per finished circle (each circle's own tiling fills its band). */
+      /* (#R122/#R139) PROGRESS BAR — the WorldPop summation runs as a server-side task (~10-30 s). The old
+         time-based ease-out DECELERATED toward 92% and snapped to 100%, which read as meaningless
+         ("100%に近づくほど遅くなる／グラフの意味を成さない"); every number here is measured instead.
+         (#R254) …and it is measured for EVERY area now, not only continental ones: js/sims.js tiles every sum,
+         so `onProg` reports tiles-done/total whatever the size, and multiple radius circles advance per finished
+         circle (each circle's own tiling fills its band). That is what let the bespoke indeterminate sweep go —
+         see window._imProgCtl (js/onboarding.js) for why it had to. */
       const _progLbl=()=>window.IntMapLang.t(HOST.lang,'Summing the WorldPop population grid…','WorldPop人口グリッドを集計中…','WorldPop-Bevölkerungsraster wird summiert…','Суммирование сетки населения WorldPop…','Sumando la cuadrícula de población WorldPop…');
       /* ══ ⚠⚠ (#R252) THE BAR WAS BEING INSERTED INTO A THREE-COLUMN GRID ═══════════════════════════
          「Summing the WorldPop population grid…の進捗バーがおかしい。」 The anchor was `#tp-pop-btn`, and
@@ -227,7 +228,7 @@ window.IntMapModules.toolPanel=function(HOST){
         /* a REUSED box still carries the previous run's fill/percentage — start every run from zero
            (the controller's own `shown` does, so leaving the DOM at 100 % showed a full bar for the
            first instant of the next summation). */
-        box.querySelector('.tp-prog-lbl').textContent=_progLbl(); box.classList.remove('indet');
+        box.querySelector('.tp-prog-lbl').textContent=_progLbl();
         { const f=box.querySelector('.tp-prog-fill'); if(f) f.style.width='0%'; const c=box.querySelector('.tp-prog-pct'); if(c) c.textContent='0%'; }
         box.style.display='block'; return box; };
       if(pb2) pb2.onclick=async()=>{ const box=_mkProg(); const P=window._imProgCtl(box); P.busy();

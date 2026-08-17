@@ -103,9 +103,16 @@ test('R233 layers: Population & economy is the seven named layers, the rest fell
   const m = /\['lyrGrpDemo',\[([^\]]*)\]\]/.exec(dl);
   assert.ok(m, 'the group is still built from a list');
   const ids = m[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')).filter(Boolean);
-  assert.deepEqual(ids.slice().sort(),
-    ['cpi', 'dem', 'gdppc', 'hdi', 'lifeexp', 'popgrid', 'tfr'].sort(),
-    '人口密度(1kmグリッド)/1人当たりGDP/合計特殊出生率/HDI/民主主義指数/汚職指標/平均寿命 — and nothing else');
+  /* ⚠ (#R254) 'energy' JOINED THE SEVEN, BY INSTRUCTION — 「エネルギー構成レイヤーは昇格」, and the
+     reader chose this group when asked which one. So the assertion is «the seven #R233 named, plus
+     whatever a later instruction promoted», not a frozen set: freezing it would make the next
+     promotion look like a regression. The seven are still asserted individually, which is what
+     #R233's own report was about (nothing else may fall back IN by accident). */
+  const SEVEN = ['cpi', 'dem', 'gdppc', 'hdi', 'lifeexp', 'popgrid', 'tfr'];
+  SEVEN.forEach((id) => assert.ok(ids.includes(id),
+    `${id} left 人口・経済; #R233 named 人口密度(1kmグリッド)/1人当たりGDP/合計特殊出生率/HDI/民主主義指数/汚職指標/平均寿命`));
+  assert.deepEqual(ids.filter((i) => !SEVEN.includes(i)), ['energy'],
+    'something other than the promoted energy-mix row appeared in 人口・経済 — #R233 demoted everything else on purpose');
   /* ⚠ THE DEMOTED ROWS MUST STILL EXIST — 「betaに降格」 is a section change, not a deletion, and a
      regression that quietly dropped them would look identical in the panel. Their owners are spread
      across js/ (data-layers builds `pop`, layer-packs and wb-layers build the World-Bank set), so the

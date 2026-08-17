@@ -139,7 +139,8 @@ window.IntMapLang.define('zh-hans', {
     "lyrGrpIndic":"指标与叠图",
     "lyrGrpMaritime":"海洋与海事",
     "lyrGrpOrbit":"太空与轨道",
-    "lyrGrpOthers":"其他（beta）",
+    "lyrGrpOthers":"Beta",
+    "lyrGrpOthersReal":"其他",
     "lyrGrpStrat":"战略网络",
     "lyrGrpTerrain":"地形与高程",
     "lyrGrpWeather":"天气与环境",
@@ -1437,6 +1438,26 @@ window.IntMapLang.define('zh-hans', {
     'partial': "偏食",   /* space.js */
     'Partial': "部分",   /* monitors.js */
     'partners': "伙伴",   /* world-packs.js */
+    'Direction arrows': "方向箭头",   /* world-packs.js */
+    "A published cloud region or campus. The point is the location the operator publishes (a city or county), not a surveyed building; fields the operator does not publish are left out rather than estimated.": "已公布的云端区域或园区。点位是营运者公布的地点（城市或郡），并非实测建物；营运者未公布的栏位一律略过，不做估算。",   /* datacenters.js */
+    "AI compute": "AI 运算",   /* datacenters.js */
+    "AI compute campus": "AI 运算园区",   /* datacenters.js */
+    "Cloud region": "云端区域",   /* datacenters.js */
+    "Colocation": "主机代管",   /* datacenters.js */
+    "Colocation / carrier hotel": "主机代管／电信汇集点",   /* datacenters.js */
+    "Country": "国家",   /* datacenters.js */
+    "Data center": "数据中心",   /* datacenters.js */
+    "HPC / research computing": "HPC／研究运算",   /* datacenters.js */
+    "In service": "启用时间",   /* datacenters.js */
+    "IT capacity": "IT 容量",   /* datacenters.js */
+    "Operator’s own page": "营运者官方页面",   /* datacenters.js */
+    "OSM object": "OSM 对象",   /* datacenters.js */
+    "Other (OpenStreetMap)": "其他（OpenStreetMap）",   /* datacenters.js */
+    "Power": "电力",   /* datacenters.js */
+    "Published cloud regions, AI campuses, carrier hotels and TOP500 sites, plus every data centre mapped in OpenStreetMap for the current view (zoom in past z6). Click any point for the full record.": "已公布的云端区域、AI 园区、电信汇集点与 TOP500 设施，加上目前视野内 OpenStreetMap 上所有的数据中心（z6 以上）。点击任一点位可看完整数据。",   /* datacenters.js */
+    "Region code": "区域代码",   /* datacenters.js */
+    "Supercomputing": "超级电脑",   /* datacenters.js */
+    "Surveyed in OpenStreetMap. Every field above comes from that object’s own tags; nothing is inferred.": "OpenStreetMap 的实测数据。以上栏位皆为该对象自身的标签，未做任何推论。",   /* datacenters.js */
     'Partners shown': "显示的伙伴",   /* world-packs.js */
     'Pass in progress': "通过中",   /* satellite-detail.js */
     'past 30 days': "过去 30 天",   /* monitors.js */
