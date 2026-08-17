@@ -287,7 +287,7 @@ window.IntMapLang.define('fr', { ui: {
     "Close":"Fermer", "Cancel":"Annuler", "Save":"Enregistrer", "Delete":"Supprimer", "Remove":"Retirer",
     "Apply":"Appliquer", "Reset":"Réinitialiser", "Search":"Rechercher", "Loading…":"Chargement…",
     "Layers":"Calques", "Settings":"Paramètres", "Map":"Carte", "Satellite":"Satellite", "Globe":"Globe",
-    "Flat":"Plat", "Minimize":"Réduire", "Send":"Envoyer", "Copy":"Copier", "Open":"Ouvrir", "Back":"Retour",
+    "Flat":"Plat", "Minimize":"Réduire", "Send":"Envoyer", "Copy":"Copier", "Copy name":"Copier le nom", "Open":"Ouvrir", "Back":"Retour",
     "Sources":"Sources", "Related articles":"Articles liés", "Cited sources":"Sources citées",
     "Web-verified sources":"Sources vérifiées sur le web", "Data used":"Données utilisées", "As of":"Au",
     "live web search":"recherche web en direct", "Stopped":"Arrêté", "Voice input":"Saisie vocale",

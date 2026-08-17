@@ -44,10 +44,28 @@ window.IntMapMapTypography = (function () {
   const GLYPH_RANGES = [0, 256, 512, 768, 1024, 1280, 7680, 8192, 8448, 8704];
   const GLYPH_STACK = 'Inter Regular';
 
+  /* ══ ⚠⚠ (#R253) THIS WAS ANSWERING WITH THE BCP-47 TAG, NOT THE APP'S LANGUAGE CODE ═════════════
+     `window.IM_HOST` and `window.currentLang` do not exist — `IM_HOST` is a module-local `const` in
+     js/app-body.js and was never published — so since #R242 every caller has been handed
+     `document.documentElement.lang`. For Japanese that is 「ja」 while this app's code is 「jp」, and
+     nothing noticed because `cjkFamily()`'s JP branch is its DEFAULT branch: the wrong answer and the
+     right answer happened to be the same string. It stopped being harmless the moment a caller looked
+     the code up in a table (`placeFont` asks `IntMapOsmNameKeys`, which is keyed by app code and
+     returned no Japanese key at all — measured: `OSM_NAME_KEYS('ja')` → ['name:en','name:latin',
+     'name_int'], so every label fell to the reader's stack and the per-label choice never happened).
+     ⚠ THE TAG IS WALKED BACK THROUGH THE ONE LIST that produced it (`IntMapLang.LANGS[].html`), not
+     through a second table — a language added to the registry needs no edit here. */
   function _lang() {
     try {
-      return String((window.IM_HOST && window.IM_HOST.lang) || window.currentLang
-        || document.documentElement.lang || 'en').toLowerCase();
+      var raw = String(document.documentElement.lang || 'en').toLowerCase();
+      var R = window.IntMapLang;
+      if (!R) return raw;
+      if (R.has && R.has(raw)) return R.normalise(raw);
+      var rows = R.LANGS || [];
+      for (var i = 0; i < rows.length; i++) {
+        if (String(rows[i] && rows[i].html || '').toLowerCase() === raw) return rows[i].code;
+      }
+      return R.normalise ? R.normalise(raw) : raw;
     } catch (_) { return 'en'; }
   }
   /* A language whose script MapLibre does not treat as "local ideograph" (fr, de, ru, es, en) still
@@ -69,6 +87,73 @@ window.IntMapMapTypography = (function () {
      だけ別のフォントになって浮く」, and it applies to every language pair, not just this one.
      ⚠ IDEMPOTENT AND FREE WHEN NOTHING CHANGED — the adapter returns early when the family is
      already the one asked for, so the boot language never pays for a glyph reload. */
+  /* ══ ⚠⚠⚠ (#R253) THE FACE FOLLOWS THE LABEL'S LANGUAGE, NOT THE READER'S ═══════════════════════
+     「日本語の地名は日本語フォント、中国語の地名は中国語フォント。中国語設定の日本語地名は中国語
+       フォントに統一。」
+     `cjkFamily()` above answers 「which face does THIS READER get」, and that question cannot produce
+     a single-face label: a Japanese reader looking at 南护城河 needs Noto Sans JP for 南城河 and
+     something else for 护, because Google's Noto Sans JP genuinely does not carry the
+     simplified-only characters (measured: 东县岛宫庆贵护凤 are all absent). Over 687 real labels
+     pulled from the tiles in Tokyo/Osaka/Beijing/Shanghai/Taipei/Guangzhou, 216 — 31.4 % — came out
+     in more than one face under the ja stack, and 185 (26.9 %) under the zh-Hant one.
+     ⚠ SO THE LABEL PICKS, NOT THE READER. `placeFont()` is a data-driven `text-font`: a feature that
+     carries the reader's own name key is drawn in the reader's face, and one that does not — i.e. the
+     label is the LOCAL name, in somebody else's script — is drawn wholly in Noto Sans SC, the one
+     Google face measured to carry Japanese, Traditional and Simplified together. Measured coverage:
+     in Japan 100 % of place features carry `name:ja` (Tokyo 20/20, Osaka 33/33, Sendai 7/7); in
+     Beijing 44 %, Shanghai 38 %, Taipei 0 % — which is exactly the split wanted, because the ones
+     that DO carry it are the ones whose drawn text is the Japanese exonym.
+     ⚠ AND THE CONDITION IS THE SAME `coalesce` THAT CHOOSES THE TEXT (js/place-labels.js
+     `applyLabelLang`), read from `IntMapOsmNameKeys` rather than from a second copy of the list.
+     ⚠⚠⚠ AND THE `text-font` IS *HOW* THE FACE IS DELIVERED, not merely which layer gets which name.
+     `localIdeographFontFamily` — the whole #R242 / #R252 mechanism — never reached a single map label:
+     MapLibre 5's `_drawGlyph` only consults it when the stack IS the style-spec default
+     («Open Sans Regular,Arial Unicode MS Regular»), and this app's layers asked for «Noto Sans
+     Regular». For every other stack MapLibre builds its rasteriser from `_createTinySDF(stack)` —
+     i.e. it treats THE STACK NAME AS A CSS FONT-FAMILY LIST. «Noto Sans Regular» is not an installed
+     family, so it fell to the generic `sans-serif` and Windows' per-character font linking drew
+     Japanese kanji, simplified-only and traditional-only characters in three different SYSTEM faces
+     inside one place name. Measured on the shipped build after panning across Tokyo:
+       entries['Noto Sans Regular']  cjk 111 cached · ideographTinySDF **null**
+                                     tinySDF.ctx.font  48px "Noto Sans Regular", sans-serif
+     Naming the real families in `text-font` is therefore the fix AND the delivery mechanism in one:
+       48px "Noto Sans JP", "Noto Sans SC", sans-serif   ← measured, after
+     No renderer patch is involved; this is MapLibre's own documented-by-code behaviour. */
+  const HAN_ALL = 'Noto Sans SC';        /* the one Google face measured to cover JP ∪ TC ∪ SC */
+  function _readerFaces() {
+    const l = _lang();
+    if (l === 'zh-hans') return [HAN_ALL];
+    if (l === 'zh' || l === 'zh-hant') return ['Noto Sans TC', HAN_ALL];
+    if (l === 'ko') return ['Pretendard', HAN_ALL];
+    return ['Noto Sans JP', HAN_ALL];    /* ja, and the default for a Latin UI */
+  }
+  /* the `text-font` for a place-name layer: the reader's face when the label IS in the reader's
+     language, the pan-Han face when it is somebody else's local name. */
+  /* the `text-font` for a layer whose text is ALREADY in the reader's language — the curated sea
+     gazetteer resolves one string per feature (#R242), so there is no name key to test and the
+     per-label `case` below would wrongly send every sea name to the pan-Han face. */
+  function readerFont() { return _readerFaces(); }
+  function placeFont() {
+    const l = _lang(), own = _readerFaces();
+    /* ⚠ THE TRADITIONAL SETTING NEEDS THE SAME `case`, NOT AN EXEMPTION. 「中国語設定の日本語地名は
+       中国語フォントに統一」 reads as «one Chinese face for the whole label», and for zh-Hant that
+       cannot be Noto Sans TC: measured, TC does not carry 区 / 渋 / 峠 / 蔵, so a Japanese place name
+       under a Traditional UI came out TC+SC — 30.2 % of labels. Noto Sans SC is the Chinese face that
+       can draw the whole of such a label, so a feature without a Chinese name key takes it whole.
+       zh-Hans needs no branch of its own: both arms resolve to the same single face there. */
+    let keys = [];
+    try { keys = (window.IntMapOsmNameKeys && window.IntMapOsmNameKeys(l)) || []; } catch (_) { }
+    /* the Latin keys are dropped: `name:en` / `name:latin` produce LATIN text, which never reaches
+       this decision (it is drawn from the Inter atlases), so testing them would send every CJK
+       fallback label to the reader's stack. */
+    keys = keys.filter((k) => /^name:/.test(k) && k !== 'name:latin' && k !== 'name:en');
+    /* ⚠ A LATIN UI HAS NO CJK KEY OF ITS OWN, AND STILL NEEDS THE SAME RULE. `_readerFaces()` puts
+       Noto Sans JP first for en/de/fr/ru/es because the CJK such a reader meets is the Japanese
+       exonym the tiles carry (#R242) — so the key that justifies that face is the Japanese one. An
+       English map of China then falls to `name`, which is Chinese, and gets the pan-Han face whole. */
+    if (!keys.length) keys = ['name:ja'];
+    return ['case', ['any'].concat(keys.map((k) => ['has', k])), ['literal', own], ['literal', [HAN_ALL]]];
+  }
   function syncCjkFamily() {
     try {
       var GE = window.IntMapGeoEngine;
@@ -78,12 +163,21 @@ window.IntMapMapTypography = (function () {
   }
   try { window.addEventListener('intmap-lang', syncCjkFamily); } catch (_) { }
 
+  /* ⚠ (#R253) …AND THE SERVER HAS NEVER HEARD OF THOSE STACK NAMES. `text-font` doubles as the glyph
+     URL, so a stack called «Noto Sans JP,Noto Sans SC» would 404 for every range the local
+     rasteriser does NOT handle (Arabic, Thai, Devanagari…). The Latin/Cyrillic ranges already come
+     from this origin's Inter atlases; everything else is folded back onto the one stack OpenFreeMap
+     actually serves, so a non-CJK label in a place-name layer is byte-identical to before. */
+  const SERVER_STACK = 'Noto Sans Regular';
   function glyphRewrite(url, type) {
     try {
       if (type !== 'Glyphs' || typeof url !== 'string') return undefined;
       const m = /\/fonts\/([^/]+)\/(\d+)-(\d+)\.pbf/.exec(url);
-      if (!m || GLYPH_RANGES.indexOf(+m[2]) < 0) return undefined;
-      return { url: new URL('fonts/' + encodeURIComponent(GLYPH_STACK) + '/' + m[2] + '-' + m[3] + '.pbf', document.baseURI).href };
+      if (!m) return undefined;
+      if (GLYPH_RANGES.indexOf(+m[2]) >= 0) return { url: new URL('fonts/' + encodeURIComponent(GLYPH_STACK) + '/' + m[2] + '-' + m[3] + '.pbf', document.baseURI).href };
+      const stack = decodeURIComponent(m[1]);
+      if (!/Noto Sans (JP|SC|TC)|Pretendard/.test(stack)) return undefined;
+      return { url: url.replace('/fonts/' + m[1] + '/', '/fonts/' + encodeURIComponent(SERVER_STACK) + '/') };
     } catch (_) { return undefined; }
   }
 
@@ -199,5 +293,5 @@ window.IntMapMapTypography = (function () {
   }
   installFlagFont();
 
-  return { GLYPH_RANGES, GLYPH_STACK, cjkFamily, syncCjkFamily, glyphRewrite, bandBox, declutterNewsBands, installFlagFont };
+  return { GLYPH_RANGES, GLYPH_STACK, cjkFamily, placeFont, readerFont, syncCjkFamily, glyphRewrite, bandBox, declutterNewsBands, installFlagFont };
 })();

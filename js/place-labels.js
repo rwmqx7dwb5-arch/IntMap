@@ -143,7 +143,11 @@ window.IntMapModules.placeLabels=function(HOST){
       /* Use the TileJSON URL (not a hardcoded tile path) — OpenFreeMap serves versioned tiles, so
          the bare /planet/{z}/{x}/{y}.pbf path 404s at real zooms and labels never appear. */
       if(!GE().layers.hasSource('ofm')) GE().layers.addSource('ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet',attribution:'© OpenFreeMap © OpenMapTiles © OSM'});
-      const FONT=['Noto Sans Regular'];
+      /* (#R253) the stack name IS the CSS family list MapLibre rasterises CJK with, and it is chosen
+         per LABEL — see js/map-typography.js `placeFont`. `applyLabelLang` re-applies it on every
+         language change, exactly as it re-applies `text-field`. */
+      const MT=()=>window.IntMapMapTypography;
+      const FONT=MT().placeFont();
       const before = GE().layers.has('grid-lines') ? 'grid-lines' : undefined;
       if(!GE().layers.has('ofm-country')) GE().layers.add({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',maxzoom:7,filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('country'),'text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}}, before);   /* (#R210) 発色を濃く: pure white on a heavier halo */
       if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('city'),'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.6}});   /* (#R210) 発色を濃く */
@@ -240,7 +244,16 @@ window.IntMapModules.placeLabels=function(HOST){
       /* (#R40) "河川や湖、その他地形のラベルが欲しい" — rivers/lakes/seas (water_name) + mountain peaks (mountain_peak),
          from the same OFM vector source. Italic blue for water (cartographic convention), a ▲ for peaks with
          elevation. They follow the Place-names toggle + the active label language (handled in applyLabelLang). */
-      const FONTI=['Noto Sans Italic'];
+      /* ⚠ (#R253) THE ITALIC STACK HAD STOPPED MEANING ITALIC AND STARTED MEANING «SYSTEM FONT».
+         Since #R242 every Latin/Cyrillic range is served from this origin's Inter atlases whatever
+         the stack is called (`glyphRewrite`), so a water label's Latin has been UPRIGHT for eleven
+         rounds; the only thing «Noto Sans Italic» still did was tell MapLibre to rasterise the CJK
+         of a river or lake name in a synthetically-obliqued system face. Water names are place names
+         and get the same per-label face as every other one. The sea gazetteer is the exception: its
+         text is resolved into the reader's language per feature (#R242), so there is no name key to
+         test and it takes the reader's own stack. */
+      const FONTI=MT().placeFont();
+      const FONTSEA=MT().readerFont();
       /* (#R41) ROOT CAUSE of "水域のラベルが地図からずれている": river names were read from `water_name` (which is
          POINT label geometry) but drawn with symbol-placement:line — line placement on a point lands the label
          off the actual river. River/canal names live in the `waterway` LINE layer; placing them there makes them
@@ -278,7 +291,7 @@ window.IntMapModules.placeLabels=function(HOST){
          whole addLayer SILENTLY (async error event, swallowed try) → the gazetteer sea/lake layer NEVER existed,
          and because the harvester dedupes any name already in the gazetteer, the majors were labelled NOWHERE.
          Rewritten with zoom outermost and the big/small distinction inside each stop output (valid form). */
-      if(!GE().layers.has('geo-sea')) GE().layers.add({id:'geo-sea',type:'symbol',source:'geo-sea-src',minzoom:0,filter:['<=',['get','z'],['+',['zoom'],0.001]],layout:{visibility:'none','symbol-sort-key':['get','z'],'text-field':['get','en'],'text-font':FONTI,'text-letter-spacing':0.08,'text-max-width':8,
+      if(!GE().layers.has('geo-sea')) GE().layers.add({id:'geo-sea',type:'symbol',source:'geo-sea-src',minzoom:0,filter:['<=',['get','z'],['+',['zoom'],0.001]],layout:{visibility:'none','symbol-sort-key':['get','z'],'text-field':['get','en'],'text-font':FONTSEA,'text-letter-spacing':0.08,'text-max-width':8,
         /* (#R198) …and that valid form is now produced by LS.subCase, which keeps zoom outermost by
            construction. An ocean used to be the BIGGEST text on the map (19.3 px against a city's 15);
            it is a non-place label, so it is now under the place ladder like every other one. */
@@ -472,8 +485,12 @@ window.IntMapModules.placeLabels=function(HOST){
        They keep their own (blue / stone) colors, so they're only given the language expression + visibility. */
     /* (#R41) water/terrain labels follow their OWN checkbox (geoLabelsOn), independent of place names. */
     const showGeo = HOST.geoLabelsOn && (sat || HOST.mapLabelsViaVector());
-    try{ ['ofm-river','ofm-water','ofm-water2'].forEach(id=>{ if(!GE().layers.has(id)) return; GE().layers.setLayout(id,'visibility',showGeo?'visible':'none'); GE().layers.setLayout(id,'text-field',nameExpr); });
-      if(GE().layers.has('ofm-peak')){ GE().layers.setLayout('ofm-peak','visibility',showGeo?'visible':'none'); GE().layers.setLayout('ofm-peak','text-field',['concat','▲ ',nameExpr]); }
+    /* ⚠ (#R253) THE FACE IS PART OF THE LANGUAGE, so it is re-applied wherever `text-field` is. One
+       expression per layer, built once here: `placeFont()` reads `IntMapOsmNameKeys` for the language
+       that is now current, so it must not be captured from layer-creation time. */
+    const fontExpr=window.IntMapMapTypography.placeFont(), fontSea=window.IntMapMapTypography.readerFont();
+    try{ ['ofm-river','ofm-water','ofm-water2'].forEach(id=>{ if(!GE().layers.has(id)) return; GE().layers.setLayout(id,'visibility',showGeo?'visible':'none'); GE().layers.setLayout(id,'text-field',nameExpr); GE().layers.setLayout(id,'text-font',fontExpr); });
+      if(GE().layers.has('ofm-peak')){ GE().layers.setLayout('ofm-peak','visibility',showGeo?'visible':'none'); GE().layers.setLayout('ofm-peak','text-field',['concat','▲ ',nameExpr]); GE().layers.setLayout('ofm-peak','text-font',fontExpr); }
       /* ⚠ (#R242) the curated sea gazetteer carries FIVE name columns and used to be read with a
          second five-language map (`{jp:'jp',de:'de',…}[HOST.lang]||'en'`) — the same defect as the
          `else if` chain above, one layer down. The row is now resolved through `pick()` itself, so a
@@ -481,7 +498,7 @@ window.IntMapModules.placeLabels=function(HOST){
          English, and the feature carries the ANSWER (`lbl`) rather than five candidates. The source
          is rebuilt here because this function is what a language change calls. */
       if(GE().layers.has('geo-sea')){
-        GE().layers.setLayout('geo-sea','visibility',showGeo?'visible':'none'); GE().layers.setLayout('geo-sea','text-field',['get','lbl']);
+        GE().layers.setLayout('geo-sea','visibility',showGeo?'visible':'none'); GE().layers.setLayout('geo-sea','text-field',['get','lbl']); GE().layers.setLayout('geo-sea','text-font',fontSea);
         try{ GE().layers.setSourceData('geo-sea-src',_seaFC(mode)); }catch(_){} }
       /* (#R64) populate the pinned lake/peak anchors immediately when the toggle turns on */
       if(showGeo) setTimeout(()=>{ try{ harvestStableLabels(); }catch(_){} },250); }catch(_){}
@@ -491,7 +508,7 @@ window.IntMapModules.placeLabels=function(HOST){
     try{ const showPoi = HOST.poiOn && (sat || HOST.mapLabelsViaVector());
       if(GE().layers.has('ofm-poi-dot')) GE().layers.setLayout('ofm-poi-dot','visibility',showPoi?'visible':'none');
       if(GE().layers.has('ofm-poi')){ GE().layers.setLayout('ofm-poi','visibility',showPoi?'visible':'none');
-        GE().layers.setLayout('ofm-poi','text-field',nameExpr);
+        GE().layers.setLayout('ofm-poi','text-field',nameExpr); GE().layers.setLayout('ofm-poi','text-font',fontExpr);   /* (#R253) */
         const lightPoi = sat || isDark;
         /* (#R211) per-tier, both ways round — the flat colour was the 「全部同じ色」 */
         GE().layers.setPaint('ofm-poi','text-color', lightPoi?POI_COL_DARK:POI_COL_LIGHT);
@@ -513,6 +530,7 @@ window.IntMapModules.placeLabels=function(HOST){
       const _showThis=((id==='ofm-country'||id==='ofm-admin1')&&_travelingLbl)?false:show;
       GE().layers.setLayout(id,'visibility',_showThis?'visible':'none');
       GE().layers.setLayout(id,'text-field',nameExpr);
+      GE().layers.setLayout(id,'text-font',fontExpr);   /* (#R253) the face follows the label's own language */
       /* dark map / satellite → light text; light map → dark text. */
       const lightText = sat || isDark;
       /* (#R210) 「全地名ラベルの白と黒の発色を濃く」— the whites go to pure white and the blacks to pure

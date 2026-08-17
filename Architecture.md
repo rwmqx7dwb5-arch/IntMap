@@ -369,6 +369,15 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   挿入されていた。実測（パネル実寸282px）: 幅**90px**・3つ目のボタンが2行目へ（top 8→96）・ラベルは省略記号だけ。
   `closest('.rad-actions')` ＝行そのものをアンカーにする（`js/map-tools.js` の描画ツール側は素のブロック要素なので
   元から無傷）。再表示時は fill/％も 0 に戻す。
+  ⚠⚠⚠ **(#R253) そして「不確定スイープ」は #R139 以来1度も動いていなかった**——`.tp-prog.indet .tp-prog-fill` が
+  `background: … !important` という**ショートハンド**で書かれていた。ショートハンドは `background-position` を初期値へ
+  戻し、`!important` が付いているのでそれは**重要宣言**になる。CSS カスケードでは **重要作者宣言 > アニメーション**
+  なので、`@keyframes imProgSweep` の `background-position` は一度も適用されていない。実測（1周期を11点で
+  サンプル）: `backgroundPositionX` は `0% 0% 0% 0% 0% 0% 0% 0% 0% 0% 0%`。画面に出ていたのは**トラック左端 42% を
+  覆う静止した塊**で、％表示が無いこととあわせて「42%で止まった進捗バー」と見分けがつかない＝報告そのもの。
+  ロングハンド（`background-image` ＋ `background-color:transparent`）に直すと実測 `-42% → 5.5% → 53% → 100.5% → -42%`。
+  `background-color` を明示的に消すのは、インラインの `background:var(--prog-grad)` が残ると帯の裏に**全幅の
+  アクセント色**が塗られるため。
 - **Playground (beta)** — 設定ではなく **Layers ▸ Tools**（旧Quizモードの場所）から起動。5モード（実データ）:
   World Explorer（衛星GeoGuessr。完全ランダム陸地・ズームアウト減点・開始地点ピン・回答地図はglobe・起動時に
   サイドバー収納/タブ解除）/ Pandemic Simulator（国別 SEIR メタ個体群＝実在都市に症例ドット・交通網拡散・自動
@@ -2290,6 +2299,40 @@ js/
                                     作られた TinySDF ごとキャッシュが空になり、グリフに依存する全タイルが再レイアウト
                                     されるので「このレイヤーを忘れていた」が原理的に起きない。family が同じなら
                                     早期 return なので、起動言語のままの人はグリフ再読込を払わない。
+                                    ⚠⚠⚠ (#R253) **……そしてその `localIdeographFontFamily` は、地図のラベルに
+                                    一度も届いていなかった**。MapLibre 5 の `_drawGlyph` は
+                                    `stack === defaultStack`（style-spec 既定の
+                                    `Open Sans Regular,Arial Unicode MS Regular`）でしか局所ラスタライズ経路に
+                                    入らない。このアプリのシンボルレイヤーは `Noto Sans Regular` を要求するので
+                                    門は一度も開かず、MapLibre は代わりに**フォントスタック名そのものを CSS の
+                                    font-family として**扱う——`Noto Sans Regular` は実在しないので `sans-serif`＝
+                                    **OS 標準フォント**に落ちる。実測（東京を流した直後の glyphManager）:
+                                    `entries['Noto Sans Regular']` は CJK 111 字をキャッシュ済みで
+                                    `ideographTinySDF` は **null**、`tinySDF.ctx.font` は
+                                    `48px "Noto Sans Regular", sans-serif`。Windows の1文字ごとのフォントリンクが
+                                    日本語漢字・簡体字専用字・繁体字専用字をそれぞれ別の OS フォントで描くので、
+                                    1つの地名が3書体に割れる＝「簡体字と日本の漢字が別のフォントだから汚い」。
+                                    #R242 の書体選択も #R252 の言語同期も**計器は緑・画面は無変化**だった理由。
+                                    **直しはレンダラに手を入れない**——同じ `_drawGlyph` が、既定でないスタックでは
+                                    `_createTinySDF(stack)` ＝**スタック名をそのまま CSS の font-family 列として**
+                                    使う。つまり `text-font` に実在するファミリ名を書けば、それが**選択であり
+                                    配達手段でもある**。①`placeFont()` が `text-font` を**ラベル単位**で決める
+                                    ＝**読者の言語の name キーを持つ地物は読者の書体、持たない地物（＝現地名が
+                                    そのまま出る＝他所の文字）は Noto Sans SC だけ**（実測で JP∪TC∪SC を1書体で
+                                    覆う唯一の Google 提供フェイス）。②`glyphRewrite` が新しいスタック名の
+                                    非 Inter レンジを `Noto Sans Regular` へ畳み直す（`text-font` はグリフ URL
+                                    でもあるため。実測: 失敗リクエスト0・上流に出るスタックは
+                                    `Inter Regular` と `Noto Sans Regular` の2つだけ）。実測（修正後）:
+                                    `48px "Noto Sans JP", "Noto Sans SC", sans-serif`。
+                                    実測（実ラベル・6都市）: 1ラベル2書体は **ja 31.4%→0.9%** ／
+                                    **zh-Hant 26.9%→4.0%** ／ zh-Hans 1.3%（元から）。
+                                    ⚠⚠ (#R253) `_lang()` は **BCP-47 タグを返していた**——`window.IM_HOST` も
+                                    `window.currentLang` も存在せず（`IM_HOST` は js/app-body.js のモジュール内
+                                    `const`）、いつも `document.documentElement.lang` に落ちていた。日本語は
+                                    「ja」でありアプリのコード「jp」ではない。`cjkFamily()` の JP 分岐が**既定の
+                                    分岐**なので誤答と正答がたまたま同じ文字列になり、11ラウンド誰も気づかなかった。
+                                    表を引いた瞬間に露見（`OSM_NAME_KEYS('ja')` は日本語キーを1つも返さない）。
+                                    タグは**それを作った1つの表**（`IntMapLang.LANGS[].html`）から逆に辿る。
                                     ②`bandBox(txt)`＝ニュース帯の実寸（`text-max-width:14em` の折返しを canvas で
                                     実測）と `declutterNewsBands(feats)`＝重なり回避。③`installFlagFont()`＝
                                     国旗 webfont（#R79e から移設。`var(--im-font)` を前置するので言語切替に追随）。
@@ -3161,6 +3204,18 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
   として `ensurePlaceLabels()` から公開）を1つの feature に適用して求めるので、`js/map-ui.js` に
   2つ目の言語一覧は無い。「現地表記で」設定・現地語＝UI言語のときは1つに解決するので括弧は出ない。
   3つの入口（ラベルクリック／水・地形ラベル／パディング付きタップ）すべてに付く。
+  ⚠ **(#R253) コピーのボタンは「地名をコピー」**（英 `Copy name`）。何をコピーするのか名前に出す
+  （`'Copy'` は共有リンクのコピーと同じ語だった）。9言語——en/jp/de/ru/es は位置引数、
+  fr/ko/zh/zh-hans は `inline` 表（zh-hans は `scripts/zh-hans.mjs` の生成物なので
+  `scripts/zh/22-inline-r253.json` にも入れて再生成する）。
+- **細かい地名ラベルの範囲ハイライト (#R253)**：`IntMapOutline.fetchPolygon` は Nominatim を
+  **2段**で引く。① クリック地点の **±0.06°・`bounded=1`** ＝結果をその近傍に**限定**、
+  ② 見つからなければ従来の ±8° viewbox（＝ヒントであって限定ではない）。⚠ 順序が本体：
+  ±8° は再ランクするだけなので、「錦町」「Reuilly」のような細かい地名は10枠を有名な同名地に奪われ、
+  **自分のポリゴンが答えの中に一度も現れない**。実測（東京・大阪・ベルリン・パリ・ロンドンの実
+  `ofm-other` ラベル24件）: 10件 → **11件**がハイライト。⚠ 残りが出ないのは**探し方ではなくデータ**
+  ——ベルリンの Kiez、Bastille、Seven Dials、East Marylebone は OSM で **place ノード**であり、
+  Nominatim が返す答えにポリゴンが存在しない。#R59 の規則どおり**何も描かない**（点に長方形を被せない）。
 - **地方行政区分ラベル (#R198)**：同じ `place` レイヤの **`state` / `province`** クラスから `ofm-admin1`。
   実測でこの2クラスが日本の都道府県（`province`・rank 5）・アメリカの州（`state`・rank 1）・中国の省
   （rank 2）・ドイツ／オーストラリアの州（rank 3）を持つ。⚠ `poi.rank`（#R187 で通し番号と実測）と違い

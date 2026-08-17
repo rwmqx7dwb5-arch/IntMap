@@ -631,6 +631,7 @@ window.IntMapLang.define('zh', {
     'Copied': "已複製",   /* atlas-reply.js */
     'Copied!': "已複製！",   /* map-ui.js */
     'Copy': "複製",   /* atlas-console.js atlas-reply.js map-ui.js */
+    'Copy name': "複製地名",   /* map-ui.js */
     'Copy message': "複製訊息",   /* atlas-console.js */
     'Coriolis cross-range': "科氏力橫向偏移",   /* atlas-console.js */
     'correlation': "相關性",   /* analysis-panels.js */
