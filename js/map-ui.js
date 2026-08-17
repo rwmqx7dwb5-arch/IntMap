@@ -315,6 +315,17 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'body.lsr-open #lsr-toggle .chev{transform:rotate(-135deg);}'
         +'@media(max-width:768px){ #layer-sidebar-r{display:none;} #lsr-toggle{display:none !important;} }';
       document.head.appendChild(st); }
+    /* ⚠⚠⚠ (#R251) THE PANEL FOLLOWS THE LANGUAGE. `build()` runs once and `sb.innerHTML` carries the
+       panel title, the close button's tooltip and the search placeholder, so a reader who switched
+       language kept the one the sidebar was BUILT in — 「Close」 and 「Search layers…」 stayed English
+       in French. The app dispatches `intmap-lang` for exactly this; the head is relabelled in place
+       rather than rebuilt, so the body's rows, its scroll position and the resize handle survive. */
+    function relabelHead(){ try{ if(!built||!sb) return;
+      const h=sb.querySelector('.lsr-head b'); if(h) h.textContent='▤ '+T('Layers','レイヤー','Ebenen','Слои','Capas');
+      const x=sb.querySelector('.lsr-x'); if(x) x.title=T('Close','閉じる','Schließen','Закрыть','Cerrar');
+      const q=sb.querySelector('#lsr-q'); if(q) q.placeholder=T('Search layers…','レイヤーを検索…','Ebenen suchen…','Поиск слоёв…','Buscar capas…');
+    }catch(_){} }
+    window.addEventListener('intmap-lang',()=>setTimeout(relabelHead,30));
     function build(){ if(built) return; built=true; css();
       sb=document.createElement('div'); sb.id='layer-sidebar-r';
       sb.innerHTML='<div class="lsr-head"><b>▤ '+T('Layers','レイヤー','Ebenen','Слои','Capas')+'</b><button class="lsr-x" title="'+T('Close','閉じる','Schließen','Закрыть','Cerrar')+'">✕</button></div>'
@@ -324,7 +335,15 @@ window.IntMapModules.layerSidebar=function(HOST){
       (document.querySelector('.operation-room')||document.body).appendChild(sb);
       /* (#R154) drag-to-resize handle on the LEFT edge (the right sidebar grows as the cursor moves left).
          Persists to intmap_lsr_w; open() honours the saved width instead of the auto-formula. Desktop only. */
-      (function(){ const rh=document.createElement('div'); rh.className='lsr-resizer'; rh.title=L5('Drag to resize','高さを調節','Zum Ändern der Höhe ziehen','Потяните, чтобы изменить размер','Arrastra para redimensionar');   /* (#R251) was a bare English literal — found by tests/r251.spec.js reading the rendered DOM */ sb.appendChild(rh);
+      (function(){ const rh=document.createElement('div'); rh.className='lsr-resizer';
+        /* ⚠ (#R251) THIS TITLE WAS A BARE ENGLISH LITERAL — `rh.title='Drag to resize'` — so it read
+           the same in all nine languages. Found by tests/r251.spec.js, which reads `title` as well as
+           text. ⚠ AND IT HAS TO FOLLOW THE LANGUAGE: the handle is appended BESIDE `sb.innerHTML`, so
+           the rebuild that relabels the panel head leaves it untouched and it would otherwise keep
+           the language the reader started in. */
+        const _rt=()=>{ rh.title=T('Drag to resize','高さを調節','Zum Ändern der Höhe ziehen','Потяните, чтобы изменить размер','Arrastra para redimensionar'); };
+        _rt(); window.addEventListener('intmap-lang',()=>setTimeout(_rt,30));
+        sb.appendChild(rh);
         let rdrag=false, rsx=0, rsw=0;
         rh.addEventListener('pointerdown',e=>{ if(isMob()) return; rdrag=true; rsx=e.clientX; rsw=sb.offsetWidth; try{ rh.setPointerCapture(e.pointerId); }catch(_){} document.body.style.userSelect='none'; sb.style.transition='none'; e.preventDefault(); e.stopPropagation(); });
         rh.addEventListener('pointermove',e=>{ if(!rdrag) return; const ls=document.getElementById('sidebar'); const lw=(ls&&!ls.classList.contains('collapsed'))?ls.getBoundingClientRect().width:0;

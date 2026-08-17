@@ -44,18 +44,29 @@ window._imCldrRegion=function(a2,lang){
 };
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.countriesUi=function(HOST){
-  /* (#R251) the seven continent names the country table carries in `region`, as calls. */
-  const _LR=window.IntMapLang.pick(()=>HOST.lang), _LRA=window.IntMapLang.pickArgs();
-  const _REGIONS={
-    'Africa':_LRA('Africa','アフリカ','Afrika','Африка','África'),
-    'Asia':_LRA('Asia','アジア','Asien','Азия','Asia'),
-    'Europe':_LRA('Europe','ヨーロッパ','Europa','Европа','Europa'),
-    'North America':_LRA('North America','北アメリカ','Nordamerika','Северная Америка','América del Norte'),
-    'South America':_LRA('South America','南アメリカ','Südamerika','Южная Америка','América del Sur'),
-    'Oceania':_LRA('Oceania','オセアニア','Ozeanien','Океания','Oceanía'),
-    'Antarctica':_LRA('Antarctica','南極','Antarktika','Антарктида','Antártida'),
-  };
-  const _regionName=(r)=>{ const t=_REGIONS[r]; return t?_LR.arr(t):r; };
+  /* (#R251) the seven continent names the country table carries in `region`, as calls.
+     ⚠ BUILT ON FIRST USE, NOT AT FACTORY LEVEL. tests/r168 #4 holds this repo to «a factory body
+     does nothing while it runs» — a module factory may DECLARE, never CALL — and both
+     `IntMapLang.pick()` and `LA(…)` are calls. Lazy also means the table is built after the
+     registry exists, which is the ordering every other module relies on. */
+  let _REGIONS=null, _LR=null;
+  function _regionName(r){
+    if(!r) return r;
+    if(!_REGIONS){
+      _LR=window.IntMapLang.pick(()=>HOST.lang);
+      const A=window.IntMapLang.pickArgs();
+      _REGIONS={
+        'Africa':A('Africa','アフリカ','Afrika','Африка','África'),
+        'Asia':A('Asia','アジア','Asien','Азия','Asia'),
+        'Europe':A('Europe','ヨーロッパ','Europa','Европа','Europa'),
+        'North America':A('North America','北アメリカ','Nordamerika','Северная Америка','América del Norte'),
+        'South America':A('South America','南アメリカ','Südamerika','Южная Америка','América del Sur'),
+        'Oceania':A('Oceania','オセアニア','Ozeanien','Океания','Oceanía'),
+        'Antarctica':A('Antarctica','南極','Antarktika','Антарктида','Antártida'),
+      };
+    }
+    const t=_REGIONS[r]; return t?_LR.arr(t):r;
+  }
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R172) THROUGH IntMapGeoEngine — this module no longer names the renderer. */

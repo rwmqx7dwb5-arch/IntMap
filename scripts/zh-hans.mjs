@@ -96,16 +96,23 @@ export const WORDS = [
    ⚠ SO THE CHARACTERS ARE NOT OUR TABLE ANY MORE. OpenCC is the reference implementation of Han
    orthography conversion; opencc-js is its pure-JS port, and it is a BUILD-TIME devDependency —
    nothing new ships to the browser, because this script runs at build time and writes a file.
-   `twp → cn` is Taiwan-with-phrases to Mainland, and it resolves every one-to-many case this file
-   used to pin by hand: 著名 keeps 著, 着色 takes 着, 乾坤 keeps 乾, 乾燥 takes 干. That is precisely
-   the knowledge the ⚠ notes above describe as the hard part, and it is published data.
+   `tw → cn` is the ORTHOGRAPHY, and it resolves every one-to-many case this file used to pin by
+   hand: 著名 keeps 著, 着色 takes 着, 乾坤 keeps 乾, 乾燥 takes 干. That is precisely the knowledge
+   the ⚠ notes above describe as the hard part, and it is published data.
+
+   ⚠ NOT `twp`, WHICH CONVERTS THE VOCABULARY A SECOND TIME. The phrase-aware variant also rewrites
+   Taiwanese TERMS into mainland ones — and the WORD table below has already done exactly that, in
+   Traditional characters. Running both turned 檔案 into 文件 (the table, correctly) and then 文件
+   into 文档 (OpenCC, reading our mainland word as a Taiwanese one). MEASURED: 「十年時光回溯檔案」
+   came out as 「十年时光回溯文档」, and tests/r224 ④ caught it. One layer owns the vocabulary, the
+   other owns the orthography.
 
    ⚠ THE WORD TABLE ABOVE STILL RUNS FIRST, AND STILL WINS. Those are this project's own choices
    about mainland vocabulary, reviewed one at a time over several rounds. OpenCC agrees with almost
    all of them; where the app wants a particular word regardless, the table is where that is said.
    What has been deleted is only the part that was standing in for a published mapping. */
 import * as OpenCC from 'opencc-js';
-const toSimplifiedChars = OpenCC.Converter({ from: 'twp', to: 'cn' });
+const toSimplifiedChars = OpenCC.Converter({ from: 'tw', to: 'cn' });
 
 export function toHans(text) {
   let s = String(text);

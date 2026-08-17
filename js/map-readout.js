@@ -9,11 +9,19 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.mapReadout=function(HOST){
+  /* (#R251) the module's language helper. It used to be bound INSIDE `tropicLabel()` only, so the
+     tsunami readout below — which this round moved off a private two-language helper — referenced a
+     free identifier; scripts/static-checks.mjs `split-scope` caught that before a browser did.
+     ⚠ LAZY, because tests/r169 #4 holds this repo to «a factory body does nothing while it runs» —
+     a module factory may DECLARE, never CALL, and `IntMapLang.pick()` is a call. Binding on first
+     use also means it is bound after the registry exists, which is the ordering every module here
+     already relies on. */
+  let _L=null;
+  const L=(...a)=>{ if(!_L) _L=window.IntMapLang.pick(()=>HOST.lang); return _L(...a); };
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* ===== Grid (zoom-adaptive, red equator, 山吹色 tropics) ===== */
   const TROPIC_LAT=23.4362;   /* (#R210) mean obliquity of the ecliptic, this epoch — not 23.5 */
   function tropicLabel(side){
-    const L=window.IntMapLang.pick(()=>HOST.lang);
     return side==='n'
       ? L('Tropic of Cancer','北回帰線','Wendekreis des Krebses','Северный тропик','Trópico de Cáncer')
       : L('Tropic of Capricorn','南回帰線','Wendekreis des Steinbocks','Южный тропик','Trópico de Capricornio');

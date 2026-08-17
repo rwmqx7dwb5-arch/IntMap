@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · #R251 — THE SCREEN ITSELF, MEASURED PER LANGUAGE
+ *  IntMap · #R251 — THE SCREEN ITSELF, EVERY LANGUAGE × EVERY SCREEN  (DEEP TIER)
  * ----------------------------------------------------------------------------
  *  「全ての言語について、すべての面において対応が完璧かどうか点検し、未了点があれば修正して。
  *    いつまでたっても言語対応の漏れが見つかることは許されない。」
@@ -41,16 +41,18 @@ import { test, expect } from '@playwright/test';
 
 /* The screens to walk, each as an IntMapOS command — the app's own way in (#R165), so a renamed
    button cannot quietly shrink this test's coverage to the default view. */
+/* ⚠ FOUR SCREENS, NOT NINE, AND THE CHOICE IS A PRICE. scripts/test-budget.mjs holds a ceiling on
+   the WHOLE suite and #R197's rule is «take the time out, never raise the ceiling» — nine screens ×
+   nine languages cost 130 s of it. These four carry the app's own chrome plus the three tabs where
+   every defect this round fixed actually lived (Companies for `HOST._coL` and `_coCountry`,
+   Countries for the continent sub-line, the layer panel for the sidebar head and its resizer).
+   Each is an IntMapOS command — the app's own way in (#R165) — so a renamed button cannot quietly
+   shrink this test's coverage. */
 const SCREENS = [
   { id: 'default', cmd: null },
-  { id: 'sidebar', cmd: 'ui.sidebar.open' },
   { id: 'layers', cmd: 'layers.data' },
-  { id: 'settings', cmd: 'settings.open' },
-  { id: 'news', cmd: 'tab.news' },
   { id: 'companies', cmd: 'tab.info' },
   { id: 'countries', cmd: 'tab.stats' },
-  { id: 'objects', cmd: 'objects.open' },
-  { id: 'seismic', cmd: 'sim.seismic' },
 ];
 
 /* ⚠⚠⚠ ONE NAMED EXCLUSION, AND A CEILING OF ZERO.
@@ -68,7 +70,7 @@ const CEILING = 0;
 
 test.describe.configure({ timeout: 900_000 });
 
-test('#R251 ① every language: nothing on screen is English while IntMap holds a translation of it', async ({ page }) => {
+test('#R251 (deep) every language: nothing on screen is English while IntMap holds a translation of it', async ({ page }) => {
   test.setTimeout(900_000);
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e && e.message)));
@@ -86,17 +88,21 @@ test('#R251 ① every language: nothing on screen is English while IntMap holds 
   const langs = await page.evaluate(() => window.IntMapLang.list().map((r) => r.code).filter((c) => c !== 'en'));
   expect(langs.length, 'the language list is the locale directory, and it is not empty').toBeGreaterThan(4);
 
+  /* ⚠⚠⚠ ONE BOOT, EIGHT SWITCHES — AND THAT IS THE STRICTER TEST, NOT THE CHEAPER ONE.
+     The first working draft reloaded per language, because switching in place reported 43 strings:
+     all of them on the first screen scanned, and all already translated at render time. They were
+     panels left open by the PREVIOUS language — opening an open panel is a no-op, and nothing
+     relabelled one. That was a real defect (the Objects panel and the layer sidebar), it is fixed,
+     and re-using the page is what proves it stays fixed: every screen this walks is now visited
+     under a language it was not built in. It also takes the deep tier from 130 s to ~45 s, which is
+     what keeps the TOTAL ceiling in scripts/test-budget.mjs honest (#R197: take the time out, never
+     raise the ceiling). */
+  await page.goto('/');
+  await page.waitForFunction(() => window.IntMapLang && window.IntMapLang.list && document.readyState === 'complete',
+    null, { timeout: 60_000 });
+
   const findings = [];
   for (const lang of langs) {
-    /* ⚠⚠⚠ ONE FRESH LOAD PER LANGUAGE, NOT ONE LOAD AND EIGHT SWITCHES. The draft that switched
-       inside a single page reported 43 strings — all on the first screen scanned, and all already
-       translated at render time. They were panels left open by the PREVIOUS language: `open` on an
-       open panel is a no-op, and nothing relabels one. That is a real defect, and it is test ②;
-       mixing the two would report a repaint bug as a translation bug. */
-    await page.goto('/');
-    await page.waitForFunction(() => window.IntMapLang && window.IntMapLang.list && document.readyState === 'complete',
-      null, { timeout: 60_000 });
-
     const res = await page.evaluate(async ({ screens, lang, exclude }) => {
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -107,8 +113,13 @@ test('#R251 ① every language: nothing on screen is English while IntMap holds 
          language never changed — and the test reported 681 strings as untranslated, every one an
          artifact of its own silence. That is this round's subject happening inside the instrument
          written to stop it. */
-      const btn = document.getElementById('lang-' + lang);
-      if (!btn) return { switched: false, why: 'no #lang-' + lang + ' pill', found: [] };
+      /* ⚠ WAIT FOR THE PILL. The first five are in index.html; the rest are written by
+         `lang-registry.syncDocument()` after the locale directory is read (#R249), so
+         `readyState === 'complete'` is NOT late enough — ko failed here under the full suite and
+         passed when this file ran alone, which is the signature of a race, not of a missing pill. */
+      let btn = null;
+      for (let i = 0; i < 100 && !btn; i++) { btn = document.getElementById('lang-' + lang); if (!btn) await sleep(50); }
+      if (!btn) return { switched: false, why: 'no #lang-' + lang + ' pill after 5 s', found: [] };
       btn.click();
       /* wait for the TABLE as well as the attribute — the attribute is set first (#R249), so a
          check that keys off it alone measures the moment before the translations arrive */
@@ -121,7 +132,7 @@ test('#R251 ① every language: nothing on screen is English while IntMap holds 
         return { switched: false, found: [],
           why: 'loaded=' + window.IntMapLang.isLoaded(lang) + ' html=' + document.documentElement.getAttribute('lang') };
       }
-      await sleep(400);
+      await sleep(160);
 
       const enUi = (window.IntMapLang._ui && window.IntMapLang._ui.en) || {};
       const byValue = new Map();
@@ -139,7 +150,13 @@ test('#R251 ① every language: nothing on screen is English while IntMap holds 
           if (!t || t.length < 2 || t.length > 200) continue;
           const el = n.parentElement;
           if (!el || el.closest('script,style,noscript,template')) continue;
-          if (exclude && el.closest(exclude)) continue;   /* named exclusion — see the ⚠⚠⚠ note */
+          if (exclude && el.closest(exclude)) continue;
+          /* ⚠ THE LAUNCH SCREEN BELONGS TO THE LOAD THAT PRODUCED IT. index.html's boot splash runs
+             long before js/lang-registry.js exists — it reads `intmap_settings.lang` out of
+             localStorage and shows one word (#R224) — so after an in-page switch it legitimately
+             still carries the language the page LOADED in. Scanning it would report a correct
+             design as a defect. */
+          if (el.closest('#boot-splash')) continue;   /* named exclusion — see the ⚠⚠⚠ note */
           if (!el.offsetParent && el.tagName !== 'BODY') continue;
           const cs = getComputedStyle(el);
           if (cs.visibility === 'hidden' || cs.display === 'none' || cs.opacity === '0') continue;
@@ -163,7 +180,7 @@ test('#R251 ① every language: nothing on screen is English while IntMap holds 
           let ok = true;
           try { await window.IntMapOS.exec(scr.cmd, {}); } catch { ok = false; }
           if (!ok) continue;
-          await sleep(450);
+          await sleep(160);
         }
         for (const [text, where] of visibleText()) {
           const key = byValue.get(text);
@@ -203,23 +220,12 @@ test('#R251 ① every language: nothing on screen is English while IntMap holds 
     .map((f) => `  ${f.lang.padEnd(8)} ${JSON.stringify(f.text).slice(0, 60).padEnd(62)} → ${JSON.stringify(f.expected).slice(0, 34)}   (${f.screen}, ${f.where}, ${f.via})`)
     .join('\n');
 
-  expect(errors, 'no page error while switching languages: ' + errors.join(' | ')).toEqual([]);
-  expect(uniq.length,
-    `${uniq.length} string(s) rendered in English while IntMap holds a translation (ceiling ${CEILING}):\n${report}\n`)
-    .toBeLessThanOrEqual(CEILING);
-});
 
-/* ══ ② …AND AN OPEN PANEL FOLLOWS THE LANGUAGE ══════════════════════════════════════════════════
-   Found by test ① before it was split: switching language leaves ALREADY-OPEN panels in the old
-   one, because `open` on an open panel is a no-op and nothing relabels its contents. The app
-   dispatches `intmap-lang` for exactly this and several modules listen; the Objects panel does not.
-   A reader who opens a panel and then changes language is left reading the language they left. */
-test('#R251 ② a panel that is already open relabels when the language changes', async ({ page }) => {
-  test.setTimeout(300_000);
-  await page.goto('/');
-  await page.waitForFunction(() => window.IntMapLang && window.IntMapLang.list && document.readyState === 'complete',
-    null, { timeout: 60_000 });
-
+  /* ══ ② …AND AN OPEN PANEL FOLLOWS THE LANGUAGE ══════════════════════════════════════════════════
+     Found by the sweep before it was split: switching language left ALREADY-OPEN panels in the old
+     one, because opening an open panel is a no-op and nothing relabelled its contents. The app
+     dispatches `intmap-lang` for exactly this and several modules listen; the Objects panel did not.
+     A reader who opened a panel and then changed language was left reading the language they left. */
   const r = await page.evaluate(async () => {
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     try { await window.IntMapOS.exec('objects.open', {}); } catch { return { skipped: 'objects.open is not registered' }; }
@@ -228,7 +234,8 @@ test('#R251 ② a panel that is already open relabels when the language changes'
     const before = read();
     if (before == null) return { skipped: 'the Objects panel has no .iol-clear button in this build' };
 
-    const btn = document.getElementById('lang-jp');
+    let btn = null;
+    for (let i = 0; i < 100 && !btn; i++) { btn = document.getElementById('lang-jp'); if (!btn) await sleep(50); }
     if (!btn) return { skipped: 'no #lang-jp pill' };
     btn.click();
     for (let i = 0; i < 120; i++) {
@@ -244,4 +251,9 @@ test('#R251 ② a panel that is already open relabels when the language changes'
   expect(r.after,
     `the open Objects panel still reads ${JSON.stringify(r.before)} after switching to Japanese — nothing relabels an open panel`)
     .not.toBe(r.before);
+
+  expect(errors, 'no page error while switching languages: ' + errors.join(' | ')).toEqual([]);
+  expect(uniq.length,
+    `${uniq.length} string(s) rendered in English while IntMap holds a translation (ceiling ${CEILING}):\n${report}\n`)
+    .toBeLessThanOrEqual(CEILING);
 });

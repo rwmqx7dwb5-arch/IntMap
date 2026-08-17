@@ -387,6 +387,10 @@ if (process.argv.includes('--json')) {
     /* (#R249) never gated, ALWAYS printed — an exemption nobody can see is an exemption nobody
        re-examines, which is how a matcher list became «2,031 strings to translate». */
     exempt: exempt.length,
+    /* (#R251) the exempt ROWS as well as their count — tests/r250-checks ④ measures the
+       untruncated `en`/`ja` fields across hits AND exemptions, so the assertion survives the gap
+       shrinking (every remaining hit is short; the exempt list still carries long prose). */
+    exemptList: exempt,
     exemptFiles: [...exemptByFile.entries()].sort((a, b) => b[1] - a[1]).map(([f, n]) => ({ file: f, n })),
     badMarkers,
   }));

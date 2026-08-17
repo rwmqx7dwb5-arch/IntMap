@@ -32,13 +32,18 @@
 /* ⚠ (#R251) the ARRAY form of the language helper — see `pickArgs` in js/lang-registry.js. The
    event names below were bare five-element arrays: complete for the positional five and English for
    fr / ko / zh / zh-Hans for ever, because an array literal is not a call and no instrument could
-   put the ten names into the inline universe. ⚠ GUARDED, like js/space-cosmos.js's: this module is
-   an ES module that other modules import, so it can evaluate before js/lang-registry.js has run.
-   `pickArgs()` only ever returns «the arguments as an array», so the fallback is the same function. */
-const LA = (typeof window !== 'undefined' && window.IntMapLang && window.IntMapLang.pickArgs())
-  || function () { return Array.prototype.slice.call(arguments); };
+   put the ten names into the inline universe.
+   ⚠ WRAPPED IN AN IIFE, NOT DECLARED AT TOP LEVEL. tests/r175 ③ refuses an unexported top-level
+   declaration in js/ — the module's surface is what it exports — so the helper lives inside the
+   expression that needs it.
+   ⚠ AND GUARDED, like js/space-cosmos.js's: this is an ES module that others import, so it can
+   evaluate before js/lang-registry.js has run. `pickArgs()` only ever returns «the arguments as an
+   array», so the fallback is the same function. */
+export const QUAKE_EVENTS = (function () {
+  const LA = (typeof window !== 'undefined' && window.IntMapLang && window.IntMapLang.pickArgs())
+    || function () { return Array.prototype.slice.call(arguments); };
+  return [
 
-export const QUAKE_EVENTS = [
   {
     id: 'tohoku2011', usgs: 'official20110311054624120_30',   /* (#R235) ShakeMap rupture.json — the published finite-fault outline */
     /* the name is a proper noun in every language that has one for it; L() takes the first five
@@ -217,7 +222,8 @@ export const QUAKE_EVENTS = [
       note: LA('A reverse-fault rupture on the peninsula’s north coast that lifted the coastline out of the sea — the ground itself rose, so several fishing harbours were left dry.','半島北岸の逆断層による破壊で、海岸線そのものが隆起した——地盤が持ち上がったため、いくつもの漁港が干上がった。','Ein Aufschiebungsbruch an der Nordküste hob die Küstenlinie aus dem Meer — mehrere Fischereihäfen fielen trocken.','Взбросовый разрыв у северного побережья поднял береговую линию из моря — несколько рыбацких портов осушились.','Una ruptura inversa en la costa norte levantó la línea de costa fuera del mar — varios puertos pesqueros quedaron en seco.')
     }
   }
-];
+  ];
+})();
 
 /* ══ THE SURFACE PROJECTION OF THE RUPTURE PLANE ═══════════════════════════════════════════════
    The simulator takes a drawn RING and treats it as the fault's surface projection (#R224), so a

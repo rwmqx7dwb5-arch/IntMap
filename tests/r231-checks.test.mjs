@@ -231,7 +231,11 @@ test('R231 i18n: the registry answers for translations AND for Intl', () => {
   /* the English default must be preservable, or every en-GB call site silently changes format */
   assert.match(reg, /if \(c === FALLBACK\) return enTag \|\| REGION\.en;/, 'an English caller keeps its own tag');
   /* and the report can SEE the new shape, or the blind spot just moved */
-  assert.match(read('scripts/i18n-report.mjs'), /property\.name === 't'/, 'the coverage report counts t(…) call sites');
+  /* ⚠ (#R251) …and the shape is recognised in ONE place now (scripts/i18n-helpers.mjs), because the
+     same question was answered three times, per file, and all three missed a helper reached through
+     a property of another module. The report must still SEE `t(…)`, so assert that it asks. */
+  assert.match(read('scripts/i18n-helpers.mjs'), /property\.name === 't'/, 'the shared resolver counts t(…) call sites');
+  assert.match(read('scripts/i18n-report.mjs'), /shapeOf\(/, 'the coverage report asks the shared resolver');
 });
 
 test('R231 i18n: the reading pages read the ONE registry, and Chinese is there', () => {

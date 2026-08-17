@@ -119,9 +119,20 @@ test('#R250 ④ the pair audit reports every hit, and the strings themselves', (
     assert.equal(typeof h.en, 'string', 'a hit carries no untruncated English string');
     assert.equal(typeof h.ja, 'string', 'a hit carries no untruncated Japanese string');
   }
-  const longest = j.hits.reduce((a2, h) => Math.max(a2, (h.en || '').length), 0);
-  assert.ok(longest > 110,
-    'no hit is longer than the terminal truncation — the untruncated field is not being exercised');
+  /* ⚠⚠⚠ (#R251) THE INVARIANT, NOT A LONG STRING THAT HAPPENS TO EXIST. This used to require one of
+     the HITS to be longer than the 110-character terminal truncation — true while there were 696 of
+     them, and false the moment a round converts the long ones. #R251 took the gap to 275 and the
+     longest string in the whole report, hits and exemptions together, is now 54 characters: a test
+     that only passes while the defect it guards is LARGE stops guarding it exactly when the work
+     succeeds, and would then have to be deleted by whoever finally closed the gap.
+     What is actually being defended is that `en` and `ja` are the raw strings and only `text` — the
+     terminal field — is cut. That is a property of the code, so it is asserted on the code: the
+     slice is applied to the display field alone, and the two data fields are assigned unsliced. */
+  const rec = code(a).slice(code(a).indexOf('const rec = {'), code(a).indexOf('hits.push(rec)'));
+  assert.match(rec, /\ben,\s*ja,/, '`en` / `ja` must be assigned the raw strings');
+  assert.ok(!/\b(en|ja):[^,]*\.slice\(/.test(rec), 'neither data field may be truncated');
+  assert.match(rec, /text:\s*\(JSON\.stringify\(en\)[\s\S]*?\.slice\(0, 110\)/,
+    'only the terminal field is cut, and it is cut where the reader can see why');
 });
 
 /* ── ⑤ THE OPEN GAP ONLY EVER GOES DOWN ─────────────────────────────────────────────────────── */
