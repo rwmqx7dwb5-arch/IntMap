@@ -424,13 +424,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R162) moved to js/i18n.js — see Architecture.md "File layout". */
   const i18n=window.IntMapI18N;
   try{ window.i18n=i18n; }catch(_){}   /* (#R84) expose for language-coverage tooling */
-  /* (#R84) COMPLETE Russian & Spanish coverage — DE was already 100%, but RU/ES were each missing these 64 keys
-     (layer names, legend titles, theme options, feedback/playground/pro/sources labels), so they fell back to
-     English ("英語の箇所がまだ大量にある"). Now all five languages cover every UI key. */
-  try{
-
-  }catch(_){}
-
+  /* (#R84) filled RU/ES to 100 % of the UI keys; (#R221) those keys are js/locales/ui.<code>.js now, so
+     the merge that used to sit here is gone. (#R252) its empty `try{}catch{}` husk went with it. */
   function updateI18n(){
     /* (#R22) Merge English under the active language so DE/RU (static-UI only) fall back cleanly. */
     const base=i18n.en, lang=i18n[currentLang]||base, d=(currentLang==='en')?base:Object.assign({},base,lang);
@@ -505,18 +500,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      label-raise self-heal keeps them above EVERY data layer. */
   function mapLabelsViaVector(){ return true; }
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
-  /* (#R64/#R67) runtime label-anchor pinning — WATER ONLY: lake/sea label geometry genuinely differs per tile
-     zoom (LineString label lines), so each water name is pinned to its FIRST-SEEN coordinate in a stable
-     geojson source (worldwide, dynamic, nothing hardcoded) and NEVER moves again. Peaks are exact point nodes
-     and render straight from the tiles (see #R67 note above) — no pinning, no refinement, nothing to hop. */
+  /* (#R64/#R67) the water label-anchor index — pinning belongs to js/place-labels.js, which is the only
+     reader; the Map itself lives here because IM_HOST hands it over. (#R252) its explanation and the
+     `window._imLabelStats` diagnostics moved there with the rest of the subject. */
   const _stabIdx={water:new Map()};
-  /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
-  window._imLabelStats=(dump)=>{ const o={water:_stabIdx.water.size};
-    if(dump==='peaks'){ try{ o.z=+GE().camera.getZoom().toFixed(2); o.c=[+GE().camera.getCenter().lng.toFixed(6),+GE().camera.getCenter().lat.toFixed(6)];
-      o.rp=GE().coords.queryRenderedFeatures({layers:['ofm-peak']}).slice(0,12).map(f=>{ const c=f.geometry&&f.geometry.coordinates; let s=null; try{ s=c?GE().coords.project(c):null; }catch(_){}
-        return {n:(f.properties||{}).name, c:c?c.map(x=>+x.toFixed(6)):null, px:s?[Math.round(s.x),Math.round(s.y)]:null}; }); }catch(e){ o.rpErr=String(e&&e.message||e); } }
-    else if(dump){ o.samples=Array.from(_stabIdx.water.values()).slice(0,10).map(f=>({n:(f.properties||{}).name,mz:(f.properties||{}).mz,cls:(f.properties||{}).class,c:f.geometry.coordinates.map(x=>+x.toFixed(5))})); }
-    return o; };   /* diagnostics (read-only) */
   /* (#R169) moved verbatim to js/place-labels.js — see Architecture.md §3.1. */
   window.applyLabelLang=applyLabelLang;
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */

@@ -96,6 +96,20 @@ window.IntMapModules.placeLabels=function(HOST){
      glance instead of being one undifferentiated amber. */
   const POI_COL_DARK=['match',POI_TIER,1,'#ffd9a0',2,'#a9dcff',3,'#ffc0d8','#cfd4dc'];
   const POI_COL_LIGHT=['match',POI_TIER,1,'#8a5300',2,'#0b4f86',3,'#8e1f52','#4b5058'];
+  /* ══ ⚠⚠ (#R252) A REGION'S NAME IS PAINTED BY THE LINE THAT DRAWS THE REGION ═══════════════════
+     「地方行政区分（紫色の境界線をしてるやつ）の名前は、境界線と同じ地名ラベルの色にして。
+       （大阪府やウィスコンシン州など）（世界共通）」
+     The dashed province line (`ref-admin1` in js/app-body.js) has been ADMIN1_COLOR — one violet, the
+     SAME one in light and in dark — since #R212; the name beside it was a near-white/near-black of its
+     own, so the two read as unrelated. It is taken from js/border-style.js rather than re-typed, so the
+     line and the label cannot drift apart ([[intmap-recurring-lessons]] G); the literal is only the
+     fallback for the impossible case where that module has not evaluated (this file is a plain script,
+     so it cannot `import`, and the value is read at CALL time, never captured at declaration time).
+     ⚠ THE HALO GOES DARK ON BOTH BASEMAPS, and that is what makes the requested colour usable rather
+     than a change of subject: #cba6f7 has ~0.72 luminance, so on the light basemap's white halo it
+     would sit at about 1.4:1 against its own outline and vanish. Contrast here is the halo's job as
+     much as the fill's (#R210's words), so the admin-1 tier — and only that tier — keeps a dark one. */
+  const A1_TEXT=()=>{ try{ return window.IntMapBorderStyle.admin1 || '#cba6f7'; }catch(_){ return '#cba6f7'; } };
 
   /* (#R27) IDEMPOTENT now. The old `_placeLabelsAdded` early-return made this a one-shot: if the very
      first call added the layers a hair before the OFM source/style was truly ready, they were never
@@ -104,6 +118,27 @@ window.IntMapModules.placeLabels=function(HOST){
      `if(!getLayer)` guards already make repeated calls safe, so we just re-attempt every time. */
   function ensurePlaceLabels(){
     if(!_imCanDraw()) return;
+    /* (#R252) the ONE answer to «which `name:*` field is this label showing?», published before any
+       label exists so js/map-ui.js's popup can ask it rather than keep a second list of languages
+       ([[intmap-recurring-lessons]] B). It used to be set as a side effect of the sea gazetteer's
+       first build, which is a fragile place for a fact two modules need. */
+    try{ window.IntMapOsmNameKeys=OSM_NAME_KEYS; }catch(_){}
+    /* ⚠ (#R64/#R67 — moved here #R252) THE WATER LABEL-ANCHOR INDEX AND ITS READ-ONLY DUMP.
+       Lake/sea label geometry genuinely differs per tile zoom (OpenMapTiles stores LineString label
+       lines), so each water name is pinned to its FIRST-SEEN coordinate in a stable geojson source —
+       worldwide, dynamic, nothing hardcoded — and NEVER moves again. Peaks are exact point nodes and
+       render straight from the tiles (#R67): no pinning, no refinement, nothing to hop.
+       ⚠ It lives here rather than in js/app-body.js because this file is the index's only reader and
+       that one has a line ceiling whose whole point is that a subject goes to its own file
+       (tests/r168 #8, and [[intmap-recurring-lessons]] K — the ceiling comes DOWN, never up).
+       ⚠ It is installed from inside a FUNCTION because the factory body may only DECLARE (tests/r169
+       #4); `ensurePlaceLabels` is re-run on every styledata, and re-assigning is idempotent. */
+    try{ window._imLabelStats=(dump)=>{ const o={water:HOST._stabIdx.water.size};
+      if(dump==='peaks'){ try{ o.z=+GE().camera.getZoom().toFixed(2); o.c=[+GE().camera.getCenter().lng.toFixed(6),+GE().camera.getCenter().lat.toFixed(6)];
+        o.rp=GE().coords.queryRenderedFeatures({layers:['ofm-peak']}).slice(0,12).map(f=>{ const c=f.geometry&&f.geometry.coordinates; let s=null; try{ s=c?GE().coords.project(c):null; }catch(_){}
+          return {n:(f.properties||{}).name, c:c?c.map(x=>+x.toFixed(6)):null, px:s?[Math.round(s.x),Math.round(s.y)]:null}; }); }catch(e){ o.rpErr=String(e&&e.message||e); } }
+      else if(dump){ o.samples=Array.from(HOST._stabIdx.water.values()).slice(0,10).map(f=>({n:(f.properties||{}).name,mz:(f.properties||{}).mz,cls:(f.properties||{}).class,c:f.geometry.coordinates.map(x=>+x.toFixed(5))})); }
+      return o; }; }catch(_){}
     try{
       /* Use the TileJSON URL (not a hardcoded tile path) — OpenFreeMap serves versioned tiles, so
          the bare /planet/{z}/{x}/{y}.pbf path 404s at real zooms and labels never appear. */
@@ -162,8 +197,46 @@ window.IntMapModules.placeLabels=function(HOST){
         layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('admin1'),
           'text-letter-spacing':0.06,'text-max-width':8,'text-padding':4,'text-optional':true,
           'symbol-sort-key':['coalesce',['get','rank'],6]},
-        paint:{'text-color':'#e9eefb','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.5}});   /* (#R210) 発色を濃く — still the quietest place tier, but no longer washed out */
-      if(!GE().layers.has('ofm-other')) GE().layers.add({id:'ofm-other',type:'symbol',source:'ofm','source-layer':'place',minzoom:7,filter:['all',['in',['get','class'],['literal',['village','suburb','hamlet','neighborhood']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('other'),'text-max-width':7},paint:{'text-color':'#f4f6fa','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.4}});   /* (#R210) 発色を濃く */
+        paint:{'text-color':A1_TEXT(),'text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.5}});   /* (#R252) the colour of the boundary it names — see A1_TEXT */
+      /* ══ ⚠⚠⚠ (#R252) THE NAMES BELOW A MUNICIPALITY — AND A MISSPELLED CLASS ═══════════════════════
+         「地名ラベルに、都道府県や市区町村までは出ても、それ未満の地名は出てこない。出るように。（世界共通）」
+
+         ⚠ THE FILTER ASKED FOR A CLASS THAT DOES NOT EXIST. OpenMapTiles spells it `neighbourhood`;
+         this layer has asked for `neighborhood` since it was written, so the branch has matched ZERO
+         features for its whole life. This file already records the same fact about the POI classes
+         («`sports_centre` IS THE TILE SCHEMA'S OWN SPELLING, not prose» — #R211) and the place layer
+         was simply never re-read against it.
+         ⚠ AND THREE MORE CLASSES WERE NEVER NAMED AT ALL. Measured on the live tiles
+         (tiles.openfreemap.org/planet, 2026-08 build, one z14 tile each):
+             Osaka  z14   neighbourhood 452,  suburb   5   (錦町, 淀川区)
+             Tokyo  z14   neighbourhood 378,  quarter 63   (隼町, 佃)
+             Berlin z14   neighbourhood  13,  quarter 14,  borough 2   (Barnimkiez, Bötzowkiez, Mitte)
+             Paris  z14   neighbourhood   5,  quarter  8,  suburb 23   (Reuilly, Bercy)
+             Madison z14  neighbourhood  17,  quarter  1   (Vilas, Downtown)
+         So 町名・丁目・Kiez・Quartier — the whole tier the report is about — were absent everywhere,
+         and it is one list for the planet, which is what 「世界共通」 asks for. `isolated_dwelling` and
+         `farm` are the schema's two remaining sub-village classes and join for the same reason.
+
+         ⚠ THE LADDER EXISTS SO THAT NOTHING DRAWN TODAY MOVES. The three classes this layer already
+         admits are tier 1 and stay ungated from minzoom 7 — byte-for-byte their present behaviour. The
+         new ones enter above them, and the tiles agree with the ladder rather than fight it: measured,
+         `place` carries suburb from z12 and neighbourhood/quarter/borough only in the z14 tiles, so a
+         stop below that would admit nothing anyway.
+         ⚠ `symbol-sort-key` IS WHAT MAKES 452 LABELS IN ONE TILE READABLE. Collision resolves in favour
+         of the coarser unit first and, inside a tier, of the tile's own `rank` — the same rule
+         `ofm-poi` uses (#R187), so a ward keeps its label and the 丁目 beside it loses one. */
+      const OTHER_TIER=['match',['get','class'],
+        ['village','suburb','hamlet'],1,          /* what this layer has drawn since #R32 */
+        ['borough','quarter'],2,                  /* the units between a ward and a street name */
+        3];                                       /* neighbourhood, isolated_dwelling, farm */
+      /* ⚠ INTEGER STOPS. `['zoom']` inside a FILTER is re-evaluated only at integer zooms — the same
+         property that made #R198's admin-1 ladder wrong when it was written with fractions. */
+      const OTHER_GATE=['<=',OTHER_TIER,['step',['zoom'],1, 13,2, 14,3]];
+      if(!GE().layers.has('ofm-other')) GE().layers.add({id:'ofm-other',type:'symbol',source:'ofm','source-layer':'place',minzoom:7,
+        filter:['all',['has','name'],['in',['get','class'],['literal',['village','suburb','hamlet','borough','quarter','neighbourhood','isolated_dwelling','farm']]],OTHER_GATE],
+        layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('other'),'text-max-width':7,'text-optional':true,
+          'symbol-sort-key':['+',['*',OTHER_TIER,1000],['coalesce',['get','rank'],20]]},
+        paint:{'text-color':'#f4f6fa','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.4}});   /* (#R210) 発色を濃く */
       /* (#R40) "河川や湖、その他地形のラベルが欲しい" — rivers/lakes/seas (water_name) + mountain peaks (mountain_peak),
          from the same OFM vector source. Italic blue for water (cartographic convention), a ▲ for peaks with
          elevation. They follow the Place-names toggle + the active label language (handled in applyLabelLang). */
@@ -440,15 +513,14 @@ window.IntMapModules.placeLabels=function(HOST){
       const _showThis=((id==='ofm-country'||id==='ofm-admin1')&&_travelingLbl)?false:show;
       GE().layers.setLayout(id,'visibility',_showThis?'visible':'none');
       GE().layers.setLayout(id,'text-field',nameExpr);
-      /* dark map / satellite → light text; light map → dark text. The admin-1 tier is deliberately
-         quieter than the settlement it contains — it names the ground, it is not the destination. */
+      /* dark map / satellite → light text; light map → dark text. */
       const lightText = sat || isDark;
       /* (#R210) 「全地名ラベルの白と黒の発色を濃く」— the whites go to pure white and the blacks to pure
-         black; only the admin-1 tier keeps a step of separation (it names the ground, it is not the
-         destination), and even that step is now inside the strong end of the range rather than a wash.
-         The halo goes fully opaque with it: contrast here is the halo's job as much as the fill's. */
-      GE().layers.setPaint(id,'text-color', lightText?(id==='ofm-admin1'?'#e9eefb':'#ffffff'):(id==='ofm-admin1'?'#2b3348':'#000000'));
-      GE().layers.setPaint(id,'text-halo-color', lightText?'rgba(0,0,0,0.9)':'rgba(255,255,255,0.96)');
+         black. The halo goes fully opaque with it: contrast here is the halo's job as much as the fill's.
+         (#R252) …and the admin-1 tier is no longer a third grey: it is painted by the line that draws
+         the region (A1_TEXT), the same colour on both basemaps, with the dark halo that colour needs. */
+      GE().layers.setPaint(id,'text-color', (id==='ofm-admin1')?A1_TEXT():(lightText?'#ffffff':'#000000'));
+      GE().layers.setPaint(id,'text-halo-color', (id==='ofm-admin1'||lightText)?'rgba(0,0,0,0.9)':'rgba(255,255,255,0.96)');
       GE().layers.setPaint(id,'text-halo-width', id==='ofm-country'?1.7:id==='ofm-city'?1.6:1.45);
     });
   }

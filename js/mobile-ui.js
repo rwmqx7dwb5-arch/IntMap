@@ -450,7 +450,26 @@ window.IntMapModules.layoutReflow=function(HOST){
         } else { document.body.classList.remove('ms-narrow'); document.body.classList.remove('ms-hide'); }
       }catch(_){} };
       try{ const ro=new ResizeObserver(upd); ro.observe(host); const sb=document.querySelector('.sidebar'); if(sb) ro.observe(sb); }catch(_){ window.addEventListener('resize',upd); }
-      window.addEventListener('resize',upd); window.addEventListener('intmap-sidebar-resize',upd); setTimeout(upd,300); upd(); }
+      window.addEventListener('resize',upd); window.addEventListener('intmap-sidebar-resize',upd); setTimeout(upd,300); upd();
+      /* ══ ⚠⚠⚠ (#R252) …AND AGAIN ONCE THE RIGHT PANEL HAS FINISHED MOVING ═══════════════════════════
+         「右サイドバーを開閉後、地名検索バーが変な位置に行く。」
+
+         Everything `upd()` measures on the right is `.map-controls-top`'s left edge, and since #R160
+         the right layer sidebar OVERLAYS the map: `.map-container` does not resize, so neither the
+         ResizeObserver above nor `resize` ever fires. js/map-ui.js does dispatch
+         `intmap-sidebar-resize` from `open()` and `close()` — but SYNCHRONOUSLY, at t=0 of the HUD's
+         own `transition:right .38s` (css/intmap.css, the #R160 block). So the one recomputation this
+         watcher gets reads the HUD where it was BEFORE the slide, pins `--ms-left`/`--ms-right` to the
+         geometry of the state being left, and nothing ever corrects it: opening leaves the pill
+         stretched under the panel, closing leaves it squeezed into the strip the panel used to fill.
+
+         ⚠ THE SIGNAL IS THE THING THAT MOVES, not a timer matching a duration typed in a stylesheet.
+         `transitionend` fires when the HUD has actually landed (and `transitioncancel` when a second
+         toggle interrupts the first), so the pill is laid out against a geometry that has stopped
+         changing, whatever the duration or `prefers-reduced-motion` make it. The early dispatch is
+         KEPT: it is what moves the pill at the start of the animation instead of after it. */
+      try{ const hud=document.querySelector('.map-controls-top');
+        if(hud) ['transitionend','transitioncancel'].forEach(ev=>hud.addEventListener(ev,(e)=>{ if(!e||e.propertyName==='right') upd(); })); }catch(_){} }
     if(document.readyState!=='loading') setTimeout(wire,0); else document.addEventListener('DOMContentLoaded',wire);
   })();
 

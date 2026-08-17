@@ -5023,7 +5023,22 @@ window.IntMapModules.seismic=function(HOST){
            two added up past the viewport and the primary button was cut off at the bottom — which is
            the defect the footer exists to fix, one layer down. The panel caps itself, the body flexes
            inside that cap, and the footer is `flex:0 0 auto`, so the verb is on screen at any height. */
-        panel.style.cssText='position:fixed;left:16px;top:80px;width:min(360px,94vw);max-height:calc(100dvh - 96px);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+        /* ══ ⚠⚠ (#R252) THE DEFAULT PLACE IT OPENS COVERED TWO THINGS THAT LIVE THERE ═══════════════
+           「地震シミュレータポップアップのデフォルト位置が座標標高常時表示欄と被っている。
+             左サイドバーの開閉部分とも被っている。少し右上にしろ。」
+           Measured on the shipped build at 1100×800 with the left sidebar collapsed:
+               #sq-panel            [ 16,  80, 378, 786]
+               #coord-readout       [  9, 760, 333, 791]   ← overlapped along its whole width
+               .btn-toggle-sidebar  [  0, 368,  22, 432]   ← overlapped by 6 px
+           `left` moves right of the collapsed sidebar handle (22 px wide) with room to spare, `top`
+           moves up, and — the part a move alone cannot fix — the CAP comes down so the panel's bottom
+           edge stops ~50 px above the readout instead of running to the foot of the window. The panel
+           is `max-height`, so a short panel is unaffected; only the full-height case is bounded.
+           ⚠ PHONES KEEP THE OLD NUMBERS. At ≤768 px the readout and the sidebar handle are laid out
+           differently (the handle is `display:none`), 94vw is nearly the whole screen, and a 36 px
+           shift right would push the panel off the right edge. Nothing about the report is a phone. */
+        const _wide=(window.innerWidth>768);
+        panel.style.cssText='position:fixed;left:'+(_wide?52:16)+'px;top:'+(_wide?58:80)+'px;width:min(360px,94vw);max-height:calc(100dvh - '+(_wide?148:96)+'px);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
         document.body.appendChild(panel); }
       panel.style.display='flex'; opened=true; render();
       if(o&&o.lng!=null){ setEpi([o.lng,o.lat]); if(o.depth!=null) depthKm=Math.max(0,+o.depth); if(o.mw!=null&&!fault) mw=Math.max(3,Math.min(9.6,+o.mw)); render(); refresh(); }
