@@ -162,6 +162,10 @@ window.IntMapLang.define('ko', { ui: {
       lyrGrpClimate:"기후·기상",
       lyrGrpDemo:"인구·경제",
       lyrGrpGeoPol:"지정학·국방",
+      lyrGrpPolitics:"정치·거버넌스",
+      lyrGrpSecurity:"국방·안보",
+      lyrGrpHealth:"보건·위생",
+      lyrGrpTech:"기술·인프라",
       lyrGrpHazard:"재해·밤하늘",
       lyrGrpIndic:"지표·오버레이",
       lyrGrpMaritime:"해양·해운",
@@ -3856,4 +3860,40 @@ window.IntMapLang.define('ko', { ui: {
   "Start exploring": "시작하기",
   "Africa": "아프리카",
   "Asia": "아시아",
-  "North America": "북아메리카",} });
+  "North America": "북아메리카",
+  "Address": "주소",   /* (#R255) */
+  "Airfields, naval bases, barracks, ranges and danger areas tagged military in OpenStreetMap for the current view. The public record only — nothing here is inferred from imagery.": "현재 화면 범위에서 OpenStreetMap에 military로 등록된 비행장·해군기지·병영·연습장·위험구역입니다. 공개된 기록만이며, 영상 판독에 의한 추정은 포함하지 않습니다.",   /* (#R255) */
+  "Base / barracks": "기지·병영",   /* (#R255) */
+  "Beds": "병상 수",   /* (#R255) */
+  "Clear search": "검색어 지우기",   /* (#R255) */
+  "Clinic": "의원",   /* (#R255) */
+  "Communication tower / mast": "통신탑·안테나 철탑",   /* (#R255) */
+  "Consulate": "영사관",   /* (#R255) */
+  "Diplomatic missions": "외교 공관",   /* (#R255) */
+  "Doctors": "개인 의원",   /* (#R255) */
+  "Embassies, consulates and other diplomatic missions mapped in OpenStreetMap for the current view. Click any point for the record.": "현재 화면 범위에 대해 OpenStreetMap에 등록된 대사관·영사관 등 외교 공관입니다. 점을 클릭하면 내용이 표시됩니다.",   /* (#R255) */
+  "Embassy": "대사관",   /* (#R255) */
+  "Emergency": "응급",   /* (#R255) */
+  "Health facilities": "의료기관",   /* (#R255) */
+  "Height": "높이",   /* (#R255) */
+  "Hospital": "병원",   /* (#R255) */
+  "Hospitals, clinics, doctors and pharmacies mapped in OpenStreetMap for the current view. Click any point for beds, speciality, operator and opening hours where the object carries them.": "현재 화면 범위에 대해 OpenStreetMap에 등록된 병원·의원·약국입니다. 병상 수·진료과·개설자·진료 시간은 해당 객체가 가지고 있는 경우에만 표시합니다.",   /* (#R255) */
+  "Internet exchange": "인터넷 익스체인지",   /* (#R255) */
+  "Internet exchanges, telephone exchanges, communication masts and towers mapped in OpenStreetMap for the current view — the physical plant the network actually runs on.": "현재 화면 범위에 대해 OpenStreetMap에 등록된 인터넷 익스체인지·전화 교환국·통신 철탑입니다. 네트워크가 실제로 올라가 있는 물리 설비입니다.",   /* (#R255) */
+  "Military sites": "군사 시설",   /* (#R255) */
+  "objects in view": "건(표시 범위 내)",   /* (#R255) */
+  "Opening hours": "진료 시간",   /* (#R255) */
+  "Other military site": "기타 군사 시설",   /* (#R255) */
+  "Other mission": "기타 공관",   /* (#R255) */
+  "Pharmacy": "약국",   /* (#R255) */
+  "Phone": "전화",   /* (#R255) */
+  "Range / danger area": "연습장·위험구역",   /* (#R255) */
+  "Represents": "파견국",   /* (#R255) */
+  "Service": "소속",   /* (#R255) */
+  "Speciality": "진료과",   /* (#R255) */
+  "Surveyed in OpenStreetMap. Every field above is that object’s own tag; nothing is inferred, and a field the object does not carry is left out rather than estimated.": "OpenStreetMap의 실측 데이터입니다. 위 항목은 해당 객체 자신의 태그이며, 추측은 포함하지 않습니다. 태그가 없는 항목은 추정하지 않고 생략합니다.",   /* (#R255) */
+  "Telecom & internet infrastructure": "통신·인터넷 기반시설",   /* (#R255) */
+  "Telephone exchange": "전화 교환국",   /* (#R255) */
+  "This crop layer could not start.": "이 작물 레이어를 시작할 수 없었습니다.",   /* (#R255) */
+  "Zoom in to load this view": "이 범위를 불러오려면 확대하세요",   /* (#R255) */
+} });

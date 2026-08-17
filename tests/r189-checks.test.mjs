@@ -109,9 +109,21 @@ test('R189 water: collectPond is declared before the sink branch that calls it',
 });
 test('R189 water: the course follows the talweg, at a resolution ladder, with a settable discharge', () => {
   const src = read('js/terrain-water.js');
-  assert.match(src, /function channelChain\(W,k0\)\{/, 'MFD accumulation over the window');
-  assert.match(src, /order\.sort\(\(a,b\)=>filled\[b\]-filled\[a\]\);/, 'processed down the FILLED surface');
-  assert.match(src, /const chain=channelChain\(W,k0\);/, 'and the walk uses it instead of the flood escape');
+  /* ══ ⚠⚠ (#R255) THE QUESTION CHANGED, AND THIS IS THE ASSERTION THAT SAID SO ═══════════════════
+     #R189 was right that the flood's least-rise escape is not the river, and answered it with an MFD
+     accumulation of UNIT contributions — drainage AREA. 「上流から下流まですべて同じ計算・描画方法に
+     しろ。上流のものに合わせろ」 → 「計算そのものを上流に統一する」 says the downstream half must
+     compute what the WORKING GRID computes: cubic metres of the water the reader placed, routed by
+     the same priority-flood + MFD(1.1) + cascading-depression sweep. So the window is routed by
+     `routeWater` — the working grid's own function — and the course follows `mainOut`, the
+     neighbour taking the largest share OF THE FLOW.
+     What #R189 established survives and is still asserted: the walk does not follow the flood's
+     escape, and a filled flat is crossed by the spill route. */
+  assert.match(src, /function channelChain\(W,k0,R\)\{/, 'the window walk no longer takes the routing it follows');
+  assert.match(src, /function windowRoute\(W,k0,inM3\)/, 'the window is not routed with the water that arrived');
+  assert.match(src, /return routeWater\(W\.surf,W\.n,W\.n,W\.spacingM,own\)/, 'the window is not routed by the SHARED function');
+  assert.match(src, /const chain=channelChain\(W,k0,WR\);/, 'and the walk uses it instead of the flood escape');
+  assert.match(src, /const lev=filled\[k\]; let k2=R\.parent\[k\]/, 'a filled flat is no longer crossed by the spill route (#R186/#R189)');
   assert.match(src, /TRACE_Z_NEAR=\[\[10,13\],\[50,12\]\]/, 'z13 near the source, z12 to 50 km, z11 beyond');
   assert.match(src, /const zWant=zFor\(distM\); if\(zWant!==z\)\{ z=zWant; warmC=null; \}/, 'stepped per window');
   /* the discharge control (#R189 「水の水流は設定可能に」) */

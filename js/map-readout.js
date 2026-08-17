@@ -394,7 +394,18 @@ window.IntMapModules.mapReadout=function(HOST){
        (#R223) …which is now a Float32Array of metres, so the read is one index */
     const d=_demPix(c); if(!d) return null;
     const px=Math.min(255,Math.max(0,Math.floor((tl.x-xi)*256))), py=Math.min(255,Math.max(0,Math.floor((tl.y-yi)*256)));
-    return d[py*256+px];
+    return _edited(lng,lat,d[py*256+px]);
+  }
+  /* ══ (#R255) SCULPTED GROUND IS THE GROUND ═══════════════════════════════════════════════════════
+     「盛る、削るはそれに合わせて実際の標高や3D表示も対応させろ。堤防・ダムも同様」 The terrain
+     sculptor (js/terrain-water.js) held its edits in a private height field and painted a coloured
+     overlay for them, so the app's own elevation readout — and everything that reads through it, the
+     profile, the line-of-sight viewshed, the insolation model — still answered with the ground as it
+     was before the edit. One hook, published by the module that OWNS the edit, consulted by the one
+     function every one of those callers already goes through. Absent hook = unchanged behaviour. */
+  function _edited(lng,lat,v){
+    if(v==null) return v;
+    try{ const f=window.IntMapElevEdit; return f?f(lng,lat,v):v; }catch(_){ return v; }
   }
   /* === Shared async DEM sampler (#R12) — used by the elevation profile and line-of-sight viewshed.
      Warms every terrarium tile covering a set of points, then samples them LOCALLY. The terrarium
@@ -532,7 +543,7 @@ window.IntMapModules.mapReadout=function(HOST){
     const x0=Math.max(0,Math.min(255,Math.floor(fx))), y0=Math.max(0,Math.min(255,Math.floor(fy)));
     const x1=Math.min(255,x0+1), y1=Math.min(255,y0+1); const tx=Math.max(0,Math.min(1,fx-x0)), ty=Math.max(0,Math.min(1,fy-y0));
     const a=d[y0*256+x0], b=d[y0*256+x1], c=d[y1*256+x0], e=d[y1*256+x1];
-    return (a*(1-tx)+b*tx)*(1-ty)+(c*(1-tx)+e*tx)*ty;
+    return _edited(lng,lat,(a*(1-tx)+b*tx)*(1-ty)+(c*(1-tx)+e*tx)*ty);   /* (#R255) …and the sculpted delta */
   }
   /* Elevation/depth respects the measurement-units setting (#R13c): imperial → feet, both → "m (ft)". */
   function fmtElevVal(e){ const m=Math.round(e), ft=Math.round(e*3.28084); const um=(typeof HOST.unitMode!=='undefined')?HOST.unitMode:'both'; return um==='imperial'?(ft.toLocaleString()+' ft'):um==='metric'?(m.toLocaleString()+' m'):(m.toLocaleString()+' m ('+ft.toLocaleString()+' ft)'); }

@@ -4323,7 +4323,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      DOM APIs (no innerHTML/template literals → no CSS-back-tick risk). */
   window.IntMapModules.gibsScience(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
   window.IntMapModules.worldPacks(IM_HOST);    /* (#R211) trade / energy mix / warnings / tides / crops — js/world-packs.js */
-  window.IntMapModules.industryWeb(IM_HOST); window.IntMapModules.oceanCurrents(IM_HOST);   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. */
+  window.IntMapModules.facilities(IM_HOST); window.IntMapModules.industryWeb(IM_HOST); window.IntMapModules.oceanCurrents(IM_HOST);   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. (#R255) …and the four surveyed-facility layers (js/osm-facilities.js) join them ON THIS LINE on purpose: the shell budget (tests/r168 #8) stood at 8,200 of 8,200, and #R254 already recorded that hitting it means spending nothing rather than raising it. */
 
   /* ===== (#R94f) MAP BORDERS FOLLOW THE CLOCK — travel to a past year and the map's OWN borders (and the
      country names) become that era's, drawn crisp exactly like the modern ones — NOT the optional "Historical

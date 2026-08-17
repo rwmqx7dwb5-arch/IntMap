@@ -157,12 +157,18 @@ window.IntMapModules.terrainWater=function(HOST){
       setVec([]); }
 
     /* ---- build the grid from the real DEM ------------------------------------------------------ */
-    async function build(){
+    async function build(opt){
       if(building) return false; building=true;
       try{
         const b=GE().camera.getBounds(); if(!b) return false;
         let w=b.getWest(), e=b.getEast(), s=b.getSouth(), n=b.getNorth();
         if(e<w) e+=360;
+        /* (#R255) …re-centred on a point when the caller names one, WITHOUT flying the camera there */
+        if(opt&&opt.center){ const cw=(w+e)/2, cn=(s+n)/2, hw=(e-w)/2, hn=(n-s)/2;
+          const dl=(+opt.center[0])-cw, db=(+opt.center[1])-cn;
+          w+=dl; e+=dl; s+=db; n+=db;
+          s=Math.max(-84,s); n=Math.min(84,n);
+          if(!(hw>0&&hn>0)) return false; }
         const midLat=(n+s)/2;
         /* cap the working area — beyond this the DEM tile budget, not the solver, is the limit */
         const spanKm=Math.max((e-w)*111.32*Math.cos(midLat*D),(n-s)*110.54);
@@ -229,7 +235,7 @@ window.IntMapModules.terrainWater=function(HOST){
         setProg(null);
         G={ NX,NY,xW,yN,dx,dy,cellM,areaM2:cellM*cellM,z,base,
             bbox:[lngOf(xW),latOf(yN),lngOf(xE),latOf(yS)], midLat, demMissing:miss };
-        sculpt=new Float32Array(NX*NY); undoStack=[];
+        sculpt=new Float32Array(NX*NY); undoStack=[]; editDirty();
         return true;
       } finally { building=false; setProg(null); }
     }
@@ -262,7 +268,7 @@ window.IntMapModules.terrainWater=function(HOST){
     function undo(){ const s=undoStack.pop(); if(!s) return false;
       pourStop();
       if(s.sculpt) sculpt=s.sculpt;
-      levees=s.levees; sources=s.sources; rainMm=s.rainMm;
+      levees=s.levees; sources=s.sources; rainMm=s.rainMm; editDirty(); terrainSoon();
       const r=panel&&panel.querySelector('.tw-rain'); if(r) r.value=rainMm;
       solve(); return true; }
     /* A raised-cosine brush: no step at the rim, so the sculpted ground is a landform and not a cylinder. */
@@ -272,7 +278,8 @@ window.IntMapModules.terrainWater=function(HOST){
       for(let dj=-rad;dj<=rad;dj++){ const j=c.j+dj; if(j<0||j>=G.NY) continue;
         for(let di=-rad;di<=rad;di++){ const i=c.i+di; if(i<0||i>=G.NX) continue;
           const d=Math.hypot(di,dj)/rad; if(d>1) continue;
-          sculpt[j*G.NX+i]+=amp*0.5*(1+Math.cos(Math.PI*d)); } } }
+          sculpt[j*G.NX+i]+=amp*0.5*(1+Math.cos(Math.PI*d)); } }
+      editDirty(); }
     /* A levee is a ridge whose crest follows the drawn line — stamped into the SAME height field, so
        the solver has no idea it is man-made and treats it exactly like ground. */
     function stampLevees(out){ if(!G||!levees.length) return;
@@ -289,9 +296,129 @@ window.IntMapModules.terrainWater=function(HOST){
                 const add=crest*(1-d*d);                       /* parabolic cross-section */
                 const k=j*G.NX+i; if(add>out[k]) out[k]=add; } } } } }); }
     function surface(){ const n=G.NX*G.NY, s=new Float32Array(n);
-      const lv=new Float32Array(n); stampLevees(lv);
-      for(let k=0;k<n;k++) s[k]=G.base[k]+sculpt[k]+lv[k];
+      for(let k=0;k<n;k++) s[k]=G.base[k]+editField()[k];
       return s; }
+
+    /* ══ ⚠⚠ (#R255) THE SCULPTED GROUND IS THE GROUND — NOT A COLOURED OVERLAY OVER IT ══════════════
+       「盛る、削るはそれに合わせて実際の標高や3D表示も対応させろ。堤防・ダムも同様」
+       Everything this tool built up or cut away lived in `sculpt` (+ the levee stamp), was fed to the
+       SOLVER, and was drawn as a translucent brown/blue wash — while the 3-D relief, the coordinate
+       readout, the elevation profile, the line-of-sight viewshed and the insolation model all went on
+       reading the untouched AWS terrarium DEM. Building a dam and then hovering it reported the
+       valley floor. There are exactly two consumers to reach, and both are reached from here:
+
+         · the READOUT family, through the one function they all call (js/map-readout.js's
+           `demElevAt` / `demElevBilinear`), via the `IntMapElevEdit` hook this publishes;
+         · the 3-D TERRAIN, through a raster-dem source whose tiles are the terrarium tiles with the
+           same delta added (see ensureDemProto / syncTerrain).
+
+       ⚠ ONE FIELD, ONE OWNER. `sculpt` and the levees are combined ONCE per change into `editF`, and
+       the solver, the hook and the terrain tiles all read that — a second summation somewhere would
+       be a second thing to keep true. `editStamp` is bumped whenever it changes, which is also what
+       tells the terrain tiles they are stale. */
+    let editF=null, editStamp=0, editSeen=-1;
+    function editField(){ if(!G) return new Float32Array(0);
+      if(editF&&editSeen===editStamp&&editF.length===G.NX*G.NY) return editF;
+      const n=G.NX*G.NY, lv=new Float32Array(n); stampLevees(lv);
+      const f=new Float32Array(n);
+      for(let k=0;k<n;k++) f[k]=sculpt[k]+lv[k];
+      editF=f; editSeen=editStamp; return f; }
+    /* ⚠ (#R255) EVERY path that changes the ground goes through here — the brush, a levee, 元に戻す,
+       either reset, a rebuild, and the Atlas `brush`/`addLevee` calls that have no pointer at all.
+       Hanging the re-mesh off the individual UI handlers is how `brush()` from Atlas sculpted the
+       solver's world and left the 3-D relief showing the old valley (measured: the readout went
+       1000 → 1117.96 m and `getTerrain().source` was still `terrain-dem`). */
+    function editDirty(){ editStamp++; terrainSoon(); }
+    /* has the reader changed the ground at all? (a pure water run must not swap the terrain source) */
+    function hasEdits(){ if(!G) return false; if(levees.length||drafting) return true;
+      const f=editField(); for(let k=0;k<f.length;k++) if(Math.abs(f[k])>0.01) return true; return false; }
+    /* the delta in metres at a geographic point — bilinear inside the working rectangle, 0 outside */
+    function editDeltaAt(lng,lat){
+      if(!G||building) return 0;
+      const fx=((mX(lng)-G.xW+1)%1)/G.dx-0.5, fy=(mY(lat)-G.yN)/G.dy-0.5;
+      if(!(fx>-1&&fy>-1&&fx<G.NX&&fy<G.NY)) return 0;
+      const f=editField(); if(!f.length) return 0;
+      const x0=Math.max(0,Math.min(G.NX-1,Math.floor(fx))), y0=Math.max(0,Math.min(G.NY-1,Math.floor(fy)));
+      const x1=Math.min(G.NX-1,x0+1), y1=Math.min(G.NY-1,y0+1);
+      const tx=Math.max(0,Math.min(1,fx-x0)), ty=Math.max(0,Math.min(1,fy-y0));
+      const a=f[y0*G.NX+x0], b=f[y0*G.NX+x1], c=f[y1*G.NX+x0], d=f[y1*G.NX+x1];
+      return (a*(1-tx)+b*tx)*(1-ty)+(c*(1-tx)+d*tx)*ty; }
+
+    /* ══ (#R255) …AND THE 3-D RELIEF ════════════════════════════════════════════════════════════════
+       A terrarium tile carries elevation as `(R·256 + G + B/256) − 32768` metres. This serves the
+       SAME tiles with `editDeltaAt` added, so MapLibre's terrain mesh — and therefore the hillshade,
+       the horizon and anything the camera flies over — is the sculpted ground rather than the ground
+       that was there before. The base tile is fetched once and kept decoded, so a brush stroke costs
+       a re-encode of the tiles on screen and NO network at all.
+       ⚠ The swap only happens while the tool is open AND the reader has actually changed something,
+       and only when the app is in 3-D to begin with: a pure water run, or a flat map, is left on the
+       app's own `terrain-dem` exactly as before. */
+    const DEM_PROTO='imapterr';
+    const _demBase=new Map();   /* z/x/y → Float32Array(256·256), the untouched terrarium tile */
+    let _demProtoOn=false, _demSrcN=0, _demSrcId=null, _demPrev=null;
+    const _demHosts=['https://s3.amazonaws.com/elevation-tiles-prod/terrarium',
+      'https://elevation-tiles-prod.s3.amazonaws.com/terrarium',
+      'https://elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com/terrarium',
+      'https://elevation-tiles-prod.s3.us-east-1.amazonaws.com/terrarium'];
+    async function _demTile(z,x,y){
+      const k=z+'/'+x+'/'+y; const have=_demBase.get(k); if(have) return have;
+      const r=await fetch(_demHosts[(x+y)&3]+'/'+z+'/'+x+'/'+y+'.png');
+      if(!r.ok) throw new Error('dem '+r.status);
+      const bmp=await createImageBitmap(await r.blob());
+      const cv=document.createElement('canvas'); cv.width=cv.height=256;
+      const ct=cv.getContext('2d',{willReadFrequently:true}); ct.drawImage(bmp,0,0,256,256);
+      try{ bmp.close&&bmp.close(); }catch(_){}
+      const px=ct.getImageData(0,0,256,256).data, out=new Float32Array(256*256);
+      for(let i=0,p=0;i<out.length;i++,p+=4) out[i]=(px[p]*256+px[p+1]+px[p+2]/256)-32768;
+      _demBase.set(k,out); if(_demBase.size>360) _demBase.delete(_demBase.keys().next().value);
+      return out; }
+    function ensureDemProto(){ if(_demProtoOn) return true;
+      try{ _demProtoOn=!!GE().scene.addProtocol(DEM_PROTO, async (params)=>{
+        const m=/^imapterr:\/\/(\d+)\/(\d+)\/(\d+)/.exec(String((params&&params.url)||''));
+        if(!m) throw new Error('bad imapterr url');
+        const z=+m[1], x=+m[2], y=+m[3];
+        const base=await _demTile(z,x,y);
+        const cv=document.createElement('canvas'); cv.width=cv.height=256;
+        const ct=cv.getContext('2d'); const img=ct.createImageData(256,256), px=img.data;
+        const n=Math.pow(2,z);
+        for(let j=0;j<256;j++){ const yy=(y+(j+0.5)/256)/n, lat=latOf(yy);
+          for(let i=0;i<256;i++){ const xx=(x+(i+0.5)/256)/n;
+            const k=j*256+i, e=base[k]+editDeltaAt(lngOf(xx),lat);
+            let v=Math.max(0,Math.min(65535.99,e+32768));
+            const p=k*4; px[p]=Math.floor(v/256); px[p+1]=Math.floor(v)%256;
+            px[p+2]=Math.floor((v-Math.floor(v))*256); px[p+3]=255; } }
+        ct.putImageData(img,0,0);
+        const blob=await new Promise(res=>{ try{ cv.toBlob(b2=>res(b2),'image/png'); }catch(_){ res(null); } });
+        if(!blob) throw new Error('encode');
+        return { data: await blob.arrayBuffer() };
+      }); }catch(e){ try{ console.warn('sculpted terrain protocol could not be registered',e); }catch(_){} }
+      return _demProtoOn; }
+    /* put the sculpted DEM under the camera, or hand the app's own back */
+    function syncTerrain(){
+      let cur=null; try{ cur=GE().scene.getTerrain(); }catch(_){ return; }
+      const want=opened&&hasEdits();
+      if(!want){
+        if(_demSrcId){ const old=_demSrcId; _demSrcId=null;
+          try{ if(cur&&cur.source===old) GE().scene.setTerrain(_demPrev||{source:'terrain-dem',exaggeration:1.0}); }catch(_){}
+          try{ if(GE().layers.hasSource(old)) GE().layers.removeSource(old); }catch(_){} }
+        return; }
+      if(!cur&&!_demSrcId) return;                    /* the app is in 2-D — nothing to re-mesh */
+      if(cur&&cur.source!==_demSrcId) _demPrev=cur;
+      if(!ensureDemProto()) return;
+      const mz=(window.IntMapDem&&window.IntMapDem.maxZoom)?window.IntMapDem.maxZoom():14;
+      const id='tw-dem-'+(++_demSrcN);
+      try{
+        GE().layers.addSource(id,{type:'raster-dem',tiles:[DEM_PROTO+'://{z}/{x}/{y}'],
+          encoding:'terrarium',tileSize:256,maxzoom:mz});
+        GE().scene.setTerrain({source:id,exaggeration:(_demPrev&&_demPrev.exaggeration)||1.0});
+        const old=_demSrcId; _demSrcId=id;
+        if(old) setTimeout(()=>{ try{ if(GE().layers.hasSource(old)) GE().layers.removeSource(old); }catch(_){} },600);
+      }catch(_){ }
+    }
+    /* the terrain is re-meshed when a stroke ENDS, not on every frame of it — one encode per edit */
+    let _terrT=null;
+    function terrainSoon(){ if(_terrT) clearTimeout(_terrT);
+      _terrT=setTimeout(()=>{ _terrT=null; try{ syncTerrain(); }catch(_){} },260); }
 
     /* ---- the solver ---------------------------------------------------------------------------- */
     /* A binary min-heap over (priority, cell). Flat typed arrays — this runs on every brush stroke. */
@@ -306,11 +433,29 @@ window.IntMapModules.terrainWater=function(HOST){
               const tp=pr[m],ti=id[m]; pr[m]=pr[c]; id[m]=id[c]; pr[c]=tp; id[c]=ti; c=m; } }
           return top; } }; }
 
-    function solve(){
-      if(!G) return null;
-      const t0=(typeof performance!=='undefined'?performance.now():Date.now());
-      const NX=G.NX, NY=G.NY, N=NX*NY, A=G.areaM2;
-      const surf=surface();
+    /* ══ ⚠⚠⚠ (#R255) ONE ROUTING. THE UPSTREAM ONE. ═══════════════════════════════════════════════
+       「上流から下流まですべて同じ計算・描画方法にしろ。上流のものに合わせろ。」 → confirmed as
+       「計算そのものを上流に統一する」.
+
+       #R211 unified the PALETTE and the drawing primitive and said so; the two halves still answered
+       different questions with different mathematics:
+
+         upstream (this grid)   priority flood → depressions → MFD(1.1) VOLUME routing, cascading
+                                lakes; every number is cubic metres of the water actually placed
+         downstream (the trace) priority flood → `channelChain`, an MFD accumulation of UNIT area
+                                (`acc.fill(1)`) — a CATCHMENT-SIZE talweg, which is a different
+                                quantity, and separate ad-hoc pond collection on top of it
+
+       So the routing is one function now, and both halves call it. Nothing about the upstream answer
+       changes (it is this code, moved); the downstream half stops computing drainage area and starts
+       routing the same cubic metres through the same depressions, which is what the instruction asks
+       for. `channelChain` and its unit-accumulation sweep are gone with the question they answered.
+
+       ⚠ It takes the surface, the dimensions, the cell size and the water GENERATED per cell, and it
+       returns everything either caller needs. It knows nothing about `G`, the panel or the map — that
+       is what makes it usable from a 161² DEM window as well as from the working grid. */
+    function routeWater(surf,NX,NY,cellM,own){
+      const N=NX*NY, A=cellM*cellM;
       const filled=new Float32Array(N);
       const parent=new Int32Array(N).fill(-1);
       const order=new Int32Array(N);
@@ -337,7 +482,7 @@ window.IntMapModules.terrainWater=function(HOST){
 
       /* DEPRESSIONS — connected components of "filled above the ground". Each is filled with the water
          that actually arrived, by binary search on its own elevation-sorted prefix sums.
-         (#R186) MOVED AHEAD OF THE ROUTING, because the routing now needs to know which cells are in a
+         (#R186) MOVED AHEAD OF THE ROUTING, because the routing needs to know which cells are in a
          basin before it starts: a lake absorbs what arrives and passes on only its overflow. */
       const depId=new Int32Array(N).fill(-1);
       const deps=[];
@@ -402,10 +547,6 @@ window.IntMapModules.terrainWater=function(HOST){
             OVERFLOW is injected at its outlet. A basin that does not fill therefore stops the water
             — which is what 「水は流れなくなる地点」 means on this grid. */
       const inflow=new Float64Array(N);       /* m³ arriving at each cell from upstream */
-      const own=new Float64Array(N);          /* m³ generated on the cell itself */
-      const rain=(rainMm/1000)*A;
-      if(rain>0) for(let k=0;k<N;k++) own[k]=rain;
-      sources.forEach(sc=>{ const c=cellOf(sc.lng,sc.lat); if(c) own[c.j*NX+c.i]+=Math.max(0,sc.m3); });
       const through=new Float64Array(N);
       const mainOut=new Int32Array(N).fill(-1);   /* the neighbour taking the largest share — the channel */
       const depIn=new Float64Array(deps.length);
@@ -432,7 +573,7 @@ window.IntMapModules.terrainWater=function(HOST){
           const ni=nk%NX, nj=(nk/NX)|0; if(Math.abs(ni-ki)>1||Math.abs(nj-kj)>1) continue;
           const dz=fk-filled[nk]; if(dz<=1e-9) continue;
           const card=(d<4);                                  /* NB = [-1,1,-NX,NX, …diagonals] */
-          const dist=(card?1:Math.SQRT2)*G.cellM, L=(card?0.5:0.354)*G.cellM;
+          const dist=(card?1:Math.SQRT2)*cellM, L=(card?0.5:0.354)*cellM;
           const w=Math.pow(dz/dist,MFD_P)*L;
           if(w>0){ kBuf[m]=nk; wBuf[m]=w; tot+=w; if(w>bestW){ bestW=w; best=nk; } m++; }
         }
@@ -447,15 +588,31 @@ window.IntMapModules.terrainWater=function(HOST){
       let wetCells=0, storedM3=0, maxDepth=0;
       deps.forEach(dp=>{ dp.cells.forEach(c=>{ const d=dp.level-surf[c];
         if(d>0.02){ depth[c]=d; wetCells++; storedM3+=d*A; if(d>maxDepth) maxDepth=d; } }); });
-      const breaches=deps.filter(d=>d.over>0&&d.outlet>=0)
+      return { surf, filled, parent, order, cnt, depId, deps, through, mainOut, depth,
+               wetCells, storedM3, maxDepth, cellAreaM2:A, NX, NY, cellM };
+    }
+
+    function solve(){
+      if(!G) return null;
+      const t0=(typeof performance!=='undefined'?performance.now():Date.now());
+      const NX=G.NX, NY=G.NY, N=NX*NY, A=G.areaM2;
+      const surf=surface();
+      /* what this grid GENERATES: uniform rainfall plus every placed source, in cubic metres */
+      const own=new Float64Array(N);
+      const rain=(rainMm/1000)*A;
+      if(rain>0) for(let k=0;k<N;k++) own[k]=rain;
+      sources.forEach(sc=>{ const c=cellOf(sc.lng,sc.lat); if(c) own[c.j*NX+c.i]+=Math.max(0,sc.m3); });
+      const R=routeWater(surf,NX,NY,G.cellM,own);
+      const breaches=R.deps.filter(d=>d.over>0&&d.outlet>=0)
         .sort((a,b)=>b.over-a.over).slice(0,12);
       const ms=(typeof performance!=='undefined'?performance.now():Date.now())-t0;
-      const biggest=deps.slice().sort((a,b)=>b.capacity-a.capacity)[0]||null;
-      result={ surf, filled, depth, through, parent, mainOut, deps, breaches, wetCells, storedM3, maxDepth,
-        floodKm2:wetCells*A/1e6, totalIn:(rainMm/1000)*A*N+sources.reduce((s,x)=>s+Math.max(0,x.m3),0),
+      const biggest=R.deps.slice().sort((a,b)=>b.capacity-a.capacity)[0]||null;
+      result={ surf:R.surf, filled:R.filled, depth:R.depth, through:R.through, parent:R.parent,
+        mainOut:R.mainOut, deps:R.deps, breaches, wetCells:R.wetCells, storedM3:R.storedM3, maxDepth:R.maxDepth,
+        floodKm2:R.wetCells*A/1e6, totalIn:(rainMm/1000)*A*N+sources.reduce((s,x)=>s+Math.max(0,x.m3),0),
         solveMs:Math.round(ms),
         /* diagnostics — the numbers to look at when the answer surprises you */
-        depCount:deps.length, depId, model:'priority-flood + MFD(1.1) + cascading depressions',
+        depCount:R.deps.length, depId:R.depId, model:'priority-flood + MFD(1.1) + cascading depressions',
         biggest:biggest?{ cells:biggest.cells.length, capacity:biggest.capacity, inflow:biggest.inflow,
           level:biggest.level, spill:biggest.spill, over:biggest.over||0 }:null };
       draw();
@@ -579,62 +736,51 @@ window.IntMapModules.terrainWater=function(HOST){
                spacingM,                                  /* (#R187) the width flowImage() draws the course at */
                cellAreaM2:spacingM*spacingM };
     }
-    /* ══ (#R189) THE ESCAPE PATH IS NOT THE RIVER ═════════════════════════════════════════════════
-       The priority flood's `parent` chain answers "which way OUT of the window with the least rise"
-       — fill-and-spill, the right question for whether water can leave at all, and the wrong one
-       for which way the channel runs: at a confluence the least-rise route to the border can walk
-       out over a side saddle. Real water follows the TALWEG — the branch carrying the largest
-       catchment. So each window now gets the same MFD accumulation sweep solve() already runs on
-       the working grid: every cell sheds its area to its lower neighbours weighted by slope^1.1,
-       processed in descending order of the FILLED surface (a lake passes its water to its spill,
-       not to its floor), and the walk from the entry follows the strictly-descending neighbour with
-       the LARGEST accumulated catchment. On a filled flat there is no descending neighbour and the
-       flood's parent — the spill route — is exactly the right fallback, so lakes are still crossed
-       the way #R186 set up. Termination is unchanged: accumulation steps strictly descend the
-       filled surface and parent steps walk the flood's own tree, so no cycle is possible. */
-    function channelChain(W,k0){
-      const n=W.n, N=W.N, filled=W.filled;
-      const order=new Uint32Array(N); for(let k=0;k<N;k++) order[k]=k;
-      order.sort((a,b)=>filled[b]-filled[a]);
-      const acc=new Float32Array(N).fill(1);
-      const DI=[-1,1,0,0,-1,1,-1,1], DJ=[0,0,-1,1,-1,-1,1,1],
-            DD=[1,1,1,1,Math.SQRT2,Math.SQRT2,Math.SQRT2,Math.SQRT2];
-      const wbuf=new Float64Array(8);
-      for(let o=0;o<N;o++){ const k=order[o], ki=k%n, kj=(k/n)|0;
-        let sum=0;
-        for(let d=0;d<8;d++){ const ni=ki+DI[d], nj=kj+DJ[d];
-          if(ni<0||nj<0||ni>=n||nj>=n){ wbuf[d]=0; continue; }
-          const dz=filled[k]-filled[nj*n+ni];
-          wbuf[d]=dz>1e-6?Math.pow(dz/DD[d],1.1):0; sum+=wbuf[d]; }
-        if(sum>0){ for(let d=0;d<8;d++){ if(!wbuf[d]) continue;
-            acc[(kj+DJ[d])*n+(ki+DI[d])]+=acc[k]*wbuf[d]/sum; } }
-        else { const p=W.parent[k]; if(p>=0) acc[p]+=acc[k]; }
-      }
+    /* ══ ⚠⚠⚠ (#R255) THE WINDOW IS ROUTED, NOT ACCUMULATED ═════════════════════════════════════════
+       「上流から下流まですべて同じ計算・描画方法にしろ。上流のものに合わせろ。」
+
+       #R189 replaced the flood's least-rise escape with `channelChain` — an MFD sweep over UNIT
+       contributions, i.e. drainage AREA. That was the right correction to the question it was asked
+       (which branch is the river), and it is a different quantity from the one the working grid
+       computes: upstream every number is cubic metres of the water the reader placed, routed through
+       depressions that hold it and spill only their overflow.
+
+       This runs `routeWater` — the working grid's own function, unchanged — over the window, with the
+       water that actually arrived at the entry cell as its input. The channel is then `mainOut`, the
+       neighbour taking the largest SHARE OF THE FLOW, and standing water is the routing's own
+       `depth`, from the same cascading-depression solve. Same code, same physics, same units, from
+       the click to the sea.
+
+       ⚠ WHAT IS CARRIED BETWEEN WINDOWS is the volume: a window's routing tells us how much of it
+       leaves at the exit cell (`through`), and that becomes the next window's input. A basin that
+       swallows everything ends the course, exactly as it does on the working grid.
+       ⚠ Rainfall is applied over the window too, at the same mm the panel is set to, because that is
+       what the upstream grid does with it. */
+    function windowRoute(W,k0,inM3){
+      const own=new Float64Array(W.N);
+      const rain=(rainMm/1000)*W.cellAreaM2;
+      if(rain>0) for(let k=0;k<W.N;k++) own[k]=rain;
+      own[k0]+=Math.max(0,+inM3||0);
+      return routeWater(W.surf,W.n,W.n,W.spacingM,own);
+    }
+    /* the course through one window: follow the share of the flow, and cross a still lake by the
+       flood's own spill route (there is no descending neighbour inside one — #R186's rule, kept). */
+    function channelChain(W,k0,R){
+      const n=W.n, N=W.N, filled=R.filled, mainOut=R.mainOut;
       const chain=[k0]; let k=k0, guard=0;
       const border=(kk)=>{ const ki=kk%n, kj=(kk/n)|0; return ki===0||kj===0||ki===n-1||kj===n-1; };
       while(guard++<4*N){
         if(border(k)) break;
-        let best=-1, bestA=-1;
-        const ki=k%n, kj=(k/n)|0;
-        for(let d=0;d<8;d++){ const ni=ki+DI[d], nj=kj+DJ[d];
-          if(ni<0||nj<0||ni>=n||nj>=n) continue;
-          const nk=nj*n+ni;
-          if(filled[nk]<filled[k]-1e-6&&acc[nk]>bestA){ bestA=acc[nk]; best=nk; } }
-        if(best<0){
-          /* a filled flat: walk the spill route across the WHOLE flat in one go. Taking a single
-             parent step and handing back to the accumulation walk can ping-pong — the parent leads
-             along the spill tree, the accumulation pulls back toward the flat's deep line — and a
-             measured Chikuma trace ended in a false 'lake' at a braided reach because of exactly
-             that oscillation. Following `parent` until the surface actually drops is the same flat
-             crossing #R186 shipped, kept verbatim for the one ground it is right on. */
-          const lev=filled[k]; let k2=W.parent[k], hop=0, moved=false;
-          while(k2>=0&&hop++<4*N){ chain.push(k2); k=k2; moved=true;
-            if(border(k2)||filled[k2]<lev-1e-6) break;
-            k2=W.parent[k2]; }
-          if(!moved||k2<0) break;
-          continue;
-        }
-        chain.push(best); k=best;
+        const nxt=mainOut[k];
+        if(nxt!=null&&nxt>=0&&filled[nxt]<filled[k]-1e-6){ chain.push(nxt); k=nxt; continue; }
+        /* a filled flat (a lake surface): walk the spill route across the WHOLE flat in one go.
+           Taking a single parent step and handing back can ping-pong — a measured Chikuma trace
+           ended in a false 'lake' at a braided reach because of exactly that oscillation. */
+        const lev=filled[k]; let k2=R.parent[k], hop=0, moved=false;
+        while(k2>=0&&hop++<4*N){ chain.push(k2); k=k2; moved=true;
+          if(border(k2)||filled[k2]<lev-1e-6) break;
+          k2=R.parent[k2]; }
+        if(!moved||k2<0) break;
       }
       return chain;
     }
@@ -808,6 +954,15 @@ window.IntMapModules.terrainWater=function(HOST){
       const elev=[], wet=[], spac=[]; let wetCap=false;
       const WET_MAX=140000, WET_MIN_D=0.3;
       let distM=0, rounds=0, warmC=null, end='cap', endInfo=null, windows=0, pts=1, escal=0, escalMult=0, stallRun=0;
+      /* ══ (#R255) THE VOLUME TRAVELS WITH THE COURSE ════════════════════════════════════════════════
+         What crosses from one window to the next is water, in cubic metres — the quantity the working
+         grid routes. It starts as everything the reader placed (plus what the rainfall puts on the
+         working rectangle) and is re-read from each window's routing at the cell the course leaves
+         by, so a lake that swallows the lot ends the course because the routing says nothing came
+         out, not because a separate rule said so. */
+      let carryM3=(function(){ try{ let v=sources.reduce((s,x)=>s+Math.max(0,x.m3),0);
+        if(G&&rainMm>0) v+=(rainMm/1000)*G.areaM2*G.NX*G.NY;
+        return v; }catch(_){ return 0; } })();
       /* (#R190) how often the "is this really the sea?" flood may be paid for, and whether the course
          has run below sea level on land at any point (the panel says so — it is the interesting fact
          that used to be an ending). */
@@ -900,9 +1055,12 @@ window.IntMapModules.terrainWater=function(HOST){
             collectPond(k0,W.filled[k0]);
             end='sink'; endInfo={ depthM:need, areaKm2:cells*W.cellAreaM2/1e6 }; break;
           }
-          /* the whole downstream path inside this window, in one walk — (#R189) the talweg by MFD
-             accumulation, not the flood's least-rise escape; see channelChain() */
-          const chain=channelChain(W,k0);
+          /* ══ (#R255) THE SAME ROUTING THE WORKING GRID RUNS, ON THIS WINDOW ═══════════════════════
+             `routeWater` — the upstream function itself — with the volume that arrived here as its
+             input. The channel is the share of the FLOW (`mainOut`), and the standing water below is
+             this routing's own depression solve rather than a second pond collector. */
+          const WR=windowRoute(W,k0,carryM3);
+          const chain=channelChain(W,k0,WR);
           if(chain.length<2){ end='flat'; break; }
           let seaRun=0, poolRun=0, poolMax=0, poolStart=null, hitSea=false, prev=[lng,lat], poolSeed=-1, poolLev=0;
           for(let a=1;a<chain.length;a++){
@@ -924,6 +1082,10 @@ window.IntMapModules.terrainWater=function(HOST){
           if(poolMax>3&&poolRun>=8){ lakes.push({ at:poolStart, depthM:poolMax, areaKm2:poolRun*W.cellAreaM2/1e6 });
             collectPond(poolSeed,poolLev); }
           lng=prev[0]; lat=prev[1];
+          /* (#R255) how much of the water is still moving where the course leaves this window — the
+             routing's own `through` at that cell. A basin that held everything reports ~0, and the
+             next window then has nothing to route, which is what ends the course. */
+          { const kOut=W.at(lng,lat); if(kOut>=0&&WR.through) carryM3=Math.max(0,WR.through[kOut]); }
           { const dx=(lng-entryLng)*Math.cos(lat*D), dy=lat-entryLat, m=Math.hypot(dx,dy);
             if(m>1e-9){ headX=dx/m; headY=dy/m; } }
           /* ⚠ "BELOW SEA LEVEL" IS NOT "THE SEA". Measured: a trace started above Death Valley ran
@@ -1073,9 +1235,15 @@ window.IntMapModules.terrainWater=function(HOST){
                 lng=p[0]; lat=p[1];
                 continue;
               }
-              /* ② otherwise the #R189 construction: the coarse window's own talweg. Right wherever
-                 the wide view actually has a slope, which is the case this rung was built for. */
-              const ch3=channelChain(V3,vk3);
+              /* ② otherwise the same construction on the coarse window: route the volume we are
+                 carrying through it and follow the share of the flow. Right wherever the wide view
+                 actually has a slope, which is the case this rung was built for.
+                 ⚠ (#R255) THE WIDE LOOK-AHEAD IS A SECOND CALL SITE, AND IT IS EASY TO MISS: the
+                 first version of this round changed the signature and updated the one call the
+                 grep showed in the main loop, leaving this one two arguments short — the trace ran
+                 88 km over 13 windows and then ended `error`, «Cannot read properties of undefined
+                 (reading 'filled')», which the catch turned into a silent bad ending. */
+              const ch3=channelChain(V3,vk3,windowRoute(V3,vk3,carryM3));
               if(ch3.length<=2) continue;
               const exit=ch3[ch3.length-1], pExit=V3.ll(exit);
               const eHere=V3.surf[vk3], eExit=V3.surf[exit];
@@ -1565,9 +1733,35 @@ window.IntMapModules.terrainWater=function(HOST){
       panel.innerHTML='<div class="tw-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;">'
         +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">⛰💧 '+L('Terrain &amp; water','地形編集・水流','Gelände &amp; Wasser','Рельеф и вода','Terreno y agua')+'</span>'
         +'<button class="tw-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
-        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
+        /* ══ ⚠ (#R255) THE SHARED HALF IS PINNED TO THE BOTTOM ══════════════════════════════════════
+           「下部スティックしろ。」 → 「共通部分や、時刻など。」 The panel was one column that simply grew:
+           choosing the brush adds five rows of pen settings, choosing 「ここに水」 adds the pour
+           controls, and the things that are the same in EVERY mode — the rainfall, 元に戻す / 地形を
+           リセット / リセット, the progress bar, and the status line that carries the elapsed simulated
+           clock — were pushed further down each time, off the bottom of a tall panel.
+           So the panel is now a SCROLLING body and a STICKY FOOTER: the per-mode parameters scroll,
+           the shared controls and the clock never move.
+           ⚠ (#R245) THE DOM PARENTAGE IS THE THING TO GET RIGHT, NOT THE CSS. That round's pinned
+           footer failed on ONE unbalanced `</div>` — `innerHTML` accepts it silently and the browser
+           re-parents the footer inside the scroller, where `position:sticky` is a no-op. Body and
+           footer are siblings here, closed in the order they are opened, and tests/r255 asserts that
+           `.tw-foot`'s parent is the panel itself. */
+        +'<div class="tw-body" style="padding:10px 12px 4px;display:flex;flex-direction:column;gap:9px;flex:1 1 auto;min-height:0;overflow-y:auto;">'
         +'<div class="tw-modes" style="display:flex;flex-wrap:wrap;gap:5px;">'+modes().map(m=>'<button class="tw-m" data-m="'+m[0]+'" style="'+BTN+'flex:1 1 auto;">'+m[1]+'</button>').join('')+'</div>'
         +'<div class="tw-params"></div>'
+        /* (#R211) 「専門統計は「詳細情報を表示」で隠す」 — <details> so the browser owns the state */
+        +'<details class="tw-more" style="font-size:11.5px;color:var(--text-main);line-height:1.55;">'
+          +'<summary style="cursor:pointer;font-size:11px;color:var(--text-muted);">'+L('Show details','詳細情報を表示','Details anzeigen','Подробнее','Ver detalles')+'</summary>'
+          +'<div class="tw-more-body" style="margin-top:5px;"></div></details>'
+        +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
+        +L('Real terrarium elevation, sculpted by you. Water is routed by priority-flood depression filling and downslope volume accounting — it answers where the water stands and which way it leaves, not how fast the front travels.',
+           '実際の標高データを編集しています。水はプライオリティフラッド（窪地充填）と流下方向への体積集積で解いています。「どこに溜まり、どちらへ抜けるか」を答えるモデルで、波の到達速度は扱いません。',
+           'Echte Höhendaten. Wasser über Priority-Flood und Volumenrouting — wo es steht und wohin es abfließt, nicht wie schnell die Front läuft.',
+           'Реальные высоты. Вода — priority-flood и маршрутизация объёма: где стоит и куда уходит, но не скорость фронта.',
+           'Elevación real. El agua se resuelve con priority-flood y enrutamiento de volumen: dónde queda y por dónde sale, no la velocidad del frente.')
+        +'</div>'
+        +'</div>'
+        +'<div class="tw-foot" style="flex:0 0 auto;position:sticky;bottom:0;padding:8px 12px 10px;display:flex;flex-direction:column;gap:8px;background:var(--card-bg,#1c1c1e);border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));">'
         +'<label style="'+ROW+'">'+L('Rainfall (mm)','降水量 (mm)','Niederschlag (mm)','Осадки (мм)','Lluvia (mm)')+'<input class="tw-rain" type="number" min="0" max="2000" step="10" value="'+rainMm+'" style="'+NUM+'"></label>'
         +'<div style="display:flex;gap:5px;flex-wrap:wrap;">'
           +'<button class="tw-undo" style="'+BTN+'flex:1 1 46%;">↩ '+L('Undo','元に戻す','Rückgängig','Отменить','Deshacer')+'</button>'
@@ -1583,17 +1777,7 @@ window.IntMapModules.terrainWater=function(HOST){
           +'<div class="tw-prog-txt" style="font-size:10px;color:var(--text-muted);margin-top:3px;"></div>'
         +'</div>'
         +'<div class="tw-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;line-height:1.55;"></div>'
-        /* (#R211) 「専門統計は「詳細情報を表示」で隠す」 — <details> so the browser owns the state */
-        +'<details class="tw-more" style="font-size:11.5px;color:var(--text-main);line-height:1.55;">'
-          +'<summary style="cursor:pointer;font-size:11px;color:var(--text-muted);">'+L('Show details','詳細情報を表示','Details anzeigen','Подробнее','Ver detalles')+'</summary>'
-          +'<div class="tw-more-body" style="margin-top:5px;"></div></details>'
-        +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-        +L('Real terrarium elevation, sculpted by you. Water is routed by priority-flood depression filling and downslope volume accounting — it answers where the water stands and which way it leaves, not how fast the front travels.',
-           '実際の標高データを編集しています。水はプライオリティフラッド（窪地充填）と流下方向への体積集積で解いています。「どこに溜まり、どちらへ抜けるか」を答えるモデルで、波の到達速度は扱いません。',
-           'Echte Höhendaten. Wasser über Priority-Flood und Volumenrouting — wo es steht und wohin es abfließt, nicht wie schnell die Front läuft.',
-           'Реальные высоты. Вода — priority-flood и маршрутизация объёма: где стоит и куда уходит, но не скорость фронта.',
-           'Elevación real. El agua se resuelve con priority-flood y enrutamiento de volumen: dónde queda y por dónde sale, no la velocidad del frente.')
-        +'</div></div>';
+        +'</div>';
       panel.querySelector('.tw-close').onclick=()=>close();
       panel.querySelectorAll('.tw-m').forEach(b=>b.onclick=()=>{ setMode(b.getAttribute('data-m')); });
       panel.querySelector('.tw-rain').onchange=e=>{ pushUndo(); rainMm=Math.max(0,+e.target.value||0); solve(); };
@@ -1602,8 +1786,8 @@ window.IntMapModules.terrainWater=function(HOST){
          and is re-solved on the ORIGINAL ground, which is the comparison the button exists for. */
       panel.querySelector('.tw-resetT').onclick=()=>{ if(!G) return; pushUndo();
         sculpt=new Float32Array(G.NX*G.NY); levees=[]; solve(); };
-      panel.querySelector('.tw-reset').onclick=()=>{ if(!G) return; pourStop(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; sources=[]; rainMm=0; clearTrace();
-        const r=panel.querySelector('.tw-rain'); if(r) r.value=0; undoStack=[]; solve(); };
+      panel.querySelector('.tw-reset').onclick=()=>{ if(!G) return; pourStop(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; sources=[]; rainMm=0; pourSimS=0; editDirty(); clearTrace();
+        const r=panel.querySelector('.tw-rain'); if(r) r.value=0; undoStack=[]; solve(); terrainSoon(); };
       try{ makeDraggable(panel,panel.querySelector('.tw-head')); }catch(_){}
       syncMode(); renderParams();
       if(result) report();
@@ -1670,8 +1854,14 @@ window.IntMapModules.terrainWater=function(HOST){
     }
     /* (#R211) re-selecting the active tool releases it — see modes(). 'pan' remains the idle state
        the map's own gestures belong to; it is simply no longer something you have to find. */
+    /* ══ ⚠ (#R255) PUTTING THE TOOL DOWN IS NOT STOPPING THE WATER ═════════════════════════════════
+       「ここに水を選択解除したら時間がリセットされるのをやめろ。」 Leaving the 「ここに水」 tool called
+       `pourStop()`, which clears the interval — the elapsed clock stops dead, and because the next
+       `placeSource` in continuous mode sets `pourSimS = 0`, the reader who deselects and then places
+       again sees the timer back at zero. The tool is what the POINTER does; the pour is a running
+       simulation and belongs to the simulation. Selecting «pan» to move the map around a flood must
+       not end the flood. (Explicit stops are unchanged: the ⏸ button, 全消去, 元に戻す and close.) */
     function setMode(m){ mode=(mode===m&&m!=='pan')?'pan':m; drafting=null;
-      if(mode!=='source') pourStop();
       try{ GE().render.canvas().style.cursor=(mode==='pan')?'':'crosshair'; }catch(_){}
       try{ if(mode==='raise'||mode==='lower') GE().input.set('dragPan',false); else GE().input.set('dragPan',true); }catch(_){}
       syncMode(); renderParams(); draw(); }
@@ -1687,7 +1877,7 @@ window.IntMapModules.terrainWater=function(HOST){
         if(!cellOf(e.lngLat.lng,e.lngLat.lat)){ rebuildAround(e.lngLat.lng,e.lngLat.lat).then(ok=>{ if(ok) solve(); else _bldFail(); }); return; }
         painting=true; pushUndo(); paintBrush(e.lngLat.lng,e.lngLat.lat,mode==='raise'?1:-1); schedule(); } }
     function onMove(e){ if(!painting) return; paintBrush(e.lngLat.lng,e.lngLat.lat,mode==='raise'?1:-1); schedule(); }
-    function onUp(){ if(painting){ painting=false; solve(); } }
+    function onUp(){ if(painting){ painting=false; solve(); terrainSoon(); } }
     function schedule(){ if(paintRaf) return; paintRaf=requestAnimationFrame(()=>{ paintRaf=0; solve(); }); }
     /* ⚠ (#R186) THE REPORTED FAULT, AND ITS CAUSE.
        「Terrain & waterで、水を配置したときに、結果が出ないことがある。」
@@ -1711,11 +1901,17 @@ window.IntMapModules.terrainWater=function(HOST){
                           'Не удалось загрузить тайлы рельефа — проверьте соединение и повторите.',
                           'No se pudieron descargar los teselas de elevación — revise la conexión e inténtelo de nuevo.');
     function _bldFail(){ setStat('⚠ '+_DEM_FAIL()); }
+    /* ══ ⚠ (#R255) THE WORKING AREA MOVES. THE CAMERA DOES NOT ══════════════════════════════════════
+       「地形編集・水流で水を置いた場所に画面を移動するのをやめろ。」 This used to `easeTo` the click
+       and then wait 520 ms for the camera to land, because `build()` took its rectangle from
+       `camera.getBounds()` — so moving the view WAS how the working area was aimed. Taking the
+       rectangle as an argument instead aims it directly: the reader's view is left exactly where they
+       put it, and the half-second of dead time before the DEM read goes with the camera flight.
+       ⚠ The span still comes from the view (the rectangle is «about a screenful», which is what makes
+       the cell size match what is on screen); only its CENTRE is the click now. */
     async function rebuildAround(lng,lat){
       setStat(L('Moving the working area here…','作業範囲をここへ移動中…','Arbeitsbereich wird hierher verschoben…','Рабочая область переносится сюда…','Moviendo el área de trabajo…'));
-      try{ GE().camera.easeTo({center:[lng,lat],duration:420}); }catch(_){}
-      await new Promise(r=>setTimeout(r,520));
-      return await build();
+      return await build({center:[lng,lat]});
     }
     /* ⚠ (#R188) THE OTHER SILENT NO-OP. #R186 found and fixed one cause of 「水を配置したときに、結果が
        出ないことがある」 — a click outside the working rectangle. It left a second one in the very
@@ -1739,7 +1935,11 @@ window.IntMapModules.terrainWater=function(HOST){
        cannot disagree about what a click did. */
     function placeSource(lng,lat){ pushUndo();
       sources.push({lng,lat,m3:(pourMode==='cont')?0:srcM3});
-      if(pourMode==='cont'){ pourSimS=0; solve(); pourStart(); if(panel) renderParams(); }
+      /* (#R255) the clock is the SIMULATION's, not this source's — it is reset when the simulation is
+         (全消去 / 元に戻す / close), and a second inlet added to a flood that is already running joins
+         it at the time it is at. Restarting from zero here is what made 「時間がリセットされる」 true
+         even after the tool-switch stop was removed. */
+      if(pourMode==='cont'){ if(!pourT) pourSimS=0; solve(); pourStart(); if(panel) renderParams(); }
       else solve();
       traceDownstream(lng,lat); }
     function onClick(e){ if(!opened) return;
@@ -1765,7 +1965,7 @@ window.IntMapModules.terrainWater=function(HOST){
       const p=drafting.pts;
       while(p.length>2){ const a=p[p.length-1], b=p[p.length-2];
         if(Math.abs(a[0]-b[0])<1e-7&&Math.abs(a[1]-b[1])<1e-7) p.pop(); else break; }
-      if(p.length>=2){ pushUndo(); levees.push(drafting); drafting=null; solve(); }   /* (#R211) a levee is one operation */
+      if(p.length>=2){ pushUndo(); levees.push(drafting); drafting=null; editDirty(); solve(); terrainSoon(); }   /* (#R211) a levee is one operation */
       else { drafting=null; draw(); } }
     GE().events.on('mousedown',onDown); GE().events.on('mousemove',onMove); GE().events.on('mouseup',onUp);
     GE().events.on('touchstart',onDown); GE().events.on('touchmove',onMove); GE().events.on('touchend',onUp);
@@ -1777,15 +1977,21 @@ window.IntMapModules.terrainWater=function(HOST){
         /* (#R189) 「ポップアップは透過するな」 — --card-bg is opaque in BOTH themes (#fff / #1c1c1e);
            --popup-bg was rgba(...,0.72/0.74) with no backdrop-filter, i.e. the map showed through
            unblurred behind the numbers. */
-        panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+        /* (#R255) a ceiling, so the body can be the thing that scrolls under the sticky footer */
+        panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);max-height:min(82vh,calc(100vh - 104px));z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
         document.body.appendChild(panel); }
       panel.style.display='flex'; opened=true; render();
+      /* (#R255) the readout family reads the sculpted ground through this while the tool is open */
+      try{ window.IntMapElevEdit=(lng,lat,v)=>{ try{ return (opened&&G)?(v+editDeltaAt(lng,lat)):v; }catch(_){ return v; } }; }catch(_){}
       if(o&&o.lng!=null){ try{ GE().camera.flyTo({center:[o.lng,o.lat],zoom:Math.max(GE().camera.getZoom(),11),duration:600}); }catch(_){}
         await new Promise(r=>setTimeout(r,750)); }
       if(!G||o&&o.refit){ if(await build()) solve(); } else solve();
       return true; }
     function clearTrace(){ traceSeq++; tracing=false; trace=null; }   /* (#R186) bumping the token aborts an in-flight trace */
     function close(){ opened=false; painting=false; drafting=null; clearTrace(); pourStop(); setProg(null);
+      /* (#R255) hand the untouched ground back — the hook and the sculpted DEM both go with the tool */
+      try{ delete window.IntMapElevEdit; }catch(_){ try{ window.IntMapElevEdit=null; }catch(__){} }
+      try{ syncTerrain(); }catch(_){}
       try{ GE().input.set('dragPan',true); GE().render.canvas().style.cursor=''; }catch(_){}
       if(panel) panel.style.display='none'; wipe(); return true; }
     window.addEventListener('intmap-lang',()=>{ if(opened) render(); });
@@ -1916,7 +2122,7 @@ window.IntMapModules.terrainWater=function(HOST){
         levees.push({pts:pts.slice(),crest:Math.max(1,+crest||leveeCrest),width:Math.max(10,+width||leveeWidth)}); solve(); return true; },
       clearWater(){ pushUndo(); pourStop(); sources=[]; rainMm=0; const r=panel&&panel.querySelector('.tw-rain'); if(r) r.value=0; return solve(); },
       /* (#R211) 「配置した水は残して地形だけ戻す」 — the button's other half, as a call */
-      resetTerrain(){ if(!G) return false; pushUndo(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; solve(); return true; },
+      resetTerrain(){ if(!G) return false; pushUndo(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; editDirty(); solve(); terrainSoon(); return true; },
       /* (#R190) why the automatic re-trace did or did not run after the last edit — a silent no-op is
          exactly the class of defect this feature keeps producing (#R186/#R188/#R189), so it reports. */
       retraceState:()=>({ why:_reWhy, pending:!!_reT, sinceLastTraceMs:Date.now()-_lastTraceAt }),

@@ -992,7 +992,12 @@ window.IntMapModules.dataLayers=function(HOST){
           /* (#R202) `sats` moved OUT of Maritime and into its own group, second from the top — see the
              lyrGrpOrbit note above. Nothing else moved: live aircraft stay where they were. */
           ['lyrGrpOrbit',['sats']],
-          ['lyrGrpMaritime',['sst','eez','subcables','planes','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
+          /* ⚠ (#R255) `subcables` LEFT THIS GROUP for Technology & infrastructure. A submarine cable
+             is under the sea the way a railway is under a hill — the sea is where it runs, not what
+             it is — and a reader looking for the internet's physical plant looks under technology,
+             beside the data centres it lands at. ⚠ It must appear in exactly ONE list: `order.push`
+             MOVES the element, so an id in two groups renders only in the last one. */
+          ['lyrGrpMaritime',['sst','eez','planes','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','gxndvi','gxrelief','wbagri','gxsoil']],   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
           /* ⚠ (#R233) SEVEN, NAMED BY THE INSTRUCTION — everything else in this group was DEMOTED.
              「人口・経済レイヤーは 人口密度（1kmグリッド）／1人当たりGDP／合計特殊出生率／HDI (2022)／
@@ -1011,7 +1016,37 @@ window.IntMapModules.dataLayers=function(HOST){
              the other always-there view switches (place names, borders, roads, grid) at the top of the
              panel. Moved by name into that list below, not duplicated: one row, one owner. */
           ['lyrGrpHazard',['thermal','aurora','nightsat','volc2','eq']],   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
-          ['lyrGrpGeoPol',['milSpend','milSpendGDP','nato','eu','ukrfront','rail','uselect']],   /* (#R26) EU members layer added beside NATO; (#R122) fsu + histb removed per request */
+          /* ══ ⚠ (#R255) FOUR NEW CATEGORIES, AND «Geopolitics & defense» SPLIT INTO TWO OF THEM ══════
+             「政治、軍事、医療・衛生、IT・テックレイヤーカテゴリを追加し、レイヤーの再編や追加を行うように。
+               それぞれのレイヤーカテゴリの名前は任せる。」 (naming delegated; reorganisation confirmed
+             as «任せる» when asked.)
+
+             `lyrGrpGeoPol` was one shelf holding two unrelated subjects — who governs (elections, EU
+             membership, democracy and corruption indices) and who is armed (defence spending, NATO,
+             a front line). It is replaced by `lyrGrpPolitics` and `lyrGrpSecurity`, which is the
+             split the instruction names. The health family and the digital/infrastructure family were
+             not shelved at all: #R233 demoted the World-Bank health indicators to «Others» with the
+             rest of that table, and the submarine cables sat in «Oceans & maritime» because that is
+             where the water is — neither is where a reader looks for them.
+
+             ⚠ NOTHING IS DELETED AND NOTHING BECOMES UNREACHABLE. Every id below already existed; a
+             row that leaves one GROUP arrives in another, and the safety sweep at the end of this
+             function still catches anything not listed. `lyrGrpGeoPol`'s KEY is retained in the nine
+             locale files (an old saved session or a share link can still name it) — it simply has no
+             rows any more, and a group with no rows is not rendered.
+             ⚠ `rail` is in Technology & infrastructure on purpose: it is the rail NETWORK layer
+             (js/routing.js, line colours and routing), i.e. built infrastructure, which is what that
+             category is named for — the base «Railways» toggle is a different row and stays at the
+             top with the other always-there view switches.
+             ⚠⚠ 民主主義指数 (`dem`), 汚職・腐敗指標 (`cpi`) and 平均寿命 (`lifeexp`) READ like Politics and
+             Health and are DELIBERATELY LEFT in 人口・経済: #R233 is an explicit instruction naming
+             those seven rows as that category's contents, and this round's authorisation to
+             reorganise is not a reason to quietly overturn a list the reader wrote out by hand. Say
+             the word and they move. */
+          ['lyrGrpPolitics',['uselect','eu','wbwomparl','osmdiplo']],
+          ['lyrGrpSecurity',['milSpend','milSpendGDP','nato','ukrfront','wbmilgdp','wbmilppl','wbhomicide','osmmil']],
+          ['lyrGrpHealth',['wbhealth','wbphys','wbbeds','wbinfmort','wbu5mort','wblife','wbwater','wbsan','wbpm25','wbcook','wbsmoke','wbalcohol','wbsuicide','wboverwt','wbunder','wbadofert','wbfert','osmhealth']],
+          ['lyrGrpTech',['dc','subcables','rail','wbnet','wbmobile','wbbbnd','wbhitech','wbrnd','wbresearch','wbpatent','osmtelecom']],
           ['lyrGrpIndic',['tz']],   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
           /* ══ ⚠ (#R254) "OTHERS" IS A REAL CATEGORY NOW, AND "BETA" MEANS BETA ═══════════════════════
              「以下のレイヤーは、Others(beta) layersから移動し、新たなカテゴリであるOthersにおくこと。
@@ -1025,14 +1060,15 @@ window.IntMapModules.dataLayers=function(HOST){
              ⚠ `lyrGrpOthers` keeps its KEY and loses its «(beta)» wording in all nine languages — the
              key is what js/map-ui.js and js/layer-dropdown.js use to find the collapsible beta group
              on mobile, and renaming it would silently un-collapse that section. */
-          ['lyrGrpOthersReal',['wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl','wbinfmort','wbgdpgrow','wblit','wbwater','wbsan','wbpov','wbgini','wbtrade','wbtax','wbphys','wbschool','wbelecuse','wbrenelec','wbfdi','wbmilppl','wblife','wbunemp','wbnet','wbdebt','wbmanuf','wbu5mort','wbpopgrow','wbenergy','wbrnd','wbtour','wbref','wbco2t','wbpatent','wbwomparl','wbpm25','wbcook','wbflfp','wbtert','wbrural','wbgni','wbunder','wbhitech','wbbbnd','wbaging','wbadofert','wbbeds','wbresearch','wboverwt','wburban','wbtourism','wbremit','wbsuicide','wbalcohol','wbhomicide','wbmilgdp','wbfert','wbdensity','wbedu','wbsmoke','wbagremp']]
+          ['lyrGrpOthersReal',['wburb','wbelec','wbrenew','wbinfl','wbgdpgrow','wblit','wbpov','wbgini','wbtrade','wbtax','wbschool','wbelecuse','wbrenelec','wbfdi','wbunemp','wbdebt','wbmanuf','wbpopgrow','wbenergy','wbtour','wbref','wbco2t','wbflfp','wbtert','wbrural','wbgni','wbaging','wburban','wbtourism','wbremit','wbdensity','wbedu','wbagremp']]
         ];
         /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */
         const OTHERS_IDS=['ec-temp','temp','ec-precip','precip','ec-wind','ec-dew','ec-isobars','ec-slp','ec-cape','ec-sst','ships','dams'];   /* (#R225) the nine geopolitics keys left this list with the layers themselves */
         const rowFor=(id)=>{ let el=document.getElementById('lyrrow-'+id); if(el) return el;
           /* (#R20) beta-dl- so promoted ex-beta layers (histb, ukrfront) can be filed into a real group.
              (#R254) …and wp-dl- for the same reason, so a world-packs row (energy mix) can be too. */
-          el=document.getElementById('eco-dl-'+id)||document.getElementById('l9-dl-'+id)||document.getElementById('beta-dl-'+id)||document.getElementById('wp-dl-'+id); if(el) return el.closest('.lyr-row')||el.closest('label');
+          /* (#R255) …and fac-dl- for the four surveyed-facility layers (js/osm-facilities.js). */
+          el=document.getElementById('eco-dl-'+id)||document.getElementById('l9-dl-'+id)||document.getElementById('beta-dl-'+id)||document.getElementById('wp-dl-'+id)||document.getElementById('fac-dl-'+id); if(el) return el.closest('.lyr-row')||el.closest('label');
           el=dd.querySelector('input[data-layer="'+id+'"]'); if(el) return el.closest('.lyr-row')||el.closest('label');
           return null; };
         const lang=(typeof HOST.lang!=='undefined')?HOST.lang:'en';
