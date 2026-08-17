@@ -3918,5 +3918,15 @@ window.IntMapLang.define('zh', {
   "coast": "沿岸",
   "Elevation relief": "高程暈渲",
   "Population density (1 km grid)": "人口密度（1 公里網格）",
+  "Explore the world, one layer at a time": "一層一層，探索世界",
+  "100+ data layers": "超過 100 種資料圖層",
+  "Climate, population, economy, geopolitics & live weather": "氣候、人口、經濟、地緣政治與即時天氣",
+  "Live news map": "即時新聞地圖",
+  "World headlines pinned to where they actually happen": "把世界頭條釘在真正發生的地點",
+  "Globe, satellite & time machine": "地球儀、衛星與時光機",
+  "3D terrain, real imagery, and travel back to 1900": "3D 地形、實拍影像，回溯至 1900 年",
+  "Atlas AI & country data": "Atlas AI 與國家資料",
+  "Ask in plain language, compare countries, even fly a jet": "用日常語言提問、比較國家，甚至駕駛噴射機",
+  "Start exploring": "開始探索",
   }
 });

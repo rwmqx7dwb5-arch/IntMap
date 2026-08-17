@@ -3832,4 +3832,14 @@ window.IntMapLang.define('fr', { ui: {
   "no arrival": "pas d’arrivée",
   "coast": "côte",
   "Elevation relief": "Relief altimétrique",
-  "Population density (1 km grid)": "Densité de population (grille de 1 km)",} });
+  "Population density (1 km grid)": "Densité de population (grille de 1 km)",
+  "Explore the world, one layer at a time": "Explorez le monde, couche par couche",
+  "100+ data layers": "Plus de 100 couches de données",
+  "Climate, population, economy, geopolitics & live weather": "Climat, population, économie, géopolitique et météo en direct",
+  "Live news map": "Carte d’actualité en direct",
+  "World headlines pinned to where they actually happen": "Les titres du monde épinglés là où ils se produisent",
+  "Globe, satellite & time machine": "Globe, satellite et machine à remonter le temps",
+  "3D terrain, real imagery, and travel back to 1900": "Relief 3D, imagerie réelle et retour jusqu’en 1900",
+  "Atlas AI & country data": "Atlas IA et données par pays",
+  "Ask in plain language, compare countries, even fly a jet": "Posez vos questions en langage courant, comparez des pays, pilotez même un avion",
+  "Start exploring": "Commencer l’exploration",} });

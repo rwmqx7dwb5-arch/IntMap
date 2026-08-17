@@ -98,6 +98,8 @@ window.IntMapModules.onboarding=function(HOST){
   function _imWelcome(){
     try{ if(localStorage.getItem('intmap_demo_seen')==='1') return; }catch(_){}
     if(document.getElementById('im-welcome')) return;
+    /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js */
+    const LW=window.IntMapLang.pick(()=>HOST.lang), LA=window.IntMapLang.pickArgs();
     const jp=HOST.lang==='jp';
     const de=HOST.lang==='de';   /* (#R35) welcome screen now full 3-language (was jp/en only → leaked English in DE) */
     const isM=(typeof isMobile==='function' && isMobile());
@@ -117,25 +119,26 @@ window.IntMapModules.onboarding=function(HOST){
     const icon=document.createElement('div'); icon.innerHTML='<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3Z"/></svg>'; icon.style.cssText='width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,var(--primary-color),#5856d6);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 16px rgba(0,0,0,0.22);';
     const ht=document.createElement('div');
     const h1=document.createElement('div'); h1.textContent='IntMap'; h1.style.cssText='font-size:23px;font-weight:700;line-height:1.15;';
-    const h2=document.createElement('div'); h2.textContent=jp?'世界を、地図で読み解く':de?'Die Welt erkunden – Ebene für Ebene':'Explore the world, one layer at a time'; h2.style.cssText='font-size:13px;color:var(--text-muted);margin-top:3px;';
+    const h2=document.createElement('div'); h2.textContent=LW('Explore the world, one layer at a time','世界を、地図で読み解く','Die Welt erkunden – Ebene für Ebene','Исследуйте мир слой за слоем','Explora el mundo, capa a capa'); h2.style.cssText='font-size:13px;color:var(--text-muted);margin-top:3px;';
     ht.appendChild(h1); ht.appendChild(h2); head.appendChild(icon); head.appendChild(ht); card.appendChild(head);
     /* (#R102) up-to-date feature list — reflects the app as it is now (100+ layers incl. live weather, the time
        machine, and the Atlas assistant / flight simulator), not the old "70+ / country data" copy. */
-    const feats=jp?[
-      ['layers','100以上のデータレイヤー','気候・人口・経済・地政学・ライブ気象を地図に重ねて表示'],
-      ['news','ライブニュースマップ','世界のニュースを「発生した場所」にピン表示'],
-      ['globe','地球儀・衛星・タイムマシン','3D地形と実写衛星画像、1900年まで遡って表示'],
-      ['chart','Atlas AI・国データ','自然言語で操作、国どうしを比較、フライトシミュレーターも']
-    ]:de?[
-      ['layers','Über 100 Datenebenen','Klima, Bevölkerung, Wirtschaft, Geopolitik & Live-Wetter'],
-      ['news','Live-Nachrichtenkarte','Schlagzeilen dort angeheftet, wo sie wirklich geschehen'],
-      ['globe','Globus, Satellit & Zeitmaschine','3D-Gelände, echte Satellitenbilder, zurück bis 1900'],
-      ['chart','Atlas-KI & Länderdaten','In normaler Sprache steuern, Länder vergleichen, Flugsimulator']
-    ]:[
-      ['layers','100+ data layers','Climate, population, economy, geopolitics & live weather'],
-      ['news','Live news map','World headlines pinned to where they actually happen'],
-      ['globe','Globe, satellite & time machine','3D terrain, real imagery, and travel back to 1900'],
-      ['chart','Atlas AI & country data','Ask in plain language, compare countries, even fly a jet']
+    /* ⚠⚠⚠ (#R251) THIS WAS THREE WHOLE LANGUAGE BLOCKS — `jp ? [...] : de ? [...] : [...]` — so the
+       WELCOME CARD, the first screen a new reader ever sees, was in English for Russian, Spanish,
+       French, Korean and both Chinese readers. Invisible to every instrument, and for a reason worth
+       recording: the branches are not two literals (the two-branch audit), not an object keyed by a
+       language (the langmap audit) and not an array indexed by one (the positional-array audit) —
+       they are ARRAYS OF ROWS chosen by a boolean that was computed a hundred lines earlier
+       (`const jp=HOST.lang==='jp'`). One row per feature now, each cell a call. */
+    const feats=[
+      ['layers',LA('100+ data layers','100以上のデータレイヤー','Über 100 Datenebenen','Более 100 слоёв данных','Más de 100 capas de datos'),
+                LA('Climate, population, economy, geopolitics & live weather','気候・人口・経済・地政学・ライブ気象を地図に重ねて表示','Klima, Bevölkerung, Wirtschaft, Geopolitik & Live-Wetter','Климат, население, экономика, геополитика и погода в реальном времени','Clima, población, economía, geopolítica y meteorología en vivo')],
+      ['news',LA('Live news map','ライブニュースマップ','Live-Nachrichtenkarte','Карта новостей в реальном времени','Mapa de noticias en vivo'),
+              LA('World headlines pinned to where they actually happen','世界のニュースを「発生した場所」にピン表示','Schlagzeilen dort angeheftet, wo sie wirklich geschehen','Мировые новости на том месте, где они произошли','Titulares del mundo anclados donde realmente ocurren')],
+      ['globe',LA('Globe, satellite & time machine','地球儀・衛星・タイムマシン','Globus, Satellit & Zeitmaschine','Глобус, спутник и машина времени','Globo, satélite y máquina del tiempo'),
+               LA('3D terrain, real imagery, and travel back to 1900','3D地形と実写衛星画像、1900年まで遡って表示','3D-Gelände, echte Satellitenbilder, zurück bis 1900','3D-рельеф, реальные снимки и путешествие до 1900 года','Relieve 3D, imágenes reales y viaje hasta 1900')],
+      ['chart',LA('Atlas AI & country data','Atlas AI・国データ','Atlas-KI & Länderdaten','Atlas ИИ и данные по странам','Atlas IA y datos por país'),
+               LA('Ask in plain language, compare countries, even fly a jet','自然言語で操作、国どうしを比較、フライトシミュレーターも','In normaler Sprache steuern, Länder vergleichen, Flugsimulator','Спрашивайте обычным языком, сравнивайте страны и даже летайте','Pregunta en lenguaje natural, compara países e incluso pilota un avión')]
     ];
     const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:16px;margin:0 0 22px;';
     const tints=['rgba(0,122,255,0.15)','rgba(255,59,48,0.15)','rgba(52,199,89,0.15)','rgba(175,82,222,0.15)'];
@@ -143,12 +146,12 @@ window.IntMapModules.onboarding=function(HOST){
     feats.forEach((f,i)=>{ const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:13px;';
       const ic=document.createElement('div'); ic.innerHTML=ICONS[f[0]]||''; ic.style.cssText='width:38px;height:38px;border-radius:10px;background:'+tints[i%tints.length]+';color:'+tintFg[i%tintFg.length]+';display:flex;align-items:center;justify-content:center;flex-shrink:0;';
       const tx=document.createElement('div');
-      const t1=document.createElement('div'); t1.textContent=f[1]; t1.style.cssText='font-size:14.5px;font-weight:600;line-height:1.2;';
-      const t2=document.createElement('div'); t2.textContent=f[2]; t2.style.cssText='font-size:12px;color:var(--text-muted);margin-top:2px;line-height:1.3;';
+      const t1=document.createElement('div'); t1.textContent=LW.arr(f[1]); t1.style.cssText='font-size:14.5px;font-weight:600;line-height:1.2;';
+      const t2=document.createElement('div'); t2.textContent=LW.arr(f[2]); t2.style.cssText='font-size:12px;color:var(--text-muted);margin-top:2px;line-height:1.3;';
       tx.appendChild(t1); tx.appendChild(t2); row.appendChild(ic); row.appendChild(tx); list.appendChild(row); });
     card.appendChild(list);
     const close=()=>{ try{ localStorage.setItem('intmap_demo_seen','1'); }catch(_){} ov.style.opacity='0'; setTimeout(()=>{ try{ ov.remove(); }catch(_){} },280); };
-    const primary=document.createElement('button'); primary.textContent=jp?'使ってみる':de?'Loslegen':'Start exploring';
+    const primary=document.createElement('button'); primary.textContent=LW('Start exploring','使ってみる','Loslegen','Начать','Empezar a explorar');
     primary.style.cssText='width:100%;padding:14px;border:none;border-radius:13px;background:var(--primary-color);color:#fff;font-size:15.5px;font-weight:600;cursor:pointer;';
     primary.onclick=close; card.appendChild(primary);
     /* (#R102) the "Play Satellite Drop" and "Watch the layer tour" buttons were removed from the Start card per request

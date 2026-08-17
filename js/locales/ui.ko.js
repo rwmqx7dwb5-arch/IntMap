@@ -3822,4 +3822,14 @@ window.IntMapLang.define('ko', { ui: {
   "no arrival": "미도달",
   "coast": "연안",
   "Elevation relief": "표고 단채",
-  "Population density (1 km grid)": "인구 밀도 (1 km 격자)",} });
+  "Population density (1 km grid)": "인구 밀도 (1 km 격자)",
+  "Explore the world, one layer at a time": "한 겹씩 세계를 살펴보세요",
+  "100+ data layers": "100개 이상의 데이터 레이어",
+  "Climate, population, economy, geopolitics & live weather": "기후·인구·경제·지정학·실시간 기상",
+  "Live news map": "실시간 뉴스 지도",
+  "World headlines pinned to where they actually happen": "세계의 뉴스를 실제로 일어난 장소에 표시",
+  "Globe, satellite & time machine": "지구본·위성·타임머신",
+  "3D terrain, real imagery, and travel back to 1900": "3D 지형과 실제 위성 영상, 1900년까지 거슬러",
+  "Atlas AI & country data": "Atlas AI·국가 데이터",
+  "Ask in plain language, compare countries, even fly a jet": "일상 언어로 묻고, 나라를 비교하고, 비행기까지 조종",
+  "Start exploring": "시작하기",} });
