@@ -6,7 +6,7 @@
   "Oil": ["Öl", "Нефть", "Petróleo", "Pétrole", "석유", "石油"],
   "Nuclear": ["Kernkraft", "Атомная", "Nuclear", "Nucléaire", "원자력", "核能"],
   "Hydro": ["Wasserkraft", "ГЭС", "Hidráulica", "Hydraulique", "수력", "水力"],
-  "Solar": ["Solar", "Солнечная", "Solar", "Solaire", "태양광", "太陽能"],
+  "Solar": ["Solarenergie", "Солнечная", "Solar", "Solaire", "태양광", "太陽能"],
   "Bioenergy": ["Bioenergie", "Биоэнергия", "Bioenergía", "Bioénergie", "바이오에너지", "生質能"],
   "Other renewables": ["Sonstige Erneuerbare", "Прочие ВИЭ", "Otras renovables", "Autres renouvelables", "기타 재생에너지", "其他再生能源"],
   "Snowstorm": ["Schneesturm", "Метель", "Ventisca", "Tempête de neige", "폭풍설", "暴風雪"],

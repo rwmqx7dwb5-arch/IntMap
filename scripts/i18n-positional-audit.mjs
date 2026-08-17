@@ -141,6 +141,14 @@ const SAME_AS_EN = {
     /* …and the dwarf planet, surfaced when js/space.js's body names became calls: Duden spells it
        «Pluto», exactly as English does (the other ten differ, and are translated at the same site). */
     'Pluto',
+    /* ⚠ (#R251) …and five more from js/world-packs.js and js/seismic-events.js, each read one at a
+       time. `Solar` was NOT one of them — German prefers «Solarenergie» beside «Bioenergie», so the
+       argument was changed rather than excused, which is what this list is for:
+         Gas   — the German noun IS «Gas» (Duden); it labels the gas share of the energy mix.
+         Frost — the German noun IS «Frost» (Duden); it is one of the JMA warning kinds.
+         «MMI IX (Banda Aceh)», «2008 Wenchuan (Sichuan)», «2010 Haiti (Léogâne)» — an intensity
+         scale designation and two place names, spelled identically in German. */
+    'Gas', 'Frost', 'MMI IX (Banda Aceh)', '2008 Wenchuan (Sichuan)', '2010 Haiti (Léogâne)',
   ]),
   ru: new Set([]),
   es: new Set([
@@ -156,6 +164,10 @@ const SAME_AS_EN = {
          alt    — the Spanish abbreviation of «altitud» is «alt.», i.e. the same three letters. It
                   labels the altitude axis of the flight-profile sketch in js/atlas-sims.js. */
     'zonal', 'Sector', 'alt',
+    /* (#R251) …and three from the energy mix and the earthquake list: «gas» and «solar» are the
+       Spanish words (RAE), capitalised here as chart labels, and «MMI IX (Banda Aceh)» is an
+       intensity-scale designation with an Indonesian place name. */
+    'Gas', 'Solar', 'MMI IX (Banda Aceh)',
   ]),
 };
 /* ⚠ …and the polity names the ERA MAP prints that carry no exonym in either language. Sub-Saharan

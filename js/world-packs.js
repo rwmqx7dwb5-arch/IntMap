@@ -595,14 +595,14 @@ window.IntMapModules.worldPacks=function(HOST){
                  ['nuclear_share_of_electricity__pct',LA('Nuclear','原子力','Kernkraft','Атомная','Nuclear'),'#b455ff'],
                  ['hydro_share_of_electricity__pct',LA('Hydro','水力','Wasserkraft','ГЭС','Hidráulica'),'#2f7fe0'],
                  ['wind_share_of_electricity__pct',LA('Wind','風力','Wind','Ветер','Viento'),'#3fd1c7'],
-                 ['solar_share_of_electricity__pct',LA('Solar','太陽光','Solar','Солнечная','Solar'),'#ffd23f'],
+                 ['solar_share_of_electricity__pct',LA('Solar','太陽光','Solarenergie','Солнечная','Solar'),'#ffd23f'],
                  ['bioenergy_share_of_electricity__pct',LA('Bioenergy','バイオ','Bioenergie','Биоэнергия','Bioenergía'),'#7cb342'],
                  ['other_renewables_excluding_bioenergy_share_of_electricity__pct',LA('Other renewables','その他再エネ','Sonstige Erneuerbare','Прочие ВИЭ','Otras renovables'),'#26a69a']],
           clean:['nuclear_share_of_electricity__pct','hydro_share_of_electricity__pct','wind_share_of_electricity__pct','solar_share_of_electricity__pct','bioenergy_share_of_electricity__pct','other_renewables_excluding_bioenergy_share_of_electricity__pct'] },
         prim:{ slug:'primary-energy-source-bar', unit:'TWh',
           parts:[['coal_twh',LA('Coal','石炭','Kohle','Уголь','Carbón'),'#6b6b6b'],['oil_twh',LA('Oil','石油','Öl','Нефть','Petróleo'),'#8b5a3c'],['gas_twh',LA('Gas','ガス','Gas','Газ','Gas'),'#c78a4b'],
                  ['nuclear_twh',LA('Nuclear','原子力','Kernkraft','Атомная','Nuclear'),'#b455ff'],['hydro_twh',LA('Hydro','水力','Wasserkraft','ГЭС','Hidráulica'),'#2f7fe0'],
-                 ['wind_twh',LA('Wind','風力','Wind','Ветер','Viento'),'#3fd1c7'],['solar_twh',LA('Solar','太陽光','Solar','Солнечная','Solar'),'#ffd23f'],
+                 ['wind_twh',LA('Wind','風力','Wind','Ветер','Viento'),'#3fd1c7'],['solar_twh',LA('Solar','太陽光','Solarenergie','Солнечная','Solar'),'#ffd23f'],
                  ['other_renewables_twh',LA('Other renewables','その他再エネ','Sonstige Erneuerbare','Прочие ВИЭ','Otras renovables'),'#26a69a']],
           clean:['nuclear_twh','hydro_twh','wind_twh','solar_twh','other_renewables_twh'] } };
       let on=false, iso=null, kind='elec';
