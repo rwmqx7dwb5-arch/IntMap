@@ -21,8 +21,19 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
     const tXY=(z,lon,lat)=>{ const n=Math.pow(2,z); const x=Math.max(0,Math.min(n-1,Math.floor((lon+180)/360*n)));
       const f=lat*Math.PI/180; const y=Math.max(0,Math.min(n-1,Math.floor((1-Math.log(Math.tan(f)+1/Math.cos(f))/Math.PI)/2*n)));
       return {x,y}; };
+    /* ══ ⚠ (#R254) A GIBS LAYER WITHOUT A TIME DIMENSION 403s WHEN YOU GIVE IT A DATE ═══════════════
+       「人口密度レイヤのプレビュー画像が消えている。」 MEASURED against every URL in this table (43
+       entries, one request each): exactly ONE fails, and it is the reported one —
+       `dl-popgrid` → **403**. GPW is a STATIC product: its WMTSCapabilities entry publishes
+       `…/GPW_Population_Density_2020/default/{TileMatrixSet}/…` with no `{Time}` segment, so the
+       `2020-01-01` this table injected made the path one segment too long. Verified both ways:
+       with the date 403 (919 B of HTML), without it 200 (18,001 B of PNG).
+       ⚠ THE LAYER ITSELF WAS ALWAYS RIGHT — js/data-layers.js draws it through `gibsStatic(…)`,
+       which omits the date. Only the PREVIEW had a second, hand-written copy of the URL shape, and
+       that is the whole defect: `date` is now optional here too, so a static product is written the
+       way the layer writes it. */
     const G=(id,lvl,date,ext,z,lon,lat)=>{ const zz=(z!=null)?z:2; const p=(z!=null)?tXY(z,lon,lat):{x:1,y:1};
-      return 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+id+'/default/'+date+'/GoogleMapsCompatible_Level'+lvl+'/'+zz+'/'+p.y+'/'+p.x+'.'+(ext||'png'); };
+      return 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+id+'/default/'+(date?(date+'/'):'')+'GoogleMapsCompatible_Level'+lvl+'/'+zz+'/'+p.y+'/'+p.x+'.'+(ext||'png'); };
     /* ---- 1) real example tiles, one per raster layer (same endpoints the layers render from) ---- */
     const _t45=tXY(4,8.5,50.2), _t46=tXY(6,8.2,46.4), _tNile=tXY(6,31.2,30.4);
     /* (#R78e) REAL cartography for the vector-overlay layers ("まだクソみたいな手抜きレイヤー例画像が多すぎる"):
@@ -37,7 +48,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       'dl-snow':G('MODIS_Terra_NDSI_Snow_Cover',8,'2024-01-15','png',4,10,46.4),              /* Alps in January */
       'dl-aod':G('MODIS_Combined_Value_Added_AOD',6,'2024-07-04','png',3,80,25),               /* N-India haze */
       'dl-nightsat':'preview_nightlights.png',   /* (#R79g) real VIIRS Black Marble of the Nile Delta + Israel (per request) */
-      'dl-popgrid':G('GPW_Population_Density_2020',7,'2020-01-01','png',4,80,24),             /* Ganges plain */
+      'dl-popgrid':G('GPW_Population_Density_2020',7,'','png',4,80,24),                       /* Ganges plain — STATIC product, no date segment (#R254) */
       'dl-relief':G('ASTER_GDEM_Color_Shaded_Relief',12,'2024-01-01','jpg',5,86.9,27.9),/* Himalaya */
       'dl-hillshade':'https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/6/'+_t46.y+'/'+_t46.x,   /* Swiss Alps */
       'gx-gxtruecolor':G('MODIS_Terra_CorrectedReflectance_TrueColor',9,'2025-06-15','jpg',5,13.5,41.8),  /* Italy from orbit */

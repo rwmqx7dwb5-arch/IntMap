@@ -173,7 +173,7 @@ import '../js/tile-warm.js';
    what hands it an event; it registers itself and computes nothing until asked. */
 import '../js/insolation.js';               /* (#R176) terrain shadow + the annual sunlight budget */
 import '../js/weather.js';
-import '../js/layer-packs.js';
+import '../js/layer-packs.js';   /* (#R254) …which imports js/datacenters.js itself — see the note there */
 /* (#R211) the sixth pack — trade, energy, warnings, tides, crops. Same shape as layer-packs.js
    (a factory on window.IntMapModules, instantiated once from js/app-body.js) and, like it, it must
    be loaded EAGERLY rather than on demand: it creates layer rows at boot, and the progress gate and

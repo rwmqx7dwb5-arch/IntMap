@@ -89,7 +89,7 @@ window.IntMapLang.define('ru', { ui: {
       blueberryBtn:"Поддержать", borders:"Границы стран", countries:"Страны (инфо)", placeNames:"Названия мест", geoLabels:"Названия вод и рельефа", adminBounds:"Границы регионов", roadsLayer:"Дороги", railLayer:"Железные дороги", favLayers:"★ Избранное",
       measureMenuBtn:"Измерить", measureDistBtn:"📏 Расстояние / площадь", drawBtn:"✏️ Рисовать", vol3dBtn:"🧊 3-D объём", droneBtn:"🛸 Дрон", radiusBtn:"⭕ Радиус", objectsBtn:"🗂 Объекты", mScreenshot:"Снимок карты", shareMenuBtn:"Поделиться", shareLinkBtn:"Поделиться / ссылка", screenshotBtn:"Снимок карты (скрывает элементы управления, оставляет легенды)", layersBtn:"Слои ▾", uploadGeoJSON:"Загрузить GeoJSON",
       lblDataSources:"Источники данных", viewDataSources:"Краткий список в приложении", lblScience:"Наука и логика", viewScience:"Как считает каждая модель ↗", lblSourcesPage:"Источники данных", viewSourcesPage:"Открыть страницу источников данных ↗", lblNewsCountries:"Страны новостей", newsCountriesHint:"Оставьте пустым для новостей со всего мира.",
-      lyrGrpGeo:"Стратегическая география", lyrGrpStrat:"Стратегические сети", lyrGrpOthers:"Прочее (бета)",
+      lyrGrpGeo:"Стратегическая география", lyrGrpStrat:"Стратегические сети", lyrGrpOthers:"Бета", lyrGrpOthersReal:"Прочее",
       filtCiv:"Гражданские", filtMil:"Военные", filtAll:"Все", thermWin24:"Последние 24 ч", thermWin48:"Последние 48 ч", thermWin72:"Последние 72 ч",
       tlTitle:"Машина времени", tlMachine:"Машина времени", tlToday:"Сегодня", tl10y:"−10 л", tl5y:"−5 л", tlNow:"Сейчас",
       lblPinMode:"Положение метки новости", pinModeLoc:"Место события", pinModePub:"Место издателя",

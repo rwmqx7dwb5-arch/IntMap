@@ -89,7 +89,7 @@ window.IntMapLang.define('es', { ui: {
       blueberryBtn:"Apoyar", borders:"Fronteras de países", countries:"Países (info)", placeNames:"Nombres de lugares", geoLabels:"Etiquetas de agua y relieve", adminBounds:"Fronteras de estados/provincias", roadsLayer:"Carreteras", railLayer:"Ferrocarriles", favLayers:"★ Favoritos",
       measureMenuBtn:"Medir", measureDistBtn:"📏 Distancia / área", drawBtn:"✏️ Dibujar", vol3dBtn:"🧊 Volumen 3-D", droneBtn:"🛸 Dron", radiusBtn:"⭕ Radio", objectsBtn:"🗂 Objetos", mScreenshot:"Captura del mapa", shareMenuBtn:"Compartir", shareLinkBtn:"Compartir / enlace", screenshotBtn:"Captura del mapa (oculta los controles, mantiene las leyendas)", layersBtn:"Capas ▾", uploadGeoJSON:"Subir GeoJSON",
       lblDataSources:"Fuentes de datos", viewDataSources:"Lista rápida dentro de la app", lblScience:"Ciencia y lógica", viewScience:"Cómo calcula cada simulación ↗", lblSourcesPage:"Fuentes de datos", viewSourcesPage:"Abrir la página de fuentes de datos ↗", lblNewsCountries:"Países de noticias", newsCountriesHint:"Déjalo vacío para noticias de todo el mundo.",
-      lyrGrpGeo:"Geografía estratégica", lyrGrpStrat:"Redes estratégicas", lyrGrpOthers:"Otras (beta)",
+      lyrGrpGeo:"Geografía estratégica", lyrGrpStrat:"Redes estratégicas", lyrGrpOthers:"Beta", lyrGrpOthersReal:"Otras",
       filtCiv:"Civil", filtMil:"Militar", filtAll:"Todos", thermWin24:"Últimas 24 h", thermWin48:"Últimas 48 h", thermWin72:"Últimas 72 h",
       tlTitle:"Máquina del tiempo", tlMachine:"Máquina del tiempo", tlToday:"Hoy", tl10y:"−10 a", tl5y:"−5 a", tlNow:"Ahora",
       lblPinMode:"Posición del marcador de noticias", pinModeLoc:"Lugar del suceso", pinModePub:"Lugar del medio",

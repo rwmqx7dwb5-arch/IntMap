@@ -214,17 +214,37 @@ window.IntMapModules.layerSidebar=function(HOST){
        paying for. The map's own canvas container is positioned too and is explicitly NOT a panel:
        clicking the map is what OPENS a popup, and the report says a fresh popup belongs BEHIND the
        sidebar. Capture phase, so a handler that stops propagation cannot hide the gesture. */
+    /* ══ ⚠⚠ (#R254) …AND A MAP POPUP COULD NEVER COME TO THE FRONT, BECAUSE IT HAS NO z-index ═══════
+       「ポップアップ内でなんらかの操作したら、ポップアップが前部に来るように。サイドバー内をクリック
+         した場合はまたサイドバーを前部に。」 — reported again, and the half above is why. MEASURED on
+       the shipped build: `getComputedStyle('.maplibregl-popup').zIndex` is **auto**, its parent is
+       `#map`, and #map / #map-container / .operation-room are all `z-index:auto`, so a popup takes
+       part in the ROOT stacking context at level 0. `body.im-float-front` drops the sidebar from
+       2600 to its base **1000** — which is still above 0. So the demotion worked exactly as #R253
+       measured it for the panels that carry an explicit z-index (legends 1100, popovers 1300-1500,
+       cards 2200), and could not possibly work for a MapLibre popup.
+       ⚠ DEMOTING THE SIDEBAR IS NOT ENOUGH; THE THING BEING USED HAS TO BE NAMED. The panel under
+       the pointer is now marked `.im-front` and rises above the whole band on its own, whatever its
+       own z-index was (or wasn't). One element carries the mark at a time — it moves with the
+       pointer, and a pointerdown in a sidebar or on the map takes it away, which is the other two
+       sentences of the instruction. */
     const _FRONT_SIDE='.sidebar,#layer-sidebar-r,.btn-toggle-sidebar,#lsr-toggle';
     function _wireFrontMost(){ if(window.__imFrontMostWired) return; window.__imFrontMostWired=1;
-      const isPanel=(el)=>{ for(let n=el; n&&n!==document.body; n=n.parentElement){
-          if(n.matches&&n.matches('.maplibregl-canvas-container,.maplibregl-control-container,canvas')) return false;
+      /* the floating panel an event landed in — the first positioned ancestor, asked of the LAYOUT
+         rather than of a list of selectors (#R253). The map's own canvas is explicitly not one. */
+      const panelOf=(el)=>{ for(let n=el; n&&n!==document.body; n=n.parentElement){
+          if(n.matches&&n.matches('.maplibregl-canvas-container,.maplibregl-control-container,canvas')) return null;
           let p=''; try{ p=getComputedStyle(n).position; }catch(_){}
-          if(p==='absolute'||p==='fixed') return true; }
-        return false; };
+          if(p==='absolute'||p==='fixed') return n; }
+        return null; };
+      const raise=(el)=>{ try{ document.querySelectorAll('.im-front').forEach(n=>{ if(n!==el) n.classList.remove('im-front'); }); }catch(_){}
+        if(el) el.classList.add('im-front'); };
       document.addEventListener('pointerdown',(e)=>{ try{
         const t=e.target; if(!t||!t.closest) return;
-        if(t.closest(_FRONT_SIDE)){ document.body.classList.remove('im-float-front'); return; }
-        document.body.classList.toggle('im-float-front', isPanel(t));
+        if(t.closest(_FRONT_SIDE)){ document.body.classList.remove('im-float-front'); raise(null); return; }
+        const p=panelOf(t);
+        document.body.classList.toggle('im-float-front', !!p);
+        raise(p);
       }catch(_){} },true);
     }
     const T=window.IntMapLang.pick(()=>HOST.lang);

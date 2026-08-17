@@ -169,19 +169,29 @@ window.IntMapModules.onboarding=function(HOST){
 };
 
 window.IntMapModules.progressCtl=function(HOST){
-  /* (#R139) HONEST population-progress control shared by the measure/radius panel and the Draw tool. WorldPop gives
-     NO real % for a single request (its task API only reports created/finished/error), so any determinate number
-     there is fabricated — the old bar was a time-based ease-out that DECELERATED toward 92% and snapped to 100%
-     ("100%に近づくほど遅くなる／グラフの意味を成さない"). This control is honest: `busy()` shows an INDETERMINATE animated
-     sweep with no % while there is no real fraction; `set(f)` shows a REAL, MONOTONIC linear fraction the moment one
-     exists (a large area that must be TILED reports tiles-done/total; radius reports circles-done/N). */
+  /* (#R139) HONEST population-progress control shared by the measure/radius panel and the Draw tool. The bar it
+     drives replaced a time-based ease-out that DECELERATED toward 92% and snapped to 100%
+     ("100%に近づくほど遅くなる／グラフの意味を成さない"): every number it shows is measured.
+     ══ ⚠⚠ (#R254) …AND IT WAS THE ONLY BAR IN THE APP WITH A UI OF ITS OWN ════════════════════════
+     「進捗バーがおかしい。勝手にほかの進捗バーと違うUIにするな。」 MEASURED on the shipped build: this
+     control's `busy()` put the fill into an `.indet` class — a 42%-wide accent band swept across the
+     track by a CSS animation, with the percentage element EMPTIED. Every other progress bar in the
+     app (js/seismic.js `sq-progb`, js/terrain-water.js `tw-prog-bar`, js/viewshed.js) is the same
+     shape as each other and a different shape from this one: a plain `var(--prog-grad)` fill whose
+     WIDTH is the fraction, with the number beside it.
+     The reason it was different was real — a sub-cap WorldPop sum is ONE request and one request has
+     no fraction — so the fix is upstream of the UI: js/sims.js now tiles EVERY area, which makes
+     `done/total` a measured fraction for every sum there is. With a real fraction always available,
+     the indeterminate mode has nothing left to represent: `busy()` is «started, nothing finished
+     yet» = 0%, drawn exactly like the other bars, and the `.indet` CSS is gone. */
   window._imProgCtl=function(box){
     const fill=box&&box.querySelector('.tp-prog-fill'), pct=box&&box.querySelector('.tp-prog-pct');
     let shown=0;
+    const put=(f)=>{ try{ if(fill) fill.style.width=(f*100).toFixed(0)+'%'; if(pct) pct.textContent=(f*100).toFixed(0)+'%'; }catch(_){} };
     return {
-      busy(){ try{ box.classList.add('indet'); if(pct) pct.textContent=''; }catch(_){} },
-      set(f){ try{ box.classList.remove('indet'); f=Math.max(0,Math.min(1,+f||0)); if(f<shown) f=shown; shown=f; if(fill) fill.style.width=(f*100).toFixed(0)+'%'; if(pct) pct.textContent=(f*100).toFixed(0)+'%'; }catch(_){} },
-      done(){ try{ box.classList.remove('indet'); shown=1; if(fill) fill.style.width='100%'; if(pct) pct.textContent='100%'; }catch(_){} }
+      busy(){ shown=0; put(0); },
+      set(f){ f=Math.max(0,Math.min(1,+f||0)); if(f<shown) f=shown; shown=f; put(f); },
+      done(){ shown=1; put(1); }
     };
   };
 };
