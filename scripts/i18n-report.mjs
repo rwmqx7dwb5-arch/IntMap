@@ -28,6 +28,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
+import { parseAll, context, shapeOf } from './i18n-helpers.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const JS = join(ROOT, 'js');
@@ -93,42 +94,22 @@ function inlineTable(code) {
 /* ── ② the inline strings, from the source ──────────────────────────────────────────────────── */
 function inlineStrings() {
   const out = new Map();                    /* English string → [file…] */
-  for (const f of readdirSync(JS).filter((n) => n.endsWith('.js'))) {
-    const src = readFileSync(join(JS, f), 'utf8');
-    /* ⚠ (#R223) NO SUBSTRING PRE-FILTER. It used to skip any file that did not contain one of four
-       spellings, and js/ocean-currents.js spells it `const { …, onRestyle, L } = W;` — none of the
-       four. The whole module was therefore invisible to this report AND to the template it writes,
-       so a new language rendered every one of its strings in English while the report said 100 %.
-       Parsing 130 files costs a fraction of a second; guessing costs a silent gap. */
-    let ast;
-    try { ast = parse(src, { ecmaVersion: 2022, sourceType: 'script' }); }
-    catch (e) { try { ast = parse(src, { ecmaVersion: 2022, sourceType: 'module' }); } catch (e2) { continue; } }
-    /* which identifiers in THIS file are language helpers */
-    const names = new Set(['L']);
-    walk.simple(ast, {
-      VariableDeclarator(n) {
-        if (!n.id || n.id.type !== 'Identifier' || !n.init) return;
-        const t = src.slice(n.init.start, n.init.end);
-        if (t.indexOf('IntMapLang.pick') >= 0) names.add(n.id.name);
-      },
-      Property(n) {
-        /* `const { L } = W;` style destructuring of the shared toolkit */
-        if (n.key && n.key.name === 'L') names.add(n.value && n.value.name ? n.value.name : 'L');
-      },
-    });
-    walk.simple(ast, {
+  /* ⚠⚠⚠ (#R251) WHICH CALLS ARE TRANSLATION CALLS IS NOT THIS FILE'S QUESTION ANY MORE.
+     It used to be answered here, per file, and it was wrong in a way no percentage could show: a
+     helper BOUND in js/app-body.js and handed to every submodule (`get _coL(){ return _coL; }`) is
+     called in js/companies-ui.js as `HOST._coL('Market cap','時価総額','Marktkap.',…)`. That is a
+     complete five-language call — and because `_coL` is not bound in the file being read, all 65
+     such sites were outside this universe, so fr / ko / zh / zh-hans had no row to translate and
+     rendered ENGLISH while this report printed 100 %. The resolution is repo-wide and lives in
+     scripts/i18n-helpers.mjs, which scripts/i18n-positional-audit.mjs and scripts/i18n-pair-audit.mjs
+     read too — one answer, so the three cannot disagree ([[intmap-recurring-lessons]] G). */
+  for (const f of parseAll().keys()) {
+    const ctx = context(f, 'strict');
+    walk.simple(ctx.ast, {
       CallExpression(n) {
-        /* ⚠ (#R231) TWO SHAPES, NOT ONE. `L(en, …)` is the helper bound to IntMapLang.pick(); the
-           second is `IntMapLang.t(lang, en, …)`, which scripts/lang-ternary-codemod.mjs wrote at 268
-           sites that used to be hand-written `lang==='jp'?…` chains. Those chains were invisible to
-           this report, which is why it printed 100 % for seven rounds while Chinese screens still
-           carried English — see the header of `t()` in js/lang-registry.js. A report that could not
-           see the new shape either would simply move the blind spot. */
-        let a = null;
-        if (n.callee && n.callee.type === 'Identifier' && names.has(n.callee.name)) a = n.arguments[0];
-        else if (n.callee && n.callee.type === 'MemberExpression' && !n.callee.computed
-          && n.callee.property && n.callee.property.name === 't'
-          && /IntMapLang$/.test(src.slice(n.callee.object.start, n.callee.object.end))) a = n.arguments[1];
+        const i = shapeOf(n, ctx);
+        if (i < 0) return;
+        const a = n.arguments[i];
         if (!a || a.type !== 'Literal' || typeof a.value !== 'string' || !a.value.trim()) return;
         if (!out.has(a.value)) out.set(a.value, []);
         const arr = out.get(a.value); if (arr.indexOf(f) < 0) arr.push(f);

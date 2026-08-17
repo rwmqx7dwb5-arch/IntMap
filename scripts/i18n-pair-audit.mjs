@@ -48,7 +48,9 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
+import { exposedHelpers } from './i18n-helpers.mjs';
 
+const EXPOSED = exposedHelpers();
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const JS = join(ROOT, 'js');
 /* the registry owns the language machinery; the locale files ARE the tables this is about */
@@ -225,6 +227,15 @@ for (const [full, rel] of files) {
     if (c.type === 'Identifier') return LANG.has(c.name);
     if (c.type !== 'MemberExpression' || c.computed) return false;
     const p = c.property.name;
+    /* ⚠⚠⚠ (#R251) THE SIXTEENTH SHAPE — A HELPER REACHED THROUGH A PROPERTY OF ANOTHER MODULE.
+       `HOST._coL('Market cap','時価総額','Marktkap.','Капитализация','Cap. bursátil')` is a complete
+       five-language call, and this file reported all 55 of js/companies-ui.js's as an OPEN GAP for
+       five rounds — because «already a translation call» was resolved from the file being read, and
+       `_coL` is bound in js/app-body.js. Crying wolf is the milder half of that bug: the same
+       per-file question left those 65 sites out of the inline universe entirely, so fr/ko/zh/zh-hans
+       had no row for them. The property names are resolved repo-wide, once, in
+       scripts/i18n-helpers.mjs, which the report and the positional audit read too. */
+    if (EXPOSED.has(p)) return true;
     if (p === 'arr' || p === 'apply' || p === 'call') return isLangCall(c.object) || c.object.type === 'MemberExpression';
     /* window.IntMapLang.t(…) and friends */
     let cur = c.object, s = p;
