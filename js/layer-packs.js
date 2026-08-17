@@ -338,10 +338,10 @@ window.IntMapModules.landCover=function(HOST){
     const SETS={worldcover:['eco-worldcover'],plates:['eco-plates-fill','eco-plates-line','eco-plates-lbl'],ecoregions:['eco-regions-fill','eco-regions-line']};
     /* (#R13c) Land-cover legend — the official ESA WorldCover 2021 11-class palette + labels (EN/JP).
        Draggable + minimisable like every other legend; the ✕ unchecks the layer. */
-    const WC_CLASSES=[['#006400','Tree cover','樹木'],['#ffbb22','Shrubland','低木地'],['#ffff4c','Grassland','草地'],
-      ['#f096ff','Cropland','農地'],['#fa0000','Built-up','市街地'],['#b4b4b4','Bare / sparse vegetation','裸地・希少植生'],
-      ['#f0f0f0','Snow and ice','雪氷'],['#0064c8','Permanent water bodies','水域'],['#0096a0','Herbaceous wetland','湿地（草本）'],
-      ['#00cf75','Mangroves','マングローブ'],['#fae6a0','Moss and lichen','苔・地衣類']];
+    const WC_CLASSES=[['#006400',LA('Tree cover','樹木','Baumbestand','Древесный покров','Cubierta arbórea')],['#ffbb22',LA('Shrubland','低木地','Strauchland','Кустарники','Matorral')],['#ffff4c',LA('Grassland','草地','Grasland','Травяные земли','Pastizal')],
+      ['#f096ff',LA('Cropland','農地','Ackerland','Пашня','Cultivos')],['#fa0000',LA('Built-up','市街地','Bebauung','Застройка','Zona urbanizada')],['#b4b4b4',LA('Bare / sparse vegetation','裸地・希少植生','Kahl / spärliche Vegetation','Оголённая / разреженная растительность','Suelo desnudo / vegetación escasa')],
+      ['#f0f0f0',LA('Snow and ice','雪氷','Schnee und Eis','Снег и лёд','Nieve y hielo')],['#0064c8',LA('Permanent water bodies','水域','Dauerhafte Gewässer','Постоянные водоёмы','Masas de agua permanentes')],['#0096a0',LA('Herbaceous wetland','湿地（草本）','Krautiges Feuchtgebiet','Травянистые водно-болотные угодья','Humedal herbáceo')],
+      ['#00cf75',LA('Mangroves','マングローブ','Mangroven','Мангры','Manglares')],['#fae6a0',LA('Moss and lichen','苔・地衣類','Moos und Flechten','Мхи и лишайники','Musgos y líquenes')]];
     function wcLegend(show){
       let lg=document.getElementById('data-legend-worldcover');
       if(show){
@@ -351,7 +351,9 @@ window.IntMapModules.landCover=function(HOST){
         lg.innerHTML='<span class="dl-drag" title="'+dragT+'">⋮⋮</span><button class="layer-popup-x" title="'+(t('close'))+'">✕</button>'+
           '<h4>'+(window.IntMapLang.t(HOST.lang,"Land cover (ESA 2021)","土地被覆 (ESA 2021)","Landbedeckung (ESA 2021)","Земной покров (ESA 2021)","Cobertura del suelo (ESA 2021)"))+'</h4>'+
           '<div style="display:flex;flex-direction:column;gap:3px;margin-top:4px;">'+
-          WC_CLASSES.map(([c,en,ja])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:13px;height:13px;border-radius:3px;flex:none;border:1px solid rgba(128,128,128,0.4);background:'+c+';"></span><span>'+(jp()?ja:en)+'</span></div>').join('')+
+          /* ⚠ (#R251) the two name slots are ONE tuple now, resolved through pick() itself, so a
+             language past the five arguments reaches the inline table instead of falling to English. */
+          WC_CLASSES.map(([c,t])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:13px;height:13px;border-radius:3px;flex:none;border:1px solid rgba(128,128,128,0.4);background:'+c+';"></span><span>'+LPK.arr(t)+'</span></div>').join('')+
           '</div>';
         lg.style.display='block';
         lg.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('eco-dl-worldcover'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
@@ -436,7 +438,7 @@ window.IntMapModules.betaPack2=function(HOST){
       [7.59,47.56,'Basel — Novartis / Roche HQ & plants'],[6.99,51.03,'Leverkusen — Bayer'],[8.06,49.97,'Ingelheim — Boehringer Ingelheim'],[12.45,55.76,'Copenhagen — Novo Nordisk'],[11.09,55.68,'Kalundborg — Novo Nordisk API site'],[-0.31,51.48,'London/Brentford — GSK'],[0.13,52.2,'Cambridge — AstraZeneca'],[2.35,48.86,'Paris — Sanofi'],[-86.16,39.77,'Indianapolis — Eli Lilly'],[-74.45,40.49,'New Brunswick — Johnson & Johnson'],[-73.97,40.75,'New York — Pfizer HQ'],[-74.29,40.68,'Rahway/Kenilworth — Merck & Co.'],[-87.86,42.33,'North Chicago — AbbVie'],[-118.84,34.18,'Thousand Oaks — Amgen'],[-122.4,37.65,'South San Francisco — Genentech'],[-8.47,51.9,'Cork — Irish pharma cluster'],[103.64,1.32,'Singapore Tuas — biologics plants'],[78.6,17.6,'Hyderabad — Genome Valley (vaccines)'],[72.88,19.08,'Mumbai — Sun Pharma'],[72.57,23.02,'Ahmedabad — Zydus / Torrent'],[83.3,17.69,'Visakhapatnam — API hub'],[-66.54,18.45,'Barceloneta — Puerto Rico pharma'],[139.76,35.68,'Tokyo — Takeda / Astellas'],[135.5,34.69,'Osaka — Shionogi / Takeda'],[116.4,39.9,'Beijing — Sinopharm'],[121.47,31.23,'Shanghai — Fosun Pharma'],[126.64,37.39,'Songdo — Samsung Biologics'],[34.89,32.09,'Petah Tikva — Teva'],[-46.63,-23.55,'São Paulo — EMS / Eurofarma'],[28.05,-26.2,'Johannesburg — Aspen Pharmacare']
     ];
     const RAIL_COL={1435:'#3a7bd5',1520:'#e03131',1067:'#2f9e44',1000:'#12b886',1676:'#9c36b5',1668:'#f08c00',1600:'#d6336c',0:'#868e96'};
-    const RAIL_LBL=[[1435,'標準軌 1435mm','Standard 1435 mm'],[1520,'ロシア軌間 1520/1524mm','Russian 1520/1524 mm'],[1676,'広軌 1676mm（印・亜）','Broad 1676 mm (India, Argentina)'],[1668,'イベリア軌間 1668mm','Iberian 1668 mm'],[1600,'アイルランド軌間 1600mm','Irish 1600 mm'],[1067,'狭軌 1067mm（日本など）','Cape 1067 mm (Japan etc.)'],[1000,'メーターゲージ 1000mm','Meter 1000 mm'],[0,'不明・その他','Unknown / other']];
+    const RAIL_LBL=[[1435,LA('Standard 1435 mm','標準軌 1435mm','Normalspur 1435 mm','Стандартная колея 1435 мм','Ancho estándar 1435 mm')],[1520,LA('Russian 1520/1524 mm','ロシア軌間 1520/1524mm','Russische Breitspur 1520/1524 mm','Русская колея 1520/1524 мм','Ancho ruso 1520/1524 mm')],[1676,LA('Broad 1676 mm (India, Argentina)','広軌 1676mm（印・亜）','Breitspur 1676 mm (Indien, Argentinien)','Широкая колея 1676 мм (Индия, Аргентина)','Ancho 1676 mm (India, Argentina)')],[1668,LA('Iberian 1668 mm','イベリア軌間 1668mm','Iberische Spur 1668 mm','Иберийская колея 1668 мм','Ancho ibérico 1668 mm')],[1600,LA('Irish 1600 mm','アイルランド軌間 1600mm','Irische Spur 1600 mm','Ирландская колея 1600 мм','Ancho irlandés 1600 mm')],[1067,LA('Cape 1067 mm (Japan etc.)','狭軌 1067mm（日本など）','Kapspur 1067 mm (Japan usw.)','Капская колея 1067 мм (Япония и др.)','Ancho Cape 1067 mm (Japón, etc.)')],[1000,LA('Meter 1000 mm','メーターゲージ 1000mm','Meterspur 1000 mm','Метровая колея 1000 мм','Ancho métrico 1000 mm')],[0,LA('Unknown / other','不明・その他','Unbekannt / sonstige','Неизвестно / прочее','Desconocido / otro')]];
     function fcPoints(arr,colFn){ return {type:'FeatureCollection',features:arr.map(d=>({type:'Feature',geometry:{type:'Point',coordinates:[d[0],d[1]]},properties:{n:d[2],k:d[3]||'',col:colFn(d)}}))}; }
     function load(key,cb){
       if(cache[key]){ cb(cache[key]); return; }
@@ -499,7 +501,10 @@ window.IntMapModules.betaPack2=function(HOST){
       if(!on&&typeof isMobile==='function'&&isMobile()){ try{ if(GE().layers.has('rail-ln')) GE().layers.remove('rail-ln'); if(GE().layers.hasSource('rail-src')) GE().layers.removeSource('rail-src'); }catch(_){} cache.rail=null; }
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('rail2',LA('World railways (by gauge)','世界の鉄道（軌間別）','Eisenbahnen weltweit (nach Spurweite)','Железные дороги мира (по колее)','Ferrocarriles del mundo (por ancho de vía)'),['rail-ln'],'beta-dl-rail');
             if(el&&!el.querySelector('.rail-key')){ const k=document.createElement('div'); k.className='rail-key'; k.style.cssText='display:flex;flex-direction:column;gap:3px;margin-top:6px;font-size:11px;color:var(--text-main);';
-              k.innerHTML=RAIL_LBL.map(([g,ja,en])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:3px;border-radius:2px;flex:none;background:'+RAIL_COL[g]+';"></span>'+(jp()?ja:en)+'</div>').join('')+
+              /* ⚠ (#R251) …and the gauge rows were `[gauge, ja, en]` — ENGLISH IN SLOT 2, so the
+                 inline table (keyed by the English source string) could not have matched even after
+                 the languages were added. The tuple is English-first and resolved by pick(). */
+              k.innerHTML=RAIL_LBL.map(([g,t])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:3px;border-radius:2px;flex:none;background:'+RAIL_COL[g]+';"></span>'+LPK.arr(t)+'</div>').join('')+
                 '<div style="font-size:10px;color:var(--text-muted);margin-top:3px;">'+(window.IntMapLang.t(HOST.lang,"Classified by each country’s predominant gauge (Natural Earth 10m)","各国の主流軌間で分類（Natural Earth 10m）","Nach der vorherrschenden Spurweite je Land klassifiziert (Natural Earth 10m)","Классифицировано по преобладающей колее каждой страны (Natural Earth 10m)","Clasificado por el ancho de vía predominante de cada país (Natural Earth 10m)"))+'</div>';
               el.appendChild(k); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('rail2'); }catch(_){}
@@ -735,17 +740,17 @@ window.IntMapModules.religionLang=function(HOST){
       if(!_imCanDraw()){ GE().events.once('idle',()=>toggle(key,true)); return; }
       build(key);
     }
-    const CLBL={religion:['宗教分布','Religion distribution'],language:['言語分布','Language distribution']};
+    const CLBL={religion:LA('Religion distribution','宗教分布','Religionsverteilung','Распределение религий','Distribución religiosa'),language:LA('Language distribution','言語分布','Sprachverteilung','Распределение языков','Distribución lingüística')};
     const CSW={religion:'#4e79a7',language:'#f28e2b'};
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('beta-dl-cat-religion')) return;
       Object.keys(CLBL).forEach(k=>{ const w=document.createElement('div'); w.className='lyr-row';
-        w.innerHTML='<label class="layer-option"><input type="checkbox" id="beta-dl-cat-'+k+'"> <span class="lyr-sw" style="background:'+CSW[k]+'"></span> <span id="beta-dl-cat-'+k+'-lbl">'+(jp()?CLBL[k][0]:CLBL[k][1])+'</span></label>';
+        w.innerHTML='<label class="layer-option"><input type="checkbox" id="beta-dl-cat-'+k+'"> <span class="lyr-sw" style="background:'+CSW[k]+'"></span> <span id="beta-dl-cat-'+k+'-lbl">'+LPK.arr(CLBL[k])+'</span></label>';
         dd.appendChild(w);
         w.querySelector('input').addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked); }); });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
-    window.addEventListener('intmap-lang',()=>setTimeout(()=>{ Object.keys(CLBL).forEach(k=>{ const e=document.getElementById('beta-dl-cat-'+k+'-lbl'); if(e) e.textContent=jp()?CLBL[k][0]:CLBL[k][1]; }); },20));
+    window.addEventListener('intmap-lang',()=>setTimeout(()=>{ Object.keys(CLBL).forEach(k=>{ const e=document.getElementById('beta-dl-cat-'+k+'-lbl'); if(e) e.textContent=LPK.arr(CLBL[k]); }); },20));
     GE().events.on('styledata',()=>{ if(state.religion||state.language){ setTimeout(()=>{ ['religion','language'].forEach(k=>{ if(state[k]){ if(GE().layers.hasSource(CFG[k].src)) setVis(k,true); else build(k); } }); },90); } });
   })();
 };

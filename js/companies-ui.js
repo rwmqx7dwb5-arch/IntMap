@@ -225,7 +225,21 @@ window.IntMapModules.companiesUi=function(HOST){
 
   const _coSec=(k)=>{ const s=CO_SECTORS[k]; return s?HOST._coL(s[0],s[1],s[2],s[3],s[4]):k; };
 
-  const _coCountry=(cc)=>{ const c=CO_CC[cc]; return c?(HOST.lang==='jp'?c[1]:c[0]):cc; };
+  /* ⚠⚠⚠ (#R251) THE COUNTRY NAME COMES FROM CLDR, NOT FROM TWO BUNDLED COLUMNS. This read
+     `HOST.lang==='jp'?c[1]:c[0]` — Japanese, or English for the other EIGHT languages — so the
+     Companies list named every country in English for de/ru/es/fr/ko/zh/zh-Hans while every
+     translation instrument read 100 %. #R240 wrote the rule for exactly this
+     (「国名のようなデータは表を書かずに Intl.DisplayNames（CLDR）へ」) and #R246/#R247 applied it to
+     the language names and to the widget country picker; this is the third table of the same kind.
+     ⚠ THE ALPHA-2 KEY IS ALREADY IN THE ROW — a flag emoji is its two REGIONAL INDICATOR letters,
+     so 🇺🇸 decodes to «US» exactly, with no third copy of the country's identity to keep in step.
+     `_imCldrRegion` (js/countries-ui.js) is the one CLDR resolver; the bundled pair stays as the
+     fallback for a runtime without Intl.DisplayNames. */
+  const _a2FromFlag=(f)=>{ try{ const cp=Array.from(String(f||'')).map(ch=>ch.codePointAt(0)-0x1F1E6);
+    return (cp.length===2&&cp.every(n=>n>=0&&n<26))?String.fromCharCode(cp[0]+65,cp[1]+65):''; }catch(_){ return ''; } };
+  const _coCountry=(cc)=>{ const c=CO_CC[cc]; if(!c) return cc;
+    const n=window._imCldrRegion&&window._imCldrRegion(_a2FromFlag(c[2]),HOST.lang);
+    return n||(HOST.lang==='jp'?c[1]:c[0]); };
 
   const _coFlag=(cc)=>{ const c=CO_CC[cc]; return c?c[2]:''; };
 

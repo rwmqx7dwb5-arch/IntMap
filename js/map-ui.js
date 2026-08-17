@@ -30,7 +30,26 @@ window.IntMapModules.layerRegistry=function(HOST){
   const demElevAt=HOST.demElevAt;
   window.IntMapLayers=(function(){
     const REG={};
-    const L5=(en,jp2,de,ru,es)=>({en,jp:jp2,de,ru,es})[typeof HOST.lang!=='undefined'?HOST.lang:'en']||en;
+    /* ⚠⚠⚠ (#R251) THIS WAS A PRIVATE FIVE-LANGUAGE HELPER, AND FIVE IS NOT NINE.
+       `const L5=(en,jp2,de,ru,es)=>({en,jp:jp2,de,ru,es})[HOST.lang]||en;` built a language-keyed
+       object and subscripted it, so every one of the 36 readout labels below was ENGLISH for
+       fr / ko / zh / zh-Hans — and invisible while it happened: the callee is not bound to the
+       registry, so scripts/i18n-report.mjs never put the strings in the inline universe, and the
+       langmap audit never saw the object because it is BUILT from parameters rather than written
+       as a literal (the same blindness #R250 found in `_dc(…,en,jp,…)` → `title:{en,jp}`).
+       `pick()` IS this function, minus the ceiling: positional for the first five, the inline table
+       keyed by the English string for the rest, English underneath both. */
+    const L5=window.IntMapLang.pick(()=>HOST.lang);
+
+    /* ⚠ (#R251) THE MAP CANVAS NAMES ITSELF, AND IT NAMES ITSELF IN ENGLISH. MapLibre writes
+       `aria-label="Map"` on its canvas, so a screen-reader user in any of the other eight languages
+       is told 「Map」 — the one string on the screen that only a blind reader ever meets, which is
+       exactly why nothing had noticed it. Found by tests/r251.spec.js, which reads attributes as
+       well as text. Re-applied on `intmap-lang` because the canvas outlives the language. */
+    const _nameCanvas=()=>{ try{ const cv=GE().render.canvas&&GE().render.canvas();
+      if(cv) cv.setAttribute('aria-label', L5('Map','地図','Karte','Карта','Mapa')); }catch(_){} };
+    try{ _nameCanvas(); }catch(_){}
+    window.addEventListener('intmap-lang', ()=>setTimeout(_nameCanvas, 30));
     const isOn=id=>{ const cb=document.getElementById('dl-'+id)||document.getElementById(id); return !!(cb&&cb.checked); };
     const _numCache=new Map();   /* per (kind,0.25°cell) numeric cache shared by all Open-Meteo samplers */
     async function _om(kind,lng,lat){ const q=v=>Math.round(v*4)/4, qla=q(lat), qlo=q(lng), key=kind+':'+qla+','+qlo;
@@ -296,6 +315,17 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'body.lsr-open #lsr-toggle .chev{transform:rotate(-135deg);}'
         +'@media(max-width:768px){ #layer-sidebar-r{display:none;} #lsr-toggle{display:none !important;} }';
       document.head.appendChild(st); }
+    /* ⚠⚠⚠ (#R251) THE PANEL FOLLOWS THE LANGUAGE. `build()` runs once and `sb.innerHTML` carries the
+       panel title, the close button's tooltip and the search placeholder, so a reader who switched
+       language kept the one the sidebar was BUILT in — 「Close」 and 「Search layers…」 stayed English
+       in French. The app dispatches `intmap-lang` for exactly this; the head is relabelled in place
+       rather than rebuilt, so the body's rows, its scroll position and the resize handle survive. */
+    function relabelHead(){ try{ if(!built||!sb) return;
+      const h=sb.querySelector('.lsr-head b'); if(h) h.textContent='▤ '+T('Layers','レイヤー','Ebenen','Слои','Capas');
+      const x=sb.querySelector('.lsr-x'); if(x) x.title=T('Close','閉じる','Schließen','Закрыть','Cerrar');
+      const q=sb.querySelector('#lsr-q'); if(q) q.placeholder=T('Search layers…','レイヤーを検索…','Ebenen suchen…','Поиск слоёв…','Buscar capas…');
+    }catch(_){} }
+    window.addEventListener('intmap-lang',()=>setTimeout(relabelHead,30));
     function build(){ if(built) return; built=true; css();
       sb=document.createElement('div'); sb.id='layer-sidebar-r';
       sb.innerHTML='<div class="lsr-head"><b>▤ '+T('Layers','レイヤー','Ebenen','Слои','Capas')+'</b><button class="lsr-x" title="'+T('Close','閉じる','Schließen','Закрыть','Cerrar')+'">✕</button></div>'
@@ -305,7 +335,15 @@ window.IntMapModules.layerSidebar=function(HOST){
       (document.querySelector('.operation-room')||document.body).appendChild(sb);
       /* (#R154) drag-to-resize handle on the LEFT edge (the right sidebar grows as the cursor moves left).
          Persists to intmap_lsr_w; open() honours the saved width instead of the auto-formula. Desktop only. */
-      (function(){ const rh=document.createElement('div'); rh.className='lsr-resizer'; rh.title='Drag to resize'; sb.appendChild(rh);
+      (function(){ const rh=document.createElement('div'); rh.className='lsr-resizer';
+        /* ⚠ (#R251) THIS TITLE WAS A BARE ENGLISH LITERAL — `rh.title='Drag to resize'` — so it read
+           the same in all nine languages. Found by tests/r251.spec.js, which reads `title` as well as
+           text. ⚠ AND IT HAS TO FOLLOW THE LANGUAGE: the handle is appended BESIDE `sb.innerHTML`, so
+           the rebuild that relabels the panel head leaves it untouched and it would otherwise keep
+           the language the reader started in. */
+        const _rt=()=>{ rh.title=T('Drag to resize','高さを調節','Zum Ändern der Höhe ziehen','Потяните, чтобы изменить размер','Arrastra para redimensionar'); };
+        _rt(); window.addEventListener('intmap-lang',()=>setTimeout(_rt,30));
+        sb.appendChild(rh);
         let rdrag=false, rsx=0, rsw=0;
         rh.addEventListener('pointerdown',e=>{ if(isMob()) return; rdrag=true; rsx=e.clientX; rsw=sb.offsetWidth; try{ rh.setPointerCapture(e.pointerId); }catch(_){} document.body.style.userSelect='none'; sb.style.transition='none'; e.preventDefault(); e.stopPropagation(); });
         rh.addEventListener('pointermove',e=>{ if(!rdrag) return; const ls=document.getElementById('sidebar'); const lw=(ls&&!ls.classList.contains('collapsed'))?ls.getBoundingClientRect().width:0;

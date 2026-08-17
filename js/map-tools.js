@@ -1079,6 +1079,21 @@ window.IntMapModules.objectList=function(HOST){
         else if(act==='rename'){ const cur=o.name; const v=window.prompt(OL('New name','新しい名前','Neuer Name','Новое имя','Nuevo nombre'),cur); if(v!=null&&v.trim()){ try{ o.rename&&o.rename(v.trim()); }catch(_){} renderList(); } } });
       panel.querySelector('.iol-body').addEventListener('input',e=>{ if(!(e.target.getAttribute&&e.target.getAttribute('data-act')==='color')) return; const row=e.target.closest('.iol-row'); const o=row&&_objs[+row.getAttribute('data-i')]; if(o&&o.setColor){ try{ o.setColor(e.target.value); }catch(_){} const dot=row.querySelector('.iol-dot'); if(dot) dot.style.background=e.target.value; } });
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.iol-head')); }catch(_){}
+      /* ⚠⚠⚠ (#R251) AN OPEN PANEL FOLLOWS THE LANGUAGE. Its head and body are built ONCE, and
+         opening an already-open panel is a no-op, so a reader who opened the Objects panel and then
+         changed language kept reading the language they left — 「Clear all」 in Japanese, and so on
+         for all nine. The app dispatches `intmap-lang` for exactly this and several modules listen;
+         this one did not. The whole panel is rebuilt (its head holds two translated buttons WITH
+         handlers, so relabelling text nodes alone would drop them) and the list re-rendered.
+         Found by tests/r251.spec.js ②, which switches language with the panel open and reads back. */
+      if(!ensurePanel._langWired){ ensurePanel._langWired=1;
+        window.addEventListener('intmap-lang',()=>{ try{
+          if(!panel||!panel.parentNode) return;
+          const wasOpen=panel.style.display!=='none';
+          panel.remove(); panel=null;
+          const p2=ensurePanel(); if(p2) p2.style.display=wasOpen?'':'none';
+          if(wasOpen) renderList();
+        }catch(_){} }); }
       return panel; }
     function ensureFab(){ if(fab) return fab; ensurePanel(); fab=document.createElement('button'); fab.id='iol-fab';
       fab.innerHTML='🗂 <span class="iol-fab-n">0</span>'; fab.title=OL('Manage all map objects','地図上のオブジェクトを管理','Objekte verwalten','Управление объектами','Gestionar objetos');

@@ -109,14 +109,19 @@ window.IntMapModules.space=function(HOST){
     const SB=()=>window.IntMapSpaceBodies;
 
     const BODIES=['sun','mercury','venus','earth','moon','mars','jupiter','saturn','uranus','neptune','pluto'];
-    const NAMED={ sun:['Sun','太陽','Sonne','Солнце','Sol'], mercury:['Mercury','水星','Merkur','Меркурий','Mercurio'],
-      venus:['Venus','金星','Venus','Венера','Venus'], earth:['Earth','地球','Erde','Земля','Tierra'],
-      moon:['Moon','月','Mond','Луна','Luna'], mars:['Mars','火星','Mars','Марс','Marte'],
-      jupiter:['Jupiter','木星','Jupiter','Юпитер','Júpiter'], saturn:['Saturn','土星','Saturn','Сатурн','Saturno'],
-      uranus:['Uranus','天王星','Uranus','Уран','Urano'], neptune:['Neptune','海王星','Neptun','Нептун','Neptuno'],
-      pluto:['Pluto','冥王星','Pluto','Плутон','Plutón'] };
-    const bodyName=(id)=>{ const a=NAMED[id]; if(!a) return id;
-      return HOST.lang==='jp'?a[1]:HOST.lang==='de'?a[2]:HOST.lang==='ru'?a[3]:HOST.lang==='es'?a[4]:a[0]; };
+    /* ⚠ (#R251) THE BODY NAMES ARE CALLS, AND THE READER IS `pick()` ITSELF. They were bare array
+       literals read by a hand-rolled `lang==='jp'?a[1]:…` chain — the two halves of the shape
+       #R241 and #R248 each closed once, in one place: not a call, so no instrument saw the eleven
+       names and fr/ko/zh/zh-hans had no row for them; and subscripted by hand, so those four
+       languages would have read English even if they had. `LA(…)` is byte-identical data. */
+    const LA=window.IntMapLang.pickArgs();
+    const NAMED={ sun:LA('Sun','太陽','Sonne','Солнце','Sol'), mercury:LA('Mercury','水星','Merkur','Меркурий','Mercurio'),
+      venus:LA('Venus','金星','Venus','Венера','Venus'), earth:LA('Earth','地球','Erde','Земля','Tierra'),
+      moon:LA('Moon','月','Mond','Луна','Luna'), mars:LA('Mars','火星','Mars','Марс','Marte'),
+      jupiter:LA('Jupiter','木星','Jupiter','Юпитер','Júpiter'), saturn:LA('Saturn','土星','Saturn','Сатурн','Saturno'),
+      uranus:LA('Uranus','天王星','Uranus','Уран','Urano'), neptune:LA('Neptune','海王星','Neptun','Нептун','Neptuno'),
+      pluto:LA('Pluto','冥王星','Pluto','Плутон','Plutón') };
+    const bodyName=(id)=>{ const a=NAMED[id]; return a?L.arr(a):id; };
     /* Saturn's rings, at their published radii in km — the C ring, the B ring, the Cassini division
        and the A ring, so what is drawn is the structure that is there rather than a flat disc. */
     const RINGS=[[74658,92000,0.35],[92000,117580,0.85],[117580,122170,0.06],[122170,136775,0.55]];

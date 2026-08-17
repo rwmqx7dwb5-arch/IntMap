@@ -1,0 +1,40 @@
+{
+  "_": "(#R251) fr/ko/zh-Hant rows for the strings the earlier conversions brought into the inline universe — js/aircraft-detail.js's emitter categories, js/space.js's body names, js/beta-overlays.js's layer names, js/monitors.js's report headings, js/map-readout.js's tsunami readout and js/onboarding.js's layer tour. de/ru/es were already arguments at those call sites and are copied here verbatim. Columns: de, ru, es, fr, ko, zh-Hant.",
+
+  "Light (< 7 t)": ["Leicht (< 7 t)", "Лёгкий (< 7 т)", "Ligero (< 7 t)", "Léger (< 7 t)", "소형 (7 t 미만)", "輕型（< 7 噸）"],
+  "Small (7–34 t)": ["Klein (7–34 t)", "Малый (7–34 т)", "Pequeño (7–34 t)", "Petit (7–34 t)", "중소형 (7~34 t)", "小型（7–34 噸）"],
+  "Large (34–136 t)": ["Groß (34–136 t)", "Крупный (34–136 т)", "Grande (34–136 t)", "Gros (34–136 t)", "대형 (34~136 t)", "大型（34–136 噸）"],
+  "High-vortex large (B757)": ["Große Wirbelschleppe (B757)", "Крупный, сильный след (B757)", "Gran estela (B757)", "Grande turbulence de sillage (B757)", "대형·강한 후류 (B757)", "大型高渦流（B757）"],
+  "Heavy (> 136 t)": ["Schwer (> 136 t)", "Тяжёлый (> 136 т)", "Pesado (> 136 t)", "Lourd (> 136 t)", "초대형 (136 t 초과)", "重型（> 136 噸）"],
+  "High performance (> 5 g, > 400 kn)": ["Hochleistung (> 5 g, > 400 kn)", "Высокоманёвренный (> 5 g, > 400 уз)", "Alto rendimiento (> 5 g, > 400 kn)", "Hautes performances (> 5 g, > 400 kn)", "고성능 (5 g·400 kn 초과)", "高性能（> 5 g、> 400 節）"],
+  "Rotorcraft": ["Drehflügler", "Винтокрылый", "Aeronave de alas giratorias", "Voilure tournante", "회전익기", "旋翼機"],
+  "Glider / sailplane": ["Segelflugzeug", "Планёр", "Planeador", "Planeur", "글라이더", "滑翔機"],
+  "Lighter-than-air": ["Leichter als Luft", "Легче воздуха", "Más ligero que el aire", "Plus léger que l’air", "경항공기 (기구·비행선)", "輕於空氣航空器"],
+  "Parachutist": ["Fallschirmspringer", "Парашютист", "Paracaidista", "Parachutiste", "낙하산", "跳傘者"],
+  "Ultralight / paraglider": ["Ultraleicht / Gleitschirm", "Сверхлёгкий / параплан", "Ultraligero / parapente", "ULM / parapente", "초경량 동력기·패러글라이더", "超輕型／飛行傘"],
+  "Unmanned aircraft": ["Unbemannt", "Беспилотник", "No tripulado", "Aéronef sans équipage", "무인 항공기", "無人航空器"],
+  "Space / trans-atmospheric": ["Raumfahrzeug", "Космический аппарат", "Vehículo espacial", "Engin spatial", "우주기·대기권 재진입기", "太空／跨大氣層飛行器"],
+  "Surface — emergency vehicle": ["Bodenfahrzeug (Einsatz)", "Наземный транспорт (экстренный)", "Vehículo de emergencia", "Véhicule au sol — secours", "지상 차량 (긴급)", "地面車輛（緊急）"],
+  "Surface — service vehicle": ["Bodenfahrzeug (Dienst)", "Наземный транспорт (служебный)", "Vehículo de servicio", "Véhicule au sol — service", "지상 차량 (작업)", "地面車輛（勤務）"],
+  "Point obstacle": ["Punkthindernis", "Точечное препятствие", "Obstáculo puntual", "Obstacle ponctuel", "점형 장애물", "點狀障礙物"],
+
+  "Earth": ["Erde", "Земля", "Tierra", "Terre", "지구", "地球"],
+  "Pluto": ["Pluto", "Плутон", "Plutón", "Pluton", "명왕성", "冥王星"],
+
+  "Ukraine frontline (DeepState)": ["Ukraine-Frontlinie (DeepState)", "Линия фронта в Украине (DeepState)", "Frente de Ucrania (DeepState)", "Ligne de front en Ukraine (DeepState)", "우크라이나 전선 (DeepState)", "烏克蘭前線（DeepState）"],
+  "Ukraine frontline (live)": ["Ukraine-Frontlinie (live)", "Линия фронта в Украине (в реальном времени)", "Frente de Ucrania (en vivo)", "Ligne de front en Ukraine (en direct)", "우크라이나 전선 (실시간)", "烏克蘭前線（即時）"],
+  "3D buildings (cities)": ["3D-Gebäude (Städte)", "3D-здания (города)", "Edificios 3D (ciudades)", "Bâtiments 3D (villes)", "3D 건물 (도시)", "3D 建築（城市）"],
+  "Volcanoes (GVP Holocene)": ["Vulkane (GVP, Holozän)", "Вулканы (GVP, голоцен)", "Volcanes (GVP, Holoceno)", "Volcans (GVP, Holocène)", "화산 (GVP 홀로세)", "火山（GVP 全新世）"],
+  "Volcanoes (GVP Holocene, all 1,215)": ["Vulkane (GVP, Holozän, alle 1.215)", "Вулканы (GVP, голоцен, все 1215)", "Volcanes (GVP, Holoceno, los 1215)", "Volcans (GVP, Holocène, les 1 215)", "화산 (GVP 홀로세, 전체 1,215곳)", "火山（GVP 全新世，全部 1,215 座）"],
+
+  "Unchanged / not confirmed": ["Unverändert", "Без изменений", "Sin cambios", "Inchangé / non confirmé", "변화 없음·미확인", "未變／未確認"],
+  "Data gaps": ["Datenlücken", "Пробелы в данных", "Lagunas de datos", "Données manquantes", "취득하지 못한 데이터", "資料缺口"],
+  "Limitations": ["Einschränkungen", "Ограничения", "Limitaciones", "Limites", "제약·불확실성", "限制與不確定性"],
+
+  "arrives": ["Ankunft", "приход", "llegada", "arrivée", "도달", "到達"],
+  "no arrival": ["keine Ankunft", "нет прихода", "sin llegada", "pas d’arrivée", "미도달", "未到達"],
+  "coast": ["Küste", "побережье", "costa", "côte", "연안", "沿岸"],
+
+  "Elevation relief": ["Höhenrelief", "Рельеф высот", "Relieve altimétrico", "Relief altimétrique", "표고 단채", "高程暈渲"],
+  "Population density (1 km grid)": ["Bevölkerungsdichte (1-km-Raster)", "Плотность населения (сетка 1 км)", "Densidad de población (malla de 1 km)", "Densité de population (grille de 1 km)", "인구 밀도 (1 km 격자)", "人口密度（1 公里網格）"]
+}

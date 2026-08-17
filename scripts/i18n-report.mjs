@@ -28,6 +28,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
+import { parseAll, context, shapeOf } from './i18n-helpers.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const JS = join(ROOT, 'js');
@@ -73,62 +74,45 @@ function keyedTable(code) {
 }
 function inlineTable(code) {
   const p = join(LOCALES, `ui.${code}.js`);
-  if (!existsSync(p)) return new Set();
+  /* ⚠ (#R251) A MAP, NOT A SET — the caller needs the VALUE as well as the key, to say how many
+     rows are still the English string.  reads the same on both, so nothing else changed. */
+  const rows = new Map();
+  if (!existsSync(p)) return rows;
   const src = readFileSync(p, 'utf8');
-  const keys = new Set();
   const ast = parse(src, { ecmaVersion: 2022 });
   walk.simple(ast, {
     Property(n) {
       if (n.key && (n.key.name === 'inline' || n.key.value === 'inline') && n.value && n.value.type === 'ObjectExpression') {
         n.value.properties.forEach((pr) => {
           if (pr.type !== 'Property') return;
-          keys.add(pr.key.value != null ? pr.key.value : pr.key.name);
+          const k = pr.key.value != null ? pr.key.value : pr.key.name;
+          rows.set(k, pr.value && pr.value.type === 'Literal' ? pr.value.value : null);
         });
       }
     },
   });
-  return keys;
+  return rows;
 }
 
 /* ── ② the inline strings, from the source ──────────────────────────────────────────────────── */
 function inlineStrings() {
   const out = new Map();                    /* English string → [file…] */
-  for (const f of readdirSync(JS).filter((n) => n.endsWith('.js'))) {
-    const src = readFileSync(join(JS, f), 'utf8');
-    /* ⚠ (#R223) NO SUBSTRING PRE-FILTER. It used to skip any file that did not contain one of four
-       spellings, and js/ocean-currents.js spells it `const { …, onRestyle, L } = W;` — none of the
-       four. The whole module was therefore invisible to this report AND to the template it writes,
-       so a new language rendered every one of its strings in English while the report said 100 %.
-       Parsing 130 files costs a fraction of a second; guessing costs a silent gap. */
-    let ast;
-    try { ast = parse(src, { ecmaVersion: 2022, sourceType: 'script' }); }
-    catch (e) { try { ast = parse(src, { ecmaVersion: 2022, sourceType: 'module' }); } catch (e2) { continue; } }
-    /* which identifiers in THIS file are language helpers */
-    const names = new Set(['L']);
-    walk.simple(ast, {
-      VariableDeclarator(n) {
-        if (!n.id || n.id.type !== 'Identifier' || !n.init) return;
-        const t = src.slice(n.init.start, n.init.end);
-        if (t.indexOf('IntMapLang.pick') >= 0) names.add(n.id.name);
-      },
-      Property(n) {
-        /* `const { L } = W;` style destructuring of the shared toolkit */
-        if (n.key && n.key.name === 'L') names.add(n.value && n.value.name ? n.value.name : 'L');
-      },
-    });
-    walk.simple(ast, {
+  /* ⚠⚠⚠ (#R251) WHICH CALLS ARE TRANSLATION CALLS IS NOT THIS FILE'S QUESTION ANY MORE.
+     It used to be answered here, per file, and it was wrong in a way no percentage could show: a
+     helper BOUND in js/app-body.js and handed to every submodule (`get _coL(){ return _coL; }`) is
+     called in js/companies-ui.js as `HOST._coL('Market cap','時価総額','Marktkap.',…)`. That is a
+     complete five-language call — and because `_coL` is not bound in the file being read, all 65
+     such sites were outside this universe, so fr / ko / zh / zh-hans had no row to translate and
+     rendered ENGLISH while this report printed 100 %. The resolution is repo-wide and lives in
+     scripts/i18n-helpers.mjs, which scripts/i18n-positional-audit.mjs and scripts/i18n-pair-audit.mjs
+     read too — one answer, so the three cannot disagree ([[intmap-recurring-lessons]] G). */
+  for (const f of parseAll().keys()) {
+    const ctx = context(f, 'strict');
+    walk.simple(ctx.ast, {
       CallExpression(n) {
-        /* ⚠ (#R231) TWO SHAPES, NOT ONE. `L(en, …)` is the helper bound to IntMapLang.pick(); the
-           second is `IntMapLang.t(lang, en, …)`, which scripts/lang-ternary-codemod.mjs wrote at 268
-           sites that used to be hand-written `lang==='jp'?…` chains. Those chains were invisible to
-           this report, which is why it printed 100 % for seven rounds while Chinese screens still
-           carried English — see the header of `t()` in js/lang-registry.js. A report that could not
-           see the new shape either would simply move the blind spot. */
-        let a = null;
-        if (n.callee && n.callee.type === 'Identifier' && names.has(n.callee.name)) a = n.arguments[0];
-        else if (n.callee && n.callee.type === 'MemberExpression' && !n.callee.computed
-          && n.callee.property && n.callee.property.name === 't'
-          && /IntMapLang$/.test(src.slice(n.callee.object.start, n.callee.object.end))) a = n.arguments[1];
+        const i = shapeOf(n, ctx);
+        if (i < 0) return;
+        const a = n.arguments[i];
         if (!a || a.type !== 'Literal' || typeof a.value !== 'string' || !a.value.trim()) return;
         if (!out.has(a.value)) out.set(a.value, []);
         const arr = out.get(a.value); if (arr.indexOf(f) < 0) arr.push(f);
@@ -183,6 +167,20 @@ function main() {
   /* (#R231) `--missing <code>` prints exactly the inline strings that language has no entry for, as
      ready-to-paste table rows. Without it, closing a gap means diffing 2,000 keys by eye — which is
      why #R223/#R224's tables were never topped up as new strings landed. */
+  /* (#R251)  prints the inline rows whose value IS still the English key —
+     the work `--missing` cannot see, because those rows are PRESENT. A skeleton written by
+     scripts/i18n-new-language.mjs is 100 % present and 0 % translated, and that was invisible.
+     ⚠ Some of them are correct in that language (units, product names, cognates); this lists them
+     so somebody decides, rather than a percentage deciding for them. */
+  const wantIdent = process.argv.indexOf('--identical');
+  if (wantIdent >= 0) {
+    const code = process.argv[wantIdent + 1];
+    const have = inlineTable(code);
+    const rowsOut = [...inline.keys()].filter((sx) => have.get(sx) === sx).sort((a, b) => a.localeCompare(b));
+    console.error(`${code}: ${rowsOut.length} of ${inline.size} inline rows are still the English string`);
+    for (const sx of rowsOut) console.log(`    ${ESC(sx)}: ${ESC(sx)},   /* ${(inline.get(sx) || []).slice(0, 2).join(' ')} */`);
+    return;
+  }
   const wantMissing = process.argv.indexOf('--missing');
   if (wantMissing >= 0) {
     const code = process.argv[wantMissing + 1];
@@ -208,6 +206,17 @@ function main() {
           keyed: r.code === 'en' ? en.size : (k ? [...k].filter((x) => en.has(x)).length : 0),
           positional: idx < 5,
           inline: idx < 5 ? null : [...inline.keys()].filter((s) => i.has(s)).length,
+          /* ⚠⚠⚠ (#R251) …AND HOW MANY OF THOSE ROWS ARE STILL THE ENGLISH STRING. #R239 wrote the
+             rule after an instrument it had just written called an English copy 100 % — 「被覆は
+             『存在する』でなく『英語と違う』」 — and fixed it for the READING PAGES. The inline table
+             still counted presence:  writes 3,576 rows whose
+             value IS the key (deliberately — the language must be readable from the first commit),
+             and this column then reported Italian at 100.0 %, so  named the 367 page
+             strings and stayed silent about 3,576 untranslated ones. It is PRINTED rather than
+             subtracted, because a row that equals its key is often correct — 「Satellite」, 「Zoom」,
+             「Distance」 and 「Atlas」 are French, 「km」 and 「UTC」 are everybodys — and certifying
+             217 of those as reviewed is a claim this file has not earned. The number is the signal. */
+          identical: idx < 5 ? null : [...inline.keys()].filter((s) => i.get(s) === s).length,
         };
       }),
     }));

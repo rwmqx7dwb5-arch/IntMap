@@ -31,6 +31,7 @@ import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
+import { parseAll, context, shapeOf } from './i18n-helpers.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const JS = join(ROOT, 'js');
@@ -125,6 +126,29 @@ const SAME_AS_EN = {
     'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus',
     'Ceylon', 'Formosa', 'Zaire', 'Dahomey', 'Basutoland', 'Kamerun', 'Togoland',
     'Transvaal', 'Natal', 'Zululand', 'Buganda', 'Bunyoro', 'Oyo',
+    /* ⚠ (#R251) …and the eleven js/ocean-currents.js and js/atlas-sims.js brought in when the
+       SIXTEENTH shape widened this audit's universe (see scripts/i18n-helpers.mjs — both files bind
+       their helper as `const { …, L } = W` / `const L = CTX.L`, so neither had ever been measured
+       here at all). Each was read against Duden one at a time:
+         warm    — the German adjective is «warm».
+         zonal   — the German adjective for a zonal (east–west) current is «zonal».
+         Neutral — the legend word for a neutral state; German uses «neutral» / «Neutral».
+         the months — German abbreviates Januar…Dezember as Jan Feb Mär Apr Mai Jun Jul Aug Sep Okt
+         Nov Dez, so eight of the twelve ARE the English abbreviation. The four that are not (Mär,
+         Mai, Okt, Dez) are translated at the same call sites, which is what makes this a claim
+         about the word rather than about a forgotten argument. */
+    'warm', 'zonal', 'Neutral', 'Jan', 'Feb', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Nov',
+    /* …and the dwarf planet, surfaced when js/space.js's body names became calls: Duden spells it
+       «Pluto», exactly as English does (the other ten differ, and are translated at the same site). */
+    'Pluto',
+    /* ⚠ (#R251) …and five more from js/world-packs.js and js/seismic-events.js, each read one at a
+       time. `Solar` was NOT one of them — German prefers «Solarenergie» beside «Bioenergie», so the
+       argument was changed rather than excused, which is what this list is for:
+         Gas   — the German noun IS «Gas» (Duden); it labels the gas share of the energy mix.
+         Frost — the German noun IS «Frost» (Duden); it is one of the JMA warning kinds.
+         «MMI IX (Banda Aceh)», «2008 Wenchuan (Sichuan)», «2010 Haiti (Léogâne)» — an intensity
+         scale designation and two place names, spelled identically in German. */
+    'Gas', 'Frost', 'MMI IX (Banda Aceh)', '2008 Wenchuan (Sichuan)', '2010 Haiti (Léogâne)',
   ]),
   ru: new Set([]),
   es: new Set([
@@ -133,6 +157,20 @@ const SAME_AS_EN = {
     'Formosa', 'Zaire', 'Bohemia', 'Mesopotamia', 'Dahomey', 'Kampuchea', 'Gran Colombia',
     'Manchuria', 'Transvaal', 'Natal', 'Buganda', 'Bunyoro', 'Oyo', 'Kanem-Bornu', 'Annam',
     'Arabia', 'Angola', 'Congo', 'Madagascar', 'Mozambique', 'Eritrea', 'Jamaica', 'Yemen',
+    /* ⚠ (#R251) …and the three the sixteenth shape's widened universe surfaced, read against the
+       RAE one at a time:
+         zonal  — the Spanish adjective is «zonal».
+         Sector — the Spanish noun is «sector»; the label is capitalised, the word is not translated.
+         alt    — the Spanish abbreviation of «altitud» is «alt.», i.e. the same three letters. It
+                  labels the altitude axis of the flight-profile sketch in js/atlas-sims.js. */
+    'zonal', 'Sector', 'alt',
+    /* (#R251) …and three from the energy mix and the earthquake list: «gas» and «solar» are the
+       Spanish words (RAE), capitalised here as chart labels, and «MMI IX (Banda Aceh)» is an
+       intensity-scale designation with an Indonesian place name. */
+    'Gas', 'Solar', 'MMI IX (Banda Aceh)',
+    /* (#R251) …and the continent: «Asia» is the Spanish name of the continent (RAE), spelled
+       exactly as in English; the other six regions differ and are translated at the same site. */
+    'Asia',
   ]),
 };
 /* ⚠ …and the polity names the ERA MAP prints that carry no exonym in either language. Sub-Saharan
@@ -163,53 +201,26 @@ const PROMPTS = [
 ];
 const isPrompt = (s) => PROMPTS.some((p) => s.startsWith(p));
 
-const files = readdirSync(JS).filter((f) => f.endsWith('.js')).sort();
 const LANGS = [{ i: 2, code: 'de' }, { i: 3, code: 'ru' }, { i: 4, code: 'es' }];
 const same = { de: [], ru: [], es: [] };
 const short = [];
 let sites = 0;
 
-for (const f of files) {
-  const src = readFileSync(join(JS, f), 'utf8');
-  let ast;
-  try { ast = parse(src, { ecmaVersion: 2022, sourceType: 'script', locations: true }); }
-  catch { try { ast = parse(src, { ecmaVersion: 2022, sourceType: 'module', locations: true }); } catch { continue; } }
-
-  /* which local names are bound to IntMapLang.pick() in THIS file
-     ⚠ (#R241) …AND TO `pickArgs()`, WHICH THIS REGEX WOULD OTHERWISE MISS. `pickArgs` returns the
-     tuple it is handed, so `LA('English','日本語','Deutsch','Русский','Español')` is the same five
-     positional arguments as an `L(…)` call — that is the whole reason it is written as a call (see
-     the header of js/lang-registry.js). `pick\s*\(` does not match `pickArgs(`, so 90 new sites
-     would have been silently outside this audit's universe while it printed 100 % — which is the
-     defect this round exists to close, one level up. */
-  const names = new Set();
-  walk.simple(ast, {
-    VariableDeclarator(n) {
-      if (n.id.type !== 'Identifier' || !n.init) return;
-      const t = src.slice(n.init.start, n.init.end);
-      if (/IntMapLang\s*\.\s*pick(?:Args)?\s*\(/.test(t)) names.add(n.id.name);
-    },
-  });
-  /* ══ ⚠⚠⚠ (#R243) THE TENTH BLIND SPOT — `IntMapLang.t(lang, …)` WAS NEVER IN THIS UNIVERSE ══════
-     「いつまでたっても言語対応の漏れが見つかることは許されない。」
-
+for (const f of parseAll().keys()) {
+  /* ══ ⚠⚠⚠ (#R251) WHICH CALLS ARE TRANSLATION CALLS IS RESOLVED REPO-WIDE, NOT HERE ═════════════
      This audit is the ONLY instrument that answers 「is the German argument actually German?」, and
-     for four rounds it has looked at exactly one shape: a CallExpression whose callee is an
-     IDENTIFIER bound to `pick()`. #R231 converted 281 hand-written language chains to
-     `IntMapLang.t(lang, en, jp, de, ru, es)` — a MemberExpression callee — and scripts/i18n-report.mjs
-     was taught to read both shapes so fr/ko/zh stayed measured. This file was not, so those sites
-     have been outside the de/ru/es measurement ever since while the table printed 100 %.
-     #R243 then converted 467 MORE sites into the same shape, which would have taken the unmeasured
-     body of text from 281 to 748 — the exact failure this family of instruments exists to stop
-     ([[intmap-recurring-lessons]] B). Both shapes are read here now; `t()`'s first argument is the
-     language, so its English string is at index 1 and every language index shifts by one. */
-  const shape = (n) => {
-    if (n.callee.type === 'Identifier' && names.has(n.callee.name)) return 0;
-    if (n.callee.type === 'MemberExpression' && !n.callee.computed
-      && n.callee.property && n.callee.property.name === 't'
-      && /IntMapLang$/.test(src.slice(n.callee.object.start, n.callee.object.end))) return 1;
-    return -1;
-  };
+     for five rounds it resolved «is this name a helper?» from the file it was reading. #R243 added
+     the `IntMapLang.t(lang, …)` shape here after that shape had been outside the measurement for
+     four rounds. #R251 found the same defect one level further out: a helper BOUND in js/app-body.js
+     and handed to submodules (`get _coL(){ return _coL; }`) is CALLED as `HOST._coL(…)`, and
+     `_coL` is bound nowhere in the calling file — so 65 five-language call sites were never checked
+     here either. The resolution now lives in scripts/i18n-helpers.mjs and is shared with
+     scripts/i18n-report.mjs and scripts/i18n-pair-audit.mjs, so a seventeenth way of reaching the
+     registry is one edit in one file and all three surfaces pick it up together. `t()`'s first
+     argument is the language, so its English string is at index 1 — `shapeOf()` returns which. */
+  const ctx = context(f, 'strict');
+  const { src, ast } = ctx;
+  const shape = (n) => shapeOf(n, ctx);
 
   walk.simple(ast, {
     CallExpression(n) {

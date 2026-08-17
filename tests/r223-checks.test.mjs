@@ -208,8 +208,16 @@ test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the 
   assert.ok(existsSync(join(ROOT, 'scripts/zh/00-ui.json')));
 });
 test('R223 ⑩ the coverage scanner reads every file, not the ones whose spelling it guessed', () => {
+  /* ⚠ (#R251) THE GUARANTEE MOVED FILES; IT IS THE SAME GUARANTEE. Parsing every file in js/ — no
+     substring pre-filter, because js/ocean-currents.js spells its helper `const { …, L } = W;` and
+     matched none of the obvious spellings — is now made ONCE in scripts/i18n-helpers.mjs, which the
+     report, the positional audit and the pair audit all read. Asserting on the old address would
+     fail while the guarantee holds, so both halves are asserted: the promise where it now lives,
+     and that the report actually goes through it rather than keeping a private copy. */
   const s = read('scripts/i18n-report.mjs');
-  assert.ok(!/indexOf\('IntMapLang\.pick'\) < 0 && src\.indexOf/.test(s),
+  const h = read('scripts/i18n-helpers.mjs');
+  assert.ok(!/indexOf\('IntMapLang\.pick'\) < 0 && src\.indexOf/.test(s + h),
     'the substring pre-filter hid js/ocean-currents.js entirely');
-  assert.match(s, /NO SUBSTRING PRE-FILTER/);
+  assert.match(h, /NO SUBSTRING PRE-FILTER/);
+  assert.match(s, /from '\.\/i18n-helpers\.mjs'/);
 });

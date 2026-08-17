@@ -43,8 +43,12 @@ test('R241 ① a tuple of translations is a CALL, so every existing instrument c
      test in i18n-report.mjs and a regex in i18n-positional-audit.mjs — match it. The regex is the
      fragile one: `pick\s*\(` does NOT match `pickArgs(`, and 218 sites were outside the positional
      universe until it was widened. Measured: 2,195 → 2,413 call sites. */
-  assert.match(R('scripts/i18n-positional-audit.mjs'), /IntMapLang\\s\*\\\.\\s\*pick\(\?:Args\)\?\\s\*\\\(/,
-    'the positional audit counts pickArgs sites too');
+  assert.match(R('scripts/i18n-helpers.mjs'), /IntMapLang\.pick(Args)?/,
+      'the shared resolver counts pickArgs sites too');
+    /* (#R251) …and the positional audit asks it, rather than carrying a fourth private copy — three
+       per-file copies is how 65 five-language call sites stayed outside every measurement. */
+    assert.match(R('scripts/i18n-positional-audit.mjs'), /i18n-helpers.mjs/,
+      'the positional audit reads the shared resolver');
 
   /* the tuple helper is actually used, in every table that used to hold a bare array */
   for (const f of ['js/weather.js', 'js/layer-packs.js', 'js/data-layers.js',

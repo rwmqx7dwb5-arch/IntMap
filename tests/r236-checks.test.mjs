@@ -233,7 +233,8 @@ test('R236 seismic: the 2024 Noto Peninsula earthquake is in the catalogue, from
   const row = s.slice(s.indexOf("id: 'noto2024'"), s.indexOf("id: 'noto2024'") + 1800);
   assert.match(row, /when: '2024-01-01T07:10:09Z'/);
   assert.match(row, /lat: 37\.49, lng: 137\.27, depthKm: 10, mw: 7\.5/);
-  assert.match(row, /name: \[[^\]]*'2024年 能登半島地震'/, 'named in five languages, positionally');
+  assert.match(row, /name: LA\([^)]*'2024年 能登半島地震'/,
+    'named in five languages — a CALL since #R251, so scripts/i18n-report.mjs can see the ten names');
   assert.match(row, /obs: \{/, 'and it carries what was observed at the time');
   assert.match(row, /JMA 7 \(Shika, Ishikawa\)/, 'including the peak intensity');
 });

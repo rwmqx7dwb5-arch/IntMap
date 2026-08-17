@@ -788,6 +788,8 @@
   );
 
   /* Capital-name aliases the packed country row has no field for. iso2|alias;… */
+  /* @i18n-entity-data  capital-name SPELLINGS a headline is matched against, packed as `iso2|alias;…`
+     — not text the app writes. Translating them would break the matcher they exist for. (#R251) */
   var CAPALT = [
     'UA|Kiev;キエフ;Киев;Київ', 'YE|Sana’a;Sanaʽa;サナア;Сана', 'MM|Nay Pyi Taw;Naypyitaw',
     'CN|Peking;Пекин;北京市', 'JP|Tokio;Токио;東京都;Tôkyô', 'KR|Séoul;Сеул;서울;ソウル特別市',
@@ -1470,6 +1472,8 @@
              o = organisation / company / club → docked, only wins when no
                  explicit place is named
              s = seat / bureau → a precise place, not docked            */
+  /* @i18n-entity-data  matcher SPELLINGS packed as `alias;alias;…|kind||` — the strings a headline
+     is compared against, not text the app writes. Translating them would break the matcher. (#R251) */
   TR.push(
     /* --- publications & brands that swallow a place name ---
        ⚠ (#R208) AND IN JAPANESE, WHICH IS THE HALF THAT WAS MISSING. Every row below already knew

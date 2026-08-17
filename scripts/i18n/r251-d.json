@@ -1,0 +1,14 @@
+{
+  "_": "(#R251) The welcome card (js/onboarding.js) — it was three whole language BLOCKS (jp / de / everyone-else), so the first screen a reader ever sees was English for ru, es, fr, ko, zh and zh-Hans. de/ru/es are now arguments at the call site; these are the fr/ko/zh-Hant rows. Columns: de, ru, es, fr, ko, zh-Hant.",
+
+  "Explore the world, one layer at a time": ["Die Welt erkunden – Ebene für Ebene", "Исследуйте мир слой за слоем", "Explora el mundo, capa a capa", "Explorez le monde, couche par couche", "한 겹씩 세계를 살펴보세요", "一層一層，探索世界"],
+  "100+ data layers": ["Über 100 Datenebenen", "Более 100 слоёв данных", "Más de 100 capas de datos", "Plus de 100 couches de données", "100개 이상의 데이터 레이어", "超過 100 種資料圖層"],
+  "Climate, population, economy, geopolitics & live weather": ["Klima, Bevölkerung, Wirtschaft, Geopolitik & Live-Wetter", "Климат, население, экономика, геополитика и погода в реальном времени", "Clima, población, economía, geopolítica y meteorología en vivo", "Climat, population, économie, géopolitique et météo en direct", "기후·인구·경제·지정학·실시간 기상", "氣候、人口、經濟、地緣政治與即時天氣"],
+  "Live news map": ["Live-Nachrichtenkarte", "Карта новостей в реальном времени", "Mapa de noticias en vivo", "Carte d’actualité en direct", "실시간 뉴스 지도", "即時新聞地圖"],
+  "World headlines pinned to where they actually happen": ["Schlagzeilen dort angeheftet, wo sie wirklich geschehen", "Мировые новости на том месте, где они произошли", "Titulares del mundo anclados donde realmente ocurren", "Les titres du monde épinglés là où ils se produisent", "세계의 뉴스를 실제로 일어난 장소에 표시", "把世界頭條釘在真正發生的地點"],
+  "Globe, satellite & time machine": ["Globus, Satellit & Zeitmaschine", "Глобус, спутник и машина времени", "Globo, satélite y máquina del tiempo", "Globe, satellite et machine à remonter le temps", "지구본·위성·타임머신", "地球儀、衛星與時光機"],
+  "3D terrain, real imagery, and travel back to 1900": ["3D-Gelände, echte Satellitenbilder, zurück bis 1900", "3D-рельеф, реальные снимки и путешествие до 1900 года", "Relieve 3D, imágenes reales y viaje hasta 1900", "Relief 3D, imagerie réelle et retour jusqu’en 1900", "3D 지형과 실제 위성 영상, 1900년까지 거슬러", "3D 地形、實拍影像，回溯至 1900 年"],
+  "Atlas AI & country data": ["Atlas-KI & Länderdaten", "Atlas ИИ и данные по странам", "Atlas IA y datos por país", "Atlas IA et données par pays", "Atlas AI·국가 데이터", "Atlas AI 與國家資料"],
+  "Ask in plain language, compare countries, even fly a jet": ["In normaler Sprache steuern, Länder vergleichen, Flugsimulator", "Спрашивайте обычным языком, сравнивайте страны и даже летайте", "Pregunta en lenguaje natural, compara países e incluso pilota un avión", "Posez vos questions en langage courant, comparez des pays, pilotez même un avion", "일상 언어로 묻고, 나라를 비교하고, 비행기까지 조종", "用日常語言提問、比較國家，甚至駕駛噴射機"],
+  "Start exploring": ["Loslegen", "Начать", "Empezar a explorar", "Commencer l’exploration", "시작하기", "開始探索"]
+}
