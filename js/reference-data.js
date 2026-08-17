@@ -204,6 +204,12 @@ window.IntMapRefData=(function(){
     {n:'Live cameras — OpenStreetMap (Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:contact:webcam'},
     /* (#R254) the data-center layer: OSM's own surveyed buildings (ODbL) plus the operators' published region lists */
     {n:'Data centers — OpenStreetMap (telecom/man_made/building = data_center, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:telecom%3Ddata_center'},
+    /* (#R255) the four surveyed-facility layers — js/osm-facilities.js. Same live Overpass path,
+       same ODbL terms; each card prints the object’s own tags and links to the object itself. */
+    {n:'Diplomatic missions — OpenStreetMap (amenity=embassy / office=diplomatic, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:amenity%3Dembassy'},
+    {n:'Military sites — OpenStreetMap (military=*, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:military'},
+    {n:'Health facilities — OpenStreetMap (amenity=hospital/clinic/doctors/pharmacy, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:healthcare'},
+    {n:'Telecom & internet infrastructure — OpenStreetMap (telecom=*, communications towers, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:telecom'},
     {n:'AWS Global Infrastructure — regions',u:'https://aws.amazon.com/about-aws/global-infrastructure/regions_az/'},
     {n:'Microsoft Azure — datacenter locations',u:'https://datacenters.microsoft.com/globe/explore/'},
     {n:'Google Cloud — locations',u:'https://cloud.google.com/about/locations'},

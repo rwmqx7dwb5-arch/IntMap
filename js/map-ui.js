@@ -229,23 +229,41 @@ window.IntMapModules.layerSidebar=function(HOST){
        pointer, and a pointerdown in a sidebar or on the map takes it away, which is the other two
        sentences of the instruction. */
     const _FRONT_SIDE='.sidebar,#layer-sidebar-r,.btn-toggle-sidebar,#lsr-toggle';
+    /* ══ ⚠ (#R255) THE SHELL IS NOT A PANEL, AND «SOME OPERATION» IS NOT ONLY A POINTERDOWN ═════════
+       「ポップアップ内でなんらかの操作したら、ポップアップが前部に来るように。」— reported a third
+       time. #R253 built the demotion and #R254 named the raised element; MEASURED on this build both
+       do exactly what they say (a `.data-legend` goes 1100 → 2650 and the sidebar 2600 → 1000; a
+       MapLibre popup goes `auto` → 2650 and back). Two holes were left, and both are «operations»:
+
+       ① A WHEEL SCROLL AND A KEYSTROKE ARE NOT POINTERDOWNS. Reading a long card by scrolling it, or
+          typing into a field inside it, are the plainest cases of 「なんらかの操作」 there are, and
+          neither raised anything. `wheel` and `focusin` now count.
+       ② `#map-container` AND `.operation-room` ARE `position:relative` (css/intmap.css), so they are
+          positioned ancestors — and `panelOf` returns the FIRST one it finds. Anything inside the map
+          shell that is not itself positioned and not under the canvas therefore resolved to the SHELL,
+          and marking that `.im-front` puts the whole map (and every sidebar inside `.operation-room`)
+          into one 2650 box. The walk now refuses the shell by name as well as the canvas. */
+    const _NOT_PANEL='#map,#map-container,.operation-room,.maplibregl-map,.maplibregl-canvas-container,.maplibregl-control-container,canvas';
     function _wireFrontMost(){ if(window.__imFrontMostWired) return; window.__imFrontMostWired=1;
       /* the floating panel an event landed in — the first positioned ancestor, asked of the LAYOUT
          rather than of a list of selectors (#R253). The map's own canvas is explicitly not one. */
       const panelOf=(el)=>{ for(let n=el; n&&n!==document.body; n=n.parentElement){
-          if(n.matches&&n.matches('.maplibregl-canvas-container,.maplibregl-control-container,canvas')) return null;
+          if(n.matches&&n.matches(_NOT_PANEL)) return null;
           let p=''; try{ p=getComputedStyle(n).position; }catch(_){}
           if(p==='absolute'||p==='fixed') return n; }
         return null; };
       const raise=(el)=>{ try{ document.querySelectorAll('.im-front').forEach(n=>{ if(n!==el) n.classList.remove('im-front'); }); }catch(_){}
         if(el) el.classList.add('im-front'); };
-      document.addEventListener('pointerdown',(e)=>{ try{
-        const t=e.target; if(!t||!t.closest) return;
+      const act=(t,mayDemote)=>{ if(!t||!t.closest) return;
         if(t.closest(_FRONT_SIDE)){ document.body.classList.remove('im-float-front'); raise(null); return; }
         const p=panelOf(t);
-        document.body.classList.toggle('im-float-front', !!p);
-        raise(p);
-      }catch(_){} },true);
+        /* a wheel over the map must not clear a panel the reader is using — only a POINTERDOWN on the
+           map means «I have moved on». So the passive signals raise, and never demote. */
+        if(!p){ if(!mayDemote) return; document.body.classList.remove('im-float-front'); raise(null); return; }
+        document.body.classList.add('im-float-front'); raise(p); };
+      document.addEventListener('pointerdown',(e)=>{ try{ act(e.target,true); }catch(_){} },true);
+      document.addEventListener('wheel',(e)=>{ try{ act(e.target,false); }catch(_){} },{capture:true,passive:true});
+      document.addEventListener('focusin',(e)=>{ try{ act(e.target,false); }catch(_){} },true);
     }
     const T=window.IntMapLang.pick(()=>HOST.lang);
     /* (#R70) REBUILT FROM SCRATCH ("単にデフォルトの Layers選択欄を移植するな。一から同じ機能かつ洗練された
@@ -293,6 +311,13 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'#layer-sidebar-r .lsr-search{display:block;padding:2px 14px 10px;}'
         +'#layer-sidebar-r .lsr-search input{width:100%;box-sizing:border-box;height:36px;border-radius:18px;border:1px solid rgba(128,128,128,0.28);background:var(--card-bg);color:var(--text-main);font-size:12.5px;padding:0 14px;outline:none;}'
         +'#layer-sidebar-r .lsr-search input:focus{border-color:var(--primary-color);}'
+        /* (#R255) 「レイヤー検索欄に入力内容をクリアするボタンを。」 — the pill is the positioning
+           context; the button sits inside its right-hand padding and appears only with a query. */
+        +'.lsr-search{position:relative;}'
+        +'.lsr-search input{padding-right:38px !important;}'
+        +'.lsr-search .lsr-clear{display:none;position:absolute;right:22px;top:50%;transform:translateY(-50%);margin-top:-4px;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:rgba(128,128,128,0.28);color:var(--text-main);font-size:11px;line-height:20px;text-align:center;cursor:pointer;}'
+        +'.lsr-search .lsr-clear:hover{background:rgba(128,128,128,0.45);}'
+        +'.lsr-mount .lsr-search .lsr-clear{right:8px;}'
         +'#layer-sidebar-r .lsr-body{flex:1;overflow-y:auto;padding:0 12px 24px;min-height:0;}'
         /* (#R70/#R71) TILE GRID — 3 columns, mercator-true previews (aspect matches the canvas exactly:
            nothing stretched), tightened typography, quieter card chrome ("素人が作ったようなダサい"対策). */
@@ -410,6 +435,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       sb.querySelector('.lsr-x').onclick=close;
       _hosts.push(sb);   /* (#R232) the sidebar is simply the FIRST host */
       sb.querySelector('#lsr-q').addEventListener('input',()=>filterTiles(sb));   /* ⚠ (#R232) not `filterTiles` bare — it takes a host now, and an Event is not one */
+      wireSearchClear(sb);   /* (#R255) the ✕ that empties it */
       sb.addEventListener('click',e=>e.stopPropagation());
       /* keep every tile's ✓ in sync with its real checkbox, whoever toggles it (classic panel, Atlas, legends) */
       document.addEventListener('change',e=>{ try{ const t2=e.target; if(!t2||t2.type!=='checkbox') return; if(!t2.closest||!t2.closest('#layer-dropdown')) return;
@@ -548,6 +574,25 @@ window.IntMapModules.layerSidebar=function(HOST){
     /* cheap state re-sync (no rebuild): reflect the live checkboxes onto the existing tiles */
     function syncTiles(){ try{ _liveHosts().forEach(h=>h.querySelectorAll('.lst-tile').forEach(t2=>{ const id=t2.dataset.lid; if(!id) return;
       const cb=document.getElementById(id); if(cb) t2.classList.toggle('on',!!cb.checked); })); }catch(_){} }
+    /* ══ (#R255) THE CLEAR BUTTON — ONE IMPLEMENTATION, EVERY MOUNT ════════════════════════════════
+       「レイヤー検索欄に入力内容をクリアするボタンを。」 This grid is mounted in at least two places
+       (the desktop sidebar and the phone's «Map & layers» sheet) and the classic panel has a search
+       box of its own in js/map-extras.js. #R239's lesson is a defect fixed in one of two copies of a
+       thing and left in the other, so this is a function every host calls rather than markup written
+       twice — the third box (a different panel entirely) gets its own, beside its own filter. */
+    function wireSearchClear(host){ try{
+      const wrap=host&&host.querySelector('.lsr-search'); if(!wrap||wrap.querySelector('.lsr-clear')) return;
+      const inp=wrap.querySelector('input'); if(!inp) return;
+      const b=document.createElement('button'); b.type='button'; b.className='lsr-clear'; b.textContent='✕';
+      const lbl=()=>T('Clear search','検索をクリア','Suche leeren','Очистить поиск','Borrar búsqueda');
+      b.title=lbl(); b.setAttribute('aria-label',lbl());
+      const sync=()=>{ b.style.display=inp.value?'block':'none'; };
+      wrap.appendChild(b); sync();
+      inp.addEventListener('input',sync);
+      inp.addEventListener('keydown',e=>{ if(e.key==='Escape'&&inp.value){ inp.value=''; filterTiles(host); sync(); } });
+      b.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); inp.value=''; filterTiles(host); sync(); inp.focus(); });
+      window.addEventListener('intmap-lang',()=>{ b.title=lbl(); b.setAttribute('aria-label',lbl()); });
+    }catch(_){} }
     function filterTiles(host){ host=host||sb; if(!host) return; const qi=host.querySelector('.lsr-search input');
       const q=((qi&&qi.value)||'').toLowerCase().trim();
       const root=host.querySelector('.lst-root'); if(!root) return;
@@ -657,6 +702,7 @@ window.IntMapModules.layerSidebar=function(HOST){
         host.innerHTML='<div class="lsr-search"><input class="lsr-q" type="text" placeholder="'+T('Search layers…','レイヤーを検索…','Ebenen suchen…','Поиск слоёв…','Buscar capas…')+'"></div><div class="lsr-body"></div>';
         container.insertBefore(host, container.firstChild);
         host.querySelector('.lsr-q').addEventListener('input',()=>filterTiles(host));
+        wireSearchClear(host);   /* (#R255) …and the phone's sheet gets the same button, from the same code */
         _hosts.push(host);
       }
       try{

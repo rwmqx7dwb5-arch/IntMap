@@ -276,13 +276,26 @@ window.IntMapModules.layerSearch=function(HOST){
         /* (#R23) NO longer pinned/sticky — the user asked the desktop layer-search box to sit in normal
            flow and scroll with the list ("レイヤー検索窓の上部固定はやめて"). */
         box.style.cssText='position:relative;z-index:6;padding:2px 0 7px;';
-        box.innerHTML='<input id="layer-search" type="search" autocomplete="off" style="width:100%;box-sizing:border-box;padding:7px 11px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;">';
-        const inp=box.querySelector('input');
-        inp.placeholder=window.IntMapLang.t(HOST.lang,"Search layers…","レイヤーを検索…","Ebenen suchen…","Поиск слоёв…","Buscar capas…");
-        inp.addEventListener('input',()=>filter(inp.value));
+        /* ══ (#R255) A CLEAR BUTTON, ON BOTH SEARCH BOXES ═══════════════════════════════════════════
+           「レイヤー検索欄に入力内容をクリアするボタンを。」 There are TWO layer-search inputs in this
+           app — this one (the classic panel, `#layer-search`) and the tile sidebar's `.lsr-q`
+           (js/map-ui.js). #R239's lesson was a defect fixed in one of two implementations and left in
+           the other; both get the button, and both clear through their OWN filter so no third code
+           path can drift. `type=search` is left alone: WebKit's native ✕ is invisible on Firefox and
+           on Chrome-for-Android, which is why this is drawn rather than relied upon.
+           ⚠ `aria-label`, so the control is not an unlabelled glyph to a screen reader. */
+        box.innerHTML='<input id="layer-search" type="search" autocomplete="off" style="width:100%;box-sizing:border-box;padding:7px 30px 7px 11px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;">'
+          +'<button type="button" class="ls-clear" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);margin-top:-2px;width:19px;height:19px;padding:0;border:0;border-radius:50%;background:rgba(128,128,128,0.28);color:var(--text-main);font-size:11px;line-height:19px;cursor:pointer;">✕</button>';
+        const inp=box.querySelector('input'), clr=box.querySelector('.ls-clear');
+        const ph=()=>window.IntMapLang.t(HOST.lang,"Search layers…","レイヤーを検索…","Ebenen suchen…","Поиск слоёв…","Buscar capas…");
+        const cl=()=>window.IntMapLang.t(HOST.lang,"Clear search","検索をクリア","Suche leeren","Очистить поиск","Borrar búsqueda");
+        const sync=()=>{ clr.style.display=inp.value?'block':'none'; };
+        inp.placeholder=ph(); clr.title=cl(); clr.setAttribute('aria-label',cl());
+        inp.addEventListener('input',()=>{ filter(inp.value); sync(); });
         inp.addEventListener('click',e=>e.stopPropagation());
-        inp.addEventListener('keydown',e=>e.stopPropagation());
-        window.addEventListener('intmap-lang',()=>{ inp.placeholder=window.IntMapLang.t(HOST.lang,"Search layers…","レイヤーを検索…","Ebenen suchen…","Поиск слоёв…","Buscar capas…"); });
+        inp.addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Escape'&&inp.value){ inp.value=''; filter(''); sync(); } });
+        clr.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); inp.value=''; filter(''); sync(); inp.focus(); });
+        window.addEventListener('intmap-lang',()=>{ inp.placeholder=ph(); clr.title=cl(); clr.setAttribute('aria-label',cl()); });
       }
       /* (#R65) the Active-layers bar owns the very top (sticky) — the search box slots in right below it */
       { const act=document.getElementById('layer-active-section');
@@ -290,6 +303,7 @@ window.IntMapModules.layerSearch=function(HOST){
         else if(d.firstChild!==box) d.insertBefore(box,d.firstChild); }
       /* re-apply an active query after a panel rebuild */
       const inp=box.querySelector('input'); if(inp&&inp.value) filter(inp.value);
+      try{ const c=box.querySelector('.ls-clear'); if(c) c.style.display=(inp&&inp.value)?'block':'none'; }catch(_){}
     }
     /* keep the box pinned across every reorganize (the panel is rebuilt on each open) */
     function hook(){ const orig=window.reorganizeLayerPanel;

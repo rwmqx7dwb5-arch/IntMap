@@ -115,19 +115,33 @@ test('#R254 ⑤ the trade arrowheads exist, the pins do not, and the arrows have
 
   assert.match(wp, /class="wp-arr"/, 'the arrow switch is gone from the panel');
   assert.match(wp, /function applyVis\(\)/, 'nothing separates the arrow visibility from the rest of the layer');
-  assert.match(wp, /setVis\(\['wp-trade-arrow'\],\s*on\s*&&\s*arrows\)/, 'the arrow layer no longer follows the switch');
+  /* ⚠ (#R255) …AND SO DOES THE TERMINAL HEAD. #R254's arrowheads really were registered and really
+     were drawn, and were still invisible — measured this round: a ≤10 px head in the LINE'S OWN
+     COLOUR on a line up to 13 px wide. So the head is sized from the shaft now and every arc ends in
+     one big head at its destination. Both symbol layers must follow the 「矢印の有無」 switch, which
+     is what this assertion has always been for. */
+  assert.match(wp, /setVis\(\['wp-trade-arrow','wp-trade-tip'\],\s*on\s*&&\s*arrows\)/, 'the arrow layers no longer follow the switch');
 });
 
 /* ── ⑥ THE CROP RASTER ───────────────────────────────────────────────────────────────────────── */
 test('#R254 ⑥ a move during a crop fetch is not lost, the encode is a blob, and there is no emoji', () => {
   const wp = code(read('js/world-packs.js'));
-  /* the guard that dropped the move must remember it instead */
-  assert.doesNotMatch(wp, /if\(!on\|\|busy\)\s*return;/,
-    'the busy guard drops the move again — the layer stays on whichever cell won the race, for ever');
-  assert.match(wp, /if\(busy\)\{\s*_dirty=true/, 'a move during a fetch is not remembered');
-  assert.match(wp, /if\(_dirty&&on\)/, 'the remembered move is never acted on');
+  /* ══ ⚠⚠ (#R255) THE DEFECT THIS PINNED IS GONE WITH THE MECHANISM THAT COULD HAVE IT ═════════════
+     #R254 measured a view-change dropped during a fetch and made the layer REMEMBER it (`_dirty`).
+     That was the right fix for a layer that re-fetches ONE IMAGE PER VIEW. This round the reader
+     reported the same layer going black and drawing at the wrong scale on every pan, and the cause
+     was that shape itself: a single image source stretched over whichever cell was last fetched
+     (measured — mean luminance 8.3 immediately after a wheel-zoom, correct only ~10 s later). It is
+     a raster TILE source now, so there is no per-view fetch for a move to be lost during, and
+     asserting `_dirty` still exists would pin the compensation and forbid the cure.
+     What must not come back is the per-view image, and that is asserted directly — here, and in
+     tests/r255-checks ②. */
+  const cropsBlock = wp.slice(wp.indexOf('(function crops()'));
+  assert.ok(cropsBlock.length > 1000, 'the crops block could not be located');
+  assert.ok(!/type:'image',url/.test(cropsBlock),
+    'the crop layer is a single stretched image again — see #R255 ② for what that looked like');
 
-  assert.match(wp, /cv\.toBlob\(/, 'the recolour encodes a data: URL on the main thread again (measured at 654,722 chars)');
+  assert.match(wp, /cv\.toBlob\(|_toBlob=/, 'the recolour encodes a data: URL on the main thread again (measured at 654,722 chars)');
 
   /* the emoji: the crop panel title and its legend name */
   const cropBlock = wp.slice(wp.indexOf("makePanel('wp-crop-panel'"), wp.indexOf("makePanel('wp-crop-panel'") + 400);
@@ -144,10 +158,18 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
   const g = /\['lyrGrpOthersReal',\[([^\]]*)\]\]/.exec(dl);
   assert.ok(g, 'the Others group is gone');
   const ids = g[1].split(',').map(s => s.trim().replace(/'/g, '')).filter(Boolean);
-  assert.equal(ids.length, 61, `Others holds ${ids.length} rows; the instruction named 61`);
+  /* ⚠ (#R255) THIS WAS `assert.equal(ids.length, 61)`, AND THAT MADE THE NEXT INSTRUCTION LOOK LIKE
+     A REGRESSION — the same trap #R254 itself removed from tests/r233 ⑤. 「政治、軍事、医療・衛生、
+     IT・テックレイヤーカテゴリを追加し、レイヤーの再編や追加を行うように」 moved twenty-eight of the
+     sixty-one World-Bank rows out of «Others» and into the four new categories, which is exactly
+     what «Others» is for: the indicators that have no better shelf. So the assertion is now the
+     PROPERTY #R254 was really asserting — Others holds World-Bank indicator rows and only those —
+     plus a floor, so the group cannot be quietly emptied out. */
+  assert.ok(ids.length >= 25, `Others holds only ${ids.length} rows; it is the shelf for the World-Bank indicators that have no better home`);
   assert.ok(ids.every(i => /^wb/.test(i)), 'Others holds something that is not a World-Bank indicator row');
-  /* the three World-Bank rows that are NOT in Others are the three already filed elsewhere */
-  ['wbco2', 'wbforest', 'wbagri'].forEach(k => assert.ok(!ids.includes(k), `${k} is filed in a real group already and must not be duplicated into Others`));
+  /* the World-Bank rows that are NOT in Others are the ones filed in a real group */
+  ['wbco2', 'wbforest', 'wbagri', 'wbhealth', 'wbnet', 'wbmilgdp', 'wbwomparl']
+    .forEach(k => assert.ok(!ids.includes(k), `${k} is filed in a real group already and must not be duplicated into Others`));
 
   assert.match(dl, /\['lyrGrpDemo',\[[^\]]*'energy'/, 'the energy-mix row is not promoted into Population & economy');
   assert.match(dl, /getElementById\('wp-dl-'\+id\)/, 'rowFor cannot find a world-packs row, so the promotion resolves to nothing');
