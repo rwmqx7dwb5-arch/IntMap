@@ -1365,9 +1365,28 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!mine.length){
           if(st==='ok') h+='<div style="margin-top:8px;color:var(--text-muted);">'+L('Nothing in force right now.','現在、発表中のものはありません。','Derzeit nichts in Kraft.','Сейчас ничего не действует.','Nada vigente ahora.')+'</div>';
           return h; }
-        const rows=[]; mine.forEach(f=>{ let it=[]; try{ it=JSON.parse(f.properties.items||'[]'); }catch(_){}
-          it.forEach(x=>rows.push(Object.assign({pref:f.properties.name},x))); });
+        /* …and «this agency has nothing» is now decided AFTER the GDACS rows are separated out */
+        /* ⚠ (#R266 追記) A GDACS EVENT IS NOT SOMETHING THE NWS ISSUED. `mine` is every feature whose
+           `iso` is this country, and GDACS points carry an iso too — so a US flood that crossed
+           GDACS's own threshold was listed under the heading «US National Weather Service, active
+           alerts», sorted to the TOP because its tier is higher. Measured on production: the United
+           States panel's first group was 「Flood in United States」. The rows were always mixed; the
+           grouping only made the attribution visible. They are now two blocks with two headings —
+           nothing is dropped, and neither source is credited with the other's work. */
+        const rows=[], gRows=[];
+        mine.forEach(f=>{ let it=[]; try{ it=JSON.parse(f.properties.items||'[]'); }catch(_){}
+          const bag=(f.properties.src==='gdacs')?gRows:rows;
+          it.forEach(x=>bag.push(Object.assign({pref:f.properties.name},x))); });
         h+=grouped(rows);
+        if(rows.length===0&&st==='ok') h+='<div style="margin-top:8px;color:var(--text-muted);">'+L('Nothing in force right now.','現在、発表中のものはありません。','Derzeit nichts in Kraft.','Сейчас ничего не действует.','Nada vigente ahora.')+'</div>';
+        if(gRows.length){
+          h+='<div style="margin-top:10px;padding-top:6px;border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));font-size:11.5px;color:var(--text-muted);">'
+            +esc(L('Also in GDACS for this country — an event feed, not this agency’s warnings',
+                   'この国について GDACS にある事象 — 事象の配信であって、この機関の警報ではありません',
+                   'Zusätzlich in GDACS für dieses Land — ein Ereignis-Feed, nicht die Warnungen dieser Behörde',
+                   'Также в GDACS по этой стране — фид событий, а не предупреждения этой службы',
+                   'También en GDACS para este país — un feed de eventos, no los avisos de esta agencia'))+'</div>'
+            +grouped(gRows); }
         return h; }
 
       /* ══ ⚠ (#R266) THE TAP IS A LIST OF ADMINISTRATIVE UNITS, NOT A LIST OF ROWS ════════════════
