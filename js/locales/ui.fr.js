@@ -4082,6 +4082,7 @@ window.IntMapLang.define('fr', { ui: {
   "fall": "dénivelé",
   "relief": "relief",
   "— flat water: the shortest way across is the way the water goes": "— eau calme : le chemin le plus court est celui que l’eau emprunte",
+  "Annual precipitation (by country)": "Précipitations annuelles (par pays)",   /* (#R266) */
   "Also in GDACS for this country — an event feed, not this agency’s warnings": "Également dans GDACS pour ce pays — un flux d’événements, et non les avertissements de cette agence",   /* (#R266) */
   "— every point on it is a DEM reading": "— chaque point en est une lecture du MNT",   /* (#R255) */
 } });

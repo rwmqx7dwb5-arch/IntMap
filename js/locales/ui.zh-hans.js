@@ -4172,6 +4172,7 @@ window.IntMapLang.define('zh-hans', {
   "fall": "落差",
   "relief": "起伏",
   "— flat water: the shortest way across is the way the water goes": "——平静水面：最短路径就是水的路径",
+    "Annual precipitation (by country)": "年降水量（各国平均）",   /* (#R266) */
     "Also in GDACS for this country — an event feed, not this agency’s warnings": "此国家在 GDACS 中的事件 — 这是事件数据源，并非该机关的警报",   /* (#R266) */
   "— every point on it is a DEM reading": "——其上每一点都是实测 DEM 值",   /* (#R255) */
   }
