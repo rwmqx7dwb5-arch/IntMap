@@ -231,7 +231,14 @@ test('R186 i18n: every new string exists in every registered language', () => {
 test('R186 water: the solver states its model, and the tracer states its endings', () => {
   const src = read('js/terrain-water.js');
   assert.match(src, /MFD_P\s*=\s*1\.1/, 'Freeman multiple-flow-direction exponent');
-  assert.match(src, /model:'priority-flood \+ MFD/, 'the result must say what model produced it');
+  /* ⚠ (#R265) THE RESULT NOW HAS TWO MODELS TO NAME. The drawn water is integrated in time
+     (js/water-dynamics.js) and ⏭ shows the steady state this string used to be the only value of, so
+     `model` is a ternary between the two. What this test is for — the result declares what produced
+     it — is unchanged, and BOTH branches are checked so neither can be dropped. */
+  assert.match(src, /model:steady\?'priority-flood \+ MFD\(1\.1\) \+ cascading depressions \(steady state\)'/,
+    'the result names the steady-state model when that is what is on screen');
+  assert.match(src, /:'local-inertial shallow water \(Bates 2010; q-centred de Almeida 2012; Manning n=0\.035\)'/,
+    '…and the time-dependent one when that is');
   assert.match(src, /LAKE_STOP_M\s*=\s*25/, 'a basin deeper than this stops the water');
   /* the sea test cannot be an elevation test — Death Valley proved that */
   assert.match(src, /function seaCheck/);

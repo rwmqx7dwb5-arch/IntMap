@@ -512,20 +512,11 @@ window.IntMapModules.betaPack2=function(HOST){
               k.querySelectorAll('.dc-keyrow').forEach(b=>{ const id=b.getAttribute('data-k'); if(!id) return;
                 b.onclick=()=>{ let on2=true; try{ on2=DCM.toggleKey(id); }catch(_){}
                   b.style.opacity=on2?'1':'0.38'; b.style.textDecoration=on2?'':'line-through'; }; }); }
-            /* ══ (#R264) 「ポップアップ二つあるのを辞めろ」 — THE IN-VIEW SUMMARY LIVES HERE NOW ═══════
-               #R261 gave this layer a floating `.tool-panel` beside the floating detail card, so
-               clicking a dot left two windows on the map. The card is the one that has to float (it
-               is about the point under the finger); the summary is about the LAYER, and the layer's
-               controls are this row — the same block that already carries the colour key and the
-               class switches. `mountSummary` is called on EVERY toggle-on, not only when the key is
-               first built, because the row is rebuilt by a language switch or a panel reorganisation
-               and the summary has to follow it. js/datacenters.js still owns every figure. */
-            try{ if(el&&DCM.mountSummary) DCM.mountSummary(el); }catch(_){} }
-           /* ⚠ (#R264) `!on`, not «else» — this branch is also reached when the layer IS on and the
-              legend registry is simply absent, and taking the summary away then would hide a live
-              layer's readout for a reason that has nothing to do with the layer. */
-           else { if(!on){ try{ if(DCM.unmountSummary) DCM.unmountSummary(); }catch(_){}
-             if(window._hideGenericLegend) window._hideGenericLegend('dc2'); } } }catch(_){}
+            /* ══ (#R265) 「表示範囲内のものを表示する機能はいらない」 — AND THE SUMMARY IS GONE ══════
+               #R261 gave this layer an in-view readout and #R264 moved it into this row. This round
+               it is deleted outright (js/datacenters.js). What stays in this row is what the row was
+               for: the colour key, and #R258's per-class SWITCHES — the filter is unaffected. */ }
+           else { if(!on){ if(window._hideGenericLegend) window._hideGenericLegend('dc2'); } } }catch(_){}
     }
     function phToggle(on){ state.pharma=on;
       const a=()=>{ if(!ptEnsure('pharma','ph-src',['ph-pt','ph-lbl'])){ GE().events.once('idle',a); return; }

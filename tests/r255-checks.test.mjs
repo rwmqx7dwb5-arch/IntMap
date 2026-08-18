@@ -125,7 +125,11 @@ test('#R255 ⑦c deselecting 「ここに水」 does not stop or reset the clock
   const m = /function setMode\(m\)\{([\s\S]*?)syncMode\(\);/.exec(tw);
   assert.ok(m, 'setMode is gone');
   assert.ok(!/pourStop\(\)/.test(m[1]), 'switching tools still stops the pour');
-  assert.match(tw, /if\(!pourT\) pourSimS=0;/, 'a second inlet still restarts the simulated clock from zero');
+  /* ⚠ (#R265) The guard grew a condition — a ONE-SHOT volume also starts the clock now, and it must
+     not reset a run that is already going. The property is the same one #R255 pinned: a source added
+     to a simulation in progress joins it at the time it is at. */
+  assert.match(tw, /if\(pourMode==='cont'&&!pourT\) pourSimS=0;/,
+    'only a fresh continuous pour starts from zero — a second inlet joins the clock where it is');
 });
 
 test('#R255 ⑦d the panel has a scrolling body and a sticky footer, as SIBLINGS', () => {

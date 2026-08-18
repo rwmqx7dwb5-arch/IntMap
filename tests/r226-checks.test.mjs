@@ -72,8 +72,14 @@ test('R226 ③ the DEM snapshot has a single bilinear, and the field walks it by
   assert.match(r, /const yy=\(1 - Math\.log\(Math\.tan\(lr\) \+ 1 \/ Math\.cos\(lr\)\) \/ Math\.PI\) \/ 2 \* N;|const yy=\(1-Math\.log\(Math\.tan\(lr\)\+1\/Math\.cos\(lr\)\)\/Math\.PI\)\/2\*N;/,
     "…and its y ONCE per row");
   assert.match(r, /if\(xi!==lastXi\)\{ lastXi=xi; d=tiles\.get\(xi\+'\/'\+yi\)\|\|null; \}/, 'with the tile memoised across the row');
-  /* one bilinear in the file, so the two can never drift apart */
-  assert.equal((r.match(/\(d\[rA\+ax\]\*tx1\+d\[rA\+bx\]\*tx\)\*ty1/g) || []).length, 1);
+  /* one bilinear in the file, so the two can never drift apart.
+     ⚠ (#R265) The four texels are bound to names first, because the sampler now has to ask whether
+     each of them is a HOLE in the published data before blending (js/map-readout.js) — a void corner
+     mixed with three real ones is what reported −7,800 m for Lake Biwa. The blend itself is the same
+     product, and it is still written exactly once. */
+  assert.equal((r.match(/\(a\*tx1\+b\*tx\)\*ty1\+\(c\*tx1\+e\*tx\)\*ty/g) || []).length, 1);
+  assert.match(r, /const a=d\[rA\+ax\], b=d\[rA\+bx\], c=d\[rB\+ax\], e=d\[rB\+bx\];/,
+    'and the texels it blends are the same four');
   const s = read('js/seismic.js');
   assert.match(s, /const _rowAt=\(snap&&snap\.rowSampler\)/, 'the field asks for a row sampler');
   assert.match(s, /const _hereAt=_rowAt\(la\), _northAt=_rowAt\(Math\.max\(-85,Math\.min\(85,la\+dLatS\)\)\);/,
