@@ -65,10 +65,18 @@ const browser = await chromium.launch();
 const page = await browser.newPage();
 page.on('pageerror', (e) => console.error('  page error: ' + e.message));
 await page.goto(base, { waitUntil: 'load' });
-await page.waitForFunction(() => window.IntMapLazy && window.IntMapEarth, null, { timeout: 60000 });
-if (BASELINE) await page.evaluate(() => { try { delete window.IntMapEarth; } catch (_) { window.IntMapEarth = undefined; } });
+/* only the loader is eager — js/earth-structure.js arrives with the seismic chunk (see below) */
+await page.waitForFunction(() => !!window.IntMapLazy, null, { timeout: 60000 });
 await page.evaluate(() => window.IntMapLazy.need('seismic'));
 await page.waitForFunction(() => !!window.IntMapSeismic, null, { timeout: 60000 });
+/* ⚠ THE ORDER HERE IS LOAD-BEARING AND IT WAS WRONG ONCE. js/earth-structure.js is imported by
+   js/seismic.js, not by src/main.js (the shell's line budget moved it there — see #R263), so it does
+   not exist until the seismic chunk has loaded and it is RE-CREATED by that import. Deleting it
+   before `need('seismic')` therefore did nothing at all, and --baseline silently measured the new
+   model twice. It is deleted AFTER the module is in memory; `refreshRegime()` and `buildSiteBank()`
+   both read `window.IntMapEarth` at CALL time, so removing it here is what the pre-#R263 model was. */
+if (BASELINE) await page.evaluate(() => { try { delete window.IntMapEarth; } catch (_) { window.IntMapEarth = undefined; } });
+await page.evaluate(() => JSON.stringify({ earth: typeof window.IntMapEarth }));
 
 const rows = [];
 for (const ev of events) {
