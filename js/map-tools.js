@@ -971,7 +971,18 @@ window.IntMapModules.isochrone=function(HOST){
       lastMinutes=minutes.slice(); renderPanel(); return {ok:true,minutes,mode:cost}; }
     function ensurePanel(){ if(panel) return panel;
       panel=document.createElement('div'); panel.id='iso-panel';
-      panel.style.cssText='position:fixed;left:20px;top:80px;width:min(268px,92vw);z-index:1500;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:14px;overflow:hidden;box-shadow:0 16px 46px rgba(0,0,0,0.44);';
+      /* ══ ⚠ (#R261) OPAQUE BY DEFAULT — 「Reachable areaのポップアップはデフォルト透過するな。」 ═══════
+         This was the only floating panel on the map with a translucent fill and NO `backdrop-filter`
+         behind it: `--popup-bg` is rgba(28,28,30,**0.74**) in dark and rgba(255,255,255,0.72) in
+         light, so 26 % of the moving map came through it SHARP — every other panel that uses that
+         token (.tool-panel, .country-popup, .ctx-menu …) also blurs what is behind it, which is what
+         makes the token readable. The sibling simulator's panel (js/terrain-water.js) uses
+         `--card-bg`, which is opaque, and that is what this now uses too.
+         ⚠ IT STILL FOLLOWS THE TRANSPARENCY SETTING. `#iso-panel` is named in the two frosted-mode
+         lists in css/intmap.css beside every other floating surface, and those rules carry
+         `!important`, so 「フロストガラス」/「より透明」 still reach it — «not transparent by DEFAULT»
+         is not «never transparent». */
+      panel.style.cssText='position:fixed;left:20px;top:80px;width:min(268px,92vw);z-index:1500;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:14px;overflow:hidden;box-shadow:0 16px 46px rgba(0,0,0,0.44);';
       panel.innerHTML='<div class="iso-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:600;color:var(--text-main);">🎯 '+LL('Reachable area','到達圏','Erreichbarkeit','Зона доступности','Área alcanzable')+'</span><button class="iso-x" title="'+LL('Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div><div class="iso-body" style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;"></div>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
       panel.querySelector('.iso-x').onclick=()=>clear();

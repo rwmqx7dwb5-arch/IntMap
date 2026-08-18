@@ -466,6 +466,15 @@ window.IntMapModules.los=function(HOST){
         +'<button class="tp-clear" id="los-go" style="width:100%;margin-top:6px;">'+L('Analyze','解析する','Analysieren','Анализ','Analizar')+'</button>'
         /* (#R183) the point-to-point link. Arming it makes the NEXT map click the far end — the same
            "one click, then it acts" shape the measure tools use, so there is nothing new to learn. */
+        /* ══ ⚠ (#R261) …AND THE BUTTON THAT MOVES THE SITE ═════════════════════════════════════════
+           「Line of sightに地点を変えるボタンがない。」 It never had one. The observation point could
+           only be moved by right-clicking the map and picking the tool again from the context menu —
+           and the panel SAID so, twice, in prose (report() and clear()), which is a workaround
+           written down rather than a control. Every other thing this panel can do is a button.
+           ⚠ It is armed exactly like 「2点間の見通し…」 above (one click, then it acts), and the two
+           disarm each other so a click can never mean both. ⚠ It does NOT call open(): open() rewrites
+           the panel's cssText and would throw away a panel the reader has dragged somewhere. */
+        +'<button class="tp-clear" id="los-move" style="width:100%;margin-top:6px;">📍 '+L('Move the site…','地点を変える…','Standort verschieben…','Перенести точку…','Mover el punto…')+'</button>'
         +'<button class="tp-clear" id="los-link" style="width:100%;margin-top:6px;">📶 '+L('Link to a point…','2点間の見通し…','Verbindung zu einem Punkt…','Связь до точки…','Enlace a un punto…')+'</button>'
         +'<button class="tp-clear" id="los-clr" style="width:100%;margin-top:6px;">'+L('Clear','消去','Löschen','Очистить','Borrar')+'</button>'
         +'<div id="los-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.55;">'
@@ -479,6 +488,7 @@ window.IntMapModules.los=function(HOST){
       p.querySelector('#los-go').onclick=()=>run();
       p.querySelector('#los-clr').onclick=()=>{ clear(); clearLink(); };
       { const lb=p.querySelector('#los-link'); if(lb) lb.onclick=()=>{ armLink(!linkArmed); }; }
+      { const mb=p.querySelector('#los-move'); if(mb) mb.onclick=()=>{ armMove(!moveArmed); }; }   /* (#R261) */
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
     }
     function readInputs(){ const p=panel; if(!p) return {};
@@ -507,12 +517,39 @@ window.IntMapModules.los=function(HOST){
         +num(r.cellM)+' m '+L('cells','セル','Zellen','ячейки','celdas')+' · '+num(r.rays)+' '+L('rays','本の放射線','Strahlen','лучей','rayos')
         +' × '+num(r.steps)+' '+L('steps','段','Schritte','шагов','pasos')+' ('+num(r.stepM)+' m) · '+num(r.samples)+' '+L('samples','標本','Proben','проб','muestras')
         +' · DEM z'+r.demZ+(r.demMissing?(' · '+num(r.demMissing)+' '+L('gaps','欠測','Lücken','пропусков','huecos')):'')+'</div>'
-        +'<div style="margin-top:5px;opacity:0.7;">'+L('Change the values and press Analyze to re-run at this site; right-click the map to move it.','数値を変えて「解析する」で同地点を再計算。地図を右クリックで移動できます。','Werte ändern und erneut analysieren; Rechtsklick verschiebt den Standort.','Измените значения и повторите анализ; правый клик переносит точку.','Cambie los valores y analice de nuevo; clic derecho para mover el punto.')+'</div>';
+        +'<div style="margin-top:5px;opacity:0.7;">'+L('Change the values and press Analyze to re-run at this site; “Move the site…” puts it somewhere else.','数値を変えて「解析する」で同地点を再計算。「地点を変える…」で別の場所に移せます。','Werte ändern und erneut analysieren; „Standort verschieben…“ setzt ihn woanders hin.','Измените значения и повторите анализ; «Перенести точку…» ставит её в другом месте.','Cambie los valores y analice de nuevo; “Mover el punto…” lo coloca en otro lugar.')+'</div>';
     }
     /* ---- the link's UI (#R183) ---------------------------------------------------------------- */
     let linkArmed=false, _linkClickWired=false;
+    /* (#R261) moving the site: the same one-click arming, and the same shape as armLink so the two
+       controls behave identically. `moveArmed` is declared before armLink because armLink disarms it. */
+    let moveArmed=false, _moveClickWired=false;
+    function moveLabel(){ const b=panel&&panel.querySelector('#los-move'); if(!b) return;
+      b.textContent=moveArmed
+        ? '✕ '+L('Cancel — click the new site','キャンセル（新しい地点をクリック）','Abbrechen — neuen Standort klicken','Отмена — щёлкните новую точку','Cancelar — clic en el nuevo punto')
+        : '📍 '+L('Move the site…','地点を変える…','Standort verschieben…','Перенести точку…','Mover el punto…'); }
+    /* the site itself moves: the overlay from the OLD point is wiped (it describes somewhere else),
+       the marker follows, and the analysis re-runs with the panel's current numbers. The panel is NOT
+       re-opened — open() would reset its position and undo a drag. */
+    function moveTo(lngLat){ if(!lngLat) return null;
+      runSeq++; wipe(); clearLink();
+      site=[lngLat.lng,lngLat.lat]; setSite();
+      /* ⚠ the camera is NOT moved. The reader clicked a point they can already see; flying to it is a
+         view change nobody asked for (CONSTITUTION §3). */
+      return run(); }
+    function armMove(on){
+      moveArmed=!!on;
+      if(moveArmed&&linkArmed) armLink(false);        /* one click cannot mean two things */
+      moveLabel();
+      try{ GE().render.setCursor(moveArmed?'crosshair':''); }catch(_){}
+      if(moveArmed&&!_moveClickWired){ _moveClickWired=true;
+        try{ GE().events.on('click',(e)=>{ if(!moveArmed) return; const ll=e&&e.lngLat; if(!ll) return;
+          armMove(false); moveTo({lng:ll.lng,lat:ll.lat}); }); }catch(_){}
+      }
+    }
     function armLink(on){
       linkArmed=!!on;
+      if(linkArmed&&moveArmed) armMove(false);        /* (#R261) …and the other way round */
       const b=panel&&panel.querySelector('#los-link');
       if(b) b.textContent=linkArmed
         ? '✕ '+L('Cancel — click the far end','キャンセル（相手側をクリック）','Abbrechen — Gegenstelle klicken','Отмена — щёлкните дальний конец','Cancelar — clic en el otro extremo')
@@ -634,13 +671,15 @@ window.IntMapModules.los=function(HOST){
       return true; }
     /* (#R19) Clear wipes the OVERLAY but keeps the site + cancels any in-flight run. */
     function clear(){ runSeq++; wipe(); setSite();
-      const b=panel&&panel.querySelector('#los-body'); if(b) b.innerHTML=L('Cleared. Press Analyze to re-run here, or right-click the map to move the site.','消去しました。「解析する」で再計算、または地図を右クリックで再配置。','Gelöscht. Erneut analysieren oder Standort per Rechtsklick verschieben.','Очищено. Нажмите «Анализ» или перенесите точку правым кликом.','Borrado. Analice de nuevo o mueva el punto con clic derecho.');
+      const b=panel&&panel.querySelector('#los-body'); if(b) b.innerHTML=L('Cleared. Press Analyze to re-run here, or “Move the site…” to place it somewhere else.','消去しました。「解析する」で再計算、「地点を変える…」で別の場所に置けます。','Gelöscht. Erneut analysieren oder „Standort verschieben…“ verwenden.','Очищено. Нажмите «Анализ» или «Перенести точку…».','Borrado. Analice de nuevo o use “Mover el punto…”.');
       return true; }
     window.addEventListener('intmap-lang',()=>{ if(panel&&panel.style.display!=='none'){ render(); if(last) report(last); } });
 
     return { open, clear, run, analyze,
       /* (#R183) the point-to-point link — see the note above _gcPoint */
       linkTo, linkRun, clearLink, armLink, isLinkArmed:()=>linkArmed,
+      /* (#R261) the site-move control, so Atlas and a test press the same door the button does */
+      moveTo, armMove, isMoveArmed:()=>moveArmed,
       linkState:()=>linkLast?{ km:linkLast.km, verdict:linkLast.verdict, needH:linkLast.needH,
         fresnelPct:linkLast.fresnelPct, diffDb:linkLast.diffDb, demZ:linkLast.demZ,
         stepM:linkLast.stepM, samples:linkLast.samples, missing:linkLast.missing,

@@ -140,6 +140,10 @@ window.IntMapLang.define('zh-hans', {
     "lyrGrpHealth":"医疗与卫生",
     "lyrGrpTech":"科技与基础设施",
     "lyrGrpEnergy":"能源与资源",   /* (#R258) */
+    "lyrGrpEconomy":"经济与贸易",   /* (#R261) */
+    "lyrGrpSociety":"社会与教育",   /* (#R261) */
+    "lyrGrpTransport":"交通与运输",   /* (#R261) */
+    "lyrGrpAgri":"农业与粮食",   /* (#R261) */
     "lyrGrpHazard":"灾害与夜空",
     "lyrGrpIndic":"指标与叠图",
     "lyrGrpMaritime":"海洋与海事",
@@ -1721,6 +1725,77 @@ window.IntMapLang.define('zh-hans', {
     "Other / biomass": "其他／生质能",   /* (#R258) */
     "Output": "出力",   /* (#R258) */
     "Place water on the map first": "请先在地图上放置水",   /* (#R258) */
+    "across": "／",   /* (#R261) */
+    "Airport / airfield": "机场／飞行场",   /* (#R261) */
+    "Airports & air infrastructure": "机场与航空设施",   /* (#R261) */
+    "Airports, airfields, terminals, heliports and control towers mapped in OpenStreetMap for the current view. Click any point for its ICAO/IATA code, runway length and operator where the object carries them.": "目前显示范围内 OpenStreetMap 收录的机场、飞行场、航厦、直升机坪与塔台。点击任一点可查看 ICAO/IATA 代码、跑道长度与营运者（限该对象本身具备者）。",   /* (#R261) */
+    "Ambulance station": "救护站",   /* (#R261) */
+    "Battery, clearance and no-fly zones over the real terrain": "在真实地形上解算电池、离地高度与禁航区",   /* (#R261) */
+    "Cancel — click the new site": "取消（点击新地点）",   /* (#R261) */
+    "Capacity": "处理能力",   /* (#R261) */
+    "Cargo / container terminal": "货柜／货运码头",   /* (#R261) */
+    "Change the values and press Analyze to re-run at this site; “Move the site…” puts it somewhere else.": "变更数值后按「分析」可重算同一地点；「变更地点…」可移到别处。",   /* (#R261) */
+    "Cleared. Press Analyze to re-run here, or “Move the site…” to place it somewhere else.": "已清除。按「分析」重算，或用「变更地点…」放到别处。",   /* (#R261) */
+    "College": "学院",   /* (#R261) */
+    "continuous": "持续",   /* (#R261) */
+    "continuous (▶ pours these)": "持续（▶ 注水的是这些）",   /* (#R261) */
+    "Control tower": "塔台",   /* (#R261) */
+    "Counts and capacity are for what is on screen. A capacity is shown only where the operator or OpenStreetMap publishes one — nothing here is estimated. Tap a class to take it off the map.": "件数与容量为画面可见范围的统计。容量仅在营运者或 OpenStreetMap 公布时显示，绝不估算。点击分类可将该类自地图移除。",   /* (#R261) */
+    "Crane": "装卸起重机",   /* (#R261) */
+    "curated": "收录",   /* (#R261) */
+    "Data centers & AI infrastructure": "数据中心与 AI 基础设施",   /* (#R261) */
+    "Dish diameter": "天线直径",   /* (#R261) */
+    "Drone flight planner": "无人机飞行规划",   /* (#R261) */
+    "Earth replay (sun over time)": "地球回放（太阳运行）",   /* (#R261) */
+    "Emergency services": "紧急应变据点（消防、警察、救护）",   /* (#R261) */
+    "Ferry terminal": "渡轮码头",   /* (#R261) */
+    "Fire station": "消防队",   /* (#R261) */
+    "Fire stations, police stations, ambulance stations and mountain-rescue posts mapped in OpenStreetMap for the current view — how far help has to come from, which no national statistic answers.": "目前显示范围内 OpenStreetMap 收录的消防队、警察局、救护站与山难救助据点。「救援从哪里来」是国家统计答不出来的事。",   /* (#R261) */
+    "Flood & tsunami hazard": "淹水与海啸风险",   /* (#R261) */
+    "Harbour type": "港口类别",   /* (#R261) */
+    "How far the timetable takes you, not the road": "能到多远取决于时刻表，而非道路",   /* (#R261) */
+    "IATA code": "IATA 代码",   /* (#R261) */
+    "ICAO code": "ICAO 代码",   /* (#R261) */
+    "International airport": "国际机场",   /* (#R261) */
+    "Largest published capacity in view": "显示范围内公布容量由大到小",   /* (#R261) */
+    "Launch pad": "发射台",   /* (#R261) */
+    "Launch pads, spaceports, satellite ground stations and radio telescopes mapped in OpenStreetMap for the current view — the ground half of everything the orbit layers show overhead.": "目前显示范围内 OpenStreetMap 收录的发射台、太空基地、卫星地面站与电波望远镜——轨道图层在头顶描绘之物的地面另一半。",   /* (#R261) */
+    "Move the site…": "变更地点…",   /* (#R261) */
+    "Next source": "下一个水源",   /* (#R261) */
+    "No site in view publishes a capacity figure.": "显示范围内没有公布容量的设施。",   /* (#R261) */
+    "Observatory": "天文台／观测站",   /* (#R261) */
+    "of": "／全",   /* (#R261) */
+    "On the map": "已配置",   /* (#R261) */
+    "one shot": "单次",   /* (#R261) */
+    "Only one-shot volumes are placed — add a continuous source to pour": "目前只放了单次水量，加入持续水源后才能注水",   /* (#R261) */
+    "Police station": "警察局",   /* (#R261) */
+    "Port / harbour": "港湾",   /* (#R261) */
+    "Ports, harbours & terminals": "港湾与码头",   /* (#R261) */
+    "Ports, harbours, ferry terminals, container and cargo terminals and cranes mapped in OpenStreetMap for the current view — where cargo physically changes vehicle.": "目前显示范围内 OpenStreetMap 收录的港湾、渔港、渡轮码头、货柜／货运码头与装卸起重机——货物实际换载的地方。",   /* (#R261) */
+    "published capacity": "公布容量",   /* (#R261) */
+    "Pumping station": "抽水站",   /* (#R261) */
+    "Radio telescope": "电波望远镜",   /* (#R261) */
+    "Rescue post": "救助据点",   /* (#R261) */
+    "Research institute": "研究机构",   /* (#R261) */
+    "Run the day and night round the planet": "让昼夜在地球上运行",   /* (#R261) */
+    "Runway length": "跑道长度",   /* (#R261) */
+    "Satellite ground station": "卫星地面站",   /* (#R261) */
+    "Signal strength from a transmitter placed here": "此处发射机的收讯强度",   /* (#R261) */
+    "sites in view": "件（显示范围内）",   /* (#R261) */
+    "Spaceports & ground stations": "太空基地与地面站",   /* (#R261) */
+    "Students": "学生人数",   /* (#R261) */
+    "Substance": "处理对象",   /* (#R261) */
+    "Terminal": "航厦",   /* (#R261) */
+    "Transit reachability": "大众运输可达范围",   /* (#R261) */
+    "Universities & research institutes": "大学与研究机构",   /* (#R261) */
+    "Universities, colleges, research institutes, observatories and libraries mapped in OpenStreetMap for the current view — where teaching and research actually happen, beside the enrolment percentages.": "目前显示范围内 OpenStreetMap 收录的大学、学院、研究机构、天文台与图书馆——在就学率的数字旁，放上教学与研究实际发生的地方。",   /* (#R261) */
+    "University": "大学",   /* (#R261) */
+    "Wastewater treatment": "污水处理厂",   /* (#R261) */
+    "Water & wastewater plant": "自来水与污水设施",   /* (#R261) */
+    "Water tower / reservoir": "水塔／配水池",   /* (#R261) */
+    "Water works": "净水场",   /* (#R261) */
+    "Water works, wastewater treatment plants, pumping stations, water towers and reservoirs mapped in OpenStreetMap for the current view — the plant that makes safe water and sanitation real in a place, rather than the national percentage.": "目前显示范围内 OpenStreetMap 收录的净水场、污水处理厂、抽水站、水塔与配水池——不是各国普及率，而是让当地自来水与污水处理真正运作的设施本身。",   /* (#R261) */
+    "What a given water level reaches from here": "某一水位从这里能淹到哪里",   /* (#R261) */
     "Power plants & grid": "发电厂与输变电设施",   /* (#R258) */
     "Quarry": "采石场",   /* (#R258) */
     "Radioactive plume simulator": "放射性烟羽扩散模拟器",   /* (#R258) */

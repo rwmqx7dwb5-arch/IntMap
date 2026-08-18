@@ -489,26 +489,67 @@ window.IntMapModules.worldPacks=function(HOST){
          ENDS off-centre by construction. Asking `GE().coords.project` where the vertices actually
          land removes the whole class of error and costs one projection per vertex.
          The Mercator estimate stays as the fallback for the moment before the camera exists. */
+      /* ══ ⚠⚠⚠ (#R261) THE HEAD'S ANGLE IS A SCREEN ANGLE. IT WAS A GEOGRAPHIC BEARING ═════════════
+         「貿易レイヤーは、矢印と線が分離している。ふざけんなよ。」
+
+         #R258 cut the shaft back by a number of PIXELS asked of the renderer's own projection —
+         that half is right and is measured right (below, the cut lands within 0.2 px of the head's
+         length at every partner). It then aimed the head with `bearingOf(neck,tip)`, which is a
+         GEOGRAPHIC bearing, through `icon-rotation-alignment:'map'` — and that alignment does not
+         mean «along the ground», it means «measured from the map's north», a SINGLE scalar for the
+         whole viewport. On a globe, north is screen-up only on the central meridian; everywhere
+         else the meridians converge. So the length was in screen space and the angle was in
+         geographic space, and the two disagreed by exactly the grid convergence.
+
+         MEASURED in globe projection with Japan's exports drawn, head-angle vs the true screen
+         direction of the shaft's last leg (`coords.project` on both ends):
+
+             z2.2, centre 170°E   USA  125.3° vs  99.0°   →  26.3° apart  (45.5 px head)
+             z1.4, centre 100°E   USA  107.1° vs 237.6°   → 130.5° apart
+                                  TWN  227.6° vs 211.8°   →  15.8° apart
+
+         26° on a 45 px head puts the base of the triangle **20.7 px** from the end of a 13 px
+         shaft: they do not touch. 130° puts it on the other side of the tip entirely. That is the
+         report, exactly — an arrowhead floating beside a line.
+
+         THE FIX IS TO STOP HAVING TWO SPACES. The neck is already known in projected coordinates
+         (the cut is computed there), so the angle is taken there too and the layer is switched to
+         `icon-rotation-alignment:'viewport'`, where `icon-rotate` IS a screen angle. Head and shaft
+         are then collinear by construction, in Mercator and on the globe, at any zoom, bearing and
+         pitch — there is one number and it cannot drift from itself.
+         ⚠ The Mercator estimate stays as the fallback for the moment before the camera exists; in
+         viewport space it has to give up the map's rotation, hence `− bearing`. */
+      const _mapBearing=()=>{ try{ const b=GE().camera.getBearing(); return isFinite(b)?b:0; }catch(_){ return 0; } };
       function trimEnd(line,headPx){
-        let P=null;
+        let P=null, screen=false;
         try{ const pr=GE().coords&&GE().coords.project;
           if(typeof pr==='function'){ P=[];
             for(const p of line){ const q=pr(p);
-              if(!q||!isFinite(q.x)||!isFinite(q.y)){ P=null; break; } P.push([q.x,q.y]); } } }catch(_){ P=null; }
+              if(!q||!isFinite(q.x)||!isFinite(q.y)){ P=null; break; } P.push([q.x,q.y]); }
+            screen=!!P; } }catch(_){ P=null; screen=false; }
         let cut=headPx;
         if(!P){ P=line.map(p=>[mercX(p[0]),mercY(p[1])]); cut=headPx*metrePerPx(); }
+        /* the angle the head must be drawn at, clockwise from screen-up. In projected pixels y grows
+           DOWNWARD, so it is atan2(dx,−dy); in the Mercator fallback y grows northward and the map's
+           own rotation has to come off. */
+        const ang=(from,to)=>screen
+          ? ((Math.atan2(to[0]-from[0],-(to[1]-from[1]))*180/Math.PI)+360)%360
+          : ((Math.atan2(to[0]-from[0],to[1]-from[1])*180/Math.PI)-_mapBearing()+720)%360;
         let acc=0, i=P.length-1, f=0;
         for(;i>0;i--){ const a=P[i-1], b=P[i], d=Math.hypot(b[0]-a[0],b[1]-a[1]);
           if(acc+d>=cut){ f=(cut-acc)/(d||1); break; }
           acc+=d; }
-        const tip=line[line.length-1];
-        if(i<=0) return { shaft:null, brg:bearingOf(line[Math.max(0,line.length-2)],tip) };
+        const tip=line[line.length-1], tipP=P[P.length-1];
+        if(i<=0) return { shaft:null, brg:ang(P[Math.max(0,P.length-2)],tipP) };
         /* the neck, interpolated in GEOGRAPHIC coordinates on the segment the cut fell in — the arc is
            sampled finely enough (56 legs) that a linear step inside one leg is under a pixel */
         const a=line[i-1], b=line[i];
         const neck=[b[0]+(a[0]-b[0])*f, b[1]+(a[1]-b[1])*f];
+        /* …and the SAME point in the space the cut was measured in, which is where the angle is read */
+        const aP=P[i-1], bP=P[i];
+        const neckP=[bP[0]+(aP[0]-bP[0])*f, bP[1]+(aP[1]-bP[1])*f];
         const shaft=line.slice(0,i).concat([neck]);
-        return { shaft:(shaft.length>=2?shaft:null), brg:bearingOf(neck,tip) };
+        return { shaft:(shaft.length>=2?shaft:null), brg:ang(neckP,tipP) };
       }
 
       /* ══ (#R215) 「貿易レイヤーは該当国がぬられるように」 — AND NO COUNTRY WAS PAINTED AT ALL ══════
@@ -561,7 +602,10 @@ window.IntMapModules.worldPacks=function(HOST){
            own colour and opacity, its tip on the arc's last vertex (`icon-anchor:'top'`). */
         if(!GE().layers.has('wp-trade-tip')) GE().layers.add({id:'wp-trade-tip',type:'symbol',source:SRC,filter:['==',['get','kind'],'tip'],
           layout:{visibility:'none','icon-image':['get','ai'],'icon-size':['get','asz'],
-            'icon-rotate':['get','brg'],'icon-rotation-alignment':'map','icon-allow-overlap':true,
+            /* (#R261) 'viewport': `brg` is a SCREEN angle now, read off the same projection the
+               shaft's cut is measured in — see trimEnd. With 'map' it was a geographic bearing and
+               the head stood up to 130° away from the line it belongs to. */
+            'icon-rotate':['get','brg'],'icon-rotation-alignment':'viewport','icon-allow-overlap':true,
             'icon-ignore-placement':true,'icon-padding':0,'icon-anchor':'top'},
           paint:{'icon-opacity':1}});
         /* ⚠ (#R254) 「国にピンを置くな」 — the circle markers this layer dropped on every partner's

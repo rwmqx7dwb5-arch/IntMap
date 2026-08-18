@@ -596,6 +596,12 @@ window.IntMapModules.layerSidebar=function(HOST){
     const SVG_SUN=_svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>');
     const SVG_STAR=_svg('<path d="M12 3l1.9 4.6 5 .4-3.8 3.3 1.2 4.9L12 13.6 7.7 16.2l1.2-4.9L5.1 8l5-.4z"/>');
     const SVG_PLUME=_svg('<path d="M4 20c0-5 3-6 3-9a3 3 0 016 0c0 4 4 3 4 7"/><path d="M3 20h18"/>');
+    /* (#R261) the five below — see the ⚠⚠⚠ note on SIM_TOOLS */
+    const SVG_DRONE=_svg('<circle cx="12" cy="12" r="2.4"/><path d="M10 10L6.5 6.5M14 10l3.5-3.5M10 14l-3.5 3.5M14 14l3.5 3.5"/><circle cx="5" cy="5" r="2.1"/><circle cx="19" cy="5" r="2.1"/><circle cx="5" cy="19" r="2.1"/><circle cx="19" cy="19" r="2.1"/>');
+    const SVG_FLOOD=_svg('<path d="M2 17c2.2 0 2.2 2 4.5 2S9 17 11.2 17s2.2 2 4.5 2 2.3-2 4.5-2"/><path d="M2 12.5c2.2 0 2.2 2 4.5 2s2.2-2 4.4-2 2.2 2 4.5 2 2.3-2 4.5-2"/><path d="M6 8.5l6-5.5 6 5.5"/>');
+    const SVG_TRANSIT=_svg('<rect x="6" y="3" width="12" height="13" rx="2.5"/><path d="M6 11h12"/><path d="M9 20l-2 2M15 20l2 2"/><circle cx="9" cy="13.7" r=".9"/><circle cx="15" cy="13.7" r=".9"/>');
+    const SVG_RF=_svg('<circle cx="12" cy="12" r="1.9"/><path d="M8.4 8.4a5 5 0 000 7.2M15.6 8.4a5 5 0 010 7.2"/><path d="M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"/>');
+    const SVG_REPLAY=_svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.2v5l3.2 2"/><path d="M4.6 8.2L3 5.6M3 5.6l3 .4"/>');
     /* the camera's centre, as the coordinate a point tool needs when it is opened from a list */
     const _hereLL=()=>{ try{ const c=GE().camera.getCenter(); return { lng:c.lng, lat:c.lat }; }catch(_){ return { lng:0, lat:0 }; } };
     const _lazy=(name,fn)=>()=>window.IntMapLazy.need(name).then(()=>{ try{ return !!fn(); }catch(_){ return false; } });
@@ -632,6 +638,46 @@ window.IntMapModules.layerSidebar=function(HOST){
         run:_lazy('nightSky',()=>window.IntMapNightSky&&window.IntMapNightSky.open(_hereLL())),
         label:()=>T('Night sky from here','ここからの星空','Sternhimmel von hier','Ночное небо отсюда','El cielo nocturno desde aquí'),
         hint:()=>T('The sky a person standing here has','ここに立つ人に見える空','Der Himmel, den man hier hat','Небо, которое видно отсюда','El cielo que se ve desde aquí') },
+      /* ══ ⚠⚠⚠ (#R261) FIVE MORE, AND THEY HAD NO UI DOOR AT ALL ═════════════════════════════════════
+         「シミュレーション系のもので、レイヤーではないものは、地震波シミュレーターのようにツール欄に
+           追加して。（続き）」 — the same sentence as #R258, sent again, and #R258's fix was real but
+         one shelf short. It swept the tools reachable from the MAP'S RIGHT-CLICK MENU into this list
+         (that was the set it went looking at). MEASURED on the shipped build by asking, for every
+         `window.IntMap*` object that has an `open`/`toggle`, which UI presses it:
+
+             IntMapDrone         js/atlas-console.js:2383   — and nothing else
+             IntMapDisaster      js/atlas-console.js:2654   — and nothing else
+             IntMapTransitReach  js/atlas-console.js:2116   — and nothing else
+             IntMapRF            js/atlas-console.js:2522   — and nothing else
+             IntMapEarthReplay   js/atlas-console.js:2658   — and nothing else
+
+         Every one of them is a simulation, none of them is a layer, and the ONLY way to run any of
+         them was to type a sentence at the AI and hope it picked that intent — no button, no menu
+         entry, not even a right-click. A terrain-aware drone flight planner (#R174/#R184) and a
+         radio-coverage model have been in this program for seventy rounds behind a door nobody can
+         see. They are rows here now, exactly like the other eight.
+         ⚠ NOT ADDED, ON PURPOSE: 「⛰ Slope / aspect」 (`IntMapSlope`) is a LAYER — it has its own row
+         in the layer list — and the instruction is about the things that are not. */
+      { id:'sim.drone', ic:SVG_DRONE, en:'Drone flight planner',
+        run:()=>{ try{ return !!(window.IntMapDrone&&window.IntMapDrone.open()); }catch(_){ return false; } },
+        label:()=>T('Drone flight planner','ドローン飛行計画','Drohnen-Flugplanung','Планировщик полёта дрона','Planificador de vuelo de dron'),
+        hint:()=>T('Battery, clearance and no-fly zones over the real terrain','実地形の上で電池・対地高度・飛行禁止区域を解く','Akku, Bodenabstand und Sperrzonen über echtem Gelände','Батарея, высота над землёй и бесполётные зоны над реальным рельефом','Batería, margen sobre el suelo y zonas prohibidas en terreno real') },
+      { id:'sim.disaster', ic:SVG_FLOOD, en:'Flood & tsunami hazard',
+        run:()=>{ try{ return !!(window.IntMapDisaster&&window.IntMapDisaster.open(_hereLL())); }catch(_){ return false; } },
+        label:()=>T('Flood & tsunami hazard','浸水・津波ハザード','Hochwasser- & Tsunami-Gefahr','Опасность наводнения и цунами','Riesgo de inundación y tsunami'),
+        hint:()=>T('What a given water level reaches from here','ある水位がここからどこまで届くか','Wohin ein gegebener Wasserstand reicht','Куда доходит заданный уровень воды','Hasta dónde llega un nivel de agua dado') },
+      { id:'sim.transitReach', ic:SVG_TRANSIT, en:'Transit reachability',
+        run:()=>{ try{ return !!(window.IntMapTransitReach&&window.IntMapTransitReach.open(_hereLL())); }catch(_){ return false; } },
+        label:()=>T('Transit reachability','公共交通の到達圏','Erreichbarkeit mit ÖPNV','Доступность общественным транспортом','Alcance en transporte público'),
+        hint:()=>T('How far the timetable takes you, not the road','道路ではなく時刻表で行ける範囲','Wie weit der Fahrplan trägt, nicht die Straße','Куда довезёт расписание, а не дорога','Hasta dónde lleva el horario, no la carretera') },
+      { id:'sim.rf', ic:SVG_RF, en:'Radio coverage',
+        run:()=>{ try{ return !!(window.IntMapRF&&window.IntMapRF.open(_hereLL())); }catch(_){ return false; } },
+        label:()=>T('Radio coverage','電波到達範囲','Funkabdeckung','Зона радиопокрытия','Cobertura de radio'),
+        hint:()=>T('Signal strength from a transmitter placed here','ここに置いた送信機の受信強度','Feldstärke eines Senders an dieser Stelle','Уровень сигнала передатчика в этой точке','Intensidad de señal de un emisor aquí') },
+      { id:'sim.earthReplay', ic:SVG_REPLAY, en:'Earth replay (sun over time)',
+        run:()=>{ try{ return !!(window.IntMapEarthReplay&&window.IntMapEarthReplay.open()); }catch(_){ return false; } },
+        label:()=>T('Earth replay (sun over time)','地球リプレイ（太陽の動き）','Erd-Wiedergabe (Sonnenlauf)','Проигрывание Земли (ход Солнца)','Reproducción de la Tierra (el Sol)'),
+        hint:()=>T('Run the day and night round the planet','昼と夜を地球上で回して見る','Tag und Nacht um den Planeten laufen lassen','Прогнать день и ночь вокруг планеты','Haga girar el día y la noche por el planeta') },
     ];
     /* one door per tool — the palette, Atlas and this row all press the same one (#R242).
        ⚠ CALLED FROM `toolsBlock()`, not from the factory body: this module is constructed during
