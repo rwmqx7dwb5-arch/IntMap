@@ -210,6 +210,18 @@ window.IntMapRefData=(function(){
     {n:'Military sites — OpenStreetMap (military=*, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:military'},
     {n:'Health facilities — OpenStreetMap (amenity=hospital/clinic/doctors/pharmacy, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:healthcare'},
     {n:'Telecom & internet infrastructure — OpenStreetMap (telecom=*, communications towers, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:telecom'},
+    /* (#R258/#R261) the eight further surveyed-facility layers — same engine, same live Overpass
+       path, same ODbL terms. ⚠ #R258 shipped `osmpower`/`osmextract` WITHOUT registering them
+       here, so two layers were drawing OSM data with no entry on the sources page; both are
+       added with the six this round adds. */
+    {n:'Power plants & grid — OpenStreetMap (power=plant/substation/generator, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:power'},
+    {n:'Mines, quarries & wells — OpenStreetMap (landuse=quarry, man_made=mineshaft/petroleum_well, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:landuse%3Dquarry'},
+    {n:'Airports & air infrastructure — OpenStreetMap (aeroway=aerodrome/terminal/heliport, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:aeroway'},
+    {n:'Ports, harbours & terminals — OpenStreetMap (harbour, landuse=port, ferry terminals, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:harbour'},
+    {n:'Water & wastewater plant — OpenStreetMap (man_made=water_works/wastewater_plant/pumping_station, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:man_made%3Dwater_works'},
+    {n:'Universities & research institutes — OpenStreetMap (amenity=university/college/research_institute, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:amenity%3Duniversity'},
+    {n:'Emergency services — OpenStreetMap (fire_station / police / ambulance_station, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:amenity%3Dfire_station'},
+    {n:'Spaceports & satellite ground stations — OpenStreetMap (aeroway=spaceport, man_made=launch_pad/satellite_dish, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:man_made%3Dsatellite_dish'},
     {n:'AWS Global Infrastructure — regions',u:'https://aws.amazon.com/about-aws/global-infrastructure/regions_az/'},
     {n:'Microsoft Azure — datacenter locations',u:'https://datacenters.microsoft.com/globe/explore/'},
     {n:'Google Cloud — locations',u:'https://cloud.google.com/about/locations'},

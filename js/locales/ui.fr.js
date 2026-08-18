@@ -175,6 +175,10 @@ window.IntMapLang.define('fr', { ui: {
       lyrGrpHealth:"Santé et assainissement",
       lyrGrpTech:"Technologie et infrastructures",
       lyrGrpEnergy:"Énergie et ressources",   /* (#R258) */
+      lyrGrpEconomy:"Économie et commerce",   /* (#R261) */
+      lyrGrpSociety:"Société et éducation",   /* (#R261) */
+      lyrGrpTransport:"Transports et mobilité",   /* (#R261) */
+      lyrGrpAgri:"Agriculture et alimentation",   /* (#R261) */
       lyrGrpHazard:"Risques et ciel nocturne",
       lyrGrpIndic:"Indicateurs et surcouches",
       lyrGrpMaritime:"Océans et maritime",
@@ -757,6 +761,77 @@ window.IntMapLang.define('fr', { ui: {
   "Other / biomass": "Autre / biomasse",   /* (#R258) */
   "Output": "Puissance",   /* (#R258) */
   "Place water on the map first": "Placez d'abord de l'eau sur la carte",   /* (#R258) */
+  "across": "sur",   /* (#R261) */
+  "Airport / airfield": "Aéroport / aérodrome",   /* (#R261) */
+  "Airports & air infrastructure": "Aéroports et infrastructures aériennes",   /* (#R261) */
+  "Airports, airfields, terminals, heliports and control towers mapped in OpenStreetMap for the current view. Click any point for its ICAO/IATA code, runway length and operator where the object carries them.": "Aéroports, aérodromes, terminaux, héliports et tours de contrôle cartographiés dans OpenStreetMap pour la vue actuelle. Cliquez sur un point pour son code OACI/IATA, la longueur de piste et l’exploitant lorsque l’objet les porte.",   /* (#R261) */
+  "Ambulance station": "Base d’ambulances",   /* (#R261) */
+  "Battery, clearance and no-fly zones over the real terrain": "Batterie, garde au sol et zones interdites sur le terrain réel",   /* (#R261) */
+  "Cancel — click the new site": "Annuler — cliquez le nouveau point",   /* (#R261) */
+  "Capacity": "Capacité",   /* (#R261) */
+  "Cargo / container terminal": "Terminal de fret / conteneurs",   /* (#R261) */
+  "Change the values and press Analyze to re-run at this site; “Move the site…” puts it somewhere else.": "Modifiez les valeurs et relancez l’analyse ; « Déplacer le point… » le place ailleurs.",   /* (#R261) */
+  "Cleared. Press Analyze to re-run here, or “Move the site…” to place it somewhere else.": "Effacé. Relancez l’analyse ici, ou utilisez « Déplacer le point… ».",   /* (#R261) */
+  "College": "Établissement supérieur",   /* (#R261) */
+  "continuous": "continu",   /* (#R261) */
+  "continuous (▶ pours these)": "continu (▶ verse ceux-ci)",   /* (#R261) */
+  "Control tower": "Tour de contrôle",   /* (#R261) */
+  "Counts and capacity are for what is on screen. A capacity is shown only where the operator or OpenStreetMap publishes one — nothing here is estimated. Tap a class to take it off the map.": "Les comptes et la capacité portent sur ce qui est à l’écran. Une capacité n’est affichée que si l’exploitant ou OpenStreetMap la publie — rien n’est estimé. Touchez une classe pour la retirer de la carte.",   /* (#R261) */
+  "Crane": "Grue",   /* (#R261) */
+  "curated": "répertoriés",   /* (#R261) */
+  "Data centers & AI infrastructure": "Centres de données et infrastructure IA",   /* (#R261) */
+  "Dish diameter": "Diamètre d’antenne",   /* (#R261) */
+  "Drone flight planner": "Planificateur de vol de drone",   /* (#R261) */
+  "Earth replay (sun over time)": "Rejeu de la Terre (course du Soleil)",   /* (#R261) */
+  "Emergency services": "Services de secours",   /* (#R261) */
+  "Ferry terminal": "Terminal de ferry",   /* (#R261) */
+  "Fire station": "Caserne de pompiers",   /* (#R261) */
+  "Fire stations, police stations, ambulance stations and mountain-rescue posts mapped in OpenStreetMap for the current view — how far help has to come from, which no national statistic answers.": "Casernes de pompiers, commissariats, bases d’ambulances et postes de secours en montagne cartographiés dans OpenStreetMap pour la vue actuelle — d’où l’aide doit venir, ce qu’aucune statistique nationale ne dit.",   /* (#R261) */
+  "Flood & tsunami hazard": "Risque d’inondation et de tsunami",   /* (#R261) */
+  "Harbour type": "Type de port",   /* (#R261) */
+  "How far the timetable takes you, not the road": "Jusqu’où l’horaire vous emmène, pas la route",   /* (#R261) */
+  "IATA code": "Code IATA",   /* (#R261) */
+  "ICAO code": "Code OACI",   /* (#R261) */
+  "International airport": "Aéroport international",   /* (#R261) */
+  "Largest published capacity in view": "Plus grandes capacités publiées à l’écran",   /* (#R261) */
+  "Launch pad": "Pas de tir",   /* (#R261) */
+  "Launch pads, spaceports, satellite ground stations and radio telescopes mapped in OpenStreetMap for the current view — the ground half of everything the orbit layers show overhead.": "Pas de tir, ports spatiaux, stations terriennes et radiotélescopes cartographiés dans OpenStreetMap pour la vue actuelle — la moitié au sol de tout ce que les couches orbitales montrent au-dessus.",   /* (#R261) */
+  "Move the site…": "Déplacer le point…",   /* (#R261) */
+  "Next source": "Prochaine source",   /* (#R261) */
+  "No site in view publishes a capacity figure.": "Aucun site à l’écran ne publie de capacité.",   /* (#R261) */
+  "Observatory": "Observatoire",   /* (#R261) */
+  "of": "sur",   /* (#R261) */
+  "On the map": "Sur la carte",   /* (#R261) */
+  "one shot": "unique",   /* (#R261) */
+  "Only one-shot volumes are placed — add a continuous source to pour": "Seuls des volumes uniques sont posés — ajoutez une source continue pour verser",   /* (#R261) */
+  "Police station": "Commissariat",   /* (#R261) */
+  "Port / harbour": "Port",   /* (#R261) */
+  "Ports, harbours & terminals": "Ports et terminaux",   /* (#R261) */
+  "Ports, harbours, ferry terminals, container and cargo terminals and cranes mapped in OpenStreetMap for the current view — where cargo physically changes vehicle.": "Ports, darses, terminaux de ferry, de conteneurs et de fret et grues cartographiés dans OpenStreetMap pour la vue actuelle — là où le fret change physiquement de véhicule.",   /* (#R261) */
+  "published capacity": "de capacité publiée",   /* (#R261) */
+  "Pumping station": "Station de pompage",   /* (#R261) */
+  "Radio telescope": "Radiotélescope",   /* (#R261) */
+  "Rescue post": "Poste de secours",   /* (#R261) */
+  "Research institute": "Institut de recherche",   /* (#R261) */
+  "Run the day and night round the planet": "Faites tourner le jour et la nuit autour de la planète",   /* (#R261) */
+  "Runway length": "Longueur de piste",   /* (#R261) */
+  "Satellite ground station": "Station terrienne",   /* (#R261) */
+  "Signal strength from a transmitter placed here": "Niveau de signal d’un émetteur placé ici",   /* (#R261) */
+  "sites in view": "sites à l’écran",   /* (#R261) */
+  "Spaceports & ground stations": "Ports spatiaux et stations terriennes",   /* (#R261) */
+  "Students": "Étudiants",   /* (#R261) */
+  "Substance": "Fluide traité",   /* (#R261) */
+  "Terminal": "Terminal passagers",   /* (#R261) */
+  "Transit reachability": "Accessibilité en transport en commun",   /* (#R261) */
+  "Universities & research institutes": "Universités et instituts de recherche",   /* (#R261) */
+  "Universities, colleges, research institutes, observatories and libraries mapped in OpenStreetMap for the current view — where teaching and research actually happen, beside the enrolment percentages.": "Universités, écoles supérieures, instituts de recherche, observatoires et bibliothèques cartographiés dans OpenStreetMap pour la vue actuelle — là où l’enseignement et la recherche ont lieu, à côté des taux de scolarisation.",   /* (#R261) */
+  "University": "Université",   /* (#R261) */
+  "Wastewater treatment": "Station d’épuration",   /* (#R261) */
+  "Water & wastewater plant": "Installations d’eau et d’assainissement",   /* (#R261) */
+  "Water tower / reservoir": "Château d’eau / réservoir",   /* (#R261) */
+  "Water works": "Usine d’eau potable",   /* (#R261) */
+  "Water works, wastewater treatment plants, pumping stations, water towers and reservoirs mapped in OpenStreetMap for the current view — the plant that makes safe water and sanitation real in a place, rather than the national percentage.": "Usines d’eau potable, stations d’épuration, stations de pompage, châteaux d’eau et réservoirs cartographiés dans OpenStreetMap pour la vue actuelle — les installations qui rendent l’eau potable et l’assainissement réels sur place, plutôt que le pourcentage national.",   /* (#R261) */
+  "What a given water level reaches from here": "Jusqu’où monte un niveau d’eau donné depuis ici",   /* (#R261) */
   "Power plants & grid": "Centrales électriques et réseau",   /* (#R258) */
   "Quarry": "Carrière",   /* (#R258) */
   "Radioactive plume simulator": "Simulateur de panache radioactif",   /* (#R258) */
