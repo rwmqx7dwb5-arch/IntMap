@@ -4072,5 +4072,6 @@ window.IntMapLang.define('ko', { ui: {
   "fall": "낙차",
   "relief": "기복",
   "— flat water: the shortest way across is the way the water goes": "— 잔잔한 수면: 최단 경로가 곧 물의 경로입니다",
+  "Also in GDACS for this country — an event feed, not this agency’s warnings": "이 나라에 대해 GDACS에 있는 사건 — 사건 피드이지 이 기관의 경보가 아닙니다",   /* (#R266) */
   "— every point on it is a DEM reading": "— 모든 지점이 실측 DEM 값입니다",   /* (#R255) */
 } });

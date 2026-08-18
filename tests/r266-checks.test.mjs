@@ -130,6 +130,12 @@ test('R266 ⑥: the warnings layer covers the G7 and China with their own servic
   /* GDACS's endpoint: the one that answers */
   assert.ok(!s.includes("fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP"),
     'the GDACS endpoint that 400s is back');
+  /* (#R266 追記) a GDACS event must not be listed under a national agency's heading — `mine` carries
+     both and the tier sort put GDACS first (measured on production: the United States panel opened
+     with 「Flood in United States」 under «US National Weather Service, active alerts») */
+  assert.match(s, /const rows=\[\], gRows=\[\];/, 'the national rows and the GDACS rows are one list again');
+  assert.match(s, /f\.properties\.src==='gdacs'\)\?gRows:rows/, 'nothing separates them');
+  assert.match(s, /Also in GDACS for this country/, 'the GDACS block has no heading of its own');
   assert.match(s, /geteventlist\/SEARCH\?/);
 });
 
