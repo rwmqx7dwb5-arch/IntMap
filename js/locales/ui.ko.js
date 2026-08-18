@@ -751,6 +751,7 @@ window.IntMapLang.define('ko', { ui: {
   "Other / biomass": "기타·바이오매스",   /* (#R258) */
   "Output": "출력",   /* (#R258) */
   "Place water on the map first": "먼저 지도에 물을 놓으세요",   /* (#R258) */
+  "OpenStreetMap did not answer — pan or zoom to try again": "OpenStreetMap이 응답하지 않았습니다 — 지도를 움직이면 다시 시도합니다",   /* (#R262) */
   "across": "／",   /* (#R261) */
   "Airport / airfield": "공항·비행장",   /* (#R261) */
   "Airports & air infrastructure": "공항·항공 시설",   /* (#R261) */

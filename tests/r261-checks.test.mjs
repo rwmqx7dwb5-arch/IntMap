@@ -226,9 +226,20 @@ test('R261 ⑫: the data-centre panel answers for the current view, and says wha
   assert.match(s, /if\(!on\)\{ setVis\(false\); closeCard\(\); dcClosePanel\(\); return; \}/);
 });
 
-/* ── ⑬ the build stamps ─────────────────────────────────────────────────────────────────────────*/
-test('R261 ⑬: both build markers name this round', () => {
+/* ── ⑬ the build stamps ─────────────────────────────────────────────────────────────────────────
+   ⚠⚠ (#R262) THIS PINNED THE LITERAL 'R261' AND BROKE THE VERY NEXT ROUND. #R262 bumped the stamp,
+   as every round must, and this test went red for doing the right thing — the sixth time in two
+   rounds that a per-round check froze a literal instead of the property it meant (r202 ③c, r212 ①,
+   r246 ③, r254 ⑦, r258 ⑩, and now this one, which was MINE).
+   What a round can honestly assert about the stamps is that they AGREE and that they never go
+   backwards past the round that wrote them; tests/r169-checks already owns the format and the
+   monotonicity, so this keeps only the part that is about #R261: the two markers name one round,
+   and it is not older than #R261. */
+test('R261 ⑬: both build markers name one round, and it is not older than R261', () => {
   const s = read('index.html');
-  assert.match(s, /window\.__imBuild='R261'/);
-  assert.match(s, /window\.INTMAP_BUILD='2026-08-18-R261'/);
+  const a = s.match(/window\.__imBuild='R(\d+)'/);
+  const b = s.match(/window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R(\d+)'/);
+  assert.ok(a && b, 'both build markers are present');
+  assert.equal(a[1], b[1], 'the two markers name the same round');
+  assert.ok(Number(a[1]) >= 261, `the build stamp went back to R${a[1]}`);
 });

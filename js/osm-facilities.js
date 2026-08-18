@@ -417,6 +417,9 @@ window.IntMapModules.facilities=function(HOST){
     const SRC='fac-'+key+'-src', PT='fac-'+key+'-pt', LBL='fac-'+key+'-lbl';
     const cache=new Map();
     let on=false, wired=false, busy=false, lastKey='', count=0;
+    /* (#R262) 'ok' | 'fail' — whether the LAST attempt for the current view reached Overpass at all.
+       «0 objects» and «nobody answered» are different sentences and the legend prints them apart. */
+    let fetchState='ok';
     const col=(k)=>((SET.buckets[k]||SET.buckets.other)[0]);
     const before=()=>{ try{ return GE().layers.has('tool-poly')?'tool-poly':undefined; }catch(_){ return undefined; } };
 
@@ -452,6 +455,25 @@ window.IntMapModules.facilities=function(HOST){
           const bb='('+bbox[1].toFixed(4)+','+bbox[0].toFixed(4)+','+bbox[3].toFixed(4)+','+bbox[2].toFixed(4)+')';
           const ql='[out:json][timeout:30];('+SET.q.map(q=>q+bb+';').join('')+');out center 1200;';
           const els=await overpass(ql);
+          /* ══ ⚠⚠⚠ (#R262) A FAILED FETCH WAS CACHED AS «THERE IS NOTHING HERE» ═════════════════════
+             MEASURED on production, R261, the emergency-services layer over Tokyo: the source held
+             **0 features 45 seconds after the layer was switched on**, `refresh()` returned in
+             milliseconds, and no error was thrown — while the SAME Overpass query, fired from the
+             same page, came back with **1,200 elements in 6.7 s**.
+
+             `overpass()` answers `null` when every mirror fails or times out. This line then built
+             `feats = []` from it and `cache.set(ck, feats)` stored that — so one slow moment turned
+             into «this view box is empty», permanently, for the whole session: `cache.get(ck)`
+             short-circuits every later visit and no request is ever made again. `lastKey` is also
+             already set, so even a re-toggle would not retry.
+
+             ⚠ THE BUG IS IN THE SHARED ENGINE, so it applied to all twelve surveyed-facility layers
+             since #R255 — it only became visible now because #R261 added six more and one of them
+             was measured on a cold cache. An empty answer and no answer must not be the same value.
+             Nothing is cached unless Overpass actually replied, `lastKey` is cleared so the next
+             `moveend` (or a re-toggle) tries again, and the legend says which of the two happened. */
+          if(els==null){ fetchState='fail'; lastKey=''; count=0; legend(); busy=false; return; }
+          fetchState='ok';
           feats=[];
           (els||[]).forEach(e=>{ const t=e.tags||{};
             const lon=(e.lon!=null?e.lon:(e.center&&e.center.lon)), lat=(e.lat!=null?e.lat:(e.center&&e.center.lat));
@@ -549,9 +571,12 @@ window.IntMapModules.facilities=function(HOST){
         +S(L.arr(SET.buckets[k][1]))+'</div>').join('');
       const tooFar=(z<SET.zoom);
       b.innerHTML=keys
-        +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:7px;">'
+        +'<div style="font-size:10.5px;color:'+((!tooFar&&fetchState==='fail')?'#ff9f0a':'var(--text-muted)')+';margin-top:7px;">'
         +(tooFar?S(L('Zoom in to load this view','この範囲を読み込むにはズームしてください','Zum Laden hineinzoomen','Приблизьте, чтобы загрузить','Acérquese para cargar'))
-                :S(count+' '+L('objects in view','件（表示範囲内）','Objekte im Ausschnitt','объектов в виде','objetos en la vista')))
+          /* (#R262) «nobody answered» is not «there is nothing here» — see the note in refresh() */
+          :(fetchState==='fail'
+            ?S(L('OpenStreetMap did not answer — pan or zoom to try again','OpenStreetMap から応答がありませんでした。地図を動かすと再試行します','OpenStreetMap hat nicht geantwortet — erneut versuchen','OpenStreetMap не ответил — попробуйте снова','OpenStreetMap no respondió — inténtelo de nuevo'))
+            :S(count+' '+L('objects in view','件（表示範囲内）','Objekte im Ausschnitt','объектов в виде','objetos en la vista'))))
         +'</div>'
         +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:6px;">'+S(SET.note())+' · OpenStreetMap (ODbL)</div>';
     }
@@ -569,7 +594,10 @@ window.IntMapModules.facilities=function(HOST){
       const a=()=>{ if(!ensure()){ try{ GE().events.once('idle',a); }catch(_){} return; }
         wire(); setVis(true); legend(); lastKey=''; refresh(); };
       a(); }
-    return { toggle, refresh, count:()=>count, id:SET.id, name:SET.name, buckets:()=>SET.buckets };
+    /* (#R262) `state()` so a test (and production verification) can tell «0 objects» from «no answer»
+       without reading the legend's prose. */
+    return { toggle, refresh, count:()=>count, id:SET.id, name:SET.name, buckets:()=>SET.buckets,
+      state:()=>({ on, busy, count, fetchState, lastKey, cached:cache.size }) };
   }
 
   const API={};
