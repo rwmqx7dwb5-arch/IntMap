@@ -19,10 +19,43 @@
  *
  *  So the site term SHIPS WITH THE APP, the way the sea floor (#R197) and the land mask (#R192) do:
  *
- *      data/vs30.png    1440 × 720 (0.25°), 8-bit GREYSCALE, no alpha
- *                       0   = no land sampled in this cell (sea, or outside Mercator)
- *                       1…255 = mean Vs30 over the cell's LAND samples, linear over 150…1500 m/s
- *      data/vs30.json   the manifest (source, zoom, sample spacing, coverage, build time)
+ *      data/vs30.png        7200 × 3600 (0.05°), 8-bit GREYSCALE, no alpha
+ *                           0   = no land sampled in this cell (sea, or outside Mercator)
+ *                           1…255 = mean Vs30 over the cell's LAND samples, linear 150…1500 m/s
+ *      data/vs30-phone.png  3600 × 1800 (0.1°), the same encoding — see ⚠ below
+ *      data/vs30.json       the manifest (source, zoom, sample spacing, coverage, build time)
+ *
+ *  ══ (#R263) 0.25° WAS THROWING AWAY RESOLUTION THE BUILD ALREADY HAD ═════════════════════════════
+ *  「全球Vs30を高解像度化し、現在の粗いfallbackを改善する。」
+ *  #R223 fetched terrarium at z7, whose pixel is 1,223 m, and then averaged 516 of those pixels into
+ *  each 0.25° (27.8 km) output cell. The output grid, not the input, was the coarse thing: at 0.05°
+ *  every cell still holds about twenty independent 1.2 km samples, which is a perfectly well-formed
+ *  mean — so the SAME 8,089 tile fetches produce a raster with five times the linear resolution and
+ *  no new assumption anywhere. A 5.5 km fallback cell can see a river valley; a 27.8 km one cannot.
+ *  ⚠ THE SAMPLE SPACING IS UNCHANGED, AND THAT IS THE POINT. Wald & Allen regressed their proxy at
+ *  30 arc-seconds (~900 m), and #R190's rule — never measure a slope over a spacing coarser than
+ *  2 km — is about the SLOPE BASELINE, not about the output grid. Going to z8 to chase 0.025° would
+ *  measure the slope at 611 m, which is finer than the scale the table was fitted at, and a table
+ *  read off the wrong baseline is a bias rather than a detail (#R190 again, from the other side).
+ *  ⚠ AND THE FILTER IS NOW CHOSEN PER ROW — but the honest measurement is that it BARELY MATTERS,
+ *  and that is worth writing down because it decides the next paragraph. The PNG specification's own
+ *  heuristic (§12.8: try the five filters, keep the row whose filtered bytes have the smallest sum of
+ *  absolute values read as signed) gives 4.77 MB against 4.84 MB for the hard-coded `Sub` — 1.4 %.
+ *  A slope-derived Vs30 field at 5.5 km is very nearly INCOMPRESSIBLE: neighbouring cells hold means
+ *  over twenty independent terrain samples each, so the correlation the filters exist to exploit has
+ *  already been averaged out. Quantising helps and costs accuracy: 64 levels reaches 3.89 MB, at a
+ *  21 m/s step that is 12 % of Vs30 on the softest ground and therefore 6 % of the amplification —
+ *  spent exactly where the site term matters most. So the filter stays (it is free at decode time and
+ *  it is the standard), the encoding stays 8-bit linear, and the size question is answered by ⚠ below
+ *  instead of by throwing away the soft end of the scale.
+ *  ⚠ THE PHONE GETS A HALF-RESOLUTION COPY, the same way data/gazetteer-phone.json.gz answers the
+ *  same question for the gazetteer (#R181). 0.05° is 4.9 MB and 25.9 M cells resident; 0.1° is 1.4 MB
+ *  and 6.5 M. Both are finer than the 0.25° this replaces, so no device loses anything, and the
+ *  second pass is FREE because the tile cache below already holds all 8,089 tiles.
+ *
+ *  ⚠ THE TILES ARE CACHED. 8,089 fetches is twenty minutes of somebody else's bandwidth; a rebuild
+ *  that only changes the output grid should not spend it twice. `--cache` (default `.cache/vs30`,
+ *  gitignored) keeps the raw terrarium PNGs, and `--no-cache` restores the original behaviour.
  *
  *  ── HOW THE NUMBER IS MADE, AND WHY AT THIS ZOOM ───────────────────────────────────────────────
  *  Wald & Allen (2007) — the USGS's own global Vs30 proxy, the active-tectonic table — reads Vs30
@@ -50,7 +83,7 @@
  *  whose whole footprint — plus a one-cell margin — is sea. That is the same public dataset, the
  *  same attribution, and about a third of the bytes.
  *
- *    node scripts/build-vs30.mjs [--zoom 7] [--width 1440] [--concurrency 16]
+ *    node scripts/build-vs30.mjs [--zoom 7] [--width 7200] [--concurrency 16] [--cache <dir>]
  * ==========================================================================*/
 import fs from 'node:fs';
 import path from 'node:path';
@@ -61,9 +94,11 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; };
 
 const Z = Number(arg('zoom', 7));
-const W = Number(arg('width', 1440));
+const W = Number(arg('width', 7200));
 const H = W / 2;
 const CONC = Number(arg('concurrency', 16));
+const CACHE = process.argv.includes('--no-cache') ? null : arg('cache', path.join(ROOT, '.cache', 'vs30'));
+if (CACHE) fs.mkdirSync(CACHE, { recursive: true });
 const HOSTS = [
   'https://s3.amazonaws.com/elevation-tiles-prod/terrarium',
   'https://elevation-tiles-prod.s3.amazonaws.com/terrarium',
@@ -123,16 +158,37 @@ function chunk(type, data) {
   const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(body), 0);
   return Buffer.concat([len, body, crc]);
 }
-/* 8-bit GREYSCALE (colour type 0) — one byte a cell, which is all this carries */
+/* 8-bit GREYSCALE (colour type 0) — one byte a cell, which is all this carries.
+   (#R263) The filter is chosen PER ROW by the heuristic the PNG specification itself recommends
+   (§12.8): try all five, keep the one whose filtered bytes have the smallest sum of absolute values
+   read as signed, because that is the row deflate will find the least to say about. Measured worth:
+   1.4 % — see the ⚠ in the header, which is why the phone copy exists. */
 function pngGrey(g, w, h) {
   const raw = Buffer.alloc((w + 1) * h);
+  const cand = [Buffer.alloc(w), Buffer.alloc(w), Buffer.alloc(w), Buffer.alloc(w), Buffer.alloc(w)];
   for (let y = 0; y < h; y++) {
-    const o = y * (w + 1);
-    raw[o] = 1;                                   /* filter Sub — Vs30 varies along a row */
+    const row = y * w, up = (y - 1) * w;
     for (let x = 0; x < w; x++) {
-      const cur = g[y * w + x], left = x > 0 ? g[y * w + x - 1] : 0;
-      raw[o + 1 + x] = (cur - left) & 255;
+      const cur = g[row + x];
+      const a = x > 0 ? g[row + x - 1] : 0;
+      const b = y > 0 ? g[up + x] : 0;
+      const c = (y > 0 && x > 0) ? g[up + x - 1] : 0;
+      cand[0][x] = cur;
+      cand[1][x] = (cur - a) & 255;
+      cand[2][x] = (cur - b) & 255;
+      cand[3][x] = (cur - ((a + b) >> 1)) & 255;
+      const pa = Math.abs(b - c), pb = Math.abs(a - c), pc2 = Math.abs(a + b - 2 * c);
+      cand[4][x] = (cur - ((pa <= pb && pa <= pc2) ? a : (pb <= pc2 ? b : c))) & 255;
     }
+    let best = 0, bestScore = Infinity;
+    for (let f = 0; f < 5; f++) {
+      let sc = 0; const cf = cand[f];
+      for (let x = 0; x < w; x++) { const v = cf[x]; sc += v < 128 ? v : 256 - v; }
+      if (sc < bestScore) { bestScore = sc; best = f; }
+    }
+    const o = y * (w + 1);
+    raw[o] = best;
+    cand[best].copy(raw, o + 1);
   }
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4);
@@ -143,13 +199,22 @@ function pngGrey(g, w, h) {
 
 async function tile(z, x, y) {
   let lastErr = null;
+  /* the cache stores the tile's BYTES, not the decode — a decoded z7 tile is 786 kB of Float32 and
+     8,089 of them is not a cache, it is the heap */
+  const cf = CACHE ? path.join(CACHE, z + '_' + x + '_' + y + '.png') : null;
+  const miss = CACHE ? path.join(CACHE, z + '_' + x + '_' + y + '.none') : null;
+  if (cf && fs.existsSync(cf)) { cached++; return pngDecode(fs.readFileSync(cf)); }
+  if (miss && fs.existsSync(miss)) { cached++; return null; }
   for (let a = 0; a < HOSTS.length * 2; a++) {
     const url = HOSTS[(x + y + a) % HOSTS.length] + '/' + z + '/' + x + '/' + y + '.png';
     try {
       const r = await fetch(url, { headers: { 'User-Agent': 'IntMap/build-vs30 (+https://github.com/rwmqx7dwb5-arch/IntMap)' } });
-      if (r.status === 403 || r.status === 404) return null;      /* terrarium has no tile here */
+      if (r.status === 403 || r.status === 404) { if (miss) fs.writeFileSync(miss, ''); return null; }
       if (!r.ok) { lastErr = new Error('HTTP ' + r.status); continue; }
-      return pngDecode(Buffer.from(await r.arrayBuffer()));
+      const bytes = Buffer.from(await r.arrayBuffer());
+      const img = pngDecode(bytes);                               /* decode BEFORE caching a truncated body */
+      if (cf) fs.writeFileSync(cf, bytes);
+      return img;
     } catch (e) { lastErr = e; }
   }
   throw lastErr || new Error('unreachable');
@@ -197,7 +262,7 @@ function tileHasLand(tx, ty) {
 
 const sumVs = new Float64Array(W * H);
 const nLand = new Uint32Array(W * H);
-let done = 0, skipped = 0, empty = 0, failed = 0;
+let done = 0, skipped = 0, empty = 0, failed = 0, cached = 0;
 
 async function doTile(tx, ty) {
   let img = null;
@@ -234,7 +299,8 @@ async function doTile(tx, ty) {
     }
   }
   done++;
-  if (done % 128 === 0) process.stdout.write('  ' + done + ' fetched · ' + skipped + ' skipped (all sea) · ' + empty + ' absent\n');
+  if (done % 256 === 0) process.stdout.write('  ' + done + '/' + jobs.length + ' read (' + cached + ' cached) · '
+    + skipped + ' skipped (all sea) · ' + empty + ' absent\n');
 }
 
 const jobs = [];
@@ -261,6 +327,30 @@ for (let k = 0; k < W * H; k++) {
 }
 const png = pngGrey(g, W, H);
 fs.writeFileSync(path.join(ROOT, 'data', 'vs30.png'), png);
+
+/* ── the phone copy ─────────────────────────────────────────────────────────────────────────────
+   ⚠ AGGREGATED FROM THE SAMPLE SUMS, NOT FROM `g`. Averaging four already-quantised bytes would
+   average four roundings as well, and — worse — would weight a cell with 4 land samples the same as
+   its neighbour with 400. Summing `sumVs`/`nLand` into the coarse cell gives the mean over exactly
+   the same land samples the 0.05° cells were built from, which is the same quantity at a coarser
+   grid rather than a smoothed picture of a finer one. */
+const PW = W >> 1, PH = H >> 1;
+const pSum = new Float64Array(PW * PH), pN = new Uint32Array(PW * PH);
+for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+  const k = j * W + i; if (!nLand[k]) continue;
+  const pk = (j >> 1) * PW + (i >> 1);
+  pSum[pk] += sumVs[k]; pN[pk] += nLand[k];
+}
+const gp = Buffer.alloc(PW * PH);
+let pCells = 0;
+for (let k = 0; k < PW * PH; k++) {
+  if (!pN[k]) { gp[k] = 0; continue; }
+  pCells++;
+  gp[k] = Math.max(1, Math.min(255, Math.round((pSum[k] / pN[k] - VS_LO) / (VS_HI - VS_LO) * 254) + 1));
+}
+const pngPhone = pngGrey(gp, PW, PH);
+fs.writeFileSync(path.join(ROOT, 'data', 'vs30-phone.png'), pngPhone);
+
 const manifest = {
   source: 'AWS Terrain Tiles (terrarium) — SRTM/GMTED/NED topography',
   url: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
@@ -272,8 +362,14 @@ const manifest = {
   vs30Lo: VS_LO, vs30Hi: VS_HI,
   landCells: cells, landCellFraction: +(cells / (W * H)).toFixed(4),
   meanVs30: +(sum / Math.max(1, cells)).toFixed(1),
-  tilesFetched: done, tilesSkippedAllSea: skipped, tilesAbsent: empty,
-  bytes: png.length, built: new Date().toISOString()
+  tilesFetched: done, tilesSkippedAllSea: skipped, tilesAbsent: empty, tilesFromCache: cached,
+  bytes: png.length,
+  phone: { file: 'data/vs30-phone.png', width: PW, height: PH, degrees: 360 / PW,
+    landCells: pCells, bytes: pngPhone.length,
+    note: 'the same encoding at half the linear resolution, aggregated from the same land samples; js/vs30-mask.js reads this one where the app reports a phone' },
+  built: new Date().toISOString()
 };
 fs.writeFileSync(path.join(ROOT, 'data', 'vs30.json'), JSON.stringify(manifest, null, 2) + '\n');
 process.stdout.write('data/vs30.png  ' + (png.length / 1024).toFixed(0) + ' kB · ' + cells.toLocaleString() + ' land cells · mean Vs30 ' + manifest.meanVs30 + ' m/s\n');
+process.stdout.write('data/vs30-phone.png  ' + (pngPhone.length / 1024).toFixed(0) + ' kB · ' + PW + '×' + PH
+  + ' (' + (360 / PW).toFixed(2) + '°) · ' + pCells.toLocaleString() + ' land cells\n');

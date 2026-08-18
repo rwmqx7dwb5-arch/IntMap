@@ -46,6 +46,19 @@
    because it is DATA with citations rather than model code (standing instruction 13), and because
    a catalogue that must be checkable should be readable without wading through the physics. */
 import { QUAKE_EVENTS, ruptureRing, momentOf, fetchRuptureRing } from './seismic-events.js';
+/* (#R263) …and the three modules this round's physics lives in. They are imported HERE, by their one
+   consumer, rather than eagerly from src/main.js — which is where the first draft put them until the
+   shell's line budget (tests/r168 #8) refused, with two lines of headroom left. The budget was right
+   and the refusal improved the design: js/seismic.js is lazy, so these three now land in ITS chunk
+   instead of the boot bundle, and the dependency is stated where it is actually used.
+     js/seismic-site.js       window.IntMapSiteAmp   — A(f), the quarter-wavelength site term
+     js/seismic-subfault.js   window.IntMapSubfault  — a finite rupture cut into subfaults
+     js/earth-structure.js    window.IntMapEarth     — CRUST1.0 · Slab2 · PB2002, and the regime
+   ⚠ THEY PUBLISH ONTO `window` AND ARE READ AT CALL TIME, never at parse time, so the order below is
+   documentation rather than a load-order dependency. */
+import './seismic-site.js';
+import './seismic-subfault.js';
+import './earth-structure.js';
 
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.seismic=function(HOST){
@@ -226,6 +239,44 @@ window.IntMapModules.seismic=function(HOST){
        tail exaggerated — the shape of the whole intensity field, not a scale factor on it. */
     let QS0=180, QETA=0.45;
     let stressDropMPa=3.0;
+    /* ══ ⚠⚠⚠ (#R263) THESE THREE NUMBERS ARE NOT PROPERTIES OF THE EARTH — THEY ARE PROPERTIES OF A
+       PLACE ═══════════════════════════════════════════════════════════════════════════════════════
+       「プレート境界型・スラブ内・活断層・安定大陸などを…自動判定し、地震動モデルへ反映する。」
+       Q₀ = 180·f^0.45 is southern California, Δσ = 3 MPa is an active crust, κ = 0.035 s is a soft
+       western-US near surface. This file applied all three to the whole planet, so a Canadian-Shield
+       earthquake radiated like a Californian one — and the difference between those two settings is
+       not a detail: eastern North America's published stochastic model has FIVE times the stress
+       drop, five times the Q and a seventh of the κ.
+       js/earth-structure.js answers «which setting is this» from Slab2, CRUST1.0 and PB2002, and
+       hands back a complete published parameter set. What is written here is the ACTIVE-CRUSTAL set,
+       which is what this file has always used, so with the datasets absent nothing changes at all.
+       ⚠ THE READER STILL WINS. Every one of these is a control in 詳細設定, and a regime must not
+       silently overwrite a number somebody typed. `regAuto` remembers which of them the model is
+       still allowed to choose; a panel control clears its own flag and never sets it again. */
+    let KAPPA_S=KAPPA;
+    let regime=null, regSeq=0;
+    const regAuto={ ds:true, q:true, kappa:true };
+    const EARTH=()=>window.IntMapEarth;
+    function applyRegime(r){
+      regime=r||null;
+      const pr=r&&r.params; if(!pr) return;
+      if(regAuto.ds) stressDropMPa=pr.stressDropMPa;
+      if(regAuto.q){ QS0=pr.q0; QETA=pr.qEta; }
+      if(regAuto.kappa) KAPPA_S=pr.kappaS;
+    }
+    /* asked once per hypocentre, never per cell — the regime is a property of the SOURCE. */
+    function refreshRegime(){
+      const E=EARTH(); if(!E||!epi) return Promise.resolve(null);
+      const seq=++regSeq;
+      return E.warm().then(()=>{
+        if(seq!==regSeq) return regime;
+        const ev={ lng:epi[0], lat:epi[1], depthKm };
+        if(fault){ if(isFinite(fault.strikeDeg)) ev.strikeDeg=fault.strikeDeg;
+          if(isFinite(fault.dipDeg)) ev.dipDeg=fault.dipDeg; }
+        applyRegime(E.regimeAt(ev));
+        return regime;
+      }).catch(()=>null);
+    }
     /* ══ (#R192) A GREAT EARTHQUAKE IS NOT ONE CIRCULAR CRACK ══════════════════════════════════════
        Brune's single-corner ω⁻² spectrum puts the whole source in one number, and for a large event
        that number is very small: at M9 with Δσ = 3 MPa the corner is 0.0075 Hz, so EVERYTHING an
@@ -369,7 +420,17 @@ window.IntMapModules.seismic=function(HOST){
     /* GEOMETRICAL SPREADING — 1/R only holds while the direct S wave is the biggest arrival. Past about
        70 km the post-critical Moho reflection takes over and the decay flattens, then surface waves
        spread as 1/√R. The trilinear form (Atkinson & Boore 1995) is the standard way to say that. */
-    function spread(rKm){ const r=Math.max(1,rKm);
+    /* ⚠ (#R263) THE CROSSOVERS ARE THE MOHO, SO THEY FOLLOW THE MOHO. 70 km and 130 km are where the
+       post-critical Moho reflection appears and then gives way to surface waves, measured over ~35 km
+       of western-North-American crust — they are a statement about a crustal THICKNESS, not a
+       universal constant. js/earth-structure.js scales the published pair by the local Moho depth
+       (CRUST1.0) and hands back the exponents with it, so a 70 km Tibetan crust and a 10 km oceanic
+       one stop being told they bend at 70 km. With no crustal model loaded `spreadOf` is never
+       reached and this is the old function, exactly. */
+    function spread(rKm){
+      const pr=regime&&regime.params, E=EARTH();
+      if(pr&&E&&E.spreadOf) return E.spreadOf(pr,rKm);
+      const r=Math.max(1,rKm);
       if(r<=70) return 1/r;
       if(r<=130) return 1/70;
       return (1/70)*Math.sqrt(130/r); }
@@ -586,15 +647,28 @@ window.IntMapModules.seismic=function(HOST){
        is asked for. Writing it four times is how the rings and the paint drift apart (#R190). */
     function srcDistM(surfKm,cutKm){ const c=(cutKm==null)?rupCutKm():cutKm;
       const s=Math.max(0,surfKm-c); return Math.sqrt(s*s+depthKm*depthKm)*1000; }
-    function motion(mw,rM,fd){
+    /* (#R263) `site` is optional and is the ONLY new argument: an object with `amp(f)`, the
+       frequency-dependent quarter-wavelength amplification of a real velocity profile
+       (js/seismic-site.js). When it is absent this function is what it has always been — the panel's
+       scalar site class — and when it is present that scalar is replaced rather than multiplied, so
+       there is never a site term applied twice. */
+    function motion(mw,rM,fd,site){
       const s=source(mw,fd); let r=Math.max(1000,rM);
       const rKm=r/1000;
       /* the displacement spectral level, with the trilinear spreading folded in */
-      const omega0=RAD*FREE*(1/Math.SQRT2)*siteAmp()*s.M0/(4*Math.PI*RHO*BETA*BETA*BETA)*spread(rKm)/1000;
+      const omega0=RAD*FREE*(1/Math.SQRT2)*(site?1:siteAmp())*s.M0/(4*Math.PI*RHO*BETA*BETA*BETA)*spread(rKm)/1000;
       /* (#R190) Q(f) = Q₀·f^η — see the note by QS0. The exponent leaves f^(1−η) in the exponent, which
          is why a constant Q cannot be tuned to imitate it: the two curves cross. */
-      const path=f=>Math.exp(-Math.PI*f*r/(QS0*Math.pow(Math.max(0.01,f),QETA)*BETA))*Math.exp(-Math.PI*KAPPA*f);
-      const disp=f=>omega0*s.shape(f)*path(f);                      /* (#R192) two-corner source — see source() */
+      /* (#R263) Q gets a FLOOR because Atkinson & Boore (2006) publish one — Q = 893·f^0.32 with
+         Q_min = 1000 — and a floor is not an optional detail of that model: without it the ENA Q at
+         0.1 Hz is 428, which is below the active-crustal value it is supposed to exceed. `qFloor` is
+         0 for the active set, where the published relation has no floor. */
+      const qF=(regime&&regime.params&&regime.params.qFloor)||0;
+      const qOf=f=>Math.max(qF,QS0*Math.pow(Math.max(0.01,f),QETA));
+      const path=f=>Math.exp(-Math.PI*f*r/(qOf(f)*BETA))*Math.exp(-Math.PI*KAPPA_S*f);
+      const disp=site
+        ? (f=>omega0*s.shape(f)*path(f)*site.amp(f))                /* (#R263) …times this profile's A(f) */
+        : (f=>omega0*s.shape(f)*path(f));                           /* (#R192) two-corner source — see source() */
       const velS=f=>2*Math.PI*f*disp(f);
       const accS=f=>(2*Math.PI*f)*(2*Math.PI*f)*disp(f);
       /* ══ (#R191) THE PATH DURATION IS PIECEWISE, AND IT IS THE SAME PAPER AS THE SPREADING ═════════
@@ -635,7 +709,7 @@ window.IntMapModules.seismic=function(HOST){
         /* (#R223) the pseudo-depth is GONE from this object as well as from the chain — a key that is
            always 0 is a reader's trap. What replaces it is the rupture the answer belongs to. */
         fc:s.fc, M0:s.M0, rupKm:s.rupKm, srcDurS:s.durS, gmDurS:Td, pathDurS:Tp,
-        impliedRupKm:(fault?0:impliedRupKm(mw)), amp:siteAmp() };
+        impliedRupKm:(fault?0:impliedRupKm(mw)), amp:(site?1:siteAmp()) };
     }
     const ROMAN=['','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
     function mmiWord(v){ const i=Math.max(1,Math.min(12,Math.round(v)));
@@ -1029,6 +1103,110 @@ window.IntMapModules.seismic=function(HOST){
     }
     function ampOf(vs30){ const rho=1800+(Math.max(150,Math.min(1500,vs30))-180)/(1500-180)*(2600-1800);
       return Math.sqrt((RHO*BETA)/(rho*vs30)); }
+
+    /* ══ ⚠⚠⚠ (#R263) Vs30 IS A NUMBER ABOUT THIRTY METRES, AND THE FIELD USED IT FOR EVERY PERIOD ══
+       「全球の堆積層厚・岩質・地殻構造を取り込み、Vs30だけでは表現できない盆地効果・地盤増幅を世界共通で
+         扱う。」
+       `ampOf` above is the quarter-wavelength amplification evaluated at ONE depth — thirty metres,
+       which is a quarter wavelength at 1.5 Hz on soft soil and 6.3 Hz on rock. Every frequency got
+       that same factor, so a 0.5 Hz wave (which samples 700 m of section) was amplified as though the
+       whole 700 m were as soft as the top 30 m, and a 2 km sedimentary basin produced no more long-
+       period motion than a 20 m soil cap. A scalar site term CANNOT produce a basin effect; that is
+       arithmetic, not a tuning problem.
+       js/seismic-site.js computes A(f) properly, from a profile that is Vs30 over the top 30 m and
+       CRUST1.0's real layered column below it. What is built here is the CORRECTION it implies:
+
+           K(f-shape) = peak with A(f)  /  peak with A(∞)
+
+       ⚠ WHY A RATIO AND NOT THE ANSWER ITSELF. A(∞) is `ampOf` exactly (js/seismic-site.js asserts
+       it), so K is 1 wherever the old model was already right, it is a pure ratio near unity, and —
+       the point — it varies SLOWLY. The per-cell scalar keeps its full 0.05° resolution and only the
+       smooth shape correction is interpolated out of a table, instead of binning the whole answer.
+       ⚠ AND THE TABLE IS SMALL BECAUSE IT IS ALLOWED TO BE. Building the full chain per site class
+       per azimuth per distance node would be 21 times the arithmetic of the whole field. K needs
+       neither the azimuth (it is a ratio, and the azimuth enters through a duration that divides out
+       of both halves) nor 140 distance nodes (it is smooth in R), so it is one bank over
+       KSED × KVS × 18 radii — about 600 extra chain evaluations against the 3,360 the field already
+       spends. Measured cost is printed in the panel's diagnostics.
+       ⚠ THE SEDIMENT AXIS IS REAL COLUMNS, NOT SYNTHESISED ONES. The field's own box is sampled on a
+       coarse grid, the CRUST1.0 columns found there are binned by sediment thickness, and each bin
+       keeps a REAL column — so no layer thickness or velocity is ever invented to fill a bin. A bin
+       nothing fell into simply does not exist and the interpolation spans the ones that do. */
+    /* the bundled raster names its OWN grain — see the siteShape note in buildField */
+    function _vsmLabel(){
+      try{ const st=window.IntMapVs30.state();
+        return 'bundled-vs30-'+st.degrees+'deg'+(st.phone?'-phone':''); }
+      catch(_){ return 'bundled-vs30'; }
+    }
+    const KVS=[150,240,360,540,800,1200,1500];
+    let siteBank=null;
+    /* A(f) on the SAME log-spaced grid rvt() and jmaA0() integrate over, so the amplification is a
+       table lookup in the inner loop rather than a quarter-wavelength search per frequency. */
+    const SPEC_F0=0.02, SPEC_F1=40, SPEC_N=400;
+    function ampFnFor(prof){
+      const SA=window.IntMapSiteAmp;
+      const lg0=Math.log(SPEC_F0), k=SPEC_N/(Math.log(SPEC_F1)-lg0);
+      const tab=new Float64Array(SPEC_N+1);
+      for(let i=0;i<=SPEC_N;i++) tab[i]=SA.ampSpectrum(prof,[Math.exp(lg0+i/k)],{rhoSrc:RHO,betaSrc:BETA})[0];
+      return { amp(f){ const x=Math.max(0,Math.min(SPEC_N-1e-9,(Math.log(Math.max(1e-6,f))-lg0)*k));
+        const i=x|0; return tab[i]+(x-i)*(tab[i+1]-tab[i]); } };
+    }
+    function buildSiteBank(boxDeg){
+      siteBank=null;
+      const SA=window.IntMapSiteAmp, E=EARTH();
+      if(!SA||!E||!E.ready()||!epi) return null;
+      /* real CRUST1.0 columns from inside this field's own box, binned by sediment thickness */
+      const cols=[];
+      const half=Math.max(1,Math.min(20,boxDeg||8));
+      for(let a=-2;a<=2;a++) for(let b=-2;b<=2;b++){
+        const c=E.crustAt(epi[0]+a*half/2,Math.max(-89,Math.min(89,epi[1]+b*half/2)));
+        if(c&&isFinite(c.sedimentKm)) cols.push(c);
+      }
+      if(!cols.length) return null;
+      cols.sort((x,y)=>x.sedimentKm-y.sedimentKm);
+      const pick=[cols[0],cols[Math.floor(cols.length/2)],cols[cols.length-1]];
+      const beds=[], seds=[];
+      for(const c of pick){ if(seds.length&&Math.abs(c.sedimentKm-seds[seds.length-1])<0.05) continue;
+        seds.push(c.sedimentKm); beds.push(c); }
+      const NS=beds.length, NV=KVS.length, NR=18;
+      const r0=Math.max(1,depthKm||1), r1=Math.sqrt(MMI_MAX_KM*MMI_MAX_KM+depthKm*depthKm)*1.02;
+      const rr=new Float64Array(NR);
+      const kp=new Float64Array(NS*NV*NR), ka=new Float64Array(NS*NV*NR);
+      let calls=0;
+      for(let is=0;is<NS;is++) for(let iv=0;iv<NV;iv++){
+        const prof=SA.buildProfile(KVS[iv],beds[is]);
+        const site=ampFnFor(prof);
+        const flat={ amp:()=>SA.ampScalar(KVS[iv],RHO,BETA) };
+        for(let ir=0;ir<NR;ir++){
+          const r=r0*Math.pow(r1/r0,ir/(NR-1)); rr[ir]=r;
+          const mA=motion(mw,r*1000,1,site), mS=motion(mw,r*1000,1,flat); calls+=2;
+          const o=(is*NV+iv)*NR+ir;
+          kp[o]=(mS.pgv>0)?Math.max(0.05,Math.min(20,mA.pgv/mS.pgv)):1;
+          ka[o]=(mS.a0>0)?Math.max(0.05,Math.min(20,mA.a0/mS.a0)):1;
+        }
+      }
+      const lr0=Math.log(r0), kIx=(NR-1)/(Math.log(r1)-lr0||1);
+      const lv=KVS.map(Math.log);
+      siteBank={ NS, NV, NR, seds, kp, ka, rr, lr0, kIx, lv, calls,
+        /* trilinear in log Vs30, sediment thickness and log R — all three axes are smooth */
+        at(vs30,sedKm,rM,out){
+          const x=Math.max(0,Math.min(NR-1-1e-9,(Math.log(Math.max(rr[0],Math.min(rr[NR-1],rM/1000)))-lr0)*kIx));
+          const ir=Math.min(NR-2,x|0), fr=x-ir;
+          const lvq=Math.log(Math.max(KVS[0],Math.min(KVS[NV-1],vs30)));
+          let iv=0; while(iv<NV-2&&lv[iv+1]<lvq) iv++;
+          const fv=Math.max(0,Math.min(1,(lvq-lv[iv])/(lv[iv+1]-lv[iv]||1)));
+          let is=0; while(is<NS-2&&seds[is+1]<sedKm) is++;
+          const fs=(NS>1)?Math.max(0,Math.min(1,(sedKm-seds[is])/(seds[is+1]-seds[is]||1))):0;
+          const g=(arr)=>{ let v=0;
+            for(let a=0;a<((NS>1)?2:1);a++) for(let b=0;b<2;b++) for(let c=0;c<2;c++){
+              const w=((NS>1)?(a?fs:1-fs):1)*(b?fv:1-fv)*(c?fr:1-fr);
+              if(w<=0) continue;
+              v+=w*arr[((is+a)*NV+(iv+b))*NR+(ir+c)];
+            }
+            return v; };
+          out=out||[0,0]; out[0]=g(kp); out[1]=g(ka); return out; } };
+      return siteBank;
+    }
     /* One full-chain profile over log-spaced hypocentral distance, interpolated in log-log.
        (#R192) It carries BOTH quantities the map can be painted with — the felt-band PGV that the MMI
        GMICE takes, and the JMA level a₀ that IS 計測震度. They are not one number times a constant
@@ -1534,6 +1712,13 @@ window.IntMapModules.seismic=function(HOST){
       const cosEdge=Math.cos(Math.min(Math.PI,(rEdge+maxReach)/RE));
       const _cut=rupCutKm();   /* (#R223) hoisted: the implied rupture radius is a constant over the raster */
       const iOfLng=(l)=>(l-W0)/dxF-0.5;
+      /* (#R263) the SAME site bank buildField built — module state, not a second one. Building a
+         second bank here would be a second opinion about the same crust, which is the drift this
+         file has written down before (#R190's "one conversion, four readers"). */
+      const farBank=siteBank;
+      const _farSedAt=(farBank&&EARTH()&&EARTH().sedimentAt)?EARTH().sedimentAt:null;
+      const _farK=[1,1];
+      const _farVs30=(SITES.find(x=>x.id===siteId)||SITES[1]).vs30;
       /* ══ ⚠⚠⚠ (#R250) THE SITE TERM, FROM THE SAME DEM THE FINE FIELD READS ═══════════════════════
          The second half of 「解像度が劇的に悪くなる」 (see the ⚠⚠⚠ block by `coastFar`): this raster's
          ground texture changed 6–8 times per 128 cells where the fine field's changes 126–127 times,
@@ -1670,7 +1855,7 @@ window.IntMapModules.seismic=function(HOST){
              (#R250) …and it is read from the DEM first, at this raster's own grain, exactly as the
              fine field reads it; the bundled 0.25° raster is the per-cell fallback it always was. */
           const b2=profAt(lo,la).both(rM);   /* (#R232) the directivity bank — see the note where it is built */
-          let g=1, gotSite=false;
+          let g=1, gotSite=false, vsHere=0;
           if(_rowFar){
             if(!_rowReady){ _hereFar=_rowFar(la);
               _northFar=_rowFar(Math.max(-85,Math.min(85,la+dLatFarS))); _rowReady=true; }
@@ -1678,11 +1863,17 @@ window.IntMapModules.seismic=function(HOST){
             if(e0!=null){
               let ex=_hereFar(lo+dLngFarS); if(ex==null) ex=e0;
               let ey=_northFar?_northFar(lo):null; if(ey==null) ey=e0;
-              g=ampOf(vs30FromSlope(Math.hypot(ex-e0,ey-e0)/dsFarM))/ampRef;
+              const vFar=vs30FromSlope(Math.hypot(ex-e0,ey-e0)/dsFarM);
+              g=ampOf(vFar)/ampRef; vsHere=vFar;
               demSiteCells++; ampCells++; gotSite=true; }
           }
-          if(!gotSite&&vsm){ const v=vsm.at(lo,la); if(v){ g=ampOf(v)/ampRef; bulkSiteCells++; ampCells++; } }
-          const I=(scale==='jma')?jmaOfA0(b2[1]*g):mmiOf(b2[0]*g);
+          if(!gotSite&&vsm){ const v=vsm.at(lo,la); if(v){ g=ampOf(v)/ampRef; vsHere=v; bulkSiteCells++; ampCells++; } }
+          let farPgv=b2[0]*g, farA0=b2[1]*g;
+          /* (#R263) the same frequency-shape correction the fine field applies — one function, two
+             painters, exactly as #R247 made the colour ramp one function for the same reason. */
+          if(farBank){ const kk=farBank.at(vsHere||_farVs30,_farSedAt?_farSedAt(lo,la):0,rM,_farK);
+            farPgv*=kk[0]; farA0*=kk[1]; }
+          const I=(scale==='jma')?jmaOfA0(farA0):mmiOf(farPgv);
           /* (#R224) MMI is a CONTINUOUS ramp now (see MMI_RAMP); 震度 keeps its published bands.
              (#R247) …and the colour AND the alpha both come from `fieldPx`, which is the ONE place
              the lowest class's fade is written — see it for why the edge stopped being a cliff. */
@@ -1726,8 +1917,8 @@ window.IntMapModules.seismic=function(HOST){
                   (#R250) …and now ALSO whether that ground is the DEM's or the 0.25° fallback's,
                   because those two differ by ~21× in grain and only one of them matches the cell. */
                siteCells:ampCells,
-               siteSource:(demSiteCells?(bulkSiteCells?'dem-slope+bundled-vs30-0.25deg':'dem-slope')
-                                       :(vsm?'bundled-vs30-0.25deg':null)),
+               siteSource:(demSiteCells?(bulkSiteCells?('dem-slope+'+_vsmLabel()):'dem-slope')
+                                       :(vsm?_vsmLabel():null)),
                demSiteCells, bulkSiteCells, demTiles:farTiles, demZ:zF,
                siteSpacingM:(demSiteCells?Math.round(demSpacingFarM):(vsm?27800:null)),
                slopeUsable:slopeUsableFar,
@@ -1772,6 +1963,13 @@ window.IntMapModules.seismic=function(HOST){
       if(!epi){ _revoke(fld&&fld.url); _revoke(fldFar&&fldFar.url); fld=null; fldFar=null; paintField(); paintFar(); return; }
       fldBusy=true; fldStale=false; fldPct=0; if(opened) report();
       const t0=performance.now();
+      /* ⚠ (#R263) BOTH OF THESE ARE RESOLVED ONCE, HERE, AND NEVER INSIDE THE CELL LOOP. The regime
+         is a property of the hypocentre and the site bank is a property of the region, so a build is
+         exactly the right granularity for both — and awaiting them here is what guarantees that the
+         profile bank below, the far raster and the panel's table all see the SAME parameters. A
+         regime that arrived halfway through would paint half a field with one stress drop. */
+      try{ await refreshRegime(); }catch(_){}
+      if(seq!==fldSeq) return;
       /* ══ ⚠ (#R226) THE PROGRESS BAR WAS REDRAWN FIVE TIMES PER VISIBLE STEP ═══════════════════════
          「地震と津波の計算速度は品質を下げない範囲で爆速に。」 `prog()` is called every eight rows —
          320 times at this round's 2,560 ceiling — and wrote to the DOM every time, although the number
@@ -1801,6 +1999,9 @@ window.IntMapModules.seismic=function(HOST){
            the azimuth is never computed, and the field is byte-for-byte the old one. */
         const dirAx=rupAxis();
         const AZN=24;
+        /* a first estimate of how far the paint will reach, only so buildSiteBank knows how wide to
+           sample CRUST1.0 — the real rEdge is solved below and is not affected by this */
+        const rEdgeGuess=Math.min(MMI_MAX_KM,Math.max(100,60*Math.pow(10,0.5*(mw-5))));
         const profBank=dirAx?Array.from({length:AZN},(_,k)=>{
           const brg=(k+0.5)*360/AZN, cosT=Math.cos((brg-dirAx.brg)*D);
           const X=(cosT>=0?dirAx.fwdKm:dirAx.backKm)/dirAx.L;
@@ -1816,6 +2017,13 @@ window.IntMapModules.seismic=function(HOST){
           ? ((lo,la)=>profBank[(((Math.round(bearingTo(epi,[lo,la])*AZN/360)%AZN)+AZN)%AZN)])
           : (()=>prof);
         const ampRef=siteAmp();
+        /* (#R263) the frequency-shape correction table — see buildSiteBank. Null (and therefore a
+           no-op below) whenever the crustal model is absent, which is what keeps this round's field
+           identical to the old one when data/crust1.bin.gz has not loaded. */
+        const bank=buildSiteBank(Math.max(2,Math.min(30,(rEdgeGuess||600)/111*2)));
+        const _sedAt=(bank&&EARTH()&&EARTH().sedimentAt)?EARTH().sedimentAt:null;
+        const _kOut=[1,1];
+        const _siteVs30=(SITES.find(x=>x.id===siteId)||SITES[1]).vs30;
         /* how far anything at all is painted: the softest plausible site against the lowest class.
            (#R191) inverted from the SAME conversions the colours use, so the edge follows the relation
            instead of repeating two of its constants. (#R192) …and it now walks the profile the ACTIVE
@@ -2315,7 +2523,12 @@ window.IntMapModules.seismic=function(HOST){
             const rM=srcDistM(km,_cut);                          /* (#R223) the one conversion — see srcDistM */
             const g=amp/ampRef;                                  /* both quantities are linear in it */
             const b2=profAt(lo,la).both(rM);                     /* (#R218) one index, two values; (#R232) …from this azimuth's profile */
-            const pgv=b2[0]*g, a0=b2[1]*g;
+            let pgv=b2[0]*g, a0=b2[1]*g;
+            /* (#R263) …and the part of the site term that is NOT a scalar: how the amplification
+               changes with frequency once the section below 30 m is real. 1 when there is no crustal
+               model, so this line cannot change the old answer by itself. */
+            if(bank){ const kk=bank.at(vs[k]>0?vs[k]:_siteVs30,_sedAt?_sedAt(lo,la):0,rM,_kOut);
+              pgv*=kk[0]; a0*=kk[1]; }
             pgvArr[k]=pgv; a0Arr[k]=a0;
             const I=(scale==='jma')?jmaOfA0(a0):mmiOf(pgv);
             /* (#R224) the same split as buildFar: continuous ramp for MMI, published bands for 震度.
@@ -2350,7 +2563,13 @@ window.IntMapModules.seismic=function(HOST){
             if(i<0||j<0||i>=this.N||j>=this.N) return null; const v=this.a0[j*this.N+i]; return v>0?v:null; },
           stats:{ cells:N*N, painted, sea, noDem, coarse, beyondCalib, calibKm:MMI_CALIB_KM, z, demSpacingM:Math.round(demSpacingM),
                   /* (#R223) how many cells took the bundled 0.25° site term instead of one class */
-                  bulkSite:bulk, bulkSiteSource:(vsm?'bundled-vs30-0.25deg':null),
+                  bulkSite:bulk, bulkSiteSource:(vsm?_vsmLabel():null),
+                  /* (#R263) …and whether the FREQUENCY-DEPENDENT half of the site term was live for
+                     this build. A label that says «bundled-vs30-0.25deg» when the raster has been
+                     0.05° for a round is exactly how a diagnostic stops being a measurement, so this
+                     one asks the module instead of repeating a constant. */
+                  siteShape:(siteBank?{ vs30Bins:siteBank.NV, sedimentBinsKm:siteBank.seds.map(v=>+v.toFixed(2)),
+                    radii:siteBank.NR, chainCalls:siteBank.calls, source:'crust1.0 quarter-wavelength A(f)' }:null),
                   /* (#R215) WHICH coastline decided the coast, and how fine it was — declared, not implied */
                   coastSource:coastSrc, coastCellKm:(coastKm!=null?+coastKm.toFixed(2):null),
                   slopeBaselineM:Math.round(dsM), slopeUsable,
@@ -3129,6 +3348,21 @@ window.IntMapModules.seismic=function(HOST){
       try{ if(fld&&fld.vs30At){ vs30=fld.vs30At(lng,lat); } }catch(_){}
       let pgv=m.pgv, pga=m.pga, pgaG=m.pgaG, a0=m.a0;
       if(vs30){ const f=ampOf(vs30)/m.amp; pgv*=f; pga*=f; pgaG*=f; a0*=f; }
+      /* ⚠ (#R263) THE TABLE APPLIES THE SAME FREQUENCY-SHAPE CORRECTION THE MAP DOES. A site term
+         that reached the painted field and not this row is the exact failure this file has recorded
+         twice — the map and the table disagreeing by a class because one of them kept an old
+         conversion (#R191 found the third copy of `mmiOf` doing it).
+         ⚠ PGA IS DELIBERATELY LEFT ON THE SCALAR, and it is not an omission. PGA is carried at 3-10
+         Hz, whose quarter wavelength is under 30 m for every site in the table (7.5 m at 5 Hz on the
+         softest ground), so A(f) has already saturated there and K is 1 by construction — see the
+         high-frequency limit js/seismic-site.js asserts. Multiplying it by a correction of 1 would
+         only suggest there was something to correct. */
+      if(siteBank){
+        const E=EARTH();
+        const kk=siteBank.at(vs30||(SITES.find(x=>x.id===siteId)||SITES[1]).vs30,
+          (E&&E.sedimentAt)?E.sedimentAt(lng,lat):0, rM);
+        pgv*=kk[0]; a0*=kk[1];
+      }
       /* (#R191) …through mmiOf, like every other reader. This was the THIRD copy of the conversion
          (#R190 found two), and it is exactly why a copy is dangerous: it kept Wald 1999 while the
          model moved to Worden 2012, so the table and the map would have disagreed by a class.
@@ -4104,9 +4338,10 @@ window.IntMapModules.seismic=function(HOST){
       
       { const d=panel.querySelector('.sq-d'); if(d) d.onchange=e=>{ depthKm=Math.max(0,Math.min(700,+e.target.value||10)); render(); touch(); }; }
       { const m=panel.querySelector('.sq-m'); if(m) m.onchange=e=>{ if(!fault){ mw=Math.max(3,Math.min(9.6,+e.target.value||7)); render(); touch(); } }; }
-      { const sd=panel.querySelector('.sq-sd'); if(sd) sd.onchange=e=>{ stressDropMPa=Math.max(0.3,Math.min(30,+e.target.value||3)); touch(); }; }
-      const q0=panel.querySelector('.sq-q0'); if(q0) q0.onchange=e=>{ QS0=Math.max(30,Math.min(2000,+e.target.value||180)); touch(); };
-      const qe=panel.querySelector('.sq-qe'); if(qe) qe.onchange=e=>{ QETA=Math.max(0,Math.min(1,+e.target.value)); touch(); };
+      /* (#R263) …and typing in one of these takes it off the regime's hands for good — see regAuto. */
+      { const sd=panel.querySelector('.sq-sd'); if(sd) sd.onchange=e=>{ stressDropMPa=Math.max(0.3,Math.min(30,+e.target.value||3)); regAuto.ds=false; touch(); }; }
+      const q0=panel.querySelector('.sq-q0'); if(q0) q0.onchange=e=>{ QS0=Math.max(30,Math.min(2000,+e.target.value||180)); regAuto.q=false; touch(); };
+      const qe=panel.querySelector('.sq-qe'); if(qe) qe.onchange=e=>{ QETA=Math.max(0,Math.min(1,+e.target.value)); regAuto.q=false; touch(); };
       /* (#R235) …and this one invalidates the PATH TABLE rather than the intensity field: the fronts
          read it every frame, the ground-motion chain never does — so `touch()` would be a lie. */
       const og=panel.querySelector('.sq-og'); if(og) og.onchange=e=>{ OCEAN_G=Math.max(1,Math.min(1.3,+e.target.value||1.08)); _pTab=null; _pKey=''; drawFronts(); };
@@ -5135,6 +5370,55 @@ window.IntMapModules.seismic=function(HOST){
         }).catch(()=>{}); } }); }catch(_){}
 
     return { open, close, draw, at, arrival, curve, source, motion, mmiRings,
+      /* ══ (#R263) SCORE THIS MODEL AGAINST REAL RECORDINGS — 「観測震度・PGA・PGVと自動比較する
+         validationを作り」 ═══════════════════════════════════════════════════════════════════════
+         One earthquake, many receivers, no map. scripts/seismic-validate.mjs drives this in a real
+         browser over the USGS ShakeMap station lists in tests/fixtures/seismic-observations.json.
+         ⚠ IT IS THE SAME CHAIN THE MAP PAINTS, not a copy of it. `at()` is what the panel's own table
+         calls, so a validation that passed while the map was wrong would be impossible — which is
+         the whole reason this is an entry point into the module rather than a re-implementation in
+         the harness (this file has been bitten three times by a second copy of a conversion).
+         ⚠ THE SITE TERM COMES FROM THE BUNDLED 0.05° RASTER, not from a painted field: a validation
+         must not need 15 seconds of DEM per event, and the raster is what the field falls back to
+         anyway. The answer therefore carries `vs30` so the harness can say where it came from. */
+      async evaluate(ev){
+        ev=ev||{};
+        const sites=Array.isArray(ev.sites)?ev.sites:[];
+        if(ev.lng!=null&&ev.lat!=null) setEpi([+ev.lng,+ev.lat]);
+        if(ev.depthKm!=null) depthKm=Math.max(0,Math.min(700,+ev.depthKm));
+        if(ev.mw!=null&&!fault) mw=Math.max(3,Math.min(9.6,+ev.mw));
+        let vsm=null;
+        try{ const VM=window.IntMapVs30; if(VM){ await VM.warm(); if(VM.ready()) vsm=VM; } }catch(_){}
+        let reg=null; try{ reg=await refreshRegime(); }catch(_){}
+        /* the frequency-shape bank the field would have used, for the same hypocentre */
+        try{ buildSiteBank(8); }catch(_){}
+        const ampRef=siteAmp();
+        const out=sites.map((p)=>{
+          const lo=+p.lng, la=+p.lat;
+          const km=distKmTo(lo,la), rM=srcDistM(km);
+          const m=motion(mw,rM,fdAt(lo,la));
+          const v=vsm?vsm.at(lo,la):null;
+          const g=v?(ampOf(v)/m.amp):1;
+          let pgv=m.pgv*g, pga=m.pga*g, a0=m.a0*g;
+          if(siteBank){
+            const E=EARTH();
+            const kk=siteBank.at(v||ampRef&&(SITES.find(x=>x.id===siteId)||SITES[1]).vs30,
+              (E&&E.sedimentAt)?E.sedimentAt(lo,la):0, rM);
+            pgv*=kk[0]; a0*=kk[1];
+          }
+          return { lng:lo, lat:la, repiKm:+(gcDelta(epi,[lo,la])*D*RE).toFixed(2), rrupKm:+km.toFixed(2),
+            vs30:v?+v.toFixed(0):null, pgvCms:pgv, pgaCms2:pga, pgaPctG:pga/9.80665,
+            mmi:mmiOf(pgv), jma:jmaOfA0(a0), inRange:m.inRange };
+        });
+        return { mw, depthKm, epi:epi?epi.slice():null,
+          regime:reg?{ id:reg.id, why:reg.why, ambiguous:!!reg.ambiguous,
+            stressDropMPa:reg.params.stressDropMPa, q0:reg.params.q0, qEta:reg.params.qEta,
+            kappaS:reg.params.kappaS, r1:reg.params.r1, r2:reg.params.r2, mohoKm:reg.params.mohoKm,
+            belowMoho:reg.params.belowMoho }:null,
+          siteSource:vsm?'bundled-vs30':'panel-site-class',
+          siteShape:siteBank?{ vs30Bins:siteBank.NV, sedimentBinsKm:siteBank.seds, radii:siteBank.NR }:null,
+          sites:out };
+      },
       setEpicentre(lng,lat){ setEpi([lng,lat]); refresh(); return true; },
       setParams(o){ o=o||{}; if(o.depth!=null) depthKm=Math.max(0,Math.min(700,+o.depth));
         if(o.mw!=null&&!fault) mw=Math.max(3,Math.min(9.6,+o.mw)); if(o.t!=null) tSec=Math.max(0,Math.min(MAXT,+o.t));

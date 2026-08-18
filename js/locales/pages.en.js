@@ -454,6 +454,10 @@ window.IntMapPageI18N.define('en', {
      Now every language keeps its own copy here, English included, and the existing audit sees the
      whole surface with no new instrument. The registry carries only the name and the URL. */
   sourceUse: {
+    "CRUST1.0 — global crustal model": "Bundled with the app (data/crust1.bin.gz): the 1° global crustal model — sediment, crystalline crust and uppermost mantle, each with its own shear velocity, density and layer depth. The earthquake simulator builds every site's velocity profile below 30 m from it, which is what lets it show a basin amplifying long periods.",
+    "USGS Slab2 — subduction zone geometry": "Bundled with the app (data/slab2.bin.gz): the depth, strike and dip of all 27 active subduction zones. The earthquake simulator uses it to tell a plate-interface earthquake from one inside the descending slab — the same question, and the same answer, everywhere on Earth.",
+    "Bird (2003) PB2002 plate boundaries": "Bundled with the app (data/tectonics.bin.gz): distance to the nearest plate boundary, that boundary's class and the diffuse-deformation (orogen) polygons. Used to classify an earthquake's tectonic setting, which selects the published ground-motion parameters for it.",
+    "USGS ShakeMap station lists": "Recorded peak ground acceleration and velocity at real instruments, used to score the earthquake model against observations (scripts/seismic-validate.mjs). Fetched only when that validation is run offline — never by the app in your browser.",
     "CARTO basemaps": "Light/dark vector basemap tiles",
     "MapLibre GL JS": "The default map rendering engine (BSD-3-Clause). Draws every 2-D/3-D map view, the globe projection and the terrain mesh.",
     "CesiumJS": "Optional second rendering engine (Apache-2.0), selectable in Settings ▸ Map behavior ▸ Map engine. Downloaded only when chosen. Uses NO Cesium Ion asset and no access token — it renders the same Esri imagery and the same AWS terrarium elevation data as the default engine.",

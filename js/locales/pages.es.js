@@ -443,6 +443,10 @@ window.IntMapPageI18N.define('es', {
      indexados por el nombre de la entrada. Una entrada sin traducir cae al inglés una a una,
      igual que la prosa de arriba. */
   sourceUse: {
+    "CRUST1.0 — global crustal model": "Incluido con la aplicación (data/crust1.bin.gz): el modelo global de corteza a 1° — sedimentos, corteza cristalina y manto superior, cada capa con su velocidad de cizalla, densidad y profundidad. El simulador sísmico construye con él el perfil de velocidades de cada sitio por debajo de 30 m, que es lo que permite que una cuenca amplifique los periodos largos.",
+    "USGS Slab2 — subduction zone geometry": "Incluido con la aplicación (data/slab2.bin.gz): profundidad, rumbo y buzamiento de las 27 zonas de subducción activas. El simulador distingue así un sismo de interfaz de uno dentro de la placa que subduce — la misma pregunta y la misma respuesta en todo el planeta.",
+    "Bird (2003) PB2002 plate boundaries": "Incluido con la aplicación (data/tectonics.bin.gz): distancia al límite de placas más cercano, su clase y los polígonos de orógenos (deformación difusa). Clasifica el entorno tectónico del sismo y con ello los parámetros publicados de movimiento del suelo.",
+    "USGS ShakeMap station lists": "Aceleración y velocidad máximas registradas en instrumentos reales, para puntuar el modelo sísmico frente a observaciones (scripts/seismic-validate.mjs). Solo se descargan al ejecutar esa validación sin conexión; nunca por la aplicación en su navegador.",
     'CARTO basemaps': 'Teselas vectoriales del mapa base (claro/oscuro).',
     'MapLibre GL JS': 'El motor de dibujo predeterminado del mapa (BSD-3-Clause). Dibuja todas las vistas 2D/3D, la proyección de globo y la malla de relieve.',
     'CesiumJS': 'Segundo motor de dibujo opcional (Apache-2.0), seleccionable en Ajustes ▸ Comportamiento del mapa ▸ Motor del mapa. Solo se descarga si se elige. NO usa ningún activo de Cesium Ion ni token de acceso: dibuja las mismas imágenes de satélite de Esri y los mismos datos de elevación AWS terrarium que el motor predeterminado.',

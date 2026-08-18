@@ -443,6 +443,10 @@ window.IntMapPageI18N.define('zh-hant', {
      譯自帶有英文原文的 pages.en.js `sourceUse`。每一則以登錄表（js/reference-data.js）中的
      名稱為鍵；缺少的項目會逐鍵回退為英文，與上方正文的規則相同。 */
   sourceUse: {
+    "CRUST1.0 — global crustal model": "隨應用程式一併提供（data/crust1.bin.gz）：1° 網格的全球地殼模型——沉積層、結晶質地殼與最上部地函，各層皆有自己的剪力波速度、密度與層界深度。地震模擬器據此建立各地點 30 公尺以下的速度剖面，這正是盆地能放大長週期的原因。",
+    "USGS Slab2 — subduction zone geometry": "隨應用程式一併提供（data/slab2.bin.gz）：全部 27 個活躍隱沒帶的板塊上表面深度、走向與傾角。地震模擬器以此區分板塊界面地震與隱沒板塊內部地震——在地球上任何地方都用同一套判準。",
+    "Bird (2003) PB2002 plate boundaries": "隨應用程式一併提供（data/tectonics.bin.gz）：到最近板塊邊界的距離、該邊界的類型，以及廣義變形帶（orogen）多邊形。用於判定地震的大地構造分區，並據此選用已發表的地動參數。",
+    "USGS ShakeMap station lists": "真實觀測站記錄到的最大加速度與最大速度，用於將地震模型與觀測對照評分（scripts/seismic-validate.mjs）。僅在離線執行該驗證時取得，瀏覽器中的應用程式從不取得。",
     "CARTO basemaps": "淺色／深色向量底圖圖磚",
     "MapLibre GL JS": "預設的地圖描繪引擎（BSD-3-Clause）。負責繪製所有 2D/3D 地圖視圖、球體投影與地形網格。",
     "CesiumJS": "可選的第二個描繪引擎（Apache-2.0），可在設定 ▸ 地圖行為 ▸ 地圖引擎中選擇，只有選用時才會下載。完全不使用 Cesium Ion 資產與存取權杖——它繪製的是與預設引擎相同的 Esri 影像與相同的 AWS terrarium 高程資料。",

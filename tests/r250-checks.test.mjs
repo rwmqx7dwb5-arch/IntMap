@@ -44,9 +44,18 @@ test('#R250 ① the far seismic raster answers land and site at its OWN cell, no
   assert.match(s, /const landAtFar=\(k,lo,la\)=>\(coastFar\?\(coastFar\[k\]===1\):\(land\.isLand\(lo,la\)===true\)\)/,
     'the far land test lost its bundled fallback — a session without country geometry must still draw');
 
-  /* the site term reads the DEM first, through the SAME table the fine field applies */
-  assert.match(s, /g=ampOf\(vs30FromSlope\(Math\.hypot\(ex-e0,ey-e0\)\/dsFarM\)\)\/ampRef/,
-    'the far site term no longer comes from the DEM slope — it is back to the 0.25° raster alone');
+  /* the site term reads the DEM first, through the SAME table the fine field applies.
+     ⚠ (#R263) THIS ASSERTION IS THE PROPERTY NOW, NOT THE LINE. It used to match the whole
+     expression `g=ampOf(vs30FromSlope(...))/ampRef` as one string, and #R263 split that line in two
+     to keep the Vs30 it computed (`vsHere`) for the frequency-dependent half of the site term. The
+     PROPERTY #R250 was defending — the far raster derives its site term from the DEM slope through
+     the same table, not from the bundled raster alone — is untouched, so the assertion is rewritten
+     to state it rather than deleted. (This is the fourth round in a row in which a previous round's
+     literal-text assertion made a legitimate change look like a regression.) */
+  assert.match(s, /vs30FromSlope\(Math\.hypot\(ex-e0,ey-e0\)\/dsFarM\)/,
+    'the far site term no longer comes from the DEM slope — it is back to the bundled raster alone');
+  assert.match(s, /g=ampOf\(vFar\)\/ampRef/,
+    'the far DEM-derived Vs30 no longer feeds ampOf against the reference');
   /* …with the bundled raster as the PER-CELL fallback, which is what makes this additive */
   assert.match(s, /if\(!gotSite&&vsm\)/,
     'the bundled 0.25° site term is no longer the per-cell fallback — a missing tile would change the picture');
