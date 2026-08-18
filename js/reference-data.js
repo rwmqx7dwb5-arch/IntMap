@@ -210,7 +210,7 @@ window.IntMapRefData=(function(){
     {n:'Military sites — OpenStreetMap (military=*, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:military'},
     {n:'Health facilities — OpenStreetMap (amenity=hospital/clinic/doctors/pharmacy, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:healthcare'},
     {n:'Telecom & internet infrastructure — OpenStreetMap (telecom=*, communications towers, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:telecom'},
-    /* (#R258/#R259) the eight further surveyed-facility layers — same engine, same live Overpass
+    /* (#R258/#R261) the eight further surveyed-facility layers — same engine, same live Overpass
        path, same ODbL terms. ⚠ #R258 shipped `osmpower`/`osmextract` WITHOUT registering them
        here, so two layers were drawing OSM data with no entry on the sources page; both are
        added with the six this round adds. */

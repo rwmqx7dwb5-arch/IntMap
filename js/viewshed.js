@@ -466,7 +466,7 @@ window.IntMapModules.los=function(HOST){
         +'<button class="tp-clear" id="los-go" style="width:100%;margin-top:6px;">'+L('Analyze','解析する','Analysieren','Анализ','Analizar')+'</button>'
         /* (#R183) the point-to-point link. Arming it makes the NEXT map click the far end — the same
            "one click, then it acts" shape the measure tools use, so there is nothing new to learn. */
-        /* ══ ⚠ (#R259) …AND THE BUTTON THAT MOVES THE SITE ═════════════════════════════════════════
+        /* ══ ⚠ (#R261) …AND THE BUTTON THAT MOVES THE SITE ═════════════════════════════════════════
            「Line of sightに地点を変えるボタンがない。」 It never had one. The observation point could
            only be moved by right-clicking the map and picking the tool again from the context menu —
            and the panel SAID so, twice, in prose (report() and clear()), which is a workaround
@@ -488,7 +488,7 @@ window.IntMapModules.los=function(HOST){
       p.querySelector('#los-go').onclick=()=>run();
       p.querySelector('#los-clr').onclick=()=>{ clear(); clearLink(); };
       { const lb=p.querySelector('#los-link'); if(lb) lb.onclick=()=>{ armLink(!linkArmed); }; }
-      { const mb=p.querySelector('#los-move'); if(mb) mb.onclick=()=>{ armMove(!moveArmed); }; }   /* (#R259) */
+      { const mb=p.querySelector('#los-move'); if(mb) mb.onclick=()=>{ armMove(!moveArmed); }; }   /* (#R261) */
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
     }
     function readInputs(){ const p=panel; if(!p) return {};
@@ -521,7 +521,7 @@ window.IntMapModules.los=function(HOST){
     }
     /* ---- the link's UI (#R183) ---------------------------------------------------------------- */
     let linkArmed=false, _linkClickWired=false;
-    /* (#R259) moving the site: the same one-click arming, and the same shape as armLink so the two
+    /* (#R261) moving the site: the same one-click arming, and the same shape as armLink so the two
        controls behave identically. `moveArmed` is declared before armLink because armLink disarms it. */
     let moveArmed=false, _moveClickWired=false;
     function moveLabel(){ const b=panel&&panel.querySelector('#los-move'); if(!b) return;
@@ -549,7 +549,7 @@ window.IntMapModules.los=function(HOST){
     }
     function armLink(on){
       linkArmed=!!on;
-      if(linkArmed&&moveArmed) armMove(false);        /* (#R259) …and the other way round */
+      if(linkArmed&&moveArmed) armMove(false);        /* (#R261) …and the other way round */
       const b=panel&&panel.querySelector('#los-link');
       if(b) b.textContent=linkArmed
         ? '✕ '+L('Cancel — click the far end','キャンセル（相手側をクリック）','Abbrechen — Gegenstelle klicken','Отмена — щёлкните дальний конец','Cancelar — clic en el otro extremo')
@@ -678,7 +678,7 @@ window.IntMapModules.los=function(HOST){
     return { open, clear, run, analyze,
       /* (#R183) the point-to-point link — see the note above _gcPoint */
       linkTo, linkRun, clearLink, armLink, isLinkArmed:()=>linkArmed,
-      /* (#R259) the site-move control, so Atlas and a test press the same door the button does */
+      /* (#R261) the site-move control, so Atlas and a test press the same door the button does */
       moveTo, armMove, isMoveArmed:()=>moveArmed,
       linkState:()=>linkLast?{ km:linkLast.km, verdict:linkLast.verdict, needH:linkLast.needH,
         fresnelPct:linkLast.fresnelPct, diffDb:linkLast.diffDb, demZ:linkLast.demZ,

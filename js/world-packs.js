@@ -489,7 +489,7 @@ window.IntMapModules.worldPacks=function(HOST){
          ENDS off-centre by construction. Asking `GE().coords.project` where the vertices actually
          land removes the whole class of error and costs one projection per vertex.
          The Mercator estimate stays as the fallback for the moment before the camera exists. */
-      /* ══ ⚠⚠⚠ (#R259) THE HEAD'S ANGLE IS A SCREEN ANGLE. IT WAS A GEOGRAPHIC BEARING ═════════════
+      /* ══ ⚠⚠⚠ (#R261) THE HEAD'S ANGLE IS A SCREEN ANGLE. IT WAS A GEOGRAPHIC BEARING ═════════════
          「貿易レイヤーは、矢印と線が分離している。ふざけんなよ。」
 
          #R258 cut the shaft back by a number of PIXELS asked of the renderer's own projection —
@@ -602,7 +602,7 @@ window.IntMapModules.worldPacks=function(HOST){
            own colour and opacity, its tip on the arc's last vertex (`icon-anchor:'top'`). */
         if(!GE().layers.has('wp-trade-tip')) GE().layers.add({id:'wp-trade-tip',type:'symbol',source:SRC,filter:['==',['get','kind'],'tip'],
           layout:{visibility:'none','icon-image':['get','ai'],'icon-size':['get','asz'],
-            /* (#R259) 'viewport': `brg` is a SCREEN angle now, read off the same projection the
+            /* (#R261) 'viewport': `brg` is a SCREEN angle now, read off the same projection the
                shaft's cut is measured in — see trimEnd. With 'map' it was a geographic bearing and
                the head stood up to 130° away from the line it belongs to. */
             'icon-rotate':['get','brg'],'icon-rotation-alignment':'viewport','icon-allow-overlap':true,

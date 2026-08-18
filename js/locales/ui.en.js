@@ -152,10 +152,10 @@ window.IntMapLang.define('en', { ui: {
       lyrGrpHealth:"Health & sanitation",
       lyrGrpTech:"Technology & infrastructure",
       lyrGrpEnergy:"Energy & resources",   /* (#R258) */
-      lyrGrpEconomy:"Economy & trade",   /* (#R259) */
-      lyrGrpSociety:"Society & education",   /* (#R259) */
-      lyrGrpTransport:"Transport & mobility",   /* (#R259) */
-      lyrGrpAgri:"Agriculture & food",   /* (#R259) */
+      lyrGrpEconomy:"Economy & trade",   /* (#R261) */
+      lyrGrpSociety:"Society & education",   /* (#R261) */
+      lyrGrpTransport:"Transport & mobility",   /* (#R261) */
+      lyrGrpAgri:"Agriculture & food",   /* (#R261) */
       lyrGrpOthers:"Beta",
       lyrGrpOthersReal:"Others",
       lyrGrpOrbit:"Space & orbit",

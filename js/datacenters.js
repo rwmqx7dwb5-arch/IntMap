@@ -516,7 +516,7 @@ window.IntMapModules.dataCenters=function(HOST){
     lastKey=key; busy=true;
     try{ const osm=await osmFor(bbox);
       if(on) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:cur.concat(dedupe(cur,osm))});
-      try{ dcRender(); }catch(_){}   /* (#R259) the OSM half arrives late; the summary must not be the curated half only */
+      try{ dcRender(); }catch(_){}   /* (#R261) the OSM half arrives late; the summary must not be the curated half only */
     }catch(_){ lastKey=''; }
     busy=false; }
 
@@ -550,7 +550,7 @@ window.IntMapModules.dataCenters=function(HOST){
     el.style.display='block';
     const coord=(+lngLat.lat).toFixed(4)+'°, '+(+lngLat.lng).toFixed(4)+'°';
     const isCur=(p.origin==='curated');
-      /* ⚠ (#R259) THE × IS NOT A DISC. 「詳細のポップアップは×を丸にするな。」 This card is a
+      /* ⚠ (#R261) THE × IS NOT A DISC. 「詳細のポップアップは×を丸にするな。」 This card is a
          `.country-popup` — the app's own detail-card shell — and that shell already HAS a close
          button: `.country-popup-close`, a 28×28 rounded SQUARE (8 px), transparent until hover, the
          same one the country card, the aircraft card and the satellite card use. What was written
@@ -628,11 +628,11 @@ window.IntMapModules.dataCenters=function(HOST){
       openCard(f.properties||{}, {lng:f.geometry.coordinates[0], lat:f.geometry.coordinates[1]}); });
     GE().events.onLayer('mouseenter',PT,()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} });
     GE().events.onLayer('mouseleave',PT,()=>{ try{ GE().render.canvas().style.cursor=''; }catch(_){} });
-    try{ GE().events.on('moveend',()=>{ if(on){ setTimeout(()=>refresh(),250); setTimeout(()=>dcRender(),320); } }); }catch(_){}   /* (#R259) the summary is «what is on screen», so it follows the screen */
+    try{ GE().events.on('moveend',()=>{ if(on){ setTimeout(()=>refresh(),250); setTimeout(()=>dcRender(),320); } }); }catch(_){}   /* (#R261) the summary is «what is on screen», so it follows the screen */
   }
 
   function toggle(v){ on=!!v;
-    if(!on){ setVis(false); closeCard(); dcClosePanel(); return; }   /* (#R259) the panel belongs to the layer */
+    if(!on){ setVis(false); closeCard(); dcClosePanel(); return; }   /* (#R261) the panel belongs to the layer */
     const a=()=>{ if(!ensure()){ try{ GE().events.once('idle',a); }catch(_){} return; } wire(); setVis(true); refresh(); dcOpenPanel(); };
     a(); }
 
@@ -642,7 +642,7 @@ window.IntMapModules.dataCenters=function(HOST){
      takes that class off the map. The filter is one expression on the layer — no second copy of the
      feature collection, so the OSM half and the curated half obey it together. */
   const hidden=new Set();
-  /* ══ ⚠⚠⚠ (#R259) THE LAYER COULD NOT BE ASKED ANYTHING ═══════════════════════════════════════════
+  /* ══ ⚠⚠⚠ (#R261) THE LAYER COULD NOT BE ASKED ANYTHING ═══════════════════════════════════════════
      「データセンター、AIインフラレイヤーを爆発的に強化。」 — the same sentence as #R258, sent again.
      #R258's work was real (the table roughly tripled its non-cloud half, the dot carries a published
      capacity, the legend became a filter) and all of it is still here. What it did not do is the
@@ -740,7 +740,7 @@ window.IntMapModules.dataCenters=function(HOST){
     ['colo',L('Colocation','コロケーション','Colocation-Standorte','Колокация','Colocación')],
     ['hpc',L('Supercomputing','スーパーコンピュータ','HPC','Суперкомпьютеры','Supercomputación')],
     ['osm',L('Other (OpenStreetMap)','その他（OpenStreetMap）','Sonstige (OpenStreetMap)','Прочие (OpenStreetMap)','Otros (OpenStreetMap)')]];
-  /* (#R259) `hidden` now holds two kinds of key — the legend's OPERATOR ids (aws, meta, colo…) and
+  /* (#R261) `hidden` now holds two kinds of key — the legend's OPERATOR ids (aws, meta, colo…) and
      the panel's CLASS ids (ai, cloud, colo, hpc, other). They are separated here rather than kept in
      two sets, because both switches have to end up in ONE filter expression on ONE layer: two sets
      would be two filters and the last one written would silently win. `colo` and `hpc` are BOTH an
@@ -763,7 +763,7 @@ window.IntMapModules.dataCenters=function(HOST){
     [PT,LBL].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setFilter(id,f); }catch(_){} });
   }
   window.IntMapDataCenters={ toggle, refresh, count:()=>DC.length, operators:()=>OP, kinds:()=>KIND,
-    /* (#R259) the in-view summary, and its window — Atlas and the tests read the same numbers the
+    /* (#R261) the in-view summary, and its window — Atlas and the tests read the same numbers the
        panel prints rather than a second computation of them */
     stats:()=>{ const st=dcStats(); return { n:st.n, curated:st.byOrigin.curated, osm:st.byOrigin.osm,
       mw:st.mw, withPublishedMw:st.withMw, byKind:Object.assign({},st.byKind),

@@ -596,7 +596,7 @@ window.IntMapModules.layerSidebar=function(HOST){
     const SVG_SUN=_svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>');
     const SVG_STAR=_svg('<path d="M12 3l1.9 4.6 5 .4-3.8 3.3 1.2 4.9L12 13.6 7.7 16.2l1.2-4.9L5.1 8l5-.4z"/>');
     const SVG_PLUME=_svg('<path d="M4 20c0-5 3-6 3-9a3 3 0 016 0c0 4 4 3 4 7"/><path d="M3 20h18"/>');
-    /* (#R259) the five below — see the ⚠⚠⚠ note on SIM_TOOLS */
+    /* (#R261) the five below — see the ⚠⚠⚠ note on SIM_TOOLS */
     const SVG_DRONE=_svg('<circle cx="12" cy="12" r="2.4"/><path d="M10 10L6.5 6.5M14 10l3.5-3.5M10 14l-3.5 3.5M14 14l3.5 3.5"/><circle cx="5" cy="5" r="2.1"/><circle cx="19" cy="5" r="2.1"/><circle cx="5" cy="19" r="2.1"/><circle cx="19" cy="19" r="2.1"/>');
     const SVG_FLOOD=_svg('<path d="M2 17c2.2 0 2.2 2 4.5 2S9 17 11.2 17s2.2 2 4.5 2 2.3-2 4.5-2"/><path d="M2 12.5c2.2 0 2.2 2 4.5 2s2.2-2 4.4-2 2.2 2 4.5 2 2.3-2 4.5-2"/><path d="M6 8.5l6-5.5 6 5.5"/>');
     const SVG_TRANSIT=_svg('<rect x="6" y="3" width="12" height="13" rx="2.5"/><path d="M6 11h12"/><path d="M9 20l-2 2M15 20l2 2"/><circle cx="9" cy="13.7" r=".9"/><circle cx="15" cy="13.7" r=".9"/>');
@@ -638,7 +638,7 @@ window.IntMapModules.layerSidebar=function(HOST){
         run:_lazy('nightSky',()=>window.IntMapNightSky&&window.IntMapNightSky.open(_hereLL())),
         label:()=>T('Night sky from here','ここからの星空','Sternhimmel von hier','Ночное небо отсюда','El cielo nocturno desde aquí'),
         hint:()=>T('The sky a person standing here has','ここに立つ人に見える空','Der Himmel, den man hier hat','Небо, которое видно отсюда','El cielo que se ve desde aquí') },
-      /* ══ ⚠⚠⚠ (#R259) FIVE MORE, AND THEY HAD NO UI DOOR AT ALL ═════════════════════════════════════
+      /* ══ ⚠⚠⚠ (#R261) FIVE MORE, AND THEY HAD NO UI DOOR AT ALL ═════════════════════════════════════
          「シミュレーション系のもので、レイヤーではないものは、地震波シミュレーターのようにツール欄に
            追加して。（続き）」 — the same sentence as #R258, sent again, and #R258's fix was real but
          one shelf short. It swept the tools reachable from the MAP'S RIGHT-CLICK MENU into this list

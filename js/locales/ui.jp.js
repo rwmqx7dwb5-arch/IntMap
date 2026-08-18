@@ -152,10 +152,10 @@ window.IntMapLang.define('jp', { ui: {
       lyrGrpHealth:"医療・衛生",
       lyrGrpTech:"IT・技術インフラ",
       lyrGrpEnergy:"エネルギー・資源",   /* (#R258) */
-      lyrGrpEconomy:"経済・貿易",   /* (#R259) */
-      lyrGrpSociety:"社会・教育",   /* (#R259) */
-      lyrGrpTransport:"交通・輸送",   /* (#R259) */
-      lyrGrpAgri:"農業・食料",   /* (#R259) */
+      lyrGrpEconomy:"経済・貿易",   /* (#R261) */
+      lyrGrpSociety:"社会・教育",   /* (#R261) */
+      lyrGrpTransport:"交通・輸送",   /* (#R261) */
+      lyrGrpAgri:"農業・食料",   /* (#R261) */
       lyrGrpOthers:"ベータ",
       lyrGrpOthersReal:"その他",
       lyrGrpOrbit:"宇宙・軌道",

@@ -194,7 +194,7 @@ test('R258 ⑨b: 地震波シミュレーター is 地震シミュレーター i
 /* ── ⑩ the new category, and the layers in it ──────────────────────────────────────────────── */
 test('R258 ⑩: Energy & resources is a category with two surveyed layers in it', () => {
   const dl = read('js/data-layers.js');
-  /* ⚠ (#R259) THIS PINNED THE LITERAL LIST, AND THE NEXT INSTRUCTION MADE IT RED. 「Others, Betaも
+  /* ⚠ (#R261) THIS PINNED THE LITERAL LIST, AND THE NEXT INSTRUCTION MADE IT RED. 「Others, Betaも
      含め既存レイヤーの再編」 moved the five World-Bank energy indicators and the dams row onto this
      shelf, which is what the shelf is for. What #R258 was actually asserting is that the category
      exists and that its two SURVEYED layers are on it — a list literal also asserts «and nothing

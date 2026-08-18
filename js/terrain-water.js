@@ -60,7 +60,7 @@ window.IntMapModules.terrainWater=function(HOST){
     let G=null;        /* {NX,NY,xW,yN,dx,dy,cellM,areaM2,z,base:Float32Array} */
     let sculpt=null;   /* Float32Array — the brush strokes */
     let levees=[];     /* [{pts:[[lng,lat]…], crest:m above ground, width:m}] */
-    /* (#R259) [{lng,lat,m3,cont,rate}] — `cont` and `rate` belong to the SOURCE, not to the panel.
+    /* (#R261) [{lng,lat,m3,cont,rate}] — `cont` and `rate` belong to the SOURCE, not to the panel.
        See the ⚠⚠⚠ note above pourStart for what was wrong with keeping them global. */
     let sources=[];
     let rainMm=0;
@@ -80,7 +80,7 @@ window.IntMapModules.terrainWater=function(HOST){
        what it deliberately does not. `pourSimS` is SIMULATED seconds, never wall clock. */
     let pourMode='once', pourRate=20000, timeScale=10, pourT=null, pourAt=0, pourSimS=0;
     const pourTotal=()=>sources.reduce((s,x)=>s+Math.max(0,x.m3),0);
-    /* ══ ⚠⚠⚠ (#R259) A TAP AND A BUCKET ARE TWO DIFFERENT OBJECTS ═══════════════════════════════════
+    /* ══ ⚠⚠⚠ (#R261) A TAP AND A BUCKET ARE TWO DIFFERENT OBJECTS ═══════════════════════════════════
        「一回だけと継続の水の水源の区別をつけろ。」
 
        There was no distinction to see, and there was none in the data either. `pourMode` was a
@@ -124,7 +124,7 @@ window.IntMapModules.terrainWater=function(HOST){
       /* (#R212) `tw-breach` — the red spill arrows — is not created at all. 「赤い矢印はいらない。一切
          不要。」 The layer is removed rather than emptied so a session that had it drawn loses it too. */
       try{ if(GE().layers.has('tw-breach')) GE().layers.remove('tw-breach'); }catch(_){}
-      /* ══ (#R259) A RUNNING TAP LOOKS DIFFERENT FROM A PLACED VOLUME ═════════════════════════
+      /* ══ (#R261) A RUNNING TAP LOOKS DIFFERENT FROM A PLACED VOLUME ═════════════════════════
          「一回だけと継続の水の水源の区別をつけろ。」 The ring is drawn UNDER the dot and only for
          `cont`, so a continuous source reads as a spring (a mouth with water spreading from it) and
          a one-shot source stays the plain blue drop it always was. Two layers rather than one
@@ -268,7 +268,7 @@ window.IntMapModules.terrainWater=function(HOST){
         if(miss>MISS_MAX){ setProg(null); _bldFail(); return false; }
         if(miss) fillHoles(base,NX,NY);
         setProg(null);
-        /* ══ ⚠⚠⚠ (#R259) THE REBUILD USED TO THROW THE SCULPTED GROUND AWAY ════════════════════════
+        /* ══ ⚠⚠⚠ (#R261) THE REBUILD USED TO THROW THE SCULPTED GROUND AWAY ════════════════════════
            「水源を追加しても地形はリセットするな。」 — and it did, every time, for one reason:
 
                onClick(mode==='source')  →  !inGrid(lng,lat)  →  rebuildAround()  →  build()
@@ -298,7 +298,7 @@ window.IntMapModules.terrainWater=function(HOST){
         return true;
       } finally { building=false; setProg(null); }
     }
-    /* (#R259) one height-offset field, read onto another grid. Bilinear over the OLD lattice at each
+    /* (#R261) one height-offset field, read onto another grid. Bilinear over the OLD lattice at each
        new cell centre; cells whose four old neighbours are not all present stay 0, because the reader
        edited ground that the new rectangle does not cover and inventing a value there would be worse
        than losing it. Mercator x can run past 1 at the antimeridian (`xE=mX(e)+1`), so the new
@@ -345,7 +345,7 @@ window.IntMapModules.terrainWater=function(HOST){
        whole editable state before ONE user action, and every action pushes exactly one. */
     function snapState(){ return { sculpt:sculpt?sculpt.slice():null,
       levees:levees.map(l=>({pts:l.pts.slice(),crest:l.crest,width:l.width})),
-      sources:sources.map(s=>({lng:s.lng,lat:s.lat,m3:s.m3,cont:!!s.cont,rate:s.rate})), rainMm }; }   /* (#R259) …and which kind each one is */
+      sources:sources.map(s=>({lng:s.lng,lat:s.lat,m3:s.m3,cont:!!s.cont,rate:s.rate})), rainMm }; }   /* (#R261) …and which kind each one is */
     function pushUndo(){ if(!G) return; undoStack.push(snapState()); if(undoStack.length>24) undoStack.shift(); }
     function undo(){ const s=undoStack.pop(); if(!s) return false;
       pourStop();
@@ -879,7 +879,7 @@ window.IntMapModules.terrainWater=function(HOST){
        swallows everything ends the course, exactly as it does on the working grid.
        ⚠ Rainfall is applied over the window too, at the same mm the panel is set to, because that is
        what the upstream grid does with it. */
-    /* ══ ⚠⚠⚠ (#R259) A CROSSING FOUND AT 27× IS A DECISION, NOT A DRAWING ══════════════════════════
+    /* ══ ⚠⚠⚠ (#R261) A CROSSING FOUND AT 27× IS A DECISION, NOT A DRAWING ══════════════════════════
        「地形編集・水流でたまに、直線で地形を完全無視するクソ区間がある。」 — the same sentence a third
        time. #R258 read it as the lake CROSSING being one leg and fixed exactly that: `flatOutlet`
        hands back its BFS path, so the course follows the water across the lake instead of a chord.
@@ -913,7 +913,7 @@ window.IntMapModules.terrainWater=function(HOST){
        (>130 cells) is left as it was rather than half-refined, and `trace.coarseLegs` counts what
        stayed coarse — a silent cap is how this defect survived three rounds (#R185). */
     const _gcM=(a,b)=>Math.hypot((b[0]-a[0])*111320*Math.cos(((a[1]+b[1])/2)*D),(b[1]-a[1])*110574);
-    /* (#R259) the DEM at the trace's own level along a polyline, so refineCrossing has data to read.
+    /* (#R261) the DEM at the trace's own level along a polyline, so refineCrossing has data to read.
        Bounded: at most 40 sample points, one call, and a failure just means the refinement declines
        and says so (`_refineDecline.nodata`) rather than drawing something invented. */
     async function warmCrossing(pts,z){
@@ -931,7 +931,7 @@ window.IntMapModules.terrainWater=function(HOST){
     const REFINE_MAX_CELLS=120;      /* cells of the leg that fit one window (N_WIN=161) with margin */
     const RISE_COST_M=30;            /* climbing 1 m costs as much as 30 m of detour */
     let _refineDecline={ span:0, nodata:0, unreachable:0 };
-    /* ⚠⚠ (#R259) THE SPACING IS THE FINEST THAT STILL FITS ONE WINDOW, NOT A FIXED ONE. The first
+    /* ⚠⚠ (#R261) THE SPACING IS THE FINEST THAT STILL FITS ONE WINDOW, NOT A FIXED ONE. The first
        version of this refused any leg longer than 130 fine cells, and MEASURED that refusal on two
        of four traces: the Pannonian leg is 3,137 m over 20 m sampling = 157 cells, so it declined
        and the 3.1 km chord stayed on the map — a cap that fires is a cap that has to be reported
@@ -1198,8 +1198,8 @@ window.IntMapModules.terrainWater=function(HOST){
       const elev=[], wet=[], spac=[]; let wetCap=false;
       const WET_MAX=140000, WET_MIN_D=0.3;
       let distM=0, rounds=0, warmC=null, end='cap', endInfo=null, windows=0, pts=1, escal=0, escalMult=0, stallRun=0;
-      let coarseLegs=0;   /* (#R259) legs a wide rung produced that the fine lattice could NOT re-walk */
-      _refineDecline={ span:0, nodata:0, unreachable:0 };   /* (#R259) …and WHY, per trace */
+      let coarseLegs=0;   /* (#R261) legs a wide rung produced that the fine lattice could NOT re-walk */
+      _refineDecline={ span:0, nodata:0, unreachable:0 };   /* (#R261) …and WHY, per trace */
       /* ══ (#R255) THE VOLUME TRAVELS WITH THE COURSE ════════════════════════════════════════════════
          What crosses from one window to the next is water, in cubic metres — the quantity the working
          grid routes. It starts as everything the reader placed (plus what the rainfall puts on the
@@ -1477,7 +1477,7 @@ window.IntMapModules.terrainWater=function(HOST){
                 /* (#R258) the CROSSING, cell by cell — not a chord from one shore to the other. The
                    fallback is the single leg only when the fill could not hand a path back. */
                 const walk=(fo.path&&fo.path.length>1)?fo.path.slice(1):[{at:p,e:fo.outElev}];
-                /* ⚠⚠ (#R259) THE FINE TILES ALONG THE CROSSING HAVE TO BE THERE FIRST. `warmBlock`
+                /* ⚠⚠ (#R261) THE FINE TILES ALONG THE CROSSING HAVE TO BE THERE FIRST. `warmBlock`
                    warmed the level around where the walk IS; the crossing ends somewhere else
                    entirely, so `demAt` came back null across most of a refine window and
                    `floodWindow` correctly returned null — the refinement declined silently on
@@ -1487,7 +1487,7 @@ window.IntMapModules.terrainWater=function(HOST){
                    `nodata`. `refineDecline` is what says whether it is enough. */
                 await warmCrossing([[lng,lat]].concat(walk.map(w=>w.at)),z);
                 if(seq!==traceSeq){ end='superseded'; break; }
-                /* (#R259) …and each of ITS legs is a coarse cell, so each is re-walked on the fine
+                /* (#R261) …and each of ITS legs is a coarse cell, so each is re-walked on the fine
                    lattice before it is drawn. See refineCrossing. */
                 let pv=[lng,lat];
                 for(const step of walk){
@@ -1524,11 +1524,11 @@ window.IntMapModules.terrainWater=function(HOST){
                  that means the ground, not the encoding. */
               if(!(moved>halfM*1.2&&eExit<eHere-FLAT_DROP_M)) continue;
               escal++; escaped=true; escalMult=mult;
-              await warmCrossing(ch3.map(k3=>V3.ll(k3)),z);   /* (#R259) — see the note in branch ① */
+              await warmCrossing(ch3.map(k3=>V3.ll(k3)),z);   /* (#R261) — see the note in branch ① */
               if(seq!==traceSeq){ end='superseded'; break; }
               let pv=[lng,lat];
               for(let a2=1;a2<ch3.length;a2++){ const p=V3.ll(ch3[a2]);
-                /* (#R259) the coarse talweg is a corridor, not a course — walk it fine */
+                /* (#R261) the coarse talweg is a corridor, not a course — walk it fine */
                 const fine=refineCrossing(pv,p,z,spacing,V3.spacingM);
                 if(fine){ for(const q of fine){ distM+=gcM(pv,q.at); pv=q.at;
                     path.push(q.at); elev.push(q.e); spac.push(spacing); pts++;
@@ -1575,8 +1575,8 @@ window.IntMapModules.terrainWater=function(HOST){
       } finally { if(seq===traceSeq){ tracing=false; setProg(null); } }
       if(seq!==traceSeq) return trace;
       trace={ path, lakes, end, endInfo, belowSea, km:distM/1000, steps:pts, windows, warmRounds:rounds, z,
-              escal, escalMult, coarseLegs,                /* (#R211) how many wide look-aheads, the widest rung, and (#R259) the legs left coarse */
-              refineDecline:Object.assign({},_refineDecline),   /* (#R259) a cap that fires has to be visible */
+              escal, escalMult, coarseLegs,                /* (#R211) how many wide look-aheads, the widest rung, and (#R261) the legs left coarse */
+              refineDecline:Object.assign({},_refineDecline),   /* (#R261) a cap that fires has to be visible */
               stepM:minSpacingM,                          /* (#R189) the FINEST sampling on the ladder */
               elev, wet, spac, wetCapped:wetCap,          /* (#R188/#R189) bed profile, flooded cells, per-point sampling */
               from:[lng0,lat0], to:[lng,lat], at:Date.now() };
@@ -1855,7 +1855,7 @@ window.IntMapModules.terrainWater=function(HOST){
       levees.forEach(lv2=>feats.push({type:'Feature',geometry:{type:'LineString',coordinates:lv2.pts},properties:{kind:'levee'}}));
       if(drafting&&drafting.pts.length>1) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:drafting.pts},properties:{kind:'draft'}});
       sources.forEach(s=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:[s.lng,s.lat]},
-        properties:{kind:'source',cont:s.cont?1:0,m3:Math.round(s.m3||0),rate:Math.round(+s.rate||0)}}));   /* (#R259) the kind travels with the point */
+        properties:{kind:'source',cont:s.cont?1:0,m3:Math.round(s.m3||0),rate:Math.round(+s.rate||0)}}));   /* (#R261) the kind travels with the point */
       /* ⚠ (#R212) NO RED ARROWS AT ALL. 「また、赤い矢印はいらない。一切不要。」 — #R211 read 「体積の赤字
          表示を消す」 as "keep the arrow, drop the number beside it"; the follow-up settles it. The spill
          points are still COMPUTED and still reported in words (how many, and how much goes over the
@@ -2040,7 +2040,7 @@ window.IntMapModules.terrainWater=function(HOST){
         '.tw-modes .tw-seg{overflow:hidden;text-overflow:ellipsis;}',
         '.tw-btn{padding:8px 10px;border-radius:10px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
           +'background:var(--input-bg);color:var(--text-main);font-size:'+TW_FS+';cursor:pointer;}',
-        /* (#R259) 「再生ボタンは四角にしろ。」 — it was `border-radius:19px` on a 38 px box, i.e. a
+        /* (#R261) 「再生ボタンは四角にしろ。」 — it was `border-radius:19px` on a 38 px box, i.e. a
            circle. A rounded SQUARE now (11 px, the same corner the segmented controls and the
            .tw-btn row in this panel already use), so the transport belongs to the panel it sits in
            instead of being the one disc in it. Same size, same accent, same states. */
@@ -2145,7 +2145,7 @@ window.IntMapModules.terrainWater=function(HOST){
       /* (#R258) the clock belongs to the simulation, so its controls are wired from here and stay
          live in every tool — including when no tool at all is selected. */
       panel.querySelectorAll('.tw-ts').forEach(b=>b.onclick=()=>{ timeScale=+b.getAttribute('data-s'); syncFoot(); });
-      /* ⚠ (#R259) …AND IT NO LONGER REWRITES THE TOOL'S MODE. `pourMode='cont'` here meant pressing ▶
+      /* ⚠ (#R261) …AND IT NO LONGER REWRITES THE TOOL'S MODE. `pourMode='cont'` here meant pressing ▶
          silently switched 「1回きり」 to 「継続」, so the next click placed a tap when the reader had
          asked for a bucket. ▶ runs the taps that exist; it does not decide what a tap is. */
       panel.querySelector('.tw-pp').onclick=()=>{ if(pourT) pourStop(); else pourStart(); syncFoot(); renderParams(); };
@@ -2168,7 +2168,7 @@ window.IntMapModules.terrainWater=function(HOST){
     function syncFoot(){ if(!panel) return;
       const pp=panel.querySelector('.tw-pp'); if(!pp) return;
       pp.textContent=pourT?'⏸':'▶';
-      /* (#R259) ▶ pours the CONTINUOUS sources. With only one-shot volumes on the map there is
+      /* (#R261) ▶ pours the CONTINUOUS sources. With only one-shot volumes on the map there is
          nothing running to start, and the disabled title says which of the two cases it is. */
       const nc=contSources().length;
       pp.disabled=!nc;
@@ -2182,7 +2182,7 @@ window.IntMapModules.terrainWater=function(HOST){
       if(el) el.textContent=L('Elapsed','経過時間','Vergangen','Прошло','Transcurrido')+' '+fmtDur(pourSimS)+' ('+timeScale+'×)';
       const vo=panel.querySelector('.tw-vol');
       if(vo) vo.textContent=sources.length?fmtM3(pourTotal()):''; }
-    /* (#R259) one line of plain language for what is on the map right now, used by the 「ここに水」
+    /* (#R261) one line of plain language for what is on the map right now, used by the 「ここに水」
        tool's panel — «2 継続 · 1 1回きり» is the distinction the report asked to be able to see. */
     function sourceSummary(){ const c=contSources().length, o2=sources.length-c;
       if(!sources.length) return '';
@@ -2239,7 +2239,7 @@ window.IntMapModules.terrainWater=function(HOST){
            picks up the brush while a pour is running. What stays is what the TOOL decides: whether a
            click drops a fixed volume or opens a tap, how much, and the channel discharge. */
         p.innerHTML=cap(L('Water here','ここに水','Wasser hier','Вода здесь','Agua aquí'))
-          /* (#R259) the segmented control decides what the NEXT click places; each source then keeps
+          /* (#R261) the segmented control decides what the NEXT click places; each source then keeps
              that kind for good, so the label has to say «next» or it reads as a global switch. */
           +card('<div class="tw-row">'+L('Next source','次に置く水源','Nächste Quelle','Следующий источник','Próxima fuente')
             +'<span class="tw-val" style="flex:1 1 auto;max-width:190px;"><span class="tw-segwrap" style="flex:1 1 auto;">'
@@ -2254,7 +2254,7 @@ window.IntMapModules.terrainWater=function(HOST){
           /* (#R189) 「水の水流は設定可能に」 — empty = the volume-continuity behaviour (#R188) */
           +'<label class="tw-row">'+L('Discharge','流量','Durchfluss','Расход','Caudal')
             +'<span class="tw-val"><input class="tw-num tw-fq" type="number" min="0" step="50" value="'+(flowM3s!=null?flowM3s:'')+'" placeholder="'+L('auto','自動','auto','авто','auto')+'"><span style="opacity:.7;">m³/s</span></span></label>'
-          /* (#R259) …and what is actually standing on the map, by kind, with the key to the two dots */
+          /* (#R261) …and what is actually standing on the map, by kind, with the key to the two dots */
           +(sources.length
             ?('<div class="tw-row" style="color:var(--text-muted);align-items:flex-start;">'+L('On the map','配置済み','Auf der Karte','На карте','En el mapa')
               +'<span class="tw-val" style="flex-wrap:wrap;justify-content:flex-end;">'+sourceSummary()+'</span></div>'
@@ -2355,7 +2355,7 @@ window.IntMapModules.terrainWater=function(HOST){
     /* (#R211) ONE place where water is placed, so 元に戻す, the pour mode and the downstream trace
        cannot disagree about what a click did. */
     function placeSource(lng,lat){ pushUndo();
-      /* (#R259) the tool's current mode decides what the NEXT source is; the source then keeps it */
+      /* (#R261) the tool's current mode decides what the NEXT source is; the source then keeps it */
       const cont=(pourMode==='cont');
       sources.push({lng,lat,m3:cont?0:srcM3,cont,rate:cont?pourRate:0});
       /* (#R255) the clock is the SIMULATION's, not this source's — it is reset when the simulation is
@@ -2488,12 +2488,12 @@ window.IntMapModules.terrainWater=function(HOST){
         if(o.rateM3s!=null) pourRate=Math.max(1,+o.rateM3s||pourRate);
         if(o.speed!=null) timeScale=Math.max(1,+o.speed||timeScale);
         if(o.run===false) pourStop();
-        else if(o.run===true||(o.run==null&&contSources().length)) pourStart();   /* (#R259) run what is actually continuous */
+        else if(o.run===true||(o.run==null&&contSources().length)) pourStart();   /* (#R261) run what is actually continuous */
         if(opened) renderParams();
         return this.pourState(); },
       pourState(){ return { running:!!pourT, mode:pourMode, rateM3s:pourRate, speed:timeScale,
         simSeconds:Math.round(pourSimS), totalM3:pourTotal(),
-        /* (#R259) how many of each kind are on the map — the thing that used to be unknowable */
+        /* (#R261) how many of each kind are on the map — the thing that used to be unknowable */
         continuous:contSources().length, oneShot:sources.length-contSources().length }; },
       /* (#R211) what the progress bar is showing, for a test that must not sleep a fixed time */
       progress(){ return { busy:!!(building||tracing||progOn), building, tracing }; },
@@ -2502,7 +2502,7 @@ window.IntMapModules.terrainWater=function(HOST){
         const f=panel&&panel.querySelector('.tw-fq'); if(f) f.value=(flowM3s!=null?flowM3s:'');
         if(trace){ try{ trace.section=channelSections(trace); }catch(_){} draw(); report(); }
         return flowM3s; },
-      /* (#R259) `o.cont` / `o.rateM3s` — the same distinction the map now draws, through the API.
+      /* (#R261) `o.cont` / `o.rateM3s` — the same distinction the map now draws, through the API.
          Omitted keeps the old meaning exactly: a one-shot volume. */
       addSource(lng,lat,m3,o){ o=o||{}; pushUndo();
         const cont=!!o.cont;
@@ -2547,7 +2547,7 @@ window.IntMapModules.terrainWater=function(HOST){
         const P=trace.path;
         const wp=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1].map(f=>{ const i=Math.min(P.length-1,Math.round(f*(P.length-1)));
           return [+P[i][0].toFixed(3),+P[i][1].toFixed(3),Math.round(e[i])]; });
-        /* ══ (#R259) HOW LONG IS EACH LEG, AGAINST THE SAMPLING IT WAS TRACED AT ═══════════════════
+        /* ══ (#R261) HOW LONG IS EACH LEG, AGAINST THE SAMPLING IT WAS TRACED AT ═══════════════════
            「地形編集・水流でたまに、直線で地形を完全無視するクソ区間がある。」 — a third report of the
            same sentence (#R258 fixed the lake CROSSING; this asks whether anything else jumps). The
            answer is not «is there a long leg» but «is a leg longer than the ground it sampled»: a
@@ -2559,7 +2559,7 @@ window.IntMapModules.terrainWater=function(HOST){
           for(let i=1;i<P.length;i++){ const a=P[i-1], b=P[i];
             const m=Math.hypot((b[0]-a[0])*111320*Math.cos(((a[1]+b[1])/2)*Math.PI/180),(b[1]-a[1])*110574);
             const sp=+S[i]||+S[i-1]||0; L2.push({ i, m, sp, r:(sp>0?m/sp:null), at:[+b[0].toFixed(4),+b[1].toFixed(4)] }); } }
-        /* ⚠ (#R259) …AND AGAINST THE FINEST SAMPLING IN THE TRACE, which is what the eye compares:
+        /* ⚠ (#R261) …AND AGAINST THE FINEST SAMPLING IN THE TRACE, which is what the eye compares:
            a leg is drawn into a course whose stroke width is set by `minSpacingM`, so 3,563 m beside
            93 m cells is one straight line where 38 cells of detail are everywhere else (#R250's
            «the ratio, not the side»). `r` is the leg against its own rung — 1.4 for a legitimate
@@ -2599,8 +2599,8 @@ window.IntMapModules.terrainWater=function(HOST){
         /* (#R211) the pour, the pen and how many single operations 元に戻す can still take back */
         brushM, brushStrength, undoDepth:undoStack.length,
         pour:{ running:!!pourT, mode:pourMode, rateM3s:pourRate, speed:timeScale, simSeconds:Math.round(pourSimS), totalM3:pourTotal(),
-          continuous:contSources().length, oneShot:sources.length-contSources().length },   /* (#R259) */
-        /* (#R259) the terrain edits that survived the last working-rectangle rebuild */
+          continuous:contSources().length, oneShot:sources.length-contSources().length },   /* (#R261) */
+        /* (#R261) the terrain edits that survived the last working-rectangle rebuild */
         carriedEdits:(G&&G.carriedEdits!=null)?G.carriedEdits:null,
         trace: trace?{ end:trace.end, km:trace.km, steps:trace.steps, lakes:trace.lakes.length, z:trace.z }:null,
         result: result?{ storedM3:result.storedM3, floodKm2:result.floodKm2, maxDepth:result.maxDepth,

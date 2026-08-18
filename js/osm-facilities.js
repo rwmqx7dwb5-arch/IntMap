@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · Surveyed facilities — IntMapFacilities   (#R255 · #R258 · #R259)
+ *  IntMap · Surveyed facilities — IntMapFacilities   (#R255 · #R258 · #R261)
  * ----------------------------------------------------------------------------
  *  「政治、軍事、医療・衛生、IT・テックレイヤーカテゴリを追加し、レイヤーの再編や追加を行うように。」
  *  → 「新レイヤー、単に国別で色分けする奴だけじゃなくて、ガチな奴もしっかりたくさん追加して。」
@@ -42,7 +42,7 @@ window.IntMapModules.facilities=function(HOST){
   const U=(v)=>{ try{ return window.IntMapSafe.url(String(v||'')); }catch(_){ return ''; } };
   function _canDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
 
-  /* ─── the sets (four in #R255, +2 in #R258, +6 in #R259 — twelve) ─────────────────────────────
+  /* ─── the sets (four in #R255, +2 in #R258, +6 in #R261 — twelve) ─────────────────────────────
      `q`    the Overpass selectors, joined into one union query
      `kind` (tags)→ a bucket id, which decides the colour, the legend row and the card's subtitle
      `zoom` the zoom at which the viewport stops being a continent — below it the layer waits    */
@@ -199,7 +199,7 @@ window.IntMapModules.facilities=function(HOST){
                    ['resource',t['resource']||t['mineral']||t['raw_material']||''],
                    ['start',t['start_date']||''],['addr',_addr(t)],['web',t['website']||'']]
     },
-    /* ══ (#R259) SIX MORE SETS — THE SHELVES THAT HAD NOTHING TO CLICK ═════════════════════════════
+    /* ══ (#R261) SIX MORE SETS — THE SHELVES THAT HAD NOTHING TO CLICK ═════════════════════════════
        「追加すべきと思うレイヤーカテゴリはありますか？あれば作り、Others, Betaも含め既存レイヤーの再編の
          ほか、新レイヤー（国単位で塗るだけのやつじゃなくて、モノホンのやつ。）全部任せる。」
        #R255's answer to the same sentence was «a category is worth opening when it shows OBJECTS in
@@ -221,7 +221,7 @@ window.IntMapModules.facilities=function(HOST){
       buckets:{
         intl:['#0a84ff',LA('International airport','国際空港','Internationaler Flughafen','Международный аэропорт','Aeropuerto internacional')],
         airport:['#5ac8fa',LA('Airport / airfield','空港・飛行場','Flughafen / Flugplatz','Аэропорт / аэродром','Aeropuerto / aeródromo')],
-        /* ⚠ (#R259) NOT the bare word in de/es: 「Terminal」 is identical to the English there, and
+        /* ⚠ (#R261) NOT the bare word in de/es: 「Terminal」 is identical to the English there, and
            scripts/i18n-positional-audit.mjs counts an identical string as untranslated — correctly,
            because it cannot tell «this word is the same» from «nobody translated this». The natural
            local terms for an aeroway=terminal say the same thing and are distinguishable. */
@@ -384,7 +384,7 @@ window.IntMapModules.facilities=function(HOST){
     voltage:()=>L('Voltage','電圧','Spannung','Напряжение','Tensión'),
     start:()=>L('In service','稼働開始','In Betrieb','В эксплуатации','En servicio'),
     resource:()=>L('Resource','資源','Rohstoff','Ресурс','Recurso'),
-    /* (#R259) the fields the six new sets print */
+    /* (#R261) the fields the six new sets print */
     icao:()=>L('ICAO code','ICAOコード','ICAO-Code','Код ИКАО','Código OACI'),
     iata:()=>L('IATA code','IATAコード','IATA-Code','Код ИАТА','Código IATA'),
     runway:()=>L('Runway length','滑走路長','Bahnlänge','Длина ВПП','Longitud de pista'),
@@ -487,7 +487,7 @@ window.IntMapModules.facilities=function(HOST){
         if(!v) return '';
         if(f==='web') return row(FLD.web(),'<a href="'+U(v)+'" target="_blank" rel="noopener" style="color:var(--primary-color);">'+S(String(v).replace(/^https?:\/\//,'').slice(0,38))+'</a>');
         return row((FLD[f]||FLD.operator)(),S(v)); }).join('');
-      /* ⚠ (#R259) THE × IS NOT A DISC. 「詳細のポップアップは×を丸にするな。」 This card is a
+      /* ⚠ (#R261) THE × IS NOT A DISC. 「詳細のポップアップは×を丸にするな。」 This card is a
          `.country-popup` — the app's own detail-card shell — and that shell already HAS a close
          button: `.country-popup-close`, a 28×28 rounded SQUARE (8 px), transparent until hover, the
          same one the country card, the aircraft card and the satellite card use. What was written
@@ -581,7 +581,7 @@ window.IntMapModules.facilities=function(HOST){
      it, so a row created here is a layer everywhere without any of them being told. The ids are
      `fac-dl-<id>`, and js/data-layers.js's `rowFor()` knows that prefix. */
   const SW={diplo:'#5ac8fa',mil:'#ff453a',health:'#30d158',telecom:'#af52de',power:'#ffd60a',extract:'#c9a227',
-    /* (#R259) */ air:'#0a84ff',port:'#0a84ff',water:'#5ac8fa',edu:'#5e5ce6',emg:'#ff453a',space:'#ff9f0a'};
+    /* (#R261) */ air:'#0a84ff',port:'#0a84ff',water:'#5ac8fa',edu:'#5e5ce6',emg:'#ff453a',space:'#ff9f0a'};
   function buildRows(){
     const dd=document.getElementById('layer-dropdown'); if(!dd){ setTimeout(buildRows,400); return; }
     Object.keys(SETS).forEach(k=>{

@@ -86,8 +86,8 @@ test('r246 ③ every source description is a reading-page string, in all nine la
   assert.match(read('js/locales/pages.en.js'), /\n {2}sourceUse: \{/, 'the English original is not a page string');
   /* …and the eager bundle no longer carries any of it */
   assert.equal(/use:\{en:/.test(read('js/reference-data.js')), false, 'the registry still holds prose');
-  /* ⚠ (#R259) THE CEILING IS ON THE PROSE, NOT ON THE NUMBER OF SOURCES. This was a byte count, and
-     #R259 registered eight more OSM facility layers — 8 `{n,u}` rows plus a comment, ~1.2 kB — which
+  /* ⚠ (#R261) THE CEILING IS ON THE PROSE, NOT ON THE NUMBER OF SOURCES. This was a byte count, and
+     #R261 registered eight more OSM facility layers — 8 `{n,u}` rows plus a comment, ~1.2 kB — which
      took the file from 38.9 kB to 40.3 kB and turned «the prose came back» red for «the map grew».
      The claim #R246 was making is the line above (no `use:{en:` in the registry); what this line
      adds is that a ROW is a name and a URL, not a paragraph. So it measures the mean row size, which

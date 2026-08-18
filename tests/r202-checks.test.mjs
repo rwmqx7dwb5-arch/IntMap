@@ -146,7 +146,7 @@ test('R202 ③b the pick projects at ALTITUDE, or it picks something that is not
 
 test('R202 ③c the satellite layer is in a group somebody would open', () => {
   const dl = rd('js/data-layers.js');
-  /* ⚠ (#R259) THE LITERAL LIST BECAME A PROPERTY. #R259 added `osmspace` (spaceports and satellite
+  /* ⚠ (#R261) THE LITERAL LIST BECAME A PROPERTY. #R261 added `osmspace` (spaceports and satellite
      ground stations) to this shelf — 「1行だけのグループはカテゴリではない」 — and a list literal
      asserts «and nothing else, ever», which is not what #R202 was claiming. The claim is that `sats`
      has a group of its own and is not filed under the ocean. */

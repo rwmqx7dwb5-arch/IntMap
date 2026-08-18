@@ -168,7 +168,7 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
      what «Others» is for: the indicators that have no better shelf. So the assertion is now the
      PROPERTY #R254 was really asserting — Others holds World-Bank indicator rows and only those —
      plus a floor, so the group cannot be quietly emptied out. */
-  /* ⚠⚠ (#R259) …AND THE FLOOR HAD TO GO, FOR THE SECOND TIME, FOR THE SAME REASON. #R255 already
+  /* ⚠⚠ (#R261) …AND THE FLOOR HAD TO GO, FOR THE SECOND TIME, FOR THE SAME REASON. #R255 already
      replaced «exactly 61» with «at least 25» after an instruction legitimately moved rows out; this
      round 「Others, Betaも含め既存レイヤーの再編」 named that shelf and moved ALL of them into named
      families (経済・貿易 / 社会・教育 / エネルギー・資源 / 気候 / 農業・食料). A count floor on a shelf

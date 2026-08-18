@@ -23,7 +23,7 @@ test('R212 ①: trade arcs carry direction — an icon layer along the line, and
      along-the-line repeater is gone and what this test pins is what makes the picture an arrow —
      a head at the destination, in the shaft's colour, with the shaft stopping at its base. */
   assert.doesNotMatch(s, /id:'wp-trade-arrow'/, 'the along-the-line repeater is back');
-  /* ⚠ (#R259) the window was 400 chars and #R259's note about `icon-rotation-alignment:'viewport'`
+  /* ⚠ (#R261) the window was 400 chars and #R261's note about `icon-rotation-alignment:'viewport'`
      pushed `icon-anchor` past it. A character budget between two facts is a tripwire on COMMENTS,
      not on behaviour — it is the layer definition that has to be searched, so it is bounded by the
      next layer instead. */

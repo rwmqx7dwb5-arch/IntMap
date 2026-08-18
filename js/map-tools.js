@@ -971,7 +971,7 @@ window.IntMapModules.isochrone=function(HOST){
       lastMinutes=minutes.slice(); renderPanel(); return {ok:true,minutes,mode:cost}; }
     function ensurePanel(){ if(panel) return panel;
       panel=document.createElement('div'); panel.id='iso-panel';
-      /* ══ ⚠ (#R259) OPAQUE BY DEFAULT — 「Reachable areaのポップアップはデフォルト透過するな。」 ═══════
+      /* ══ ⚠ (#R261) OPAQUE BY DEFAULT — 「Reachable areaのポップアップはデフォルト透過するな。」 ═══════
          This was the only floating panel on the map with a translucent fill and NO `backdrop-filter`
          behind it: `--popup-bg` is rgba(28,28,30,**0.74**) in dark and rgba(255,255,255,0.72) in
          light, so 26 % of the moving map came through it SHARP — every other panel that uses that

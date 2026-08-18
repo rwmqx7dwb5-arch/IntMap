@@ -1,5 +1,5 @@
 /* ============================================================================
- *  #R259 — source-level checks
+ *  #R261 — source-level checks
  * ----------------------------------------------------------------------------
  *  One test per defect this round measured, in the shape the measurement took.
  *  Source assertions (no browser): the browser specs cost minutes, these cost
@@ -19,7 +19,7 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
    screen direction of the shaft's last leg: 26.3° apart at z2.2 (USA) and 130.5° at z1.4 — a 45 px
    head standing clear of the 13 px line it terminates. The cut was computed in projected pixels and
    the angle in geographic degrees; they are one space now. After: ≤ 0.02°. */
-test('R259 ①: the trade arrowhead is rotated in viewport space, from the projected neck', () => {
+test('R261 ①: the trade arrowhead is rotated in viewport space, from the projected neck', () => {
   const s = read('js/world-packs.js');
   assert.match(s, /'icon-rotate':\['get','brg'\],'icon-rotation-alignment':'viewport'/,
     "`brg` is a screen angle, so the tip layer must be aligned to the viewport");
@@ -35,7 +35,7 @@ test('R259 ①: the trade arrowhead is rotated in viewport space, from the proje
    「詳細のポップアップは×を丸にするな。」 Two files built a private `border-radius:50%` button on a
    shell that already has `.country-popup-close` (8 px, transparent, 32 px on a phone, in the drag
    exclusion list). */
-test('R259 ②: no detail card builds its own circular close button', () => {
+test('R261 ②: no detail card builds its own circular close button', () => {
   for (const f of ['js/datacenters.js', 'js/osm-facilities.js']) {
     const s = read(f);
     assert.doesNotMatch(s, /class="cp-close"[^>]*border-radius:50%/,
@@ -51,7 +51,7 @@ test('R259 ②: no detail card builds its own circular close button', () => {
 /* ── ③ the water source knows whether it is a bucket or a tap ───────────────────────────────────
    「一回だけと継続の水の水源の区別をつけろ。」 `pourMode` was a panel setting and the interval fed
    `sources[sources.length-1]` only, so a second source silently stopped the first. */
-test('R259 ③: continuous/one-shot is a property of each source, and every tap is fed', () => {
+test('R261 ③: continuous/one-shot is a property of each source, and every tap is fed', () => {
   const s = read('js/terrain-water.js');
   assert.doesNotMatch(s, /sources\[sources\.length-1\]\.m3\+=/,
     'the pour must not feed only the last-placed source');
@@ -72,7 +72,7 @@ test('R259 ③: continuous/one-shot is a property of each source, and every tap 
    「水源を追加しても地形はリセットするな。」 A water source outside the rectangle calls rebuildAround
    → build(), which did `sculpt = new Float32Array(...)`. MEASURED after the fix: a rebuild shifted
    a third of a rectangle east reported 132 carried cells where it used to report none. */
-test('R259 ④: build() resamples the sculpt field and the undo stack instead of zeroing them', () => {
+test('R261 ④: build() resamples the sculpt field and the undo stack instead of zeroing them', () => {
   const s = read('js/terrain-water.js');
   assert.doesNotMatch(s, /sculpt=new Float32Array\(NX\*NY\); undoStack=\[\]; editDirty\(\);/,
     'the rebuild must not wipe the brush strokes and the undo history');
@@ -87,7 +87,7 @@ test('R259 ④: build() resamples the sculpt field and the undo stack instead of
 
 /* ── ⑤ the play button is a rounded square ─────────────────────────────────────────────────────
    「再生ボタンは四角にしろ。」 38 px box at `border-radius:19px` is a circle. */
-test('R259 ⑤: the terrain/water transport is not a disc', () => {
+test('R261 ⑤: the terrain/water transport is not a disc', () => {
   const s = read('js/terrain-water.js');
   const m = s.match(/'\.tw-play\{[^']*'/);
   assert.ok(m, 'the .tw-play rule is there');
@@ -99,7 +99,7 @@ test('R259 ⑤: the terrain/water transport is not a disc', () => {
    「たまに、直線で地形を完全無視するクソ区間がある。」 MEASURED with the leg instrument on five real
    traces: the longest single leg was 3,563 m (Lake Biwa) and 3,107 m (Pannonian) — 1.4 cells at the
    27× rung that produced them, and 150–160 cells of the sampling the course is DRAWN at. */
-test('R259 ⑥: both escalation branches refine their crossing, and a decline is counted', () => {
+test('R261 ⑥: both escalation branches refine their crossing, and a decline is counted', () => {
   const s = read('js/terrain-water.js');
   assert.match(s, /function refineCrossing\(a,b,z,spacingM,corridorM\)\{/);
   /* the least-rise path is a real Dijkstra on the fine lattice, inside a corridor */
@@ -123,7 +123,7 @@ test('R259 ⑥: both escalation branches refine their crossing, and a decline is
 /* ── ⑦ the reachable-area panel is opaque by default and still follows the setting ──────────────
    「Reachable areaのポップアップはデフォルト透過するな。」 It was the only floating panel with a
    translucent fill and NO backdrop-filter, and it was named in neither frosted-mode list. */
-test('R259 ⑦: #iso-panel is opaque by default and joins the two frosted-mode lists', () => {
+test('R261 ⑦: #iso-panel is opaque by default and joins the two frosted-mode lists', () => {
   const js = read('js/map-tools.js');
   assert.match(js, /id='iso-panel'[\s\S]{0,1600}background:var\(--card-bg,#1c1c1e\)/,
     'the default fill is the opaque card background');
@@ -137,7 +137,7 @@ test('R259 ⑦: #iso-panel is opaque by default and joins the two frosted-mode l
 /* ── ⑧ Line of sight can move its site from a button ────────────────────────────────────────────
    「Line of sightに地点を変えるボタンがない。」 The only way was a right-click on the map, described
    in prose in two places. */
-test('R259 ⑧: the LOS panel has a Move-the-site control, armed like the link', () => {
+test('R261 ⑧: the LOS panel has a Move-the-site control, armed like the link', () => {
   const s = read('js/viewshed.js');
   assert.match(s, /id="los-move"/, 'the button exists');
   assert.match(s, /function armMove\(on\)\{/);
@@ -154,7 +154,7 @@ test('R259 ⑧: the LOS panel has a Move-the-site control, armed like the link',
 /* ── ⑨ the simulations that had no UI door at all ───────────────────────────────────────────────
    MEASURED: IntMapDrone / IntMapDisaster / IntMapTransitReach / IntMapRF / IntMapEarthReplay were
    reachable ONLY from js/atlas-console.js — no button, no menu, not even a right-click. */
-test('R259 ⑨: every non-layer simulation is a row in the Tools list', () => {
+test('R261 ⑨: every non-layer simulation is a row in the Tools list', () => {
   const s = read('js/map-ui.js');
   for (const id of ['sim.seismic','sim.tsunami','sim.terrainWater','sim.radiation','sim.los','sim.reach',
                     'sim.sun','sim.nightSky','sim.drone','sim.disaster','sim.transitReach','sim.rf','sim.earthReplay']) {
@@ -171,7 +171,7 @@ test('R259 ⑨: every non-layer simulation is a row in the Tools list', () => {
 /* ── ⑩ the four new shelves, and what did NOT move ──────────────────────────────────────────────
    「Others, Betaも含め既存レイヤーの再編…」 — the authorisation #R255 and #R258 both said they did
    not have. What they refused to move on their own is still exactly where the reader put it. */
-test('R259 ⑩: Others is emptied into named families and the demoted rows stay demoted', () => {
+test('R261 ⑩: Others is emptied into named families and the demoted rows stay demoted', () => {
   const s = read('js/data-layers.js');
   for (const k of ['lyrGrpEconomy','lyrGrpSociety','lyrGrpTransport','lyrGrpAgri'])
     assert.match(s, new RegExp("\\['" + k + "',\\["), k + ' is a group');
@@ -195,7 +195,7 @@ test('R259 ⑩: Others is emptied into named families and the demoted rows stay 
 
 /* ── ⑪ six new surveyed-object layers, on the shelves that had nothing to click ─────────────────
    「新レイヤー（国単位で塗るだけのやつじゃなくて、モノホンのやつ。）」 */
-test('R259 ⑪: the six new facility sets exist, are filed, and invent nothing', () => {
+test('R261 ⑪: the six new facility sets exist, are filed, and invent nothing', () => {
   const s = read('js/osm-facilities.js');
   const ids = ['osmair','osmport','osmwater','osmedu','osmemg','osmspace'];
   for (const id of ids) {
@@ -211,7 +211,7 @@ test('R259 ⑪: the six new facility sets exist, are filed, and invent nothing',
 
 /* ── ⑫ the data-centre layer can be asked a question ────────────────────────────────────────────
    「データセンター、AIインフラレイヤーを爆発的に強化。」 It had a colour key and nothing else. */
-test('R259 ⑫: the data-centre panel answers for the current view, and says what it does not know', () => {
+test('R261 ⑫: the data-centre panel answers for the current view, and says what it does not know', () => {
   const s = read('js/datacenters.js');
   assert.match(s, /function dcStats\(\)\{/);
   assert.match(s, /id='dc-panel'/);
@@ -227,8 +227,8 @@ test('R259 ⑫: the data-centre panel answers for the current view, and says wha
 });
 
 /* ── ⑬ the build stamps ─────────────────────────────────────────────────────────────────────────*/
-test('R259 ⑬: both build markers name this round', () => {
+test('R261 ⑬: both build markers name this round', () => {
   const s = read('index.html');
-  assert.match(s, /window\.__imBuild='R259'/);
-  assert.match(s, /window\.INTMAP_BUILD='2026-08-18-R259'/);
+  assert.match(s, /window\.__imBuild='R261'/);
+  assert.match(s, /window\.INTMAP_BUILD='2026-08-18-R261'/);
 });
