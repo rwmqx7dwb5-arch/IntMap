@@ -183,8 +183,15 @@ test('R261 ⑩: Others is emptied into named families and the demoted rows stay 
   assert.match(s, /\['lyrGrpDemo',\['popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','energy'\]\]/);
   /* the rows #R40 demoted BY INSTRUCTION are not promoted */
   const groups = s.slice(s.indexOf('const GROUPS=['), s.indexOf('/* Explicit order for the Others'));
-  for (const id of ['gxtruecolor','gxlst','gxcloud','ec-temp','ec-precip','ec-wind'])
+  /* ⚠ (#R266) THE GIBS HALF OF THIS LIST IS GONE, AND NOT BECAUSE IT WAS PROMOTED. #R40 demoted
+     seven GIBS rasters to Beta by instruction; #R266 DELETED eight of them by instruction (「以下の
+     レイヤーは削除」), so «is gxtruecolor still in Beta» no longer has a subject. The three EC
+     weather rows are the demotions that still exist, and #R266 ① asserts the deletions separately —
+     between them nothing about #R40's decision goes unchecked. */
+  for (const id of ['ec-temp','ec-precip','ec-wind'])
     assert.ok(!groups.includes("'" + id + "'"), id + ' stays in Beta — it was demoted per request');
+  for (const id of ['gxtruecolor','gxlst','gxcloud'])
+    assert.ok(!s.includes("'" + id + "'"), id + ' was deleted in #R266 and must not come back');
   /* every id in a GROUP has to be resolvable, which is what the `ox-` prefix gap broke */
   assert.match(s, /document\.getElementById\('ox-'\+id\)/,
     'rowFor knows the ox- prefix, or oxrail/oxsea silently stay in Beta');

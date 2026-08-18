@@ -109,7 +109,7 @@ window.IntMapLang.define('jp', { ui: {
       lyrClimate:"ケッペン気候区分",
       lyrTemp:"気温（2m・再解析）",
       lyrPrecip:"降水量 (IMERG)",
-      lyrPop:"人口密度",
+      lyrPop:"人口密度（国別）",
       lyrHDI:"HDI (2022)",
       lyrDem:"民主主義指数 (2023)",
       lyrNATO:"NATO加盟国",

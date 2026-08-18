@@ -27,7 +27,11 @@ IntMap is primarily designed for people interested in geography and internationa
 * Combine more than a hundred geographic and statistical layers
 * Follow a country's goods trade partner by partner, by commodity and by year
 * Read a country's electricity and primary-energy mix as a composition, not a single colour
-* See the weather and disaster warnings an agency has actually issued, at the unit it issued them for
+* See the weather and disaster warnings an agency has actually issued, at the unit it issued them for —
+  Japan (JMA), the United States (NWS), Canada (ECCC), the thirty-seven European services through
+  MeteoAlarm and China (CMA), refreshed every minute
+* Read annual precipitation as a measured 1 km field, or as any single year from 1981 to 2020
+* Compare any World Bank indicator in a year you choose, rather than whatever year each country last reported
 * Look up high and low water anywhere on a coast, and how far the tide reaches over real terrain
 * Explore climate, terrain, ecology, population, economics, infrastructure, and strategic geography
 * Move between historical periods using the Time Machine

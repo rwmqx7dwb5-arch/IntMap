@@ -121,7 +121,7 @@ test('R166 #3 the layer packs still built their rows into the shared Layers pane
     betaPack2: !!document.getElementById('beta-dl-dc'),
     religionLang: !!document.getElementById('beta-dl-cat-religion'),
     timeZones: !!document.getElementById('dl-tz'),
-    gibs: !!document.getElementById('gx-gxtruecolor'),
+    gibs: !!document.getElementById('gx-gxndvi'),
     total: document.querySelectorAll('.layer-option').length,
   }));
   expect(rows.total, 'the Layers panel is fully populated').toBeGreaterThan(100);

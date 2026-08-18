@@ -991,7 +991,8 @@ window.IntMapModules.worldPacks=function(HOST){
          from a country with nothing in force. Every feed now carries its own state and the legend says
          which one it is: loading / could not be fetched / genuinely nothing. Verified against the live
          feed while writing this: 16 of 47 prefectures were under a warning at the time. */
-      const FEED_STATE={};        /* jma | nws | gdacs → 'idle' | 'loading' | 'ok' | 'error' */
+      const FEED_STATE={};        /* jma | nws | eccc | meteoalarm | cma | gdacs → 'idle' | 'loading' | 'ok' | 'error' */
+      let cmaCount=0, cmaRec=null;   /* (#R266) China has no geometry in its feed — a wash and a list */
       let lastAt=0;
       const panel=makePanel('wp-alert-panel',()=>'⚠ '+L('Warnings','気象・災害警報','Warnungen','Предупреждения','Avisos'),'wp-dl-alerts',
         { legendId:'wpalerts', layers:()=>LYR.concat([CHORO]),
@@ -1014,7 +1015,54 @@ window.IntMapModules.worldPacks=function(HOST){
       const tierName=(t)=>t===3?L('Emergency warning','特別警報','Notfallwarnung','Экстренное предупреждение','Aviso de emergencia')
         :t===2?L('Warning','警報','Warnung','Предупреждение','Aviso')
         :L('Advisory','注意報','Hinweis','Рекомендация','Advertencia');
-      const FEEDS={ JPN:'jma', USA:'nws' };
+      /* ══ ⚠⚠⚠ (#R266) TWO COUNTRIES OUT OF ONE HUNDRED AND NINETY-FIVE ═══════════════════════════
+         「気象災害警報レイヤーはくそ。対応する国をもっと増やせ。少なくとも G7, 中露には対応しろ。
+           また、全然現実の発令に追い付いていない。リアルタイムで反映しろ。」
+
+         #R211 wrote that 「技術的に可能なすべての国で」 IS A REAL CONSTRAINT AND IT IS NARROW, and
+         it was right about the constraint and wrong about how narrow. The blocker was never that
+         other services do not publish — it is that they do not publish WITH CORS, and a browser
+         cannot read them. MEASURED this round, same second:
+
+             api.weather.gc.ca (ECCC)   200 · Access-Control-Allow-Origin: *   → read directly
+             feeds.meteoalarm.org       200 · no ACAO · 10.2 MB for Germany    → relay + summarise
+             www.nmc.cn (CMA)           200 · no ACAO · 927 live warnings      → relay
+             Roshydromet / MChS         no machine-readable public feed found  → GDACS only
+
+         So: Canada joins Japan and the United States at the issuing unit; MeteoAlarm brings the
+         thirty-seven European services — Germany, France, Italy and the United Kingdom among them,
+         which completes the G7 — and the China Meteorological Administration brings China. Russia
+         is the one member of the requested set with no open feed; it stays on GDACS and the legend
+         SAYS that rather than letting an empty map imply calm.
+
+         ⚠ ONE MINUTE, NOT FIVE. 「リアルタイムで反映しろ」 — the refresh interval was 300 s and the
+         relay caches for 60 s, so a warning could be five minutes old before it appeared. It is now
+         60 s, and a tab coming back to the foreground refreshes immediately rather than waiting out
+         whatever remained of its timer. */
+      const FEEDS={ JPN:'jma', USA:'nws', CAN:'eccc', CHN:'cma' };
+      /* MeteoAlarm (EUMETNET) member services, ISO3 → the slug its feed is named with */
+      const MA={ AUT:'austria', BEL:'belgium', BIH:'bosnia-herzegovina', BGR:'bulgaria', HRV:'croatia',
+        CYP:'cyprus', CZE:'czechia', DNK:'denmark', EST:'estonia', FIN:'finland', FRA:'france',
+        DEU:'germany', GRC:'greece', HUN:'hungary', ISL:'iceland', IRL:'ireland', ISR:'israel',
+        ITA:'italy', LVA:'latvia', LTU:'lithuania', LUX:'luxembourg', MLT:'malta', MDA:'moldova',
+        MNE:'montenegro', NLD:'netherlands', MKD:'north-macedonia', NOR:'norway', POL:'poland',
+        PRT:'portugal', ROU:'romania', SRB:'serbia', SVK:'slovakia', SVN:'slovenia', ESP:'spain',
+        SWE:'sweden', CHE:'switzerland', GBR:'united-kingdom' };
+      Object.keys(MA).forEach(k=>{ FEEDS[k]='meteoalarm'; });
+      /* fetched on the first refresh: the G7's European members. Every other MeteoAlarm country is
+         fetched the moment somebody taps it — 37 × 10 MB upstream is not a page load. */
+      const MA_DEFAULT=['DEU','FRA','ITA','GBR'];
+      const maData={};        /* ISO3 → {count, warnings:[…]} | {error} */
+      let maAsked=MA_DEFAULT.slice();
+      const relay=(qs)=>{ let b=''; try{ b=String(window.SUPABASE_URL||'').replace(/\/$/,''); }catch(_){ b=''; }
+        return b?(b+'/functions/v1/alerts-relay?'+qs):''; };
+      /* GB/T 2260: the first two digits of a CMA alert id are the province, which is the level
+         「まずは都道府県でくくるとか、そういうのをどの国でもしろ」 asks for on the Chinese side */
+      const CN_PROV={'11':'北京市','12':'天津市','13':'河北省','14':'山西省','15':'内蒙古自治区','21':'辽宁省',
+        '22':'吉林省','23':'黑龙江省','31':'上海市','32':'江苏省','33':'浙江省','34':'安徽省','35':'福建省',
+        '36':'江西省','37':'山东省','41':'河南省','42':'湖北省','43':'湖南省','44':'广东省','45':'广西壮族自治区',
+        '46':'海南省','50':'重庆市','51':'四川省','52':'贵州省','53':'云南省','54':'西藏自治区','61':'陕西省',
+        '62':'甘肃省','63':'青海省','64':'宁夏回族自治区','65':'新疆维吾尔自治区','71':'台湾省','81':'香港特别行政区','82':'澳门特别行政区'};
 
       function ensureLayers(){ if(!_imCanDraw()) return false; try{
         if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
@@ -1087,14 +1135,18 @@ window.IntMapModules.worldPacks=function(HOST){
             (a.warnings||[]).forEach(w=>{ if(!w||w.status==='解除'||w.status==='発表警報・注意報はなし') return;
               const t=tierOf(w.code); if(t>rec.tier) rec.tier=t;
               const kind=JMA_KIND[String(w.code).padStart(2,'0')];
-              rec.items.push({ area:nameOf(a.code), unit:ti===0?'pref':'muni', tier:t,
+              rec.items.push({ area:nameOf(a.code), adm:nameOf(String(pref).padStart(2,'0')+'0000')||nameOf(a.code), unit:ti===0?'pref':'muni', tier:t,
                 kind:kind?(HOST.lang==='jp'?kind[0]:kind[1]):('#'+w.code), status:w.status }); }); }); }); });
         const out=[];
         Object.keys(byPref).forEach(p=>{ const rec=byPref[p]; if(!rec.tier) return;
           const f=geo[+p]; if(!f) return;
+          const pn=(f.properties&&f.properties.shapeName)||('JP-'+p);
+          /* ⚠ (#R266) 「日本なら市町村単位で列挙するのを辞めろ。まずは都道府県でくくる」 — the tap used to
+             print up to 160 municipality rows in one flat list. Every row now carries the PREFECTURE
+             it belongs to, and the tap groups on it. Nothing is dropped; it is nested. */
           out.push({type:'Feature',geometry:f.geometry,properties:{ iso:'JPN', col:TIERCOL[rec.tier], tier:rec.tier,
-            name:(f.properties&&f.properties.shapeName)||('JP-'+p), n:rec.items.length, at:rec.reportedAt,
-            items:JSON.stringify(rec.items.slice(0,120)) }}); });
+            name:pn, n:rec.items.length, at:rec.reportedAt,
+            items:JSON.stringify(rec.items.slice(0,200).map(x=>Object.assign({},x,{adm:pn}))) }}); });
         return out; }
 
       async function loadNWS(){
@@ -1105,10 +1157,59 @@ window.IntMapModules.worldPacks=function(HOST){
         const out=[];
         (j.features||[]).forEach(f=>{ if(!f.geometry) return;
           const p=f.properties||{}; const t=SEV[p.severity]||1;
+          /* the state is the first two letters of the UGC zone code («TXZ123»), which is the
+             admin-1 level the tap groups on — the same treatment Japan's prefectures get */
+          let st=''; try{ const u=(p.geocode&&(p.geocode.UGC||p.geocode.SAME))||[]; st=String(u[0]||'').slice(0,2).toUpperCase(); }catch(_){}
+          if(!/^[A-Z]{2}$/.test(st)) st=String(p.areaDesc||'').split(',').pop().trim().slice(-2).toUpperCase();
           out.push({type:'Feature',geometry:f.geometry,properties:{ iso:'USA', col:TIERCOL[t], tier:t,
             name:p.event||'Alert', n:1, at:p.sent||'',
-            items:JSON.stringify([{area:p.areaDesc||'',unit:'zone',tier:t,kind:p.event||'',status:p.severity||''}]) }}); });
+            items:JSON.stringify([{area:p.areaDesc||'',adm:st,unit:'zone',tier:t,kind:p.event||'',status:p.severity||''}]) }}); });
         return out; }
+
+      /* ── Canada: Environment and Climate Change Canada, alert polygons, grouped by province ──
+         api.weather.gc.ca is an OGC API - Features collection and it sends ACAO — no relay. */
+      async function loadECCC(){
+        const r=await fetch('https://api.weather.gc.ca/collections/weather-alerts/items?f=json&limit=500');
+        if(!r.ok) throw new Error('eccc '+r.status);
+        const j=await r.json(); const out=[];
+        const en=()=>HOST.lang!=='fr';
+        (j.features||[]).forEach(f=>{ if(!f.geometry) return; const p=f.properties||{};
+          const t=/warning/i.test(p.alert_type||'')?2:/watch/i.test(p.alert_type||'')?1:1;
+          const kind=(en()?p.alert_name_en:p.alert_name_fr)||p.alert_name_en||p.alert_code||'';
+          const area=(en()?p.feature_name_en:p.feature_name_fr)||p.feature_name_en||'';
+          out.push({type:'Feature',geometry:f.geometry,properties:{ iso:'CAN', col:TIERCOL[t], tier:t,
+            name:kind, n:1, at:p.publication_datetime||'',
+            items:JSON.stringify([{area,adm:p.province||'',unit:'zone',tier:t,kind,status:(en()?p.status_en:p.status_fr)||''}]) }}); });
+        return out; }
+
+      /* ── China: the CMA's public warning list, through the relay (no ACAO, http only). It carries
+            no geometry, so this is a country wash plus the list — grouped by province from the
+            alert id, which is a GB/T 2260 division code. ── */
+      async function loadCMA(){
+        const u=relay('u='+encodeURIComponent('https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=300&signaltype=&signallevel=&province='));
+        if(!u) throw new Error('no relay');
+        const r=await fetch(u); if(!r.ok) throw new Error('cma '+r.status);
+        const j=await r.json();
+        const list=(j&&j.data&&j.data.page&&j.data.page.list)||[];
+        const items=[]; let worst=0;
+        list.forEach(a=>{ const id=String(a.alertid||''); const prov=CN_PROV[id.slice(0,2)]||'';
+          const title=String(a.title||'');
+          const t=/红色/.test(title)?3:/橙色/.test(title)?2:/黄色/.test(title)?2:1;
+          if(t>worst) worst=t;
+          items.push({ area:title.replace(/^.*?气象台发布/,'')||title, adm:prov, unit:'city', tier:t,
+            kind:(title.match(/发布(.+?)预警/)||[])[1]||'', status:String(a.issuetime||'') }); });
+        cmaCount=items.length;
+        return { items, worst }; }
+
+      /* ── Europe: MeteoAlarm, summarised by the relay (the raw feed is 10 MB per country) ── */
+      async function loadMA(list){
+        const names=list.map(k=>MA[k]).filter(Boolean); if(!names.length) return;
+        const u=relay('ma='+encodeURIComponent(names.join(','))+'&lang='+encodeURIComponent(window.IntMapLang.htmlTag(HOST.lang)||'en'));
+        if(!u) throw new Error('no relay');
+        const r=await fetch(u); if(!r.ok) throw new Error('meteoalarm '+r.status);
+        const j=await r.json();
+        list.forEach(k=>{ const n=MA[k]; const d=(j.countries||{})[n]; if(d) maData[k]=d; });
+      }
 
       /* ── the rest of the world: GDACS, the UN/EC global disaster alert system ────────────────────
          「利用可能なデータのあるすべての国で実装しろ。」 GDACS is the one browser-reachable feed that is
@@ -1122,15 +1223,25 @@ window.IntMapModules.worldPacks=function(HOST){
       const GDACS_KIND={EQ:LA('Earthquake','地震','Erdbeben','Землетрясение','Terremoto'),TC:LA('Tropical cyclone','熱帯低気圧','Tropischer Wirbelsturm','Тропический циклон','Ciclón tropical'),FL:LA('Flood','洪水','Hochwasser','Наводнение','Inundación'),
         VO:LA('Volcano','火山','Vulkan','Вулкан','Volcán'),DR:LA('Drought','干ばつ','Dürre','Засуха','Sequía'),WF:LA('Wildfire','森林火災','Waldbrand','Природный пожар','Incendio forestal')};
       let gCountries=Object.create(null);
+      /* ⚠ (#R266) THE ENDPOINT THIS USED IS GONE, AND THE FEED HAD BEEN EMPTY EVER SINCE. MEASURED:
+         `…/geteventlist/MAP?alertlevel=…&eventlist=…` answers **400 Bad Request** (36 bytes), so
+         `loadGDACS` threw on every refresh and FEED_STATE.gdacs has been 'error' — the layer's whole
+         rest-of-the-world coverage, silently. `…/geteventlist/SEARCH` is what GDACS's own map calls
+         and it answers 200 with ACAO; with no dates it returns the same four-day window the GDACS
+         site shows. ⚠ AND THE `iscurrent` FILTER IS DROPPED WITH IT: on this endpoint only 2 of 99
+         events carry it, because it means «still unfolding», not «recent» — filtering on it would
+         reproduce the empty map with a different cause. */
       async function loadGDACS(){
-        const r=await fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP?alertlevel=Green;Orange;Red&eventlist=EQ;TC;FL;VO;DR;WF');
+        const r=await fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?fromDate=&toDate=&alertlevel=&eventlist=');
         if(!r.ok) throw new Error('gdacs '+r.status);
         const j=await r.json(); const out=[]; const byC=Object.create(null);
-        (j.features||[]).forEach(f=>{ const p=f.properties||{}; if(String(p.iscurrent)!=='true') return;
+        (j.features||[]).forEach(f=>{ const p=f.properties||{};
           const t=GDACS_TIER[p.alertlevel]||1;
           const kind=GDACS_KIND[p.eventtype];
           const label=kind?(HOST.lang==='jp'?kind[0]:kind[1]):(p.eventtype||'');
-          (p.affectedcountries||[]).forEach(c=>{ const k=String(c.iso3||'').toUpperCase(); if(k.length!==3) return;
+          const affected=(p.affectedcountries&&p.affectedcountries.length)?p.affectedcountries
+            :String(p.iso3||'').split(/[,;]/).filter(Boolean).map(x=>({iso3:x.trim(),countryname:p.country||''}));
+          affected.forEach(c=>{ const k=String(c.iso3||'').toUpperCase(); if(k.length!==3) return;
             const rec=byC[k]=byC[k]||{tier:0,items:[]};
             if(t>rec.tier) rec.tier=t;
             rec.items.push({ area:c.countryname||k, unit:'event', tier:t, kind:label,
@@ -1141,20 +1252,38 @@ window.IntMapModules.worldPacks=function(HOST){
               items:JSON.stringify([{area:p.country||'',unit:'event',tier:t,kind:label,status:p.alertlevel||''}]) }}); });
         gCountries=byC; return out; }
 
+      /* (#R266) …and the feeds that publish a LIST rather than a geometry colour their country the
+         same way GDACS does — otherwise «China has 927 warnings in force» would be invisible on the
+         map and only appear on a tap. */
+      function washTier(c){
+        let t=(gCountries[c]&&gCountries[c].tier)||0;
+        if(c==='CHN'&&cmaRec) t=Math.max(t,cmaRec.worst||0);
+        const md=maData[c]; if(md&&md.warnings&&md.warnings.length) t=Math.max(t,md.warnings.reduce((m,w)=>Math.max(m,w.tier||1),0));
+        return t; }
       function paintCountries(){ withCountrySource().then(()=>{ if(!on) return;
         if(!ensureChoro()) { whenDrawable(()=>{ if(on&&ensureChoro()) paintCountries(); }); return; }
         try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||''); if(!c) return;
-          const rec=gCountries[c];
-          GE().layers.setFeatureState({source:'countries',id:f.id},{wpAlert:rec?rec.tier:0}); }); }catch(_){}
+          GE().layers.setFeatureState({source:'countries',id:f.id},{wpAlert:washTier(c)}); }); }catch(_){}
         setVis([CHORO],on); }); }
 
       async function refresh(){ if(busy) return; busy=true;
-        ['jma','nws','gdacs'].forEach(k=>{ if(FEED_STATE[k]!=='ok') FEED_STATE[k]='loading'; });
+        ['jma','nws','eccc','meteoalarm','cma','gdacs'].forEach(k=>{ if(FEED_STATE[k]!=='ok') FEED_STATE[k]='loading'; });
         try{ const parts=await Promise.all([
             loadJMA().then(v=>{ FEED_STATE.jma='ok'; return v; }).catch(e=>{ FEED_STATE.jma='error'; console.warn('JMA warnings',e); return []; }),
             loadNWS().then(v=>{ FEED_STATE.nws='ok'; return v; }).catch(e=>{ FEED_STATE.nws='error'; console.warn('NWS warnings',e); return []; }),
+            loadECCC().then(v=>{ FEED_STATE.eccc='ok'; return v; }).catch(e=>{ FEED_STATE.eccc='error'; console.warn('ECCC warnings',e); return []; }),
             loadGDACS().then(v=>{ FEED_STATE.gdacs='ok'; return v; }).catch(e=>{ FEED_STATE.gdacs='error'; console.warn('GDACS warnings',e); return []; })]);
           feats=parts.flat(); lastAt=Date.now();
+          /* ⚠ (#R266) THE TWO LIST FEEDS ARE NOT AWAITED WITH THE OTHERS. MeteoAlarm's summariser
+             reads up to four ten-megabyte national feeds; measured cold it is seconds, and a
+             `Promise.all` that includes it means Japan's and America's warnings — which arrived in
+             milliseconds — sit unrendered until Europe answers. That is the #R212 defect in a new
+             place: a picture withheld because something ELSE has not landed. They repaint on their
+             own when they land. */
+          loadCMA().then(v=>{ FEED_STATE.cma='ok'; cmaRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
+            .catch(e=>{ FEED_STATE.cma='error'; console.warn('CMA warnings',e); if(on&&panel.shown()) overview(); });
+          loadMA(maAsked).then(()=>{ FEED_STATE.meteoalarm='ok'; if(on){ paintCountries(); if(panel.shown()) overview(); } })
+            .catch(e=>{ FEED_STATE.meteoalarm='error'; console.warn('MeteoAlarm',e); if(on&&panel.shown()) overview(); });
           whenDrawable(()=>{ if(ensureLayers()){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,on); } });
           paintCountries();
           if(on&&panel.shown()) overview();
@@ -1183,8 +1312,8 @@ window.IntMapModules.worldPacks=function(HOST){
           :'';
         if(!feed){
           h+='<div style="margin-top:4px;color:var(--text-muted);">'
-            +L('Global feed: GDACS (Global Disaster Alert and Coordination System, UN/EC) — earthquakes, tropical cyclones, floods, volcanoes, droughts and wildfires.',
-               '全球フィード: GDACS（国連/欧州委員会の全球災害警報システム）— 地震・熱帯低気圧・洪水・火山・干ばつ・森林火災。',
+            +L('Global feed: GDACS (Global Disaster Alert and Coordination System, UN/EC) — earthquakes, tropical cyclones, floods, volcanoes, droughts and wildfires of the last four days.',
+               '全球フィード: GDACS（国連/欧州委員会の全球災害警報システム）— 地震・熱帯低気圧・洪水・火山・干ばつ・森林火災（直近4日間）。',
                'Globaler Feed: GDACS (UN/EC).','Глобальный фид: GDACS (ООН/ЕК).','Feed global: GDACS (ONU/CE).')+'</div>'
             +tierKey(GDACS_TIERNAME)+stLine(FEED_STATE.gdacs);
           if(FEED_STATE.gdacs==='ok'&&!gRec){
@@ -1202,8 +1331,34 @@ window.IntMapModules.worldPacks=function(HOST){
               +'<span style="width:9px;height:9px;border-radius:2px;background:'+TIERCOL[x.tier]+';flex:none;"></span>'
               +'<span style="flex:1;">'+esc(x.kind)+'</span><span style="opacity:.75;">'+esc(x.status)+'</span></div>').join('')+'</div>'; }
           return h; }
+        /* the two feeds that publish a list rather than a geometry */
+        if(feed==='cma'){
+          h+='<div style="margin-top:4px;color:var(--text-muted);">'
+            +L('China Meteorological Administration — the public warning list, grouped by province.',
+               '中国気象局（中国気象局）の公開警報一覧。省ごとにまとめています。',
+               'China Meteorological Administration — öffentliche Warnliste, nach Provinz gruppiert.',
+               'Метеорологическое управление Китая — публичный список предупреждений по провинциям.',
+               'Administración Meteorológica de China — lista pública de avisos, agrupada por provincia.')+'</div>'
+            +tierKey()+stLine(FEED_STATE.cma);
+          if(cmaRec&&cmaRec.items&&cmaRec.items.length) h+=grouped(cmaRec.items);
+          else if(FEED_STATE.cma==='ok') h+='<div style="margin-top:8px;color:var(--text-muted);">'+L('Nothing in force right now.','現在、発表中のものはありません。','Derzeit nichts in Kraft.','Сейчас ничего не действует.','Nada vigente ahora.')+'</div>';
+          return h; }
+        if(feed==='meteoalarm'){
+          h+='<div style="margin-top:4px;color:var(--text-muted);">'
+            +L('MeteoAlarm (EUMETNET) — the national weather service’s own warnings, grouped by region.',
+               'MeteoAlarm（EUMETNET）— 各国気象機関が発表した警報を、地域ごとにまとめています。',
+               'MeteoAlarm (EUMETNET) — Warnungen des nationalen Wetterdienstes, nach Region gruppiert.',
+               'MeteoAlarm (EUMETNET) — предупреждения национальной метеослужбы по регионам.',
+               'MeteoAlarm (EUMETNET) — avisos del servicio meteorológico nacional, por región.')+'</div>'
+            +tierKey()+stLine(maData[iso3]?(maData[iso3].error?'error':'ok'):'loading');
+          const md=maData[iso3];
+          if(md&&md.warnings&&md.warnings.length) h+=grouped(md.warnings.map(w=>({area:w.area,adm:w.area,tier:w.tier,kind:w.event,status:w.severity})));
+          else if(md&&!md.error) h+='<div style="margin-top:8px;color:var(--text-muted);">'+L('Nothing in force right now.','現在、発表中のものはありません。','Derzeit nichts in Kraft.','Сейчас ничего не действует.','Nada vigente ahora.')+'</div>';
+          return h; }
         h+='<div style="margin-top:4px;color:var(--text-muted);">'+(feed==='jma'
             ?L('Japan Meteorological Agency, at the unit the warning is issued for.','気象庁・発令単位（都道府県／市町村）','Japanische Wetterbehörde','Метеоагентство Японии','Agencia Meteorológica de Japón')
+            :feed==='eccc'
+            ?L('Environment and Climate Change Canada, active alerts by province.','カナダ環境・気候変動省（州ごとの発表中の警報）','Environment and Climate Change Canada','Министерство окружающей среды Канады','Medio Ambiente y Cambio Climático de Canadá')
             :L('US National Weather Service, active alerts.','米国 国立気象局（発表中の警報）','US-Wetterdienst','Нацслужба погоды США','Servicio Meteorológico Nacional de EE. UU.'))+'</div>';
         h+=tierKey();
         h+=stLine(st);
@@ -1212,14 +1367,50 @@ window.IntMapModules.worldPacks=function(HOST){
           return h; }
         const rows=[]; mine.forEach(f=>{ let it=[]; try{ it=JSON.parse(f.properties.items||'[]'); }catch(_){}
           it.forEach(x=>rows.push(Object.assign({pref:f.properties.name},x))); });
-        rows.sort((a,b)=>b.tier-a.tier);
-        h+='<div style="margin-top:8px;max-height:230px;overflow:auto;">'
-          +rows.slice(0,160).map(x=>'<div style="display:flex;gap:6px;align-items:center;padding:2px 0;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));font-size:11.5px;">'
-            +'<span style="width:9px;height:9px;border-radius:2px;background:'+TIERCOL[x.tier]+';flex:none;"></span>'
-            +'<span style="flex:1;">'+esc(x.area||x.pref)+'</span><b>'+esc(x.kind)+'</b>'
-            +'<span style="opacity:.65;">'+esc(x.status||'')+'</span></div>').join('')
-          +(rows.length>160?('<div style="opacity:.7;padding-top:4px;">+'+(rows.length-160)+'</div>'):'')+'</div>';
+        h+=grouped(rows);
         return h; }
+
+      /* ══ ⚠ (#R266) THE TAP IS A LIST OF ADMINISTRATIVE UNITS, NOT A LIST OF ROWS ════════════════
+         「クリックしたら、例えば、日本なら市町村単位で列挙するのを辞めろ。まずは都道府県でくくるとか、
+           そういうのをどの国でもしろ。」 — MEASURED, Japan under a rain event printed 160 municipality
+         rows in one flat scroll, and there is no reading order in that: the same hazard appears
+         forty times and the prefecture it is in is never stated once.
+         Every feed now labels each row with its admin-1 unit (prefecture / state / province /
+         region), and this is the ONE renderer all of them share: one line per unit, the worst tier
+         as its colour, the distinct hazards named once each, and the individual rows folded behind
+         the browser's own <details>. Nothing is dropped — it is nested. */
+      function grouped(rows,cap){
+        if(!rows||!rows.length) return '';
+        const by=new Map();
+        rows.forEach(x=>{ const k=x.adm||x.pref||x.area||'—';
+          const g=by.get(k)||{tier:0,kinds:new Map(),rows:[]}; by.set(k,g);
+          if((x.tier||0)>g.tier) g.tier=x.tier||0;
+          const kd=x.kind||''; if(kd) g.kinds.set(kd,Math.max(g.kinds.get(kd)||0,x.tier||0));
+          g.rows.push(x); });
+        const list=[...by.entries()].sort((a,b)=>(b[1].tier-a[1].tier)||(b[1].rows.length-a[1].rows.length));
+        const N=cap||60;
+        return '<div style="margin-top:8px;max-height:260px;overflow:auto;">'
+          +list.slice(0,N).map(([k,g])=>{
+            const kinds=[...g.kinds.entries()].sort((a,b)=>b[1]-a[1]).map(([kd,t])=>
+              '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:6px;"><span style="width:7px;height:7px;border-radius:2px;background:'+TIERCOL[t]+';"></span>'+esc(kd)+'</span>').join('');
+            /* ⚠ the fold is per unit, so the CAP has to be per unit too: Japan under a rain event is
+               17 prefectures × ~200 municipalities, and rendering every one produced a 190 kB panel
+               for a phone to lay out. Thirty rows per unit, and the remainder is counted. */
+            const IN=30;
+            const inner=g.rows.slice(0,IN).map(x=>'<div style="display:flex;gap:6px;align-items:center;padding:1px 0;font-size:11px;color:var(--text-muted);">'
+              +'<span style="width:7px;height:7px;border-radius:2px;background:'+TIERCOL[x.tier]+';flex:none;"></span>'
+              +'<span style="flex:1;">'+esc(x.area||'')+'</span><span>'+esc(x.kind||'')+'</span></div>').join('')
+              +(g.rows.length>IN?('<div style="font-size:10.5px;opacity:.7;padding-top:2px;">+'+(g.rows.length-IN)+'</div>'):'');
+            return '<div style="padding:4px 0;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));">'
+              +'<div style="display:flex;gap:6px;align-items:center;font-size:12px;">'
+              +'<span style="width:10px;height:10px;border-radius:3px;background:'+TIERCOL[g.tier]+';flex:none;"></span>'
+              +'<b style="flex:1;">'+esc(k)+'</b><span style="opacity:.7;font-size:11px;">'+g.rows.length+'</span></div>'
+              +(kinds?('<div style="font-size:10.5px;margin:2px 0 0 16px;">'+kinds+'</div>'):'')
+              +(g.rows.length>1?('<details class="im-more" style="margin:2px 0 0 16px;"><summary>'
+                +esc(L('Each area','各区域','Einzelne Gebiete','По районам','Cada zona'))+'</summary>'+inner+'</details>'):'')
+              +'</div>'; }).join('')
+          +(list.length>N?('<div style="opacity:.7;padding-top:4px;font-size:11px;">+'+(list.length-N)+'</div>'):'')
+          +'</div>'; }
 
       /* what is in force RIGHT NOW, worldwide — shown the moment the layer is on, without a tap */
       function overview(){
@@ -1231,6 +1422,9 @@ window.IntMapModules.worldPacks=function(HOST){
             :L('loading…','取得中…','lädt…','загрузка…','cargando…'))+'</span></div>';
         const jp=feats.filter(f=>f.properties.iso==='JPN').length;
         const us=feats.filter(f=>f.properties.iso==='USA').length;
+        const ca=feats.filter(f=>f.properties.iso==='CAN').length;
+        const maN=Object.keys(maData).reduce((n,k)=>n+(((maData[k]||{}).warnings||[]).length),0);
+        const maC=Object.keys(maData).filter(k=>((maData[k]||{}).warnings||[]).length).length;
         const gc=Object.keys(gCountries).length;
         const worst=Object.keys(gCountries).reduce((m,k)=>Math.max(m,gCountries[k].tier||0),0);
         panel.open('<div class="wp-a-body">'
@@ -1239,34 +1433,59 @@ window.IntMapModules.worldPacks=function(HOST){
                 jp+' '+L('prefectures','都道府県','Präfekturen','префектур','prefecturas'))
           +line(L('United States — NWS','米国 — NWS','USA — NWS','США — NWS','EE. UU. — NWS'),'nws',
                 us+' '+L('alert areas','警報区域','Warngebiete','зон','zonas'))
+          +line(L('Canada — ECCC','カナダ — 環境・気候変動省','Kanada — ECCC','Канада — ECCC','Canadá — ECCC'),'eccc',
+                ca+' '+L('alert areas','警報区域','Warngebiete','зон','zonas'))
+          +line(L('Europe — MeteoAlarm (37 services)','ヨーロッパ — MeteoAlarm（37機関）','Europa — MeteoAlarm (37 Dienste)','Европа — MeteoAlarm (37 служб)','Europa — MeteoAlarm (37 servicios)'),'meteoalarm',
+                maN+' '+L('warnings in','件 /',' Warnungen in',' предупреждений в',' avisos en ')+' '+maC+' '+L('countries','か国','Ländern','странах','países'))
+          +line(L('China — CMA','中国 — 中国気象局','China — Wetterdienst CMA','Китай — CMA','China — servicio CMA'),'cma',
+                cmaCount+' '+L('warnings','件','Warnungen','предупреждений','avisos'))
           +line(L('Rest of the world — GDACS','その他の国 — GDACS','Weltweit — GDACS','Остальной мир — GDACS','Resto del mundo — GDACS'),'gdacs',
                 gc+' '+L('countries','か国','Länder','стран','países'))
           +tierKey(GDACS_TIERNAME)
           +'<div style="margin-top:8px;font-size:11.5px;color:var(--text-main);">'
           +L('Tap any country for the legend its own agency uses.','国をタップすると、その国の機関の凡例が出ます。','Land antippen für die Legende der jeweiligen Behörde.','Нажмите страну — появится легенда её службы.','Toque un país para la leyenda de su agencia.')+'</div>'
           +'<div style="margin-top:6px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-          +L('Japan and the United States are drawn at the unit their agency issues at. Everywhere else is GDACS, which is an event feed, not a national warning service — a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.',
-             '日本と米国は各機関の発令単位で描いています。それ以外の国は GDACS で、これは事象の配信であって各国の警報そのものではありません——GDACS の事象が無い国は「警報が無い国」ではありません。表示は参考です。実際には公的機関の発表に従ってください。',
-             'Japan und die USA in den Einheiten ihrer Behörden; sonst GDACS (Ereignisse, keine nationalen Warnungen).',
-             'Япония и США — в единицах их служб; остальное — GDACS (события, а не национальные предупреждения).',
-             'Japón y EE. UU. en sus unidades oficiales; el resto es GDACS (eventos, no avisos nacionales).')+'</div>'
+          +L('Japan, the United States and Canada are drawn at the unit their agency issues at. Europe and China publish a list rather than a shape, so their countries are washed and the tap holds the regions. Russia has no machine-readable public warning feed, so it is on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.',
+             '日本・米国・カナダは各機関の発令単位で描いています。ヨーロッパと中国は図形ではなく一覧で公開されているため、国を色で塗り、タップで地域ごとの内訳を出します。ロシアは機械可読な公開警報フィードが見つからないため GDACS のみです——GDACS は事象の配信であって各国の警報そのものではなく、事象が無い国は「警報が無い国」ではありません。表示は参考です。実際には公的機関の発表に従ってください。',
+             'Japan, die USA und Kanada in den Einheiten ihrer Behörden; Europa und China als Liste (Land eingefärbt, Regionen im Tap); Russland nur über GDACS — kein offener maschinenlesbarer Warndienst gefunden.',
+             'Япония, США и Канада — в единицах их служб; Европа и Китай публикуют список (страна закрашена, регионы в подсказке); Россия — только GDACS, открытого машиночитаемого фида не найдено.',
+             'Japón, EE. UU. y Canadá en sus unidades oficiales; Europa y China publican una lista (país coloreado, regiones al tocar); Rusia solo mediante GDACS — no se encontró un feed público legible por máquina.')+'</div>'
           +(worst>=3?'':'')+'</div>'); }
 
+      /* ⚠ (#R266) 「全然現実の発令に追い付いていない。リアルタイムで反映しろ。」 — the interval was FIVE
+         MINUTES, and a tab that had been in the background for an hour showed whatever it had when
+         it was last looked at, because nothing refreshed on the way back. Both are fixed: 60 s while
+         the layer is on and visible, and an immediate refresh when the tab is fronted. A warning is
+         a safety claim with a clock on it. */
+      function tick(){ if(on&&!document.hidden) refresh(); }
       function toggle(v){ on=v;
         if(!on){ if(timer){ clearInterval(timer); timer=null; } panel.hide(); setVis(LYR,false); setVis([CHORO],false); return; }
         whenDrawable(()=>ensureLayers()); overview(); refresh(); hiResCountries(()=>{ if(on) paintCountries(); });
-        if(!timer) timer=setInterval(()=>{ if(on) refresh(); },300000); }
+        if(!timer) timer=setInterval(tick,60000); }
+      document.addEventListener('visibilitychange',()=>{ if(on&&!document.hidden) refresh(); });
 
       onRestyle(()=>{ if(on) whenDrawable(()=>{ if(ensureLayers()) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,true); paintCountries(); }); });
       mapClick((e)=>{ if(!on) return false;
         const c=countryAt(e.lngLat.lng,e.lngLat.lat); if(!c) return false;
-        panel.open('<div class="wp-a-body">'+legendFor(c)+'</div>'); return true; });
+        panel.open('<div class="wp-a-body">'+legendFor(c)+'</div>');
+        /* (#R266) the four G7 members are fetched up front; any other MeteoAlarm country is fetched
+           the moment somebody asks about it, and the panel is redrawn when it lands. Asking for all
+           thirty-seven at boot would be ~370 MB upstream — see the note in the relay. */
+        if(MA[c]&&!maData[c]){ if(maAsked.indexOf(c)<0) maAsked.push(c);
+          loadMA([c]).then(()=>{ if(on&&panel.shown()) panel.open('<div class="wp-a-body">'+legendFor(c)+'</div>'); paintCountries(); })
+            .catch(()=>{ maData[c]={error:'fetch'}; if(on&&panel.shown()) panel.open('<div class="wp-a-body">'+legendFor(c)+'</div>'); }); }
+        return true; });
 
       STATE.alerts=()=>({ on, areas:feats.length, feeds:Object.keys(FEEDS).concat(['*gdacs']),
         state:Object.assign({},FEED_STATE), countries:Object.keys(gCountries).length, at:lastAt,
-        worst:feats.reduce((m,f)=>Math.max(m,f.properties.tier||0),0) });
+        worst:feats.reduce((m,f)=>Math.max(m,f.properties.tier||0),0),
+        /* (#R266) the new feeds, as facts rather than as a shape in the DOM */
+        national:Object.keys(FEEDS).length, meteoalarm:Object.keys(MA).length,
+        maLoaded:Object.keys(maData).length, maWarnings:Object.keys(maData).reduce((n,k)=>n+(((maData[k]||{}).warnings||[]).length),0),
+        cma:cmaCount, canada:feats.filter(f=>f.properties.iso==='CAN').length, intervalMs:60000 });
       STATE.alertsLegend=(iso3)=>legendFor(String(iso3||'').toUpperCase());
-      window.__wpAlerts={ toggle, refresh };
+      window.__wpAlerts={ toggle, refresh, ask:(iso)=>loadMA([String(iso||'').toUpperCase()]),
+        grouped:(rows)=>grouped(rows), maCountries:()=>Object.keys(MA) };
     })();
 
     /* ══════════════════════════════════════════════════════════════════════════════════════════════

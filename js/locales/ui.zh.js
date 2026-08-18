@@ -157,7 +157,7 @@ window.IntMapLang.define('zh', {
     "lyrNightSide":"晝夜著色",
     "lyrNightSat":"夜間燈光（衛星）",
     "lyrOceanCur":"海流",
-    "lyrPop":"人口密度",
+    "lyrPop":"人口密度（各國）",
     "lyrPopGrid":"人口密度（1 公里網格）",
     "lyrPrecip":"降水量（IMERG）",
     "lyrRadar":"降水雷達（即時）",
@@ -2657,7 +2657,7 @@ window.IntMapLang.define('zh', {
   "GDP per capita (PPP)": "人均GDP（購買力平價）",
   "Geopolitics": "地緣政治",
   "GHRSST MUR sea-ice concentration": "GHRSST MUR 海冰密集度",
-  "Globe tour (slow spin)": "地球導覽（緩慢自轉）",
+  "Auto-rotate": "自動旋轉",
   "Govt debt (% GDP)": "政府債務（占GDP）",
   "HDI": "人類發展指數",
   "Health spending (% GDP)": "醫療支出（占GDP）",
@@ -4109,7 +4109,46 @@ window.IntMapLang.define('zh', {
     "Telecom & internet infrastructure": "電信與網際網路基礎設施",   /* (#R255) */
     "Telephone exchange": "電話交換局",   /* (#R255) */
     "This crop layer could not start.": "無法啟動此作物圖層。",   /* (#R255) */
-    "Zoom in to load this view": "請放大以載入此範圍",
+    "Zoom in to load this view": "請放大以載入此範圍",   /* (#R255) */
+    " countries": " 個國家",   /* (#R266) */
+    " countries reporting": " 個國家有資料",   /* (#R266) */
+    " · ": " · ",   /* (#R266) */
+    "An anomaly is a DIFFERENCE, not a temperature. Each pixel is today’s sea-surface temperature minus the 1985–2014 average for that same spot on that same day of the year, so red means warmer than usual there and blue means cooler than usual there — a +2 °C patch in the Arctic and a +2 °C patch in the tropics are the same departure from normal, not the same water. Grey is normal. The scale is clamped at ±3 °C. This is the map El Niño and La Niña are read off: a warm tongue along the equatorial Pacific is El Niño, a cool one is La Niña.": "距平是「差值」而非水溫本身：每個像素是當日該點的海面水溫，減去同一地點、同一日期的 1985–2014 年平均。紅色代表比當地常年偏暖，藍色代表偏冷，灰色為接近常年；色階上限為 ±3 °C。聖嬰／反聖嬰即由此圖判讀——赤道太平洋出現暖舌為聖嬰，冷舌為反聖嬰。",   /* (#R266) */
+    "Canada — ECCC": "加拿大 — ECCC",   /* (#R266) */
+    "Catholic": "天主教",   /* (#R266) */
+    "China Meteorological Administration — the public warning list, grouped by province.": "中國氣象局公開發布的預警清單，依省份彙整。",   /* (#R266) */
+    "China — CMA": "中國 — 中國氣象局",   /* (#R266) */
+    "Christian (not separated)": "基督宗教（未分教派）",   /* (#R266) */
+    "Each area": "各區域",   /* (#R266) */
+    "Each country is coloured by the group with the largest share; tap a country for the full composition. Source: CIA World Factbook (public domain).": "各國以占比最大的群體上色；點選國家可看完整組成。資料來源：CIA World Factbook（公有領域）。",   /* (#R266) */
+    "Environment and Climate Change Canada, active alerts by province.": "加拿大環境及氣候變化部發布中的警報，依省份分列。",   /* (#R266) */
+    "Europe — MeteoAlarm (37 services)": "歐洲 — MeteoAlarm（37 個機構）",   /* (#R266) */
+    "Finnish 1524 mm": "芬蘭軌距 1524 mm",   /* (#R266) */
+    "Folk & traditional": "民間與傳統宗教",   /* (#R266) */
+    "Global feed: GDACS (Global Disaster Alert and Coordination System, UN/EC) — earthquakes, tropical cyclones, floods, volcanoes, droughts and wildfires of the last four days.": "全球資料源：GDACS（聯合國／歐盟全球災害警報系統）— 最近四天的地震、熱帶氣旋、洪水、火山、乾旱與野火。",   /* (#R266) */
+    "How far today’s sea-surface temperature is from normal for this place and this time of year": "當日海面水溫與該地、該時期常年值的差距",   /* (#R266) */
+    "Japan, the United States and Canada are drawn at the unit their agency issues at. Europe and China publish a list rather than a shape, so their countries are washed and the tap holds the regions. Russia has no machine-readable public warning feed, so it is on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "日本、美國與加拿大依各機關的發布單位繪製。歐洲與中國以清單而非圖形公開，因此以顏色標示國家，點選後顯示各地區明細。俄羅斯未能找到機器可讀的公開警報資料源，僅以 GDACS 呈現——GDACS 是事件資料源，並非各國警報本身，沒有事件不代表沒有警報。此為參考顯示，請以官方機關發布為準。",   /* (#R266) */
+    "Latest per country": "各國最新年",   /* (#R266) */
+    "Live from OpenStreetMap for this view": "此顯示範圍的即時 OpenStreetMap",   /* (#R266) */
+    "MeteoAlarm (EUMETNET) — the national weather service’s own warnings, grouped by region.": "MeteoAlarm（EUMETNET）— 各國氣象機關發布的警報，依地區彙整。",   /* (#R266) */
+    "Normal 1981–2010 (1 km)": "常年值 1981–2010（1 公里）",   /* (#R266) */
+    "Normal: CHELSA V2.1 bio12, mean annual precipitation 1981–2010, 30 arc-seconds (~1 km), reprojected to Web Mercator and masked to land. Its 16-bit storage saturates at 6,553 mm, so the very wettest places (parts of Meghalaya, the Chilean fjords) are shown at that ceiling. Years: GPCC Full Data Monthly V2022 (Deutscher Wetterdienst), a rain-gauge analysis at 0.5° over land, with the twelve monthly totals of each year summed. A gauge analysis has nothing to say over the ocean, which is why the sea is empty in both.": "常年值：CHELSA V2.1 bio12（1981–2010 年平均年降水量，30 角秒 ≈ 1 公里），重新投影為網頁麥卡托並僅顯示陸地。受 16 位元儲存上限影響，於 6,553 公釐飽和，因此最多雨的地區（梅加拉亞部分地區、智利峽灣等）以該上限顯示。年份：GPCC Full Data Monthly V2022（德國氣象局）陸地 0.5° 雨量計分析，將各年十二個月的合計相加。雨量計分析無法描述海上，因此兩者的海域皆為空白。",   /* (#R266) */
+    "Orthodox": "正教會",   /* (#R266) */
+    "Population density /km² (World Bank)": "人口密度 /km²（世界銀行）",   /* (#R266) */
+    "Protestant": "新教",   /* (#R266) */
+    "Russian 1520 mm": "俄羅斯軌距 1520 mm",   /* (#R266) */
+    "Shinto": "神道",   /* (#R266) */
+    "Shipped snapshot": "隨附的快照",   /* (#R266) */
+    "Source text": "出處原文",   /* (#R266) */
+    "Sources and caveats": "出處與注意事項",   /* (#R266) */
+    "That single year’s total, on a 55 km gauge analysis — land only.": "該年一整年的合計，55 公里雨量計分析（僅陸地）。",   /* (#R266) */
+    "The 1981–2010 average, on a 1 km grid — how much rain and snow a place gets in a normal year.": "1981–2010 年的平均，以 1 公里網格呈現：一個地方在常年一年內的雨雪總量。",   /* (#R266) */
+    "The company data could not be loaded just now.": "目前無法載入企業資料。",   /* (#R266) */
+    "Try again": "再試一次",   /* (#R266) */
+    "What is an anomaly?": "什麼是距平？",   /* (#R266) */
+    "warnings": "則",   /* (#R266) */
+    "warnings in": "則 /",   /* (#R266) */
+    "zoom in for the live record": "放大後可取得即時紀錄",   /* (#R266) */
   "Run to steady state": "推進至穩定狀態",
   "Steady state (t → ∞)": "穩定狀態（t → ∞）",
   "The water has come to rest — add a continuous source or place more": "水已靜止——請新增持續水源或再放置更多水",

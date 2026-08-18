@@ -988,7 +988,7 @@ window.IntMapModules.dataLayers=function(HOST){
         /* (#R32b) The World-Bank choropleths + earthquakes are PROMOTED out of "Others (beta)" into real
            groups ("正規レイヤーに") — wbco2/wbforest = environment, the rest = population & economy, eq = hazards. */
         const GROUPS=[
-          ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod','gxaero','gxco','wbco2','wbco2t','wbforest']],   /* (#R261) +total CO₂ emissions, beside the per-capita row it belongs with */   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
+          ['lyrGrpClimate',['climate','annprecip','wind','radar','ec-cloud','snow','aod','gxaero','gxco','wbco2','wbco2t','wbforest']],   /* (#R261) +total CO₂ emissions, beside the per-capita row it belongs with */   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
           /* (#R202) `sats` moved OUT of Maritime and into its own group, second from the top — see the
              lyrGrpOrbit note above. Nothing else moved: live aircraft stay where they were. */
           ['lyrGrpOrbit',['sats','osmspace']],   /* (#R261) +spaceports and satellite ground stations — a one-row shelf is not a category */
@@ -1079,8 +1079,8 @@ window.IntMapModules.dataLayers=function(HOST){
              temp/precip rows carry «DEMOTED to Others(beta) per request» in #R40's note, and the
              ECMWF family sits with them; all of that stays in Beta. Assuming a past instruction has
              expired is the failure this file has warned about twice. */
-          ['lyrGrpEconomy',['trade','industry','wbgdpgrow','wbinfl','wbtrade','wbtax','wbdebt','wbmanuf','wbfdi','wbunemp','wbgni','wbremit','wbtour','wbtourism']],
-          ['lyrGrpSociety',['wblit','wbschool','wbtert','wbedu','osmedu','wbpov','wbgini','wbflfp','wbref','wbaging','wbpopgrow','wburb','wburban','wbrural','wbdensity','cat-religion','cat-language']],
+          ['lyrGrpEconomy',['trade','industry','wbgdpgrow','wbinfl','wbtrade','wbtax','wbdebt','wbmanuf','wbfdi','wbunemp','wbgni','wbremit','wbtour']],
+          ['lyrGrpSociety',['wblit','wbschool','wbtert','wbedu','osmedu','wbpov','wbgini','wbflfp','wbref','wbaging','wbpopgrow','wburb','wbrural','wbdensity','cat-religion','cat-language']],
           ['lyrGrpTransport',['planes','rail','ships','oxrail','oxsea','osmair','osmport']],
           ['lyrGrpAgri',['crops','wbagremp']],
           /* ══ (#R258) A FIFTH NEW CATEGORY — WHERE THE ENERGY AND THE MATERIAL COME FROM ═════════════
@@ -2425,25 +2425,22 @@ window.IntMapModules.dataLayers=function(HOST){
           }
         }
         /* (#R184) satellites: the CelesTrak group is the equivalent of the traffic filter — it decides
-           which catalogue is being propagated at all, so it belongs in the same place. Beside it, the
-           one filter that is real geometry rather than a category: "only what is above the horizon from
-           the map centre", which is what `visible` means for an object 400 km up. */
+           which catalogue is being propagated at all, so it belongs in the same place.
+           ⚠ (#R266) THE "only visible from here" CHECKBOX IS GONE, BY INSTRUCTION (「ここから見えるもの
+           だけ、チェックはいらない」). It was a second, silent way for the layer to be showing fewer
+           objects than the catalogue holds, and the count line already reports drawn/total. The
+           horizon geometry itself stays — `lookFrom` / `nextPass` are what the satellite card uses to
+           say when a pass is — it is only the whole-layer FILTER that no longer exists. */
         if(id==='sats'){
           const A=()=>window.IntMapSatellites;
           const fr=document.createElement('div'); fr.className='gl-filter-row'; fr.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
           const _gL=window.IntMapLang.t(HOST.lang,'Catalog','カタログ','Katalog','Каталог','Catálogo');
-          const _vL=window.IntMapLang.t(HOST.lang,'Only visible from here','ここから見えるものだけ','Nur von hier sichtbare','Только видимые отсюда','Solo los visibles desde aquí');
           let opts='';
           try{ (A()?A().groups():[]).forEach(g=>{ opts+='<option value="'+HOST.escapeHtml(g.id)+'">'+HOST.escapeHtml(g.name)+(g.kb>=1000?(' ('+Math.round(g.kb/1000)+' MB)'):'')+'</option>'; }); }catch(_){}
           fr.innerHTML=_gL+' <select class="gl-satgrp" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;max-width:170px;">'+opts+'</select>';
           el.appendChild(fr);
           const gs=fr.querySelector('.gl-satgrp'); try{ gs.value=A()?A().group():'visual'; }catch(_){}
           gs.addEventListener('change',()=>{ try{ A().setGroup(gs.value); }catch(_){} try{ _satLegendCount(); }catch(_){} });
-          const vw=document.createElement('label'); vw.style.cssText='display:flex;align-items:center;gap:5px;cursor:pointer;';
-          vw.innerHTML='<input type="checkbox" class="gl-satvis" style="accent-color:var(--primary-color);">'+_vL;
-          fr.appendChild(vw);
-          const vc=vw.querySelector('.gl-satvis'); try{ vc.checked=!!(A()&&A().visibleOnly()); }catch(_){}
-          vc.addEventListener('change',()=>{ try{ A().setVisibleOnly(vc.checked); }catch(_){} try{ _satLegendCount(); }catch(_){} });
           const cnt=document.createElement('div'); cnt.className='gl-satcount'; cnt.style.cssText='font-size:10px;color:var(--text-muted);margin-top:3px;';
           el.appendChild(cnt);
           /* fill it NOW rather than on the next one-second tick: the legend is created after the layer

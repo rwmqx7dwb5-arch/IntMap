@@ -190,6 +190,7 @@ import '../js/industry-web.js';
    (the World-data plate and the older data-layers row) read the same grid through it. */
 import '../js/ocean-currents-field.js';
 import '../js/ocean-currents.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is */
+import '../js/precip-annual.js';   /* (#R266) 年降水量 — CHELSA 1 km normal + GPCC per-year, both bundled rasters */
 import '../js/analysis-panels.js';
 import '../js/sims.js';
 import '../js/tables.js';
@@ -330,7 +331,7 @@ const MODULE_FACTORIES = [
   'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
   'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
   'satProto', 'tileWarm', 'orbitPoints', 'limbLayer', 'newsSources', 'industryWeb',
-  'oceanCurrents', 'usElections',
+  'oceanCurrents', 'usElections', 'precipAnnual',
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────
    These eight files are not in the import list above: they are fetched by js/lazy-modules.js the
