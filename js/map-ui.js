@@ -758,8 +758,18 @@ window.IntMapModules.layerSidebar=function(HOST){
            OS action for it and inventing thirteen would be a second registry to keep in step. */
         b.addEventListener('click',()=>{
           if(_toolOn(t)){ _toolOff(t); syncTools(); return; }
-          try{ const OS=window.IntMapOS; if(OS&&OS.exec) OS.exec(t.id,{source:'ui'}); }catch(_){}
-          syncTools(); setTimeout(syncTools,340);   /* a lazily-loaded tool arrives a tick later */
+          /* ⚠⚠ (#R264 追記) THE SYNC WAITS FOR THE OPEN, IT DOES NOT GUESS HOW LONG IT TAKES.
+             PRODUCTION VERIFICATION caught this: eight of these thirteen are LAZY CHUNKS, and a
+             chunk takes seconds, not the 340 ms a timeout was willing to wait — measured on the
+             shipped build, pressing 「地震シミュレーター」 opened the panel (`state().open` true,
+             `#sq-panel` display flex) with the row still UNLIT, and it only lit on the next pointer
+             release anywhere on the page. `OS.exec` hands back whatever the command returned, which
+             for every lazy tool is the promise of its arrival, so that is what the sync hangs off.
+             The timeout stays for the commands that return a plain value. */
+          let p=null;
+          try{ const OS=window.IntMapOS; if(OS&&OS.exec) p=OS.exec(t.id,{source:'ui'}); }catch(_){}
+          syncTools(); setTimeout(syncTools,340);
+          try{ if(p&&typeof p.then==='function') p.then(syncTools,syncTools); }catch(_){}
           try{ if(isMob()) close(); }catch(_){} });   /* on a phone the panel covers the map the tool needs */
         wrap.appendChild(b);
       });

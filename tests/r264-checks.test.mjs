@@ -115,6 +115,11 @@ test('R264 ⑤: every tool row names a module, and every module can report and c
   assert.match(ui, /const _toolOn=\(t\)=>\{ const m=_tmod\(t\);/, 'the row reads the module, never a cached class');
   assert.match(ui, /if\(_toolOn\(t\)\)\{ _toolOff\(t\); syncTools\(\); return; \}/, 'a second press closes');
   assert.match(ui, /function syncTools\(\)/, 'and the rows re-read the modules rather than trusting their own class');
+  /* ⚠ eight of the thirteen are lazy chunks: production verification measured the panel open with
+     the row still unlit, because a fixed timeout cannot outwait a chunk download. The sync hangs off
+     what `exec` returned — the promise of the tool's arrival — not off a guess. */
+  assert.match(ui, /if\(p&&typeof p\.then==='function'\) p\.then\(syncTools,syncTools\);/,
+    'the row is re-synced when the open actually resolves');
   /* the modules themselves — an isOpen() or a state().open, and a close() */
   const FILES = ['js/seismic.js', 'js/tsunami.js', 'js/terrain-water.js', 'js/sims.js',
     'js/viewshed.js', 'js/map-tools.js', 'js/night-sky.js', 'js/drone-nav.js'];
