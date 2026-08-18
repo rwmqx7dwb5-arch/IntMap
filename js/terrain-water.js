@@ -927,7 +927,36 @@ window.IntMapModules.terrainWater=function(HOST){
         await warmDEMTiles(dense.slice(0,40),z,15000,null);
       }catch(_){}
     }
-    const REFINE_MIN_CELLS=3;        /* under this a leg already IS the fine resolution */
+    /* ══ ⚠⚠⚠ (#R264) THE TRIGGER WAS EXACTLY THE FIRST RUNG, SO THE FIRST RUNG WAS NEVER REFINED ═══
+       「地形編集・水流でたまに、直線で地形を完全無視するクソ区間がある。」 — the same sentence a FOURTH
+       time. #R261 built everything below and it works; what it got wrong is one number.
+
+       The ladder's first multiplier is **3**, so one coarse cell of the rung that fires most often
+       is exactly `3 × spacing` — and the trigger was `L > REFINE_MIN_CELLS(3) × spacing`. Strictly
+       greater, against a length that equals it: **every leg of the ×3 rung failed the test by
+       construction** and was drawn as a straight chord. Measured on the shipped build, four traces,
+       real DEM (`_dbgTrace().legs.worst`):
+
+           start          finest   longest leg   at its own rung   at the FINEST sampling
+           Lake Biwa       23 m      280 m          1.0 cells          12   cells
+           Death Valley    23 m      277 m          1.0 cells          12   cells
+           Pannonian       20 m      163 m          2.0 cells           8.4 cells
+           W-Siberia       14 m      112 m          1.9 cells           7.8 cells
+
+       ⚠⚠ AND `coarseLegs` READ **0** ON ALL FOUR, because it counted with the SAME constant the
+       refiner declined on — a counter defined as «longer than the threshold the refiner uses» can
+       never report a leg the refiner skipped. The instrument was guaranteed to agree with the code
+       it was watching ([[intmap-recurring-lessons]]: 自分の検査が自分を捕まえられない).
+
+       Two constants now, because they answer two different questions:
+         · REFINE_MIN_CELLS — when is a leg a CHORD? A step on the fine lattice is one spacing, √2
+           diagonally, so anything past ~1.5 crossed ground it never sampled. Every escalation leg
+           (≥3 fine cells at ×3, ≥9 at ×9, ≥27 at ×27) is now re-walked.
+         · COARSE_REPORT_CELLS — when does the EYE see a seam? Against the FINEST sampling in the
+           trace, which is what the course is drawn at (#R250's ratio), and reported per trace so a
+           decline is visible instead of arithmetically impossible. */
+    const REFINE_MIN_CELLS=1.5;      /* under this a leg already IS the fine resolution */
+    const COARSE_REPORT_CELLS=3;     /* …and this many of the trace's FINEST cells is a visible seam */
     const REFINE_MAX_CELLS=120;      /* cells of the leg that fit one window (N_WIN=161) with margin */
     const RISE_COST_M=30;            /* climbing 1 m costs as much as 30 m of detour */
     let _refineDecline={ span:0, nodata:0, unreachable:0 };
@@ -939,7 +968,7 @@ window.IntMapModules.terrainWater=function(HOST){
        WIDE, not 161 metres, so the answer is to choose the sampling from the leg: `L/120`, floored
        at the trace's own. Worst case that is 26 m for a 3.1 km crossing — the ladder's 27× rung is
        2,196 m, so this is still 84× finer than the decision it is refining. */
-    function refineCrossing(a,b,z,spacingM,corridorM){
+    async function refineCrossing(a,b,z,spacingM,corridorM){
       const L=_gcM(a,b);
       if(!(L>REFINE_MIN_CELLS*spacingM)) return null;
       const sp=Math.max(spacingM,L/REFINE_MAX_CELLS);
@@ -947,7 +976,30 @@ window.IntMapModules.terrainWater=function(HOST){
       const need=Math.ceil(L/sp)+2*Math.ceil(Math.max(2*sp,corridorM||0)/sp)+6;
       if(need>161){ _refineDecline.span++; return null; }
       const n=(need%2)?need:need+1;
-      const W=floodWindow(mid[0],mid[1],n,sp,z); if(!W){ _refineDecline.nodata++; return null; }
+      let W=floodWindow(mid[0],mid[1],n,sp,z);
+      /* ══ ⚠⚠ (#R264) `nodata` IS A FACT ABOUT THE CACHE, NOT ABOUT THE GROUND ══════════════════════
+         `floodWindow` gives up when more than 40% of its cells have no DEM, and the DEM cache is an
+         LRU that this very round made busier: lowering the trigger multiplies the number of refine
+         windows, and js/map-readout.js's `_demCacheTrim` then evicts tiles a LATER, wider window
+         still needs. MEASURED on the first version of this change: Pannonian and W-Siberia went from
+         0 declines to 5 each, and their longest legs went the WRONG WAY (163 → 3,114 m and 112 →
+         753 m) — the ×3 rung was fixed and the ×27/×9 rungs broke, because the small windows had
+         pushed the wide window's tiles out of the cache.
+         `warmCrossing` warms the CHAIN, at most 40 samples spread over the whole escalation; a
+         single 8 km refine window in the middle of it is not what those samples cover. So the window
+         asks for its OWN footprint — a 5×5 lattice over its extent, which cannot miss a tile at any
+         level where a tile is at least a quarter of the window — and the flood is retried once. A
+         decline after that is a real hole in the data and is still counted and printed (#R185). */
+      if(!W){
+        try{ const halfM=(n-1)/2*sp;
+          const dLat=halfM/110574, dLng=halfM/(111320*Math.max(0.05,Math.cos(mid[1]*D)));
+          const pts=[]; for(let j=-2;j<=2;j++) for(let i=-2;i<=2;i++)
+            pts.push([mid[0]+i*dLng/2, Math.max(-84,Math.min(84,mid[1]+j*dLat/2))]);
+          await warmDEMTiles(pts,z,9000,null);
+        }catch(_){}
+        W=floodWindow(mid[0],mid[1],n,sp,z);
+      }
+      if(!W){ _refineDecline.nodata++; return null; }
       const ka=W.at(a[0],a[1]), kb=W.at(b[0],b[1]); if(ka<0||kb<0||ka===kb){ _refineDecline.span++; return null; }
       const N=W.N, surf=W.surf, lo=Math.min(surf[ka],surf[kb]);
       /* the corridor: cells further than this from the segment are not candidates, so a refinement
@@ -1491,10 +1543,11 @@ window.IntMapModules.terrainWater=function(HOST){
                    lattice before it is drawn. See refineCrossing. */
                 let pv=[lng,lat];
                 for(const step of walk){
-                  const fine=refineCrossing(pv,step.at,z,spacing,V3.spacingM);
+                  const fine=await refineCrossing(pv,step.at,z,spacing,V3.spacingM);
                   if(fine){ for(const q of fine){ distM+=gcM(pv,q.at); pv=q.at;
                       path.push(q.at); elev.push(q.e); spac.push(spacing); pts++; } continue; }
-                  if(gcM(pv,step.at)>REFINE_MIN_CELLS*spacing) coarseLegs++;
+                  /* (#R264) counted against the FINEST sampling in the trace — see COARSE_REPORT_CELLS */
+                  if(gcM(pv,step.at)>COARSE_REPORT_CELLS*(minSpacingM||spacing)) coarseLegs++;
                   distM+=gcM(pv,step.at); pv=step.at;
                   path.push(step.at); elev.push(step.e); spac.push(V3.spacingM); pts++; }
                 lakes.push({ at:[lng,lat], depthM:0, areaKm2:fo.areaKm2 });   /* the lake it crossed, and how big */
@@ -1529,11 +1582,11 @@ window.IntMapModules.terrainWater=function(HOST){
               let pv=[lng,lat];
               for(let a2=1;a2<ch3.length;a2++){ const p=V3.ll(ch3[a2]);
                 /* (#R261) the coarse talweg is a corridor, not a course — walk it fine */
-                const fine=refineCrossing(pv,p,z,spacing,V3.spacingM);
+                const fine=await refineCrossing(pv,p,z,spacing,V3.spacingM);
                 if(fine){ for(const q of fine){ distM+=gcM(pv,q.at); pv=q.at;
                     path.push(q.at); elev.push(q.e); spac.push(spacing); pts++;
                     if(distM>=maxKm*1000) break; } }
-                else { if(gcM(pv,p)>REFINE_MIN_CELLS*spacing) coarseLegs++;
+                else { if(gcM(pv,p)>COARSE_REPORT_CELLS*(minSpacingM||spacing)) coarseLegs++;   /* (#R264) against the finest */
                   distM+=gcM(pv,p); pv=p;
                   path.push(p); elev.push(V3.surf[ch3[a2]]); spac.push(V3.spacingM); pts++; }
                 if(distM>=maxKm*1000) break; }
@@ -2572,6 +2625,33 @@ window.IntMapModules.terrainWater=function(HOST){
         const fin=+trace.stepM||0;
         L2.forEach(x=>{ x.rf=(fin>0?x.m/fin:null); });
         const skipped=L2.filter(x=>(x.r!=null&&x.r>1.5)||(x.rf!=null&&x.rf>3)).sort((a,b)=>(b.rf||b.r)-(a.rf||a.r));
+        /* ══ (#R264) THE SYMPTOM ITSELF, MEASURED ═══════════════════════════════════════════════════
+           「直線で地形を完全無視するクソ区間がある」 names a RUN of collinear legs, not one long leg,
+           and three rounds of leg statistics never measured a run. A river bed changes direction at
+           every meander, so consecutive legs whose bearing agrees to within a couple of degrees are
+           a straight section — and how long it is, against the sampling the rest of the course is
+           drawn at, is the number the report is about. */
+        const straight=(()=>{ if(P.length<3) return null;
+          const brg=(a,b)=>Math.atan2((b[0]-a[0])*Math.cos(((a[1]+b[1])/2)*Math.PI/180),(b[1]-a[1]));
+          const TOL=3*Math.PI/180;
+          let best={legs:0,m:0,at:null,i0:0,i1:0}, runN=0, runM=0, runAt=null, runI=0, pb=null;
+          for(let i=1;i<P.length;i++){
+            const b2=brg(P[i-1],P[i]), m=L2[i-1]?L2[i-1].m:0;
+            let d=(pb==null)?Infinity:Math.abs(b2-pb); if(d>Math.PI) d=2*Math.PI-d;
+            if(d<=TOL){ runN++; runM+=m; } else { runN=1; runM=m; runI=i-1; runAt=[+P[i-1][0].toFixed(4),+P[i-1][1].toFixed(4)]; }
+            if(runN>best.legs||(runN===best.legs&&runM>best.m)) best={legs:runN,m:Math.round(runM),at:runAt,i0:runI,i1:i};
+            pb=b2; }
+          /* ⚠ A STRAIGHT RUN IS ONLY A DEFECT IF THERE WAS GROUND TO FOLLOW. Across a lake the
+             least-rise path over a flat surface IS a straight line — every direction costs the
+             same, so the shortest one wins, and that is what water on flat water does. The fall
+             along the run separates the two cases without a judgement call: metres of drop over its
+             whole length, and how much the bed varies at all. */
+          let lo=Infinity, hi=-Infinity;
+          for(let i=best.i0;i<=Math.min(best.i1,e.length-1);i++){ const v=e[i]; if(v<lo) lo=v; if(v>hi) hi=v; }
+          return { longestRunLegs:best.legs, longestRunM:best.m, at:best.at,
+                   cellsAtFinest:(fin>0?+(best.m/fin).toFixed(1):null),
+                   reliefM:(isFinite(hi-lo)?+(hi-lo).toFixed(1):null),
+                   dropM:(e[best.i0]!=null&&e[best.i1]!=null)?+(e[best.i0]-e[best.i1]).toFixed(1):null }; })();
         return { n, wp, first:e[0], last:e[n-1], min:Math.min.apply(null,e), max:Math.max.apply(null,e),
                  q:[q(0),q(0.25),q(0.5),q(0.75),q(1)], drops, flats,
                  legs:{ n:L2.length, maxM:Math.round(Math.max.apply(null,L2.map(x=>x.m).concat([0]))),
@@ -2580,6 +2660,7 @@ window.IntMapModules.terrainWater=function(HOST){
                         worst:skipped.slice(0,6).map(x=>({ m:Math.round(x.m), spacingM:Math.round(x.sp),
                           cellsAtOwnRung:(x.r==null?null:+x.r.toFixed(1)),
                           cellsAtFinest:(x.rf==null?null:+x.rf.toFixed(1)), at:x.at })) },
+                 straight,                                   /* (#R264) the reported symptom, measured */
                  escal:trace.escal, escalMult:trace.escalMult, windows:trace.windows }; },
       clearTrace,
       /* ⚠ (#R258) `editDirty()` — WITHOUT IT THIS DOOR BUILDS NOTHING. MEASURED: adding a levee through

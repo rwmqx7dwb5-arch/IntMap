@@ -382,13 +382,29 @@ window.IntMapModules.layerSidebar=function(HOST){
            verb. ⚠ AND THE OPEN GOES THROUGH THE OS ACTION (`sim.seismic`), which is what the classic
            dropdown's button, the map's right-click menu and the command palette all call — one path,
            three doors ([[intmap-recurring-lessons]] G). */
-        +'#layer-sidebar-r .lst-tools,.lsr-mount .lst-tools{margin-top:18px;}'
+        /* ══ ⚠⚠ (#R264) THE TOOL CARDS ARE CARDS, SO THEY BEHAVE LIKE THE OTHER CARDS ══════════════
+           「レイヤー欄のToolsのカードは、タイルカードと同様に選択中はハイライトし、カード間の間隔が今ない
+             から少し開けること。もう一度タイルを押したら選択解除されるように。」
+           Two of the three are here. MEASURED on the shipped build: the four visible rows had gaps
+           of 0, 0, 0 px (the tile grid beside them is `gap:8px`) because the block was a plain
+           `display:block` wrapper of full-width buttons, and no row ever carried an `on` class —
+           there was no such rule and nothing set one. The gap is now the SAME 8 px the tile grid
+           uses, and `.on` is the SAME accent border + 1 px ring `.lst-tile.on` already draws, so
+           «selected» reads identically whichever kind of card it is. The section heading keeps its
+           16 px of air above and gives up its own bottom margin to the flex gap, so the first card
+           does not sit 16 px further down than the tiles' first row. */
+        +'#layer-sidebar-r .lst-tools,.lsr-mount .lst-tools{margin-top:18px;display:flex;flex-direction:column;gap:8px;}'
+        +'#layer-sidebar-r .lst-tools>.lst-sech,.lsr-mount .lst-tools>.lst-sech{margin-bottom:0;}'
         +'#layer-sidebar-r .lst-toolrow,.lsr-mount .lst-toolrow{width:100%;box-sizing:border-box;display:flex;align-items:center;gap:10px;'
           +'min-height:46px;padding:9px 12px;border-radius:12px;border:1px solid rgba(128,128,128,0.18);'
           +'background:var(--card-bg);color:var(--text-main);font-size:12.5px;font-weight:500;cursor:pointer;text-align:left;'
           +'transition:background .13s ease,border-color .13s ease;-webkit-tap-highlight-color:transparent;}'
         +'#layer-sidebar-r .lst-toolrow:hover,.lsr-mount .lst-toolrow:hover{border-color:rgba(128,128,128,0.38);background:var(--input-bg);}'
         +'#layer-sidebar-r .lst-toolrow:active,.lsr-mount .lst-toolrow:active{transform:scale(0.995);}'
+        /* ⚠ (#R264) AFTER `:hover`, exactly as `.lst-tile.on` is. `#id .cls:hover` and `#id .cls.on`
+           have the SAME specificity, so the one written later wins — an `on` row the pointer happens
+           to be over would otherwise lose its accent border while it is being pressed. */
+        +'#layer-sidebar-r .lst-toolrow.on,.lsr-mount .lst-toolrow.on{border-color:var(--primary-color);box-shadow:0 0 0 1px var(--primary-color);}'
         +'#layer-sidebar-r .lst-toolic,.lsr-mount .lst-toolic{flex:0 0 auto;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;'
           +'background:color-mix(in srgb, var(--primary-color) 16%, transparent);color:var(--primary-color);}'
         +'#layer-sidebar-r .lst-toolt,.lsr-mount .lst-toolt{flex:1;min-width:0;}'
@@ -606,35 +622,43 @@ window.IntMapModules.layerSidebar=function(HOST){
     const _hereLL=()=>{ try{ const c=GE().camera.getCenter(); return { lng:c.lng, lat:c.lat }; }catch(_){ return { lng:0, lat:0 }; } };
     const _lazy=(name,fn)=>()=>window.IntMapLazy.need(name).then(()=>{ try{ return !!fn(); }catch(_){ return false; } });
     const SIM_TOOLS=[
-      { id:'sim.seismic', ic:SVG_QUAKE, run:null,   /* registered in js/app-body.js beside the OS kernel */
+      { id:'sim.seismic', mod:'IntMapSeismic', ic:SVG_QUAKE, run:null,   /* registered in js/app-body.js beside the OS kernel */
         label:()=>T('Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos'),
         hint:()=>T('Place a source and watch the shaking spread','震源を置いて揺れの広がりを見る','Herd setzen und die Erschütterung verfolgen','Задайте очаг и смотрите, как расходятся колебания','Coloque una fuente y vea propagarse el temblor') },
-      { id:'sim.tsunami', ic:SVG_WAVE, en:'Tsunami simulator',
+      { id:'sim.tsunami', mod:'IntMapTsunami', ic:SVG_WAVE, en:'Tsunami simulator',
         run:_lazy('tsunami',()=>window.IntMapTsunami&&window.IntMapTsunami.open(_hereLL())),
         label:()=>T('Tsunami simulator','津波シミュレーター','Tsunami-Simulator','Симулятор цунами','Simulador de tsunamis'),
         hint:()=>T('Solve the wave from a sea-floor rupture','海底の断層から波を解く','Welle aus einem Seebeben lösen','Волна от подводного разрыва','Resuelve la ola de una ruptura submarina') },
-      { id:'sim.terrainWater', ic:SVG_TERR, en:'Terrain & water simulator',
+      { id:'sim.terrainWater', mod:'IntMapTerrainWater', ic:SVG_TERR, en:'Terrain & water simulator',
         run:_lazy('terrainWater',()=>window.IntMapTerrainWater&&window.IntMapTerrainWater.open(_hereLL())),
         label:()=>T('Terrain & water simulator','地形編集・水流シミュレーター','Gelände- & Wasser-Simulator','Симулятор рельефа и водотока','Simulador de terreno y agua'),
         hint:()=>T('Sculpt the ground, pour water, build a levee','地形を盛る・削る、水を流す、堤防を引く','Gelände formen, Wasser gießen, Deich ziehen','Лепите рельеф, лейте воду, стройте дамбу','Modele el terreno, vierta agua, trace un dique') },
-      { id:'sim.radiation', ic:SVG_PLUME, en:'Radioactive plume simulator',
+      /* ⚠⚠ (#R264) THIS ROW HAS NEVER OPENED ANYTHING, AND THAT IS NOT THIS ROUND'S FIX. MEASURED on
+         the shipped build: `IntMapRadiation` (js/sims.js) exposes `run / clear / ISOTOPES / SOURCES /
+         ZONES / resolveSite` and has NO `openPanel` — `typeof` it is `undefined`, the call throws,
+         the catch returns false, and `IntMapOS.exec('sim.radiation')` measured **false**. Unlike the
+         other twelve this simulator has no panel AT ALL; Atlas's `run(site, opts)` is its only door,
+         and picking an isotope and a release rate on the reader's behalf is exactly the invented
+         data the standing rules forbid. Reported rather than papered over. `mod` is still real: the
+         row lights when a plume IS on the map and a second press clears it. */
+      { id:'sim.radiation', mod:'IntMapRadiation', ic:SVG_PLUME, en:'Radioactive plume simulator',
         run:()=>{ try{ return !!(window.IntMapRadiation&&window.IntMapRadiation.openPanel()); }catch(_){ return false; } },
         label:()=>T('Radioactive plume simulator','放射性プルーム拡散シミュレーター','Simulator radioaktiver Fahnen','Симулятор радиоактивного шлейфа','Simulador de pluma radiactiva'),
         hint:()=>T('Disperse a release on the live wind field','実際の風の場で放出を拡散させる','Freisetzung im realen Windfeld ausbreiten','Выброс в реальном поле ветра','Dispersa una emisión con el viento real') },
-      { id:'sim.los', ic:SVG_LOS, en:'Line of sight (radar shadow)',
+      { id:'sim.los', mod:'IntMapLOS', ic:SVG_LOS, en:'Line of sight (radar shadow)',
         run:_lazy('los',()=>window.IntMapLOS&&window.IntMapLOS.open(_hereLL())),
         label:()=>T('Line of sight (radar shadow)','見通し線解析（レーダー死角）','Sichtlinie (Radarschatten)','Линия видимости (радиотень)','Línea de visión (sombra de radar)'),
         hint:()=>T('What the terrain hides from a point','ある地点から地形が隠すもの','Was das Gelände von einem Punkt verbirgt','Что рельеф скрывает от точки','Lo que el terreno oculta desde un punto') },
-      { id:'sim.reach', ic:SVG_REACH, en:'Reachable area',
+      { id:'sim.reach', mod:'IntMapIsochrone', ic:SVG_REACH, en:'Reachable area',
         run:()=>{ try{ return !!(window.IntMapIsochrone&&window.IntMapIsochrone.open(_hereLL())); }catch(_){ return false; } },
         label:()=>T('Reachable area (drive/walk/cycle)','到達圏（車・徒歩・自転車）','Erreichbarkeit (Auto/Fuß/Rad)','Зона доступности (авто/пешком/вело)','Área alcanzable (coche/pie/bici)'),
         hint:()=>T('How far you get in a given time','決めた時間でどこまで行けるか','Wie weit man in einer Zeit kommt','Как далеко можно уехать за время','Hasta dónde se llega en un tiempo') },
-      { id:'sim.sun', ic:SVG_SUN, en:'Sunlight hours & shade',
+      { id:'sim.sun', mod:'IntMapSun', ic:SVG_SUN, en:'Sunlight hours & shade',
         run:()=>{ try{ if(!window.IntMapSun) return false; window.IntMapSun.open();
           const ll=_hereLL(); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(ll.lng,ll.lat); return true; }catch(_){ return false; } },
         label:()=>T('Sunlight hours & shade','日照時間・影の解析','Sonnenstunden & Schatten','Часы солнца и тени','Horas de sol y sombra'),
         hint:()=>T('Where the sun reaches, hour by hour','時間ごとに日が当たる場所','Wo die Sonne stündlich hinkommt','Куда солнце попадает по часам','Dónde llega el sol, hora a hora') },
-      { id:'sim.nightSky', ic:SVG_STAR, en:'Night sky from here',
+      { id:'sim.nightSky', mod:'IntMapNightSky', ic:SVG_STAR, en:'Night sky from here',
         run:_lazy('nightSky',()=>window.IntMapNightSky&&window.IntMapNightSky.open(_hereLL())),
         label:()=>T('Night sky from here','ここからの星空','Sternhimmel von hier','Ночное небо отсюда','El cielo nocturno desde aquí'),
         hint:()=>T('The sky a person standing here has','ここに立つ人に見える空','Der Himmel, den man hier hat','Небо, которое видно отсюда','El cielo que se ve desde aquí') },
@@ -658,23 +682,23 @@ window.IntMapModules.layerSidebar=function(HOST){
          see. They are rows here now, exactly like the other eight.
          ⚠ NOT ADDED, ON PURPOSE: 「⛰ Slope / aspect」 (`IntMapSlope`) is a LAYER — it has its own row
          in the layer list — and the instruction is about the things that are not. */
-      { id:'sim.drone', ic:SVG_DRONE, en:'Drone flight planner',
+      { id:'sim.drone', mod:'IntMapDrone', ic:SVG_DRONE, en:'Drone flight planner',
         run:()=>{ try{ return !!(window.IntMapDrone&&window.IntMapDrone.open()); }catch(_){ return false; } },
         label:()=>T('Drone flight planner','ドローン飛行計画','Drohnen-Flugplanung','Планировщик полёта дрона','Planificador de vuelo de dron'),
         hint:()=>T('Battery, clearance and no-fly zones over the real terrain','実地形の上で電池・対地高度・飛行禁止区域を解く','Akku, Bodenabstand und Sperrzonen über echtem Gelände','Батарея, высота над землёй и бесполётные зоны над реальным рельефом','Batería, margen sobre el suelo y zonas prohibidas en terreno real') },
-      { id:'sim.disaster', ic:SVG_FLOOD, en:'Flood & tsunami hazard',
+      { id:'sim.disaster', mod:'IntMapDisaster', ic:SVG_FLOOD, en:'Flood & tsunami hazard',
         run:()=>{ try{ return !!(window.IntMapDisaster&&window.IntMapDisaster.open(_hereLL())); }catch(_){ return false; } },
         label:()=>T('Flood & tsunami hazard','浸水・津波ハザード','Hochwasser- & Tsunami-Gefahr','Опасность наводнения и цунами','Riesgo de inundación y tsunami'),
         hint:()=>T('What a given water level reaches from here','ある水位がここからどこまで届くか','Wohin ein gegebener Wasserstand reicht','Куда доходит заданный уровень воды','Hasta dónde llega un nivel de agua dado') },
-      { id:'sim.transitReach', ic:SVG_TRANSIT, en:'Transit reachability',
+      { id:'sim.transitReach', mod:'IntMapTransitReach', ic:SVG_TRANSIT, en:'Transit reachability',
         run:()=>{ try{ return !!(window.IntMapTransitReach&&window.IntMapTransitReach.open(_hereLL())); }catch(_){ return false; } },
         label:()=>T('Transit reachability','公共交通の到達圏','Erreichbarkeit mit ÖPNV','Доступность общественным транспортом','Alcance en transporte público'),
         hint:()=>T('How far the timetable takes you, not the road','道路ではなく時刻表で行ける範囲','Wie weit der Fahrplan trägt, nicht die Straße','Куда довезёт расписание, а не дорога','Hasta dónde lleva el horario, no la carretera') },
-      { id:'sim.rf', ic:SVG_RF, en:'Radio coverage',
+      { id:'sim.rf', mod:'IntMapRF', ic:SVG_RF, en:'Radio coverage',
         run:()=>{ try{ return !!(window.IntMapRF&&window.IntMapRF.open(_hereLL())); }catch(_){ return false; } },
         label:()=>T('Radio coverage','電波到達範囲','Funkabdeckung','Зона радиопокрытия','Cobertura de radio'),
         hint:()=>T('Signal strength from a transmitter placed here','ここに置いた送信機の受信強度','Feldstärke eines Senders an dieser Stelle','Уровень сигнала передатчика в этой точке','Intensidad de señal de un emisor aquí') },
-      { id:'sim.earthReplay', ic:SVG_REPLAY, en:'Earth replay (sun over time)',
+      { id:'sim.earthReplay', mod:'IntMapEarthReplay', ic:SVG_REPLAY, en:'Earth replay (sun over time)',
         run:()=>{ try{ return !!(window.IntMapEarthReplay&&window.IntMapEarthReplay.open()); }catch(_){ return false; } },
         label:()=>T('Earth replay (sun over time)','地球リプレイ（太陽の動き）','Erd-Wiedergabe (Sonnenlauf)','Проигрывание Земли (ход Солнца)','Reproducción de la Tierra (el Sol)'),
         hint:()=>T('Run the day and night round the planet','昼と夜を地球上で回して見る','Tag und Nacht um den Planeten laufen lassen','Прогнать день и ночь вокруг планеты','Haga girar el día y la noche por el planeta') },
@@ -684,6 +708,30 @@ window.IntMapModules.layerSidebar=function(HOST){
        boot and `window.IntMapOS` is built later in js/app-body.js, so a registration at load time
        would be a silent no-op (#R200 ⑥'s shape, in a different file). The tile browser is assembled
        long after both exist, and `OS.has` keeps it idempotent. */
+    /* ══ ⚠⚠⚠ (#R264) A TOOL CARD NOW CARRIES THE TOOL'S STATE ══════════════════════════════════════
+       「…選択中はハイライトし…もう一度タイルを押したら選択解除されるように。」 A layer tile can do this
+       because it owns a checkbox; a tool card owns nothing — the state lives in the simulator, so
+       the card has to ASK it. `mod` on each row above is that module's global name, written ONCE
+       per row beside the `run` that opens it, and these two read it:
+
+         · `isOn` — `isOpen()` where the module has one, else `state().open`. Modules whose answer is
+           a drawing rather than a panel (the plume, the transit reach) report their own source, so
+           the highlight is read off what is on the map and cannot disagree with it.
+         · `off`  — the module's `close()`. Five simulators had no way to be shut from outside and
+           two could not say whether they were open at all; those are added in their own files this
+           round (js/sims.js, js/viewshed.js, js/map-tools.js), reusing the body of the ✕ their
+           header already had, so there is one way out rather than two that drift apart.
+
+       ⚠ NOT A SECOND SOURCE OF TRUTH. Nothing is cached here — every read goes to the module, so a
+       panel closed by its own ✕, by Atlas or by a keyboard shortcut is reflected the moment the row
+       is re-synced, and a row can never be lit for a tool that is not running. */
+    const _tmod=(t)=>{ try{ return (t&&t.mod)?(window[t.mod]||null):null; }catch(_){ return null; } };
+    const _toolOn=(t)=>{ const m=_tmod(t); if(!m) return false;
+      try{ if(typeof m.isOpen==='function') return !!m.isOpen(); }catch(_){}
+      try{ if(typeof m.state==='function'){ const s=m.state(); return !!(s&&s.open); } }catch(_){}
+      return false; };
+    const _toolOff=(t)=>{ const m=_tmod(t); if(!m||typeof m.close!=='function') return false;
+      try{ return m.close()!==false; }catch(_){ return false; } };
     function registerSimTools(){ try{ const OS=window.IntMapOS; if(!OS||!OS.register) return;
       SIM_TOOLS.forEach(t=>{ if(!t.run) return; try{ if(OS.has&&OS.has(t.id)) return;
         OS.register(t.id,()=>Promise.resolve(t.run()),{label:t.en,group:'sim'}); }catch(_){} }); }catch(_){} }
@@ -694,7 +742,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       const tt=document.createElement('span'); tt.textContent=T('Tools','ツール','Werkzeuge','Инструменты','Herramientas'); h.appendChild(tt);
       wrap.appendChild(h);
       TOOLS.forEach(t=>{
-        const b=document.createElement('button'); b.type='button'; b.className='lst-toolrow'; b.dataset.act=t.id;
+        const b=document.createElement('button'); b.type='button'; b.className='lst-toolrow'+(_toolOn(t)?' on':''); b.dataset.act=t.id;
         const ic=document.createElement('span'); ic.className='lst-toolic'; ic.innerHTML=t.ic;
         const tx=document.createElement('span'); tx.className='lst-toolt';
         const nm=document.createElement('b'); nm.style.cssText='display:block;font-weight:600;'; nm.textContent=t.label();
@@ -702,12 +750,30 @@ window.IntMapModules.layerSidebar=function(HOST){
         tx.appendChild(nm); tx.appendChild(hn);
         const go=document.createElement('span'); go.className='lst-toolgo'; go.textContent='›';
         b.appendChild(ic); b.appendChild(tx); b.appendChild(go);
-        b.addEventListener('click',()=>{ try{ const OS=window.IntMapOS; if(OS&&OS.exec) OS.exec(t.id,{source:'ui'}); }catch(_){}
+        /* ⚠ (#R264) THE SECOND PRESS CLOSES — and it asks the module, not the class on this button.
+           A row rebuilt while its tool is running, or a tool closed by its own ✕ since this row was
+           drawn, would both make a cached class lie; `_toolOn` is the live answer either way.
+           ⚠ The OPEN still goes through `IntMapOS.exec` — one door, pressed by the palette, the
+           right-click menu and this row alike (#R242). Only the CLOSE is direct, because there is no
+           OS action for it and inventing thirteen would be a second registry to keep in step. */
+        b.addEventListener('click',()=>{
+          if(_toolOn(t)){ _toolOff(t); syncTools(); return; }
+          try{ const OS=window.IntMapOS; if(OS&&OS.exec) OS.exec(t.id,{source:'ui'}); }catch(_){}
+          syncTools(); setTimeout(syncTools,340);   /* a lazily-loaded tool arrives a tick later */
           try{ if(isMob()) close(); }catch(_){} });   /* on a phone the panel covers the map the tool needs */
         wrap.appendChild(b);
       });
       return wrap;
     }
+    /* ══ (#R264) …AND THE ROWS FOLLOW THE TOOLS, NOT ONLY THE PRESSES ═══════════════════════════════
+       A simulator is closed from its own ✕ far more often than from this list, and #R254's lesson is
+       that a highlight which only updates on its own button is a highlight that goes stale and lies.
+       The cheapest honest signal is that closing anything is a POINTER RELEASE somewhere on the page,
+       so the rows re-read the modules just after one — 13 property reads, and only while a tools
+       block is actually mounted. No timer, no observer, no second copy of the state. */
+    function syncTools(){ try{ _liveHosts().forEach(h=>h.querySelectorAll('.lst-toolrow').forEach(b=>{
+      const t=TOOLS.find(x=>x.id===b.dataset.act); if(!t) return; b.classList.toggle('on',_toolOn(t)); })); }catch(_){} }
+    try{ document.addEventListener('pointerup',()=>{ try{ if(document.querySelector('.lst-toolrow')) setTimeout(syncTools,60); }catch(_){} },true); }catch(_){}
     /* cheap state re-sync (no rebuild): reflect the live checkboxes onto the existing tiles */
     function syncTiles(){ try{ _liveHosts().forEach(h=>h.querySelectorAll('.lst-tile').forEach(t2=>{ const id=t2.dataset.lid; if(!id) return;
       const cb=document.getElementById(id); if(cb) t2.classList.toggle('on',!!cb.checked); })); }catch(_){} }
