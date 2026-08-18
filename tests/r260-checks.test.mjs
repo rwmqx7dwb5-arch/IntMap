@@ -48,9 +48,14 @@ test('#R260 ② CLAUDE.md still carries each clause of the finish procedure', ()
     ['commit と push',           'GitHub へ push'],
     ['変更が無ければ commit しない', '不要な commit を作成しない'],
     ['GitHub が最新であることの確認', '最新状態になっていることを確認'],
-    ['1 暦日 1 回',              '1 暦日につき最大 1 回'],
-    ['同日の以後はスキップ',     'その日の以後のセッションでは USB 同期を行わない'],
-    ['日付をローカルに記録',     'usb-backup-state.json'],
+    /* ⚠⚠ (#R267) THE CADENCE CHANGED BY INSTRUCTION, NOT BY DRIFT.
+       「これからはIntMapのUSBメモリバックアップは、一日一回ではなく毎回に。」 — so the two rules that
+       pinned «at most once a calendar day» and «skip for the rest of that day» are replaced by the
+       rule that replaced them. Everything else in this list is untouched: what #R260 established is
+       that the finish procedure is WRITTEN DOWN, and it still is. */
+    ['毎回同期する',             '依頼された作業が完了するたびに毎回'],
+    ['1日1回の制限は無い',       '1 日 1 回の制限は無い'],
+    ['日時をローカルに記録',     'usb-backup-state.json'],
     ['成功時のみ日付を更新',     '正常完了した場合のみ'],
     ['未接続はエラーにしない',   'エラー扱いにせず'],
     ['恒久的な識別',             'Volume Label'],
@@ -71,7 +76,7 @@ test('#R260 ② CLAUDE.md still carries each clause of the finish procedure', ()
     ['失敗したら自分で直す',     '自動的に修正・再同期・再検証'],
     ['1回で諦めない',            '1 回失敗しただけで諦めない'],
     ['無限ループにしない',       '無限ループにはせず'],
-    ['失敗日は記録しない',       'その日の「バックアップ済み」記録を更新してはならない'],
+    ['失敗時は記録しない',       '「バックアップ済み」記録を更新してはならない'],
     ['失敗を隠さない',           'その事実を隠さず明示する'],
   ];
   for (const [name, needle] of rules) {
@@ -84,9 +89,10 @@ test('#R260 ② CLAUDE.md still carries each clause of the finish procedure', ()
 test('#R260 ③ the finish report has a line for each outcome', () => {
   const md = read('CLAUDE.md');
   for (const [what, needle] of [
-    ['同期した日',   'USB: 2026-08-18 同期済み'],
+    /* (#R267) the sample line carries a TIME now — «once a day» was the only reason a bare date
+       was enough — and the «already done today» shape is gone with the rule that produced it. */
+    ['同期した日時', 'USB: 2026-08-19 14:20 同期済み'],
     ['検証の結果',   'USB検証: 差分ゼロ'],
-    ['本日済み',     'USB: 本日バックアップ済みのためスキップ'],
     ['未接続',       'USB: 未接続のためスキップ'],
     ['GitHub の行',  'GitHub: push済み / 最新'],
   ]) {

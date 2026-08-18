@@ -22,22 +22,33 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
    own rung, 12 of the trace's finest). The assertion is the RELATION, not the number: whatever the
    two constants become, the trigger has to sit under the smallest rung the escalation can take. */
 test('R264 ①: the crossing refinement triggers below the escalation ladder’s first rung', () => {
-  const s = read('js/terrain-water.js');
-  const trig = s.match(/const REFINE_MIN_CELLS=([\d.]+);/);
-  assert.ok(trig, 'REFINE_MIN_CELLS is still the refinement trigger');
-  /* the ladder that MATTERS is the one whose legs are handed to refineCrossing — js/terrain-water.js
-     has a second, unrelated `mult` loop in pitEscape(), which draws nothing. Anchor on the call. */
-  const call = s.indexOf('refineCrossing(pv,');
-  assert.ok(call > 0, 'the escalation still refines its legs');
-  const ladder = s.lastIndexOf('for(const mult of [', call);
-  assert.ok(ladder > 0, '…and it still walks a ladder of multipliers');
-  const rungs = s.slice(ladder).match(/^for\(const mult of \[([\d,\s]+)\]\)/);
-  assert.ok(rungs, 'the escalation ladder is still a list of multipliers');
-  const first = Math.min(...rungs[1].split(',').map((x) => +x.trim()).filter((x) => x > 0));
-  assert.ok(+trig[1] < first,
-    `the trigger (${trig[1]}) must be under the smallest rung (${first}); equal means that rung is never refined`);
-  assert.match(s, /if\(!\(L>REFINE_MIN_CELLS\*spacingM\)\) return null;/,
-    'and it is still measured against the FINE spacing the leg is drawn into');
+  const src = read('js/terrain-water.js');
+  /* ══ ⚠⚠⚠ (#R267) THE TWO-MODEL ANSWER IS GONE, SO THE ASSERTIONS ABOUT ITS SECOND HALF ARE ═══
+     「上流から下流まで全部同じモデル、描画にしろと言っている。」 — the third time that instruction has
+     been given (#R211, #R255, #R267). The water beyond the working rectangle is now the SAME
+     shallow-water field on the SAME lattice, so the walk, its resolution ladder, its per-window
+     routing, its chain, its cross-sections and its escalation no longer exist to be pinned. What
+     each round actually ESTABLISHED is kept and re-asserted against the model that replaced them.
+     ⚠ This is the seventh consecutive round in which the previous rounds' tests made a correct
+     change look like a regression ([[intmap-recurring-lessons]]): assert the property, not the text.
+  */
+  /* ⚠⚠⚠ WHAT THIS ROUND WAS ABOUT, RE-ASKED OF THE FIELD. 「直線で地形を完全無視するクソ区間が
+     ある」 was reported six times. #R258 fixed the lake crossing, #R261 re-walked every coarse leg on
+     the fine lattice, #R264 fixed the trigger that made the most common rung skip that re-walk, and
+     #R265 found the DEM voids underneath all of it. Four real fixes, all still correct — and all
+     four were about a POLYLINE, which is the object that can have a chord.
+
+     The drawn water is a depth field. Fluxes only ever move water between face neighbours, so the
+     same question — «did any water get somewhere without crossing the ground in between?» — has a
+     provable answer, and `jumpCells()` is the instrument that reports it. That is what replaces
+     every leg-length assertion these rounds accumulated. */
+  assert.ok(!/refineCrossing/.test(src), 'there is no crossing to refine, because there is no chord');
+  assert.ok(!/escalMult/.test(src), 'and no escalation ladder to be one rung short of');
+  assert.match(read('js/water-dynamics.js'), /function jumpCells\(\)\{/,
+    'the symptom is measured on the object that replaced the polyline');
+  assert.match(src, /Object\.assign\(st,S\.jumpCells\(\),/,
+    'and it is measured on every solve, not only behind a debug door');
+  assert.match(src, /result\.sim&&result\.sim\.jumps/, '…and a non-zero reading is printed in the panel');
 });
 
 /* ── ② the counter cannot be defined by the code it is watching ─────────────────────────────────
@@ -45,16 +56,33 @@ test('R264 ①: the crossing refinement triggers below the escalation ladder’s
    four measured traces BY CONSTRUCTION. It is counted against the trace's own finest sampling now —
    what the eye compares (#R250) — which is a different question from «did the refiner take it». */
 test('R264 ②: coarseLegs is counted against the trace’s finest sampling', () => {
-  const s = read('js/terrain-water.js');
-  assert.match(s, /const COARSE_REPORT_CELLS=\d+;/, 'the report threshold is its own constant');
-  const sites = s.match(/coarseLegs\+\+/g) || [];
-  assert.equal(sites.length, 2, 'both fallback branches still count');
-  for (const m of s.matchAll(/if\(gcM\([^)]*\)>([A-Z_]+)\*\(?([A-Za-z|]+)/g)) {
-    assert.equal(m[1], 'COARSE_REPORT_CELLS', 'the counter uses the report threshold');
-    assert.match(m[2], /minSpacingM/, 'against the finest sampling, not the leg’s own rung');
-  }
-  assert.match(s, /straight,\s*\/\* \(#R264\)/,
-    'and the reported symptom — a RUN of collinear legs — is measured too');
+  const src = read('js/terrain-water.js');
+  /* ══ ⚠⚠⚠ (#R267) THE TWO-MODEL ANSWER IS GONE, SO THE ASSERTIONS ABOUT ITS SECOND HALF ARE ═══
+     「上流から下流まで全部同じモデル、描画にしろと言っている。」 — the third time that instruction has
+     been given (#R211, #R255, #R267). The water beyond the working rectangle is now the SAME
+     shallow-water field on the SAME lattice, so the walk, its resolution ladder, its per-window
+     routing, its chain, its cross-sections and its escalation no longer exist to be pinned. What
+     each round actually ESTABLISHED is kept and re-asserted against the model that replaced them.
+     ⚠ This is the seventh consecutive round in which the previous rounds' tests made a correct
+     change look like a regression ([[intmap-recurring-lessons]]): assert the property, not the text.
+  */
+  /* ⚠⚠⚠ WHAT THIS ROUND WAS ABOUT, RE-ASKED OF THE FIELD. 「直線で地形を完全無視するクソ区間が
+     ある」 was reported six times. #R258 fixed the lake crossing, #R261 re-walked every coarse leg on
+     the fine lattice, #R264 fixed the trigger that made the most common rung skip that re-walk, and
+     #R265 found the DEM voids underneath all of it. Four real fixes, all still correct — and all
+     four were about a POLYLINE, which is the object that can have a chord.
+
+     The drawn water is a depth field. Fluxes only ever move water between face neighbours, so the
+     same question — «did any water get somewhere without crossing the ground in between?» — has a
+     provable answer, and `jumpCells()` is the instrument that reports it. That is what replaces
+     every leg-length assertion these rounds accumulated. */
+  assert.ok(!/refineCrossing/.test(src), 'there is no crossing to refine, because there is no chord');
+  assert.ok(!/escalMult/.test(src), 'and no escalation ladder to be one rung short of');
+  assert.match(read('js/water-dynamics.js'), /function jumpCells\(\)\{/,
+    'the symptom is measured on the object that replaced the polyline');
+  assert.match(src, /Object\.assign\(st,S\.jumpCells\(\),/,
+    'and it is measured on every solve, not only behind a debug door');
+  assert.match(src, /result\.sim&&result\.sim\.jumps/, '…and a non-zero reading is printed in the panel');
 });
 
 /* ── ③ the data-centre layer has one window, not two ────────────────────────────────────────────
