@@ -263,6 +263,12 @@ window.IntMapRefData=(function(){
     {n:'AWS Terrain Tiles — the bundled global sea floor',u:'https://registry.opendata.aws/terrain-tiles/'},
     {n:'Solar System Scope — planetary surface textures',u:'https://www.solarsystemscope.com/textures/'},
     {n:'USGS Gazetteer of Planetary Nomenclature',u:'https://planetarynames.wr.usgs.gov/'},
+    /* (#R263) the shipped earth model the earthquake simulator's regional constants come from,
+       and the recordings its validation harness is scored against */
+    {n:'CRUST1.0 — global crustal model',u:'https://igppweb.ucsd.edu/~gabi/crust1.html'},
+    {n:'USGS Slab2 — subduction zone geometry',u:'https://www.sciencebase.gov/catalog/item/5aa1b00ee4b0b1c392e86467'},
+    {n:'Bird (2003) PB2002 plate boundaries',u:'https://github.com/fraxen/tectonicplates'},
+    {n:'USGS ShakeMap station lists',u:'https://earthquake.usgs.gov/data/shakemap/'},
     {n:'OpenRailwayMap / OpenSeaMap',u:'https://www.openrailwaymap.org/'},
     {n:'Wikipedia / Wikimedia',u:'https://www.wikipedia.org/'},
     {n:'Public CORS relays (allorigins.win, corsproxy.io, corsfix.com, codetabs.com)',u:'https://corsproxy.io/'},

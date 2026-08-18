@@ -104,7 +104,12 @@ test('R192 seismic: 震度 is the JMA definition, MMI is fed the band an instrum
   /* (#R232) …divided by the directivity factor, because the two source corners move with the
      apparent duration exactly as fc does. The published coefficients are what is pinned. */
   assert.match(s, /const fa=Math\.pow\(10,2\.181-0\.496\*mw\)(?:\/f)?, fb=Math\.pow\(10,2\.41-0\.408\*mw\)(?:\/f)?;/, 'Atkinson & Silva 2000');
-  assert.match(s, /const disp=f=>omega0\*s\.shape\(f\)\*path\(f\);/, 'and the chain uses it');
+  /* ⚠ (#R263) …and the chain still uses it, with one optional factor after it. The displacement
+     spectrum gained a `site` branch — the frequency-dependent quarter-wavelength amplification of a
+     real velocity profile — which multiplies the SAME `omega0*shape*path` product rather than
+     replacing any part of it. Without a site profile the expression is byte-for-byte #R192's. */
+  assert.match(s, /\(f=>omega0\*s\.shape\(f\)\*path\(f\)\*site\.amp\(f\)\)/, 'the site branch multiplies the same product');
+  assert.match(s, /\(f=>omega0\*s\.shape\(f\)\*path\(f\)\);/, 'and without one, the chain is unchanged');
   /* the field carries BOTH quantities, so switching scale still needs no rebuild (#R190) */
   assert.match(s, /pgvArr=new Float32Array\(N\*N\), a0Arr=new Float32Array\(N\*N\)/, 'both are stored per cell');
   assert.match(s, /const I=\(scale==='jma'\)\?jmaOfA0\(a0\):mmiOf\(pgv\);/, 'and each scale reads its own');

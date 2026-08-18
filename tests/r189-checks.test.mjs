@@ -216,7 +216,15 @@ test('R189 seismic: the intensity is a terrain-aware painted field, not contour 
   /* (#R232) one index for both quantities still — but the profile is now chosen by azimuth, because
      rupture directivity makes the source term a function of direction as well as distance. */
   assert.match(src, /const b2=(?:prof|profAt\(lo,la\))\.both\(rM\);/, 'one RVT profile, one index for both quantities');
-  assert.match(src, /const pgv=b2\[0\]\*g, a0=b2\[1\]\*g;/, 'one multiply per cell');
+  /* ⚠ (#R263) THE PROPERTY IS «THE CELL'S SITE TERM SCALES BOTH QUANTITIES», NOT «ONE MULTIPLY».
+     #R189 wrote this as a literal because the site term was a single scalar and one multiply was
+     literally all it took. #R263 added the FREQUENCY-DEPENDENT half of the same site term, so a cell
+     now applies the scalar `g` and then a shape correction `kk` — two multiplies for two halves of
+     one term. What #R189 was defending (both PGV and a₀ scale with this cell's own ground, off one
+     index into one profile) is unchanged, so the assertion states that instead. */
+  assert.match(src, /let pgv=b2\[0\]\*g, a0=b2\[1\]\*g;/, 'the cell\'s scalar site term scales both quantities');
+  assert.match(src, /if\(bank\)\{ const kk=bank\.at\(/, '…and the frequency-shape half is applied to the same pair');
+  assert.match(src, /pgv\*=kk\[0\]; a0\*=kk\[1\];/, 'PGV takes the PGV correction and a₀ takes the a₀ one');
   /* ⚠ (#R212) SEA cells are still not painted — but a cell below zero is no longer assumed to be
      sea. 「海抜0m以下の土地は震源分布の対象外にされるのを辞めろ」: the Jordan Rift, a quarter of the
      Netherlands, the Caspian Depression and Death Valley are dry land below zero and were dropped

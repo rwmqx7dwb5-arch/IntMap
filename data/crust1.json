@@ -1,0 +1,60 @@
+{
+  "source": "CRUST1.0 — Laske, G., Masters, G., Ma, Z. & Pasyanos, M. (2013), Update on CRUST1.0: a 1-degree global model of Earth's crust, Geophys. Res. Abstr. 15, EGU2013-2658",
+  "distribution": "https://igppweb.ucsd.edu/~gabi/crust1/crust1.0.tar.gz",
+  "home": "https://igppweb.ucsd.edu/~gabi/crust1.html",
+  "layers": [
+    "water",
+    "ice",
+    "upper sediments",
+    "middle sediments",
+    "lower sediments",
+    "upper crystalline crust",
+    "middle crystalline crust",
+    "lower crystalline crust",
+    "uppermost mantle"
+  ],
+  "nlon": 360,
+  "nlat": 180,
+  "nlayers": 9,
+  "degrees": 1,
+  "projection": "equirectangular 1°, cell CENTRES 89.5N…-89.5N × -179.5E…179.5E, longitude the inner loop",
+  "planes": [
+    {
+      "name": "bounds",
+      "type": "int16le",
+      "count": 9,
+      "scale": 0.01,
+      "unit": "km, elevation positive up",
+      "note": "top of water · bottom of water · bottom of ice · bottom of sed 1·2·3 · bottom of cryst 1·2·3 (= Moho)"
+    },
+    {
+      "name": "vs",
+      "type": "uint8",
+      "count": 9,
+      "scale": 0.025,
+      "unit": "km/s",
+      "note": "0 = layer absent"
+    },
+    {
+      "name": "rho",
+      "type": "uint8",
+      "count": 9,
+      "scale": 0.02,
+      "unit": "g/cm3"
+    }
+  ],
+  "boundsRangeKm": [
+    -74.81,
+    5.41
+  ],
+  "maxVsKms": 4.71,
+  "maxRhoGcc": 3.46,
+  "landCells": 27118,
+  "meanSedimentKm": 1.435,
+  "maxSedimentKm": 21,
+  "meanMohoKm": 37.22,
+  "maxMohoKm": 80,
+  "bytes": 685522,
+  "bytesRaw": 2332800,
+  "built": "2026-08-18T04:01:36.446Z"
+}

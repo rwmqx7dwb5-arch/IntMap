@@ -90,10 +90,19 @@ test('R223 ④ the implied rupture is the size the magnitude says, and the two p
 });
 
 /* ── ⑤ the site term never collapses to one class while a bundled one exists ───────────────────── */
-test('R223 ⑤ the bundled 0.25° Vs30 raster ships and is consulted everywhere the DEM cannot reach', () => {
+test('R223 ⑤ the bundled Vs30 raster ships and is consulted everywhere the DEM cannot reach', () => {
   assert.ok(existsSync(join(ROOT, 'data/vs30.png')), 'data/vs30.png must ship');
   const man = JSON.parse(read('data/vs30.json'));
-  assert.equal(man.width, 1440); assert.equal(man.height, 720);
+  /* ⚠ (#R263) THE GRAIN IS NO LONGER 0.25°, AND PINNING IT WAS THE WRONG ASSERTION ANYWAY.
+     #R223 pinned 1440 × 720 because that was the raster it shipped; #R263 rebuilt it at 0.05°
+     (7200 × 3600) from the SAME z7 terrarium fetch, which had been averaging 516 samples into every
+     output cell. What #R223 was defending is that a bundled raster EXISTS and is finer than the far
+     field's own cell, so the site term can never collapse to one class — that is what is asserted
+     now, against the far raster's ~28 km cell, and it gets stronger rather than weaker as the
+     resolution improves. */
+  assert.ok(man.width >= 1440 && man.height === man.width / 2, 'a global equirectangular raster, at least as fine as #R223 shipped');
+  assert.ok(360 / man.width <= 0.25, 'never coarser than the 0.25° #R223 established (got ' + (360 / man.width) + '°)');
+  assert.equal(man.degrees, 360 / man.width, 'the manifest agrees with itself');
   assert.ok(man.sampleSpacingM <= 2000, 'the slope must be measured at a spacing the proxy supports');
   assert.ok(man.landCellFraction > 0.2 && man.landCellFraction < 0.4, 'about a third of the Earth is land');
   assert.ok(man.meanVs30 > 200 && man.meanVs30 < 800, 'a plausible global mean (got ' + man.meanVs30 + ')');

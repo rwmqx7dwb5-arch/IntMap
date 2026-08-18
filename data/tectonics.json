@@ -1,0 +1,47 @@
+{
+  "source": "Bird (2003) PB2002 — a digital model of the plate boundaries (Geochem. Geophys. Geosyst. 4(3), 1027)",
+  "distribution": "https://github.com/fraxen/tectonicplates (PB2002_steps.json, PB2002_orogens.json)",
+  "doi": "10.1029/2001GC000252",
+  "method": "nearest PB2002 boundary vertex by great-circle distance, swept to convergence; orogen flag by point-in-polygon against the 13 PB2002 orogen polygons",
+  "width": 1440,
+  "height": 720,
+  "degrees": 0.25,
+  "projection": "equirectangular, -180..180 × 90..-90, pixel centres at (i+0.5), (j+0.5)",
+  "planes": [
+    {
+      "name": "distSqrt4",
+      "bytes": 1,
+      "encoding": "distance to the nearest plate-boundary step as round(4·sqrt(km)); decode km = (v/4)^2"
+    },
+    {
+      "name": "stepClass",
+      "bytes": 1,
+      "encoding": "0=none 1=OSR 2=OTF 3=OCB 4=CTF 5=CRB 6=CCB 7=SUB"
+    },
+    {
+      "name": "orogen",
+      "bytes": 1,
+      "encoding": "1 inside a PB2002 orogen polygon, else 0"
+    }
+  ],
+  "steps": 5824,
+  "boundaryVertices": 269153,
+  "orogenRings": 14,
+  "orogenCells": 62106,
+  "orogenCellFraction": 0.0599,
+  "sweepPasses": 35,
+  "maxDistanceKm": 3998,
+  "classCells": {
+    "none": 0,
+    "OSR": 330198,
+    "OTF": 257223,
+    "OCB": 31718,
+    "CTF": 72328,
+    "CRB": 107134,
+    "CCB": 75693,
+    "SUB": 162506
+  },
+  "bytes": 305856,
+  "bytesRaw": 3110400,
+  "built": "2026-08-18T04:00:16.880Z"
+}
