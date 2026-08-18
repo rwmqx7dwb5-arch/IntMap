@@ -212,7 +212,10 @@ test('R191 seismic: the intensity field reads a FROZEN DEM, so it cannot come ou
   assert.match(ro, /function demSnapshot\(w,s,e,n,z,keep\)/, 'the snapshot holds decoded buffers');
   /* (#R221) demTilePoints joined the export list between demSnapshot and demZoomForMap — the field
      now warms the TILE GRID rather than a fixed lattice of positions. */
-  assert.match(ro, /demElevBilinear, demSnapshot, demTilePoints, demZoomForMap/, 'and is exported');
+  /* (#R265) `demVoidStats` joined the list between them — how much of the published elevation data
+     was a hole, so a void tile is reportable instead of silent. The property is that the snapshot is
+     exported at all, not what its neighbours are. */
+  assert.match(ro, /demElevBilinear, demSnapshot, demTilePoints, demVoidStats, demZoomForMap/, 'and is exported');
   assert.match(read('js/app-body.js'), /get demSnapshot\(\)\{ return demSnapshot; \}/, 'through the host contract');
 });
 

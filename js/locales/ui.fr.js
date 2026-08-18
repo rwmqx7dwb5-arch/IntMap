@@ -4023,5 +4023,25 @@ window.IntMapLang.define('fr', { ui: {
   "Telecom & internet infrastructure": "Infrastructures télécoms et Internet",   /* (#R255) */
   "Telephone exchange": "Central téléphonique",   /* (#R255) */
   "This crop layer could not start.": "Cette couche de cultures n’a pas pu démarrer.",   /* (#R255) */
-  "Zoom in to load this view": "Zoomez pour charger cette vue",   /* (#R255) */
+  "Zoom in to load this view": "Zoomez pour charger cette vue",
+  "Run to steady state": "Jusqu’au régime permanent",
+  "Steady state (t → ∞)": "Régime permanent (t → ∞)",
+  "The water has come to rest — add a continuous source or place more": "L’eau s’est immobilisée — ajoutez une source continue ou davantage d’eau",
+  "front": "front",
+  "Flow": "Écoulement",
+  "left the area": "sorti de la zone",
+  "at rest": "au repos",
+  "at rest this becomes": "au repos",
+  "ticks hit the step cap (the clock ran ahead of the water)": "ticks ont atteint la limite de pas (l’horloge a devancé l’eau)",
+  "Travel time": "Temps de parcours",
+  "over": "sur",
+  "as set": "tel que défini",
+  "from the sources": "d’après les sources",
+  "from the placed volume": "d’après le volume placé",
+  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. ⏭ jumps to the steady state, which is solved by priority-flood depression filling and downslope volume routing.": "Altitudes réelles, sculptées par vous. L’eau est intégrée dans le temps par les équations de Saint-Venant bidimensionnelles sous forme inertielle locale (Bates 2010, schéma centré sur q d’après de Almeida 2012) avec frottement de Manning n = 0,035 : une onde de crue met le temps qu’elle met. ⏭ saute au régime permanent, résolu par remplissage des dépressions priority-flood et routage volumique vers l’aval.",
+  "Longest straight run": "Plus long segment rectiligne",
+  "fall": "dénivelé",
+  "relief": "relief",
+  "— flat water: the shortest way across is the way the water goes": "— eau calme : le chemin le plus court est celui que l’eau emprunte",
+  "— every point on it is a DEM reading": "— chaque point en est une lecture du MNT",   /* (#R255) */
 } });

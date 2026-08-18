@@ -62,22 +62,25 @@ test('R264 ②: coarseLegs is counted against the trace’s finest sampling', ()
    floating `.tool-panel` beside the floating detail card. The card is the one that has to float (it
    is about the point under the finger); the summary is about the layer, so it is rendered into the
    legend block the layer already has. Every figure and every handler is the same markup. */
-test('R264 ③: the data-centre summary has no window of its own', () => {
+/* ⚠⚠ (#R265) THE SUMMARY IS NOT JUST UNHOUSED, IT IS DELETED — 「表示範囲内のものを表示する機能は
+   いらない」. #R264's assertions named `mountSummary` / `dcRender` / `.dc-krow`, i.e. the mechanism,
+   so they would have called this round's deletion a regression. What #R264 was ABOUT is that this
+   layer has ONE floating thing, and that is still the property worth holding: the detail card (the
+   answer about the point under the finger) floats, and nothing else does. */
+test('R264 ③: the data-centre layer floats exactly one thing — the card about a point', () => {
   const s = read('js/datacenters.js');
-  assert.doesNotMatch(s, /id='dc-panel'/, 'the floating summary panel is gone');
-  assert.doesNotMatch(s, /className='tool-panel'/, '…and so is its shell');
-  assert.match(s, /function mountSummary\(el\)\{ sumHost=el\|\|null;/,
-    'the host is handed in by the consumer that builds it');
-  assert.match(s, /function dcRender\(\)\{ const p=dcSumEl\(\); if\(!p\) return;/,
-    'and with no host there is nothing to draw into');
-  /* nothing was dropped: the denominator, the class switches and the largest-in-view list */
-  assert.match(s, /class="dc-krow"/, 'the class rows (which are also the filter) survive');
-  assert.match(s, /class="dc-top"/, 'the largest-in-view list survives');
-  assert.match(s, /st\.withMw/, 'and so does the «N of M publish a capacity» denominator');
-  const c = read('js/layer-packs.js');
-  assert.match(c, /if\(el&&DCM\.mountSummary\) DCM\.mountSummary\(el\)/,
-    'the consumer mounts it on every toggle-on, so a rebuilt row keeps the summary');
-  assert.match(c, /if\(DCM\.unmountSummary\) DCM\.unmountSummary\(\)/, 'and takes it away with the layer');
+  assert.doesNotMatch(s, /id='dc-panel'/, 'no floating summary panel');
+  assert.doesNotMatch(s, /className='tool-panel'/, '…and no shell for one');
+  /* the in-view readout is gone outright (#R265) */
+  for (const gone of ['dcStats', 'dcRender', 'mountSummary', 'unmountSummary', 'sumHost', 'dc-sum']) {
+    assert.doesNotMatch(s, new RegExp('function\\s+' + gone + '\\b|\\b' + gone + ':'),
+      gone + ' is gone with the in-view summary');
+  }
+  assert.doesNotMatch(read('js/layer-packs.js'), /DCM\.(un)?mountSummary/,
+    'and the consumer no longer mounts one');
+  /* what does float is the card, and it places itself beside the point that was clicked (#R255) */
+  assert.match(s, /id='dc-detail'/, 'the detail card survives');
+  assert.match(s, /HOST\.makeDraggable&&HOST\.makeDraggable\(el,el\.querySelector\('\.dc-drag'\)\)/);
 });
 
 /* ── ④ the tool cards are cards ─────────────────────────────────────────────────────────────────

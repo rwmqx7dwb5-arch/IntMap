@@ -330,6 +330,39 @@ window.IntMapModules.mapReadout=function(HOST){
      ⚠ ONE decode canvas for the whole app, reused. Creating 700 canvases to throw 700 away is the
      other half of the allocation this removes. */
   let _decCv=null, _decCtx=null;
+  /* ══ ⚠⚠⚠ (#R265) THE ELEVATION DATA HAS HOLES, AND EVERY ONE OF THEM WAS −32,768 m OF GROUND ════
+     「地形編集・水流でたまに、直線で地形を完全無視するクソ区間がある。」 — a FIFTH report, and the first four
+     rounds all looked at the walk. The walk was never the problem. MEASURED on the shipped build,
+     fetching the tiles directly from the bucket:
+
+         https://…/terrarium/14/9101/5896.png   256×256, loads fine, alpha 255 everywhere,
+                                                 and ALL 65,536 pixels are RGB(0,0,0)
+
+     terrarium encodes height as R·256 + G + B/256 − 32768, so RGB(0,0,0) decodes to −32,768 m. The
+     same ground one level down reads **85.61 m**. Around the Sava floodplain **14 of 49** z14 tiles
+     are like this (Lake Biwa, Death Valley, W-Siberia, Tokyo Bay and Lake Geneva: 0 of 49 each) —
+     which is exactly 「たまに」, and exactly why four rounds of path fixes could not remove it.
+
+     What that did to the water: MEASURED on js/terrain-water.js's working grid over that place,
+     **2,240 of 7,680 sampled cells (29.2 %) read −32,768 m**, and `demMissing` was **0** — nothing
+     was missing, because a number came back. A 1.7 km square of −32.8 km ground is a bottomless pit
+     to the priority flood and, to the crossing refinement, a region whose `max(0, e − lo)` term is
+     zero everywhere — i.e. FREE TO CROSS — so the least-cost path dives in and runs dead straight,
+     because inside the void nothing but distance costs anything. That is the reported symptom.
+     (Lake Biwa's largest basin reported `level: −7,800.7 m` against a spill of 81 m for the same
+     reason — a bilinear blend of one void corner with three real ones.)
+
+     ⚠ THE GUARD IS PHYSICAL, NOT A MAGIC NUMBER. The deepest point on Earth is the Challenger Deep
+     at −10,935 m, and terrarium's own bathymetry bottoms out just above that, so nothing this
+     dataset can legitimately say is under −12,000 m. A reading below that is not ground.
+     ⚠ AND A HOLE IS NOT AN ENDING. `demElevAt` steps DOWN the pyramid instead — the parent tile
+     covers the same place with real, published, coarser data (85.61 m at z12 where z14 is void) —
+     and the parent is requested the moment a holed tile decodes, so the fallback has something to
+     read. What cannot be answered at any level is counted and reportable (#R185: no silent caps). */
+  const DEM_NODATA_BELOW=-12000;   /* Challenger Deep is −10,935 m — under this is not Earth */
+  const DEM_VOID_MIN_Z=6;          /* how far down the pyramid a hole may be chased */
+  const DEM_VOID_STEPS=4;
+  const _demVoid={ tiles:0, holedTiles:0, cells:0, fallbacks:0, unfilled:0 };
   function _decodeTile(img){
     try{
       if(!_decCv){ _decCv=document.createElement('canvas'); _decCv.width=256; _decCv.height=256;
@@ -339,8 +372,15 @@ window.IntMapModules.mapReadout=function(HOST){
       _decCtx.drawImage(img,0,0,256,256);
       const d=_decCtx.getImageData(0,0,256,256).data;
       const out=new Float32Array(65536);
-      for(let i=0,o=0;i<65536;i++,o+=4) out[i]=(d[o]*256+d[o+1]+d[o+2]/256)-32768;
-      return out;
+      let voids=0;
+      for(let i=0,o=0;i<65536;i++,o+=4){
+        /* an untouched pixel of the cleared canvas is (0,0,0,0) and a void terrarium pixel is
+           (0,0,0,255); both decode to −32,768, and both are «no data», not «32.8 km down» */
+        const v=(d[o]*256+d[o+1]+d[o+2]/256)-32768;
+        if(d[o+3]===0||!(v>DEM_NODATA_BELOW)){ out[i]=NaN; voids++; } else out[i]=v;
+      }
+      if(voids){ _demVoid.cells+=voids; _demVoid.holedTiles++; if(voids===65536) _demVoid.tiles++; }
+      return { el:out, voids };
     }catch(e){ return null; }
   }
   /* the decoded elevations for a cache entry — a Float32Array, or null while loading / after a failure */
@@ -368,7 +408,7 @@ window.IntMapModules.mapReadout=function(HOST){
   /* Pick a DEM tile-zoom matched to the map zoom. Zoomed out → low z (a handful of tiles cover the
      whole view, so the readout is instant everywhere). Zoomed in → high z (sharper elevation). */
   function demZoomForMap(){ let mz=4; try{ if(GE().hasRenderer()) mz=GE().camera.getZoom(); }catch(_){} return Math.max(3,Math.min(12,Math.round(mz)+1)); }
-  function demElevAt(lng,lat,onReady,zArg){
+  function demElevAt(lng,lat,onReady,zArg,_step){
     const z=(zArg!=null?zArg:demZoomForMap()); const tl=_ll2tile(lng,lat,z); const xi=Math.floor(tl.x), yi=Math.floor(tl.y);
     if(xi<0||yi<0||xi>=tl.n||yi>=tl.n||lat>85||lat<-85) return null;
     const key=z+'/'+xi+'/'+yi; let c=_demCache.get(key);
@@ -377,7 +417,11 @@ window.IntMapModules.mapReadout=function(HOST){
       _demCache.set(key,'loading');
       const img=new Image(); img.crossOrigin='anonymous';
       /* (#R223) decode straight to elevations and let the <img> go — see _decodeTile */
-      img.onload=()=>{ const el=_decodeTile(img); _demCache.set(key,el||null); if(el&&onReady) onReady(); };
+      img.onload=()=>{ const r=_decodeTile(img); _demCache.set(key,(r&&r.el)||null);
+        /* (#R265) a tile with holes in it: ask for its PARENT now, so the fallback below has real
+           ground to read by the time anything samples this place. One extra tile per holed tile. */
+        if(r&&r.voids&&z>DEM_VOID_MIN_Z){ try{ demElevAt(lng,lat,onReady,z-1,0); }catch(_){} }
+        if(r&&r.el&&onReady) onReady(); };
       /* ⚠ (#R221) A FAILED TILE USED TO BE DEAD FOR THE WHOLE SESSION. `null` is the "asked and got
          nothing" marker, and nothing ever cleared it — so one dropped request (a phone changing
          network, a 503 from the tile host) left a permanent hole that every later intensity field
@@ -394,7 +438,15 @@ window.IntMapModules.mapReadout=function(HOST){
        (#R223) …which is now a Float32Array of metres, so the read is one index */
     const d=_demPix(c); if(!d) return null;
     const px=Math.min(255,Math.max(0,Math.floor((tl.x-xi)*256))), py=Math.min(255,Math.max(0,Math.floor((tl.y-yi)*256)));
-    return _edited(lng,lat,d[py*256+px]);
+    const raw=d[py*256+px];
+    /* (#R265) NaN is a hole in the published data, not an elevation — step down the pyramid, where
+       the same place is covered by real (coarser) ground. Bounded, and counted when it runs out. */
+    if(raw!==raw){
+      const st=_step||0;
+      if(st<DEM_VOID_STEPS&&z>DEM_VOID_MIN_Z){ _demVoid.fallbacks++; return demElevAt(lng,lat,onReady,z-1,st+1); }
+      _demVoid.unfilled++; return null;
+    }
+    return _edited(lng,lat,raw);
   }
   /* ══ (#R255) SCULPTED GROUND IS THE GROUND ═══════════════════════════════════════════════════════
      「盛る、削るはそれに合わせて実際の標高や3D表示も対応させろ。堤防・ダムも同様」 The terrain
@@ -526,7 +578,16 @@ window.IntMapModules.mapReadout=function(HOST){
           const fx=(xx-xi)*256-0.5;
           const ax=Math.max(0,Math.min(255,Math.floor(fx))), bx=Math.min(255,ax+1);
           const tx=Math.max(0,Math.min(1,fx-ax)), tx1=1-tx;
-          return (d[rA+ax]*tx1+d[rA+bx]*tx)*ty1+(d[rB+ax]*tx1+d[rB+bx]*tx)*ty;
+          const a=d[rA+ax], b=d[rA+bx], c=d[rB+ax], e=d[rB+bx];
+          /* (#R265) the same renormalisation demElevBilinear does — this sampler feeds the seismic
+             and tsunami fields, which were reading −32,768 m as ground wherever a tile has holes.
+             No hole at all (the overwhelming case) is the original expression, term for term. */
+          if(a===a&&b===b&&c===c&&e===e) return (a*tx1+b*tx)*ty1+(c*tx1+e*tx)*ty;
+          const wa=tx1*ty1, wb=tx*ty1, wc=tx1*ty, we=tx*ty;
+          let sum=0, wsum=0;
+          if(a===a){ sum+=a*wa; wsum+=wa; } if(b===b){ sum+=b*wb; wsum+=wb; }
+          if(c===c){ sum+=c*wc; wsum+=wc; } if(e===e){ sum+=e*we; wsum+=we; }
+          return (wsum>0)?(sum/wsum):null;
         };
       } };
     return api;
@@ -543,7 +604,16 @@ window.IntMapModules.mapReadout=function(HOST){
     const x0=Math.max(0,Math.min(255,Math.floor(fx))), y0=Math.max(0,Math.min(255,Math.floor(fy)));
     const x1=Math.min(255,x0+1), y1=Math.min(255,y0+1); const tx=Math.max(0,Math.min(1,fx-x0)), ty=Math.max(0,Math.min(1,fy-y0));
     const a=d[y0*256+x0], b=d[y0*256+x1], c=d[y1*256+x0], e=d[y1*256+x1];
-    return _edited(lng,lat,(a*(1-tx)+b*tx)*(1-ty)+(c*(1-tx)+e*tx)*ty);   /* (#R255) …and the sculpted delta */
+    /* ⚠ (#R265) ONE VOID CORNER USED TO POISON THE WHOLE BLEND. A quarter of −32,768 mixed with
+       three real 85 m corners is −7,800 m — which is precisely the level js/terrain-water.js
+       reported for Lake Biwa's largest basin. Weights are renormalised over the corners that
+       actually carry data; with none of them the pyramid fallback in demElevAt answers instead. */
+    const wa=(1-tx)*(1-ty), wb=tx*(1-ty), wc=(1-tx)*ty, we=tx*ty;
+    let sum=0, wsum=0;
+    if(a===a){ sum+=a*wa; wsum+=wa; } if(b===b){ sum+=b*wb; wsum+=wb; }
+    if(c===c){ sum+=c*wc; wsum+=wc; } if(e===e){ sum+=e*we; wsum+=we; }
+    if(!(wsum>0)) return demElevAt(lng,lat,null,z);
+    return _edited(lng,lat,sum/wsum);   /* (#R255) …and the sculpted delta */
   }
   /* Elevation/depth respects the measurement-units setting (#R13c): imperial → feet, both → "m (ft)". */
   function fmtElevVal(e){ const m=Math.round(e), ft=Math.round(e*3.28084); const um=(typeof HOST.unitMode!=='undefined')?HOST.unitMode:'both'; return um==='imperial'?(ft.toLocaleString()+' ft'):um==='metric'?(m.toLocaleString()+' m'):(m.toLocaleString()+' m ('+ft.toLocaleString()+' ft)'); }
@@ -656,5 +726,9 @@ const _wxCache=new Map();
     }catch(_){}
   }
   function updateCompass(){ const s=document.querySelector('.compass-svg'); if(s&&GE().hasRenderer())s.style.transform=`rotate(${-GE().camera.getBearing()}deg)`; }
-  return { _demZoomForSpan, demElevAt, demElevBilinear, demSnapshot, demTilePoints, demZoomForMap, releaseDEMHold, fetchBathymetry, fmtElevVal, fmtLL, handleMapClick, refreshGrid, renderCoordReadout, setGrid, showMeasureTip, updateCompass, updateCoord, updateLayerReadout, warmDEMTiles };
+  /* (#R265) what the elevation source could not answer, so a hole is visible instead of silent:
+     `tiles` entirely void, `holedTiles` with any hole, `cells` no-data samples decoded, `fallbacks`
+     samples answered one level down, `unfilled` samples no level could answer. */
+  function demVoidStats(){ return Object.assign({},_demVoid); }
+  return { _demZoomForSpan, demElevAt, demElevBilinear, demSnapshot, demTilePoints, demVoidStats, demZoomForMap, releaseDEMHold, fetchBathymetry, fmtElevVal, fmtLL, handleMapClick, refreshGrid, renderCoordReadout, setGrid, showMeasureTip, updateCompass, updateCoord, updateLayerReadout, warmDEMTiles };
 };
