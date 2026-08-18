@@ -1725,6 +1725,7 @@ window.IntMapLang.define('zh-hans', {
     "Other / biomass": "其他／生质能",   /* (#R258) */
     "Output": "出力",   /* (#R258) */
     "Place water on the map first": "请先在地图上放置水",   /* (#R258) */
+    "OpenStreetMap did not answer — pan or zoom to try again": "OpenStreetMap 没有回应——移动或缩放地图可再试一次",   /* (#R262) */
     "across": "／",   /* (#R261) */
     "Airport / airfield": "机场／飞行场",   /* (#R261) */
     "Airports & air infrastructure": "机场与航空设施",   /* (#R261) */
