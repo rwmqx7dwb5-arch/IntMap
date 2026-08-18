@@ -1049,7 +1049,11 @@ sw.js                           Service Worker（タイル等のキャッシュ�
 CLAUDE.md                       (#R257) Claude Code が**毎セッション自動で読む**恒久指示（作業の進め方・
                                 ワークフロー・確認要件・報告要件）。それまでユーザーが毎回チャットに貼っていた
                                 「IntMap 定例指示」の内容がここに移った。⚠ 秘密情報を書いてはならない
-                                （このリポジトリは public）。
+                                （このリポジトリは public）。(#R258) §11 に**作業終了処理**を追加——
+                                commit / push のあと **USB への完全ミラー（1 日 1 回・PC→USB の一方向・
+                                同期後にハッシュで差分ゼロを検証）**。最後に成功した日付は
+                                `~/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/usb-backup-state.json`
+                                に持つ（リポジトリの外）。
 CLAUDE.local.md                 (#R257) 同じ機構のローカル上書き。**追跡対象外**（.gitignore ＋
                                 .git/info/exclude）。Claude 用 Google アカウントの資格情報など、
                                 公開できない情報だけを置く。
