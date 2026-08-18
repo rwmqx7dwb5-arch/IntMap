@@ -2043,7 +2043,12 @@ window.IntMapModules.terrainWater=function(HOST){
         /* (#R261) 「再生ボタンは四角にしろ。」 — it was `border-radius:19px` on a 38 px box, i.e. a
            circle. A rounded SQUARE now (11 px, the same corner the segmented controls and the
            .tw-btn row in this panel already use), so the transport belongs to the panel it sits in
-           instead of being the one disc in it. Same size, same accent, same states. */
+           instead of being the one disc in it. Same size, same accent, same states.
+           ⚠ THE COMMENT THIS REPLACED SAID «a round accent button, the way the other simulator's
+           player is (#R242)», AND THAT WAS NOT TRUE WHEN IT WAS WRITTEN. `.sq-play` in
+           js/seismic.js is 32 px at `border-radius:9px` — already a rounded square. `.tw-play` was
+           the only disc, so this change makes the two players AGREE rather than diverge. A note
+           that says «matched to X» is only evidence about X if somebody looked at X. */
         '.tw-play{width:38px;height:38px;flex:0 0 auto;border-radius:11px;border:none;background:var(--primary-color);'
           +'color:#fff;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}',
         '.tw-play:disabled{opacity:.42;cursor:default;}',
