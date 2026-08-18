@@ -117,7 +117,8 @@ Deno.serve(async (req) => {
         });
         if (!r.ok) { out[n] = { error: "upstream " + r.status }; return; }
         out[n] = summariseMeteoAlarm(await r.text(), lang);
-      } catch (e) { out[n] = { error: String((e && e.message) || e) }; }
+      } catch (_e) { out[n] = { error: "unreachable" }; }   /* ⚠ the upstream exception is NOT echoed:
+           it can carry a stack, and this response is public (CodeQL js/stack-trace-exposure) */
     }));
     return new Response(JSON.stringify({ countries: out }), {
       headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": CACHE },
@@ -149,8 +150,12 @@ Deno.serve(async (req) => {
       status: r.status,
       headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": CACHE },
     });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: String((e && e.message) || e) }), {
+  } catch (_e) {
+    /* ⚠ ONE WORD, NOT THE EXCEPTION. Whatever went wrong upstream is a server-side fact; echoing it
+       hands a stack trace to anyone who can call this URL (CodeQL js/stack-trace-exposure), and the
+       layer's own legend already says «this feed could not be fetched just now», which is the only
+       thing a reader can act on. */
+    return new Response(JSON.stringify({ error: "upstream unreachable" }), {
       status: 502, headers: { ...CORS, "content-type": "application/json" },
     });
   }

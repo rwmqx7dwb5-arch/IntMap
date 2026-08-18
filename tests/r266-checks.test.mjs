@@ -15,21 +15,21 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const json = (p) => JSON.parse(read(p));
 /* ⚠ THE CHECK MUST NOT BE ABLE TO CATCH THE NOTE THAT EXPLAINS IT. Every «X must be gone» assertion
-   below runs against the file WITH ITS COMMENTS STRIPPED, because this round's own comments quote
-   the very strings being retired — the endpoint that 400s, the archived indicator ids, the
-   hand-typed ISO list. [[intmap-recurring-lessons]] records this shape eight times: a source-text
-   grep whose subject is a string the fix had to name in prose. Strings are left intact, so a real
-   `'SM.POP.REFG'` in code is still caught. */
-const code = (p) => read(p)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')
-  .replace(/^\s*\/\/.*$/gm, '');
+   below names the CODE SHAPE X had — `code:'…'`, `fetch('…')`, `esc(L('…` — and not the bare string,
+   because this round's own comments quote the retired strings to explain why they went:
+   [[intmap-recurring-lessons]] records that shape eight times, and it caught three of these checks
+   on the first run. ⚠ AND NOT BY STRIPPING COMMENTS EITHER: the first fix here was
+   `read(p).replace(/\/\*…\*\//g, ' ')`, which CodeQL reads as an incomplete sanitizer
+   (js/incomplete-sanitization, high) — correctly, since a comment terminator inside a string
+   literal breaks it, which this very note managed to demonstrate on its first draft.
+   Matching on syntax needs no sanitizer at all. */
 
 test('R266 ①: the eight GIBS rasters named for deletion are gone from every surface', () => {
   const DEAD = ['gxtruecolor', 'gxlst', 'gxwvapor', 'gxcloud', 'gxcloudtop', 'gxlstnight', 'gxbtday', 'gxchlor'];
   const files = ['js/layer-packs.js', 'js/layer-previews.js', 'js/atlas-console.js', 'js/data-layers.js', 'scripts/static-checks.mjs'];
   for (const f of files) {
     const s = read(f);
-    for (const id of DEAD) assert.ok(!code(f).includes(id), `${f} still names ${id}`);
+    for (const id of DEAD) assert.ok(!read(f).includes(id), `${f} still names ${id}`);
   }
   /* …and the ones that were NOT named are still there — a deletion instruction is a list, not a sweep */
   const lp = read('js/layer-packs.js');
@@ -49,10 +49,10 @@ test('R266 ②: the sea-surface-temperature ANOMALY layer explains what an anoma
 });
 
 test('R266 ③: no World-Bank layer points at an indicator the Bank has retired', () => {
-  const s = read('js/wb-layers.js'), c = code('js/wb-layers.js');
+  const s = read('js/wb-layers.js');
   /* the API answers «The indicator was not found. It may have been deleted or archived.» for both */
   for (const dead of ['SM.POP.REFG', 'SH.STA.OWAD.ZS']) {
-    assert.ok(!c.includes("'" + dead + "'"), dead + ' is archived — the layer can only ever say 「取得できませんでした」');
+    assert.ok(!s.includes("code:'" + dead + "'"), dead + ' is archived — the layer can only ever say 「取得できませんでした」');
   }
   assert.ok(s.includes("'SM.POP.RHCR.EA'") && s.includes("'SM.POP.RRWA.EA'"),
     'the refugee layer must sum the UNHCR and UNRWA series that replaced SM.POP.REFG');
@@ -122,9 +122,10 @@ test('R266 ⑥: the warnings layer covers the G7 and China with their own servic
   assert.match(s, /timer=setInterval\(tick,60000\)/, 'the refresh interval is not 60 s');
   assert.match(s, /addEventListener\('visibilitychange'/, 'a backgrounded tab never catches up');
   /* the slow feeds must not hold the fast ones */
-  assert.ok(!/loadMA\(maAsked\)[\s\S]{0,120}\]\)/.test(code('js/world-packs.js')), 'MeteoAlarm is awaited inside the Promise.all again');
+  assert.ok(!/loadMA\(maAsked\)[\s\S]{0,120}\]\)/.test(s), 'MeteoAlarm is awaited inside the Promise.all again');
   /* GDACS's endpoint: the one that answers */
-  assert.ok(!code('js/world-packs.js').includes('geteventlist/MAP?'), 'the GDACS endpoint that 400s is back');
+  assert.ok(!s.includes("fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP"),
+    'the GDACS endpoint that 400s is back');
   assert.match(s, /geteventlist\/SEARCH\?/);
 });
 
@@ -137,7 +138,7 @@ test('R266 ⑦: a tap lists administrative units, not a flat run of municipaliti
   assert.match(s, /adm:p\.province\|\|''/, 'ECCC rows carry no province');
   assert.match(s, /adm:prov/, 'CMA rows carry no province');
   assert.match(s, /const CN_PROV=\{/, 'the Chinese division codes are gone, so China cannot be grouped');
-  assert.ok(!/rows\.slice\(0,160\)\.map/.test(code('js/world-packs.js')), 'the old flat 160-row list is back');
+  assert.ok(!/rows\.slice\(0,160\)\.map/.test(s), 'the old flat 160-row list is back');
 });
 
 test('R266 ⑧: annual precipitation is a measured field, and its grid is read from the manifest', () => {
@@ -192,7 +193,7 @@ test('R266 ⑨: religion is split by denomination and language is not sixteen en
   const s = read('js/layer-packs.js');
   assert.match(s, /file:'data\/religion\.json'/);
   assert.match(s, /file:'data\/language\.json'/);
-  assert.ok(!/christian:'USA CAN MEX/.test(code('js/layer-packs.js')), 'the hand-typed ISO lists are back');
+  assert.ok(!s.includes("christian:'USA CAN MEX BRA ARG"), 'the hand-typed ISO lists are back');
 });
 
 test('R266 ⑩: the long legends fold, and the developer-facing failure text is gone', () => {
@@ -200,7 +201,7 @@ test('R266 ⑩: the long legends fold, and the developer-facing failure text is 
   const iw = read('js/industry-web.js');
   assert.match(iw, /<details class="im-more"/);
   assert.match(iw, /class="iw-retry"/, 'the failure gives the reader nothing to do');
-  assert.ok(!/Nothing is drawn — this is a failed query/.test(code('js/industry-web.js')), 'the developer-facing sentence is back');
+  assert.ok(!iw.includes("esc(L('Nothing is drawn"), 'the developer-facing sentence is back');
   assert.match(read('css/intmap.css'), /\.im-more > summary\{/, 'the disclosure has no styling');
 });
 
@@ -208,7 +209,7 @@ test('R266 ⑪: 1520 and 1524 are two gauges, and the three population layers ar
   const s = read('js/layer-packs.js');
   assert.match(s, /1524:'#f08080'/, 'the Finnish gauge has no colour of its own');
   assert.match(s, /\[1524,LA\('Finnish 1524 mm'/, '…and no legend row');
-  assert.ok(!/Russian 1520\/1524 mm/.test(code('js/layer-packs.js')), 'the merged label is back');
+  assert.ok(!s.includes("LA('Russian 1520/1524 mm'"), 'the merged label is back');
   const rail = json('data/railways_gauge.json');
   const g = {};
   for (const f of rail.features) g[f.properties.g] = (g[f.properties.g] || 0) + 1;
@@ -232,9 +233,8 @@ test('R266 ⑪: 1520 and 1524 are two gauges, and the three population layers ar
 
 test('R266 ⑫: the satellite layer has no second way to be showing fewer objects', () => {
   const sl = read('js/satellites-live.js');
-  const slc = code('js/satellites-live.js');
-  assert.ok(!/setVisibleOnly/.test(slc), 'the filter API is back');
-  assert.ok(!/let visibleOnly/.test(slc), 'the filter state is back');
+  assert.ok(!/setVisibleOnly/.test(sl), 'the filter API is back');
+  assert.ok(!/let visibleOnly/.test(sl), 'the filter state is back');
   assert.match(sl, /function shown\(\)\{ return fixes; \}/, '`shown()` filters again');
   assert.ok(!/gl-satvis/.test(read('js/data-layers.js')), 'the checkbox is back in the legend');
   /* the per-satellite geometry is NOT what was removed */
@@ -245,7 +245,7 @@ test('R266 ⑫: the satellite layer has no second way to be showing fewer object
 test('R266 ⑬: the auto-rotate row is named the same thing in all nine languages', () => {
   const s = read('js/layer-packs.js');
   assert.match(s, /spin:LA\('Auto-rotate','自動回転'/);
-  assert.ok(!/Globe tour \(slow spin\)/.test(code('js/layer-packs.js')));
+  assert.ok(!s.includes("LA('Globe tour (slow spin)'"));
   for (const c of ['fr', 'ko', 'zh', 'zh-hans']) {
     const t = read('js/locales/ui.' + c + '.js');
     assert.match(t, /"Auto-rotate":/, 'ui.' + c + '.js has no entry for the new name');

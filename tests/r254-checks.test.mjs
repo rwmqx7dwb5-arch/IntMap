@@ -199,10 +199,10 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
   });
   /* the two indicators the World Bank retired: the API answers «not found» for these, which is
      what 「難民受入数レイヤーはデータを取得できませんでした」 was */
-  /* ⚠ comments stripped first: #R266's own note has to NAME the archived ids to explain why they
-     went, and a bare `includes` on the file would catch the explanation ([[intmap-recurring-lessons]]) */
-  const wbCode = wb.replace(/\/\*[\s\S]*?\*\//g, ' ');
-  ['SM.POP.REFG', 'SH.STA.OWAD.ZS'].forEach(id => assert.ok(!wbCode.includes("'" + id + "'"),
+  /* ⚠ the DECLARATION, not the id in prose: #R266's own note has to name the archived ids to explain
+     why they went, and a bare `includes` on the file would catch the explanation. (Stripping the
+     comments first is worse — CodeQL reads that regex as an incomplete sanitizer.) */
+  ['SM.POP.REFG', 'SH.STA.OWAD.ZS'].forEach(id => assert.ok(!wb.includes("code:'" + id + "'"),
     id + ' is archived by the World Bank — a layer pointing at it can only ever fail'));
   /* the World-Bank rows that are NOT in Others are the ones filed in a real group */
   ['wbco2', 'wbforest', 'wbagri', 'wbhealth', 'wbnet', 'wbmilgdp', 'wbwomparl']
