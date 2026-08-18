@@ -1721,6 +1721,7 @@ window.IntMapLang.define('zh', {
     "Other / biomass": "其他／生質能",   /* (#R258) */
     "Output": "出力",   /* (#R258) */
     "Place water on the map first": "請先在地圖上放置水",   /* (#R258) */
+    "OpenStreetMap did not answer — pan or zoom to try again": "OpenStreetMap 沒有回應——移動或縮放地圖可再試一次",   /* (#R262) */
     "across": "／",   /* (#R261) */
     "Airport / airfield": "機場／飛行場",   /* (#R261) */
     "Airports & air infrastructure": "機場與航空設施",   /* (#R261) */

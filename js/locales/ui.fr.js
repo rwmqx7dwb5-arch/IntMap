@@ -761,6 +761,7 @@ window.IntMapLang.define('fr', { ui: {
   "Other / biomass": "Autre / biomasse",   /* (#R258) */
   "Output": "Puissance",   /* (#R258) */
   "Place water on the map first": "Placez d'abord de l'eau sur la carte",   /* (#R258) */
+  "OpenStreetMap did not answer — pan or zoom to try again": "OpenStreetMap n’a pas répondu — déplacez ou zoomez pour réessayer",   /* (#R262) */
   "across": "sur",   /* (#R261) */
   "Airport / airfield": "Aéroport / aérodrome",   /* (#R261) */
   "Airports & air infrastructure": "Aéroports et infrastructures aériennes",   /* (#R261) */
