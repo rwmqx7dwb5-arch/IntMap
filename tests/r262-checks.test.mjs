@@ -48,9 +48,16 @@ test('R262 ②: «no answer» and «0 objects» are distinguishable', () => {
   assert.match(s, /OpenStreetMap から応答がありませんでした/, 'the five positional languages are at the call site');
 });
 
-/* ── ③ the build markers name this round ───────────────────────────────────────────────────── */
-test('R262 ③: both build markers name this round', () => {
+/* ── ③ the build markers agree, and do not go backwards ────────────────────────────────────────
+   ⚠ WRITTEN THIS WAY ON PURPOSE. #R261 ⑬ pinned the literal 'R261' and went red the moment #R262
+   bumped the stamp, which is what every round is required to do. The property a round can assert is
+   that the two markers AGREE and are not older than itself; the format and the global monotonicity
+   belong to tests/r169-checks, which already owns them. */
+test('R262 ③: both build markers name one round, and it is not older than R262', () => {
   const s = read('index.html');
-  assert.match(s, /window\.__imBuild='R262'/);
-  assert.match(s, /window\.INTMAP_BUILD='2026-08-18-R262'/);
+  const a = s.match(/window\.__imBuild='R(\d+)'/);
+  const b = s.match(/window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R(\d+)'/);
+  assert.ok(a && b, 'both build markers are present');
+  assert.equal(a[1], b[1], 'the two markers name the same round');
+  assert.ok(Number(a[1]) >= 262, `the build stamp went back to R${a[1]}`);
 });
