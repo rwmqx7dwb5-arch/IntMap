@@ -4168,6 +4168,8 @@ window.IntMapLang.define('zh', {
   "fall": "落差",
   "relief": "起伏",
   "— flat water: the shortest way across is the way the water goes": "——平靜水面：最短路徑就是水的路徑",
+    "Annual precipitation (by country)": "年降水量（各國平均）",   /* (#R266) */
+    "Also in GDACS for this country — an event feed, not this agency’s warnings": "此國家在 GDACS 中的事件 — 這是事件資料源，並非該機關的警報",   /* (#R266) */
   "— every point on it is a DEM reading": "——其上每一點都是實測 DEM 值",   /* (#R255) */
   }
 });

@@ -130,6 +130,12 @@ test('R266 ⑥: the warnings layer covers the G7 and China with their own servic
   /* GDACS's endpoint: the one that answers */
   assert.ok(!s.includes("fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP"),
     'the GDACS endpoint that 400s is back');
+  /* (#R266 追記) a GDACS event must not be listed under a national agency's heading — `mine` carries
+     both and the tier sort put GDACS first (measured on production: the United States panel opened
+     with 「Flood in United States」 under «US National Weather Service, active alerts») */
+  assert.match(s, /const rows=\[\], gRows=\[\];/, 'the national rows and the GDACS rows are one list again');
+  assert.match(s, /f\.properties\.src==='gdacs'\)\?gRows:rows/, 'nothing separates them');
+  assert.match(s, /Also in GDACS for this country/, 'the GDACS block has no heading of its own');
   assert.match(s, /geteventlist\/SEARCH\?/);
 });
 
@@ -171,7 +177,14 @@ test('R266 ⑧: annual precipitation is a measured field, and its grid is read f
     assert.ok(st.size < 12 * 1024 * 1024, f + ' is too heavy to ship');
   }
   /* the country-average World-Bank precipitation layer is still there — this is additive */
-  assert.match(read('js/layer-packs.js'), /AG\.LND\.PRCP\.MM/);
+  const lp = read('js/layer-packs.js');
+  assert.match(lp, /AG\.LND\.PRCP\.MM/);
+  /* ⚠ (#R266 追記) …AND THE TWO ARE NOT BOTH CALLED «Annual precipitation». Measured on production:
+     the new 1 km field and the World-Bank country average both read 「年降水量」 in the layer list —
+     the very ambiguity 「人口密度レイヤは、国別とグリッドで名称の区別をつけて」 was reported about,
+     reproduced by this round's own addition. */
+  assert.match(lp, /precip:LA\('Annual precipitation \(by country\)'/, 'the country average does not say so');
+  assert.ok(!/precip:LA\('Annual precipitation','/.test(lp), 'the two precipitation layers share a name again');
 });
 
 test('R266 ⑨: religion is split by denomination and language is not sixteen entries', () => {
