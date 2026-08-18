@@ -4013,5 +4013,25 @@ window.IntMapLang.define('ko', { ui: {
   "Telecom & internet infrastructure": "통신·인터넷 기반시설",   /* (#R255) */
   "Telephone exchange": "전화 교환국",   /* (#R255) */
   "This crop layer could not start.": "이 작물 레이어를 시작할 수 없었습니다.",   /* (#R255) */
-  "Zoom in to load this view": "이 범위를 불러오려면 확대하세요",   /* (#R255) */
+  "Zoom in to load this view": "이 범위를 불러오려면 확대하세요",
+  "Run to steady state": "정상 상태까지 진행",
+  "Steady state (t → ∞)": "정상 상태 (t → ∞)",
+  "The water has come to rest — add a continuous source or place more": "물이 멈췄습니다 — 연속 수원을 추가하거나 물을 더 배치하세요",
+  "front": "선단",
+  "Flow": "흐름",
+  "left the area": "영역 밖으로",
+  "at rest": "정지",
+  "at rest this becomes": "정지 시",
+  "ticks hit the step cap (the clock ran ahead of the water)": "틱이 스텝 상한에 도달 (시계가 물보다 앞섰습니다)",
+  "Travel time": "도달 시간",
+  "over": "구간",
+  "as set": "설정값",
+  "from the sources": "수원의 유량에서",
+  "from the placed volume": "배치한 수량에서",
+  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. ⏭ jumps to the steady state, which is solved by priority-flood depression filling and downslope volume routing.": "실제 표고 데이터를 직접 편집합니다. 물은 2차원 천수방정식의 국소 관성 형식(Bates 2010, de Almeida 2012의 q 중심화)과 매닝 조도 n = 0.035로 시간 적분되므로, 홍수파는 실제로 걸리는 시간만큼 진행합니다. ⏭ 를 누르면 정상 상태(우선순위 침수 기반 요지 충전과 사면 하향 체적 라우팅)로 넘어갑니다.",
+  "Longest straight run": "가장 긴 직선 구간",
+  "fall": "낙차",
+  "relief": "기복",
+  "— flat water: the shortest way across is the way the water goes": "— 잔잔한 수면: 최단 경로가 곧 물의 경로입니다",
+  "— every point on it is a DEM reading": "— 모든 지점이 실측 DEM 값입니다",   /* (#R255) */
 } });

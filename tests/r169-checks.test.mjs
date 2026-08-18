@@ -81,7 +81,7 @@ const MODULES = {
   newsFeed:         { file: 'js/news-feed.js', k: 'IM_NEWSFEED', exports: ['aiTranslateTitles', 'fetchData', 'loadNewsFromSupabase', 'startNews'] },
   articleReader:    { file: 'js/article-reader.js', k: 'IM_READER', exports: ['openArticleInSidebar'] },
   communityBoard:   { file: 'js/community-board.js', k: 'IM_COMMBOARD', exports: ['cmAddPost', 'cmEditPost', 'commCatLabel', 'imViewProfile', 'loadCommunity', 'openComposeModal', 'renderCommList', 'setupCommunityLayer', 'visibleCommunityPosts'] },
-  mapReadout:       { file: 'js/map-readout.js', k: 'IM_READOUT', /* (#R221) demTilePoints + releaseDEMHold: the intensity field asks for one point per DEM TILE and PINS what it warms — see js/map-readout.js */ exports: ['_demZoomForSpan', 'demElevAt', 'demElevBilinear', 'demSnapshot', 'demTilePoints', 'demZoomForMap', 'releaseDEMHold', 'fetchBathymetry', 'fmtElevVal', 'fmtLL', 'handleMapClick', 'refreshGrid', 'renderCoordReadout', 'setGrid', 'showMeasureTip', 'updateCompass', 'updateCoord', 'updateLayerReadout', 'warmDEMTiles'] },
+  mapReadout:       { file: 'js/map-readout.js', k: 'IM_READOUT', /* (#R221) demTilePoints + releaseDEMHold: the intensity field asks for one point per DEM TILE and PINS what it warms — see js/map-readout.js */ exports: ['_demZoomForSpan', 'demElevAt', 'demElevBilinear', 'demSnapshot', 'demTilePoints', 'demVoidStats', 'demZoomForMap', 'releaseDEMHold', 'fetchBathymetry', 'fmtElevVal', 'fmtLL', 'handleMapClick', 'refreshGrid', 'renderCoordReadout', 'setGrid', 'showMeasureTip', 'updateCompass', 'updateCoord', 'updateLayerReadout', 'warmDEMTiles'] },
   elevationProfile: { file: 'js/elevation-profile.js', k: 'IM_ELEVPROF', exports: ['_openProfilePanel'] },
 };
 const NAMES = Object.keys(MODULES);

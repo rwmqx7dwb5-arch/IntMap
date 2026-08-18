@@ -140,11 +140,22 @@ test('R188 water: the drawn body comes from DEM cross-sections, not from one wid
   assert.match(src, /function channelSections\(tr\)\{/, 'there must be a cross-section solve');
   /* continuity: A ∝ 1/√S, scaled once so ∫A ds is the volume the user placed */
   /* (#R189) the scale is the placed volume by default, or the user's discharge when set */
-  assert.match(src, /const C=\(Q!=null\)\?\(Q\/CHEZY_K\):\(V\/Math\.max\(1e-6,tot\)\);/,
+  /* ⚠ (#R265) THE SCALE IS THE DISCHARGE ITSELF NOW. #R188's rule is unchanged — the placed volume,
+     laid along the course by continuity, ∫A ds = V — but it is expressed as a constraint on Q rather
+     than on a Chézy-like factor with no source, because the section is solved at Manning's normal
+     depth and A therefore depends on Q. ∫A ds is monotone increasing in Q, so Q is bisected. */
+  assert.match(src, /const volAt=\(Qv\)=>\{ let v=0; for\(let m=0;m<M;m\+\+\) v\+=atQ\(m,Qv\)\.area\*ds\[m\]; return v; \};/,
+    'the volume the course would hold, as a function of the discharge');
+  assert.match(src, /if\(volAt\(qm\)<V\) q0=qm; else q1=qm;/,
     'the scale comes from the placed volume, or from the set discharge');
-  assert.match(src, /const A=C\/Math\.sqrt\(slope\[m\]\);/, 'section area follows 1/√slope');
-  assert.match(src, /const areaAt=\(h\)=>\{ let acc=0;/, 'the level is solved against the real section');
-  assert.match(src, /for\(let it=0;it<26;it\+\+\)\{ const hm=\(h0\+h1\)\/2;/, 'by bisection on the wetted area');
+  /* ⚠ (#R265) A ∝ 1/√S WAS CHÉZY'S SHAPE; MANNING'S IS SOLVED, NOT WRITTEN. The level whose
+     discharge is Q is found by the same bisection against the same real transect — what changed is
+     that the target is a DISCHARGE rather than a scaled area, so the section carries the depth
+     friction actually permits. `√S` is still the whole slope dependence. */
+  assert.match(src, /return g\.area\*Math\.pow\(g\.area\/g\.wid,2\/3\)\*sq\/NM;/, "section discharge is Manning's");
+  assert.match(src, /sq=Math\.sqrt\(slope\[m\]\)/, '…with the same √slope dependence');
+  assert.match(src, /function geom\(m,h\)\{/, 'the level is solved against the real section');
+  assert.match(src, /for\(let it=0;it<26;it\+\+\)\{ const hm=\(h0\+h1\)\/2;/, 'by bisection, 26 steps as before');
   /* ⚠ (#R211) THE MEASURED BANKS ARE STILL WHAT GETS DRAWN — THE PRIMITIVE CHANGED, NOT THE DATA.
      #R188's claim is that the drawn body comes from `wl`/`wr`, the two banks the transect solve
      measured, rather than from one width. That claim is intact. What a later instruction changed is

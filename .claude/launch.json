@@ -832,6 +832,19 @@
       ],
       "port": 4264,
       "url": "http://127.0.0.1:4264"
+    },
+    {
+      "name": "intmap-preview-r265",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4265"
+      ],
+      "port": 4265,
+      "url": "http://127.0.0.1:4265"
     }
   ]
 }

@@ -272,7 +272,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get areaHTML(){ return areaHTML; },             get ringArea(){ return ringArea; },
     get fmtLL(){ return fmtLL; },                   get hasTurf(){ return hasTurf; },
     get demElevAt(){ return demElevAt; },           get demElevBilinear(){ return demElevBilinear; },
-    get _demZoomForSpan(){ return _demZoomForSpan; }, get warmDEMTiles(){ return warmDEMTiles; }, get demSnapshot(){ return demSnapshot; }, get demTilePoints(){ return demTilePoints; }, get releaseDEMHold(){ return releaseDEMHold; },
+    get _demZoomForSpan(){ return _demZoomForSpan; }, get warmDEMTiles(){ return warmDEMTiles; }, get demSnapshot(){ return demSnapshot; }, get demTilePoints(){ return demTilePoints; }, get releaseDEMHold(){ return releaseDEMHold; }, get demVoidStats(){ return demVoidStats; },
     get layerCbInfo(){ return layerCbInfo; },       get renderLayerFavs(){ return renderLayerFavs; },
     get removePin(){ return removePin; },           get setupIntelLayers(){ return setupIntelLayers; },
     /* ── (#R167) members added for the sixth split (legal / feedback / onboarding / mobile-ui /
@@ -1060,7 +1060,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function updateCoord(){ return IM_READOUT.updateCoord.apply(this,arguments); }
   function updateLayerReadout(){ return IM_READOUT.updateLayerReadout.apply(this,arguments); }
   function warmDEMTiles(){ return IM_READOUT.warmDEMTiles.apply(this,arguments); } function demTilePoints(){ return IM_READOUT.demTilePoints.apply(this,arguments); } function releaseDEMHold(){ return IM_READOUT.releaseDEMHold.apply(this,arguments); }   /* (#R221) one point per DEM TILE, and the pin the intensity field holds them with */
-  function demSnapshot(){ return IM_READOUT.demSnapshot.apply(this,arguments); }   /* (#R191) a frozen DEM for a field built over several frames */
+  function demSnapshot(){ return IM_READOUT.demSnapshot.apply(this,arguments); } function demVoidStats(){ return IM_READOUT.demVoidStats.apply(this,arguments); }   /* (#R191) a frozen DEM for a field built over several frames; (#R265) …and the holes in the published elevation data, counted (the shell has a line budget — tests/r168 #8) */
   const IM_ELEVPROF=window.IntMapModules.elevationProfile(IM_HOST);
   function _openProfilePanel(){ return IM_ELEVPROF._openProfilePanel.apply(this,arguments); }
 

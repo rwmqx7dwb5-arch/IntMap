@@ -32,11 +32,22 @@
  *  Real time: 256² = 65,536 cells, one heap pass and two linear sweeps — a few milliseconds, so the
  *  answer is recomputed on every brush stroke rather than behind a "compute" button.
  *
- *  HONESTY: this is a steady-state routing model, not a shallow-water solver. It answers "where does
- *  the water end up and which way does it leave", which is what the request asks for. It does not
- *  answer "how fast does the front travel" — the panel says so, and IntMapDisaster's inundation model
- *  stays what it is (an existing feature; nothing here replaces it).
+ *  ══ ⚠⚠⚠ (#R265) …AND THE CLOCK NOW MEANS SOMETHING ═══════════════════════════════════════
+ *  「経過時間に対する水の動きが、現実と乖離しすぎ。リアルなモデルにしろ。」
+ *
+ *  Everything above is still here and still true — it is the STEADY STATE, the t → ∞ answer, and it
+ *  is what the downstream trace and the ⏭ button are built on. What was wrong is that it was the
+ *  ONLY answer: the pour transport advanced a simulated clock and re-solved the whole accumulated
+ *  volume on every tick, so the water was already at its final resting place at t = 0⁺ however far
+ *  away that was, and the elapsed-time readout beside it labelled a quantity nothing used.
+ *
+ *  The drawn water is now integrated in time by js/water-dynamics.js — the two-dimensional
+ *  shallow-water equations in their local inertial form (Bates, Horritt & Fewtrell 2010) with the
+ *  q-centred stabilisation of de Almeida et al. (2012) and Manning friction at n = 0.035. ▶ runs
+ *  the clock, ⏸ freezes it, ⏭ jumps to the steady state above, and a flood wave takes the time a
+ *  flood wave takes. See that file's header for the scheme and for what it was validated against.
  * ==========================================================================*/
+import './water-dynamics.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.terrainWater=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -69,17 +80,30 @@ window.IntMapModules.terrainWater=function(HOST){
     let mode='pan';    /* pan | raise | lower | levee | source */
     let brushM=400, brushStrength=20, leveeCrest=8, leveeWidth=60, srcM3=1e6;
     /* (#R189) 「水の水流は設定可能に」 — the channel's DISCHARGE (m³/s). null = the #R188 behaviour:
-       the whole placed volume laid along the course by continuity. A number here scales every
-       cross-section from Q = A·v with v = K·√S instead, so the same course can be drawn carrying a
-       stream or a flood. K is a Chézy-like bulk speed factor: v = 40·√S gives 1.3 m/s on a 0.1 %
-       grade — the middle of what real lowland rivers run. */
-    let flowM3s=null; const CHEZY_K=40;
+       the whole placed volume laid along the course by continuity.
+       ⚠ (#R265) THE CHÉZY-LIKE BULK SPEED FACTOR IS GONE. `v = K·√S` with K = 40 was a number with
+       no source, and it was a DIFFERENT friction law from the one the grid runs on. Both halves use
+       Manning at js/water-dynamics.js's n now — see channelSections.
+       ⚠⚠ THE OLD NAME IS DELIBERATELY NOT WRITTEN HERE. tests/r265 ⑥ asserts the identifier is gone
+       from this file, and a specimen of it in prose is an occurrence — [[intmap-recurring-lessons]]
+       «自分の検査が自分のコメントに当たる», which this project has now paid for nine times. */
+    let flowM3s=null;
     let drafting=null; /* a levee being drawn */
     let undoStack=[];
     /* (#R211) continuous pouring — see renderParams()'s 'source' branch for what this models and
        what it deliberately does not. `pourSimS` is SIMULATED seconds, never wall clock. */
     let pourMode='once', pourRate=20000, timeScale=10, pourT=null, pourAt=0, pourSimS=0;
     const pourTotal=()=>sources.reduce((s,x)=>s+Math.max(0,x.m3),0);
+    /* ══ (#R265) THE TIME-DEPENDENT WATER ════════════════════════════════════════════
+       `sim` is the shallow-water state on the working rectangle (js/water-dynamics.js) and it is what
+       gets DRAWN. `steady` says the field on screen is the t → ∞ routing answer instead — the ⏭
+       button, and what the tool used to show unconditionally.
+       ⚠ THE WATER IS DELIVERED ONCE. Each source records how much of itself has already gone into
+       `sim` (`_fed`), because `x.m3` is a running total that the tap keeps adding to and the routing
+       keeps re-reading; injecting the total every tick would multiply the water by the tick count. */
+    let sim=null, simBedStamp=-1, steady=false, simCapped=0, rainFed=0, simFrontM=0, simFrontAt=0;
+    const WD=()=>window.IntMapWaterDynamics;
+    const SIM_MAX_STEPS=140;      /* per tick — a capped tick is reported, never silent (#R185) */
     /* ══ ⚠⚠⚠ (#R261) A TAP AND A BUCKET ARE TWO DIFFERENT OBJECTS ═══════════════════════════════════
        「一回だけと継続の水の水源の区別をつけろ。」
 
@@ -99,20 +123,28 @@ window.IntMapModules.terrainWater=function(HOST){
        volume, a ringed disc for a running tap — see `tw-src-ring`), the panel lists them, and the
        ▶ button is enabled only when there is something for it to actually pour. */
     const contSources=()=>sources.filter(x=>x.cont);
+    /* ⚠⚠ (#R265) ▶ NO LONGER MEANS «THERE IS A TAP», IT MEANS «THERE IS SOMETHING TO ADVANCE».
+       With a steady-state solver, water with no tap behind it had nothing to do, so the transport was
+       disabled unless a continuous source existed. Water that is MOVING has plenty to do — a placed
+       volume runs downhill, spreads, fills and drains, and watching that is the whole point of the
+       clock now. So the button is live whenever there is a tap OR water still in motion. */
+    function simMoving(){ try{ return !!(sim&&!steady&&sim.stats().maxUnitQ>1e-4); }catch(_){ return false; } }
+    function canPour(){ return !!(contSources().length||simMoving()); }
     function pourStart(){ if(pourT) return false;
-      const live=contSources(); if(!live.length) return false;
-      pourAt=Date.now();
+      if(!canPour()) return false;
+      steady=false; pourAt=Date.now();
       pourT=setInterval(()=>{
-        if(!opened||!contSources().length){ pourStop(); return; }
+        if(!opened){ pourStop(); return; }
         const now=Date.now(), dt=Math.min(2,(now-pourAt)/1000); pourAt=now;
-        pourSimS+=dt*timeScale;
-        const add=dt*timeScale;
-        sources.forEach(x=>{ if(x.cont) x.m3+=Math.max(0,+x.rate||pourRate)*add; });
-        solve();                       /* redraws and re-reports; _retrace() stays debounced out */
-        try{ syncFoot(); }catch(_){}   /* (#R258) the footer clock ticks with the simulation */
+        stepSim(dt*timeScale);      /* (#R265) …which advances the clock and the taps by what it managed */
+        /* the water has arrived and stopped, and nothing is feeding it any more — say so and stop
+           rather than burning frames on a field that is not changing */
+        if(!contSources().length&&!simMoving()){ pourStop(); return; }
+        draw(); try{ syncFoot(); }catch(_){}   /* (#R258) the footer clock ticks with the simulation */
       },220);
       return true; }
-    function pourStop(){ if(pourT){ clearInterval(pourT); pourT=null; if(opened){ report(); try{ syncFoot(); }catch(_){} } } return false; }
+    function pourStop(){ if(pourT){ clearInterval(pourT); pourT=null;
+      if(opened){ solve(); try{ syncFoot(); }catch(_){} } } return false; }
 
     /* ---- layers ------------------------------------------------------------------------------- */
     function ensureVec(){ try{ if(!_imCanDraw()) return false;
@@ -292,6 +324,7 @@ window.IntMapModules.terrainWater=function(HOST){
         G={ NX,NY,xW,yN,dx,dy,cellM,areaM2:cellM*cellM,z,base,
             bbox:[lngOf(xW),latOf(yN),lngOf(xE),latOf(yS)], midLat, demMissing:miss };
         sculpt=regridField(_oldSculpt,_oldG,G);
+        resetSim();       /* (#R265) a different lattice is a different state vector — see ensureSim */
         undoStack=_oldUndo.map(u=>Object.assign({},u,{ sculpt:regridField(u.sculpt,_oldG,G) }));
         G.carriedEdits=(function(){ let n2=0; for(let i=0;i<sculpt.length;i++) if(sculpt[i]) n2++; return n2; })();
         editDirty();
@@ -329,7 +362,14 @@ window.IntMapModules.terrainWater=function(HOST){
             if(ii<0||jj<0||ii>=NX||jj>=NY) continue; const v=a[idx(ii,jj)]; if(!isNaN(v)){ s+=v; c++; } }
           if(c) a[k]=s/c; else left++; }
         if(!left) break; }
-      for(let k=0;k<a.length;k++) if(isNaN(a[k])) a[k]=0;
+      /* ⚠ (#R265) A HOLE THE SWEEPS COULD NOT REACH WAS FILLED WITH **0 m** — i.e. sea level, in the
+         middle of a plateau, which is a pit the water then runs into. It is the same fiction #R265
+         took out of the DEM decode (js/map-readout.js), one layer up. The grid's own mean is not a
+         measurement either, but it is the flattest thing that cannot attract or repel water. */
+      let sum=0, cnt=0;
+      for(let k=0;k<a.length;k++) if(!isNaN(a[k])){ sum+=a[k]; cnt++; }
+      const fallback=cnt?(sum/cnt):0;
+      for(let k=0;k<a.length;k++) if(isNaN(a[k])) a[k]=fallback;
     }
 
     /* ---- edits --------------------------------------------------------------------------------- */
@@ -348,6 +388,7 @@ window.IntMapModules.terrainWater=function(HOST){
       sources:sources.map(s=>({lng:s.lng,lat:s.lat,m3:s.m3,cont:!!s.cont,rate:s.rate})), rainMm }; }   /* (#R261) …and which kind each one is */
     function pushUndo(){ if(!G) return; undoStack.push(snapState()); if(undoStack.length>24) undoStack.shift(); }
     function undo(){ const s=undoStack.pop(); if(!s) return false;
+      resetSim();       /* (#R265) the water is a function of what was placed; taking a step back re-places it */
       pourStop();
       if(s.sculpt) sculpt=s.sculpt;
       levees=s.levees; sources=s.sources; rainMm=s.rainMm; editDirty(); terrainSoon();
@@ -479,7 +520,20 @@ window.IntMapModules.terrainWater=function(HOST){
       const ct=cv.getContext('2d',{willReadFrequently:true}); ct.drawImage(bmp,0,0,256,256);
       try{ bmp.close&&bmp.close(); }catch(_){}
       const px=ct.getImageData(0,0,256,256).data, out=new Float32Array(256*256);
-      for(let i=0,p=0;i<out.length;i++,p+=4) out[i]=(px[p]*256+px[p+1]+px[p+2]/256)-32768;
+      /* ⚠⚠ (#R265) A VOID PIXEL IS NOT −32,768 m OF GROUND HERE EITHER. Some terrarium tiles come
+         back entirely RGB(0,0,0) — measured: 14 of 49 z14 tiles around the Sava floodplain — and
+         re-encoding that into the terrain mesh puts a 32.8 km pit under the camera. The sampler side
+         of this is fixed in js/map-readout.js by stepping down the pyramid; here the tile is already
+         in hand, so the holes are filled from the tile's own median, and a tile with NOTHING in it
+         is refused so MapLibre falls back rather than rendering a hole. */
+      let good=0, sum=0;
+      for(let i=0,q=0;i<out.length;i++,q+=4){
+        const v=(px[q]*256+px[q+1]+px[q+2]/256)-32768;
+        if(px[q+3]===0||!(v>-12000)) out[i]=NaN; else { out[i]=v; good++; sum+=v; }
+      }
+      if(!good) throw new Error('dem tile is entirely no-data');
+      if(good<out.length){ const fill=sum/good;
+        for(let i=0;i<out.length;i++) if(out[i]!==out[i]) out[i]=fill; }
       _demBase.set(k,out); if(_demBase.size>360) _demBase.delete(_demBase.keys().next().value);
       return out; }
     function ensureDemProto(){ if(_demProtoOn) return true;
@@ -715,6 +769,91 @@ window.IntMapModules.terrainWater=function(HOST){
                wetCells, storedM3, maxDepth, cellAreaM2:A, NX, NY, cellM };
     }
 
+    /* ══ (#R265) THE SHALLOW-WATER STATE ON THE WORKING RECTANGLE ══════════════════════════
+       ⚠ THE BED IS UPDATED IN PLACE AND THE WATER IS NOT THROWN AWAY. A brush stroke or a levee
+       changes the ground UNDER water that is already moving — which is the point of being able to
+       build a dam while a flood runs — so an edit rewrites `simBed` and leaves `h` alone. Only a new
+       working rectangle, a reset or an undo rebuilds the state. */
+    let simBed=null;
+    function ensureSim(){
+      if(!G||!WD()) return null;
+      const n=G.NX*G.NY;
+      if(!sim||!simBed||simBed.length!==n){
+        simBed=new Float32Array(n); sim=WD().create(simBed,G.NX,G.NY,G.cellM);
+        simBedStamp=-1; rainFed=0; sources.forEach(x=>{ x._fed=0; });
+      }
+      if(simBedStamp!==editStamp){
+        const surf=surface();
+        for(let k=0;k<n;k++) simBed[k]=surf[k];
+        simBedStamp=editStamp;
+      }
+      return sim;
+    }
+    /* every source's water reaches the model EXACTLY ONCE — see the note on `_fed` above */
+    function feedSim(){
+      const S=ensureSim(); if(!S) return;
+      if(rainMm>rainFed){ S.addRain(rainMm-rainFed); rainFed=rainMm; }
+      else if(rainMm<rainFed) rainFed=rainMm;               /* lowered: nothing to add or take back */
+      sources.forEach(sc=>{
+        const c=cellOf(sc.lng,sc.lat); if(!c) return;
+        const k=c.j*G.NX+c.i;
+        const want=Math.max(0,+sc.m3||0), had=Math.max(0,+sc._fed||0);
+        if(want<=had){ sc._fed=want; return; }
+        const give=want-had;
+        /* a bucket tipped out makes a pool; a tap delivers into its own cell (#R261's distinction,
+           now visible in the physics as well as in the symbol) */
+        if(sc.cont) S.addVolume([k],give); else S.pool(k,give);
+        sc._fed=want;
+      });
+    }
+    /* ══ ⚠⚠ (#R265) ONE CLOCK, AND IT IS THE WATER'S ══════════════════════════════════════════════
+       The first version advanced `pourSimS` by what the tick ASKED for and the model by what it could
+       fit in its step budget, and the panel then printed both: MEASURED, the footer read
+       「Elapsed 2.0 h」 while the details read 「Flow: Elapsed 35 min」 for the same run, because four
+       ticks had hit the cap. Two clocks for one simulation is the defect this round is about, in
+       miniature — the clock has to be the time the water was actually integrated for. So the model is
+       advanced FIRST, and the elapsed time and the taps' delivery both follow what it returns; a
+       capped tick then shows up as the clock running slower than the multiplier asks, which is true,
+       and `cappedTicks` says why. */
+    function stepSim(sec,maxSteps){
+      const S=ensureSim(); if(!S) return null;
+      steady=false;
+      feedSim();                                    /* whatever is owed from the last step goes in first */
+      const r=S.advance(sec,maxSteps||SIM_MAX_STEPS);
+      if(r.capped) simCapped++;
+      pourSimS+=r.simS;
+      sources.forEach(x=>{ if(x.cont) x.m3+=Math.max(0,+x.rate||pourRate)*r.simS; });
+      simFrontM=frontDistanceM(); simFrontAt=S.tS;
+      return r;
+    }
+    /* how far the wetted edge has reached from the nearest source — the number that says whether the
+       clock and the water agree, and the one the panel prints beside the elapsed time */
+    function frontDistanceM(){
+      if(!sim||!G||!sources.length) return 0;
+      const NX=G.NX, h=sim.h, cm=G.cellM;
+      const src=sources.map(sc=>cellOf(sc.lng,sc.lat)).filter(Boolean).map(c=>[c.i,c.j]);
+      if(!src.length) return 0;
+      let best=0;
+      for(let k=0;k<h.length;k++){ if(!(h[k]>0.02)) continue;
+        const i=k%NX, j=(k/NX)|0;
+        let d=Infinity;
+        for(let a=0;a<src.length;a++){ const dd=Math.hypot(i-src[a][0],j-src[a][1]); if(dd<d) d=dd; }
+        if(d>best) best=d; }
+      return best*cm;
+    }
+    /* ⏭ — the steady state, which is the routing this file has always computed */
+    function settleSim(){
+      const S=ensureSim(); if(!S||!result) return false;
+      feedSim();                                  /* so `totalIn` and the routing agree */
+      S.h.set(result.eqDepth||result.depth);
+      S.qx.fill(0); S.qy.fill(0);
+      steady=true; simFrontM=frontDistanceM();
+      solve(); try{ syncFoot(); }catch(_){}
+      return true;
+    }
+    function resetSim(){ sim=null; simBed=null; simBedStamp=-1; steady=false; rainFed=0; simCapped=0;
+      simFrontM=0; simFrontAt=0; sources.forEach(x=>{ x._fed=0; }); }
+
     function solve(){
       if(!G) return null;
       const t0=(typeof performance!=='undefined'?performance.now():Date.now());
@@ -730,12 +869,22 @@ window.IntMapModules.terrainWater=function(HOST){
         .sort((a,b)=>b.over-a.over).slice(0,12);
       const ms=(typeof performance!=='undefined'?performance.now():Date.now())-t0;
       const biggest=R.deps.slice().sort((a,b)=>b.capacity-a.capacity)[0]||null;
-      result={ surf:R.surf, filled:R.filled, depth:R.depth, through:R.through, parent:R.parent,
-        mainOut:R.mainOut, deps:R.deps, breaches, wetCells:R.wetCells, storedM3:R.storedM3, maxDepth:R.maxDepth,
-        floodKm2:R.wetCells*A/1e6, totalIn:(rainMm/1000)*A*N+sources.reduce((s,x)=>s+Math.max(0,x.m3),0),
+      /* (#R265) the DRAWN depth is the time-dependent field; `eqDepth` is the routing's t → ∞ answer,
+         which ⏭ copies into it and which the report still names as the resting state. */
+      const S=ensureSim(); if(S) feedSim();
+      const drawn=(S&&!steady)?S.h:R.depth;
+      let wetC=R.wetCells, storedV=R.storedM3, maxD=R.maxDepth;
+      if(S&&!steady){ const st=S.stats(); wetC=st.wetCells; storedV=st.storedM3; maxD=st.maxDepthM; }
+      result={ surf:R.surf, filled:R.filled, depth:drawn, eqDepth:R.depth, through:R.through, parent:R.parent,
+        mainOut:R.mainOut, deps:R.deps, breaches, wetCells:wetC, storedM3:storedV, maxDepth:maxD,
+        floodKm2:wetC*A/1e6, totalIn:(rainMm/1000)*A*N+sources.reduce((s,x)=>s+Math.max(0,x.m3),0),
         solveMs:Math.round(ms),
+        /* (#R265) what the clock says, and what it cost to get there */
+        sim:S?Object.assign(S.stats(),{ steady, frontM:simFrontM, cappedTicks:simCapped }):null,
         /* diagnostics — the numbers to look at when the answer surprises you */
-        depCount:R.deps.length, depId:R.depId, model:'priority-flood + MFD(1.1) + cascading depressions',
+        depCount:R.deps.length, depId:R.depId,
+        model:steady?'priority-flood + MFD(1.1) + cascading depressions (steady state)'
+                    :'local-inertial shallow water (Bates 2010; q-centred de Almeida 2012; Manning n=0.035)',
         biggest:biggest?{ cells:biggest.cells.length, capacity:biggest.capacity, inflow:biggest.inflow,
           level:biggest.level, spill:biggest.spill, over:biggest.over||0 }:null };
       draw();
@@ -1627,7 +1776,25 @@ window.IntMapModules.terrainWater=function(HOST){
         console.warn('traceDownstream',err);
       } finally { if(seq===traceSeq){ tracing=false; setProg(null); } }
       if(seq!==traceSeq) return trace;
-      trace={ path, lakes, end, endInfo, belowSea, km:distM/1000, steps:pts, windows, warmRounds:rounds, z,
+      /* (#R265) the longest run of collinear legs, with the fall and the relief along it — the same
+         construction `_dbgTrace().straight` uses, computed once here so the PANEL can print it too */
+      const straightRun=(function(){ try{
+        if(path.length<3) return null;
+        const brg=(a,b)=>Math.atan2((b[0]-a[0])*Math.cos(((a[1]+b[1])/2)*D),(b[1]-a[1]));
+        const TOL=3*Math.PI/180;
+        let best={legs:0,m:0,i0:0,i1:0}, runN=0, runM=0, runI=0, pb=null;
+        for(let i=1;i<path.length;i++){
+          const b2=brg(path[i-1],path[i]), m=gcM(path[i-1],path[i]);
+          let d=(pb==null)?Infinity:Math.abs(b2-pb); if(d>Math.PI) d=2*Math.PI-d;
+          if(d<=TOL){ runN++; runM+=m; } else { runN=1; runM=m; runI=i-1; }
+          if(runN>best.legs||(runN===best.legs&&runM>best.m)) best={legs:runN,m:runM,i0:runI,i1:i};
+          pb=b2; }
+        let lo=Infinity, hi=-Infinity;
+        for(let i=best.i0;i<=Math.min(best.i1,elev.length-1);i++){ const v=elev[i]; if(v<lo) lo=v; if(v>hi) hi=v; }
+        return { legs:best.legs, m:best.m, dropM:(elev[best.i0]!=null&&elev[best.i1]!=null)?(elev[best.i0]-elev[best.i1]):0,
+                 reliefM:isFinite(hi-lo)?(hi-lo):0, at:path[best.i0] };
+      }catch(_){ return null; } })();
+      trace={ path, lakes, end, endInfo, belowSea, km:distM/1000, steps:pts, windows, warmRounds:rounds, z, straightRun,
               escal, escalMult, coarseLegs,                /* (#R211) how many wide look-aheads, the widest rung, and (#R261) the legs left coarse */
               refineDecline:Object.assign({},_refineDecline),   /* (#R261) a cap that fires has to be visible */
               stepM:minSpacingM,                          /* (#R189) the FINEST sampling on the ladder */
@@ -1699,52 +1866,118 @@ window.IntMapModules.terrainWater=function(HOST){
         const de=Math.max(0,elev[Math.max(0,i-2)]-elev[Math.min(n-1,i+2)]);
         slope[m]=Math.max(1e-4,de/rw);
       }
-      let tot=0; for(let m=0;m<M;m++) tot+=ds[m]/Math.sqrt(slope[m]);
-      const C=(Q!=null)?(Q/CHEZY_K):(V/Math.max(1e-6,tot));           /* Q/v, or ∫A ds = V (#R188) */
-      const out=new Array(M); let belowRes=0, atLimit=0, wMax=0, dMax=0, wSum=0, thMax=0;
+      /* ══ ⚠⚠ (#R265) THE SECTION IS SOLVED AT MANNING'S NORMAL DEPTH, AND IT KEEPS A CLOCK ═════════
+         「経過時間に対する水の動きが、現実と乖離しすぎ。リアルなモデルにしろ。」 — asked of the working
+         grid, and the traced course is the other half of the same answer: 「何時間後にここへ届くか」.
+
+         #R188/#R189 sized every section from A ∝ 1/√S, i.e. a Chézy-like bulk speed v = K·√S with
+         K = 40 — a number with no source, and a different friction law from the one the grid now
+         runs on. Manning is the law: v = R^(2/3)·√S / n with R the hydraulic radius, which for a
+         wide section is the mean depth A/W. So a section is solved for the level whose DISCHARGE is
+         Q rather than whose AREA is a scaled 1/√S,
+
+               Q(h) = A(h) · (A(h)/W(h))^(2/3) · √S / n
+
+         which is monotone in h, so the same bisection finds it. `n` is js/water-dynamics.js's — one
+         number for the whole tool (#R255's rule), so the course and the grid cannot disagree about
+         how fast water moves.
+
+         ⚠ WITHOUT A DISCHARGE THE VOLUME STILL SETS THE SCALE. #R188's rule — the placed volume laid
+         along the course by continuity, ∫A ds = V — is a constraint on Q now instead of on a scale
+         factor: ∫A(Q,s) ds is monotone increasing in Q, so Q is bisected until it holds. Nothing
+         about what the reader controls changes; the shape of A(s) is Manning's rather than Chézy's.
+
+         ⚠ AND THE TRAVEL TIME FALLS OUT OF THE SAME v. t(s) = ∫ ds / v(s), accumulated along the
+         course, so every point carries «how long after release the water gets here». */
+      const NM=(window.IntMapWaterDynamics&&window.IntMapWaterDynamics.MANNING_N)||0.035;
       const half=SEC_HALF;
-      const prof=new Float64Array(2*half+1);
+      /* ① the transects, sampled once — the DEM reads are the expensive part and the Q solve below
+         needs all of them at the same time */
+      const profs=new Array(M), stMs=new Float64Array(M), normals=new Array(M), lows=new Float64Array(M);
+      let thMax=0;
       for(let m=0;m<M;m++){
         const i=keep[m], p=path[i];
-        /* (#R189) the transect samples at HALF THIS POINT'S OWN DEM spacing — the resolution ladder
-           means the head of the course is measured at ~10 m and the lower reaches at ~46 m, each
-           the finest its own data supports */
         const stM=(spacArr&&isFinite(spacArr[i])&&spacArr[i]>0)?spacArr[i]:stepM;
-        const dt=stM/2; if(half*dt>thMax) thMax=half*dt;
-        const a=path[Math.max(0,i-1)], b=path[Math.min(n-1,i+1)];
+        stMs[m]=stM; const dt=stM/2; if(half*dt>thMax) thMax=half*dt;
+        const a2=path[Math.max(0,i-1)], b2=path[Math.min(n-1,i+1)];
         const cosL=Math.max(0.05,Math.cos(p[1]*D));
-        let dx=(b[0]-a[0])*111320*cosL, dy=(b[1]-a[1])*110574;
-        const L=Math.hypot(dx,dy)||1; dx/=L; dy/=L;
-        const nx=-dy, ny=dx;                                          /* unit normal, in metres */
+        let dx=(b2[0]-a2[0])*111320*cosL, dy=(b2[1]-a2[1])*110574;
+        const Ln=Math.hypot(dx,dy)||1; dx/=Ln; dy/=Ln;
+        normals[m]=[-dy,dx];
         const bed=elev[i];
+        const pr=new Float64Array(2*half+1);
         let lo=bed;
         for(let t=-half;t<=half;t++){
           const om=t*dt;
-          const lo2=p[0]+nx*om/(111320*cosL), la2=p[1]+ny*om/110574;
+          const lo2=p[0]+normals[m][0]*om/(111320*cosL), la2=p[1]+normals[m][1]*om/110574;
           let e=demAt(lo2,la2,z); if(e==null||!isFinite(e)) e=bed+SEC_DEPTH_MAX;   /* unknown ground is a bank */
-          prof[t+half]=e; if(e<lo) lo=e;
+          pr[t+half]=e; if(e<lo) lo=e;
         }
-        const A=C/Math.sqrt(slope[m]);                 /* the wetted area continuity asks for here */
-        /* wetted area of the run CONNECTED to the centre, as a function of the water level */
-        const areaAt=(h)=>{ let acc=0;
-          for(let t=half;t>=0;t--){ if(prof[t]>=h) break; acc+=(h-prof[t])*dt; }
-          for(let t=half+1;t<=2*half;t++){ if(prof[t]>=h) break; acc+=(h-prof[t])*dt; }
-          return acc; };
+        profs[m]=pr; lows[m]=lo;
+      }
+      /* the wetted area and top width of the run CONNECTED to the centre, at a water level */
+      function geom(m,h){
+        const pr=profs[m], dt=stMs[m]/2; let area=0, wid=0;
+        for(let t=half;t>=0;t--){ if(pr[t]>=h) break; area+=(h-pr[t])*dt; wid+=dt; }
+        for(let t=half+1;t<=2*half;t++){ if(pr[t]>=h) break; area+=(h-pr[t])*dt; wid+=dt; }
+        return { area, wid };
+      }
+      /* the level at which this section carries Q, and what the section then is */
+      function atQ(m,Qv){
+        const lo=lows[m], sq=Math.sqrt(slope[m]);
+        const disch=(h)=>{ const g=geom(m,h); if(!(g.area>0)||!(g.wid>0)) return 0;
+          return g.area*Math.pow(g.area/g.wid,2/3)*sq/NM; };
         let h0=lo, h1=lo+SEC_DEPTH_MAX;
-        if(areaAt(h1)<A) h0=h1;                                       /* the valley cannot hold it — take the cap */
-        else { for(let it=0;it<26;it++){ const hm=(h0+h1)/2; if(areaAt(hm)<A) h0=hm; else h1=hm; } }
-        const h=h0;
+        if(disch(h1)<Qv) h0=h1;                              /* the valley cannot carry it — take the cap */
+        else { for(let it=0;it<26;it++){ const hm=(h0+h1)/2; if(disch(hm)<Qv) h0=hm; else h1=hm; } }
+        const g=geom(m,h0);
+        return { h:h0, area:g.area, wid:g.wid };
+      }
+      /* ② the discharge. In order: the one the reader typed, then the one the taps are actually
+         delivering (a continuous source's rate IS a discharge, in the same units), and only then
+         the #R188 fallback of «the placed volume, laid along the course». */
+      let Qs=Q, qFrom=(Q!=null)?'set':'volume';
+      if(Qs==null){
+        const taps=sources.filter(x=>x.cont).reduce((a,x)=>a+Math.max(0,+x.rate||0),0);
+        if(taps>0){ Qs=taps; qFrom='sources'; }
+      }
+      if(Qs==null){
+        const volAt=(Qv)=>{ let v=0; for(let m=0;m<M;m++) v+=atQ(m,Qv).area*ds[m]; return v; };
+        let q0=1e-3, q1=1e6;
+        if(volAt(q1)<V) q0=q1;
+        else { for(let it=0;it<24;it++){ const qm=Math.sqrt(q0*q1); if(volAt(qm)<V) q0=qm; else q1=qm; } }
+        Qs=q0;
+      }
+      /* ③ the sections themselves, and the clock along them */
+      const out=new Array(M); let belowRes=0, atLimit=0, wMax=0, dMax=0, wSum=0, tSum=0, vMax=0, vMin=Infinity;
+      for(let m=0;m<M;m++){
+        const i=keep[m], p=path[i], stM=stMs[m], dt=stM/2, pr=profs[m], lo=lows[m];
+        const r=atQ(m,Qs), h=r.h;
         let left=0, right=0;
-        for(let t=half;t>=0;t--){ if(prof[t]>=h) break; left=(half-t)*dt; }
-        for(let t=half+1;t<=2*half;t++){ if(prof[t]>=h) break; right=(t-half)*dt; }
+        for(let t=half;t>=0;t--){ if(pr[t]>=h) break; left=(half-t)*dt; }
+        for(let t=half+1;t<=2*half;t++){ if(pr[t]>=h) break; right=(t-half)*dt; }
         let wl=left, wr=right;
         if(left>=half*dt-1e-9||right>=half*dt-1e-9) atLimit++;        /* the transect ran out before the bank did */
         if(wl+wr<stM){ belowRes++; wl=wr=stM/2; }                     /* finer than the data — say so */
         const dep=Math.max(0,h-lo);
-        out[m]={ i, lng:p[0], lat:p[1], nx, ny, wl, wr, depth:dep, stM };   /* (#R211) its own DEM sampling — flowImage draws cells of it */
+        /* ⚠ THE SPEED COMES FROM MANNING, NOT FROM Q/A. They are the same number at the solved
+           level, but Q/A divides by an area that goes to zero on a section the valley cannot carry
+           — measured 57 m/s on one Lake Biwa section that way, which is not water. */
+        const R=(r.wid>0)?(r.area/r.wid):0;                           /* hydraulic depth, wide-channel R */
+        const v=Math.max(1e-4,Math.pow(Math.max(1e-4,R),2/3)*Math.sqrt(slope[m])/NM);
+        /* ⚠ AND THE ARRIVAL IS THE WAVE, NOT THE WATER. A flood wave runs at the kinematic celerity
+           c = dQ/dA = (5/3)·v for a wide Manning channel (Lighthill & Whitham 1955), which is what
+           「何時間後にここへ届くか」 asks about; `vMs` stays the speed of the water itself. */
+        tSum+=ds[m]/(v*5/3);
+        if(v>vMax) vMax=v; if(v<vMin) vMin=v;
+        out[m]={ i, lng:p[0], lat:p[1], nx:normals[m][0], ny:normals[m][1], wl, wr, depth:dep, stM,
+                 vMs:v, tS:tSum };                                    /* (#R265) …and when the water arrives */
         wSum+=(wl+wr); if(wl+wr>wMax) wMax=wl+wr; if(dep>dMax) dMax=dep;
       }
-      return { list:out, volM3:V, flowM3s:Q, belowRes, atLimit, meanWidthM:wSum/M, maxWidthM:wMax, maxDepthM:dMax,
+      return { list:out, volM3:V, flowM3s:Q, dischargeM3s:Qs, dischargeFrom:qFrom, belowRes, atLimit,
+               meanWidthM:wSum/M, maxWidthM:wMax, maxDepthM:dMax,
+               /* (#R265) how long the water takes to run the whole course, and the speeds behind it */
+               travelS:tSum, vMaxMs:vMax, vMinMs:isFinite(vMin)?vMin:0, manningN:NM,
                sections:M, transectHalfM:thMax };
     }
 
@@ -1884,9 +2117,15 @@ window.IntMapModules.terrainWater=function(HOST){
       const ct=cv.getContext('2d'), im=ct.createImageData(NX,NY), px=im.data;
       /* the flow scale is set by the biggest through-flow, so the picture reads the same whether the
          user dropped a bathtub or a reservoir */
-      let maxThrough=0; for(let k=0;k<result.through.length;k++) if(result.through[k]>maxThrough) maxThrough=result.through[k];
+      /* ⚠ (#R265) WHILE THE CLOCK IS RUNNING, THE MOVING WATER IS THE MODEL'S OWN DISCHARGE.
+         `through` is the steady-state routing's cubic metres — the right quantity for the resting
+         answer and the wrong one for a picture of a wave that has not arrived yet. When `sim` holds
+         the field, the cyan is |q| on the cell's two faces, i.e. what is actually flowing there. */
+      const simOn=!!(sim&&!steady&&result.sim);
+      const flowAt=simOn?((k)=>Math.abs(sim.qx[k])+Math.abs(sim.qy[k])):((k)=>result.through[k]);
+      let maxThrough=0; for(let k=0;k<NX*NY;k++){ const f=flowAt(k); if(f>maxThrough) maxThrough=f; }
       const thr=Math.max(1e-9,maxThrough*0.004);
-      for(let k=0;k<NX*NY;k++){ const o=k*4, d=result.depth[k], f=result.through[k];
+      for(let k=0;k<NX*NY;k++){ const o=k*4, d=result.depth[k], f=flowAt(k);
         if(d>0.02){ const c=waterRGBA(d);        /* (#R211) the shared ramp — the far field uses this one too */
           px[o]=c[0]; px[o+1]=c[1]; px[o+2]=c[2]; px[o+3]=c[3]; }
         else if(f>thr){ const s=Math.min(1,Math.log10(f/thr)/2.4);
@@ -2016,6 +2255,18 @@ window.IntMapModules.terrainWater=function(HOST){
       try{ syncFoot(); }catch(_){}
       setMore('<b>'+L('Ponded','湛水','Aufgestaut','Затоплено','Embalsado')+':</b> '+fmtM3(result.storedM3)
         +' · '+n(result.floodKm2,2)+' km² · '+L('max depth','最大水深','max. Tiefe','макс. глубина','prof. máx')+' '+n(result.maxDepth,1)+' m'
+        /* ══ (#R265) THE TIME-DEPENDENT HALF — what the clock actually bought ══════════════════
+           `on the grid now` versus `at rest`: the second is the routing's t → ∞ answer, which is
+           what this panel used to print unconditionally. Seeing them differ IS the feature. */
+        +(result.sim?('<br><b>'+L('Flow','流れ','Strömung','Течение','Flujo')+':</b> '
+            +(result.sim.steady
+              ? L('at rest','静止（定常状態）','in Ruhe','в покое','en reposo')
+              : (L('Elapsed','経過','Vergangen','Прошло','Transcurrido')+' '+fmtDur(result.sim.tS)
+                 +' · '+L('left the area','領域外へ','abgeflossen','ушло за пределы','salió del área')+' '+fmtM3(result.sim.outM3)
+                 +((result.sim.outM3s>0)?(' ('+n(result.sim.outM3s)+' m³/s)'):'')
+                 +' · Δt '+n(result.sim.dt,1)+' s'
+                 +(result.sim.cappedTicks?(' · ⚠ '+result.sim.cappedTicks+' '+L('ticks hit the step cap (the clock ran ahead of the water)','ティックがステップ上限に到達（時計が水より先に進みました）','Ticks am Schrittlimit','тиков упёрлись в предел шагов','ticks alcanzaron el límite de pasos')):'')))
+            +'<br><span style="opacity:0.72;">'+L('at rest this becomes','最終的には','im Ruhezustand','в покое','en reposo')+' '+fmtM3(eqStoredM3())+'</span>'):'')
         +(result.breaches.length?('<br><b>'+L('Largest spill','最大の越流','Größter Überlauf','Наибольший перелив','Mayor desbordamiento')+':</b> '+fmtM3(result.breaches[0].over)):'')
         +'<br><span style="opacity:0.72;">'+n(G.cellM)+' m '+L('cells','セル','Zellen','ячейки','celdas')+' · '+G.NX+'×'+G.NY+' · DEM z'+G.z+' · MFD · '+result.solveMs+' ms'
         /* (#R189) a repaired DEM hole is a guess — say how many cells are guessed, never silently */
@@ -2027,6 +2278,29 @@ window.IntMapModules.terrainWater=function(HOST){
             +L('width','幅','Breite','ширина','ancho')+' '+n(trace.section.meanWidthM)+'–'+n(trace.section.maxWidthM)+' m · '
             +L('max depth','最大水深','max. Tiefe','макс. глубина','prof. máx')+' '+n(trace.section.maxDepthM,1)+' m · '
             +(trace.section.flowM3s?('Q '+n(trace.section.flowM3s)+' m³/s'):fmtM3(trace.section.volM3))):'')
+          /* (#R265) 「経過時間に対する水の動き」 — the course's own clock, from the same Manning velocity
+             the working grid runs on. This is the answer to 「何時間後にここへ届くか」. */
+          +((trace.section&&trace.section.travelS>0)?('<br><b>'+L('Travel time','到達時間','Laufzeit','Время добегания','Tiempo de recorrido')+':</b> '
+            +fmtDur(trace.section.travelS)+' '+L('over','／','über','на','en')+' '+n(trace.km,1)+' km'
+            +' <span style="opacity:0.72;">('+sig(trace.section.vMinMs)+'–'+sig(trace.section.vMaxMs)+' m/s · Manning n='+trace.section.manningN
+            +' · Q '+((trace.section.dischargeM3s>=10)?n(trace.section.dischargeM3s):trace.section.dischargeM3s.toPrecision(2))+' m³/s '
+            +(trace.section.dischargeFrom==='set'?L('as set','設定値','wie gesetzt','как задано','según lo fijado')
+              :trace.section.dischargeFrom==='sources'?L('from the sources','水源の流量から','aus den Quellen','из источников','de las fuentes')
+              :L('from the placed volume','配置した水量から','aus der platzierten Menge','из размещённого объёма','del volumen colocado'))
+            +')</span>'):'')
+          /* ══ (#R265) THE STRAIGHT RUN, IN THE PANEL ═══════════════════════════════════════════
+             「直線で地形を完全無視するクソ区間がある」 has been reported five times, and the number
+             behind it has been measured since #R264 — but only on `_dbgTrace()`, i.e. by whoever
+             already knew to look. A course crossing a lake or a floodplain IS straight (over water
+             every direction costs the same, so the least-rise path is the shortest one), and the
+             fall along the run is what separates that from a defect. Printing both is what lets a
+             reader see which they are looking at instead of reporting it again. */
+          +((trace.straightRun&&trace.straightRun.m>=1000)?('<br><b>'+L('Longest straight run','最長の直線区間','Längste Gerade','Самый длинный прямой участок','Tramo recto más largo')+':</b> '
+            +n(trace.straightRun.m/1000,1)+' km · '+L('fall','落差','Gefälle','падение','desnivel')+' '+n(trace.straightRun.dropM,1)+' m · '
+            +L('relief','起伏','Relief','перепад','relieve')+' '+n(trace.straightRun.reliefM,1)+' m'
+            +' <span style="opacity:0.72;">'+((trace.straightRun.reliefM<2)
+              ? L('— flat water: the shortest way across is the way the water goes','——平水面。最短経路がそのまま水の経路になります','— stilles Wasser: der kürzeste Weg ist der Weg des Wassers','— стоячая вода: кратчайший путь и есть путь воды','— agua en calma: el camino más corto es el del agua')
+              : L('— every point on it is a DEM reading','——各点は実測の標高値です','— jeder Punkt ist ein DEM-Wert','— каждая точка — отсчёт DEM','— cada punto es una lectura del DEM'))+'</span>'):'')
           +'<br><span style="opacity:0.72;">'+L('real DEM','実標高','echtes DEM','реальный DEM','DEM real')+' z'+trace.z+' · '+trace.steps+' '+L('steps','ステップ','Schritte','шагов','pasos')
             /* (#R211) a wide look-ahead crossed a lake bigger than the window — say so, it is why
                the course did not stop there */
@@ -2037,6 +2311,18 @@ window.IntMapModules.terrainWater=function(HOST){
               +(trace.section.atLimit?(' · '+trace.section.atLimit+' '+L('wider than the transect','断面幅の上限に到達','breiter als das Profil','шире профиля','más ancho que el perfil')):'')):'')
             +((trace.wet&&trace.wet.length)?(' · '+n(trace.wet.length)+' '+L('flooded cells','湛水セル','geflutete Zellen','затопленных ячеек','celdas inundadas')+(trace.wetCapped?' ('+L('capped','上限','begrenzt','предел','limitado')+')':'')):'')
             +'</span>'):'')); }
+    /* (#R265) how much the routing says is standing once everything has arrived — the number this
+       panel used to print as `Ponded` unconditionally, kept beside the running one */
+    function eqStoredM3(){ if(!result||!result.eqDepth||!G) return 0;
+      let v=0; const A=G.areaM2, d=result.eqDepth;
+      for(let k=0;k<d.length;k++) if(d[k]>0.02) v+=d[k]*A;
+      return v; }
+    /* (#R265) two significant figures, so a flat reach reads «0.0031 m/s» instead of «0.00» — the
+       travel time is dominated by exactly those sections, so printing them as zero hides the reason */
+    function sig(v){ const x=Math.abs(+v||0);
+      if(!(x>0)) return '0';
+      if(x>=10) return String(Math.round(x));
+      return (+v).toPrecision(2); }
     function fmtDur(s){ s=Math.max(0,Math.round(s));
       if(s<90) return s+' '+L('s','秒','s','с','s');
       if(s<5400) return Math.round(s/60)+' '+L('min','分','min','мин','min');
@@ -2168,11 +2454,11 @@ window.IntMapModules.terrainWater=function(HOST){
         +'<details class="tw-note" style="line-height:1.5;">'
           +'<summary>'+L('About this model','このモデルについて','Über dieses Modell','Об этой модели','Sobre este modelo')+'</summary>'
           +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:4px;">'
-          +L('Real terrarium elevation, sculpted by you. Water is routed by priority-flood depression filling and downslope volume accounting — it answers where the water stands and which way it leaves, not how fast the front travels.',
-             '実際の標高データを編集しています。水はプライオリティフラッド（窪地充填）と流下方向への体積集積で解いています。「どこに溜まり、どちらへ抜けるか」を答えるモデルで、波の到達速度は扱いません。',
-             'Echte Höhendaten. Wasser über Priority-Flood und Volumenrouting — wo es steht und wohin es abfließt, nicht wie schnell die Front läuft.',
-             'Реальные высоты. Вода — priority-flood и маршрутизация объёма: где стоит и куда уходит, но не скорость фронта.',
-             'Elevación real. El agua se resuelve con priority-flood y enrutamiento de volumen: dónde queda y por dónde sale, no la velocidad del frente.')
+          +L('Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. ⏭ jumps to the steady state, which is solved by priority-flood depression filling and downslope volume routing.',
+             '実際の標高データを編集しています。水は2次元浅水方程式（局所慣性形：Bates 2010／q中心化 de Almeida 2012、マニング粗度 n = 0.035）で時間積分しており、洪水波は実際にかかる時間をかけて進みます。⏭ を押すと定常状態（プライオリティフラッドによる窪地充填と流下方向への体積集積）へ飛びます。',
+             'Echte Höhendaten. Das Wasser wird zeitlich integriert — 2-D-Flachwassergleichungen in lokal-inertialer Form (Bates 2010, q-zentriert nach de Almeida 2012) mit Manning-Reibung n = 0,035; eine Flutwelle braucht die Zeit, die sie braucht. ⏭ springt zum Beharrungszustand (Priority-Flood und Volumenrouting).',
+             'Реальные высоты. Вода интегрируется по времени: двумерные уравнения мелкой воды в локально-инерционной форме (Bates 2010, q-центрированная схема de Almeida 2012), трение Маннинга n = 0,035 — паводковая волна идёт столько, сколько идёт. ⏭ переходит к установившемуся состоянию (priority-flood и маршрутизация объёма).',
+             'Elevación real. El agua se integra en el tiempo con las ecuaciones de aguas someras en forma inercial local (Bates 2010, esquema centrado en q de de Almeida 2012) y fricción de Manning n = 0,035: una onda de crecida tarda lo que tarda. ⏭ salta al régimen permanente (priority-flood y enrutamiento de volumen).')
           +'</div></details>'
         +'</div>'
         +'<div class="tw-foot" style="flex:0 0 auto;position:sticky;bottom:0;padding:8px 12px calc(10px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;background:var(--card-bg,#1c1c1e);border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));">'
@@ -2180,6 +2466,9 @@ window.IntMapModules.terrainWater=function(HOST){
         +'<div style="display:flex;align-items:center;gap:8px;">'
           +'<button class="tw-play tw-pp" aria-label="'+L('Pour','注水','Zulauf','Наполнение','Verter')+'">▶</button>'
           +'<div class="tw-segwrap" style="flex:1 1 auto;">'+[1,10,60,600].map(s=>'<button class="tw-seg tw-ts" data-s="'+s+'">'+(s>=60?(s/60)+'m':s+'s')+'</button>').join('')+'</div>'
+          /* (#R265) …and the way to the END of the run, for a reader who wants the resting answer
+             rather than the journey — it is the routing this file has always computed. */
+          +'<button class="tw-play tw-settle" aria-label="'+L('Run to steady state','定常状態まで進める','Bis zum Beharrungszustand','До установившегося состояния','Hasta el régimen permanente')+'">⏭</button>'
         +'</div>'
         +'<div class="tw-clock" style="display:flex;justify-content:space-between;gap:8px;"><span class="tw-elapsed"></span><span class="tw-vol" style="opacity:.72;"></span></div>'
         +'<div style="display:flex;gap:5px;flex-wrap:wrap;">'
@@ -2207,12 +2496,14 @@ window.IntMapModules.terrainWater=function(HOST){
          silently switched 「1回きり」 to 「継続」, so the next click placed a tap when the reader had
          asked for a bucket. ▶ runs the taps that exist; it does not decide what a tap is. */
       panel.querySelector('.tw-pp').onclick=()=>{ if(pourT) pourStop(); else pourStart(); syncFoot(); renderParams(); };
+      /* (#R265) ⏭ — stop the clock and show the t → ∞ answer */
+      panel.querySelector('.tw-settle').onclick=()=>{ pourStop(); settleSim(); renderParams(); };
       panel.querySelector('.tw-undo').onclick=()=>undo();
       /* (#R211) 「配置した水は残して地形だけ戻す」 — the sculpt and the levees go, the water stays put
          and is re-solved on the ORIGINAL ground, which is the comparison the button exists for. */
       panel.querySelector('.tw-resetT').onclick=()=>{ if(!G) return; pushUndo();
         sculpt=new Float32Array(G.NX*G.NY); levees=[]; solve(); };
-      panel.querySelector('.tw-reset').onclick=()=>{ if(!G) return; pourStop(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; sources=[]; rainMm=0; pourSimS=0; editDirty(); clearTrace();
+      panel.querySelector('.tw-reset').onclick=()=>{ if(!G) return; pourStop(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; sources=[]; rainMm=0; pourSimS=0; resetSim(); editDirty(); clearTrace();
         const r=panel.querySelector('.tw-rain'); if(r) r.value=0; undoStack=[]; solve(); terrainSoon(); };
       try{ makeDraggable(panel,panel.querySelector('.tw-head')); }catch(_){}
       syncMode(); renderParams(); syncFoot();
@@ -2228,16 +2519,32 @@ window.IntMapModules.terrainWater=function(HOST){
       pp.textContent=pourT?'⏸':'▶';
       /* (#R261) ▶ pours the CONTINUOUS sources. With only one-shot volumes on the map there is
          nothing running to start, and the disabled title says which of the two cases it is. */
-      const nc=contSources().length;
-      pp.disabled=!nc;
-      pp.title=nc
+      /* ⚠ (#R265) ▶ IS LIVE WHENEVER THERE IS SOMETHING TO ADVANCE. With a steady-state solver a
+         placed volume had nothing to do, so this was disabled unless a tap existed; now a bucket
+         tipped out is a body of water that runs, and pressing ▶ is how you watch it. */
+      const nc=contSources().length, mv=simMoving();
+      pp.disabled=!(nc||mv);
+      pp.title=(nc||mv)
         ? (pourT?L('Pause','一時停止','Pause','Пауза','Pausa'):L('Pour','注水開始','Zulauf starten','Начать','Verter'))
         : (sources.length
-            ? L('Only one-shot volumes are placed — add a continuous source to pour','置かれているのは1回きりの水量だけです。継続の水源を追加すると注水できます','Nur einmalige Mengen platziert — für Zulauf eine dauernde Quelle setzen','Размещены только разовые объёмы — добавьте непрерывный источник','Solo hay volúmenes de una vez — añada una fuente continua')
+            ? L('The water has come to rest — add a continuous source or place more','水は静止しました。継続の水源を足すか、さらに配置してください','Das Wasser ruht — dauernde Quelle hinzufügen oder mehr platzieren','Вода успокоилась — добавьте источник или ещё воды','El agua se ha detenido — añada una fuente o más agua')
             : L('Place water on the map first','先に地図へ水を配置してください','Zuerst Wasser platzieren','Сначала разместите воду','Coloque agua primero'));
+      const sb=panel.querySelector('.tw-settle');
+      if(sb){ sb.disabled=!sources.length&&!rainMm; sb.classList.toggle('on',!!steady); }
       panel.querySelectorAll('.tw-ts').forEach(b=>b.classList.toggle('on',+b.getAttribute('data-s')===timeScale));
       const el=panel.querySelector('.tw-elapsed');
-      if(el) el.textContent=L('Elapsed','経過時間','Vergangen','Прошло','Transcurrido')+' '+fmtDur(pourSimS)+' ('+timeScale+'×)';
+      /* (#R265) the elapsed clock now has something to be elapsed AGAINST: how far the wetted edge
+         has travelled from the source, and the mean speed that implies. That pair is the whole
+         report — a front that is 12 km out after 40 simulated seconds is the defect, visibly. */
+      if(el){
+        const front=(simFrontM>0&&!steady)
+          ? (' · '+L('front','先端','Front','фронт','frente')+' '+(simFrontM>=1000?((simFrontM/1000).toFixed(1)+' km'):(Math.round(simFrontM)+' m'))
+             +((pourSimS>0)?(' @ '+(simFrontM/pourSimS).toFixed(2)+' m/s'):''))
+          : '';
+        el.innerHTML=steady
+          ? L('Steady state (t → ∞)','定常状態（t → ∞）','Beharrungszustand (t → ∞)','Установившееся состояние (t → ∞)','Régimen permanente (t → ∞)')
+          : (L('Elapsed','経過時間','Vergangen','Прошло','Transcurrido')+' '+fmtDur(pourSimS)+' ('+timeScale+'×)'+front);
+      }
       const vo=panel.querySelector('.tw-vol');
       if(vo) vo.textContent=sources.length?fmtM3(pourTotal()):''; }
     /* (#R261) one line of plain language for what is on the map right now, used by the 「ここに水」
@@ -2420,8 +2727,10 @@ window.IntMapModules.terrainWater=function(HOST){
          (全消去 / 元に戻す / close), and a second inlet added to a flood that is already running joins
          it at the time it is at. Restarting from zero here is what made 「時間がリセットされる」 true
          even after the tool-switch stop was removed. */
-      if(pourMode==='cont'){ if(!pourT) pourSimS=0; solve(); pourStart(); if(panel) renderParams(); }
-      else solve();
+      /* (#R265) …and a ONE-SHOT volume now has somewhere to be as well: it is a body of water that
+         runs downhill, so placing it starts the clock exactly as a tap does. ⏸ or ⏭ take it back. */
+      if(pourMode==='cont'&&!pourT) pourSimS=0;
+      solve(); pourStart(); if(panel) renderParams();
       try{ syncFoot(); }catch(_){}      /* (#R258) the transport is live the moment there is water */
       traceDownstream(lng,lat); }
     function onClick(e){ if(!opened) return;
@@ -2549,10 +2858,28 @@ window.IntMapModules.terrainWater=function(HOST){
         else if(o.run===true||(o.run==null&&contSources().length)) pourStart();   /* (#R261) run what is actually continuous */
         if(opened) renderParams();
         return this.pourState(); },
-      pourState(){ return { running:!!pourT, mode:pourMode, rateM3s:pourRate, speed:timeScale,
+      pourState(){ const st=(sim&&sim.stats)?sim.stats():null;
+        return { running:!!pourT, mode:pourMode, rateM3s:pourRate, speed:timeScale,
         simSeconds:Math.round(pourSimS), totalM3:pourTotal(),
         /* (#R261) how many of each kind are on the map — the thing that used to be unknowable */
-        continuous:contSources().length, oneShot:sources.length-contSources().length }; },
+        continuous:contSources().length, oneShot:sources.length-contSources().length,
+        /* (#R265) the water itself: where its edge has got to, how fast, and whether the clock is
+           the running one or the t → ∞ one */
+        steady, frontM:Math.round(simFrontM), frontMs:(pourSimS>0?+(simFrontM/pourSimS).toFixed(3):0),
+        storedM3:st?Math.round(st.storedM3):0, outM3:st?Math.round(st.outM3):0,
+        maxDepthM:st?+st.maxDepthM.toFixed(2):0, dtS:st?+st.dt.toFixed(2):0,
+        cappedTicks:simCapped }; },
+      /* (#R265) ⏭ as a call — Atlas must be able to reach every control (standing rule) */
+      settle(){ pourStop(); return settleSim(); },
+      /* (#R265) advance the water by a given number of SIMULATED seconds without the wall clock —
+         this is what a test drives, and what «run it for six hours» means from Atlas */
+      advance(seconds){ if(!G) return null;
+        const sec=Math.max(0,+seconds||0); if(!sec) return null;
+        /* ⚠ this door is not on a frame budget, so it gets a step ceiling generous enough that «run
+           it for six hours» really runs six hours; the interactive tick keeps SIM_MAX_STEPS. */
+        const r=stepSim(sec,200000);
+        solve(); try{ syncFoot(); }catch(_){}
+        return r; },
       /* (#R211) what the progress bar is showing, for a test that must not sleep a fixed time */
       progress(){ return { busy:!!(building||tracing||progOn), building, tracing }; },
       /* (#R189) the channel discharge — null/0 restores the volume-continuity behaviour (#R188) */
@@ -2588,7 +2915,18 @@ window.IntMapModules.terrainWater=function(HOST){
       /* (#R186) "is this the sea?" on its own — the connectedness test, so a test can check it at a
          known ocean point and at a known below-sea-level closed basin instead of trusting the label */
       _seaCheck:(lng,lat)=>seaCheck(lng,lat),
+      /* (#R265) when the water gets where the course goes — `at(km)` answers for any point along it */
+      travelTime:()=>{ const sec=trace&&trace.section; if(!sec||!sec.list.length) return null;
+        return { totalS:sec.travelS, km:trace.km, vMinMs:sec.vMinMs, vMaxMs:sec.vMaxMs,
+                 dischargeM3s:sec.dischargeM3s, manningN:sec.manningN,
+                 at:(km)=>{ const P=trace.path; if(!P||P.length<2) return null;
+                   let d=0, want=Math.max(0,+km||0)*1000, idx=P.length-1;
+                   for(let i=1;i<P.length;i++){ d+=_gcM(P[i-1],P[i]); if(d>=want){ idx=i; break; } }
+                   let best=sec.list[0];
+                   for(const q of sec.list){ if(q.i<=idx) best=q; else break; }
+                   return { tS:best.tS, vMs:best.vMs, at:[P[idx][0],P[idx][1]] }; } }; },
       traceState:()=>(trace?{ end:trace.end, km:trace.km, steps:trace.steps, points:trace.path.length,
+        travelS:(trace.section&&trace.section.travelS)||null,
         escal:trace.escal, escalMult:trace.escalMult,   /* (#R211) how many wide look-aheads fired, and the widest rung */
         lakes:trace.lakes.length, z:trace.z, from:trace.from, to:trace.to, info:trace.endInfo,
         belowSea:!!trace.belowSea,        /* (#R190) ran under 0 m on land and kept going */
@@ -2674,7 +3012,10 @@ window.IntMapModules.terrainWater=function(HOST){
       addLevee(pts,crest,width){ if(!Array.isArray(pts)||pts.length<2) return false; pushUndo();
         levees.push({pts:pts.slice(),crest:Math.max(1,+crest||leveeCrest),width:Math.max(10,+width||leveeWidth)});
         editDirty(); solve(); return true; },
-      clearWater(){ pushUndo(); pourStop(); sources=[]; rainMm=0; const r=panel&&panel.querySelector('.tw-rain'); if(r) r.value=0; return solve(); },
+      /* ⚠ (#R265) …AND THE SHALLOW-WATER STATE WITH IT. Emptying `sources` used to leave `sim.h`
+         holding everything that had been poured, so the next placement started on top of the old
+         flood — measured, a 5 Mm³ release reported 「Ponded 14.48 Mm³」 after two runs. */
+      clearWater(){ pushUndo(); pourStop(); sources=[]; rainMm=0; resetSim(); const r=panel&&panel.querySelector('.tw-rain'); if(r) r.value=0; return solve(); },
       /* (#R211) 「配置した水は残して地形だけ戻す」 — the button's other half, as a call */
       resetTerrain(){ if(!G) return false; pushUndo(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; editDirty(); solve(); terrainSoon(); return true; },
       /* (#R190) why the automatic re-trace did or did not run after the last edit — a silent no-op is
@@ -2685,7 +3026,10 @@ window.IntMapModules.terrainWater=function(HOST){
         /* (#R211) the pour, the pen and how many single operations 元に戻す can still take back */
         brushM, brushStrength, undoDepth:undoStack.length,
         pour:{ running:!!pourT, mode:pourMode, rateM3s:pourRate, speed:timeScale, simSeconds:Math.round(pourSimS), totalM3:pourTotal(),
-          continuous:contSources().length, oneShot:sources.length-contSources().length },   /* (#R261) */
+          continuous:contSources().length, oneShot:sources.length-contSources().length,   /* (#R261) */
+          /* (#R265) the shallow-water state: is the clock running or is this the t -> infinity answer,
+             and how far the wetted edge has travelled from the source */
+          steady, frontM:Math.round(simFrontM), model:(result&&result.model)||null },
         /* (#R261) the terrain edits that survived the last working-rectangle rebuild */
         carriedEdits:(G&&G.carriedEdits!=null)?G.carriedEdits:null,
         trace: trace?{ end:trace.end, km:trace.km, steps:trace.steps, lakes:trace.lakes.length, z:trace.z }:null,

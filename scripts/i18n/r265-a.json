@@ -1,0 +1,26 @@
+{
+  "_": "(#R265) The terrain & water tool stopped being a steady-state model: the clock now drives a 2-D shallow-water solve, ⏭ jumps to the resting answer, and the traced course reports when the water arrives. These are the strings that came with it. Columns: de, ru, es, fr, ko, zh-Hant.",
+
+  "Run to steady state": ["Bis zum Beharrungszustand", "До установившегося состояния", "Hasta el régimen permanente", "Jusqu’au régime permanent", "정상 상태까지 진행", "推進至穩定狀態"],
+  "Steady state (t → ∞)": ["Beharrungszustand (t → ∞)", "Установившееся состояние (t → ∞)", "Régimen permanente (t → ∞)", "Régime permanent (t → ∞)", "정상 상태 (t → ∞)", "穩定狀態（t → ∞）"],
+  "The water has come to rest — add a continuous source or place more": ["Das Wasser ruht — dauernde Quelle hinzufügen oder mehr platzieren", "Вода успокоилась — добавьте источник или ещё воды", "El agua se ha detenido — añada una fuente o más agua", "L’eau s’est immobilisée — ajoutez une source continue ou davantage d’eau", "물이 멈췄습니다 — 연속 수원을 추가하거나 물을 더 배치하세요", "水已靜止——請新增持續水源或再放置更多水"],
+  "front": ["Front", "фронт", "frente", "front", "선단", "前緣"],
+  "Flow": ["Strömung", "Течение", "Flujo", "Écoulement", "흐름", "水流"],
+  "left the area": ["abgeflossen", "ушло за пределы", "salió del área", "sorti de la zone", "영역 밖으로", "流出範圍"],
+  "at rest": ["in Ruhe", "в покое", "en reposo", "au repos", "정지", "靜止"],
+  "at rest this becomes": ["im Ruhezustand", "в покое", "en reposo", "au repos", "정지 시", "靜止時"],
+  "ticks hit the step cap (the clock ran ahead of the water)": ["Ticks am Schrittlimit (die Uhr lief dem Wasser voraus)", "тиков упёрлись в предел шагов (часы обогнали воду)", "ticks alcanzaron el límite de pasos (el reloj se adelantó al agua)", "ticks ont atteint la limite de pas (l’horloge a devancé l’eau)", "틱이 스텝 상한에 도달 (시계가 물보다 앞섰습니다)", "刻數達到步進上限（時鐘走在水之前）"],
+  "Travel time": ["Laufzeit", "Время добегания", "Tiempo de recorrido", "Temps de parcours", "도달 시간", "到達時間"],
+  "over": ["über", "на", "en", "sur", "구간", "距離"],
+  "as set": ["wie gesetzt", "как задано", "según lo fijado", "tel que défini", "설정값", "依設定值"],
+  "from the sources": ["aus den Quellen", "из источников", "de las fuentes", "d’après les sources", "수원의 유량에서", "來自水源流量"],
+  "from the placed volume": ["aus der platzierten Menge", "из размещённого объёма", "del volumen colocado", "d’après le volume placé", "배치한 수량에서", "來自放置的水量"],
+  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. ⏭ jumps to the steady state, which is solved by priority-flood depression filling and downslope volume routing.": [
+    "Echte Höhendaten, von Ihnen modelliert. Das Wasser wird zeitlich integriert — 2-D-Flachwassergleichungen in lokal-inertialer Form (Bates 2010, q-zentriert nach de Almeida 2012) mit Manning-Reibung n = 0,035; eine Flutwelle braucht die Zeit, die sie braucht. ⏭ springt zum Beharrungszustand, gelöst mit Priority-Flood-Senkenfüllung und Volumenrouting hangabwärts.",
+    "Реальные высоты, изменённые вами. Вода интегрируется по времени: двумерные уравнения мелкой воды в локально-инерционной форме (Bates 2010, q-центрированная схема de Almeida 2012), трение Маннинга n = 0,035 — паводковая волна идёт столько, сколько идёт. ⏭ переходит к установившемуся состоянию, которое решается заполнением котловин методом priority-flood и маршрутизацией объёма вниз по склону.",
+    "Elevación real, esculpida por usted. El agua se integra en el tiempo con las ecuaciones de aguas someras en forma inercial local (Bates 2010, esquema centrado en q de de Almeida 2012) y fricción de Manning n = 0,035: una onda de crecida tarda lo que tarda. ⏭ salta al régimen permanente, resuelto con relleno de depresiones priority-flood y enrutamiento de volumen ladera abajo.",
+    "Altitudes réelles, sculptées par vous. L’eau est intégrée dans le temps par les équations de Saint-Venant bidimensionnelles sous forme inertielle locale (Bates 2010, schéma centré sur q d’après de Almeida 2012) avec frottement de Manning n = 0,035 : une onde de crue met le temps qu’elle met. ⏭ saute au régime permanent, résolu par remplissage des dépressions priority-flood et routage volumique vers l’aval.",
+    "실제 표고 데이터를 직접 편집합니다. 물은 2차원 천수방정식의 국소 관성 형식(Bates 2010, de Almeida 2012의 q 중심화)과 매닝 조도 n = 0.035로 시간 적분되므로, 홍수파는 실제로 걸리는 시간만큼 진행합니다. ⏭ 를 누르면 정상 상태(우선순위 침수 기반 요지 충전과 사면 하향 체적 라우팅)로 넘어갑니다.",
+    "真實地形高程，由您塑形。水以二維淺水方程的局部慣性形式（Bates 2010、依 de Almeida 2012 的 q 中心化）與曼寧糙率 n = 0.035 進行時間積分，洪水波該花多久就花多久。按 ⏭ 可跳至穩定狀態，該狀態以優先淹沒法填窪與順坡體積演算求解。"
+  ]
+}

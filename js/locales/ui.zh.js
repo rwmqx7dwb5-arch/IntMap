@@ -4109,6 +4109,26 @@ window.IntMapLang.define('zh', {
     "Telecom & internet infrastructure": "電信與網際網路基礎設施",   /* (#R255) */
     "Telephone exchange": "電話交換局",   /* (#R255) */
     "This crop layer could not start.": "無法啟動此作物圖層。",   /* (#R255) */
-    "Zoom in to load this view": "請放大以載入此範圍",   /* (#R255) */
+    "Zoom in to load this view": "請放大以載入此範圍",
+  "Run to steady state": "推進至穩定狀態",
+  "Steady state (t → ∞)": "穩定狀態（t → ∞）",
+  "The water has come to rest — add a continuous source or place more": "水已靜止——請新增持續水源或再放置更多水",
+  "front": "前緣",
+  "Flow": "水流",
+  "left the area": "流出範圍",
+  "at rest": "靜止",
+  "at rest this becomes": "靜止時",
+  "ticks hit the step cap (the clock ran ahead of the water)": "刻數達到步進上限（時鐘走在水之前）",
+  "Travel time": "到達時間",
+  "over": "距離",
+  "as set": "依設定值",
+  "from the sources": "來自水源流量",
+  "from the placed volume": "來自放置的水量",
+  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. ⏭ jumps to the steady state, which is solved by priority-flood depression filling and downslope volume routing.": "真實地形高程，由您塑形。水以二維淺水方程的局部慣性形式（Bates 2010、依 de Almeida 2012 的 q 中心化）與曼寧糙率 n = 0.035 進行時間積分，洪水波該花多久就花多久。按 ⏭ 可跳至穩定狀態，該狀態以優先淹沒法填窪與順坡體積演算求解。",
+  "Longest straight run": "最長的直線區段",
+  "fall": "落差",
+  "relief": "起伏",
+  "— flat water: the shortest way across is the way the water goes": "——平靜水面：最短路徑就是水的路徑",
+  "— every point on it is a DEM reading": "——其上每一點都是實測 DEM 值",   /* (#R255) */
   }
 });

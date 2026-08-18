@@ -55,8 +55,11 @@ test('R261 ③: continuous/one-shot is a property of each source, and every tap 
   const s = read('js/terrain-water.js');
   assert.doesNotMatch(s, /sources\[sources\.length-1\]\.m3\+=/,
     'the pour must not feed only the last-placed source');
-  assert.match(s, /sources\.forEach\(x=>\{ if\(x\.cont\) x\.m3\+=Math\.max\(0,\+x\.rate\|\|pourRate\)\*add; \}\);/,
-    'every continuous source fills, at its own rate');
+  /* ⚠ (#R265) …and it fills by what the model ACTUALLY integrated (`r.simS`), not by what the tick
+     asked for. The two differ whenever a tick hits its step budget, and paying the taps for time the
+     water did not get is how the clock and the water come apart — this round's subject exactly. */
+  assert.match(s, /sources\.forEach\(x=>\{ if\(x\.cont\) x\.m3\+=Math\.max\(0,\+x\.rate\|\|pourRate\)\*r\.simS; \}\);/,
+    'every continuous source fills, at its own rate, for the time the water was integrated');
   assert.match(s, /const contSources=\(\)=>sources\.filter\(x=>x\.cont\);/);
   assert.match(s, /sources\.push\(\{lng,lat,m3:cont\?0:srcM3,cont,rate:cont\?pourRate:0\}\);/,
     'a placed source records the kind it was placed as');
@@ -217,20 +220,22 @@ test('R261 ⑪: the six new facility sets exist, are filed, and invent nothing',
    二つあるのを辞めろ」 asked to stop. What #R261 was ABOUT is that the layer can be asked a question
    at all, and that it never states a capacity without its denominator; that is what is asserted now,
    and where the answer is drawn is #R264's ③ to decide. (Same lesson as ⑬ below, one round later.) */
-test('R261 ⑫: the data-centre layer answers for the current view, and says what it does not know', () => {
+/* ⚠⚠⚠ (#R265) …AND THE IN-VIEW SUMMARY ITSELF IS GONE — 「表示範囲内のものを表示する機能はいらない」.
+   That is the FOURTH round in a row in which this test's subject moved (#R261 built it, #R264 moved
+   its host, #R265 deleted it), and the third time the assertions had frozen the implementation
+   rather than the property. What survives of #R261 is real and is what is asserted now: the layer
+   can be filtered by class from its legend, and the two kinds of switch share ONE filter expression
+   on ONE layer — two sets would be two filters and the last one written would silently win. */
+test('R261 ⑫: the data-centre layer is filterable, through a single expression', () => {
   const s = read('js/datacenters.js');
-  assert.match(s, /function dcStats\(\)\{/);
-  assert.match(s, /function dcRender\(\)\{/, 'the summary is still rendered from one place');
-  assert.match(s, /window\.IntMapDataCenters=\{[^]*?stats:\(\)=>\{/,
-    'and Atlas/tests read the same numbers rather than recomputing them');
-  /* the honest denominator — «X GW across N of M sites», never a bare total */
-  assert.match(s, /withPublishedMw:st\.withMw/);
-  assert.match(s, /No site in view publishes a capacity figure\./);
-  /* the class switches and the legend's operator switches share ONE filter expression */
+  /* the classes and the operator rows are both understood, and both end up in one filter */
   assert.match(s, /const CLASS_KEYS=\['ai','cloud','colo','hpc','other'\];/);
   assert.match(s, /if\(outKinds\.length\) clauses\.push\(\['!',\['in',\['get','k'\],\['literal',outKinds\]\]\]\);/);
-  /* it belongs to the layer: switching the layer off takes the summary with it */
-  assert.match(s, /if\(!on\)\{ setVis\(false\); closeCard\(\); unmountSummary\(\); return; \}/);
+  assert.match(s, /if\(outOps\.length\) clauses\.push\(\['!',\['in',\['get','op'\],\['literal',outOps\]\]\]\);/);
+  const setFilter = s.match(/GE\(\)\.layers\.setFilter\(/g) || [];
+  assert.equal(setFilter.length, 1, 'exactly one place writes the filter');
+  /* and the door the legend rows drive it through is still there */
+  assert.match(s, /toggleKey\(k\)\{ if\(hidden\.has\(k\)\) hidden\.delete\(k\); else hidden\.add\(k\);/);
 });
 
 /* ── ⑬ the build stamps ─────────────────────────────────────────────────────────────────────────

@@ -127,7 +127,12 @@ test('R189 water: the course follows the talweg, at a resolution ladder, with a 
   assert.match(src, /TRACE_Z_NEAR=\[\[10,13\],\[50,12\]\]/, 'z13 near the source, z12 to 50 km, z11 beyond');
   assert.match(src, /const zWant=zFor\(distM\); if\(zWant!==z\)\{ z=zWant; warmC=null; \}/, 'stepped per window');
   /* the discharge control (#R189 「水の水流は設定可能に」) */
-  assert.match(src, /let flowM3s=null; const CHEZY_K=40;/, 'a discharge state with a physical speed law');
+  /* ⚠ (#R265) The settable discharge is still here; the bulk-speed factor beside it is not. It was
+     an unsourced number AND a second friction law in a tool whose grid now runs on Manning — the
+     defect #R255 removed once already. Both halves read js/water-dynamics.js's n. */
+  assert.match(src, /let flowM3s=null;/, 'a settable discharge state');
+  assert.match(src, /const NM=\(window\.IntMapWaterDynamics&&window\.IntMapWaterDynamics\.MANNING_N\)\|\|0\.035;/,
+    '…and a physical speed law, shared with the grid');
   /* ⚠ (#R258) the panel is a grouped inset list now, so the box is `class="tw-num tw-fq"` — the
      control is the same control and this test is about its EXISTENCE, not about its styling. */
   assert.match(src, /class="tw-num tw-fq"/, 'and its input in the source-mode panel');

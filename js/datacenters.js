@@ -516,7 +516,6 @@ window.IntMapModules.dataCenters=function(HOST){
     lastKey=key; busy=true;
     try{ const osm=await osmFor(bbox);
       if(on) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:cur.concat(dedupe(cur,osm))});
-      try{ dcRender(); }catch(_){}   /* (#R261) the OSM half arrives late; the summary must not be the curated half only */
     }catch(_){ lastKey=''; }
     busy=false; }
 
@@ -628,12 +627,12 @@ window.IntMapModules.dataCenters=function(HOST){
       openCard(f.properties||{}, {lng:f.geometry.coordinates[0], lat:f.geometry.coordinates[1]}); });
     GE().events.onLayer('mouseenter',PT,()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} });
     GE().events.onLayer('mouseleave',PT,()=>{ try{ GE().render.canvas().style.cursor=''; }catch(_){} });
-    try{ GE().events.on('moveend',()=>{ if(on){ setTimeout(()=>refresh(),250); setTimeout(()=>dcRender(),320); } }); }catch(_){}   /* (#R261) the summary is «what is on screen», so it follows the screen */
+    try{ GE().events.on('moveend',()=>{ if(on){ setTimeout(()=>refresh(),250); } }); }catch(_){}   /* the OSM half is fetched for the view — see refresh() */
   }
 
   function toggle(v){ on=!!v;
-    if(!on){ setVis(false); closeCard(); unmountSummary(); return; }   /* (#R261/#R264) the summary belongs to the layer */
-    const a=()=>{ if(!ensure()){ try{ GE().events.once('idle',a); }catch(_){} return; } wire(); setVis(true); refresh(); dcRender(); };
+    if(!on){ setVis(false); closeCard(); return; }
+    const a=()=>{ if(!ensure()){ try{ GE().events.once('idle',a); }catch(_){} return; } wire(); setVis(true); refresh(); };
     a(); }
 
   /* ══ (#R258) THE KEY IS A FILTER ═════════════════════════════════════════════════════════════════
@@ -642,118 +641,25 @@ window.IntMapModules.dataCenters=function(HOST){
      takes that class off the map. The filter is one expression on the layer — no second copy of the
      feature collection, so the OSM half and the curated half obey it together. */
   const hidden=new Set();
-  /* ══ ⚠⚠⚠ (#R261) THE LAYER COULD NOT BE ASKED ANYTHING ═══════════════════════════════════════════
-     「データセンター、AIインフラレイヤーを爆発的に強化。」 — the same sentence as #R258, sent again.
-     #R258's work was real (the table roughly tripled its non-cloud half, the dot carries a published
-     capacity, the legend became a filter) and all of it is still here. What it did not do is the
-     thing every other serious layer in this app does: 貿易フロー, 電力構成, 作物, 海流, 気象警報 and
-     潮汐 each open a PANEL that answers a question about what is on screen. This one had a colour
-     key and nothing else, so the only question a reader could put to a map of the world's compute
-     was «what is this one dot».
+  /* ══ (#R265) …AND THE IN-VIEW SUMMARY IS GONE ═════════════════════════════════════════════════
+     「データセンター、AIインフラレイヤーに表示範囲内のものを表示する機能はいらない。」
 
-     The panel answers the three that matter, for the CURRENT VIEW and no wider:
-       · how many sites are in it, split curated / OpenStreetMap, so the reader can see which half
-         they are looking at;
-       · how much PUBLISHED capacity that is, and — the number that keeps this honest — how many of
-         the sites in view publish one at all. «3.1 GW across 9 of 214 sites» is a true sentence;
-         «3.1 GW» on its own invites the reader to think it is the total, which it is not;
-       · which sites they are, largest first, clickable.
-     ⚠ IT COMPUTES NOTHING NEW. Every figure is a sum over the features already in the source, which
-     is the same data the dots and the cards are drawn from — there is one table (#R213) and this
-     reads it. A site with no published capacity is counted as a site and contributes 0 MW, and the
-     panel says so rather than estimating.
-     ══ ⚠⚠⚠ (#R264) …AND IT DID NOT NEED TO FLOAT ═══════════════════════════════════════════════════
-     「データセンター、AIインフラレイヤーにポップアップ二つあるのを辞めろ。」 #R261 made this a
-     `.tool-panel` — a floating window over the map — and the layer ALSO opens a floating detail card
-     when a dot is clicked, so a reader who did the one thing the layer is for ended up with two of
-     them stacked on the same map. Neither is wrong on its own; having both is.
+     #R261 added a block that counted what was on screen (sites, published capacity with its
+     denominator, a per-class breakdown that doubled as a filter, and the largest-in-view list) and
+     #R264 moved it out of its own floating window into the layer's legend row. Both were answers to
+     what was asked at the time; this round the block itself is not wanted, so all three parts of it
+     are deleted rather than hidden — `dcStats`, `inView`, `dcRender`, `mountSummary` /
+     `unmountSummary` and the `stats()` door on the public object are gone, and so is the `moveend`
+     repaint that existed only to keep them current.
 
-     They are different KINDS of answer and only one of them belongs over the map:
-       · «what is this dot» is about a point the reader just touched → it stays a floating card,
-         placed beside that point (that is the whole reason it floats);
-       · «what is in view» is about the LAYER → it belongs where the layer's own controls are, and
-         this layer already has a block there: the legend `_registerLayerOpacity('dc2', …)` builds,
-         which is where the colour key and the class switches live (js/layer-packs.js).
-     So the summary is now rendered INTO that legend block instead of into a window of its own.
-     ⚠ NOTHING IS DROPPED — the counts, the «N of M publish a capacity» denominator, the class
-     breakdown that doubles as a filter and the largest-in-view list are the same markup with the
-     same handlers; only their host changed. ⚠ And the host is handed in (`mountSummary`) rather
-     than looked up by selector here: the row is built by the consumer, so the consumer says where. */
-  let sumHost=null;      /* the legend row this layer's summary is rendered into (#R264) */
-  const fmtMW=(mw)=>(mw>=1000)?((mw/1000).toFixed(mw>=10000?0:2)+' GW'):(Math.round(mw)+' MW');
-  function inView(f){ try{ const b=GE().camera.getBounds(); if(!b) return true;
-    const c=f.geometry&&f.geometry.coordinates; if(!c) return false;
-    return c[0]>=b.getWest()&&c[0]<=b.getEast()&&c[1]>=b.getSouth()&&c[1]<=b.getNorth(); }catch(_){ return true; } }
-  function dcStats(){
-    let feats=[]; try{ const d=GE().layers.sourceData(SRC); feats=(d&&d.features)||[]; }catch(_){}
-    const vis=feats.filter(f=>inView(f)&&!hidden.has(f.properties&&f.properties.op==='osm'?'osm':(f.properties&&f.properties.op)));
-    const byKind={}, byOrigin={curated:0,osm:0};
-    let mw=0, withMw=0;
-    vis.forEach(f=>{ const p=f.properties||{};
-      byKind[p.k||'other']=(byKind[p.k||'other']||0)+1;
-      byOrigin[p.origin==='curated'?'curated':'osm']++;
-      const v=+p.mw||0; if(v>0){ mw+=v; withMw++; } });
-    const top=vis.filter(f=>(+((f.properties||{}).mw)||0)>0)
-      .sort((a,b)=>(+b.properties.mw||0)-(+a.properties.mw||0)).slice(0,8);
-    return { n:vis.length, byKind, byOrigin, mw, withMw, top };
-  }
-  /* (#R264) the summary's element inside the legend row, created on first use. `sumHost` is set by
-     mountSummary(); with no host there is nothing to draw into and dcRender() is a no-op. */
-  function dcSumEl(){ if(!sumHost||!sumHost.isConnected) return null;
-    let e=sumHost.querySelector('.dc-sum');
-    if(!e){ e=document.createElement('div'); e.className='dc-sum';
-      e.style.cssText='margin-top:8px;padding-top:7px;border-top:1px solid var(--glass-border,rgba(128,128,128,0.18));';
-      sumHost.appendChild(e); }
-    return e; }
-  function dcRender(){ const p=dcSumEl(); if(!p) return;
-    const st=dcStats();
-    const kindRow=(k,lbl)=>{ const c=st.byKind[k]||0; if(!c) return '';
-      return '<div class="dc-krow" data-k="'+S(k)+'" style="display:flex;align-items:center;gap:7px;padding:2px 0;cursor:pointer;font-size:11.5px;'+(hidden.has(k)?'opacity:.42;':'')+'">'
-        +'<span style="width:10px;height:10px;border-radius:50%;flex:none;background:'+S(colOf(k==='cloud'?'aws':k==='ai'?'ai':k==='colo'?'colo':k==='hpc'?'hpc':'osm'))+';"></span>'
-        +'<span style="flex:1;color:var(--text-main);">'+S(lbl)+'</span>'
-        +'<b style="color:var(--text-main);">'+c+'</b></div>'; };
-    /* (#R264) no title row and no ✕: the block sits inside the layer's own row, which already names
-       the layer, and it is dismissed by switching the layer off like every other legend. */
-    p.innerHTML='<div style="font-size:11.5px;color:var(--text-main);line-height:1.6;">'
-        +'<b style="font-size:15px;">'+st.n+'</b> '+S(L('sites in view','件（表示範囲内）','Standorte im Ausschnitt','объектов в виде','sitios a la vista'))
-        +' <span style="color:var(--text-muted);">('+st.byOrigin.curated+' '+S(L('curated','収録','kuratiert','из таблицы','curados'))+' · '+st.byOrigin.osm+' OSM)</span></div>'
-      +'<div style="margin-top:6px;font-size:11.5px;color:var(--text-main);">'
-        +(st.withMw
-          ?('<b>'+S(fmtMW(st.mw))+'</b> '+S(L('published capacity','公表容量','veröffentlichte Kapazität','заявленная мощность','capacidad publicada'))
-             +' <span style="color:var(--text-muted);">'+S(L('across','／','über','по','en'))+' '+st.withMw+' '+S(L('of','件／全','von','из','de'))+' '+st.n+'</span>')
-          :('<span style="color:var(--text-muted);">'+S(L('No site in view publishes a capacity figure.','表示範囲内に容量を公表している施設はありません。','Kein Standort im Ausschnitt veröffentlicht eine Kapazität.','Ни один объект в виде не публикует мощность.','Ningún sitio a la vista publica su capacidad.'))+'</span>'))
-      +'</div>'
-      +'<div style="margin-top:8px;border-top:1px solid var(--glass-border,rgba(128,128,128,0.18));padding-top:6px;">'
-        +kindRow('ai',L.arr(KIND.ai))+kindRow('cloud',L.arr(KIND.cloud))+kindRow('colo',L.arr(KIND.colo))
-        +kindRow('hpc',L.arr(KIND.hpc))+kindRow('other',L.arr(KIND.other))
-      +'</div>'
-      +(st.top.length
-        ?('<div style="margin-top:8px;border-top:1px solid var(--glass-border,rgba(128,128,128,0.18));padding-top:6px;font-size:10px;color:var(--text-muted);">'
-            +S(L('Largest published capacity in view','表示範囲内で公表容量が大きい順','Größte veröffentlichte Kapazität im Ausschnitt','Наибольшая заявленная мощность в виде','Mayor capacidad publicada a la vista'))+'</div>'
-          +st.top.map((f,i)=>'<div class="dc-top" data-i="'+i+'" style="display:flex;gap:7px;justify-content:space-between;padding:2px 0;font-size:11px;cursor:pointer;">'
-            +'<span style="color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+S(f.properties.n)+'</span>'
-            +'<b style="flex:none;color:var(--text-main);">'+S(fmtMW(+f.properties.mw||0))+'</b></div>').join(''))
-        :'')
-      +'<div style="margin-top:8px;font-size:9.5px;color:var(--text-muted);line-height:1.55;">'
-      +S(L('Counts and capacity are for what is on screen. A capacity is shown only where the operator or OpenStreetMap publishes one — nothing here is estimated. Tap a class to take it off the map.',
-           '件数・容量は画面に表示されている範囲の集計です。容量は運営者または OpenStreetMap が公表している場合のみ表示し、推定値は一切使いません。分類をタップするとその分類を地図から外せます。',
-           'Zahlen gelten für den sichtbaren Ausschnitt. Kapazität nur, wo sie veröffentlicht ist — nichts wird geschätzt.',
-           'Подсчёт — по видимой области. Мощность показана только там, где она опубликована; оценок нет.',
-           'Los recuentos son de lo que se ve. La capacidad solo se muestra si está publicada; nada se estima.'))
-      +'</div>';
-    p.querySelectorAll('.dc-krow').forEach(r=>r.onclick=()=>{ const k=r.getAttribute('data-k');
-      if(hidden.has(k)) hidden.delete(k); else hidden.add(k); applyFilter(); dcRender(); });
-    p.querySelectorAll('.dc-top').forEach(r=>r.onclick=()=>{ const f=st.top[+r.getAttribute('data-i')]; if(!f) return;
-      const c=f.geometry.coordinates;
-      try{ GE().camera.flyTo({center:c,zoom:Math.max(GE().camera.getZoom(),9),duration:700}); }catch(_){}
-      try{ openCard(f.properties,{lng:c[0],lat:c[1]}); }catch(_){} });
-  }
-  /* (#R264) the consumer (js/layer-packs.js) owns the legend row and hands it here, so this module
-     never guesses at a selector for a node it did not build. Idempotent: the row is rebuilt on a
-     language switch and on a panel reorganisation, and re-mounting is how the summary follows it. */
-  function mountSummary(el){ sumHost=el||null; if(sumHost) dcRender(); }
-  function unmountSummary(){ try{ const e=sumHost&&sumHost.querySelector('.dc-sum'); if(e&&e.parentNode) e.parentNode.removeChild(e); }catch(_){}
-    sumHost=null; }
+     ⚠ NOTHING ELSE IS REDUCED. The layer keeps its detail card (the answer about the point under
+     the finger), its colour key, and the FILTER — #R258's key rows are switches in their own right
+     (js/layer-packs.js), so taking a class off the map is still one click. `refresh()` still fetches
+     the OpenStreetMap half for the current view; that is how the layer gets its data, not a readout
+     about the view.
+     ⚠ `hidden` therefore holds only the key rows' ids now, but `applyFilter` still understands the
+     CLASS ids as well (`ai`, `cloud`, `colo`, `hpc`, `other`) because `toggleKey` is a public door
+     Atlas can call with either kind — see the note over CLASS_KEYS. */
 
   const KEY_ROWS=()=>[['aws','AWS'],['azure','Azure'],['gcp','Google Cloud'],['oracle','Oracle'],['alibaba','Alibaba'],
     ['meta','Meta'],['ai',L('AI compute','AI計算基盤','KI-Rechenzentrum','ИИ-вычисления','Cómputo de IA')],
@@ -783,15 +689,6 @@ window.IntMapModules.dataCenters=function(HOST){
     [PT,LBL].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setFilter(id,f); }catch(_){} });
   }
   window.IntMapDataCenters={ toggle, refresh, count:()=>DC.length, operators:()=>OP, kinds:()=>KIND,
-    /* (#R261) the in-view summary — Atlas and the tests read the same numbers the legend prints
-       rather than a second computation of them */
-    stats:()=>{ const st=dcStats(); return { n:st.n, curated:st.byOrigin.curated, osm:st.byOrigin.osm,
-      mw:st.mw, withPublishedMw:st.withMw, byKind:Object.assign({},st.byKind),
-      top:st.top.map(f=>({ n:f.properties.n, mw:+f.properties.mw||0, k:f.properties.k })) }; },
-    /* (#R264) the summary is rendered into the layer's own legend row, which the consumer builds and
-       hands over — there is no window of its own any more (「ポップアップ二つあるのを辞めろ」). */
-    mountSummary, unmountSummary, renderSummary:dcRender,
-    summaryMounted:()=>!!(sumHost&&sumHost.isConnected&&sumHost.querySelector('.dc-sum')),
     /* (#R258) the legend's rows drive this — see js/layer-packs.js */
     toggleKey(k){ if(hidden.has(k)) hidden.delete(k); else hidden.add(k); applyFilter(); return !hidden.has(k); },
     keyOn:(k)=>!hidden.has(k),
