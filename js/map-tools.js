@@ -998,8 +998,13 @@ window.IntMapModules.isochrone=function(HOST){
         +'<div style="font-size:10px;color:var(--text-muted);line-height:1.4;">'+LL('Follows the real road network (Valhalla / OpenStreetMap) — not a distance circle.','実際の道路網に沿った範囲（Valhalla／OpenStreetMap）— 距離の円ではありません。','Entlang des echten Straßennetzes (Valhalla/OSM) — kein Distanzkreis.','По реальной дорожной сети (Valhalla/OSM) — не круг расстояния.','Sigue la red vial real (Valhalla/OSM) — no un círculo.')+'</div>';
       body.querySelectorAll('.iso-mode').forEach(b=>b.onclick=()=>{ mode=b.getAttribute('data-m'); run(center,{mode,minutes:mins}); });
       body.querySelectorAll('.iso-min').forEach(b=>b.onclick=()=>{ const v=+b.getAttribute('data-v'); const i=mins.indexOf(v); if(i>=0){ if(mins.length>1) mins.splice(i,1); } else { if(mins.length>=3) mins.shift(); mins.push(v); } run(center,{mode,minutes:mins}); }); }
-    function open(lngLat){ if(lngLat&&lngLat.lng!=null) center={lng:+lngLat.lng,lat:+lngLat.lat}; ensurePanel().style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(panel); }catch(_){} if(center) run(center,{mode,minutes:mins}); else renderPanel(); }
-    return { open, run, clear, ensureLayers, _src:SRC }; })();
+    function open(lngLat){ if(lngLat&&lngLat.lng!=null) center={lng:+lngLat.lng,lat:+lngLat.lat}; ensurePanel().style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(panel); }catch(_){} if(center) run(center,{mode,minutes:mins}); else renderPanel(); return true; }
+    /* (#R264) the tools list lights the row of a running tool and shuts it on a second press, so
+       this answers both. `clear()` already did exactly what closing means here — it takes the
+       contours off the map AND hides the panel — so close() is clear(), named for what it is. */
+    const isOpen=()=>!!(panel&&panel.style.display!=='none');
+    function close(){ if(!isOpen()) return false; clear(); return true; }
+    return { open, close, isOpen, run, clear, ensureLayers, _src:SRC }; })();
 };
 
 window.IntMapModules.arc3d=function(HOST){

@@ -211,19 +211,26 @@ test('R261 ⑪: the six new facility sets exist, are filed, and invent nothing',
 
 /* ── ⑫ the data-centre layer can be asked a question ────────────────────────────────────────────
    「データセンター、AIインフラレイヤーを爆発的に強化。」 It had a colour key and nothing else. */
-test('R261 ⑫: the data-centre panel answers for the current view, and says what it does not know', () => {
+/* ⚠⚠ (#R264) THIS PINNED THE SUMMARY'S HOST AND WOULD HAVE CALLED ITS MOVE A REGRESSION. The three
+   assertions below used to name `id='dc-panel'` and `openPanel:dcOpenPanel, closePanel:dcClosePanel`
+   — i.e. «the answer lives in a floating window of its own», which is exactly what 「ポップアップ
+   二つあるのを辞めろ」 asked to stop. What #R261 was ABOUT is that the layer can be asked a question
+   at all, and that it never states a capacity without its denominator; that is what is asserted now,
+   and where the answer is drawn is #R264's ③ to decide. (Same lesson as ⑬ below, one round later.) */
+test('R261 ⑫: the data-centre layer answers for the current view, and says what it does not know', () => {
   const s = read('js/datacenters.js');
   assert.match(s, /function dcStats\(\)\{/);
-  assert.match(s, /id='dc-panel'/);
-  assert.match(s, /openPanel:dcOpenPanel, closePanel:dcClosePanel,/);
+  assert.match(s, /function dcRender\(\)\{/, 'the summary is still rendered from one place');
+  assert.match(s, /window\.IntMapDataCenters=\{[^]*?stats:\(\)=>\{/,
+    'and Atlas/tests read the same numbers rather than recomputing them');
   /* the honest denominator — «X GW across N of M sites», never a bare total */
   assert.match(s, /withPublishedMw:st\.withMw/);
   assert.match(s, /No site in view publishes a capacity figure\./);
-  /* the panel's class switches and the legend's operator switches share ONE filter expression */
+  /* the class switches and the legend's operator switches share ONE filter expression */
   assert.match(s, /const CLASS_KEYS=\['ai','cloud','colo','hpc','other'\];/);
   assert.match(s, /if\(outKinds\.length\) clauses\.push\(\['!',\['in',\['get','k'\],\['literal',outKinds\]\]\]\);/);
-  /* it belongs to the layer */
-  assert.match(s, /if\(!on\)\{ setVis\(false\); closeCard\(\); dcClosePanel\(\); return; \}/);
+  /* it belongs to the layer: switching the layer off takes the summary with it */
+  assert.match(s, /if\(!on\)\{ setVis\(false\); closeCard\(\); unmountSummary\(\); return; \}/);
 });
 
 /* ── ⑬ the build stamps ─────────────────────────────────────────────────────────────────────────

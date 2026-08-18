@@ -819,6 +819,19 @@
       ],
       "port": 4261,
       "url": "http://127.0.0.1:4261"
+    },
+    {
+      "name": "intmap-preview-r264",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4264"
+      ],
+      "port": 4264,
+      "url": "http://127.0.0.1:4264"
     }
   ]
 }
