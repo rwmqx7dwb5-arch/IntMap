@@ -484,7 +484,7 @@ window.IntMapModules.los=function(HOST){
            'Задайте высоты и дальность, затем анализ. Пустая частота = чистая геометрия; с частотой ещё зона Френеля и дифракция.',
            'Fije las alturas y el alcance y analice. Frecuencia vacía = geometría pura; con frecuencia también Fresnel y difracción.')+'</div>';
       const k=p.querySelector('#los-k'); if(k) k.value=String(losK===1?1:losK===1.13?1.13:1.3333);
-      p.querySelector('.tp-close').onclick=()=>{ runSeq++; site=null; clearLink(); setSite(); wipe(); p.style.display='none'; };
+      p.querySelector('.tp-close').onclick=()=>close();   /* (#R264) one implementation — see close() */
       p.querySelector('#los-go').onclick=()=>run();
       p.querySelector('#los-clr').onclick=()=>{ clear(); clearLink(); };
       { const lb=p.querySelector('#los-link'); if(lb) lb.onclick=()=>{ armLink(!linkArmed); }; }
@@ -673,9 +673,16 @@ window.IntMapModules.los=function(HOST){
     function clear(){ runSeq++; wipe(); setSite();
       const b=panel&&panel.querySelector('#los-body'); if(b) b.innerHTML=L('Cleared. Press Analyze to re-run here, or “Move the site…” to place it somewhere else.','消去しました。「解析する」で再計算、「地点を変える…」で別の場所に置けます。','Gelöscht. Erneut analysieren oder „Standort verschieben…“ verwenden.','Очищено. Нажмите «Анализ» или «Перенести точку…».','Borrado. Analice de nuevo o use “Mover el punto…”.');
       return true; }
+    /* ══ (#R264) THE ✕ WAS THE ONLY WAY OUT, AND IT WAS WRITTEN INLINE ═════════════════════════════
+       「Toolsのカードは…もう一度押したら選択解除されるように。」 The tools list has to be able to shut a
+       tool it opened, and `state().open` already answers whether this one is showing — what was
+       missing was the verb. It is the ✕'s own body, moved here and called from there, so there is
+       one way to leave rather than two that can drift apart. */
+    function close(){ if(!(panel&&panel.style.display!=='none')) return false;
+      runSeq++; site=null; clearLink(); setSite(); wipe(); panel.style.display='none'; return true; }
     window.addEventListener('intmap-lang',()=>{ if(panel&&panel.style.display!=='none'){ render(); if(last) report(last); } });
 
-    return { open, clear, run, analyze,
+    return { open, close, isOpen:()=>!!(panel&&panel.style.display!=='none'), clear, run, analyze,
       /* (#R183) the point-to-point link — see the note above _gcPoint */
       linkTo, linkRun, clearLink, armLink, isLinkArmed:()=>linkArmed,
       /* (#R261) the site-move control, so Atlas and a test press the same door the button does */

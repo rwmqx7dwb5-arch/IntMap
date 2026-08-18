@@ -4863,6 +4863,17 @@ window.IntMapModules.seismic=function(HOST){
          about the panel, not about which earthquake is loaded. The slider itself is rewritten by the
          `render()` below, which prints `value="'+tSec+'"`. */
       tSec=0;
+      /* ══ ⚠⚠ (#R264) A CHOSEN EARTHQUAKE BRINGS ITS OWN HYPOCENTRE ═══════════════════════════════
+         「過去・最近の地震から選んだ場合、Place the hypocenterピルは表示しないように。」
+         `open()` arms the map when there is no epicentre yet (#R240: «with no epicentre there is
+         exactly one thing to do»), and the on-map HUD reads that arming — but LOADING AN EVENT is
+         the other way of doing that one thing, and neither loader disarmed. So the catalogue set
+         `epi`, the panel moved on to 「震度分布を計算」, and the pill over the map went on saying
+         「② 震央を置く」 for an earthquake whose hypocentre is a published fact — and the next tap
+         anywhere on the map silently moved it. Disarmed HERE, not in `_hud()`: the HUD is a READOUT
+         of `clickMode` (#R239) and giving it a second opinion is the two-sources-of-truth defect it
+         was built to avoid. `clearEvent()` re-arms, which is the inverse it already performs. */
+      if(clickMode==='epi') clickMode='none';
       try{
         depthKm=ev.depthKm;
         setEpi([ev.lng,ev.lat]);
@@ -5268,6 +5279,7 @@ window.IntMapModules.seismic=function(HOST){
       evId=''; evNow=null; evPub=null;
       if(!f||!f.geometry) return;
       const o=panel&&panel.querySelector('.sq-out');
+      if(clickMode==='epi') clickMode='none';   /* (#R264) the USGS feed carries the hypocentre — see applyEvent */
       setEpi([f.geometry.coordinates[0],f.geometry.coordinates[1]]);   /* (#R210) a real USGS event is a different earthquake — the placed points go */
       depthKm=Math.max(0,Math.round(f.geometry.coordinates[2]||10));
       faultClear();   /* (#R189) a real point event replaces any drawn rupture */
@@ -5276,6 +5288,11 @@ window.IntMapModules.seismic=function(HOST){
       try{ GE().camera.flyTo({center:epi,zoom:3,duration:900}); }catch(_){}
       tSec=0; const tl=panel.querySelector('.sq-t'); if(tl) tl.value=0;
       refresh();
+      /* ⚠ (#R264) `refresh()` is draw/warm/solve — it does NOT call render(), and render() is what
+         repaints the on-map HUD. This loader edits the panel's existing nodes in place (and holds
+         `o` from before), so it must not rebuild it; the HUD is asked directly instead, exactly as
+         `close()` does for the same reason. */
+      try{ _hud(); }catch(_){}
       if(o) o.insertAdjacentHTML('afterbegin','<div style="margin-bottom:5px;">'+HOST.escapeHtml(_realLabel(f))+'</div>');
     }
 

@@ -632,8 +632,8 @@ window.IntMapModules.dataCenters=function(HOST){
   }
 
   function toggle(v){ on=!!v;
-    if(!on){ setVis(false); closeCard(); dcClosePanel(); return; }   /* (#R261) the panel belongs to the layer */
-    const a=()=>{ if(!ensure()){ try{ GE().events.once('idle',a); }catch(_){} return; } wire(); setVis(true); refresh(); dcOpenPanel(); };
+    if(!on){ setVis(false); closeCard(); unmountSummary(); return; }   /* (#R261/#R264) the summary belongs to the layer */
+    const a=()=>{ if(!ensure()){ try{ GE().events.once('idle',a); }catch(_){} return; } wire(); setVis(true); refresh(); dcRender(); };
     a(); }
 
   /* ══ (#R258) THE KEY IS A FILTER ═════════════════════════════════════════════════════════════════
@@ -662,9 +662,24 @@ window.IntMapModules.dataCenters=function(HOST){
      is the same data the dots and the cards are drawn from — there is one table (#R213) and this
      reads it. A site with no published capacity is counted as a site and contributes 0 MW, and the
      panel says so rather than estimating.
-     ⚠ It is a `.tool-panel`, so it inherits the app's material, its drag handle and the frosted-mode
-     rules, exactly as js/viewshed.js's does. */
-  let dcPanel=null;
+     ══ ⚠⚠⚠ (#R264) …AND IT DID NOT NEED TO FLOAT ═══════════════════════════════════════════════════
+     「データセンター、AIインフラレイヤーにポップアップ二つあるのを辞めろ。」 #R261 made this a
+     `.tool-panel` — a floating window over the map — and the layer ALSO opens a floating detail card
+     when a dot is clicked, so a reader who did the one thing the layer is for ended up with two of
+     them stacked on the same map. Neither is wrong on its own; having both is.
+
+     They are different KINDS of answer and only one of them belongs over the map:
+       · «what is this dot» is about a point the reader just touched → it stays a floating card,
+         placed beside that point (that is the whole reason it floats);
+       · «what is in view» is about the LAYER → it belongs where the layer's own controls are, and
+         this layer already has a block there: the legend `_registerLayerOpacity('dc2', …)` builds,
+         which is where the colour key and the class switches live (js/layer-packs.js).
+     So the summary is now rendered INTO that legend block instead of into a window of its own.
+     ⚠ NOTHING IS DROPPED — the counts, the «N of M publish a capacity» denominator, the class
+     breakdown that doubles as a filter and the largest-in-view list are the same markup with the
+     same handlers; only their host changed. ⚠ And the host is handed in (`mountSummary`) rather
+     than looked up by selector here: the row is built by the consumer, so the consumer says where. */
+  let sumHost=null;      /* the legend row this layer's summary is rendered into (#R264) */
   const fmtMW=(mw)=>(mw>=1000)?((mw/1000).toFixed(mw>=10000?0:2)+' GW'):(Math.round(mw)+' MW');
   function inView(f){ try{ const b=GE().camera.getBounds(); if(!b) return true;
     const c=f.geometry&&f.geometry.coordinates; if(!c) return false;
@@ -682,19 +697,24 @@ window.IntMapModules.dataCenters=function(HOST){
       .sort((a,b)=>(+b.properties.mw||0)-(+a.properties.mw||0)).slice(0,8);
     return { n:vis.length, byKind, byOrigin, mw, withMw, top };
   }
-  function dcBuildPanel(){ if(dcPanel) return dcPanel;
-    dcPanel=document.createElement('div'); dcPanel.className='tool-panel'; dcPanel.id='dc-panel';
-    (document.getElementById('map-container')||document.body).appendChild(dcPanel);
-    return dcPanel; }
-  function dcRender(){ const p=dcPanel; if(!p||p.style.display==='none') return;
+  /* (#R264) the summary's element inside the legend row, created on first use. `sumHost` is set by
+     mountSummary(); with no host there is nothing to draw into and dcRender() is a no-op. */
+  function dcSumEl(){ if(!sumHost||!sumHost.isConnected) return null;
+    let e=sumHost.querySelector('.dc-sum');
+    if(!e){ e=document.createElement('div'); e.className='dc-sum';
+      e.style.cssText='margin-top:8px;padding-top:7px;border-top:1px solid var(--glass-border,rgba(128,128,128,0.18));';
+      sumHost.appendChild(e); }
+    return e; }
+  function dcRender(){ const p=dcSumEl(); if(!p) return;
     const st=dcStats();
     const kindRow=(k,lbl)=>{ const c=st.byKind[k]||0; if(!c) return '';
       return '<div class="dc-krow" data-k="'+S(k)+'" style="display:flex;align-items:center;gap:7px;padding:2px 0;cursor:pointer;font-size:11.5px;'+(hidden.has(k)?'opacity:.42;':'')+'">'
         +'<span style="width:10px;height:10px;border-radius:50%;flex:none;background:'+S(colOf(k==='cloud'?'aws':k==='ai'?'ai':k==='colo'?'colo':k==='hpc'?'hpc':'osm'))+';"></span>'
         +'<span style="flex:1;color:var(--text-main);">'+S(lbl)+'</span>'
         +'<b style="color:var(--text-main);">'+c+'</b></div>'; };
-    p.innerHTML='<div class="tp-header"><span class="tp-title">'+S(L('Data centers & AI infrastructure','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e IA'))+'</span><button class="tp-close" type="button">✕</button></div>'
-      +'<div style="font-size:11.5px;color:var(--text-main);line-height:1.6;">'
+    /* (#R264) no title row and no ✕: the block sits inside the layer's own row, which already names
+       the layer, and it is dismissed by switching the layer off like every other legend. */
+    p.innerHTML='<div style="font-size:11.5px;color:var(--text-main);line-height:1.6;">'
         +'<b style="font-size:15px;">'+st.n+'</b> '+S(L('sites in view','件（表示範囲内）','Standorte im Ausschnitt','объектов в виде','sitios a la vista'))
         +' <span style="color:var(--text-muted);">('+st.byOrigin.curated+' '+S(L('curated','収録','kuratiert','из таблицы','curados'))+' · '+st.byOrigin.osm+' OSM)</span></div>'
       +'<div style="margin-top:6px;font-size:11.5px;color:var(--text-main);">'
@@ -721,19 +741,19 @@ window.IntMapModules.dataCenters=function(HOST){
            'Подсчёт — по видимой области. Мощность показана только там, где она опубликована; оценок нет.',
            'Los recuentos son de lo que se ve. La capacidad solo se muestra si está publicada; nada se estima.'))
       +'</div>';
-    try{ p.querySelector('.tp-close').onclick=()=>dcClosePanel(); }catch(_){}
     p.querySelectorAll('.dc-krow').forEach(r=>r.onclick=()=>{ const k=r.getAttribute('data-k');
       if(hidden.has(k)) hidden.delete(k); else hidden.add(k); applyFilter(); dcRender(); });
     p.querySelectorAll('.dc-top').forEach(r=>r.onclick=()=>{ const f=st.top[+r.getAttribute('data-i')]; if(!f) return;
       const c=f.geometry.coordinates;
       try{ GE().camera.flyTo({center:c,zoom:Math.max(GE().camera.getZoom(),9),duration:700}); }catch(_){}
       try{ openCard(f.properties,{lng:c[0],lat:c[1]}); }catch(_){} });
-    try{ if(HOST.makeDraggable) HOST.makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
   }
-  function dcOpenPanel(){ const p=dcBuildPanel();
-    p.style.cssText='display:block;left:auto;right:24px;top:96px;bottom:auto;z-index:1500;width:238px;';
-    dcRender(); }
-  function dcClosePanel(){ if(dcPanel) dcPanel.style.display='none'; }
+  /* (#R264) the consumer (js/layer-packs.js) owns the legend row and hands it here, so this module
+     never guesses at a selector for a node it did not build. Idempotent: the row is rebuilt on a
+     language switch and on a panel reorganisation, and re-mounting is how the summary follows it. */
+  function mountSummary(el){ sumHost=el||null; if(sumHost) dcRender(); }
+  function unmountSummary(){ try{ const e=sumHost&&sumHost.querySelector('.dc-sum'); if(e&&e.parentNode) e.parentNode.removeChild(e); }catch(_){}
+    sumHost=null; }
 
   const KEY_ROWS=()=>[['aws','AWS'],['azure','Azure'],['gcp','Google Cloud'],['oracle','Oracle'],['alibaba','Alibaba'],
     ['meta','Meta'],['ai',L('AI compute','AI計算基盤','KI-Rechenzentrum','ИИ-вычисления','Cómputo de IA')],
@@ -763,13 +783,15 @@ window.IntMapModules.dataCenters=function(HOST){
     [PT,LBL].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setFilter(id,f); }catch(_){} });
   }
   window.IntMapDataCenters={ toggle, refresh, count:()=>DC.length, operators:()=>OP, kinds:()=>KIND,
-    /* (#R261) the in-view summary, and its window — Atlas and the tests read the same numbers the
-       panel prints rather than a second computation of them */
+    /* (#R261) the in-view summary — Atlas and the tests read the same numbers the legend prints
+       rather than a second computation of them */
     stats:()=>{ const st=dcStats(); return { n:st.n, curated:st.byOrigin.curated, osm:st.byOrigin.osm,
       mw:st.mw, withPublishedMw:st.withMw, byKind:Object.assign({},st.byKind),
       top:st.top.map(f=>({ n:f.properties.n, mw:+f.properties.mw||0, k:f.properties.k })) }; },
-    openPanel:dcOpenPanel, closePanel:dcClosePanel,
-    panelOpen:()=>!!(dcPanel&&dcPanel.style.display!=='none'),
+    /* (#R264) the summary is rendered into the layer's own legend row, which the consumer builds and
+       hands over — there is no window of its own any more (「ポップアップ二つあるのを辞めろ」). */
+    mountSummary, unmountSummary, renderSummary:dcRender,
+    summaryMounted:()=>!!(sumHost&&sumHost.isConnected&&sumHost.querySelector('.dc-sum')),
     /* (#R258) the legend's rows drive this — see js/layer-packs.js */
     toggleKey(k){ if(hidden.has(k)) hidden.delete(k); else hidden.add(k); applyFilter(); return !hidden.has(k); },
     keyOn:(k)=>!hidden.has(k),

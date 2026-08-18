@@ -178,7 +178,15 @@ window.IntMapModules.radiation=function(HOST){
       return {ok:true,reachKm:estReach,windSpeed:spd,windToward:toward,wet,hours,emitHours,bq,iso:iso.n,halfLifeHours,
         zoneKm2:dz.zoneKm2,peakKBqM2:dz.peak,peakDoseUSvH:dz.peakDoseUSvH,peakLL:dz.peakLL,startISO:F.startISO,zones:ZONES}; }
     try{ GE().events.on('styledata',()=>{ setTimeout(()=>{ try{ const d=GE().layers.sourceData(SRC); if(d&&d.features&&d.features.length) ensureLayers(); }catch(_){} },160); }); }catch(_){}
-    return { run, clear, ISOTOPES, SOURCES, ZONES, resolveSite,
+    /* ══ (#R264) NO PANEL HERE EITHER — THE PLUME ON THE MAP IS THE STATE ═════════════════════════
+       Read off the source this module fills, so it cannot disagree with what is drawn. `clear()` is
+       what «close» means for a layer-shaped tool, so close() is clear() named for the tools list.
+       ⚠ MEASURED THIS ROUND: the Tools row for this simulator (js/map-ui.js `sim.radiation`) calls
+       `openPanel()`, WHICH THIS MODULE HAS NEVER HAD — pressing it returns false and nothing
+       happens. That is a separate defect from the one this round was asked about and it is reported
+       rather than patched over; these two doors are real and are what the row's highlight reads. */
+    const isOpen=()=>{ try{ const d=GE().layers.sourceData(SRC); return !!(d&&d.features&&d.features.length); }catch(_){ return false; } };
+    return { run, clear, isOpen, close:()=>{ if(!isOpen()) return false; clear(); return true; }, ISOTOPES, SOURCES, ZONES, resolveSite,
       /* ⚠ (#R214) THE ONLY WAY TO RESTORE A PLUME IS TO RUN IT AGAIN. There is no stored field to
          reopen: the answer is a Lagrangian solve over a LIVE wind field, so the state of this
          module is the QUESTION, not the picture. `set` therefore re-runs — which is the honest
@@ -490,7 +498,7 @@ window.IntMapModules.rf=function(HOST){
         +'<div class="rf-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;"></div>'
         +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'+RF('Line-of-sight service area over real terrain (4/3-earth horizon + free-space path loss). A first approximation — no diffraction/clutter.','実地形上の見通し（4/3地球の電波見通し＋自由空間損失）。回折・遮蔽物は未考慮の一次近似です。','Sichtlinie über echtem Gelände.','Прямая видимость по рельефу.','Línea de vista sobre terreno real.')+'</div></div>';
       document.body.appendChild(panel);
-      panel.querySelector('.rf-close').onclick=()=>{ panel.style.display='none'; _endPick(); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} };
+      panel.querySelector('.rf-close').onclick=()=>close();   /* (#R264) one implementation — see close() */
       const gv=(sel,d)=>{ const el=panel.querySelector(sel); const v=+el.value; return isFinite(v)?v:d; };
       panel.querySelector('.rf-h').onchange=()=>{ antH=Math.max(1,gv('.rf-h',30)); if(ant) run(); };
       panel.querySelector('.rf-p').onchange=()=>{ txDbm=gv('.rf-p',30); if(ant) run(); };
@@ -498,8 +506,16 @@ window.IntMapModules.rf=function(HOST){
       panel.querySelector('.rf-pick').onclick=()=>startPick();
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.rf-head')); }catch(_){}
       return panel; }
-    function open(ll){ ensure(); ensurePanel(); panel.style.display='flex'; if(ll&&ll.lng!=null){ ant={lng:ll.lng,lat:ll.lat}; run(); } }
-    return { open, run, clear:()=>{ if(panel) panel.style.display='none'; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }, _compute:compute, setParams:(h,p,f)=>{ if(h)antH=h; if(p!=null)txDbm=p; if(f)freq=f; } }; })();
+    function open(ll){ ensure(); ensurePanel(); panel.style.display='flex'; if(ll&&ll.lng!=null){ ant={lng:ll.lng,lat:ll.lat}; run(); } return true; }
+    /* ══ (#R264) A SIMULATION HAS TO BE ABLE TO SAY WHETHER IT IS OPEN, AND TO SHUT ═══════════════
+       「Toolsのカードは…選択中はハイライト…もう一度押したら選択解除されるように。」 The tools list can
+       only light a row for a running tool if the tool answers; five of the thirteen had no such
+       answer and four had no way to be closed from outside. This is the module's own state (its
+       panel), not a second copy of it, and the ✕ in the header goes through the same function. */
+    function isOpen(){ return !!(panel&&panel.style.display!=='none'); }
+    function close(){ if(!isOpen()) return false; panel.style.display='none'; _endPick();
+      try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
+    return { open, close, isOpen, run, clear:()=>{ if(panel) panel.style.display='none'; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }, _compute:compute, setParams:(h,p,f)=>{ if(h)antH=h; if(p!=null)txDbm=p; if(f)freq=f; } }; })();
 };
 
 window.IntMapModules.sun=function(HOST){
@@ -806,7 +822,13 @@ window.IntMapModules.transitReach=function(HOST){
          (see src/vendor.js). Wait for them HERE rather than letting draw() find them missing. */
       try{ await window.turf.ensureHeavy(); }catch(_){}
       if(r&&r.ok){ draw(r); } return r; }
-    return { run, open, draw, clear:()=>{ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
+    /* ══ (#R264) THIS ONE HAS NO PANEL — WHAT IT DRAWS *IS* THE ANSWER ═══════════════════════════
+       So «open» is «the reach is on the map», read off the source it fills rather than from a flag
+       that could disagree with it, and closing takes the drawing off. The tools list needs both to
+       light its row and to switch it back off (js/map-ui.js). */
+    const isOpen=()=>{ try{ const d=GE().layers.sourceData(SRC); return !!(d&&d.features&&d.features.length); }catch(_){ return false; } };
+    function close(){ if(!isOpen()) return false; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
+    return { run, open, draw, isOpen, close, clear:()=>{ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
 };
 
 window.IntMapModules.disaster=function(HOST){
@@ -928,9 +950,10 @@ window.IntMapModules.disaster=function(HOST){
       if(ll&&ll.hazard&&HAZ().some(h=>h[0]===ll.hazard)){ hazard=ll.hazard; try{ syncHaz&&syncHaz(); }catch(_){} }
       if(ll&&ll.floodM!=null&&isFinite(+ll.floodM)) floodM=Math.max(1,Math.min(60,+ll.floodM));
       try{ renderParam&&renderParam(); }catch(_){}
-      if(ll&&ll.lng!=null){ origin=ll; run(); } }
-    function close(){ if(panel) panel.style.display='none'; _endPick(); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }
-    return { open, run, clear:close,
+      if(ll&&ll.lng!=null){ origin=ll; run(); } return true; }
+    function close(){ if(panel) panel.style.display='none'; _endPick(); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
+    const isOpen=()=>!!(panel&&panel.style.display!=='none');   /* (#R264) the tools list reads this — see js/map-ui.js */
+    return { open, close, isOpen, run, clear:close,
       /* (#R197) an unknown hazard is refused rather than stored: `setHazard('tsunami')` used to leave the
          panel in a state no button could show and no parameter belonged to. */
       setHazard:(h)=>{ if(!HAZ().some(k=>k[0]===h)) return false; hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); return true; },
@@ -1024,7 +1047,8 @@ window.IntMapModules.earthReplay=function(HOST){
     /* (#R94) mirror the shared kernel: any time change (this panel, the main slider, or Atlas) redraws the
        terminator + read-out while the panel is open. */
     try{ if(window.IntMapTime) window.IntMapTime.on(e=>{ when=e.when; syncInputs(); if(panel&&panel.style.display!=='none'){ drawTerminator(); updateReadout(); } }); }catch(_){}
-    function open(){ ensure(); ensurePanel(); try{ if(window.IntMapTime) when=window.IntMapTime.when(); }catch(_){} panel.style.display='flex'; syncInputs(); apply(); }
-    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.er-play'); if(pb) pb.textContent='▶'; } try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }
-    return { open, close, setWhen, _terminatorFC:terminatorFC, _solar:solar }; })();
+    function open(){ ensure(); ensurePanel(); try{ if(window.IntMapTime) when=window.IntMapTime.when(); }catch(_){} panel.style.display='flex'; syncInputs(); apply(); return true; }
+    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.er-play'); if(pb) pb.textContent='▶'; } try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
+    const isOpen=()=>!!(panel&&panel.style.display!=='none');   /* (#R264) the tools list reads this — see js/map-ui.js */
+    return { open, close, isOpen, setWhen, _terminatorFC:terminatorFC, _solar:solar }; })();
 };
