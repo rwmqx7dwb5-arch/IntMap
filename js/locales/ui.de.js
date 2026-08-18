@@ -134,7 +134,7 @@ window.IntMapLang.define('de', { ui: {
       lyrClimate:"Köppen-Klima",
       lyrTemp:"Lufttemperatur (2 m)",
       lyrPrecip:"Niederschlag (IMERG)",
-      lyrPop:"Bevölkerungsdichte",
+      lyrPop:"Bevölkerungsdichte (nach Land)",
       lyrHDI:"HDI (2022)",
       lyrDem:"Demokratieindex (2023)",
       lyrNATO:"NATO-Mitglieder",

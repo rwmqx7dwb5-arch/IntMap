@@ -1042,7 +1042,6 @@ window.IntMapModules.atlasConsole=function(HOST){
       'aircraft':'dl-planes','planes':'dl-planes','flights':'dl-planes','air traffic':'dl-planes','航空機':'dl-planes','飛行機':'dl-planes',
       'ships':'dl-ships','shipping':'dl-ships','vessels':'dl-ships','ship traffic':'dl-ships','船':'dl-ships','船舶':'dl-ships',
       'satellites':'dl-sats','satellite':'dl-sats','live satellites':'dl-sats','orbits':'dl-sats','satellite traffic':'dl-sats','人工衛星':'dl-sats','衛星':'dl-sats','軌道上の衛星':'dl-sats','satelliten':'dl-sats','спутники':'dl-sats','satélites':'dl-sats',
-      'chlorophyll':'gx-gxchlor','ocean color':'gx-gxchlor',
       'land cover':'eco-dl-worldcover','landcover':'eco-dl-worldcover','土地被覆':'eco-dl-worldcover',
       'ecoregions':'eco-dl-ecoregions','エコリージョン':'eco-dl-ecoregions',
       'tectonic plates':'eco-dl-plates','plates':'eco-dl-plates','プレート':'eco-dl-plates',

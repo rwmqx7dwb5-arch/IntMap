@@ -48,7 +48,7 @@ window.IntMapModules.facilities=function(HOST){
      `zoom` the zoom at which the viewport stops being a continent — below it the layer waits    */
   const SETS={
     diplo:{
-      id:'osmdiplo', row:'fac-dl-osmdiplo', zoom:5,
+      id:'osmdiplo', row:'fac-dl-osmdiplo', zoom:5, global:'data/osm-diplo.json',
       name:()=>LA('Diplomatic missions','外交公館（大使館・領事館）','Diplomatische Vertretungen','Дипломатические миссии','Misiones diplomáticas'),
       note:()=>L('Embassies, consulates and other diplomatic missions mapped in OpenStreetMap for the current view. Click any point for the record.',
                  '現在の表示範囲について OpenStreetMap に登録されている大使館・領事館などの外交公館です。点をクリックすると内容が出ます。',
@@ -339,7 +339,7 @@ window.IntMapModules.facilities=function(HOST){
                    ['phone',t['phone']||t['contact:phone']||''],['addr',_addr(t)],['web',t['website']||'']]
     },
     space:{
-      id:'osmspace', row:'fac-dl-osmspace', zoom:5,
+      id:'osmspace', row:'fac-dl-osmspace', zoom:5, global:'data/osm-space.json',
       name:()=>LA('Spaceports & ground stations','宇宙基地・地上局','Raumfahrtbahnhöfe & Bodenstationen','Космодромы и наземные станции','Bases espaciales y estaciones terrenas'),
       note:()=>L('Launch pads, spaceports, satellite ground stations and radio telescopes mapped in OpenStreetMap for the current view — the ground half of everything the orbit layers show overhead.',
                  '現在の表示範囲について OpenStreetMap に登録されている射点・宇宙基地・衛星地上局・電波望遠鏡です。軌道レイヤーが頭上に描いているものの、地上側の半分にあたります。',
@@ -417,6 +417,26 @@ window.IntMapModules.facilities=function(HOST){
     const SRC='fac-'+key+'-src', PT='fac-'+key+'-pt', LBL='fac-'+key+'-lbl';
     const cache=new Map();
     let on=false, wired=false, busy=false, lastKey='', count=0;
+    /* ══ ⚠⚠⚠ (#R266) TWO OF THE TWELVE SETS ARE GLOBALLY SPARSE, AND «THE CURRENT VIEW» IS THE
+       WRONG QUESTION FOR THEM ═══════════════════════════════════════════════════════════════════
+       「宇宙基地・地上局レイヤー、外交公館（大使館・領事館）に何も表示されない。」 — MEASURED, and the
+       layer was doing exactly what it says: `refresh()` returns an empty collection below zoom 5
+       and otherwise asks Overpass about the rectangle on screen. For hospitals, schools, power and
+       ports that is right, because a viewport always contains some. There are about thirty
+       spaceports on Earth and embassies exist only in capitals — so for these two the answer to
+       «what is in this rectangle» is «nothing» almost everywhere it is asked, and the WORLD view,
+       which is where a reader would go looking for exactly these two, was gated off entirely.
+       (Measured at z11 over Tokyo the diplomatic layer DID return 170 objects. Nothing was broken;
+       the shape of the question was.)
+
+       A global Overpass query cannot be the run-time fix: the diplomatic union measured 60 s for a
+       bare `out count`, and the retry came back «the server is probably too busy». So a global
+       SNAPSHOT is shipped (scripts/build-osm-sparse.mjs — 17,423 missions, 3,341 space sites) and
+       these two sets paint it at any zoom, instantly and offline. The live viewport query still
+       runs past `SET.zoom` and REPLACES the snapshot for that view, so a newly-mapped object still
+       shows up and the card still gets the object's full tags. The legend says which one is on
+       screen — «the shipped snapshot of <date>» and «live OpenStreetMap» are different claims. */
+    let bundle=null, bundleAt='', bundleTried=false, showing='live';
     /* (#R262) 'ok' | 'fail' — whether the LAST attempt for the current view reached Overpass at all.
        «0 objects» and «nobody answered» are different sentences and the legend prints them apart. */
     let fetchState='ok';
@@ -439,12 +459,38 @@ window.IntMapModules.facilities=function(HOST){
       }catch(_){ return false; } }
     function setVis(v){ [PT,LBL].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',v?'visible':'none'); }catch(_){} }); }
 
+    /* the shipped snapshot, in the same feature shape the live path builds */
+    function loadBundle(){
+      if(bundle||bundleTried||!SET.global) return Promise.resolve(bundle);
+      bundleTried=true;
+      const u=(()=>{ try{ return new URL(SET.global,document.baseURI).toString(); }catch(_){ return SET.global; } })();
+      return fetch(u).then(r=>r.json()).then(j=>{
+        bundleAt=j.built||'';
+        bundle=(j.features||[]).map(f=>({type:'Feature',geometry:{type:'Point',coordinates:[f.x,f.y]},
+          properties:{ n:f.n||(SET.buckets[f.k]||SET.buckets.other)[1][0], k:f.k, col:col(f.k),
+            osmId:(f.i&&f.i[0]==='n'?'node/':f.i&&f.i[0]==='w'?'way/':'relation/')+String(f.i||'').slice(1),
+            tags:JSON.stringify({name:f.n||'',country:f.c||'',operator:f.o||''}) }}));
+        return bundle; }).catch(()=>{ bundleTried=false; return null; });
+    }
+    const inBox=(fs,bb)=>fs.filter(f=>{ const c=f.geometry.coordinates;
+      return c[0]>=bb[0]&&c[0]<=bb[2]&&c[1]>=bb[1]&&c[1]<=bb[3]; });
+
     async function refresh(){
       if(!on||busy) return;
       let z,b; try{ z=GE().camera.getZoom(); b=GE().camera.getBounds(); }catch(_){ return; }
       if(!b) return;
-      if(z<SET.zoom){ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){}
-        lastKey=''; count=0; legend(); return; }
+      if(SET.global){
+        /* paint the snapshot FIRST, at whatever zoom — «nothing on screen» is never the answer for
+           a set the app already holds every object of */
+        const all=await loadBundle();
+        if(all&&on){ const bb0=[Math.max(-180,b.getWest()),Math.max(-85,b.getSouth()),Math.min(180,b.getEast()),Math.min(85,b.getNorth())];
+          const vis=(bb0[2]-bb0[0]>=350)?all:inBox(all,bb0);
+          showing='bundle'; count=vis.length; fetchState='ok';
+          try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:vis}); }catch(_){}
+          legend(); }
+        if(z<SET.zoom) return;      /* the live query stays gated; the picture no longer is */
+      } else if(z<SET.zoom){ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){}
+        lastKey=''; count=0; showing='live'; legend(); return; }
       const bbox=[Math.max(-180,b.getWest()),Math.max(-85,b.getSouth()),Math.min(180,b.getEast()),Math.min(85,b.getNorth())];
       const ck=bbox.map(v=>v.toFixed(2)).join(',');
       if(ck===lastKey) return;
@@ -472,7 +518,11 @@ window.IntMapModules.facilities=function(HOST){
              was measured on a cold cache. An empty answer and no answer must not be the same value.
              Nothing is cached unless Overpass actually replied, `lastKey` is cleared so the next
              `moveend` (or a re-toggle) tries again, and the legend says which of the two happened. */
-          if(els==null){ fetchState='fail'; lastKey=''; count=0; legend(); busy=false; return; }
+          if(els==null){ fetchState='fail'; lastKey='';
+            /* (#R266) …but if the shipped snapshot is what is painted, it STAYS painted and keeps
+               its count — a failed refresh must not empty a layer that is already correct. */
+            if(showing!=='bundle') count=0;
+            legend(); busy=false; return; }
           fetchState='ok';
           feats=[];
           (els||[]).forEach(e=>{ const t=e.tags||{};
@@ -484,7 +534,7 @@ window.IntMapModules.facilities=function(HOST){
                 osmId:e.type+'/'+e.id, tags:JSON.stringify(t).slice(0,3000) }}); });
           cache.set(ck,feats); if(cache.size>20) cache.delete(cache.keys().next().value);
         }
-        count=feats.length;
+        count=feats.length; showing='live';
         if(on){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); legend(); }
       }catch(_){ lastKey=''; }
       busy=false; }
@@ -569,7 +619,8 @@ window.IntMapModules.facilities=function(HOST){
       const keys=Object.keys(SET.buckets).map(k=>'<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-main);margin-top:3px;">'
         +'<span style="width:10px;height:10px;border-radius:6px;flex:none;background:'+S(SET.buckets[k][0])+';"></span>'
         +S(L.arr(SET.buckets[k][1]))+'</div>').join('');
-      const tooFar=(z<SET.zoom);
+      const tooFar=(z<SET.zoom)&&!SET.global;
+      const snap=(showing==='bundle');
       b.innerHTML=keys
         +'<div style="font-size:10.5px;color:'+((!tooFar&&fetchState==='fail')?'#ff9f0a':'var(--text-muted)')+';margin-top:7px;">'
         +(tooFar?S(L('Zoom in to load this view','この範囲を読み込むにはズームしてください','Zum Laden hineinzoomen','Приблизьте, чтобы загрузить','Acérquese para cargar'))
@@ -578,6 +629,12 @@ window.IntMapModules.facilities=function(HOST){
             ?S(L('OpenStreetMap did not answer — pan or zoom to try again','OpenStreetMap から応答がありませんでした。地図を動かすと再試行します','OpenStreetMap hat nicht geantwortet — erneut versuchen','OpenStreetMap не ответил — попробуйте снова','OpenStreetMap no respondió — inténtelo de nuevo'))
             :S(count+' '+L('objects in view','件（表示範囲内）','Objekte im Ausschnitt','объектов в виде','objetos en la vista'))))
         +'</div>'
+        +(SET.global?('<div style="font-size:9.5px;color:var(--text-muted);margin-top:3px;">'
+          +S(snap?(L('Shipped snapshot','同梱スナップショット','Mitgelieferter Stand','Прилагаемый снимок','Instantánea incluida')
+                    +(bundleAt?(' · '+bundleAt):'')
+                    +' · '+L('zoom in for the live record','拡大すると最新の記録を取得します','Zum Laden des Livestands hineinzoomen','Приблизьте для актуальных данных','Acérquese para el registro en vivo'))
+                 :L('Live from OpenStreetMap for this view','この表示範囲の最新の OpenStreetMap','Live aus OpenStreetMap für diesen Ausschnitt','Актуальные данные OpenStreetMap для этого вида','En vivo desde OpenStreetMap para esta vista'))
+          +'</div>'):'')
         +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:6px;">'+S(SET.note())+' · OpenStreetMap (ODbL)</div>';
     }
 
@@ -597,7 +654,8 @@ window.IntMapModules.facilities=function(HOST){
     /* (#R262) `state()` so a test (and production verification) can tell «0 objects» from «no answer»
        without reading the legend's prose. */
     return { toggle, refresh, count:()=>count, id:SET.id, name:SET.name, buckets:()=>SET.buckets,
-      state:()=>({ on, busy, count, fetchState, lastKey, cached:cache.size }) };
+      state:()=>({ on, busy, count, fetchState, lastKey, cached:cache.size,
+        showing, bundled:!!bundle, bundleCount:bundle?bundle.length:0, bundleAt }) };
   }
 
   const API={};

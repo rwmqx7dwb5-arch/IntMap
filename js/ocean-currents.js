@@ -468,8 +468,16 @@ window.IntMapModules.oceanCurrents=function(HOST){
         +'<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;padding:1.5px 0;">'
         +'<span style="width:22px;height:9px;border-radius:2px;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,0.3);background:'+_speedRamp()+';"></span>'
         +esc(L('Field arrows: shading and size are the measured speed (0 → 1.4 m/s)','流向の矢印：濃さと大きさは実測の流速（0 → 1.4 m/s）','Pfeile: Farbe und Größe = gemessene Geschwindigkeit','Стрелки: цвет и размер — измеренная скорость','Flechas: el color y el tamaño son la velocidad medida'))+'</div>'
-        /* (#R222) two sentences the reader needs when the spacing changes under them, and when a
+        /* ⚠ (#R266) EVERYTHING BELOW IS BEHIND A DISCLOSURE. 「これ長すぎ。せめて隠せ。」 — and the
+           report quoted the whole block back, which is the measurement: the spacing sentence, the
+           climatology sentence and the four-source provenance paragraph came to ~900 characters of
+           prose sitting permanently under a colour key on a map. None of it can be DELETED (a data
+           layer has to say where its numbers come from) so it is folded: <details> is the browser's
+           own disclosure, needs no script, and keeps the text one tap away and findable.
+           (#R222) two sentences the reader needs when the spacing changes under them, and when a
            month is chosen: what decides the spacing, and what a month IS. */
+        +'</div>'
+        +'<details class="im-more"><summary>'+esc(L('Details','詳しく','Details','Подробнее','Detalles'))+'</summary>'
         +'<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-top:3px;">'
         +esc(L('The spacing follows the view — zoom in and the same measured grid is drawn finer, down to its own 0.25° (~28 km).',
                '矢印の間隔は表示範囲に追随します。拡大すれば同じ実測格子がより細かく描かれ、提供元と同じ 0.25°（約28 km）まで下がります。',
@@ -482,14 +490,13 @@ window.IntMapModules.oceanCurrents=function(HOST){
                '«Месяц» — климатология этого календарного месяца (среднее за шесть лет), а не месяц конкретного года.',
                'Un mes es la climatología de ese mes natural (media de seis años), no ese mes de un año concreto.'))
         +'</div>'
-        +'</div>'
         +'<div style="margin-top:6px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
         +esc(L('Sources: NOAA CoastWatch blended sea-surface geostrophic currents from multi-mission satellite altimetry (0.25°); NOAA NCEI blended wind stress, turned into the Ekman surface current by the drifter-fitted relation of Ralph & Niiler (1999); and NOAA OISST v2.1 sea-surface temperature. All U.S. Government works in the public domain; altimetric products generated using AVISO+. This layer is a FIXED dataset that ships with the app: a climatological mean of fields spread across the whole record, on the source\'s own 0.25° grid, with each named current traced through that measured field from a published seed on its core. Warm / cold / zonal is MEASURED, not asserted — it is the current\'s own temperature against the zonal mean at the same latitude. Because it is a mean, it does not follow the app clock: it is the climatological picture, the same every time you open it.',
              '出典: NOAA CoastWatch の海面地衡流（複数衛星の高度計をブレンド、0.25°）、NOAA NCEI の海上風応力（Ralph & Niiler 1999 の漂流ブイ実測式でエクマン流に換算）、および NOAA OISST v2.1 の海面水温。いずれも米国政府作成物でパブリックドメイン（高度計プロダクトは AVISO+ を使用）。このレイヤーはアプリに同梱された固定データです：記録全体にわたる多数の場を平均した気候値を、提供元と同じ 0.25° 格子のまま作り、各海流はその実測の場を、公表されている核の位置から積分して辿ったものです。暖流・寒流・東西流は決めつけではなく実測です——その海流自身の水温を、同じ緯度の帯平均と比べて判定しています。平均場なので時計には追随しません——いつ開いても同じ、気候学的な海流図です。',
              'Quellen: NOAA CoastWatch (geostrophische Oberflächenströmung aus Multi-Missions-Altimetrie, 0.25°), NOAA NCEI Windschub → Ekman-Strömung nach Ralph & Niiler (1999), NOAA OISST v2.1 Meeresoberflächentemperatur. Gemeinfrei. Mitgelieferter, fester Datensatz: ein klimatologisches Mittel über den gesamten Zeitraum auf dem 0.25°-Gitter der Quelle. Warm/kalt/zonal wird GEMESSEN (Temperatur gegen das zonale Mittel derselben Breite). Ein Mittelfeld folgt der Uhr nicht.',
              'Источники: NOAA CoastWatch (геострофические поверхностные течения по мультимиссионной альтиметрии, 0.25°), NOAA NCEI (напряжение ветра → экмановское течение по Ralph & Niiler, 1999), NOAA OISST v2.1 (температура поверхности). Общественное достояние. Фиксированный набор данных в составе приложения: климатическое среднее за весь период на сетке 0.25° самого источника. Тёплое/холодное/зональное ИЗМЕРЕНО — температура течения против зонального среднего на той же широте. Среднее поле не следует за часами.',
              'Fuentes: NOAA CoastWatch (corrientes geostróficas superficiales por altimetría multimisión, 0.25°), NOAA NCEI (tensión del viento → corriente de Ekman según Ralph y Niiler, 1999) y NOAA OISST v2.1 (temperatura superficial). Dominio público. Conjunto fijo incluido en la app: una media climatológica de todo el registro en la propia malla de 0.25°. Cálida/fría/zonal se MIDE — la temperatura de la corriente frente a la media zonal de su misma latitud. Una media no sigue al reloj.'))
-        +'</div>');
+        +'</div></details>');
       if(b) b.querySelectorAll('.oc-row').forEach(r=>{ r.onclick=()=>flyTo(r.getAttribute('data-en')); });
       if(b) b.querySelectorAll('.oc-m').forEach(r=>{ r.onclick=()=>setMonth(+r.getAttribute('data-m')||0); });
     }

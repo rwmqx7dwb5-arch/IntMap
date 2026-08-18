@@ -413,7 +413,7 @@ try {
       ["'Standard 1435 mm'", 'js/layer-packs.js'],
       ["'IND NPL MUS'", 'js/layer-packs.js'],
       ["'Time zones'", 'js/layer-packs.js'],
-      ["'gxtruecolor'", 'js/layer-packs.js'],
+      ["'gxndvi'", 'js/layer-packs.js'],
       ['window.IntMapTimeSeries=(function(){', 'js/analysis-panels.js'],
       ['window.IntMapAIResearch=(function(){', 'js/analysis-panels.js'],
       ['window.IntMapEdu=(function(){', 'js/analysis-panels.js'],

@@ -59,3 +59,4 @@ dist/
 # scripts/build-vs30.mjs keeps 8,089 terrarium tiles here; build-slab2/crust1/
 # tectonics keep their upstream downloads. All are re-fetchable, none ship.
 .cache/
+__pycache__/

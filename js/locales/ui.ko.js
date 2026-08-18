@@ -186,7 +186,7 @@ window.IntMapLang.define('ko', { ui: {
       lyrNATO:"NATO 회원국",
       lyrNightSat:"야간 조명 (위성)",
       lyrNightSide:"낮·밤 음영",
-      lyrPop:"인구 밀도",
+      lyrPop:"인구 밀도 (국가별)",
       lyrPopGrid:"인구 밀도 (1 km 격자)",
       lyrPrecip:"강수량 (IMERG)",
       lyrRadar:"강수 레이더 (실시간)",
@@ -2561,7 +2561,7 @@ window.IntMapLang.define('ko', { ui: {
   "GDP per capita (PPP)": "1인당 GDP (구매력평가)",
   "Geopolitics": "지정학",
   "GHRSST MUR sea-ice concentration": "GHRSST MUR 해빙 밀집도",
-  "Globe tour (slow spin)": "지구 둘러보기 (느린 회전)",
+  "Auto-rotate": "자동 회전",
   "Govt debt (% GDP)": "정부 부채 (GDP 대비)",
   "HDI": "인간개발지수",
   "Health spending (% GDP)": "보건 지출 (GDP 대비)",
@@ -4013,7 +4013,46 @@ window.IntMapLang.define('ko', { ui: {
   "Telecom & internet infrastructure": "통신·인터넷 기반시설",   /* (#R255) */
   "Telephone exchange": "전화 교환국",   /* (#R255) */
   "This crop layer could not start.": "이 작물 레이어를 시작할 수 없었습니다.",   /* (#R255) */
-  "Zoom in to load this view": "이 범위를 불러오려면 확대하세요",
+  "Zoom in to load this view": "이 범위를 불러오려면 확대하세요",   /* (#R255) */
+  " countries": "개국",   /* (#R266) */
+  " countries reporting": "개국 보고",   /* (#R266) */
+  " · ": " · ",   /* (#R266) */
+  "An anomaly is a DIFFERENCE, not a temperature. Each pixel is today’s sea-surface temperature minus the 1985–2014 average for that same spot on that same day of the year, so red means warmer than usual there and blue means cooler than usual there — a +2 °C patch in the Arctic and a +2 °C patch in the tropics are the same departure from normal, not the same water. Grey is normal. The scale is clamped at ±3 °C. This is the map El Niño and La Niña are read off: a warm tongue along the equatorial Pacific is El Niño, a cool one is La Niña.": "편차(아노말리)는 “수온” 자체가 아니라 “차이”입니다. 각 화소는 그날 그 지점의 해수면 수온에서 같은 지점·같은 날짜의 1985–2014년 평균을 뺀 값입니다. 빨강은 그곳 평년보다 따뜻함, 파랑은 평년보다 차가움, 회색은 평년 수준을 뜻합니다. 눈금은 ±3 °C에서 잘립니다. 엘니뇨와 라니냐는 이 지도에서 읽습니다 — 적도 태평양을 따라 붉은 혀가 뻗으면 엘니뇨, 푸르면 라니냐입니다.",   /* (#R266) */
+  "Canada — ECCC": "캐나다 — ECCC",   /* (#R266) */
+  "Catholic": "가톨릭",   /* (#R266) */
+  "China Meteorological Administration — the public warning list, grouped by province.": "중국기상국의 공개 경보 목록입니다. 성(省) 단위로 묶어 표시합니다.",   /* (#R266) */
+  "China — CMA": "중국 — CMA",   /* (#R266) */
+  "Christian (not separated)": "기독교(교파 구분 없음)",   /* (#R266) */
+  "Each area": "지역별",   /* (#R266) */
+  "Each country is coloured by the group with the largest share; tap a country for the full composition. Source: CIA World Factbook (public domain).": "각 나라는 가장 큰 집단의 색으로 칠합니다. 나라를 누르면 전체 구성이 나옵니다. 출처: CIA World Factbook(퍼블릭 도메인).",   /* (#R266) */
+  "Environment and Climate Change Canada, active alerts by province.": "캐나다 환경·기후변화부의 발효 중 경보를 주(州)별로 표시합니다.",   /* (#R266) */
+  "Europe — MeteoAlarm (37 services)": "유럽 — MeteoAlarm(37개 기관)",   /* (#R266) */
+  "Finnish 1524 mm": "핀란드 궤간 1524 mm",   /* (#R266) */
+  "Folk & traditional": "민족·전통 종교",   /* (#R266) */
+  "Global feed: GDACS (Global Disaster Alert and Coordination System, UN/EC) — earthquakes, tropical cyclones, floods, volcanoes, droughts and wildfires of the last four days.": "전 지구 피드: GDACS(유엔/EU 전 지구 재난경보 시스템) — 최근 4일간의 지진·열대저기압·홍수·화산·가뭄·산불.",   /* (#R266) */
+  "How far today’s sea-surface temperature is from normal for this place and this time of year": "오늘의 해수면 수온이 이 장소·이 시기의 평년값에서 얼마나 벗어나 있는지",   /* (#R266) */
+  "Japan, the United States and Canada are drawn at the unit their agency issues at. Europe and China publish a list rather than a shape, so their countries are washed and the tap holds the regions. Russia has no machine-readable public warning feed, so it is on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "일본·미국·캐나다는 각 기관의 발표 단위로 그립니다. 유럽과 중국은 도형이 아니라 목록으로 공개하므로 국가를 색으로 칠하고, 누르면 지역별 내역이 나옵니다. 러시아는 기계가 읽을 수 있는 공개 경보 피드를 찾지 못해 GDACS만 사용합니다 — GDACS는 사건 피드이지 각국의 경보가 아니며, 사건이 없는 나라가 경보가 없는 나라는 아닙니다. 참고용 표시입니다. 실제로는 공식 기관의 발표를 따르십시오.",   /* (#R266) */
+  "Latest per country": "국가별 최신",   /* (#R266) */
+  "Live from OpenStreetMap for this view": "이 화면 범위의 최신 OpenStreetMap",   /* (#R266) */
+  "MeteoAlarm (EUMETNET) — the national weather service’s own warnings, grouped by region.": "MeteoAlarm(EUMETNET) — 각국 기상기관이 발표한 경보를 지역별로 묶어 표시합니다.",   /* (#R266) */
+  "Normal 1981–2010 (1 km)": "평년값 1981–2010 (1 km)",   /* (#R266) */
+  "Normal: CHELSA V2.1 bio12, mean annual precipitation 1981–2010, 30 arc-seconds (~1 km), reprojected to Web Mercator and masked to land. Its 16-bit storage saturates at 6,553 mm, so the very wettest places (parts of Meghalaya, the Chilean fjords) are shown at that ceiling. Years: GPCC Full Data Monthly V2022 (Deutscher Wetterdienst), a rain-gauge analysis at 0.5° over land, with the twelve monthly totals of each year summed. A gauge analysis has nothing to say over the ocean, which is why the sea is empty in both.": "평년값: CHELSA V2.1 bio12(1981–2010년 연강수량 평균, 30초각 ≈ 1 km)를 웹 메르카토르로 재투영하고 육지만 표시했습니다. 16비트 저장 한계로 6,553 mm에서 포화되므로 가장 비가 많은 지역(메갈라야 일부, 칠레 피오르 등)은 그 상한값으로 표시됩니다. 연도별: GPCC Full Data Monthly V2022(독일 기상청)의 육상 0.5° 우량계 분석으로, 각 연도의 12개월 합계를 더했습니다. 우량계 분석은 해상에 대해 말할 수 없으므로 두 경우 모두 바다는 비어 있습니다.",   /* (#R266) */
+  "Orthodox": "정교회",   /* (#R266) */
+  "Population density /km² (World Bank)": "인구 밀도 /km² (세계은행)",   /* (#R266) */
+  "Protestant": "개신교",   /* (#R266) */
+  "Russian 1520 mm": "러시아 궤간 1520 mm",   /* (#R266) */
+  "Shinto": "신토",   /* (#R266) */
+  "Shipped snapshot": "동봉된 스냅숏",   /* (#R266) */
+  "Source text": "출처 원문",   /* (#R266) */
+  "Sources and caveats": "출처와 유의점",   /* (#R266) */
+  "That single year’s total, on a 55 km gauge analysis — land only.": "그 해 1년치 합계입니다. 55 km 우량계 분석(육지만).",   /* (#R266) */
+  "The 1981–2010 average, on a 1 km grid — how much rain and snow a place gets in a normal year.": "1981–2010년 평균을 1 km 격자로 나타낸 것입니다. 평년 1년 동안 내리는 비와 눈의 합계를 뜻합니다.",   /* (#R266) */
+  "The company data could not be loaded just now.": "지금은 기업 데이터를 불러오지 못했습니다.",   /* (#R266) */
+  "Try again": "다시 시도",   /* (#R266) */
+  "What is an anomaly?": "편차란?",   /* (#R266) */
+  "warnings": "건",   /* (#R266) */
+  "warnings in": "건 /",   /* (#R266) */
+  "zoom in for the live record": "확대하면 최신 기록을 가져옵니다",   /* (#R266) */
   "Run to steady state": "정상 상태까지 진행",
   "Steady state (t → ∞)": "정상 상태 (t → ∞)",
   "The water has come to rest — add a continuous source or place more": "물이 멈췄습니다 — 연속 수원을 추가하거나 물을 더 배치하세요",

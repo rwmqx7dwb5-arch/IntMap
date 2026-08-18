@@ -21,29 +21,73 @@ window.IntMapModules.wbLayers=function(HOST){
     const jp=()=>HOST.lang==='jp';
     function ensureGeo(cb){ try{ if(window.countryGeo&&window.countryGeo.features) return cb(window.countryGeo); if(typeof loadCountryData==='function'){ loadCountryData().then(()=>cb(window.countryGeo)); return; } }catch(_){} cb(null); }
     const iso=(p)=>{ p=p||{}; return p.ISO_A3_EH||p.ISO_A3||p.ADM0_A3||p.SOV_A3||p.iso_a3||p.ADM0_A3_US||''; };
-    const wbCache={};
-    /* (#R32) Resilient fetch. Two real-world failures it now survives:
-       (1) Newer WDI indicators (e.g. the AR5 CO₂ series) RETURN A SERVER ERROR for `mrnev=1` on country/all
-           → the old code silently got empty data = "CO₂が映らない". We FALL BACK to a date-range query and
-           pick each country's most-recent non-null year.
-       (2) The WB API throttles rapid bursts → empty. We only CACHE non-empty results so a throttled attempt
-           recovers on the next toggle, and the range fallback acts as a second attempt. */
-    function wbFetch(code){ if(wbCache[code]) return Promise.resolve(wbCache[code]);
-      const base='https://api.worldbank.org/v2/country/all/indicator/'+code+'?format=json';
-      const mrnev=(j)=>{ const arr=(j&&j[1])||[]; const m={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code) m[d.countryiso3code]={v:+d.value,y:d.date}; }); return m; };
-      const range=(j)=>{ const arr=(j&&j[1])||[]; const m={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code){ const cur=m[d.countryiso3code]; if(!cur||(+d.date)>(+cur.y)) m[d.countryiso3code]={v:+d.value,y:d.date}; } }); return m; };
-      const tryMrnev=()=>fetch(base+'&mrnev=1&per_page=400').then(r=>r.json()).then(mrnev).catch(()=>({}));
-      const tryRange=()=>fetch(base+'&date=2010:2024&per_page=20000').then(r=>r.json()).then(range).catch(()=>({}));
-      return tryMrnev().then(m=>Object.keys(m).length?m:tryRange())
-        .then(m=>{ if(Object.keys(m).length) wbCache[code]=m; return m; }).catch(()=>({}));
+    /* ══ (#R266) ONE SERIES PER INDICATOR, NOT ONE NUMBER ══════════════════════════════════════════
+       「GDP成長率レイヤーは年を選択できるようにしろ。同一年度で比較しないと意味がない。」 — and that is
+       exactly right about what was being painted. `mrnev=1` is «each country's most recent NON-EMPTY
+       year», so one map could hold Japan at 2025 beside a country whose last reported year is 2019,
+       and the legend said only «most recent value per country». A choropleth is a comparison; a
+       comparison across different years is not one.
+
+       So the fetch is now the whole series (1990 → next year, one page, measured 2.1 MB / 0.55 s for
+       NY.GDP.MKTP.KD.ZG), kept per indicator, and every layer paints ONE year at a time. The old
+       shape is derived from it rather than fetched separately — `wbFetch(code)` still answers the
+       `{ISO:{v,y}}` latest-per-country map that the Correlation tool and refreshStatsLatest read,
+       so there is still exactly one network path and one cache.
+
+       ⚠ `code` MAY BE AN ARRAY, and it is summed per country-year. That is not a convenience: the
+       World Bank RETIRED `SM.POP.REFG` (難民受入数) — the API answers «The indicator was not found.
+       It may have been deleted or archived.» for it, which is why that layer said 「データを取得でき
+       ませんでした」 — and its replacement is split in two, UNHCR's mandate and UNRWA's. Summing them
+       is what reproduces «refugees hosted». */
+    const wbCache={};        /* code -> {ISO:{v,y}}  — latest non-empty year per country (the old shape) */
+    const wbSeriesCache={};  /* code -> {years:[…], by:{y:{ISO:v}}, counts:{y:n}, best:y} */
+    const WB_FROM=1990;
+    const _wbKey=(code)=>Array.isArray(code)?code.join('+'):code;
+    /* (#R32) Resilient fetch, kept: newer WDI series answer a SERVER ERROR for `mrnev=1`, so the
+       date-range query is the primary read and only a truly empty answer falls back. Nothing is
+       cached unless it is non-empty, so a throttled attempt recovers on the next toggle. */
+    function wbSeries(code){ const key=_wbKey(code);
+      if(wbSeriesCache[key]) return Promise.resolve(wbSeriesCache[key]);
+      const to=new Date().getUTCFullYear()+1;
+      const one=(c)=>fetch('https://api.worldbank.org/v2/country/all/indicator/'+c+'?format=json&date='+WB_FROM+':'+to+'&per_page=20000')
+        .then(r=>r.json()).then(j=>(j&&j[1])||[]).catch(()=>[]);
+      const codes=Array.isArray(code)?code:[code];
+      return Promise.all(codes.map(one)).then(parts=>{
+        const by=Object.create(null);
+        parts.forEach(arr=>{ arr.forEach(d=>{ if(!d||d.value==null||!d.countryiso3code) return;
+          const y=String(d.date); (by[y]=by[y]||Object.create(null));
+          by[y][d.countryiso3code]=(by[y][d.countryiso3code]||0)+(+d.value); }); });
+        const years=Object.keys(by).sort();
+        if(!years.length) return null;
+        const counts={}; years.forEach(y=>{ counts[y]=Object.keys(by[y]).length; });
+        /* THE DEFAULT YEAR IS «as recent as the data actually is». Scanning for the most recent year
+           that still carries essentially the full coverage the series ever had beats both «the very
+           latest year» (which is half-empty while countries are still reporting) and «the year with
+           the most countries» (which can be a decade old). The count is printed in the legend, so
+           the choice is visible rather than asserted. */
+        const max=Math.max.apply(null,years.map(y=>counts[y]));
+        let best=years[years.length-1];
+        for(let i=years.length-1;i>=0;i--){ if(counts[years[i]]>=max*0.9){ best=years[i]; break; } }
+        const S={years,by,counts,best};
+        wbSeriesCache[key]=S;
+        /* the latest-per-country map, derived — never a second request */
+        const m={}; years.forEach(y=>{ const row=by[y]; Object.keys(row).forEach(iso3=>{ const cur=m[iso3];
+          if(!cur||(+y)>(+cur.y)) m[iso3]={v:row[iso3],y}; }); });
+        if(Object.keys(m).length) wbCache[key]=m;
+        return S; });
     }
+    function wbFetch(code){ const key=_wbKey(code);
+      if(wbCache[key]) return Promise.resolve(wbCache[key]);
+      return wbSeries(code).then(()=>wbCache[key]||{}).catch(()=>({})); }
     /* (#R40) expose the WB indicator fetch (cached, latest value per country) so the Correlation/Scatter tool
-       can offer the full World-Bank indicator set as axes ("対応する項目を大幅に増やして"). */
-    try{ window.IntMapWB={ fetch:wbFetch, get:(code)=>wbCache[code]||null }; }catch(_){}
+       can offer the full World-Bank indicator set as axes ("対応する項目を大幅に増やして"). (#R266) `series`
+       joins it, so Atlas can ask for a specific year rather than only «the latest». */
+    try{ window.IntMapWB={ fetch:wbFetch, get:(code)=>wbCache[_wbKey(code)]||null,
+      series:wbSeries, seriesOf:(code)=>wbSeriesCache[_wbKey(code)]||null }; }catch(_){}
     const LA=window.IntMapLang.pickArgs(), LWB=window.IntMapLang.pick(()=>HOST.lang);
     const WB=[
       {id:'wbco2', code:'EN.GHG.CO2.PC.CE.AR5', n:LA('CO₂ per capita','1人当たりCO₂排出','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita'), ramp:[0,'#1a9850',2,'#a6d96a',5,'#fee08b',10,'#f46d43',20,'#a50026'], unit:' t'},   /* (#R32) old EN.ATM.CO2E.PC was discontinued by the World Bank (returned 0 rows) → current AR5 per-capita series */
-      {id:'wburb', code:'SP.URB.TOTL.IN.ZS', n:LA('Urban population %','都市人口率','Stadtbevölkerung %','Городское население %','Población urbana %'), ramp:[20,'#fee08b',40,'#a6d96a',60,'#66bd63',80,'#1a9850',95,'#006837'], unit:'%'},
+      {id:'wburb', code:'SP.URB.TOTL.IN.ZS', n:LA('Urban population %','都市人口比率 %','Stadtbevölkerung %','Городское население %','Población urbana %'), ramp:[20,'#edf8e9',40,'#bae4b3',60,'#74c476',80,'#31a354',95,'#006d2c'], unit:'%'},   /* (#R266) 「都市人口率」と「都市人口比率 %」は同じ SP.URB.TOTL.IN.ZS だった — 色違いの完全な重複。1本に統合 */
       {id:'wbelec', code:'EG.ELC.ACCS.ZS', n:LA('Electricity access %','電力アクセス率','Stromzugang %','Доступ к электричеству %','Acceso a electricidad %'), ramp:[20,'#a50026',50,'#f46d43',80,'#fee08b',95,'#a6d96a',100,'#1a9850'], unit:'%'},
       {id:'wbhealth', code:'SH.XPD.CHEX.GD.ZS', n:LA('Health spend %GDP','医療支出 対GDP','Gesundheitsausgaben % BIP','Расходы на здравоохранение % ВВП','Gasto en salud % PIB'), ramp:[2,'#fff7ec',4,'#fdd49e',8,'#fc8d59',12,'#d7301f',18,'#7f0000'], unit:'%'},
       {id:'wbforest', code:'AG.LND.FRST.ZS', n:LA('Forest area %','森林面積率','Waldfläche %','Площадь лесов %','Superficie forestal %'), ramp:[5,'#f6e8c3',20,'#c7eae5',40,'#80cdc1',60,'#35978f',80,'#01665e'], unit:'%'},
@@ -79,7 +123,7 @@ window.IntMapModules.wbLayers=function(HOST){
       /* (#R122) +6 NEW beta choropleths (World Bank, latest value per country — same resilient mrnev fetch, hover values + source note). */
       {id:'wbrnd', code:'GB.XPD.RSDV.GD.ZS', n:LA('R&D spending % GDP','研究開発費 対GDP %','F&E-Ausgaben % BIP','Расходы на НИОКР % ВВП','Gasto en I+D % PIB'), ramp:[0.1,'#fff7ec',0.5,'#fdd49e',1.5,'#a6d96a',2.5,'#66bd63',4.5,'#006837'], unit:'%'},
       {id:'wbtour', code:'ST.INT.ARVL', n:LA('Intl. tourist arrivals','外国人観光客数','Touristenankünfte','Прибытия туристов','Llegadas de turistas int.'), ramp:[500000,'#fff7ec',3000000,'#fdd49e',10000000,'#fc8d59',40000000,'#d7301f',90000000,'#7f0000'], unit:''},
-      {id:'wbref', code:'SM.POP.REFG', n:LA('Refugees hosted','難民受入数','Aufgenommene Flüchtlinge','Принято беженцев','Refugiados acogidos'), ramp:[1000,'#fff7ec',20000,'#fee08b',100000,'#fc8d59',500000,'#d7301f',2000000,'#7f0000'], unit:''},
+      {id:'wbref', code:['SM.POP.RHCR.EA','SM.POP.RRWA.EA'], n:LA('Refugees hosted','難民受入数','Aufgenommene Flüchtlinge','Принято беженцев','Refugiados acogidos'), ramp:[1000,'#fff7ec',20000,'#fee08b',100000,'#fc8d59',500000,'#d7301f',2000000,'#7f0000'], unit:''},
       {id:'wbco2t', code:'EN.GHG.CO2.MT.CE.AR5', n:LA('CO₂ emissions (Mt)','CO₂排出量（百万t）','CO₂-Emissionen (Mt)','Выбросы CO₂ (млн т)','Emisiones de CO₂ (Mt)'), ramp:[5,'#1a9850',50,'#a6d96a',300,'#fee08b',1500,'#f46d43',10000,'#a50026'], unit:' Mt'},
       {id:'wbpatent', code:'IP.PAT.RESD', n:LA('Patent applications (resident)','特許出願数（居住者）','Patentanmeldungen','Патентные заявки','Solicitudes de patentes (residentes)'), ramp:[10,'#fff7ec',500,'#fdd49e',5000,'#fc8d59',50000,'#d7301f',500000,'#7f0000'], unit:''},
       {id:'wbwomparl', code:'SG.GEN.PARL.ZS', n:LA('Women in parliament %','女性議員比率 %','Frauen im Parlament %','Женщины в парламенте %','Mujeres en el parlamento %'), ramp:[5,'#a50026',15,'#f46d43',30,'#fee08b',45,'#a6d96a',60,'#1a9850'], unit:'%'},
@@ -99,10 +143,8 @@ window.IntMapModules.wbLayers=function(HOST){
       {id:'wbadofert', code:'SP.ADO.TFRT', n:LA('Adolescent fertility /1k','思春期出生率 /1k','Teenager-Geburtenrate /1k','Подростковая рождаемость /1k','Fecundidad adolescente /1k'), ramp:[2,'#1a9850',15,'#a6d96a',40,'#fee08b',80,'#f46d43',130,'#a50026'], unit:''},
       {id:'wbbeds', code:'SH.MED.BEDS.ZS', n:LA('Hospital beds /1k','病床数 /1k人','Krankenhausbetten /1k','Больничные койки /1k','Camas hospitalarias /1k'), ramp:[0.5,'#a50026',2,'#f46d43',4,'#fee08b',8,'#a6d96a',13,'#1a9850'], unit:''},
       {id:'wbresearch', code:'SP.POP.SCIE.RD.P6', n:LA('Researchers /million','研究者数 /100万人','Forscher /Mio.','Исследователи /млн','Investigadores /millón'), ramp:[50,'#fff7ec',500,'#fdd49e',2000,'#fc8d59',5000,'#66bd63',8000,'#006837'], unit:''},
-      {id:'wboverwt', code:'SH.STA.OWAD.ZS', n:LA('Overweight adults %','成人過体重率 %','Übergewichtige Erwachsene %','Избыточный вес у взрослых %','Adultos con sobrepeso %'), ramp:[10,'#1a9850',25,'#a6d96a',40,'#fee08b',55,'#f46d43',70,'#a50026'], unit:'%'},
+      {id:'wboverwt', code:'HF.STA.OW18.ZS', n:LA('Overweight adults %','成人過体重率 %','Übergewichtige Erwachsene %','Избыточный вес у взрослых %','Adultos con sobrepeso %'), ramp:[10,'#1a9850',25,'#a6d96a',40,'#fee08b',55,'#f46d43',70,'#a50026'], unit:'%'},
       /* (#R125) +6 more beta choropleths (World Bank, latest value per country — auto-wired like the rest). */
-      {id:'wburban', code:'SP.URB.TOTL.IN.ZS', n:LA('Urban population %','都市人口比率 %','Stadtbevölkerung %','Городское население %','Población urbana %'), ramp:[20,'#edf8e9',40,'#bae4b3',60,'#74c476',80,'#31a354',95,'#006d2c'], unit:'%'},
-      {id:'wbtourism', code:'ST.INT.ARVL', n:LA('Tourist arrivals','外国人観光客数','Touristenankünfte','Прибытия туристов','Llegadas de turistas'), ramp:[100000,'#fff7fb',1000000,'#d0d1e6',5000000,'#74a9cf',20000000,'#0570b0',60000000,'#023858'], unit:''},
       {id:'wbremit', code:'BX.TRF.PWKR.DT.GD.ZS', n:LA('Remittances % GDP','海外送金受取 %GDP','Rücküberweisungen % BIP','Денежные переводы % ВВП','Remesas % PIB'), ramp:[0.5,'#fff7ec',2,'#fdd49e',5,'#fc8d59',12,'#d7301f',25,'#7f0000'], unit:'%'},
       {id:'wbsuicide', code:'SH.STA.SUIC.P5', n:LA('Suicide rate /100k','自殺率 /10万人','Suizidrate /100k','Уровень суицида /100k','Tasa de suicidio /100k'), ramp:[3,'#1a9850',7,'#a6d96a',12,'#fee08b',20,'#f46d43',30,'#a50026'], unit:''},
       {id:'wbalcohol', code:'SH.ALC.PCAP.LI', n:LA('Alcohol per capita L','一人当たり飲酒量 L','Alkohol pro Kopf L','Алкоголь на душу, л','Alcohol per cápita L'), ramp:[1,'#fff7ec',4,'#fdd49e',7,'#fc8d59',10,'#d7301f',14,'#7f0000'], unit:' L'},
@@ -110,7 +152,7 @@ window.IntMapModules.wbLayers=function(HOST){
       /* (#R126) +6 more beta choropleths (World Bank, latest value per country — auto-wired like the rest). */
       {id:'wbmilgdp', code:'MS.MIL.XPND.GD.ZS', n:LA('Military spending % GDP','軍事費 %GDP','Militärausgaben % BIP','Военные расходы % ВВП','Gasto militar % PIB'), ramp:[0.5,'#1a9850',1.5,'#a6d96a',2.5,'#fee08b',4,'#f46d43',8,'#a50026'], unit:'%'},
       {id:'wbfert', code:'SP.DYN.TFRT.IN', n:LA('Fertility rate (births/woman)','合計特殊出生率','Geburtenrate (Kinder/Frau)','Суммарный коэфф. рождаемости','Tasa de fecundidad (hijos/mujer)'), ramp:[1.2,'#2c7fb8',1.8,'#7fcdbb',2.5,'#ffffb2',4,'#fe9929',6,'#cc4c02'], unit:''},
-      {id:'wbdensity', code:'EN.POP.DNST', n:LA('Population density /km²','人口密度 /km²','Bevölkerungsdichte /km²','Плотность населения /км²','Densidad de población /km²'), ramp:[5,'#fff7ec',25,'#fdd49e',100,'#fc8d59',300,'#d7301f',1000,'#7f0000'], unit:'/km²'},
+      {id:'wbdensity', code:'EN.POP.DNST', n:LA('Population density /km² (World Bank)','人口密度 /km²（世界銀行）','Bevölkerungsdichte /km² (Weltbank)','Плотность населения /км² (Всемирный банк)','Densidad de población /km² (Banco Mundial)'), ramp:[5,'#fff7ec',25,'#fdd49e',100,'#fc8d59',300,'#d7301f',1000,'#7f0000'], unit:'/km²'},
       {id:'wbedu', code:'SE.XPD.TOTL.GD.ZS', n:LA('Education spending % GDP','教育支出 %GDP','Bildungsausgaben % BIP','Расходы на образование % ВВП','Gasto en educación % PIB'), ramp:[2,'#a50026',3,'#f46d43',4.5,'#fee08b',6,'#a6d96a',8,'#1a9850'], unit:'%'},
       {id:'wbsmoke', code:'SH.PRV.SMOK', n:LA('Smoking prevalence %','喫煙率 %','Raucherquote %','Распространённость курения %','Prevalencia de tabaquismo %'), ramp:[8,'#1a9850',15,'#a6d96a',22,'#fee08b',30,'#f46d43',40,'#a50026'], unit:'%'},
       {id:'wbagremp', code:'SL.AGR.EMPL.ZS', n:LA('Employment in agriculture %','農業就業率 %','Beschäftigung Landwirtschaft %','Занятость в сельском хоз-ве %','Empleo en agricultura %'), ramp:[2,'#fff7ec',10,'#fdd49e',25,'#fc8d59',45,'#d7301f',70,'#7f0000'], unit:'%'}
@@ -135,14 +177,28 @@ window.IntMapModules.wbLayers=function(HOST){
       SAU:27,ARE:30,ISR:62,TUR:35,IRN:34,IRQ:44,EGY:96,JOR:89,QAT:45,KWT:8,OMN:36,BHR:122,LBN:150,YEM:78,
       ZAF:75,NGA:46,MAR:70,TUN:80,KEN:70,GHA:84,AGO:85,ETH:37,ZMB:113,MOZ:92,CIV:58,SEN:81,CMR:43,UGA:50,TZA:47,COD:21,SDN:152,NAM:66,BWA:24,MUS:80,
       AUS:50,NZL:46,FJI:80,RUS:20,UKR:88,KAZ:24,UZB:35,GEO:39,ARM:50,AZE:22,BLR:42,SRB:48,MKD:52,ALB:59,BIH:30,MNE:64,MDA:36};
-    function choroOn(L){ ensureGeo(geo=>{ if(!geo) return; wbFetch(L.code).then(m=>{
+    /* ══ (#R266) WHICH YEAR THIS LAYER IS PAINTING ═════════════════════════════════════════════════
+       `undefined` = «the series' own default» (wbSeries.best — the most recent year that still has
+       essentially full coverage); a year string = that year; '' = the old latest-per-country map,
+       kept because for a survey indicator reported once a decade it is the only mode that fills the
+       map — but it is no longer the default, because 「同一年度で比較しないと意味がない」. */
+    const wbYear={};
+    function choroOn(L){ ensureGeo(geo=>{ if(!geo) return; wbSeries(L.code).then(S=>{
+      const key=_wbKey(L.code);
+      const year=(wbYear[L.id]!==undefined)?wbYear[L.id]:((S&&S.best)||'');
+      let m;
+      if(S&&year&&S.by[year]){ m={}; const row=S.by[year]; Object.keys(row).forEach(k=>{ m[k]={v:row[k],y:year}; }); }
+      else m=wbCache[key]||{};
       /* (#R37) Paint EVERY country, not only the ones WITH data: countries the World Bank has no value for now
          carry NO `v` property and are rendered NEUTRAL GRAY (like the core HDI/pop choropleths), instead of
          showing nothing ("レイヤーにおいて、データのない国は灰色にするように" + "Govt Debt にデータのない国が多すぎる"
          — the gray makes the real coverage gaps honest and visible rather than invisible). */
-      if(L.id==='wbdebt'){ try{ Object.keys(DEBT_IMF_GG).forEach(k=>{ if(!(m[k]&&m[k].v!=null)) m[k]={v:DEBT_IMF_GG[k],y:'2024',imf:true}; }); }catch(_){} }
+      /* ⚠ (#R266) the IMF gap-fill is a 2024 FIGURE. Painting it onto a 2005 map would be a made-up
+         number in a year it was never reported, so it applies only to the latest-per-country mode and
+         to 2024 itself — every other year shows the World Bank's own coverage, gaps included. */
+      if(L.id==='wbdebt'&&(!year||year==='2024')){ try{ Object.keys(DEBT_IMF_GG).forEach(k=>{ if(!(m[k]&&m[k].v!=null)) m[k]={v:DEBT_IMF_GG[k],y:'2024',imf:true}; }); }catch(_){} }
       const feats=[]; let withData=0; geo.features.forEach(f=>{ const d=m[iso(f.properties||{})]; const props={nm:_nmOf(f.properties)}; if(d&&d.v!=null){ props.v=d.v; withData++; } feats.push({type:'Feature',geometry:f.geometry,properties:props}); });
-      if(!withData){ try{ if(typeof imToast==='function') imToast(window.IntMapLang.t(HOST.lang,"No data right now — please try again in a moment.","データを取得できませんでした。少し待って再試行してください。","Derzeit keine Daten — bitte gleich erneut versuchen.","Сейчас данных нет — попробуйте через мгновение.","Ahora mismo no hay datos; inténtelo en un momento.")); }catch(_){} }
+      if(!withData&&!S){ try{ if(typeof imToast==='function') imToast(window.IntMapLang.t(HOST.lang,"No data right now — please try again in a moment.","データを取得できませんでした。少し待って再試行してください。","Derzeit keine Daten — bitte gleich erneut versuchen.","Сейчас данных нет — попробуйте через мгновение.","Ahora mismo no hay datos; inténtelo en un momento.")); }catch(_){} }
       const fc={type:'FeatureCollection',features:feats}, src='src-'+L.id, fill=L.id+'-fill', line=L.id+'-line';
       try{ if(GE().layers.hasSource(src)) GE().layers.setSourceData(src,fc); else { GE().layers.addSource(src,{type:'geojson',data:fc});
         GE().layers.add({id:fill,type:'fill',source:src,paint:{'fill-color':['case',['has','v'],['interpolate',['linear'],['get','v']].concat(L.ramp),'#9aa0a6'],'fill-opacity':['case',['has','v'],0.62,0.42]}});
@@ -150,12 +206,31 @@ window.IntMapModules.wbLayers=function(HOST){
       const cb=document.getElementById('bx-'+L.id), on=cb?cb.checked:true;
       [fill,line].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity(L.id,L.n,[fill,line],'bx-'+L.id); if(el){ const ramp=L.ramp,parts=[]; for(let i=0;i<ramp.length;i+=2) parts.push('<span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:11px;height:11px;border-radius:2px;background:'+ramp[i+1]+';"></span>'+ramp[i]+L.unit+'</span>'); let kk=el.querySelector('.bx-key'); if(!kk){ kk=document.createElement('div'); kk.className='bx-key'; kk.style.cssText='display:flex;flex-wrap:wrap;gap:7px;font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(kk); } kk.innerHTML=parts.join('');
+        /* ── the year picker. Built once, then only its VALUE is set: rebuilding the <select> on every
+              repaint would close the dropdown under the finger that just opened it. ── */
+        if(S){ let yr=el.querySelector('.bx-yearrow');
+          if(!yr){ yr=document.createElement('div'); yr.className='bx-yearrow'; yr.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10.5px;color:var(--text-muted);';
+            yr.innerHTML='<span class="bx-yearlbl"></span><select class="bx-year" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"></select>';
+            el.appendChild(yr);
+            yr.querySelector('.bx-year').addEventListener('change',(e)=>{ wbYear[L.id]=e.target.value; choroOn(L); }); }
+          yr.querySelector('.bx-yearlbl').textContent=window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
+          const sel=yr.querySelector('.bx-year');
+          const latestTxt=window.IntMapLang.t(HOST.lang,'Latest per country','最新（国ごと）','Neuester je Land','Последний по стране','Más reciente por país');
+          const opts=S.years.slice().reverse().map(y=>'<option value="'+y+'">'+y+' ('+S.counts[y]+')</option>').join('')
+            +'<option value="">'+HOST.escapeHtml(latestTxt)+'</option>';
+          if(sel.getAttribute('data-built')!==String(S.years.length)){ sel.innerHTML=opts; sel.setAttribute('data-built',String(S.years.length)); }
+          sel.value=year;
+        }
         /* (#R34) State the DATA SOURCE + PERIOD on every World Bank choropleth ("Inflation % (CPI)→データの
-           出典と時期を記載しろ"). The period is the actual span of years present in the fetched data (each country
-           shows its most-recent available year). */
-        let yrs=[]; try{ yrs=Object.values(m).map(d=>+d.y).filter(isFinite); }catch(_){} let ysp=''; if(yrs.length){ const a=Math.min.apply(null,yrs),b=Math.max.apply(null,yrs); ysp=(a===b)?(''+a):(a+'–'+b); }
+           出典と時期を記載しろ"). (#R266) …and WHICH year is on the map, with how many countries reported it,
+           so «the colours are comparable» is a statement the legend actually supports. */
+        let ysp='', mode='';
+        if(year&&S&&S.counts[year]){ ysp=year;
+          mode=(window.IntMapLang.t(HOST.lang,' · ','・',' · ',' · ',' · '))+S.counts[year]+(window.IntMapLang.t(HOST.lang,' countries reporting','か国が報告',' Länder mit Daten',' стран с данными',' países con datos')); }
+        else { let yrs=[]; try{ yrs=Object.values(m).map(d=>+d.y).filter(isFinite); }catch(_){} if(yrs.length){ const a=Math.min.apply(null,yrs),b=Math.max.apply(null,yrs); ysp=(a===b)?(''+a):(a+'–'+b); }
+          mode=window.IntMapLang.t(HOST.lang," · most recent value per country","（国ごとに最新値）"," · jeweils neuester Wert je Land"," · последнее значение по каждой стране"," · valor más reciente por país"); }
         let nn=el.querySelector('.bx-note'); if(!nn){ nn=document.createElement('div'); nn.className='bx-note'; nn.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(nn); }
-        nn.textContent=(window.IntMapLang.t(HOST.lang,"Source: World Bank · ","出典: 世界銀行 · ","Quelle: Weltbank · ","Источник: Всемирный банк · ","Fuente: Banco Mundial · "))+L.code+(ysp?(' · '+ysp):'')+(window.IntMapLang.t(HOST.lang," · most recent value per country","（国ごとに最新値）"," · jeweils neuester Wert je Land"," · последнее значение по каждой стране"," · valor más reciente por país"))+(L.id==='wbdebt'?(window.IntMapLang.t(HOST.lang," + IMF WEO general govt gross debt (gap-fill)"," ＋ IMF WEO（一般政府総債務）で補完"," + IWF WEO Bruttoschuldenstand des Staates (Lückenfüllung)"," + МВФ WEO, валовой долг сектора госуправления (заполнение пробелов)"," + FMI WEO deuda bruta del gobierno general (relleno de huecos)")):''); } } }catch(_){}
+        nn.textContent=(window.IntMapLang.t(HOST.lang,"Source: World Bank · ","出典: 世界銀行 · ","Quelle: Weltbank · ","Источник: Всемирный банк · ","Fuente: Banco Mundial · "))+(Array.isArray(L.code)?L.code.join(' + '):L.code)+(ysp?(' · '+ysp):'')+mode+((L.id==='wbdebt'&&(!year||year==='2024'))?(window.IntMapLang.t(HOST.lang," + IMF WEO general govt gross debt (gap-fill)"," ＋ IMF WEO（一般政府総債務）で補完"," + IWF WEO Bruttoschuldenstand des Staates (Lückenfüllung)"," + МВФ WEO, валовой долг сектора госуправления (заполнение пробелов)"," + FMI WEO deuda bruta del gobierno general (relleno de huecos)")):''); } } }catch(_){}
     }); }); }
     function choroOff(L){ [L.id+'-fill',L.id+'-line'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }catch(_){} }); try{ window._hideGenericLegend&&window._hideGenericLegend(L.id); }catch(_){} }
 

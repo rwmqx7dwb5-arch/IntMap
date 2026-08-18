@@ -1104,6 +1104,10 @@ js/
                                     streetView / nightSky / atlasConsole）。⚠ 指定子はすべてリテラル。
   world-base.js                     (#R186) 全球衛星ベース `window.IntMapWorldBase`。
   world-packs.js                    (#R211) 世界データ層（貿易・エネルギー・警報・潮汐・作物）。160 KB。
+  precip-annual.js                  (#R266) 年降水量。CHELSA V2.1 bio12 の 1 km 平年値（8192² メルカトル、
+                                    海マスクは Köppen ラスタのアルファ）と、GPCC Full Data Monthly V2022 から
+                                    作った 1981–2020 の年別（0.5°、1枚に縦積み）を1レイヤーで切り替える。
+                                    格子・帯・色は data/precip-mm.json / data/precip-year.json から読む。
                                     ⚠ (#R254) 貿易＝**矢印は `scene.addImage`**（`layers.addImage` は
                                     契約に存在せず throw → catch に飲まれ、#R212 以来アイコンは一度も
                                     登録されていなかった）。**国のピン `wp-trade-pt` は廃止**（国は塗り
@@ -3471,6 +3475,15 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
 - `refresh-news` … ニュース取得＋AI地点解析＋書き込み（`--no-verify-jwt` で公開、`REFRESH_SECRET` で保護推奨）。
 - `monitor-run` … Area Monitors 定期実行（`--no-verify-jwt`＋自前fail-closed認証、`MONITOR_SECRET`）。
 - `sv-cov` … (#R145) Street Viewカバレッジ svv タイルの**ACAO付与プロキシ**（`--no-verify-jwt`・秘密なし）。Googleのmtsタイルは Access-Control-Allow-Origin を安定して返さず、クライアントの canvas 画素サンプリング（最寄カバレッジへのスナップ）が CORS で失敗する→本関数がサーバ側 fetch して `ACAO:*` を付与。**厳格allowlist**（`mts0-3.google.com/vt?…lyrs=svv`＋整数 x/y/z のみ・空タイルは透明PNG）＝オープンプロキシではない。フロントの `_COV_PROX` ラダー（直→sv-cov→corsproxy）で使用。
+- `alerts-relay` … (#R266) 各国気象機関の警報フィードの **ACAO 付与＋要約**（`--no-verify-jwt`・秘密なし）。
+  **2ホストだけの厳格 allowlist**: `feeds.meteoalarm.org`（欧州37機関の MeteoAlarm）と `www.nmc.cn`
+  （中国気象局の公開警報一覧）。どちらも `Access-Control-Allow-Origin` を返さないのでブラウザからは
+  読めない。⚠ **MeteoAlarm は要約する**——1国の CAP JSON が実測 **10.2 MB**（532件 × 8言語）で、
+  色と地域名を描くためにそれを端末へ送るのは不合理。`?ma=germany,france,…&lang=…` で複数国をまとめて
+  取り、1警報1行（地域・災害種・severity・時刻）に落として返す。**要約は射影であって編集ではない**
+  ——語を変えず、小さいという理由で落とさない。キャッシュは **60秒**（警報は時計の付いた安全上の主張）。
+  ⚠ カナダ ECCC（`api.weather.gc.ca`）は **ACAO を返すので relay を通さない**——要らない relay は
+  「落ちうるものが1つ増える」だけ。
 - `delete-account` … (#R155) 呼出ユーザ自身のアカウント＋全データを**ハード削除**（`verify_jwt` on＋内部でも検証・`confirm:"DELETE"` 必須）。全所有行を明示purge後に `auth.admin.deleteUser`（FKカスケード設定に非依存）。秘密なし（注入される service_role のみ）。
 
 ### 6.3 SQL
@@ -3485,6 +3498,49 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
 ---
 
 ## 7. 地図・レイヤー・Globe・ウィジェットの構造
+
+### (#R266) この節に効く現状 — レイヤーの追加・削除・データ源の入れ替え
+
+- **年降水量（`dl-annprecip` / `js/precip-annual.js`）** — 実測グリッドの新レイヤー。1レイヤーで2つの
+  モードを持ち、凡例の年セレクタで切り替える。
+  - **平年値**: CHELSA V2.1 bio12（30秒角 ≒ 1 km、1981–2010）を `precip_mercator_1981-2010.png`
+    （8192²・携帯は `_4k`）へ。Köppen と**同じメルカトル枠**で、**海のマスクは Köppen ラスタ自身の
+    アルファ**（`data/land-mask.png` は 2048幅＝0.18° で、この大きさでは海へ 20 km はみ出す）。
+  - **年別**: GPCC Full Data Monthly V2022（DWD、0.5°、陸上の雨量計解析）の 1981–2020 を
+    `data/precip-year.png` に**縦に積んだ1枚**（年の切り替えに通信が要らない）。
+  - **色は16段の帯**。連続ランプではない——色から範囲へ正確に戻せて、平らな帯は圧縮が効く。
+  - **数値の読み出しは絵を読まない**: `data/precip-mm.png`（8bit の log(mm)）を読む。
+  - ⚠ **格子と帯と色は `data/precip-mm.json` / `data/precip-year.json` から読む**。JS 側に定数を持たない
+    （#R263 が同じ形で 5× ずれた）。
+- **宗教分布・言語分布（`js/layer-packs.js` の `religionLang`）** — 手打ちの ISO 一覧をやめ、
+  `data/religion.json`（202か国）/ `data/language.json`（196か国）を読む。出典は CIA World Factbook
+  （米国政府作成物・パブリックドメイン、`scripts/build-culture.mjs` が生成）。**カトリック/プロテスタント
+  /正教会/キリスト教（内訳なし）**を分ける。⚠ **出典が分けていない国は地図も分けない**。
+  凡例の分類と色は**データを数えて決まる**（言語は87分類・出現国数順）。
+- **外交公館・宇宙基地（`js/osm-facilities.js`）** — この2集合だけ `global:` を持ち、
+  `data/osm-diplo.json`（17,423件）/ `data/osm-space.json`（13,310件）の**同梱スナップショット**を
+  どのズームでも描く。z≥5 では従来どおり視野内 Overpass がその視野を置き換える。
+  生成は `scripts/build-osm-sparse.mjs`。凡例が**どちらを描いているか**を明示する。
+- **気象・災害警報（`js/world-packs.js`）** — フィードは6つ:
+  | 国・地域 | 出典 | 形 |
+  |---|---|---|
+  | 日本 | 気象庁 | 都道府県ポリゴン |
+  | 米国 | NWS | 警報ポリゴン（州でまとめる） |
+  | カナダ | ECCC（`api.weather.gc.ca`・直接） | 警報ポリゴン（州でまとめる） |
+  | 欧州37か国 | MeteoAlarm（relay 経由・要約） | 国を塗り、タップで地域別 |
+  | 中国 | 中国気象局（relay 経由） | 国を塗り、タップで省別 |
+  | その他 | GDACS（`…/geteventlist/SEARCH`） | 事象の点＋国の塗り |
+  ロシアは**機械可読な公開警報フィードが見つからず GDACS のみ**——凡例がそう書く。
+  更新は **60秒**＋タブ復帰時。タップは `grouped()` が **admin-1 単位**で束ねる。
+- **削除**: GIBS 8層（当日の衛星画像／地表面温度 昼・夜／可降水量／雲量割合／雲頂温度／輝度温度／
+  クロロフィルa）。**完全な重複2組を統合**（都市人口率＝都市人口比率 %＝`SP.URB.TOTL.IN.ZS`、
+  外国人観光客数×2＝`ST.INT.ARVL`）。**人工衛星の「ここから見えるものだけ」チェックを廃止**
+  （1機の地平線幾何 `lookFrom`/`nextPass` は残る）。
+- **世界銀行系レイヤーは年を選べる**（2家族・67本）。`js/wb-layers.js` の `wbSeries()` が全系列
+  （1990→翌年）を1回取り、`js/layer-packs.js` の5本は `window.IntMapWB.series` を**共有**する
+  ——取得もキャッシュも1本。既定年 = 被覆が最大の90%以上ある中で最も新しい年。
+  旧「最新（国ごと）」は選択肢として残る（10年に1度の調査系指標ではそれだけが地図を埋める）。
+- **長い凡例の折りたたみ**: `.im-more`（`<details>`、`css/intmap.css`）。海流・企業・海面水温偏差で使用。
 
 - **地図初期化**：`map = new maplibregl.Map(...)`。`renderWorldCopies` は投影/自由パンに応じて切替。基盤は CARTO/Esri ラスタ＋OpenFreeMap ベクタ(`ofm`)。
 - **基盤切替**：`btn-view-map/sat` と `applyTheme()`＋`_reassertBase()`（スタイルロード競合に強いポーリング再適用）。

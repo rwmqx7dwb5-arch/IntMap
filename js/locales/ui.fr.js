@@ -194,7 +194,7 @@ window.IntMapLang.define('fr', { ui: {
       lyrNATO:"États membres de l'OTAN",
       lyrNightSat:"Lumières nocturnes (satellite)",
       lyrNightSide:"Ombrage jour / nuit",
-      lyrPop:"Densité de population",
+      lyrPop:"Densité de population (par pays)",
       lyrPopGrid:"Densité de population (grille 1 km)",
       lyrPrecip:"Précipitations (IMERG)",
       lyrRadar:"Radar de précipitations (en direct)",
@@ -2571,7 +2571,7 @@ window.IntMapLang.define('fr', { ui: {
   "GDP per capita (PPP)": "PIB par habitant (PPA)",
   "Geopolitics": "Géopolitique",
   "GHRSST MUR sea-ice concentration": "Concentration de glace de mer GHRSST MUR",
-  "Globe tour (slow spin)": "Tour du globe (rotation lente)",
+  "Auto-rotate": "Rotation automatique",
   "Govt debt (% GDP)": "Dette publique (% du PIB)",
   "HDI": "IDH",
   "Health spending (% GDP)": "Dépenses de santé (% du PIB)",
@@ -4023,7 +4023,46 @@ window.IntMapLang.define('fr', { ui: {
   "Telecom & internet infrastructure": "Infrastructures télécoms et Internet",   /* (#R255) */
   "Telephone exchange": "Central téléphonique",   /* (#R255) */
   "This crop layer could not start.": "Cette couche de cultures n’a pas pu démarrer.",   /* (#R255) */
-  "Zoom in to load this view": "Zoomez pour charger cette vue",
+  "Zoom in to load this view": "Zoomez pour charger cette vue",   /* (#R255) */
+  " countries": " pays",   /* (#R266) */
+  " countries reporting": " pays ayant déclaré",   /* (#R266) */
+  " · ": " · ",   /* (#R266) */
+  "An anomaly is a DIFFERENCE, not a temperature. Each pixel is today’s sea-surface temperature minus the 1985–2014 average for that same spot on that same day of the year, so red means warmer than usual there and blue means cooler than usual there — a +2 °C patch in the Arctic and a +2 °C patch in the tropics are the same departure from normal, not the same water. Grey is normal. The scale is clamped at ±3 °C. This is the map El Niño and La Niña are read off: a warm tongue along the equatorial Pacific is El Niño, a cool one is La Niña.": "Une anomalie est un ÉCART, pas une température : chaque pixel est la température de surface de la mer du jour moins la moyenne 1985–2014 au même endroit et au même jour de l’année. Rouge = plus chaud que d’habitude à cet endroit, bleu = plus froid, gris = normal ; l’échelle est bornée à ±3 °C. C’est sur cette carte que se lisent El Niño et La Niña : une langue chaude le long du Pacifique équatorial est El Niño, une langue froide La Niña.",   /* (#R266) */
+  "Canada — ECCC": "Canada — ECCC",   /* (#R266) */
+  "Catholic": "Catholicisme",   /* (#R266) */
+  "China Meteorological Administration — the public warning list, grouped by province.": "Administration météorologique de Chine — la liste publique des alertes, groupée par province.",   /* (#R266) */
+  "China — CMA": "Chine — CMA",   /* (#R266) */
+  "Christian (not separated)": "Christianisme (sans détail)",   /* (#R266) */
+  "Each area": "Chaque zone",   /* (#R266) */
+  "Each country is coloured by the group with the largest share; tap a country for the full composition. Source: CIA World Factbook (public domain).": "Chaque pays est coloré selon le groupe majoritaire ; touchez un pays pour la composition complète. Source : CIA World Factbook (domaine public).",   /* (#R266) */
+  "Environment and Climate Change Canada, active alerts by province.": "Environnement et Changement climatique Canada — alertes en vigueur, par province.",   /* (#R266) */
+  "Europe — MeteoAlarm (37 services)": "Europe — MeteoAlarm (37 services)",   /* (#R266) */
+  "Finnish 1524 mm": "Écartement finlandais 1524 mm",   /* (#R266) */
+  "Folk & traditional": "Religions populaires et traditionnelles",   /* (#R266) */
+  "Global feed: GDACS (Global Disaster Alert and Coordination System, UN/EC) — earthquakes, tropical cyclones, floods, volcanoes, droughts and wildfires of the last four days.": "Flux mondial : GDACS (système mondial d’alerte aux catastrophes, ONU/CE) — séismes, cyclones tropicaux, inondations, volcans, sécheresses et feux de forêt des quatre derniers jours.",   /* (#R266) */
+  "How far today’s sea-surface temperature is from normal for this place and this time of year": "De combien la température de surface de la mer d’aujourd’hui s’écarte de la normale pour ce lieu et cette saison",   /* (#R266) */
+  "Japan, the United States and Canada are drawn at the unit their agency issues at. Europe and China publish a list rather than a shape, so their countries are washed and the tap holds the regions. Russia has no machine-readable public warning feed, so it is on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "Le Japon, les États-Unis et le Canada sont dessinés à l’unité d’émission de leur agence. L’Europe et la Chine publient une liste et non des formes : leur pays est coloré et les régions apparaissent au toucher. La Russie ne publie aucun flux d’alerte lisible par machine — elle n’apparaît que via GDACS, un flux d’événements et non un service national d’alerte ; un pays sans événement GDACS n’est pas un pays sans alerte. Affichage à titre indicatif : suivez les autorités officielles.",   /* (#R266) */
+  "Latest per country": "Le plus récent par pays",   /* (#R266) */
+  "Live from OpenStreetMap for this view": "En direct d’OpenStreetMap pour cette vue",   /* (#R266) */
+  "MeteoAlarm (EUMETNET) — the national weather service’s own warnings, grouped by region.": "MeteoAlarm (EUMETNET) — les avertissements du service météorologique national, groupés par région.",   /* (#R266) */
+  "Normal 1981–2010 (1 km)": "Normale 1981–2010 (1 km)",   /* (#R266) */
+  "Normal: CHELSA V2.1 bio12, mean annual precipitation 1981–2010, 30 arc-seconds (~1 km), reprojected to Web Mercator and masked to land. Its 16-bit storage saturates at 6,553 mm, so the very wettest places (parts of Meghalaya, the Chilean fjords) are shown at that ceiling. Years: GPCC Full Data Monthly V2022 (Deutscher Wetterdienst), a rain-gauge analysis at 0.5° over land, with the twelve monthly totals of each year summed. A gauge analysis has nothing to say over the ocean, which is why the sea is empty in both.": "Normale : CHELSA V2.1 bio12, précipitations annuelles moyennes 1981–2010, 30 secondes d’arc (~1 km), reprojetées en Web Mercator et limitées aux terres. Son stockage 16 bits sature à 6 553 mm : les endroits les plus arrosés (parties du Meghalaya, fjords chiliens) sont affichés à ce plafond. Années : GPCC Full Data Monthly V2022 (Deutscher Wetterdienst), analyse pluviométrique à 0,5° sur les terres, les douze totaux mensuels de chaque année étant additionnés. Une analyse pluviométrique n’a rien à dire sur l’océan : c’est pourquoi la mer est vide dans les deux cas.",   /* (#R266) */
+  "Orthodox": "Orthodoxie",   /* (#R266) */
+  "Population density /km² (World Bank)": "Densité de population /km² (Banque mondiale)",   /* (#R266) */
+  "Protestant": "Protestantisme",   /* (#R266) */
+  "Russian 1520 mm": "Écartement russe 1520 mm",   /* (#R266) */
+  "Shinto": "Shintoïsme",   /* (#R266) */
+  "Shipped snapshot": "Instantané fourni",   /* (#R266) */
+  "Source text": "Texte de la source",   /* (#R266) */
+  "Sources and caveats": "Sources et réserves",   /* (#R266) */
+  "That single year’s total, on a 55 km gauge analysis — land only.": "Le total de cette seule année, sur une analyse pluviométrique de 55 km — terres uniquement.",   /* (#R266) */
+  "The 1981–2010 average, on a 1 km grid — how much rain and snow a place gets in a normal year.": "La moyenne 1981–2010, sur une grille de 1 km : la quantité de pluie et de neige qu’un lieu reçoit une année normale.",   /* (#R266) */
+  "The company data could not be loaded just now.": "Les données d’entreprises n’ont pas pu être chargées pour le moment.",   /* (#R266) */
+  "Try again": "Réessayer",   /* (#R266) */
+  "What is an anomaly?": "Qu’est-ce qu’une anomalie ?",   /* (#R266) */
+  "warnings": "avertissements",   /* (#R266) */
+  "warnings in": "avertissements dans",   /* (#R266) */
+  "zoom in for the live record": "zoomez pour le relevé en direct",   /* (#R266) */
   "Run to steady state": "Jusqu’au régime permanent",
   "Steady state (t → ∞)": "Régime permanent (t → ∞)",
   "The water has come to rest — add a continuous source or place more": "L’eau s’est immobilisée — ajoutez une source continue ou davantage d’eau",

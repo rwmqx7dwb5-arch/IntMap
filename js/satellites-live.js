@@ -194,7 +194,6 @@ window.IntMapModules.satellitesLive=function(HOST){
   let tleAt=0, loading=false, lastErr=null;
   let selected=null;                       /* NORAD id of the satellite whose track is drawn */
   let timer=null, on=false;
-  let visibleOnly=false;                   /* show only what is above the horizon from the map centre */
   let bundled=false, bundledMeta=null;     /* (#R185) true when the elements came from the shipped catalogue */
   let _diverged=0;                         /* (#R185) objects dropped this tick because SGP4 diverged on them */
   /* (#R202) the orbit rendering: whether the engine can do it, whether the layer is in, and the
@@ -707,11 +706,12 @@ window.IntMapModules.satellitesLive=function(HOST){
     const p=Math.max(-89.9999,Math.min(89.9999,lat))*Math.PI/180;
     return [x,(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+p/2)))/360];
   }
-  function shown(){
-    if(!visibleOnly) return fixes;
-    const obs=observer(); if(!obs) return fixes;
-    return fixes.filter(f=>{ const la=lookFrom(obs,f); return !!(la&&la.elDeg>0); });
-  }
+  /* ⚠ (#R266) THIS USED TO BE A FILTER, AND THE FILTER IS GONE BY INSTRUCTION («ここから見えるものだけ、
+     チェックはいらない»). Everything propagated is drawn; `shown()` is kept as the ONE name the picker,
+     the source builder and `state().drawn` all read, so «what is on the map» has a single definition
+     rather than three call sites that each decide for themselves. The horizon geometry lives on in
+     `lookFrom` / `nextPass` / `footprintRing`, which answer questions about ONE satellite. */
+  function shown(){ return fixes; }
   function paint(){
     /* PROPAGATE FIRST, DRAW SECOND. The positions are this layer's data; the renderer is only where
        they are put. Bailing out before computing them (which is what an `if(!ensureLayers()) return`
@@ -907,7 +907,6 @@ window.IntMapModules.satellitesLive=function(HOST){
     if(on) load(group).then(()=>{ paint(); });
     return group;
   }
-  function setVisibleOnly(v){ visibleOnly=!!v; if(on) paint(); return visibleOnly; }
 
   /* Find one satellite by name / NORAD id / international designator — what Atlas needs to answer
      「ISSはどこ？」 without the user having to click a dot. */
@@ -923,7 +922,6 @@ window.IntMapModules.satellitesLive=function(HOST){
     start, stop, isOn:()=>on,
     groups:()=>GROUPS.map(g=>({ id:g.id, kb:g.kb, name:g.nm() })),
     group:()=>group, setGroup,
-    visibleOnly:()=>visibleOnly, setVisibleOnly,
     setOpacity, opacity:()=>opacity,
     reload(){ tleAt=0; return load(group).then(ok=>{ if(on) paint(); return ok; }); },
     pickAt, select, selected:()=>selected, get, find,
@@ -939,7 +937,7 @@ window.IntMapModules.satellitesLive=function(HOST){
     /* diagnostics — Atlas and the tests read these instead of poking at the renderer (#R183: a
        GeoJSON source's data is not readable back out of MapLibre 5, so it would lie) */
     state:()=>({ on, group, catalogue:sats.length, drawn:shown().length, computed:fixes.length,
-      selected, visibleOnly, opacity,
+      selected, opacity,
       tleAgeH:tleAt?(Date.now()-tleAt)/3600000:null, loading, err:lastErr,
       bundled, bundledSource:(bundledMeta&&bundledMeta.source)||null,
       bundledEpoch:(bundledMeta&&bundledMeta.newestEpoch)||null,

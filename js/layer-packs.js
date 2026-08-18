@@ -448,8 +448,15 @@ window.IntMapModules.betaPack2=function(HOST){
     const PH=[
       [7.59,47.56,'Basel — Novartis / Roche HQ & plants'],[6.99,51.03,'Leverkusen — Bayer'],[8.06,49.97,'Ingelheim — Boehringer Ingelheim'],[12.45,55.76,'Copenhagen — Novo Nordisk'],[11.09,55.68,'Kalundborg — Novo Nordisk API site'],[-0.31,51.48,'London/Brentford — GSK'],[0.13,52.2,'Cambridge — AstraZeneca'],[2.35,48.86,'Paris — Sanofi'],[-86.16,39.77,'Indianapolis — Eli Lilly'],[-74.45,40.49,'New Brunswick — Johnson & Johnson'],[-73.97,40.75,'New York — Pfizer HQ'],[-74.29,40.68,'Rahway/Kenilworth — Merck & Co.'],[-87.86,42.33,'North Chicago — AbbVie'],[-118.84,34.18,'Thousand Oaks — Amgen'],[-122.4,37.65,'South San Francisco — Genentech'],[-8.47,51.9,'Cork — Irish pharma cluster'],[103.64,1.32,'Singapore Tuas — biologics plants'],[78.6,17.6,'Hyderabad — Genome Valley (vaccines)'],[72.88,19.08,'Mumbai — Sun Pharma'],[72.57,23.02,'Ahmedabad — Zydus / Torrent'],[83.3,17.69,'Visakhapatnam — API hub'],[-66.54,18.45,'Barceloneta — Puerto Rico pharma'],[139.76,35.68,'Tokyo — Takeda / Astellas'],[135.5,34.69,'Osaka — Shionogi / Takeda'],[116.4,39.9,'Beijing — Sinopharm'],[121.47,31.23,'Shanghai — Fosun Pharma'],[126.64,37.39,'Songdo — Samsung Biologics'],[34.89,32.09,'Petah Tikva — Teva'],[-46.63,-23.55,'São Paulo — EMS / Eurofarma'],[28.05,-26.2,'Johannesburg — Aspen Pharmacare']
     ];
-    const RAIL_COL={1435:'#3a7bd5',1520:'#e03131',1067:'#2f9e44',1000:'#12b886',1676:'#9c36b5',1668:'#f08c00',1600:'#d6336c',0:'#868e96'};
-    const RAIL_LBL=[[1435,LA('Standard 1435 mm','標準軌 1435mm','Normalspur 1435 mm','Стандартная колея 1435 мм','Ancho estándar 1435 mm')],[1520,LA('Russian 1520/1524 mm','ロシア軌間 1520/1524mm','Russische Breitspur 1520/1524 mm','Русская колея 1520/1524 мм','Ancho ruso 1520/1524 mm')],[1676,LA('Broad 1676 mm (India, Argentina)','広軌 1676mm（印・亜）','Breitspur 1676 mm (Indien, Argentinien)','Широкая колея 1676 мм (Индия, Аргентина)','Ancho 1676 mm (India, Argentina)')],[1668,LA('Iberian 1668 mm','イベリア軌間 1668mm','Iberische Spur 1668 mm','Иберийская колея 1668 мм','Ancho ibérico 1668 mm')],[1600,LA('Irish 1600 mm','アイルランド軌間 1600mm','Irische Spur 1600 mm','Ирландская колея 1600 мм','Ancho irlandés 1600 mm')],[1067,LA('Cape 1067 mm (Japan etc.)','狭軌 1067mm（日本など）','Kapspur 1067 mm (Japan usw.)','Капская колея 1067 мм (Япония и др.)','Ancho Cape 1067 mm (Japón, etc.)')],[1000,LA('Meter 1000 mm','メーターゲージ 1000mm','Meterspur 1000 mm','Метровая колея 1000 мм','Ancho métrico 1000 mm')],[0,LA('Unknown / other','不明・その他','Unbekannt / sonstige','Неизвестно / прочее','Desconocido / otro')]];
+    /* ⚠ (#R266) 1520 AND 1524 ARE TWO GAUGES, AND THE MAP NOW SAYS SO. 「ロシア軌間 1520/1524mm の
+       この二つの軌間を区別して描画して。」 — _rail_convert.py had Finland in the 1520 list with the
+       comment «FIN 1524 ~ Russian family», i.e. the difference was known and then thrown away. They
+       are 4 mm apart, which is why through running works at all, but they are not the same standard:
+       1524 mm (5 ft) is what the Grand Duchy was built to and what Finland still maintains, and
+       1520 mm is the Soviet 1970s re-standardisation everything east of it was converted to.
+       The colour stays in the same red family so the relationship is still visible at a glance. */
+    const RAIL_COL={1435:'#3a7bd5',1520:'#e03131',1524:'#f08080',1067:'#2f9e44',1000:'#12b886',1676:'#9c36b5',1668:'#f08c00',1600:'#d6336c',0:'#868e96'};
+    const RAIL_LBL=[[1435,LA('Standard 1435 mm','標準軌 1435mm','Normalspur 1435 mm','Стандартная колея 1435 мм','Ancho estándar 1435 mm')],[1520,LA('Russian 1520 mm','ロシア軌間 1520mm','Russische Breitspur 1520 mm','Русская колея 1520 мм','Ancho ruso 1520 mm')],[1524,LA('Finnish 1524 mm','フィンランド軌間 1524mm','Finnische Breitspur 1524 mm','Финская колея 1524 мм','Ancho finlandés 1524 mm')],[1676,LA('Broad 1676 mm (India, Argentina)','広軌 1676mm（印・亜）','Breitspur 1676 mm (Indien, Argentinien)','Широкая колея 1676 мм (Индия, Аргентина)','Ancho 1676 mm (India, Argentina)')],[1668,LA('Iberian 1668 mm','イベリア軌間 1668mm','Iberische Spur 1668 mm','Иберийская колея 1668 мм','Ancho ibérico 1668 mm')],[1600,LA('Irish 1600 mm','アイルランド軌間 1600mm','Irische Spur 1600 mm','Ирландская колея 1600 мм','Ancho irlandés 1600 mm')],[1067,LA('Cape 1067 mm (Japan etc.)','狭軌 1067mm（日本など）','Kapspur 1067 mm (Japan usw.)','Капская колея 1067 мм (Япония и др.)','Ancho Cape 1067 mm (Japón, etc.)')],[1000,LA('Meter 1000 mm','メーターゲージ 1000mm','Meterspur 1000 mm','Метровая колея 1000 мм','Ancho métrico 1000 mm')],[0,LA('Unknown / other','不明・その他','Unbekannt / sonstige','Неизвестно / прочее','Desconocido / otro')]];
     function fcPoints(arr,colFn){ return {type:'FeatureCollection',features:arr.map(d=>({type:'Feature',geometry:{type:'Point',coordinates:[d[0],d[1]]},properties:{n:d[2],k:d[3]||'',col:colFn(d)}}))}; }
     function load(key,cb){
       if(cache[key]){ cb(cache[key]); return; }
@@ -579,22 +586,44 @@ window.IntMapModules.betaPack2=function(HOST){
         score:v=>v, fmt:v=>Math.round(v)+' mm',
         nm:LA('Annual precipitation (mm)','年降水量（mm）','Jahresniederschlag (mm)','Годовое количество осадков (мм)','Precipitación anual (mm)'),
         note:()=>window.IntMapLang.t(HOST.lang,"Average annual precipitation (depth in mm, long-term; World Bank).","年間平均降水量（深さmm、長期平均・世界銀行）。","Durchschnittlicher Jahresniederschlag (Höhe in mm, langjährig; Weltbank).","Среднегодовое количество осадков (в мм, многолетнее; Всемирный банк).","Precipitación media anual (altura en mm, a largo plazo; Banco Mundial).")}};
+    /* ══ (#R266) THESE FIVE ALSO PAINT ONE YEAR AT A TIME ══════════════════════════════════════════
+       「その他、年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 — and this
+       family is the OTHER World-Bank family in the app (corruption / life expectancy / unemployment /
+       internet / annual precipitation). Two of them had a year HARD-CODED in the table (`date:'2023'`,
+       `date:'2022'`) and the other three asked for `mrnev=1`, so the reader could not move any of
+       them. The series itself comes from js/wb-layers.js's `window.IntMapWB.series` — the same fetch,
+       the same cache, one network path for the whole app — and `date`/`q` stay in the table only as
+       the fallback for a build that somehow runs before that module is up.
+       ⚠ THE SOURCE IS BUILT ONCE AND THEN RE-FED. `build()` used to early-return the moment the
+       source existed, which is correct for «turn it back on» and wrong for «show me 2010»: the year
+       change has to reach `setSourceData`, or the picker moves and the map does not. */
+    const wbYr={};
     function wbToggle(key,on){ state[key]=on; const W=WB[key];
       const show=()=>setVis(W.ids,on);
       if(!on){ show(); try{ window._hideGenericLegend&&window._hideGenericLegend('wb-'+key); }catch(_){} return; }
       const build=async()=>{
         if(!_imCanDraw()){ GE().events.once('idle',build); return; }
-        if(GE().layers.hasSource(W.src)){ show(); legend(); return; }
-        try{ await loadCountryData(); }catch(_){}
-        if(!HOST.countryGeo||!Array.isArray(HOST.countryGeo.features)){ setTimeout(build,1200); return; }
-        let vals=cache['wb_'+key];
-        if(!vals){ vals={};
-          try{ const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+W.ind+'?format=json&per_page=400'+(W.date?('&date='+W.date):'')+(W.q||''));
-            const j=await r.json(); (j&&j[1]||[]).forEach(row=>{ if(row&&row.value!=null){ const iso=row.countryiso3code||(row.country&&row.country.id); if(iso&&iso.length===3) vals[iso]=+row.value; } });
-          }catch(_){}
-          if(!Object.keys(vals).length){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load the data","データを取得できませんでした","Daten konnten nicht geladen werden","Не удалось загрузить данные","No se pudieron cargar los datos")); }catch(_){} return; }
-          cache['wb_'+key]=vals;
+        const S=await (async()=>{ try{ if(window.IntMapWB&&window.IntMapWB.series) return await window.IntMapWB.series(W.ind); }catch(_){} return null; })();
+        const year=(wbYr[key]!==undefined)?wbYr[key]:((S&&S.best)||'');
+        let vals=null;
+        if(S&&year&&S.by[year]){ vals={}; const row=S.by[year]; Object.keys(row).forEach(k2=>{ if(k2&&k2.length===3) vals[k2]=row[k2]; }); }
+        else if(S){ vals={}; const m=(window.IntMapWB&&window.IntMapWB.get(W.ind))||{}; Object.keys(m).forEach(k2=>{ if(k2&&k2.length===3) vals[k2]=m[k2].v; }); }
+        if(!vals||!Object.keys(vals).length){
+          /* the pre-#R266 single-year read, kept as the fallback for a build that beats wbLayers up */
+          vals=cache['wb_'+key];
+          if(!vals){ vals={};
+            try{ const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+W.ind+'?format=json&per_page=400'+(W.date?('&date='+W.date):'')+(W.q||''));
+              const j=await r.json(); (j&&j[1]||[]).forEach(row=>{ if(row&&row.value!=null){ const iso=row.countryiso3code||(row.country&&row.country.id); if(iso&&iso.length===3) vals[iso]=+row.value; } });
+            }catch(_){}
+            if(!Object.keys(vals).length){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load the data","データを取得できませんでした","Daten konnten nicht geladen werden","Не удалось загрузить данные","No se pudieron cargar los datos")); }catch(_){} return; }
+            cache['wb_'+key]=vals;
+          }
         }
+        wbYr[key]=year;
+        if(GE().layers.hasSource(W.src)){
+          try{ const g=HOST.countryGeo; if(g&&g.features) GE().layers.setSourceData(W.src,{type:'FeatureCollection',
+            features:g.features.filter(f=>f.id!=null&&vals[f.id]!=null).map(f=>({type:'Feature',geometry:f.geometry,properties:{s:W.score(vals[f.id]),raw:vals[f.id],iso:f.id}}))}); }catch(_){}
+          show(); legend(S,year); return; }
         try{
           /* ══ ⚠⚠ (#R254) …AND THIS FAMILY MAKES ITS OWN COPY OF THE BORDERS ═══════════════════════
              「以下のレイヤーは国境線が雑い（…汚職・腐敗指標…）。勝手に解像度の低い国境線に変えるな。」
@@ -637,7 +666,7 @@ window.IntMapModules.betaPack2=function(HOST){
               window.positionTooltip&&window.positionTooltip(e.point); GE().render.canvas().style.cursor='pointer'; }catch(_){}
           });
           GE().events.onLayer('mouseleave',W.ids[0],()=>{ try{ const el=window.ensureMapTooltip&&window.ensureMapTooltip(); if(el) el.style.display='none'; GE().render.canvas().style.cursor=''; }catch(_){} });
-          show(); legend();
+          show(); legend(S,year);
         }catch(_){}
       };
       /* ══ ⚠⚠ (#R254) THE BOX WAS THERE; THE LEGEND WAS NOT ═══════════════════════════════════════════
@@ -665,9 +694,25 @@ window.IntMapModules.betaPack2=function(HOST){
           +'<span style="width:9px;height:9px;border-radius:2px;background:#9aa0a6;opacity:.55;flex:none;"></span>'
           +esc(window.IntMapLang.t(HOST.lang,'no data','データなし','keine Daten','нет данных','sin datos'))+'</div>';
         return d; }
-      function legend(){ try{ if(window._registerLayerOpacity){ const el=window._registerLayerOpacity('wb-'+key,[W.nm[0],W.nm[1]],W.ids,'beta-dl-'+key);
+      function legend(S,year){ try{ if(window._registerLayerOpacity){ const el=window._registerLayerOpacity('wb-'+key,[W.nm[0],W.nm[1]],W.ids,'beta-dl-'+key);
         if(el&&!el.querySelector('.wb-key')){ const k=rampKey(); if(k) el.appendChild(k); }
-        if(el&&!el.querySelector('.wb-note')){ const d=document.createElement('div'); d.className='wb-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.5;'; d.textContent=W.note(); el.appendChild(d); } } }catch(_){} }
+        /* (#R266) the year picker — same shape as the one on the js/wb-layers.js choropleths, built
+           once and then only re-VALUED, so an open dropdown is not torn out from under the finger */
+        if(el&&S&&S.years&&S.years.length){ let yr=el.querySelector('.wb-yearrow');
+          if(!yr){ yr=document.createElement('div'); yr.className='wb-yearrow'; yr.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10.5px;color:var(--text-muted);';
+            yr.innerHTML='<span class="wb-yearlbl"></span><select class="wb-year" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"></select>';
+            el.appendChild(yr);
+            yr.querySelector('.wb-year').addEventListener('change',(e)=>{ wbYr[key]=e.target.value; wbToggle(key,true); }); }
+          yr.querySelector('.wb-yearlbl').textContent=window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
+          const sel=yr.querySelector('.wb-year');
+          const latestTxt=window.IntMapLang.t(HOST.lang,'Latest per country','最新（国ごと）','Neuester je Land','Последний по стране','Más reciente por país');
+          if(sel.getAttribute('data-built')!==String(S.years.length)){
+            sel.innerHTML=S.years.slice().reverse().map(y=>'<option value="'+y+'">'+y+' ('+S.counts[y]+')</option>').join('')
+              +'<option value="">'+esc(latestTxt)+'</option>';
+            sel.setAttribute('data-built',String(S.years.length)); }
+          sel.value=year||''; }
+        let d=el&&el.querySelector('.wb-note'); if(el&&!d){ d=document.createElement('div'); d.className='wb-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.5;'; el.appendChild(d); }
+        if(d) d.textContent=W.note()+((S&&year&&S.counts[year])?(' · '+year+(window.IntMapLang.t(HOST.lang,' · ','・',' · ',' · ',' · '))+S.counts[year]+(window.IntMapLang.t(HOST.lang,' countries reporting','か国が報告',' Länder mit Daten',' стран с данными',' países con datos'))):''); } }catch(_){} }
       build();
     }
     /* ---------- Globe tour — slow endless rotation with the whole earth in view ---------- */
@@ -687,7 +732,7 @@ window.IntMapModules.betaPack2=function(HOST){
     }
     /* ---------- rows (swept into Others(beta) by reorganizeLayerPanel) ---------- */
     /* (#R38) [JP, EN, DE, RU] — b2Lbl() picks the active UI language (was JP/EN only → English in DE/RU). */
-    const B2LBL={dc:LA('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infraestructura de IA'),pharma:LA('Pharma manufacturing hubs','製薬・医薬品製造拠点','Pharma-Produktionszentren','Центры фармпроизводства','Centros de fabricación farmacéutica'),lifeexp:LA('Life expectancy','平均寿命','Lebenserwartung','Продолжительность жизни','Esperanza de vida'),cpi:LA('Corruption indicator','汚職・腐敗指標','Korruptionsindex','Индекс коррупции','Indicador de corrupción'),rail:LA('World railways (by gauge)','世界の鉄道（軌間別）','Welt-Eisenbahnen (nach Spurweite)','Железные дороги мира (по колее)','Ferrocarriles del mundo (por ancho de vía)'),unemp:LA('Unemployment rate','失業率','Arbeitslosenquote','Уровень безработицы','Tasa de desempleo'),internet:LA('Internet penetration','インターネット普及率','Internetverbreitung','Проникновение интернета','Penetración de internet'),precip:LA('Annual precipitation','年降水量','Jahresniederschlag','Годовое количество осадков','Precipitación anual'),spin:LA('Globe tour (slow spin)','地球をゆっくり回す','Globus-Tour (langsame Drehung)','Тур по глобусу (медленное вращение)','Recorrido del globo (giro lento)')};
+    const B2LBL={dc:LA('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infraestructura de IA'),pharma:LA('Pharma manufacturing hubs','製薬・医薬品製造拠点','Pharma-Produktionszentren','Центры фармпроизводства','Centros de fabricación farmacéutica'),lifeexp:LA('Life expectancy','平均寿命','Lebenserwartung','Продолжительность жизни','Esperanza de vida'),cpi:LA('Corruption indicator','汚職・腐敗指標','Korruptionsindex','Индекс коррупции','Indicador de corrupción'),rail:LA('World railways (by gauge)','世界の鉄道（軌間別）','Welt-Eisenbahnen (nach Spurweite)','Железные дороги мира (по колее)','Ferrocarriles del mundo (por ancho de vía)'),unemp:LA('Unemployment rate','失業率','Arbeitslosenquote','Уровень безработицы','Tasa de desempleo'),internet:LA('Internet penetration','インターネット普及率','Internetverbreitung','Проникновение интернета','Penetración de internet'),precip:LA('Annual precipitation','年降水量','Jahresniederschlag','Годовое количество осадков','Precipitación anual'),spin:LA('Auto-rotate','自動回転','Automatisch drehen','Автовращение','Rotación automática')};
     const b2Lbl=(k)=>LPK.arr(B2LBL[k]);
     const B2SW={dc:'#5e8bff',pharma:'#2bb3a3',lifeexp:'#74add1',cpi:'#f46d43',rail:'#3a7bd5',unemp:'#f46d43',internet:'#1a9850',precip:'#35978f',spin:'#ffd166'};
     const B2FN={dc:dcToggle,pharma:phToggle,lifeexp:(on)=>wbToggle('lifeexp',on),cpi:(on)=>wbToggle('cpi',on),rail:railToggle,unemp:(on)=>wbToggle('unemp',on),internet:(on)=>wbToggle('internet',on),precip:(on)=>wbToggle('precip',on),spin:spinToggle};
@@ -718,97 +763,129 @@ window.IntMapModules.betaPack2=function(HOST){
 
 window.IntMapModules.religionLang=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
-  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
-     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
-     isStyleLoaded() test only if the host is somehow absent. */
+  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html. */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
-  /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const loadCountryData=HOST.loadCountryData, countryStats=HOST.countryStats;
   (function(){
-    if(!GE().hasRenderer()||!GE().hasRenderer()) return;
+    if(!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
-    /* ⚠ (#R248) THIS IIFE HAD NO LANGUAGE HELPER OF ITS OWN. The three siblings above each declare
-       their own `LPK`/`LA`; a `const` in a sibling IIFE is not in scope here, so the tuples below
-       threw `ReferenceError: LA is not defined` at module evaluation and took the whole religion /
-       language pack down with them. Declared at the TOP of the scope on purpose — [[intmap-recurring-lessons]]
-       L: a binding added in the middle puts everything above it in the temporal dead zone. */
+    /* ⚠ (#R248) THIS IIFE HAD NO LANGUAGE HELPER OF ITS OWN — declared at the TOP of the scope on
+       purpose ([[intmap-recurring-lessons]] L: a binding added in the middle puts everything above
+       it in the temporal dead zone). */
     const LPK=window.IntMapLang.pick(()=>HOST.lang);
     const LA=window.IntMapLang.pickArgs();
-    const before=()=>GE().layers.has('tool-poly')?'tool-poly':undefined;
-    const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const esc=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
+    const before=()=>{ try{ return GE().layers.has('tool-poly')?'tool-poly':undefined; }catch(_){ return undefined; } };
     let pop=null;
-    const expand=(o)=>{ const m={}; Object.keys(o).forEach(cat=>String(o[cat]).split(/\s+/).forEach(iso=>{ if(iso) m[iso]=cat; })); return m; };
-    /* dominant religion by population */
-    const REL=expand({
-      christian:'USA CAN MEX BRA ARG COL CHL PER VEN ECU BOL PRY URY GTM HND SLV NIC CRI PAN CUB DOM HTI JAM GBR FRA DEU ITA ESP PRT POL ROU GRC HUN AUT BEL IRL CHE HRV SVK SVN SRB BGR GEO ARM RUS UKR BLR MDA AUS NZL FJI ZAF COD ETH KEN GHA UGA TZA AGO MOZ ZMB ZWE NGA CMR RWA BDI MWI MDG NAM BWA LSO SWZ SSD CAF GAB COG PHL TLS PNG',
-      muslim:'SAU IRN IRQ EGY TUR PAK BGD IDN MYS AFG DZA MAR TUN LBY SDN SOM YEM JOR SYR KWT ARE QAT OMN BHR KAZ UZB TKM TJK KGZ AZE MLI NER SEN TCD MRT GMB GIN GNB SLE BRN MDV DJI COM',
-      hindu:'IND NPL MUS',
-      buddhist:'THA MMR KHM LAO LKA BTN MNG JPN VNM',
-      jewish:'ISR',
-      unaffiliated:'CHN KOR PRK CZE EST NLD SWE'
-    });
-    const REL_COL={christian:'#4e79a7',muslim:'#59a14f',hindu:'#e15759',buddhist:'#f0a93b',jewish:'#76b7b2',unaffiliated:'#9aa0a6'};
-    const REL_LBL={christian:LA('Christianity','キリスト教','Christentum','Христианство','Cristianismo'),muslim:LA('Islam','イスラム教','Islam','Ислам','Islam'),hindu:LA('Hinduism','ヒンドゥー教','Hinduismus','Индуизм','Hinduismo'),buddhist:LA('Buddhism','仏教','Buddhismus','Буддизм','Budismo'),jewish:LA('Judaism','ユダヤ教','Judentum','Иудаизм','Judaísmo'),unaffiliated:LA('Unaffiliated','無宗教','Konfessionslos','Не религиозные','Sin religión')};
-    /* primary official / most-used language */
-    const LANG=expand({
-      english:'USA GBR CAN AUS NZL IRL NGA GHA KEN UGA ZAF ZWE ZMB BWA NAM SSD LBR SLE GMB MWI PNG FJI JAM TTO GUY',
-      spanish:'MEX ESP ARG COL PER VEN ECU BOL PRY URY GTM HND SLV NIC CRI PAN CUB DOM',
-      portuguese:'BRA PRT AGO MOZ TLS GNB CPV',
-      french:'FRA COD CIV CMR SEN MLI NER BFA BEN GIN TGO BDI RWA GAB COG MDG TCD DJI HTI LUX',
-      arabic:'SAU EGY IRQ DZA MAR TUN LBY SDN SYR JOR YEM ARE KWT QAT OMN BHR LBN MRT',
-      chinese:'CHN TWN SGP',
-      russian:'RUS BLR KAZ KGZ',
-      hindi:'IND',
-      bengali:'BGD',
-      german:'DEU AUT CHE',
-      japanese:'JPN',
-      korean:'KOR PRK',
-      turkish:'TUR',
-      persian:'IRN AFG TJK',
-      malay:'IDN MYS BRN',
-      italian:'ITA'
-    });
-    const LANG_COL={english:'#4e79a7',spanish:'#f28e2b',arabic:'#59a14f',chinese:'#e15759',french:'#76b7b2',portuguese:'#edc948',russian:'#b07aa1',hindi:'#ff9da7',bengali:'#9c755f',german:'#bab0ac',japanese:'#86bcb6',korean:'#d37295',turkish:'#a0cbe8',persian:'#8cd17d',malay:'#e377c2',italian:'#79706e'};
-    /* ⚠⚠ (#R248) THE LANGUAGE LEGEND IS NOT A TRANSLATION TABLE — IT IS CLDR.
-       These sixteen labels were `LA('English','英語')` … i.e. en+jp only, which is de/ru/es/fr/ko/zh in
-       English on a legend whose whole subject is languages. Writing the other seven by hand would be
-       126 strings to maintain and one more list to forget when a tenth language is added. The name of
-       a language IN a language is exactly what `Intl.DisplayNames` answers from CLDR, so the source
-       changes instead of the table growing (#R247's rule, after 曜日頭文字 and the Wikipedia edition).
-       ⚠ The keys stay the app's own category ids (they index LANG / LANG_COL); the BCP-47 tag is what
-       CLDR is asked with, and 'ms' deliberately answers 'Malay' — the Indonesian half of the category
-       is kept by the parenthesis, which IS translated through the ordinary table. */
-    const LANG_TAG={english:'en',spanish:'es',arabic:'ar',chinese:'zh',french:'fr',portuguese:'pt',russian:'ru',hindi:'hi',bengali:'bn',german:'de',japanese:'ja',korean:'ko',turkish:'tr',persian:'fa',malay:'ms',italian:'it'};
-    function langLabel(cat){
-      const tag=LANG_TAG[cat]; if(!tag) return cat;
-      let nm=null;
+
+    /* ══ ⚠⚠⚠ (#R266) THESE TWO LAYERS WERE TWO LISTS OF ISO CODES, TYPED BY HAND ══════════════════
+       「宗教分布レイヤーはカトリック、プロテスタント、正教会を区別しろ。」
+       「言語分布レイヤーはもっと正確に。表示言語数も増やして。」
+
+       What was here: `christian:'USA CAN MEX BRA … GBR FRA DEU ITA … RUS UKR BLR …'`, one bucket for
+       all of Christianity — so Poland, Russia and Sweden were literally the same colour — and
+       sixteen languages assigned the same way. No share, no year, no source, and no way for a wrong
+       country to be noticed by anything but a human reading the string.
+
+       What is here now: data/religion.json and data/language.json, built by
+       scripts/build-culture.mjs out of the CIA World Factbook's own «Religions» and «Languages»
+       fields (a US Government work, public domain). 202 countries carry a religious composition and
+       196 a linguistic one, each as a SHARE, so the map can colour by which group leads and the tap
+       can print the whole composition with the Factbook's own sentence underneath it.
+
+       ⚠ WHERE THE SOURCE DOES NOT SEPARATE THE DENOMINATIONS, NEITHER DOES THIS MAP. The United
+       Kingdom's entry reads «Christian (includes Anglican, Roman Catholic, Presbyterian, Methodist)
+       59.5%»; that is «Christian», not «Catholic», and the first version of the build read the
+       Roman Catholic out of that list and painted the UK Catholic. Italy's «Christian 80.8%
+       (overwhelmingly Roman Catholic …)» IS Catholic, because the source says overwhelmingly.
+       ⚠ THE CATEGORY LIST IS DERIVED FROM THE DATA, NOT DECLARED. Which languages exist, and in
+       what order, comes from counting the file — so a rebuild that adds a country adds its language
+       to the legend without anyone editing a palette. */
+    const REL_COL={catholic:'#4e79a7',protestant:'#7fb3d5',orthodox:'#2e5f8a',christian_other:'#a6c8e0',
+      muslim:'#59a14f',hindu:'#e15759',buddhist:'#f0a93b',jewish:'#76b7b2',shinto:'#d4a5c8',
+      folk:'#b07d34',unaffiliated:'#9aa0a6',other:'#c9c9c9'};
+    const REL_LBL={
+      catholic:LA('Catholic','カトリック','Katholisch','Католицизм','Católica'),
+      protestant:LA('Protestant','プロテスタント','Protestantisch','Протестантизм','Protestante'),
+      orthodox:LA('Orthodox','正教会','Orthodoxes Christentum','Православие','Ortodoxa'),
+      christian_other:LA('Christian (not separated)','キリスト教（宗派の内訳なし）','Christlich (nicht aufgeschlüsselt)','Христианство (без разделения)','Cristiana (sin desglose)'),
+      muslim:LA('Islam','イスラム教','Islam','Ислам','Islam'),
+      hindu:LA('Hinduism','ヒンドゥー教','Hinduismus','Индуизм','Hinduismo'),
+      buddhist:LA('Buddhism','仏教','Buddhismus','Буддизм','Budismo'),
+      jewish:LA('Judaism','ユダヤ教','Judentum','Иудаизм','Judaísmo'),
+      shinto:LA('Shinto','神道','Shintō','Синто','Sintoísmo'),
+      folk:LA('Folk & traditional','民族宗教・伝統宗教','Volks- & Naturreligionen','Народные религии','Religiones populares'),
+      unaffiliated:LA('Unaffiliated','無宗教','Konfessionslos','Не относят себя','Sin filiación'),
+      other:LA('Other','その他','Sonstige','Прочие','Otras')};
+
+    /* the legend palette for languages: ordered by how many countries a language leads, so the
+       common ones get the distinct hues and the long tail cycles */
+    const LPAL=['#4e79a7','#f28e2b','#59a14f','#e15759','#76b7b2','#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac',
+      '#86bcb6','#d37295','#a0cbe8','#8cd17d','#e377c2','#79706e','#5254a3','#e7ba52','#31a354','#843c39',
+      '#7b4173','#637939','#8c6d31','#ad494a','#a55194','#6b6ecf','#b5cf6b','#e7969c','#9c9ede','#cedb9c'];
+    const langName=(tag)=>{ let nm=null;
       try{ nm=new Intl.DisplayNames([window.IntMapLang.htmlTag(HOST.lang)],{type:'language'}).of(tag); }catch(_){}
-      if(!nm||nm===tag) nm=cat.charAt(0).toUpperCase()+cat.slice(1);
-      return cat==='malay'?(nm+' / '+LPK('Indonesian','インドネシア語','Indonesisch','Индонезийский','Indonesio')):nm;
-    }
+      return (nm&&nm!==tag)?nm:tag; };
+
+    const DATA={religion:null,language:null};
     const CFG={
-      religion:{map:REL,col:REL_COL,lbl:REL_LBL,ids:['cat-rel-f','cat-rel-l'],src:'cat-rel',nm:LA('Dominant religion','宗教分布（主流）','Vorherrschende Religion','Преобладающая религия','Religión predominante')},
-      language:{map:LANG,col:LANG_COL,lbl:null,ids:['cat-lang-f','cat-lang-l'],src:'cat-lang',nm:LA('Primary language','言語分布（主要）','Vorherrschende Sprache','Основной язык','Idioma principal')}   /* (#R248) lbl:null = «ask CLDR» — see langLabel */
+      religion:{ file:'data/religion.json', ids:['cat-rel-f','cat-rel-l'], src:'cat-rel',
+        nm:LA('Dominant religion','宗教分布（主流）','Vorherrschende Religion','Преобладающая религия','Religión predominante'),
+        label:(k)=>LPK.arr(REL_LBL[k]||REL_LBL.other), col:(k)=>REL_COL[k]||REL_COL.other },
+      language:{ file:'data/language.json', ids:['cat-lang-f','cat-lang-l'], src:'cat-lang',
+        nm:LA('Primary language','言語分布（主要）','Vorherrschende Sprache','Основной язык','Idioma principal'),
+        label:(k)=>langName(k), col:null }
     };
     const state={religion:false,language:false};
-    function colorExpr(C){ const e=['match',['get','cat']]; Object.keys(C.col).forEach(cat=>{ e.push(cat, C.col[cat]); }); e.push('#9aa0a6'); return e; }
+    const order={};      /* key -> [category, …] most-led first; decides the colour AND the legend */
+
+    function load(key){ const C=CFG[key];
+      if(DATA[key]) return Promise.resolve(DATA[key]);
+      const u=(()=>{ try{ return new URL(C.file,document.baseURI).toString(); }catch(_){ return C.file; } })();
+      return fetch(u).then(r=>r.json()).then(j=>{
+        DATA[key]=j;
+        const n={}; Object.values(j.countries||{}).forEach(v=>{ n[v.top]=(n[v.top]||0)+1; });
+        order[key]=Object.keys(n).sort((a,b)=>(n[b]-n[a])||(a<b?-1:1));
+        return j; }).catch(()=>null);
+    }
+    const colOf=(key,cat)=>{ const C=CFG[key]; if(C.col) return C.col(cat);
+      const i=(order[key]||[]).indexOf(cat); return i<0?'#9aa0a6':LPAL[i%LPAL.length]; };
+    function colorExpr(key){ const e=['match',['get','cat']];
+      (order[key]||[]).forEach(cat=>{ e.push(cat,colOf(key,cat)); }); e.push('#9aa0a6'); return e; }
+
+    /* the tap: WHICH group leads, by how much, and the whole composition underneath */
+    function popupHTML(key,iso,p){
+      const C=CFG[key], rec=(DATA[key]&&DATA[key].countries&&DATA[key].countries[iso])||null;
+      let nm=iso; try{ const s=countryStats[iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||iso; }catch(_){}
+      if(!rec) return '<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div>';
+      const mix=Object.entries(rec.mix||{}).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+      const rows=mix.map(([k,v])=>'<div style="display:flex;align-items:center;gap:6px;font-size:11.5px;padding:1px 0;">'
+        +'<span style="width:9px;height:9px;border-radius:2px;flex:none;background:'+esc(colOf(key,k))+';"></span>'
+        +'<span style="flex:1;">'+esc(C.label(k))+'</span><b style="font-variant-numeric:tabular-nums;">'+(Math.round(v*10)/10)+'%</b></div>').join('');
+      return '<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div>'
+        +'<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+esc(LPK.arr(C.nm))+': <b style="color:var(--text-main);">'+esc(C.label(rec.top))+'</b>'
+        +(rec.pct!=null?(' '+(Math.round(rec.pct*10)/10)+'%'):'')+'</div>'
+        +(rows?('<div style="margin-top:5px;">'+rows+'</div>'):'')
+        +'<details class="im-more"><summary>'+esc(LPK('Source text','出典の原文','Quelltext','Текст источника','Texto de la fuente'))+'</summary>'
+        +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'+esc(rec.src||'')+'</div></details>';
+    }
+
     async function build(key){ const C=CFG[key];
+      const j=await load(key); if(!j) return;
       if(GE().layers.hasSource(C.src)){ setVis(key,true); legend(key); return; }
       try{ await loadCountryData(); }catch(_){}
       const cg=(typeof HOST.countryGeo!=='undefined'&&HOST.countryGeo)||window.countryGeo;
       if(!cg||!Array.isArray(cg.features)){ setTimeout(()=>build(key),1200); return; }
-      const feats=cg.features.filter(f=>f.id!=null&&C.map[f.id]).map(f=>({type:'Feature',geometry:f.geometry,properties:{cat:C.map[f.id],iso:f.id}}));
+      const M=j.countries||{};
+      const feats=cg.features.filter(f=>f.id!=null&&M[f.id]).map(f=>({type:'Feature',geometry:f.geometry,properties:{cat:M[f.id].top,iso:f.id}}));
       try{
         GE().layers.addSource(C.src,{type:'geojson',data:{type:'FeatureCollection',features:feats}});
-        GE().layers.add({id:C.ids[0],type:'fill',source:C.src,layout:{visibility:'none'},paint:{'fill-color':colorExpr(C),'fill-opacity':0.62}},before());
+        GE().layers.add({id:C.ids[0],type:'fill',source:C.src,layout:{visibility:'none'},paint:{'fill-color':colorExpr(key),'fill-opacity':0.62}},before());
         GE().layers.add({id:C.ids[1],type:'line',source:C.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
         GE().events.onLayer('click',C.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
-          let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){}
-          /* (#R248) `jp()?a[1]:a[0]` reached NO language but the two it names — see the note by
-             LANG_TAG. `catLbl` is the ONE resolver both the map label and the key below use. */
-          const catLbl=C.lbl?(C.lbl[p.cat]?LPK.arr(C.lbl[p.cat]):p.cat):langLabel(p.cat);
           try{ if(pop) pop.remove(); }catch(_){}
-          try{ pop=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?C.nm[1]:C.nm[0])+': <b style="color:var(--text-main);">'+esc(catLbl)+'</b></div>')); }catch(_){}
+          try{ pop=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'})
+            .setLngLat(e.lngLat).setHTML(popupHTML(key,p.iso,p))); }catch(_){}
         });
         GE().events.onLayer('mouseenter',C.ids[0],()=>{ GE().render.canvas().style.cursor='pointer'; });
         GE().events.onLayer('mouseleave',C.ids[0],()=>{ GE().render.canvas().style.cursor=''; });
@@ -816,15 +893,32 @@ window.IntMapModules.religionLang=function(HOST){
       }catch(_){}
     }
     function setVis(key,on){ const C=CFG[key]; C.ids.forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} }); }
+
     function legend(key){ const C=CFG[key];
       try{ if(!window._registerLayerOpacity) return;
         const el=window._registerLayerOpacity('cat-'+key,[C.nm[0],C.nm[1]],C.ids,'beta-dl-cat-'+key);
-        if(el&&!el.querySelector('.cat-key')){ const k=document.createElement('div'); k.className='cat-key'; k.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;margin-top:6px;font-size:10.5px;color:var(--text-main);';
-          k.innerHTML=Object.keys(C.col).map(cat=>'<div style="display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;flex:none;background:'+C.col[cat]+';"></span>'+(C.lbl?LPK.arr(C.lbl[cat]):langLabel(cat))+'</div>').join('');
-          el.appendChild(k); }
+        if(!el) return;
+        let k=el.querySelector('.cat-key');
+        if(!k){ k=document.createElement('div'); k.className='cat-key'; el.appendChild(k); }
+        /* ⚠ the language key can be 85 rows long — that is the point of 「表示言語数も増やして」 —
+           so it scrolls inside the legend rather than growing the legend past the screen. */
+        k.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;margin-top:6px;font-size:10.5px;color:var(--text-main);max-height:30vh;overflow:auto;';
+        const cats=order[key]||[];
+        k.innerHTML=cats.map(cat=>'<div style="display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;flex:none;background:'
+          +esc(colOf(key,cat))+';"></span>'+esc(C.label(cat))+'</div>').join('');
+        let n=el.querySelector('.cat-note');
+        if(!n){ n=document.createElement('div'); n.className='cat-note'; n.style.cssText='font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:6px;'; el.appendChild(n); }
+        const j=DATA[key];
+        n.textContent=LPK('Each country is coloured by the group with the largest share; tap a country for the full composition. Source: CIA World Factbook (public domain).',
+          '各国は最大シェアのグループで色分けしています。国をタップすると内訳が出ます。出典: CIA World Factbook（パブリックドメイン）。',
+          'Jedes Land ist nach der größten Gruppe eingefärbt; Land antippen für die volle Zusammensetzung. Quelle: CIA World Factbook (gemeinfrei).',
+          'Каждая страна окрашена по крупнейшей группе; нажмите страну, чтобы увидеть состав. Источник: CIA World Factbook (общественное достояние).',
+          'Cada país se colorea por el grupo mayoritario; toque un país para ver la composición. Fuente: CIA World Factbook (dominio público).')
+          +(j&&j.countries?(' '+Object.keys(j.countries).length+LPK(' countries','か国',' Länder',' стран',' países')):'');
       }catch(_){} }
+
     function toggle(key,on){ state[key]=on;
-      if(!on){ setVis(key,false); try{ window._hideGenericLegend&&window._hideGenericLegend('cat-'+key); }catch(_){} return; }
+      if(!on){ setVis(key,false); try{ if(pop) pop.remove(); }catch(_){} try{ window._hideGenericLegend&&window._hideGenericLegend('cat-'+key); }catch(_){} return; }
       if(!_imCanDraw()){ GE().events.once('idle',()=>toggle(key,true)); return; }
       build(key);
     }
@@ -838,8 +932,12 @@ window.IntMapModules.religionLang=function(HOST){
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
-    window.addEventListener('intmap-lang',()=>setTimeout(()=>{ Object.keys(CLBL).forEach(k=>{ const e=document.getElementById('beta-dl-cat-'+k+'-lbl'); if(e) e.textContent=LPK.arr(CLBL[k]); }); },20));
+    window.addEventListener('intmap-lang',()=>setTimeout(()=>{ Object.keys(CLBL).forEach(k=>{ const e=document.getElementById('beta-dl-cat-'+k+'-lbl'); if(e) e.textContent=LPK.arr(CLBL[k]); if(state[k]) legend(k); }); },20));
     GE().events.on('styledata',()=>{ if(state.religion||state.language){ setTimeout(()=>{ ['religion','language'].forEach(k=>{ if(state[k]){ if(GE().layers.hasSource(CFG[k].src)) setVis(k,true); else build(k); } }); },90); } });
+    /* the facts the layer publishes — Atlas and the tests read these instead of the paint expression */
+    window.IntMapCulture={ toggle, isOn:(k)=>!!state[k], data:(k)=>DATA[k],
+      categories:(k)=>(order[k]||[]).slice(), of:(k,iso)=>((DATA[k]&&DATA[k].countries&&DATA[k].countries[iso])||null),
+      ready:(k)=>load(k) };
   })();
 };
 
@@ -968,38 +1066,30 @@ window.IntMapModules.gibsScience=function(HOST){
        `pick()` so a language past the arguments gets its inline-table entry. */
     const LA=window.IntMapLang.pickArgs();
     const LIST=[
-      {id:'gxtruecolor', gibs:'MODIS_Terra_CorrectedReflectance_TrueColor', max:9, ext:'jpg', sw:'#9ec7ff',
-        label:LA('Daily satellite (true color)','当日の衛星画像（自然色）','Satellit (Echtfarben, täglich)','Спутник (естеств. цвет, ежедн.)','Satélite diario (color natural)'),
-        note:LA('MODIS Terra daily true-color mosaic','MODIS Terra 当日のトゥルーカラー合成','MODIS Terra Echtfarben-Mosaik (täglich)','MODIS Terra естеств. цвет (ежедневно)','Mosaico diario en color natural de MODIS Terra')},
-      {id:'gxlst', gibs:'MODIS_Terra_Land_Surface_Temp_Day', max:7, ext:'png', sw:'#f0651b',
-        label:LA('Land surface temp (day)','地表面温度（昼）','Bodentemperatur (Tag)','Темп. поверхности (день)','Temp. de superficie (día)'),
-        note:LA('MODIS land-surface temperature, daytime','MODIS 地表面温度（日中）','MODIS Landoberflächentemperatur (Tag)','MODIS темп. поверхности суши (день)','Temperatura de la superficie terrestre (MODIS), de día')},
       {id:'gxndvi', gibs:'MODIS_Terra_NDVI_8Day', max:9, ext:'png', sw:'#2e7d32',
         label:LA('Vegetation index (NDVI)','植生指数 (NDVI)','Vegetationsindex (NDVI)','Индекс растительности (NDVI)','Índice de vegetación (NDVI)'),
         note:LA('MODIS vegetation index (8-day)','MODIS 植生指数（8日合成）','MODIS Vegetationsindex (8 Tage)','MODIS индекс растительности (8 дней)','Índice de vegetación MODIS (8 días)')},
-      {id:'gxwvapor', gibs:'MODIS_Terra_Water_Vapor_5km_Day', max:6, ext:'png', sw:'#4fc3f7',
-        label:LA('Water vapor','可降水量（水蒸気）','Wasserdampf','Водяной пар','Vapor de agua'),
-        note:LA('MODIS atmospheric water vapor','MODIS 大気可降水量','MODIS atmosphärischer Wasserdampf','MODIS атмосферный водяной пар','Vapor de agua atmosférico (MODIS)')},
-      {id:'gxcloud', gibs:'MODIS_Terra_Cloud_Fraction_Day', max:6, ext:'png', sw:'#e2e2e2',
-        label:LA('Cloud fraction (day)','雲量割合（昼）','Wolkenanteil (Tag)','Доля облачности (день)','Fracción de nubes (día)'),
-        note:LA('MODIS cloud fraction, daytime','MODIS 雲量割合（日中）','MODIS Wolkenanteil (Tag)','MODIS доля облачности (день)','Fracción de nubes MODIS, de día')},
       {id:'gxseaice', gibs:'GHRSST_L4_MUR_Sea_Ice_Concentration', max:7, ext:'png', sw:'#cfe8ff',
         label:LA('Sea-ice concentration','海氷密接度','Meereiskonzentration','Концентрация морского льда','Concentración de hielo marino'),
         note:LA('GHRSST MUR sea-ice concentration','GHRSST MUR 海氷密接度','GHRSST MUR Meereiskonzentration','GHRSST MUR концентрация льда','Concentración de hielo marino GHRSST MUR')},
       {id:'gxsstanom', gibs:'GHRSST_L4_MUR_Sea_Surface_Temperature_Anomalies', max:7, ext:'png', sw:'#ef5350',
         label:LA('Sea-surface temp anomaly','海面水温 偏差','Meeresoberflächentemp.-Anomalie','Аномалия темп. поверхности моря','Anomalía de temp. superficial del mar'),
-        note:LA('Anomaly vs climatology (ENSO signal)','平年差（エルニーニョ等の指標）','Abweichung vom Mittel (ENSO)','Аномалия к норме (сигнал Эль-Ниньо)','Anomalía respecto a la climatología (señal ENSO)')},
+        note:LA('How far today’s sea-surface temperature is from normal for this place and this time of year',
+                '今日の海面水温が、その場所・その時期の平年値からどれだけ離れているか',
+                'Wie weit die heutige Meeresoberflächentemperatur vom Normalwert für Ort und Jahreszeit abweicht',
+                'Насколько сегодняшняя температура поверхности моря отличается от нормы для этого места и сезона',
+                'Cuánto se aparta la temperatura del mar de hoy de lo normal para este lugar y esta época'),
+        /* ⚠ (#R266) 「海面水温 偏差レイヤー、海面水温 偏差がなんなのか説明するように。」 — and the old
+           note was 「平年差（エルニーニョ等の指標）」, which explains an anomaly to somebody who already
+           knows what one is. The three things a reader actually needs are: it is a DIFFERENCE and not
+           a temperature; which sign is which colour; and what «normal» is measured against. */
+        more:LA('An anomaly is a DIFFERENCE, not a temperature. Each pixel is today’s sea-surface temperature minus the 1985–2014 average for that same spot on that same day of the year, so red means warmer than usual there and blue means cooler than usual there — a +2 °C patch in the Arctic and a +2 °C patch in the tropics are the same departure from normal, not the same water. Grey is normal. The scale is clamped at ±3 °C. This is the map El Niño and La Niña are read off: a warm tongue along the equatorial Pacific is El Niño, a cool one is La Niña.',
+                '偏差（平年差）とは「水温そのもの」ではなく「ずれ」です。各画素は、その日のその場所の海面水温から、同じ場所・同じ暦日の 1985–2014 年平均を引いた値です。赤はその場所として平年より暖かい、青は平年より冷たい、灰色は平年並みを意味します。北極の +2°C と熱帯の +2°C は「同じずれ幅」であって「同じ水温」ではありません。目盛りは ±3°C で頭打ちです。エルニーニョ／ラニーニャはこの図で読み取れます — 赤道太平洋に赤い舌が伸びればエルニーニョ、青ければラニーニャです。',
+                'Eine Anomalie ist eine DIFFERENZ, keine Temperatur: heutige Meeresoberflächentemperatur minus dem Mittel 1985–2014 für denselben Ort und denselben Kalendertag. Rot = wärmer als dort üblich, Blau = kälter, Grau = normal; Skala bei ±3 °C begrenzt. El Niño/La Niña liest man an der Zunge entlang des äquatorialen Pazifiks ab.',
+                'Аномалия — это РАЗНОСТЬ, а не температура: сегодняшняя температура поверхности моря минус среднее за 1985–2014 для того же места и того же дня года. Красный — теплее обычного здесь, синий — холоднее, серый — норма; шкала обрезана на ±3 °C. Эль-Ниньо и Ла-Нинья видны как язык вдоль экваториальной части Тихого океана.',
+                'Una anomalía es una DIFERENCIA, no una temperatura: la temperatura del mar de hoy menos la media 1985–2014 del mismo punto y el mismo día del año. Rojo = más cálido de lo habitual allí, azul = más frío, gris = normal; escala limitada a ±3 °C. El Niño y La Niña se leen en la lengua del Pacífico ecuatorial.')},
       /* (#R40) Blue Marble (relief + bathymetry) was DELETED per request. */
       /* (#R39) +4 more curl-verified GIBS rasters (HTTP 200 / image/*). */
-      {id:'gxcloudtop', gibs:'MODIS_Terra_Cloud_Top_Temp_Day', max:6, ext:'png', sw:'#b3d4fc',
-        label:LA('Cloud-top temperature','雲頂温度（昼）','Wolkenobergrenzentemperatur','Температура вершин облаков','Temperatura del tope de nubes'),
-        note:LA('MODIS cloud-top temperature; colder = taller storm clouds','MODIS 雲頂温度。低いほど高く発達した雲（積乱雲など）','MODIS Wolkenobergrenzentemperatur; kälter = höhere Gewitterwolken','MODIS температура вершин облаков; холоднее = выше грозовые облака','Temperatura del tope de nubes (MODIS); más frío = nubes de tormenta más altas')},
-      {id:'gxlstnight', gibs:'MODIS_Terra_Land_Surface_Temp_Night', max:7, ext:'png', sw:'#5c6bc0',
-        label:LA('Land surface temp (night)','地表面温度（夜）','Bodentemperatur (Nacht)','Темп. поверхности (ночь)','Temp. de superficie (noche)'),
-        note:LA('MODIS land-surface temperature, nighttime','MODIS 夜間の地表面温度','MODIS Landoberflächentemperatur (Nacht)','MODIS темп. поверхности суши (ночь)','Temperatura de la superficie terrestre (MODIS), de noche')},
-      {id:'gxbtday', gibs:'MODIS_Terra_Brightness_Temp_Band31_Day', max:7, ext:'png', sw:'#ff8a65',
-        label:LA('Brightness temp (thermal IR)','輝度温度（熱赤外・昼）','Strahlungstemperatur (Thermal-IR)','Яркостная температура (ИК)','Temperatura de brillo (IR térmico)'),
-        note:LA('MODIS band-31 thermal-IR brightness temperature','MODIS バンド31熱赤外の輝度温度（雲・地表の熱）','MODIS Band-31 thermische IR-Strahlungstemperatur','MODIS яркостная температура (тепловой ИК, канал 31)','Temperatura de brillo en IR térmico (banda 31) de MODIS')},
       {id:'gxrelief', gibs:'ASTER_GDEM_Color_Shaded_Relief', max:12, ext:'jpg', staticDate:'2024-01-01', sw:'#8d6e63',
         label:LA('Color relief (ASTER GDEM)','カラー段彩・陰影（ASTER）','Farbrelief (ASTER GDEM)','Цветной рельеф (ASTER GDEM)','Relieve en color (ASTER GDEM)'),
         note:LA('ASTER global DEM color + shaded relief (static)','ASTER 全球標高モデルのカラー段彩＋陰影起伏（静止画）','ASTER globales DEM, Farb- + Schummerung (statisch)','ASTER глобальная ЦМР: цвет + отмывка (статично)','MDE global ASTER: color + relieve sombreado (estático)')},
@@ -1011,9 +1101,6 @@ window.IntMapModules.gibsScience=function(HOST){
       /* (#R42) THREE new objective NASA GIBS science rasters (endpoints + colormaps curl-verified). Distinct new
          categories — ocean biology / air pollution / soil — placed straight into REAL groups (same objective+
          sourced+legend bar as gxaero/gxndvi). Daily products at −2 d via the shared GDATE(). */
-      {id:'gxchlor', gibs:'VIIRS_NOAA20_Chlorophyll_a', max:7, ext:'png', sw:'#1bb37a',
-        label:LA('Chlorophyll-a (ocean color)','クロロフィルa（海色）','Chlorophyll a (Ozeanfarbe)','Хлорофилл-а (цвет океана)','Clorofila-a (color del océano)'),
-        note:LA('Ocean-surface chlorophyll-a — phytoplankton / marine productivity (VIIRS)','海洋表層のクロロフィルa濃度 — 植物プランクトン＝海の生産性（VIIRS）','Chlorophyll a an der Meeresoberfläche — Phytoplankton/Produktivität (VIIRS)','Хлорофилл-а у поверхности океана — фитопланктон/продуктивность (VIIRS)','Clorofila-a superficial — fitoplancton/productividad marina (VIIRS)')},
       {id:'gxco', gibs:'AIRS_L3_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Daily_Day', max:6, ext:'png', sw:'#cb3220',
         label:LA('Carbon monoxide (CO)','一酸化炭素 (CO)','Kohlenmonoxid (CO)','Угарный газ (CO)','Monóxido de carbono (CO)'),
         note:LA('Mid-tropospheric CO — wildfire smoke, combustion & air pollution (AIRS)','対流圏中層のCO濃度 — 山火事の煙・燃焼・大気汚染の指標（AIRS）','CO in der mittleren Troposphäre — Rauch, Verbrennung, Luftverschmutzung (AIRS)','CO в средней тропосфере — дым пожаров, горение, загрязнение (AIRS)','CO en la troposfera media — humo, combustión y contaminación (AIRS)')},
@@ -1034,18 +1121,11 @@ window.IntMapModules.gibsScience=function(HOST){
        magenta→dark-red. The temp rasters span the colormap's true Kelvin clamp range (e.g. LST 200–350 K =
        −73…+77 °C). Every gradient below now MATCHES what the tiles actually paint. */
     const SCALES={
-      gxlst:{temp:[-73,77],grad:'#c900ff,#3900ff,#0075ff,#24ffab,#a4ff00,#ffdc00,#ff6d00,#ff0100'},
-      gxlstnight:{temp:[-73,77],grad:'#c900ff,#3900ff,#0075ff,#24ffab,#a4ff00,#ffdc00,#ff6d00,#ff0100'},
       gxseaice:{lo:'0%',hi:'100%',grad:'#111111,#950095,#b100ff,#0700ff,#00bdff,#00d98e,#1eb400,#d2f000,#ff7f00,#ff3333,#ffffff'},
       gxsstanom:{anom:[-3,3],grad:'#6b00db,#7f1ad1,#0094ff,#18fce5,#88ff84,#bff4a3,#cacab7,#fff679,#ffb601,#ff7100,#f90113,#d30085,#800000'},
       gxndvi:{loK:LA('sparse','まばら','spärlich','редкая','escasa'),hiK:LA('dense','密','dicht','густая','densa'),grad:'#f1ecec,#ddc9bc,#b19883,#bfde77,#78ad01,#3e8a01,#086701,#001801'},
-      gxwvapor:{loK:LA('dry','乾燥','trocken','сухо','seco'),hiK:LA('humid','湿潤','feucht','влажно','húmedo'),grad:'#a900ab,#2c02de,#0064ee,#00c64f,#e5fc00,#ffb800,#ff5900,#b40000'},
-      gxcloud:{lo:'0%',hi:'100%',grad:'#660077,#000264,#0004ff,#055000,#ffff00,#bb8802,#6e0004,#ff0005'},
-      gxcloudtop:{temp:[-123,77],grad:'#660077,#010264,#0203ff,#045004,#ffff01,#bb8804,#6e0303,#ff0405'},
-      gxbtday:{temp:[-93,67],grad:'#000016,#2e347e,#684f92,#a16995,#c68289,#ebc7b0,#fffadf,#ffffff'},
       gxrelief:{loK:LA('low','低い','niedrig','низко','bajo'),hiK:LA('high','高い','hoch','высоко','alto'),grad:'#1a7a3c,#a6d96a,#e6e08b,#a87b52,#ffffff'},
       gxaero:{lo:'0',hi:'≥5',grad:'#ffffff,#dddd8d,#f1f12a,#e5e300,#de8800,#f30f00,#c60001,#730019'},
-      gxchlor:{loK:LA('low','低い','niedrig','низкая','baja'),hiK:LA('high','高い','hoch','высокая','alta'),grad:'#93006c,#2700d8,#0080ff,#00ff9f,#88ff00,#ffab00,#ff1700,#690000'},
       gxco:{loK:LA('low','低い','niedrig','низкий','bajo'),hiK:LA('high','高い','hoch','высокий','alto'),grad:'#fffdda,#fffcbb,#fcd76e,#fd704e,#cb3220,#a12259,#8a34f0,#2f054a'},
       gxsoil:{loK:LA('dry','乾燥','trocken','сухо','seco'),hiK:LA('wet','湿潤','feucht','влажно','húmedo'),grad:'#cc8029,#cadb25,#65eb21,#1bf74d,#16f7cc,#0e97e8,#0714d9,#6600cc'}
     };
@@ -1069,7 +1149,15 @@ window.IntMapModules.gibsScience=function(HOST){
           const mid=sc.anom?'<span>0</span>':'';
           bar.innerHTML='<div style="height:8px;border-radius:3px;background:linear-gradient(to right,'+sc.grad+');border:1px solid rgba(128,128,128,0.28);"></div>'
             +'<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-muted);margin-top:1px;"><span>'+lo+'</span>'+mid+'<span>'+hi+'</span></div>'; }
-        let h=el.querySelector('.gx-note'); if(!h){ h=document.createElement('div'); h.className='gx-note'; h.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:4px;line-height:1.35;'; el.appendChild(h);} h.textContent=gxNote(L); } }catch(_){} }
+        let h=el.querySelector('.gx-note'); if(!h){ h=document.createElement('div'); h.className='gx-note'; h.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:4px;line-height:1.35;'; el.appendChild(h);} h.textContent=gxNote(L);
+        /* (#R266) the layers whose UNIT needs explaining carry a `more` paragraph; it folds into the
+           same <details> the ocean-current and company legends use, so a legend never grows a wall. */
+        if(L.more){ let m=el.querySelector('.gx-more');
+          if(!m){ m=document.createElement('details'); m.className='im-more gx-more';
+            m.innerHTML='<summary></summary><div class="gx-more-b" style="font-size:9.5px;color:var(--text-muted);line-height:1.5;"></div>'; el.appendChild(m); }
+          m.querySelector('summary').textContent=LGX('What is an anomaly?','偏差とは','Was ist eine Anomalie?','Что такое аномалия?','¿Qué es una anomalía?');
+          m.querySelector('.gx-more-b').textContent=_lx(L.more); }
+      } }catch(_){} }
     function toggle(L,on){ state[L.id]=on;
       const apply=()=>{ if(!ensure(L)){ GE().events.once('idle',apply); return; }
         try{ GE().layers.setLayout(layId(L),'visibility',on?'visible':'none'); }catch(_){}
@@ -1118,7 +1206,7 @@ window.IntMapModules.gibsScience=function(HOST){
     try{ if(window.IntMapLayers){ LIST.forEach(L=>{ if(!SCALES[L.id]) return;
       window.IntMapLayers.register('gx-'+L.id,{ on:()=>!!state[L.id], label:()=>gxLbl(L),
         sampleAt:(x,y)=>sampleGx(L,x,y), time:()=>(L.staticDate||GDATE()), source:()=>'NASA GIBS · '+L.gibs }); }); } }catch(_){}
-    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('gx-gxlst')) return;
+    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('gx-gxndvi')) return;
       LIST.forEach(L=>{ const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+L.id;
         const lab=document.createElement('label'); lab.className='layer-option';
         const cb=document.createElement('input'); cb.type='checkbox'; cb.id='gx-'+L.id;

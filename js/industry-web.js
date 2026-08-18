@@ -495,6 +495,8 @@ LIMIT ${limit}`;
       const sel$ = body.querySelector('.iw-pick');
       if (sel$) sel$.onchange = () => { qid = sel$.value; sel = null; load(); };
       const cl = body.querySelector('.iw-clear'); if (cl) cl.onclick = () => { sel = null; refresh(); };
+      const rt = body.querySelector('.iw-retry');
+      if (rt) rt.onclick = () => { try { delete cache[qid]; } catch (_) {} status = 'loading'; err = ''; load(); };
       body.querySelectorAll('.iw-goto').forEach(b => b.onclick = () => {
         const n = nodes.find(x => x.id === b.getAttribute('data-id')); if (!n) return;
         sel = n; refresh();
@@ -525,9 +527,22 @@ LIMIT ${limit}`;
         + INDUSTRIES.map(i => '<option value="' + esc(i.q) + '"' + (i.q === qid ? ' selected' : '') + '>' + esc(indName(i)) + '</option>').join('')
         + '</select>';
       if (status === 'loading') return s + '<div style="font-size:12px;color:var(--text-muted);">' + esc(L('Querying Wikidata…', 'Wikidata に問い合わせ中…', 'Wikidata wird abgefragt…', 'Запрос к Wikidata…', 'Consultando Wikidata…')) + '</div>';
-      if (status === 'error') return s + '<div style="font-size:12px;color:#ff9f0a;line-height:1.5;">'
-        + esc(L('Wikidata could not be reached: ', 'Wikidata に接続できませんでした：', 'Wikidata nicht erreichbar: ', 'Не удалось получить данные Wikidata: ', 'No se pudo acceder a Wikidata: ') + (err || '')) + '<br>'
-        + esc(L('Nothing is drawn — this is a failed query, not an industry with no companies.', '何も描いていません。これは「企業が無い」ではなく「取得に失敗した」状態です。', 'Nichts gezeichnet — fehlgeschlagene Abfrage, keine leere Branche.', 'Ничего не нарисовано — это сбой запроса, а не пустая отрасль.', 'No se dibuja nada: es una consulta fallida, no un sector vacío.')) + '</div>';
+      /* ══ ⚠ (#R266) THIS SENTENCE WAS WRITTEN FOR WHOEVER WROTE THE QUERY ═════════════════════
+         「この表示を辞めろ。これは開発者向けサービスではない。」 — and the two lines it quoted were
+         «Wikidata could not be reached: the query took longer than 45 s» and «Nothing is drawn —
+         this is a failed query, not an industry with no companies». Both are TRUE and both are
+         answers to a question a reader never asked: the timeout budget is an implementation
+         detail, and «this is not an absence» is a distinction #R262 made for the code's benefit.
+         What a reader needs is one plain sentence and a way to try again — so the diagnosis moves
+         into the disclosure with everything else, and the button does what re-toggling the layer
+         used to do by hand. `err` is still built (the retry logic and the tests read it); it is
+         simply no longer the headline. */
+      if (status === 'error') return s + '<div style="font-size:12.5px;color:var(--text-main);line-height:1.6;margin-top:6px;">'
+        + esc(L('The company data could not be loaded just now.', '企業データをいま読み込めませんでした。', 'Die Unternehmensdaten konnten gerade nicht geladen werden.', 'Сейчас не удалось загрузить данные о компаниях.', 'Ahora mismo no se pudieron cargar los datos de empresas.'))
+        + ' <button class="iw-retry" style="border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">'
+        + esc(L('Try again', 'もう一度', 'Erneut versuchen', 'Повторить', 'Reintentar')) + '</button>'
+        + '<details class="im-more" style="margin-top:6px;"><summary>' + esc(L('Details', '詳しく', 'Details', 'Подробнее', 'Detalles')) + '</summary>'
+        + '<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;">' + esc(String(err || '')) + '</div></details></div>';
 
       const withRev = nodes.filter(n => n.rev != null).length;
       const unconverted = nodes.filter(n => n.rev != null && n.revUsd == null).length;
@@ -566,7 +581,15 @@ LIMIT ${limit}`;
           + '</div>';
       }
 
-      s += '<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));padding-top:6px;">'
+      /* ⚠ (#R266) 「これ長すぎ。せめて隠すとかしろ。」 — this paragraph is ~700 characters of
+         provenance and caveats, and every sentence of it is load-bearing (what the source is, that
+         its coverage is uneven, that the ranking is a conversion and not the historical figure, and
+         which counts were left out and why). It cannot be shortened without becoming a claim the
+         data does not support, so it is folded behind the browser's own <details> — the same
+         disclosure the ocean-current legend now uses. */
+      s += '<details class="im-more" style="border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));padding-top:6px;"><summary>'
+        + esc(L('Sources and caveats', '出典と注意', 'Quellen und Hinweise', 'Источники и оговорки', 'Fuentes y advertencias')) + '</summary>'
+        + '<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
         + esc(L(
           'Companies, headquarters coordinates, revenue, market capitalisation, employees and every ownership link come from Wikidata (CC0). Only P452 «industry» members with a headquarters coordinate are shown, ordered by revenue and capped at ' + MAX + '.',
           '企業・本社座標・売上高・時価総額・従業員数・資本関係はすべて Wikidata（CC0）から取得しています。P452「業種」が一致し、かつ本社座標を持つ企業のみを、売上高順に最大' + MAX + '社まで表示します。',
@@ -612,7 +635,7 @@ LIMIT ${limit}`;
           outside + ' Beteiligungen zeigen aus dieser Branche heraus und werden nur gezählt.',
           outside + ' связей указывают за пределы отрасли и только подсчитаны.',
           outside + ' vínculos apuntan fuera del sector y solo se cuentan.'))) : '')
-        + '</div>';
+        + '</div></details>';
       return s;
     }
     const rowKV = (k, v) => '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;"><span style="opacity:.72;">' + esc(k) + '</span><b style="text-align:right;">' + esc(v) + '</b></div>';

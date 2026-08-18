@@ -3157,3 +3157,31 @@
   [data-theme="dark"] #docked-feed::-webkit-scrollbar-thumb{ background:rgba(170,172,180,0.45); background-clip:padding-box; }
   #docked-feed > .im-docked{ border-radius:0 !important; border-left:none !important; border-right:none !important; }
 }
+
+/* ══ (#R266) THE DISCLOSURE FOR LONG LEGEND PROSE ══════════════════════════════════════════════
+   「これ長すぎ。せめて隠せ。」 Two legends had grown a wall of text that is individually necessary
+   and collectively unreadable: the ocean-current legend's spacing/climatology/provenance block and
+   the company panel's sources-and-caveats paragraph. Neither can be deleted — a data layer has to
+   say where its numbers come from, and #R262's lesson is that the caveats are the honest part — so
+   both fold into <details>, the browser's own disclosure. No script, keyboard-operable, findable
+   with the page's own find-in-page (which expands it), and it remembers nothing between openings,
+   which is what "hidden by default" has to mean here. */
+.im-more{ margin-top:6px; }
+.im-more > summary{
+  cursor:pointer; list-style:none; display:inline-flex; align-items:center; gap:5px;
+  font-size:10.5px; font-weight:600; color:var(--text-muted);
+  padding:2px 8px 2px 6px; border-radius:7px; border:1px solid var(--glass-border,rgba(128,128,128,0.22));
+  background:var(--input-bg,rgba(128,128,128,0.08));
+  -webkit-tap-highlight-color:transparent; user-select:none;
+  transition:color .12s ease, border-color .12s ease;
+}
+.im-more > summary::-webkit-details-marker{ display:none; }
+.im-more > summary::before{
+  content:''; width:0; height:0; flex:none;
+  border-left:4px solid currentColor; border-top:3.5px solid transparent; border-bottom:3.5px solid transparent;
+  transition:transform .14s ease; transform-origin:25% 50%;
+}
+.im-more[open] > summary::before{ transform:rotate(90deg); }
+.im-more > summary:hover{ color:var(--text-main); border-color:var(--glass-border,rgba(128,128,128,0.4)); }
+.im-more > summary:focus-visible{ outline:2px solid var(--primary-color); outline-offset:2px; }
+.im-more[open] > summary{ margin-bottom:5px; }
