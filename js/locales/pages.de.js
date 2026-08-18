@@ -443,6 +443,10 @@ window.IntMapPageI18N.define('de', {
      stehen hier, nach dem Namen des Eintrags geschlüsselt. Ein Eintrag ohne Übersetzung fällt
      Eintrag für Eintrag auf Englisch zurück — genau wie die Prosa oben. */
   sourceUse: {
+    "CRUST1.0 — global crustal model": "Mit der App ausgeliefert (data/crust1.bin.gz): das globale 1°-Krustenmodell — Sedimente, kristalline Kruste und oberster Mantel mit jeweils eigener Scherwellengeschwindigkeit, Dichte und Schichttiefe. Der Erdbebensimulator baut daraus das Geschwindigkeitsprofil jedes Standorts unterhalb von 30 m; nur so kann ein Becken lange Perioden verstärken.",
+    "USGS Slab2 — subduction zone geometry": "Mit der App ausgeliefert (data/slab2.bin.gz): Tiefe, Streichen und Einfallen aller 27 aktiven Subduktionszonen. Der Erdbebensimulator unterscheidet damit ein Interface-Beben von einem Beben in der abtauchenden Platte — überall auf der Erde nach derselben Regel.",
+    "Bird (2003) PB2002 plate boundaries": "Mit der App ausgeliefert (data/tectonics.bin.gz): Entfernung zur nächsten Plattengrenze, deren Klasse und die Orogen-Polygone diffuser Deformation. Bestimmt die tektonische Einordnung eines Bebens und damit die veröffentlichten Bodenbewegungsparameter.",
+    "USGS ShakeMap station lists": "Aufgezeichnete Spitzenbeschleunigung und -geschwindigkeit an echten Messstationen, um das Erdbebenmodell gegen Beobachtungen zu bewerten (scripts/seismic-validate.mjs). Wird nur bei dieser Offline-Prüfung abgerufen, nie von der App im Browser.",
     'CARTO basemaps': 'Vektorkacheln der Basiskarte (hell/dunkel)',
     'MapLibre GL JS': 'Die Standard-Renderengine der Karte (BSD-3-Clause). Zeichnet jede 2-D-/3-D-Ansicht, die Globusprojektion und das Geländenetz.',
     'CesiumJS': 'Optionale zweite Renderengine (Apache-2.0), wählbar unter Einstellungen ▸ Kartenverhalten ▸ Karten-Engine. Wird nur bei Auswahl geladen. Verwendet KEINE Cesium-Ion-Assets und kein Zugriffstoken — sie zeichnet dieselben Esri-Satellitenbilder und dieselben AWS-Terrarium-Höhendaten wie die Standard-Engine.',

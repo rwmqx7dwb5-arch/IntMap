@@ -444,6 +444,10 @@ window.IntMapPageI18N.define('fr', {
      indexée par le NOM du registre (js/reference-data.js) ; une entrée absente retombe sur
      l'anglais, clé par clé, exactement comme la prose ci-dessus. */
   sourceUse: {
+    "CRUST1.0 — global crustal model": "Fourni avec l'application (data/crust1.bin.gz) : le modèle global de croûte à 1° — sédiments, croûte cristalline et manteau supérieur, chaque couche avec sa vitesse de cisaillement, sa densité et sa profondeur. Le simulateur sismique en construit le profil de vitesses de chaque site sous 30 m, ce qui permet à un bassin d'amplifier les longues périodes.",
+    "USGS Slab2 — subduction zone geometry": "Fourni avec l'application (data/slab2.bin.gz) : profondeur, direction et pendage des 27 zones de subduction actives. Le simulateur distingue ainsi un séisme d'interface d'un séisme intraplaque plongeante — la même question et la même réponse partout sur Terre.",
+    "Bird (2003) PB2002 plate boundaries": "Fourni avec l'application (data/tectonics.bin.gz) : distance à la limite de plaques la plus proche, sa classe et les polygones d'orogènes (déformation diffuse). Classe le contexte tectonique du séisme et donc les paramètres publiés de mouvement du sol.",
+    "USGS ShakeMap station lists": "Accélération et vitesse maximales enregistrées par de vrais instruments, pour noter le modèle sismique face aux observations (scripts/seismic-validate.mjs). Téléchargées uniquement lors de cette validation hors ligne, jamais par l'application dans votre navigateur.",
     "CARTO basemaps": "Tuiles vectorielles de fond de carte (clair/sombre)",
     "MapLibre GL JS": "Le moteur de rendu cartographique par défaut (BSD-3-Clause). Il dessine toutes les vues 2D/3D, la projection du globe et le maillage du relief.",
     "CesiumJS": "Second moteur de rendu facultatif (Apache-2.0), sélectionnable dans Réglages ▸ Comportement de la carte ▸ Moteur de carte. Téléchargé uniquement s'il est choisi. Il n'utilise AUCUN actif Cesium Ion ni jeton d'accès — il affiche la même imagerie Esri et les mêmes données d'altitude AWS terrarium que le moteur par défaut.",

@@ -444,6 +444,10 @@ window.IntMapPageI18N.define('ko', {
      (js/reference-data.js)의 이름을 키로 삼으며, 없는 항목은 위의 본문과 똑같이 키 단위로
      영어로 되돌아갑니다. */
   sourceUse: {
+    "CRUST1.0 — global crustal model": "앱에 포함됨(data/crust1.bin.gz). 1° 격자의 전 지구 지각 모델 — 퇴적층·결정질 지각·최상부 맨틀 각각의 S파 속도, 밀도, 층 경계. 지진 시뮬레이터는 이것으로 각 지점의 30 m 아래 속도 주상도를 만든다. 퇴적분지가 장주기를 증폭하는 모습을 낼 수 있는 이유다.",
+    "USGS Slab2 — subduction zone geometry": "앱에 포함됨(data/slab2.bin.gz). 활동 중인 27개 섭입대 슬랩 상면의 깊이·주향·경사. 지진 시뮬레이터는 이것으로 판 경계형 지진과 침강하는 슬랩 내부 지진을 구분한다 — 지구 어디서나 같은 방식으로.",
+    "Bird (2003) PB2002 plate boundaries": "앱에 포함됨(data/tectonics.bin.gz). 가장 가까운 판 경계까지의 거리와 그 종류, 그리고 광역 변형대(orogen) 폴리곤. 지진의 지구조 구분을 판정하고, 그 구분이 적용할 공표 파라미터를 결정한다.",
+    "USGS ShakeMap station lists": "실제 관측소에서 기록된 최대 가속도·최대 속도. 지진 모델을 관측과 대조해 채점하는 데 쓴다(scripts/seismic-validate.mjs). 이 검증을 오프라인으로 실행할 때만 받아오며, 브라우저의 앱이 받아오는 일은 없다.",
     "CARTO basemaps": "라이트/다크 벡터 기본 지도 타일",
     "MapLibre GL JS": "기본 지도 렌더링 엔진(BSD-3-Clause). 모든 2D/3D 지도 뷰, 지구본 투영, 지형 메시를 그립니다.",
     "CesiumJS": "선택 가능한 두 번째 렌더링 엔진(Apache-2.0). 설정 ▸ 지도 동작 ▸ 지도 엔진에서 고를 수 있으며, 선택했을 때만 내려받습니다. Cesium Ion 자산과 액세스 토큰을 전혀 사용하지 않고, 기본 엔진과 동일한 Esri 위성 영상과 동일한 AWS terrarium 고도 데이터를 그립니다.",

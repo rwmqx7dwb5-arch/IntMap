@@ -444,6 +444,10 @@ window.IntMapPageI18N.define('ja', {
      js/reference-data.js の `use:{en,jp}` から移設。英語版と同じ場所に置くことで
      scripts/i18n-pages-audit.mjs の測定対象（＝英語文書の全パス）に入る。 */
   sourceUse: {
+    "CRUST1.0 — global crustal model": "アプリに同梱（data/crust1.bin.gz）。1°格子の全球地殻モデル——堆積層・結晶質地殻・最上部マントルの、層ごとのS波速度・密度・層境界。地震シミュレータは各地点の深さ30 mより下の速度柱をこれで作る。堆積盆地が長周期を増幅する様子を出せるのはこのため。",
+    "USGS Slab2 — subduction zone geometry": "アプリに同梱（data/slab2.bin.gz）。活動中の沈み込み帯27箇所すべてのスラブ上面の深さ・走向・傾斜。地震シミュレータはこれでプレート境界型と沈み込むスラブ内の地震を区別する——同じ問いに、地球上のどこでも同じ答え方で。",
+    "Bird (2003) PB2002 plate boundaries": "アプリに同梱（data/tectonics.bin.gz）。最近接プレート境界までの距離とその種別、および広域変形帯（orogen）のポリゴン。地震のテクトニクス区分の判定に使い、その区分が適用される公表パラメータを決める。",
+    "USGS ShakeMap station lists": "実際の観測点で記録された最大加速度・最大速度。地震モデルを観測と突き合わせて採点するために使う（scripts/seismic-validate.mjs）。この検証をオフラインで実行するときだけ取得し、ブラウザ上のアプリが取得することはない。",
     "CARTO basemaps": "標準マップのタイル",
     "MapLibre GL JS": "既定の地図描画エンジン（BSD-3-Clause）。2D/3D地図・globe投影・地形メッシュの描画。",
     "CesiumJS": "任意の第2描画エンジン（Apache-2.0）。設定 ▸ 地図の動作 ▸ 地図エンジンで選択でき、選んだときだけダウンロードされます。Cesium Ion のアセットもアクセストークンも一切使わず、既定エンジンと同じ Esri 衛星画像・同じ AWS terrarium 標高データを描画します。",
