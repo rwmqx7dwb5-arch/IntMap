@@ -134,7 +134,7 @@ window.IntMapLang.define('ru', { ui: {
       lyrClimate:"Климат Кёппена",
       lyrTemp:"Температура воздуха (2 м)",
       lyrPrecip:"Осадки (IMERG)",
-      lyrPop:"Плотность населения",
+      lyrPop:"Плотность населения (по странам)",
       lyrHDI:"ИЧР (2022)",
       lyrDem:"Индекс демократии (2023)",
       lyrNATO:"Страны НАТО",

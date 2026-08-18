@@ -277,8 +277,13 @@ test('R184 ⑤: selecting an object draws its track + footprint and opens a card
   if (!r.pass.none) { expect(r.pass.hasRise).toBe(true); expect(r.pass.maxEl).toBeGreaterThan(0); }
 });
 
-/* ── ⑥ THE "VISIBLE FROM HERE" FILTER IS LOOK-ANGLE GEOMETRY, NOT PROXIMITY ───────────────── */
-test('R184 ⑥: the horizon filter keeps exactly the objects with a positive elevation angle', async ({ page }) => {
+/* ── ⑥ THERE IS NO WHOLE-LAYER HORIZON FILTER ANY MORE — AND THE GEOMETRY IS STILL THERE ─────
+   ⚠ (#R266) #R184 shipped a "only visible from here" checkbox and this test proved its geometry.
+   The checkbox was removed BY INSTRUCTION («ここから見えるものだけ、チェックはいらない»), so the
+   assertion is INVERTED rather than deleted: nothing may narrow the layer behind the count line
+   (`drawn` === `computed`), no `setVisibleOnly` may come back, and the per-satellite look angle —
+   which the detail card and `nextPass` are built on — must still answer. */
+test('R266 ⑥: everything propagated is drawn, and the look-angle geometry survives', async ({ page }) => {
   await boot(page);
   await needFeed(page);
   const r = await page.evaluate(async () => {
@@ -288,20 +293,25 @@ test('R184 ⑥: the horizon filter keeps exactly the objects with a positive ele
     cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true }));
     const t0 = Date.now();
     while (Date.now() - t0 < 25000 && A.state().drawn === 0) await new Promise((r) => setTimeout(r, 250));
-    const all = A.state().drawn;
-    A.setVisibleOnly(true);
-    const filtered = A.shown();
+    const st = A.state();
     const obs = A.observer();
-    const badlyKept = filtered.filter((f) => { const l = A.lookFrom(obs, f); return !(l && l.elDeg > 0); }).length;
-    const wronglyDropped = A.list().filter((f) => { const l = A.lookFrom(obs, f); return l && l.elDeg > 0; }).length - filtered.length;
-    A.setVisibleOnly(false);
-    return { all, filtered: filtered.length, badlyKept, wronglyDropped, restored: A.shown().length };
+    const above = A.list().filter((f) => { const l = A.lookFrom(obs, f); return l && l.elDeg > 0; }).length;
+    return {
+      drawn: st.drawn, computed: st.computed, listed: A.list().length, shown: A.shown().length,
+      hasSetter: typeof A.setVisibleOnly, hasGetter: typeof A.visibleOnly,
+      inState: Object.prototype.hasOwnProperty.call(st, 'visibleOnly'),
+      above, hasBox: !!document.querySelector('.gl-satvis'),
+    };
   });
-  expect(r.all).toBeGreaterThan(50);
-  expect(r.filtered, 'only part of the catalogue is above any one horizon').toBeLessThan(r.all);
-  expect(r.badlyKept, 'nothing below the horizon survives the filter').toBe(0);
-  expect(r.wronglyDropped, 'nothing above the horizon is dropped').toBe(0);
-  expect(r.restored).toBe(r.all);
+  expect(r.drawn).toBeGreaterThan(50);
+  expect(r.drawn, 'nothing is filtered out behind the count line').toBe(r.computed);
+  expect(r.shown, '`shown()` is the whole computed list').toBe(r.listed);
+  expect(r.hasSetter, 'the filter API is gone, not merely unwired').toBe('undefined');
+  expect(r.hasGetter).toBe('undefined');
+  expect(r.inState, 'state() no longer reports a filter that does not exist').toBe(false);
+  expect(r.hasBox, 'the checkbox is gone from the legend').toBe(false);
+  expect(r.above, 'the horizon geometry still answers per satellite').toBeGreaterThan(0);
+  expect(r.above, '…and it is a strict subset — a whole catalogue is never all above one horizon').toBeLessThan(r.listed);
 });
 
 /* ── ⑦ ATLAS DRIVES IT, AND SAYS ONLY WHAT THE LAYER ACTUALLY HAS ─────────────────────────── */

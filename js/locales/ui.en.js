@@ -109,7 +109,7 @@ window.IntMapLang.define('en', { ui: {
       lyrClimate:"Köppen climate",
       lyrTemp:"Air temperature (2 m)",
       lyrPrecip:"Precipitation (IMERG)",
-      lyrPop:"Population density",
+      lyrPop:"Population density (by country)",
       lyrHDI:"HDI (2022)",
       lyrDem:"Democracy Index (2023)",
       lyrNATO:"NATO members",

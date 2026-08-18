@@ -133,7 +133,7 @@ window.IntMapLang.define('es', { ui: {
       lyrClimate:"Clima de Köppen",
       lyrTemp:"Temperatura del aire (2 m)",
       lyrPrecip:"Precipitación (IMERG)",
-      lyrPop:"Densidad de población",
+      lyrPop:"Densidad de población (por país)",
       lyrHDI:"IDH (2022)",
       lyrDem:"Índice de democracia (2023)",
       lyrNATO:"Miembros de la OTAN",

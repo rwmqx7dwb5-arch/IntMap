@@ -51,19 +51,11 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       'dl-popgrid':G('GPW_Population_Density_2020',7,'','png',4,80,24),                       /* Ganges plain — STATIC product, no date segment (#R254) */
       'dl-relief':G('ASTER_GDEM_Color_Shaded_Relief',12,'2024-01-01','jpg',5,86.9,27.9),/* Himalaya */
       'dl-hillshade':'https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/6/'+_t46.y+'/'+_t46.x,   /* Swiss Alps */
-      'gx-gxtruecolor':G('MODIS_Terra_CorrectedReflectance_TrueColor',9,'2025-06-15','jpg',5,13.5,41.8),  /* Italy from orbit */
-      'gx-gxlst':G('MODIS_Terra_Land_Surface_Temp_Day',7,'2025-06-15','png',3,134,-24),        /* Australian outback */
       'gx-gxndvi':G('MODIS_Terra_NDVI_8Day',9,'2025-06-26','png',4,-62,-4),                    /* Amazon green — 8-day product: only recent period-boundary dates are served (probed live) */
-      'gx-gxwvapor':G('MODIS_Terra_Water_Vapor_5km_Day',6,'2025-06-15','png',3,-60,2),         /* tropical Atlantic */
-      'gx-gxcloud':G('MODIS_Terra_Cloud_Fraction_Day',6,'2025-06-15','png',3,155,35),          /* Pacific cloud decks */
       'gx-gxseaice':G('GHRSST_L4_MUR_Sea_Ice_Concentration',7,'2024-01-15','png',3,-45,72),    /* Greenland ice edge */
       'gx-gxsstanom':G('GHRSST_L4_MUR_Sea_Surface_Temperature_Anomalies',7,'2024-07-04','png',3,-120,0),   /* El-Niño tongue */
-      'gx-gxcloudtop':G('MODIS_Terra_Cloud_Top_Temp_Day',6,'2025-06-15','png',3,130,12),       /* typhoon belt */
-      'gx-gxlstnight':G('MODIS_Terra_Land_Surface_Temp_Night',7,'2025-06-15','png',3,45,26),   /* Arabian nights */
-      'gx-gxbtday':G('MODIS_Terra_Brightness_Temp_Band31_Day',7,'2025-06-15','png',3,-60,-10), /* S-America */
       'gx-gxrelief':G('ASTER_GDEM_Color_Shaded_Relief',12,'2024-01-01','jpg',5,-72.5,-13.5),  /* Andes */
       'gx-gxaero':G('OMPS_Aerosol_Index',6,'2025-06-15','png',3,-20,18),                       /* Saharan dust plume */
-      'gx-gxchlor':G('VIIRS_NOAA20_Chlorophyll_a',7,'2025-06-15','png',4,-76,-12),             /* Peru upwelling bloom */
       'gx-gxco':G('AIRS_L3_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Daily_Day',6,'2025-06-15','png',3,22,-4),  /* African burning season */
       'gx-gxsoil':G('AMSRU2_Soil_Moisture_SCA_Day',6,'2025-06-15','png',3,90,24),              /* Bengal delta */
       'eco-dl-worldcover':'https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX=6&TILEROW='+_tNile.y+'&TILECOL='+_tNile.x+'&FORMAT=image/png&TIME=2021-01-01',   /* Nile delta: crops vs desert */
@@ -142,7 +134,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
        loader (window.IntMapWB). Lazy: fetched only when the tile is on screen; max 2 concurrent. ---- */
     const WBP={
       'bx-wbco2':{c:'EN.GHG.CO2.PC.CE.AR5',r:[0,'#1a9850',2,'#a6d96a',5,'#fee08b',10,'#f46d43',20,'#a50026']},
-      'bx-wburb':{c:'SP.URB.TOTL.IN.ZS',r:[20,'#fee08b',40,'#a6d96a',60,'#66bd63',80,'#1a9850',95,'#006837']},
+      'bx-wburb':{c:'SP.URB.TOTL.IN.ZS',r:[20,'#edf8e9',40,'#bae4b3',60,'#74c476',80,'#31a354',95,'#006d2c']},
       'bx-wbelec':{c:'EG.ELC.ACCS.ZS',r:[20,'#a50026',50,'#f46d43',80,'#fee08b',95,'#a6d96a',100,'#1a9850']},
       'bx-wbhealth':{c:'SH.XPD.CHEX.GD.ZS',r:[2,'#fff7ec',4,'#fdd49e',8,'#fc8d59',12,'#d7301f',18,'#7f0000']},
       'bx-wbforest':{c:'AG.LND.FRST.ZS',r:[5,'#f6e8c3',20,'#c7eae5',40,'#80cdc1',60,'#35978f',80,'#01665e']},

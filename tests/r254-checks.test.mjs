@@ -179,11 +179,31 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
   assert.ok(ids.every(i => /^wb/.test(i)), 'Others holds something that is not a World-Bank indicator row');
   const R254_OTHERS = ['wburb','wbelec','wbrenew','wbinfl','wbgdpgrow','wblit','wbpov','wbgini','wbtrade',
     'wbtax','wbschool','wbelecuse','wbrenelec','wbfdi','wbunemp','wbdebt','wbmanuf','wbpopgrow','wbenergy',
-    'wbtour','wbref','wbco2t','wbflfp','wbtert','wbrural','wbgni','wbaging','wburban','wbtourism','wbremit',
+    'wbtour','wbref','wbco2t','wbflfp','wbtert','wbrural','wbgni','wbaging','wbremit',
+    /* ⚠ (#R266) 'wburban' and 'wbtourism' ARE GONE, BY INSTRUCTION, AND THAT IS NOT A LOSS.
+       They were byte-for-byte the same World-Bank indicators as 'wburb' (SP.URB.TOTL.IN.ZS)
+       and 'wbtour' (ST.INT.ARVL) with a different colour ramp — 「都市人口率と都市人口比率 %
+       は何が違うか」 was the report, and the answer was «nothing». The survivors keep the
+       clearer name and the better ramp, so the QUANTITY is still on a shelf; it is the second
+       copy that left. The check below proves the merge rather than the removal. */
     'wbdensity','wbedu','wbagremp'];
   const groups = dl.slice(dl.indexOf('const GROUPS=['), dl.indexOf("const OTHERS_IDS="));
   R254_OTHERS.forEach(k => assert.ok(groups.includes("'" + k + "'"),
     k + ' left Others and is on NO shelf — #R254 listed it and nothing may be lost'));
+  const wb = read('js/wb-layers.js');
+  ['wburban', 'wbtourism'].forEach(k => assert.ok(!wb.includes("{id:'" + k + "'"),
+    k + ' came back — it is an exact duplicate of another row and was merged away in #R266'));
+  ['SP.URB.TOTL.IN.ZS', 'ST.INT.ARVL'].forEach((code) => {
+    const n = (wb.match(new RegExp("code:'" + code.replace(/\./g, '\\.') + "'", 'g')) || []).length;
+    assert.equal(n, 1, code + ' is declared by exactly one layer — that is what «merged» means');
+  });
+  /* the two indicators the World Bank retired: the API answers «not found» for these, which is
+     what 「難民受入数レイヤーはデータを取得できませんでした」 was */
+  /* ⚠ comments stripped first: #R266's own note has to NAME the archived ids to explain why they
+     went, and a bare `includes` on the file would catch the explanation ([[intmap-recurring-lessons]]) */
+  const wbCode = wb.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  ['SM.POP.REFG', 'SH.STA.OWAD.ZS'].forEach(id => assert.ok(!wbCode.includes("'" + id + "'"),
+    id + ' is archived by the World Bank — a layer pointing at it can only ever fail'));
   /* the World-Bank rows that are NOT in Others are the ones filed in a real group */
   ['wbco2', 'wbforest', 'wbagri', 'wbhealth', 'wbnet', 'wbmilgdp', 'wbwomparl']
     .forEach(k => assert.ok(!ids.includes(k), `${k} is filed in a real group already and must not be duplicated into Others`));

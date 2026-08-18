@@ -4315,15 +4315,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      ids are `tzl-*` so they don't collide with the generic dl- orphan sweep (id `tz`). ===== */
   window.IntMapModules.timeZones(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
 
-  /* (#R38) "レイヤーを大幅増強して" — EIGHT additional REAL NASA GIBS science rasters. Every tile endpoint was
-     curl-verified (HTTP 200 / image/*) before wiring (wrong GIBS layer ids serve blank tiles). Self-contained +
-     additive: rows are filed into their categories by reorganizeLayerPanel (ids added to GROUPS), labels are
-     full EN/JP/DE/RU from the start, each registers the shared opacity legend + a one-line source note. Daily
-     layers request the freshest reliably-processed GIBS day (−2 d); Blue Marble is a static composite. Built via
-     DOM APIs (no innerHTML/template literals → no CSS-back-tick risk). */
+  /* (#R38) the NASA GIBS science rasters; every tile endpoint curl-verified before wiring, daily layers
+     asking for the freshest reliably-processed day (−2 d). ⚠ (#R266) EIGHT OF THEM WERE DELETED BY
+     INSTRUCTION (「以下のレイヤーは削除」) — seven remain and the list lives in js/layer-packs.js. */
   window.IntMapModules.gibsScience(IM_HOST);   /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. */
   window.IntMapModules.worldPacks(IM_HOST);    /* (#R211) trade / energy mix / warnings / tides / crops — js/world-packs.js */
-  window.IntMapModules.facilities(IM_HOST); window.IntMapModules.industryWeb(IM_HOST); window.IntMapModules.oceanCurrents(IM_HOST);   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. (#R255) …and the four surveyed-facility layers (js/osm-facilities.js) join them ON THIS LINE on purpose: the shell budget (tests/r168 #8) stood at 8,200 of 8,200, and #R254 already recorded that hitting it means spending nothing rather than raising it. */
+  window.IntMapModules.facilities(IM_HOST); window.IntMapModules.industryWeb(IM_HOST); window.IntMapModules.oceanCurrents(IM_HOST);   /* (#R213/#R216) the industry ownership web (js/industry-web.js) and the ocean currents (js/ocean-currents.js). BOTH after worldPacks: they borrow that module's panel/row toolkit. (#R255) …and the four surveyed-facility layers (js/osm-facilities.js) join them ON THIS LINE on purpose: the shell budget (tests/r168 #8) stood at 8,200 of 8,200, and #R254 already recorded that hitting it means spending nothing rather than raising it. */ window.IntMapModules.precipAnnual(IM_HOST);
 
   /* ===== (#R94f) MAP BORDERS FOLLOW THE CLOCK — travel to a past year and the map's OWN borders (and the
      country names) become that era's, drawn crisp exactly like the modern ones — NOT the optional "Historical

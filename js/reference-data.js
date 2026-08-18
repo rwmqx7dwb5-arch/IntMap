@@ -222,6 +222,13 @@ window.IntMapRefData=(function(){
     {n:'Universities & research institutes — OpenStreetMap (amenity=university/college/research_institute, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:amenity%3Duniversity'},
     {n:'Emergency services — OpenStreetMap (fire_station / police / ambulance_station, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:amenity%3Dfire_station'},
     {n:'Spaceports & satellite ground stations — OpenStreetMap (aeroway=spaceport, man_made=launch_pad/satellite_dish, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:man_made%3Dsatellite_dish'},
+    /* (#R266) the round's new datasets */
+    {n:'Annual precipitation, 1981–2010 normal — CHELSA V2.1 bio12 (30 arc-seconds, ~1 km)',u:'https://chelsa-climate.org/'},
+    {n:'Annual precipitation by year, 1981–2020 — GPCC Full Data Monthly V2022, Deutscher Wetterdienst (0.5°, gauge analysis over land)',u:'https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/05/'},
+    {n:'Religion and language composition by country — CIA World Factbook (US Government work, public domain)',u:'https://www.cia.gov/the-world-factbook/'},
+    {n:'Weather warnings, Canada — Environment and Climate Change Canada (OGC API — Features)',u:'https://api.weather.gc.ca/collections/weather-alerts'},
+    {n:'Weather warnings, Europe — MeteoAlarm (EUMETNET), the 37 national services',u:'https://feeds.meteoalarm.org/'},
+    {n:'Weather warnings, China — China Meteorological Administration public warning list',u:'https://www.nmc.cn/'},
     {n:'AWS Global Infrastructure — regions',u:'https://aws.amazon.com/about-aws/global-infrastructure/regions_az/'},
     {n:'Microsoft Azure — datacenter locations',u:'https://datacenters.microsoft.com/globe/explore/'},
     {n:'Google Cloud — locations',u:'https://cloud.google.com/about/locations'},
