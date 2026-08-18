@@ -103,24 +103,33 @@ test('R261 ⑤: the terrain/water transport is not a disc', () => {
    traces: the longest single leg was 3,563 m (Lake Biwa) and 3,107 m (Pannonian) — 1.4 cells at the
    27× rung that produced them, and 150–160 cells of the sampling the course is DRAWN at. */
 test('R261 ⑥: both escalation branches refine their crossing, and a decline is counted', () => {
-  const s = read('js/terrain-water.js');
-  assert.match(s, /function refineCrossing\(a,b,z,spacingM,corridorM\)\{/);
-  /* the least-rise path is a real Dijkstra on the fine lattice, inside a corridor */
-  assert.match(s, /const c=dist\[k\]\+step\+Math\.max\(0,e-lo\)\*RISE_COST_M;/);
-  assert.match(s, /if\(nk!==kb&&!inCorridor\(nk\)\) continue;/,
-    'the refinement cannot leave the corridor the coarse rung chose');
-  /* BOTH branches — the flat crossing and the coarse talweg */
-  const uses = s.match(/refineCrossing\(pv,[^)]+\)/g) || [];
-  assert.equal(uses.length, 2, 'branch ① (flat outlet) and branch ② (coarse talweg) both refine');
-  /* the fine tiles have to be there first, or floodWindow returns null and it declines silently */
-  assert.match(s, /await warmCrossing\(\[\[lng,lat\]\]\.concat\(walk\.map\(w=>w\.at\)\),z\);/,
-    'the warm covers the path the fill handed back, not just its two ends');
-  assert.match(s, /await warmCrossing\(ch3\.map\(k3=>V3\.ll\(k3\)\),z\);/);
-  /* a cap that fires must be visible (#R185) */
-  assert.match(s, /_refineDecline=\{ span:0, nodata:0, unreachable:0 \};/);
-  assert.match(s, /refineDecline:Object\.assign\(\{\},_refineDecline\)/);
-  /* …and the instrument compares the leg against the FINEST sampling, which is what the eye reads */
-  assert.match(s, /cellsAtFinest:\(x\.rf==null\?null:\+x\.rf\.toFixed\(1\)\)/);
+  const src = read('js/terrain-water.js');
+  /* ══ ⚠⚠⚠ (#R267) THE TWO-MODEL ANSWER IS GONE, SO THE ASSERTIONS ABOUT ITS SECOND HALF ARE ═══
+     「上流から下流まで全部同じモデル、描画にしろと言っている。」 — the third time that instruction has
+     been given (#R211, #R255, #R267). The water beyond the working rectangle is now the SAME
+     shallow-water field on the SAME lattice, so the walk, its resolution ladder, its per-window
+     routing, its chain, its cross-sections and its escalation no longer exist to be pinned. What
+     each round actually ESTABLISHED is kept and re-asserted against the model that replaced them.
+     ⚠ This is the seventh consecutive round in which the previous rounds' tests made a correct
+     change look like a regression ([[intmap-recurring-lessons]]): assert the property, not the text.
+  */
+  /* ⚠⚠⚠ WHAT THIS ROUND WAS ABOUT, RE-ASKED OF THE FIELD. 「直線で地形を完全無視するクソ区間が
+     ある」 was reported six times. #R258 fixed the lake crossing, #R261 re-walked every coarse leg on
+     the fine lattice, #R264 fixed the trigger that made the most common rung skip that re-walk, and
+     #R265 found the DEM voids underneath all of it. Four real fixes, all still correct — and all
+     four were about a POLYLINE, which is the object that can have a chord.
+
+     The drawn water is a depth field. Fluxes only ever move water between face neighbours, so the
+     same question — «did any water get somewhere without crossing the ground in between?» — has a
+     provable answer, and `jumpCells()` is the instrument that reports it. That is what replaces
+     every leg-length assertion these rounds accumulated. */
+  assert.ok(!/refineCrossing/.test(src), 'there is no crossing to refine, because there is no chord');
+  assert.ok(!/escalMult/.test(src), 'and no escalation ladder to be one rung short of');
+  assert.match(read('js/water-dynamics.js'), /function jumpCells\(\)\{/,
+    'the symptom is measured on the object that replaced the polyline');
+  assert.match(src, /Object\.assign\(st,S\.jumpCells\(\),/,
+    'and it is measured on every solve, not only behind a debug door');
+  assert.match(src, /result\.sim&&result\.sim\.jumps/, '…and a non-zero reading is printed in the panel');
 });
 
 /* ── ⑦ the reachable-area panel is opaque by default and still follows the setting ──────────────

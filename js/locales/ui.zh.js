@@ -4171,5 +4171,19 @@ window.IntMapLang.define('zh', {
     "Annual precipitation (by country)": "年降水量（各國平均）",   /* (#R266) */
     "Also in GDACS for this country — an event feed, not this agency’s warnings": "此國家在 GDACS 中的事件 — 這是事件資料源，並非該機關的警報",   /* (#R266) */
   "— every point on it is a DEM reading": "——其上每一點都是實測 DEM 值",   /* (#R255) */
+  "At rest": "靜止",   /* (#R267) */
+  "integrated": "積分",   /* (#R267) */
+  "flowing": "流動中",   /* (#R267) */
+  "still flowing at the edge of the modelled area": "在計算範圍邊緣仍在流動",   /* (#R267) */
+  "still moving when the ⏭ budget ran out": "達到 ⏭ 計算上限時仍在流動",   /* (#R267) */
+  "extended": "範圍擴充",   /* (#R267) */
+  "drawn at": "繪製解像度",   /* (#R267) */
+  "cells with no DEM (closed)": "個儲存格無高程資料（已封閉）",   /* (#R267) */
+  "cells hold water that did not flow into them": "個儲存格的水並非流入而來",   /* (#R267) */
+  "extensions could not read the elevation data": "次範圍擴充無法讀取高程資料",   /* (#R267) */
+  "The modelled area has reached its limit — water leaving its edge is counted, not drawn.": "計算範圍已達上限；流出邊緣的水只計入統計，不再繪製。",   /* (#R267) */
+  "— when the water reached the front, on the run that drew it": "— 與畫面同一次積分中水抵達前端的時刻",   /* (#R267) */
+  "Run on until the water stops moving": "繼續計算至水不再流動",   /* (#R267) */
+  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. The same model runs the whole course: the lattice is extended in whichever direction the water goes, at the same cell size, so there is no second calculation and no second drawing downstream. ⏭ runs this model on until the water stops moving.": "您正在編輯真實高程資料。水以二維淺水方程式的局部慣性形式（Bates 2010；de Almeida 2012 的 q 中心化）進行時間積分，曼寧粗率 n = 0.035，因此洪峰需要多少時間就走多少時間。上游到下游是同一個模型：格網會沿水前進的方向以相同的格子尺寸延伸，因此下游並沒有另一套計算或另一層繪製。⏭ 會讓同一個模型繼續跑到水不再流動為止。",   /* (#R267) */
   }
 });

@@ -4075,4 +4075,18 @@ window.IntMapLang.define('ko', { ui: {
   "Annual precipitation (by country)": "연강수량 (국가별)",   /* (#R266) */
   "Also in GDACS for this country — an event feed, not this agency’s warnings": "이 나라에 대해 GDACS에 있는 사건 — 사건 피드이지 이 기관의 경보가 아닙니다",   /* (#R266) */
   "— every point on it is a DEM reading": "— 모든 지점이 실측 DEM 값입니다",   /* (#R255) */
+  "At rest": "정지",   /* (#R267) */
+  "integrated": "적분",   /* (#R267) */
+  "flowing": "흘러가는 중",   /* (#R267) */
+  "still flowing at the edge of the modelled area": "계산 영역 가장자리에서도 아직 흐르는 중",   /* (#R267) */
+  "still moving when the ⏭ budget ran out": "⏭ 계산 한도에 도달했을 때 아직 움직이는 중",   /* (#R267) */
+  "extended": "영역 확장",   /* (#R267) */
+  "drawn at": "렌더링 해상도",   /* (#R267) */
+  "cells with no DEM (closed)": "셀은 DEM 없음(면 차단)",   /* (#R267) */
+  "cells hold water that did not flow into them": "셀에 흘러들어오지 않은 물이 있습니다",   /* (#R267) */
+  "extensions could not read the elevation data": "번의 영역 확장이 고도 데이터를 읽지 못했습니다",   /* (#R267) */
+  "The modelled area has reached its limit — water leaving its edge is counted, not drawn.": "계산 영역이 한계에 도달했습니다. 가장자리로 빠져나간 물은 집계만 되고 그려지지 않습니다.",   /* (#R267) */
+  "— when the water reached the front, on the run that drew it": "— 그림을 만든 것과 같은 적분에서 선단에 물이 도달한 시각",   /* (#R267) */
+  "Run on until the water stops moving": "물이 멈출 때까지 계속 진행",   /* (#R267) */
+  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. The same model runs the whole course: the lattice is extended in whichever direction the water goes, at the same cell size, so there is no second calculation and no second drawing downstream. ⏭ runs this model on until the water stops moving.": "실제 고도 데이터를 편집하고 있습니다. 물은 2차원 천수 방정식의 국소 관성 형식(Bates 2010, de Almeida 2012의 q 중심화)으로 시간 적분되며, 마닝 조도 n = 0.035를 씁니다. 따라서 홍수파는 실제로 걸리는 시간만큼 진행합니다. 상류에서 하류까지 같은 모델입니다. 물이 향하는 방향으로 같은 셀 크기의 격자를 이어 붙이므로 하류에 별도의 계산도 별도의 그림도 없습니다. ⏭ 는 같은 모델을 물이 멈출 때까지 계속 진행시킵니다.",   /* (#R267) */
 } });
