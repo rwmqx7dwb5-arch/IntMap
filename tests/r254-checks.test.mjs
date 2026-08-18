@@ -193,9 +193,10 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
   const wb = read('js/wb-layers.js');
   ['wburban', 'wbtourism'].forEach(k => assert.ok(!wb.includes("{id:'" + k + "'"),
     k + ' came back — it is an exact duplicate of another row and was merged away in #R266'));
-  ['SP.URB.TOTL.IN.ZS', 'ST.INT.ARVL'].forEach((code) => {
-    const n = (wb.match(new RegExp("code:'" + code.replace(/\./g, '\\.') + "'", 'g')) || []).length;
-    assert.equal(n, 1, code + ' is declared by exactly one layer — that is what «merged» means');
+  /* counted by splitting rather than by building a RegExp — see the note in tests/r266-checks */
+  ['SP.URB.TOTL.IN.ZS', 'ST.INT.ARVL'].forEach((ind) => {
+    const n = wb.split("code:'" + ind + "'").length - 1;
+    assert.equal(n, 1, ind + ' is declared by exactly one layer — that is what «merged» means');
   });
   /* the two indicators the World Bank retired: the API answers «not found» for these, which is
      what 「難民受入数レイヤーはデータを取得できませんでした」 was */

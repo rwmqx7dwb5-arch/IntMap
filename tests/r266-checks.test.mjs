@@ -57,9 +57,13 @@ test('R266 ③: no World-Bank layer points at an indicator the Bank has retired'
   assert.ok(s.includes("'SM.POP.RHCR.EA'") && s.includes("'SM.POP.RRWA.EA'"),
     'the refugee layer must sum the UNHCR and UNRWA series that replaced SM.POP.REFG');
   /* the exact duplicates are merged, not both kept */
-  for (const code of ['SP.URB.TOTL.IN.ZS', 'ST.INT.ARVL']) {
-    const n = (s.match(new RegExp("code:'" + code.replace(/\./g, '\\.') + "'", 'g')) || []).length;
-    assert.equal(n, 1, code + ' is declared twice — that is the 「何が違うか」 report');
+  /* ⚠ COUNTED BY SPLITTING, NOT BY BUILDING A REGEXP. Escaping dots and not backslashes is what
+     CodeQL reads as an incomplete sanitizer (js/incomplete-sanitization, high) — and it is right that
+     the shape is wrong even where the input is a literal I control. A substring count needs no
+     escaping at all. */
+  for (const ind of ['SP.URB.TOTL.IN.ZS', 'ST.INT.ARVL']) {
+    const n = s.split("code:'" + ind + "'").length - 1;
+    assert.equal(n, 1, ind + ' is declared twice — that is the 「何が違うか」 report');
   }
 });
 
