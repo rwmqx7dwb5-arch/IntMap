@@ -135,64 +135,30 @@ test('R188 widgets: every card is translucent glass, tint included', () => {
 });
 
 /* ── 5. terrain & water: the water's own edges, not a stroke ─────────────────────────────────── */
-test('R188 water: the drawn body comes from DEM cross-sections, not from one width', () => {
+test('R188 water: the drawn body is measured from the ground, not from one width', () => {
   const src = read('js/terrain-water.js');
-  assert.match(src, /function channelSections\(tr\)\{/, 'there must be a cross-section solve');
-  /* continuity: A ∝ 1/√S, scaled once so ∫A ds is the volume the user placed */
-  /* (#R189) the scale is the placed volume by default, or the user's discharge when set */
-  /* ⚠ (#R265) THE SCALE IS THE DISCHARGE ITSELF NOW. #R188's rule is unchanged — the placed volume,
-     laid along the course by continuity, ∫A ds = V — but it is expressed as a constraint on Q rather
-     than on a Chézy-like factor with no source, because the section is solved at Manning's normal
-     depth and A therefore depends on Q. ∫A ds is monotone increasing in Q, so Q is bisected. */
-  assert.match(src, /const volAt=\(Qv\)=>\{ let v=0; for\(let m=0;m<M;m\+\+\) v\+=atQ\(m,Qv\)\.area\*ds\[m\]; return v; \};/,
-    'the volume the course would hold, as a function of the discharge');
-  assert.match(src, /if\(volAt\(qm\)<V\) q0=qm; else q1=qm;/,
-    'the scale comes from the placed volume, or from the set discharge');
-  /* ⚠ (#R265) A ∝ 1/√S WAS CHÉZY'S SHAPE; MANNING'S IS SOLVED, NOT WRITTEN. The level whose
-     discharge is Q is found by the same bisection against the same real transect — what changed is
-     that the target is a DISCHARGE rather than a scaled area, so the section carries the depth
-     friction actually permits. `√S` is still the whole slope dependence. */
-  assert.match(src, /return g\.area\*Math\.pow\(g\.area\/g\.wid,2\/3\)\*sq\/NM;/, "section discharge is Manning's");
-  assert.match(src, /sq=Math\.sqrt\(slope\[m\]\)/, '…with the same √slope dependence');
-  assert.match(src, /function geom\(m,h\)\{/, 'the level is solved against the real section');
-  assert.match(src, /for\(let it=0;it<26;it\+\+\)\{ const hm=\(h0\+h1\)\/2;/, 'by bisection, 26 steps as before');
-  /* ⚠ (#R211) THE MEASURED BANKS ARE STILL WHAT GETS DRAWN — THE PRIMITIVE CHANGED, NOT THE DATA.
-     #R188's claim is that the drawn body comes from `wl`/`wr`, the two banks the transect solve
-     measured, rather than from one width. That claim is intact. What a later instruction changed is
-     HOW the strip between them is filled: 「上流と下流でモデルと表示方法を変えず配置地点付近のもの
-     で統一」 — the near field rasterises depth-shaded CELLS and the far field filled smooth quads,
-     two textures for one body of water. It is cells on both sides now, so the assertion follows the
-     stamp instead of the quad corner. `wl`/`wr` still decide where the water ends. */
-  assert.match(src, /const stamp=\(lng,lat,nx,ny,wl,wr,dep,cellM\)=>\{/, 'the strip is stamped in cells');
-  assert.match(src, /const om=-wl\+\(wl\+wr\)\*q\/steps;/, 'and it spans exactly the measured banks');
-  assert.ok(!/g\.lineTo\(PX\(bR\[0\]\),PY\(bR\[1\]\)\)/.test(src), 'the smooth quad is gone (#R211)');
-  /* …and the real ponds, not discs of equivalent area */
-  assert.match(src, /g\.fillStyle=shade\(w\[2\]\); g\.fillRect\(X-cell\/2,Y-cell\/2,cell,cell\);/,
-    'every pooled cell is drawn where it is, at its own depth');
-  assert.ok(!/const disc=\(at,areaKm2\)=>/.test(src), 'the equivalent-area discs must be gone');
-  /* ⚠ and only cells a POND holds — `filled > surf` alone is the window's own depression filling,
-     which #R186 measured as 157 false lakes over 125 km, and which the first draft of this round
-     drew as 15,755 cells of water that is not there. */
-  assert.match(src, /const collectPond=\(seed,lev\)=>\{/, 'ponds are collected by connected outline');
-  assert.match(src, /if\(poolMax>3&&poolRun>=8\)\{ lakes\.push\(/,
-    'and only where #R186\'s deep-AND-wide test already calls it a pool');
-  assert.match(src, /collectPond\(k0,W\.filled\[k0\]\);\s*\n\s*end='sink'/,
-    'the basin a trace ends in is collected too');
-  assert.ok(!/for\(let i=0;i<W\.N;i\+\+\)\{ const d=W\.filled\[i\]-W\.surf\[i\];\s*\n\s*if\(!\(d>WET_MIN_D\)\) continue;/.test(src),
-    'the blanket "every cell with filled>surf" collector must be gone');
-  /* the constant-width stroke is gone except as the explicit no-section fallback */
-  assert.ok(!/g\.strokeStyle='rgba\(96,196,255,0\.86\)'; g\.lineWidth=widthPx; g\.stroke\(\);/.test(src),
-    'the #R187 constant-width stroke must be gone');
-  /* a claim finer than the data is counted, never passed off as measurement (#R185: no silent caps) */
-  /* (#R189) the floor is each section's OWN sampling on the resolution ladder */
-  assert.match(src, /if\(wl\+wr<stM\)\{ belowRes\+\+; wl=wr=stM\/2; \}/,
-    'sections below the DEM resolution must be counted');
-  assert.match(src, /trace\.section\.belowRes/, '…and reported in the panel');
-  /* the canvas must resolve one DEM sample, or every edge above is thrown away at draw time */
-  assert.match(src, /const LONG=Math\.max\(512,Math\.min\(2560,Math\.round\(longM\/Math\.max\(1,stepM\)\)\)\);/,
-    'the canvas is sized by the data');
-  assert.ok(!/const LONG=1024;/.test(src), 'the fixed 1,024 px canvas must be gone');
-  /* and the second silent no-op: a click before the grid exists */
+  /* ══ ⚠⚠⚠ (#R267) THE CLAIM SURVIVES; THE MACHINE THAT MADE IT TRUE IS GONE ═════════════════════
+     #R188's claim was that the far field's width comes from the DEM (a transect solved at the level
+     continuity asks for) rather than from one stroke width. Every assertion in the original version
+     of this test pinned that machinery by its source text: `channelSections`, `geom(m,h)`, `atQ`,
+     the 26-step bisection, `stamp(lng,lat,nx,ny,wl,wr,dep,cellM)`, the canvas sizing.
+
+     #R267 was told 「上流から下流まで全部同じモデル、描画にしろ」 and there is no far field any more —
+     the water beyond the working rectangle is the same shallow-water field on the same lattice. Its
+     width is not solved from a transect at all: it is however many cells hold water, which is a
+     stronger form of the same claim (the ground decides the width, cell by cell, every step). So
+     the test asserts the property and, positively, that no width is ever written as a constant.
+     ⚠ THIS IS THE SEVENTH ROUND IN A ROW IN WHICH THE PREVIOUS ROUND'S TESTS MADE A CORRECT CHANGE
+     LOOK LIKE A REGRESSION ([[intmap-recurring-lessons]]). The rule that keeps coming out of it:
+     assert what must be TRUE of the answer, not the text that produced it. */
+  assert.ok(!/lineWidth=/.test(src), 'nothing about the water is drawn as a stroke of any width');
+  assert.ok(!/widthPx/.test(src), 'and no width in pixels survives');
+  /* the drawn extent is the wet set of the solver, cell by cell */
+  assert.match(src, /if\(d>0\.02\)\{ const c=waterRGBA\(d\);/, 'a cell is drawn because it holds water');
+  assert.match(src, /const bb=basinBBox\(\);/, 'over the lattice the model actually covers');
+  /* a claim finer than the data is still counted, never passed off as measurement (#R185) */
+  assert.match(src, /drawBlock>1/, 'and a picture coarser than the model says so');
+  /* and the second silent no-op #R188 fixed: a click before the grid exists */
   assert.ok(!/function onClick\(e\)\{ if\(!opened\|\|!G\) return;/.test(src),
     'a click with no grid yet must not be discarded');
   assert.match(src, /if\(!G\)\{ if\(mode==='source'\) onClickNoGrid\(lng,lat\);/,

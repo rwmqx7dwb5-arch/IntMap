@@ -10,6 +10,16 @@ import { readFileSync } from 'node:fs';
 
 const root = new URL('../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
+/* ⚠ (#R267) THE EXECUTABLE TEXT ONLY — block and line comments and quoted strings removed. An
+   assertion about what the code DOES must not be answerable by what the code SAYS; see R265 ⑥. */
+function codeOnly(src){
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ')
+    .replace(/'(?:\\.|[^'\\\n])*'/g, "''")
+    .replace(/"(?:\\.|[^"\\\n])*"/g, '""')
+    .replace(/`(?:\\.|[^`\\])*`/g, '``');
+}
 const load = (p) => { const w = {}; new Function('window', read(p))(w); return w; };
 
 /* ── ① A VOID TILE IS NOT −32,768 m OF GROUND ────────────────────────────────────────────────────
@@ -161,8 +171,25 @@ test('R265 ⑥ one Manning n for the grid and for the traced course, and no Ché
   /* ⚠ THE IDENTIFIER, ANYWHERE — including in a comment. A note that spells the old name out is an
      occurrence, and js/terrain-water.js says so where the constant used to be declared. */
   assert.doesNotMatch(t, /CHEZY_K/, 'the unsourced bulk-speed factor is gone, name and all');
-  assert.match(t, /const NM=\(window\.IntMapWaterDynamics&&window\.IntMapWaterDynamics\.MANNING_N\)\|\|0\.035;/,
-    'the course reads the grid\'s own n');
+  /* ⚠⚠ (#R267) THIS ASSERTION USED TO PIN THE LINE THAT READ `MANNING_N` INTO THE CROSS-SECTION
+     SOLVE. #R265's claim was «one friction law for both halves»; #R267 removed the second half
+     altogether, so the claim is now stronger and simpler: js/terrain-water.js does not have a
+     friction law of its own AT ALL — it has no Manning exponent, no bed-roughness constant and no
+     velocity formula, because every one of those lives in the solver. Pinning the old line would
+     have made a change that deletes the second law look like a regression, which is what the last
+     six rounds of this file kept doing. */
+  /* ══ ⚠⚠⚠ AND THIS ASSERTION IS ABOUT CODE, NOT ABOUT PROSE ═════════════════════════════════════
+     Two drafts of it in a row caught the file's own writing instead of its behaviour: first the
+     bare string `0.035` (which the panel legitimately prints, because the reader is told what n
+     is), then `= 0.035` (which matched 「マニング粗度 n = 0.035」 in that same sentence). That is the
+     failure [[intmap-recurring-lessons]] has now recorded TEN times — 自分の検査が自分のコメントに
+     当たる — and the fix that finally generalises is not a cleverer pattern but a different input:
+     strip the comments and the string literals, then ask the question of what is left. */
+  const code = codeOnly(t);
+  assert.doesNotMatch(code, /0\.035/, 'no roughness constant appears in the executable text');
+  assert.doesNotMatch(code, /Math\.sqrt\(slope/, 'and no velocity is computed from a slope here');
+  assert.doesNotMatch(code, /manningV\(/, '…nor read out of the solver to be used as a second law');
+  assert.match(t, /WD\(\)&&WD\(\)\.MANNING_N/, 'the number the panel reports comes from the solver');
   /* the manning velocity is written down once */
   assert.equal((w.match(/function manningV\(/g) || []).length, 1);
 });
@@ -203,13 +230,19 @@ test('R265 ⑦ the pour tick advances the shallow-water state, and ⏭ is the st
    discharge it used has to be visible, or the number is unreadable. */
 test('R265 ⑧ the traced course reports when the water gets there, and what it assumed', () => {
   const s = read('js/terrain-water.js');
-  assert.match(s, /tSum\+=ds\[m\]\/\(v\*5\/3\);/, 'the arrival runs at the kinematic celerity');
-  assert.match(s, /travelS:tSum, vMaxMs:vMax, vMinMs:isFinite\(vMin\)\?vMin:0, manningN:NM,/);
-  assert.match(s, /dischargeM3s:Qs, dischargeFrom:qFrom/, 'and the discharge is reported with its origin');
+  /* ⚠⚠⚠ (#R267) 「上に加えて下流トレースにも到達時刻」 IS STILL THE REQUIREMENT — AND THE ANSWER MOVED
+     FROM A FORMULA TO A MEASUREMENT. #R265 integrated ∫ds/c along a polyline with the kinematic
+     celerity c = (5/3)v, which is the right formula for the object it had; MEASURED on the shipped
+     build it put 99.2 km of the Fuji valley 184.8 days away, because the geometry it integrated
+     over was not the geometry the water runs on. The arrival time is now `tArr` — the clock at the
+     step the cell first held drawable water, i.e. a fact about the run that drew the picture. So
+     what this test asserts is the PROPERTY (there is a per-point arrival time, Atlas can ask for it,
+     the panel prints it) and, positively, the absence of a second travel-time calculation. */
+  assert.doesNotMatch(s, /5\s*\/\s*3/, 'no second wave-speed formula outside the solver');
   assert.match(s, /travelTime:\(\)=>\{/, 'Atlas can ask for it');
+  assert.match(s, /at:\(lng,lat\)=>\{/, '…for any point, not only for a distance along a line');
+  assert.match(s, /sim\.tArr\[k\]/, 'and the answer is read off the integration');
   assert.match(s, /Travel time','到達時間'/, 'and the panel prints it');
-  /* the section level is solved for a DISCHARGE now, not for a scaled 1/√S area */
-  assert.match(s, /return g\.area\*Math\.pow\(g\.area\/g\.wid,2\/3\)\*sq\/NM;/);
 });
 
 /* ── ⑨ THE DATA-CENTRE LAYER STOPS ANSWERING ABOUT THE VIEW ─────────────────────────────────────

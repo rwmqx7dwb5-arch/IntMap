@@ -4085,4 +4085,18 @@ window.IntMapLang.define('fr', { ui: {
   "Annual precipitation (by country)": "Précipitations annuelles (par pays)",   /* (#R266) */
   "Also in GDACS for this country — an event feed, not this agency’s warnings": "Également dans GDACS pour ce pays — un flux d’événements, et non les avertissements de cette agence",   /* (#R266) */
   "— every point on it is a DEM reading": "— chaque point en est une lecture du MNT",   /* (#R255) */
+  "At rest": "Au repos",   /* (#R267) */
+  "integrated": "intégré",   /* (#R267) */
+  "flowing": "s’écoule",   /* (#R267) */
+  "still flowing at the edge of the modelled area": "s’écoule encore au bord de la zone modélisée",   /* (#R267) */
+  "still moving when the ⏭ budget ran out": "encore en mouvement à l’épuisement du budget de ⏭",   /* (#R267) */
+  "extended": "étendu",   /* (#R267) */
+  "drawn at": "tracé à",   /* (#R267) */
+  "cells with no DEM (closed)": "cellules sans MNT (faces fermées)",   /* (#R267) */
+  "cells hold water that did not flow into them": "cellules contiennent de l’eau qui n’y est pas arrivée par écoulement",   /* (#R267) */
+  "extensions could not read the elevation data": "extensions n’ont pas pu lire les données d’altitude",   /* (#R267) */
+  "The modelled area has reached its limit — water leaving its edge is counted, not drawn.": "La zone modélisée a atteint sa limite : l’eau qui en sort est comptabilisée, mais pas dessinée.",   /* (#R267) */
+  "— when the water reached the front, on the run that drew it": "— instant où l’eau a atteint le front, dans le calcul même qui l’a dessinée",   /* (#R267) */
+  "Run on until the water stops moving": "Poursuivre jusqu’à l’arrêt de l’eau",   /* (#R267) */
+  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. The same model runs the whole course: the lattice is extended in whichever direction the water goes, at the same cell size, so there is no second calculation and no second drawing downstream. ⏭ runs this model on until the water stops moving.": "Altitudes réelles, sculptées par vous. L’eau est intégrée dans le temps par les équations de Saint-Venant sous leur forme inertielle locale (Bates 2010, schéma centré sur q de de Almeida 2012) avec un frottement de Manning n = 0,035 : une onde de crue met le temps qu’elle met. Le même modèle couvre tout le parcours : la grille s’étend dans la direction que prend l’eau, à la même taille de maille, donc il n’y a en aval ni second calcul ni second tracé. ⏭ poursuit l’intégration jusqu’à l’arrêt de l’eau.",   /* (#R267) */
 } });

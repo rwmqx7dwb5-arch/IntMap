@@ -96,11 +96,15 @@ test('R211 water: the near field and the far field share the ramp and the cell',
   const ramps = src.match(/126-96\*s/g) || [];
   assert.equal(ramps.length, 1, 'the standing-water ramp is written exactly once');
   assert.ok(!/const shade=\(d\)=>\{ const t=/.test(src), 'the far field no longer has a ramp of its own');
-  assert.match(src, /const shade=waterCSS;/, 'it uses the shared one');
-  assert.match(src, /const c=waterRGBA\(d\);/, 'and so does the grid raster');
-  /* the primitive: cells, on both sides, and never finer than one pixel */
-  assert.match(src, /const stamp=\(lng,lat,nx,ny,wl,wr,dep,cellM\)=>\{/, 'the far field stamps cells');
-  assert.match(src, /Math\.max\(a\.stM\|\|stepM,pxGroundM\)/, 'a cell is one sample, or one pixel if that is coarser');
+  assert.match(src, /const c=waterRGBA\(d\);/, 'the raster uses the shared ramp');
+  /* ⚠⚠⚠ (#R267) 「上流と下流でモデルと表示方法を変えず配置地点付近のもので統一」 — THIS ROUND'S
+     INSTRUCTION IS THE SAME ONE, A THIRD TIME («上流から下流まで全部同じモデル、描画にしろと言って
+     いる»), and #R211 and #R255 both answered it by making the two drawings agree about colour and
+     primitive. They still WERE two drawings, of two different objects, on two different clocks.
+     There is one now: one depth field, one lattice, one canvas, so «share the ramp» is no longer a
+     thing that has to be arranged. Asserted as a count, which cannot be satisfied by agreement. */
+  assert.equal((src.match(/paintImg\(IMG_WATER/g) || []).length, 1, 'exactly one call paints water');
+  assert.ok(!/const stamp=\(lng,lat,nx,ny,wl,wr,dep,cellM\)=>\{/.test(src), 'nothing stamps a course any more');
   assert.ok(!/g\.lineTo\(PX\(bR\[0\]\)/.test(src), 'the smooth quad is gone');
 });
 

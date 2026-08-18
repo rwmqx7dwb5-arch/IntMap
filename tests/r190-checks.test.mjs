@@ -93,17 +93,23 @@ test('R190 satellite: the bundled floor is colour-matched to the tiles that pain
 /* ── 4 · water: below sea level on land is not an ending ─────────────────────────────────────── */
 test('R190 water: a course under 0 m on land keeps going, and edits re-trace it', () => {
   const src = read('js/terrain-water.js');
-  /* the sea test still runs, and its NEGATIVE answer no longer stops the walk */
-  assert.match(src, /belowSea=true; endInfo=null;/, 'not-the-sea means carry on');
-  assert.match(src, /const SEA_CHECK_MAX=8;/, 'bounded — the test costs a flood window');
-  assert.match(src, /gcM\(lastSeaCheck,\[lng,lat\]\)>20000/, 'and never twice within 20 km');
-  assert.match(src, /if\(v&&v\.sea\)\{[\s\S]{0,180}?end='sea'; break; \}/, 'only a verified sea ends the trace');
+  /* the sea test still runs, and its NEGATIVE answer still does not stop anything (#R267: the
+     water simply keeps flowing, because there is nothing but the water) */
+  assert.match(src, /async function seaCheck\(lng,lat\)\{/, 'the connectedness test is still the decider');
+  assert.match(src, /course\.checking=true;/, 'bounded — it costs a DEM window, so one at a time');
+  /* ⚠ (#R267) the ending is decided on the WATER's leading cell now, not on a walk's last step,
+     but #R190's rule is unchanged and is what is asserted: elevation alone never says «the sea». */
+  assert.match(src, /if\(v&&v\.sea\) end='sea';/, 'only a verified sea ends the course');
+  assert.match(src, /if\(f\.bedM<=0\)\{/, '…and it is only asked where the ground is at or below 0 m');
   assert.doesNotMatch(src, /end='sink'; endInfo=\{ depthM:null/, 'the below-sea-level "sink" ending is gone');
-  assert.match(src, /belowSea:!!trace\.belowSea/, 'and the fact is reported instead');
-  /* every edit goes through solve(), so that is where the re-trace lives */
-  assert.match(src, /draw\(\);\s*_retrace\(\);\s*return result;/, 'solve() re-traces');
-  assert.match(src, /function _retrace\(\)\{/, 'debounced, and it says why when it declines');
-  assert.match(src, /retraceState:\(\)=>\(\{ why:_reWhy/, 'a silent no-op is the defect class here');
+  /* ⚠⚠ (#R267) 「他の操作をすれば、水の流れは再描画して」 — #R190 met this with a debounced re-trace
+     because the course was a separate object that could go stale. It cannot go stale now: an edit
+     changes the bed the SAME field is integrating on, so the next step already runs on the new
+     ground and the next draw already shows it. What still has to be true is that every edit reaches
+     the model, which is what is asserted — plus that the ending is re-read after a solve. */
+  assert.match(src, /draw\(\);\s*courseSoon\(\);\s*return result;/, 'solve() re-reads where the water got to');
+  assert.match(src, /simBedStamp!==editStamp/, 'and an edit rewrites the bed the water is running on');
+  assert.ok(!/function _retrace\(\)\{/.test(src), 'there is no separate course to keep in step any more');
   /* and the DEM refusal is a last resort behind a resolution ladder */
   assert.match(src, /if\(miss<=MISS_MAX\|\|z<=7\|\|tries>=6\) break;/, 'a coarser level is tried first');
   assert.match(src, /const _DEM_FAIL=\(\)=>L\(/, 'one message, in one place');

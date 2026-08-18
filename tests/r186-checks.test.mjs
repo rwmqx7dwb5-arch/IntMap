@@ -231,19 +231,29 @@ test('R186 i18n: every new string exists in every registered language', () => {
 test('R186 water: the solver states its model, and the tracer states its endings', () => {
   const src = read('js/terrain-water.js');
   assert.match(src, /MFD_P\s*=\s*1\.1/, 'Freeman multiple-flow-direction exponent');
-  /* ⚠ (#R265) THE RESULT NOW HAS TWO MODELS TO NAME. The drawn water is integrated in time
-     (js/water-dynamics.js) and ⏭ shows the steady state this string used to be the only value of, so
-     `model` is a ternary between the two. What this test is for — the result declares what produced
-     it — is unchanged, and BOTH branches are checked so neither can be dropped. */
-  assert.match(src, /model:steady\?'priority-flood \+ MFD\(1\.1\) \+ cascading depressions \(steady state\)'/,
-    'the result names the steady-state model when that is what is on screen');
-  assert.match(src, /:'local-inertial shallow water \(Bates 2010; q-centred de Almeida 2012; Manning n=0\.035\)'/,
-    '…and the time-dependent one when that is');
-  assert.match(src, /LAKE_STOP_M\s*=\s*25/, 'a basin deeper than this stops the water');
+  /* ══ ⚠⚠⚠ (#R267) THE TWO-MODEL ANSWER IS GONE, SO THE ASSERTIONS ABOUT ITS SECOND HALF ARE ═══
+     「上流から下流まで全部同じモデル、描画にしろと言っている。」 — the third time that instruction has
+     been given (#R211, #R255, #R267). The water beyond the working rectangle is now the SAME
+     shallow-water field on the SAME lattice, so the walk, its resolution ladder, its per-window
+     routing, its chain, its cross-sections and its escalation no longer exist to be pinned. What
+     each round actually ESTABLISHED is kept and re-asserted against the model that replaced them.
+     ⚠ This is the seventh consecutive round in which the previous rounds' tests made a correct
+     change look like a regression ([[intmap-recurring-lessons]]): assert the property, not the text.
+  */
+  /* ⚠ (#R267) ONE MODEL, SO ONE NAME — and the result still declares what produced it, which is
+     what this assertion is for. #R265 made it a ternary between the integration and the routing;
+     there is nothing to choose between now. */
+  assert.match(src, /model:'local-inertial shallow water \(Bates 2010; q-centred de Almeida 2012; Manning n='/,
+    'the result names the model that produced it');
+  assert.ok(!/model:steady\?/.test(src), 'and there is no second model to switch to');
   /* the sea test cannot be an elevation test — Death Valley proved that */
   assert.match(src, /function seaCheck/);
   assert.match(src, /fraction/, 'the sea test needs the area fraction as well as edge contact');
-  for (const end of ['sea', 'sink', 'lake', 'loop', 'flat', 'nodata', 'tiles']) {
+  /* ⚠ THE ENDINGS ARE THE WATER'S NOW. 「水は流れなくなる地点または海に到達した地点まで」 names two,
+     and the model answers both by doing them: it reaches the sea, or it stops advancing. The
+     book-keeping endings of the walk (a window budget, a tile budget, a step cap) went with the
+     walk; what replaced them is the lattice budget, which is reported in the same place. */
+  for (const end of ['sea', 'still', 'extent', 'running']) {
     assert.ok(src.includes(`case '${end}'`) || src.includes(`end='${end}'`), `the ending '${end}' must be reachable and labelled`);
   }
 });

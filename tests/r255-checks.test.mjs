@@ -107,17 +107,33 @@ test('#R255 ⑦a the sculptor never flies the camera to the water', () => {
 });
 
 test('#R255 ⑦b one routing, used by the working grid AND by every downstream window', () => {
-  const tw = code(read('js/terrain-water.js'));
-  assert.match(tw, /function routeWater\(surf,NX,NY,cellM,own\)/, 'the routing was not factored out');
-  assert.match(tw, /const R=routeWater\(surf,NX,NY,G\.cellM,own\)/, 'the working grid does not use the shared routing');
-  assert.match(tw, /function windowRoute\(W,k0,inM3\)/, 'the downstream window does not route a volume');
-  assert.match(tw, /return routeWater\(W\.surf,W\.n,W\.n,W\.spacingM,own\)/, 'the window is not routed by the shared function');
-  /* the drainage-area sweep the downstream half used to run must be gone */
-  assert.ok(!/acc=new Float32Array\(N\)\.fill\(1\)/.test(tw),
-    'the unit-contribution accumulation is back — that is drainage AREA, not the water the reader placed');
-  /* both call sites take the routing (the wide look-ahead is the one that is easy to miss) */
-  assert.equal((tw.match(/channelChain\(/g) || []).length, 3,
-    'channelChain has a call site that was not updated with its signature');
+  const src = read('js/terrain-water.js');
+  /* ══ ⚠⚠⚠ (#R267) THE TWO-MODEL ANSWER IS GONE, SO THE ASSERTIONS ABOUT ITS SECOND HALF ARE ═══
+     「上流から下流まで全部同じモデル、描画にしろと言っている。」 — the third time that instruction has
+     been given (#R211, #R255, #R267). The water beyond the working rectangle is now the SAME
+     shallow-water field on the SAME lattice, so the walk, its resolution ladder, its per-window
+     routing, its chain, its cross-sections and its escalation no longer exist to be pinned. What
+     each round actually ESTABLISHED is kept and re-asserted against the model that replaced them.
+     ⚠ This is the seventh consecutive round in which the previous rounds' tests made a correct
+     change look like a regression ([[intmap-recurring-lessons]]): assert the property, not the text.
+  */
+  /* ⚠⚠⚠ WHAT THIS ROUND WAS ABOUT, RE-ASKED OF THE FIELD. 「直線で地形を完全無視するクソ区間が
+     ある」 was reported six times. #R258 fixed the lake crossing, #R261 re-walked every coarse leg on
+     the fine lattice, #R264 fixed the trigger that made the most common rung skip that re-walk, and
+     #R265 found the DEM voids underneath all of it. Four real fixes, all still correct — and all
+     four were about a POLYLINE, which is the object that can have a chord.
+
+     The drawn water is a depth field. Fluxes only ever move water between face neighbours, so the
+     same question — «did any water get somewhere without crossing the ground in between?» — has a
+     provable answer, and `jumpCells()` is the instrument that reports it. That is what replaces
+     every leg-length assertion these rounds accumulated. */
+  assert.ok(!/refineCrossing/.test(src), 'there is no crossing to refine, because there is no chord');
+  assert.ok(!/escalMult/.test(src), 'and no escalation ladder to be one rung short of');
+  assert.match(read('js/water-dynamics.js'), /function jumpCells\(\)\{/,
+    'the symptom is measured on the object that replaced the polyline');
+  assert.match(src, /Object\.assign\(st,S\.jumpCells\(\),/,
+    'and it is measured on every solve, not only behind a debug door');
+  assert.match(src, /result\.sim&&result\.sim\.jumps/, '…and a non-zero reading is printed in the panel');
 });
 
 test('#R255 ⑦c deselecting 「ここに水」 does not stop or reset the clock', () => {

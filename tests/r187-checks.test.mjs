@@ -191,15 +191,17 @@ test('R187 water: the traced course is a raster of water, not a polyline', () =>
   assert.ok(!/id:'tw-flow'/.test(src), "the cyan guide line must be gone");
   assert.ok(!/id:'tw-flow-case'/.test(src), 'and so must its casing');
   assert.ok(!/properties:\{kind:'flow'\}/.test(src), 'and the feature that fed them');
-  assert.match(src, /function flowImage\(\)/, 'the course is rasterised instead');
-  /* width in ground metres — the DEM sampling the trace ran at. A pixel width would stop being a
-     river the moment the user zooms. */
-  assert.match(src, /const stepM=\(trace\.stepM&&isFinite\(trace\.stepM\)\)\?trace\.stepM:92/,
-    'the draw width comes from the trace sampling');
-  /* (#R189) the resolution ladder means it is no longer one number — the trace records the finest
-     sampling (stepM) plus a per-point array (spac) */
-  assert.match(src, /stepM:minSpacingM/, 'the trace must record the sampling it used');
-  assert.match(src, /elev, wet, spac, wetCapped:wetCap/, '…and the per-point sampling of the ladder');
+  /* ⚠⚠⚠ (#R267) #R187'S CLAIM IS «THE COURSE IS WATER, NOT A LINE», AND IT SURVIVES BY BEING MADE
+     TRUE OF THE MODEL RATHER THAN OF A SECOND RASTER. There is no `flowImage` and no per-trace
+     sampling to pin, because there is no trace: the water beyond the working rectangle is the SAME
+     depth field on the SAME lattice, drawn into the SAME image as the water inside it. Asserting the
+     old function name here would have made deleting the second raster look like deleting the
+     feature — the shape this file has produced for six rounds running. */
+  assert.equal((src.match(/paintImg\(IMG_WATER/g) || []).length, 1, 'water is painted in exactly one place');
+  assert.ok(!/tw-flowimg'/.test(src.replace(/GONE_FLOW=\[[^\]]*\]/, '')),
+    'the second water overlay is gone except from the line that removes it');
+  assert.match(src, /const blk=Math\.max\(1,Math\.ceil\(Math\.max\(bNX,bNY\)\/DRAW_MAX_PX\)\);/,
+    'one canvas, sized from the lattice it draws');
   /* ⚠ (#R211) TWO OF THESE THREE WERE REVERSED BY A LATER INSTRUCTION, AND THAT IS RECORDED HERE
      RATHER THAN DELETED. #R187 kept the working rectangle and the per-pond markers because they
      were not the guide line that round was told to remove. #R211 was told to remove them by name:
@@ -211,8 +213,9 @@ test('R187 water: the traced course is a raster of water, not a polyline', () =>
   assert.ok(!/id:'tw-area'/.test(src), 'the working rectangle is gone (#R211)');
   assert.ok(!/kind:'lake'\}/.test(src), 'and so are the per-pond pins (#R211) — the ponds are drawn as water');
   assert.match(src, /kind:'end'/, 'the end label stays');
-  /* and the overlay is cleaned up with the others */
-  assert.match(src, /\[LYR_FLOW,IMG_FLOW\]/, 'wipe() must clear the course overlay too');
+  /* and the retired overlay is still cleaned up, so a style that has it loses it (#R267) */
+  assert.match(src, /GONE_FLOW=\['tw-flowimg','tw-flow-src'\]/, 'wipe() must clear the retired overlay too');
+  assert.match(src, /function wipe\(\)\{ \[\[LYR_WATER,IMG_WATER\],\[LYR_TERR,IMG_TERR\],GONE_FLOW\]/);
 });
 
 /* ── 7. a refused layer add is retried ───────────────────────────────────────────────────────── */
