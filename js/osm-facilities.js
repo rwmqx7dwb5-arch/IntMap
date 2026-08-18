@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · Surveyed facilities — IntMapFacilities   (#R255)
+ *  IntMap · Surveyed facilities — IntMapFacilities   (#R255 · #R258 · #R259)
  * ----------------------------------------------------------------------------
  *  「政治、軍事、医療・衛生、IT・テックレイヤーカテゴリを追加し、レイヤーの再編や追加を行うように。」
  *  → 「新レイヤー、単に国別で色分けする奴だけじゃなくて、ガチな奴もしっかりたくさん追加して。」
@@ -42,7 +42,7 @@ window.IntMapModules.facilities=function(HOST){
   const U=(v)=>{ try{ return window.IntMapSafe.url(String(v||'')); }catch(_){ return ''; } };
   function _canDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
 
-  /* ─── the four sets ────────────────────────────────────────────────────────────────────────────
+  /* ─── the sets (four in #R255, +2 in #R258, +6 in #R259 — twelve) ─────────────────────────────
      `q`    the Overpass selectors, joined into one union query
      `kind` (tags)→ a bucket id, which decides the colour, the legend row and the card's subtitle
      `zoom` the zoom at which the viewport stops being a continent — below it the layer waits    */
@@ -198,6 +198,169 @@ window.IntMapModules.facilities=function(HOST){
       fields:(t)=>[['operator',t['operator']||t['owner']||''],
                    ['resource',t['resource']||t['mineral']||t['raw_material']||''],
                    ['start',t['start_date']||''],['addr',_addr(t)],['web',t['website']||'']]
+    },
+    /* ══ (#R259) SIX MORE SETS — THE SHELVES THAT HAD NOTHING TO CLICK ═════════════════════════════
+       「追加すべきと思うレイヤーカテゴリはありますか？あれば作り、Others, Betaも含め既存レイヤーの再編の
+         ほか、新レイヤー（国単位で塗るだけのやつじゃなくて、モノホンのやつ。）全部任せる。」
+       #R255's answer to the same sentence was «a category is worth opening when it shows OBJECTS in
+       their real places that you can click», and that is the test applied again. MEASURED off the
+       shipped panel: 「Space & orbit」 had ONE row, 「Indicators」 ONE, 「Energy & resources」 two, and
+       the two new shelves this round opens (Transport & mobility, Society & education) would have
+       had nothing surveyed in them at all. Every set below is OpenStreetMap objects for the current
+       view, through the same raced-mirror Overpass path, ODbL-attributed, with the object's own tags
+       on the card and a link to the object — nothing generated, no field filled in. */
+    air:{
+      id:'osmair', row:'fac-dl-osmair', zoom:6,
+      name:()=>LA('Airports & air infrastructure','空港・航空施設','Flughäfen & Luftfahrt-Infrastruktur','Аэропорты и авиаинфраструктура','Aeropuertos e infraestructura aérea'),
+      note:()=>L('Airports, airfields, terminals, heliports and control towers mapped in OpenStreetMap for the current view. Click any point for its ICAO/IATA code, runway length and operator where the object carries them.',
+                 '現在の表示範囲について OpenStreetMap に登録されている空港・飛行場・ターミナル・ヘリポート・管制塔です。ICAO/IATAコード・滑走路長・運営者は、そのオブジェクトが持っている場合に表示します。',
+                 'Flughäfen, Flugplätze, Terminals, Hubschrauberlandeplätze und Tower aus OpenStreetMap für den aktuellen Ausschnitt.',
+                 'Аэропорты, аэродромы, терминалы, вертолётные площадки и вышки из OpenStreetMap для текущего вида.',
+                 'Aeropuertos, aeródromos, terminales, helipuertos y torres de control de OpenStreetMap para la vista actual.'),
+      q:['nwr["aeroway"="aerodrome"]','nwr["aeroway"="terminal"]','nwr["aeroway"="heliport"]','nwr["aeroway"="control_tower"]'],
+      buckets:{
+        intl:['#0a84ff',LA('International airport','国際空港','Internationaler Flughafen','Международный аэропорт','Aeropuerto internacional')],
+        airport:['#5ac8fa',LA('Airport / airfield','空港・飛行場','Flughafen / Flugplatz','Аэропорт / аэродром','Aeropuerto / aeródromo')],
+        /* ⚠ (#R259) NOT the bare word in de/es: 「Terminal」 is identical to the English there, and
+           scripts/i18n-positional-audit.mjs counts an identical string as untranslated — correctly,
+           because it cannot tell «this word is the same» from «nobody translated this». The natural
+           local terms for an aeroway=terminal say the same thing and are distinguishable. */
+        terminal:['#ffd166',LA('Terminal','ターミナル','Terminalgebäude','Терминал','Terminal de pasajeros')],
+        heli:['#ff9f0a',LA('Heliport','ヘリポート','Hubschrauberlandeplatz','Вертолётная площадка','Helipuerto')],
+        tower:['#af52de',LA('Control tower','管制塔','Tower','Диспетчерская вышка','Torre de control')],
+        other:['#a0a6b0',LA('Other','その他','Sonstige','Прочее','Otros')] },
+      kind:(t)=>{ const a=String(t['aeroway']||'').toLowerCase();
+        if(a==='terminal') return 'terminal';
+        if(a==='heliport') return 'heli';
+        if(a==='control_tower') return 'tower';
+        if(a==='aerodrome') return (/international/i.test(String(t['aerodrome:type']||t['aerodrome']||t['name']||''))||t['iata'])?'intl':'airport';
+        return 'other'; },
+      fields:(t)=>[['icao',t['icao']||''],['iata',t['iata']||''],
+                   ['runway',t['runway:length']?(t['runway:length']+' m'):''],
+                   ['elevation',t['ele']?(Math.round(+t['ele'])+' m'):''],
+                   ['operator',t['operator']||''],['addr',_addr(t)],['web',t['website']||t['contact:website']||'']]
+    },
+    port:{
+      id:'osmport', row:'fac-dl-osmport', zoom:7,
+      name:()=>LA('Ports, harbours & terminals','港湾・ターミナル','Häfen & Terminals','Порты и терминалы','Puertos y terminales'),
+      note:()=>L('Ports, harbours, ferry terminals, container and cargo terminals and cranes mapped in OpenStreetMap for the current view — where cargo physically changes vehicle.',
+                 '現在の表示範囲について OpenStreetMap に登録されている港湾・漁港・フェリーターミナル・コンテナ／貨物ターミナル・荷役クレーンです。貨物が実際に載せ替えられる場所そのものです。',
+                 'Häfen, Fährterminals, Container- und Frachtterminals sowie Kräne aus OpenStreetMap für den aktuellen Ausschnitt.',
+                 'Порты, гавани, паромные, контейнерные и грузовые терминалы и краны из OpenStreetMap для текущего вида.',
+                 'Puertos, dársenas, terminales de ferry, de contenedores y de carga y grúas de OpenStreetMap para la vista actual.'),
+      q:['nwr["harbour"="yes"]','nwr["landuse"="port"]','nwr["industrial"="port"]','nwr["amenity"="ferry_terminal"]','nwr["man_made"="crane"]'],
+      buckets:{
+        port:['#0a84ff',LA('Port / harbour','港湾','Hafen','Порт','Puerto')],
+        ferry:['#30d158',LA('Ferry terminal','フェリーターミナル','Fährterminal','Паромный терминал','Terminal de ferry')],
+        cargo:['#ff9f0a',LA('Cargo / container terminal','貨物・コンテナターミナル','Fracht- / Containerterminal','Грузовой / контейнерный терминал','Terminal de carga / contenedores')],
+        crane:['#ffd166',LA('Crane','荷役クレーン','Kran','Кран','Grúa')],
+        other:['#a0a6b0',LA('Other','その他','Sonstige','Прочее','Otros')] },
+      kind:(t)=>{ if(t['amenity']==='ferry_terminal') return 'ferry';
+        if(t['man_made']==='crane') return 'crane';
+        if(t['industrial']==='port'||/container|cargo/i.test(String(t['harbour:category']||t['name']||''))) return 'cargo';
+        if(t['harbour']==='yes'||t['landuse']==='port') return 'port';
+        return 'other'; },
+      fields:(t)=>[['operator',t['operator']||t['owner']||''],['seamark',t['seamark:harbour:category']||''],
+                   ['addr',_addr(t)],['web',t['website']||'']]
+    },
+    water:{
+      id:'osmwater', row:'fac-dl-osmwater', zoom:8,
+      name:()=>LA('Water & wastewater plant','上下水道施設','Wasser- & Abwasseranlagen','Водоснабжение и очистка','Agua y saneamiento'),
+      note:()=>L('Water works, wastewater treatment plants, pumping stations, water towers and reservoirs mapped in OpenStreetMap for the current view — the plant that makes safe water and sanitation real in a place, rather than the national percentage.',
+                 '現在の表示範囲について OpenStreetMap に登録されている浄水場・下水処理場・ポンプ場・給水塔・配水池です。国別の普及率ではなく、その場所で実際に上下水道を成り立たせている設備そのものです。',
+                 'Wasserwerke, Kläranlagen, Pumpwerke, Wassertürme und Speicher aus OpenStreetMap für den aktuellen Ausschnitt.',
+                 'Водопроводные и очистные сооружения, насосные станции, водонапорные башни и резервуары из OpenStreetMap.',
+                 'Potabilizadoras, depuradoras, estaciones de bombeo, depósitos y torres de agua de OpenStreetMap.'),
+      q:['nwr["man_made"="water_works"]','nwr["man_made"="wastewater_plant"]','nwr["man_made"="pumping_station"]',
+         'nwr["man_made"="water_tower"]','nwr["man_made"="storage_tank"]["content"="water"]'],
+      buckets:{
+        works:['#0a84ff',LA('Water works','浄水場','Wasserwerk','Водопроводная станция','Potabilizadora')],
+        waste:['#8e6f3a',LA('Wastewater treatment','下水処理場','Kläranlage','Очистные сооружения','Depuradora')],
+        pump:['#30d158',LA('Pumping station','ポンプ場','Pumpwerk','Насосная станция','Estación de bombeo')],
+        tower:['#5ac8fa',LA('Water tower / reservoir','給水塔・配水池','Wasserturm / Speicher','Башня / резервуар','Torre / depósito')],
+        other:['#a0a6b0',LA('Other','その他','Sonstige','Прочее','Otros')] },
+      kind:(t)=>{ const m=String(t['man_made']||'').toLowerCase();
+        if(m==='water_works') return 'works';
+        if(m==='wastewater_plant') return 'waste';
+        if(m==='pumping_station') return 'pump';
+        if(m==='water_tower'||m==='storage_tank') return 'tower';
+        return 'other'; },
+      fields:(t)=>[['operator',t['operator']||t['owner']||''],['capacity',t['capacity']||''],
+                   ['substance',t['substance']||t['content']||''],['start',t['start_date']||''],
+                   ['addr',_addr(t)],['web',t['website']||'']]
+    },
+    edu:{
+      id:'osmedu', row:'fac-dl-osmedu', zoom:8,
+      name:()=>LA('Universities & research institutes','大学・研究機関','Hochschulen & Forschungsinstitute','Университеты и НИИ','Universidades e institutos de investigación'),
+      note:()=>L('Universities, colleges, research institutes, observatories and libraries mapped in OpenStreetMap for the current view — where teaching and research actually happen, beside the enrolment percentages.',
+                 '現在の表示範囲について OpenStreetMap に登録されている大学・カレッジ・研究機関・天文台・図書館です。就学率の数字の隣に、教育と研究が実際に行われている場所そのものを置いています。',
+                 'Universitäten, Hochschulen, Forschungsinstitute, Sternwarten und Bibliotheken aus OpenStreetMap für den aktuellen Ausschnitt.',
+                 'Университеты, колледжи, НИИ, обсерватории и библиотеки из OpenStreetMap для текущего вида.',
+                 'Universidades, centros superiores, institutos de investigación, observatorios y bibliotecas de OpenStreetMap.'),
+      q:['nwr["amenity"="university"]','nwr["amenity"="college"]','nwr["amenity"="research_institute"]',
+         'nwr["man_made"="observatory"]','nwr["amenity"="library"]["library"!="public"]'],
+      buckets:{
+        uni:['#5e5ce6',LA('University','大学','Universität','Университет','Universidad')],
+        college:['#0a84ff',LA('College','短大・専門課程','Hochschule','Колледж','Centro superior')],
+        research:['#30d158',LA('Research institute','研究機関','Forschungsinstitut','НИИ','Instituto de investigación')],
+        obs:['#af52de',LA('Observatory','天文台・観測所','Sternwarte','Обсерватория','Observatorio')],
+        other:['#a0a6b0',LA('Other','その他','Sonstige','Прочее','Otros')] },
+      kind:(t)=>{ const a=String(t['amenity']||'').toLowerCase();
+        if(t['man_made']==='observatory') return 'obs';
+        if(a==='university') return 'uni';
+        if(a==='college') return 'college';
+        if(a==='research_institute') return 'research';
+        return 'other'; },
+      fields:(t)=>[['operator',t['operator']||''],['students',t['students']||''],
+                   ['start',t['start_date']||''],['addr',_addr(t)],['web',t['website']||t['contact:website']||'']]
+    },
+    emg:{
+      id:'osmemg', row:'fac-dl-osmemg', zoom:9,
+      name:()=>LA('Emergency services','緊急対応拠点（消防・警察・救急）','Rettungs- & Einsatzkräfte','Экстренные службы','Servicios de emergencia'),
+      note:()=>L('Fire stations, police stations, ambulance stations and mountain-rescue posts mapped in OpenStreetMap for the current view — how far help has to come from, which no national statistic answers.',
+                 '現在の表示範囲について OpenStreetMap に登録されている消防署・警察署・救急ステーション・山岳救助拠点です。「助けがどこから来るのか」は国別統計では分からない情報です。',
+                 'Feuerwachen, Polizeiwachen, Rettungswachen und Bergrettungsstationen aus OpenStreetMap für den aktuellen Ausschnitt.',
+                 'Пожарные части, отделения полиции, станции скорой помощи и посты спасателей из OpenStreetMap.',
+                 'Parques de bomberos, comisarías, bases de ambulancias y puestos de rescate de OpenStreetMap.'),
+      q:['nwr["amenity"="fire_station"]','nwr["amenity"="police"]','nwr["emergency"="ambulance_station"]','nwr["emergency"="mountain_rescue"]'],
+      buckets:{
+        fire:['#ff453a',LA('Fire station','消防署','Feuerwache','Пожарная часть','Parque de bomberos')],
+        police:['#0a84ff',LA('Police station','警察署','Polizeiwache','Отделение полиции','Comisaría')],
+        ambulance:['#30d158',LA('Ambulance station','救急ステーション','Rettungswache','Станция скорой помощи','Base de ambulancias')],
+        rescue:['#ffd166',LA('Rescue post','救助拠点','Rettungsstation','Спасательный пост','Puesto de rescate')],
+        other:['#a0a6b0',LA('Other','その他','Sonstige','Прочее','Otros')] },
+      kind:(t)=>{ const a=String(t['amenity']||'').toLowerCase(), e=String(t['emergency']||'').toLowerCase();
+        if(a==='fire_station') return 'fire';
+        if(a==='police') return 'police';
+        if(e==='ambulance_station') return 'ambulance';
+        if(e==='mountain_rescue') return 'rescue';
+        return 'other'; },
+      fields:(t)=>[['operator',t['operator']||''],['hours',t['opening_hours']||''],
+                   ['phone',t['phone']||t['contact:phone']||''],['addr',_addr(t)],['web',t['website']||'']]
+    },
+    space:{
+      id:'osmspace', row:'fac-dl-osmspace', zoom:5,
+      name:()=>LA('Spaceports & ground stations','宇宙基地・地上局','Raumfahrtbahnhöfe & Bodenstationen','Космодромы и наземные станции','Bases espaciales y estaciones terrenas'),
+      note:()=>L('Launch pads, spaceports, satellite ground stations and radio telescopes mapped in OpenStreetMap for the current view — the ground half of everything the orbit layers show overhead.',
+                 '現在の表示範囲について OpenStreetMap に登録されている射点・宇宙基地・衛星地上局・電波望遠鏡です。軌道レイヤーが頭上に描いているものの、地上側の半分にあたります。',
+                 'Startrampen, Raumfahrtbahnhöfe, Satelliten-Bodenstationen und Radioteleskope aus OpenStreetMap für den aktuellen Ausschnitt.',
+                 'Стартовые комплексы, космодромы, наземные станции спутниковой связи и радиотелескопы из OpenStreetMap.',
+                 'Rampas de lanzamiento, puertos espaciales, estaciones terrenas y radiotelescopios de OpenStreetMap.'),
+      q:['nwr["aeroway"="spaceport"]','nwr["man_made"="launch_pad"]','nwr["military"="launchpad"]',
+         'nwr["man_made"="satellite_dish"]','nwr["man_made"="telescope"]["telescope:type"="radio"]'],
+      buckets:{
+        pad:['#ff453a',LA('Launch pad','射点','Startrampe','Стартовый комплекс','Rampa de lanzamiento')],
+        spaceport:['#ff9f0a',LA('Spaceport','宇宙基地','Raumfahrtbahnhof','Космодром','Puerto espacial')],
+        ground:['#5ac8fa',LA('Satellite ground station','衛星地上局','Satelliten-Bodenstation','Наземная станция','Estación terrena')],
+        radio:['#af52de',LA('Radio telescope','電波望遠鏡','Radioteleskop','Радиотелескоп','Radiotelescopio')],
+        other:['#a0a6b0',LA('Other','その他','Sonstige','Прочее','Otros')] },
+      kind:(t)=>{ if(t['aeroway']==='spaceport') return 'spaceport';
+        if(t['man_made']==='launch_pad'||t['military']==='launchpad') return 'pad';
+        if(t['man_made']==='satellite_dish') return 'ground';
+        if(t['man_made']==='telescope') return 'radio';
+        return 'other'; },
+      fields:(t)=>[['operator',t['operator']||t['owner']||''],['diameter',t['diameter']?(t['diameter']+' m'):''],
+                   ['start',t['start_date']||''],['addr',_addr(t)],['web',t['website']||'']]
     }
   };
   function _addr(t){ const a=[t['addr:housenumber'],t['addr:street'],t['addr:city']].filter(Boolean).join(' ');
@@ -221,6 +384,16 @@ window.IntMapModules.facilities=function(HOST){
     voltage:()=>L('Voltage','電圧','Spannung','Напряжение','Tensión'),
     start:()=>L('In service','稼働開始','In Betrieb','В эксплуатации','En servicio'),
     resource:()=>L('Resource','資源','Rohstoff','Ресурс','Recurso'),
+    /* (#R259) the fields the six new sets print */
+    icao:()=>L('ICAO code','ICAOコード','ICAO-Code','Код ИКАО','Código OACI'),
+    iata:()=>L('IATA code','IATAコード','IATA-Code','Код ИАТА','Código IATA'),
+    runway:()=>L('Runway length','滑走路長','Bahnlänge','Длина ВПП','Longitud de pista'),
+    elevation:()=>L('Elevation','標高','Höhe ü. NN','Высота','Altitud'),
+    seamark:()=>L('Harbour type','港種別','Hafenart','Тип гавани','Tipo de puerto'),
+    capacity:()=>L('Capacity','処理能力','Kapazität','Мощность','Capacidad'),
+    substance:()=>L('Substance','対象','Medium','Среда','Sustancia'),
+    students:()=>L('Students','学生数','Studierende','Студентов','Estudiantes'),
+    diameter:()=>L('Dish diameter','アンテナ直径','Schüsseldurchmesser','Диаметр антенны','Diámetro de antena'),
     web:()=>L('Website','ウェブサイト','Website','Сайт','Sitio web')
   };
 
@@ -314,7 +487,17 @@ window.IntMapModules.facilities=function(HOST){
         if(!v) return '';
         if(f==='web') return row(FLD.web(),'<a href="'+U(v)+'" target="_blank" rel="noopener" style="color:var(--primary-color);">'+S(String(v).replace(/^https?:\/\//,'').slice(0,38))+'</a>');
         return row((FLD[f]||FLD.operator)(),S(v)); }).join('');
-      el.innerHTML='<button class="cp-close" aria-label="close" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border:none;border-radius:50%;background:var(--input-bg);color:var(--text-main);font-size:15px;cursor:pointer;">✕</button>'
+      /* ⚠ (#R259) THE × IS NOT A DISC. 「詳細のポップアップは×を丸にするな。」 This card is a
+         `.country-popup` — the app's own detail-card shell — and that shell already HAS a close
+         button: `.country-popup-close`, a 28×28 rounded SQUARE (8 px), transparent until hover, the
+         same one the country card, the aircraft card and the satellite card use. What was written
+         here instead was a bespoke inline `border-radius:50%` disc on `--input-bg`, i.e. a filled
+         circle, which is the only round × on the map.
+         ⚠ AND THE CLASS CARRIES TWO THINGS BESIDES THE SHAPE: js/data-layers.js sizes
+         `.country-popup-close` to 32×32 on a phone (this one stayed 28 and was under the touch
+         target), and js/window-manager.js lists it in NODRAG so a press on it cannot start a window
+         drag. Both were missed by the private class, so this is one fix, not three. */
+      el.innerHTML='<button class="country-popup-close cp-close" type="button" aria-label="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'" title="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">✕</button>'
         +'<div style="padding:16px 18px 18px;">'
         +'<div class="fac-drag" style="display:flex;align-items:center;gap:9px;margin-bottom:3px;padding-right:32px;cursor:move;user-select:none;">'
         +'<span style="width:12px;height:12px;border-radius:7px;flex:none;background:'+S(bucket[0])+';"></span>'
@@ -397,7 +580,8 @@ window.IntMapModules.facilities=function(HOST){
      (#R70): the tile sidebar, the phone sheet, Active layers, the share link and Atlas all read from
      it, so a row created here is a layer everywhere without any of them being told. The ids are
      `fac-dl-<id>`, and js/data-layers.js's `rowFor()` knows that prefix. */
-  const SW={diplo:'#5ac8fa',mil:'#ff453a',health:'#30d158',telecom:'#af52de',power:'#ffd60a',extract:'#c9a227'};
+  const SW={diplo:'#5ac8fa',mil:'#ff453a',health:'#30d158',telecom:'#af52de',power:'#ffd60a',extract:'#c9a227',
+    /* (#R259) */ air:'#0a84ff',port:'#0a84ff',water:'#5ac8fa',edu:'#5e5ce6',emg:'#ff453a',space:'#ff9f0a'};
   function buildRows(){
     const dd=document.getElementById('layer-dropdown'); if(!dd){ setTimeout(buildRows,400); return; }
     Object.keys(SETS).forEach(k=>{

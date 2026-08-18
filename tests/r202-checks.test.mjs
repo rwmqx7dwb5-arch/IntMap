@@ -146,7 +146,12 @@ test('R202 ③b the pick projects at ALTITUDE, or it picks something that is not
 
 test('R202 ③c the satellite layer is in a group somebody would open', () => {
   const dl = rd('js/data-layers.js');
-  assert.match(dl, /\['lyrGrpOrbit',\['sats'\]\]/, 'sats is in its own group');
+  /* ⚠ (#R259) THE LITERAL LIST BECAME A PROPERTY. #R259 added `osmspace` (spaceports and satellite
+     ground stations) to this shelf — 「1行だけのグループはカテゴリではない」 — and a list literal
+     asserts «and nothing else, ever», which is not what #R202 was claiming. The claim is that `sats`
+     has a group of its own and is not filed under the ocean. */
+  const og = /\['lyrGrpOrbit',\[([^\]]*)\]\]/.exec(dl);
+  assert.ok(og && og[1].includes("'sats'"), 'sats is in its own group');
   assert.doesNotMatch(dl, /lyrGrpMaritime',\[[^\]]*'sats'/, 'and no longer under Oceans & maritime');
   /* ⚠ (#R239) SAME CLAIM, NEW HOME — every keyed string moved into js/locales/ui.<code>.js.
      The `Object.assign(i18n.en…es,{…})` shape this test read was five languages by

@@ -988,17 +988,20 @@ window.IntMapModules.dataLayers=function(HOST){
         /* (#R32b) The World-Bank choropleths + earthquakes are PROMOTED out of "Others (beta)" into real
            groups ("正規レイヤーに") — wbco2/wbforest = environment, the rest = population & economy, eq = hazards. */
         const GROUPS=[
-          ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod','gxaero','gxco','wbco2','wbforest']],   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
+          ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod','gxaero','gxco','wbco2','wbco2t','wbforest']],   /* (#R259) +total CO₂ emissions, beside the per-capita row it belongs with */   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
           /* (#R202) `sats` moved OUT of Maritime and into its own group, second from the top — see the
              lyrGrpOrbit note above. Nothing else moved: live aircraft stay where they were. */
-          ['lyrGrpOrbit',['sats']],
+          ['lyrGrpOrbit',['sats','osmspace']],   /* (#R259) +spaceports and satellite ground stations — a one-row shelf is not a category */
           /* ⚠ (#R255) `subcables` LEFT THIS GROUP for Technology & infrastructure. A submarine cable
              is under the sea the way a railway is under a hill — the sea is where it runs, not what
              it is — and a reader looking for the internet's physical plant looks under technology,
              beside the data centres it lands at. ⚠ It must appear in exactly ONE list: `order.push`
              MOVES the element, so an id in two groups renders only in the last one. */
-          ['lyrGrpMaritime',['sst','eez','planes','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
-          ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','gxndvi','gxrelief','wbagri','gxsoil']],   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
+          /* (#R259) `planes` LEFT for Transport & mobility (it is aircraft, not ocean); tides and
+             ocean currents ARRIVED from the beta sweep — both are finished world-packs layers with
+             their own panel, legend and sources, and neither was ever demoted by an instruction. */
+          ['lyrGrpMaritime',['sst','eez','tides','currents','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
+          ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','bldg3d','gxndvi','gxrelief','wbagri','gxsoil']],   /* (#R259) +3-D city buildings — built ground is still ground */   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
           /* ⚠ (#R233) SEVEN, NAMED BY THE INSTRUCTION — everything else in this group was DEMOTED.
              「人口・経済レイヤーは 人口密度（1kmグリッド）／1人当たりGDP／合計特殊出生率／HDI (2022)／
              民主主義指数 (2023)／汚職・腐敗指標／平均寿命 以外のものはbetaに降格。」
@@ -1015,7 +1018,7 @@ window.IntMapModules.dataLayers=function(HOST){
              It is not a hazard overlay, it is which half of the planet the Sun is on, so it belongs with
              the other always-there view switches (place names, borders, roads, grid) at the top of the
              panel. Moved by name into that list below, not duplicated: one row, one owner. */
-          ['lyrGrpHazard',['thermal','aurora','nightsat','volc2','eq']],   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
+          ['lyrGrpHazard',['thermal','aurora','nightsat','volc2','eq','alerts']],   /* (#R259) +live weather & disaster warnings (JMA/NWS/GDACS) */   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
           /* ══ ⚠ (#R255) FOUR NEW CATEGORIES, AND «Geopolitics & defense» SPLIT INTO TWO OF THEM ══════
              「政治、軍事、医療・衛生、IT・テックレイヤーカテゴリを追加し、レイヤーの再編や追加を行うように。
                それぞれのレイヤーカテゴリの名前は任せる。」 (naming delegated; reorganisation confirmed
@@ -1045,8 +1048,41 @@ window.IntMapModules.dataLayers=function(HOST){
              the word and they move. */
           ['lyrGrpPolitics',['uselect','eu','wbwomparl','osmdiplo']],
           ['lyrGrpSecurity',['milSpend','milSpendGDP','nato','ukrfront','wbmilgdp','wbmilppl','wbhomicide','osmmil']],
-          ['lyrGrpHealth',['wbhealth','wbphys','wbbeds','wbinfmort','wbu5mort','wblife','wbwater','wbsan','wbpm25','wbcook','wbsmoke','wbalcohol','wbsuicide','wboverwt','wbunder','wbadofert','wbfert','osmhealth']],
-          ['lyrGrpTech',['dc','subcables','rail','wbnet','wbmobile','wbbbnd','wbhitech','wbrnd','wbresearch','wbpatent','osmtelecom']],
+          ['lyrGrpHealth',['wbhealth','wbphys','wbbeds','wbinfmort','wbu5mort','wblife','wbwater','wbsan','wbpm25','wbcook','wbsmoke','wbalcohol','wbsuicide','wboverwt','wbunder','wbadofert','wbfert','osmhealth','osmemg','osmwater','pharma']],   /* (#R259) +emergency services, +water & wastewater plant, +pharma hubs */
+          /* (#R259) `rail` LEFT for Transport & mobility — a railway network is transport, and the
+             category it was in is the one about computing and communications. */
+          ['lyrGrpTech',['dc','subcables','wbnet','wbmobile','wbbbnd','wbhitech','wbrnd','wbresearch','wbpatent','osmtelecom']],
+          /* ══ ⚠⚠ (#R259) FOUR NEW SHELVES, AND «OTHERS» AND «BETA» EMPTIED INTO THEM ═══════════════
+             「追加すべきと思うレイヤーカテゴリはありますか？あれば作り、Others, Betaも含め既存レイヤーの
+               再編のほか、新レイヤー…全部任せる。結局何もしませんはやめろ。」
+
+             This is the authorisation #R255 and #R258 both said they did not have. Both wrote the
+             same ⚠ note — «再編 is not a licence to overturn a list the reader wrote out by hand» —
+             and refused to touch #R233's seven or #R254's sixty-one. The instruction now names
+             Others and Beta specifically, so those two are what moves; #R233's 人口・経済 seven and
+             #R254's energy-mix promotion stay exactly where the reader put them.
+
+             WHAT WAS WRONG, MEASURED off the shipped panel (167 rows, 16 headings):
+               · «Others» was 33 rows and every one was a World-Bank indicator — inflation beside
+                 literacy beside refugees beside renewable electricity. That is not a category, it is
+                 the tail of one table. It is now four families: economic (14), social and
+                 educational (14), energy (5), and CO₂ total, which joins its own per-capita twin in
+                 Climate. Nothing is dropped and the order inside each family is #R254's.
+               · «Beta» was 40 rows, six of which are finished world-packs layers with their own
+                 panel, legend, time-machine wiring and published sources (trade flows, ocean
+                 currents, tides, crops, industry web, weather warnings). They were never demoted by
+                 an instruction; they had no shelf and fell through the safety sweep at the end of
+                 this function.
+               · Three shelves had ONE row (Space & orbit, Indicators) or two (Energy). Six new
+                 surveyed-object layers (js/osm-facilities.js) fill them with things you can click.
+             ⚠ NOTHING DEMOTED BY AN INSTRUCTION IS PROMOTED. The GIBS rasters and the plain
+             temp/precip rows carry «DEMOTED to Others(beta) per request» in #R40's note, and the
+             ECMWF family sits with them; all of that stays in Beta. Assuming a past instruction has
+             expired is the failure this file has warned about twice. */
+          ['lyrGrpEconomy',['trade','industry','wbgdpgrow','wbinfl','wbtrade','wbtax','wbdebt','wbmanuf','wbfdi','wbunemp','wbgni','wbremit','wbtour','wbtourism']],
+          ['lyrGrpSociety',['wblit','wbschool','wbtert','wbedu','osmedu','wbpov','wbgini','wbflfp','wbref','wbaging','wbpopgrow','wburb','wburban','wbrural','wbdensity','cat-religion','cat-language']],
+          ['lyrGrpTransport',['planes','rail','ships','oxrail','oxsea','osmair','osmport']],
+          ['lyrGrpAgri',['crops','wbagremp']],
           /* ══ (#R258) A FIFTH NEW CATEGORY — WHERE THE ENERGY AND THE MATERIAL COME FROM ═════════════
              「追加すべきと思うレイヤーカテゴリはありますか？あれば作り…新レイヤー（国単位で塗るだけの
                やつじゃなくて、モノホンのやつ。）」 The map had no shelf for energy at all: the country
@@ -1057,7 +1093,7 @@ window.IntMapModules.dataLayers=function(HOST){
              ⚠ NOTHING IS MOVED INTO IT. Every existing row stays where it is: #R233's seven and
              #R254's sixty-one were named one by one by the reader, and 「再編」 is not a licence to
              overturn a list somebody wrote out by hand (the same reasoning as the ⚠⚠ note above). */
-          ['lyrGrpEnergy',['osmpower','osmextract']],
+          ['lyrGrpEnergy',['osmpower','osmextract','dams','wbelec','wbrenew','wbelecuse','wbrenelec','wbenergy']],
           ['lyrGrpIndic',['tz']],   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
           /* ══ ⚠ (#R254) "OTHERS" IS A REAL CATEGORY NOW, AND "BETA" MEANS BETA ═══════════════════════
              「以下のレイヤーは、Others(beta) layersから移動し、新たなカテゴリであるOthersにおくこと。
@@ -1071,15 +1107,25 @@ window.IntMapModules.dataLayers=function(HOST){
              ⚠ `lyrGrpOthers` keeps its KEY and loses its «(beta)» wording in all nine languages — the
              key is what js/map-ui.js and js/layer-dropdown.js use to find the collapsible beta group
              on mobile, and renaming it would silently un-collapse that section. */
-          ['lyrGrpOthersReal',['wburb','wbelec','wbrenew','wbinfl','wbgdpgrow','wblit','wbpov','wbgini','wbtrade','wbtax','wbschool','wbelecuse','wbrenelec','wbfdi','wbunemp','wbdebt','wbmanuf','wbpopgrow','wbenergy','wbtour','wbref','wbco2t','wbflfp','wbtert','wbrural','wbgni','wbaging','wburban','wbtourism','wbremit','wbdensity','wbedu','wbagremp']]
+          /* (#R259) EMPTY, AND KEPT — every one of #R254's thirty-three rows is on a named shelf
+             above, in the order that instruction listed them. The KEY stays for the same reason
+             #R255 kept `lyrGrpGeoPol`: an old saved session or a share link can still name it, and a
+             group with no rows is simply not rendered. Nothing is deleted; the shelf is empty
+             because the things on it found their families. */
+          ['lyrGrpOthersReal',[]]
         ];
         /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */
-        const OTHERS_IDS=['ec-temp','temp','ec-precip','precip','ec-wind','ec-dew','ec-isobars','ec-slp','ec-cape','ec-sst','ships','dams'];   /* (#R225) the nine geopolitics keys left this list with the layers themselves */
+        const OTHERS_IDS=['ec-temp','temp','ec-precip','precip','ec-wind','ec-dew','ec-isobars','ec-slp','ec-cape','ec-sst'];   /* (#R259) `ships` → Transport, `dams` → Energy & resources */   /* (#R225) the nine geopolitics keys left this list with the layers themselves */
         const rowFor=(id)=>{ let el=document.getElementById('lyrrow-'+id); if(el) return el;
           /* (#R20) beta-dl- so promoted ex-beta layers (histb, ukrfront) can be filed into a real group.
              (#R254) …and wp-dl- for the same reason, so a world-packs row (energy mix) can be too. */
           /* (#R255) …and fac-dl- for the four surveyed-facility layers (js/osm-facilities.js). */
-          el=document.getElementById('eco-dl-'+id)||document.getElementById('l9-dl-'+id)||document.getElementById('beta-dl-'+id)||document.getElementById('wp-dl-'+id)||document.getElementById('fac-dl-'+id); if(el) return el.closest('.lyr-row')||el.closest('label');
+          /* ⚠ (#R259) …and `ox-` for the two OpenRailwayMap / OpenSeaMap overlays. MEASURED: filing
+             them under Transport & mobility changed nothing at all — the group came out with five
+             rows instead of seven and both stayed in Beta, because this list is what turns an id
+             into a row and it had never been told about that prefix. A prefix table is a place a
+             new family gets forgotten, which is why the check is a test now (tests/r259). */
+          el=document.getElementById('eco-dl-'+id)||document.getElementById('l9-dl-'+id)||document.getElementById('beta-dl-'+id)||document.getElementById('wp-dl-'+id)||document.getElementById('fac-dl-'+id)||document.getElementById('ox-'+id); if(el) return el.closest('.lyr-row')||el.closest('label');
           el=dd.querySelector('input[data-layer="'+id+'"]'); if(el) return el.closest('.lyr-row')||el.closest('label');
           return null; };
         const lang=(typeof HOST.lang!=='undefined')?HOST.lang:'en';

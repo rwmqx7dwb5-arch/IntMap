@@ -516,6 +516,7 @@ window.IntMapModules.dataCenters=function(HOST){
     lastKey=key; busy=true;
     try{ const osm=await osmFor(bbox);
       if(on) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:cur.concat(dedupe(cur,osm))});
+      try{ dcRender(); }catch(_){}   /* (#R259) the OSM half arrives late; the summary must not be the curated half only */
     }catch(_){ lastKey=''; }
     busy=false; }
 
@@ -549,7 +550,17 @@ window.IntMapModules.dataCenters=function(HOST){
     el.style.display='block';
     const coord=(+lngLat.lat).toFixed(4)+'°, '+(+lngLat.lng).toFixed(4)+'°';
     const isCur=(p.origin==='curated');
-    el.innerHTML='<button class="cp-close" aria-label="close" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border:none;border-radius:50%;background:var(--input-bg);color:var(--text-main);font-size:15px;cursor:pointer;">✕</button>'
+      /* ⚠ (#R259) THE × IS NOT A DISC. 「詳細のポップアップは×を丸にするな。」 This card is a
+         `.country-popup` — the app's own detail-card shell — and that shell already HAS a close
+         button: `.country-popup-close`, a 28×28 rounded SQUARE (8 px), transparent until hover, the
+         same one the country card, the aircraft card and the satellite card use. What was written
+         here instead was a bespoke inline `border-radius:50%` disc on `--input-bg`, i.e. a filled
+         circle, which is the only round × on the map.
+         ⚠ AND THE CLASS CARRIES TWO THINGS BESIDES THE SHAPE: js/data-layers.js sizes
+         `.country-popup-close` to 32×32 on a phone (this one stayed 28 and was under the touch
+         target), and js/window-manager.js lists it in NODRAG so a press on it cannot start a window
+         drag. Both were missed by the private class, so this is one fix, not three. */
+    el.innerHTML='<button class="country-popup-close cp-close" type="button" aria-label="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'" title="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">✕</button>'
       +'<div style="padding:16px 18px 18px;">'
       +'<div class="dc-drag" style="display:flex;align-items:center;gap:9px;margin-bottom:3px;padding-right:32px;cursor:move;user-select:none;">'
       +'<span style="width:12px;height:12px;border-radius:7px;flex:none;background:'+S((OP[p.op]||OP.osm)[1])+';"></span>'
@@ -617,12 +628,12 @@ window.IntMapModules.dataCenters=function(HOST){
       openCard(f.properties||{}, {lng:f.geometry.coordinates[0], lat:f.geometry.coordinates[1]}); });
     GE().events.onLayer('mouseenter',PT,()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} });
     GE().events.onLayer('mouseleave',PT,()=>{ try{ GE().render.canvas().style.cursor=''; }catch(_){} });
-    try{ GE().events.on('moveend',()=>{ if(on) setTimeout(()=>refresh(),250); }); }catch(_){}
+    try{ GE().events.on('moveend',()=>{ if(on){ setTimeout(()=>refresh(),250); setTimeout(()=>dcRender(),320); } }); }catch(_){}   /* (#R259) the summary is «what is on screen», so it follows the screen */
   }
 
   function toggle(v){ on=!!v;
-    if(!on){ setVis(false); closeCard(); return; }
-    const a=()=>{ if(!ensure()){ try{ GE().events.once('idle',a); }catch(_){} return; } wire(); setVis(true); refresh(); };
+    if(!on){ setVis(false); closeCard(); dcClosePanel(); return; }   /* (#R259) the panel belongs to the layer */
+    const a=()=>{ if(!ensure()){ try{ GE().events.once('idle',a); }catch(_){} return; } wire(); setVis(true); refresh(); dcOpenPanel(); };
     a(); }
 
   /* ══ (#R258) THE KEY IS A FILTER ═════════════════════════════════════════════════════════════════
@@ -631,25 +642,134 @@ window.IntMapModules.dataCenters=function(HOST){
      takes that class off the map. The filter is one expression on the layer — no second copy of the
      feature collection, so the OSM half and the curated half obey it together. */
   const hidden=new Set();
+  /* ══ ⚠⚠⚠ (#R259) THE LAYER COULD NOT BE ASKED ANYTHING ═══════════════════════════════════════════
+     「データセンター、AIインフラレイヤーを爆発的に強化。」 — the same sentence as #R258, sent again.
+     #R258's work was real (the table roughly tripled its non-cloud half, the dot carries a published
+     capacity, the legend became a filter) and all of it is still here. What it did not do is the
+     thing every other serious layer in this app does: 貿易フロー, 電力構成, 作物, 海流, 気象警報 and
+     潮汐 each open a PANEL that answers a question about what is on screen. This one had a colour
+     key and nothing else, so the only question a reader could put to a map of the world's compute
+     was «what is this one dot».
+
+     The panel answers the three that matter, for the CURRENT VIEW and no wider:
+       · how many sites are in it, split curated / OpenStreetMap, so the reader can see which half
+         they are looking at;
+       · how much PUBLISHED capacity that is, and — the number that keeps this honest — how many of
+         the sites in view publish one at all. «3.1 GW across 9 of 214 sites» is a true sentence;
+         «3.1 GW» on its own invites the reader to think it is the total, which it is not;
+       · which sites they are, largest first, clickable.
+     ⚠ IT COMPUTES NOTHING NEW. Every figure is a sum over the features already in the source, which
+     is the same data the dots and the cards are drawn from — there is one table (#R213) and this
+     reads it. A site with no published capacity is counted as a site and contributes 0 MW, and the
+     panel says so rather than estimating.
+     ⚠ It is a `.tool-panel`, so it inherits the app's material, its drag handle and the frosted-mode
+     rules, exactly as js/viewshed.js's does. */
+  let dcPanel=null;
+  const fmtMW=(mw)=>(mw>=1000)?((mw/1000).toFixed(mw>=10000?0:2)+' GW'):(Math.round(mw)+' MW');
+  function inView(f){ try{ const b=GE().camera.getBounds(); if(!b) return true;
+    const c=f.geometry&&f.geometry.coordinates; if(!c) return false;
+    return c[0]>=b.getWest()&&c[0]<=b.getEast()&&c[1]>=b.getSouth()&&c[1]<=b.getNorth(); }catch(_){ return true; } }
+  function dcStats(){
+    let feats=[]; try{ const d=GE().layers.sourceData(SRC); feats=(d&&d.features)||[]; }catch(_){}
+    const vis=feats.filter(f=>inView(f)&&!hidden.has(f.properties&&f.properties.op==='osm'?'osm':(f.properties&&f.properties.op)));
+    const byKind={}, byOrigin={curated:0,osm:0};
+    let mw=0, withMw=0;
+    vis.forEach(f=>{ const p=f.properties||{};
+      byKind[p.k||'other']=(byKind[p.k||'other']||0)+1;
+      byOrigin[p.origin==='curated'?'curated':'osm']++;
+      const v=+p.mw||0; if(v>0){ mw+=v; withMw++; } });
+    const top=vis.filter(f=>(+((f.properties||{}).mw)||0)>0)
+      .sort((a,b)=>(+b.properties.mw||0)-(+a.properties.mw||0)).slice(0,8);
+    return { n:vis.length, byKind, byOrigin, mw, withMw, top };
+  }
+  function dcBuildPanel(){ if(dcPanel) return dcPanel;
+    dcPanel=document.createElement('div'); dcPanel.className='tool-panel'; dcPanel.id='dc-panel';
+    (document.getElementById('map-container')||document.body).appendChild(dcPanel);
+    return dcPanel; }
+  function dcRender(){ const p=dcPanel; if(!p||p.style.display==='none') return;
+    const st=dcStats();
+    const kindRow=(k,lbl)=>{ const c=st.byKind[k]||0; if(!c) return '';
+      return '<div class="dc-krow" data-k="'+S(k)+'" style="display:flex;align-items:center;gap:7px;padding:2px 0;cursor:pointer;font-size:11.5px;'+(hidden.has(k)?'opacity:.42;':'')+'">'
+        +'<span style="width:10px;height:10px;border-radius:50%;flex:none;background:'+S(colOf(k==='cloud'?'aws':k==='ai'?'ai':k==='colo'?'colo':k==='hpc'?'hpc':'osm'))+';"></span>'
+        +'<span style="flex:1;color:var(--text-main);">'+S(lbl)+'</span>'
+        +'<b style="color:var(--text-main);">'+c+'</b></div>'; };
+    p.innerHTML='<div class="tp-header"><span class="tp-title">'+S(L('Data centers & AI infrastructure','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e IA'))+'</span><button class="tp-close" type="button">✕</button></div>'
+      +'<div style="font-size:11.5px;color:var(--text-main);line-height:1.6;">'
+        +'<b style="font-size:15px;">'+st.n+'</b> '+S(L('sites in view','件（表示範囲内）','Standorte im Ausschnitt','объектов в виде','sitios a la vista'))
+        +' <span style="color:var(--text-muted);">('+st.byOrigin.curated+' '+S(L('curated','収録','kuratiert','из таблицы','curados'))+' · '+st.byOrigin.osm+' OSM)</span></div>'
+      +'<div style="margin-top:6px;font-size:11.5px;color:var(--text-main);">'
+        +(st.withMw
+          ?('<b>'+S(fmtMW(st.mw))+'</b> '+S(L('published capacity','公表容量','veröffentlichte Kapazität','заявленная мощность','capacidad publicada'))
+             +' <span style="color:var(--text-muted);">'+S(L('across','／','über','по','en'))+' '+st.withMw+' '+S(L('of','件／全','von','из','de'))+' '+st.n+'</span>')
+          :('<span style="color:var(--text-muted);">'+S(L('No site in view publishes a capacity figure.','表示範囲内に容量を公表している施設はありません。','Kein Standort im Ausschnitt veröffentlicht eine Kapazität.','Ни один объект в виде не публикует мощность.','Ningún sitio a la vista publica su capacidad.'))+'</span>'))
+      +'</div>'
+      +'<div style="margin-top:8px;border-top:1px solid var(--glass-border,rgba(128,128,128,0.18));padding-top:6px;">'
+        +kindRow('ai',L.arr(KIND.ai))+kindRow('cloud',L.arr(KIND.cloud))+kindRow('colo',L.arr(KIND.colo))
+        +kindRow('hpc',L.arr(KIND.hpc))+kindRow('other',L.arr(KIND.other))
+      +'</div>'
+      +(st.top.length
+        ?('<div style="margin-top:8px;border-top:1px solid var(--glass-border,rgba(128,128,128,0.18));padding-top:6px;font-size:10px;color:var(--text-muted);">'
+            +S(L('Largest published capacity in view','表示範囲内で公表容量が大きい順','Größte veröffentlichte Kapazität im Ausschnitt','Наибольшая заявленная мощность в виде','Mayor capacidad publicada a la vista'))+'</div>'
+          +st.top.map((f,i)=>'<div class="dc-top" data-i="'+i+'" style="display:flex;gap:7px;justify-content:space-between;padding:2px 0;font-size:11px;cursor:pointer;">'
+            +'<span style="color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+S(f.properties.n)+'</span>'
+            +'<b style="flex:none;color:var(--text-main);">'+S(fmtMW(+f.properties.mw||0))+'</b></div>').join(''))
+        :'')
+      +'<div style="margin-top:8px;font-size:9.5px;color:var(--text-muted);line-height:1.55;">'
+      +S(L('Counts and capacity are for what is on screen. A capacity is shown only where the operator or OpenStreetMap publishes one — nothing here is estimated. Tap a class to take it off the map.',
+           '件数・容量は画面に表示されている範囲の集計です。容量は運営者または OpenStreetMap が公表している場合のみ表示し、推定値は一切使いません。分類をタップするとその分類を地図から外せます。',
+           'Zahlen gelten für den sichtbaren Ausschnitt. Kapazität nur, wo sie veröffentlicht ist — nichts wird geschätzt.',
+           'Подсчёт — по видимой области. Мощность показана только там, где она опубликована; оценок нет.',
+           'Los recuentos son de lo que se ve. La capacidad solo se muestra si está publicada; nada se estima.'))
+      +'</div>';
+    try{ p.querySelector('.tp-close').onclick=()=>dcClosePanel(); }catch(_){}
+    p.querySelectorAll('.dc-krow').forEach(r=>r.onclick=()=>{ const k=r.getAttribute('data-k');
+      if(hidden.has(k)) hidden.delete(k); else hidden.add(k); applyFilter(); dcRender(); });
+    p.querySelectorAll('.dc-top').forEach(r=>r.onclick=()=>{ const f=st.top[+r.getAttribute('data-i')]; if(!f) return;
+      const c=f.geometry.coordinates;
+      try{ GE().camera.flyTo({center:c,zoom:Math.max(GE().camera.getZoom(),9),duration:700}); }catch(_){}
+      try{ openCard(f.properties,{lng:c[0],lat:c[1]}); }catch(_){} });
+    try{ if(HOST.makeDraggable) HOST.makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
+  }
+  function dcOpenPanel(){ const p=dcBuildPanel();
+    p.style.cssText='display:block;left:auto;right:24px;top:96px;bottom:auto;z-index:1500;width:238px;';
+    dcRender(); }
+  function dcClosePanel(){ if(dcPanel) dcPanel.style.display='none'; }
+
   const KEY_ROWS=()=>[['aws','AWS'],['azure','Azure'],['gcp','Google Cloud'],['oracle','Oracle'],['alibaba','Alibaba'],
     ['meta','Meta'],['ai',L('AI compute','AI計算基盤','KI-Rechenzentrum','ИИ-вычисления','Cómputo de IA')],
     ['colo',L('Colocation','コロケーション','Colocation-Standorte','Колокация','Colocación')],
     ['hpc',L('Supercomputing','スーパーコンピュータ','HPC','Суперкомпьютеры','Supercomputación')],
     ['osm',L('Other (OpenStreetMap)','その他（OpenStreetMap）','Sonstige (OpenStreetMap)','Прочие (OpenStreetMap)','Otros (OpenStreetMap)')]];
+  /* (#R259) `hidden` now holds two kinds of key — the legend's OPERATOR ids (aws, meta, colo…) and
+     the panel's CLASS ids (ai, cloud, colo, hpc, other). They are separated here rather than kept in
+     two sets, because both switches have to end up in ONE filter expression on ONE layer: two sets
+     would be two filters and the last one written would silently win. `colo` and `hpc` are BOTH an
+     operator and a class and mean the same thing either way, so they are matched on both. */
+  const CLASS_KEYS=['ai','cloud','colo','hpc','other'];
   function applyFilter(){
     /* the rows the key does NOT name (ibm, tencent, huawei, apple) ride with `osm`'s «other» row, so
        a filter is expressed on the OPERATOR of every hidden row plus that catch-all */
     const named=KEY_ROWS().map(r=>r[0]);
-    const outOps=[]; let hideOther=false;
-    hidden.forEach(k=>{ if(k==='osm') hideOther=true; else outOps.push(k); });
+    const outOps=[], outKinds=[]; let hideOther=false;
+    hidden.forEach(k=>{ if(k==='osm'){ hideOther=true; return; }
+      if(CLASS_KEYS.indexOf(k)>=0) outKinds.push(k);
+      if(named.indexOf(k)>=0) outOps.push(k); });
     let f=null;
     const clauses=[];
     if(outOps.length) clauses.push(['!',['in',['get','op'],['literal',outOps]]]);
+    if(outKinds.length) clauses.push(['!',['in',['get','k'],['literal',outKinds]]]);
     if(hideOther) clauses.push(['in',['get','op'],['literal',named.filter(x=>x!=='osm')]]);
     if(clauses.length) f=(clauses.length===1)?clauses[0]:['all'].concat(clauses);
     [PT,LBL].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setFilter(id,f); }catch(_){} });
   }
   window.IntMapDataCenters={ toggle, refresh, count:()=>DC.length, operators:()=>OP, kinds:()=>KIND,
+    /* (#R259) the in-view summary, and its window — Atlas and the tests read the same numbers the
+       panel prints rather than a second computation of them */
+    stats:()=>{ const st=dcStats(); return { n:st.n, curated:st.byOrigin.curated, osm:st.byOrigin.osm,
+      mw:st.mw, withPublishedMw:st.withMw, byKind:Object.assign({},st.byKind),
+      top:st.top.map(f=>({ n:f.properties.n, mw:+f.properties.mw||0, k:f.properties.k })) }; },
+    openPanel:dcOpenPanel, closePanel:dcClosePanel,
+    panelOpen:()=>!!(dcPanel&&dcPanel.style.display!=='none'),
     /* (#R258) the legend's rows drive this — see js/layer-packs.js */
     toggleKey(k){ if(hidden.has(k)) hidden.delete(k); else hidden.add(k); applyFilter(); return !hidden.has(k); },
     keyOn:(k)=>!hidden.has(k),

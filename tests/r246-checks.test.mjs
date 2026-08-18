@@ -86,7 +86,22 @@ test('r246 ③ every source description is a reading-page string, in all nine la
   assert.match(read('js/locales/pages.en.js'), /\n {2}sourceUse: \{/, 'the English original is not a page string');
   /* …and the eager bundle no longer carries any of it */
   assert.equal(/use:\{en:/.test(read('js/reference-data.js')), false, 'the registry still holds prose');
-  assert.ok(read('js/reference-data.js').length < 40_000, 'the registry did not shed its ~50 kB of prose');
+  /* ⚠ (#R259) THE CEILING IS ON THE PROSE, NOT ON THE NUMBER OF SOURCES. This was a byte count, and
+     #R259 registered eight more OSM facility layers — 8 `{n,u}` rows plus a comment, ~1.2 kB — which
+     took the file from 38.9 kB to 40.3 kB and turned «the prose came back» red for «the map grew».
+     The claim #R246 was making is the line above (no `use:{en:` in the registry); what this line
+     adds is that a ROW is a name and a URL, not a paragraph. So it measures the mean row size, which
+     the prose regressing would blow up and which adding sources cannot. (Measured now: ~110 chars a
+     row against the ~330 the prose version carried.) */
+  {
+    const reg = read('js/reference-data.js');
+    const arr = /const DATA_SOURCES=\[[\s\S]*?\n  \];/.exec(reg);
+    assert.ok(arr, 'DATA_SOURCES is not a single array literal any more');
+    const rows = (arr[0].match(/\{n:'/g) || []).length;
+    assert.ok(rows > 100, `the registry holds only ${rows} sources`);
+    const per = arr[0].length / rows;
+    assert.ok(per < 220, `the registry averages ${Math.round(per)} chars a source — it is carrying prose again`);
+  }
 });
 
 /* ── ④ THE SEISMIC FOOTER DRAWS THE PROGRESS ABOVE THE BUTTON ──────────────────────────────── */

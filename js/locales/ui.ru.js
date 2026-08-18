@@ -202,6 +202,10 @@ window.IntMapLang.define('ru', { ui: {
       lyrGrpHealth:"Здоровье и санитария",
       lyrGrpTech:"Технологии и инфраструктура",
       lyrGrpEnergy:"Энергетика и ресурсы",   /* (#R258) */
+      lyrGrpEconomy:"Экономика и торговля",   /* (#R259) */
+      lyrGrpSociety:"Общество и образование",   /* (#R259) */
+      lyrGrpTransport:"Транспорт и мобильность",   /* (#R259) */
+      lyrGrpAgri:"Сельское хозяйство и продовольствие",   /* (#R259) */
       lyrGrpMaritime:"Океаны и море",
       lyrGrpTerrain:"Рельеф и высота",
       lyrGrpIndic:"Индикаторы и слои",

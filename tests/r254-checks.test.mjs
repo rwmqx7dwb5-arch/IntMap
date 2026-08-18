@@ -168,8 +168,22 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
      what «Others» is for: the indicators that have no better shelf. So the assertion is now the
      PROPERTY #R254 was really asserting — Others holds World-Bank indicator rows and only those —
      plus a floor, so the group cannot be quietly emptied out. */
-  assert.ok(ids.length >= 25, `Others holds only ${ids.length} rows; it is the shelf for the World-Bank indicators that have no better home`);
+  /* ⚠⚠ (#R259) …AND THE FLOOR HAD TO GO, FOR THE SECOND TIME, FOR THE SAME REASON. #R255 already
+     replaced «exactly 61» with «at least 25» after an instruction legitimately moved rows out; this
+     round 「Others, Betaも含め既存レイヤーの再編」 named that shelf and moved ALL of them into named
+     families (経済・貿易 / 社会・教育 / エネルギー・資源 / 気候 / 農業・食料). A count floor on a shelf
+     whose whole purpose is «what is left over» will keep turning the next instruction into a red
+     test — the thing worth asserting is not how full it is, it is that NOTHING WAS LOST.
+     So: every id #R254 listed is still somewhere in GROUPS, and Others still holds only World-Bank
+     rows if it holds any. */
   assert.ok(ids.every(i => /^wb/.test(i)), 'Others holds something that is not a World-Bank indicator row');
+  const R254_OTHERS = ['wburb','wbelec','wbrenew','wbinfl','wbgdpgrow','wblit','wbpov','wbgini','wbtrade',
+    'wbtax','wbschool','wbelecuse','wbrenelec','wbfdi','wbunemp','wbdebt','wbmanuf','wbpopgrow','wbenergy',
+    'wbtour','wbref','wbco2t','wbflfp','wbtert','wbrural','wbgni','wbaging','wburban','wbtourism','wbremit',
+    'wbdensity','wbedu','wbagremp'];
+  const groups = dl.slice(dl.indexOf('const GROUPS=['), dl.indexOf("const OTHERS_IDS="));
+  R254_OTHERS.forEach(k => assert.ok(groups.includes("'" + k + "'"),
+    k + ' left Others and is on NO shelf — #R254 listed it and nothing may be lost'));
   /* the World-Bank rows that are NOT in Others are the ones filed in a real group */
   ['wbco2', 'wbforest', 'wbagri', 'wbhealth', 'wbnet', 'wbmilgdp', 'wbwomparl']
     .forEach(k => assert.ok(!ids.includes(k), `${k} is filed in a real group already and must not be duplicated into Others`));

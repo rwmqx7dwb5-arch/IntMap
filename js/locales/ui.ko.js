@@ -167,6 +167,10 @@ window.IntMapLang.define('ko', { ui: {
       lyrGrpHealth:"보건·위생",
       lyrGrpTech:"기술·인프라",
       lyrGrpEnergy:"에너지·자원",   /* (#R258) */
+      lyrGrpEconomy:"경제·무역",   /* (#R259) */
+      lyrGrpSociety:"사회·교육",   /* (#R259) */
+      lyrGrpTransport:"교통·이동",   /* (#R259) */
+      lyrGrpAgri:"농업·식량",   /* (#R259) */
       lyrGrpHazard:"재해·밤하늘",
       lyrGrpIndic:"지표·오버레이",
       lyrGrpMaritime:"해양·해운",
@@ -747,6 +751,77 @@ window.IntMapLang.define('ko', { ui: {
   "Other / biomass": "기타·바이오매스",   /* (#R258) */
   "Output": "출력",   /* (#R258) */
   "Place water on the map first": "먼저 지도에 물을 놓으세요",   /* (#R258) */
+  "across": "／",   /* (#R259) */
+  "Airport / airfield": "공항·비행장",   /* (#R259) */
+  "Airports & air infrastructure": "공항·항공 시설",   /* (#R259) */
+  "Airports, airfields, terminals, heliports and control towers mapped in OpenStreetMap for the current view. Click any point for its ICAO/IATA code, runway length and operator where the object carries them.": "현재 표시 범위에 대해 OpenStreetMap에 등록된 공항·비행장·터미널·헬리포트·관제탑입니다. ICAO/IATA 코드, 활주로 길이, 운영자는 해당 객체가 가지고 있는 경우에만 표시합니다.",   /* (#R259) */
+  "Ambulance station": "구급 스테이션",   /* (#R259) */
+  "Battery, clearance and no-fly zones over the real terrain": "실제 지형에서 배터리·대지 고도·비행 금지 구역을 계산",   /* (#R259) */
+  "Cancel — click the new site": "취소 — 새 지점을 클릭",   /* (#R259) */
+  "Capacity": "처리 용량",   /* (#R259) */
+  "Cargo / container terminal": "화물·컨테이너 터미널",   /* (#R259) */
+  "Change the values and press Analyze to re-run at this site; “Move the site…” puts it somewhere else.": "값을 바꾸고 「분석」으로 같은 지점을 다시 계산합니다. 「지점 변경…」으로 다른 곳에 놓을 수 있습니다.",   /* (#R259) */
+  "Cleared. Press Analyze to re-run here, or “Move the site…” to place it somewhere else.": "지웠습니다. 「분석」으로 다시 계산하거나 「지점 변경…」으로 다른 곳에 놓으세요.",   /* (#R259) */
+  "College": "전문대·단과대",   /* (#R259) */
+  "continuous": "연속",   /* (#R259) */
+  "continuous (▶ pours these)": "연속（▶ 로 주수되는 쪽）",   /* (#R259) */
+  "Control tower": "관제탑",   /* (#R259) */
+  "Counts and capacity are for what is on screen. A capacity is shown only where the operator or OpenStreetMap publishes one — nothing here is estimated. Tap a class to take it off the map.": "건수·용량은 화면에 보이는 범위의 집계입니다. 용량은 운영자 또는 OpenStreetMap이 공표한 경우에만 표시하며 추정값은 쓰지 않습니다. 분류를 누르면 지도에서 뺄 수 있습니다.",   /* (#R259) */
+  "Crane": "하역 크레인",   /* (#R259) */
+  "curated": "수록",   /* (#R259) */
+  "Data centers & AI infrastructure": "데이터센터·AI 인프라",   /* (#R259) */
+  "Dish diameter": "안테나 직경",   /* (#R259) */
+  "Drone flight planner": "드론 비행 계획",   /* (#R259) */
+  "Earth replay (sun over time)": "지구 리플레이（태양의 움직임）",   /* (#R259) */
+  "Emergency services": "긴급 대응 거점（소방·경찰·구급）",   /* (#R259) */
+  "Ferry terminal": "페리 터미널",   /* (#R259) */
+  "Fire station": "소방서",   /* (#R259) */
+  "Fire stations, police stations, ambulance stations and mountain-rescue posts mapped in OpenStreetMap for the current view — how far help has to come from, which no national statistic answers.": "현재 표시 범위에 대해 OpenStreetMap에 등록된 소방서·경찰서·구급 스테이션·산악 구조 거점입니다. 「도움이 어디서 오는가」는 국가 통계로는 알 수 없습니다.",   /* (#R259) */
+  "Flood & tsunami hazard": "침수·쓰나미 위험",   /* (#R259) */
+  "Harbour type": "항만 종별",   /* (#R259) */
+  "How far the timetable takes you, not the road": "도로가 아니라 시간표로 갈 수 있는 범위",   /* (#R259) */
+  "IATA code": "IATA 코드",   /* (#R259) */
+  "ICAO code": "ICAO 코드",   /* (#R259) */
+  "International airport": "국제공항",   /* (#R259) */
+  "Largest published capacity in view": "표시 범위에서 공표 용량이 큰 순",   /* (#R259) */
+  "Launch pad": "발사대",   /* (#R259) */
+  "Launch pads, spaceports, satellite ground stations and radio telescopes mapped in OpenStreetMap for the current view — the ground half of everything the orbit layers show overhead.": "현재 표시 범위에 대해 OpenStreetMap에 등록된 발사대·우주기지·위성 지상국·전파망원경입니다. 궤도 레이어가 머리 위에 그리는 것의 지상 쪽 절반입니다.",   /* (#R259) */
+  "Move the site…": "지점 변경…",   /* (#R259) */
+  "Next source": "다음에 놓을 수원",   /* (#R259) */
+  "No site in view publishes a capacity figure.": "표시 범위 안에 용량을 공표한 시설이 없습니다.",   /* (#R259) */
+  "Observatory": "천문대·관측소",   /* (#R259) */
+  "of": "／전",   /* (#R259) */
+  "On the map": "배치됨",   /* (#R259) */
+  "one shot": "1회",   /* (#R259) */
+  "Only one-shot volumes are placed — add a continuous source to pour": "놓여 있는 것은 1회분 수량뿐입니다. 연속 수원을 추가하면 주수할 수 있습니다",   /* (#R259) */
+  "Police station": "경찰서",   /* (#R259) */
+  "Port / harbour": "항만",   /* (#R259) */
+  "Ports, harbours & terminals": "항만·터미널",   /* (#R259) */
+  "Ports, harbours, ferry terminals, container and cargo terminals and cranes mapped in OpenStreetMap for the current view — where cargo physically changes vehicle.": "현재 표시 범위에 대해 OpenStreetMap에 등록된 항만·어항·페리 터미널·컨테이너/화물 터미널·하역 크레인입니다. 화물이 실제로 옮겨 실리는 장소 그 자체입니다.",   /* (#R259) */
+  "published capacity": "공표 용량",   /* (#R259) */
+  "Pumping station": "펌프장",   /* (#R259) */
+  "Radio telescope": "전파망원경",   /* (#R259) */
+  "Rescue post": "구조 거점",   /* (#R259) */
+  "Research institute": "연구기관",   /* (#R259) */
+  "Run the day and night round the planet": "밤과 낮을 지구 위에서 돌려 봅니다",   /* (#R259) */
+  "Runway length": "활주로 길이",   /* (#R259) */
+  "Satellite ground station": "위성 지상국",   /* (#R259) */
+  "Signal strength from a transmitter placed here": "여기에 놓은 송신기의 수신 강도",   /* (#R259) */
+  "sites in view": "건（표시 범위 내）",   /* (#R259) */
+  "Spaceports & ground stations": "우주기지·지상국",   /* (#R259) */
+  "Students": "학생 수",   /* (#R259) */
+  "Substance": "대상",   /* (#R259) */
+  "Terminal": "터미널",   /* (#R259) */
+  "Transit reachability": "대중교통 도달권",   /* (#R259) */
+  "Universities & research institutes": "대학·연구기관",   /* (#R259) */
+  "Universities, colleges, research institutes, observatories and libraries mapped in OpenStreetMap for the current view — where teaching and research actually happen, beside the enrolment percentages.": "현재 표시 범위에 대해 OpenStreetMap에 등록된 대학·단과대·연구기관·천문대·도서관입니다. 취학률 숫자 옆에, 교육과 연구가 실제로 이루어지는 장소 자체를 둡니다.",   /* (#R259) */
+  "University": "대학",   /* (#R259) */
+  "Wastewater treatment": "하수처리장",   /* (#R259) */
+  "Water & wastewater plant": "상하수도 시설",   /* (#R259) */
+  "Water tower / reservoir": "급수탑·배수지",   /* (#R259) */
+  "Water works": "정수장",   /* (#R259) */
+  "Water works, wastewater treatment plants, pumping stations, water towers and reservoirs mapped in OpenStreetMap for the current view — the plant that makes safe water and sanitation real in a place, rather than the national percentage.": "현재 표시 범위에 대해 OpenStreetMap에 등록된 정수장·하수처리장·펌프장·급수탑·배수지입니다. 국가별 보급률이 아니라, 그 장소에서 실제로 상하수도를 성립시키는 설비 그 자체입니다.",   /* (#R259) */
+  "What a given water level reaches from here": "어떤 수위가 여기서 어디까지 닿는가",   /* (#R259) */
   "Power plants & grid": "발전소·송변전 설비",   /* (#R258) */
   "Quarry": "채석장",   /* (#R258) */
   "Radioactive plume simulator": "방사성 플룸 확산 시뮬레이터",   /* (#R258) */

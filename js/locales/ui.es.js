@@ -201,6 +201,10 @@ window.IntMapLang.define('es', { ui: {
       lyrGrpHealth:"Salud y saneamiento",
       lyrGrpTech:"Tecnología e infraestructura",
       lyrGrpEnergy:"Energía y recursos",   /* (#R258) */
+      lyrGrpEconomy:"Economía y comercio",   /* (#R259) */
+      lyrGrpSociety:"Sociedad y educación",   /* (#R259) */
+      lyrGrpTransport:"Transporte y movilidad",   /* (#R259) */
+      lyrGrpAgri:"Agricultura y alimentación",   /* (#R259) */
       lyrGrpMaritime:"Océanos y marítimo",
       lyrGrpTerrain:"Terreno y tierra",
       lyrGrpIndic:"Indicadores y capas",

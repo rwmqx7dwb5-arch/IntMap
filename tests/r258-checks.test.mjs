@@ -194,7 +194,15 @@ test('R258 ⑨b: 地震波シミュレーター is 地震シミュレーター i
 /* ── ⑩ the new category, and the layers in it ──────────────────────────────────────────────── */
 test('R258 ⑩: Energy & resources is a category with two surveyed layers in it', () => {
   const dl = read('js/data-layers.js');
-  assert.match(dl, /\['lyrGrpEnergy',\['osmpower','osmextract'\]\]/, 'the group holds exactly the new rows');
+  /* ⚠ (#R259) THIS PINNED THE LITERAL LIST, AND THE NEXT INSTRUCTION MADE IT RED. 「Others, Betaも
+     含め既存レイヤーの再編」 moved the five World-Bank energy indicators and the dams row onto this
+     shelf, which is what the shelf is for. What #R258 was actually asserting is that the category
+     exists and that its two SURVEYED layers are on it — a list literal also asserts «and nothing
+     else will ever be», which is not something this round knew. (#R244's lesson, third time.) */
+  const eg = /\['lyrGrpEnergy',\[([^\]]*)\]\]/.exec(dl);
+  assert.ok(eg, 'the Energy & resources group is there');
+  ['osmpower', 'osmextract'].forEach(k => assert.ok(eg[1].includes("'" + k + "'"),
+    k + ' is on the Energy & resources shelf'));
   const fac = read('js/osm-facilities.js');
   assert.match(fac, /id:'osmpower', row:'fac-dl-osmpower'/, 'the power layer exists');
   assert.match(fac, /id:'osmextract', row:'fac-dl-osmextract'/, 'the extraction layer exists');

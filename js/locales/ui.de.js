@@ -173,6 +173,10 @@ window.IntMapLang.define('de', { ui: {
       lyrGrpHealth:"Gesundheit & Hygiene",
       lyrGrpTech:"Technik & Infrastruktur",
       lyrGrpEnergy:"Energie & Rohstoffe",   /* (#R258) */
+      lyrGrpEconomy:"Wirtschaft & Handel",   /* (#R259) */
+      lyrGrpSociety:"Gesellschaft & Bildung",   /* (#R259) */
+      lyrGrpTransport:"Verkehr & Mobilität",   /* (#R259) */
+      lyrGrpAgri:"Landwirtschaft & Ernährung",   /* (#R259) */
       lyrGrpMaritime:"Ozeane & Seefahrt",
       lyrGrpIndic:"Indikatoren & Overlays",
       lyrGrpTerrain:"Gelände & Höhe",

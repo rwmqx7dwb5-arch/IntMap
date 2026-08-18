@@ -2156,7 +2156,12 @@
     body.sidebar-translucent .ctx-menu, body.sidebar-glass2 .ctx-menu,
     body.sidebar-translucent .m-sheet, body.sidebar-glass2 .m-sheet,
     body.sidebar-translucent .m-news-pop, body.sidebar-glass2 .m-news-pop,
-    body.sidebar-translucent .wgt-card, body.sidebar-glass2 .wgt-card{
+    body.sidebar-translucent .wgt-card, body.sidebar-glass2 .wgt-card,
+    /* (#R259) …and the reachable-area panel. It is opaque by default now (js/map-tools.js) — being
+       opaque by DEFAULT and following the setting are the same requirement, and it was doing
+       neither: it was translucent unconditionally and named in no list, so the setting never
+       reached it in either direction. */
+    body.sidebar-translucent #iso-panel, body.sidebar-glass2 #iso-panel{
       background:var(--glass-fill) !important; backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); border-color:var(--glass-border) !important; }
     /* (#R37) REAL ROOT CAUSE of "frosted glassにするとSettingsだけグレーになる" — DOUBLE backdrop-filter. The
        .modal-overlay already has its OWN backdrop-filter:blur(12px) + a dark scrim; the child .modal-content then
