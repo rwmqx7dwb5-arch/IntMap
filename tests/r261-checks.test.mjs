@@ -55,11 +55,18 @@ test('R261 ③: continuous/one-shot is a property of each source, and every tap 
   const s = read('js/terrain-water.js');
   assert.doesNotMatch(s, /sources\[sources\.length-1\]\.m3\+=/,
     'the pour must not feed only the last-placed source');
-  /* ⚠ (#R265) …and it fills by what the model ACTUALLY integrated (`r.simS`), not by what the tick
-     asked for. The two differ whenever a tick hits its step budget, and paying the taps for time the
-     water did not get is how the clock and the water come apart — this round's subject exactly. */
-  assert.match(s, /sources\.forEach\(x=>\{ if\(x\.cont\) x\.m3\+=Math\.max\(0,\+x\.rate\|\|pourRate\)\*r\.simS; \}\);/,
-    'every continuous source fills, at its own rate, for the time the water was integrated');
+  /* ⚠ (#R265) …and it fills by what the model ACTUALLY integrated, not by what the tick asked for.
+     Paying the taps for time the water did not get is how the clock and the water come apart.
+     ⚠⚠ (#R267 追記) AND IT IS PAID PER STEP NOW, because a discharge is a rate. Crediting a whole
+     interval at once put the interval's water into ONE cell as a column — MEASURED IN PRODUCTION,
+     60,000 m³/s advanced by half an hour reported 「max depth 21,290.1 m」, which is 1.08e8 m³ over
+     a 71 m cell to the metre (21,424 m → 11.9 m after the fix, same 1.08e8 m³ delivered).
+     What #R261 established is unchanged and is what is asserted: EVERY tap fills, at ITS OWN rate. */
+  assert.match(s, /sources\.forEach\(sc=>\{ if\(!sc\.cont\) return;/,
+    'every continuous source is fed, not only the last one');
+  assert.match(s, /const give=Math\.max\(0,\+sc\.rate\|\|pourRate\)\*dt;/,
+    '…at its own rate, for the length of the step the solver is about to take');
+  assert.match(s, /,feedTaps\);/, 'and the solver is what calls back for it');
   assert.match(s, /const contSources=\(\)=>sources\.filter\(x=>x\.cont\);/);
   assert.match(s, /sources\.push\(\{lng,lat,m3:cont\?0:srcM3,cont,rate:cont\?pourRate:0\}\);/,
     'a placed source records the kind it was placed as');

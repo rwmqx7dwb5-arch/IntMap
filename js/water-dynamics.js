@@ -282,7 +282,15 @@ window.IntMapWaterDynamics=(function(){
        the basin, and the basin follows the flood. MEASURED: 36 simulated hours of a 60,000 m³/s
        release did not return inside several minutes through this door, because by then the sweep
        was over a lattice several times the one the budget was chosen for. Both ceilings report. */
-    function advance(seconds,maxSteps,maxMs){
+    /* ⚠⚠⚠ (#R267 追記) `onStep(dt)` EXISTS BECAUSE A TAP IS A RATE, NOT A PARCEL. Water owed for a
+       whole interval used to be handed over in one lump before the integration started, so a tap at
+       60,000 m³/s advanced by half an hour put 1.08×10⁸ m³ into ONE 71 m cell — MEASURED IN
+       PRODUCTION, 「max depth 21,290.1 m」 in the panel, which is 1.08e8 / 71.2² to the metre. The
+       column drains over the next steps and the flood that results is roughly right, but the depth
+       it passes through is not water, and the picture and the readout both show it.
+       A discharge is delivered per unit time: `onStep` is called before every step with that step's
+       dt, so a tap adds rate·dt and nothing ever exists as a parcel. */
+    function advance(seconds,maxSteps,maxMs,onStep){
       const want=Math.max(0,+seconds||0);
       if(!want) return { steps:0, simS:0, capped:false, dt:lastDt, maxDh:0 };
       const cap=Math.max(1,maxSteps||160);
@@ -290,7 +298,9 @@ window.IntMapWaterDynamics=(function(){
       const t0ms=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
       const el=()=>((typeof performance!=='undefined'&&performance.now)?performance.now():Date.now())-t0ms;
       let rest=want, n=0, mdh=0, over=false;
-      while(rest>1e-6&&n<cap){ const dt=Math.min(rest,dtFor()); step(dt); rest-=dt; n++;
+      while(rest>1e-6&&n<cap){ const dt=Math.min(rest,dtFor());
+        if(onStep) onStep(dt);
+        step(dt); rest-=dt; n++;
         if(lastMaxDh>mdh) mdh=lastMaxDh;
         if((n&7)===0&&el()>=ms){ over=true; break; } }
       return { steps:n, simS:want-rest, capped:rest>1e-6, dt:lastDt, maxDh:mdh,
