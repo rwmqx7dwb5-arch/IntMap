@@ -1,0 +1,48 @@
+{
+ "source": "NASA EOSDIS GIBS — temporal extent measured by tile probe (404 outside the archive, 200 inside)",
+ "probed": "2026-08-19",
+ "layers": {
+  "gxndvi": {
+   "gibs": "MODIS_Terra_NDVI_8Day",
+   "from": "2025-02-18",
+   "to": "2026-08-13",
+   "period": 8,
+   "periodChecked": false
+  },
+  "gxseaice": {
+   "gibs": "GHRSST_L4_MUR_Sea_Ice_Concentration",
+   "from": "2002-06-01",
+   "to": "2026-08-17",
+   "period": 1,
+   "periodChecked": true
+  },
+  "gxsstanom": {
+   "gibs": "GHRSST_L4_MUR_Sea_Surface_Temperature_Anomalies",
+   "from": "2019-07-23",
+   "to": "2026-08-17",
+   "period": 1,
+   "periodChecked": true
+  },
+  "gxaero": {
+   "gibs": "OMPS_Aerosol_Index",
+   "from": "2012-01-30",
+   "to": "2026-08-18",
+   "period": 1,
+   "periodChecked": true
+  },
+  "gxco": {
+   "gibs": "AIRS_L3_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Daily_Day",
+   "from": "2002-09-01",
+   "to": "2026-08-14",
+   "period": 1,
+   "periodChecked": true
+  },
+  "gxsoil": {
+   "gibs": "AMSRU2_Soil_Moisture_SCA_Day",
+   "from": "2012-07-24",
+   "to": "2025-09-01",
+   "period": 1,
+   "periodChecked": true
+  }
+ }
+}

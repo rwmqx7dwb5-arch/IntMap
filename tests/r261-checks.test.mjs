@@ -91,8 +91,17 @@ test('R261 ④: build() resamples the sculpt field and the undo stack instead of
     'a snapshot holds a sculpt sized for the OLD grid, so it is resampled too');
   assert.match(s, /function regridField\(src,oldG,newG\)\{/);
   assert.match(s, /G\.carriedEdits=/, 'how much came across is reported, not silent');
-  /* the two explicit resets still reset */
-  assert.match(s, /resetTerrain\(\)\{[\s\S]{0,120}sculpt=new Float32Array\(G\.NX\*G\.NY\)/);
+  /* the two explicit resets still reset.
+     ⚠ (#R268) …THROUGH ONE FUNCTION NOW. The Atlas door used to inline the clear; the panel button
+     inlined it too and forgot `editDirty()`, so pressing 「地形をリセット」 changed nothing anybody
+     could see (the memoised `editField()` never went stale). Both doors call `resetTerrainNow()`,
+     which is where the clear and the invalidation now live together — so this asserts the
+     DELEGATION plus what the delegate does, rather than a copy of the body. */
+  assert.match(s, /resetTerrain\(\)\{\s*return resetTerrainNow\(\);/, 'the Atlas door delegates');
+  const rt = s.slice(s.indexOf('function resetTerrainNow'), s.indexOf('function resetTerrainNow') + 400);
+  assert.match(rt, /sculpt=new Float32Array\(G\.NX\*G\.NY\)/, '…and the one reset clears the sculpt');
+  assert.match(rt, /levees=\[\]/, '…and the levees');
+  assert.match(rt, /editDirty\(\)/, '…and tells every reader the ground changed');
 });
 
 /* ── ⑤ the play button is a rounded square ─────────────────────────────────────────────────────

@@ -4188,6 +4188,41 @@ window.IntMapLang.define('zh-hans', {
   "The modelled area has reached its limit — water leaving its edge is counted, not drawn.": "计算范围已达上限；流出边缘的水只计入统计，不再绘制。",   /* (#R267) */
   "— when the water reached the front, on the run that drew it": "— 与画面同一次积分中水抵达前端的时刻",   /* (#R267) */
   "Run on until the water stops moving": "继续计算至水不再流动",   /* (#R267) */
-  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. The same model runs the whole course: the lattice is extended in whichever direction the water goes, at the same cell size, so there is no second calculation and no second drawing downstream. ⏭ runs this model on until the water stops moving.": "您正在编辑真实高程数据。水以二维浅水方程序的局部惯性形式（Bates 2010；de Almeida 2012 的 q 中心化）进行时间积分，曼宁粗率 n = 0.035，因此洪峰需要多少时间就走多少时间。上游到下游是同一个模型：格网会沿水前进的方向以相同的格子尺寸延伸，因此下游并没有另一套计算或另一层绘制。⏭ 会让同一个模型继续跑到水不再流动为止。",   /* (#R267) */
+  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. The same model runs the whole course: the lattice is extended in whichever direction the water goes, at the same cell size, so there is no second calculation and no second drawing downstream. ⏭ runs this model on until the water stops moving.": "您正在编辑真实高程数据。水以二维浅水方程序的局部惯性形式（Bates 2010；de Almeida 2012 的 q 中心化）进行时间积分，曼宁粗率 n = 0.035，因此洪峰需要多少时间就走多少时间。上游到下游是同一个模型：格网会沿水前进的方向以相同的格子尺寸延伸，因此下游并没有另一套计算或另一层绘制。⏭ 会让同一个模型继续跑到水不再流动为止。",
+  "Australia — BoM": "澳洲 — 气象局（BoM）",
+  "Brazil — INMET": "巴西 — INMET",
+  "Bureau of Meteorology — warnings in force, grouped by state or territory.": "澳洲气象局 — 生效中的警报，依州或领地分组。",
+  "By area": "依地区",
+  "cells have no elevation data and the water cannot enter them": "个网格没有高程数据，水无法进入",
+  "Creoles & pidgins": "克里奥尔语与皮钦语",
+  "Data year": "数据年份",
+  "Each municipality": "各市区町村",
+  "every 60 s": "每 60 秒",
+  "Hong Kong — HKO": "香港 — 天文台（HKO）",
+  "Hong Kong Observatory — the warning signals in force.": "香港天文台 — 生效中的警告信号。",
+  "INMET (Brazil), active warnings with their published areas, grouped by state.": "INMET（巴西）— 生效中的警报与其公布范围，依州分组。",
+  "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed and the tap holds the units. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "日本、美国、加拿大与巴西以各机关发布的单位绘制。欧洲、中国、澳洲与香港公布的是列表而非图形，因此以颜色标示国家，点按后显示各单位的内容。俄罗斯、印度、纽西兰、马来西亚、印尼、南非与墨西哥本回合皆实际测试过，未找到浏览器可读取的公开来源，因此仅使用 GDACS — GDACS 是事件发布，并非各国的警报本身，没有事件的国家不代表没有警报。本显示仅供参考，请以官方机关的发布为准。",
+  "Land cover (ESA)": "土地覆盖（ESA）",
+  "Live OpenStreetMap for this view, merged with the shipped snapshot": "本视图的实时 OpenStreetMap，与随附快照合并",
+  "Montenegrin": "蒙特内哥罗语",
+  "Serbo-Croatian": "塞尔维亚-克罗埃西亚语",
+  "signals": "个",
+  "Sikhism": "锡克教",
+  "This product ends at": "此数据集结束于",
+  "Tint raised / lowered ground": "为填高／挖低处着色",
+  "Unspecified / no answer": "未说明／未作答",
+  "year not stated": "未注明年份",
+  "Fula": "富拉语",
+  "Cook Islands Māori": "库克群岛毛利语",
+  "Gilbertese": "吉尔伯特语",
+  "Niuean": "纽埃语",
+  "Bislama": "比斯拉马语",
+  "Nauruan": "诺鲁语",
+  "Palauan": "帛琉语",
+  "Marshallese": "马绍尔语",
+  "Tuvaluan": "吐瓦鲁语",
+  "Tok Pisin": "巴布亚皮钦语",
+  "Greenlandic": "格陵兰语",
+  "Dzongkha": "宗喀语",   /* (#R267) */
   }
 });

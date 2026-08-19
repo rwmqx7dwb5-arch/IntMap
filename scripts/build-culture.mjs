@@ -62,7 +62,20 @@ const LANG = [
   [/^urdu/i, 'ur'], [/^swahili|kiswahili/i, 'sw'], [/^vietnamese/i, 'vi'], [/^thai/i, 'th'],
   [/^polish/i, 'pl'], [/^ukrainian/i, 'uk'], [/^romanian|moldovan/i, 'ro'], [/^greek/i, 'el'],
   [/^czech/i, 'cs'], [/^hungarian|magyar/i, 'hu'], [/^swedish/i, 'sv'], [/^danish/i, 'da'],
-  [/^norwegian|bokmal|nynorsk/i, 'no'], [/^finnish|suomi/i, 'fi'], [/^serbian|croatian|bosnian|montenegrin|serbo/i, 'sh'],
+  [/^norwegian|bokmal|nynorsk/i, 'no'], [/^finnish|suomi/i, 'fi'],
+  /* == (#R268) THE SOURCE COUNTS THESE SEPARATELY, SO THE MAP MUST NOT ADD THEM UP ==============
+     「ユーゴスラビアの言語をすべてセルビア語 (ラテン文字)でまとめるのはやめろ。不正確なうえ名称も
+       リスキー。」  One bucket `sh` collected Serbian, Croatian, Bosnian, Montenegrin AND
+     Serbo-Croat, and `Intl.DisplayNames.of('sh')` renders that as 「セルビア語 (ラテン文字)」 /
+     «Serbian (Latin)» - so Croatia's own map label said Serbian. The Factbook states them as
+     separate lines with separate percentages ("Bosnian (official) 52.9%, Serbian (official) 30.8%,
+     Croatian (official) 14.6%"), which is the converse of #R266's rule about the United Kingdom:
+     where the source does not separate, neither does the map - and where it DOES separate, neither
+     may the map merge. `sh` survives for the one label that really is the joint one, because some
+     entries (Switzerland, Slovenia, Montenegro) literally say «Serbo-Croatian».
+     The FILL stays one colour for the whole set - see `LANG_ONE_COLOUR` in js/layer-packs.js. */
+  [/^serbo[- ]?croat/i, 'sh'], [/^serbian/i, 'sr'], [/^croatian/i, 'hr'],
+  [/^bosnian/i, 'bs'], [/^montenegrin/i, 'cnr'],
   [/^bulgarian/i, 'bg'], [/^slovak/i, 'sk'], [/^slovene|slovenian/i, 'sl'], [/^albanian|shqip/i, 'sq'],
   [/^lithuanian/i, 'lt'], [/^latvian/i, 'lv'], [/^estonian/i, 'et'], [/^hebrew/i, 'he'],
   [/^amharic/i, 'am'], [/^somali/i, 'so'], [/^hausa/i, 'ha'], [/^yoruba/i, 'yo'], [/^igbo/i, 'ig'],
@@ -151,6 +164,22 @@ function pairs(text) {
 }
 /* the year in «(2015 est.)» is not a group, and neither is a stray «est» */
 const REALNAME = (nm) => !/^(est|note|approx|about|around|roughly)$/i.test(nm.trim());
+/* == (#R268) THE YEAR THE COMPOSITION IS FROM ==================================================
+   「データの年も記載しろ。」  The Factbook states every composition as of a census or estimate year
+   and prints it at the end of the sentence - «… (2011 est.)», «… (2021 census)». It was parsed off
+   and thrown away, so the map showed a percentage with no date on it and Russia's 2006 estimate sat
+   beside Japan's 2021 one looking equally current. It is carried as `y` now, and the tap prints it.
+   ⚠ ONLY WHEN THE SOURCE SAYS SO. Some entries carry no year at all (a bare list of official
+   languages); those get no `y`, and the popup says the year is not stated rather than inventing
+   one. Measured on the shipped files: 181 of 202 religion entries and 86 of 196 language entries
+   carry a year. */
+const yearOf = (text) => {
+  const t = String(text || '');
+  let y = null, m;
+  const re = /\((?:[^()]*?\b)?((?:1[89]|20)\d{2})\b[^()]*\)/g;
+  while ((m = re.exec(t))) y = +m[1];                    /* the LAST one stated - the whole entry's */
+  return y;
+};
 const bucket = (nm, table, dflt) => { for (const [re, k] of table) if (re.test(nm)) return k; return dflt; };
 
 const ne = await j(NE);
@@ -201,24 +230,24 @@ for (const f of files) {
       g[k] = (g[k] || 0) + v;
     }
     const rank = Object.entries(g).filter(([k]) => k !== 'unspecified').sort((a, b) => b[1] - a[1]);
-    if (rank.length) religion[iso] = { top: rank[0][0], pct: Math.round(rank[0][1] * 10) / 10, mix: g, src: rt.slice(0, 400) };
+    if (rank.length) religion[iso] = { top: rank[0][0], pct: Math.round(rank[0][1] * 10) / 10, mix: g, y: yearOf(rt), src: rt.slice(0, 400) };
   } else if (rt) {
     /* no share published — record the leading group and NO number, the way the language branch does */
     const first = (rt.split(/[,;(]/)[0] || '').trim();
     const k = bucket(first, REL, null);
-    if (k && k !== 'unspecified') religion[iso] = { top: k, pct: null, mix: {}, src: rt.slice(0, 400) };
+    if (k && k !== 'unspecified') religion[iso] = { top: k, pct: null, mix: {}, y: yearOf(rt), src: rt.slice(0, 400) };
   }
   const lp = pairs(lt).filter(([nm]) => REALNAME(nm));
   if (lp.length) {
     const g = {}; for (const [nm, v] of lp) { const k = bucket(nm, LANG, null); if (k) g[k] = (g[k] || 0) + v; }
     const rank = Object.entries(g).sort((a, b) => b[1] - a[1]);
-    if (rank.length) language[iso] = { top: rank[0][0], pct: Math.round(rank[0][1] * 10) / 10, mix: g, src: lt.slice(0, 400) };
+    if (rank.length) language[iso] = { top: rank[0][0], pct: Math.round(rank[0][1] * 10) / 10, mix: g, y: yearOf(lt), src: lt.slice(0, 400) };
   } else if (lt) {
     /* no percentages given — the Factbook often lists the official language(s) only. The FIRST one
        named is the dominant one, and it is recorded WITHOUT a share so nothing is invented. */
     const first = (lt.split(/[,;(]/)[0] || '').trim();
     const k = bucket(first, LANG, null);
-    if (k) language[iso] = { top: k, pct: null, mix: {}, src: lt.slice(0, 400) };
+    if (k) language[iso] = { top: k, pct: null, mix: {}, y: yearOf(lt), src: lt.slice(0, 400) };
   }
   process.stdout.write('.');
 }

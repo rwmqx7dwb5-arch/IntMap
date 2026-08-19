@@ -74,6 +74,16 @@ window.IntMapModules.terrainWater=function(HOST){
     /* ---- the working grid --------------------------------------------------------------------- */
     let G=null;        /* {NX,NY,xW,yN,dx,dy,cellM,areaM2,z,base:Float32Array} */
     let sculpt=null;   /* Float32Array — the brush strokes */
+    /* ══ (#R268) 「盛る、削る部分の着色の有無をトグルで選択できるように」 ═══════════════════════════
+       The brown/blue wash over the edited cells answers 「どこを触ったか」, and once the ground has
+       been shaped it is in the way of 「その地形はどう見えるか」 — the 3-D relief and the hillshade
+       already carry the edit itself (#R255). This is that wash and nothing else: `sculpt` and the
+       levees are untouched, so the solver, the readout and the terrain tiles are byte-identical
+       either way. Remembered across sessions, because it is a preference rather than a state. */
+    let tintEdits=(function(){ try{ return localStorage.getItem('intmap_tw_tint')!=='0'; }catch(_){ return true; } })();
+    function setTint(v){ tintEdits=!!v;
+      try{ localStorage.setItem('intmap_tw_tint',tintEdits?'1':'0'); }catch(_){}
+      draw(); return tintEdits; }
     let levees=[];     /* [{pts:[[lng,lat]…], crest:m above ground, width:m}] */
     /* (#R261) [{lng,lat,m3,cont,rate}] — `cont` and `rate` belong to the SOURCE, not to the panel.
        See the ⚠⚠⚠ note above pourStart for what was wrong with keeping them global. */
@@ -483,6 +493,19 @@ window.IntMapModules.terrainWater=function(HOST){
        solver's world and left the 3-D relief showing the old valley (measured: the readout went
        1000 → 1117.96 m and `getTerrain().source` was still `terrain-dem`). */
     function editDirty(){ editStamp++; terrainSoon(); }
+    /* ══ ⚠⚠⚠ (#R268) 「地形をリセットを押してもリセットされない」 — THE BUTTON DID NOTHING AT ALL ═════
+       MEASURED in the source: the panel's handler was `sculpt=new Float32Array(...); levees=[];
+       solve();` — and `editField()` is MEMOISED on `editStamp`, which only `editDirty()` bumps. So
+       the arrays were cleared and every consumer went on reading the OLD combined field: `surface()`
+       (the solver), the `IntMapElevEdit` readout hook, and the raster-dem tiles the 3-D relief is
+       built from. Nothing moved, on screen or in the numbers.
+       ⚠ THIS IS THE THIRD TIME THE SAME DOOR HAS BEEN LEFT OUT — #R255 (`brush()` from Atlas) and
+       #R258 (`addLevee`) both wrote the same ⚠ note above `editDirty`. The answer is not another
+       note: there is now ONE reset, called by the button and by the Atlas door alike, so there is
+       no second place for the call to be missing from. */
+    function resetTerrainNow(){ if(!G) return false;
+      pushUndo(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; drafting=null;
+      editDirty(); solve(); terrainSoon(); return true; }
     /* has the reader changed the ground at all? (a pure water run must not swap the terrain source) */
     function hasEdits(){ if(!G) return false; if(levees.length||drafting) return true;
       const f=editField(); for(let k=0;k<f.length;k++) if(Math.abs(f[k])>0.01) return true; return false; }
@@ -820,17 +843,6 @@ window.IntMapModules.terrainWater=function(HOST){
       const i=Math.floor(((mX(lng)-B.xW+1)%1)/B.dx), j=Math.floor((mY(lat)-B.yN)/B.dy);
       return (i>=0&&j>=0&&i<B.NX&&j<B.NY)?{i,j}:null; }
     function basinBBox(){ return B?[lngOf(B.xW),latOf(B.yN),lngOf(B.xW+B.NX*B.dx),latOf(B.yN+B.NY*B.dy)]:null; }
-    /* the bed for one basin cell: inside the working rectangle it is the SCULPTED ground, outside it
-       is the DEM at the basin's own level. One level for the whole basin, so the answer never has
-       two resolutions in it (#R249). A sample the DEM cannot answer stays NaN — the solver closes
-       every face touching it rather than inventing a bed (#R265). */
-    function bedAt(i,j,surf){
-      const gi=i-B.offI, gj=j-B.offJ;
-      if(gi>=0&&gj>=0&&gi<G.NX&&gj<G.NY) return surf[gj*G.NX+gi];
-      const v=demAt(bLng(i),bLat(j),B.z);
-      if(v==null||!isFinite(v)){ basinVoid++; return NaN; }
-      return v;
-    }
     function ensureSim(){
       if(!G||!WD()) return null;
       if(!sim||!B||!simBed||simBed.length!==B.NX*B.NY){
@@ -927,32 +939,93 @@ window.IntMapModules.terrainWater=function(HOST){
       growPending=true;
       growBasin(padW,padE,padN,padS).catch(()=>{ growFailed++; }).then(()=>{ growPending=false; });
     }
+    /* == (#R268) THE LATTICE OUTGREW THE ELEVATION CACHE, AND A CELL WITH NO BED IS A WALL ========
+       「水がある直線を境に一切描画されないことが多い。」
+
+       #R267's growth warmed a FIXED 28x28 lattice over the WHOLE new extent
+       (`STEP = max(1, round(max(nNX,nNY)/28))`) and then read `demAt` for every one of the new
+       cells. Two independent things break as the basin follows a river:
+
+         - 28 samples per axis is a density in CELLS, and what has to be covered is TILES. A basin
+           200 km across at z14 (2.4 km tiles) spans 83 tiles per axis and was probed at 28 - two of
+           every three tiles were never requested at all.
+         - the DEM cache is an LRU of 560 tiles (js/map-readout.js `_DEM_CACHE_MAX`) and nothing
+           pinned these, so even a tile that WAS requested could be evicted before the bed was read.
+           #R264 wrote this lesson down for the refinement windows one file over: `null` from
+           `demAt` means 「not in the cache」 at least as often as it means 「no ground here」.
+
+       Either way the cell's bed is NaN, and the solver closes every face touching a NaN bed - by
+       design, and correctly (#R265). A tile that was never fetched is a RECTANGLE in Mercator, so
+       the water stops dead along its edge: a straight line across a valley, with nothing drawn past
+       it, exactly as reported.
+
+       So the new ground is read one DEM-TILE BLOCK at a time - one warm point per tile, a block
+       small enough to sit inside the LRU whole, read immediately while it is still cached, and one
+       targeted retry for whatever still came back null. What is missing after that is counted in
+       `basinVoid` and PRINTED (#R185: no silent caps); the old code counted it into the same
+       variable and never showed it, which is part of why five rounds looked for this in the
+       geometry.
+       WARNING: NOTHING NEW IS EVER INSIDE THE WORKING RECTANGLE. G always sits at (offI, offJ)
+       inside B, so a cell being added is by construction outside it - which is why this no longer
+       needs `surface()` at all, and why `B` is not swapped until the whole bed is in hand (an
+       `await` between the swap and `sim.grow` would leave every reader indexing the new lattice
+       into the old state vector). */
+    /* tiles per block. The LRU holds 560 on a desktop and 140 on a phone (js/app-body.js
+       `_DEM_CACHE_MAX`), and a block has to fit inside it WHOLE with room for the readers that share
+       it - the same reasoning `build()` uses for its own 420 / 110 tile budget. */
+    const GROW_TILE_BUDGET=()=>((typeof isMobile==='function'&&isMobile())?100:280);
+    const GROW_MAX_MS=45000;      /* the whole extension; past it the rest is read from cache only */
     async function growBasin(padW,padE,padN,padS){
-      const oldNX=B.NX, oldNY=B.NY;
+      const Bold=B, S0=sim;
+      const oldNX=Bold.NX, oldNY=Bold.NY;
       const nNX=oldNX+padW+padE, nNY=oldNY+padN+padS;
-      const xW2=B.xW-padW*B.dx, yN2=B.yN-padN*B.dy;
-      /* the elevation the new ground needs, asked for as a lattice over the new extent only */
-      const pts=[];
-      const STEP=Math.max(1,Math.round(Math.max(nNX,nNY)/28));
-      for(let j=0;j<nNY;j+=STEP) for(let i=0;i<nNX;i+=STEP){
-        const gi=i-padW, gj=j-padN;
-        if(gi>=0&&gj>=0&&gi<oldNX&&gj<oldNY) continue;      /* already have this ground */
-        pts.push([lngOf(xW2+(i+0.5)*B.dx),latOf(yN2+(j+0.5)*B.dy)]); }
-      if(pts.length) await warmDEMTiles(pts.slice(0,1600),B.z,25000,null);
-      if(!sim||!B||B.NX!==oldNX||B.NY!==oldNY) return;       /* a rebuild overtook us — drop it */
-      const surf=surface();
+      const dx=Bold.dx, dy=Bold.dy, z=Bold.z;
+      const xW2=Bold.xW-padW*dx, yN2=Bold.yN-padN*dy;
+      const nLng=(i)=>lngOf(xW2+(i+0.5)*dx), nLat=(j)=>latOf(yN2+(j+0.5)*dy);
+      const isOld=(i,j)=>(i>=padW&&j>=padN&&i<padW+oldNX&&j<padN+oldNY);
       const nZ=new Float32Array(nNX*nNY);
-      const Bold=B;
-      B={ NX:nNX, NY:nNY, xW:xW2, yN:yN2, dx:Bold.dx, dy:Bold.dy, cellM:Bold.cellM,
-          areaM2:Bold.areaM2, z:Bold.z, offI:Bold.offI+padW, offJ:Bold.offJ+padN };
-      try{
-        for(let j=0;j<oldNY;j++){ const src=j*oldNX, dst=(j+padN)*nNX+padW;
-          for(let i=0;i<oldNX;i++) nZ[dst+i]=simBed[src+i]; }
-        for(let j=0;j<nNY;j++){ const gj=j-padN;
-          for(let i=0;i<nNX;i++){ const gi=i-padW;
-            if(gi>=0&&gj>=0&&gi<oldNX&&gj<oldNY) continue;
-            nZ[j*nNX+i]=bedAt(i,j,surf); } }
-      }catch(err){ B=Bold; throw err; }
+      for(let j=0;j<oldNY;j++){ const src=j*oldNX, dst=(j+padN)*nNX+padW;
+        for(let i=0;i<oldNX;i++) nZ[dst+i]=simBed[src+i]; }
+      const tw=1/Math.pow(2,z);                                   /* one DEM tile, in mercator units */
+      const ci=Math.max(1,Math.floor(tw/dx)), cj=Math.max(1,Math.floor(tw/dy));   /* cells per tile */
+      const per=Math.max(1,Math.floor(Math.sqrt(GROW_TILE_BUDGET())));            /* tiles per block */
+      const blkI=ci*per, blkJ=cj*per;
+      const t0=(typeof performance!=='undefined'?performance.now():Date.now());
+      const over=()=>((typeof performance!=='undefined'?performance.now():Date.now())-t0)>GROW_MAX_MS;
+      let voids=0;
+      for(let j0=0;j0<nNY;j0+=blkJ){ const j1=Math.min(nNY,j0+blkJ);
+        for(let i0=0;i0<nNX;i0+=blkI){ const i1=Math.min(nNX,i0+blkI);
+          let need=false;
+          for(let j=j0;j<j1&&!need;j++){ for(let i=i0;i<i1;i++){ if(!isOld(i,j)){ need=true; break; } } }
+          if(!need) continue;                                     /* ground the old lattice already has */
+          if(!over()){
+            const pts=[];
+            for(let j=j0;j<j1;j+=cj) for(let i=i0;i<i1;i+=ci) pts.push([nLng(i),nLat(j)]);
+            pts.push([nLng(i1-1),nLat(j1-1)]);                    /* ...and the far corner's own tile */
+            try{ await warmDEMTiles(pts,z,12000,null); }catch(_){}
+            if(sim!==S0||B!==Bold) return;                        /* a rebuild overtook us - drop it */
+          }
+          const miss=[];
+          for(let j=j0;j<j1;j++){ for(let i=i0;i<i1;i++){ if(isOld(i,j)) continue;
+            const k=j*nNX+i, v=demAt(nLng(i),nLat(j),z);
+            if(v==null||!isFinite(v)){ nZ[k]=NaN; miss.push(k); } else nZ[k]=v; } }
+          if(miss.length&&!over()){
+            /* (#R264) ONE targeted retry, one point per TILE - a null is as likely to be an
+               eviction as a hole, and asking again for the same ground is how the two are told apart */
+            const seen=Object.create(null), again=[];
+            miss.forEach(k=>{ const i=k%nNX, j=(k/nNX)|0;
+              const key=Math.floor(i/ci)+'/'+Math.floor(j/cj);
+              if(seen[key]) return; seen[key]=1; again.push([nLng(i),nLat(j)]); });
+            try{ await warmDEMTiles(again,z,12000,null); }catch(_){}
+            if(sim!==S0||B!==Bold) return;
+            miss.forEach(k=>{ const v=demAt(nLng(k%nNX),nLat((k/nNX)|0),z);
+              if(v==null||!isFinite(v)) voids++; else nZ[k]=v; });
+          } else voids+=miss.length;
+        } }
+      if(sim!==S0||B!==Bold) return;
+      basinVoid+=voids;
+      B={ NX:nNX, NY:nNY, xW:xW2, yN:yN2, dx, dy, cellM:Bold.cellM,
+          areaM2:Bold.areaM2, z, offI:Bold.offI+padW, offJ:Bold.offJ+padN };
       if(!sim.grow(nNX,nNY,padW,padN,nZ)){ B=Bold; growFailed++; return; }
       simBed=nZ; basinGrow++;
     }
@@ -1230,7 +1303,7 @@ window.IntMapModules.terrainWater=function(HOST){
       const cvT=document.createElement('canvas'); cvT.width=NX; cvT.height=NY;
       const ctT=cvT.getContext('2d'), imT=ctT.createImageData(NX,NY), pT=imT.data;
       let anyEdit=false;
-      for(let k=0;k<NX*NY;k++){ const d=sculpt[k]+lv[k]; if(Math.abs(d)<0.05) continue; anyEdit=true;
+      for(let k=0;k<NX*NY&&tintEdits;k++){ const d=sculpt[k]+lv[k]; if(Math.abs(d)<0.05) continue; anyEdit=true;
         const a=Math.min(190,40+Math.abs(d)*4), o=k*4;
         if(d>0){ pT[o]=214; pT[o+1]=132; pT[o+2]=52; }                 /* built up */
         else   { pT[o]=90;  pT[o+1]=110; pT[o+2]=140; }                /* cut away */
@@ -1412,6 +1485,9 @@ window.IntMapModules.terrainWater=function(HOST){
         +((result.sim&&result.sim.capped)?('<br><span style="opacity:0.85;">⚠ '+L('The modelled area has reached its limit — water leaving its edge is counted, not drawn.','計算領域が上限に達しました。端から出た水は集計され、描画されません。','Das Modellgebiet hat seine Grenze erreicht — abfließendes Wasser wird gezählt, nicht gezeichnet.','Область моделирования достигла предела — вода за краем учитывается, но не рисуется.','El área modelada alcanzó su límite: el agua que sale del borde se contabiliza, no se dibuja.')+'</span>'):'')
         /* ⚠ (#R267) 0 is the whole point, so it is printed only when it is not 0 — and then loudly */
         +((result.sim&&result.sim.jumps)?('<br><span style="opacity:0.85;">⚠ '+n(result.sim.jumps)+' '+L('cells hold water that did not flow into them','セルの水が、流れ込んだのではない経路で存在しています','Zellen mit Wasser, das nicht eingeflossen ist','ячеек с водой, которая туда не притекла','celdas con agua que no fluyó hasta allí')+'</span>'):'')
+        /* (#R268) …and the cells the elevation host never answered for. They are WALLS to the
+           solver (a NaN bed closes every face), so a silent count is a silent straight edge. */
+        +((result.sim&&result.sim.voids)?('<br><span style="opacity:0.85;">⚠ '+n(result.sim.voids)+' '+L('cells have no elevation data and the water cannot enter them','セルの標高データが取得できず、水はそこへ入れません','Zellen ohne Höhendaten - dort kann kein Wasser hin','ячеек без данных высот - вода туда не идёт','celdas sin datos de elevación: el agua no puede entrar')+'</span>'):'')
         +((result.sim&&result.sim.growFailed)?('<br><span style="opacity:0.85;">⚠ '+result.sim.growFailed+' '+L('extensions could not read the elevation data','回、領域拡張が標高データを取得できませんでした','Erweiterungen konnten keine Höhendaten lesen','расширений не смогли прочитать данные высот','ampliaciones no pudieron leer los datos de elevación')+'</span>'):'')
         +((trace&&trace.frontTS>0)?('<br><b>'+L('Travel time','到達時間','Laufzeit','Время добегания','Tiempo de recorrido')+':</b> '
           +fmtDur(trace.frontTS)+' '+L('over','／','über','на','en')+' '+n(trace.km,1)+' km'
@@ -1531,7 +1607,11 @@ window.IntMapModules.terrainWater=function(HOST){
         +'<div class="tw-body" style="padding:10px 12px 4px;display:flex;flex-direction:column;gap:11px;flex:1 1 auto;min-height:0;overflow-y:auto;">'
         /* ① the tool — a segmented control, because exactly one of them is in the pointer's hand */
         +'<div>'+cap(L('Tool','ツール','Werkzeug','Инструмент','Herramienta'))
-          +'<div class="tw-segwrap tw-modes">'+modes().map(m=>'<button class="tw-seg tw-m" data-m="'+m[0]+'">'+m[1]+'</button>').join('')+'</div></div>'
+          +'<div class="tw-segwrap tw-modes">'+modes().map(m=>'<button class="tw-seg tw-m" data-m="'+m[0]+'">'+m[1]+'</button>').join('')+'</div>'
+          /* (#R268) …and whether the ground you shaped is tinted while you shape it */
+          +card('<label class="tw-row" style="cursor:pointer;">'+L('Tint raised / lowered ground','盛った所・削った所に着色','Angehobenes / abgetragenes Gelände einfärben','Подсвечивать поднятое / срезанное','Colorear lo elevado / rebajado')
+            +'<span class="tw-val"><input class="tw-tint" type="checkbox"'+(tintEdits?' checked':'')+' style="accent-color:var(--primary-color);width:16px;height:16px;"></span></label>')
+          +'</div>'
         /* ② whatever that tool is set by */
         +'<div class="tw-params"></div>'
         /* ③ the one condition that applies to the whole rectangle whichever tool is out */
@@ -1582,6 +1662,7 @@ window.IntMapModules.terrainWater=function(HOST){
         +'</div>';
       panel.querySelector('.tw-close').onclick=()=>close();
       panel.querySelectorAll('.tw-m').forEach(b=>b.onclick=()=>{ setMode(b.getAttribute('data-m')); });
+      { const t=panel.querySelector('.tw-tint'); if(t) t.onchange=()=>setTint(t.checked); }
       panel.querySelector('.tw-rain').onchange=e=>{ pushUndo(); rainMm=Math.max(0,+e.target.value||0); solve(); };
       /* (#R258) the clock belongs to the simulation, so its controls are wired from here and stay
          live in every tool — including when no tool at all is selected. */
@@ -1595,8 +1676,7 @@ window.IntMapModules.terrainWater=function(HOST){
       panel.querySelector('.tw-undo').onclick=()=>undo();
       /* (#R211) 「配置した水は残して地形だけ戻す」 — the sculpt and the levees go, the water stays put
          and is re-solved on the ORIGINAL ground, which is the comparison the button exists for. */
-      panel.querySelector('.tw-resetT').onclick=()=>{ if(!G) return; pushUndo();
-        sculpt=new Float32Array(G.NX*G.NY); levees=[]; solve(); };
+      panel.querySelector('.tw-resetT').onclick=()=>{ resetTerrainNow(); };
       panel.querySelector('.tw-reset').onclick=()=>{ if(!G) return; pourStop(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; sources=[]; rainMm=0; pourSimS=0; resetSim(); editDirty(); clearTrace();
         const r=panel.querySelector('.tw-rain'); if(r) r.value=0; undoStack=[]; solve(); terrainSoon(); };
       try{ makeDraggable(panel,panel.querySelector('.tw-head')); }catch(_){}
@@ -2126,7 +2206,7 @@ window.IntMapModules.terrainWater=function(HOST){
          flood — measured, a 5 Mm³ release reported 「Ponded 14.48 Mm³」 after two runs. */
       clearWater(){ pushUndo(); pourStop(); sources=[]; rainMm=0; resetSim(); const r=panel&&panel.querySelector('.tw-rain'); if(r) r.value=0; return solve(); },
       /* (#R211) 「配置した水は残して地形だけ戻す」 — the button's other half, as a call */
-      resetTerrain(){ if(!G) return false; pushUndo(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; editDirty(); solve(); terrainSoon(); return true; },
+      resetTerrain(){ return resetTerrainNow(); },
       state:()=>({ open:opened, mode, grid:G?{nx:G.NX,ny:G.NY,cellM:G.cellM,z:G.z,bbox:G.bbox,demMissing:G.demMissing||0}:null,
         levees:levees.length, sources:sources.length, rainMm, flowM3s, tracing,
         /* (#R211) the pour, the pen and how many single operations 元に戻す can still take back */

@@ -111,7 +111,15 @@ test('R266 ⑤: the two globally sparse facility sets ship a global snapshot', (
 
 test('R266 ⑥: the warnings layer covers the G7 and China with their own services', () => {
   const s = read('js/world-packs.js');
-  assert.match(s, /const FEEDS=\{ JPN:'jma', USA:'nws', CAN:'eccc', CHN:'cma' \}/);
+  /* ⚠ (#R268) THE MEMBERSHIP, NOT THE WHOLE LITERAL. #R266's four are still each on their own
+     agency's feed; #R268 added Australia, Brazil and Hong Kong, and pinning the exact object made a
+     LARGER table look like a regression. What this test is about is that these four countries are
+     not on GDACS. */
+  const feeds = /const FEEDS=\{([^}]*)\}/.exec(s);
+  assert.ok(feeds, 'the national-feed table is gone');
+  for (const [iso, feed] of [['JPN', 'jma'], ['USA', 'nws'], ['CAN', 'eccc'], ['CHN', 'cma']]) {
+    assert.ok(feeds[1].includes(iso + ":'" + feed + "'"), iso + ' lost its own service');
+  }
   const ma = /const MA=\{([\s\S]*?)\};/.exec(s);
   assert.ok(ma, 'the MeteoAlarm table is gone');
   for (const iso of ['DEU', 'FRA', 'ITA', 'GBR']) assert.ok(ma[1].includes(iso + ':'), iso + ' has no European feed');

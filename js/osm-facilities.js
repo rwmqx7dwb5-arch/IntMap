@@ -347,7 +347,11 @@ window.IntMapModules.facilities=function(HOST){
                  'Стартовые комплексы, космодромы, наземные станции спутниковой связи и радиотелескопы из OpenStreetMap.',
                  'Rampas de lanzamiento, puertos espaciales, estaciones terrenas y radiotelescopios de OpenStreetMap.'),
       q:['nwr["aeroway"="spaceport"]','nwr["man_made"="launch_pad"]','nwr["military"="launchpad"]',
-         'nwr["man_made"="satellite_dish"]','nwr["man_made"="telescope"]["telescope:type"="radio"]'],
+         'nwr["man_made"="satellite_dish"]','nwr["man_made"="telescope"]["telescope:type"="radio"]',
+         /* (#R268) MEASURED globally: `communication:satellite` is on 1,861 objects, 960 of them
+            tagged `man_made=antenna` rather than `satellite_dish` — real ground stations the tag
+            set could not see. Counting them as ground stations is what the tag says they are. */
+         'nwr["communication:satellite"]'],
       buckets:{
         pad:['#ff453a',LA('Launch pad','射点','Startrampe','Стартовый комплекс','Rampa de lanzamiento')],
         spaceport:['#ff9f0a',LA('Spaceport','宇宙基地','Raumfahrtbahnhof','Космодром','Puerto espacial')],
@@ -358,6 +362,7 @@ window.IntMapModules.facilities=function(HOST){
         if(t['man_made']==='launch_pad'||t['military']==='launchpad') return 'pad';
         if(t['man_made']==='satellite_dish') return 'ground';
         if(t['man_made']==='telescope') return 'radio';
+        if(t['communication:satellite']) return 'ground';   /* (#R268) — see the query note above */
         return 'other'; },
       fields:(t)=>[['operator',t['operator']||t['owner']||''],['diameter',t['diameter']?(t['diameter']+' m'):''],
                    ['start',t['start_date']||''],['addr',_addr(t)],['web',t['website']||'']]
@@ -534,6 +539,23 @@ window.IntMapModules.facilities=function(HOST){
                 osmId:e.type+'/'+e.id, tags:JSON.stringify(t).slice(0,3000) }}); });
           cache.set(ck,feats); if(cache.size>20) cache.delete(cache.keys().next().value);
         }
+        /* == (#R268) THE LIVE ANSWER IS ADDED TO THE SHIPPED ONE, NOT SUBSTITUTED FOR IT ===========
+           「宇宙基地・地上局レイヤー、にほぼ何も表示されない。」 - the same sentence as #R266's, with
+           the half that got fixed removed. MEASURED on production this round, the space layer over
+           Japan at z6: the snapshot puts 102 objects in that box and the live query came back with
+           100, which then REPLACED them. A viewport query is not a superset of a global snapshot -
+           Overpass caps at `out center 1200`, the bbox is rounded to two decimals, and an object
+           can be edited out of the tags between the snapshot's date and now - so «zoom in for the
+           live record» could and did make the picture smaller.
+           Merged by OSM id, live wins for an object present in both (its tags are current), and the
+           legend says both numbers. A reader zooming in can now only ever see MORE. */
+        if(showing==='bundle'||bundle){
+          const all=bundle||[];
+          const bb0=[Math.max(-180,b.getWest()),Math.max(-85,b.getSouth()),Math.min(180,b.getEast()),Math.min(85,b.getNorth())];
+          const have=Object.create(null); feats.forEach(f=>{ const i=f.properties&&f.properties.osmId; if(i) have[i]=1; });
+          const extra=inBox(all,bb0).filter(f=>{ const i=f.properties&&f.properties.osmId; return !(i&&have[i]); });
+          if(extra.length) feats=feats.concat(extra);
+        }
         count=feats.length; showing='live';
         if(on){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); legend(); }
       }catch(_){ lastKey=''; }
@@ -633,7 +655,9 @@ window.IntMapModules.facilities=function(HOST){
           +S(snap?(L('Shipped snapshot','同梱スナップショット','Mitgelieferter Stand','Прилагаемый снимок','Instantánea incluida')
                     +(bundleAt?(' · '+bundleAt):'')
                     +' · '+L('zoom in for the live record','拡大すると最新の記録を取得します','Zum Laden des Livestands hineinzoomen','Приблизьте для актуальных данных','Acérquese para el registro en vivo'))
-                 :L('Live from OpenStreetMap for this view','この表示範囲の最新の OpenStreetMap','Live aus OpenStreetMap für diesen Ausschnitt','Актуальные данные OpenStreetMap для этого вида','En vivo desde OpenStreetMap para esta vista'))
+                 /* (#R268) …and what is on screen once the reader has zoomed in is the UNION of the
+                    two, so the line says so rather than claiming the picture is purely live. */
+                 :L('Live OpenStreetMap for this view, merged with the shipped snapshot','この表示範囲の最新の OpenStreetMap と同梱スナップショットの統合','Live-OpenStreetMap für diesen Ausschnitt, zusammengeführt mit dem mitgelieferten Stand','Актуальные данные OpenStreetMap для этого вида вместе с прилагаемым снимком','OpenStreetMap en vivo para esta vista, combinado con la instantánea incluida'))
           +'</div>'):'')
         +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:6px;">'+S(SET.note())+' · OpenStreetMap (ODbL)</div>';
     }

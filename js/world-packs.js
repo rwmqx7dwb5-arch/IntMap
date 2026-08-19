@@ -1039,7 +1039,30 @@ window.IntMapModules.worldPacks=function(HOST){
          relay caches for 60 s, so a warning could be five minutes old before it appeared. It is now
          60 s, and a tab coming back to the foreground refreshes immediately rather than waiting out
          whatever remained of its timer. */
-      const FEEDS={ JPN:'jma', USA:'nws', CAN:'eccc', CHN:'cma' };
+      /* ══ ⚠⚠⚠ (#R268) 「対応する国をもっと増やせ」 — THE SECOND TIME, SO THE ANSWER IS MEASURED ═══
+         #R266 got the same sentence and added Canada, China and the 37 MeteoAlarm services. It came
+         back, so every candidate was PROBED this round with a real request from this app's own
+         origin, and only what actually answers is wired:
+
+           api.weather.bom.gov.au/v1/warnings      200 · ACAO * · 4 KB      → Australia, direct
+           apiprevmet3.inmet.gov.br/avisos/ativos  200 · ACAO echoes us     → Brazil, WITH POLYGONS
+           data.weather.gov.hk/…?dataType=warnsum  200 · ACAO * · 161 B     → Hong Kong, direct
+           alerts.metservice.com/cap/rss           200 · ACAO about.metservice.com  → blocked
+           mausam.imd.gov.in/api/…                 401 «IP needs to be whitelisted»  → not public
+           ws.smn.gob.ar/alerts/type/AL            503                      → not answering
+           api.met.gov.my, caps.weathersa.co.za, smn.conagua.gob.mx, signature.bmkg.go.id
+                                                   401 / 404 / 500          → no open endpoint found
+           severeweather.wmo.int WFS (WMO SWIC)    200 but 35–420 MB and `ACAO: null`
+                                                   → the one global aggregate, and it cannot be read
+                                                     from a browser NOR relayed at that size on a
+                                                     60-second clock. Recorded here so the next round
+                                                     starts from the measurement rather than the idea.
+
+         ⚠ AND EUROPE WAS ONLY NOMINALLY COVERED. 37 MeteoAlarm services were SUPPORTED and four
+         were FETCHED (`MA_DEFAULT`), so 33 European countries were washed only if somebody tapped
+         them. They are now pulled in a few per tick until the whole set is in — bounded per call,
+         complete within a few minutes, and reported. */
+      const FEEDS={ JPN:'jma', USA:'nws', CAN:'eccc', CHN:'cma', AUS:'bom', BRA:'inmet', HKG:'hko' };
       /* MeteoAlarm (EUMETNET) member services, ISO3 → the slug its feed is named with */
       const MA={ AUT:'austria', BEL:'belgium', BIH:'bosnia-herzegovina', BGR:'bulgaria', HRV:'croatia',
         CYP:'cyprus', CZE:'czechia', DNK:'denmark', EST:'estonia', FIN:'finland', FRA:'france',
@@ -1054,6 +1077,12 @@ window.IntMapModules.worldPacks=function(HOST){
       const MA_DEFAULT=['DEU','FRA','ITA','GBR'];
       const maData={};        /* ISO3 → {count, warnings:[…]} | {error} */
       let maAsked=MA_DEFAULT.slice();
+      /* (#R268) …and the rest arrive a few at a time, so every European country is washed without
+         asking one relay call to read 37 ten-megabyte feeds at once (see the note on FEEDS). */
+      const MA_PER_TICK=6;
+      function maNext(){ const todo=Object.keys(MA).filter(k=>!maData[k]&&maAsked.indexOf(k)<0);
+        const take=todo.slice(0,MA_PER_TICK); take.forEach(k=>maAsked.push(k)); return take; }
+      let bomRec=null, hkoRec=null;   /* the two list-only services — a wash and a list, like CMA */
       const relay=(qs)=>{ let b=''; try{ b=String(window.SUPABASE_URL||'').replace(/\/$/,''); }catch(_){ b=''; }
         return b?(b+'/functions/v1/alerts-relay?'+qs):''; };
       /* GB/T 2260: the first two digits of a CMA alert id are the province, which is the level
@@ -1122,11 +1151,23 @@ window.IntMapModules.worldPacks=function(HOST){
 
       async function loadJMA(){
         const [map,area,geo]=await Promise.all([
-          fetch('https://www.jma.go.jp/bosai/warning/data/warning/map.json').then(r=>{ if(!r.ok) throw new Error('jma '+r.status); return r.json(); }),
+          fetch('https://www.jma.go.jp/bosai/warning/data/warning/map.json',{cache:'no-store'}).then(r=>{ if(!r.ok) throw new Error('jma '+r.status); return r.json(); }),
           fetch('https://www.jma.go.jp/bosai/common/const/area.json').then(r=>r.ok?r.json():{}),
           jpPrefGeo() ]);
         const nameOf=(code)=>{ for(const k of ['class20s','class15s','class10s','offices','centers']){
             const t=area&&area[k]; if(t&&t[code]&&t[code].name) return t[code].name; } return code; };
+        /* ══ (#R268) THE LEVEL BETWEEN THE PREFECTURE AND THE TOWN ════════════════════════════════
+           JMA issues at two levels and the tap printed the lower one as a flat list — MEASURED on
+           production, a Japan tap rendered 785 rows in 111,000 characters of HTML, and opening
+           Hokkaido gave 稚内市 / 猿払村 / 浜頓別町 … one line per town PER HAZARD. area.json already
+           carries the hierarchy (class20 → class15 → class10 = 宗谷地方), so every row now knows its
+           region and the renderer folds on it. Nothing is dropped; it gains a level. */
+        const parentOf=(code)=>{ for(const k of ['class20s','class15s','class10s']){
+            const t=area&&area[k]; if(t&&t[code]) return t[code].parent||''; } return ''; };
+        const regionOf=(code)=>{ let c=String(code);
+          for(let i=0;i<4;i++){ if(area&&area.class10s&&area.class10s[c]) return c;
+            const q=parentOf(c); if(!q||q===c) break; c=q; }
+          return null; };
         const byPref=Object.create(null);
         Object.keys(map).forEach(k=>{ const o=map[k]; if(!o||!o.areaTypes) return;
           (o.areaTypes||[]).forEach((at,ti)=>{ (at.areas||[]).forEach(a=>{
@@ -1135,7 +1176,9 @@ window.IntMapModules.worldPacks=function(HOST){
             (a.warnings||[]).forEach(w=>{ if(!w||w.status==='解除'||w.status==='発表警報・注意報はなし') return;
               const t=tierOf(w.code); if(t>rec.tier) rec.tier=t;
               const kind=JMA_KIND[String(w.code).padStart(2,'0')];
-              rec.items.push({ area:nameOf(a.code), adm:nameOf(String(pref).padStart(2,'0')+'0000')||nameOf(a.code), unit:ti===0?'pref':'muni', tier:t,
+              const r10=regionOf(a.code);
+              rec.items.push({ area:nameOf(a.code), sub:r10?nameOf(r10):nameOf(a.code),
+                adm:nameOf(String(pref).padStart(2,'0')+'0000')||nameOf(a.code), unit:ti===0?'pref':'muni', tier:t,
                 kind:kind?(HOST.lang==='jp'?kind[0]:kind[1]):('#'+w.code), status:w.status }); }); }); }); });
         const out=[];
         Object.keys(byPref).forEach(p=>{ const rec=byPref[p]; if(!rec.tier) return;
@@ -1149,8 +1192,13 @@ window.IntMapModules.worldPacks=function(HOST){
             items:JSON.stringify(rec.items.slice(0,200).map(x=>Object.assign({},x,{adm:pn}))) }}); });
         return out; }
 
+      /* ⚠ (#R268) `cache:'no-store'` ON EVERY LIVE WARNING FETCH. 「全然現実の発令に追い付いていない。
+         リアルタイムで反映しろ。」 — #R266 took the refresh interval from 300 s to 60 s and left the
+         HTTP cache alone, so a tick could be served the copy the browser already had: JMA's map.json
+         and the NWS feed both ship ordinary cache headers, and a 60-second timer that re-reads a
+         cached document is a 60-second timer that changes nothing. */
       async function loadNWS(){
-        const r=await fetch('https://api.weather.gov/alerts/active?status=actual&message_type=alert');
+        const r=await fetch('https://api.weather.gov/alerts/active?status=actual&message_type=alert',{cache:'no-store'});
         if(!r.ok) throw new Error('nws '+r.status);
         const j=await r.json();
         const SEV={Extreme:3,Severe:2,Moderate:1,Minor:1,Unknown:1};
@@ -1169,7 +1217,7 @@ window.IntMapModules.worldPacks=function(HOST){
       /* ── Canada: Environment and Climate Change Canada, alert polygons, grouped by province ──
          api.weather.gc.ca is an OGC API - Features collection and it sends ACAO — no relay. */
       async function loadECCC(){
-        const r=await fetch('https://api.weather.gc.ca/collections/weather-alerts/items?f=json&limit=500');
+        const r=await fetch('https://api.weather.gc.ca/collections/weather-alerts/items?f=json&limit=500',{cache:'no-store'});
         if(!r.ok) throw new Error('eccc '+r.status);
         const j=await r.json(); const out=[];
         const en=()=>HOST.lang!=='fr';
@@ -1188,7 +1236,7 @@ window.IntMapModules.worldPacks=function(HOST){
       async function loadCMA(){
         const u=relay('u='+encodeURIComponent('https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=300&signaltype=&signallevel=&province='));
         if(!u) throw new Error('no relay');
-        const r=await fetch(u); if(!r.ok) throw new Error('cma '+r.status);
+        const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('cma '+r.status);
         const j=await r.json();
         const list=(j&&j.data&&j.data.page&&j.data.page.list)||[];
         const items=[]; let worst=0;
@@ -1201,12 +1249,62 @@ window.IntMapModules.worldPacks=function(HOST){
         cmaCount=items.length;
         return { items, worst }; }
 
+      /* ── Australia: the Bureau of Meteorology's own warning list. ACAO *, 4 KB, no geometry —
+            so this is a country wash plus a list grouped by STATE, the level BoM files them at. ──
+         ⚠ THE TIER IS BoM's OWN WORD, NOT A JUDGEMENT: everything on this endpoint is a warning
+            (tier «警報»), and `warning_group_type` = «major» is BoM's own top flood classification,
+            which is the only thing raised to the top tier. Nothing is inferred from the title. ── */
+      async function loadBOM(){
+        const r=await fetch('https://api.weather.bom.gov.au/v1/warnings',{cache:'no-store'});
+        if(!r.ok) throw new Error('bom '+r.status);
+        const j=await r.json(); const items=[]; let worst=0;
+        (j.data||[]).forEach(a=>{ const t=/major|emergency/i.test(String(a.warning_group_type||''))?3:2;
+          if(t>worst) worst=t;
+          (a.states&&a.states.length?a.states:[a.state||'']).forEach(st=>{
+            items.push({ area:String(a.title||a.short_title||''), sub:String(a.short_title||a.type||''),
+              adm:String(st||''), unit:'state', tier:t,
+              kind:String(a.short_title||a.type||'').replace(/_/g,' '), status:String(a.issue_time||'') }); }); });
+        return { items, worst }; }
+
+      /* ── Hong Kong: the Observatory's warning SUMMARY — one object per signal in force. ──
+         ⚠ The top tier is the two the HKO itself treats as the highest: a black rainstorm warning
+            and a tropical-cyclone signal of 8 or above. Everything else in force is a warning. ── */
+      async function loadHKO(){
+        const r=await fetch('https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=en',{cache:'no-store'});
+        if(!r.ok) throw new Error('hko '+r.status);
+        const j=await r.json(); const items=[]; let worst=0;
+        Object.keys(j||{}).forEach(k=>{ const a=j[k]||{};
+          if(/CANCEL/i.test(String(a.actionCode||''))) return;
+          const key=String(a.subtype||a.type||a.code||k);
+          const t=/WRAINB|TC(8|9|10)/i.test(key)?3:2; if(t>worst) worst=t;
+          items.push({ area:'Hong Kong', sub:String(a.name||key), adm:'Hong Kong', unit:'territory',
+            tier:t, kind:String(a.name||key), status:String(a.issueTime||'') }); });
+        return { items, worst }; }
+
+      /* ── Brazil: INMET's active warnings. These DO carry a polygon, so they are drawn as areas
+            like Japan's and America's rather than as a country wash, and grouped by state. ── */
+      async function loadINMET(){
+        const r=await fetch('https://apiprevmet3.inmet.gov.br/avisos/ativos',{cache:'no-store'});
+        if(!r.ok) throw new Error('inmet '+r.status);
+        const j=await r.json(); const out=[];
+        const SEV={'Grande Perigo':3,'Perigo':2,'Perigo Potencial':1};
+        (j.hoje||[]).forEach(a=>{ if(a.encerrado) return;
+          let g=null; try{ g=JSON.parse(a.poligono||'null'); }catch(_){}
+          if(!g||!g.type) return;
+          const t=SEV[String(a.severidade||'')]||1;
+          const states=String(a.estados||'').split(',').map(x=>x.trim()).filter(Boolean);
+          out.push({type:'Feature',geometry:g,properties:{ iso:'BRA', col:TIERCOL[t], tier:t,
+            name:String(a.descricao||''), n:1, at:String(a.data_inicio||''),
+            items:JSON.stringify(states.map(st=>({ area:String(a.descricao||''), sub:String(a.severidade||''),
+              adm:st, unit:'state', tier:t, kind:String(a.descricao||''), status:String(a.inicio||'') }))) }}); });
+        return out; }
+
       /* ── Europe: MeteoAlarm, summarised by the relay (the raw feed is 10 MB per country) ── */
       async function loadMA(list){
         const names=list.map(k=>MA[k]).filter(Boolean); if(!names.length) return;
         const u=relay('ma='+encodeURIComponent(names.join(','))+'&lang='+encodeURIComponent(window.IntMapLang.htmlTag(HOST.lang)||'en'));
         if(!u) throw new Error('no relay');
-        const r=await fetch(u); if(!r.ok) throw new Error('meteoalarm '+r.status);
+        const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('meteoalarm '+r.status);
         const j=await r.json();
         list.forEach(k=>{ const n=MA[k]; const d=(j.countries||{})[n]; if(d) maData[k]=d; });
       }
@@ -1232,7 +1330,7 @@ window.IntMapModules.worldPacks=function(HOST){
          events carry it, because it means «still unfolding», not «recent» — filtering on it would
          reproduce the empty map with a different cause. */
       async function loadGDACS(){
-        const r=await fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?fromDate=&toDate=&alertlevel=&eventlist=');
+        const r=await fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?fromDate=&toDate=&alertlevel=&eventlist=',{cache:'no-store'});
         if(!r.ok) throw new Error('gdacs '+r.status);
         const j=await r.json(); const out=[]; const byC=Object.create(null);
         (j.features||[]).forEach(f=>{ const p=f.properties||{};
@@ -1258,6 +1356,8 @@ window.IntMapModules.worldPacks=function(HOST){
       function washTier(c){
         let t=(gCountries[c]&&gCountries[c].tier)||0;
         if(c==='CHN'&&cmaRec) t=Math.max(t,cmaRec.worst||0);
+        if(c==='AUS'&&bomRec) t=Math.max(t,bomRec.worst||0);      /* (#R268) list-only, like CMA */
+        if(c==='HKG'&&hkoRec) t=Math.max(t,hkoRec.worst||0);
         const md=maData[c]; if(md&&md.warnings&&md.warnings.length) t=Math.max(t,md.warnings.reduce((m,w)=>Math.max(m,w.tier||1),0));
         return t; }
       function paintCountries(){ withCountrySource().then(()=>{ if(!on) return;
@@ -1267,12 +1367,14 @@ window.IntMapModules.worldPacks=function(HOST){
         setVis([CHORO],on); }); }
 
       async function refresh(){ if(busy) return; busy=true;
-        ['jma','nws','eccc','meteoalarm','cma','gdacs'].forEach(k=>{ if(FEED_STATE[k]!=='ok') FEED_STATE[k]='loading'; });
+        ['jma','nws','eccc','meteoalarm','cma','gdacs','bom','inmet','hko'].forEach(k=>{ if(FEED_STATE[k]!=='ok') FEED_STATE[k]='loading'; });
         try{ const parts=await Promise.all([
             loadJMA().then(v=>{ FEED_STATE.jma='ok'; return v; }).catch(e=>{ FEED_STATE.jma='error'; console.warn('JMA warnings',e); return []; }),
             loadNWS().then(v=>{ FEED_STATE.nws='ok'; return v; }).catch(e=>{ FEED_STATE.nws='error'; console.warn('NWS warnings',e); return []; }),
             loadECCC().then(v=>{ FEED_STATE.eccc='ok'; return v; }).catch(e=>{ FEED_STATE.eccc='error'; console.warn('ECCC warnings',e); return []; }),
-            loadGDACS().then(v=>{ FEED_STATE.gdacs='ok'; return v; }).catch(e=>{ FEED_STATE.gdacs='error'; console.warn('GDACS warnings',e); return []; })]);
+            loadGDACS().then(v=>{ FEED_STATE.gdacs='ok'; return v; }).catch(e=>{ FEED_STATE.gdacs='error'; console.warn('GDACS warnings',e); return []; }),
+            /* (#R268) Brazil publishes polygons, so it joins the geometry feeds rather than the washes */
+            loadINMET().then(v=>{ FEED_STATE.inmet='ok'; return v; }).catch(e=>{ FEED_STATE.inmet='error'; console.warn('INMET warnings',e); return []; })]);
           feats=parts.flat(); lastAt=Date.now();
           /* ⚠ (#R266) THE TWO LIST FEEDS ARE NOT AWAITED WITH THE OTHERS. MeteoAlarm's summariser
              reads up to four ten-megabyte national feeds; measured cold it is seconds, and a
@@ -1282,7 +1384,12 @@ window.IntMapModules.worldPacks=function(HOST){
              own when they land. */
           loadCMA().then(v=>{ FEED_STATE.cma='ok'; cmaRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
             .catch(e=>{ FEED_STATE.cma='error'; console.warn('CMA warnings',e); if(on&&panel.shown()) overview(); });
-          loadMA(maAsked).then(()=>{ FEED_STATE.meteoalarm='ok'; if(on){ paintCountries(); if(panel.shown()) overview(); } })
+          loadBOM().then(v=>{ FEED_STATE.bom='ok'; bomRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
+            .catch(e=>{ FEED_STATE.bom='error'; console.warn('BoM warnings',e); if(on&&panel.shown()) overview(); });
+          loadHKO().then(v=>{ FEED_STATE.hko='ok'; hkoRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
+            .catch(e=>{ FEED_STATE.hko='error'; console.warn('HKO warnings',e); if(on&&panel.shown()) overview(); });
+          /* (#R268) the European set completes itself: whatever has not been read yet, a few per tick */
+          loadMA(maAsked.filter(k=>!maData[k]).concat(maNext())).then(()=>{ FEED_STATE.meteoalarm='ok'; if(on){ paintCountries(); if(panel.shown()) overview(); } })
             .catch(e=>{ FEED_STATE.meteoalarm='error'; console.warn('MeteoAlarm',e); if(on&&panel.shown()) overview(); });
           whenDrawable(()=>{ if(ensureLayers()){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,on); } });
           paintCountries();
@@ -1343,6 +1450,25 @@ window.IntMapModules.worldPacks=function(HOST){
           if(cmaRec&&cmaRec.items&&cmaRec.items.length) h+=grouped(cmaRec.items);
           else if(FEED_STATE.cma==='ok') h+='<div style="margin-top:8px;color:var(--text-muted);">'+L('Nothing in force right now.','現在、発表中のものはありません。','Derzeit nichts in Kraft.','Сейчас ничего не действует.','Nada vigente ahora.')+'</div>';
           return h; }
+        /* (#R268) Australia and Hong Kong publish a list rather than a shape — the same treatment
+           China already has: the country is washed and the tap holds the units. */
+        if(feed==='bom'||feed==='hko'){
+          const rec=(feed==='bom')?bomRec:hkoRec;
+          h+='<div style="margin-top:4px;color:var(--text-muted);">'+(feed==='bom'
+              ?L('Bureau of Meteorology — warnings in force, grouped by state or territory.',
+                 'オーストラリア気象局（BoM）の発表中の警報。州・準州ごとにまとめています。',
+                 'Bureau of Meteorology — geltende Warnungen nach Bundesstaat.',
+                 'Бюро метеорологии Австралии — действующие предупреждения по штатам.',
+                 'Oficina de Meteorología — avisos vigentes por estado.')
+              :L('Hong Kong Observatory — the warning signals in force.',
+                 '香港天文台が発表中の警報信号。',
+                 'Hong Kong Observatory — geltende Warnsignale.',
+                 'Гонконгская обсерватория — действующие сигналы предупреждения.',
+                 'Observatorio de Hong Kong — señales de aviso vigentes.'))+'</div>'
+            +tierKey()+stLine(FEED_STATE[feed]);
+          if(rec&&rec.items&&rec.items.length) h+=grouped(rec.items);
+          else if(FEED_STATE[feed]==='ok') h+='<div style="margin-top:8px;color:var(--text-muted);">'+L('Nothing in force right now.','現在、発表中のものはありません。','Derzeit nichts in Kraft.','Сейчас ничего не действует.','Nada vigente ahora.')+'</div>';
+          return h; }
         if(feed==='meteoalarm'){
           h+='<div style="margin-top:4px;color:var(--text-muted);">'
             +L('MeteoAlarm (EUMETNET) — the national weather service’s own warnings, grouped by region.',
@@ -1356,7 +1482,9 @@ window.IntMapModules.worldPacks=function(HOST){
           else if(md&&!md.error) h+='<div style="margin-top:8px;color:var(--text-muted);">'+L('Nothing in force right now.','現在、発表中のものはありません。','Derzeit nichts in Kraft.','Сейчас ничего не действует.','Nada vigente ahora.')+'</div>';
           return h; }
         h+='<div style="margin-top:4px;color:var(--text-muted);">'+(feed==='jma'
-            ?L('Japan Meteorological Agency, at the unit the warning is issued for.','気象庁・発令単位（都道府県／市町村）','Japanische Wetterbehörde','Метеоагентство Японии','Agencia Meteorológica de Japón')
+            ?L('Japan Meteorological Agency, at the unit the warning is issued for.','気象庁・発令単位（都道府県／地方／市区町村）','Japanische Wetterbehörde','Метеоагентство Японии','Agencia Meteorológica de Japón')
+            :feed==='inmet'
+            ?L('INMET (Brazil), active warnings with their published areas, grouped by state.','ブラジル国立気象研究所（INMET）の発表中の警報。公表された対象範囲を描画し、州ごとにまとめています。','INMET (Brasilien) — geltende Warnungen mit ihren Gebieten, nach Bundesstaat.','INMET (Бразилия) — действующие предупреждения с их зонами, по штатам.','INMET (Brasil) — avisos vigentes con sus áreas, por estado.')
             :feed==='eccc'
             ?L('Environment and Climate Change Canada, active alerts by province.','カナダ環境・気候変動省（州ごとの発表中の警報）','Environment and Climate Change Canada','Министерство окружающей среды Канады','Medio Ambiente y Cambio Climático de Canadá')
             :L('US National Weather Service, active alerts.','米国 国立気象局（発表中の警報）','US-Wetterdienst','Нацслужба погоды США','Servicio Meteorológico Nacional de EE. UU.'))+'</div>';
@@ -1398,37 +1526,108 @@ window.IntMapModules.worldPacks=function(HOST){
          region), and this is the ONE renderer all of them share: one line per unit, the worst tier
          as its colour, the distinct hazards named once each, and the individual rows folded behind
          the browser's own <details>. Nothing is dropped — it is nested. */
+      /* ══ ⚠⚠⚠ (#R268) THE SAME REPORT, A SECOND TIME — SO THIS TIME IT WAS MEASURED FIRST ═══════
+         「クリックしたら、例えば、日本なら市町村単位で列挙するのを辞めろ。まずは都道府県でくくるとか、
+           そういうのをどの国でもしろ。」
+
+         #R266 read the same sentence, wrote a grouping, and it did group by prefecture. MEASURED on
+         production before touching anything this round: a Japan tap renders **785 rows in 111,000
+         characters of HTML**, and opening Hokkaido's fold gives
+
+             宗谷地方 洪水 · 宗谷地方 暴風 · 宗谷地方 濃霧 · 稚内市 洪水 · 稚内市 暴風 · 稚内市 濃霧 ·
+             猿払村 洪水 · 猿払村 暴風 · … +170
+
+         — i.e. exactly the municipality enumeration the instruction is about, one line per TOWN per
+         HAZARD, one level down from where #R266 looked. Two things were wrong and both are fixed
+         here, for every country at once because every feed goes through this one function:
+
+           · A UNIT APPEARS ONCE, WITH ITS HAZARDS. 「宗谷地方 洪水／暴風／濃霧」 is one line with three
+             hazard chips, not three lines. That alone divides the Japanese list by about three.
+           · THERE IS A LEVEL BETWEEN. Rows carry `sub` — JMA's class10 region (宗谷地方), BoM's
+             warning kind, INMET's severity band, and for the feeds that have no third level it is
+             simply the area itself, so nothing regresses. The default view is 都道府県 → 地方; the
+             individual towns are one more fold down and still all there.
+         ⚠ CAPS ARE PER LEVEL AND EVERY ONE OF THEM IS PRINTED — an elided row must never look like
+         a row that does not exist (#R185). */
+      /* ⚠ THE MARKUP IS BUDGETED TOO, AND THE FIRST VERSION OF THIS SPENT IT BADLY. Measured on the
+         same Japanese warning set: the flat #R266 list was 111,000 characters and a straight three
+         -level nesting came out at 278,000 — worse, for the same information, because every row
+         carried its own inline style and every municipality got its own line even when it said
+         exactly what its region already said. Two changes fix both: the styles are a stylesheet
+         (one copy, not one per row), and the third level groups the municipalities BY THEIR SET OF
+         HAZARDS, so 「洪水・濃霧」 over twenty-three towns is one line naming twenty-three towns
+         rather than twenty-three lines saying the same two words. */
+      let _wpaCss=false;
+      function ensureGroupedCss(){ if(_wpaCss||typeof document==='undefined') return; _wpaCss=true;
+        const st=document.createElement('style'); st.id='wpa-grouped-css';
+        st.textContent='.wpa{margin-top:8px;max-height:300px;overflow:auto;}'
+          +'.wpa-g{padding:4px 0;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));}'
+          +'.wpa-h{display:flex;gap:6px;align-items:center;font-size:12px;}'
+          +'.wpa-h b{flex:1;}.wpa-n{opacity:.7;font-size:11px;}'
+          +'.wpa-sw{width:10px;height:10px;border-radius:3px;flex:none;}'
+          +'.wpa-k{font-size:10.5px;margin:2px 0 0 16px;}'
+          +'.wpa-s{padding:2px 0;}'
+          +'.wpa-sh{display:flex;gap:6px;align-items:baseline;font-size:11.5px;}'
+          +'.wpa-sh span:last-child{flex:1;}'
+          +'.wpa-sw2{width:8px;height:8px;border-radius:2px;flex:none;position:relative;top:1px;}'
+          +'.wpa-sk{font-size:10.5px;margin:1px 0 0 14px;}'
+          +'.wpa-a{font-size:11px;color:var(--text-muted);margin:1px 0 0 14px;line-height:1.5;}'
+          +'.wpa-c{display:inline-flex;align-items:center;gap:3px;margin-right:6px;white-space:nowrap;}'
+          +'.wpa-c i{width:7px;height:7px;border-radius:2px;display:inline-block;font-style:normal;}'
+          +'.wpa-more{font-size:10.5px;opacity:.7;padding-top:2px;}';
+        (document.head||document.documentElement).appendChild(st); }
       function grouped(rows,cap){
         if(!rows||!rows.length) return '';
+        ensureGroupedCss();
+        const chip=(kd,t)=>'<span class="wpa-c"><i style="background:'+TIERCOL[t]+';"></i>'+esc(kd)+'</span>';
+        const kindChips=(km)=>[...km.entries()].sort((a,b)=>b[1]-a[1]).map(([kd,t])=>chip(kd,t)).join('');
+        const sig=(km)=>[...km.keys()].sort().join('\u0001');
+        /* one bucket per admin-1 unit, each holding one bucket per sub-unit */
         const by=new Map();
         rows.forEach(x=>{ const k=x.adm||x.pref||x.area||'—';
-          const g=by.get(k)||{tier:0,kinds:new Map(),rows:[]}; by.set(k,g);
-          if((x.tier||0)>g.tier) g.tier=x.tier||0;
-          const kd=x.kind||''; if(kd) g.kinds.set(kd,Math.max(g.kinds.get(kd)||0,x.tier||0));
-          g.rows.push(x); });
-        const list=[...by.entries()].sort((a,b)=>(b[1].tier-a[1].tier)||(b[1].rows.length-a[1].rows.length));
-        const N=cap||60;
-        return '<div style="margin-top:8px;max-height:260px;overflow:auto;">'
+          const g=by.get(k)||{tier:0,kinds:new Map(),n:0,subs:new Map()}; by.set(k,g);
+          const t=x.tier||0; if(t>g.tier) g.tier=t; g.n++;
+          const kd=x.kind||''; if(kd) g.kinds.set(kd,Math.max(g.kinds.get(kd)||0,t));
+          const sk=x.sub||x.area||k;
+          const sg=g.subs.get(sk)||{tier:0,kinds:new Map(),areas:new Map()}; g.subs.set(sk,sg);
+          if(t>sg.tier) sg.tier=t;
+          if(kd) sg.kinds.set(kd,Math.max(sg.kinds.get(kd)||0,t));
+          const ar=x.area||''; if(ar&&ar!==sk){ const am=sg.areas.get(ar)||new Map(); sg.areas.set(ar,am);
+            if(kd) am.set(kd,Math.max(am.get(kd)||0,t)); } });
+        const list=[...by.entries()].sort((a,b)=>(b[1].tier-a[1].tier)||(b[1].n-a[1].n));
+        const N=cap||60, SUBN=20, ARN=40;
+        const more=(n)=>'<div class="wpa-more">+'+n+'</div>';
+        return '<div class="wpa">'
           +list.slice(0,N).map(([k,g])=>{
-            const kinds=[...g.kinds.entries()].sort((a,b)=>b[1]-a[1]).map(([kd,t])=>
-              '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:6px;"><span style="width:7px;height:7px;border-radius:2px;background:'+TIERCOL[t]+';"></span>'+esc(kd)+'</span>').join('');
-            /* ⚠ the fold is per unit, so the CAP has to be per unit too: Japan under a rain event is
-               17 prefectures × ~200 municipalities, and rendering every one produced a 190 kB panel
-               for a phone to lay out. Thirty rows per unit, and the remainder is counted. */
-            const IN=30;
-            const inner=g.rows.slice(0,IN).map(x=>'<div style="display:flex;gap:6px;align-items:center;padding:1px 0;font-size:11px;color:var(--text-muted);">'
-              +'<span style="width:7px;height:7px;border-radius:2px;background:'+TIERCOL[x.tier]+';flex:none;"></span>'
-              +'<span style="flex:1;">'+esc(x.area||'')+'</span><span>'+esc(x.kind||'')+'</span></div>').join('')
-              +(g.rows.length>IN?('<div style="font-size:10.5px;opacity:.7;padding-top:2px;">+'+(g.rows.length-IN)+'</div>'):'');
-            return '<div style="padding:4px 0;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));">'
-              +'<div style="display:flex;gap:6px;align-items:center;font-size:12px;">'
-              +'<span style="width:10px;height:10px;border-radius:3px;background:'+TIERCOL[g.tier]+';flex:none;"></span>'
-              +'<b style="flex:1;">'+esc(k)+'</b><span style="opacity:.7;font-size:11px;">'+g.rows.length+'</span></div>'
-              +(kinds?('<div style="font-size:10.5px;margin:2px 0 0 16px;">'+kinds+'</div>'):'')
-              +(g.rows.length>1?('<details class="im-more" style="margin:2px 0 0 16px;"><summary>'
-                +esc(L('Each area','各区域','Einzelne Gebiete','По районам','Cada zona'))+'</summary>'+inner+'</details>'):'')
+            const subs=[...g.subs.entries()].sort((a,b)=>(b[1].tier-a[1].tier)||(b[1].areas.size-a[1].areas.size));
+            const subHtml=subs.slice(0,SUBN).map(([sk,sg])=>{
+              /* the municipalities, collected by WHAT IS IN FORCE THERE rather than one per line */
+              const bySig=new Map();
+              [...sg.areas.entries()].sort((a,b)=>a[0]<b[0]?-1:1).forEach(([ar,am])=>{
+                const key=sig(am); const b2=bySig.get(key)||{kinds:am,names:[]}; bySig.set(key,b2); b2.names.push(ar); });
+              const groupsOfSame=[...bySig.values()].sort((a,b)=>b.names.length-a.names.length);
+              const arCount=sg.areas.size;
+              const arHtml=groupsOfSame.map(b2=>'<div class="wpa-a">'
+                  +(sig(b2.kinds)===sig(sg.kinds)?'':kindChips(b2.kinds))
+                  +esc(b2.names.slice(0,ARN).join('・'))+(b2.names.length>ARN?(' +'+(b2.names.length-ARN)):'')+'</div>').join('');
+              return '<div class="wpa-s">'
+                +'<div class="wpa-sh"><span class="wpa-sw2" style="background:'+TIERCOL[sg.tier]+';"></span>'
+                +'<span>'+esc(sk)+'</span></div>'
+                +'<div class="wpa-sk">'+kindChips(sg.kinds)+'</div>'
+                +(arCount?('<details class="im-more" style="margin:1px 0 0 14px;"><summary>'
+                  +esc(L('Each municipality','市区町村ごと','Einzelne Gemeinden','По муниципалитетам','Cada municipio'))
+                  +' ('+arCount+')</summary>'+arHtml+'</details>'):'')
+                +'</div>'; }).join('')
+              +(subs.length>SUBN?more(subs.length-SUBN):'');
+            return '<div class="wpa-g">'
+              +'<div class="wpa-h"><span class="wpa-sw" style="background:'+TIERCOL[g.tier]+';"></span>'
+              +'<b>'+esc(k)+'</b><span class="wpa-n">'+subs.length+'</span></div>'
+              +'<div class="wpa-k">'+kindChips(g.kinds)+'</div>'
+              +'<details class="im-more" style="margin:2px 0 0 16px;"><summary>'
+                +esc(L('By area','地域ごと','Nach Gebiet','По районам','Por zona'))+' ('+subs.length+')</summary>'
+                +subHtml+'</details>'
               +'</div>'; }).join('')
-          +(list.length>N?('<div style="opacity:.7;padding-top:4px;font-size:11px;">+'+(list.length-N)+'</div>'):'')
+          +(list.length>N?more(list.length-N):'')
           +'</div>'; }
 
       /* what is in force RIGHT NOW, worldwide — shown the moment the layer is on, without a tap */
@@ -1442,6 +1641,7 @@ window.IntMapModules.worldPacks=function(HOST){
         const jp=feats.filter(f=>f.properties.iso==='JPN').length;
         const us=feats.filter(f=>f.properties.iso==='USA').length;
         const ca=feats.filter(f=>f.properties.iso==='CAN').length;
+        const br=feats.filter(f=>f.properties.iso==='BRA').length;
         const maN=Object.keys(maData).reduce((n,k)=>n+(((maData[k]||{}).warnings||[]).length),0);
         const maC=Object.keys(maData).filter(k=>((maData[k]||{}).warnings||[]).length).length;
         const gc=Object.keys(gCountries).length;
@@ -1455,20 +1655,37 @@ window.IntMapModules.worldPacks=function(HOST){
           +line(L('Canada — ECCC','カナダ — 環境・気候変動省','Kanada — ECCC','Канада — ECCC','Canadá — ECCC'),'eccc',
                 ca+' '+L('alert areas','警報区域','Warngebiete','зон','zonas'))
           +line(L('Europe — MeteoAlarm (37 services)','ヨーロッパ — MeteoAlarm（37機関）','Europa — MeteoAlarm (37 Dienste)','Европа — MeteoAlarm (37 служб)','Europa — MeteoAlarm (37 servicios)'),'meteoalarm',
-                maN+' '+L('warnings in','件 /',' Warnungen in',' предупреждений в',' avisos en ')+' '+maC+' '+L('countries','か国','Ländern','странах','países'))
+                maN+' '+L('warnings in','件 /',' Warnungen in',' предупреждений в',' avisos en ')+' '+maC+' '+L('countries','か国','Ländern','странах','países')
+                /* (#R268) …of how many have been READ at all — 33 of the 37 used to be fetched only
+                   on a tap, so «Europe» meant four countries unless somebody asked */
+                +' ('+Object.keys(maData).length+'/'+Object.keys(MA).length+')')
           +line(L('China — CMA','中国 — 中国気象局','China — Wetterdienst CMA','Китай — CMA','China — servicio CMA'),'cma',
                 cmaCount+' '+L('warnings','件','Warnungen','предупреждений','avisos'))
+          /* (#R268) the three services added this round */
+          +line(L('Australia — BoM','オーストラリア — 気象局','Australien — BoM','Австралия — BoM','Australia — Oficina de Meteorología (BoM)'),'bom',
+                ((bomRec&&bomRec.items.length)||0)+' '+L('warnings','件','Warnungen','предупреждений','avisos'))
+          +line(L('Brazil — INMET','ブラジル — INMET','Brasilien — INMET','Бразилия — INMET','Brasil — INMET'),'inmet',
+                br+' '+L('alert areas','警報区域','Warngebiete','зон','zonas'))
+          +line(L('Hong Kong — HKO','香港 — 香港天文台','Hongkong — HKO','Гонконг — HKO','Hong Kong — Observatorio (HKO)'),'hko',
+                ((hkoRec&&hkoRec.items.length)||0)+' '+L('signals','件','Signale','сигналов','señales'))
           +line(L('Rest of the world — GDACS','その他の国 — GDACS','Weltweit — GDACS','Остальной мир — GDACS','Resto del mundo — GDACS'),'gdacs',
                 gc+' '+L('countries','か国','Länder','стран','países'))
           +tierKey(GDACS_TIERNAME)
+          /* ⚠ (#R268) 「全然現実の発令に追い付いていない」 — the age of what is on screen is a fact the
+             reader can check, so it is printed rather than promised. The clock is the last completed
+             fetch, not the last tick. */
+          +'<div style="margin-top:6px;font-size:10.5px;color:var(--text-muted);">'
+          +esc(L('Updated','最終取得','Aktualisiert','Обновлено','Actualizado'))+': '
+          +esc(lastAt?new Date(lastAt).toLocaleTimeString():'—')
+          +' · '+esc(L('every 60 s','60秒ごと','alle 60 s','каждые 60 с','cada 60 s'))+'</div>'
           +'<div style="margin-top:8px;font-size:11.5px;color:var(--text-main);">'
           +L('Tap any country for the legend its own agency uses.','国をタップすると、その国の機関の凡例が出ます。','Land antippen für die Legende der jeweiligen Behörde.','Нажмите страну — появится легенда её службы.','Toque un país para la leyenda de su agencia.')+'</div>'
           +'<div style="margin-top:6px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-          +L('Japan, the United States and Canada are drawn at the unit their agency issues at. Europe and China publish a list rather than a shape, so their countries are washed and the tap holds the regions. Russia has no machine-readable public warning feed, so it is on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.',
-             '日本・米国・カナダは各機関の発令単位で描いています。ヨーロッパと中国は図形ではなく一覧で公開されているため、国を色で塗り、タップで地域ごとの内訳を出します。ロシアは機械可読な公開警報フィードが見つからないため GDACS のみです——GDACS は事象の配信であって各国の警報そのものではなく、事象が無い国は「警報が無い国」ではありません。表示は参考です。実際には公的機関の発表に従ってください。',
-             'Japan, die USA und Kanada in den Einheiten ihrer Behörden; Europa und China als Liste (Land eingefärbt, Regionen im Tap); Russland nur über GDACS — kein offener maschinenlesbarer Warndienst gefunden.',
-             'Япония, США и Канада — в единицах их служб; Европа и Китай публикуют список (страна закрашена, регионы в подсказке); Россия — только GDACS, открытого машиночитаемого фида не найдено.',
-             'Japón, EE. UU. y Canadá en sus unidades oficiales; Europa y China publican una lista (país coloreado, regiones al tocar); Rusia solo mediante GDACS — no se encontró un feed público legible por máquina.')+'</div>'
+          +L('Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed and the tap holds the units. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.',
+             '日本・米国・カナダ・ブラジルは各機関の発令単位で描いています。ヨーロッパ・中国・オーストラリア・香港は図形ではなく一覧で公開されているため、国を色で塗り、タップで単位ごとの内訳を出します。ロシア・インド・ニュージーランド・マレーシア・インドネシア・南アフリカ・メキシコは今回実際に接続を試しましたが、ブラウザから読める公開フィードが見つからなかったため GDACS のみです——GDACS は事象の配信であって各国の警報そのものではなく、事象が無い国は「警報が無い国」ではありません。表示は参考です。実際には公的機関の発表に従ってください。',
+             'Japan, die USA, Kanada und Brasilien in den Einheiten ihrer Behörden; Europa, China, Australien und Hongkong als Liste (Land eingefärbt, Einheiten im Tap); Russland, Indien, Neuseeland, Malaysia, Indonesien, Südafrika und Mexiko haben keinen offenen, im Browser lesbaren Warndienst — nur GDACS.',
+             'Япония, США, Канада и Бразилия — в единицах их служб; Европа, Китай, Австралия и Гонконг публикуют список (страна закрашена, единицы в подсказке); у России, Индии, Новой Зеландии, Малайзии, Индонезии, ЮАР и Мексики открытого читаемого браузером фида не найдено — только GDACS.',
+             'Japón, EE. UU., Canadá y Brasil en sus unidades oficiales; Europa, China, Australia y Hong Kong publican una lista (país coloreado, unidades al tocar); Rusia, India, Nueva Zelanda, Malasia, Indonesia, Sudáfrica y México no tienen un feed público legible por el navegador — solo GDACS.')+'</div>'
           +(worst>=3?'':'')+'</div>'); }
 
       /* ⚠ (#R266) 「全然現実の発令に追い付いていない。リアルタイムで反映しろ。」 — the interval was FIVE
@@ -1501,7 +1718,11 @@ window.IntMapModules.worldPacks=function(HOST){
         /* (#R266) the new feeds, as facts rather than as a shape in the DOM */
         national:Object.keys(FEEDS).length, meteoalarm:Object.keys(MA).length,
         maLoaded:Object.keys(maData).length, maWarnings:Object.keys(maData).reduce((n,k)=>n+(((maData[k]||{}).warnings||[]).length),0),
-        cma:cmaCount, canada:feats.filter(f=>f.properties.iso==='CAN').length, intervalMs:60000 });
+        cma:cmaCount, canada:feats.filter(f=>f.properties.iso==='CAN').length, intervalMs:60000,
+        /* (#R268) the three services added this round, plus how much of Europe has actually landed */
+        bom:(bomRec&&bomRec.items.length)||0, hko:(hkoRec&&hkoRec.items.length)||0,
+        brazil:feats.filter(f=>f.properties.iso==='BRA').length,
+        maAll:Object.keys(MA).length });
       STATE.alertsLegend=(iso3)=>legendFor(String(iso3||'').toUpperCase());
       window.__wpAlerts={ toggle, refresh, ask:(iso)=>loadMA([String(iso||'').toUpperCase()]),
         grouped:(rows)=>grouped(rows), maCountries:()=>Object.keys(MA) };
