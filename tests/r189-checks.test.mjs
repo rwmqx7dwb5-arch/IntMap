@@ -128,7 +128,15 @@ test('R189 water: the course follows the ground, at one resolution, with a setta
     'the basin starts as the working rectangle itself');
   assert.match(src, /areaM2:G\.areaM2, z:G\.z, offI:0, offJ:0 \}/, '…at its cell size and its DEM level');
   assert.ok(!/TRACE_Z_NEAR/.test(src), 'there is no resolution ladder, because there is one resolution');
-  assert.match(src, /const v=demAt\(bLng\(i\),bLat\(j\),B\.z\);/, 'and new ground is read at that one level');
+  /* ⚠ (#R268) THE PROPERTY, NOT THE CALL SITE. This used to pin `demAt(bLng(i),bLat(j),B.z)` — the
+     one line inside the old `bedAt()`. #R268 removed `bedAt` because the growth reads the new ground
+     one DEM-TILE BLOCK at a time (the fixed 28-sample probe missed two tiles in three once a basin
+     outgrew a few tens of kilometres), so the read now lives in `growBasin` and names the basin's
+     own captured `z`. What #R189 is about is unchanged and is what is asserted: ONE level, the
+     basin's, for every sample of new ground. */
+  assert.match(src, /const dx=Bold\.dx, dy=Bold\.dy, z=Bold\.z;/, 'the growth captures the basin\'s own level');
+  assert.match(src, /v=demAt\(nLng\(i\),nLat\(j\),z\)/, 'and new ground is read at that one level');
+  assert.ok(!/demAt\([^)]*,\s*(?:B\.z\s*[-+]|z\s*[-+])/.test(src), 'never at a level derived from it');
   /* the discharge control (#R189 「水の水流は設定可能に」) is still here, and is now an INPUT */
   assert.match(src, /let flowM3s=null;/, 'a settable discharge state');
   assert.match(src, /sources\.forEach\(x=>\{ if\(x\.cont&&flowM3s!=null\) x\.rate=flowM3s; \}\);/,

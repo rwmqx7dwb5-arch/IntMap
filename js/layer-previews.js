@@ -42,6 +42,11 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
     const CT=(style,z,lon,lat)=>{ const t=tXY(z,lon,lat); return 'https://a.basemaps.cartocdn.com/'+style+'/'+z+'/'+t.x+'/'+t.y+'@2x.png'; };
     const IMG={
       'dl-climate':'preview_koppen_eu.png',   /* (#R79f) Europe crop of the Köppen map (per request — "ヨーロッパを写したスクショに") */
+      /* (#R268) 「年降水量レイヤーは…サムネイル画像（実スクリーンショット）をつけるように。」 — this layer
+         had NO row here at all, so its tile fell back to the generic swatch. The file is a real
+         capture of this app with the layer on, over monsoon Asia where the field is unmistakable;
+         `node scripts/shot-layer-preview.mjs preview_precip.png` is how it is remade. */
+      'dl-annprecip':'preview_precip.png',
       'dl-temp':G('MERRA2_2m_Air_Temperature_Monthly',6,'2024-06-01','png',3,25,22),          /* Sahara heat */
       'dl-precip':G('IMERG_Precipitation_Rate',6,'2025-06-01T12:00:00Z','png',3,100,14),      /* SE-Asia monsoon */
       'dl-sst':G('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'2024-07-04','png',3,-65,35),      /* Gulf Stream */

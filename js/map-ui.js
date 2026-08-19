@@ -340,8 +340,10 @@ window.IntMapModules.layerSidebar=function(HOST){
            context; the button sits inside its right-hand padding and appears only with a query. */
         +'.lsr-search{position:relative;}'
         +'.lsr-search input{padding-right:38px !important;}'
-        +'.lsr-search .lsr-clear{display:none;position:absolute;right:22px;top:50%;transform:translateY(-50%);margin-top:-4px;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:rgba(128,128,128,0.28);color:var(--text-main);font-size:11px;line-height:20px;text-align:center;cursor:pointer;}'
-        +'.lsr-search .lsr-clear:hover{background:rgba(128,128,128,0.45);}'
+        /* (#R268) 「レイヤー検索欄の×ボタンに背景は不要」 — the disc is gone from BOTH search boxes
+           (this one and js/map-extras.js's `#layer-search`); hover moves the glyph, not a plate. */
+        +'.lsr-search .lsr-clear{display:none;position:absolute;right:22px;top:50%;transform:translateY(-50%);margin-top:-4px;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--text-muted);font-size:12px;line-height:20px;text-align:center;cursor:pointer;}'
+        +'.lsr-search .lsr-clear:hover{background:transparent;color:var(--text-main);}'
         +'.lsr-mount .lsr-search .lsr-clear{right:8px;}'
         +'#layer-sidebar-r .lsr-body{flex:1;overflow-y:auto;padding:0 12px 24px;min-height:0;}'
         /* (#R70/#R71) TILE GRID — 3 columns, mercator-true previews (aspect matches the canvas exactly:
