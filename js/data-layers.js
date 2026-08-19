@@ -310,6 +310,57 @@ window.IntMapModules.dataLayers=function(HOST){
          data-legend behaves like the Köppen legend and stays movable on phones too (#10). */
       return el;
     }
+    /* ══ ⚠⚠⚠ (#R270) A YEAR SELECTOR ON THE LAYER, DRIVING THE ONE CLOCK ══════════════════════════
+       「年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 (re-sent for the
+         third time; confirmed: 各レイヤー個別に年セレクタを付ける.)
+
+       #R268's audit answered this with three buckets and put six layers in the bucket 「既にマスター
+       クロックで変えられる」 — 1人当たりGDP・合計特殊出生率・人口密度・平均寿命・国防費・HDI. That is
+       true of the DATA and it was not true of the READER: nothing on those layers says a year can be
+       changed at all, and the control that changes it is a button called 「過去の世界を見る」 on the
+       other side of the screen. Meanwhile the World-Bank choropleths (#R266), the GIBS rasters
+       (#R268), Köppen, land cover, night lights, annual precipitation and the US elections all carry
+       a year picker in their own legend. Same question, two answers, depending on which layer you
+       happened to open.
+
+       ⚠ IT IS THE SAME CLOCK, NOT A SECOND ONE. The standing rule is one master clock
+       (window.IntMapTime, #R94); a per-layer year that kept its own state would be exactly the
+       「2つの時計」 #R265 and #R267 each had to remove. This row READS `IntMapTime` and WRITES
+       `IntMapTime`, and it subscribes so that moving the time machine moves every one of these
+       selectors with it. The hint under it says so, because a control that silently moves the whole
+       app is worse than one that says it does.
+       ⚠ ONE BUILDER, exported, because js/world-packs.js needs the identical row on trade, energy
+       and crops — #R239's lesson is a thing implemented twice and fixed once. */
+    let _syncYearHints=null;     /* (#R270) set by buildCoreLegends; called by _imReapplyChoros */
+    function legendClockYear(el,opts){ if(!el) return null; opts=opts||{};
+      /* ⚠ the newest selectable year is LAST year: `IntMapTime.setYear(y)` treats the current year
+         as live (it is), so offering it would put two options on the list meaning 「現在」. */
+      const min=opts.min||1960, thisYear=new Date().getFullYear();
+      const max=Math.min(opts.max||(thisYear-1),thisYear-1);
+      let row=el.querySelector('.dl-clockrow');
+      if(!row){ row=document.createElement('div'); row.className='dl-clockrow';
+        row.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10.5px;color:var(--text-muted);';
+        row.innerHTML='<span class="dl-clocklbl"></span><select class="dl-clockyear" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"></select>';
+        el.appendChild(row);
+        row.querySelector('.dl-clockyear').addEventListener('change',(e)=>{
+          const v=e.target.value;
+          try{ if(v==='') window.IntMapTime.setNow({source:'layer-legend'});
+               else window.IntMapTime.setYear(+v,{source:'layer-legend'}); }catch(_){} });
+      }
+      const nowTxt=window.IntMapLang.t(HOST.lang,'Now','現在','Jetzt','Сейчас','Ahora');
+      row.querySelector('.dl-clocklbl').textContent=window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
+      const sel=row.querySelector('.dl-clockyear');
+      const sig=min+'-'+max;
+      if(sel.getAttribute('data-built')!==sig||sel.getAttribute('data-lang')!==String(HOST.lang)){
+        const ys=[]; for(let y=max;y>=min;y--) ys.push(y);
+        sel.innerHTML='<option value="">'+escapeHtml(nowTxt)+'</option>'+ys.map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+        sel.setAttribute('data-built',sig); sel.setAttribute('data-lang',String(HOST.lang)); }
+      const sync=()=>{ let y=null; try{ y=window.IntMapTime.isLive()?null:window.IntMapTime.year(); }catch(_){}
+        sel.value=(y!=null&&y>=min&&y<=max)?String(y):''; };
+      sync();
+      if(!row._imClockSub){ row._imClockSub=1; try{ window.IntMapTime.on(()=>sync()); }catch(_){} }
+      return row; }
+    try{ window._legendClockYear=legendClockYear; }catch(_){}
     /* (#R110) the core data-legends bake `currentLang` at construction, so a LANGUAGE CHANGE left already-shown
        legends in the old language ("言語設定を変更したとき、すでに表示済みのレイヤーの凡例はその言語に切り替わらない").
        Wrap their build in buildCoreLegends() so it can be re-run in the new language; the element refs are hoisted to
@@ -330,6 +381,59 @@ window.IntMapModules.dataLayers=function(HOST){
     lgdTfr=makeLegend('tfr',140,(window.IntMapLang.t(HOST.lang,'Total fertility rate','合計特殊出生率','Geburtenrate (TFR)','Суммарный коэффициент рождаемости','Tasa de fecundidad total')),'linear-gradient(to right,#2c7fb8,#7fcdbb,#ffffb2,#fe9929,#cc4c02)',['1.0','6.5+'], window.IntMapLang.t(HOST.lang,'2022 World Bank','2022 世界銀行','2022 Weltbank','2022 Всемирный банк','2022 Banco Mundial'));
     lgdMil=makeLegend('milSpend',140,(window.IntMapLang.t(HOST.lang,'Mil. spending ($B)','国防費（$B）','Militärausgaben ($ Mrd.)','Военные расходы ($ млрд)','Gasto militar ($ mil M)')),'linear-gradient(to right,#fff7ec,#fdd49e,#fc8d59,#d7301f,#7f0000)',['$1B','$900B+'], 'SIPRI / IISS 2023');
     lgdMilGDP=makeLegend('milSpendGDP',140,(window.IntMapLang.t(HOST.lang,'Mil. spending (% GDP)','国防費（対GDP）','Militärausgaben (% BIP)','Военные расходы (% ВВП)','Gasto militar (% PIB)')),'linear-gradient(to right,#edf8fb,#b2e2e2,#66c2a4,#2ca25f,#006d2c)',['0.5%','6%+'], 'SIPRI / IISS 2023');
+    /* ══ (#R270) …AND EACH OF THEM SAYS SO ══════════════════════════════════════════════════════════
+       These six are the layers #R268 filed under 「既にマスタークロックで変えられる」. They are, and
+       until now nothing on them said it: the year lives on the legend as well, as one control that
+       moves the one clock (see legendClockYear). The floors are each source's own — the World Bank's
+       annual series start in 1960 (js/time-countries.js WB_FLOOR), Maddison carries GDP and
+       population back to 1900 which is `IntMapTime.min`, and HDI is exactly UNDP's 1990–2022. */
+    try{
+      const WBF=(window.IntMapTimeCountries&&window.IntMapTimeCountries.floor)||1960;
+      const MAD=(window.IntMapTime&&window.IntMapTime.min)||1900;
+      legendClockYear(lgdGdppc,{min:MAD});                    /* Maddison real GDP pc back to 1900 */
+      legendClockYear(lgdPop,{min:MAD});                      /* population → density, same source */
+      legendClockYear(lgdTfr,{min:WBF});
+      legendClockYear(lgdMil,{min:WBF});
+      legendClockYear(lgdMilGDP,{min:WBF});
+      /* HDI's range is UNDP's own, and it is asked for rather than assumed */
+      legendClockYear(lgdHDI,{min:1990,max:2022});
+      if(window.IntMapTimeCountries&&window.IntMapTimeCountries.hdiLoad){
+        window.IntMapTimeCountries.hdiLoad().then(()=>{ try{
+          const ys=window.IntMapTimeCountries.hdiYears();
+          if(ys&&ys.length) legendClockYear(lgdHDI,{min:ys[0],max:ys[ys.length-1]}); }catch(_){} }); }
+      /* ⚠ (#R270) …AND THE SOURCE LINE MOVES WITH IT. These hints are dated — 「2022 UNDP」,
+         「2022 世界銀行」, 「SIPRI / IISS 2023」 — and a year picker that leaves them saying 2022 while
+         the map draws 2005 is a label lying about the picture, which is the whole class of defect
+         #R266 was reported for. The HDI line names the year UNDP actually publishes for the chosen
+         year (`hdiYear`, clamped at both ends by js/time-countries.js); the rest keep their own text
+         and gain 「· <年>」 while the clock is in the past. */
+      [[lgdHDI,'hdi'],[lgdGdppc,'gdppc'],[lgdPop,'pop'],[lgdTfr,'tfr'],[lgdMil,'mil'],[lgdMilGDP,'mil']].forEach(([el,kind])=>{
+        if(!el) return; const h=el.querySelector('.dl-hint'); if(!h) return;
+        if(!h.getAttribute('data-base')) h.setAttribute('data-base',h.textContent||'');
+      });
+      const syncHints=()=>{ try{
+        let y=null; try{ y=window.IntMapTime.isLive()?null:window.IntMapTime.year(); }catch(_){}
+        const undp=window._imHdiYear;
+        [[lgdHDI,1],[lgdGdppc,0],[lgdPop,0],[lgdTfr,0],[lgdMil,0],[lgdMilGDP,0]].forEach(([el,isHdi])=>{
+          if(!el) return; const h=el.querySelector('.dl-hint'); if(!h) return;
+          const base=h.getAttribute('data-base')||'';
+          if(isHdi){ const yy=(y==null)?2022:(undp||null);
+            h.textContent=(yy==null)
+              ?window.IntMapLang.t(HOST.lang,'UNDP publishes no HDI for this year','この年のHDIは UNDP が公表していません','UNDP veröffentlicht für dieses Jahr keinen HDI','ПРООН не публикует ИЧР за этот год','El PNUD no publica IDH para este año')
+              :(yy+' UNDP'); return; }
+          h.textContent=base+((y!=null)?(' · '+y):''); });
+      }catch(_){} };
+      syncHints();
+      /* ⚠ (#R270) HOOKED TO THE REPAINT, NOT TO A TIMER. #R264's lesson: 「終わった時刻を推定するな、
+         終わったと教えてくれるものに繋げ」. The overlay lands after loadCountryData, Maddison and the
+         HDI file have all resolved — MEASURED at several seconds on a cold travel — so a
+         `setTimeout(…,420)` after the clock event reads `_imHdiYear` before it is written and the
+         line says 「この年のHDIは公表されていません」 about a year UNDP does publish. `_imReapplyChoros`
+         is called by js/time-countries.js's `repaint()`, which runs AFTER the overlay; the clock
+         subscription stays as the answer for the case where no choropleth is on. */
+      _syncYearHints=syncHints;
+      try{ window.IntMapTime.on(()=>{ setTimeout(syncHints,420); setTimeout(syncHints,2500); }); }catch(_){}
+    }catch(_){}
     lgdSnow=makeLegend('snow',140,(window.IntMapLang.t(HOST.lang,'Snow & ice','積雪・海氷','Schnee & Eis','Снег и лёд','Nieve y hielo')),'linear-gradient(to right,#2a78b8,#7fb3d9,#cfe6f5,#ffffff)',[window.IntMapLang.t(HOST.lang,'Low','少','Wenig','Мало','Bajo'),window.IntMapLang.t(HOST.lang,'High','多','Viel','Много','Alto')], 'MODIS NDSI');
     lgdAod=makeLegend('aod',140,(window.IntMapLang.t(HOST.lang,'Aerosol / haze','エアロゾル / 煙霧','Aerosol / Dunst','Аэрозоль / дымка','Aerosol / bruma')),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',[window.IntMapLang.t(HOST.lang,'Clear','清浄','Klar','Чисто','Limpio'),window.IntMapLang.t(HOST.lang,'Hazy','濃い','Trüb','Мутно','Brumoso')], 'MODIS AOD');
     lgdNightsat=makeLegend('nightsat',140,(window.IntMapLang.t(HOST.lang,'Night lights','夜間光（衛星）','Nachtlichter','Ночные огни','Luces nocturnas')),'linear-gradient(to right,#05050f,#241a40,#7a5a1e,#ffd27f,#ffffff)',[window.IntMapLang.t(HOST.lang,'Dark','暗','Dunkel','Темно','Oscuro'),window.IntMapLang.t(HOST.lang,'Bright','明','Hell','Ярко','Brillante')], 'VIIRS Black Marble');
@@ -1068,7 +1172,7 @@ window.IntMapModules.dataLayers=function(HOST){
              It is not a hazard overlay, it is which half of the planet the Sun is on, so it belongs with
              the other always-there view switches (place names, borders, roads, grid) at the top of the
              panel. Moved by name into that list below, not duplicated: one row, one owner. */
-          ['lyrGrpHazard',['thermal','aurora','nightsat','volc2','eq','alerts']],   /* (#R261) +live weather & disaster warnings (JMA/NWS/GDACS) */   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
+          ['lyrGrpHazard',['thermal','aurora','nightsat','volc2','eq','alerts','osmemg']],   /* (#R270) +emergency response bases — see the note below */   /* (#R261) +live weather & disaster warnings (JMA/NWS/GDACS) */   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
           /* ══ ⚠ (#R255) FOUR NEW CATEGORIES, AND «Geopolitics & defense» SPLIT INTO TWO OF THEM ══════
              「政治、軍事、医療・衛生、IT・テックレイヤーカテゴリを追加し、レイヤーの再編や追加を行うように。
                それぞれのレイヤーカテゴリの名前は任せる。」 (naming delegated; reorganisation confirmed
@@ -1097,8 +1201,32 @@ window.IntMapModules.dataLayers=function(HOST){
              reorganise is not a reason to quietly overturn a list the reader wrote out by hand. Say
              the word and they move. */
           ['lyrGrpPolitics',['uselect','eu','wbwomparl','osmdiplo']],
-          ['lyrGrpSecurity',['milSpend','milSpendGDP','nato','ukrfront','wbmilgdp','wbmilppl','wbhomicide','osmmil']],
-          ['lyrGrpHealth',['wbhealth','wbphys','wbbeds','wbinfmort','wbu5mort','wblife','wbwater','wbsan','wbcook','wbsmoke','wbalcohol','wbsuicide','wboverwt','wbunder','wbadofert','wbfert','osmhealth','osmemg','osmwater','pharma']],   /* (#R261) +emergency services, +water & wastewater plant, +pharma hubs */
+          /* ══ ⚠ (#R270) THREE ROWS WERE ON THE WRONG SHELF, AND ONLY THREE ═════════════════════════
+             「レイヤーのカテゴリ分類があきらかに不適切なレイヤーがいくつかある。任せる。」
+
+             The whole panel was read against its headings again (167 rows, 17 headings). Most of it
+             is where a reader would look; these three were not, and each is wrong for a reason that
+             can be stated rather than felt:
+
+               · 殺人発生率 (`wbhomicide`) was in 「軍事・安全保障 / Defense & security」, whose other
+                 seven rows are defence spending, NATO, armed-forces strength, a front line and
+                 military installations. A homicide rate is a crime statistic about a society, and it
+                 joins the social indicators.
+               · 緊急対応拠点 —— 消防・警察・救急 (`osmemg`) was in 「医療・衛生 / Health & sanitation」.
+                 An ambulance station belongs to that subject; a POLICE station and a FIRE station do
+                 not. All three are what a place has for an emergency, so they sit with the hazards.
+               · 合計特殊出生率 (`wbfert`) was in Health, one shelf away from the OTHER 合計特殊出生率
+                 (`tfr`, in 人口・経済) and away from the World-Bank demographic family it belongs to
+                 (人口増加率・65歳以上人口比率・都市/農村人口比率・人口密度), all of which are in
+                 Society & education. It joins them, and its NAME now says which of the two it is.
+
+             ⚠ NOTHING ELSE MOVED, and that is deliberate. #R233's seven in 人口・経済, #R254's
+             sixty-one and #R261's four new shelves were each written out by a reader by hand, and
+             「任せる」 for the obviously-wrong rows is not a licence to re-sort a list somebody chose.
+             オーロラ予測 and 夜間光 stay in 「災害・夜空 / Hazards & night sky」 — that heading names
+             them; the shelf is not only about disasters. */
+          ['lyrGrpSecurity',['milSpend','milSpendGDP','nato','ukrfront','wbmilgdp','wbmilppl','osmmil']],
+          ['lyrGrpHealth',['wbhealth','wbphys','wbbeds','wbinfmort','wbu5mort','wblife','wbwater','wbsan','wbcook','wbsmoke','wbalcohol','wbsuicide','wboverwt','wbunder','wbadofert','osmhealth','osmwater','pharma']],   /* (#R261) +water & wastewater plant, +pharma hubs. (#R270) −emergency services (→ hazards), −fertility (→ society) */
           /* (#R261) `rail` LEFT for Transport & mobility — a railway network is transport, and the
              category it was in is the one about computing and communications. */
           ['lyrGrpTech',['dc','subcables','wbnet','wbmobile','wbbbnd','wbhitech','wbrnd','wbresearch','wbpatent','osmtelecom']],
@@ -1130,7 +1258,7 @@ window.IntMapModules.dataLayers=function(HOST){
              ECMWF family sits with them; all of that stays in Beta. Assuming a past instruction has
              expired is the failure this file has warned about twice. */
           ['lyrGrpEconomy',['trade','industry','wbgdpgrow','wbinfl','wbtrade','wbtax','wbdebt','wbmanuf','wbfdi','wbunemp','wbgni','wbremit','wbtour']],
-          ['lyrGrpSociety',['wblit','wbschool','wbtert','wbedu','osmedu','wbpov','wbgini','wbflfp','wbref','wbaging','wbpopgrow','wburb','wbrural','wbdensity','cat-religion','cat-language']],
+          ['lyrGrpSociety',['wblit','wbschool','wbtert','wbedu','osmedu','wbpov','wbgini','wbflfp','wbhomicide','wbref','wbaging','wbpopgrow','wbfert','wburb','wbrural','wbdensity','cat-religion','cat-language']],   /* (#R270) +homicide rate, +fertility rate — see the note above */
           ['lyrGrpTransport',['planes','rail','ships','oxrail','oxsea','osmair','osmport']],
           ['lyrGrpAgri',['crops','wbagri','wbagremp','gxsoil']],
           /* ══ (#R258) A FIFTH NEW CATEGORY — WHERE THE ENERGY AND THE MATERIAL COME FROM ═════════════
@@ -1481,6 +1609,8 @@ window.IntMapModules.dataLayers=function(HOST){
         milSpend:s=>s.milSpend, milSpendGDP:s=>(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null,
         gdppc:s=>(s.gdppc!=null?s.gdppc:null), tfr:s=>(s.tfr!=null?s.tfr:null) };
       Object.keys(M).forEach(id=>{ try{ if(GE().layers.has(id+'-fill')&&GE().layers.getLayout(id+'-fill','visibility')==='visible') applyChoro(id,M[id]); }catch(_){} });
+      /* (#R270) the year on the source line is repainted with the map it describes */
+      try{ if(_syncYearHints) _syncYearHints(); }catch(_){}
     }catch(_){} };
     /* NATO members fill (#R7): brighter blue so it's clearly visible on the dark basemap, with a crisp
        outline. Built from a DEDICATED geojson (not the shared country feature-state) so we can drop the

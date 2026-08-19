@@ -117,7 +117,20 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
           if(stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=0.5; ctx.stroke(); } };
         if(gm.type==='Polygon') draw(gm.coordinates); else if(gm.type==='MultiPolygon') gm.coordinates.forEach(draw); });
       return true; }
-    function rampColor(ramp,v){ if(v==null||isNaN(v)) return '#2a3950'; let col=null; for(let i=0;i<ramp.length;i+=2){ if(v>=ramp[i]) col=ramp[i+1]; else break; } return col||ramp[1]; }
+    /* ══ ⚠⚠ (#R270) THE TILE PAINTED A STAIRCASE FOR A LAYER THAT PAINTS A GRADIENT ═══════════════
+       「GDP成長率レイヤーの色は段彩ではなく、他レイヤーと同じようにグラデーションに。」 — the layers
+       themselves paint `['interpolate',['linear'],…]` (js/wb-layers.js), and this returned the last
+       stop AT OR BELOW the value, i.e. hard bands. A thumbnail is a picture of the layer; it has to
+       be the same function. Linear between the two stops the value falls between, clamped at both
+       ends — the same arithmetic maplibre's `interpolate` does. */
+    function _hx(h){ return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]; }
+    function rampColor(ramp,v){ if(v==null||isNaN(v)) return '#2a3950';
+      if(v<=ramp[0]) return ramp[1];
+      const last=ramp.length-2; if(v>=ramp[last]) return ramp[last+1];
+      for(let i=0;i<last;i+=2){ const a=ramp[i], b=ramp[i+2];
+        if(v>=a&&v<=b){ const t=(b===a)?0:(v-a)/(b-a), A=_hx(ramp[i+1]), B=_hx(ramp[i+3]);
+          return '#'+[0,1,2].map(k=>Math.round(A[k]+(B[k]-A[k])*t).toString(16).padStart(2,'0')).join(''); } }
+      return ramp[last+1]; }
     const R5=['#ffffcc','#a1dab4','#41b6c4','#2c7fb8','#253494'];
     function q5(v,lo,span){ const t2=Math.max(0,Math.min(0.999,(v-lo)/(span||1))); return R5[Math.floor(t2*5)]; }
     /* ---- 2) client-side stat choropleths (countryStats fields — same data the layers paint) ---- */
@@ -147,7 +160,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       'bx-wbmobile':{c:'IT.CEL.SETS.P2',r:[30,'#fee08b',80,'#a6d96a',110,'#66bd63',140,'#1a9850',180,'#006837']},
       'bx-wbinfl':{c:'FP.CPI.TOTL.ZG',r:[0,'#1a9850',3,'#a6d96a',6,'#fee08b',15,'#f46d43',40,'#a50026']},
       'bx-wbinfmort':{c:'SP.DYN.IMRT.IN',r:[2,'#1a9850',8,'#a6d96a',25,'#fee08b',50,'#f46d43',90,'#a50026']},
-      'bx-wbgdpgrow':{c:'NY.GDP.MKTP.KD.ZG',r:[-6,'#a50026',-1,'#f46d43',2,'#fee08b',5,'#a6d96a',9,'#1a9850']},
+      'bx-wbgdpgrow':{c:'NY.GDP.MKTP.KD.ZG',r:[-8,'#67001f',-4,'#d6604d',-1.5,'#f4a582',0,'#ffffff',1.5,'#92c5de',4,'#4393c3',8,'#053061']},
       'bx-wblit':{c:'SE.ADT.LITR.ZS',r:[40,'#a50026',60,'#f46d43',80,'#fee08b',92,'#a6d96a',100,'#1a9850']},
       'bx-wbwater':{c:'SH.H2O.SMDW.ZS',r:[30,'#a50026',55,'#f46d43',75,'#fee08b',90,'#a6d96a',100,'#1a9850']},
       'bx-wbsan':{c:'SH.STA.SMSS.ZS',r:[20,'#a50026',45,'#f46d43',70,'#fee08b',90,'#a6d96a',100,'#1a9850']},
@@ -185,9 +198,16 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
         else{ fetch(t.spec.url||('https://api.worldbank.org/v2/country/all/indicator/'+t.spec.c+'?format=json&mrnev=1&per_page=400'))
           .then(r=>r.json()).then(j=>{ const m={}; ((j&&j[1])||[]).forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code) m[d.countryiso3code]={v:+d.value}; }); done(m); }).catch(()=>done({})); }
       }catch(_){ done({}); } } }
-    function wbChoro(spec){ return wbValues(spec).then(m=>{ if(!m||Object.keys(m).length<5) return null;
+    /* (#R270) the ramp comes from the LAYER when it is loaded (`IntMapWB.rampOf`), because the copy
+       in WBP below went stale the moment #R268 made GDP growth diverging — the tile was still red →
+       green while the map was red → white → blue. The copy stays as the answer before that module
+       has registered, which is the only state in which it can still be reached. */
+    function wbRamp(id,spec){ try{ const r=window.IntMapWB&&window.IntMapWB.rampOf&&window.IntMapWB.rampOf(String(id).replace(/^bx-/,''));
+      if(r&&r.length>=4) return r; }catch(_){} return spec.r; }
+    function wbChoro(spec,id){ return wbValues(spec).then(m=>{ if(!m||Object.keys(m).length<5) return null;
       const c=cnv(),ctx=c.getContext('2d'); ocean(ctx);
-      const ok=drawLand(ctx,cd=>{ const e=m[cd]; return e?rampColor(spec.r,e.v):'#1b2a3d'; });
+      const r=wbRamp(id,spec);
+      const ok=drawLand(ctx,cd=>{ const e=m[cd]; return e?rampColor(r,e.v):'#1b2a3d'; });
       return ok?c.toDataURL('image/png'):null; }); }
     /* ---- 4) real member sets (mirrors of the layers' own lists) ---- */
     const MEMBERS={
@@ -615,7 +635,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       if(STAT[id]){ geoJob(()=>statChoro(STAT[id])); return; }
       if(MEMBERS[id]){ geoJob(()=>memberMap(MEMBERS[id])); return; }
       if(WBP[id]){ /* lazy: only fetch when the tile is actually visible */
-        _observe(el,()=>{ const run=()=>wbChoro(WBP[id]).then(u=>{ if(u){ cache[id]=u; apply(el,u); } });
+        _observe(el,()=>{ const run=()=>wbChoro(WBP[id],id).then(u=>{ if(u){ cache[id]=u; apply(el,u); } });
           if(_geoReady()) run(); else { _needGeo.push(run); _kickGeo(); } });
         return; }
       /* (#R74) live-data painters first; the old sketch in PAINT[id] is only the fallback */

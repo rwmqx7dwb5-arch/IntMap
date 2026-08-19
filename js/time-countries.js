@@ -25,7 +25,9 @@ export function makeTimeCountries(HOST, CTX) {
    *  internet use, military spending) are fetched and overlaid onto countryStats, so the whole app shows
    *  the world as it was; returning to "Now" restores the present. Honest by construction: WB annual
    *  series begin in 1960 (deeper past keeps the latest figures with a clear banner), and indicators
-   *  WITHOUT a WB annual series (HDI/UNDP, Democracy Index/EIU) are never relabelled with the wrong year.
+   *  WITHOUT an annual series are never relabelled with the wrong year.
+   *  (#R270) HDI is NO LONGER one of those: UNDP publishes 1990–2022 and the app now ships it
+   *  (data/hdi-series.json). The Democracy Index (EIU) still is — no open series exists.
    *  ========================================================================== */
   window.IntMapTimeCountries=(function(){
     const WB_FLOOR=1960;
@@ -40,13 +42,42 @@ export function makeTimeCountries(HOST, CTX) {
       {f:'internet', ind:'IT.NET.USER.ZS', scale:1},
       {f:'milSpend', ind:'MS.MIL.XPND.CD', scale:1e-9}
     ];
+    /* ══ ⚠⚠⚠ (#R270) HDI DOES HAVE AN ANNUAL SERIES, AND THIS FILE SAID IT DOES NOT ═════════════════
+       「年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 (re-sent.)
+
+       The header above says «indicators WITHOUT a WB annual series (HDI/UNDP, Democracy Index/EIU)
+       are never relabelled with the wrong year», and #R268's audit repeated it as 「年系列そのものが
+       無い」. The rule is right; the FACT was wrong for HDI. UNDP's Human Development Report Office
+       publishes the complete composite-indices time series 1990 → 2022 — one CSV, one column per
+       year — and the app was shipping exactly one of those columns (js/tables.js, the 2022 one).
+       data/hdi-series.json is that table, built by scripts/build-hdi.mjs; 193 countries, 33 years.
+
+       ⚠ IT IS NOT A WORLD-BANK INDICATOR, so it is not in FIELDS: there is nothing to fetch per year.
+       The whole series is local, which is why travelling in time updates HDI with no network at all —
+       PHASE 1 of the two-phase update below, like Maddison.
+       ⚠ AND THE RULE ITSELF STILL HOLDS. Outside 1990–2022 the value is NOT carried over: before
+       1990 UNDP publishes nothing, so `hdi` is null there and the map shows 「データなし」; after the
+       last published year the latest column stands and `hdiYear` says which year that is, so the
+       legend never claims a year UNDP has not published. */
+    let hdiSeries=null, hdiP=null;
+    function loadHDI(){ if(hdiSeries) return Promise.resolve(hdiSeries); if(hdiP) return hdiP;
+      const u=(()=>{ try{ return new URL('data/hdi-series.json',document.baseURI).toString(); }catch(_){ return 'data/hdi-series.json'; } })();
+      hdiP=fetch(u).then(r=>r.json()).then(j=>{ hdiSeries=(j&&j.years&&j.hdi)?j:null; return hdiSeries; })
+        .catch(()=>{ hdiP=null; return null; });
+      return hdiP; }
+    /* the index into `years` this year should read, or -1 when UNDP publishes nothing for it */
+    function hdiIndex(year){ if(!hdiSeries) return -1; const ys=hdiSeries.years;
+      if(year<ys[0]) return -1;
+      if(year>=ys[ys.length-1]) return ys.length-1;
+      const i=ys.indexOf(year); return i>=0?i:-1; }
     const yearCache={};        /* year -> { field -> {iso3 -> value} } */
     let base=null;             /* present-day snapshot of the overlaid fields (+ density) */
     let curYear=null;          /* the year currently overlaid, or null */
     let seq=0, deb=null;
-    function snapshotBase(){ if(base) return; base={}; try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue; const o={density:s.density}; FIELDS.forEach(F=>o[F.f]=s[F.f]); base[iso]=o; } }catch(_){} }
+    function snapshotBase(){ if(base) return; base={}; try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue; const o={density:s.density,hdi:s.hdi}; FIELDS.forEach(F=>o[F.f]=s[F.f]); base[iso]=o; } }catch(_){} }
     function restore(){ try{ if(window.IntMapHistId) window.IntMapHistId.clear(); }catch(_){}   /* restore modern names/flags */
       try{ if(window.IntMapHistStates) window.IntMapHistStates.clear(); }catch(_){}   /* remove former-state entries */
+      window._imHdiYear=null;
       if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; } }catch(_){} curYear=null; window._imTimeYear=null; window._imTimeReal=false; }
     /* Fetch the year's figures from the World Bank. SEQUENTIALLY, not in parallel: the WB throttles a single
        IP on request bursts, so 7 concurrent calls get dropped — one-at-a-time (≈100 ms each) is reliable.
@@ -76,7 +107,13 @@ export function makeTimeCountries(HOST, CTX) {
           s.gdppc=(mpc!=null)?mpc:(M.has(iso,year)?null:s.gdppc);
           if(mp!=null) s.pop=mp; }
         s.density=(s.pop&&s.area)?s.pop/s.area:null;   /* density recomputed from the year's population */
+        /* (#R270) HDI from UNDP's own annual series — local, so it lands in PHASE 1 */
+        if(hdiSeries){ const hi=hdiIndex(year);
+          const row=hdiSeries.hdi[iso];
+          s.hdi=(hi>=0&&row&&row[hi]!=null)?row[hi]:null; }
       } }catch(_){}
+      /* which year the HDI on screen actually IS — the legend prints this rather than 「2022」 */
+      if(hdiSeries){ const hi=hdiIndex(year); window._imHdiYear=(hi>=0)?hdiSeries.years[hi]:null; }
       curYear=year; window._imTimeYear=year; window._imTimeReal=useM;
       /* former states: replace successors with the historical state for its real lifespan (uses the year values just overlaid) */
       try{ if(window.IntMapHistStates) window.IntMapHistStates.apply(window.IntMapTime.when()); }catch(_){}
@@ -100,6 +137,7 @@ export function makeTimeCountries(HOST, CTX) {
         if(y===curYear) return;   /* same year → country annual data unchanged, nothing to repaint */
         try{ if(!HOST.countryDataLoaded) await loadCountryData(); }catch(_){}
         try{ await window.IntMapMaddison.load(); }catch(_){}
+        try{ await loadHDI(); }catch(_){}      /* (#R270) local, ~38 kB, cached after the first travel */
         if(my!==seq) return;
         /* (#R110) TWO-PHASE update so the Countries tab reflects the new year IMMEDIATELY ("タイムマシンでの年代変更が、
            すぐにCountriesに反映されない。時間がかかる"): PHASE 1 overlays the LOCAL Maddison GDP / population /
@@ -113,6 +151,8 @@ export function makeTimeCountries(HOST, CTX) {
         if(data){ FIELDS.forEach(F=>{ if(!data[F.f]) data[F.f]={}; }); overlay(y,data); repaint(); }
       }, 340);
     });
-    return { year:()=>curYear, floor:WB_FLOOR, _fetchYear:fetchYear, _restore:restore };
+    return { year:()=>curYear, floor:WB_FLOOR, _fetchYear:fetchYear, _restore:restore,
+      /* (#R270) the HDI series, as facts — the legend prints the year and the tests read the range */
+      hdiLoad:loadHDI, hdiYears:()=>(hdiSeries?hdiSeries.years.slice():null), hdiYear:()=>window._imHdiYear||null };
   })();
 }

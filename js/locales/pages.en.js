@@ -535,7 +535,7 @@ window.IntMapPageI18N.define('en', {
     "MarineRegions": "Maritime EEZ / territorial-sea boundaries",
     "TeleGeography Submarine Cable Map": "Submarine telecom cable routes",
     "NASA SEDAC GPW v4": "Gridded population density",
-    "UNDP / EIU / SIPRI / World Bank": "HDI, Democracy Index, GDP, military spend, demographics",
+    "UNDP / EIU / SIPRI / World Bank": "HDI (1990–2022 annual series), Democracy Index, GDP, military spend, demographics",
     "AISstream.io": "Live ship AIS traffic (your key)",
     "airplanes.live": "Live aircraft traffic (community ADS-B; also samples the aircraft-layer preview image)",
     "CelesTrak": "Orbital element sets (GP/OMM, the modern successor to the two-line element set) for the live-satellite layer, by catalogue group. Keyless and CORS-open; free for non-commercial use with attribution. Positions are NOT downloaded — the element sets are, once every two hours, and every position on screen is propagated locally from them with SGP4/SDP4 (satellite.js, MIT), so panning and time do not cost requests. TWO THINGS ARE ALSO SHIPPED WITH THE APP, both rebuilt from this same source by CI: data/tle/catalogue.tle, a real snapshot of the `active` catalogue with a real epoch, so the layer still draws when celestrak.org cannot be reached (the app states how old the elements it used are); and data/tle/groups.json, the NORAD catalogue numbers belonging to each CelesTrak group, so that a request for one CATEGORY can be answered from that snapshot instead of drawing nothing. Group membership is not derivable from an element set and is never inferred from an object’s name — a group whose listing could not be fetched is recorded as absent rather than as empty",

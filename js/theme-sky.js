@@ -331,8 +331,37 @@ export function makeThemeSky(HOST, CTX) {
      off both would still go dark at local midnight. `null` is already the "the Sun's position is
      unknown" path in both callers, and it lands on the DAY colours — which is what "do not show me
      the night" means. */
+  /* ══ ⚠⚠⚠ (#R270) «DAY/NIGHT OFF» IS NOT «THE SUN'S POSITION IS UNKNOWN» ═══════════════════════════
+     「昼夜の表示を選択していなくても、同じ大気を表示するように。」 (confirmed: 明るさ・色は同じ、
+       境は出さない.)
+
+     #R240 already aimed the Sun at the SUB-CAMERA POINT when the day/night display is off, precisely
+     so the scattering integral has a sun in the right frame and the air stays on the globe. This
+     function was never told: it kept answering `null` — «unknown» — for the same state, and three
+     readers act on that answer:
+
+       · `_limbOwnsRim()` returns false when it is null, so js/limb-layer.js — THE APP'S OWN
+         physical atmosphere, the whole of #R227–#R238 — is not switched on at all;
+       · `_skyColour()` falls back to `_SKY_SPACE` (#060b16), i.e. the sky above the horizon is space
+         at noon;
+       · `_horizonColour()` falls back to `_SKY_H_DAY` (#c2ccd1), a flat neutral grey band.
+
+     So switching the day/night display off replaced the real, computed, coloured air with maplibre's
+     own five-step halo under a grey band — a DIFFERENT atmosphere, which is exactly the report.
+
+     ⚠ THE SUN IS KNOWN IN THAT STATE, AND IT IS OVERHEAD AT THE CAMERA CENTRE. That is what
+     `_aimSun()` sets, so 90° is not an assumption here — it is a READ-BACK of the light this file
+     just aimed. The air is then the model's daylight air (same brightness, same colour as with the
+     display on) and there is no light/dark division anywhere on screen, because the Sun is at the
+     point the reader is looking at: 「境は出さない」 holds by construction, as it did in #R240.
+
+     ⚠ THE VECTOR BASEMAP IS UNTOUCHED. #R241 is an explicit instruction —
+     「標準マップでは大気はなし」「Mapでは大気ゼロ（縁の帯も消す）」 — so when the satellite basemap is
+     NOT up this still answers «unknown», `_airOn()` stays false, `atmosphere-blend` stays 0 and the
+     Map globe keeps no air at all. The only state this changes is satellite + day/night off. */
   function _sunElevAtCentre(){
-    if(_nightSideOff()) return null;
+    if(!_satelliteUp()) return null;          /* (#R241) 「Mapでは大気ゼロ」 — unchanged */
+    if(_nightSideOff()) return 90;            /* (#R270) the Sun _aimSun() put over the camera centre */
     const s=_sunOverheadPoint(); if(!s) return null;
     let c=null; try{ c=GE().camera.getCenter(); }catch(_){}
     if(!c||!isFinite(c.lat)||!isFinite(c.lng)) return null;
@@ -560,6 +589,10 @@ export function makeThemeSky(HOST, CTX) {
      sky as the same low Sun behind you, and the bearing is something the camera already knows */
   function _relAzimuth(){
     try{
+      /* (#R270) with the day/night display off the Sun is overhead at the camera centre (`_aimSun`),
+         so the view direction and the Sun's azimuth coincide: 0, not the bearing to a sub-solar
+         point the light is not pointing at. Same read-back as `_sunElevAtCentre`. */
+      if(_satelliteUp()&&_nightSideOff()) return 0;
       const s=_sunOverheadPoint(); if(!s) return 90;
       const c=GE().camera.getCenter(); if(!c) return 90;
       const R=Math.PI/180, a=c.lat*R, b=s.lat*R, dl=(s.lng-c.lng)*R;

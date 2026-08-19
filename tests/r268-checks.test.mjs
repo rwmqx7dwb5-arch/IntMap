@@ -186,8 +186,14 @@ test('R268 ⑧ the ex-Yugoslav standards are separate names with one fill', () =
     assert.match(rec.src, /Serbo[- ]?Croat/i, `${iso} is bucketed as sh without the source saying so`);
   }
   const s = codeOnly(read('js/layer-packs.js'));
-  assert.match(s, /const LANG_ONE_COLOUR=\{sr:'sh',hr:'sh',bs:'sh',cnr:'sh',sh:'sh'\}/, 'one fill for the family');
-  assert.match(s, /group:LANG_ONE_COLOUR/, 'the language layer must use it');
+  /* ⚠ (#R270) THE ONE FILL IS GONE, AND THAT IS THE SAME INSTRUCTION CARRIED ONE STEP FURTHER.
+     #R268 was told 「塗は同じ色のままでいい」 and kept one colour for the four South-Slavic standards.
+     #R270 was then told 「凡例はまだ単に『セルビア語』のまま」 (confirmed: 色の凡例) — with one fill,
+     the three rows in the key carry the SAME swatch, so the colour on the map is named by whichever
+     row uses it first, and that row is 「セルビア語」. A key whose swatches are not distinct is not a
+     key. What #R268 is about — the NAMES are separated and nothing merges them again — is checked
+     below and unchanged. */
+  assert.ok(!/LANG_ONE_COLOUR/.test(s), 'the shared fill must be gone (#R270), not merely unused');
   /* the platform's own name for `sh` is the risky one this round is about */
   assert.match(s, /sh:LA\('Serbo-Croatian'/, 'sh must be named Serbo-Croatian, not Serbian (Latin)');
   assert.match(s, /cnr:LA\('Montenegrin'/, 'cnr must be named Montenegrin');

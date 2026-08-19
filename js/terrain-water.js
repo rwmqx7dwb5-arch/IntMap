@@ -1531,8 +1531,19 @@ window.IntMapModules.terrainWater=function(HOST){
       s.textContent=[
         '.tw-card{background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.16));border-radius:12px;overflow:hidden;}',
         '.tw-cap{font-size:'+TW_FS_S+';font-weight:600;letter-spacing:.01em;color:var(--text-main);padding:0 3px 5px;}',
-        '.tw-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;'
-          +'padding:7px 11px;font-size:'+TW_FS+';color:var(--text-main);box-sizing:border-box;}',
+        /* ══ ⚠⚠ (#R270) ONE ROW HEIGHT, BECAUSE A GROUPED LIST IS A RHYTHM ═══════════════════════
+           「不自然な余白…が多い。」 MEASURED in this panel, 盛る mode: the rows came out 40 / 44 / 45 /
+           49 px — four different heights in one card, because `min-height:40px` plus 7 px of padding
+           takes whatever the control inside happens to be (a 30 px number box, a 35 px segmented
+           strip, a 16 px checkbox). #R258 wrote 「a 40 px row」 into the design note and then let the
+           contents decide. The row is a fixed 44 px now (the iOS grouped-list row, and the height
+           the tallest control already needed), the inline segmented strip is sized to sit inside it,
+           and every row in every mode is the same height. */
+        '.tw-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;'
+          +'padding:5px 11px;font-size:'+TW_FS+';color:var(--text-main);box-sizing:border-box;}',
+        /* a segmented control INSIDE a row is compact — the full-width one above a card is not */
+        '.tw-val .tw-segwrap{padding:2px;}',
+        '.tw-val .tw-seg{padding:5px 8px;}',
         '.tw-row+.tw-row,.tw-row+.tw-blk,.tw-blk+.tw-row,.tw-blk+.tw-blk{border-top:1px solid var(--glass-border,rgba(128,128,128,0.16));}',
         '.tw-blk{padding:9px 11px;font-size:'+TW_FS+';color:var(--text-main);box-sizing:border-box;}',
         '.tw-val{margin-left:auto;display:flex;align-items:center;gap:7px;flex:0 0 auto;}',
@@ -1562,6 +1573,15 @@ window.IntMapModules.terrainWater=function(HOST){
           +'color:#fff;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}',
         '.tw-play:disabled{opacity:.42;cursor:default;}',
         '.tw-clock{font-variant-numeric:tabular-nums;font-size:'+TW_FS+';color:var(--text-main);white-space:nowrap;}',
+        /* ══ ⚠⚠ (#R270) THE TWO DISCLOSURES WERE THE ONLY THINGS NOT ON THE LIST ═════════════════
+           MEASURED: every card in this panel spans x 29 → 335 and its text starts at 41 (11 px of
+           row padding). The two `<details>` spanned the same 29 → 335 and their summary text started
+           at **29** — twelve pixels left of every other word in the panel, with no card behind it and
+           no hairline between them. That is the 「不自然な余白」 a reader sees at the bottom of the
+           panel: two rows that belong to no group, indented differently from everything above.
+           They are cards now, with the same padding as a row, so the column has one left edge. */
+        '.tw-note{background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.16));'
+          +'border-radius:12px;padding:9px 11px;box-sizing:border-box;}',
         '.tw-note summary{cursor:pointer;font-size:'+TW_FS_S+';color:var(--text-main);list-style:revert;}',
       ].join('\n');
       document.head.appendChild(s);
@@ -1680,6 +1700,9 @@ window.IntMapModules.terrainWater=function(HOST){
       panel.querySelector('.tw-reset').onclick=()=>{ if(!G) return; pourStop(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; sources=[]; rainMm=0; pourSimS=0; resetSim(); editDirty(); clearTrace();
         const r=panel.querySelector('.tw-rain'); if(r) r.value=0; undoStack=[]; solve(); terrainSoon(); };
       try{ makeDraggable(panel,panel.querySelector('.tw-head')); }catch(_){}
+      /* (#R270) once the reader has moved it, it stays where they put it */
+      try{ const h=panel.querySelector('.tw-head'); if(h&&!h._twMoveWired){ h._twMoveWired=1;
+        h.addEventListener('pointerdown',()=>{ panel._twMoved=true; },true); } }catch(_){}
       syncMode(); renderParams(); syncFoot();
       if(result) report();
     }
@@ -1943,6 +1966,28 @@ window.IntMapModules.terrainWater=function(HOST){
     GE().events.on('touchstart',onDown); GE().events.on('touchmove',onMove); GE().events.on('touchend',onUp);
     GE().events.on('click',onClick); GE().events.on('dblclick',onDbl);
 
+    /* (#R270) open clear of whatever is covering the map's left edge — MEASURED each time, because
+       the sidebar can be opened and closed while the tool is up. Only moves the panel if it has not
+       been dragged: a position the reader chose is theirs. */
+    function placeClear(){ if(!panel||panel._twMoved) return;
+      try{
+        const mc=document.getElementById('map-container');
+        const r=mc?mc.getBoundingClientRect():{left:0,right:(window.innerWidth||0)};
+        let l=r.left;
+        ['#sidebar','#layer-sidebar-r','.mobile-sheet.open'].forEach(sel=>{
+          try{ const el=document.querySelector(sel); if(!el) return;
+            const cs=getComputedStyle(el);
+            if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity===0) return;
+            const b=el.getBoundingClientRect();
+            if(b.width<=1||b.height<=1) return;
+            if(b.left<=r.left+2&&b.right>l) l=b.right;      /* it eats the map from the LEFT */
+          }catch(_){}
+        });
+        const w=panel.getBoundingClientRect().width||330;
+        const maxL=Math.max(8,(window.innerWidth||0)-w-16);
+        panel.style.left=Math.round(Math.min(maxL,l+16))+'px';
+      }catch(_){}
+    }
     /* ---- lifecycle -------------------------------------------------------------------------------- */
     async function open(o){
       if(!panel){ panel=document.createElement('div'); panel.id='tw-panel';
@@ -1950,9 +1995,32 @@ window.IntMapModules.terrainWater=function(HOST){
            --popup-bg was rgba(...,0.72/0.74) with no backdrop-filter, i.e. the map showed through
            unblurred behind the numbers. */
         /* (#R255) a ceiling, so the body can be the thing that scrolls under the sticky footer */
-        panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);max-height:min(82vh,calc(100vh - 104px));z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
-        document.body.appendChild(panel); }
+        /* ══ ⚠⚠⚠ (#R270) THE PANEL OPENED WHERE NOBODY COULD SEE IT ═══════════════════════════════
+           「地形編集・水流で…おかしい配置が多い。」
+
+           MEASURED on the built site, desktop, default profile: this panel is `left:16px; top:80px;
+           z-index:1402`, and `#sidebar` — the Countries / News / Atlas column that a fresh desktop
+           profile opens (#R170) — is 400 px wide at z-index **2600**. `elementsFromPoint` at the
+           panel's own header returned the sidebar. So opening 地形編集・水流 with the sidebar up put
+           the whole tool underneath it: not clipped, not behind a legend — invisible, at the exact
+           coordinates it chose for itself.
+
+           Two things were wrong and both are structural:
+             ① 1402 is not a band this app has. css/intmap.css §「WHO IS IN FRONT」 puts floating
+                windows at 2200–2599 and js/window-manager.js keeps them there and raises the one you
+                touch (`registerWindow`). Every other tool panel is in it; this one was 800 below it,
+                so a data legend could cover it too.
+             ② The position was a constant. #R252's lesson is exactly this: 「動く障害物は矩形を実測
+                しろ」 — the sidebar can be open or shut, and its width is not this file's to guess.
+                `_freeLeft()` measures whatever is actually overlaying the map's left edge and opens
+                clear of it, the same way js/space.js's gauge finds the free middle. */
+        panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);max-height:min(82vh,calc(100vh - 104px));display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+        document.body.appendChild(panel);
+        try{ HOST.registerWindow&&HOST.registerWindow(panel); }catch(_){}
+        try{ panel.style.zIndex='2400'; }catch(_){} }
+      placeClear();
       panel.style.display='flex'; opened=true; render();
+      try{ HOST.bringToFront&&HOST.bringToFront(panel); }catch(_){}
       /* (#R255) the readout family reads the sculpted ground through this while the tool is open */
       try{ window.IntMapElevEdit=(lng,lat,v)=>{ try{ return (opened&&G)?(v+editDeltaAt(lng,lat)):v; }catch(_){ return v; } }; }catch(_){}
       if(o&&o.lng!=null){ try{ GE().camera.flyTo({center:[o.lng,o.lat],zoom:Math.max(GE().camera.getZoom(),11),duration:600}); }catch(_){}

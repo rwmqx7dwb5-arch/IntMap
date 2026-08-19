@@ -525,7 +525,7 @@ window.IntMapPageI18N.define('ko', {
     "MarineRegions": "해양 경계(배타적 경제수역·영해)",
     "TeleGeography Submarine Cable Map": "해저 통신 케이블 경로",
     "NASA SEDAC GPW v4": "격자화된 인구 밀도",
-    "UNDP / EIU / SIPRI / World Bank": "인간개발지수, 민주주의 지수, GDP, 국방비, 인구 통계",
+    "UNDP / EIU / SIPRI / World Bank": "인간개발지수(1990–2022년 연간 시계열), 민주주의 지수, GDP, 국방비, 인구 통계",
     "AISstream.io": "실시간 선박 AIS 정보(사용자 키 필요)",
     "airplanes.live": "실시간 항공기 정보(커뮤니티 ADS-B. 항공기 레이어의 미리보기 이미지에도 실데이터를 사용합니다)",
     "CelesTrak": "실시간 위성 레이어에 쓰는 궤도 요소 집합(GP/OMM. 2행 요소 집합의 현대적 후속 형식)을 카탈로그 그룹별로 제공합니다. 키가 필요 없고 CORS가 열려 있으며, 출처를 밝히면 비상업적 사용은 무료입니다. 위치는 내려받지 않습니다. 두 시간에 한 번 요소 집합만 받고, 화면의 모든 위치는 그것으로부터 SGP4/SDP4로 로컬에서 계산합니다(satellite.js, MIT). 그래서 지도를 움직이거나 시각을 바꿔도 요청이 발생하지 않습니다. 두 가지를 앱과 함께 배포하며, 둘 다 CI가 같은 출처에서 다시 만듭니다. data/tle/catalogue.tle는 실제 에폭을 가진 `active` 카탈로그의 실제 스냅숏으로, celestrak.org에 접속할 수 없을 때도 레이어가 그려지도록 합니다(앱은 사용한 요소가 얼마나 오래된 것인지 표시합니다). data/tle/groups.json은 각 CelesTrak 그룹에 속한 NORAD 카탈로그 번호로, 특정 분류에 대한 요청을 아무것도 그리지 않는 대신 그 스냅숏으로 답할 수 있게 합니다. 그룹 소속은 요소 집합에서 유도할 수 없고 객체 이름으로 추정하지도 않습니다. 목록을 가져오지 못한 그룹은 비어 있는 것이 아니라 없는 것으로 기록합니다",

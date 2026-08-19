@@ -286,11 +286,17 @@ window.IntMapModules.layerSearch=function(HOST){
            ⚠ `aria-label`, so the control is not an unlabelled glyph to a screen reader. */
         box.innerHTML='<input id="layer-search" type="search" autocomplete="off" style="width:100%;box-sizing:border-box;padding:7px 30px 7px 11px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;">'
           /* (#R268) no background disc — see the twin rule in js/map-ui.js */
-          +'<button type="button" class="ls-clear" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);margin-top:-2px;width:19px;height:19px;padding:0;border:0;background:transparent;color:var(--text-muted);font-size:12px;line-height:19px;cursor:pointer;">✕</button>';
+          /* ⚠ (#R270) …and the MARK is geometry rather than U+2715, which none of this app's
+             families has: `window.IntMapClearGlyph()` in js/map-ui.js is the one definition, so the
+             two search boxes cannot drift apart. The native WebKit ✕ that `type=search` adds is
+             suppressed by the rule in that same file — without it Chrome drew a second mark
+             underneath this one, which is the other half of 「不自然な形の×」. */
+          +'<button type="button" class="ls-clear" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:19px;height:19px;padding:0;border:0;background:transparent;color:var(--text-muted);cursor:pointer;align-items:center;justify-content:center;line-height:0;">'
+          +window.IntMapClearGlyph()+'</button>';
         const inp=box.querySelector('input'), clr=box.querySelector('.ls-clear');
         const ph=()=>window.IntMapLang.t(HOST.lang,"Search layers…","レイヤーを検索…","Ebenen suchen…","Поиск слоёв…","Buscar capas…");
         const cl=()=>window.IntMapLang.t(HOST.lang,"Clear search","検索をクリア","Suche leeren","Очистить поиск","Borrar búsqueda");
-        const sync=()=>{ clr.style.display=inp.value?'block':'none'; };
+        const sync=()=>{ clr.style.display=inp.value?'flex':'none'; };
         inp.placeholder=ph(); clr.title=cl(); clr.setAttribute('aria-label',cl());
         inp.addEventListener('input',()=>{ filter(inp.value); sync(); });
         inp.addEventListener('click',e=>e.stopPropagation());
@@ -304,7 +310,7 @@ window.IntMapModules.layerSearch=function(HOST){
         else if(d.firstChild!==box) d.insertBefore(box,d.firstChild); }
       /* re-apply an active query after a panel rebuild */
       const inp=box.querySelector('input'); if(inp&&inp.value) filter(inp.value);
-      try{ const c=box.querySelector('.ls-clear'); if(c) c.style.display=(inp&&inp.value)?'block':'none'; }catch(_){}
+      try{ const c=box.querySelector('.ls-clear'); if(c) c.style.display=(inp&&inp.value)?'flex':'none'; }catch(_){}
     }
     /* keep the box pinned across every reorganize (the panel is rebuilt on each open) */
     function hook(){ const orig=window.reorganizeLayerPanel;

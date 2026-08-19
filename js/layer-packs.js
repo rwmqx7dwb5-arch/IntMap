@@ -887,9 +887,20 @@ window.IntMapModules.religionLang=function(HOST){
       let nm=null;
       try{ nm=new Intl.DisplayNames([window.IntMapLang.htmlTag(HOST.lang)],{type:'language'}).of(tag); }catch(_){}
       return (nm&&nm!==tag)?nm:tag; };
-    /* 「塗は同じ色のままでいい」 — the four South-Slavic standards and the joint one keep ONE fill, so
-       the picture does not fragment; only the NAMES are separated, which is what the source does. */
-    const LANG_ONE_COLOUR={sr:'sh',hr:'sh',bs:'sh',cnr:'sh',sh:'sh'};
+    /* ══ ⚠⚠⚠ (#R270) THE SHARED FILL IS WHAT KEPT THE KEY SAYING «SERBIAN» ═══════════════════════
+       「凡例はまだ単に『セルビア語』のまま」 (confirmed: 色の凡例のこと).
+
+       #R268 separated the NAMES — measured on the built page, the key really does carry
+       「セルビア語」「クロアチア語」「ボスニア語」 as three rows — and kept ONE fill for all of them
+       because 「塗は同じ色のままでいい」. That permission is what is being withdrawn here, and the
+       reason is exactly what a colour key is FOR: with one fill, those three rows carry the SAME
+       swatch, so the colour on the map has no name but the first row that happens to use it, and
+       that row is 「セルビア語」 (it leads two countries; Croatian and Bosnian lead one each and sort
+       19 and 32 places below it). Reading the map through the key, Croatia and Bosnia were still
+       Serbian — the thing #R268 was told to stop saying, said by the palette instead of by the
+       label. A key whose swatches are not distinct is not a key.
+       → Each standard gets its own colour, so the legend answers the question it exists to answer.
+       Nothing else changes: the names, the popup and the per-country data are #R268's. */
 
     const DATA={religion:null,language:null};
     const CFG={
@@ -898,7 +909,7 @@ window.IntMapModules.religionLang=function(HOST){
         label:(k)=>LPK.arr(REL_LBL[k]||REL_LBL.other), col:(k)=>REL_COL[k]||REL_COL.other },
       language:{ file:'data/language.json', ids:['cat-lang-f','cat-lang-l'], src:'cat-lang',
         nm:LA('Primary language','言語分布（主要）','Vorherrschende Sprache','Основной язык','Idioma principal'),
-        label:(k)=>langName(k), col:null, group:LANG_ONE_COLOUR }
+        label:(k)=>langName(k), col:null }
     };
     const state={religion:false,language:false};
     const order={};      /* key -> [category, …] most-led first; decides the colour AND the legend */
@@ -912,14 +923,11 @@ window.IntMapModules.religionLang=function(HOST){
         order[key]=Object.keys(n).sort((a,b)=>(n[b]-n[a])||(a<b?-1:1));
         return j; }).catch(()=>null);
     }
-    /* (#R268) `grp` maps a category onto the one whose colour the whole family shares; the rank
-       used for the palette is the FIRST member of that family in the most-led order, so the four
-       ex-Yugoslav standards paint as one colour and every other language is unaffected. */
-    const grpOf=(key,cat)=>{ const C=CFG[key]; return (C.group&&C.group[cat])||cat; };
+    /* (#R270) one category, one colour — see the note by LANG_FIX. #R268's family-grouping is gone
+       with the shared fill it existed for; a rank in the most-led order IS the colour now. */
     const colOf=(key,cat)=>{ const C=CFG[key]; if(C.col) return C.col(cat);
-      const ord=order[key]||[], g=grpOf(key,cat);
-      let i=ord.indexOf(cat);
-      if(C.group){ const j=ord.findIndex(c=>grpOf(key,c)===g); if(j>=0) i=j; }
+      const ord=order[key]||[];
+      const i=ord.indexOf(cat);
       return i<0?'#9aa0a6':LPAL[i%LPAL.length]; };
     function colorExpr(key){ const e=['match',['get','cat']];
       (order[key]||[]).forEach(cat=>{ e.push(cat,colOf(key,cat)); }); e.push('#9aa0a6'); return e; }
