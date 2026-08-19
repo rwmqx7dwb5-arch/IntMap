@@ -92,7 +92,12 @@ function summariseMeteoAlarm(raw, lang) {
       expires: pick.expires || "",
     });
   }
-  return { source: "MeteoAlarm (EUMETNET)", count: rows.length, warnings: rows };
+  /* ⚠ (#R269) `fetchedAt` — WHEN THIS SUMMARY WAS READ FROM MeteoAlarm. The rows carry `onset` and
+     `expires`, which are the VALIDITY WINDOW and are normally in the FUTURE: the app's freshness
+     instrument used them and reported MeteoAlarm as 82 hours «newer than now». A validity window is
+     not an issue time, and a feed with no clock at all is the blind spot the instrument exists for,
+     so the relay states the one timestamp it can actually vouch for. */
+  return { source: "MeteoAlarm (EUMETNET)", fetchedAt: new Date().toISOString(), count: rows.length, warnings: rows };
 }
 
 Deno.serve(async (req) => {
@@ -133,11 +138,22 @@ Deno.serve(async (req) => {
     });
   }
 
+  /* ⚠ (#R269) TWENTY SECONDS WAS NOT A BUDGET, IT WAS A COIN TOSS. MEASURED on production: this
+     relay answered `502 upstream unreachable` after exactly 20,140 ms for the CMA list while the
+     SAME url fetched from a laptop returned 300 items in 1.0 s. www.nmc.cn is reachable from the
+     edge region but not always quickly, and a timeout shorter than the upstream's bad days turns an
+     available feed into 「取得不可」 at random. Forty-five seconds and ONE retry; the 60-second edge
+     cache means a reader still pays for at most one upstream request a minute either way. */
   try {
-    const r = await fetch(ok.toString(), {
-      headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
-      signal: AbortSignal.timeout(20000),
-    });
+    let r = null;
+    for (let i = 0; i < 2 && !r; i++) {
+      try {
+        r = await fetch(ok.toString(), {
+          headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
+          signal: AbortSignal.timeout(45000),
+        });
+      } catch (_e) { if (i) throw _e; }
+    }
     const body = await r.text();
     // the response must BE the kind of document the layer is about to parse; a login
     // page or an error HTML must not reach the app as "the warnings"

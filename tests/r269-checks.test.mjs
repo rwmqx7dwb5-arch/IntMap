@@ -155,3 +155,37 @@ test('R269 ③ «reachable» and «still running» are two different dots', () =
   assert.ok(h >= 24 * 4, `the threshold is ${h} h — a live feed with a multi-day warning must not be flagged`);
   assert.match(s, /const dot=\(k\)=>/, 'the dot must be computed from the state AND the age');
 });
+
+/* ── ④ 追記: the relay-backed loaders, and what a «newest timestamp» may be ─────────────────── */
+test('R269 ④ a timestamp in the future is refused as evidence of freshness', () => {
+  const s = WP();
+  assert.match(s, /if\(v>Date\.now\(\)\+60000\) return;/,
+    'a validity window that ends tomorrow must not make a feed look newer than now');
+  /* MeteoAlarm's rows carry onset/expires — a WINDOW — so its clock is the relay's own read time */
+  assert.match(s, /seenAt\('meteoalarm',d\.fetchedAt\)/, 'MeteoAlarm uses the relay’s fetchedAt');
+  assert.match(codeOnly(read('supabase/functions/alerts-relay/index.ts')), /fetchedAt: new Date\(\)\.toISOString\(\)/,
+    '…which the relay must actually send');
+});
+
+test('R269 ④ the two relay-backed loaders run one call at a time', () => {
+  const s = WP();
+  assert.match(s, /let cmaBusy=false, maBusy=false;/, 'the in-flight flags must exist');
+  assert.match(s, /if\(!cmaBusy\)\{ cmaBusy=true;/, 'CMA is guarded');
+  assert.match(s, /if\(!maBusy\)\{ maBusy=true;/, 'MeteoAlarm is guarded');
+  /* and each one must clear its flag on BOTH paths, or the feed stops for the session */
+  const cma = s.slice(s.indexOf('if(!cmaBusy)'), s.indexOf('if(!maBusy)'));
+  assert.match(cma, /\.then\(\(\)=>\{ cmaBusy=false; \}\)/, 'CMA clears its flag after success AND failure');
+});
+
+test('R269 ④ the relay gives a slow upstream a real budget and one retry', () => {
+  const t = codeOnly(read('supabase/functions/alerts-relay/index.ts'));
+  const m = /AbortSignal\.timeout\((\d+)\)/g;
+  const budgets = [...t.matchAll(m)].map((x) => +x[1]);
+  assert.ok(budgets.length >= 2, 'both upstream fetches must state a budget');
+  /* MEASURED: the CMA list returned 502 after exactly 20,140 ms from the edge while the same URL
+     answered in 1.0 s from a laptop — a budget shorter than the upstream's bad days turns an
+     available feed into 「取得不可」 at random. */
+  assert.ok(Math.min(...budgets) >= 40000, `the smallest budget is ${Math.min(...budgets)} ms`);
+  assert.match(t, /for \(let i = 0; i < 2 && !r; i\+\+\)/, 'and one retry');
+});
+
