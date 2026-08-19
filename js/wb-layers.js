@@ -82,8 +82,13 @@ window.IntMapModules.wbLayers=function(HOST){
     /* (#R40) expose the WB indicator fetch (cached, latest value per country) so the Correlation/Scatter tool
        can offer the full World-Bank indicator set as axes ("対応する項目を大幅に増やして"). (#R266) `series`
        joins it, so Atlas can ask for a specific year rather than only «the latest». */
+    /* (#R270) …and the RAMP, so js/layer-previews.js can draw a tile with the colours the layer
+       actually paints. Its `WBP` table carried its own copy, and the copy went stale the moment
+       #R268 made GDP growth diverging: the thumbnail was still the old red→green sequential ramp,
+       so the tile and the map disagreed about the layer's colours. One owner, read at draw time. */
     try{ window.IntMapWB={ fetch:wbFetch, get:(code)=>wbCache[_wbKey(code)]||null,
-      series:wbSeries, seriesOf:(code)=>wbSeriesCache[_wbKey(code)]||null }; }catch(_){}
+      series:wbSeries, seriesOf:(code)=>wbSeriesCache[_wbKey(code)]||null,
+      rampOf:(id)=>{ const L=WB.find(x=>x.id===id); return L?L.ramp.slice():null; } }; }catch(_){}
     const LA=window.IntMapLang.pickArgs(), LWB=window.IntMapLang.pick(()=>HOST.lang);
     const WB=[
       {id:'wbco2', code:'EN.GHG.CO2.PC.CE.AR5', n:LA('CO₂ per capita','1人当たりCO₂排出','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita'), ramp:[0,'#1a9850',2,'#a6d96a',5,'#fee08b',10,'#f46d43',20,'#a50026'], unit:' t'},   /* (#R32) old EN.ATM.CO2E.PC was discontinued by the World Bank (returned 0 rows) → current AR5 per-capita series */
@@ -118,7 +123,10 @@ window.IntMapModules.wbLayers=function(HOST){
       {id:'wbfdi', code:'BX.KLT.DINV.WD.GD.ZS', n:LA('FDI inflow % GDP','対内直接投資 対GDP %','ADI-Zufluss % BIP','Приток ПИИ % ВВП','Entrada de IED % PIB'), ramp:[-2,'#a50026',1,'#fee08b',4,'#a6d96a',8,'#66bd63',15,'#006837'], unit:'%'},
       {id:'wbmilppl', code:'MS.MIL.TOTL.P1', n:LA('Armed forces personnel','軍人数','Streitkräftepersonal','Численность вооружённых сил','Personal de fuerzas armadas'), ramp:[5000,'#fff7ec',50000,'#fdd49e',200000,'#fc8d59',800000,'#d7301f',2000000,'#7f0000'], unit:''},
       /* (#R34) +8 more beta choropleths (World Bank) — same resilient mrnev+range fetch, hover values + source note. */
-      {id:'wblife', code:'SP.DYN.LE00.IN', n:LA('Life expectancy','平均寿命','Lebenserwartung','Продолжительность жизни','Esperanza de vida'), ramp:[50,'#a50026',60,'#f46d43',70,'#fee08b',78,'#a6d96a',85,'#1a9850'], unit:' yr'},
+      /* (#R270) 「平均寿命」 is ALSO the name of `beta-dl-lifeexp` in 人口・経済 (the countryStats row
+         the master clock drives). Two rows with one name is the ambiguity #R266 was asked to remove
+         for 年降水量 — same fix, same wording: the source goes in the name. */
+      {id:'wblife', code:'SP.DYN.LE00.IN', n:LA('Life expectancy (World Bank)','平均寿命（世界銀行）','Lebenserwartung (Weltbank)','Продолжительность жизни (Всемирный банк)','Esperanza de vida (Banco Mundial)'), ramp:[50,'#a50026',60,'#f46d43',70,'#fee08b',78,'#a6d96a',85,'#1a9850'], unit:' yr'},
       {id:'wbunemp', code:'SL.UEM.TOTL.ZS', n:LA('Unemployment %','失業率 %','Arbeitslosigkeit %','Безработица %','Desempleo %'), ramp:[2,'#1a9850',5,'#a6d96a',10,'#fee08b',20,'#f46d43',35,'#a50026'], unit:'%'},
       {id:'wbnet', code:'IT.NET.USER.ZS', n:LA('Internet users %','インターネット利用率 %','Internetnutzer %','Пользователи интернета %','Usuarios de internet %'), ramp:[10,'#a50026',30,'#f46d43',55,'#fee08b',80,'#a6d96a',98,'#1a9850'], unit:'%'},
       {id:'wbdebt', code:'GC.DOD.TOTL.GD.ZS', n:LA('Govt debt % GDP','政府債務 対GDP %','Staatsverschuldung % BIP','Госдолг % ВВП','Deuda pública % PIB'), ramp:[20,'#1a9850',45,'#a6d96a',70,'#fee08b',110,'#f46d43',180,'#a50026'], unit:'%'},
@@ -157,7 +165,8 @@ window.IntMapModules.wbLayers=function(HOST){
       {id:'wbhomicide', code:'VC.IHR.PSRC.P5', n:LA('Homicide rate /100k','殺人発生率 /10万人','Mordrate /100k','Убийства /100k','Tasa de homicidios /100k'), ramp:[1,'#1a9850',3,'#a6d96a',8,'#fee08b',20,'#f46d43',40,'#a50026'], unit:''},
       /* (#R126) +6 more beta choropleths (World Bank, latest value per country — auto-wired like the rest). */
       {id:'wbmilgdp', code:'MS.MIL.XPND.GD.ZS', n:LA('Military spending % GDP','軍事費 %GDP','Militärausgaben % BIP','Военные расходы % ВВП','Gasto militar % PIB'), ramp:[0.5,'#1a9850',1.5,'#a6d96a',2.5,'#fee08b',4,'#f46d43',8,'#a50026'], unit:'%'},
-      {id:'wbfert', code:'SP.DYN.TFRT.IN', n:LA('Fertility rate (births/woman)','合計特殊出生率','Geburtenrate (Kinder/Frau)','Суммарный коэфф. рождаемости','Tasa de fecundidad (hijos/mujer)'), ramp:[1.2,'#2c7fb8',1.8,'#7fcdbb',2.5,'#ffffb2',4,'#fe9929',6,'#cc4c02'], unit:''},
+      /* (#R270) …and 「合計特殊出生率」 is also `dl-tfr` in 人口・経済 — same pair, same fix */
+      {id:'wbfert', code:'SP.DYN.TFRT.IN', n:LA('Fertility rate (World Bank)','合計特殊出生率（世界銀行）','Geburtenrate (Weltbank)','Суммарный коэфф. рождаемости (Всемирный банк)','Tasa de fecundidad (Banco Mundial)'), ramp:[1.2,'#2c7fb8',1.8,'#7fcdbb',2.5,'#ffffb2',4,'#fe9929',6,'#cc4c02'], unit:''},
       {id:'wbdensity', code:'EN.POP.DNST', n:LA('Population density /km² (World Bank)','人口密度 /km²（世界銀行）','Bevölkerungsdichte /km² (Weltbank)','Плотность населения /км² (Всемирный банк)','Densidad de población /km² (Banco Mundial)'), ramp:[5,'#fff7ec',25,'#fdd49e',100,'#fc8d59',300,'#d7301f',1000,'#7f0000'], unit:'/km²'},
       {id:'wbedu', code:'SE.XPD.TOTL.GD.ZS', n:LA('Education spending % GDP','教育支出 %GDP','Bildungsausgaben % BIP','Расходы на образование % ВВП','Gasto en educación % PIB'), ramp:[2,'#a50026',3,'#f46d43',4.5,'#fee08b',6,'#a6d96a',8,'#1a9850'], unit:'%'},
       {id:'wbsmoke', code:'SH.PRV.SMOK', n:LA('Smoking prevalence %','喫煙率 %','Raucherquote %','Распространённость курения %','Prevalencia de tabaquismo %'), ramp:[8,'#1a9850',15,'#a6d96a',22,'#fee08b',30,'#f46d43',40,'#a50026'], unit:'%'},
@@ -165,6 +174,44 @@ window.IntMapModules.wbLayers=function(HOST){
     ];
     /* (#R32) Hover tooltip for every beta choropleth ("ホバーして数値が出るように") — reuses the shared map
        tooltip so it matches HDI/pop. Shows the country name, the metric and its value. */
+    /* ══ ⚠⚠⚠ (#R270) THE KEY WAS A STAIRCASE FOR A LAYER THAT PAINTS A GRADIENT ═══════════════════
+       「GDP成長率レイヤーの色は段彩ではなく、他レイヤーと同じようにグラデーションに。」
+
+       MEASURED on the built site: `wbgdpgrow-fill` paints
+       `['interpolate',['linear'],['get','v'], -8,#67001f, … , 8,#053061]` — a CONTINUOUS ramp, as
+       every layer in this file does — while its key drew seven discrete chips, one per stop. So the
+       key said 段彩 about a layer that is not 段彩, and a country at −6 % had a colour that appeared
+       nowhere in its own legend. Every other choropleth in this app (HDI, GDP per capita, population
+       density, fertility, military spending — js/data-layers.js `makeLegend`) draws a
+       `linear-gradient` bar, which is what 「他レイヤーと同じように」 names.
+
+       ⚠ THE STOPS ARE PLACED BY VALUE, NOT SPREAD EVENLY. `interpolate` is linear in the VALUE, so a
+       bar whose stops sit at equal fractions would be a different picture from the map wherever the
+       ramp is unevenly spaced — which is most of them (0 / 2 / 5 / 10 / 20 t of CO₂). Positioning
+       each stop at (v − lo)/(hi − lo) makes the bar and the map the same function.
+       ⚠ AND THE WHOLE FAMILY GETS IT, not just the one layer named: these sixty-odd rows share this
+       one builder, and fixing the reported layer alone would leave GDP growth the only World-Bank
+       choropleth whose key is a gradient — a new inconsistency in place of the old one. */
+    const _kFmt=(v,unit)=>{ const a=Math.abs(v);
+      const n=a>=1e9?((v/1e9)+'B'):a>=1e6?((v/1e6)+'M'):a>=1e4?((v/1e3)+'k'):String(v);
+      return n+(unit||''); };
+    function rampKey(L){
+      const r=L.ramp, lo=r[0], hi=r[r.length-2], span=(hi-lo)||1;
+      const at=(v)=>Math.max(0,Math.min(100,(v-lo)/span*100));
+      const stops=[]; for(let i=0;i<r.length;i+=2) stops.push(r[i+1]+' '+at(r[i]).toFixed(2)+'%');
+      /* at most five ticks, always including both ends and (for a diverging ramp) the hinge */
+      const idx=[]; const n=r.length/2;
+      for(let i=0;i<n;i++) idx.push(i);
+      let show=idx;
+      if(n>5){ show=[0]; const step=(n-1)/4; for(let k=1;k<4;k++) show.push(Math.round(k*step)); show.push(n-1);
+        show=show.filter((v,i,a2)=>a2.indexOf(v)===i); }
+      const ticks=show.map(i=>{ const v=r[i*2], p=at(v);
+        const tr=(p<=1)?'translateX(0)':(p>=99)?'translateX(-100%)':'translateX(-50%)';
+        return '<span style="position:absolute;left:'+p.toFixed(2)+'%;transform:'+tr+';white-space:nowrap;">'+HOST.escapeHtml(_kFmt(v,L.unit))+'</span>'; }).join('');
+      return '<div style="height:10px;border-radius:5px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
+        +'background:linear-gradient(90deg,'+stops.join(',')+');"></div>'
+        +'<div style="position:relative;height:13px;margin-top:3px;font-variant-numeric:tabular-nums;">'+ticks+'</div>';
+    }
     function _wbHover(L,fill){ if(window['_wbhov_'+fill]) return; window['_wbhov_'+fill]=true;
       const fmt=(v)=>{ if(v==null) return '—'; const a=Math.abs(v); const r=(a>=100?Math.round(v):Math.round(v*10)/10); return r+(L.unit||''); };
       GE().events.onLayer('mousemove',fill,(e)=>{ if(!e.features||!e.features.length) return; GE().render.canvas().style.cursor='pointer'; const p=e.features[0].properties||{};
@@ -211,7 +258,7 @@ window.IntMapModules.wbLayers=function(HOST){
         GE().layers.add({id:line,type:'line',source:src,paint:{'line-color':'rgba(0,0,0,0.16)','line-width':0.3}}); _wbHover(L,fill); } }catch(_){}
       const cb=document.getElementById('bx-'+L.id), on=cb?cb.checked:true;
       [fill,line].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
-      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity(L.id,L.n,[fill,line],'bx-'+L.id); if(el){ const ramp=L.ramp,parts=[]; for(let i=0;i<ramp.length;i+=2) parts.push('<span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:11px;height:11px;border-radius:2px;background:'+ramp[i+1]+';"></span>'+ramp[i]+L.unit+'</span>'); let kk=el.querySelector('.bx-key'); if(!kk){ kk=document.createElement('div'); kk.className='bx-key'; kk.style.cssText='display:flex;flex-wrap:wrap;gap:7px;font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(kk); } kk.innerHTML=parts.join('');
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity(L.id,L.n,[fill,line],'bx-'+L.id); if(el){ let kk=el.querySelector('.bx-key'); if(!kk){ kk=document.createElement('div'); kk.className='bx-key'; kk.style.cssText='margin-top:6px;font-size:10px;color:var(--text-muted);'; el.appendChild(kk); } kk.innerHTML=rampKey(L);
         /* ── the year picker. Built once, then only its VALUE is set: rebuilding the <select> on every
               repaint would close the dropdown under the finger that just opened it. ── */
         if(S){ let yr=el.querySelector('.bx-yearrow');

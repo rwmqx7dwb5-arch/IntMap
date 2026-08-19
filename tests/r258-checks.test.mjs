@@ -142,7 +142,15 @@ test('R258 ⑦: the terrain panel is a grouped inset list with a pinned clock', 
   const s = read('js/terrain-water.js');
   assert.match(s, /if\(document\.getElementById\('tw-ios-css'\)\) return;/, 'the sheet is injected by the module');
   assert.match(s, /'\.tw-card\{/, 'cards');
-  assert.match(s, /'\.tw-row\{[^']*min-height:40px/, '40 px rows, the measurement the other simulator uses');
+  /* ⚠ (#R270) 40 → 44, AND THE ASSERTION IS THE PROPERTY RATHER THAN THE NUMBER. #R258 wrote 「a 40 px
+     row」 and then let the contents decide: measured in 盛る mode the rows came out 40 / 44 / 45 / 49,
+     because `min-height` plus padding takes whatever control is inside. What this test is actually
+     about — «the panel is a grouped inset list with ONE row rhythm» — is now checked as that. */
+  const rowRule = /'\.tw-row\{([^']*)'/.exec(s);
+  assert.ok(rowRule, 'the row must be styled here');
+  const mh = /min-height:(\d+)px/.exec(rowRule[1]);
+  assert.ok(mh && +mh[1] >= 40, 'a grouped-list row is at least 40 px');
+  assert.match(s, /'\.tw-val \.tw-segwrap\{/, 'a control inside a row must be sized to fit that row');
   assert.match(s, /class="tw-play tw-pp"/, 'the transport is in the footer…');
   assert.match(s, /panel\.querySelector\('\.tw-pp'\)\.onclick=/, '…and wired from render(), not from a tool');
   assert.match(s, /function syncFoot\(\)/, 'the clock repaints without rebuilding the panel');

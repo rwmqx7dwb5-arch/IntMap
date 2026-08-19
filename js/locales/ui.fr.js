@@ -4139,5 +4139,11 @@ window.IntMapLang.define('fr', { ui: {
   "Strong wind": "Vent fort",
   "Snow and wind": "Neige et vent",
   "Landslide": "Glissement de terrain",
-  "Ice accretion": "Givrage",   /* (#R267) */
+  "Ice accretion": "Givrage",
+  "Fertility rate (World Bank)": "Taux de fécondité (Banque mondiale)",
+  "Life expectancy (World Bank)": "Espérance de vie (Banque mondiale)",
+  "GDACS event level, over the whole country": "Niveau d’événement GDACS, sur tout le pays",
+  "Warning rank, at the unit the agency issues for": "Rang de l’alerte, à l’échelle où l’agence la publie",
+  "UNDP publishes no HDI for this year": "Le PNUD ne publie pas d’IDH pour cette année",
+  "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed in the agency’s own rank and the tap holds the units. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "Le Japon, les États-Unis, le Canada et le Brésil sont dessinés à l’échelle où leur agence publie ses alertes, et ne sont jamais teintés en entier — ce sont les formes qui répondent. L’Europe, la Chine, l’Australie et Hong Kong publient une liste plutôt qu’une géométrie : leur pays est teinté selon le rang de l’agence et le détail apparaît au toucher. Une teinte GDACS est une autre échelle, dans d’autres couleurs : elle indique qu’un événement de ce niveau touche le pays, pas qu’une alerte est en vigueur à un endroit précis. La Russie, l’Inde, la Nouvelle-Zélande, la Malaisie, l’Indonésie, l’Afrique du Sud et le Mexique n’ont aucun flux public lisible par un navigateur ; ils ne figurent que dans GDACS — un flux d’événements, pas un service national d’alerte, et un pays sans événement GDACS n’est pas un pays sans alertes. Affichage à titre indicatif : suivez les autorités officielles.",   /* (#R267) */
 } });

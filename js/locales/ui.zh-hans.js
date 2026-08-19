@@ -4229,6 +4229,12 @@ window.IntMapLang.define('zh-hans', {
   "Strong wind": "强风",
   "Snow and wind": "风雪",
   "Landslide": "土砂灾害",
-  "Ice accretion": "着冰",   /* (#R267) */
+  "Ice accretion": "着冰",
+  "Fertility rate (World Bank)": "生育率（世界银行）",
+  "Life expectancy (World Bank)": "平均寿命（世界银行）",
+  "GDACS event level, over the whole country": "GDACS 事件等级（整个国家淡色标示）",
+  "Warning rank, at the unit the agency issues for": "各机关的发布等级（依发布单位绘制）",
+  "UNDP publishes no HDI for this year": "UNDP 未发布该年度的 HDI",
+  "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed in the agency’s own rank and the tap holds the units. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "日本、美国、加拿大与巴西依各机关的发布单位绘制，并不会整国上色——在那些国家，发布区域的形状本身就是答案。欧洲、中国、澳洲与香港以列表而非图形公开，因此以该机关的等级颜色淡涂全国，点击后显示各单位的明细。GDACS 的淡涂是另一套尺度、另一组颜色：它表示该等级的事件影响这个国家，而非国内某一地点已发布警报。俄罗斯、印度、纽西兰、马来西亚、印尼、南非与墨西哥没有浏览器可读取的公开数据源，因此仅显示 GDACS——GDACS 是事件发布，并非各国的警报本身；没有事件的国家并不等于没有警报。此为参考显示，实际请依循官方机关的发布。",   /* (#R267) */
   }
 });

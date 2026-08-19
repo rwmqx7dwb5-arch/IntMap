@@ -18,6 +18,17 @@
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
+/* ══ ⚠ (#R270) THE CLEAR MARK, DRAWN ONCE ════════════════════════════════════════════════════════
+   「レイヤー検索欄の×の様子がおかしい。不自然な形の×。」 — the mark was the character U+2715, which
+   no family in this app's stack has (measured: identical advance in Inter, Noto Sans JP, system-ui
+   and sans-serif = every one of them falls through to the platform's symbol font). This is the ONE
+   definition of the geometry, because there are TWO layer-search boxes — this file's `.lsr-clear`
+   and js/map-extras.js's `.ls-clear` — and #R239's standing lesson is a defect fixed in one of two
+   copies and left in the other. `currentColor` so the button keeps its own hover state. */
+window.IntMapClearGlyph=function(){
+  return '<svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
+    +'<path d="M2.6 2.6 L9.4 9.4 M9.4 2.6 L2.6 9.4" fill="none" stroke="currentColor" '
+    +'stroke-width="1.6" stroke-linecap="round"/></svg>'; };
 
 window.IntMapModules.layerRegistry=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -342,9 +353,24 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'.lsr-search input{padding-right:38px !important;}'
         /* (#R268) 「レイヤー検索欄の×ボタンに背景は不要」 — the disc is gone from BOTH search boxes
            (this one and js/map-extras.js's `#layer-search`); hover moves the glyph, not a plate. */
-        +'.lsr-search .lsr-clear{display:none;position:absolute;right:22px;top:50%;transform:translateY(-50%);margin-top:-4px;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--text-muted);font-size:12px;line-height:20px;text-align:center;cursor:pointer;}'
+        /* ══ ⚠⚠ (#R270) THE ✕ WAS A CHARACTER NOBODY IN THIS APP'S TYPEFACE DRAWS ══════════════════
+           「レイヤー検索欄の×の様子がおかしい。不自然な形の×。」
+           MEASURED in the running page: `measureText('✕')` returns 9.8027 px at 12 px in EVERY
+           family this app names — Inter, Noto Sans JP, system-ui, sans-serif — i.e. none of them has
+           the glyph and every one of them falls through to the platform's symbol font. So the mark
+           was drawn at a weight, a size and a baseline that belong to no other glyph on the screen,
+           and it is a different mark on every operating system. That is the 不自然な形.
+           → It is GEOMETRY now: two strokes of one SVG, 1.6 px wide with round caps, centred in the
+           box. Exactly symmetric, the same on every platform, and it inherits `currentColor` so the
+           hover state is unchanged. Both search boxes get it — see js/map-extras.js. */
+        +'.lsr-search .lsr-clear{display:none;position:absolute;right:22px;top:50%;transform:translateY(-50%);width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--text-muted);cursor:pointer;align-items:center;justify-content:center;line-height:0;}'
+        +'.lsr-search .lsr-clear[data-on="1"]{display:flex;}'
+        +'.lsr-search .lsr-clear svg,#layer-search-wrap .ls-clear svg{width:11px;height:11px;display:block;}'
         +'.lsr-search .lsr-clear:hover{background:transparent;color:var(--text-main);}'
         +'.lsr-mount .lsr-search .lsr-clear{right:8px;}'
+        /* the native WebKit clear button would sit UNDER this one on Chrome (`type=search`), i.e.
+           two marks in one place — the other half of 「不自然な形の×」 (see js/map-extras.js) */
+        +'.lsr-search input::-webkit-search-cancel-button,#layer-search-wrap input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none;}'
         +'#layer-sidebar-r .lsr-body{flex:1;overflow-y:auto;padding:0 12px 24px;min-height:0;}'
         /* (#R70/#R71) TILE GRID — 3 columns, mercator-true previews (aspect matches the canvas exactly:
            nothing stretched), tightened typography, quieter card chrome ("素人が作ったようなダサい"対策). */
@@ -798,10 +824,10 @@ window.IntMapModules.layerSidebar=function(HOST){
     function wireSearchClear(host){ try{
       const wrap=host&&host.querySelector('.lsr-search'); if(!wrap||wrap.querySelector('.lsr-clear')) return;
       const inp=wrap.querySelector('input'); if(!inp) return;
-      const b=document.createElement('button'); b.type='button'; b.className='lsr-clear'; b.textContent='✕';
+      const b=document.createElement('button'); b.type='button'; b.className='lsr-clear'; b.innerHTML=window.IntMapClearGlyph();
       const lbl=()=>T('Clear search','検索をクリア','Suche leeren','Очистить поиск','Borrar búsqueda');
       b.title=lbl(); b.setAttribute('aria-label',lbl());
-      const sync=()=>{ b.style.display=inp.value?'block':'none'; };
+      const sync=()=>{ b.setAttribute('data-on',inp.value?'1':'0'); };
       wrap.appendChild(b); sync();
       inp.addEventListener('input',sync);
       inp.addEventListener('keydown',e=>{ if(e.key==='Escape'&&inp.value){ inp.value=''; filterTiles(host); sync(); } });
