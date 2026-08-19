@@ -878,15 +878,32 @@ window.IntMapModules.terrainWater=function(HOST){
        advanced FIRST, and the elapsed time and the taps' delivery both follow what it returns; a
        capped tick then shows up as the clock running slower than the multiplier asks, which is true,
        and `cappedTicks` says why. */
+    /* ══ ⚠⚠⚠ (#R267 追記) A TAP IS A RATE, SO IT IS DELIVERED PER STEP ══════════════════════════
+       MEASURED IN PRODUCTION: a 60,000 m³/s source advanced by half an hour reported
+       「max depth 21,290.1 m」 — 1.08×10⁸ m³ divided by one 71 m cell, to the metre. The volume owed
+       for the whole interval was handed to `addVolume` before the integration started, i.e. as a
+       PARCEL. It drains, and the flood it produces is about right, but a 21 km column of water is
+       not something that ever exists, and both the picture and the readout showed it.
+       `feedTaps(dt)` runs before every step of the solver instead, so what a discharge puts in is
+       rate·dt — and `x.m3` (the running total the panel prints) advances by exactly the same
+       amount at exactly the same time, which is what keeps the two from disagreeing again. */
+    function feedTaps(dt){
+      const S=sim; if(!S||!B||!(dt>0)) return;
+      sources.forEach(sc=>{ if(!sc.cont) return;
+        const c=basinCellOf(sc.lng,sc.lat); if(!c) return;
+        const give=Math.max(0,+sc.rate||pourRate)*dt; if(!(give>0)) return;
+        S.addVolume([c.j*B.NX+c.i],give);
+        sc.m3=Math.max(0,+sc.m3||0)+give;
+        sc._fed=Math.max(0,+sc._fed||0)+give; });
+    }
     function stepSim(sec,maxSteps){
       const S=ensureSim(); if(!S) return null;
       steady=false;
-      feedSim();                                    /* whatever is owed from the last step goes in first */
+      feedSim();                                    /* the one-shot volumes and the rain, once each */
       /* the interactive tick is a frame budget; the explicit door below passes its own */
-      const r=S.advance(sec,maxSteps||SIM_MAX_STEPS,arguments.length>2?arguments[2]:180);
+      const r=S.advance(sec,maxSteps||SIM_MAX_STEPS,arguments.length>2?arguments[2]:180,feedTaps);
       if(r.capped) simCapped++;
       pourSimS+=r.simS;
-      sources.forEach(x=>{ if(x.cont) x.m3+=Math.max(0,+x.rate||pourRate)*r.simS; });
       simFrontM=frontDistanceM(); simFrontAt=S.tS;
       growSoon();                                   /* (#R267) make room before the water needs it */
       return r;
