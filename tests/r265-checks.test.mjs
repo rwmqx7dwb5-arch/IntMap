@@ -207,8 +207,17 @@ test('R265 ⑦ the pour tick advances the shallow-water state, and ⏭ is the st
      integrate, not what the tick asked for — two clocks for one simulation is this round's own
      defect in miniature (measured: the footer read «2.0 h» while the details read «35 min»). */
   assert.match(s, /pourSimS\+=r\.simS;/, "the clock is the water's clock");
-  assert.match(s, /if\(x\.cont\) x\.m3\+=Math\.max\(0,\+x\.rate\|\|pourRate\)\*r\.simS;/,
-    '…and so is what the taps deliver');
+  /* ⚠⚠ (#R267 追記) …AND WHAT THE TAPS DELIVER IS NOW TIED TO THE INTEGRATION MORE TIGHTLY STILL.
+     #R265 credited a tap once per TICK, with what the model managed to integrate — which kept the
+     two clocks together but still handed the interval'''s water over as a parcel. MEASURED IN
+     PRODUCTION: 60,000 m³/s advanced by half an hour reported 「max depth 21,290.1 m」, which is
+     1.08e8 m³ / (71.2 m)² to the metre. A discharge is a RATE, so it is delivered per STEP. */
+  assert.match(s, /const r=S\.advance\(sec,maxSteps\|\|SIM_MAX_STEPS,arguments\.length>2\?arguments\[2\]:180,feedTaps\);/,
+    'the solver calls back for the taps on every step');
+  assert.match(s, /sc\.m3=Math\.max\(0,\+sc\.m3\|\|0\)\+give;/,
+    '…and the running total the panel prints advances by the same amount at the same time');
+  assert.doesNotMatch(s, /x\.m3\+=Math\.max\(0,\+x\.rate\|\|pourRate\)\*r\.simS;/,
+    'nothing credits a tap for a whole interval at once any more');
   assert.doesNotMatch(s, /pourSimS\+=add;/, 'nothing advances the clock by the requested interval');
   /* and clearing the water clears the shallow-water state with it */
   assert.match(s, /clearWater\(\)\{ pushUndo\(\); pourStop\(\); sources=\[\]; rainMm=0; resetSim\(\);/);
