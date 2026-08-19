@@ -160,6 +160,12 @@ test('R268 ⑦ the two-epoch rasters can be switched too', () => {
   const dl = codeOnly(read('js/data-layers.js'));
   assert.match(dl, /const NIGHTSAT_EPOCHS=\['2016-01-01','2012-01-01'\]/, 'night lights: the two epochs GIBS serves');
   assert.match(dl, /gibs\('VIIRS_Black_Marble',8,'png',window\._nightsatEpoch\)/, 'the URL must use the chosen epoch');
+  /* (#R268 追記) …and the 1 km population grid, which GIBS publishes as one product PER EPOCH.
+     Probed one tile each: 2000 / 2005 / 2010 / 2015 / 2020 all answer 200. */
+  assert.match(dl, /const POPGRID_EPOCHS=\['2020','2015','2010','2005','2000'\]/, 'the five GPW epochs');
+  assert.match(dl, /const popgridTiles=\(\)=>gibsStatic\('GPW_Population_Density_'\+window\._popgridYear/,
+    'the URL must be built from the chosen epoch');
+  assert.match(dl, /addRaster\('popgrid',popgridTiles\(\),7\)/, '…and the layer must use it');
   const lp = codeOnly(read('js/layer-packs.js'));
   assert.match(lp, /const WC_EPOCHS=/, 'land cover: both ESA WorldCover versions');
   assert.ok(lp.includes('esa-worldcover-map-10m-2020-v1_map') && lp.includes('esa-worldcover-map-10m-2021-v2_map'),

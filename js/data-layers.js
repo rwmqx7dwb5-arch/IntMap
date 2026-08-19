@@ -581,12 +581,26 @@ window.IntMapModules.dataLayers=function(HOST){
        mostly draw nothing. */
     const NIGHTSAT_EPOCHS=['2016-01-01','2012-01-01'];
     if(!window._nightsatEpoch) window._nightsatEpoch=NIGHTSAT_EPOCHS[0];
+    /* ══ (#R268 追記) …AND THE 1 km POPULATION GRID HAS FIVE ═════════════════════════════════════
+       Reviewing 「年を変えることに意味があるレイヤーは一つ残らずすべて」 against the whole panel after
+       the round shipped: 1人当たりGDP・合計特殊出生率・人口・平均寿命・軍事費 already travel with the
+       MASTER CLOCK (#R94/#R200 fetch that year's World Bank figures onto countryStats), and HDI/UNDP
+       and 民主主義指数/EIU are single published editions with no annual series — #R94 deliberately
+       never relabels those with a year they do not have. The one genuine gap left was this layer:
+       GPW is published as a SEPARATE GIBS product per epoch and the app was pinned to 2020.
+       Probed one tile each: 2000 / 2005 / 2010 / 2015 / 2020 all answer 200. Two decades of where
+       people are, on a 1 km grid, is exactly what 「年を変えることに意味がある」 means. */
+    const POPGRID_EPOCHS=['2020','2015','2010','2005','2000'];
+    if(!window._popgridYear) window._popgridYear=POPGRID_EPOCHS[0];
+    const popgridTiles=()=>gibsStatic('GPW_Population_Density_'+window._popgridYear,7,'png');
     window._imLayerDates=layerDates;   /* (#R77) live reference for Atlas stateContext (vision §2 — dated-layer awareness) */
     /* (#R13c) Time-varying layers state WHEN their data is from, in the legend (user request). A small
        "as-of" line is appended to each dated legend and refreshed whenever the date/window changes. */
     function _legendWhenText(id){ const jp=HOST.lang==='jp';
       if(id==='radar') return (window.IntMapLang.t(HOST.lang,'Latest frame (live)','最新フレーム（実時間）','Neuestes Bild (live)','Последний кадр (в реальном времени)','Último fotograma (en vivo)'));
       if(id==='thermal'){ const w=window._thermalWindow||'24'; return (jp?('直近'+w+'時間'):('Last '+w+' h')); }
+      /* (#R268 追記) …before the `layerDates` gate: this layer's year is an EPOCH, not a date */
+      if(id==='popgrid') return (window.IntMapLang.t(HOST.lang,'Data: ','データ: ','Daten: ','данные: ','datos: '))+window._popgridYear;
       const d=layerDates[id]; if(!d) return '';
       if(id==='temp') return (window.IntMapLang.t(HOST.lang,'Month: ','対象月: ','Monat: ','месяц: ','mes: '))+String(d).slice(0,7);
       return (window.IntMapLang.t(HOST.lang,'Data: ','データ: ','Daten: ','данные: ','datos: '))+d;
@@ -596,7 +610,7 @@ window.IntMapModules.dataLayers=function(HOST){
        window select. Each writes layerDates[id] / _thermalWindow and reloads the dated layer. */
     const _today=()=>new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     function _refreshLegendDates(){
-      [['temp',lgdTemp],['thermal',lgdThermal],['radar',lgdRadar],['sst',lgdSST],['snow',lgdSnow],['aod',lgdAod],['nightsat',lgdNightsat]].forEach(([id,lg])=>{
+      [['temp',lgdTemp],['thermal',lgdThermal],['radar',lgdRadar],['sst',lgdSST],['snow',lgdSnow],['aod',lgdAod],['nightsat',lgdNightsat],['popgrid',lgdPopGrid]].forEach(([id,lg])=>{
         if(!lg) return;
         let w=lg.querySelector('.dl-when');
         if(!w){
@@ -611,6 +625,12 @@ window.IntMapModules.dataLayers=function(HOST){
             e.addEventListener('change',()=>{ window._nightsatEpoch=e.value;
               try{ GE().layers.setSourceTiles('src-nightsat',gibs('VIIRS_Black_Marble',8,'png',window._nightsatEpoch)); }catch(_){}
               _refreshLegendDates(); }); }
+          else if(id==='popgrid'){ w.innerHTML='🕒 <span>'+(window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año'))+'</span> <select class="dl-epoch" style="'+inSty+'">'
+              +POPGRID_EPOCHS.map(y=>'<option value="'+y+'">'+y+'</option>').join('')+'</select>';
+            const e=w.querySelector('.dl-epoch'); e.value=window._popgridYear;
+            e.addEventListener('change',()=>{ window._popgridYear=e.value;
+              try{ GE().layers.setSourceTiles('src-popgrid',popgridTiles()); }catch(_){}
+              _refreshLegendDates(); }); }
           else if(id==='temp'){ w.innerHTML='🕒 <input type="month" class="dl-date" style="'+inSty+'">';
             const d=w.querySelector('.dl-date'); d.value=(layerDates[id]||'').slice(0,7); d.addEventListener('change',()=>{ if(!d.value)return; layerDates[id]=d.value+'-01'; if(GE().layers.has('lyr-'+id)&&GE().layers.getLayout('lyr-'+id,'visibility')==='visible') refreshDatedLayer(id); _refreshLegendDates(); }); }
           else { w.innerHTML='🕒 <input type="date" class="dl-date" max="'+_today()+'" style="'+inSty+'">';
@@ -620,7 +640,7 @@ window.IntMapModules.dataLayers=function(HOST){
         /* keep values in sync */
         const dt=w.querySelector('.dl-date'); if(dt){ dt.value = id==='temp' ? (layerDates[id]||'').slice(0,7) : (layerDates[id]||_today()); }
         const wn=w.querySelector('.dl-win'); if(wn) wn.value=window._thermalWindow||'24';
-        const ep=w.querySelector('.dl-epoch'); if(ep) ep.value=window._nightsatEpoch;
+        const ep=w.querySelector('.dl-epoch'); if(ep) ep.value=(id==='popgrid')?window._popgridYear:window._nightsatEpoch;
         const tt=w.querySelector('.dl-when-t'); if(tt) tt.textContent=_legendWhenText(id);
       });
     }
@@ -4354,7 +4374,8 @@ window.IntMapModules.dataLayers=function(HOST){
         else if(id==='nightsat'){ lgdNightsat.style.display='block'; tileLegends(); try{ _refreshLegendDates(); }catch(_){} whenStyleReady().then(()=>{ try{ addRaster('nightsat',gibs('VIIRS_Black_Marble',8,'png',window._nightsatEpoch),8); }catch(_){} try{ GE().layers.setSourceTiles('src-nightsat',gibs('VIIRS_Black_Marble',8,'png',window._nightsatEpoch)); }catch(_){} try{ setVis('lyr-nightsat',true); }catch(_){} }); }
         else if(id==='popgrid'){
           lgdPopGrid.style.display='block'; tileLegends();
-          whenStyleReady().then(()=>{ try{ addRaster('popgrid',gibsStatic('GPW_Population_Density_2020',7,'png'),7); }catch(_){} try{ setVis('lyr-popgrid',true); }catch(_){} });
+          try{ _refreshLegendDates(); }catch(_){}
+          whenStyleReady().then(()=>{ try{ addRaster('popgrid',popgridTiles(),7); }catch(_){} try{ GE().layers.setSourceTiles('src-popgrid',popgridTiles()); }catch(_){} try{ setVis('lyr-popgrid',true); }catch(_){} });
         }
         else if(id==='wind'){ try{ const l=document.getElementById('data-legend-wind'); if(l){ l.style.display='block'; tileLegends(); window._updateWindLegend&&window._updateWindLegend(); } window.Wind&&window.Wind.toggle(true); }catch(_){} }
         else if(id==='relief'){
