@@ -524,7 +524,7 @@ window.IntMapPageI18N.define('zh-hant', {
     "MarineRegions": "海域界線：專屬經濟海域與領海",
     "TeleGeography Submarine Cable Map": "海底電信電纜路線",
     "NASA SEDAC GPW v4": "網格化人口密度",
-    "UNDP / EIU / SIPRI / World Bank": "人類發展指數、民主指數、GDP、軍事支出與人口統計",
+    "UNDP / EIU / SIPRI / World Bank": "人類發展指數（1990–2022 年度序列）、民主指數、GDP、軍事支出與人口統計",
     "AISstream.io": "即時船舶 AIS 動態（需自備金鑰）",
     "airplanes.live": "即時航班動態（社群 ADS-B；航空器圖層的預覽影像亦取樣自此）",
     "CelesTrak": "即時衛星圖層所用的軌道根數集（GP/OMM，兩行式根數集的現代後繼格式），依目錄群組提供。免金鑰、開放 CORS；非商業用途在標示出處下免費使用。位置「不會」被下載——每兩小時只下載根數集，畫面上的每個位置都在本機以 SGP4/SDP4 推算（satellite.js，MIT），因此平移地圖或改變時間都不會產生請求。另有兩項資料隨程式一併提供，皆由 CI 自同一來源重新產生：data/tle/catalogue.tle，是帶有真實曆元的 `active` 目錄真實快照，讓 celestrak.org 無法連線時圖層仍能繪製（程式會說明所用根數的新舊）；以及 data/tle/groups.json，記錄各 CelesTrak 群組所含的 NORAD 目錄編號，使針對某一「類別」的請求能以該快照作答，而非什麼都不畫。群組歸屬無法由根數集導出，也絕不從物體名稱推測——無法取得清單的群組會記為「缺漏」而非「空的」",

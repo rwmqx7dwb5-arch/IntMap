@@ -525,7 +525,7 @@ window.IntMapPageI18N.define('ja', {
     "MarineRegions": "EEZ・領海境界",
     "TeleGeography Submarine Cable Map": "海底通信ケーブル",
     "NASA SEDAC GPW v4": "人口密度（グリッド）",
-    "UNDP / EIU / SIPRI / World Bank": "HDI・民主主義指数・GDP・軍事費・人口統計",
+    "UNDP / EIU / SIPRI / World Bank": "HDI（1990–2022年の年次系列）・民主主義指数・GDP・軍事費・人口統計",
     "AISstream.io": "船舶AIS（ユーザーキー）",
     "airplanes.live": "航空機トラフィック（コミュニティADS-B。レイヤー一覧のプレビュー画像にも実データを使用）",
     "CelesTrak": "人工衛星レイヤーの軌道要素（GP/OMM＝2行軌道要素の後継形式）をカタログ群ごとに取得。APIキー不要・CORS対応、非商用利用は出典表示のうえ無料。取得するのは「位置」ではなく「軌道要素」で、2時間に1回だけ。画面上の位置はすべて SGP4/SDP4（satellite.js・MIT）でブラウザ内計算しているため、地図の操作や時間経過で通信は発生しません。さらに**同じ出所から CI が再生成して同梱している**ものが2つあります：data/tle/catalogue.tle（`active` カタログの実スナップショット。実際の元期を持ち、celestrak.org に到達できないときでも描画できます。要素の古さはアプリが表示します）と、data/tle/groups.json（各 CelesTrak グループに属する NORAD 番号。カテゴリを選んだときに、何も表示しないのではなくそのスナップショットから答えられるようにするためのものです）。グループの所属は軌道要素からは導けず、天体名から推測することもしません——取得できなかったグループは「空」ではなく「不明（キーごと省略）」として記録します",

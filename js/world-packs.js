@@ -81,6 +81,7 @@ window.IntMapModules.worldPacks=function(HOST){
       if(cell!==''||row.length){ row.push(cell); rows.push(row); }
       return rows; }
     const _csvCache=Object.create(null);
+    const _csvVal=Object.create(null);      /* (#R270) the RESOLVED value, so a year range can be read synchronously */
     async function owid(slug){
       if(_csvCache[slug]) return _csvCache[slug];
       _csvCache[slug]=(async()=>{
@@ -96,9 +97,16 @@ window.IntMapModules.worldPacks=function(HOST){
           const o=(by[c]=by[c]||Object.create(null))[y]=Object.create(null);
           for(let k=0;k<head.length;k++){ if(k===iC||k===iY||head[k]==='entity') continue;
             const v=parseFloat(r2[k]); if(isFinite(v)) o[head[k]]=v; } }
-        return { columns:head, by };
-      })();
+        /* (#R270) the range the file actually covers — the year picker's bounds are measured, never
+           assumed, the same rule scripts/probe-gibs-range.mjs follows for the rasters */
+        let lo=1e9, hi=-1e9;
+        for(const c in by) for(const y in by[c]){ const n=+y; if(n<lo) lo=n; if(n>hi) hi=n; }
+        return { columns:head, by, minYear:(lo<=hi?lo:null), maxYear:(lo<=hi?hi:null) };
+      })().then(v=>{ _csvVal[slug]=v; return v; });
       return _csvCache[slug]; }
+    /* the loaded CSV's own year span, or null while nothing has landed yet */
+    function owidRange(slug){ const d=_csvVal[slug];
+      return (d&&d.minYear!=null)?{min:d.minYear,max:d.maxYear}:null; }
 
     /* ── country geometry: centroids and a point-in-polygon, from the ONE country dataset ─────────
        ⚠ countryGeo is NEVER re-broadcast as a second geojson source. #R166 recorded that MapLibre's
@@ -262,6 +270,15 @@ window.IntMapModules.worldPacks=function(HOST){
         claim(){ try{ window._registerLayerOpacity&&window._registerLayerOpacity(LID,names(),layers(),cbId); }catch(_){}
           if(!_want){ const el=legend(); if(el) el.style.display='none';
             try{ window._tileLegends&&window._tileLegends(); }catch(_){} } },
+        /* ══ (#R270) THE YEAR, ON THE LAYER ══════════════════════════════════════════════════════
+           「年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 — the trade,
+           energy and crop layers have followed the master clock since they were written (see the
+           header: 「a year that follows window.IntMapTime」), and nothing on them said so. This is
+           js/data-layers.js's row — the SAME builder the six country-statistic legends use, reading
+           and writing the one clock — appended to the legend SHELL rather than to `.wp-body`, so a
+           re-render of the body cannot take it away. */
+        clockYear(opts){ const el=legend(); if(!el) return null;
+          try{ return window._legendClockYear?window._legendClockYear(el,opts||{}):null; }catch(_){ return null; } },
         hide(){ _want=false;
           try{ window._hideGenericLegend&&window._hideGenericLegend(LID); }catch(_){}
           const el=legend(); if(el) el.style.display='none'; },
@@ -692,6 +709,8 @@ window.IntMapModules.worldPacks=function(HOST){
              'Ширина линии пропорциональна КОРНЮ из суммы. Точная цифра — при наведении. Источник: BACI (CEPII) / OEC, ',
              'El ancho sigue la RAÍZ CUADRADA del valor. Cifra exacta al pasar el cursor. Fuente: BACI (CEPII) vía OEC, ')
           +y+(y<YMIN||y>YMAX?(' → '+Math.max(YMIN,Math.min(YMAX,y))):'')+'.</div>');
+        /* (#R270) the year, on the layer — BACI's own range. See makePanel.clockYear. */
+        panel.clockYear({min:YMIN,max:YMAX});
         const mark=(sel,active)=>b.querySelectorAll(sel).forEach(x=>{ const a=active(x);
           x.style.background=a?'var(--primary-color)':'var(--input-bg)'; x.style.color=a?'#fff':'var(--text-main)'; });
         mark('.wp-x',()=>dir==='X'); mark('.wp-m',()=>dir==='M');
@@ -852,6 +871,9 @@ window.IntMapModules.worldPacks=function(HOST){
 
       async function apply(k){
         const cfg=SRCS[k]; const data=await owid(cfg.slug);
+        /* (#R270) the year row's bounds are the file's own, so it can only be built once the file is
+           here — this is the moment it arrives, on the path the MAP already takes. */
+        try{ if(panel.shown()){ const yr=owidRange(cfg.slug); if(yr) panel.clockYear(yr); } }catch(_){}
         const y=nowYear(); const key=(k==='elec')?'wpElec':'wpPrim';
         if(!HOST.countryGeo) return;
         let n=0;
@@ -913,6 +935,9 @@ window.IntMapModules.worldPacks=function(HOST){
           +L('Source: Our World in Data — Ember (electricity) and the Energy Institute Statistical Review (primary energy). The map shades the low-carbon share of electricity, and the fossil share of primary energy; the bar is the mix itself, because nine sources are not one color.',
              '出典: Our World in Data（電力＝Ember、一次エネルギー＝Energy Institute 統計）。地図は電力の低炭素比率／一次エネルギーの化石燃料比率で塗り、構成そのものは棒グラフで示します（9つの電源は1色では表せないため）。',
              'Quelle: Our World in Data (Ember / Energy Institute).','Источник: Our World in Data (Ember / Energy Institute).','Fuente: Our World in Data (Ember / Energy Institute).')+'</div>');
+        /* (#R270) the year, on the layer — Our World in Data's own range, read off the rows that
+           actually loaded rather than assumed; before they land the row is simply not built. */
+        { const yr=owidRange(SRCS[kind].slug); if(yr) panel.clockYear(yr); }
         b.querySelectorAll('.wp-k').forEach(x=>{ const a=x.getAttribute('data-k')===kind;
           x.style.background=a?'var(--primary-color)':'var(--input-bg)'; x.style.color=a?'#fff':'var(--text-main)';
           x.onclick=()=>{ const nk=x.getAttribute('data-k'); if(nk===kind) return; setKind(nk); }; });
@@ -1091,6 +1116,34 @@ window.IntMapModules.worldPacks=function(HOST){
         const k=(e[1]>20&&JMA_ELEM[e[0]+'Gale'])?(e[0]+'Gale'):e[0];
         return JMA_ELEM[k]||null; };
       const TIERCOL={3:'#a335ee',2:'#ff3b30',1:'#ffcc00'};
+      /* ══ ⚠⚠⚠ (#R270) TWO SCALES WERE SHARING ONE PALETTE, AND THE KEY NAMED THE OTHER ONE ═══════
+         「気象警報、凡例の色がおかしすぎ。対応が崩壊している。日本は発令されてない箇所が紫色」
+
+         MEASURED on the built site: the world legend printed a PURPLE swatch labelled 「赤（最も
+         深刻）」, a RED swatch labelled 「オレンジ（深刻）」 and a YELLOW swatch labelled
+         「緑（情報）」 — `tierKey(GDACS_TIERNAME)`, i.e. this app's three warning tiers drawn in
+         TIERCOL and then read out with GDACS's Green/Orange/Red names. Every row contradicted its
+         own colour. That is the 「対応が崩壊している」, literally.
+
+         And it is not only the key. GDACS is an EVENT feed whose unit is the whole country, so
+         `washTier` painted every country in an event's `affectedcountries` list with TIERCOL —
+         MEASURED the same minute: GDACS carried Tropical Cyclone BAVI-26 at level **Red**, whose
+         affected list contains Japan, so `feature-state.wpAlert` for JPN was 3 and the ENTIRE
+         COUNTRY was painted #a335ee. The JMA's own polygons underneath said 15 prefectures, all of
+         them 注意報 (yellow). 「発令されてない箇所が紫色」 is that wash, in one colour that this
+         layer's own key defines as 特別警報.
+
+         → GDACS gets ITS OWN COLOURS — the Green / Orange / Red it publishes and names — so a
+         swatch and its label agree, and no country wash can ever be read as an issued 特別警報.
+         The alpha is in the colour rather than in `fill-opacity` because the opacity slider
+         (`_registerLayerOpacity`) overwrites that property with one scalar for every layer it owns:
+         a wash has to stay a wash at 85 %, which is where the slider sits.
+         ⚠ AND A COUNTRY WHOSE OWN AGENCY DRAWS AREAS HERE IS NOT WASHED AT ALL (see `washTier`). */
+      const GDACSCOL={3:'#e02b1d',2:'#f08c00',1:'#3d9a3d'};
+      const GDACSWASH={3:'rgba(224,43,29,0.42)',2:'rgba(240,140,0,0.42)',1:'rgba(61,154,61,0.34)'};
+      /* the national wash (China, Australia, Hong Kong, MeteoAlarm) is the agency's own tier, so it
+         keeps TIERCOL — but a whole country is not an issuing unit either, so it is drawn AS a wash */
+      const TIERWASH={3:'rgba(163,53,238,0.40)',2:'rgba(255,59,48,0.40)',1:'rgba(255,204,0,0.40)'};
       /* (#R269) tier 3 now carries two JMA ranks — 危険警報 (level 4) and 特別警報 (level 5) — so the
          key names both rather than claiming every purple area is a 特別警報. */
       const tierName=(t)=>t===3?L('Emergency / danger warning','特別警報・危険警報','Notfall-/Gefahrenwarnung','Экстренное / опасное предупреждение','Aviso de emergencia / peligro')
@@ -1193,9 +1246,13 @@ window.IntMapModules.worldPacks=function(HOST){
       const CHORO='wp-alert-choro';
       function ensureChoro(){ if(GE().layers.has(CHORO)) return true;
         if(!_imCanDraw()||!GE().layers.hasSource('countries')) return false;
+        /* (#R270) 1–3 = the national agency's own tier; 11–13 = a GDACS event level, in GDACS's own
+           colours. One field, two scales, and the legend below names both — see GDACSCOL. */
         try{ GE().layers.add({id:CHORO,type:'fill',source:'countries',layout:{visibility:'none'},
-          paint:{'fill-color':['match',['to-number',['feature-state','wpAlert'],0],3,TIERCOL[3],2,TIERCOL[2],1,TIERCOL[1],'rgba(0,0,0,0)'],
-            'fill-opacity':['case',['>',['to-number',['feature-state','wpAlert'],0],0],0.20,0]}},
+          paint:{'fill-color':['match',['to-number',['feature-state','wpAlert'],0],
+            3,TIERWASH[3],2,TIERWASH[2],1,TIERWASH[1],
+            13,GDACSWASH[3],12,GDACSWASH[2],11,GDACSWASH[1],'rgba(0,0,0,0)'],
+            'fill-opacity':['case',['>',['to-number',['feature-state','wpAlert'],0],0],1,0]}},
           GE().layers.has('tool-poly')?'tool-poly':undefined); }catch(_){ return false; }
         return true; }
 
@@ -1480,8 +1537,9 @@ window.IntMapModules.worldPacks=function(HOST){
             rec.items.push({ area:c.countryname||k, unit:'event', tier:t, kind:label,
               status:(p.name||p.eventname||'')+(p.severitydata&&p.severitydata.severitytext?(' · '+p.severitydata.severitytext):'') }); });
           seenAt('gdacs',p.datemodified||p.fromdate);
+          /* (#R270) a GDACS event is drawn in GDACS's own colour, not in this layer's warning tiers */
           if(f.geometry&&f.geometry.type==='Point') out.push({type:'Feature',geometry:f.geometry,
-            properties:{ iso:String(p.iso3||'').toUpperCase(), col:TIERCOL[t], tier:t, src:'gdacs',
+            properties:{ iso:String(p.iso3||'').toUpperCase(), col:GDACSCOL[t], tier:t, src:'gdacs',
               name:p.name||label, n:1, at:p.datemodified||p.fromdate||'',
               items:JSON.stringify([{area:p.country||'',unit:'event',tier:t,kind:label,status:p.alertlevel||''}]) }}); });
         gCountries=byC; return out; }
@@ -1489,13 +1547,30 @@ window.IntMapModules.worldPacks=function(HOST){
       /* (#R266) …and the feeds that publish a LIST rather than a geometry colour their country the
          same way GDACS does — otherwise «China has 927 warnings in force» would be invisible on the
          map and only appear on a tap. */
-      function washTier(c){
-        let t=(gCountries[c]&&gCountries[c].tier)||0;
+      /* ══ ⚠⚠⚠ (#R270) A COUNTRY WHOSE OWN AGENCY DRAWS AREAS HERE IS NEVER WASHED ═══════════════
+         「日本は発令されてない箇所が紫色」 — and the prefecture polygons underneath were saying the
+         opposite about those same places. When an agency publishes the SHAPES it issues for, the
+         shapes are the answer to 「ここに何が出ているか」; a country-wide fill can only contradict
+         them, and it did. GDACS's event for such a country is still on the map (its point) and still
+         in the tap (its own block, #R266 追記), which is where an event feed belongs.
+         GEOM_FEEDS is derived from the features actually drawn rather than written out by hand, so a
+         feed that starts publishing polygons stops being washed on the same day. */
+      const GEOM_FEEDS={jma:1,nws:1,eccc:1,inmet:1};
+      const drawsAreas=(c)=>!!GEOM_FEEDS[FEEDS[c]];
+      /* the national agency's own tier for a country that publishes a LIST rather than shapes */
+      function agencyTier(c){
+        let t=0;
         if(c==='CHN'&&cmaRec) t=Math.max(t,cmaRec.worst||0);
         if(c==='AUS'&&bomRec) t=Math.max(t,bomRec.worst||0);      /* (#R268) list-only, like CMA */
         if(c==='HKG'&&hkoRec) t=Math.max(t,hkoRec.worst||0);
         const md=maData[c]; if(md&&md.warnings&&md.warnings.length) t=Math.max(t,md.warnings.reduce((m,w)=>Math.max(m,w.tier||1),0));
         return t; }
+      /* 0 = nothing · 1–3 = the agency's warning tier · 11–13 = a GDACS event level (its own scale) */
+      function washTier(c){
+        const a=agencyTier(c); if(a) return a;
+        if(drawsAreas(c)) return 0;
+        const g=(gCountries[c]&&gCountries[c].tier)||0;
+        return g?(10+g):0; }
       function paintCountries(){ withCountrySource().then(()=>{ if(!on) return;
         if(!ensureChoro()) { whenDrawable(()=>{ if(on&&ensureChoro()) paintCountries(); }); return; }
         try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||''); if(!c) return;
@@ -1542,13 +1617,20 @@ window.IntMapModules.worldPacks=function(HOST){
         } finally { busy=false; } }
 
       /* the three tiers as a colour key — the same TIERCOL the map paints from */
-      function tierKey(names){ return '<div style="margin-top:8px;display:flex;flex-direction:column;gap:3px;">'
+      /* ⚠ (#R270) A KEY TAKES ITS COLOURS FROM THE THING IT IS A KEY TO. `tierKey(names)` used to
+         accept ANY naming function while always drawing TIERCOL, and the one caller that passed a
+         naming function passed GDACS's — so the swatch and the label were about different scales.
+         The palette travels with the names now: there is no way to write that row again. */
+      function keyRows(col,name){ return '<div style="margin-top:8px;display:flex;flex-direction:column;gap:3px;">'
         +[3,2,1].map(t=>'<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;">'
-          +'<span style="width:12px;height:12px;border-radius:3px;background:'+TIERCOL[t]+';"></span>'
-          +esc(names?names(t):tierName(t))+'</div>').join('')+'</div>'; }
+          +'<span style="width:12px;height:12px;border-radius:3px;background:'+col[t]+';"></span>'
+          +esc(name(t))+'</div>').join('')+'</div>'; }
+      const keyHead=(t)=>'<div style="margin-top:9px;font-size:10.5px;font-weight:600;color:var(--text-muted);">'+esc(t)+'</div>';
+      const tierKey=()=>keyRows(TIERCOL,tierName);
       const GDACS_TIERNAME=(t)=>t===3?L('Red alert','赤（最も深刻）','Rote Warnstufe','Красный уровень','Alerta roja')
         :t===2?L('Orange alert','オレンジ（深刻）','Orange Warnstufe','Оранжевый уровень','Alerta naranja')
         :L('Green alert','緑（情報）','Grüne Warnstufe','Зелёный уровень','Alerta verde');
+      const gdacsKey=()=>keyRows(GDACSCOL,GDACS_TIERNAME);
 
       function legendFor(iso3){
         const feed=FEEDS[iso3];
@@ -1567,7 +1649,7 @@ window.IntMapModules.worldPacks=function(HOST){
             +L('Global feed: GDACS (Global Disaster Alert and Coordination System, UN/EC) — earthquakes, tropical cyclones, floods, volcanoes, droughts and wildfires of the last four days.',
                '全球フィード: GDACS（国連/欧州委員会の全球災害警報システム）— 地震・熱帯低気圧・洪水・火山・干ばつ・森林火災（直近4日間）。',
                'Globaler Feed: GDACS (UN/EC).','Глобальный фид: GDACS (ООН/ЕК).','Feed global: GDACS (ONU/CE).')+'</div>'
-            +tierKey(GDACS_TIERNAME)+stLine(FEED_STATE.gdacs);
+            +gdacsKey()+stLine(FEED_STATE.gdacs);
           if(FEED_STATE.gdacs==='ok'&&!gRec){
             /* ⚠ NOT an empty map, and not silence either: GDACS only carries events big enough to
                cross its own thresholds, so "no GDACS event" is not "no warnings". */
@@ -1580,7 +1662,7 @@ window.IntMapModules.worldPacks=function(HOST){
             return h; }
           if(gRec){ h+='<div style="margin-top:8px;max-height:230px;overflow:auto;">'
             +gRec.items.slice(0,60).map(x=>'<div style="display:flex;gap:6px;align-items:center;padding:2px 0;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));font-size:11.5px;">'
-              +'<span style="width:9px;height:9px;border-radius:2px;background:'+TIERCOL[x.tier]+';flex:none;"></span>'
+              +'<span style="width:9px;height:9px;border-radius:2px;background:'+GDACSCOL[x.tier]+';flex:none;"></span>'
               +'<span style="flex:1;">'+esc(x.kind)+'</span><span style="opacity:.75;">'+esc(x.status)+'</span></div>').join('')+'</div>'; }
           return h; }
         /* the two feeds that publish a list rather than a geometry */
@@ -1830,7 +1912,13 @@ window.IntMapModules.worldPacks=function(HOST){
                 ((hkoRec&&hkoRec.items.length)||0)+' '+L('signals','件','Signale','сигналов','señales'))
           +line(L('Rest of the world — GDACS','その他の国 — GDACS','Weltweit — GDACS','Остальной мир — GDACS','Resto del mundo — GDACS'),'gdacs',
                 gc+' '+L('countries','か国','Länder','стран','países'))
-          +tierKey(GDACS_TIERNAME)
+          /* ⚠ (#R270) TWO KEYS, EACH NAMED. The map carries two scales at once — the issuing
+             agencies' own ranks over their own areas, and GDACS's event levels over whole countries
+             — and one three-colour key cannot be a key to both. */
+          +keyHead(L('Warning rank, at the unit the agency issues for','各機関の発令階級（発令単位で描画）','Warnstufe der Behörde (in ihren Einheiten)','Ранг предупреждения службы (в её единицах)','Rango del aviso de la agencia (en sus unidades)'))
+          +tierKey()
+          +keyHead(L('GDACS event level, over the whole country','GDACS の事象レベル（国全体を薄く塗る）','GDACS-Ereignisstufe (ganzes Land)','Уровень события GDACS (вся страна)','Nivel del evento GDACS (todo el país)'))
+          +gdacsKey()
           /* ⚠ (#R268) 「全然現実の発令に追い付いていない」 — the age of what is on screen is a fact the
              reader can check, so it is printed rather than promised. The clock is the last completed
              fetch, not the last tick. */
@@ -1841,8 +1929,8 @@ window.IntMapModules.worldPacks=function(HOST){
           +'<div style="margin-top:8px;font-size:11.5px;color:var(--text-main);">'
           +L('Tap any country for the legend its own agency uses.','国をタップすると、その国の機関の凡例が出ます。','Land antippen für die Legende der jeweiligen Behörde.','Нажмите страну — появится легенда её службы.','Toque un país para la leyenda de su agencia.')+'</div>'
           +'<div style="margin-top:6px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-          +L('Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed and the tap holds the units. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.',
-             '日本・米国・カナダ・ブラジルは各機関の発令単位で描いています。ヨーロッパ・中国・オーストラリア・香港は図形ではなく一覧で公開されているため、国を色で塗り、タップで単位ごとの内訳を出します。ロシア・インド・ニュージーランド・マレーシア・インドネシア・南アフリカ・メキシコは今回実際に接続を試しましたが、ブラウザから読める公開フィードが見つからなかったため GDACS のみです——GDACS は事象の配信であって各国の警報そのものではなく、事象が無い国は「警報が無い国」ではありません。表示は参考です。実際には公的機関の発表に従ってください。',
+          +L('Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed in the agency’s own rank and the tap holds the units. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.',
+             '日本・米国・カナダ・ブラジルは各機関の発令単位で描いており、国全体を塗ることはありません——その国では発令区域の形そのものが答えだからです。ヨーロッパ・中国・オーストラリア・香港は図形ではなく一覧で公開されているため、その機関の階級の色で国を薄く塗り、タップで単位ごとの内訳を出します。GDACS の塗りは別の尺度・別の色です——「そのレベルの事象がその国に影響している」という意味であって、国内のどこかの地点に警報が出ているという意味ではありません。ロシア・インド・ニュージーランド・マレーシア・インドネシア・南アフリカ・メキシコは今回実際に接続を試しましたが、ブラウザから読める公開フィードが見つからなかったため GDACS のみです——GDACS は事象の配信であって各国の警報そのものではなく、事象が無い国は「警報が無い国」ではありません。表示は参考です。実際には公的機関の発表に従ってください。',
              'Japan, die USA, Kanada und Brasilien in den Einheiten ihrer Behörden; Europa, China, Australien und Hongkong als Liste (Land eingefärbt, Einheiten im Tap); Russland, Indien, Neuseeland, Malaysia, Indonesien, Südafrika und Mexiko haben keinen offenen, im Browser lesbaren Warndienst — nur GDACS.',
              'Япония, США, Канада и Бразилия — в единицах их служб; Европа, Китай, Австралия и Гонконг публикуют список (страна закрашена, единицы в подсказке); у России, Индии, Новой Зеландии, Малайзии, Индонезии, ЮАР и Мексики открытого читаемого браузером фида не найдено — только GDACS.',
              'Japón, EE. UU., Canadá y Brasil en sus unidades oficiales; Europa, China, Australia y Hong Kong publican una lista (país coloreado, unidades al tocar); Rusia, India, Nueva Zelanda, Malasia, Indonesia, Sudáfrica y México no tienen un feed público legible por el navegador — solo GDACS.')+'</div>'
@@ -2605,6 +2693,10 @@ window.IntMapModules.worldPacks=function(HOST){
              'Quelle: FAO GAEZ v4 («Fläche, Ertrag, Produktion»), 5-Bogenminuten-Raster, Referenzjahre 2000/2010.',
              'Источник: FAO GAEZ v4 («Площадь, урожайность, производство»), сетка 5′, 2000/2010.',
              'Fuente: FAO GAEZ v4 («Superficie, rendimiento y producción»), malla de 5′, años 2000/2010.')));
+        /* (#R270) GAEZ publishes two reference years and `gaezYear()` picks the nearer one, so the
+           year that matters here is the CLOCK's — the panel's own note already prints which raster
+           that resolved to. */
+        panel.clockYear({min:1961,max:2024});
         b.querySelector('.wp-crop').onchange=(e)=>{ crop=e.target.value; lastMeta=null; paint(true); };
         b.querySelector('.wp-cvar').onchange=(e)=>{ variable=e.target.value; lastMeta=null; paint(true); };
         b.querySelector('.wp-csup').onchange=(e)=>{ supply=e.target.value; lastMeta=null; paint(true); };
