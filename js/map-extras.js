@@ -285,7 +285,8 @@ window.IntMapModules.layerSearch=function(HOST){
            on Chrome-for-Android, which is why this is drawn rather than relied upon.
            ⚠ `aria-label`, so the control is not an unlabelled glyph to a screen reader. */
         box.innerHTML='<input id="layer-search" type="search" autocomplete="off" style="width:100%;box-sizing:border-box;padding:7px 30px 7px 11px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;">'
-          +'<button type="button" class="ls-clear" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);margin-top:-2px;width:19px;height:19px;padding:0;border:0;border-radius:50%;background:rgba(128,128,128,0.28);color:var(--text-main);font-size:11px;line-height:19px;cursor:pointer;">✕</button>';
+          /* (#R268) no background disc — see the twin rule in js/map-ui.js */
+          +'<button type="button" class="ls-clear" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);margin-top:-2px;width:19px;height:19px;padding:0;border:0;background:transparent;color:var(--text-muted);font-size:12px;line-height:19px;cursor:pointer;">✕</button>';
         const inp=box.querySelector('input'), clr=box.querySelector('.ls-clear');
         const ph=()=>window.IntMapLang.t(HOST.lang,"Search layers…","レイヤーを検索…","Ebenen suchen…","Поиск слоёв…","Buscar capas…");
         const cl=()=>window.IntMapLang.t(HOST.lang,"Clear search","検索をクリア","Suche leeren","Очистить поиск","Borrar búsqueda");

@@ -44,13 +44,19 @@ const SETS = {
     },
   },
   space: {
+    /* (#R268) + `communication:satellite`, which OSM puts on 1,861 objects worldwide (960 of them
+       `man_made=antenna`, i.e. invisible to the dish tag) — measured before adding it. The same
+       five queries plus this one are what js/osm-facilities.js asks live, so the shipped snapshot
+       and the live view are the same question. */
     q: ['nwr["aeroway"="spaceport"]', 'nwr["man_made"="launch_pad"]', 'nwr["military"="launchpad"]',
-        'nwr["man_made"="satellite_dish"]', 'nwr["man_made"="telescope"]["telescope:type"="radio"]'],
+        'nwr["man_made"="satellite_dish"]', 'nwr["man_made"="telescope"]["telescope:type"="radio"]',
+        'nwr["communication:satellite"]'],
     kind: (t) => {
       if (t['aeroway'] === 'spaceport') return 'spaceport';
       if (t['man_made'] === 'launch_pad' || t['military'] === 'launchpad') return 'pad';
       if (t['man_made'] === 'satellite_dish') return 'ground';
       if (t['man_made'] === 'telescope') return 'radio';
+      if (t['communication:satellite']) return 'ground';
       return 'other';
     },
   },

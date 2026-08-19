@@ -145,7 +145,8 @@ window.IntMapModules.precipAnnual = function (HOST) {
   /* ── the legend ──────────────────────────────────────────────────────────────────────────── */
   function legend() {
     let el = null;
-    try { el = window._registerLayerOpacity && window._registerLayerOpacity('annprecip', NAME(), [LYR], ROW); } catch (_) { }
+    /* (#R268) the NAME TABLE, not the resolved string - see ensureGenericLegend in js/data-layers.js */
+    try { el = window._registerLayerOpacity && window._registerLayerOpacity('annprecip', NM, [LYR], ROW); } catch (_) { }
     if (!el) return;
     if (!on) { el.style.display = 'none'; return; }
     el.style.display = 'block';

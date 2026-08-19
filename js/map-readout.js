@@ -648,6 +648,20 @@ const _wxCache=new Map();
             +(h?(' · '+L('max','最大波高','max. Höhe','макс.','máx.')+' '+h):'')
             +((p.coastalM!=null)?(' · '+L('coast','沿岸','Küste','побережье','costa')+' '+p.coastalM.toFixed(1)+' m'):'');
           return; } } }catch(_){}
+    /* ══ (#R268) THE ANNUAL-PRECIPITATION FIELD ANSWERS FOR A POINT, SO THE POINT LINE SHOWS IT ═══
+       「年降水量レイヤーはホバー地点の数値を表示するように。」 The layer has had an exact point value
+       since #R266 — `valueAt` reads data/precip-mm.png, the 8-bit log(mm) VALUE grid, never the
+       banded picture — and nothing asked it. It is synchronous (the grid is decoded when the layer
+       is switched on), so this costs one array index per mouse frame, the same as the tsunami line
+       above. The year the number is FROM travels with it, because 1,600 mm in 2011 and 1,600 mm in
+       the 1981–2010 normal are different statements. */
+    try{ const P=window.IntMapPrecipAnnual;
+      if(P&&P.isOn&&P.isOn()){ const v=P.valueAt(lng,lat);
+        if(v!=null&&isFinite(v)){
+          const y=P.year&&P.year();
+          HOST.lastLayerVal=Math.round(v)+' mm'+L('/yr','／年','/Jahr','/год','/año')
+            +' · '+(y?String(y):'1981–2010');
+          return; } } }catch(_){}
     const lyr=activeWxLayer();
     if(!lyr){ /* no weather layer → show the active numeric choropleth's value at the cursor (#R13c) */
       let cv=null; try{ cv=window.choroValueAt&&window.choroValueAt(lng,lat); }catch(_){}

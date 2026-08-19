@@ -176,6 +176,23 @@ window.IntMapModules.landCover=function(HOST){
     const setVis=(ids,on)=>ids.forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); }catch(_){} });
     const state={worldcover:false,ecoregions:false,plates:false};
     const PAL=['#e8590c','#1c7ed6','#2f9e44','#9c36b5','#f08c00','#0c8599','#e64980','#5c940d','#3b5bdb','#c2255c','#087f5b','#d9480f','#5f3dc4','#1971c2','#66a80f'];
+    /* ══ (#R268) …AND ITS TWO EPOCHS ══════════════════════════════════════════════════════════════
+       「年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 ESA WorldCover
+       exists as v100 (2020) and v200 (2021) and the layer was pinned to 2021 with no way to ask for
+       the other. Both layer names were read out of Terrascope's own «Invalid LAYER parameter» reply,
+       which lists every layer it serves, and both were fetched as tiles before being written here —
+       `esa-worldcover-map-10m-2020-v1_map` answers 200 image/png with TIME=2020-01-01. */
+    const WC_EPOCHS=[['2021','esa-worldcover-map-10m-2021-v2_map','2021-01-01'],
+                     ['2020','esa-worldcover-map-10m-2020-v1_map','2020-01-01']];
+    let wcYear='2021';
+    const wcTiles=()=>{ const e=WC_EPOCHS.find(x=>x[0]===wcYear)||WC_EPOCHS[0];
+      return ['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER='+e[1]
+        +'&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME='+e[2]]; };
+    function wcSetYear(y){ if(!WC_EPOCHS.some(e=>e[0]===y)) return wcYear;
+      wcYear=y;
+      try{ if(GE().layers.hasSource('eco-worldcover')) GE().layers.setSourceTiles('eco-worldcover',wcTiles()); }catch(_){}
+      try{ wcLegend(state.worldcover); }catch(_){}
+      return wcYear; }
     /* ---- ESA WorldCover (raster) ---- */
     function ensureRaster(){ if(GE().layers.hasSource('eco-worldcover')) return true; if(!_imCanDraw()) return false;
       /* (#R18) maxzoom 13→14: ESA WorldCover is 10 m/px (≈ native z14), so this keeps the classes crisp one
@@ -183,7 +200,7 @@ window.IntMapModules.landCover=function(HOST){
          count is unchanged (maxzoom only bites when zoomed right in), so it doesn't slow the common case;
          the SW (R17) caches every Terrascope tile so revisits are instant — the controllable speed win on a
          single slow host. */
-      try{ GE().layers.addSource('eco-worldcover',{type:'raster',tiles:['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME=2021-01-01'],tileSize:256,maxzoom:14,attribution:'ESA WorldCover 2021 · Terrascope'});
+      try{ GE().layers.addSource('eco-worldcover',{type:'raster',tiles:wcTiles(),tileSize:256,maxzoom:14,attribution:'ESA WorldCover · Terrascope'});
         /* (#R15 / #19,#29) The Terrascope WMTS is a single slow host (can't multi-host it), so squeeze what
            we can: raster-fade-duration:0 shows each tile the instant it arrives (no 300 ms fade → feels
            faster); raster-resampling:nearest keeps the CATEGORICAL land-cover classes crisp instead of
@@ -362,7 +379,12 @@ window.IntMapModules.landCover=function(HOST){
           (document.getElementById('map-container')||document.body).appendChild(lg); }
         const dragT=window.IntMapLang.t(HOST.lang,"Drag to move","ドラッグして移動","Zum Verschieben ziehen","Потяните, чтобы переместить","Arrastre para mover");
         lg.innerHTML='<span class="dl-drag" title="'+dragT+'">⋮⋮</span><button class="layer-popup-x" title="'+(t('close'))+'">✕</button>'+
-          '<h4>'+(window.IntMapLang.t(HOST.lang,"Land cover (ESA 2021)","土地被覆 (ESA 2021)","Landbedeckung (ESA 2021)","Земной покров (ESA 2021)","Cobertura del suelo (ESA 2021)"))+'</h4>'+
+          /* (#R268) the year is chosen, so it is no longer baked into the title */
+          '<h4>'+(window.IntMapLang.t(HOST.lang,"Land cover (ESA)","土地被覆 (ESA)","Landbedeckung (ESA)","Земной покров (ESA)","Cobertura del suelo (ESA)"))+'</h4>'+
+          '<div style="display:flex;align-items:center;gap:6px;margin-top:4px;font-size:10.5px;color:var(--text-muted);"><span>'
+            +(window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año'))+'</span>'
+            +'<select class="wc-year" style="flex:1;padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;">'
+            +WC_EPOCHS.map(e=>'<option value="'+e[0]+'"'+(e[0]===wcYear?' selected':'')+'>'+e[0]+'</option>').join('')+'</select></div>'+
           '<div style="display:flex;flex-direction:column;gap:3px;margin-top:4px;">'+
           /* ⚠ (#R251) the two name slots are ONE tuple now, resolved through pick() itself, so a
              language past the five arguments reaches the inline table instead of falling to English. */
@@ -370,6 +392,7 @@ window.IntMapModules.landCover=function(HOST){
           '</div>';
         lg.style.display='block';
         lg.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('eco-dl-worldcover'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
+        { const ys=lg.querySelector('.wc-year'); if(ys) ys.onchange=()=>wcSetYear(ys.value); }
         try{ window._wireLegendDrag&&window._wireLegendDrag(lg); window._ensureLegendMinimize&&window._ensureLegendMinimize(lg); }catch(_){}
       } else if(lg){ lg.style.display='none'; }
     }
@@ -801,9 +824,12 @@ window.IntMapModules.religionLang=function(HOST){
        ⚠ THE CATEGORY LIST IS DERIVED FROM THE DATA, NOT DECLARED. Which languages exist, and in
        what order, comes from counting the file — so a rebuild that adds a country adds its language
        to the legend without anyone editing a palette. */
+    /* (#R268) `sikh` and `unspecified` are REAL buckets in data/religion.json (4 and 152 countries)
+       and neither had a colour or a name, so both fell through to 「その他」 — two rows labelled the
+       same thing in a composition that now draws a bar per row. */
     const REL_COL={catholic:'#4e79a7',protestant:'#7fb3d5',orthodox:'#2e5f8a',christian_other:'#a6c8e0',
       muslim:'#59a14f',hindu:'#e15759',buddhist:'#f0a93b',jewish:'#76b7b2',shinto:'#d4a5c8',
-      folk:'#b07d34',unaffiliated:'#9aa0a6',other:'#c9c9c9'};
+      sikh:'#e8913a',folk:'#b07d34',unaffiliated:'#9aa0a6',unspecified:'#bdc3c7',other:'#c9c9c9'};
     const REL_LBL={
       catholic:LA('Catholic','カトリック','Katholisch','Католицизм','Católica'),
       protestant:LA('Protestant','プロテスタント','Protestantisch','Протестантизм','Protestante'),
@@ -814,8 +840,10 @@ window.IntMapModules.religionLang=function(HOST){
       buddhist:LA('Buddhism','仏教','Buddhismus','Буддизм','Budismo'),
       jewish:LA('Judaism','ユダヤ教','Judentum','Иудаизм','Judaísmo'),
       shinto:LA('Shinto','神道','Shintō','Синто','Sintoísmo'),
+      sikh:LA('Sikhism','シク教','Sikhismus','Сикхизм','Sijismo'),
       folk:LA('Folk & traditional','民族宗教・伝統宗教','Volks- & Naturreligionen','Народные религии','Religiones populares'),
       unaffiliated:LA('Unaffiliated','無宗教','Konfessionslos','Не относят себя','Sin filiación'),
+      unspecified:LA('Unspecified / no answer','不明・無回答','Ohne Angabe','Не указано','Sin especificar'),
       other:LA('Other','その他','Sonstige','Прочие','Otras')};
 
     /* the legend palette for languages: ordered by how many countries a language leads, so the
@@ -823,9 +851,45 @@ window.IntMapModules.religionLang=function(HOST){
     const LPAL=['#4e79a7','#f28e2b','#59a14f','#e15759','#76b7b2','#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac',
       '#86bcb6','#d37295','#a0cbe8','#8cd17d','#e377c2','#79706e','#5254a3','#e7ba52','#31a354','#843c39',
       '#7b4173','#637939','#8c6d31','#ad494a','#a55194','#6b6ecf','#b5cf6b','#e7969c','#9c9ede','#cedb9c'];
-    const langName=(tag)=>{ let nm=null;
+    /* == ⚠⚠⚠ (#R268) THREE CODES WHERE `Intl.DisplayNames` IS WRONG, RISKY OR SILENT ===========
+       「ユーゴスラビアの言語をすべてセルビア語 (ラテン文字)でまとめるのはやめろ。不正確なうえ名称も
+         リスキー。」 MEASURED: `Intl.DisplayNames(['ja']).of('sh')` is 「セルビア語 (ラテン文字)」 and
+       `.of('cnr')` is 「セルビア語 (モンテネグロ)」 — so even after scripts/build-culture.mjs stopped
+       merging the four standards into `sh` (it does now), Montenegro would still have been labelled
+       Serbian, and the joint standard would be labelled Serbian rather than Serbo-Croatian.
+       `crp` is not in the CLDR list at all and came back as the raw string «crp».
+       These three are named here; everything else stays with the platform, which is right about the
+       other seventy-nine. */
+    const LANG_FIX={
+      sh:LA('Serbo-Croatian','セルビア・クロアチア語','Serbokroatisch','Сербскохорватский','Serbocroata'),
+      cnr:LA('Montenegrin','モンテネグロ語','Montenegrinisch','Черногорский','Montenegrino'),
+      crp:LA('Creoles & pidgins','クレオール語・ピジン語','Kreol- und Pidginsprachen','Креольские и пиджины','Criollos y pidgins'),
+      /* ⚠ (#R268) …AND TWELVE THAT THE BROWSER SIMPLY HAS NO NAME FOR. MEASURED in the running page
+         over all 102 codes the data carries: `Intl.DisplayNames` returns the CODE ITSELF for these
+         twelve in EVERY one of the app's languages — Chromium ships the «modern» CLDR subset — and
+         eleven of them are the LEADING language of a country (Kiribati, Nauru, Vanuatu, Palau, the
+         Marshall Islands, Tuvalu, Papua New Guinea, Greenland, Bhutan, the Cook Islands, Niue), so
+         the legend and the tap read 「gil」「na」「bi」 for those countries. Named here, so a small
+         country's language is a word rather than a code. */
+      ff:LA('Fula','フラ語','Fulfulde','Фула','Fulfulde'),
+      rar:LA('Cook Islands Māori','クック諸島マオリ語','Cookinseln-Maori','Кукский маори','Maorí de las Islas Cook'),
+      gil:LA('Gilbertese','キリバス語','Gilbertesisch','Кирибати','Gilbertés'),
+      niu:LA('Niuean','ニウエ語','Niueanisch','Ниуэ','Niueano'),
+      bi:LA('Bislama','ビスラマ語','Bislama (Vanuatu)','Бислама','bislama (Vanuatu)'),
+      na:LA('Nauruan','ナウル語','Nauruisch','Науруанский','Nauruano'),
+      pau:LA('Palauan','パラオ語','Palauisch','Палауский','Palauano'),
+      mh:LA('Marshallese','マーシャル語','Marshallesisch','Маршалльский','Marshalés'),
+      tvl:LA('Tuvaluan','ツバル語','Tuvaluisch','Тувалу','Tuvaluano'),
+      tpi:LA('Tok Pisin','トク・ピシン語','Neumelanesisch','Ток-писин','tok pisin'),
+      kl:LA('Greenlandic','グリーンランド語','Grönländisch','Гренландский','Groenlandés'),
+      dz:LA('Dzongkha','ゾンカ語','Dzongkha (Bhutan)','Дзонг-кэ','dzongkha'),};
+    const langName=(tag)=>{ if(LANG_FIX[tag]) return LPK.arr(LANG_FIX[tag]);
+      let nm=null;
       try{ nm=new Intl.DisplayNames([window.IntMapLang.htmlTag(HOST.lang)],{type:'language'}).of(tag); }catch(_){}
       return (nm&&nm!==tag)?nm:tag; };
+    /* 「塗は同じ色のままでいい」 — the four South-Slavic standards and the joint one keep ONE fill, so
+       the picture does not fragment; only the NAMES are separated, which is what the source does. */
+    const LANG_ONE_COLOUR={sr:'sh',hr:'sh',bs:'sh',cnr:'sh',sh:'sh'};
 
     const DATA={religion:null,language:null};
     const CFG={
@@ -834,7 +898,7 @@ window.IntMapModules.religionLang=function(HOST){
         label:(k)=>LPK.arr(REL_LBL[k]||REL_LBL.other), col:(k)=>REL_COL[k]||REL_COL.other },
       language:{ file:'data/language.json', ids:['cat-lang-f','cat-lang-l'], src:'cat-lang',
         nm:LA('Primary language','言語分布（主要）','Vorherrschende Sprache','Основной язык','Idioma principal'),
-        label:(k)=>langName(k), col:null }
+        label:(k)=>langName(k), col:null, group:LANG_ONE_COLOUR }
     };
     const state={religion:false,language:false};
     const order={};      /* key -> [category, …] most-led first; decides the colour AND the legend */
@@ -848,24 +912,50 @@ window.IntMapModules.religionLang=function(HOST){
         order[key]=Object.keys(n).sort((a,b)=>(n[b]-n[a])||(a<b?-1:1));
         return j; }).catch(()=>null);
     }
+    /* (#R268) `grp` maps a category onto the one whose colour the whole family shares; the rank
+       used for the palette is the FIRST member of that family in the most-led order, so the four
+       ex-Yugoslav standards paint as one colour and every other language is unaffected. */
+    const grpOf=(key,cat)=>{ const C=CFG[key]; return (C.group&&C.group[cat])||cat; };
     const colOf=(key,cat)=>{ const C=CFG[key]; if(C.col) return C.col(cat);
-      const i=(order[key]||[]).indexOf(cat); return i<0?'#9aa0a6':LPAL[i%LPAL.length]; };
+      const ord=order[key]||[], g=grpOf(key,cat);
+      let i=ord.indexOf(cat);
+      if(C.group){ const j=ord.findIndex(c=>grpOf(key,c)===g); if(j>=0) i=j; }
+      return i<0?'#9aa0a6':LPAL[i%LPAL.length]; };
     function colorExpr(key){ const e=['match',['get','cat']];
       (order[key]||[]).forEach(cat=>{ e.push(cat,colOf(key,cat)); }); e.push('#9aa0a6'); return e; }
 
-    /* the tap: WHICH group leads, by how much, and the whole composition underneath */
+    /* ══ (#R268) THE TAP IS A BAR CHART, AND IT CARRIES THE YEAR ══════════════════════════════════
+       「宗教分布レイヤーで国をクリックしたときのポップアップに棒グラフを入れろ。また、データの年も
+         記載しろ。言語分布レイヤーも。」
+       The composition was a list of numbers, which is the one form in which 「48.6 % と 46.4 % は
+       ほぼ同じ」 and 「79.8 % と 2.3 % は桁が違う」 read the same. Each row now has a bar scaled to
+       the LARGEST share in that country, so the shape of the country's composition is the first
+       thing seen, and the exact percentage stays beside it. The year comes from `rec.y`, which
+       scripts/build-culture.mjs reads out of the Factbook's own «(2011 est.)» — and when the source
+       states no year the popup says so rather than leaving a date-less percentage looking current. */
     function popupHTML(key,iso,p){
       const C=CFG[key], rec=(DATA[key]&&DATA[key].countries&&DATA[key].countries[iso])||null;
       let nm=iso; try{ const s=countryStats[iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||iso; }catch(_){}
       if(!rec) return '<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div>';
       const mix=Object.entries(rec.mix||{}).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-      const rows=mix.map(([k,v])=>'<div style="display:flex;align-items:center;gap:6px;font-size:11.5px;padding:1px 0;">'
-        +'<span style="width:9px;height:9px;border-radius:2px;flex:none;background:'+esc(colOf(key,k))+';"></span>'
-        +'<span style="flex:1;">'+esc(C.label(k))+'</span><b style="font-variant-numeric:tabular-nums;">'+(Math.round(v*10)/10)+'%</b></div>').join('');
+      const top=mix.length?mix[0][1]:0;
+      const rows=mix.map(([k,v])=>{
+        const w=top>0?Math.max(1.5,v/top*100):0;
+        return '<div style="font-size:11.5px;padding:2px 0;">'
+          +'<div style="display:flex;align-items:center;gap:6px;">'
+            +'<span style="width:9px;height:9px;border-radius:2px;flex:none;background:'+esc(colOf(key,k))+';"></span>'
+            +'<span style="flex:1;">'+esc(C.label(k))+'</span>'
+            +'<b style="font-variant-numeric:tabular-nums;">'+(Math.round(v*10)/10)+'%</b></div>'
+          +'<div style="height:6px;border-radius:3px;background:rgba(128,128,128,0.18);margin:2px 0 0 15px;overflow:hidden;">'
+            +'<div style="height:100%;width:'+w.toFixed(1)+'%;background:'+esc(colOf(key,k))+';border-radius:3px;"></div></div>'
+          +'</div>'; }).join('');
+      const yr=rec.y?('<span style="font-variant-numeric:tabular-nums;">'+esc(String(rec.y))+'</span>')
+        :esc(LPK('year not stated','年の記載なし','Jahr nicht angegeben','год не указан','año no indicado'));
       return '<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div>'
         +'<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+esc(LPK.arr(C.nm))+': <b style="color:var(--text-main);">'+esc(C.label(rec.top))+'</b>'
         +(rec.pct!=null?(' '+(Math.round(rec.pct*10)/10)+'%'):'')+'</div>'
-        +(rows?('<div style="margin-top:5px;">'+rows+'</div>'):'')
+        +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:1px;">'+esc(LPK('Data year','データの年','Datenjahr','Год данных','Año de los datos'))+': '+yr+'</div>'
+        +(rows?('<div style="margin-top:6px;">'+rows+'</div>'):'')
         +'<details class="im-more"><summary>'+esc(LPK('Source text','出典の原文','Quelltext','Текст источника','Texto de la fuente'))+'</summary>'
         +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'+esc(rec.src||'')+'</div></details>';
     }
@@ -1134,7 +1224,72 @@ window.IntMapModules.gibsScience=function(HOST){
     const gxNote=(L)=>LGX.arr(L.note);
     const srcId=(L)=>'gxsrc-'+L.id, layId=(L)=>'gxlyr-'+L.id;
     const beforeLabels=()=>['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
-    const urlFor=(L)=>'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+L.gibs+'/default/'+(L.staticDate||GDATE())+'/GoogleMapsCompatible_Level'+L.max+'/{z}/{y}/{x}.'+L.ext;
+    /* ══ ⚠⚠⚠ (#R268) THESE SIX RASTERS HAVE AN ARCHIVE, AND THE APP ASKED ONLY FOR TODAY ══════════
+       「年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」
+
+       Every one of these was pinned to `GDATE()` — today minus two days — with no control at all,
+       and they are exactly the layers whose meaning is the comparison between years: sea-ice
+       concentration, the sea-surface-temperature ANOMALY, NDVI, soil moisture, CO, the aerosol
+       index. GIBS serves the whole archive at the same URL shape; only the date segment changes.
+
+       ⚠ THE RANGE IS MEASURED, NOT ASSUMED. data/gibs-range.json is written by
+       scripts/probe-gibs-range.mjs, which bisects on real tile requests (GIBS answers 404 outside a
+       layer's extent and 200 inside). A picker whose bounds were invented would offer dates that
+       draw an empty ocean and call it data. What that probe found, and nothing else would have:
+
+         · MODIS_Terra_NDVI_8Day is a ROLLING WINDOW — 2025-02-18 onwards, not 2000.
+         · AMSRU2_Soil_Moisture_SCA_Day STOPPED at 2025-09-01. Every date in 2026 answers 404, so
+           the 土壌水分 layer as shipped (today − 2 d) has been drawing NOTHING, silently, for as
+           long as that has been true. Defaulting to the latest date the product actually HAS is
+           what fixes it, and the legend says which date is on screen.
+       ⚠ The 8-day composite is served on its period start days only (DOY 1, 9, 17 …), so the
+       stepper and the date box snap to those; a date typed in between is moved to its period. */
+    /* ⚠ (#R268) THE IN-FLIGHT PROMISE IS WHAT IS SHARED, NOT A FLAG. MEASURED on the built site with
+       sea-ice and soil moisture switched on together: the first legend started the fetch and set the
+       «tried» flag, the second got `Promise.resolve(null)` back because the answer had not landed
+       yet, and its `.then` therefore never re-pointed the source — the picker showed 2025-09-01
+       (correct) while the tiles were still being asked for 2026-08-17 (empty). A layer whose control
+       says one thing and whose URL says another is the failure this project has paid for repeatedly;
+       one promise, handed to everybody, is what makes the two the same statement. */
+    let gxRange=null, gxRangeP=null;
+    const gxDate={};              /* id → 'YYYY-MM-DD' the reader asked for */
+    function gxRanges(){
+      if(gxRange) return Promise.resolve(gxRange);
+      if(gxRangeP) return gxRangeP;
+      const u=(()=>{ try{ return new URL('data/gibs-range.json',document.baseURI).toString(); }catch(_){ return 'data/gibs-range.json'; } })();
+      gxRangeP=fetch(u).then(r=>r.json()).then(j=>{ gxRange=(j&&j.layers)||null; return gxRange; })
+        .catch(()=>{ gxRangeP=null; return null; });
+      return gxRangeP;
+    }
+    const gxR=(L)=>(gxRange&&gxRange[L.id])||null;
+    const DAYMS=864e5;
+    const gxIso=(t)=>new Date(t).toISOString().slice(0,10);
+    /* the period start day an arbitrary date belongs to — identical arithmetic to the probe script */
+    function gxSnap(iso,period){
+      if(!(period>1)) return iso;
+      const t=Date.parse(iso+'T00:00:00Z'); if(!isFinite(t)) return iso;
+      const y=new Date(t).getUTCFullYear(), j0=Date.UTC(y,0,1);
+      const d=Math.floor((t-j0)/DAYMS)+1;
+      return gxIso(j0+(Math.floor((d-1)/period)*period)*DAYMS);
+    }
+    function gxClamp(L,iso){ const R=gxR(L); if(!R) return iso;
+      let v=gxSnap(iso,R.period||1);
+      if(R.from&&v<R.from) v=gxSnap(R.from,R.period||1);
+      if(R.to&&v>R.to) v=R.to;
+      return v; }
+    /* the date this layer is drawing: the reader's choice, else the newest the product HAS */
+    function gxAt(L){ if(L.staticDate) return L.staticDate;
+      const R=gxR(L);
+      if(gxDate[L.id]) return gxClamp(L,gxDate[L.id]);
+      return (R&&R.to)||GDATE(); }
+    function gxStep(L,dir){ const R=gxR(L); if(!R) return;
+      const per=R.period||1;
+      const t=Date.parse(gxAt(L)+'T00:00:00Z')+dir*per*DAYMS;
+      gxDate[L.id]=gxClamp(L,gxIso(t));
+      gxRepoint(L); }
+    function gxRepoint(L){ try{ if(GE().layers.hasSource(srcId(L))) GE().layers.setSourceTiles(srcId(L),[urlFor(L)]); }catch(_){}
+      legendNote(L); }
+    const urlFor=(L)=>'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+L.gibs+'/default/'+gxAt(L)+'/GoogleMapsCompatible_Level'+L.max+'/{z}/{y}/{x}.'+L.ext;
     function ensure(L){ try{ if(!_imCanDraw()) return false;
       if(!GE().layers.hasSource(srcId(L))) GE().layers.addSource(srcId(L),{type:'raster',tiles:[urlFor(L)],tileSize:256,maxzoom:L.max,attribution:'NASA EOSDIS GIBS'});
       if(!GE().layers.has(layId(L))) GE().layers.add({id:layId(L),type:'raster',source:srcId(L),layout:{visibility:'none'},paint:{'raster-opacity':0.85,'raster-fade-duration':0}}, beforeLabels());
@@ -1149,6 +1304,41 @@ window.IntMapModules.gibsScience=function(HOST){
           const mid=sc.anom?'<span>0</span>':'';
           bar.innerHTML='<div style="height:8px;border-radius:3px;background:linear-gradient(to right,'+sc.grad+');border:1px solid rgba(128,128,128,0.28);"></div>'
             +'<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-muted);margin-top:1px;"><span>'+lo+'</span>'+mid+'<span>'+hi+'</span></div>'; }
+        /* (#R268) the date, for every layer that HAS an archive — static products have none and
+           show nothing here, which is the honest difference between the two kinds */
+        if(!L.staticDate){
+          if(!gxRange) gxRanges().then(r=>{ if(r&&state[L.id]){ gxRepoint(L); } });
+          /* …and once they are in hand, every render of this legend re-asserts the URL, so a source
+             built before the ranges landed cannot stay pointed at a date the product does not have */
+          else { try{ if(GE().layers.hasSource(srcId(L))) GE().layers.setSourceTiles(srcId(L),[urlFor(L)]); }catch(_){} }
+          const R=gxR(L);
+          let d=el.querySelector('.gx-daterow');
+          if(!d){ d=document.createElement('div'); d.className='gx-daterow';
+            d.style.cssText='display:flex;align-items:center;gap:5px;margin-top:6px;font-size:10.5px;color:var(--text-muted);';
+            d.innerHTML='<span class="gx-dlbl"></span>'
+              +'<button type="button" class="gx-prev" style="border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);border-radius:6px;width:20px;height:20px;line-height:1;cursor:pointer;padding:0;">‹</button>'
+              +'<input type="date" class="gx-date" style="flex:1;min-width:0;padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;">'
+              +'<button type="button" class="gx-next" style="border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);border-radius:6px;width:20px;height:20px;line-height:1;cursor:pointer;padding:0;">›</button>';
+            el.appendChild(d);
+            d.querySelector('.gx-prev').onclick=()=>gxStep(L,-1);
+            d.querySelector('.gx-next').onclick=()=>gxStep(L,1);
+            d.querySelector('.gx-date').addEventListener('change',(e)=>{ gxDate[L.id]=gxClamp(L,e.target.value); gxRepoint(L); });
+          }
+          d.querySelector('.gx-dlbl').textContent=LGX('Date','日付','Datum','Дата','Fecha');
+          const inp=d.querySelector('.gx-date');
+          inp.value=gxAt(L);
+          if(R){ inp.min=R.from||''; inp.max=R.to||''; }
+          d.querySelector('.gx-prev').disabled=!!(R&&R.from&&gxAt(L)<=R.from);
+          d.querySelector('.gx-next').disabled=!!(R&&R.to&&gxAt(L)>=R.to);
+          /* …and when the product itself has ENDED, the legend says so instead of showing a blank
+             map — measured for AMSR2 soil moisture, which stops at 2025-09-01 */
+          let en=el.querySelector('.gx-end');
+          if(!en){ en=document.createElement('div'); en.className='gx-end'; en.style.cssText='font-size:9.5px;line-height:1.4;margin-top:3px;'; el.appendChild(en); }
+          const stale=!!(R&&R.to&&(Date.now()-Date.parse(R.to+'T00:00:00Z'))>45*DAYMS);
+          en.style.color=stale?'#ff9f0a':'var(--text-muted)';
+          en.textContent=R?((stale?(LGX('This product ends at','このデータは次の日付で終了しています','Dieses Produkt endet am','Продукт заканчивается','Este producto termina el')+' '):'')
+              +(R.from||'?')+' – '+(R.to||'?')):'';
+        }
         let h=el.querySelector('.gx-note'); if(!h){ h=document.createElement('div'); h.className='gx-note'; h.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:4px;line-height:1.35;'; el.appendChild(h);} h.textContent=gxNote(L);
         /* (#R266) the layers whose UNIT needs explaining carry a `more` paragraph; it folds into the
            same <details> the ocean-current and company legends use, so a legend never grows a wall. */
@@ -1177,7 +1367,9 @@ window.IntMapModules.gibsScience=function(HOST){
       const xf=(lng+180)/360*n, latR=lat*Math.PI/180, yf=(1-Math.log(Math.tan(latR)+1/Math.cos(latR))/Math.PI)/2*n;
       const tx=Math.floor(xf), ty=Math.floor(yf); if(!(ty>=0&&ty<n)) return null;
       const px=Math.max(0,Math.min(255,Math.floor((xf-tx)*256))), py=Math.max(0,Math.min(255,Math.floor((yf-ty)*256)));
-      const url='https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+L.gibs+'/default/'+(L.staticDate||GDATE())+'/GoogleMapsCompatible_Level'+L.max+'/'+z+'/'+ty+'/'+tx+'.'+L.ext;
+      /* (#R268) the same date the layer is PAINTING — a readout off a different day would be a
+         second answer to «what is the value here», which is the defect this project has paid for */
+      const url='https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+L.gibs+'/default/'+gxAt(L)+'/GoogleMapsCompatible_Level'+L.max+'/'+z+'/'+ty+'/'+tx+'.'+L.ext;
       let imgd=_gxPix.get(url);
       if(imgd===undefined){ imgd=await new Promise(res=>{ const im=new Image(); im.crossOrigin='anonymous';
           im.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=cv.height=256; const cx=cv.getContext('2d',{willReadFrequently:true}); cx.drawImage(im,0,0); res(cx.getImageData(0,0,256,256)); }catch(_){ res(null); } };

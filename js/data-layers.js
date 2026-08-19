@@ -572,6 +572,15 @@ window.IntMapModules.dataLayers=function(HOST){
     /* thermal is NOT date-keyed any more (#5): NASA FIRMS publishes rolling time-window layers, so the
        thermal row carries a window selector in its legend instead of a calendar date. */
     const layerDates={temp:tempMonthISO(3),precip:PRECIP_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
+    /* ══ (#R268) THE NIGHT-LIGHTS EPOCHS, MEASURED ════════════════════════════════════════════════
+       「年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 — and night
+       lights is the layer where a decade of difference is the whole subject (a city that was dark in
+       2012 and lit in 2016). GIBS's `VIIRS_Black_Marble` is not a daily product: probed one tile per
+       candidate year, **2012-01-01 and 2016-01-01 answer 200 and every other year answers 404**, so
+       those two are the choice and the picker offers exactly them rather than a calendar that would
+       mostly draw nothing. */
+    const NIGHTSAT_EPOCHS=['2016-01-01','2012-01-01'];
+    if(!window._nightsatEpoch) window._nightsatEpoch=NIGHTSAT_EPOCHS[0];
     window._imLayerDates=layerDates;   /* (#R77) live reference for Atlas stateContext (vision §2 — dated-layer awareness) */
     /* (#R13c) Time-varying layers state WHEN their data is from, in the legend (user request). A small
        "as-of" line is appended to each dated legend and refreshed whenever the date/window changes. */
@@ -587,7 +596,7 @@ window.IntMapModules.dataLayers=function(HOST){
        window select. Each writes layerDates[id] / _thermalWindow and reloads the dated layer. */
     const _today=()=>new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     function _refreshLegendDates(){
-      [['temp',lgdTemp],['thermal',lgdThermal],['radar',lgdRadar],['sst',lgdSST],['snow',lgdSnow],['aod',lgdAod]].forEach(([id,lg])=>{
+      [['temp',lgdTemp],['thermal',lgdThermal],['radar',lgdRadar],['sst',lgdSST],['snow',lgdSnow],['aod',lgdAod],['nightsat',lgdNightsat]].forEach(([id,lg])=>{
         if(!lg) return;
         let w=lg.querySelector('.dl-when');
         if(!w){
@@ -596,6 +605,12 @@ window.IntMapModules.dataLayers=function(HOST){
           if(id==='radar'){ w.innerHTML='🕒 <span class="dl-when-t"></span>'; }
           else if(id==='thermal'){ w.innerHTML='🕒 <span>'+(window.IntMapLang.t(HOST.lang,'Window','期間','Zeitfenster','Окно','Ventana'))+'</span> <select class="dl-win" style="'+inSty+'"><option value="24">24 h</option><option value="48">48 h</option><option value="72">72 h</option></select>';
             const s=w.querySelector('.dl-win'); s.value=window._thermalWindow||'24'; s.addEventListener('change',()=>{ window._thermalWindow=s.value; try{ window._refreshThermal&&window._refreshThermal(); }catch(_){} _refreshLegendDates(); }); }
+          else if(id==='nightsat'){ w.innerHTML='🕒 <span>'+(window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año'))+'</span> <select class="dl-epoch" style="'+inSty+'">'
+              +NIGHTSAT_EPOCHS.map(d=>'<option value="'+d+'">'+d.slice(0,4)+'</option>').join('')+'</select>';
+            const e=w.querySelector('.dl-epoch'); e.value=window._nightsatEpoch;
+            e.addEventListener('change',()=>{ window._nightsatEpoch=e.value;
+              try{ GE().layers.setSourceTiles('src-nightsat',gibs('VIIRS_Black_Marble',8,'png',window._nightsatEpoch)); }catch(_){}
+              _refreshLegendDates(); }); }
           else if(id==='temp'){ w.innerHTML='🕒 <input type="month" class="dl-date" style="'+inSty+'">';
             const d=w.querySelector('.dl-date'); d.value=(layerDates[id]||'').slice(0,7); d.addEventListener('change',()=>{ if(!d.value)return; layerDates[id]=d.value+'-01'; if(GE().layers.has('lyr-'+id)&&GE().layers.getLayout('lyr-'+id,'visibility')==='visible') refreshDatedLayer(id); _refreshLegendDates(); }); }
           else { w.innerHTML='🕒 <input type="date" class="dl-date" max="'+_today()+'" style="'+inSty+'">';
@@ -605,6 +620,7 @@ window.IntMapModules.dataLayers=function(HOST){
         /* keep values in sync */
         const dt=w.querySelector('.dl-date'); if(dt){ dt.value = id==='temp' ? (layerDates[id]||'').slice(0,7) : (layerDates[id]||_today()); }
         const wn=w.querySelector('.dl-win'); if(wn) wn.value=window._thermalWindow||'24';
+        const ep=w.querySelector('.dl-epoch'); if(ep) ep.value=window._nightsatEpoch;
         const tt=w.querySelector('.dl-when-t'); if(tt) tt.textContent=_legendWhenText(id);
       });
     }
@@ -988,7 +1004,21 @@ window.IntMapModules.dataLayers=function(HOST){
         /* (#R32b) The World-Bank choropleths + earthquakes are PROMOTED out of "Others (beta)" into real
            groups ("正規レイヤーに") — wbco2/wbforest = environment, the rest = population & economy, eq = hazards. */
         const GROUPS=[
-          ['lyrGrpClimate',['climate','annprecip','wind','radar','ec-cloud','snow','aod','gxaero','gxco','wbco2','wbco2t','wbforest']],   /* (#R261) +total CO₂ emissions, beside the per-capita row it belongs with */   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
+          /* ══ (#R268) FOUR ROWS THAT WERE ON THE WRONG SHELF ══════════════════════════════════════
+             「レイヤーのカテゴリ分類があきらかに不適切なレイヤーがいくつかある。任せる。」 Only rows whose
+             own subject names a different category are moved, and each one is said out loud here;
+             #R233's 人口・経済 seven and #R254's World-Bank list are untouched, for the reason
+             #R255/#R258/#R261 all give — 再編 is not a licence to overturn a list written by hand.
+               · `wbforest` 森林面積率 : Climate → Terrain & land. It is a LAND-COVER share, and it
+                 belongs beside `worldcover` and `ecoregions`, not beside CO₂ and rainfall.
+               · `wbagri` 農地率 : Terrain → Agriculture. Its own twin `wbagremp`(農業就業率) was
+                 already there and these two are the same subject counted two ways.
+               · `gxsoil` 土壌水分 : Terrain → Agriculture. The layer's own note says what it is for
+                 — 「干ばつ・農業の指標」 — and that sentence names the category.
+               · `wbpm25` PM2.5大気汚染 : Health → Climate & atmosphere, where the other three air
+                 -composition rasters (AOD, UV aerosol index, CO) already are. Air pollution was
+                 split across two shelves by whether the number came from a satellite or a table. */
+          ['lyrGrpClimate',['climate','annprecip','wind','radar','ec-cloud','snow','aod','gxaero','gxco','wbpm25','wbco2','wbco2t']],   /* (#R261) +total CO₂ emissions, beside the per-capita row it belongs with */   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
           /* (#R202) `sats` moved OUT of Maritime and into its own group, second from the top — see the
              lyrGrpOrbit note above. Nothing else moved: live aircraft stay where they were. */
           ['lyrGrpOrbit',['sats','osmspace']],   /* (#R261) +spaceports and satellite ground stations — a one-row shelf is not a category */
@@ -1001,7 +1031,7 @@ window.IntMapModules.dataLayers=function(HOST){
              ocean currents ARRIVED from the beta sweep — both are finished world-packs layers with
              their own panel, legend and sources, and neither was ever demoted by an instruction. */
           ['lyrGrpMaritime',['sst','eez','tides','currents','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
-          ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','bldg3d','gxndvi','gxrelief','wbagri','gxsoil']],   /* (#R261) +3-D city buildings — built ground is still ground */   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
+          ['lyrGrpTerrain',['worldcover','ecoregions','wbforest','plates','relief','hillshade','contours','sealevel','bldg3d','gxndvi','gxrelief']],   /* (#R261) +3-D city buildings — built ground is still ground */   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
           /* ⚠ (#R233) SEVEN, NAMED BY THE INSTRUCTION — everything else in this group was DEMOTED.
              「人口・経済レイヤーは 人口密度（1kmグリッド）／1人当たりGDP／合計特殊出生率／HDI (2022)／
              民主主義指数 (2023)／汚職・腐敗指標／平均寿命 以外のものはbetaに降格。」
@@ -1048,7 +1078,7 @@ window.IntMapModules.dataLayers=function(HOST){
              the word and they move. */
           ['lyrGrpPolitics',['uselect','eu','wbwomparl','osmdiplo']],
           ['lyrGrpSecurity',['milSpend','milSpendGDP','nato','ukrfront','wbmilgdp','wbmilppl','wbhomicide','osmmil']],
-          ['lyrGrpHealth',['wbhealth','wbphys','wbbeds','wbinfmort','wbu5mort','wblife','wbwater','wbsan','wbpm25','wbcook','wbsmoke','wbalcohol','wbsuicide','wboverwt','wbunder','wbadofert','wbfert','osmhealth','osmemg','osmwater','pharma']],   /* (#R261) +emergency services, +water & wastewater plant, +pharma hubs */
+          ['lyrGrpHealth',['wbhealth','wbphys','wbbeds','wbinfmort','wbu5mort','wblife','wbwater','wbsan','wbcook','wbsmoke','wbalcohol','wbsuicide','wboverwt','wbunder','wbadofert','wbfert','osmhealth','osmemg','osmwater','pharma']],   /* (#R261) +emergency services, +water & wastewater plant, +pharma hubs */
           /* (#R261) `rail` LEFT for Transport & mobility — a railway network is transport, and the
              category it was in is the one about computing and communications. */
           ['lyrGrpTech',['dc','subcables','wbnet','wbmobile','wbbbnd','wbhitech','wbrnd','wbresearch','wbpatent','osmtelecom']],
@@ -1082,7 +1112,7 @@ window.IntMapModules.dataLayers=function(HOST){
           ['lyrGrpEconomy',['trade','industry','wbgdpgrow','wbinfl','wbtrade','wbtax','wbdebt','wbmanuf','wbfdi','wbunemp','wbgni','wbremit','wbtour']],
           ['lyrGrpSociety',['wblit','wbschool','wbtert','wbedu','osmedu','wbpov','wbgini','wbflfp','wbref','wbaging','wbpopgrow','wburb','wbrural','wbdensity','cat-religion','cat-language']],
           ['lyrGrpTransport',['planes','rail','ships','oxrail','oxsea','osmair','osmport']],
-          ['lyrGrpAgri',['crops','wbagremp']],
+          ['lyrGrpAgri',['crops','wbagri','wbagremp','gxsoil']],
           /* ══ (#R258) A FIFTH NEW CATEGORY — WHERE THE ENERGY AND THE MATERIAL COME FROM ═════════════
              「追加すべきと思うレイヤーカテゴリはありますか？あれば作り…新レイヤー（国単位で塗るだけの
                やつじゃなくて、モノホンのやつ。）」 The map had no shelf for energy at all: the country
@@ -2389,6 +2419,15 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R38) store all four [EN, JP, DE, RU]; callers that pass only [EN, JP] still work (DE/RU fall back to
          EN — never Japanese). (#R215) …and ES, which used to fall off the end of the array and show
          an English title to a Spanish reader (standing instruction 3). */
+      /* == (#R268) A STRING IS NOT A LIST OF NAMES, AND INDEXING ONE GIVES A LETTER ==============
+         「年降水量レイヤの凡例が、「降」となっている。」 MEASURED on the shipped build: the legend's
+         <h4> read 「降」 in Japanese and 「A」 in English. js/precip-annual.js passed the ALREADY
+         RESOLVED name (`NAME()`) where every other caller passes the LA(...) array, so `names[1]`
+         was the second CHARACTER of 年降水量 and `names[0]` the 'A' of «Annual precipitation» — one
+         letter per language, picked by the reader's language index. The caller is fixed, and so is
+         this: a bare string is one name in every language, which is what a caller writing one
+         obviously means, and there is no longer a way to spell it that yields a letter. */
+      if(typeof names==='string') names=[names,names,names,names,names];
       if(names && !GENERIC_LEG[id]) GENERIC_LEG[id]=[names[0], names[1]||names[0], names[2]||names[0], names[3]||names[0], names[4]||names[0]];
       if(!GENERIC_LEG[id]) return null;
       let el=document.getElementById('data-legend-'+id);
@@ -4312,7 +4351,7 @@ window.IntMapModules.dataLayers=function(HOST){
         else if(id==='snow'){ lgdSnow.style.display='block'; tileLegends(); whenStyleReady().then(()=>{ try{ addRaster('snow',gibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',layerDates.snow),8); }catch(_){} try{ setVis('lyr-snow',true); }catch(_){} }); }
         else if(id==='aod'){ lgdAod.style.display='block'; tileLegends(); whenStyleReady().then(()=>{ try{ addRaster('aod',gibs('MODIS_Combined_Value_Added_AOD',6,'png',layerDates.aod),6); }catch(_){} try{ setVis('lyr-aod',true); }catch(_){} }); }
         /* Night-time satellite (#R9/#39) — VIIRS "Black Marble" city-lights composite via NASA GIBS. */
-        else if(id==='nightsat'){ lgdNightsat.style.display='block'; tileLegends(); whenStyleReady().then(()=>{ try{ addRaster('nightsat',gibs('VIIRS_Black_Marble',8,'png','2016-01-01'),8); }catch(_){} try{ setVis('lyr-nightsat',true); }catch(_){} }); }
+        else if(id==='nightsat'){ lgdNightsat.style.display='block'; tileLegends(); try{ _refreshLegendDates(); }catch(_){} whenStyleReady().then(()=>{ try{ addRaster('nightsat',gibs('VIIRS_Black_Marble',8,'png',window._nightsatEpoch),8); }catch(_){} try{ GE().layers.setSourceTiles('src-nightsat',gibs('VIIRS_Black_Marble',8,'png',window._nightsatEpoch)); }catch(_){} try{ setVis('lyr-nightsat',true); }catch(_){} }); }
         else if(id==='popgrid'){
           lgdPopGrid.style.display='block'; tileLegends();
           whenStyleReady().then(()=>{ try{ addRaster('popgrid',gibsStatic('GPW_Population_Density_2020',7,'png'),7); }catch(_){} try{ setVis('lyr-popgrid',true); }catch(_){} });
