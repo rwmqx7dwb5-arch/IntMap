@@ -4223,6 +4223,12 @@ window.IntMapLang.define('zh-hans', {
   "Tuvaluan": "吐瓦鲁语",
   "Tok Pisin": "巴布亚皮钦语",
   "Greenlandic": "格陵兰语",
-  "Dzongkha": "宗喀语",   /* (#R267) */
+  "Dzongkha": "宗喀语",
+  "Emergency / danger warning": "特别警报・危险警报",
+  "Gale": "暴风",
+  "Strong wind": "强风",
+  "Snow and wind": "风雪",
+  "Landslide": "土砂灾害",
+  "Ice accretion": "着冰",   /* (#R267) */
   }
 });

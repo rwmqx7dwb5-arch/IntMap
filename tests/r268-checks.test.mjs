@@ -259,7 +259,12 @@ test('R268 ⑨ the tap folds three levels deep and never opens on a list of town
   assert.match(body, /'Each municipality','市区町村ごと'/, 'the second fold is the municipalities');
   /* the JMA rows must know which region they are in, or the middle level is empty */
   assert.match(s, /const regionOf=\(code\)=>/, 'the class10 lookup must exist');
-  assert.match(s, /sub:r10\?nameOf\(r10\):nameOf\(a\.code\)/, 'every JMA row must carry its region');
+  /* ⚠ (#R269) THE PROPERTY, NOT THE VARIABLE NAME. #R269 rewrote `loadJMA` for the JMA's live r8
+     bulletin list — the area identifier is `code` there rather than `a.code` — and pinning the old
+     spelling made a rewrite that KEPT this behaviour look like a regression. What #R268 is about is
+     that every JMA row carries the class10 region it belongs to, falling back to its own name. */
+  assert.match(s, /sub:r10\?nameOf\(r10\):nameOf\([a-zA-Z.]+\)/, 'every JMA row must carry its region');
+  assert.match(s, /const r10=regionOf\(/, '…looked up through the class10 walk');
 });
 
 /* ── ⑩ the layer taxonomy ──────────────────────────────────────────────────────────────────── */
