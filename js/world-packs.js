@@ -992,6 +992,21 @@ window.IntMapModules.worldPacks=function(HOST){
          which one it is: loading / could not be fetched / genuinely nothing. Verified against the live
          feed while writing this: 16 of 47 prefectures were under a warning at the time. */
       const FEED_STATE={};        /* jma | nws | eccc | meteoalarm | cma | gdacs → 'idle' | 'loading' | 'ok' | 'error' */
+      /* ══ ⚠⚠⚠ (#R269) A FEED THAT STOPPED IS NOT A FEED THAT FAILED ═══════════════════════════════
+         The JMA endpoint this layer read had been frozen for eighty-three days and answered 200 with
+         valid JSON of the expected shape the whole time. `FEED_STATE` said 'ok', the count was
+         non-zero, the panel printed 「Updated: <now>」 — every instrument here reported success while
+         the layer showed May's advisories in August. NOTHING IN THIS FILE ASKED THE FEED WHAT TIME
+         IT THOUGHT IT WAS.
+         So every loader now records the newest timestamp IT COULD FIND IN ITS OWN PAYLOAD, and the
+         panel prints the age beside the service. A feed that stops updating goes visibly stale
+         instead of quietly wrong, whichever feed it is. */
+      const FEED_AT={};           /* feed key → the newest item timestamp in that feed's own payload */
+      const seenAt=(k,t)=>{ const v=Date.parse(t||''); if(!isFinite(v)) return;
+        if(!FEED_AT[k]||v>FEED_AT[k]) FEED_AT[k]=v; };
+      const ageH=(k)=>(FEED_AT[k]?((Date.now()-FEED_AT[k])/3600000):null);
+      const ageTxt=(k)=>{ const h=ageH(k); if(h==null) return '';
+        return ' · '+(h<1?(Math.max(0,Math.round(h*60))+' min'):h<48?(h.toFixed(1)+' h'):(Math.round(h/24)+' d')); };
       let cmaCount=0, cmaRec=null;   /* (#R266) China has no geometry in its feed — a wash and a list */
       let lastAt=0;
       const panel=makePanel('wp-alert-panel',()=>'⚠ '+L('Warnings','気象・災害警報','Warnungen','Предупреждения','Avisos'),'wp-dl-alerts',
@@ -999,20 +1014,81 @@ window.IntMapModules.worldPacks=function(HOST){
           names:()=>(LA('⚠ Weather & disaster warnings','⚠ 気象・災害警報','⚠ Wetter- und Katastrophenwarnungen','⚠ Метеопредупреждения','⚠ Avisos meteorológicos')) });
       /* JMA warning codes → the kind of hazard, and the tier the code belongs to.
          Tier comes from the code range JMA publishes: 3x = 特別警報, 0x/1x = 警報, 2x = 注意報. */
-      const JMA_KIND={'02':LA('Snowstorm','暴風雪','Schneesturm','Метель','Ventisca'),'03':LA('Heavy rain','大雨','Starkregen','Сильный дождь','Lluvia intensa'),'04':LA('Flood','洪水','Hochwasser','Наводнение','Inundación'),'05':LA('Storm','暴風','Sturm','Шторм','Tormenta'),
-        '06':LA('Heavy snow','大雪','Starker Schneefall','Сильный снегопад','Nevada intensa'),'07':LA('High waves','波浪','Hoher Seegang','Высокие волны','Oleaje fuerte'),'08':LA('Storm surge','高潮','Sturmflut','Штормовой нагон','Marea de tormenta'),'10':LA('Heavy rain','大雨','Starkregen','Сильный дождь','Lluvia intensa'),
-        '12':LA('Snowstorm','暴風雪','Schneesturm','Метель','Ventisca'),'13':LA('Heavy rain','大雨','Starkregen','Сильный дождь','Lluvia intensa'),'14':LA('Flood','洪水','Hochwasser','Наводнение','Inundación'),'15':LA('Storm','暴風','Sturm','Шторм','Tormenta'),
-        '16':LA('Heavy snow','大雪','Starker Schneefall','Сильный снегопад','Nevada intensa'),'17':LA('High waves','波浪','Hoher Seegang','Высокие волны','Oleaje fuerte'),'18':LA('Storm surge','高潮','Sturmflut','Штормовой нагон','Marea de tormenta'),'19':LA('Thunderstorm','雷','Gewitter','Гроза','Tormenta eléctrica'),
-        '20':LA('Dense fog','濃霧','Dichter Nebel','Густой туман','Niebla densa'),'21':LA('Dry air','乾燥','Trockene Luft','Сухой воздух','Aire seco'),'22':LA('Avalanche','なだれ','Lawine','Лавина','Avalancha'),'23':LA('Low temperature','低温','Tiefe Temperaturen','Низкая температура','Baja temperatura'),
-        '24':LA('Frost','霜','Frost','Заморозки','Helada'),'25':LA('Snow accretion','着雪','Schneeanhaftung','Налипание снега','Acumulación de nieve'),'26':LA('Snowmelt','融雪','Schneeschmelze','Таяние снега','Deshielo'),'27':LA('Other','その他','Sonstiges','Прочее','Otros'),
-        '32':LA('Snowstorm','暴風雪','Schneesturm','Метель','Ventisca'),'33':LA('Heavy rain','大雨','Starkregen','Сильный дождь','Lluvia intensa'),'35':LA('Storm','暴風','Sturm','Шторм','Tormenta'),'36':LA('Heavy snow','大雪','Starker Schneefall','Сильный снегопад','Nevada intensa'),
-        '37':LA('High waves','波浪','Hoher Seegang','Высокие волны','Oleaje fuerte'),'38':LA('Storm surge','高潮','Sturmflut','Штормовой нагон','Marea de tormenta')};
-      const tierOf=(code)=>{ const n=parseInt(code,10);
-        if(n>=32&&n<=38) return 3;                 /* 特別警報 */
-        if(n>=19&&n<=27) return 1;                 /* 注意報 */
-        return 2; };                               /* 警報 */
+      /* ══ ⚠⚠⚠ (#R269) THE JMA CODE TABLE WAS INVENTED, AND MOST OF IT WAS WRONG ═══════════════════
+         「全く警報レイヤーが機能していない。気象庁とは全く違うデタラメが表示される」
+
+         The table this replaces was written from memory rather than read from the JMA, and from code
+         10 onwards almost every row named the wrong hazard AND the wrong severity. MEASURED against
+         the JMA's own table (below), on the codes that were actually in force when this was written:
+
+             code  the app said            the JMA says
+             10    大雨・警報(赤)          大雨注意報      ← 注意報, drawn as a 警報
+             13    大雨・警報(赤)          風雪注意報      ← wrong hazard AND wrong level
+             14    洪水・警報(赤)          雷注意報        ← 914 areas in force: all drawn as FLOOD WARNINGS
+             15    暴風・警報(赤)          強風注意報
+             16    大雪・警報(赤)          波浪注意報
+             17    波浪・警報(赤)          融雪注意報
+             19    雷                      高潮注意報
+             25    着雪                    着氷注意報
+             26    融雪                    着雪注意報
+
+         and 04 / 18 / 27 do not exist in the JMA's scheme at all, while 09 / 29 / 39 / 43 / 48 / 49
+         (土砂災害 and the level-4 危険警報 rank) were missing. `tierOf` compounded it: it decided the
+         rank from a CODE RANGE (`19–27 → 注意報, else 警報`), so every one of 10 / 12 / 13 / 14 / 15 /
+         16 / 17 — all of them 注意報 — was painted red as a 警報. At the moment of writing the JMA had
+         no 警報 in force anywhere in Japan and this layer showed most of the country under one.
+
+         ⚠ SO THE TABLE IS NOT WRITTEN HERE FROM MEMORY EITHER. It is the object the JMA's own warning
+         page (https://www.jma.go.jp/bosai/warning/) carries, read out of that page: every code with
+         the ELEMENT it belongs to and the LEVEL the JMA assigns it — 20 注意報 / 30 警報 / 40 危険警報
+         / 50 特別警報. The rank comes from that level and from nothing else.
+         ⚠ THE FLOOD-FORECAST CODES ARE A DIFFERENT TABLE AND ARE DELIBERATELY NOT HERE. The same page
+         carries a second object for 指定河川洪水予報 (20/21/22 → 氾濫注意報, 30/31 → 警報 …), whose
+         codes COLLIDE with 濃霧/乾燥/なだれ in this one. It is published in a different file
+         (bosai/flood/data/r8/…), so mixing the two tables would relabel every fog advisory in Japan
+         as a river-flood warning — which is the exact shape of the defect this note is about. */
+      const JMA_ELEM={
+        rain:LA('Heavy rain','大雨','Starkregen','Сильный дождь','Lluvia intensa'),
+        landslide:LA('Landslide','土砂災害','Erdrutsch','Оползень','Deslizamiento'),
+        tide:LA('Storm surge','高潮','Sturmflut','Штормовой нагон','Marea de tormenta'),
+        wind:LA('Strong wind','強風','Starkwind','Сильный ветер','Viento fuerte'),
+        windGale:LA('Gale','暴風','Sturm','Шторм','Vendaval'),
+        wind_snow:LA('Snow and wind','風雪','Schneetreiben','Снег с ветром','Nieve con viento'),
+        wind_snowGale:LA('Snowstorm','暴風雪','Schneesturm','Метель','Ventisca'),
+        snow:LA('Heavy snow','大雪','Starker Schneefall','Сильный снегопад','Nevada intensa'),
+        wave:LA('High waves','波浪','Hoher Seegang','Высокие волны','Oleaje fuerte'),
+        thunder:LA('Thunderstorm','雷','Gewitter','Гроза','Tormenta eléctrica'),
+        snow_melting:LA('Snowmelt','融雪','Schneeschmelze','Таяние снега','Deshielo'),
+        fog:LA('Dense fog','濃霧','Dichter Nebel','Густой туман','Niebla densa'),
+        dry:LA('Dry air','乾燥','Trockene Luft','Сухой воздух','Aire seco'),
+        avalanche:LA('Avalanche','なだれ','Lawine','Лавина','Avalancha'),
+        cold:LA('Low temperature','低温','Tiefe Temperaturen','Низкая температура','Baja temperatura'),
+        frost:LA('Frost','霜','Frost','Заморозки','Helada'),
+        ice_accretion:LA('Ice accretion','着氷','Eisansatz','Обледенение','Engelamiento'),
+        snow_accretion:LA('Snow accretion','着雪','Schneeanhaftung','Налипание снега','Acumulación de nieve')};
+      /* code → [element, JMA level].  ⚠ 強風/暴風 and 風雪/暴風雪 are DIFFERENT WORDS at different
+         levels and the JMA writes them so; the element key gains `Gale` above level 20 for those two. */
+      const JMA_CODE={
+        '10':['rain',20], '03':['rain',30], '43':['rain',40], '33':['rain',50],
+        '29':['landslide',20], '09':['landslide',30], '49':['landslide',40], '39':['landslide',50],
+        '19':['tide',20], '08':['tide',30], '48':['tide',40], '38':['tide',50],
+        '15':['wind',20], '05':['wind',30], '35':['wind',50],
+        '13':['wind_snow',20], '02':['wind_snow',30], '32':['wind_snow',50],
+        '12':['snow',20], '06':['snow',30], '36':['snow',50],
+        '16':['wave',20], '07':['wave',30], '37':['wave',50],
+        '14':['thunder',20], '17':['snow_melting',20], '20':['fog',20], '21':['dry',20],
+        '22':['avalanche',20], '23':['cold',20], '24':['frost',20],
+        '25':['ice_accretion',20], '26':['snow_accretion',20]};
+      /* the JMA's four ranks onto this layer's three tiers — 危険警報 and 特別警報 both sit above 警報,
+         and the ROW still carries the JMA's own word for which of the two it is */
+      const jmaTier=(lvl)=>lvl>=40?3:lvl>=30?2:1;
+      const jmaKind=(code)=>{ const e=JMA_CODE[String(code)]; if(!e) return null;
+        const k=(e[1]>20&&JMA_ELEM[e[0]+'Gale'])?(e[0]+'Gale'):e[0];
+        return JMA_ELEM[k]||null; };
       const TIERCOL={3:'#a335ee',2:'#ff3b30',1:'#ffcc00'};
-      const tierName=(t)=>t===3?L('Emergency warning','特別警報','Notfallwarnung','Экстренное предупреждение','Aviso de emergencia')
+      /* (#R269) tier 3 now carries two JMA ranks — 危険警報 (level 4) and 特別警報 (level 5) — so the
+         key names both rather than claiming every purple area is a 特別警報. */
+      const tierName=(t)=>t===3?L('Emergency / danger warning','特別警報・危険警報','Notfall-/Gefahrenwarnung','Экстренное / опасное предупреждение','Aviso de emergencia / peligro')
         :t===2?L('Warning','警報','Warnung','Предупреждение','Aviso')
         :L('Advisory','注意報','Hinweis','Рекомендация','Advertencia');
       /* ══ ⚠⚠⚠ (#R266) TWO COUNTRIES OUT OF ONE HUNDRED AND NINETY-FIVE ═══════════════════════════
@@ -1149,18 +1225,45 @@ window.IntMapModules.worldPacks=function(HOST){
           if(isFinite(n)) by[n]=f; });
         return (_jpGeo=by); }
 
+      /* ══ ⚠⚠⚠ (#R269) THE FEED THE APP READ HAD STOPPED THREE MONTHS EARLIER ═════════════════════
+         `…/bosai/warning/data/warning/map.json` answers 200 and parses, and it is FROZEN: measured,
+         every `reportDatetime` in it fell between 2026-05-21 and 2026-05-28 while the day was
+         2026-08-19 — eighty-three days of nothing. The layer was drawing May's advisories, on a
+         one-minute refresh, and saying 「Updated: <now>」 underneath them. A stale endpoint is the
+         worst kind of broken feed because every instrument reports success: HTTP 200, valid JSON,
+         the expected shape, a non-empty answer.
+
+         The JMA's OWN warning page requests `…/bosai/warning/data/r8/map.json`, which is live —
+         `…/r8/map_time.json` publishes `latestControlDatetime`, measured minutes old. It is a
+         different shape: a LIST OF BULLETINS (287 of them, 58 offices), each with the full state of
+         its office at its `reportDatetime`, and `warning.class10Items` / `class20Items` rather than
+         `areaTypes`.
+
+         ⚠ THE STATE IS THE NEWEST BULLETIN PER OFFICE, NOT THE UNION OF ALL OF THEM. Unioning them
+         resurrects warnings a later bulletin cancelled — the same «one file, several generations»
+         trap in a new place. Measured: newest-per-office reproduces the national picture exactly
+         (142 class10 areas, 1,805 class20 areas), and `supersededBulletins` counts what was dropped
+         so a silent change of shape upstream cannot look like a quiet day.
+         ⚠ AND THE AGE IS CHECKED RATHER THAN ASSUMED. `jmaAgeH` is how old the newest bulletin in
+         the file is; the panel prints it, and `loadJMA` REFUSES a file whose newest bulletin is more
+         than three days old rather than presenting it as «in force now». That is the instrument the
+         old endpoint would have tripped on day one. */
+      const JMA_R8='https://www.jma.go.jp/bosai/warning/data/r8/map.json';
+      const JMA_MAX_AGE_H=72;
+      let jmaAgeH=null, jmaSuperseded=0, jmaAt='';
       async function loadJMA(){
-        const [map,area,geo]=await Promise.all([
-          fetch('https://www.jma.go.jp/bosai/warning/data/warning/map.json',{cache:'no-store'}).then(r=>{ if(!r.ok) throw new Error('jma '+r.status); return r.json(); }),
+        const [list,area,geo]=await Promise.all([
+          fetch(JMA_R8,{cache:'no-store'}).then(r=>{ if(!r.ok) throw new Error('jma '+r.status); return r.json(); }),
           fetch('https://www.jma.go.jp/bosai/common/const/area.json').then(r=>r.ok?r.json():{}),
           jpPrefGeo() ]);
+        if(!Array.isArray(list)||!list.length) throw new Error('jma: not a bulletin list');
         const nameOf=(code)=>{ for(const k of ['class20s','class15s','class10s','offices','centers']){
             const t=area&&area[k]; if(t&&t[code]&&t[code].name) return t[code].name; } return code; };
         /* ══ (#R268) THE LEVEL BETWEEN THE PREFECTURE AND THE TOWN ════════════════════════════════
-           JMA issues at two levels and the tap printed the lower one as a flat list — MEASURED on
+           The JMA issues at two levels and the tap printed the lower one as a flat list — MEASURED on
            production, a Japan tap rendered 785 rows in 111,000 characters of HTML, and opening
            Hokkaido gave 稚内市 / 猿払村 / 浜頓別町 … one line per town PER HAZARD. area.json already
-           carries the hierarchy (class20 → class15 → class10 = 宗谷地方), so every row now knows its
+           carries the hierarchy (class20 → class15 → class10 = 宗谷地方), so every row knows its
            region and the renderer folds on it. Nothing is dropped; it gains a level. */
         const parentOf=(code)=>{ for(const k of ['class20s','class15s','class10s']){
             const t=area&&area[k]; if(t&&t[code]) return t[code].parent||''; } return ''; };
@@ -1168,35 +1271,45 @@ window.IntMapModules.worldPacks=function(HOST){
           for(let i=0;i<4;i++){ if(area&&area.class10s&&area.class10s[c]) return c;
             const q=parentOf(c); if(!q||q===c) break; c=q; }
           return null; };
+        /* ── the newest bulletin per office, and the age of the newest of those ── */
+        const newest=Object.create(null);
+        list.forEach(b=>{ const k=String(b.publishingOffice||''); const t=String(b.reportDatetime||'');
+          if(!newest[k]||t>String(newest[k].reportDatetime||'')) newest[k]=b; });
+        const kept=Object.values(newest);
+        jmaSuperseded=list.length-kept.length;
+        jmaAt=kept.reduce((m,b)=>{ const t=String(b.reportDatetime||''); return t>m?t:m; },'');
+        jmaAgeH=jmaAt?((Date.now()-Date.parse(jmaAt))/3600000):null;
+        seenAt('jma',jmaAt);
+        if(!(jmaAgeH!=null&&jmaAgeH<JMA_MAX_AGE_H))
+          throw new Error('jma: newest bulletin is '+(jmaAgeH==null?'undated':(Math.round(jmaAgeH)+' h old')));
         const byPref=Object.create(null);
-        Object.keys(map).forEach(k=>{ const o=map[k]; if(!o||!o.areaTypes) return;
-          (o.areaTypes||[]).forEach((at,ti)=>{ (at.areas||[]).forEach(a=>{
-            const pref=parseInt(String(a.code).slice(0,2),10); if(!isFinite(pref)) return;
-            const rec=byPref[pref]=byPref[pref]||{tier:0,items:[],reportedAt:o.reportDatetime||''};
-            (a.warnings||[]).forEach(w=>{ if(!w||w.status==='解除'||w.status==='発表警報・注意報はなし') return;
-              const t=tierOf(w.code); if(t>rec.tier) rec.tier=t;
-              const kind=JMA_KIND[String(w.code).padStart(2,'0')];
-              const r10=regionOf(a.code);
-              rec.items.push({ area:nameOf(a.code), sub:r10?nameOf(r10):nameOf(a.code),
-                adm:nameOf(String(pref).padStart(2,'0')+'0000')||nameOf(a.code), unit:ti===0?'pref':'muni', tier:t,
-                kind:kind?(HOST.lang==='jp'?kind[0]:kind[1]):('#'+w.code), status:w.status }); }); }); }); });
+        kept.forEach(b=>{ const w=b.warning||{};
+          [['class10Items','pref'],['class20Items','muni']].forEach(([key,unit])=>{
+            (w[key]||[]).forEach(a=>{
+              const code=String(a.areaCode||''); const pref=parseInt(code.slice(0,2),10);
+              if(!isFinite(pref)) return;
+              (a.kinds||[]).forEach(k=>{
+                if(!k||!k.code) return;                                   /* 「発表警報・注意報はなし」 */
+                if(k.status==='解除'||k.status==='発表警報・注意報はなし') return;
+                const e=JMA_CODE[String(k.code)]; if(!e) return;          /* an unknown code is not invented */
+                const t=jmaTier(e[1]);
+                const rec=byPref[pref]=byPref[pref]||{tier:0,items:[],reportedAt:b.reportDatetime||''};
+                if(t>rec.tier) rec.tier=t;
+                if(String(b.reportDatetime||'')>String(rec.reportedAt||'')) rec.reportedAt=b.reportDatetime||'';
+                const kind=jmaKind(k.code);
+                const r10=regionOf(code);
+                rec.items.push({ area:nameOf(code), sub:r10?nameOf(r10):nameOf(code),
+                  adm:nameOf(String(pref).padStart(2,'0')+'0000')||nameOf(code), unit, tier:t,
+                  kind:kind?L.arr(kind):('#'+k.code), status:k.status }); }); }); }); });
         const out=[];
         Object.keys(byPref).forEach(p=>{ const rec=byPref[p]; if(!rec.tier) return;
           const f=geo[+p]; if(!f) return;
           const pn=(f.properties&&f.properties.shapeName)||('JP-'+p);
-          /* ⚠ (#R266) 「日本なら市町村単位で列挙するのを辞めろ。まずは都道府県でくくる」 — the tap used to
-             print up to 160 municipality rows in one flat list. Every row now carries the PREFECTURE
-             it belongs to, and the tap groups on it. Nothing is dropped; it is nested. */
           out.push({type:'Feature',geometry:f.geometry,properties:{ iso:'JPN', col:TIERCOL[rec.tier], tier:rec.tier,
             name:pn, n:rec.items.length, at:rec.reportedAt,
-            items:JSON.stringify(rec.items.slice(0,200).map(x=>Object.assign({},x,{adm:pn}))) }}); });
+            items:JSON.stringify(rec.items.slice(0,400).map(x=>Object.assign({},x,{adm:pn}))) }}); });
         return out; }
 
-      /* ⚠ (#R268) `cache:'no-store'` ON EVERY LIVE WARNING FETCH. 「全然現実の発令に追い付いていない。
-         リアルタイムで反映しろ。」 — #R266 took the refresh interval from 300 s to 60 s and left the
-         HTTP cache alone, so a tick could be served the copy the browser already had: JMA's map.json
-         and the NWS feed both ship ordinary cache headers, and a 60-second timer that re-reads a
-         cached document is a 60-second timer that changes nothing. */
       async function loadNWS(){
         const r=await fetch('https://api.weather.gov/alerts/active?status=actual&message_type=alert',{cache:'no-store'});
         if(!r.ok) throw new Error('nws '+r.status);
@@ -1209,6 +1322,7 @@ window.IntMapModules.worldPacks=function(HOST){
              admin-1 level the tap groups on — the same treatment Japan's prefectures get */
           let st=''; try{ const u=(p.geocode&&(p.geocode.UGC||p.geocode.SAME))||[]; st=String(u[0]||'').slice(0,2).toUpperCase(); }catch(_){}
           if(!/^[A-Z]{2}$/.test(st)) st=String(p.areaDesc||'').split(',').pop().trim().slice(-2).toUpperCase();
+          seenAt('nws',p.sent);
           out.push({type:'Feature',geometry:f.geometry,properties:{ iso:'USA', col:TIERCOL[t], tier:t,
             name:p.event||'Alert', n:1, at:p.sent||'',
             items:JSON.stringify([{area:p.areaDesc||'',adm:st,unit:'zone',tier:t,kind:p.event||'',status:p.severity||''}]) }}); });
@@ -1225,6 +1339,7 @@ window.IntMapModules.worldPacks=function(HOST){
           const t=/warning/i.test(p.alert_type||'')?2:/watch/i.test(p.alert_type||'')?1:1;
           const kind=(en()?p.alert_name_en:p.alert_name_fr)||p.alert_name_en||p.alert_code||'';
           const area=(en()?p.feature_name_en:p.feature_name_fr)||p.feature_name_en||'';
+          seenAt('eccc',p.publication_datetime);
           out.push({type:'Feature',geometry:f.geometry,properties:{ iso:'CAN', col:TIERCOL[t], tier:t,
             name:kind, n:1, at:p.publication_datetime||'',
             items:JSON.stringify([{area,adm:p.province||'',unit:'zone',tier:t,kind,status:(en()?p.status_en:p.status_fr)||''}]) }}); });
@@ -1244,6 +1359,16 @@ window.IntMapModules.worldPacks=function(HOST){
           const title=String(a.title||'');
           const t=/红色/.test(title)?3:/橙色/.test(title)?2:/黄色/.test(title)?2:1;
           if(t>worst) worst=t;
+          /* ⚠ (#R269) the CMA writes 「2026/08/19 17:22」 — slashes, no seconds, no zone. `Date.parse`
+             answers NaN for that, so the first version of this instrument left China with no clock
+             at all: the one feed the age check exists for would have been the one it could not see. */
+          /* WARNING (#R269) the CMA writes 2026/08/19 17:22 - slashes, no seconds, no zone.
+             `Date.parse` answers NaN for that, so the first version of this instrument left the
+             one feed the age check exists for without a clock at all.
+             WARNING and it is a `split`/`join`, not a regex literal: `/\x2f/g` spells two
+             consecutive slashes, which every comment-stripping instrument in this repo reads as
+             the start of a line comment - measured, tests/r269 truncated this very line. */
+          seenAt('cma',String(a.issuetime||'').split('/').join('-').replace(' ','T')+':00+08:00');
           items.push({ area:title.replace(/^.*?气象台发布/,'')||title, adm:prov, unit:'city', tier:t,
             kind:(title.match(/发布(.+?)预警/)||[])[1]||'', status:String(a.issuetime||'') }); });
         cmaCount=items.length;
@@ -1259,7 +1384,7 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!r.ok) throw new Error('bom '+r.status);
         const j=await r.json(); const items=[]; let worst=0;
         (j.data||[]).forEach(a=>{ const t=/major|emergency/i.test(String(a.warning_group_type||''))?3:2;
-          if(t>worst) worst=t;
+          if(t>worst) worst=t; seenAt('bom',a.issue_time);
           (a.states&&a.states.length?a.states:[a.state||'']).forEach(st=>{
             items.push({ area:String(a.title||a.short_title||''), sub:String(a.short_title||a.type||''),
               adm:String(st||''), unit:'state', tier:t,
@@ -1277,6 +1402,7 @@ window.IntMapModules.worldPacks=function(HOST){
           if(/CANCEL/i.test(String(a.actionCode||''))) return;
           const key=String(a.subtype||a.type||a.code||k);
           const t=/WRAINB|TC(8|9|10)/i.test(key)?3:2; if(t>worst) worst=t;
+          seenAt('hko',a.issueTime||a.updateTime);
           items.push({ area:'Hong Kong', sub:String(a.name||key), adm:'Hong Kong', unit:'territory',
             tier:t, kind:String(a.name||key), status:String(a.issueTime||'') }); });
         return { items, worst }; }
@@ -1292,6 +1418,7 @@ window.IntMapModules.worldPacks=function(HOST){
           let g=null; try{ g=JSON.parse(a.poligono||'null'); }catch(_){}
           if(!g||!g.type) return;
           const t=SEV[String(a.severidade||'')]||1;
+          seenAt('inmet',a.updated_at||a.data_inicio);
           const states=String(a.estados||'').split(',').map(x=>x.trim()).filter(Boolean);
           out.push({type:'Feature',geometry:g,properties:{ iso:'BRA', col:TIERCOL[t], tier:t,
             name:String(a.descricao||''), n:1, at:String(a.data_inicio||''),
@@ -1306,7 +1433,8 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!u) throw new Error('no relay');
         const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('meteoalarm '+r.status);
         const j=await r.json();
-        list.forEach(k=>{ const n=MA[k]; const d=(j.countries||{})[n]; if(d) maData[k]=d; });
+        list.forEach(k=>{ const n=MA[k]; const d=(j.countries||{})[n]; if(d){ maData[k]=d;
+          (d.warnings||[]).forEach(x=>seenAt('meteoalarm',x.onset||x.expires)); } });
       }
 
       /* ── the rest of the world: GDACS, the UN/EC global disaster alert system ────────────────────
@@ -1344,6 +1472,7 @@ window.IntMapModules.worldPacks=function(HOST){
             if(t>rec.tier) rec.tier=t;
             rec.items.push({ area:c.countryname||k, unit:'event', tier:t, kind:label,
               status:(p.name||p.eventname||'')+(p.severitydata&&p.severitydata.severitytext?(' · '+p.severitydata.severitytext):'') }); });
+          seenAt('gdacs',p.datemodified||p.fromdate);
           if(f.geometry&&f.geometry.type==='Point') out.push({type:'Feature',geometry:f.geometry,
             properties:{ iso:String(p.iso3||'').toUpperCase(), col:TIERCOL[t], tier:t, src:'gdacs',
               name:p.name||label, n:1, at:p.datemodified||p.fromdate||'',
@@ -1633,10 +1762,21 @@ window.IntMapModules.worldPacks=function(HOST){
       /* what is in force RIGHT NOW, worldwide — shown the moment the layer is on, without a tap */
       function overview(){
         const fs=(k)=>FEED_STATE[k]||'idle';
+        /* ⚠ (#R269) the dot is AMBER when the feed answered but has PRODUCED NOTHING FOR A WEEK —
+           «reachable» and «still running» are two different claims and this layer had been making
+           the first while implying the second (its JMA endpoint had been frozen for 83 days).
+           ⚠ THE THRESHOLD IS NOT «RECENT». A three-day flood warning issued 33 hours ago is current,
+           not stale — measured, INMET's newest item was 33 h old and BoM's 2 h while both were live.
+           What no national warning service does is go a whole week without issuing anything, so that
+           is where the amber sits. The AGE ITSELF is printed either way, which is the thing that
+           would have shown the frozen endpoint on day one. */
+        const STALE_H=168;
+        const dot=(k)=>{ if(fs(k)==='error') return '#ff453a'; if(fs(k)!=='ok') return '#ffcc00';
+          const h=ageH(k); return (h!=null&&h>STALE_H)?'#ff9f0a':'#32d74b'; };
         const line=(name,k,extra)=>'<div style="display:flex;gap:6px;align-items:center;font-size:11.5px;padding:2px 0;">'
-          +'<span style="width:8px;height:8px;border-radius:50%;flex:none;background:'+(fs(k)==='ok'?'#32d74b':fs(k)==='error'?'#ff453a':'#ffcc00')+';"></span>'
+          +'<span style="width:8px;height:8px;border-radius:50%;flex:none;background:'+dot(k)+';"></span>'
           +'<span style="flex:1;">'+esc(name)+'</span><span style="opacity:.75;">'
-          +(fs(k)==='ok'?esc(extra):fs(k)==='error'?L('unavailable','取得不可','nicht verfügbar','недоступно','no disponible')
+          +(fs(k)==='ok'?(esc(extra)+esc(ageTxt(k))):fs(k)==='error'?L('unavailable','取得不可','nicht verfügbar','недоступно','no disponible')
             :L('loading…','取得中…','lädt…','загрузка…','cargando…'))+'</span></div>';
         const jp=feats.filter(f=>f.properties.iso==='JPN').length;
         const us=feats.filter(f=>f.properties.iso==='USA').length;
@@ -1649,7 +1789,11 @@ window.IntMapModules.worldPacks=function(HOST){
         panel.open('<div class="wp-a-body">'
           +'<div style="font-weight:700;font-size:13px;">'+L('In force now','現在発表中','Aktuell in Kraft','Действует сейчас','Vigente ahora')+'</div>'
           +line(L('Japan — JMA, by issuing unit','日本 — 気象庁（発令単位）','Japan — JMA','Япония — JMA','Japón — JMA'),'jma',
-                jp+' '+L('prefectures','都道府県','Präfekturen','префектур','prefecturas'))
+                jp+' '+L('prefectures','都道府県','Präfekturen','префектур','prefecturas')
+                /* ⚠ (#R269) HOW OLD THE JMA'S OWN NEWEST BULLETIN IS. The endpoint this layer used
+                   until now had been frozen for eighty-three days while answering 200 with valid
+                   JSON; the only thing that would have shown it is the feed's own clock, printed. */
+                )
           +line(L('United States — NWS','米国 — NWS','USA — NWS','США — NWS','EE. UU. — NWS'),'nws',
                 us+' '+L('alert areas','警報区域','Warngebiete','зон','zonas'))
           +line(L('Canada — ECCC','カナダ — 環境・気候変動省','Kanada — ECCC','Канада — ECCC','Canadá — ECCC'),'eccc',
@@ -1719,6 +1863,10 @@ window.IntMapModules.worldPacks=function(HOST){
         national:Object.keys(FEEDS).length, meteoalarm:Object.keys(MA).length,
         maLoaded:Object.keys(maData).length, maWarnings:Object.keys(maData).reduce((n,k)=>n+(((maData[k]||{}).warnings||[]).length),0),
         cma:cmaCount, canada:feats.filter(f=>f.properties.iso==='CAN').length, intervalMs:60000,
+        /* (#R269) the JMA feed's own clock, and how many superseded bulletins were dropped */
+        jmaAt, jmaAgeH:(jmaAgeH==null?null:+jmaAgeH.toFixed(2)), jmaSuperseded,
+        /* (#R269) every feed's own clock, in hours — the instrument a frozen endpoint trips */
+        feedAgeH:Object.keys(FEED_AT).reduce((o,k)=>{ const h=ageH(k); o[k]=(h==null?null:+h.toFixed(2)); return o; },{}),
         /* (#R268) the three services added this round, plus how much of Europe has actually landed */
         bom:(bomRec&&bomRec.items.length)||0, hko:(hkoRec&&hkoRec.items.length)||0,
         brazil:feats.filter(f=>f.properties.iso==='BRA').length,

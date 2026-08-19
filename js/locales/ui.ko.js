@@ -4123,5 +4123,11 @@ window.IntMapLang.define('ko', { ui: {
   "Tuvaluan": "투발루어",
   "Tok Pisin": "톡 피신",
   "Greenlandic": "그린란드어",
-  "Dzongkha": "종카어",   /* (#R267) */
+  "Dzongkha": "종카어",
+  "Emergency / danger warning": "특별경보·위험경보",
+  "Gale": "폭풍",
+  "Strong wind": "강풍",
+  "Snow and wind": "눈과 바람",
+  "Landslide": "토사재해",
+  "Ice accretion": "착빙",   /* (#R267) */
 } });
