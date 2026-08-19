@@ -1002,7 +1002,12 @@ window.IntMapModules.worldPacks=function(HOST){
          panel prints the age beside the service. A feed that stops updating goes visibly stale
          instead of quietly wrong, whichever feed it is. */
       const FEED_AT={};           /* feed key → the newest item timestamp in that feed's own payload */
+      /* ⚠ A TIMESTAMP IN THE FUTURE IS NOT EVIDENCE OF FRESHNESS. MEASURED on production: MeteoAlarm
+         reported an age of −82.9 h, because the rows carry the warning's VALIDITY WINDOW and a
+         warning in force normally expires tomorrow. Anything ahead of now is refused here, so a
+         feed can only ever look as new as something it has actually published. */
       const seenAt=(k,t)=>{ const v=Date.parse(t||''); if(!isFinite(v)) return;
+        if(v>Date.now()+60000) return;
         if(!FEED_AT[k]||v>FEED_AT[k]) FEED_AT[k]=v; };
       const ageH=(k)=>(FEED_AT[k]?((Date.now()-FEED_AT[k])/3600000):null);
       const ageTxt=(k)=>{ const h=ageH(k); if(h==null) return '';
@@ -1159,6 +1164,7 @@ window.IntMapModules.worldPacks=function(HOST){
       function maNext(){ const todo=Object.keys(MA).filter(k=>!maData[k]&&maAsked.indexOf(k)<0);
         const take=todo.slice(0,MA_PER_TICK); take.forEach(k=>maAsked.push(k)); return take; }
       let bomRec=null, hkoRec=null;   /* the two list-only services — a wash and a list, like CMA */
+      let cmaBusy=false, maBusy=false;   /* (#R269) the two relay-backed loaders, one call at a time */
       const relay=(qs)=>{ let b=''; try{ b=String(window.SUPABASE_URL||'').replace(/\/$/,''); }catch(_){ b=''; }
         return b?(b+'/functions/v1/alerts-relay?'+qs):''; };
       /* GB/T 2260: the first two digits of a CMA alert id are the province, which is the level
@@ -1433,8 +1439,9 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!u) throw new Error('no relay');
         const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('meteoalarm '+r.status);
         const j=await r.json();
+        /* (#R269) the relay's own `fetchedAt` — the warnings' onset/expires are a validity window */
         list.forEach(k=>{ const n=MA[k]; const d=(j.countries||{})[n]; if(d){ maData[k]=d;
-          (d.warnings||[]).forEach(x=>seenAt('meteoalarm',x.onset||x.expires)); } });
+          seenAt('meteoalarm',d.fetchedAt); } });
       }
 
       /* ── the rest of the world: GDACS, the UN/EC global disaster alert system ────────────────────
@@ -1511,15 +1518,24 @@ window.IntMapModules.worldPacks=function(HOST){
              milliseconds — sit unrendered until Europe answers. That is the #R212 defect in a new
              place: a picture withheld because something ELSE has not landed. They repaint on their
              own when they land. */
-          loadCMA().then(v=>{ FEED_STATE.cma='ok'; cmaRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
-            .catch(e=>{ FEED_STATE.cma='error'; console.warn('CMA warnings',e); if(on&&panel.shown()) overview(); });
+          /* ⚠ (#R269) THE DISPATCHED LOADERS NEED THEIR OWN IN-FLIGHT GUARD. `busy` covers the awaited
+             half; these two are fired and left to land on their own, and the relay can legitimately
+             take longer than one tick — MEASURED, a CMA call that the upstream hung on returned 502
+             after 90 s, which is a minute and a half of 60-second ticks stacking a second, third and
+             fourth request on a host that is already not answering. One at a time. */
+          if(!cmaBusy){ cmaBusy=true;
+            loadCMA().then(v=>{ FEED_STATE.cma='ok'; cmaRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
+              .catch(e=>{ FEED_STATE.cma='error'; console.warn('CMA warnings',e); if(on&&panel.shown()) overview(); })
+              .then(()=>{ cmaBusy=false; }); }
           loadBOM().then(v=>{ FEED_STATE.bom='ok'; bomRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
             .catch(e=>{ FEED_STATE.bom='error'; console.warn('BoM warnings',e); if(on&&panel.shown()) overview(); });
           loadHKO().then(v=>{ FEED_STATE.hko='ok'; hkoRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
             .catch(e=>{ FEED_STATE.hko='error'; console.warn('HKO warnings',e); if(on&&panel.shown()) overview(); });
           /* (#R268) the European set completes itself: whatever has not been read yet, a few per tick */
-          loadMA(maAsked.filter(k=>!maData[k]).concat(maNext())).then(()=>{ FEED_STATE.meteoalarm='ok'; if(on){ paintCountries(); if(panel.shown()) overview(); } })
-            .catch(e=>{ FEED_STATE.meteoalarm='error'; console.warn('MeteoAlarm',e); if(on&&panel.shown()) overview(); });
+          if(!maBusy){ maBusy=true;
+            loadMA(maAsked.filter(k=>!maData[k]).concat(maNext())).then(()=>{ FEED_STATE.meteoalarm='ok'; if(on){ paintCountries(); if(panel.shown()) overview(); } })
+              .catch(e=>{ FEED_STATE.meteoalarm='error'; console.warn('MeteoAlarm',e); if(on&&panel.shown()) overview(); })
+              .then(()=>{ maBusy=false; }); }
           whenDrawable(()=>{ if(ensureLayers()){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,on); } });
           paintCountries();
           if(on&&panel.shown()) overview();
