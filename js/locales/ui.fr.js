@@ -4133,5 +4133,11 @@ window.IntMapLang.define('fr', { ui: {
   "Tuvaluan": "Tuvaluan",
   "Tok Pisin": "Tok pisin",
   "Greenlandic": "Groenlandais",
-  "Dzongkha": "Dzongkha",   /* (#R267) */
+  "Dzongkha": "Dzongkha",
+  "Emergency / danger warning": "Alerte d’urgence / de danger",
+  "Gale": "Tempête",
+  "Strong wind": "Vent fort",
+  "Snow and wind": "Neige et vent",
+  "Landslide": "Glissement de terrain",
+  "Ice accretion": "Givrage",   /* (#R267) */
 } });
