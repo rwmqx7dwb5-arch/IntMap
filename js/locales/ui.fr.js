@@ -4276,5 +4276,7 @@ window.IntMapLang.define('fr', { ui: {
   "Water": "Eau",
   "Hailstorm": "Grêle",
   "Heavy rainfall": "Fortes pluies",
-  "Thunderstorms": "Orages",   /* (#R267) */
+  "Thunderstorms": "Orages",
+  "The reachable area is computed for 1 to 120 minutes — ask again inside that range.": "La zone accessible est calculée de 1 à 120 minutes — refaites la demande dans cette plage.",
+  "The reachable area was computed, but the map layer could not be created (the map style was still loading) — try again in a moment.": "La zone accessible a été calculée, mais la couche cartographique n'a pas pu être créée (le style de la carte se chargeait encore) — réessayez dans un instant.",   /* (#R267) */
 } });

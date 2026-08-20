@@ -52,6 +52,12 @@ const HALVES = [
          other. It also refuses to let Architecture.md become a changelog again. */
       ['node', ['scripts/doc-facts.mjs', '--check']],
       ['node', ['scripts/arch-files-check.mjs', '--check']],
+      /* ⚠ (#R278) THE ATLAS CATALOGUE GATE. 「an action the catalogue does not describe does not
+         exist for the planner」 has been the rule since #R115 and nothing enforced it: six working
+         capabilities — the road-network isochrone among them — had a dispatch case and no catalogue
+         entry, so asking for 「徒歩1時間で行ける範囲」 returned a radius circle and then 「できません」.
+         This compares the dispatch with the prompt on every run. See scripts/atlas-catalog.mjs. */
+      ['node', ['scripts/atlas-catalog.mjs', '--check']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],
