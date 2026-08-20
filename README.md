@@ -27,9 +27,11 @@ IntMap is primarily designed for people interested in geography and internationa
 * Combine more than a hundred geographic and statistical layers
 * Follow a country's goods trade partner by partner, by commodity and by year
 * Read a country's electricity and primary-energy mix as a composition, not a single colour
-* See the weather and disaster warnings an agency has actually issued, at the unit it issued them for —
-  Japan (JMA), the United States (NWS), Canada (ECCC), the thirty-seven European services through
-  MeteoAlarm and China (CMA), refreshed every minute
+* See the weather and disaster warnings an agency has actually issued, at the unit it issued them
+  for — 45 countries over eleven feeds: Japan (JMA), the United States (NWS), Canada (ECCC),
+  Germany (DWD), Norway (MET Norway), China (CMA), Australia (BoM), Brazil (INMET), Hong Kong
+  (HKO), the Philippines (PAGASA), and thirty-five further European services through MeteoAlarm,
+  refreshed every minute. Everywhere else falls back to GDACS, drawn on its own separate scale
 * Read annual precipitation as a measured 1 km field, or as any single year from 1981 to 2020
 * Compare any World Bank indicator in a year you choose, rather than whatever year each country last reported
 * Look up high and low water anywhere on a coast, and how far the tide reaches over real terrain
@@ -213,22 +215,24 @@ The mobile interface supports most standard map features, although complex tools
 
 ## Languages
 
-The interface currently supports:
+The interface is available in nine languages:
 
 * English
 * 日本語
-* Deutsch — beta
-* Русский — beta
-* Español — beta
-* 繁體中文 — beta
-* 简体中文 — beta
-* Français — in progress
-* 한국어 — in progress
+* Deutsch
+* Русский
+* Español
+* 繁體中文
+* 简体中文
+* Français
+* 한국어
 
-The first seven are complete. French and Korean are being filled in and currently cover the keyed
-interface in full plus part of the in-line text; anything not yet translated falls back to English
-per string, never per screen. Place-name labels support the same languages. Some recent or deeply
-nested content may still fall back to English or Japanese.
+All nine are complete on every surface the project measures — the keyed interface, the in-line
+text and the two reading pages. Coverage is re-measured on every build, and a language is labelled
+"beta" automatically if it ever falls below 98%; none currently is. Place-name labels support the
+same languages. A small residue of reference tables is not yet routed through the translation
+system and reads English in every language; that residue is counted and tracked rather than hidden.
+Anything untranslated falls back to English per string, never per screen.
 
 Atlas normally responds in the language used in the request.
 

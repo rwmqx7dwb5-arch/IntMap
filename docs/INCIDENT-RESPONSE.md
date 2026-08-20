@@ -140,7 +140,7 @@ Append a short note to `DEV-NOTES.md` (and/or the incident issue):
 | Need | Command / place |
 |------|-----------------|
 | Is it up? | Actions → Uptime, or open the URL |
-| What's live? | `window.INTMAP_BUILD`, `/-build-info.json` |
+| What's live? | `window.INTMAP_BUILD`, `/build-info.json` |
 | Roll back (gated) | Actions → Rollback → **commit SHA** (no tags exist) |
 | Roll back (Git) | `git revert <sha> && git push` |
 | Verify prod | `PROD_URL=… npx playwright test --config playwright.prod.config.js` |
