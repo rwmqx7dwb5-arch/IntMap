@@ -1206,7 +1206,7 @@ window.IntMapModules.worldPacks=function(HOST){
          the issuing services publish the shapes themselves. The national service wins where it
          exists; MA below is then EUMETNET's remaining thirty-five, and the panel counts thirty-five. */
       const FEEDS={ JPN:'jma', USA:'nws', CAN:'eccc', CHN:'cma', AUS:'bom', BRA:'inmet', HKG:'hko',
-        DEU:'dwd', NOR:'metno' };
+        DEU:'dwd', NOR:'metno', PHL:'pagasa' };
       /* MeteoAlarm (EUMETNET) member services, ISO3 → the slug its feed is named with */
       const MA={ AUT:'austria', BEL:'belgium', BIH:'bosnia-herzegovina', BGR:'bulgaria', HRV:'croatia',
         CYP:'cyprus', CZE:'czechia', DNK:'denmark', EST:'estonia', FIN:'finland', FRA:'france',
@@ -1230,7 +1230,7 @@ window.IntMapModules.worldPacks=function(HOST){
       /* (#R271) the loaders that are NOT awaited with the others still put shapes on the map, so the
          published collection is the awaited half plus whatever each of them has landed. One place
          builds it, so a late feed can never blank an early one (the #R212 shape, again). */
-      const SIDE={cma:[],bom:[],ma:[]};
+      const SIDE={cma:[],bom:[],ma:[],phl:[]};
       /* how many of the areas an agency published could be given a shape — printed, never assumed */
       const PLACED={};
       /* ⚠ (#R271) …AND WHAT THE UNPLACED ONES SAY. A warning is a safety claim; an area whose name
@@ -1802,6 +1802,37 @@ window.IntMapModules.worldPacks=function(HOST){
           UNPL[iso]=u; });
         SIDE.ma=out; }
 
+      /* ══ (#R271 追記2) THE PHILIPPINES — A NEW COUNTRY, AT ITS OWN PROVINCES ═══════════════════
+         「対応国も増やせ。」 #R268 probed PAGASA and stopped at the Tropical Cyclone Alert bulletins,
+         whose only area is 「Philippine Area of Responsibility」 — a box over the open sea. #R271
+         recorded that as a reason NOT to add the country, and then looked at the REST of the feed:
+         the General Flood Advisories carry one `<area>` PER PROVINCE with a real `<polygon>` and a
+         severity band in the event name. MEASURED through the relay, one minute: **20 provinces**,
+         Zambales / Bataan / Bulacan at Extreme, La Union / Ilocos Sur at Severe, every one with its
+         own outline. The Philippines was on GDACS only until now.
+         ⚠ 「the first area I looked at was useless」 is not 「the feed is useless」 — that is the shape
+         this round is about, one feed further out. */
+      let phlRec=null, phlBusy=false;
+      async function loadPHL(){
+        const u=relay('ph=1'); if(!u) throw new Error('no relay');
+        const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('pagasa '+r.status);
+        const j=await r.json(); if(j&&j.error) throw new Error('pagasa '+j.error);
+        const out=[]; const areas=(j&&j.areas)||[];
+        areas.forEach(a=>{ const g=a.poly?capPolygon(a.poly):null; if(!g) return;
+          const t=a.tier||1;
+          const ev=(a.events&&a.events.length)?a.events:[{event:'',severity:'',tier:t}];
+          out.push({type:'Feature',geometry:g,properties:{ iso:'PHL', col:TIERCOL[t], tier:t,
+            name:String(a.name||''), n:ev.length, at:String(j.fetchedAt||''), unit:'province',
+            items:JSON.stringify(ev.slice(0,20).map(e=>({ area:String(a.name||''), adm:String(a.name||''),
+              sub:String(e.event||''), unit:'province', tier:e.tier||t,
+              kind:String(e.event||''), status:String(e.severity||'') }))) }}); });
+        PLACED.PHL=[out.length,areas.length];
+        let u2=0; areas.forEach(a=>{ if(!(a.poly&&capPolygon(a.poly))&&(a.tier||0)>u2) u2=a.tier||0; });
+        UNPL.PHL=u2;
+        seenAt('pagasa',j&&j.fetchedAt);
+        SIDE.phl=out;
+        return j; }
+
       /* ── Europe: MeteoAlarm, summarised by the relay (the raw feed is 10 MB per country) ── */
       async function loadMA(list){
         const names=list.map(k=>MA[k]).filter(Boolean); if(!names.length) return;
@@ -1906,7 +1937,7 @@ window.IntMapModules.worldPacks=function(HOST){
          is recomputed, so the country wash and the unit fills can never both be showing. */
       let baseFeats=[];
       function publish(){
-        feats=baseFeats.concat(SIDE.cma,SIDE.bom,SIDE.ma);
+        feats=baseFeats.concat(SIDE.cma,SIDE.bom,SIDE.ma,SIDE.phl);
         drawnISO=Object.create(null);
         feats.forEach(f=>{ const g=f.geometry; if(g&&g.type!=='Point'&&f.properties&&f.properties.iso) drawnISO[f.properties.iso]=1; });
         whenDrawable(()=>{ if(ensureLayers()){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,on); } });
@@ -1914,7 +1945,7 @@ window.IntMapModules.worldPacks=function(HOST){
         if(on&&panel.shown()) overview(); }
 
       async function refresh(){ if(busy) return; busy=true;
-        ['jma','nws','eccc','meteoalarm','cma','gdacs','bom','inmet','hko','dwd','metno'].forEach(k=>{ if(FEED_STATE[k]!=='ok') FEED_STATE[k]='loading'; });
+        ['jma','nws','eccc','meteoalarm','cma','gdacs','bom','inmet','hko','dwd','metno','pagasa'].forEach(k=>{ if(FEED_STATE[k]!=='ok') FEED_STATE[k]='loading'; });
         try{ const parts=await Promise.all([
             loadJMA().then(v=>{ FEED_STATE.jma='ok'; return v; }).catch(e=>{ FEED_STATE.jma='error'; console.warn('JMA warnings',e); return []; }),
             loadNWS().then(v=>{ FEED_STATE.nws='ok'; return v; }).catch(e=>{ FEED_STATE.nws='error'; console.warn('NWS warnings',e); return []; }),
@@ -1943,6 +1974,12 @@ window.IntMapModules.worldPacks=function(HOST){
               .then(()=>{ cmaBusy=false; }); }
           loadBOM().then(v=>{ FEED_STATE.bom='ok'; bomRec=v; if(on) publish(); })
             .catch(e=>{ FEED_STATE.bom='error'; console.warn('BoM warnings',e); if(on&&panel.shown()) overview(); });
+          /* (#R271 追記2) the relay reads up to 24 CAP files for this one, so it gets the same
+             one-at-a-time guard the CMA call has (#R269) */
+          if(!phlBusy){ phlBusy=true;
+            loadPHL().then(v=>{ FEED_STATE.pagasa='ok'; phlRec=v; if(on) publish(); })
+              .catch(e=>{ FEED_STATE.pagasa='error'; console.warn('PAGASA warnings',e); if(on&&panel.shown()) overview(); })
+              .then(()=>{ phlBusy=false; }); }
           loadHKO().then(v=>{ FEED_STATE.hko='ok'; hkoRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
             .catch(e=>{ FEED_STATE.hko='error'; console.warn('HKO warnings',e); if(on&&panel.shown()) overview(); });
           /* (#R268) the European set completes itself: whatever has not been read yet, a few per tick */
@@ -2049,6 +2086,8 @@ window.IntMapModules.worldPacks=function(HOST){
             ?L('Japan Meteorological Agency, at the region the warning is issued for.','気象庁・発令単位（一次細分区域）。市区町村はタップの中にあります。','Japanische Wetterbehörde, in ihren Warnregionen','Метеоагентство Японии, в её регионах выпуска','Agencia Meteorológica de Japón, en sus regiones de emisión')
             :feed==='dwd'
             ?L('Deutscher Wetterdienst, warnings with their own district polygons.','ドイツ気象局（DWD）の発表中の警報。郡（Landkreis）単位の区域を描画し、州ごとにまとめています。','Deutscher Wetterdienst — Warnungen mit ihren Landkreis-Gebieten, nach Bundesland.','Метеослужба Германии (DWD) — предупреждения с их округами, по землям.','Servicio Meteorológico Alemán (DWD) — avisos con sus distritos, por estado.')
+            :feed==='pagasa'
+            ?L('PAGASA (Philippines), flood advisories with their published province outlines.','フィリピン気象庁（PAGASA）の洪水情報。公表された州ごとの範囲を描画しています。','PAGASA (Philippinen) — Hochwasserhinweise mit den veröffentlichten Provinzgebieten.','PAGASA (Филиппины) — паводковые сообщения с опубликованными границами провинций.','PAGASA (Filipinas) — avisos de inundación con los contornos provinciales publicados.')
             :feed==='metno'
             ?L('MET Norway, alerts with their own polygons.','ノルウェー気象研究所（MET Norway）の警報。警報ごとの対象範囲を描画しています。','MET Norway — Warnungen mit ihren eigenen Gebieten.','Метеоинститут Норвегии — предупреждения с их зонами.','MET Norway — avisos con sus propias zonas.')
             :feed==='inmet'
@@ -2272,6 +2311,9 @@ window.IntMapModules.worldPacks=function(HOST){
                 ((bomRec&&bomRec.items.length)||0)+' '+L('warnings','件','Warnungen','предупреждений','avisos'))
           +line(L('Brazil — INMET','ブラジル — INMET','Brasilien — INMET','Бразилия — INMET','Brasil — INMET'),'inmet',
                 br+' '+L('alert areas','警報区域','Warngebiete','зон','zonas'))
+          /* (#R271 追記2) a country that was on GDACS only until now */
+          +line(L('Philippines — PAGASA, by province','フィリピン — PAGASA（州単位）','Philippinen — PAGASA (Provinzen)','Филиппины — PAGASA (провинции)','Filipinas — PAGASA (provincias)'),'pagasa',
+                ((PLACED.PHL&&PLACED.PHL[0])||0)+' '+L('alert areas','警報区域','Warngebiete','зон','zonas'))
           +line(L('Hong Kong — HKO','香港 — 香港天文台','Hongkong — HKO','Гонконг — HKO','Hong Kong — Observatorio (HKO)'),'hko',
                 ((hkoRec&&hkoRec.items.length)||0)+' '+L('signals','件','Signale','сигналов','señales'))
           +line(L('Rest of the world — GDACS','その他の国 — GDACS','Weltweit — GDACS','Остальной мир — GDACS','Resto del mundo — GDACS'),'gdacs',
@@ -2297,8 +2339,8 @@ window.IntMapModules.worldPacks=function(HOST){
           +'<div style="margin-top:8px;font-size:11.5px;color:var(--text-main);">'
           +L('Tap any country for the legend its own agency uses.','国をタップすると、その国の機関の凡例が出ます。','Land antippen für die Legende der jeweiligen Behörde.','Нажмите страну — появится легенда её службы.','Toque un país para la leyenda de su agencia.')+'</div>'
           +'<div style="margin-top:6px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-          +L('Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China and Australia are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.',
-             '日本・米国・カナダ・ブラジル・ドイツ・ノルウェー、および MeteoAlarm が区域名を示すヨーロッパの地域は、各機関の発令単位で描いており、国全体を塗ることはありません——その国では発令区域の形そのものが答えだからです。中国は省、オーストラリアは州という、その機関が警報を出している区分で塗ります。香港の警報は全域を対象とするため、香港そのものが発令単位です。GDACS の塗りは別の尺度・別の色です——「そのレベルの事象がその国に影響している」という意味であって、国内のどこかの地点に警報が出ているという意味ではありません。ロシア・インド・ニュージーランド・マレーシア・インドネシア・南アフリカ・メキシコは今回実際に接続を試しましたが、ブラウザから読める公開フィードが見つからなかったため GDACS のみです——GDACS は事象の配信であって各国の警報そのものではなく、事象が無い国は「警報が無い国」ではありません。表示は参考です。実際には公的機関の発表に従ってください。',
+          +L('Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China, Australia and the Philippines are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.',
+             '日本・米国・カナダ・ブラジル・ドイツ・ノルウェー、および MeteoAlarm が区域名を示すヨーロッパの地域は、各機関の発令単位で描いており、国全体を塗ることはありません——その国では発令区域の形そのものが答えだからです。中国は省、オーストラリアは州、フィリピンは州という、その機関が警報を出している区分で塗ります。香港の警報は全域を対象とするため、香港そのものが発令単位です。GDACS の塗りは別の尺度・別の色です——「そのレベルの事象がその国に影響している」という意味であって、国内のどこかの地点に警報が出ているという意味ではありません。ロシア・インド・ニュージーランド・マレーシア・インドネシア・南アフリカ・メキシコは今回実際に接続を試しましたが、ブラウザから読める公開フィードが見つからなかったため GDACS のみです——GDACS は事象の配信であって各国の警報そのものではなく、事象が無い国は「警報が無い国」ではありません。表示は参考です。実際には公的機関の発表に従ってください。',
              'Japan, die USA, Kanada und Brasilien in den Einheiten ihrer Behörden; Europa, China, Australien und Hongkong als Liste (Land eingefärbt, Einheiten im Tap); Russland, Indien, Neuseeland, Malaysia, Indonesien, Südafrika und Mexiko haben keinen offenen, im Browser lesbaren Warndienst — nur GDACS.',
              'Япония, США, Канада и Бразилия — в единицах их служб; Европа, Китай, Австралия и Гонконг публикуют список (страна закрашена, единицы в подсказке); у России, Индии, Новой Зеландии, Малайзии, Индонезии, ЮАР и Мексики открытого читаемого браузером фида не найдено — только GDACS.',
              'Japón, EE. UU., Canadá y Brasil en sus unidades oficiales; Europa, China, Australia y Hong Kong publican una lista (país coloreado, unidades al tocar); Rusia, India, Nueva Zelanda, Malasia, Indonesia, Sudáfrica y México no tienen un feed público legible por el navegador — solo GDACS.')+'</div>'
@@ -2349,6 +2391,7 @@ window.IntMapModules.worldPacks=function(HOST){
         drawn:Object.keys(drawnISO).sort(),
         placed:Object.keys(PLACED).sort().reduce((o,k)=>{ o[k]=PLACED[k].slice(); return o; },{}),
         germany:feats.filter(f=>f.properties.iso==='DEU').length,
+        philippines:feats.filter(f=>f.properties.iso==='PHL').length,
         norway:feats.filter(f=>f.properties.iso==='NOR').length,
         china:feats.filter(f=>f.properties.iso==='CHN').length,
         australia:feats.filter(f=>f.properties.iso==='AUS').length,
