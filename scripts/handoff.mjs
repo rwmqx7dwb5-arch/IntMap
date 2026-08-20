@@ -3,22 +3,13 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import {
-  appendFile,
-  mkdir,
-  readFile,
-  rename,
-  rm,
-  stat,
-  writeFile,
-} from 'node:fs/promises';
+import { appendFile, mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TASK_RE = /<!--\s*HANDOFF:TASK\s+id="([A-Za-z0-9_-]+)"\s*-->\s*([\s\S]*?)<!--\s*HANDOFF:END\s+id="\1"\s*-->/g;
 const VALID_ID = /^[A-Za-z][A-Za-z0-9_-]*-\d{3,}$/;
 
@@ -27,41 +18,37 @@ const TEMPLATE = `# IntMap → Claude Handoff
 <!-- GPT-EDITOR-CONTRACT
 This file is the single semantic handoff from ChatGPT to Claude for IntMap implementation work.
 
-ChatGPT owns this file. When the user gives fragments, observations, screenshots, comparisons, changed ideas, or new requirements over time, continuously refactor those inputs into clear implementation tasks here rather than merely appending a chat transcript.
+ChatGPT owns this file. As the user discovers things over time, continuously refactor their fragments, observations, screenshots, comparisons, changed ideas, and new requirements into clear implementation tasks here. Do not merely append a transcript.
 
 Rules for ChatGPT:
-- Edit only this HANDOFF.md when this folder is the granted local Work scope.
-- Keep only implementation-relevant requirements. Remove duplication and reconcile later user changes with earlier text.
-- Do not mark Claude completion or user verification in this file; state is managed mechanically elsewhere.
+- When ChatGPT Work is granted this folder, edit only HANDOFF.md.
+- Keep only implementation-relevant requirements; remove duplication and reconcile later changes with earlier text.
+- Never mark Claude completion or user verification here. Status is mechanical and stored elsewhere.
 - Keep stable task IDs. Create a new ID only for a genuinely separate implementation task.
-- A task must be enclosed by the exact markers shown below so the bridge can track it.
-- Do not edit or remove the marker syntax.
-- Do not add status checkboxes; the review UI owns status.
+- Every active task must use the exact marker shape below. Do not alter the marker syntax.
+- Do not add status checkboxes.
 
-Task format:
-<!-- HANDOFF:TASK id="IM-001" -->
-## IM-001 — Short title
+Task shape (replace <TASK-ID>; this example is intentionally not parseable as an active task):
+<!-- HANDOFF:TASK id="<TASK-ID>" -->
+## <TASK-ID> — Short title
 
 ### Requirements
 - ...
 
 ### Done when
 - ...
-<!-- HANDOFF:END id="IM-001" -->
-
-The task format above is an example inside this comment, not an active task.
+<!-- HANDOFF:END id="<TASK-ID>" -->
 GPT-EDITOR-CONTRACT -->
 
 `;
 
 function canonicalRepoRoot() {
   if (process.env.INTMAP_CANONICAL_REPO) return path.resolve(process.env.INTMAP_CANONICAL_REPO);
-  const oneDrive = path.join(os.homedir(), 'OneDrive', 'IntMap');
-  if (existsSync(path.join(oneDrive, 'CLAUDE.md'))) return oneDrive;
-  return REPO_ROOT;
+  const main = path.join(os.homedir(), 'OneDrive', 'IntMap');
+  return existsSync(path.join(main, 'CLAUDE.md')) ? main : REPO_ROOT;
 }
 
-function makeContext(overrides = {}) {
+function context(overrides = {}) {
   const repoRoot = overrides.repoRoot || canonicalRepoRoot();
   const handoffDir = overrides.handoffDir || process.env.INTMAP_HANDOFF_DIR || path.join(repoRoot, 'GPT-HANDOFF');
   const stateDir = overrides.stateDir || process.env.INTMAP_HANDOFF_STATE_DIR || path.join(os.homedir(), '.intmap-handoff');
@@ -75,45 +62,28 @@ function makeContext(overrides = {}) {
   };
 }
 
-async function fileExists(file) {
-  try {
-    await stat(file);
-    return true;
-  } catch {
-    return false;
-  }
+async function exists(file) {
+  try { await stat(file); return true; } catch { return false; }
 }
 
-async function writeAtomic(file, content) {
+async function atomicWrite(file, text) {
   await mkdir(path.dirname(file), { recursive: true });
   const temp = `${file}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(temp, content, 'utf8');
-  try {
-    await rename(temp, file);
-  } catch (error) {
-    await rm(temp, { force: true });
-    throw error;
-  }
+  await writeFile(temp, text, 'utf8');
+  try { await rename(temp, file); }
+  catch (error) { await rm(temp, { force: true }); throw error; }
 }
 
-async function ensureInitialized(ctx) {
+async function init(ctx) {
   await mkdir(ctx.handoffDir, { recursive: true });
   await mkdir(ctx.stateDir, { recursive: true });
-  if (!(await fileExists(ctx.handoffFile))) await writeAtomic(ctx.handoffFile, TEMPLATE);
-  if (!(await fileExists(ctx.stateFile))) {
-    await writeAtomic(ctx.stateFile, `${JSON.stringify({ version: 1, tasks: {} }, null, 2)}\n`);
-  }
+  if (!(await exists(ctx.handoffFile))) await atomicWrite(ctx.handoffFile, TEMPLATE);
+  if (!(await exists(ctx.stateFile))) await atomicWrite(ctx.stateFile, `${JSON.stringify({ version: 1, tasks: {} }, null, 2)}\n`);
 }
 
-function normalizedForHash(text) {
-  return text
-    .replace(/\r\n/g, '\n')
-    .replace(/[ \t]+$/gm, '')
-    .trim();
-}
-
-function hashTask(raw) {
-  return createHash('sha256').update(normalizedForHash(raw), 'utf8').digest('hex');
+function taskHash(raw) {
+  const normalized = raw.replace(/\r\n/g, '\n').replace(/[ \t]+$/gm, '').trim();
+  return createHash('sha256').update(normalized, 'utf8').digest('hex');
 }
 
 function parseTasks(document) {
@@ -123,18 +93,16 @@ function parseTasks(document) {
   let match;
   while ((match = TASK_RE.exec(document))) {
     const id = match[1];
-    if (!VALID_ID.test(id)) throw new Error(`Invalid handoff task id: ${id}`);
-    if (seen.has(id)) throw new Error(`Duplicate handoff task id: ${id}`);
+    if (!VALID_ID.test(id)) throw new Error(`Invalid task id: ${id}`);
+    if (seen.has(id)) throw new Error(`Duplicate task id: ${id}`);
     seen.add(id);
     const raw = match[0];
     const body = match[2].trim();
-    const heading = body.match(/^##\s+(.+)$/m)?.[1]?.trim() || id;
     tasks.push({
       id,
-      title: heading,
-      body,
+      title: body.match(/^##\s+(.+)$/m)?.[1]?.trim() || id,
       raw,
-      hash: hashTask(raw),
+      hash: taskHash(raw),
       start: match.index,
       end: match.index + raw.length,
     });
@@ -143,287 +111,203 @@ function parseTasks(document) {
 }
 
 async function readState(ctx) {
-  await ensureInitialized(ctx);
+  await init(ctx);
   try {
-    const parsed = JSON.parse(await readFile(ctx.stateFile, 'utf8'));
-    if (!parsed || parsed.version !== 1 || typeof parsed.tasks !== 'object' || !parsed.tasks) {
-      throw new Error('unsupported schema');
-    }
-    return parsed;
+    const state = JSON.parse(await readFile(ctx.stateFile, 'utf8'));
+    if (state?.version !== 1 || !state.tasks || typeof state.tasks !== 'object') throw new Error('unsupported schema');
+    return state;
   } catch (error) {
-    throw new Error(`Cannot read handoff state (${ctx.stateFile}): ${error.message}`);
+    throw new Error(`Cannot read state (${ctx.stateFile}): ${error.message}`);
   }
 }
 
 async function saveState(ctx, state) {
-  await writeAtomic(ctx.stateFile, `${JSON.stringify(state, null, 2)}\n`);
+  await atomicWrite(ctx.stateFile, `${JSON.stringify(state, null, 2)}\n`);
+}
+
+function newStateEntry() {
+  return {
+    claudeComplete: false,
+    userVerified: false,
+    completedHash: null,
+    claudeCompletedAt: null,
+    userVerifiedAt: null,
+    reworkRequestedAt: null,
+  };
 }
 
 function syncState(state, tasks) {
-  const taskIds = new Set(tasks.map((task) => task.id));
+  const ids = new Set(tasks.map((task) => task.id));
   let changed = false;
-
   for (const task of tasks) {
-    if (!state.tasks[task.id]) {
-      state.tasks[task.id] = {
-        claudeComplete: false,
-        userVerified: false,
-        completedHash: null,
-        claudeCompletedAt: null,
-        userVerifiedAt: null,
-        reworkRequestedAt: null,
-      };
-      changed = true;
-    }
+    if (!state.tasks[task.id]) { state.tasks[task.id] = newStateEntry(); changed = true; }
     const entry = state.tasks[task.id];
     if (entry.claudeComplete && entry.completedHash !== task.hash) {
-      entry.claudeComplete = false;
-      entry.userVerified = false;
-      entry.completedHash = null;
-      entry.claudeCompletedAt = null;
-      entry.userVerifiedAt = null;
+      state.tasks[task.id] = newStateEntry();
       changed = true;
     }
   }
-
   for (const id of Object.keys(state.tasks)) {
-    if (!taskIds.has(id)) {
-      delete state.tasks[id];
-      changed = true;
-    }
+    if (!ids.has(id)) { delete state.tasks[id]; changed = true; }
   }
   return changed;
 }
 
-async function readSnapshot(ctx, { saveSyncedState = true } = {}) {
-  await ensureInitialized(ctx);
+async function snapshot(ctx) {
+  await init(ctx);
   const document = await readFile(ctx.handoffFile, 'utf8');
   const tasks = parseTasks(document);
   const state = await readState(ctx);
-  const changed = syncState(state, tasks);
-  if (changed && saveSyncedState) await saveState(ctx, state);
+  if (syncState(state, tasks)) await saveState(ctx, state);
   return { document, tasks, state };
 }
 
-function taskView(task, state) {
-  const entry = state.tasks[task.id];
-  const specCurrent = Boolean(entry?.claudeComplete && entry.completedHash === task.hash);
+function view(task, state) {
+  const entry = state.tasks[task.id] || newStateEntry();
+  const current = entry.claudeComplete && entry.completedHash === task.hash;
   return {
     id: task.id,
     title: task.title,
-    claudeComplete: Boolean(entry?.claudeComplete && specCurrent),
-    userVerified: Boolean(entry?.userVerified && specCurrent),
-    specCurrent,
-    claudeCompletedAt: entry?.claudeCompletedAt || null,
-    userVerifiedAt: entry?.userVerifiedAt || null,
+    claudeComplete: Boolean(current),
+    userVerified: Boolean(current && entry.userVerified),
   };
 }
 
-async function appendArchive(ctx, tasks) {
-  if (!tasks.length) return;
-  await mkdir(ctx.stateDir, { recursive: true });
-  const stamp = new Date().toISOString();
-  let text = `\n\n# Archived ${stamp}\n`;
-  for (const task of tasks) text += `\n${task.raw.trim()}\n`;
-  await appendFile(ctx.archiveFile, text, 'utf8');
-}
-
-async function prepare(ctx, { quiet = false } = {}) {
-  const snapshot = await readSnapshot(ctx);
-  const done = snapshot.tasks.filter((task) => {
-    const entry = snapshot.state.tasks[task.id];
+async function prepare(ctx, quiet = false) {
+  const before = await snapshot(ctx);
+  const completed = before.tasks.filter((task) => {
+    const entry = before.state.tasks[task.id];
     return entry?.claudeComplete && entry?.userVerified && entry.completedHash === task.hash;
   });
 
-  let document = snapshot.document;
-  let state = snapshot.state;
-
-  if (done.length) {
-    const liveBeforeWrite = await readFile(ctx.handoffFile, 'utf8');
-    if (liveBeforeWrite !== snapshot.document) {
-      throw new Error('HANDOFF.md changed while preparing. Nothing was removed; rerun prepare.');
+  if (completed.length) {
+    if (await readFile(ctx.handoffFile, 'utf8') !== before.document) {
+      throw new Error('HANDOFF.md changed while prepare was running; nothing was removed. Run prepare again.');
     }
-
-    await appendArchive(ctx, done);
-    const ranges = done
-      .map((task) => ({ start: task.start, end: task.end }))
-      .sort((a, b) => b.start - a.start);
-    for (const range of ranges) document = `${document.slice(0, range.start)}${document.slice(range.end)}`;
+    const stamp = new Date().toISOString();
+    await appendFile(ctx.archiveFile, `\n\n# Archived ${stamp}\n${completed.map((task) => `\n${task.raw.trim()}\n`).join('')}`, 'utf8');
+    let document = before.document;
+    for (const task of [...completed].sort((a, b) => b.start - a.start)) {
+      document = document.slice(0, task.start) + document.slice(task.end);
+      delete before.state.tasks[task.id];
+    }
     document = document.replace(/\n{4,}/g, '\n\n\n').trimEnd() + '\n';
-    await writeAtomic(ctx.handoffFile, document);
-    for (const task of done) delete state.tasks[task.id];
-    await saveState(ctx, state);
+    await atomicWrite(ctx.handoffFile, document);
+    await saveState(ctx, before.state);
   }
 
-  const current = await readSnapshot(ctx);
+  const current = await snapshot(ctx);
   if (!quiet) {
     console.log(`Handoff: ${current.tasks.length} active task(s)`);
     console.log(`Source: ${ctx.handoffFile}`);
     for (const task of current.tasks) {
-      const view = taskView(task, current.state);
-      const status = view.claudeComplete ? (view.userVerified ? 'verified' : 'awaiting user verification') : 'ready for Claude';
-      console.log(`- ${task.id}: ${task.title} [${status}]`);
+      const status = view(task, current.state);
+      console.log(`- ${task.id}: ${status.claudeComplete ? 'Claude done / user review pending' : 'ready for Claude'} — ${task.title}`);
     }
-    if (done.length) console.log(`Archived and removed ${done.length} fully verified task(s).`);
+    if (completed.length) console.log(`Archived and removed ${completed.length} fully verified task(s).`);
   }
   return current;
 }
 
-async function markClaudeDone(ctx, ids) {
+async function claudeDone(ctx, ids) {
   if (!ids.length) throw new Error('Usage: node scripts/handoff.mjs claude-done <TASK-ID> [...]');
-  const snapshot = await readSnapshot(ctx);
-  const byId = new Map(snapshot.tasks.map((task) => [task.id, task]));
+  const data = await snapshot(ctx);
+  const byId = new Map(data.tasks.map((task) => [task.id, task]));
   const now = new Date().toISOString();
   for (const id of ids) {
     const task = byId.get(id);
-    if (!task) throw new Error(`Active handoff task not found: ${id}`);
-    const entry = snapshot.state.tasks[id];
-    entry.claudeComplete = true;
-    entry.userVerified = false;
-    entry.completedHash = task.hash;
-    entry.claudeCompletedAt = now;
-    entry.userVerifiedAt = null;
-    entry.reworkRequestedAt = null;
+    if (!task) throw new Error(`Active task not found: ${id}`);
+    data.state.tasks[id] = {
+      claudeComplete: true,
+      userVerified: false,
+      completedHash: task.hash,
+      claudeCompletedAt: now,
+      userVerifiedAt: null,
+      reworkRequestedAt: null,
+    };
   }
-  await saveState(ctx, snapshot.state);
+  await saveState(ctx, data.state);
   console.log(`Claude completion recorded: ${ids.join(', ')}`);
 }
 
-async function setUserReview(ctx, id, action) {
-  const snapshot = await readSnapshot(ctx);
-  const task = snapshot.tasks.find((candidate) => candidate.id === id);
-  if (!task) throw new Error(`Active handoff task not found: ${id}`);
-  const entry = snapshot.state.tasks[id];
+async function userReview(ctx, id, action) {
+  const data = await snapshot(ctx);
+  const task = data.tasks.find((item) => item.id === id);
+  if (!task) throw new Error(`Active task not found: ${id}`);
+  const entry = data.state.tasks[id];
   const now = new Date().toISOString();
-
   if (action === 'approve') {
-    if (!entry.claudeComplete || entry.completedHash !== task.hash) {
-      throw new Error('Claude has not completed the current version of this task yet.');
-    }
+    if (!entry.claudeComplete || entry.completedHash !== task.hash) throw new Error('Claude has not completed the current version yet.');
     entry.userVerified = true;
     entry.userVerifiedAt = now;
     entry.reworkRequestedAt = null;
   } else if (action === 'rework') {
-    entry.claudeComplete = false;
-    entry.userVerified = false;
-    entry.completedHash = null;
-    entry.claudeCompletedAt = null;
-    entry.userVerifiedAt = null;
-    entry.reworkRequestedAt = now;
+    data.state.tasks[id] = { ...newStateEntry(), reworkRequestedAt: now };
   } else {
-    throw new Error(`Unknown review action: ${action}`);
+    throw new Error('Unknown review action');
   }
-
-  await saveState(ctx, snapshot.state);
+  await saveState(ctx, data.state);
 }
 
-function sendJson(res, status, payload) {
-  const body = JSON.stringify(payload);
-  res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Content-Length': Buffer.byteLength(body),
-    'Cache-Control': 'no-store',
-  });
+function json(res, status, value) {
+  const body = JSON.stringify(value);
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(body), 'Cache-Control': 'no-store' });
   res.end(body);
 }
 
-function uiHtml() {
-  return `<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>IntMap Handoff Review</title>
-<style>
-:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark;background:#f5f5f7;color:#1d1d1f}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#f5f5f7;color:#1d1d1f}
-main{width:min(760px,100%);margin:0 auto;padding:32px 18px 80px}header{padding:8px 4px 20px}h1{font-size:30px;line-height:1.15;margin:0 0 8px;font-weight:750;letter-spacing:-.02em}header p{margin:0;color:#6e6e73;font-size:15px}.grid{display:grid;gap:14px}.card{background:rgba(255,255,255,.92);border:1px solid rgba(0,0,0,.06);border-radius:24px;padding:20px;box-shadow:0 10px 35px rgba(0,0,0,.06)}.task-title{font-size:18px;font-weight:700;line-height:1.35;margin:0}.id{font-size:12px;color:#86868b;margin-bottom:6px;font-variant-numeric:tabular-nums}.status{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 18px}.pill{border-radius:999px;padding:7px 10px;font-size:12px;font-weight:650;background:#ececf0;color:#515154}.pill.done{background:#e6f6ea;color:#19713a}.pill.wait{background:#fff3d6;color:#8a5a00}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}button{appearance:none;border:0;border-radius:15px;padding:14px 12px;font:inherit;font-weight:700;cursor:pointer;transition:transform .08s ease,opacity .2s ease;background:#007aff;color:white}button:active{transform:scale(.985)}button.secondary{background:#ececf0;color:#1d1d1f}button:disabled{opacity:.38;cursor:not-allowed}.empty{padding:44px 20px;text-align:center;color:#6e6e73}.error{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1d1d1f;color:white;border-radius:14px;padding:11px 14px;max-width:calc(100% - 32px);font-size:13px;display:none}
-@media(prefers-color-scheme:dark){:root,body{background:#000;color:#f5f5f7}.card{background:#1c1c1e;border-color:#2c2c2e;box-shadow:none}.id,header p,.empty{color:#98989d}.pill{background:#2c2c2e;color:#d1d1d6}.pill.done{background:#153c22;color:#78d993}.pill.wait{background:#493714;color:#ffd36a}button.secondary{background:#2c2c2e;color:#f5f5f7}}
-@media(max-width:520px){main{padding-top:20px}.actions{grid-template-columns:1fr}.card{border-radius:20px}}
-</style>
-</head>
-<body>
-<main><header><h1>IntMap Handoff</h1><p>確認したら、押すだけです。</p></header><section id="tasks" class="grid"></section></main><div id="error" class="error"></div>
-<script>
-const root=document.getElementById('tasks');const err=document.getElementById('error');
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
-async function api(url,opts){const r=await fetch(url,{cache:'no-store',...opts});const j=await r.json();if(!r.ok)throw new Error(j.error||'Request failed');return j}
-function showError(message){err.textContent=message;err.style.display='block';clearTimeout(showError.t);showError.t=setTimeout(()=>err.style.display='none',3500)}
-async function review(id,action){try{await api('/api/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,action})});await refresh()}catch(e){showError(e.message)}}
-async function refresh(){try{const data=await api('/api/tasks');if(!data.tasks.length){root.innerHTML='<div class="card empty">確認待ちはありません。</div>';return}root.innerHTML=data.tasks.map(t=>{const status=t.claudeComplete?(t.userVerified?'あなたの確認済み':'Claude 実装済み'):'Claude 実装待ち';const cls=t.userVerified||t.claudeComplete?'done':'wait';return '<article class="card"><div class="id">'+esc(t.id)+'</div><h2 class="task-title">'+esc(t.title)+'</h2><div class="status"><span class="pill '+cls+'">'+esc(status)+'</span></div><div class="actions"><button '+(!t.claudeComplete||t.userVerified?'disabled':'')+' onclick="review(\''+esc(t.id)+'\',\'approve\')">✓ 確認OK</button><button class="secondary" onclick="review(\''+esc(t.id)+'\',\'rework\')">↩ 修正必要</button></div></article>'}).join('')}catch(e){showError(e.message)}}
-refresh();setInterval(refresh,2000);
-</script>
-</body></html>`;
+function page(token) {
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>IntMap Handoff</title><style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark}*{box-sizing:border-box}body{margin:0;background:#f5f5f7;color:#1d1d1f}main{max-width:760px;margin:auto;padding:30px 18px 70px}h1{font-size:30px;margin:0 0 6px}header p{margin:0 0 22px;color:#6e6e73}.grid{display:grid;gap:14px}.card{background:#fff;border-radius:24px;padding:20px;box-shadow:0 8px 28px #0000000d}.id{font-size:12px;color:#86868b}.title{font-size:18px;font-weight:700;margin:5px 0 15px}.pill{display:inline-block;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:650;background:#fff3d6;color:#8a5a00;margin-bottom:18px}.pill.done{background:#e6f6ea;color:#19713a}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}button{border:0;border-radius:15px;padding:14px;font:inherit;font-weight:700;background:#007aff;color:#fff;cursor:pointer}button.secondary{background:#ececf0;color:#1d1d1f}button:disabled{opacity:.35;cursor:not-allowed}.empty{text-align:center;color:#6e6e73;padding:45px}.error{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:none;background:#1d1d1f;color:#fff;padding:10px 14px;border-radius:14px;max-width:calc(100% - 30px)}
+@media(prefers-color-scheme:dark){body{background:#000;color:#f5f5f7}.card{background:#1c1c1e}.id,header p,.empty{color:#98989d}.pill{background:#493714;color:#ffd36a}.pill.done{background:#153c22;color:#78d993}button.secondary{background:#2c2c2e;color:#f5f5f7}}@media(max-width:520px){.actions{grid-template-columns:1fr}}
+</style></head><body><main><header><h1>IntMap Handoff</h1><p>確認したら、押すだけです。</p></header><section id="tasks" class="grid"></section></main><div id="error" class="error"></div><script>
+const TOKEN=${JSON.stringify(token)},root=document.getElementById('tasks'),err=document.getElementById('error');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+async function api(url,options={}){options.headers={...(options.headers||{}),'X-Handoff-Token':TOKEN};const r=await fetch(url,{cache:'no-store',...options}),j=await r.json();if(!r.ok)throw new Error(j.error||'Request failed');return j}
+function fail(m){err.textContent=m;err.style.display='block';clearTimeout(fail.t);fail.t=setTimeout(()=>err.style.display='none',3000)}
+async function review(id,action){try{await api('/api/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,action})});refresh()}catch(e){fail(e.message)}}
+async function refresh(){try{const d=await api('/api/tasks');root.innerHTML=d.tasks.length?d.tasks.map(t=>'<article class="card"><div class="id">'+esc(t.id)+'</div><div class="title">'+esc(t.title)+'</div><span class="pill '+(t.claudeComplete?'done':'')+'">'+(t.userVerified?'あなたの確認済み':t.claudeComplete?'Claude 実装済み':'Claude 実装待ち')+'</span><div class="actions"><button '+(!t.claudeComplete||t.userVerified?'disabled':'')+' onclick="review(\''+t.id+'\',\'approve\')">✓ 確認OK</button><button class="secondary" onclick="review(\''+t.id+'\',\'rework\')">↩ 修正必要</button></div></article>').join(''):'<div class="card empty">確認待ちはありません。</div>'}catch(e){fail(e.message)}}refresh();setInterval(refresh,2000);
+</script></body></html>`;
 }
 
-async function readJsonBody(req) {
+async function requestBody(req) {
   let text = '';
-  for await (const chunk of req) {
-    text += chunk;
-    if (text.length > 16_384) throw new Error('Request body too large');
-  }
+  for await (const chunk of req) { text += chunk; if (text.length > 16_384) throw new Error('Request too large'); }
   return text ? JSON.parse(text) : {};
 }
 
 function openBrowser(url) {
   try {
-    let command;
-    let args;
-    if (process.platform === 'win32') {
-      command = 'cmd';
-      args = ['/c', 'start', '', url];
-    } else if (process.platform === 'darwin') {
-      command = 'open';
-      args = [url];
-    } else {
-      command = 'xdg-open';
-      args = [url];
-    }
-    const child = spawn(command, args, { detached: true, stdio: 'ignore', windowsHide: true });
-    child.unref();
-  } catch {
-    // The URL is printed even if automatic browser opening is unavailable.
-  }
+    const [cmd, args] = process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]] : process.platform === 'darwin' ? ['open', [url]] : ['xdg-open', [url]];
+    spawn(cmd, args, { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+  } catch { /* URL is printed as a fallback. */ }
 }
 
-async function startUi(ctx) {
-  await prepare(ctx, { quiet: true });
+async function ui(ctx) {
+  await prepare(ctx, true);
+  const token = randomUUID();
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url || '/', 'http://127.0.0.1');
       if (req.method === 'GET' && url.pathname === '/') {
-        const html = uiHtml();
-        res.writeHead(200, {
-          'Content-Type': 'text/html; charset=utf-8',
-          'Content-Length': Buffer.byteLength(html),
-          'Cache-Control': 'no-store',
-          'Content-Security-Policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'",
-        });
-        res.end(html);
-        return;
+        const html = page(token);
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': Buffer.byteLength(html), 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'" });
+        return res.end(html);
       }
+      if (req.headers['x-handoff-token'] !== token) return json(res, 403, { error: 'Forbidden' });
       if (req.method === 'GET' && url.pathname === '/api/tasks') {
-        const snapshot = await readSnapshot(ctx);
-        sendJson(res, 200, { tasks: snapshot.tasks.map((task) => taskView(task, snapshot.state)) });
-        return;
+        const data = await snapshot(ctx);
+        return json(res, 200, { tasks: data.tasks.map((task) => view(task, data.state)) });
       }
       if (req.method === 'POST' && url.pathname === '/api/review') {
-        const { id, action } = await readJsonBody(req);
-        if (typeof id !== 'string' || typeof action !== 'string') throw new Error('Invalid review request');
-        await setUserReview(ctx, id, action);
-        sendJson(res, 200, { ok: true });
-        return;
+        const { id, action } = await requestBody(req);
+        if (typeof id !== 'string' || typeof action !== 'string') throw new Error('Invalid request');
+        await userReview(ctx, id, action);
+        return json(res, 200, { ok: true });
       }
-      sendJson(res, 404, { error: 'Not found' });
-    } catch (error) {
-      sendJson(res, 400, { error: error.message });
-    }
+      return json(res, 404, { error: 'Not found' });
+    } catch (error) { return json(res, 400, { error: error.message }); }
   });
-
-  await new Promise((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', resolve);
-  });
+  await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   const address = server.address();
   const url = `http://127.0.0.1:${address.port}/`;
   console.log(`IntMap handoff review: ${url}`);
@@ -431,82 +315,56 @@ async function startUi(ctx) {
   openBrowser(url);
 }
 
-async function printStatus(ctx) {
-  const snapshot = await readSnapshot(ctx);
-  console.log(`Handoff: ${snapshot.tasks.length} active task(s)`);
+async function status(ctx) {
+  const data = await snapshot(ctx);
+  console.log(`Handoff: ${data.tasks.length} active task(s)`);
   console.log(`Source: ${ctx.handoffFile}`);
   console.log(`State: ${ctx.stateFile}`);
-  for (const task of snapshot.tasks) {
-    const view = taskView(task, snapshot.state);
-    console.log(`- ${task.id}: Claude=${view.claudeComplete ? 'done' : 'pending'}, User=${view.userVerified ? 'verified' : 'pending'} — ${task.title}`);
+  for (const task of data.tasks) {
+    const item = view(task, data.state);
+    console.log(`- ${task.id}: Claude=${item.claudeComplete ? 'done' : 'pending'}, User=${item.userVerified ? 'verified' : 'pending'} — ${task.title}`);
   }
 }
 
 async function selfTest() {
-  const base = path.join(os.tmpdir(), `intmap-handoff-test-${process.pid}-${randomUUID()}`);
-  const ctx = makeContext({
-    repoRoot: base,
-    handoffDir: path.join(base, 'GPT-HANDOFF'),
-    stateDir: path.join(base, 'state'),
-  });
+  const root = path.join(os.tmpdir(), `intmap-handoff-${process.pid}-${randomUUID()}`);
+  const ctx = context({ repoRoot: root, handoffDir: path.join(root, 'GPT-HANDOFF'), stateDir: path.join(root, 'state') });
+  const task = `<!-- HANDOFF:TASK id="IM-001" -->\n## IM-001 — Test\n\n### Requirements\n- A\n\n### Done when\n- B\n<!-- HANDOFF:END id="IM-001" -->\n`;
   try {
-    await ensureInitialized(ctx);
-    const task = `<!-- HANDOFF:TASK id="IM-001" -->\n## IM-001 — Test task\n\n### Requirements\n- A\n\n### Done when\n- B\n<!-- HANDOFF:END id="IM-001" -->\n`;
-    await writeAtomic(ctx.handoffFile, `${TEMPLATE}${task}`);
-    let snapshot = await readSnapshot(ctx);
-    if (snapshot.tasks.length !== 1) throw new Error('parse failed');
-    await markClaudeDone(ctx, ['IM-001']);
-    snapshot = await readSnapshot(ctx);
-    if (!taskView(snapshot.tasks[0], snapshot.state).claudeComplete) throw new Error('Claude completion failed');
-    await setUserReview(ctx, 'IM-001', 'approve');
-    await prepare(ctx, { quiet: true });
-    snapshot = await readSnapshot(ctx);
-    if (snapshot.tasks.length !== 0) throw new Error('verified task was not compacted');
-    if (!(await fileExists(ctx.archiveFile))) throw new Error('archive was not created');
+    await init(ctx);
+    await atomicWrite(ctx.handoffFile, TEMPLATE + task);
+    if ((await snapshot(ctx)).tasks.length !== 1) throw new Error('parse failed');
+    await claudeDone(ctx, ['IM-001']);
+    let data = await snapshot(ctx);
+    if (!view(data.tasks[0], data.state).claudeComplete) throw new Error('completion failed');
+    await userReview(ctx, 'IM-001', 'approve');
+    await prepare(ctx, true);
+    if ((await snapshot(ctx)).tasks.length !== 0) throw new Error('compaction failed');
+    if (!(await exists(ctx.archiveFile))) throw new Error('archive missing');
 
-    await writeAtomic(ctx.handoffFile, `${TEMPLATE}${task}`);
-    await markClaudeDone(ctx, ['IM-001']);
-    const changedTask = task.replace('- A', '- A changed');
-    await writeAtomic(ctx.handoffFile, `${TEMPLATE}${changedTask}`);
-    snapshot = await readSnapshot(ctx);
-    if (taskView(snapshot.tasks[0], snapshot.state).claudeComplete) throw new Error('spec change did not invalidate completion');
+    await atomicWrite(ctx.handoffFile, TEMPLATE + task);
+    await claudeDone(ctx, ['IM-001']);
+    await atomicWrite(ctx.handoffFile, TEMPLATE + task.replace('- A', '- A changed'));
+    data = await snapshot(ctx);
+    if (view(data.tasks[0], data.state).claudeComplete) throw new Error('changed spec did not invalidate completion');
     console.log('handoff self-test: PASS');
-  } finally {
-    await rm(base, { recursive: true, force: true });
-  }
+  } finally { await rm(root, { recursive: true, force: true }); }
 }
 
 async function main() {
-  const ctx = makeContext();
+  const ctx = context();
   const [command = 'status', ...args] = process.argv.slice(2);
-  switch (command) {
-    case 'init':
-      await ensureInitialized(ctx);
-      console.log(`GPT folder: ${ctx.handoffDir}`);
-      console.log(`Edit target: ${ctx.handoffFile}`);
-      console.log('Open only the GPT folder in ChatGPT Work. It contains the single GPT-owned handoff file.');
-      break;
-    case 'prepare':
-      await prepare(ctx);
-      break;
-    case 'status':
-      await printStatus(ctx);
-      break;
-    case 'claude-done':
-      await markClaudeDone(ctx, args);
-      break;
-    case 'ui':
-      await startUi(ctx);
-      break;
-    case 'self-test':
-      await selfTest();
-      break;
-    default:
-      throw new Error(`Unknown command: ${command}`);
-  }
+  if (command === 'init') {
+    await init(ctx);
+    console.log(`GPT folder: ${ctx.handoffDir}`);
+    console.log(`Edit target: ${ctx.handoffFile}`);
+    console.log('Open only that GPT folder in ChatGPT Work.');
+  } else if (command === 'prepare') await prepare(ctx);
+  else if (command === 'status') await status(ctx);
+  else if (command === 'claude-done') await claudeDone(ctx, args);
+  else if (command === 'ui') await ui(ctx);
+  else if (command === 'self-test') await selfTest();
+  else throw new Error(`Unknown command: ${command}`);
 }
 
-main().catch((error) => {
-  console.error(`handoff: ${error.message}`);
-  process.exitCode = 1;
-});
+main().catch((error) => { console.error(`handoff: ${error.message}`); process.exitCode = 1; });
