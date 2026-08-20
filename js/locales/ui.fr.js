@@ -179,13 +179,14 @@ window.IntMapLang.define('fr', { ui: {
       lyrGrpSociety:"Société et éducation",   /* (#R261) */
       lyrGrpTransport:"Transports et mobilité",   /* (#R261) */
       lyrGrpAgri:"Agriculture et alimentation",   /* (#R261) */
-      lyrGrpHazard:"Risques et ciel nocturne",
+      lyrGrpHazard:"Risques et urgences",
       lyrGrpIndic:"Indicateurs et surcouches",
       lyrGrpMaritime:"Océans et maritime",
       lyrGrpOrbit:"Espace et orbite",
       lyrGrpOthers:"Bêta",
       lyrGrpOthersReal:"Autres",
       lyrGrpTerrain:"Relief et altitude",
+      lyrGrpNature:"Nature et couverture du sol",
       lyrGrpWeather:"Météo et environnement",
       lyrHDI:"IDH (2022)",
       lyrHillshade:"Relief ombré",
@@ -1837,6 +1838,15 @@ window.IntMapLang.define('fr', { ui: {
   "Note: a small share of the tiniest streams was omitted at the display cap (all major tributaries are drawn)": "Remarque : une petite part des plus petits cours d'eau a été omise à la limite d'affichage (tous les affluents principaux sont tracés)",
   "Nothing found — neither OpenStreetMap nor Wikidata has such facilities recorded here and the AI knows none it is sure of": "Rien trouvé — ni OpenStreetMap ni Wikidata ne recensent de telles installations ici, et l'IA n'en connaît aucune avec certitude",
   "Nothing in force right now.": "Rien en vigueur pour l'instant.",
+  "Areas the agency published but this map could not place: ": "Zones publiées par le service mais que cette carte n’a pas pu localiser : ",   /* world-packs.js (#R271) */
+  "Deutscher Wetterdienst, warnings with their own district polygons.": "Deutscher Wetterdienst — avertissements avec leurs propres polygones d’arrondissement, groupés par Land.",   /* world-packs.js (#R271) */
+  "Europe — MeteoAlarm (35 services)": "Europe — MeteoAlarm (35 services)",   /* world-packs.js (#R271) */
+  "Extending the model to here…": "Extension du modèle jusqu’ici…",   /* world-packs.js (#R271) */
+  "Germany — DWD, by district": "Allemagne — DWD, par arrondissement",   /* world-packs.js (#R271) */
+  "Japan Meteorological Agency, at the region the warning is issued for.": "Agence météorologique du Japon, à la région pour laquelle l’alerte est émise.",   /* world-packs.js (#R271) */
+  "Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China and Australia are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "Le Japon, les États-Unis, le Canada, le Brésil, l’Allemagne, la Norvège et chaque région européenne nommée par MeteoAlarm sont dessinés à l’unité pour laquelle leur service émet, et ne sont jamais colorés en entier — la forme de la zone est la réponse. La Chine est dessinée par province et l’Australie par État, les divisions dans lesquelles leur service publie ses avertissements ; les avertissements de Hong Kong couvrent tout le territoire, donc le territoire EST l’unité. Un aplat GDACS est une autre échelle, dans d’autres couleurs : il indique qu’un événement de ce niveau touche le pays, pas qu’un avertissement est en vigueur à un endroit donné. La Russie, l’Inde, la Nouvelle-Zélande, la Malaisie, l’Indonésie, l’Afrique du Sud et le Mexique ont été testés et aucun n’a de flux public lisible par un navigateur ; ils n’ont que GDACS — un flux d’événements, pas un service national d’alerte, et un pays sans événement GDACS n’est pas un pays sans avertissements. Affichage à titre indicatif : suivez les autorités officielles.",   /* world-packs.js (#R271) */
+  "MET Norway, alerts with their own polygons.": "MET Norway — alertes avec leurs propres polygones.",   /* world-packs.js (#R271) */
+  "Norway — MET Norway": "Norvège — MET Norway",   /* world-packs.js (#R271) */
   "Nothing is drawn — this is a failed query, not an industry with no companies.": "Rien n'est dessiné — il s'agit d'une requête ayant échoué, pas d'un secteur sans entreprises.",
   "Nothing is highlighted yet — name the countries or regions": "Rien n'est encore mis en évidence — nommez les pays ou les régions",
   "Nov": "nov.",

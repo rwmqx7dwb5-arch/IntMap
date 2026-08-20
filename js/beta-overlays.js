@@ -324,7 +324,16 @@ window.IntMapModules.betaOverlays=function(HOST){
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
-    function relabel(){ Object.keys(BLBL).forEach(k=>{ const e=document.getElementById('beta-dl-'+k+'-lbl'); if(e) e.textContent=jp()?BLBL[k][0]:BLBL[k][1]; }); }
+    /* == (#R271) THE THREE ROWS THAT WERE JAPANESE IN EVERY OTHER LANGUAGE ======================
+       #R270 reported 「3D建物（都市）」「火山（GVP完新世・全1,215座）」「ウクライナ前線（リアルタイム）」
+       as still Japanese in the English UI and left it as out of scope. The cause is one line, and it
+       is the ninth translation shape #R242 named: a two-branch `jp() ? … : …` over a table whose
+       slot 0 is ENGLISH and slot 1 is Japanese. The branches were the wrong way round, so a Japanese
+       reader got English and EVERY OTHER LANGUAGE got Japanese — measured on the built page, the
+       English layer panel printed all three Japanese names. `buildUI` above is correct (`L.arr`), so
+       the row was right until the first language event and wrong from then on.
+       WARNING a two-branch ternary cannot serve nine languages whichever way round it is. */
+    function relabel(){ Object.keys(BLBL).forEach(k=>{ const e=document.getElementById('beta-dl-'+k+'-lbl'); if(e) e.textContent=L.arr(BLBL[k]); }); }
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));
     /* self-heal across basemap swaps */
     GE().events.on('styledata',()=>{ if(state.ukr||state.bldg||state.hist||state.volc){ setTimeout(()=>{

@@ -847,10 +847,48 @@ window.IntMapModules.religionLang=function(HOST){
       other:LA('Other','その他','Sonstige','Прочие','Otras')};
 
     /* the legend palette for languages: ordered by how many countries a language leads, so the
-       common ones get the distinct hues and the long tail cycles */
+       common ones get the hand-picked hues */
     const LPAL=['#4e79a7','#f28e2b','#59a14f','#e15759','#76b7b2','#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac',
       '#86bcb6','#d37295','#a0cbe8','#8cd17d','#e377c2','#79706e','#5254a3','#e7ba52','#31a354','#843c39',
       '#7b4173','#637939','#8c6d31','#ad494a','#a55194','#6b6ecf','#b5cf6b','#e7969c','#9c9ede','#cedb9c'];
+    /* ══ ⚠⚠⚠ (#R271) A KEY WHOSE SWATCHES ARE NOT DISTINCT IS NOT A KEY — SECOND TIME ═════════════
+       「凡例内はまだ単に「セルビア語」のまま」 (third report of this sentence: #R268, #R270, now)
+
+       #R270 wrote that line about the four Yugoslav standards, took away their shared fill and gave
+       each its own colour. MEASURED on the built site this round, with the layer on and the key
+       open: **89 rows, 30 colours, and all thirty of them are shared by three languages.** The
+       palette above was indexed `LPAL[i % LPAL.length]`, so rank 8, rank 38 and rank 68 are the
+       same swatch — and the row a colour is READ by is the first one that uses it. Croatian is rank
+       38, Italian is rank 8, so the brown Croatia is painted is labelled 「イタリア語」 in the key.
+       #R270's own sentence, one level up: the palette was still doing the merging that the labels
+       had stopped doing. Montenegro is the same story from the data side — the Factbook's leading
+       language there IS Serbian (42.9 % against 37 % for Montenegrin), so the country is Serbian on
+       the map, correctly; what was wrong was that the key could not tell you which Serbian.
+
+       → THE PALETTE CONTINUES INSTEAD OF REPEATING. Past the hand-picked thirty the hue advances by
+       the golden angle (137.508°, the arrangement that keeps successive values as far apart as a
+       cycle allows) and the lightness/saturation pair rotates through three settings, so the 31st
+       colour is not near the 1st. Uniqueness is not assumed: the builder keeps a set and nudges the
+       lightness until the value has not been used, and the test asserts that every category in the
+       layer's own order carries a different swatch. */
+    const _hex2=(v)=>{ const n=Math.max(0,Math.min(255,Math.round(v))).toString(16); return n.length<2?('0'+n):n; };
+    function _hsl(h,sp,lp){
+      const s=sp/100, l=lp/100, c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs(((h/60)%2)-1)), m=l-c/2;
+      const t=h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x];
+      return '#'+_hex2((t[0]+m)*255)+_hex2((t[1]+m)*255)+_hex2((t[2]+m)*255); }
+    const _palCache={};
+    function paletteOf(n){
+      n=Math.max(0,n|0);
+      if(_palCache[n]) return _palCache[n];
+      const out=LPAL.slice(0,Math.min(n,LPAL.length));
+      const seen=Object.create(null); out.forEach(c=>{ seen[c.toLowerCase()]=1; });
+      for(let i=out.length;i<n;i++){
+        const h=Math.round((i*137.508)%360), k=(i-LPAL.length)%3;
+        const sat=[58,40,74][k]; let lig=[44,64,54][k];
+        let c=_hsl(h,sat,lig), guard=0;
+        while(seen[c.toLowerCase()]&&guard<24){ lig=((lig+7-28)%44)+28; c=_hsl(h,sat,lig); guard++; }
+        seen[c.toLowerCase()]=1; out.push(c); }
+      return (_palCache[n]=out); }
     /* == ⚠⚠⚠ (#R268) THREE CODES WHERE `Intl.DisplayNames` IS WRONG, RISKY OR SILENT ===========
        「ユーゴスラビアの言語をすべてセルビア語 (ラテン文字)でまとめるのはやめろ。不正確なうえ名称も
          リスキー。」 MEASURED: `Intl.DisplayNames(['ja']).of('sh')` is 「セルビア語 (ラテン文字)」 and
@@ -928,7 +966,9 @@ window.IntMapModules.religionLang=function(HOST){
     const colOf=(key,cat)=>{ const C=CFG[key]; if(C.col) return C.col(cat);
       const ord=order[key]||[];
       const i=ord.indexOf(cat);
-      return i<0?'#9aa0a6':LPAL[i%LPAL.length]; };
+      if(i<0) return '#9aa0a6';
+      const pal=paletteOf(ord.length);
+      return pal[i]||'#9aa0a6'; };
     function colorExpr(key){ const e=['match',['get','cat']];
       (order[key]||[]).forEach(cat=>{ e.push(cat,colOf(key,cat)); }); e.push('#9aa0a6'); return e; }
 
@@ -1035,7 +1075,10 @@ window.IntMapModules.religionLang=function(HOST){
     /* the facts the layer publishes — Atlas and the tests read these instead of the paint expression */
     window.IntMapCulture={ toggle, isOn:(k)=>!!state[k], data:(k)=>DATA[k],
       categories:(k)=>(order[k]||[]).slice(), of:(k,iso)=>((DATA[k]&&DATA[k].countries&&DATA[k].countries[iso])||null),
-      ready:(k)=>load(k) };
+      ready:(k)=>load(k),
+      /* (#R271) the colour a category is drawn in, and the palette itself — so «no two rows share a
+         swatch» is a thing a test can assert rather than a thing a comment claims */
+      colourOf:(k,cat)=>colOf(k,cat), palette:(n)=>paletteOf(n).slice() };
   })();
 };
 

@@ -285,7 +285,12 @@ test('R268 ⑩ the four moved rows are on their new shelf, and no id is on two',
   assert.ok(Object.keys(groups).length > 10, 'the taxonomy must parse');
   assert.ok(groups.lyrGrpAgri.includes('wbagri'), '農地率 belongs with agriculture');
   assert.ok(groups.lyrGrpAgri.includes('gxsoil'), '土壌水分 belongs with agriculture');
-  assert.ok(groups.lyrGrpTerrain.includes('wbforest'), '森林面積率 is land cover');
+  /* ⚠ (#R271) 森林面積率 IS land cover, and that is now a shelf of its own. #R268 moved it OUT of
+     Climate on the argument that it is a land-cover share; #R271 gave land cover its own heading
+     (`lyrGrpNature`: 土地被覆・エコリージョン・植生指数・森林面積率) because 「地形・標高」 is about
+     the SHAPE of the ground. The property #R268 asserted — that it is filed with land cover and not
+     with CO₂ — is unchanged. */
+  assert.ok(groups.lyrGrpNature.includes('wbforest'), '森林面積率 is land cover');
   assert.ok(groups.lyrGrpClimate.includes('wbpm25'), 'PM2.5 belongs with the air-composition rasters');
   assert.ok(!groups.lyrGrpTerrain.includes('wbagri') && !groups.lyrGrpTerrain.includes('gxsoil'), 'and they left Terrain');
   assert.ok(!groups.lyrGrpClimate.includes('wbforest'), '…and forest left Climate');

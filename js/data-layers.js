@@ -1127,6 +1127,53 @@ window.IntMapModules.dataLayers=function(HOST){
            bottom so the panel reads cleanly. (#R15c) ec-time moved OUT of the panel into a floating legend. */
         /* (#R32b) The World-Bank choropleths + earthquakes are PROMOTED out of "Others (beta)" into real
            groups ("正規レイヤーに") — wbco2/wbforest = environment, the rest = population & economy, eq = hazards. */
+        /* ══ ⚠⚠⚠ (#R271) THE PANEL WAS RE-SORTED, THIS TIME BECAUSE IT WAS ASKED FOR ═════════════
+           「レイヤーのカテゴリ分類があきらかに不適切なレイヤーが大量にある。大規模にレイヤーカテゴリ分類を
+             再編しろ。」
+
+           #R255, #R258, #R261 and #R270 all wrote the same ⚠ note into this file — 「再編 is not a
+           licence to overturn a list the reader wrote out by hand」 — and each moved three or four
+           rows. That reservation was right while the instruction said 「任せる」 about 「いくつか」.
+           It is now 「大量にある」 and 「大規模に…再編しろ」, which is the licence those notes said they
+           did not have, so the whole panel was read against its headings and TWENTY rows moved. Each
+           one is named below with the reason, and the reason is always the same shape: the row's own
+           subject names a category that exists on this panel and is not the one it was on.
+
+           WHAT MOVED, and out of / into what:
+             · 民主主義指数 `dem`, 汚職・腐敗指標 `cpi`   人口・経済 → 政治・統治
+               Two governance indices on the population shelf while a Politics & governance shelf
+               existed (#R255 created it and #R270 explicitly left these two behind, saying 「say the
+               word and they move」). This is the word.
+             · 平均寿命 `lifeexp`                        人口・経済 → 医療・衛生
+               …where 平均寿命（世界銀行） `wblife` already was. Two life-expectancy rows, two shelves.
+             · エネルギー構成 `energy`                    人口・経済 → エネルギー・資源
+               #R254 filed it under 人口・経済 because there was no energy shelf; #R258 built one.
+             · オーロラ予測 `aurora`                      災害・夜空 → 宇宙・軌道
+               A space-weather forecast, beside the satellites it disturbs.
+             · 夜間光 `nightsat`                          災害・夜空 → 人口・経済
+               Night lights are the satellite view of where people live; they are not a hazard.
+               (…and with those two gone the heading no longer says 「夜空」 — see the locale files.)
+             · 人口増加率・65歳以上・合計特殊出生率（世界銀行）・都市人口・農村人口・人口密度（世界銀行）・
+               難民受け入れ数  `wbpopgrow` `wbaging` `wbfert` `wburb` `wbrural` `wbdensity` `wbref`
+                                                          社会・教育 → 人口・経済
+               Seven demographic series were on the education shelf while the population shelf held
+               eight rows. A reader looking for 人口 statistics looks under 人口.
+             · 土地被覆・エコリージョン・植生指数・森林面積率
+               `worldcover` `ecoregions` `gxndvi` `wbforest`   地形・標高 → 自然・土地被覆 (NEW)
+               Land COVER is not elevation. Four rows about what grows on the ground were filed with
+               the rows about the shape of it; they get their own shelf.
+             · 3D建物（都市）`bldg3d`                     地形・標高 → テクノロジー・インフラ
+               #R261 filed it under terrain with 「built ground is still ground」. A building is not
+               ground; it is built infrastructure, which this panel has a shelf for.
+             · タイムゾーン `tz`                          指標・オーバーレイ → the always-on switches
+               「指標・オーバーレイ」 held exactly one row. A live-clock overlay of the whole planet is
+               the same KIND of switch as the grid and the day/night shading (#R233's reasoning for
+               `nightside`), so it joins them and the one-row shelf is empty (its KEY is kept).
+
+           ⚠ WHAT DID NOT MOVE, and why: every row whose subject the heading above it actually names.
+           #R254's sixty-one World-Bank rows keep their families and their internal order; the four
+           shelves #R261 created keep their contents; nothing is deleted, and the safety sweep at the
+           end of this function still catches anything unlisted. */
         const GROUPS=[
           /* ══ (#R268) FOUR ROWS THAT WERE ON THE WRONG SHELF ══════════════════════════════════════
              「レイヤーのカテゴリ分類があきらかに不適切なレイヤーがいくつかある。任せる。」 Only rows whose
@@ -1145,7 +1192,7 @@ window.IntMapModules.dataLayers=function(HOST){
           ['lyrGrpClimate',['climate','annprecip','wind','radar','ec-cloud','snow','aod','gxaero','gxco','wbpm25','wbco2','wbco2t']],   /* (#R261) +total CO₂ emissions, beside the per-capita row it belongs with */   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
           /* (#R202) `sats` moved OUT of Maritime and into its own group, second from the top — see the
              lyrGrpOrbit note above. Nothing else moved: live aircraft stay where they were. */
-          ['lyrGrpOrbit',['sats','osmspace']],   /* (#R261) +spaceports and satellite ground stations — a one-row shelf is not a category */
+          ['lyrGrpOrbit',['sats','osmspace','aurora']],   /* (#R261) +spaceports and satellite ground stations — a one-row shelf is not a category */
           /* ⚠ (#R255) `subcables` LEFT THIS GROUP for Technology & infrastructure. A submarine cable
              is under the sea the way a railway is under a hill — the sea is where it runs, not what
              it is — and a reader looking for the internet's physical plant looks under technology,
@@ -1155,7 +1202,9 @@ window.IntMapModules.dataLayers=function(HOST){
              ocean currents ARRIVED from the beta sweep — both are finished world-packs layers with
              their own panel, legend and sources, and neither was ever demoted by an instruction. */
           ['lyrGrpMaritime',['sst','eez','tides','currents','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
-          ['lyrGrpTerrain',['worldcover','ecoregions','wbforest','plates','relief','hillshade','contours','sealevel','bldg3d','gxndvi','gxrelief']],   /* (#R261) +3-D city buildings — built ground is still ground */   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
+          ['lyrGrpTerrain',['plates','relief','hillshade','contours','sealevel','gxrelief']],
+          /* (#R271) the new shelf: what is ON the ground, as against the shape of it */
+          ['lyrGrpNature',['worldcover','ecoregions','gxndvi','wbforest']],   /* (#R261) +3-D city buildings — built ground is still ground */   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
           /* ⚠ (#R233) SEVEN, NAMED BY THE INSTRUCTION — everything else in this group was DEMOTED.
              「人口・経済レイヤーは 人口密度（1kmグリッド）／1人当たりGDP／合計特殊出生率／HDI (2022)／
              民主主義指数 (2023)／汚職・腐敗指標／平均寿命 以外のものはbetaに降格。」
@@ -1167,12 +1216,12 @@ window.IntMapModules.dataLayers=function(HOST){
           /* (#R254) 「エネルギー構成レイヤーは昇格」 — out of the beta sweep and into the curated set,
              beside the other per-country statistics (confirmed: 人口・経済). It is the world-packs row
              `wp-dl-energy`; see rowFor's prefix list. */
-          ['lyrGrpDemo',['popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','energy']],
+          ['lyrGrpDemo',['popgrid','gdppc','tfr','hdi','nightsat','wbpopgrow','wbaging','wbfert','wburb','wbrural','wbdensity','wbref']],
           /* (#R233) 'nightside' LEFT this group — 「昼夜の表示はレイヤー選択欄の基本表示カテゴリです。」
              It is not a hazard overlay, it is which half of the planet the Sun is on, so it belongs with
              the other always-there view switches (place names, borders, roads, grid) at the top of the
              panel. Moved by name into that list below, not duplicated: one row, one owner. */
-          ['lyrGrpHazard',['thermal','aurora','nightsat','volc2','eq','alerts','osmemg']],   /* (#R270) +emergency response bases — see the note below */   /* (#R261) +live weather & disaster warnings (JMA/NWS/GDACS) */   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
+          ['lyrGrpHazard',['thermal','volc2','eq','alerts','osmemg']],   /* (#R270) +emergency response bases — see the note below */   /* (#R261) +live weather & disaster warnings (JMA/NWS/GDACS) */   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
           /* ══ ⚠ (#R255) FOUR NEW CATEGORIES, AND «Geopolitics & defense» SPLIT INTO TWO OF THEM ══════
              「政治、軍事、医療・衛生、IT・テックレイヤーカテゴリを追加し、レイヤーの再編や追加を行うように。
                それぞれのレイヤーカテゴリの名前は任せる。」 (naming delegated; reorganisation confirmed
@@ -1200,7 +1249,7 @@ window.IntMapModules.dataLayers=function(HOST){
              those seven rows as that category's contents, and this round's authorisation to
              reorganise is not a reason to quietly overturn a list the reader wrote out by hand. Say
              the word and they move. */
-          ['lyrGrpPolitics',['uselect','eu','wbwomparl','osmdiplo']],
+          ['lyrGrpPolitics',['uselect','eu','dem','cpi','wbwomparl','osmdiplo']],
           /* ══ ⚠ (#R270) THREE ROWS WERE ON THE WRONG SHELF, AND ONLY THREE ═════════════════════════
              「レイヤーのカテゴリ分類があきらかに不適切なレイヤーがいくつかある。任せる。」
 
@@ -1226,10 +1275,10 @@ window.IntMapModules.dataLayers=function(HOST){
              オーロラ予測 and 夜間光 stay in 「災害・夜空 / Hazards & night sky」 — that heading names
              them; the shelf is not only about disasters. */
           ['lyrGrpSecurity',['milSpend','milSpendGDP','nato','ukrfront','wbmilgdp','wbmilppl','osmmil']],
-          ['lyrGrpHealth',['wbhealth','wbphys','wbbeds','wbinfmort','wbu5mort','wblife','wbwater','wbsan','wbcook','wbsmoke','wbalcohol','wbsuicide','wboverwt','wbunder','wbadofert','osmhealth','osmwater','pharma']],   /* (#R261) +water & wastewater plant, +pharma hubs. (#R270) −emergency services (→ hazards), −fertility (→ society) */
+          ['lyrGrpHealth',['wbhealth','wbphys','wbbeds','wbinfmort','wbu5mort','lifeexp','wblife','wbwater','wbsan','wbcook','wbsmoke','wbalcohol','wbsuicide','wboverwt','wbunder','wbadofert','osmhealth','osmwater','pharma']],   /* (#R261) +water & wastewater plant, +pharma hubs. (#R270) −emergency services (→ hazards), −fertility (→ society) */
           /* (#R261) `rail` LEFT for Transport & mobility — a railway network is transport, and the
              category it was in is the one about computing and communications. */
-          ['lyrGrpTech',['dc','subcables','wbnet','wbmobile','wbbbnd','wbhitech','wbrnd','wbresearch','wbpatent','osmtelecom']],
+          ['lyrGrpTech',['dc','subcables','bldg3d','wbnet','wbmobile','wbbbnd','wbhitech','wbrnd','wbresearch','wbpatent','osmtelecom']],
           /* ══ ⚠⚠ (#R261) FOUR NEW SHELVES, AND «OTHERS» AND «BETA» EMPTIED INTO THEM ═══════════════
              「追加すべきと思うレイヤーカテゴリはありますか？あれば作り、Others, Betaも含め既存レイヤーの
                再編のほか、新レイヤー…全部任せる。結局何もしませんはやめろ。」
@@ -1258,7 +1307,7 @@ window.IntMapModules.dataLayers=function(HOST){
              ECMWF family sits with them; all of that stays in Beta. Assuming a past instruction has
              expired is the failure this file has warned about twice. */
           ['lyrGrpEconomy',['trade','industry','wbgdpgrow','wbinfl','wbtrade','wbtax','wbdebt','wbmanuf','wbfdi','wbunemp','wbgni','wbremit','wbtour']],
-          ['lyrGrpSociety',['wblit','wbschool','wbtert','wbedu','osmedu','wbpov','wbgini','wbflfp','wbhomicide','wbref','wbaging','wbpopgrow','wbfert','wburb','wbrural','wbdensity','cat-religion','cat-language']],   /* (#R270) +homicide rate, +fertility rate — see the note above */
+          ['lyrGrpSociety',['wblit','wbschool','wbtert','wbedu','osmedu','wbpov','wbgini','wbflfp','wbhomicide','cat-religion','cat-language']],   /* (#R270) +homicide rate, +fertility rate — see the note above */
           ['lyrGrpTransport',['planes','rail','ships','oxrail','oxsea','osmair','osmport']],
           ['lyrGrpAgri',['crops','wbagri','wbagremp','gxsoil']],
           /* ══ (#R258) A FIFTH NEW CATEGORY — WHERE THE ENERGY AND THE MATERIAL COME FROM ═════════════
@@ -1271,8 +1320,10 @@ window.IntMapModules.dataLayers=function(HOST){
              ⚠ NOTHING IS MOVED INTO IT. Every existing row stays where it is: #R233's seven and
              #R254's sixty-one were named one by one by the reader, and 「再編」 is not a licence to
              overturn a list somebody wrote out by hand (the same reasoning as the ⚠⚠ note above). */
-          ['lyrGrpEnergy',['osmpower','osmextract','dams','wbelec','wbrenew','wbelecuse','wbrenelec','wbenergy']],
-          ['lyrGrpIndic',['tz']],   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
+          ['lyrGrpEnergy',['osmpower','osmextract','dams','energy','wbelec','wbrenew','wbelecuse','wbrenelec','wbenergy']],
+          /* (#R271) EMPTY, AND KEPT — `tz` joined the always-on switches at the top of the panel;
+             the KEY stays for the same reason `lyrGrpGeoPol` and `lyrGrpOthers` keep theirs. */
+          ['lyrGrpIndic',[]],   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
           /* ══ ⚠ (#R254) "OTHERS" IS A REAL CATEGORY NOW, AND "BETA" MEANS BETA ═══════════════════════
              「以下のレイヤーは、Others(beta) layersから移動し、新たなカテゴリであるOthersにおくこと。
                Others(beta)は単にベータとすること。」 The sixty-one rows named in that instruction are
@@ -1321,6 +1372,9 @@ window.IntMapModules.dataLayers=function(HOST){
            .lyr-row rather than a bare label, so it is fetched through rowFor() and marked `placed` — the
            safety sweep below would otherwise find it unplaced and file it under Others (beta). */
         const nsRow=rowFor('nightside'); if(nsRow){ try{ nsRow.style.display=''; }catch(_){} order.push(nsRow); }
+        /* (#R271) …and the time zones, for the same reason: a live-clock overlay of the whole planet
+           is a view switch, not an indicator, and 「指標・オーバーレイ」 held nothing else. */
+        const tzRow=rowFor('tz'); if(tzRow){ try{ tzRow.style.display=''; }catch(_){} order.push(tzRow); }
         /* (#R14 / #17) the live "Active layers" list. DESKTOP: right below the favorites + top toggles.
            (#R25) MOBILE: moved to the BOTTOM (just before Tools) — when it sat at the top, toggling the
            FIRST layer made it appear above the rows and the scroll-compensation had to scroll the list,
@@ -1352,6 +1406,11 @@ window.IntMapModules.dataLayers=function(HOST){
         order.push(mkHr());
         const placed=new Set();
         if(nsRow) placed.add(nsRow);   /* (#R233) already in the basic-display block above */
+        /* ⚠ (#R271) …AND SO IS THE TIME-ZONE OVERLAY, FOR THE SAME REASON. Pushing a row into the
+           always-on block without marking it here does nothing at all: the safety sweep below finds
+           it unplaced, and `order.push` MOVES the element, so it lands in Beta. MEASURED on the
+           built page before this line existed — 「Beta」 is exactly where 🕒 タイムゾーン came out. */
+        if(tzRow) placed.add(tzRow);
         GROUPS.forEach(([key,ids])=>{ const rows=ids.map(rowFor).filter(Boolean); if(!rows.length) return;
           const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=T(key); order.push(h);
           rows.forEach(r=>{ try{ r.style.display=''; }catch(_){} order.push(r); placed.add(r); }); });

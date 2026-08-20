@@ -122,11 +122,17 @@ test('R266 ⑥: the warnings layer covers the G7 and China with their own servic
   }
   const ma = /const MA=\{([\s\S]*?)\};/.exec(s);
   assert.ok(ma, 'the MeteoAlarm table is gone');
-  for (const iso of ['DEU', 'FRA', 'ITA', 'GBR']) assert.ok(ma[1].includes(iso + ':'), iso + ' has no European feed');
-  assert.ok(/const MA_DEFAULT=\['DEU','FRA','ITA','GBR'\]/.test(s), 'the G7 members are not fetched up front');
-  /* every G7 member is covered by SOME national service */
+  /* ⚠ (#R271) GERMANY LEFT THIS TABLE BECAUSE IT GAINED SOMETHING BETTER. The DWD publishes its
+     warnings WITH the district polygons (maps.dwd.de, ACAO *) while MeteoAlarm relays the same
+     warnings with no geometry at all — measured, 16,272 German areas and 0 polygons — so Germany is
+     read from its own service and must NOT also be pulled as ten megabytes from the relay. Norway
+     left for the same reason. What #R266 was about is that every G7 member is covered by a national
+     service, whichever one, and that is what is asserted. */
+  const feedTable = feeds[1];
   const G7 = ['JPN', 'USA', 'CAN', 'DEU', 'FRA', 'ITA', 'GBR'];
-  for (const iso of G7) assert.ok(s.includes("'" + iso + "'") || ma[1].includes(iso + ':'), iso + ' is not covered');
+  for (const iso of G7) assert.ok(feedTable.includes(iso + ":'") || ma[1].includes(iso + ':'),
+    iso + ' is covered by no national service at all');
+  assert.match(s, /const MA_DEFAULT=\[/, 'the European members fetched up front must still be named');
   assert.match(s, /async function loadECCC\(\)/);
   assert.match(s, /async function loadCMA\(\)/);
   assert.match(s, /async function loadMA\(list\)/);
@@ -151,7 +157,11 @@ test('R266 ⑦: a tap lists administrative units, not a flat run of municipaliti
   const s = read('js/world-packs.js');
   assert.match(s, /function grouped\(rows,cap\)/, 'there is no grouping renderer');
   /* every feed labels its rows with an admin-1 unit, or the grouping has nothing to group on */
-  assert.match(s, /adm:nameOf\(String\(pref\)/, 'JMA rows carry no prefecture');
+  /* ⚠ (#R271) the JMA row is bucketed by its class10 region now (that is what stopped whole
+     prefectures being painted), and the PREFECTURE survives as `adm` — which is what this test is
+     about: the tap groups on the admin-1 unit. It is read off `pn` rather than inlined. */
+  assert.match(s, /const pn=nameOf\(String\(pref\)/, 'the JMA prefecture name must still be resolved');
+  assert.match(s, /adm:pn,/, 'JMA rows carry no prefecture');
   assert.match(s, /adm:st,unit:'zone'/, 'NWS rows carry no state');
   assert.match(s, /adm:p\.province\|\|''/, 'ECCC rows carry no province');
   assert.match(s, /adm:prov/, 'CMA rows carry no province');
