@@ -12,12 +12,16 @@
 //       locate button is outlined until it is following you
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { readLF } from '../scripts/eol.mjs';
 
 const ROOT = new URL('../', import.meta.url);
-const read = (p) => readFileSync(new URL(p, ROOT), 'utf8');
+/* ⚠ (#R283) THE CONTENT OF A FILE, NOT THE BYTES THIS CHECKOUT PRODUCED — scripts/eol.mjs. ① also
+   runs the generator's own staleness gate, which compared js/locales/_langs.js byte for byte with
+   what it renders and therefore called the committed copy stale on every CRLF working copy. */
+const read = (p) => readLF(new URL(p, ROOT));
 const R = (p) => join(new URL('.', ROOT).pathname.replace(/^\/([A-Za-z]:)/, '$1'), p);
 
 /* ⚠ COMMENTS ARE STRIPPED BEFORE EVERY NEGATIVE CHECK. #R231 hit this five times and #R208/#R229

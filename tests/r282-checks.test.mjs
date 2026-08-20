@@ -243,9 +243,13 @@ test('R282 (5) CLAUDE.md ends the workflow at the master and sources the USB mir
     '§6 must still forbid two sessions sharing one working directory');
   assert.match(s6, /冪等/, '§6 must record WHY no lock is needed, or the next round will add one');
 
-  const s114 = md.slice(md.indexOf('### 11.4'), md.indexOf('### 11.5'));
-  assert.match(s114, /master-sync\.mjs --check/, '§11.4 gates the USB mirror on the master being current');
-  assert.match(s114, /原本/, '§11.4 names the master as the mirror source');
+  /* ⚠ (#R280) THE SECTION IS FOUND BY ITS SUBJECT, NOT BY ITS NUMBER. This read §11.4 literally
+     until #R280 turned §11 into «when to run it» plus scripts/backup-usb.ps1, which renumbered the
+     subsections. What must hold is that §11 — wherever inside it — gates the mirror on the master
+     being current and names the master as the source. */
+  const s11 = md.slice(md.indexOf('## 11.'), md.indexOf('## 12.'));
+  assert.match(s11, /master-sync\.mjs --check/, '§11 gates the USB mirror on the master being current');
+  assert.match(s11, /原本/, '§11 names the master as the mirror source');
 });
 
 /* ── ⑦ PARALLEL SESSIONS DO NOT SHARE ONE DEV SERVER ────────────────────────────────────────────

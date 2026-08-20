@@ -50,7 +50,10 @@ const sims = R('js/sims.js');
 const atlas = R('js/atlas-console.js');
 const toolPanel = R('js/tool-panel.js');
 const refs = R('js/reference-data.js');
-const legal = R('js/legal.js');
+/* (#R280) the policy TEXT is js/legal-text.js now — js/legal.js is the modal that renders it,
+   and privacy.html / terms.html render the same string. What this file asserts is that the
+   policy SAYS what the new tools send, so it has to read where the words are. */
+const legal = R('js/legal-text.js');
 
 /* ── ① the tilt anchor lives in Mercator units ──────────────────────────────────────────────────
    Measured before the fix, on a real ctrl-drag with the ceiling lifted: the viewpoint moved 22,218 km

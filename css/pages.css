@@ -296,3 +296,22 @@ html{scroll-behavior:smooth}
 .pg-tex.pg-tex-on .katex-display{ margin:0.35em 0; }
 .pg-tex.pg-tex-on .katex{ font-size:1.06em; }
 @media (max-width:640px){ .pg-tex.pg-tex-on .katex{ font-size:0.98em; } }
+
+/* ── (#R280) privacy.html / terms.html ────────────────────────────────────────────────────
+   The two legal pages reuse everything above; these are the only rules they add.
+   ⚠ The legal text itself is written once (js/legal-text.js) and shown BOTH in the app modal and
+   on these pages, and its inline styles name the APP's colour variables. Aliasing them here is
+   what lets one string be correct in two very different skins — rather than forking the text. */
+:root{ --text-main:var(--pg-ink); --text-muted:var(--pg-mut); }
+.lg-textpick{ display:flex; gap:8px; margin:20px 0 0 }
+.lg-textbtn{
+  font:inherit; font-size:13.5px; line-height:1; padding:9px 16px; cursor:pointer;
+  color:var(--pg-ink-2); background:var(--pg-surface);
+  border:1px solid var(--pg-line); border-radius:980px;
+  -webkit-appearance:none; appearance:none;
+}
+.lg-textbtn:hover{ background:var(--pg-accent-soft) }
+.lg-textbtn.is-on{
+  color:var(--pg-accent-ink); background:var(--pg-accent); border-color:var(--pg-accent);
+}
+.lg-textbtn:focus-visible{ outline:2px solid var(--pg-accent); outline-offset:2px }
