@@ -99,8 +99,11 @@ test('R277 ③ hatched / grey / coloured are three states, and the wash sits und
   assert.match(s, /'fill-pattern':'wp-alert-hatch-img'/, 'no feed → a pattern, not a fourth grey');
   assert.match(s, /1,'rgba\(200,200,203,0\.42\)'/, 'a feed and nothing in force → grey');
   assert.match(s, /function readState\(c\)\{/, '…and 「read」 is a state that is checked, not assumed');
-  assert.match(s, /if\(readState\(c\)!=='ok'\) return 0;/,
-    'only a country whose service ANSWERED earns the grey — loading, error and idle are hatched');
+  /* ⚠ (#R284) …and loading / error / idle are no longer HATCHED either: the hatch means 「未対応」,
+     so a wired country that has not answered draws nothing at all (`-1`). What #R277 asserted —
+     only an answer earns the grey — is unchanged. */
+  assert.match(s, /if\(readState\(c\)!=='ok'\) return -1;/,
+    'only a country whose service ANSWERED earns the grey');
 });
 
 /* ── ④ 「漏れが多すぎる」 — the shape ladder ────────────────────────────────────────────────────
@@ -113,11 +116,13 @@ test('R277 ④ a warning without a polygon is looked for in the agency’s own s
   assert.match(ma, /if\(a\.poly\)\{ const g=capPolygon\(a\.poly\); if\(g\) return g; \}/, '① the CAP polygon');
   assert.match(ma, /if\(lib\)\{ const f=lookupUnit\(lib,a\.name\);/, '② the same service’s own shapes');
   assert.match(ma, /if\(idx\)\{ const f=lookupUnit\(idx,a\.name\);/, '③ Eurostat NUTS');
-  assert.match(ma, /return wholeCountryShape\(iso,a\.name\);/, '④ the country, when the area IS the country');
-  assert.match(ma, /if\(missed\) askSwicGeo\(iso\);/, 'and a shortfall is what asks for the library');
+  assert.match(ma, /if\(gb\)\{ const f=lookupUnit\(gb,a\.name\);/, '④ (#R284) a stable administrative index');
+  assert.match(ma, /return wholeCountryShape\(iso,a\.name\);/, '⑤ the country, when the area IS the country');
+  assert.match(ma, /if\(missed\)\{ askSwicGeo\(iso\); askGB\(iso\); \}/,
+    'and a shortfall is what asks for both libraries');
   /* the library is a NAME→SHAPE index and carries no warning of its own — 「ソースは一国一ソース」 */
   assert.match(s, /function askSwicGeo\(iso\)\{/, 'the library has one loader');
-  const ask = s.slice(s.indexOf('function askSwicGeo(iso)'), s.indexOf('function wholeCountryShape'));
+  const ask = s.slice(s.indexOf('function askSwicGeo(iso)'), s.indexOf('function gbIndex('));
   assert.ok(!/tier|events|severity|sent/.test(ask), 'nothing but names and shapes comes out of it');
   assert.match(ask, /swicGeoAsked\[iso\]=false;/, 'a failure is not an answer — it is retried');
   /* the relay end: no expiry filter, because a district does not expire with the warning on it */
@@ -190,7 +195,9 @@ test('R277 ⑦ the hazard is named in the reader’s language, and the agency’
 test('R277 ⑧ every rotating feed comes round inside the edge cache’s own age', () => {
   const s = WP();
   const per = +(/const MA_PER_TICK=(\d+);/.exec(s) || [])[1];
-  const calls = +(/const MA_CALLS=(\d+);/.exec(s) || [])[1];
+  /* (#R284) `MA_SLOTS` is the SUSTAINED number of slots; a rotation that still has unread countries
+     runs at `COLD_CALLS` instead. The floor this test is about is the sustained one. */
+  const calls = +(/const MA_SLOTS=(\d+);/.exec(s) || [])[1];
   const tick = +(/const TICK_MS=(\d+);/.exec(s) || [])[1];
   const cache = +(/max-age=(\d+), s-maxage=/.exec(read('supabase/functions/alerts-relay/index.ts')) || [])[1];
   const countries = (read('js/world-packs.js').match(/^\s{6}const MA=\{[\s\S]*?\};/m) || [''])[0]
@@ -199,8 +206,11 @@ test('R277 ⑧ every rotating feed comes round inside the edge cache’s own age
   const cycleS = Math.ceil(countries / (per * calls)) * (tick / 1000);
   assert.ok(cycleS <= cache, `a full cycle is ${cycleS}s against a ${cache}s edge cache`);
   /* …and the same is true of the WMO register's rotation */
-  const sper = +(/const SWIC_PER_TICK=(\d+), SWIC_CALLS=(\d+);/.exec(s) || [])[1];
-  const scalls = +(/const SWIC_PER_TICK=\d+, SWIC_CALLS=(\d+);/.exec(s) || [])[1];
+  const sper = +(/const SWIC_PER_TICK=(\d+), SWIC_SLOTS=(\d+);/.exec(s) || [])[1];
+  const scalls = +(/const SWIC_PER_TICK=\d+, SWIC_SLOTS=(\d+);/.exec(s) || [])[1];
+  /* …and a COLD rotation is faster than the sustained one, never slower (#R284) */
+  const cold = +(/const COLD_CALLS=(\d+);/.exec(s) || [])[1];
+  assert.ok(cold >= calls && cold >= scalls, `the warm-up burst (${cold}) is at least the steady rate`);
   assert.ok(sper * scalls >= per * calls, 'the register rotates at least as fast');
   /* the AGE is what the panel prints — a rotation that stops has to be visible (#R275) */
   assert.match(s, /maOldestS:\(function\(\)\{/, 'the oldest country’s age is measured');

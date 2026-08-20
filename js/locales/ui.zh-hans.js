@@ -2280,6 +2280,7 @@ window.IntMapLang.define('zh-hans', {
     'Watching': "监看中",   /* monitors.js */
     'water': "水",   /* sims.js */
     'Water here': "此处的水",   /* terrain-water.js */
+    'Water source': "水源",   /* terrain-water.js (#R284) */
     'Water supply': "供水",   /* world-packs.js */
     'Wave scale': "波高比例尺",   /* tsunami.js */
     'waypoints': "个航点",   /* atlas-console.js */
@@ -2441,7 +2442,12 @@ window.IntMapLang.define('zh-hans', {
     'Display name cannot be empty.': "显示名称不能空白。",
     'Drag to move': "拖动以移动",
     'Earth, sky & airspace': "地球、天空与空域",
+    'Could not be read': "无法读取",   /* world-packs.js (#R284) */
+    'this service could not be reached just now, so the map is not saying anything about this country. It is retried on every update.': "目前无法连接到该机关，因此地图对这个国家不作任何表述。每次更新时会重试。",   /* world-packs.js (#R284) */
+    'ECMWF forecast time': "ECMWF 预报时刻",   /* weather.js (#R284) */
     'ECMWF weather': "ECMWF 天气",
+    'One step back': "上一个时刻",   /* weather.js (#R284) */
+    'One step forward': "下一个时刻",   /* weather.js (#R284) */
     'Edit comment': "编辑留言",
     'EEZ = Exclusive Economic Zone (to 200 nm). Line color = boundary type (bright colors for visibility); overlaps flag disputed claims.': "EEZ＝专属经济海域（至 200 海里）。线条颜色代表界线类型（采用高辨识度的亮色）；重叠处代表有争议的主张。",
     'Elevation (color)': "高程（彩色）",

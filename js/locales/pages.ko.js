@@ -479,7 +479,7 @@ window.IntMapPageI18N.define('ko', {
     "OpenStreetMap Overpass API": "아틀라스의 시설·POI 매핑 — 지정한 시설 종류(석유, 발전소, 공항, 군사 시설 등)를 지정 범위에서 실시간 조회합니다. 또한 Nominatim이 답하지 못하는 하천의 경우, 클릭한 하천 라벨 주변의 이름 있는 하천·운하 선형을 가져옵니다(ODbL)",
     "Wikidata Query Service": "아틀라스의 시설·POI 매핑 — 독립적인 두 번째 시설 출처(좌표를 가진 선별 항목을 OSM 결과와 병합, CC0). 그리고 함께 배포하는 세계 지명 사전의 ja/de/ru/es 이름을 GeoNames id(P1566)로 빌드 시점에 조회합니다 — GeoNames의 대체 이름 열에는 언어 태그가 없기 때문입니다. 또한 국가 지도자에 대한 아틀라스 답변의 근거가 되는 현직자(국가원수·정부수반) 실시간 조회, 산업 관계망 레이어의 기업·소유 구조 그래프, 그리고 전 세계 해류의 이름과 공표 좌표(CC0)에도 씁니다",
     "GeoNames": "함께 배포하는 세계 지명 사전 data/gazetteer-world.json.gz — 242개국 147,924개 거주지(좌표·인구·국가는 cities1000 내보내기에서, 18개 언어의 이름은 alternateNamesV2에서 가져왔습니다. 인라인 열과 달리 이름마다 ISO 언어 코드가 붙어 있습니다). 3.9 MB로 gzip 압축해 브라우저에서 풉니다. scripts/build-gazetteer.mjs로 만듭니다. 덕분에 AI를 쓰지 않는 뉴스 위치 판정과 검색창이 선별 표만 쓸 때보다 열 배 더 긴 꼬리까지 지명을 해석합니다. CC BY 4.0.",
-    "geoBoundaries": "아틀라스의 지역 구성에 쓰는 행정구역 경계(ADM1) — 대체 경계 출처(CC BY 4.0)",
+    "geoBoundaries": "행정구역 경계(ADM1/ADM2) — 아틀라스의 지역 구성과, 다른 경계 자료에 없는 특보 구역을 그리기 위한 기상특보 레이어의 최종 대체 출처(CC BY 4.0)",
     "GDELT Project": "아틀라스의 브리핑과 통합 분석을 구동하는 전 세계 실시간 뉴스 검색(최근 72시간)",
     "Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)": "환율, 금·은 시세, 암호화폐 가격과 심리 지표 — 위젯과 하단 티커",
     "Yahoo Finance": "하단 티커에 쓰는 주가지수 시세, 그리고 기업 탭에서 실시간 시가총액을 계산하는 데 쓰는 실시간 주가(미국 상장 종목)",

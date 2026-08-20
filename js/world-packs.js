@@ -1257,14 +1257,19 @@ window.IntMapModules.worldPacks=function(HOST){
          is already the colour, and repeating it in the label is what produced 「Moderate Heat Related
          Impact」 on the map. */
       const HAZ=[
-        ['tsunami',   /tsunami|津波|海啸|해일|цунами/i,        ()=>L('Tsunami','津波','Tsunami','Цунами','Tsunami')],
+        ['tsunami',   /tsunami|rissaga|meteotsunami|津波|海啸|해일|цунами/i,        ()=>L('Tsunami','津波','Tsunami','Цунами','Tsunami')],
         ['volcano',   /volcan|ash ?fall|cendre|火山|화산|вулкан/i,       ()=>L('Volcanic ash','火山灰','Vulkanasche','Вулканический пепел','Ceniza volcánica')],
         ['cyclone',   /typhoon|hurricane|tropical (cyclone|storm|depression)|cyclone|tempête tropicale|cicl[oó]n|台风|颱風|台風|熱帯低気圧|тайфун|ураган|циклон/i, ()=>L('Cyclone','台風','Wirbelsturm','Циклон','Ciclón')],
         ['tornado',   /tornado|waterspout|trombe|竜巻|龍捲|龙卷|смерч/i, ()=>L('Tornado','竜巻','Tornado','Смерч','Tornado')],
         ['dust',      /dust|sand ?storm|vent de sable|sable|رمل|غبار|沙尘|揚沙|砂じん|黄砂|пыл|polvo|staub/i, ()=>L('Dust','砂じん嵐','Staubsturm','Пыльная буря','Polvo')],
         ['avalanche', /avalanche|lawine|valanga|alud|snøskred|雪崩|なだれ|лавин|awareness_?type ?= ?9\b/i, ()=>L('Avalanche','なだれ','Lawine','Лавина','Aludes')],
-        ['wildfire',  /fire\b|waldbrand|skogbrann|feu de for|incendi|山火|林野火災|森林火|пожар|awareness_?type ?= ?8\b/i, ()=>L('Wildfire','林野火災','Waldbrand','Лесные пожары','Incendios')],
-        ['landslide', /landslide|mudslide|debris flow|rockfall|erdrutsch|glissement|deslizamiento|土砂|地质灾害|山体滑坡|оползен/i, ()=>L('Landslide','土砂災害','Erdrutsch','Оползень','Deslizamiento')],
+        /* ⚠ (#R284) 「Red Flag Warning」 IS THE NWS'S NAME FOR FIRE WEATHER and carries neither the
+           word 「fire」 nor 「weather」 in a form this list matched — measured, it came through as the
+           agency's own words on a map set to Japanese. Same for the CMA's 「Meteorological risk of
+           geological disaster」 (a landslide) and 「Strong convection」 (a thunderstorm), and for the
+           Balearic 「rissaga」, which is a meteotsunami and has no other name in any language. */
+        ['wildfire',  /fire\b|red flag|waldbrand|skogbrann|feu de for|incendi|山火|林野火災|森林火|пожар|awareness_?type ?= ?8\b/i, ()=>L('Wildfire','林野火災','Waldbrand','Лесные пожары','Incendios')],
+        ['landslide', /landslide|mudslide|debris flow|rockfall|geological (disaster|hazard)|erdrutsch|glissement|deslizamiento|土砂|地质灾害|山体滑坡|оползен/i, ()=>L('Landslide','土砂災害','Erdrutsch','Оползень','Deslizamiento')],
         ['flashflood',/flash ?flood|sturzflut|riada|内涝|山洪|浸水|ливнев|awareness_?type ?= ?12\b/i,  ()=>L('Flash flood','浸水','Sturzflut','Ливневый паводок','Riada')],
         ['flood',     /flood|inondation|hochwasser|inundaci|alluvion|poplav|powódź|árvíz|flom|tulva|översvämning|洪水|大水|боднен|наводнен|паводок/i, ()=>L('Flood','洪水','Hochwasser','Наводнение','Inundación')],
         ['ice',       /black ?ice|freezing rain|glatteis|verglas|icing|glaze|isglatta|着氷|凍結|冻雨|гололёд|гололед|hielo/i, ()=>L('Ice','着氷・路面凍結','Glatteis','Гололёд','Hielo')],
@@ -1283,8 +1288,8 @@ window.IntMapModules.worldPacks=function(HOST){
         ['airquality',/air ?quality|smog|haze|pollution|luftqualität|calidad del aire|空气污染|霾|воздуха/i, ()=>L('Air quality','大気汚染','Luftqualität','Качество воздуха','Calidad del aire')],
         ['wind',      /wind|\bgale\b|\bstorm\b|sturm|\bvent\b|viento|vento|vendaval|vind|tuuli|強風|暴風|大風|大风|风力|ветер|шторм|강풍|رياح|awareness_?type ?= ?1\b/i, ()=>L('Strong wind','強風','Wind','Ветер','Viento')],
         ['coastal',   /coastal|high (waves|water)|storm surge|swell|waves?\b|houle|oleaje|marejada|高波|高潮|波浪|прибой|волн|풍랑|awareness_?type ?= ?7\b/i, ()=>L('Coastal','高波・高潮','Küste','Побережье','Costa')],
-        ['marine',    /marine|sea area|offshore|maritime|海上|海面|море|морск/i, ()=>L('Marine','海上','See','Море','Marítimo')],
-        ['thunderstorm',/thunder|t-?storm|gewitter|orage|onweer|tormenta|trovoada|tempestade|nubifragio|åska|ukkonen|雷|强对流|強對流|гроз|뇌우|awareness_?type ?= ?3\b/i, ()=>L('Thunderstorms','雷','Gewitter','Гроза','Tormenta')],
+        ['marine',    /marine|sea area|offshore|maritime|small craft|海上|海面|море|морск/i, ()=>L('Marine','海上','See','Море','Marítimo')],
+        ['thunderstorm',/thunder|t-?storm|strong convection|gewitter|orage|onweer|tormenta|trovoada|tempestade|nubifragio|åska|ukkonen|雷|强对流|強對流|гроз|뇌우|awareness_?type ?= ?3\b/i, ()=>L('Thunderstorms','雷','Gewitter','Гроза','Tormenta')],
         ['rain',      /rain|regen|regn|pluie|lluvia|chuva|pioggia|sade|precipita|大雨|暴雨|降雨|豪雨|雨|дожд|호우|أمطار|awareness_?type ?= ?10\b/i, ()=>L('Heavy rainfall','大雨','Starkregen','Сильный дождь','Lluvia intensa')]];
       const HAZI={}; HAZ.forEach((h,i)=>{ HAZI[h[0]]=h; h[3]=i; });
       /* the pattern that matches EARLIEST wins; list order breaks a tie (see the note above) */
@@ -1351,6 +1356,20 @@ window.IntMapModules.worldPacks=function(HOST){
          failure, and the panel prints it as one). */
       const FEEDS={ JPN:'jma', USA:'nws', CAN:'eccc', CHN:'cma', AUS:'bom', BRA:'inmet', HKG:'hko',
         DEU:'dwd', NOR:'metno', PHL:'pagasa', TWN:'cwa', NZL:'metservice' };
+      /* ══ ⚠⚠ (#R284) A SERVICE'S AREA OF RESPONSIBILITY IS NOT ITS OWN BORDER — 「対応国も増やせ」 ══
+         MEASURED against api.weather.gov this build: the NWS's active-alert feed carries UGC zones
+         in **GU, MP, PW and FM** as well as the fifty states — WFO Guam issues for the Marianas,
+         Palau, the Federated States of Micronesia and the Marshalls, WFO San Juan for Puerto Rico
+         and the U.S. Virgin Islands, WFO Pago Pago for American Samoa. Those warnings were already
+         being DRAWN; the country layer just did not know a feed existed there, so it hatched
+         「未対応」 over the very islands it had a warning polygon on.
+         ⚠ This is not a second source for those countries — 「ソースは一国一ソース」 holds: the NWS IS
+         their national weather service, by treaty and by office. A country listed here never asks
+         the WMO register (`loadSWICMeta` only wires members with no feed).
+         ⚠ And it is checked rather than declared: tests/r284 asserts every ISO here is one the
+         NWS's own UGC prefixes cover. */
+      const ALSO={ nws:['PRI','VIR','GUM','MNP','ASM','PLW','FSM','MHL'] };
+      Object.keys(ALSO).forEach(f=>{ ALSO[f].forEach(c=>{ if(!FEEDS[c]) FEEDS[c]=f; }); });
       const MA={ AUT:'austria', BEL:'belgium', BIH:'bosnia-herzegovina', BGR:'bulgaria', HRV:'croatia',
         CYP:'cyprus', CZE:'czechia', DNK:'denmark', EST:'estonia', FIN:'finland', FRA:'france',
         GRC:'greece', HUN:'hungary', ISL:'iceland', IRL:'ireland', ISR:'israel',
@@ -1371,7 +1390,7 @@ window.IntMapModules.worldPacks=function(HOST){
          returns the same bytes — i.e. 60 s is the floor, and 90 s was above it for no reason.
          18 a tick × two ticks = 35 countries in 60 s, exactly on the floor. Asking faster would not
          make any answer newer; it would only multiply requests EUMETNET has to serve. */
-      const MA_CALLS=3;             /* …so a full cycle is 60 s, which is the edge cache's own age */
+      const MA_SLOTS=3;             /* …so a full cycle is 60 s, which is the edge cache's own age */
       /* ══ ⚠⚠⚠ (#R275) 「更新が遅すぎる。リアルタイムにと言っている。」 (2回目) ═══════════════════════
          #R273 answered this by halving the tick — 60 s to 30 s — and the tick was never what was
          wrong for most of the map. MEASURED on the built page, layer on, refresh() driven 80 times
@@ -1412,7 +1431,7 @@ window.IntMapModules.worldPacks=function(HOST){
          ⚠ A country that already has a feed never asks here — one source per country. */
       /* (#R277) three calls here too — the scan says which members have anything in force at all
          (measured, 38 of 93), so a full cycle of the ones that matter is two ticks. */
-      const SWIC_PER_TICK=6, SWIC_CALLS=3;
+      const SWIC_PER_TICK=6, SWIC_SLOTS=3;
       const swicMeta={ mid:Object.create(null), dept:Object.create(null), status:Object.create(null), at:0, asked:false };
       const swicData={};            /* iso → the member summary */
       const swicAt={};              /* iso → when it was last read */
@@ -2042,15 +2061,19 @@ window.IntMapModules.worldPacks=function(HOST){
          `EMMA_ID`) and their names are the SERVICE’S own region names, which are not Eurostat NUTS
          names: 「Rijeka region」, 「Wien Brigittenau」, 「Meseta cacereña」, 「Košice okolie」.
 
-         So the shape is looked for in FOUR places, in order of how close each is to the agency that
+         So the shape is looked for in FIVE places, in order of how close each is to the agency that
          issued the warning:
             1  the CAP’s own <polygon>, when the service publishes one       (the UK, the Netherlands)
             2  THE SAME SERVICE’S OWN SHAPES, from the WMO register (#R277)  (Austria, Slovakia,
                Spain, Poland, Serbia, Bosnia, Croatia, Greece, Slovenia, …)
             3  Eurostat NUTS, where the region name IS the NUTS name          (Italy, France, …)
-            4  the country outline, but ONLY when the area names the country  (Cyprus)
-         MEASURED with the ladder in place: 965 of 1,127. The 162 that remain are counted and
-         printed per country (「置けなかった数は言葉で印字する」 #R273) rather than rounded away.
+            4  (#R284) geoBoundaries gbOpen ADM1/ADM2 — a boundary set that does not depend on
+               today's weather, for a unit that is in no NUTS  (Portugal's distritos, Moldova's
+               raions)
+            5  the country outline, but ONLY when the area names the country  (Cyprus)
+         MEASURED with rungs 1–3 and 5: 965 of 1,127 (#R277), and 2,737 of 2,923 across every feed
+         when this round measured it again. Whatever is left is counted and printed per country
+         (「置けなかった数は言葉で印字する」 #R273) rather than rounded away.
          ⚠ STEP 2 IS NOT A SECOND SOURCE OF WARNINGS — 「ソースは一国一ソース」. What the warning IS still
          comes from that country’s own feed; the register supplies the OUTLINE the same national
          service drew for the same named unit, and nothing else travels with it. */
@@ -2059,20 +2082,86 @@ window.IntMapModules.worldPacks=function(HOST){
       const SHAPELIB={};         /* iso → how many shapes that library holds (printed, not assumed) */
       let swicGeoInflight=0;
       const SWIC_GEO_MAX=2;      /* at most two libraries in flight, so a tick cannot become a storm */
+      /* ══ ⚠⚠⚠ (#R284) THE REGISTER'S SHAPES ARE WHAT IS IN FORCE **NOW**, AND THAT EMPTIES ════
+         `?swicgeo=` returns the member's CURRENT CAP areas, so the library is only as complete as
+         that member's weather. MEASURED this build, same minute: Austria 112 shapes, Poland 126,
+         Spain 86, Slovakia 54 — and **Portugal 0, Moldova 0, Hungary 0, Italy 0, Belgium 0**,
+         because those services had nothing filed with the WMO at that moment. Their MeteoAlarm
+         warnings therefore had no shape at all: MEASURED, Moldova placed **0 of 42** and Portugal
+         **1 of 18**, i.e. two whole countries drawing nothing while their own service was
+         publishing. That is 「漏れが多すぎる」 with a cause — a library that forgets.
+         → it ACCUMULATES. A shape learned once is kept for the session, a later read MERGES into it
+         rather than replacing it, and a member that answered with nothing is asked again later
+         instead of being written off for ever. */
+      const swicGeoAt={};              /* iso → when its library was last read */
+      const SWIC_GEO_RETRY_MS=600000;  /* an empty answer is re-asked, but not every tick */
       function askSwicGeo(iso){
-        if(swicGeoAsked[iso]||swicGeoInflight>=SWIC_GEO_MAX) return;
+        if(swicGeoInflight>=SWIC_GEO_MAX) return;
+        if(swicGeoAsked[iso]&&(swicGeoBy[iso]||Date.now()-(swicGeoAt[iso]||0)<SWIC_GEO_RETRY_MS)) return;
         const mid=swicMeta.mid[iso]; if(!mid) return;     /* the member table has not landed yet */
         const u=relay('swicgeo='+encodeURIComponent(mid)); if(!u) return;
-        swicGeoAsked[iso]=true; swicGeoInflight++;
+        swicGeoAsked[iso]=true; swicGeoAt[iso]=Date.now(); swicGeoInflight++;
         fetchJSON(u).then(j=>{ const d=(j.members||{})[mid]; if(!d||d.error) return;
-            const by=Object.create(null); let n=0;
+            const by=swicGeoBy[iso]||Object.create(null); let n=0;
             (d.areas||[]).forEach(a=>{ if(!a.geom) return; n++;
               _alias(a.name).forEach(x=>{ const k=_norm(x); if(k&&!by[k]) by[k]={geometry:a.geom}; }); });
             if(!n) return;
-            swicGeoBy[iso]=by; SHAPELIB[iso]=n;
+            swicGeoBy[iso]=by; SHAPELIB[iso]=Object.keys(by).length;
             return maFeatures().then(()=>{ if(on) publish(); }); })
           .catch(()=>{ swicGeoAsked[iso]=false; })
           .then(()=>{ swicGeoInflight--; }); }
+
+      /* ══ ⚠⚠⚠ (#R284) A STABLE ADMINISTRATIVE INDEX, FOR THE UNITS NOBODY ELSE NAMES ═══════════
+         Some services issue at a unit that is neither their own published polygon, nor a WMO shape
+         they happen to have filed today, nor a Eurostat NUTS region: IPMA warns by DISTRITO and the
+         Moldovan service by RAION, and neither is in NUTS at all. So the last rung before 「the
+         whole country」 is a boundary set that does not depend on the weather: geoBoundaries gbOpen,
+         one country at a time, ADM1 then ADM2, fetched only for a country that still has areas it
+         could not place.
+         MEASURED with the real matcher against the live feeds: Moldova **32 of 42** at ADM1 (was 0),
+         Portugal **17 of 18** at ADM2 (was 1), Lithuania 10 of 11, Italy 19 of 20 — and Greece and
+         Belgium WORSE than what they already had, which is why this is a FALLBACK rather than a
+         replacement: it is consulted only for the areas the closer rungs could not answer.
+         ⚠ THE SHAPES ARE GEOMETRY, NOT A SECOND OPINION ABOUT THE WEATHER. What the warning is, its
+         rank and its wording all still come from that country's own service — exactly as NUTS,
+         Natural Earth and 国土数値情報 already do for the other feeds. 「ソースは一国一ソース」 is about
+         the warning, and the warning is untouched.
+         ⚠ `raw.githubusercontent.com` returns the Git-LFS POINTER for these files (measured: 131
+         bytes beginning 「version https://git-lfs…」) and `github.com/…/raw/…` sends no CORS header
+         at all. `media.githubusercontent.com/media/…` serves the real GeoJSON with
+         `Access-Control-Allow-Origin: *` — measured, 595 kB in 373 ms for Portugal.
+         Source & terms: geoBoundaries (gbOpen), Runfola et al. 2020 — declared in sources.html,
+         js/reference-data.js and js/legal.js. */
+      const GB_BASE='https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/';
+      const gbAsked={}, gbBy={};
+      function gbIndex(iso,lvl){
+        const u=GB_BASE+iso+'/'+lvl+'/geoBoundaries-'+iso+'-'+lvl+'_simplified.geojson';
+        return fetchJSON(u).then(j=>{ const by=Object.create(null); let n=0;
+          (j.features||[]).forEach(f=>{ const nm=(f.properties||{}).shapeName; if(!nm||!f.geometry) return; n++;
+            _alias(nm).forEach(x=>{ const k=_norm(x); if(k&&!by[k]) by[k]=f; }); });
+          return n?by:null; }); }
+      function askGB(iso){
+        if(gbAsked[iso]||!/^[A-Z]{3}$/.test(String(iso||''))) return;
+        gbAsked[iso]=true;
+        gbIndex(iso,'ADM1').catch(()=>null)
+          .then(a=>gbIndex(iso,'ADM2').catch(()=>null).then(b=>{
+            if(!a&&!b) return;
+            /* ADM1 first — the coarser unit is the one a met service usually names */
+            const by=Object.create(null);
+            [a,b].forEach(x=>{ if(!x) return; Object.keys(x).forEach(k=>{ if(!by[k]) by[k]=x[k]; }); });
+            gbBy[iso]=by; SHAPELIB[iso+'/gb']=Object.keys(by).length;
+            return maFeatures().then(()=>{ if(on) publish(); }); }))
+          .catch(()=>{ gbAsked[iso]=false; }); }
+      /* ⚠ (#R284) HUNGARY NAMES ITS NUTS-2 REGIONS **IN ENGLISH**, and Eurostat publishes them only
+         in Hungarian (`NAME_LATN` = 「Dél-Alföld」), so 「Southern Great Plain」 matched nothing at any
+         rung — measured 0 of 7, i.e. the whole country blank. The NUTS index is also keyed by
+         `NUTS_ID`, so the standard English name of each region is registered as an alias of its ID.
+         This is a NAMING table, not a boundary: the shapes are still Eurostat's. */
+      const MA_ALIAS={ HUN:{ 'Central Hungary':'HU11', 'Budapest':'HU11', 'Pest':'HU12',
+        'Central Transdanubia':'HU21', 'Western Transdanubia':'HU22', 'Southern Transdanubia':'HU23',
+        'Northern Hungary':'HU31', 'Northern Great Plain':'HU32', 'Southern Great Plain':'HU33' } };
+      function aliasUnit(idx,iso,name){ const t=MA_ALIAS[iso]&&MA_ALIAS[iso][String(name||'').trim()];
+        if(!t||!idx) return null; const f=idx[_norm(t)]; return (f&&f.geometry)?f:null; }
       /* the country outline, and ONLY when the area is the country — 「Cyprus」 is an issuing unit
          for a service that issues for the whole island, and a wash over a country that names itself
          is the truth rather than the 「発令されてない箇所が塗られている」 this layer has been reported for. */
@@ -2088,11 +2177,15 @@ window.IntMapModules.worldPacks=function(HOST){
         try{ await withCountryGeo(); }catch(_){}
         const out=[];
         isos.forEach(iso=>{ const d=maData[iso]||{}; const cc=NUTS_CC[iso];
-          const idx=(nuts&&cc&&nuts[cc])||null; const lib=swicGeoBy[iso]||null; let placed=0, missed=0;
+          const idx=(nuts&&cc&&nuts[cc])||null; const lib=swicGeoBy[iso]||null;
+          const gb=gbBy[iso]||null; let placed=0, missed=0;
           const shapeOf=(a)=>{
             if(a.poly){ const g=capPolygon(a.poly); if(g) return g; }
             if(lib){ const f=lookupUnit(lib,a.name); if(f&&f.geometry) return f.geometry; }
-            if(idx){ const f=lookupUnit(idx,a.name); if(f&&f.geometry) return f.geometry; }
+            if(idx){ const f=lookupUnit(idx,a.name); if(f&&f.geometry) return f.geometry;
+              const al=aliasUnit(idx,iso,a.name); if(al) return al.geometry; }
+            /* (#R284) the stable administrative index, for a unit none of the above names */
+            if(gb){ const f=lookupUnit(gb,a.name); if(f&&f.geometry) return f.geometry; }
             return wholeCountryShape(iso,a.name); };
           (d.areas||[]).forEach(a=>{
             const g=shapeOf(a);
@@ -2108,8 +2201,10 @@ window.IntMapModules.worldPacks=function(HOST){
           PLACED[iso]=[placed,(d.areas||[]).length];
           let u=0; (d.areas||[]).forEach(a=>{ if(!shapeOf(a)){ const n=normOf('meteoalarm',a.tier||1); if(n>u) u=n; } });
           UNPL[iso]=u;
-          /* a country that could not place everything asks the register for that service’s shapes */
-          if(missed) askSwicGeo(iso); });
+          /* a country that could not place everything asks the register for that service’s shapes,
+             and — (#R284) — the stable administrative index as well, because the register only
+             holds what that member has in force right now */
+          if(missed){ askSwicGeo(iso); askGB(iso); } });
         SIDE.ma=out; }
 
       async function loadMA(list){
@@ -2301,9 +2396,29 @@ window.IntMapModules.worldPacks=function(HOST){
          one state along: a feed that could not be fetched is not a feed that answered 「nothing」.
          → only `ok` earns the grey. Everything else is HATCHED, which says nothing, and the tap
          says WHICH nothing it is, in words. */
+      /* ══ ⚠⚠⚠ (#R284) THE HATCH MEANS 「未対応」 AND NOTHING ELSE ════════════════════════
+         「対応国まで斜線で塗るのを辞めろ。」
+
+         #R275 stopped 「発表なし」 grey being painted over a country nobody had read yet, and #R277
+         did the same for one whose feed had errored — both correct, and both answered with THE HATCH,
+         which is the appearance reserved for 「this map has no feed for this country」. So a country
+         that IS wired spent the whole of its first read looking exactly like one that is not.
+         MEASURED on the built page, layer on: at t+45 s **22 wired countries were hatched** — fifteen
+         WMO members mid-rotation and five MeteoAlarm ones — and North Macedonia stayed hatched for
+         ever, because feeds.meteoalarm.org answers `upstream_error` for it.
+
+         There are FOUR states and only three of them are a claim, so the fourth draws nothing:
+             0    no feed at all             → hatched   (「未対応」)
+            -1    wired, not read yet / could not be read → NOTHING, the basemap
+             1    read, nothing in force     → grey      (「発令なし」)
+            11-14 read, and areas at that rank that could not be placed → the rank, washed
+         An empty country among grey ones reads as 「no answer yet」 without teaching a fourth
+         pattern, and the tap card still says WHICH nothing it is, in words. `-1` is also what the
+         paint expressions already default to, so neither the hatch (`== 0`) nor the wash (`> 0`)
+         needed a line changed. */
       function washTier(c){
         if(!supported(c)) return 0;
-        if(readState(c)!=='ok') return 0;
+        if(readState(c)!=='ok') return -1;
         const u=UNPL[c]||0;
         if(u&&!drawnISO[c]) return 10+Math.min(4,u);
         return 1; }
@@ -2349,7 +2464,24 @@ window.IntMapModules.worldPacks=function(HOST){
          the SAME BYTES, so asking is pure cost — for us and for the service. 「リアルタイム」 here
          means 「as new as the transport can be」, and the transport says sixty seconds. */
       const MIN_AGE_MS=45000;
+      /* ══ ⚠⚠ (#R284) A COLD ROTATION SPRINTS; A WARM ONE CRUISES ═══════════════════════════════
+         「更新が遅すぎる。リアルタイムにと言っている。」 (4回目). The steady-state cycle is already at the
+         floor the transport allows — the relay's edge cache is sixty seconds, so asking a country
+         more often than that returns the same bytes (MEASURED this round: the oldest MeteoAlarm
+         country swings between 38 and 78 s, i.e. one cache lifetime).
+         What was NOT at the floor is the FIRST minute. MEASURED at t+45 s after switching the layer
+         on: 30 of 35 MeteoAlarm countries and 78 of 93 WMO members had been read — so a quarter of
+         the world was still blank at the moment the reader was looking at it. Three slots is the
+         right sustained rate and the wrong opening one: a country nobody has read yet is not
+         costing the cache anything, because there is nothing cached.
+         → while any wired country is still unread the rotation runs at `COLD_CALLS` slots and drops
+         back to `MA_CALLS` the moment it has been round once. The burst is bounded by the number of
+         countries, so it happens once per session and never repeats. */
+      const COLD_CALLS=6;
+      const maCold=()=>Object.keys(MA).some(k=>!maData[k]);
+      const swicCold=()=>swicHot().some(k=>!swicData[k]);
       function pumpMA(){ if(!on) return;
+        const MA_CALLS=maCold()?COLD_CALLS:MA_SLOTS;
         while(maBusy<MA_CALLS){
           const b=maNext(MA_PER_TICK); if(!b.length) break;
           maBusy++; b.forEach(k=>{ maPend[k]=1; });
@@ -2357,6 +2489,7 @@ window.IntMapModules.worldPacks=function(HOST){
             .catch(e=>{ FEED_STATE.meteoalarm='error'; console.warn('MeteoAlarm',e); if(on&&panel.shown()) overview(); })
             .then(()=>{ maBusy--; b.forEach(k=>{ delete maPend[k]; }); pumpMA(); }); } }
       function pumpSWIC(){ if(!on||!swicMeta.at) return;
+        const SWIC_CALLS=swicCold()?COLD_CALLS:SWIC_SLOTS;
         while(swicBusy<SWIC_CALLS){
           const b=swicNext(SWIC_PER_TICK); if(!b.length) break;
           swicBusy++; b.forEach(k=>{ swicPend[k]=1; });
@@ -2467,17 +2600,27 @@ window.IntMapModules.worldPacks=function(HOST){
         const feed=FEEDS[iso3];
         const mine=feats.filter(f=>f.properties.iso===iso3&&(f.properties.norm||0)>0);
         let h='<div style="font-weight:700;font-size:13px;">'+esc(countryName(iso3))+'</div>';
-        if(feed&&readState(iso3)==='loading'){
+        if(feed&&readState(iso3)!=='ok'){
+          /* ⚠ (#R284) an EMPTY swatch, because an empty country is what the map draws — the hatch
+             belongs to 「未対応」 and to nothing else. `readState` may also be `error` here, and the
+             sentence below says so rather than calling a failure a queue. */
           h+='<div style="margin-top:6px;display:flex;align-items:center;gap:7px;font-size:11.5px;">'
-            +'<span style="width:14px;height:14px;border-radius:3px;flex:none;background:repeating-linear-gradient(45deg,rgba(96,100,108,0.75) 0 2px,rgba(160,164,170,0.30) 2px 5px);"></span>'
-            +esc(L('Not read yet','未取得','Noch nicht gelesen','Ещё не прочитано','Aún no leído'))+'</div>'
+            +'<span style="width:14px;height:14px;border-radius:3px;flex:none;background:transparent;border:1px dashed rgba(128,132,140,0.75);"></span>'
+            +esc(readState(iso3)==='error'?L('Could not be read','取得できませんでした','Nicht lesbar','Не удалось прочитать','No se pudo leer')
+                                          :L('Not read yet','未取得','Noch nicht gelesen','Ещё не прочитано','Aún no leído'))+'</div>'
             +'<div style="margin-top:6px;color:var(--text-main);font-size:11.5px;line-height:1.6;">'
             +esc(agencyFor(feed,iso3))+' — '
-            +L('this service is in the update cycle and has not been read yet, so the map is not saying anything about this country until it has.',
-               'この機関は更新の順番待ちで、まだ取得できていません。取得できるまで、この地図はこの国について何も述べません。',
-               'Dieser Dienst ist noch nicht gelesen — bis dahin sagt die Karte nichts über dieses Land.',
-               'Эта служба ещё не прочитана — до тех пор карта ничего не утверждает об этой стране.',
-               'Este servicio aún no se ha leído — hasta entonces el mapa no afirma nada sobre este país.')+'</div>';
+            +(readState(iso3)==='error'
+              ? L('this service could not be reached just now, so the map is not saying anything about this country. It is retried on every update.',
+                  'この機関にいま到達できませんでした。そのため、この地図はこの国について何も述べていません。更新のたびに再試行します。',
+                  'Dieser Dienst war gerade nicht erreichbar — die Karte sagt nichts über dieses Land. Wird bei jeder Aktualisierung erneut versucht.',
+                  'Служба сейчас недоступна — карта ничего не утверждает об этой стране. Повтор при каждом обновлении.',
+                  'No se pudo contactar con este servicio — el mapa no afirma nada sobre este país. Se reintenta en cada actualización.')
+              : L('this service is in the update cycle and has not been read yet, so the map is not saying anything about this country until it has.',
+                  'この機関は更新の順番待ちで、まだ取得できていません。取得できるまで、この地図はこの国について何も述べません。',
+                  'Dieser Dienst ist noch nicht gelesen — bis dahin sagt die Karte nichts über dieses Land.',
+                  'Эта служба ещё не прочитана — до тех пор карта ничего не утверждает об этой стране.',
+                  'Este servicio aún no se ha leído — hasta entonces el mapa no afirma nada sobre este país.'))+'</div>';
           return h; }
         if(!feed){
           /* ⚠ 「『警報なし』と『データなし』を区別できない」 — this is the second of those two, and it

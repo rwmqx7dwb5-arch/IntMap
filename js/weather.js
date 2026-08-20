@@ -18,8 +18,32 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 
+  /* ══ ⚠⚠ (#R284) THE PLAYER'S ICONS ARE DRAWN, AND NO TWO OF THEM ARE THE SAME ═══════════════
+     「ECMWFの時間UIはボタンがくそ。アイコンが分かりにくすぎるし、再生ボタンと次に行くボタンが同じ
+       アイコンというくそ仕様。」 — MEASURED, the five buttons carried `⏮ ◀ ▶ ▶ ⦿`: **play and next
+     were literally the same character**, and 「戻る」 and 「再生」 were the same triangle mirrored.
+     A glyph out of the emoji / Miscellaneous-Technical blocks is also whatever the reader's OS
+     decides to draw at 10.5 px, which is the other half of 「分かりにくすぎる」.
+     So they are inline SVG at a size that can be seen and hit: bar-plus-triangle for 「最初へ」,
+     DOUBLE triangles for the two steps and a SINGLE one for play — the shape difference IS the
+     distinction — two bars for pause, and 「現在」 is a WORD, because no icon reads as 「now」 and
+     `⦿` certainly did not. */
+  window.IntMapWxPlayer=(function(){
+    const _svg=(d)=>'<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" focusable="false" fill="currentColor">'+d+'</svg>';
+    const IC={
+      first:_svg('<rect x="4" y="5" width="2.6" height="14" rx="1"></rect><path d="M20 6.2v11.6a1 1 0 0 1-1.53.85l-9.1-5.8a1 1 0 0 1 0-1.7l9.1-5.8A1 1 0 0 1 20 6.2z"></path>'),
+      prev:_svg('<path d="M12.6 6.6v10.8a.9.9 0 0 1-1.38.76l-8.5-5.4a.9.9 0 0 1 0-1.52l8.5-5.4a.9.9 0 0 1 1.38.76z"></path><path d="M22 6.6v10.8a.9.9 0 0 1-1.38.76l-8.5-5.4a.9.9 0 0 1 0-1.52l8.5-5.4A.9.9 0 0 1 22 6.6z"></path>'),
+      play:_svg('<path d="M7 4.9v14.2a1 1 0 0 0 1.53.85l11.2-7.1a1 1 0 0 0 0-1.7L8.53 4.05A1 1 0 0 0 7 4.9z"></path>'),
+      pause:_svg('<rect x="6" y="4.5" width="4.4" height="15" rx="1.4"></rect><rect x="13.6" y="4.5" width="4.4" height="15" rx="1.4"></rect>'),
+      next:_svg('<path d="M11.4 6.6v10.8a.9.9 0 0 0 1.38.76l8.5-5.4a.9.9 0 0 0 0-1.52l-8.5-5.4a.9.9 0 0 0-1.38.76z"></path><path d="M2 6.6v10.8a.9.9 0 0 0 1.38.76l8.5-5.4a.9.9 0 0 0 0-1.52L3.38 5.84A.9.9 0 0 0 2 6.6z"></path>')
+    };
+    const _b=(act,label,inner,cls)=>'<button class="ecl-b'+(cls?' '+cls:'')+'" data-act="'+act+'" aria-label="'+label+'" title="'+label+'">'+inner+'</button>';
+    return { svg:_svg, IC:IC, b:_b };
+  })();
+
 window.IntMapModules.wind=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const IC=window.IntMapWxPlayer.IC, _b=window.IntMapWxPlayer.b;   /* (#R284) one declaration, two views of one clock */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const satToast=HOST.satToast, isMobile=HOST.isMobile;
   const L=window.IntMapLang.pick(()=>HOST.lang);
@@ -182,10 +206,26 @@ window.IntMapModules.wind=function(HOST){
     }
 
     /* the forecast axis is shared with every ECMWF raster: a step there moves the wind too */
+    /* ══ ⚠⚠⚠ (#R284) THE PARTICLES ARE NOT BLANKED WHILE THE NEXT HOUR LOADS ═══════════════
+       「点滅してしまうバグが発生する。」 — this handler opened with `renderer.setField(null)`, which stops every
+       particle dead, and the slider fired it on EVERY PIXEL of a drag. So the animation went out
+       and came back forty times in one gesture: that is the blink, and it was not a rendering bug
+       at all but an instruction to erase, repeated.
+       The field a particle reads is a CLOSURE over the frame it was made from (`sampler()` captures
+       `held.grid` / `held.data`), so the old hour keeps animating correctly until the new one lands
+       and replaces it — the same 「never show nothing」 rule the colour raster's two slots follow.
+       ⚠ `index` is the cheap event (#R284): the legend's own clock follows the finger; only the
+       settled `time` costs a download. */
+    function touchWindTime(){ try{ const E=EC(); if(!E) return;
+      const v=document.getElementById('wind-validtime'); const vt=E.validTime();
+      if(v&&vt) v.textContent=L('valid','有効時刻','gültig','действ.','válido')+' '+E.fmt(vt)+' · '+relTxt(vt);
+      const sl=document.getElementById('wind-time'); if(sl&&document.activeElement!==sl) sl.value=String(E.index());
+    }catch(_){} }
     try{ (window.IntMapECMWF||{on:()=>{}}).on(ev=>{
+      if(ev.type==='index'){ touchWindTime(); return; }
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
       if(!on) return;
-      if(ev.type==='time'||ev.type==='meta'){ if(renderer) renderer.setField(null); load({step:ev.type==='time'}); } }); }catch(_){}
+      if(ev.type==='time'||ev.type==='meta'){ load({step:ev.type==='time'}); } }); }catch(_){}
     /* the forecast axis exists without the tile SDK — fetch it so the legend can name the run and
        the hour the moment the layer is switched on, rather than after a 340 kB script lands */
     try{ (window.IntMapECMWF||{meta:()=>Promise.resolve()}).meta().then(()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} }).catch(()=>{}); }catch(_){}
@@ -242,12 +282,15 @@ window.IntMapModules.wind=function(HOST){
         +'<select id="wind-unit-sel">'+(window.WIND_UNITS||[]).map(u=>'<option value="'+u[0]+'"'+(u[0]===window.windUnit?' selected':'')+'>'+u[1]+'</option>').join('')+'</select></div>';
       const n=E?E.count():0, i=E?E.index():0, vt=E?E.validTime():'', ref=E?E.referenceTime():'';
       const playing=!!(E&&E.isPlaying());
+      /* (#R284) the SAME drawn icons the ECMWF box uses — one declaration, so the two views of one
+         clock can never disagree about which button is 「再生」 and which is 「次へ」. */
       const player=n?('<div class="ecl-player">'
-        +'<button class="ecl-b" data-act="first" title="'+L('First step','最初の時刻','Erster Schritt','Первый шаг','Primer paso')+'">⏮</button>'
-        +'<button class="ecl-b" data-act="prev" title="'+L('Previous hour','前の時刻','Vorherige Stunde','Предыдущий час','Hora anterior')+'">◀</button>'
-        +'<button class="ecl-b" data-act="play" title="'+(playing?L('Pause','一時停止','Pause','Пауза','Pausa'):L('Play','再生','Abspielen','Воспроизвести','Reproducir'))+'">'+(playing?'⏸':'▶')+'</button>'
-        +'<button class="ecl-b" data-act="next" title="'+L('Next hour','次の時刻','Nächste Stunde','Следующий час','Hora siguiente')+'">▶</button>'
-        +'<button class="ecl-b" data-act="now" title="'+L('Back to now','現在に戻る','Zurück zu jetzt','К текущему времени','Volver a ahora')+'">⦿</button></div>'
+        +_b('first',L('First step','最初の時刻','Erster Schritt','Первый шаг','Primer paso'),IC.first)
+        +_b('prev',L('One step back','1つ前の時刻','Ein Schritt zurück','На шаг назад','Un paso atrás'),IC.prev)
+        +_b('play',(playing?L('Pause','一時停止','Pause','Пауза','Pausa'):L('Play','再生','Abspielen','Воспроизвести','Reproducir')),(playing?IC.pause:IC.play),'ecl-play')
+        +_b('next',L('One step forward','1つ次の時刻','Ein Schritt vor','На шаг вперёд','Un paso adelante'),IC.next)
+        +_b('now',L('Back to now','現在に戻る','Zurück zu jetzt','К текущему времени','Volver a ahora'),L('Now','現在','Jetzt','Сейчас','Ahora'),'ecl-now')
+        +'</div>'
         +'<input type="range" id="wind-time" min="0" max="'+Math.max(0,n-1)+'" step="1" value="'+i+'" style="width:100%;accent-color:var(--primary-color);">'):'';
       const model='<div class="ecl-model">'+(E?E.MODEL:'ECMWF IFS HRES')+' · '+(E?E.RESOLUTION_KM:9)+' km · '+ul
         +(ref?(' · '+L('run','初期時刻','Lauf','прогон','pasada')+' '+E.fmt(ref,{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric',timeZone:'UTC'})+' UTC'):'')+'</div>';
@@ -264,10 +307,10 @@ window.IntMapModules.wind=function(HOST){
       if(sl) sl.oninput=()=>{ E.pause(); E.setIndex(+sl.value); };
       try{ window._tileLegends&&window._tileLegends(); }catch(_){}
       body.querySelectorAll('.ecl-b').forEach(b=>{ b.onclick=()=>{ const a=b.getAttribute('data-act');
-        if(a==='first'){ E.pause(); E.setIndex(0); }
+        if(a==='first'){ E.pause(); E.setIndex(0,{now:true}); }
         else if(a==='prev'){ E.pause(); E.step(-1); }
         else if(a==='next'){ E.pause(); E.step(1); }
-        else if(a==='now'){ E.pause(); E.setIndex(E.nowIndex()); }
+        else if(a==='now'){ E.pause(); E.setIndex(E.nowIndex(),{now:true}); }
         else if(a==='play') E.togglePlay(); }; });
     };
     window.addEventListener('intmap-units',()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} });
@@ -298,6 +341,7 @@ window.IntMapModules.wind=function(HOST){
 
 window.IntMapModules.weatherEC=function(HOST){
  const GE=()=>window.IntMapGeoEngine;
+  const IC=window.IntMapWxPlayer.IC, _b=window.IntMapWxPlayer.b;   /* (#R284) …the same declaration */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const satToast=HOST.satToast, t=HOST.t;
   window.IntMapWeatherEC=(function(){
@@ -344,32 +388,53 @@ window.IntMapModules.weatherEC=function(HOST){
     const ecDesc=(l)=>L.arr(l.desc);
     const state={};   /* id → {on, op} */
     LAYERS.forEach(l=>state[l.id]={on:false, op:l.op});
-    let mounted=false, legendEl=null, rowsMounted=false;
+    let mounted=false, rowsMounted=false;
 
     function omUrl(cfg,extra){ return EC().omUrl(cfg.variable,extra); }
 
-    function addLayer(cfg){
-      const sid=cfg.id+'-src'; const before=EC().before(); const url=omUrl(cfg,cfg.type==='arrows'?'&arrows=true':'');
+    /* ══ ⚠⚠ (#R284) TWO SLOTS PER LAYER, SO A FORECAST STEP NEVER SHOWS AN EMPTY MAP ═══════════
+       A time step used to `removeLayer()` and then add the same ids back against the new hour's
+       file — and the interval between those two is a hole with nothing in it, for as long as the
+       new tiles take to arrive. The animated wind field has alternated between two slots since
+       #R276 for exactly this reason; the raster/contour layers were still doing the remove-first
+       version, which is the other half of 「点滅してしまうバグが発生する」 whenever more than the wind
+       is on. The new hour is built in the free slot at zero opacity and the old one is dropped only
+       once the map has settled, so there is always a picture.
+       ⚠ THE PUBLIC NAME OF A LAYER IS ITS ROW ID (`dl-ec-cape`), NOT ITS MapLibre id — checked
+       before this was written: nothing outside this module names `ec-cape` as a style layer. */
+    const slotIds=(cfg,s)=>[cfg.id+'-'+s, cfg.id+'-'+s+'-lbl'];
+    const curIds=(cfg)=>slotIds(cfg,cfg._s|0);
+    function addSlot(cfg,s){
+      const sid=cfg.id+'-'+s+'-src', lid=cfg.id+'-'+s, lbl=lid+'-lbl';
+      const before=EC().before(); const url=omUrl(cfg,cfg.type==='arrows'?'&arrows=true':'');
       if(!url) return false;
       try{
         if(cfg.type==='isobars'){
           if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'vector',url:url});
-          if(!GE().layers.has(cfg.id)) GE().layers.add({id:cfg.id,type:'line',source:sid,'source-layer':'contours',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':'rgba(255,255,255,0.9)','line-width':1.1,'line-opacity':cfg.op}},before);
-          if(!GE().layers.has(cfg.id+'-lbl')) GE().layers.add({id:cfg.id+'-lbl',type:'symbol',source:sid,'source-layer':'contours',layout:{visibility:'none','symbol-placement':'line','text-field':['get','value'],'text-size':window.IntMapLabelScale.sub(0.82)},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}},before);
+          if(!GE().layers.has(lid)) GE().layers.add({id:lid,type:'line',source:sid,'source-layer':'contours',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':'rgba(255,255,255,0.9)','line-width':1.1,'line-opacity':cfg.op}},before);
+          if(!GE().layers.has(lbl)) GE().layers.add({id:lbl,type:'symbol',source:sid,'source-layer':'contours',layout:{visibility:'none','symbol-placement':'line','text-field':['get','value'],'text-size':window.IntMapLabelScale.sub(0.82)},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}},before);
         } else if(cfg.type==='arrows'){
           if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'vector',url:url});
-          if(!GE().layers.has(cfg.id)) GE().layers.add({id:cfg.id,type:'line',source:sid,'source-layer':'wind-arrows',layout:{visibility:'none','line-cap':'round'},paint:{'line-width':1.8,'line-opacity':cfg.op,'line-color':['interpolate',['linear'],['to-number',['get','value'],0],0,'#5b8ff9',6,'#36cfc9',12,'#73d13d',18,'#ffd666',26,'#ff7a45',36,'#cf1322']}},before);
+          if(!GE().layers.has(lid)) GE().layers.add({id:lid,type:'line',source:sid,'source-layer':'wind-arrows',layout:{visibility:'none','line-cap':'round'},paint:{'line-width':1.8,'line-opacity':cfg.op,'line-color':['interpolate',['linear'],['to-number',['get','value'],0],0,'#5b8ff9',6,'#36cfc9',12,'#73d13d',18,'#ffd666',26,'#ff7a45',36,'#cf1322']}},before);
         } else {
           if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'raster',url:url,maxzoom:12});
-          if(!GE().layers.has(cfg.id)) GE().layers.add({id:cfg.id,type:'raster',source:sid,layout:{visibility:'none'},paint:{'raster-opacity':cfg.op,'raster-opacity-transition':{duration:220},'raster-fade-duration':0}},before);
+          if(!GE().layers.has(lid)) GE().layers.add({id:lid,type:'raster',source:sid,layout:{visibility:'none'},paint:{'raster-opacity':cfg.op,'raster-opacity-transition':{duration:220},'raster-fade-duration':0}},before);
         }
-        [cfg.id,cfg.id+'-lbl'].forEach(l=>{ try{ EC().lift(l); }catch(_){} });
+        slotIds(cfg,s).forEach(l=>{ try{ EC().lift(l); }catch(_){} });
         return true;
       }catch(e){ try{ console.warn('ECMWF add fail',cfg.id,e); }catch(_){} return false; }
     }
-    function removeLayer(cfg){ [cfg.id,cfg.id+'-lbl'].forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} }); try{ if(GE().layers.hasSource(cfg.id+'-src')) GE().layers.removeSource(cfg.id+'-src'); }catch(_){} }
-    function setVis(cfg,on){ [cfg.id,cfg.id+'-lbl'].forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); }catch(_){} }); }
-    function setOp(cfg,op){ try{ if(cfg.type==='isobars'||cfg.type==='arrows'){ if(GE().layers.has(cfg.id)) GE().layers.setPaint(cfg.id,'line-opacity',op); } else if(GE().layers.has(cfg.id)) GE().layers.setPaint(cfg.id,'raster-opacity',op); }catch(_){} }
+    function dropSlot(cfg,s){ slotIds(cfg,s).forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} });
+      try{ const sid=cfg.id+'-'+s+'-src'; if(GE().layers.hasSource(sid)) GE().layers.removeSource(sid); }catch(_){} }
+    function addLayer(cfg){ return addSlot(cfg,cfg._s|0); }
+    function removeLayer(cfg){ dropSlot(cfg,0); dropSlot(cfg,1); }
+    function setVisSlot(cfg,s,on){ slotIds(cfg,s).forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); }catch(_){} }); }
+    function setVis(cfg,on){ setVisSlot(cfg,cfg._s|0,on); if(!on) setVisSlot(cfg,1-(cfg._s|0),false); }
+    function setOpSlot(cfg,s,op){ const lid=cfg.id+'-'+s;
+      try{ if(cfg.type==='isobars'||cfg.type==='arrows'){ if(GE().layers.has(lid)) GE().layers.setPaint(lid,'line-opacity',op); }
+        else if(GE().layers.has(lid)) GE().layers.setPaint(lid,'raster-opacity',op); }catch(_){} }
+    function setOp(cfg,op){ setOpSlot(cfg,cfg._s|0,op); }
+    const liveLayer=(cfg)=>{ try{ return GE().layers.has(cfg.id+'-'+(cfg._s|0)); }catch(_){ return false; } };
 
     function toggle(id,on){ const cfg=LAYERS.find(l=>l.id===id); if(!cfg) return;
       state[id].on=on;
@@ -387,7 +452,7 @@ window.IntMapModules.weatherEC=function(HOST){
           if(n++<80) setTimeout(go,200);
         };
         go();
-        try{ GE().events.once('idle',()=>{ if(state[id].on&&!GE().layers.has(cfg.id)) go(); }); }catch(_){}
+        try{ GE().events.once('idle',()=>{ if(state[id].on&&!liveLayer(cfg)) go(); }); }catch(_){}
       }).catch(()=>{
         try{ satToast(L('Could not load ECMWF weather','ECMWFデータを読み込めませんでした','ECMWF-Wetterdaten konnten nicht geladen werden','Не удалось загрузить данные ECMWF','No se pudieron cargar los datos meteorológicos del ECMWF')); }catch(_){}
         state[id].on=false;
@@ -399,15 +464,22 @@ window.IntMapModules.weatherEC=function(HOST){
     function anyOn(){ return LAYERS.some(l=>state[l.id].on); }
     function activeLayers(){ return LAYERS.filter(l=>state[l.id].on); }
 
-    /* ── the forecast step changed: rebuild every live source ────────────────────────────────── */
+    /* ── the forecast step changed: build the new hour beside the old one, then swap ─────────── */
     function applyTime(){
-      /* ⚠ (#R276 追記) the rebuild removes the layer FIRST, so a refusal would leave nothing on the
-         map — the same shape as the wind field's. Retry until it lands. */
-      activeLayers().forEach(cfg=>{ removeLayer(cfg);
+      activeLayers().forEach(cfg=>{
+        const old=cfg._s|0, nu=1-old;
+        dropSlot(cfg,nu);                       /* whatever a superseded step left there */
         let n=0;
         const go=()=>{ if(!state[cfg.id].on) return;
-          if(_imCanDraw()&&addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); return; }
-          if(n++<40) setTimeout(go,200); };
+          if(!(_imCanDraw()&&addSlot(cfg,nu))){ if(n++<40) setTimeout(go,200); return; }
+          setVisSlot(cfg,nu,true); setOpSlot(cfg,nu,0);
+          const reveal=()=>{ if(!state[cfg.id].on) return;
+            if((cfg._s|0)!==nu){ cfg._s=nu; }
+            setOpSlot(cfg,nu,state[cfg.id].op);
+            dropSlot(cfg,old); };
+          try{ GE().events.once('idle',reveal); }catch(_){}
+          setTimeout(reveal,2500);              /* backstop: 'idle' can be far away on a busy map */
+        };
         go(); });
       renderLegend();
       try{ const nx=Math.min(EC().count()-1,EC().index()+1);
@@ -429,78 +501,114 @@ window.IntMapModules.weatherEC=function(HOST){
     }
     function nice(v){ const a=Math.abs(v); return a>=100?Math.round(v):a>=10?(Math.round(v*10)/10):(Math.round(v*100)/100); }
 
-    /* ── the legend: the layer's own name, its own ramp, its own numbers ─────────────────────
-       「CAPE 不安定度（ECMWF）レイヤーの凡例名がECMWF気象になっている。また、凡例がない。説明もない。」
-       Every bar below is built from `IntMapECMWF.legend(variable)`, which reads the SDK's own colour
-       table — the same table the tiles were painted with — so the ramp, its end points and its unit
-       cannot drift away from the picture. */
-    function barFor(cfg){
+    /* ══ ⚠⚠⚠ (#R284) ONE LEGEND PER LAYER, EACH UNDER ITS OWN NAME ═══════════════════════════════
+       「CAPE 不安定度（ECMWF）レイヤーの凡例名がECMWF気象になっている。また、凡例がない。その他の
+         ECMWF系レイヤーも、凡例名がECMWF気象になっている。ECMWFレイヤーはなぜか凡例が連結してしまう。」
+
+       All four sentences describe ONE box. MEASURED on the built page at 1280×800 with three ECMWF
+       layers on: a single `#data-legend-ecmwf` whose `<h4>` read 「ECMWF weather」 and whose body held
+       three stacked `.ecl-item`s — 354 px of concatenated ramps under a title that names none of
+       them. And at a narrow width `ensureLegendMinimize` auto-collapses a floating legend, which
+       hides every child except the `<h4>` — so the whole box became the two words 「ECMWF 気象」 and
+       the ramp was gone: 「凡例がない」, exactly.
+
+       So an ECMWF layer's legend is now the same thing every other layer's legend is: ITS OWN BOX,
+       titled with ITS OWN name, holding ITS OWN ramp, numbers and description. Turning two on gives
+       two boxes that the existing tiler stacks; collapsing one leaves the layer's real name on
+       screen rather than the family's.
+
+       The forecast axis is a CONTROL shared by all of them, not a key to any one of them, so it is
+       its own small box — 「ECMWF 予報時刻」 — and it is up only while at least one ECMWF layer is on. */
+    function barBody(cfg){
       const dark=(document.documentElement.getAttribute('data-theme')||'')!=='light';
       const lg=EC().legend(cfg.variable,dark);
-      const name=ecLbl(cfg).replace(/\s*\(ECMWF\)\s*$/,'');
-      if(!lg) return '<div class="ecl-item"><div class="ecl-name">'+name+'</div><div class="ecl-desc">'+ecDesc(cfg)+'</div></div>';
+      if(!lg) return '<div class="ecl-desc">'+ecDesc(cfg)+'</div>';
       const u=unitOf(cfg.kind,lg.unit);
       const ticks=[0,0.25,0.5,0.75,1].map(f=>{ const v=lg.min+(lg.max-lg.min)*f; return { pos:f*100, txt:nice(convert(cfg.kind,v)) }; });
-      return '<div class="ecl-item"><div class="ecl-name">'+name+' <span class="ecl-unit">'+u+'</span></div>'
+      return '<div class="ecl-unitline">'+u+'</div>'
         +'<div class="ecl-bar" style="background:'+lg.css+';"></div>'
         +'<div class="ecl-ticks">'+ticks.map(k=>'<span style="left:'+k.pos.toFixed(1)+'%">'+k.txt+'</span>').join('')+'</div>'
-        +'<div class="ecl-desc">'+ecDesc(cfg)+'</div></div>';
+        +'<div class="ecl-desc">'+ecDesc(cfg)+'</div>';
     }
 
-    function ensureLegend(){
-      if(legendEl) return legendEl;
+    const boxes={};            /* layer id → its own legend element */
+    let timeEl=null;
+    const dragHandle=()=>'<span class="dl-drag" title="'+L('Drag to move','ドラッグして移動','Zum Verschieben ziehen','Потяните, чтобы переместить','Arrastre para mover')+'">⋮⋮</span>';
+    function newBox(id){
       const mc=document.getElementById('map-container')||document.body;
-      legendEl=document.createElement('div'); legendEl.className='data-legend'; legendEl.id='data-legend-ecmwf';
-      legendEl.style.bottom='140px'; legendEl.style.display='none';
-      mc.appendChild(legendEl);
-      try{ window._wireLegendDrag&&window._wireLegendDrag(legendEl); }catch(_){}
-      return legendEl;
+      const el=document.createElement('div'); el.className='data-legend'; el.id='data-legend-'+id;
+      el.style.bottom='140px'; el.style.display='none';
+      mc.appendChild(el);
+      try{ window._wireLegendDrag&&window._wireLegendDrag(el); }catch(_){}
+      return el;
     }
+    function boxFor(cfg){ return boxes[cfg.id]||(boxes[cfg.id]=newBox(cfg.id)); }
+    function ensureLegend(){ return timeEl||(timeEl=newBox('ec-time')); }
+    function closeBtn(el){ const x=el.querySelector('.layer-popup-x');
+      if(x) x.onclick=()=>{ el.style.display='none'; try{ window._tileLegends&&window._tileLegends(); }catch(_){} }; }
+
     function relTxt(iso){
       try{ const dh=Math.round((Date.parse(/[zZ]$/.test(iso)?iso:iso+'Z')-Date.now())/3600000);
         if(dh===0) return L('now','現在','jetzt','сейчас','ahora');
         return (dh>0?'+':'')+dh+' '+L('h','時間','h','ч','h'); }catch(_){ return ''; }
     }
-    function renderLegend(){
+    function renderTime(){
       const el=ensureLegend();
       const E=EC(); const n=E.count(), i=E.index();
       const vt=E.validTime(), ref=E.referenceTime();
       const playing=E.isPlaying();
-      const head='<span class="dl-drag" title="'+L('Drag to move','ドラッグして移動','Zum Verschieben ziehen','Потяните, чтобы переместить','Arrastre para mover')+'">⋮⋮</span>'
-        +'<button class="layer-popup-x" id="ec-legend-x" title="'+t('close')+'">×</button>'
-        +'<h4>'+L('ECMWF weather','ECMWF 気象','ECMWF-Wetter','Погода ECMWF','Meteorología ECMWF')+'</h4>'
+      const playTxt=playing?L('Pause','一時停止','Pause','Пауза','Pausa'):L('Play','再生','Abspielen','Воспроизвести','Reproducir');
+      el.innerHTML=dragHandle()
+        +'<button class="layer-popup-x" title="'+t('close')+'">×</button>'
+        +'<h4>'+L('ECMWF forecast time','ECMWF 予報時刻','ECMWF-Vorhersagezeit','Время прогноза ECMWF','Hora de pronóstico del ECMWF')+'</h4>'
+        +'<div class="ecl-timebody">'
         +'<div class="ecl-model">'+E.MODEL+' · '+E.RESOLUTION_KM+' km · '
-        +L('run','初期時刻','Lauf','прогон','pasada')+' '+(ref?E.fmt(ref,{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric',timeZone:'UTC'})+' UTC':'—')+'</div>';
-      const player='<div class="ecl-player">'
-        +'<button class="ecl-b" data-act="first" title="'+L('First step','最初の時刻','Erster Schritt','Первый шаг','Primer paso')+'">⏮</button>'
-        +'<button class="ecl-b" data-act="prev" title="'+L('Previous hour','前の時刻','Vorherige Stunde','Предыдущий час','Hora anterior')+'">◀</button>'
-        +'<button class="ecl-b ecl-play" data-act="play" title="'+(playing?L('Pause','一時停止','Pause','Пауза','Pausa'):L('Play','再生','Abspielen','Воспроизвести','Reproducir'))+'">'+(playing?'⏸':'▶')+'</button>'
-        +'<button class="ecl-b" data-act="next" title="'+L('Next hour','次の時刻','Nächste Stunde','Следующий час','Hora siguiente')+'">▶</button>'
-        +'<button class="ecl-b" data-act="now" title="'+L('Back to now','現在に戻る','Zurück zu jetzt','К текущему времени','Volver a ahora')+'">⦿</button>'
+          +L('run','初期時刻','Lauf','прогон','pasada')+' '+(ref?E.fmt(ref,{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric',timeZone:'UTC'})+' UTC':'—')+'</div>'
+        +'<div class="ecl-player">'
+          +_b('first',L('First step','最初の時刻','Erster Schritt','Первый шаг','Primer paso'),IC.first)
+          +_b('prev',L('One step back','1つ前の時刻','Ein Schritt zurück','На шаг назад','Un paso atrás'),IC.prev)
+          +_b('play',playTxt,playing?IC.pause:IC.play,'ecl-play')
+          +_b('next',L('One step forward','1つ次の時刻','Ein Schritt vor','На шаг вперёд','Un paso adelante'),IC.next)
+          +_b('now',L('Back to now','現在に戻る','Zurück zu jetzt','К текущему времени','Volver a ahora'),L('Now','現在','Jetzt','Сейчас','Ahora'),'ecl-now')
         +'</div>'
         +'<input type="range" id="ec-time" min="0" max="'+Math.max(0,n-1)+'" step="1" value="'+i+'" style="width:100%;accent-color:var(--primary-color);">'
-        +'<div id="ec-validtime">'+(vt?(L('valid','有効時刻','gültig','действ.','válido')+' '+E.fmt(vt)+' · '+relTxt(vt)):L('loading…','読み込み中…','wird geladen…','загрузка…','cargando…'))+'</div>';
-      const bars=activeLayers().map(barFor).join('');
-      el.innerHTML=head+player+'<div class="ecl-items">'+bars+'</div>';
-      const x=el.querySelector('#ec-legend-x'); if(x) x.onclick=()=>{ el.style.display='none'; };
+        +'<div id="ec-validtime">'+(vt?(L('valid','有効時刻','gültig','действ.','válido')+' '+E.fmt(vt)+' · '+relTxt(vt)):L('loading…','読み込み中…','wird geladen…','загрузка…','cargando…'))+'</div>'
+        +'</div>';
+      closeBtn(el);
       const sl=el.querySelector('#ec-time');
+      /* ⚠ (#R284) `input` fires on every pixel of a drag — `EC().setIndex` is what coalesces the
+         axis moves, so this only has to hand it the value. See the note on `emit('time')`. */
       if(sl){ sl.oninput=()=>{ E.pause(); E.setIndex(+sl.value); }; }
-      try{ window._tileLegends&&window._tileLegends(); }catch(_){}
       el.querySelectorAll('.ecl-b').forEach(b=>{ b.onclick=()=>{ const a=b.getAttribute('data-act');
-        if(a==='first') { E.pause(); E.setIndex(0); }
+        if(a==='first') { E.pause(); E.setIndex(0,{now:true}); }
         else if(a==='prev'){ E.pause(); E.step(-1); }
         else if(a==='next'){ E.pause(); E.step(1); }
-        else if(a==='now'){ E.pause(); E.setIndex(E.nowIndex()); }
+        else if(a==='now'){ E.pause(); E.setIndex(E.nowIndex(),{now:true}); }
         else if(a==='play') E.togglePlay(); }; });
     }
-    function syncLegend(){ const el=ensureLegend(); const show=anyOn(); el.style.display=show?'block':'none';
-      if(show) renderLegend();
-      /* the tiler owns where the legends sit; adding or removing a bar changes this box's height */
+    function renderOne(cfg){
+      const el=boxFor(cfg);
+      el.innerHTML=dragHandle()
+        +'<button class="layer-popup-x" title="'+t('close')+'">×</button>'
+        +'<h4>'+ecLbl(cfg)+'</h4>'
+        +'<div class="ecl-one">'+barBody(cfg)+'</div>';
+      closeBtn(el);
+    }
+    function renderLegend(){
+      renderTime();
+      activeLayers().forEach(renderOne);
+      try{ window._tileLegends&&window._tileLegends(); }catch(_){}
+    }
+    function syncLegend(){ const show=anyOn();
+      ensureLegend().style.display=show?'block':'none';
+      LAYERS.forEach(l=>{ const el=boxes[l.id]; if(el&&!(state[l.id]&&state[l.id].on)) el.style.display='none'; });
+      if(show){ activeLayers().forEach(l=>{ boxFor(l).style.display='block'; }); renderLegend(); }
+      /* the tiler owns where the legends sit; opening or closing one moves every box below it */
       try{ window._tileLegends&&window._tileLegends(); }catch(_){} }
     window._ecSyncTimeLegend=syncLegend;
 
     /* ── the Layers-panel rows ───────────────────────────────────────────────────────────────── */
-    function relabelRows(){ LAYERS.forEach(l=>{ const s=document.querySelector('#lyrrow-'+l.id+' .ec-lbl'); if(s) s.textContent=ecLbl(l); }); if(legendEl&&legendEl.style.display!=='none') renderLegend(); }
+    function relabelRows(){ LAYERS.forEach(l=>{ const s=document.querySelector('#lyrrow-'+l.id+' .ec-lbl'); if(s) s.textContent=ecLbl(l); }); if(anyOn()) renderLegend(); }
     function mountRows(){
       const dd=document.getElementById('layer-dropdown'); if(!dd||rowsMounted) return;
       rowsMounted=true;
@@ -532,13 +640,22 @@ window.IntMapModules.weatherEC=function(HOST){
 
     /* re-attach after a style swap */
     GE().events.on('styledata',()=>{ if(anyOn()){ setTimeout(()=>{ if(!_imCanDraw())return; activeLayers().forEach(cfg=>{ if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } }); },80); } });
-    GE().events.on('idle',()=>{ if(!anyOn()) return; activeLayers().forEach(cfg=>[cfg.id,cfg.id+'-lbl'].forEach(l=>{ try{ EC().lift(l); }catch(_){} })); });
-    EC().on(ev=>{ if(ev.type==='time'){ if(anyOn()) applyTime(); renderLegend(); }
+    GE().events.on('idle',()=>{ if(!anyOn()) return; activeLayers().forEach(cfg=>curIds(cfg).forEach(l=>{ try{ EC().lift(l); }catch(_){} })); });
+    /* ⚠ (#R284) `index` fires on EVERY slider pixel and `time` once the drag has settled — see
+       IntMapECMWF.setIndex. `index` therefore updates the two things that must feel instant, IN
+       PLACE: rebuilding the box would replace the very `<input>` the finger is holding. */
+    function touchTime(){ try{ const E=EC(); const el=timeEl; if(!el) return;
+      const v=el.querySelector('#ec-validtime'); const vt=E.validTime();
+      if(v&&vt) v.textContent=L('valid','有効時刻','gültig','действ.','válido')+' '+E.fmt(vt)+' · '+relTxt(vt);
+      const sl=el.querySelector('#ec-time'); if(sl&&document.activeElement!==sl) sl.value=String(E.index());
+    }catch(_){} }
+    EC().on(ev=>{ if(ev.type==='index'){ touchTime(); return; }
+      if(ev.type==='time'){ if(anyOn()) applyTime(); renderLegend(); }
       else if(ev.type==='play'||ev.type==='meta'){ if(anyOn()) renderLegend(); } });
 
     mountRows(); setTimeout(mountRows,1500);
     window.addEventListener('intmap-lang',relabelRows);
-    window.addEventListener('intmap-units',()=>{ if(legendEl&&legendEl.style.display!=='none') renderLegend(); });
+    window.addEventListener('intmap-units',()=>{ if(anyOn()) renderLegend(); });
 
     /* ── the share link ──────────────────────────────────────────────────────────────────────
        「共有URLに、選択中の気象レイヤー、ECMWF有効時刻、透明度を保存し、同じ表示を復元できるように」
