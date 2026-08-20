@@ -421,7 +421,7 @@ test('⑧ …and the name closure itself is the same for every segment of one ri
 /* ── ⑨ the split gate learned about the standalone pages ────────────────────────────────── */
 test('⑨ a module reached only by a page <script src> counts as reachable, and only that way', () => {
   const s = read('scripts/static-checks.mjs');
-  assert.match(s, /for \(const page of \['sources\.html', 'science\.html', 'admin\.html'\]\)/,
+  assert.match(s, /for \(const page of \['sources\.html', 'science\.html', 'admin\.html', 'privacy\.html', 'terms\.html'\]\)/,
     'the reachability scan does not read the standalone pages');
   /* ⚠ read the check WITHOUT its comments: the two file names appear in the note that explains why
      the scan reads the pages, and that note is the thing this test is here to protect (#R216). */

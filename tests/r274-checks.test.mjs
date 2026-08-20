@@ -24,6 +24,7 @@ import { readFileSync, readdirSync, writeFileSync, unlinkSync, existsSync } from
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { withTreeLock } from './helpers/gate-lock.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -60,7 +61,11 @@ test('② the sweep reaches the whole tree of current-state documents', () => {
 });
 
 /* ── ③ …and it is NOT blind: a real violation fails it ───────────────────────────────────── */
-test('③ a violating document really does fail the gate', () => {
+/* ⚠ (#R280) THIS TEST WRITES TO THE TREE, AND SO DOES tests/r280 ②. `node --test` runs files in
+   parallel, so without a lock one file's probe is on disk while the other asserts the tree is
+   clean — measured: this test passed alone and failed inside `npm test`. */
+test('③ a violating document really does fail the gate', async () => {
+  await withTreeLock(() => {
   const probe = join(ROOT, 'docs', '_doc-facts-negative-probe.md');
   /* assembled, so this test file is not itself a violation of the rule it is proving */
   const badStamp = '`/' + '-' + 'build-info.json`';
@@ -74,6 +79,7 @@ test('③ a violating document really does fail the gate', () => {
   }
   const after = runGate(['--check']);
   assert.equal(after.code, 0, 'the probe was not cleaned up — the tree is left failing');
+  });
 });
 
 /* ── ④ the gate is wired into the run, so it cannot quietly stop running ─────────────────── */

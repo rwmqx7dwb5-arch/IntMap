@@ -253,7 +253,13 @@ test('R217 ⑦b: DEV-NOTES-ARCHIVE.md is everything older, oldest first', () => 
   const md = rd('DEV-NOTES-ARCHIVE.md');
   const rounds = ROUND_HEADS(md);
   assert.ok(rounds.includes(199) && rounds.includes(86), 'it carries the range it took over');
-  assert.ok(Math.max(...rounds) <= 199, `nothing from R200 on is duplicated here — found R${Math.max(...rounds)}`);
+  /* ⚠ (#R280) THE BOUNDARY IS NOT A CONSTANT. #R217 put it at 199 and #R280 moved it to 259,
+     because DEV-NOTES.md had grown back to 14,704 lines. What must hold is the RELATION — the
+     two files never overlap — so that is what is asserted, and the boundary can move again
+     without this test having to be edited to keep meaning the same thing. */
+  const live = ROUND_HEADS(rd('DEV-NOTES.md'));
+  assert.ok(Math.max(...rounds) < Math.min(...live),
+    `the archive and DEV-NOTES.md overlap — archive reaches R${Math.max(...rounds)}, DEV-NOTES starts at R${Math.min(...live)}`);
   for (let i = 1; i < rounds.length; i++) {
     assert.ok(rounds[i] >= rounds[i - 1], `oldest-first: R${rounds[i]} follows R${rounds[i - 1]}`);
   }

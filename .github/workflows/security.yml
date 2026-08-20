@@ -7,7 +7,7 @@
 # ci.yml (every PR) — they are NOT duplicated here, to avoid double notifications.
 #
 # CodeQL is free for PUBLIC repositories (IntMap is public). On a private repo it needs
-# GitHub Advanced Security; see docs/SECURITY-TESTING.md.
+# GitHub Advanced Security; see docs/TESTING.md.
 name: Security
 
 on:

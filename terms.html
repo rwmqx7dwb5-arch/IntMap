@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>IntMap — Terms of Service</title>
+<meta name="description" content="Terms of Service — IntMap.">
+<link rel="icon" href="./IntMap.Icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="./css/fonts.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="./css/pages.css">
+<!-- The Terms of Service with a URL of its own, so it can be linked to, cited and read without
+     opening the app. A SHELL, exactly like sources.html / science.html:
+       · the words   → js/legal-text.js   (the same file the in-app modal reads — one source)
+       · the look    → css/pages.css      (shared with the other three reading pages)
+       · the machine → js/legal-page.js   (nine-language chrome; the document itself is JA/EN)
+     The title and description above are the pre-JS defaults; js/legal-page.js replaces both with
+     the reader's language on load, the same way index.html's are wired through the registry. -->
+</head>
+<body>
+
+<div class="pg-top">
+  <div class="pg-top-in">
+    <a class="pg-back" href="./index.html">←</a>
+    <span class="pg-top-spacer"></span>
+    <a class="pg-sibling" href="./privacy.html"></a>
+    <span class="pg-lang"></span>
+  </div>
+</div>
+
+<main class="pg-wrap" id="pg-root"></main>
+
+<!-- the generated language list, then the registry that reads it, then the text, then the shell —
+     the same order (and the same reason) as sources.html. -->
+<script src="./js/locales/_langs.js"></script>
+<script src="./js/lang-registry.js"></script>
+<script src="./js/legal-text.js"></script>
+<script src="./js/legal-page.js"></script>
+<script>
+  window.IntMapLegalPage.mount('terms');
+</script>
+</body>
+</html>

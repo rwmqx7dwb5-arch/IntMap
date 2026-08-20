@@ -77,4 +77,4 @@ Every PR runs, in CI:
   throwaway Postgres (`supabase/tests/*_test.sql`).
 
 Run locally: `npm test` (adds the browser suite). See
-[`docs/SECURITY-TESTING.md`](docs/SECURITY-TESTING.md).
+[`docs/TESTING.md`](docs/TESTING.md).

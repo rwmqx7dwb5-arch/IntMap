@@ -10,6 +10,14 @@
 - **§1–§18 は「今どうなっているか」だけ**を書く。**このファイルには変更履歴を書かない。**
   「いつ・なぜ・どう直したか」は `DEV-NOTES.md`（直近）と `DEV-NOTES-ARCHIVE.md`（それ以前）の担当。
   標準指示（やってはいけないこと等）は `CONSTITUTION.md`、作業の進め方は `CLAUDE.md`。
+- **このファイルは構造・データフロー・公開契約・不変条件だけを持つ。** 分量が大きく、かつ
+  「そこだけ読めば済む」主題は、**節番号をこのファイルと共有したまま**別の文書にしてある——
+  [`docs/FILES.md`](docs/FILES.md)（§3 ファイル台帳）と
+  [`docs/MAP-LAYERS.md`](docs/MAP-LAYERS.md)（§7.1・§7.2・§7.5〜§7.10 レイヤー実装の詳細）。
+  他の文書からの `§3.x` / `§7.x` 参照はそのまま通る。
+- **「何ができるか」は [`PRODUCT.md`](PRODUCT.md)、「なぜそうなっているか」は
+  [`DECISIONS.md`](DECISIONS.md)。** どの文書が何の正本かは
+  [`docs/README.md`](docs/README.md) が1枚の表で持っている。
 - **ラウンド番号をこのファイルに書かない。** 「いつその事実になったか」を知りたいときは
   `git log -S'<その記述>' -- Architecture.md` で入った commit を辿り、同じラウンドの `DEV-NOTES.md`
   を読む。本文にラウンド番号を埋めると、それを手掛かりに履歴の物語がまた増えるので、
@@ -28,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（919行・83 KB）＋ `css/`（3本）＋ `js/`（151本・8.5 MB）＋ `src/`（8本）。**
+- **本体は `index.html`（919行・83 KB）＋ `css/`（3本）＋ `js/`（153本・8.6 MB）＋ `src/`（8本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -98,530 +106,41 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ## 2. 主要機能一覧 (Features)
 
-> ここは**何ができるか**の一覧。内部構造は §7（地図・レイヤー）・§8（UI）・§9（モバイル）へ。
+**「何ができるか」の一覧は [`PRODUCT.md`](PRODUCT.md) が正本**（§3 主要機能）。製品としての
+目的・対象・優先順位・非目標と同じ場所に置いてある——「何のためにあるか」と「何ができるか」は
+同じ問いの両面で、離せば片方だけが古くなるため。
 
-### 2.1 地図とニュース
-
-- **ライブニュースマップ** — 世界の見出しを「出来事が起きた場所」にピン表示。発信元（媒体HQ）表示にも
-  切替可。地点解析は**サーバー側でAI事前解析**（§4）。72時間以内のニュースのみ表示。
-- **Globe / Flat / Satellite / 3D地形** 切替、コンパス、距離・面積計測、半径円 (Radius)、
-  可視判定（見通し線・レーダー影）。
-- **タイムマシン** — マスタークロック `window.IntMapTime` を動かすと、国境・国家・統計・レイヤーの年が
-  そろって過去へ動く（§7.4）。
-- **国情報** — Countries を ON にして国をタップ → 統計カード＋詳細ポップアップ（世界銀行の時系列、比較）。
-- **Isolate（この国だけ表示）** — 1国だけ残して周囲をマスク。タイムマシンで遡った歴史的国家も、
-  その当時の版図のまま Isolate できる。
-- **共有 (Share this view)** — 位置・ズーム・投影・ベース地図・選択中の全レイヤー・時刻・比較状態を
-  **URL 自体**に格納する。リンクを開くと状態を完全復元する。
-- **スクリーンショット**、**お気に入りレイヤー**、**レイヤープリセット**、**PWA (Service Worker)**。
-
-### 2.2 データレイヤー
-
-- **100本以上のデータレイヤー**。`js/data-layers.js` の `GROUPS` が **18 の棚に 136 行**を配り、
-  `GROUPS` に無い行は末尾の「Others」と「ベータ」へ落ちる（棚の一覧と方針は §7.2）。
-- 分野は、気候／宇宙・軌道／海洋／地形／自然・土地被覆／人口・経済／災害／政治・統治／安全保障／
-  医療・衛生／テクノロジー・インフラ／経済／社会／交通／農業／エネルギー。
-- **GIBS ラスタの凡例は実際の NASA カラーマップ XML から生成**するので、凡例の色が地図と一致する。
-- **世界銀行系の塗り分けは年を選べる**（凡例の年セレクタが `window.IntMapTime` を読み書きする）。
-- **気象・災害警報は、その機関が発令した単位で塗る**（自前 13 フィード・47 か国 ＋ **WMO の CAP 登録簿**で
-  さらに約 90 か国。§7.1）。
-  フィードの無い国は**灰色斜線**で「データなし」と言う（空白を「平穏」に見せない）。
-
-### 2.3 分析・ツール
-
-- **統計 (Stats)・情報 (Information) ダッシュボード・コミュニティ・Companies** タブ。
-- **多国比較 `IntMapStatsCompare`** — 最大10か国 × 28指標、**棒グラフ／時系列／表**の3モード、
-  出典切替（世界銀行 ⇄ IMF WEO）、CSV エクスポート。
-- **測る系** — 距離・面積・半径・自由描画・3-D 体積・標高断面・傾斜／斜面方向・見通し線 (viewshed)・
-  到達圏 (isochrone)・海路ルート。
-  **到達圏**は Valhalla／OpenStreetMap の**実道路網**に沿った時間到達域（車・徒歩・自転車、
-  1〜120分・最大4本の等時線）で、**距離の円ではない**。1点をクリック（🎯 パネル）でも
-  Atlas（`isochrone`）でも同じ実装を呼ぶ。算出できなかったとき・地図に描けなかったときは
-  **成功とは報告しない**（ルータ側の失敗と地図側の失敗を区別して言う）。
-- **範囲人口** — 面積測定・半径円・自由描画のパネルと Atlas `population` から、**WorldPop 100m グリッド**の
-  実グリッド集計で「囲んだ範囲の人口」を出す。**面積によらず常にタイル分割**するので、進捗バーの割合は
-  常に実測値（`done/cells.length`）であり、アプリの他の進捗バーと同じ確定バーである。
-- **物理シミュレーション** — 地震波（`js/seismic.js`）、津波（`js/tsunami.js`）、
-  地形編集と水の流れ（`js/terrain-water.js`）、放射性物質拡散、日照と地形の影、電波見通し圏。
-  手法の説明は設定 ▸ 科学とロジック。
-- **ドローン航法** — Measure ▸ Drone。DEM を経路に沿ってサンプリングして総飛行距離・立体経路長・
-  予想飛行時間・地上高・最大必要高度・推定バッテリー消費と、**飛行条件を満たさない地点とその理由**を返す。
-  機体条件はすべて編集可。高度は AGL/AMSL をウェイポイントごとに保持して両方表示する。
-- **ルーティング** — 車／徒歩／自転車（OSRM・Valhalla）と公共交通（Transitous / MOTIS）。
-- **Playground (beta)** — Layers ▸ Tools から起動。World Explorer（衛星版 GeoGuessr）／
-  Pandemic Simulator（国別 SEIR メタ個体群）／Statecraft（1900–2026 の国家運営）／World Sandbox／Quiz。
-- **フライトシミュレーター**、**宇宙を探索**（`js/space.js`）、**夜空**（`js/night-sky.js`）。
-
-### 2.4 Atlas（自然言語コンソール）
-
-- 自然言語で指示すると AI が**JSON のアクション計画**を返し、実ディスパッチャが実行する。
-  明確な単一指示は**AIを介さない決定論パス `localPlan`** で即実行する。
-- **IntMap の全機能に到達できることが恒久ルール**。到達経路は3つ：
-  **DOM 操作**＝`control` ＋ `controlCatalog`、**レイヤー**＝`layer` ＋ `layerCatalogText`、
-  **モジュール**＝`module` ＋ `moduleCatalog`（`window.IntMap*` を**自動発見**し、
-  許可リストで制限したメソッドを名前で呼ぶ）。**新しく足したモジュールは配線なしで到達可能**になる。
-- **カタログに書かれていない操作は、プランナーにとって存在しない。** `SYS()` が渡す操作カタログが
-  モデルの知る全世界なので、ディスパッチャに `case` があってもカタログに項目が無ければモデルは
-  それを出力できず、**似ている別の操作で代用するか「その機能はありません」と答える**。
-  この規則自体は長く明文化されていたが検査が無く、実際に6つの機能（到達圏・複数地点最短巡回・
-  オブジェクト一覧・傾斜／斜面方位・電波到達域・世界の巻き戻し）が実装済みのまま不可視だった。
-  **`npm run check:catalog`（`scripts/atlas-catalog.mjs`・`npm test` に内包）が、
-  ディスパッチャの `case` 群とカタログ本文を毎回突き合わせて落とす。**
-  意図的に撤去した機能だけが例外で、理由つきで `WITHDRAWN` に明記する（現在は `monitor` のみ）。
-- **実行結果は検証して正直に報告する。** 各アクションは構造化された `{ok,html}` を返し、
-  効果（チェック状態・テーマ値・ハイライトの描画結果）を検証する。失敗は注意色で明示し、
-  `run()` が実結果を集計してモデルの楽観的な `say` を上書きする。
-- **返答は利用者のメッセージの言語**（UI 言語ではない）。判定できない言語は UI 言語へ落ちる。
-- **画像入力（ビジョン）** — 入力欄に画像をペースト／ドラッグ／添付できる（最大4枚）。画像は
-  地図志向のプランナーを経由せず `_atlVisionTurn` が **分類（`contentClass`）→ 転記 → 求解 →
-  決定論的検算 → 統一レンダリング → 地理のときだけ地図化** を行う。**非地理クラスでは地点抽出を
-  一切呼ばない**ので、数式や文書の語が地名に化けることが構造的に起きない。
-- **返答の描画** — `js/atlas-reply.js` が安全な markdown（`IntMapSafe` でエスケープしてから整形）・
-  KaTeX の数式・コードブロック・GFM 表・出典リンクカードを描く。
-- **主なアクション** — 移動／ズーム／投影／3D／ベース地図／方位、レイヤー切替と不透明度、
-  `highlight`（国・行政区分・通称地域の実境界）、`value`、`clear`、`locate`、`poi`（Overpass ＋ Wikidata）、
-  `analyze`（実データを集めた統合分析）、`brief`、`answer`、`mapReport`（ライブニュース事件の地図）、
-  `researchMap`（歴史・現在・混合のリサーチ）、`compareStats`、`mapMetric`、`scoreMap`、`explore`、
-  `impact`、`population`、`drone`、`engine`、`module`、`control`、
-  `isochrone`（**到達圏**——実道路網に沿った時間到達域。`radius`＝直線距離の円とは別物で、
-  「徒歩1時間で行ける範囲」のような**所要時間**の質問には `radius` で代用しない）、
-  `optimizeRoute`（複数地点の最短巡回）、`objects`（オブジェクト一覧）、`slope`（傾斜・斜面方位）、
-  `rfCoverage`（電波到達域）、`earthReplay`（世界の巻き戻し）。
-- **「所要時間」と「距離」は別のアクション。** `radius` は直線距離の円、`isochrone` は
-  Valhalla／OpenStreetMap の**実道路網**を辿った到達域（`auto` / `pedestrian` / `bicycle`、
-  `transit` は OSM 鉄道網で到達可能な駅）。起点は地名・`現在地`（端末のGPS）・クリック地点・
-  `lng`/`lat` のいずれでもよい。**カタログの `radius` の項目自身が、所要時間の質問を
-  `isochrone` へ回すよう書かれている。**
-- 明確な単一指示の決定論パス `localPlan` は**漢数字・全角数字**と
-  「〜で行ける範囲／エリア／到達圏」「〜分以内」「〜圏内」を読む（「現在地から徒歩一時間で行ける
-  範囲を表示して」は AI もアカウントも使わずに実行される）。移動手段は所要時間の前後どちらでもよいが
-  **必須**で、手段の無い「30分の範囲」はプランナーへ回す。
-- **リサーチ地図の二系統** — `mapReport` は**現在・直近のライブニュース事件のみ**、
-  `researchMap` は歴史・現在・混合のリサーチで文章と地図を独立に生成する。
-  **Request Profile**（時間軸・地理・要求出力を機械判定）と能力レジストリによる実行前プラン検証で、
-  歴史質問がライブ専用の `mapReport` へ流れるのを実行前に防ぐ。
-- **座標・URL・出典をモデルに生成させない**。`mapReport` は IntMap が集めた証拠に ID を付け、
-  モデルは `{name,locationName,country,summary,date,evidenceIds}` だけを返す。クライアントが証拠 ID の
-  実在を検証し、地名を geocode して位置を確定し、URL・出典・日付は**引用された証拠から**充填する。
-  確認できない位置はピンにせず一覧だけにする。
-- Atlas は通常モードでは **サイドバーの本物のタブ**（`#atlas-feed`）で、ワークスペースモードでは
-  専用ウィンドウで開く。カーネル `js/atlas-console.js` は**押されてから取りに行く**（§9.3）。
-
-### 2.5 アカウント・その他
-
-- **アカウント／AI機能** — ログインで使えるアカウント制AI（1日上限つき。§5）。
-- **テーマ** — System / Light / Dark ＋ **アクセントカラー**（アカウント同期）。
-- **設定ページ** — 通常／モバイル／ワークスペース共通のモーダルを **8セクションの iOS 風グループ**に
-  分けたもの（外観／レイアウトとパネル／地図の動作／単位と時刻／ニュースとティッカー／AI／連携・キー／
-  情報とサポート）。
-- **ウィンドウ・ワークスペース**（デスクトップ・既定オフ） — 地図・Information・News・Countries・
-  Layers・Atlas が自由配置・全辺リサイズできる本物のウィンドウになる。レイアウトは localStorage に永続化。
-- **下部ティッカー**（既定オフ・デスクトップのみ） — FX・株価指数・金銀・暗号資産・読み込み済みニュース
-  見出し。表示銘柄は設定で選べる。`body.ticker-on` を flex 列にしているので地図に重ならない。
-- **天気ポップアップ**（右クリック → 「ここの天気」） — Open-Meteo の現況＋5日予報。
-- **Bug Report** — 診断情報を自動添付して Supabase `bug_reports` に送信（オフライン時はローカル＋
-  クリップボード）。**フィードバック**、**寄付 (Stripe)**、**管理コンソール (`admin.html`)**。
-- **多言語ニュース翻訳**（任意）。
+このファイルが答えるのは**それがどう組み上がっているか**のほうで、内訳は §4（ニュース）・
+§5（AI）・§6（Supabase）・§7（地図とレイヤーの契約）・§8（UI）・§9（モバイル）・§10（多言語）と、
+[`docs/MAP-LAYERS.md`](docs/MAP-LAYERS.md)（レイヤー実装の詳細）・
+[`docs/FILES.md`](docs/FILES.md)（ファイル台帳）にある。
 
 ---
-## 3. ファイル構成と各ファイルの役割 (Files)
+## 3. ファイル構成 (Files)
 
-> ⚠ **`js/` の一覧は `node scripts/arch-files-check.mjs --check` が実体と突き合わせる。**
-> ファイルを足す・改名する・分割するときは、ここも同じコミットで直すこと。
-> 各ファイルの1行説明は、そのファイル自身の先頭コメント（`IntMap · …`）と同じ主題にする。
+**ファイル台帳の正本は [`docs/FILES.md`](docs/FILES.md)。** `js/` だけで 151 本あり、1行説明を
+全部ここに置くと仕様書の 4 分の 1 が台帳になるので分けた。節番号は向こうでも `§3.1`〜`§3.13` の
+ままで、他の文書からの `§3.x` 参照はそのまま通る。`node scripts/arch-files-check.mjs --check` が
+`js/` の実体と台帳を突き合わせる。
 
-### 3.1 ルート
+ここでは**置き場所の規約**だけを述べる。
 
-```
-index.html                      公開用SPAのマークアップ＋ブート script（919行）。アプリ本体は js/app-body.js
-admin.html                      管理コンソール（geo_pins / dashboard_cards / コミュニティ通報 / feedback）。
-                                バンドラを通らない独立ページ。Supabase SDK は同梱版を読む
-sw.js                           Service Worker。タイル等のキャッシュとオフライン補助。キャッシュ名は
-                                バージョン付きで、activate が旧世代を消す。cache-first の対象は
-                                「自分が知っているホストの、不変なタイル」だけに限定する
-science.html / sources.html     読み物2ページ（手法の説明・出典の一覧）。バンドラを通らないので
-                                言語一覧は scripts/i18n-langs.mjs が生成する js/locales/_langs.js から読む
-google….html                    Google Search Console 認証用
-package.json / package-lock     npm スクリプトと依存。dependencies がアプリに入る依存の唯一のリスト
-.nvmrc                          Node のバージョン（CI・ローカル共通）
-vite.config.js                  ビルド設定（チャンク分割・静的アセットのコピー・prebuild フック）
-playwright.config.js            hermetic なブラウザ試験（webServer=scripts/serve.mjs）
-playwright.prod.config.js       実 URL に対する本番スモーク（webServer 無し・retry 3）
-CLAUDE.md                       Claude Code が毎セッション自動で読む恒久指示（作業の進め方・ワークフロー・
-                                確認要件・報告要件・作業終了処理）。⚠ 秘密情報を書いてはならない
-                                （このリポジトリは public）
-CLAUDE.local.md                 同じ機構のローカル上書き。**追跡対象外**（.gitignore ＋ .git/info/exclude）。
-                                公開できない資格情報だけを置く
-CONSTITUTION.md                 標準指示（最優先のルール集）
-Architecture.md                 本ファイル（現状仕様書）
-DEV-NOTES.md                    直近ラウンドの開発記録（新しい順）
-DEV-NOTES-ARCHIVE.md            それ以前の全記録（古い順・追記しない）
-ATLAS-VISION.md                 Atlas の到達目標と実装状況の対応表
-README.md                       公開向けの紹介（英語）
-SECURITY.md                     脆弱性の報告方法と、公開値・秘密値の区別
-LICENSE
-koppen_mercator_*.png           ケッペン気候区分のベース画像（期間別）
-koppen_mercator_*_4k.png        同・軽量版（携帯はこちらを使う。フル解像度は携帯で RAM 超過）
-precip_mercator_1981-2010.png   年降水量の平年値（CHELSA V2.1 bio12）。_4k は軽量版
-og-image.jpg / IntMap.Icon*.png OGP 画像とアイコン
-TwemojiCountryFlags.woff2       国旗グリフ
-USGS.能登.pdf                    地震モデルの検証に使った公表資料
-_koppen_convert.py              ケッペン TIFF → PNG（データ前処理。実行時には不要）
-_precip_convert.py              CHELSA → メルカトル PNG（同上）
-_precip_years_convert.py        GPCC → 年別 PNG（同上）
-_rail_convert.py                鉄道データ変換（同上）
-```
-
-### 3.2 `css/` / `src/` / `fonts/`
-
-```
-css/
-  intmap.css                        アプリのスタイルシート全体
-  pages.css                         読み物2ページ（science.html / sources.html）のスタイル
-  fonts.css                         同梱フォントの @font-face
-src/
-  main.js                           js/ を index.html と同じ順序で import するエントリ
-  vendor.js                         npm 依存を従来と同じグローバル名で再公開し、Supabase クライアントを作る
-  locale-boot.js                    import.meta.glob('../js/locales/ui.*.js') で言語をディレクトリから読む（lazy）
-  sat-worker.js / sat-worker-client.js      衛星の軌道計算（SGP4/SDP4）をワーカーで回す
-  tsunami-worker.js / tsunami-worker-client.js  津波の伝播計算をワーカーで回す
-  satellite-wasm-stub.js            satellite.js の wasm 経路を使わないためのスタブ
-fonts/                              Inter（サブセット woff2 ＋ MapLibre 用 pbf グリフ）と Pretendard
-```
-
-### 3.3 `js/` — 中核
-
-```
-app-body.js                       アプリ本体（392 KB・最大のファイル）。状態宣言・ブート・地図構築・
-                                  DOM 配線・map.on() ハンドラ・IntMapOS・セッション永続化・IM_HOST。
-                                  ⚠ 新規機能はここに足さない。§3.13 の手順で別ファイルへ
-geo-engine.js                     レンダラの継ぎ目そのもの window.IntMapGeoEngine（178 KB）
-runtime.js                        1つのフレームループ・1つのタイマー・1つのライフサイクル
-lazy-modules.js                   押されてから取りに行くモジュール window.IntMapLazy。⚠ 指定子はすべてリテラル
-engine-select.js                  このセッションがどのエンジンで走るかを DOMContentLoaded 前に決める
-cesium-engine.js                  第2エンジン——同じ契約の裏で動く CesiumJS
-cesium-style.js                   style 言語の解釈器（式・フィルタ・色）。純粋なので Node から検証できる
-cesium-layers.js                  Cesium のプロバイダとレイヤー描画
-cesium-vector-tiles.js            第2エンジンのベクタタイル
-cesium-input.js                   Cesium のカメラを MapLibre のジェスチャで動かす
-i18n.js                           window.IntMapI18N — キー付き UI 表の組み立て
-i18n-late.js                      後から足す翻訳と、ティッカー自身の設定パネル
-lang-registry.js                  言語の唯一のリスト window.IntMapLang（code / label / html / alias と pick）
-lang-switch.js                    言語変更は「待てるイベント」——文字列が届く前に描き直さない
-locales/_langs.js                 生成物。読み物2ページ用の言語コード一覧（scripts/i18n-langs.mjs が書く）
-locales/ui.<code>.js              1言語＝1ファイルの UI 文字列表（9言語）
-locales/pages.<code>.js           読み物2ページの文字列表（9言語）
-page-i18n.js                      読み物2ページの言語機械 window.IntMapPageI18N
-sources-list.js                   sources.html の出典レジストリ（生成された一覧）
-```
-
-### 3.4 `js/` — 地図の表面
-
-```
-map-ui.js                         地図の周りの UI（レイヤーレジストリ／レイヤーサイドバー／ティッカー／
-                                  レイヤープリセット／ラベルのポップアップ／GeoJSON 取り込み／共有ハッシュ）
-map-tools.js                      対話ツール（投影ビュー・描画・Isolate・海路・見通し線・オブジェクト一覧・
-                                  アウトライン・図形移動・到達圏・3-D 弧）
-map-readout.js                    座標・標高・レイヤー値・コンパスの読み出しと経緯線
-map-extras.js                     残りの自己完結した地図表面モジュール
-map-pick.js                       地図上の1点を拾う window.IntMapPick
-map-typography.js                 このアプリの文字——どの書体が描き、どれだけの幅で出るか
-place-labels.js                   地名・海洋名ラベルと、そのローカライズ
-label-scale.js                    ラベルの大きさ window.IntMapLabelScale
-label-occlusion.js                名前を最前面に、地球の裏側のマーカーを隠す
-border-style.js                   国境線を1本にまとめるスタイル層
-grid-style.js                     経緯線のスタイル層
-layer-dropdown.js                 レイヤーメニューとそのアコーディオン
-layer-favs.js                     ★を付けたレイヤーとクイックピックのチップ
-layer-previews.js                 レイヤーのサムネイル IntMapLayerPreviews
-tile-warm.js                      カメラがこれから必要とするタイルを温める
-wheel-zoom.js                     ホイールと、地図がどれだけ速く応えるか
-view-controls.js                  傾きの上限と、視点高度の読み出し
-basemap-switch.js                 携帯のベースマップ切替 window.IntMapBasemapSwitch
-opening-view.js                   アプリが開く視点——黒い地球ではなく、光の当たった地球
-theme-sky.js                      テーマと空——アプリの色と、太陽の位置
-sky-model.js                      空自身の色（Rayleigh ＋ Mie を march する）
-limb-layer.js                     このアプリが描く大気の縁 IntMapModules.limbLayer
-night-side.js                     地球の夜側 window.IntMapNightSide
-world-base.js                     全球衛星ベース window.IntMapWorldBase
-satellite.js                      衛星画像コントローラ
-sat-proto.js                      衛星タイルの imapsat:// スキーム
-solid3d.js                        地図の上に立つ閉じた立体
-streamline.js                     地理的なベクトル場の流線 window.IntMapStreamline
-coast-mask.js                     求めた解像度での海岸線 window.IntMapCoastMask
-land-mask.js                      同梱の陸／海マスク window.IntMapLandMask
-bathymetry.js                     同梱の海底地形 window.IntMapBathymetry
-dem-source.js                     標高の出所と深さ（terrarium の native max = z15）
-geodesy.js                        極と日付変更線に安全な幾何 window.IntMapGeodesy
-```
-
-### 3.5 `js/` — データレイヤー
-
-```
-data-layers.js                    データレイヤーの目録＋エンジン（495 KB）。GROUPS が棚を決める
-layer-packs.js                    追加レイヤーパック（地球と空／土地被覆／ベータ2／宗教・言語／
-                                  タイムゾーン／GIBS の科学プロダクト）
-wb-layers.js                      世界銀行指標の塗り分けと最新統計の更新
-world-packs.js                    世界データ層——貿易・エネルギー・気象警報・潮汐・作物（282 KB）
-precip-annual.js                  年降水量——国別平均ではなく実測グリッド
-ocean-currents.js                 海流——同梱のアトラス盤
-ocean-currents-field.js           海流——場のファイルの復号とストライド
-osm-facilities.js                 実地調査された施設 IntMapFacilities
-datacenters.js                    データセンターと AI インフラ IntMapDataCenters
-cameras.js                        ライブカメラ層 IntMapModules.cameras
-beta-overlays.js                  ベータのオーバーレイ IntMapModules.betaOverlays
-time-borders.js                   時間軸の上の歴史的国境 IntMapTimeBorders
-time-countries.js                 時計の年から見た Countries タブ
-history.js                        歴史的国家／同一性／マディソン系列
-us-elections.js                   すべての米大統領選挙 IntMapUSElections
-industry-web.js                   産業の相関 window.IntMapIndustry
-companies.js                      企業データセットと時価総額のライブ算出 IntMapCompanies
-reference-data.js                 参照データ表
-tables.js                         参照データ表（大きい方）
-gazetteer.js                      ニュース地点解析の内蔵ガゼッティア
-```
-
-### 3.6 `js/` — ニュース
-
-```
-news-feed.js                      ニュースの取得・キャッシュ・見出しの翻訳
-news-ui.js                        ニュース一覧・ピン・リーダー
-news-context.js                   記事 → 場所／媒体の解決
-news-sources.js                   どの媒体からニュースを取るか window.IntMapNewsSources
-news-timeline.js                  ニュースのタイムマシン用タイムライン帯
-newsgeo.js                        NewsGeo — 決定論的（非AI）のニュース地点解析
-article-reader.js                 サイドバー内の記事リーダー
-```
-
-### 3.7 `js/` — Atlas と AI
-
-```
-atlas-console.js                  Atlas カーネル（自然言語コンソール／OS コマンド面。846 KB）
-atlas-controls.js                 Atlas — 実 UI コントロールとモジュールメソッドへの全操作面
-atlas-geo-resolve.js              Atlas — 場所・地域の解決とカメラの寄せ方
-atlas-reply.js                    Atlas — 返答の描画（安全な markdown・コード／数式・GFM 表・出典カード）
-atlas-sims.js                     Atlas — 飛行・弾道・爆風・標高・勢力のアニメーション表示
-atlas-sources.js                  Atlas — 外部の証拠源（首脳・ライブニュース・POI カタログ）
-atlas-verify.js                   Atlas — 回答のコード側検証（内容分類・算術・出典・地図化の可否）
-atlas-attach.js                   Atlas — 添付ファイルの正体判定と全画面ビューア
-atlas-loader.js                   Atlas に手を伸ばすと Atlas を取りに行く window.IntMapAtlas
-ai-core.js                        Atlas の AI 通信・利用枠・設定
-```
-
-### 3.8 `js/` — 分析・パネル・シミュレーション
-
-```
-analysis-panels.js                分析パネル（時系列・AIリサーチ・相関・世界の出来事・学習モード）
-stats-compare.js                  多国統計比較 IntMapStatsCompare
-countries-ui.js                   Countries タブと国の詳細
-companies-ui.js                   Companies タブ・比較ビュー・ダッシュボード
-dash-extended.js                  ダッシュボードのキャッシュと拡張情報カード
-widgets.js                        ウィジェット板 IntMapModules.widgets
-tool-panel.js                     計測／半径ツールのパネルと地図のコンテキストメニュー
-elevation-profile.js              標高断面のパネル
-sims.js                           物理シミュレーションと太陽幾何（範囲人口・傾斜・電波・日照・到達圏・
-                                  災害・地震リプレイ・放射性物質拡散）
-seismic.js                        地震波シミュレータ（477 KB）
-seismic-events.js                 過去の地震——公表された震源パラメータ
-seismic-site.js                   場址項は周波数の関数である window.IntMapSiteAmp
-seismic-subfault.js               破壊は1枚のすべる矩形ではない window.IntMapSubfault
-earth-structure.js                この地震は何で、その下に何があるか window.IntMapEarth
-fault-geometry.js                 描かれた輪郭は断層面の投影である window.IntMapFaultGeom
-vs30-mask.js                      同梱の場址項 window.IntMapVs30
-tsunami.js                        津波の伝播 window.IntMapTsunami
-terrain-water.js                  地形の編集と水の流れ（194 KB）
-water-dynamics.js                 水は届くまでに時間がかかる window.IntMapWaterDynamics
-insolation.js                     地形の影と日照時間のエンジン
-viewshed.js                       見通し線——高精度の地形可視領域
-volume3d.js                       Measure ▸ 3-D 体積——実スケールの箱が空中に立つ
-river-course.js                   どの区間が同じ川か window.IntMapRiverCourse
-drone-nav.js                      ドローン航法——地形を見た飛行計画
-drone-ops.js                      ドローンの運航条件 window.IntMapDroneOps
-routing.js                        車／徒歩／自転車／公共交通の経路 IntMapRouting
-routing-ops.js                    経路の分析 window.IntMapRoutingOps
-```
-
-### 3.9 `js/` — 宇宙・空
-
-```
-space.js                          宇宙エクスプローラ window.IntMapSpace（220 KB）
-space-bodies.js                   ほかに何があるか（探査機・小惑星・太陽系外）window.IntMapSpaceBodies
-space-cosmos.js                   太陽系の外へ出る距離の梯子 window.IntMapCosmos
-space-events.js                   天文現象 window.IntMapSpaceEvents
-space-sky.js                      地球の背後の実際の星空 window.IntMapSky
-ephemeris.js                      惑星の実位置 window.IntMapEphemeris
-night-sky.js                      地上の1点から見た空 window.IntMapNightSky
-satellites-live.js                ライブ衛星 window.IntMapSatellites
-satellite-detail.js               ライブ衛星——クリックの先の詳細カード
-orbit-points.js                   衛星が実際にいる場所——軌道上の点
-aircraft-detail.js                ライブ航空機——クリックの先の詳細カード
-```
-
-### 3.10 `js/` — シェル・アカウント・その他
-
-```
-mobile-ui.js                      モバイル UI とレスポンシブのシェル
-window-manager.js                 浮遊パネルのドラッグ／リサイズ／重なり順
-workspace.js                      浮遊ウィンドウのワークスペースモード（デスクトップ）
-session-tabs.js                   タブバーと、その裏の OS 登録と、両方を復元するセッション
-keyboard-shortcuts.js             キーボードと、それを一覧するカード
-onboarding.js                     ウェルカムカード・案内デモ・進捗コントロール
-screenshot.js                     スクリーンショットのボタン
-search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード
-compare.js                        並べて／スワイプで比べる地図 IntMapCompare
-playground.js                     Playground (beta) IntMapModules.playground
-flight-sim.js                     フライトシミュレーター IntMapFlightSim（238 KB）
-street-view.js                    ストリートビューのパネルと実カバレッジ IntMapStreetView
-community.js                      コミュニティのフィード
-community-board.js                コミュニティ板——一覧・カード・投稿・地図層
-feedback.js                       フィードバックとバグ報告のモーダル
-auth-ui.js                        アカウント・認証・Supabase のブート
-legal.js                          利用規約とプライバシーポリシー
-premium-plan.js                   プレミアムの節——ただしその全機能が無料である
-monitors.js                       Area Monitors IntMapMonitors
-weather.js                        気象 IntMapModules.{wind,weatherEC,weatherPanel}
-wx-source.js                      ガードされた唯一の気象／UV ソース window.IntMapWx
-wx-ecmwf.js                       ECMWF IFS モデル本体 window.IntMapECMWF——予報時刻軸・.om URL・復号済みの場・配色表
-wx-wind.js                        風の粒子レンダラ window.IntMapWindGL——WebGL 1描画呼び出し／実経過時間基準
-place-framing.js                  どこまで寄るか window.IntMapPlaceFraming
-proxy-fetch.js                    CORS プロキシ経由の取得（相手先ごとに効くものが違う）
-perf-hud.js                       実機の計器 `?perf=1`
-admin-literal.js                  admin.html の初期データ読み取り——**評価器ではなくパーサ**
-```
-
-### 3.11 `data/`
-
-```
-gazetteer-world.json.gz           世界の地名の長い尾（cities1000 由来・18言語）。必要になった時に取得する
-gazetteer-phone.json.gz           携帯が取りに行くのはこちら。上のファイルの先頭 12,000 行を切り出したもの
-ecoregions_2017.geojson / .js     エコリージョン（自前ホスト）
-railways_gauge.json               世界の鉄道（軌間別）
-volcanoes_gvp.json                火山（Smithsonian GVP 完新世）
-crust1.bin.gz / .json             CRUST1.0（地殻構造）
-slab2.bin.gz / .json              Slab2（沈み込み帯のスラブ面）
-tectonics.bin.gz / .json          PB2002（プレート境界）
-vs30.png / vs30-phone.png / .json 場址項 Vs30 のラスタ
-bathymetry.png / .json            海底地形
-land-mask.png / .json             陸／海マスク
-precip-mm.png / .json             年降水量の値格納ラスタ（8bit の log(mm)）と、その格子・帯・色
-precip-year.png / .json           年別の年降水量（1枚に縦積み）
-hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
-maddison.json                     マディソン・プロジェクトの歴史 GDP・人口
-data/cshapes.js                   歴史的国境
-us-elections.json / us-states.json  米大統領選挙
-religion.json / language.json     宗教・言語の分布
-osm-space.json / osm-diplo.json   宇宙基地・地上局／外交公館の全球スナップショット
-ocean-currents*.bin.gz / .json    海流の場
-stars.bin / stars.json / deep-sky.json / planets/ / planets.json / moons.json /
-  planet-names.json / small-bodies.json / spacecraft.json                星表・天体
-basins_mrb.json                   主要流域
-gibs-range.json                   GIBS 各プロダクトの実配信期間（二分探索で実測したもの）
-world-basemap.jpg / .json         粗い全球衛星ベース
-tle/                              衛星の軌道要素カタログ（定期生成の同梱スナップショット）
-```
-
-### 3.12 `supabase/` / `docs/` / `scripts/` / `tests/` / `.github/`
-
-```
-supabase/
-  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全8本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（7本）。本番変更は必ずここを通す
-  seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数。6本）
-  functions/<name>/index.ts       Edge Functions（8本。§6.2）
-  functions/_shared/              関数ではないライブラリ（newsgeo.js / relay-guard.js）
-docs/
-  TESTING.md                      テストの分類と走らせ方
-  RELEASE.md                      リリース手順（**配信方法の正本**）
-  MONITORING.md                   監視と、鳴ったときに見る場所
-  INCIDENT-RESPONSE.md            本番障害・セキュリティ事故の runbook
-  DATABASE.md / MIGRATIONS.md / RLS-TESTING.md / BACKUP-RESTORE.md / DATABASE-INCIDENT.md
-                                  DB の構造・変更手順・権限テスト・バックアップ・事故対応
-  SECURITY-ARCHITECTURE.md        脅威モデル・データフロー・CSP（**セキュリティの正本**）
-  SECURITY-TESTING.md             セキュリティ検査の走らせ方
-  AREA-MONITORS.md                Area Monitors の運用
-scripts/
-  serve.mjs                       依存ゼロの静的サーバ（GitHub Pages と同じ配信＝gzip も含む）
-  static-checks.mjs               構文・JSON・YAML・マージ衝突・秘密検出・HTML 参照の存在
-  doc-facts.mjs                   **文書間の固定事実の照合**（§15.5）
-  atlas-catalog.mjs               **Atlas の操作カタログのゲート**（§2.4・ディスパッチャ ⇄ SYS）
-  arch-files-check.mjs            Architecture §3 と js/ の突き合わせ
-  engine-coupling.mjs             レンダラ脱依存のゲート
-  i18n-*.mjs                      翻訳の被覆と形の監査（§10）
-  eol.mjs                         ソース検査は**バイト列ではなく内容**を読む（改行はチェックアウトの性質）
-  build-*.mjs                     data/ の生成（実行時には不要）
-  run-tests.mjs / test-parallel.mjs / shard-plan.mjs / test-budget.mjs   テストの実行と予算
-  backup-db.sh / restore-test.sh  DB のバックアップと隔離復元
-tests/
-  tests/smoke.spec.js                   hermetic なスモーク
-  tests/internal-qa.spec.js             内部 QA（IntMapAtlasQA / IntMapRegionResolverTest / IntMapUIAudit）
-  tests/prod-smoke.spec.js              実 URL に対するスモーク（PROD_URL）
-  tests/security.spec.js                実ブラウザでの無害化確認
-  helpers/network.js              hermetic なルーティングと console の分類
-  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（127本）
-  *.spec.js                       ブラウザ回帰（67本）
-.github/workflows/
-  ci.yml                          PR ＋ push main ＋ 手動。静的検査＋hermetic ブラウザ試験
-  deploy.yml                      本番公開（**有効**。§15.4）
-  rollback.yml                    手動ロールバック（履歴に実在する ref のみ）
-  db.yml                          supabase/** 変更時の DB 検査（本番非接続）
-  db-backup.yml                   休眠（Secret 2本が登録されるまで各 run skip）
-  security.yml                    CodeQL ほかセキュリティ検査
-  uptime.yml                      6時間ごとの死活監視＋Issue の自動起票／自動クローズ
-  tle-refresh.yml                 衛星軌道要素スナップショットの定期更新
-```
-
----
-
-## 3.13 index.html の分割方式 — **今後の分割はこの手順に従うこと**
-
-`index.html` は「マークアップ＋ブート」だけの状態にしてある。**新しい機能を `js/app-body.js` に足さない。**
-新しい主題は新しいファイルにし、以下の規約を満たすこと。
-
-### 手順
-
-1. **切り出す単位は「継ぎ目」で選ぶ。** 大きい塊ではなく、外から見た依存が細い所で切る。
-2. **ブロック全文をそのままファクトリで包み、代入なしで呼ぶ**：`window.X=(function(){ … })()`、
-   あるいは `window.IntMapModules.x=function(HOST){ … }`。
-3. **可変値はホスト・インターフェース `IM_HOST` 経由で読む。** クロージャ内で**再代入される**値
-   （`currentLang` / `currentUser` / `currentProj` / `currentMapType` / `terrainOn` …）を値渡しすると
-   古い値に固定される。`HOST.lang` のように毎回読む。
-4. **不変値はファクトリ先頭で元の名前に束縛し直す**：`const imToast=HOST.imToast, …;`。
-   本体は1文字も変えずに済む。
-5. **`map` だけは第1引数**（boot 時に1回だけ代入され、全モジュール本体が裸の `map` を使うため）。
-6. **パラメータ名は `HOST`**（`H` は既存の1文字識別子と衝突する）。
-7. **書き込みが必要な値は RW メンバー**にする：`get x(){return x;}, set x(v){x=v;}` の1行ペア。
-   変数の実体は元の場所に残る＝**単一の真実の源**。
-8. **巻き上げが要る関数はシムを置く。** 元が巻き上げ関数宣言だったものは、`index.html` 側に
-   `function f(){ return IntMapModules.x.f.apply(this,arguments); }` を置く（レシーバも引数もそのまま透過）。
-9. **変数はエクスポートできない**（シムは関数にしか作れない）。
-
-### `IM_HOST` の規約
-
-- **メンバーは全て getter。** ⑴ **LIVE**：手順3の可変値が常に現在値になる。
-  ⑵ **LAZY**：getter の本体は読まれるまで評価されないので、まだ定義されていない関数を掴まない。
-- **RW メンバーは明示的に一覧を固定**する（`tests/r165-checks.test.mjs`）。増やすときはその一覧も直す。
-
-### 「いつ取りに行くか」という第2の軸
-
-置き場所とは別に、**起動時に読むか、押されてから取りに行くか**を決める。`js/lazy-modules.js` の
-`window.IntMapLazy` が遅延モジュールを持つ（フライトシム／Playground／地震／津波／地形と水／
-見通し線／ストリートビュー／夜空／Atlas カーネル）。
-
-- ファクトリを呼んだ瞬間に**共有 UI を作らない**こと（レイヤー行やタブは、押される前に現れてはならない）。
-- **入口が数えられること。** 右クリックメニュー・タブ・設定のボタン・Atlas の dispatch のどれから来ても
-  同じ1つの入口に集まるようにする。出口（✕ / `close()`）も1つにする。
-- 遅延モジュールは**開き終わったことを知らせる**。`OS.exec` が返す到着の Promise に繋ぐ——
-  「終わった時刻を推定する」タイマーを書かない。
-
-### 分割を守る検査
-
-- `scripts/check-split-scope.mjs` … acorn で、手順3・7・9の不変条件を検査する。
-- `scripts/static-checks.mjs` … 未読込のモジュール／呼ばれていないファクトリ／移設元の残骸を検査する。
-- `tests/r162-checks.test.mjs` / `tests/r163-checks.test.mjs` / `tests/r165-checks.test.mjs` …
-  ホストメンバーと RW 一覧を固定する。
-- `tests/app-source.mjs` … 文字列一致の回帰テスト群が `index.html` だけでなく `css/` ＋ `js/` も読む。
-- `tests/r163.spec.js` … **実ブラウザで実際に動かす**。静的検査だけでは束縛の誤りを捕まえられない。
+- **リポジトリのルートがサイトそのもの**。`index.html` が頂点にあり、`css/` `js/` `src/` と
+  静的アセット（Köppen ラスタ・国旗 webfont・`sw.js`・`data/`・`admin.html`・
+  `science.html` / `sources.html` / `privacy.html` / `terms.html`）が横に並ぶ。
+  `vite.config.js` の `STATIC_ASSETS` が「Rollup を通さずそのまま配るファイル」の**明示リスト**で、
+  `tests/r175-checks.test.mjs` が、参照されているのにリストに無いアセットで落ちる。
+- **`js/`** — アプリ本体。`js/app-body.js` が中核（`IM_HOST`）で、他は主題ごとのモジュール
+  （地図の表面／データレイヤー／ニュース／Atlas と AI／分析とシミュレーション／宇宙／シェルと
+  アカウント）。ファイル単位の役割は `docs/FILES.md` §3.3〜§3.10。
+- **`src/`** — バンドラ側の入口だけ（`main.js` が `js/*.js` を index.html と同じ順で import し、
+  `vendor.js` が npm 依存を同じグローバル名で再公開する）。アプリのロジックは置かない。
+- **`css/`** — 3 本（アプリ本体・静的ページ・フォント）。
+- **`data/`** — 同梱データ（ビルド時に生成した軌道要素・海流・星表など）。生成元は
+  `scripts/build-*.mjs`。詳細は `docs/FILES.md` §3.11。
+- **`supabase/`** `docs/` `scripts/` `tests/` `.github/` — 運用側。詳細は `docs/FILES.md` §3.12。
+- **`index.html` を分割するときの手順**は `docs/FILES.md` §3.13 が正本（`IM_HOST` の規約と、
+  「いつ取りに行くか」という第2の軸を含む）。**分割は必ずその手順に従うこと。**
 
 ---
 ## 4. ニュース処理の流れ (News pipeline)
@@ -731,24 +250,13 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
 
 ### 6.1 テーブル
 
-| テーブル | 用途 |
-|---|---|
-| `profiles` | ユーザープロフィール（表示名・plan・login_count 等） |
-| `current_news` | 事前AI解析済みニュース（subject/pub 座標、`analyzed_by`、`fetched_at` ほか） |
-| `geo_pins` | ニュース地点解析の辞書。管理コンソールで編集し、`refresh-news` も読む |
-| `favorites` | 保存記事（ブックマーク） |
-| `user_prefs` | ユーザー設定の同期 |
-| `dashboard_cards` | Information ダッシュボードのカード（管理コンソールで編集） |
-| `ai_usage` | AI 利用量（1日あたりの消費）。`increment_ai_usage` / `refund_ai_usage` RPC で操作 |
-| `community_posts` / `community_comments` / `community_votes` / `community_comment_votes` / `community_reports` | コミュニティ |
-| `feedback` | フィードバック |
-| `bug_reports` | バグ報告（診断情報 JSON 付き。anon が insert 可・admin が閲覧） |
-| `donations` | 寄付記録 |
-| `monitors` ほか | Area Monitors（§18） |
+**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](docs/DATABASE.md)**（pgTAP による
+実証手順も同じファイル）。現在 **20 表**（`profiles` / `current_news` / `geo_pins` / `favorites` /
+`user_prefs` / `dashboard_cards` / `ai_usage` / `community_*` 5 表 / `feedback` / `bug_reports` /
+`donations` / Area Monitors の 5 表）。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
-本番へ手で SQL を流さない。手順は `docs/MIGRATIONS.md`。
-
+本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
 ### 6.2 Edge Functions — **8本**（`_shared/` は関数ではない）
 
 > ⚠ **8本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
@@ -804,230 +312,17 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
 ---
 ## 7. 地図・レイヤー・Globe・ウィジェットの構造
 
-### 7.1 気象・災害警報
+**レイヤーの実装詳細は [`docs/MAP-LAYERS.md`](docs/MAP-LAYERS.md) が正本**——§7.1 気象・災害警報、
+§7.6 ラベル、§7.7 レイヤー個別の注意、§7.8 地形と水、§7.9 物理シミュレーションの不変条件、
+§7.10 気象モデル（ECMWF IFS）・風・レーダー。**節番号は向こうでも同じ**なので、他の文書からの
+`§7.x` 参照はそのまま通る。
 
-**「どこで／何が／どれほど危険か／情報は新鮮か」の4つに答える**（`js/world-packs.js`）。
-**その機関が発令した単位で塗る。** 世界の事象フィード（GDACS）は**完全に撤廃されている**——
-コードは1行も残っておらず、`tests/r273-checks.test.mjs` が**書かれていた構文**で不在を確認する。
-撤廃したからこそ、**未対応国を「静かな国」に見せない**仕組みが要る（下の3状態）。
+ここに残すのは**契約**——「レイヤーを1本足すときに必ず読むもの」だけである。
+### 7.2 レイヤー欄の分類・7.5 地図の初期化
 
-自前フィードは **13本**（下表の 12 か国 ＋ MeteoAlarm）で、MeteoAlarm が EUMETNET の残り 35 か国を運ぶ。
-合計 **47 か国**。**その外側は WMO の CAP 登録簿（SWIC）**が運ぶ——下表の最終行。
-
-| 国・地域 | 出典 | 描く単位 |
-|---|---|---|
-| 日本 | 気象庁 `bosai/warning/data/r8/map.json`（官署ごとの最新1件） | **市町村 (class20)**。幾何は国土数値情報 N03 を **JIS X 0402** で引く（class20 コードの上5桁が JIS コード。実測 1,805 中 1,774 が直接一致、残る31は政令指定都市・離島で区の合併により解決） |
-| 米国 / カナダ / ブラジル / ドイツ / ノルウェー | NWS / ECCC / INMET / DWD WFS / MET Norway | 各機関の**警報ポリゴン**（DWD は郡） |
-| ヨーロッパ35機関 | MeteoAlarm（`alerts-relay` が要約） | **4段の形のはしご**（下記）——CAP の `<polygon>` → **その機関自身が WMO 登録簿に出している形** → Eurostat NUTS 2/3（20M）→ 区域名が国名そのものなら国境 |
-| 中国 | CMA（relay） | **発令 ID が名乗る行政区画**——`alertid` の上6桁は GB/T 2260 コードなので、**区・県 → 地級市 → 省** の順に引く（DataV.GeoAtlas） |
-| オーストラリア | BoM | **州**（Natural Earth 50m admin-1） |
-| フィリピン / 台湾 / ニュージーランド | PAGASA / 中央氣象署（NCDR 経由）/ MetService | **CAP 索引を読む1本の関数**（relay `?cap=`）。台湾はポリゴンの無い区域を**郷鎮市区**で引く |
-| 香港 | HKO | 香港全域＝発令単位そのもの |
-| **上記以外** | **各国気象機関（WMO Severe Weather Information Centre 経由）** | **その機関自身が描いた CAP ポリゴン**。対象は WMO が「CAP 実装 Completed」と記録している加盟国だけ（実測 93 か国が追加され、未対応は 206 → 112 に減る） |
-
-- **国の3状態は3つの見え方を持つ。** ⑴ フィードが無い国＝**灰色斜線**（`fill-pattern`・`wp-alert-hatch`）、
-  ⑵ フィードがあり何も出ていない＝**灰色**（気象庁自身の `#c8c8cb`）、⑶ 発令中＝その階級の色。
-  **「警報なし」と「データなし」は別。**
-- ⚠ **灰色は「読んだうえで何も無い」という主張なので、答えた機関にしか塗らない。** `readState(iso)` が
-  `none` / `loading` / `ok` / `error` を返し、`washTier` は **`ok` 以外をすべて斜線**にする。
-  MeteoAlarm も WMO 登録簿も**輪番で読む**ので対応国でもまだ読めていない瞬間があり、上流が落ちている瞬間も
-  ある——実測、`www.nmc.cn` はエッジから断続的に到達できず（45 秒 × 2 回とも timeout。上がっているときは
-  0.9 秒）、**1,235 件が発令中の中国が「発表なし」の灰色**になっていた。斜線は「この地図は何も述べていない」
-  で、**どの沈黙なのか**（未対応／順番待ち／取得不可）はタップした地点のカードが**言葉で**言う。
-  パネルの `unread` は**0 に落ちなければならない数**である。
-- ⚠⚠ **国全体の灰色・斜線は、発令単位の塗りの<b>下</b>に置く。** 実測、`wp-alert-fill` が style index 34、
-  `wp-alert-choro` が 39——どちらも `before` を指定しておらず、薄塗りの側が後から着地するため、
-  **発令中の区域の上に 42% の灰色が乗っていた**。`ensureChoro()` は `wp-alert-fill` を **名前で**
-  `before` に指定する（順序が非同期の着地順に依存してはならない）。
-- ⚠ **国は「発令単位で描く」か「薄塗り」かのどちらかで、両方はしない。** 置けなかった区域のために
-  描画済みの国まで薄塗りすると、日本を市町村で描いたとき **1,490 のうち 11 置けないだけで全土が着色**される。
-  置けなかった数は**言葉で**印字する（`placedLine`）。
-- **配色は2モードで、既定は各機関の公式配色**（`localStorage['im.alertPal']`）。
-  ① **各国公式** … 気象庁 `#f2e700`/`#ff2800`/`#aa00aa`/`#0c000c`（**気象庁自身のページの
-  `.contents-levelNN` から読み出した値**）、中国気象局の四色予警信号、その他は CAP の黄／橙／赤。
-  ② **IntMap 換算** … 独自の4段階で、**どの機関の配色とも1色も共有しない**うえ、パネルが
-  「IntMap 独自の換算であり、同じ段でも国どうしの危険度が等しいという意味ではない」と明示する。
-  地物は `colA`（公式）と `colN`（換算）の**両方**を持つので、切替は**再取得ではなく塗り替え**。
-- ⚠⚠⚠ **災害名は読み手の言語で書く。** 実測、1つの画面に「Thunderstormwarning」（墺）・「ORAGE」
-  （象牙海岸）・「STARKES GEWITTER」（独）・「Mye regn」（諾）・「Baixa Umidade」（伯）・「降雨」（台）・
-  「大风蓝色」（中）・「大雨」（日）・「ارتفاع درجات الحرارة」が同時に並んでいた——8言語3文字体系で、
-  どれも読み手の言語とは限らない。`HAZ`（25 の災害 × 各機関が実際に書く語のパターン）が分類し、
-  `L()` が設定言語で名前を出す。⚠ **勝つのは「一番早く一致した」パターンであって表の先頭ではない**——
-  先頭語が災害で残りは限定だから（「Strong Wind and Large Waves」は wind、「雷雨大风」は thunderstorm、
-  「rain-flood」は rain）。同着は表の順で決め、それが「VENT DE SABLE」を砂嵐に入れる。
-  ⚠ **機関の言葉は捨てず、並べる。** 地物は `hzr`（機関自身の表記）を持ち、タップしたカードが
-  「訳語（原語）」の形で両方出す。表に無い語は**訳さずそのまま**出す（プレースホルダに潰すほうが失う）。
-  ⚠ **階級は災害名ではない**——本文が「Yellow Warning」だけの行は災害を名乗っていないので名前に使わない。
-  ⚠ 言語を切り替えると `relabel()` が**取得し直さずに描き直す**（`hzr` が地物にあるので再取得は要らない）。
-  ⚠⚠ **災害名の英語は、その災害だけの鍵でなければならない。** 6言語目以降（fr / ko / 中文）の索引は
-  **英語の文字列で引く**ので、他の呼び出し箇所が同じ英語を別の意味で使っていると、そちらの訳が出る。
-  実測: 雹を `L('Hail',…)` と書いたところ、`js/time-borders.js` に `LA('Hail','ハーイル',…)`
-  ——サウジアラビアの**都市** حائل——が既にあり、4つの表はその都市で埋まっていた
-  （fr《Haïl》/ ko《하일》/ 中文《哈伊勒》）。**欠落も未翻訳も無いまま、地図が都市名を災害として
-  印字する**ところだった。同じ理由で `Wind` / `Fog` / `Snow` / `Heavy rain` / `Thunderstorm` も
-  他の呼び出しに使われていたので、災害側は `Strong wind` / `Dense fog` / `Heavy snow` /
-  `Heavy rainfall` / `Thunderstorms` という**自分の鍵**を持つ。`tests/r277 ⑩` が
-  「1つの英語の鍵が2つの意味を持たないこと」を検査する。
-- **種別は地図の上に文字で出る。** 区域は災害名を持ち、同じ区域に複数出ていれば `+N`。
-  z5 未満は短縮形、以上は正式名。⚠ **`text-field` に `['step',['zoom'],['get',…]]` は書けない**
-  （style 時に落ちてページごと死ぬ）ので **2レイヤーの `minzoom`/`maxzoom`** で表す。
-  ⚠ 短縮形は**頭字語ではない**——階級語を落として災害語を残す（頭字語にすると読み手に鍵が無い）。
-- **塗りは薄い。** 既定の不透明度は **0.38**（他レイヤーと同じ `_registerLayerOpacity` の**共通スライダー**が
-  動かす。専用のボタンは作らない）。階級は**輪郭線**が持つので、塗りを透かしても答えは残る。
-- **更新は 30 秒**（`TICK_MS`）＋タブ復帰で即時。**フィードの鮮度は4段階**——
-  Fresh（≤6h）／ Delayed（≤48h）／ Stale ／ Error。⚠ これは**フィードについての語**であって、
-  発表が無い機関は「静か」であって「故障」ではない、とパネルが自分で書く。
-- ⚠⚠ **多国フィードは「初回読み込みの待ち行列」ではなく「輪番」である。** MeteoAlarm は1リクエスト
-  6か国（relay の上限）× 2本／tick、対象は**最後に読んだ時刻が古い順**（未読が先）。35 か国を約 90 秒で
-  一周する。**「まだ持っていない国」だけを候補にすると、届いた瞬間に候補から外れて二度と更新されない**
-  ——実測、修正前は8分間・80回の更新で MeteoAlarm へのリクエストは**3本**で、以後は**ゼロ**だった。
-  `maAt` / `swicAt` が国ごとの取得時刻を持ち、パネルの `maOldestS` / `swic.oldestS` が
-  「最後に読んだのが一番古い国の年齢」を印字する（**増え続けたらそれが凍結**である）。
-- ⚠⚠ **一周は「エッジキャッシュの寿命」に合わせる。** relay のキャッシュは 60 秒なので、
-  それより速く同じ国を聞いても**同じバイトが返るだけ**で上流は新しくならない。逆に 90 秒はその床より
-  遅い。tick 30 秒 × **1リクエスト6か国 × 3本** ＝ 35 か国を **60 秒**で一周する。
-- ⚠⚠ **`busy` はラッチではなく<b>数</b>である。** 全バッチを1つの `Promise.all` に入れて1つの真偽値で
-  守ると、**一番遅い国が次の tick を決める**——実測、3本にしたのに最古が 108 秒まで伸び、2本のときより
-  悪化した（10 MB の上流取得が 30 秒を超えると次の tick が丸ごと空振りする）。`maBusy` / `swicBusy` は
-  **飛んでいるバッチの数**で、遅い1本は3枠のうち1枠を占めるだけ。`maPend` / `swicPend` が
-  「いま飛んでいる国」を持ち、二重取得を防ぐ。⚠ `maAt` は**完了時にだけ**書く（先に書くと停止が隠れる）。
-- ⚠ **WMO 登録簿は「誰かに何か出ているか」を先に1回で聞く。** `?swicscan=1` は GeoServer の
-  `propertyName` から**幾何列を外した**同じ問い合わせ（実測 1.53 MB・1.5 秒で全世界 4,427 区域）で、
-  形を落とさずに「どの加盟国に何件あるか」を答える。形を取りに行くのはそこに出ている国だけなので、
-  93 か国が**最初の tick で読み終わる**。⚠ `propertyName` に `wkb_geometry` を書き忘れると
-  GeoServer は**全地物を `geometry: null` で返す**（実測、韓国 37 区域が形なしで「取得成功」した）。
-- **パネルは「いま何が起きているか」から始まり、そこは1国1行である。** 〈色・国・災害（最悪順、入り切らない
-  分は `+N`）・階級・区域数〉。⚠ **国 × 災害で並べると1国が何行も占める**——実測、14行のうち**5行が中国**、
-  4行がイタリア、2行が豪で、残りの世界は「+59」だった。⚠ **行に印字する階級はその行の階級**である
-  （旧実装は国全体の最悪値を1つの災害名の横に出し、CMA の**黄色**に「Red (I)」と書いていた）。
-  取得先の一覧（`Source status`）とその下の `Diagnostics`（置けなかった区域）は畳んである。
-  数字は**全ソースで「区域数」に統一**する。
-- **押した地点の警報は別のカードに出る**（`.country-panel` ではなく `.country-popup`＝アプリ共通の詳細カード）。
-  当たり判定は**描かれている地物の幾何**（`ptInGeom` / `alertsAt`）なので、答えは「日本なら市町村、ドイツなら郡、
-  その他はその機関が描いたポリゴン」。⚠ **凡例は上書きしない**——タップで「いま世界で何が起きているか」が
-  消えるのが旧実装で、国全体の一覧はカードのボタンから開く。同じ答えは `__wpAlerts.at(lng,lat)` でも取れる。
-- `drawnISO` は**実際にソースに載った地物から毎回作り直す**（`publish()`）。「自分の単位を描いている国」は
-  表ではなく**測定**である。⚠ **手書きの対象一覧を作らない**——その一覧に国が増える日に嘘になる。
-- 名前の突き合わせは**両側に同じ正規化**（`_norm`：アクセント畳み・記号除去・単位語の除去）を通し、
-  `_alias()` が `|` `/`・括弧つきの別綴り・**先頭の行政語**（`Prov.` / `Région de` / `Landkreis` …）を外した形・
-  **`A; B; C` の各要素**を索引に入れる。`lookupUnit()` は完全一致 → 語の接頭辞・接尾辞（4文字以上）→
-  **索引側の接頭辞**（＝索引の鍵が問い合わせで始まる。「Antwerp」→「Prov. Antwerpen」、
-  「Viseu」→「Viseu Dão Lafões」）の順に試し、⚠ **索引側は一意に決まるときだけ**採用する
-  （二つに当たる語幹はコイン投げであり、違う区域に警報を描くのは描かないより悪い）。
-  ⚠ **片側だけの正規化はコイン投げ**になる。
-
-**発令区域の形を、4段のはしごで探す**
-
-実測、MeteoAlarm の35か国で公表 1,127 区域のうち**置けたのは 754**——373 区域が地図から静かに落ちていた
-（オーストリア 86／スロバキア 59 全部／ベルギー 9 全部／クロアチア 13 全部／スペイン 64／モルドバ 42 全部）。
-原因は1つで、**MeteoAlarm の CAP はそれらにポリゴンを持たず**（`<geocode>` は `EMMA_ID` だけ）、
-区域名が**その機関自身の呼び名**で Eurostat NUTS の名前ではないこと——「Rijeka region」「Wien Brigittenau」
-「Meseta cacereña」「Košice okolie」。
-
-| 段 | 形の出どころ | 効く国（実測） |
-|---|---|---|
-| ① | CAP 自身の `<polygon>` | 英国・オランダ |
-| ② | **同じ機関が WMO 登録簿に出している形**（relay `?swicgeo=<mid>`） | 墺・斯・西・波・塞・波黒・克・希・斯洛 … |
-| ③ | Eurostat NUTS 2/3 | 伊・仏・独 … |
-| ④ | 国境そのもの（**区域名が国名のときだけ**） | 塞浦路斯 |
-
-**実測 754 → 965 / 1,127**、ビルド済みページの全フィード合計では **3,093 / 3,261**。
-残りは国ごとに「置けた数／公表数」を**言葉で**印字する（丸めない）。
-⚠ **② は「第2の警報ソース」ではない**——`?swicgeo=` が返すのは **区域名と形だけ**（event も severity も
-時刻も入っていない）。何が発令されているかは今もその国のフィードが答えるので、**一国一ソース**は保たれる。
-⚠ **② は有効期限で絞らない。** 警報は期限切れになるが、その警報を描いた郡は期限切れにならない。
-⚠ 座標は小数4桁（約 11 m）に丸める——実測、オーストリアの生データは 1.5 MB、要約後 1.07 MB。
-
-**出典の言葉で読む**
-
-- ⚠ **気象庁のコード表は気象庁のものを置く。** `JMA_CODE` は気象庁自身の警報ページが持つオブジェクトから
-  取った「コード → 要素 ＋ **レベル**（20/30/40/50）」で、**階級はレベルだけ**から決める
-  （コードの数値範囲から決めてはならない）。⚠ 指定河川洪水予報の表は混ぜない（コードが衝突する）。
-  検証は出典自身の言葉で行う（`headlineText` の文言と要素名が一致するか）。
-- ⚠ **現在の状態は「官署ごとの最新1件」。** `r8` は速報の一覧なので、全部足すと後の速報が解除した警報が
-  復活する。最新が 72 時間より古ければ **throw** する。
-- ⚠ **全フィードが自分の時計を持つ。** `seenAt(feed, iso)` が**そのペイロードの一番新しい時刻**を記録し、
-  パネルが機関ごとに年齢を印字する。**年齢は常に印字する。**
-  ⚠ **有効期間は発表時刻ではない**——CAP の `onset`/`expires` は有効期間なので、`seenAt` は未来を拒否し、
-  リレーの `fetchedAt` を使う。
-- ⚠ **上流の「悪い日」より短い制限時間は、生きたフィードをランダムに落とす。** 上流の期限は 45 秒＋1回の
-  リトライ。投げっぱなしのローダには**自前の in-flight ガード**を持たせる（`Promise.all` する側の
-  `busy` は自分しか守らない）。
-- ⚠ ライブ取得は全て `cache:'no-store'`（付けないと定期タイマがキャッシュを読み直す）。
-- ⚠ **遅いフィードを `Promise.all` に入れない。** 公開される地物は「待ち合わせた分＋各ローダが着地させた分」を
-  1か所（`publish()`）で組み立てるので、遅いフィードが早いフィードを白紙にできない。
-- タップは `grouped()` の3段（admin-1 → sub → 市区町村）。同じ災害の組合せを持つ市区町村は1行にまとめる
-  （**markup にも予算がある**）。
-- ⚠⚠⚠ **CORS が開いていることと、「本番のオリジンから読める」ことは別である。** 中国の行政区画
-  （DataV.GeoAtlas）は `Access-Control-Allow-Origin: *` を返し、**同時に hotlink を防いでいる**——
-  実測、同じ秒・同じ URL で `Referer: http://127.0.0.1:4277/` は **200 / 569 KB**、
-  `Referer: https://rwmqx7dwb5-arch.github.io/IntMap/` は **403**。ローカルのプレビューでは
-  見えないので、中国が 127.0.0.1 では 223 区画描かれ、本番では `PLACED.CHN = [0, 1217]` になった。
-  → **relay 経由で読む**（relay は Referer を送らない）。`?cngeo=` は境界データなので**1日**のエッジキャッシュ。
-- ⚠ **公開フィードが見つからない国は、灰色斜線で「データなし」と言う。** 空の地図に「平穏」を含意させない。
-- **「対応国をどこまで増やせるか」は測れる。** 実測（同じ分）: WMO の加盟表に ISO コードを持つ加盟機関は
-  **198**、そのうち WMO 自身が「CAP 実装 Completed」と記録しているのは **139**——この地図はその全部を
-  読んでいる（自前フィードの国を含めて **140**）。残りは **Development 37 ／ Not started 20** で、
-  **登録簿の全球スキャンに1件も現れない**（実測、スキャンに出た 37 機関はすべて Completed）。
-  つまり **「CAP を出しているのに読んでいない加盟機関」は 0 である。**
-  ⚠ 加盟表の外を足すには、その機関が**機械可読で、発令単位ごとに**出していなければならない。
-  実測（12機関を叩いた結果）: 印 IMD **401**（IP 制限）／土 MGM **500**（Not allowed）／墨 **500**／
-  南ア **404**／泰・尼・越・智・亜・以 **404 または 403**／新 SGP はデータ無し。
-  唯一答えたのは **馬 MET Malaysia**（`api.data.gov.my/weather/warning` · 200 · JSON）だが、
-  中身は**散文**で（「over the waters of Pahang • Terengganu • Northern Sarawak」）、
-  `<area>` も geocode もポリゴンも無い——**出典が分けていないものを地図が分けてはいけない**ので、
-  これを区域に切り出すのは実装ではなく捏造になる。よって**足していない**。
-- ⚠⚠ **MeteoAlarm の「緑」は警報ではない。** CAP の `parameter[awareness_level]` が `1; green; Minor` の行は
-  「注意の必要なし」で、**発表中の警報ではない**。実測、イタリアの 474 件のうち **201 件が緑**、ベルギーは
-  フィード全体（10 区域）が緑だった——`severity` だけを読むと緑が `Minor`/`Moderate` として警報の色になる。
-  ⚠ **災害名の文字列で代用してはならない**：イタリアは event に色名を書くが、オーストリアは書かない
-  （`Thunderstormwarning` 796 件、すべて awareness 2）。階級は **2/3/4 → CAP の 1/2/3**、緑は**落として数える**
-  （relay が `green` を返し、黙って消さない）。
-
-### 7.2 レイヤー欄の分類
-
-`js/data-layers.js` の `GROUPS` が **18 の棚に 136 行**を配る。`GROUPS` に無い行は末尾の
-**「Others」**と**「ベータ」**へ自動的に掃かれる（ベータは削除ではなく1段下の棚）。
-
-| キー | 名前（EN / JA） |
-|---|---|
-| `lyrGrpClimate` | Climate & weather / 気候・気象 |
-| `lyrGrpOrbit` | Space & orbit / 宇宙・軌道 |
-| `lyrGrpMaritime` | Oceans & maritime / 海洋・船舶 |
-| `lyrGrpTerrain` | Terrain & elevation / 地形・標高 |
-| `lyrGrpNature` | Nature & land cover / 自然・土地被覆 |
-| `lyrGrpDemo` | Population & demographics / 人口・人口動態 |
-| `lyrGrpHazard` | Hazards & emergencies / 災害・緊急 |
-| `lyrGrpPolitics` | Politics & governance / 政治・統治 |
-| `lyrGrpSecurity` | Defense & security / 軍事・安全保障 |
-| `lyrGrpHealth` | Health & sanitation / 医療・衛生 |
-| `lyrGrpTech` | Technology & infrastructure / IT・技術インフラ |
-| `lyrGrpEconomy` | Economy & trade / 経済・貿易 |
-| `lyrGrpSociety` | Society & education / 社会・教育 |
-| `lyrGrpTransport` | Transport & mobility / 交通・輸送 |
-| `lyrGrpAgri` | Agriculture & food / 農業・食料 |
-| `lyrGrpEnergy` | Energy & resources / エネルギー・資源 |
-| `lyrGrpIndic` | Indicators & overlays / 指標・オーバーレイ（空。キーは保持） |
-| `lyrGrpOthersReal` | Others / その他（空。キーは保持） |
-| `lyrGrpOthers` | Beta / ベータ（`GROUPS` に無い行の落ち先） |
-
-規約:
-
-- ⚠ **1つの id は1つのグループにしか書けない。** `order.push` は要素を**移動**させるので、2箇所に書くと
-  最後のグループにしか出ない。`tests/r271-checks.test.mjs` が全 id の一意性を検査する。
-- ⚠ **全グループキーは9言語すべてに見出しを持つ**こと（同テストが検査する）。
-- ⚠ **行が0のグループはキーを残す**（保存済みセッションや共有リンクが名指しできる。描画はされない）。
-- ⚠ **`lyrGrpOthers` のキーは変えない。** `js/map-ui.js`（タイルのベータ判定）と `js/layer-dropdown.js`
-  （携帯での折りたたみ）が名指しで使っているので、改名すると携帯でベータ節が畳まれなくなる。
-- **基本表示カテゴリ**（地名・国境・州県境・道路・鉄道・グリッド・国情報）に**昼夜の表示**
-  （`dl-nightside`）が入る。これは「地球のどちら側に太陽があるか」という常設のビュー切替であって
-  レイヤーではないので、`_refreshActiveLayers()` の `skip`、`window._imActiveLayerCount`、
-  `js/widgets.js` の `FEAT_IDS`（ルーレット）のいずれにも入れない。
-  ⚠ 常設スイッチへ移した行は `placed` にも入れること（入れないと掃き出しでベータにも現れて二重になる）。
-- **行 id の接頭辞**は `rowFor()` が知っている必要がある（世界データ層 `wp-dl-`、施設層 `fac-dl-` など）。
-- **分類の規則は1つ——レイヤーは、それが測っている主題に属する**（作った計器でも、対象の場所でも、
-  出てきた表でもない）。
-- ⚠ **過去の指示で beta へ降格されたものを、勝手に昇格させない**（「beta」は品質の判断、分類は主題の判断）。
+**どちらも [`docs/MAP-LAYERS.md`](docs/MAP-LAYERS.md) へ移した**（節番号は同じ）。§7.2 は 18 の棚と
+「新しいレイヤーはどの棚に入るか」、§7.5 は基図・投影・初期カメラの組み立て。レイヤーを1本足すときは
+あちらを開くほうが早い——`§7.1`〜`§7.10` のうち **§7.3 と §7.4 以外はすべてあのファイル**にある。
 
 ### 7.3 レイヤー・データ契約 `window.IntMapLayers`
 
@@ -1065,279 +360,6 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
   プロジェクト（`data/maddison.json`）。歴史的国家のクリックは**当時の名称・当時の記事**に解決する
   （現代のページへは決して飛ばさない）。
 - **年次系列を持たない指標に、誤った年を付さない。** 公開系列が無いものは版を明示するだけにする。
-
-### 7.5 地図の初期化・基図・投影
-
-- **初期化**：`map = new maplibregl.Map(...)`。`renderWorldCopies` は投影／自由パンに応じて切り替える。
-  基盤は CARTO / Esri のラスタ ＋ OpenFreeMap のベクタ（`ofm`）。
-- **基盤切替**：`btn-view-map/sat` と `applyTheme()` ＋ `_reassertBase()`（スタイルロード競合に強い
-  ポーリング再適用）。⚠ `applyTheme` は `styledata` を同期で発火しうるので**再入禁止フラグ**を持つ。
-- **投影**：Flat (mercator) / Globe。3D 地形は terrarium DEM（複数ホストで並列取得。携帯は maxzoom 13）。
-- **タイルの密度はバイトで言う**：`maxTileCacheSize` は 512² のタイルを前提に決める（256² 前提の枚数を
-  そのまま使うとメモリが4倍になる）。
-- **衛星タイルは `imapsat://` プロトコル**（`js/sat-proto.js`）。@2x の綴じ合わせは「無い画像」に払わない
-  ——z10 近傍ごとに `have`（実画像が見えた最深）と `stop`（次の段が灰色だと**観測された**最深）を
-  **別々に**持ち、止めてよいのは `stop` だけ。記録は**訊かれたタイル**に対して行う（祖先に対してではない）。
-  観測は `window.IntMapSatProto.depth/wouldStitch/hiDPI`。
-- **粗い地球全体の衛星ベース**：`js/world-base.js` が同梱の正距円筒画像から `imapworld://` で低ズーム
-  衛星タイルを**ネットワーク無しで**生成し、`layer-sat` の下に敷く。
-- **極冠 (±85.0511°〜±90°)**：Mercator にそこのタイルは存在しないので、`layer-polar-cap`
-  （スタイル配列の先頭に宣言された `background`）が**どのベースマップでも**敷かれる。
-- **背後の星空・太陽・月**：`js/space-sky.js`。ダークテーマ ＋ globe ＋ 自前の空を持たないエンジンのときだけ、
-  `#map` の**下**の `#space-canvas` に実カタログの星（`data/stars.bin`）と実位置の太陽・月を描く。
-  月は満ち欠けを描く（照射率・明縁の位置角・明暗境界楕円・地球照）。太陽は周縁減光した円盤＋光冠＋コロナ。
-  数値は `window.IntMapEphemeris` から来る（テクスチャではない）。
-- **大気の縁**：`js/limb-layer.js`。`js/theme-sky.js` の `_sunElevAtCentre()` は
-  ⑴ 衛星写真でなければ `null`（標準マップに大気は出さない）、⑵ **昼夜表示がオフなら 90°**
-  （`_aimSun()` がカメラ中心の真上へ向けた光の読み戻し）、⑶ それ以外は実際の太陽高度を返す。
-  ⚠ **「モードをオフ」は「その量が不明」ではない**——`null` を返すとアプリ自身の大気がそもそも点かない。
-
-### 7.6 ラベル
-
-- **地名ラベル**：`ensurePlaceLabels()` が `ofm` の `place` レイヤから `ofm-country` / `ofm-city` /
-  `ofm-other` を生成する（冪等）。`cb-names`（既定 ON）で表示。
-  ⚠ **市区町村より下の階層は `ofm-other`**：`village` / `suburb` / `hamlet` に加えて
-  `borough` / `quarter` / **`neighbourhood`** / `isolated_dwelling` / `farm`。
-  綴りは **`neighbourhood`**（OpenMapTiles のスキーマ値。US 綴りは1件もマッチしない）。
-  クラスを3段に分け、`['step',['zoom'],1, 13,2, 14,3]` で開く。⚠ **段は整数**
-  （`['zoom']` はフィルタ内では整数ズームでしか再評価されない）。
-- **地方行政区分ラベル**：同じ `place` レイヤの `state` / `province` クラスから `ofm-admin1`。
-  ここでの `rank` は**面積で世界規模にそろった順序**なので、ズームの階段は国別ではなく rank 別。
-  ⚠ **色は「その区分を描いている線の色」**＝`js/border-style.js` の `ADMIN1_COLOR` を**そのモジュールから
-  読む**ので、破線とラベルが食い違わない。⚠ ハローは**両基図で暗色**にする（コントラストはハローの仕事）。
-  ⚠ **クリック／ホバーの一覧に入っている**（地図の上では都市名と見分けがつかないので、答えないラベルは
-  壊れた機能である）。4つの一覧（レイヤー別クリック・カーソル・厳密ヒット・パディング付きタップ）は
-  `PLACE_LBL` / `ALL_LBL` から**導出**するので、片方だけ更新できない。
-- **ポップアップは名前を2つ出す**：「現地名（地図がそう描いた名前）」。`showPopup(…,{title})` は
-  **見出しだけ**を差し替え、`name`（コピー・Wikipedia 照会・AI ブリーフ・境界検索が使う識別子）は
-  タイルの `name` のまま。2つ目の名前は `applyLabelLang()` が `text-field` を組むのと**同じ**
-  `OSM_NAME_KEYS(lang)`（`window.IntMapOsmNameKeys`）から求めるので、言語一覧は1つしかない。
-- **細かい地名ラベルの範囲ハイライト**：`IntMapOutline.fetchPolygon` は Nominatim を**2段**で引く。
-  ① クリック地点の ±0.06°・`bounded=1` ＝結果をその近傍に**限定**、② 見つからなければ ±8° の viewbox
-  （ヒントであって限定ではない）。⚠ 順序が本体（±8° は再ランクするだけなので、細かい地名は同名の有名地に
-  枠を奪われる）。⚠ ポリゴンが存在しない place ノードには**何も描かない**（点に長方形を被せない）。
-- **水域・地形ラベルと河川**：`geo-sea` / `ofm-water` / `ofm-water2` / `ofm-river` / `ofm-peak` は
-  クリックでポップアップ（面が無いので「この地域だけ」「移動」は出さない）。
-  **`ofm-river` だけは、その河川を線でハイライトする**。選び方は `js/river-course.js`：
-  **名前の集合**（`name`・`name:xx`・`name_xx`・`int_name`・`alt_name` を正規化）を作り、
-  **共有する名前で推移的に**タイル内の `waterway` 区間を繋ぐ。⚠ **1つの名前で比較してはいけない**
-  （河川は国境ごとに改名され、`name:en` だけが共通という形が普通）。
-  そのうえで `course()` が OSM に実流路を訊く（Nominatim →（駄目なら）Overpass）。
-  ⚠ **タイルのハイライトを先に描き、それを取り上げない**（取得は後から届き、届かないこともある）。
-  ⚠ `course()` が受け取るのは「押された区間」ではなく**閉包そのもの**（全名前・範囲・代表点）。
-  ⚠ 門は「クリックからの 40 km」ではなく「**すでに一致しているタイル区間のどれかからの 40 km**」。
-- **ポイント地物はタイル直描画／ラベル線地物は初見ピン留め。** 見えているアンカーを「改善」目的で動かさない。
-- **ラベルのサイズ**：全レイヤーが `window.IntMapLabelScale`（`js/label-scale.js`）から取る。
-  地名以外は必ず地名の基準の 0.88 倍以下。
-- **施設・店舗名**：同じ `ofm` の `poi` レイヤから `ofm-poi`（テキスト）＋ `ofm-poi-dot`（点）。z14 〜、
-  `rank` の窓をズームで開き、`symbol-sort-key` で衝突順も同じ順序にする。`cb-poi`（既定 OFF）。
-- ⚠ **閉じる × は U+00D7 ひとつに統一する。** 実測 `measureText` 16px で **U+2715 は Inter・Noto Sans JP・
-  system-ui・sans-serif・Arial の全部で 13.07px**（＝どれも持たず記号フォント落ち）、**U+00D7 は
-  10.59/16.00/10.95/16.00/9.34**（＝Inter が持っている）。定義は `window.IntMapClearGlyph()` ただ1つで、
-  `tests/r273-checks.test.mjs` が js/ と css/ の**全ファイル**を掃く。位置は**それが属する入力欄の矩形**から
-  決める（`top:50%` は位置指定の祖先に解決されるため、包み箱と入力欄の高さが違うとずれる）。
-
-### 7.7 レイヤー個別の注意
-
-- **年降水量**（`dl-annprecip` / `js/precip-annual.js`）— **平年値**は CHELSA V2.1 bio12（30秒角 ≒ 1 km、
-  1981–2010）をメルカトルに再投影したもの、**年別**は GPCC Full Data Monthly V2022（DWD、0.5°、
-  陸上の雨量計解析）の 1981–2020 を1枚に縦積みしたもの。**色は16段の帯**（連続ランプではない——
-  色から範囲へ正確に戻せる）。数値の読み出しは絵を読まず `data/precip-mm.png`（8bit の log(mm)）を読む。
-  ⚠ **格子と帯と色は `data/precip-mm.json` / `data/precip-year.json` から読む**（JS 側に写さない）。
-  ⚠ 海の上で雨量計解析は何も言わないので、陸だけを塗る。
-- **GIBS ラスタ** — 各プロダクトの**実配信期間**は `data/gibs-range.json`（範囲外 404・範囲内 200 を
-  二分探索して実測したもの）。⚠ NDVI はローリング窓、土壌水分は配信終了済みのものがある——
-  「今日−2日」を既定にすると**何も描かない**日ができる。⚠ 2層同時に切り替えるときは、
-  フラグではなく**飛んでいる Promise を共有**する（2つ目が「まだ着かない答え」を `null` として受けない）。
-- **宇宙基地・地上局**（`js/osm-facilities.js`）— 同梱スナップショット `data/osm-space.json`（14,965件）と
-  ライブ Overpass を **id で合成**する（ライブがスナップショットを上書きすると、ズームで件数が減る）。
-  外交公館も同じ形。⚠ 疎な集合は「視野内 Overpass」では答えが出ないので、全球スナップショットを同梱する。
-- **宗教・言語のポップアップ**は棒グラフ＋**データの年**を出す。
-  ⚠ **出典が分けていないものを地図が分けてはいけない**（自由文の括弧を採るのは限定された語のときだけ）。
-  ⚠ **出典が分けているものを地図がまとめてはいけない**（旧ユーゴの4標準は別々の分類）。
-- **GDP 成長率は発散配色**（0 ＝ 白・負 ＝ 赤・正 ＝ 青・0 について対称）。
-- **データセンター層**は表示範囲の集計を**レイヤー自身の凡例**に出す（浮くポップアップにしない）——
-  「この点は何か」は浮き、「表示範囲に何があるか」はレイヤーの答えである。
-- **貿易フロー**の矢印は軸（`wp-trade-arc`）・頭（`wp-trade-tip`）・相手国名を**一式**で切り替える。
-  軸は頭の base で終わる（`trimEnd` / `line-cap:'butt'` / `icon-anchor:'top'`）。
-  ⚠ 切る長さは**画素**なので**レンダラの投影に訊く**（`GE().coords.project`）。メルカトルのメートルは
-  画面中心でしか合わない。`moveend` で作り直す。
-
-### 7.8 地形と水
-
-`js/terrain-water.js`。
-
-- **DEM の穴は「地面が無い」ではなく「キャッシュに無い」かもしれない。** 判定の閾値は**物理**で置く
-  （−12,000 m ＝ チャレンジャー海淵の下・符号化の最小の上）。穴に当たったら終わりにせず
-  **ピラミッドを1段降りる**。残った穴は**数えて印字**する。
-- **basin の拡張は DEM タイルのブロック単位**（`growBasin`）。LRU に丸ごと収まる大きさで読み、
-  `null` は1回だけ再試行する。⚠ セルの密度で温めると、広い basin ではタイルの大半が未要求のまま残り、
-  未取得タイルの矩形の辺で水が止まる。
-- **新しい水源を置いても、既にある水はリセットされない。** 作業矩形の外を押したときは
-  `padsToReach()` → `extendToPoint()` が**盆地を広げて**そこに届く（`sim.grow` は水深をそのまま運ぶ）。
-  予算 `basinMaxCells()` を超えるときだけ `rebuildAround`（＝リセット）に落ちる。
-  Atlas の `addSource()` も同じ経路を通る。
-- **リセットは1本の関数**（`resetTerrainNow()`）。⚠ **「この関数を通れ」という注記が2本あったら、
-  通らない道を無くす番**である（`editDirty()` を呼ばない経路を作らない）。
-- **`cont` / `rate` は水源自身の属性**（最後に置いた水源だけを太らせない）。継続の水源は緑＋輪、
-  1回きりは青い点。
-- ⚠⚠⚠ **1回きりと継続の差は「水が出続けるか否か」だけである。** どちらも**流量を持つ蛇口**で、
-  `feedTaps(dt)` が**両方**に `rate × dt` を注ぐ。違うのは `cap`（＝出し切る総量）が有限か `Infinity` かの
-  1点で、`owed(x) = cap − m3` が 0 になったら止まる。`m3` は**これまでに出した量**（両方とも）。
-  ⚠ 旧実装は1回きりを `pool()` で**最初から静止した湖**として置いていたので、置いた瞬間に
-  `simMoving()` が偽 → `canPour()` が偽 → **▶ が無効・↺ を押しても再生できない**という状態になっていた。
-  ▶ は「まだ出し切っていない水源がある**か**、水がまだ動いている」ときに有効。
-- ⚠⚠⚠ **その差は「量」と「速さ」の2つの数で、m³/s の箱は<b>1つ</b>である。** 旧実装は
-  「1クリックの水量 m³」「注水量 m³/s」「流量 m³/s」の**3つ**を並べていて、後ろ2つは**同じ量**だった——
-  `placeSource` が `rate:(flowM3s!=null?flowM3s:pourRate)`、`srcRate` が `pourRate` に落ちる、つまり
-  1つの数に2つの操作子があった。いまは `pourRate` **1本**（`setRate()` が唯一の書き手で、置いてある
-  水源すべての `rate` も同時に動かす。Atlas の `setFlow()` も同じ関数を通る）と、1回きりだけが持つ
-  `srcM3`（総量）。⚠ **パネルが割り算を自分でする**——「1クリックで合計 X m³ を、毎秒 Y m³ の速さで
-  出します（シミュレーション時間で約 Z）」を2つの箱の下に印字するので、2つの数が**何をするのか**が
-  読める。継続では総量の箱ごと消え、「止めるまで出し続けます」と書く。
-  ⚠ この文の鍵は**静的な文字列**でなければならない（`L('One click pours '+n+…)` は英語の引数を自分で
-  組み立ててしまい、6言語目以降の索引は**英語の文字列で引く**ので永久に一致しない）。`{v}`/`{r}`/`{t}`
-  を後から差し替える。
-- **水は届くまでに時間がかかる**（`js/water-dynamics.js`）——浅水方程式の局所慣性形＋q 中心化、
-  マニング n。閉じた形の答えで検証してある（等流水深・静水で max|q|＝0・質量保存）。
-  ⚠ **予算は実時間の上限で持つ**（格子が育つとステップの値段が変わるので、ステップ数は予算にならない）。
-- **パネルは1本の列。** `.tw-body` は `scrollbar-gutter:stable`、スクロールバーの幅は `_squareColumn()` が
-  **実測**して `.tw-head` / `.tw-foot` の `padding-right` にインラインで書く
-  （⚠ **インラインの padding にスタイルシートは勝てない**）。
-  ⚠ **寸法は1か所の宣言**（`TW_FS`/`TW_FS_S`/`TW_FS_H`/`TW_ROW`/`TW_CTL`/`TW_IN`/`TW_PAD`/`TW_GAP`/`TW_INSET`）で、
-  **端末クラスで2組**ある——デスクトップは**他の凡例と同じ寸法**（本文 11 px・行 30 px・操作 28 px）、
-  携帯は指の寸法（12 px・44 px・36 px）。⚠ 44 px は iOS のグループ化リストの行高で、**デスクトップの
-  凡例の列では他のどの行の3倍近く**になる（実測、警報凡例は本文 10.5 px・行 13〜16 px）。
-- **ツール選択は上部に<b>一行で</b>ピン留めされる。** `.tw-tools` は `.tw-body` の**兄弟**（`.tw-foot` と
-  同じ作り）で、head → tools → body → foot の順。⚠ **`position:sticky` はスクローラの中では効かない**
-  ——ピン留めは CSS ではなく **DOM の親子関係**である（不均衡な `</div>` 1個でピン留めが黙って失われる）。
-  スクロールバー幅は `.tw-head` / `.tw-tools` / `.tw-foot` の3枚に配る。
-  ⚠ **ピン留めするのは「切替」だけで、設定は流れる。** 実測、`.tw-tools` は 591.7 px のパネルのうち
-  **131.7 px**（「ツール」見出し 17.7 ＋ 2×2 の選択 58 ＋「着色」チェック 31.3）を占めていた——
-  ピン留めする要素は正しかったが、**3行あった**。いまは `grid-template-columns:repeat(4,1fr)` の
-  **1行 46.7 px**で、着色チェックは本文（「表示」）へ移した。
-  ⚠ 4つの**正式名**は 306 px に入らない（実測）ので、帯には短い語を出し、正式名は `title` と、
-  そのツールが開くパラメータ欄の見出し（`modeName()`＝**唯一の宣言**）に出る。
-- **計算解像度は読み手が選ぶ**（`RES_D=[384,512,768,1024]`・既定 **512**・`im.twRes` に保存）。
-  解像度の変更は `build({keep:true})` で**同じ作業矩形のまま**作り直す。セル寸法と格子数はパネルが印字する。
-- ⚠⚠⚠ **標高のレベルは「作業矩形」から選ぶ。カメラからではない。** 作業矩形は `MAXKM`（60 km／携帯 26 km）で
-  切られるので、切る**前**の視野で `_demZoomForSpan` を呼ぶと格子より粗い DEM を読むことになる——実測、
-  カメラ z6 で矩形 47.2 km・セル 92 m のところ **DEM は z10（124 m 標本）**で、**格子より粗い地面**を
-  読んでいた。矩形から選べば z13（15.5 m）。`viewKm`（視野）と `spanKm`（矩形）は別の名前を持つ。
-- ⚠ **ツールを開くことは「地図を動かせ」という要求ではない。** `open({lng,lat})` はその点が**画面外のときだけ**
-  カメラを動かし、**ズームは変えない**。旧実装は `zoom: max(現在,11)` で飛んでいたので、z6 で開くと z11 に
-  なった（`js/map-ui.js` のツール行は**カメラの中心そのもの**を渡す）。矩形は `build({center})` で直接狙う。
-- **↺ 再生**は時計・水・各水源の供給量を 0 に戻し、**同じ地形と同じ水源のまま** t=0 から流す。
-  `m3` は「これまでに出した量」なので**両方の種類とも 0 に戻す**——それが再生そのものである。
-  ⚠ `editDirty()` を通すこと。⚠ **⏭（静止まで進める）も蛇口に注ぎ続ける**（`settle({onStep:feedTaps})`）——
-  注がない静止状態は「置いた水の一部の静止状態」でしかない。
-- パネルは他の浮遊ウィンドウと同じ帯にいる（`registerWindow`）。開く位置は `placeClear()` が
-  **地図を覆っているものの矩形を実測**して決める（サイドバーは開閉するので定数にできない）。
-  読者が動かした後は動かさない。
-
-### 7.9 物理シミュレーションの不変条件
-
-**地震波（`js/seismic.js` ほか）**
-
-- **初動の等時線は、破壊速度 Vr ≤ 波速 V であるかぎり厳密に震央中心の円である。**
-  `t(x) = min_k( off_k/Vr + dist(k,x)/V )` の括弧が常に ≥ 0 だからで、これは改善できる近似ではなく物理。
-  だが有限の破壊が持つ境界は**2つ**あり、もう一方は円ではない:
-
-  ```
-  T_first(x) = min over k ( off_k/Vr + dist(k,x)/V )    ← 円（定理）
-  T_last (x) = MAX over k ( off_k/Vr + dist(k,x)/V )    ← 断層の形が出る
-  ```
-
-  その間が「いま揺れている」**帯**で、`T_last − T_first` は継続時間そのもの。破壊が向かった側では
-  狭く（＝指向性）、背後では広い。⚠ **後端に枝刈りを掛けてはいけない**——最大値に勝てないとして
-  捨てられる点こそが、最小値を決める点である。⚠ 点震源では両境界が一致するので**帯は描かれない**
-  （長さが無ければ到達時刻は広がらない）。
-- **場址項は周波数の関数**（`js/seismic-site.js`）。上位 30 m を Vs30、その下を CRUST1.0 の実層構造と
-  した速度柱から `A(f)` を積分する。⚠ 高周波の極限は 1/4 波長を 30 m で1点評価した従来値と厳密に一致し、
-  変わるのは**その下の周波数だけ**＝盆地効果。⚠ 速度反転は作らない（Vs30 を下回らないようクランプ）。
-- **破壊は1枚のすべる矩形ではない**（`js/seismic-subfault.js`）。k⁻² すべり／**総モーメント厳密保存**／
-  破壊時刻 |r−r_hypo|/Vr／ライズタイムは公表式。位相は断層形状を種にした決定的生成なので、
-  **同じ断層なら常に同じすべり分布**になる。
-- **その土地の分類は測って決める**（`js/earth-structure.js`）。同梱の CRUST1.0 / Slab2 / PB2002 から
-  interface / intraslab / active-crustal / stable-continental を判定し、**区分ごとに公表された
-  パラメータ一式**を返す。⚠ 幾何減衰の折れ点は**その土地の Moho 深さ**に比例させる。
-  ⚠ **出典が確認できない係数は書かない**（出典のない閾値はファイル冒頭に明記してある）。
-- ⚠ **地域限定の補正に依存しない。** 検証は観測から作る（`scripts/build-seismic-observations.mjs` /
-  `scripts/seismic-validate.mjs` の `--baseline` で A/B）。
-- これらのファイルは**純粋な算術**（DOM・レンダラ・fetch・アプリ状態を参照しない）なので、
-  Node から直接検証できる。
-
-**津波・水（`js/tsunami.js` / `js/water-dynamics.js`）**
-
-- 浅水方程式の局所慣性形＋q 中心化、マニング n。**閉じた形の答えで検証する**
-  （等流水深との比・静水で max|q| ＝ 厳密に 0・質量保存）。
-- ⚠ **「このモデルは X を扱いません」と自分で書いてある機能は、いつか X を要求される。**
-  到達時間を隣に表示しているなら、到達時間はそのモデルが答えるべき量である。
-- ⚠ **2つ目の時計を作らない**（フッタと詳細が別々の到達時刻を出さない）。
-
----
-### 7.10 気象モデル（ECMWF IFS）・風・レーダー
-
-**気象の数値はすべて 1 つのモデルから来る。** `window.IntMapECMWF`（`js/wx-ecmwf.js`）が
-Open-Meteo の spatial アーカイブ（**ECMWF IFS HRES・O1280 縮約ガウス格子・約 9 km**）を持つ。
-色面（ラスタ）・粒子・カーソル下の地点値・共有リンクの4つが**同じ変数・同じ初期時刻・同じ有効時刻**を読む。
-
-- **`.om` ファイルの場所は自分で組み立てる。**
-  `<base>/<初期 YYYY>/<MM>/<DD>/<HH>00Z/<有効 YYYY-MM-DD>T<HH>00.om`。
-  ⚠ **SDK に `latest.json` を渡してはならない。** `normalizeUrl` は `time=` を無視して
-  `valid_times[0]` に解決し、キャッシュ鍵（`DATA_RELEVANT_PARAMS` は `['variable']` のみ）も
-  時刻を含まない。**ファイル名に有効時刻が入っていることが、予報時刻が実在する唯一の理由**。
-- **予報時刻は全部使う**（実測 109 ステップ＝3日は毎時、6日目まで3時間毎）。既定は「今」に最も近い段。
-  再生・一時停止・前後・「今へ戻る」。**モデル初期時刻（run）と有効時刻の両方を印字する。**
-  モデルランが更新されたら、**同じ添字ではなく同じ壁時計の瞬間**へ移す。
-- **凡例はレンダラ自身の配色表から作る**（`IntMapECMWF.legend(variable)`）。目盛は 5 点・単位つき、
-  気温は `imUnitTemp`、風は風速単位の選択に従う。**凡例の最大値が LUT と食い違うことは構造上起きない。**
-- **風の配色は Windy 相当の独自表**（`WINDY_WIND`：静穏＝青紫 → 青 → 青緑 → 緑 → 黄 → 橙 → 赤 →
-  マゼンタ → 白、**全域 α=1**）。SDK 既定の風配色は最初の 7 m/s で α を 0→1 に上げるため、
-  静穏域が「穴」になり Windy の絵にならない。プロトコルは**この表で**登録する。
-- ⚠⚠ **気象の面は昼夜シェーディングより上に置く。** `im-night-shade` は装飾、気象はデータ。
-  実測（z3・150°E 20°N・夜側）：LUT が要求する `rgb(40,130,180)` に対し実際の画素は `rgb(15,43,64)`＝**0.36 倍**。
-  `IntMapECMWF.before()` が夜側スタックの直後を返し、`lift()` が**毎 idle** で位置を再主張する
-  （`js/night-side.js` は自分の層をタイマーで貼り直すため）。
-- ⚠⚠ **断られたレイヤーは、断られたままにしない。** `addField`／`addLayer` はスタイルが層を受け付けられ
-  ない間は false を返すので、**1回呼んで終わりにすると「粒子は出るが色がつかない」になる**
-  （実測、梯子なしでは 150 秒待っても付かない／梯子ありで 6.9 秒）。約 16 秒のポーリング＋次の `idle`、着いたら止める。
-  時刻変更時の再構築は**先に層を消す**ので同じ梯子が要る。
-- ⚠⚠ **読み手は1つ、だから待ち行列も1つ。** SDK の `ensureData` は毎回 `setToOmFile` で**共有リーダを
-  張り替える**ので、違うファイルの読み込みが時間的に重なると互いを壊す（同じ state 同士は
-  `state.dataPromise` が重複排除するので安全）。`IntMapECMWF` が始める読み込みは全部1本の鎖に並ぶ。
-- ⚠⚠ **レイヤーが手放してよいのは自分のフレームだけ**（`release(variable)`）。無条件の `release()` は、
-  別の変数の読み込みが飛んでいる最中だとそれを黙って無効にし、地点値が理由もなく空欄になる。
-  ⚠ `js/map-ui.js` は起動後 700 / 1,800 / 3,200 ms に保存済みレイヤー集合を再適用するので、
-  これは稀な競合ではなく**通常の起動で起きる**。時刻を変えたときの `release()` は無条件で正しい。
-- **隣接フレームの先読みは「時刻変更時」だけ。** 1 フレームの暖機は画面のフレームと同じ範囲読み込み
-  （実測 410 リクエスト・約 27 MB）を要求するので、再生器に触っていない読者には課さない。
-  ⚠ `.om` を開く操作は `Content-Length` が示すほど高くない——実測 `setToOmFile` は 260 ms / 1,019 ms で、
-  Range 無しの 200（ファイル全体の宣言長）は**本体を読まずに捨てられている**。
-- **不透明度は1回だけ掛ける。** 面の α は配色表（風速の意味を持つ）、スライダーはただ1つの倍率で既定 1.0。
-- **粒子は WebGL・1フレーム1描画呼び出し**（`js/wx-wind.js`）。移動量・寿命・残像はすべて**実経過時間**基準
-  （`dt` 秒／`exp(-dt/τ)`）なので、60 Hz と 144 Hz で同じ絵になる。WebGL が無ければ**束ねた Canvas2D**。
-  粒子はネイティブ格子を直接サンプルする（実測 14,000 回 2.2 ms）——低解像度の地点格子は存在しない。
-- **地点値**：ECMWF ラスタが出ていれば `valueNow(variable, lat, lng)`＝**タイルを描いたのと同じ配列**。
-  NASA GIBS のラスタ（`temp`/`sst` など）は地点値サービスを持たないので、**データセット名と表示中の日付**を
-  出して止まる。⚠ **別のデータセットの現在値を代わりに出してはならない。**
-- **レーダー**：RainViewer の `radar.past`（実測 13 コマ・10 分間隔・直近2時間）を**ループできる**。
-  コマ時刻と経過（「13:30 · −11 分 · 13/13」）を出す。タイルは差し替え（`setSourceTiles`）なので
-  コマ送りは点滅せずクロスフェードする。⚠ 無料枠の配色番号は**2種類しか返らない**
-  （0/2/3/6/7/8 と 1/4/5/9 でバイト一致）ので、`RV_SCHEME` が実際に得られる方を名指しする。
-- **雲（赤外）**：RainViewer の衛星 IR は**廃止済み**（`satellite.infrared` は実測 0 コマ）。
-  NASA GIBS の静止衛星 clean-IR（**Himawari + GOES-East + GOES-West**、10 分間隔）に置き換えた。
-  ⚠ **Meteosat は GIBS に無い**ので、およそ西経 20°〜東経 75°（欧州・アフリカ）は範囲外。
-  凡例が**その旨を文字で書く**（空白を「雲が無い」と読ませない）。
-- **地点天気ポップアップ**は `window.IntMapWx`（`js/wx-source.js`）経由。突風・海面更正気圧・
-  **データの有効時刻**（ブラウザ時刻ではない）・**実際のモデル名**を出す。
-  ⚠ Open-Meteo の `models=` 無指定は **Best match**（GFS ではない）。⟳ は `ttl:0` で
-  **両方の**梯子（Open-Meteo と MET Norway）のキャッシュを無効化する。
-- ⚠ **Open-Meteo への直接 fetch は残っていない。** すべて `IntMapWx.guardedJSON`（キャッシュ・
-  重複排除・日次 429 のサーキットブレーカ）を通る。`IntMapWx.isOpenMeteo(url)` が**ホストで**判定する
-  （部分文字列ではない）ので、`sims.js` / `atlas-console.js` の共有ローダも自動的に通る。
-- **共有リンク**は選択中のレイヤー（`dl-*`）に加えて **ECMWF の有効時刻（瞬間）と各層の不透明度**を運ぶ
-  （`IntMapShareState.register('weatherEC')`）。⚠ 添字ではなく**瞬間**——開いた人のモデルランは別かもしれない。
 
 ## 8. UI/UX の構造
 
@@ -1678,40 +700,16 @@ Open-Meteo の spatial アーカイブ（**ECMWF IFS HRES・O1280 縮約ガウ�
 アプリ本体とは分離した**開発／CI 用ツール**。ブラウザには一切ロードされない
 （`package.json` の devDependencies はアプリに同梱されない）。
 
-### 15.1 ファイル
+### 15.1 正本の在り処
 
-- `package.json`（private・type:module）。`.nvmrc` が Node のバージョンを持つ。
-- `scripts/serve.mjs` — 依存ゼロの静的サーバ（`http://127.0.0.1:4173/`）。
-  ⚠ **「Pages と同一」には圧縮も含まれる**——`Accept-Encoding` に応答する。
-  ⚠ **brotli ではなく gzip**（`br` を提示しても Pages は gzip を返す）。
-  ⚠ **`.gz` は対象外**（`data/*.json.gz` は「gzip 形式の**本体**」であって gzip 符号化された応答ではない）。
-  ⚠ 経路の組み立ては「先に join して後で検査」ではなく**素の区間に分解して ROOT から組み直す**
-  （前者は正しく効くが、静的解析からはサニタイザに見えない）。
-- `scripts/static-checks.mjs` — 構文（`node --check` を全 js/mjs/cjs/ts に）／JSON parse／YAML／
-  マージ衝突マーカー／秘密検出（publishable anon は allowlist）／HTML 参照アセットの存在／
-  ワークフローの最小権限／**リモート Action の完全長 SHA 固定**（error。除外なし）。
-- `scripts/doc-facts.mjs` — **文書間の固定事実の照合**（§15.5）。
-- `scripts/atlas-catalog.mjs` — **Atlas の操作カタログのゲート**。`js/atlas-console.js` の
-  `switch(a.type)` にある `case` 群と `SYS()` の本文を突き合わせ、**実行できるのに
-  カタログに書かれていない操作**があれば落ちる（§2.4）。`--check` 無しで走らせると
-  全 117 件の状態を一覧する。
-- `scripts/arch-files-check.mjs` — Architecture §3 と `js/` の突き合わせ。
-- `scripts/engine-coupling.mjs` — レンダラ脱依存のゲート。
-- `scripts/master-sync.mjs` — **原本（main worktree）が merge 後の状態かを見るツール**。
-  `npm run master:check` は原本が `origin/main` と一致し、`main` にいて、作業ツリーが
-  clean でなければ exit 1。`npm run master:sync` は fetch して原本を早送りする。
-  原本の場所は**ハードコードせず** `git rev-parse --git-common-dir` から導出するので、
-  どの worktree から実行しても原本を指す。作業ツリーが汚れている場合と、
-  `origin/main` に含まれない branch にいる場合は**何もせずに断る**（他セッションの作業を奪わない）。
-  ⚠ **`npm test` には入れない**——CI のチェックアウトは detached な PR ref なので、
-  そこでは「`origin/main` より遅れている」ことが正しい状態。規則そのものは
-  `tests/r282-checks.test.mjs` が合成リポジトリを作って測る。
-- `playwright.config.js` — hermetic なスモーク＋内部 QA（webServer＝`scripts/serve.mjs`・UTC/en-US・
-  SW ブロック・prod-smoke は除外）。`playwright.prod.config.js` — 実 URL 用（webServer 無し・retry 3）。
-- `tests/helpers/network.js` — hermetic なルーティング（同一オリジンのみ許可、他は全 `abort`）＋
-  console の分類（外部／ネット系は benign、自コードのみ失敗扱い）。
-- `.github/workflows/` — §3.12。
-- `docs/TESTING.md` / `docs/RELEASE.md` / `docs/MONITORING.md` / `docs/INCIDENT-RESPONSE.md`。
+| 主題 | 正本 |
+|---|---|
+| 何をどう試験するか・層・tier・テスト予算・`check:*` ゲートの一覧 | [`docs/TESTING.md`](docs/TESTING.md) |
+| リリース手順・ロールバック・着地確認 | [`docs/RELEASE.md`](docs/RELEASE.md) |
+| 稼働監視・アラート | [`docs/MONITORING.md`](docs/MONITORING.md) |
+| 障害対応（サイト・DB・鍵） | [`docs/INCIDENT-RESPONSE.md`](docs/INCIDENT-RESPONSE.md) |
+| CI／検査スクリプトのファイル一覧 | [`docs/FILES.md`](docs/FILES.md) §3.12 |
+| **作業終了処理**（commit / push → 原本の最新化 → USB への完全ミラーと検証） | [`CLAUDE.md`](CLAUDE.md) §11 ＋ `scripts/master-sync.mjs` ＋ `scripts/backup-usb.ps1` |
 
 ### 15.2 実行
 
@@ -1737,59 +735,44 @@ npm run serve      # http://127.0.0.1:4173/（Pagesと同じ配信）
 
 ### 15.4 リリース（現行）
 
-**本番は CI ゲート付きの GitHub Actions ワークフローで公開される。**
-Pages の Source は **GitHub Actions**、リポジトリ変数 **`ENABLE_PAGES_DEPLOY = true`** が設定済みで、
-`main` への push ごとに `.github/workflows/deploy.yml` が
-
-```
-ビルド(Vite) → 静的検査 → dist/ を公開 → 実URLへの post-deploy smoke
-```
-
-を行う。`build-info.json` が公開時に書かれるので、
+**本番は CI ゲート付きの GitHub Actions ワークフローで公開される。** Pages の Source は
+**GitHub Actions**、リポジトリ変数 **`ENABLE_PAGES_DEPLOY = true`** が設定済みで、`main` への
+push ごとに `.github/workflows/deploy.yml` が「ビルド(Vite) → 静的検査 → `dist/` を公開 →
+実 URL への post-deploy smoke」を行う。着地の確認は
 `curl -s https://rwmqx7dwb5-arch.github.io/IntMap/build-info.json` の `sha` が
-`git rev-parse origin/main` と一致することで着地を確認する。ロールバックは
-`.github/workflows/rollback.yml`（履歴に実在する ref のみ・対象 ref を **Vite ビルドして `dist` を配信**）。
-**手順の正本は `docs/RELEASE.md`。**
+`git rev-parse origin/main` と一致すること。ロールバックは `.github/workflows/rollback.yml`
+（履歴に実在する ref のみ・対象 ref を **Vite ビルドして `dist` を配信**）。
 
 ⚠ `deploy.yml` は `concurrency: pages-production` で直列に走る（前の run が固まると次は pending のまま）。
+**手順の正本は [`docs/RELEASE.md`](docs/RELEASE.md)。**
 
 ### 15.5 文書間の固定事実の照合 — `npm run check:docs`
 
-`scripts/doc-facts.mjs` が、**複数の文書に書かれている同じ事実**を実体と突き合わせる。
-`npm test` に内包され、ずれていれば落ちる。検査するのは:
+`scripts/doc-facts.mjs` が、**複数の文書に書かれている同じ事実**と、**文書と実装の食い違い**を
+突き合わせる。`npm test` に内包され、ずれていれば落ちる。**検査する事実の一覧は
+[`docs/TESTING.md`](docs/TESTING.md) の「文書の検査」節が正本**（ルールを足したらそこに1行足す）。
 
-- `index.html` の行数／`js/` のファイル数——`Architecture.md` §1 の数字
-- Edge Functions の一覧——`supabase/functions/` の実体 ⇄ `CLAUDE.md` §2 ⇄ `Architecture.md` §6.2
-  ⇄ `supabase/config.toml` の `[functions.*]` 宣言
-- `supabase/migrations/` の本数——`Architecture.md` §3.12
-- **配信方法**——`dist/` を配信すること。本番公開ワークフローの状態を、その正本である
-  `docs/RELEASE.md` と一致させること（既に有効なものを役目を果たしていないかのように書かない）
-- **ビルド印のファイル名**——先頭にハイフンを付けた綴りをした文書が無いこと
-- **USB バックアップの頻度**——正本は `CLAUDE.md` §11 のみ。他の文書は頻度を書かない
-- **対応言語**——`js/locales/ui.*.js` の集合 ⇄ `Architecture.md` §1.3 ⇄ `README.md`。
-  `IntMapLangBeta` が空なのに beta と書いた文書が無いこと
-- **気象警報の機関数**——`js/world-packs.js` の `FEEDS` / `MA` ⇄ `Architecture.md` §7.1 ⇄ `README.md`
-- **アプリの形**——「ビルド無し」「単一 HTML」「全 JS がインライン」と書いた文書が無いこと
-- **anon キーの置き場所**——`index.html` にあると書いた文書が無いこと
-- **`Architecture.md` にラウンド参照が無いこと**（冒頭の「この文書の読み方」）
+⚠ **規則を文章で書いたら、その規則を測る検査を同じ変更の中で書く。** ここに並ぶ規則はどれも、
+「書いてはあったが誰も突き合わせていなかった」ものが実際に嘘になってから足されている。
 
 ---
 
 ## 16. データ保護基盤 (migrations・RLS/権限テスト・バックアップ・復元)
 
 DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バックアップ／隔離復元を用意し、本番 DB 変更を
-安全化した設備。
+安全化した設備。**手順の正本は [`docs/DATABASE.md`](docs/DATABASE.md)（表と RLS ＋ pgTAP 手順）・
+[`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)（本番適用）・
+[`docs/BACKUP-RESTORE.md`](docs/BACKUP-RESTORE.md)（バックアップと隔離復元）。**
 
 ### 16.1 Supabase CLI 構成
 
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**。全テーブル＋制約／index、`is_admin()` /
-  `handle_new_user()` トリガ、RPC、**RLS 全表 ON ＋ポリシー**、grants、realtime publication。
-  冪等・非破壊（`if not exists` / `create or replace` / `drop policy if exists`）。
+- `supabase/migrations/*.sql` — **唯一の設計図**（7本）。冪等・非破壊
+  （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
-- `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数）。
+- `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格）。
 
 ### 16.2 RLS の3大保証（テストで実証）
 
@@ -1807,11 +790,8 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `.github/workflows/db.yml` — `supabase/**` 変更時のみ発火。ローカル Supabase で `db reset` →
   **drift gate**（`db diff` が空であること）→ pgTAP → **backup/restore ラウンドトリップ**（合成データ）。
   **本番非接続・秘密不要・fail-closed。**
-- `.github/workflows/db-backup.yml` — **休眠**（`SUPABASE_DB_URL` ＋ `BACKUP_GPG_PASSPHRASE` の
-  両 Secret が登録されるまで各 run skip）。`scripts/backup-db.sh` ＝ pg_dump → GPG AES-256 → SHA-256 →
-  7日保持の暗号化 artifact。`scripts/restore-test.sh` ＝ checksum → 復号 → 隔離 DB へ restore →
-  構造＋RLS 検証（非ローカル対象は拒否）。
-- 方針 ＝ **Managed backups 優先**（Pro＝Daily＋PITR 推奨）＋ 休眠 pg_dump をフリー環境の予備とする。
+- `.github/workflows/db-backup.yml` — `SUPABASE_DB_URL` ＋ `BACKUP_GPG_PASSPHRASE` の両 Secret が
+  登録されるまで各 run は skip される。方針 ＝ **Managed backups 優先**＋その pg_dump を予備とする。
 
 ### 16.4 実行
 
@@ -1822,11 +802,11 @@ supabase test db                             # RLS/権限 pgTAP
 supabase db diff --schema public             # driftゼロ確認
 ```
 
-本番適用は `docs/MIGRATIONS.md`（バックアップ → 承認 → `db push`）。
-詳細は `docs/{DATABASE,MIGRATIONS,RLS-TESTING,BACKUP-RESTORE,DATABASE-INCIDENT}.md`。
-
-⚠ **本番はマイグレーションファイルと乖離しうる。** 監査は `supabase db query --linked` で
-`pg_policies` / `role_table_grants` / `pg_proc` を**本番から読んで**行う。
+⚠ **本番はマイグレーションファイルと乖離しうる。** ベースライン（最初の1本）は本番へ「適用済み」として
+記録されていないので `supabase db push` は使えない。**本番適用は
+`supabase db query --file … --linked` ＋ `supabase migration repair --status applied <version>`** で行う
+（正本は `docs/MIGRATIONS.md`）。監査は `supabase db query --linked` で `pg_policies` /
+`role_table_grants` / `pg_proc` を**本番から読んで**行う。
 
 ---
 
@@ -1836,8 +816,9 @@ supabase db diff --schema public             # driftゼロ確認
 ニュース RSS 見出し、OSM/Nominatim の地名、OSM で編集可能なウェブカメラ URL、AI 出力、URL hash）は
 すべて敵性入力として扱う。
 
-**正本は `docs/SECURITY-ARCHITECTURE.md`**（脅威モデル・データフロー図・認証認可・公開値と秘密値の区別・
-残存リスク・本番の手動設定）。報告方法は `SECURITY.md`、検査手順は `docs/SECURITY-TESTING.md`。
+**正本は [`docs/SECURITY-ARCHITECTURE.md`](docs/SECURITY-ARCHITECTURE.md)**（脅威モデル・データフロー図・
+認証認可・公開値と秘密値の区別・**残存リスク**・本番の手動設定）。報告方法は
+[`SECURITY.md`](SECURITY.md)、検査手順は [`docs/TESTING.md`](docs/TESTING.md) の「セキュリティ」節。
 
 ### 17.1 XSS 出力エンコード（第一防御）
 
@@ -1865,8 +846,16 @@ supabase db diff --schema public             # driftゼロ確認
 ### 17.3 ブラウザ側の設定
 
 - **CSP は `<meta http-equiv>`**（GitHub Pages は独自のレスポンスヘッダを設定できない）。
-  `default-src 'self'` を持ち、14 の directive を明示的に書く。
-  ⚠ **絶対に書いてはいけない**のは `'unsafe-eval'` と CDN ホスト（どちらも現在は入っていない）。
+  `index.html` は `default-src 'self'` を持ち、**14 の directive** を明示的に書く。
+- ⚠ **`index.html` の `script-src` には現在 `'unsafe-eval'` と 8 つの CDN ホストが入っている**
+  （`unpkg.com` / `maps.googleapis.com` / `www.googletagmanager.com` / `www.google-analytics.com` /
+  `ssl.google-analytics.com` / `browser.sentry-cdn.com` / `www.clarity.ms` / `*.clarity.ms`）。
+  これは**受け入れて追跡している残存リスク**で、理由・影響・軽減策は
+  `docs/SECURITY-ARCHITECTURE.md §8` の 1 番に測定日つきで書いてある。
+  ⚠ **`admin.html` はそのどちらも持たない**（SDK 同梱＋データリテラル・パーサ）。
+  `tests/security-logic.mjs` が admin 側に `'unsafe-eval'` が戻らないことを毎回検査する。
+  ⚠ **新しい CDN ホストを CSP に足さない。** 実行時依存は npm から取り `src/vendor.js` が再公開する
+  （§1.1）。現在残っている 8 つは、その方針より前からある計測・地図・タイル系のタグである。
   ⚠ 不在の directive は「許可」ではなく「**不在**」であり、それが意図かどうかを policy が言えない。
 - **ヘッダ形式でしか設定できないもの**（`X-Frame-Options` / `Referrer-Policy` / `Permissions-Policy` /
   `X-Content-Type-Options`）は **GitHub Pages では設定できない**ので未設定のままである。
@@ -1893,36 +882,16 @@ supabase db diff --schema public             # driftゼロ確認
 
 ## 18. 地域監視基盤 (Area Monitors)
 
-ログインユーザーが**監視地域**（円／描画／解決済み地域／現在の地図表示）を保存し、**サーバー側が定期実行**
-して**意味のある変化がある時だけ根拠付きレポート**を生成する機能。詳細は
-[`docs/AREA-MONITORS.md`](docs/AREA-MONITORS.md)。
+⚠ **この機能には現在、利用者から到達できる入口が1つも無い。** タブ・ワークスペースのウィンドウ・
+Atlas のどれからも開けず、Atlas は `FEATURE_WITHDRAWN` を返す（`PRODUCT.md` §3.4 が言う唯一の例外）。
+**撤去であって削除ではない**——モジュール（`js/monitors.js`）・API（`window.IntMapMonitors`）・
+その表示領域・Edge Function（`monitor-run`）・DB の 5 表・cron はすべて動いたまま残してある。
 
-- **中核原則 ＝ 変化の有無はコードが判定し、AI は説明のみ。**
-  処理順＝取得 → 正規化／重複排除 → スナップショット → 機械的 diff（new / gone / continuing・件数・
-  クラスタ・媒体多様性）→ change score → **変化があり閾値を超えたときだけ AI** →
-  **AI が引いた evidence ID を実行後にコードで検証**（偽 ID の主張は棄却）→ run / evidence / report を永続化。
-  ⚠ **取得失敗は「変化なし」ではなく専用 status。**
-- **DB** ＝ 5表 `area_monitors` / `monitor_runs` / `monitor_evidence` / `monitor_reports` /
-  `monitor_seen_items`（長期レジャ）。**RLS 全表 owner-only**、runs/evidence/reports/seen は
-  **service_role 書込・user 読取専用**（実行結果を偽造できない）。
-  `area_monitors` の UPDATE は列単位 grant ＋ **BEFORE UPDATE トリガ `tg_monitors_guard_state`** で
-  run-state 列と `next_run_at` を凍結する（**grant 非依存の実防御**）。
-  `monitor_limit()`（plan 別上限＝課金の接続点）を挿入トリガで強制し、`monitor_limit_self()` は
-  他人の plan を探索できない。`monitor_claim_due()`（cron 用 `FOR UPDATE SKIP LOCKED`）／
-  `monitor_claim_one()`（手動用の原子 claim）／`monitor_finalize` / `monitor_commit_report`
-  （run＋report＋meta を単一トランザクションで）。pgTAP は `04_monitors_test.sql`。
-- **Edge Function `monitor-run`** ＝ ① cron（`x-monitor-secret`）で due な monitor を claim して逐次処理、
-  ② ユーザーの「今すぐ実行」（JWT ＋ monitorId ＋ 所有権照合）。純ロジックは `logic.mjs`
-  （runtime 非依存 ESM）を Deno と Node テストで共有する。status は10種
-  （success / success_no_change / partial / source_unavailable / ai_failed / timed_out /
-  invalid_geometry / quota_exceeded / disabled / internal_error）。
-  **AI が失敗しても snapshot / diff / evidence は保持する。**
-- **定期実行** ＝ pg_cron（`net.http_post` でヘッダに秘密。SQL は `docs/AREA-MONITORS.md`）。
-- **UI / Atlas** ＝ Monitors タブ（通常／モバイル／ワークスペース・9言語）、`window.IntMapMonitors`
-  （一覧／作成ダイアログ／詳細／レポート＝結論・主な変化 → evidence chip・数値比較・根拠一覧・
-  変化地点の地図表示・取得できなかったデータ・制約・日時／status）。
-  Atlas `{"type":"monitor","op":…}` の**返信は実 DB の結果のみ**（偽の成功報告をしない）。
-  全描画は `IntMapSafe` を通す。
-- **コスト制御** ＝ 変化なしは AI を呼ばない／新規のみ AI へ送る（履歴 dedup）／run ごとの cap
-  （evidence 60・AI 入力 40・110s wall-clock・55s AI timeout）／plan 別 monitor 上限・最短間隔30分・
-  手動クールダウン30s／保持（run 100・evidence 12run）。
+サーバー側が監視地域を定期実行し、**変化の有無はコードが判定し、AI は説明のみを書く**
+（取得 → 正規化／重複排除 → スナップショット → 機械的 diff → change score → 閾値超過時のみ AI →
+AI が引いた evidence ID をコードで検証 → 永続化）。⚠ **取得失敗は「変化なし」ではなく専用 status。**
+
+**設計・DB・status 一覧・cron の SQL・復帰させるときに戻す入口の正本は
+[`docs/AREA-MONITORS.md`](docs/AREA-MONITORS.md)。**
+
+---

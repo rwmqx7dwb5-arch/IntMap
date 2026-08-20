@@ -270,6 +270,15 @@ The project is best treated as an evolving exploration platform rather than a fi
 
 Bug reports and feature suggestions are welcome through [GitHub Issues](https://github.com/rwmqx7dwb5-arch/IntMap/issues). Pull requests are not currently being accepted.
 
+## Terms, privacy, and how it works
+
+* [**Terms of Service**](https://rwmqx7dwb5-arch.github.io/IntMap/terms.html) — also in the app, under Settings
+* [**Privacy Policy**](https://rwmqx7dwb5-arch.github.io/IntMap/privacy.html) — what each layer and feature sends, and to whom
+* [**Data sources**](https://rwmqx7dwb5-arch.github.io/IntMap/sources.html) — every organization whose data IntMap shows, and its licence
+* [**Science & logic**](https://rwmqx7dwb5-arch.github.io/IntMap/science.html) — what each simulation actually computes
+
+For the repository itself, [`docs/README.md`](docs/README.md) is the index of the documentation: which file owns which fact, who it is for, and when it has to be updated.
+
 ## About the project
 
 IntMap is independently developed and maintained by one university student.

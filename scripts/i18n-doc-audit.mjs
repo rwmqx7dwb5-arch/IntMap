@@ -58,6 +58,12 @@ const DOCS = [
   { file: 'index.html', wiredBy: 'js/lang-registry.js', keys: ['docTitle', 'docDesc'] },
   { file: 'sources.html', wiredBy: 'js/page-i18n.js', keys: null },   /* pages.<lg>.js `title`/`meta` */
   { file: 'science.html', wiredBy: 'js/page-i18n.js', keys: null },
+  /* (#R280) the Terms and the Privacy Policy as pages of their own. Their CHROME — the tab title
+     and the description this rule measures — is nine languages; the DOCUMENT they wrap is
+     Japanese and English only, on purpose, and the page says so in the reader's own language.
+     See the header of js/legal-page.js. */
+  { file: 'privacy.html', wiredBy: 'js/legal-page.js', keys: null },
+  { file: 'terms.html', wiredBy: 'js/legal-page.js', keys: null },
 ];
 export const EXCLUDED = {
   'admin.html': 'the operator console, not a reader-facing page — #R249, confirmed with the reader',

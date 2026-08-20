@@ -25,7 +25,7 @@
 --    Three properties below are security-critical and are ENFORCED here even if the
 --    live database is currently more permissive. `supabase db diff --linked` will
 --    flag them as drift; that is the signal to apply them to prod (see
---    docs/DATABASE-INCIDENT.md → "RLS/権限ミス"). They are:
+--    docs/INCIDENT-RESPONSE.md → "RLS/権限ミス"). They are:
 --      1. profiles.email (and is_admin/is_pro/plan) is readable ONLY by the owner
 --         and admins — never world-readable. Public profile display uses the
 --         profiles_public VIEW (id, display_name, bio, avatar_url only).

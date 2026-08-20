@@ -345,7 +345,7 @@ try {
        asks («is this module dead code whose feature silently never exists?») is answered by the page
        that loads them. Reading the pages rather than exempting the two filenames keeps the check
        honest: delete the <script> tag and the module goes back to failing. */
-    for (const page of ['sources.html', 'science.html', 'admin.html']) {
+    for (const page of ['sources.html', 'science.html', 'admin.html', 'privacy.html', 'terms.html']) {
       const p = join(ROOT, page);
       if (!existsSync(p)) continue;
       for (const m of readFileSync(p, 'utf8').matchAll(/<script[^>]*\ssrc=["']\.\/(js\/[A-Za-z0-9_.-]+\.js)["']/g)) sib.add(m[1]);

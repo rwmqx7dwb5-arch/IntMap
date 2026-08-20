@@ -56,6 +56,12 @@ export const STATIC_ASSETS = [
      shells now (see the note at the top of sources.html). `js/locales` is a DIRECTORY on purpose —
      adding a language must not also mean editing this list, which is the whole promise of #R218. */
   'css/pages.css',
+  /* (#R280) …and the typeface those pages declare. Measured in the BUILT site: this was 404 on
+     sources.html and science.html from #R242 until now, so both rendered in the browser's default
+     face. Nothing caught it because the asset check treats everything under css/ as bundled —
+     true for index.html, false for a page that is copied verbatim. tests/r280 ⑨ now checks the
+     standalone pages against this list directly. */
+  'css/fonts.css',
   /* ⚠ (#R231) js/lang-registry.js IS PART OF THOSE TWO PAGES NOW, and this line is the reason the
      round nearly shipped without it: js/page-i18n.js no longer carries its own five-row language
      list — it reads the app's ONE registry — and the two shells load it with a plain <script src>.
@@ -65,6 +71,17 @@ export const STATIC_ASSETS = [
   'js/lang-registry.js',
   'js/page-i18n.js',
   'js/sources-list.js',
+  /* (#R280) the Terms and the Privacy Policy as ORDINARY PAGES with their own URL — a policy that
+     can only be reached by opening the app and clicking a footer link cannot be linked to, cited
+     or read by someone deciding whether to sign in at all. Same shape as the two pages above:
+     shells served verbatim, so everything they <script src> has to be copied too. js/legal-text.js
+     is served RAW here AND bundled into the app (src/main.js imports it) for the same reason
+     js/reference-data.js is: it is the ONE copy of the text, and copying it is how the page avoids
+     becoming a second one that goes stale. */
+  'privacy.html',
+  'terms.html',
+  'js/legal-text.js',
+  'js/legal-page.js',
   'js/locales',
   'google0266d9db8efbc48c.html',        // Google Search Console site verification
   'TwemojiCountryFlags.woff2',          // flag webfont, @font-face'd from the main body (#R79e)

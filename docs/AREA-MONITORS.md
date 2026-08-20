@@ -1,5 +1,12 @@
 # Area Monitors (#R141)
 
+> ⚠ **WITHDRAWN, NOT DELETED — this feature currently has no user-facing entry point.**
+> There is no Monitors tab, no workspace window and no Atlas route: the Atlas dispatch case
+> exists only to answer `FEATURE_WITHDRAWN`. Everything below is still deployed and still runs —
+> the module (`js/monitors.js`), `window.IntMapMonitors`, the `monitor-run` Edge Function, the
+> five tables and the cron — because 一旦撤去 means it has to be able to come back. Read this
+> page as "how it works and what to re-attach", not as "what a user can do today".
+
 Saved, server-side **area watches** that re-check a user-selected region on a schedule
 (even when the page is closed) and produce an **evidence-backed change report only when a
 real change is detected**. News is the first data source; the collector layer is generic so
@@ -204,7 +211,9 @@ per-monitor frequency is set by `interval_minutes` (minimum 30).
   clustering, change score, decideAI, **(#R144)** `validateClaims` (fabricated-id rejection),
   `buildReport` (headline/summary/gaps from authoritative numbers only), `partitionByNovelty`
   (cap-proof + order-independent), `classifyDisappeared`. Runs in CI (`ci.yml`).
-- **Browser** — `tests/monitors.spec.js` (Playwright, hermetic): tab present, login gating,
+- **Browser** — `tests/monitors.spec.js` (Playwright, hermetic). ⚠ Its tab assertions are
+  **inverted**: they prove the module, its API and its feed element are all still present *and*
+  that **no route lands on the tab** (see the banner at the top of this file). Also: login gating,
   honest Atlas routing, geometry accessor, a report rendering **XSS-inert**, and **(#R144)** a
   **Workspace regression** test (the Monitors ws-window has a default rect → no clampRect throw).
   The tag-stripping regexes were replaced with an inert `DOMParser` (clears CodeQL

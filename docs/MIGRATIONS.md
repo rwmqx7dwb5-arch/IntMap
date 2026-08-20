@@ -34,11 +34,11 @@ changes out unless intended (see below).
 
 ```bash
 supabase db reset          # drops local DB, re-applies ALL migrations + seed.sql
-supabase test db           # runs the pgTAP RLS/permission tests (see RLS-TESTING.md)
+supabase test db           # runs the pgTAP RLS/permission tests (see DATABASE.md)
 ```
 
 `db reset` must succeed from an empty database, and every test must pass. If you added a
-table, add its RLS tests in the same PR — see [`RLS-TESTING.md`](RLS-TESTING.md#adding-tests-for-a-new-table).
+table, add its RLS tests in the same PR — see [`DATABASE.md`](DATABASE.md#adding-tests-for-a-new-table).
 
 ### 3. Check for drift (read-only)
 
@@ -65,17 +65,27 @@ Only after review + a fresh backup:
 # b) See exactly what will run:
 supabase link --project-ref vpekfwdpurzejrrmacac      # prompts for the DB password (a SECRET)
 supabase db diff --linked --schema public             # read-only: prod vs your migrations
-# c) Apply:
-supabase db push                                       # applies pending migrations to prod
+# c) Apply — see "Why not db push" below:
+supabase db query --file supabase/migrations/<the one file> --linked   # one atomic begin/commit
+supabase migration repair --status applied <version>                   # record it as applied
 # d) Prod smoke test: load the site, log in, post a community item, submit feedback.
 ```
 
 `supabase link` / `db push` need the **database password** (Dashboard → Settings → Database).
 It is a secret — type it into the CLI prompt; never paste it into chat, a file, or a commit.
 
-## Making the baseline authoritative
+## Why not `db push` — the baseline is not recorded in production
 
-The baseline was reconstructed from code, so reconcile it with production **once**, read-only:
+`supabase db push` applies **every** migration the remote has not recorded, and the remote has
+never recorded the baseline (`20260718090000`), because production already had that schema before
+the file existed. So `db push` would try to re-run the whole baseline against a live database.
+**Apply one file at a time instead** — `supabase db query --file … --linked` runs it through the
+Management API in a single begin/commit and needs no database password — then record it with
+`supabase migration repair --status applied <version>`. Verify first by temporarily swapping the
+file's `commit;` for `rollback;`.
+
+This is a standing condition, not a to-do: nothing below has been run against production.
+If you ever do want `db push` back, the reconciliation is this, read-only:
 
 ```bash
 supabase link --project-ref vpekfwdpurzejrrmacac
@@ -100,7 +110,7 @@ diff): (1) `profiles` email/is_admin not world-readable, (2) no self-escalation 
 `is_admin/is_pro/plan`, (3) `ai_usage` writable only via service_role RPCs. Applying them is
 **non-destructive** (adds a view, tightens a policy, narrows grants) but changes behavior, so
 apply them deliberately with the gated flow and a prod smoke test. See
-[`DATABASE-INCIDENT.md`](DATABASE-INCIDENT.md) → "RLS / 権限ミス".
+[`INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md#database-incidents) → "RLS / 権限ミス".
 
 ## Destructive changes — extra care
 
@@ -123,7 +133,7 @@ Not every migration needs a reverse migration. Classify:
   corrects it. Most cases.
 - **Restore required** → data was lost/corrupted. Restore from backup into an isolated DB,
   extract the good rows, and re-import. See [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md) and
-  [`DATABASE-INCIDENT.md`](DATABASE-INCIDENT.md).
+  [`INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md#database-incidents).
 
 ## When a production `db push` fails midway
 
