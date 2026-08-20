@@ -281,6 +281,43 @@ test('R276 ⑭ the wind palette feeds the tiles and the legend from the same dec
   assert.deepEqual([...new Set(alphas)], [1], 'and every one of them is opaque');
 });
 
+/* ── ⑯ a layer that cannot be added YET keeps asking ──────────────────────────────────────────
+   ⚠ CAUGHT BY THIS ROUND'S OWN PRODUCTION TEST, four attempts of 75 s each on the CI runner: the
+   wind data arrived and the raster never appeared. `addField`/`addLayer` refuse while the style
+   cannot accept a layer, and the rewrite called each of them ONCE — so on a machine where the style
+   settles after the data does, the wind had particles and no colour for ever. #R85 answered exactly
+   this report with a retry ladder; this asserts the ladder exists rather than the number in it. */
+test('R276 ⑯ a weather layer that is refused keeps trying, and stops when it lands', () => {
+  const w = WX();
+  assert.match(w, /function ensureField\(key\)\{[\s\S]{0,400}?if\(n\+\+<\d+\) setTimeout\(again,\d+\);/,
+    'the wind field retries on a timer…');
+  assert.match(w, /GE\(\)\.events\.once\('idle',\(\)=>\{ if\(on&&liveKey!==key\) addField\(key\); \}\)/,
+    '…and on the map\'s next idle');
+  assert.match(w, /const again=\(\)=>\{ if\(!on\|\|liveKey===key\) return;/,
+    'and it stops as soon as the slot is live, or the layer is off');
+  assert.match(w, /if\(key&&key!==liveKey\) ensureField\(key\);/, 'load() goes through the ladder');
+  /* the ECMWF rasters have the same shape and the same ladder */
+  assert.match(w, /const go=\(\)=>\{ if\(!state\[id\]\.on\) return;\s*\n\s*if\(_imCanDraw\(\)&&addLayer\(cfg\)\)/,
+    'an ECMWF layer retries too');
+  assert.match(w, /if\(n\+\+<\d+\) setTimeout\(go,\d+\);/, '…on a bounded ladder');
+  /* and a rebuild for a new hour cannot leave the map with nothing */
+  assert.match(w, /activeLayers\(\)\.forEach\(cfg=>\{ removeLayer\(cfg\);\s*\n\s*let n=0;/,
+    'a time step retries its rebuild, because it removes the old layer first');
+});
+
+/* ── ⑰ the next hour is warmed when the reader moves, not on first sight ──────────────────────
+   「時刻変更時は隣接フレームを先読みし」 — the instruction's own words. Warming a frame costs the
+   same ranged reads as the one on screen, so doing it for a reader who has not touched the player
+   spends their bandwidth on a picture they may never ask for, and competes with the one they did. */
+test('R276 ⑰ the prefetch is on the time change, not on the first load', () => {
+  const w = WX();
+  assert.match(w, /if\(opt&&opt\.step\)\{ try\{ EC\(\)\.prefetch\(\['wind_u_component_10m','wind_v_component_10m'\]/,
+    'the wind warms the next hour only when the axis moved');
+  assert.match(w, /load\(\{step:ev\.type==='time'\}\)/, 'and that is what a time event passes');
+  assert.match(w, /function applyTime\(\)\{[\s\S]{0,900}?EC\(\)\.prefetch\(activeLayers\(\)\.map/,
+    'the ECMWF rasters warm theirs from the time change too');
+});
+
 /* ── ⑮ the point-weather panel says what the numbers are and when they are for ────────────────*/
 test('R276 ⑮ the popup shows gusts, MSL pressure, the data\'s own valid time, and a refresh that refreshes', () => {
   const w = WX();

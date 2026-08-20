@@ -78,15 +78,33 @@ window.IntMapModules.wind=function(HOST){
       try{ cv.style.opacity=String(Math.max(0.25,opacity)); }catch(_){}
     }
 
+    /* ⚠⚠ (#R276 追記) THE FIELD LAYER HAS TO KEEP ASKING, AND THIS IS #R85's DEFECT COMING BACK.
+       CAUGHT BY THIS ROUND'S OWN PRODUCTION TEST, four attempts, 75 s each: on the CI runner the
+       data arrived and `hasLyr` never became true. `addField` refuses when `_imCanDraw()` is false —
+       the style is not ready to accept a layer yet — and it was called ONCE, from `load()`. On a
+       machine where the style settles after the field does, the wind then had particles and no
+       colour for ever, with nothing retrying: 「粒子のみで色がつかない」, the exact report #R85
+       answered with a retry ladder that this rewrite dropped.
+       So the ladder is back, in the one place that owns the layer: poll for ~16 s AND hook the map's
+       next idle, and stop the moment the slot is live (`liveKey===key`). */
+    function ensureField(key){
+      if(addField(key)) return;
+      let n=0;
+      const again=()=>{ if(!on||liveKey===key) return;
+        if(addField(key)) return;
+        if(n++<80) setTimeout(again,200); };
+      setTimeout(again,200);
+      try{ GE().events.once('idle',()=>{ if(on&&liveKey!==key) addField(key); }); }catch(_){}
+    }
     /* ── the data ─────────────────────────────────────────────────────────────────────────────*/
-    function load(){
+    function load(opt){
       if(!EC()) return Promise.resolve(null);
       const want=()=>EC().stateKey(VAR,'');
       loading=true; lastErr='';
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
       return EC().ready().then(()=>{
         const key=want();
-        if(key&&key!==liveKey) addField(key);
+        if(key&&key!==liveKey) ensureField(key);
         return EC().load(VAR);
       }).then(f=>{
         loading=false;
@@ -99,8 +117,12 @@ window.IntMapModules.wind=function(HOST){
           return null; }
         if(renderer) renderer.setField(EC().sampler(VAR));
         try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
-        /* the next hour, warmed but not decoded — see IntMapECMWF.prefetch */
-        try{ EC().prefetch(['wind_u_component_10m','wind_v_component_10m'],Math.min(EC().count()-1,EC().index()+1)); }catch(_){}
+        /* ⚠ (#R276 追記) THE NEXT HOUR IS WARMED ON A TIME CHANGE, NOT ON THE FIRST LOAD. 「時刻変更時
+           は隣接フレームを先読みし」 is the instruction, and it is also the cheaper reading: warming a
+           frame costs the same ranged reads as the one on screen, so doing it for a reader who has not
+           touched the player spends their bandwidth on a picture they may never ask for — and it
+           competes with the picture they DID ask for. `opt.step` is true only when the axis moved. */
+        if(opt&&opt.step){ try{ EC().prefetch(['wind_u_component_10m','wind_v_component_10m'],Math.min(EC().count()-1,EC().index()+1)); }catch(_){} }
         return f;
       }).catch(()=>{ loading=false; lastErr='load';
         try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
@@ -163,7 +185,7 @@ window.IntMapModules.wind=function(HOST){
     try{ (window.IntMapECMWF||{on:()=>{}}).on(ev=>{
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
       if(!on) return;
-      if(ev.type==='time'||ev.type==='meta'){ if(renderer) renderer.setField(null); load(); } }); }catch(_){}
+      if(ev.type==='time'||ev.type==='meta'){ if(renderer) renderer.setField(null); load({step:ev.type==='time'}); } }); }catch(_){}
     /* the forecast axis exists without the tile SDK — fetch it so the legend can name the run and
        the hour the moment the layer is switched on, rather than after a 340 kB script lands */
     try{ (window.IntMapECMWF||{meta:()=>Promise.resolve()}).meta().then(()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} }).catch(()=>{}); }catch(_){}
@@ -174,6 +196,11 @@ window.IntMapModules.wind=function(HOST){
       GE().events.on('moveend',()=>{ moving=false; if(on){ resize(); } });
       /* a style swap drops custom sources — put the field back rather than leaving only streaks */
       GE().events.on('styledata',()=>{ if(!on) return; setTimeout(()=>{ if(on&&!GE().layers.has(SLOT[0].lyr)&&!GE().layers.has(SLOT[1].lyr)){ liveKey=''; load(); } },120); });
+      /* …and if the data is already here but the layer is not, put it back rather than waiting for a
+         style event that may never come (the #R85 defect above, seen from the other side) */
+      GE().events.on('idle',()=>{ if(!on) return;
+        try{ if(GE().layers.has(SLOT[0].lyr)||GE().layers.has(SLOT[1].lyr)) return; }catch(_){ return; }
+        const key=EC()&&EC().stateKey(VAR,''); if(key){ liveKey=''; ensureField(key); } });
       /* js/night-side.js re-adds its terminator on a timer and lands above whatever is there, so the
          field re-asserts its place whenever the style settles rather than only when it is created */
       GE().events.on('idle',()=>{ if(!on) return; SLOT.forEach(s=>{ try{ EC().lift(s.lyr); }catch(_){} }); });
@@ -349,13 +376,18 @@ window.IntMapModules.weatherEC=function(HOST){
       syncLegend();
       if(!on){ setVis(cfg,false); return; }
       EC().ready().then(()=>{
-        const go=()=>{ if(!_imCanDraw()){ GE().events.once('idle',go); return; }
-          if(!state[id].on) return;
-          if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); }
-          renderLegend();
-          try{ EC().prefetch([cfg.variable],Math.min(EC().count()-1,EC().index()+1)); }catch(_){}
+        /* ⚠ (#R276 追記) A RETRY LADDER, not a single `once('idle')`. `addLayer` can refuse for two
+           different reasons — the style cannot accept a layer yet, or the metadata has not arrived so
+           `omUrl` is empty — and only the first of them is an idle away. Poll for ~16 s as well, and
+           stop as soon as the layer exists. (The prefetch moved to the time change, where the
+           instruction puts it: see the note in the wind module.) */
+        let n=0;
+        const go=()=>{ if(!state[id].on) return;
+          if(_imCanDraw()&&addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); renderLegend(); return; }
+          if(n++<80) setTimeout(go,200);
         };
         go();
+        try{ GE().events.once('idle',()=>{ if(state[id].on&&!GE().layers.has(cfg.id)) go(); }); }catch(_){}
       }).catch(()=>{
         try{ satToast(L('Could not load ECMWF weather','ECMWFデータを読み込めませんでした','ECMWF-Wetterdaten konnten nicht geladen werden','Не удалось загрузить данные ECMWF','No se pudieron cargar los datos meteorológicos del ECMWF')); }catch(_){}
         state[id].on=false;
@@ -369,7 +401,14 @@ window.IntMapModules.weatherEC=function(HOST){
 
     /* ── the forecast step changed: rebuild every live source ────────────────────────────────── */
     function applyTime(){
-      activeLayers().forEach(cfg=>{ removeLayer(cfg); if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } });
+      /* ⚠ (#R276 追記) the rebuild removes the layer FIRST, so a refusal would leave nothing on the
+         map — the same shape as the wind field's. Retry until it lands. */
+      activeLayers().forEach(cfg=>{ removeLayer(cfg);
+        let n=0;
+        const go=()=>{ if(!state[cfg.id].on) return;
+          if(_imCanDraw()&&addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); return; }
+          if(n++<40) setTimeout(go,200); };
+        go(); });
       renderLegend();
       try{ const nx=Math.min(EC().count()-1,EC().index()+1);
         EC().prefetch(activeLayers().map(c=>c.variable).concat(['wind_u_component_10m','wind_v_component_10m']),nx); }catch(_){}

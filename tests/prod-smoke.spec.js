@@ -563,7 +563,14 @@ test('(#R276) prod draws the wind from the model, and the pixel is the colour th
     return true;
   });
   test.skip(!on, 'no wind row on the deployed build');
-  await page.waitForFunction(() => { const d = window.Wind && window.Wind._dbg(); return d && d.hasField && d.hasLyr && d.rasterOpacity > 0; }, null, { timeout: 75_000 });
+  /* ⚠ (#R276 追記) THE BUDGET IS STATED AND THE ELAPSED TIME IS PRINTED, because 「時間がかかる」 is
+     usually 「上限が無い」 and a silent wait tells nobody anything. MEASURED on the development
+     machine, cold: the field is decoded in 7.5–9.1 s (410 ranged reads, ~27 MB) and painted within
+     the same second. A shared CI runner with no GPU is several times slower, so the ceiling here is
+     deliberately loose — it is a tripwire against a hang, not a performance target. */
+  const t0 = Date.now();
+  await page.waitForFunction(() => { const d = window.Wind && window.Wind._dbg(); return d && d.hasField && d.hasLyr && d.rasterOpacity > 0; }, null, { timeout: 150_000 });
+  console.log('[R276] wind field ready in ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s');
   await page.waitForTimeout(6000);   /* the raster's own tiles */
 
   const m = await page.evaluate(() => new Promise((res) => {
@@ -642,7 +649,7 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
     const b = document.getElementById('btn-view-flat'); if (b) b.click();
     window.IntMapGeoEngine.camera.jumpTo({ center: [e.eye.lo, e.eye.la], zoom: 5 });
     const t0 = Date.now();
-    while (Date.now() - t0 < 60000) {
+    while (Date.now() - t0 < 150000) {
       const d = window.Wind._dbg();
       if (d.hasField && d.hasLyr && d.rasterOpacity > 0) break;
       await new Promise((r) => setTimeout(r, 400));
