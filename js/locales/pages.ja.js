@@ -572,5 +572,7 @@ window.IntMapPageI18N.define('ja', {
     "Weather warnings, Canada — Environment and Climate Change Canada (OGC API — Features)": "警報レイヤーがその場で取得：カナダ環境・気候変動省が現在発表している警報を、機関自身のポリゴンで描き、タップでは州ごとにまとめます。この配信は CORS ヘッダを自ら返すため、ブラウザから直接読んでいます。",
     "Weather warnings, Europe — MeteoAlarm (EUMETNET), 35 national services": "警報レイヤーがその場で取得：欧州各国の気象機関が発表中の警報を、MeteoAlarm が公開している形で読み、タップでは地域ごとにまとめます。MeteoAlarm は CORS ヘッダを返さず、1 か国のフィードが約 10 MB（その大半は同じ警報の 8 言語版）あるため、アプリ自身の中継関数がサーバ側で取得して要約します。要約は射影であって編集ではありません——フィード中のすべての警報が 1 行になります。",
     "Weather warnings, China — China Meteorological Administration public warning list": "警報レイヤーがその場で取得：中国気象局が公開している発表中の警報一覧。図形を含まないため、国は発表中の最高レベルで塗り、タップでは省ごとにまとめて一覧します（省は警報 ID の先頭にある行政区画コードから決まります）。CORS ヘッダを返さないので、アプリ自身の中継関数を通しています。",
+    "Weather warnings worldwide — national meteorological services via the WMO Severe Weather Information Centre (CAP)": "上の表に自前フィードが無いすべての国について、警報レイヤーがその場で取得します。各国の気象機関が発表した警報そのものを、その機関が描いたポリゴン・その機関の言葉・その機関が付けた CAP 深刻度のまま、WMO が再配信しているものです。WMO は経路であって作成者ではありません——パネルは発表機関の名前を出します。取得はアプリ自身の中継関数を通し、先に幾何情報を含まない問い合わせを1回だけ行って「どの加盟国に何かが出ているか」を確かめます。",
+    "WMO Members and their CAP implementation status (which national service files CAP, and which does not)": "セッションにつき1回取得します。WMO 自身が記録している「その加盟国の CAP 実装が完了しているか」の表です。完了と記録されている国だけを対応国として描きます——何も発表していない国を「発表なし」の灰色で塗るのは、斜線がまさに避けるための主張だからです。",
   }
 });

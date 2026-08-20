@@ -288,19 +288,31 @@ window.IntMapLang.define('fr', { ui: {
     /* (#R234) the seismic panel's new instruction banners, its 詳細設定 disclosure and the
        two-state run button. Item ③ 「フランス語、韓国語の整備を継続」. */
     "Advanced — model assumptions":"Avancé — hypothèses du modèle",
+  "All areas in force in this country": "Toutes les zones en vigueur dans ce pays",   /* (#R275) */
     "Choose an earthquake…":"Choisissez un séisme…",
     "Click the map to add an observation point.":"Cliquez sur la carte pour ajouter un point d’observation.",
     "Click to start, click each corner, and click the first point again to finish.":"Cliquez pour commencer, cliquez chaque sommet, puis cliquez à nouveau sur le premier point pour terminer.",
     "Draw the rupture area on the map.":"Tracez la zone de rupture sur la carte.",
     "Each point is added to the table below. Press the button again to turn this off.":"Chaque point s’ajoute au tableau ci-dessous. Appuyez de nouveau sur le bouton pour désactiver.",
+  "Educational display — follow the official authorities.": "Affichage éducatif — suivez les autorités officielles.",   /* (#R275) */
     "If one is already placed, tapping moves it. Press the button again to turn this off.":"Si un épicentre existe déjà, le toucher le déplace. Appuyez de nouveau sur le bouton pour désactiver.",
+  "IntMap is not connected to this country’s warning service, so it is saying nothing about this point — not that nothing is in force.": "IntMap n’est pas connecté au service d’alerte de ce pays : la carte n’affirme rien sur ce point — cela ne veut pas dire qu’aucune alerte n’est en vigueur.",   /* (#R275) */
+  "National services via the WMO register": "Services nationaux via le registre de l’OMM",   /* (#R275) */
+  "No country here.": "Aucun pays ici.",   /* (#R275) */
+  "Not read yet": "Pas encore lu",   /* (#R275) */
+  "Nothing in force at this point.": "Aucune alerte en vigueur à cet endroit.",   /* (#R275) */
     "Recompute the intensity map":"Recalculer la carte d’intensité",
     "Close":"Fermer", "Cancel":"Annuler", "Save":"Enregistrer", "Delete":"Supprimer", "Remove":"Retirer",
     "Apply":"Appliquer", "Reset":"Réinitialiser", "Search":"Rechercher", "Loading…":"Chargement…",
     "Layers":"Calques", "Settings":"Paramètres", "Map":"Carte", "Satellite":"Satellite", "Globe":"Globe",
     "Flat":"Plat", "Minimize":"Réduire", "Send":"Envoyer", "Copy":"Copier", "Copy name":"Copier le nom", "Open":"Ouvrir", "Back":"Retour",
     "Sources":"Sources", "Related articles":"Articles liés", "Cited sources":"Sources citées",
+  "The water has come to rest — press ↺ to run it again, or place more": "L’eau s’est immobilisée — appuyez sur ↺ pour rejouer, ou ajoutez de l’eau",   /* (#R275) */
+  "This country’s service is in the update cycle and has not been read yet.": "Le service de ce pays est dans le cycle de mise à jour et n’a pas encore été lu.",   /* (#R275) */
+  "Warnings at this point": "Alertes à cet endroit",   /* (#R275) */
     "Web-verified sources":"Sources vérifiées sur le web", "Data used":"Données utilisées", "As of":"Au",
+  "by the area the service names": "par zone désignée par le service",   /* (#R275) */
+  "continuous — never stops": "continue — ne s’arrête pas",   /* (#R275) */
     "live web search":"recherche web en direct", "Stopped":"Arrêté", "Voice input":"Saisie vocale",
     "Attach a file":"Joindre un fichier", "Attach a file (image or text)":"Joindre un fichier (image ou texte)",
     "Ask Atlas anything…":"Demandez ce que vous voulez à Atlas…", "Thinking…":"Réflexion…",
@@ -324,7 +336,9 @@ window.IntMapLang.define('fr', { ui: {
     "Retry":"Réessayer", "Failed":"Échec", "Done":"Terminé", "km":"km", "Distance":"Distance",
     "Back to the map":"Retour à la carte", "Data sources":"Sources des données"
 ,
+  "more countries": "autres pays",   /* (#R275) */
   "not felt": "non ressenti",
+  "one shot — stops when its volume is used up": "unique — s’arrête quand le volume est épuisé",   /* (#R275) */
   "out of range": "hors de portée",
   "Oceanic path, surface waves (×)": "Trajet océanique, ondes de surface (×)",
   "Rupture outline": "Contour de la rupture",
@@ -339,6 +353,8 @@ window.IntMapLang.define('fr', { ui: {
   "No list yet — press to load": "Pas encore de liste — appuyez pour charger",
   "Loading the recent earthquakes…": "Chargement des séismes récents…",
   " events": " événements",
+  "this service is in the update cycle and has not been read yet, so the map is not saying anything about this country until it has.": "ce service est dans le cycle de mise à jour et n’a pas encore été lu ; jusque-là, la carte n’affirme rien sur ce pays.",   /* (#R275) */
+  "via WMO SWIC": "via l’OMM SWIC",   /* (#R275) */
   "✓ Copied": "✓ Copié",
   "📍 Places": "📍 Lieux",
   "🗓 Events": "🗓 Événements",

@@ -31,9 +31,10 @@ IntMap is primarily designed for people interested in geography and internationa
   for — 47 countries over thirteen feeds: Japan (JMA, down to the municipality), the United States
   (NWS), Canada (ECCC), Germany (DWD), Norway (MET Norway), China (CMA), Australia (BoM), Brazil
   (INMET), Hong Kong (HKO), the Philippines (PAGASA), Taiwan (CWA), New Zealand (MetService), and
-  thirty-five further European services through MeteoAlarm. Each agency's own colours are the
-  default; a country with no feed is drawn hatched, so "nothing published" never looks like
-  "nothing happening"
+  thirty-five further European services through MeteoAlarm — plus every other national service that
+  files CAP into the WMO's own register, which the map reads at the polygon that service drew.
+  Each agency's own colours are the default; a country with no feed is drawn hatched, so "nothing
+  published" never looks like "nothing happening", and a tap answers for the point you pressed
 * Read annual precipitation as a measured 1 km field, or as any single year from 1981 to 2020
 * Compare any World Bank indicator in a year you choose, rather than whatever year each country last reported
 * Look up high and low water anywhere on a coast, and how far the tide reaches over real terrain

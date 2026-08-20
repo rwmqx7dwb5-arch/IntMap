@@ -326,10 +326,17 @@ window.IntMapWaterDynamics=(function(){
       const nowMs=()=>((typeof performance!=='undefined'&&performance.now)?performance.now():Date.now())-t0ms;
       const stillM=Math.max(1e-6,opt.stillM||1e-4);      /* a tenth of a millimetre a batch */
       const stillQ=Math.max(1e-9,opt.stillQ||1e-4);
+      /* ⚠ (#R275) `onStep` — THE SAME HOOK `advance` TAKES, FOR THE SAME REASON. A source is a rate
+         (js/terrain-water.js), so water that has not been delivered yet is still owed while this
+         runs; without the hook ⏭ would settle a field the taps had stopped filling and call that
+         the resting state. It is optional and the physics does not depend on it. */
+      const onStep=(typeof opt.onStep==='function')?opt.onStep:null;
       const t0=tS; let n=0, batches=0;
       for(;;){
         let mdh=0;
-        for(let b=0;b<40&&n<maxSteps&&(tS-t0)<maxS;b++){ step(dtFor()); n++;
+        for(let b=0;b<40&&n<maxSteps&&(tS-t0)<maxS;b++){ const dt=dtFor();
+          if(onStep) onStep(dt);
+          step(dt); n++;
           if(lastMaxDh>mdh) mdh=lastMaxDh; }
         batches++;
         const over=nowMs()>=maxMs;

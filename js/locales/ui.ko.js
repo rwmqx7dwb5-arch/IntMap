@@ -278,19 +278,31 @@ window.IntMapLang.define('ko', { ui: {
     /* (#R234) the seismic panel's new instruction banners, its 詳細設定 disclosure and the
        two-state run button. Item ③ 「フランス語、韓国語の整備を継続」. */
     "Advanced — model assumptions":"고급 설정 — 모델 가정",
+  "All areas in force in this country": "이 나라에서 발효 중인 모든 구역",   /* (#R275) */
     "Choose an earthquake…":"지진을 선택하세요…",
     "Click the map to add an observation point.":"지도를 클릭해 관측 지점을 추가하세요.",
     "Click to start, click each corner, and click the first point again to finish.":"클릭해서 시작하고 모서리를 차례로 클릭한 뒤, 첫 점을 다시 클릭하면 끝납니다.",
     "Draw the rupture area on the map.":"지도 위에 진원역을 그려 주세요.",
     "Each point is added to the table below. Press the button again to turn this off.":"추가한 지점은 아래 표에 나타납니다. 버튼을 다시 누르면 해제됩니다.",
+  "Educational display — follow the official authorities.": "참고용 표시입니다. 공식 기관의 발표를 따르세요.",   /* (#R275) */
     "If one is already placed, tapping moves it. Press the button again to turn this off.":"이미 설정되어 있으면 탭한 위치로 이동합니다. 버튼을 다시 누르면 해제됩니다.",
+  "IntMap is not connected to this country’s warning service, so it is saying nothing about this point — not that nothing is in force.": "IntMap은 이 나라의 경보 기관에 연결되어 있지 않으므로, 이 지점에 대해 아무것도 말하지 않습니다 — 발표가 없다는 뜻이 아닙니다.",   /* (#R275) */
+  "National services via the WMO register": "각국 기상기관(WMO 등록 경유)",   /* (#R275) */
+  "No country here.": "여기에는 국가가 없습니다.",   /* (#R275) */
+  "Not read yet": "아직 수신되지 않음",   /* (#R275) */
+  "Nothing in force at this point.": "이 지점에 발효 중인 경보가 없습니다.",   /* (#R275) */
     "Recompute the intensity map":"진도 분포 다시 계산",
     "Close":"닫기", "Cancel":"취소", "Save":"저장", "Delete":"삭제", "Remove":"제거",
     "Apply":"적용", "Reset":"초기화", "Search":"검색", "Loading…":"불러오는 중…",
     "Layers":"레이어", "Settings":"설정", "Map":"지도", "Satellite":"위성", "Globe":"지구본",
     "Flat":"평면", "Minimize":"최소화", "Send":"보내기", "Copy":"복사", "Copy name":"지명 복사", "Open":"열기", "Back":"뒤로",
     "Sources":"출처", "Related articles":"관련 기사", "Cited sources":"인용 출처",
+  "The water has come to rest — press ↺ to run it again, or place more": "물이 멈췄습니다 — ↺ 로 다시 재생하거나 물을 더 배치하세요",   /* (#R275) */
+  "This country’s service is in the update cycle and has not been read yet.": "이 나라의 기관은 갱신 순서를 기다리는 중이며 아직 수신되지 않았습니다.",   /* (#R275) */
+  "Warnings at this point": "이 지점의 경보",   /* (#R275) */
     "Web-verified sources":"웹으로 확인된 출처", "Data used":"사용한 데이터", "As of":"기준일",
+  "by the area the service names": "발표 기관이 지정한 구역 단위",   /* (#R275) */
+  "continuous — never stops": "지속 — 멈추지 않음",   /* (#R275) */
     "live web search":"실시간 웹 검색", "Stopped":"중지됨", "Voice input":"음성 입력",
     "Attach a file":"파일 첨부", "Attach a file (image or text)":"파일 첨부 (이미지 또는 텍스트)",
     "Ask Atlas anything…":"Atlas에게 무엇이든 물어보세요…", "Thinking…":"생각 중…",
@@ -314,7 +326,9 @@ window.IntMapLang.define('ko', { ui: {
     "Retry":"다시 시도", "Failed":"실패", "Done":"완료", "km":"km", "Distance":"거리",
     "Back to the map":"지도로 돌아가기", "Data sources":"데이터 출처"
 ,
+  "more countries": "개국 더",   /* (#R275) */
   "not felt": "무감",
+  "one shot — stops when its volume is used up": "1회성 — 수량을 다 쓰면 멈춤",   /* (#R275) */
   "out of range": "범위 밖",
   "Oceanic path, surface waves (×)": "해양지각 경로, 표면파 (×)",
   "Rupture outline": "진원역 윤곽",
@@ -329,6 +343,8 @@ window.IntMapLang.define('ko', { ui: {
   "No list yet — press to load": "목록이 아직 없습니다 — 눌러서 불러오기",
   "Loading the recent earthquakes…": "최근 지진을 불러오는 중…",
   " events": "건",
+  "this service is in the update cycle and has not been read yet, so the map is not saying anything about this country until it has.": "이 기관은 갱신 순서를 기다리는 중이며 아직 수신되지 않았습니다. 수신될 때까지 이 지도는 이 나라에 대해 아무것도 말하지 않습니다.",   /* (#R275) */
+  "via WMO SWIC": "WMO SWIC 경유",   /* (#R275) */
   "✓ Copied": "✓ 복사했습니다",
   "📍 Places": "📍 장소",
   "🗓 Events": "🗓 사건",

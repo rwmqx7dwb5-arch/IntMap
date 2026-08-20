@@ -85,8 +85,10 @@ window.IntMapModules.terrainWater=function(HOST){
       try{ localStorage.setItem('intmap_tw_tint',tintEdits?'1':'0'); }catch(_){}
       draw(); return tintEdits; }
     let levees=[];     /* [{pts:[[lng,lat]…], crest:m above ground, width:m}] */
-    /* (#R261) [{lng,lat,m3,cont,rate}] — `cont` and `rate` belong to the SOURCE, not to the panel.
-       See the ⚠⚠⚠ note above pourStart for what was wrong with keeping them global. */
+    /* (#R261) `cont` and `rate` belong to the SOURCE, not to the panel — see the ⚠⚠⚠ note above
+       pourStart for what was wrong with keeping them global.
+       (#R275) `[{lng, lat, cont, rate, cap, m3}]`: `rate` is m³/s, `cap` is the total it will ever
+       deliver (Infinity for a continuous one) and `m3` is what it HAS delivered. */
     let sources=[];
     let rainMm=0;
     let result=null;
@@ -128,9 +130,11 @@ window.IntMapModules.terrainWater=function(HOST){
        `sim` is the shallow-water state on the working rectangle (js/water-dynamics.js) and it is what
        gets DRAWN. `steady` says the field on screen is the t → ∞ routing answer instead — the ⏭
        button, and what the tool used to show unconditionally.
-       ⚠ THE WATER IS DELIVERED ONCE. Each source records how much of itself has already gone into
-       `sim` (`_fed`), because `x.m3` is a running total that the tap keeps adding to and the routing
-       keeps re-reading; injecting the total every tick would multiply the water by the tick count. */
+       ⚠ THE WATER IS DELIVERED ONCE, AND `x.m3` IS THAT DELIVERY. (#R275) It used to be a TARGET
+       that the routing kept re-reading, so a second field was needed to remember how much of it had
+       actually gone in; now it is the running total of what HAS gone in, for both kinds of source,
+       and `owed()` — capacity minus delivery — is what is left. Nothing can be poured twice because
+       pouring is what advances the number the test uses. */
     let sim=null, simBedStamp=-1, steady=false, simCapped=0, rainFed=0, simFrontM=0, simFrontAt=0;
     const WD=()=>window.IntMapWaterDynamics;
     const SIM_MAX_STEPS=140;      /* per tick — a capped tick is reported, never silent (#R185) */
@@ -153,13 +157,39 @@ window.IntMapModules.terrainWater=function(HOST){
        volume, a ringed disc for a running tap — see `tw-src-ring`), the panel lists them, and the
        ▶ button is enabled only when there is something for it to actually pour. */
     const contSources=()=>sources.filter(x=>x.cont);
+    /* ══ ⚠⚠⚠ (#R275) ONE KIND OF SOURCE, WITH ONE THING DIFFERENT ABOUT IT ════════════════
+       「一回きりの水源、再生できない。ふざけるな。一回きりと継続の差は、水が継続的に発生し続けるか否かしか
+         ないようにするべき。ふざけるな。」
+
+       #R273 gave the panel a ↺ button and it could not restart a one-shot run. MEASURED, before this
+       round: place 1,000,000 m³, advance 4,200 s, press ↺ → the clock goes back to 0 and the water
+       is back at its initial pool, and `running` is **false** — ▶ stays disabled for ever after. The
+       reason was not the button. A one-shot volume was delivered by `pool()`, i.e. as a LAKE that
+       already exists at t=0 with nothing moving in it, so `simMoving()` was false the instant it was
+       placed and `canPour()` — «a continuous source exists, or water is already moving» — had
+       nothing to say yes to. A one-shot run was therefore never a RUN at all: it was a still picture
+       you could only leave by pressing ⏭.
+
+       That is the second difference the instruction says must not exist. So there is now ONE
+       delivery mechanism: every source is a tap with a rate, `feedTaps` feeds all of them, and the
+       only thing `cont` changes is whether the tap has a BOTTOM — `cap` cubic metres for a one-shot,
+       no bound for a continuous one. Everything else follows from that and is identical:
+         · both start pouring the moment they are placed (▶ is live because something is owed)
+         · both are re-runnable — ↺ puts `m3` back to 0 and the same water arrives the same way
+         · both put water in at the same place by the same call, so the flood is the same physics
+       `m3` is HOW MUCH THIS SOURCE HAS DELIVERED, for both kinds, which is what the panel prints and
+       what the routing reads; `cap` is how much it has left to give. */
+    const srcCap=(x)=>(x&&x.cont?Infinity:Math.max(0,+((x||{}).cap)||0));
+    const owed=(x)=>Math.max(0,srcCap(x)-Math.max(0,+((x||{}).m3)||0));
+    const owedAny=()=>sources.some(x=>owed(x)>0);
+    const srcRate=(x)=>Math.max(1,+((x||{}).rate)||pourRate);
     /* ⚠⚠ (#R265) ▶ NO LONGER MEANS «THERE IS A TAP», IT MEANS «THERE IS SOMETHING TO ADVANCE».
        With a steady-state solver, water with no tap behind it had nothing to do, so the transport was
        disabled unless a continuous source existed. Water that is MOVING has plenty to do — a placed
        volume runs downhill, spreads, fills and drains, and watching that is the whole point of the
        clock now. So the button is live whenever there is a tap OR water still in motion. */
     function simMoving(){ try{ return !!(sim&&!steady&&sim.stats().maxUnitQ>1e-4); }catch(_){ return false; } }
-    function canPour(){ return !!(contSources().length||simMoving()); }
+    function canPour(){ return !!(owedAny()||simMoving()); }
     function pourStart(){ if(pourT) return false;
       if(!canPour()) return false;
       steady=false; pourAt=Date.now();
@@ -169,7 +199,7 @@ window.IntMapModules.terrainWater=function(HOST){
         stepSim(dt*timeScale);      /* (#R265) …which advances the clock and the taps by what it managed */
         /* the water has arrived and stopped, and nothing is feeding it any more — say so and stop
            rather than burning frames on a field that is not changing */
-        if(!contSources().length&&!simMoving()){ pourStop(); return; }
+        if(!owedAny()&&!simMoving()){ pourStop(); return; }
         draw(); try{ syncFoot(); }catch(_){}   /* (#R258) the footer clock ticks with the simulation */
       },220);
       return true; }
@@ -270,10 +300,23 @@ window.IntMapModules.terrainWater=function(HOST){
           if(!(hw>0&&hn>0)) return false; }
         const midLat=(n+s)/2;
         /* cap the working area — beyond this the DEM tile budget, not the solver, is the limit */
-        const spanKm=Math.max((e-w)*111.32*Math.cos(midLat*D),(n-s)*110.54);
+        const viewKm=Math.max((e-w)*111.32*Math.cos(midLat*D),(n-s)*110.54);
         const MAXKM=(typeof isMobile==='function'&&isMobile())?26:60;
-        if(spanKm>MAXKM){ const f=MAXKM/spanKm, cw=(w+e)/2, cn=(n+s)/2;
+        if(viewKm>MAXKM){ const f=MAXKM/viewKm, cw=(w+e)/2, cn=(n+s)/2;
           w=cw-(e-w)*f/2; e=cw+(e-w)*f/2; s=cn-(n-s)*f/2; n=cn+(n-s)*f/2; }
+        /* ══ ⚠⚠⚠ (#R275) THE ELEVATION LEVEL IS CHOSEN FOR THE RECTANGLE, NOT FOR THE CAMERA ════
+           「水流シミュレーションの解像度が低すぎる。」 (2回目)  #R273 made the CELL COUNT selectable and left the
+           thing the cells are FILLED FROM taking its level from the view. `spanKm` was measured
+           before the cap above and never recomputed, so every number downstream — the DEM zoom and
+           the tile-budget estimate — sized itself to the CAMERA while the grid sized itself to the
+           capped rectangle. MEASURED, camera at z6 over the Kōfu basin: working rectangle 47.2 km,
+           grid cell 92 m, DEM level chosen **z10** = a 124 m sample. The grid was finer than the
+           ground it was reading — every cell a resample of something blurrier than itself. From the
+           rectangle the same call gives z13, a 15.5 m sample: six times the detail, same grid.
+           ⚠ THIS IS WHY THE FLY-TO EXISTED. `open()` used to jump the camera to z≥11 before
+           building, which made the view small enough that the two agreed by accident; removing the
+           jump (「勝手にズームするのを辞めろ」) is only safe together with this. */
+        const spanKm=Math.min(viewKm,MAXKM);
         const xW=mX(w), xE=mX(e)+(mX(e)<mX(w)?1:0), yN=mY(n), yS=mY(s);
         /* (#R186) 256 → 384 on desktop. The grid was throwing away most of the elevation data it had
            already paid for: over a 60 km view the DEM comes in at z13, i.e. 13.5 m a sample, and a
@@ -418,7 +461,7 @@ window.IntMapModules.terrainWater=function(HOST){
        whole editable state before ONE user action, and every action pushes exactly one. */
     function snapState(){ return { sculpt:sculpt?sculpt.slice():null,
       levees:levees.map(l=>({pts:l.pts.slice(),crest:l.crest,width:l.width})),
-      sources:sources.map(s=>({lng:s.lng,lat:s.lat,m3:s.m3,cont:!!s.cont,rate:s.rate})), rainMm }; }   /* (#R261) …and which kind each one is */
+      sources:sources.map(s=>({lng:s.lng,lat:s.lat,m3:s.m3,cont:!!s.cont,cap:s.cap,rate:s.rate})), rainMm }; }   /* (#R261) …and which kind each one is */
     function pushUndo(){ if(!G) return; undoStack.push(snapState()); if(undoStack.length>24) undoStack.shift(); }
     function undo(){ const s=undoStack.pop(); if(!s) return false;
       resetSim();       /* (#R265) the water is a function of what was placed; taking a step back re-places it */
@@ -871,7 +914,7 @@ window.IntMapModules.terrainWater=function(HOST){
         simBed=new Float32Array(B.NX*B.NY);
         sim=WD().create(simBed,B.NX,B.NY,B.cellM);
         simBedStamp=-1; rainFed=0; basinCapped=false; basinGrow=0; basinVoid=0; growFailed=0;
-        sources.forEach(x=>{ x._fed=0; });
+        sources.forEach(x=>{ x.m3=0; });      /* (#R275) a new state vector is a run from zero */
       }
       if(simBedStamp!==editStamp){
         /* ⚠ ONLY THE RECTANGLE IS RE-READ. A brush stroke changes the ground under water that is
@@ -884,22 +927,14 @@ window.IntMapModules.terrainWater=function(HOST){
       }
       return sim;
     }
-    /* every source's water reaches the model EXACTLY ONCE — see the note on `_fed` above */
+    /* ⚠ (#R275) RAIN, AND NOTHING ELSE. The sources used to be delivered here — a running total
+       re-injected whenever it grew, with `pool()` for the one-shots — and that is the branch the
+       note above `srcCap` is about. Every source is fed by `feedTaps` now, per step, so this
+       function has one job: rainfall is a depth over the whole rectangle and it is applied once. */
     function feedSim(){
       const S=ensureSim(); if(!S) return;
       if(rainMm>rainFed){ S.addRain(rainMm-rainFed); rainFed=rainMm; }
       else if(rainMm<rainFed) rainFed=rainMm;               /* lowered: nothing to add or take back */
-      sources.forEach(sc=>{
-        const c=basinCellOf(sc.lng,sc.lat); if(!c) return;
-        const k=c.j*B.NX+c.i;
-        const want=Math.max(0,+sc.m3||0), had=Math.max(0,+sc._fed||0);
-        if(want<=had){ sc._fed=want; return; }
-        const give=want-had;
-        /* a bucket tipped out makes a pool; a tap delivers into its own cell (#R261's distinction,
-           now visible in the physics as well as in the symbol) */
-        if(sc.cont) S.addVolume([k],give); else S.pool(k,give);
-        sc._fed=want;
-      });
     }
     /* ══ ⚠⚠ (#R265) ONE CLOCK, AND IT IS THE WATER'S ══════════════════════════════════════════════
        The first version advanced `pourSimS` by what the tick ASKED for and the model by what it could
@@ -919,14 +954,17 @@ window.IntMapModules.terrainWater=function(HOST){
        `feedTaps(dt)` runs before every step of the solver instead, so what a discharge puts in is
        rate·dt — and `x.m3` (the running total the panel prints) advances by exactly the same
        amount at exactly the same time, which is what keeps the two from disagreeing again. */
+    /* ⚠ (#R275) …AND IT FEEDS BOTH KINDS. `owed` is the whole difference: a continuous source owes
+       for ever, a one-shot owes what is left of its `cap`, and when that reaches zero it simply
+       stops — which is 「水が継続的に発生し続けるか否か」 and nothing else. */
     function feedTaps(dt){
       const S=sim; if(!S||!B||!(dt>0)) return;
-      sources.forEach(sc=>{ if(!sc.cont) return;
+      sources.forEach(sc=>{
+        const left=owed(sc); if(!(left>0)) return;
         const c=basinCellOf(sc.lng,sc.lat); if(!c) return;
-        const give=Math.max(0,+sc.rate||pourRate)*dt; if(!(give>0)) return;
+        const give=Math.min(left,srcRate(sc)*dt); if(!(give>0)) return;
         S.addVolume([c.j*B.NX+c.i],give);
-        sc.m3=Math.max(0,+sc.m3||0)+give;
-        sc._fed=Math.max(0,+sc._fed||0)+give; });
+        sc.m3=Math.max(0,+sc.m3||0)+give; });
     }
     function stepSim(sec,maxSteps){
       const S=ensureSim(); if(!S) return null;
@@ -952,7 +990,7 @@ window.IntMapModules.terrainWater=function(HOST){
        「新しい水源を設置したら、他の関係無い場所の水までリセットされるのをやめろ。」
 
        The path was: click outside the working rectangle → `rebuildAround` → `build()` → a new grid
-       → `resetSim()`, which drops the state vector, sets every source's `_fed` back to 0 and puts
+       → `resetSim()`, which drops the state vector, puts every source's delivery back to 0 and puts
        the clock back to zero. Every flood on screen restarted from t = 0 because a tap was placed
        somewhere else. #R261 fixed exactly this shape for the SCULPTED GROUND (it is resampled onto
        the new lattice now); the water was the other half and it was still being thrown away.
@@ -1113,29 +1151,33 @@ window.IntMapModules.terrainWater=function(HOST){
     function settleSim(){
       const S=ensureSim(); if(!S) return false;
       feedSim();
+      /* ⚠ (#R275) ⏭ FEEDS THE TAPS TOO. A one-shot source now arrives over time like any other, so
+         a settle that did not feed would run the ground dry — the resting state has to be the state
+         of ALL the water that was placed, not of whatever had been delivered when ⏭ was pressed. */
       const r=S.settle({ maxSteps:(typeof isMobile==='function'&&isMobile())?9000:120000,
-                        maxMs:(typeof isMobile==='function'&&isMobile())?2500:6000 });
+                        maxMs:(typeof isMobile==='function'&&isMobile())?2500:6000,
+                        onStep:feedTaps });
       pourSimS=S.tS; settleInfo=r; steady=!r.capped;
       simFrontM=frontDistanceM();
       solve(); try{ syncFoot(); }catch(_){}
       return true;
     }
     /* ══ ⚠⚠⚠ (#R273) 「一回きりの水源、再生できない。」 ═══════════════════════════════════════════
-       A one-shot source is poured into the model EXACTLY ONCE — `_fed` is what makes that true, and
-       it is what made the run un-repeatable: after the water had drained there was no way back to
-       t = 0 except 「リセット」, which also throws away the terrain you sculpted and the sources you
-       placed. So the run was a thing you got one of.
+       ⚠⚠⚠ (#R275) THE SAME SENTENCE CAME BACK, TWICE, WITH 「ふざけるな」 ON BOTH SIDES OF IT. This
+       button was correct and it had nothing to restart: a one-shot volume was a still lake placed
+       by `pool()`, so `canPour()` was false the moment ↺ finished and ▶ stayed disabled. The fix is
+       not here — it is that both kinds of source are now taps with a rate (see `srcCap` above), so
+       ↺ is the same button for both and ▶ is live afterwards because something is owed again.
        → REPLAY puts the clock, the water and every source's delivery back to zero and starts again
-       on the SAME ground with the SAME sources. ⚠ A tap's `m3` is what it has DELIVERED so far, so
-       it goes back to zero too — otherwise `feedSim` would pool an hour of discharge in one step
-       (the #R267 追記 defect, from the other end).
+       on the SAME ground with the SAME sources. ⚠ `m3` is what a source has DELIVERED so far — for
+       BOTH kinds now — so it goes back to zero and the pour is re-run rather than re-injected.
        ⚠ AND IT GOES THROUGH `editDirty()`. That is the one door every mutation in this file has to
        pass (#R255 brush, #R258 addLevee, #R268 reset, #R271 addSource — four rounds of the same
        omission), because the solver, the elevation hook and the 3-D tiles all memoise on it. */
     function replay(){ if(!G) return false;
       pourStop();
       pourSimS=0;
-      sources.forEach(x=>{ if(x.cont) x.m3=0; x._fed=0; });
+      sources.forEach(x=>{ x.m3=0; });
       resetSim(); clearTrace();
       editDirty();
       solve();
@@ -1145,7 +1187,7 @@ window.IntMapModules.terrainWater=function(HOST){
     function resetSim(){ sim=null; simBed=null; B=null; simBedStamp=-1; steady=false; rainFed=0; simCapped=0;
       simFrontM=0; simFrontAt=0; basinCapped=false; basinGrow=0; basinVoid=0; growFailed=0; settleInfo=null;
       course={ end:null, at:null, info:null, since:0, lastFrontM:0, checking:false };
-      sources.forEach(x=>{ x._fed=0; }); }
+      sources.forEach(x=>{ x.m3=0; }); }
 
     function solve(){
       if(!G) return null;
@@ -1606,7 +1648,34 @@ window.IntMapModules.terrainWater=function(HOST){
        ⚠ Every class name the handlers bind to is unchanged, and `.tw-foot` is still a SIBLING of
        `.tw-body` closed in the order it is opened (tests/r255 asserts its parent is the panel — the
        one unbalanced `</div>` that broke #R245's pinned footer). */
-    const TW_FS='12px', TW_FS_S='11px';
+    /* ══ ⚠⚠⚠ (#R275) THIS PANEL IS A LEGEND-SIZED BOX, AND IT WAS NOT SIZED LIKE ONE ═════════
+       「地形編集・水流で地形のポップアップのUI、他の凡例やポップアップに比べて内部要素のサイズが大きすぎる。」
+
+       MEASURED on the built page, desktop, side by side with the warnings legend (the box this one
+       opens next to):
+
+           title      凡例 11 px    このパネル 13 px
+           body text  凡例 10.5 px  このパネル 12 px
+           a row      凡例 13–16 px このパネル 44 px
+           a control  凡例 ~22 px   このパネル 30–36 px
+           padding    凡例 8×10 px  このパネル 10×12 px
+
+       #R270 and #R273 were right that this panel needed ONE row height — it had four — and picked
+       44 px, the iOS grouped-list row, from the phone's rule book. On a desktop legend column that
+       is nearly three times the height of every other row on screen, which is what the report is
+       about: the rhythm was fixed and the SCALE was never compared with anything.
+
+       So the scale is one declaration, and it is compared: 10.5/11 px text on 30 px rows on a
+       desktop — the legends' own type size, one row height, still a real hit target. A phone keeps
+       the 44 px row and the 12 px type, because there the rule book is about fingers and the
+       legends are sized the same way. */
+    const TW_FS=_mob()?'12px':'11px', TW_FS_S=_mob()?'11px':'10.5px', TW_FS_H=_mob()?'13px':'12px';
+    const TW_ROW=_mob()?'44px':'30px';        /* one row height, whichever device it is */
+    const TW_CTL=_mob()?'36px':'28px';        /* one control height: buttons, the transport, strips */
+    const TW_IN=_mob()?'30px':'24px';         /* a number box inside a row */
+    const TW_PAD=_mob()?'10px 12px':'8px 10px';
+    const TW_GAP=_mob()?'10px':'8px';
+    const TW_INSET=_mob()?12:10;              /* the column's one left edge, in px */
     function _ensureCss(){
       if(document.getElementById('tw-ios-css')) return;
       const s=document.createElement('style'); s.id='tw-ios-css';
@@ -1634,25 +1703,27 @@ window.IntMapModules.terrainWater=function(HOST){
            the note; one gap (10 px) between head, body, foot and every card; and the scrollbar's
            width is MEASURED and given to the header and the footer as well, so the column has one
            right edge whether the body scrolls or not. */
-        '.tw-card{background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.16));border-radius:12px;overflow:hidden;}',
+        '.tw-card{background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.16));border-radius:11px;overflow:hidden;}',
         /* ⚠ (#R273) 12, not 11: a row sits inside a card whose 1 px border pushes its text to
            x+12, so a caption inset by 11 started ONE pixel left of every word it labels. MEASURED
            on the built panel: caption 440.0, row text 441.0. */
-        '.tw-cap{font-size:'+TW_FS_S+';font-weight:600;letter-spacing:.01em;color:var(--text-main);padding:0 12px 6px;}',
+        '.tw-cap{font-size:'+TW_FS_S+';font-weight:600;letter-spacing:.01em;color:var(--text-main);padding:0 '+TW_INSET+'px 5px;}',
         /* ⚠⚠ (#R273) TWO CONTAINERS WERE TOUCHING. MEASURED: the tool picker (a `.tw-segwrap`,
            grey, radius 10) ended at y = 218 and the card under it started at y = 218 — zero gap,
            two different container styles, no line between them. Every other pair in this panel has
            the body's own 10 px. One rule, so a section can hold any number of boxes and they are
            always spaced the same way. */
-        '#tw-panel .tw-body > div > * + *{margin-top:10px;}',
+        '#tw-panel .tw-body > div > * + *{margin-top:'+TW_GAP+';}',
+        '#tw-panel .tw-tools > * + *{margin-top:'+TW_GAP+';}',
         /* …except right under a caption, which already carries the 6 px that ties a label to the
            group it labels — 6 + 10 was sixteen pixels of nothing between a word and its control */
-        '#tw-panel .tw-body > div > .tw-cap + *{margin-top:0;}',
+        '#tw-panel .tw-body > div > .tw-cap + *,#tw-panel .tw-tools > .tw-cap + *{margin-top:0;}',
         /* ONE control height in the body too: a full-width segmented strip is 36 px like everything
            in the footer, and the 2x2 tool picker is two of those rows */
-        '#tw-panel .tw-body > div > .tw-segwrap > .tw-seg{min-height:30px;display:flex;align-items:center;justify-content:center;padding:0 6px;}',
+        '#tw-panel .tw-body > div > .tw-segwrap > .tw-seg,#tw-panel .tw-tools > .tw-segwrap > .tw-seg'
+          +'{min-height:'+(_mob()?'30px':'26px')+';display:flex;align-items:center;justify-content:center;padding:0 6px;}',
         /* …and the picker takes the card's corner radius, so the panel has ONE container shape */
-        '#tw-panel .tw-segwrap{border-radius:12px;}',
+        '#tw-panel .tw-segwrap{border-radius:11px;}',
         /* ══ ⚠⚠ (#R270) ONE ROW HEIGHT, BECAUSE A GROUPED LIST IS A RHYTHM ═══════════════════════
            「不自然な余白…が多い。」 MEASURED in this panel, 盛る mode: the rows came out 40 / 44 / 45 /
            49 px — four different heights in one card, because `min-height:40px` plus 7 px of padding
@@ -1661,26 +1732,30 @@ window.IntMapModules.terrainWater=function(HOST){
            contents decide. The row is a fixed 44 px now (the iOS grouped-list row, and the height
            the tallest control already needed), the inline segmented strip is sized to sit inside it,
            and every row in every mode is the same height. */
-        '.tw-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;'
-          +'padding:5px 11px;font-size:'+TW_FS+';color:var(--text-main);box-sizing:border-box;}',
+        '.tw-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:'+TW_ROW+';'
+          +'padding:3px '+(TW_INSET-1)+'px;font-size:'+TW_FS+';color:var(--text-main);box-sizing:border-box;}',
         /* a segmented control INSIDE a row is compact — the full-width one above a card is not */
-        '.tw-val .tw-segwrap{padding:2px;}',
-        '.tw-val .tw-seg{padding:5px 8px;}',
+        /* ⚠ (#R275) AN INLINE SEGMENTED STRIP IS SIZED, NOT PADDED. MEASURED: padding alone made
+           the 「次に置く水源」 row 33.75 px against every other row's 30 — the same «the contents
+           decide the height» the row rhythm was introduced to end (#R270). It is the number box's
+           height, the way the footer's strip is the button height. */
+        '.tw-val .tw-segwrap{height:'+TW_IN+';padding:2px;box-sizing:border-box;align-items:stretch;}',
+        '.tw-val .tw-seg{padding:0 8px;display:flex;align-items:center;justify-content:center;}',
         '.tw-row+.tw-row,.tw-row+.tw-blk,.tw-blk+.tw-row,.tw-blk+.tw-blk{border-top:1px solid var(--glass-border,rgba(128,128,128,0.16));}',
-        '.tw-blk{padding:11px;min-height:44px;display:flex;align-items:center;font-size:'+TW_FS+';color:var(--text-main);box-sizing:border-box;}',
+        '.tw-blk{padding:6px '+(TW_INSET-1)+'px;min-height:'+TW_ROW+';display:flex;align-items:center;font-size:'+TW_FS+';color:var(--text-main);box-sizing:border-box;}',
         '.tw-val{margin-left:auto;display:flex;align-items:center;gap:7px;flex:0 0 auto;}',
-        '.tw-num{width:82px;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
+        '.tw-num{width:76px;height:'+TW_IN+';border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
           +'background:var(--input-bg);color:var(--text-main);font-size:'+TW_FS+';padding:0 7px;box-sizing:border-box;text-align:right;}',
-        '.tw-segwrap{display:flex;gap:3px;background:var(--input-bg);border-radius:10px;padding:3px;}',
+        '.tw-segwrap{display:flex;gap:2px;background:var(--input-bg);border-radius:9px;padding:2px;}',
         '.tw-seg{flex:1;min-width:0;border:none;background:transparent;color:var(--text-main);font-size:'+TW_FS+';'
-          +'font-weight:500;padding:7px 6px;border-radius:8px;cursor:pointer;line-height:1.25;white-space:nowrap;}',
+          +'font-weight:500;padding:'+(_mob()?'7px':'5px')+' 6px;border-radius:7px;cursor:pointer;line-height:1.25;white-space:nowrap;}',
         '.tw-seg.on{background:var(--primary-color);color:#fff;font-weight:600;}',
         /* ⚠ (#R258) THE TOOL PICKER IS 2×2, NOT A FOUR-WAY STRIP. Measured in this panel: the strip
            gives each segment 73 px while 「🧱 堤防・ダム」 needs 96 and 「💧 ここに水」 88 — two of the
            four labels were clipped. Four names do not fit across 306 px, so they go two by two. */
         '.tw-modes{display:grid;grid-template-columns:1fr 1fr;}',
         '.tw-modes .tw-seg{overflow:hidden;text-overflow:ellipsis;}',
-        '.tw-btn{min-height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
+        '.tw-btn{min-height:'+TW_CTL+';padding:0 9px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
           +'background:var(--input-bg);color:var(--text-main);font-size:'+TW_FS+';cursor:pointer;'
           +'display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;}',
         /* (#R261) 「再生ボタンは四角にしろ。」 — it was `border-radius:19px` on a 38 px box, i.e. a
@@ -1692,8 +1767,8 @@ window.IntMapModules.terrainWater=function(HOST){
            js/seismic.js is 32 px at `border-radius:9px` — already a rounded square. `.tw-play` was
            the only disc, so this change makes the two players AGREE rather than diverge. A note
            that says «matched to X» is only evidence about X if somebody looked at X. */
-        '.tw-play{width:36px;height:36px;flex:0 0 auto;border-radius:11px;border:none;background:var(--primary-color);'
-          +'color:#fff;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}',
+        '.tw-play{width:'+TW_CTL+';height:'+TW_CTL+';flex:0 0 auto;border-radius:9px;border:none;background:var(--primary-color);'
+          +'color:#fff;font-size:'+(_mob()?'15px':'13px')+';line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}',
         '.tw-play:disabled{opacity:.42;cursor:default;}',
         '.tw-clock{font-variant-numeric:tabular-nums;font-size:'+TW_FS+';color:var(--text-main);white-space:nowrap;}',
         /* ══ ⚠⚠ (#R270) THE TWO DISCLOSURES WERE THE ONLY THINGS NOT ON THE LIST ═════════════════
@@ -1711,13 +1786,13 @@ window.IntMapModules.terrainWater=function(HOST){
         '.tw-note{background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.16));'
           +'border-radius:12px;padding:0;box-sizing:border-box;}',
         '.tw-note > summary{cursor:pointer;font-size:'+TW_FS_S+';color:var(--text-main);list-style:revert;'
-          +'min-height:44px;display:flex;align-items:center;padding:0 12px;box-sizing:border-box;}',
-        '.tw-note > div{padding:0 12px 11px;}',
+          +'min-height:'+TW_ROW+';display:flex;align-items:center;padding:0 '+TW_INSET+'px;box-sizing:border-box;}',
+        '.tw-note > div{padding:0 '+TW_INSET+'px 8px;}',
         /* ⚠⚠ (#R273) ONE CONTROL HEIGHT IN THE FOOTER. MEASURED: the transport pill was 38, the
            speed strip 35 and the three reset buttons 34 — three heights on three consecutive rows
            of one pinned footer, which is the 「おかしい配置」 at the bottom of the panel. 36 for all
            of them, and the strip is sized rather than padded so it cannot drift again. */
-        '#tw-panel .tw-foot .tw-segwrap{height:36px;padding:3px;box-sizing:border-box;align-items:stretch;}',
+        '#tw-panel .tw-foot .tw-segwrap{height:'+TW_CTL+';padding:2px;box-sizing:border-box;align-items:stretch;}',
         '#tw-panel .tw-foot .tw-seg{padding:0 6px;display:flex;align-items:center;justify-content:center;}',
         /* the body keeps its scrollbar's width whether or not it is scrolling, so the column does
            not jump; the width itself is measured and written onto the head and the foot by
@@ -1749,9 +1824,23 @@ window.IntMapModules.terrainWater=function(HOST){
     const PEN=[[150,L('Fine','細','Fein','Тонкая','Fina')],[400,L('Medium','中','Mittel','Средняя','Media')],[1200,L('Broad','太','Breit','Широкая','Ancha')]];
     function render(){ if(!panel) return;
       _ensureCss();
-      panel.innerHTML='<div class="tw-head" style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--input-bg);cursor:move;">'
-        +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">⛰💧 '+L('Terrain &amp; water','地形編集・水流','Gelände &amp; Wasser','Рельеф и вода','Terreno y agua')+'</span>'
-        +'<button class="tw-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
+      panel.innerHTML='<div class="tw-head" style="display:flex;align-items:center;gap:8px;padding:'+TW_PAD+';background:var(--input-bg);cursor:move;">'
+        +'<span style="flex:1;font-size:'+TW_FS_H+';font-weight:700;color:var(--text-main);">⛰💧 '+L('Terrain &amp; water','地形編集・水流','Gelände &amp; Wasser','Рельеф и вода','Terreno y agua')+'</span>'
+        +'<button class="tw-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;line-height:1;">×</button></div>'
+        /* ══ ⚠⚠ (#R275) 「ツールは上部にスティックしろ。」 ═══════════════════════════════════════════
+           The tool picker was the first thing INSIDE the scroller, so choosing 🧱 堤防・ダム, scrolling
+           down to its settings and then wanting ⛏ 削る meant scrolling back up to find the switch —
+           and the switch is the one control every other control in the panel depends on.
+           It is a SIBLING of `.tw-body` now, exactly as `.tw-foot` is: the same construction #R245
+           had to learn is about DOM parentage rather than CSS (`position:sticky` inside the scroller
+           is a no-op). Head · tools · body · foot, in that order, closed in the order they open. */
+        +'<div class="tw-tools" style="flex:0 0 auto;padding:'+TW_PAD+';border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--card-bg,#1c1c1e);">'
+        +cap(L('Tool','ツール','Werkzeug','Инструмент','Herramienta'))
+        +'<div class="tw-segwrap tw-modes">'+modes().map(m=>'<button class="tw-seg tw-m" data-m="'+m[0]+'">'+m[1]+'</button>').join('')+'</div>'
+        /* (#R268) …and whether the ground you shaped is tinted while you shape it */
+        +card('<label class="tw-row" style="cursor:pointer;">'+L('Tint raised / lowered ground','盛った所・削った所に着色','Angehobenes / abgetragenes Gelände einfärben','Подсвечивать поднятое / срезанное','Colorear lo elevado / rebajado')
+          +'<span class="tw-val"><input class="tw-tint" type="checkbox"'+(tintEdits?' checked':'')+' style="accent-color:var(--primary-color);width:15px;height:15px;"></span></label>')
+        +'</div>'
         /* ══ ⚠ (#R255) THE SHARED HALF IS PINNED TO THE BOTTOM ══════════════════════════════════════
            「下部スティックしろ。」 → 「共通部分や、時刻など。」 The panel was one column that simply grew:
            choosing the brush adds five rows of pen settings, choosing 「ここに水」 adds the pour
@@ -1765,15 +1854,8 @@ window.IntMapModules.terrainWater=function(HOST){
            re-parents the footer inside the scroller, where `position:sticky` is a no-op. Body and
            footer are siblings here, closed in the order they are opened, and tests/r255 asserts that
            `.tw-foot`'s parent is the panel itself. */
-        +'<div class="tw-body" style="padding:10px 12px;display:flex;flex-direction:column;gap:10px;flex:1 1 auto;min-height:0;overflow-y:auto;">'
-        /* ① the tool — a segmented control, because exactly one of them is in the pointer's hand */
-        +'<div>'+cap(L('Tool','ツール','Werkzeug','Инструмент','Herramienta'))
-          +'<div class="tw-segwrap tw-modes">'+modes().map(m=>'<button class="tw-seg tw-m" data-m="'+m[0]+'">'+m[1]+'</button>').join('')+'</div>'
-          /* (#R268) …and whether the ground you shaped is tinted while you shape it */
-          +card('<label class="tw-row" style="cursor:pointer;">'+L('Tint raised / lowered ground','盛った所・削った所に着色','Angehobenes / abgetragenes Gelände einfärben','Подсвечивать поднятое / срезанное','Colorear lo elevado / rebajado')
-            +'<span class="tw-val"><input class="tw-tint" type="checkbox"'+(tintEdits?' checked':'')+' style="accent-color:var(--primary-color);width:16px;height:16px;"></span></label>')
-          +'</div>'
-        /* ② whatever that tool is set by */
+        +'<div class="tw-body" style="padding:'+TW_PAD+';display:flex;flex-direction:column;gap:'+TW_GAP+';flex:1 1 auto;min-height:0;overflow-y:auto;">'
+        /* ① whatever the pinned tool above is set by */
         +'<div class="tw-params"></div>'
         /* ③ (#R273) how finely the whole answer is computed — 「解像度が低すぎる」 */
         +'<div>'+cap(L('Simulation','シミュレーション','Modellrechnung','Расчёт','Simulación'))
@@ -1804,7 +1886,7 @@ window.IntMapModules.terrainWater=function(HOST){
              'Elevación real. El agua se integra en el tiempo con las ecuaciones de aguas someras en forma inercial local (Bates 2010, esquema centrado en q de de Almeida 2012) y fricción de Manning n = 0,035: una onda de crecida tarda lo que tarda. El mismo modelo cubre todo el recorrido: la malla se extiende hacia donde va el agua, con el mismo tamaño de celda. ⏭ sigue integrando hasta que el agua se detiene.')
           +'</div></details>'
         +'</div>'
-        +'<div class="tw-foot" style="flex:0 0 auto;position:sticky;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;background:var(--card-bg,#1c1c1e);border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));">'
+        +'<div class="tw-foot" style="flex:0 0 auto;position:sticky;bottom:0;padding:'+TW_PAD+';padding-bottom:calc('+TW_GAP+' + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:'+TW_GAP+';background:var(--card-bg,#1c1c1e);border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));">'
         /* ══ (#R258) 「時間は下部スティックしろ。」 — the transport, the multiplier and the clock ═══════ */
         +'<div style="display:flex;align-items:center;gap:8px;">'
           +'<button class="tw-play tw-pp" aria-label="'+L('Pour','注水','Zulauf','Наполнение','Verter')+'">▶</button>'
@@ -1894,7 +1976,7 @@ window.IntMapModules.terrainWater=function(HOST){
       pp.title=(nc||mv)
         ? (pourT?L('Pause','一時停止','Pause','Пауза','Pausa'):L('Pour','注水開始','Zulauf starten','Начать','Verter'))
         : (sources.length
-            ? L('The water has come to rest — add a continuous source or place more','水は静止しました。継続の水源を足すか、さらに配置してください','Das Wasser ruht — dauernde Quelle hinzufügen oder mehr platzieren','Вода успокоилась — добавьте источник или ещё воды','El agua se ha detenido — añada una fuente o más agua')
+            ? L('The water has come to rest — press ↺ to run it again, or place more','水は静止しました。↺ でもう一度再生するか、さらに配置してください','Das Wasser ruht — ↺ spielt denselben Lauf erneut ab','Вода успокоилась — ↺ повторит тот же запуск','El agua se ha detenido — ↺ repite la misma simulación')
             : L('Place water on the map first','先に地図へ水を配置してください','Zuerst Wasser platzieren','Сначала разместите воду','Coloque agua primero'));
       const sb=panel.querySelector('.tw-settle');
       if(sb){ sb.disabled=!sources.length&&!rainMm; sb.classList.toggle('on',!!steady); }
@@ -1980,11 +2062,15 @@ window.IntMapModules.terrainWater=function(HOST){
               +'<button class="tw-seg tw-pm" data-p="once">'+L('One shot','1回きり','Einmalig','Разово','Una vez')+'</button>'
               +'<button class="tw-seg tw-pm" data-p="cont">'+L('Continuous','継続','Dauernd','Непрерывно','Continuo')+'</button>'
             +'</span></span></div>'
+          /* ⚠ (#R275) BOTH KINDS HAVE A RATE, AND ONLY ONE OF THEM HAS A TOTAL. That is the whole
+             difference the instruction asks for, so the panel shows exactly that: the inflow row is
+             there in both modes, and the volume row appears when the tap has a bottom. */
           +(pourMode==='once'
             ?'<label class="tw-row">'+L('Volume per click','1クリックの水量','Volumen je Klick','Объём за клик','Volumen por clic')
               +'<span class="tw-val"><input class="tw-num tw-sv" type="number" min="1" step="100000" value="'+srcM3+'"><span style="opacity:.7;">m³</span></span></label>'
-            :'<label class="tw-row">'+L('Inflow','注水量','Zulauf','Приток','Aporte')
-              +'<span class="tw-val"><input class="tw-num tw-pr" type="number" min="1" step="1000" value="'+pourRate+'"><span style="opacity:.7;">m³/s</span></span></label>')
+            :'')
+          +'<label class="tw-row">'+L('Inflow','注水量','Zulauf','Приток','Aporte')
+            +'<span class="tw-val"><input class="tw-num tw-pr" type="number" min="1" step="1000" value="'+pourRate+'"><span style="opacity:.7;">m³/s</span></span></label>'
           /* (#R189) 「水の水流は設定可能に」 — (#R267) empty leaves each tap on its own rate; a value
              here sets the rate of every continuous source, which is what the model consumes. */
           +'<label class="tw-row">'+L('Discharge','流量','Durchfluss','Расход','Caudal')
@@ -1995,9 +2081,9 @@ window.IntMapModules.terrainWater=function(HOST){
               +'<span class="tw-val" style="flex-wrap:wrap;justify-content:flex-end;">'+sourceSummary()+'</span></div>'
               +'<div class="tw-blk" style="color:var(--text-muted);font-size:'+TW_FS_S+';display:flex;gap:12px;flex-wrap:wrap;">'
                 +'<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#29b6f6;border:2px solid #04283a;"></span>'
-                  +L('one shot','1回きり','einmalig','разовый','de una vez')+'</span>'
+                  +L('one shot — stops when its volume is used up','1回きり（水量分を出し切ったら止まる）','einmalig — endet mit dem Volumen','разовый — до исчерпания объёма','de una vez — hasta agotar el volumen')+'</span>'
                 +'<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#34c759;box-shadow:0 0 0 3px rgba(52,199,89,0.35);"></span>'
-                  +L('continuous (▶ pours these)','継続（▶ で注水されるのはこちら）','dauernd (▶ füllt diese)','непрерывный (▶ наполняет их)','continua (▶ vierte estas)')+'</span></div>')
+                  +L('continuous — never stops','継続（止まらない）','dauernd — hört nicht auf','непрерывный — не останавливается','continua — no se detiene')+'</span></div>')
             :''));
         p.querySelectorAll('.tw-pm').forEach(b=>{ b.classList.toggle('on',b.getAttribute('data-p')===pourMode);
           b.onclick=()=>{ pourMode=b.getAttribute('data-p'); if(pourMode==='once') pourStop(); renderParams(); syncFoot(); }; });
@@ -2008,7 +2094,7 @@ window.IntMapModules.terrainWater=function(HOST){
           /* (#R267) the discharge is an INPUT to the model now — it sets the rate of the continuous
              sources that have not been given one of their own — rather than the scale of a
              cross-section drawing that no longer exists. */
-          sources.forEach(x=>{ if(x.cont&&flowM3s!=null) x.rate=flowM3s; });
+          sources.forEach(x=>{ if(flowM3s!=null) x.rate=flowM3s; });
           solve(); };
       } else p.innerHTML=card('<div class="tw-blk" style="color:var(--text-muted);font-size:'+TW_FS_S+';">'+L('Drag the map normally. Pick a tool above to edit.','通常どおり地図を操作できます。編集は上のツールを選んでください。','Karte normal bewegen. Oben ein Werkzeug wählen.','Карта работает как обычно. Выберите инструмент выше.','Mueva el mapa normalmente. Elija una herramienta arriba.')+'</div>');
     }
@@ -2096,7 +2182,9 @@ window.IntMapModules.terrainWater=function(HOST){
     function placeSource(lng,lat){ pushUndo();
       /* (#R261) the tool's current mode decides what the NEXT source is; the source then keeps it */
       const cont=(pourMode==='cont');
-      sources.push({lng,lat,m3:cont?0:srcM3,cont,rate:cont?pourRate:0});
+      /* (#R275) `cap` is the only field the two kinds disagree about: a volume for a one-shot,
+         nothing for a tap that never stops. `m3` starts at 0 for both — it is what has arrived. */
+      sources.push({lng,lat,m3:0,cont,cap:cont?Infinity:srcM3,rate:(flowM3s!=null?flowM3s:pourRate)});
       /* (#R255) the clock is the SIMULATION's, not this source's — it is reset when the simulation is
          (全消去 / 元に戻す / close), and a second inlet added to a flood that is already running joins
          it at the time it is at. Restarting from zero here is what made 「時間がリセットされる」 true
@@ -2174,7 +2262,7 @@ window.IntMapModules.terrainWater=function(HOST){
       const w=Math.max(0,Math.round(b.offsetWidth-b.clientWidth));
       panel.style.setProperty('--tw-sbw',w+'px');
       const pr=(12+w)+'px';
-      ['.tw-head','.tw-foot'].forEach(sel=>{ const e=panel.querySelector(sel); if(e) e.style.paddingRight=pr; });
+      ['.tw-head','.tw-tools','.tw-foot'].forEach(sel=>{ const e=panel.querySelector(sel); if(e) e.style.paddingRight=pr; });
     }
     try{ window.addEventListener('resize',()=>{ try{ _squareColumn(); }catch(_){} }); }catch(_){}
 
@@ -2213,9 +2301,25 @@ window.IntMapModules.terrainWater=function(HOST){
       try{ HOST.bringToFront&&HOST.bringToFront(panel); }catch(_){}
       /* (#R255) the readout family reads the sculpted ground through this while the tool is open */
       try{ window.IntMapElevEdit=(lng,lat,v)=>{ try{ return (opened&&G)?(v+editDeltaAt(lng,lat)):v; }catch(_){ return v; } }; }catch(_){}
-      if(o&&o.lng!=null){ try{ GE().camera.flyTo({center:[o.lng,o.lat],zoom:Math.max(GE().camera.getZoom(),11),duration:600}); }catch(_){}
-        await new Promise(r=>setTimeout(r,750)); }
-      if(!G||o&&o.refit){ if(await build()) solve(); } else solve();
+      /* ══ ⚠⚠⚠ (#R275) OPENING A TOOL IS NOT A REQUEST TO MOVE THE MAP ═════════════════
+         「地形編集・水流を開くと勝手にズームするのを辞めろ。」 MEASURED: js/map-ui.js's tool row calls
+         `open(_hereLL())`, i.e. it hands over the CAMERA'S OWN CENTRE, and this line then flew to
+         that same centre at `zoom: max(current, 11)`. Opening the tool at z6 left the reader at
+         **z11** — a fivefold zoom nobody asked for, aimed at the point they were already looking at.
+         The rectangle never needed the camera to move: `build({center})` aims it directly (#R255
+         wrote exactly that for a click), and the elevation level now follows the rectangle rather
+         than the view (see build()), which is what the zoom floor was silently compensating for.
+         ⚠ A point OFF SCREEN is the one case that still moves the camera — Atlas can name a place
+         the reader cannot see, and building a rectangle there without showing it is a tool operating
+         out of sight. The reader's ZOOM is kept even then; only the centre changes. */
+      let ctr=null;
+      if(o&&o.lng!=null){ ctr=[+o.lng,+o.lat];
+        let seen=false;
+        try{ const b=GE().camera.getBounds();
+          seen=!!(b&&ctr[0]>=b.getWest()&&ctr[0]<=b.getEast()&&ctr[1]>=b.getSouth()&&ctr[1]<=b.getNorth()); }catch(_){ seen=false; }
+        if(!seen){ try{ GE().camera.flyTo({center:ctr,duration:600}); }catch(_){}
+          await new Promise(r=>setTimeout(r,750)); } }
+      if(!G||o&&o.refit){ if(await build(ctr?{center:ctr}:undefined)) solve(); } else solve();
       return true; }
     /* (#R267) there is nothing in flight to abort any more — the answer is a reading of the field,
        so clearing it is clearing the reading. `course` is the running «has it stopped» book-keeping. */
@@ -2239,7 +2343,11 @@ window.IntMapModules.terrainWater=function(HOST){
       get(){ if(!opened) return null;
         return { m:mode, rain:rainMm, vol:srcM3, q:flowM3s, br:brushM, bs:brushStrength,
           pm:pourMode, pr:pourRate, ts:timeScale,
-          src:sources.slice(0,40).map(s=>[+s.lng.toFixed(5),+s.lat.toFixed(5),Math.round(s.m3)]),
+          /* (#R275) a link carries what was PLACED, which is the source's capacity and its kind —
+             not how much of it had arrived when the link was made. A 3-element entry is an older
+             link and still reads as a one-shot volume. */
+          src:sources.slice(0,40).map(s=>[+s.lng.toFixed(5),+s.lat.toFixed(5),
+            (s.cont?0:Math.round(srcCap(s))),(s.cont?1:0),Math.round(srcRate(s))]),
           lv:levees.slice(0,12).map(l=>[l.crest,l.width,l.pts.map(p=>[+p[0].toFixed(5),+p[1].toFixed(5)])]) }; },
       set(v){ if(!v||typeof v!=='object') return;
         if(v.rain!=null) rainMm=Math.max(0,+v.rain||0);
@@ -2254,7 +2362,9 @@ window.IntMapModules.terrainWater=function(HOST){
         Promise.resolve(open(first?{lng:first.lng,lat:first.lat}:undefined)).then(()=>{
           if(Array.isArray(v.lv)) v.lv.forEach(l=>{ if(Array.isArray(l)&&Array.isArray(l[2])&&l[2].length>1)
             levees.push({pts:l[2].map(p=>[+p[0],+p[1]]),crest:Math.max(1,+l[0]||leveeCrest),width:Math.max(10,+l[1]||leveeWidth)}); });
-          if(Array.isArray(v.src)){ sources=v.src.map(s=>({lng:+s[0],lat:+s[1],m3:Math.max(0,+s[2]||0)})); }
+          if(Array.isArray(v.src)){ sources=v.src.map(s=>{ const cont=(+s[3]===1);
+            return {lng:+s[0],lat:+s[1],m3:0,cont,cap:cont?Infinity:Math.max(0,+s[2]||srcM3),
+              rate:Math.max(1,+s[4]||flowM3s||pourRate)}; }); }
           if(v.m) setMode(String(v.m));
           editDirty();          /* (#R258) a restored levee is a change to the ground — see addLevee */
           solve();
@@ -2340,7 +2450,9 @@ window.IntMapModules.terrainWater=function(HOST){
          what «the same model everywhere» costs and buys. */
       setFlow(m3s){ const v=parseFloat(m3s); flowM3s=(isFinite(v)&&v>0)?v:null;
         const f=panel&&panel.querySelector('.tw-fq'); if(f) f.value=(flowM3s!=null?flowM3s:'');
-        sources.forEach(x=>{ if(x.cont&&flowM3s!=null) x.rate=flowM3s; });
+        /* (#R275) every source has a discharge now, so this sets every source's — a rate that only
+           reached half of them would be the second difference this round removed. */
+        sources.forEach(x=>{ if(flowM3s!=null) x.rate=flowM3s; });
         if(G) solve();
         return flowM3s; },
       /* (#R261) `o.cont` / `o.rateM3s` — the same distinction the map now draws, through the API.
@@ -2358,8 +2470,9 @@ window.IntMapModules.terrainWater=function(HOST){
           if(!ok){ const ok2=await rebuildAround(lng,lat); if(!ok2) return null; } }
         pushUndo();
         const cont=!!o.cont;
-        sources.push({lng,lat,m3:cont?Math.max(0,+m3||0):Math.max(0,+m3||srcM3),cont,rate:cont?Math.max(1,+o.rateM3s||flowM3s||pourRate):0});
-        if(cont&&!pourT) pourStart();
+        sources.push({lng,lat,m3:0,cont,cap:cont?Infinity:Math.max(0,+m3||srcM3),
+          rate:Math.max(1,+o.rateM3s||flowM3s||pourRate)});
+        if(!pourT) pourStart();   /* (#R275) both kinds have something to deliver, so both run */
         const r=solve();
         courseSoon(); return r; },
       /* ══ (#R267) 「水は流れなくなる地点または海に到達した地点まで」 — BY RUNNING IT ══════════════════
@@ -2369,7 +2482,8 @@ window.IntMapModules.terrainWater=function(HOST){
          fixed stretch instead, and `o.m3` is how much to place. Resolves with `traceState()`. */
       trace:async(lng,lat,o)=>{ o=o||{};
         if(!G||!cellOf(lng,lat)){ const ok=await rebuildAround(lng,lat); if(!ok) return null; }
-        if(!sources.length) sources.push({lng,lat,m3:Math.max(0,+o.m3||srcM3),cont:false,rate:0});
+        if(!sources.length) sources.push({lng,lat,m3:0,cont:false,cap:Math.max(0,+o.m3||srcM3),
+          rate:Math.max(1,+o.rateM3s||flowM3s||pourRate)});
         solve();
         tracing=true;
         try{

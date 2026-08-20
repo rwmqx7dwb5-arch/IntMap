@@ -62,13 +62,21 @@ test('R261 ③: continuous/one-shot is a property of each source, and every tap 
      60,000 m³/s advanced by half an hour reported 「max depth 21,290.1 m」, which is 1.08e8 m³ over
      a 71 m cell to the metre (21,424 m → 11.9 m after the fix, same 1.08e8 m³ delivered).
      What #R261 established is unchanged and is what is asserted: EVERY tap fills, at ITS OWN rate. */
-  assert.match(s, /sources\.forEach\(sc=>\{ if\(!sc\.cont\) return;/,
-    'every continuous source is fed, not only the last one');
-  assert.match(s, /const give=Math\.max\(0,\+sc\.rate\|\|pourRate\)\*dt;/,
-    '…at its own rate, for the length of the step the solver is about to take');
+  /* ⚠⚠⚠ (#R275) EVERY SOURCE, NOT EVERY CONTINUOUS SOURCE. 「一回きりと継続の差は、水が継続的に発生
+     し続けるか否かしかないようにするべき」 — the one-shot half used to be delivered by `pool()` as a
+     lake that already existed at t=0, which is why ↺ could not restart it (nothing was moving, so
+     `canPour()` said no). One mechanism now: `feedTaps` feeds ALL of them at their own rate, and
+     `owed()` — the remaining capacity — is the only thing the two kinds disagree about.
+     What #R261 established is unchanged and is what is asserted: EVERY tap fills, at ITS OWN rate. */
+  assert.match(s, /function feedTaps\(dt\)\{[\s\S]{0,400}sources\.forEach\(sc=>\{\n\s*const left=owed\(sc\);/,
+    'every source is fed, not only the last one and not only the continuous ones');
+  assert.match(s, /const give=Math\.min\(left,srcRate\(sc\)\*dt\);/,
+    '…at its own rate, for the length of the step the solver is about to take, and never past what it owes');
+  assert.match(s, /const srcCap=\(x\)=>\(x&&x\.cont\?Infinity:/,
+    'the kind is a bound on the total, and nothing else');
   assert.match(s, /,feedTaps\);/, 'and the solver is what calls back for it');
   assert.match(s, /const contSources=\(\)=>sources\.filter\(x=>x\.cont\);/);
-  assert.match(s, /sources\.push\(\{lng,lat,m3:cont\?0:srcM3,cont,rate:cont\?pourRate:0\}\);/,
+  assert.match(s, /sources\.push\(\{lng,lat,m3:0,cont,cap:cont\?Infinity:srcM3,/,
     'a placed source records the kind it was placed as');
   /* …and the map shows the difference */
   assert.match(s, /id:'tw-src-ring'[\s\S]{0,200}\['==',\['get','cont'\],1\]/,
@@ -108,17 +116,21 @@ test('R261 ④: build() resamples the sculpt field and the undo stack instead of
    「再生ボタンは四角にしろ。」 38 px box at `border-radius:19px` is a circle. */
 test('R261 ⑤: the terrain/water transport is not a disc', () => {
   const s = read('js/terrain-water.js');
-  const m = s.match(/'\.tw-play\{[^']*'/);
+  /* ⚠ (#R275) a WINDOW, not one quoted string: the rule is concatenated around `+TW_CTL+` now */
+  const m = s.match(/'\.tw-play\{[\s\S]{0,320}/);
   assert.ok(m, 'the .tw-play rule is there');
   assert.doesNotMatch(m[0], /border-radius:19px/, 'a 19 px radius on a 38 px box IS a circle');
   /* ⚠ (#R273) THE PROPERTY IS «ROUNDED SQUARE», NOT «38 px». That round's footer measured 38 / 35 /
      34 on three consecutive rows and the transport is 36 now, level with the speed strip and the
      buttons. Pinning the size made a fix to the ROW look like a regression of the SHAPE. */
-  const size = /width:(\d+)px;height:(\d+)px/.exec(m[0]);
-  assert.ok(size, '.tw-play must state its box');
-  assert.equal(size[1], size[2], 'the transport is square');
+  /* ⚠ (#R275) …AND THE BOX IS A TOKEN NOW, not a literal: the panel's control height is one
+     declaration (`TW_CTL`) so the transport, the buttons and the speed strip cannot drift apart
+     again. Square is asserted by the two sides being the SAME token, which is stronger. */
+  assert.match(m[0], /width:'\+TW_CTL\+';height:'\+TW_CTL\+'/, 'the transport is square, from one token');
+  const ctl = /const TW_CTL=_mob\(\)\?'(\d+)px':'(\d+)px';/.exec(s);
+  assert.ok(ctl, 'TW_CTL must be declared for both device classes');
   const rad = +(/border-radius:(\d+)px/.exec(m[0]) || [])[1];
-  assert.ok(rad > 0 && rad < +size[1] / 2, `radius ${rad} on a ${size[1]} px box must be a rounded square, not a disc`);
+  assert.ok(rad > 0 && rad < +ctl[2] / 2, `radius ${rad} on a ${ctl[2]} px box must be a rounded square, not a disc`);
 });
 
 /* ── ⑥ a coarse rung's crossing is re-walked at the trace's own resolution ──────────────────────

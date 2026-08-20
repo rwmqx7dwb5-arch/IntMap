@@ -571,5 +571,7 @@ window.IntMapPageI18N.define('zh-hant', {
     "Weather warnings, Canada — Environment and Climate Change Canada (OGC API — Features)": "警報圖層即時讀取：加拿大環境及氣候變化部目前發布中的警報，以機關自身的多邊形繪製，點選時依省份彙整。此服務自帶 CORS 標頭，因此由瀏覽器直接讀取。",
     "Weather warnings, Europe — MeteoAlarm (EUMETNET), 35 national services": "警報圖層即時讀取：歐洲各國氣象機關發布中的警報，依 MeteoAlarm 公開的形式讀取，點選時依地區彙整。MeteoAlarm 不回傳 CORS 標頭，且單一國家的資料源約十 MB，因此由應用程式自有的中繼函式在伺服器端取得並摘要。",
     "Weather warnings, China — China Meteorological Administration public warning list": "警報圖層即時讀取：中國氣象局公開的發布中警報清單。其中不含圖形，因此國家以發布中的最高等級上色，點選後依省份彙整列出。因該服務不回傳 CORS 標頭，透過應用程式自有的中繼函式取得。",
+    "Weather warnings worldwide — national meteorological services via the WMO Severe Weather Information Centre (CAP)": "警報圖層即時讀取——適用於上表沒有自有來源的每個國家：各國氣象機關自己發布的警報，連同該機關繪製的多邊形、該機關的用語與其 CAP 嚴重度，由 WMO 原樣轉發。WMO 是傳輸管道而非作者，面板會標示發布機關的名稱。",
+    "WMO Members and their CAP implementation status (which national service files CAP, and which does not)": "每個工作階段讀取一次：WMO 自己記錄的各會員國 CAP 實作是否已完成。只有記錄為已完成的國家才會被視為已支援。",
   }
 });

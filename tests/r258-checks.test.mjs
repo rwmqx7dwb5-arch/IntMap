@@ -146,10 +146,20 @@ test('R258 ⑦: the terrain panel is a grouped inset list with a pinned clock', 
      row」 and then let the contents decide: measured in 盛る mode the rows came out 40 / 44 / 45 / 49,
      because `min-height` plus padding takes whatever control is inside. What this test is actually
      about — «the panel is a grouped inset list with ONE row rhythm» — is now checked as that. */
-  const rowRule = /'\.tw-row\{([^']*)'/.exec(s);
+  /* ⚠⚠ (#R275) THE ROW HEIGHT IS ONE DECLARATION NOW, AND IT IS NOT ONE NUMBER. 「他の凡例やポップ
+     アップに比べて内部要素のサイズが大きすぎる」 — measured against the warnings legend, this panel ran
+     12 px text on 44 px rows where every legend runs 10.5 px on 13–16. A desktop legend column and a
+     thumb are different rule books, so `TW_ROW` is `_mob() ? '44px' : '30px'` and the rows read it.
+     What this test is about — ONE rhythm, and a real hit target on a phone — is asserted as that. */
+  /* ⚠ the rule is a run of CONCATENATED literals, so it is a WINDOW of source rather than one
+     quoted string — `[^']*` stops at the quote before the first `+TOKEN+`. */
+  const rowRule = /'\.tw-row\{[\s\S]{0,320}/.exec(s);
   assert.ok(rowRule, 'the row must be styled here');
-  const mh = /min-height:(\d+)px/.exec(rowRule[1]);
-  assert.ok(mh && +mh[1] >= 40, 'a grouped-list row is at least 40 px');
+  assert.match(rowRule[0], /min-height:'\+TW_ROW\+'/, 'the row height is the panel’s one declaration');
+  const decl = /const TW_ROW=_mob\(\)\?'(\d+)px':'(\d+)px';/.exec(s);
+  assert.ok(decl, 'TW_ROW must be declared for both device classes');
+  assert.ok(+decl[1] >= 44, `a phone row is a touch target (${decl[1]} px)`);
+  assert.ok(+decl[2] >= 28, `a desktop row is still a row (${decl[2]} px)`);
   assert.match(s, /'\.tw-val \.tw-segwrap\{/, 'a control inside a row must be sized to fit that row');
   assert.match(s, /class="tw-play tw-pp"/, 'the transport is in the footer…');
   assert.match(s, /panel\.querySelector\('\.tw-pp'\)\.onclick=/, '…and wired from render(), not from a tool');
