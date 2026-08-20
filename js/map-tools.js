@@ -265,7 +265,7 @@ window.IntMapModules.drawTool=function(HOST){
                    ? (_coarse ? _L5('Lift your finger to finish','指を離すと確定','Finger anheben zum Abschließen','Поднимите палец, чтобы завершить','Levanta el dedo para finalizar')
                               : _L5('Move the cursor to trace → click to finish','カーソルを動かして描画 → クリックで確定','Cursor bewegen zum Zeichnen → Klick zum Abschließen','Двигайте курсор для обводки → клик для завершения','Mueve el cursor para trazar → clic para finalizar'))
                  : _L5('Done — use Redraw to start over','完了。「やり直し」で再描画','Fertig — „Neu zeichnen“ zum Neustart','Готово — «Перерисовать», чтобы начать заново','Listo — usa Redibujar para empezar de nuevo');
-      p.innerHTML=`<div class="tp-header"><span class="tp-title">✏️ ${window.IntMapLang.t(HOST.lang,"Draw / trace","描画測定","Zeichnen / nachzeichnen","Рисование и трассировка","Dibujar / trazar")}</span><button class="tp-close" title="${t('close')}">✕</button></div>`+
+      p.innerHTML=`<div class="tp-header"><span class="tp-title">✏️ ${window.IntMapLang.t(HOST.lang,"Draw / trace","描画測定","Zeichnen / nachzeichnen","Рисование и трассировка","Dibujar / trazar")}</span><button class="tp-close" title="${t('close')}">×</button></div>`+
         `<div class="tp-row"><span>${window.IntMapLang.t(HOST.lang,"Length","距離","Länge","Длина","Longitud")}</span><b>${distHTML(lengthKm)}</b></div>`+
         `<div class="tp-row"><span>${window.IntMapLang.t(HOST.lang,"Area (loops)","面積（閉領域）","Fläche (geschlossen)","Площадь (замкнутые)","Superficie (cerrado)")}</span><b>${lockedArea>0?areaHTML(lockedArea):'—'}</b></div>`+
         `<div class="tp-row"><span>${window.IntMapLang.t(HOST.lang,"Points (simpl/raw)","点数（簡略/元）","Punkte (vereinfacht/roh)","Точки (упрощ./исходн.)","Puntos (simplif./bruto)")}</span><b>${simplified.length}/${raw.length}</b></div>`+
@@ -465,7 +465,7 @@ window.IntMapModules.isolate=function(HOST){
            fight the isolate mask ("isolateを押したらCountries (info)は選択解除"). Dispatch change so the
            checkbox, the map layer and the Active-layers list all update together. */
         try{ const cc=document.getElementById('cb-countries'); if(cc&&cc.checked){ cc.checked=false; cc.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){}
-        active=true; const b=exitBtn(); b.textContent='✕ '+(window.IntMapLang.t(HOST.lang,"Exit country view","全体表示に戻る","Länderansicht verlassen","Выйти из вида страны","Salir de la vista del país")); b.style.display='block';
+        active=true; const b=exitBtn(); b.textContent='× '+(window.IntMapLang.t(HOST.lang,"Exit country view","全体表示に戻る","Länderansicht verlassen","Выйти из вида страны","Salir de la vista del país")); b.style.display='block';
         try{ const bb=bbox(feat); if(bb[0][0]>-179&&bb[1][0]<179){ GE().camera.fitBounds(bb,{padding:60,duration:800});
           /* (#R11) Restrict panning to roughly the country's extent so you can only roam that country. */
           const padX=(bb[1][0]-bb[0][0])*0.18+0.6, padY=(bb[1][1]-bb[0][1])*0.18+0.6;
@@ -640,7 +640,7 @@ window.IntMapModules.seaRoute=function(HOST){
     }
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='route-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function refreshPanel(){ const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:248px;';
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🚢 '+(window.IntMapLang.t(HOST.lang,"Sea route","洋上ルート","Seeroute","Морской маршрут","Ruta marítima"))+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🚢 '+(window.IntMapLang.t(HOST.lang,"Sea route","洋上ルート","Seeroute","Морской маршрут","Ruta marítima"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
         +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;font-size:12px;">'
         +'<div>'+(window.IntMapLang.t(HOST.lang,"Start","始点","Start","Начало","Inicio"))+': <b>'+(start?fmtLL(start[0],start[1]):'—')+'</b></div>'
         +'<div>'+(window.IntMapLang.t(HOST.lang,"End","終点","Ziel","Конец","Fin"))+': <b>'+(end?fmtLL(end[0],end[1]):'—')+'</b></div>'
@@ -650,7 +650,7 @@ window.IntMapModules.seaRoute=function(HOST){
         +'<button class="tp-clear" id="route-go" style="width:100%;margin-top:6px;">'+(window.IntMapLang.t(HOST.lang,"Compute route","ルート計算","Route berechnen","Рассчитать маршрут","Calcular la ruta"))+'</button>'
         +'<button class="tp-clear" id="route-clr" style="width:100%;margin-top:6px;">'+(window.IntMapLang.t(HOST.lang,"Clear","消去","Löschen","Очистить","Borrar"))+'</button>'
         +'<div id="route-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(window.IntMapLang.t(HOST.lang,"Pick two sea points (right-click → set start/end), then Compute.","海上の2点を選びます。右クリック→「始点/終点に設定」、または計算を押す。","Zwei Seepunkte wählen (Rechtsklick → Start/Ziel festlegen), dann Berechnen.","Выберите две морские точки (правый клик → задать начало/конец), затем нажмите «Рассчитать».","Elija dos puntos marinos (clic derecho → fijar inicio/fin) y pulse Calcular."))+'</div>';
-      /* ✕ now clears the drawn route + no-go zones too — the "can't remove it once used" bug was that
+      /* × now clears the drawn route + no-go zones too — the "can't remove it once used" bug was that
          closing the panel left everything painted with the Clear button no longer reachable. */
       p.querySelector('.tp-close').onclick=()=>{ clear(); p.style.display='none'; };
       p.querySelector('#route-pure').onchange=(e)=>{ pureDist=e.target.checked; };
@@ -983,7 +983,7 @@ window.IntMapModules.isochrone=function(HOST){
          `!important`, so 「フロストガラス」/「より透明」 still reach it — «not transparent by DEFAULT»
          is not «never transparent». */
       panel.style.cssText='position:fixed;left:20px;top:80px;width:min(268px,92vw);z-index:1500;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:14px;overflow:hidden;box-shadow:0 16px 46px rgba(0,0,0,0.44);';
-      panel.innerHTML='<div class="iso-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:600;color:var(--text-main);">🎯 '+LL('Reachable area','到達圏','Erreichbarkeit','Зона доступности','Área alcanzable')+'</span><button class="iso-x" title="'+LL('Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div><div class="iso-body" style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;"></div>';
+      panel.innerHTML='<div class="iso-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:600;color:var(--text-main);">🎯 '+LL('Reachable area','到達圏','Erreichbarkeit','Зона доступности','Área alcanzable')+'</span><button class="iso-x" title="'+LL('Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div><div class="iso-body" style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;"></div>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
       panel.querySelector('.iso-x').onclick=()=>clear();
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.iso-head')); }catch(_){}
@@ -1123,7 +1123,7 @@ window.IntMapModules.objectList=function(HOST){
             +(o.toggleHide?('<button class="iol-ic" data-act="hide" title="'+esc(OL('Show / hide','表示切替','Ein/Aus','Показать/скрыть','Mostrar/ocultar'))+'">'+(o.hidden?'🙈':'👁')+'</button>'):'')
             +'<button class="iol-ic" data-act="focus" title="'+esc(OL('Fly to','移動','Anfliegen','Перейти','Ir'))+'">◎</button>'
             +(o.rename?('<button class="iol-ic" data-act="rename" title="'+esc(OL('Rename','名称変更','Umbenennen','Переименовать','Renombrar'))+'">✎</button>'):'')
-            +'<button class="iol-ic iol-del" data-act="del" title="'+esc(OL('Delete','削除','Löschen','Удалить','Eliminar'))+'">✕</button>'
+            +'<button class="iol-ic iol-del" data-act="del" title="'+esc(OL('Delete','削除','Löschen','Удалить','Eliminar'))+'">×</button>'
           +'</div>'; });
       });
       body.innerHTML=h; }
@@ -1136,14 +1136,14 @@ window.IntMapModules.objectList=function(HOST){
       /* ⚠ (#R248) 「ポップアップの上部の帯の高さを短く」 — the band is SIZED HERE, inline, and that is why
          the numbers are here rather than in the stylesheet below: an inline `padding` beats any rule
          #iol-css could add, so a shorter band written there would have been silently ignored (the
-         defect shape #R243 spent a round on). Measured: 9 px padding + a 16 px ✕ on its default
+         defect shape #R243 spent a round on). Measured: 9 px padding + a 16 px × on its default
          line-height made a 37 px band; 4 px padding, a 12.5 px title and `line-height:1` on the two
          buttons (below) make it 25 px, and the head is still the drag handle it always was. */
-      panel.innerHTML='<div class="iol-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:4px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:12.5px;font-weight:700;color:var(--text-main);">🗂 '+esc(OL('Objects','オブジェクト一覧','Objekte','Объекты','Objetos'))+'</span><button class="iol-clear" style="border:none;background:transparent;color:var(--info-mil,#ff3b30);font-size:10.5px;font-weight:700;cursor:pointer;">'+esc(OL('Clear all','全消去','Alles löschen','Очистить','Borrar todo'))+'</button><button class="iol-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;">✕</button></div>'
+      panel.innerHTML='<div class="iol-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:4px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:12.5px;font-weight:700;color:var(--text-main);">🗂 '+esc(OL('Objects','オブジェクト一覧','Objekte','Объекты','Objetos'))+'</span><button class="iol-clear" style="border:none;background:transparent;color:var(--info-mil,#ff3b30);font-size:10.5px;font-weight:700;cursor:pointer;">'+esc(OL('Clear all','全消去','Alles löschen','Очистить','Borrar todo'))+'</button><button class="iol-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;">×</button></div>'
         +'<div class="iol-body" style="flex:1 1 auto;overflow-y:auto;padding:6px 10px 12px;"></div>';
       document.body.appendChild(panel);
       if(!document.getElementById('iol-css')){ const st=document.createElement('style'); st.id='iol-css';
-        st.textContent='#iol-panel .iol-head button{line-height:1;padding:0;}'   /* (#R248) the ✕ and 全消去 stop setting the band’s height — see the note by the markup */
+        st.textContent='#iol-panel .iol-head button{line-height:1;padding:0;}'   /* (#R248) the × and 全消去 stop setting the band’s height — see the note by the markup */
           +'#iol-panel .iol-grp{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--text-main);text-transform:uppercase;letter-spacing:.03em;padding:9px 3px 4px;}'
           +'#iol-panel .iol-row{display:flex;align-items:center;gap:6px;padding:4px 3px;border-top:1px solid rgba(128,128,128,0.12);}'
           +'#iol-panel .iol-dot{flex:0 0 auto;width:11px;height:11px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.15);}'

@@ -1177,7 +1177,7 @@
     .tool-panel.tp-collapsed > *:not(.tp-header){ display:none !important; }
     .tool-panel.tp-collapsed .tp-header{ margin-bottom:0 !important; }
     .tool-panel.tp-collapsed{ width:auto; min-width:0; }
-    /* (#R39) The AI brief / Ask-AI panel scrolls; pin its header so the ✕ (and title) are ALWAYS reachable
+    /* (#R39) The AI brief / Ask-AI panel scrolls; pin its header so the × (and title) are ALWAYS reachable
        — it used to scroll out of view, so the user had to scroll back to the top to close it. */
     #ai-research-panel .tp-header{ position:sticky; top:-14px; margin:-14px -16px 8px; padding:14px 16px 8px; background:var(--popup-bg); z-index:6; border-radius:14px 14px 0 0; }
     body.sidebar-translucent #ai-research-panel .tp-header, body.sidebar-glass2 #ai-research-panel .tp-header{ background:var(--glass-fill); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }
@@ -2427,13 +2427,13 @@
     .alc-row:hover{ background:var(--input-bg); }
     .alc-row .alcr-name{ flex:1; min-width:0; font-size:12px; color:var(--text-main); cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .alc-row input[type=range]{ width:84px; flex:0 0 auto; accent-color:var(--primary-color); }
-    /* (#R72) remove button: round ghost ✕, no square frame ("□の枠があってダサい")
+    /* (#R72) remove button: round ghost ×, no square frame ("□の枠があってダサい")
        (#R73) hover = the × ITSELF turns red, no red disc ("赤丸が出てきてダサい。×が赤くなるだけにしろ") */
     .alc-row .alc-x{ background:none; color:var(--text-muted); border:none; width:22px; height:22px; border-radius:50%; font-size:11px; }
     .alc-row .alc-x:hover{ background:none; color:#ff453a; }
     .alc-empty{ padding:8px 10px; color:var(--text-muted); font-size:11.5px; }
     /* (#R72) mobile: no opacity slider (too fiddly — "透明度選択スライダーはモバイル版ではいらない"),
-       and a big enough ✕ to actually tap ("×が小さすぎて押しにくい") */
+       and a big enough × to actually tap ("×が小さすぎて押しにくい") */
     @media(max-width:768px){
       .alc-row input[type=range]{ display:none; }
       .alc-row .alc-x{ width:30px; height:30px; font-size:14px; }
@@ -2456,7 +2456,7 @@
        crops / the industry web used to open a second floating window of their own beside the
        legend. They now put their controls in `.wp-body` inside the legend itself, so there is one
        window per layer: title, controls, colour key, the tapped answer, the opacity slider and the
-       ✕ that unchecks the row. The only thing this rule does is give that box room for a <select>. */
+       × that unchecks the row. The only thing this rule does is give that box room for a <select>. */
     .data-legend.wp-legend{ width:min(330px,92vw); max-height:min(72vh,620px); overflow-y:auto; }
     .data-legend .wp-body{ display:flex; flex-direction:column; gap:8px; margin:7px 0 2px; }
     .data-legend .wp-body select, .data-legend .wp-body input[type=text], .data-legend .wp-body input[type=search]{ max-width:172px; }
@@ -2852,7 +2852,7 @@
       #space-view .sp-timebox .sp-rate{ width:88px !important; font-size:13px !important; }
       /* the leave button is an icon on a phone — its four words were the widest thing in the bar */
       #space-view .sp-close{ font-size:0 !important; padding:5px 9px !important; }
-      #space-view .sp-close::before{ content:'✕'; font-size:13px; }
+      #space-view .sp-close::before{ content:'×'; font-size:13px; }
       /* one row of comfortable targets rather than two rows of small ones */
       #space-view .sp-bar button, #space-view .sp-bar .sp-seg button{ min-height:32px; }
       #space-view .sp-side .sp-b{ min-height:32px; }
@@ -2955,7 +2955,7 @@
          being a run of items and becomes a GRID with two rows and a declared place for each
          control, which fits at any width down to 320 px and never scrolls:
 
-             row 1   ✕            the body (stretches)          the clock
+             row 1   ×            the body (stretches)          the clock
              row 2   true / model scale (stretches)             what is drawn
              row 3   ← the solar-system button when it is shown (body view only)
 
@@ -3021,7 +3021,7 @@
      タブを作り、そこにすべてまとめて表示というモードを作って。」
 
    js/window-manager.js re-parents the REAL panels into #docked-feed — nothing is re-implemented, so
-   every button, ✕, slider and live readout keeps working exactly as it did over the map. What that
+   every button, ×, slider and live readout keeps working exactly as it did over the map. What that
    costs is the geometry: those panels are positioned `fixed`/`absolute` with inline left/top/width
    written by #R47's drag and resize, and a `position:fixed` child of a scrolling column would sit
    still while the column scrolls. So the dock un-anchors them, exactly the way `atl-tab` (#R130)
@@ -3087,7 +3087,7 @@
 /* ⚠ the drag handle is still there and still says «this is the title bar»; it simply has nowhere to
    drag to. `cursor:default` is what stops it claiming otherwise. */
 #docked-feed .im-docked .panel-head, #docked-feed .im-docked [class$="-head"], #docked-feed .im-docked .iol-head, #docked-feed .im-docked .kl-drag, #docked-feed .im-docked .dl-drag{ cursor:default !important; }
-/* the ✕ stays — 「パネル内のポップアップや凡例は×可能」 — so nothing here touches it.
+/* the × stays — 「パネル内のポップアップや凡例は×可能」 — so nothing here touches it.
    The ⋮⋮ grip does not: it is the affordance for a gesture that is now refused, and an affordance
    that lies is worse than none. (The header keeps its own padding, so nothing reflows.) */
 #docked-feed .im-docked .kl-drag, #docked-feed .im-docked .dl-drag{ display:none !important; }

@@ -63,9 +63,16 @@ test('R270 ① one row height in the panel, and the disclosures are on the list'
     return s.slice(i, s.indexOf('}', i)).split("'+'").join(''); };
   const note = rule('.tw-note'), card = rule('.tw-card');
   assert.match(note, /border-radius/, '.tw-note must be a card');
-  const pad = /padding:\s*\d+px\s+(\d+)px/.exec(note);
-  assert.ok(pad, '.tw-note must state its padding');
-  assert.equal(pad[1], '11', 'the horizontal padding must be the row’s, so the column has one left edge');
+  /* ⚠⚠ (#R273) THE INSET MOVED FROM THE CARD TO THE SUMMARY, and it had to: with the padding on the
+     card the two disclosures came out 37.0 and 36.5 px tall against a 44 px row — a card is a card
+     but it was not on the rhythm. The summary is a ROW now (44 px, inset 12 like every other row
+     inside a bordered card), so what #R270 asserted — one left edge — is asserted of the element
+     that actually carries the text. */
+  const sum = rule('.tw-note > summary');
+  assert.match(sum, /min-height:44px/, 'a disclosure sits on the row rhythm');
+  const pad = /padding:\s*0 (\d+)px/.exec(sum);
+  assert.ok(pad, '.tw-note > summary must state its inset');
+  assert.equal(pad[1], '12', 'the horizontal inset must be the row’s, so the column has one left edge');
   assert.match(card, /border-radius/, '.tw-card is the shape .tw-note now matches');
 });
 
@@ -268,27 +275,33 @@ test('R270 ⑦ «day/night off» is not «the Sun’s position is unknown» — 
   assert.match(s, /'atmosphere-blend':\(sat\?_airRamp\([\d.]+\):0\)/, 'the Map basemap keeps a blend of 0');
 });
 
-/* ── ⑧ two scales, two palettes, two keys ───────────────────────────────────────────────────── */
-test('R270 ⑧ the GDACS wash has its own colours and cannot be read as an issued warning', () => {
+/* ── ⑧ a key takes its colours from the thing it is a key to ────────────────────────────────── */
+test('R270 ⑧ a swatch and its label can never be about different scales', () => {
   const s = codeOnly(read('js/world-packs.js'));
+  /* ⚠⚠ (#R273) GDACS IS GONE, so the two scales this test was written about are now the agencies'
+     OWN palettes and IntMap's normalised one — 「各国の警報階級を同じ紫・赤・黄に押し込んでいる。
+     これがかなり危険です」. The property #R270 established survives unchanged and is what is
+     asserted: a key row's colour and its name are produced together, so the call that drew one
+     palette under another scale's names cannot be written. */
+  assert.ok(!/GDACSCOL|GDACSWASH|GDACS_TIERNAME/.test(s), 'the GDACS palette must be gone, not renamed');
+  assert.match(s, /function keyRows\(pairs\)/, 'a key row is a colour AND a name, together');
+  assert.match(s, /const agencyKey=\(feed\)=>keyRows\(/, 'an agency key is built from that agency’s own palette');
+  assert.match(s, /const normKey=\(\)=>keyRows\(/, '…and the normalised key from the normalised one');
+  /* the three published palettes and IntMap's own must not be confusable */
   const grab = (name) => {
-    const m = new RegExp('const ' + name + '=\\{([^}]*)\\}').exec(s);
+    const m = new RegExp(name + ':\\{([^}]*)\\}').exec(s);
     assert.ok(m, `${name} must exist`);
     const out = {};
     for (const e of m[1].matchAll(/(\d+):'([^']*)'/g)) out[e[1]] = e[2];
     return out;
   };
-  const tier = grab('TIERCOL'), gd = grab('GDACSCOL');
-  assert.deepEqual(Object.keys(tier).sort(), ['1', '2', '3'], 'three warning tiers');
-  assert.deepEqual(Object.keys(gd).sort(), ['1', '2', '3'], 'three GDACS levels');
-  const shared = Object.values(tier).filter((c) => Object.values(gd).includes(c));
-  assert.deepEqual(shared, [], `the two scales must share no colour (shared: ${shared})`);
-  /* a key takes its palette from the thing it is a key to — the pairing is structural now */
-  assert.match(s, /function keyRows\(col,name\)/, 'the key builder must take BOTH');
-  assert.match(s, /const tierKey=\(\)=>keyRows\(TIERCOL,tierName\)/, 'warning names go with warning colours');
-  assert.match(s, /const gdacsKey=\(\)=>keyRows\(GDACSCOL,GDACS_TIERNAME\)/, 'GDACS names go with GDACS colours');
-  assert.ok(!/tierKey\(GDACS_TIERNAME\)/.test(s),
-    'the call that drew one palette under the other scale’s names must be impossible to write');
+  const jma = grab('jma'), cap = grab('cap');
+  const norm = (() => { const m = /const PAL_NORM=\{([^}]*)\}/.exec(s); assert.ok(m, 'PAL_NORM must exist');
+    const o = {}; for (const e of m[1].matchAll(/(\d+):'([^']*)'/g)) o[e[1]] = e[2]; return o; })();
+  assert.deepEqual(Object.keys(jma).sort(), ['20', '30', '40', '50'], 'the JMA has four published ranks');
+  assert.deepEqual(Object.keys(norm).sort(), ['1', '2', '3', '4'], 'IntMap normalises onto four');
+  const shared = Object.values(norm).filter((c) => Object.values(jma).includes(c) || Object.values(cap).includes(c));
+  assert.deepEqual(shared, [], `IntMap’s scale must share no colour with an official one (shared: ${shared})`);
 });
 
 test('R270 ⑧ a country whose agency draws areas is never washed as a whole country', () => {
@@ -302,23 +315,29 @@ test('R270 ⑧ a country whose agency draws areas is never washed as a whole cou
      rather than a list. */
   assert.ok(!/const GEOM_FEEDS=\{/.test(s), 'the hand-written table must be gone, not extended');
   assert.match(s, /drawnISO/, 'the drawn set must be derived from the published features');
-  assert.match(s, /const drawsAreas=\(c\)=>!!drawnISO\[c\]/, 'drawsAreas asks the map');
+  /* ⚠⚠⚠ (#R273) …AND THE PROPERTY IS NOW ABSOLUTE. #R271 let a country be drawn at its units AND
+     washed for the areas that could not be placed; measured with Japan at the municipality, that
+     tinted the whole country for ELEVEN unplaced areas out of 1,490 — 「発令されてない箇所が紫色」
+     with a smaller cause. A country is drawn at its units OR washed, never both, and the shortfall
+     is stated in words instead (`placedLine`). */
   const wi = s.indexOf('function washTier(c){');
   assert.ok(wi > 0, 'washTier() must exist');
-  const w = [null, s.slice(wi, s.indexOf('function paintCountries', wi))];
-  assert.match(w[1], /if\(drawsAreas\(c\)\) return 0/, 'those countries get no wash at all');
-  assert.match(w[1], /return g\?\(10\+g\):0/, 'a GDACS level is a DIFFERENT range on the same field');
-  /* the paint must know both ranges, or half of them would fall through to «nothing» */
-  const pi = s.indexOf("'fill-color':['match',['to-number',['feature-state','wpAlert'],0]");
+  const w = s.slice(wi, s.indexOf('function paintCountries', wi));
+  assert.match(w, /if\(!supported\(c\)\) return 0;/, 'a country with no feed is state 0 — the hatch');
+  assert.match(w, /if\(u&&!drawnISO\[c\]\) return 10\+/, 'a wash requires that NOTHING was drawn there');
+  assert.match(w, /return 1;/, 'and a country whose service is read but quiet is grey');
+  /* the paint must know all three states, or one of them falls through to «nothing» */
+  const pi = s.indexOf("'match',['to-number',['feature-state','wpAlert'],-1]");
   assert.ok(pi > 0, 'the choropleth must paint from that field');
-  const paint = s.slice(pi, s.indexOf("'fill-opacity'", pi));
-  for (const k of ['\n            3,', '2,', '1,', '13,', '12,', '11,']) {
-    assert.ok(paint.includes(k.trim()), `the wash must have a colour for ${k.trim().replace(',', '')}`);
-  }
-  /* the six are the two three-step scales — no seventh case, no fall-through into a colour */
-  const cases = [...paint.matchAll(/(?:^|,)\s*(\d+),\s*(?:TIERWASH|GDACSWASH)\[/g)].map((m) => +m[1]).sort((a, b) => a - b);
-  assert.deepEqual(cases, [1, 2, 3, 11, 12, 13], `expected exactly the two scales, got ${cases}`);
-  /* the wash carries its own alpha, because the opacity slider overwrites fill-opacity wholesale */
-  assert.match(s, /const GDACSWASH=\{[^}]*rgba\(/, 'the GDACS wash colours must carry alpha');
-  assert.match(s, /const TIERWASH=\{[^}]*rgba\(/, 'so must the national wash');
+  const paint = s.slice(pi, pi + 400);
+  /* one case = a state number followed by the colour it paints — `_wash(...)` for the four unplaced
+     ranks and a literal rgba for the grey; anything else in that slice is not a case */
+  const cases = [...paint.matchAll(/(\d+),(?:_wash\(|'rgba)/g)].map((m) => +m[1]).sort((a, b) => a - b);
+  assert.deepEqual(cases, [1, 11, 12, 13, 14], `expected grey plus the four unplaced ranks, got ${cases}`);
+  assert.match(s, /'fill-pattern':'wp-alert-hatch-img'/, 'and «no feed» is a hatch, not a colour');
+  /* the wash carries its own alpha, because the opacity slider overwrites fill-opacity wholesale.
+     (#R273) the two hand-written wash tables became ONE function that dims whichever palette is on,
+     which is what lets the mode switch be a paint swap rather than a second set of colours. */
+  assert.match(s, /const _wash=\(hex\)=>/, 'the wash colour must carry its own alpha');
+  assert.match(s, /return 'rgba\('[\s\S]{0,160}0\.62\)'/, '…and be weaker than a unit fill');
 });

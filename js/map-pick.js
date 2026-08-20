@@ -21,7 +21,7 @@
  *  ── THE FIX IS ONE PLACE, NOT FIVE ─────────────────────────────────────────────────────────────
  *  The defect is not "the seismic panel is too big"; it is that a panel asks for a click on a
  *  surface it is covering. So the gesture itself is a module: while a pick is live the requesting
- *  panel is HIDDEN and a slim banner names what is being placed and offers ✕/Esc to cancel. The map
+ *  panel is HIDDEN and a slim banner names what is being placed and offers ×/Esc to cancel. The map
  *  is fully reachable on every screen size, on both engines, with no per-panel geometry to tune.
  *
  *  ⚠ `once('click')` is kept as the delivery mechanism — the panels' own handlers, the station
@@ -52,7 +52,7 @@ window.IntMapPick=(function(){
       +'font-size:12.5px;font-weight:600;pointer-events:auto;';
     bar.innerHTML='<span class="im-pick-msg" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>'
       +'<button class="im-pick-x" style="flex:none;border:none;background:rgba(128,128,128,0.22);color:var(--text-main,#fff);'
-      +'width:24px;height:24px;border-radius:50%;font-size:14px;line-height:1;cursor:pointer;">✕</button>';
+      +'width:24px;height:24px;border-radius:50%;font-size:14px;line-height:1;cursor:pointer;">×</button>';
     document.body.appendChild(bar);
     bar.querySelector('.im-pick-x').onclick=()=>cancel();
     return bar;
@@ -84,7 +84,7 @@ window.IntMapPick=(function(){
      「◎ 震源地を設置・移動をクリックしたら、その後にポップアップ上でクリックしても、その直下の地図が
       クリックされた判定になってしまう。」 `pointer-events:none` on the panel is inherited by everything
      inside it, so while the pick was armed the ◎ button that armed it — and the depth, the magnitude,
-     the ✕ — were all transparent too: pressing ◎ again to change your mind DROPPED THE EPICENTRE
+     the × — were all transparent too: pressing ◎ again to change your mind DROPPED THE EPICENTRE
      UNDER THE BUTTON. The panel could be read and not touched, and nothing said so.
 
      What #R196/#R207 need is that the panel's SURFACE lets a tap through, not that its controls stop

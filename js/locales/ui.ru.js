@@ -195,7 +195,7 @@ window.IntMapLang.define('ru', { ui: {
       blueberryNote:"Откроется внешняя страница (Stripe).",
       lyrGrpClimate:"Климат и погода",
       lyrGrpHazard:"Опасности и ЧС",
-      lyrGrpDemo:"Население и экономика",
+      lyrGrpDemo:"Население и демография",
       lyrGrpGeoPol:"Геополитика и оборона",
       lyrGrpPolitics:"Политика и управление",
       lyrGrpSecurity:"Оборона и безопасность",

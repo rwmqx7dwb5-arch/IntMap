@@ -145,7 +145,7 @@ window.IntMapLang.define('jp', { ui: {
       worldExplorerBtn:"🌍 サテライトドロップ",
       lyrGrpClimate:"気候・気象",
       lyrGrpHazard:"災害・緊急",
-      lyrGrpDemo:"人口・経済",
+      lyrGrpDemo:"人口・人口動態",
       lyrGrpGeoPol:"地政学・防衛",
       lyrGrpPolitics:"政治・統治",
       lyrGrpSecurity:"軍事・安全保障",

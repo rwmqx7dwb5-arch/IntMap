@@ -165,7 +165,7 @@ window.IntMapModules.toolPanel=function(HOST){
       RADIUS_PRESETS.forEach(grp=>{ opts+=`<optgroup label="${window.IntMapLang.pick(()=>HOST.lang).arr(grp.g)}">`+grp.items.map(it=>`<option value="${it[1]}">${it[0]} — ${it[1]} km</option>`).join('')+`</optgroup>`; });
       let list='';
       if(HOST.radiusItems.length){
-        list=`<div class="tp-sub">${HOST.radiusItems.length} ${HOST.t('radius')}</div><div class="radius-list">`+HOST.radiusItems.map((c,i)=>`<div class="radius-list-item"><span class="rl-sw" style="background:${c.color}"></span><span class="rl-main">${c.radiusKm} km · ${c.center[1].toFixed(2)}°,${c.center[0].toFixed(2)}°</span><button class="rl-del" data-radiusdel="${IntMapSafe.html(c.id)}">✕</button></div>`).join('')+`</div><button class="tp-clear" onclick="clearAllRadius()" style="margin-top:6px;">${HOST.t('removeAll')}</button>`;
+        list=`<div class="tp-sub">${HOST.radiusItems.length} ${HOST.t('radius')}</div><div class="radius-list">`+HOST.radiusItems.map((c,i)=>`<div class="radius-list-item"><span class="rl-sw" style="background:${c.color}"></span><span class="rl-main">${c.radiusKm} km · ${c.center[1].toFixed(2)}°,${c.center[0].toFixed(2)}°</span><button class="rl-del" data-radiusdel="${IntMapSafe.html(c.id)}">×</button></div>`).join('')+`</div><button class="tp-clear" onclick="clearAllRadius()" style="margin-top:6px;">${HOST.t('removeAll')}</button>`;
       }
       body=`<div class="tp-row radius-control"><input type="range" id="radius-range" min="1" max="20000" step="10" value="${Math.min(20000,HOST.radiusKm)}"><div class="radius-row"><button type="button" id="radius-dec" class="rad-step" title="${window.IntMapLang.t(HOST.lang,'Decrease','小さく','Kleiner','Мельче','Reducir')}">−</button><input type="number" id="radius-num" min="1" value="${HOST.radiusKm}"><button type="button" id="radius-inc" class="rad-step" title="${window.IntMapLang.t(HOST.lang,'Increase','大きく','Größer','Крупнее','Aumentar')}">＋</button><select id="radius-unit" style="background:var(--input-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:6px;padding:2px 4px;font-size:11.5px;"><option value="km">km</option><option value="mi">mi</option></select></div></div>
         <div class="rad-stats"><div class="rad-stat"><label>${HOST.t('circumference')}</label><b id="rad-c">${HOST.distHTML(2*Math.PI*HOST.radiusKm)}</b></div><div class="rad-stat"><label>${HOST.t('area')}</label><b id="rad-a">${HOST.areaHTML(Math.PI*HOST.radiusKm*HOST.radiusKm)}</b></div></div><!-- (#R147) dropped the redundant Radius tile (already shown in the slider + number field) to declutter ("項目数が増え、煩雑…UIを整理") -->
@@ -177,7 +177,7 @@ window.IntMapModules.toolPanel=function(HOST){
     const footBtns = (HOST.toolMode!=='radius')
       ? `<div class="tp-foot-btns">${HOST.measurePoints.length?`<button class="tp-clear" id="tp-undo">↶ ${HOST.t('undoPt')}</button>`:''}<button class="tp-clear" id="tp-clear">${HOST.t('clear')}</button></div>`
       : '';
-    p.innerHTML=`<div class="tp-header"><span class="tp-title">${titles[HOST.toolMode]}</span><span class="tp-hd-btns"><button class="tp-min-btn" title="${window.IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar')}">–</button><button class="tp-close" title="${HOST.t('close')}">✕</button></span></div>${body}${footBtns}`;
+    p.innerHTML=`<div class="tp-header"><span class="tp-title">${titles[HOST.toolMode]}</span><span class="tp-hd-btns"><button class="tp-min-btn" title="${window.IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar')}">–</button><button class="tp-close" title="${HOST.t('close')}">×</button></span></div>${body}${footBtns}`;
     p.classList.toggle('tp-radius', HOST.toolMode==='radius');   /* (#R22) drives the compact mobile radius layout */
     if(p.dataset.collapsed==='1'){ p.classList.add('tp-collapsed'); }   /* (#R34) keep minimized state across re-renders */
     p.querySelector('.tp-close').onclick=HOST.exitTool; HOST.makeDraggable(p,p.querySelector('.tp-header'));
@@ -309,7 +309,7 @@ window.IntMapModules.toolPanel=function(HOST){
             +`<span class="rl-main" style="${o.visible?'':'opacity:0.45;'}">${esc(o.name)}<br>`
             +`<span style="font-size:10px;color:var(--text-muted);">${o.band} · ${o.volume}</span></span>`
             +`<button class="rl-del" data-v3dvis="${o.id}" title="${o.visible?_L('Hide','非表示','Ausblenden','Скрыть','Ocultar'):_L('Show','表示','Einblenden','Показать','Mostrar')}">${o.visible?'👁':'⚊'}</button>`
-            +`<button class="rl-del" data-v3ddel="${o.id}" title="${_L('Delete','削除','Löschen','Удалить','Eliminar')}">✕</button></div>`).join('')
+            +`<button class="rl-del" data-v3ddel="${o.id}" title="${_L('Delete','削除','Löschen','Удалить','Eliminar')}">×</button></div>`).join('')
           +`</div>`
           +(sel?(()=>{ const o=objs.find(x=>x.id===sel); if(!o) return '';
               /* editing a SAVED body afterwards: the same three controls the draft has, bound to it */
