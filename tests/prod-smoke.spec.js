@@ -670,10 +670,13 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
           return Array.from(px);
         };
         const EC = window.IntMapECMWF;
+        const sc = EC.scale('wind_u_component_10m', true);
+        const eyeV = EC.valueNow('wind_u_component_10m', e.eye.la, e.eye.lo);
+        const ringV = EC.valueNow('wind_u_component_10m', e.peak.la, e.peak.lo);
+        const want = (v) => { try { return EC.sdk().getColor(sc, v, true).slice(0, 3).map(Math.round); } catch { return null; } };
         res({
           eyePx: read(e.eye.lo, e.eye.la), ringPx: read(e.peak.lo, e.peak.la),
-          eyeV: EC.valueNow('wind_u_component_10m', e.eye.la, e.eye.lo),
-          ringV: EC.valueNow('wind_u_component_10m', e.peak.la, e.peak.lo),
+          eyeV, ringV, eyeWant: want(eyeV), ringWant: want(ringV),
           particles: window.Wind._dbg().drawn,
         });
       });
@@ -684,12 +687,23 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
   expect(pic.eyePx, 'the eye is on screen').not.toBeNull();
   expect(pic.ringPx, 'and so is the eyewall').not.toBeNull();
   expect(pic.ringV, 'the eyewall is the strong half of the pair').toBeGreaterThan(pic.eyeV * 1.6);
-  /* "hotness" on this ramp rises with red and falls with blue, so the difference is VISIBLE rather
-     than merely present: the eyewall must be measurably redder than the eye. */
-  const hot = (p) => p[0] - p[2];
-  expect(hot(pic.ringPx) - hot(pic.eyePx),
-    'the eyewall is painted hotter than the eye: eye ' + JSON.stringify(pic.eyePx) + ' vs ring ' + JSON.stringify(pic.ringPx))
-    .toBeGreaterThan(30);
+  /* ⚠⚠ (#R276 追記) THE COMPARISON IS AGAINST THE TABLE, NOT AGAINST AN INVENTED QUANTITY. The first
+     version of this line asked whether the eyewall was "hotter", defined as red − blue, and it FAILED
+     in production on a picture that was perfectly correct:
+         eye  rgb(160,195,55)   = the 13 m/s stop
+         ring rgb(210,40,110)   = the 30 m/s stop
+     …and 160−55 = 105 while 210−110 = 100. Red − blue is NOT monotone along this ramp, because the
+     strong end runs through magenta into white and the blue channel climbs again. A derived measure
+     written beside a colour table instead of read from it is exactly #R270's defect (「凡例が自分の色と
+     矛盾していた」), one layer up. So both pixels are checked against `getColor` for their OWN speed,
+     which is exact, and against each other, which is what "you can see the eye" means. */
+  expect(pic.eyeWant, 'this SDK build exposes getColor').not.toBeNull();
+  expect(pic.eyePx.slice(0, 3), 'the eye is painted with the table entry for the speed at the eye ('
+    + pic.eyeV.toFixed(1) + ' m/s)').toEqual(pic.eyeWant);
+  expect(pic.ringPx.slice(0, 3), 'the eyewall with the entry for the speed at the eyewall ('
+    + pic.ringV.toFixed(1) + ' m/s)').toEqual(pic.ringWant);
+  expect(pic.eyePx.slice(0, 3), 'and the two are different colours, which is what seeing an eye IS: eye '
+    + JSON.stringify(pic.eyePx) + ' vs ring ' + JSON.stringify(pic.ringPx)).not.toEqual(pic.ringPx.slice(0, 3));
   expect(pic.particles, 'and the particles are running over it').toBeGreaterThan(100);
 });
 
@@ -698,13 +712,18 @@ test('(#R276) prod offers the whole forecast, and stepping it changes the file A
     const EC = window.IntMapECMWF;
     const meta = await EC.meta();
     if (!meta) return { err: 'no metadata' };
+    /* ⚠ the wind layer answers the SAME time event, and `_state().held` is ONE slot — whichever
+       load resolves last owns it. So this asks `stateKey`, which is a pure function of the chosen
+       step and of nothing else, and switches the wind off so the two loads do not race. */
+    const wcb = document.getElementById('dl-wind');
+    if (wcb && wcb.checked) { wcb.checked = false; wcb.dispatchEvent(new Event('change', { bubbles: true })); }
     const nowI = EC.nowIndex();
     EC.setIndex(nowI);
     await EC.load('temperature_2m');
-    const a = { key: EC._state().held, vt: EC.validTime(), v: EC.valueNow('temperature_2m', 35.68, 139.76) };
+    const a = { key: EC.stateKey('temperature_2m', ''), vt: EC.validTime(), v: EC.valueNow('temperature_2m', 35.68, 139.76) };
     EC.setIndex(Math.min(EC.count() - 1, nowI + 24));
     await EC.load('temperature_2m');
-    const b = { key: EC._state().held, vt: EC.validTime(), v: EC.valueNow('temperature_2m', 35.68, 139.76) };
+    const b = { key: EC.stateKey('temperature_2m', ''), vt: EC.validTime(), v: EC.valueNow('temperature_2m', 35.68, 139.76) };
     return {
       count: EC.count(), ref: EC.referenceTime(), nowI, a, b,
       lastAhead: (Date.parse(EC.validTime(EC.count() - 1)) - Date.now()) / 3600000,
