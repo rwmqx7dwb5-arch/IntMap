@@ -334,7 +334,12 @@ test('R270 ⑧ a country whose agency draws areas is never washed as a whole cou
   const w = s.slice(wi, s.indexOf('function paintCountries', wi));
   assert.match(w, /if\(!supported\(c\)\) return 0;/, 'a country with no feed is state 0 — the hatch');
   assert.match(w, /if\(u&&!drawnISO\[c\]\) return 10\+/, 'a wash requires that NOTHING was drawn there');
-  assert.match(w, /return 1;/, 'and a country whose service is read but quiet is grey');
+  /* ⚠ (#R288) 「発令なし」 IS NOW DECIDED AT THE ADMINISTRATIVE UNIT, so the country-wide grey is
+     tier 1 only where this map does NOT hold that country's units; where it does, the units carry
+     it (tier 2, which no arm of the paint expression claims). The property #R270 asserted — a
+     country is never painted whole where its own units are on the map — is unchanged and is what
+     the two arms below say together. */
+  assert.match(w, /return unitsOf\(c\)\?2:1;/, 'a country whose service is read but quiet is grey — per unit where it can be');
   /* the paint must know all three states, or one of them falls through to «nothing» */
   const pi = s.indexOf("'match',['to-number',['feature-state','wpAlert'],-1]");
   assert.ok(pi > 0, 'the choropleth must paint from that field');

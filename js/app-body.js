@@ -3602,7 +3602,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   try{ window.IntMapTime.on(e=>{ try{ const LD=window._imLayerDates; if(!LD) return;
     const maxIso=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     let d=e.isLive?maxIso:e.iso; if(d>maxIso) d=maxIso;
-    ['temp','no2','co','fire','truecolor','viirs'].forEach(k=>{ try{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked){ LD[k]=d; if(window.refreshDatedLayer&&GE().layers.has('lyr-'+k)&&GE().layers.getLayout('lyr-'+k,'visibility')==='visible') window.refreshDatedLayer(k); } }catch(_){} });
+    ['no2','co','fire','truecolor','viirs'].forEach(k=>{ try{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked){ LD[k]=d; if(window.refreshDatedLayer&&GE().layers.has('lyr-'+k)&&GE().layers.getLayout('lyr-'+k,'visibility')==='visible') window.refreshDatedLayer(k); } }catch(_){} });
   }catch(_){} }); }catch(_){}
 
   /* ============================================================================

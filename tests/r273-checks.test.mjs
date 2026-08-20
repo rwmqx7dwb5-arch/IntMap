@@ -87,11 +87,15 @@ test('R273 ② the JMA’s own colours, read from the JMA’s own page', () => {
 /* ── ③ 「警報なし」と「データなし」 are different states and look different ─────────────────── */
 test('R273 ③ a country with no feed is hatched, a quiet one is grey, and they are not the same', () => {
   const s = WP();
-  assert.match(s, /const supported=\(c\)=>!!FEEDS\[c\]/, 'support is the feed table, not a hand-written list');
+  /* ⚠ (#R288) …and it is not only the feed table any more: a service whose own polygon lands in a
+     country with no feed of its own covers that country, learned from the geometry rather than
+     written down (`LEARNED`). Still not a hand-written list, which is what #R273 was asserting. */
+  assert.match(s, /const supported=\(c\)=>!!\(FEEDS\[c\]\|\|LEARNED\[c\]\);/, 'support is derived, not a hand-written list');
+  assert.match(s, /function learnCoverage\(list\)\{/, '…and the derivation has a name');
   const wi = s.indexOf('function washTier(c){');
   const w = s.slice(wi, s.indexOf('function paintCountries', wi));
   assert.match(w, /if\(!supported\(c\)\) return 0;/, 'no feed → state 0');
-  assert.match(w, /return 1;/, 'a feed and nothing in force → state 1');
+  assert.match(w, /return unitsOf\(c\)\?2:1;/, 'a feed and nothing in force → grey (#R288: per unit where this map holds them)');
   assert.match(s, /function ensureHatch\(\)/, 'the hatch must be drawn, once');
   assert.match(s, /GE\(\)\.scene\.addImage\(HATCH_IMG/, '…through the image API the engine actually has');
   assert.match(s, /'fill-pattern':'wp-alert-hatch-img'/, '…and used as a pattern');

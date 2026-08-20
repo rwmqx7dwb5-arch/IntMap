@@ -47,7 +47,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
          capture of this app with the layer on, over monsoon Asia where the field is unmistakable;
          `node scripts/shot-layer-preview.mjs preview_precip.png` is how it is remade. */
       'dl-annprecip':'preview_precip.png',
-      'dl-temp':G('MERRA2_2m_Air_Temperature_Monthly',6,'2024-06-01','png',3,25,22),          /* Sahara heat */
+      'dl-ec-temp':G('MERRA2_2m_Air_Temperature_Monthly',6,'2024-06-01','png',3,25,22),          /* Sahara heat */
       'dl-precip':G('IMERG_Precipitation_Rate',6,'2025-06-01T12:00:00Z','png',3,100,14),      /* SE-Asia monsoon */
       'dl-sst':G('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'2024-07-04','png',3,-65,35),      /* Gulf Stream */
       'dl-snow':G('MODIS_Terra_NDSI_Snow_Cover',8,'2024-01-15','png',4,10,46.4),              /* Alps in January */

@@ -4285,4 +4285,12 @@ window.IntMapLang.define('fr', { ui: {
   "Thunderstorms": "Orages",
   "The reachable area is computed for 1 to 120 minutes — ask again inside that range.": "La zone accessible est calculée de 1 à 120 minutes — refaites la demande dans cette plage.",
   "The reachable area was computed, but the map layer could not be created (the map style was still loading) — try again in a moment.": "La zone accessible a été calculée, mais la couche cartographique n'a pas pu être créée (le style de la carte se chargeait encore) — réessayez dans un instant.",   /* (#R267) */
+  "Temperature": "Température",   /* (#R288) */
+  "Month": "Mois",   /* (#R288) */
+  "Forecast": "Prévision",   /* (#R288) */
+  "ECMWF IFS forecast": "Prévision ECMWF IFS",   /* (#R288) */
+  "MERRA-2 reanalysis": "Réanalyse MERRA-2",   /* (#R288) */
+  "monthly mean": "moyenne mensuelle",   /* (#R288) */
+  "Open the time machine": "Ouvrir la machine à remonter le temps",   /* (#R288) */
+  "Nothing in force is drawn per administrative unit in {u} countries ({n} units), and country-wide in {c}.": "L’absence d’alerte est dessinée par unité administrative dans {u} pays ({n} unités) et à l’échelle du pays dans {c}.",   /* (#R288) */
 } });

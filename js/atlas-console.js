@@ -1024,7 +1024,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     const _subnorm=s=>String(s==null?'':s).replace(/[₀-₉²³¹]/g,c=>_SUBMAP[c]||c);
     const _reEsc=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
     const LAYER_ALIASES={
-      'temperature':'dl-temp','temp':'dl-temp','air temperature':'dl-temp','surface temperature':'dl-temp','気温':'dl-temp','温度':'dl-temp','temperatur':'dl-temp','температура':'dl-temp','temperatura':'dl-temp',
+      'temperature':'dl-ec-temp','temp':'dl-ec-temp','air temperature':'dl-ec-temp','surface temperature':'dl-ec-temp','気温':'dl-ec-temp','温度':'dl-ec-temp','temperatur':'dl-ec-temp','температура':'dl-ec-temp','temperatura':'dl-ec-temp',
       'sea temperature':'dl-sst','sea surface temperature':'dl-sst','sst':'dl-sst','water temperature':'dl-sst','海水温':'dl-sst','水温':'dl-sst','ocean temperature':'dl-ec-sst',
       'rain':'dl-radar','rainfall':'dl-radar','radar':'dl-radar','雨':'dl-radar','降雨':'dl-radar','regen':'dl-radar','дождь':'dl-radar','lluvia':'dl-radar',
       'precipitation':'dl-precip','降水':'dl-precip','降水量':'dl-precip','niederschlag':'dl-precip','осадки':'dl-precip','precipitación':'dl-precip',
@@ -1307,7 +1307,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         try{ const ob=window.IntMapObjects&&window.IntMapObjects.list&&window.IntMapObjects.list();
           if(ob&&ob.length) lines.push('Map objects ('+ob.length+') — target them with the "object" action by id: '+ob.slice(0,12).map(o=>o.kind+' id='+o.id+' "'+String(o.name).slice(0,24)+'"').join('; ')+'.'); }catch(_){}
         try{ if(typeof HOST.newsDate!=='undefined'&&HOST.newsDate) lines.push('TIME TRAVEL is active — news/imagery around '+ymdISO(HOST.newsDate)+' (not today). "now/current" requests may need timeTravel reset. IMPORTANT: this date is a DISPLAY setting of the map. It is NOT the data year of any statistic, highlight or reply — NEVER present it as "the year of the data".'); }catch(_){}
-        try{ const LD=window._imLayerDates; if(LD){ const dl=[]; ['temp','precip','sst','snow','aod'].forEach(k=>{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked&&LD[k]) dl.push(k+'='+LD[k]); }); if(dl.length) lines.push('Dated raster layers showing: '+dl.join(', ')+' (changeable via control "date: <layer>").'); } }catch(_){}
+        try{ const LD=window._imLayerDates; if(LD){ const dl=[]; ['precip','sst','snow','aod'].forEach(k=>{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked&&LD[k]) dl.push(k+'='+LD[k]); }); if(dl.length) lines.push('Dated raster layers showing: '+dl.join(', ')+' (changeable via control "date: <layer>").'); } }catch(_){}
         try{ const si=document.getElementById('map-search')||document.getElementById('search-input'); if(si&&si.value&&String(si.value).trim()) lines.push('Search box contains: "'+String(si.value).trim().slice(0,60)+'".'); }catch(_){}
         try{ if(document.body.classList.contains('ws-mode')) lines.push('WORKSPACE MODE is on — the UI is free-floating windows (News / Countries / Information / Community / Map / Layers), a top menu bar (View/Tools/Window/Settings) and a fixed bottom ticker; hidden windows reopen from the Window menu; turn off via the "setting-wsmode-btn" button or IntMapWorkspace.close.'); }catch(_){}
         let tu=''; try{ tu=(window.imUnitTemp||localStorage.getItem('intmap_temp_unit')||''); }catch(_){}

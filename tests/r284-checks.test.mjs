@@ -40,10 +40,17 @@ test('#R284 ① a wired country never gets the 「未対応」 hatch', () => {
   assert.ok(i > 0, 'washTier must exist');
   const body = src.slice(i, src.indexOf('function paintCountries(', i));
   assert.match(body, /if\(!supported\(c\)\)\s*return\s*0;/, 'no feed is still the hatch');
-  assert.match(body, /if\(readState\(c\)!=='ok'\)\s*return\s*-1;/,
-    'a wired country that has not been read draws NOTHING — the hatch is not an answer for it');
-  assert.ok(!/if\(readState\(c\)!=='ok'\)\s*return\s*0;/.test(body),
-    'the old 「unread → hatched」 line must be gone');
+  /* ⚠ (#R288) THE READER RESOLVED THIS THEMSELVES. #R284 read 「対応国まで斜線で塗るのを辞めろ」 as
+     「draw nothing for a country that is wired but unread」; the next instruction said, in the same
+     sentence as the rule, 「まだ対応していない、**もしくはデータがまだ入っていない**ところは灰色斜線で」.
+     So the fourth state is gone and the hatch means 「この地図はここについて何も述べていない」.
+     What #R284 measured is still the reason the hatch is harmless now: its own cold burst
+     (`COLD_CALLS`) takes the unread set to nearly zero inside a minute — measured this round,
+     29 → 3 in 80 s — so no country wears it for a whole sweep. */
+  assert.match(body, /if\(readState\(c\)!=='ok'\)\s*return\s*0;/,
+    '「未対応」 and 「データがまだ入っていない」 are the same silence, and it is the hatch');
+  assert.ok(!/return\s*-1;/.test(body), '#R284’s fourth state must be gone');
+  assert.match(WP(), /const COLD_CALLS=6;/, '…and the burst that makes the hatch transient survives');
   /* and the two paint expressions still read the tier the way the four states assume */
   assert.match(src, /'fill-opacity':\['case',\['==',\['to-number',\['feature-state','wpAlert'\],-1\],0\],0\.9,0\]/,
     'the hatch paints on tier 0 only');
@@ -143,7 +150,13 @@ test('#R284 ⑥ every ECMWF layer has its own legend box and its own title', () 
   assert.ok(!/id='data-legend-ecmwf'/.test(src) && !/data-legend-ecmwf/.test(src),
     'the one shared box is gone');
   /* the forecast axis is a control, so it is its own box — and it still exists */
-  assert.match(src, /L\('ECMWF forecast time','ECMWF 予報時刻'/, 'the shared player has its own titled box');
+  /* ⚠ (#R288) THE SHARED PLAYER HAS NO BOX AT ALL ANY MORE — it is the app's own time control
+     (「わざわざ分けるな」). What #R284 asserted here is still true: the forecast axis is not crammed
+     into a layer's legend under a family name. Each legend states WHICH INSTANT its own picture is
+     of, and that line opens the one shared control. */
+  assert.ok(!/L\('ECMWF forecast time','ECMWF 予報時刻'/.test(src), 'the separate clock box is gone');
+  assert.match(src, /class="ecl-when"/, '…and each legend says which instant its picture is of');
+  assert.match(src, /window\._imTimeMachineForecast\(\)/, '…by opening the ONE shared control');
   /* the tiler has to be able to see them, or a legend sits on top of the one below it (#R276) */
   const DL = codeOnly(read('js/data-layers.js'));
   assert.match(DL, /querySelectorAll\('\[id\^="data-legend-ec-"\]'\)/,
@@ -162,9 +175,15 @@ test('#R284 ⑦ no two forecast-player buttons look the same', () => {
   for (const g of ['⏮', '⦿'])
     assert.ok(!src.includes("'" + g + "'"), 'the old glyph ' + g + ' is gone');
   /* both players — the ECMWF box and the wind legend — use the ONE declaration */
-  assert.equal((src.match(/IC\.play/g) || []).length, 2, 'both players read the same play icon');
-  assert.equal((src.match(/const IC=\{/g) || []).length, 1, 'and there is exactly ONE declaration of them');
-  assert.equal((src.match(/IC\.next/g) || []).length, 2, 'both players read the same next icon');
+  /* ⚠ (#R288) the second player moved OUT of this file and into the app's own time control, so the
+     count here is one — and the property #R284 wrote this for (ONE declaration, read by every view,
+     so two views cannot disagree about which button is 「再生」) is asserted across both files. */
+  assert.equal((src.match(/const IC=\{/g) || []).length, 1, 'there is exactly ONE declaration of them');
+  assert.equal((src.match(/IC\.play/g) || []).length, 1, 'the wind legend reads it');
+  const tl = codeOnly(read('js/news-timeline.js'));
+  assert.match(tl, /P\.IC\.play/, '…and so does the time machine');
+  assert.match(tl, /P\.IC\.next/, '…for every button');
+  assert.match(tl, /const P=window\.IntMapWxPlayer;/, '…from the same declaration');
 });
 
 /* ── ⑧ the wind ramp is continuous, and its anchors are the same colours ─────────────────────
@@ -205,7 +224,7 @@ test('#R284 ⑨ a slider drag is one forecast step, and it does not blank the an
   assert.match(wx, /if\(ev\.type==='index'\)\{ touchTime\(\); return; \}/,
     'and so does the ECMWF box');
   /* the forecast step builds the new hour beside the old one instead of removing it first */
-  assert.match(wx, /function applyTime\(\)\{[\s\S]*?dropSlot\(cfg,nu\);[\s\S]*?setOpSlot\(cfg,nu,0\);[\s\S]*?dropSlot\(cfg,old\);/,
+  assert.match(wx, /function applyTime\(only\)\{[\s\S]*?dropSlot\(cfg,nu\);[\s\S]*?setOpSlot\(cfg,nu,0\);[\s\S]*?dropSlot\(cfg,old\);/,
     'two slots: the old picture stays up until the new one has painted');
 });
 
@@ -213,8 +232,9 @@ test('#R284 ⑨ a slider drag is one forecast step, and it does not blank the an
    Every deletion check above is run once more against a synthetic source carrying the OLD shape,
    so a predicate that matches nothing anywhere cannot pass by accident (#R274 ③).               */
 test('#R284 ⑩ the deletion checks would catch the old code', () => {
-  const oldWash = "function washTier(c){ if(!supported(c)) return 0; if(readState(c)!=='ok') return 0; return 1; }";
-  assert.ok(/if\(readState\(c\)!=='ok'\)\s*return\s*0;/.test(oldWash),
+  /* ⚠ (#R288) the pair swapped round: what must not appear in the file now is #R284's own −1. */
+  const oldWash = "function washTier(c){ if(!supported(c)) return 0; if(readState(c)!=='ok') return -1; return 1; }";
+  assert.ok(/return\s*-1;/.test(oldWash),
     'the predicate that must not match the new file DOES match the old one');
   const oldPlayer = "'<button class=\"ecl-b\" data-act=\"next\">▶</button>'";
   assert.ok(oldPlayer.includes('▶'), 'and the old player really did carry the play glyph on next');

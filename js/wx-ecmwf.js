@@ -238,20 +238,77 @@
     return out;
   }
   var WINDY_WIND = rampFrom(WIND_ANCHORS, 0.1);
+
+  /* ══ ⚠⚠⚠ (#R288) THE TEMPERATURE RAMP IS THE REFERENCE PICTURE'S, MEASURED RATHER THAN GUESSED ══
+     「気温 2m（ECMWF）レイヤーも色を添付画像と同じ色＋グラデーションに。」
+
+     What was on the map, MEASURED: the SDK's own `temperature` scale, **46 breakpoints** — i.e. the
+     same staircase the wind had before #R284, in a palette that is not the one in the picture.
+
+     The picture is windy.com's default temperature overlay, and that overlay's colour table is a
+     value the reader can open in Windy's own 「Customize color scale」 panel. It was read from the
+     live page rather than eyeballed from the screenshot: `W.colors.temp.defaultColorGradient` is
+     thirteen stops in KELVIN, and `_precomputedGradient.RGBA(k)` is the colour the map is actually
+     painted with at any k. Sampling that function every 0.05 K from 203 K to 320 K and fitting the
+     smallest set of stops whose LINEAR interpolation reproduces it gives the table below:
+     **23 stops, worst channel error 3/255** — below the threshold at which a difference can be
+     seen, which is the same standard #R284 held the wind ramp to.
+
+     Stated in °C because that is the unit the feed publishes `temperature_2m` in (MEASURED: Tokyo
+     25.5, Riyadh 35.7, Vostok −51.1 — not Kelvin). The four stops crowded between 0.00 and 0.85 °C
+     are not noise: Windy emphasises the freezing isotherm by turning blue into green across less
+     than one degree, and that edge is visible in the reference picture wherever a plateau rises
+     through 0 °C. Dropping ONE of them (0.40) was tried and takes the worst error from 3 to 7.
+
+     ⚠ The key is `temperature`, the SDK's FAMILY name — so `temperature_2m`, `surface_temperature`
+     and the soil temperatures all move together, which is right: they are the same quantity in the
+     same unit and a legend that coloured them differently would be lying about one of them.
+     `dew_point` is its own family and is left alone. */
+  var TEMP_ANCHORS = {
+    unit: '°C',
+    breakpoints: [-70.15, -55.15, -40.15, -25.15, -22.95, -20.90, -18.00, -15.15, -8.15, -4.15,
+      0.00, 0.35, 0.40, 0.75, 0.85, 2.40, 4.50, 5.95, 9.85, 20.85, 24.50, 29.85, 46.85],
+    colors: [
+      [115, 70, 105, 1], [203, 173, 196, 1], [163, 70, 146, 1], [144, 89, 170, 1],
+      [151, 114, 194, 1], [148, 141, 214, 1], [142, 185, 218, 1], [157, 220, 218, 1],
+      [106, 192, 182, 1], [100, 167, 190, 1], [93, 134, 199, 1], [77, 132, 160, 1],
+      [77, 132, 160, 1], [68, 128, 107, 1], [68, 126, 101, 1], [70, 135, 81, 1],
+      [86, 141, 54, 1], [99, 143, 42, 1], [129, 148, 24, 1], [244, 184, 4, 1],
+      [243, 143, 7, 1], [233, 83, 25, 1], [71, 14, 0, 1]
+    ]
+  };
+  /* 0.05 °C rather than the wind's 0.1: the steepest segment here is 0.35 → 0.75 °C, where the
+     colour travels 92 units of blue in 0.4 degrees. At 0.1 °C that edge would be four visible
+     steps; at 0.05 it is eight, each below 24/255 — and the ramp is 2,341 buckets, which costs
+     nothing on the map (`legend()` thins the stops it DRAWS, see below). */
+  var WINDY_TEMP = rampFrom(TEMP_ANCHORS, 0.05);
+
   var settings = null;
   function omSettings() {
     if (settings || !sdk) return settings;
     var base = sdk.defaultOmProtocolSettings;
-    var scales = Object.assign({}, sdk.COLOR_SCALES_WITH_ALIASES || base.colorScales, { wind: WINDY_WIND });
+    var scales = Object.assign({}, sdk.COLOR_SCALES_WITH_ALIASES || base.colorScales,
+      { wind: WINDY_WIND, temperature: WINDY_TEMP });
     settings = Object.assign({}, base, { colorScales: scales });
     return settings;
   }
+  /* ══ ⚠⚠⚠ (#R288) THE FLAG ONLY GOES UP IF THE REGISTRATION ACTUALLY HAPPENED ═══════════════════
+     This latched `protoReg = true` OUTSIDE the try, so a registration that threw — or one attempted
+     before the renderer existed — was recorded as done. Everything downstream then handed MapLibre
+     an `om://…` url with no handler behind it, and MapLibre did the only thing it can with an
+     unknown scheme: a NATIVE FETCH. CAUGHT by this round's own probe as a CSP violation —
+         Connecting to 'om://https//map-tiles.open-meteo.com/…' violates connect-src
+     — which is the #R286 shape exactly: a scheme this app registers itself can only reach the
+     network if the registration is missing, so the violation IS the diagnosis. `addProtocol`
+     already returns a boolean; this reads it. */
   function registerProtocol() {
-    if (protoReg || !sdk || !sdk.omProtocol) return protoReg;
+    if (protoReg) return true;
+    if (!sdk || !sdk.omProtocol) return false;
     var st = omSettings();
-    try { window.IntMapGeoEngine.scene.addProtocol('om', function (params, ctl) { return sdk.omProtocol(params, ctl, st); }); } catch (_) {}
-    protoReg = true;
-    return true;
+    var ok = false;
+    try { ok = !!window.IntMapGeoEngine.scene.addProtocol('om', function (params, ctl) { return sdk.omProtocol(params, ctl, st); }); } catch (_) { ok = false; }
+    protoReg = ok;
+    return ok;
   }
   /* everything a layer needs, in one await */
   function ready() {
@@ -305,34 +362,105 @@
       : grid.getNearestNeighborValue(arr, lat, lon);
   }
 
-  function load(variable, i) {
+  /* ══ ⚠⚠⚠ (#R288) A READ THAT SUCCEEDED MUST NOT RESOLVE AS A FAILURE ═══════════════════════════
+     「未来に変えたとき、風データを取得できませんでしたとなる。」
+
+     REPRODUCED on the deployed build, not reasoned about: start `load('wind_u_component_10m', 30)`,
+     call `release()` 50 ms later — which is EXACTLY what `fireTime()` did on every time change —
+     and the promise resolves **null after 8.3 seconds**. The bytes had arrived; the frame had been
+     decoded; the module threw it away. js/weather.js reads that null as a failed fetch and raises
+     the toast the reader reported, so the message was not describing anything that had happened.
+
+     Two lines caused it and both are fixed here:
+       ① the handler returned the MODULE-LEVEL `held` instead of the frame it had just decoded. An
+          unqualified `release()` sets `held = null`, so a load whose `loadingKey` had been cleared
+          returned null — or, worse, ANOTHER variable's frame.
+       ② `loadingKey` is a single slot shared by every variable, so two layers loading at once made
+          one of them "superseded" by the other rather than by a newer request for itself.
+     `seq` replaces both: it is bumped by every load AND by `release`, so a frame installs itself as
+     the current one only if nothing newer has been asked for — and it is RETURNED either way,
+     because a superseded picture is still a picture that loaded. */
+  var seq = 0;
+  /* ══ ⚠⚠⚠ (#R288) THE BAND, NOT THE PLANET — 「品質は一切落とさずに爆速にしろ」 ══════════════════
+     MEASURED on the built page: one frame of the global field is **6,599,680 samples**, and reading
+     it costs **274 ranged requests / 17.96 MB / 7.8–8.4 s** before a single particle can move. That
+     is the whole of 「重すぎる」, and none of it is rendering — the renderer itself measures 2.65 ms
+     a frame with 1,980 particles.
+
+     The ECMWF domain is a REDUCED GAUSSIAN grid, and the SDK's `getCoveringRanges` for that grid
+     narrows a read by LATITUDE only (longitude is one flat index, so it cannot be cut) — read out
+     of the shipped bundle and then measured: a 25°–46° band is **935,400 samples, 25 requests,
+     1.64 MB**. Same 9 km spacing, same numbers, same colours; what is not downloaded is the part of
+     the planet that is not on the screen. Nothing about the picture the reader is looking at
+     changes, which is what 「品質は一切落とさずに」 asks for. (And because the band spans every
+     longitude, panning east or west needs no new read at all.)
+
+     The second half is that the band is LATENCY-bound where the globe was BANDWIDTH-bound: 25
+     sequential range requests at ~220 ms is still 5.6 s. The SDK's own `prefetchVariable` issues
+     them at `prefetchConcurrency: 1000`, so warming the state's ranges before reading collapses
+     them into roughly one round trip. MEASURED end to end:
+         global  8,436 ms · band alone 2,829 ms · **band + prefetch 1,254 ms**
+     ⚠ A HELD FRAME IS REUSED WHEN IT COVERS WHAT IS ASKED FOR, and a null band means the globe,
+     which covers everything — so a caller that needs an arbitrary point (`valueAt`, the drone
+     forecast) still gets the global read it always got. */
+  function bandCovers(have, want) {
+    if (have === null || have === undefined) return true;          /* the globe covers everything */
+    if (!want) return false;                                       /* the globe is not covered by a band */
+    return have[1] <= want[1] + 1e-6 && have[3] >= want[3] - 1e-6;
+  }
+  function load(variable, i, bounds) {
+    var band = (bounds && bounds.length === 4) ? bounds : null;
     var key = stateKey(variable, '', i);
-    if (held && key && held.key === key) return Promise.resolve(held);
+    if (held && key && held.key === key && bandCovers(held.band, band)) return Promise.resolve(held);
+    var mine = ++seq;
     return ready().then(function () {
       var key2 = stateKey(variable, '', i);          /* meta may have arrived meanwhile */
-      if (held && held.key === key2) return held;
+      if (held && held.key === key2 && bandCovers(held.band, band)) return held;
       if (!key2) return null;
       loadingKey = key2;
       var inst = sdk.getProtocolInstance(omSettings());
       var dom = sdk.domainOptions.find(function (d) { return d.value === DOMAIN; });
       if (!dom) return null;
       var f = fileUrl(i);
-      var st = sdk.getOrCreateState(inst.stateByKey, key2, { domain: dom, variable: variable, bounds: undefined }, f);
+      /* ⚠ OUR OWN KEY CARRIES THE BAND. The SDK reuses a state whose bounds CONTAIN the new ones,
+         but its key is ours to choose, and two different bands under one key would hand the second
+         reader the first one's ranges. */
+      var skey = key2 + (band ? ('#' + band[1].toFixed(1) + ',' + band[3].toFixed(1)) : '');
+      var st = sdk.getOrCreateState(inst.stateByKey, skey, { domain: dom, variable: variable, bounds: band || undefined }, f);
       return serial(function () {
         /* the queue may have been waiting a while — if the reader has moved on, so have we */
-        if (held && held.key === key2) return held;
-        return sdk.ensureData(st, inst.omFileReader, undefined).then(function (data) {
+        if (held && held.key === key2 && bandCovers(held.band, band)) return held;
+        var warm = Promise.resolve();
+        if (band) {
+          var rd = inst.omFileReader;
+          if (rd && rd.setToOmFile && rd.prefetchVariable) {
+            warm = rd.setToOmFile(f).then(function () { return rd.prefetchVariable(variable, st.ranges); }).catch(function () {});
+          }
+        }
+        return warm.then(function () {
+          return sdk.ensureData(st, inst.omFileReader, undefined);
+        }).then(function (data) {
           if (!data || !data.values) return null;
           var g = _grid(st);
           if (!g) return null;
-          if (loadingKey === key2) {
-            held = { key: key2, variable: variable, file: f, data: data, grid: g };
-            emit('field', { variable: variable });
+          var frame = { key: key2, variable: variable, file: f, data: data, grid: g, band: band };
+          if (seq === mine) {
+            held = frame; loadingKey = '';
+            emit('field', { variable: variable, band: band });
           }
-          return held;
+          return frame;
         });
       }).catch(function () { return null; });
     }).catch(function () { return null; });
+  }
+  /* the band that covers a view, or null when the view is most of the planet (where the whole grid
+     is cheaper than pretending otherwise). Padded, so a small pan does not cost a read. */
+  function bandFor(south, north) {
+    if (!isFinite(south) || !isFinite(north)) return null;
+    var pad = Math.max(4, (north - south) * 0.35);
+    var s2 = Math.max(-90, south - pad), n2 = Math.min(90, north + pad);
+    if (n2 - s2 >= 120) return null;
+    return [-180, Math.round(s2 * 10) / 10, 180, Math.round(n2 * 10) / 10];
   }
   /* ⚠⚠ (#R276 追記2) `release(variable)` — A LAYER MAY ONLY DROP ITS OWN FRAME.
      MEASURED: switching the wind layer OFF called `release()` unqualified, which cleared `held` AND
@@ -350,6 +478,9 @@
         : (loadingKey ? loadingKey.indexOf('variable=' + encodeURIComponent(variable)) >= 0 : true);
       if (!mine) return false;
     }
+    /* (#R288) a deliberate drop supersedes whatever is in flight, so an older read cannot land
+       afterwards and put the frame back — but it still RESOLVES to its caller (see `load`). */
+    seq++;
     held = null; loadingKey = '';
     return true;
   }
@@ -464,12 +595,61 @@
   function fireTime() {
     clearTimeout(timeT); timeT = 0;
     if (!meta) return;
-    if (held && held.key !== stateKey(held.variable, '', idx)) {
-      var here = fileUrl(idx);
-      held = null;
-      if (loadingKey && here && loadingKey.indexOf(here) !== 0) loadingKey = '';
-    }
+    /* ⚠⚠⚠ (#R288) THE OLD FRAME IS NOT THROWN AWAY HERE AT ALL — the line is gone, not narrowed.
+       #R287 measured this from the other side and reached for the same defect: the unconditional
+       `release()` also cleared `loadingKey`, so a load STARTED INSIDE the 140 ms coalescing window
+       resolved, found the slot no longer matching its own key and returned null — 「風データを取得
+       できませんでした」 with 27 MB decoded and discarded. Its fix kept dropping `held` and only
+       spared `loadingKey` when the in-flight read was for the SAME file.
+       Two things are still wrong with dropping `held` here, and this round measured both:
+         · a load that resolves after ANY later request — not just one inside the window — still
+           returned the module slot rather than the frame it had decoded (MEASURED on the deployed
+           build: `release()` 50 ms into a load, 8.3 s later the data was there and the promise
+           resolved **null**), which is why `load()` now returns ITS OWN frame and a monotonic
+           `seq` decides which one is current;
+         · dropping the frame blanks the point readout and forces the next load to decode the same
+           hour again. The new frame REPLACES the old one when it lands — the rule #R284 wrote for
+           the particles and then contradicted one level down. */
     emit('time', { index: idx, validTime: meta.validTimes[idx] });
+  }
+  /* ══ ⚠⚠⚠ (#R288) ONE CLOCK — THE FORECAST AXIS IS A VIEW OF window.IntMapTime ═══════════════
+     「ECMWF系レイヤーを開くと勝手にECMWFの時間ポップアップが出るのを辞めろ。わざわざ分けるな。」
+
+     This module used to own a private index that nothing else could see, and js/weather.js gave it
+     a floating box of its own that appeared the moment any ECMWF layer was switched on. Both are
+     gone: the instant is the app's master clock (js/app-body.js), the ECMWF axis SNAPS that instant
+     to the nearest hour the model publishes, and the reader moves it from the one time control the
+     app already has (js/news-timeline.js).
+     ⚠ `_fromClock` is what stops the two writing to each other for ever: a change that arrived FROM
+     the clock does not travel back to it. */
+  var _fromClock = false;
+  function _clock() { try { return window.IntMapTime; } catch (_) { return null; } }
+  /* the model's own window, as milliseconds — outside it the axis holds at the nearer end and the
+     legend says so, rather than pretending the model covers a year it has never heard of. */
+  function span() {
+    if (!meta || !meta.validTimes.length) return null;
+    return [tms(meta.validTimes[0]), tms(meta.validTimes[meta.validTimes.length - 1])];
+  }
+  function covers(ms) { var s = span(); return !!(s && ms >= s[0] - 1800000 && ms <= s[1] + 1800000); }
+  /* ⚠ A BROADCAST IS NOT FREE. `IntMapTime.set` wakes every time-aware subsystem in the app — the
+     news archive, the dated NASA rasters, the historical borders, the terminator — so pushing on
+     every pixel of a drag, or on every 700 ms frame of playback, would spend the reader's machine
+     re-deriving a dozen unrelated layers for an instant they are about to leave. The push is
+     therefore TRAILING (the axis itself has already moved; only the app-wide announcement waits)
+     and is suppressed entirely while the player is running, landing once when it stops. */
+  var pushT = 0;
+  function _pushNow() {
+    clearTimeout(pushT); pushT = 0;
+    var C = _clock(); if (!C || !meta) return;
+    var vt = meta.validTimes[idx]; if (!vt) return;
+    _fromClock = true;
+    try { C.set(new Date(tms(vt)), { allowFuture: true, source: 'ecmwf' }); } catch (_) {}
+    _fromClock = false;
+  }
+  function _pushClock() {
+    if (playing) return;
+    clearTimeout(pushT);
+    pushT = setTimeout(_pushNow, 220);
   }
   function setIndex(i, opt) {
     if (!meta) return;
@@ -477,12 +657,32 @@
     i = Math.max(0, Math.min(n - 1, i | 0));
     if (i === idx && idxSet) return;
     idx = i; idxSet = true; _prevValid = meta.validTimes[idx] || '';
+    if (!(opt && opt.fromClock)) _pushClock();
     if (opt && opt.quiet) { clearTimeout(timeT); timeT = 0; return; }
     emit('index', { index: idx, validTime: meta.validTimes[idx] });
     if (opt && opt.now) { fireTime(); return; }
     clearTimeout(timeT);
     timeT = setTimeout(fireTime, COALESCE_MS);
   }
+  /* the clock → the axis. A reader who travels to 1972 has not asked for a forecast, so the axis
+     holds where it is and `covers()` is what the legend prints the caveat from. */
+  function _followClock(e) {
+    if (_fromClock || !meta) return;
+    var ms = (e && e.when) ? e.when.getTime() : Date.now();
+    if (e && e.isLive) { setIndex(nowIndex(), { now: true, fromClock: true }); return; }
+    if (!covers(ms)) return;
+    setIndex(nearestTo(ms), { now: true, fromClock: true });
+  }
+  /* ⚠ js/app-body.js — which DECLARES window.IntMapTime — is imported LAST (src/main.js), so the
+     kernel does not exist while this file is being evaluated. Poll for it rather than subscribing
+     into a hole: 「呼ばれていない1行」 is the shape this project has paid for four times. */
+  var _clockWired = false;
+  (function wireClock(n) {
+    if (_clockWired) return;
+    var C = _clock();
+    if (C && C.on) { C.on(_followClock); _clockWired = true; return; }
+    if ((n | 0) < 60) setTimeout(function () { wireClock((n | 0) + 1); }, 200);
+  })(0);
   function step(n) { if (!meta) return; var c = meta.validTimes.length; setIndex(((idx + n) % c + c) % c, { now: true }); }
   function play() {
     if (playing || !meta) return;
@@ -494,18 +694,28 @@
     };
     playTimer = setTimeout(tick, playMs);
   }
-  function pause() { playing = false; clearTimeout(playTimer); playTimer = 0; emit('play', { playing: false }); }
+  function pause() { playing = false; clearTimeout(playTimer); playTimer = 0;
+    _pushNow();                       /* (#R288) the clock lands where the player stopped */
+    emit('play', { playing: false }); }
 
   /* ── colour scales & legends ──────────────────────────────────────────────────────────────────
      The legend is BUILT FROM THE RENDERER'S OWN TABLE, not written beside it. 「凡例の最大値と実際の
      LUTも一致させる」 — a hand-written 「0 … 40 m/s」 beside a ramp that actually runs to 60 m/s is a
      legend that disagrees with its own picture, which is #R270's lesson (色は名前と一緒に旅する). */
+  /* ⚠ (#R288) THE RAMPS THIS FILE OWNS DO NOT NEED THE SDK. `getColorScale` does — it is the SDK's
+     own alias resolver — so before this, a legend asked for while the 340 kB bundle had not been
+     fetched came back null and printed a description with no key. The reanalysis source (see
+     js/wx-reanalysis.js) never loads that bundle at all, so its legend would have been permanently
+     keyless. Our own two families answer without it; everything else still waits for the SDK. */
+  var OWN = { temperature_2m: WINDY_TEMP, temperature_2m_max: WINDY_TEMP, temperature_2m_min: WINDY_TEMP,
+    surface_temperature: WINDY_TEMP,
+    wind_u_component_10m: WINDY_WIND, wind_v_component_10m: WINDY_WIND, wind_gusts_10m: WINDY_WIND };
   function scale(variable, dark) {
-    if (!sdk || !sdk.getColorScale) return null;
+    if (!sdk || !sdk.getColorScale) return OWN[variable] || null;
     try {
       var st = omSettings();
       return sdk.getColorScale(variable, !!dark, st && st.colorScales);
-    } catch (_) { return null; }
+    } catch (_) { return OWN[variable] || null; }
   }
   function rgbaCss(c) { return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; }
   /* {unit, min, max, css:<linear-gradient>, stops:[{v,pos,css}]} — all a numeric legend needs. */
@@ -622,6 +832,8 @@
     loadSDK: loadSDK,
     sdk: function () { return sdk; },
     registerProtocol: registerProtocol,
+    /* (#R288) 「om:// を渡してよいか」 — an unregistered scheme reaches the network, see registerProtocol */
+    protocolReady: function () { return protoReg; },
     has: function (v) { return !!(meta && meta.variables.indexOf(v) >= 0); },
     variables: function () { return meta ? meta.variables.slice() : []; },
     times: function () { return meta ? meta.validTimes.slice() : []; },
@@ -631,6 +843,10 @@
     step: step,
     nowIndex: nowIndex,
     nearestTo: nearestTo,
+    /* (#R288) the model's own window, and whether the master clock's instant is inside it */
+    span: span,
+    covers: covers,
+    followClock: _followClock,
     validTime: function (i) { return meta ? (meta.validTimes[i == null ? idx : i] || '') : ''; },
     referenceTime: function () { return meta ? meta.referenceTime : ''; },
     isPlaying: function () { return playing; },
@@ -643,11 +859,16 @@
     load: load,
     release: release,
     sampler: sampler,
+    bandFor: bandFor,
+    bandCovers: bandCovers,
+    heldBand: function () { return held ? (held.band || null) : null; },
     valueAt: valueAt,
     valueNow: valueNow,
     prefetch: prefetch,
     scale: scale,
     legend: legend,
+    WINDY_TEMP: WINDY_TEMP,
+    TEMP_ANCHORS: TEMP_ANCHORS,
     before: before,
     lift: lift,
     colorScales: function () { var st = omSettings(); return st && st.colorScales; },
@@ -656,6 +877,7 @@
     on: function (f) { if (typeof f === 'function' && listeners.indexOf(f) < 0) listeners.push(f); return this; },
     off: function (f) { var i = listeners.indexOf(f); if (i >= 0) listeners.splice(i, 1); return this; },
     /* test seam — never called by the app */
+    _settings: omSettings,
     _state: function () { return { meta: meta, idx: idx, playing: playing, held: held ? held.key : null, variable: held ? held.variable : null }; }
   };
 })();
