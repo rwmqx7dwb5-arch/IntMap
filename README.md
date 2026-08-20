@@ -33,7 +33,8 @@ IntMap is primarily designed for people interested in geography and internationa
   (INMET), Hong Kong (HKO), the Philippines (PAGASA), Taiwan (CWA), New Zealand (MetService), and
   thirty-five further European services through MeteoAlarm — plus every other national service that
   files CAP into the WMO's own register, which the map reads at the polygon that service drew.
-  Each agency's own colours are the default; a country with no feed is drawn hatched, so "nothing
+  Each agency's own colours are the default and the hazard is named in YOUR language beside the
+  agency's own wording; a country whose service has not answered is drawn hatched, so "nothing
   published" never looks like "nothing happening", and a tap answers for the point you pressed
 * Read annual precipitation as a measured 1 km field, or as any single year from 1981 to 2020
 * Compare any World Bank indicator in a year you choose, rather than whatever year each country last reported

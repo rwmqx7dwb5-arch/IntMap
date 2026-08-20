@@ -1233,30 +1233,108 @@ window.IntMapModules.worldPacks=function(HOST){
         if(t.length>13) t=t.slice(0,12)+'…';
         return t.charAt(0).toUpperCase()+t.slice(1); }
 
+      /* ══ ⚠⚠⚠ (#R277) 「警報名は設定言語で書け。」 ═══════════════════════════════
+         Until this round the word on the map was whatever the issuing service happened to write, so
+         one map carried, MEASURED in one session: 「Thunderstormwarning」 (Austria), 「ORAGE」 (Ivory
+         Coast), 「STARKES GEWITTER」 (Germany), 「Mye regn」 (Norway), 「Baixa Umidade」 (Brazil),
+         「降雨」 (Taiwan), 「大風蓝色」 (China), 「大雨」 (Japan) and 「ارتفاع درجات الحرارة」 — eight
+         languages and three scripts, on one screen, none of them necessarily the reader’s.
+
+         So the hazard is CLASSIFIED and then NAMED in the reader’s language. The classification is
+         a match against the vocabulary the services actually publish (each pattern carries the word
+         in the languages the services that use it write in), and the winner is the pattern that
+         matches EARLIEST in the text — not the first pattern in the list — because the leading word
+         is the hazard and the rest is qualification: 「Strong Wind and Large Waves」 is wind,
+         「雷雨大风」 is a thunderstorm, 「rain-flood」 is rain. Ties go to list order, which is what
+         puts 「VENT DE SABLE」 (a sandstorm, matching `dust` and `wind` at position 0) under dust.
+
+         ⚠ NOTHING IS THROWN AWAY. The agency’s own wording travels with the row and is what the tap
+         card prints, beside the translated name — 「正確で忠実な」 means the reader can always see what
+         the service itself said. And a hazard that matches NOTHING keeps the agency’s own word
+         rather than being flattened into 「Other」: a name this table has not learned yet is
+         information, and replacing it with a placeholder would be the only lossy option here.
+         ⚠ THE RANK IS NOT PART OF THE NAME. 「Yellow high-temperature warning」 is 「Heat」 — the rank
+         is already the colour, and repeating it in the label is what produced 「Moderate Heat Related
+         Impact」 on the map. */
+      const HAZ=[
+        ['tsunami',   /tsunami|津波|海啸|해일|цунами/i,        ()=>L('Tsunami','津波','Tsunami','Цунами','Tsunami')],
+        ['volcano',   /volcan|ash ?fall|cendre|火山|화산|вулкан/i,       ()=>L('Volcanic ash','火山灰','Vulkanasche','Вулканический пепел','Ceniza volcánica')],
+        ['cyclone',   /typhoon|hurricane|tropical (cyclone|storm|depression)|cyclone|tempête tropicale|cicl[oó]n|台风|颱風|台風|熱帯低気圧|тайфун|ураган|циклон/i, ()=>L('Cyclone','台風','Wirbelsturm','Циклон','Ciclón')],
+        ['tornado',   /tornado|waterspout|trombe|竜巻|龍捲|龙卷|смерч/i, ()=>L('Tornado','竜巻','Tornado','Смерч','Tornado')],
+        ['dust',      /dust|sand ?storm|vent de sable|sable|رمل|غبار|沙尘|揚沙|砂じん|黄砂|пыл|polvo|staub/i, ()=>L('Dust','砂じん嵐','Staubsturm','Пыльная буря','Polvo')],
+        ['avalanche', /avalanche|lawine|valanga|alud|snøskred|雪崩|なだれ|лавин/i, ()=>L('Avalanche','雪崩','Lawine','Лавина','Aludes')],
+        ['wildfire',  /(forest|wild|bush|veld|grass) ?fire|forestfire|fire ?(danger|weather|risk)|waldbrand|skogbrann|feu de for|incendi|山火|林野火災|森林火|пожар/i, ()=>L('Wildfire','林野火災','Waldbrand','Лесные пожары','Incendios')],
+        ['landslide', /landslide|mudslide|debris flow|rockfall|erdrutsch|glissement|deslizamiento|土砂|地质灾害|山体滑坡|оползен/i, ()=>L('Landslide','土砂災害','Erdrutsch','Оползень','Deslizamiento')],
+        ['flashflood',/flash ?flood|sturzflut|riada|内涝|浸水|ливнев/i,  ()=>L('Flash flood','浸水','Sturzflut','Ливневый паводок','Riada')],
+        ['flood',     /flood|inondation|hochwasser|inundaci|alluvion|poplav|powódź|árvíz|flom|tulva|översvämning|洪水|大水|боднен|наводнен|паводок/i, ()=>L('Flood','洪水','Hochwasser','Наводнение','Inundación')],
+        ['ice',       /black ?ice|freezing rain|glatteis|verglas|icing|glaze|isglatta|着氷|凍結|冻雨|гололёд|гололед|hielo/i, ()=>L('Ice','着氷・路面凍結','Glatteis','Гололёд','Hielo')],
+        ['snow',      /snow|schnee|neige|nieve|neve|snø|lumi|snö|blizzard|大雪|降雪|融雪|着雪|снег|снегопад/i, ()=>L('Snow','大雪','Schnee','Снег','Nieve')],
+        ['frost',     /frost|gelée|helada|霜|заморозк/i,             ()=>L('Frost','霜','Frost','Заморозки','Helada')],
+        ['fog',       /fog|nebel|brouillard|niebla|nevoeiro|dimma|濃霧|大雾|大霧|туман|안개/i, ()=>L('Fog','濃霧','Nebel','Туман','Niebla')],
+        ['heat',      /heat|high[- ]?temp|hot weather|canicule|hitze|calor|caldo|altas temperaturas|高温|酷暑|猛暑|жар|폭염|الحرارة/i, ()=>L('Heat','高温','Hitze','Жара','Calor')],
+        ['cold',      /cold|low[- ]?temperature|kälte|kaelte|froid|fr[ií]o|寒潮|低温|寒波|холод|мороз|한파/i, ()=>L('Cold','低温','Kälte','Холод','Frío')],
+        ['dryair',    /dry ?air|low humidity|baixa umidade|trockenheit|sequedad|乾燥|干燥/i, ()=>L('Dry air','乾燥','Trockenheit','Сухость','Sequedad')],
+        ['drought',   /drought|dürre|duerre|sécheresse|sequ[ií]a|seca|干旱|засух/i, ()=>L('Drought','干ばつ','Dürre','Засуха','Sequía')],
+        ['lowwater',  /low water|niedrigwasser|étiage|estiaje|渇水|межен/i,  ()=>L('Low water','渇水','Niedrigwasser','Малая вода','Estiaje')],
+        ['airquality',/air ?quality|smog|haze|pollution|luftqualität|calidad del aire|空气污染|霾|воздуха/i, ()=>L('Air quality','大気汚染','Luftqualität','Качество воздуха','Calidad del aire')],
+        ['wind',      /wind|\bgale\b|\bstorm\b|sturm|\bvent\b|viento|vento|vendaval|vind|tuuli|強風|暴風|大風|大风|风力|ветер|шторм|강풍|رياح/i, ()=>L('Wind','強風','Wind','Ветер','Viento')],
+        ['coastal',   /coastal|high (waves|water)|storm surge|swell|waves?\b|houle|oleaje|marejada|高波|高潮|波浪|прибой|волн|풍랑/i, ()=>L('Coastal','高波・高潮','Küste','Побережье','Costa')],
+        ['marine',    /marine|sea area|offshore|maritime|海上|海面|море|морск/i, ()=>L('Marine','海上','See','Море','Marítimo')],
+        ['thunderstorm',/thunder|t-?storm|gewitter|orage|onweer|tormenta|trovoada|tempestade|nubifragio|åska|ukkonen|雷|强对流|強對流|гроз|뇌우/i, ()=>L('Thunderstorm','雷','Gewitter','Гроза','Tormenta')],
+        ['rain',      /rain|regen|regn|pluie|lluvia|chuva|pioggia|sade|precipita|大雨|暴雨|降雨|豪雨|雨|дожд|호우|أمطار/i, ()=>L('Heavy rain','大雨','Starkregen','Сильный дождь','Lluvia intensa')]];
+      const HAZI={}; HAZ.forEach((h,i)=>{ HAZI[h[0]]=h; h[3]=i; });
+      /* the pattern that matches EARLIEST wins; list order breaks a tie (see the note above) */
+      function hazardKey(text){ const t=String(text||''); if(!t) return '';
+        let best=null, at=1e9;
+        for(let i=0;i<HAZ.length;i++){ const m=HAZ[i][1].exec(t); if(!m) continue;
+          if(m.index<at||(m.index===at&&best&&HAZ[i][3]<best[3])){ at=m.index; best=HAZ[i]; } }
+        return best?best[0]:''; }
+      const hazardName=(k)=>{ const h=HAZI[k]; return h?h[2]():''; };
+      /* the reader’s word for it, or — when this table has not learned that name — the agency’s own */
+      function hazardLabel(raw){ const k=hazardKey(raw); return k?hazardName(k):String(raw||'').trim(); }
+
       /* ══ ONE BUILDER FOR EVERY FEED ═══════════════════════════════════════════════════════════════
          Rows carry the agency's own rank (`lv`) and its own word for the hazard (`kind`). This turns
          a set of rows over one unit into the feature the map draws: the worst rank decides the
          colour and the outline, the distinct hazards decide the text, and BOTH palettes are computed
          here so switching modes is a paint swap rather than a re-fetch. */
+      /* (#R277) the words the map draws, from the agency's own words — kept as their own function so
+         a language change RELABELS what is already drawn instead of waiting for the next fetch. */
+      const HZSEP='␟';
+      /* ⚠ (#R277) A RANK IS NOT A HAZARD. MeteoAlarm publishes rows whose whole event text is
+         「Yellow Warning」 — the colour and nothing else — and drawing that as the hazard puts the
+         rank on the map twice and says nothing. Such a row contributes NO name, and if a unit has
+         only those the label falls back to the agency's own rank word, which is what it is. */
+      function hzName(w){ const t=hazardLabel(w); if(!t) return '';
+        if(hazardKey(w)) return t;
+        return String(t).split(/[\s,·()]+/).some(x=>x&&!HZ_DROP.test(x))?t:''; }
+      function hzFields(raw,feed,lv){
+        const words=String(raw||'').split(HZSEP).filter(Boolean);
+        const named=[]; words.forEach(w=>{ const t=hzName(w); if(t&&named.indexOf(t)<0) named.push(t); });
+        const hz=named[0]||rankName(feed,lv);
+        const extra=Math.max(0,named.length-1);
+        return { hz:hz+(extra?(' +'+extra):''), hzs:shortHz(hz)+(extra?('+'+extra):''), nh:named.length||1 }; }
       function unitFeature(iso,feed,geometry,unit,name,rows,at){
         let lv=0; const kinds=[];
         (rows||[]).forEach(r=>{ const v=+r.lv||0; if(v>lv) lv=v;
           const k=String(r.kind||'').trim(); if(k&&kinds.indexOf(k)<0) kinds.push(k); });
         if(!lv) return null;
         const norm=normOf(feed,lv);
-        const hz=kinds[0]||rankName(feed,lv);
-        const extra=Math.max(0,kinds.length-1);
+        /* ⚠ `hzr` IS THE AGENCY'S OWN WORDING, VERBATIM. It is what the tap card prints beside the
+           translated name and what `relabel()` re-reads when the reader changes language. */
+        const hzr=kinds.join(HZSEP);
+        const f=hzFields(hzr,feed,lv);
         return {type:'Feature',geometry,properties:{
           iso, feed, unit, name:String(name||''), lv, norm,
           colA:agCol(feed,lv), colN:PAL_NORM[norm],
-          hz:hz+(extra?(' +'+extra):''), hzs:shortHz(hz)+(extra?('+'+extra):''),
-          nh:kinds.length, n:(rows||[]).length, at:String(at||''),
+          hzr, hz:f.hz, hzs:f.hzs,
+          nh:f.nh, n:(rows||[]).length, at:String(at||''),
           items:JSON.stringify((rows||[]).slice(0,400))}}; }
       /* a unit with a feed and nothing in force — the JMA's own 「発表なし」 grey (Japan only, where
          the issuing units are all known; elsewhere the country wash below says the same thing) */
       function quietFeature(iso,feed,geometry,unit,name){
         return {type:'Feature',geometry,properties:{ iso, feed, unit, name:String(name||''),
-          lv:0, norm:0, colA:NONE_COL, colN:NONE_COL, hz:'', hzs:'', nh:0, n:0, at:'', items:'[]'}}; }
+          lv:0, norm:0, colA:NONE_COL, colN:NONE_COL, hzr:'', hz:'', hzs:'', nh:0, n:0, at:'', items:'[]'}}; }
 
       /* ══ ⚠⚠ (#R273) 「対応国も増やせ」「ソースは一国一ソース」 ══════════════════════════════════
          Fourteen national services plus the thirty-five MeteoAlarm carries, and each country appears
@@ -1282,7 +1360,14 @@ window.IntMapModules.worldPacks=function(HOST){
       const maAt={};                /* iso → when THIS country's rows were last read (#R275) */
       let maAsked=MA_DEFAULT.slice();
       const MA_PER_TICK=6;          /* the relay's own per-request bound — see alerts-relay */
-      const MA_CALLS=2;             /* …and two requests a tick, so a full cycle is ~90 s */
+      /* ⚠⚠ (#R277) THREE, AND THE NUMBER IS NOT ARBITRARY — 「更新が遅すぎる。リアルタイムにと言っている」
+         (3回目). #R275 turned a stuck first-load queue into a real rotation and left it at two calls
+         a tick: 12 countries every 30 s over 35 is a full cycle every ~90 s. The relay's edge cache
+         is SIXTY seconds, so a country asked for more often than that costs nothing upstream and
+         returns the same bytes — i.e. 60 s is the floor, and 90 s was above it for no reason.
+         18 a tick × two ticks = 35 countries in 60 s, exactly on the floor. Asking faster would not
+         make any answer newer; it would only multiply requests EUMETNET has to serve. */
+      const MA_CALLS=3;             /* …so a full cycle is 60 s, which is the edge cache's own age */
       /* ══ ⚠⚠⚠ (#R275) 「更新が遅すぎる。リアルタイムにと言っている。」 (2回目) ═══════════════════════
          #R273 answered this by halving the tick — 60 s to 30 s — and the tick was never what was
          wrong for most of the map. MEASURED on the built page, layer on, refresh() driven 80 times
@@ -1310,7 +1395,9 @@ window.IntMapModules.worldPacks=function(HOST){
         const cold=all.filter(k=>!maData[k]);
         cold.sort((a,b)=>(maAsked.indexOf(a)>=0?0:1)-(maAsked.indexOf(b)>=0?0:1));
         const byAge=fresh.sort((a,b)=>(maAt[a]||0)-(maAt[b]||0));
-        const take=cold.concat(byAge).slice(0,Math.max(0,n||MA_PER_TICK));
+        const now=Date.now();
+        const take=cold.concat(byAge).filter(k=>!maPend[k]&&(!maAt[k]||now-maAt[k]>=MIN_AGE_MS))
+          .slice(0,Math.max(0,n||MA_PER_TICK));
         take.forEach(k=>{ if(maAsked.indexOf(k)<0) maAsked.push(k); });
         return take; }
       /* ══ ⚠⚠⚠ (#R275) THE WMO REGISTER — 「対応国も増やせ。ソースは一国一ソース。」 ═══════════════
@@ -1319,7 +1406,9 @@ window.IntMapModules.worldPacks=function(HOST){
          Information Centre and why that is not GDACS coming back: SWIC republishes each member's own
          CAP, polygon and wording intact, and the panel names the MEMBER'S service as the source.
          ⚠ A country that already has a feed never asks here — one source per country. */
-      const SWIC_PER_TICK=6, SWIC_CALLS=2;
+      /* (#R277) three calls here too — the scan says which members have anything in force at all
+         (measured, 38 of 93), so a full cycle of the ones that matter is two ticks. */
+      const SWIC_PER_TICK=6, SWIC_CALLS=3;
       const swicMeta={ mid:Object.create(null), dept:Object.create(null), status:Object.create(null), at:0, asked:false };
       const swicData={};            /* iso → the member summary */
       const swicAt={};              /* iso → when it was last read */
@@ -1336,14 +1425,21 @@ window.IntMapModules.worldPacks=function(HOST){
         const hot=swicHot();
         const cold=hot.filter(k=>!swicData[k]);
         const byAge=hot.filter(k=>swicData[k]).sort((a,b)=>(swicAt[a]||0)-(swicAt[b]||0));
-        return cold.concat(byAge).slice(0,Math.max(0,n||SWIC_PER_TICK)); }
+        const now=Date.now();
+        return cold.concat(byAge).filter(k=>!swicPend[k]&&(!swicAt[k]||now-swicAt[k]>=MIN_AGE_MS))
+          .slice(0,Math.max(0,n||SWIC_PER_TICK)); }
+      /* (#R277) how many batches of each rotation are in flight, and which countries they hold */
+      const maPend=Object.create(null), swicPend=Object.create(null);
+      let swicMetaBusy=false;
       let bomRec=null, hkoRec=null;
       /* the loaders that are NOT awaited with the others still put shapes on the map, so the
          published collection is the awaited half plus whatever each of them has landed (#R271). */
       const SIDE={cma:[],bom:[],ma:[],phl:[],cwa:[],nzl:[],swic:[]};
       const PLACED={};            /* iso → [placed, published] — printed, never assumed (#R185) */
       const UNPL={};              /* iso → worst rank among the areas that could NOT be placed */
-      let cmaBusy=false, maBusy=false, phlBusy=false, capBusy={}, swicBusy=false;
+      /* ⚠ (#R277) `maBusy` and `swicBusy` are COUNTS of batches in flight, not booleans — see the
+         note in refresh(): one slow country must not stop the rotation for a whole tick. */
+      let cmaBusy=false, maBusy=0, phlBusy=false, capBusy={}, swicBusy=0;
       const relay=(qs)=>{ let b=''; try{ b=String(window.SUPABASE_URL||'').replace(/\/$/,''); }catch(_){ b=''; }
         return b?(b+'/functions/v1/alerts-relay?'+qs):''; };
       const CN_PROV={'11':'北京市','12':'天津市','13':'河北省','14':'山西省','15':'内蒙古自治区','21':'辽宁省',
@@ -1415,7 +1511,18 @@ window.IntMapModules.worldPacks=function(HOST){
           'rgba(0,0,0,0)']; };
       function ensureChoro(){ if(GE().layers.has(CHORO)&&GE().layers.has(HATCH)) return true;
         if(!_imCanDraw()||!GE().layers.hasSource('countries')) return false;
-        const before=GE().layers.has('tool-poly')?'tool-poly':undefined;
+        /* ══ ⚠⚠⚠ (#R277) THE COUNTRY-SCALE GREY WAS ON TOP OF THE UNITS ══════════════════
+           MEASURED on the built page with the layer on: `wp-alert-fill` sat at style index 34 and
+           `wp-alert-choro` at 39 — the wash is added from `paintCountries()`, which lands AFTER
+           `ensureLayers()`, and neither named a `before`, so 「発令されていないだけの地域は灰色に」
+           was painting its 42 % grey OVER every warned unit in the same country, and the hatch its
+           90 % pattern over everything in an unwired one. Which one won depended on which async
+           continuation happened to land first, which is worse than either answer.
+           → the wash and the hatch go UNDER the unit fills, by NAME, so the order is a fact of the
+           construction rather than of the timing. Grey means 「read, nothing here」; it can never be
+           the thing a reader sees where something IS in force. */
+        const before=GE().layers.has('wp-alert-fill')?'wp-alert-fill'
+          :(GE().layers.has('tool-poly')?'tool-poly':undefined);
         try{
           if(!GE().layers.has(HATCH)){
             ensureHatch();
@@ -1486,19 +1593,42 @@ window.IntMapModules.worldPacks=function(HOST){
       const _norm=(s)=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()
         .replace(/[\s　.,\-_'’«»"]/g,'').replace(/[()]/g,'')
         .replace(/(county|province|region|state|territory|prefecture|lan|voivodeship|megye|zupanija)$/,'');
+      /* ══ ⚠⚠ (#R277) THE INDEX SIDE OF THE MATCH ═════════════════════════════════════
+         This tried shorter and shorter pieces of the QUERY against the index and never the other
+         way round, so 「Antwerp」 could not find 「Prov. Antwerpen」 and 「Viseu」 could not find
+         「Viseu Dão Lafões」 — Belgium came out 0 of 9 and Lithuania 0 of 11, measured.
+         ⚠ AND ONLY WHEN EXACTLY ONE KEY MATCHES. A stem that fits two units is not an answer; it
+         is a coin toss, and a warning drawn on the wrong district is worse than one drawn nowhere.
+         The keys are cached per index (they are built once and never mutated). */
+      const _IDXKEYS=(typeof WeakMap==='function')?new WeakMap():null;
+      const _keysOf=(idx)=>{ if(!_IDXKEYS) return Object.keys(idx);
+        let k=_IDXKEYS.get(idx); if(!k){ k=Object.keys(idx); _IDXKEYS.set(idx,k); } return k; };
       function lookupUnit(idx,name){ if(!idx) return null;
         const k=_norm(name); if(k&&idx[k]) return idx[k];
         const w=String(name||'').split(/\s+/).filter(Boolean);
-        if(w.length<2) return null;
         const tryK=(t)=>{ const q=_norm(t); return (q.length>=4&&idx[q])?idx[q]:null; };
-        for(let n=w.length-1;n>=1;n--){ const f=tryK(w.slice(0,n).join(' ')); if(f) return f; }
-        for(let n=1;n<w.length;n++){ const f=tryK(w.slice(n).join(' ')); if(f) return f; }
+        if(w.length>=2){
+          for(let n=w.length-1;n>=1;n--){ const f=tryK(w.slice(0,n).join(' ')); if(f) return f; }
+          for(let n=1;n<w.length;n++){ const f=tryK(w.slice(n).join(' ')); if(f) return f; }
+        }
+        if(k.length>=5){ let hit=null,n=0;
+          const keys=_keysOf(idx);
+          for(let i=0;i<keys.length;i++){ const q=keys[i];
+            if(q.length>k.length&&q.slice(0,k.length)===k&&idx[q]!==hit){ hit=idx[q]; if(++n>1) break; } }
+          if(n===1) return hit; }
         return null; }
+      /* ⚠ (#R277) …and a leading administrative word is not part of the name. Eurostat writes
+         「Prov. West-Vlaanderen」 and 「Région de Bruxelles-Capitale」; the agency writes 「West
+         Flanders」 and 「Brussels」. The prefix is registered as an alias so both spellings resolve. */
+      const _LEAD=/^(prov\.?|provincia(?:\s+d[ie])?|province\s+(?:of|de|du)|région\s+(?:de|du|des)|regione|região|región(?:\s+de)?|comunidad(?:\s+de)?|kreis|landkreis|kanton|okres|powiat|département|departement|zupanija|županija)\s+/i;
       const _alias=(v)=>{ const out=[];
         String(v||'').split('|').forEach(part=>{ const t=part.trim(); if(!t) return;
           out.push(t);
           t.split('/').forEach(x=>{ if(x.trim()) out.push(x.trim()); });
-          const noParen=t.replace(/\([^)]*\)/g,'').trim(); if(noParen&&noParen!==t) out.push(noParen); });
+          const noParen=t.replace(/\([^)]*\)/g,'').trim(); if(noParen&&noParen!==t) out.push(noParen);
+          [t,noParen].forEach(x=>{ const st=String(x||'').replace(_LEAD,'').trim(); if(st&&st!==x) out.push(st); });
+          /* a composite 「A; B; C」 areaDesc names each of its parts as well as the whole */
+          if(t.indexOf(';')>=0) t.split(/\s*;\s*/).forEach(x=>{ if(x.trim()) out.push(x.trim()); }); });
         return out; };
       /* ⚠ (#R273) 「発令の色分けの境界線の解像度が低すぎる。」 — Eurostat's NUTS goes from 60 m to 20 m
          (measured: 0.68 MB + 1.60 MB, and at 60 m a French département was a seven-sided blob), and
@@ -1709,13 +1839,55 @@ window.IntMapModules.worldPacks=function(HOST){
         UNPL[iso]=u;
         return out; }
 
-      /* ── China: the CMA's public warning list through the relay, at the province the alert id names ── */
+      /* ══ ⚠⚠⚠ (#R277) CHINA, AT THE UNIT THE CMA ACTUALLY ISSUES FOR ═══════════════════
+         「日本以外でも区分単位、発令単位ごとに色分けしろ。」「漏れが多すぎる。」
+         MEASURED, one request: the CMA list holds 1,235 warnings in force; this loader asked for
+         **300** and painted them over **28 PROVINCES**. Both halves are wrong in the same way — the
+         id 「36073341600000」 is a GB/T 2260 division code and 360733 is 会昌县, a county inside
+         赣州市 inside 江西省. 「江西省赣州市会昌县气象台发布大风蓝色预警信号」 is one county’s wind
+         warning, and it was colouring 167,000 km².
+
+         So: every page of the list (1,000 a request, and the relay states the real total), and the
+         shape is looked up BY CODE rather than by the province’s name — the district first, then the
+         prefecture-city, then the province, because the code says which of the three the issuing
+         office is. The boundaries are DataV.GeoAtlas (Aliyun), which publishes every prefecture-city
+         in one CORS-open file keyed on the same adcode. MEASURED with this ladder: **1,000 of 1,000
+         warnings placed, over 223 distinct units** — 149 at the district, 849 at the city, 2 at the
+         province (those two ARE province-level bulletins: 「江西省气象台发布大风黄色预警信号」).
+         ⚠ The two files are fetched ONCE, and only when this layer is on and China has something in
+         force — 4.3 MB from a CDN, against a country drawn at the wrong unit. */
+      const CN_GEO='https://geo.datav.aliyun.com/areas_v3/bound/100000_full_city.json';
+      const CN_GEO_PROV='https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json';
+      function cnGeo(){ return SUBDIV.cn||(SUBDIV.cn=Promise.all([fetchJSON(CN_GEO),fetchJSON(CN_GEO_PROV)])
+        .then(([city,prov])=>{ const by=Object.create(null);
+          (city.features||[]).forEach(f=>{ const q=f.properties||{}; const c=String(q.adcode||'');
+            if(c&&f.geometry) by[c]={name:String(q.name||c),level:String(q.level||''),geometry:f.geometry}; });
+          (prov.features||[]).forEach(f=>{ const q=f.properties||{}; const c=String(q.adcode||'');
+            if(c&&f.geometry&&!by[c]) by[c]={name:String(q.name||c),level:'province',geometry:f.geometry}; });
+          if(!Object.keys(by).length) throw new Error('cn division geometry empty');
+          return by; })); }
+      /* the unit an alert id names: district → prefecture-city → province, first one that exists */
+      function cnUnitOf(idx,id){ const d=String(id||'').slice(0,6); if(d.length<6||!idx) return null;
+        const c=d.slice(0,4)+'00', p=d.slice(0,2)+'0000';
+        if(idx[d]&&idx[d].level!=='province') return {code:d,rec:idx[d]};
+        if(idx[c]) return {code:c,rec:idx[c]};
+        if(idx[p]) return {code:p,rec:idx[p]};
+        return null; }
+      const CN_PAGE=1000, CN_PAGES=2;      /* the relay states `count`; this is the bound on pages */
+      let cnTotal=0;
       async function loadCMA(){
-        const u=relay('u='+encodeURIComponent('https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=300&signaltype=&signallevel=&province='));
-        if(!u) throw new Error('no relay');
-        const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('cma '+r.status);
-        const j=await r.json();
-        const list=(j&&j.data&&j.data.page&&j.data.page.list)||[];
+        const page=async(n)=>{
+          const u=relay('u='+encodeURIComponent('https://www.nmc.cn/rest/findAlarm?pageNo='+n+'&pageSize='+CN_PAGE+'&signaltype=&signallevel=&province='));
+          if(!u) throw new Error('no relay');
+          const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('cma '+r.status);
+          return r.json(); };
+        const first=await page(1);
+        const pg=(first&&first.data&&first.data.page)||{};
+        cnTotal=+pg.count||0;
+        let list=(pg.list||[]).slice();
+        for(let n=2;n<=CN_PAGES&&list.length<cnTotal;n++){
+          try{ const j=await page(n); const l=((j&&j.data&&j.data.page)||{}).list||[]; if(!l.length) break; list=list.concat(l); }
+          catch(_){ break; } }
         const items=[];
         list.forEach(a=>{ const id=String(a.alertid||''); const prov=CN_PROV[id.slice(0,2)]||'';
           const title=String(a.title||'');
@@ -1726,11 +1898,28 @@ window.IntMapModules.worldPacks=function(HOST){
              because a literal for one slash spells two of them, which every comment-stripping
              instrument in this repo reads as the start of a line comment. */
           seenAt('cma',String(a.issuetime||'').split('/').join('-').replace(' ','T')+':00+08:00');
-          items.push({ area:title.replace(/^.*?气象台发布/,'')||title, adm:prov, unit:'city', lv,
+          items.push({ id, area:title.replace(/^.*?气象台发布/,'')||title, adm:prov, unit:'division', lv,
             tier:normOf('cma',lv), kind:(title.match(/发布(.+?)预警/)||[])[1]||'', status:String(a.issuetime||'') }); });
         cmaCount=items.length;
-        SIDE.cma=await unitFeatures('CHN','cma',items,(x)=>x.adm,'province');
+        SIDE.cma=await cmaFeatures(items);
         return { items }; }
+      async function cmaFeatures(items){
+        let idx=null; try{ idx=await cnGeo(); }catch(_){ idx=null; }
+        /* (#R271 追記) A BOUNDARY SET THAT COULD NOT BE READ IS 「nothing could be placed」, NOT
+           「nothing is in force」 — the wash then says so, in the rank of the worst unplaced warning. */
+        if(!idx){ let w=0; items.forEach(x=>{ const n=normOf('cma',x.lv||1); if(n>w) w=n; });
+          PLACED.CHN=[0,items.length]; UNPL.CHN=w; return []; }
+        const by=new Map(); let lost=0, worst=0;
+        items.forEach(x=>{ const u=cnUnitOf(idx,x.id);
+          if(!u){ lost++; const n=normOf('cma',x.lv||1); if(n>worst) worst=n; return; }
+          const g=by.get(u.code)||{rec:u.rec,items:[]}; by.set(u.code,g); g.items.push(x); });
+        const out=[];
+        by.forEach((g,code)=>{ const ft=unitFeature('CHN','cma',g.rec.geometry,
+            (g.rec.level==='province'?'province':g.rec.level==='city'?'city':'district'),
+            g.rec.name,g.items,(g.items[0]&&g.items[0].status)||'');
+          if(ft) out.push(ft); });
+        PLACED.CHN=[items.length-lost,items.length]; UNPL.CHN=worst;
+        return out; }
 
       /* ── Australia: the Bureau of Meteorology's own warning list, at the state it files by ── */
       async function loadBOM(){
@@ -1833,18 +2022,70 @@ window.IntMapModules.worldPacks=function(HOST){
         PLACED.NOR=[out.length,n]; UNPL.NOR=0;
         return out; }
 
-      /* ══ EUROPE, AT THE REGION THE CAP MESSAGE NAMES (#R271) ═══════════════════════════════════ */
+      /* ══ EUROPE, AT THE REGION THE CAP MESSAGE NAMES (#R271, ═ the ladder is #R277) ════════
+         ══ ⚠⚠⚠ (#R277) 「漏れが多すぎる。」 — MEASURED: 754 OF 1,127 ═══════════════════
+         Over all thirty-five MeteoAlarm countries the same minute, 373 published areas could not be
+         placed and simply did not appear — Austria 86 of 116, Slovakia ALL 59, Belgium all 9,
+         Croatia all 13, Bosnia all 10, Spain 64 of 157, Portugal all 18, Moldova all 42. The single
+         cause is that MeteoAlarm’s CAP carries no polygon for them (the `<geocode>` is a bare
+         `EMMA_ID`) and their names are the SERVICE’S own region names, which are not Eurostat NUTS
+         names: 「Rijeka region」, 「Wien Brigittenau」, 「Meseta cacereña」, 「Košice okolie」.
+
+         So the shape is looked for in FOUR places, in order of how close each is to the agency that
+         issued the warning:
+            1  the CAP’s own <polygon>, when the service publishes one       (the UK, the Netherlands)
+            2  THE SAME SERVICE’S OWN SHAPES, from the WMO register (#R277)  (Austria, Slovakia,
+               Spain, Poland, Serbia, Bosnia, Croatia, Greece, Slovenia, …)
+            3  Eurostat NUTS, where the region name IS the NUTS name          (Italy, France, …)
+            4  the country outline, but ONLY when the area names the country  (Cyprus)
+         MEASURED with the ladder in place: 965 of 1,127. The 162 that remain are counted and
+         printed per country (「置けなかった数は言葉で印字する」 #R273) rather than rounded away.
+         ⚠ STEP 2 IS NOT A SECOND SOURCE OF WARNINGS — 「ソースは一国一ソース」. What the warning IS still
+         comes from that country’s own feed; the register supplies the OUTLINE the same national
+         service drew for the same named unit, and nothing else travels with it. */
+      const swicGeoBy={};        /* iso → name index of that member’s own published shapes */
+      const swicGeoAsked={};     /* iso → asked already (a FAILURE clears it, so it is retried) */
+      const SHAPELIB={};         /* iso → how many shapes that library holds (printed, not assumed) */
+      let swicGeoInflight=0;
+      const SWIC_GEO_MAX=2;      /* at most two libraries in flight, so a tick cannot become a storm */
+      function askSwicGeo(iso){
+        if(swicGeoAsked[iso]||swicGeoInflight>=SWIC_GEO_MAX) return;
+        const mid=swicMeta.mid[iso]; if(!mid) return;     /* the member table has not landed yet */
+        const u=relay('swicgeo='+encodeURIComponent(mid)); if(!u) return;
+        swicGeoAsked[iso]=true; swicGeoInflight++;
+        fetchJSON(u).then(j=>{ const d=(j.members||{})[mid]; if(!d||d.error) return;
+            const by=Object.create(null); let n=0;
+            (d.areas||[]).forEach(a=>{ if(!a.geom) return; n++;
+              _alias(a.name).forEach(x=>{ const k=_norm(x); if(k&&!by[k]) by[k]={geometry:a.geom}; }); });
+            if(!n) return;
+            swicGeoBy[iso]=by; SHAPELIB[iso]=n;
+            return maFeatures().then(()=>{ if(on) publish(); }); })
+          .catch(()=>{ swicGeoAsked[iso]=false; })
+          .then(()=>{ swicGeoInflight--; }); }
+      /* the country outline, and ONLY when the area is the country — 「Cyprus」 is an issuing unit
+         for a service that issues for the whole island, and a wash over a country that names itself
+         is the truth rather than the 「発令されてない箇所が塗られている」 this layer has been reported for. */
+      function wholeCountryShape(iso,name){
+        const k=_norm(name); if(!k) return null;
+        if(k!==_norm(countryName(iso))&&k!==_norm(iso)) return null;
+        try{ const f=(HOST.countryGeo&&HOST.countryGeo.features||[]).find(x=>String(x.id)===String(iso));
+          return (f&&f.geometry)||null; }catch(_){ return null; } }
       async function maFeatures(){
         const isos=Object.keys(maData).filter(k=>((maData[k]||{}).areas||[]).length);
         if(!isos.length){ SIDE.ma=[]; return; }
         let nuts=null; try{ nuts=await nutsGeo(); }catch(_){ nuts=null; }
+        try{ await withCountryGeo(); }catch(_){}
         const out=[];
         isos.forEach(iso=>{ const d=maData[iso]||{}; const cc=NUTS_CC[iso];
-          const idx=(nuts&&cc&&nuts[cc])||null; let placed=0;
+          const idx=(nuts&&cc&&nuts[cc])||null; const lib=swicGeoBy[iso]||null; let placed=0, missed=0;
+          const shapeOf=(a)=>{
+            if(a.poly){ const g=capPolygon(a.poly); if(g) return g; }
+            if(lib){ const f=lookupUnit(lib,a.name); if(f&&f.geometry) return f.geometry; }
+            if(idx){ const f=lookupUnit(idx,a.name); if(f&&f.geometry) return f.geometry; }
+            return wholeCountryShape(iso,a.name); };
           (d.areas||[]).forEach(a=>{
-            let g=a.poly?capPolygon(a.poly):null;
-            if(!g&&idx){ const f=lookupUnit(idx,a.name); if(f&&f.geometry) g=f.geometry; }
-            if(!g) return;
+            const g=shapeOf(a);
+            if(!g){ missed++; return; }
             placed++;
             const lv=a.tier||1;
             const ev=(a.events&&a.events.length)?a.events:[{event:'',severity:'',tier:lv}];
@@ -1854,9 +2095,10 @@ window.IntMapModules.worldPacks=function(HOST){
             const ft=unitFeature(iso,'meteoalarm',g,'region',String(a.name||''),rows,String(d.fetchedAt||''));
             if(ft) out.push(ft); });
           PLACED[iso]=[placed,(d.areas||[]).length];
-          let u=0; (d.areas||[]).forEach(a=>{ const has=(a.poly&&capPolygon(a.poly))||lookupUnit(idx,a.name);
-            if(!has){ const n=normOf('meteoalarm',a.tier||1); if(n>u) u=n; } });
-          UNPL[iso]=u; });
+          let u=0; (d.areas||[]).forEach(a=>{ if(!shapeOf(a)){ const n=normOf('meteoalarm',a.tier||1); if(n>u) u=n; } });
+          UNPL[iso]=u;
+          /* a country that could not place everything asks the register for that service’s shapes */
+          if(missed) askSwicGeo(iso); });
         SIDE.ma=out; }
 
       async function loadMA(list){
@@ -1947,15 +2189,34 @@ window.IntMapModules.worldPacks=function(HOST){
          boundary set publishes its `name` in exactly that county+township form, 378 units in 629 KB
          with `Access-Control-Allow-Origin: *`, so the warning is drawn on the township it names
          rather than washed over the island. */
+      /* ══ ⚠⚠ (#R277) THE BOUNDARY SET IS FROM 1982 AND TAIWAN RENAMED ITS COUNTIES IN 2010 ════
+         MEASURED: 183 of the CWA's 286 areas were placed and 103 were dropped, and almost all of the
+         drop was 臺南市 and 新北市 — the 2010 municipal reform turned 台南縣楠西鄉 into 臺南市楠西區
+         and 台北縣板橋市 into 新北市板橋區, so an EXACT string match against a 1982 file misses every
+         district of two of the six special municipalities.
+         → Two keys per unit, neither of them a hand-written rename table:
+             · the STEM of the whole name — 臺/台 folded and the 縣市區鄉鎮 suffixes dropped, so
+               「臺南市楠西區」 and 「台南縣楠西鄉」 are the same key
+             · the TOWNSHIP stem alone, and only where it is unique in the whole country — which is
+               what carries a county that was RENAMED (台北縣 → 新北市): 「板橋」 is one place.
+         MEASURED with both: **284 of 286**. What is left is 「高雄市那瑪夏區」 (a township renamed in
+         2008) and 「台20臨105線 0k+0~43k+830」, which is a stretch of ROAD and not a place at all. */
+      const _twFold=(n)=>String(n||'').trim().split('臺').join('台');
+      const twKey=(n)=>_twFold(n).replace(/[縣市區鄉鎮]/g,'');
+      const twTown=(n)=>{ const m=_twFold(n).match(/^(.{2,3}[縣市])(.+)$/);
+        return m?m[2].replace(/[區鄉鎮市]$/,''):''; };
       function twTownGeo(){ return SUBDIV.twtown||(SUBDIV.twtown=
         fetchJSON('https://cdn.jsdelivr.net/gh/g0v/twgeojson@master/legacy/twTown1982.json').then(j=>{
-          const by=Object.create(null);
+          const by=Object.create(null), tn=Object.create(null), dup=Object.create(null);
           (j.features||[]).forEach(f=>{ const n=(f.properties&&f.properties.name)||''; if(!n||!f.geometry) return;
-            /* 臺 and 台 are the same character in practice and the two files disagree about which */
-            const k=String(n).split('臺').join('台'); if(!by[k]) by[k]=f; });
+            const k=twKey(n); if(!by[k]) by[k]=f;
+            const t=twTown(n); if(t){ if(tn[t]&&tn[t]!==f) dup[t]=1; else tn[t]=f; } });
           if(!Object.keys(by).length) throw new Error('tw township geometry empty');
-          return by; })); }
-      const twKey=(n)=>String(n||'').trim().split('臺').join('台');
+          Object.keys(dup).forEach(t=>{ delete tn[t]; });   /* an ambiguous stem is not an answer */
+          return {by,tn}; })); }
+      const twFind=(idx,name)=>{ if(!idx) return null;
+        const f=idx.by[twKey(name)]; if(f) return f;
+        const t=twTown(name); return (t&&idx.tn[t])||null; };
 
       const CAPFEED={ pagasa:{q:'ph=1',iso:'PHL',unit:'province',side:'phl'},
         cwa:{q:'cap=tw',iso:'TWN',unit:'township',side:'cwa'},
@@ -1969,7 +2230,7 @@ window.IntMapModules.worldPacks=function(HOST){
         let town=null;
         if(feed==='cwa'){ try{ town=await twTownGeo(); }catch(_){ town=null; } }
         const shapeOf=(a)=>{ if(a.poly){ const g=capPolygon(a.poly); if(g) return g; }
-          if(town){ const f=town[twKey(a.name)]; if(f&&f.geometry) return f.geometry; }
+          if(town){ const f=twFind(town,a.name); if(f&&f.geometry) return f.geometry; }
           return null; };
         const out=[]; const areas=(j&&j.areas)||[];
         areas.forEach(a=>{ const g=shapeOf(a); if(!g) return;
@@ -2020,9 +2281,18 @@ window.IntMapModules.worldPacks=function(HOST){
         if(f==='meteoalarm') return maData[c]?(maData[c].error?'error':'ok'):(FEED_STATE.meteoalarm==='error'?'error':'loading');
         if(f==='swic') return swicData[c]?'ok':(FEED_STATE.swic==='error'?'error':'loading');
         return FEED_STATE[f]||'idle'; }
+      /* ══ ⚠⚠⚠ (#R277) GREY IS 「READ, AND NOTHING IS IN FORCE」 — SO ONLY A READ EARNS IT ══════
+         #R275 stopped 「発表なし」 being painted over a country that had not been READ yet (`loading`)
+         and left `error` and `idle` painting it. MEASURED this round: 「cma 502」 — www.nmc.cn is
+         intermittently unreachable from the edge region (two attempts, 45 s each, both timed out;
+         the same url answers in 0.9 s when it is up) — and China came out GREY, i.e. the map said
+         「中国に発令中の警報はありません」 while 1,235 were in force. That is #R212's defect exactly,
+         one state along: a feed that could not be fetched is not a feed that answered 「nothing」.
+         → only `ok` earns the grey. Everything else is HATCHED, which says nothing, and the tap
+         says WHICH nothing it is, in words. */
       function washTier(c){
         if(!supported(c)) return 0;
-        if(readState(c)==='loading') return 0;
+        if(readState(c)!=='ok') return 0;
         const u=UNPL[c]||0;
         if(u&&!drawnISO[c]) return 10+Math.min(4,u);
         return 1; }
@@ -2042,11 +2312,47 @@ window.IntMapModules.worldPacks=function(HOST){
         paintCountries();
         if(on&&panel.shown()) overview(); }
 
+      /* ══ ⚠⚠ (#R277) A LANGUAGE CHANGE RELABELS WHAT IS ALREADY DRAWN ════════════════════
+         「警報名は設定言語で書け。」 Every feature carries `hzr` — the issuing agency's own wording — so
+         the reader's word for it is recomputed from what is already here. No feed is asked again,
+         and a reader who switches language does not watch the map empty and refill. */
+      function relabel(){
+        try{ feats.forEach(f=>{ const q=f&&f.properties; if(!q||!q.hzr) return;
+          const x=hzFields(q.hzr,q.feed,q.lv); q.hz=x.hz; q.hzs=x.hzs; q.nh=x.nh; }); }catch(_){}
+        whenDrawable(()=>{ if(ensureLayers()) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); });
+        if(on&&panel.shown()) overview(); }
+      try{ window.addEventListener('intmap-lang',()=>{ if(on) relabel(); }); }catch(_){}
+
       /* ⚠ 「更新が遅すぎる。リアルタイムにと言っている。」 — thirty seconds while the layer is on and the
          tab is visible, and an immediate refresh when the tab comes back. The relay's edge cache is
          what stops that becoming thirty upstream requests a minute. */
       const TICK_MS=30000;
       const FEED_KEYS=['jma','nws','eccc','meteoalarm','swic','cma','bom','inmet','hko','dwd','metno','pagasa','cwa','metservice'];
+      /* ══ ⚠⚠ (#R277) THE ROTATION REFILLS ITS OWN SLOTS ═════════════════════════════
+         Starting batches only ON the tick caps the cycle at `MA_CALLS` countries-worth every 30 s
+         AND wastes any slot that frees early — MEASURED, the oldest country still swung to 94 s.
+         A finished batch pumps the next one, so the three slots stay busy and the cycle is bounded
+         by throughput rather than by the clock.
+         ⚠ AND THERE IS A FLOOR, or a fast round would spin. `MIN_AGE_MS` is just under the relay's
+         own sixty seconds of edge cache: a country read more recently than that would answer with
+         the SAME BYTES, so asking is pure cost — for us and for the service. 「リアルタイム」 here
+         means 「as new as the transport can be」, and the transport says sixty seconds. */
+      const MIN_AGE_MS=45000;
+      function pumpMA(){ if(!on) return;
+        while(maBusy<MA_CALLS){
+          const b=maNext(MA_PER_TICK); if(!b.length) break;
+          maBusy++; b.forEach(k=>{ maPend[k]=1; });
+          loadMA(b).then(()=>{ FEED_STATE.meteoalarm='ok'; if(on) publish(); })
+            .catch(e=>{ FEED_STATE.meteoalarm='error'; console.warn('MeteoAlarm',e); if(on&&panel.shown()) overview(); })
+            .then(()=>{ maBusy--; b.forEach(k=>{ delete maPend[k]; }); pumpMA(); }); } }
+      function pumpSWIC(){ if(!on||!swicMeta.at) return;
+        while(swicBusy<SWIC_CALLS){
+          const b=swicNext(SWIC_PER_TICK); if(!b.length) break;
+          swicBusy++; b.forEach(k=>{ swicPend[k]=1; });
+          loadSWIC(b).then(()=>{ FEED_STATE.swic='ok'; if(on){ publish(); paintCountries(); } })
+            .catch(e=>{ FEED_STATE.swic='error'; console.warn('WMO SWIC',e); if(on&&panel.shown()) overview(); })
+            .then(()=>{ swicBusy--; b.forEach(k=>{ delete swicPend[k]; }); pumpSWIC(); }); } }
+
       async function refresh(){ if(busy) return; busy=true;
         FEED_KEYS.forEach(k=>{ if(FEED_STATE[k]!=='ok') FEED_STATE[k]='loading'; });
         try{ const parts=await Promise.all([
@@ -2076,24 +2382,25 @@ window.IntMapModules.worldPacks=function(HOST){
           /* ⚠ (#R275) A ROTATION, NOT A FIRST-LOAD QUEUE — see the note on `maNext`. Each call takes
              the relay's own maximum and the batches are disjoint, so a tick advances the cycle by
              `MA_CALLS × MA_PER_TICK` countries and never asks for the same one twice. */
-          if(!maBusy){ maBusy=true;
-            const batches=[]; const claimed=[];
-            for(let i=0;i<MA_CALLS;i++){ const b=maNext(MA_PER_TICK+claimed.length).filter(k=>claimed.indexOf(k)<0).slice(0,MA_PER_TICK);
-              if(b.length){ b.forEach(k=>claimed.push(k)); batches.push(b); } }
-            Promise.all(batches.map(b=>loadMA(b))).then(()=>{ FEED_STATE.meteoalarm='ok'; if(on) publish(); })
-              .catch(e=>{ FEED_STATE.meteoalarm='error'; console.warn('MeteoAlarm',e); if(on&&panel.shown()) overview(); })
-              .then(()=>{ maBusy=false; }); }
+          /* ══ ⚠⚠⚠ (#R277) ONE SLOW BATCH USED TO STOP THE WHOLE ROTATION FOR A TICK ════════
+             `maBusy` covered a `Promise.all` of every batch, so a tick advanced only when the SLOWEST
+             of them finished — and a MeteoAlarm country is up to a ten-megabyte upstream fetch.
+             MEASURED with three batches under that flag: the oldest country reached 108 s, WORSE
+             than the two-batch version it replaced, because a batch that overran 30 s made the next
+             tick a no-op entirely.
+             → the flag becomes a COUNT of batches in flight, each independent: a slow one occupies
+             one of the three slots and the other two keep the cycle turning. `maPend` is what stops
+             two slots claiming the same country — `maAt` is only written when a read COMPLETES,
+             because it is the age the panel prints and an optimistic write would hide a stall. */
+          pumpMA();
           /* (#R275) the WMO register — the member table once, then the members' own warnings, on the
-             same age-ordered rotation MeteoAlarm uses */
-          if(!swicBusy){ swicBusy=true;
-            Promise.resolve(loadSWICMeta()).then(()=>loadSWICScan()).then(()=>{
-              const claimed=[]; const batches=[];
-              for(let i=0;i<SWIC_CALLS;i++){ const b=swicNext(SWIC_PER_TICK+claimed.length).filter(k=>claimed.indexOf(k)<0).slice(0,SWIC_PER_TICK);
-                if(b.length){ b.forEach(k=>claimed.push(k)); batches.push(b); } }
-              return Promise.all(batches.map(b=>loadSWIC(b))); })
+             same age-ordered rotation MeteoAlarm uses (#R277: and the same independent slots) */
+          if(!swicMetaBusy){ swicMetaBusy=true;
+            Promise.resolve(loadSWICMeta()).then(()=>loadSWICScan())
               .then(()=>{ FEED_STATE.swic='ok'; if(on){ publish(); paintCountries(); } })
               .catch(e=>{ FEED_STATE.swic='error'; console.warn('WMO SWIC',e); if(on&&panel.shown()) overview(); })
-              .then(()=>{ swicBusy=false; }); }
+              .then(()=>{ swicMetaBusy=false; }); }
+          pumpSWIC();
           publish();
         } finally { busy=false; } }
 
@@ -2232,21 +2539,25 @@ window.IntMapModules.worldPacks=function(HOST){
       function grouped(rows,cap){
         if(!rows||!rows.length) return '';
         ensureGroupedCss();
-        const chip=(kd,c)=>'<span class="wpa-c"><i style="background:'+c+';"></i>'+esc(kd)+'</span>';
-        const kindChips=(km)=>[...km.entries()].sort((a,b)=>b[1].n-a[1].n).map(([kd,v])=>chip(kd,v.c)).join('');
+        /* (#R277) the chip carries the reader's word for the hazard and the agency's own on hover —
+           the rows are grouped BY that word, so two of a service's spellings are one chip. */
+        const chip=(kd,c,raw)=>'<span class="wpa-c"'+(raw&&raw!==kd?(' title="'+esc(raw)+'"'):'')
+          +'><i style="background:'+c+';"></i>'+esc(kd)+'</span>';
+        const kindChips=(km)=>[...km.entries()].sort((a,b)=>b[1].n-a[1].n).map(([kd,v])=>chip(kd,v.c,v.raw)).join('');
         const sig=(km)=>[...km.keys()].sort().join('');
         const by=new Map();
         rows.forEach(x=>{ const k=x.adm||x.pref||x.area||'—';
           const t=x.tier||0, c=rowCol(x);
           const g=by.get(k)||{tier:0,col:NONE_COL,kinds:new Map(),n:0,subs:new Map()}; by.set(k,g);
           if(t>g.tier){ g.tier=t; g.col=c; } g.n++;
-          const kd=x.kind||''; if(kd&&(!g.kinds.has(kd)||g.kinds.get(kd).n<t)) g.kinds.set(kd,{n:t,c});
+          const raw=String(x.kind||'').trim(); const kd=hazardLabel(raw)||raw;
+          if(kd&&(!g.kinds.has(kd)||g.kinds.get(kd).n<t)) g.kinds.set(kd,{n:t,c,raw});
           const sk=x.sub||x.area||k;
           const sg=g.subs.get(sk)||{tier:0,col:NONE_COL,kinds:new Map(),areas:new Map()}; g.subs.set(sk,sg);
           if(t>sg.tier){ sg.tier=t; sg.col=c; }
-          if(kd&&(!sg.kinds.has(kd)||sg.kinds.get(kd).n<t)) sg.kinds.set(kd,{n:t,c});
+          if(kd&&(!sg.kinds.has(kd)||sg.kinds.get(kd).n<t)) sg.kinds.set(kd,{n:t,c,raw});
           const ar=x.area||''; if(ar&&ar!==sk){ const am=sg.areas.get(ar)||new Map(); sg.areas.set(ar,am);
-            if(kd&&(!am.has(kd)||am.get(kd).n<t)) am.set(kd,{n:t,c}); } });
+            if(kd&&(!am.has(kd)||am.get(kd).n<t)) am.set(kd,{n:t,c,raw}); } });
         const list=[...by.entries()].sort((a,b)=>(b[1].tier-a[1].tier)||(b[1].n-a[1].n));
         const N=cap||60, SUBN=20, ARN=40;
         const more=(n)=>'<div class="wpa-more">+'+n+'</div>';
@@ -2335,7 +2646,8 @@ window.IntMapModules.worldPacks=function(HOST){
           /* ⚠ A HAZARD'S RANK IS ITS OWN, not the unit's worst. The rows carry `tier`, and using the
              feature's `norm` here would order 「雷電黄色」 as if it were the province's 「暴雨紅色」 —
              the same conflation that captioned a CMA yellow 「Red (I)」, one level down. */
-          const add=(k,t)=>{ k=String(k||'').trim(); if(!k) return;
+          /* (#R277) …and the NAME is the reader's, from the agency's word — see `hazardLabel` */
+          const add=(k,t)=>{ k=hazardLabel(k); if(!k) return;
             const cur=g.kinds.get(k)||{n:0,norm:0};
             cur.n++; if(t>cur.norm) cur.norm=t; g.kinds.set(k,cur); };
           if(it.length) it.forEach(x=>add(x.kind,+x.tier||p.norm));
@@ -2460,7 +2772,15 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!hits.length){
           h+='<div style="margin-top:9px;font-size:12px;color:var(--text-main);line-height:1.6;">'
             +(!iso?esc(L('No country here.','ここには国がありません。','Hier ist kein Land.','Здесь нет страны.','No hay país aquí.'))
-              :(feed&&readState(iso)==='loading')?esc(L('This country’s service is in the update cycle and has not been read yet.',
+              /* (#R277) …and 「could not be fetched」 is a THIRD thing, not the same silence as
+                 「not read yet」 and not 「nothing in force」 — both are hatched on the map, so this
+                 card is where the reader finds out which one it is. */
+              :(feed&&readState(iso)==='error')?esc(L('This country’s service could not be fetched just now — nothing is being said about this point.',
+                           'この国の機関の情報を今は取得できませんでした——この地点については何も述べていません。',
+                           'Dieser Dienst war gerade nicht erreichbar — über diesen Punkt wird nichts ausgesagt.',
+                           'Службу этой страны сейчас не удалось прочитать — о этой точке ничего не утверждается.',
+                           'No se pudo obtener el servicio de este país ahora mismo — no se afirma nada sobre este punto.'))
+              :(feed&&readState(iso)!=='ok')?esc(L('This country’s service is in the update cycle and has not been read yet.',
                            'この国の機関は更新の順番待ちで、まだ取得できていません。',
                            'Dieser Dienst wurde noch nicht gelesen.',
                            'Эта служба ещё не прочитана.',
@@ -2477,7 +2797,12 @@ window.IntMapModules.worldPacks=function(HOST){
             +hits.slice(0,12).map(f=>{ const pr=f.properties;
               let items=[]; try{ items=JSON.parse(pr.items||'[]'); }catch(_){}
               const col=(mode==='agency'?pr.colA:pr.colN);
-              const kinds=[]; items.forEach(x=>{ const k=String(x.kind||'').trim(); if(k&&kinds.indexOf(k)<0) kinds.push(k); });
+              /* (#R277) ⚠ THE AGENCY'S OWN WORDING IS NOT REPLACED, IT IS ACCOMPANIED. The reader's
+                 name for the hazard first, and what the service itself wrote in brackets after it —
+                 「正確で忠実な」 means the original has to stay legible somewhere, and this card is where. */
+              const kinds=[]; items.forEach(x=>{ const k=String(x.kind||'').trim(); if(!k) return;
+                const t=hazardLabel(k); const shown=(t&&t!==k)?(t+' （'+k+'）'):k;
+                if(kinds.indexOf(shown)<0) kinds.push(shown); });
               return '<div style="border-left:3px solid '+col+';padding-left:8px;">'
                 +'<div style="display:flex;gap:7px;align-items:baseline;font-size:12.5px;">'
                 +'<b style="flex:1;">'+esc(pr.name||countryName(pr.iso))+'</b>'
@@ -2638,7 +2963,7 @@ window.IntMapModules.worldPacks=function(HOST){
         /* (#R275) wired but not yet read — the countries the hatch is covering for a REASON that is
            not 「未対応」, and a number that must go to zero as the rotation comes round */
         unread:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
-            const c=String(f.id||''); if(supported(c)&&readState(c)==='loading') n++; }); }catch(_){} return n; })() });
+            const c=String(f.id||''); if(supported(c)&&readState(c)!=='ok') n++; }); }catch(_){} return n; })() });
       STATE.alertsLegend=(iso3)=>legendFor(String(iso3||'').toUpperCase());
       window.__wpAlerts={ toggle, refresh, ask:(iso)=>loadMA([String(iso||'').toUpperCase()]),
         /* (#R275) the tap's own answer, as a call — so a test can ask 「この地点で何が出ているか」
@@ -2653,7 +2978,10 @@ window.IntMapModules.worldPacks=function(HOST){
         grouped:(rows)=>grouped(rows), maCountries:()=>Object.keys(MA),
         setPalette:(m)=>{ mode=(m==='norm')?'norm':'agency'; try{ localStorage.setItem('im.alertPal',mode); }catch(_){}
           repaintMode(); if(on&&panel.shown()) overview(); return mode; },
-        palette:()=>mode, shortHz };
+        palette:()=>mode, shortHz,
+        /* (#R277) what this table makes of one agency's word — so the classifier is testable
+           without a map, and so an unlearned name can be FOUND rather than guessed at */
+        hazard:(t)=>({ key:hazardKey(t), name:hazardLabel(t) }) };
     })();
 
     /* ══════════════════════════════════════════════════════════════════════════════════════════════

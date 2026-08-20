@@ -102,8 +102,12 @@ window.IntMapModules.terrainWater=function(HOST){
        Manning at js/water-dynamics.js's n now, and (#R267) the model itself is that one solver.
        ⚠⚠ THE OLD NAME IS DELIBERATELY NOT WRITTEN HERE. tests/r265 ⑥ asserts the identifier is gone
        from this file, and a specimen of it in prose is an occurrence — [[intmap-recurring-lessons]]
-       «自分の検査が自分のコメントに当たる», which this project has now paid for nine times. */
-    let flowM3s=null;
+       «自分の検査が自分のコメントに当たる», which this project has now paid for nine times.
+       ⚠⚠⚠ (#R277) AND IT IS `pourRate`. This used to be a SECOND state (`flowM3s`) holding the
+       same m³/s, written by a second box in the panel, overriding the first and also re-writing every
+       tap already on the map — which is why 「1クリックの水量　注水量　流量の違いが判らない。」. One
+       quantity, one variable, one control: `setRate()` below is the only way it moves, and it moves
+       every source with it, so 「水の水流は設定可能に」 (#R189) still reaches the model. */
     let drafting=null; /* a levee being drawn */
     let undoStack=[];
     /* (#R211) continuous pouring — see renderParams()'s 'source' branch for what this models and
@@ -183,6 +187,13 @@ window.IntMapModules.terrainWater=function(HOST){
     const owed=(x)=>Math.max(0,srcCap(x)-Math.max(0,+((x||{}).m3)||0));
     const owedAny=()=>sources.some(x=>owed(x)>0);
     const srcRate=(x)=>Math.max(1,+((x||{}).rate)||pourRate);
+    /* (#R277) THE ONE WRITER for the discharge — the default a new tap is opened at AND the rate of
+       every tap already standing, because a reader who changes 「出す速さ」 means the water they are
+       looking at. Returns what it settled on, so Atlas and the tests read the same number back. */
+    function setRate(v){ const n=Math.max(1,+v||0); if(!isFinite(n)) return pourRate;
+      pourRate=n; sources.forEach(x=>{ x.rate=pourRate; });
+      const pr=panel&&panel.querySelector('.tw-pr'); if(pr&&+pr.value!==pourRate) pr.value=pourRate;
+      solve(); return pourRate; }
     /* ⚠⚠ (#R265) ▶ NO LONGER MEANS «THERE IS A TAP», IT MEANS «THERE IS SOMETHING TO ADVANCE».
        With a steady-state solver, water with no tap behind it had nothing to do, so the transport was
        disabled unless a continuous source existed. Water that is MOVING has plenty to do — a placed
@@ -1750,11 +1761,20 @@ window.IntMapModules.terrainWater=function(HOST){
         '.tw-seg{flex:1;min-width:0;border:none;background:transparent;color:var(--text-main);font-size:'+TW_FS+';'
           +'font-weight:500;padding:'+(_mob()?'7px':'5px')+' 6px;border-radius:7px;cursor:pointer;line-height:1.25;white-space:nowrap;}',
         '.tw-seg.on{background:var(--primary-color);color:#fff;font-weight:600;}',
-        /* ⚠ (#R258) THE TOOL PICKER IS 2×2, NOT A FOUR-WAY STRIP. Measured in this panel: the strip
-           gives each segment 73 px while 「🧱 堤防・ダム」 needs 96 and 「💧 ここに水」 88 — two of the
-           four labels were clipped. Four names do not fit across 306 px, so they go two by two. */
-        '.tw-modes{display:grid;grid-template-columns:1fr 1fr;}',
-        '.tw-modes .tw-seg{overflow:hidden;text-overflow:ellipsis;}',
+        /* ══ ⚠⚠ (#R277) 「ツールは上部に一行でスティックしろ。」 ════════════════════════════════════
+           #R275 got the sticking right (the picker is a SIBLING of the scroller, so it never scrolls
+           away) and left it THREE ROWS TALL. MEASURED on the built page, desktop: `.tw-tools` came
+           out 131.7 px — a 17.7 px 「ツール」 caption, the 2×2 picker at 58, and the 「着色」 checkbox
+           card at 31.3 — on a 591.7 px panel, i.e. the pinned head was 28 % of the panel before a
+           single per-tool control appeared. 「一行」 is the whole instruction: what is pinned is the
+           SWITCH, and everything that is merely a setting scrolls with the rest.
+
+           #R258 measured that four FULL names do not fit across 306 px, and that is still true —
+           so the strip carries the hazard word alone (「堤防」, not 「堤防・ダム」) with the full name
+           on `title` and, in full, as the caption of the parameter block the choice opens. Nothing
+           is lost: the long name is one row lower, where it was already printed. */
+        '.tw-modes{display:grid;grid-template-columns:repeat(4,1fr);}',
+        '.tw-modes .tw-seg{overflow:hidden;text-overflow:ellipsis;padding-left:3px;padding-right:3px;}',
         '.tw-btn{min-height:'+TW_CTL+';padding:0 9px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
           +'background:var(--input-bg);color:var(--text-main);font-size:'+TW_FS+';cursor:pointer;'
           +'display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;}',
@@ -1804,6 +1824,8 @@ window.IntMapModules.terrainWater=function(HOST){
     }
     const cap=(t)=>'<div class="tw-cap">'+t+'</div>';
     const card=(inner)=>'<div class="tw-card">'+inner+'</div>';
+    /* (#R277) an attribute value, escaped — the tool strip carries the full name on `title` */
+    const _at=(s)=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
     /* kept for the few places that still write an inline control (the params block builds rows) */
     const NUM='';
     const ROW='';
@@ -1813,11 +1835,19 @@ window.IntMapModules.terrainWater=function(HOST){
        map's ORDINARY behaviour into a mode, and the only way back to it was to notice the button.
        It is still the internal idle state (setMode falls back to it, and the drag-pan lock keys off
        it), but it is no longer something to press: clicking the active tool turns it off. */
+    /* (#R277) `[id, the word on the one-row strip, the full name]` — the strip is one row of four,
+       so the word is the SHORT one and the full name travels on `title` and into the parameter
+       block's own caption. `modeName()` is what everything else (the caption, Atlas, the tests)
+       reads, so the two can never drift apart. */
     function modes(){ return [
-      ['raise','⛰ '+L('Raise','盛る','Anheben','Поднять','Elevar')],
-      ['lower','⛏ '+L('Lower','削る','Abtragen','Срезать','Rebajar')],
-      ['levee','🧱 '+L('Levee / dam','堤防・ダム','Deich / Damm','Дамба','Dique / presa')],
-      ['source','💧 '+L('Water here','ここに水','Wasser hier','Вода здесь','Agua aquí')]]; }
+      ['raise','⛰ '+L('Raise','盛る','Anheben','Поднять','Elevar'),modeName('raise')],
+      ['lower','⛏ '+L('Lower','削る','Abtragen','Срезать','Rebajar'),modeName('lower')],
+      ['levee','🧱 '+L('Levee','堤防','Deich','Дамба','Dique'),modeName('levee')],
+      ['source','💧 '+L('Water','水','Wasser','Вода','Agua'),modeName('source')]]; }
+    function modeName(m){ return m==='raise'?L('Raise','盛る','Anheben','Поднять','Elevar')
+      :m==='lower'?L('Lower','削る','Abtragen','Срезать','Rebajar')
+      :m==='levee'?L('Levee / dam','堤防・ダム','Deich / Damm','Дамба','Dique / presa')
+      :m==='source'?L('Water here','ここに水','Wasser hier','Вода здесь','Agua aquí'):''; }
     /* 「盛る・削るはペン太さ3段階」 — three named widths instead of a metre box nobody can picture.
        The metres are still what the brush uses (and setBrush() still takes any radius), so Atlas and
        the tests are unaffected; this is the human end of the same number. */
@@ -1835,11 +1865,7 @@ window.IntMapModules.terrainWater=function(HOST){
            had to learn is about DOM parentage rather than CSS (`position:sticky` inside the scroller
            is a no-op). Head · tools · body · foot, in that order, closed in the order they open. */
         +'<div class="tw-tools" style="flex:0 0 auto;padding:'+TW_PAD+';border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--card-bg,#1c1c1e);">'
-        +cap(L('Tool','ツール','Werkzeug','Инструмент','Herramienta'))
-        +'<div class="tw-segwrap tw-modes">'+modes().map(m=>'<button class="tw-seg tw-m" data-m="'+m[0]+'">'+m[1]+'</button>').join('')+'</div>'
-        /* (#R268) …and whether the ground you shaped is tinted while you shape it */
-        +card('<label class="tw-row" style="cursor:pointer;">'+L('Tint raised / lowered ground','盛った所・削った所に着色','Angehobenes / abgetragenes Gelände einfärben','Подсвечивать поднятое / срезанное','Colorear lo elevado / rebajado')
-          +'<span class="tw-val"><input class="tw-tint" type="checkbox"'+(tintEdits?' checked':'')+' style="accent-color:var(--primary-color);width:15px;height:15px;"></span></label>')
+        +'<div class="tw-segwrap tw-modes">'+modes().map(m=>'<button class="tw-seg tw-m" data-m="'+m[0]+'" title="'+_at(m[2])+'">'+m[1]+'</button>').join('')+'</div>'
         +'</div>'
         /* ══ ⚠ (#R255) THE SHARED HALF IS PINNED TO THE BOTTOM ══════════════════════════════════════
            「下部スティックしろ。」 → 「共通部分や、時刻など。」 The panel was one column that simply grew:
@@ -1864,6 +1890,13 @@ window.IntMapModules.terrainWater=function(HOST){
               L('Very high','最高','Sehr hoch','Очень высокое','Muy alta'),L('Ultra','超高','Maximal','Ультра','Máxima')][i]
             +'</button>').join('')+'</div>'
           +card('<div class="tw-blk tw-resnote" style="font-size:'+TW_FS_S+';color:var(--text-muted);"></div>')
+        +'</div>'
+        /* ③b (#R277) …and how the ground you shaped is DRAWN. This was pinned next to the tool
+           picker until this round, which is what made 「ツール」 three rows tall: it is a display
+           preference, not the switch every other control depends on, so it scrolls with the rest. */
+        +'<div>'+cap(L('Display','表示','Anzeige','Отображение','Visualización'))
+          +card('<label class="tw-row" style="cursor:pointer;">'+L('Tint raised / lowered ground','盛った所・削った所に着色','Angehobenes / abgetragenes Gelände einfärben','Подсвечивать поднятое / срезанное','Colorear lo elevado / rebajado')
+            +'<span class="tw-val"><input class="tw-tint" type="checkbox"'+(tintEdits?' checked':'')+' style="accent-color:var(--primary-color);width:15px;height:15px;"></span></label>')
         +'</div>'
         /* ④ the one condition that applies to the whole rectangle whichever tool is out */
         +'<div>'+cap(L('Weather','気象','Wetter','Погода','Meteorología'))
@@ -2006,11 +2039,42 @@ window.IntMapModules.terrainWater=function(HOST){
       if(c) parts.push(c+' '+L('continuous','継続','dauernd','непрерывных','continuas'));
       if(o2) parts.push(o2+' '+L('one shot','1回きり','einmalig','разовых','de una vez'));
       return parts.join(' · '); }
+    /* ══ ⚠⚠ (#R277) THE SENTENCE THAT TELLS THE TWO NUMBERS APART ═════════════════════════
+       「何が何かわからない。」 Two boxes with different units are only unambiguous if the panel says what
+       they do TOGETHER. A one-shot tap has a bottom, so the total divided by the speed IS how long
+       it runs — the panel prints that division rather than leaving the reader to do it. A continuous
+       tap has no bottom, and the note says exactly that instead of a duration.
+       ⚠ The number is SIMULATED time (the clock in the footer), never wall clock. */
+    function _dur(sec){ const n=(v,d)=>Number(v).toLocaleString(undefined,{maximumFractionDigits:d==null?0:d});
+      if(!(sec>0)) return '';
+      if(sec<90) return n(sec,sec<10?1:0)+' '+L('s','秒','s','с','s');
+      if(sec<5400) return n(sec/60,sec<600?1:0)+' '+L('min','分','min','мин','min');
+      if(sec<172800) return n(sec/3600,1)+' '+L('h','時間','h','ч','h');
+      return n(sec/86400,1)+' '+L('d','日','d','сут','d'); }
+    function pourNote(){ const n=(v)=>Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
+      if(pourMode!=='once')
+        return L('It keeps pouring at that rate until you stop it — there is no total.',
+                 '止めるまでその速さで出し続けます（合計に上限はありません）。',
+                 'Sie läuft mit dieser Rate weiter, bis Sie sie stoppen — es gibt keine Gesamtmenge.',
+                 'Подача идёт с этой скоростью, пока вы не остановите — общего объёма нет.',
+                 'Sigue vertiendo a esa velocidad hasta que la detenga — no hay total.');
+      const sec=Math.max(0,srcM3)/Math.max(1,pourRate);
+      /* ⚠ (#R277) THE KEY HAS TO BE A STATIC STRING. `L('One click pours '+n(srcM3)+…)` builds its
+         own English argument, and the inline tables for the languages past the five positional ones
+         are keyed BY that English string — so a computed key can never be found and fr / ko / 中文
+         would silently read English. The template is fixed and the numbers are substituted after. */
+      return L('One click pours {v} m³ in all, at {r} m³/s — about {t} of simulated time, then it stops.',
+               '1クリックで合計 {v} m³ を、毎秒 {r} m³ の速さで出します（シミュレーション時間で約 {t}）。出し切ったら止まります。',
+               'Ein Klick gibt insgesamt {v} m³ mit {r} m³/s ab — rund {t} Modellzeit, dann endet er.',
+               'Один клик — всего {v} m³ со скоростью {r} m³/s: около {t} модельного времени, затем остановка.',
+               'Un clic vierte {v} m³ en total, a {r} m³/s — unos {t} de tiempo simulado, y se detiene.')
+        .split('{v}').join(n(srcM3)).split('{r}').join(n(pourRate)).split('{t}').join(_dur(sec)); }
+    function syncPourNote(){ try{ const e=panel&&panel.querySelector('.tw-pnote'); if(e) e.innerHTML=pourNote(); }catch(_){} }
     function renderParams(){ if(!panel) return; const p=panel.querySelector('.tw-params'); if(!p) return;
       if(mode==='raise'||mode==='lower'){
         /* (#R211) three named pen widths, and the height/depth box labelled for what this tool does
            to the ground (盛る → 高さ, 削る → 深さ) rather than one word for both. */
-        p.innerHTML=cap(mode==='raise'?L('Raise','盛る','Anheben','Поднять','Elevar'):L('Lower','削る','Abtragen','Срезать','Rebajar'))
+        p.innerHTML=cap(modeName(mode))
           +card('<div class="tw-row">'+L('Pen width','ペンの太さ','Pinselbreite','Ширина пера','Grosor')
             +'<span class="tw-val" style="flex:1 1 auto;max-width:180px;"><span class="tw-segwrap tw-pen" style="flex:1 1 auto;">'
               +PEN.map(([m2,lb])=>'<button class="tw-seg tw-pw" data-m="'+m2+'">'+lb+'</button>').join('')+'</span></span></div>'
@@ -2027,7 +2091,7 @@ window.IntMapModules.terrainWater=function(HOST){
       } else if(mode==='levee'){
         /* (#R258) …and it says when the grid cannot carry the width that was typed (see stampLevees) */
         const thin=(leveeWidth/2/((G&&G.cellM)||1))<1.5;
-        p.innerHTML=cap(L('Levee / dam','堤防・ダム','Deich / Damm','Дамба','Dique / presa'))
+        p.innerHTML=cap(modeName(mode))
           +card('<div class="tw-blk" style="color:var(--text-muted);font-size:'+TW_FS_S+';">'+L('Click along the line, double-click to finish.','線に沿ってクリック、ダブルクリックで確定。','Entlang der Linie klicken, Doppelklick beendet.','Кликайте по линии, двойной клик — конец.','Haga clic a lo largo; doble clic para terminar.')+'</div>'
           +'<label class="tw-row">'+L('Crest above ground','天端高（地上）','Kronenhöhe','Высота гребня','Coronación')
             +'<span class="tw-val"><input class="tw-num tw-lc" type="number" min="1" max="300" step="1" value="'+leveeCrest+'"><span style="opacity:.7;">m</span></span></label>'
@@ -2054,48 +2118,49 @@ window.IntMapModules.terrainWater=function(HOST){
            is what 「時間は下部スティックしろ」 asks for and what stops them vanishing when the reader
            picks up the brush while a pour is running. What stays is what the TOOL decides: whether a
            click drops a fixed volume or opens a tap, how much, and the channel discharge. */
-        p.innerHTML=cap(L('Water here','ここに水','Wasser hier','Вода здесь','Agua aquí'))
+        p.innerHTML=cap(modeName(mode))
           /* (#R261) the segmented control decides what the NEXT click places; each source then keeps
-             that kind for good, so the label has to say «next» or it reads as a global switch. */
-          +card('<div class="tw-row">'+L('Next source','次に置く水源','Nächste Quelle','Следующий источник','Próxima fuente')
+             that kind for good, so the label has to say 《next》 or it reads as a global switch. */
+          +card('<div class="tw-row">'+L('Next source','次に置く水源','N\u00e4chste Quelle','Следующий источник','Pr\u00f3xima fuente')
             +'<span class="tw-val" style="flex:1 1 auto;max-width:190px;"><span class="tw-segwrap" style="flex:1 1 auto;">'
               +'<button class="tw-seg tw-pm" data-p="once">'+L('One shot','1回きり','Einmalig','Разово','Una vez')+'</button>'
               +'<button class="tw-seg tw-pm" data-p="cont">'+L('Continuous','継続','Dauernd','Непрерывно','Continuo')+'</button>'
             +'</span></span></div>'
-          /* ⚠ (#R275) BOTH KINDS HAVE A RATE, AND ONLY ONE OF THEM HAS A TOTAL. That is the whole
-             difference the instruction asks for, so the panel shows exactly that: the inflow row is
-             there in both modes, and the volume row appears when the tap has a bottom. */
+          /* ══ ⚠⚠⚠ (#R277) 「1クリックの水量m³　注水量m³/s　流量 の違いが判らない。何が何かわからない。」 ══
+             THREE BOXES, AND TWO OF THEM WERE THE SAME NUMBER. Read against the model: `placeSource`
+             did `rate: (flowM3s != null ? flowM3s : pourRate)` and `srcRate(x)` fell back to
+             `pourRate`, so 「注水量」 and 「流量」 were ONE quantity — both m³/s, both writing
+             `source.rate`, the second one merely overriding the first and also re-writing every tap
+             already on the map. A reader cannot tell two controls apart when there is nothing to
+             tell apart. #R275 unified the MODEL (「each source is a tap with a `rate`, and `cap` is
+             the only thing the two kinds disagree about」) and left the PANEL at three boxes.
+
+             So the panel is the model: ONE speed, and — for a one-shot — ONE total. They cannot be
+             confused because they are not the same kind of number (m³ is an amount, m³/s is a
+             speed), and the panel does the division itself so the reader sees how they combine:
+             the total ÷ the speed is how long the tap runs, printed under them. */
           +(pourMode==='once'
-            ?'<label class="tw-row">'+L('Volume per click','1クリックの水量','Volumen je Klick','Объём за клик','Volumen por clic')
+            ?'<label class="tw-row">'+L('Amount to pour','出す量（合計）','Gesamtmenge','Объём всего','Cantidad total')
               +'<span class="tw-val"><input class="tw-num tw-sv" type="number" min="1" step="100000" value="'+srcM3+'"><span style="opacity:.7;">m³</span></span></label>'
             :'')
-          +'<label class="tw-row">'+L('Inflow','注水量','Zulauf','Приток','Aporte')
+          +'<label class="tw-row">'+L('How fast it pours','出す速さ','Zulaufrate','Скорость подачи','Velocidad de vertido')
             +'<span class="tw-val"><input class="tw-num tw-pr" type="number" min="1" step="1000" value="'+pourRate+'"><span style="opacity:.7;">m³/s</span></span></label>'
-          /* (#R189) 「水の水流は設定可能に」 — (#R267) empty leaves each tap on its own rate; a value
-             here sets the rate of every continuous source, which is what the model consumes. */
-          +'<label class="tw-row">'+L('Discharge','流量','Durchfluss','Расход','Caudal')
-            +'<span class="tw-val"><input class="tw-num tw-fq" type="number" min="0" step="50" value="'+(flowM3s!=null?flowM3s:'')+'" placeholder="'+L('auto','自動','auto','авто','auto')+'"><span style="opacity:.7;">m³/s</span></span></label>'
+          /* the sentence that makes the pair readable — what these two numbers MEAN together */
+          +'<div class="tw-blk tw-pnote" style="color:var(--text-muted);font-size:'+TW_FS_S+';line-height:1.5;">'+pourNote()+'</div>'
           /* (#R261) …and what is actually standing on the map, by kind, with the key to the two dots */
           +(sources.length
             ?('<div class="tw-row" style="color:var(--text-muted);align-items:flex-start;">'+L('On the map','配置済み','Auf der Karte','На карте','En el mapa')
               +'<span class="tw-val" style="flex-wrap:wrap;justify-content:flex-end;">'+sourceSummary()+'</span></div>'
               +'<div class="tw-blk" style="color:var(--text-muted);font-size:'+TW_FS_S+';display:flex;gap:12px;flex-wrap:wrap;">'
                 +'<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#29b6f6;border:2px solid #04283a;"></span>'
-                  +L('one shot — stops when its volume is used up','1回きり（水量分を出し切ったら止まる）','einmalig — endet mit dem Volumen','разовый — до исчерпания объёма','de una vez — hasta agotar el volumen')+'</span>'
+                  +L('one shot \u2014 stops when its volume is used up','1回きり（水量分を出し切ったら止まる）','einmalig \u2014 endet mit dem Volumen','разовый \u2014 до исчерпания объёма','de una vez \u2014 hasta agotar el volumen')+'</span>'
                 +'<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#34c759;box-shadow:0 0 0 3px rgba(52,199,89,0.35);"></span>'
-                  +L('continuous — never stops','継続（止まらない）','dauernd — hört nicht auf','непрерывный — не останавливается','continua — no se detiene')+'</span></div>')
+                  +L('continuous \u2014 never stops','継続（止まらない）','dauernd \u2014 h\u00f6rt nicht auf','непрерывный \u2014 не останавливается','continua \u2014 no se detiene')+'</span></div>')
             :''));
         p.querySelectorAll('.tw-pm').forEach(b=>{ b.classList.toggle('on',b.getAttribute('data-p')===pourMode);
           b.onclick=()=>{ pourMode=b.getAttribute('data-p'); if(pourMode==='once') pourStop(); renderParams(); syncFoot(); }; });
-        const sv=p.querySelector('.tw-sv'); if(sv) sv.onchange=e=>srcM3=Math.max(1,+e.target.value||1e6);
-        const pr=p.querySelector('.tw-pr'); if(pr) pr.onchange=e=>pourRate=Math.max(1,+e.target.value||20000);
-        p.querySelector('.tw-fq').onchange=e=>{ const v=parseFloat(e.target.value);
-          flowM3s=(isFinite(v)&&v>0)?v:null;
-          /* (#R267) the discharge is an INPUT to the model now — it sets the rate of the continuous
-             sources that have not been given one of their own — rather than the scale of a
-             cross-section drawing that no longer exists. */
-          sources.forEach(x=>{ if(flowM3s!=null) x.rate=flowM3s; });
-          solve(); };
+        const sv=p.querySelector('.tw-sv'); if(sv) sv.oninput=sv.onchange=e=>{ srcM3=Math.max(1,+e.target.value||1e6); syncPourNote(); };
+        const pr=p.querySelector('.tw-pr'); if(pr) pr.oninput=pr.onchange=e=>{ setRate(+e.target.value); syncPourNote(); };
       } else p.innerHTML=card('<div class="tw-blk" style="color:var(--text-muted);font-size:'+TW_FS_S+';">'+L('Drag the map normally. Pick a tool above to edit.','通常どおり地図を操作できます。編集は上のツールを選んでください。','Karte normal bewegen. Oben ein Werkzeug wählen.','Карта работает как обычно. Выберите инструмент выше.','Mueva el mapa normalmente. Elija una herramienta arriba.')+'</div>');
     }
     /* (#R211) re-selecting the active tool releases it — see modes(). 'pan' remains the idle state
@@ -2184,7 +2249,7 @@ window.IntMapModules.terrainWater=function(HOST){
       const cont=(pourMode==='cont');
       /* (#R275) `cap` is the only field the two kinds disagree about: a volume for a one-shot,
          nothing for a tap that never stops. `m3` starts at 0 for both — it is what has arrived. */
-      sources.push({lng,lat,m3:0,cont,cap:cont?Infinity:srcM3,rate:(flowM3s!=null?flowM3s:pourRate)});
+      sources.push({lng,lat,m3:0,cont,cap:cont?Infinity:srcM3,rate:pourRate});
       /* (#R255) the clock is the SIMULATION's, not this source's — it is reset when the simulation is
          (全消去 / 元に戻す / close), and a second inlet added to a flood that is already running joins
          it at the time it is at. Restarting from zero here is what made 「時間がリセットされる」 true
@@ -2341,7 +2406,7 @@ window.IntMapModules.terrainWater=function(HOST){
        cubic metre — a link is a link, not a save file, and the solve is deterministic from these. */
     try{ window.IntMapShareState&&window.IntMapShareState.register('terrainWater',{
       get(){ if(!opened) return null;
-        return { m:mode, rain:rainMm, vol:srcM3, q:flowM3s, br:brushM, bs:brushStrength,
+        return { m:mode, rain:rainMm, vol:srcM3, q:pourRate, br:brushM, bs:brushStrength,
           pm:pourMode, pr:pourRate, ts:timeScale,
           /* (#R275) a link carries what was PLACED, which is the source's capacity and its kind —
              not how much of it had arrived when the link was made. A 3-element entry is an older
@@ -2352,7 +2417,9 @@ window.IntMapModules.terrainWater=function(HOST){
       set(v){ if(!v||typeof v!=='object') return;
         if(v.rain!=null) rainMm=Math.max(0,+v.rain||0);
         if(v.vol!=null) srcM3=Math.max(1,+v.vol||srcM3);
-        if(v.q!=null) flowM3s=(isFinite(+v.q)&&+v.q>0)?+v.q:null;
+        /* (#R277) `q` was the second name for this number; a workspace saved before this round
+           restores onto the one that is left. `pr` below is the same field and wins if both are there. */
+        if(v.q!=null&&isFinite(+v.q)&&+v.q>0) pourRate=+v.q;
         if(v.br!=null) brushM=Math.max(20,+v.br||brushM);
         if(v.bs!=null) brushStrength=Math.max(0.1,+v.bs||brushStrength);
         if(v.pm==='cont'||v.pm==='once') pourMode=v.pm;
@@ -2364,7 +2431,7 @@ window.IntMapModules.terrainWater=function(HOST){
             levees.push({pts:l[2].map(p=>[+p[0],+p[1]]),crest:Math.max(1,+l[0]||leveeCrest),width:Math.max(10,+l[1]||leveeWidth)}); });
           if(Array.isArray(v.src)){ sources=v.src.map(s=>{ const cont=(+s[3]===1);
             return {lng:+s[0],lat:+s[1],m3:0,cont,cap:cont?Infinity:Math.max(0,+s[2]||srcM3),
-              rate:Math.max(1,+s[4]||flowM3s||pourRate)}; }); }
+              rate:Math.max(1,+s[4]||pourRate)}; }); }
           if(v.m) setMode(String(v.m));
           editDirty();          /* (#R258) a restored levee is a change to the ground — see addLevee */
           solve();
@@ -2448,13 +2515,11 @@ window.IntMapModules.terrainWater=function(HOST){
       /* (#R267) the discharge a continuous source delivers, in m³/s. It used to be the scale of the
          cross-section drawing that no longer exists; it is now an INPUT to the one model — which is
          what «the same model everywhere» costs and buys. */
-      setFlow(m3s){ const v=parseFloat(m3s); flowM3s=(isFinite(v)&&v>0)?v:null;
-        const f=panel&&panel.querySelector('.tw-fq'); if(f) f.value=(flowM3s!=null?flowM3s:'');
-        /* (#R275) every source has a discharge now, so this sets every source's — a rate that only
-           reached half of them would be the second difference this round removed. */
-        sources.forEach(x=>{ if(flowM3s!=null) x.rate=flowM3s; });
-        if(G) solve();
-        return flowM3s; },
+      /* (#R275) every source has a discharge, so this sets every source's — a rate that only
+         reached half of them would be the second difference that round removed. (#R277) and it is
+         the SAME setting the panel's 「出す速さ」 box writes, because there is only one of them now. */
+      setFlow(m3s){ const v=parseFloat(m3s); if(!(isFinite(v)&&v>0)) return pourRate;
+        const r=setRate(v); syncPourNote(); return r; },
       /* (#R261) `o.cont` / `o.rateM3s` — the same distinction the map now draws, through the API.
          Omitted keeps the old meaning exactly: a one-shot volume. */
       /* ⚠ (#R271) THE PROGRAMMATIC DOOR TAKES THE SAME ROUTE AS THE TAP. This one pushed a source
@@ -2471,7 +2536,7 @@ window.IntMapModules.terrainWater=function(HOST){
         pushUndo();
         const cont=!!o.cont;
         sources.push({lng,lat,m3:0,cont,cap:cont?Infinity:Math.max(0,+m3||srcM3),
-          rate:Math.max(1,+o.rateM3s||flowM3s||pourRate)});
+          rate:Math.max(1,+o.rateM3s||pourRate)});
         if(!pourT) pourStart();   /* (#R275) both kinds have something to deliver, so both run */
         const r=solve();
         courseSoon(); return r; },
@@ -2483,7 +2548,7 @@ window.IntMapModules.terrainWater=function(HOST){
       trace:async(lng,lat,o)=>{ o=o||{};
         if(!G||!cellOf(lng,lat)){ const ok=await rebuildAround(lng,lat); if(!ok) return null; }
         if(!sources.length) sources.push({lng,lat,m3:0,cont:false,cap:Math.max(0,+o.m3||srcM3),
-          rate:Math.max(1,+o.rateM3s||flowM3s||pourRate)});
+          rate:Math.max(1,+o.rateM3s||pourRate)});
         solve();
         tracing=true;
         try{
@@ -2601,7 +2666,7 @@ window.IntMapModules.terrainWater=function(HOST){
         try{ syncRes(); }catch(_){}
         return Promise.resolve(build({keep:true})).then(ok=>{ if(ok){ solve(); try{ syncRes(); }catch(_){} } return !!ok; }); },
       state:()=>({ open:opened, mode, grid:G?{nx:G.NX,ny:G.NY,cellM:G.cellM,z:G.z,bbox:G.bbox,demMissing:G.demMissing||0}:null,
-        levees:levees.length, sources:sources.length, rainMm, flowM3s, tracing,
+        levees:levees.length, sources:sources.length, rainMm, rateM3s:pourRate, tracing,
         /* (#R211) the pour, the pen and how many single operations 元に戻す can still take back */
         brushM, brushStrength, undoDepth:undoStack.length,
         /* (#R273) the resolution dial and the cell it produces */
