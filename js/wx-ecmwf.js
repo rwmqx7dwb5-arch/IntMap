@@ -447,10 +447,28 @@
      playback at 700 ms an hour must not have 140 ms added to every frame. */
   var COALESCE_MS = 140;
   var timeT = 0;
+  /* ⚠⚠⚠ (#R287) DROP THE STALE FRAME — DO NOT CANCEL THE LOAD OF THE NEW ONE.
+     This line was `release()` unqualified, and while it lived in `setIndex` (#R276) that was
+     harmless: it ran SYNCHRONOUSLY, before any caller could have started a load for the new hour.
+     Deferring it by COALESCE_MS put it 140 ms into the future — and `release()` clears `loadingKey`
+     as well as `held`, so a load STARTED IN THAT WINDOW resolved, found `loadingKey` no longer
+     matching its own key, declined to install itself and returned null. The 27 MB it had just
+     decoded was thrown away, which is the very waste the coalescing exists to prevent.
+     ⚠ THAT IS #R276 追記2's DEFECT, ONE AXIS OVER. There it was one VARIABLE's teardown cancelling
+     another variable's read; here it is the TIME axis cancelling a read of the hour it is itself
+     announcing. MEASURED against production: the first step after boot always lost the race (a cold
+     field takes 7–9 s, the window is 140 ms) — `valueNow` came back null and a retry 1.5 s later
+     returned 25.27 °C; a warm field that resolved inside the window was never affected.
+     So the frame still goes, and a load is still abandoned when it is for some OTHER hour — only a
+     load of the hour being announced is now left alone to finish. */
   function fireTime() {
     clearTimeout(timeT); timeT = 0;
     if (!meta) return;
-    if (held && held.key !== stateKey(held.variable, '', idx)) release();
+    if (held && held.key !== stateKey(held.variable, '', idx)) {
+      var here = fileUrl(idx);
+      held = null;
+      if (loadingKey && here && loadingKey.indexOf(here) !== 0) loadingKey = '';
+    }
     emit('time', { index: idx, validTime: meta.validTimes[idx] });
   }
   function setIndex(i, opt) {
