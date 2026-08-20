@@ -195,6 +195,8 @@ window.IntMapRefData=(function(){
     {n:'OpenStreetMap Overpass API',u:'https://wiki.openstreetmap.org/wiki/Overpass_API'},
     {n:'Wikidata Query Service',u:'https://query.wikidata.org/'},
     {n:'GeoNames',u:'https://www.geonames.org/'},
+    /* (#R284) also the warning layer's last shape rung — the ADM1/ADM2 outline of a warning area
+       that is in no NUTS, in no national file and in nothing the WMO register happens to hold today. */
     {n:'geoBoundaries',u:'https://www.geoboundaries.org/'},
     {n:'GDELT Project',u:'https://www.gdeltproject.org/'},
     {n:'Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)',u:'https://fxratesapi.com/'},

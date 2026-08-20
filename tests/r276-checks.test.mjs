@@ -98,7 +98,9 @@ test('R276 ④ the weather sits above the day/night shading, and one slider is t
   const w = WX();
   assert.match(w, /GE\(\)\.events\.on\('idle',\(\)=>\{ if\(!on\) return; SLOT\.forEach\(s=>\{ try\{ EC\(\)\.lift\(s\.lyr\)/,
     'the wind field re-asserts its place every idle');
-  assert.match(w, /activeLayers\(\)\.forEach\(cfg=>\[cfg\.id,cfg\.id\+'-lbl'\]\.forEach\(l=>\{ try\{ EC\(\)\.lift\(l\)/,
+  /* (#R284) the ids are a layer's CURRENT slot now (two slots per layer, so a forecast step never
+     shows an empty map) — `curIds(cfg)` is the same set of layers, named through the swap. */
+  assert.match(w, /activeLayers\(\)\.forEach\(cfg=>curIds\(cfg\)\.forEach\(l=>\{ try\{ EC\(\)\.lift\(l\)/,
     '…and so does every ECMWF raster');
   /* the slider is applied ONCE, and its default is 1 */
   assert.match(DL(), /else if\(id==='wind'\)\{ try\{ window\.Wind&&window\.Wind\.setOpacity&&window\.Wind\.setOpacity\(v\); \}catch\(_\)\{\} \}/,
@@ -120,9 +122,13 @@ test('R276 ⑤ every ECMWF legend reads the colour scale the tiles were drawn wi
   assert.match(w, /const ticks=\[0,0\.25,0\.5,0\.75,1\]\.map/, 'with numeric ticks…');
   assert.match(w, /const u=unitOf\(cfg\.kind,lg\.unit\);/, '…and the scale\'s own unit');
   assert.match(w, /\bdesc:LA\(/, 'and every layer carries a description');
-  /* the layer's own NAME, not the panel's — 「凡例名がECMWF気象になっている」 */
-  assert.match(w, /const name=ecLbl\(cfg\)\.replace\(\/\\s\*\\\(ECMWF\\\)\\s\*\$\/,''\);/,
-    'the bar is titled with the layer, not with the panel');
+  /* the layer's own NAME, not the panel's — 「凡例名がECMWF気象になっている」
+     ⚠ (#R284) …and the name is now the BOX's `<h4>`, because the panel that carried the family name
+     is gone: every ECMWF layer has its own legend box. Titling a bar inside a shared box was the
+     half-answer; this is the whole one. */
+  assert.match(w, /function renderOne\(cfg\)\{[\s\S]{0,400}?<h4>'\+ecLbl\(cfg\)\+'<\/h4>/,
+    'the legend is titled with the layer, not with the panel');
+  assert.ok(!/data-legend-ecmwf/.test(w), 'and there is no one box holding all of them');
   assert.ok(!/40\*window\.windUnitFactor/.test(DL()), 'the hand-written 40 m/s maximum is gone');
 });
 
@@ -267,14 +273,17 @@ test('R276 ⑬ movement, lifetime and trail are all real elapsed time, and the d
 /* ── ⑭ the palette is ONE table, and it is the one the reader asked for ───────────────────────*/
 test('R276 ⑭ the wind palette feeds the tiles and the legend from the same declaration', () => {
   const s = EC();
-  assert.match(s, /var WINDY_WIND = \{[\s\S]{0,120}?unit: 'm\/s'/, 'the palette is declared once');
+  /* ⚠ (#R284) the anchors are declared once and RESAMPLED, because the SDK's colour tables do not
+     interpolate — a 17-entry table paints 17 flat bands. The declaration is still one. */
+  assert.match(s, /var WIND_ANCHORS = \{[\s\S]{0,120}?unit: 'm\/s'/, 'the palette is declared once');
+  assert.match(s, /var WINDY_WIND = rampFrom\(WIND_ANCHORS, [0-9.]+\);/, '…and the table is built from it');
   assert.match(s, /Object\.assign\(\{\}, sdk\.COLOR_SCALES_WITH_ALIASES \|\| base\.colorScales, \{ wind: WINDY_WIND \}\)/,
     'and replaces the SDK\'s wind family in the protocol settings');
   assert.match(s, /sdk\.omProtocol\(params, ctl, st\)/, 'the tiles are rendered with those settings…');
   assert.match(s, /sdk\.getColorScale\(variable, !!dark, st && st\.colorScales\)/, '…and the legend reads them');
   /* opaque: the reader's reference picture has no holes where the air is still */
   const raw = read('js/wx-ecmwf.js');
-  const block = /breakpoints: \[([^\]]*)\][\s\S]*?colors: \[([\s\S]*?)\n    \]/.exec(raw);
+  const block = /breakpoints: \[([^\]]*)\][\s\S]*?colors: \[([\s\S]*?)\n    \]/.exec(raw.slice(raw.indexOf('var WIND_ANCHORS')));
   assert.ok(block, 'the palette is readable as data');
   const alphas = (block[2].match(/,\s*([0-9.]+)\]/g) || []).map((x) => parseFloat(x.replace(/[,\s\]]/g, '')));
   assert.ok(alphas.length >= 12, 'every stop declares an alpha');
@@ -300,9 +309,14 @@ test('R276 ⑯ a weather layer that is refused keeps trying, and stops when it l
   assert.match(w, /const go=\(\)=>\{ if\(!state\[id\]\.on\) return;\s*\n\s*if\(_imCanDraw\(\)&&addLayer\(cfg\)\)/,
     'an ECMWF layer retries too');
   assert.match(w, /if\(n\+\+<\d+\) setTimeout\(go,\d+\);/, '…on a bounded ladder');
-  /* and a rebuild for a new hour cannot leave the map with nothing */
-  assert.match(w, /activeLayers\(\)\.forEach\(cfg=>\{ removeLayer\(cfg\);\s*\n\s*let n=0;/,
-    'a time step retries its rebuild, because it removes the old layer first');
+  /* and a rebuild for a new hour cannot leave the map with nothing
+     ⚠ (#R284) it no longer removes the old layer first AT ALL — the new hour is built in the free
+     slot at zero opacity and the old one is dropped once the map has settled. The retry ladder is
+     still there, because `addSlot` can still be refused; what is gone is the hole it was covering. */
+  assert.match(w, /const old=cfg\._s\|0, nu=1-old;[\s\S]{0,300}?if\(!\(_imCanDraw\(\)&&addSlot\(cfg,nu\)\)\)\{ if\(n\+\+<\d+\) setTimeout\(go,\d+\); return; \}/,
+    'a time step retries its rebuild');
+  assert.match(w, /setOpSlot\(cfg,nu,0\);[\s\S]{0,300}?dropSlot\(cfg,old\);/,
+    '…and the old picture is only dropped once the new one has painted');
 });
 
 /* ── ⑰ the next hour is warmed when the reader moves, not on first sight ──────────────────────

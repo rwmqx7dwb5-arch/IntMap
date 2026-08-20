@@ -189,8 +189,7 @@
      post-hoc tint: the tiles are rendered from it in the SDK's worker, and `legend()` reads the SAME
      object, so the ramp under the map and the ramp in the legend are one declaration. `wind_gusts_10m`
      resolves to the same family, which is right — it is the same quantity in the same unit. */
-  var WINDY_WIND = {
-    type: 'breakpoint',
+  var WIND_ANCHORS = {
     unit: 'm/s',
     breakpoints: [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20, 23, 26, 30, 36, 45, 60],
     colors: [
@@ -201,6 +200,44 @@
       [240, 220, 245, 1]
     ]
   };
+  /* ══ ⚠⚠⚠ (#R284) A BREAKPOINT TABLE IS A STAIRCASE, AND THAT IS WHAT WAS ON THE MAP ══════════
+     「Wind(animated)は色味は段彩ではなくグラデーションに。（色はそのまま。精度も一切落とすな。」
+
+     The SDK has exactly two colour-scale types and NEITHER of them interpolates — read out of the
+     shipped bundle: `rgba` picks `colors[floor((v-min)/step)]` and `breakpoint` picks
+     `colors[binarySearch(breakpoints, v)]`. Both are nearest-bucket lookups, so the seventeen
+     anchors above painted the whole planet in SEVENTEEN FLAT BANDS. And the legend beside it was
+     built as a CSS `linear-gradient` over the same seventeen stops — which CSS interpolates — so
+     the key was already a smooth ramp while the map was a staircase: #R270's 「凡例が自分の色と
+     矛盾していた」, one round later and the other way round.
+
+     So the SAME seventeen colours are RESAMPLED onto a step fine enough that no edge survives. The
+     anchor values are unchanged and land on their own colours exactly (a bucket's colour is the one
+     at its lower breakpoint), so 「色はそのまま」 is literal rather than approximate; between
+     them the colour is linear in sRGB. Nothing about the DATA changes — same file, same 9 km
+     samples, same speeds; what is finer is the colour resolution, which goes from 17 steps to 601.
+     MEASURED on the steepest segment (0→1 m/s, ΔR = 37): 3.7 units of red per step at 0.1 m/s,
+     i.e. below the threshold at which a band edge can be seen at all. */
+  function rampFrom(a, step) {
+    var bp = a.breakpoints, cols = a.colors;
+    var lo = bp[0], hi = bp[bp.length - 1];
+    var out = { type: 'breakpoint', unit: a.unit, breakpoints: [], colors: [] };
+    var n = Math.round((hi - lo) / step), seg = 0;
+    for (var k = 0; k <= n; k++) {
+      var v = lo + k * step;
+      while (seg < bp.length - 2 && v >= bp[seg + 1]) seg++;
+      var span = (bp[seg + 1] - bp[seg]) || 1;
+      var f = (v - bp[seg]) / span; if (f < 0) f = 0; if (f > 1) f = 1;
+      var c0 = cols[seg], c1 = cols[Math.min(seg + 1, cols.length - 1)];
+      out.breakpoints.push(Math.round(v * 1000) / 1000);
+      out.colors.push([
+        Math.round(c0[0] + (c1[0] - c0[0]) * f),
+        Math.round(c0[1] + (c1[1] - c0[1]) * f),
+        Math.round(c0[2] + (c1[2] - c0[2]) * f), 1]);
+    }
+    return out;
+  }
+  var WINDY_WIND = rampFrom(WIND_ANCHORS, 0.1);
   var settings = null;
   function omSettings() {
     if (settings || !sdk) return settings;
@@ -389,16 +426,46 @@
 
   /* ── time ─────────────────────────────────────────────────────────────────────────────────────*/
   function count() { return meta ? meta.validTimes.length : 0; }
+  /* ══ ⚠⚠⚠ (#R284) THE AXIS MOVES ONCE PER GESTURE, NOT ONCE PER PIXEL ═════════════════════
+     「未来や過去に変えたとき、読み込みまでの速度が異常におそい。」「点滅してしまうバグが発生する。」
+
+     A range input fires `input` on EVERY pixel of a drag, and this fired `time` on every one of
+     them. Each `time` made js/weather.js tear the raster source down and build it again AND queue a
+     whole 26 MB field read through `serial()` — so dragging the slider ten steps enqueued ten full
+     reads, and the hour the reader actually stopped on was LAST IN THE QUEUE, behind nine frames
+     nobody would ever look at. That is the whole of 「異常におそい」: the work was not slow, it
+     was work for pictures that had already been superseded.
+
+     So the axis has TWO events now:
+        `index`  fires immediately, carries the new hour, and is what the labels and the slider
+                 read — the reader sees the time move under their finger with no lag at all;
+        `time`   fires once the axis has been STILL for `COALESCE_MS`, and is the one that costs a
+                 download. A drag of forty pixels is one of these.
+     The held frame is dropped at the same moment for the same reason: releasing it per pixel threw
+     away the frame a reader who drags back would land on again.
+     ⚠ `step()` and the player buttons pass `{now:true}` — a click is a decision, not a sweep, and
+     playback at 700 ms an hour must not have 140 ms added to every frame. */
+  var COALESCE_MS = 140;
+  var timeT = 0;
+  function fireTime() {
+    clearTimeout(timeT); timeT = 0;
+    if (!meta) return;
+    if (held && held.key !== stateKey(held.variable, '', idx)) release();
+    emit('time', { index: idx, validTime: meta.validTimes[idx] });
+  }
   function setIndex(i, opt) {
     if (!meta) return;
     var n = meta.validTimes.length;
     i = Math.max(0, Math.min(n - 1, i | 0));
     if (i === idx && idxSet) return;
     idx = i; idxSet = true; _prevValid = meta.validTimes[idx] || '';
-    if (held && held.key !== stateKey(held.variable, '', idx)) release();
-    if (!(opt && opt.quiet)) emit('time', { index: idx, validTime: meta.validTimes[idx] });
+    if (opt && opt.quiet) { clearTimeout(timeT); timeT = 0; return; }
+    emit('index', { index: idx, validTime: meta.validTimes[idx] });
+    if (opt && opt.now) { fireTime(); return; }
+    clearTimeout(timeT);
+    timeT = setTimeout(fireTime, COALESCE_MS);
   }
-  function step(n) { if (!meta) return; var c = meta.validTimes.length; setIndex(((idx + n) % c + c) % c); }
+  function step(n) { if (!meta) return; var c = meta.validTimes.length; setIndex(((idx + n) % c + c) % c, { now: true }); }
   function play() {
     if (playing || !meta) return;
     playing = true; emit('play', { playing: true });
@@ -446,7 +513,19 @@
     /* the swatch is painted OPAQUE. The scale's own alpha ramp is how the map fades calm air into
        the basemap; a legend chip has no basemap under it, so carrying the alpha there would print a
        pale grey block for "no wind" that a reader cannot match to anything on the map. */
-    var css = 'linear-gradient(to right,' + stops.map(function (st) {
+    /* ⚠ (#R284) …and a ramp may now hold six hundred stops (see `rampFrom`). CSS interpolates
+       between whatever stops it is given, so the PICTURE needs only enough of them to trace the
+       ramp; writing all six hundred into a style attribute would be 24 kB of markup per redraw for
+       a bar 160 px wide. `stops` itself is untouched — the numbers a caller reads are all still
+       there. */
+    var draw = stops;
+    if (draw.length > 64) {
+      var every = Math.ceil(draw.length / 64), thin = [];
+      for (var j = 0; j < draw.length; j += every) thin.push(draw[j]);
+      if (thin[thin.length - 1] !== draw[draw.length - 1]) thin.push(draw[draw.length - 1]);
+      draw = thin;
+    }
+    var css = 'linear-gradient(to right,' + draw.map(function (st) {
       return st.css + ' ' + st.pos.toFixed(2) + '%';
     }).join(',') + ')';
     return { unit: s.unit || '', min: min, max: max, stops: stops, css: css, type: s.type };

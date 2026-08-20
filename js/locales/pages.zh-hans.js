@@ -483,7 +483,7 @@ window.IntMapPageI18N.define('zh-hans', {
     "OpenStreetMap Overpass API": "Atlas 的设施／POI 地图数据——针对指定的设施类型（石油、发电厂、机场、军事设施……）实时查询指定范围；以及当 Nominatim 无法回答某条河川时，取得所点击河川标签周边的具名河道与运河线段（#R217）（ODbL）",
     "Wikidata Query Service": "Atlas 的设施／POI 地图数据——第二个独立的设施来源（带坐标的精选实体，与 OSM 结果合并；CC0）——(#R198) 随程序打包的世界地名词典中 ja/de/ru/es 的「名称」，在建置时以 GeoNames id（P1566）查得，因为 GeoNames 的替代名称栏位不带语言标签——以及支撑 Atlas 回答各国领导人问题的现任者（国家元首／政府首长）实时查询、产业关系网图层背后的公司与持股关系图，还有 (#R216) 全球洋流的「名称」与其公开坐标（CC0）",
     "GeoNames": "(#R198) (#R208) 随程序打包的世界地名词典 data/gazetteer-world.json.gz——242 个国家、147,924 个聚落（坐标、人口与国别取自 cities1000 导出档；18 种语言的名称取自 alternateNamesV2，与内嵌栏位不同，它为每个名称附上 ISO 语言代码），以 gzip 压缩为 3.9 MB，于浏览器端解压。由 scripts/build-gazetteer.mjs 建立。正因如此，非 AI 的新闻定位器与搜索框才能比仅用精选表格多解析十倍长尾的地名。CC BY 4.0。",
-    "geoBoundaries": "Atlas 地区组合所用的行政区界（ADM1）——备援边界来源（CC BY 4.0）",
+    "geoBoundaries": "行政区界（ADM1/ADM2）——Atlas 地区组合，以及其他边界数据中没有的发布区域，由气象警报图层作为最后备援（CC BY 4.0）",
     "GDELT Project": "驱动 Atlas 摘要与整合分析的全球实时新闻搜索（最近 72 小时）",
     "Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)": "汇率、金银价格、加密货币行情与市场情绪——小工具与底部跑马灯",
     "Yahoo Finance": "底部跑马灯的股价指数报价，以及「企业」分页中用来计算实时市值的股价（美国挂牌公司）",

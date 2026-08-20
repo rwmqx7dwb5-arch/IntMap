@@ -478,7 +478,7 @@ window.IntMapPageI18N.define('zh-hant', {
     "OpenStreetMap Overpass API": "Atlas 的設施／POI 圖資——針對指定的設施類型（石油、發電廠、機場、軍事設施……）即時查詢指定範圍；以及當 Nominatim 無法回答某條河川時，取得所點選河川標籤周邊的具名河道與運河線段（#R217）（ODbL）",
     "Wikidata Query Service": "Atlas 的設施／POI 圖資——第二個獨立的設施來源（帶座標的精選實體，與 OSM 結果合併；CC0）——(#R198) 隨程式打包的世界地名詞典中 ja/de/ru/es 的「名稱」，在建置時以 GeoNames id（P1566）查得，因為 GeoNames 的替代名稱欄位不帶語言標籤——以及支撐 Atlas 回答各國領導人問題的現任者（國家元首／政府首長）即時查詢、產業關係網圖層背後的公司與持股關係圖，還有 (#R216) 全球洋流的「名稱」與其公開座標（CC0）",
     "GeoNames": "(#R198) (#R208) 隨程式打包的世界地名詞典 data/gazetteer-world.json.gz——242 個國家、147,924 個聚落（座標、人口與國別取自 cities1000 匯出檔；18 種語言的名稱取自 alternateNamesV2，與內嵌欄位不同，它為每個名稱附上 ISO 語言代碼），以 gzip 壓縮為 3.9 MB，於瀏覽器端解壓。由 scripts/build-gazetteer.mjs 建立。正因如此，非 AI 的新聞定位器與搜尋框才能比僅用精選表格多解析十倍長尾的地名。CC BY 4.0。",
-    "geoBoundaries": "Atlas 地區組合所用的行政區界（ADM1）——備援邊界來源（CC BY 4.0）",
+    "geoBoundaries": "行政區界（ADM1/ADM2）——Atlas 地區組合，以及其他邊界資料中沒有的發布區域，由氣象警報圖層作為最後備援（CC BY 4.0）",
     "GDELT Project": "驅動 Atlas 摘要與整合分析的全球即時新聞搜尋（最近 72 小時）",
     "Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)": "匯率、金銀價格、加密貨幣行情與市場情緒——小工具與底部跑馬燈",
     "Yahoo Finance": "底部跑馬燈的股價指數報價，以及「企業」分頁中用來計算即時市值的股價（美國掛牌公司）",

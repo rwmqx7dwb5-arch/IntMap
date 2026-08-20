@@ -479,7 +479,7 @@ window.IntMapPageI18N.define('ja', {
     "OpenStreetMap Overpass API": "Atlasの施設マッピング — 指定範囲の施設（石油・発電所・空港・軍事など）のライブ検索。加えて、河川名ラベルのクリック時にNominatimが応答できない場合の、周辺範囲の同名の河川・運河ウェイの取得（#R217）（ODbL）",
     "Wikidata Query Service": "Atlasの施設マッピング — OSMと併用する第2の独立ソース（座標付きの収録施設。OSM結果とマージ表示。CC0）。(#R198) 同梱の世界地名表の ja/de/ru/es の**名前**（GeoNames id = P1566 で照会。GeoNames の alternatenames 欄には言語タグが無いため）。加えて、国家指導者に関する回答の根拠となる現職（国家元首・政府の長）のライブ照会、業界の相関レイヤーの企業・資本関係、(#R216) 世界の海流の名称とその公開座標（CC0）にも使用",
     "GeoNames": "(#R198) (#R208) 同梱の世界地名表 data/gazetteer-world.json.gz — 242か国147,924件の居住地（座標・人口・国コードは cities1000 由来。名前は alternateNamesV2 から18言語分＝インラインの列と違い1件ごとにISO言語コードが付く）。gzipで3.9 MBにし、ブラウザ側で展開します。scripts/build-gazetteer.mjs が生成。非AIのニュース地点解析と検索ボックスが、curated 表だけの場合より10倍広い「長い尾」まで地名を解決できるのはこのデータによります。CC BY 4.0。",
-    "geoBoundaries": "Atlasの地域ハイライト（構成区画）用の行政境界形状（ADM1）— 予備の境界ソース（CC BY 4.0）",
+    "geoBoundaries": "行政境界形状（ADM1/ADM2）— Atlasの地域ハイライトと、他の境界データに存在しない発令区域を描くための気象警報レイヤーの最終フォールバック（CC BY 4.0）",
     "GDELT Project": "Atlasのブリーフ・統合分析で使う世界ニュース横断検索（直近72時間）",
     "Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)": "為替・金銀・暗号資産の価格と指標 — ウィジェット・下部ティッカー",
     "Yahoo Finance": "株価指数（下部ティッカー）と、Companies（企業）タブで時価総額をライブ算出するための株価（米国上場銘柄）",
