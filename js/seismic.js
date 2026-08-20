@@ -3387,7 +3387,7 @@ window.IntMapModules.seismic=function(HOST){
 
        「地震シミュレータのポップアップに書かれたテキストには必須ではない限り灰色を使わないように。」
        — so `--text-muted` is gone from the body of the panel. It survives in exactly two places, and
-       both are the case where grey is the MEANING rather than the decoration: the window's own ✕
+       both are the case where grey is the MEANING rather than the decoration: the window's own ×
        and — glyphs, which are chrome and not content. Everything a reader is meant to READ is
        `--text-main`, including the 「無感」 placeholder, which stays distinguishable from a real
        reading by having no chip behind it — (#R235) 「太字禁止」 took the chip's weight to 400 too,
@@ -3858,7 +3858,7 @@ window.IntMapModules.seismic=function(HOST){
            give the map back its pixels". The header stays (it is also the drag handle), the body is
            the only thing hidden, and `minimised` lives outside render() so a redraw keeps it. */
         +'<button class="sq-min" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" aria-label="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;">'+(minimised?'▢':'—')+'</button>'
-        +'<button class="sq-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
+        +'<button class="sq-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
         /* ⚠⚠ (#R215) `display` WAS DECLARED TWICE IN THE SAME INLINE STYLE, AND THE SECOND ONE WON.
            「地震・津波シミュレータウィンドウは最小化可能に」 — #R210 added the button and it has been a no-op ever
            since: the string began `display:none;` when minimised and then unconditionally continued
@@ -3908,9 +3908,9 @@ window.IntMapModules.seismic=function(HOST){
            「過去の地震から選んだ後、それを選択解除して戻す方法がない。」 The list's first option is
            「地震を選んでください…」 and choosing it did nothing — `onchange` returned early on the empty
            value — so once a preset was in, the panel had no way back to the state it opens in. Now that
-           option CLEARS, and there is a visible ✕ beside the list while something is loaded, because a
+           option CLEARS, and there is a visible × beside the list while something is loaded, because a
            way back that is only reachable by re-opening a dropdown is not a way back. */
-        +(evNow?('<button class="sq-ev-x" title="'+L('Clear the loaded earthquake','読み込んだ地震を解除','Geladenes Beben entfernen','Убрать загруженное землетрясение','Quitar el terremoto cargado')+'" aria-label="'+L('Clear the loaded earthquake','読み込んだ地震を解除','Geladenes Beben entfernen','Убрать загруженное землетрясение','Quitar el terremoto cargado')+'">✕</button>'):'')
+        +(evNow?('<button class="sq-ev-x" title="'+L('Clear the loaded earthquake','読み込んだ地震を解除','Geladenes Beben entfernen','Убрать загруженное землетрясение','Quitar el terremoto cargado')+'" aria-label="'+L('Clear the loaded earthquake','読み込んだ地震を解除','Geladenes Beben entfernen','Убрать загруженное землетрясение','Quitar el terremoto cargado')+'">×</button>'):'')
         +'</div>'
         +(evNow?('<div class="sq-ev-obs sq-blk" style="font-size:'+FS_S+';line-height:1.55;color:var(--text-main);border-left:2px solid var(--primary-color);">'+evObsHtml(evNow)+'</div>'):'')
         /* ══ ⚠⚠⚠ (#R245) THREE CLOSERS, NOT TWO — THIS IS WHY THE FOOTER WAS NEVER PINNED ═══════════
@@ -3939,7 +3939,7 @@ window.IntMapModules.seismic=function(HOST){
            ⚠ THE ONE EXCEPTION IS 震度階級, which is not a property of the earthquake: MMI or JMA is
            how the READER wants the answer spelled, and it stays available for a loaded event exactly
            as it is for a drawn one.
-           ⚠ AND THIS IS A DISPLAY RULE, NOT A DELETION. `evNow` is cleared by the ✕ beside the list
+           ⚠ AND THIS IS A DISPLAY RULE, NOT A DELETION. `evNow` is cleared by the × beside the list
            and by picking the empty option (#R242), and both re-render — so the controls come back
            whole, with their state untouched, the moment the earthquake is unloaded. */
         +(evNow?'':(''
@@ -3962,7 +3962,7 @@ window.IntMapModules.seismic=function(HOST){
            So the row reads in the order the work is done: draw the rupture area, put the hypocentre
            somewhere ON that area, then add the places you want answers for. The three used to be two
            rows separated by the banner, which put the drawing button BELOW the instruction telling
-           you to draw. ⚠ The ✕ is not a fourth step — it only exists once there is a rupture to
+           you to draw. ⚠ The × is not a fourth step — it only exists once there is a rupture to
            clear, and it stays beside the button that made one. */
         /* ══ ⚠⚠⚠ (#R238) THREE STEPS, NOT THREE BUTTONS ═══════════════════════════════════════════════
            「地震シミュレータで震源置いたり震源域描いたりするのにUIが分かりにくすぎるから全面的に改修し、
@@ -3993,7 +3993,7 @@ window.IntMapModules.seismic=function(HOST){
               ?L('Finish','終了','Fertig','Готово','Terminar')
               :(fault?L('Redraw','描き直す','Neu zeichnen','Перерисовать','Redibujar')
                      :L('Draw','描く','Zeichnen','Нарисовать','Dibujar')))+'</button>'
-            +(fault?('<button class="sq-fclear sq-stbtn" title="'+L('Clear','消去','Löschen','Очистить','Borrar')+'">✕</button>'):'');
+            +(fault?('<button class="sq-fclear sq-stbtn" title="'+L('Clear','消去','Löschen','Очистить','Borrar')+'">×</button>'):'');
           const s1val=fault
             ?(Math.round(fault.areaKm2).toLocaleString()+' km² · M'+fault.mw.toFixed(1))
             :L('Not set — optional, a point source works too','未設定（省略可・点震源でも動きます）','Nicht gesetzt — optional','Не задано — необязательно','Sin definir — opcional');

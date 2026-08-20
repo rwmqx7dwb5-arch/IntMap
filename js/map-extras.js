@@ -281,17 +281,17 @@ window.IntMapModules.layerSearch=function(HOST){
            app — this one (the classic panel, `#layer-search`) and the tile sidebar's `.lsr-q`
            (js/map-ui.js). #R239's lesson was a defect fixed in one of two implementations and left in
            the other; both get the button, and both clear through their OWN filter so no third code
-           path can drift. `type=search` is left alone: WebKit's native ✕ is invisible on Firefox and
+           path can drift. `type=search` is left alone: WebKit's native × is invisible on Firefox and
            on Chrome-for-Android, which is why this is drawn rather than relied upon.
            ⚠ `aria-label`, so the control is not an unlabelled glyph to a screen reader. */
         box.innerHTML='<input id="layer-search" type="search" autocomplete="off" style="width:100%;box-sizing:border-box;padding:7px 30px 7px 11px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;">'
           /* (#R268) no background disc — see the twin rule in js/map-ui.js */
-          /* ⚠ (#R270) …and the MARK is geometry rather than U+2715, which none of this app's
-             families has: `window.IntMapClearGlyph()` in js/map-ui.js is the one definition, so the
-             two search boxes cannot drift apart. The native WebKit ✕ that `type=search` adds is
-             suppressed by the rule in that same file — without it Chrome drew a second mark
-             underneath this one, which is the other half of 「不自然な形の×」. */
-          +'<button type="button" class="ls-clear" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:19px;height:19px;padding:0;border:0;background:transparent;color:var(--text-muted);cursor:pointer;align-items:center;justify-content:center;line-height:0;">'
+          /* ⚠ (#R273) …and the MARK is `×` (U+00D7), which Inter actually draws, rather than the
+             U+2715 no family in this app's stack has: `window.IntMapClearGlyph()` in js/map-ui.js is
+             the one definition, so the two search boxes cannot drift apart. The native WebKit ×
+             that `type=search` adds is suppressed by the rule in that same file — without it Chrome
+             drew a second mark underneath this one, which is the other half of 「不自然な形の×」. */
+          +'<button type="button" class="ls-clear" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:19px;height:19px;padding:0;border:0;background:transparent;color:var(--text-muted);cursor:pointer;align-items:center;justify-content:center;line-height:1;">'
           +window.IntMapClearGlyph()+'</button>';
         const inp=box.querySelector('input'), clr=box.querySelector('.ls-clear');
         const ph=()=>window.IntMapLang.t(HOST.lang,"Search layers…","レイヤーを検索…","Ebenen suchen…","Поиск слоёв…","Buscar capas…");
@@ -417,7 +417,7 @@ window.IntMapModules.runwaySearch=function(HOST){
     }
     function open(lngLat){ center=[lngLat.lng,lngLat.lat]; if(!panel){ panel=document.createElement('div'); panel.className='tool-panel'; panel.id='rwy-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); } const p=panel; p.style.display='block';
       const im0=isImp();
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🛬 '+(window.IntMapLang.t(HOST.lang,"Runway search","滑走路検索","Bahnsuche","Поиск ВПП","Búsqueda de pistas"))+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🛬 '+(window.IntMapLang.t(HOST.lang,"Runway search","滑走路検索","Bahnsuche","Поиск ВПП","Búsqueda de pistas"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'+
         '<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'+
           '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(window.IntMapLang.t(HOST.lang,"Units","単位","Einheiten","Единицы","Unidades"))+' <select id="rwy-unit"><option value="met"'+(im0?'':' selected')+'>'+(window.IntMapLang.t(HOST.lang,"Metric (km/m)","メートル法 (km/m)","Metrisch (km/m)","Метрические (км/м)","Métrico (km/m)"))+'</option><option value="imp"'+(im0?' selected':'')+'>'+(window.IntMapLang.t(HOST.lang,"Imperial (mi/ft)","ヤード・ポンド (mi/ft)","Angloamerikanisch (mi/ft)","Имперские (мили/футы)","Imperial (mi/ft)"))+'</option></select></label>'+
           '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;"><span class="rwy-ulabel-r"></span> <input id="rwy-radius" type="number" value="'+(im0?186:300)+'" min="1" style="width:74px;"></label>'+

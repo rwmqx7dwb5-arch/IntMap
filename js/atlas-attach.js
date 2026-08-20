@@ -6,7 +6,7 @@
  *
  *  The chat caps a sent picture at 230–280 px, which is the right size for a conversation and the
  *  wrong size for looking at what you sent. This is the conventional viewer: the page dims, the
- *  picture takes the screen at its own aspect ratio, and anything — the backdrop, the ✕, Escape,
+ *  picture takes the screen at its own aspect ratio, and anything — the backdrop, the ×, Escape,
  *  the browser Back button — closes it.
  *
  *  ⚠ IT LIVES ON <body>, NOT INSIDE #atlas-panel. The panel is a 400 px box with `overflow` and its
@@ -34,7 +34,7 @@ export function attachLightbox(chatEl, closeLabel) {
   /* ⚠ NOT EXPORTED, AND NOT TOP-LEVEL EITHER. tests/r175-checks ③ allows a top-level declaration in
      js/ only when it is exported AND imported by name — a private helper is exactly what that rule
      forbids — so both the opener and its closer live inside the one thing this module publishes.
-     Open `src` full-screen; `closeLabel` is the ✕ button's accessible name, already localised. */
+     Open `src` full-screen; `closeLabel` is the × button's accessible name, already localised. */
   function _open(src, closeLabel) {
     if (!src) return;
     /* ⚠ `close` IS DECLARED HERE, NOT AT THE TOP OF THE FILE. tests/r175-checks ③ allows a top-level
@@ -133,7 +133,7 @@ export function attachLightbox(chatEl, closeLabel) {
 
     const x = document.createElement('button');
     x.className = 'atl-lb-x'; x.type = 'button';
-    x.setAttribute('aria-label', closeLabel || 'Close'); x.textContent = '✕';
+    x.setAttribute('aria-label', closeLabel || 'Close'); x.textContent = '×';
     el.appendChild(img); el.appendChild(x);
     x.addEventListener('click', (e) => { e.stopPropagation(); close(); });
     el.addEventListener('click', () => { if (moved) { moved = false; return; } close(); });

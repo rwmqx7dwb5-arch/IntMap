@@ -61,7 +61,7 @@ export function makeAtlasControls(HOST, CTX) {
       return out.slice(0,140).join('; '); }catch(_){ return ''; } }
     /* ==== (#R77) FULL UI⇄Atlas integration ("IntMapのUIすべてとAtlasが統合されるように" / vision §1·§17·第六段階).
        Measured baseline: 538 interactive elements, 192 had NO accessible name — unreachable by any Atlas path
-       (128 favourite ★ per layer row, 21 legend-close ✕, per-layer date inputs, opacity sliders, unlabeled
+       (128 favourite ★ per layer row, 21 legend-close ×, per-layer date inputs, opacity sliders, unlabeled
        checkboxes). Fix = a NAMING SWEEP that derives an aria-label from each element's real context (its layer
        row text, its legend's title, its container heading). aria-label feeds _ctlLabel/findControl directly, so
        named = reachable via {"type":"control"} — and the sweep re-runs periodically, so elements created later
@@ -83,9 +83,9 @@ export function makeAtlasControls(HOST, CTX) {
           nm2=(t3||String(box.id||'').replace(/^data-legend-/,'')).slice(0,32); }
         b.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'close legend: ','凡例を閉じる: ','Legende schließen: ','закрыть легенду: ','cerrar leyenda: '))+(nm2||'legend')); });
       document.querySelectorAll('input.sl-legend-range:not([aria-label]), input.sl-num:not([aria-label])').forEach(i2=>{ i2.setAttribute('aria-label',window.IntMapLang.t(HOST.lang,'sea level rise (m)','海面上昇 (m)','Meeresspiegelanstieg (m)','подъём уровня моря (м)','subida del nivel del mar (m)')); });
-      /* generic: an unnamed ×/✕ button is a CLOSE button for its nearest identified container */
+      /* generic: an unnamed ×/× button is a CLOSE button for its nearest identified container */
       document.querySelectorAll('button:not([aria-label]), [role="button"]:not([aria-label])').forEach(b=>{ try{
-        const t2=(b.textContent||'').replace(/\s+/g,''); if(t2&&!/^[×✕✖xX]$/.test(t2)) return; if(b.id&&b.id.length>3) return;
+        const t2=(b.textContent||'').replace(/\s+/g,''); if(t2&&!/^[××✖xX]$/.test(t2)) return; if(b.id&&b.id.length>3) return;
         const host=b.closest&&b.closest('[id]'); if(!host||!host.id) return;
         b.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'close: ','閉じる: ','schließen: ','закрыть: ','cerrar: '))+host.id.replace(/[-_]/g,' ').slice(0,32)); }catch(_){} });
       document.querySelectorAll('input[type=file]:not([aria-label])').forEach(i2=>{ i2.setAttribute('aria-label','file: '+String(i2.accept||'upload').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim().slice(0,32)); });

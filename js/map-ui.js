@@ -18,21 +18,38 @@
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
-/* ══ ⚠ (#R270) THE CLEAR MARK, DRAWN ONCE ════════════════════════════════════════════════════════
-   「レイヤー検索欄の×の様子がおかしい。不自然な形の×。」 — the mark was the character U+2715, which
-   no family in this app's stack has (measured: identical advance in Inter, Noto Sans JP, system-ui
-   and sans-serif = every one of them falls through to the platform's symbol font). This is the ONE
-   definition of the geometry, because there are TWO layer-search boxes — this file's `.lsr-clear`
-   and js/map-extras.js's `.ls-clear` — and #R239's standing lesson is a defect fixed in one of two
-   copies and left in the other. `currentColor` so the button keeps its own hover state. */
-window.IntMapClearGlyph=function(){
-  return '<svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
-    +'<path d="M2.6 2.6 L9.4 9.4 M9.4 2.6 L2.6 9.4" fill="none" stroke="currentColor" '
-    +'stroke-width="1.6" stroke-linecap="round"/></svg>'; };
+/* ══ ⚠⚠⚠ (#R273) THE CLOSE MARK, ONE CHARACTER, EVERYWHERE ════════════════════════════════════════
+   「複数のポップアップで、×の形がおかしくなっている。改悪をするな。元に戻せ。」
+   「なにか形がおかしい×をやめろと言っている。明らかに×の形が変な感じ。」
+
+   MEASURED in the running page, `measureText` at 16 px:
+
+       U+2715   Inter 13.07 · Noto Sans JP 13.07 · system-ui 13.07 · sans-serif 13.07 · Arial 13.07
+       U+00D7   Inter 10.59 · Noto Sans JP 16.00 · system-ui 10.95 · sans-serif 16.00 · Arial  9.34
+
+   ⚠ THE TWO CODE POINTS ARE NAMED HERE RATHER THAN TYPED. tests/r273 sweeps every js/ and css/
+   file for U+2715 and would find this note if it spelled the character out — the shape #R266
+   recorded as 「自分の検査が自分のコメントに当たった」, for the ninth time.
+
+   An advance that is IDENTICAL in every family is the signature of a glyph NO family has: every one
+   of them was falling through to the platform's symbol font, so the mark was drawn at a weight, a
+   size and a baseline belonging to nothing else on screen — and to a different font on every
+   operating system. U+00D7 varies per family because Inter, the app's own typeface, actually draws
+   it. THAT is the 「形が変な感じ」, and this app was using BOTH: 177 occurrences of the first across
+   46 files, next to a dozen buttons already on the second.
+
+   → ONE mark, U+00D7, in the app's own font, in every popup, panel, chip and search box. #R270
+   replaced the search boxes' U+2715 with two SVG strokes, which fixed the fallback for two of the
+   app's forty-odd close buttons and left the rest on the character nobody draws — 「改悪をするな。
+   元に戻せ」 is that, and the answer is the mark the rest of the app was already using rather than a
+   third one. This function stays the ONE definition, because there are TWO layer-search boxes —
+   this file's `.lsr-clear` and js/map-extras.js's `.ls-clear` — and #R239's standing lesson is a
+   defect fixed in one of two copies and left in the other. */
+window.IntMapClearGlyph=function(){ return '×'; };
 /* ══ ⚠⚠ (#R271) A CLEAR MARK BELONGS TO ITS FIELD, NOT TO THE BOX AROUND IT ══════════════════════
    「レイヤー検索欄の×の様子がおかしい。不自然な位置の×。」 — #R270 fixed the SHAPE (that half holds:
-   the mark is two SVG strokes now, identical on every platform) and left the placement written in
-   CSS as `top:50%`, which resolves against the POSITIONED ANCESTOR. MEASURED on the built site,
+   #R273 has since replaced that SVG with `×`, the character the rest of the app uses) and left
+   the placement written in CSS as `top:50%`, which resolves against the POSITIONED ANCESTOR. MEASURED on the built site,
    desktop, default profile, with a query typed so the button is on screen:
 
        .lsr-search (the wrapper, and the positioned ancestor)   y = 53   h = 48   centre 77
@@ -385,9 +402,9 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'.lsr-search input{padding-right:38px !important;}'
         /* (#R268) 「レイヤー検索欄の×ボタンに背景は不要」 — the disc is gone from BOTH search boxes
            (this one and js/map-extras.js's `#layer-search`); hover moves the glyph, not a plate. */
-        /* ══ ⚠⚠ (#R270) THE ✕ WAS A CHARACTER NOBODY IN THIS APP'S TYPEFACE DRAWS ══════════════════
+        /* ══ ⚠⚠ (#R270) THE × WAS A CHARACTER NOBODY IN THIS APP'S TYPEFACE DRAWS ══════════════════
            「レイヤー検索欄の×の様子がおかしい。不自然な形の×。」
-           MEASURED in the running page: `measureText('✕')` returns 9.8027 px at 12 px in EVERY
+           MEASURED in the running page: `measureText('×')` returns 9.8027 px at 12 px in EVERY
            family this app names — Inter, Noto Sans JP, system-ui, sans-serif — i.e. none of them has
            the glyph and every one of them falls through to the platform's symbol font. So the mark
            was drawn at a weight, a size and a baseline that belong to no other glyph on the screen,
@@ -395,9 +412,11 @@ window.IntMapModules.layerSidebar=function(HOST){
            → It is GEOMETRY now: two strokes of one SVG, 1.6 px wide with round caps, centred in the
            box. Exactly symmetric, the same on every platform, and it inherits `currentColor` so the
            hover state is unchanged. Both search boxes get it — see js/map-extras.js. */
-        +'.lsr-search .lsr-clear{display:none;position:absolute;right:22px;top:50%;transform:translateY(-50%);width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--text-muted);cursor:pointer;align-items:center;justify-content:center;line-height:0;}'
+        +'.lsr-search .lsr-clear{display:none;position:absolute;right:22px;top:50%;transform:translateY(-50%);width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--text-muted);cursor:pointer;align-items:center;justify-content:center;line-height:1;}'
         +'.lsr-search .lsr-clear[data-on="1"]{display:flex;}'
-        +'.lsr-search .lsr-clear svg,#layer-search-wrap .ls-clear svg{width:11px;height:11px;display:block;}'
+        /* (#R273) the mark is a CHARACTER again (see IntMapClearGlyph) — sized and weighted to sit
+           in the field the way the app's other close marks sit in their panels */
+        +'.lsr-search .lsr-clear,#layer-search-wrap .ls-clear{font-size:17px;font-weight:400;line-height:1;}'
         +'.lsr-search .lsr-clear:hover{background:transparent;color:var(--text-main);}'
         +'.lsr-mount .lsr-search .lsr-clear{right:8px;}'
         /* the native WebKit clear button would sit UNDER this one on Chrome (`type=search`), i.e.
@@ -507,7 +526,7 @@ window.IntMapModules.layerSidebar=function(HOST){
     window.addEventListener('intmap-lang',()=>setTimeout(relabelHead,30));
     function build(){ if(built) return; built=true; css();
       sb=document.createElement('div'); sb.id='layer-sidebar-r';
-      sb.innerHTML='<div class="lsr-head"><b>▤ '+T('Layers','レイヤー','Ebenen','Слои','Capas')+'</b><button class="lsr-x" title="'+T('Close','閉じる','Schließen','Закрыть','Cerrar')+'">✕</button></div>'
+      sb.innerHTML='<div class="lsr-head"><b>▤ '+T('Layers','レイヤー','Ebenen','Слои','Capas')+'</b><button class="lsr-x" title="'+T('Close','閉じる','Schließen','Закрыть','Cerrar')+'">×</button></div>'
         +'<div class="lsr-search"><input id="lsr-q" type="text" placeholder="'+T('Search layers…','レイヤーを検索…','Ebenen suchen…','Поиск слоёв…','Buscar capas…')+'"></div>'
         +'<div class="lsr-body"></div>';
       /* (#R64) live INSIDE the app shell flex row (last child) so opening pushes the map like the left sidebar */
@@ -536,7 +555,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       sb.querySelector('.lsr-x').onclick=close;
       _hosts.push(sb);   /* (#R232) the sidebar is simply the FIRST host */
       sb.querySelector('#lsr-q').addEventListener('input',()=>filterTiles(sb));   /* ⚠ (#R232) not `filterTiles` bare — it takes a host now, and an Event is not one */
-      wireSearchClear(sb);   /* (#R255) the ✕ that empties it */
+      wireSearchClear(sb);   /* (#R255) the × that empties it */
       sb.addEventListener('click',e=>e.stopPropagation());
       /* keep every tile's ✓ in sync with its real checkbox, whoever toggles it (classic panel, Atlas, legends) */
       document.addEventListener('change',e=>{ try{ const t2=e.target; if(!t2||t2.type!=='checkbox') return; if(!t2.closest||!t2.closest('#layer-dropdown')) return;
@@ -779,11 +798,11 @@ window.IntMapModules.layerSidebar=function(HOST){
            the highlight is read off what is on the map and cannot disagree with it.
          · `off`  — the module's `close()`. Five simulators had no way to be shut from outside and
            two could not say whether they were open at all; those are added in their own files this
-           round (js/sims.js, js/viewshed.js, js/map-tools.js), reusing the body of the ✕ their
+           round (js/sims.js, js/viewshed.js, js/map-tools.js), reusing the body of the × their
            header already had, so there is one way out rather than two that drift apart.
 
        ⚠ NOT A SECOND SOURCE OF TRUTH. Nothing is cached here — every read goes to the module, so a
-       panel closed by its own ✕, by Atlas or by a keyboard shortcut is reflected the moment the row
+       panel closed by its own ×, by Atlas or by a keyboard shortcut is reflected the moment the row
        is re-synced, and a row can never be lit for a tool that is not running. */
     const _tmod=(t)=>{ try{ return (t&&t.mod)?(window[t.mod]||null):null; }catch(_){ return null; } };
     const _toolOn=(t)=>{ const m=_tmod(t); if(!m) return false;
@@ -811,7 +830,7 @@ window.IntMapModules.layerSidebar=function(HOST){
         const go=document.createElement('span'); go.className='lst-toolgo'; go.textContent='›';
         b.appendChild(ic); b.appendChild(tx); b.appendChild(go);
         /* ⚠ (#R264) THE SECOND PRESS CLOSES — and it asks the module, not the class on this button.
-           A row rebuilt while its tool is running, or a tool closed by its own ✕ since this row was
+           A row rebuilt while its tool is running, or a tool closed by its own × since this row was
            drawn, would both make a cached class lie; `_toolOn` is the live answer either way.
            ⚠ The OPEN still goes through `IntMapOS.exec` — one door, pressed by the palette, the
            right-click menu and this row alike (#R242). Only the CLOSE is direct, because there is no
@@ -836,7 +855,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       return wrap;
     }
     /* ══ (#R264) …AND THE ROWS FOLLOW THE TOOLS, NOT ONLY THE PRESSES ═══════════════════════════════
-       A simulator is closed from its own ✕ far more often than from this list, and #R254's lesson is
+       A simulator is closed from its own × far more often than from this list, and #R254's lesson is
        that a highlight which only updates on its own button is a highlight that goes stale and lies.
        The cheapest honest signal is that closing anything is a POINTER RELEASE somewhere on the page,
        so the rows re-read the modules just after one — 13 property reads, and only while a tools
@@ -1131,7 +1150,7 @@ window.IntMapModules.layerPresets=function(HOST){
         (presets.length?('<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">'+presets.map((p,i)=>
           '<div style="display:flex;align-items:center;gap:6px;">'+
           '<button data-ap="'+i+'" style="flex:1;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.2);color:var(--text-main);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">▶ '+String(p.name).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+' <span style="color:var(--text-muted);font-size:10px;">('+(p.ids||[]).length+')</span></button>'+
-          '<button data-del="'+i+'" title="'+(window.IntMapLang.t(HOST.lang,"Delete","削除","Löschen","Удалить","Eliminar"))+'" style="flex:0 0 auto;width:26px;height:26px;border:none;border-radius:7px;background:var(--input-bg);color:var(--text-muted);cursor:pointer;font-size:12px;">✕</button></div>').join('')+'</div>'):'');
+          '<button data-del="'+i+'" title="'+(window.IntMapLang.t(HOST.lang,"Delete","削除","Löschen","Удалить","Eliminar"))+'" style="flex:0 0 auto;width:26px;height:26px;border:none;border-radius:7px;background:var(--input-bg);color:var(--text-muted);cursor:pointer;font-size:12px;">×</button></div>').join('')+'</div>'):'');
       const sv=host.querySelector('#lp-save');
       if(sv) sv.onclick=()=>{ const snap=capture(); if(!snap||!snap.ids.length){ try{ imToast(window.IntMapLang.t(HOST.lang,"No layers are on","表示中のレイヤーがありません","Keine Ebene ist eingeschaltet","Ни один слой не включён","No hay capas activas")); }catch(_){} return; }
         const name=prompt(window.IntMapLang.t(HOST.lang,"Preset name:","プリセット名:","Name der Voreinstellung:","Название пресета:","Nombre del preajuste:"), jp()?('プリセット '+(presets.length+1)):('Preset '+(presets.length+1)));
@@ -1607,7 +1626,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
       try{ if(GE().layers.hasSource(it.sid)) GE().layers.removeSource(it.sid); }catch(_){}
       items.splice(i,1); renderList(); }
     function renderList(){ if(!listEl) return;
-      listEl.innerHTML=items.map(it=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;"><span style="width:11px;height:11px;border-radius:3px;background:${it.col};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${String(it.name).replace(/[<>&]/g,'')}</span><button data-rm="${it.n}" title="${window.IntMapLang.t(HOST.lang,"Remove","削除","Entfernen","Удалить","Quitar")}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;line-height:1;">✕</button></div>`).join('');
+      listEl.innerHTML=items.map(it=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;"><span style="width:11px;height:11px;border-radius:3px;background:${it.col};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${String(it.name).replace(/[<>&]/g,'')}</span><button data-rm="${it.n}" title="${window.IntMapLang.t(HOST.lang,"Remove","削除","Entfernen","Удалить","Quitar")}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;line-height:1;">×</button></div>`).join('');
       listEl.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>removeItem(+b.getAttribute('data-rm'))); }
     function handleFiles(files){ Array.from(files||[]).forEach(f=>{ const r=new FileReader();
       r.onload=()=>{ let g=null; try{ g=JSON.parse(r.result); }catch(_){ toast(window.IntMapLang.t(HOST.lang,"Could not parse JSON","JSONの解析に失敗しました","JSON konnte nicht gelesen werden","Не удалось разобрать JSON","No se pudo analizar el JSON")); return; }
@@ -1873,7 +1892,7 @@ window.IntMapModules.share=function(HOST){
         'Enthalten: Position, Zoom, Projektion, Basiskarte, alle aktiven Ebenen, Zeitreise & Vergleich.',
         'Включено: позиция, зум, проекция, базовая карта, все активные слои, время и режим сравнения.',
         'Incluye: posición, zoom, proyección, mapa base, todas las capas activas, viaje en el tiempo y comparación.');
-      panel.innerHTML='<button class="sh-x" title="'+t('close')+'">✕</button>'
+      panel.innerHTML='<button class="sh-x" title="'+t('close')+'">×</button>'
         +'<h4>🔗 '+L('Share this view','このビューを共有','Diese Ansicht teilen','Поделиться видом','Compartir esta vista')+'</h4>'
         +'<div style="font-size:11.5px;color:var(--text-muted);">'+L('Anyone who opens this link sees the map exactly as you do now.','このリンクを開くと、今あなたが見ている状態がそのまま再現されます。','Wer den Link öffnet, sieht die Karte genau wie Sie jetzt.','Открывший ссылку увидит карту точно как вы сейчас.','Quien abra el enlace verá el mapa tal como lo ves ahora.')+'</div>'
         +'<div class="sh-row"><input class="sh-url" type="text" readonly value="'+String(link).replace(/"/g,'&quot;')+'"><button class="sh-btn sh-copy">📋 '+L('Copy','コピー','Kopieren','Копировать','Copiar')+'</button></div>'

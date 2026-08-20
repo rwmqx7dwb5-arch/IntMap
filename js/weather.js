@@ -367,7 +367,7 @@ window.IntMapModules.weatherEC=function(HOST){
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='ec-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function refreshPanel(){ const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:260px;max-height:78vh;overflow-y:auto;';
       const rows=LAYERS.map(l=>'<div class="lyr-row'+(state[l.id].on?' on':'')+'" style="margin:2px 0;"><label class="layer-option" style="display:flex;align-items:center;gap:7px;"><input type="checkbox" id="'+l.id+'-cb"'+(state[l.id].on?' checked':'')+'> <span>'+ecLbl(l)+'</span></label><input type="range" class="ec-op" data-for="'+l.id+'" min="0" max="1" step="0.05" value="'+state[l.id].op+'" style="width:100%;accent-color:var(--primary-color);'+(state[l.id].on?'':'display:none;')+'"></div>').join('');
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🌦 '+(window.IntMapLang.t(HOST.lang,"ECMWF weather","ECMWF 気象","ECMWF-Wetter","Погода ECMWF","Meteorología ECMWF"))+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🌦 '+(window.IntMapLang.t(HOST.lang,"ECMWF weather","ECMWF 気象","ECMWF-Wetter","Погода ECMWF","Meteorología ECMWF"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
         +'<div style="font-size:11px;color:var(--text-muted);margin:2px 0 6px;">'+(window.IntMapLang.t(HOST.lang,"Open-Meteo ECMWF IFS (hourly)","Open-Meteo ECMWF IFS（1時間毎）","Open-Meteo ECMWF IFS (stündlich)","Open-Meteo ECMWF IFS (почасово)","Open-Meteo ECMWF IFS (horario)"))+'</div>'
         +rows
         +'<div style="border-top:1px solid rgba(128,128,128,0.18);margin-top:8px;padding-top:7px;">'
@@ -407,7 +407,7 @@ window.IntMapModules.weatherEC=function(HOST){
       if(document.getElementById('data-legend-ecmwf')) return;
       const mc=document.getElementById('map-container')||document.body;
       const el=document.createElement('div'); el.className='data-legend'; el.id='data-legend-ecmwf'; el.style.bottom='140px';
-      el.innerHTML='<span class="dl-drag" title="'+(window.IntMapLang.t(HOST.lang,"Drag to move","ドラッグして移動","Zum Verschieben ziehen","Потяните, чтобы переместить","Arrastre para mover"))+'">⋮⋮</span><button class="layer-popup-x" id="ec-legend-x" title="'+t('close')+'">✕</button><h4>'+(window.IntMapLang.t(HOST.lang,"ECMWF weather","ECMWF 気象","ECMWF-Wetter","Погода ECMWF","Meteorología ECMWF"))+'</h4>'
+      el.innerHTML='<span class="dl-drag" title="'+(window.IntMapLang.t(HOST.lang,"Drag to move","ドラッグして移動","Zum Verschieben ziehen","Потяните, чтобы переместить","Arrastre para mover"))+'">⋮⋮</span><button class="layer-popup-x" id="ec-legend-x" title="'+t('close')+'">×</button><h4>'+(window.IntMapLang.t(HOST.lang,"ECMWF weather","ECMWF 気象","ECMWF-Wetter","Погода ECMWF","Meteorología ECMWF"))+'</h4>'
         +'<div class="ec-time-cap" style="font-size:10.5px;color:var(--text-muted);margin:0 0 4px;">'+(window.IntMapLang.t(HOST.lang,"Valid time (hourly)","時刻（1時間毎）","Gültigkeitszeit (stündlich)","Время действия (почасово)","Hora de validez (horaria)"))+'</div>'
         +'<input type="range" id="ec-time" min="0" max="0" step="1" value="0" style="width:100%;accent-color:var(--primary-color);">'
         +'<div id="ec-validtime" style="font-size:10.5px;color:var(--text-main);font-weight:600;margin-top:3px;text-align:center;">'+(window.IntMapLang.t(HOST.lang,"latest","最新","aktuellste","последние","más reciente"))+'</div>';
@@ -507,7 +507,7 @@ window.IntMapModules.weatherPanel=function(HOST){
       const lat=lngLat.lat, lng=lngLat.lng;
       /* (#R41) title is an <h4> so the shared _wireLegendDrag delegated handler makes the popup MOVABLE
          ("ポップアップは移動可能にしろ"); a ⟳ button re-fetches for always-latest data. */
-      const head=`<button class="wp-x" title="${t('close')}">✕</button><button class="wp-rf" title="${L('Refresh','更新','Aktualisieren','Обновить','Actualizar')}">⟳</button><h4 class="wp-head" style="margin:0;font-weight:700;font-size:13.5px;cursor:move;">🌤 ${L('Weather','天気','Wetter','Погода','El tiempo')}</h4><div style="font-size:10.5px;color:var(--text-muted);margin-top:1px;">${lat.toFixed(3)}°, ${lng.toFixed(3)}°</div>`;
+      const head=`<button class="wp-x" title="${t('close')}">×</button><button class="wp-rf" title="${L('Refresh','更新','Aktualisieren','Обновить','Actualizar')}">⟳</button><h4 class="wp-head" style="margin:0;font-weight:700;font-size:13.5px;cursor:move;">🌤 ${L('Weather','天気','Wetter','Погода','El tiempo')}</h4><div style="font-size:10.5px;color:var(--text-muted);margin-top:1px;">${lat.toFixed(3)}°, ${lng.toFixed(3)}°</div>`;
       p.innerHTML=head+`<div style="margin-top:12px;color:var(--text-muted);">${L('Loading…','読み込み中…','Wird geladen…','Загрузка…','Cargando…')}</div>`;
       p.querySelector('.wp-x').onclick=close; { const rf=p.querySelector('.wp-rf'); if(rf) rf.onclick=()=>open(_lastLL||lngLat); }
       try{

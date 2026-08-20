@@ -128,7 +128,7 @@ window.IntMapLang.define('zh', {
     "lyrEU":"歐盟成員國",
     "lyrGDPpc":"人均 GDP",
     "lyrGrpClimate":"氣候與天氣",
-    "lyrGrpDemo":"人口與經濟",
+    "lyrGrpDemo":"人口與人口結構",
     "lyrGrpGeo":"戰略地理",
     "lyrGrpGeoPol":"地緣政治與國防",
     "lyrGrpPolitics":"政治與治理",
@@ -316,7 +316,7 @@ window.IntMapLang.define('zh', {
     '⚠ Capped at 600 results — zoom into a sub-region for the rest': "⚠ 已限制為 600 筆結果 — 請放大到較小區域查看其餘",   /* atlas-console.js */
     '⚠ Wikidata is community-maintained, so coverage is uneven: a company nobody has entered is simply absent, and «the largest» means «the largest Wikidata has a revenue for». An ownership graph is not a market-share or influence graph.': "⚠ Wikidata 由社群維護，因此涵蓋程度並不平均：沒有人建檔的公司就是不存在於此，而「最大」的意思是「Wikidata 有營收資料者之中最大」。持股關係圖不等於市佔率或影響力圖。",   /* industry-web.js */
     '✓ LANDED': "✓ 已降落",   /* flight-sim.js */
-    '✕ CRASHED': "✕ 墜毀",   /* flight-sim.js */
+    '× CRASHED': "× 墜毀",   /* flight-sim.js */
     '⬡ = approximate extent (no official boundary exists — AI-traced outline)': "⬡＝概略範圍（沒有官方界線 — 由 AI 描繪）",   /* atlas-console.js */
     '⬡ = approximate extent (no official boundary exists)': "⬡＝概略範圍（沒有官方界線）",   /* atlas-console.js */
     '⬡ = approximate extent derived from web-verified boundary anchors (no official boundary exists for this region)': "⬡＝依據網路查證的邊界錨點推得的概略範圍（此區域沒有官方界線）",   /* atlas-console.js */
@@ -4245,6 +4245,58 @@ window.IntMapLang.define('zh', {
   "GDACS event level, over the whole country": "GDACS 事件等級（整個國家淡色標示）",
   "Warning rank, at the unit the agency issues for": "各機關的發布等級（依發布單位繪製）",
   "UNDP publishes no HDI for this year": "UNDP 未發布該年度的 HDI",
-  "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed in the agency’s own rank and the tap holds the units. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "日本、美國、加拿大與巴西依各機關的發布單位繪製，並不會整國上色——在那些國家，發布區域的形狀本身就是答案。歐洲、中國、澳洲與香港以清單而非圖形公開，因此以該機關的等級顏色淡塗全國，點選後顯示各單位的明細。GDACS 的淡塗是另一套尺度、另一組顏色：它表示該等級的事件影響這個國家，而非國內某一地點已發布警報。俄羅斯、印度、紐西蘭、馬來西亞、印尼、南非與墨西哥沒有瀏覽器可讀取的公開資料源，因此僅顯示 GDACS——GDACS 是事件發布，並非各國的警報本身；沒有事件的國家並不等於沒有警報。此為參考顯示，實際請依循官方機關的發布。",   /* (#R267) */
+  "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed in the agency’s own rank and the tap holds the units. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "日本、美國、加拿大與巴西依各機關的發布單位繪製，並不會整國上色——在那些國家，發布區域的形狀本身就是答案。歐洲、中國、澳洲與香港以清單而非圖形公開，因此以該機關的等級顏色淡塗全國，點選後顯示各單位的明細。GDACS 的淡塗是另一套尺度、另一組顏色：它表示該等級的事件影響這個國家，而非國內某一地點已發布警報。俄羅斯、印度、紐西蘭、馬來西亞、印尼、南非與墨西哥沒有瀏覽器可讀取的公開資料源，因此僅顯示 GDACS——GDACS 是事件發布，並非各國的警報本身；沒有事件的國家並不等於沒有警報。此為參考顯示，實際請依循官方機關的發布。",
+  "areas": "區域",
+  "Areas published but not locatable on this map: ": "已發布但本地圖無法定位的區域：",
+  "Blue (IV)": "藍色（IV級）",
+  "by district": "以郡為單位",
+  "by issuing region": "以發布區域為單位",
+  "by municipality": "以市町村為單位",
+  "by province": "以省為單位",
+  "by region": "以地區為單位",
+  "by state": "以州為單位",
+  "by warning area": "以警報區為單位",
+  "Colours": "配色",
+  "Colours are the issuing agency’s own — Japan’s are the JMA’s yellow / red / magenta / black, China’s the CMA’s four signal colours, and the rest the CAP awareness ladder. Tap a country for that agency’s exact scale.": "顏色為發布機關自身的配色——日本為氣象廳的黃／紅／洋紅／黑，中國為氣象局的四色預警信號，其餘為 CAP 等級。點選國家可查看該機關的確切等級。",
+  "Danger": "危險",
+  "Danger warning": "危險警報",
+  "Delayed": "略舊",
+  "Diagnostics": "診斷",
+  "Each agency’s own published scale": "各機關公布的等級",
+  "Each agency’s ranks are mapped onto these four by IntMap. Two countries at the same step do NOT necessarily face the same danger — the warning systems themselves differ. Tap a country for its own agency’s scale.": "各機關的等級由 IntMap 自行換算為這四級。同一級並不代表兩國的危險程度相同——警報制度本身不同。點選國家可查看該機關的等級。",
+  "Each country is drawn from its own agency, at the unit that agency issues for. Educational display — follow the official authorities.": "各國均以該國機關的發布單位繪製。僅供參考，請以官方機關發布為準。",
+  "Europe — MeteoAlarm": "歐洲 — MeteoAlarm",
+  "every 30 s": "每 30 秒",
+  "Every area every connected service published could be located.": "已連線的各機關所發布的所有區域皆已定位。",
+  "Fill opacity": "填色透明度",
+  "Fresh": "最新",
+  "higher rank": "上位等級",
+  "IntMap has no connection to this country’s warning service, so it is saying nothing about it — not that nothing is in force. Follow the national authority.": "IntMap 未連接此國家的警報機關，因此本地圖對此國家不作任何陳述——並非表示沒有發布警報。請以該國官方機關為準。",
+  "IntMap normalised scale — IntMap’s own conversion": "IntMap 換算（IntMap 自行換算）",
+  "IntMap scale": "IntMap 換算",
+  "Loading": "載入中",
+  "lower rank": "下位等級",
+  "No feed connected": "未支援（未連接資料來源）",
+  "Nothing in force": "未發布",
+  "Nothing in force in any connected service right now.": "目前已連線的各機關皆無發布中的警報。",
+  "Nothing in force right now — this country’s service was read and had nothing to publish.": "目前無發布中的警報（已正常讀取該國機關，且無發布內容）。",
+  "Official": "各國官方",
+  "oldest feed": "最舊的來源",
+  "Orange (II)": "橙色（II級）",
+  "Pick a tool and the grid is built for the current view.": "選擇工具後，會為目前顯示範圍建立網格。",
+  "Red (I)": "紅色（I級）",
+  "Replay from the start": "從頭重播",
+  "Severe": "嚴重（Severe）",
+  "Simulation": "模擬計算",
+  "Source status": "來源狀態",
+  "Stale": "過舊",
+  "Standard": "標準",
+  "Tap any country for its own agency’s scale and the areas in force.": "點選國家可查看該機關的等級與發布中的區域。",
+  "territory-wide": "全境為發布單位",
+  "The clock is the newest item in that feed, not how long ago it was fetched. A national service with nothing to publish is quiet, not broken.": "顯示的時間為該來源中最新項目的時刻，並非下載時刻。沒有內容可發布的機關是「安靜」，而非「故障」。",
+  "This agency’s own ranks": "此機關自身的等級",
+  "Ultra": "極高",
+  "What is in force now": "目前發布中的警報",
+  "Yellow (III)": "黃色（III級）",   /* (#R267) */
   }
 });

@@ -60,7 +60,7 @@ window.IntMapModules.feedback=function(HOST){
       return modal; }
     function star(n){ return '<button class="fb-star" data-n="'+n+'" style="background:none;border:none;font-size:30px;cursor:pointer;padding:2px 3px;line-height:1;color:'+(n<=rating?'#ffcc00':'rgba(128,128,128,0.45)')+';">'+(n<=rating?'★':'☆')+'</button>'; }
     function renderForm(){ const c=modal.querySelector('#fb-card'); const loggedOut=!(typeof HOST.user!=='undefined'&&HOST.user);
-      c.innerHTML='<button id="fb-x" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">✕</button>'+
+      c.innerHTML='<button id="fb-x" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">×</button>'+
         '<h3 style="margin:0 0 6px;font-size:17px;">'+(window.IntMapLang.t(HOST.lang,"Send feedback","フィードバックを送る","Feedback senden","Отправить отзыв","Enviar comentarios"))+'</h3>'+
         '<p style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;">'+(window.IntMapLang.t(HOST.lang,"Rate IntMap and tell us what to improve.","IntMapの評価と、ご意見・ご要望をお聞かせください。","Bewerten Sie IntMap und sagen Sie uns, was wir verbessern sollen.","Оцените IntMap и расскажите, что улучшить.","Valore IntMap y díganos qué mejorar."))+'</p>'+
         '<div style="font-size:11.5px;font-weight:600;color:var(--text-muted);margin:0 0 6px;">'+(window.IntMapLang.t(HOST.lang,"Type","種類","Art","Тип","Tipo"))+'</div>'+
@@ -166,7 +166,7 @@ window.IntMapModules.feedback=function(HOST){
       ['other',  LA('Other','その他','Sonstiges','Другое','Otro')]];
     function cats(){ return BUG_CATS.map(([id,tuple])=>[id,L.arr(tuple)]); }
     function renderForm(){ const c=modal.querySelector('#bug-card'); const diag=_imDiag();
-      c.innerHTML='<button id="bug-x" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">✕</button>'+
+      c.innerHTML='<button id="bug-x" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">×</button>'+
         '<h3 style="margin:0 0 6px;font-size:17px;">🐞 '+(window.IntMapLang.t(HOST.lang,"Report a bug","バグを報告","Fehler melden","Сообщить об ошибке","Informar de un error"))+'</h3>'+
         '<p style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;">'+(window.IntMapLang.t(HOST.lang,"Describe what went wrong — steps to reproduce help a lot.","不具合の内容をできるだけ具体的に教えてください。再現手順があると助かります。","Beschreiben Sie, was schiefgelaufen ist — Schritte zum Nachstellen helfen sehr.","Опишите, что пошло не так — шаги воспроизведения очень помогают.","Describa qué ha fallado; los pasos para reproducirlo ayudan mucho."))+'</p>'+
         '<select id="bug-cat" style="width:100%;box-sizing:border-box;margin-bottom:10px;padding:9px 11px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;">'+cats().map(c=>'<option value="'+c[0]+'">'+c[1]+'</option>').join('')+'</select>'+

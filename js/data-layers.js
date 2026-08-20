@@ -148,7 +148,7 @@ window.IntMapModules.dataLayers=function(HOST){
          same size, evenly spaced), and the title padded so it never collides with either side. */
       .koppen-legend h4, .data-legend h4{ padding:0 44px 0 18px !important; min-height:16px; display:flex; align-items:center; }
       /* (#R8b) Minimize/close icons are DRAWN as CSS shapes at EVERY width (desktop · tablet · phone) —
-         NOT font glyphs. ▢ / – / ✕ have different ink positions, so as glyphs they never quite line up;
+         NOT font glyphs. ▢ / – / × have different ink positions, so as glyphs they never quite line up;
          as identical centerd bars they are pixel-aligned at any DPR. (The earlier fix only covered ≤768px,
          leaving tablet/landscape-phone widths with the misaligned glyphs the user still saw.) */
       /* (#R8c) ONE shared declaration for the box, so close & min cannot diverge in top/size — only the
@@ -215,7 +215,7 @@ window.IntMapModules.dataLayers=function(HOST){
            and every "Close" button get the same 32px tap target ("×が小さすぎて押せない" re-report). */
         .satc-close{ width:32px !important; height:32px !important; font-size:20px !important; display:flex !important; align-items:center; justify-content:center; }
         button[aria-label="Close"], .ai-panel-close, .ai-x, .nrp-close, .fb-x, #fb-x{ min-width:32px !important; min-height:32px !important; }
-        /* (#R21) the last stragglers — widget board ✕/⚙ and the widget-gallery ✕ join the ONE 32px size */
+        /* (#R21) the last stragglers — widget board ×/⚙ and the widget-gallery × join the ONE 32px size */
         .wgt-x{ width:32px !important; height:32px !important; border-radius:9px !important; font-size:15px !important; }
         .wgt-cfg{ width:32px !important; height:32px !important; border-radius:16px !important; right:6px !important; }
         #wgt-g-close{ width:32px !important; height:32px !important; border-radius:9px !important; font-size:15px !important; }
@@ -303,7 +303,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const el=document.createElement('div'); el.className='data-legend'; el.id='data-legend-'+id;
       el.style.bottom=bottomPx+'px';
       const noData=(['hdi','dem','pop','gdppc','tfr','milSpend','milSpendGDP'].includes(id))?`<div style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;border-radius:3px;background:#9aa0a6;border:1px solid rgba(0,0,0,0.12);"></span>${window.IntMapLang.t(HOST.lang,'No data','データなし','Keine Daten','Нет данных','Sin datos')}</div>`:'';
-      el.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="${id}" title="${t('close')}">✕</button><h4>${title}</h4><div class="dl-bar" style="background:${gradient};"></div><div class="dl-scale"><span>${labels[0]}</span><span>${labels[1]}</span></div>${noData}${hint?`<div class="dl-hint">${hint}</div>`:''}${_legendDesc(id)}`;
+      el.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="${id}" title="${t('close')}">×</button><h4>${title}</h4><div class="dl-bar" style="background:${gradient};"></div><div class="dl-scale"><span>${labels[0]}</span><span>${labels[1]}</span></div>${noData}${hint?`<div class="dl-hint">${hint}</div>`:''}${_legendDesc(id)}`;
       mc.appendChild(el);
       el.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
       /* Drag (mouse + touch) is wired centrally by wireDrag() once it is defined below, so every
@@ -455,7 +455,7 @@ window.IntMapModules.dataLayers=function(HOST){
       {c:'#C8D0D8',n:LA('Connection line','接続線','Verbindungslinie','Соединительная линия','Línea de conexión')}
     ];
     const eezRows=EEZ_CATS.map(cat=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:1.5px 0;"><span style="display:inline-block;width:26px;height:0;border-top:3px ${cat.d?'dashed':'solid'} ${cat.c};box-shadow:0 0 4px ${cat.c};flex-shrink:0;"></span><span>${LDL.arr(cat.n)}</span></div>`).join('');
-    lgdEEZ.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Maritime zones','海洋管轄区域','Meereszonen','Морские зоны','Zonas marítimas')}</h4>
+    lgdEEZ.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Maritime zones','海洋管轄区域','Meereszonen','Морские зоны','Zonas marítimas')}</h4>
       <div style="max-height:34vh; overflow-y:auto; margin:2px 0 4px; padding-right:2px;">${eezRows}</div>
       <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${window.IntMapLang.t(HOST.lang,'EEZ = Exclusive Economic Zone (to 200 nm). Line color = boundary type (bright colors for visibility); overlaps flag disputed claims.','EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け（視認性のため明るい配色）。重なりは領有権紛争の目安。','AWZ = Ausschließliche Wirtschaftszone (bis 200 sm). Linienfarbe = Grenztyp (helle Farben für bessere Sichtbarkeit); Überlappungen = Streitfälle.','ИЭЗ = исключительная экономическая зона (до 200 миль). Цвет линий — тип границы (яркие цвета для читаемости); наложения — споры.','ZEE = Zona Económica Exclusiva (hasta 200 mn). Color de línea = tipo de límite (colores vivos para visibilidad); solapamientos = disputas.')}</div>
       <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'Source: MarineRegions WMS','出典: MarineRegions WMS','Quelle: MarineRegions WMS','Источник: MarineRegions WMS','Fuente: MarineRegions WMS')}</div>`;
@@ -463,7 +463,7 @@ window.IntMapModules.dataLayers=function(HOST){
     lgdEEZ.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-eez'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Temperature legend (MODIS LST color ramp ≈ Kelvin) */
     lgdTemp=document.createElement('div'); lgdTemp.className='data-legend'; lgdTemp.id='data-legend-temp'; lgdTemp.style.bottom='140px';
-    lgdTemp.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="temp" title="${t('close')}">✕</button><h4>${t('lgdTempTitle')||'Air temperature (2 m)'}</h4>
+    lgdTemp.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="temp" title="${t('close')}">×</button><h4>${t('lgdTempTitle')||'Air temperature (2 m)'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#3a0088,#0050d0,#0098ff,#00e0c0,#7dff66,#fff700,#ff9000,#ed1c24,#8a0027);"></div>
       <div class="dl-scale"><span>${fmtTemp(-40)}</span><span>${fmtTemp(40)}</span></div>
       <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'MERRA-2 reanalysis, monthly — gap-free worldwide. Use the slider to pick a month.','MERRA-2 再解析・月別。全球で欠損なし。スライダーで月を選択。','MERRA-2-Reanalyse, monatlich — weltweit lückenlos. Monat per Schieberegler wählen.','Реанализ MERRA-2, помесячно — без пропусков по всему миру. Месяц выбирается ползунком.','Reanálisis MERRA-2, mensual — sin huecos en todo el mundo. Elige el mes con el deslizador.')}</div>`;
@@ -471,7 +471,7 @@ window.IntMapModules.dataLayers=function(HOST){
     lgdTemp.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-temp'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Thermal anomalies legend (fire/heat-signature pixels) */
     lgdThermal=document.createElement('div'); lgdThermal.className='data-legend'; lgdThermal.id='data-legend-thermal'; lgdThermal.style.bottom='140px';
-    lgdThermal.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="thermal" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Thermal anomalies','熱異常(火災)','Thermische Anomalien','Тепловые аномалии','Anomalías térmicas')}</h4>
+    lgdThermal.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="thermal" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Thermal anomalies','熱異常(火災)','Thermische Anomalien','Тепловые аномалии','Anomalías térmicas')}</h4>
       <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:14px;height:14px;background:#ff3b30;border-radius:50%;box-shadow:0 0 8px rgba(255,59,48,0.6);"></span> ${window.IntMapLang.t(HOST.lang,'Detected active fire / heat source','検知された火災・熱源','Erkannte Brände / Wärmequellen','Обнаруженные пожары / тепловые источники','Fuegos activos / fuentes de calor detectados')}</div>
       <label style="display:flex; align-items:center; gap:6px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">${window.IntMapLang.t(HOST.lang,'Window','期間','Zeitfenster','Окно','Ventana')}: <select class="thermal-window" style="flex:1; padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="24" data-i18n="thermWin24">${t('thermWin24')}</option><option value="48" data-i18n="thermWin48">${t('thermWin48')}</option><option value="72" data-i18n="thermWin72">${t('thermWin72')}</option></select></label>
       <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'NASA FIRMS · MODIS + VIIRS (real, near-real-time)','NASA FIRMS · MODIS + VIIRS（実データ・準リアルタイム）','NASA FIRMS · MODIS + VIIRS (echt, nahezu Echtzeit)','NASA FIRMS · MODIS + VIIRS (реальные данные, почти в реальном времени)','NASA FIRMS · MODIS + VIIRS (real, casi en tiempo real)')}</div>`;
@@ -480,7 +480,7 @@ window.IntMapModules.dataLayers=function(HOST){
     { const sw=lgdThermal.querySelector('.thermal-window'); if(sw){ sw.value=window._thermalWindow||'24'; sw.addEventListener('change',()=>{ window._thermalWindow=sw.value; if(window._refreshThermal) window._refreshThermal(); try{ window._refreshLegendDates&&window._refreshLegendDates(); }catch(_){} }); } }
     /* Precipitation-radar legend (RainViewer rain-rate scale) */
     lgdRadar=document.createElement('div'); lgdRadar.className='data-legend'; lgdRadar.id='data-legend-radar'; lgdRadar.style.bottom='140px';
-    lgdRadar.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="radar" title="${t('close')}">✕</button><h4>${t('lgdRadarTitle')||'Rain rate'}</h4>
+    lgdRadar.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="radar" title="${t('close')}">×</button><h4>${t('lgdRadarTitle')||'Rain rate'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#9bd2ff,#0080ff,#00c800,#ffe000,#ff7800,#ff0000,#c800c8);"></div>
       <div class="dl-scale"><span>${window.IntMapLang.t(HOST.lang,'Light','弱い','Leicht','Слабый','Ligero')}</span><span>${window.IntMapLang.t(HOST.lang,'Heavy','激しい','Stark','Сильный','Fuerte')}</span></div>
       <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'RainViewer live radar (latest frame)','RainViewer 実時間レーダー（最新フレーム）','RainViewer-Echtzeitradar (neuester Frame)','Радар RainViewer в реальном времени (последний кадр)','Radar en vivo RainViewer (último fotograma)')}</div>`;
@@ -488,7 +488,7 @@ window.IntMapModules.dataLayers=function(HOST){
     lgdRadar.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-radar'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Sea-surface-temperature legend (GHRSST MUR L4) */
     lgdSST=document.createElement('div'); lgdSST.className='data-legend'; lgdSST.id='data-legend-sst'; lgdSST.style.bottom='140px';
-    lgdSST.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sst" title="${t('close')}">✕</button><h4>${t('lgdSSTTitle')||'Sea-surface temp'}</h4>
+    lgdSST.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sst" title="${t('close')}">×</button><h4>${t('lgdSSTTitle')||'Sea-surface temp'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#3a0088,#0033cc,#0099ff,#00e0c0,#7dff66,#ffe000,#ff7800,#e00000);"></div>
       <div class="dl-scale"><span>${fmtTemp(-2)}</span><span>${fmtTemp(32)}</span></div>
       <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'GHRSST MUR L4 (oceans only)','GHRSST MUR L4（海域のみ）','GHRSST MUR L4 (nur Ozeane)','GHRSST MUR L4 (только океаны)','GHRSST MUR L4 (solo océanos)')}</div>`;
@@ -496,7 +496,7 @@ window.IntMapModules.dataLayers=function(HOST){
     lgdSST.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-sst'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Gridded population-density legend (NASA SEDAC GPW v4) */
     lgdPopGrid=document.createElement('div'); lgdPopGrid.className='data-legend'; lgdPopGrid.id='data-legend-popgrid'; lgdPopGrid.style.bottom='140px';
-    lgdPopGrid.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="popgrid" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Pop. density (grid)','人口密度（グリッド）','Bevölkerungsdichte (Raster)','Плотность населения (сетка)','Densidad de población (malla)')}</h4>
+    lgdPopGrid.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="popgrid" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Pop. density (grid)','人口密度（グリッド）','Bevölkerungsdichte (Raster)','Плотность населения (сетка)','Densidad de población (malla)')}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#ffffd4,#fee391,#fec44f,#fe9929,#ec7014,#cc4c02,#8c2d04);"></div>
       <div class="dl-scale"><span>0</span><span>1000+ /km²</span></div>
       <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'NASA SEDAC GPW v4 (2020, ~1 km). Real distribution, independent of borders.','NASA SEDAC GPW v4（2020・約1km）。国境に依存しない実分布。','NASA SEDAC GPW v4 (2020, ~1 km). Reale Verteilung, unabhängig von Grenzen.','NASA SEDAC GPW v4 (2020, ~1 км). Реальное распределение, независимое от границ.','NASA SEDAC GPW v4 (2020, ~1 km). Distribución real, independiente de fronteras.')}</div>`;
@@ -504,7 +504,7 @@ window.IntMapModules.dataLayers=function(HOST){
     lgdPopGrid.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-popgrid'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Color-relief elevation legend (#5) */
     lgdRelief=document.createElement('div'); lgdRelief.className='data-legend'; lgdRelief.id='data-legend-relief'; lgdRelief.style.bottom='140px';
-    lgdRelief.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="relief" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Elevation (color)','標高（カラー段彩）','Höhe (farbig)','Высота (цвет)','Elevación (color)')}</h4>
+    lgdRelief.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="relief" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Elevation (color)','標高（カラー段彩）','Höhe (farbig)','Высота (цвет)','Elevación (color)')}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#0b4f8a,#7fb3d9,#1a7a3c,#a6d96a,#e6e08b,#d9a066,#a87b52,#cdbfb4,#ffffff);"></div>
       <div class="dl-scale"><span>${window.IntMapLang.t(HOST.lang,'Deep sea','深海','Tiefsee','Глубоководье','Mar profundo')}</span><span>${window.IntMapLang.t(HOST.lang,'Peaks','高峰','Gipfel','Вершины','Cumbres')}</span></div>
       <div class="dl-hint">AWS Terrain (terrarium DEM)</div>`;
@@ -513,7 +513,7 @@ window.IntMapModules.dataLayers=function(HOST){
     /* Sea-level-rise legend (#24) */
     lgdSeaLevel=document.createElement('div'); lgdSeaLevel.className='data-legend'; lgdSeaLevel.id='data-legend-sealevel'; lgdSeaLevel.style.bottom='140px';
     const slL=window._seaLevelM||0;
-    lgdSeaLevel.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sealevel" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Sea-level change','海面変動','Meeresspiegel-Änderung','Изменение уровня моря','Cambio del nivel del mar')}</h4>
+    lgdSeaLevel.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sealevel" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Sea-level change','海面変動','Meeresspiegel-Änderung','Изменение уровня моря','Cambio del nivel del mar')}</h4>
       <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:16px;height:11px;border-radius:3px;background:rgba(40,120,200,0.75);border:1px solid rgba(0,0,0,0.15);"></span> ${window.IntMapLang.t(HOST.lang,'Flooded (≤ today ','浸水域 (≤ 現海面 ','Überflutet (≤ heute ','Затоплено (≤ текущего ','Inundado (≤ hoy ')}<b class="sl-cur">${(slL>=0?'+':'')+slL} m</b>${HOST.lang==='jp'?')':')'}</div>
       <label style="display:flex; align-items:center; gap:8px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">-150<input type="range" class="sl-legend-range" min="-150" max="70" step="1" value="${Math.max(-150,Math.min(70,slL))}" style="flex:1; accent-color:var(--primary-color);">+70 m</label>
       <div style="display:flex; gap:6px; margin:4px 0 2px;"><input type="number" class="sl-num" min="-11000" max="9000" step="1" value="${slL}" placeholder="m" style="flex:1; min-width:0; padding:5px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px;"><button class="sl-set" style="padding:5px 12px; border:none; border-radius:8px; background:var(--primary-color); color:#fff; font-size:11px; font-weight:600; cursor:pointer;">${window.IntMapLang.t(HOST.lang,'Set','設定','Festlegen','Задать','Fijar')}</button></div>
@@ -556,7 +556,7 @@ window.IntMapModules.dataLayers=function(HOST){
     window.fmtWindSpeed=(ms)=>{ const v=(ms||0)*window.windUnitFactor(); return v.toFixed(v<10?1:0)+' '+window.windUnitLabel(); };
     const _windGrad='linear-gradient(to right,rgb(16,32,92) 0%,rgb(28,108,184) 7.5%,rgb(40,168,170) 17.5%,rgb(90,205,120) 27.5%,rgb(225,215,75) 40%,rgb(242,150,52) 55%,rgb(232,70,70) 72.5%,rgb(198,55,176) 100%)';
     lgdWind=document.createElement('div'); lgdWind.className='data-legend'; lgdWind.id='data-legend-wind'; lgdWind.style.bottom='140px';
-    lgdWind.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="wind" title="${t('close')}">✕</button><h4>${window.IntMapLang.t(HOST.lang,'Wind 10 m','風（10m）','Wind 10 m','Ветер 10 м','Viento 10 m')}</h4>
+    lgdWind.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="wind" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Wind 10 m','風（10m）','Wind 10 m','Ветер 10 м','Viento 10 m')}</h4>
       <div class="dl-bar" style="background:${_windGrad};"></div>
       <div class="dl-scale"><span>0</span><span class="wind-scale-max"></span></div>
       <div class="kl-period" style="margin:7px 0 2px;"><label>${window.IntMapLang.t(HOST.lang,'Units','単位','Einheiten','Единицы','Unidades')}</label><select id="wind-unit-sel">${window.WIND_UNITS.map(u=>`<option value="${u[0]}"${u[0]===window.windUnit?' selected':''}>${u[1]}</option>`).join('')}</select></div>
@@ -924,7 +924,7 @@ window.IntMapModules.dataLayers=function(HOST){
        (the user disliked them sitting mid-list). The old "Data layers" section label is dropped. */
     /* (#R14 / #17) "Active layers" — a live list of every currently-ON thematic layer, shown in the
        Layers panel just below the favorites bar and the Country-borders/Grid toggles. Each entry is a
-       chip: click the name to scroll to its row, click ✕ to switch it off. Rebuilt whenever any layer
+       chip: click the name to scroll to its row, click × to switch it off. Rebuilt whenever any layer
        checkbox changes and on every panel open. (The 4 utility toggles names/borders/grid/countries are
        excluded — they sit right above and would be redundant.) */
     window._refreshActiveLayers=function(){
@@ -994,7 +994,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const chip=document.createElement('span'); chip.className='active-lyr-chip';
         const nm=document.createElement('span'); nm.className='alc-name'; nm.textContent=c.name;
         nm.onclick=()=>{ const row=c.el.closest('.lyr-row')||c.el.closest('label'); if(row&&row.scrollIntoView) try{ row.scrollIntoView({block:'nearest'}); }catch(_){} };
-        const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(window.IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
+        const x=document.createElement('button'); x.className='alc-x'; x.textContent='×'; x.title=(window.IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
         x.onclick=(e)=>{ e.stopPropagation(); c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
         chip.appendChild(nm); chip.appendChild(x); wrap.appendChild(chip);
       });
@@ -1018,7 +1018,7 @@ window.IntMapModules.dataLayers=function(HOST){
             rg.title=(window.IntMapLang.t(lang,'Opacity','透明度','Deckkraft','Непрозрачность','Opacidad'));
             rg.oninput=()=>{ try{ src.value=rg.value; src.dispatchEvent(new Event('input',{bubbles:true})); src.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} };
             row.appendChild(rg); }
-          const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(window.IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
+          const x=document.createElement('button'); x.className='alc-x'; x.textContent='×'; x.title=(window.IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
           x.onclick=()=>{ try{ c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
           row.appendChild(x); pn.appendChild(row); });
         sec.appendChild(pn); };
@@ -1201,8 +1201,10 @@ window.IntMapModules.dataLayers=function(HOST){
           /* (#R261) `planes` LEFT for Transport & mobility (it is aircraft, not ocean); tides and
              ocean currents ARRIVED from the beta sweep — both are finished world-packs layers with
              their own panel, legend and sources, and neither was ever demoted by an instruction. */
-          ['lyrGrpMaritime',['sst','eez','tides','currents','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
-          ['lyrGrpTerrain',['plates','relief','hillshade','contours','sealevel','gxrelief']],
+          ['lyrGrpMaritime',['sst','tides','currents','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
+          /* (#R273) +slope / aspect (← Beta, where it had no shelf): it is computed FROM the
+             elevation model and belongs beside the hillshade and the contours. */
+          ['lyrGrpTerrain',['plates','relief','hillshade','contours','slope','sealevel','gxrelief']],
           /* (#R271) the new shelf: what is ON the ground, as against the shape of it */
           ['lyrGrpNature',['worldcover','ecoregions','gxndvi','wbforest']],   /* (#R261) +3-D city buildings — built ground is still ground */   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
           /* ⚠ (#R233) SEVEN, NAMED BY THE INSTRUCTION — everything else in this group was DEMOTED.
@@ -1216,12 +1218,32 @@ window.IntMapModules.dataLayers=function(HOST){
           /* (#R254) 「エネルギー構成レイヤーは昇格」 — out of the beta sweep and into the curated set,
              beside the other per-country statistics (confirmed: 人口・経済). It is the world-packs row
              `wp-dl-energy`; see rowFor's prefix list. */
-          ['lyrGrpDemo',['popgrid','gdppc','tfr','hdi','nightsat','wbpopgrow','wbaging','wbfert','wburb','wbrural','wbdensity','wbref']],
+          /* ══ ⚠⚠⚠ (#R273) THE BIG RE-SHELVING — AND THE PERMISSION FOR IT IS EXPLICIT ═════════
+             「レイヤーのカテゴリ分類があきらかに不適切なレイヤーが大量にある。大規模にレイヤーカテゴリ分類を再編しろ。」
+             — and, asked directly whether the hand-written lists (#R233's seven, #R254's sixty-one
+             and their order) were included: 「全部動かしてよい」. #R255, #R258, #R261 and #R270 each
+             wrote the note that 再編 is not a licence to overturn a list somebody wrote out by hand,
+             and each was right at the time. That reservation is now withdrawn in writing, so this
+             round applies ONE rule to all 167 rows:
+
+                 A LAYER BELONGS TO THE SUBJECT IT MEASURES — not to the instrument that produced
+                 it, not to the place it happens to be about, and not to the family of the table it
+                 came out of.
+
+             Fourteen rows moved and one heading was renamed; every one is named on its own line
+             below with the sentence that puts it where it now is. Nothing is deleted, nothing
+             becomes unreachable, and no row that an instruction DEMOTED (the ECMWF rasters, #R40)
+             is promoted — 「beta」 is a judgement about quality and this is one about subject. */
+          /* (#R273) −GDP per capita (→ Economy: it measures the economy), −HDI (→ Society: a
+             human-development composite of health, schooling and income), +adolescent fertility
+             (← Health: it is a fertility rate, and the other four already live here). The heading
+             is 「人口・人口動態」 now, because with GDP gone there is no economy left on the shelf. */
+          ['lyrGrpDemo',['popgrid','tfr','nightsat','wbpopgrow','wbaging','wbfert','wbadofert','wburb','wbrural','wbdensity','wbref']],
           /* (#R233) 'nightside' LEFT this group — 「昼夜の表示はレイヤー選択欄の基本表示カテゴリです。」
              It is not a hazard overlay, it is which half of the planet the Sun is on, so it belongs with
              the other always-there view switches (place names, borders, roads, grid) at the top of the
              panel. Moved by name into that list below, not duplicated: one row, one owner. */
-          ['lyrGrpHazard',['thermal','volc2','eq','alerts','osmemg']],   /* (#R270) +emergency response bases — see the note below */   /* (#R261) +live weather & disaster warnings (JMA/NWS/GDACS) */   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
+          ['lyrGrpHazard',['thermal','volc2','eq','alerts','osmemg']],   /* (#R270) +emergency response bases — see the note below */   /* (#R273) +live weather & disaster warnings — one national agency per country, GDACS removed */   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
           /* ══ ⚠ (#R255) FOUR NEW CATEGORIES, AND «Geopolitics & defense» SPLIT INTO TWO OF THEM ══════
              「政治、軍事、医療・衛生、IT・テックレイヤーカテゴリを追加し、レイヤーの再編や追加を行うように。
                それぞれのレイヤーカテゴリの名前は任せる。」 (naming delegated; reorganisation confirmed
@@ -1249,7 +1271,9 @@ window.IntMapModules.dataLayers=function(HOST){
              those seven rows as that category's contents, and this round's authorisation to
              reorganise is not a reason to quietly overturn a list the reader wrote out by hand. Say
              the word and they move. */
-          ['lyrGrpPolitics',['uselect','eu','dem','cpi','wbwomparl','osmdiplo']],
+          /* (#R273) +maritime EEZ / 12 nm (← Oceans): an exclusive economic zone is a JURISDICTION
+             drawn on water, not a property of the water — it belongs with the other borders. */
+          ['lyrGrpPolitics',['uselect','eu','dem','cpi','eez','wbwomparl','osmdiplo']],
           /* ══ ⚠ (#R270) THREE ROWS WERE ON THE WRONG SHELF, AND ONLY THREE ═════════════════════════
              「レイヤーのカテゴリ分類があきらかに不適切なレイヤーがいくつかある。任せる。」
 
@@ -1275,10 +1299,17 @@ window.IntMapModules.dataLayers=function(HOST){
              オーロラ予測 and 夜間光 stay in 「災害・夜空 / Hazards & night sky」 — that heading names
              them; the shelf is not only about disasters. */
           ['lyrGrpSecurity',['milSpend','milSpendGDP','nato','ukrfront','wbmilgdp','wbmilppl','osmmil']],
-          ['lyrGrpHealth',['wbhealth','wbphys','wbbeds','wbinfmort','wbu5mort','lifeexp','wblife','wbwater','wbsan','wbcook','wbsmoke','wbalcohol','wbsuicide','wboverwt','wbunder','wbadofert','osmhealth','osmwater','pharma']],   /* (#R261) +water & wastewater plant, +pharma hubs. (#R270) −emergency services (→ hazards), −fertility (→ society) */
+          /* (#R273) −clean cooking fuel access (→ Energy: it is an energy-access rate and sits
+             beside electricity access), −undernourishment (→ Agriculture & food: it measures food),
+             −adolescent fertility (→ Population), −pharma hubs (→ Economy: they are factories).
+             What is left is care, disease, sanitation and the things a body does. */
+          ['lyrGrpHealth',['wbhealth','wbphys','wbbeds','wbinfmort','wbu5mort','lifeexp','wblife','wbwater','wbsan','wbsmoke','wbalcohol','wbsuicide','wboverwt','osmhealth','osmwater']],   /* (#R261) +water & wastewater plant, +pharma hubs. (#R270) −emergency services (→ hazards), −fertility (→ society) */
           /* (#R261) `rail` LEFT for Transport & mobility — a railway network is transport, and the
              category it was in is the one about computing and communications. */
-          ['lyrGrpTech',['dc','subcables','bldg3d','wbnet','wbmobile','wbbbnd','wbhitech','wbrnd','wbresearch','wbpatent','osmtelecom']],
+          /* (#R273) −high-tech exports (→ Economy: it is a share of EXPORTS, i.e. a trade
+             statistic), − 3-D city buildings (→ the always-on view switches at the top: it is a way
+             of DRAWING the map, like Roads and Place names, not a statistic about technology). */
+          ['lyrGrpTech',['dc','subcables','wbnet','wbmobile','wbbbnd','wbrnd','wbresearch','wbpatent','osmtelecom']],
           /* ══ ⚠⚠ (#R261) FOUR NEW SHELVES, AND «OTHERS» AND «BETA» EMPTIED INTO THEM ═══════════════
              「追加すべきと思うレイヤーカテゴリはありますか？あれば作り、Others, Betaも含め既存レイヤーの
                再編のほか、新レイヤー…全部任せる。結局何もしませんはやめろ。」
@@ -1306,10 +1337,19 @@ window.IntMapModules.dataLayers=function(HOST){
              temp/precip rows carry «DEMOTED to Others(beta) per request» in #R40's note, and the
              ECMWF family sits with them; all of that stays in Beta. Assuming a past instruction has
              expired is the failure this file has warned about twice. */
-          ['lyrGrpEconomy',['trade','industry','wbgdpgrow','wbinfl','wbtrade','wbtax','wbdebt','wbmanuf','wbfdi','wbunemp','wbgni','wbremit','wbtour']],
-          ['lyrGrpSociety',['wblit','wbschool','wbtert','wbedu','osmedu','wbpov','wbgini','wbflfp','wbhomicide','cat-religion','cat-language']],   /* (#R270) +homicide rate, +fertility rate — see the note above */
-          ['lyrGrpTransport',['planes','rail','ships','oxrail','oxsea','osmair','osmport']],
-          ['lyrGrpAgri',['crops','wbagri','wbagremp','gxsoil']],
+          /* (#R273) +GDP per capita (← Population), +extreme poverty, +income inequality (Gini) and
+             +female labour participation (← Society: all three measure income and the labour market),
+             +high-tech exports (← Technology), +pharma manufacturing hubs (← Health). */
+          ['lyrGrpEconomy',['trade','industry','gdppc','wbgdpgrow','wbinfl','wbtrade','wbtax','wbdebt','wbmanuf','wbhitech','wbfdi','wbunemp','wbgni','wbpov','wbgini','wbflfp','wbremit','wbtour','pharma']],
+          /* (#R273) +HDI (← Population: it is the human-development composite), and −poverty,
+             −Gini, −female labour participation (→ Economy). */
+          ['lyrGrpSociety',['hdi','wblit','wbschool','wbtert','wbedu','osmedu','wbhomicide','cat-religion','cat-language']],   /* (#R270) +homicide rate, +fertility rate — see the note above */
+          /* (#R273) +live cameras (← Beta, where it had no shelf rather than a demotion): the feeds
+             are road and traffic cameras — TfL JamCams, Caltrans, the DOT 「511」 networks. */
+          ['lyrGrpTransport',['planes','rail','ships','oxrail','oxsea','osmair','osmport','webcams']],
+          /* (#R273) +undernourishment (← Health): it is the food-security measure, and it belongs
+             with the land that grows the food. */
+          ['lyrGrpAgri',['crops','wbagri','wbagremp','gxsoil','wbunder']],
           /* ══ (#R258) A FIFTH NEW CATEGORY — WHERE THE ENERGY AND THE MATERIAL COME FROM ═════════════
              「追加すべきと思うレイヤーカテゴリはありますか？あれば作り…新レイヤー（国単位で塗るだけの
                やつじゃなくて、モノホンのやつ。）」 The map had no shelf for energy at all: the country
@@ -1320,7 +1360,9 @@ window.IntMapModules.dataLayers=function(HOST){
              ⚠ NOTHING IS MOVED INTO IT. Every existing row stays where it is: #R233's seven and
              #R254's sixty-one were named one by one by the reader, and 「再編」 is not a licence to
              overturn a list somebody wrote out by hand (the same reasoning as the ⚠⚠ note above). */
-          ['lyrGrpEnergy',['osmpower','osmextract','dams','energy','wbelec','wbrenew','wbelecuse','wbrenelec','wbenergy']],
+          /* (#R273) +clean cooking fuel access (← Health), directly beside electricity access:
+             both are 「does this household have energy」 rates. */
+          ['lyrGrpEnergy',['osmpower','osmextract','dams','energy','wbelec','wbcook','wbrenew','wbelecuse','wbrenelec','wbenergy']],
           /* (#R271) EMPTY, AND KEPT — `tz` joined the always-on switches at the top of the panel;
              the KEY stays for the same reason `lyrGrpGeoPol` and `lyrGrpOthers` keep theirs. */
           ['lyrGrpIndic',[]],   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
@@ -1375,6 +1417,10 @@ window.IntMapModules.dataLayers=function(HOST){
         /* (#R271) …and the time zones, for the same reason: a live-clock overlay of the whole planet
            is a view switch, not an indicator, and 「指標・オーバーレイ」 held nothing else. */
         const tzRow=rowFor('tz'); if(tzRow){ try{ tzRow.style.display=''; }catch(_){} order.push(tzRow); }
+        /* (#R273) …and the 3-D city buildings, for the same reason again: 「how the map is drawn」
+           rather than 「a statistic about a subject」. It was filed under IT & infrastructure, beside
+           broadband subscriptions and patent counts. ⚠ `placed.add` below is half of this move. */
+        const b3Row=rowFor('bldg3d'); if(b3Row){ try{ b3Row.style.display=''; }catch(_){} order.push(b3Row); }
         /* (#R14 / #17) the live "Active layers" list. DESKTOP: right below the favorites + top toggles.
            (#R25) MOBILE: moved to the BOTTOM (just before Tools) — when it sat at the top, toggling the
            FIRST layer made it appear above the rows and the scroll-compensation had to scroll the list,
@@ -1411,6 +1457,7 @@ window.IntMapModules.dataLayers=function(HOST){
            it unplaced, and `order.push` MOVES the element, so it lands in Beta. MEASURED on the
            built page before this line existed — 「Beta」 is exactly where 🕒 タイムゾーン came out. */
         if(tzRow) placed.add(tzRow);
+        if(b3Row) placed.add(b3Row);
         GROUPS.forEach(([key,ids])=>{ const rows=ids.map(rowFor).filter(Boolean); if(!rows.length) return;
           const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=T(key); order.push(h);
           rows.forEach(r=>{ try{ r.style.display=''; }catch(_){} order.push(r); placed.add(r); }); });
@@ -2443,7 +2490,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const periodSel=`<div class="kl-period"><label>${perLabel}</label><select id="kl-period">`+window.KOPPEN_PERIODS.map(([p])=>`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`).join('')+`</select></div>`;
       /* (#R23) Click a class = highlight just that climate on the map (RESTORED). Selected rows get the
          .sel outline + a Clear button; long-press (mobile) / right-click (desktop) shows the criteria. */
-      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>{ const _kn=window.kName(code), _knm=(_kn===code?'':_kn); return `<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}" title="${code}${_knm?' · '+_knm:''}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span><span class="kl-code">${code}</span>${_knm?`<span class="kl-nm"> · ${_knm}</span>`:''}</div>`; }).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(window.IntMapLang.t(HOST.lang,'Tap to highlight • long-press for criteria','タップでその気候だけ強調 / 長押しで定義','Tippen: Klima hervorheben • lange drücken: Kriterien','Касание — выделить климат • долгое нажатие — критерии','Toca para resaltar el clima • mantén pulsado para criterios')):(window.IntMapLang.t(HOST.lang,'Click to highlight • right-click for criteria','クリックでその気候だけ強調 / 右クリックで定義','Klick: Klima hervorheben • Rechtsklick: Kriterien','Клик — выделить климат • правый клик — критерии','Clic: resaltar clima • clic derecho: criterios'))}</div>`;
+      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">×</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>{ const _kn=window.kName(code), _knm=(_kn===code?'':_kn); return `<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}" title="${code}${_knm?' · '+_knm:''}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span><span class="kl-code">${code}</span>${_knm?`<span class="kl-nm"> · ${_knm}</span>`:''}</div>`; }).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(window.IntMapLang.t(HOST.lang,'Tap to highlight • long-press for criteria','タップでその気候だけ強調 / 長押しで定義','Tippen: Klima hervorheben • lange drücken: Kriterien','Касание — выделить климат • долгое нажатие — критерии','Toca para resaltar el clima • mantén pulsado para criterios')):(window.IntMapLang.t(HOST.lang,'Click to highlight • right-click for criteria','クリックでその気候だけ強調 / 右クリックで定義','Klick: Klima hervorheben • Rechtsklick: Kriterien','Клик — выделить климат • правый клик — критерии','Clic: resaltar clima • clic derecho: criterios'))}</div>`;
       const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
       const clr=lg.querySelector('#kl-clear'); if(clr) clr.onclick=()=>{ kSelected.clear(); buildLegend(); if(window._refreshKoppenImage) window._refreshKoppenImage(); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
@@ -2558,7 +2605,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const col=(KCOL.find(k=>k[0]===code)||[,[150,150,150]])[1];
       let pop=document.getElementById('koppen-info-pop');
       if(!pop){ pop=document.createElement('div'); pop.id='koppen-info-pop'; pop.className='koppen-info-pop'; mc.appendChild(pop); }
-      pop.innerHTML=`<button class="kip-x" title="${t('close')}">✕</button><div class="kip-h"><span class="kl-sw" style="background:rgb(${col[0]},${col[1]},${col[2]})"></span><b>${code}</b> · ${nm}</div><ul>${lines}</ul>`;
+      pop.innerHTML=`<button class="kip-x" title="${t('close')}">×</button><div class="kip-h"><span class="kl-sw" style="background:rgb(${col[0]},${col[1]},${col[2]})"></span><b>${code}</b> · ${nm}</div><ul>${lines}</ul>`;
       pop.style.display='block';
       const r=mc.getBoundingClientRect();
       pop.style.left=Math.max(8,Math.min((x||0)-r.left, r.width-248))+'px';
@@ -2648,7 +2695,7 @@ window.IntMapModules.dataLayers=function(HOST){
          gets its inline-table entry rather than English at index 0. */
       const nm=LDL.arr(GENERIC_LEG[id]);
       const _dragT=window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите','Arrastra para mover');
-      if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+_dragT+'">⋮⋮</span><button class="layer-popup-x" data-x="'+(cbId||id)+'" title="'+t('close')+'">✕</button><h4>'+nm+'</h4>';   /* (#R40) data-x so the universal delegated × handler is a guaranteed fallback */
+      if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+_dragT+'">⋮⋮</span><button class="layer-popup-x" data-x="'+(cbId||id)+'" title="'+t('close')+'">×</button><h4>'+nm+'</h4>';   /* (#R40) data-x so the universal delegated × handler is a guaranteed fallback */
         el.querySelector('.layer-popup-x').onclick=()=>{ const cb=(el.dataset.cbId&&document.getElementById(el.dataset.cbId))||document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };
         /* (#R15d) ships/planes: the military/civilian filter moves from the Layers panel INTO the legend. */
         if(id==='ships'||id==='planes'){
@@ -4876,7 +4923,11 @@ window.IntMapModules.dataLayers=function(HOST){
     window._applyGenericOpacity=_applyGenericOpacity;
     window._registerLayerOpacity=function(id,namesEnJp,layerIds,cbId){ try{
       /* (#R20) per-layer defaults: tectonic plates start at 30% per request. */
-      if(opacities[id]==null) opacities[id]=((id==='plates'||id==='eco-plates')?0.30:(id==='worldcover'?1:(id==='tz'?0.5:0.85)));   /* (#R40) Land cover 100%; (#R79c) Time zones default 50% */
+      /* ⚠ (#R273) 「色が濃すぎて地図を殺している。」 — the warning layer starts at 38 %, not 85 %: it is a
+         WASH over the whole world and at 85 % the terrain, the roads and the borders under it are
+         gone. Its rank is carried by the outline and its hazard by a label, both of which survive a
+         fill you can see through (see the alerts block in js/world-packs.js). */
+      if(opacities[id]==null) opacities[id]=((id==='plates'||id==='eco-plates')?0.30:(id==='worldcover'?1:(id==='tz'?0.5:(id==='wpalerts'?0.38:0.85))));   /* (#R40) Land cover 100%; (#R79c) Time zones default 50% */
       window._opacityTargets[id]=layerIds||[];
       /* (#R74) feed the layer-state audit: remember which REAL style layers belong to this checkbox */
       try{ if(cbId&&layerIds&&layerIds.length){ (window._imAuditReg=window._imAuditReg||{})[cbId]=layerIds.slice(); } }catch(_){}

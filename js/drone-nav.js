@@ -607,7 +607,7 @@ window.IntMapModules.droneNav=function(HOST){
         <input type="number" class="dn-wp-alt" data-i="${i}" step="1" inputmode="decimal" value="${esc(Math.round(_fin(w.alt,0)))}">
         <span class="dn-wp-ref">${w.ref==='amsl'?'AMSL':'AGL'}</span>
         <span class="dn-wp-both">${amsl==null?'':(fmtM(amsl)+' AMSL · '+fmtM(agl)+' AGL')}</span>
-        <span class="dn-wp-btns"><button type="button" data-up="${i}" title="↑">↑</button><button type="button" data-down="${i}" title="↓">↓</button><button type="button" data-del="${i}" title="✕">✕</button></span>
+        <span class="dn-wp-btns"><button type="button" data-up="${i}" title="↑">↑</button><button type="button" data-down="${i}" title="↓">↓</button><button type="button" data-del="${i}" title="×">×</button></span>
       </div>`; }).join('');
     const row=(k,v)=>`<div class="tp-row"><span>${k}</span><b>${v}</b></div>`;
     const results=!st?`<div class="tp-hint">${L('Add at least two waypoints, then compute.','ウェイポイントを2点以上追加して計算してください。','Mindestens zwei Wegpunkte hinzufügen und berechnen.','Добавьте не менее двух точек и рассчитайте.','Añade al menos dos puntos y calcula.')}</div>`
@@ -623,11 +623,11 @@ window.IntMapModules.droneNav=function(HOST){
         +st.violations.map(v=>`<div class="dn-vio dn-${esc(v.severity)}" data-at="${v.at}"><b>${esc(kindLabel(v.kind))}</b> <span class="dn-vio-at">${v.toKm?('· '+v.fromKm.toFixed(2)+'–'+v.toKm.toFixed(2)+' km'):''}</span><br>${esc(v.text)}</div>`).join('')
       : `<div class="dn-ok">✓ ${L('Every condition is met.','すべての飛行条件を満たしています。','Alle Bedingungen erfüllt.','Все условия выполнены.','Se cumplen todas las condiciones.')}</div>`);
     const specRows=SPEC_FIELDS.map(f=>`<label class="dn-spec"><span>${esc(specLabel(f))}</span><input type="number" data-spec="${f.k}" step="${f.step}" min="${f.min}" max="${f.max}" inputmode="decimal" value="${esc(route.spec[f.k])}"><i>${f.unit}</i></label>`).join('');
-    const saved=routes.length?`<div class="dn-saved">${routes.map(r=>`<div class="dn-saved-row"><button type="button" class="dn-open" data-open="${esc(r.id)}">${esc(r.name)}</button><span>${(r.wp||[]).length}</span><button type="button" class="dn-del" data-drop="${esc(r.id)}">✕</button></div>`).join('')}</div>`:'';
+    const saved=routes.length?`<div class="dn-saved">${routes.map(r=>`<div class="dn-saved-row"><button type="button" class="dn-open" data-open="${esc(r.id)}">${esc(r.name)}</button><span>${(r.wp||[]).length}</span><button type="button" class="dn-del" data-drop="${esc(r.id)}">×</button></div>`).join('')}</div>`:'';
     const ops=opsSection();
 
     p.innerHTML=`<div class="tp-header"><span class="tp-title">🛸 ${L('Drone navigation','ドローン航法','Drohnen-Navigation','Навигация дрона','Navegación de dron')}</span>
-        <span class="tp-hd-btns"><button class="tp-min-btn" type="button" title="–">–</button><button class="tp-close" type="button" title="${HOST.t('close')}">✕</button></span></div>
+        <span class="tp-hd-btns"><button class="tp-min-btn" type="button" title="–">–</button><button class="tp-close" type="button" title="${HOST.t('close')}">×</button></span></div>
       <input type="text" id="dn-name" class="dn-name" value="${esc(route.name)}">
       <div class="dn-sec">${L('Aircraft','機体','Fluggerät','Аппарат','Aeronave')}</div>
       <select id="dn-preset" class="tp-select">${PRESETS.map(x=>`<option value="${x.id}"${route.presetId===x.id?' selected':''}>${esc(presetName(x))}</option>`).join('')}<option value="custom"${route.presetId==='custom'?' selected':''}>${L('Custom','カスタム','Eigene','Свой','Personalizado')}</option></select>

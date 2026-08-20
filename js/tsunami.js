@@ -770,7 +770,7 @@ window.IntMapModules.tsunami=function(HOST){
        file had drifted the same way its sibling had: 10, 10.5, 11, 11.5 and 12 px all in one
        column, and --text-muted on labels the reader is meant to read. Two steps, one text colour,
        and the SAME two numbers js/seismic.js uses, so the two panels are one design rather than two
-       that resemble each other. Grey survives only on the ✕/— window chrome. */
+       that resemble each other. Grey survives only on the ×/— window chrome. */
     const FS='12px', FS_S='11px';
     const BTN='padding:6px 10px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);font-size:12px;cursor:pointer;';
     const fmtHM=(s)=>{ const t=Math.max(0,Math.round(s)); const h=Math.floor(t/3600), m=Math.floor((t%3600)/60);
@@ -803,7 +803,7 @@ window.IntMapModules.tsunami=function(HOST){
         /* (#R210) same third state as the seismic panel — a solve in flight is not something to
            close just to see the wave it is drawing. See js/seismic.js for the reasoning. */
         +'<button class="tsu-min" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" aria-label="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;">'+(minimised?'▢':'—')+'</button>'
-        +'<button class="tsu-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>';
+        +'<button class="tsu-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>';
       /* (#R215) the same two-declaration bug js/seismic.js carried — see the note there. */
       let body='<div class="tsu-body" style="padding:10px 12px;display:'+(minimised?'none':'flex')+';flex-direction:column;gap:8px;max-height:74vh;overflow:auto;">';
       if(epi) body+='<div style="font-size:'+FS+';color:var(--text-main);">M '+mw.toFixed(1)+' · '

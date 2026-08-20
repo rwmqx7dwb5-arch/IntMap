@@ -367,7 +367,7 @@ window.IntMapModules.landCover=function(HOST){
       }catch(e){ try{ console.warn('ecoregions add failed',e); }catch(_){} } }
     const SETS={worldcover:['eco-worldcover'],plates:['eco-plates-fill','eco-plates-line','eco-plates-lbl'],ecoregions:['eco-regions-fill','eco-regions-line']};
     /* (#R13c) Land-cover legend — the official ESA WorldCover 2021 11-class palette + labels (EN/JP).
-       Draggable + minimisable like every other legend; the ✕ unchecks the layer. */
+       Draggable + minimisable like every other legend; the × unchecks the layer. */
     const WC_CLASSES=[['#006400',LA('Tree cover','樹木','Baumbestand','Древесный покров','Cubierta arbórea')],['#ffbb22',LA('Shrubland','低木地','Strauchland','Кустарники','Matorral')],['#ffff4c',LA('Grassland','草地','Grasland','Травяные земли','Pastizal')],
       ['#f096ff',LA('Cropland','農地','Ackerland','Пашня','Cultivos')],['#fa0000',LA('Built-up','市街地','Bebauung','Застройка','Zona urbanizada')],['#b4b4b4',LA('Bare / sparse vegetation','裸地・希少植生','Kahl / spärliche Vegetation','Оголённая / разреженная растительность','Suelo desnudo / vegetación escasa')],
       ['#f0f0f0',LA('Snow and ice','雪氷','Schnee und Eis','Снег и лёд','Nieve y hielo')],['#0064c8',LA('Permanent water bodies','水域','Dauerhafte Gewässer','Постоянные водоёмы','Masas de agua permanentes')],['#0096a0',LA('Herbaceous wetland','湿地（草本）','Krautiges Feuchtgebiet','Травянистые водно-болотные угодья','Humedal herbáceo')],
@@ -378,7 +378,7 @@ window.IntMapModules.landCover=function(HOST){
         if(!lg){ lg=document.createElement('div'); lg.className='data-legend'; lg.id='data-legend-worldcover'; lg.style.bottom='140px';
           (document.getElementById('map-container')||document.body).appendChild(lg); }
         const dragT=window.IntMapLang.t(HOST.lang,"Drag to move","ドラッグして移動","Zum Verschieben ziehen","Потяните, чтобы переместить","Arrastre para mover");
-        lg.innerHTML='<span class="dl-drag" title="'+dragT+'">⋮⋮</span><button class="layer-popup-x" title="'+(t('close'))+'">✕</button>'+
+        lg.innerHTML='<span class="dl-drag" title="'+dragT+'">⋮⋮</span><button class="layer-popup-x" title="'+(t('close'))+'">×</button>'+
           /* (#R268) the year is chosen, so it is no longer baked into the title */
           '<h4>'+(window.IntMapLang.t(HOST.lang,"Land cover (ESA)","土地被覆 (ESA)","Landbedeckung (ESA)","Земной покров (ESA)","Cobertura del suelo (ESA)"))+'</h4>'+
           '<div style="display:flex;align-items:center;gap:6px;margin-top:4px;font-size:10.5px;color:var(--text-muted);"><span>'
@@ -876,12 +876,28 @@ window.IntMapModules.religionLang=function(HOST){
       const s=sp/100, l=lp/100, c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs(((h/60)%2)-1)), m=l-c/2;
       const t=h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x];
       return '#'+_hex2((t[0]+m)*255)+_hex2((t[1]+m)*255)+_hex2((t[2]+m)*255); }
+    /* ══ ⚠⚠⚠ (#R273) THE SERBIAN FAMILY IS ONE HUE, ON PURPOSE ══════════════════════════
+       「凡例内はまだ単に「セルビア語」のまま（追記：セルビア語系言語は似た色味にするように。ほとんど同じ色味に。）」
+
+       MEASURED first, because this sentence has come back four times. On the built page with the
+       layer on and the key open, the three standards ARE three rows with three names and three
+       distinct swatches — #R268 split the names, #R270 split the fill, #R271 made all 89 unique.
+       What they were NOT was recognisable as one family: Serbian came out #31a354 (green), Croatian
+       #33d2e1 (cyan) and Bosnian #6b6ecf (blue-violet), i.e. as unrelated as English and Arabic,
+       because a rank in the most-led order decided the hue and those ranks are 18, 38 and 25.
+
+       → BCMS gets ONE HUE and separates by lightness alone: the map reads as one area at a glance
+       and the key still answers which standard a given shade is. The colours are RESERVED before the
+       generated palette runs, so nothing else can be handed the same value. */
+    const FAM_BCMS={ sr:0, cnr:1, bs:2, hr:3, sh:4 };
+    const FAM_COL=['#7b2e8e','#8f3fa3','#a453b7','#b96ccb','#cd88dd'];
     const _palCache={};
     function paletteOf(n){
       n=Math.max(0,n|0);
       if(_palCache[n]) return _palCache[n];
       const out=LPAL.slice(0,Math.min(n,LPAL.length));
       const seen=Object.create(null); out.forEach(c=>{ seen[c.toLowerCase()]=1; });
+      FAM_COL.forEach(c=>{ seen[c.toLowerCase()]=1; });
       for(let i=out.length;i<n;i++){
         const h=Math.round((i*137.508)%360), k=(i-LPAL.length)%3;
         const sat=[58,40,74][k]; let lig=[44,64,54][k];
@@ -964,6 +980,8 @@ window.IntMapModules.religionLang=function(HOST){
     /* (#R270) one category, one colour — see the note by LANG_FIX. #R268's family-grouping is gone
        with the shared fill it existed for; a rank in the most-led order IS the colour now. */
     const colOf=(key,cat)=>{ const C=CFG[key]; if(C.col) return C.col(cat);
+      /* (#R273) the Serbo-Croatian standards share a hue — see FAM_COL */
+      if(key==='language'&&FAM_BCMS[cat]!=null) return FAM_COL[FAM_BCMS[cat]];
       const ord=order[key]||[];
       const i=ord.indexOf(cat);
       if(i<0) return '#9aa0a6';
@@ -1078,7 +1096,9 @@ window.IntMapModules.religionLang=function(HOST){
       ready:(k)=>load(k),
       /* (#R271) the colour a category is drawn in, and the palette itself — so «no two rows share a
          swatch» is a thing a test can assert rather than a thing a comment claims */
-      colourOf:(k,cat)=>colOf(k,cat), palette:(n)=>paletteOf(n).slice() };
+      colourOf:(k,cat)=>colOf(k,cat), palette:(n)=>paletteOf(n).slice(),
+      /* (#R273) the Serbo-Croatian standards and the one hue they share */
+      family:()=>Object.keys(FAM_BCMS).slice(), familyColours:()=>FAM_COL.slice() };
   })();
 };
 

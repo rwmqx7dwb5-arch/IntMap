@@ -1400,7 +1400,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     let b=document.getElementById('area-news-banner');
     if(!b){ b=document.createElement('div'); b.id='area-news-banner'; b.style.cssText='display:flex;align-items:center;gap:8px;justify-content:space-between;margin:0 0 8px;padding:7px 11px;border-radius:9px;background:rgba(10,132,255,0.12);border:1px solid var(--primary-color);font-size:12px;color:var(--text-main);';
       const feed=document.getElementById('live-news-feed'); if(feed&&feed.parentNode) feed.parentNode.insertBefore(b,feed); }
-    b.innerHTML='<span>📍 '+(window.IntMapLang.t(currentLang,'Showing news in the selected area','選択範囲のニュースのみ表示中','Nur News im gewählten Bereich','Показаны новости выбранной области','Mostrando noticias del área seleccionada'))+'</span><button onclick="window._clearNewsArea()" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap;">✕ '+(window.IntMapLang.t(currentLang,'Clear','解除','Aufheben','Сбросить','Quitar'))+'</button>';
+    b.innerHTML='<span>📍 '+(window.IntMapLang.t(currentLang,'Showing news in the selected area','選択範囲のニュースのみ表示中','Nur News im gewählten Bereich','Показаны новости выбранной области','Mostrando noticias del área seleccionada'))+'</span><button onclick="window._clearNewsArea()" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap;">× '+(window.IntMapLang.t(currentLang,'Clear','解除','Aufheben','Сбросить','Quitar'))+'</button>';
   }
 
   /* ===== AI FEATURE 3: spatial news summarization (radius / area) =====
@@ -2839,7 +2839,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* ══ (#R212) THE DAY/NIGHT SWITCH TAKES EFFECT WHEN IT IS SWITCHED ═══════════════════════════════
      「設定から、昼夜を表示するのをオフにできるように。（追記：オフにしてもオフにならない。）」 #R210 wired
      it into the Apply handler, and Apply is `btn-close-settings` — but this dialog has a SECOND way
-     out (`closeSettings`, the ✕ and Escape) which discards everything, and it is the one that looks
+     out (`closeSettings`, the × and Escape) which discards everything, and it is the one that looks
      like «close». A display toggle has no reason to wait for a commit at all: it is instant, it is
      reversible, and it persists itself (js/night-side.js writes the key). So it applies on `change`
      as well — the Apply path still runs and is now a no-op for this control. */
@@ -3041,7 +3041,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const brg=bearingDeg([prev.lng,prev.lat],[pin.lng,pin.lat]);
       distHTML2=`<div class="pin-popup-row"><span>${t('ctxDistFrom')}</span><b>${distTXT(km)}</b></div><div class="pin-popup-row"><span>${t('bearing')}</span><b>${brg.toFixed(1)}° ${compassDir(brg)}</b></div>`;
     }
-    el.innerHTML=`<button class="pin-popup-close" onclick="window._closePinPopup()">✕</button>
+    el.innerHTML=`<button class="pin-popup-close" onclick="window._closePinPopup()">×</button>
       <div style="font-weight:600; margin-bottom:6px;">📍 ${window.IntMapLang.t(currentLang,'Pin','ピン','Pin','Метка','Pin')} #${idx+1}</div>
       <div class="pin-popup-row"><span>${t('coords')}</span><b>${fmtLL(pin.lng,pin.lat)}</b></div>
       <div class="pin-popup-row"><span>${pin.elev!=null&&pin.elev<0?t('depth'):t('elev')}</span>${elevHTML}</div>
@@ -3697,7 +3697,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* ===== (#R19) Apple-style SIDEBAR widgets — shown ONLY in the no-tab-selected blank state.
      Per the spec: default = NONE; the user adds widgets from a gallery ("+"), iOS-widget look
-     (rounded glass cards, 2-col grid), removable (hover/tap ✕), prefs persist. Data: clock (user TZ),
+     (rounded glass cards, 2-col grid), removable (hover/tap ×), prefs persist. Data: clock (user TZ),
      weather (Open-Meteo @ map center), FX (open.er-api.com), markets (CoinGecko — keyless+CORS;
      stock APIs are key-walled/CORS-blocked, so markets = crypto majors, honestly labeled). ===== */
   /* (#R164) moved to js/widgets.js — see Architecture.md §3.1. */
@@ -3713,7 +3713,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     function chk(k,label){ return '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-w="'+k+'" '+(cfg[k]?'checked':'')+'> '+label+'</label>'; }
     function render(){ const p=ensure();
       p.style.cssText='display:block;position:absolute;top:70px;right:24px;left:auto;bottom:auto;z-index:1500;width:240px;';
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🧩 '+(window.IntMapLang.t(currentLang,"Widgets","ウィジェット","Widgets","Виджеты","Widgets"))+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🧩 '+(window.IntMapLang.t(currentLang,"Widgets","ウィジェット","Widgets","Виджеты","Widgets"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
         +'<div id="wdg-clock" style="'+(cfg.clock?'':'display:none;')+'margin-bottom:7px;"></div>'
         +'<div id="wdg-weather" style="'+(cfg.weather?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(window.IntMapLang.t(currentLang,"Loading weather…","天気を取得中…","Wetter wird geladen…","Загрузка погоды…","Cargando el tiempo…"))+'</div>'
         +'<div id="wdg-fx" style="'+(cfg.fx?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(window.IntMapLang.t(currentLang,"Loading FX…","為替を取得中…","Wechselkurse werden geladen…","Загрузка курсов валют…","Cargando tipos de cambio…"))+'</div>'

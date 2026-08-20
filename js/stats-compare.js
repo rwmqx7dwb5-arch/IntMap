@@ -534,7 +534,7 @@ window.IntMapModules.statsCompare=function(HOST){
     function _endPick(){ try{ _setPick(false); }catch(_){} }
     function chipRow(){ const w=host&&host.querySelector('#scp-chips'); if(!w) return; w.innerHTML='';
       codes.forEach((cd,i)=>{ const s2=_cs(cd); const el=document.createElement('span'); el.className='scp-chip'; el.style.borderColor=PAL[i];
-        el.innerHTML='<span class="scp-dot" style="background:'+PAL[i]+';"></span>'+(s2.flag?s2.flag+' ':'')+esc(cName(s2)||cd)+'<span class="scp-x" title="remove">✕</span>';
+        el.innerHTML='<span class="scp-dot" style="background:'+PAL[i]+';"></span>'+(s2.flag?s2.flag+' ':'')+esc(cName(s2)||cd)+'<span class="scp-x" title="remove">×</span>';
         el.querySelector('.scp-x').onclick=()=>{ codes=codes.filter(x=>x!==cd); render(); }; w.appendChild(el); });
       try{ paintOnMap(); }catch(_){} }   /* (#R83) keep the map fill in sync with the current selection */
     /* (#R71) grouped picker behind a single toggle ("指標選択画面が煩雑になっている。ごちゃごちゃ") */

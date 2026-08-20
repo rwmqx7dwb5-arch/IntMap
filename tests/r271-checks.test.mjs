@@ -46,14 +46,17 @@ test('R271 ① a country is washed only for what could NOT be placed', () => {
   assert.ok(!/GEOM_FEEDS\s*=\s*\{/.test(s),
     'the set of countries drawn at their own units must be derived, not written down');
   assert.match(s, /drawnISO/, 'it is rebuilt from the features that actually reached the source');
-  assert.match(s, /const drawsAreas\s*=\s*\(c\)\s*=>\s*!!drawnISO\[c\]/,
-    'drawsAreas must ask the map, not a table');
-  /* the wash's rank comes from the unplaced areas only — that is what stops one district's
-     top-tier warning from colouring a whole country */
-  const m = /function agencyTier\(c\)\{([\s\S]*?return UNPL\[c\]\|\|0; \})/.exec(s);
-  assert.ok(m, 'agencyTier() must exist and end at the unplaced-tier lookup');
-  assert.match(m[1], /UNPL\[c\]/, 'the wash rank must come from the areas that could not be placed');
-  assert.ok(!/cmaRec\.worst/.test(m[1]) && !/bomRec\.worst/.test(m[1]),
+  /* ⚠⚠⚠ (#R273) THE RULE GOT STRICTER, NOT LOOSER. #R271 washed a country for the areas it could
+     not place even where its other units WERE drawn; with Japan at the municipality that tinted the
+     whole country for eleven unplaced areas out of 1,490. A country is drawn at its units OR washed,
+     never both — `drawsAreas` is inlined into `washTier` as `!drawnISO[c]`, which is the same
+     measurement with no second name for it. */
+  const wi = s.indexOf('function washTier(c){');
+  assert.ok(wi > 0, 'washTier() must exist');
+  const w = s.slice(wi, s.indexOf('function paintCountries', wi));
+  assert.match(w, /UNPL\[c\]/, 'the wash rank must come from the areas that could not be placed');
+  assert.match(w, /!drawnISO\[c\]/, '…and only where nothing at all could be drawn');
+  assert.ok(!/cmaRec\.worst/.test(w) && !/bomRec\.worst/.test(w),
     'the worst rank anywhere in a country is not what a wash is allowed to say');
 });
 
@@ -71,12 +74,17 @@ test('R271 ① what could not be placed is COUNTED and printed (#R185: no silent
 
 /* ⚠ (#R271 追記) the panel must name the unit it is actually drawing — measured on production right
    after the deploy, it said 「115 prefectures」 while drawing 115 CLASS10 REGIONS (Japan has 47). */
-test('R271 ① the panel counts the unit Japan is drawn at, not a fixed word', () => {
+test('R271 ① the panel names the unit Japan is drawn at, not a fixed word', () => {
   const s = codeOnly(read('js/world-packs.js'));
-  const m = /jp\+' '\+\(jmaUnit===[\s\S]{0,420}/.exec(s);
-  assert.ok(m, 'the Japanese count must be labelled from jmaUnit, not from a fixed word');
-  assert.match(m[0], /issuing regions/, 'class10 areas are issuing regions');
-  assert.match(m[0], /prefectures/, '…and the fallback geometry really is prefectures');
+  /* (#R273) the word moved from the world overview to the country's own legend, where the reader is
+     asking about Japan — but it is still READ OFF `jmaUnit`, which is set by whichever geometry
+     actually loaded, rather than written out beside a count of something else. */
+  const m = /function unitWord\(feed\)\{([\s\S]{0,700})/.exec(s);
+  assert.ok(m, 'the unit word must be a function of the feed');
+  assert.match(m[1], /jmaUnit==='muni'/, 'Japan’s word comes from the geometry that loaded');
+  assert.match(m[1], /by municipality/, 'the municipality is what 「市町村単位で塗り分けろ」 asked for');
+  assert.match(m[1], /by issuing region/, '…and the fallback geometry really is the issuing region');
+  assert.match(s, /jmaUnit='muni'/, 'and the municipality path must set it');
 });
 
 /* ── ② the two services that answer a browser directly, with geometry ───────────────────────── */
@@ -113,7 +121,10 @@ test('R271 ② Europe’s regions get a shape from the feed’s own polygon or t
 test('R271 ② the Philippines is read from PAGASA, at its provinces', () => {
   const s = codeOnly(read('js/world-packs.js'));
   assert.match(s, /PHL:'pagasa'/, 'the Philippines must be routed to its own service');
-  assert.match(s, /async function loadPHL\(\)/, 'and have a loader');
+  /* (#R273) …through the ONE reader every CAP-index service now shares (Taiwan and New Zealand
+     joined it), because the cost of adding a country has to be one table entry */
+  assert.match(s, /pagasa:\{q:'ph=1',iso:'PHL',unit:'province'/, 'and have a loader');
+  assert.match(s, /async function loadCAP\(feed\)/, '…which is one function, not one per country');
   assert.match(s, /SIDE\.phl/, '…whose features reach the one publisher');
   assert.match(s, /feats=baseFeats\.concat\([^)]*SIDE\.phl/, '…and are actually published');
   const r = read('supabase/functions/alerts-relay/index.ts');
@@ -179,7 +190,9 @@ test('R271 ⑤ the panel’s scrollbar width is measured and given to the panes 
   assert.match(s, /paddingRight/, '…and written where an inline style cannot outrank it');
   assert.match(s, /scrollbar-gutter:stable/, 'so the column does not change width as content grows');
   /* the section heading and the row it labels start at the same inset */
-  assert.match(s, /\.tw-cap\{[^}]*padding:0 11px/, 'a section heading is inset like the rows under it');
+  /* (#R273) 12, not 11: a row lives inside a card whose 1 px border pushes its text to x+12, so a
+     caption inset by 11 started ONE pixel left of every word it labels (measured 440.0 vs 441.0). */
+  assert.match(s, /\.tw-cap\{[^}]*padding:0 12px/, 'a section heading is inset like the rows under it');
   /* a one-line prose block is a row, not something shorter than one */
   assert.match(s, /\.tw-blk\{[^}]*min-height:44px/, 'a prose block must sit on the row rhythm');
 });
@@ -233,7 +246,27 @@ test('R271 ⑦ every layer id is in exactly one group, and the moved rows are wh
   assert.equal(where('energy'), 'lyrGrpEnergy', 'the energy mix belongs on the energy shelf');
   assert.equal(where('aurora'), 'lyrGrpOrbit', 'an aurora forecast is space weather');
   assert.equal(where('nightsat'), 'lyrGrpDemo', 'night lights show where people are');
-  assert.equal(where('bldg3d'), 'lyrGrpTech', 'a building is built infrastructure, not terrain');
+  /* ⚠⚠ (#R273) 「レイヤーのカテゴリ分類があきらかに不適切なレイヤーが大量にある。大規模に…再編しろ。」
+     — asked whether the hand-written lists were included, the answer was 「全部動かしてよい」. One
+     rule for all 167 rows: a layer belongs to the SUBJECT IT MEASURES. These are the fourteen. */
+  assert.equal(where('gdppc'), 'lyrGrpEconomy', 'GDP per capita measures the economy');
+  assert.equal(where('hdi'), 'lyrGrpSociety', 'HDI is a human-development composite');
+  assert.equal(where('wbadofert'), 'lyrGrpDemo', 'adolescent fertility is a fertility rate');
+  assert.equal(where('pharma'), 'lyrGrpEconomy', 'pharma hubs are factories');
+  assert.equal(where('wbcook'), 'lyrGrpEnergy', 'clean cooking fuel access is an energy-access rate');
+  assert.equal(where('wbunder'), 'lyrGrpAgri', 'undernourishment measures food');
+  for (const id of ['wbpov', 'wbgini', 'wbflfp', 'wbhitech']) {
+    assert.equal(where(id), 'lyrGrpEconomy', id + ' measures income, labour or trade');
+  }
+  assert.equal(where('eez'), 'lyrGrpPolitics', 'an EEZ is a jurisdiction drawn on water');
+  assert.equal(where('slope'), 'lyrGrpTerrain', 'slope is computed from the elevation model');
+  assert.equal(where('webcams'), 'lyrGrpTransport', 'the camera feeds are road and traffic cameras');
+  /* ⚠ (#R273) 3-D buildings LEFT the shelves entirely: it is a way of DRAWING the map, like Roads
+     and Place names, and it now sits with the always-on view switches at the top — the same move
+     #R233 made for the day/night shading and #R271 for the time zones. */
+  assert.equal(where('bldg3d'), undefined, '3-D buildings is a view switch, not a subject shelf');
+  assert.match(codeOnly(s), /rowFor\('bldg3d'\)/, '…and it must be pushed into the always-on block');
+  assert.match(codeOnly(s), /if\(b3Row\) placed\.add\(b3Row\)/, '…and marked placed, or the sweep files it in Beta');
   for (const id of ['worldcover', 'ecoregions', 'gxndvi', 'wbforest']) {
     assert.equal(where(id), 'lyrGrpNature', id + ' is land cover, not elevation');
   }

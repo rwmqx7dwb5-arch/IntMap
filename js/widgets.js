@@ -221,7 +221,7 @@ window.IntMapModules.widgets=function(HOST){
       '.wgt-card:hover .wgt-x{opacity:1;}'+
       '@media(max-width:768px){ .wgt-x{opacity:0.85;width:30px;height:30px;border-radius:15px;} }'+
       '.wgt-add{position:relative;overflow:hidden;border:1.5px dashed rgba(128,128,128,0.45);border-radius:22px;min-height:106px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--text-muted);cursor:pointer;font-size:12.5px;background:transparent;transition:background 0.15s;}'+
-      /* (#R22) Edit mode: per-card delete + reorder controls replace the old hover ✕. */
+      /* (#R22) Edit mode: per-card delete + reorder controls replace the old hover ×. */
       '.wgt-title-row{display:flex;align-items:center;margin:2px 2px 10px;}'+
       '.wgt-edit-btn{margin-left:auto;border:none;background:rgba(128,128,128,0.16);color:var(--text-main);font-size:11.5px;font-weight:600;padding:4px 12px;border-radius:999px;cursor:pointer;}'+
       '.wgt-edit-btn.on{background:var(--primary-color);color:#fff;}'+
@@ -263,7 +263,7 @@ window.IntMapModules.widgets=function(HOST){
       const i=active.indexOf(e);
       let topright='';
       if(editing){
-        /* (#R31) Edit mode: DRAG-AND-DROP reorder (iOS-style) + delete (✕). The ↑↓ buttons are gone — a
+        /* (#R31) Edit mode: DRAG-AND-DROP reorder (iOS-style) + delete (×). The ↑↓ buttons are gone — a
            grip handle (the whole card is draggable) replaces them ("↓↑ではなく、ドラッグアンドドロップで"). */
         /* (#R33) iOS home-screen style: the whole card is draggable (no separate grip), and the delete badge
            is a minus in a dark circle at the top-left ("iPhoneのホーム画面のように / 削除ボタンをiOS風に"). */
@@ -298,7 +298,7 @@ window.IntMapModules.widgets=function(HOST){
       const isMob=(typeof isMobile==='function'&&isMobile());
       const cards=active.map(card).join('');
       const addable=Object.keys(DEFS).filter(k=>DEFS[k].multi||!hasType(k));
-      /* (#R22) An "Edit" button (top-right of the board) drives reorder/remove — no more per-card ✕. */
+      /* (#R22) An "Edit" button (top-right of the board) drives reorder/remove — no more per-card ×. */
       const editBtn=active.length?'<button id="wgt-edit" class="wgt-edit-btn'+(editing?' on':'')+'">'+(editing?(window.IntMapLang.t(HOST.lang,"Done","完了","Fertig","Готово","Hecho")):(window.IntMapLang.t(HOST.lang,"Edit","編集","Bearbeiten","Изменить","Editar")))+'</button>':'';
       let addCell='';
       if(!editing && addable.length){
@@ -311,7 +311,7 @@ window.IntMapModules.widgets=function(HOST){
       b.innerHTML='<div class="wgt-title-row"><span class="wgt-title" style="margin:0;">'+(window.IntMapLang.t(HOST.lang,"Widgets","ウィジェット","Widgets","Виджеты","Widgets"))+'</span>'+editBtn+'</div>'+
         '<div class="wgt-grid">'+cards+addCell+'</div>'+
         (!isMob&&gallery&&!editing&&addable.length?('<div class="wgt-gallery"><h5 style="display:flex;align-items:center;">'+(window.IntMapLang.t(HOST.lang,"Available widgets","追加できるウィジェット","Verfügbare Widgets","Доступные виджеты","Widgets disponibles"))+
-          '<button id="wgt-g-close" title="'+(window.IntMapLang.t(HOST.lang,"Close","閉じる","Schließen","Закрыть","Cerrar"))+'" style="margin-left:auto;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.22);color:var(--text-main);font-size:13px;line-height:1;cursor:pointer;">✕</button></h5>'+
+          '<button id="wgt-g-close" title="'+(window.IntMapLang.t(HOST.lang,"Close","閉じる","Schließen","Закрыть","Cerrar"))+'" style="margin-left:auto;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.22);color:var(--text-main);font-size:13px;line-height:1;cursor:pointer;">×</button></h5>'+
           addable.map(k=>'<div class="wgt-g-row" data-add="'+k+'"><span class="gi">'+DEFS[k].ic+'</span><span><div class="gn">'+DEFS[k].nm()+'</div><div class="gd">'+DEFS[k].desc()+'</div></span><span class="ga">＋</span></div>').join('')+'</div>'):'');
       const eb=b.querySelector('#wgt-edit'); if(eb) eb.onclick=()=>{ editing=!editing; gallery=false; render(); };
       const add=b.querySelector('#wgt-add'); if(add && !isMob) add.onclick=()=>{ gallery=!gallery; render(); };
