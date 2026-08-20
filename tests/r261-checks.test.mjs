@@ -4,15 +4,22 @@
  *  One test per defect this round measured, in the shape the measurement took.
  *  Source assertions (no browser): the browser specs cost minutes, these cost
  *  milliseconds, and a defect that has a shape in the source belongs here.
+ *
+ *  ⚠ (#R283) EVERY ASSERTION BELOW IS ABOUT THE CONTENT OF A FILE, SO IT READS THE
+ *  CONTENT. This file used to read the bytes the checkout produced, and ③ demands a
+ *  line break at a named place — which on a CRLF working copy has a carriage return
+ *  in front of it, so ③ has been red on Windows and green in CI ever since #R275 gave
+ *  it that shape. See scripts/eol.mjs: the line break ③ requires is still required,
+ *  and nothing else moved.
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readLF } from '../scripts/eol.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
+const read = (p) => readLF(path.join(ROOT, p));
 
 /* ── ① the trade arrowhead is aimed in SCREEN space ─────────────────────────────────────────────
    「貿易レイヤーは、矢印と線が分離している。」 MEASURED in globe projection, head angle vs the true
@@ -68,10 +75,7 @@ test('R261 ③: continuous/one-shot is a property of each source, and every tap 
      `canPour()` said no). One mechanism now: `feedTaps` feeds ALL of them at their own rate, and
      `owed()` — the remaining capacity — is the only thing the two kinds disagree about.
      What #R261 established is unchanged and is what is asserted: EVERY tap fills, at ITS OWN rate. */
-  /* ⚠ (#R280) `\n` — not `\r?\n` — made this fail on every Windows checkout: the committed blob is
-     LF, core.autocrlf=true writes CRLF to disk, so the working copy never matched while CI always
-     did. A test that is red on the maintainer’s own machine every run teaches people to skim red. */
-  assert.match(s, /function feedTaps\(dt\)\{[\s\S]{0,400}sources\.forEach\(sc=>\{\r?\n\s*const left=owed\(sc\);/,
+  assert.match(s, /function feedTaps\(dt\)\{[\s\S]{0,400}sources\.forEach\(sc=>\{\n\s*const left=owed\(sc\);/,
     'every source is fed, not only the last one and not only the continuous ones');
   assert.match(s, /const give=Math\.min\(left,srcRate\(sc\)\*dt\);/,
     '…at its own rate, for the length of the step the solver is about to take, and never past what it owes');

@@ -341,6 +341,7 @@ scripts/
                                   ⚠ `npm test` には入れない——CI のチェックアウトは detached な PR ref。
   engine-coupling.mjs             レンダラ脱依存のゲート
   i18n-*.mjs                      翻訳の被覆と形の監査（§10）
+  eol.mjs                         ソース検査は**バイト列ではなく内容**を読む（改行はチェックアウトの性質）
   build-*.mjs                     data/ の生成（実行時には不要）
   run-tests.mjs / test-parallel.mjs / shard-plan.mjs / test-budget.mjs   テストの実行と予算
   backup-db.sh / restore-test.sh  DB のバックアップと隔離復元
@@ -350,7 +351,7 @@ tests/
   tests/prod-smoke.spec.js              実 URL に対するスモーク（PROD_URL）
   tests/security.spec.js                実ブラウザでの無害化確認
   helpers/network.js              hermetic なルーティングと console の分類
-  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（124本）
+  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（129本）
   *.spec.js                       ブラウザ回帰（67本）
 .github/workflows/
   ci.yml                          PR ＋ push main ＋ 手動。静的検査＋hermetic ブラウザ試験
