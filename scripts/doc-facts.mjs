@@ -495,8 +495,16 @@ const FILES = BODY.get('docs/FILES.md') || '';
          names this exact path, so a plain substring test stays green after the <script> tag is
          deleted. Read the TAGS — comments stripped first — and compare whole strings; building a
          pattern out of the filename would be an escaping bug waiting to happen (CodeQL agrees). */
-      const scriptSrcs = (pg) => [...pg.replace(/<!--[\s\S]*?-->/g, '')
-        .matchAll(/<script[^>]+src=["']([^"']+)["']/g)].map((m) => m[1].replace(/^\.\//, ''));
+      const scriptSrcs = (pg) => {
+        const out = [];
+        for (const tag of pg.matchAll(/<script[^>]+src=["']([^"']+)["']/g)) {
+          const before = pg.slice(0, tag.index);
+          const opened = (before.match(/<!--/g) || []).length;
+          const closed = (before.match(/-->/g) || []).length;
+          if (opened === closed) out.push(tag[1].replace(/^\.\//, ''));   // not inside a comment
+        }
+        return out;
+      };
       const loaded = scriptSrcs(rd(page));
       if (!loaded.includes('js/legal-text.js')) fail('legal', page + ' does not LOAD js/legal-text.js (a mention in a comment is not a script tag)');
       if (!loaded.includes('js/legal-page.js')) fail('legal', page + ' does not LOAD js/legal-page.js');
