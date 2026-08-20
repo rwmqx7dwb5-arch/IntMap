@@ -104,8 +104,14 @@ test('#R260 ③ the finish report has a line for each outcome', () => {
 /* ── ④ the direction of the sync, asserted on its own ───────────────────────────────────────── */
 test('#R260 ④ the mirror is one-way, PC → USB', () => {
   const md = read('CLAUDE.md');
-  assert.ok(md.includes('PC 上の IntMap → USB'),
+  /* ⚠ THE ASSERTION IS THE PROPERTY, NOT THE WORDING. This read «PC 上の IntMap → USB» literally
+     until #R282, when the source had to be named more precisely: 「PC 上の IntMap」 was ambiguous
+     between the master copy and a temp worktree, and mirroring the worktree is exactly the defect
+     that round fixed. What must never be lost is that the arrow has ONE direction and that the
+     master is the end it starts from. */
+  assert.match(md, /(原本|PC 上の IntMap)\s*→\s*USB/,
     'the sync direction is no longer written down — a "sync" that can run backwards is not a backup');
+  assert.ok(!/USB\s*→\s*(原本|PC)/.test(md), 'CLAUDE.md now describes a sync that runs back from the USB');
   assert.ok(md.includes('USB 上のファイルを作業元として使用したり'),
     'the ban on working from the USB copy is gone');
 });
