@@ -681,8 +681,8 @@ window.IntMapModules.widgets=function(HOST){
         setV(e.u,ic+' <span style="font-size:15px;">'+(jp()?nmJ[idx]:nmE[idx])+'</span>',(window.IntMapLang.t(HOST.lang,"age ","月齢 ","Mondalter ","возраст Луны ","edad lunar "))+age.toFixed(1)+(window.IntMapLang.t(HOST.lang," d","日"," T"," дн"," d"))+' · '+illum+'% '+(window.IntMapLang.t(HOST.lang,"lit","照度","beleuchtet","освещ.","iluminada")));
       }catch(_){ setV(e.u,'—',''); } }
     async function refreshAqi(e){ try{ const c=await widgetLoc(); if(!c){ wgtLocPrompt(e); return; }
-        const r=await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=us_aqi,pm2_5');
-        const j=await r.json(); const cu=j.current||{}; const v=cu.us_aqi; const cat=_aqiCat(v);   /* (#R154) 6-tier scale + colour-fill */
+        const j=await window.IntMapWx.guardedJSON('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=us_aqi,pm2_5',300000);
+        if(!j) throw new Error('aqi'); const cu=j.current||{}; const v=cu.us_aqi; const cat=_aqiCat(v);   /* (#R154) 6-tier scale + colour-fill */
         _wgtColor(e.u, cat.col);
         setV(e.u, _wgtBig(v!=null?Math.round(v):'—','US AQI', cat.label),
           (cu.pm2_5!=null?('PM2.5 '+(+cu.pm2_5).toFixed(1)+' µg/m³'):'')+_locLine(c.lbl));

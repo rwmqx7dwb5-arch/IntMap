@@ -231,10 +231,21 @@ test('R212 ⑬: the news proxies and the wind grid both carry a deadline', () =>
   assert.match(pf, /fetchDeadline\(make\(url\), PROXY_TIMEOUT_MS, ctls\[i\]\)/, 'each racer has its own clock');
   assert.match(pf, /ctls\.forEach\(\(c\) => \{ try \{ c\.abort\(\)/, 'and the losers are aborted when one wins');
   assert.match(read('js/app-body.js'), /import \{ fetchViaProxy \} from '\.\/proxy-fetch\.js'/, 'and the core just imports it');
-  const w = read('js/weather.js');
-  assert.match(w, /const WIND_TIMEOUT_MS=\d+/);
-  assert.match(w, /await _wfetch\(mk\(url\)\)/, 'the chunk fetches use it');
-  assert.match(w, /const coarseP=grid\?null:fetchCoarse\(\)/, 'the coarse field is asked for at the same time as the fine one');
+  /* ⚠⚠ (#R276) THE SECOND HALF OF THIS TEST GUARDED A MECHANISM THAT NO LONGER EXISTS, AND THE
+     PROPERTY IT WAS FOR IS NOW SATISFIED MORE STRONGLY. #R212's report was 「Wind(animated)が表示
+     されるまでが非常に遅い」, and its answer was a deadline on each of the five chunked Open-Meteo
+     point requests the wind field was assembled from. #R276 removed the requests: the field is the
+     ECMWF IFS `.om` file, read once through the Open-Meteo SDK (which carries its own
+     AbortController) after ONE metadata fetch through the guarded client. So the check is that the
+     wind layer asks for no per-point weather at all — a stronger statement than 「each of its many
+     requests has a clock」, and one that cannot be satisfied by re-adding the grid. */
+  const w = read('js/weather.js') + read('js/wx-ecmwf.js') + read('js/wx-wind.js');
+  assert.doesNotMatch(w, /api\.open-meteo\.com\/v1\/forecast/,
+    'the wind field must not be built from point-forecast requests');
+  assert.doesNotMatch(w, /latitude='\+lats\.join|latitude='\+las\.join/,
+    '…and certainly not from a joined list of coordinates');
+  assert.match(read('js/wx-ecmwf.js'), /window\.IntMapWx && window\.IntMapWx\.guardedJSON/,
+    'the one metadata fetch goes through the guarded client, which is where the deadline and the breaker live');
 });
 
 /* ── 14. the sources page is the registry, not a copy of it ────────────────────────────────────── */

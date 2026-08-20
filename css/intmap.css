@@ -2561,7 +2561,10 @@
     .acct-color.sel{ border-color:var(--text-main); }
 
     /* --- Animated wind canvas overlay (#7) --- */
-    /* (#R7) Windy model: a wind-SPEED color field (#wind-bg-canvas) under WHITE particle streaks (#wind-canvas). */
+    /* (#R276) The wind-SPEED colour field is a MapLibre raster of the model's own 9 km tiles; only the
+       particle streaks are on #wind-canvas, and they are drawn with WebGL (js/wx-wind.js). The second
+       canvas this pair used to need — #wind-bg-canvas, the screen-space colour field of #R7 — has been
+       gone since #R8b and its element and rule are now gone too. */
     /* (#R186) THE NIGHT SKY behind the globe (js/space-sky.js). It sits at stacking level 0 and is
        inserted BEFORE #map in the DOM, so the renderer's own canvas — and therefore the opaque Earth
        — paints on top of it and occludes every star behind the planet for free. `#map` gives up its
@@ -2569,7 +2572,6 @@
     #space-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:0; display:none; }
     body.space-sky-on #map{ background:transparent; }
     body.space-sky-on .map-container{ background:#000; }
-    #wind-bg-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:4; display:none; }
     #wind-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:5; display:none; }
 
     /* --- Data sources list in Settings (#37) --- */

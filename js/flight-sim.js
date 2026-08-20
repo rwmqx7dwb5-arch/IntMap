@@ -1307,8 +1307,8 @@ window.IntMapModules.flightSim=function(HOST){
          touchdown. Fetch is async & optional — no wind data = calm (physics unchanged). */
       st._wind=null; st._wNE=[0,0];
       try{ const _wla=st.lat.toFixed(3), _wlo=st.lng.toFixed(3);
-        fetch('https://api.open-meteo.com/v1/forecast?latitude='+_wla+'&longitude='+_wlo+'&current=wind_speed_10m,wind_direction_10m&hourly=wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_500hPa,wind_direction_500hPa,wind_speed_300hPa,wind_direction_300hPa&forecast_days=1&wind_speed_unit=ms&timezone=UTC')
-          .then(r=>r.ok?r.json():null).then(j=>{ if(!j||!st) return;
+        window.IntMapWx.guardedJSON('https://api.open-meteo.com/v1/forecast?latitude='+_wla+'&longitude='+_wlo+'&current=wind_speed_10m,wind_direction_10m&hourly=wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_500hPa,wind_direction_500hPa,wind_speed_300hPa,wind_direction_300hPa&forecast_days=1&wind_speed_unit=ms&timezone=UTC',900000)
+          .then(j=>{ if(!j||!st) return;
             let hr=0; try{ const iso=new Date().toISOString().slice(0,13); const arr=j.hourly&&j.hourly.time; if(arr){ const ix=arr.findIndex(t2=>String(t2).slice(0,13)===iso); if(ix>=0) hr=ix; } }catch(_){}
             const tbl=[]; const cur=j.current||{}; if(cur.wind_speed_10m!=null) tbl.push({alt:10,sp:+cur.wind_speed_10m||0,di:+cur.wind_direction_10m||0});
             const H=j.hourly||{}; [['925',750],['850',1500],['700',3000],['500',5600],['300',9200]].forEach(p=>{ const s2=H['wind_speed_'+p[0]+'hPa'],d2=H['wind_direction_'+p[0]+'hPa']; if(s2&&s2[hr]!=null) tbl.push({alt:p[1],sp:+s2[hr]||0,di:(d2&&+d2[hr])||0}); });

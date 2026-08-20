@@ -2900,7 +2900,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        DELETED in R33, so every surviving theme (auto/light/dark) mapped to 'opaque' → ANY theme change
        silently wiped the user's Solid/Frosted/More-transparent choice. The sidebar appearance is an
        INDEPENDENT user setting now; theme changes must NOT touch it. (Block removed — no auto-pick.) */
-    { const tu=document.getElementById('setting-temp-unit'); if(tu){ window.imUnitTemp=tu.value; try{ localStorage.setItem('intmap_temp_unit',window.imUnitTemp); }catch(_){} } }
+    { const tu=document.getElementById('setting-temp-unit'); if(tu){ window.imUnitTemp=tu.value; try{ localStorage.setItem('intmap_temp_unit',window.imUnitTemp); }catch(_){} try{ window.dispatchEvent(new Event('intmap-units')); }catch(_){} } }   /* (#R276) every legend that prints a temperature redraws from one event */
     { const al=document.getElementById('setting-ailocate'); if(al){ aiLocateMode=al.value; localStorage.setItem('intmap_ai_locate',aiLocateMode); } }
     const prevNewsLang=newsLangMode; newsLangMode=document.getElementById('setting-newslang').value; localStorage.setItem('intmap_news_lang',newsLangMode);
     /* Read the individually-selected news languages (when in "multiple languages" mode). */
@@ -3010,9 +3010,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }
   async function fetchElevDepth(lat,lng){
     try{
-      const r=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}`);
-      if(!r.ok) return null;
-      const j=await r.json(); const e=j&&j.elevation&&j.elevation[0];
+      const j=await window.IntMapWx.guardedJSON(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}`,3600000);   /* (#R276) one guarded client */
+      const e=j&&j.elevation&&j.elevation[0];
       return (typeof e==='number')?e:null;
     }catch(_){ return null; }
   }
@@ -3729,7 +3728,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     function wIcon(c){ if(c==null) return '🌡'; if(c===0) return '☀️'; if(c<=3) return '⛅'; if(c<=48) return '🌫'; if(c<=67) return '🌧'; if(c<=77) return '❄️'; if(c<=82) return '🌦'; if(c<=99) return '⛈'; return '🌡'; }
     function fxF(v){ return v==null?'—':(v<10?(+v).toFixed(3):(+v).toFixed(2)); }
     async function refreshData(){
-      if(cfg.weather && panel){ try{ const c=GE().hasRenderer()?GE().camera.getCenter():{lat:35.68,lng:139.76}; const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m'); const j=await r.json(); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(window.IntMapLang.t(currentLang,"wind ","風 ","Wind ","ветер ","viento "))+Math.round(cu.wind_speed_10m)+' km/h · '+(window.IntMapLang.t(currentLang,"map center","地図中心","Kartenmitte","центр карты","centro del mapa"))+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=window.IntMapLang.t(currentLang,"Weather unavailable","天気を取得できません","Wetter nicht verfügbar","Погода недоступна","Tiempo no disponible"); } }
+      if(cfg.weather && panel){ try{ const c=GE().hasRenderer()?GE().camera.getCenter():{lat:35.68,lng:139.76}; const j=await window.IntMapWx.guardedJSON('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m',300000); if(!j) throw new Error('wx'); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(window.IntMapLang.t(currentLang,"wind ","風 ","Wind ","ветер ","viento "))+Math.round(cu.wind_speed_10m)+' km/h · '+(window.IntMapLang.t(currentLang,"map center","地図中心","Kartenmitte","центр карты","centro del mapa"))+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=window.IntMapLang.t(currentLang,"Weather unavailable","天気を取得できません","Wetter nicht verfügbar","Погода недоступна","Tiempo no disponible"); } }
       if(cfg.fx && panel){ try{ const r=await fetch('https://open.er-api.com/v6/latest/USD'); const j=await r.json(); const rt=j.rates||{}; const el=panel.querySelector('#wdg-fx'); if(el) el.innerHTML='<b style="color:var(--text-main);">USD</b> → JPY '+fxF(rt.JPY)+' · EUR '+fxF(rt.EUR)+' · CNY '+fxF(rt.CNY)+' · GBP '+fxF(rt.GBP); }catch(_){ const el=panel.querySelector('#wdg-fx'); if(el) el.textContent=window.IntMapLang.t(currentLang,"FX unavailable","為替を取得できません","Wechselkurse nicht verfügbar","Курсы валют недоступны","Tipos de cambio no disponibles"); } }
     }
     function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display){ render(); if(!tick) tick=setInterval(updateClock,1000); if(!dataTick) dataTick=setInterval(()=>{ if(panel&&panel.style.display!=='none') refreshData(); },300000); } else { p.style.display='none'; } }

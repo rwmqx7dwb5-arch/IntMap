@@ -302,3 +302,134 @@ test('R208 ⑧ the space camera can leave the solar system, and the stars have r
   expect(s.model.starFarEdge).toBeLessThan(s.real.starFarEdge);
   expect(s.model.starFarEdge, 'and is still the outermost thing in the scene').toBeGreaterThan(0);
 });
+
+/* ══ #R276 ═══════════════════════════════════════════════════════════════════════════════════════
+   Appended here rather than given a spec file of their own, for the reason #R207 MEASURED: the
+   assertions are free and the BOOT is the whole price. Everything answerable without a browser is
+   in tests/r276-checks.test.mjs; the LIVE-data half (a typhoon eye in the rendered raster, the
+   readout against the field it is standing on, the forecast axis against the real feed) is in
+   tests/prod-smoke.spec.js, because it needs data this hermetic context deliberately blocks.
+
+   ⚠ AND THAT BLOCK IS ITSELF ONE OF THE THINGS THIS ROUND HAS TO PROVE. 「API失敗」 is on the list:
+   with map-tiles.open-meteo.com unreachable, the wind layer must SAY SO rather than show a picture
+   that is not there. This context blocks every host but the two boot CDNs, so it is the honest
+   place to ask. */
+
+test('R276 ⑯ the weather model and its renderer are on the page, and the SDK is only fetched when asked for', async () => {
+  const s = await page.evaluate(() => ({
+    ec: typeof window.IntMapECMWF, gl: typeof window.IntMapWindGL,
+    api: Object.keys(window.IntMapECMWF || {}).sort(),
+    sdkLoaded: !!window.IntMapECMWF.sdk(),
+    webgl: window.IntMapWindGL.supported(),
+  }));
+  expect(s.ec, 'the ECMWF model publishes itself').toBe('object');
+  expect(s.gl, 'and so does the particle renderer').toBe('object');
+  expect(s.api, 'the model exposes the surface every reader of it uses').toEqual(
+    expect.arrayContaining(['omUrl', 'load', 'sampler', 'valueNow', 'legend', 'before', 'lift',
+      'play', 'pause', 'step', 'setIndex', 'nowIndex', 'validTime', 'referenceTime', 'prefetch']));
+  /* the tile SDK is 340 kB compressed; a session that never opens a weather layer must not pay it */
+  expect(s.sdkLoaded, 'the SDK is not fetched at boot').toBe(false);
+  expect(s.webgl, 'this browser can run the particle renderer').toBe(true);
+});
+
+test('R276 ⑰ with the model host unreachable, the wind layer says so instead of drawing nothing quietly', async () => {
+  const r = await page.evaluate(async () => {
+    const cb = document.getElementById('dl-wind');
+    if (!cb) return { skip: true };
+    if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+    const t0 = Date.now();
+    while (Date.now() - t0 < 20000) {
+      const d = window.Wind._dbg();
+      if (!d.loading && (d.lastErr || d.hasField)) break;
+      await new Promise((res) => setTimeout(res, 250));
+    }
+    const d = window.Wind._dbg();
+    const legend = (document.querySelector('#data-legend-wind .wind-legend-body') || {}).textContent || '';
+    /* leave the map as we found it */
+    cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true }));
+    return { skip: false, dbg: d, legend };
+  });
+  test.skip(!!r.skip, 'no wind row in this build');
+  expect(r.dbg.hasField, 'no data can have arrived — the host is blocked').toBe(false);
+  expect(r.dbg.loading, 'and the attempt finished rather than hanging').toBe(false);
+  expect(r.dbg.lastErr, 'the failure is recorded, not swallowed').toBeTruthy();
+  expect(r.legend, 'and the legend says the field is unavailable').toMatch(
+    /unavailable|nicht verfügbar|недоступны|no disponibles|取得できませんでした|indisponibles|없|無法|无法/);
+});
+
+test('R276 ⑱ the particle renderer holds a 1080p frame, and its speed does not depend on the frame rate', async () => {
+  const r = await page.evaluate(async () => {
+    /* An ANALYTIC field, so this measures the renderer and not the network: a solid-body vortex —
+       calm at the centre, strongest on a ring — which is also the shape the eye test looks for. */
+    const field = {
+      uv(lat, lng, out) {
+        const dx = (lng - 140) * Math.cos(lat * Math.PI / 180), dy = lat - 20;
+        const r2 = Math.hypot(dx, dy) || 1e-6;
+        const sp = 55 * Math.min(1, r2 / 2) * Math.exp(-r2 / 6);
+        out[0] = -sp * dy / r2; out[1] = sp * dx / r2; return out;
+      },
+    };
+    const cv = document.createElement('canvas');
+    document.body.appendChild(cv);
+    const R = window.IntMapWindGL.create(cv, {
+      perPixels: 320, maxParts: 6000,
+      project: (lng, lat) => ({ x: (lng + 180) / 360 * 1920, y: (90 - lat) / 180 * 1080 }),
+      visible: () => true, zoom: () => 4,
+      randomLL: () => [130 + Math.random() * 20, 10 + Math.random() * 20],
+    });
+    R.resize(1920, 1080, 1);
+    R.setField(field);
+    /* two runs at DIFFERENT step lengths: 60 Hz and 144 Hz over the same WALL-CLOCK second */
+    const run = (hz) => {
+      R.reseed();
+      const dtMs = 1000 / hz;
+      let t = 1000, drawn = 0;
+      for (let i = 0; i < hz; i++) { t += dtMs; drawn = R.tick(t, false); }
+      return { drawn, stats: R.stats() };
+    };
+    const a = run(60);
+    const b = run(144);
+    /* and the same again, timed for real, to price a frame at 1080p */
+    R.reseed();
+    let t = 5000; const t0 = performance.now();
+    for (let i = 0; i < 60; i++) { t += 16.7; R.tick(t, false); }
+    const wall = (performance.now() - t0) / 60;
+    const st = R.stats();
+    R.dispose(); cv.remove();
+    return { a, b, wall, st };
+  });
+  expect(r.st.webgl, 'the field is drawn with WebGL').toBe(true);
+  expect(r.st.w, 'at 1080p').toBe(1920);
+  expect(r.a.drawn, 'a 60 Hz second draws a full field').toBeGreaterThan(500);
+  expect(r.b.drawn, 'and so does a 144 Hz second').toBeGreaterThan(500);
+  /* ⚠ THE POINT OF THIS TEST. The old loop moved a fixed distance PER FRAME, so 144 Hz blew the
+     wind 2.4× harder. Both runs cover one wall-clock second, so both must place the particles the
+     same distance downwind: the count of segments actually on screen is within a few per cent. */
+  const ratio = r.b.drawn / Math.max(1, r.a.drawn);
+  expect(ratio, 'the same second of wind is the same picture at either refresh rate').toBeGreaterThan(0.88);
+  expect(ratio).toBeLessThan(1.14);
+  /* a frame at 1080p costs a small part of a 16.7 ms budget — measured on THIS machine, and
+     deliberately generous, because a shared CI runner has no GPU and this is a floor, not a target */
+  expect(r.wall, 'a 1080p frame costs a fraction of the budget: ' + r.wall.toFixed(2) + ' ms').toBeLessThan(12);
+});
+
+test('R276 ⑲ the wind legend is the renderer\'s own colour table, ends where the table ends, and is opaque', async () => {
+  const r = await page.evaluate(async () => {
+    const EC = window.IntMapECMWF;
+    await EC.loadSDK();                       /* unpkg is allowed in this context; the DATA is not */
+    const lg = EC.legend('wind_u_component_10m', true);
+    const sc = EC.scale('wind_u_component_10m', true);
+    const raw = EC.sdk().getColorScale('wind_u_component_10m', true);   /* the SDK's own default */
+    return { lg, unit: sc && sc.unit, max: sc && sc.breakpoints && sc.breakpoints[sc.breakpoints.length - 1],
+      alphas: [...new Set((sc.colors || []).map((c) => c[3]))],
+      overridden: JSON.stringify(raw) !== JSON.stringify(sc) };
+  });
+  expect(r.unit, 'the scale carries its unit').toBe('m/s');
+  expect(r.lg.max, 'and the legend ends exactly where the table ends').toBe(r.max);
+  expect(r.lg.min).toBe(0);
+  expect(r.lg.stops.length, 'every breakpoint is a stop in the printed ramp').toBeGreaterThan(8);
+  expect(r.lg.css, 'which is what the swatch is painted with').toMatch(/^linear-gradient\(to right,rgb\(/);
+  /* the Windy-style table is opaque throughout — that is what stops calm air being a hole */
+  expect(r.alphas, 'the wind palette is fully opaque').toEqual([1]);
+  expect(r.overridden, 'and it is OUR table, not the SDK default (whose alpha ramps from 0)').toBe(true);
+});

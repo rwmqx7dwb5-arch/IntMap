@@ -108,5 +108,16 @@ test('R154 #10 Layer on/off desync — OFF learned layer is hidden', () => {
   assert.match(html, /function _ownedByCheckedOther\(cbId,lid\)\{/, 'cross-owner guard so an OFF-hide never mis-hides');
   assert.match(html, /function _auditLearned\(cb\)\{ try\{ if\(_LEARN_SKIP\.test\(cb\.id\)\|\|userTouched\(cb\)\)/, 'guards apply to BOTH directions (no !cb.checked bail)');
   assert.match(html, /if\(!cb\.checked\)\{[\s\S]*fix:'hide-learned'[\s\S]*setLayout\(lid,'visibility','none'\)/   /* (#R178) …through the contract (layers.setLayout) */, 'OFF + still-painted owned layers are hidden');
-  assert.match(html, /try\{ state\[id\]\.on=false; \}catch\(_\)\{\}[^\n]*re-attach \+ applyTime re-show/, 'ECMWF load-failure also clears state.on (not just the checkbox)');
+  /* ⚠ (#R276) ASSERTED AS A PROPERTY, NOT AS A LINE. The original pinned the exact text
+     `try{ state[id].on=false; }catch(_){}` and its trailing comment; #R276 rewrote that failure
+     branch (the toast, the state, the checkbox and the legend) and the property — a load failure
+     clears the STATE, not only the checkbox — is unchanged and is what is checked. Pinning the line
+     turned a correct change into a red test, which is this project's most-repeated false signal. */
+  {
+    const after = html.slice(html.indexOf('function toggle(id,on)'));
+    const m = /\.catch\(\(\)=>\{([\s\S]{0,700}?)\n\s*\}\);/.exec(after);
+    assert.ok(m, 'the ECMWF toggle has a failure branch');
+    assert.match(m[1], /state\[id\]\.on=false/, 'ECMWF load-failure also clears state.on…');
+    assert.match(m[1], /cb\.checked=false/, '…as well as the checkbox');
+  }
 });

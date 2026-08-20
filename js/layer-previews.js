@@ -449,7 +449,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       const las=[],los=[]; _OMLA.forEach(la=>_OMLO.forEach(lo=>{ las.push(la); los.push(lo); }));
       const url='https://api.open-meteo.com/v1/forecast?latitude='+las.join(',')+'&longitude='+los.join(',')
         +'&current=temperature_2m,cloud_cover,precipitation,pressure_msl,wind_speed_10m,wind_direction_10m&hourly=cape,dew_point_2m&forecast_days=1';
-      _omP=fetch(url).then(r=>r.json()).then(j=>{ const arr=Array.isArray(j)?j:[j];
+      _omP=window.IntMapWx.guardedJSON(url,900000).then(j=>{ if(!j) return null; const arr=Array.isArray(j)?j:[j];
         if(arr.length!==las.length||!arr[0]||!arr[0].current) return null;
         const hh=Math.min(23,new Date().getUTCHours());
         const F={t:[],cl:[],pr:[],p:[],ws:[],wd:[],cape:[],dew:[]};

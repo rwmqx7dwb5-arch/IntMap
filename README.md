@@ -27,6 +27,11 @@ IntMap is primarily designed for people interested in geography and internationa
 * Combine more than a hundred geographic and statistical layers
 * Follow a country's goods trade partner by partner, by commodity and by year
 * Read a country's electricity and primary-energy mix as a composition, not a single colour
+* Watch the weather forecast itself: wind, temperature, precipitation, cloud, gusts, sea-level
+  pressure, dew point and CAPE, drawn from ECMWF's IFS HRES model at about 9 km, with a player that
+  runs from now to six days ahead. The animated wind is a WebGL particle field over the model's own
+  colour surface — both read the same numbers, and the value under the cursor comes from that same
+  field at that same forecast hour. Live precipitation radar loops over the last two hours.
 * See the weather and disaster warnings an agency has actually issued, at the unit it issued them
   for — 47 countries over thirteen feeds: Japan (JMA, down to the municipality), the United States
   (NWS), Canada (ECCC), Germany (DWD), Norway (MET Norway), China (CMA), Australia (BoM), Brazil

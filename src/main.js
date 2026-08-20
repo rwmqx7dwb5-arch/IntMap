@@ -172,6 +172,9 @@ import '../js/tile-warm.js';
    from the same event the seismic panel is already describing. After seismic.js because that is
    what hands it an event; it registers itself and computes nothing until asked. */
 import '../js/insolation.js';               /* (#R176) terrain shadow + the annual sunlight budget */
+/* (#R276) the ECMWF IFS model (forecast axis, .om URLs, decoded field, colour scales) and the WebGL particle renderer that draws the wind from it — both publish a window global synchronously and js/weather.js reads both, so they precede it. */
+import '../js/wx-ecmwf.js';
+import '../js/wx-wind.js';
 import '../js/weather.js';
 import '../js/layer-packs.js';   /* (#R254) …which imports js/datacenters.js itself — see the note there */
 /* (#R211) the sixth pack — trade, energy, warnings, tides, crops. Same shape as layer-packs.js

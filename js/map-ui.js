@@ -124,7 +124,8 @@ window.IntMapModules.layerRegistry=function(HOST){
       else if(kind==='no2'){ url='https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+qla+'&longitude='+qlo+'&current=nitrogen_dioxide'; pick=j=>j.current&&j.current.nitrogen_dioxide; unit=' µg/m³'; }
       else if(kind==='co'){ url='https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+qla+'&longitude='+qlo+'&current=carbon_monoxide'; pick=j=>j.current&&j.current.carbon_monoxide; unit=' µg/m³'; }
       if(!url) return null;
-      try{ const r=await fetch(url); if(!r.ok) return null; const j=await r.json(); const v=pick(j);
+      /* (#R276) through window.IntMapWx — one cache, one de-duplicator, one circuit breaker */
+      try{ const j=await window.IntMapWx.guardedJSON(url,300000); if(!j) return null; const v=pick(j);
         const out=(v==null||v==='')?null:(typeof v==='number'?(Math.round(v*100)/100+unit):String(v));
         if(out!=null) _numCache.set(key,out); return out; }catch(_){ return null; } }
     function _srcFeatsIn(srcId,bounds){ try{ const d=GE().layers.sourceData(srcId); if(!d||!Array.isArray(d.features)) return null;
