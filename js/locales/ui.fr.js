@@ -1838,6 +1838,7 @@ window.IntMapLang.define('fr', { ui: {
   "Note: a small share of the tiniest streams was omitted at the display cap (all major tributaries are drawn)": "Remarque : une petite part des plus petits cours d'eau a été omise à la limite d'affichage (tous les affluents principaux sont tracés)",
   "Nothing found — neither OpenStreetMap nor Wikidata has such facilities recorded here and the AI knows none it is sure of": "Rien trouvé — ni OpenStreetMap ni Wikidata ne recensent de telles installations ici, et l'IA n'en connaît aucune avec certitude",
   "Nothing in force right now.": "Rien en vigueur pour l'instant.",
+  "issuing regions": "régions d’émission",   /* world-packs.js (#R271) */
   "Areas the agency published but this map could not place: ": "Zones publiées par le service mais que cette carte n’a pas pu localiser : ",   /* world-packs.js (#R271) */
   "Deutscher Wetterdienst, warnings with their own district polygons.": "Deutscher Wetterdienst — avertissements avec leurs propres polygones d’arrondissement, groupés par Land.",   /* world-packs.js (#R271) */
   "Europe — MeteoAlarm (35 services)": "Europe — MeteoAlarm (35 services)",   /* world-packs.js (#R271) */

@@ -62,6 +62,21 @@ test('R271 ① what could not be placed is COUNTED and printed (#R185: no silent
   assert.match(s, /PLACED\[/, 'every resolver must record placed-of-total');
   assert.match(s, /function placedLine\(\)/, 'and the panel must print the shortfall');
   assert.match(s, /\+placedLine\(\)/, '…and actually call it');
+  /* ⚠ (#R271 追記) …and a boundary set that could not be READ is «nothing could be placed», not
+     «nothing is in force»: without this the country gets neither polygons nor a wash, and a CDN
+     hiccup would take three hundred Chinese warnings off the map (#R212's rule). */
+  assert.match(s, /if\(!idx\)\{ UNPL\[iso\]=worst\(\); return \[\]; \}/,
+    'a failed boundary fetch must fall back to the country wash, not to silence');
+});
+
+/* ⚠ (#R271 追記) the panel must name the unit it is actually drawing — measured on production right
+   after the deploy, it said 「115 prefectures」 while drawing 115 CLASS10 REGIONS (Japan has 47). */
+test('R271 ① the panel counts the unit Japan is drawn at, not a fixed word', () => {
+  const s = codeOnly(read('js/world-packs.js'));
+  const m = /jp\+' '\+\(jmaUnit===[\s\S]{0,420}/.exec(s);
+  assert.ok(m, 'the Japanese count must be labelled from jmaUnit, not from a fixed word');
+  assert.match(m[0], /issuing regions/, 'class10 areas are issuing regions');
+  assert.match(m[0], /prefectures/, '…and the fallback geometry really is prefectures');
 });
 
 /* ── ② the two services that answer a browser directly, with geometry ───────────────────────── */
