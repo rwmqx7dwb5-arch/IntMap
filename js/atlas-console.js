@@ -1334,6 +1334,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        source) and countryStats — then ONE text-AI call synthesizes the answer FROM THAT DATA ONLY. Datasets
        that returned nothing are listed honestly in the footer (never silently pretended). ---- */
     async function _fetchJSON(url){ /* direct → the app's usual CORS proxies (GDELT/IMF don't send ACAO) */
+      try{ if(window.IntMapWx&&window.IntMapWx.isOpenMeteo(url)) return await window.IntMapWx.guardedJSON(url,300000); }catch(_){}   /* (#R276) …except Open-Meteo: CORS-open and rate-limited, so it goes through the app's ONE guarded client (js/wx-source.js) */
       const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
       for(const p of PROX){ try{ const c=('AbortController' in window)?new AbortController():null; const t2=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },9000):null;
         const r=await fetch(p(url),c?{signal:c.signal}:undefined); if(t2) clearTimeout(t2); if(r&&r.ok) return await r.json(); }catch(_){} }

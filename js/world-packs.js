@@ -2761,8 +2761,8 @@ window.IntMapModules.worldPacks=function(HOST){
         const u='https://marine-api.open-meteo.com/v1/marine?latitude='+pts.map(p=>p[1]).join(',')
           +'&longitude='+pts.map(p=>p[0]).join(',')+'&hourly=sea_level_height_msl&timezone=UTC'
           +'&start_date='+iso(a)+'&end_date='+iso(b);
-        const r=await fetch(u); if(!r.ok) throw new Error('marine '+r.status);
-        const j=await r.json(); const arr=Array.isArray(j)?j:[j];
+        const j=await window.IntMapWx.guardedJSON(u,1800000); if(!j) throw new Error('marine');
+        const arr=Array.isArray(j)?j:[j];
         return arr.map((o,i)=>{ const h=o&&o.hourly||{};
           const t=(h.time||[]).map(s=>Date.parse(s+'Z')), v=h.sea_level_height_msl||[];
           const s=[]; for(let k=0;k<t.length;k++) if(isFinite(t[k])&&v[k]!=null) s.push([t[k],+v[k]]);
@@ -2886,8 +2886,8 @@ window.IntMapModules.worldPacks=function(HOST){
         const a=new Date(day.getTime()-36*3600e3), b=new Date(day.getTime()+36*3600e3);
         const u='https://marine-api.open-meteo.com/v1/marine?latitude='+lat.toFixed(4)+'&longitude='+lng.toFixed(4)
           +'&hourly=sea_level_height_msl&timezone=UTC&start_date='+iso(a)+'&end_date='+iso(b);
-        const r=await fetch(u); if(!r.ok) throw new Error('marine '+r.status);
-        const j=await r.json(); const h=j.hourly||{};
+        const j=await window.IntMapWx.guardedJSON(u,1800000); if(!j) throw new Error('marine');
+        const h=j.hourly||{};
         const t=(h.time||[]).map(s=>Date.parse(s+'Z')), v=h.sea_level_height_msl||[];
         const pts=[]; for(let i=0;i<t.length;i++) if(isFinite(t[i])&&v[i]!=null) pts.push([t[i],+v[i]]);
         return pts; }

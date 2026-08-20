@@ -287,7 +287,8 @@ window.IntMapModules.searchGeocode=function(HOST){
     if(_looksPostal(displayName,raw)) _outlinePostcode(displayName,raw,lng,lat);
     /* Async elevation / depth */
     try{
-      const r=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}`);
+      const _j=await window.IntMapWx.guardedJSON(`https://api.open-meteo.com/v1/elevation?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}`,3600000);
+      const r={ok:!!_j, json:async()=>_j};
       let e=null; if(r.ok){ const j=await r.json(); e=j&&j.elevation&&j.elevation[0]; }
       const el=searchCardEl&&searchCardEl.querySelector('#src-elev');
       if(el){
