@@ -1051,8 +1051,18 @@ window.IntMapModules.worldPacks=function(HOST){
         return (h<1?(Math.max(0,Math.round(h*60))+' min'):h<48?(h.toFixed(1)+' h'):(Math.round(h/24)+' d')); };
       let cmaCount=0, cmaRec=null;
       let lastAt=0;
+      /* ⚠⚠ (#R273 追記) THE SLIDER OWNS THE WASH, NOT THE ANSWER. MEASURED on production with the
+         layer on: `line-opacity` on `wp-alert-line` came back **0.38** — `_applyGenericOpacity` dims a
+         line layer along with everything else the checkbox owns, so the OUTLINE that was given the
+         rank to carry (「面はもっと薄くして、重大度は境界線やパターンでも表現した方がいい」) faded with the fill
+         it was supposed to survive. `layers()` below declares the FILL and the country wash; the
+         outline and the hazard's own name are the answer and stay — the same rule #R205 wrote for a
+         plate label, which is what `_opacityOpaqueText` does for the symbol half.
+         ⚠ KEEP THIS NOTE OUTSIDE THE CALL: tests/r212 ② matches `makePanel('…', …)` within 560
+         characters to check every family passes a row id, and a comment inside the argument list
+         pushes the closing brace past that window. */
       const panel=makePanel('wp-alert-panel',()=>'⚠ '+L('Warnings','気象・災害警報','Warnungen','Предупреждения','Avisos'),'wp-dl-alerts',
-        { legendId:'wpalerts', layers:()=>LYR.concat([CHORO,HATCH]),
+        { legendId:'wpalerts', layers:()=>['wp-alert-fill',CHORO,HATCH],
           names:()=>(LA('⚠ Weather & disaster warnings','⚠ 気象・災害警報','⚠ Wetter- und Katastrophenwarnungen','⚠ Метеопредупреждения','⚠ Avisos meteorológicos')) });
 
       /* ══ ⚠⚠⚠ (#R269) THE JMA CODE TABLE IS THE JMA'S OWN, NOT ONE WRITTEN FROM MEMORY ═══════════
