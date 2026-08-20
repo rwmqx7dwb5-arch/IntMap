@@ -54,8 +54,11 @@ Free, per-PR preview URLs, and it does **not** touch GitHub Pages or production:
 
 1. Sign in at <https://dash.cloudflare.com/> → **Workers & Pages** → **Create** → **Pages**
    → **Connect to Git** → pick this repo.
-2. Build settings: **Framework preset = None**, **Build command = (empty)**,
-   **Build output directory = `/`**. Save.
+2. Build settings: **Framework preset = None**, **Build command = `npm ci && npm run build`**,
+   **Build output directory = `dist`**. Save.
+   > ⚠ Since #R175 the site is a **Vite build**. Serving the repository root (`/`) would ship the
+   > un-bundled sources, which is not the site — the page comes up blank. Whatever previews the app
+   > must build it first, exactly as `deploy.yml` does.
 3. Cloudflare now builds every branch/PR to a `https://<hash>.<project>.pages.dev` URL.
 
 Any non-production origin (a `*.pages.dev` host, or `?staging=1`, or a
@@ -112,7 +115,7 @@ failure does not fail it (only IntMap’s own breakage does).
 
 - `window.INTMAP_BUILD` — the human-readable build stamp (e.g. `2026-07-18-R133`), visible
   in the Bug Report diagnostics.
-- `/-build-info.json` at the site root (written by the gated deploy) — the exact commit
+- `/build-info.json` at the site root (written by the gated deploy) — the exact commit
   `sha`, `ref`, `runId`, and `builtAt`.
 
 ## Tagging known-good releases

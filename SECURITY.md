@@ -39,7 +39,8 @@ disclosure is appreciated.
 - SSRF / injection reachable from untrusted input.
 
 ### Not a vulnerability (please don't report these)
-- **The Supabase publishable / anon key** (`sb_publishable_…`) in `index.html` / `admin.html`.
+- **The Supabase publishable / anon key** (`sb_publishable_…`) in `src/vendor.js` (and therefore
+  in the published bundle) and in `admin.html`.
   It is **designed to be public**; security is enforced by Row Level Security, column grants,
   the SECURITY DEFINER RPCs, and the Edge-Function auth — not by hiding this key. See the
   architecture doc. (A `service_role`/secret key committed anywhere **is** a vulnerability.)

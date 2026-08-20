@@ -46,6 +46,12 @@ const HALVES = [
          every surface any of them lives on (see the header of scripts/i18n-audit.mjs). It is one
          second of parsing, and it is the difference between a rule and a hope. */
       ['node', ['scripts/i18n-audit.mjs', '--gate']],
+      /* ⚠ THE CROSS-DOCUMENT GATE. Facts written down in more than one place rot in one place
+         at a time, and the reader who opens the stale copy is simply misled. This compares the
+         facts that are BOTH written down and measurable against the repository, and against each
+         other. It also refuses to let Architecture.md become a changelog again. */
+      ['node', ['scripts/doc-facts.mjs', '--check']],
+      ['node', ['scripts/arch-files-check.mjs', '--check']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],
