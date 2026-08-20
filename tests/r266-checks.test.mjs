@@ -13,6 +13,8 @@ import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
+/* (#R273) the prose that records why something went is not evidence that it is still there */
+const codeOnly = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const json = (p) => JSON.parse(read(p));
 /* ⚠ THE CHECK MUST NOT BE ABLE TO CATCH THE NOTE THAT EXPLAINS IT. Every «X must be gone» assertion
    below names the CODE SHAPE X had — `code:'…'`, `fetch('…')`, `esc(L('…` — and not the bare string,
@@ -136,21 +138,28 @@ test('R266 ⑥: the warnings layer covers the G7 and China with their own servic
   assert.match(s, /async function loadECCC\(\)/);
   assert.match(s, /async function loadCMA\(\)/);
   assert.match(s, /async function loadMA\(list\)/);
-  /* real time: one minute, and on the way back to the foreground */
-  assert.match(s, /timer=setInterval\(tick,60000\)/, 'the refresh interval is not 60 s');
+  /* real time, and on the way back to the foreground.
+     ⚠ (#R273) 「更新が遅すぎる。リアルタイムにと言っている。」 — the interval came down again, to 30 s,
+     so what is asserted is the BOUND rather than the number: a warning is a safety claim with a
+     clock on it and a minute was already the second answer to that sentence. */
+  const ms = /const TICK_MS=(\d+)/.exec(s);
+  assert.ok(ms, 'the refresh interval must be a named constant');
+  assert.ok(+ms[1] > 0 && +ms[1] <= 60000, `the interval is ${ms[1]} ms — it must be a minute or better`);
+  assert.match(s, /timer=setInterval\(tick,TICK_MS\)/, '…and the timer must use it');
   assert.match(s, /addEventListener\('visibilitychange'/, 'a backgrounded tab never catches up');
   /* the slow feeds must not hold the fast ones */
   assert.ok(!/loadMA\(maAsked\)[\s\S]{0,120}\]\)/.test(s), 'MeteoAlarm is awaited inside the Promise.all again');
-  /* GDACS's endpoint: the one that answers */
-  assert.ok(!s.includes("fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP"),
-    'the GDACS endpoint that 400s is back');
-  /* (#R266 追記) a GDACS event must not be listed under a national agency's heading — `mine` carries
-     both and the tier sort put GDACS first (measured on production: the United States panel opened
-     with 「Flood in United States」 under «US National Weather Service, active alerts») */
-  assert.match(s, /const rows=\[\], gRows=\[\];/, 'the national rows and the GDACS rows are one list again');
-  assert.match(s, /f\.properties\.src==='gdacs'\)\?gRows:rows/, 'nothing separates them');
-  assert.match(s, /Also in GDACS for this country/, 'the GDACS block has no heading of its own');
-  assert.match(s, /geteventlist\/SEARCH\?/);
+  /* ⚠⚠ (#R273) 「GDACSを完全に撤廃しろ。」 — the global event feed is GONE, and with it the whole
+     class of defect #R266 追記 was about (an event listed under a national agency's heading,
+     because `mine` carried both). One country, one national service; there is no second kind of
+     row in a country's list to attribute wrongly. */
+  /* ⚠ 「Xは消えたか」はXが書かれていた構文で書け (#R266's own lesson) — and the question is about the
+     CODE, so the prose that records why it went is not evidence against it. */
+  const code = codeOnly(s);
+  for (const form of ['loadGDACS', 'gdacsapi', 'GDACSCOL', 'GDACSWASH', "'gdacs'", 'gCountries']) {
+    assert.ok(!code.includes(form), 'GDACS must be gone from the layer entirely: ' + form);
+  }
+  assert.match(s, /const FEEDS=\{/, 'the country → service table is what covers the world now');
 });
 
 test('R266 ⑦: a tap lists administrative units, not a flat run of municipalities', () => {

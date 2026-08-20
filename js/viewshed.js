@@ -450,7 +450,7 @@ window.IntMapModules.los=function(HOST){
     function fmtKm(v){ return (v>=100?Math.round(v):v.toFixed(1))+' km'; }
     function render(){
       const p=panel; if(!p) return;
-      p.innerHTML='<div class="tp-header"><span class="tp-title">📡 '+L('Line of sight','見通し線解析','Sichtlinie','Линия видимости','Línea de visión')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
+      p.innerHTML='<div class="tp-header"><span class="tp-title">📡 '+L('Line of sight','見通し線解析','Sichtlinie','Линия видимости','Línea de visión')+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
         +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'
         +'<label style="'+ROW+'">'+L('Antenna height (m)','アンテナ高 (m)','Antennenhöhe (m)','Высота антенны (м)','Altura de antena (m)')+'<input id="los-h" type="number" value="'+losH+'" min="0" step="5" style="'+IN+'"></label>'
         +'<label style="'+ROW+'">'+L('Target height (m)','対象物の高さ (m)','Zielhöhe (m)','Высота цели (м)','Altura del objetivo (m)')+'<input id="los-t" type="number" value="'+losT+'" min="0" step="1" style="'+IN+'"></label>'
@@ -526,7 +526,7 @@ window.IntMapModules.los=function(HOST){
     let moveArmed=false, _moveClickWired=false;
     function moveLabel(){ const b=panel&&panel.querySelector('#los-move'); if(!b) return;
       b.textContent=moveArmed
-        ? '✕ '+L('Cancel — click the new site','キャンセル（新しい地点をクリック）','Abbrechen — neuen Standort klicken','Отмена — щёлкните новую точку','Cancelar — clic en el nuevo punto')
+        ? '× '+L('Cancel — click the new site','キャンセル（新しい地点をクリック）','Abbrechen — neuen Standort klicken','Отмена — щёлкните новую точку','Cancelar — clic en el nuevo punto')
         : '📍 '+L('Move the site…','地点を変える…','Standort verschieben…','Перенести точку…','Mover el punto…'); }
     /* the site itself moves: the overlay from the OLD point is wiped (it describes somewhere else),
        the marker follows, and the analysis re-runs with the panel's current numbers. The panel is NOT
@@ -552,7 +552,7 @@ window.IntMapModules.los=function(HOST){
       if(linkArmed&&moveArmed) armMove(false);        /* (#R261) …and the other way round */
       const b=panel&&panel.querySelector('#los-link');
       if(b) b.textContent=linkArmed
-        ? '✕ '+L('Cancel — click the far end','キャンセル（相手側をクリック）','Abbrechen — Gegenstelle klicken','Отмена — щёлкните дальний конец','Cancelar — clic en el otro extremo')
+        ? '× '+L('Cancel — click the far end','キャンセル（相手側をクリック）','Abbrechen — Gegenstelle klicken','Отмена — щёлкните дальний конец','Cancelar — clic en el otro extremo')
         : '📶 '+L('Link to a point…','2点間の見通し…','Verbindung zu einem Punkt…','Связь до точки…','Enlace a un punto…');
       try{ GE().render.setCursor(linkArmed?'crosshair':''); }catch(_){}
       if(linkArmed&&!_linkClickWired){ _linkClickWired=true;
@@ -673,10 +673,10 @@ window.IntMapModules.los=function(HOST){
     function clear(){ runSeq++; wipe(); setSite();
       const b=panel&&panel.querySelector('#los-body'); if(b) b.innerHTML=L('Cleared. Press Analyze to re-run here, or “Move the site…” to place it somewhere else.','消去しました。「解析する」で再計算、「地点を変える…」で別の場所に置けます。','Gelöscht. Erneut analysieren oder „Standort verschieben…“ verwenden.','Очищено. Нажмите «Анализ» или «Перенести точку…».','Borrado. Analice de nuevo o use “Mover el punto…”.');
       return true; }
-    /* ══ (#R264) THE ✕ WAS THE ONLY WAY OUT, AND IT WAS WRITTEN INLINE ═════════════════════════════
+    /* ══ (#R264) THE × WAS THE ONLY WAY OUT, AND IT WAS WRITTEN INLINE ═════════════════════════════
        「Toolsのカードは…もう一度押したら選択解除されるように。」 The tools list has to be able to shut a
        tool it opened, and `state().open` already answers whether this one is showing — what was
-       missing was the verb. It is the ✕'s own body, moved here and called from there, so there is
+       missing was the verb. It is the ×'s own body, moved here and called from there, so there is
        one way to leave rather than two that can drift apart. */
     function close(){ if(!(panel&&panel.style.display!=='none')) return false;
       runSeq++; site=null; clearLink(); setSite(); wipe(); panel.style.display='none'; return true; }

@@ -384,7 +384,7 @@ window.IntMapModules.windowManager=function(HOST){
      「Legends and tool windows will appear here instead of over the map. は全部凡例やポップアップを
        消した後も出せ。」 — re-sent after #R242 wired this to `__docked.size`.
      Every path that goes through `_undockOne` does keep that Map honest, and both of them were
-     verified this round (the panel's own ✕, and a layer switched off from the Layers panel). What is
+     verified this round (the panel's own ×, and a layer switched off from the Layers panel). What is
      NOT honest is a panel that is REMOVED from the DOM while docked: the attribute observer watches
      `style`/`class`/`hidden` on the element and the childList observer watches the MAP CONTAINER, so
      a `.remove()` from inside the column is seen by neither, the entry survives in `__docked`, and

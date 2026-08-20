@@ -1356,7 +1356,7 @@ window.IntMapModules.space=function(HOST){
     const STEP_U={ d:L('day','日','Tag','день','día'), m:L('month','月','Monat','мес','mes'), y:L('year','年','Jahr','год','año') };
     function hud(){
       return '<div class="sp-bar" style="position:absolute;left:0;right:0;top:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;background:linear-gradient(180deg,rgba(0,0,0,0.72),rgba(0,0,0,0));pointer-events:auto;">'
-        +'<button class="sp-close" style="'+BTN+'">✕ '+L('Back to the map','地図へ戻る','Zur Karte','К карте','Al mapa')+'</button>'
+        +'<button class="sp-close" style="'+BTN+'">× '+L('Back to the map','地図へ戻る','Zur Karte','К карте','Al mapa')+'</button>'
         /* ══ (#R219) THE 「天体を見る」 BUTTON IS GONE ══════════════════════════════════════════════
            「宇宙を探索の「天体を見る」ボタンは不要」. It was a MODE switch beside a zoom, for a thing
            the zoom already expresses: selecting a body now flies to it (setFocus → visitDist), and
@@ -1491,7 +1491,7 @@ window.IntMapModules.space=function(HOST){
         +'<div class="sp-sidebox">'
         +'<div class="sp-sideh">'
           +'<input class="sp-sidef" type="search" placeholder="'+S(L('Filter bodies…','天体を絞り込み…','Objekte filtern…','Фильтр объектов…','Filtrar cuerpos…'))+'">'
-          +'<button class="sp-sidex" type="button" aria-label="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">✕</button>'
+          +'<button class="sp-sidex" type="button" aria-label="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">×</button>'
         +'</div>'
         +'<div class="sp-side" style="position:absolute;left:10px;top:52px;width:190px;max-height:calc(100% - 130px);overflow:auto;display:flex;flex-direction:column;gap:3px;pointer-events:auto;"></div>'
         +'</div>'
@@ -1517,7 +1517,7 @@ window.IntMapModules.space=function(HOST){
            `column-reverse` fixes it at the source: the button is still the first child in the DOM (so
            the tab order and the code read the same), but it LAYS OUT last — pinned to the bottom edge
            — and the panel grows upward above it. Pressing ⓘ to close now means pressing exactly where
-           you pressed to open. The panel also gets its own surface and a ✕ of its own, because a
+           you pressed to open. The panel also gets its own surface and a × of its own, because a
            scrolling wall of grey text over a starfield was not readable either. */
         +'<div class="sp-notewrap" style="position:absolute;left:10px;bottom:8px;right:10px;z-index:6;'
           +'display:flex;flex-direction:column-reverse;align-items:flex-start;gap:6px;pointer-events:none;">'
@@ -2322,7 +2322,7 @@ window.IntMapModules.space=function(HOST){
           th.onclick=(e)=>{ if(!_phone()){ col.classList.toggle('sp-min'); } };
         }
       }catch(_){}
-      /* (#R221) the phone's BODY sheet: the chip opens it, ✕ and choosing a body close it, and the
+      /* (#R221) the phone's BODY sheet: the chip opens it, × and choosing a body close it, and the
          filter hides rows by matching their own text. Everything here is class + display only —
          `refreshHUD` rewrites `.sp-side`'s rows whenever it likes and none of this is disturbed. */
       try{
@@ -2351,10 +2351,10 @@ window.IntMapModules.space=function(HOST){
           tx.addEventListener('click',(e)=>e.stopPropagation());
           root.addEventListener('click',()=>tx.classList.remove('open')); } }
       { const nb=root.querySelector('.sp-noteb'), nd=root.querySelector('.sp-note');
-        /* (#R218) the button says which state it is in, so ⓘ / ✕ is never a guess; and a click on the
+        /* (#R218) the button says which state it is in, so ⓘ / × is never a guess; and a click on the
            sky closes it, which is the other way out of a panel that covers a third of the screen. */
         if(nb&&nd){ const lbl=L('Sources','出典','Quellen','Источники','Fuentes');
-          const set=(on)=>{ nd.style.display=on?'block':'none'; nb.textContent=(on?'✕ ':'ⓘ ')+lbl; };
+          const set=(on)=>{ nd.style.display=on?'block':'none'; nb.textContent=(on?'× ':'ⓘ ')+lbl; };
           nb.onclick=(e)=>{ e.stopPropagation(); set(nd.style.display==='none'); };
           nd.addEventListener('click',(e)=>e.stopPropagation());
           root.addEventListener('click',()=>set(false)); } }
@@ -2770,7 +2770,7 @@ window.IntMapModules.space=function(HOST){
        Handing the map back is a statement that the sphere filling the screen IS the map's globe. That
        is true when the Earth is the body being approached and false otherwise, so that is the test.
        A body that is not the Earth simply zooms up to the floor and stays there, which is what
-       「拡大」 asked for. ✕ and Escape are unchanged and still leave from anywhere. */
+       「拡大」 asked for. × and Escape are unchanged and still leave from anywhere. */
     /* ══ ⚠⚠ (#R222) THE SAME DEFECT, THE DOOR NEXT TO THE ONE #R221 CLOSED ═══════════════════════════
        「宇宙を探索で、地球じゃないのに、ズームインしたら地球に戻されるものがあるバグがある。」 — sent
        again, so the fix is somewhere #R221 did not look.
@@ -2787,7 +2787,7 @@ window.IntMapModules.space=function(HOST){
 
        ⚠ THE TEST IS "IS THE EARTH THE SUBJECT", so it has to ask both halves of what the subject is —
        which body is focused AND whether something else has been chosen on top of it. Every other
-       exit is untouched: ✕, Escape and `leaveToMap()` still work from anywhere, and with nothing
+       exit is untouched: ×, Escape and `leaveToMap()` still work from anywhere, and with nothing
        selected this is byte-for-byte #R207's behaviour. */
     function earthIsSubject(){ return focus==='earth'&&!craftSel&&!smallSel; }
     function atNearLimit(){

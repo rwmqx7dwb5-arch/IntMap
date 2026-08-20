@@ -248,6 +248,118 @@ async function summarisePAGASA() {
     areaTotal: areas.size, capTotal, capRead: Math.min(PH_MAX, capTotal) };
 }
 
+/* == (#R273) ONE READER FOR EVERY "CAP INDEX + CAP FILES" SERVICE =============================
+   'taiou-koku mo fuyase. source wa ikkoku ichi source.' -- and 'GDACS wo kanzen ni teppai shiro',
+   which is what makes this necessary rather than nice: with the global event feed gone, a country
+   with no national service wired is a country the map says nothing about, so the cost of adding
+   one has to be one table entry.
+
+   The Philippines reader above was written for PAGASA and is the same three steps every national
+   CAP service publishes: an RSS/Atom INDEX of bulletins, one CAP file per bulletin, and one
+   <area> per issuing unit inside it. MEASURED this round, from a real request:
+
+       alerts.ncdr.nat.gov.tw/RssAtomFeed.ashx   200 - Atom - 1,029 entries, 157 of them the
+                                                 CWA's own (the rest are the water utility, the
+                                                 railway and the fire service) -- CAP 1.2 with a
+                                                 <polygon> per area and the CWA's OWN colour in an
+                                                 alert_color parameter
+       alerts.metservice.com/cap/rss             200 - RSS - CAP index, EMPTY at the time of
+                                                 writing (no warning in force in New Zealand that
+                                                 minute) -- recorded as such rather than claimed
+                                                 as verified
+       caps.weathersa.co.za                      200 - RSS - 306 items, and every <link> in it
+                                                 points at weathersa.co.za, which answered
+                                                 "521 Web server is down". NOT wired.
+
+   WARNING THE AGENCY'S OWN COLOUR TRAVELS WITH THE ROW. `acol` is whatever word the service
+   publishes for the rank it assigned (Taiwan's own colour word, a CAP awareness level elsewhere);
+   the app maps it to that agency's published palette, which is the whole point of the
+   "each agency's official colours" mode. Nothing is inferred from the text of a headline. */
+const CAPSRC = {
+  tw: { url: "https://alerts.ncdr.nat.gov.tw/RssAtomFeed.ashx", kind: "atom",
+        only: /\u4e2d\u592e\u6c23\u8c61\u7f72/, source: "CWA (Taiwan), via NCDR", max: 60 },
+  nz: { url: "https://alerts.metservice.com/cap/rss", kind: "rss",
+        source: "MetService (New Zealand)", max: 40 },
+};
+/* an <area> that is the whole area of responsibility is not an issuing unit (#R271 tsuiki2) */
+const AREA_SKIP = /area of responsibility|whole country|nationwide/i;
+
+function capLinks(feed, kind) {
+  const out = [];
+  const blocks = xmlAll(feed, kind === "rss" ? "item" : "entry");
+  for (const e of blocks) {
+    let href = "";
+    if (kind === "rss") href = unesc(xmlOne(e, "link"));
+    else href = (/<link[^>]*href="([^"]+)"/.exec(e) || [])[1] || "";
+    if (!/^https?:/.test(href)) continue;
+    const updated = xmlOne(e, kind === "rss" ? "pubDate" : "updated");
+    out.push({ href, updated, block: e, title: unesc(xmlOne(e, "title")) });
+  }
+  return out;
+}
+
+async function summariseCAP(key) {
+  const cfg = CAPSRC[key];
+  const r = await fetch(cfg.url, {
+    headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)" },
+    signal: AbortSignal.timeout(45000),
+  });
+  if (!r.ok) throw new Error(key + " " + r.status);
+  const feed = await r.text();
+  let picks = capLinks(feed, cfg.kind);
+  if (cfg.only) picks = picks.filter((p) => cfg.only.test(p.block));
+  const capTotal = picks.length;
+  /* newest first, so a cap on how many files are read drops the OLDEST rather than a random set */
+  picks.sort((a, b) => (Date.parse(b.updated) || 0) - (Date.parse(a.updated) || 0));
+  const now = Date.now();
+  const areas = new Map();
+  const rows = [];
+  await Promise.all(picks.slice(0, cfg.max).map(async (pk) => {
+    try {
+      const rr = await fetch(pk.href, {
+        headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)" },
+        signal: AbortSignal.timeout(45000),
+      });
+      if (!rr.ok) return;
+      const cap = await rr.text();
+      if (!/<alert/i.test(cap)) return;                    /* an error page is not a bulletin */
+      const status = unesc(xmlOne(cap, "status"));
+      const msgType = unesc(xmlOne(cap, "msgType"));
+      if (status && !/actual/i.test(status)) return;
+      if (/cancel/i.test(msgType)) return;
+      const event = unesc(xmlOne(cap, "event")) || pk.title;
+      const severity = unesc(xmlOne(cap, "severity"));
+      const expires = xmlOne(cap, "expires");
+      const sent = xmlOne(cap, "sent");
+      if (expires) { const t = Date.parse(expires); if (isFinite(t) && t < now) return; }
+      const tier = SEV[severity] || 1;
+      /* the agency's own word for the rank, where it publishes one as a CAP <parameter> */
+      let acol = "";
+      for (const pm of xmlAll(cap, "parameter")) {
+        if (/alert_color|awareness_level|colour|color/i.test(xmlOne(pm, "valueName"))) {
+          acol = unesc(xmlOne(pm, "value")).slice(0, 40); break;
+        }
+      }
+      for (const a of xmlAll(cap, "area")) {
+        const name = unesc(xmlOne(a, "areaDesc"));
+        if (!name || AREA_SKIP.test(name)) continue;
+        const poly = xmlOne(a, "polygon");
+        const b = areas.get(name) || { name, tier: 0, events: [], poly: "", acol: "" };
+        areas.set(name, b);
+        if (tier > b.tier) { b.tier = tier; b.acol = acol; }
+        if (!b.poly && poly) b.poly = poly.replace(/\s+/g, " ").trim().slice(0, 20000);
+        if (event && !b.events.some((x) => x.event === event)) b.events.push({ event, severity, tier, acol });
+        rows.push({ area: name, event, headline: unesc(xmlOne(cap, "headline")).slice(0, 160),
+          tier, severity, acol, onset: sent, expires });
+      }
+    } catch (_e) { /* one unreachable bulletin is not the whole country */ }
+  }));
+  return { source: cfg.source, fetchedAt: new Date().toISOString(),
+    count: rows.length, warnings: rows.slice(0, 400),
+    areas: [...areas.values()].sort((a, b) => b.tier - a.tier).slice(0, AREA_CAP),
+    areaTotal: areas.size, capTotal, capRead: Math.min(cfg.max, capTotal) };
+}
+
 Deno.serve(async (req) => {
   const gate = methodGate(req, CORS);
   if (gate) return gate;
@@ -264,6 +376,23 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "upstream unreachable" }), {
         status: 502, headers: { ...CORS, "content-type": "application/json" },
       });
+    }
+  }
+  /* (#R273) `?cap=tw` -- any national service that publishes a CAP index (see CAPSRC) */
+  const capKey = String(q.get("cap") || "").trim().toLowerCase();
+  if (capKey) {
+    if (!Object.prototype.hasOwnProperty.call(CAPSRC, capKey)) {
+      return new Response(JSON.stringify({ error: "not an allowed feed" }), {
+        status: 400, headers: { ...CORS, "content-type": "application/json" } });
+    }
+    try {
+      const body = await summariseCAP(capKey);
+      return new Response(JSON.stringify(body), {
+        headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": CACHE },
+      });
+    } catch (_e) {
+      return new Response(JSON.stringify({ error: "upstream unreachable" }), {
+        status: 502, headers: { ...CORS, "content-type": "application/json" } });
     }
   }
   /* `?ma=germany,france,…` — one call, several countries, each summarised */

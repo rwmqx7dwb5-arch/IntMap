@@ -262,7 +262,7 @@ window.IntMapModules.monitors=function(HOST){
       const srcOpts=[['news',true],['earthquake',false],['weather',false],['fire',false]];
       const areaLine=area?('<div class="mon-area-box">'+S(ML('Watching','監視範囲','Überwacht','Область','Vigilando'))+': <b>'+S(area.label)+'</b></div>'+(usingView?'<div style="font-size:11px;color:var(--text-muted);margin:2px 0 6px;line-height:1.4;">'+S(ML('Using the current map view — pan/zoom before creating, or close and set a radius, draw an area or resolve a region for a tighter watch.','現在の地図表示を使用中です。作成前に地図を調整するか、一度閉じて半径・描画・地域指定でより狭い範囲を監視できます。','Aktuelle Kartenansicht — vor dem Erstellen anpassen oder für einen engeren Bereich Radius/Zeichnung/Region setzen.','Используется текущий вид карты — настройте карту перед созданием или задайте радиус/область/регион для более узкой зоны.','Usando la vista actual del mapa — ajústala antes de crear o define un radio/área/región para una zona más precisa.'))+'</div>':''))
         :('<div class="mon-area-box mon-area-none">'+S(ML('No area selected. Set a radius, draw an area, or resolve a region — or use the current map view below.','範囲が未選択です。半径・描画・地域指定するか、下の「現在の地図表示」を使ってください。','Kein Bereich gewählt.','Область не выбрана.','Sin área seleccionada.'))+'</div>');
-      const inner='<button class="mon-x" aria-label="Close">✕</button>'
+      const inner='<button class="mon-x" aria-label="Close">×</button>'
         +'<h3 class="mon-h3">'+S(ML('New monitor','新規監視','Neuer Monitor','Новый монитор','Nuevo monitor'))+'</h3>'
         +areaLine
         +(area?'':'<button class="mon-viewbtn" id="mon-usemapview">'+S(ML('Use current map view','現在の地図表示を使う','Aktuelle Kartenansicht verwenden','Использовать вид карты','Usar vista del mapa'))+'</button>')
@@ -304,7 +304,7 @@ window.IntMapModules.monitors=function(HOST){
       const runsHtml=runs.length?('<div class="mon-runs">'+runs.map(r=>{ const sev=(r.report_generated&&r.change_score!=null)?'':''; const badge='<span class="mon-chip" style="--c:'+(r.status==='success'||r.status==='partial'?'#30a46c':(r.status==='success_no_change'?'#8e8e93':(r.status==='source_unavailable'||r.status==='ai_failed'?'#ff9f0a':'#ff453a')))+'">'+S(statusLabel(r.status))+'</span>';
         return '<div class="mon-run" data-rid="'+S(r.id)+'" data-rep="'+S(r.report_id||'')+'"><div class="mon-run-l"><span class="mon-run-when">'+S(_fmtWhen(r.started_at))+'</span>'+badge+'</div>'
           +'<span class="mon-run-r">'+(r.report_generated?'<span class="mon-run-link">'+S(ML('View report','レポートを見る','Bericht','Отчёт','Ver informe'))+' →</span>':(r.evidence_count?S(r.evidence_count)+' '+S(ML('items','件','Einträge','эл.','elem.')):'—'))+'</span></div>'; }).join('')+'</div>'):('<div class="mon-empty">'+S(ML('No runs yet.','実行履歴はまだありません。','Noch keine Läufe.','Пока нет запусков.','Sin ejecuciones.'))+'</div>');
-      const inner='<button class="mon-x" aria-label="Close">✕</button>'
+      const inner='<button class="mon-x" aria-label="Close">×</button>'
         +'<h3 class="mon-h3">'+S(m.name)+' '+_statusChip(m)+'</h3>'
         +'<div class="mon-kvs">'
           +kv(ML('Area','範囲','Bereich','Область','Área'),S(m.area_label||'—'))
@@ -352,7 +352,7 @@ window.IntMapModules.monitors=function(HOST){
         +'<div class="mon-evtitle">'+(e.source_url?'<a href="'+URLS(e.source_url)+'" target="_blank" rel="noopener">'+S(e.title||e.source_url)+'</a>':S(e.title||'—'))+'</div>'
         +'<div class="mon-evmeta">'+S(e.source_name||'')+(e.observed_at?' · '+S(new Date(e.observed_at).toLocaleString()):'')+((e.payload&&e.payload.subject)?' · '+S(e.payload.subject):'')+' · <span class="mon-evkind mon-evkind-'+S(e.change_kind||'')+'">'+S(e.change_kind||'')+'</span></div>'
         +'</div></div>').join('');
-      const inner='<button class="mon-x" aria-label="Close">✕</button>'
+      const inner='<button class="mon-x" aria-label="Close">×</button>'
         +'<div class="mon-rep-head"><span class="mon-sev-badge" style="--c:'+sevC+'">'+S(sevLabel(rep.severity))+'</span><h3 class="mon-h3">'+S(rep.headline)+'</h3></div>'
         +(rep.summary?'<p class="mon-summary">'+S(rep.summary)+'</p>':'')
         +metrics

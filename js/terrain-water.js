@@ -107,6 +107,22 @@ window.IntMapModules.terrainWater=function(HOST){
     /* (#R211) continuous pouring — see renderParams()'s 'source' branch for what this models and
        what it deliberately does not. `pourSimS` is SIMULATED seconds, never wall clock. */
     let pourMode='once', pourRate=20000, timeScale=10, pourT=null, pourAt=0, pourSimS=0;
+    /* ══ ⚠⚠ (#R273) 「水流シミュレーションの解像度が低すぎる。」 ═══════════════════════════════════
+       #R186 raised the working grid from 256 to 384 and printed the cell size so the cost was never
+       hidden; #R267 then made that number the resolution of the WHOLE answer, because the basin
+       extends this lattice rather than starting a second one. So «too low» is one number, and it is
+       this one — and the honest fix is to raise the default AND hand the reader the dial, because
+       the cost is quadratic and only they know how long they are willing to wait.
+       MEASURED over a 60 km view: 384 → 156 m cells, 512 → 117 m, 768 → 78 m, 1024 → 59 m; the cell
+       count goes 384²·r … 1024²·r, i.e. the top step is seven times the work of the default. The
+       panel prints the cell size, the grid dimensions and the solve time for whichever is chosen. */
+    const RES_D=[384,512,768,1024], RES_M=[150,192,256,384];
+    const _mob=()=>(typeof isMobile==='function'&&isMobile());
+    const resList=()=>(_mob()?RES_M:RES_D);
+    let simRes=(function(){ try{ const v=+localStorage.getItem('im.twRes');
+        if(RES_D.indexOf(v)>=0||RES_M.indexOf(v)>=0) return v; }catch(_){}
+      return _mob()?192:512; })();
+    const resNX=()=>{ const L=resList(); return (L.indexOf(simRes)>=0)?simRes:L[1]; };
     const pourTotal=()=>sources.reduce((s,x)=>s+Math.max(0,x.m3),0);
     /* ══ (#R265) THE TIME-DEPENDENT WATER ════════════════════════════════════════════
        `sim` is the shallow-water state on the working rectangle (js/water-dynamics.js) and it is what
@@ -242,6 +258,10 @@ window.IntMapModules.terrainWater=function(HOST){
         const b=GE().camera.getBounds(); if(!b) return false;
         let w=b.getWest(), e=b.getEast(), s=b.getSouth(), n=b.getNorth();
         if(e<w) e+=360;
+        /* ⚠ (#R273) …or the SAME rectangle, when the rebuild is about the resolution rather than
+           about where the reader is looking. Without this a resolution change would silently move
+           the working area to wherever the camera happens to be. */
+        if(opt&&opt.keep&&G&&G.bbox){ w=G.bbox[0]; e=G.bbox[2]; s=G.bbox[1]; n=G.bbox[3]; if(e<w) e+=360; }
         /* (#R255) …re-centred on a point when the caller names one, WITHOUT flying the camera there */
         if(opt&&opt.center){ const cw=(w+e)/2, cn=(s+n)/2, hw=(e-w)/2, hn=(n-s)/2;
           const dl=(+opt.center[0])-cw, db=(+opt.center[1])-cn;
@@ -264,7 +284,7 @@ window.IntMapModules.terrainWater=function(HOST){
            ⚠ (#R267) THIS IS ALSO THE LONG-RANGE ANSWER'S CELL SIZE. The basin extends this lattice
            rather than starting a second one, so the number chosen here is the resolution of the
            whole answer, from the click to wherever the water stops. */
-        const NX=(typeof isMobile==='function'&&isMobile())?192:384;
+        const NX=resNX();
         const NY=Math.max(24,Math.round(NX*(yS-yN)/Math.max(1e-12,xE-xW)));
         const dx=(xE-xW)/NX, dy=(yS-yN)/NY;
         const cellM=dx*CIRC*Math.cos(midLat*D);
@@ -1100,6 +1120,28 @@ window.IntMapModules.terrainWater=function(HOST){
       solve(); try{ syncFoot(); }catch(_){}
       return true;
     }
+    /* ══ ⚠⚠⚠ (#R273) 「一回きりの水源、再生できない。」 ═══════════════════════════════════════════
+       A one-shot source is poured into the model EXACTLY ONCE — `_fed` is what makes that true, and
+       it is what made the run un-repeatable: after the water had drained there was no way back to
+       t = 0 except 「リセット」, which also throws away the terrain you sculpted and the sources you
+       placed. So the run was a thing you got one of.
+       → REPLAY puts the clock, the water and every source's delivery back to zero and starts again
+       on the SAME ground with the SAME sources. ⚠ A tap's `m3` is what it has DELIVERED so far, so
+       it goes back to zero too — otherwise `feedSim` would pool an hour of discharge in one step
+       (the #R267 追記 defect, from the other end).
+       ⚠ AND IT GOES THROUGH `editDirty()`. That is the one door every mutation in this file has to
+       pass (#R255 brush, #R258 addLevee, #R268 reset, #R271 addSource — four rounds of the same
+       omission), because the solver, the elevation hook and the 3-D tiles all memoise on it. */
+    function replay(){ if(!G) return false;
+      pourStop();
+      pourSimS=0;
+      sources.forEach(x=>{ if(x.cont) x.m3=0; x._fed=0; });
+      resetSim(); clearTrace();
+      editDirty();
+      solve();
+      if(canPour()) pourStart();
+      try{ syncFoot(); renderParams(); }catch(_){}
+      return true; }
     function resetSim(){ sim=null; simBed=null; B=null; simBedStamp=-1; steady=false; rainFed=0; simCapped=0;
       simFrontM=0; simFrontAt=0; basinCapped=false; basinGrow=0; basinVoid=0; growFailed=0; settleInfo=null;
       course={ end:null, at:null, info:null, since:0, lastFrontM:0, checking:false };
@@ -1485,7 +1527,7 @@ window.IntMapModules.terrainWater=function(HOST){
           :L('none — everything is held','なし（すべて湛水）','keines','нет','ninguno'))
         /* (#R258) the pouring volume and the elapsed clock moved to the footer — see syncFoot() */
         );
-      try{ syncFoot(); }catch(_){}
+      try{ syncFoot(); syncRes(); }catch(_){}
       setMore('<b>'+L('Ponded','湛水','Aufgestaut','Затоплено','Embalsado')+':</b> '+fmtM3(result.storedM3)
         +' · '+n(result.floodKm2,2)+' km² · '+L('max depth','最大水深','max. Tiefe','макс. глубина','prof. máx')+' '+n(result.maxDepth,1)+' m'
         /* ══ (#R267) ONE CLOCK, ONE MODEL, AND THE EXTENT IT IS RUNNING ON ═════════════════════
@@ -1593,7 +1635,24 @@ window.IntMapModules.terrainWater=function(HOST){
            width is MEASURED and given to the header and the footer as well, so the column has one
            right edge whether the body scrolls or not. */
         '.tw-card{background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.16));border-radius:12px;overflow:hidden;}',
-        '.tw-cap{font-size:'+TW_FS_S+';font-weight:600;letter-spacing:.01em;color:var(--text-main);padding:0 11px 6px;}',
+        /* ⚠ (#R273) 12, not 11: a row sits inside a card whose 1 px border pushes its text to
+           x+12, so a caption inset by 11 started ONE pixel left of every word it labels. MEASURED
+           on the built panel: caption 440.0, row text 441.0. */
+        '.tw-cap{font-size:'+TW_FS_S+';font-weight:600;letter-spacing:.01em;color:var(--text-main);padding:0 12px 6px;}',
+        /* ⚠⚠ (#R273) TWO CONTAINERS WERE TOUCHING. MEASURED: the tool picker (a `.tw-segwrap`,
+           grey, radius 10) ended at y = 218 and the card under it started at y = 218 — zero gap,
+           two different container styles, no line between them. Every other pair in this panel has
+           the body's own 10 px. One rule, so a section can hold any number of boxes and they are
+           always spaced the same way. */
+        '#tw-panel .tw-body > div > * + *{margin-top:10px;}',
+        /* …except right under a caption, which already carries the 6 px that ties a label to the
+           group it labels — 6 + 10 was sixteen pixels of nothing between a word and its control */
+        '#tw-panel .tw-body > div > .tw-cap + *{margin-top:0;}',
+        /* ONE control height in the body too: a full-width segmented strip is 36 px like everything
+           in the footer, and the 2x2 tool picker is two of those rows */
+        '#tw-panel .tw-body > div > .tw-segwrap > .tw-seg{min-height:30px;display:flex;align-items:center;justify-content:center;padding:0 6px;}',
+        /* …and the picker takes the card's corner radius, so the panel has ONE container shape */
+        '#tw-panel .tw-segwrap{border-radius:12px;}',
         /* ══ ⚠⚠ (#R270) ONE ROW HEIGHT, BECAUSE A GROUPED LIST IS A RHYTHM ═══════════════════════
            「不自然な余白…が多い。」 MEASURED in this panel, 盛る mode: the rows came out 40 / 44 / 45 /
            49 px — four different heights in one card, because `min-height:40px` plus 7 px of padding
@@ -1621,8 +1680,9 @@ window.IntMapModules.terrainWater=function(HOST){
            four labels were clipped. Four names do not fit across 306 px, so they go two by two. */
         '.tw-modes{display:grid;grid-template-columns:1fr 1fr;}',
         '.tw-modes .tw-seg{overflow:hidden;text-overflow:ellipsis;}',
-        '.tw-btn{padding:8px 10px;border-radius:10px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
-          +'background:var(--input-bg);color:var(--text-main);font-size:'+TW_FS+';cursor:pointer;}',
+        '.tw-btn{min-height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
+          +'background:var(--input-bg);color:var(--text-main);font-size:'+TW_FS+';cursor:pointer;'
+          +'display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;}',
         /* (#R261) 「再生ボタンは四角にしろ。」 — it was `border-radius:19px` on a 38 px box, i.e. a
            circle. A rounded SQUARE now (11 px, the same corner the segmented controls and the
            .tw-btn row in this panel already use), so the transport belongs to the panel it sits in
@@ -1632,7 +1692,7 @@ window.IntMapModules.terrainWater=function(HOST){
            js/seismic.js is 32 px at `border-radius:9px` — already a rounded square. `.tw-play` was
            the only disc, so this change makes the two players AGREE rather than diverge. A note
            that says «matched to X» is only evidence about X if somebody looked at X. */
-        '.tw-play{width:38px;height:38px;flex:0 0 auto;border-radius:11px;border:none;background:var(--primary-color);'
+        '.tw-play{width:36px;height:36px;flex:0 0 auto;border-radius:11px;border:none;background:var(--primary-color);'
           +'color:#fff;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}',
         '.tw-play:disabled{opacity:.42;cursor:default;}',
         '.tw-clock{font-variant-numeric:tabular-nums;font-size:'+TW_FS+';color:var(--text-main);white-space:nowrap;}',
@@ -1643,9 +1703,22 @@ window.IntMapModules.terrainWater=function(HOST){
            no hairline between them. That is the 「不自然な余白」 a reader sees at the bottom of the
            panel: two rows that belong to no group, indented differently from everything above.
            They are cards now, with the same padding as a row, so the column has one left edge. */
+        /* ⚠⚠ (#R273) …AND THEY WERE NOT ON THE ROW RHYTHM EITHER. MEASURED: every `.tw-row` is
+           44 px and every `.tw-blk` is 44 px, and the two disclosures came out 37.0 and 36.5 —
+           because #R270 gave them a padding instead of a row height. The summary IS a row now
+           (44 px, 12 px of inset, vertically centred) and the disclosed text is what carries the
+           padding, so an open note and a closed one both start where the rows do. */
         '.tw-note{background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.16));'
-          +'border-radius:12px;padding:9px 11px;box-sizing:border-box;}',
-        '.tw-note summary{cursor:pointer;font-size:'+TW_FS_S+';color:var(--text-main);list-style:revert;}',
+          +'border-radius:12px;padding:0;box-sizing:border-box;}',
+        '.tw-note > summary{cursor:pointer;font-size:'+TW_FS_S+';color:var(--text-main);list-style:revert;'
+          +'min-height:44px;display:flex;align-items:center;padding:0 12px;box-sizing:border-box;}',
+        '.tw-note > div{padding:0 12px 11px;}',
+        /* ⚠⚠ (#R273) ONE CONTROL HEIGHT IN THE FOOTER. MEASURED: the transport pill was 38, the
+           speed strip 35 and the three reset buttons 34 — three heights on three consecutive rows
+           of one pinned footer, which is the 「おかしい配置」 at the bottom of the panel. 36 for all
+           of them, and the strip is sized rather than padded so it cannot drift again. */
+        '#tw-panel .tw-foot .tw-segwrap{height:36px;padding:3px;box-sizing:border-box;align-items:stretch;}',
+        '#tw-panel .tw-foot .tw-seg{padding:0 6px;display:flex;align-items:center;justify-content:center;}',
         /* the body keeps its scrollbar's width whether or not it is scrolling, so the column does
            not jump; the width itself is measured and written onto the head and the foot by
            `_squareColumn` — as an INLINE padding, because those two already carry inline padding and
@@ -1678,7 +1751,7 @@ window.IntMapModules.terrainWater=function(HOST){
       _ensureCss();
       panel.innerHTML='<div class="tw-head" style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--input-bg);cursor:move;">'
         +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">⛰💧 '+L('Terrain &amp; water','地形編集・水流','Gelände &amp; Wasser','Рельеф и вода','Terreno y agua')+'</span>'
-        +'<button class="tw-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
+        +'<button class="tw-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
         /* ══ ⚠ (#R255) THE SHARED HALF IS PINNED TO THE BOTTOM ══════════════════════════════════════
            「下部スティックしろ。」 → 「共通部分や、時刻など。」 The panel was one column that simply grew:
            choosing the brush adds five rows of pen settings, choosing 「ここに水」 adds the pour
@@ -1702,7 +1775,15 @@ window.IntMapModules.terrainWater=function(HOST){
           +'</div>'
         /* ② whatever that tool is set by */
         +'<div class="tw-params"></div>'
-        /* ③ the one condition that applies to the whole rectangle whichever tool is out */
+        /* ③ (#R273) how finely the whole answer is computed — 「解像度が低すぎる」 */
+        +'<div>'+cap(L('Simulation','シミュレーション','Modellrechnung','Расчёт','Simulación'))
+          +'<div class="tw-segwrap tw-resw">'+resList().map((n,i)=>'<button class="tw-seg tw-res" data-r="'+n+'">'
+            +[L('Standard','標準','Normal','Стандарт','Estándar'),L('High','高','Hoch','Высокое','Alta'),
+              L('Very high','最高','Sehr hoch','Очень высокое','Muy alta'),L('Ultra','超高','Maximal','Ультра','Máxima')][i]
+            +'</button>').join('')+'</div>'
+          +card('<div class="tw-blk tw-resnote" style="font-size:'+TW_FS_S+';color:var(--text-muted);"></div>')
+        +'</div>'
+        /* ④ the one condition that applies to the whole rectangle whichever tool is out */
         +'<div>'+cap(L('Weather','気象','Wetter','Погода','Meteorología'))
           +card('<label class="tw-row">'+L('Rainfall','降水量','Niederschlag','Осадки','Lluvia')
             /* ⚠ (#R237) ONE `class` attribute per tag — a second one is silently discarded */
@@ -1727,6 +1808,9 @@ window.IntMapModules.terrainWater=function(HOST){
         /* ══ (#R258) 「時間は下部スティックしろ。」 — the transport, the multiplier and the clock ═══════ */
         +'<div style="display:flex;align-items:center;gap:8px;">'
           +'<button class="tw-play tw-pp" aria-label="'+L('Pour','注水','Zulauf','Наполнение','Verter')+'">▶</button>'
+          /* (#R273) 「一回きりの水源、再生できない。」 — the same ground, the same sources, from t = 0 */
+          +'<button class="tw-play tw-replay" style="background:var(--input-bg);color:var(--text-main);" aria-label="'
+            +L('Replay from the start','最初から再生','Von vorn abspielen','Проиграть сначала','Reproducir desde el inicio')+'">↺</button>'
           +'<div class="tw-segwrap" style="flex:1 1 auto;">'+[1,10,60,600].map(s=>'<button class="tw-seg tw-ts" data-s="'+s+'">'+(s>=60?(s/60)+'m':s+'s')+'</button>').join('')+'</div>'
           /* (#R265) …and the way to the END of the run, for a reader who wants the resting answer
              rather than the journey — it is the routing this file has always computed. */
@@ -1759,6 +1843,13 @@ window.IntMapModules.terrainWater=function(HOST){
          silently switched 「1回きり」 to 「継続」, so the next click placed a tap when the reader had
          asked for a bucket. ▶ runs the taps that exist; it does not decide what a tap is. */
       panel.querySelector('.tw-pp').onclick=()=>{ if(pourT) pourStop(); else pourStart(); syncFoot(); renderParams(); };
+      { const rb=panel.querySelector('.tw-replay'); if(rb) rb.onclick=()=>{ replay(); }; }
+      panel.querySelectorAll('.tw-res').forEach(b=>b.onclick=()=>{
+        const v=+b.getAttribute('data-r'); if(!(v>0)||v===simRes) return;
+        simRes=v; try{ localStorage.setItem('im.twRes',String(v)); }catch(_){}
+        syncRes();
+        /* the SAME rectangle at the new cell size — `keep` is why the working area does not jump */
+        Promise.resolve(build({keep:true})).then(ok=>{ if(ok){ solve(); syncRes(); } }); });
       /* (#R265) ⏭ — stop the clock and show the t → ∞ answer */
       panel.querySelector('.tw-settle').onclick=()=>{ pourStop(); settleSim(); renderParams(); };
       panel.querySelector('.tw-undo').onclick=()=>undo();
@@ -1772,9 +1863,19 @@ window.IntMapModules.terrainWater=function(HOST){
       /* (#R270) once the reader has moved it, it stays where they put it */
       try{ const h=panel.querySelector('.tw-head'); if(h&&!h._twMoveWired){ h._twMoveWired=1;
         h.addEventListener('pointerdown',()=>{ panel._twMoved=true; },true); } }catch(_){}
-      syncMode(); renderParams(); syncFoot();
+      syncMode(); renderParams(); syncFoot(); syncRes();
       if(result) report();
     }
+    /* the chosen step and what it BUYS — the cell size and the grid, so 「解像度」 is a number the
+       reader can check rather than a word (#R250's rule: say what the drawing resolution is) */
+    function syncRes(){ if(!panel) return;
+      panel.querySelectorAll('.tw-res').forEach(b=>b.classList.toggle('on',+b.getAttribute('data-r')===simRes));
+      const n=panel.querySelector('.tw-resnote'); if(!n) return;
+      const cells=G?(G.NX*G.NY):0;
+      n.textContent=G
+        ? (Math.round(G.cellM)+' m '+L('cells','セル','Zellen','ячейки','celdas')+' · '+G.NX+'×'+G.NY
+           +' = '+cells.toLocaleString()+' '+L('cells','セル','Zellen','ячеек','celdas'))
+        : L('Pick a tool and the grid is built for the current view.','ツールを選ぶと現在の表示範囲に格子を作ります。','Werkzeug wählen — das Gitter wird für die aktuelle Ansicht gebaut.','Выберите инструмент — сетка построится для текущего вида.','Elija una herramienta y se construirá la malla de la vista actual.'); }
     function syncMode(){ if(!panel) return; panel.querySelectorAll('.tw-m').forEach(b=>{
       b.classList.toggle('on',b.getAttribute('data-m')===mode); }); }
     /* ══ (#R258) THE FOOTER IS THE SIMULATION'S CLOCK ═══════════════════════════════════════════════
@@ -2375,10 +2476,22 @@ window.IntMapModules.terrainWater=function(HOST){
       clearWater(){ pushUndo(); pourStop(); sources=[]; rainMm=0; resetSim(); const r=panel&&panel.querySelector('.tw-rain'); if(r) r.value=0; return solve(); },
       /* (#R211) 「配置した水は残して地形だけ戻す」 — the button's other half, as a call */
       resetTerrain(){ return resetTerrainNow(); },
+      /* (#R273) the run again, from t = 0, on the same ground with the same sources */
+      replay(){ return replay(); },
+      /* (#R273) the working grid's own resolution — the step, the list, and the change */
+      resolution(){ return resNX(); },
+      resolutions(){ return resList().slice(); },
+      setResolution(v){ v=+v||0; if(resList().indexOf(v)<0) return false;
+        if(v===simRes) return true;
+        simRes=v; try{ localStorage.setItem('im.twRes',String(v)); }catch(_){}
+        try{ syncRes(); }catch(_){}
+        return Promise.resolve(build({keep:true})).then(ok=>{ if(ok){ solve(); try{ syncRes(); }catch(_){} } return !!ok; }); },
       state:()=>({ open:opened, mode, grid:G?{nx:G.NX,ny:G.NY,cellM:G.cellM,z:G.z,bbox:G.bbox,demMissing:G.demMissing||0}:null,
         levees:levees.length, sources:sources.length, rainMm, flowM3s, tracing,
         /* (#R211) the pour, the pen and how many single operations 元に戻す can still take back */
         brushM, brushStrength, undoDepth:undoStack.length,
+        /* (#R273) the resolution dial and the cell it produces */
+        resolution:resNX(), resolutions:resList().slice(),
         pour:{ running:!!pourT, mode:pourMode, rateM3s:pourRate, speed:timeScale, simSeconds:Math.round(pourSimS), totalM3:pourTotal(),
           continuous:contSources().length, oneShot:sources.length-contSources().length,   /* (#R261) */
           /* (#R265) the shallow-water state: is the clock running or is this the t -> infinity answer,

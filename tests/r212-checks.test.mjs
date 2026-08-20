@@ -72,18 +72,21 @@ test('R212 ③: the energy mix is one row, and its legend is built from the pain
 test('R212 ④: "nothing in force" is only said when that feed actually answered', () => {
   const s = read('js/world-packs.js');
   assert.match(s, /FEED_STATE/, 'each feed carries its own state');
-  /* the sentence is gated on the state being ok */
-  assert.match(s, /if\(st==='ok'\)\s*h\+='<div[^']*'\+L\('Nothing in force right now\./,
-    'the reassuring sentence is behind an ok check');
-  assert.match(s, /loadGDACS/, 'the rest of the world has a feed at all');
-  assert.match(s, /getgeometry[\s\S]{0,240}Access-Control-Allow-Origin/,
-    'the note recording that GDACS polygons are NOT reachable stays with the code that works around it');
-  /* ⚠ and the reason Japan was never painted: geoBoundaries hands back a github.com/…/raw/… URL,
-     which redirects without CORS, and whose LFS pointer is what raw.githubusercontent returns.
-     media.githubusercontent.com/media/… is the content host and does send the header. */
-  assert.match(s, /media\.githubusercontent\.com\/media\//, 'the prefecture geometry comes from the LFS content host');
-  assert.match(s, /function _lfsUrl\(u\)/, 'and the rewrite is a function, not a pasted URL');
-  assert.match(s, /throw new Error\('jp prefecture geometry unreachable'\)/,
+  /* the sentence is gated on the state being ok — the GUARD is the property, not the exact
+     wording of the sentence (#R273 rewrote the sentence and the branch shape stayed) */
+  const okBranch = /st==='ok'\)[\s\S]{0,200}Nothing in force right now/.test(s);
+  assert.ok(okBranch, 'the reassuring sentence is behind an ok check');
+  /* ⚠⚠ (#R273) GDACS IS GONE — 「GDACSを完全に撤廃しろ」. What #R212 was about survives and is
+     STRONGER: a country this app has no feed for must not look like a country with nothing in
+     force. It used to be covered by an event feed presented beside national warnings; it is a
+     HATCH and a sentence now, which is the same claim made honestly. */
+  assert.ok(!/loadGDACS|gdacsapi/.test(s), 'GDACS must be gone, not re-added');
+  assert.match(s, /No feed connected/, 'a country with no feed says so in words');
+  assert.match(s, /wp-alert-hatch/, '…and is hatched on the map rather than left blank');
+  /* ⚠ and Japan is drawn at the unit the JMA issues at. #R212's point was that a geometry which
+     cannot be had is an ERROR rather than an empty map, and that is what is asserted. */
+  assert.match(s, /japan-topography[\s\S]{0,200}N03/, 'the municipality geometry is the MLIT boundary set');
+  assert.match(s, /throw new Error\('jma: no issuing-unit geometry could be read'\)/,
     'a geometry that cannot be had is an error, not an empty map');
 });
 

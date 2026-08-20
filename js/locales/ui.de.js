@@ -166,7 +166,7 @@ window.IntMapLang.define('de', { ui: {
       worldExplorerBtn:"🌍 Satellite Drop",
       lyrGrpClimate:"Klima & Wetter",
       lyrGrpHazard:"Gefahren & Notfälle",
-      lyrGrpDemo:"Bevölkerung & Wirtschaft",
+      lyrGrpDemo:"Bevölkerung & Demografie",
       lyrGrpGeoPol:"Geopolitik & Verteidigung",
       lyrGrpPolitics:"Politik & Regierungsführung",
       lyrGrpSecurity:"Verteidigung & Sicherheit",

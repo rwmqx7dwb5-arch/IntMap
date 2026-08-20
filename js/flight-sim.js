@@ -493,7 +493,7 @@ window.IntMapModules.flightSim=function(HOST){
            the top edge, and nothing but the ADI is allowed below the centre line.
 
                ┌──────────────────────────────────────────────────────┐
-               │ speed/VS/G/AoA    compass tape        alt/AGL   ✕    │  top band
+               │ speed/VS/G/AoA    compass tape        alt/AGL   ×    │  top band
                │                                       minimap        │
                │                    ( the view )                      │
                │ ⋯  ┌──────┐                                  ┌─────┐ │
@@ -550,7 +550,7 @@ window.IntMapModules.flightSim=function(HOST){
 
            WHAT WAS ON SCREEN, from the reader's own capture of a landscape phone: the airspeed block
            top-left, the heading tape top-centre, the altitude block top-right with a full-width RED
-           「✕ 終了」 pill beside it, the aircraft badge and the three configuration chips floating
+           「× 終了」 pill beside it, the aircraft badge and the three configuration chips floating
            loose across the middle of the sky (with the badge's own text cut off mid-word), the ADI
            sitting on the bottom edge in the centre where it lands ON the two rudder keys, the minimap
            in the right margin, the throttle and a 「⋯」 at the left, and the pad bottom-right. Eleven
@@ -573,7 +573,7 @@ window.IntMapModules.flightSim=function(HOST){
            ⚠ NOTHING IS REMOVED. Every control, readout and instrument that existed still exists and
            still updates; the six-pack and the PFD remain hidden on touch exactly as #R220 left them
            (they are duplicates of the tape and the panels, and that decision is not revisited here).
-           ⚠ THE EXIT IS AN ICON. 「✕ 終了」 at 12 px was the widest thing in the top band and the only
+           ⚠ THE EXIT IS AN ICON. 「× 終了」 at 12 px was the widest thing in the top band and the only
            red object on screen — on a phone it read as the primary action of a flight simulator. It
            keeps its label for screen readers (`aria-label` is set in js/flight-sim.js) and becomes a
            34 px square, which is the size everything else in the band already is. */
@@ -593,13 +593,13 @@ window.IntMapModules.flightSim=function(HOST){
           +'#fs-hud .fs-x{top:calc(8px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));'
             +'width:34px;height:34px;padding:0;font-size:0;border-radius:10px;display:flex;align-items:center;justify-content:center;'
             +'background:rgba(255,69,58,0.72);}'
-          +'#fs-hud .fs-x::before{content:"\\2715";font-size:15px;font-weight:700;color:#fff;}'
+          +'#fs-hud .fs-x::before{content:"\\00d7";font-size:19px;font-weight:400;color:#fff;}'
           /* ③ the ladder is the view — its numbers were drawn at desktop size over a phone-sized sky */
           +'#fs-hud .fs-ladder-g text{font-size:13px;} #fs-hud .fs-ladder-g line{stroke-width:1.8;}'
         +'}'
         /* ④ the rails, in the orientation a flight is actually flown in */
         +'@media(hover:none) and (orientation:landscape){'
-          /* the top band, right edge in: altitude block shifts left of the ✕ so the two never touch */
+          /* the top band, right edge in: altitude block shifts left of the × so the two never touch */
           +'#fs-hud .fs-panel.fs-tr{right:calc(50px + env(safe-area-inset-right,0px));}'
           /* ⚠ 78px, NOT 52: `.fs-tr` measures 64 px tall from y=5 (altitude AND AGL), so a map at 52
              covered the AGL figure — measured, 17 px of overlap, with the number under the map. */
@@ -674,9 +674,9 @@ window.IntMapModules.flightSim=function(HOST){
     function sharedChromeHTML(){ return '<div class="fs-vign"></div>'+_fsHint(AC())
       +'<div class="fs-warn">'+LL('STALL','失速','STRÖMUNGSABRISS','СВАЛИВАНИЕ','PÉRDIDA')+'</div>'
       /* ⚠ (#R222) the label stays IN the button and is only hidden visually on a phone (font-size:0
-         with a ✕ drawn by ::before), so the accessible name is still the word — and `aria-label`
+         with a × drawn by ::before), so the accessible name is still the word — and `aria-label`
          carries it for the case where the text is not rendered at all. */
-      +'<button class="fs-x" aria-label="'+LL('Exit','終了','Ende','Выход','Salir')+'">✕ '+LL('Exit','終了','Ende','Выход','Salir')+'</button>'
+      +'<button class="fs-x" aria-label="'+LL('Exit','終了','Ende','Выход','Salir')+'">× '+LL('Exit','終了','Ende','Выход','Salir')+'</button>'
       /* ══ ⚠ (#R216) THE ARROWS ARE BACK, BECAUSE THEY WERE ASKED FOR ═══════════════════════════════
          「上下左右の操作は上下左右ボタンに戻して。」 #R117 replaced six arrow buttons with an analog
          stick and wrote down why (an analog axis is a better control than a tap). The reader has now
@@ -946,7 +946,7 @@ window.IntMapModules.flightSim=function(HOST){
           where=' · '+(rwy?LL('runway landing — '+best[1],best[1]+' 滑走路に着陸','Landebahn — '+best[1],'на ВПП — '+best[1],'en pista — '+best[1])
                          :LL('near '+best[1],best[1]+' 周辺（滑走路外）','bei '+best[1],'возле '+best[1],'cerca de '+best[1])); }
         else where=' · '+LL('off-field','場外着陸','abseits','вне полосы','fuera de pista'); }
-      const col=ok?'#34c759':'#ff453a', title=(ok?LL('✓ LANDED','✓ 着陸成功','✓ GELANDET','✓ ПОСАДКА','✓ ATERRIZÓ'):LL('✕ CRASHED','✕ 墜落','✕ ABGESTÜRZT','✕ КРУШЕНИЕ','✕ ACCIDENTE'))+where;
+      const col=ok?'#34c759':'#ff453a', title=(ok?LL('✓ LANDED','✓ 着陸成功','✓ GELANDET','✓ ПОСАДКА','✓ ATERRIZÓ'):LL('× CRASHED','× 墜落','× ABGESTÜRZT','× КРУШЕНИЕ','× ACCIDENTE'))+where;
       const ov=document.createElement('div'); ov.id='fs-result';
       ov.style.cssText='position:fixed;inset:0;z-index:6060;background:rgba(4,10,20,0.86);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;';   /* (#R102) above ws menu bar */
       const stat=(l,v)=>'<div><div style="font-size:10px;color:#8fb8e0;">'+l+'</div><b style="font-size:14px;">'+v+'</b></div>';
@@ -1180,7 +1180,7 @@ window.IntMapModules.flightSim=function(HOST){
     /* ══ ⚠⚠ (#R218) NO "PLEASE TURN YOUR PHONE" SCREEN ═══════════════════════════════════════════════
        「スマホでは横画面でスタートさせるのに、確認なんかいらない。そのままフライトシミュレーターを開始
         すればいいだけ。」 Confirmed this round: it is THAT screen — #R216's `#fs-rotate`, a full-screen
-       black card with a rotating phone and an ✕ Exit button — that has to go. The reader pressed START;
+       black card with a rotating phone and an × Exit button — that has to go. The reader pressed START;
        being asked to confirm the shape of their own screen before anything happens is a second START.
        What replaces it is what the overlay was in front of anyway: the fullscreen request and the
        orientation lock, attempted SILENTLY, and the flight starting either way. If the lock takes
@@ -1210,7 +1210,7 @@ window.IntMapModules.flightSim=function(HOST){
 
        ⚠ THIS IS NOT #R216's SCREEN COMING BACK, and the difference is the whole point of #R218's
        instruction 「確認なんかいらない。そのままフライトシミュレーターを開始すればいいだけ」: that one
-       was a CONFIRMATION — a full-screen card with an ✕ Exit button that had to be tapped before the
+       was a CONFIRMATION — a full-screen card with an × Exit button that had to be tapped before the
        flight would begin, i.e. a second START. This one has no button to press and nothing to
        confirm. It appears only if the phone is actually upright, it goes away BY ITSELF the instant
        the phone is turned, and the flight is already running behind it.

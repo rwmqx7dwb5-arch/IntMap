@@ -591,7 +591,7 @@ window.IntMapModules.facilities=function(HOST){
          `.country-popup-close` to 32×32 on a phone (this one stayed 28 and was under the touch
          target), and js/window-manager.js lists it in NODRAG so a press on it cannot start a window
          drag. Both were missed by the private class, so this is one fix, not three. */
-      el.innerHTML='<button class="country-popup-close cp-close" type="button" aria-label="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'" title="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">✕</button>'
+      el.innerHTML='<button class="country-popup-close cp-close" type="button" aria-label="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'" title="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">×</button>'
         +'<div style="padding:16px 18px 18px;">'
         +'<div class="fac-drag" style="display:flex;align-items:center;gap:9px;margin-bottom:3px;padding-right:32px;cursor:move;user-select:none;">'
         +'<span style="width:12px;height:12px;border-radius:7px;flex:none;background:'+S(bucket[0])+';"></span>'
