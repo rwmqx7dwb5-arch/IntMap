@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · #R284 source checks
+ *  IntMap · #R285 source checks
  * ----------------------------------------------------------------------------
  *  「Atlasの最低限の人格設定を正式仕様として追加してください。… 可能なら人格設定は
  *    1か所を正本として管理し、system prompt等への重複記述を最小化してください。」
@@ -68,7 +68,7 @@ const OLD_SHAPE = [
   "    const _langLine=()=>{ const l2=_replyLang(); return l2+'…'+(l2==='Japanese'?'; use polite Japanese (です・ます／敬語) by default unless the user is clearly casual':''); };",
 ].join('\n');
 
-test('R284 (1) the predicates name the old shape when it is there', () => {
+test('R285 (1) the predicates name the old shape when it is there', () => {
   const code = codeOnly(OLD_SHAPE);
   assert.equal(openers(code).length, 2, 'two hand-written identity openers are seen in the old shape');
   assert.equal((code.match(/personaPrompt\(/g) || []).length, 0, 'the old shape calls nothing shared');
@@ -76,7 +76,7 @@ test('R284 (1) the predicates name the old shape when it is there', () => {
 });
 
 /* ── ② EVERY ATLAS PROMPT OPENS WITH THE SHARED PERSONA ────────────────────────────────────── */
-test('R284 (2) every Atlas system prompt is built from js/atlas-persona.js', () => {
+test('R285 (2) every Atlas system prompt is built from js/atlas-persona.js', () => {
   for (const f of PROMPT_FILES) {
     const code = codeOnly(read(f));
     assert.equal(
@@ -88,7 +88,7 @@ test('R284 (2) every Atlas system prompt is built from js/atlas-persona.js', () 
 });
 
 /* ── ③ …AND NONE OF THEM STILL INTRODUCES ITSELF IN ITS OWN WORDS ──────────────────────────── */
-test('R284 (3) no prompt carries a hand-written identity line any more', () => {
+test('R285 (3) no prompt carries a hand-written identity line any more', () => {
   for (const f of PROMPT_FILES) {
     const found = openers(codeOnly(read(f)));
     assert.deepEqual(found, [], `${f}: still names who it is by hand: ${found.join(' | ')}`);
@@ -107,17 +107,19 @@ test('R284 (3) no prompt carries a hand-written identity line any more', () => {
 /* ③ only looks at the files that are known to build a prompt, so it cannot see a TENTH prompt added
    to a file this list has never heard of — which is exactly how the nine extra ones survived the
    first sweep. This walks js/ and supabase/functions/ whole. */
-test('R284 (3b) no file in js/ or supabase/functions/ hand-writes an Atlas identity', () => {
-  const walk = (dir, out = []) => {
-    for (const e of readdirSync(resolve(ROOT, dir), { withFileTypes: true })) {
-      const rel = dir + '/' + e.name;
-      if (e.isDirectory()) walk(rel, out);
-      else if (/\.(js|ts|mjs)$/.test(e.name)) out.push(rel);
-    }
-    return out;
-  };
+/* every source file under a directory, recursively — the file set ③b and ⑥ both sweep */
+const walkSources = (dir, out = []) => {
+  for (const e of readdirSync(resolve(ROOT, dir), { withFileTypes: true })) {
+    const rel = dir + '/' + e.name;
+    if (e.isDirectory()) walkSources(rel, out);
+    else if (/\.(js|ts|mjs)$/.test(e.name)) out.push(rel);
+  }
+  return out;
+};
+
+test('R285 (3b) no file in js/ or supabase/functions/ hand-writes an Atlas identity', () => {
   const offenders = [];
-  for (const f of [...walk('js'), ...walk('supabase/functions')]) {
+  for (const f of [...walkSources('js'), ...walkSources('supabase/functions')]) {
     for (const hit of openers(codeOnly(read(f)))) offenders.push(`${f}: ${hit}`);
   }
   assert.deepEqual(offenders, [], 'a prompt names who it is by hand instead of calling personaPrompt(): ' + offenders.join(' | '));
@@ -139,7 +141,7 @@ const SPEC = {
   confidential: [/never reveal/i, /system prompt/i, /decline/i],
 };
 
-test('R284 (4) all ten specified points are in the persona, and each still says what it must', () => {
+test('R285 (4) all ten specified points are in the persona, and each still says what it must', () => {
   assert.deepEqual(ATLAS_PERSONA.order, Object.keys(SPEC), 'the persona carries exactly the specified points, in order');
   for (const [id, patterns] of Object.entries(SPEC)) {
     const text = ATLAS_PERSONA.clauses[id];
@@ -150,7 +152,7 @@ test('R284 (4) all ten specified points are in the persona, and each still says 
 });
 
 /* ── ⑤ …AND ALL OF IT REACHES A REAL PROMPT ────────────────────────────────────────────────── */
-test('R284 (5) the full preamble delivers every clause; internal mode drops exactly four', () => {
+test('R285 (5) the full preamble delivers every clause; internal mode drops exactly four', () => {
   const full = personaPrompt('the analysis engine of the IntMap world map');
   assert.match(full, /^You are Atlas, the analysis engine of the IntMap world map\.\n/, 'the task role opens the prompt');
   for (const id of ATLAS_PERSONA.order) assert.ok(full.includes(ATLAS_PERSONA.clauses[id]), `clause "${id}" never reaches the prompt`);
@@ -170,7 +172,24 @@ test('R284 (5) the full preamble delivers every clause; internal mode drops exac
    its wording (「ただし常に自然な敬語」, with no "unless the user is casual" escape), and the
    persona now owns it. ⚠ The second half of this test counts what must NOT have been deleted:
    _langLine() exists for the reply-language LOCK (#R155), which has to survive intact. */
-test('R284 (6) the Japanese register rule appears once, and the language lock survived', () => {
+test('R285 (6) the Japanese register rule appears once, and the language lock survived', () => {
+  /* ⚠ (#R285 追記) THIS USED TO LOOK AT ONE FILE, AND THAT IS HOW IT MISSED THE THIRD COPY.
+     js/app-body.js's `_aiLangLine()` carried the same clause — with the same superseded «unless the
+     user is clearly casual» escape that the specification replaces with 「ただし常に自然な敬語」 —
+     and it is appended to four prompts. ③ and ③b sweep the repository for a hand-written IDENTITY;
+     nothing swept it for a hand-written REGISTER, so the register survived in a file the identity
+     sweep had already cleared. It is the same defect one field over, and the fix is the same shape:
+     look at every file, not at the one that was on your mind. Found by production verification. */
+  const CANON = ['js/atlas-persona.js', 'supabase/functions/_shared/atlas-persona.js'];
+  const dupes = [];
+  for (const f of [...walkSources('js'), ...walkSources('supabase/functions')]) {
+    if (CANON.includes(f)) continue;
+    const code = codeOnly(read(f));
+    if (/です・ます|敬語|polite Japanese/.test(code)) dupes.push(f);
+    if (/unless the user is clearly casual/i.test(code)) dupes.push(f + ' (superseded escape)');
+  }
+  assert.deepEqual(dupes, [], 'a second copy of the register rule survives — it belongs only in js/atlas-persona.js: ' + dupes.join(' | '));
+
   const console_ = codeOnly(read('js/atlas-console.js'));
   assert.ok(!/です・ます/.test(console_), 'js/atlas-console.js still carries its own copy of the register rule');
   assert.ok(!/unless the user is clearly casual/i.test(console_), 'the superseded "unless the user is casual" escape is still in the prompts');
@@ -185,14 +204,14 @@ test('R284 (6) the Japanese register rule appears once, and the language lock su
 });
 
 /* ── ⑦ THE EDGE-FUNCTION MIRROR IS THE SAME TEXT ───────────────────────────────────────────── */
-test('R284 (7) the Edge Function copy is byte-identical to the source of truth', async () => {
+test('R285 (7) the Edge Function copy is byte-identical to the source of truth', async () => {
   const { inSync } = await import('../scripts/sync-atlas-persona.mjs');
   assert.ok(inSync(), 'supabase/functions/_shared/atlas-persona.js has drifted — run: node scripts/sync-atlas-persona.mjs');
 });
 
 /* ── ⑧ THE WHOLE PLANNER CATALOGUE ACTUALLY ARRIVES ────────────────────────────────────────── */
 /* Rebuild the planner prompt the way the browser does — the real persona, and the three runtime
-   catalogues at the sizes measured live on the built app (window.IntMapOS.catalog(), #R284) — and
+   catalogues at the sizes measured live on the built app (window.IntMapOS.catalog(), #R285) — and
    compare it with the bound the deployed proxy applies to `system`. */
 const LIVE_CATALOGUES = 3727 + 3750 + 1482;   /* controls + layers + modules, measured */
 
@@ -213,7 +232,7 @@ function plannerPromptSize() {
   return new Function('__stub', 'with(__stub){ ' + lines.slice(s, e + 1).join('\n') + ' return SYS(); }')(stub).length;
 }
 
-test('R284 (8) ai-proxy admits the whole planner prompt, with room to grow', () => {
+test('R285 (8) ai-proxy admits the whole planner prompt, with room to grow', () => {
   const proxy = read('supabase/functions/ai-proxy/index.ts');
   const sysCap = Number((proxy.match(/const MAX_SYSTEM = ([\d_]+)/) || [])[1]?.replace(/_/g, ''));
   const promptCap = Number((proxy.match(/const MAX_PROMPT = ([\d_]+)/) || [])[1]?.replace(/_/g, ''));
@@ -234,7 +253,7 @@ test('R284 (8) ai-proxy admits the whole planner prompt, with room to grow', () 
 /* ── ⑨ THE DOCUMENT POINTS AT THE SOURCE OF TRUTH INSTEAD OF COPYING IT ────────────────────── */
 /* 「1か所を正本として管理し」 is a property of the DOCUMENTS too: a prose copy of the traits in
    Architecture.md is a second normative text, and #R274 is the round about what happens next. */
-test('R284 (9) Architecture.md names the source of truth and does not restate the persona', () => {
+test('R285 (9) Architecture.md names the source of truth and does not restate the persona', () => {
   const arch = read('Architecture.md');
   assert.match(arch, /js\/atlas-persona\.js/, 'Architecture.md does not name the persona file at all');
   /* (#R280 moved the file ledger out of §3 and into docs/FILES.md; the entry lives there now.) */
