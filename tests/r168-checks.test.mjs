@@ -177,7 +177,12 @@ test('R168 #4 DECLARATION-ONLY: a factory body does nothing while it runs', () =
   // side effect — and reading closure state at factory time is exactly the #R167 dead-zone trap.
   for (const m of NAMES) {
     const src = rd(MODULES[m].file);
-    const ast = acorn.parse(src, { ecmaVersion: 'latest', locations: true });
+    /* (#R285) sourceType:'module'. Two of these files grew a real ES import this round
+       (`personaPrompt` from js/atlas-persona.js), and script mode cannot parse one — the file that
+       #R199 made the norm for js/ would have been unparseable here. NOTHING below is relaxed: a
+       top-level ImportDeclaration is not part of the factory body, so every assertion about what
+       the factory DOES is unchanged, and module mode is a strict superset for that question. */
+    const ast = acorn.parse(src, { ecmaVersion: 'latest', locations: true, sourceType: 'module' });
     let body = null;
     for (const st of ast.body) {
       if (st.type !== 'ExpressionStatement' || st.expression.type !== 'AssignmentExpression') continue;

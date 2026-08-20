@@ -2,6 +2,19 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "intmap-preview-r285",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "C:/Users/gyuuk/AppData/Local/Temp/claude/C--Users-gyuuk-OneDrive-IntMap/e843dd3f-642f-4e8b-9305-10a6a5f2f31d/scratchpad/wt-r285/dist",
+        "--port",
+        "4285"
+      ],
+      "port": 4285,
+      "url": "http://127.0.0.1:4285"
+    },
+    {
       "name": "intmap-preview-r282",
       "runtimeExecutable": "node",
       "runtimeArgs": [

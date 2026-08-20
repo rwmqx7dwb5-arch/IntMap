@@ -184,6 +184,8 @@ article-reader.js                 サイドバー内の記事リーダー
 ### 3.7 `js/` — Atlas と AI
 
 ```
+atlas-persona.js                  Atlas の人格の**正本**（名前・立場・由来・性格・対人姿勢・事実優先・
+                                  意見・感情表現・自己設定・非開示。全 system prompt の先頭に入る唯一の写し）
 atlas-console.js                  Atlas カーネル（自然言語コンソール／OS コマンド面。846 KB）
 atlas-controls.js                 Atlas — 実 UI コントロールとモジュールメソッドへの全操作面
 atlas-geo-resolve.js              Atlas — 場所・地域の解決とカメラの寄せ方

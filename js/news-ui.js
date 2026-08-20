@@ -1,3 +1,4 @@
+import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
 /* ============================================================================
  *  IntMap · News feed, pins & reader  (#R168)
  * ----------------------------------------------------------------------------
@@ -564,8 +565,8 @@ window.IntMapModules.newsUi=function(HOST){
     if(!todo.length){ HOST.aiToast(HOST.t('aiGeoNone')); return; }
     HOST.aiSetBtnBusy(btn,true,HOST.t('aiGeoBusy'));
     const sys=pub
-      ? "You are a precise geocoder. Each numbered line is the NAME of a news outlet / publisher. Return the city where that outlet is headquartered. Reply with ONLY a JSON array, one object per identifiable outlet: {\"i\":<index>,\"name\":\"<City, Country>\",\"lat\":<number>,\"lng\":<number>}. Omit outlets you cannot place. No commentary, no code fences."
-      : "You are a precise geocoder for a world news map. For EACH numbered headline, return the SUBJECT LOCATION: the single specific real-world place where the main event/incident actually happens. RULES: (1) NOT the news outlet's HQ or dateline (e.g. ignore 'Reuters, London'). (2) NOT a place where someone merely SPOKE about the event — if an official at the White House in Washington comments on the Middle East, return the specific Middle-East country/city the event concerns, NOT Washington. (3) Be as SPECIFIC as possible — prefer city/landmark over country (e.g. 'Mariupol' over 'Ukraine', 'Rafah' over 'Gaza' when identifiable). Reply with ONLY a JSON array; one object per locatable item: {\"i\":<index number>,\"name\":\"<short English place name, most specific>\",\"lat\":<number>,\"lng\":<number>}. Omit any item with no clear subject location. No commentary, no code fences.";
+      ? personaPrompt("locating news publishers on the map for IntMap",{mode:"internal"})+"Each numbered line is the NAME of a news outlet / publisher. Return the city where that outlet is headquartered. Reply with ONLY a JSON array, one object per identifiable outlet: {\"i\":<index>,\"name\":\"<City, Country>\",\"lat\":<number>,\"lng\":<number>}. Omit outlets you cannot place. No commentary, no code fences."
+      : personaPrompt("locating world news on the map for IntMap",{mode:"internal"})+"For EACH numbered headline, return the SUBJECT LOCATION: the single specific real-world place where the main event/incident actually happens. RULES: (1) NOT the news outlet's HQ or dateline (e.g. ignore 'Reuters, London'). (2) NOT a place where someone merely SPOKE about the event — if an official at the White House in Washington comments on the Middle East, return the specific Middle-East country/city the event concerns, NOT Washington. (3) Be as SPECIFIC as possible — prefer city/landmark over country (e.g. 'Mariupol' over 'Ukraine', 'Rafah' over 'Gaza' when identifiable). Reply with ONLY a JSON array; one object per locatable item: {\"i\":<index number>,\"name\":\"<short English place name, most specific>\",\"lat\":<number>,\"lng\":<number>}. Omit any item with no clear subject location. No commentary, no code fences.";
     const BATCH=12; let done=0, hit=0, failed=false;
     try{
       for(let i=0;i<todo.length;i+=BATCH){
@@ -691,7 +692,7 @@ window.IntMapModules.newsUi=function(HOST){
     try{
       /* (#R39) Translate into the UI language, not always Japanese (DE/RU/EN users got Japanese). */
       const _tgt=HOST._aiLangName();
-      const sys="You are a professional news translator. Translate the article into natural, fluent "+_tgt+". Keep paragraph breaks. Do not add notes, labels, or the original text — output only the "+_tgt+" translation.";
+      const sys=personaPrompt("translating a news article for IntMap",{mode:"internal"})/* (#R285) a translation carries the register of its SOURCE, never one of its own */+"Translate the article into natural, fluent "+_tgt+". Keep paragraph breaks. Do not add notes, labels, or the original text — output only the "+_tgt+" translation.";
       const out=await HOST.askAI('Title: '+item.title+'\n\n'+src, sys);
       const paras=String(out||'').split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
       res._translatedHTML=(paras.length?paras:[String(out||'')]).map(p=>`<p>${HOST.escForReader(p)}</p>`).join('');

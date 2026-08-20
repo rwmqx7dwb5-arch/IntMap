@@ -29,9 +29,9 @@
    promise anywhere in the path. Wrapping rather than re-indenting is deliberate:
    the 5,000-line body below is byte-identical to #R179's, so nothing in it can
    have changed meaning. */
-/* (#R199) A real ES import, not window.IntMapModules: the theme/sky subsystem is a named binding the
-   bundler resolves, so it cannot be missing at runtime and cannot depend on load order. */
+/* (#R199) Real ES imports, not window.IntMapModules: each is a named binding the bundler resolves, so it cannot be missing at runtime and cannot depend on load order. */
 import { makeThemeSky } from './theme-sky.js';
+import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
 /* (#R203) the opening view: a lit Earth rather than a black one — see the file for the measurement. */
 import { OpeningView } from './opening-view.js';
 import { makeI18nLate } from './i18n-late.js';
@@ -614,7 +614,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(err||!imgA||!imgB) return {err:(err&&err.message)||t('aiVisCapFail')};
     return {imgA,imgB}; };
   window._imSatAnalyze=async function(va,vb,imgA,imgB){
-    const sys=(window.IntMapLang.t(currentLang,"You are a satellite-imagery analyst comparing two images of the same area (first = earlier, second = later). Report: military construction/expansion, movement of ships/aircraft/vehicles, land clearing, natural disasters (floods, fires, landslides), and urban/infrastructure change. Use bullet points, each with a confidence level (high/medium/low). If nothing changed, say so, and beware false positives from clouds, image quality, or seasonal differences.","あなたは衛星画像アナリストです。同一地域の2枚の衛星画像を比較します（1枚目=過去、2枚目=新しい日付）。軍事施設の建設・拡張、艦船・航空機・車両など装備の移動、土地造成や伐採、自然災害（洪水・火災・地滑り等）、都市・インフラの変化を日本語で報告してください。各項目は箇条書きにし、確度（高/中/低）を付けてください。変化が無ければその旨を述べ、雲量や画質・季節差による誤検出に注意してください。"))+window._aiLangLine();
+    const sys=personaPrompt('working here as the satellite-imagery analyst of IntMap')+(window.IntMapLang.t(currentLang,"Compare two images of the same area (first = earlier, second = later). Report: military construction/expansion, movement of ships/aircraft/vehicles, land clearing, natural disasters (floods, fires, landslides), and urban/infrastructure change. Use bullet points, each with a confidence level (high/medium/low). If nothing changed, say so, and beware false positives from clouds, image quality, or seasonal differences.","同一地域の2枚の衛星画像を比較してください（1枚目=過去、2枚目=新しい日付）。軍事施設の建設・拡張、艦船・航空機・車両など装備の移動、土地造成や伐採、自然災害（洪水・火災・地滑り等）、都市・インフラの変化を日本語で報告してください。各項目は箇条書きにし、確度（高/中/低）を付けてください。変化が無ければその旨を述べ、雲量や画質・季節差による誤検出に注意してください。"))+window._aiLangLine();
     const prompt=currentLang==='jp'?`1枚目の日付: ${va}\n2枚目の日付: ${vb}\nこの2枚を比較し、変化を報告してください。`:`First image date: ${va}\nSecond image date: ${vb}\nCompare the two images and report the changes.`;
     return askAI(prompt,sys,[imgA,imgB]); };
   /* (#R169) moved verbatim to js/satellite.js — see Architecture.md §3.1. */
@@ -1413,7 +1413,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       rep.setLoading(t('aiThinking'));
       try{
         const lines=uniq.map((p,i)=>`${i+1}. [${p.name||'?'}] ${p.title||''}${p.publisher?' ('+p.publisher+')':''}`).join('\n');
-        const sys = (window.IntMapLang.t(currentLang,"You are a geopolitical analyst. Below are news headlines reported within a single geographic area. In about three concise lines, summarize what is happening in this region from a geopolitical perspective. Begin each line with '- '. Stay grounded in the given headlines and avoid over-speculation.","あなたは地政学アナリストです。以下は、ある地理的範囲内で報じられているニュース見出しの一覧です。この地域で今何が起きているのかを地政学的観点から、日本語で簡潔に3行程度に要約してください。各行は「・」で始めてください。与えられた見出しの範囲内で述べ、過度な推測は避けてください。"))+window._aiLangLine();
+        const sys = personaPrompt('working here as the geopolitical analyst of IntMap')+(window.IntMapLang.t(currentLang,"Below are news headlines reported within a single geographic area. In about three concise lines, summarize what is happening in this region from a geopolitical perspective. Begin each line with '- '. Stay grounded in the given headlines and avoid over-speculation.","以下は、ある地理的範囲内で報じられているニュース見出しの一覧です。この地域で今何が起きているのかを地政学的観点から、日本語で簡潔に3行程度に要約してください。各行は「・」で始めてください。与えられた見出しの範囲内で述べ、過度な推測は避けてください。"))+window._aiLangLine();
         const out=await askAI('Headlines:\n'+lines, sys);
         rep.setBody(out||'');
       }catch(e){ rep.setError((e&&e.message)||t('aiError'), run); }
