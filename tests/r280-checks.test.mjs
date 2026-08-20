@@ -19,6 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withTreeLock } from './helpers/gate-lock.mjs';
+import { readLF } from '../scripts/eol.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -71,7 +72,14 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', a
   ];
 
   for (const c of CASES) {
-    const original = rd(c.file);
+    /* ⚠ (#R282 追記) MATCH ON CONTENT, RESTORE THE BYTES. Two of these needles contain a literal
+       `\n`, and on a core.autocrlf=true checkout the file holds `\r\n` — so `includes` said no and
+       this went red for a reason that has nothing to do with the facts it is guarding. #R283 fixed
+       the same class in tests/r232 and tests/r261 with scripts/eol.mjs; this file landed in the
+       same hour and missed it. The broken copy is written as LF (it lives for one `--check` and is
+       thrown away), and `finally` puts the ORIGINAL BYTES back, so the checkout is untouched. */
+    const originalBytes = rd(c.file);
+    const original = readLF(join(ROOT, c.file));
     let broken;
     if (c.rule === 'node-tests') {
       broken = original.replace(/\*\*(\d+) Node test files\*\*/, '**3 Node test files**');
@@ -87,7 +95,7 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', a
       assert.equal(r.code, 1, `check:docs stayed green with a broken ${c.rule} fact in ${c.file}`);
       assert.ok(r.out.includes(c.rule), `check:docs failed but never named the ${c.rule} rule:\n` + r.out);
     } finally {
-      writeFileSync(join(ROOT, c.file), original);
+      writeFileSync(join(ROOT, c.file), originalBytes);
     }
   }
   /* and the tree is back the way it was */
