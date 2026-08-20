@@ -28,6 +28,40 @@ test.beforeAll(async ({ browser }) => {
       sessionStorage.setItem('__smokeDocLoads', String(n));
     } catch { /* ignore */ }
   });
+  /* ══ (#R286) EVERY URL THE APP HANDS TO AN <img>, RECORDED AT THE ONE DOOR THEY ALL PASS ═══════
+     The round's defect was a tile template whose scheme only a REGISTERED PROTOCOL understands
+     (`imapsat://…`, js/sat-proto.js) being assigned to `new Image().src`: the browser cannot fetch
+     that, so nothing was warmed and index.html's `img-src` policy refused one load per tile. Pinning
+     that one spelling would only ever catch the leak somebody has already thought of, so the property
+     is measured where every image URL in the app must pass — the `src` setter — and it is stated as
+     the CSP's own list rather than as a name. Only VIOLATIONS are kept, so a boot that loads hundreds
+     of images costs one regex each and nothing else.
+     ⚠ BOTH DOORS. `.src = …` and `setAttribute('src', …)` are separate paths into the same load, and
+     shadowing setAttribute on the IMAGE prototype leaves every other element's untouched — measuring
+     the property alone would legislate a source style instead of watching the behaviour. */
+  await context.addInitScript(() => {
+    try {
+      window.__imgSrc = { n: 0, bad: [] };
+      const note = (v) => {
+        try {
+          const s = String(v); window.__imgSrc.n++;
+          const m = /^\s*([a-z0-9+.-]+):/i.exec(s);
+          if (m && !/^(https?|data|blob)$/i.test(m[1]) && window.__imgSrc.bad.length < 40) window.__imgSrc.bad.push(s.slice(0, 140));
+        } catch { /* ignore */ }
+      };
+      const d = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+      Object.defineProperty(HTMLImageElement.prototype, 'src', {
+        configurable: true, enumerable: d.enumerable,
+        get() { return d.get.call(this); },
+        set(v) { note(v); d.set.call(this, v); },
+      });
+      const setAttr = Element.prototype.setAttribute;
+      HTMLImageElement.prototype.setAttribute = function (name, value) {
+        if (String(name).toLowerCase() === 'src') note(value);
+        return setAttr.call(this, name, value);
+      };
+    } catch { /* ignore */ }
+  });
   page = await context.newPage();
   diag = collectPageDiagnostics(page);
   response = await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
@@ -432,4 +466,64 @@ test('R276 ⑲ the wind legend is the renderer\'s own colour table, ends where t
   /* the Windy-style table is opaque throughout — that is what stops calm air being a hole */
   expect(r.alphas, 'the wind palette is fully opaque').toEqual([1]);
   expect(r.overridden, 'and it is OUR table, not the SDK default (whose alpha ramps from 0)').toBe(true);
+});
+
+/* ══ #R286 ══════════════════════════════════════════════════════════════════════════════════════
+   tests/monitors.spec.js's console-error gate failed intermittently with twenty refusals of
+   「Loading the image 'imapsat://2/0/2' violates … "img-src 'self' https: data: blob:"」.
+   `imapsat://` is IntMap's OWN scheme (js/sat-proto.js registers it), so a tile served through it
+   never becomes a browser image load at all — the message meant some path was handing the raw
+   template to the browser instead of to the handler. It was js/dash-extended.js's speculative
+   prefetch, which read the ACTIVE STYLE's tile template and assigned it to `new Image().src`; the
+   satellite source has held the protocol URL since #R158 and is the default basemap since #R207.
+   Intermittent because that block fires only on a fast `moveend` PAIR, which the monitors spec
+   produces when `_radiusFromPoint` moves the camera Tokyo → Paris.
+
+   This asserts the whole shape rather than the absence of one string: the subject is live (the
+   satellite source really is protocol-backed), the prefetch SAW that template and refused it (so a
+   path that silently stopped running could not pass instead), the imagery is still warmed by the
+   module that owns it, and no <img> anywhere in this session was given a scheme the page's own CSP
+   cannot admit. Appended to this file rather than given a spec of its own for #R207's reason: the
+   boot is already paid for here, and this file is always in the gate. */
+test('R286 ⑳ the tile prefetch never hands the browser a scheme only a protocol handler understands', async () => {
+  const before = diag.consoleErrors.length;
+  const seen = await page.evaluate(async () => {
+    const st = window.__imap.getStyle();
+    const out = {
+      satTiles: (st && st.sources && st.sources.satellite && st.sources.satellite.tiles) || null,
+      satProto: !!window.__imSatProto,
+      hasPrefetch: !!(window.SpeculativePrefetch && window.SpeculativePrefetch.prefetch),
+    };
+    /* the call the reported `moveend` pair makes: Paris, at the world zoom the failure named */
+    window.SpeculativePrefetch.prefetch(2.35, 48.85, 2);
+    await new Promise((r) => setTimeout(r, 600));
+    out.last = (typeof window.SpeculativePrefetch.last === 'function') ? window.SpeculativePrefetch.last() : null;
+    out.imgSeen = window.__imgSrc ? window.__imgSrc.n : null;
+    out.badImg = window.__imgSrc ? window.__imgSrc.bad.slice() : null;
+    return out;
+  });
+  /* ① the subject is live — this is only a regression if the satellite source is still the protocol's */
+  expect(seen.satProto, 'the imapsat protocol is registered').toBe(true);
+  expect(seen.satTiles, 'and the satellite source is served through it').toEqual(['imapsat://{z}/{y}/{x}']);
+  expect(seen.hasPrefetch).toBe(true);
+  /* ② THE DEFECT ITSELF, stated over every image this session has loaded rather than over one URL.
+     Asserted first, so a run against the unrepaired app reports the leak rather than the instrument. */
+  expect(seen.imgSeen, 'the recorder saw the app load images at all').toBeGreaterThan(0);
+  expect(seen.badImg, `<img> given a scheme index.html's img-src cannot admit:\n${(seen.badImg || []).join('\n')}`).toEqual([]);
+  /* ③ …and the refusals the gate reported are gone with it */
+  const csp = diag.consoleErrors.slice(before).filter((t) => /Content Security Policy/i.test(t));
+  expect(csp, `CSP violations raised by the prefetch:\n${csp.join('\n')}`).toHaveLength(0);
+  /* ④ the prefetch ran, saw that template and REFUSED it — not "the path quietly disappeared",
+     which is the other way both assertions above could come out clean */
+  expect(seen.last, 'the prefetch ran at all').toBeTruthy();
+  expect(seen.last.tpl, 'on the template the style actually holds').toBe('imapsat://{z}/{y}/{x}');
+  expect(seen.last.refused, 'a protocol template is not warmed HERE — js/tile-warm.js owns it (#R206)').toBe(true);
+  expect(seen.last.warmed, 'so not one <img> was created for it').toBe(0);
+  /* ⑤ …and the imagery it declined to warm is warmed by that owner, through a URL the browser CAN load */
+  const owner = await page.evaluate(() => {
+    const f = window.IntMapSatProto && window.IntMapSatProto.tileUrl;
+    return { url: f ? f(2, 0, 2) : null, warmer: typeof window._imPredictivePrefetch };
+  });
+  expect(owner.warmer, 'satellite prefetch has an owner (js/tile-warm.js)').toBe('function');
+  expect(owner.url, 'and it asks for the tile by a URL the browser can load').toMatch(/^https:\/\/[\w.-]+\.arcgisonline\.com\/.+\/2\/0\/2$/);
 });

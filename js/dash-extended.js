@@ -73,11 +73,36 @@ window.IntMapModules.dashExtended=function(HOST){
         if(typeof HOST.mapType!=='undefined' && HOST.mapType==='sat'){ const s=st.sources['satellite']; return s&&s.tiles&&s.tiles[0]; }
         for(const id of ['bd','bdn','bl','bln']){ const s=st.sources[id]; if(s&&s.tiles){ const lyr=(st.layers||[]).find(l=>l.source===id); if(lyr && GE().layers.has(lyr.id) && GE().layers.getLayout(lyr.id,'visibility')!=='none') return s.tiles[0]; } }
         const s=st.sources['bd']; return s&&s.tiles&&s.tiles[0]; }catch(_){ return null; } }
-      function prefetch(lng,lat,z){ const tpl=activeTpl(); if(!tpl) return; z=Math.max(0,Math.min(18,Math.round(z))); const n=Math.pow(2,z);
+      /* ══ (#R286) A STYLE TILE TEMPLATE IS NOT ALWAYS A URL THE BROWSER CAN LOAD ═════════════
+         This warmed a tile by substituting the numbers into the ACTIVE STYLE's own template and
+         assigning the result to `new Image().src` — which means something only for `http(s):`. The
+         satellite source has been served by the REGISTERED `imapsat://` protocol since #R158
+         (js/sat-proto.js), and satellite is the DEFAULT basemap since #R207, so the ordinary case
+         handed the browser `imapsat://2/0/2`. MEASURED: twenty of them per prefetch, every one
+         refused against index.html's `img-src 'self' https: data: blob:`, and the protocol handler
+         never consulted — so the warm warmed NOTHING and paid for it in console errors. It surfaced
+         as an INTERMITTENT failure of tests/monitors.spec.js's console-error gate, intermittent only
+         because this block fires on a fast `moveend` PAIR; the leak itself was not.
+         The app registers seven protocols (`imapsat`, `pmtiles`, `om`, and the DEM / world-base /
+         crop ones), so the rule is about the SCHEME and not about a name: warm what the browser can
+         load, and warm nothing for a template it cannot.
+         ⚠ REFUSING IS NOT SILENCING, AND SATELLITE IS NOT LEFT UNWARMED. js/tile-warm.js OWNS the
+         satellite prefetch: on this same `moveend` it warms that imagery through the protocol's own
+         network URL (`IntMapSatProto.tileUrl`, #R206), at the level the render path actually asks
+         for, across both Esri hosts, behind the dedupe memory #R196 added after measuring 865
+         requests for 112 distinct tiles on a phone. A second, memory-less, twenty-five-tile block
+         built here would re-create THAT defect while repairing this one. */
+      const browserLoadable=(tpl)=>{ const m=/^\s*([a-z0-9+.-]+):/i.exec(tpl||''); return !m||/^https?$/i.test(m[1]); };
+      /* …and the refusal is OBSERVABLE, so 「this path is dead」 can never pass for 「this path is quiet」. */
+      let _last=null;
+      function prefetch(lng,lat,z){ const tpl=activeTpl(); if(!tpl) return;
+        if(!browserLoadable(tpl)){ _last={tpl:tpl,warmed:0,refused:true}; return; }
+        z=Math.max(0,Math.min(18,Math.round(z))); const n=Math.pow(2,z);
         const xc=Math.floor((lng+180)/360*n), latR=lat*Math.PI/180, yc=Math.floor((1-Math.log(Math.tan(latR)+1/Math.cos(latR))/Math.PI)/2*n);
-        let cnt=0; for(let dx=-2;dx<=2;dx++){ for(let dy=-2;dy<=2;dy++){ if(cnt>=22) break; const x=((xc+dx)%n+n)%n, y=yc+dy; if(y<0||y>=n) continue; const url=tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y).replace('{s}','a'); try{ const im=new Image(); im.decoding='async'; im.src=url; }catch(_){} cnt++; } } }
+        let cnt=0; for(let dx=-2;dx<=2;dx++){ for(let dy=-2;dy<=2;dy++){ if(cnt>=22) break; const x=((xc+dx)%n+n)%n, y=yc+dy; if(y<0||y>=n) continue; const url=tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y).replace('{s}','a'); try{ const im=new Image(); im.decoding='async'; im.src=url; }catch(_){} cnt++; } }
+        _last={tpl:tpl,warmed:cnt,refused:false}; }
       GE().events.on('moveend',()=>{ try{ const c=GE().camera.getCenter(), z=GE().camera.getZoom(), now=performance.now(); hist.push({lng:c.lng,lat:c.lat,t:now}); if(hist.length>3) hist.shift(); if(hist.length<2) return; const a=hist[hist.length-2], b=hist[hist.length-1], dt=Math.max(1,b.t-a.t); let dl=b.lng-a.lng; if(dl>180)dl-=360; else if(dl<-180)dl+=360; const vlng=dl/dt, vlat=(b.lat-a.lat)/dt, look=550, pl=b.lng+vlng*look, pa=Math.max(-85,Math.min(85,b.lat+vlat*look)); if(Math.abs(vlng*look)<0.15 && Math.abs(vlat*look)<0.15) return; prefetch(pl,pa,z); }catch(_){} });
-      window.SpeculativePrefetch={ prefetch };
+      window.SpeculativePrefetch={ prefetch, last:()=>_last };
     })();
 
     /* ---------- (E) New intelligence overlays ---------- */
