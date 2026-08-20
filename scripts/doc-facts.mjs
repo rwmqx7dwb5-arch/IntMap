@@ -492,22 +492,16 @@ const FILES = BODY.get('docs/FILES.md') || '';
     for (const page of ['privacy.html', 'terms.html']) {
       if (!has(page)) { fail('legal', page + ' is gone — the policy needs a URL of its own'); continue; }
       /* ⚠ MENTIONING IT IS NOT LOADING IT. Both pages explain the arrangement in a comment that
-         names this exact path, so a plain substring test stays green after the <script> tag is
-         deleted. Read the TAGS — comments stripped first — and compare whole strings; building a
-         pattern out of the filename would be an escaping bug waiting to happen (CodeQL agrees). */
-      const scriptSrcs = (pg) => {
-        const out = [];
-        for (const tag of pg.matchAll(/<script[^>]+src=["']([^"']+)["']/g)) {
-          const before = pg.slice(0, tag.index);
-          const opened = (before.match(/<!--/g) || []).length;
-          const closed = (before.match(/-->/g) || []).length;
-          if (opened === closed) out.push(tag[1].replace(/^\.\//, ''));   // not inside a comment
+         names these exact paths, so a bare substring test stays green after the <script> tag is
+         deleted. What separates the two is the ATTRIBUTE — quotes included — which appears in the
+         tag and never in the prose. No pattern is built and no markup is parsed: three attempts at
+         doing this with a regex produced three CodeQL findings in a row, each correct. */
+      const pageSrc = rd(page);
+      for (const dep of ['js/legal-text.js', 'js/legal-page.js']) {
+        if (!pageSrc.includes('src="./' + dep + '"')) {
+          fail('legal', page + ' does not LOAD ' + dep + ' as src="./' + dep + '" (a mention in a comment is not a script tag)');
         }
-        return out;
-      };
-      const loaded = scriptSrcs(rd(page));
-      if (!loaded.includes('js/legal-text.js')) fail('legal', page + ' does not LOAD js/legal-text.js (a mention in a comment is not a script tag)');
-      if (!loaded.includes('js/legal-page.js')) fail('legal', page + ' does not LOAD js/legal-page.js');
+      }
       if (/<p><b>/.test(rd(page))) fail('legal', page + ' carries its own copy of the prose');
     }
     const vite = rd('vite.config.js');
