@@ -171,13 +171,14 @@ window.IntMapLang.define('ko', { ui: {
       lyrGrpSociety:"사회·교육",   /* (#R261) */
       lyrGrpTransport:"교통·이동",   /* (#R261) */
       lyrGrpAgri:"농업·식량",   /* (#R261) */
-      lyrGrpHazard:"재해·밤하늘",
+      lyrGrpHazard:"재해·긴급",
       lyrGrpIndic:"지표·오버레이",
       lyrGrpMaritime:"해양·해운",
       lyrGrpOrbit:"우주·궤도",
       lyrGrpOthers:"베타",
       lyrGrpOthersReal:"기타",
       lyrGrpTerrain:"지형·표고",
+      lyrGrpNature:"자연·토지피복",
       lyrGrpWeather:"기상·환경",
       lyrHDI:"인간개발지수 (2022)",
       lyrHillshade:"음영 기복",
@@ -1827,6 +1828,15 @@ window.IntMapLang.define('ko', { ui: {
   "Note: a small share of the tiniest streams was omitted at the display cap (all major tributaries are drawn)": "참고: 표시 한도 때문에 아주 작은 물줄기 일부를 생략했습니다 (주요 지류는 모두 그렸습니다)",
   "Nothing found — neither OpenStreetMap nor Wikidata has such facilities recorded here and the AI knows none it is sure of": "찾지 못했습니다 — OpenStreetMap과 Wikidata 모두 이곳에 그런 시설을 기록해 두지 않았고, AI도 확신할 수 있는 것을 알지 못합니다",
   "Nothing in force right now.": "현재 발효 중인 것이 없습니다.",
+  "Areas the agency published but this map could not place: ": "기관이 발표했으나 이 지도가 위치를 특정하지 못한 구역: ",   /* world-packs.js (#R271) */
+  "Deutscher Wetterdienst, warnings with their own district polygons.": "독일 기상청(DWD) — 군(Landkreis) 단위 구역을 그리며, 주별로 묶습니다.",   /* world-packs.js (#R271) */
+  "Europe — MeteoAlarm (35 services)": "유럽 — MeteoAlarm (35개 기관)",   /* world-packs.js (#R271) */
+  "Extending the model to here…": "여기까지 모델을 확장하는 중…",   /* world-packs.js (#R271) */
+  "Germany — DWD, by district": "독일 — DWD (군 단위)",   /* world-packs.js (#R271) */
+  "Japan Meteorological Agency, at the region the warning is issued for.": "일본 기상청, 특보가 발표되는 지역 단위.",   /* world-packs.js (#R271) */
+  "Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China and Australia are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "일본·미국·캐나다·브라질·독일·노르웨이, 그리고 MeteoAlarm이 이름을 밝히는 유럽의 각 지역은 해당 기관이 발표하는 단위로 그리며, 국가 전체를 칠하지 않습니다 — 그곳에서는 발표 구역의 형태 자체가 답이기 때문입니다. 중국은 성, 오스트레일리아는 주라는, 그 기관이 경보를 발표하는 구분으로 칠합니다. 홍콩의 경보는 전역을 대상으로 하므로 홍콩 자체가 발표 단위입니다. GDACS의 옅은 칠은 다른 척도, 다른 색입니다 — 그 수준의 사건이 그 나라에 영향을 준다는 뜻이지, 나라 안 특정 지점에 경보가 발효 중이라는 뜻이 아닙니다. 러시아·인도·뉴질랜드·말레이시아·인도네시아·남아프리카공화국·멕시코는 이번에 실제로 접속을 시도했으나 브라우저가 읽을 수 있는 공개 피드를 찾지 못해 GDACS만 표시됩니다 — GDACS는 사건 배포이지 각국의 경보 자체가 아니며, 사건이 없는 나라가 경보가 없는 나라는 아닙니다. 참고용 표시입니다. 실제로는 공식 기관의 발표를 따르십시오.",   /* world-packs.js (#R271) */
+  "MET Norway, alerts with their own polygons.": "MET Norway — 경보별 대상 구역을 그립니다.",   /* world-packs.js (#R271) */
+  "Norway — MET Norway": "노르웨이 — MET Norway",   /* world-packs.js (#R271) */
   "Nothing is drawn — this is a failed query, not an industry with no companies.": "아무것도 그리지 않았습니다 — 조회에 실패한 것이며, 기업이 없는 업종이라는 뜻이 아닙니다.",
   "Nothing is highlighted yet — name the countries or regions": "아직 강조된 것이 없습니다 — 국가나 지역을 지정해 주세요",
   "Nov": "11월",

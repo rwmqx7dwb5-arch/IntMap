@@ -194,7 +194,7 @@ window.IntMapLang.define('ru', { ui: {
       blueberryGo:"Выбрать сумму ↗",
       blueberryNote:"Откроется внешняя страница (Stripe).",
       lyrGrpClimate:"Климат и погода",
-      lyrGrpHazard:"Опасности и ночное небо",
+      lyrGrpHazard:"Опасности и ЧС",
       lyrGrpDemo:"Население и экономика",
       lyrGrpGeoPol:"Геополитика и оборона",
       lyrGrpPolitics:"Политика и управление",
@@ -208,6 +208,7 @@ window.IntMapLang.define('ru', { ui: {
       lyrGrpAgri:"Сельское хозяйство и продовольствие",   /* (#R261) */
       lyrGrpMaritime:"Океаны и море",
       lyrGrpTerrain:"Рельеф и высота",
+      lyrGrpNature:"Природа и растительный покров",
       lyrGrpIndic:"Индикаторы и слои",
       lyrGrpOrbit:"Космос и орбита",
       lblAccent:"Акцентный цвет",

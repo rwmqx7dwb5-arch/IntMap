@@ -144,7 +144,7 @@ window.IntMapLang.define('zh-hans', {
     "lyrGrpSociety":"社会与教育",   /* (#R261) */
     "lyrGrpTransport":"交通与运输",   /* (#R261) */
     "lyrGrpAgri":"农业与粮食",   /* (#R261) */
-    "lyrGrpHazard":"灾害与夜空",
+    "lyrGrpHazard":"灾害与紧急",
     "lyrGrpIndic":"指标与叠图",
     "lyrGrpMaritime":"海洋与海事",
     "lyrGrpOrbit":"太空与轨道",
@@ -152,6 +152,7 @@ window.IntMapLang.define('zh-hans', {
     "lyrGrpOthersReal":"其他",
     "lyrGrpStrat":"战略网络",
     "lyrGrpTerrain":"地形与高程",
+    "lyrGrpNature":"自然与土地覆盖",
     "lyrGrpWeather":"天气与环境",
     "lyrHDI":"人类发展指数（2022）",
     "lyrHillshade":"地形起伏（阴影）",
@@ -1365,6 +1366,15 @@ window.IntMapLang.define('zh-hans', {
     'Nothing found — neither OpenStreetMap nor Wikidata has such facilities recorded here and the AI knows none it is sure of': "查无结果 — OpenStreetMap 与 Wikidata 都没有记录此处有这类设施，AI 也没有可确定的数据",   /* atlas-console.js */
     'Nothing found for': "查无结果：",   /* atlas-console.js */
     'Nothing in force right now.': "目前没有任何生效中的警报。",   /* world-packs.js */
+    'Areas the agency published but this map could not place: ': "机关已发布但本地图无法定位的区域：",   /* world-packs.js (#R271) */
+    'Deutscher Wetterdienst, warnings with their own district polygons.': "德国气象局（DWD）——以郡（Landkreis）为单位绘制警报范围，并依邦分组。",   /* world-packs.js (#R271) */
+    'Europe — MeteoAlarm (35 services)': "欧洲 — MeteoAlarm（35 个机关）",   /* world-packs.js (#R271) */
+    'Extending the model to here…': "正在把模型延伸到这里…",   /* world-packs.js (#R271) */
+    'Germany — DWD, by district': "德国 — DWD（郡）",   /* world-packs.js (#R271) */
+    'Japan Meteorological Agency, at the region the warning is issued for.': "日本气象厅，以发布警报的区域为单位。",   /* world-packs.js (#R271) */
+    'Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China and Australia are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.': "日本、美国、加拿大、巴西、德国、挪威，以及 MeteoAlarm 指名的每一个欧洲地区，都以各机关的发布单位绘制，不会整国上色——在那些国家，发布区域的形状本身就是答案。中国以省、澳洲以州为单位上色，那是其机关发布警报的区分。香港的警报涵盖全境，因此香港本身就是发布单位。GDACS 的淡色是另一套尺度、另一组颜色：它表示该等级的事件影响到该国，而不是该国境内某地正有警报生效。俄罗斯、印度、纽西兰、马来西亚、印尼、南非与墨西哥本回合都实际尝试连接，均未找到浏览器可读的公开数据源，因此只有 GDACS——GDACS 是事件的发布，并非各国的警报本身，没有事件的国家不等于没有警报。本显示仅供参考，实际请依官方机关的发布。",   /* world-packs.js (#R271) */
+    'MET Norway, alerts with their own polygons.': "MET Norway——以各警报自身的范围绘制。",   /* world-packs.js (#R271) */
+    'Norway — MET Norway': "挪威 — MET Norway",   /* world-packs.js (#R271) */
     'Nothing is drawn — this is a failed query, not an industry with no companies.': "没有绘制任何内容 — 这是查询失败，并不代表这个产业没有企业。",   /* industry-web.js */
     'Nothing is highlighted yet — name the countries or regions': "目前没有标示任何项目 — 请指定国家或地区",   /* atlas-console.js */
     'nothing overtopping': "没有溢流",   /* atlas-console.js */

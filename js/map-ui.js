@@ -29,6 +29,38 @@ window.IntMapClearGlyph=function(){
   return '<svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
     +'<path d="M2.6 2.6 L9.4 9.4 M9.4 2.6 L2.6 9.4" fill="none" stroke="currentColor" '
     +'stroke-width="1.6" stroke-linecap="round"/></svg>'; };
+/* ══ ⚠⚠ (#R271) A CLEAR MARK BELONGS TO ITS FIELD, NOT TO THE BOX AROUND IT ══════════════════════
+   「レイヤー検索欄の×の様子がおかしい。不自然な位置の×。」 — #R270 fixed the SHAPE (that half holds:
+   the mark is two SVG strokes now, identical on every platform) and left the placement written in
+   CSS as `top:50%`, which resolves against the POSITIONED ANCESTOR. MEASURED on the built site,
+   desktop, default profile, with a query typed so the button is on screen:
+
+       .lsr-search (the wrapper, and the positioned ancestor)   y = 53   h = 48   centre 77
+       its <input> (the field the mark belongs to)              y = 55   h = 36   centre 73
+       .lsr-clear  (the mark)                                   y = 67   h = 20   centre 77
+
+   Four pixels low, on a 20 px control inside a 36 px field, because the wrapper is twelve pixels
+   taller than the field it wraps. It is not a rounding error and it is not a font: the mark is
+   centred on the wrong box.
+   → It is placed from the FIELD'S OWN offset rectangle — `offsetTop`/`offsetLeft`/`offsetWidth`
+   are measured against the same padding box CSS `top`/`right` are, so the two cannot disagree
+   however the wrapper is padded. Re-measured when the button appears, when the window resizes and
+   whenever the field itself changes size. ONE definition, because there are two search boxes and
+   #R239's standing lesson is a defect fixed in one copy and left in the other. */
+window.IntMapPlaceClear=function(inp,btn,gap){
+  if(!inp||!btn) return function(){};
+  var pad=(typeof gap==='number')?gap:9;
+  function place(){ try{
+    var host=btn.offsetParent; if(!host||!inp.offsetHeight) return;
+    var h=btn.offsetHeight||20;
+    btn.style.top=Math.round(inp.offsetTop+(inp.offsetHeight-h)/2)+'px';
+    btn.style.right=Math.round(host.clientWidth-(inp.offsetLeft+inp.offsetWidth)+pad)+'px';
+    btn.style.transform='none';   /* the CSS fallback centred on the wrapper; the measurement wins */
+  }catch(_){} }
+  place();
+  try{ window.addEventListener('resize',place); }catch(_){}
+  try{ if(window.ResizeObserver){ var ro=new ResizeObserver(place); ro.observe(inp); } }catch(_){}
+  return place; };
 
 window.IntMapModules.layerRegistry=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -827,8 +859,11 @@ window.IntMapModules.layerSidebar=function(HOST){
       const b=document.createElement('button'); b.type='button'; b.className='lsr-clear'; b.innerHTML=window.IntMapClearGlyph();
       const lbl=()=>T('Clear search','検索をクリア','Suche leeren','Очистить поиск','Borrar búsqueda');
       b.title=lbl(); b.setAttribute('aria-label',lbl());
-      const sync=()=>{ b.setAttribute('data-on',inp.value?'1':'0'); };
-      wrap.appendChild(b); sync();
+      wrap.appendChild(b);
+      /* (#R271) the mark is placed from the field, not from the wrapper — see IntMapPlaceClear */
+      const place=window.IntMapPlaceClear(inp,b);
+      const sync=()=>{ b.setAttribute('data-on',inp.value?'1':'0'); if(inp.value) place(); };
+      sync();
       inp.addEventListener('input',sync);
       inp.addEventListener('keydown',e=>{ if(e.key==='Escape'&&inp.value){ inp.value=''; filterTiles(host); sync(); } });
       b.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); inp.value=''; filterTiles(host); sync(); inp.focus(); });

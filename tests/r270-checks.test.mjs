@@ -199,7 +199,14 @@ test('R270 ⑥ the three moved rows are on exactly one shelf each, and it is the
   const where = (id) => Object.keys(groups).filter((g) => groups[g].includes(id));
   assert.deepEqual(where('wbhomicide'), ['lyrGrpSociety'], 'a homicide rate is not a defence layer');
   assert.deepEqual(where('osmemg'), ['lyrGrpHazard'], 'fire and police stations are not health');
-  assert.deepEqual(where('wbfert'), ['lyrGrpSociety'], 'fertility joins the demographic family');
+  /* ⚠ (#R271) …AND THE DEMOGRAPHIC FAMILY MOVED. #R270 sent 合計特殊出生率（世界銀行） to Society &
+     education because that is where the rest of the World-Bank demographic series were; #R271 moved
+     that whole family — 人口増加率・65歳以上・都市・農村・人口密度・難民 — to 人口・経済, where a
+     reader looking for population statistics looks. The property is 「it is with its family」, and it
+     still is; only the family's address changed. */
+  assert.deepEqual(where('wbfert'), ['lyrGrpDemo'], 'fertility joins the demographic family');
+  for (const id of ['wbpopgrow', 'wbaging', 'wburb', 'wbrural', 'wbdensity'])
+    assert.deepEqual(where(id), ['lyrGrpDemo'], id + ' is part of that same family');
   /* ⚠ AND NOTHING MAY BE ON TWO SHELVES: `order.push` MOVES the row, so the second listing wins and
      the first silently loses it (the note by rowFor()). */
   const seen = new Map();
@@ -207,11 +214,16 @@ test('R270 ⑥ the three moved rows are on exactly one shelf each, and it is the
     assert.ok(!seen.has(id), `${id} is on two shelves: ${seen.get(id)} and ${g}`);
     seen.set(id, g);
   }
-  /* the rows named by earlier instructions stay where their reader put them */
-  assert.deepEqual(groups.lyrGrpDemo, ['popgrid', 'gdppc', 'tfr', 'hdi', 'dem', 'cpi', 'lifeexp', 'energy'],
-    '#R233’s seven plus #R254’s energy mix must be untouched');
-  for (const id of ['aurora', 'nightsat']) {
-    assert.ok(groups.lyrGrpHazard.includes(id), `${id} stays under 「災害・夜空 / Hazards & night sky」`);
+  /* ⚠ (#R271) THE ROWS NAMED BY EARLIER INSTRUCTIONS ARE STILL CURATED, ON A DIFFERENT SHELF.
+     #R270 wrote 「say the word and they move」 about 民主主義指数 / 汚職指標 / 平均寿命; the word
+     arrived (「大規模にレイヤーカテゴリ分類を再編しろ」) and they moved to the shelf their own subject
+     names. オーロラ予測 went to 宇宙・軌道 and 夜間光 to 人口・経済, and with both gone the heading
+     no longer says 「夜空」 — it is 「災害・緊急」 in all nine locale files now. What survives is the
+     property: none of them fell back into Beta / Others, and none is on two shelves. */
+  for (const id of ['popgrid', 'gdppc', 'tfr', 'hdi', 'dem', 'cpi', 'lifeexp', 'energy', 'aurora', 'nightsat']) {
+    const w = where(id);
+    assert.equal(w.length, 1, id + ' must be on exactly one shelf');
+    assert.ok(!/Others|Beta/i.test(w[0]), id + ' fell back into ' + w[0]);
   }
 });
 
@@ -281,11 +293,16 @@ test('R270 ⑧ the GDACS wash has its own colours and cannot be read as an issue
 
 test('R270 ⑧ a country whose agency draws areas is never washed as a whole country', () => {
   const s = codeOnly(read('js/world-packs.js'));
-  const m = /const GEOM_FEEDS=\{([^}]*)\}/.exec(s);
-  assert.ok(m, 'the polygon-publishing feeds must be named');
-  const geom = m[1].split(',').map((x) => x.split(':')[0].trim()).filter(Boolean).sort();
-  assert.deepEqual(geom, ['eccc', 'inmet', 'jma', 'nws'],
-    'exactly the four feeds whose loaders push geometry');
+  /* ⚠⚠ (#R271) THE LIST OF THOSE COUNTRIES IS NO LONGER WRITTEN DOWN, AND THAT IS THE POINT.
+     #R270 kept a hand-written `GEOM_FEEDS={jma,nws,eccc,inmet}`; four more feeds started publishing
+     shapes this round (DWD, MET Norway, MeteoAlarm-via-NUTS, and the province/state resolvers), and
+     a hand-written table would have been wrong the moment they did. `drawnISO` is rebuilt from the
+     features that actually reached the source on every publish, so the property #R270 asserted —
+     「a country whose own units are on the map is never also painted whole」 — is now a measurement
+     rather than a list. */
+  assert.ok(!/const GEOM_FEEDS=\{/.test(s), 'the hand-written table must be gone, not extended');
+  assert.match(s, /drawnISO/, 'the drawn set must be derived from the published features');
+  assert.match(s, /const drawsAreas=\(c\)=>!!drawnISO\[c\]/, 'drawsAreas asks the map');
   const wi = s.indexOf('function washTier(c){');
   assert.ok(wi > 0, 'washTier() must exist');
   const w = [null, s.slice(wi, s.indexOf('function paintCountries', wi))];

@@ -296,7 +296,9 @@ window.IntMapModules.layerSearch=function(HOST){
         const inp=box.querySelector('input'), clr=box.querySelector('.ls-clear');
         const ph=()=>window.IntMapLang.t(HOST.lang,"Search layers…","レイヤーを検索…","Ebenen suchen…","Поиск слоёв…","Buscar capas…");
         const cl=()=>window.IntMapLang.t(HOST.lang,"Clear search","検索をクリア","Suche leeren","Очистить поиск","Borrar búsqueda");
-        const sync=()=>{ clr.style.display=inp.value?'flex':'none'; };
+        /* (#R271) …and so does this one: one helper, both boxes (see js/map-ui.js) */
+        const place=window.IntMapPlaceClear(inp,clr);
+        const sync=()=>{ clr.style.display=inp.value?'flex':'none'; if(inp.value) place(); };
         inp.placeholder=ph(); clr.title=cl(); clr.setAttribute('aria-label',cl());
         inp.addEventListener('input',()=>{ filter(inp.value); sync(); });
         inp.addEventListener('click',e=>e.stopPropagation());
