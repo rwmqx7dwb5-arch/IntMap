@@ -9,17 +9,24 @@
   this and what to report; this file owns HOW, and it is the only implementation.
 
   WHAT IT DOES
-    1. Finds the IntMap backup USB — by its volume label first, and only by
+    1. Finds the MASTER working directory — the OneDrive checkout — and refuses to
+       mirror anything else. It is never hard-coded: `git rev-parse --git-common-dir`
+       names the main repository's .git from any worktree and its parent IS the
+       master. (#R282: OneDrive sat fifteen commits behind while rounds merged and
+       deployed; a mirror of a temp worktree is not a backup of the master.)
+    2. Finds the IntMap backup USB — by its volume label first, and only by
        "there is exactly one writable removable drive" as a fallback, which then
        stamps the label file so the next run is unambiguous.
-    2. Mirrors the repository's tracked tree (HEAD) onto the USB ROOT, one way.
-    3. Verifies by re-walking both sides and comparing SHA-256, not by trusting
+    3. Mirrors the MASTER's tracked tree (HEAD) onto the USB ROOT, one way.
+    4. Verifies by re-walking both sides and comparing SHA-256, not by trusting
        that the copy loop returned without throwing.
-    4. Records the timestamp OUTSIDE the repository, and only on success.
+    5. Records the timestamp OUTSIDE the repository, and only on success.
 
   INVARIANTS — every one of these has a reason, and none of them is negotiable:
-    · ONE WAY. PC → USB. Nothing is ever read from the USB as a work source and
+    · ONE WAY. MASTER → USB. Nothing is ever read from the USB as a work source and
       nothing is copied back.
+    · THE SOURCE IS THE MASTER, and it has to BE the merged state first — the script
+      runs `master-sync.mjs --check` and skips rather than mirroring a stale master.
     · NEVER GUESS THE DRIVE. Two candidates and no label ⇒ skip, and say so. A
       mirror written to the wrong disk deletes whatever was there.
     · REMOVABLE ONLY. The system drive, OneDrive and network drives are refused
@@ -48,7 +55,15 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$Repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+
+# ── the MASTER working directory, derived the same way scripts/master-sync.mjs derives it ──
+# --git-common-dir names the MAIN repository's .git from any worktree; its parent is the master
+# checkout. Hard-coding the path would break the moment the checkout moves; running this from a
+# temp worktree and mirroring THAT is the defect #R282 fixed.
+$Here = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$common = & git -C $Here rev-parse --path-format=absolute --git-common-dir 2>$null
+if ($LASTEXITCODE -ne 0 -or -not $common) { Write-Host 'not inside a git repository'; Write-Host 'RESULT failed no-repo'; exit 1 }
+$Repo = (Resolve-Path (Split-Path ($common -replace '/', '\') -Parent)).Path
 $IdFile = '.intmap-backup-id.json'
 # Directories the VOLUME owns, not the mirror. Matched on the FIRST path segment only, so a
 # directory with one of these names inside the repository would still be treated as content.
@@ -243,8 +258,16 @@ if ($null -eq $drive) {
 }
 Say ("USB: {0} ({1})" -f $drive.Root, ($(if ($drive.VolName) { $drive.VolName } else { 'no label' })))
 
+# ⚠ THE MASTER HAS TO BE THE MERGED STATE. Mirroring a master that is behind origin/main writes
+# a backup of work that is already superseded — and does it while reporting success.
+& node (Join-Path $Repo 'scripts/master-sync.mjs') --check | Out-Null
+if ($LASTEXITCODE -ne 0) {
+  Say 'The master copy is not the merged state. Run `npm run master:sync` first (CLAUDE.md §5).'
+  Result 'skipped' 'master-not-synced'
+  exit 0
+}
 $files = Get-SourceFiles
-Say ("repository: {0} tracked files at HEAD" -f $files.Count)
+Say ("master: {0} · {1} tracked files at HEAD" -f $Repo, $files.Count)
 
 $attempt = 0
 while ($true) {

@@ -709,7 +709,7 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
 | 稼働監視・アラート | [`docs/MONITORING.md`](docs/MONITORING.md) |
 | 障害対応（サイト・DB・鍵） | [`docs/INCIDENT-RESPONSE.md`](docs/INCIDENT-RESPONSE.md) |
 | CI／検査スクリプトのファイル一覧 | [`docs/FILES.md`](docs/FILES.md) §3.12 |
-| **作業終了処理**（commit / push → USB への完全ミラーと検証） | [`CLAUDE.md`](CLAUDE.md) §11 ＋ `scripts/backup-usb.ps1` |
+| **作業終了処理**（commit / push → 原本の最新化 → USB への完全ミラーと検証） | [`CLAUDE.md`](CLAUDE.md) §11 ＋ `scripts/master-sync.mjs` ＋ `scripts/backup-usb.ps1` |
 
 ### 15.2 実行
 

@@ -34,7 +34,9 @@
 - **変更は加算的・その場で。** Keep changes additive and in-place. Don't rewrite working subsystems wholesale.
 - **作業は branch → PR → CI → squash merge。** `main` へ直接 push しない。
   本番は `main` への merge ごとに **GitHub Actions がビルドして GitHub Pages へ配信**する
-  （配信されるのは `dist/`。リポジトリのソースツリーではない）。手順は `docs/RELEASE.md`。
+  （公開されるのは `dist/`。リポジトリのソースツリーではない）。手順は `docs/RELEASE.md`。
+  ⚠ **OneDrive（`C:\Users\gyuuk\OneDrive\IntMap`）は原本の作業ディレクトリであって、
+  公開元ではない**——`CLAUDE.md` §6。merge のあとは原本も最新化する（§5 の最終工程）。
 - **既定のレンダラは MapLibre GL。Cesium は設定で選べる第2エンジン**（設定 ▸ 地図の動作 ▸ 地図エンジン）。
   MapLibre is the default renderer; Cesium is a second engine the user can select. どちらも消さない。
   ⚠ レンダラの名を出してよいファイルは `js/geo-engine.js` だけ（`npm run check:engine`）。

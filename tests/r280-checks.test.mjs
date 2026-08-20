@@ -259,6 +259,9 @@ test('R280 ⑧ the backup procedure lives in one place and keeps its invariants'
   assert.match(ps, /DriveType\s*=\s*2/, 'the removable-only guard is gone — a mirror could target the system disk');
   assert.match(ps, /SHA256/i, 'verification no longer hashes — a copy that returned is not a copy that is correct');
   assert.match(ps, /INTMAP-BACKUP/, 'the volume label the drive is identified by is gone');
+  /* (#R282 ⟂ #R280) the SOURCE is the master copy, and it has to be the merged state first */
+  assert.match(ps, /--git-common-dir/, 'the script no longer derives the master copy — it would mirror whichever worktree ran it');
+  assert.ok(/master-sync\.mjs[\s\S]{0,80}--check/.test(ps), 'the script no longer refuses a master that is behind origin/main');
   assert.match(ps, /AMBIGUOUS/, 'the refuse-to-guess path is gone');
   assert.match(ps, /RESULT /, 'the machine-readable result line is gone');
   /* CLAUDE.md keeps WHEN, and stays the only place that states the frequency */

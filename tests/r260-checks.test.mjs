@@ -113,8 +113,15 @@ test('#R260 ③ the finish report has a line for each outcome', () => {
 test('#R260 ④ the mirror is one-way, PC → USB', () => {
   const md = read('CLAUDE.md');
   const ps = read('scripts/backup-usb.ps1');
-  assert.ok(md.includes('PC → USB') && /ONE WAY\. PC → USB/.test(ps),
+  /* ⚠ THE ASSERTION IS THE PROPERTY, NOT THE WORDING. This read «PC 上の IntMap → USB» literally
+     until #R282, when the source had to be named more precisely: 「PC 上の IntMap」 was ambiguous
+     between the master copy and a temp worktree, and mirroring the worktree is exactly the defect
+     that round fixed. #R280 then moved the mechanism into scripts/backup-usb.ps1, so the direction
+     is now stated in two places and BOTH have to keep saying it. */
+  assert.match(md, /(原本|PC 上の IntMap)\s*→\s*USB/,
     'the sync direction is no longer written down — a "sync" that can run backwards is not a backup');
+  assert.ok(!/USB\s*→\s*(原本|PC)/.test(md), 'CLAUDE.md now describes a sync that runs back from the USB');
+  assert.match(ps, /ONE WAY\. .*→ USB/, 'the script no longer states the direction it enforces');
   assert.ok(md.includes('USB 上のファイルを作業元にしない'),
     'the ban on working from the USB copy is gone');
 });

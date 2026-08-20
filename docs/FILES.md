@@ -336,6 +336,9 @@ scripts/
   doc-facts.mjs                   **文書間の固定事実の照合**（§15.5）
   atlas-catalog.mjs               **Atlas の操作カタログのゲート**（`PRODUCT.md` §3.4・ディスパッチャ ⇄ SYS）
   arch-files-check.mjs            Architecture §3 と js/ の突き合わせ
+  master-sync.mjs                 **原本（main worktree）が merge 後の状態か**を見る（`npm run master:check` / `master:sync`）。
+                                  原本の場所はハードコードせず `git rev-parse --git-common-dir` から導出する。
+                                  ⚠ `npm test` には入れない——CI のチェックアウトは detached な PR ref。
   engine-coupling.mjs             レンダラ脱依存のゲート
   i18n-*.mjs                      翻訳の被覆と形の監査（§10）
   build-*.mjs                     data/ の生成（実行時には不要）

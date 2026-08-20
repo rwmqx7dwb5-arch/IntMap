@@ -117,8 +117,19 @@ Bash から直接起動しない。
 ```
 調査 → 再現 → 実装 → ドキュメント更新 → テスト → commit → push → PR
      → CI 確認および修正 → squash merge → production deployment
-     → production verification → branch deletion
+     → production verification → branch deletion → 原本 (OneDrive) の最新化
 ```
+
+**最後の工程は省略できない。** 原本は `C:\Users\gyuuk\OneDrive\IntMap`（§6）。merge した内容が
+原本の作業ディレクトリに**実際に書き込まれて**初めて、その作業は手元で完了したことになる。
+
+```bash
+node scripts/master-sync.mjs --sync    # fetch して原本を origin/main へ早送り
+node scripts/master-sync.mjs --check   # 原本が merge 後の状態でなければ exit 1
+```
+
+原本の場所はハードコードしていない。`git rev-parse --git-common-dir` から導出するので、
+**どの worktree から実行しても原本を指す。**
 
 **変更した Edge Function は本番環境へデプロイする。** 例:
 
@@ -143,12 +154,25 @@ import した関数の中に CLI がバンドルする。`[functions._shared]` �
 
 ---
 
-## 6. 並行セッションと Git
+## 6. 原本と、並行セッションと Git
+
+**原本（master copy）は `C:\Users\gyuuk\OneDrive\IntMap` である。**
+これはリポジトリの main worktree であり、OneDrive が同期している唯一の作業ディレクトリ。
+GitHub は共有と CI のための remote、USB は §11 のバックアップであって、**どちらも原本ではない。**
+
+- **作業は原則として原本の中で行う。** 原本が空いている（他セッションが使っていない）なら、
+  `C:\Users\gyuuk\OneDrive\IntMap` で専用 branch を切って作業すること。
+- **`%LOCALAPPDATA%\Temp` 以下の worktree は、原本が他セッションに占有されている場合の回避策**
+  であって既定の作業場所ではない。temp の worktree は OneDrive の外にあるため、そこで完結した
+  作業は**原本に 1 バイトも書き込まない。**
+- **temp の worktree を使った場合でも、§5 の最終工程で原本を merge 後の状態にする。**
+  `node scripts/master-sync.mjs --sync`。これを行わない限り、その作業は原本に存在しない。
 
 複数の Claude Code セッションが同時に実行されている場合:
 
-- **各セッションは必ず独立した worktree および専用 branch を使用する。**
-  セッション間で同一の working directory を共有してはならない。
+- **各セッションは必ず専用 branch を使用する。**
+  同一 branch を複数セッションで共有してはならない。原本が既に他セッションに使われている場合は、
+  そのセッションの作業を妨げないよう独立した worktree を使う。
 - **別セッションの未コミット変更・branch・worktree・stash その他の作業状態を、
   変更・削除・reset・clean・force-push・上書きしてはならない。**
 - 編集前・push 前・merge 前には**最新の Git 状態を確認**し、必要に応じて `main` の最新更新を取り込む。
@@ -158,8 +182,13 @@ import した関数の中に CLI がバンドルする。`[functions._shared]` �
 - **競合その他の問題を安全かつ明確に解決できない場合は、必ず確認を求める。**
   問題解決後はワークフローを再開し、可能な限り完了まで実行する。
 
-> 実務上の注意: 主 working directory（`C:\Users\gyuuk\OneDrive\IntMap`）が他セッションの
-> 作業中である場合がある。着手時に `git status` と `git worktree list` を必ず見ること。
+> 実務上の注意: 原本（`C:\Users\gyuuk\OneDrive\IntMap`）が他セッションの作業中である場合がある。
+> 着手時に `git status` と `git worktree list` を必ず見ること。
+>
+> ⚠ #R282 の実測: この規程が worktree を既定にしていた間に、原本は origin/main より
+> **15 コミット・159 ファイル**遅れていた（R272〜R279 が丸ごと欠落）。OneDrive の同期エンジンは
+> 正常に動いていた——**原本に何も書き込まれていなかった**だけ。GitHub と USB は各ラウンドで
+> 更新され、原本だけが「どの工程も責任を持たない写し」になっていた。
 
 ---
 
@@ -260,7 +289,12 @@ pwsh -File scripts/backup-usb.ps1
 
 ### 11.3 スクリプトが守っていること（**書き換えるときも壊さないこと**）
 
-- **同期方向は `PC → USB` の一方向のみ。** USB 上のファイルを作業元にしない。逆同期しない。
+- ⚠ **ミラー元は原本（`C:\Users\gyuuk\OneDrive\IntMap`）であって、temp の worktree ではない。**
+  スクリプトは原本の場所を**ハードコードせず** `git rev-parse --git-common-dir` から導出するので、
+  どの worktree から実行しても原本を見る。§5 の最終工程で原本を最新化し、
+  `node scripts/master-sync.mjs --check` が exit 0 を返してから同期すること
+  （原本が merge 後の状態でなければ、スクリプトは同期せず `skipped` で終わる）。
+- **同期方向は `原本 → USB` の一方向のみ。** USB 上のファイルを作業元にしない。逆同期しない。
 - **USB のルートが IntMap の完全ミラー**になる。中身は **Git HEAD の追跡対象ファイル**
   （＝サイトを再現するのに必要なものすべて。`node_modules` / `.git` / `dist` / キャッシュは入らない）。
   新規は作成、更新は上書き、**リポジトリに無いものは USB からも削除**する。
@@ -268,7 +302,8 @@ pwsh -File scripts/backup-usb.ps1
 - **ドライブは推測しない。** ボリュームラベル `INTMAP-BACKUP`（または上記の識別ファイル）で特定する。
   ラベル付きが無く、書き込み可能なリムーバブルが**ちょうど1台**のときだけ、それを採用してラベルを刻む。
   候補が複数あって一意に決まらない場合は**スキップして報告する**。
-  **内蔵 SSD・システムドライブ・OneDrive・ネットワークドライブは対象外**（DriveType で除外）。
+  **バックアップ先としては、内蔵 SSD・システムドライブ・OneDrive・ネットワークドライブを対象外**
+  にする（DriveType で除外。⚠ OneDrive はミラーの**元**であって、**先**ではない）。
 - **コピーが成功したことを、バックアップが成功したことにしない。** 同期後に両側を再帰的に歩き直し、
   相対パス・存在・SHA-256 が**完全に一致することを確認する**。一致した場合のみ成功とする。
 - **失敗したら原因を調べ、再同期・再検証する**（既定3回）。それでも駄目なら**無限ループにせず**失敗として終える。
