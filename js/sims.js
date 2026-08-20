@@ -52,7 +52,13 @@ window.IntMapModules.radiation=function(HOST){
       {min:185,c:'#ff9f0a',n:LA('Relocation right / monitoring','移住権・要監視','Umsiedlungsrecht','Право на отселение','Reubicación'),mSv:'0.5–1'},
       {min:37,c:'#ffd60a',n:LA('Enhanced monitoring','要観察','Verstärkte Überwachung','Усиленный контроль','Vigilancia'),mSv:'0.1–0.5'},
       {min:2,c:'#b7f7b0',n:LA('Trace deposition','微量沈着','Spuren','Следы','Trazas'),mSv:'<0.1'} ];
-    async function fetchJSON(url){ const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
+    async function fetchJSON(url){
+      /* (#R276) An Open-Meteo URL goes through the app's ONE guarded client — cache, request
+         coalescing and the daily-quota circuit breaker (js/wx-source.js). A proxy ladder in front of
+         a 429 is not a retry, it is the same exhausted quota asked three more times through three
+         more hops, which is what kept it at zero all day (#R183). */
+      try{ if(window.IntMapWx&&window.IntMapWx.isOpenMeteo(url)) return await window.IntMapWx.guardedJSON(url,300000); }catch(_){}
+      const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
       for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok) return await r.json(); }catch(_){} } return null; }
     function ensureLayers(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
       GE().layers.addSource(DEP,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
@@ -881,7 +887,7 @@ window.IntMapModules.disaster=function(HOST){
        concentration; reach grows with the time step. Uses live Open-Meteo surface wind at the source. */
     let _wind=null, _windKey='';
     async function getWind(){ const key=origin.lng.toFixed(2)+','+origin.lat.toFixed(2); if(key===_windKey&&_wind) return _wind; _windKey=key;
-      try{ const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+origin.lat.toFixed(3)+'&longitude='+origin.lng.toFixed(3)+'&current=wind_speed_10m,wind_direction_10m'); const j=await r.json(); const c=j.current||{}; _wind={spd:+c.wind_speed_10m||12,dir:+c.wind_direction_10m||270}; }catch(_){ _wind={spd:12,dir:270}; }
+      try{ const j=await window.IntMapWx.guardedJSON('https://api.open-meteo.com/v1/forecast?latitude='+origin.lat.toFixed(3)+'&longitude='+origin.lng.toFixed(3)+'&current=wind_speed_10m,wind_direction_10m',300000); const c=(j&&j.current)||{}; _wind={spd:+c.wind_speed_10m||12,dir:+c.wind_direction_10m||270}; }catch(_){ _wind={spd:12,dir:270}; }
       return _wind; }
     function dest(lng,lat,brgDeg,dkm){ const dr=dkm/6371, br=brgDeg*Math.PI/180, la=lat*Math.PI/180, lo=lng*Math.PI/180; const la2=Math.asin(Math.sin(la)*Math.cos(dr)+Math.cos(la)*Math.sin(dr)*Math.cos(br)); const lo2=lo+Math.atan2(Math.sin(br)*Math.sin(dr)*Math.cos(la),Math.cos(dr)-Math.sin(la)*Math.sin(la2)); return [lo2*180/Math.PI,la2*180/Math.PI]; }
     async function plume(){ const w=await getWind(); const toward=(w.dir+180)%360;   /* wind blows FROM dir → plume goes toward dir+180 */

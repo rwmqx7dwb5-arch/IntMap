@@ -153,13 +153,14 @@
     var k = String(sym).replace(/_(day|night|polartwilight)$/, '');
     return (METSYM[k] != null) ? METSYM[k] : 3;
   }
-  function metNo(lat, lng) {
+  function metNo(lat, lng, ttlMs) {
     var url = 'https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=' + lat.toFixed(3) + '&lon=' + lng.toFixed(3);
     /* MET asks callers to identify themselves with a User-Agent; a browser sets its own and will not
        let a page override it, so this is a plain fetch — the same call js/weather.js has been making
        since #R72. Their 20-minute cache guidance is honoured by the TTL below. */
+    var ttl = (ttlMs == null) ? 600000 : ttlMs;
     var hit = cache[url];
-    if (hit && (Date.now() - hit.t) < 600000) return Promise.resolve(hit.j);
+    if (hit && (Date.now() - hit.t) < ttl) return Promise.resolve(hit.j);
     if (inflight[url]) return inflight[url];
     var p = fetch(url).then(function (r) {
       if (!r.ok) return null;
@@ -179,6 +180,9 @@
         wind_speed_10m: (i0.wind_speed != null) ? i0.wind_speed * 3.6 : null,   /* m/s → km/h, Open-Meteo's default unit */
         wind_direction_10m: i0.wind_from_direction,
         surface_pressure: i0.air_pressure_at_sea_level,
+        /* MET publishes only the sea-level value, so it is both fields — stated rather than implied */
+        pressure_msl: i0.air_pressure_at_sea_level,
+        wind_gusts_10m: (i0.wind_speed_of_gust != null) ? i0.wind_speed_of_gust * 3.6 : null,
         /* NOT `uv_index`. MET publishes the CLEAR-SKY index, which ignores cloud and is therefore an
            upper bound on the all-sky number Open-Meteo returns. Putting it in the same field would
            silently change what the widget's number means. */
@@ -245,6 +249,10 @@
         return time.length ? { time: time, wind_speed_10m: ws, wind_direction_10m: wd,
           wind_gusts_10m: wg, temperature_2m: t2, _windLevelM: 10 } : null;
       })();
+      /* ⚠ NO `model` FIELD HERE, DELIBERATELY. MET Norway's Locationforecast blends whichever of its
+         products covers the point (MET Nordic inside the Nordic domain, ECMWF elsewhere) and does not
+         say which in the response. Naming one would be a guess printed as a fact, which is the defect
+         「Open-Meteo GFS」 was. The service name is what we know, so the service name is what shows. */
       var out = { current: current, daily: daily, hourly: hourly, _src: 'MET Norway' };
       cache[url] = { t: Date.now(), j: out };
       return out;
@@ -264,18 +272,34 @@
     var cur = ['temperature_2m', 'weather_code', 'wind_speed_10m', 'wind_direction_10m', 'relative_humidity_2m', 'apparent_temperature', 'precipitation', 'surface_pressure', 'is_day'];
     var dly = ['weather_code', 'temperature_2m_max', 'temperature_2m_min', 'precipitation_probability_max', 'sunrise', 'sunset', 'daylight_duration'];
     if (wantUV) { cur.push('uv_index'); dly.push('uv_index_max'); }
+    /* (#R276) 「突風、海面更正気圧、モデル名も表示し」 — the gust and the MSL pressure are separate
+       fields from the ones above: `surface_pressure` is the pressure AT THE STATION'S ALTITUDE, so on
+       a mountain it reads 200 hPa low and is not the number a synoptic chart means. Asked for only
+       when a caller wants them, so the widget board's URL — and therefore its cache key — is
+       unchanged. */
+    if (opt.gusts !== false) { cur.push('wind_gusts_10m'); cur.push('pressure_msl'); }
     var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + (+lat).toFixed(3) + '&longitude=' + (+lng).toFixed(3) +
       '&current=' + cur.join(',') + '&daily=' + dly.join(',') + '&forecast_days=' + days + '&timezone=auto&wind_speed_unit=kmh';
 
+    /* ⚠ (#R276) A REFRESH BUTTON THAT CANNOT REFRESH IS A LIE. `ttl: 0` has to reach BOTH ladders or
+       the ⟳ falls through to a ten-minute MET Norway cache and still shows the same numbers. */
+    var ttl = (opt.ttl == null) ? 300000 : opt.ttl;
     var viaMet = function () {
-      return metNo(+lat, +lng).then(function (m) { return m || null; });
+      return metNo(+lat, +lng, ttl).then(function (m) { return m || null; });
     };
     /* Breaker open → do not even ask. This is the line that lets the quota recover. */
     if (_open()) return viaMet();
-    return guardedJSON(url, opt.ttl == null ? 300000 : opt.ttl).then(function (j) {
+    return guardedJSON(url, ttl).then(function (j) {
       if (j && j.current && j.current.temperature_2m != null) {
         j._src = 'Open-Meteo';
+        /* Open-Meteo's forecast endpoint with no `models=` parameter is the BEST-MATCH blend of the
+           models it holds for this point — it is NOT GFS, which is what this app printed under its
+           wind legend for eleven rounds. Naming it here is what lets every caller print the truth
+           without each of them having to know the API's default. */
+        if (!j.model) j.model = 'best_match';
         if (j.current.uv_index_clear_sky === undefined) j.current.uv_index_clear_sky = null;
+        if (j.current.wind_gusts_10m === undefined) j.current.wind_gusts_10m = null;
+        if (j.current.pressure_msl === undefined) j.current.pressure_msl = null;
         return j;
       }
       return viaMet();
@@ -335,6 +359,12 @@
   window.IntMapWx = {
     point: point,
     guardedJSON: guardedJSON,
+    /* (#R276) 「Open-Meteoへの直接fetchを整理し、既存のIntMapWxによるキャッシュ・重複排除・429対策を
+       迂回しない。」 Published so a caller can ROUTE by host instead of each one deciding for itself —
+       and by HOST, never by substring: `url.indexOf('open-meteo.com')` also matches
+       https://evil.example/?x=open-meteo.com, and the answer decides whether a day-long circuit
+       breaker trips. */
+    isOpenMeteo: isOpenMeteo,
     metNo: metNo,
     sunTimes: sunTimes,
     /* Diagnostics — Atlas, the tests and the widget's own "why is this a dash" line read these

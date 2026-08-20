@@ -617,11 +617,48 @@ window.IntMapModules.mapReadout=function(HOST){
   }
   /* Elevation/depth respects the measurement-units setting (#R13c): imperial → feet, both → "m (ft)". */
   function fmtElevVal(e){ const m=Math.round(e), ft=Math.round(e*3.28084); const um=(typeof HOST.unitMode!=='undefined')?HOST.unitMode:'both'; return um==='imperial'?(ft.toLocaleString()+' ft'):um==='metric'?(m.toLocaleString()+' m'):(m.toLocaleString()+' m ('+ft.toLocaleString()+' ft)'); }
-  /* Live weather-layer value at the cursor (#12): Köppen is instant (pixel sample); SST / air-temp
-     are fetched seamlessly from Open-Meteo (debounced + cached per ~0.1°). */
-  let _wxTimer=null;
-const _wxCache=new Map();
+  /* Live weather-layer value at the cursor: Köppen is an instant pixel sample, an ECMWF raster is an
+     instant lookup in the field it was drawn from, and a NASA GIBS raster names its dataset and date.
+     ⚠ (#R276) THE DEBOUNCED PER-CELL Open-Meteo FETCH AND ITS 0.25° CACHE ARE GONE. They existed to
+     hide the latency of asking a live API for a number that did not belong to the layer on screen —
+     the defect, not the latency, was the problem. Nothing here touches the network any more. */
   function activeWxLayer(){ const on=id=>{ const cb=document.getElementById('dl-'+id); return cb&&cb.checked; }; return on('sst')?'sst':on('temp')?'temp':on('climate')?'climate':null; }
+  /* ══ (#R276) THE NUMBER UNDER THE CURSOR BELONGS TO THE PICTURE UNDER THE CURSOR ═══════════════
+     「地図上の地点値は、表示中のレイヤー・モデル・時刻と同じデータから取得する。NASA過去レイヤー表示中に
+       Open-Meteo現在値を返す現状は禁止する。」
+
+     What this used to do, MEASURED: with the NASA `temp` layer on — MERRA-2 monthly-mean 2 m air
+     temperature for a date chosen in the layer's own date picker, which defaults to two days ago and
+     can be set to any past month — it fetched `api.open-meteo.com/…&current=temperature_2m` and
+     printed that. A live reading, to three significant figures, sitting under a monthly mean from
+     another dataset for another time. The same for `sst`, against a GHRSST composite.
+
+     Two rules now:
+       ① if an ECMWF raster is on, the value comes from THAT variable, THAT model run and THAT valid
+          time — the identical Float32Array the tiles were rendered from (IntMapECMWF.valueNow), so
+          the readout cannot disagree with the colour it is standing on;
+       ② a GIBS layer has no point-value service, so it names its dataset and the date it is showing
+          and stops there. A blank is honest; a number from somewhere else is not. */
+  const _GIBS_WHEN={
+    temp:()=>L('MERRA-2 monthly mean','MERRA-2 月平均','MERRA-2 Monatsmittel','MERRA-2 среднемесячное','MERRA-2 media mensual'),
+    sst:()=>L('GHRSST MUR L4','GHRSST MUR L4','GHRSST MUR L4','GHRSST MUR L4','GHRSST MUR L4')
+  };
+  function ecmwfReadout(lng,lat){
+    try{
+      const EC=window.IntMapECMWF, W=window.IntMapWeatherEC;
+      if(!EC||!W||!W.activeVariable) return null;
+      const cfg=W.activeVariable(); if(!cfg) return null;
+      const v=EC.valueNow(cfg.variable,lat,lng);
+      if(v==null) return null;
+      const lg=EC.legend(cfg.variable,true);
+      let out, unit=(lg&&lg.unit)||'';
+      if(cfg.kind==='temp'){ const um=window.imUnitTemp||'both';
+        out = um==='f' ? (v*9/5+32).toFixed(1)+'°F' : um==='c' ? v.toFixed(1)+'°C' : v.toFixed(1)+'°C ('+(v*9/5+32).toFixed(1)+'°F)'; }
+      else if(cfg.kind==='wind'){ out=(window.fmtWindSpeed?window.fmtWindSpeed(v):(v.toFixed(1)+' m/s')); }
+      else { out=(Math.abs(v)>=100?Math.round(v):(Math.round(v*10)/10))+(unit?(' '+unit):''); }
+      return out+' · '+EC.fmt(EC.validTime(),{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric'});
+    }catch(_){ return null; }
+  }
   function updateLayerReadout(lng,lat){
     /* ══ (#R211) THE TSUNAMI ANSWER BELONGS ON THE LINE THAT IS ALWAYS THERE ═════════════════════
        「津波シミュレータ — ホバー地点の到達時間と最大波高を座標標高の常時表示欄に」
@@ -662,6 +699,9 @@ const _wxCache=new Map();
           HOST.lastLayerVal=Math.round(v)+' mm'+L('/yr','／年','/Jahr','/год','/año')
             +' · '+(y?String(y):'1981–2010');
           return; } } }catch(_){}
+    /* an ECMWF raster answers for itself, and it takes priority: it is the layer the reader is
+       looking at, and it is the only weather layer in the app that HAS a point value */
+    { const ec=ecmwfReadout(lng,lat); if(ec){ HOST.lastLayerVal=ec; return; } }
     const lyr=activeWxLayer();
     if(!lyr){ /* no weather layer → show the active numeric choropleth's value at the cursor (#R13c) */
       let cv=null; try{ cv=window.choroValueAt&&window.choroValueAt(lng,lat); }catch(_){}
@@ -670,29 +710,15 @@ const _wxCache=new Map();
       /* no leading emoji on the layer value (#34) */
       /* (#R245) one climate-name lookup for the whole app — see window.kName in js/data-layers.js */
       HOST.lastLayerVal = code ? (code+((window.kName&&window.kName(code)!==code)?' · '+window.kName(code):'')) : ''; return; }
-    /* (#R27) Cache on a COARSER 0.25° grid (was 0.1°). SST / air-temp barely change over ~28 km, so a
-       coarser grid means the cursor lands on an ALREADY-cached cell far more often → the value is shown
-       instantly (no fetch) across a whole local area, and far fewer network calls fire. This is the main
-       "数値が変わるのが遅い" lever — the per-cell fetch was the only real latency. */
-    const q=(v)=>(Math.round(v*4)/4);                        /* snap to 0.25° */
-    const qla=q(lat), qlo=q(lng), key=lyr+':'+qla.toFixed(2)+','+qlo.toFixed(2);
-    if(_wxCache.has(key)){ HOST.lastLayerVal=_wxCache.get(key); return; }
-    /* (#R25/#R27) Show the nearest already-cached neighbor INSTANTLY so the readout tracks the cursor with
-       no blank/stale gap; the exact fetch refines it below. Tolerance widened (0.6°→1.5°) so the readout
-       stays populated while panning into a new region. */
-    try{ let best=null,bd=1e9;
-      for(const k of _wxCache.keys()){ if(k.slice(0,key.indexOf(':'))!==lyr) continue; const m=k.split(':')[1].split(','); const d=Math.abs(+m[0]-qla)+Math.abs(+m[1]-qlo); if(d<bd){ bd=d; best=k; } }
-      if(best&&bd<=1.5){ HOST.lastLayerVal=_wxCache.get(best); } }catch(_){}
-    clearTimeout(_wxTimer);
-    _wxTimer=setTimeout(async()=>{
-      try{
-        let url,pick;   /* fetch the CELL CENTER so the cached value matches the key */
-        if(lyr==='sst'){ url=`https://marine-api.open-meteo.com/v1/marine?latitude=${qla.toFixed(3)}&longitude=${qlo.toFixed(3)}&current=sea_surface_temperature`; pick=j=>j&&j.current&&j.current.sea_surface_temperature; }
-        else { url=`https://api.open-meteo.com/v1/forecast?latitude=${qla.toFixed(3)}&longitude=${qlo.toFixed(3)}&current=temperature_2m`; pick=j=>j&&j.current&&j.current.temperature_2m; }
-        const r=await fetch(url); if(!r.ok) return; const j=await r.json(); const v=pick(j);
-        if(typeof v==='number'){ const um=window.imUnitTemp||'both'; const txt = um==='f' ? (v*9/5+32).toFixed(1)+'°F' : um==='c' ? v.toFixed(1)+'°C' : v.toFixed(1)+'°C ('+(v*9/5+32).toFixed(1)+'°F)'; _wxCache.set(key,txt); HOST.lastLayerVal=txt; renderCoordReadout(lng,lat); }   /* unit-aware (#R13c); no leading emoji (#34) */
-      }catch(_){}
-    },30);
+    /* ⚠ NO LIVE FETCH HERE ANY MORE — see the note beside `ecmwfReadout`. A GIBS raster is an image
+       of a dataset for a chosen date; NASA publishes no point-value service for it, so the readout
+       says WHICH dataset and WHICH date the colour under the cursor is from, and nothing more. The
+       exact number for a place and an hour is what the ECMWF layers above are for. */
+    try{
+      const when=(window._imLayerDates&&window._imLayerDates[lyr])||'';
+      const name=_GIBS_WHEN[lyr]?_GIBS_WHEN[lyr]():lyr;
+      HOST.lastLayerVal=name+(when?(' · '+when):'');
+    }catch(_){ HOST.lastLayerVal=''; }
   }
   /* (#R25) Coalesce the per-move readout to ONE animation frame with the LATEST cursor position, so fast
      mouse movement can't build a backlog of heavy updateCoord calls (queryRenderedFeatures + DEM + DOM)
@@ -730,8 +756,11 @@ const _wxCache=new Map();
     const ckey=rLat.toFixed(2)+','+rLng.toFixed(2);
     const set=(txt)=>{ _elevCache.set(ckey,txt); if(seq===HOST._elevSeq){ HOST.lastElev=txt; renderCoordReadout(rLng,rLat); } };
     try{
-      const r=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${rLat.toFixed(4)}&longitude=${rLng.toFixed(4)}`);
-      let e=null; if(r.ok){ const j=await r.json(); e=j&&j.elevation&&j.elevation[0]; }
+      /* (#R276) elevation goes through window.IntMapWx too: it is the same host and the same quota
+         as the weather endpoints, and a cursor sweeping a coastline used to fire one uncached request
+         per 0.01° cell. */
+      const j=await window.IntMapWx.guardedJSON(`https://api.open-meteo.com/v1/elevation?latitude=${rLat.toFixed(4)}&longitude=${rLng.toFixed(4)}`,3600000);
+      let e=null; if(j){ e=j&&j.elevation&&j.elevation[0]; }
       if(typeof e==='number' && e>0.5){ set(HOST.elevText(e)); return; }
       /* At/below sea level → fetch true depth from GEBCO bathymetry. */
       const d=await fetchBathymetry(rLat,rLng);

@@ -144,6 +144,29 @@ window.IntMapModules.dataLayers=function(HOST){
       .data-legend .dl-hint{ color:var(--text-muted); margin-top:5px; font-size:9.5px; }
       /* (#R39) Short "what is this data" explanation for the non-obvious metrics. */
       .data-legend .dl-desc{ color:var(--text-main); opacity:0.82; margin-top:5px; font-size:9.5px; line-height:1.45; border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); padding-top:5px; }
+      /* ══ (#R276) THE NUMERIC WEATHER LEGEND AND ITS FORECAST PLAYER ═══════════════════════════
+         Sized from the SAME declarations the rest of the legend uses (10.5px body, 9.5px hints) — a
+         panel whose inner controls are twice the size of the legend beside it is #R275's report. */
+      .data-legend .ecl-model{ color:var(--text-muted); font-size:9.5px; line-height:1.35; margin:0 0 5px; }
+      .data-legend .ecl-player{ display:flex; gap:3px; justify-content:center; margin:5px 0 3px; }
+      .data-legend .ecl-b, .data-legend .rv-b{ flex:0 0 auto; min-width:22px; height:20px; padding:0 4px; font-size:10.5px; line-height:1; border:1px solid var(--glass-border,rgba(128,128,128,0.2)); border-radius:6px; background:var(--input-bg); color:var(--text-main); cursor:pointer; }
+      .data-legend .ecl-b:hover, .data-legend .rv-b:hover{ background:var(--primary-color); color:#fff; border-color:transparent; }
+      .data-legend .ecl-b[data-act="next"]{ transform:scaleX(1); }
+      .data-legend .ecl-items{ margin-top:6px; }
+      .data-legend .ecl-item{ border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); padding-top:5px; margin-top:5px; }
+      .data-legend .ecl-item:first-child{ border-top:none; padding-top:0; margin-top:0; }
+      .data-legend .ecl-name{ font-weight:600; font-size:10.5px; line-height:1.25; }
+      .data-legend .ecl-unit{ color:var(--text-muted); font-weight:400; }
+      .data-legend .ecl-bar{ height:8px; border-radius:4px; margin:4px 0 1px; border:1px solid rgba(0,0,0,0.1); }
+      .data-legend .ecl-ticks{ position:relative; height:11px; color:var(--text-muted); font-size:9px; }
+      .data-legend .ecl-ticks span{ position:absolute; transform:translateX(-50%); white-space:nowrap; }
+      .data-legend .ecl-ticks span:first-child{ transform:none; } .data-legend .ecl-ticks span:last-child{ transform:translateX(-100%); }
+      .data-legend .ecl-desc{ color:var(--text-main); opacity:0.8; margin-top:3px; font-size:9.5px; line-height:1.4; }
+      .data-legend #ec-validtime, .data-legend #wind-validtime{ color:var(--text-main); font-weight:600; font-size:9.5px; margin-top:3px; text-align:center; }
+      .data-legend .rv-player{ margin:5px 0 2px; }
+      .data-legend .rv-btns{ display:flex; gap:3px; justify-content:center; margin-bottom:3px; }
+      .data-legend .rv-when{ color:var(--text-main); font-weight:600; font-size:9.5px; margin-top:3px; text-align:center; font-variant-numeric:tabular-nums; }
+      .legend-collapsed .ecl-items, .legend-collapsed .ecl-player, .legend-collapsed .ecl-model, .legend-collapsed .rv-player, .legend-collapsed .wind-legend-body{ display:none !important; }
       /* #30 — balanced legend header controls: drag handle (top-left), minimize + close (top-right,
          same size, evenly spaced), and the title padded so it never collides with either side. */
       .koppen-legend h4, .data-legend h4{ padding:0 44px 0 18px !important; min-height:16px; display:flex; align-items:center; }
@@ -483,9 +506,21 @@ window.IntMapModules.dataLayers=function(HOST){
     lgdRadar.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="radar" title="${t('close')}">×</button><h4>${t('lgdRadarTitle')||'Rain rate'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#9bd2ff,#0080ff,#00c800,#ffe000,#ff7800,#ff0000,#c800c8);"></div>
       <div class="dl-scale"><span>${window.IntMapLang.t(HOST.lang,'Light','弱い','Leicht','Слабый','Ligero')}</span><span>${window.IntMapLang.t(HOST.lang,'Heavy','激しい','Stark','Сильный','Fuerte')}</span></div>
-      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'RainViewer live radar (latest frame)','RainViewer 実時間レーダー（最新フレーム）','RainViewer-Echtzeitradar (neuester Frame)','Радар RainViewer в реальном времени (последний кадр)','Radar en vivo RainViewer (último fotograma)')}</div>`;
+      <div class="rv-player">
+        <div class="rv-btns"><button class="rv-b" data-act="first" title="${window.IntMapLang.t(HOST.lang,'Oldest frame','最も古いフレーム','Ältester Frame','Самый старый кадр','Fotograma más antiguo')}">⏮</button><button class="rv-b" data-act="prev" title="${window.IntMapLang.t(HOST.lang,'Previous frame','前のフレーム','Vorheriger Frame','Предыдущий кадр','Fotograma anterior')}">◀</button><button class="rv-b" data-act="play" title="${window.IntMapLang.t(HOST.lang,'Animate','アニメーション','Animieren','Анимация','Animar')}">▶</button><button class="rv-b" data-act="next" title="${window.IntMapLang.t(HOST.lang,'Next frame','次のフレーム','Nächster Frame','Следующий кадр','Fotograma siguiente')}">▶</button><button class="rv-b" data-act="last" title="${window.IntMapLang.t(HOST.lang,'Latest frame','最新フレーム','Neuester Frame','Последний кадр','Último fotograma')}">⏭</button></div>
+        <input type="range" id="rv-time" min="0" max="0" step="1" value="0" style="width:100%;accent-color:var(--primary-color);">
+        <div class="rv-when">—</div>
+      </div>
+      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'RainViewer radar — the last two hours, 10 min apart','RainViewer レーダー — 直近2時間・10分間隔','RainViewer-Radar — die letzten zwei Stunden, 10-Minuten-Schritte','Радар RainViewer — последние два часа с шагом 10 мин','Radar RainViewer — las últimas dos horas, cada 10 min')}</div>`;
     mc.appendChild(lgdRadar);
     lgdRadar.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-radar'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
+    { const box=lgdRadar.querySelector('.rv-player');
+      box.querySelectorAll('.rv-b').forEach(b=>{ b.onclick=()=>{ const P=window._rvPlayer; if(!P) return; const a=b.getAttribute('data-act');
+        if(a==='play'){ P.play(!P.playing()); return; }
+        P.play(false);
+        if(a==='first') P.show(0); else if(a==='last') P.show(P.frames().length-1);
+        else P.step(a==='prev'?-1:1); }; });
+      const sl=box.querySelector('#rv-time'); if(sl) sl.oninput=()=>{ const P=window._rvPlayer; if(!P) return; P.play(false); P.show(+sl.value); }; }
     /* Sea-surface-temperature legend (GHRSST MUR L4) */
     lgdSST=document.createElement('div'); lgdSST.className='data-legend'; lgdSST.id='data-legend-sst'; lgdSST.style.bottom='140px';
     lgdSST.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sst" title="${t('close')}">×</button><h4>${t('lgdSSTTitle')||'Sea-surface temp'}</h4>
@@ -554,21 +589,21 @@ window.IntMapModules.dataLayers=function(HOST){
     window.windUnitFactor=()=>window._windUnitEntry()[2];
     window.windUnitLabel=()=>window._windUnitEntry()[1];
     window.fmtWindSpeed=(ms)=>{ const v=(ms||0)*window.windUnitFactor(); return v.toFixed(v<10?1:0)+' '+window.windUnitLabel(); };
-    const _windGrad='linear-gradient(to right,rgb(16,32,92) 0%,rgb(28,108,184) 7.5%,rgb(40,168,170) 17.5%,rgb(90,205,120) 27.5%,rgb(225,215,75) 40%,rgb(242,150,52) 55%,rgb(232,70,70) 72.5%,rgb(198,55,176) 100%)';
+    /* ⚠⚠ (#R276) THE RAMP IS NO LONGER WRITTEN HERE, AND NEITHER IS THE MAXIMUM. 「凡例の最大値と
+       実際のLUTも一致させる」 — the gradient above was hand-typed and its label said 「40 m/s」 while
+       the raster it described actually ran to 60 m/s, so the legend and the picture disagreed by half
+       a hurricane. The body is rendered by js/weather.js from the model's OWN colour table
+       (IntMapECMWF.legend), together with the model name, its run hour and the valid time — the
+       three facts 「Open-Meteo GFS」 was standing in for, wrongly, on a field that is ECMWF IFS. */
     lgdWind=document.createElement('div'); lgdWind.className='data-legend'; lgdWind.id='data-legend-wind'; lgdWind.style.bottom='140px';
-    lgdWind.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="wind" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Wind 10 m','風（10m）','Wind 10 m','Ветер 10 м','Viento 10 m')}</h4>
-      <div class="dl-bar" style="background:${_windGrad};"></div>
-      <div class="dl-scale"><span>0</span><span class="wind-scale-max"></span></div>
-      <div class="kl-period" style="margin:7px 0 2px;"><label>${window.IntMapLang.t(HOST.lang,'Units','単位','Einheiten','Единицы','Unidades')}</label><select id="wind-unit-sel">${window.WIND_UNITS.map(u=>`<option value="${u[0]}"${u[0]===window.windUnit?' selected':''}>${u[1]}</option>`).join('')}</select></div>
-      <div class="dl-hint" id="wind-valid">${window.IntMapLang.t(HOST.lang,'Open-Meteo GFS (10 m wind)','Open-Meteo GFS（10m風）','Open-Meteo GFS (10-m-Wind)','Open-Meteo GFS (ветер 10 м)','Open-Meteo GFS (viento a 10 m)')}</div>`;
+    lgdWind.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="wind" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Wind 10 m','風（10m）','Wind 10 m','Ветер 10 м','Viento 10 m')}</h4><div class="wind-legend-body"></div>`;
     mc.appendChild(lgdWind);
     lgdWind.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-wind'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
-    /* Refresh the max-speed scale label + valid-time line; called on unit change + when new data lands. */
     window._updateWindLegend=function(){
-      try{ const mx=lgdWind.querySelector('.wind-scale-max'); if(mx) mx.textContent=(40*window.windUnitFactor()).toFixed(0)+' '+window.windUnitLabel(); }catch(_){}
-      try{ const vt=document.getElementById('wind-valid'); const gt=(window.Wind&&window.Wind.dataTime&&window.Wind.dataTime()); if(vt){ if(gt&&window._fmtWindTime){ vt.textContent=(HOST.lang==='jp'?'🌬 ':'🌬 ')+window._fmtWindTime(gt); } else { vt.textContent=window.IntMapLang.t(HOST.lang,'Open-Meteo GFS (10 m wind)','Open-Meteo GFS（10m風）','Open-Meteo GFS (10-m-Wind)','Open-Meteo GFS (ветер 10 м)','Open-Meteo GFS (viento a 10 m)'); } } }catch(_){}
+      const body=lgdWind.querySelector('.wind-legend-body'); if(!body) return;
+      try{ if(window._renderWindLegendBody){ window._renderWindLegendBody(body); return; } }catch(_){}
+      body.innerHTML='<div class="dl-hint">'+window.IntMapLang.t(HOST.lang,'Loading the wind model…','風モデルを読み込み中…','Windmodell wird geladen…','Загрузка модели ветра…','Cargando el modelo de viento…')+'</div>';
     };
-    { const sel=lgdWind.querySelector('#wind-unit-sel'); if(sel) sel.onchange=()=>{ window.windUnit=sel.value; try{ localStorage.setItem('intmap_wind_unit',window.windUnit); }catch(_){} window._updateWindLegend(); try{ renderCoordReadout(); }catch(_){} }; }
     window._updateWindLegend();
     }
     buildCoreLegends();   /* (#R110) build once now; re-run on language change (see the intmap-lang listener below) */
@@ -665,7 +700,7 @@ window.IntMapModules.dataLayers=function(HOST){
        on (#30). */
     const head=document.createElement('div'); head.className='lyr-head lyr-section-label'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[HOST.lang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:1,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,nightsat:1,nightside:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:0.9,subcables:0.95,sats:0.95};   /* (#R122) Köppen climate default opacity = 100% */
+    const opacities={climate:1,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,nightsat:1,nightside:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,'clouds-goese':0.75,'clouds-goesw':0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:1,subcables:0.95,sats:0.95};   /* (#R122) Köppen climate default opacity = 100% */
     if(window._seaLevelM==null) window._seaLevelM=2;   /* default +2 m sea-level rise (#24) */
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
@@ -810,7 +845,11 @@ window.IntMapModules.dataLayers=function(HOST){
        Hazards & night sky · Population & economy · Geopolitics & defense. */
     [
       ['__grp','lyrGrpClimate'],
-      ['climate','lyrClimate'],['temp','lyrTemp'],['precip','lyrPrecip'],['radar','lyrRadar'],['wind','lyrWind'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],
+      /* (#R276) 'clouds' has a row again. Its layer id, its opacity entry, its legend and its
+         toggleLayer branch have all been here since #R7 — the ROW never was, so the only reachable
+         switch for it was a share link, and the RainViewer product behind it was retired anyway. It
+         is NASA GIBS geostationary clean-IR now (see IR_SATS) and it is switchable. */
+      ['climate','lyrClimate'],['temp','lyrTemp'],['precip','lyrPrecip'],['radar','lyrRadar'],['clouds','lyrClouds'],['wind','lyrWind'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],
       ['__grp','lyrGrpTerrain'],
       ['relief','lyrRelief'],['hillshade','lyrHillshade'],['contours','lyrContours'],['sealevel','lyrSeaLevel'],
       ['__grp','lyrGrpMaritime'],
@@ -1189,7 +1228,7 @@ window.IntMapModules.dataLayers=function(HOST){
                · `wbpm25` PM2.5大気汚染 : Health → Climate & atmosphere, where the other three air
                  -composition rasters (AOD, UV aerosol index, CO) already are. Air pollution was
                  split across two shelves by whether the number came from a satellite or a table. */
-          ['lyrGrpClimate',['climate','annprecip','wind','radar','ec-cloud','snow','aod','gxaero','gxco','wbpm25','wbco2','wbco2t']],   /* (#R261) +total CO₂ emissions, beside the per-capita row it belongs with */   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
+          ['lyrGrpClimate',['climate','annprecip','wind','radar','clouds','ec-cloud','snow','aod','gxaero','gxco','wbpm25','wbco2','wbco2t']],   /* (#R261) +total CO₂ emissions, beside the per-capita row it belongs with */   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
           /* (#R202) `sats` moved OUT of Maritime and into its own group, second from the top — see the
              lyrGrpOrbit note above. Nothing else moved: live aircraft stay where they were. */
           ['lyrGrpOrbit',['sats','osmspace','aurora']],   /* (#R261) +spaceports and satellite ground stations — a one-row shelf is not a category */
@@ -2658,7 +2697,7 @@ window.IntMapModules.dataLayers=function(HOST){
        positional audit checks the five slots and the inline table carries the rest. */
     const GENERIC_LEG={
       precip:LA('Precipitation (IMERG)','降水量 (IMERG)','Niederschlag (IMERG)','Осадки (IMERG)','Precipitación (IMERG)'),
-      clouds:LA('Clouds (infrared)','雲（赤外）','Wolken (Infrarot)','Облака (инфракрасный)','Nubes (infrarrojo)'),
+      clouds:LA('Clouds · infrared (GOES + Himawari)','雲・赤外（GOES＋ひまわり）','Wolken · Infrarot (GOES + Himawari)','Облака · ИК (GOES + Himawari)','Nubes · infrarrojo (GOES + Himawari)'),   /* (#R276) NASA GIBS geostationary clean-IR — see IR_SATS */
       ships:LA('Live ship traffic','船舶（リアルタイム）','Schiffsverkehr (live)','Суда (в реальном времени)','Tráfico marítimo en vivo'),
       planes:LA('Live aircraft traffic','航空機（リアルタイム）','Flugverkehr (live)','Самолёты (в реальном времени)','Tráfico aéreo en vivo'),
       sats:LA('Live satellites','人工衛星（リアルタイム）','Live-Satelliten','Спутники в реальном времени','Satélites en vivo'),
@@ -2791,7 +2830,11 @@ window.IntMapModules.dataLayers=function(HOST){
         .forEach(el=>{ if(el && (el.style.display==='block'||el.style.display==='flex') && !el.classList.contains('im-docked') && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); }catch(_){} } });
     };
     function tileLegends(){
-      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind')].concat([...document.querySelectorAll('.data-legend.generic-legend')]);
+      /* ⚠ (#R276) `data-legend-ecmwf` HAS TO BE IN THIS LIST. It docks at the same left/bottom as every
+         other legend, and a legend the tiler cannot see is a legend that sits ON TOP of the one below
+         it — MEASURED with the wind field and two ECMWF layers on: the wind legend covered the ECMWF
+         one completely, so the numeric bars this round added were invisible whenever both were up. */
+      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind'),document.getElementById('data-legend-ecmwf')].concat([...document.querySelectorAll('.data-legend.generic-legend')]);
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
       all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureContourDensity(el); ensureLegendMinimize(el); }catch(_){} });
       /* (#R13c) Desktop legends live on the LEFT of the map. In frosted-overlay mode the sidebar floats
@@ -4518,41 +4561,143 @@ window.IntMapModules.dataLayers=function(HOST){
         return true;
       }catch(e){ console.warn('addContours',e); return false; }
     }
-    /* === RainViewer: live precipitation radar + infrared cloud imagery, via its own
-       "latest frame" API — this is genuinely real-time (refreshed every ~10 min). === */
+    /* ══ (#R276) RAINVIEWER IS A LOOP NOW, AND THE DEAD HALF OF IT IS GONE ═══════════════════
+       「RainViewerは最新1枚だけでなく、利用可能な過去フレームをアニメーション可能にする。フレーム時刻と
+         経過時間を表示する。廃止済みSatellite IRと旧配色番号への依存は削除または現行データ源へ置換する。」
+
+       MEASURED against the live API on 2026-08-20:
+         · radar.past           -> 13 frames, 10 min apart, covering the last two hours;
+         · radar.nowcast        -> 0 frames (a paid feature; handled if it ever appears);
+         · satellite.infrared   -> 0 frames. The free satellite product is RETIRED, so `frames[len-1]`
+           read `undefined`, rvTiles returned null, and the Clouds layer could only ever toast
+           「Live weather data unavailable」 and untick itself. It has not worked since RainViewer
+           withdrew it. It is replaced below by NASA GIBS geostationary clean-IR, which is current.
+         · the colour-scheme number: schemes 0/2/3/6/7/8 return BYTE-IDENTICAL tiles and 1/4/5/9
+           return the other one, so the free tier serves two palettes behind ten numbers. The app
+           asked for 「4」 as if it were a choice. RV_SCHEME names the one we actually get. */
     let _rvData=null, _rvAt=0, _rvPending=null, _rvTimer=null;
+    let _rvFrames=[], _rvIdx=-1, _rvPlay=false, _rvPlayT=0;
+    const RV_SCHEME=4;                 /* the blue->red palette the two-palette free tier gives back */
+    const RV_STEP_MS=520;              /* one radar frame per ~half second, the RainViewer pace */
     function rvFetch(){
       if(_rvData && Date.now()-_rvAt<5*60000) return Promise.resolve(_rvData);
       if(_rvPending) return _rvPending;
       _rvPending=fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.ok?r.json():null)
-        .then(j=>{ if(j){ _rvData=j; _rvAt=Date.now(); } _rvPending=null; return _rvData; })
+        .then(j=>{ if(j){ _rvData=j; _rvAt=Date.now(); rvRefreshFrames(); } _rvPending=null; return _rvData; })
         .catch(()=>{ _rvPending=null; return null; });
       return _rvPending;
     }
-    function rvTiles(kind){
-      if(!_rvData) return null;
-      const host=_rvData.host||'https://tilecache.rainviewer.com';
-      const frames=(kind==='radar') ? (_rvData.radar&&_rvData.radar.past) : (_rvData.satellite&&_rvData.satellite.infrared);
-      if(!frames||!frames.length) return null;
-      const path=frames[frames.length-1].path;  /* the most recent available frame */
-      /* radar: color scheme 4 (blue→red), smoothed + snow; clouds: IR scheme 0 */
-      return (kind==='radar') ? [host+path+'/256/{z}/{x}/{y}/4/1_1.png'] : [host+path+'/256/{z}/{x}/{y}/0/0_0.png'];
+    function rvRefreshFrames(){
+      const r=(_rvData&&_rvData.radar)||{};
+      const was=(_rvIdx>=0)?_rvFrames[_rvIdx]:null;
+      _rvFrames=(r.past||[]).concat(r.nowcast||[]);
+      /* stay on the SAME INSTANT across a refresh; a reader watching -60 min should not be jumped to
+         «now» just because a newer frame arrived at the end of the list */
+      if(was&&_rvFrames.length){ let best=_rvFrames.length-1,bd=Infinity;
+        _rvFrames.forEach((f,i)=>{ const d=Math.abs(f.time-was.time); if(d<bd){bd=d;best=i;} });
+        _rvIdx=best; }
+      else _rvIdx=_rvFrames.length-1;
     }
-    function addRainViewer(kind){
-      const tiles=rvTiles(kind); if(!tiles) return false;
-      try{ if(GE().layers.has('lyr-'+kind)) GE().layers.remove('lyr-'+kind); if(GE().layers.hasSource('src-'+kind)) GE().layers.removeSource('src-'+kind); }catch(_){}
-      addRaster(kind,tiles, kind==='radar'?12:10);
-      setVis('lyr-'+kind,true);
+    function rvTiles(idx){
+      if(!_rvData||!_rvFrames.length) return null;
+      const host=_rvData.host||'https://tilecache.rainviewer.com';
+      const f=_rvFrames[Math.max(0,Math.min(_rvFrames.length-1,idx==null?_rvIdx:idx))];
+      if(!f) return null;
+      return [host+f.path+'/256/{z}/{x}/{y}/'+RV_SCHEME+'/1_1.png'];
+    }
+    function rvFrameTime(){ const f=_rvFrames[_rvIdx]; return f?f.time*1000:null; }
+    function addRainViewer(){
+      const tiles=rvTiles(); if(!tiles) return false;
+      try{ if(GE().layers.has('lyr-radar')) GE().layers.remove('lyr-radar'); if(GE().layers.hasSource('src-radar')) GE().layers.removeSource('src-radar'); }catch(_){}
+      addRaster('radar',tiles,12);
+      setVis('lyr-radar',true);
+      rvUpdateLegend();
       return true;
     }
+    /* Re-point the tiles rather than rebuild the source — MapLibre cross-fades between the old and the
+       new tile set (raster-fade-duration), which is what stops a step looking like a blink. */
+    function rvShow(idx){
+      if(!_rvFrames.length) return;
+      _rvIdx=Math.max(0,Math.min(_rvFrames.length-1,idx));
+      const tiles=rvTiles();
+      if(!(tiles&&GE().layers.setSourceTiles('src-radar',tiles))&&tiles) addRainViewer();
+      rvUpdateLegend();
+    }
+    function rvStep(n){ if(!_rvFrames.length) return; rvShow((_rvIdx+n+_rvFrames.length)%_rvFrames.length); }
+    function rvSetPlay(on){
+      _rvPlay=!!on; clearTimeout(_rvPlayT);
+      if(_rvPlay){ const tick=()=>{ if(!_rvPlay) return; rvStep(1);
+        /* hold the newest frame a beat longer so the loop reads as a loop, not a stutter */
+        _rvPlayT=setTimeout(tick,(_rvIdx===_rvFrames.length-1)?RV_STEP_MS*3:RV_STEP_MS); };
+        _rvPlayT=setTimeout(tick,RV_STEP_MS); }
+      rvUpdateLegend();
+    }
+    window._rvPlayer={ show:rvShow, step:rvStep, play:rvSetPlay, playing:()=>_rvPlay,
+      frames:()=>_rvFrames.slice(), index:()=>_rvIdx, time:rvFrameTime };
+    function rvUpdateLegend(){
+      const box=lgdRadar&&lgdRadar.querySelector('.rv-player'); if(!box) return;
+      const n=_rvFrames.length, tt=rvFrameTime();
+      const sl=box.querySelector('#rv-time'); if(sl){ sl.max=Math.max(0,n-1); sl.value=Math.max(0,_rvIdx); }
+      const pb=box.querySelector('.rv-b[data-act="play"]'); if(pb) pb.textContent=_rvPlay?'⏸':'▶';
+      const cap=box.querySelector('.rv-when');
+      if(cap){
+        if(!tt) cap.textContent=window.IntMapLang.t(HOST.lang,'no frames','フレームなし','keine Bilder','нет кадров','sin fotogramas');
+        else{
+          const mins=Math.round((Date.now()-tt)/60000);
+          const clock=new Date(tt).toLocaleTimeString(window.IntMapLang.locale(HOST.lang,'en-GB'),{hour:'2-digit',minute:'2-digit'});
+          const rel=(mins<=0)?window.IntMapLang.t(HOST.lang,'now','現在','jetzt','сейчас','ahora')
+            :('−'+mins+' '+window.IntMapLang.t(HOST.lang,'min','分','Min.','мин','min'));
+          cap.textContent=clock+' · '+rel+' · '+(_rvIdx+1)+'/'+n;
+        }
+      }
+    }
+    window._rvUpdateLegend=rvUpdateLegend;
     function rvAutoRefresh(){
       if(_rvTimer) return;
-      _rvTimer=setInterval(()=>{ rvFetch().then(()=>{ ['radar','clouds'].forEach(k=>{
-        if(GE().layers.has('lyr-'+k)&&GE().layers.getLayout('lyr-'+k,'visibility')==='visible'){
-          try{ const tiles=rvTiles(k); if(!(tiles&&GE().layers.setSourceTiles('src-'+k,tiles))&&tiles) addRainViewer(k); }catch(_){}
+      _rvTimer=setInterval(()=>{ _rvAt=0; rvFetch().then(()=>{
+        if(GE().layers.has('lyr-radar')&&GE().layers.getLayout('lyr-radar','visibility')==='visible'){
+          try{ const tiles=rvTiles(); if(!(tiles&&GE().layers.setSourceTiles('src-radar',tiles))&&tiles) addRainViewer(); }catch(_){}
+          rvUpdateLegend();
         }
-      }); }); },240000);
+      }); },240000);
     }
+    /* ── the Clouds layer, on a source that still exists ─────────────────────────
+       NASA GIBS geostationary Band-13 「clean infrared」 — Himawari, GOES-East and GOES-West, each a
+       near-real-time WMTS on a 10-minute cadence, stacked so the three discs make one picture.
+       ⚠ WHAT IS NOT IN IT: the Meteosat sector. NASA GIBS carries no Meteosat imagery, so roughly
+       20°W–75°E — Europe, Africa and the western Indian Ocean — has no cloud disc here. The legend
+       says so in words rather than leaving a hole the reader has to explain to themselves (#R273). */
+    const IR_SATS=[['clouds','Himawari_AHI_Band13_Clean_Infrared'],
+                   ['clouds-goese','GOES-East_ABI_Band13_Clean_Infrared'],
+                   ['clouds-goesw','GOES-West_ABI_Band13_Clean_Infrared']];
+    function addCloudsIR(){
+      let any=false;
+      IR_SATS.forEach(([id,layer])=>{
+        try{ addRaster(id,gibs(layer,6,'png','default'),6); setVis('lyr-'+id,true); any=true; }catch(_){}
+        try{ if(GE().layers.has('lyr-'+id)) GE().layers.setPaint('lyr-'+id,'raster-opacity',opacities.clouds); }catch(_){}
+      });
+      cloudsLegendHint();
+      return any;
+    }
+    /* ⚠ THE GAP IS NAMED, NOT LEFT FOR THE READER TO EXPLAIN TO THEMSELVES (#R273). Three discs cover
+       the Americas, the Pacific and Asia–Australia; NASA GIBS carries no Meteosat, so ~20°W–75°E has
+       no imagery here at all. A blank Atlantic-to-India band with nothing saying why is the exact
+       shape of 「対応していない」 being mistaken for 「雲がない」. */
+    function cloudsLegendHint(){
+      try{
+        const el=document.getElementById('data-legend-clouds'); if(!el||el.querySelector('.cl-cov')) return;
+        const d=document.createElement('div'); d.className='dl-hint cl-cov';
+        d.textContent=window.IntMapLang.t(HOST.lang,
+          'NASA GIBS clean-IR, 10 min. GOES-East · GOES-West · Himawari — no Meteosat, so ~20°W–75°E (Europe, Africa) is not covered.',
+          'NASA GIBS 赤外（10分間隔）。GOES-East・GOES-West・ひまわり。Meteosat は含まれないため、西経20度〜東経75度（欧州・アフリカ）は範囲外。',
+          'NASA GIBS Infrarot, 10 min. GOES-East · GOES-West · Himawari — kein Meteosat, daher ist ~20°W–75°O (Europa, Afrika) nicht abgedeckt.',
+          'NASA GIBS ИК, 10 мин. GOES-East · GOES-West · Himawari — без Meteosat, поэтому ~20°з.д.–75°в.д. (Европа, Африка) не покрыты.',
+          'NASA GIBS infrarrojo, 10 min. GOES-East · GOES-West · Himawari — sin Meteosat, por lo que ~20°O–75°E (Europa, África) no está cubierto.');
+        el.appendChild(d);
+      }catch(_){}
+    }
+    function setCloudsVis(on){ IR_SATS.forEach(([id])=>{ try{ if(GE().layers.has('lyr-'+id)) setVis('lyr-'+id,on); }catch(_){} }); }
+    window._setCloudsOpacity=(v)=>{ IR_SATS.forEach(([id])=>{ try{ if(GE().layers.has('lyr-'+id)) GE().layers.setPaint('lyr-'+id,'raster-opacity',v); }catch(_){} }); };
     /* === Refresh tiles for dated layers when the date selector changes === */
     function refreshDatedLayer(id){
       const date=layerDates[id]||GIBS_DATE;
@@ -4588,18 +4733,19 @@ window.IntMapModules.dataLayers=function(HOST){
           lgdThermal.style.display='block'; tileLegends();
           whenStyleReady().then(()=>{ try{ addFirmsThermal(); setThermalVis(true); }catch(e){ console.warn('thermal (GIBS) fail',e); const cb=document.getElementById('dl-thermal'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(window.IntMapLang.t(HOST.lang,'Active-fire data unavailable','火災データを取得できませんでした','Branddaten nicht verfügbar','Данные о пожарах недоступны','Datos de incendios no disponibles')); }catch(_){} } });
         }
-        else if(id==='radar'||id==='clouds'){
-          if(id==='radar'){ lgdRadar.style.display='block'; tileLegends(); }
+        else if(id==='radar'){
+          lgdRadar.style.display='block'; tileLegends();
           whenStyleReady().then(()=>rvFetch()).then(()=>{
-            if(!addRainViewer(id)){
+            if(!addRainViewer()){
               try{ satToast(window.IntMapLang.t(HOST.lang,'Live weather data unavailable','気象データを取得できませんでした','Wetterdaten nicht verfügbar','Данные о погоде недоступны','Datos meteorológicos no disponibles')); }catch(_){}
-              const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); }
-              if(id==='radar'){ lgdRadar.style.display='none'; tileLegends(); }
+              const cb=document.getElementById('dl-radar'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); }
+              lgdRadar.style.display='none'; tileLegends();
               return;
             }
             rvAutoRefresh();
           });
         }
+        else if(id==='clouds'){ whenStyleReady().then(()=>{ addCloudsIR(); setCloudsVis(true); }); }
         else if(id==='sst'){
           lgdSST.style.display='block'; tileLegends();
           whenStyleReady().then(()=>{ try{ addRaster('sst',gibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',layerDates.sst),7); }catch(_){} try{ setVis('lyr-sst',true); }catch(_){} });
@@ -4745,9 +4891,8 @@ window.IntMapModules.dataLayers=function(HOST){
         if(id==='aod') lgdAod.style.display='none';
         if(id==='nightsat') lgdNightsat.style.display='none';
         if(GENERIC_LEG[id]){ const gl=document.getElementById('data-legend-'+id); if(gl){ gl.style.display='none'; tileLegends(); } }   /* (#R15c) */
-        if((id==='radar'||id==='clouds')&&_rvTimer){ const other=(id==='radar')?'clouds':'radar';
-          const otherVis=GE().layers.get('lyr-'+other)&&GE().layers.getLayout('lyr-'+other,'visibility')==='visible';
-          if(!otherVis){ clearInterval(_rvTimer); _rvTimer=null; } }
+        if(id==='radar'){ if(_rvTimer){ clearInterval(_rvTimer); _rvTimer=null; } try{ rvSetPlay(false); }catch(_){} }
+        if(id==='clouds') setCloudsVis(false);
         tileLegends();
         if(id==='nightside'){ _setNightSide(false); }   /* (#R232) */
       }
@@ -4890,7 +5035,12 @@ window.IntMapModules.dataLayers=function(HOST){
       else if(id==='contours'){ if(GE().layers.has('contour-lines'))GE().layers.setPaint('contour-lines','line-opacity',v); if(GE().layers.has('contour-labels'))GE().layers.setPaint('contour-labels','text-opacity',v); }
       else if(id==='relief'){ if(GE().layers.has('lyr-relief'))GE().layers.setPaint('lyr-relief','color-relief-opacity',v); }
       else if(id==='sealevel'){ if(GE().layers.has('lyr-sealevel'))GE().layers.setPaint('lyr-sealevel','color-relief-opacity',v); }
-      else if(id==='wind'){ const wc=document.getElementById('wind-canvas'); if(wc) wc.style.opacity=Math.min(1,0.5+v*0.5); try{ window.Wind&&window.Wind.setOpacity&&window.Wind.setOpacity(v*0.82); }catch(_){} }   /* (#R8b) particle alpha barely dims; slider mainly drives the geo-anchored speed-field raster */
+      /* ⚠ (#R276) ONE number, applied ONCE. This used to multiply the reader's choice by 0.82 before
+         handing it on, on top of a colour field that was already being painted at 0.50 — 「風色面の
+         二重透過を解消する」. The module applies it to the raster and to the particle canvas itself. */
+      else if(id==='wind'){ try{ window.Wind&&window.Wind.setOpacity&&window.Wind.setOpacity(v); }catch(_){} }
+      /* (#R276) the IR clouds picture is THREE geostationary discs, so one slider drives all three */
+      else if(id==='clouds'){ try{ window._setCloudsOpacity&&window._setCloudsOpacity(v); }catch(_){} }
       else if(id==='subcables'){ if(GE().layers.has('lyr-subcables'))GE().layers.setPaint('lyr-subcables','line-opacity',v); }
       else if(id==='thermal'){ try{ window._setThermalOpacity(v); }catch(_){} }
       else if(window._opacityTargets&&window._opacityTargets[id]){ _applyGenericOpacity(window._opacityTargets[id],v); }
