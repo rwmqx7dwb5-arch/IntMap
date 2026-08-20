@@ -4263,5 +4263,8 @@ window.IntMapLang.define('ko', { ui: {
   "This country’s service could not be fetched just now — nothing is being said about this point.": "이 나라 기관의 정보를 지금은 가져오지 못했습니다 — 이 지점에 대해서는 아무것도 말하고 있지 않습니다.",
   "Tornado": "토네이도",
   "Volcanic ash": "화산재",
-  "Water": "물",   /* (#R267) */
+  "Water": "물",
+  "Hailstorm": "우박",
+  "Heavy rainfall": "호우",
+  "Thunderstorms": "뇌우",   /* (#R267) */
 } });

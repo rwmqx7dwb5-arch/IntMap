@@ -1262,26 +1262,30 @@ window.IntMapModules.worldPacks=function(HOST){
         ['cyclone',   /typhoon|hurricane|tropical (cyclone|storm|depression)|cyclone|tempête tropicale|cicl[oó]n|台风|颱風|台風|熱帯低気圧|тайфун|ураган|циклон/i, ()=>L('Cyclone','台風','Wirbelsturm','Циклон','Ciclón')],
         ['tornado',   /tornado|waterspout|trombe|竜巻|龍捲|龙卷|смерч/i, ()=>L('Tornado','竜巻','Tornado','Смерч','Tornado')],
         ['dust',      /dust|sand ?storm|vent de sable|sable|رمل|غبار|沙尘|揚沙|砂じん|黄砂|пыл|polvo|staub/i, ()=>L('Dust','砂じん嵐','Staubsturm','Пыльная буря','Polvo')],
-        ['avalanche', /avalanche|lawine|valanga|alud|snøskred|雪崩|なだれ|лавин/i, ()=>L('Avalanche','雪崩','Lawine','Лавина','Aludes')],
-        ['wildfire',  /(forest|wild|bush|veld|grass) ?fire|forestfire|fire ?(danger|weather|risk)|waldbrand|skogbrann|feu de for|incendi|山火|林野火災|森林火|пожар/i, ()=>L('Wildfire','林野火災','Waldbrand','Лесные пожары','Incendios')],
+        ['avalanche', /avalanche|lawine|valanga|alud|snøskred|雪崩|なだれ|лавин|awareness_?type ?= ?9\b/i, ()=>L('Avalanche','なだれ','Lawine','Лавина','Aludes')],
+        ['wildfire',  /fire\b|waldbrand|skogbrann|feu de for|incendi|山火|林野火災|森林火|пожар|awareness_?type ?= ?8\b/i, ()=>L('Wildfire','林野火災','Waldbrand','Лесные пожары','Incendios')],
         ['landslide', /landslide|mudslide|debris flow|rockfall|erdrutsch|glissement|deslizamiento|土砂|地质灾害|山体滑坡|оползен/i, ()=>L('Landslide','土砂災害','Erdrutsch','Оползень','Deslizamiento')],
-        ['flashflood',/flash ?flood|sturzflut|riada|内涝|浸水|ливнев/i,  ()=>L('Flash flood','浸水','Sturzflut','Ливневый паводок','Riada')],
+        ['flashflood',/flash ?flood|sturzflut|riada|内涝|山洪|浸水|ливнев|awareness_?type ?= ?12\b/i,  ()=>L('Flash flood','浸水','Sturzflut','Ливневый паводок','Riada')],
         ['flood',     /flood|inondation|hochwasser|inundaci|alluvion|poplav|powódź|árvíz|flom|tulva|översvämning|洪水|大水|боднен|наводнен|паводок/i, ()=>L('Flood','洪水','Hochwasser','Наводнение','Inundación')],
         ['ice',       /black ?ice|freezing rain|glatteis|verglas|icing|glaze|isglatta|着氷|凍結|冻雨|гололёд|гололед|hielo/i, ()=>L('Ice','着氷・路面凍結','Glatteis','Гололёд','Hielo')],
-        ['snow',      /snow|schnee|neige|nieve|neve|snø|lumi|snö|blizzard|大雪|降雪|融雪|着雪|снег|снегопад/i, ()=>L('Snow','大雪','Schnee','Снег','Nieve')],
+        ['snow',      /snow|schnee|neige|nieve|neve|snø|lumi|snö|blizzard|大雪|降雪|融雪|着雪|снег|снегопад|awareness_?type ?= ?2\b/i, ()=>L('Heavy snow','大雪','Schnee','Снег','Nieve')],
+        ['hail',      /hail|hagel|grêle|granizo|grandine|冰雹|雹|град|우박|awareness_?type ?= ?13\b/i, /* ⚠ NOT 「Hail」: the inline tables are keyed BY THE ENGLISH STRING and one already exists for
+           the Yemeni city of حائل — measured, fr 《Haïl》 / ko 《하일》 / 中文 《哈伊勒》. A hazard called
+           「Hail」 would have rendered as a CITY NAME in every language past the five positional ones. */
+          ()=>L('Hailstorm','雹','Hagel','Град','Granizo')],
         ['frost',     /frost|gelée|helada|霜|заморозк/i,             ()=>L('Frost','霜','Frost','Заморозки','Helada')],
-        ['fog',       /fog|nebel|brouillard|niebla|nevoeiro|dimma|濃霧|大雾|大霧|туман|안개/i, ()=>L('Fog','濃霧','Nebel','Туман','Niebla')],
-        ['heat',      /heat|high[- ]?temp|hot weather|canicule|hitze|calor|caldo|altas temperaturas|高温|酷暑|猛暑|жар|폭염|الحرارة/i, ()=>L('Heat','高温','Hitze','Жара','Calor')],
-        ['cold',      /cold|low[- ]?temperature|kälte|kaelte|froid|fr[ií]o|寒潮|低温|寒波|холод|мороз|한파/i, ()=>L('Cold','低温','Kälte','Холод','Frío')],
+        ['fog',       /fog|nebel|brouillard|niebla|nevoeiro|dimma|濃霧|大雾|大霧|туман|안개|awareness_?type ?= ?4\b/i, ()=>L('Dense fog','濃霧','Nebel','Туман','Niebla')],
+        ['heat',      /heat|high[- ]?temp|hot weather|canicule|hitze|calor|caldo|altas temperaturas|高温|酷暑|猛暑|жар|폭염|الحرارة|awareness_?type ?= ?5\b/i, ()=>L('Heat','高温','Hitze','Жара','Calor')],
+        ['cold',      /cold|low[- ]?temperature|kälte|kaelte|froid|fr[ií]o|寒潮|低温|寒波|холод|мороз|한파|awareness_?type ?= ?6\b/i, ()=>L('Cold','低温','Kälte','Холод','Frío')],
         ['dryair',    /dry ?air|low humidity|baixa umidade|trockenheit|sequedad|乾燥|干燥/i, ()=>L('Dry air','乾燥','Trockenheit','Сухость','Sequedad')],
         ['drought',   /drought|dürre|duerre|sécheresse|sequ[ií]a|seca|干旱|засух/i, ()=>L('Drought','干ばつ','Dürre','Засуха','Sequía')],
         ['lowwater',  /low water|niedrigwasser|étiage|estiaje|渇水|межен/i,  ()=>L('Low water','渇水','Niedrigwasser','Малая вода','Estiaje')],
         ['airquality',/air ?quality|smog|haze|pollution|luftqualität|calidad del aire|空气污染|霾|воздуха/i, ()=>L('Air quality','大気汚染','Luftqualität','Качество воздуха','Calidad del aire')],
-        ['wind',      /wind|\bgale\b|\bstorm\b|sturm|\bvent\b|viento|vento|vendaval|vind|tuuli|強風|暴風|大風|大风|风力|ветер|шторм|강풍|رياح/i, ()=>L('Wind','強風','Wind','Ветер','Viento')],
-        ['coastal',   /coastal|high (waves|water)|storm surge|swell|waves?\b|houle|oleaje|marejada|高波|高潮|波浪|прибой|волн|풍랑/i, ()=>L('Coastal','高波・高潮','Küste','Побережье','Costa')],
+        ['wind',      /wind|\bgale\b|\bstorm\b|sturm|\bvent\b|viento|vento|vendaval|vind|tuuli|強風|暴風|大風|大风|风力|ветер|шторм|강풍|رياح|awareness_?type ?= ?1\b/i, ()=>L('Strong wind','強風','Wind','Ветер','Viento')],
+        ['coastal',   /coastal|high (waves|water)|storm surge|swell|waves?\b|houle|oleaje|marejada|高波|高潮|波浪|прибой|волн|풍랑|awareness_?type ?= ?7\b/i, ()=>L('Coastal','高波・高潮','Küste','Побережье','Costa')],
         ['marine',    /marine|sea area|offshore|maritime|海上|海面|море|морск/i, ()=>L('Marine','海上','See','Море','Marítimo')],
-        ['thunderstorm',/thunder|t-?storm|gewitter|orage|onweer|tormenta|trovoada|tempestade|nubifragio|åska|ukkonen|雷|强对流|強對流|гроз|뇌우/i, ()=>L('Thunderstorm','雷','Gewitter','Гроза','Tormenta')],
-        ['rain',      /rain|regen|regn|pluie|lluvia|chuva|pioggia|sade|precipita|大雨|暴雨|降雨|豪雨|雨|дожд|호우|أمطار/i, ()=>L('Heavy rain','大雨','Starkregen','Сильный дождь','Lluvia intensa')]];
+        ['thunderstorm',/thunder|t-?storm|gewitter|orage|onweer|tormenta|trovoada|tempestade|nubifragio|åska|ukkonen|雷|强对流|強對流|гроз|뇌우|awareness_?type ?= ?3\b/i, ()=>L('Thunderstorms','雷','Gewitter','Гроза','Tormenta')],
+        ['rain',      /rain|regen|regn|pluie|lluvia|chuva|pioggia|sade|precipita|大雨|暴雨|降雨|豪雨|雨|дожд|호우|أمطار|awareness_?type ?= ?10\b/i, ()=>L('Heavy rainfall','大雨','Starkregen','Сильный дождь','Lluvia intensa')]];
       const HAZI={}; HAZ.forEach((h,i)=>{ HAZI[h[0]]=h; h[3]=i; });
       /* the pattern that matches EARLIEST wins; list order breaks a tie (see the note above) */
       function hazardKey(text){ const t=String(text||''); if(!t) return '';

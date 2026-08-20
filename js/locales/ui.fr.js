@@ -4273,5 +4273,8 @@ window.IntMapLang.define('fr', { ui: {
   "This country’s service could not be fetched just now — nothing is being said about this point.": "Le service de ce pays n’a pas pu être récupéré à l’instant — rien n’est affirmé sur ce point.",
   "Tornado": "Tornade",
   "Volcanic ash": "Cendres volcaniques",
-  "Water": "Eau",   /* (#R267) */
+  "Water": "Eau",
+  "Hailstorm": "Grêle",
+  "Heavy rainfall": "Fortes pluies",
+  "Thunderstorms": "Orages",   /* (#R267) */
 } });

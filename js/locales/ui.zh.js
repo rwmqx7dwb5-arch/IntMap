@@ -4359,6 +4359,9 @@ window.IntMapLang.define('zh', {
   "This country’s service could not be fetched just now — nothing is being said about this point.": "目前無法取得該國機關的資訊——本地點並未作任何說明。",
   "Tornado": "龍捲風",
   "Volcanic ash": "火山灰",
-  "Water": "水",   /* (#R267) */
+  "Water": "水",
+  "Hailstorm": "冰雹",
+  "Heavy rainfall": "大雨",
+  "Thunderstorms": "雷雨",   /* (#R267) */
   }
 });
