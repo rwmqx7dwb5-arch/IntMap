@@ -25,6 +25,20 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 const has = (p) => existsSync(join(ROOT, p));
 
+/* ⚠ (#R286) THE ANCHORS IN § ② ARE WRITTEN WITH LF, AND THIS CHECKOUT MAY NOT BE.
+   `.gitattributes` pins only the extensions Linux executes (*.sh *.sql *.mjs *.yml *.yaml *.toml);
+   *.html and *.md are left to `core.autocrlf`, which is `true` on the development machine. So
+   `privacy.html`'s `…legal-text.js"></script>` is followed by CRLF here and by LF in CI, and the
+   `legal` case demanded LF — red on Windows, green in CI, for a reason that is not its subject.
+   That is #R283's finding in a fourth file; #R274, #R279 and #R282 each re-diagnosed the first
+   three by hand, which is the cost of leaving one.
+   ⚠ THE TEXT IS NOT NORMALISED, AND THAT IS THE POINT. § ② writes each file back byte for byte to
+   restore it, so normalising what it READS would rewrite the working copy's line endings as a side
+   effect of running the tests. The ANCHOR is widened instead: a line break in the pattern matches
+   this checkout's line break and NOTHING else is relaxed — every other character is escaped, so an
+   anchor that has genuinely gone is still a failure (tests/r286-checks ⑥ proves both directions). */
+const anchorRe = (s) => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\n/g, '\\r?\\n'));
+
 function docFacts() {
   try {
     execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check'], { cwd: ROOT, encoding: 'utf8' });
@@ -35,8 +49,17 @@ function docFacts() {
 }
 
 /* ── ① the new rules actually bite ───────────────────────────────────────────────────────── */
-test('R280 ① check:docs is green on the committed tree', () => {
-  const r = docFacts();
+/* ⚠ (#R286) A READER THAT REQUIRES A PRISTINE TREE IS ALSO A PARTY TO THE LOCK.
+   tests/helpers/gate-lock.mjs was written for the two tests that MUTATE tracked files, and both
+   take it — but this test asserts the opposite property (nothing is mutated right now) and took
+   nothing. `node --test` runs the files in parallel, so while tests/r274 ③ held the lock with
+   `docs/_doc-facts-negative-probe.md` on disk, this ran check:docs and reported the probe as a
+   defect in the committed tree. MEASURED twice locally in one round; CI happened to schedule
+   around it. The lock's own note already says everything that touches the tree must go through
+   it — a reader of a shared invariant is exactly that, and nothing about WHAT is asserted below
+   changes. */
+test('R280 ① check:docs is green on the committed tree', async () => {
+  const r = await withTreeLock(() => docFacts());
   assert.equal(r.code, 0, 'npm run check:docs must pass as committed:\n' + r.out);
 });
 
@@ -85,8 +108,10 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', a
       broken = original.replace(/\*\*(\d+) Node test files\*\*/, '**3 Node test files**');
       assert.notEqual(broken, original, 'the node-test count sentence is gone from docs/TESTING.md');
     } else {
-      assert.ok(original.includes(c.from), `${c.file} no longer contains the anchor for the ${c.rule} case`);
-      broken = original.replace(c.from, c.to);
+      const re = anchorRe(c.from);          /* (#R286) a line break in the anchor ⇒ this checkout's line break */
+      assert.ok(re.test(original), `${c.file} no longer contains the anchor for the ${c.rule} case`);
+      /* the replacement is a FUNCTION, so a `$` inside `to` stays text instead of becoming a back-reference */
+      broken = original.replace(re, () => c.to);
       assert.notEqual(broken, original, `the ${c.rule} case did not change ${c.file}`);
     }
     try {
