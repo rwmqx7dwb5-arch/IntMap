@@ -492,11 +492,14 @@ const FILES = BODY.get('docs/FILES.md') || '';
     for (const page of ['privacy.html', 'terms.html']) {
       if (!has(page)) { fail('legal', page + ' is gone — the policy needs a URL of its own'); continue; }
       /* ⚠ MENTIONING IT IS NOT LOADING IT. Both pages explain the arrangement in a comment that
-         names this exact path, so a substring test stays green after the <script> tag is deleted. */
-      const loads = (pg, src) => new RegExp('<script[^>]+src="[^"]*' + src.replace(/[.\/]/g, '\\$&') + '"').test(pg);
-      const pageSrc = rd(page);
-      if (!loads(pageSrc, 'js/legal-text.js')) fail('legal', page + ' does not LOAD js/legal-text.js (a mention in a comment is not a script tag)');
-      if (!loads(pageSrc, 'js/legal-page.js')) fail('legal', page + ' does not LOAD js/legal-page.js');
+         names this exact path, so a plain substring test stays green after the <script> tag is
+         deleted. Read the TAGS — comments stripped first — and compare whole strings; building a
+         pattern out of the filename would be an escaping bug waiting to happen (CodeQL agrees). */
+      const scriptSrcs = (pg) => [...pg.replace(/<!--[\s\S]*?-->/g, '')
+        .matchAll(/<script[^>]+src=["']([^"']+)["']/g)].map((m) => m[1].replace(/^\.\//, ''));
+      const loaded = scriptSrcs(rd(page));
+      if (!loaded.includes('js/legal-text.js')) fail('legal', page + ' does not LOAD js/legal-text.js (a mention in a comment is not a script tag)');
+      if (!loaded.includes('js/legal-page.js')) fail('legal', page + ' does not LOAD js/legal-page.js');
       if (/<p><b>/.test(rd(page))) fail('legal', page + ' carries its own copy of the prose');
     }
     const vite = rd('vite.config.js');
