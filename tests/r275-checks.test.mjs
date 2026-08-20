@@ -251,8 +251,12 @@ test('R275 ⑩ every feed is on a rotation, and none of them is a first-load que
 test('R275 ⑪ a country is only painted «nothing in force» once its service has been read', () => {
   const s = WP();
   assert.match(s, /function readState\(c\)\{ const f=FEEDS\[c\];/, 'what is known per country has a name');
-  assert.match(s, /if\(readState\(c\)==='loading'\) return 0;/,
-    'a wired but unread country is hatched, not washed with the 「発表なし」 grey');
+  /* ⚠ (#R277) THE RULE GOT STRICTER AND THIS CHECK PINNED THE OLD ONE. `loading` was not the only
+     state that has not READ anything: `error` and `idle` were painting the 「発表なし」 grey too, and
+     MEASURED this round China came out grey with 1,235 warnings in force because www.nmc.cn was
+     briefly unreachable from the edge. What #R275 is about is asserted, on the whole rule. */
+  assert.match(s, /if\(readState\(c\)!=='ok'\) return 0;/,
+    'a country whose service has not answered is hatched, not washed with the 「発表なし」 grey');
   /* the three states are still three appearances (#R273) */
   assert.match(s, /1,'rgba\(200,200,203,0\.42\)'/, 'read and quiet is grey');
   assert.match(s, /'fill-pattern':'wp-alert-hatch-img'/, 'and nothing-to-say is hatched');

@@ -149,6 +149,11 @@ const SAME_AS_EN = {
          «MMI IX (Banda Aceh)», «2008 Wenchuan (Sichuan)», «2010 Haiti (Léogâne)» — an intensity
          scale designation and two place names, spelled identically in German. */
     'Gas', 'Frost', 'MMI IX (Banda Aceh)', '2008 Wenchuan (Sichuan)', '2010 Haiti (Léogâne)',
+    /* (#R277) …and the hazard the warning layer names in the reader's language: Duden spells it
+       «Tornado, der», exactly as English does. The other twenty-four hazards at the same table
+       differ in German (Gewitter, Starkregen, Waldbrand, …), which is what makes this a claim
+       about the word rather than a forgotten argument. */
+    'Tornado',
   ]),
   ru: new Set([]),
   es: new Set([
@@ -176,6 +181,10 @@ const SAME_AS_EN = {
        (Clínica, Consultorio, Farmacia, Otros) differ, which is what makes this a claim about the
        word rather than a forgotten argument. */
     'Hospital',
+    /* (#R277) …and the hazard: the RAE noun IS «tornado», spelled exactly as in English. The
+       other twenty-four hazards at the same table differ in Spanish (Tormenta, Lluvia intensa,
+       Incendios, …), which is what makes this a claim about the word. */
+    'Tornado',
   ]),
 };
 /* ⚠ …and the polity names the ERA MAP prints that carry no exonym in either language. Sub-Saharan

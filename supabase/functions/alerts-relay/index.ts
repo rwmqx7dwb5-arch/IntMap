@@ -506,6 +506,65 @@ function swicUrl(mid) {
     + "&cql_filter=" + encodeURIComponent(cql);
 }
 
+/* ══ ⚠⚠⚠ (#R277) THE SHAPE LIBRARY — 「漏れが多すぎる」、測った数字で ════════════════════
+   MEASURED over all thirty-five MeteoAlarm countries the same minute: the app could place
+   **754 of 1,127** published areas. The other 373 were dropped from the map in silence-by-numbers
+   — Austria 86, Slovakia 59, Moldova 42, Spain 64, Portugal 18, Croatia 13, Belgium 9 … because
+   MeteoAlarm's CAP carries NO polygon for them (`geocode` is a bare `EMMA_ID`) and their region
+   names are not Eurostat NUTS names: 「Rijeka region」, 「Meseta cacereña」, 「Wien Brigittenau」.
+
+   The shapes exist, published by the SAME national service, in the WMO register this relay already
+   reads: measured, mem 006 (GeoSphere Austria) answers 164 rows with a real `<polygon>` on 109
+   distinct area names — 「Lienz」, 「Graz-Umgebung」, 「Leoben」 — which is exactly the vocabulary
+   MeteoAlarm names. So this endpoint is a NAME → SHAPE index for one member.
+
+   ⚠ IT IS NOT A SECOND SOURCE OF WARNINGS. Nothing here carries an event, a severity or a time;
+   「ソースは一国一ソース」 is untouched — the warning still comes from the country's own feed, and
+   this supplies the outline the same agency drew for the same named unit.
+   ⚠ AND THE EXPIRY FILTER IS DELIBERATELY OFF. A warning expires; the district it was drawn on
+   does not. Filtering by `expires` would make the library only as complete as this minute's
+   weather, which is the opposite of what an index is for.
+   ⚠ COORDINATES ARE ROUNDED TO FOUR DECIMALS (~11 m). Austria measured 1.5 MB raw; a warning
+   region is not a cadastral boundary and the rounding is stated rather than silent. */
+const SWIC_GEO_MAX_MEMBERS = 3;
+const SWIC_GEO_DP = 4;
+function swicGeoUrl(mid) {
+  const cql = "row_type='POLYGON' AND mem='" + String(mid).replace(/[^0-9A-Za-z]/g, "") + "'";
+  return SWIC + "/f/wfs?service=WFS&version=1.1.0&request=GetFeature"
+    + "&typeName=" + encodeURIComponent(SWIC_TYPE)
+    + "&outputFormat=" + encodeURIComponent("application/json")
+    + "&propertyName=" + encodeURIComponent("areadesc,sent,wkb_geometry")
+    + "&cql_filter=" + encodeURIComponent(cql);
+}
+const _rnd = (v) => Math.round(v * 1e4) / 1e4;
+function trimGeom(g) {
+  if (!g || !g.coordinates) return g;
+  const walk = (a) => Array.isArray(a[0]) ? a.map(walk) : [_rnd(a[0]), _rnd(a[1])];
+  return { type: g.type, coordinates: walk(g.coordinates) };
+}
+function summariseSWICGeo(raw, mid) {
+  const j = JSON.parse(raw);
+  const by = new Map();
+  for (const f of (j.features || [])) {
+    if (!f || !f.geometry) continue;
+    const name = String(((f.properties || {}).areadesc) || "").trim();
+    if (!name) continue;
+    const sent = String(((f.properties || {}).sent) || "");
+    const b = by.get(name);
+    if (!b || sent >= b.sent) by.set(name, { sent, geom: f.geometry });
+  }
+  const areas = []; let bytes = 0, dropped = 0;
+  for (const [name, b] of by) {
+    const g = trimGeom(b.geom);
+    const n = JSON.stringify(g).length;
+    if (bytes + n > SWIC_GEOM_BYTES) { dropped++; continue; }
+    bytes += n;
+    areas.push({ name, geom: g });
+  }
+  return { mid: String(mid), fetchedAt: new Date().toISOString(),
+    areas, areaTotal: by.size, dropped, dp: SWIC_GEO_DP };
+}
+
 /* One member → one row per AREA, the way MeteoAlarm and the CAP services are summarised: the worst
    severity in force there, the distinct hazards by the member's own name for them, and ONE geometry
    — the one from the most recently SENT warning, because that is the shape currently in force. */
@@ -639,6 +698,33 @@ Deno.serve(async (req) => {
       headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": CACHE },
     });
   }
+  /* `?swicgeo=006,011,…` — the SHAPE LIBRARY for those members (see summariseSWICGeo) */
+  const swicgeo = (q.get("swicgeo") || "").trim();
+  if (swicgeo) {
+    const mids = [...new Set(
+      swicgeo.split(",").map((x) => x.trim()).filter((x) => /^[0-9A-Za-z]{2,4}$/.test(x)),
+    )].slice(0, SWIC_GEO_MAX_MEMBERS);
+    if (!mids.length) {
+      return new Response(JSON.stringify({ error: "no member named" }), { status: 400, headers: { ...CORS, "content-type": "application/json" } });
+    }
+    const out = {};
+    for (const m of mids) {
+      try {
+        const r = await fetchGuarded(swicGeoUrl(m), {
+          timeoutMs: SWIC_TIMEOUT_MS,
+          maxBytes: SWIC_MAX_BYTES,
+          contentTypeRe: /json|text\//i,
+          headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
+        });
+        if (!r.ok) { out[m] = { error: "upstream_error" }; continue; }
+        out[m] = summariseSWICGeo(r.text(), m);
+      } catch (_e) { out[m] = { error: "unreachable" }; }
+    }
+    /* a district boundary is not this minute's weather — an hour of edge cache, not sixty seconds */
+    return new Response(JSON.stringify({ members: out }), {
+      headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400" },
+    });
+  }
   /* `?ph=1` — the Philippines, summarised the same way MeteoAlarm is (see summarisePAGASA) */
   if (q.get("ph")) {
     try {
@@ -714,8 +800,13 @@ Deno.serve(async (req) => {
      available feed into 「取得不可」 at random. Forty-five seconds and ONE retry; the 60-second edge
      cache means a reader still pays for at most one upstream request a minute either way. */
   try {
+    /* ⚠⚠ (#R277) A NON-2xx WAS NOT RETRIED, ONLY A THROWN ONE. `fetchGuarded` RESOLVES with
+       `ok:false` for an upstream 5xx, so `r` was truthy, the loop ended, and the error page fell
+       through to the JSON check and out as 502. MEASURED on the built page: 「cma 502」 in the
+       console with the SAME url answering 200 from a shell one second later, i.e. China vanished
+       from the map on an upstream hiccup. A failed status is a failed attempt. */
     let r = null;
-    for (let i = 0; i < 2 && !r; i++) {
+    for (let i = 0; i < 2 && !(r && r.ok); i++) {
       try {
         r = await fetchGuarded(ok.toString(), {
           timeoutMs: U_TIMEOUT_MS,
@@ -723,8 +814,9 @@ Deno.serve(async (req) => {
           contentTypeRe: /json|text\//i,
           headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
         });
-      } catch (_e) { if (i) throw _e; }
+      } catch (_e) { r = null; if (i) throw _e; }
     }
+    if (!r) throw new Error("upstream_error");
     const body = r.text();
     // the response must BE the kind of document the layer is about to parse; a login
     // page or an error HTML must not reach the app as "the warnings"

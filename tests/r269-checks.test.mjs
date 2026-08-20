@@ -183,16 +183,42 @@ test('R269 ④ the two relay-backed loaders run one call at a time', () => {
   /* (#R273) …and the CAP-index services joined them, so the flags are a set rather than two names */
   /* ⚠ (#R275) the set grew again (the WMO register), so the assertion names the FLAGS rather than
      the declaration line — a new feed with its own guard must not read as a regression. */
-  for (const flag of ['cmaBusy', 'maBusy', 'phlBusy', 'swicBusy'])
+  /* ⚠⚠ (#R277) THE TWO ROTATING FEEDS COUNT INSTEAD OF LATCHING, AND THIS CHECK PINNED THE LATCH.
+     A boolean over a `Promise.all` of every batch means the SLOWEST country decides when the next
+     batch may start — MEASURED, the oldest MeteoAlarm country reached 108 s under three batches
+     held that way, WORSE than the two it replaced. `maBusy`/`swicBusy` are the NUMBER of batches in
+     flight now, bounded by MA_CALLS / SWIC_CALLS, and a country one batch holds cannot be claimed
+     by another (`maPend`/`swicPend`). What #R269 is about — a bound on concurrent relay calls per
+     feed, released on BOTH paths — is asserted on the form that delivers it. */
+  for (const flag of ['cmaBusy', 'phlBusy'])
     assert.match(s, new RegExp('let [^\\n]*\\b' + flag + '=false'), `${flag} must exist`);
+  for (const flag of ['maBusy', 'swicBusy'])
+    assert.match(s, new RegExp('let [^\\n]*\\b' + flag + '=0'), `${flag} must be a count`);
   assert.match(s, /capBusy=\{\}/, 'the CAP-index services share one keyed flag');
   assert.match(s, /if\(!cmaBusy\)\{ cmaBusy=true;/, 'CMA is guarded');
-  assert.match(s, /if\(!maBusy\)\{ maBusy=true;/, 'MeteoAlarm is guarded');
+  assert.match(s, /function pumpMA\(\)\{ if\(!on\) return;/, 'MeteoAlarm has one dispatcher');
+  assert.match(s, /while\(maBusy<MA_CALLS\)\{/, '…bounded by its own slot count');
+  assert.match(s, /function pumpSWIC\(\)\{ if\(!on\|\|!swicMeta\.at\) return;/, 'the register has one too');
+  assert.match(s, /while\(swicBusy<SWIC_CALLS\)\{/, '…bounded the same way');
   assert.match(s, /if\(capBusy\[k\]\) return; capBusy\[k\]=true;/, 'every CAP-index service is guarded');
   assert.match(s, /\.then\(\(\)=>\{ capBusy\[k\]=false; \}\)/, '…and clears its flag on both paths');
-  /* and each one must clear its flag on BOTH paths, or the feed stops for the session */
-  const cma = s.slice(s.indexOf('if(!cmaBusy)'), s.indexOf('if(!maBusy)'));
+  /* and each one must release on BOTH paths, or the feed stops for the session */
+  const iC = s.indexOf('if(!cmaBusy)');
+  const cma = s.slice(iC, s.indexOf('if(!maMetaBusy)', iC) > 0 ? s.indexOf('if(!maMetaBusy)', iC) : s.indexOf('pumpMA();', iC));
   assert.match(cma, /\.then\(\(\)=>\{ cmaBusy=false; \}\)/, 'CMA clears its flag after success AND failure');
+  assert.match(s, /maBusy--; b\.forEach\(k=>\{ delete maPend\[k\]; \}\);/,
+    'a MeteoAlarm batch releases its slot and its countries on both paths');
+  assert.match(s, /swicBusy--; b\.forEach\(k=>\{ delete swicPend\[k\]; \}\);/, '…and so does the register');
+  assert.match(s, /!maPend\[k\]/, 'a country in flight is not claimed twice');
+  assert.match(s, /!swicPend\[k\]/, '…in either rotation');
+  /* …and a country read more recently than the relay's own cache is not asked again: the same
+     bytes would come back, so it is cost with no answer in it. */
+  assert.match(s, /const MIN_AGE_MS=(\d+);/, 'there is a floor on how often one country is asked');
+  const floor = +(/const MIN_AGE_MS=(\d+);/.exec(s) || [])[1];
+  const cacheS = +(/max-age=(\d+), s-maxage=/.exec(read('supabase/functions/alerts-relay/index.ts')) || [])[1];
+  assert.ok(floor > 0 && floor <= cacheS * 1000, `the floor is ${floor} ms against a ${cacheS}s edge cache`);
+  assert.match(s, /now-maAt\[k\]>=MIN_AGE_MS/, '…and the rotation obeys it');
+  assert.match(s, /now-swicAt\[k\]>=MIN_AGE_MS/, '…in both rotations');
 });
 
 test('R269 ④ the relay gives a slow upstream a real budget and one retry', () => {
@@ -210,6 +236,11 @@ test('R269 ④ the relay gives a slow upstream a real budget and one retry', () 
      answered in 1.0 s from a laptop — a budget shorter than the upstream's bad days turns an
      available feed into 「取得不可」 at random. */
   assert.ok(Math.min(...budgets) >= 40000, `the smallest budget is ${Math.min(...budgets)} ms`);
-  assert.match(t, /for \(let i = 0; i < 2 && !r; i\+\+\)/, 'and one retry');
+  /* ⚠ (#R277) THE LOOP CONDITION HAD TO CHANGE, AND THIS CHECK PINNED THE OLD ONE. `!r` ends the
+     loop as soon as `fetchGuarded` RESOLVES — which it does for an upstream 5xx, with `ok:false`
+     — so a failed status was never retried and the CMA disappeared from the map on a hiccup
+     (MEASURED: 「cma 502」 in the console, the same url answering 200 a second later). What #R269
+     is about — a real budget and one retry — is asserted on the condition that delivers it. */
+  assert.match(t, /for \(let i = 0; i < 2 && !\(r && r\.ok\); i\+\+\)/, 'and one retry, on a failed STATUS too');
 });
 
