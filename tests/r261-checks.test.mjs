@@ -4,15 +4,22 @@
  *  One test per defect this round measured, in the shape the measurement took.
  *  Source assertions (no browser): the browser specs cost minutes, these cost
  *  milliseconds, and a defect that has a shape in the source belongs here.
+ *
+ *  ⚠ (#R283) EVERY ASSERTION BELOW IS ABOUT THE CONTENT OF A FILE, SO IT READS THE
+ *  CONTENT. This file used to read the bytes the checkout produced, and ③ demands a
+ *  line break at a named place — which on a CRLF working copy has a carriage return
+ *  in front of it, so ③ has been red on Windows and green in CI ever since #R275 gave
+ *  it that shape. See scripts/eol.mjs: the line break ③ requires is still required,
+ *  and nothing else moved.
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readLF } from '../scripts/eol.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
+const read = (p) => readLF(path.join(ROOT, p));
 
 /* ── ① the trade arrowhead is aimed in SCREEN space ─────────────────────────────────────────────
    「貿易レイヤーは、矢印と線が分離している。」 MEASURED in globe projection, head angle vs the true

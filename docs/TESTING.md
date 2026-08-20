@@ -21,7 +21,8 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-20): the **core** tier that
 gates a push is **6 spec files / 1.1 min**; the **whole** suite is **65 measured spec files /
 86.5 min** of serial browser time against a ceiling of 86.7 min; and `npm run test:checks` runs
-**118 Node test files** with no browser at all. `npm test` runs the source half and the browser
+**128 Node test files** with no browser at all (counted from `package.json` on 2026-08-21; the
+line above it is the 2026-08-20 measurement). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
 | Layer | Command | Needs a browser? | External network? |
@@ -237,3 +238,14 @@ Tests are order-independent and repeatable: a fresh browser context per file (no
 `localStorage` / `IndexedDB`), a fixed **UTC** timezone and **en-US** locale, Service
 Workers blocked, and a hermetic network. Nothing depends on the developer's clock,
 language, or prior runs.
+
+**…nor on the line endings the checkout produced.** `.gitattributes` pins the extensions that
+are executed or parsed on Linux (`*.sh`, `*.sql`, `*.mjs`, `*.yml`, `*.yaml`, `*.toml`) to LF;
+`js/`, `css/` and the HTML shells are left to `core.autocrlf`, which is `true` on the Windows
+development machine and hands those files back with CRLF — while CI reads them with LF. A
+source-level check that asserts something about a file's **content** must therefore read the
+content, not the bytes: use `readLF` / `sameText` from **`scripts/eol.mjs`**, never a bare
+`readFileSync(p, 'utf8')` feeding a pattern that names a line break. Two checks did the latter
+and were red on every local run and green in CI, which is worse than no check at all — a
+failure list that is always red is a failure list nobody reads. `tests/r283-checks.test.mjs`
+holds the rule, and it fails on **both** platforms if a raw byte read comes back.
