@@ -338,6 +338,14 @@ scripts/
   arch-files-check.mjs            Architecture §3 と js/ の突き合わせ
   master-sync.mjs                 **原本（main worktree）が merge 後の状態か**を見る（`npm run master:check` / `master:sync`）。
                                   原本の場所はハードコードせず `git rev-parse --git-common-dir` から導出する。
+                                  ⚠ **branch を切り替えない。** 原本は「`main` の置き場」で作業場ではない
+                                  （`CLAUDE.md` §6）。`main` 以外にいるときは何もせず報告する。
+                                  ⚠ **未コミットの変更が「邪魔か」を判定するのは git。** 早送りが触らない
+                                  ファイル（他セッションの `.claude/launch.json` など）は素通りさせ、実際に
+                                  上書きになるときだけ `git merge --ff-only` 自身の理由を出して止まる。
+                                  `--check` も「遅れている」と「汚れている」を分け、汚れは**警告**で exit 0。
+                                  ⚠ **早送りだけ＝冪等**なので並行セッションが同時に走らせてよく、
+                                  排他ロックを必要としない。
                                   ⚠ `npm test` には入れない——CI のチェックアウトは detached な PR ref。
   engine-coupling.mjs             レンダラ脱依存のゲート
   i18n-*.mjs                      翻訳の被覆と形の監査（§10）
