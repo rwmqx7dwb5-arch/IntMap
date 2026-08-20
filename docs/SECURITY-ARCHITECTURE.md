@@ -106,9 +106,10 @@ flowchart LR
 
 ## 4. Frontend XSS defense (the primary control)
 
-Because the app is a single inline no-build file and holds the session token in
+Because the boot code is still inline (§6) and the app holds the session token in
 `localStorage`, **correct output-encoding at every sink is the primary XSS defense** (CSP is
-secondary — see §6). All untrusted text now routes through one canonical, dependency-free,
+secondary — see §6). The app IS built (Vite, since #R175) and what ships is `dist/`, but that
+changes nothing here: a bundled sink is exactly as exploitable as an inline one. All untrusted text now routes through one canonical, dependency-free,
 globally-defined helper, `window.IntMapSafe` (defined in the first `<head>` script):
 
 - `IntMapSafe.html(s)` — escapes `& < > " '`; safe in HTML **text** and single/double-quoted
