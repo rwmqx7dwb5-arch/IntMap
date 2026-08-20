@@ -111,7 +111,14 @@ test('R261 ⑤: the terrain/water transport is not a disc', () => {
   const m = s.match(/'\.tw-play\{[^']*'/);
   assert.ok(m, 'the .tw-play rule is there');
   assert.doesNotMatch(m[0], /border-radius:19px/, 'a 19 px radius on a 38 px box IS a circle');
-  assert.match(m[0], /width:38px;height:38px;flex:0 0 auto;border-radius:11px/);
+  /* ⚠ (#R273) THE PROPERTY IS «ROUNDED SQUARE», NOT «38 px». That round's footer measured 38 / 35 /
+     34 on three consecutive rows and the transport is 36 now, level with the speed strip and the
+     buttons. Pinning the size made a fix to the ROW look like a regression of the SHAPE. */
+  const size = /width:(\d+)px;height:(\d+)px/.exec(m[0]);
+  assert.ok(size, '.tw-play must state its box');
+  assert.equal(size[1], size[2], 'the transport is square');
+  const rad = +(/border-radius:(\d+)px/.exec(m[0]) || [])[1];
+  assert.ok(rad > 0 && rad < +size[1] / 2, `radius ${rad} on a ${size[1]} px box must be a rounded square, not a disc`);
 });
 
 /* ── ⑥ a coarse rung's crossing is re-walked at the trace's own resolution ──────────────────────

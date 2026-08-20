@@ -28,10 +28,12 @@ IntMap is primarily designed for people interested in geography and internationa
 * Follow a country's goods trade partner by partner, by commodity and by year
 * Read a country's electricity and primary-energy mix as a composition, not a single colour
 * See the weather and disaster warnings an agency has actually issued, at the unit it issued them
-  for — 45 countries over eleven feeds: Japan (JMA), the United States (NWS), Canada (ECCC),
-  Germany (DWD), Norway (MET Norway), China (CMA), Australia (BoM), Brazil (INMET), Hong Kong
-  (HKO), the Philippines (PAGASA), and thirty-five further European services through MeteoAlarm,
-  refreshed every minute. Everywhere else falls back to GDACS, drawn on its own separate scale
+  for — 47 countries over thirteen feeds: Japan (JMA, down to the municipality), the United States
+  (NWS), Canada (ECCC), Germany (DWD), Norway (MET Norway), China (CMA), Australia (BoM), Brazil
+  (INMET), Hong Kong (HKO), the Philippines (PAGASA), Taiwan (CWA), New Zealand (MetService), and
+  thirty-five further European services through MeteoAlarm. Each agency's own colours are the
+  default; a country with no feed is drawn hatched, so "nothing published" never looks like
+  "nothing happening"
 * Read annual precipitation as a measured 1 km field, or as any single year from 1981 to 2020
 * Compare any World Bank indicator in a year you choose, rather than whatever year each country last reported
 * Look up high and low water anywhere on a coast, and how far the tide reaches over real terrain

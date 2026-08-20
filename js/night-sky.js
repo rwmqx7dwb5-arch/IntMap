@@ -557,7 +557,7 @@ window.IntMapNightSky = (function () {
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
       + '<strong class="ns-title" style="flex:1"></strong>'
       + '<button class="ns-close" title="' + esc(L('Close', '閉じる', 'Schließen', 'Закрыть', 'Cerrar')) + '" '
-      + 'style="background:none;border:0;color:#e8eef8;font-size:16px;cursor:pointer;">✕</button></div>'
+      + 'style="background:none;border:0;color:#e8eef8;font-size:16px;cursor:pointer;">×</button></div>'
       /* ══ ⚠ (#R245) THE CONTROLS ARE THREE GROUPS, NOT SIX STACKED ROWS ══════════════════════════
          「Stand and look upはパネル部分をもう少しパネルの領域範囲を整理して。」 In the standing view
          #R244 gave the panel a 1,080 px band across the bottom and left the controls as the SIX

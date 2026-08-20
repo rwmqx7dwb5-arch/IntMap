@@ -180,7 +180,7 @@ window.IntMapModules.aircraftDetail=function(HOST){
     if(el&&document.body.contains(el)) return el;
     el=document.createElement('div');
     el.className='country-popup ac-popup'; el.id='ac-popup';
-    el.innerHTML='<button class="country-popup-close" id="acp-close" type="button" title="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">✕</button>'
+    el.innerHTML='<button class="country-popup-close" id="acp-close" type="button" title="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">×</button>'
       +'<div class="country-popup-header"><h3 id="acp-title"></h3></div><div id="acp-body"></div>';
     (document.getElementById('map-container')||document.body).appendChild(el);
     el.querySelector('#acp-close').addEventListener('click',()=>close());

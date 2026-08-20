@@ -194,7 +194,7 @@ window.IntMapLang.define('es', { ui: {
       blueberryNote:"Abre una página externa (Stripe).",
       lyrGrpClimate:"Clima y meteorología",
       lyrGrpHazard:"Riesgos y emergencias",
-      lyrGrpDemo:"Población y economía",
+      lyrGrpDemo:"Población y demografía",
       lyrGrpGeoPol:"Geopolítica y defensa",
       lyrGrpPolitics:"Política y gobernanza",
       lyrGrpSecurity:"Defensa y seguridad",

@@ -84,7 +84,7 @@ window.IntMapModules.satelliteDetail=function(HOST){
     if(el&&document.body.contains(el)) return el;
     el=document.createElement('div');
     el.className='country-popup sat-popup'; el.id='sat-popup';
-    el.innerHTML='<button class="country-popup-close" id="satp-close" type="button" title="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">✕</button>'
+    el.innerHTML='<button class="country-popup-close" id="satp-close" type="button" title="'+S(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">×</button>'
       +'<div class="country-popup-header"><h3 id="satp-title"></h3></div><div id="satp-body"></div>';
     (document.getElementById('map-container')||document.body).appendChild(el);
     el.querySelector('#satp-close').addEventListener('click',()=>close());

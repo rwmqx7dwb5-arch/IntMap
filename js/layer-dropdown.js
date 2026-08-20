@@ -41,7 +41,7 @@ export function makeLayerDropdown(HOST, CTX) {
     }catch(_){}
   });
   /* (#R7-legend-x) A click anywhere on the document used to collapse the Layers dropdown — including a
-     click on a layer's legend ✕ (which sits OUTSIDE the dropdown). Keep the dropdown open when the
+     click on a layer's legend × (which sits OUTSIDE the dropdown). Keep the dropdown open when the
      click originates inside any legend / its controls, so toggling a legend off doesn't shut the tab. */
   document.addEventListener('click',(e)=>{ if(e.target.closest&&e.target.closest('.data-legend,.koppen-legend,.koppen-info-pop,.layer-popup-x,.legend-min,#layer-sidebar-r')) return; if(layerDropdown.classList.contains('lsr-mode')) return; layerDropdown.classList.remove('show'); });
   /* (#R27) Robust, idempotent fallback for every legend × that carries a data-x layer id. A legend's

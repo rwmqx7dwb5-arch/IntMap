@@ -147,7 +147,7 @@ window.IntMapModules.searchGeocode=function(HOST){
   function closeSearchCard(){
     if(HOST.searchMarker){ HOST.searchMarker.remove(); HOST.searchMarker=null; }
     if(searchCardEl){ searchCardEl.remove(); searchCardEl=null; }
-    /* ⚠ (#R244) ONE ✕ CLEARS BOTH, which is the whole point of #R59: the place popup owns its
+    /* ⚠ (#R244) ONE × CLEARS BOTH, which is the whole point of #R59: the place popup owns its
        boundary and closing it takes the boundary with it. The search card now owns one too, so it
        has to be the same contract — otherwise a postcode outline outlives the card that drew it and
        there is no control left that removes it. */
@@ -241,7 +241,7 @@ window.IntMapModules.searchGeocode=function(HOST){
     const parts=(displayName||'').split(',');
     const primary=parts[0]||displayName||'';
     const restAdmin=parts.slice(1,4).map(s=>s.trim()).filter(Boolean).join(', ');
-    searchCardEl.innerHTML=`<button class="src-card-close" title="${HOST.t('close')}">✕</button>
+    searchCardEl.innerHTML=`<button class="src-card-close" title="${HOST.t('close')}">×</button>
       <div class="src-card">
         <h4>📍 ${IntMapSafe.html(primary)}</h4>
         <div class="src-sub">${IntMapSafe.html(restAdmin||country||'')}</div>
@@ -259,7 +259,7 @@ window.IntMapModules.searchGeocode=function(HOST){
        The card is the ASK ("is this the place you meant?"); dropping a pin is the answer, so leaving the card open
        left the question on screen next to its own answer. closeSearchCard() takes the transient search marker with
        it, and that is the point rather than a side effect: a real user pin now stands at the same coordinates, and
-       the ✕ that was the search marker's ONLY remover is the thing being closed — keeping it would strand a second,
+       the × that was the search marker's ONLY remover is the thing being closed — keeping it would strand a second,
        un-removable pin under the first. Pin first, then close: HOST.openPinPopup(id) must not open into a card that
        is still being torn down. */
     searchCardEl.querySelector('#src-pin').onclick=()=>{ const id=HOST.addPin(lng,lat); HOST.openPinPopup(id); closeSearchCard(); };

@@ -14,7 +14,7 @@ window.IntMapModules.onboarding=function(HOST){
   const ensurePlaceLabels=HOST.ensurePlaceLabels, applyLabelLang=HOST.applyLabelLang, isMobile=HOST.isMobile;
   /* (#R15c) First-visit showcase — a new user reported the map "was initially just black". On the very
      first visit (nothing seen before) we auto-cycle a few colorful layers with a bottom pill that names
-     the layer being shown + play/pause + dismiss. It stops the moment the user toggles any layer or hits ✕,
+     the layer being shown + play/pause + dismiss. It stops the moment the user toggles any layer or hits ×,
      and remembers it's been seen so it never nags again. Purely additive; touches only its own pill. */
   function _imStartDemo(force){
     /* (#R21) force=true → the Settings "Tutorial" button re-runs the showcase on demand. */
@@ -48,7 +48,7 @@ window.IntMapModules.onboarding=function(HOST){
       badge.style.cssText='font-size:9.5px;font-weight:800;letter-spacing:0.06em;padding:2px 6px;border-radius:999px;background:var(--primary-color);color:#fff;text-transform:uppercase;animation:imDemoPulse 1.6s ease-in-out infinite;';
       pill.appendChild(badge);
       const t=document.createElement('span'); t.innerHTML='<span style="opacity:0.7;">'+(window.IntMapLang.t(HOST.lang,"Intro demo:","初回デモ:","Einführungsdemo:","Вводная демонстрация:","Demostración inicial:"))+'</span> <b>'+name+'</b>'; pill.appendChild(t);
-      /* (#R32) iOS-clean controls — SVG play/pause + a circular × instead of the ▶ ⏸ ✕ emoji
+      /* (#R32) iOS-clean controls — SVG play/pause + a circular × instead of the ▶ ⏸ × emoji
          ("中途半端にダサい絵文字を入れるな / iOS風にしろ"). */
       const _svgPlay='<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
       const _svgPause='<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';

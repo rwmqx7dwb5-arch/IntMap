@@ -70,7 +70,12 @@ test('R269 ① a feed whose newest bulletin is old is refused, not presented as 
 /* ── ② the code table is the JMA's, and the rank comes from its level ──────────────────────── */
 test('R269 ② the rank is a function of the JMA level and of nothing else', () => {
   const s = WP();
-  assert.match(s, /const jmaTier=\(lvl\)=>lvl>=40\?3:lvl>=30\?2:1;/, 'the rank must come from the level');
+  /* ⚠ (#R273) the function was renamed when every agency gained one — `normOf(feed,lv)` is the ONE
+     place a rank is normalised, and the JMA branch is still a function of the level and nothing
+     else. What #R269 was about is that a rank may never come from a code RANGE. */
+  assert.match(s, /if\(feed==='jma'\) return lv>=50\?4:lv>=40\?3:lv>=30\?2:1;/,
+    'the JMA rank must come from the level');
+  assert.match(s, /function normOf\(feed,lv\)/, 'and there must be exactly one normaliser');
   /* the old rule decided the rank from a CODE RANGE, which is what painted every 注意報 red */
   assert.doesNotMatch(s, /n>=19&&n<=27/, 'no rank may be inferred from a code range again');
   assert.doesNotMatch(s, /const JMA_KIND=/, 'the invented table must be gone');
@@ -133,7 +138,8 @@ test('R269 ③ every warning feed records the newest timestamp in its own payloa
   const s = WP();
   assert.match(s, /const FEED_AT=\{\}/, 'the per-feed clock must exist');
   assert.match(s, /const seenAt=\(k,t\)=>/, '…and one way to write to it');
-  for (const k of ['jma', 'nws', 'eccc', 'cma', 'bom', 'hko', 'inmet', 'gdacs', 'meteoalarm']) {
+  /* (#R273) gdacs left the list with the feed itself; cwa / metservice joined it */
+  for (const k of ['jma', 'nws', 'eccc', 'cma', 'bom', 'hko', 'inmet', 'meteoalarm']) {
     assert.ok(new RegExp("seenAt\\('" + k + "'").test(s), `${k} records no timestamp of its own`);
   }
   /* ⚠ the CMA writes 2026/08/19 17:22 — slashes, which Date.parse answers NaN for, so the first
@@ -143,17 +149,22 @@ test('R269 ③ every warning feed records the newest timestamp in its own payloa
   assert.ok(cma[0].includes(".split('/').join('-')"), 'the CMA slashes must be replaced: ' + cma[0]);
   assert.ok(cma[0].includes('+08:00'), 'and its zone stated: ' + cma[0]);
   assert.match(s, /const ageH=\(k\)=>/, 'the age must be derived from it');
-  assert.match(s, /esc\(extra\)\+esc\(ageTxt\(k\)\)/, '…and printed beside the service');
+  assert.match(s, /ageTxt\(k\)/, '…and printed beside the service');
 });
 
 test('R269 ③ «reachable» and «still running» are two different dots', () => {
   const s = WP();
-  assert.match(s, /const STALE_H=(\d+)/, 'the staleness threshold must exist');
-  const h = +/const STALE_H=(\d+)/.exec(s)[1];
-  /* MEASURED live: INMET's newest item was 33.5 h old and HKO's 19.3 h while both were current, so
-     a «recent» threshold would cry wolf. A week without a single bulletin is the real signal. */
-  assert.ok(h >= 24 * 4, `the threshold is ${h} h — a live feed with a multi-day warning must not be flagged`);
-  assert.match(s, /const dot=\(k\)=>/, 'the dot must be computed from the state AND the age');
+  /* ⚠⚠ (#R273) ONE DOT BECAME FOUR GRADES — 「更新時間31.1hと2minが同列」. #R269 asked for «reachable»
+     and «still running» to be different; the reader then pointed out that 31 h and 2 min were still
+     the same green. Fresh / Delayed / Stale / Error, and the thresholds are named constants. */
+  assert.match(s, /const FRESH_H=(\d+), DELAY_H=(\d+)/, 'the freshness thresholds must exist');
+  const th = /const FRESH_H=(\d+), DELAY_H=(\d+)/.exec(s);
+  assert.ok(+th[1] > 0 && +th[1] < +th[2], `fresh ${th[1]} h must be inside delayed ${th[2]} h`);
+  /* MEASURED live: INMET's newest item was 33.5 h old while it was current, so a feed at that age
+     is 「Delayed」 — a word about the FEED — and never an error about the warnings. */
+  assert.ok(+th[2] >= 24, `the delayed band ends at ${th[2]} h — a multi-day warning must not read as broken`);
+  assert.match(s, /function grade\(k\)/, 'the grade must be computed from the state AND the age');
+  assert.match(s, /const GRADE_COL=\{/, '…and each grade must have its own colour');
 });
 
 /* ── ④ 追記: the relay-backed loaders, and what a «newest timestamp» may be ─────────────────── */
@@ -169,9 +180,12 @@ test('R269 ④ a timestamp in the future is refused as evidence of freshness', (
 
 test('R269 ④ the two relay-backed loaders run one call at a time', () => {
   const s = WP();
-  assert.match(s, /let cmaBusy=false, maBusy=false;/, 'the in-flight flags must exist');
+  /* (#R273) …and the CAP-index services joined them, so the flags are a set rather than two names */
+  assert.match(s, /let cmaBusy=false, maBusy=false, phlBusy=false, capBusy=\{\};/, 'the in-flight flags must exist');
   assert.match(s, /if\(!cmaBusy\)\{ cmaBusy=true;/, 'CMA is guarded');
   assert.match(s, /if\(!maBusy\)\{ maBusy=true;/, 'MeteoAlarm is guarded');
+  assert.match(s, /if\(capBusy\[k\]\) return; capBusy\[k\]=true;/, 'every CAP-index service is guarded');
+  assert.match(s, /\.then\(\(\)=>\{ capBusy\[k\]=false; \}\)/, '…and clears its flag on both paths');
   /* and each one must clear its flag on BOTH paths, or the feed stops for the session */
   const cma = s.slice(s.indexOf('if(!cmaBusy)'), s.indexOf('if(!maBusy)'));
   assert.match(cma, /\.then\(\(\)=>\{ cmaBusy=false; \}\)/, 'CMA clears its flag after success AND failure');
