@@ -4366,6 +4366,8 @@ window.IntMapLang.define('zh-hans', {
   "Water": "水",
   "Hailstorm": "冰雹",
   "Heavy rainfall": "大雨",
-  "Thunderstorms": "雷雨",   /* (#R267) */
+  "Thunderstorms": "雷雨",
+  "The reachable area is computed for 1 to 120 minutes — ask again inside that range.": "可达范围以 1 至 120 分钟计算，请在此范围内重新指定。",
+  "The reachable area was computed, but the map layer could not be created (the map style was still loading) — try again in a moment.": "可达范围已计算完成，但无法建立地图图层（地图样式尚在加载）— 请稍后再试一次。",   /* (#R267) */
   }
 });
