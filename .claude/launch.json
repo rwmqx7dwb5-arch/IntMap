@@ -975,6 +975,19 @@
       ],
       "port": 4278,
       "url": "http://127.0.0.1:4278"
+    },
+    {
+      "name": "intmap-preview-r279",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "C:/Users/gyuuk/AppData/Local/Temp/claude/C--Users-gyuuk-OneDrive-IntMap/422f916b-758f-41d5-be4c-561ed9288844/scratchpad/wt-r279/dist",
+        "--port",
+        "4279"
+      ],
+      "port": 4279,
+      "url": "http://127.0.0.1:4279"
     }
   ]
 }
