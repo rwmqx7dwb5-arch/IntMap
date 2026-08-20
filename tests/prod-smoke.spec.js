@@ -5,6 +5,7 @@
 import { test, expect } from '@playwright/test';
 import { collectPageDiagnostics, ensureAtlasOnDemand } from './helpers/network.js';
 import { loadLazyModules } from './helpers/app.js';
+import { readPixel, explain, colourFor } from './helpers/wind-ramp.js';
 
 const PROD_URL = process.env.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntMap/';
 
@@ -580,13 +581,32 @@ test('(#R276) prod draws the wind from the model, and the pixel is the colour th
       const gl = c.getContext('webgl2') || c.getContext('webgl');
       const px = new Uint8Array(4);
       gl.readPixels(Math.round(c.width * 0.5), Math.round(c.height * 0.5), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-      const ll = window.IntMapGeoEngine.coords.unproject([c.clientWidth * 0.5, c.clientHeight * 0.5]);
+      const X = c.clientWidth * 0.5, Y = c.clientHeight * 0.5;
+      const ll = window.IntMapGeoEngine.coords.unproject([X, Y]);
       const EC = window.IntMapECMWF;
       const sp = EC.valueNow('wind_u_component_10m', ll.lat, ll.lng);
       const sc = EC.scale('wind_u_component_10m', true);
+      /* THE SPEEDS THE MODEL ACTUALLY TAKES UNDER THIS ONE PIXEL. One screen pixel is the smallest
+         patch the question can be asked about, and the linear resampling reaches into its
+         neighbours, so the footprint is the pixel and the ring around it — nothing tuned. */
+      const smp = EC.sampler('wind_u_component_10m');
+      let lo = Infinity, hi = -Infinity;
+      for (let dx = -1; dx <= 1; dx += 0.5) {
+        for (let dy = -1; dy <= 1; dy += 0.5) {
+          const q = window.IntMapGeoEngine.coords.unproject([X + dx, Y + dy]);
+          const v = smp ? smp.value(q.lat, q.lng) : NaN;
+          if (v === v && isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        }
+      }
+      /* the renderer's OWN table, carried out whole — the verdict is taken in Node so that
+         tests/r287-checks.test.mjs can run the same decision over failures this page cannot show */
+      const ramp = sc && sc.breakpoints
+        ? { breakpoints: sc.breakpoints.slice(), colors: sc.colors.map((q) => [q[0], q[1], q[2]]) }
+        : null;
       let want = null;
       try { want = EC.sdk().getColor(sc, sp, true); } catch { /* older SDK */ }
-      return res({ px: Array.from(px), sp, want, model: window.Wind.model(), stats: window.Wind._dbg() });
+      return res({ px: Array.from(px), sp, want, ramp, lo, hi,
+        model: window.Wind.model(), stats: window.Wind._dbg() });
     });
     map.triggerRepaint();
   }));
@@ -597,12 +617,45 @@ test('(#R276) prod draws the wind from the model, and the pixel is the colour th
   expect(m.stats.webgl, 'the particles are drawn with WebGL').toBe(true);
   expect(m.stats.drawn, 'and there really are particles on screen').toBeGreaterThan(200);
   expect(typeof m.sp, 'the field answers for the point under the middle of the map').toBe('number');
+
   /* ⚠⚠ THE INVARIANT THIS ROUND EXISTS FOR. Before it, the pixel here was 0.36× the colour the
      table asks for, because the day/night shading sat on top of the weather. Exact equality is the
-     only version of this worth asserting: anything looser passes while half the planet is grey. */
-  test.skip(!m.want, 'this SDK build does not expose getColor');
-  expect(m.px.slice(0, 3), 'the painted pixel IS the LUT entry for the wind speed there')
-    .toEqual(m.want.slice(0, 3).map((v) => Math.round(v)));
+     only version of this worth asserting: anything looser passes while half the planet is grey.
+
+     ⚠⚠⚠ (#R287) …AND WHAT MUST BE EXACT IS THE COLOUR, WHICH IS NOT THE SAME CLAIM AS 「the entry
+     for the value at this point」. #R284 resampled the same seventeen anchors onto 0.1 m/s so the
+     wind would be a gradient rather than seventeen flat bands, and that quietly removed the
+     accident this assertion had been resting on: the pixel is painted from a raster TEXEL through
+     `raster-resampling: linear`, so it answers for the patch of atmosphere it covers, while
+     `valueNow()` answers for the mathematical point at its centre. Under seventeen bands those two
+     readings landed in the same band and produced the same colour; at 0.1 m/s they are one to eight
+     visible steps apart. MEASURED against production, 78 of 81 sampled pixels are EXACTLY a table
+     entry — but only 20 of those 78 (26 %) are the entry for the point value, so the old form had
+     become a coin flip that failed two deployments on a picture that was right.
+
+     The ambiguity is SPATIAL, so it is settled in space and the colour stays byte-exact — the same
+     move #R276 追記3 made for the eyewall pair, for the same reason: tightening a number until a
+     correct picture passes is how a test stops meaning anything. Two exact claims replace one:
+       ① the pixel IS one of the table's colours          → nothing was multiplied over the raster
+                                                             (0.36× lands 128 RGB units away)
+       ② the speed that entry stands for is a speed the
+          field really takes under that pixel             → it is THIS field, here, now.
+     Neither carries a colour tolerance. */
+  expect(m.ramp, 'the deployed build exposes the colour table its own tiles are rendered from').not.toBeNull();
+  expect(m.ramp.breakpoints.length, 'and it is the resampled ramp (#R284), not the seventeen anchors')
+    .toBe(601);
+  /* the table is read here exactly as the SDK reads it — pinned against the SDK itself, so the
+     verdict below cannot drift from the renderer by an off-by-one in the bucket search */
+  if (m.want) {
+    expect(colourFor(m.ramp, m.sp), 'the bucket rule used here is the SDK\'s own')
+      .toEqual(m.want.slice(0, 3).map((v) => Math.round(v)));
+  }
+
+  const verdict = readPixel(m.ramp, m.px.slice(0, 3), m.lo, m.hi);
+  expect(verdict.onTable, 'the painted pixel IS a colour the wind table can produce — '
+    + explain(m.px.slice(0, 3), verdict)).toBe(true);
+  expect(verdict.withinFootprint, 'and it stands for a wind speed the model really has under that '
+    + 'pixel — ' + explain(m.px.slice(0, 3), verdict) + ' (point value ' + m.sp.toFixed(2) + ')').toBe(true);
   expect(m.px[3], 'and it is opaque').toBe(255);
 });
 

@@ -346,8 +346,14 @@ test('R276 ⑱ a layer releases its own frame, never somebody else\'s', () => {
   assert.match(s, /loadingKey\.indexOf\('variable=' \+ encodeURIComponent\(variable\)\) >= 0/,
     '…and when nothing is held, the load in flight does');
   assert.match(WX(), /EC\(\)\.release\(VAR\)/, 'the wind layer names itself when it lets go');
-  /* setIndex's own release stays unqualified on purpose: a new hour invalidates every variable */
-  assert.match(s, /if \(held && held\.key !== stateKey\(held\.variable, '', idx\)\) release\(\);/,
+  /* The time step's own drop stays unqualified by VARIABLE on purpose: a new hour invalidates every
+     variable, so the held frame goes whatever it holds — that is what this line still asserts.
+     ⚠ (#R287) IT IS NO LONGER `release()`. That call cleared `loadingKey` as well, which was
+     harmless while the line ran synchronously inside `setIndex`; once #R284 deferred it by
+     COALESCE_MS it began landing INSIDE the window a load lives in and cancelled the fetch of the
+     very hour being announced. The frame still goes; only a load of that hour is now spared.
+     The new shape is asserted in full by tests/r287-checks.test.mjs ⑧. */
+  assert.match(s, /if \(held && held\.key !== stateKey\(held\.variable, '', idx\)\) \{[\s\S]{0,200}?held = null;/,
     'a time step still drops everything, because it invalidates everything');
 });
 
