@@ -1,3 +1,4 @@
+import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
 /* ============================================================================
  *  IntMap · Analysis panels — IntMapModules.{timeSeries,aiResearch,correlate,worldEvents,edu}  (#R166)
  * ----------------------------------------------------------------------------
@@ -214,9 +215,9 @@ window.IntMapModules.aiResearch=function(HOST){
          ⚠ IT IS FIXED IN BOTH PLACES, because a prompt is a request and not a guarantee: the system
          message says not to, and `_dropLeadTitle` below removes it if one arrives anyway. */
       const noTitle=(window.IntMapLang.t(HOST.lang," Do NOT open with a heading or bold line that merely repeats the place name — it is already on screen above your reply. Start straight with the content.","見出しや太字で場所の名前だけを繰り返す行を冒頭に置かないでください（画面に既に表示されています）。本文からすぐ始めてください。"," Beginnen Sie NICHT mit einer Überschrift oder Fettzeile, die nur den Ortsnamen wiederholt — er steht bereits über Ihrer Antwort auf dem Bildschirm. Fangen Sie direkt mit dem Inhalt an."," НЕ начинайте с заголовка или жирной строки, которая лишь повторяет название места — оно уже показано над вашим ответом. Сразу переходите к содержанию."," NO empiece con un título ni una línea en negrita que sólo repita el nombre del lugar: ya aparece en pantalla encima de su respuesta. Empiece directamente con el contenido."));
-      const sys=(jp()
-        ?('あなたは地政学・地域研究のリサーチアシスタントです。本日は'+today+'です。事実に忠実に、簡潔な日本語で答えてください。可能な限り具体的な年・日付・数値（人口、GDP、兵力、距離など）を文中に入れてください。不確かな点は「未確認」と明記してください。'+noTitle)
-        :('You are a geopolitical and area-studies research assistant. Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain.'+noTitle))+window._aiLangLine();
+      const sys=personaPrompt('working here as the geopolitical and area-studies research desk of IntMap')+(jp()   /* (#R285) both branches opened with an identity sentence of their own */
+        ?('本日は'+today+'です。事実に忠実に、簡潔な日本語で答えてください。可能な限り具体的な年・日付・数値（人口、GDP、兵力、距離など）を文中に入れてください。不確かな点は「未確認」と明記してください。'+noTitle)
+        :('Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain.'+noTitle))+window._aiLangLine();
       const prompt=(jp()
         ?('場所「'+name+'」'+(lngLat?('（座標: '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+'）'):'')+'について、以下の構成で簡潔なインテリジェンス・ブリーフを書いてください。\n## 概要・背景\n## 歴史（重要な出来事は年号つきで）\n## 経済（最新の数値・年を明記）\n## 軍事・戦略的意義\n## 最近の動向（直近1〜2年を最優先。出来事には日付や時期を明記）\n各セクション2〜4文。曖昧な一般論より、固有名詞・日付・数値を優先してください。')
         :('Write a concise intelligence brief on "'+name+'"'+(lngLat?(' (around '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (state the latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritize the last 1–2 years; date each event)\n2–4 sentences per section. Prefer named entities, dates and numbers over generalities.'))
@@ -315,7 +316,7 @@ window.IntMapModules.aiResearch=function(HOST){
       p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       const chat=p.querySelector('#air-chat'); const convo=[]; const news=nearbyNews(lngLat); const today=new Date().toISOString().slice(0,10);
-      const sys='You are a world-geography, history and geopolitics expert. The user is asking about a SPECIFIC point on the map at latitude '+lngLat.lat.toFixed(4)+', longitude '+lngLat.lng.toFixed(4)+'. Today is '+today+'. First work out what is at or near that exact location (country, region, city, terrain, sea), then answer concisely and factually with concrete facts, figures and dates. If the point is ocean or uninhabited, say so plainly. Flag anything uncertain.'+window._aiLangLine();
+      const sys=personaPrompt('answering here as the world-geography, history and geopolitics desk of IntMap')/* (#R285) */+'The user is asking about a SPECIFIC point on the map at latitude '+lngLat.lat.toFixed(4)+', longitude '+lngLat.lng.toFixed(4)+'. Today is '+today+'. First work out what is at or near that exact location (country, region, city, terrain, sea), then answer concisely and factually with concrete facts, figures and dates. If the point is ocean or uninhabited, say so plainly. Flag anything uncertain.'+window._aiLangLine();
       const bubble=(who,html)=>{ const d=document.createElement('div'); d.style.cssText=(who==='user'?'align-self:flex-end;max-width:88%;background:var(--primary-color);color:#fff;border-radius:14px 14px 5px 14px;':'align-self:flex-start;max-width:93%;background:var(--input-bg);color:var(--text-main);border-radius:14px 14px 14px 5px;')+'padding:8px 11px;font-size:12.5px;line-height:1.55;word-break:break-word;'; d.innerHTML=html; chat.appendChild(d); try{ p.scrollTop=p.scrollHeight; }catch(_){} return d; };
       const ask=async(qq)=>{ bubble('user',esc(qq));
         const ai=bubble('ai','<span style="color:var(--text-muted);">'+LL('Thinking…','回答中…','Denke nach…','Думаю…','Pensando…')+'</span>'); convo.push('User: '+qq);

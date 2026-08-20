@@ -209,9 +209,15 @@ const hasLetter = (s) => /\p{L}/u.test(s);
    translation — it is one instruction with a second draft — and giving it eight more drafts would
    multiply a maintenance surface no reader can see while changing nothing on screen.
    ⚠ Listed by their opening words, so adding one is a decision somebody made on purpose. */
+/* ⚠ (#R285) BOTH ENTRIES WERE RE-KEYED when the persona landed. They used to open «You are a
+   satellite-imagery analyst…» and «You are a geopolitical analyst…»; who Atlas is now comes from
+   js/atlas-persona.js, prepended by personaPrompt(), so the translated half of each prompt begins
+   with its TASK instead of with a second identity. Matching on opening words means a rewording is a
+   deliberate edit here rather than a silent exemption that stops applying — which is what happened:
+   the gate went 0 → 2 the moment the sentences changed, and named both sites. */
 const PROMPTS = [
-  'You are a satellite-imagery analyst comparing two images',
-  'You are a geopolitical analyst. Below are news headlines',
+  'Compare two images of the same area (first = earlier, second = later)',
+  'Below are news headlines reported within a single geographic area',
 ];
 const isPrompt = (s) => PROMPTS.some((p) => s.startsWith(p));
 

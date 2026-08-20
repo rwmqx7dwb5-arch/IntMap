@@ -288,6 +288,18 @@ try {
   err('newsgeo-mirror', 'could not verify the newsgeo mirror: ' + (e && e.message));
 }
 
+// ── 7b. (#R285) Atlas persona mirror is in sync ──────────────────────────────
+// js/atlas-persona.js is the single source of truth for WHO ATLAS IS; the two Edge Functions that
+// also speak as Atlas read the generated copy at supabase/functions/_shared/atlas-persona.js.
+// Editing one and not the other is how a product ends up with two Atlases whose characters differ
+// by which half of the stack answered — the exact thing #R285 existed to remove.
+try {
+  const { inSync } = await import('./sync-atlas-persona.mjs');
+  if (!inSync()) err('persona-mirror', 'supabase/functions/_shared/atlas-persona.js is out of sync with js/atlas-persona.js — run: node scripts/sync-atlas-persona.mjs');
+} catch (e) {
+  err('persona-mirror', 'could not verify the atlas-persona mirror: ' + (e && e.message));
+}
+
 // ── 8. (#R162) index.html file-split integrity ───────────────────────────────
 // index.html is being split into css/ + js/ (standing rule 13). Two ways that goes wrong
 // silently: (a) a module file exists but nothing loads it — the app then boots with the
