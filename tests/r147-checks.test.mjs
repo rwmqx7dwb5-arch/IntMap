@@ -46,9 +46,25 @@ test('R147 #10 Atlas planner prompt carries the scope/safety judgment layer', ()
   assert.match(html, /Try rephrasing it as a public-information, broad-area analysis/);
 });
 
-test('R147 #2 Atlas defaults to polite Japanese (keigo) unless the user opts out', () => {
-  assert.match(html, /敬語/, 'keigo instruction present');
-  assert.match(html, /polite form/, 'polite-form instruction present');
+/* (#R285 追記) THE RULE DID NOT GO AWAY — IT MOVED, AND IT STOPPED HAVING AN EXIT.
+   #R147's contract was «Atlas is polite in Japanese», and it checked the app SHELL because that is
+   where the instruction was written, twice, by hand. #R285 made the register part of the persona, so
+   the one place it may live is js/atlas-persona.js — which is not in the shell, and this test would
+   have gone quiet had it kept pointing there. It now asserts the SAME contract at its real home, and
+   the strengthening the specification asked for: 「ただし常に自然な敬語」 — no "unless the user is
+   casual" escape anywhere. tests/r285-checks ⑥ is the other half (nothing carries a second copy). */
+test('R147 #2 Atlas is polite in Japanese — always, and from exactly one place', () => {
+  const persona = readFileSync(new URL('js/atlas-persona.js', root), 'utf8');
+  assert.match(persona, /です・ます／自然な敬語/, 'the keigo instruction is in the persona');
+  assert.match(persona, /at all times, including when the user writes casually/,
+    'the register is unconditional — 「ただし常に自然な敬語」');
+  assert.ok(!/unless the user is clearly casual/i.test(persona),
+    'the superseded opt-out came back into the persona');
+  /* ⚠ NOT «the rule appears nowhere else» — `html` here is appSource(), which is index.html + css +
+     ALL of js/, so it contains js/atlas-persona.js and the canonical copy would fail its own check.
+     That question belongs to tests/r285-checks ⑥, which walks the same tree with the two canonical
+     files excluded. This test owns «the rule exists, at its one home, without an exit». */
+  assert.match(html, /です・ます／自然な敬語/, 'the instruction still reaches the bundled app');
 });
 
 test('R147/R152 Street View coverage is a cyan light-blue, THINNER line (R152 dropped the glow)', () => {
