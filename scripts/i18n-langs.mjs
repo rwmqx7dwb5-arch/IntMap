@@ -14,6 +14,13 @@
  *  this file exists. #R231 shipped 「読み物ページに中国語が一度も届いていなかった」 precisely because
  *  the equivalent list was a literal somebody had to remember.
  *
+ *  ⚠⚠ (#R283) «DIFFERS» MEANS THE CONTENT, NOT THE BYTES. This compared the committed file with the
+ *  rendered text character for character. The renderer emits LF; `core.autocrlf` hands a Windows
+ *  checkout the same file with a carriage return before every line break; git normalises that away
+ *  again on the way in. So the gate reported 「stale」 on every local run of a file that was exactly
+ *  current, and rewriting it changed nothing that could be committed. The comparison is
+ *  scripts/eol.mjs's now: a different LIST still fails, a different CHECKOUT does not.
+ *
  *  Run directly:  node scripts/i18n-langs.mjs           (writes)
  *                 node scripts/i18n-langs.mjs --check   (exit 1 if stale)
  * ==========================================================================*/
@@ -21,6 +28,7 @@ import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { sameText } from './eol.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DIR = join(ROOT, 'js', 'locales');
@@ -76,12 +84,12 @@ const check = process.argv.includes('--check');
 const current = existsSync(OUT) ? readFileSync(OUT, 'utf8') : '';
 
 if (check) {
-  if (current !== text) {
+  if (!sameText(current, text)) {
     console.error('js/locales/_langs.js is stale — run `node scripts/i18n-langs.mjs`');
     process.exit(1);
   }
   console.log('js/locales/_langs.js is current (' + codes.length + ' languages)');
-} else if (current !== text) {
+} else if (!sameText(current, text)) {
   writeFileSync(OUT, text);
   console.log('wrote js/locales/_langs.js — ' + codes.join(', '));
 } else {
