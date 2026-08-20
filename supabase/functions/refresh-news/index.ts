@@ -42,6 +42,9 @@ import { createClient } from "@supabase/supabase-js";   // pinned in this functi
 // globalThis.IntMapNewsGeo. It replaces the old bag-of-words dictionary as the non-AI path, so a
 // story the server scores and a story the browser scores land on the SAME pin.
 import "../_shared/newsgeo.js";
+/* (#R285) WHO Atlas is, from the generated mirror of js/atlas-persona.js. Editing it here is a build
+   failure; edit js/atlas-persona.js and run `node scripts/sync-atlas-persona.mjs`. */
+import { personaPrompt } from "../_shared/atlas-persona.js";
 // deno-lint-ignore no-explicit-any
 const NEWSGEO: any = (globalThis as any).IntMapNewsGeo || null;
 
@@ -423,8 +426,13 @@ function aiProviderConfig(): { provider: string; key: string; model: string } | 
   return null;
 }
 
+/* (#R285) This one never writes a word the user reads — it returns a place list, on a cron, over every
+   headline — so it takes the persona in 'internal' mode: identity, fact discipline and non-disclosure,
+   and none of the register/opinion/feeling clauses a coordinate cannot have. It still says Atlas rather
+   than "a precise geocoder", because there is one assistant in this product, not four. */
 const AI_SYS =
-  "You are a precise geocoder for a world news map. For EACH numbered headline, return the SUBJECT LOCATION: the single specific real-world place where the main event actually happens. " +
+  personaPrompt("locating world news on the map for IntMap", { mode: "internal" }) +
+  "For EACH numbered headline, return the SUBJECT LOCATION: the single specific real-world place where the main event actually happens. " +
   "RULES: (1) NOT the news outlet's HQ or dateline. (2) NOT where someone merely SPOKE about it — if an official in Washington comments on the Middle East, return the Middle-East place the event concerns. " +
   "(3) Be as SPECIFIC as the headline allows: prefer a city, district, landmark, port, base, or border crossing over a whole country; give the coordinates of that specific place, not the country centroid. " +
   "(4) Resolve sports clubs, companies, airports, universities, parliaments and stadiums to their actual physical city. (5) Disambiguate same-name places using country/region cues in the headline (e.g. Springfield, Tripoli, San José, Córdoba). " +

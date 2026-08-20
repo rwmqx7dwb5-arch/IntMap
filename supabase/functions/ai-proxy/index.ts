@@ -100,6 +100,20 @@ const OPENAI_DEFAULT_MODEL = "gpt-5.6-terra";
 const FALLBACK_MODEL = "gpt-5.6-luna";
 
 const MAX_PROMPT = 24_000;     // hard caps so a single call can't be abused
+/* ══ ⚠⚠⚠ (#R285) THE PLANNER'S CATALOGUE WAS BEING CUT IN HALF, IN PRODUCTION, SILENTLY ═══════════
+   `system` used to share MAX_PROMPT with `prompt`. But `system` is not user text — it is the Atlas
+   prompt the app itself builds, and the planner's is the action CATALOGUE: every button, layer,
+   panel and setting described to the model. Measured on the deployed build (v46): that string is
+   ~91 kB, so `.slice(0, 24_000)` threw away roughly two thirds of it, mid-word, inside the `engine`
+   action's description. Everything documented after that point — several dozen actions, the layer
+   list, the module list, the control list — DID NOT EXIST for the planner.
+   ⚠ AND THE GATE THAT WAS SUPPOSED TO CATCH THIS COULD NOT SEE IT. scripts/atlas-catalog.mjs
+   (#R278) checks that every dispatch capability is described in function SYS() — it reads the
+   SOURCE, and the source was complete. What was incomplete was the part that arrived. A catalogue
+   gate that stops at the client is measuring the letter, not the delivery.
+   The cap stays a cap: `prompt` — the half that carries user text — keeps 24 kB, and `system` gets
+   a bound of its own, set well above the real maximum rather than below it. */
+const MAX_SYSTEM = 160_000;
 const MAX_IMAGES = 4;
 
 /* ══ ⚠⚠ THE REQUEST ITSELF HAD NO SIZE ═══════════════════════════════════════════════════════════
@@ -110,7 +124,8 @@ const MAX_IMAGES = 4;
    is measured against what the CLIENT actually sends, so none of them can be reached by normal use:
      · js/atlas-console.js compresses each picked image with compressImage(f, 2000, 0.9) — a 2000 px
        JPEG at q=0.9, i.e. ~0.5-2 MB, base64'd to ~0.7-2.7 MB — and slices the list to 4.
-     · the prompt and system strings are already clamped to MAX_PROMPT (24 kB) each.
+     · the prompt string is already clamped to MAX_PROMPT (24 kB) and, since #R285, the system string
+       to MAX_SYSTEM (160 kB) — together still four orders of magnitude under the body ceiling below.
    So the realistic worst case is ~11 MB of body; the ceiling is 20 MB, and a request over it is
    refused before it is read rather than after it is parsed. */
 const MAX_BODY_BYTES = 20 * 1024 * 1024;
@@ -694,7 +709,7 @@ Deno.serve(async (req) => {
   const web = webMode === "auto" || webMode === "required";
   const requestedCount = typeof payload.requestedCount === "number" ? payload.requestedCount : undefined;
   const prompt = String(payload.prompt || "").slice(0, MAX_PROMPT);
-  const system = String(payload.system || "").slice(0, MAX_PROMPT);
+  const system = String(payload.system || "").slice(0, MAX_SYSTEM);   // (#R285) its own bound — see MAX_SYSTEM
   /* ⚠ THE PER-IMAGE CEILING IS IN parseDataUrl; THIS IS THE ONE FOR ALL OF THEM TOGETHER. Four
      images each just under the single-image limit is four times the single-image limit, and the
      provider request carries every one of them. */

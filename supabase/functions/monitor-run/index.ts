@@ -38,6 +38,10 @@ import {
   buildNewsSnapshot, clusterPoints, computeChangeScore, severityFromScore,
   decideAI, validateClaims, buildReport, partitionByNovelty,
 } from "./logic.mjs";
+/* (#R285) WHO Atlas is, from the generated mirror of js/atlas-persona.js — the same text the browser
+   surfaces use. Editing it here is a build failure; edit js/atlas-persona.js and run
+   `node scripts/sync-atlas-persona.mjs`. */
+import { personaPrompt } from "../_shared/atlas-persona.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -104,8 +108,11 @@ async function fetchWithTimeout(url: string, init: RequestInit, ms = 55_000): Pr
   finally { clearTimeout(t); }
 }
 
+/* (#R285) The area-monitor report is Atlas speaking — the user reads its headline and summary in the
+   monitors panel — so it opens with the same persona every other Atlas surface uses. */
 const AI_SYS =
-  "You are IntMap's area-monitoring analyst. You receive: (1) a monitored AREA, (2) a machine-computed CHANGE SUMMARY " +
+  personaPrompt("working here as IntMap's area-monitoring analyst") +
+  "You receive: (1) a monitored AREA, (2) a machine-computed CHANGE SUMMARY " +
   "(exact new/continuing/gone counts and cluster counts — these numbers are AUTHORITATIVE, do not recompute or contradict them), " +
   "and (3) an EVIDENCE list where each item has an id (like \"ev_3\"), source, title, url, date and place. Write a factual CHANGE report as JSON.\n" +
   "HARD RULES: (a) EVERY factual claim in `changes` MUST cite one or more evidence ids that appear verbatim in the EVIDENCE list. " +

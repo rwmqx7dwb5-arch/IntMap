@@ -77,6 +77,12 @@
 
 ## 5. AI・ニュース・鍵 (AI, news, keys)
 
+- **Atlas の人格は正式仕様であり、正本は `js/atlas-persona.js` 1本だけ。**
+  Atlas's persona is a formal specification with exactly ONE source of truth: `js/atlas-persona.js`.
+  system prompt に人格を書き足さない——**呼び出し側が足してよいのはタスク規則だけ**。
+  ⚠ **中身をここに書き写さない**（内容は正本とその近くの `Architecture.md` §2.4 の案内だけ）。
+  写しを増やせば片方が古くなる。`npm run check:static` と `tests/r285-checks.test.mjs` が
+  「全 prompt に届いているか」と「二重に書かれていないか」の両方を毎回落とす。
 - **APIキーは絶対にフロントに置かない。** Never put an API key in the frontend.
   AIは**サーバー側（Supabase Edge Function）**が当方の鍵で実行する（アカウント制・1日上限）。
 - **ニュースの地点解析でブラウザが AI を呼ぶことは無い。ユーザー向けの「AIで解析」ボタンも作らない。**
