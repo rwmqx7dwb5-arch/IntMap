@@ -1651,7 +1651,7 @@ window.IntMapModules.terrainWater=function(HOST){
        segmented control carrying the accent on the chosen segment).
 
        ⚠ THE CLOCK IS IN THE FOOTER, NOT IN A TOOL. 「時間は下部スティックしろ。」 ▶/⏸, the time
-       multiplier and the elapsed simulated time used to live inside the 「ここに水」 tool's parameter
+       multiplier and the elapsed simulated time used to live inside the 「水源」 tool's parameter
        block — i.e. they scrolled away, and they DISAPPEARED entirely as soon as you picked up the
        brush, while the pour they control kept running (#R255 made sure of that). The pour is the
        simulation's, so its controls belong to the panel and not to a pointer mode: the footer
@@ -1847,7 +1847,11 @@ window.IntMapModules.terrainWater=function(HOST){
     function modeName(m){ return m==='raise'?L('Raise','盛る','Anheben','Поднять','Elevar')
       :m==='lower'?L('Lower','削る','Abtragen','Срезать','Rebajar')
       :m==='levee'?L('Levee / dam','堤防・ダム','Deich / Damm','Дамба','Dique / presa')
-      :m==='source'?L('Water here','ここに水','Wasser hier','Вода здесь','Agua aquí'):''; }
+      :m==='source'?L('Water source','水源','Wasserquelle','Источник воды','Fuente de agua'):''; }
+    /* (#R284) 「「ここに水」ネーミングがダサすぎる」 — the tool places a SOURCE and the water runs
+       from it, so the name is the thing rather than a stage direction. The one-row strip still
+       says the short word; `modeName()` is the full name every caption, every Atlas answer and
+       every test reads, so the two can never drift apart. */
     /* 「盛る・削るはペン太さ3段階」 — three named widths instead of a metre box nobody can picture.
        The metres are still what the brush uses (and setBrush() still takes any radius), so Atlas and
        the tests are unaffected; this is the human end of the same number. */
@@ -1869,7 +1873,7 @@ window.IntMapModules.terrainWater=function(HOST){
         +'</div>'
         /* ══ ⚠ (#R255) THE SHARED HALF IS PINNED TO THE BOTTOM ══════════════════════════════════════
            「下部スティックしろ。」 → 「共通部分や、時刻など。」 The panel was one column that simply grew:
-           choosing the brush adds five rows of pen settings, choosing 「ここに水」 adds the pour
+           choosing the brush adds five rows of pen settings, choosing 「水源」 adds the pour
            controls, and the things that are the same in EVERY mode — the rainfall, 元に戻す / 地形を
            リセット / リセット, the progress bar, and the status line that carries the elapsed simulated
            clock — were pushed further down each time, off the bottom of a tall panel.
@@ -2031,7 +2035,7 @@ window.IntMapModules.terrainWater=function(HOST){
       }
       const vo=panel.querySelector('.tw-vol');
       if(vo) vo.textContent=sources.length?fmtM3(pourTotal()):''; }
-    /* (#R261) one line of plain language for what is on the map right now, used by the 「ここに水」
+    /* (#R261) one line of plain language for what is on the map right now, used by the 「水源」
        tool's panel — «2 継続 · 1 1回きり» is the distinction the report asked to be able to see. */
     function sourceSummary(){ const c=contSources().length, o2=sources.length-c;
       if(!sources.length) return '';
@@ -2166,7 +2170,7 @@ window.IntMapModules.terrainWater=function(HOST){
     /* (#R211) re-selecting the active tool releases it — see modes(). 'pan' remains the idle state
        the map's own gestures belong to; it is simply no longer something you have to find. */
     /* ══ ⚠ (#R255) PUTTING THE TOOL DOWN IS NOT STOPPING THE WATER ═════════════════════════════════
-       「ここに水を選択解除したら時間がリセットされるのをやめろ。」 Leaving the 「ここに水」 tool called
+       「ここに水を選択解除したら時間がリセットされるのをやめろ。」 Leaving the 「水源」 tool called
        `pourStop()`, which clears the interval — the elapsed clock stops dead, and because the next
        `placeSource` in continuous mode sets `pourSimS = 0`, the reader who deselects and then places
        again sees the timer back at zero. The tool is what the POINTER does; the pour is a running

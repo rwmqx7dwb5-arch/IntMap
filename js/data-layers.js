@@ -151,12 +151,15 @@ window.IntMapModules.dataLayers=function(HOST){
       .data-legend .ecl-player{ display:flex; gap:3px; justify-content:center; margin:5px 0 3px; }
       .data-legend .ecl-b, .data-legend .rv-b{ flex:0 0 auto; min-width:22px; height:20px; padding:0 4px; font-size:10.5px; line-height:1; border:1px solid var(--glass-border,rgba(128,128,128,0.2)); border-radius:6px; background:var(--input-bg); color:var(--text-main); cursor:pointer; }
       .data-legend .ecl-b:hover, .data-legend .rv-b:hover{ background:var(--primary-color); color:#fff; border-color:transparent; }
-      .data-legend .ecl-b[data-act="next"]{ transform:scaleX(1); }
+      .data-legend .ecl-b.ecl-play{ background:var(--primary-color); color:#fff; border-color:transparent; }
+      .data-legend .ecl-b.ecl-now{ min-width:auto; padding:0 7px; font-size:9.5px; font-weight:600; }
+      .data-legend .ecl-b svg{ display:block; margin:0 auto; }
       .data-legend .ecl-items{ margin-top:6px; }
       .data-legend .ecl-item{ border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); padding-top:5px; margin-top:5px; }
       .data-legend .ecl-item:first-child{ border-top:none; padding-top:0; margin-top:0; }
       .data-legend .ecl-name{ font-weight:600; font-size:10.5px; line-height:1.25; }
-      .data-legend .ecl-unit{ color:var(--text-muted); font-weight:400; }
+      .data-legend .ecl-unit, .data-legend .ecl-unitline{ color:var(--text-muted); font-weight:400; }
+      .data-legend .ecl-unitline{ font-size:9.5px; margin-top:1px; }
       .data-legend .ecl-bar{ height:8px; border-radius:4px; margin:4px 0 1px; border:1px solid rgba(0,0,0,0.1); }
       .data-legend .ecl-ticks{ position:relative; height:11px; color:var(--text-muted); font-size:9px; }
       .data-legend .ecl-ticks span{ position:absolute; transform:translateX(-50%); white-space:nowrap; }
@@ -166,7 +169,7 @@ window.IntMapModules.dataLayers=function(HOST){
       .data-legend .rv-player{ margin:5px 0 2px; }
       .data-legend .rv-btns{ display:flex; gap:3px; justify-content:center; margin-bottom:3px; }
       .data-legend .rv-when{ color:var(--text-main); font-weight:600; font-size:9.5px; margin-top:3px; text-align:center; font-variant-numeric:tabular-nums; }
-      .legend-collapsed .ecl-items, .legend-collapsed .ecl-player, .legend-collapsed .ecl-model, .legend-collapsed .rv-player, .legend-collapsed .wind-legend-body{ display:none !important; }
+      .legend-collapsed .ecl-items, .legend-collapsed .ecl-player, .legend-collapsed .ecl-model, .legend-collapsed .ecl-one, .legend-collapsed .ecl-timebody, .legend-collapsed .rv-player, .legend-collapsed .wind-legend-body{ display:none !important; }
       /* #30 — balanced legend header controls: drag handle (top-left), minimize + close (top-right,
          same size, evenly spaced), and the title padded so it never collides with either side. */
       .koppen-legend h4, .data-legend h4{ padding:0 44px 0 18px !important; min-height:16px; display:flex; align-items:center; }
@@ -2830,11 +2833,15 @@ window.IntMapModules.dataLayers=function(HOST){
         .forEach(el=>{ if(el && (el.style.display==='block'||el.style.display==='flex') && !el.classList.contains('im-docked') && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); }catch(_){} } });
     };
     function tileLegends(){
-      /* ⚠ (#R276) `data-legend-ecmwf` HAS TO BE IN THIS LIST. It docks at the same left/bottom as every
+      /* ⚠ (#R276) THE ECMWF BOXES HAVE TO BE IN THIS LIST. They dock at the same left/bottom as every
          other legend, and a legend the tiler cannot see is a legend that sits ON TOP of the one below
          it — MEASURED with the wind field and two ECMWF layers on: the wind legend covered the ECMWF
-         one completely, so the numeric bars this round added were invisible whenever both were up. */
-      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind'),document.getElementById('data-legend-ecmwf')].concat([...document.querySelectorAll('.data-legend.generic-legend')]);
+         one completely, so the numeric bars #R276 added were invisible whenever both were up.
+         ⚠⚠ (#R284) …and there is no longer ONE of them. 「ECMWFレイヤーはなぜか凡例が連結してしまう。」 — every
+         ECMWF layer now has its own box under its own name (js/weather.js), so the list matches them
+         by ID PREFIX rather than naming one element. A box added later is picked up by construction;
+         a hand-maintained name would have gone stale on the next layer. */
+      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind')].concat([...document.querySelectorAll('[id^="data-legend-ec-"]')]).concat([...document.querySelectorAll('.data-legend.generic-legend')]);
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
       all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureContourDensity(el); ensureLegendMinimize(el); }catch(_){} });
       /* (#R13c) Desktop legends live on the LEFT of the map. In frosted-overlay mode the sidebar floats
