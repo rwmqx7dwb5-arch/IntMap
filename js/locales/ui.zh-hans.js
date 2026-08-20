@@ -4344,6 +4344,25 @@ window.IntMapLang.define('zh-hans', {
   "This agency’s own ranks": "此机关自身的等级",
   "Ultra": "极高",
   "What is in force now": "目前发布中的警报",
-  "Yellow (III)": "黄色（III级）",   /* (#R267) */
+  "Yellow (III)": "黄色（III级）",
+  "Air quality": "空气质量",
+  "Amount to pour": "注水总量",
+  "Coastal": "沿岸",
+  "Cold": "低温",
+  "Cyclone": "台风",
+  "Dust": "沙尘",
+  "Flash flood": "暴洪",
+  "Heat": "高温",
+  "How fast it pours": "注水速度",
+  "Ice": "结冰",
+  "It keeps pouring at that rate until you stop it — there is no total.": "会以该速度持续注水，直到你停止为止——没有总量上限。",
+  "Levee": "堤防",
+  "Low water": "枯水",
+  "Marine": "海上",
+  "One click pours {v} m³ in all, at {r} m³/s — about {t} of simulated time, then it stops.": "单次点击共注入 {v} m³，速度为每秒 {r} m³——模拟时间约 {t} 后停止。",
+  "This country’s service could not be fetched just now — nothing is being said about this point.": "目前无法取得该国机关的信息——本地点并未作任何说明。",
+  "Tornado": "龙卷风",
+  "Volcanic ash": "火山灰",
+  "Water": "水",   /* (#R267) */
   }
 });

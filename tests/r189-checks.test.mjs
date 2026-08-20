@@ -138,14 +138,19 @@ test('R189 water: the course follows the ground, at one resolution, with a setta
   assert.match(src, /v=demAt\(nLng\(i\),nLat\(j\),z\)/, 'and new ground is read at that one level');
   assert.ok(!/demAt\([^)]*,\s*(?:B\.z\s*[-+]|z\s*[-+])/.test(src), 'never at a level derived from it');
   /* the discharge control (#R189 「水の水流は設定可能に」) is still here, and is now an INPUT */
-  assert.match(src, /let flowM3s=null;/, 'a settable discharge state');
-  /* ⚠ (#R275) …OF EVERY SOURCE. This pinned `if(x.cont&&flowM3s!=null)`, i.e. the discharge only
-     reached the continuous half. 「一回きりと継続の差は、水が継続的に発生し続けるか否かしかないように
-     するべき」 — a one-shot is a tap with a bottom now, so it has a discharge too, and a rate that
-     reached half the sources would be exactly the second difference that instruction removed.
-     What #R189 is about — 「水の水流は設定可能に」, and the setting reaching the model — is asserted. */
-  assert.match(src, /sources\.forEach\(x=>\{ if\(flowM3s!=null\) x\.rate=flowM3s; \}\);/,
+  /* ⚠⚠ (#R277) THIS USED TO PIN THE VARIABLE (`let flowM3s=null;`) AND THE LINE THAT APPLIED IT.
+     There were TWO states holding the same m³/s and two boxes writing them — which is the report
+     this round is about (「1クリックの水量　注水量　流量の違いが判らない」) — so a check that
+     names one of them makes the fix look like a regression. What #R189 asked for is asserted
+     instead: the discharge is SETTABLE, and what it sets is what the model is fed, for every
+     source. */
+  assert.match(src, /function setRate\(v\)\{/, 'a settable discharge');
+  assert.match(src, /pourRate=n; sources\.forEach\(x=>\{ x\.rate=pourRate; \}\);/,
     '…and it sets what the model is actually fed, for every source');
+  assert.match(src, /const srcRate=\(x\)=>Math\.max\(1,\+\(\(x\|\|\{\}\)\.rate\)\|\|pourRate\);/,
+    '…which is the rate the solver reads');
+  assert.ok(/setFlow\(m3s\)\{[\s\S]{0,220}?setRate\(v\)/.test(src),
+    'and Atlas reaches the same one setting');
 });
 test('R189 water/seismic: the panels are opaque', () => {
   for (const f of ['js/terrain-water.js', 'js/seismic.js']) {
