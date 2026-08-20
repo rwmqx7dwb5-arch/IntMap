@@ -725,6 +725,38 @@ Deno.serve(async (req) => {
       headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400" },
     });
   }
+  /* ══ ⚠⚠⚠ `?cngeo=100000_full_city` — THE CHINESE DIVISION BOUNDARIES ════════════════
+     DataV.GeoAtlas is CORS-open, and the browser still cannot read it FROM THE DEPLOYED ORIGIN.
+     MEASURED, same second, same url: `Referer: http://127.0.0.1:4277/` → **200, 569 KB**;
+     `Referer: https://rwmqx7dwb5-arch.github.io/IntMap/` → **403**. A hotlink guard, and one a
+     localhost preview cannot see — which is exactly why this shipped drawing China locally and
+     nothing at all in production. A relay has no Referer, so it reads what the page cannot.
+     ⚠ A boundary set is not this minute's weather: a DAY of edge cache, not sixty seconds. */
+  const cngeo = (q.get("cngeo") || "").trim();
+  if (cngeo) {
+    if (!/^[0-9]{6}(_full(_city)?)?$/.test(cngeo)) {
+      return new Response(JSON.stringify({ error: "not an allowed feed" }), {
+        status: 400, headers: { ...CORS, "content-type": "application/json" } });
+    }
+    try {
+      const r = await fetchGuarded("https://geo.datav.aliyun.com/areas_v3/bound/" + cngeo + ".json", {
+        timeoutMs: U_TIMEOUT_MS,
+        maxBytes: 12 * 1024 * 1024,
+        contentTypeRe: /json|text\//i,
+        headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
+      });
+      if (!r.ok) throw new Error("upstream_error");
+      const body = r.text();
+      try { JSON.parse(body); } catch (_) { throw new Error("upstream_not_json"); }
+      return new Response(body, {
+        headers: { ...CORS, "content-type": "application/json; charset=utf-8",
+          "cache-control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800" },
+      });
+    } catch (_e) {
+      return new Response(JSON.stringify({ error: "upstream unreachable" }), {
+        status: 502, headers: { ...CORS, "content-type": "application/json" } });
+    }
+  }
   /* `?ph=1` — the Philippines, summarised the same way MeteoAlarm is (see summarisePAGASA) */
   if (q.get("ph")) {
     try {
