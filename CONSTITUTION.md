@@ -32,7 +32,9 @@
 ## 1. 変更の作法 (How to change the code)
 
 - **変更は加算的・その場で。** Keep changes additive and in-place. Don't rewrite working subsystems wholesale.
-- **コミット先は `main`。** Commit and push to `main`. (本番は OneDrive 上の `index.html` / `admin.html` を直接配信。)
+- **コミット先は `main`。** Commit and push to `main`.
+  (本番は GitHub Pages が `dist/` のビルド成果を配信する。**OneDrive は原本の作業ディレクトリであって
+  配信元ではない**——`CLAUDE.md` §6。)
 - **Cesium は廃止済み。再構築しない。** Cesium is abandoned — do not rebuild it. The map is MapLibre GL.
 - **テキストに勝手に影を付けない。** Do not add text-shadows / "contrast halos" to panels, legends, popups.
 - **🫐 等の余計な装飾・絵文字を勝手に足さない。** Don't add gratuitous decoration the user didn't ask for.

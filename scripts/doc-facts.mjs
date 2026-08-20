@@ -128,6 +128,17 @@ const ARCH = BODY.get('Architecture.md') || '';
   const ROOT_SERVE = ['OneDrive 直配信', 'リポジトリ直配信'];
   eachDoc((f, s) => { for (const n of ROOT_SERVE) if (s.includes(n)) fail('serving', `${f} still says the site is served straight from the repository (${n})`); });
 
+  /* ⚠ A LIST OF EXACT SUBSTRINGS ONLY CATCHES THE WORDING SOMEBODY ALREADY THOUGHT OF. The two
+     needles above missed the sentence that was actually sitting in CONSTITUTION.md §1 —
+     「本番は OneDrive 上の …… を直接配信」 — the same false claim, spelled a way no needle matched,
+     and it survived every run of this gate. OneDrive is the MASTER WORKING DIRECTORY (CLAUDE.md
+     §6); it has never served production, which is Pages publishing the dist/ build. */
+  const SERVED_FROM_ONEDRIVE = /OneDrive[^\n]{0,60}?(直接配信|から配信|を配信|直配信)/;
+  eachDoc((f, s) => {
+    const m = s.match(SERVED_FROM_ONEDRIVE);
+    if (m) fail('serving', `${f} says production is served from OneDrive («${m[0]}») — Pages serves dist/, and OneDrive is the master working directory`);
+  });
+
   if (!/dist\//.test(ARCH)) fail('serving', 'Architecture.md never mentions dist/, which is what GitHub Pages actually serves');
   else ok('serving', 'dist/ is gitignored, built by deploy.yml, and named in Architecture.md');
 }
