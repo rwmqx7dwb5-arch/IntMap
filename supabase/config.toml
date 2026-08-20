@@ -71,8 +71,34 @@ enable_confirmations = false
 [auth.external.google]
 enabled = false
 
-# Edge Functions already present in this repo. verify_jwt mirrors each function's
-# deploy flag (ai-proxy verifies the user; refresh-news is deployed --no-verify-jwt).
+# ============================================================================
+#  EVERY Edge Function in this repo, and its verify_jwt.
+# ----------------------------------------------------------------------------
+#  This block used to name FIVE of the eight. alerts-relay, cable-geo and news-relay were deployed
+#  with --no-verify-jwt from a line in their own header comment and appeared nowhere in this file,
+#  so `supabase functions deploy` from a clean checkout, or anyone reading this config to learn what
+#  the project exposes, saw three fewer public endpoints than exist. A deploy flag that lives only
+#  in a comment is not configuration.
+#
+#  ⚠ `_shared/` IS NOT A FUNCTION. It is a library directory (newsgeo.js, relay-guard.js) that other
+#  functions import with a relative path and the CLI bundles into each of them; it has no index.ts,
+#  no route and no verify_jwt, and giving it a [functions.*] block here would try to deploy it as an
+#  endpoint. It is listed nowhere on purpose — this note is so that stays deliberate.
+#
+#  THE EIGHT, and why each is where it is:
+#    ai-proxy        JWT   the caller's identity IS the quota; anonymous use is the whole thing to stop
+#    delete-account  JWT   deletes the CALLER's own account; it also re-verifies the user explicitly
+#    monitor-run     no    two callers, two credentials: pg_cron with x-monitor-secret and the "Run
+#                          now" button with a user JWT. It does its own auth for both, fail-closed.
+#    refresh-news    no    called by a scheduler with the REFRESH_SECRET header; fail-closed if unset
+#    alerts-relay    no    keyless public relay of official warning feeds — no user data reaches it
+#    cable-geo       no    keyless public relay of two TeleGeography GeoJSON URLs
+#    news-relay      no    keyless public relay of Google News RSS
+#    sv-cov          no    keyless public relay of Google's Street-View coverage tiles
+#  The four keyless relays share the bounds in _shared/relay-guard.js (allow-list, deadline, byte
+#  ceiling, content-type, generic errors) — that, not a JWT, is what stands in front of them, because
+#  requiring a login for a public map layer would break the layer for everyone who is not signed in.
+# ============================================================================
 [functions.ai-proxy]
 verify_jwt = true
 
@@ -94,3 +120,18 @@ verify_jwt = false
 # it ALSO verifies the user explicitly and requires { confirm: "DELETE" }.
 [functions.delete-account]
 verify_jwt = true
+
+# alerts-relay (#R266) relays MeteoAlarm + CMA warning feeds (neither sends CORS headers).
+# Keyless, no user data, GET only, allow-listed hosts and paths — deployed --no-verify-jwt.
+[functions.alerts-relay]
+verify_jwt = false
+
+# cable-geo (#R190) relays the two TeleGeography submarine-cable GeoJSON URLs. Keyless,
+# no user data — deployed --no-verify-jwt.
+[functions.cable-geo]
+verify_jwt = false
+
+# news-relay (#R216) relays Google News RSS (news.google.com sends no ACAO). Keyless,
+# no user data — deployed --no-verify-jwt.
+[functions.news-relay]
+verify_jwt = false

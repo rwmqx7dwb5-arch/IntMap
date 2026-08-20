@@ -1,5 +1,8 @@
 # Testing IntMap
 
+> **Verified 2026-08-20 against `acc55b1`** — the tier split, the file counts and the build time
+> below are measurements taken on that date, not estimates.
+
 IntMap ships as a static site — `index.html` + assets, with **no server of its own**. Since
 #R175 that static site is produced by a Vite build (`npm run build` → `dist/`) instead of
 being the repo tree itself. Everything in this document lives in `package.json`, `scripts/`,
@@ -9,9 +12,17 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 > first and serves the build output, because what has to keep working is what GitHub Pages
 > publishes. A build-only failure — a bad chunk split, a static asset the build forgot to
 > copy, a module that only resolves through the dev server — would otherwise be discovered in
-> production. The build takes ~10 s, so the suite still starts in well under a minute.
+> production. MEASURED 2026-08-20 on this machine, `npm run build` is **21–25 s** (Vite reports
+> 20.2 s and 21.7 s for the bundle; 24.9 s wall including npm's own start-up). The "~10 s" this
+> line used to claim predates the Cesium chunk.
 
 ## What runs
+
+**The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-20): the **core** tier that
+gates a push is **6 spec files / 1.1 min**; the **whole** suite is **65 measured spec files /
+86.5 min** of serial browser time against a ceiling of 86.7 min; and `npm run test:checks` runs
+**118 Node test files** with no browser at all. `npm test` runs the source half and the browser
+half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
 | Layer | Command | Needs a browser? | External network? |
 |-------|---------|------------------|-------------------|

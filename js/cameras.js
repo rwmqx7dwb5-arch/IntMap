@@ -30,7 +30,17 @@ window.IntMapModules.cameras=function(HOST){
     function fc(){ const a=[]; for(const k in camById) a.push(camById[k]); return {type:'FeatureCollection',features:a}; }
     function ytId(u){ const m=/(?:youtube\.com\/(?:watch\?v=|embed\/|live\/|v\/)|youtu\.be\/)([\w-]{11})/.exec(u||''); return m?m[1]:null; }
     /* only classify a cam we can ACTUALLY DISPLAY — '' means link-out-only, which we now DROP (the facade cause) */
-    function classify(u){ u=String(u||''); if(!u) return ''; if(ytId(u)) return 'yt'; if(/roundshot\.com|panomax\.com/i.test(u)) return 'pano'; if(/\.(mp4|webm)(\?|#|$)/i.test(u)) return 'video'; if(/\.(jpe?g|png|webp)(\?|#|$)/i.test(u)||/(?:snapshot|current\.jpg|image\.jpg|axis-cgi\/(?:mjpg|jpg)|cam\.jpg|webcam\.jpg|\/jpg\/image)/i.test(u)) return 'img';
+    /* ⚠ SEC: THE PANORAMA EMBED IS THE ONE IFRAME HERE WHOSE URL COMES FROM OSM, i.e. from anyone with
+       an OSM account, and it is framed WITHOUT a sandbox. The gate on it was
+       `/roundshot\.com|panomax\.com/i.test(u)` — a substring test on the WHOLE url, so
+       `https://attacker.example/?ref=roundshot.com` classified as a panorama and got framed. The two
+       providers are hosts, so the test is on the HOST, with a dot boundary (a neighbour that merely ends
+       in the same letters is a different party). Legitimate URLs are unaffected: every roundshot/panomax
+       webcam in OSM is on those domains. */
+    function _panoHost(u){ try{ var h=new URL(String(u),location.href).hostname.toLowerCase();
+      return ['roundshot.com','panomax.com'].some(function(d){ return h===d||h.endsWith('.'+d); });
+    }catch(_){ return false; } }
+    function classify(u){ u=String(u||''); if(!u) return ''; if(ytId(u)) return 'yt'; if(_panoHost(u)) return 'pano'; if(/\.(mp4|webm)(\?|#|$)/i.test(u)) return 'video'; if(/\.(jpe?g|png|webp)(\?|#|$)/i.test(u)||/(?:snapshot|current\.jpg|image\.jpg|axis-cgi\/(?:mjpg|jpg)|cam\.jpg|webcam\.jpg|\/jpg\/image)/i.test(u)) return 'img';
       /* (#R87b) also accept standard single-shot IP-camera JPEG endpoints (Canon GetOneShot/wvhttp, Panasonic
          SnapshotJPEG, generic cgi-bin image / ?action=snapshot) — these return a real JPEG that displays + refreshes
          cleanly. HTTPS-only so we never add a dead mixed-content pin (an http cam can't load on an https page). */

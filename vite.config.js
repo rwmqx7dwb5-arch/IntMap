@@ -34,6 +34,11 @@ const ROOT = resolve(import.meta.dirname);
 export const STATIC_ASSETS = [
   'sw.js',                              // tile-cache service worker (registered by index.html)
   'admin.html',                         // the ops console — its own page, not part of the app bundle
+  /* …and the one file admin.html loads that is neither the SDK nor its own inline body: the data-literal
+     PARSER that replaced the starter-dataset import's eval. Same reason as js/lang-registry.js below —
+     admin.html is copied verbatim, so a plain <script src> in it resolves against dist/ and the file has
+     to be there. Without it the import button says so and refuses, rather than falling back to anything. */
+  'js/admin-literal.js',
   /* (#R211) the transparency page — what every simulation COMPUTES, as opposed to where its data
      came from (that is the in-app Sources dialog). It is static markup with one inline script and
      no imports, so it is copied rather than bundled: passing it through Rollup would produce a
@@ -118,6 +123,46 @@ function katexAssets() {
       }
       const fonts = join(KATEX_SRC, 'fonts');
       if (existsSync(fonts)) cpSync(fonts, join(out, 'fonts'), { recursive: true });
+    },
+  };
+}
+
+/* ── ⚠ THE ADMIN CONSOLE'S SUPABASE SDK, VENDORED ────────────────────────────
+   admin.html used to load the SDK with
+       <script src="supabase.js"></script>
+       <script>window.supabase||document.write('<scr'+'ipt src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">…')</script>
+   and `supabase.js` HAS NEVER EXISTED in this repo — MEASURED on production, admin.html reached the
+   fallback every single time. So the operator console's authentication code was, in practice, a
+   floating major-version tag fetched from a third-party CDN and injected with document.write: no
+   pinned version, no integrity, no subresource this project controls, and a parser-blocking write
+   that runs whatever that URL answers with.
+   The SDK is already a dependency of this repo, pinned exactly in package.json (@supabase/supabase-js
+   2.58.0). Copying its UMD build here gives admin.html the SAME API from OUR origin at a version the
+   lockfile decides, which is what lets admin.html's CSP drop the CDN host entirely. */
+const SB_UMD = join(ROOT, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd', 'supabase.js');
+const SB_VENDOR_URL = '/vendor/supabase-js.js';
+function supabaseAdminSdk() {
+  return {
+    name: 'intmap-supabase-admin-sdk',
+    apply: 'build',
+    closeBundle() {
+      if (!existsSync(SB_UMD)) { this.error('@supabase/supabase-js UMD build not found — admin.html would have no SDK'); return; }
+      cpSync(SB_UMD, join(ROOT, 'dist', 'vendor', 'supabase-js.js'));
+    },
+  };
+}
+/* …and the same path out of node_modules for `vite dev`, exactly as cesiumDevAssets does below. */
+function supabaseAdminSdkDev() {
+  return {
+    name: 'intmap-supabase-admin-sdk-dev',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if ((req.url || '').split('?')[0] !== SB_VENDOR_URL) return next();
+        if (!existsSync(SB_UMD)) return next();
+        res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+        createReadStream(SB_UMD).pipe(res);
+      });
     },
   };
 }
@@ -223,12 +268,19 @@ export default defineConfig({
     },
     /* The app is one 500 KB inline body plus MapLibre; a size warning at every build is just noise. */
     chunkSizeWarningLimit: 3000,
-    sourcemap: true,
+    /* ══ ⚠ SOURCE MAPS ARE OFF UNLESS ASKED FOR ════════════════════════════════════════════════════
+       `sourcemap: true` emitted dist/assets/*.map, copyStatic put dist/ into _site verbatim, and Pages
+       published them: MEASURED on production, https://…/IntMap/assets/main-VdS_tG39.js.map answered
+       200 with 8,810,729 bytes — every original js/ source, comment included, readable by anyone. A
+       minified bundle is not an obfuscation control, but a published map is a free, complete copy of
+       the tree the deploy was built from, and it is not something a visitor needs.
+       IM_SOURCEMAP=1 turns them back on for a local debugging build, where they belong. */
+    sourcemap: process.env.IM_SOURCEMAP === '1',
     target: 'es2020',
     cssCodeSplit: true,
     reportCompressedSize: false,
   },
   server: { port: 5173, strictPort: false },
   preview: { port: 4173, strictPort: false },
-  plugins: [copyStatic(), katexAssets(), cesiumAssets(), cesiumDevAssets()],
+  plugins: [copyStatic(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
 });

@@ -81,8 +81,12 @@ fix, and the **test/check added** so it cannot recur silently.
 
 Do not debug on production. Restore the last known-good build:
 
-- **Actions → “Rollback (production, Pages)” → Run workflow → enter the last known-good tag
-  or SHA** (e.g. `v2026.07.18-R133`). See [`docs/RELEASE.md`](RELEASE.md#rollback).
+- **Actions → “Rollback (production, Pages)” → Run workflow → enter the last known-good commit
+  SHA.** ⚠ **There are no tags in this repository** (measured 2026-08-20: `git tag` prints
+  nothing), so `v2026.07.18-R133`-style names are a format illustration and will be *refused* —
+  use a SHA. The workflow rebuilds that commit with Vite and publishes `dist/`; it no longer
+  publishes the raw tree, which since #R175 is not the site. See
+  [`docs/RELEASE.md`](RELEASE.md#rollback).
 - If the gated deploy is not enabled yet, roll back with Git instead:
   ```bash
   git revert <bad-commit>        # safe, keeps history
@@ -137,7 +141,7 @@ Append a short note to `DEV-NOTES.md` (and/or the incident issue):
 |------|-----------------|
 | Is it up? | Actions → Uptime, or open the URL |
 | What's live? | `window.INTMAP_BUILD`, `/-build-info.json` |
-| Roll back (gated) | Actions → Rollback → tag/SHA |
+| Roll back (gated) | Actions → Rollback → **commit SHA** (no tags exist) |
 | Roll back (Git) | `git revert <sha> && git push` |
 | Verify prod | `PROD_URL=… npx playwright test --config playwright.prod.config.js` |
 | Repro locally | `npm run serve` |

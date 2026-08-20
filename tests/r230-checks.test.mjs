@@ -171,7 +171,11 @@ test('R230 ⑥ …and the worker is held alive until the lanes drain', () => {
   /* `Promise.all` gave `waitUntil` the whole batch for free. A queue that resolves the moment it is
      SCHEDULED lets the browser terminate the worker with lanes still in flight — that is not
      "smaller batches", it is silently fewer tiles. */
-  assert.match(handler.slice(0, 900), /await\s+done/,
+  /* ⚠ A WINDOW OF 900 CHARACTERS IS NOT THE PROPERTY. The handler grew (a sender check and the tile
+     allow-list went in front of the queueing) and `await done` slid past the window — so the test
+     failed on code that still does exactly what it asserts. The handler is the end of the file; read
+     all of it. */
+  assert.match(handler, /await\s+done/,
     'the message handler awaits the drain, so waitUntil covers the fetches and not just the enqueue');
   assert.match(sw, /function\s+pfSettle\s*\(\)[\s\S]{0,200}_pfLanes\s*===\s*0\s*&&\s*_pfQueue\.length\s*===\s*0/,
     'drained means: no lane running AND nothing left queued');

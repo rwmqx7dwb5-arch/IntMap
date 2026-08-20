@@ -20,7 +20,8 @@ window.IntMapModules.aiCore=function(HOST){
   function aiProxyOn(){ try{ return !!(window.INTMAP_AI_PROXY && window.INTMAP_AI_PROXY.url); }catch(_){ return false; } }
   const aiJP=()=>(typeof HOST.lang!=='undefined'&&HOST.lang==='jp');
   function aiToday(){ try{ return new Date().toISOString().slice(0,10); }catch(_){ return ''; } }
-  /* (#R31) Developer = unlimited AI. Enabled by localStorage intmap_dev='1' or the owner's account email.
+  /* (#R31) Developer = unlimited AI. Enabled by localStorage intmap_dev='1' (set at sign-in by
+     js/auth-ui.js), by running on a local dev origin, or by the server reporting an unlimited limit.
      This lifts the CLIENT-side gate; for a truly unlimited server quota, the ai-proxy function also grants
      the dev user id/email an unlimited plan (DEV_USER_IDS / DEV_EMAILS secret) — see DEV-NOTES. */
   function aiDev(){ try{ if(localStorage.getItem('intmap_dev')==='1') return true;
@@ -31,7 +32,14 @@ window.IntMapModules.aiCore=function(HOST){
        end-users on the deployed site are unaffected (their quota is unchanged). */
     const proto=location.protocol, h=location.hostname;
     if(proto==='file:'||h==='localhost'||h==='127.0.0.1'||h==='[::1]'||h===''){ try{ localStorage.setItem('intmap_dev','1'); }catch(_){} return true; }
-    const e=(typeof HOST.user!=='undefined'&&HOST.user&&HOST.user.email)||''; return /2ppzc4kk6r@privaterelay\.appleid\.com/i.test(e); }catch(_){ return false; } }
+    /* ⚠ THE SERVER'S ANSWER, NOT A COPY OF THE RULE. This used to re-implement the entitlement on the
+       client by comparing the signed-in e-mail to a literal compiled into a public repo. ai-proxy
+       already REPORTS the plan's daily limit in every response (`limit`), and the unlimited plan is
+       the only one that is astronomically large — so "am I unlimited" is a question the server has
+       already answered, and reading its answer cannot drift from it the way a second copy of the rule
+       can. js/auth-ui.js still sets `intmap_dev` at sign-in (checked above) so the graph is right
+       before the first call, and it does that from a hash rather than from the address. */
+    const lim=(HOST.aiUsage&&HOST.aiUsage.limit)||0; return lim>=1e6; }catch(_){ return false; } }
   function aiDailyLimit(){ return (HOST.aiUsage && HOST.aiUsage.limit) || HOST.AI_FREE_DAILY; }
   function aiUsesLeft(){ if(aiDev()) return Infinity; if(HOST.aiUsage.date!==aiToday()) return aiDailyLimit(); return Math.max(0, aiDailyLimit() - (HOST.aiUsage.used||0)); }
   function aiSetUsage(used, limit){

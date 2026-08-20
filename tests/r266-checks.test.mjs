@@ -293,7 +293,11 @@ test('R266 ⑭: the alert relay is an allow-list, not an open proxy', () => {
   assert.match(s, /h === "feeds\.meteoalarm\.org"/);
   assert.match(s, /h === "www\.nmc\.cn"/);
   assert.match(s, /return null;\s*\n\}/, 'the allow-list falls through to something other than a refusal');
-  assert.match(s, /"Access-Control-Allow-Origin": "\*"/);
+  /* ⚠ THE HEADER IS STILL SENT; IT IS DECLARED IN ONE PLACE NOW. The four keyless relays share
+     _shared/relay-guard.js (allow-list bounds, deadline, byte ceiling, generic errors), and the CORS
+     object came with them — a literal grep in this file could only ever find a copy. */
+  assert.match(s, /corsFor\(/, 'the relay does not build its CORS headers from the shared guard');
+  assert.match(read('supabase/functions/_shared/relay-guard.js'), /"Access-Control-Allow-Origin": "\*"/);
   assert.match(s, /max-age=60/, 'a warning must not be cached for minutes');
   /* Canada sends its own ACAO — a relay that is not needed is another thing to be down */
   assert.ok(!/api\.weather\.gc\.ca/.test(s.slice(s.indexOf('function allowed'), s.indexOf('Deno.serve'))),

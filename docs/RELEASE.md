@@ -44,6 +44,12 @@ npm run serve       # http://127.0.0.1:4173/
 ```
 
 **B. Live staging URL (recommended for UI-heavy changes) — Cloudflare Pages.**
+> ⚠ **This is a PR-preview option, not production.** Production is served by **GitHub Pages**;
+> nothing sits in front of it. That matters for security because the response headers GitHub
+> Pages cannot set (`X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`,
+> `X-Content-Type-Options`, a header-form CSP) stay unset in production —
+> MEASURED 2026-08-20, see `docs/SECURITY-ARCHITECTURE.md §6/§8`. If IntMap is ever moved
+> behind Cloudflare **for production**, those headers become settable and should be set.
 Free, per-PR preview URLs, and it does **not** touch GitHub Pages or production:
 
 1. Sign in at <https://dash.cloudflare.com/> → **Workers & Pages** → **Create** → **Pages**
@@ -111,6 +117,12 @@ failure does not fail it (only IntMap’s own breakage does).
 
 ## Tagging known-good releases
 
+> ⚠ **MEASURED 2026-08-20: this repository has ZERO tags.** `git tag` prints nothing, and no
+> release has ever been tagged, so every example of the form `v2026.07.18-R133` in this file
+> and in `INCIDENT-RESPONSE.md` is a *format illustration*, not something you can roll back to.
+> **Roll back by commit SHA** — that always exists. Tagging is still worth doing; it is just
+> not something to rely on in an incident until the first tag is actually pushed.
+
 Tag a commit you have verified in production so you can roll back to it by name:
 
 ```bash
@@ -133,9 +145,26 @@ If a deploy turns out to be broken, redeploy the last known-good commit/tag. Thi
 the gated deploy to be enabled.
 
 1. **Actions → “Rollback (production, Pages)” → Run workflow.**
-2. Enter the **known-good tag or SHA** (e.g. `v2026.07.18-R133`).
+2. Enter the **known-good commit SHA** (there are no tags in this repo yet — see the warning
+   above).
 3. The workflow refuses anything that does not resolve to a real commit in this repo, checks
-   it out, republishes that exact tree, and runs the post-rollback smoke.
+   it out, decides which SHAPE that commit is, and publishes accordingly.
+
+⚠ **STEP 3 USED TO PUBLISH THE SOURCE TREE, AND SINCE #R175 THAT IS NOT THE SITE.** The job ran
+`git archive <sha> | tar -x -C _site`, which was correct while the repo root *was* what Pages
+served. On any commit from #R175 onward that tree's `index.html` ends in
+`<script type="module" src="/src/main.js">` — a 404 on Pages and a blank page. The rollback
+that exists for the worst ten minutes of a deploy would have replaced a broken site with no
+site at all. It now:
+
+- runs the **same `npm ci && npm run build`** the deploy does, at the rolled-back commit, and
+  publishes `dist/` — when that commit has a `vite.config.js` and a `build` script;
+- falls back to `git archive` **only** for a pre-#R175 commit, recognised by having an
+  `index.html` at the root and no `vite.config.js` — the shape where that was the right answer;
+- **refuses by name** anything that is neither, rather than deploying a tree of unknown shape.
+
+The shape it chose is recorded in `build-info.json` (`"shape": "vite" | "static"`) alongside the
+sha, so "what did the rollback actually publish" is answerable after the fact.
 
 `workflow_dispatch` is restricted by GitHub to users with write access, and the input can
 only ever be an existing commit — so rollback cannot publish arbitrary/injected code.

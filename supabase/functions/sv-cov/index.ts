@@ -25,11 +25,13 @@
 //  Secrets: none.
 // ============================================================================
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, range",
-};
+import { corsFor, fetchGuarded, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+
+const CORS = corsFor("range");
+/* A 256×256 coverage PNG is a few kilobytes. 2 MB is far above any tile Google serves here and far
+   below anything worth relaying — and there was NO ceiling and NO deadline on this fetch at all. */
+const MAX_BYTES = 2 * 1024 * 1024;
+const TIMEOUT_MS = 15000;
 
 // 1×1 fully-transparent PNG — returned (200) in place of an upstream miss so the client
 // sampler treats a coverage-less tile as "loaded, no coverage here" rather than a network
@@ -57,6 +59,7 @@ Deno.serve(async (req) => {
   try {
     const raw = new URL(req.url).searchParams.get("u");
     if (!raw) return bad(400, "missing u");
+    if (raw.length > MAX_QUERY_URL) return bad(400, "bad url");
     target = new URL(raw);
   } catch {
     return bad(400, "bad url");
@@ -70,13 +73,20 @@ Deno.serve(async (req) => {
   // z ∈ 0..22 (1–2 digits); x,y ∈ 0..2^z-1 (up to 7 digits at z=22). Integer-only, no scheme tricks.
   const z = target.searchParams.get("z");
   if (z === null || !/^\d{1,2}$/.test(z) || +z > 22) return bad(400, "bad z");
+  /* ⚠ THE COORDINATE HAS TO BE ON THE PYRAMID, NOT MERELY BE DIGITS. `/^\d{1,7}$/` accepted x=9999999
+     at z=0, where the only tile is 0/0/0 — a request this function would have forwarded to Google as
+     if it were a real tile. A z/x/y is only a tile when x and y are below 2^z. */
+  const span = Math.pow(2, +z);
   for (const k of ["x", "y"]) {
     const v = target.searchParams.get(k);
-    if (v === null || !/^\d{1,7}$/.test(v)) return bad(400, "bad " + k);
+    if (v === null || !/^\d{1,7}$/.test(v) || +v >= span) return bad(400, "bad " + k);
   }
+  if (target.hash) return bad(400, "bad url");
 
   try {
-    const up = await fetch(target.toString(), {
+    const up = await fetchGuarded(target.toString(), {
+      timeoutMs: TIMEOUT_MS,
+      maxBytes: MAX_BYTES,
       headers: {
         // A browser-like UA/Referer keeps Google serving the tiles consistently.
         "User-Agent": "Mozilla/5.0 (compatible; IntMap/1.0; +https://rwmqx7dwb5-arch.github.io/IntMap/)",
@@ -85,9 +95,9 @@ Deno.serve(async (req) => {
       },
     });
     if (!up.ok) return blank(); // 404/204 on an empty tile → transparent (no coverage), not an error
-    const ct = up.headers.get("content-type") || "image/png";
+    const ct = up.contentType || "image/png";
     if (!/^image\//i.test(ct)) return blank(); // never relay an HTML error body into a <canvas>
-    const buf = await up.arrayBuffer();
+    const buf = up.bytes;
     return new Response(buf, {
       headers: {
         ...CORS,

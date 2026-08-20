@@ -31,11 +31,13 @@
 //  Secrets: none.
 // ============================================================================
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+
+const CORS = corsFor();
+/* Upstream is ~0.7 MB (cables) + ~0.34 MB (landing points). Four megabytes is four times the larger
+   of the two and still a bound; past it this is not the GeoJSON it claims to be. */
+const MAX_BYTES = 4 * 1024 * 1024;
+const TIMEOUT_MS = 20000;
 
 /* The ONLY two upstream URLs this function will ever fetch. An allowlist of exact
    strings, not a pattern: there is nothing to be clever about with two constants, and
@@ -53,10 +55,13 @@ const CACHE = "public, max-age=21600, s-maxage=86400, stale-while-revalidate=604
 // NOTE: written WITHOUT TypeScript annotations, like sv-cov — scripts/static-checks.mjs parses every
 // committed .ts with acorn, so a type annotation here fails the build gate rather than the type check.
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  /* GET only. The old code answered a POST exactly like a GET, which is not what the CORS header
+     above advertises and is one more verb an upstream never needed to see. */
+  const gate = methodGate(req, CORS);
+  if (gate) return gate;
 
   const u = new URL(req.url).searchParams.get("u") || "";
-  if (!ALLOWED.has(u)) {
+  if (u.length > MAX_QUERY_URL || !ALLOWED.has(u)) {
     return new Response(
       JSON.stringify({ error: "only the submarinecablemap.com cable/landing-point GeoJSON is relayed" }),
       { status: 400, headers: { ...CORS, "content-type": "application/json" } },
@@ -64,34 +69,32 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const ac = new AbortController();
-    const t = setTimeout(() => ac.abort(), 20000);
-    let r;
-    try {
-      r = await fetch(u, {
-        signal: ac.signal,
-        headers: { "user-agent": "IntMap/cable-geo (+https://github.com/rwmqx7dwb5-arch/IntMap)", accept: "application/json" },
-      });
-    } finally { clearTimeout(t); }
-
+    const r = await fetchGuarded(u, {
+      timeoutMs: TIMEOUT_MS,
+      maxBytes: MAX_BYTES,
+      contentTypeRe: /json|text\//i,
+      headers: { "user-agent": "IntMap/cable-geo (+https://github.com/rwmqx7dwb5-arch/IntMap)", accept: "application/json" },
+    });
     if (!r.ok) {
-      return new Response(JSON.stringify({ error: "upstream " + r.status }),
+      return new Response(JSON.stringify({ error: "upstream_error" }),
         { status: 502, headers: { ...CORS, "content-type": "application/json" } });
     }
     /* Verify it really is the FeatureCollection before handing it on: an upstream error
        page served with HTTP 200 would otherwise be cached for a day as if it were data. */
-    const body = await r.text();
+    const body = r.text();
     let n = 0;
     try { const j = JSON.parse(body); n = (j && Array.isArray(j.features)) ? j.features.length : 0; } catch { n = 0; }
     if (!n) {
-      return new Response(JSON.stringify({ error: "upstream returned no features" }),
+      return new Response(JSON.stringify({ error: "upstream_no_features" }),
         { status: 502, headers: { ...CORS, "content-type": "application/json" } });
     }
     return new Response(body, {
       headers: { ...CORS, "content-type": "application/json", "cache-control": CACHE, "x-intmap-features": String(n) },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: String((e && e.message) || e) }),
-      { status: 502, headers: { ...CORS, "content-type": "application/json" } });
+    /* ⚠ THE EXCEPTION USED TO BE THE MESSAGE. `String(e.message)` on a world-readable endpoint hands
+       out DNS answers, TLS details and this file's own internals; relayFail says only which BOUND
+       was hit (unreachable / too large / wrong type). */
+    return relayFail(e, CORS);
   }
 });

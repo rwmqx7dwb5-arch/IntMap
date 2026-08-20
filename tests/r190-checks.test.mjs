@@ -53,7 +53,10 @@ test('R190 default layers: the cables come through our own origin', () => {
   assert.match(fn, /const ALLOWED = new Set\(\[/, 'an allowlist, not an open proxy');
   assert.match(fn, /submarinecablemap\.com\/api\/v3\/cable\/cable-geo\.json/, 'the cable routes');
   assert.match(fn, /submarinecablemap\.com\/api\/v3\/landing-point\/landing-point-geo\.json/, 'and the landing points');
-  assert.match(fn, /if \(!ALLOWED\.has\(u\)\)/, 'anything else is refused');
+  /* ⚠ THE SET DECIDES, whatever else the same `if` now also checks (a length bound went in beside
+     it). Pinning the whole condition made the test fail when the guard got STRONGER. */
+  assert.match(fn, /!ALLOWED\.has\(u\)/, 'anything else is refused');
+  assert.match(fn, /status:\s*400/, 'and refused with a 400 rather than fetched');
   assert.match(fn, /Array\.isArray\(j\.features\)/,
     'an HTTP-200 error page is not cached for a day as if it were data');
   assert.doesNotMatch(fn, /:\s*Request\b/, 'no TypeScript annotations — scripts/static-checks parses .ts with acorn');

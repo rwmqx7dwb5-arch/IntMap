@@ -2436,11 +2436,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!active){ return; }
     if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty">${t('compareEmpty')}</div>`; return; }
     const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
-    const chips=items.map((s)=>`<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button onclick="_toggleCompare('${s.code}')">×</button></span>`).join('');
+    const chips=items.map((s)=>`<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button data-cmptoggle="${IntMapSafe.html(s.code)}">×</button></span>`).join('');
     let head=`<div class="scf-head"><span class="scf-title">${t('compare')} (${compareSet.size}/10)</span><div style="display:flex;gap:6px;">`+
       (compareSet.size>=2?`<button class="scf-view" onclick="_showCompare()">${t('compareView')}</button>`:'')+
       `<button onclick="_clearCompare()">${t('compareClear')}</button></div></div>`;
     panel.innerHTML=head+`<div class="scf-chips">${chips}</div>`;
+    if(!panel.__imCmpWired){ panel.__imCmpWired=1; panel.addEventListener('click',(ev)=>{ const b=ev.target.closest('[data-cmptoggle]'); if(b&&panel.contains(b)) window._toggleCompare(b.getAttribute('data-cmptoggle')); }); }   /* ⚠ (#R272 SEC) the country code used to be pasted into an onclick string — see the pin popup above. */
   }
   /* (#R70) renderCompareView (the separate static-bar comparison page) was MERGED into IntMapStatsCompare —
      its bar view is the unified comparison's default mode, on live per-indicator data, incl. all the bundled
@@ -3045,7 +3046,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       <div class="pin-popup-row"><span>${t('coords')}</span><b>${fmtLL(pin.lng,pin.lat)}</b></div>
       <div class="pin-popup-row"><span>${pin.elev!=null&&pin.elev<0?t('depth'):t('elev')}</span>${elevHTML}</div>
       ${distHTML2}
-      <div class="pin-popup-actions"><button onclick="window._measureFromPin('${pin.id}')">${t('measure')}</button><button onclick="window._radiusFromPin('${pin.id}')">⭕ ${t('radius')}</button><button style="background:var(--info-mil); color:#fff;" onclick="window._removePin('${pin.id}')">${t('deletePin')}</button></div>`;
+      <div class="pin-popup-actions"><button data-pinact="measure" data-pinid="${IntMapSafe.html(pin.id)}">${t('measure')}</button><button data-pinact="radius" data-pinid="${IntMapSafe.html(pin.id)}">⭕ ${t('radius')}</button><button style="background:var(--info-mil); color:#fff;" data-pinact="remove" data-pinid="${IntMapSafe.html(pin.id)}">${t('deletePin')}</button></div>`;
+    /* ⚠ (#R272 SEC) a value interpolated into an event attribute IS JavaScript source — data-attribute + one delegated listener instead (same call; delegation survives the re-render). Full note in js/companies-ui.js. */
+    if(!el.__imPinWired){ el.__imPinWired=1; const PIN={measure:'_measureFromPin',radius:'_radiusFromPin',remove:'_removePin'}; el.addEventListener('click',(ev)=>{ const b=ev.target.closest('[data-pinact]'), f=b&&el.contains(b)&&PIN[b.getAttribute('data-pinact')]; if(f) window[f](b.getAttribute('data-pinid')); }); }
   }
   function positionPinPopup(){
     const pin=userPins.find(p=>p.id===activePinId); if(!pin) return;

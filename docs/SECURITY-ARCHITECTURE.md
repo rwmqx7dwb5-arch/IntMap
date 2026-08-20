@@ -1,5 +1,10 @@
 # IntMap — Security Architecture & Threat Model (#R138)
 
+> **Verified 2026-08-20 against `acc55b1`**, including a read-only audit of the live Supabase
+> project (`vpekfwdpurzejrrmacac`, Postgres **17.6**) and of the production HTTP response
+> headers. What that audit could not close is in §8; what it found and closed is in §5, §6
+> and §11.
+
 Authoritative description of IntMap's attack surface, trust boundaries, authentication /
 authorization model, the public-vs-secret distinction, and the residual risks + manual
 production settings. Companion to [`SECURITY.md`](../SECURITY.md) (reporting) and
@@ -140,16 +145,64 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
+**There are EIGHT, and this table used to list two.** `supabase/config.toml` used to declare
+five and the other three carried their deploy flag only in a header comment — a deploy flag
+that lives in a comment is not configuration. All eight are declared there now.
+⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`newsgeo.js`,
+`relay-guard.js`) that the CLI bundles into the functions that import it.
+
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
 | `ai-proxy` | **true** | Supabase JWT (login required) → 401 | plan lookup + `increment/refund_ai_usage` RPC | server env only, never logged |
+| `delete-account` | **true** | Supabase JWT **and** an explicit re-check; body must be `{"confirm":"DELETE"}` | `delete_account_data(uuid)` then `auth.admin.deleteUser` | — |
+| `monitor-run` | false | two callers, two credentials: pg_cron's `x-monitor-secret` (from Vault) or a user JWT; fail-closed on the secret | claim/finalize monitor runs | server env only |
 | `refresh-news` | false (by design) | **fail-closed shared secret** (`x-refresh-secret` header, constant-time) | write `current_news`, read `geo_pins` | server env only |
+| `alerts-relay` | false | none — keyless public relay of official warning feeds | — | — |
+| `cable-geo` | false | none — keyless public relay of two TeleGeography GeoJSON URLs | — | — |
+| `news-relay` | false | none — keyless public relay of Google News RSS | — | — |
+| `sv-cov` | false | none — keyless public relay of Google Street-View coverage tiles | — | — |
+
+**The four keyless relays are not protected by a login and must not be** — they serve map
+layers to signed-out readers. What stands in front of them is `_shared/relay-guard.js`, shared
+so the four cannot drift apart: a URL **allow-list** (exact strings for cable-geo, an
+endpoint-shaped rule for news-relay, host+path for alerts-relay, host+path+`lyrs`+a z/x/y that
+must be **on the pyramid** for sv-cov), **GET only**, a **deadline** on every upstream fetch, a
+**byte ceiling** enforced on `content-length` *and* while streaming (an upstream may omit the
+length), a **content-type** rule, and **generic outward errors** — the caller learns which
+bound was hit and never what the exception said (CodeQL `js/stack-trace-exposure`).
+`alerts-relay` additionally **deduplicates** its `?ma=` country list and caps it at the six the
+client asks for; it accepted forty, each up to a measured 10.28 MB, so one ~300-byte
+unauthenticated GET could ask it to pull ~400 MB from EUMETNET.
 
 - **`ai-proxy`** verifies the user, resolves plan → daily limit, **atomically** consumes one
-  use, calls the provider with the server-held key, refunds on failure, and caps input
-  (`MAX_PROMPT=24000`, `MAX_IMAGES=4`). Errors are typed; **prompt / key / JWT are never
-  logged** (metadata only). CORS is `*` but that is safe: every request needs a valid user
-  JWT that a cross-origin site cannot obtain.
+  use, calls the provider with the server-held key, refunds on failure, and bounds its input.
+  Errors are typed; **prompt / key / JWT are never logged** (metadata only). CORS is `*` but
+  that is safe: every request needs a valid user JWT that a cross-origin site cannot obtain.
+  The bounds, and why each is where it is: `MAX_PROMPT=24000` and `MAX_IMAGES=4` were applied
+  **after** `await req.json()`, i.e. after the whole body had been read and parsed, so
+  `MAX_BODY_BYTES=20 MB` is now checked on `content-length` and again on the bytes read;
+  images must be one of four raster MIME types (`image/svg+xml` used to pass), must be valid
+  base64, and are capped **per image** (4 MB decoded) and **in total** (12 MB); `task` is an
+  allow-list of the ten tasks the code defines rather than an arbitrary string used to index
+  four configuration objects; a caller-supplied `responseSchema` is bounded by size, depth and
+  key count and rejected if it contains a prototype key.
+  ⚠ **The upstream error body is no longer echoed.** `pe.meta.bodySnippet = t.slice(0,160)`
+  was written as server-log-only, but `meta` is spread into the JSON response — so 160 bytes
+  of whatever the provider answered with went to the caller too. Only its **length** is kept.
+  ⚠ **The developer override is an id, not an address.** A real e-mail address was compiled
+  into this **public** repository and the exemption depended on `auth.users.email`, a field a
+  provider can re-issue. It reads the `DEV_USER_IDS` secret now. Audited 2026-08-20: that
+  address matched **0 of 56** production accounts, so the constant had never granted anything.
+- **`delete-account`** ran one DELETE per hard-coded table over PostgREST, ignored the ones
+  that failed, and removed the auth user **either way** — fail-OPEN in the one direction that
+  matters, because once `auth.users` is gone the person cannot sign in to ask again. It is one
+  transaction now: `public.delete_account_data(uuid)` **discovers** the owned tables from the
+  foreign keys to `auth.users` (plus any `user_id uuid` column whose FK is missing — audited,
+  `bug_reports` is exactly that case in production), deletes them, **re-counts**, and raises if
+  anything survives. The auth user is deleted only after that returns `ok`.
+  ⚠ The FK cascade is not a substitute: `donations`, `feedback` and `bug_reports` are
+  `ON DELETE SET NULL`, so deleting the auth user would leave the person's own submitted text
+  behind with a NULL owner.
 - **`refresh-news`** (#R138) is **fail-closed**: `REFRESH_SECRET` **must** be set or every
   request is refused (503) — it never runs publicly. The secret is read **only** from the
   `x-refresh-secret` header (never a URL query, so it can't reach access logs) and compared in
@@ -161,18 +214,44 @@ CodeQL runs the JS XSS queries.
 
 ## 6. Browser security — CSP & the GitHub Pages limits
 
-IntMap is served by **GitHub Pages**, which **cannot set custom HTTP response headers**, and
-its app JS is **entirely inline** with no build step and fetches from **60+ external hosts**.
-So a nonce/hash `script-src` or a `connect-src` allowlist is impossible without a build the
-project forbids, and would break the app. The chosen posture:
+IntMap is served by **GitHub Pages**, which **cannot set custom HTTP response headers**. Since
+#R175 it *is* built (Vite), but the boot code is still inline in `index.html` — measured, the
+published `dist/index.html` contains five inline `<script>` blocks — and the app fetches from
+**60+ external hosts**, so a nonce/hash `script-src` and a host-list `connect-src` remain out
+of reach. The chosen posture:
 
-- **In-page CSP (`<meta http-equiv>`), tested to not break the app** — `object-src 'none'`
-  (no plugin XSS), `base-uri 'self'` (no `<base>` hijack), `frame-src 'self' https: blob:`
-  (blocks a `javascript:`/`data:` iframe), `worker-src 'self' blob:`, and a `script-src`
-  allowlist (self + the known CDNs + `'unsafe-inline'`/`'unsafe-eval'`, which are unavoidable
-  for an inline no-build app) that still blocks an injected `<script src=evil-host>`.
-  `connect-src`/`img-src`/`style-src` are intentionally left unrestricted so the data/tile
-  APIs keep working. `<meta name="referrer" content="strict-origin-when-cross-origin">`.
+- **In-page CSP (`<meta http-equiv>`), verified in a real browser against the built site.**
+  ⚠ **The policy used to name five directives and have no `default-src`.** A directive that is
+  absent *and* has nothing to fall back on is not permissive, it is **absent**: `connect-src`,
+  `img-src`, `style-src`, `font-src`, `media-src`, `form-action`, `manifest-src` and every
+  directive a future browser adds were unconstrained, and the policy could not say whether that
+  was a decision. There is a `default-src 'self'` now, and fourteen directives are written
+  down: `base-uri 'self'`, `object-src 'none'`, `form-action 'self'`, `manifest-src 'self'`,
+  `frame-src 'self' https: blob:`, `child-src`/`worker-src 'self' blob:`,
+  `connect-src 'self' https: wss: data: blob:`, `img-src`/`media-src 'self' https: data: blob:`,
+  `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+  `font-src 'self' data: https://fonts.gstatic.com`, and a `script-src` **host list**.
+  `style-src` and `font-src` are exact lists because Google Fonts is the only external
+  stylesheet and the only external font host in the tree; `connect-src` stays `https: wss:`
+  because naming ~60 data hosts is a list that goes stale as a *silently missing layer*.
+  `script-src` lost `https://cdn.jsdelivr.net`: measured across the tree, jsDelivr is only ever
+  a `fetch()` target here, and the one page that loaded a `<script>` from it was `admin.html`,
+  which bundles its SDK now. `<meta name="referrer" content="strict-origin-when-cross-origin">`.
+  ⚠ `frame-ancestors` is **ignored** in a `<meta>` policy, so it is deliberately not written
+  there rather than written and silently inert.
+- **The admin console's policy is stricter and lost two entries**, each of which had exactly
+  one reason to exist: `https://cdn.jsdelivr.net` (the SDK fallback wrote a `<script>` at the
+  floating tag `@supabase/supabase-js@2` into the parser — measured, that fallback ran *every*
+  time, because the local file it tried first has never existed in this repo) and
+  `'unsafe-eval'` (the starter-dataset import ran an operator-chosen file as code). The SDK is
+  vendored from this repo's own pinned dependency to `dist/vendor/supabase-js.js`, and the
+  import calls `js/admin-literal.js` — a **parser** for the object/array-literal grammar those
+  files are written in, which throws a `SyntaxError` on anything that is not data and cannot
+  invoke anything.
+- **Production source maps are no longer published.** `sourcemap: true` put `dist/assets/*.map`
+  into the deploy; measured on production, `assets/main-VdS_tG39.js.map` answered **200 with
+  8,810,729 bytes** — a complete copy of every original source, comments included. The build
+  emits none unless `IM_SOURCEMAP=1`.
 - **Because `'unsafe-inline'` is unavoidable, output-encoding (§4) — not CSP — is the primary
   XSS defense.** The CSP is defense-in-depth.
 - **Header-only controls GitHub Pages cannot provide** — `X-Frame-Options` / CSP
@@ -202,17 +281,66 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
   query strings and only reports IntMap's own exceptions.
 - Analytics: Google Analytics (gtag) + Microsoft Clarity load as third-party scripts
   (allowlisted in the CSP).
+  ⚠ **Neither may see an auth return URL.** An OAuth return and a magic-link click land on the
+  page with the credential *in the URL* (`?code=…`, `#access_token=…&refresh_token=…`) until
+  supabase-js finishes `detectSessionInUrl`, which is a network round trip. GA has been given a
+  sanitised `page_location` since #R155 (`__imScrubAuthUrl`); **Clarity had not been**, and
+  Clarity records the page URL and a DOM replay. Inserting its tag on an idle callback made
+  that a race. The tag is now simply not inserted while an auth parameter is present, re-checked
+  until the URL is clean, and skipped for that page-load if it never becomes clean.
 
 ---
 
 ## 8. Residual risks (accepted / tracked)
 
-1. **`'unsafe-inline'`/`'unsafe-eval'` in `script-src`** — unavoidable for an inline no-build
-   app; mitigated by output-encoding (§4). Eliminable only by a build step (out of scope).
+1. **`'unsafe-inline'`/`'unsafe-eval'` in `script-src`** — the boot code is inline (five
+   `<script>` blocks in the built `index.html`) and Cesium/KaTeX compile at runtime. Removing
+   either is a rewrite of how the app loads, not a policy edit. Mitigated by output-encoding
+   (§4). ⚠ **Not removable by moving the remaining inline event attributes**, which is why they
+   were only moved where a *value* was being interpolated into one (see §11.4).
 2. **JWT in `localStorage`** — Supabase JS default; mitigated by the XSS fixes. An httpOnly
    cookie would need a different auth transport.
-3. **Header-only browser controls** not settable on GitHub Pages (§6).
+3. **Header-only browser controls** not settable on GitHub Pages (§6). MEASURED 2026-08-20:
+   production returns HSTS (GitHub's own) and nothing else; no `X-Content-Type-Options`, no
+   `X-Frame-Options`, no `Referrer-Policy`, no `Permissions-Policy`, no CSP header. A host that
+   can set headers (Cloudflare — see `RELEASE.md`, where it is described only as an **optional
+   PR-preview** target and is **not** in front of production) would close all five.
 4. **Public CORS relays** for some camera lists (§7) — third-party sees the request.
+5. **Nine `mgmt_*` tables exist in production and in no migration in this repo**
+   (`mgmt_cases`, `mgmt_passkeys`, `mgmt_incidents`, `mgmt_approvals`, `mgmt_changes`,
+   `mgmt_documents`, `mgmt_improvements`, `mgmt_notices`, `mgmt_ai_suggestions`). RLS is on and
+   they have **zero policies**, so every row operation by `anon`/`authenticated` is denied — but
+   they hold table-level `INSERT/UPDATE/DELETE/**TRUNCATE**` for both roles, and **TRUNCATE is
+   not subject to RLS**. It is not reachable through PostgREST, which exposes no TRUNCATE, so
+   this is an over-grant rather than an open door. Left untouched **by decision**: they belong
+   to something outside this repository and revoking could break it. To close:
+   `revoke insert, update, delete, truncate on public.mgmt_* from anon, authenticated;`
+6. **Default privileges in `public` and `storage` grant `anon`/`authenticated` ALL — including
+   TRUNCATE — on every table created in future.** This is the Supabase default, it is the root
+   cause of the #R155 blanket-UPDATE escalation, and it is how the `mgmt_*` tables acquired
+   their grants without anyone writing a `grant`. Every table this repo's migrations create has
+   an explicit grant, so tightening it would not affect IntMap; it would affect anything else
+   that creates tables here. Left untouched **by decision**. To close:
+   `alter default privileges in schema public revoke all on tables from anon, authenticated;`
+7. **`public.profiles_public` is not `security_invoker`**, so it reads `profiles` with the
+   view owner's rights and bypasses that table's RLS. Its projection is `id, display_name, bio,
+   avatar_url` — the columns the baseline declares as public — so this is the intended
+   behaviour rather than a leak, and it is recorded here because a future column added to the
+   view would inherit the bypass.
+8. **`supabase/config.toml` still says `db.major_version = 15`; production is Postgres 17.6.**
+   The file drives only the LOCAL stack, so this affects the fidelity of `supabase db diff`, not
+   production. Recorded rather than changed because raising it changes what every local reset
+   and every CI pgTAP run executes against, which is a test-infrastructure decision of its own.
+9. **Passkeys are enabled on the project** (`GET /auth/v1/settings` → `passkeys_enabled: true`)
+   and `config.toml` says nothing about them. No factor is enrolled (`auth.mfa_factors` is
+   empty), so nothing depends on it today.
+10. **The maintainer's e-mail address remains in this repository's git HISTORY.** It was removed
+   from every tracked file (`ai-proxy`, `static-checks.mjs`, `js/ai-core.js`, `js/auth-ui.js`);
+   removing it from past commits means rewriting published history, which is destructive and out
+   of scope for this change.
+11. **The service worker's cache-first store is still keyed on host allow-lists**, and one entry
+   is `s3.amazonaws.com` for the terrarium DEM. The six exact hostnames are listed by name (not
+   by suffix) precisely so that "any S3 bucket serving a `/terrarium/` path" is not admitted.
 5. **AI content-sharing**: when the active provider is OpenAI, submitted text/outputs may be
    used by OpenAI to improve its models (disclosed in-app); users are told not to submit
    sensitive data.
