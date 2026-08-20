@@ -177,7 +177,7 @@ window.IntMapModules.wind=function(HOST){
       removeField();
       if(renderer){ renderer.clearTrails(); }
       cv.style.display='none';
-      try{ EC()&&EC().release(); }catch(_){}
+      try{ EC()&&EC().release(VAR); }catch(_){}   /* only OUR frame — see IntMapECMWF.release */
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
     }
 
