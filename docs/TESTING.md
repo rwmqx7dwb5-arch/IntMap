@@ -21,7 +21,8 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-20): the **core** tier that
 gates a push is **6 spec files / 1.1 min**; the **whole** suite is **65 measured spec files /
 86.5 min** of serial browser time against a ceiling of 86.7 min; and `npm run test:checks` runs
-**118 Node test files** with no browser at all. `npm test` runs the source half and the browser
+**130 Node test files** with no browser at all (counted from `package.json` on 2026-08-21; the
+line above it is the 2026-08-20 measurement). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
 | Layer | Command | Needs a browser? | External network? |
@@ -237,3 +238,108 @@ Tests are order-independent and repeatable: a fresh browser context per file (no
 `localStorage` / `IndexedDB`), a fixed **UTC** timezone and **en-US** locale, Service
 Workers blocked, and a hermetic network. Nothing depends on the developer's clock,
 language, or prior runs.
+
+**…nor on the line endings the checkout produced.** `.gitattributes` pins the extensions that
+are executed or parsed on Linux (`*.sh`, `*.sql`, `*.mjs`, `*.yml`, `*.yaml`, `*.toml`) to LF;
+`js/`, `css/` and the HTML shells are left to `core.autocrlf`, which is `true` on the Windows
+development machine and hands those files back with CRLF — while CI reads them with LF. A
+source-level check that asserts something about a file's **content** must therefore read the
+content, not the bytes: use `readLF` / `sameText` from **`scripts/eol.mjs`**, never a bare
+`readFileSync(p, 'utf8')` feeding a pattern that names a line break. Two checks did the latter
+and were red on every local run and green in CI, which is worse than no check at all — a
+failure list that is always red is a failure list nobody reads. `tests/r283-checks.test.mjs`
+holds the rule, and it fails on **both** platforms if a raw byte read comes back.
+
+---
+
+## Security testing
+
+What each security check proves and how to add a case. The threat model itself is
+[`SECURITY-ARCHITECTURE.md`](SECURITY-ARCHITECTURE.md); the DB harness is
+[`DATABASE.md`](DATABASE.md#rls--permission-testing).
+---
+
+### Run everything
+
+```bash
+npm ci
+npm test          # = static-checks  →  security-logic (node --test)  →  Playwright (browser)
+```
+
+The DB / RLS tests need Postgres and run in CI (`.github/workflows/db.yml`); locally they need
+Docker + the Supabase CLI (`supabase db start && supabase db reset --local && supabase test db`).
+
+### Run one layer
+
+| Command | What it proves | Runtime |
+|---|---|---|
+| `npm run check:static` | no committed secrets, no SQL PII, workflows least-privilege, **every remote action SHA-pinned** (no exemption), valid JSON/YAML/JS/TS | Node only |
+| `npm run test:security` (`node --test tests/security-logic.mjs`) | refresh-news is fail-closed / header-only / constant-time; ai-proxy needs a JWT + caps input + never logs secrets | Node only |
+| `npx playwright test tests/security.spec.js` | XSS payloads stay **inert in a real browser**; `IntMapSafe.url` blocks bad schemes; i18n renders; CSP present | Chromium |
+| `supabase test db` (or `db.yml` in CI) | RLS + privilege + the `feedback.rating` CHECK (pgTAP) | Postgres |
+| CodeQL (`.github/workflows/security.yml`) | SAST for JS/TS (XSS, injection) → Security tab | CI |
+
+---
+
+### What each test file is
+
+- **`scripts/static-checks.mjs`** — fast, dependency-light gate. Secret patterns (incl. a
+  `service_role` JWT and provider keys), SQL-PII guard, destructive-migration detector,
+  workflow permissions + **`action-pinning`** (EVERY remote `uses:` must be a full 40-hex SHA —
+  there is no exemption; `actions/*` and `github/*` were exempt once, which is where all of this
+  repo's actions live, so the rule ran on an empty set and passed by looking at nothing), asset
+  existence.
+- **`tests/security-logic.mjs`** (`node:test`) — unit-tests the constant-time compare, then
+  **reads the Edge-Function sources** and asserts their invariants so a future edit cannot
+  silently reintroduce a fail-open guard, a URL-query secret, an unauthenticated ai-proxy, or
+  an uncapped prompt/image. (No Deno runtime needed — this is the CI-friendly substitute.)
+- **`tests/security.spec.js`** (Playwright) — loads the app, feeds the commission's exact XSS
+  payloads through `IntMapSafe` **into the live DOM**, and asserts no script runs and no active
+  `<img onerror>`/`<svg onload>`/`<script>` is created, in text **and** attribute contexts;
+  checks scheme-blocking and i18n round-trip; checks the CSP meta.
+- **`supabase/tests/03_security_test.sql`** (pgTAP) — the `feedback.rating` CHECK rejects the
+  out-of-range DoS payload, `profiles_public` exposes no PII, public-read tables aren't
+  anon-writable, `ai_usage` is RPC-only. (00/01/02 cover structure / the RLS matrix / the RPCs.)
+- **`supabase/tests/05_r155_security_test.sql`** (pgTAP, #R155) — proves the profiles
+  privilege-escalation is closed **grant-independently**: it RE-CREATES the production condition on
+  CI (grants `authenticated` the blanket table-level `UPDATE` on `profiles`) and then asserts the
+  `tg_profiles_guard_privcols` trigger still freezes `is_admin`/`is_pro`/`plan`/`email` while
+  `display_name` stays editable; also asserts the least-privilege column/table grants, the no
+  world-readable-profiles invariant, that monitor results are unforgeable at the grant layer, and
+  the public-write length caps. (This is the case vanilla CI could not otherwise reproduce.)
+- **`tests/r155-checks.test.mjs`** (`node --test`, #R155) — source regression guards over
+  `index.html` + `admin.html`: passkeys wired, `delete-account` called with `confirm`, reset/
+  change/logout-all present, HIBP k-anonymity sends only a 5-char prefix, GA `page_location`
+  sanitized, admin CSP present + **no** public sign-up + re-auth gate, and **behavioural** XSS
+  tests that `eval` the shipped `esc()`/`safeUrl()` and assert they neutralise payloads / reject
+  `javascript:`+`data:` schemes. Plus UX guards (Köppen border-box, Atlas reply-language lock).
+
+---
+
+### Adding a case
+
+- **New XSS sink?** Route the untrusted value through `IntMapSafe.html()` (text/attr) or
+  `IntMapSafe.html(IntMapSafe.url(v,{allowData}))` (href/src/style). Add its payload/context to
+  `XSS_PAYLOADS` in `tests/security.spec.js` if it exercises a new context.
+- **New Edge-Function auth rule?** Add an assertion to `tests/security-logic.mjs` (unit or a
+  source regression guard).
+- **New RLS / constraint?** Add to `supabase/tests/03_security_test.sql` using the existing
+  pgTAP helpers (`throws_ok`/`lives_ok`/`ok`/`has_*_privilege`) — see 02 for the impersonation
+  pattern (`set local role` + `request.jwt.claims`). Don't rewrite 00/01/02; add cases.
+
+---
+
+### The commission payload set (kept in sync with `tests/security.spec.js`)
+
+```
+<script>window.__xss = true</script>
+<img src=x onerror="window.__xss = true">
+<svg onload="window.__xss = true">
+"><img src=x onerror=window.__xss=true>
+</style><script>window.__xss=true</script>
+x" onmouseover="window.__xss=true          (attribute breakout)
+x' onmouseover='window.__xss=true          (single-quote breakout)
+javascript:alert(1) · data:text/html,… · vbscript:… · java\tscript:…   (url() must return '')
+```
+Each must render as inert text; and 日本語 / Zürich / Москва / España / emoji / accents /
+long place names must survive `html()` unchanged.

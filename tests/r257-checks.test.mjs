@@ -88,7 +88,8 @@ test('#R257 ③ CLAUDE.md carries the project information block', () => {
     'admin.html',                                       // admin
     'vpekfwdpurzejrrmacac',                             // supabase ref (a public identifier)
     'Architecture.md', 'DEV-NOTES.md', 'CONSTITUTION.md',
-    'docs/{TESTING,RELEASE,MONITORING,INCIDENT-RESPONSE}.md',
+    /* (#R280) the list of operational documents grew; match its stem so it can grow again */
+    'docs/{TESTING,RELEASE,MONITORING,INCIDENT-RESPONSE',
     'donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01',        // Stripe EN
     'donate.stripe.com/8x29AM9Qa2se7JYetA5gc00',        // Stripe JA
     'CLAUDE.local.md',                                  // where the credentials went

@@ -25,9 +25,11 @@
 
 - メモリ（`~/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/memory/`）
 - `DEV-NOTES.md` の**最新ラウンド**
-- `Architecture.md`（現状仕様）
 - `CONSTITUTION.md`（製品の不文律）
-- `README.md`、および関連するすべてのドキュメント・記録ファイル
+- **[`docs/README.md`](docs/README.md) — 文書の索引。**「どれが何の正本か・いつ更新するか」がここに
+  1枚の表であるので、今回触る主題の**正本**をここで特定してから、その文書を読む
+- `Architecture.md`（現状仕様）・`PRODUCT.md`（何ができるか）・`DECISIONS.md`（なぜそうなっているか）
+- `README.md`、および今回の作業に関係するすべてのドキュメント・記録ファイル
 - **現在の Git 状態**（ブランチ、未コミット変更、他セッションの worktree）
 - **既存の PR** と **CI 状態**
 
@@ -45,11 +47,14 @@
 | Local | `npm run serve` → http://127.0.0.1:4173/ （**`file://` は非対応**） |
 | Admin | `admin.html` |
 | Supabase project ref | `vpekfwdpurzejrrmacac` |
-| 現状仕様書 | `Architecture.md` |
+| **文書の索引** | **`docs/README.md`** — どれが何の正本か・対象読者・更新条件（**まずここ**） |
+| 現状仕様書 | `Architecture.md`（＋ `docs/FILES.md` ファイル台帳・`docs/MAP-LAYERS.md` レイヤー実装） |
+| 製品 | `PRODUCT.md`（目的・機能一覧・Atlas の到達点） |
+| 技術判断 | `DECISIONS.md`（今も有効な判断とその理由だけ） |
 | 開発記録 | `DEV-NOTES.md`（**最新 `R###` エントリを先頭に足す**） |
-| 過去記録 | `DEV-NOTES-ARCHIVE.md`（Round 1 〜 #R199・読むだけ） |
+| 過去記録 | `DEV-NOTES-ARCHIVE.md`（読むだけ・追記しない） |
 | 統治原則 | `CONSTITUTION.md` |
-| 運用ドキュメント | `docs/{TESTING,RELEASE,MONITORING,INCIDENT-RESPONSE}.md` |
+| 運用ドキュメント | `docs/{TESTING,RELEASE,MONITORING,INCIDENT-RESPONSE,DATABASE,MIGRATIONS,BACKUP-RESTORE,SECURITY-ARCHITECTURE,AREA-MONITORS}.md` |
 | Stripe 寄付 (EN) | https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en |
 | Stripe 寄付 (JA) | https://donate.stripe.com/8x29AM9Qa2se7JYetA5gc00?locale=ja |
 
@@ -112,8 +117,19 @@ Bash から直接起動しない。
 ```
 調査 → 再現 → 実装 → ドキュメント更新 → テスト → commit → push → PR
      → CI 確認および修正 → squash merge → production deployment
-     → production verification → branch deletion
+     → production verification → branch deletion → 原本 (OneDrive) の最新化
 ```
+
+**最後の工程は省略できない。** 原本は `C:\Users\gyuuk\OneDrive\IntMap`（§6）。merge した内容が
+原本の作業ディレクトリに**実際に書き込まれて**初めて、その作業は手元で完了したことになる。
+
+```bash
+node scripts/master-sync.mjs --sync    # fetch して原本を origin/main へ早送り
+node scripts/master-sync.mjs --check   # 原本が merge 後の状態でなければ exit 1
+```
+
+原本の場所はハードコードしていない。`git rev-parse --git-common-dir` から導出するので、
+**どの worktree から実行しても原本を指す。**
 
 **変更した Edge Function は本番環境へデプロイする。** 例:
 
@@ -138,12 +154,25 @@ import した関数の中に CLI がバンドルする。`[functions._shared]` �
 
 ---
 
-## 6. 並行セッションと Git
+## 6. 原本と、並行セッションと Git
+
+**原本（master copy）は `C:\Users\gyuuk\OneDrive\IntMap` である。**
+これはリポジトリの main worktree であり、OneDrive が同期している唯一の作業ディレクトリ。
+GitHub は共有と CI のための remote、USB は §11 のバックアップであって、**どちらも原本ではない。**
+
+- **作業は原則として原本の中で行う。** 原本が空いている（他セッションが使っていない）なら、
+  `C:\Users\gyuuk\OneDrive\IntMap` で専用 branch を切って作業すること。
+- **`%LOCALAPPDATA%\Temp` 以下の worktree は、原本が他セッションに占有されている場合の回避策**
+  であって既定の作業場所ではない。temp の worktree は OneDrive の外にあるため、そこで完結した
+  作業は**原本に 1 バイトも書き込まない。**
+- **temp の worktree を使った場合でも、§5 の最終工程で原本を merge 後の状態にする。**
+  `node scripts/master-sync.mjs --sync`。これを行わない限り、その作業は原本に存在しない。
 
 複数の Claude Code セッションが同時に実行されている場合:
 
-- **各セッションは必ず独立した worktree および専用 branch を使用する。**
-  セッション間で同一の working directory を共有してはならない。
+- **各セッションは必ず専用 branch を使用する。**
+  同一 branch を複数セッションで共有してはならない。原本が既に他セッションに使われている場合は、
+  そのセッションの作業を妨げないよう独立した worktree を使う。
 - **別セッションの未コミット変更・branch・worktree・stash その他の作業状態を、
   変更・削除・reset・clean・force-push・上書きしてはならない。**
 - 編集前・push 前・merge 前には**最新の Git 状態を確認**し、必要に応じて `main` の最新更新を取り込む。
@@ -153,8 +182,13 @@ import した関数の中に CLI がバンドルする。`[functions._shared]` �
 - **競合その他の問題を安全かつ明確に解決できない場合は、必ず確認を求める。**
   問題解決後はワークフローを再開し、可能な限り完了まで実行する。
 
-> 実務上の注意: 主 working directory（`C:\Users\gyuuk\OneDrive\IntMap`）が他セッションの
-> 作業中である場合がある。着手時に `git status` と `git worktree list` を必ず見ること。
+> 実務上の注意: 原本（`C:\Users\gyuuk\OneDrive\IntMap`）が他セッションの作業中である場合がある。
+> 着手時に `git status` と `git worktree list` を必ず見ること。
+>
+> ⚠ #R282 の実測: この規程が worktree を既定にしていた間に、原本は origin/main より
+> **15 コミット・159 ファイル**遅れていた（R272〜R279 が丸ごと欠落）。OneDrive の同期エンジンは
+> 正常に動いていた——**原本に何も書き込まれていなかった**だけ。GitHub と USB は各ラウンドで
+> 更新され、原本だけが「どの工程も責任を持たない写し」になっていた。
 
 ---
 
@@ -196,10 +230,14 @@ CLI、API、SQL、Git、GitHub、Supabase、既存の認証済み環境その他
   （経緯は `DEV-NOTES.md` の仕事。同じ検査がこれを見ている）。
 - **作業完了時**には、現在の状態を反映するよう `Architecture.md` および関連ドキュメントを更新し、
   **`DEV-NOTES.md` の先頭に新しい `R###` エントリを追加する**（索引行と本文の両方）。
-- ファイルの分担（`CONSTITUTION.md` §6 参照）:
+- **文書を1本足したら、同じコミットで [`docs/README.md`](docs/README.md) に1行足す**
+  （その行が無ければ `npm run check:docs` が落ちる）。役割が既存の文書と重なるなら、
+  **新しい文書を作らずそちらへ足す**——1つの事実に正本が2つある状態を作らない。
+- ファイルの分担の全体像は [`docs/README.md`](docs/README.md) と `CONSTITUTION.md` §6:
+  `PRODUCT.md`＝何のためにあり何ができるか / `DECISIONS.md`＝なぜそうなっているか /
   `Architecture.md`＝今どうなっているか（主題順） /
-  `DEV-NOTES.md`＝#R200 以降の記録（新しい順） /
-  `DEV-NOTES-ARCHIVE.md`＝Round 1〜#R199（古い順・追記しない）。
+  `DEV-NOTES.md`＝直近ラウンドの記録（新しい順） /
+  `DEV-NOTES-ARCHIVE.md`＝それ以前（古い順・追記しない）。
 
 ---
 
@@ -227,96 +265,52 @@ CLI、API、SQL、Git、GitHub、Supabase、既存の認証済み環境その他
 
 ユーザーから依頼された作業が**すべて完了した後**、必ず以下の終了処理を行う。
 
-### 11.1 通常の終了処理
+### 11.1 Git
 
-実装・修正・テスト・必要なドキュメント更新をすべて完了させる（§5 のワークフロー）。
-そのうえで Git の状態を確認し、**今回の変更を適切に commit し、GitHub へ push する。**
+実装・修正・テスト・必要なドキュメント更新をすべて完了させ（§5 のワークフロー）、
+**今回の変更を commit し、GitHub へ push する。**
 
 - **変更が存在しない場合は、不要な commit を作成しない。**
 - **GitHub 側が今回の作業を含む最新状態になっていることを確認してから**次へ進む。
 
-### 11.2 USB バックアップは作業のたびに毎回
+### 11.2 USB バックアップ — **作業のたびに毎回**
 
-- USB バックアップは、**依頼された作業が完了するたびに毎回**行う。**1 日 1 回の制限は無い。**
-  同じ日に複数のセッションがあれば、**そのすべてで**同期する。
-- **最後に正常完了した USB バックアップを、日時つきでローカルに記録する。**
-  記録先（リポジトリの外・追跡対象外）:
-  `~/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/usb-backup-state.json`
-- **記録を更新してよいのは、正常完了した場合のみ。**
-- **USB が接続されていない場合はエラー扱いにせず**、そのまま USB バックアップをスキップして終了する。
-  この場合、記録は**更新しない**。
+USB バックアップは、**依頼された作業が完了するたびに毎回**行う。**1 日 1 回の制限は無い。**
+同じ日に複数のセッションがあれば、**そのすべてで**同期する。
 
-### 11.3 USB ドライブの特定
+**手順は実装されている。読んで真似せず、これを実行する:**
 
-- 接続されているドライブを確認し、**安全に** USB メモリを自動判定する。
-- 可能であれば、**Volume Label 等の恒久的な識別方法**で IntMap バックアップ専用 USB を識別する。
-- 初回などで専用ラベルがまだ存在せず、**書き込み可能なリムーバブル USB ドライブが 1 台だけ**存在する
-  場合は、そのドライブを IntMap バックアップ先として設定してよい。
-- **複数の候補が存在し、安全に一意に特定できない場合は、絶対に推測で選択しない。**
-  その日は USB バックアップをスキップし、終了報告でその旨だけ明示する。
-- **内蔵 SSD・システムドライブ・OneDrive・ネットワークドライブ等を
-  USB バックアップ先として扱ってはならない。**
+```bash
+pwsh -File scripts/backup-usb.ps1
+```
 
-### 11.4 USB は IntMap の最新ミラーにする
+最後の1行が `RESULT <status> <detail>` で、`ok` / `skipped` / `failed` のいずれかを返す。
+`skipped` は**エラーではない**（USB 未接続、または候補が複数あって一意に特定できない）。
 
-- **USB メモリのルート**を IntMap バックアップとして使用する。
-- 同期方向は **`PC 上の IntMap → USB` の一方向のみ**とする。
-  **USB 上のファイルを作業元として使用したり、USB から PC へ変更を逆同期したりしてはならない。**
-- バックアップ実行時には、現在の IntMap を**再びサイトとして完全に再現するために必要なファイルだけ**を
-  USB へ保存する。
+### 11.3 スクリプトが守っていること（**書き換えるときも壊さないこと**）
 
-| 含めるもの（例） | 原則として含めないもの |
-|---|---|
-| ソースコード（HTML / CSS / JavaScript / TypeScript 等） | `node_modules` |
-| 静的アセット | `.git` |
-| 必要なデータファイル | キャッシュ・一時ファイル・ログ |
-| `package.json` / lockfile | OS・エディタ固有の不要ファイル |
-| ビルド設定・デプロイ設定・必要なスクリプト | 再生成可能で復元に不要なビルドキャッシュ |
-| Supabase 等の構成・schema・migration 類 | その他、IntMap を再現するために不要なファイル |
-| サイト再現に必要なその他の追跡対象ファイル | |
+- ⚠ **ミラー元は原本（`C:\Users\gyuuk\OneDrive\IntMap`）であって、temp の worktree ではない。**
+  スクリプトは原本の場所を**ハードコードせず** `git rev-parse --git-common-dir` から導出するので、
+  どの worktree から実行しても原本を見る。§5 の最終工程で原本を最新化し、
+  `node scripts/master-sync.mjs --check` が exit 0 を返してから同期すること
+  （原本が merge 後の状態でなければ、スクリプトは同期せず `skipped` で終わる）。
+- **同期方向は `原本 → USB` の一方向のみ。** USB 上のファイルを作業元にしない。逆同期しない。
+- **USB のルートが IntMap の完全ミラー**になる。中身は **Git HEAD の追跡対象ファイル**
+  （＝サイトを再現するのに必要なものすべて。`node_modules` / `.git` / `dist` / キャッシュは入らない）。
+  新規は作成、更新は上書き、**リポジトリに無いものは USB からも削除**する。
+  例外は `.intmap-backup-id.json` ——ドライブを識別するためにスクリプト自身が置く管理情報。
+- **ドライブは推測しない。** ボリュームラベル `INTMAP-BACKUP`（または上記の識別ファイル）で特定する。
+  ラベル付きが無く、書き込み可能なリムーバブルが**ちょうど1台**のときだけ、それを採用してラベルを刻む。
+  候補が複数あって一意に決まらない場合は**スキップして報告する**。
+  **バックアップ先としては、内蔵 SSD・システムドライブ・OneDrive・ネットワークドライブを対象外**
+  にする（DriveType で除外。⚠ OneDrive はミラーの**元**であって、**先**ではない）。
+- **コピーが成功したことを、バックアップが成功したことにしない。** 同期後に両側を再帰的に歩き直し、
+  相対パス・存在・SHA-256 が**完全に一致することを確認する**。一致した場合のみ成功とする。
+- **失敗したら原因を調べ、再同期・再検証する**（既定3回）。それでも駄目なら**無限ループにせず**失敗として終える。
+- **成功したときだけ**、台帳に日時を書く:
+  `~/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/usb-backup-state.json`（リポジトリの外・追跡対象外）。
 
-- GitHub への commit / push が完了しているため、**原則として現在の Git HEAD に含まれる追跡対象ファイル**
-  を基準に、再現可能なクリーンなスナップショットを作成する。
-- ただし、**Git 追跡外でもサイトの完全な再現に不可欠なローカルファイルが実際に存在する場合**は、
-  必要性を確認したうえで含める。
-
-### 11.5 完全ミラー
-
-USB 側は、**バックアップ時点の IntMap と一致する完全ミラー**にする。
-
-| PC 側 | USB 側 |
-|---|---|
-| 新規ファイル | 作成する |
-| 更新ファイル | 更新する |
-| 名前変更 | 最新状態を反映する |
-| 削除されたファイル | **USB 側からも削除する** |
-
-**USB に古い IntMap のファイルを残さない。**
-
-ただし、USB ドライブを安全に識別するために Claude 自身が作成したバックアップ管理情報
-（USB ルートの `.intmap-backup-id.json`）は、**同期対象外の管理情報**として保持してよい。
-
-### 11.6 同期後の完全検証
-
-**コピー処理の成功だけでバックアップ成功と判断してはならない。**
-
-同期完了後、PC 側のバックアップ対象と USB 側を**再帰的に比較し、差分がゼロであることを確認する。**
-最低でも以下を確認し、必要に応じて **SHA-256 等のハッシュ**を使用する。
-
-- 相対ファイルパス
-- ファイルの存在
-- ファイル内容
-
-**検証結果が完全一致した場合のみ、バックアップ成功とする。**
-
-### 11.7 失敗時
-
-- USB 同期または検証に失敗した場合は**原因を調査し、自動的に修正・再同期・再検証を行う。**
-  **単に 1 回失敗しただけで諦めない。**
-- 再試行しても正常に完了できない場合のみ、**無限ループにはせず**終了し、バックアップ失敗として報告する。
-- **失敗した場合、「バックアップ済み」記録を更新してはならない。**
-
-### 11.8 終了報告
+### 11.4 終了報告
 
 すべての終了処理後、**最終報告（§10）の末尾**にバックアップ状態を簡潔に明示する。
 

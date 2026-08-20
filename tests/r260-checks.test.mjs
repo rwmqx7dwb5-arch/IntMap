@@ -42,7 +42,15 @@ test('#R260 ① CLAUDE.md has §11 作業終了処理 and still has 本ファイ
 
 /* ── ② every clause of the procedure survived ───────────────────────────────────────────────── */
 test('#R260 ② CLAUDE.md still carries each clause of the finish procedure', () => {
-  const md = read('CLAUDE.md');
+  /* ⚠⚠ (#R280) THE PROCEDURE IS CODE NOW. §11 was 114 lines of prose steps; steps written in
+     prose are re-implemented slightly differently every time they are followed, and «slightly
+     differently» is how a backup ends up verified by a weaker test than the one written down.
+     scripts/backup-usb.ps1 is the implementation and CLAUDE.md keeps WHEN to run it and the
+     invariants. What #R260 established — that every clause is WRITTEN DOWN — is unchanged, so
+     this reads both, and asserts that CLAUDE.md actually points at the script. */
+  const md = read('CLAUDE.md') + '\n' + read('scripts/backup-usb.ps1');
+  assert.ok(read('CLAUDE.md').includes('scripts/backup-usb.ps1'),
+    'CLAUDE.md no longer names the script — a procedure nobody is told to run is not a procedure');
   const rules = [
     ['作業完了後に必ず実行',     '作業終了処理'],
     ['commit と push',           'GitHub へ push'],
@@ -56,27 +64,27 @@ test('#R260 ② CLAUDE.md still carries each clause of the finish procedure', ()
     ['毎回同期する',             '依頼された作業が完了するたびに毎回'],
     ['1日1回の制限は無い',       '1 日 1 回の制限は無い'],
     ['日時をローカルに記録',     'usb-backup-state.json'],
-    ['成功時のみ日付を更新',     '正常完了した場合のみ'],
-    ['未接続はエラーにしない',   'エラー扱いにせず'],
-    ['恒久的な識別',             'Volume Label'],
-    ['候補が1台なら設定してよい','1 台だけ'],
-    ['推測で選ばない',           '絶対に推測で選択しない'],
+    ['成功時のみ日付を更新',     'THE LEDGER MOVES ONLY ON SUCCESS'],
+    ['未接続はエラーにしない',   'NOT CONNECTED IS NOT AN ERROR'],
+    ['恒久的な識別',             'ボリュームラベル'],
+    ['候補が1台なら設定してよい','ちょうど1台'],
+    ['推測で選ばない',           'NEVER GUESS THE DRIVE'],
     ['内蔵/OneDrive は対象外',   'ネットワークドライブ'],
-    ['USB のルートが対象',       'USB メモリのルート'],
+    ['USB のルートが対象',       'USB のルート'],
     ['一方向のみ',               '一方向のみ'],
-    ['逆同期の禁止',             '逆同期したりしてはならない'],
+    ['逆同期の禁止',             '逆同期しない'],
     ['node_modules は含めない',  'node_modules'],
-    ['Git HEAD の追跡対象が基準','Git HEAD に含まれる追跡対象ファイル'],
-    ['削除も反映する完全ミラー', 'USB 側からも削除する'],
-    ['古いファイルを残さない',   '古い IntMap のファイルを残さない'],
+    ['Git HEAD の追跡対象が基準','Git HEAD の追跡対象ファイル'],
+    ['削除も反映する完全ミラー', 'リポジトリに無いものは USB からも削除'],
+    ['古いファイルを残さない',   'EXTRAS ARE DELETED EXPLICITLY'],
     ['管理情報は同期対象外',     '.intmap-backup-id.json'],
-    ['コピー成功≠バックアップ成功', 'コピー処理の成功だけで'],
-    ['再帰比較で差分ゼロ',       '差分がゼロであることを確認'],
+    ['コピー成功≠バックアップ成功', 'コピーが成功したことを、バックアップが成功したことにしない'],
+    ['再帰比較で差分ゼロ',       '完全に一致することを確認'],
     ['ハッシュで照合',           'SHA-256'],
-    ['失敗したら自分で直す',     '自動的に修正・再同期・再検証'],
-    ['1回で諦めない',            '1 回失敗しただけで諦めない'],
-    ['無限ループにしない',       '無限ループにはせず'],
-    ['失敗時は記録しない',       '「バックアップ済み」記録を更新してはならない'],
+    ['失敗したら自分で直す',     '再同期・再検証する'],
+    ['1回で諦めない',            '既定3回'],
+    ['無限ループにしない',       '無限ループにせず'],
+    ['失敗時は記録しない',       'This is a failed backup, not a slow one'],
     ['失敗を隠さない',           'その事実を隠さず明示する'],
   ];
   for (const [name, needle] of rules) {
@@ -104,9 +112,17 @@ test('#R260 ③ the finish report has a line for each outcome', () => {
 /* ── ④ the direction of the sync, asserted on its own ───────────────────────────────────────── */
 test('#R260 ④ the mirror is one-way, PC → USB', () => {
   const md = read('CLAUDE.md');
-  assert.ok(md.includes('PC 上の IntMap → USB'),
+  const ps = read('scripts/backup-usb.ps1');
+  /* ⚠ THE ASSERTION IS THE PROPERTY, NOT THE WORDING. This read «PC 上の IntMap → USB» literally
+     until #R282, when the source had to be named more precisely: 「PC 上の IntMap」 was ambiguous
+     between the master copy and a temp worktree, and mirroring the worktree is exactly the defect
+     that round fixed. #R280 then moved the mechanism into scripts/backup-usb.ps1, so the direction
+     is now stated in two places and BOTH have to keep saying it. */
+  assert.match(md, /(原本|PC 上の IntMap)\s*→\s*USB/,
     'the sync direction is no longer written down — a "sync" that can run backwards is not a backup');
-  assert.ok(md.includes('USB 上のファイルを作業元として使用したり'),
+  assert.ok(!/USB\s*→\s*(原本|PC)/.test(md), 'CLAUDE.md now describes a sync that runs back from the USB');
+  assert.match(ps, /ONE WAY\. .*→ USB/, 'the script no longer states the direction it enforces');
+  assert.ok(md.includes('USB 上のファイルを作業元にしない'),
     'the ban on working from the USB copy is gone');
 });
 

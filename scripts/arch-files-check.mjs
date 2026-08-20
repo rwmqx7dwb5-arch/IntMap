@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ============================================================================
- *  IntMap · DOES Architecture.md §3 STILL DESCRIBE THE FILES THAT EXIST?  (#R236)
+ *  IntMap · DOES THE FILE LEDGER STILL DESCRIBE THE FILES THAT EXIST?  (#R236)
  * ----------------------------------------------------------------------------
  *  「Architecture.mdやDEVNOTES.md等のmd、方針や記録系ファイルが増大してきており、
  *    また現状にそぐわない記述が増加しており」
@@ -26,13 +26,17 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = process.argv.includes('--check');
 
-const doc = readFileSync(join(ROOT, 'Architecture.md'), 'utf8');
+/* (#R280) THE LEDGER MOVED OUT OF Architecture.md. §3 was 399 of its 1,918 lines — a quarter of
+   the spec was a table of contents for js/ — so it is docs/FILES.md now, keeping the SAME section
+   numbers (§3.1…§3.13) so every `§3.x` reference in the other documents still resolves. What this
+   file measures did not change; only where it reads it from. */
+const DOC = 'docs/FILES.md';
+const doc = readFileSync(join(ROOT, DOC), 'utf8');
 
-/* §3 runs from its own heading to the next top-level heading */
-const start = doc.indexOf('## 3. ファイル構成');
-if (start < 0) { console.error('Architecture.md: §3 not found'); process.exit(1); }
-const after = doc.indexOf('\n## ', start + 1);
-const section = doc.slice(start, after < 0 ? doc.length : after);
+/* the ledger is the whole file below its own §3.1 heading */
+const start = doc.indexOf('### 3.1');
+if (start < 0) { console.error(DOC + ': the §3.1 heading is gone — this check needs rewriting'); process.exit(1); }
+const section = doc.slice(start);
 
 /* a listed module is a bare filename at the start of a line, at any indent — the
    list nests (js/ then the file), and descriptions wrap onto continuation lines */
@@ -49,7 +53,7 @@ const scriptsDir = new Set(readdirSync(join(ROOT, 'scripts')).filter((f) => f.en
 const stale = [...listed].filter((f) => !actual.includes(f) && !srcDir.has(f) && !scriptsDir.has(f)
   && !/^(sw|admin|vite\.config|playwright[.a-z]*|_.*)\.js$/.test(f)).sort();
 
-console.log('Architecture.md §3 — modules described: ' + listed.size + ' · js/ holds ' + actual.length);
+console.log(DOC + ' — modules described: ' + listed.size + ' · js/ holds ' + actual.length);
 if (missing.length) {
   console.log('\n' + missing.length + ' file(s) in js/ that §3 does not describe:');
   missing.forEach((f) => console.log('  + ' + f));
@@ -61,6 +65,6 @@ if (stale.length) {
 if (!missing.length && !stale.length) console.log('\n✓ §3 is in sync with js/');
 
 if (CHECK && (missing.length || stale.length)) {
-  console.error('\n✖ Architecture.md §3 is out of sync with js/ — describe the new files, or remove the gone ones.');
+  console.error('\n✖ ' + DOC + ' is out of sync with js/ — describe the new files, or remove the gone ones.');
   process.exit(1);
 }

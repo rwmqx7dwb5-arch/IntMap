@@ -52,6 +52,12 @@ for (const must of ['Architecture.md', 'README.md', 'CLAUDE.md', 'CONSTITUTION.m
 }
 
 const ARCH = BODY.get('Architecture.md') || '';
+/* (#R280) §3 (the file ledger) and most of §7 (the layer implementation) moved to documents of
+   their own, keeping the same section numbers. The rules that measured those sections follow
+   them — a rule left pointing at the old address does not fail, it just stops looking, which is
+   the same silence this whole file exists to prevent. */
+const LAYERS = BODY.get('docs/MAP-LAYERS.md') || '';
+const FILES = BODY.get('docs/FILES.md') || '';
 
 /* ═══ 1. the size of the app, as Architecture.md §1 states it ══════════════════════════════ */
 {
@@ -101,9 +107,11 @@ const ARCH = BODY.get('Architecture.md') || '';
 /* ═══ 3. migrations ═══════════════════════════════════════════════════════════════════════ */
 {
   const n = readdirSync(join(ROOT, 'supabase/migrations')).filter((f) => f.endsWith('.sql')).length;
-  const m = ARCH.match(/migrations\/\*\.sql[^\n]*?（(\d+)\s*本/);
-  if (m && Number(m[1]) !== n) fail('migrations', `Architecture says ${m[1]} migrations; there are ${n}`);
-  else ok('migrations', `${n} migration files`);
+  for (const [name, body] of [['Architecture.md', ARCH], ['docs/FILES.md', FILES]]) {
+    const m = body.match(/migrations\/\*\.sql[^\n]*?（(\d+)\s*本/);
+    if (m && Number(m[1]) !== n) fail('migrations', `${name} says ${m[1]} migrations; there are ${n}`);
+  }
+  ok('migrations', `${n} migration files`);
 
   /* a named SQL file the restore procedure tells the reader to run must actually exist */
   eachDoc((f, s) => {
@@ -127,6 +135,17 @@ const ARCH = BODY.get('Architecture.md') || '';
   /* nothing may still describe the repository tree itself as the thing that is served */
   const ROOT_SERVE = ['OneDrive 直配信', 'リポジトリ直配信'];
   eachDoc((f, s) => { for (const n of ROOT_SERVE) if (s.includes(n)) fail('serving', `${f} still says the site is served straight from the repository (${n})`); });
+
+  /* ⚠ A LIST OF EXACT SUBSTRINGS ONLY CATCHES THE WORDING SOMEBODY ALREADY THOUGHT OF. The two
+     needles above missed the sentence that was actually sitting in CONSTITUTION.md §1 —
+     「本番は OneDrive 上の …… を直接配信」 — the same false claim, spelled a way no needle matched,
+     and it survived every run of this gate. OneDrive is the MASTER WORKING DIRECTORY (CLAUDE.md
+     §6); it has never served production, which is Pages publishing the dist/ build. */
+  const SERVED_FROM_ONEDRIVE = /OneDrive[^\n]{0,60}?(直接配信|から配信|を配信|直配信)/;
+  eachDoc((f, s) => {
+    const m = s.match(SERVED_FROM_ONEDRIVE);
+    if (m) fail('serving', `${f} says production is served from OneDrive («${m[0]}») — Pages serves dist/, and OneDrive is the master working directory`);
+  });
 
   if (!/dist\//.test(ARCH)) fail('serving', 'Architecture.md never mentions dist/, which is what GitHub Pages actually serves');
   else ok('serving', 'dist/ is gitignored, built by deploy.yml, and named in Architecture.md');
@@ -227,10 +246,10 @@ const ARCH = BODY.get('Architecture.md') || '';
   if (!national.length || !ma.length) {
     fail('alerts', 'could not read FEEDS / MA out of js/world-packs.js — this rule needs rewriting');
   } else {
-    const archFeeds = (ARCH.match(/自前フィードは\s*\*\*(\d+)本\*\*/) || [])[1];
-    if (archFeeds && Number(archFeeds) !== feedCount) fail('alerts', `Architecture says ${archFeeds} feeds; the code has ${feedCount}`);
-    const archMA = (ARCH.match(/MeteoAlarm が EUMETNET の残り\s*(\d+)\s*か国/) || [])[1];
-    if (archMA && Number(archMA) !== ma.length) fail('alerts', `Architecture says MeteoAlarm carries ${archMA} countries; the code has ${ma.length}`);
+    const archFeeds = (LAYERS.match(/自前フィードは\s*\*\*(\d+)本\*\*/) || [])[1];
+    if (archFeeds && Number(archFeeds) !== feedCount) fail('alerts', `docs/MAP-LAYERS.md says ${archFeeds} feeds; the code has ${feedCount}`);
+    const archMA = (LAYERS.match(/MeteoAlarm が EUMETNET の残り\s*(\d+)\s*か国/) || [])[1];
+    if (archMA && Number(archMA) !== ma.length) fail('alerts', `docs/MAP-LAYERS.md says MeteoAlarm carries ${archMA} countries; the code has ${ma.length}`);
     const readme = BODY.get('README.md') || '';
     const rmN = (readme.match(/(\d+)\s+countries over (\w+) feeds/) || [])[1];
     if (rmN && Number(rmN) !== countries) fail('alerts', `README says ${rmN} countries; the code has ${countries}`);
@@ -240,11 +259,11 @@ const ARCH = BODY.get('Architecture.md') || '';
        that quietly covers ninety more countries than the spec describes is the drift this file is
        for. Same shape in both directions — a spec that names it after the code drops it also fails. */
     const codeSwic = /FEEDS\[c\]='swic'/.test(wp);
-    const archSwic = /WMO Severe Weather Information Centre/.test(ARCH);
+    const archSwic = /WMO Severe Weather Information Centre/.test(LAYERS);
     if (codeSwic !== archSwic) {
       fail('alerts', codeSwic
-        ? 'the code wires the WMO CAP register but Architecture.md does not describe it'
-        : 'Architecture.md describes the WMO CAP register but the code does not wire it');
+        ? 'the code wires the WMO CAP register but docs/MAP-LAYERS.md does not describe it'
+        : 'docs/MAP-LAYERS.md describes the WMO CAP register but the code does not wire it');
     }
     ok('alerts', `${feedCount} feeds · ${national.length} national services + MeteoAlarm's ${ma.length} · ${countries} countries`
       + (codeSwic ? ' + the WMO CAP register' : ''));
@@ -291,6 +310,219 @@ const ARCH = BODY.get('Architecture.md') || '';
   });
   if (hits.length) fail('arch-rounds', `Architecture.md carries ${hits.length} round reference(s) — the history belongs in DEV-NOTES.md\n      ` + hits.slice(0, 5).join('\n      '));
   else ok('arch-rounds', 'Architecture.md carries no round references');
+}
+
+/* ═══ 13. Cesium is a SECOND ENGINE, not an abandoned one ═════════════════════════════════
+   CONSTITUTION.md said 「Cesium は廃止済み。再構築しない。」 for many rounds while five
+   js/cesium-*.js files, a package.json dependency and a Settings row shipped in every build.
+   That sentence outranks every other document by its own declaration, so it was the most
+   expensive wrong sentence in the repository. */
+{
+  const dep = /"cesium"\s*:/.test(rd('package.json'));
+  const files = readdirSync(join(ROOT, 'js')).filter((f) => /^cesium-/.test(f)).length;
+  if (!(dep && files >= 3)) {
+    ok('cesium', 'no Cesium engine in the tree — this rule is now inert and should be removed');
+  } else {
+    const GONE = ['廃止済み', '廃止した', 'abandoned', 'is abandoned'];
+    eachDoc((f, s) => {
+      for (const line of s.split('\n')) {
+        if (!/Cesium/.test(line)) continue;
+        if (GONE.some((g) => line.includes(g))) fail('cesium', f + ' calls Cesium abandoned while ' + files + ' js/cesium-*.js files ship and package.json depends on it: ' + line.trim().slice(0, 90));
+      }
+    });
+    if (!/第2エンジン|second engine/.test(ARCH)) fail('cesium', 'Architecture.md no longer describes Cesium as the selectable second engine');
+    if (!problems.some((x) => x.startsWith('cesium'))) ok('cesium', 'Cesium ships (' + files + ' files) and is described as a second engine');
+  }
+}
+
+/* ═══ 14. Area Monitors: withdrawn in the code ⇒ withdrawn in the documents ═══════════════
+   The tab, the workspace window and the Atlas route were all removed; three documents went on
+   describing a Monitors tab a reader could click. The code states the fact twice — the button
+   is not in the markup and the dispatch answers with a withdrawal code — so the documents can
+   be held to it. */
+{
+  const noTab = !/id="btn-monitors"/.test(rd('index.html'));
+  const withdrawn = /FEATURE_WITHDRAWN/.test(rd('js/atlas-console.js'));
+  if (noTab && withdrawn) {
+    for (const f of ['Architecture.md', 'docs/AREA-MONITORS.md', 'PRODUCT.md']) {
+      const body = BODY.get(f) || '';
+      if (/Monitor/i.test(body) && !/撤去|WITHDRAWN|withdrawn/.test(body)) {
+        fail('monitors', f + ' describes Area Monitors without saying the feature has no entry point');
+      }
+    }
+    eachDoc((f, s) => {
+      for (const line of s.split('\n')) {
+        if (/Monitors\s*タブ/.test(line) && !/撤去|無い|ない|WITHDRAWN/.test(line)) {
+          fail('monitors', f + ' still describes a Monitors tab as present: ' + line.trim().slice(0, 90));
+        }
+      }
+    });
+    if (!problems.some((x) => x.startsWith('monitors'))) ok('monitors', 'the feature is withdrawn in the code and the documents say so');
+  } else {
+    ok('monitors', 'the Monitors entry point is back — this rule needs rewriting');
+  }
+}
+
+/* ═══ 15. the news pipeline, and the PRIVACY POLICY that describes it ═════════════════════
+   USE_SERVER_NEWS has been false for a long time: headlines are fetched by the browser through
+   our own relay and placed by a non-AI engine in the browser. The privacy policy went on telling
+   readers that news is "fetched and geolocated server-side and stored". A policy is a statement
+   of fact about the code, so it is checkable, and this is the rule that checks it. */
+{
+  const body = rd('js/app-body.js');
+  const m = body.match(/const\s+USE_SERVER_NEWS\s*=\s*(true|false)/);
+  if (!m) fail('news-path', 'USE_SERVER_NEWS is gone from js/app-body.js — this rule needs rewriting');
+  else {
+    const serverPath = m[1] === 'true';
+    const legal = has('js/legal-text.js') ? rd('js/legal-text.js') : '';
+    const CLAIMS_SERVER = [
+      'news is fetched and geolocated server-side',
+      'reads the pre-analyzed result',
+      'ニュースはサーバー側で取得・地点解析のうえ保存',
+      'ブラウザは解析済み結果を読み込みます',
+    ];
+    const hit = CLAIMS_SERVER.filter((c) => legal.includes(c));
+    if (!serverPath && hit.length) {
+      fail('news-path', 'the privacy policy says news is analysed and stored server-side ("' + hit[0].slice(0, 40) + '…") while USE_SERVER_NEWS is false');
+    }
+    if (serverPath && !hit.length) {
+      fail('news-path', 'USE_SERVER_NEWS is true again but the privacy policy no longer describes the server path');
+    }
+    if (!serverPath) {
+      eachDoc((f, s) => {
+        for (const line of s.split('\n')) {
+          if (!/地点解析/.test(line)) continue;
+          if (/サーバー側でAI事前解析|サーバー側で事前にAI解析/.test(line) && !/停止|止めて|残してある|かつて/.test(line)) {
+            fail('news-path', f + ' presents the server-side pre-analysis as the live path: ' + line.trim().slice(0, 90));
+          }
+        }
+      });
+    }
+    if (!problems.some((x) => x.startsWith('news-path'))) ok('news-path', 'USE_SERVER_NEWS=' + m[1] + ' and every document — the privacy policy included — describes that path');
+  }
+}
+
+/* ═══ 16. the CSP, as index.html actually writes it ═══════════════════════════════════════
+   Architecture said 「'unsafe-eval' と CDN ホスト（どちらも現在は入っていない）」. Both were in
+   index.html; what the admin-console round removed them from was admin.html. A residual risk
+   that a document reports as absent stops being tracked. */
+{
+  const grab = (file) => {
+    const t = rd(file);
+    const mm = t.match(/Content-Security-Policy"\s+content="([^"]+)"/);
+    return mm ? mm[1] : null;
+  };
+  const app = grab('index.html'), adm = grab('admin.html');
+  if (!app || !adm) fail('csp', 'the CSP meta could not be read out of index.html / admin.html — this rule needs rewriting');
+  else {
+    const dirs = app.split(';').map((x) => x.trim()).filter(Boolean).length;
+    const claimed = (ARCH.match(/\*\*(\d+)\s*の\s*directive\*\*/) || [])[1];
+    if (claimed && Number(claimed) !== dirs) fail('csp', 'Architecture says the policy has ' + claimed + ' directives; index.html writes ' + dirs);
+
+    const scriptSrc = (app.match(/script-src([^;]*)/) || [, ''])[1];
+    const evalOn = /'unsafe-eval'/.test(scriptSrc);
+    const cdns = (scriptSrc.match(/https:\/\/[^\s;]+/g) || []);
+    if (/'unsafe-eval'/.test(adm)) fail('csp', "admin.html's CSP grants 'unsafe-eval' again");
+
+    if (evalOn || cdns.length) {
+      const ABSENT = [/どちらも現在は入っていない/, /neither is present/i, /no CDN hosts?/i];
+      eachDoc((f, s) => {
+        for (const line of s.split('\n')) {
+          if (!/unsafe-eval/.test(line)) continue;
+          if (ABSENT.some((re) => re.test(line))) fail('csp', f + " says the app's CSP has no 'unsafe-eval' / CDN hosts; index.html has " + (evalOn ? "'unsafe-eval' and " : '') + cdns.length + ' CDN host(s)');
+        }
+      });
+      const archCount = (ARCH.match(/(\d+)\s*つの\s*CDN\s*ホスト/) || [])[1];
+      if (archCount && Number(archCount) !== cdns.length) fail('csp', 'Architecture says ' + archCount + ' CDN hosts in script-src; index.html has ' + cdns.length);
+      if (!/SECURITY-ARCHITECTURE\.md/.test(ARCH)) fail('csp', 'Architecture.md no longer points at the residual-risk register that tracks this');
+    }
+    if (!problems.some((x) => x.startsWith('csp'))) ok('csp', dirs + ' directives · script-src: ' + (evalOn ? "'unsafe-eval' + " : '') + cdns.length + ' CDN host(s), described as such');
+  }
+}
+
+/* ═══ 17. the tables: migrations ⇄ the pgTAP harness ⇄ the documents ══════════════════════
+   The harness asserted RLS on 19 tables, the migrations created 20, and the DB page said 15.
+   A table missing from the assertion list cannot fail the assertion. */
+{
+  const sqlAll = readdirSync(join(ROOT, 'supabase/migrations')).filter((f) => f.endsWith('.sql'))
+    .map((f) => rd('supabase/migrations/' + f)).join('\n');
+  const created = new Set([...sqlAll.matchAll(/create table (?:if not exists )?public\.([a-z0-9_]+)/gi)].map((x) => x[1].toLowerCase()));
+  /* ⚠ EVERY enumeration IS ITS OWN CLAIM. The file lists the tables TWICE — once for "the table
+     exists", once for "RLS is on for it" — and reading the file as one bag of names hides a table
+     that is missing from exactly one of them, which is the shape the defect actually had. */
+  const struct = rd('supabase/tests/00_structure_test.sql');
+  const arrays = [...struct.matchAll(/unnest\(array\[([\s\S]*?)\]\)/g)]
+    .map((m) => new Set([...m[1].matchAll(/'([a-z0-9_]+)'/g)].map((x) => x[1]).filter((n) => created.has(n))))
+    .filter((set) => set.size > 0);
+  if (!arrays.length) fail('db-tables', 'supabase/tests/00_structure_test.sql no longer enumerates any table — this rule needs rewriting');
+  arrays.forEach((set, i) => {
+    const gone = [...created].filter((t) => !set.has(t));
+    if (gone.length) fail('db-tables', 'supabase/tests/00_structure_test.sql list #' + (i + 1) + ' never names ' + gone.join(', ') + ' — ' + created.size + ' tables exist, it asserts ' + set.size);
+  });
+
+  const RE = [['docs/DATABASE.md', /RLS is enabled on all \*\*(\d+)\*\*/], ['Architecture.md', /現在\s*\*\*(\d+)\s*表\*\*/]];
+  for (const [f, re] of RE) {
+    const mm = (BODY.get(f) || '').match(re);
+    if (mm && Number(mm[1]) !== created.size) fail('db-tables', f + ' says ' + mm[1] + ' tables; the migrations create ' + created.size);
+  }
+  if (!problems.some((x) => x.startsWith('db-tables'))) ok('db-tables', created.size + ' tables, all of them asserted by the pgTAP structure test');
+}
+
+/* ═══ 18. the size of the node-test tier, as package.json defines it ══════════════════════ */
+{
+  const n = JSON.parse(rd('package.json')).scripts['test:checks'].split(/\s+/).filter((x) => x.endsWith('.mjs')).length;
+  eachDoc((f, s) => {
+    const mm = s.match(/\*\*(\d+) Node test files\*\*/);
+    if (mm && Number(mm[1]) !== n) fail('node-tests', f + ' says ' + mm[1] + ' Node test files; test:checks runs ' + n);
+  });
+  if (!/Node test files/.test(BODY.get('docs/TESTING.md') || '')) fail('node-tests', 'docs/TESTING.md no longer states how large the node tier is');
+  if (!problems.some((x) => x.startsWith('node-tests'))) ok('node-tests', n + ' node test files, stated correctly');
+}
+
+/* ═══ 19. the legal text has exactly ONE copy ═════════════════════════════════════════════
+   The modal and the two public pages must all read js/legal-text.js. The moment one of them
+   carries its own paragraph, the app and the linkable policy can say different things — and the
+   one a reader can cite is the one that is wrong. */
+{
+  if (!has('js/legal-text.js')) fail('legal', 'js/legal-text.js is gone — the single source of the policy text');
+  else {
+    const text = rd('js/legal-text.js');
+    if (!/プライバシーポリシー/.test(text) || !/Privacy Policy/.test(text)) fail('legal', 'js/legal-text.js no longer holds both language versions');
+    if (/<p><b>/.test(rd('js/legal.js'))) fail('legal', 'js/legal.js carries policy prose again — it must read js/legal-text.js');
+    for (const page of ['privacy.html', 'terms.html']) {
+      if (!has(page)) { fail('legal', page + ' is gone — the policy needs a URL of its own'); continue; }
+      /* ⚠ MENTIONING IT IS NOT LOADING IT. Both pages explain the arrangement in a comment that
+         names these exact paths, so a bare substring test stays green after the <script> tag is
+         deleted. What separates the two is the ATTRIBUTE — quotes included — which appears in the
+         tag and never in the prose. No pattern is built and no markup is parsed: three attempts at
+         doing this with a regex produced three CodeQL findings in a row, each correct. */
+      const pageSrc = rd(page);
+      for (const dep of ['js/legal-text.js', 'js/legal-page.js']) {
+        if (!pageSrc.includes('src="./' + dep + '"')) {
+          fail('legal', page + ' does not LOAD ' + dep + ' as src="./' + dep + '" (a mention in a comment is not a script tag)');
+        }
+      }
+      if (/<p><b>/.test(rd(page))) fail('legal', page + ' carries its own copy of the prose');
+    }
+    const vite = rd('vite.config.js');
+    for (const asset of ['privacy.html', 'terms.html', 'js/legal-text.js', 'js/legal-page.js']) {
+      if (!vite.includes("'" + asset + "'")) fail('legal', 'vite.config.js STATIC_ASSETS does not copy ' + asset + ' — it would be absent from dist/');
+    }
+    if (!problems.some((x) => x.startsWith('legal'))) ok('legal', 'one copy of the policy, read by the modal and by both public pages, all shipped');
+  }
+}
+
+/* ═══ 20. every current-state document is in the index ════════════════════════════════════
+   docs/README.md exists so a reader can tell which document owns which fact. An index that
+   silently misses a document is worse than none: it reads as complete. */
+{
+  const idx = BODY.get('docs/README.md');
+  if (!idx) fail('doc-index', 'docs/README.md is gone — there is no index of the documents');
+  else {
+    const missing = DOCS.filter((f) => f !== 'docs/README.md' && !idx.includes(f.replace(/^docs\//, '')));
+    if (missing.length) fail('doc-index', 'docs/README.md does not list ' + missing.join(', '));
+    else ok('doc-index', 'all ' + (DOCS.length - 1) + ' current-state documents are listed in docs/README.md');
+  }
 }
 
 /* ── report ──────────────────────────────────────────────────────────────────────────────── */
