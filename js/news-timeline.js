@@ -28,10 +28,26 @@ window.IntMapModules.newsTimeline=function(HOST){
     const synced=document.getElementById('ntl-synced'), bigval=document.getElementById('ntl-bigval');
     const badge=document.getElementById('ntl-badge'), btnNow=document.getElementById('ntl-today');
     const modeYear=document.getElementById('ntl-mode-year'), modeDate=document.getElementById('ntl-mode-date'), modeTime=document.getElementById('ntl-mode-time');
+    /* (#R288) the fourth tab and its transport — see the note on `fcReady` below */
+    const modeFc=document.getElementById('ntl-mode-fc'), playerEl=document.getElementById('ntl-player');
     const timePicker=document.getElementById('ntl-time');
     const scale=document.getElementById('ntl-scale'), closeX=document.getElementById('ntl-x'), title=document.getElementById('ntl-title');
     if(!tl||!slider) return;
-    let pendingTimer=null, _self=false, mode='year';   /* (#R101) Year (1900→now) | Date (recent days) | (#R137) Time (time-of-day) */
+    let pendingTimer=null, _self=false, mode='year';   /* (#R101) Year (1900→now) | Date (recent days) | (#R137) Time (time-of-day) | (#R288) Forecast (the model's own hours) */
+    /* ══ ⚠⚠⚠ (#R288) THE APP HAS ONE CLOCK, AND IT NOW REACHES FORWARD ══════════════════════════
+       「ECMWF系レイヤーを開くと勝手にECMWFの時間ポップアップが出るのを辞めろ。わざわざ分けるな。」
+
+       #R284 answered the forecast axis with a floating box of its own that opened by itself. This
+       widget is the app's ONE time control — every other time-aware layer has followed it since
+       #R94 — and it had no way to reach a future instant, which is the only reason a second clock
+       was ever built. So it gets a fourth tab whose steps are the MODEL'S OWN valid times
+       (js/wx-ecmwf.js), and the ECMWF layers follow the master clock like everything else.
+       ⚠ The tab is present only when the model actually published an axis; a control for something
+       that does not exist is the 「押しても何も起きない」 shape (#R268). */
+    const EC=()=>{ try{ return window.IntMapECMWF; }catch(_){ return null; } };
+    const fcReady=()=>{ try{ const E=EC(); return !!(E&&E.count()>0); }catch(_){ return false; } };
+    const fcCount=()=>{ try{ return EC().count(); }catch(_){ return 0; } };
+    const fcIndex=()=>{ try{ return EC().index(); }catch(_){ return 0; } };
     /* (#R137) HH:MM (24h) label used by the Time tab. */
     const _hm=(w)=>String(w.getHours()).padStart(2,'0')+':'+String(w.getMinutes()).padStart(2,'0');
     /* (#R137/#R139) Time tab writes the chosen time-of-day onto the date SELECTED BY the Year/Date tabs (today when
@@ -91,6 +107,8 @@ window.IntMapModules.newsTimeline=function(HOST){
       if(modeYear) modeYear.textContent=L5('Year','年','Jahr','Год','Año');
       if(modeDate) modeDate.textContent=L5('Date','日付','Datum','Дата','Fecha');
       if(modeTime) modeTime.textContent=L5('Time','時刻','Zeit','Время','Hora');   /* (#R137) time-of-day tab */
+      if(modeFc) modeFc.textContent=L5('Forecast','予報','Vorhersage','Прогноз','Pronóstico');   /* (#R288) */
+      syncFcTab();
       if(btnNow) btnNow.textContent=L5('Back to now','現在へ戻る','Zurück zu heute','К настоящему','Volver al presente');
       if(badge) badge.textContent=L5('Viewing the past','過去表示中','Vergangenheit','Прошлое','Viendo el pasado');
       /* (#27) the collapsed "See the past world / 1900 to present" button labels */
@@ -99,23 +117,53 @@ window.IntMapModules.newsTimeline=function(HOST){
         if(os) os.textContent=L5('1900 to present','1900年から現在まで','1900 bis heute','с 1900 до наших дней','1900 hasta hoy'); }catch(_){}
       buildScale();
     }
+    /* the tab appears the moment the model's metadata lands, and never before */
+    function syncFcTab(){ try{ if(modeFc) modeFc.style.display=fcReady()?'':'none'; }catch(_){} }
+    function fcValid(i){ try{ return EC().validTime(i); }catch(_){ return ''; } }
+    function fcFmt(iso){ try{ return EC().fmt(iso,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso||''; } }
+    /* the SAME icon declaration the weather legends read (#R284), so the two views of one clock can
+       never disagree about which button is 「再生」 and which is 「次へ」 */
+    function buildPlayer(){
+      if(!playerEl) return;
+      if(mode!=='forecast'||!fcReady()){ playerEl.style.display='none'; playerEl.innerHTML=''; return; }
+      const P=window.IntMapWxPlayer; if(!P){ playerEl.style.display='none'; return; }
+      const E=EC(), playing=!!(E&&E.isPlaying());
+      playerEl.style.display='flex';
+      playerEl.innerHTML=P.b('first',L5('First step','最初の時刻','Erster Schritt','Первый шаг','Primer paso'),P.IC.first)
+        +P.b('prev',L5('One step back','1つ前の時刻','Ein Schritt zurück','На шаг назад','Un paso atrás'),P.IC.prev)
+        +P.b('play',(playing?L5('Pause','一時停止','Pause','Пауза','Pausa'):L5('Play','再生','Abspielen','Воспроизвести','Reproducir')),(playing?P.IC.pause:P.IC.play),'ecl-play')
+        +P.b('next',L5('One step forward','1つ次の時刻','Ein Schritt vor','На шаг вперёд','Un paso adelante'),P.IC.next)
+        +P.b('now',L5('Back to now','現在に戻る','Zurück zu jetzt','К текущему времени','Volver a ahora'),L5('Now','現在','Jetzt','Сейчас','Ahora'),'ecl-now');
+      playerEl.querySelectorAll('.ecl-b').forEach(b=>{ b.onclick=()=>{ const a=b.getAttribute('data-act'); const E2=EC(); if(!E2) return;
+        if(a==='first'){ E2.pause(); E2.setIndex(0,{now:true}); }
+        else if(a==='prev'){ E2.pause(); E2.step(-1); }
+        else if(a==='next'){ E2.pause(); E2.step(1); }
+        else if(a==='now'){ E2.pause(); E2.setIndex(E2.nowIndex(),{now:true}); }
+        else if(a==='play') E2.togglePlay();
+        buildPlayer(); refreshUI(window.IntMapTime.state()); }; });
+    }
     function buildScale(){ if(!scale) return; const now=L5('Now','現在','Jetzt','Сейчас','Ahora');
+      if(mode==='forecast'){ const n=fcCount();
+        scale.innerHTML=n?('<span>'+fcFmt(fcValid(0))+'</span><span>'+fcFmt(fcValid(n-1))+'</span>'):'';
+        return; }
       scale.innerHTML=(mode==='year')
         ? '<span>1900</span><span>1960</span><span>2000</span><span>'+now+'</span>'
         : (mode==='time')
         ? '<span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>'
         : '<span>'+L5('−10y','10年前','−10 J','−10 л','−10 a')+'</span><span>'+L5('−5y','5年前','−5 J','−5 л','−5 a')+'</span><span>'+now+'</span>'; }
-    function applyMode(m){ mode=m;
+    function applyMode(m){ if(m==='forecast'&&!fcReady()) m='date'; mode=m;
       if(modeYear) modeYear.classList.toggle('on',m==='year');
       if(modeDate) modeDate.classList.toggle('on',m==='date');
       if(modeTime) modeTime.classList.toggle('on',m==='time');
+      if(modeFc) modeFc.classList.toggle('on',m==='forecast');
       if(datePicker) datePicker.style.display=(m==='date')?'':'none';
       if(timePicker) timePicker.style.display=(m==='time')?'':'none';
-      if(m==='year'){ slider.min='1900'; slider.max=String(curY); slider.step='1'; }
+      if(m==='forecast'){ slider.min='0'; slider.max=String(Math.max(0,fcCount()-1)); slider.step='1'; }
+      else if(m==='year'){ slider.min='1900'; slider.max=String(curY); slider.step='1'; }
       else if(m==='time'){ slider.min='0'; slider.max=String(_timeMaxMins()); slider.step='1'; _updTimeMax(); }   /* (#R137) minutes-of-day; (#R210) the whole day, today included */
       else { slider.min='0'; slider.max='3650'; slider.step='1'; }
       if(m!=='time') _tmTerminator(false);   /* (#R137) leaving Time mode clears the day/night overlay */
-      buildScale();
+      buildScale(); buildPlayer();
       try{ refreshUI(window.IntMapTime.state()); }catch(_){}
     }
     function buildSynced(e){ if(!synced) return;
@@ -146,7 +194,14 @@ window.IntMapModules.newsTimeline=function(HOST){
     if(modeYear) modeYear.onclick=()=>applyMode('year');
     if(modeDate) modeDate.onclick=()=>applyMode('date');
     if(modeTime) modeTime.onclick=()=>applyMode('time');   /* (#R137) */
+    if(modeFc) modeFc.onclick=()=>applyMode('forecast');   /* (#R288) */
+    /* the one entry point a weather legend uses to reach this control — it opens the strip on the
+       forecast tab rather than growing a second copy of it (「わざわざ分けるな」) */
+    window._imTimeMachineForecast=()=>{ try{ tl.classList.remove('collapsed'); localizeChrome(); applyMode(fcReady()?'forecast':'date'); }catch(_){} };
     slider.addEventListener('input',()=>{ if(_self) return;
+      /* ⚠ the forecast tab writes to the MODEL's axis, which pushes the master clock itself (and
+         coalesces that push) — writing to both from here would be two clocks again. */
+      if(mode==='forecast'){ const E=EC(); if(E){ E.pause(); E.setIndex(+slider.value); } bigval.textContent=fcFmt(fcValid(+slider.value)); return; }
       if(mode==='year'){ const y=parseInt(slider.value,10); if(y>=curY) window.IntMapTime.setNow({source:'ui'}); else if(y>=1900) window.IntMapTime.setYear(y,{source:'ui'}); }
       else if(mode==='time'){ _applyTimeOfDay(parseInt(slider.value,10)||0); }   /* (#R137) minutes-of-day → clock */
       else { window.IntMapTime.setDaysAgo(3650-parseInt(slider.value,10),{source:'ui'}); } });
@@ -155,7 +210,14 @@ window.IntMapModules.newsTimeline=function(HOST){
     if(btnNow) btnNow.onclick=()=>window.IntMapTime.setNow({source:'ui'});
     /* READ side: kernel → this widget's UI */
     function refreshUI(e){ _self=true; try{
-      if(mode==='time'){ /* (#R137) Time tab: show the time-of-day of the current instant (now when live).
+      if(mode==='forecast'){
+        const n=fcCount(), i=fcIndex();
+        if(slider.max!==String(Math.max(0,n-1))) slider.max=String(Math.max(0,n-1));
+        if(+slider.value!==i) slider.value=i;
+        bigval.textContent=fcFmt(fcValid(i));
+        tl.classList.toggle('active',!e.isLive);
+      }
+      else if(mode==='time'){ /* (#R137) Time tab: show the time-of-day of the current instant (now when live).
                            (#R139) keep the slider/picker max at "now" while the selected date is today (no future). */
         const w=e.when; const base=e.isLive?new Date():new Date(e.when); const maxM=_timeMaxMins();
         if(slider.max!==String(maxM)) slider.max=String(maxM); _updTimeMax();
@@ -189,6 +251,13 @@ window.IntMapModules.newsTimeline=function(HOST){
         }
       }catch(_){}
     }catch(_){} _self=false; }
+    /* the axis and the tab keep each other honest: a step taken from a weather legend moves this
+       slider, and the tab appears as soon as the model's metadata lands */
+    try{ (window.IntMapECMWF||{on:()=>{}}).on(ev=>{ try{
+      if(ev.type==='meta'){ syncFcTab(); if(mode==='forecast'){ applyMode('forecast'); } }
+      if(ev.type==='play') buildPlayer();
+      if(mode==='forecast') refreshUI(window.IntMapTime.state());
+    }catch(_){} }); }catch(_){}
     window.IntMapTime.on(e=>{ refreshUI(e);
       /* Refetch the news feed only when the DAY (or live-state) actually changed. */
       const key=e.isLive?'live':e.iso;
@@ -211,5 +280,8 @@ window.IntMapModules.newsTimeline=function(HOST){
     /* init */
     if(datePicker){ datePicker.max=ymdISO(new Date()); datePicker.min=ymdISO(new Date(Date.now()-3650*864e5)); }
     tl.classList.add('collapsed'); localizeChrome(); applyMode('year');
+    /* the metadata is a 3 kB JSON with no SDK behind it, so the tab can be honest from boot */
+    try{ (window.IntMapECMWF||{meta:()=>Promise.resolve()}).meta().then(syncFcTab).catch(()=>{}); }catch(_){}
+    setTimeout(syncFcTab,2500);
   })();
 };

@@ -4375,5 +4375,13 @@ window.IntMapLang.define('zh-hans', {
   "Thunderstorms": "雷雨",
   "The reachable area is computed for 1 to 120 minutes — ask again inside that range.": "可达范围以 1 至 120 分钟计算，请在此范围内重新指定。",
   "The reachable area was computed, but the map layer could not be created (the map style was still loading) — try again in a moment.": "可达范围已计算完成，但无法建立地图图层（地图样式尚在加载）— 请稍后再试一次。",   /* (#R267) */
+  "Temperature": "气温",   /* (#R288) */
+  "Month": "对象月份",   /* (#R288) */
+  "Forecast": "预报",   /* (#R288) */
+  "ECMWF IFS forecast": "ECMWF IFS 预报",   /* (#R288) */
+  "MERRA-2 reanalysis": "MERRA-2 再分析",   /* (#R288) */
+  "monthly mean": "月平均",   /* (#R288) */
+  "Open the time machine": "开启时光机",   /* (#R288) */
+  "Nothing in force is drawn per administrative unit in {u} countries ({n} units), and country-wide in {c}.": "「未发布」在 {u} 个国家以行政区为单位绘制（共 {n} 个区），在 {c} 个国家则以整国绘制。",   /* (#R288) */
   }
 });

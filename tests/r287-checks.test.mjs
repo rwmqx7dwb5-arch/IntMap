@@ -263,10 +263,18 @@ test('#R287 ⑧ the coalesced time event drops the frame without cancelling the 
 
   assert.ok(!/\brelease\(\)/.test(body),
     'fireTime no longer calls release() unqualified — that is what cleared loadingKey');
-  assert.match(body, /held = null/, 'but the stale frame is still dropped (the 27 MB still goes)');
-  assert.match(body, /fileUrl\(idx\)/, 'and the survivor is identified by the CURRENT hour\'s file');
-  assert.match(body, /loadingKey[\s\S]{0,80}indexOf\(here\) !== 0[\s\S]{0,40}loadingKey = ''/,
-    'a load for some OTHER hour is still abandoned, exactly as before');
+  /* ⚠ (#R288) …AND THE DROP ITSELF IS GONE, for the same defect one step further out: a load
+     overtaken by ANY later request — not only one that started inside the 140 ms window — still
+     resolved null, because the handler returned the module slot instead of the frame it had just
+     decoded (MEASURED on the deployed build: 8.3 s, data present, result null). `load()` returns
+     its own frame now and a monotonic `seq` decides which one is installed, so nothing has to be
+     cancelled at all — and the old frame stays until the new one lands, which is what keeps the
+     point readout from blanking and the same hour from being decoded twice.
+     What #R287 established is unchanged and is what is asserted: fireTime cancels nothing. */
+  assert.ok(!/held = null/.test(body), 'and the stale frame is not dropped either — it is replaced');
+  assert.ok(!/loadingKey/.test(body), 'fireTime touches no load state at all');
+  assert.match(src, /var mine = \+\+seq;/, 'which frame is current is explicit instead');
+  assert.match(src, /if \(seq === mine\) \{/, '…and a superseded read still resolves to its caller');
 
   /* what must survive elsewhere: release() is still there for the axis it was written for */
   assert.match(src, /function release\(variable\)/, 'release(variable) itself is untouched');

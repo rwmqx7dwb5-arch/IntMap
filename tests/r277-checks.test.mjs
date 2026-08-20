@@ -102,7 +102,11 @@ test('R277 ③ hatched / grey / coloured are three states, and the wash sits und
   /* ⚠ (#R284) …and loading / error / idle are no longer HATCHED either: the hatch means 「未対応」,
      so a wired country that has not answered draws nothing at all (`-1`). What #R277 asserted —
      only an answer earns the grey — is unchanged. */
-  assert.match(s, /if\(readState\(c\)!=='ok'\) return -1;/,
+  /* ⚠ (#R288) …and the reader has since said which appearance that unread state should have:
+     「まだ対応していない、もしくはデータがまだ入っていないところは灰色斜線で」. #R277's rule is
+     untouched — only a READ earns the grey — and this is the other half of it, written the way the
+     reader asked for. */
+  assert.match(s, /if\(readState\(c\)!=='ok'\) return 0;/,
     'only a country whose service ANSWERED earns the grey');
 });
 

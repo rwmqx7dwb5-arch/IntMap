@@ -165,11 +165,15 @@ window.IntMapModules.dataLayers=function(HOST){
       .data-legend .ecl-ticks span{ position:absolute; transform:translateX(-50%); white-space:nowrap; }
       .data-legend .ecl-ticks span:first-child{ transform:none; } .data-legend .ecl-ticks span:last-child{ transform:translateX(-100%); }
       .data-legend .ecl-desc{ color:var(--text-main); opacity:0.8; margin-top:3px; font-size:9.5px; line-height:1.4; }
+      /* (#R288) each weather legend states WHICH INSTANT its picture is of, and the line opens the
+         one shared time control rather than carrying a second copy of it. */
+      .data-legend .ecl-when{ display:block; width:100%; margin-top:5px; padding:4px 6px; border:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:7px; background:var(--input-bg); color:var(--text-main); font-weight:600; font-size:9.5px; text-align:center; cursor:pointer; font-variant-numeric:tabular-nums; }
+      .data-legend .ecl-when:hover{ background:var(--primary-color); color:#fff; border-color:transparent; }
       .data-legend #ec-validtime, .data-legend #wind-validtime{ color:var(--text-main); font-weight:600; font-size:9.5px; margin-top:3px; text-align:center; }
       .data-legend .rv-player{ margin:5px 0 2px; }
       .data-legend .rv-btns{ display:flex; gap:3px; justify-content:center; margin-bottom:3px; }
       .data-legend .rv-when{ color:var(--text-main); font-weight:600; font-size:9.5px; margin-top:3px; text-align:center; font-variant-numeric:tabular-nums; }
-      .legend-collapsed .ecl-items, .legend-collapsed .ecl-player, .legend-collapsed .ecl-model, .legend-collapsed .ecl-one, .legend-collapsed .ecl-timebody, .legend-collapsed .rv-player, .legend-collapsed .wind-legend-body{ display:none !important; }
+      .legend-collapsed .ecl-items, .legend-collapsed .ecl-when, .legend-collapsed .ecl-player, .legend-collapsed .ecl-model, .legend-collapsed .ecl-one, .legend-collapsed .ecl-timebody, .legend-collapsed .rv-player, .legend-collapsed .wind-legend-body{ display:none !important; }
       /* #30 — balanced legend header controls: drag handle (top-left), minimize + close (top-right,
          same size, evenly spaced), and the title padded so it never collides with either side. */
       .koppen-legend h4, .data-legend h4{ padding:0 44px 0 18px !important; min-height:16px; display:flex; align-items:center; }
@@ -392,8 +396,8 @@ window.IntMapModules.dataLayers=function(HOST){
        Wrap their build in buildCoreLegends() so it can be re-run in the new language; the element refs are hoisted to
        `let` (tileLegends & co. reference them) and reassigned on each rebuild. Opacity / date / unit VALUES live in
        persistent JS state (opacities[], layerDates[], windUnit…), so they survive a rebuild. */
-    const CORE_LEGEND_IDS=['hdi','dem','pop','nato','gdppc','tfr','milSpend','milSpendGDP','snow','aod','nightsat','eez','temp','thermal','radar','sst','popgrid','relief','sealevel','wind'];
-    let lgdHDI,lgdDem,lgdPop,lgdNATO,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdWind;
+    const CORE_LEGEND_IDS=['hdi','dem','pop','nato','gdppc','tfr','milSpend','milSpendGDP','snow','aod','nightsat','eez','thermal','radar','sst','popgrid','relief','sealevel','wind'];
+    let lgdHDI,lgdDem,lgdPop,lgdNATO,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdWind;
     function buildCoreLegends(){
       CORE_LEGEND_IDS.forEach(id=>{ const e=document.getElementById('data-legend-'+id); if(e) e.remove(); });   /* drop the old-language elements before rebuilding (no duplicate ids) */
     lgdHDI=makeLegend('hdi',140,(HOST.lang==='jp'?'HDI':'HDI'),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#a6d96a,#1a9850)',['0.45','0.95'], window.IntMapLang.t(HOST.lang,'2022 UNDP','2022 国連UNDP','2022 UNDP','2022 ПРООН','2022 PNUD'));
@@ -487,14 +491,6 @@ window.IntMapModules.dataLayers=function(HOST){
       <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'Source: MarineRegions WMS','出典: MarineRegions WMS','Quelle: MarineRegions WMS','Источник: MarineRegions WMS','Fuente: MarineRegions WMS')}</div>`;
     mc.appendChild(lgdEEZ);
     lgdEEZ.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-eez'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
-    /* Temperature legend (MODIS LST color ramp ≈ Kelvin) */
-    lgdTemp=document.createElement('div'); lgdTemp.className='data-legend'; lgdTemp.id='data-legend-temp'; lgdTemp.style.bottom='140px';
-    lgdTemp.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="temp" title="${t('close')}">×</button><h4>${t('lgdTempTitle')||'Air temperature (2 m)'}</h4>
-      <div class="dl-bar" style="background:linear-gradient(to right,#3a0088,#0050d0,#0098ff,#00e0c0,#7dff66,#fff700,#ff9000,#ed1c24,#8a0027);"></div>
-      <div class="dl-scale"><span>${fmtTemp(-40)}</span><span>${fmtTemp(40)}</span></div>
-      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'MERRA-2 reanalysis, monthly — gap-free worldwide. Use the slider to pick a month.','MERRA-2 再解析・月別。全球で欠損なし。スライダーで月を選択。','MERRA-2-Reanalyse, monatlich — weltweit lückenlos. Monat per Schieberegler wählen.','Реанализ MERRA-2, помесячно — без пропусков по всему миру. Месяц выбирается ползунком.','Reanálisis MERRA-2, mensual — sin huecos en todo el mundo. Elige el mes con el deslizador.')}</div>`;
-    mc.appendChild(lgdTemp);
-    lgdTemp.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-temp'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Thermal anomalies legend (fire/heat-signature pixels) */
     lgdThermal=document.createElement('div'); lgdThermal.className='data-legend'; lgdThermal.id='data-legend-thermal'; lgdThermal.style.bottom='140px';
     lgdThermal.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="thermal" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Thermal anomalies','熱異常(火災)','Thermische Anomalien','Тепловые аномалии','Anomalías térmicas')}</h4>
@@ -673,7 +669,7 @@ window.IntMapModules.dataLayers=function(HOST){
       hint(); el.addEventListener('mouseenter',hint);
     }
     window._wireLegendDrag=wireDrag;
-    wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST); wireDrag(lgdPopGrid); wireDrag(lgdRelief); wireDrag(lgdSeaLevel);
+    wireDrag(lgdEEZ); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST); wireDrag(lgdPopGrid); wireDrag(lgdRelief); wireDrag(lgdSeaLevel);
     wireDrag(lgdHDI); wireDrag(lgdDem); wireDrag(lgdPop); wireDrag(lgdNATO);   /* the makeLegend legends drag centrally too now (#10) */
     wireDrag(lgdGdppc); wireDrag(lgdTfr); wireDrag(lgdMil); wireDrag(lgdMilGDP); wireDrag(lgdSnow); wireDrag(lgdAod); wireDrag(lgdNightsat);   /* (#R15b #38) */
     /* (#R110) LANGUAGE CHANGE → rebuild the core legends in the new language, preserving which are open + any dragged
@@ -683,7 +679,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const snap={};
       CORE_LEGEND_IDS.forEach(id=>{ const el=document.getElementById('data-legend-'+id); if(el) snap[id]={disp:el.style.display,dragged:el.dataset.dragged,cssText:el.style.cssText}; });
       buildCoreLegends();
-      [lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdHDI,lgdDem,lgdPop,lgdNATO,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,lgdWind].forEach(el=>{ try{ wireDrag(el); }catch(_){} });
+      [lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdHDI,lgdDem,lgdPop,lgdNATO,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,lgdWind].forEach(el=>{ try{ wireDrag(el); }catch(_){} });
       CORE_LEGEND_IDS.forEach(id=>{ const s=snap[id]; if(!s) return; const el=document.getElementById('data-legend-'+id); if(!el) return;
         if(s.dragged){ el.style.cssText=s.cssText; el.dataset.dragged='1'; }   /* keep a user-dragged legend exactly where it was */
         else if(s.disp&&s.disp!=='none'){ el.style.display=s.disp; } });   /* keep an open legend open (re-tiled below) */
@@ -703,17 +699,20 @@ window.IntMapModules.dataLayers=function(HOST){
        on (#30). */
     const head=document.createElement('div'); head.className='lyr-head lyr-section-label'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[HOST.lang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:1,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,nightsat:1,nightside:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,'clouds-goese':0.75,'clouds-goesw':0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:1,subcables:0.95,sats:0.95};   /* (#R122) Köppen climate default opacity = 100% */
+    const opacities={climate:1,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,nightsat:1,nightside:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,'clouds-goese':0.75,'clouds-goesw':0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:1,subcables:0.95,sats:0.95};   /* (#R122) Köppen climate default opacity = 100% */
     if(window._seaLevelM==null) window._seaLevelM=2;   /* default +2 m sea-level rise (#24) */
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     /* Date-aware layers: temp, precip, thermal — these vary day-by-day. */
     const PRECIP_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
-    /* Air-temperature (MERRA-2 monthly reanalysis) lags ~3 months → default to the latest safe month. */
-    function tempMonthISO(monthsBack){ const d=new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth()-(monthsBack==null?3:monthsBack)); return d.toISOString().slice(0,10); }
+    /* ⚠ (#R288) THE MERRA-2 MONTHLY AIR-TEMPERATURE RASTER IS NOT A LAYER OF ITS OWN ANY MORE.
+       「気温（2m・再解析）レイヤーも統合し、一つのレイヤー、同じ色分け、グラフィックに。
+         ソースだけ切り替えられる仕様に。」 It is the `merra2` SOURCE of the one 「気温」 layer
+       (js/weather.js), re-coloured through the same ramp the forecast uses (js/wx-reanalysis.js).
+       Its month, its legend and its opacity live there; nothing about it is declared twice any more. */
     /* thermal is NOT date-keyed any more (#5): NASA FIRMS publishes rolling time-window layers, so the
        thermal row carries a window selector in its legend instead of a calendar date. */
-    const layerDates={temp:tempMonthISO(3),precip:PRECIP_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
+    const layerDates={precip:PRECIP_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
     /* ══ (#R268) THE NIGHT-LIGHTS EPOCHS, MEASURED ════════════════════════════════════════════════
        「年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 — and night
        lights is the layer where a decade of difference is the whole subject (a city that was dark in
@@ -744,7 +743,6 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R268 追記) …before the `layerDates` gate: this layer's year is an EPOCH, not a date */
       if(id==='popgrid') return (window.IntMapLang.t(HOST.lang,'Data: ','データ: ','Daten: ','данные: ','datos: '))+window._popgridYear;
       const d=layerDates[id]; if(!d) return '';
-      if(id==='temp') return (window.IntMapLang.t(HOST.lang,'Month: ','対象月: ','Monat: ','месяц: ','mes: '))+String(d).slice(0,7);
       return (window.IntMapLang.t(HOST.lang,'Data: ','データ: ','Daten: ','данные: ','datos: '))+d;
     }
     /* (#R15d) The date/window control now lives IN the legend (not the Layers panel). For radar (live) we
@@ -752,7 +750,7 @@ window.IntMapModules.dataLayers=function(HOST){
        window select. Each writes layerDates[id] / _thermalWindow and reloads the dated layer. */
     const _today=()=>new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     function _refreshLegendDates(){
-      [['temp',lgdTemp],['thermal',lgdThermal],['radar',lgdRadar],['sst',lgdSST],['snow',lgdSnow],['aod',lgdAod],['nightsat',lgdNightsat],['popgrid',lgdPopGrid]].forEach(([id,lg])=>{
+      [['thermal',lgdThermal],['radar',lgdRadar],['sst',lgdSST],['snow',lgdSnow],['aod',lgdAod],['nightsat',lgdNightsat],['popgrid',lgdPopGrid]].forEach(([id,lg])=>{
         if(!lg) return;
         let w=lg.querySelector('.dl-when');
         if(!w){
@@ -773,14 +771,12 @@ window.IntMapModules.dataLayers=function(HOST){
             e.addEventListener('change',()=>{ window._popgridYear=e.value;
               try{ GE().layers.setSourceTiles('src-popgrid',popgridTiles()); }catch(_){}
               _refreshLegendDates(); }); }
-          else if(id==='temp'){ w.innerHTML='🕒 <input type="month" class="dl-date" style="'+inSty+'">';
-            const d=w.querySelector('.dl-date'); d.value=(layerDates[id]||'').slice(0,7); d.addEventListener('change',()=>{ if(!d.value)return; layerDates[id]=d.value+'-01'; if(GE().layers.has('lyr-'+id)&&GE().layers.getLayout('lyr-'+id,'visibility')==='visible') refreshDatedLayer(id); _refreshLegendDates(); }); }
           else { w.innerHTML='🕒 <input type="date" class="dl-date" max="'+_today()+'" style="'+inSty+'">';
             const d=w.querySelector('.dl-date'); d.value=layerDates[id]||_today(); d.addEventListener('change',()=>{ layerDates[id]=d.value||_today(); if(GE().layers.has('lyr-'+id)&&GE().layers.getLayout('lyr-'+id,'visibility')==='visible') refreshDatedLayer(id); _refreshLegendDates(); }); }
           lg.appendChild(w);
         }
         /* keep values in sync */
-        const dt=w.querySelector('.dl-date'); if(dt){ dt.value = id==='temp' ? (layerDates[id]||'').slice(0,7) : (layerDates[id]||_today()); }
+        const dt=w.querySelector('.dl-date'); if(dt){ dt.value = layerDates[id]||_today(); }
         const wn=w.querySelector('.dl-win'); if(wn) wn.value=window._thermalWindow||'24';
         const ep=w.querySelector('.dl-epoch'); if(ep) ep.value=(id==='popgrid')?window._popgridYear:window._nightsatEpoch;
         const tt=w.querySelector('.dl-when-t'); if(tt) tt.textContent=_legendWhenText(id);
@@ -852,7 +848,7 @@ window.IntMapModules.dataLayers=function(HOST){
          toggleLayer branch have all been here since #R7 — the ROW never was, so the only reachable
          switch for it was a share link, and the RainViewer product behind it was retired anyway. It
          is NASA GIBS geostationary clean-IR now (see IR_SATS) and it is switchable. */
-      ['climate','lyrClimate'],['temp','lyrTemp'],['precip','lyrPrecip'],['radar','lyrRadar'],['clouds','lyrClouds'],['wind','lyrWind'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],
+      ['climate','lyrClimate'],['precip','lyrPrecip'],['radar','lyrRadar'],['clouds','lyrClouds'],['wind','lyrWind'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],
       ['__grp','lyrGrpTerrain'],
       ['relief','lyrRelief'],['hillshade','lyrHillshade'],['contours','lyrContours'],['sealevel','lyrSeaLevel'],
       ['__grp','lyrGrpMaritime'],
@@ -885,8 +881,7 @@ window.IntMapModules.dataLayers=function(HOST){
     ].forEach(([id,key])=>{
       if(id==='__grp'){ const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=i18n[HOST.lang][key]||''; dd.appendChild(h); return; }
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+id;
-      const isMonth=(id==='temp');                          /* air-temp uses a MONTH slider, not a day picker */
-      const isDated=layerDates.hasOwnProperty(id) && !isMonth;
+      const isDated=layerDates.hasOwnProperty(id);   /* (#R288) the one month-sliced layer moved to js/weather.js */
       const isTraffic=(id==='ships'||id==='planes');
       let extra='';
       /* ⚠ (#R138/#R186) `layerDates[id]` IS DOM TEXT — it is written from the date input's own `value`
@@ -896,10 +891,7 @@ window.IntMapModules.dataLayers=function(HOST){
          "nothing", and #R138's rule is that a value which came from outside our own code reaches the
          DOM through window.IntMapSafe. So it does. */
       const _esc=(v)=>window.IntMapSafe.html(v==null?'':v);
-      if(isMonth){
-        /* time slider over the last 36 months (value 36 = newest available month) */
-        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${t('lyrTimeMonth')||'Month'}: <input type="range" id="mo-${id}" min="0" max="36" value="36" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="molbl-${id}" style="min-width:58px; text-align:right; font-variant-numeric:tabular-nums;">${_esc(String(layerDates[id]).slice(0,7))}</span></label></div>`;
-      } else if(isDated){
+      if(isDated){
         extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('lyrTime')||'Date'}: <input type="date" id="dt-${id}" value="${_esc(layerDates[id])}" max="${_esc(new Date().toISOString().slice(0,10))}" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"></label></div>`;
       }
       if(isTraffic){
@@ -917,7 +909,7 @@ window.IntMapModules.dataLayers=function(HOST){
       }
       /* (#R15c) EVERY opacity layer now owns a legend (specific, generic, or the wind legend), so the
          opacity control lives THERE and the inline Layers-panel slider is hidden for all of them. */
-      const HAS_LEGEND=new Set(['climate','hdi','dem','pop','popgrid','eez','temp','thermal','radar','sst','relief','sealevel',
+      const HAS_LEGEND=new Set(['climate','hdi','dem','pop','popgrid','eez','thermal','radar','sst','relief','sealevel',
         'gdppc','tfr','milSpend','milSpendGDP','snow','aod','nightsat','wind',
         'precip','clouds','ships','planes','sats','hillshade','contours','subcables','nato','eu']);   /* (#R232) 'night' removed with its row */
       if(HAS_LEGEND.has(id)) w.classList.add('has-legend');
@@ -941,10 +933,6 @@ window.IntMapModules.dataLayers=function(HOST){
         toggleLayer(id,e.target.checked);
       });
       w.querySelector('#op-'+id).addEventListener('input',e=>setLayerOpacity(id,parseFloat(e.target.value)));
-      if(isMonth){
-        const sl=w.querySelector('#mo-'+id), lbl=w.querySelector('#molbl-'+id);
-        sl.addEventListener('input',e=>{ const back=36-parseInt(e.target.value,10); layerDates[id]=tempMonthISO(3+back); if(lbl) lbl.textContent=layerDates[id].slice(0,7); if(cb.checked) refreshDatedLayer(id); try{ _refreshLegendDates(); }catch(_){} });
-      }
       if(isDated){
         w.querySelector('#dt-'+id).addEventListener('change',e=>{ layerDates[id]=e.target.value||GIBS_DATE; if(cb.checked){ /* reload tiles for new date */ refreshDatedLayer(id); } try{ _refreshLegendDates(); }catch(_){} });
       }
@@ -1231,7 +1219,7 @@ window.IntMapModules.dataLayers=function(HOST){
                · `wbpm25` PM2.5大気汚染 : Health → Climate & atmosphere, where the other three air
                  -composition rasters (AOD, UV aerosol index, CO) already are. Air pollution was
                  split across two shelves by whether the number came from a satellite or a table. */
-          ['lyrGrpClimate',['climate','annprecip','wind','radar','clouds','ec-cloud','snow','aod','gxaero','gxco','wbpm25','wbco2','wbco2t']],   /* (#R261) +total CO₂ emissions, beside the per-capita row it belongs with */   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
+          ['lyrGrpClimate',['climate','ec-temp','annprecip','wind','radar','clouds','ec-cloud','snow','aod','gxaero','gxco','wbpm25','wbco2','wbco2t']],   /* (#R261) +total CO₂ emissions, beside the per-capita row it belongs with */   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
           /* (#R202) `sats` moved OUT of Maritime and into its own group, second from the top — see the
              lyrGrpOrbit note above. Nothing else moved: live aircraft stay where they were. */
           ['lyrGrpOrbit',['sats','osmspace','aurora']],   /* (#R261) +spaceports and satellite ground stations — a one-row shelf is not a category */
@@ -1428,7 +1416,7 @@ window.IntMapModules.dataLayers=function(HOST){
           ['lyrGrpOthersReal',[]]
         ];
         /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */
-        const OTHERS_IDS=['ec-temp','temp','ec-precip','precip','ec-wind','ec-dew','ec-isobars','ec-slp','ec-cape','ec-sst'];   /* (#R261) `ships` → Transport, `dams` → Energy & resources */   /* (#R225) the nine geopolitics keys left this list with the layers themselves */
+        const OTHERS_IDS=['ec-precip','precip','ec-wind','ec-dew','ec-isobars','ec-slp','ec-cape','ec-sst'];   /* (#R261) `ships` → Transport, `dams` → Energy & resources */   /* (#R225) the nine geopolitics keys left this list with the layers themselves */
         const rowFor=(id)=>{ let el=document.getElementById('lyrrow-'+id); if(el) return el;
           /* (#R20) beta-dl- so promoted ex-beta layers (histb, ukrfront) can be filed into a real group.
              (#R254) …and wp-dl- for the same reason, so a world-packs row (energy mix) can be too. */
@@ -2826,7 +2814,7 @@ window.IntMapModules.dataLayers=function(HOST){
     };
     /* Collapse every open, expanded legend (used when a phone user taps the map outside a legend, #29). */
     window._minimizeOpenLegends=function(){
-      [document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat]
+      [document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat]
         /* (#R240) a DOCKED legend is not over the map, so tapping the map has no reason to collapse
            it — and doing so is the other half of 「最小化された状態でスタートしないように」: the
            reader taps the map once and every panel in the sidebar shuts. */
@@ -2841,7 +2829,7 @@ window.IntMapModules.dataLayers=function(HOST){
          ECMWF layer now has its own box under its own name (js/weather.js), so the list matches them
          by ID PREFIX rather than naming one element. A box added later is picked up by construction;
          a hand-maintained name would have gone stale on the next layer. */
-      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind')].concat([...document.querySelectorAll('[id^="data-legend-ec-"]')]).concat([...document.querySelectorAll('.data-legend.generic-legend')]);
+      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind')].concat([...document.querySelectorAll('[id^="data-legend-ec-"]')]).concat([...document.querySelectorAll('.data-legend.generic-legend')]);
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
       all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureContourDensity(el); ensureLegendMinimize(el); }catch(_){} });
       /* (#R13c) Desktop legends live on the LEFT of the map. In frosted-overlay mode the sidebar floats
@@ -4711,8 +4699,7 @@ window.IntMapModules.dataLayers=function(HOST){
       let tiles=null;
       /* NOTE: thermal is intentionally NOT here — it is a FIRMS WMS layer now (rolling time window),
          refreshed by window._refreshThermal, not by a GIBS date (#5). */
-      if(id==='temp') tiles=gibs('MERRA2_2m_Air_Temperature_Monthly',6,'png',date);  /* gap-free reanalysis, monthly */
-      else if(id==='precip') tiles=gibs('IMERG_Precipitation_Rate',6,'png',date+'T12:00:00Z');  /* IMERG requires a sub-daily timestamp or returns 404 */
+      if(id==='precip') tiles=gibs('IMERG_Precipitation_Rate',6,'png',date+'T12:00:00Z');  /* IMERG requires a sub-daily timestamp or returns 404 */
       else if(id==='sst') tiles=gibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',date);
       else if(id==='snow') tiles=gibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',date);
       else if(id==='aod') tiles=gibs('MODIS_Combined_Value_Added_AOD',6,'png',date);
@@ -4721,20 +4708,13 @@ window.IntMapModules.dataLayers=function(HOST){
       const wasVis=GE().layers.has('lyr-'+id)?GE().layers.getLayout('lyr-'+id,'visibility')==='visible':false;
       if(GE().layers.has('lyr-'+id)) GE().layers.remove('lyr-'+id);
       if(GE().layers.hasSource('src-'+id)) GE().layers.removeSource('src-'+id);
-      const maxzMap={temp:6,precip:6,sst:7,snow:8,aod:6};
+      const maxzMap={precip:6,sst:7,snow:8,aod:6};
       addRaster(id,tiles, maxzMap[id]||6);
       if(wasVis) setVis('lyr-'+id,true);
     }
     function toggleLayer(id,on){
       if(on){
         if(id==='climate'){ addKoppen(); /* layer added async after CORS preflight; setVis once it appears */ const t0=Date.now(); (function w(){ if(GE().layers.has('lyr-climate')){ setVis('lyr-climate',true); } else if(Date.now()-t0<5000){ setTimeout(w,150); } })(); legend.style.display='flex'; try{ const _f=()=>{ try{ window._fitKoppenLegend&&window._fitKoppenLegend(); }catch(_){} }; requestAnimationFrame(()=>{ requestAnimationFrame(_f); }); setTimeout(_f,120); }catch(_){} }   /* (#R147/#R148) fit legend height to content once visible — double-rAF + a timeout backstop so it runs after layout settles */
-        else if(id==='temp'){
-          lgdTemp.style.display='block'; tileLegends();
-          whenStyleReady().then(()=>{
-            try{ addRaster('temp',gibs('MERRA2_2m_Air_Temperature_Monthly',6,'png',layerDates.temp),6); }catch(_){}
-            try{ setVis('lyr-temp',true); }catch(_){}
-          });
-        }
         else if(id==='precip'){ whenStyleReady().then(()=>{ try{ addRaster('precip',gibs('IMERG_Precipitation_Rate',6,'png',layerDates.precip+'T12:00:00Z'),6); }catch(_){} try{ setVis('lyr-precip',true); }catch(_){} }); }
         else if(id==='thermal'){
           lgdThermal.style.display='block'; tileLegends();
@@ -4886,7 +4866,7 @@ window.IntMapModules.dataLayers=function(HOST){
         if(id==='relief') lgdRelief.style.display='none';
         if(id==='sealevel') lgdSeaLevel.style.display='none';
         if(id==='eez') lgdEEZ.style.display='none';
-        if(id==='temp') lgdTemp.style.display='none';
+
         if(id==='thermal') lgdThermal.style.display='none';
         if(id==='radar') lgdRadar.style.display='none';
         if(id==='sst') lgdSST.style.display='none';
@@ -5158,7 +5138,7 @@ window.IntMapModules.dataLayers=function(HOST){
     })();
     (function(){
       const STATIC={
-        'dl-climate':['lyr-climate'],'dl-temp':['lyr-temp'],'dl-precip':['lyr-precip'],'dl-sst':['lyr-sst'],
+        'dl-climate':['lyr-climate'],'dl-precip':['lyr-precip'],'dl-sst':['lyr-sst'],
         'dl-snow':['lyr-snow'],'dl-aod':['lyr-aod'],'dl-nightsat':['lyr-nightsat'],'dl-popgrid':['lyr-popgrid'],
         'dl-relief':['lyr-relief'],'dl-hillshade':['lyr-hillshade'],'dl-sealevel':['lyr-sealevel'],
         'dl-eez':['lyr-eez'],'dl-radar':['lyr-radar'],   /* (#R232) dl-night deleted with its layer */

@@ -622,7 +622,10 @@ window.IntMapModules.mapReadout=function(HOST){
      ⚠ (#R276) THE DEBOUNCED PER-CELL Open-Meteo FETCH AND ITS 0.25° CACHE ARE GONE. They existed to
      hide the latency of asking a live API for a number that did not belong to the layer on screen —
      the defect, not the latency, was the problem. Nothing here touches the network any more. */
-  function activeWxLayer(){ const on=id=>{ const cb=document.getElementById('dl-'+id); return cb&&cb.checked; }; return on('sst')?'sst':on('temp')?'temp':on('climate')?'climate':null; }
+  /* (#R288) the merged temperature layer's reanalysis source is a GIBS raster with no point
+     service, so it names its dataset (below) rather than printing a forecast number for it. */
+  function _ecSource(){ try{ const W=window.IntMapWeatherEC; return (W&&W.source)?W.source('ec-temp'):'ecmwf'; }catch(_){ return 'ecmwf'; } }
+  function activeWxLayer(){ const on=id=>{ const cb=document.getElementById('dl-'+id); return cb&&cb.checked; }; return on('sst')?'sst':(on('ec-temp')&&_ecSource()==='merra2')?'temp':on('climate')?'climate':null; }
   /* ══ (#R276) THE NUMBER UNDER THE CURSOR BELONGS TO THE PICTURE UNDER THE CURSOR ═══════════════
      「地図上の地点値は、表示中のレイヤー・モデル・時刻と同じデータから取得する。NASA過去レイヤー表示中に
        Open-Meteo現在値を返す現状は禁止する。」

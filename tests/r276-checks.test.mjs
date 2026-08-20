@@ -72,7 +72,10 @@ test('R276 ② every published forecast step is reachable, and the axis is a pla
 test('R276 ③ the wind field is the model\'s own data, sampled directly', () => {
   const w = WX();
   assert.match(w, /const VAR='wind_u_component_10m';/, 'the layer names a MODEL VARIABLE…');
-  assert.match(w, /EC\(\)\.load\(VAR\)/, '…loads it once…');
+  /* ⚠ (#R288) …and it names the LATITUDE BAND it is drawn in. Same variable, same model, same
+     samples; what the third argument removes is the part of the planet that is not on the screen
+     (measured: 6,599,680 samples / 17.96 MB global against 935,400 / 1.64 MB for a 21° band). */
+  assert.match(w, /EC\(\)\.load\(VAR,null,band\(\)\)/, '…loads it once, for the band in view…');
   assert.match(w, /renderer\.setField\(EC\(\)\.sampler\(VAR\)\)/, '…and hands THAT to the particles');
   assert.match(w, /url=EC\(\)\.omUrl\(VAR\)/, 'while the colour raster is the same variable');
   /* the sampler reads the decoded field itself — no lattice, no resample, no point API */
@@ -163,15 +166,21 @@ test('R276 ⑦ a variable the feed does not publish cannot leave a dead row behi
 test('R276 ⑧ the two forecast players are two views of one state, with different ids', () => {
   const w = WX();
   const ids = (w.match(/id="(ec-time|ec-validtime|wind-time|wind-validtime)"/g) || []).sort();
-  assert.deepEqual(ids, ['id="ec-time"', 'id="ec-validtime"', 'id="wind-time"', 'id="wind-validtime"'],
+  /* ⚠ (#R288) THE ECMWF CONTROL IDS ARE GONE, because the box that held them is gone: the forecast
+     axis is window.IntMapTime now and the reader moves it from the time machine
+     (「わざわざ分けるな」). The property #R276 asserted — an id is declared exactly once, so two
+     views of one clock cannot become two clocks — is unchanged; one of the views lives elsewhere. */
+  assert.deepEqual(ids, ['id="wind-time"', 'id="wind-validtime"'],
     'each control id is declared exactly once');
   assert.ok(!/function buildPanel\(\)|panel\.className='tool-panel'/.test(w),
     'the second ECMWF panel — the one that duplicated them — is gone');
-  assert.match(w, /return \{ open\(\)\{ const el=ensureLegend\(\); el\.style\.display='block'; renderLegend\(\); \}/,
+  assert.match(w, /return \{ open\(\)\{ if\(!anyOn\(\)\) return; activeLayers\(\)\.forEach\(l=>\{ boxFor\(l\)\.style\.display='block'; \}\); renderLegend\(\); \}/,
     'open() shows the one legend instead of building a rival');
   /* both players drive the SAME module */
   assert.match(w, /if\(sl\) sl\.oninput=\(\)=>\{ E\.pause\(\); E\.setIndex\(\+sl\.value\); \};/, 'the wind player…');
-  assert.match(w, /if\(sl\)\{ sl\.oninput=\(\)=>\{ E\.pause\(\); E\.setIndex\(\+sl\.value\); \}; \}/, '…and the ECMWF one');
+  /* …and the other view is the time machine's forecast tab, which writes to the same axis */
+  assert.match(codeOnly(read('js/news-timeline.js')),
+    /if\(mode==='forecast'\)\{ const E=EC\(\); if\(E\)\{ E\.pause\(\); E\.setIndex\(\+slider\.value\); \}/, '…and the shared one');
 });
 
 /* ── ⑨ the number under the cursor belongs to the picture under the cursor ────────────────────
@@ -277,7 +286,9 @@ test('R276 ⑭ the wind palette feeds the tiles and the legend from the same dec
      interpolate — a 17-entry table paints 17 flat bands. The declaration is still one. */
   assert.match(s, /var WIND_ANCHORS = \{[\s\S]{0,120}?unit: 'm\/s'/, 'the palette is declared once');
   assert.match(s, /var WINDY_WIND = rampFrom\(WIND_ANCHORS, [0-9.]+\);/, '…and the table is built from it');
-  assert.match(s, /Object\.assign\(\{\}, sdk\.COLOR_SCALES_WITH_ALIASES \|\| base\.colorScales, \{ wind: WINDY_WIND \}\)/,
+  /* ⚠ (#R288) …beside the temperature family, which got the same treatment. ONE object, so the
+     tiles and every legend still read one declaration. */
+  assert.match(s, /Object\.assign\(\{\}, sdk\.COLOR_SCALES_WITH_ALIASES \|\| base\.colorScales,\s*\{ wind: WINDY_WIND, temperature: WINDY_TEMP \}\)/,
     'and replaces the SDK\'s wind family in the protocol settings');
   assert.match(s, /sdk\.omProtocol\(params, ctl, st\)/, 'the tiles are rendered with those settings…');
   assert.match(s, /sdk\.getColorScale\(variable, !!dark, st && st\.colorScales\)/, '…and the legend reads them');
@@ -328,7 +339,7 @@ test('R276 ⑰ the prefetch is on the time change, not on the first load', () =>
   assert.match(w, /if\(opt&&opt\.step\)\{ try\{ EC\(\)\.prefetch\(\['wind_u_component_10m','wind_v_component_10m'\]/,
     'the wind warms the next hour only when the axis moved');
   assert.match(w, /load\(\{step:ev\.type==='time'\}\)/, 'and that is what a time event passes');
-  assert.match(w, /function applyTime\(\)\{[\s\S]{0,900}?EC\(\)\.prefetch\(activeLayers\(\)\.map/,
+  assert.match(w, /function applyTime\(only\)\{[\s\S]{0,1600}?EC\(\)\.prefetch\(vars,Math\.min\(n-1,i\+1\)\)/,
     'the ECMWF rasters warm theirs from the time change too');
 });
 
@@ -346,15 +357,24 @@ test('R276 ⑱ a layer releases its own frame, never somebody else\'s', () => {
   assert.match(s, /loadingKey\.indexOf\('variable=' \+ encodeURIComponent\(variable\)\) >= 0/,
     '…and when nothing is held, the load in flight does');
   assert.match(WX(), /EC\(\)\.release\(VAR\)/, 'the wind layer names itself when it lets go');
-  /* The time step's own drop stays unqualified by VARIABLE on purpose: a new hour invalidates every
-     variable, so the held frame goes whatever it holds — that is what this line still asserts.
-     ⚠ (#R287) IT IS NO LONGER `release()`. That call cleared `loadingKey` as well, which was
-     harmless while the line ran synchronously inside `setIndex`; once #R284 deferred it by
-     COALESCE_MS it began landing INSIDE the window a load lives in and cancelled the fetch of the
-     very hour being announced. The frame still goes; only a load of that hour is now spared.
-     The new shape is asserted in full by tests/r287-checks.test.mjs ⑧. */
-  assert.match(s, /if \(held && held\.key !== stateKey\(held\.variable, '', idx\)\) \{[\s\S]{0,200}?held = null;/,
-    'a time step still drops everything, because it invalidates everything');
+  /* ⚠⚠ (#R288) THE TIME STEP'S OWN DROP IS GONE ENTIRELY. #R287 had already narrowed it — the
+     unconditional `release()` was cancelling the load of the very hour it was announcing — and this
+     round removed the drop itself: a load that SUCCEEDED still resolved as a failure whenever any
+     later request superseded it (measured: 8.3 s, data present, result null), because the handler
+     returned the module slot rather than the frame it had decoded. What survives is the rule this
+     test was written for — a release NAMES its variable — plus a monotonic `seq` that makes
+     「which frame is current」 explicit instead of leaving it to a slot anything could clear. */
+  /* ⚠⚠ (#R288) THE UNCONDITIONAL RELEASE ON A TIME CHANGE IS GONE, and #R276's own reasoning is
+     why: it invalidated the read that was already running for the hour the reader had just
+     chosen, so a load that SUCCEEDED resolved as a failure and js/weather.js raised
+     「風データを取得できませんでした」 (measured: 8.3 s, data present, result null). The new frame
+     replaces the old one when it lands. What survives is the rule this test was written for — a
+     release NAMES its variable — plus a monotonic `seq` that makes 「which frame is current」
+     explicit instead of leaving it to a slot that anything could clear. */
+  const ft = s.slice(s.indexOf('function fireTime()'), s.indexOf('function _clock()'));
+  assert.ok(!/release\(\)/.test(ft), 'a time change no longer throws the current frame away');
+  assert.match(s, /var mine = \+\+seq;/, 'which frame is current is explicit');
+  assert.match(s, /if \(seq === mine\) \{/, '…and a superseded read still resolves to its caller');
 });
 
 /* ── ⑲ one reader, therefore one queue ────────────────────────────────────────────────────────
@@ -365,9 +385,11 @@ test('R276 ⑲ every read this module starts is serialised', () => {
   const s = EC();
   assert.match(s, /function serial\(fn\) \{\s*var p = chain\.then\(fn, fn\);\s*chain = p\.then/,
     'there is one chain…');
-  assert.match(s, /return serial\(function \(\) \{[\s\S]{0,300}?sdk\.ensureData\(st, inst\.omFileReader/,
+  /* (#R288) …with the band's warm-up inside the SAME serialised body, so the prefetch cannot
+     re-point the shared reader beside a read either. */
+  assert.match(s, /return serial\(function \(\) \{[\s\S]{0,900}?sdk\.ensureData\(st, inst\.omFileReader/,
     '…the field load goes through it…');
-  assert.match(s, /serial\(function \(\) \{[\s\S]{0,400}?reader\.setToOmFile\(f\)/,
+  assert.match(s, /serial\(function \(\) \{[\s\S]{0,700}?setToOmFile\(f\)/,
     '…and so does the prefetch, which is the call that re-points the reader');
 });
 
