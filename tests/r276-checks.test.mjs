@@ -318,6 +318,39 @@ test('R276 ⑰ the prefetch is on the time change, not on the first load', () =>
     'the ECMWF rasters warm theirs from the time change too');
 });
 
+/* ── ⑱ one layer's teardown is not a global "forget everything" ───────────────────────────────
+   MEASURED: switching the wind OFF called `release()` unqualified, clearing `held` AND `loadingKey`,
+   so a load of a DIFFERENT variable that was in flight resolved, found `loadingKey` no longer its
+   own, and returned null — an ECMWF layer whose point value went blank for no visible reason. And it
+   is not a contrived race: js/map-ui.js re-applies the saved layer set at 700 / 1,800 / 3,200 ms
+   after boot, switching OFF anything not in the share hash. */
+test('R276 ⑱ a layer releases its own frame, never somebody else\'s', () => {
+  const s = EC();
+  assert.match(s, /function release\(variable\) \{[\s\S]{0,500}?if \(!mine\) return false;/,
+    'release takes the variable it belongs to and refuses when the held frame is another\'s');
+  assert.match(s, /var mine = held \? \(held\.variable === variable\)/, 'the held frame decides…');
+  assert.match(s, /loadingKey\.indexOf\('variable=' \+ encodeURIComponent\(variable\)\) >= 0/,
+    '…and when nothing is held, the load in flight does');
+  assert.match(WX(), /EC\(\)\.release\(VAR\)/, 'the wind layer names itself when it lets go');
+  /* setIndex's own release stays unqualified on purpose: a new hour invalidates every variable */
+  assert.match(s, /if \(held && held\.key !== stateKey\(held\.variable, '', idx\)\) release\(\);/,
+    'a time step still drops everything, because it invalidates everything');
+});
+
+/* ── ⑲ one reader, therefore one queue ────────────────────────────────────────────────────────
+   `ensureData` re-points the SDK's single `omFileReader` at its own file every time it runs, so two
+   reads of different files that overlap corrupt each other. Every read this module starts is queued
+   behind the last, so it can never be the second party to that collision. */
+test('R276 ⑲ every read this module starts is serialised', () => {
+  const s = EC();
+  assert.match(s, /function serial\(fn\) \{\s*var p = chain\.then\(fn, fn\);\s*chain = p\.then/,
+    'there is one chain…');
+  assert.match(s, /return serial\(function \(\) \{[\s\S]{0,300}?sdk\.ensureData\(st, inst\.omFileReader/,
+    '…the field load goes through it…');
+  assert.match(s, /serial\(function \(\) \{[\s\S]{0,400}?reader\.setToOmFile\(f\)/,
+    '…and so does the prefetch, which is the call that re-points the reader');
+});
+
 /* ── ⑮ the point-weather panel says what the numbers are and when they are for ────────────────*/
 test('R276 ⑮ the popup shows gusts, MSL pressure, the data\'s own valid time, and a refresh that refreshes', () => {
   const w = WX();

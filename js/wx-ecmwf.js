@@ -234,6 +234,25 @@
      at, so the previous frame is released the moment a new one lands. */
   var held = null;          /* {key, variable, file, data, grid} */
   var loadingKey = '';
+  /* ══ ⚠⚠⚠ ONE READER, THEREFORE ONE QUEUE ═════════════════════════════════════════════════════
+     The SDK keeps a SINGLE `omFileReader` behind `getProtocolInstance`, and `ensureData` re-points it
+     at the state's file every time:
+         await reader.setToOmFile(state.omFileUrl);   // dispose() + re-open, on the shared reader
+         const data = await reader.readVariable(…);
+     So two reads of DIFFERENT files that overlap in time corrupt each other: the second `setToOmFile`
+     disposes the reader the first one is still reading through, and the first read resolves with
+     nothing. CAUGHT IN PRODUCTION by this round's own forecast test — `valueNow` came back null after
+     a step, because the prefetch of the NEXT hour re-pointed the reader out from under the load of
+     the CURRENT one. (The same states loading concurrently is safe: `ensureData` de-duplicates by
+     `state.dataPromise`. It is only two different FILES that collide.)
+     Every read this module starts therefore goes through one chain, so it can never be the second
+     party to that collision. */
+  var chain = Promise.resolve();
+  function serial(fn) {
+    var p = chain.then(fn, fn);
+    chain = p.then(function () {}, function () {});
+    return p;
+  }
 
   function _grid(state) {
     try { return sdk.GridFactory.create(state.dataOptions.domain.grid, state.ranges); } catch (_) { return null; }
@@ -262,19 +281,41 @@
       if (!dom) return null;
       var f = fileUrl(i);
       var st = sdk.getOrCreateState(inst.stateByKey, key2, { domain: dom, variable: variable, bounds: undefined }, f);
-      return sdk.ensureData(st, inst.omFileReader, undefined).then(function (data) {
-        if (!data || !data.values) return null;
-        var g = _grid(st);
-        if (!g) return null;
-        if (loadingKey === key2) {
-          held = { key: key2, variable: variable, file: f, data: data, grid: g };
-          emit('field', { variable: variable });
-        }
-        return held;
+      return serial(function () {
+        /* the queue may have been waiting a while — if the reader has moved on, so have we */
+        if (held && held.key === key2) return held;
+        return sdk.ensureData(st, inst.omFileReader, undefined).then(function (data) {
+          if (!data || !data.values) return null;
+          var g = _grid(st);
+          if (!g) return null;
+          if (loadingKey === key2) {
+            held = { key: key2, variable: variable, file: f, data: data, grid: g };
+            emit('field', { variable: variable });
+          }
+          return held;
+        });
       }).catch(function () { return null; });
     }).catch(function () { return null; });
   }
-  function release() { held = null; loadingKey = ''; }
+  /* ⚠⚠ (#R276 追記2) `release(variable)` — A LAYER MAY ONLY DROP ITS OWN FRAME.
+     MEASURED: switching the wind layer OFF called `release()` unqualified, which cleared `held` AND
+     `loadingKey` — so a load of a DIFFERENT variable that was in flight at that moment resolved,
+     found `loadingKey` no longer matching its own key, and quietly returned null. The reader saw an
+     ECMWF layer whose point value was blank for no reason they could see.
+     Reproduced from the app's own behaviour, not from a contrived test: js/map-ui.js re-applies the
+     saved layer set at 700 / 1,800 / 3,200 ms after boot, and that re-apply switches OFF any layer
+     not in the share hash — so a layer switched on programmatically is switched off again a second
+     later, in the middle of somebody else's read. Unqualified, one layer's teardown was a global
+     `forget everything`. */
+  function release(variable) {
+    if (variable) {
+      var mine = held ? (held.variable === variable)
+        : (loadingKey ? loadingKey.indexOf('variable=' + encodeURIComponent(variable)) >= 0 : true);
+      if (!mine) return false;
+    }
+    held = null; loadingKey = '';
+    return true;
+  }
 
   /* A synchronous sampler for the field that is loaded RIGHT NOW, or null. Costs one grid lookup
      per call — MEASURED at 14,000 calls in 2.2 ms, which is what makes per-particle sampling of the
@@ -329,14 +370,21 @@
     var f = fileUrl(i);
     if (!f || warmed[f]) return;
     warmed[f] = 1;
-    try {
+    /* ⚠ THROUGH THE QUEUE, LIKE EVERY OTHER READ. This is the call that caught the collision above:
+       warming the next hour re-points the shared reader, and doing it beside a load of the current
+       hour is how `valueNow` came back null in production. Queued, it starts only once whatever is
+       reading has finished — which is also the right ORDER, because the frame on screen matters more
+       than the one that might be asked for next. */
+    serial(function () {
       var inst = sdk.getProtocolInstance(omSettings());
       var reader = inst && inst.omFileReader;
-      if (!reader || !reader.setToOmFile || !reader.prefetchVariable) return;
-      reader.setToOmFile(f).then(function () {
-        (variables || []).forEach(function (v) { try { reader.prefetchVariable(v, null); } catch (_) {} });
-      }).catch(function () {});
-    } catch (_) {}
+      if (!reader || !reader.setToOmFile || !reader.prefetchVariable) return null;
+      return reader.setToOmFile(f).then(function () {
+        return Promise.all((variables || []).map(function (v) {
+          try { return reader.prefetchVariable(v, null); } catch (_) { return null; }
+        }));
+      });
+    }).catch(function () {});
   }
 
   /* ── time ─────────────────────────────────────────────────────────────────────────────────────*/
@@ -511,6 +559,6 @@
     on: function (f) { if (typeof f === 'function' && listeners.indexOf(f) < 0) listeners.push(f); return this; },
     off: function (f) { var i = listeners.indexOf(f); if (i >= 0) listeners.splice(i, 1); return this; },
     /* test seam — never called by the app */
-    _state: function () { return { meta: meta, idx: idx, playing: playing, held: held ? held.key : null }; }
+    _state: function () { return { meta: meta, idx: idx, playing: playing, held: held ? held.key : null, variable: held ? held.variable : null }; }
   };
 })();
