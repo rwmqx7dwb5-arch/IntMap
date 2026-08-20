@@ -47,7 +47,7 @@
 //  Secrets, JWTs and full prompts are never logged.
 // ============================================================================
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "@supabase/supabase-js";   // pinned in this function's deno.json (kept in step with index.ts; this file is a reference copy, not an entry point)
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -367,7 +367,7 @@ Deno.serve(async (req) => {
     if (prof && typeof prof.plan === "string" && prof.plan) plan = prof.plan;
   } catch (_) { /* profiles.plan may not exist yet → default free */ }
   // (#R31/#R32) Developer override → UNLIMITED AI, quota never consumed ("AI機能の使用は無制限に").
-  const DEFAULT_DEV_EMAILS = ["2ppzc4kk6r@privaterelay.appleid.com"];
+  const DEFAULT_DEV_EMAILS: string[] = [];   /* the address moved to the DEV_USER_IDS secret — see index.ts */
   const devEmails = [...DEFAULT_DEV_EMAILS, ...(Deno.env.get("DEV_EMAILS") || "").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean)];
   const devIds = (Deno.env.get("DEV_USER_IDS") || "").split(",").map((s) => s.trim()).filter(Boolean);
   const isDev = (user.email && devEmails.includes(user.email.toLowerCase())) || devIds.includes(user.id);

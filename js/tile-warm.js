@@ -36,6 +36,16 @@ window.IntMapModules.tileWarm=function(HOST){
         _tileSW=navigator.serviceWorker.controller||reg.active||reg.waiting||reg.installing||null;
       }).catch(()=>{});
       navigator.serviceWorker.addEventListener('controllerchange',()=>{ _tileSW=navigator.serviceWorker.controller; });
+      /* ⚠ THE WORKER'S ALLOW-LIST CAN REFUSE A URL, AND A REFUSAL IS NOT A REASON TO WARM NOTHING.
+         sw.js only stores tiles from hosts it knows (that list is what stops a postMessage turning the
+         cache into an arbitrary key/value store). The satellite basemap's `custom` provider is an XYZ
+         template the reader types in, so its host is never on that list — and the batch below is
+         posted to the worker and then RETURNS, so without this the custom provider would lose its
+         prefetch entirely. The worker names what it declined and this warms it the ordinary way. */
+      navigator.serviceWorker.addEventListener('message',(ev)=>{
+        try{ const d=ev&&ev.data; if(!d||d.type!=='prefetch-declined'||!Array.isArray(d.urls)) return;
+          _warmQueued.push(...d.urls.filter(u=>typeof u==='string')); _warmPump(); }catch(_){}
+      });
     }catch(_){}
   }
   const _lng2x=(lng,z)=>Math.floor((lng+180)/360*Math.pow(2,z));

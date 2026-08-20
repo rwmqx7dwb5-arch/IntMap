@@ -29,12 +29,29 @@
 //  Secrets: none.
 // ============================================================================
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+
+const CORS = corsFor();
 const CACHE = "public, max-age=60, s-maxage=60, stale-while-revalidate=300";
+
+/* ══ ⚠⚠ ONE CALLER-SIZED REQUEST WAS BUYING FORTY UPSTREAM-SIZED ONES ═══════════════════════════
+   `?ma=` took `.slice(0, 40)` country slugs and fetched them ALL, in parallel, with a 45-second
+   deadline each. MEASURED (the note further down): feeds-germany is 10,284,904 bytes. So a single
+   unauthenticated GET of ~300 characters could ask this function to pull up to FOUR HUNDRED
+   MEGABYTES from EUMETNET, hold it in one isolate, and JSON.parse it — and repeating names
+   (`?ma=germany,germany,…`) multiplied the same feed forty times over.
+
+   The client never asks for more than six. js/world-packs.js seeds MA_DEFAULT = the four European
+   G7 members and then washes the rest MA_PER_TICK = 6 at a time, precisely so that «37 × 10 MB
+   upstream is not a page load». The relay now says the same number the caller already obeys, and
+   deduplicates before counting, so normal use is bit-for-bit unchanged and the amplifier is gone. */
+const MA_MAX_COUNTRIES = 6;
+/* Germany measured 10.28 MB; 24 MB is more than twice the largest observed feed and still a bound. */
+const MA_MAX_BYTES = 24 * 1024 * 1024;
+const MA_TIMEOUT_MS = 45000;
+/* The CMA list is ~300 items of JSON — hundreds of kilobytes at the outside. */
+const U_MAX_BYTES = 8 * 1024 * 1024;
+const U_TIMEOUT_MS = 45000;
 
 /* The allow-list, checked structurally rather than with a `startsWith` so a crafted
    string cannot smuggle a different host past it. */
@@ -232,8 +249,8 @@ async function summarisePAGASA() {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
-  if (req.method !== "GET") return new Response("method", { status: 405, headers: CORS });
+  const gate = methodGate(req, CORS);
+  if (gate) return gate;
 
   const q = new URL(req.url).searchParams;
   /* `?ph=1` — the Philippines, summarised the same way MeteoAlarm is (see summarisePAGASA) */
@@ -253,19 +270,24 @@ Deno.serve(async (req) => {
   const ma = (q.get("ma") || "").trim();
   if (ma) {
     const lang = (q.get("lang") || "en").toLowerCase().slice(0, 5);
-    const names = ma.split(",").map((x) => x.trim().toLowerCase()).filter((x) => /^[a-z-]{3,40}$/.test(x)).slice(0, 40);
+    /* Deduplicate BEFORE the cap, so `germany,germany,…` costs one fetch rather than six. */
+    const names = [...new Set(
+      ma.split(",").map((x) => x.trim().toLowerCase()).filter((x) => /^[a-z-]{3,40}$/.test(x)),
+    )].slice(0, MA_MAX_COUNTRIES);
     if (!names.length) {
       return new Response(JSON.stringify({ error: "no country named" }), { status: 400, headers: { ...CORS, "content-type": "application/json" } });
     }
     const out = {};
     await Promise.all(names.map(async (n) => {
       try {
-        const r = await fetch("https://feeds.meteoalarm.org/api/v1/warnings/feeds-" + n, {
+        const r = await fetchGuarded("https://feeds.meteoalarm.org/api/v1/warnings/feeds-" + n, {
+          timeoutMs: MA_TIMEOUT_MS,
+          maxBytes: MA_MAX_BYTES,
+          contentTypeRe: /json|text\//i,
           headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
-          signal: AbortSignal.timeout(45000),
         });
-        if (!r.ok) { out[n] = { error: "upstream " + r.status }; return; }
-        out[n] = summariseMeteoAlarm(await r.text(), lang);
+        if (!r.ok) { out[n] = { error: "upstream_error" }; return; }
+        out[n] = summariseMeteoAlarm(r.text(), lang);
       } catch (_e) { out[n] = { error: "unreachable" }; }   /* ⚠ the upstream exception is NOT echoed:
            it can carry a stack, and this response is public (CodeQL js/stack-trace-exposure) */
     }));
@@ -275,7 +297,7 @@ Deno.serve(async (req) => {
   }
 
   const target = q.get("u") || "";
-  const ok = allowed(target);
+  const ok = target.length <= MAX_QUERY_URL ? allowed(target) : null;
   if (!ok) {
     return new Response(JSON.stringify({ error: "not an allowed feed" }), {
       status: 400, headers: { ...CORS, "content-type": "application/json" },
@@ -292,17 +314,19 @@ Deno.serve(async (req) => {
     let r = null;
     for (let i = 0; i < 2 && !r; i++) {
       try {
-        r = await fetch(ok.toString(), {
+        r = await fetchGuarded(ok.toString(), {
+          timeoutMs: U_TIMEOUT_MS,
+          maxBytes: U_MAX_BYTES,
+          contentTypeRe: /json|text\//i,
           headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
-          signal: AbortSignal.timeout(45000),
         });
       } catch (_e) { if (i) throw _e; }
     }
-    const body = await r.text();
+    const body = r.text();
     // the response must BE the kind of document the layer is about to parse; a login
     // page or an error HTML must not reach the app as "the warnings"
     try { JSON.parse(body); } catch (_) {
-      return new Response(JSON.stringify({ error: "upstream did not return JSON", status: r.status }), {
+      return new Response(JSON.stringify({ error: "upstream_not_json" }), {
         status: 502, headers: { ...CORS, "content-type": "application/json" },
       });
     }
@@ -310,13 +334,11 @@ Deno.serve(async (req) => {
       status: r.status,
       headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": CACHE },
     });
-  } catch (_e) {
+  } catch (e) {
     /* ⚠ ONE WORD, NOT THE EXCEPTION. Whatever went wrong upstream is a server-side fact; echoing it
        hands a stack trace to anyone who can call this URL (CodeQL js/stack-trace-exposure), and the
        layer's own legend already says «this feed could not be fetched just now», which is the only
-       thing a reader can act on. */
-    return new Response(JSON.stringify({ error: "upstream unreachable" }), {
-      status: 502, headers: { ...CORS, "content-type": "application/json" },
-    });
+       thing a reader can act on. relayFail names the BOUND that was hit and nothing else. */
+    return relayFail(e, CORS);
   }
 });

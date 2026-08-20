@@ -4,10 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- (#R155 SEC) CSP for the admin console. Stricter than the main app's: connect-src is
-     locked to same-origin + Supabase (admin only ever talks to those). 'unsafe-inline'/'unsafe-eval'
-     are unavoidable for this inline, no-build page (the eval is the admin-only starter-dataset
-     import of an admin-chosen file). object-src/base-uri/form-action are locked down. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
+     locked to same-origin + Supabase (admin only ever talks to those). 'unsafe-inline' remains
+     unavoidable for this inline, no-build page. object-src/base-uri/form-action are locked down.
+     WARNING: TWO ENTRIES LEFT THIS LIST, AND EACH HAD EXACTLY ONE REASON TO BE IN IT.
+       - https://cdn.jsdelivr.net : the SDK fallback below used to write a script tag into the parser
+         at the floating tag `@supabase/supabase-js@2`. The SDK is vendored from this repo's own pinned
+         dependency now (vite.config.js -> dist/vendor/supabase-js.js), so no third party is in the
+         admin console's authentication path any more and the host is not needed.
+       - 'unsafe-eval' : the starter-dataset import ran a chosen file's source as code on a file the
+         operator picked off disk. It calls js/admin-literal.js's PARSER now, which cannot invoke anything, so the whole
+         page no longer needs the capability. A CSP that grants eval to a page with no eval in it is
+         a grant nobody is watching. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>IntMap · Admin Console</title>
 <script>document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');</script>
@@ -168,15 +176,23 @@
 <datalist id="dl-cat"><option value="geo"><option value="mil"><option value="tech"><option value="maritime"></datalist>
 <datalist id="dl-type"><option value="hub"><option value="mil"><option value="tech"><option value="space"><option value="choke"><option value="energy"><option value="maritime"></datalist>
 
-<!-- Local vendored SDK first, CDN fallback, then create the client inline (self-contained). -->
-<script src="supabase.js"></script>
-<script>window.supabase||document.write('<scr'+'ipt src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/scr'+'ipt>');</script>
+<!-- WARNING: THE SDK IS VENDORED, PINNED, AND FIRST-PARTY. The two tags this replaces were one
+     pointing at a local supabase SDK file that has never existed in this repo and, when that produced no
+     window.supabase, a parser-blocking write of a script tag pointing at the floating major-version
+     tag @supabase/supabase-js@2 on cdn.jsdelivr.net. So in practice the admin console's auth stack
+     was a third-party CDN at a version nothing here pinned, with no integrity attribute, executing
+     whatever that URL answered with. vite.config.js copies the exact build
+     the lockfile resolved (@supabase/supabase-js 2.58.0) to dist/vendor/supabase-js.js, so this is
+     now the same origin as the console itself and moves only when package-lock.json does.
+     js/admin-literal.js is the data-literal PARSER the starter-dataset import uses instead of eval. -->
+<script src="vendor/supabase-js.js"></script>
+<script src="./js/admin-literal.js"></script>
 <script>
   window.SUPABASE_URL='https://vpekfwdpurzejrrmacac.supabase.co';
   window.SUPABASE_ANON_KEY='sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0';
   window.sb=(window.supabase&&window.supabase.createClient)
     ? window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})
-    : (console.error('[IntMap] Supabase SDK failed to load (local file and CDN both unavailable).'),null);
+    : (console.error('[IntMap] Supabase SDK failed to load (vendor/supabase-js.js missing from this deploy).'),null);
 </script>
 <script>
 (function(){
@@ -260,14 +276,31 @@
         '<td style="white-space:nowrap;color:#ffcc00;">'+(rt=>'★'.repeat(rt)+'<span style="opacity:0.3;">'+'★'.repeat(5-rt)+'</span>')(Math.max(0,Math.min(5,r.rating|0)))+'</td>'+
         '<td style="max-width:420px;">'+esc(r.comment||'')+'</td>'+
         '<td>'+esc(r.lang||'')+'</td><td>'+esc(r.email||'')+'</td>'+
-        '<td style="font-family:monospace;font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:'+(r.user_id?'copy':'default')+';" title="'+esc(r.user_id||'(not logged in)')+'"'+(r.user_id?' class="uid-copy" data-uid="'+esc(r.user_id)+'" onclick="window._copyUid(this)"':'')+'>'+esc(r.user_id||'—')+'</td>'+   /* (#R138 SEC) uid via data-attr + static onclick (no user data in an inline JS string) */
-        '<td><button class="btn sec sm" onclick="window._fbDel('+r.id+')">Delete</button></td></tr>').join('');
+        '<td style="font-family:monospace;font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:'+(r.user_id?'copy':'default')+';" title="'+esc(r.user_id||'(not logged in)')+'"'+(r.user_id?' class="uid-copy" data-uid="'+esc(r.user_id)+'"':'')+'>'+esc(r.user_id||'—')+'</td>'+   /* (#R138 SEC) uid via data-attr + static onclick (no user data in an inline JS string) */
+        '<td><button class="btn sec sm" data-fbdel="'+esc(r.id)+'">Delete</button></td></tr>').join('');
     }catch(e){ tb.innerHTML='<tr><td colspan="7" class="muted">'+esc(e.message||String(e))+'</td></tr>'; }
   }
-  window._copyUid=function(el){ try{ const u=el&&el.getAttribute('data-uid'); if(u&&navigator.clipboard) navigator.clipboard.writeText(u); }catch(_){} };   /* (#R138 SEC) copies the uid from the data-attr; no user-controlled value is ever placed in an inline handler string */
-  window._fbDel=async function(id){ if(!confirm('Delete this feedback row?')) return;
-    try{ await sb.from('feedback').delete().eq('id',id); }catch(_){}
-    loadFb(); };
+  /* WARNING: ONE DELEGATED LISTENER PER ACTION, WIRED ONCE, INSTEAD OF A STRING-FORM EVENT ATTRIBUTE
+     PER ROW. The old markup carried a click attribute whose value was `window._fbDel(<id>)`, i.e. a
+     fragment of JavaScript SOURCE assembled per row out of a database value. It was correct as written - `r.id` is a bigint - but
+     the safety of the page then rests on a column's type rather than on anything the page controls,
+     and the row is rebuilt on every refresh so a later column swapped in there would be invisible.
+     A data-attribute plus a listener carries the id as a VALUE the whole way, so there is no string
+     of code for anything to end up inside. The table body is replaced wholesale by loadFb(), so the
+     listener lives on the tbody (delegation) and survives every re-render. */
+  { const _fbBody=$('fb-table').querySelector('tbody');
+    _fbBody.addEventListener('click',async(ev)=>{
+      const uid=ev.target.closest('.uid-copy');
+      if(uid&&_fbBody.contains(uid)){ try{ const u=uid.getAttribute('data-uid'); if(u&&navigator.clipboard) navigator.clipboard.writeText(u); }catch(_){} return; }
+      const del=ev.target.closest('[data-fbdel]');
+      if(del&&_fbBody.contains(del)){
+        const id=del.getAttribute('data-fbdel');
+        if(!confirm('Delete this feedback row?')) return;
+        try{ await sb.from('feedback').delete().eq('id',id); }catch(_){}
+        loadFb();
+      }
+    });
+  }
 
   /* ---------------- COMMUNITY MODERATION ---------------- */
   let commView='posts';
@@ -504,8 +537,17 @@
       if(raErr){ toast('Re-authentication failed — import cancelled.','err'); return; } }
     $('btn-import').disabled=true; toast('Importing…');
     try{
-      const geoRaw=eval('('+sliceBalanced(txt,txt.indexOf('{',txt.indexOf('const geoRaw=')),'{','}')+')');
-      const dash=eval('('+sliceBalanced(txt,txt.indexOf('[',txt.indexOf('const extendedDashDB=')),'[',']')+')');
+      /* WARNING: PARSED, NOT RUN. `txt` is a file the operator chose off disk (getIntmapSource falls
+         back to a file picker whenever intmap.html is not fetchable, which is every time - it has not
+         been in this repo for many rounds). The old code ran that text as source with this console's
+         live admin session in scope; window.IntMapAdminLiteral reads the SAME object/array literal grammar
+         and throws a SyntaxError on anything that is not data. Existing files parse identically: bare
+         identifier keys, single quotes, template literals, comments and trailing commas are all still
+         accepted, which is exactly why JSON.parse was not the answer. */
+      const LIT=window.IntMapAdminLiteral;
+      if(!LIT||typeof LIT.parse!=='function'){ toast('Import parser did not load - reload the page.','err'); $('btn-import').disabled=false; return; }
+      const geoRaw=LIT.parse(sliceBalanced(txt,txt.indexOf('{',txt.indexOf('const geoRaw=')),'{','}'));
+      const dash=LIT.parse(sliceBalanced(txt,txt.indexOf('[',txt.indexOf('const extendedDashDB=')),'[',']'));
       const geoRows=[]; let o=0;
       for(const type of Object.keys(geoRaw)) for(const g of geoRaw[type]){ o++;
         geoRows.push({type, terms:g.terms||[], name_en:(g.name&&g.name.en)||'', name_jp:(g.name&&g.name.jp)||null, lng:g.loc[0], lat:g.loc[1], sort_order:o}); }

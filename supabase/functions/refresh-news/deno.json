@@ -1,0 +1,6 @@
+{
+  "//": "IntMap - this function's dependencies, pinned. The import used to be a URL: `https://esm.sh/@supabase/supabase-js@2.45.4`, i.e. a THIRD-PARTY CDN transpiling and re-hosting the package, fetched at deploy time, with no lockfile and no way to see what changed. `npm:` resolves from the registry the package is actually published to, at an exact version, and an import map keeps that version in one declared place per function instead of repeated inside the source.",
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.45.4"
+  }
+}

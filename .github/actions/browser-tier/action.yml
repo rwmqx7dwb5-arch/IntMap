@@ -31,7 +31,7 @@ runs:
     # ⚠ NO CHECKOUT HERE. A local `uses: ./…` action is read off the workspace, so the job has to
     # have checked the repository out BEFORE it can call this file at all — doing it again inside
     # would be a second copy of the same tree.
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
       with:
         node-version-file: .nvmrc
         cache: npm
@@ -40,7 +40,7 @@ runs:
     # Cache the Playwright browser binaries between runs (keyed on the lockfile).
     - name: Cache Playwright browsers
       id: pw-cache
-      uses: actions/cache@v4
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
       with:
         path: ~/.cache/ms-playwright
         key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -56,7 +56,7 @@ runs:
     # predates a new spec leaves that spec charged p75 exactly as it was before.
     - name: Restore main's measured spec times
       continue-on-error: true
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
       with:
         path: _timecache
         key: intmap-timings-${{ github.run_id }}
@@ -96,7 +96,7 @@ runs:
     # On failure, publish the report + screenshots + traces so the cause is visible in GitHub.
     - name: Upload Playwright report
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: playwright-report-${{ inputs.tier }}-${{ inputs.suite }}-${{ inputs.shard }}
         path: |
@@ -117,7 +117,7 @@ runs:
         node scripts/shard-plan.mjs --update test-results/junit.xml
     - name: Upload the baseline fragment
       if: ${{ github.ref == 'refs/heads/main' && !cancelled() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
       with:
         name: baseline-${{ inputs.tier }}-${{ inputs.suite }}-${{ inputs.shard }}
         path: |

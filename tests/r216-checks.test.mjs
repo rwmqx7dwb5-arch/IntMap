@@ -47,7 +47,14 @@ test('① proxy-fetch offers the Supabase relay FIRST, and reads SUPABASE_URL at
 test('① the news-relay function is an allow-list, and refuses a non-feed body', () => {
   const s = read('supabase/functions/news-relay/index.ts');
   assert.match(s, /u\.hostname\s*!==\s*"news\.google\.com"/, 'the host is not pinned');
-  assert.match(s, /u\.pathname\.startsWith\("\/rss\/"\)/, 'the path is not pinned');
+  /* ⚠ «THE PATH IS PINNED» IS THE PROPERTY; `startsWith("/rss/")` was one (loose) way of holding it.
+     It accepted /rss/articles/CBMi… — the aggregator redirect every Google News item links to — so the
+     relay would follow an arbitrary Google-hosted redirect target server-side. The rule is now the two
+     endpoints js/news-feed.js actually builds, which is strictly narrower, and this assertion says so
+     rather than naming the old expression. */
+  assert.match(s, /"\/rss\/search"/, 'the search endpoint is not named');
+  assert.match(s, /rss\\\/headlines\\\/section\\\/topic/, 'the headlines endpoint is not named');
+  assert.ok(!/pathname\.startsWith\("\/rss\/"\)/.test(s), 'the whole /rss/ directory is allowed again');
   /* Google answers a blocked request with 200 + an HTML interstitial; passing it through would let
      the browser's race declare this relay the winner and then parse zero items */
   assert.match(s, /includes\("<rss"\)[\s\S]{0,40}includes\("<feed"\)/, 'a non-feed body is not rejected');

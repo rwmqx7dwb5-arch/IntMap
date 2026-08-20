@@ -514,7 +514,7 @@ window.IntMapModules.companiesUi=function(HOST){
          gradient over the bare card — that overlay over the white card read as "うっすらグレーの四角いもの".
          The wc-noimg class drops the gradient; the real image (+ its gradient) returns once it lazy-loads. */
       const _cimg=info.img||'';
-      cards+=`<div class="wiki-card" id="card-${info.id}" onclick="flyToLoc(${info.loc[0]},${info.loc[1]})" onmouseenter="triggerLayerHover('${info.layerRef||''}',true); highlightDashMarker('${info.id}',true)" onmouseleave="triggerLayerHover('${info.layerRef||''}',false); highlightDashMarker('${info.id}',false)">
+      cards+=`<div class="wiki-card" id="card-${info.id}" data-cardfly="${(+info.loc[0])},${(+info.loc[1])}" data-cardlayer="${IntMapSafe.html(info.layerRef||'')}" data-cardid="${IntMapSafe.html(info.id)}">
         <div class="wiki-card-img${_cimg?'':' wc-noimg'}" data-type="${info.type||''}"${_cimg?` style="background-image:url('${_cimg}');"`:''}><span class="wiki-card-badge">${dashBadgeLabel(info.badge)}</span></div>
         <div class="wiki-card-content"><h4 class="wiki-card-title">${info.title[HOST.lang]||info.title.en}</h4><p class="wiki-card-body">${info.body[HOST.lang]||info.body.en}</p>${specsHTML}<div class="wiki-card-footer"><a href="${IntMapSafe.html(IntMapSafe.url(info.wiki[HOST.lang]||info.wiki.en)||'#')}" target="_blank" rel="noopener" class="wiki-link" onclick="event.stopPropagation()">${dict.readWiki}</a></div></div></div>`;
     });
@@ -522,7 +522,36 @@ window.IntMapModules.companiesUi=function(HOST){
     /* (#R20) top-level Places | Events switch, then the existing category nav */
     const seg=`<div class="dash-nav"><button class="dash-nav-btn active" onclick="_setDashView('places')">${window.IntMapLang.t(HOST.lang,'📍 Places','📍 場所','📍 Orte','📍 Места','📍 Lugares')}</button><button class="dash-nav-btn" onclick="_setDashView('events')">${window.IntMapLang.t(HOST.lang,'🗓 Events','🗓 出来事','🗓 Ereignisse','🗓 События','🗓 Eventos')}</button></div>`;
     const nav=`<div class="dash-nav" id="dash-nav"><button class="dash-nav-btn ${HOST.activeDashCategories.has('mil')?'active':''}" onclick="toggleDashCat('mil')">${dict.dashCatMil}</button><button class="dash-nav-btn ${HOST.activeDashCategories.has('tech')?'active':''}" onclick="toggleDashCat('tech')">${dict.dashCatTech}</button><button class="dash-nav-btn ${HOST.activeDashCategories.has('maritime')?'active':''}" onclick="toggleDashCat('maritime')">${dict.dashCatMar}</button><button class="dash-nav-btn ${HOST.activeDashCategories.has('geo')?'active':''}" onclick="toggleDashCat('geo')">${dict.dashCatGeo}</button></div>`;
+/* ⚠ SEC: A VALUE INTERPOLATED INTO AN EVENT ATTRIBUTE HAS BECOME JAVASCRIPT SOURCE.
+     Each attribute rewritten here carried a runtime value inside an `on…="…"` string, so the only thing
+     between that value and execution was the quoting around it. Some were safe by the column's type
+     (a bigint id) and one was not safe by anything (`dashboard_cards.layer_ref` is admin-editable
+     TEXT); the point is that the difference lived in a schema rather than in this file. The value now
+     travels as a data-attribute — a VALUE the whole way — and one delegated listener on the container
+     does the call. Behaviour is identical (same target, same function, same argument), and delegation
+     is what makes it survive the container being re-rendered, which is why the attributes existed. */
+    /* ⚠⚠ AND THIS IS THE ONE THAT WAS NOT SAFE BY ANYTHING: `info.layerRef` is `dashboard_cards.layer_ref`,
+       a TEXT column edited through admin.html, and it was interpolated into an onmouseenter string
+       inside single quotes. A value containing `');…//` closed the call and continued as code, in the
+       app's own origin, on hover. The two coordinates and the id were safe by their column types —
+       which is a property of the schema, not of this line, and a schema is exactly the kind of thing
+       that changes without anyone re-reading the markup that depends on it.
+       ⚠ mouseenter/mouseleave DO NOT BUBBLE, so delegation uses mouseover/mouseout and reconstructs
+       enter/leave from `relatedTarget`. The `<a class="wiki-link">` inside a card still stops
+       propagation on click, so opening a Wikipedia link still does not fly the map. */
     dash.innerHTML=seg+nav+cards;
+    if(!dash.__imCardWired){ dash.__imCardWired=1;
+      const cardOf=(ev)=>{ const c=ev.target.closest('[data-cardfly]'); return (c&&dash.contains(c))?c:null; };
+      const hov=(c,on)=>{ try{ const lr=c.getAttribute('data-cardlayer'); if(lr) window.triggerLayerHover(lr,on);
+        window.highlightDashMarker(c.getAttribute('data-cardid'),on); }catch(_){} };
+      let cur=null;
+      dash.addEventListener('click',(ev)=>{ if(ev.target.closest('a')) return; const c=cardOf(ev); if(!c) return;
+        const ll=String(c.getAttribute('data-cardfly')||'').split(','); window.flyToLoc(+ll[0],+ll[1]); });
+      dash.addEventListener('mouseover',(ev)=>{ const c=cardOf(ev); if(c===cur) return;
+        if(cur) hov(cur,false); cur=c; if(c) hov(c,true); });
+      dash.addEventListener('mouseout',(ev)=>{ const c=cardOf(ev); if(!c||cur!==c) return;
+        const to=ev.relatedTarget; if(to&&c.contains(to)) return; hov(c,false); cur=null; });
+    }
     /* Mouse wheel → horizontal scroll on the category nav */
     const dnav=document.getElementById('dash-nav');
     if(dnav){ dnav.addEventListener('wheel',(e)=>{ if(e.deltaY===0)return; e.preventDefault(); dnav.scrollLeft+=e.deltaY+e.deltaX; },{passive:false}); }

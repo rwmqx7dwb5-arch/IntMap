@@ -1,17 +1,11 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-  <!-- (#R138 SECURITY) Content Security Policy — pragmatic, defence-in-depth. IntMap is a single no-build file whose
-       JS is ENTIRELY inline and which legitimately fetches from 60+ external hosts, so a nonce script-src or a
-       connect-src allowlist is impossible without a build step (which the project forbids) / would break the app.
-       The PRIMARY XSS defence is therefore correct output-encoding at every sink (window.IntMapSafe, below); this
-       CSP adds the layers that DON'T break an inline app: no plugins (object-src 'none'), no <base> hijack
-       (base-uri 'self'), only https/blob framed content (blocks a javascript:/data: iframe), workers only from
-       blob:, and a script-src that still blocks an injected <script src=evil-host>. 'unsafe-inline'/'unsafe-eval'
-       are unavoidable for an inline no-build app. connect-src/img-src/style-src are intentionally left
-       unrestricted so the 60+ data/tile/API hosts keep working. Header-only controls GitHub Pages cannot set
-       (frame-ancestors, X-Frame-Options, HSTS, Permissions-Policy) are documented in docs/SECURITY-ARCHITECTURE.md. -->
-  <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; frame-src 'self' https: blob:; worker-src 'self' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://unpkg.com https://cdn.jsdelivr.net https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://browser.sentry-cdn.com https://www.clarity.ms https://*.clarity.ms">
+  <!-- (#R138/#R272 SECURITY) CSP. The PRIMARY XSS defence is output-encoding at every sink (window.IntMapSafe, below); this is defence-in-depth.
+       ⚠ (#R272) it used to name FIVE directives with no `default-src` — a directive that is absent with nothing to fall back on is not "permissive",
+       it is ABSENT. Fourteen now, each explained with its measurement in docs/SECURITY-ARCHITECTURE.md §6. ⚠ `frame-ancestors` is IGNORED in a
+       <meta> policy, so it is deliberately absent rather than written and silently inert (§6/§8). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; manifest-src 'self'; frame-src 'self' https: blob:; child-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https: wss: data: blob:; img-src 'self' https: data: blob:; media-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://unpkg.com https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://browser.sentry-cdn.com https://www.clarity.ms https://*.clarity.ms">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-57X5MX0ZPW"></script>
 <script>
@@ -35,7 +29,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R271';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R272';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -50,7 +44,7 @@ window.__imBuild='R271';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-20-R271';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-20-R272';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -915,7 +909,11 @@ window.__imBuild='R271';/* (#R121) build marker — bump when verifying that a r
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
         var ins=function(){ var t=l.createElement(r); t.async=1; t.src="https://www.clarity.ms/tag/"+i;
             var y=l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t,y); };
-        if(typeof requestIdleCallback==='function') requestIdleCallback(ins,{timeout:6000}); else setTimeout(ins,2500);
+        /* ⚠⚠ (#R272 SEC) NOT WHILE AN AUTH CREDENTIAL IS IN THE URL. An OAuth return / magic link lands here with `?code=…` / `#access_token=…` until supabase-js finishes detectSessionInUrl, and Clarity records the page URL and a DOM replay (GA is scrubbed — __imScrubAuthUrl above — this was not, and an idle callback made it a RACE). Skipped for this page-load if the URL never clears; a normal visit has no such parameter and is unaffected. See docs/SECURITY-ARCHITECTURE.md §7. */
+        var AUTHY=/[?&](code|token_hash|access_token|refresh_token|provider_token|provider_refresh_token)=/, tries=0;
+        var authy=function(){ try{ return AUTHY.test(l.location.search||'')||AUTHY.test('&'+(l.location.hash||'').replace(/^#/,'')); }catch(e){ return false; } };
+        var guarded=function(){ if(!authy()) return ins(); if(++tries<=40) setTimeout(guarded,500); };   /* ~20 s, then this page-load is skipped */
+        if(typeof requestIdleCallback==='function') requestIdleCallback(guarded,{timeout:6000}); else setTimeout(guarded,2500);
     })(window, document, "clarity", "script", "x2colhytq7");
 </script>
 </body>

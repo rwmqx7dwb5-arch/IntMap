@@ -136,5 +136,66 @@ select throws_ok(
   $$ insert into public.community_comments(post_id, user_id, body) values (1, '11111111-1111-1111-1111-111111111111', repeat('y', 5001)) $$,
   '23514', null, 'R155: an over-length community comment is rejected');
 
+-- ─────────────────────────────────────────────────────────────────────────────
+--  4. ACCOUNT DELETION IS ONE TRANSACTION, AND IT IS NOT A LIST.
+--
+--     The Edge Function used to issue one DELETE per hard-coded table name over
+--     PostgREST and then remove the auth user WHETHER OR NOT they succeeded. Two
+--     properties replace that, and both are checkable here rather than by reading
+--     the function: the purge is a single SECURITY DEFINER call that either
+--     completes or raises, and the tables it visits are DISCOVERED from the foreign
+--     keys to auth.users — so a table added by a later migration is covered without
+--     anyone remembering to add it.
+--     ⚠ IT IS ALSO A PRIVILEGE. A logged-in caller who could invoke it with someone
+--     else's uuid would be able to erase that account's data, so EXECUTE belongs to
+--     service_role only.
+-- ─────────────────────────────────────────────────────────────────────────────
+reset role;
+select has_function('public', 'delete_account_data', array['uuid'],
+  'delete_account_data(uuid) exists');
+select is(
+  (select prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+    where n.nspname='public' and p.proname='delete_account_data'),
+  true, 'delete_account_data runs as SECURITY DEFINER');
+select ok(
+  (select coalesce(array_to_string(proconfig, ','), '') like '%search_path=%'
+     from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+    where n.nspname='public' and p.proname='delete_account_data'),
+  'delete_account_data pins its search_path');
+select ok(not has_function_privilege('anon','public.delete_account_data(uuid)','execute'),
+  'anon cannot run the account purge');
+select ok(not has_function_privilege('authenticated','public.delete_account_data(uuid)','execute'),
+  'a logged-in user cannot purge another account');
+select ok(has_function_privilege('service_role','public.delete_account_data(uuid)','execute'),
+  'service_role (the Edge Function) can run the purge');
+
+--  It really deletes, and it really reports. User A owns rows in several of the
+--  tables the seed creates; after the call nothing of theirs is left anywhere the
+--  FK graph says they own something.
+select ok(
+  (select (public.delete_account_data('11111111-1111-1111-1111-111111111111'::uuid) ->> 'ok')::boolean),
+  'the purge reports success for a real user');
+select is(
+  (select count(*)::int from public.profiles where id='11111111-1111-1111-1111-111111111111'),
+  0, 'the profile row is gone');
+select is(
+  (select count(*)::int from public.favorites where user_id='11111111-1111-1111-1111-111111111111'),
+  0, 'the favorites are gone');
+--  ⚠ AND THE THREE `ON DELETE SET NULL` TABLES TOO. Deleting the auth user would have
+--  left these rows behind with a NULL owner; the explicit purge is the only thing
+--  that removes them, which is why it has to run BEFORE the auth delete.
+select is(
+  (select count(*)::int from public.feedback where user_id='11111111-1111-1111-1111-111111111111'),
+  0, 'feedback (ON DELETE SET NULL) is deleted rather than orphaned');
+
+--  A missing user is not an error — deletion has to be idempotent, because the
+--  Edge Function may be retried after a failed auth delete.
+select ok(
+  (select (public.delete_account_data('99999999-9999-9999-9999-999999999999'::uuid) ->> 'ok')::boolean),
+  'purging an account with no rows still succeeds');
+select throws_ok(
+  $$ select public.delete_account_data(null::uuid) $$,
+  '22004', null, 'a null user id is refused rather than treated as "everyone"');
+
 select * from finish();
 rollback;

@@ -38,6 +38,31 @@ const CACHE = 'intmap-tiles-v2';
    bookkeeping, not memory. */
 const MAX_ENTRIES = 12000;         // ~tiles kept on disk (trimmed oldest-first)
 const TRIM_TO = 10200;             // trim down to this when the cap is hit
+/* ══ SEC: …AND A CEILING IN BYTES, WHICH THE ENTRY COUNT IS NOT ═══════════════════════════════════
+   12,000 ENTRIES bounds how many things are kept and says nothing about how big they are: a real
+   z/x/y tile is tens of kilobytes, so the count was a de-facto size cap only for as long as every
+   cached URL was a tile. Now that a URL may also arrive by postMessage from the page (see the
+   prefetch handler at the bottom), "how many" and "how much" are two different questions.
+     · MAX_ENTRY_BYTES  — one response. World_Imagery at @2x is ~120 kB and a terrarium PNG ~90 kB;
+       8 MB is far above any tile and far below anything worth parking in a cache.
+     · MAX_CACHE_BYTES  — the origin's Cache Storage as the BROWSER accounts for it. Past it the SW
+       stops ADDING (and forces a trim); it never stops answering, so a session that reaches the
+       ceiling loses cache growth, not tiles: the map still fetches over the network exactly as it
+       does on a cold profile. */
+const MAX_ENTRY_BYTES = 8 * 1024 * 1024;
+const MAX_CACHE_BYTES = 1536 * 1024 * 1024;      /* 1.5 GiB: ~12,000 tiles at 128 kB, with room */
+const QUOTA_EVERY = 256;                          /* stores between two storage.estimate() calls */
+let _overBudget = false, _sinceQuota = 0;
+async function withinBudget() {
+  if (_sinceQuota-- > 0) return !_overBudget;
+  _sinceQuota = QUOTA_EVERY;
+  try {
+    const est = await self.navigator.storage.estimate();
+    const usage = (est && est.usage) || 0, quota = (est && est.quota) || 0;
+    _overBudget = usage > MAX_CACHE_BYTES || (quota > 0 && usage / quota > 0.9);
+  } catch (_) { _overBudget = false; }            /* no estimate API → the entry cap is the only cap */
+  return !_overBudget;
+}
 
 /* Hosts whose responses are immutable tiles worth caching aggressively. */
 const TILE_HOSTS = [
@@ -64,15 +89,48 @@ const TILE_HOSTS = [
        s3.dualstack.us-east-1.amazonaws.com                        MISSED
    Matching the PATH fixes every present and future alias at once, and it cannot over-match: nothing
    else in the app requests a URL containing /terrarium/. */
-const TILE_PATHS = [
-  '/terrarium/',                      // AWS terrarium DEM, whichever S3 alias served it
+/* ══ ⚠⚠ SEC: A PATH RULE THAT MATCHED **ANY HOST**, AND A SUFFIX TEST WITH NO DOT ═════════════════
+   The rule above was written as "the path decides", and it was implemented literally:
+
+       return TILE_PATHS.some((p) => u.pathname.indexOf(p) !== -1);      // ← no host test at all
+
+   So `https://anything.example/terrarium/x.png` was a tile: cached FIRST-hit, answered cache-FIRST for
+   sixty days, and — because store() rebuilds the response — handed back to the page as a same-origin
+   body. Anything on the page that can reach `fetch()` with a URL of its choosing could therefore pin
+   a permanent, attacker-chosen answer at an attacker-chosen URL inside this origin's cache. The
+   comment claimed the pattern «cannot over-match: nothing else in the app requests a URL containing
+   /terrarium/», which is a statement about IntMap's own code and not about what a request can be.
+
+   The second half is the host test itself: `h.endsWith(t)` has no dot, so `t = 'api.mapbox.com'`
+   also matched `notapi.mapbox.com`, and `t = 'tiles.openfreemap.org'` also matched
+   `eviltiles.openfreemap.org` — a registrable-domain neighbour is not the same party.
+
+   Both are now the same shape: EXACT hostname, or a genuine subdomain (`.` + host). The DEM's five S3
+   spellings (#R178: MapLibre picks the alias per tile as (x+y) % 5) are listed by name rather than
+   inferred from a bucket-shaped suffix, because `*.s3.amazonaws.com` is every S3 bucket on earth. */
+function hostMatches(h, list) {
+  return list.some((t) => h === t || h.endsWith('.' + t));
+}
+const TILE_PATH_RULES = [
+  { path: '/terrarium/',              // AWS terrarium DEM, whichever S3 alias served it (js/dem-source.js)
+    hosts: [
+      's3.amazonaws.com',
+      'elevation-tiles-prod.s3.amazonaws.com',
+      'elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com',
+      'elevation-tiles-prod.s3.us-east-1.amazonaws.com',
+      's3.dualstack.us-east-1.amazonaws.com',
+      's3.us-east-1.amazonaws.com',
+    ] },
 ];
 function isTileRequest(url) {
   let u;
   try { u = new URL(url); } catch { return false; }
+  if (u.protocol !== 'https:') return false;      /* a tile is never plaintext; nothing here asks for http */
   const h = u.hostname;
-  if (TILE_HOSTS.some((t) => h === t || h.endsWith('.' + t) || h.endsWith(t))) return true;
-  return TILE_PATHS.some((p) => u.pathname.indexOf(p) !== -1);
+  if (hostMatches(h, TILE_HOSTS)) return true;
+  /* ⚠ EXACT hostnames here, not hostMatches(): the two generic S3 endpoints in the list would
+     otherwise admit every bucket in the world that happens to serve a /terrarium/ path. */
+  return TILE_PATH_RULES.some((r) => r.hosts.indexOf(h) !== -1 && u.pathname.indexOf(r.path) !== -1);
 }
 
 /* ══ (#R224) WHAT MAY GO STALE, AND HOW STALE ═══════════════════════════════════════════════════════
@@ -88,7 +146,7 @@ const DAY = 86400e3;
 const REFRESHABLE = ['tiles.openfreemap.org', 'basemaps.cartocdn.com'];   /* re-rendered upstream */
 function maxAgeFor(url) {
   try { const h = new URL(url).hostname;
-    if (REFRESHABLE.some((t) => h === t || h.endsWith('.' + t) || h.endsWith(t))) return 7 * DAY;
+    if (hostMatches(h, REFRESHABLE)) return 7 * DAY;         /* SEC: same dot-boundary rule as isTileRequest */
   } catch (_) {}
   return 60 * DAY;                       /* immutable imagery/DEM — long, but never infinite */
 }
@@ -104,7 +162,8 @@ function maxAgeFor(url) {
 const SAT_PLACEHOLDER_MAX = 3500;
 function isPlaceholder(url, res) {
   try {
-    if (!/arcgisonline\.com$/.test(new URL(url).hostname)) return false;
+    /* SEC: `/arcgisonline\.com$/` also matched `notarcgisonline.com`. Same dot boundary as everywhere else. */
+    if (!hostMatches(new URL(url).hostname, ['arcgisonline.com'])) return false;
     const n = +res.headers.get('content-length');
     return isFinite(n) && n > 0 && n <= SAT_PLACEHOLDER_MAX;
   } catch (_) { return false; }
@@ -118,8 +177,14 @@ async function store(cache, req, res) {
   if (!res || !res.ok) return;
   if (!(res.type === 'cors' || res.type === 'basic' || res.type === 'default')) return;
   if (isPlaceholder(typeof req === 'string' ? req : req.url, res)) return;
+  /* SEC: refuse an oversized body before reading it, when the server declared a length. */
+  const declared = +res.headers.get('content-length');
+  if (isFinite(declared) && declared > MAX_ENTRY_BYTES) return;
+  if (!(await withinBudget())) { try { await trim(cache, true); } catch (_) {} return; }
   try {
     const body = await res.blob();
+    /* SEC: …and again once it is read, because content-length is optional and chunked answers omit it. */
+    if (body.size > MAX_ENTRY_BYTES) return;
     const h = new Headers();
     const ct = res.headers.get('content-type'); if (ct) h.set('content-type', ct);
     /* ⚠ NOT `content-encoding`. `res.blob()` hands back the DECODED bytes, so carrying the original
@@ -169,10 +234,11 @@ self.addEventListener('activate', (e) => {
    high costs one wasted walk. Neither can lose a tile. */
 let _trimming = false, _n = -1, _sinceCheck = 0;
 const CHECK_EVERY = 64;              /* stores between two cheap re-checks once the count is known */
-async function trim(cache) {
+async function trim(cache, force) {
   if (_trimming) return;
-  /* the first store after a start-up learns the size; after that the counter answers */
-  if (_n >= 0) {
+  /* the first store after a start-up learns the size; after that the counter answers.
+     SEC: `force` is the byte-budget path — it must walk even when the ENTRY count is nowhere near. */
+  if (_n >= 0 && !force) {
     _n++;
     if (_n <= MAX_ENTRIES) return;                      /* nowhere near the cap — no walk */
     if (_sinceCheck++ < CHECK_EVERY && _n < MAX_ENTRIES * 1.05) return;
@@ -181,10 +247,14 @@ async function trim(cache) {
   try {
     const keys = await cache.keys();               // insertion order (oldest first)
     _n = keys.length;                              // …and re-seed the hint from the truth
-    if (keys.length > MAX_ENTRIES) {
-      const remove = keys.slice(0, keys.length - TRIM_TO);
+    /* SEC: over the byte budget, drop the oldest sixth outright — the entry count is not the thing
+       that is full, so waiting for it to be reached would never free anything. */
+    const target = force ? Math.min(TRIM_TO, Math.floor(keys.length * 5 / 6)) : TRIM_TO;
+    if (keys.length > target) {
+      const remove = keys.slice(0, keys.length - target);
       await Promise.all(remove.map((req) => cache.delete(req)));
       _n = Math.max(0, keys.length - remove.length);
+      if (force) { _sinceQuota = 0; _overBudget = false; }   /* re-measure on the next store */
     }
   } catch (_) {} finally { _trimming = false; }
 }
@@ -235,9 +305,25 @@ self.addEventListener('fetch', (event) => {
    ⚠ THE LANES ARE SHARED ACROSS BATCHES, deliberately: a pan is a run of `moveend`s, so per-batch
    limiting would still let three overlapping batches put 3×N in the air. One module-level cursor over
    a queue that later batches append to is what actually bounds it. */
+/* ══ ⚠⚠ SEC: THIS PORT ACCEPTED ANY URL FROM ANY SENDER ══════════════════════════════════════════
+   The handler at the bottom took `d.urls` and fetched them. It did not ask who sent the message, it
+   did not run the tile allow-list over them, and it stored whatever came back through the same
+   cache-first store() the fetch path uses. A service worker's scope is its origin, so the sender is
+   at least same-origin — but "same origin" includes an injected iframe, an extension content script
+   with page access, and every future page this project serves; and the fetches themselves went out
+   from the SW with the default `credentials`, i.e. with cookies for the target site. The result was
+   a general-purpose, cookie-bearing, cache-poisoning fetch primitive reachable with one postMessage.
+   Four things fix it, and none of them narrows what the real prefetcher does:
+     · the SENDER must be a same-origin window client of this registration;
+     · every URL goes through isTileRequest() — the same list the fetch path uses;
+     · length and count are bounded before anything is queued (a URL is a z/x/y, not a document);
+     · `credentials: 'omit'`, so a prefetch can never carry the reader's cookies to a tile host.
+   MEASURED against the prefetcher (js/sat-prefetch.js) this changes nothing: every URL it sends is
+   an https tile on a listed host, and its batches are ≤ 96. */
 const PREFETCH_LANES = 4;                 /* concurrent prefetch fetches, across every batch */
 const PREFETCH_MAX = 96;                  /* per batch, unchanged — the ceiling that was already here */
 const PREFETCH_BACKLOG = 512;             /* a queue that outgrows this is stale; drop the oldest */
+const PREFETCH_URL_MAX = 2048;            /* a tile URL with BYOK query params is ~300 chars */
 let _pfQueue = [], _pfLanes = 0, _pfDrained = null, _pfResolve = null;
 /* ⚠ THE WORKER STILL HAS TO BE HELD ALIVE UNTIL THE LAST TILE LANDS. `Promise.all` did that for free
    — `waitUntil` was given the whole batch. A queue that returns the moment it is *scheduled* would
@@ -254,7 +340,9 @@ async function pfLane(cache) {
     const u = _pfQueue.shift();
     try {
       if (await cache.match(u)) continue;
-      const res = await fetch(u, { mode: 'cors' });
+      /* SEC: never the reader's cookies, and never a redirect to somewhere that is not a tile. */
+      const res = await fetch(u, { mode: 'cors', credentials: 'omit', redirect: 'follow' });
+      if (res && res.url && !isTileRequest(res.url)) continue;
       /* (#R224) the SAME writer as the fetch path — stamped, and never a placeholder. The prefetch
          ring warms exactly the tiles sat-proto will ask about, so a placeholder pinned HERE was the
          other half of the half-resolution defect. */
@@ -269,12 +357,47 @@ function pfPump(cache) {
   }
   pfSettle();                              /* nothing to do (empty batch) must resolve, not hang */
 }
+/* SEC: who sent this. `event.origin` is '' for a same-origin postMessage in some engines, so the
+   authority is the CLIENT: a window controlled by this registration, whose URL is this origin. */
+async function senderIsOurWindow(event) {
+  try {
+    if (event.origin && event.origin !== self.location.origin) return false;
+    const src = event.source;
+    if (!src || !src.id) return false;
+    const client = await self.clients.get(src.id);
+    if (!client) return false;
+    if (client.type && client.type !== 'window') return false;
+    return new URL(client.url).origin === self.location.origin;
+  } catch (_) { return false; }
+}
 self.addEventListener('message', (event) => {
   const d = event.data;
   if (!d || d.type !== 'prefetch' || !Array.isArray(d.urls)) return;
   event.waitUntil((async () => {
+    if (!(await senderIsOurWindow(event))) return;
+    const wanted = [];
+    for (const u of d.urls) {
+      if (wanted.length >= PREFETCH_MAX) break;
+      if (typeof u !== 'string' || u.length > PREFETCH_URL_MAX) continue;
+      if (!isTileRequest(u)) continue;                 /* the SAME allow-list the fetch path uses */
+      wanted.push(u);
+    }
+    /* ⚠ AND HAND BACK WHAT THE ALLOW-LIST REFUSED, rather than silently doing less than before.
+       The satellite basemap has a `custom` (pro-tier) provider whose XYZ template the READER types
+       in Settings, so its host is by construction not on any list here. Those tiles were never
+       cache-FIRST served — the fetch handler's allow-list already excluded them — but this port did
+       fetch them, which warmed the browser's own HTTP cache for the render path. Dropping them on
+       the floor would have made a real feature quietly slower, so the page (js/tile-warm.js) is told
+       and warms them through the same four-lane queue it uses when there is no controller at all. */
+    if (wanted.length < d.urls.length) {
+      try {
+        const declined = d.urls.filter((u) => typeof u === 'string' && u.length <= PREFETCH_URL_MAX && !isTileRequest(u)).slice(0, PREFETCH_MAX);
+        if (declined.length && event.source && event.source.postMessage) event.source.postMessage({ type: 'prefetch-declined', urls: declined });
+      } catch (_) {}
+    }
+    if (!wanted.length) return;
     const cache = await caches.open(CACHE);
-    for (const u of d.urls.slice(0, PREFETCH_MAX)) _pfQueue.push(u);
+    for (const u of wanted) _pfQueue.push(u);
     if (_pfQueue.length > PREFETCH_BACKLOG) _pfQueue = _pfQueue.slice(-PREFETCH_BACKLOG);
     const done = pfDrain();
     pfPump(cache);

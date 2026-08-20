@@ -179,9 +179,15 @@ test('R269 ④ the two relay-backed loaders run one call at a time', () => {
 
 test('R269 ④ the relay gives a slow upstream a real budget and one retry', () => {
   const t = codeOnly(read('supabase/functions/alerts-relay/index.ts'));
-  const m = /AbortSignal\.timeout\((\d+)\)/g;
-  const budgets = [...t.matchAll(m)].map((x) => +x[1]);
+  /* ⚠ «STATES A BUDGET» IS THE PROPERTY, and the call that enforces it is shared now: both fetches go
+     through _shared/relay-guard.js's fetchGuarded(), which takes the budget as `timeoutMs`. Grepping
+     for `AbortSignal.timeout(<number>)` was grepping for one implementation of it. */
+  const budgets = [...t.matchAll(/TIMEOUT_MS = (\d+)/g)].map((x) => +x[1]);
   assert.ok(budgets.length >= 2, 'both upstream fetches must state a budget');
+  assert.match(t, /timeoutMs: MA_TIMEOUT_MS/, 'the MeteoAlarm fetch does not use its budget');
+  assert.match(t, /timeoutMs: U_TIMEOUT_MS/, 'the ?u= fetch does not use its budget');
+  assert.match(read('supabase/functions/_shared/relay-guard.js'), /AbortSignal\.timeout\(timeoutMs\)/,
+    'the shared guard does not actually abort');
   /* MEASURED: the CMA list returned 502 after exactly 20,140 ms from the edge while the same URL
      answered in 1.0 s from a laptop — a budget shorter than the upstream's bad days turns an
      available feed into 「取得不可」 at random. */

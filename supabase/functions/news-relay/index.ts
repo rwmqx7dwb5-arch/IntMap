@@ -39,38 +39,65 @@
 //  Secrets: none.
 // ============================================================================
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+
+const CORS = corsFor();
+/* A Google News RSS document is tens of kilobytes; 4 MB is two orders of magnitude of headroom and
+   still refuses to hand a caller something that is not a feed at all. */
+const MAX_BYTES = 4 * 1024 * 1024;
+const TIMEOUT_MS = 12000;
 
 /* Google News rotates its headlines a few times an hour; the app also keeps its own
    6-hour localStorage copy. Five minutes of shared edge caching turns a burst of
    readers into one upstream request without ever showing a stale-feeling feed. */
 const CACHE = "public, max-age=300, s-maxage=300, stale-while-revalidate=1800";
 
-/* The ONE upstream host, and the two path prefixes js/news-feed.js builds:
+/* The ONE upstream host, and the two path shapes js/news-feed.js builds:
      /rss/headlines/section/topic/<TOPIC>?hl=…&gl=…&ceid=…
      /rss/search?q=…&hl=…&gl=…&ceid=…
    Checked structurally rather than by regex so a crafted string cannot smuggle a
-   different host past a `startsWith`. */
+   different host past a `startsWith`.
+   ⚠ AND THE PATH IS NOW THE SHAPE, NOT THE PREFIX. `startsWith("/rss/")` accepted every URL under
+   that directory — including `/rss/articles/CBMi…`, the aggregator REDIRECT that every Google News
+   item's `link` is. Nothing in the app can use one (js/proxy-fetch.js returns only documents that
+   contain `<rss`/`<feed`, so an article's HTML is discarded by the caller either way), but the relay
+   would still have FETCHED it: an arbitrary Google-News-hosted redirect target, followed server-side,
+   at this project's expense. Two endpoints are what the app builds, so two endpoints are what this
+   forwards, and the query is an allow-list rather than whatever was attached. */
+const TOPIC_RE = /^\/rss\/headlines\/section\/topic\/[A-Z][A-Z_]{1,31}$/;
+const EDITION_PARAMS = new Set(["hl", "gl", "ceid"]);
+const MAX_Q = 512;
 function allowed(raw) {
   let u;
   try { u = new URL(raw); } catch (_) { return false; }
   if (u.protocol !== "https:") return false;
   if (u.hostname !== "news.google.com") return false;
-  if (!u.pathname.startsWith("/rss/")) return false;
+  if (u.hash) return false;
+  const isSearch = u.pathname === "/rss/search";
+  if (!isSearch && !TOPIC_RE.test(u.pathname)) return false;
+  let sawQ = false;
+  for (const [k, v] of u.searchParams) {
+    if (k === "q") {
+      if (!isSearch || v.length > MAX_Q) return false;
+      sawQ = true;
+      continue;
+    }
+    if (!EDITION_PARAMS.has(k)) return false;
+    /* hl=en-US, gl=US, ceid=US:en — a locale, never a payload. */
+    if (!/^[A-Za-z0-9:_-]{1,24}$/.test(v)) return false;
+  }
+  if (isSearch && !sawQ) return false;
   return true;
 }
 
 // NOTE: written WITHOUT TypeScript annotations, like sv-cov and cable-geo — scripts/static-checks.mjs
 // parses every committed .ts with acorn, so a type annotation here fails the build gate.
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  const gate = methodGate(req, CORS);
+  if (gate) return gate;
 
   const u = new URL(req.url).searchParams.get("u") || "";
-  if (!allowed(u)) {
+  if (u.length > MAX_QUERY_URL || !allowed(u)) {
     return new Response(
       JSON.stringify({ error: "only https://news.google.com/rss/… is relayed" }),
       { status: 400, headers: { ...CORS, "content-type": "application/json" } },
@@ -78,40 +105,39 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const ac = new AbortController();
-    const t = setTimeout(() => ac.abort(), 12000);
-    let r;
-    try {
-      r = await fetch(u, {
-        signal: ac.signal,
-        headers: {
-          /* a real UA string: Google serves its bot interstitial to obviously-automated
-             clients, which is the 503 the public relays were collecting */
-          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-          "accept": "application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8",
-          "accept-language": "*",
-        },
-      });
-    } finally { clearTimeout(t); }
+    const r = await fetchGuarded(u, {
+      timeoutMs: TIMEOUT_MS,
+      maxBytes: MAX_BYTES,
+      /* text/html passes this and then fails the `<rss`/`<feed` test below, which is exactly the
+         Google interstitial case the note underneath is about — same 502, one check earlier. */
+      contentTypeRe: /xml|text\//i,
+      headers: {
+        /* a real UA string: Google serves its bot interstitial to obviously-automated
+           clients, which is the 503 the public relays were collecting */
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "accept": "application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8",
+        "accept-language": "*",
+      },
+    });
 
     if (!r.ok) {
-      return new Response(JSON.stringify({ error: "upstream " + r.status }),
+      return new Response(JSON.stringify({ error: "upstream_error" }),
         { status: 502, headers: { ...CORS, "content-type": "application/json" } });
     }
-    const txt = await r.text();
+    const txt = r.text();
     /* ⚠ AN INTERSTITIAL IS NOT A FEED, AND MUST NOT BE HANDED BACK AS ONE. Google answers a
        blocked request with 200 + an HTML "Sorry…" page; passing that through would let the
        browser's race declare this relay the winner and then parse zero items — the exact
        failure mode that made 「読み込み中」 permanent. Say 502 so the caller tries the next one. */
     if (!(txt.includes("<rss") || txt.includes("<feed"))) {
-      return new Response(JSON.stringify({ error: "upstream did not return a feed" }),
+      return new Response(JSON.stringify({ error: "upstream_not_a_feed" }),
         { status: 502, headers: { ...CORS, "content-type": "application/json" } });
     }
     return new Response(txt, {
       headers: { ...CORS, "content-type": "text/xml; charset=utf-8", "cache-control": CACHE },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: String((e && e.message) || e) }),
-      { status: 502, headers: { ...CORS, "content-type": "application/json" } });
+    /* ⚠ A CODE, NOT THE EXCEPTION — this endpoint is world-readable (CodeQL js/stack-trace-exposure). */
+    return relayFail(e, CORS);
   }
 });

@@ -8,6 +8,7 @@
 //   node scripts/static-checks.mjs --list     # just print the files it would scan
 //
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { cpus } from 'node:os';
 import { join, extname, relative, resolve, dirname } from 'node:path';
@@ -28,8 +29,13 @@ const TEXT_EXT = new Set(['.html', '.htm', '.js', '.mjs', '.cjs', '.ts', '.json'
 const PUBLIC_ALLOW = [
   'sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0', // Supabase publishable/anon key — RLS protects every table
 ];
-// Files referenced but intentionally optional (local-first with a CDN fallback).
-const OPTIONAL_LOCAL = new Set(['supabase.js']);
+/* Files an HTML page references that are produced by the BUILD rather than committed. The entry used
+   to be `supabase.js` — a file that has never existed, whose absence is what sent admin.html to a
+   third-party CDN via document.write. That fallback is gone; vite.config.js's supabaseAdminSdk()
+   copies the pinned @supabase/supabase-js UMD build to dist/vendor/supabase-js.js, and the dev server
+   serves the same path out of node_modules, so the file is real everywhere the page actually runs and
+   is simply not in the source tree. */
+const OPTIONAL_LOCAL = new Set(['vendor/supabase-js.js']);
 
 const errors = [];
 const warnings = [];
@@ -114,15 +120,23 @@ for (const f of textFiles) {
 // ── 2b. SQL migrations/seed must be synthetic (no real PII, no dev email) ─────
 // The DB migrations + seed ship in this PUBLIC repo, so they must never contain a
 // real email, a real auth UUID, or production data. Enforce synthetic-only.
-const DEV_EMAIL = /2ppzc4kk6r@privaterelay\.appleid\.com/i;
+/* ⚠ THE DETECTOR MUST NOT BE THE LEAK. This guard's whole subject is «the maintainer's real address
+   must never appear in a committed file», and it was implemented by writing that address into a
+   committed file — in a PUBLIC repository, where it has been readable for as long as the check has
+   existed. A hash answers the same question ("is this address the one?") without publishing the
+   answer: every address the scan finds is hashed and compared, so the check gets STRONGER (it now
+   catches a case-variant or a lookalike by value rather than by one regex) and the address is gone. */
+const DEV_EMAIL_SHA256 = '1ee3ea177de1f01d0e475beebf5213000bcb781499ca17f6c6941645219bdd68';
+const isDevEmail = (s) => createHash('sha256').update(String(s).trim().toLowerCase()).digest('hex') === DEV_EMAIL_SHA256;
 const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
 for (const f of ALL.filter((x) => x.rel.startsWith('supabase/') && x.ext === '.sql')) {
   const t = read(f);
-  if (DEV_EMAIL.test(t)) {
-    err('sql-pii', `${f.rel}: contains the real developer email — SQL must use synthetic *.test addresses only`);
-  }
   for (const m of t.matchAll(EMAIL_RE)) {
     const email = m[0];
+    if (isDevEmail(email)) {
+      err('sql-pii', `${f.rel}: contains the real developer email — SQL must use synthetic *.test addresses only`);
+      continue;
+    }
     // Allowed: reserved test TLD (.test) and documentation domains (example.*).
     if (!/\.test$/i.test(email) && !/@example\.(?:com|org|net|test)$/i.test(email)) {
       err('sql-pii', `${f.rel}: non-synthetic email "${email}" — use a *.test address in migrations/seed`);
@@ -212,14 +226,25 @@ for (const f of yamlFiles) {
     if (/pull_request_target/.test(t) && /actions\/checkout/.test(t)) {
       warn('workflow-security', `${f.rel}: uses pull_request_target with checkout — never build/run untrusted PR code with repo secrets`);
     }
-    // (#R138) Supply-chain: a THIRD-PARTY action pinned to a moveable tag can be repointed to
-    // malicious code. First-party actions/* and github/* are GitHub-owned (tags acceptable);
-    // everything else should be pinned to a full 40-hex commit SHA (Dependabot bumps them).
-    for (const m of t.matchAll(/(?:^|\s)uses:\s*([A-Za-z0-9._-]+)\/([A-Za-z0-9._\/-]+)@(\S+)/g)) {
-      const owner = m[1], ref = (m[3] || '').replace(/["']/g, '');
-      if (owner === 'actions' || owner === 'github') continue;         // GitHub-owned first-party
-      if (!/^[0-9a-f]{40}$/.test(ref)) {
-        warn('action-pinning', `${f.rel}: third-party action ${m[1]}/${m[2]}@${ref} is not SHA-pinned (supply-chain: pin to a full commit SHA)`);
+    /* (#R138) Supply-chain: an action pinned to a moveable tag can be repointed to malicious code —
+       `v4` is a branch-like ref its owner rewrites on every release, so "pinned to v4" means "runs
+       whatever that owner publishes next", inside this repo's CI, with this repo's GITHUB_TOKEN.
+       ⚠ TWO THINGS CHANGED, AND THE FIRST ONE IS WHY THIS FOUND NOTHING FOR MANY ROUNDS.
+         · The exemption. `actions/*` and `github/*` were skipped as "GitHub-owned (tags acceptable)",
+           which is where ALL of this repo's remote actions live — so the check ran on an empty set
+           and passed by having nothing to look at. GitHub-owned or not, the tag still moves, and
+           GitHub's own hardening guidance is to pin every action by SHA. Every one of them is now
+           pinned (with the version in a trailing comment, which is what Dependabot bumps), so the
+           exemption has nothing left to protect and is gone.
+         · WARNING → ERROR. A warning that nobody has to clear is a note, not a gate.
+       A LOCAL action (`uses: ./…`) is read off the checked-out workspace and is not fetched, so it
+       has nothing to pin. */
+    for (const m of t.matchAll(/(?:^|\s)uses:\s*(\S+)/g)) {
+      const ref = (m[1] || '').replace(/["']/g, '');
+      if (ref.startsWith('./') || ref.startsWith('docker://')) continue;
+      const at = ref.lastIndexOf('@');
+      if (at < 0 || !/^[0-9a-f]{40}$/.test(ref.slice(at + 1))) {
+        err('action-pinning', `${f.rel}: action ${ref} is not pinned to a full commit SHA (supply-chain: whoever controls that repository can move a tag)`);
       }
     }
     // NOTE: expression-injection into run: blocks (${{ inputs.* }} → shell) is checked by CodeQL's

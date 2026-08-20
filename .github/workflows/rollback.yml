@@ -7,6 +7,16 @@
 #     already reviewed and committed — never arbitrary/injected code.
 #   • Gated by the same ENABLE_PAGES_DEPLOY variable as deploy.yml.
 #
+# ⚠ AND SINCE #R175 IT HAS TO BUILD. What GitHub Pages serves is `dist/` — a Vite build — and this
+# workflow published `git archive <sha>` , i.e. the SOURCE TREE. On any commit from #R175 onward that
+# tree's index.html ends in `<script type="module" src="/src/main.js">`, which on Pages is a 404 and a
+# blank page: the rollback that exists for the worst ten minutes of a deploy would have replaced a
+# broken site with no site at all. It now runs the SAME `npm ci && npm run build` the deploy does, at
+# the rolled-back commit, and publishes what that produces.
+# Refs from BEFORE #R175 are a different, still-valid shape — the repo root WAS the site then — so
+# they take the archive path, and only when that is verified (an index.html at the root and no Vite
+# build to run). Anything that is neither is refused by name rather than deployed as a guess.
+#
 # It does NOT revert database state — see docs/INCIDENT-RESPONSE.md.
 name: Rollback (production, Pages)
 
@@ -33,7 +43,7 @@ jobs:
     if: ${{ vars.ENABLE_PAGES_DEPLOY == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
           fetch-depth: 0          # need full history + tags to resolve an old ref
       - name: Resolve and check out the requested ref
@@ -48,18 +58,54 @@ jobs:
           echo "Rolling back to ${REF} → ${SHA}"
           git checkout --quiet "${SHA}"
           echo "ROLLBACK_SHA=${SHA}" >> "$GITHUB_ENV"
-      - name: Assemble site (exact tree at the rolled-back commit)
+      - name: Decide how this ref is built
+        id: shape
+        run: |
+          set -euo pipefail
+          # Which era is this commit from? Two shapes have ever been deployable, and they are told
+          # apart by what the commit itself contains rather than by the ref's name or date.
+          if [ -f vite.config.js ] && [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build?0:1)"; then
+            echo "shape=vite" >> "$GITHUB_OUTPUT"
+          elif [ -f index.html ] && [ ! -f vite.config.js ]; then
+            echo "shape=static" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::This commit is neither a Vite build (vite.config.js + a build script) nor a pre-#R175 static tree (index.html at the root). Refusing to deploy a tree whose shape is unknown."
+            exit 1
+          fi
+          echo "Rollback tree shape: $(cat "$GITHUB_OUTPUT")"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        if: ${{ steps.shape.outputs.shape == 'vite' }}
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Build the site at the rolled-back commit (Vite)
+        if: ${{ steps.shape.outputs.shape == 'vite' }}
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+          test -f dist/index.html || { echo "::error::dist/index.html missing — the build produced no site"; exit 1; }
+      - name: Assemble site
         env:
           REF: ${{ inputs.ref }}          # (#R138 SEC) env, not inline interpolation
+          SHAPE: ${{ steps.shape.outputs.shape }}
         run: |
           set -euo pipefail
           rm -rf _site && mkdir -p _site
-          git archive "${ROLLBACK_SHA}" | tar -x -C _site
-          printf '{ "sha": "%s", "ref": "%s", "runId": "%s", "builtAt": "%s", "rollback": true }\n' \
-            "${ROLLBACK_SHA}" "${REF}" "${GITHUB_RUN_ID}" "$(date -u +%FT%TZ)" \
+          if [ "${SHAPE}" = "vite" ]; then
+            cp -r dist/. _site/
+            test -f _site/sw.js || { echo "::error::dist/sw.js missing — static assets were not copied"; exit 1; }
+          else
+            # Pre-#R175: the committed tree IS the site. Exactly the old behaviour, now only on the
+            # commits where it was ever correct.
+            git archive "${ROLLBACK_SHA}" | tar -x -C _site
+            test -f _site/index.html || { echo "::error::no index.html in the archived tree"; exit 1; }
+          fi
+          printf '{ "sha": "%s", "ref": "%s", "runId": "%s", "builtAt": "%s", "rollback": true, "shape": "%s" }\n' \
+            "${ROLLBACK_SHA}" "${REF}" "${GITHUB_RUN_ID}" "$(date -u +%FT%TZ)" "${SHAPE}" \
             > _site/build-info.json
           cat _site/build-info.json
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa  # v3.0.1
         with:
           path: _site
 
@@ -74,15 +120,15 @@ jobs:
       page_url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e  # v4.0.5
 
   post-smoke:
     name: Post-rollback smoke (live URL)
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: npm

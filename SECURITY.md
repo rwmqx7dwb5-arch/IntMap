@@ -1,7 +1,12 @@
 # Security Policy — IntMap
 
-IntMap is a static, client-side world-map web app (single `index.html`) backed by
-Supabase (Auth, Postgres + RLS, Edge Functions) and many public read-only data APIs.
+> **Verified 2026-08-20 against `acc55b1`.** Every claim below was re-checked against the tree and
+> against the live project on that date; the findings that could not be closed are listed as
+> residual risks in [`docs/SECURITY-ARCHITECTURE.md §8`](docs/SECURITY-ARCHITECTURE.md).
+
+IntMap is a static, client-side world-map web app — since #R175 a **Vite build** (`npm run
+build` → `dist/`, which is what GitHub Pages publishes), not the repo tree — backed by
+Supabase (Auth, Postgres + RLS, **eight** Edge Functions) and many public read-only data APIs.
 This document is the entry point for **reporting a vulnerability** and for the two facts
 people most often get wrong about this project.
 
@@ -41,7 +46,11 @@ disclosure is appreciated.
 - Rate-limiting / cost of the **public** read-only data APIs IntMap calls (they are third-party).
 - Missing HTTP response headers that **GitHub Pages cannot set** (e.g. `X-Frame-Options`,
   HSTS, `Permissions-Policy`, a header-form CSP). These are documented limitations with the
-  compensating in-page controls listed in `docs/SECURITY-ARCHITECTURE.md §CSP`.
+  compensating in-page controls listed in `docs/SECURITY-ARCHITECTURE.md §CSP`. MEASURED on
+  production 2026-08-20, `GET https://rwmqx7dwb5-arch.github.io/IntMap/` returns
+  `Strict-Transport-Security: max-age=31556952` and `Access-Control-Allow-Origin: *` from
+  GitHub's edge and **no** `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
+  `Permissions-Policy` or CSP header — the in-page `<meta>` policy is the whole of it.
 
 ---
 
@@ -54,10 +63,12 @@ IntMap ships continuously from `main` (there is no release train). Security fixe
 ## How security is verified
 Every PR runs, in CI:
 - `npm run check:static` — syntax, committed-secret scan, SQL-PII guard, workflow least-
-  privilege + **third-party-action SHA-pinning** checks.
-- `node --test tests/security-logic.mjs` — Edge-Function auth invariants (refresh-news is
-  fail-closed / header-only / constant-time; ai-proxy requires a JWT + caps input) and the
-  constant-time compare.
+  privilege, and **action SHA-pinning**. The pinning rule is an **error**, and it covers
+  `actions/*` and `github/*` too: it used to exempt them, which is where every remote action
+  in this repo lives, so it had nothing to check.
+- `node --test tests/security-logic.mjs` — the Edge-Function, service-worker, admin-console
+  and CSP invariants, plus real unit tests of the constant-time compare and of the admin
+  console's data-literal parser (the one that replaced `eval`).
 - `tests/security.spec.js` (Playwright) — XSS payloads are neutralised in a **real browser**
   and i18n text still renders.
 - `.github/workflows/security.yml` — **CodeQL** (JavaScript/TypeScript) SAST.
