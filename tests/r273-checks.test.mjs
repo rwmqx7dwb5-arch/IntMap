@@ -129,6 +129,15 @@ test('R273 ⑤ the area carries the hazard’s own name, and says when more than
   /* an acronym is not a short name: 「MTW+4」 is a code the reader has no key to */
   assert.match(s, /const HZ_DROP=/, 'the short form drops the RANK words, which the colour already says');
   assert.ok(!/map\(x=>x\.charAt\(0\)\.toUpperCase\(\)\)\.join\(''\)/.test(s), 'no initials');
+  /* ⚠⚠ (#R273 追記) …and the answer must survive the opacity slider. MEASURED on production:
+     `line-opacity` on `wp-alert-line` was **0.38**, because `_applyGenericOpacity` dims every layer
+     the checkbox declares — including the outline that was given the rank to carry. The fill and
+     the country wash follow the slider; the outline and the label do not. */
+  const reg = /legendId:'wpalerts', layers:\(\)=>\[([^\]]*)\]/.exec(s);
+  assert.ok(reg, 'the opacity targets must be declared');
+  assert.ok(reg[1].includes("'wp-alert-fill'"), 'the fill follows the slider');
+  assert.ok(!reg[1].includes('wp-alert-line'), 'the outline does NOT — it carries the rank');
+  assert.ok(!reg[1].includes('wp-alert-lbl'), 'nor does the hazard name');
 });
 
 /* ── ⑥ four grades, not one green dot ──────────────────────────────────────────────────────── */
