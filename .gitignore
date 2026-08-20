@@ -19,6 +19,12 @@ supabase/functions/ai-proxy/supabase/
 # 資格情報を持つ。このリポジトリは public なので、絶対に追跡してはならない。
 CLAUDE.local.md
 
+# ── GPT ↔ Claude handoff workspace ───────────────────────────────────────────
+# ChatGPT Work edits the single local HANDOFF.md in this folder. The bridge
+# keeps it deliberately outside Git so evolving prompts and approvals never
+# become source-code dirt or leak into parallel Claude worktrees.
+GPT-HANDOFF/
+
 # ── Ops / test tooling (added R133) ──────────────────────────────────────────
 # Dev/test dependencies and their build artifacts. The IntMap app itself ships
 # NO node_modules — these exist only for CI and local testing.
