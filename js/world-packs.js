@@ -1860,9 +1860,16 @@ window.IntMapModules.worldPacks=function(HOST){
          province (those two ARE province-level bulletins: 「江西省气象台发布大风黄色预警信号」).
          ⚠ The two files are fetched ONCE, and only when this layer is on and China has something in
          force — 4.3 MB from a CDN, against a country drawn at the wrong unit. */
-      const CN_GEO='https://geo.datav.aliyun.com/areas_v3/bound/100000_full_city.json';
-      const CN_GEO_PROV='https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json';
-      function cnGeo(){ return SUBDIV.cn||(SUBDIV.cn=Promise.all([fetchJSON(CN_GEO),fetchJSON(CN_GEO_PROV)])
+      /* ⚠⚠⚠ (#R277 追記) THROUGH THE RELAY, BECAUSE THE DEPLOYED ORIGIN IS BLOCKED.
+         DataV.GeoAtlas is CORS-open and it is ALSO hotlink-guarded: MEASURED the same second on the
+         same url, `Referer: http://127.0.0.1:4277/` answers **200 / 569 KB** and
+         `Referer: https://rwmqx7dwb5-arch.github.io/IntMap/` answers **403**. The local preview
+         could not see it, so China drew 223 units on 127.0.0.1 and **nothing at all** in production
+         — `PLACED.CHN` came back `[0, 1217]`. The relay sends no Referer.
+         ⚠ The direct url stays as the fallback for a build with no relay configured (a localhost
+         preview, where it works), and the relay is preferred whenever there is one. */
+      const cnUrl=(n)=>relay('cngeo='+encodeURIComponent(n))||('https://geo.datav.aliyun.com/areas_v3/bound/'+n+'.json');
+      function cnGeo(){ return SUBDIV.cn||(SUBDIV.cn=Promise.all([fetchJSON(cnUrl('100000_full_city')),fetchJSON(cnUrl('100000_full'))])
         .then(([city,prov])=>{ const by=Object.create(null);
           (city.features||[]).forEach(f=>{ const q=f.properties||{}; const c=String(q.adcode||'');
             if(c&&f.geometry) by[c]={name:String(q.name||c),level:String(q.level||''),geometry:f.geometry}; });

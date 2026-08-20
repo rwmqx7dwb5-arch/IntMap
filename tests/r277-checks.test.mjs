@@ -279,3 +279,20 @@ test('R277 ⑪ hail, 山洪, a bare “Fire” and the awareness_type codes all 
   const tsu = blk.slice(blk.indexOf("['tsunami',"), blk.indexOf("['volcano',"));
   assert.ok(!/awareness_/.test(tsu), 'no awareness_type code may sit on the tsunami pattern');
 });
+
+/* ── ⑫ 追記2: CORS-open is not the same as readable FROM THE DEPLOYED ORIGIN ────────────────
+   MEASURED the same second on the same url: `Referer: http://127.0.0.1:4277/` → 200 / 569 KB;
+   `Referer: https://rwmqx7dwb5-arch.github.io/IntMap/` → **403**. DataV.GeoAtlas sends
+   `Access-Control-Allow-Origin: *` AND guards against hotlinking, so China drew 223 units in the
+   local preview and `PLACED.CHN = [0, 1217]` in production. A relay sends no Referer. */
+test('R277 ⑫ the Chinese boundaries are read through the relay, not from the page', () => {
+  const s = WP();
+  assert.match(s, /const cnUrl=\(n\)=>relay\('cngeo='/, 'the relay is the route');
+  assert.match(s, /Promise\.all\(\[fetchJSON\(cnUrl\('100000_full_city'\)\),fetchJSON\(cnUrl\('100000_full'\)\)\]/,
+    '…for both files');
+  const r = RELAY();
+  assert.match(r, /const cngeo = \(q\.get\("cngeo"\) \|\| ""\)\.trim\(\);/, 'the relay answers it');
+  assert.match(r, /\^\[0-9\]\{6\}\(_full\(_city\)\?\)\?\$/, '…and the name is a shape, not a path');
+  const blk = r.slice(r.indexOf('const cngeo ='), r.indexOf('`?ph=1`') > 0 ? r.indexOf('`?ph=1`') : r.length);
+  assert.match(blk, /max-age=86400/, 'a boundary set is not this minute’s weather');
+});
