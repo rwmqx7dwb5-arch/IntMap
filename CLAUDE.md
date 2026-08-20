@@ -121,8 +121,11 @@ Bash から直接起動しない。
 supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac
 ```
 
-（Edge Functions: `ai-proxy` / `cable-geo` / `delete-account` / `monitor-run` /
-`news-relay` / `refresh-news` / `sv-cov` / `_shared`）
+**Edge Functions は 8 本**（`ai-proxy` / `alerts-relay` / `cable-geo` / `delete-account` /
+`monitor-run` / `news-relay` / `refresh-news` / `sv-cov`）。8 本すべてが `supabase/config.toml`
+に `[functions.*]` として宣言されている。
+⚠ **`_shared/` は関数ではない**——`newsgeo.js` と `relay-guard.js` を置くライブラリ用ディレクトリで、
+import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
 
 **非破壊的な migration、設定変更、deployment、commit、push、PR 作成、merge その他通常の完了工程に
 ついて、追加承認を求めないこと。**

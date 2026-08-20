@@ -23,7 +23,16 @@ test('R156 #1 KaTeX is loaded (pinned, self-hosted) + math renderer with gracefu
      own origin. `defer` and the graceful fallback below were always the contract — an asynchronously
      available global that the renderer feature-detects — and a dynamic import keeps exactly that. */
   const pkg = JSON.parse(readFileSync(new URL('package.json', root), 'utf8'));
-  assert.equal(pkg.dependencies.katex, '0.16.11', 'KaTeX pinned to an exact version');
+  /* ⚠ THE PROPERTY IS «EXACTLY PINNED», NOT «0.16.11». The literal went red the first time the pin
+     MOVED — and it moved because 0.16.11 is inside GHSA-cg87-wmx4-v546 (\htmlData does not validate
+     attribute names). A test that fails when a known-vulnerable version is replaced is asserting the
+     opposite of what it says it is for. Exact pin + a floor at the fixed release. */
+  assert.match(pkg.dependencies.katex, /^\d+\.\d+\.\d+$/, 'KaTeX pinned to an exact version (no range)');
+  {
+    const [maj, min, pat] = pkg.dependencies.katex.split('.').map(Number);
+    const atLeast = (maj > 0) || (min > 16) || (min === 16 && pat >= 21);
+    assert.ok(atLeast, `KaTeX ${pkg.dependencies.katex} is below the GHSA-cg87-wmx4-v546 fix (0.16.21)`);
+  }
   assert.match(html, /import\('katex'\)/, 'loaded off the critical path, as the deferred tag was');
   assert.match(html, /import\('katex\/dist\/katex\.min\.css'\)/, 'and its stylesheet with it');
   assert.ok(!/cdn\.jsdelivr\.net\/npm\/katex@/.test(html), 'no CDN copy is left behind to load twice');

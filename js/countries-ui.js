@@ -455,12 +455,41 @@ window.IntMapModules.countriesUi=function(HOST){
          which is invisible to the positional audit (scripts/i18n-positional-audit.mjs reads `L(…)`
          call sites, and these are `t(…)` with a ternary in front — #R231's blind spot, one level
          further in). Folded back into the call so every language is one argument in one place. */
-      +`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter((window._cpCurrent||{}).code)" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${window.IntMapLang.t(HOST.lang,'Isolate','この国だけ','Nur dieses Land','Только эту страну','Solo este país')}</button>`
-      +`<button onclick="window.IntMapTimeSeries&&window.IntMapTimeSeries.open()" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${window.IntMapLang.t(HOST.lang,'Time-series','時系列グラフ','Zeitverlauf','Динамика','Series temporales')}</button>`
-      +`<button onclick="try{var _n=decodeURIComponent('${_aiName}'),_l=(window._cpCurrent&&window._cpCurrent._ll)||null;if(window.IntMapAtlas){window.IntMapAtlas.ensure().then(function(C){try{if(C&&C.brief){C.brief(_n,_l);}else if(window.IntMapAIResearch){window.IntMapAIResearch.open(_n,_l);}}catch(e2){}});}else if(window.IntMapConsole&&window.IntMapConsole.brief){window.IntMapConsole.brief(_n,_l);}else if(window.IntMapAIResearch){window.IntMapAIResearch.open(_n,_l);}}catch(e){}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_aiSvg}</span>${window.IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Bericht','ИИ-справка','Informe de IA')}</button>`
-      +`<button onclick="try{window.IntMapStatsCompare&&window.IntMapStatsCompare.open()}catch(e){}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_cmpSvg}</span>${window.IntMapLang.t(HOST.lang,'Compare','国を比較','Vergleichen','Сравнить','Comparar')}</button>`
+      +`<button data-cpact="isolate" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${window.IntMapLang.t(HOST.lang,'Isolate','この国だけ','Nur dieses Land','Только эту страну','Solo este país')}</button>`
+      +`<button data-cpact="timeseries" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${window.IntMapLang.t(HOST.lang,'Time-series','時系列グラフ','Zeitverlauf','Динамика','Series temporales')}</button>`
+      +`<button data-cpact="brief" data-cpname="${_aiName}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_aiSvg}</span>${window.IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Bericht','ИИ-справка','Informe de IA')}</button>`
+      +`<button data-cpact="compare" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_cmpSvg}</span>${window.IntMapLang.t(HOST.lang,'Compare','国を比較','Vergleichen','Сравнить','Comparar')}</button>`
       +`</div>`;
     if(s && s.latlng) window._cpCurrent._ll={lng:s.latlng[1],lat:s.latlng[0]};
+    /* ⚠ SEC: A VALUE INTERPOLATED INTO AN EVENT ATTRIBUTE HAS BECOME JAVASCRIPT SOURCE.
+       Each attribute rewritten here carried a runtime value inside an `on…="…"` string, so the only thing
+       between that value and execution was the quoting around it. Some were safe by the column's type
+       (a bigint id) and one was not safe by anything (`dashboard_cards.layer_ref` is admin-editable
+       TEXT); the point is that the difference lived in a schema rather than in this file. The value now
+       travels as a data-attribute — a VALUE the whole way — and one delegated listener on the container
+       does the call. Behaviour is identical (same target, same function, same argument), and delegation
+       is what makes it survive the container being re-rendered, which is why the attributes existed. */
+    if(body && !body.__imCpWired){ body.__imCpWired=1;
+      body.addEventListener('click',(ev)=>{ const b=ev.target.closest('[data-cpact]'); if(!b||!body.contains(b)) return;
+        const a=b.getAttribute('data-cpact');
+        try{
+          if(a==='isolate'){ if(window.IntMapIsolate) window.IntMapIsolate.enter((window._cpCurrent||{}).code); return; }
+          if(a==='timeseries'){ if(window.IntMapTimeSeries) window.IntMapTimeSeries.open(); return; }
+          if(a==='compare'){ if(window.IntMapStatsCompare) window.IntMapStatsCompare.open(); return; }
+          if(a==='brief'){
+            /* the SAME ladder the attribute used to spell out, verbatim: Atlas if it is (or can be)
+               loaded, then the console's own brief, then the research panel. `_aiName` was already
+               encodeURIComponent'd — it is read back out of the attribute and decoded exactly as before. */
+            const _n=decodeURIComponent(b.getAttribute('data-cpname')||'');
+            const _l=(window._cpCurrent&&window._cpCurrent._ll)||null;
+            if(window.IntMapAtlas){ window.IntMapAtlas.ensure().then(function(C){ try{
+              if(C&&C.brief){ C.brief(_n,_l); } else if(window.IntMapAIResearch){ window.IntMapAIResearch.open(_n,_l); } }catch(e2){} }); }
+            else if(window.IntMapConsole&&window.IntMapConsole.brief){ window.IntMapConsole.brief(_n,_l); }
+            else if(window.IntMapAIResearch){ window.IntMapAIResearch.open(_n,_l); }
+          }
+        }catch(e){}
+      });
+    }
     body.innerHTML=topBtns()+renderCountryDetailBody(s);
     _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name);
     if(s && s.latlng){ try{ _CM().flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0}); }catch(_){} }

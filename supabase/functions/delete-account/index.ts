@@ -19,6 +19,7 @@
 //    • Owned rows are deleted EXPLICITLY across every user-owned table (defense in
 //      depth: it does not rely on the auth.users FK cascade config, which has
 //      historically drifted in prod), THEN the auth user is removed.
+//    • ⚠ AND "THEN" IS NOW A CONDITION RATHER THAN AN ORDER. See the note above the handler.
 //    • No secrets, JWTs, emails or ids are logged.
 //
 //  Deploy:  supabase functions deploy delete-account --project-ref vpekfwdpurzejrrmacac
@@ -27,7 +28,7 @@
 //           SUPABASE_SERVICE_ROLE_KEY.
 // ============================================================================
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "@supabase/supabase-js";   // pinned in this function's deno.json
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -37,14 +38,32 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-// Tables that carry the user's OWN data, keyed by user_id (deleted where user_id = me).
-// Order: children before parents so an explicit delete never trips a RESTRICT FK.
-const OWNED_BY_USER_ID = [
-  "monitor_seen_items", "monitor_evidence", "monitor_reports", "monitor_runs", "area_monitors",
-  "community_comment_votes", "community_votes", "community_reports", "community_comments", "community_posts",
-  "favorites", "user_prefs", "ai_usage",
-  "donations", "feedback", "bug_reports",
-];
+/* ══ ⚠⚠ SIXTEEN STATEMENTS, SIXTEEN TRANSACTIONS, AND THE AUTH USER WENT EITHER WAY ═══════════════
+   What used to be here was a hard-coded array of sixteen table names and this loop:
+
+       for (const table of OWNED_BY_USER_ID) {
+         const { error } = await db.from(table).delete().eq("user_id", uid);
+         if (error) failed.push(table);       // "table/column may not exist on this instance -> skip"
+       }
+       const { error: delErr } = await db.auth.admin.deleteUser(uid);   // ← runs regardless
+
+   Every DELETE was its own transaction over PostgREST, a failure was recorded and then ignored, and
+   the auth user was removed even when rows had NOT been. That is fail-OPEN in the worst possible
+   direction: once auth.users is gone the person cannot sign in to ask again, and the rows that
+   survived are exactly the ones nobody can now attribute or purge. It also could not have covered a
+   table nobody remembered to add — `monitor_seen_items` was appended by hand in #R155, and the next
+   table would have been missed in silence.
+
+   ⚠ AND THE CASCADE IS NOT A SUBSTITUTE. Audited on this schema: donations, feedback and bug_reports
+   are `ON DELETE SET NULL`, so deleting auth.users LEAVES the user's own submitted text behind with
+   a NULL owner. Removing those rows is precisely what the explicit pass is for.
+
+   It is one RPC now — public.delete_account_data(uuid), added in
+   supabase/migrations/20260820120000_delete_account_txn.sql. That function DISCOVERS the owned
+   tables from the FK catalog (so a table added later is covered the moment its foreign key exists),
+   deletes them in ONE transaction, re-counts, and RAISES if anything survives — which rolls the
+   whole thing back. So this file's job is reduced to the only decision that was ever load-bearing:
+   the auth user is deleted if, and only if, the data delete reported success. */
 
 Deno.serve(async (req) => {
   try {
@@ -72,16 +91,19 @@ Deno.serve(async (req) => {
     const uid = user.id;
     const db = createClient(url, serviceKey, { auth: { persistSession: false } });
 
-    // 3) Purge owned rows EXPLICITLY (does not depend on the auth.users FK cascade).
-    const failed: string[] = [];
-    for (const table of OWNED_BY_USER_ID) {
-      const { error } = await db.from(table).delete().eq("user_id", uid);
-      if (error) failed.push(table);   // table/column may not exist on this instance → skip, still delete the user
+    // 3) Purge owned rows in ONE transaction. The RPC raises rather than half-succeeding, so an
+    //    error here means NOTHING was deleted — and the account is left intact to try again.
+    const { data: purge, error: purgeErr } = await db.rpc("delete_account_data", { p_user: uid });
+    const row = Array.isArray(purge) ? purge[0] : purge;
+    if (purgeErr || !row || row.ok !== true) {
+      /* ⚠ FAIL-CLOSED. The auth user is NOT touched. Logged as a category only — a Postgres error
+         message names the schema, the constraint and sometimes the row that tripped it. */
+      try { console.error("delete-account: data purge failed", String((purgeErr && purgeErr.code) || "no_ok_flag")); } catch (_) { /* */ }
+      return json({ error: "delete_failed", message: "Could not delete the account data. Nothing was removed — please try again or contact support." }, 500);
     }
-    // profiles is keyed by id (= the user id), not user_id.
-    try { await db.from("profiles").delete().eq("id", uid); } catch (_) { /* cascade will catch it */ }
 
-    // 4) Delete the auth user itself. This is the point of no return.
+    // 4) Delete the auth user itself. This is the point of no return, and it is now only reached
+    //    once every owned row is provably gone.
     const { error: delErr } = await db.auth.admin.deleteUser(uid);
     if (delErr) {
       // Do not leak internals; log a non-sensitive category only.
@@ -89,7 +111,7 @@ Deno.serve(async (req) => {
       return json({ error: "delete_failed", message: "Could not fully delete the account. Please contact support." }, 500);
     }
 
-    return json({ ok: true, deleted: true, partial_tables: failed.length ? failed.length : 0 });
+    return json({ ok: true, deleted: true, rows: Number(row.rows || 0) });
   } catch (topErr) {
     try { console.error("delete-account UNCAUGHT", String((topErr as Error)?.message || topErr).slice(0, 200)); } catch (_) { /* */ }
     return json({ error: "internal_error", message: "Account deletion hit an unexpected error." }, 500);

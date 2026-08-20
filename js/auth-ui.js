@@ -438,10 +438,33 @@ window.IntMapModules.authUi=function(HOST){
        SYNCHRONOUSLY everywhere afterward — even before currentUser repopulates on the next load. This is why
        the Settings usage graph "wasn't reflecting unlimited": aiRenderSettings could run before the async
        email arrived. Persist + re-render now. */
-    try{ if(/2ppzc4kk6r@privaterelay\.appleid\.com/i.test(HOST.user.email||'')) localStorage.setItem('intmap_dev','1'); }catch(_){}
+    /* ⚠ THE ADDRESS ITSELF IS NOT IN THIS FILE ANY MORE. This test asks «is the signed-in address the
+       owner's?», and it used to answer by carrying the owner's address in a public repository. A
+       SHA-256 comparison answers the same question and publishes nothing; SubtleCrypto is async, so
+       the settings graph is re-rendered when it resolves (the #R35 reason this line exists at all).
+       ⚠ AND IT GRANTS NOTHING. `intmap_dev` only changes what the Settings usage graph SHOWS and
+       which client-side gate is skipped — the real quota decision is ai-proxy's, and that one is keyed
+       on the immutable auth user id through the DEV_USER_IDS secret. Faking this flag in localStorage
+       has always been possible and has never bought an AI call. */
+    try{ _markDevIfOwner(HOST.user.email||''); }catch(_){}
     try{ window.aiRenderSettings&&window.aiRenderSettings(); }catch(_){}
     try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
     try{ window._syncPrefsDown&&window._syncPrefsDown(); }catch(_){}   /* (#R20) pull the account's saved settings/presets/widgets */
+  }
+
+  /* SHA-256 of the owner's account address. A hash, so the address is not published; a full 256-bit
+     digest, so it cannot be matched by accident. Kept beside its only caller. */
+  const _OWNER_EMAIL_SHA256='1ee3ea177de1f01d0e475beebf5213000bcb781499ca17f6c6941645219bdd68';
+  async function _markDevIfOwner(email){
+    try{
+      const e=String(email||'').trim().toLowerCase(); if(!e) return;
+      const c=(typeof crypto!=='undefined')&&crypto.subtle; if(!c) return;   /* insecure context → no flag, no error */
+      const buf=await c.digest('SHA-256', new TextEncoder().encode(e));
+      const hex=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+      if(hex!==_OWNER_EMAIL_SHA256) return;
+      localStorage.setItem('intmap_dev','1');
+      try{ window.aiRenderSettings&&window.aiRenderSettings(); }catch(_){}
+    }catch(_){}
   }
 
   /* ---------- FAVORITES (★ saved articles) ---------- */

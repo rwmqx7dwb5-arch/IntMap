@@ -2612,6 +2612,20 @@ js/
                                     **`_hiDPITiles` の1つだけ**で `IM_HOST.hiDPITiles` 経由（継承させると
                                     @2x が無言で止まる）。⚠ 呼び出し位置は動かせない——このファクトリが立てる
                                     `window.__imSatProto` を下流のスタイル定義が読む。22KB
+  admin-literal.js                  (#R272) **`admin.html` 専用のデータリテラル・パーサ**（`window.IntMapAdminLiteral`）。
+                                    取込ボタンが `eval` で読んでいた「元データ」を、**走らせずに読む**ための
+                                    もの。⚠ アプリ本体はこれを import しない——`admin.html` が古典的な
+                                    `<script src>` で読む1本きり（だから `vite.config.js` の `STATIC_ASSETS`
+                                    に載っている）。文法はオブジェクト・配列・文字列（`'` `"` 両方とテンプレート
+                                    リテラル）・数値・`true/false/null/undefined/NaN/Infinity`・コメント・
+                                    末尾カンマ **だけ**。識別子・呼び出し・演算子・スプレッド・テンプレート置換・
+                                    getter・配列の穴は `SyntaxError`。⚠ **JSON.parse では読めない**——入力は
+                                    JS ソースで、素の識別子キーと単引用符を持つ（`{ name:{en:'…'} }`）。
+                                    JSON より広く、JS より狭く、「データ」で止まる。`__proto__` はキーとして
+                                    拒否（オブジェクトリテラルの `__proto__:` はキー追加ではなく
+                                    **プロトタイプの差し替え**）。入力8 MB・深さ32・値50万の上限つき。
+                                    ユニットテストは `tests/security-logic.mjs`（Node から import すると
+                                    同じグローバルを立てる）。
   ai-core.js                        (#R169) Atlas AI のトランスポート層（`aiCallServerFull`＝ai-proxy 呼び出し・
                                     プロバイダエラー分類・1日上限とその表示・AI設定パネル・`askAI`/`askAIJSON`）。24KB
   place-labels.js                   (#R169) 地名/海洋ラベル（`ensurePlaceLabels`＝`ofm-*` シンボル群の生成・
@@ -3520,7 +3534,14 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
 | `bug_reports` | バグ報告（診断情報JSON付き。`supabase_bug_reports.sql`。anon が insert 可・admin が閲覧） |
 | `donations` | 寄付記録 |
 
-### 6.2 Edge Functions
+### 6.2 Edge Functions — **8本**（`_shared/` は関数ではない）
+> ⚠ この一覧は 2026-08-20 に本番（`supabase functions list`）と `supabase/config.toml` の両方に
+> 突き合わせて確認した。**8本すべてが `config.toml` に `[functions.*]` として宣言されている**
+> ——以前は5本だけで、`alerts-relay` / `cable-geo` / `news-relay` の deploy フラグは各ファイルの
+> ヘッダコメントにしか書かれていなかった。**コメントに書いた deploy フラグは設定ではない。**
+> `supabase/functions/_shared/` は `newsgeo.js` と `relay-guard.js` を置くライブラリ用
+> ディレクトリで、import した関数の中に CLI がバンドルする。`[functions._shared]` は書かない。
+
 - `ai-proxy` … アカウント制AI（要 `verify_jwt` 可、内部でも検証）。
 - `refresh-news` … ニュース取得＋AI地点解析＋書き込み（`--no-verify-jwt` で公開、`REFRESH_SECRET` で保護推奨）。
 - `monitor-run` … Area Monitors 定期実行（`--no-verify-jwt`＋自前fail-closed認証、`MONITOR_SECRET`）。
@@ -3544,6 +3565,17 @@ acorn で対象文の範囲（**直前のコメント塊を含む**）を確定 
   ——語を変えず、小さいという理由で落とさない。キャッシュは **60秒**（警報は時計の付いた安全上の主張）。
   ⚠ カナダ ECCC（`api.weather.gc.ca`）は **ACAO を返すので relay を通さない**——要らない relay は
   「落ちうるものが1つ増える」だけ。
+- `cable-geo` … (#R190) TeleGeography 海底ケーブル GeoJSON（2URL固定 allowlist）の **ACAO 付与中継**。
+- `news-relay` … (#R216) Google News RSS の **ACAO 付与中継**。`news.google.com` の
+  `/rss/search` と `/rss/headlines/section/topic/<TOPIC>` の**2エンドポイントだけ**（以前は
+  `/rss/` 配下すべてを許可しており、記事リダイレクト `/rss/articles/CBMi…` まで中継対象だった）。
+- ⚠ **4本の無認証中継（`alerts-relay` / `cable-geo` / `news-relay` / `sv-cov`）は
+  `_shared/relay-guard.js` を共有する。** 4本がばらばらに劣化しないための1か所：URL allowlist、
+  **GET限定**、**期限**（AbortSignal.timeout）、**バイト上限**（`content-length` と
+  ストリーム読み出しの両方——上流は length を返さないことがある）、**Content-Type** 判定、
+  そして**外向きエラーはコード1語**（上流の例外文言・スタックは返さない＝CodeQL
+  `js/stack-trace-exposure`）。⚠ **公開レイヤーなのでログイン必須にはしない**（署名前の読者に
+  地図を出せなくなる）。
 - `delete-account` … (#R155) 呼出ユーザ自身のアカウント＋全データを**ハード削除**（`verify_jwt` on＋内部でも検証・`confirm:"DELETE"` 必須）。全所有行を明示purge後に `auth.admin.deleteUser`（FKカスケード設定に非依存）。秘密なし（注入される service_role のみ）。
 
 ### 6.3 SQL
@@ -4929,12 +4961,37 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 
 ### 17.3 CSP・ブラウザ・供給網
 - GitHub Pagesは応答ヘッダ設定不可＋インライン多用＋外部60+ホスト接続のため、nonce/connect-src許可リストは
-  非現実的。採用＝`<meta>` CSP（`object-src 'none'`/`base-uri 'self'`/`frame-src 'self' https: blob:`/
-  `worker-src 'self' blob:`/script-src許可リスト＋インライン許可）でアプリを壊さず注入`<script src=evil>`を
-  遮断。frame-ancestors/XFO/HSTS/Permissions-Policyはヘッダ専用＝不可→文書化（`§6`）。全`target=_blank`に
-  `rel=noopener`。DB側＝`feedback.rating` CHECK（管理画面DoS対策・migration `20260720120000`）。
-- CI＝**CodeQL**（`security.yml`）＋`check:static`に**第三者Action SHA固定**検査＋`tests/security-logic.mjs`
-  （Edge Function認証不変条件）＋pgTAP `03_security_test.sql`。`npm test`で全実行。
+  非現実的。採用＝`<meta>` CSP。⚠ **以前は5ディレクティブしか書いておらず `default-src` が無かった**——
+  書かれておらず fallback も無いディレクティブは「緩い」のではなく**存在しない**（`connect-src` /
+  `img-src` / `style-src` / `font-src` / `media-src` / `form-action` / `manifest-src` が
+  無制限で、それが判断の結果なのか書き忘れなのかを policy 自身が言えない状態だった）。現在は
+  `default-src 'self'` を置いた上で **14 ディレクティブを明記**：`base-uri 'self'` /
+  `object-src 'none'` / `form-action 'self'` / `manifest-src 'self'` /
+  `frame-src 'self' https: blob:` / `child-src`・`worker-src 'self' blob:` /
+  `connect-src 'self' https: wss: data: blob:` / `img-src`・`media-src 'self' https: data: blob:` /
+  `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com` /
+  `font-src 'self' data: https://fonts.gstatic.com` / `script-src`（**ホスト一覧**）。
+  `style-src`・`font-src` が正確なホスト一覧なのは、外部スタイルシートも外部フォントホストも
+  Google Fonts しか存在しないから。`connect-src` を `https: wss:` のままにしたのは、60超のデータ
+  ホストを列挙した一覧は**レイヤーが黙って消える形で腐る**から。`script-src` からは
+  `https://cdn.jsdelivr.net` を**削除**した——実測、jsDelivr はこのツリーでは `fetch()` 先にしか
+  使われておらず、`<script>` を読み込んでいた唯一のページ `admin.html` は SDK を同梱にした。
+  ⚠ `frame-ancestors` は `<meta>` では**無視される**ので、書いて効かない状態にせず**書かない**。
+  frame-ancestors/XFO/HSTS/Permissions-Policyはヘッダ専用＝不可→文書化（`§6`）。全`target=_blank`に
+  `rel=noopener`（例外は同一オリジンの sources/science ページ3本で、`rel="opener"` は
+  「元のタブへ戻る」機能のために意図的）。DB側＝`feedback.rating` CHECK（管理画面DoS対策・migration
+  `20260720120000`）。
+- **本番ソースマップは公開しない。** `sourcemap: true` が `dist/assets/*.map` を deploy に載せて
+  おり、実測で `assets/main-VdS_tG39.js.map` が **200・8,810,729 バイト**——全ソースの完全な写し
+  （コメント込み）が誰でも読める状態だった。`IM_SOURCEMAP=1` のときだけ出力する。
+- **Service Worker のホスト判定**＝完全一致またはドット境界のサブドメイン。⚠ 以前は
+  `h.endsWith(t)`（ドット無し）で `notapi.mapbox.com` が `api.mapbox.com` に一致し、さらに
+  **ホストを一切見ないパス一致**（`/terrarium/` を含めばどのオリジンでも cache-first で保存・配信）
+  があった。パス規則は**ホスト限定**になり、prefetch の `postMessage` 口には**送信元検証・同じ
+  allowlist・件数/URL長/応答サイズ/容量上限・`credentials:'omit'`** が付いた。
+- CI＝**CodeQL**（`security.yml`）＋`check:static` の **Action SHA固定検査（全リモートAction・error）**
+  ＋`tests/security-logic.mjs`（Edge Function／SW／admin／CSP の不変条件＋パーサのユニットテスト）
+  ＋pgTAP `03_security_test.sql` / `05_r155_security_test.sql`。`npm test`で全実行。
 
 ### 17.4 R155 — 統合セキュリティ大改修（本番監査で発見した2重大脆弱性の修正・本番反映済）
 - **本番はマイグレーションファイルと乖離しうる**という前提で `supabase db query --linked` により**本番実状**（`pg_policies`/`role_table_grants`/`pg_proc`）を監査。**profiles上に2件のライブ重大脆弱性**を発見・同日修正・本番検証：(1) `SELECT … USING(true)` ポリシ2本で全ユーザの `email`/`is_admin`/`plan` が**世界公開**→DROP＋`profiles_public` ビュー化、(2) table-level UPDATE grant＋列無制限UPDATEポリシで `is_pro`/`plan` **自己昇格**（既存 `guard_admin_flag` は `is_admin` のみ防御）→grant REVOKE＋**`tg_profiles_guard_privcols`**（grant非依存BEFORE UPDATEトリガ）。
@@ -4942,6 +4999,44 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 - **認証ライフサイクル**（`docs/SECURITY-ARCHITECTURE.md §11`）：`delete-account` Edge Function（真の削除）、パスキー(WebAuthn `experimental.passkey`)、パスワード再設定/変更・メール変更・全端末ログアウト、弱い/漏えいPW拒否（強度＋HIBP k-匿名）、列挙防止、トークンのGA流出防止。
 - **admin.html隔離**：公開Sign Up撤去・厳格CSP（`connect-src` self＋`*.supabase.co`）・esc()強化＋`safeUrl()`・破壊操作前の再認証。回帰＝`tests/r155-checks.test.mjs`（実挙動XSS含む）。
 - **手動作業（ダッシュボード）**：パスキーRP設定・leaked-password protection・Redirect URL・SMTP/CAPTCHA(任意) は `docs/SECURITY-ARCHITECTURE.md §9`。
+
+### 17.5 R272 — 供給網・中継・削除・SW・可観測性（本番読み取り監査つき）
+
+**確認日 2026-08-20 / 確認SHA `acc55b1`**（本番 Supabase `vpekfwdpurzejrrmacac`＝Postgres **17.6** の
+読み取り監査、本番 HTTP 応答ヘッダ、GitHub のリポジトリ設定を含む）。
+
+- **依存**：`vite 6.3.5→6.4.3`・`js-yaml ^4.1.0→4.3.1`・`katex 0.16.11→0.16.21`、および
+  `overrides` で `dompurify 3.4.13`（cesium 経由）・`nanoid 3.3.18`（vite→postcss 経由）。
+  `npm audit` は **5件（high 3・moderate 2）→ 0件**。`npm audit fix` は使わず、各パッケージの
+  「既知脆弱性の無い最小の互換版」を明示的に固定して lockfile を更新した。
+- **admin.html**：⑴ SDK が **jsDelivr の浮動タグ `@supabase/supabase-js@2` を `document.write` で
+  注入**していた（先に試すローカルファイルはこのリポジトリに一度も存在しないので、**毎回**この経路
+  だった）→ package.json が固定している版を `dist/vendor/supabase-js.js` へ同梱。⑵ スタータ
+  データセット取込の `eval` → `js/admin-literal.js` の**パーサ**（オブジェクト／配列リテラル文法
+  だけを読み、それ以外は `SyntaxError`。JSON.parse では読めない——入力は JS ソースで、素の識別子
+  キーと単引用符を含む）。⑶ その結果 CSP から `'unsafe-eval'` と CDN ホストが消えた。
+- **CSP**（§17.3）・**本番ソースマップ非公開**（実測 8,810,729 バイトが 200 で読めた）・
+  **Clarity は URL に認証情報がある間タグを挿さない**（GA は #R155 から scrub 済みだった）。
+- **Service Worker**：ホスト判定をドット境界へ、**ホストを見ないパス一致**を廃止、
+  `postMessage` プリフェッチに送信元検証・同一 allowlist・件数/URL長/応答サイズ/容量上限・
+  `credentials:'omit'`。⚠ allowlist 外の URL は**page 側へ差し戻す**（`prefetch-declined`）ので、
+  カスタム XYZ プロバイダの温めは失われない。
+- **4本の無認証中継**は `_shared/relay-guard.js` を共有（§6.2）。`alerts-relay` の `?ma=` は
+  **重複排除＋6件上限**（クライアントの `MA_PER_TICK` と同じ数）。
+- **ai-proxy**：本体サイズ・画像の復号後バイト数（各/合計）・base64/MIME・schema のサイズ/深さ/
+  キー数・task allowlist。**上流本文（`bodySnippet`）と例外文言を応答/ログから除去**。
+  開発者特権は**メール→`DEV_USER_IDS`（UUID）**へ。⚠ 実測、そのメールは本番 56 アカウントの
+  **0件**に一致していた＝この定数は一度も発動していない。
+- **delete-account**：`public.delete_account_data(uuid)` の**1トランザクション**化。所有テーブルは
+  FK から**発見**し（＋FK が欠けている `user_id uuid` 列も——実測、本番の `bug_reports` がその状態）、
+  削除後に**数え直して**残っていれば raise＝**fail-closed**。Auth ユーザーの削除はその後だけ。
+- **GitHub Actions**：リモート Action 全 35 箇所を**検証済み完全長 SHA**へ固定し、`check:static` の
+  固定検査を **warning→error** かつ `actions/*`・`github/*` の除外を撤廃（＝これまで検査対象が
+  空だった）。`rollback.yml` は対象 ref を **Vite ビルドして `dist` を配信**し、旧形式（#R175 以前）
+  は検証済み分岐、どちらでもない木は**名指しで拒否**。
+- **本番監査で見つけて閉じなかったもの**は `docs/SECURITY-ARCHITECTURE.md §8`（`mgmt_*` 9テーブルの
+  anon 権限・`public` の既定権限・`config.toml` の Postgres 15 表記・passkeys 有効・git 履歴中の
+  メールアドレス）。**判断により変更していない**——どれも IntMap 外の何かを壊しうる。
 
 ## 18. 地域監視基盤 (Area Monitors) — R141 / R144
 

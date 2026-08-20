@@ -32,7 +32,7 @@
 //  (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
 // ============================================================================
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "@supabase/supabase-js";   // pinned in this function's deno.json
 import {
   normalizeNewsRow, dedupeEvidence, pointInMonitorArea, bboxOfGeometry, validGeometry,
   buildNewsSnapshot, clusterPoints, computeChangeScore, severityFromScore,

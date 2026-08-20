@@ -36,7 +36,7 @@
 //  analyzed_by column) + the pg_cron schedule.
 // ============================================================================
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "@supabase/supabase-js";   // pinned in this function's deno.json
 // (#R161) The DETERMINISTIC (non-AI) locator, byte-identical to the browser's js/newsgeo.js
 // (mirrored by scripts/sync-newsgeo.mjs, CI-enforced). Importing it for its side effect sets
 // globalThis.IntMapNewsGeo. It replaces the old bag-of-words dictionary as the non-AI path, so a

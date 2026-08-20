@@ -267,7 +267,11 @@ test('R175 ③: the pinned versions did not drift when they moved to npm', () =>
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
   assert.equal(pkg.dependencies['maplibre-gl'], '5.24.0', 'pinned EXACTLY since #R158 — camera-API behaviour depends on it');
   assert.equal(pkg.dependencies['maplibre-contour'], '0.1.0');
-  assert.equal(pkg.dependencies['katex'], '0.16.11');
+  /* ⚠ EXACTLY PINNED, not a particular number — see the same note in tests/r156-checks. Both KaTeX
+     and Vite moved this round to leave a published advisory behind; «did not drift» has always meant
+     «cannot float», which is what an exact pin says and what a hard-coded version cannot check. */
+  assert.match(pkg.dependencies['katex'], /^\d+\.\d+\.\d+$/, 'katex is pinned exactly');
+  assert.match(pkg.devDependencies['vite'], /^\d+\.\d+\.\d+$/, 'vite is pinned exactly');
   assert.equal(pkg.dependencies['html2canvas'], '1.4.1');
   assert.equal(pkg.scripts.build, 'vite build');
   assert.match(pkg.scripts.serve, /npm run build && node scripts\/serve\.mjs --root dist/, '`npm run serve` still means "the real site" — it just builds first');

@@ -76,7 +76,7 @@
 //  failing at "low"), extraction tasks stay "low". Web calls get a 90s leash.
 // ============================================================================
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "@supabase/supabase-js";   // pinned in this function's deno.json
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -101,6 +101,60 @@ const FALLBACK_MODEL = "gpt-5.6-luna";
 
 const MAX_PROMPT = 24_000;     // hard caps so a single call can't be abused
 const MAX_IMAGES = 4;
+
+/* ══ ⚠⚠ THE REQUEST ITSELF HAD NO SIZE ═══════════════════════════════════════════════════════════
+   MAX_PROMPT and MAX_IMAGES were applied AFTER `await req.json()`, i.e. after the whole body had
+   already been read into the isolate and parsed. `{"images":[<400 MB of base64>]}` was therefore
+   accepted, buffered and parsed in full before the code that limits it to four ever ran — and the
+   caller only needs to be logged in, because the quota is consumed a step earlier. Every bound below
+   is measured against what the CLIENT actually sends, so none of them can be reached by normal use:
+     · js/atlas-console.js compresses each picked image with compressImage(f, 2000, 0.9) — a 2000 px
+       JPEG at q=0.9, i.e. ~0.5-2 MB, base64'd to ~0.7-2.7 MB — and slices the list to 4.
+     · the prompt and system strings are already clamped to MAX_PROMPT (24 kB) each.
+   So the realistic worst case is ~11 MB of body; the ceiling is 20 MB, and a request over it is
+   refused before it is read rather than after it is parsed. */
+const MAX_BODY_BYTES = 20 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;        // ONE decoded image (2000 px q0.9 JPEG is well under)
+const MAX_IMAGES_BYTES = 12 * 1024 * 1024;      // …and all of them together
+/* The four raster formats the providers accept. The old regex was `image/[a-zA-Z0-9.+-]+`, which also
+   said yes to image/svg+xml — a document format with script in it — and to any string shaped like a
+   MIME type, for a value that is pasted straight into the provider request. */
+const IMAGE_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+/* ⚠ A TASK IS A KEY INTO FOUR CONFIGURATION TABLES, and it arrived as an arbitrary string:
+   `String(payload.task || "free_text").toLowerCase()`, then `TASK_MAX_OUTPUT[task] ?? FALLBACK`. So an
+   unknown task silently ran on fallback budgets, was echoed back in `meta.task`, and — because a
+   plain object was being indexed with caller-controlled text — `task: "__proto__"` or
+   `"constructor"` read an inherited value instead of a missing one. The set below is exactly the ten
+   tasks TASK_MAX_OUTPUT defines and the eight js/ actually sends; anything else is a 400. */
+const TASKS = new Set([
+  "atlas_plan", "map_report", "analysis", "free_text", "json_extract",
+  "brief", "geo_verify", "geo_resolve", "research_map", "vision_read",
+]);
+/* A caller-supplied responseSchema is forwarded to the provider verbatim, so it is an input too.
+   Nothing in js/ passes one today (only task === "map_report" gets a schema, and that one is this
+   file's own constant) — these are the bounds on a field that exists for future callers. */
+const MAX_SCHEMA_BYTES = 16 * 1024;
+const MAX_SCHEMA_DEPTH = 12;
+const MAX_SCHEMA_KEYS = 512;
+function schemaOk(v) {
+  let json = "";
+  try { json = JSON.stringify(v); } catch (_) { return false; }      // cyclic, or not serialisable
+  if (!json || json.length > MAX_SCHEMA_BYTES) return false;
+  let keys = 0;
+  const walk = (n: unknown, depth: number): boolean => {
+    if (depth > MAX_SCHEMA_DEPTH) return false;
+    if (Array.isArray(n)) return n.every((x) => walk(x, depth + 1));
+    if (n && typeof n === "object") {
+      for (const k of Object.keys(n as Record<string, unknown>)) {
+        if (++keys > MAX_SCHEMA_KEYS) return false;
+        if (k === "__proto__" || k === "constructor" || k === "prototype") return false;
+        if (!walk((n as Record<string, unknown>)[k], depth + 1)) return false;
+      }
+    }
+    return true;
+  };
+  return walk(v, 0);
+}
 
 // (#R113) Per-TASK output budgets (replaces the single MAX_TOKENS = 1600). A 20-item
 // map_report can't fit in 1600 tokens; a quick json_extract shouldn't be allowed 3000.
@@ -187,9 +241,23 @@ interface ImgPart { mime: string; b64: string; }
 // this turn, distinct from the articles IntMap gathered on the client. The old code threw these
 // away, so a correctly web-verified source could vanish from the UI.
 interface WebCitation { url: string; title: string; startIndex?: number; endIndex?: number; }
+/* Decoded length of a base64 string, without decoding it. */
+function b64Bytes(b64: string): number {
+  const pad = b64.endsWith("==") ? 2 : b64.endsWith("=") ? 1 : 0;
+  return Math.floor(b64.length / 4) * 3 - pad;
+}
 function parseDataUrl(d: string): ImgPart | null {
-  const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/.exec(d || "");
-  return m ? { mime: m[1], b64: m[2] } : null;
+  const m = /^data:(image\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/]+={0,2})$/.exec(d || "");
+  if (!m) return null;
+  const mime = m[1].toLowerCase(), b64 = m[2];
+  /* ⚠ ALL THREE CHECKS ARE ABOUT THE SAME THING: what goes into the provider request must be an
+     image, and it must be an image of a size somebody could actually have taken. The old regex
+     checked neither the format nor the length, and `.*` accepted any character at all after the
+     comma — including a second `data:` URL, or a megabyte of text that is not base64. */
+  if (!IMAGE_MIME.has(mime)) return null;
+  if (b64.length % 4 !== 0) return null;
+  if (b64Bytes(b64) > MAX_IMAGE_BYTES) return null;
+  return { mime, b64 };
 }
 
 // (#R113b) A hung/slow provider fetch must NOT run the isolate into the Edge-Function wall-clock limit (which
@@ -203,7 +271,10 @@ async function fetchWithTimeout(url: string, init: RequestInit, ms = PROVIDER_TI
     return await fetch(url, { ...init, signal: ctl.signal });
   } catch (e) {
     const aborted = (e as Error)?.name === "AbortError";
-    throw new ProviderError("provider_unavailable", aborted ? "The AI provider timed out." : ("Network error contacting the AI provider: " + String((e as Error)?.message || e)), 503, true, { timeout: aborted });
+    /* ⚠ NOT `+ e.message`. A transport failure's message names the host it was resolving, the TLS
+       state it got to and this file's own internals; the caller can act on «timed out» and «could not
+       be reached», and nothing more specific is theirs. */
+    throw new ProviderError("provider_unavailable", aborted ? "The AI provider timed out." : "Could not reach the AI provider.", 503, true, { timeout: aborted });
   } finally {
     clearTimeout(t);
   }
@@ -376,7 +447,14 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
       return await callOpenAI(FALLBACK_MODEL, key, prompt, system, imgs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, true);
     }
     const pe = classifyGemini(r.status, t, "", "");
-    pe.meta.bodySnippet = t.slice(0, 160);   // (#R116) surfaced in the server log for diagnosis (no secrets in an error body)
+    /* ⚠ THE UPSTREAM BODY IS NOT OURS TO REPEAT. `pe.meta.bodySnippet = t.slice(0,160)` was written
+       as «surfaced in the server log for diagnosis», but `meta` is spread into the JSON handed back
+       to the browser at the bottom of this file — so 160 bytes of whatever OpenAI answered with went
+       to the CALLER as well as to the log. A provider error body is not a controlled surface: it can
+       echo the request (which contains the prompt), name an organisation or project, or carry an
+       identifier from the account. The CLASSIFICATION is what anyone here can act on; the length
+       says whether there was a body at all, which is the only part of it worth keeping. */
+    pe.meta.bodyLen = t.length;
     throw pe;
   }
   const j = await r.json();
@@ -541,11 +619,21 @@ Deno.serve(async (req) => {
     const { data: prof } = await db.from("profiles").select("plan").eq("id", user.id).maybeSingle();
     if (prof && typeof prof.plan === "string" && prof.plan) plan = prof.plan;
   } catch (_) { /* profiles.plan may not exist yet → default free */ }
-  // (#R31/#R32) Developer override → UNLIMITED AI, quota never consumed ("AI機能の使用は無制限に").
-  const DEFAULT_DEV_EMAILS = ["2ppzc4kk6r@privaterelay.appleid.com"];
-  const devEmails = [...DEFAULT_DEV_EMAILS, ...(Deno.env.get("DEV_EMAILS") || "").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean)];
-  const devIds = (Deno.env.get("DEV_USER_IDS") || "").split(",").map((s) => s.trim()).filter(Boolean);
-  const isDev = (user.email && devEmails.includes(user.email.toLowerCase())) || devIds.includes(user.id);
+  /* (#R31/#R32) Developer override → UNLIMITED AI, quota never consumed ("AI機能の使用は無制限に").
+     ⚠ IT IS A USER ID NOW, AND THE ID LIVES IN A SECRET RATHER THAN IN THIS FILE. The rule used to be
+     a hard-coded e-mail address compiled into a PUBLIC repository, which is three separate problems:
+       · it publishes the maintainer's address to anyone who reads the source;
+       · it makes the privilege depend on `auth.users.email`, a field that a provider can change
+         (an Apple private-relay address is re-issued when the user turns off «Hide My Email») and
+         that several identity providers let the account holder edit;
+       · and it is unrevocable without a redeploy.
+     The identity is the immutable `auth.users.id`, supplied through the DEV_USER_IDS secret
+     (`supabase secrets set DEV_USER_IDS=<uuid>`), so the RIGHTS are unchanged — the same account is
+     still exempt from consumption and still resolves to plan "unlimited" — while the address is gone
+     from the tree and the grant can be moved or withdrawn without touching code. `profiles.plan`
+     carries the same grant in the database, so the two agree even if the secret is ever unset. */
+  const devIds = (Deno.env.get("DEV_USER_IDS") || "").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean);
+  const isDev = devIds.includes(String(user.id || "").toLowerCase());
   if (isDev) plan = "unlimited";
   const limit = PLAN_LIMITS[plan] ?? DEFAULT_LIMIT;
 
@@ -557,8 +645,10 @@ Deno.serve(async (req) => {
     const row = Array.isArray(dec) ? dec[0] : dec;
     used = row?.used ?? 0;
     if (!row?.allowed) return json({ error: "limit", used, limit }, 429);
-  } catch (e) {
-    return json({ error: "quota_unavailable", message: String((e as Error)?.message || e) }, 500);
+  } catch (_e) {
+    /* ⚠ NOT the database error. `String(e.message)` from a PostgREST/RPC failure names the schema,
+       the function signature and sometimes the row that tripped a constraint. */
+    return json({ error: "quota_unavailable", message: "The usage counter is unavailable — please try again." }, 500);
   }
   const refund = async () => { if (!isDev) try { await db.rpc("refund_ai_usage", { p_user: user.id }); } catch (_) { /* best-effort */ } };
 
@@ -568,10 +658,32 @@ Deno.serve(async (req) => {
   let payload: {
     prompt?: string; system?: string; images?: string[]; lang?: string;
     web?: boolean; webMode?: string; task?: string; requestedCount?: number; schema?: unknown; imageDetail?: string;
+    effortHint?: string;
   } = {};
-  try { payload = await req.json(); } catch (_) { payload = {}; }
+  /* ⚠ REFUSED BEFORE IT IS READ, when the caller declares a size. A body without content-length is
+     still bounded, because the read below is capped and a longer one is discarded rather than parsed. */
+  {
+    const declared = Number(req.headers.get("content-length"));
+    if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+      await refund();
+      return json({ error: "too_large", message: "Request body is too large." }, 413);
+    }
+    try {
+      const raw = await req.arrayBuffer();
+      if (raw.byteLength > MAX_BODY_BYTES) {
+        await refund();
+        return json({ error: "too_large", message: "Request body is too large." }, 413);
+      }
+      payload = JSON.parse(new TextDecoder("utf-8").decode(raw));
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) payload = {};
+    } catch (_) { payload = {}; }
+  }
 
   const task = String(payload.task || "free_text").toLowerCase();
+  if (!TASKS.has(task)) {
+    await refund();
+    return json({ error: "bad_task", message: "Unknown task." }, 400);
+  }
   // (#R156) input_image detail — "high" is the small-text/maths OCR lever for vision_read; clamp to a safe set.
   const imageDetail = (payload.imageDetail === "high" || payload.imageDetail === "low") ? payload.imageDetail : "auto";
   const webMode = String(payload.webMode || (payload.web === true ? "auto" : "off")).toLowerCase();
@@ -583,8 +695,22 @@ Deno.serve(async (req) => {
   const requestedCount = typeof payload.requestedCount === "number" ? payload.requestedCount : undefined;
   const prompt = String(payload.prompt || "").slice(0, MAX_PROMPT);
   const system = String(payload.system || "").slice(0, MAX_PROMPT);
-  const imgs = (Array.isArray(payload.images) ? payload.images : [])
-    .map(parseDataUrl).filter((x): x is ImgPart => !!x).slice(0, MAX_IMAGES);
+  /* ⚠ THE PER-IMAGE CEILING IS IN parseDataUrl; THIS IS THE ONE FOR ALL OF THEM TOGETHER. Four
+     images each just under the single-image limit is four times the single-image limit, and the
+     provider request carries every one of them. */
+  const imgs: ImgPart[] = [];
+  {
+    let total = 0;
+    for (const d of (Array.isArray(payload.images) ? payload.images : [])) {
+      if (imgs.length >= MAX_IMAGES) break;
+      const part = typeof d === "string" ? parseDataUrl(d) : null;
+      if (!part) continue;
+      const n = b64Bytes(part.b64);
+      if (total + n > MAX_IMAGES_BYTES) break;
+      total += n;
+      imgs.push(part);
+    }
+  }
   if (!prompt && !imgs.length) {
     await refund();
     return json({ error: "empty" }, 400);
@@ -600,7 +726,7 @@ Deno.serve(async (req) => {
   const wantJson = JSON_TASKS.has(task) || (provider === "openai" && task === "atlas_plan");
   // Server owns the map_report schema; other JSON tasks may pass their own (validated shallowly).
   const responseSchema = task === "map_report" ? MAP_REPORT_SCHEMA
-    : (wantJson && payload.schema && typeof payload.schema === "object" ? payload.schema : undefined);
+    : (wantJson && payload.schema && typeof payload.schema === "object" && schemaOk(payload.schema) ? payload.schema : undefined);
   const searchEnabled = (Deno.env.get("GEMINI_SEARCH_ENABLED") || "").toLowerCase() === "true";
   const model = Deno.env.get("AI_MODEL") ||
     (provider === "openai" ? OPENAI_DEFAULT_MODEL : provider === "gemini" ? "gemini-3.5-flash" : "claude-3-5-haiku-latest");   /* (#R151) OpenAI default = GPT-5.6 Terra (AI_MODEL secret = gpt-5.6-terra; re-verified reachable R150/R151). Luna stays the FALLBACK_MODEL only on 403/404 model_not_found so a model outage can never blanket-kill Atlas. */
@@ -670,7 +796,11 @@ Deno.serve(async (req) => {
       try { console.error("ai-proxy provider fail", JSON.stringify({ provider, model, task, code: e.code, http: e.http, meta: e.meta })); } catch (_) { /* ignore */ }
       return json({ error: e.code, message: e.message, retryable: e.retryable, meta: { provider, model, task, ...e.meta } }, e.http);
     }
-    return json({ error: "provider_unavailable", message: String((e as Error)?.message || e), retryable: false, meta: { provider, model, task } }, 502);
+    /* ⚠ AN UNCLASSIFIED FAILURE IS STILL NOT A PLACE TO PUT AN EXCEPTION MESSAGE. Anything that
+       reaches here came from code that has the prompt, the provider key and the caller's JWT in
+       scope, so the message is a generic one and the detail stays in the log line above. */
+    try { console.error("ai-proxy unclassified fail", JSON.stringify({ provider, model, task, name: String((e as Error)?.name || "") })); } catch (_) { /* ignore */ }
+    return json({ error: "provider_unavailable", message: "The AI provider could not be reached.", retryable: false, meta: { provider, model, task } }, 502);
   }
  } catch (topErr) {
   // (#R113b) LAST-RESORT guard: any error not caught above (auth/parse/etc.) returns a clean, CLASSIFIED JSON error

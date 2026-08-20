@@ -223,8 +223,11 @@ test('R202 ③h the timing tables finally have a writer, and it cannot delete wh
      That rule is right, and a DERIVED measurement is the wrong thing to weaken it for — so the
      tables travel by cache, which a pull-request run can read from the default branch. */
   assert.doesNotMatch(ci, /git push origin HEAD:main/, 'nothing in CI pushes to main');
-  assert.match(ci, /actions\/cache\/save@v4/, 'the measured times are published as a cache');
-  assert.match(act, /actions\/cache\/restore@v4[\s\S]{0,200}intmap-timings-/, 'and the browser job restores them');
+  /* ⚠ THE ACTION, NOT THE REF. Every remote action is pinned to a full-length commit SHA now (a
+     mutable tag is a supply-chain hole: whoever can move `v4` can run code in this repo's CI), so a
+     test that spells `@v4` fails on the hardening rather than on a regression. */
+  assert.match(ci, new RegExp('actions/cache/save@[0-9a-f]{40}'), 'the measured times are published as a cache');
+  assert.match(act, new RegExp('actions/cache/restore@[0-9a-f]{40}[\\s\\S]{0,240}intmap-timings-'), 'and the browser job restores them');
   assert.match(act, /--merge _timecache\/durations\.json/, 'merging them into the committed table before planning');
 });
 

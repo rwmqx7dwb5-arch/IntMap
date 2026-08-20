@@ -112,8 +112,14 @@ test('R193 ⑧ nothing large is fetched on the boot path that nobody is waiting 
     'the gazetteer warm-up waits for the map to settle');
   /* and the analytics tag is inserted at idle rather than at parse time */
   const h = read('index.html');
-  assert.match(h, /if\(typeof requestIdleCallback==='function'\) requestIdleCallback\(ins,\{timeout:6000\}\)/,
+  /* ⚠ THE PROPERTY IS «SCHEDULED AT IDLE WITH A CEILING», NOT «the callback is named `ins`». The
+     scheduled function is `guarded` now — it re-checks that no OAuth/magic-link credential is still
+     sitting in the URL before inserting the tag, because Clarity records the page URL and a DOM
+     replay (see the note beside the tag). Same scheduler, same 6 s ceiling, same "not at parse
+     time"; pinning the identifier made this fail on a privacy fix that changes none of that. */
+  assert.match(h, /if\(typeof requestIdleCallback==='function'\) requestIdleCallback\(\w+,\{timeout:6000\}\)/,
     'the Clarity tag is inserted at idle');
+  assert.match(h, /var authy=function\(\)/, 'and only once the URL carries no auth credential');
   assert.match(h, /c\[a\]=c\[a\]\|\|function\(\)\{\(c\[a\]\.q=c\[a\]\.q\|\|\[\]\)\.push\(arguments\)\}/,
     '…while its queue shim is still defined immediately, so nothing that calls it breaks');
 });

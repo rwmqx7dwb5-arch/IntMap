@@ -1,5 +1,16 @@
-# Keep the dev/CI tooling current with low noise. IntMap's *app* has no npm dependencies —
-# these updates only touch the test/CI toolchain and GitHub Actions versions.
+# Keep the toolchain current with low noise.
+#
+# ⚠ THE FIRST SENTENCE OF THIS FILE USED TO SAY 「IntMap's *app* has no npm dependencies」.
+# That has not been true since #R175: `dependencies` in package.json is what the BROWSER ships
+# (MapLibre, Cesium, Turf, TopoJSON, @supabase/supabase-js, KaTeX, html2canvas, satellite.js,
+# pbf, …), bundled by Vite into dist/. So an npm update here can change the deployed site, not
+# just CI — which is exactly why the group below covers every ecosystem entry rather than the
+# dev half alone, and why a bump wants the browser suite to run before it merges.
+#
+# ⚠ THE github-actions ECOSYSTEM UPDATES SHA PINS. Every remote action is pinned to a full
+# 40-hex commit SHA with the version in a trailing comment (`@<sha>  # v4.4.0`); Dependabot
+# reads that comment, proposes the next release's SHA, and rewrites both. A PR that replaces a
+# SHA with a tag is a regression — scripts/static-checks.mjs fails on it.
 version: 2
 updates:
   - package-ecosystem: npm
