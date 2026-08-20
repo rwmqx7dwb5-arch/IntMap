@@ -69,8 +69,18 @@ runs the specs marked `solo` in `tests/durations.json` (the `-cesium` family) at
 only changes the order and the width. If the plan cannot cover every spec that exists it says so and
 falls back to a plain `playwright test` over the whole directory — never to a subset.
 
-Override the width with `PW_WORKERS=<n>` when measuring the machine itself, and set `PORT` when
-another worktree already has a server on 4173.
+Override the width with `PW_WORKERS=<n>` when measuring the machine itself.
+
+**(#R282 追記) The port follows the checkout, so you no longer have to remember `PORT`.** This used
+to read «set `PORT` when another worktree already has a server on 4173» — an instruction nobody is
+reading at the moment they type `npm test`, which is how it kept happening. With
+`reuseExistingServer: !isCI`, two sessions on 4173 fail in two silent ways: the second run skips its
+own `npm run build` and tests the FIRST one's `dist/`, or it dies mid-suite with
+`net::ERR_CONNECTION_REFUSED` when the first takes the server down (measured: **2 failed / 25 did
+not run**, on a tree whose own tests all pass — the same suite went **52 passed** on a private
+port). `tests/helpers/session-seed.js` now derives it: a linked worktree's `.git` is a FILE, the
+main worktree's is a DIRECTORY, so **the main worktree and CI keep 4173** and each worktree gets its
+own stable port in 4174–4373. `PORT` in the environment still wins when you want to pin it.
 
 Run a single test by title:
 
