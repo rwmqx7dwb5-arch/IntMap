@@ -85,7 +85,7 @@ synthetic data on every DB PR, so the pipeline itself is always known-good.
 
 ## Recovering production (real incident)
 
-See [`DATABASE-INCIDENT.md`](DATABASE-INCIDENT.md) for the full runbook. In short:
+See [`INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md#database-incidents) for the full runbook. In short:
 1. **Stop the bleeding** (identify and stop whatever is deleting/corrupting).
 2. **Restore into an isolated DB** (never straight onto prod) and verify.
 3. If PITR is available, prefer restoring prod to a timestamp **just before** the incident.

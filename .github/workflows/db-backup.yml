@@ -108,7 +108,7 @@ jobs:
                     'The scheduled encrypted database backup failed.', '',
                     `- Detected (UTC): ${now}`,
                     `- Run: ${runUrl}`, '',
-                    'Runbook: `docs/BACKUP-RESTORE.md` and `docs/DATABASE-INCIDENT.md` → "backup失敗".',
+                    'Runbook: `docs/BACKUP-RESTORE.md` and `docs/INCIDENT-RESPONSE.md` → "backup失敗".',
                     'This issue auto-closes on the next successful backup.',
                   ].join('\n') });
               }

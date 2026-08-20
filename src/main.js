@@ -197,7 +197,7 @@ import '../js/precip-annual.js';   /* (#R266) 年降水量 — CHELSA 1 km norma
 import '../js/analysis-panels.js';
 import '../js/sims.js';
 import '../js/tables.js';
-import '../js/legal.js';
+import '../js/legal.js';        /* …which imports js/legal-text.js — the words privacy.html / terms.html also read */
 import '../js/feedback.js';
 import '../js/onboarding.js';
 import '../js/mobile-ui.js';
