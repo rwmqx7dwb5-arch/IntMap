@@ -92,9 +92,21 @@ const BENIGN_CONSOLE = [
   /\b(429|5\d\d|403|404)\b.*(gdelt|overpass|wikidata|nominatim|supabase|gibs|open-meteo|arcgis|carto)/i,
 ];
 
+/* ⚠ (#R286) A CONTENT-SECURITY-POLICY VIOLATION IS NEVER BENIGN, WHATEVER ELSE THE TEXT LOOKS LIKE.
+   This round's defect reached the gate as 「Loading the image 'imapsat://2/0/2' violates … img-src」
+   — twenty of them, from a tile template with a scheme only a registered protocol handler
+   understands (js/dash-extended.js, js/sat-proto.js). It was caught only by an accident of spelling:
+   `imapsat` contains no "tile", "glyph" or "sprite", so `/load.*(tile|…)/` — which is here for
+   MapLibre reacting to a blocked HOST — happened not to match it. MEASURED: the identical leak
+   through `pmtiles://` (one of the seven protocols this app registers) reads as
+   「Loading the image 'pmtiles://…」 and WAS classified benign by that same pattern.
+   Nothing legitimate is lost by refusing the whole class: the hermetic policy blocks hosts, which
+   produces `net::ERR_FAILED`, never a CSP refusal. A CSP violation always means the page asked for
+   something its OWN policy forbids, and that is a defect by construction. */
 // Is this console/error text harmless under the hermetic policy?
 export function isBenign(text) {
   const t = String(text || '');
+  if (/Content Security Policy/i.test(t)) return false;
   return BENIGN_CONSOLE.some((re) => re.test(t));
 }
 
