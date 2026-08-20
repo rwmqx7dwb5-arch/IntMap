@@ -28,6 +28,8 @@
     · THE LEDGER MOVES ONLY ON SUCCESS. A failed run must not look like a done one.
     · EXTRAS ARE DELETED EXPLICITLY. The USB must not keep files the repository no
       longer has — including ones whose names arrived mangled from an older copier.
+      The VOLUME's own directories (System Volume Information, $RECYCLE.BIN …) are
+      not content and are never touched.
 
   USAGE
       pwsh -File scripts/backup-usb.ps1            # mirror + verify
@@ -48,6 +50,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $Repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $IdFile = '.intmap-backup-id.json'
+# Directories the VOLUME owns, not the mirror. Matched on the FIRST path segment only, so a
+# directory with one of these names inside the repository would still be treated as content.
+$VolumeSystem = @('System Volume Information', '$RECYCLE.BIN', 'RECYCLER', '.Trashes', '.Spotlight-V100', 'found.000')
 $Ledger = Join-Path $env:USERPROFILE '.claude\projects\C--Users-gyuuk-OneDrive-IntMap\usb-backup-state.json'
 
 function Say($m) { Write-Host $m }
@@ -101,12 +106,34 @@ function Get-BackupDrive {
 # dist, caches) or is history (.git). git is the authority here so the list cannot
 # drift from what the repository actually contains.
 function Get-SourceFiles {
+  # ⚠ -z, AND THE BYTES. Plain `git ls-files` QUOTES a path with non-ASCII in it and escapes the
+  # bytes — «USGS.能登.pdf» comes back as "USGS.\350\203\275\347\231\273.pdf", a C string that
+  # Test-Path rejects as an illegal path. -z suppresses the quoting (and separates with NUL instead
+  # of newline); reading the raw bytes and decoding UTF-8 keeps the console codepage out of it.
+  $tmp = Join-Path ([IO.Path]::GetTempPath()) ('intmap-ls-' + [guid]::NewGuid().ToString('N') + '.bin')
   Push-Location $Repo
   try {
-    $out = & git ls-files --cached --full-name
-    if ($LASTEXITCODE -ne 0) { throw 'git ls-files failed' }
-    return @($out | Where-Object { $_ -ne '' })
-  } finally { Pop-Location }
+    $psi = New-Object Diagnostics.ProcessStartInfo
+    $psi.FileName = 'git'
+    $psi.Arguments = '-c core.quotepath=false ls-files -z --cached --full-name'
+    $psi.WorkingDirectory = $Repo
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardOutput = $true
+    $proc = [Diagnostics.Process]::Start($psi)
+    $bytes = New-Object IO.MemoryStream
+    $proc.StandardOutput.BaseStream.CopyTo($bytes)
+    $proc.WaitForExit()
+    if ($proc.ExitCode -ne 0) { throw 'git ls-files failed' }
+    $text = [Text.Encoding]::UTF8.GetString($bytes.ToArray())
+    return @($text -split "`0" | Where-Object { $_ -ne '' })
+  } finally { Pop-Location; if (Test-Path -LiteralPath $tmp) { Remove-Item -LiteralPath $tmp -Force } }
+}
+
+function Get-UsbFiles($root) {
+  # -Force to see hidden/system entries; SilentlyContinue so a directory Windows will not let us
+  # enter (System Volume Information) is skipped rather than aborting the run.
+  Get-ChildItem -LiteralPath $root -Recurse -File -Force -ErrorAction SilentlyContinue |
+    Where-Object { $VolumeSystem -notcontains ($_.FullName.Substring($root.Length).TrimStart('\') -split '\\')[0] }
 }
 
 function Get-Sha256([string]$path) {
@@ -143,7 +170,7 @@ function Invoke-Mirror($drive, $files) {
   # …and everything the repository no longer has. Deleted explicitly, by full path,
   # because a name that arrived mangled from an older copier is exactly the kind of
   # leftover a pattern-based sweep misses.
-  foreach ($f in Get-ChildItem -LiteralPath $root -Recurse -File -Force) {
+  foreach ($f in Get-UsbFiles $root) {
     $rel = $f.FullName.Substring($root.Length).TrimStart('\')
     if ($rel -eq $IdFile) { continue }
     if ($want.Contains($rel)) { continue }
@@ -151,8 +178,10 @@ function Invoke-Mirror($drive, $files) {
     $deleted++
   }
   # prune directories that are now empty, deepest first
-  foreach ($d in (Get-ChildItem -LiteralPath $root -Recurse -Directory -Force | Sort-Object { $_.FullName.Length } -Descending)) {
-    if (-not (Get-ChildItem -LiteralPath $d.FullName -Force)) {
+  $dirs = Get-ChildItem -LiteralPath $root -Recurse -Directory -Force -ErrorAction SilentlyContinue |
+    Where-Object { $VolumeSystem -notcontains ($_.FullName.Substring($root.Length).TrimStart('\') -split '\\')[0] }
+  foreach ($d in ($dirs | Sort-Object { $_.FullName.Length } -Descending)) {
+    if (-not (Get-ChildItem -LiteralPath $d.FullName -Force -ErrorAction SilentlyContinue)) {
       if ($PSCmdlet.ShouldProcess($d.FullName, 'remove empty directory')) { Remove-Item -LiteralPath $d.FullName -Force }
     }
   }
@@ -173,7 +202,7 @@ function Test-Mirror($drive, $files) {
     if (-not (Test-Path -LiteralPath $dst)) { $problems += "missing on USB: $r"; continue }
     if ((Get-Sha256 $src) -ne (Get-Sha256 $dst)) { $problems += "content differs: $r" }
   }
-  foreach ($f in Get-ChildItem -LiteralPath $root -Recurse -File -Force) {
+  foreach ($f in Get-UsbFiles $root) {
     $rel = $f.FullName.Substring($root.Length).TrimStart('\')
     if ($rel -eq $IdFile) { continue }
     if (-not $want.Contains($rel)) { $problems += "extra on USB: $rel" }

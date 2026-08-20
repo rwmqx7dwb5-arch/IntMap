@@ -15,6 +15,7 @@
 | [`../CLAUDE.md`](../CLAUDE.md) | 作業する人／AI | **どう働くか** — セッションの始め方、着手前の確認、変更の作法、ワークフロー、報告、**USB バックアップの頻度と手順** | 開発環境・Git 運用・CI/CD・deployment の前提が変わったとき |
 | [`../CONSTITUTION.md`](../CONSTITUTION.md) | 同上 | **何を守るか** — 製品の不文律、壊れやすい罠、地図・モバイルの作法、鍵とニュースの方針、文書の分担 | ユーザーが方針を変えたとき |
 | `../CLAUDE.local.md` | このマシンだけ | 資格情報とローカル固有の情報（**追跡対象外**。リポジトリは public） | 資格情報が変わったとき |
+| [`../CHATGPT-HANDOFF.md`](../CHATGPT-HANDOFF.md) | ChatGPT 側の会話 | **GPT → Claude の受け渡し規約** — どんな発話を実装意図として拾い、どの Issue の受信箱へ積むか（実装は `scripts/handoff*.mjs`・規則は `.claude/rules/gpt-handoff.md`） | 受け渡しの手順・受信箱・判定条件が変わったとき |
 
 ## 製品と判断
 
