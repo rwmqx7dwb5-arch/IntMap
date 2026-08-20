@@ -3471,8 +3471,8 @@ window.IntMapModules.atlasConsole=function(HOST){
           let replyPlaces=[]; try{ txt=String(txt).replace(/\n?\s*PLACES\s*[:：]\s*(\[[\s\S]*?\])\s*$/i,(m,g)=>{ try{ const arr=JSON.parse(g); if(Array.isArray(arr)) replyPlaces=arr; }catch(_){} return ''; }); }catch(_){}
           /* (#R74) peel the SOURCES line off the prose and render it as ChatGPT-style link cards */
           let srcUrls=[]; try{ txt=String(txt).replace(/\n?\s*SOURCES?\s*[:：]\s*([^\n]+)\s*$/i,(m,g)=>{ srcUrls=g.split(/[|\s]+/).filter(u=>/^https?:\/\//i.test(u)).slice(0,4); return ''; }); }catch(_){}
-          let html='<div style="font-weight:600;margin:2px 0 5px;">🧭 '+L('Integrated analysis','統合分析','Integrierte Analyse','Комплексный анализ','Análisis integrado')+'</div>';
-          html+='<div style="font-size:14px;line-height:1.68;">'+mdMini(String(txt).trim())+'</div>';
+          /* (#R279) 「Atlasの回答に、「統合分析」ってつけなくていいです」 — the reply opened with a label that restated itself on every single answer; the prose starts at the top now. */
+          let html='<div style="font-size:14px;line-height:1.68;">'+mdMini(String(txt).trim())+'</div>';
           /* (#R149 · mapping commission) pin the specific real places the analysis named (unless the plan already
              pinned) so an integrated analysis delivers MAP value, not just prose — with an honest placed/not-placed note. */
           /* (#R150) ALWAYS reconcile prose↔map — pass the final text (so places the model omitted from the list are
