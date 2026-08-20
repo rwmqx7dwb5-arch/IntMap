@@ -116,8 +116,15 @@ Turn on earthquakes and volcanoes.
 
 Find nuclear sites near major rivers.
 
+How far can I walk in one hour from my location?
+
 Change the map to a globe and show country borders.
 ```
+
+The last example is a *reachable area*, not a circle: it is traced over the real road network
+(Valhalla / OpenStreetMap), so rivers, motorways and dead ends shape it. Asking in terms of
+travel time — walking, cycling, driving, or the reachable stations by rail — gives that,
+never a straight-line radius standing in for it.
 
 Atlas can navigate the map, control layers, select and compare countries, activate tools, change historical periods, and perform a growing range of geographic actions.
 

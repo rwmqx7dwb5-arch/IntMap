@@ -960,13 +960,22 @@ window.IntMapModules.isochrone=function(HOST){
       const cost=COST[String(opts.mode||mode).toLowerCase()]||'auto'; mode=cost;
       let minutes=Array.isArray(opts.minutes)?opts.minutes.slice():(opts.minutes!=null?[+opts.minutes]:mins.slice());
       minutes=minutes.map(x=>Math.round(+x)).filter(x=>x>0&&x<=120); minutes=[...new Set(minutes)].sort((a,b)=>a-b).slice(0,4); if(!minutes.length) minutes=[15,30];
-      mins=minutes.slice(); ensureLayers(); busy=true; renderPanel();
+      /* ⚠⚠⚠ (#R278) THIS FUNCTION USED TO REPORT ok:true WITHOUT EVER PUTTING A POLYGON ON THE MAP.
+         `ensureLayers()` already returned a boolean and the return value was thrown away; the one write that
+         matters sat inside `try{…}catch(_){}`; and a response carrying zero polygons still fell through to
+         `return {ok:true}`. Measured on a fresh tab whose style had not finished loading: addSource threw
+         «Style is not done loading», nothing was drawn, and Atlas printed 「✓ 60 分の到達圏」 over an empty map.
+         The user's whole complaint this round is Atlas claiming work it did not do, so all three now fail
+         honestly and the caller distinguishes 'api' (the router) from 'render' (the map). */
+      mins=minutes.slice(); const layersOK=ensureLayers(); busy=true; renderPanel();
       const j=await fetchIso(center,cost,minutes); busy=false;
       if(!j){ renderPanel('err'); return {ok:false,reason:'api'}; }
       const polys=(j.features||[]).filter(f=>f.geometry&&/Polygon/.test(f.geometry.type)).sort((a,b)=>(b.properties.contour||0)-(a.properties.contour||0));   /* largest first → drawn underneath */
+      if(!polys.length){ renderPanel('err'); return {ok:false,reason:'api'}; }
       const feats=polys.map(f=>{ const c=+f.properties.contour; const idx=Math.max(0,minutes.indexOf(c)); return {type:'Feature',geometry:f.geometry,properties:{col:PAL[Math.min(PAL.length-1,idx)],min:c}}; });
       feats.push({type:'Feature',geometry:{type:'Point',coordinates:[center.lng,center.lat]},properties:{}});
-      try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
+      let drew=false; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); drew=!!(layersOK&&GE().layers.hasSource(SRC)); }catch(_){ drew=false; }
+      if(!drew){ renderPanel('err'); return {ok:false,reason:'render'}; }
       try{ if(polys.length&&typeof turf!=='undefined'){ const bb=turf.bbox({type:'FeatureCollection',features:polys}); if(bb.every(isFinite)&&bb[2]>bb[0]) GE().camera.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:56,duration:900,maxZoom:14}); } }catch(_){}
       lastMinutes=minutes.slice(); renderPanel(); return {ok:true,minutes,mode:cost}; }
     function ensurePanel(){ if(panel) return panel;

@@ -4266,5 +4266,7 @@ window.IntMapLang.define('ko', { ui: {
   "Water": "물",
   "Hailstorm": "우박",
   "Heavy rainfall": "호우",
-  "Thunderstorms": "뇌우",   /* (#R267) */
+  "Thunderstorms": "뇌우",
+  "The reachable area is computed for 1 to 120 minutes — ask again inside that range.": "도달권은 1~120분 범위에서 계산합니다. 그 범위 안에서 다시 요청해 주세요.",
+  "The reachable area was computed, but the map layer could not be created (the map style was still loading) — try again in a moment.": "도달권은 계산되었지만 지도 레이어를 만들 수 없었습니다(지도 스타일을 아직 불러오는 중) — 잠시 후 다시 시도해 주세요.",   /* (#R267) */
 } });

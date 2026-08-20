@@ -134,6 +134,10 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   出典切替（世界銀行 ⇄ IMF WEO）、CSV エクスポート。
 - **測る系** — 距離・面積・半径・自由描画・3-D 体積・標高断面・傾斜／斜面方向・見通し線 (viewshed)・
   到達圏 (isochrone)・海路ルート。
+  **到達圏**は Valhalla／OpenStreetMap の**実道路網**に沿った時間到達域（車・徒歩・自転車、
+  1〜120分・最大4本の等時線）で、**距離の円ではない**。1点をクリック（🎯 パネル）でも
+  Atlas（`isochrone`）でも同じ実装を呼ぶ。算出できなかったとき・地図に描けなかったときは
+  **成功とは報告しない**（ルータ側の失敗と地図側の失敗を区別して言う）。
 - **範囲人口** — 面積測定・半径円・自由描画のパネルと Atlas `population` から、**WorldPop 100m グリッド**の
   実グリッド集計で「囲んだ範囲の人口」を出す。**面積によらず常にタイル分割**するので、進捗バーの割合は
   常に実測値（`done/cells.length`）であり、アプリの他の進捗バーと同じ確定バーである。
@@ -156,6 +160,14 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   **DOM 操作**＝`control` ＋ `controlCatalog`、**レイヤー**＝`layer` ＋ `layerCatalogText`、
   **モジュール**＝`module` ＋ `moduleCatalog`（`window.IntMap*` を**自動発見**し、
   許可リストで制限したメソッドを名前で呼ぶ）。**新しく足したモジュールは配線なしで到達可能**になる。
+- **カタログに書かれていない操作は、プランナーにとって存在しない。** `SYS()` が渡す操作カタログが
+  モデルの知る全世界なので、ディスパッチャに `case` があってもカタログに項目が無ければモデルは
+  それを出力できず、**似ている別の操作で代用するか「その機能はありません」と答える**。
+  この規則自体は長く明文化されていたが検査が無く、実際に6つの機能（到達圏・複数地点最短巡回・
+  オブジェクト一覧・傾斜／斜面方位・電波到達域・世界の巻き戻し）が実装済みのまま不可視だった。
+  **`npm run check:catalog`（`scripts/atlas-catalog.mjs`・`npm test` に内包）が、
+  ディスパッチャの `case` 群とカタログ本文を毎回突き合わせて落とす。**
+  意図的に撤去した機能だけが例外で、理由つきで `WITHDRAWN` に明記する（現在は `monitor` のみ）。
 - **実行結果は検証して正直に報告する。** 各アクションは構造化された `{ok,html}` を返し、
   効果（チェック状態・テーマ値・ハイライトの描画結果）を検証する。失敗は注意色で明示し、
   `run()` が実結果を集計してモデルの楽観的な `say` を上書きする。
@@ -170,7 +182,20 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   `highlight`（国・行政区分・通称地域の実境界）、`value`、`clear`、`locate`、`poi`（Overpass ＋ Wikidata）、
   `analyze`（実データを集めた統合分析）、`brief`、`answer`、`mapReport`（ライブニュース事件の地図）、
   `researchMap`（歴史・現在・混合のリサーチ）、`compareStats`、`mapMetric`、`scoreMap`、`explore`、
-  `impact`、`population`、`drone`、`engine`、`module`、`control`。
+  `impact`、`population`、`drone`、`engine`、`module`、`control`、
+  `isochrone`（**到達圏**——実道路網に沿った時間到達域。`radius`＝直線距離の円とは別物で、
+  「徒歩1時間で行ける範囲」のような**所要時間**の質問には `radius` で代用しない）、
+  `optimizeRoute`（複数地点の最短巡回）、`objects`（オブジェクト一覧）、`slope`（傾斜・斜面方位）、
+  `rfCoverage`（電波到達域）、`earthReplay`（世界の巻き戻し）。
+- **「所要時間」と「距離」は別のアクション。** `radius` は直線距離の円、`isochrone` は
+  Valhalla／OpenStreetMap の**実道路網**を辿った到達域（`auto` / `pedestrian` / `bicycle`、
+  `transit` は OSM 鉄道網で到達可能な駅）。起点は地名・`現在地`（端末のGPS）・クリック地点・
+  `lng`/`lat` のいずれでもよい。**カタログの `radius` の項目自身が、所要時間の質問を
+  `isochrone` へ回すよう書かれている。**
+- 明確な単一指示の決定論パス `localPlan` は**漢数字・全角数字**と
+  「〜で行ける範囲／エリア／到達圏」「〜分以内」「〜圏内」を読む（「現在地から徒歩一時間で行ける
+  範囲を表示して」は AI もアカウントも使わずに実行される）。移動手段は所要時間の前後どちらでもよいが
+  **必須**で、手段の無い「30分の範囲」はプランナーへ回す。
 - **リサーチ地図の二系統** — `mapReport` は**現在・直近のライブニュース事件のみ**、
   `researchMap` は歴史・現在・混合のリサーチで文章と地図を独立に生成する。
   **Request Profile**（時間軸・地理・要求出力を機械判定）と能力レジストリによる実行前プラン検証で、
@@ -519,6 +544,7 @@ scripts/
   serve.mjs                       依存ゼロの静的サーバ（GitHub Pages と同じ配信＝gzip も含む）
   static-checks.mjs               構文・JSON・YAML・マージ衝突・秘密検出・HTML 参照の存在
   doc-facts.mjs                   **文書間の固定事実の照合**（§15.5）
+  atlas-catalog.mjs               **Atlas の操作カタログのゲート**（§2.4・ディスパッチャ ⇄ SYS）
   arch-files-check.mjs            Architecture §3 と js/ の突き合わせ
   engine-coupling.mjs             レンダラ脱依存のゲート
   i18n-*.mjs                      翻訳の被覆と形の監査（§10）
@@ -531,7 +557,7 @@ tests/
   tests/prod-smoke.spec.js              実 URL に対するスモーク（PROD_URL）
   tests/security.spec.js                実ブラウザでの無害化確認
   helpers/network.js              hermetic なルーティングと console の分類
-  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（122本）
+  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（124本）
   *.spec.js                       ブラウザ回帰（67本）
 .github/workflows/
   ci.yml                          PR ＋ push main ＋ 手動。静的検査＋hermetic ブラウザ試験
@@ -1651,6 +1677,10 @@ Open-Meteo の spatial アーカイブ（**ECMWF IFS HRES・O1280 縮約ガウ�
   マージ衝突マーカー／秘密検出（publishable anon は allowlist）／HTML 参照アセットの存在／
   ワークフローの最小権限／**リモート Action の完全長 SHA 固定**（error。除外なし）。
 - `scripts/doc-facts.mjs` — **文書間の固定事実の照合**（§15.5）。
+- `scripts/atlas-catalog.mjs` — **Atlas の操作カタログのゲート**。`js/atlas-console.js` の
+  `switch(a.type)` にある `case` 群と `SYS()` の本文を突き合わせ、**実行できるのに
+  カタログに書かれていない操作**があれば落ちる（§2.4）。`--check` 無しで走らせると
+  全 117 件の状態を一覧する。
 - `scripts/arch-files-check.mjs` — Architecture §3 と `js/` の突き合わせ。
 - `scripts/engine-coupling.mjs` — レンダラ脱依存のゲート。
 - `playwright.config.js` — hermetic なスモーク＋内部 QA（webServer＝`scripts/serve.mjs`・UTC/en-US・
