@@ -572,5 +572,7 @@ window.IntMapPageI18N.define('ko', {
     "Weather warnings, Canada — Environment and Climate Change Canada (OGC API — Features)": "경보 레이어가 실시간으로 읽음: 캐나다 환경·기후변화부가 현재 발효 중인 경보를 기관 자체 폴리곤으로 그리고, 누르면 주(州)별로 묶습니다. 이 서비스는 CORS 헤더를 스스로 보내므로 브라우저가 직접 읽습니다.",
     "Weather warnings, Europe — MeteoAlarm (EUMETNET), 35 national services": "경보 레이어가 실시간으로 읽음: 유럽 각국 기상기관이 발효 중인 경보를 MeteoAlarm이 공개하는 형태로 읽고, 누르면 지역별로 묶습니다. MeteoAlarm은 CORS 헤더를 보내지 않고 한 나라 피드가 약 10 MB이므로, 앱 자체 중계 함수가 서버에서 받아 요약합니다.",
     "Weather warnings, China — China Meteorological Administration public warning list": "경보 레이어가 실시간으로 읽음: 중국기상국이 공개하는 발효 중 경보 목록입니다. 도형이 없으므로 국가는 발효 중 최고 등급으로 칠하고, 누르면 성(省)별로 묶어 나열합니다. CORS 헤더를 보내지 않아 앱 자체 중계 함수를 통합니다.",
+    "Weather warnings worldwide — national meteorological services via the WMO Severe Weather Information Centre (CAP)": "위 표에 자체 피드가 없는 모든 나라에 대해 경보 레이어가 실시간으로 읽습니다. 각국 기상기관이 직접 발표한 경보를, 그 기관이 그린 폴리곤·그 기관의 표현·그 기관이 매긴 CAP 심각도 그대로 WMO가 재배포한 것입니다. WMO는 전달 경로일 뿐 작성자가 아니며, 패널은 발표 기관의 이름을 표시합니다.",
+    "WMO Members and their CAP implementation status (which national service files CAP, and which does not)": "세션당 한 번 읽습니다. 어느 회원국의 CAP 구현이 완료되었는지에 대한 WMO 자체 기록입니다. 완료로 기록된 나라만 대응 국가로 그립니다.",
   }
 });

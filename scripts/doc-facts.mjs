@@ -234,7 +234,20 @@ const ARCH = BODY.get('Architecture.md') || '';
     const readme = BODY.get('README.md') || '';
     const rmN = (readme.match(/(\d+)\s+countries over (\w+) feeds/) || [])[1];
     if (rmN && Number(rmN) !== countries) fail('alerts', `README says ${rmN} countries; the code has ${countries}`);
-    ok('alerts', `${feedCount} feeds · ${national.length} national services + MeteoAlarm's ${ma.length} · ${countries} countries`);
+    /* ⚠ THE REGISTER IS NOT IN `FEEDS`, BECAUSE ITS COUNTRIES ARE ADDED AT RUN TIME from the WMO's own
+       CAP-status table — so the number is a MEASUREMENT and does not belong here. What this rule can
+       check, and must, is that the code and the spec agree about whether it exists at all: a source
+       that quietly covers ninety more countries than the spec describes is the drift this file is
+       for. Same shape in both directions — a spec that names it after the code drops it also fails. */
+    const codeSwic = /FEEDS\[c\]='swic'/.test(wp);
+    const archSwic = /WMO Severe Weather Information Centre/.test(ARCH);
+    if (codeSwic !== archSwic) {
+      fail('alerts', codeSwic
+        ? 'the code wires the WMO CAP register but Architecture.md does not describe it'
+        : 'Architecture.md describes the WMO CAP register but the code does not wire it');
+    }
+    ok('alerts', `${feedCount} feeds · ${national.length} national services + MeteoAlarm's ${ma.length} · ${countries} countries`
+      + (codeSwic ? ' + the WMO CAP register' : ''));
   }
 }
 

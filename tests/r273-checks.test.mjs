@@ -243,8 +243,13 @@ test('R273 ⑪ a run can be repeated without throwing the terrain or the sources
   const m = /function replay\(\)\{([\s\S]*?)\n    function resetSim/.exec(s);
   assert.ok(m, 'replay() must exist');
   assert.match(m[1], /pourSimS=0;/, 'the clock goes back to zero');
-  assert.match(m[1], /sources\.forEach\(x=>\{ if\(x\.cont\) x\.m3=0; x\._fed=0; \}\)/,
-    'every source’s delivery goes back to zero — a tap’s m3 is what it has DELIVERED');
+  /* ⚠⚠ (#R275) BOTH KINDS, ONE LINE. 「一回きりの水源、再生できない。ふざけるな。」 came back: the
+     button was right and there was nothing for it to restart, because a one-shot volume was a still
+     lake rather than a run. `m3` is what a source has DELIVERED — for both kinds now — so putting it
+     back to zero IS the replay, and there is no second field to reset. */
+  assert.match(m[1], /sources\.forEach\(x=>\{ x\.m3=0; \}\);/,
+    'every source’s delivery goes back to zero — a source’s m3 is what it has DELIVERED');
+  assert.ok(!/x\.cont/.test(m[1]), 'and the two kinds are replayed the same way');
   assert.match(m[1], /resetSim\(\);/, 'and the water with it');
   /* ⚠ the one door every mutation in that file has to pass — four rounds have found something
      that skipped it (#R255 brush, #R258 addLevee, #R268 reset, #R271 addSource) */
@@ -261,12 +266,16 @@ test('R273 ⑪ the panel has one control height and one gap', () => {
   const play = rule('.tw-play'), btn = rule('.tw-btn');
   const h = (r) => +(/(?:min-)?height:(\d+)px/.exec(r) || [])[1];
   assert.equal(h(play), h(btn), `the transport and the buttons must be the same height (${h(play)} vs ${h(btn)})`);
-  assert.match(s, /#tw-panel \.tw-foot \.tw-segwrap\{height:36px/, '…and so must the speed strip');
-  assert.equal(h(play), 36, 'and that height is 36');
+  assert.match(s, /#tw-panel \.tw-foot \.tw-segwrap\{height:'\+TW_CTL\+'/, '…and so must the speed strip');
+  /* ⚠ (#R275) 36 was the number; ONE HEIGHT is the property. It is a declaration now because the
+     panel was rescaled to the size every other legend uses (「内部要素のサイズが大きすぎる」), and the
+     three controls have to move together or the footer goes back to having three heights. */
+  assert.match(s, /const TW_CTL=_mob\(\)\?'(\d+)px':'(\d+)px';/, 'and that height is one declaration');
   /* two containers were touching: the tool picker ended exactly where the card below it began */
-  assert.match(s, /#tw-panel \.tw-body > div > \* \+ \*\{margin-top:10px;\}/, 'siblings in a section are spaced');
-  assert.match(s, /#tw-panel \.tw-body > div > \.tw-cap \+ \*\{margin-top:0;\}/,
-    '…except under a caption, which already carries its own 6 px');
+  assert.match(s, /#tw-panel \.tw-body > div > \* \+ \*\{margin-top:'\+TW_GAP\+';\}/, 'siblings in a section are spaced');
+  /* (#R275) the pinned tool block is a second place a caption can be, so the rule names both */
+  assert.match(s, /#tw-panel \.tw-body > div > \.tw-cap \+ \*[^{]*\{margin-top:0;\}/,
+    '…except under a caption, which already carries its own gap');
 });
 
 /* ── ⑫ the shelves say what is on them ─────────────────────────────────────────────────────── */
