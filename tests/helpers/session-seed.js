@@ -15,6 +15,10 @@
  *  imAutoOff fix, so the app treats its absences as an outage's poison rather than as a choice and
  *  heals them once — which puts every default layer back on. See #R189.
  * ==========================================================================*/
+import { statSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 export const SESSION_KEY = 'intmap_session2';
 /* WARN (#R210) `right:false` IS NOT COSMETIC. js/map-ui.js opens the right layer panel when the
  *  saved session has NO ANSWER for it — the first-visit behaviour asked for this round. Every
@@ -42,7 +46,34 @@ export function sessionWith(layers, extra) {
   return JSON.stringify(Object.assign({ v: 2, defv: 190, layers: BASE_LAYERS.concat(layers || []), lsrOpen: false }, extra || {}));
 }
 export const SESSION_VALUE = '{"v":2,"defv":190,"layers":["cb-names","cb-geolabels","cb-poi","cb-borders","cb-admin1","cb-roads","cb-rail2"],"lsrOpen":false}';
-export const PORT = Number(process.env.PORT || 4173);
+/* ── THE PORT IS PER-CHECKOUT, BECAUSE SESSIONS RUN IN PARALLEL  (#R282 追記) ───────────────────
+   This was `process.env.PORT || 4173` for every checkout on the machine, and playwright.config.js
+   sets `reuseExistingServer: !isCI`. Together that means two Claude Code sessions testing at the
+   same time SHARE ONE dev server, and both ways it goes wrong are silent:
+
+     · the second run skips its own `npm run build` and tests the OTHER session's dist/ — green,
+       and meaningless, because it never looked at the code that was changed;
+     · when the first run finishes and takes the server down, the second dies mid-suite with
+       «net::ERR_CONNECTION_REFUSED at http://127.0.0.1:4173/» for no reason of its own.
+       MEASURED: 2 failed / 25 did not run, on a tree whose own tests all pass.
+
+   So the port follows the CHECKOUT. A linked worktree's `.git` is a FILE that points at the main
+   repository, while the main worktree's is a DIRECTORY — one stat, no subprocess, no config. The
+   main worktree therefore keeps 4173 exactly as the documents say (and so does CI, which checks
+   out normally), and every worktree gets its own stable port derived from its path.
+   ⚠ `PORT` in the environment still wins, for the times you want to pin it. */
+export const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url));
+export const isLinkedWorktree = (root) => {
+  try { return statSync(join(root, '.git')).isFile(); } catch { return false; }
+};
+/* pure, so tests/r282 ⑦ can ask it about paths this machine does not have */
+export const portForPath = (root, linked) => {
+  if (!linked) return 4173;
+  let h = 0;
+  for (const ch of String(root).toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return 4174 + (h % 200);            // 4174–4373, stable for this path
+};
+export const PORT = Number(process.env.PORT || portForPath(REPO_ROOT, isLinkedWorktree(REPO_ROOT)));
 export const BASE = `http://127.0.0.1:${PORT}`;
 
 /**
