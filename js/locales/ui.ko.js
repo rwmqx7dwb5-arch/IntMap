@@ -1828,6 +1828,7 @@ window.IntMapLang.define('ko', { ui: {
   "Note: a small share of the tiniest streams was omitted at the display cap (all major tributaries are drawn)": "참고: 표시 한도 때문에 아주 작은 물줄기 일부를 생략했습니다 (주요 지류는 모두 그렸습니다)",
   "Nothing found — neither OpenStreetMap nor Wikidata has such facilities recorded here and the AI knows none it is sure of": "찾지 못했습니다 — OpenStreetMap과 Wikidata 모두 이곳에 그런 시설을 기록해 두지 않았고, AI도 확신할 수 있는 것을 알지 못합니다",
   "Nothing in force right now.": "현재 발효 중인 것이 없습니다.",
+  "issuing regions": "발표 구역",   /* world-packs.js (#R271) */
   "Areas the agency published but this map could not place: ": "기관이 발표했으나 이 지도가 위치를 특정하지 못한 구역: ",   /* world-packs.js (#R271) */
   "Deutscher Wetterdienst, warnings with their own district polygons.": "독일 기상청(DWD) — 군(Landkreis) 단위 구역을 그리며, 주별로 묶습니다.",   /* world-packs.js (#R271) */
   "Europe — MeteoAlarm (35 services)": "유럽 — MeteoAlarm (35개 기관)",   /* world-packs.js (#R271) */
