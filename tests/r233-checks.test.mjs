@@ -108,11 +108,29 @@ test('R233 layers: Population & economy is the seven named layers, the rest fell
      whatever a later instruction promoted», not a frozen set: freezing it would make the next
      promotion look like a regression. The seven are still asserted individually, which is what
      #R233's own report was about (nothing else may fall back IN by accident). */
+  /* ══ ⚠⚠ (#R271) THE SEVEN ARE STILL CURATED — THEY ARE NO LONGER ALL ON ONE SHELF ═══════════
+     「レイヤーのカテゴリ分類があきらかに不適切なレイヤーが大量にある。大規模に…再編しろ。」 #R233's
+     report was that 人口・経済 had swollen to twenty-five World-Bank rows and that these SEVEN are
+     the curated set; the shelf they sit on was this file's reading, not the instruction's. #R271
+     moved four of them to the shelf their own subject names (民主主義指数 and 汚職指標 → 政治・統治,
+     平均寿命 → 医療・衛生, エネルギー構成 → エネルギー・資源) under an explicit instruction to
+     reorganise. Pinning the shelf here would have made that instruction look like a regression, so
+     what is asserted is the property #R233 was actually about: each of them is on a CURATED shelf,
+     exactly one, and none of them fell back into Beta / Others. */
+  const shelves = {};
+  for (const e of dl.matchAll(/\['(lyrGrp[A-Za-z]+)',\[([^\]]*)\]\]/g)) {
+    shelves[e[1]] = e[2].split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean);
+  }
+  const shelfOf = (id) => Object.keys(shelves).filter((g) => shelves[g].includes(id));
   const SEVEN = ['cpi', 'dem', 'gdppc', 'hdi', 'lifeexp', 'popgrid', 'tfr'];
-  SEVEN.forEach((id) => assert.ok(ids.includes(id),
-    `${id} left 人口・経済; #R233 named 人口密度(1kmグリッド)/1人当たりGDP/合計特殊出生率/HDI/民主主義指数/汚職指標/平均寿命`));
-  assert.deepEqual(ids.filter((i) => !SEVEN.includes(i)), ['energy'],
-    'something other than the promoted energy-mix row appeared in 人口・経済 — #R233 demoted everything else on purpose');
+  SEVEN.concat(['energy']).forEach((id) => {
+    const w = shelfOf(id);
+    assert.equal(w.length, 1, id + ' must be on exactly one shelf, not ' + w.length);
+    assert.ok(!/Others|Beta/i.test(w[0]),
+      id + ' fell back into ' + w[0] + '; #R233 named it as a curated row');
+  });
+  assert.ok(ids.includes('popgrid') && ids.includes('tfr'),
+    '人口密度 and 合計特殊出生率 are what 人口・経済 is named for and must stay on it');
   /* ⚠ THE DEMOTED ROWS MUST STILL EXIST — 「betaに降格」 is a section change, not a deletion, and a
      regression that quietly dropped them would look identical in the panel. Their owners are spread
      across js/ (data-layers builds `pop`, layer-packs and wb-layers build the World-Bank set), so the

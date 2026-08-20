@@ -72,9 +72,27 @@ function allowed(raw) {
    being small — every warning in the feed produces a row. */
 const SEV = { Extreme: 3, Severe: 2, Moderate: 1, Minor: 1, Unknown: 1 };
 
+/* == (#R271) THE AREA IS WHAT GETS COLOURED, SO THE AREA HAS TO SURVIVE THE SUMMARY ============
+   The layer used to paint whole countries because that is all this summary told it: every area of a
+   warning was flattened into one comma-joined string. MEASURED over ten national feeds the same
+   minute, that threw away exactly what a map needs — the United Kingdom's and Norway's feeds carry
+   a CAP <polygon> per area, and the rest carry an `areaDesc` that IS the region's published name
+   (Italy「Toscana」, the Netherlands「Drenthe」, France「Cantal」), which the app matches against
+   Eurostat's NUTS geometry.
+
+   So the summary now carries a SECOND projection: one row per REGION, deduplicated by EMMA_ID (or
+   by name where the feed publishes none), holding the worst tier in force there and the hazards by
+   name. Deduplication is what keeps it small — Spain publishes 15,170 area entries across roughly a
+   hundred and eighty distinct zones — and it is still a projection, not an edit: every warning in
+   the feed contributes to the region it names.
+   WARNING THE CAP POLYGON IS PASSED THROUGH VERBATIM, not parsed here: the app turns "lat,lon ..."
+   into GeoJSON, and doing it in one place is what stops the two ends disagreeing about the order. */
+const AREA_CAP = 400;      /* per country; `areaTotal` states the real number either way */
+
 function summariseMeteoAlarm(raw, lang) {
   const j = JSON.parse(raw);
   const rows = [];
+  const areaMap = new Map();
   for (const w of (j.warnings || [])) {
     const infos = (w?.alert?.info) || [];
     if (!infos.length) continue;
@@ -82,22 +100,39 @@ function summariseMeteoAlarm(raw, lang) {
       || infos.find((i) => String(i.language || "").toLowerCase().startsWith("en"))
       || infos[0];
     const areas = (pick.area || []).map((a) => String(a.areaDesc || "")).filter(Boolean);
+    const tier = SEV[String(pick.severity)] || 1;
+    for (const a of (pick.area || [])) {
+      const name = String(a.areaDesc || "").trim();
+      if (!name) continue;
+      const emma = ((a.geocode || []).find((g) => String(g.valueName || "") === "EMMA_ID") || {}).value || "";
+      const key = String(emma || name);
+      const bucket = areaMap.get(key) || { name, emma: String(emma || ""), tier: 0, events: [], poly: "" };
+      areaMap.set(key, bucket);
+      if (tier > bucket.tier) bucket.tier = tier;
+      if (!bucket.poly && a.polygon) bucket.poly = String(Array.isArray(a.polygon) ? a.polygon[0] : a.polygon).slice(0, 20000);
+      const ev = String(pick.event || "").slice(0, 80);
+      if (ev && !bucket.events.some((e) => e.event === ev)) {
+        bucket.events.push({ event: ev, severity: String(pick.severity || ""), tier });
+      }
+    }
     rows.push({
       area: areas.join(", ").slice(0, 160),
       event: String(pick.event || "").slice(0, 80),
       headline: String(pick.headline || "").slice(0, 160),
-      tier: SEV[String(pick.severity)] || 1,
+      tier,
       severity: String(pick.severity || ""),
       onset: pick.onset || pick.effective || "",
       expires: pick.expires || "",
     });
   }
+  const areas = [...areaMap.values()].sort((a, b) => b.tier - a.tier).slice(0, AREA_CAP);
   /* ⚠ (#R269) `fetchedAt` — WHEN THIS SUMMARY WAS READ FROM MeteoAlarm. The rows carry `onset` and
      `expires`, which are the VALIDITY WINDOW and are normally in the FUTURE: the app's freshness
      instrument used them and reported MeteoAlarm as 82 hours «newer than now». A validity window is
      not an issue time, and a feed with no clock at all is the blind spot the instrument exists for,
      so the relay states the one timestamp it can actually vouch for. */
-  return { source: "MeteoAlarm (EUMETNET)", fetchedAt: new Date().toISOString(), count: rows.length, warnings: rows };
+  return { source: "MeteoAlarm (EUMETNET)", fetchedAt: new Date().toISOString(), count: rows.length,
+    warnings: rows, areas, areaTotal: areaMap.size };
 }
 
 Deno.serve(async (req) => {

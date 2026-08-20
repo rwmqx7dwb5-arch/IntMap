@@ -1139,6 +1139,8 @@ window.IntMapModules.worldPacks=function(HOST){
          (`_registerLayerOpacity`) overwrites that property with one scalar for every layer it owns:
          a wash has to stay a wash at 85 %, which is where the slider sits.
          ⚠ AND A COUNTRY WHOSE OWN AGENCY DRAWS AREAS HERE IS NOT WASHED AT ALL (see `washTier`). */
+      /* CAP's own severity words, the scale NWS, the DWD and MeteoAlarm all publish on */
+      const SEV3={Extreme:3,Severe:2,Moderate:1,Minor:1,Unknown:1};
       const GDACSCOL={3:'#e02b1d',2:'#f08c00',1:'#3d9a3d'};
       const GDACSWASH={3:'rgba(224,43,29,0.42)',2:'rgba(240,140,0,0.42)',1:'rgba(61,154,61,0.34)'};
       /* the national wash (China, Australia, Hong Kong, MeteoAlarm) is the agency's own tier, so it
@@ -1196,13 +1198,21 @@ window.IntMapModules.worldPacks=function(HOST){
          were FETCHED (`MA_DEFAULT`), so 33 European countries were washed only if somebody tapped
          them. They are now pulled in a few per tick until the whole set is in — bounded per call,
          complete within a few minutes, and reported. */
-      const FEEDS={ JPN:'jma', USA:'nws', CAN:'eccc', CHN:'cma', AUS:'bom', BRA:'inmet', HKG:'hko' };
+      /* (#R271) two more services, both answering the browser directly with their own polygons:
+           maps.dwd.de/geoserver/dwd/ows  WFS Warnungen_Landkreise  200 · ACAO * · district polygons
+           api.met.no/weatherapi/metalerts/2.0/current.json         200 · ACAO * · alert polygons
+         Germany and Norway are EUMETNET members, so MeteoAlarm carries them too — but MeteoAlarm's
+         rows for those two arrive WITHOUT geometry (measured: 16,272 German areas, 0 polygons) while
+         the issuing services publish the shapes themselves. The national service wins where it
+         exists; MA below is then EUMETNET's remaining thirty-five, and the panel counts thirty-five. */
+      const FEEDS={ JPN:'jma', USA:'nws', CAN:'eccc', CHN:'cma', AUS:'bom', BRA:'inmet', HKG:'hko',
+        DEU:'dwd', NOR:'metno' };
       /* MeteoAlarm (EUMETNET) member services, ISO3 → the slug its feed is named with */
       const MA={ AUT:'austria', BEL:'belgium', BIH:'bosnia-herzegovina', BGR:'bulgaria', HRV:'croatia',
         CYP:'cyprus', CZE:'czechia', DNK:'denmark', EST:'estonia', FIN:'finland', FRA:'france',
-        DEU:'germany', GRC:'greece', HUN:'hungary', ISL:'iceland', IRL:'ireland', ISR:'israel',
+        GRC:'greece', HUN:'hungary', ISL:'iceland', IRL:'ireland', ISR:'israel',
         ITA:'italy', LVA:'latvia', LTU:'lithuania', LUX:'luxembourg', MLT:'malta', MDA:'moldova',
-        MNE:'montenegro', NLD:'netherlands', MKD:'north-macedonia', NOR:'norway', POL:'poland',
+        MNE:'montenegro', NLD:'netherlands', MKD:'north-macedonia', POL:'poland',
         PRT:'portugal', ROU:'romania', SRB:'serbia', SVK:'slovakia', SVN:'slovenia', ESP:'spain',
         SWE:'sweden', CHE:'switzerland', GBR:'united-kingdom' };
       Object.keys(MA).forEach(k=>{ FEEDS[k]='meteoalarm'; });
@@ -1217,6 +1227,22 @@ window.IntMapModules.worldPacks=function(HOST){
       function maNext(){ const todo=Object.keys(MA).filter(k=>!maData[k]&&maAsked.indexOf(k)<0);
         const take=todo.slice(0,MA_PER_TICK); take.forEach(k=>maAsked.push(k)); return take; }
       let bomRec=null, hkoRec=null;   /* the two list-only services — a wash and a list, like CMA */
+      /* (#R271) the loaders that are NOT awaited with the others still put shapes on the map, so the
+         published collection is the awaited half plus whatever each of them has landed. One place
+         builds it, so a late feed can never blank an early one (the #R212 shape, again). */
+      const SIDE={cma:[],bom:[],ma:[]};
+      /* how many of the areas an agency published could be given a shape — printed, never assumed */
+      const PLACED={};
+      /* ⚠ (#R271) …AND WHAT THE UNPLACED ONES SAY. A warning is a safety claim; an area whose name
+         this map cannot turn into a shape must not simply disappear from the map because the units
+         around it could be drawn. So the country wash survives — but it now means exactly one thing,
+         «areas at this rank that could not be placed», and its rank comes from THOSE areas only.
+         That is what stops one district's 特別警報 from colouring a whole country: if the district
+         resolved, it is drawn and it contributes nothing to the wash.
+         MEASURED this round against the live feeds: France 93/93 areas placed, Italy 18/20,
+         the Netherlands 12/15 (the three are sea areas), Austria 1/116 (its zones are Bezirke and
+         NUTS has no Bezirk layer), Greece 3/16, China 31/34 provinces, Australia 5/5 states. */
+      const UNPL={};
       let cmaBusy=false, maBusy=false;   /* (#R269) the two relay-backed loaders, one call at a time */
       const relay=(qs)=>{ let b=''; try{ b=String(window.SUPABASE_URL||'').replace(/\/$/,''); }catch(_){ b=''; }
         return b?(b+'/functions/v1/alerts-relay?'+qs):''; };
@@ -1255,6 +1281,128 @@ window.IntMapModules.worldPacks=function(HOST){
             'fill-opacity':['case',['>',['to-number',['feature-state','wpAlert'],0],0],1,0]}},
           GE().layers.has('tool-poly')?'tool-poly':undefined); }catch(_){ return false; }
         return true; }
+
+      /* == (#R271) A COUNTRY IS NOT AN ISSUING UNIT, AND NEITHER IS A PREFECTURE =================
+         「気象警報、凡例の色がおかしすぎ。対応が崩壊している。日本は発令されてない箇所が紫色」(2回目)
+         「警報レイヤー、日本以外でも区分単位、発令単位ごとに色分けしろ。正確にリアルタイムな情報に
+           基づき正確で忠実な色分けを。また、対応国も増やせ。」
+
+         #R270 read the first sentence as a LEGEND defect (it was one, and that half is fixed: the
+         swatches and their names agree now) plus a GDACS country wash over Japan (also fixed --
+         MEASURED again this round, JPN's `wpAlert` is 0). The report came back unchanged, so the
+         paint was measured instead of the key. Two things were still painting places where nothing
+         is in force, and they are the same mistake at two scales:
+
+           - JAPAN WAS DRAWN AT THE PREFECTURE. `loadJMA` rolled every warning up to the two-digit
+             JIS prefecture and filled that whole shape with the WORST tier found anywhere in it.
+             MEASURED against the JMA's own bulletins the same minute: of the 64 class10 areas lying
+             inside a prefecture this layer painted, **18 (28.1 %) had no warning of their own** --
+             and the moment any one municipality is under a special warning the entire prefecture
+             becomes `#a335ee`. That is the reported purple over places with nothing in force,
+             exactly, and the panel was calling it the issuing unit while doing it.
+           - EVERY OTHER COUNTRY WAS DRAWN AT THE COUNTRY. MEASURED on production, same minute:
+             AUS `wpAlert`=3 -> the whole continent in the key's top-tier purple; FRA, DEU, BEL, AUT,
+             ITA, HRV, BIH, HKG all =2 -> whole countries in the key's warning red; 51 more washed
+             GDACS-orange and 18 GDACS-red. Ten countries painted at the top of a scale for a
+             warning covering a few districts.
+
+         -> THE UNIT THE AGENCY ISSUES AT IS WHAT GETS COLOURED, wherever that unit can be obtained:
+
+             Japan       the JMA's OWN class10 geometry (bosai/common/const/geojson/class10s.json,
+                         153 issuing regions, ACAO *) -- the shapes the JMA's own warning page draws
+             Germany     the DWD's own WFS (maps.dwd.de, ACAO *) -- warning polygons per Landkreis
+             Norway      MET Norway metalerts (api.met.no, ACAO *) -- the alert's own polygon
+             Europe      MeteoAlarm's CAP area: its polygon when the feed carries one (measured:
+                         the UK and Norwegian feeds do), otherwise the NUTS 2/3 region whose name
+                         the CAP itself names (measured: Italy=regioni, the Netherlands=provincies,
+                         France=departements, Poland=powiaty, Greece=periferies)
+             China       the CMA's province (the alert id is a GB/T 2260 division code)
+             Australia   the BoM's state
+             Hong Kong   the territory IS the issuing unit, so the wash is the unit
+
+         AND A COUNTRY IS WASHED ONLY WHERE NOTHING COULD BE DRAWN. `drawnISO` is derived from the
+         features that actually reached the map, so a country whose regions resolved is never also
+         painted whole; a country whose regions did NOT resolve keeps its wash rather than vanishing,
+         and the panel prints how many areas resolved out of how many the agency published, because
+         an area that could not be placed must not look like an area that does not exist (#R185). */
+      const SUBDIV={};             /* key -> Promise of an index, fetched once, kept for the session */
+      function fetchJSON(u,opt){ return fetch(u,opt||{}).then(r=>{ if(!r.ok) throw new Error(String(u).slice(0,60)+' '+r.status); return r.json(); }); }
+      /* the JMA's own issuing units. `code` here is the same class10 code `class10Items` is keyed on. */
+      function jmaClass10Geo(){ return SUBDIV.jma||(SUBDIV.jma=
+        fetchJSON('https://www.jma.go.jp/bosai/common/const/geojson/class10s.json').then(j=>{
+          const by=Object.create(null);
+          (j.features||[]).forEach(f=>{ const c=(f.properties&&f.properties.code)||''; if(c) by[String(c)]=f; });
+          if(!Object.keys(by).length) throw new Error('jma class10 geometry empty');
+          return by; })); }
+      /* one global admin-1 collection (Natural Earth 50 m, ACAO *) -- the level China's provinces and
+         Australia's states are issued at. Indexed by ISO3 and by every name the file carries for a
+         unit, so a feed's own wording finds its shape without a hand-written table. */
+      /* ⚠ THE TWO SIDES OF THE MATCH ARE WRITTEN BY DIFFERENT PEOPLE. A national service writes
+         「Fryslân」 where Eurostat writes 「Friesland」 and 「Valle d'Aosta」 where Eurostat writes
+         「Valle d'Aosta/Vallée d'Aoste」, so the key both go through folds accents, drops punctuation
+         and drops the word for the kind of unit. Both sides use THIS function — a normaliser applied
+         to only one side is the shape that makes a match table look complete and behave like a
+         coin toss. */
+      const _norm=(s)=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+        .replace(/[\s　.,\-_'’«»"]/g,'').replace(/[()]/g,'')
+        .replace(/(county|province|region|state|territory|prefecture|lan|voivodeship|megye|zupanija)$/,'');
+      /* ⚠ …AND SOME SERVICES NAME A ZONE BY THE UNIT IT IS PART OF PLUS WHICH PART. MEASURED:
+         Poland publishes 「Dolnośląskie Province Głogowski County」 (354 zones, none of them a NUTS
+         name) and Spain publishes 「Sur de Ourense」/「Montaña de Lugo」 (233 zones) — the province is
+         in the string, at the front in one case and at the end in the other. The longest word-prefix
+         or word-suffix that IS a published unit is that unit, so the warning is drawn on the region
+         it names rather than not at all. A fragment must be at least four characters, so a stray
+         「Sur」 or 「Nord」 cannot pick up a region by accident, and the row keeps the agency's own
+         wording for the zone so the tap still says which part of it the warning is for. */
+      function lookupUnit(idx,name){ if(!idx) return null;
+        const k=_norm(name); if(k&&idx[k]) return idx[k];
+        const w=String(name||'').split(/\s+/).filter(Boolean);
+        if(w.length<2) return null;
+        const tryK=(t)=>{ const q=_norm(t); return (q.length>=4&&idx[q])?idx[q]:null; };
+        for(let n=w.length-1;n>=1;n--){ const f=tryK(w.slice(0,n).join(' ')); if(f) return f; }
+        for(let n=1;n<w.length;n++){ const f=tryK(w.slice(n).join(' ')); if(f) return f; }
+        return null; }
+      /* every spelling one unit is published under, so the index answers to any of them */
+      const _alias=(v)=>{ const out=[];
+        String(v||'').split('|').forEach(part=>{ const t=part.trim(); if(!t) return;
+          out.push(t);
+          t.split('/').forEach(x=>{ if(x.trim()) out.push(x.trim()); });
+          const noParen=t.replace(/\([^)]*\)/g,'').trim(); if(noParen&&noParen!==t) out.push(noParen); });
+        return out; };
+      function adm1Geo(){ return SUBDIV.adm1||(SUBDIV.adm1=
+        fetchJSON('https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_50m_admin_1_states_provinces.geojson').then(j=>{
+          const by=Object.create(null);
+          (j.features||[]).forEach(f=>{ const p=f.properties||{}; const iso=String(p.adm0_a3||'').toUpperCase();
+            if(!iso) return; const m=by[iso]=by[iso]||Object.create(null);
+            const names=[];
+            ['name','name_alt','name_local','name_en','name_zh','name_zht','name_ja','name_ru','name_es','name_fr','name_de','gn_name','woe_name','iso_3166_2','code_hasc','postal','abbrev']
+              .forEach(k=>{ _alias(p[k]).forEach(x=>names.push(x)); });
+            names.forEach(n=>{ const k=_norm(n); if(k&&!m[k]) m[k]=f; }); });
+          return by; })); }
+      /* Europe's statistical regions -- the level the national services' CAP areas are named at.
+         Levels 2 and 3 together, at 60 m, because these are read at country zoom and 20 m is 2.4 MB. */
+      function nutsGeo(){ return SUBDIV.nuts||(SUBDIV.nuts=Promise.all([
+          fetchJSON('https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_60M_2021_4326_LEVL_2.geojson'),
+          fetchJSON('https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_60M_2021_4326_LEVL_3.geojson')])
+        .then(function(r){ const by=Object.create(null);
+          r.forEach(j=>(j.features||[]).forEach(f=>{ const p=f.properties||{};
+            const cc=String(p.CNTR_CODE||'').toUpperCase(); if(!cc) return;
+            const m=by[cc]=by[cc]||Object.create(null);
+            [p.NAME_LATN,p.NUTS_NAME,p.NUTS_ID].forEach(n=>_alias(n).forEach(x=>{ const k=_norm(x); if(k&&!m[k]) m[k]=f; })); }));
+          return by; })); }
+      /* ISO3 -> the two-letter code NUTS files a country under (EL and UK are NUTS's own spellings) */
+      const NUTS_CC={ AUT:'AT', BEL:'BE', BGR:'BG', HRV:'HR', CYP:'CY', CZE:'CZ', DNK:'DK', EST:'EE',
+        FIN:'FI', FRA:'FR', DEU:'DE', GRC:'EL', HUN:'HU', ISL:'IS', IRL:'IE', ITA:'IT', LVA:'LV',
+        LTU:'LT', LUX:'LU', MLT:'MT', NLD:'NL', MKD:'MK', NOR:'NO', POL:'PL', PRT:'PT', ROU:'RO',
+        SRB:'RS', SVK:'SK', SVN:'SI', ESP:'ES', SWE:'SE', CHE:'CH', GBR:'UK', MNE:'ME' };
+      /* a CAP <polygon> is "lat,lon lat,lon ..." -- GeoJSON wants [lon,lat] and a closed ring */
+      function capPolygon(txt){
+        const pts=String(txt||'').trim().split(/\s+/).map(p=>{ const a=p.split(','); const y=+a[0], x=+a[1];
+          return (isFinite(x)&&isFinite(y))?[x,y]:null; }).filter(Boolean);
+        if(pts.length<4) return null;
+        const first=pts[0], last=pts[pts.length-1];
+        if(first[0]!==last[0]||first[1]!==last[1]) pts.push([first[0],first[1]]);
+        return {type:'Polygon',coordinates:[pts]}; }
 
       let _jpGeo=null;
       /* ⚠⚠ (#R212) THE PREFECTURE GEOMETRY NEVER ARRIVED IN A BROWSER, AND THAT IS THE WHOLE OF
@@ -1314,6 +1462,8 @@ window.IntMapModules.worldPacks=function(HOST){
       const JMA_R8='https://www.jma.go.jp/bosai/warning/data/r8/map.json';
       const JMA_MAX_AGE_H=72;
       let jmaAgeH=null, jmaSuperseded=0, jmaAt='';
+      /* (#R271) which unit Japan is on screen at, and how many of the agency's areas were placed */
+      let jmaUnit='', jmaAreas=0, jmaPlaced=0;
       async function loadJMA(){
         const [list,area,geo]=await Promise.all([
           fetch(JMA_R8,{cache:'no-store'}).then(r=>{ if(!r.ok) throw new Error('jma '+r.status); return r.json(); }),
@@ -1345,7 +1495,12 @@ window.IntMapModules.worldPacks=function(HOST){
         seenAt('jma',jmaAt);
         if(!(jmaAgeH!=null&&jmaAgeH<JMA_MAX_AGE_H))
           throw new Error('jma: newest bulletin is '+(jmaAgeH==null?'undated':(Math.round(jmaAgeH)+' h old')));
-        const byPref=Object.create(null);
+        /* == (#R271) THE BUCKET IS THE ISSUING REGION, NOT THE PREFECTURE ========================
+           Every warning already knew which class10 area it belongs to -- `regionOf` walks a class20
+           municipality code up to it, and a class10Item IS one. Rolling both up to the two-digit
+           prefecture is what painted the quiet 28 % of Japan. The bucket is the class10 code now;
+           the prefecture survives as the row's `adm`, which is what the tap groups on. */
+        const byC10=Object.create(null), byPref=Object.create(null);
         kept.forEach(b=>{ const w=b.warning||{};
           [['class10Items','pref'],['class20Items','muni']].forEach(([key,unit])=>{
             (w[key]||[]).forEach(a=>{
@@ -1356,21 +1511,44 @@ window.IntMapModules.worldPacks=function(HOST){
                 if(k.status==='解除'||k.status==='発表警報・注意報はなし') return;
                 const e=JMA_CODE[String(k.code)]; if(!e) return;          /* an unknown code is not invented */
                 const t=jmaTier(e[1]);
-                const rec=byPref[pref]=byPref[pref]||{tier:0,items:[],reportedAt:b.reportDatetime||''};
-                if(t>rec.tier) rec.tier=t;
-                if(String(b.reportDatetime||'')>String(rec.reportedAt||'')) rec.reportedAt=b.reportDatetime||'';
                 const kind=jmaKind(k.code);
-                const r10=regionOf(code);
-                rec.items.push({ area:nameOf(code), sub:r10?nameOf(r10):nameOf(code),
-                  adm:nameOf(String(pref).padStart(2,'0')+'0000')||nameOf(code), unit, tier:t,
-                  kind:kind?L.arr(kind):('#'+k.code), status:k.status }); }); }); }); });
+                const r10=regionOf(code)||(unit==='pref'?code:null);
+                const pn=nameOf(String(pref).padStart(2,'0')+'0000')||nameOf(code);
+                const row={ area:nameOf(code), sub:r10?nameOf(r10):nameOf(code),
+                  adm:pn, unit, tier:t, kind:kind?L.arr(kind):('#'+k.code), status:k.status };
+                const put=(bag,id)=>{ const rec=bag[id]=bag[id]||{tier:0,items:[],reportedAt:b.reportDatetime||'',pref,name:''};
+                  if(t>rec.tier) rec.tier=t;
+                  if(String(b.reportDatetime||'')>String(rec.reportedAt||'')) rec.reportedAt=b.reportDatetime||'';
+                  rec.items.push(row); };
+                if(r10){ put(byC10,String(r10)); byC10[String(r10)].name=nameOf(r10); }
+                put(byPref,String(pref)); }); }); }); });
+        /* the JMA's own shapes for those regions; if they cannot be read the prefecture outline is
+           still a true statement about WHERE, just a coarser one -- so it is the fallback, and the
+           panel says which of the two is on screen rather than letting one pass for the other. */
+        let c10geo=null; try{ c10geo=await jmaClass10Geo(); }catch(_){ c10geo=null; }
+        jmaUnit=c10geo?'class10':'pref';
         const out=[];
+        if(c10geo){
+          jmaAreas=Object.keys(byC10).length; jmaPlaced=0;
+          Object.keys(byC10).forEach(c=>{ const rec=byC10[c]; if(!rec.tier) return;
+            const f=c10geo[c]; if(!f) return; jmaPlaced++;
+            const nm=rec.name||nameOf(c);
+            out.push({type:'Feature',geometry:f.geometry,properties:{ iso:'JPN', col:TIERCOL[rec.tier], tier:rec.tier,
+              name:nm, n:rec.items.length, at:rec.reportedAt, unit:'class10',
+              items:JSON.stringify(rec.items.slice(0,400)) }}); });
+          UNPL.JPN=0; Object.keys(byC10).forEach(c=>{ const r=byC10[c];
+            if(!c10geo[c]&&(r.tier||0)>UNPL.JPN) UNPL.JPN=r.tier||0; });
+          PLACED.JPN=[jmaPlaced,jmaAreas];
+          if(jmaPlaced) return out;
+        }
+        jmaAreas=Object.keys(byPref).length; jmaPlaced=0;
         Object.keys(byPref).forEach(p=>{ const rec=byPref[p]; if(!rec.tier) return;
-          const f=geo[+p]; if(!f) return;
+          const f=geo[+p]; if(!f) return; jmaPlaced++;
           const pn=(f.properties&&f.properties.shapeName)||('JP-'+p);
           out.push({type:'Feature',geometry:f.geometry,properties:{ iso:'JPN', col:TIERCOL[rec.tier], tier:rec.tier,
-            name:pn, n:rec.items.length, at:rec.reportedAt,
+            name:pn, n:rec.items.length, at:rec.reportedAt, unit:'pref',
             items:JSON.stringify(rec.items.slice(0,400).map(x=>Object.assign({},x,{adm:pn}))) }}); });
+        jmaUnit='pref';
         return out; }
 
       async function loadNWS(){
@@ -1435,7 +1613,36 @@ window.IntMapModules.worldPacks=function(HOST){
           items.push({ area:title.replace(/^.*?气象台发布/,'')||title, adm:prov, unit:'city', tier:t,
             kind:(title.match(/发布(.+?)预警/)||[])[1]||'', status:String(a.issuetime||'') }); });
         cmaCount=items.length;
+        /* (#R271) the province the alert id names, as a shape. `CN_PROV` is the GB/T 2260 division
+           this feed keys on; Natural Earth carries the same units under `name_zh`/`name_local`, so
+           the match is the agency's own word for the unit rather than a table written here. */
+        SIDE.cma=await unitFeatures('CHN',items,(x)=>x.adm,'province');
         return { items, worst }; }
+
+      /* ══ (#R271) ONE PLACE TURNS «THE AGENCY SAID THIS UNIT» INTO A SHAPE ══════════════════════
+         Rows carry the agency's own name for the unit they were issued for. This looks that name up
+         in the admin-1 collection for the country, buckets the rows by unit, and emits one feature
+         per unit at the worst tier in it. A name that does not resolve is COUNTED, not dropped
+         silently: `PLACED[iso]` is [placed, total] and the panel prints both, so an area that could
+         not be located never looks like an area with nothing in force (#R185). */
+      async function unitFeatures(iso,rows,keyOf,unitName){
+        const by=new Map();
+        (rows||[]).forEach(x=>{ const k=String(keyOf(x)||'').trim(); if(!k) return;
+          const g=by.get(k)||{tier:0,items:[]}; by.set(k,g);
+          if((x.tier||0)>g.tier) g.tier=x.tier||0; g.items.push(x); });
+        PLACED[iso]=[0,by.size];
+        if(!by.size) return [];
+        let idx=null; try{ idx=(await adm1Geo())[iso]||null; }catch(_){ idx=null; }
+        if(!idx) return [];
+        const out=[];
+        by.forEach((g,k)=>{ const f=lookupUnit(idx,k); if(!f||!f.geometry) return;
+          out.push({type:'Feature',geometry:f.geometry,properties:{ iso, col:TIERCOL[g.tier], tier:g.tier,
+            name:k, n:g.items.length, at:(g.items[0]&&g.items[0].status)||'', unit:unitName,
+            items:JSON.stringify(g.items.slice(0,300)) }}); });
+        PLACED[iso]=[out.length,by.size];
+        let u=0; by.forEach((g,k)=>{ if(!lookupUnit(idx,k)&&(g.tier||0)>u) u=g.tier||0; });
+        UNPL[iso]=u;
+        return out; }
 
       /* ── Australia: the Bureau of Meteorology's own warning list. ACAO *, 4 KB, no geometry —
             so this is a country wash plus a list grouped by STATE, the level BoM files them at. ──
@@ -1452,6 +1659,9 @@ window.IntMapModules.worldPacks=function(HOST){
             items.push({ area:String(a.title||a.short_title||''), sub:String(a.short_title||a.type||''),
               adm:String(st||''), unit:'state', tier:t,
               kind:String(a.short_title||a.type||'').replace(/_/g,' '), status:String(a.issue_time||'') }); }); });
+        /* (#R271) BoM files its warnings by state, so the state is what gets coloured — the whole
+           continent used to go purple the moment one flood was classed «major». */
+        SIDE.bom=await unitFeatures('AUS',items,(x)=>x.adm,'state');
         return { items, worst }; }
 
       /* ── Hong Kong: the Observatory's warning SUMMARY — one object per signal in force. ──
@@ -1489,6 +1699,102 @@ window.IntMapModules.worldPacks=function(HOST){
               adm:st, unit:'state', tier:t, kind:String(a.descricao||''), status:String(a.inicio||'') }))) }}); });
         return out; }
 
+      /* ══ (#R271) GERMANY, AT THE DISTRICT THE DWD ISSUES FOR ═══════════════════════════════════
+         The DWD runs a public GeoServer and its `Warnungen_Landkreise` layer IS the warning set with
+         the district polygons attached — measured, 200 with `Access-Control-Allow-Origin: *` and CAP
+         fields (EVENT, SEVERITY, SENT, HEADLINE) on every feature. MeteoAlarm relays the same
+         warnings without any geometry at all (measured: 16,272 German areas, 0 polygons), so the
+         issuing service is read directly and Germany stops being one red rectangle.
+         ⚠ THE BUNDESLAND COMES FROM THE DWD TOO. The WFS carries no admin-1 field, and the standing
+         rule is that a tap groups by the admin-1 unit (#R266) — `warnings.json` on dwd.de is the
+         same warnings keyed by the same WARNCELLID WITH the state on each, so the join is the DWD's
+         own answer rather than a guess. If it cannot be read the district is still a true label. */
+      const DWD_WFS='https://maps.dwd.de/geoserver/dwd/ows?service=WFS&version=2.0.0&request=GetFeature'
+        +'&typeName=dwd:Warnungen_Landkreise&outputFormat=application/json&count=2000';
+      async function dwdStates(){
+        const r=await fetch('https://www.dwd.de/DWD/warnungen/warnapp/json/warnings.json',{cache:'no-store'});
+        if(!r.ok) throw new Error('dwd states '+r.status);
+        let t=await r.text();
+        const a=t.indexOf('('), b=t.lastIndexOf(')');
+        if(a<0||b<a) throw new Error('dwd states: not the callback shape');
+        const j=JSON.parse(t.slice(a+1,b));
+        const by=Object.create(null);
+        Object.keys(j.warnings||{}).forEach(k=>{ const w=(j.warnings[k]||[])[0]; if(w&&w.state) by[String(k)]=String(w.state); });
+        Object.keys(j.vorabInformation||{}).forEach(k=>{ const w=(j.vorabInformation[k]||[])[0]; if(w&&w.state&&!by[String(k)]) by[String(k)]=String(w.state); });
+        return by; }
+      async function loadDWD(){
+        const [j,st]=await Promise.all([
+          fetch(DWD_WFS,{cache:'no-store'}).then(r=>{ if(!r.ok) throw new Error('dwd '+r.status); return r.json(); }),
+          dwdStates().catch(()=>({}))]);
+        const out=[]; let n=0;
+        (j.features||[]).forEach(f=>{ if(!f.geometry) return; const p=f.properties||{}; n++;
+          const t=SEV3[String(p.SEVERITY||'')]||1;
+          seenAt('dwd',p.SENT||p.EFFECTIVE);
+          const area=String(p.NAME||p.AREADESC||'');
+          const adm=st[String(p.WARNCELLID||'')]||area;
+          out.push({type:'Feature',geometry:f.geometry,properties:{ iso:'DEU', col:TIERCOL[t], tier:t,
+            name:area, n:1, at:String(p.SENT||''), unit:'district',
+            items:JSON.stringify([{ area, adm, sub:String(p.EVENT||''), unit:'district', tier:t,
+              kind:String(p.EVENT||''), status:String(p.HEADLINE||p.SEVERITY||'') }]) }}); });
+        PLACED.DEU=[out.length,n]; UNPL.DEU=0;   /* every DWD feature carries its own polygon */
+        return out; }
+
+      /* ══ (#R271) NORWAY, WITH THE ALERT'S OWN POLYGON ══════════════════════════════════════════
+         MET Norway publishes its CAP set as GeoJSON with the affected polygon on every feature —
+         measured, 200 with ACAO *. `awareness_level` is CAP's own «2; yellow; Moderate», so the tier
+         is the service's word for it and nothing is inferred from the text.
+         ⚠ `eventEndingTime` is a VALIDITY WINDOW, not an issue time (#R269) — `seenAt` refuses
+         anything in the future, so the clock can only ever show something already published. */
+      async function loadMETNO(){
+        const r=await fetch('https://api.met.no/weatherapi/metalerts/2.0/current.json',{cache:'no-store'});
+        if(!r.ok) throw new Error('metno '+r.status);
+        const j=await r.json(); const out=[]; let n=0;
+        (j.features||[]).forEach(f=>{ if(!f.geometry) return; const p=f.properties||{}; n++;
+          const lv=String(p.awareness_level||'');
+          const t=/red|extreme/i.test(lv)?3:/orange|severe/i.test(lv)?2:1;
+          seenAt('metno',p.eventStartingTime||p.sent||j.lastChange);
+          const area=String(p.area||'');
+          out.push({type:'Feature',geometry:f.geometry,properties:{ iso:'NOR', col:TIERCOL[t], tier:t,
+            name:area, n:1, at:String(p.eventStartingTime||''), unit:'area',
+            items:JSON.stringify([{ area, adm:area, sub:String(p.eventAwarenessName||p.event||''),
+              unit:'area', tier:t, kind:String(p.eventAwarenessName||p.event||''),
+              status:String(p.awarenessSeriousness||lv||'') }]) }}); });
+        PLACED.NOR=[out.length,n]; UNPL.NOR=0;   /* every MET Norway feature carries its own polygon */
+        return out; }
+
+      /* ══ (#R271) EUROPE, AT THE REGION THE CAP MESSAGE NAMES ═══════════════════════════════════
+         A MeteoAlarm warning always names its areas; what it usually does not carry is their shape.
+         MEASURED across ten national feeds the same minute: the United Kingdom's and Norway's carry
+         `<polygon>`, and the rest carry an EMMA_ID plus an `areaDesc` that IS the region's own name —
+         Italy「Toscana」, the Netherlands「Drenthe」, France「Cantal」, Greece「West Sterea」. Those are
+         NUTS 2 and NUTS 3 units, published by Eurostat as GeoJSON with `Access-Control-Allow-Origin: *`.
+         So: the feed's polygon if it has one, else the NUTS region whose own name the feed printed,
+         else nothing is drawn for that area and it is COUNTED as unplaced. */
+      async function maFeatures(){
+        const isos=Object.keys(maData).filter(k=>((maData[k]||{}).areas||[]).length);
+        if(!isos.length){ SIDE.ma=[]; return; }
+        let nuts=null; try{ nuts=await nutsGeo(); }catch(_){ nuts=null; }
+        const out=[];
+        isos.forEach(iso=>{ const d=maData[iso]||{}; const cc=NUTS_CC[iso];
+          const idx=(nuts&&cc&&nuts[cc])||null; let placed=0;
+          (d.areas||[]).forEach(a=>{
+            let g=a.poly?capPolygon(a.poly):null;
+            if(!g&&idx){ const f=lookupUnit(idx,a.name); if(f&&f.geometry) g=f.geometry; }
+            if(!g) return;
+            placed++;
+            const t=a.tier||1;
+            const ev=(a.events&&a.events.length)?a.events:[{event:'',severity:'',tier:t}];
+            out.push({type:'Feature',geometry:g,properties:{ iso, col:TIERCOL[t], tier:t,
+              name:String(a.name||''), n:ev.length, at:String(d.fetchedAt||''), unit:'region',
+              items:JSON.stringify(ev.slice(0,40).map(e=>({ area:String(a.name||''), adm:String(a.name||''),
+                sub:String(e.event||a.name||''), unit:'region', tier:e.tier||t,
+                kind:String(e.event||''), status:String(e.severity||'') }))) }}); });
+          PLACED[iso]=[placed,(d.areas||[]).length];
+          let u=0; (d.areas||[]).forEach(a=>{ const has=(a.poly&&capPolygon(a.poly))||lookupUnit(idx,a.name);
+            if(!has&&(a.tier||0)>u) u=a.tier||0; });
+          UNPL[iso]=u; });
+        SIDE.ma=out; }
+
       /* ── Europe: MeteoAlarm, summarised by the relay (the raw feed is 10 MB per country) ── */
       async function loadMA(list){
         const names=list.map(k=>MA[k]).filter(Boolean); if(!names.length) return;
@@ -1499,6 +1805,7 @@ window.IntMapModules.worldPacks=function(HOST){
         /* (#R269) the relay's own `fetchedAt` — the warnings' onset/expires are a validity window */
         list.forEach(k=>{ const n=MA[k]; const d=(j.countries||{})[n]; if(d){ maData[k]=d;
           seenAt('meteoalarm',d.fetchedAt); } });
+        await maFeatures();
       }
 
       /* ── the rest of the world: GDACS, the UN/EC global disaster alert system ────────────────────
@@ -1555,18 +1862,26 @@ window.IntMapModules.worldPacks=function(HOST){
          in the tap (its own block, #R266 追記), which is where an event feed belongs.
          GEOM_FEEDS is derived from the features actually drawn rather than written out by hand, so a
          feed that starts publishing polygons stops being washed on the same day. */
-      const GEOM_FEEDS={jma:1,nws:1,eccc:1,inmet:1};
-      const drawsAreas=(c)=>!!GEOM_FEEDS[FEEDS[c]];
-      /* the national agency's own tier for a country that publishes a LIST rather than shapes */
+      /* ⚠ (#R271) …AND THE LIST OF THOSE COUNTRIES IS NOT WRITTEN DOWN ANY MORE. #R270 kept a
+         hand-written `GEOM_FEEDS={jma,nws,eccc,inmet}`, which stops being true the day a feed starts
+         publishing shapes — and this round four more did. `drawnISO` is rebuilt from the features
+         that actually reached the source on every publish, so «this country's own units are on the
+         map» is a measurement rather than a table, for the feeds that exist and the ones that do not
+         exist yet. A country whose units did NOT resolve keeps its wash and its counted shortfall. */
+      let drawnISO=Object.create(null);
+      const drawsAreas=(c)=>!!drawnISO[c];
+      /* ⚠ (#R271) THE WASH IS WHAT COULD NOT BE PLACED, AND NOTHING ELSE. This used to be «the
+         worst rank anywhere in the country», which is why one BoM flood classed «major» painted the
+         whole of Australia in the key's top colour while five states were separately known.
+         Hong Kong's warnings are territory-wide — the HKO issues for Hong Kong, not for a district
+         inside it — so there the wash IS the issuing unit and `UNPL` is its rank by construction. */
       function agencyTier(c){
-        let t=0;
-        if(c==='CHN'&&cmaRec) t=Math.max(t,cmaRec.worst||0);
-        if(c==='AUS'&&bomRec) t=Math.max(t,bomRec.worst||0);      /* (#R268) list-only, like CMA */
-        if(c==='HKG'&&hkoRec) t=Math.max(t,hkoRec.worst||0);
-        const md=maData[c]; if(md&&md.warnings&&md.warnings.length) t=Math.max(t,md.warnings.reduce((m,w)=>Math.max(m,w.tier||1),0));
-        return t; }
+        if(c==='HKG'&&hkoRec) return hkoRec.worst||0;
+        return UNPL[c]||0; }
       /* 0 = nothing · 1–3 = the agency's warning tier · 11–13 = a GDACS event level (its own scale) */
       function washTier(c){
+        /* (#R271) the agency's own rank now MEANS «areas of this country that could not be placed»,
+           so it still comes first — a country whose units are all on the map returns 0 here. */
         const a=agencyTier(c); if(a) return a;
         if(drawsAreas(c)) return 0;
         const g=(gCountries[c]&&gCountries[c].tier)||0;
@@ -1577,16 +1892,33 @@ window.IntMapModules.worldPacks=function(HOST){
           GE().layers.setFeatureState({source:'countries',id:f.id},{wpAlert:washTier(c)}); }); }catch(_){}
         setVis([CHORO],on); }); }
 
+      /* ══ (#R271) ONE PUBLISHER ═════════════════════════════════════════════════════════════════
+         The awaited half and the four loaders that land on their own all put shapes in the same
+         collection. Building it in one place is what keeps a late feed from blanking an early one
+         (#R212), and it is where `drawnISO` — the set of countries whose own units are on the map —
+         is recomputed, so the country wash and the unit fills can never both be showing. */
+      let baseFeats=[];
+      function publish(){
+        feats=baseFeats.concat(SIDE.cma,SIDE.bom,SIDE.ma);
+        drawnISO=Object.create(null);
+        feats.forEach(f=>{ const g=f.geometry; if(g&&g.type!=='Point'&&f.properties&&f.properties.iso) drawnISO[f.properties.iso]=1; });
+        whenDrawable(()=>{ if(ensureLayers()){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,on); } });
+        paintCountries();
+        if(on&&panel.shown()) overview(); }
+
       async function refresh(){ if(busy) return; busy=true;
-        ['jma','nws','eccc','meteoalarm','cma','gdacs','bom','inmet','hko'].forEach(k=>{ if(FEED_STATE[k]!=='ok') FEED_STATE[k]='loading'; });
+        ['jma','nws','eccc','meteoalarm','cma','gdacs','bom','inmet','hko','dwd','metno'].forEach(k=>{ if(FEED_STATE[k]!=='ok') FEED_STATE[k]='loading'; });
         try{ const parts=await Promise.all([
             loadJMA().then(v=>{ FEED_STATE.jma='ok'; return v; }).catch(e=>{ FEED_STATE.jma='error'; console.warn('JMA warnings',e); return []; }),
             loadNWS().then(v=>{ FEED_STATE.nws='ok'; return v; }).catch(e=>{ FEED_STATE.nws='error'; console.warn('NWS warnings',e); return []; }),
             loadECCC().then(v=>{ FEED_STATE.eccc='ok'; return v; }).catch(e=>{ FEED_STATE.eccc='error'; console.warn('ECCC warnings',e); return []; }),
             loadGDACS().then(v=>{ FEED_STATE.gdacs='ok'; return v; }).catch(e=>{ FEED_STATE.gdacs='error'; console.warn('GDACS warnings',e); return []; }),
             /* (#R268) Brazil publishes polygons, so it joins the geometry feeds rather than the washes */
-            loadINMET().then(v=>{ FEED_STATE.inmet='ok'; return v; }).catch(e=>{ FEED_STATE.inmet='error'; console.warn('INMET warnings',e); return []; })]);
-          feats=parts.flat(); lastAt=Date.now();
+            loadINMET().then(v=>{ FEED_STATE.inmet='ok'; return v; }).catch(e=>{ FEED_STATE.inmet='error'; console.warn('INMET warnings',e); return []; }),
+            /* (#R271) the two services that answer the browser directly with their own polygons */
+            loadDWD().then(v=>{ FEED_STATE.dwd='ok'; return v; }).catch(e=>{ FEED_STATE.dwd='error'; console.warn('DWD warnings',e); return []; }),
+            loadMETNO().then(v=>{ FEED_STATE.metno='ok'; return v; }).catch(e=>{ FEED_STATE.metno='error'; console.warn('MET Norway warnings',e); return []; })]);
+          baseFeats=parts.flat(); lastAt=Date.now();
           /* ⚠ (#R266) THE TWO LIST FEEDS ARE NOT AWAITED WITH THE OTHERS. MeteoAlarm's summariser
              reads up to four ten-megabyte national feeds; measured cold it is seconds, and a
              `Promise.all` that includes it means Japan's and America's warnings — which arrived in
@@ -1599,21 +1931,19 @@ window.IntMapModules.worldPacks=function(HOST){
              after 90 s, which is a minute and a half of 60-second ticks stacking a second, third and
              fourth request on a host that is already not answering. One at a time. */
           if(!cmaBusy){ cmaBusy=true;
-            loadCMA().then(v=>{ FEED_STATE.cma='ok'; cmaRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
+            loadCMA().then(v=>{ FEED_STATE.cma='ok'; cmaRec=v; if(on) publish(); })
               .catch(e=>{ FEED_STATE.cma='error'; console.warn('CMA warnings',e); if(on&&panel.shown()) overview(); })
               .then(()=>{ cmaBusy=false; }); }
-          loadBOM().then(v=>{ FEED_STATE.bom='ok'; bomRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
+          loadBOM().then(v=>{ FEED_STATE.bom='ok'; bomRec=v; if(on) publish(); })
             .catch(e=>{ FEED_STATE.bom='error'; console.warn('BoM warnings',e); if(on&&panel.shown()) overview(); });
           loadHKO().then(v=>{ FEED_STATE.hko='ok'; hkoRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
             .catch(e=>{ FEED_STATE.hko='error'; console.warn('HKO warnings',e); if(on&&panel.shown()) overview(); });
           /* (#R268) the European set completes itself: whatever has not been read yet, a few per tick */
           if(!maBusy){ maBusy=true;
-            loadMA(maAsked.filter(k=>!maData[k]).concat(maNext())).then(()=>{ FEED_STATE.meteoalarm='ok'; if(on){ paintCountries(); if(panel.shown()) overview(); } })
+            loadMA(maAsked.filter(k=>!maData[k]).concat(maNext())).then(()=>{ FEED_STATE.meteoalarm='ok'; if(on) publish(); })
               .catch(e=>{ FEED_STATE.meteoalarm='error'; console.warn('MeteoAlarm',e); if(on&&panel.shown()) overview(); })
               .then(()=>{ maBusy=false; }); }
-          whenDrawable(()=>{ if(ensureLayers()){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,on); } });
-          paintCountries();
-          if(on&&panel.shown()) overview();
+          publish();
         } finally { busy=false; } }
 
       /* the three tiers as a colour key — the same TIERCOL the map paints from */
@@ -1709,7 +2039,11 @@ window.IntMapModules.worldPacks=function(HOST){
           else if(md&&!md.error) h+='<div style="margin-top:8px;color:var(--text-muted);">'+L('Nothing in force right now.','現在、発表中のものはありません。','Derzeit nichts in Kraft.','Сейчас ничего не действует.','Nada vigente ahora.')+'</div>';
           return h; }
         h+='<div style="margin-top:4px;color:var(--text-muted);">'+(feed==='jma'
-            ?L('Japan Meteorological Agency, at the unit the warning is issued for.','気象庁・発令単位（都道府県／地方／市区町村）','Japanische Wetterbehörde','Метеоагентство Японии','Agencia Meteorológica de Japón')
+            ?L('Japan Meteorological Agency, at the region the warning is issued for.','気象庁・発令単位（一次細分区域）。市区町村はタップの中にあります。','Japanische Wetterbehörde, in ihren Warnregionen','Метеоагентство Японии, в её регионах выпуска','Agencia Meteorológica de Japón, en sus regiones de emisión')
+            :feed==='dwd'
+            ?L('Deutscher Wetterdienst, warnings with their own district polygons.','ドイツ気象局（DWD）の発表中の警報。郡（Landkreis）単位の区域を描画し、州ごとにまとめています。','Deutscher Wetterdienst — Warnungen mit ihren Landkreis-Gebieten, nach Bundesland.','Метеослужба Германии (DWD) — предупреждения с их округами, по землям.','Servicio Meteorológico Alemán (DWD) — avisos con sus distritos, por estado.')
+            :feed==='metno'
+            ?L('MET Norway, alerts with their own polygons.','ノルウェー気象研究所（MET Norway）の警報。警報ごとの対象範囲を描画しています。','MET Norway — Warnungen mit ihren eigenen Gebieten.','Метеоинститут Норвегии — предупреждения с их зонами.','MET Norway — avisos con sus propias zonas.')
             :feed==='inmet'
             ?L('INMET (Brazil), active warnings with their published areas, grouped by state.','ブラジル国立気象研究所（INMET）の発表中の警報。公表された対象範囲を描画し、州ごとにまとめています。','INMET (Brasilien) — geltende Warnungen mit ihren Gebieten, nach Bundesstaat.','INMET (Бразилия) — действующие предупреждения с их зонами, по штатам.','INMET (Brasil) — avisos vigentes con sus áreas, por estado.')
             :feed==='eccc'
@@ -1857,6 +2191,16 @@ window.IntMapModules.worldPacks=function(HOST){
           +(list.length>N?more(list.length-N):'')
           +'</div>'; }
 
+      /* (#R271) «resolved N of M areas» for every country where the two numbers differ */
+      function placedLine(){
+        const gaps=Object.keys(PLACED).filter(k=>PLACED[k]&&PLACED[k][1]>PLACED[k][0]);
+        if(!gaps.length) return '';
+        const tot=gaps.reduce((n,k)=>n+PLACED[k][1]-PLACED[k][0],0);
+        return '<div style="margin-top:5px;font-size:10px;color:var(--text-muted);line-height:1.5;">'
+          +esc(L('Areas the agency published but this map could not place: ','機関が発表したもののうち、地図上に位置を特定できなかった区域: ','Gebiete ohne auflösbare Geometrie: ','Зоны без найденной геометрии: ','Zonas sin geometría resuelta: '))
+          +tot+' ('+esc(gaps.slice(0,8).map(k=>countryName(k)+' '+PLACED[k][0]+'/'+PLACED[k][1]).join(', '))
+          +(gaps.length>8?(' +'+(gaps.length-8)):'')+')</div>'; }
+
       /* what is in force RIGHT NOW, worldwide — shown the moment the layer is on, without a tap */
       function overview(){
         const fs=(k)=>FEED_STATE[k]||'idle';
@@ -1896,7 +2240,12 @@ window.IntMapModules.worldPacks=function(HOST){
                 us+' '+L('alert areas','警報区域','Warngebiete','зон','zonas'))
           +line(L('Canada — ECCC','カナダ — 環境・気候変動省','Kanada — ECCC','Канада — ECCC','Canadá — ECCC'),'eccc',
                 ca+' '+L('alert areas','警報区域','Warngebiete','зон','zonas'))
-          +line(L('Europe — MeteoAlarm (37 services)','ヨーロッパ — MeteoAlarm（37機関）','Europa — MeteoAlarm (37 Dienste)','Европа — MeteoAlarm (37 служб)','Europa — MeteoAlarm (37 servicios)'),'meteoalarm',
+          /* (#R271) the two services read directly, at their own units */
+          +line(L('Germany — DWD, by district','ドイツ — DWD（郡単位）','Deutschland — DWD (Landkreise)','Германия — DWD (округа)','Alemania — DWD (distritos)'),'dwd',
+                ((PLACED.DEU&&PLACED.DEU[0])||0)+' '+L('alert areas','警報区域','Warngebiete','зон','zonas'))
+          +line(L('Norway — MET Norway','ノルウェー — MET Norway','Norwegen — MET Norway','Норвегия — MET Norway','Noruega — MET Norway'),'metno',
+                ((PLACED.NOR&&PLACED.NOR[0])||0)+' '+L('alert areas','警報区域','Warngebiete','зон','zonas'))
+          +line(L('Europe — MeteoAlarm (35 services)','ヨーロッパ — MeteoAlarm（35機関）','Europa — MeteoAlarm (35 Dienste)','Европа — MeteoAlarm (35 служб)','Europa — MeteoAlarm (35 servicios)'),'meteoalarm',
                 maN+' '+L('warnings in','件 /',' Warnungen in',' предупреждений в',' avisos en ')+' '+maC+' '+L('countries','か国','Ländern','странах','países')
                 /* (#R268) …of how many have been READ at all — 33 of the 37 used to be fetched only
                    on a tap, so «Europe» meant four countries unless somebody asked */
@@ -1917,6 +2266,10 @@ window.IntMapModules.worldPacks=function(HOST){
              — and one three-colour key cannot be a key to both. */
           +keyHead(L('Warning rank, at the unit the agency issues for','各機関の発令階級（発令単位で描画）','Warnstufe der Behörde (in ihren Einheiten)','Ранг предупреждения службы (в её единицах)','Rango del aviso de la agencia (en sus unidades)'))
           +tierKey()
+          /* ⚠ (#R271) HOW MANY OF THE AGENCY'S OWN AREAS COULD BE GIVEN A SHAPE. An area whose name
+             did not resolve is not drawn, and a reader must be able to tell that from an area with
+             nothing in force (#R185) — so the shortfall is printed rather than left to look like calm. */
+          +placedLine()
           +keyHead(L('GDACS event level, over the whole country','GDACS の事象レベル（国全体を薄く塗る）','GDACS-Ereignisstufe (ganzes Land)','Уровень события GDACS (вся страна)','Nivel del evento GDACS (todo el país)'))
           +gdacsKey()
           /* ⚠ (#R268) 「全然現実の発令に追い付いていない」 — the age of what is on screen is a fact the
@@ -1929,8 +2282,8 @@ window.IntMapModules.worldPacks=function(HOST){
           +'<div style="margin-top:8px;font-size:11.5px;color:var(--text-main);">'
           +L('Tap any country for the legend its own agency uses.','国をタップすると、その国の機関の凡例が出ます。','Land antippen für die Legende der jeweiligen Behörde.','Нажмите страну — появится легенда её службы.','Toque un país para la leyenda de su agencia.')+'</div>'
           +'<div style="margin-top:6px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-          +L('Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed in the agency’s own rank and the tap holds the units. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.',
-             '日本・米国・カナダ・ブラジルは各機関の発令単位で描いており、国全体を塗ることはありません——その国では発令区域の形そのものが答えだからです。ヨーロッパ・中国・オーストラリア・香港は図形ではなく一覧で公開されているため、その機関の階級の色で国を薄く塗り、タップで単位ごとの内訳を出します。GDACS の塗りは別の尺度・別の色です——「そのレベルの事象がその国に影響している」という意味であって、国内のどこかの地点に警報が出ているという意味ではありません。ロシア・インド・ニュージーランド・マレーシア・インドネシア・南アフリカ・メキシコは今回実際に接続を試しましたが、ブラウザから読める公開フィードが見つからなかったため GDACS のみです——GDACS は事象の配信であって各国の警報そのものではなく、事象が無い国は「警報が無い国」ではありません。表示は参考です。実際には公的機関の発表に従ってください。',
+          +L('Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China and Australia are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.',
+             '日本・米国・カナダ・ブラジル・ドイツ・ノルウェー、および MeteoAlarm が区域名を示すヨーロッパの地域は、各機関の発令単位で描いており、国全体を塗ることはありません——その国では発令区域の形そのものが答えだからです。中国は省、オーストラリアは州という、その機関が警報を出している区分で塗ります。香港の警報は全域を対象とするため、香港そのものが発令単位です。GDACS の塗りは別の尺度・別の色です——「そのレベルの事象がその国に影響している」という意味であって、国内のどこかの地点に警報が出ているという意味ではありません。ロシア・インド・ニュージーランド・マレーシア・インドネシア・南アフリカ・メキシコは今回実際に接続を試しましたが、ブラウザから読める公開フィードが見つからなかったため GDACS のみです——GDACS は事象の配信であって各国の警報そのものではなく、事象が無い国は「警報が無い国」ではありません。表示は参考です。実際には公的機関の発表に従ってください。',
              'Japan, die USA, Kanada und Brasilien in den Einheiten ihrer Behörden; Europa, China, Australien und Hongkong als Liste (Land eingefärbt, Einheiten im Tap); Russland, Indien, Neuseeland, Malaysia, Indonesien, Südafrika und Mexiko haben keinen offenen, im Browser lesbaren Warndienst — nur GDACS.',
              'Япония, США, Канада и Бразилия — в единицах их служб; Европа, Китай, Австралия и Гонконг публикуют список (страна закрашена, единицы в подсказке); у России, Индии, Новой Зеландии, Малайзии, Индонезии, ЮАР и Мексики открытого читаемого браузером фида не найдено — только GDACS.',
              'Japón, EE. UU., Canadá y Brasil en sus unidades oficiales; Europa, China, Australia y Hong Kong publican una lista (país coloreado, unidades al tocar); Rusia, India, Nueva Zelanda, Malasia, Indonesia, Sudáfrica y México no tienen un feed público legible por el navegador — solo GDACS.')+'</div>'
@@ -1956,7 +2309,7 @@ window.IntMapModules.worldPacks=function(HOST){
            the moment somebody asks about it, and the panel is redrawn when it lands. Asking for all
            thirty-seven at boot would be ~370 MB upstream — see the note in the relay. */
         if(MA[c]&&!maData[c]){ if(maAsked.indexOf(c)<0) maAsked.push(c);
-          loadMA([c]).then(()=>{ if(on&&panel.shown()) panel.open('<div class="wp-a-body">'+legendFor(c)+'</div>'); paintCountries(); })
+          loadMA([c]).then(()=>{ if(on&&panel.shown()) panel.open('<div class="wp-a-body">'+legendFor(c)+'</div>'); publish(); })
             .catch(()=>{ maData[c]={error:'fetch'}; if(on&&panel.shown()) panel.open('<div class="wp-a-body">'+legendFor(c)+'</div>'); }); }
         return true; });
 
@@ -1974,7 +2327,19 @@ window.IntMapModules.worldPacks=function(HOST){
         /* (#R268) the three services added this round, plus how much of Europe has actually landed */
         bom:(bomRec&&bomRec.items.length)||0, hko:(hkoRec&&hkoRec.items.length)||0,
         brazil:feats.filter(f=>f.properties.iso==='BRA').length,
-        maAll:Object.keys(MA).length });
+        maAll:Object.keys(MA).length,
+        /* (#R271) the unit each country is DRAWN at, and how much of what the agency published
+           could be placed — the two numbers the panel prints and the tests assert on */
+        jmaUnit, jmaAreas, jmaPlaced,
+        drawn:Object.keys(drawnISO).sort(),
+        placed:Object.keys(PLACED).sort().reduce((o,k)=>{ o[k]=PLACED[k].slice(); return o; },{}),
+        germany:feats.filter(f=>f.properties.iso==='DEU').length,
+        norway:feats.filter(f=>f.properties.iso==='NOR').length,
+        china:feats.filter(f=>f.properties.iso==='CHN').length,
+        australia:feats.filter(f=>f.properties.iso==='AUS').length,
+        europeUnits:feats.filter(f=>f.properties.unit==='region').length,
+        washed:(function(){ const o={}; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
+            const t=washTier(String(f.id||'')); if(t) o[String(f.id)]=t; }); }catch(_){} return o; })() });
       STATE.alertsLegend=(iso3)=>legendFor(String(iso3||'').toUpperCase());
       window.__wpAlerts={ toggle, refresh, ask:(iso)=>loadMA([String(iso||'').toUpperCase()]),
         grouped:(rows)=>grouped(rows), maCountries:()=>Object.keys(MA) };

@@ -193,7 +193,7 @@ window.IntMapLang.define('es', { ui: {
       blueberryGo:"Elige un importe ↗",
       blueberryNote:"Abre una página externa (Stripe).",
       lyrGrpClimate:"Clima y meteorología",
-      lyrGrpHazard:"Riesgos y cielo nocturno",
+      lyrGrpHazard:"Riesgos y emergencias",
       lyrGrpDemo:"Población y economía",
       lyrGrpGeoPol:"Geopolítica y defensa",
       lyrGrpPolitics:"Política y gobernanza",
@@ -206,7 +206,8 @@ window.IntMapLang.define('es', { ui: {
       lyrGrpTransport:"Transporte y movilidad",   /* (#R261) */
       lyrGrpAgri:"Agricultura y alimentación",   /* (#R261) */
       lyrGrpMaritime:"Océanos y marítimo",
-      lyrGrpTerrain:"Terreno y tierra",
+      lyrGrpTerrain:"Terreno y altitud",
+      lyrGrpNature:"Naturaleza y cobertura del suelo",
       lyrGrpIndic:"Indicadores y capas",
       lyrGrpOrbit:"Espacio y órbita",
       lblAccent:"Color de acento",

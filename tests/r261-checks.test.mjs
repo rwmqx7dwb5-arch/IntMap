@@ -204,8 +204,20 @@ test('R261 ⑩: Others is emptied into named families and the demoted rows stay 
   for (const k of ['lyrGrpEconomy','lyrGrpSociety','lyrGrpTransport','lyrGrpAgri'])
     assert.match(s, new RegExp("\\['" + k + "',\\["), k + ' is a group');
   assert.match(s, /\['lyrGrpOthersReal',\[\]\]/, 'the Others shelf is empty, and kept (the lyrGrpGeoPol precedent)');
-  /* #R233's seven and #R254's energy-mix promotion are untouched */
-  assert.match(s, /\['lyrGrpDemo',\['popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','energy'\]\]/);
+  /* ⚠ (#R271) #R233's seven and #R254's energy-mix promotion are still CURATED — they are no longer
+     all on one shelf. This round was told 「大規模にレイヤーカテゴリ分類を再編しろ」, which is the
+     authorisation #R255, #R258 and #R270 each said they did not have, and four of the eight moved to
+     the shelf their own subject names. What #R261 was about — that nothing quietly falls back into
+     Beta / Others — is what is asserted now. */
+  const grp261 = {};
+  for (const e of s.matchAll(/\['(lyrGrp[A-Za-z]+)',\[([^\]]*)\]\]/g)) {
+    grp261[e[1]] = e[2].split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean);
+  }
+  for (const id of ['popgrid', 'gdppc', 'tfr', 'hdi', 'dem', 'cpi', 'lifeexp', 'energy']) {
+    const w = Object.keys(grp261).filter((g) => grp261[g].includes(id));
+    assert.equal(w.length, 1, id + ' must be on exactly one shelf');
+    assert.ok(!/Others|Beta/i.test(w[0]), id + ' fell back into ' + w[0]);
+  }
   /* the rows #R40 demoted BY INSTRUCTION are not promoted */
   const groups = s.slice(s.indexOf('const GROUPS=['), s.indexOf('/* Explicit order for the Others'));
   /* ⚠ (#R266) THE GIBS HALF OF THIS LIST IS GONE, AND NOT BECAUSE IT WAS PROMOTED. #R40 demoted

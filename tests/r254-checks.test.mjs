@@ -209,7 +209,18 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
   ['wbco2', 'wbforest', 'wbagri', 'wbhealth', 'wbnet', 'wbmilgdp', 'wbwomparl']
     .forEach(k => assert.ok(!ids.includes(k), `${k} is filed in a real group already and must not be duplicated into Others`));
 
-  assert.match(dl, /\['lyrGrpDemo',\[[^\]]*'energy'/, 'the energy-mix row is not promoted into Population & economy');
+  /* ⚠ (#R271) 「エネルギー構成レイヤーは昇格」 is about the row LEAVING Beta, which is what this
+     asserts. The shelf it landed on was this file's choice at the time (there was no energy shelf
+     until #R258 built one); #R271's reorganisation moved it there, so the assertion is «promoted,
+     onto a curated shelf», not «on the shelf #R254 happened to pick». */
+  const grp = {};
+  for (const e of dl.matchAll(/\['(lyrGrp[A-Za-z]+)',\[([^\]]*)\]\]/g)) {
+    grp[e[1]] = e[2].split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean);
+  }
+  const energyShelf = Object.keys(grp).filter((g) => grp[g].includes('energy'));
+  assert.equal(energyShelf.length, 1, 'the energy-mix row must be on exactly one shelf');
+  assert.ok(!/Others|Beta/i.test(energyShelf[0]),
+    'the energy-mix row is not promoted out of Beta — it is on ' + energyShelf[0]);
   assert.match(dl, /getElementById\('wp-dl-'\+id\)/, 'rowFor cannot find a world-packs row, so the promotion resolves to nothing');
 
   /* every language says «beta» without «others», and every language has the new group */

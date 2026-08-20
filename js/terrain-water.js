@@ -928,6 +928,46 @@ window.IntMapModules.terrainWater=function(HOST){
        simulated time to use up.
        ⚠ A growth in flight does not block the clock — the rim stays an outfall until the ground
        arrives, which is the honest behaviour for «we do not have that data yet» and is counted. */
+    /* ══ ⚠⚠⚠ (#R271) A NEW SOURCE MUST NOT RESET THE WATER THAT IS ALREADY THERE ═══════════════
+       「新しい水源を設置したら、他の関係無い場所の水までリセットされるのをやめろ。」
+
+       The path was: click outside the working rectangle → `rebuildAround` → `build()` → a new grid
+       → `resetSim()`, which drops the state vector, sets every source's `_fed` back to 0 and puts
+       the clock back to zero. Every flood on screen restarted from t = 0 because a tap was placed
+       somewhere else. #R261 fixed exactly this shape for the SCULPTED GROUND (it is resampled onto
+       the new lattice now); the water was the other half and it was still being thrown away.
+
+       The fix is not to resample the water — it is not to rebuild at all. The BASIN already extends
+       past the working rectangle by design (#R267: «the basin extends this lattice rather than
+       starting a second one»), and `growBasin` extends it WITHOUT touching the state: `sim.grow`
+       copies the existing depths into the larger lattice. So a source dropped outside the rectangle
+       grows the basin to reach it, and everything already flowing keeps flowing, at the time it is
+       at.
+       ⚠ THE GROWTH IS BUDGETED, and when the budget cannot cover the distance the old behaviour is
+       what is left — a rebuild, which really does start again, and which now SAYS so instead of
+       doing it silently. */
+    function padsToReach(lng,lat){
+      if(!B) return null;
+      const MARGIN=GROW_TRIGGER+4;         /* land inside the rim, not on it */
+      const i=((mX(lng)-B.xW+1)%1)/B.dx, j=(mY(lat)-B.yN)/B.dy;
+      const padW=Math.max(0,Math.ceil(MARGIN-i)), padE=Math.max(0,Math.ceil(i-B.NX+1+MARGIN));
+      const padN=Math.max(0,Math.ceil(MARGIN-j)), padS=Math.max(0,Math.ceil(j-B.NY+1+MARGIN));
+      if(!(padW||padE||padN||padS)) return {padW:0,padE:0,padN:0,padS:0,fits:true};
+      const nNX=B.NX+padW+padE, nNY=B.NY+padN+padS;
+      return {padW,padE,padN,padS,fits:(nNX*nNY<=basinMaxCells())};
+    }
+    async function extendToPoint(lng,lat){
+      if(!sim||!B) return false;
+      const p=padsToReach(lng,lat); if(!p||!p.fits) return false;
+      if(!(p.padW||p.padE||p.padN||p.padS)) return true;
+      setStat(L('Extending the model to here…','モデルをここまで広げています…','Modell wird bis hierher erweitert…','Модель расширяется сюда…','Ampliando el modelo hasta aquí…'));
+      growPending=true;
+      try{ await growBasin(p.padW,p.padE,p.padN,p.padS); }
+      catch(_){ growFailed++; }
+      finally{ growPending=false; }
+      setStat('');
+      return !!basinCellOf(lng,lat);
+    }
     function growSoon(){
       if(!sim||!B||growPending||basinCapped) return;
       const m=sim.wetMargins();
@@ -1529,8 +1569,31 @@ window.IntMapModules.terrainWater=function(HOST){
       if(document.getElementById('tw-ios-css')) return;
       const s=document.createElement('style'); s.id='tw-ios-css';
       s.textContent=[
+        /* ══ ⚠⚠⚠ (#R271) THE PANEL HAD TWO LEFT EDGES AND TWO RIGHT EDGES ═════════════════════════
+           「地形編集・水流で地形のポップアップのUI、不自然な余白や、おかしい配置が多い。」(2回目)
+
+           #R270 measured this panel and fixed two real things (the z-band it opened in, and the two
+           <details> that sat outside the card column). The same sentence came back, so it was
+           measured again — on the built page, desktop, every one of the four modes:
+
+             · THE COLUMN IS TWO WIDTHS. `.tw-body` scrolls, so its scrollbar eats 10 px of its own
+               content box: the cards inside it are 296 px wide, while `.tw-foot` — same padding,
+               no scrollbar — lays its buttons out at 306. Every card in the panel stops ten pixels
+               short of the buttons underneath it. Measured: body clientWidth 320, foot 330.
+             · THE SECTION HEADINGS ARE INSET LESS THAN THE ROWS THEY LABEL. `.tw-cap` had 3 px of
+               side padding against `.tw-row`'s 11: measured, caption text starts at x = 431.7 and
+               row text at x = 440.3 — 8.6 px apart, in a 296 px column. That is the same defect
+               #R270 fixed for the two disclosures (12 px) with the headings left out of the fix.
+             · `.tw-blk` IS NOT ON THE ROW RHYTHM. #R270's note says 「44 px 1種」 and the levee mode
+               measures 31.3 / 44 / 60 — the two prose blocks have 9 px of padding and no minimum,
+               so an explanatory line is 12.7 px shorter than the rows it sits between.
+
+           → One inset (11 px of text, 12 px of column) used by the heading, the row, the block and
+           the note; one gap (10 px) between head, body, foot and every card; and the scrollbar's
+           width is MEASURED and given to the header and the footer as well, so the column has one
+           right edge whether the body scrolls or not. */
         '.tw-card{background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.16));border-radius:12px;overflow:hidden;}',
-        '.tw-cap{font-size:'+TW_FS_S+';font-weight:600;letter-spacing:.01em;color:var(--text-main);padding:0 3px 5px;}',
+        '.tw-cap{font-size:'+TW_FS_S+';font-weight:600;letter-spacing:.01em;color:var(--text-main);padding:0 11px 6px;}',
         /* ══ ⚠⚠ (#R270) ONE ROW HEIGHT, BECAUSE A GROUPED LIST IS A RHYTHM ═══════════════════════
            「不自然な余白…が多い。」 MEASURED in this panel, 盛る mode: the rows came out 40 / 44 / 45 /
            49 px — four different heights in one card, because `min-height:40px` plus 7 px of padding
@@ -1545,7 +1608,7 @@ window.IntMapModules.terrainWater=function(HOST){
         '.tw-val .tw-segwrap{padding:2px;}',
         '.tw-val .tw-seg{padding:5px 8px;}',
         '.tw-row+.tw-row,.tw-row+.tw-blk,.tw-blk+.tw-row,.tw-blk+.tw-blk{border-top:1px solid var(--glass-border,rgba(128,128,128,0.16));}',
-        '.tw-blk{padding:9px 11px;font-size:'+TW_FS+';color:var(--text-main);box-sizing:border-box;}',
+        '.tw-blk{padding:11px;min-height:44px;display:flex;align-items:center;font-size:'+TW_FS+';color:var(--text-main);box-sizing:border-box;}',
         '.tw-val{margin-left:auto;display:flex;align-items:center;gap:7px;flex:0 0 auto;}',
         '.tw-num{width:82px;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));'
           +'background:var(--input-bg);color:var(--text-main);font-size:'+TW_FS+';padding:0 7px;box-sizing:border-box;text-align:right;}',
@@ -1583,6 +1646,11 @@ window.IntMapModules.terrainWater=function(HOST){
         '.tw-note{background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.16));'
           +'border-radius:12px;padding:9px 11px;box-sizing:border-box;}',
         '.tw-note summary{cursor:pointer;font-size:'+TW_FS_S+';color:var(--text-main);list-style:revert;}',
+        /* the body keeps its scrollbar's width whether or not it is scrolling, so the column does
+           not jump; the width itself is measured and written onto the head and the foot by
+           `_squareColumn` — as an INLINE padding, because those two already carry inline padding and
+           a stylesheet rule cannot outrank it (it lost silently the first time this was tried). */
+        '#tw-panel .tw-body{scrollbar-gutter:stable;}',
       ].join('\n');
       document.head.appendChild(s);
     }
@@ -1608,7 +1676,7 @@ window.IntMapModules.terrainWater=function(HOST){
     const PEN=[[150,L('Fine','細','Fein','Тонкая','Fina')],[400,L('Medium','中','Mittel','Средняя','Media')],[1200,L('Broad','太','Breit','Широкая','Ancha')]];
     function render(){ if(!panel) return;
       _ensureCss();
-      panel.innerHTML='<div class="tw-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;">'
+      panel.innerHTML='<div class="tw-head" style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--input-bg);cursor:move;">'
         +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">⛰💧 '+L('Terrain &amp; water','地形編集・水流','Gelände &amp; Wasser','Рельеф и вода','Terreno y agua')+'</span>'
         +'<button class="tw-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
         /* ══ ⚠ (#R255) THE SHARED HALF IS PINNED TO THE BOTTOM ══════════════════════════════════════
@@ -1624,7 +1692,7 @@ window.IntMapModules.terrainWater=function(HOST){
            re-parents the footer inside the scroller, where `position:sticky` is a no-op. Body and
            footer are siblings here, closed in the order they are opened, and tests/r255 asserts that
            `.tw-foot`'s parent is the panel itself. */
-        +'<div class="tw-body" style="padding:10px 12px 4px;display:flex;flex-direction:column;gap:11px;flex:1 1 auto;min-height:0;overflow-y:auto;">'
+        +'<div class="tw-body" style="padding:10px 12px;display:flex;flex-direction:column;gap:10px;flex:1 1 auto;min-height:0;overflow-y:auto;">'
         /* ① the tool — a segmented control, because exactly one of them is in the pointer's hand */
         +'<div>'+cap(L('Tool','ツール','Werkzeug','Инструмент','Herramienta'))
           +'<div class="tw-segwrap tw-modes">'+modes().map(m=>'<button class="tw-seg tw-m" data-m="'+m[0]+'">'+m[1]+'</button>').join('')+'</div>'
@@ -1655,7 +1723,7 @@ window.IntMapModules.terrainWater=function(HOST){
              'Elevación real. El agua se integra en el tiempo con las ecuaciones de aguas someras en forma inercial local (Bates 2010, esquema centrado en q de de Almeida 2012) y fricción de Manning n = 0,035: una onda de crecida tarda lo que tarda. El mismo modelo cubre todo el recorrido: la malla se extiende hacia donde va el agua, con el mismo tamaño de celda. ⏭ sigue integrando hasta que el agua se detiene.')
           +'</div></details>'
         +'</div>'
-        +'<div class="tw-foot" style="flex:0 0 auto;position:sticky;bottom:0;padding:8px 12px calc(10px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;background:var(--card-bg,#1c1c1e);border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));">'
+        +'<div class="tw-foot" style="flex:0 0 auto;position:sticky;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;background:var(--card-bg,#1c1c1e);border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));">'
         /* ══ (#R258) 「時間は下部スティックしろ。」 — the transport, the multiplier and the clock ═══════ */
         +'<div style="display:flex;align-items:center;gap:8px;">'
           +'<button class="tw-play tw-pp" aria-label="'+L('Pour','注水','Zulauf','Наполнение','Verter')+'">▶</button>'
@@ -1700,6 +1768,7 @@ window.IntMapModules.terrainWater=function(HOST){
       panel.querySelector('.tw-reset').onclick=()=>{ if(!G) return; pourStop(); sculpt=new Float32Array(G.NX*G.NY); levees=[]; sources=[]; rainMm=0; pourSimS=0; resetSim(); editDirty(); clearTrace();
         const r=panel.querySelector('.tw-rain'); if(r) r.value=0; undoStack=[]; solve(); terrainSoon(); };
       try{ makeDraggable(panel,panel.querySelector('.tw-head')); }catch(_){}
+      try{ _squareColumn(); }catch(_){}
       /* (#R270) once the reader has moved it, it stays where they put it */
       try{ const h=panel.querySelector('.tw-head'); if(h&&!h._twMoveWired){ h._twMoveWired=1;
         h.addEventListener('pointerdown',()=>{ panel._twMoved=true; },true); } }catch(_){}
@@ -1947,10 +2016,13 @@ window.IntMapModules.terrainWater=function(HOST){
       if(mode==='levee'){ if(!drafting) drafting={pts:[],crest:leveeCrest,width:leveeWidth};
         drafting.pts.push([lng,lat]); draw(); }
       else if(mode==='source'){
-        if(!inGrid(lng,lat)){ rebuildAround(lng,lat).then(ok=>{ if(!ok){ _bldFail(); return; }
-          placeSource(lng,lat); }); return; }
-        /* (#R186) …and follow it out: 「水は流れなくなる地点または海に到達した地点まで」 (placeSource) */
-        placeSource(lng,lat);
+        /* (#R271) inside the rectangle, or inside the basin the water is already using, or close
+           enough that the basin can be extended to it — three ways to place a source without
+           throwing away what is already flowing. Only the fourth rebuilds. */
+        if(inGrid(lng,lat)||basinCellOf(lng,lat)){ placeSource(lng,lat); return; }
+        extendToPoint(lng,lat).then(ok=>{ if(ok){ placeSource(lng,lat); return; }
+          rebuildAround(lng,lat).then(ok2=>{ if(!ok2){ _bldFail(); return; }
+            placeSource(lng,lat); }); });
       } }
     /* (#R174 recorded this: a double-click delivers TWO plain clicks first, so the last two vertices of
        a levee are the same point twice. Drop them, and stop MapLibre zooming on the same gesture. */
@@ -1988,6 +2060,23 @@ window.IntMapModules.terrainWater=function(HOST){
         panel.style.left=Math.round(Math.min(maxL,l+16))+'px';
       }catch(_){}
     }
+    /* ══ (#R271) THE SCROLLBAR IS MEASURED, NOT ASSUMED ════════════════════════════════════════════
+       `.tw-body` scrolls and `.tw-head`/`.tw-foot` do not, so the body's own content box is narrower
+       than theirs by exactly the width of the scrollbar the platform draws — 10 px on this desktop,
+       0 on a phone with overlay scrollbars, and not a number this file is entitled to guess (#R252:
+       「動く障害物は矩形を実測しろ」). It is read off the element and handed to the other two panes as
+       `--tw-sbw`, so the cards, the buttons and the status line share one right edge everywhere.
+       `scrollbar-gutter:stable` keeps that width from changing as the body's content grows. */
+    function _squareColumn(){
+      if(!panel) return;
+      const b=panel.querySelector('.tw-body'); if(!b) return;
+      const w=Math.max(0,Math.round(b.offsetWidth-b.clientWidth));
+      panel.style.setProperty('--tw-sbw',w+'px');
+      const pr=(12+w)+'px';
+      ['.tw-head','.tw-foot'].forEach(sel=>{ const e=panel.querySelector(sel); if(e) e.style.paddingRight=pr; });
+    }
+    try{ window.addEventListener('resize',()=>{ try{ _squareColumn(); }catch(_){} }); }catch(_){}
+
     /* ---- lifecycle -------------------------------------------------------------------------------- */
     async function open(o){
       if(!panel){ panel=document.createElement('div'); panel.id='tw-panel';
@@ -2155,7 +2244,18 @@ window.IntMapModules.terrainWater=function(HOST){
         return flowM3s; },
       /* (#R261) `o.cont` / `o.rateM3s` — the same distinction the map now draws, through the API.
          Omitted keeps the old meaning exactly: a one-shot volume. */
-      addSource(lng,lat,m3,o){ o=o||{}; pushUndo();
+      /* ⚠ (#R271) THE PROGRAMMATIC DOOR TAKES THE SAME ROUTE AS THE TAP. This one pushed a source
+         and solved, whatever the point was: outside the basin `feedSim` finds no cell for it and the
+         water is never delivered — the silent no-op this file has already been caught by twice
+         (#R255 `brush`, #R258 `addLevee`, #R268 the reset). It now reaches the point the way the tap
+         does: use the basin if it covers it, grow the basin if it can, and only rebuild — which is
+         what resets the water — when neither is possible. */
+      async addSource(lng,lat,m3,o){ o=o||{};
+        if(!G){ const ok0=await rebuildAround(lng,lat); if(!ok0) return null; }
+        if(!inGrid(lng,lat)&&!basinCellOf(lng,lat)){
+          const ok=await extendToPoint(lng,lat);
+          if(!ok){ const ok2=await rebuildAround(lng,lat); if(!ok2) return null; } }
+        pushUndo();
         const cont=!!o.cont;
         sources.push({lng,lat,m3:cont?Math.max(0,+m3||0):Math.max(0,+m3||srcM3),cont,rate:cont?Math.max(1,+o.rateM3s||flowM3s||pourRate):0});
         if(cont&&!pourT) pourStart();
