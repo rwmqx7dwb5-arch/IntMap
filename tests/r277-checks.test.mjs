@@ -19,7 +19,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -218,4 +218,64 @@ test('R277 ⑨ Taiwan matches on the stem, and on the township alone when it is 
   assert.match(s, /Object\.keys\(dup\)\.forEach\(t=>\{ delete idx\.tn\[t\]; \}\);|Object\.keys\(dup\)\.forEach\(t=>\{ delete tn\[t\]; \}\);/,
     '…and an ambiguous stem is dropped rather than guessed');
   assert.match(s, /const twFind=\(idx,name\)=>\{/, 'one lookup for both keys');
+});
+
+/* ── ⑩ 追記: two call sites may not claim one English key with different translations ────────────
+   The inline tables for every language past the five positional arguments are keyed BY THE ENGLISH
+   STRING, so an English word used at two call sites can only be right at ONE of them.
+   MEASURED on production, this round: the new 雹 hazard was written L('Hail','雹',…) — and
+   js/time-borders.js already had LA('Hail','ハーイル',…), the Saudi city حائل. The four tables were
+   filled for the CITY: fr «Haïl», ko «하일», 中文 «哈伊勒». Nothing was missing, nothing was
+   untranslated, and the map would have printed a city name as the hazard in three languages.
+   ⚠ THE CHECK IS THE GENERAL RULE, not that one word: one English key, one meaning. */
+test('R277 ⑩ no hazard name is an English key another call site already means something else by', () => {
+  const src = read('js/world-packs.js');
+  const blk = src.slice(src.indexOf('const HAZ=['), src.indexOf('const HAZI={};'));
+  const haz = new Map([...blk.matchAll(/\(\)=>L\('([^']+)','([^']+)'/g)].map((m) => [m[1], m[2]]));
+  assert.ok(haz.size >= 20, `expected the hazard names, found ${haz.size}`);
+  const files = readdirSync(resolve(ROOT, 'js')).filter((f) => f.endsWith('.js'));
+  const clashes = [];
+  for (const f of files) {
+    const t = read(`js/${f}`);
+    for (const m of t.matchAll(/\bLA?\('((?:[^'\\]|\\.)+)','((?:[^'\\]|\\.)*)'/g)) {
+      const [, en, ja] = m;
+      if (!haz.has(en)) continue;
+      if (ja !== haz.get(en)) clashes.push(`${f}: L('${en}','${ja}') vs the hazard's '${haz.get(en)}'`);
+    }
+  }
+  assert.deepEqual(clashes, [], 'an English key may only mean one thing');
+  /* …and every hazard must actually HAVE an entry in the tables that are keyed by that string */
+  const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  for (const c of ['fr', 'ko', 'zh']) {
+    const t = read(`js/locales/ui.${c}.js`);
+    for (const en of haz.keys()) {
+      assert.match(t, new RegExp("['\"]" + esc(en) + "['\"]\\s*:"),
+        `«${en}» has no entry in ui.${c}.js — it would read English`);
+    }
+  }
+});
+
+/* ── ⑪ 追記: the words production surfaced that the table had not learned ────────────────────────
+   MEASURED on the live site right after the deploy: 121 distinct agency words were on the map and
+   13 of them resolved to nothing. Three were real gaps; one («Yellow Warning») is correct. */
+test('R277 ⑪ hail, 山洪, a bare “Fire” and the awareness_type codes all resolve', () => {
+  const blk0 = codeOnly(read('js/world-packs.js'));
+  const blk = blk0.slice(blk0.indexOf('const HAZ=['), blk0.indexOf('const HAZI={};'));
+  assert.match(blk, /\['hail',/, '冰雹 has a hazard of its own');
+  assert.match(blk, /山洪/, '山洪 is a flash flood, not an unnamed word');
+  /* ⚠ «\bfire\b» does NOT match «Wildfire» — there is no boundary before «fire» inside the word */
+  assert.match(blk, /\['wildfire', *\/fire\\b\|/, 'a bare “Fire” in a warning is a wildfire');
+  const want = { wind: 1, snow: 2, thunderstorm: 3, fog: 4, heat: 5, cold: 6, coastal: 7,
+    wildfire: 8, avalanche: 9, rain: 10, flashflood: 12, hail: 13 };
+  for (const [key, code] of Object.entries(want)) {
+    const i = blk.search(new RegExp("\\['" + key + "',"));
+    assert.ok(i >= 0, `${key} must be in the table`);
+    const seg = blk.slice(i, blk.indexOf('/i,', i));
+    assert.ok(seg.includes('awareness_?type ?= ?' + code + '\\b'),
+      `awareness_type=${code} must resolve to ${key}`);
+  }
+  /* …and nowhere else. `['wind',` also occurs in the JMA CODE TABLE far earlier in the file, and
+     resolving the insert point against THAT put awareness_type=1 on the tsunami pattern. */
+  const tsu = blk.slice(blk.indexOf("['tsunami',"), blk.indexOf("['volcano',"));
+  assert.ok(!/awareness_/.test(tsu), 'no awareness_type code may sit on the tsunami pattern');
 });

@@ -4363,6 +4363,9 @@ window.IntMapLang.define('zh-hans', {
   "This country’s service could not be fetched just now — nothing is being said about this point.": "目前无法取得该国机关的信息——本地点并未作任何说明。",
   "Tornado": "龙卷风",
   "Volcanic ash": "火山灰",
-  "Water": "水",   /* (#R267) */
+  "Water": "水",
+  "Hailstorm": "冰雹",
+  "Heavy rainfall": "大雨",
+  "Thunderstorms": "雷雨",   /* (#R267) */
   }
 });
