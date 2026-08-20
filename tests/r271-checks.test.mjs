@@ -106,6 +106,22 @@ test('R271 ② Europe’s regions get a shape from the feed’s own polygon or t
   assert.match(r, /EMMA_ID/, 'regions are deduplicated by the id the feed publishes them under');
 });
 
+/* ⚠ (#R271 追記2) 「対応国も増やせ」 — the Philippines, a country that was on GDACS only. #R268 and
+   #R271 both stopped at PAGASA's Tropical Cyclone Alert, whose only <area> is the whole Philippine
+   Area of Responsibility (a box over the open sea). The flood advisories in the SAME feed carry one
+   <area> per PROVINCE with a real <polygon> — measured through the relay: 20 provinces. */
+test('R271 ② the Philippines is read from PAGASA, at its provinces', () => {
+  const s = codeOnly(read('js/world-packs.js'));
+  assert.match(s, /PHL:'pagasa'/, 'the Philippines must be routed to its own service');
+  assert.match(s, /async function loadPHL\(\)/, 'and have a loader');
+  assert.match(s, /SIDE\.phl/, '…whose features reach the one publisher');
+  assert.match(s, /feats=baseFeats\.concat\([^)]*SIDE\.phl/, '…and are actually published');
+  const r = read('supabase/functions/alerts-relay/index.ts');
+  assert.match(r, /publicalert\.pagasa\.dost\.gov\.ph/, 'the relay must reach PAGASA');
+  assert.match(r, /PH_PAR/, 'the area-of-responsibility box must be dropped by name, not drawn');
+  assert.match(r, /Date\.parse\(expires\)/, 'an expired bulletin is not in force');
+});
+
 /* ── ③ one swatch, one category ─────────────────────────────────────────────────────────────── */
 test('R271 ③ the culture palette continues instead of repeating', async () => {
   const s = read('js/layer-packs.js');

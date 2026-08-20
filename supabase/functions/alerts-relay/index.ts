@@ -135,11 +135,120 @@ function summariseMeteoAlarm(raw, lang) {
     warnings: rows, areas, areaTotal: areaMap.size };
 }
 
+/* ══ ⚠⚠ (#R271 追記2) THE PHILIPPINES — A NEW COUNTRY, AND ITS OWN PROVINCE POLYGONS ══════════
+   「対応国も増やせ。」 #R268 probed PAGASA and #R271 measured it again: `publicalert.pagasa.dost.gov.ph`
+   answers 200 with an Atom index of CAP messages and NO Access-Control-Allow-Origin, so it needs the
+   relay. The first look stopped at the Tropical Cyclone Alert bulletins, whose only `<area>` is
+   「Philippine Area of Responsibility」 — a 16°×17° box over the open sea, which would be a lie to
+   draw. Looking at the REST of the feed is what changed the answer: the General Flood Advisories
+   carry one `<area>` PER PROVINCE with a real `<polygon>` and a `<geocode>`, and their `<event>`
+   names the band (Extreme / Severe / Moderate). MEASURED, one minute: 51 entries, 43 of them GFAs
+   over 17 regions, La Union / Ilocos Sur / Pangasinan / … with 3–9 polygons each.
+
+   So: the Atom index, the newest bulletin per region (a GFA is numbered and each supersedes the one
+   before — `references` chains them, and the newest `<updated>` per region title is the state), the
+   CAP files for those, and one row per province.
+   ⚠ THE PAR BOX IS DROPPED BY NAME. An area that is the whole area of responsibility is not an
+   issuing unit, and drawing it would put a rectangle over the Philippine Sea.
+   ⚠ AND AN EXPIRED BULLETIN IS NOT IN FORCE — `expires` is checked here rather than shipped for the
+   app to check, because the number the panel prints has to be the number that is current. */
+const PH_FEED = "https://publicalert.pagasa.dost.gov.ph/feeds/";
+const PH_MAX = 24;                    /* CAP files fetched per refresh; `capTotal` states the real number */
+/* ⚠ (#R269's rule) FORTY-FIVE SECONDS, NOT TWENTY — a budget shorter than the upstream's bad days
+   turns an available feed into 「取得不可」 at random. The CAP files are fetched in parallel, so this
+   is a per-request ceiling rather than a sum, and tests/r269 ④ holds every upstream fetch to it. */
+const PH_PAR = /philippine area of responsibility/i;
+
+function xmlAll(src, tag) {
+  const out = [];
+  const re = new RegExp("<" + tag + "(?:\\s[^>]*)?>([\\s\\S]*?)<\\/" + tag + ">", "g");
+  let m;
+  while ((m = re.exec(src))) out.push(m[1]);
+  return out;
+}
+const xmlOne = (src, tag) => (xmlAll(src, tag)[0] || "").trim();
+const unesc = (s) => String(s).replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')
+  .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(+d))
+  .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+  .replace(/&amp;/g, "&");
+
+async function summarisePAGASA() {
+  const r = await fetch(PH_FEED, {
+    headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)" },
+    signal: AbortSignal.timeout(45000),
+  });
+  if (!r.ok) throw new Error("pagasa " + r.status);
+  const feed = await r.text();
+  /* newest bulletin per REGION: the title is 「GFA #7 - Region 3 (Central Luzon)」, so the region is
+     what follows the first « - » and the number is what changes between generations. */
+  const newest = new Map();
+  for (const e of xmlAll(feed, "entry")) {
+    const title = unesc(xmlOne(e, "title"));
+    const updated = xmlOne(e, "updated");
+    const href = (/<link[^>]*href="([^"]+)"/.exec(e) || [])[1];
+    if (!href || !/^https:\/\/publicalert\.pagasa\.dost\.gov\.ph\//.test(href)) continue;
+    const region = title.replace(/^[^-]*-\s*/, "").trim() || title;
+    const prev = newest.get(region);
+    if (!prev || String(updated) > String(prev.updated)) newest.set(region, { updated, href, title });
+  }
+  const picks = [...newest.values()].sort((a, b) => (a.updated < b.updated ? 1 : -1));
+  const capTotal = picks.length;
+  const now = Date.now();
+  const areas = new Map();
+  const rows = [];
+  await Promise.all(picks.slice(0, PH_MAX).map(async (pk) => {
+    try {
+      const rr = await fetch(pk.href, {
+        headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)" },
+        signal: AbortSignal.timeout(45000),
+      });
+      if (!rr.ok) return;
+      const cap = await rr.text();
+      if (/<status>\s*Exercise|Test\s*<\/status>/i.test(cap)) return;
+      const event = unesc(xmlOne(cap, "event"));
+      const severity = unesc(xmlOne(cap, "severity"));
+      const expires = xmlOne(cap, "expires");
+      const sent = xmlOne(cap, "sent");
+      if (expires) { const t = Date.parse(expires); if (isFinite(t) && t < now) return; }
+      const tier = SEV[severity] || 1;
+      for (const a of xmlAll(cap, "area")) {
+        const name = unesc(xmlOne(a, "areaDesc"));
+        if (!name || PH_PAR.test(name)) continue;
+        const poly = xmlOne(a, "polygon");
+        const b = areas.get(name) || { name, tier: 0, events: [], poly: "" };
+        areas.set(name, b);
+        if (tier > b.tier) b.tier = tier;
+        if (!b.poly && poly) b.poly = poly.replace(/\s+/g, " ").trim().slice(0, 20000);
+        if (event && !b.events.some((x) => x.event === event)) b.events.push({ event, severity, tier });
+        rows.push({ area: name, event, headline: unesc(xmlOne(cap, "headline")).slice(0, 160),
+          tier, severity, onset: sent, expires });
+      }
+    } catch (_e) { /* one unreachable bulletin is not the whole country */ }
+  }));
+  return { source: "PAGASA-DOST (Philippines)", fetchedAt: new Date().toISOString(),
+    count: rows.length, warnings: rows.slice(0, 400),
+    areas: [...areas.values()].sort((a, b) => b.tier - a.tier).slice(0, AREA_CAP),
+    areaTotal: areas.size, capTotal, capRead: Math.min(PH_MAX, capTotal) };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "GET") return new Response("method", { status: 405, headers: CORS });
 
   const q = new URL(req.url).searchParams;
+  /* `?ph=1` — the Philippines, summarised the same way MeteoAlarm is (see summarisePAGASA) */
+  if (q.get("ph")) {
+    try {
+      const body = await summarisePAGASA();
+      return new Response(JSON.stringify(body), {
+        headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": CACHE },
+      });
+    } catch (_e) {
+      return new Response(JSON.stringify({ error: "upstream unreachable" }), {
+        status: 502, headers: { ...CORS, "content-type": "application/json" },
+      });
+    }
+  }
   /* `?ma=germany,france,…` — one call, several countries, each summarised */
   const ma = (q.get("ma") || "").trim();
   if (ma) {
