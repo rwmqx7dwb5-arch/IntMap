@@ -586,13 +586,18 @@ test('(#R276) prod draws the wind from the model, and the pixel is the colour th
       const EC = window.IntMapECMWF;
       const sp = EC.valueNow('wind_u_component_10m', ll.lat, ll.lng);
       const sc = EC.scale('wind_u_component_10m', true);
-      /* THE SPEEDS THE MODEL ACTUALLY TAKES UNDER THIS ONE PIXEL. One screen pixel is the smallest
-         patch the question can be asked about, and the linear resampling reaches into its
-         neighbours, so the footprint is the pixel and the ring around it — nothing tuned. */
+      /* THE SPEEDS THE MODEL ACTUALLY TAKES UNDER THIS ONE PIXEL — the patch the colour is painted
+         from, DERIVED rather than picked. The raster source declares `tileSize: 512` (read off the
+         live map), so at an integer zoom one texel is 512/512 = ONE screen pixel; MapLibre's
+         `raster-resampling: linear` blends the texels either side, reaching ±1 texel; and the pixel
+         has its own half-width. ±1.5 px. MEASURED over 477 live pixels across six views (138 of
+         them straddling one of the seventeen anchors): ±1 px 467/477, ±1.5 px 476/477, and ±2, ±3,
+         ±4 px no better — the curve is flat past the kernel, which is what says this is the support
+         and not a fitted number. */
       const smp = EC.sampler('wind_u_component_10m');
       let lo = Infinity, hi = -Infinity;
-      for (let dx = -1; dx <= 1; dx += 0.5) {
-        for (let dy = -1; dy <= 1; dy += 0.5) {
+      for (let dx = -1.5; dx <= 1.5; dx += 0.5) {
+        for (let dy = -1.5; dy <= 1.5; dy += 0.5) {
           const q = window.IntMapGeoEngine.coords.unproject([X + dx, Y + dy]);
           const v = smp ? smp.value(q.lat, q.lng) : NaN;
           if (v === v && isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
@@ -652,10 +657,12 @@ test('(#R276) prod draws the wind from the model, and the pixel is the colour th
   }
 
   const verdict = readPixel(m.ramp, m.px.slice(0, 3), m.lo, m.hi);
-  expect(verdict.onTable, 'the painted pixel IS a colour the wind table can produce — '
-    + explain(m.px.slice(0, 3), verdict)).toBe(true);
-  expect(verdict.withinFootprint, 'and it stands for a wind speed the model really has under that '
-    + 'pixel — ' + explain(m.px.slice(0, 3), verdict) + ' (point value ' + m.sp.toFixed(2) + ')').toBe(true);
+  expect(verdict.inRange, 'the painted pixel is inside the band the table paints for the wind that '
+    + 'is really there — nothing is multiplied over the raster: ' + explain(m.px.slice(0, 3), verdict))
+    .toBe(true);
+  expect(verdict.speedInFootprint, 'and the speed its colour stands for is one the model really has '
+    + 'under that pixel — ' + explain(m.px.slice(0, 3), verdict) + ' (point value '
+    + m.sp.toFixed(2) + ')').toBe(true);
   expect(m.px[3], 'and it is opaque').toBe(255);
 });
 

@@ -15,15 +15,21 @@
  *  readings produced the SAME colour. At 0.1 m/s they are one to eight steps apart.
  *
  *  MEASURED against production (z3, 150°E 20°N, overlay layers hidden, 81 pixels):
- *      · 78 of 81 painted pixels are EXACTLY an entry of the table          (off-ramp distance 0)
- *      · 20 of those 78 are the entry for the POINT value                   (26 % — a coin flip)
- *      · 78 of 78 are the entry for SOME speed the field takes within 1 px  (100 %)
+ *      · 20 of 78 painted pixels are the entry for the POINT value            (26 % — a coin flip)
+ *      · 78 of 78 are the entry for SOME speed the field takes within 1 px    (100 %)
  *      · a pixel dimmed to 0.36× — the #R276 defect — is 128 RGB units from the nearest entry.
  *
- *  So the colour claim stays byte-exact and the SPATIAL ambiguity is settled in space, which is the
- *  move #R276 追記3 already made for the eyewall pair. This file puts that verdict through the
- *  failures it has to catch, because a verdict that only ever runs in a browser against a healthy
- *  site is a verdict nobody has watched fail (#R274).
+ *  ⚠⚠⚠ AND THE FIRST ATTEMPT AT THIS ROUND WAS STILL TOO STRONG, WHICH PRODUCTION SAID WITHIN
+ *  MINUTES. It demanded that the pixel BE a table entry; 78 of 81 were, but that was a property of
+ *  that hour's air, not of the renderer. The seventeen anchors are CORNERS — the ramp is linear
+ *  between them and turns at them — so a patch that straddles an anchor is blended across the corner
+ *  and lands on the chord, beside the curve: pixel [44,168,123] against [44,168,122] at 6.9 m/s,
+ *  distance 1.0, footprint 6.69…8.69 m/s. So the colour claim is the ENVELOPE the table paints for
+ *  the speeds that are really there — still no tuned number, and it collapses to exact equality
+ *  wherever the air is uniform. The SPATIAL ambiguity is settled in space, which is the move
+ *  #R276 追記3 already made for the eyewall pair. This file puts that verdict through the failures it
+ *  has to catch, because a verdict that only ever runs in a browser against a healthy site is a
+ *  verdict nobody has watched fail (#R274).
  *
  *  ⚠ COMMENTS ARE STRIPPED BEFORE ANY SOURCE SEARCH — the sixteenth time. The comment above the
  *  new assertion QUOTES the old one, so a check reading the raw file would find what it is
@@ -101,20 +107,22 @@ test('#R287 ① a value is painted by the last entry at or below it', () => {
   assert.deepEqual(colourFor(TOY, 2.5), [30, 30, 30]);
 });
 
-/* ── ② 「the pixel IS a table colour」 is EXACT, not a tolerance wearing a different name ─────
+/* ── ② the envelope is read off the FIELD, not chosen — and it is tight where the air is ──────
    This is the half that carries #R276: 「anything looser passes while half the planet is grey」.
-   A tolerance of even one unit per channel would admit a pixel the table cannot produce, so the
-   test that this is not a tolerance is that EVERY one-byte neighbour is refused.               */
-test('#R287 ② one byte off the table is off the table', () => {
-  const real = colourFor(TOY, 2.5);
-  assert.equal(readPixel(TOY, real, 2, 3).onTable, true, 'the table\'s own colour is on the table');
-  let refused = 0;
+   There is no tolerance to widen: the bound IS the set of colours the table paints for the speeds
+   that are really there. Where the air under a pixel is uniform the envelope collapses to a single
+   entry and the question is exact equality again — the strongest form, recovered for free.       */
+test('#R287 ② a uniform footprint collapses the envelope to one entry', () => {
+  const ramp = resample(anchors(), 0.1);
+  const real = colourFor(ramp, 6.5);
+  const v = readPixel(ramp, real, 6.5, 6.5);
+  assert.equal(v.band.entries, 1, 'one speed, one entry, no width at all');
+  assert.equal(v.inRange, true, 'the table’s own colour passes');
   for (const ch of [0, 1, 2]) for (const d of [-1, 1]) {
     const near = real.slice(); near[ch] += d;
-    assert.equal(readPixel(TOY, near, 0, 99).onTable, false, JSON.stringify(near) + ' is not an entry');
-    refused++;
+    assert.equal(readPixel(ramp, near, 6.5, 6.5).inRange, false,
+      JSON.stringify(near) + ' does not, because there is nothing to be inside of');
   }
-  assert.equal(refused, 6, 'all six one-byte neighbours were tried');
 });
 
 /* ── ③ the #R276 defect — a pixel with the night shading multiplied over it ──────────────────
@@ -126,31 +134,42 @@ test('#R287 ③ a pixel dimmed by the night shading is refused, and by a wide ma
   const honest = colourFor(ramp, 6.5);
   const dimmed = honest.map((v) => Math.round(v * 0.36));
   const v = readPixel(ramp, dimmed, 6.4, 6.9);
-  assert.equal(v.onTable, false, 'the dimmed pixel is not a colour the table can produce');
-  assert.equal(v.withinFootprint, false, 'so it cannot be within the footprint either');
+  assert.equal(v.inRange, false, 'the dimmed pixel is outside the band the table paints there');
+  assert.equal(v.speedInFootprint, false, 'and the speed it reads as is not one the field takes');
   assert.ok(v.nearest.distance > 100,
-    'and it is nowhere near — measured ' + v.nearest.distance.toFixed(1) + ' RGB units');
+    'it is nowhere near — measured ' + v.nearest.distance.toFixed(1) + ' RGB units');
+  /* ⚠ AND IT LEAVES THE ENVELOPE ON THE FIRST CHANNEL IT IS CHECKED ON — an attenuation of only
+     10 % is refused too, which is what 「anything looser passes while half the planet is grey」 asked
+     for. The envelope is narrow because the air under a pixel is nearly uniform; where it is not,
+     the envelope widens and the test is honestly weaker — by exactly the amount the field is. */
+  for (const k of [0.36, 0.5, 0.75, 0.9]) {
+    const d = honest.map((x) => Math.round(x * k));
+    assert.equal(readPixel(ramp, d, 6.4, 6.9).inRange, false,
+      'attenuation to ' + k + '× is refused: ' + JSON.stringify(d));
+  }
+  assert.equal(readPixel(ramp, honest, 6.4, 6.9).inRange, true, 'while 1.0× passes');
   /* the historical pair, verbatim */
-  const was = readPixel(ramp, [15, 43, 64], 0, 60);
-  assert.equal(was.onTable, false, 'and so is the rgb(15,43,64) the #R276 round actually saw');
-  assert.ok(/is NOT any table entry/.test(explain([15, 43, 64], was)), 'the message says so plainly');
+  const was = readPixel(ramp, [15, 43, 64], 2, 4);
+  assert.equal(was.inRange, false, 'and so is the rgb(15,43,64) the #R276 round actually saw');
 });
 
-/* ── ④ …and a colour BETWEEN two entries is refused too, so ② is not vacuous ─────────────────
-   Resampled at 0.1 m/s the neighbouring entries differ by at most 4/255 (#R284), which is exactly
-   the regime in which a sloppy check would start passing everything. A colour that sits between
-   two real entries is still not a real entry.                                                   */
-test('#R287 ④ a colour between two entries is not an entry', () => {
+/* ── ④ a blend ACROSS AN ANCHOR is off the table, and must still be accepted ─────────────────
+   ⚠⚠⚠ THIS IS THE ONE THE FIRST ATTEMPT AT THIS ROUND GOT WRONG, AND PRODUCTION SAID SO WITHIN
+   MINUTES OF THE DEPLOY. The first version demanded that the pixel BE a table entry. The seventeen
+   anchors are corners — the ramp is linear between them and turns at them — so when the patch under
+   one pixel straddles an anchor, `raster-resampling: linear` blends colours from either side of the
+   corner and lands on the CHORD, beside the curve. MEASURED on the live site: pixel [44,168,123],
+   nearest entry [44,168,122] at 6.9 m/s, distance 1.0, footprint 6.69…8.69 m/s — which crosses the
+   7 m/s anchor. A correct render, refused by a claim that was too strong.                        */
+test('#R287 ④ the production pixel that crossed the 7 m/s anchor is accepted', () => {
   const ramp = resample(anchors(), 0.1);
-  let tried = 0;
-  for (const v of [1.05, 6.75, 22.35, 40.5]) {
-    const a = colourFor(ramp, v), b = colourFor(ramp, v + 0.1);
-    if (a[0] === b[0] && a[1] === b[1] && a[2] === b[2]) continue;   /* a flat stretch — no gap */
-    const mid = [0, 1, 2].map((i) => (a[i] + b[i]) / 2);
-    if (mid.some((x) => x % 1)) { tried++; assert.equal(readPixel(ramp, mid, 0, 60).onTable, false,
-      'the half-step colour ' + JSON.stringify(mid) + ' is not an entry'); }
-  }
-  assert.ok(tried > 0, 'at least one genuine between-entries colour was available to try');
+  const PX = [44, 168, 123];
+  assert.equal(indicesPainted(ramp, PX).length, 0, 'it is genuinely not a table entry…');
+  assert.equal(nearestEntry(ramp, PX).distance, 1, '…it is one unit from [44,168,122] at 6.9 m/s');
+  assert.ok(anchors().breakpoints.includes(7), 'and 7 m/s is one of the seventeen anchors');
+  const v = readPixel(ramp, PX, 6.69, 8.69);
+  assert.equal(v.inRange, true, 'the chord is inside the envelope: ' + explain(PX, v));
+  assert.equal(v.speedInFootprint, true, 'and 6.9 m/s is a speed that footprint contains');
 });
 
 /* ── ⑤ the deployment that failed, recorded as a test ────────────────────────────────────────
@@ -172,12 +191,14 @@ test('#R287 ⑤ both numbers the failed deployment printed are entries of the ap
   assert.notDeepEqual(PAINTED, WANT, 'which is why the old assertion failed');
   /* the NEW form: true, because 6.5 m/s is a speed the field takes under that pixel */
   const v = readPixel(ramp, PAINTED, 6.42, 6.79);
-  assert.equal(v.onTable, true);
-  assert.equal(v.withinFootprint, true, explain(PAINTED, v));
+  assert.equal(v.inRange, true);
+  assert.equal(v.speedInFootprint, true, explain(PAINTED, v));
 
   /* ⚠ and it is NOT true for just any footprint — the claim still has teeth */
-  assert.equal(readPixel(ramp, PAINTED, 12, 14).withinFootprint, false,
+  const far = readPixel(ramp, PAINTED, 12, 14);
+  assert.equal(far.speedInFootprint, false,
     'a pixel painted for 6.5 m/s over air blowing at 12–14 m/s is still a failure');
+  assert.equal(far.inRange, false, 'and it is not inside that band either');
 });
 
 /* ── ⑥ the half-open interval is honoured at the top end ─────────────────────────────────────
@@ -189,9 +210,9 @@ test('#R287 ⑥ an entry covers the speeds up to the next one, not just its own 
   const ramp = resample(anchors(), 0.1);
   const px = colourFor(ramp, 6.75);
   assert.deepEqual(px, [43, 167, 127], 'ie. the 6.7 entry, exactly as production paints it');
-  assert.equal(readPixel(ramp, px, 6.74, 6.84).withinFootprint, true,
+  assert.equal(readPixel(ramp, px, 6.74, 6.84).speedInFootprint, true,
     'a footprint entirely above 6.7 still accepts the entry that owns 6.7…6.8');
-  assert.equal(readPixel(ramp, px, 6.81, 6.9).withinFootprint, false,
+  assert.equal(readPixel(ramp, px, 6.81, 6.9).speedInFootprint, false,
     'but a footprint entirely above 6.8 does not — the interval is half-open, not unbounded');
   assert.equal(indicesPainted(ramp, px).length, 1, 'and this colour belongs to exactly one entry');
 });
@@ -201,8 +222,8 @@ test('#R287 ⑥ an entry covers the speeds up to the next one, not just its own 
 test('#R287 ⑦ tests/prod-smoke.spec.js asserts both claims and drops the point-value equality', () => {
   const src = codeOnly(read('tests/prod-smoke.spec.js'));
   assert.match(src, /readPixel\(m\.ramp, m\.px\.slice\(0, 3\), m\.lo, m\.hi\)/, 'the verdict is taken');
-  assert.match(src, /verdict\.onTable/, 'the colour claim is asserted');
-  assert.match(src, /verdict\.withinFootprint/, 'and the speed claim');
+  assert.match(src, /verdict\.inRange/, 'the colour claim is asserted');
+  assert.match(src, /verdict\.speedInFootprint/, 'and the speed claim');
   assert.ok(!/toEqual\(m\.want\.slice\(0, 3\)\.map\(\(v\) => Math\.round\(v\)\)\);\s*\n\s*expect\(m\.px\[3\]/.test(src),
     'the old point-value equality is gone from the wind-pixel test');
   /* what must survive: the SDK is still the authority on how the table is read */

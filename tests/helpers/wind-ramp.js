@@ -58,50 +58,69 @@ export function nearestEntry(ramp, px) {
   return best;
 }
 
+/* The band of colour the table spans over a range of speeds — the per-channel envelope of every
+   entry that [lo, hi] can paint. When the air under a pixel is uniform this collapses to ONE entry
+   and the question below becomes exact equality again. */
+export function bandFor(ramp, lo, hi) {
+  const i0 = entryIndexFor(ramp, lo), i1 = entryIndexFor(ramp, hi);
+  const min = [255, 255, 255], max = [0, 0, 0];
+  for (let i = Math.min(i0, i1); i <= Math.max(i0, i1); i++) {
+    const q = ramp.colors[i];
+    for (let c = 0; c < 3; c++) { if (q[c] < min[c]) min[c] = q[c]; if (q[c] > max[c]) max[c] = q[c]; }
+  }
+  return { min, max, entries: Math.abs(i1 - i0) + 1 };
+}
+
 /* ══ THE VERDICT ══════════════════════════════════════════════════════════════════════════════
-   Two independent claims, both EXACT — no colour tolerance anywhere, because a tolerance is what
-   would let #R276's grey planet back in (a pixel dimmed to 0.36× lands 128 RGB units from the
-   nearest entry, so the first claim refuses it outright):
+   Two claims, and NEITHER carries a tuned number — every bound below is read off the field and the
+   table themselves, which is the point: 「anything looser passes while half the planet is grey」 was
+   an objection to a TOLERANCE, and there is none here.
 
-     onTable        — the pixel IS one of the table's colours, byte for byte. This is what says the
-                      raster reached the screen with nothing multiplied over it and nothing blended
-                      into it.
-     withinFootprint— and the speed that entry stands for is a speed the FIELD REALLY TAKES under
-                      that pixel, [lo, hi] being the model's own range over the pixel's footprint.
+     inRange          — every channel of the pixel lies inside the envelope of colours the table
+                        spans over the speeds the field really takes under that pixel. This is what
+                        says nothing was multiplied over the raster: #R276's 0.36× grey leaves the
+                        envelope on the FIRST channel, and so does an attenuation of only 10 %.
+     speedInFootprint — and the speed the pixel's own colour stands for is one of those speeds. This
+                        is what says it is THIS field, here, now, rather than a plausible colour.
 
-   ⚠ WHY THE SECOND CLAIM IS A RANGE AND NOT THE POINT VALUE. `valueNow()` interpolates the grid at
-   a mathematical POINT; the renderer paints from a raster texel, and MapLibre's
-   `raster-resampling: linear` blends the texels around it — so the pixel answers for the patch of
-   atmosphere it covers, not for the point at its centre. Under seventeen flat bands (before #R284)
-   the difference was invisible: both readings fell inside the same band and produced the same
-   colour. At 0.1 m/s it is one to eight visible steps, and asking the pixel to equal the entry for
-   the point value became a coin flip — MEASURED against production, 20 of 78 painted pixels (26 %).
-   The ambiguity is SPATIAL, so it is settled in space rather than by loosening the colour. */
+   ⚠ WHY THE FIRST CLAIM IS AN ENVELOPE AND NOT 「the pixel IS a table entry」. That stronger form was
+   tried and it is FALSE BY CONSTRUCTION for a correct render. The seventeen anchors are corners: the
+   ramp is linear in sRGB BETWEEN them and turns AT them, so when the patch under one pixel straddles
+   an anchor, MapLibre's `raster-resampling: linear` blends two colours from either side of a corner
+   and the result is a chord — beside the curve, not on it. MEASURED in production the moment it was
+   deployed: pixel [44,168,123] against a nearest entry of [44,168,122] at 6.9 m/s, distance 1.0,
+   over a footprint of 6.69…8.69 m/s — which crosses the 7 m/s anchor. The first measurement had 78
+   of 81 pixels exactly on the table only because that hour's air was flat enough to stay inside one
+   segment; it is not a property of the renderer.
+
+   ⚠ WHY THE SECOND CLAIM IS A RANGE AND NOT THE POINT VALUE. `valueNow()` interpolates the grid at a
+   mathematical POINT; the pixel is painted from raster texels and answers for the patch it covers.
+   Under seventeen flat bands (before #R284) both readings fell in the same band and produced the
+   same colour; at 0.1 m/s they are one to eight steps apart, and demanding equality with the point
+   value became a coin flip — MEASURED, 20 of 78 painted pixels (26 %). The ambiguity is SPATIAL, so
+   it is settled in space rather than by loosening the colour. */
 export function readPixel(ramp, px, lo, hi) {
-  const idx = indicesPainted(ramp, px);
+  const band = bandFor(ramp, lo, hi);
+  const inRange = [0, 1, 2].every((c) => px[c] >= band.min[c] && px[c] <= band.max[c]);
+  const near = nearestEntry(ramp, px);
   const bp = ramp.breakpoints;
-  /* entry i is legitimately painted iff its interval [bp[i], bp[i+1]) meets [lo, hi] */
-  const covers = idx.filter((i) => {
-    const top = i + 1 < bp.length ? bp[i + 1] : Infinity;
-    return bp[i] <= hi && top > lo;
-  });
+  /* the entry the pixel reads as owns [bp[i], bp[i+1]); it is a speed the field takes iff that
+     interval meets the footprint */
+  const top = near.i + 1 < bp.length ? bp[near.i + 1] : Infinity;
+  const speedInFootprint = near.i >= 0 && near.v <= hi && top > lo;
   return {
-    onTable: idx.length > 0,
-    withinFootprint: covers.length > 0,
-    says: idx.map((i) => bp[i]),
-    covers: covers.map((i) => bp[i]),
-    nearest: nearestEntry(ramp, px),
-    footprint: [lo, hi],
+    inRange, speedInFootprint,
+    onTable: indicesPainted(ramp, px).length > 0,   /* reported, not required — see above */
+    band, nearest: near, footprint: [lo, hi],
   };
 }
 
 /** One line a human can read out of a verdict. */
 export function explain(px, v) {
-  const n = v.nearest;
+  const n = v.nearest, b = v.band;
   return 'pixel ' + JSON.stringify(px)
-    + (v.onTable
-      ? ' is the table entry for ' + (v.says.length > 1 ? v.says[0] + '…' + v.says[v.says.length - 1] : v.says[0]) + ' m/s'
-      : ' is NOT any table entry — nearest is ' + JSON.stringify(n.colour) + ' (' + n.v + ' m/s) at distance '
-        + n.distance.toFixed(1))
-    + ', and the field under that pixel runs ' + v.footprint[0].toFixed(2) + '…' + v.footprint[1].toFixed(2) + ' m/s';
+    + ' reads as ' + JSON.stringify(n.colour) + ' = ' + n.v + ' m/s (distance ' + n.distance.toFixed(1) + ')'
+    + '; the field under it runs ' + v.footprint[0].toFixed(2) + '…' + v.footprint[1].toFixed(2)
+    + ' m/s, which the table paints between ' + JSON.stringify(b.min) + ' and ' + JSON.stringify(b.max)
+    + ' (' + b.entries + ' entries)';
 }
