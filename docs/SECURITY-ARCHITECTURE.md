@@ -8,7 +8,7 @@
 Authoritative description of IntMap's attack surface, trust boundaries, authentication /
 authorization model, the public-vs-secret distinction, and the residual risks + manual
 production settings. Companion to [`SECURITY.md`](../SECURITY.md) (reporting) and
-[`SECURITY-TESTING.md`](SECURITY-TESTING.md) (how to run the checks). Keep this current when
+[`TESTING.md`](TESTING.md#security-testing) (how to run the checks). Keep this current when
 the data flow, an Edge Function, or the auth model changes.
 
 ---
@@ -85,7 +85,7 @@ flowchart LR
 - **AuthZ — data:** Postgres **Row Level Security** on every table + column-level UPDATE
   grants so a user can only touch their own rows and **cannot** set `is_admin`/`is_pro`/
   `plan`/`email` on their profile (no privilege escalation). See
-  [`DATABASE.md`](DATABASE.md) / [`RLS-TESTING.md`](RLS-TESTING.md); enforced baseline in
+  [`DATABASE.md`](DATABASE.md) / [`DATABASE.md`](DATABASE.md#rls--permission-testing); enforced baseline in
   `supabase/migrations/20260718090000_baseline.sql`; attack cases in `supabase/tests/*_test.sql`.
   - **(#R144) RLS is the real protection — grants are wide open in prod.** Supabase's
     schema-wide default privileges grant `anon`/`authenticated` **full** table privileges on
@@ -390,7 +390,8 @@ put a real secret value in the repo, a PR, or a log.**
   suffix list so the full host must be used) and add the **Relying Party Origin
   `https://rwmqx7dwb5-arch.github.io`**, then enable passkeys. Until this is set, the client's
   passkey buttons degrade gracefully to password auth (feature-detected). supabase-js ≥ 2.105 is
-  required (the app loads the latest `@supabase/supabase-js@2` from the CDN, which satisfies it).
+  required; the app no longer takes it from a CDN at all — `src/vendor.js` imports the version
+  `package.json` pins, so **check that pin** (and `admin.html`'s vendored copy) when this matters.
 - **Auth → SMTP**: for reliable delivery of confirmation / reset / email-change mails at volume,
   configure a custom SMTP sender (the default Supabase mailer is rate-limited). Optional but
   recommended once real users exist.

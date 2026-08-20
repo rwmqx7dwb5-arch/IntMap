@@ -160,9 +160,13 @@ test('R282 (5) CLAUDE.md ends the workflow at the master and sources the USB mir
   assert.match(s6, /原本/, '§6 names the master copy');
   assert.match(s6, /OneDrive[\\/]IntMap/, '§6 says which directory it is');
 
-  const s114 = md.slice(md.indexOf('### 11.4'), md.indexOf('### 11.5'));
-  assert.match(s114, /master-sync\.mjs --check/, '§11.4 gates the USB mirror on the master being current');
-  assert.match(s114, /原本/, '§11.4 names the master as the mirror source');
+  /* ⚠ (#R280) THE SECTION IS FOUND BY ITS SUBJECT, NOT BY ITS NUMBER. This read §11.4 literally
+     until #R280 turned §11 into «when to run it» plus scripts/backup-usb.ps1, which renumbered the
+     subsections. What must hold is that §11 — wherever inside it — gates the mirror on the master
+     being current and names the master as the source. */
+  const s11 = md.slice(md.indexOf('## 11.'), md.indexOf('## 12.'));
+  assert.match(s11, /master-sync\.mjs --check/, '§11 gates the USB mirror on the master being current');
+  assert.match(s11, /原本/, '§11 names the master as the mirror source');
 });
 
 /* ── ⑥ THE COMMANDS EXIST, AND ARE DELIBERATELY OUT OF `npm test` ───────────────────────────────

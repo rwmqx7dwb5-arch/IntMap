@@ -58,7 +58,7 @@ enable_signup = true
 # and additionally runs a Have-I-Been-Pwned k-anonymity check so a KNOWN-BREACHED
 # password is rejected before the request is even sent. NOTE: the dashboard's
 # "Leaked password protection" toggle (HIBP, server-side) is NOT reproducible in this
-# file — enable it in Authentication → Providers/Passwords (see docs/SECURITY-TESTING.md).
+# file — enable it in Authentication → Providers/Passwords (see docs/TESTING.md).
 minimum_password_length = 8
 password_requirements = "lower_upper_letters_digits"
 

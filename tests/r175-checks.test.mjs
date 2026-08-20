@@ -177,7 +177,9 @@ test('R175 ③: every js/ module is imported by the entry, in index.html’s old
      their own documents, and since #R218 they pull two js/ modules directly. Reading the pages
      rather than exempting two filenames keeps the question the same one: is this module dead code?
      Delete the <script> tag and the module goes back to failing, here and in static-checks.mjs. */
-  for (const page of ['sources.html', 'science.html', 'admin.html']) {
+  /* (#R280) …and the two legal pages, which are the same kind of document: served verbatim,
+     loading js/legal-text.js and js/legal-page.js with a plain <script src>. */
+  for (const page of ['sources.html', 'science.html', 'admin.html', 'privacy.html', 'terms.html']) {
     const p = join(ROOT, page);
     if (!existsSync(p)) continue;
     for (const m of readFileSync(p, 'utf8').matchAll(/<script[^>]*\ssrc=["']\.\/(js\/[A-Za-z0-9_.-]+\.js)["']/g)) sib.add(m[1]);
