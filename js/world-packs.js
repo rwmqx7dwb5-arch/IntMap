@@ -1631,9 +1631,16 @@ window.IntMapModules.worldPacks=function(HOST){
           const g=by.get(k)||{tier:0,items:[]}; by.set(k,g);
           if((x.tier||0)>g.tier) g.tier=x.tier||0; g.items.push(x); });
         PLACED[iso]=[0,by.size];
+        UNPL[iso]=0;
+        const worst=()=>{ let u=0; by.forEach(g=>{ if((g.tier||0)>u) u=g.tier||0; }); return u; };
         if(!by.size) return [];
         let idx=null; try{ idx=(await adm1Geo())[iso]||null; }catch(_){ idx=null; }
-        if(!idx) return [];
+        /* ⚠ (#R271 追記) A BOUNDARY SET THAT COULD NOT BE READ IS «NOTHING COULD BE PLACED», NOT
+           «NOTHING IS IN FORCE». Returning here without setting `UNPL` left the country with no
+           polygons AND no wash — i.e. a CDN hiccup would have taken China's three hundred warnings
+           off the map entirely, which is a safety claim made from a failed fetch (#R212's rule).
+           The count is printed either way; now the wash carries them too. */
+        if(!idx){ UNPL[iso]=worst(); return []; }
         const out=[];
         by.forEach((g,k)=>{ const f=lookupUnit(idx,k); if(!f||!f.geometry) return;
           out.push({type:'Feature',geometry:f.geometry,properties:{ iso, col:TIERCOL[g.tier], tier:g.tier,
@@ -2230,8 +2237,16 @@ window.IntMapModules.worldPacks=function(HOST){
         const worst=Object.keys(gCountries).reduce((m,k)=>Math.max(m,gCountries[k].tier||0),0);
         panel.open('<div class="wp-a-body">'
           +'<div style="font-weight:700;font-size:13px;">'+L('In force now','現在発表中','Aktuell in Kraft','Действует сейчас','Vigente ahora')+'</div>'
+          /* ⚠⚠ (#R271 追記) THE PANEL WAS STILL SAYING 「都道府県」. MEASURED on production right after
+             the deploy: 「Japan — JMA, by issuing unit · 115 prefectures」 — and 115 is the number of
+             CLASS10 REGIONS on the map, because that is what this round changed it to draw. Japan
+             has forty-seven prefectures. This is the same defect the whole round is about (a panel
+             naming a unit it does not draw), left in the one line that counts the shapes. The word
+             now comes from `jmaUnit`, which is set by whichever geometry actually loaded. */
           +line(L('Japan — JMA, by issuing unit','日本 — 気象庁（発令単位）','Japan — JMA','Япония — JMA','Japón — JMA'),'jma',
-                jp+' '+L('prefectures','都道府県','Präfekturen','префектур','prefecturas')
+                jp+' '+(jmaUnit==='class10'
+                  ?L('issuing regions','発令区域','Warnregionen','районов выпуска','regiones de emisión')
+                  :L('prefectures','都道府県','Präfekturen','префектур','prefecturas'))
                 /* ⚠ (#R269) HOW OLD THE JMA'S OWN NEWEST BULLETIN IS. The endpoint this layer used
                    until now had been frozen for eighty-three days while answering 200 with valid
                    JSON; the only thing that would have shown it is the feed's own clock, printed. */

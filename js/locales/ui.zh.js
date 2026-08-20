@@ -1362,6 +1362,7 @@ window.IntMapLang.define('zh', {
     'Nothing found — neither OpenStreetMap nor Wikidata has such facilities recorded here and the AI knows none it is sure of': "查無結果 — OpenStreetMap 與 Wikidata 都沒有記錄此處有這類設施，AI 也沒有可確定的資料",   /* atlas-console.js */
     'Nothing found for': "查無結果：",   /* atlas-console.js */
     'Nothing in force right now.': "目前沒有任何生效中的警報。",   /* world-packs.js */
+    'issuing regions': "發布區域",   /* world-packs.js (#R271) */
     'Areas the agency published but this map could not place: ': "機關已發布但本地圖無法定位的區域：",   /* world-packs.js (#R271) */
     'Deutscher Wetterdienst, warnings with their own district polygons.': "德國氣象局（DWD）——以郡（Landkreis）為單位繪製警報範圍，並依邦分組。",   /* world-packs.js (#R271) */
     'Europe — MeteoAlarm (35 services)': "歐洲 — MeteoAlarm（35 個機關）",   /* world-packs.js (#R271) */
