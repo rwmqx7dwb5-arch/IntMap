@@ -950,6 +950,13 @@
     .ntl-mode{ border:none; background:transparent; color:var(--text-muted); font-size:12px; font-weight:600; padding:5px 15px; border-radius:8px; cursor:pointer; }   /* (#R137) 18→15px so the third (Time) tab fits */
     /* (#R137) selected Year / Date / Time tab = solid WHITE bg, BLACK text ("選択中のものは白背景黒文字に"). */
     .ntl-mode.on{ background:#fff; color:#000; box-shadow:0 1px 4px rgba(0,0,0,0.2); }
+    /* (#R288) the forecast player, in the ONE time control — same metrics as the legend player it replaces */
+    .ntl-player{ display:flex; gap:4px; justify-content:center; margin:6px 0 2px; }
+    .ntl-player .ecl-b{ flex:0 0 auto; min-width:26px; height:24px; padding:0 6px; border:1px solid var(--glass-border,rgba(128,128,128,0.25)); border-radius:7px; background:var(--input-bg); color:var(--text-main); cursor:pointer; font-size:11px; line-height:1; }
+    .ntl-player .ecl-b:hover{ background:var(--primary-color); color:#fff; border-color:transparent; }
+    .ntl-player .ecl-b.ecl-play{ background:var(--primary-color); color:#fff; border-color:transparent; }
+    .ntl-player .ecl-b.ecl-now{ min-width:auto; padding:0 9px; font-size:10.5px; font-weight:600; }
+    .ntl-player .ecl-b svg{ display:block; margin:0 auto; }
     /* (#11) bigval fills the left (fixed body width) so the "現在へ戻る" button never shifts as the date text length
        changes ("Dateスライダーを動かすと…激しくUIが動いてしまう"); and the value is NOT bold ("太字にするな"). */
     .ntl-valrow{ display:flex; align-items:center; gap:10px; margin:0; }

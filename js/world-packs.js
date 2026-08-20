@@ -1031,6 +1031,22 @@ window.IntMapModules.worldPacks=function(HOST){
     (function alerts(){
       const SRC='wp-alert', LYR=['wp-alert-fill','wp-alert-line','wp-alert-lbl','wp-alert-lbls'];
       const CHORO='wp-alert-choro', HATCH='wp-alert-hatch';
+      /* (#R288) 「発令なし」 at the unit the country is divided into — see quietFeatures() */
+      const QSRC='wp-alert-quiet-src', QFILL='wp-alert-quiet', QLINE='wp-alert-quiet-line';
+      /* the SAME grey the country-wide sheet uses (`washExpr`'s tier 1), because it is the same
+         claim at a finer unit — a second shade would read as a second meaning */
+      const QUIET_COL='rgba(200,200,203,0.42)';
+      /* ══ ⚠⚠ (#R288) ONE PLACE DECIDES WHETHER THIS LAYER IS SHOWING ═══════════════════════════
+         Visibility was set in four places over three different lists (LYR in publish, [CHORO,HATCH]
+         in paintCountries, LYR again in the restyle hook), and any of them could run while the style
+         was refusing new layers — so a re-add that landed between two of those calls left PART of
+         the layer hidden. MEASURED while this round was being written: `wp-alert-fill`, the country
+         wash and the hatch sat at `visibility:none` while the outlines and the labels beside them
+         were visible, i.e. the warnings were on the map as thin coloured lines with no fill.
+         So the whole family is ONE list and ONE call, re-asserted whenever the map goes idle — the
+         same treatment the weather field needed in #R276, for the same reason. */
+      const ALL_LYR=()=>LYR.concat([CHORO,HATCH,QFILL,QLINE]);
+      function applyAlertVis(){ setVis(ALL_LYR(),on); }
       let on=false, feats=[], busy=false, timer=null;
       /* ⚠ (#R212) 「現在出てるのに、何も発令されてないと日本の場合は出てくる。」 — AND THAT WAS THE FEED
          NOT HAVING ARRIVED, PRINTED AS A FACT. Every feed carries its own state and the legend says
@@ -1370,6 +1386,47 @@ window.IntMapModules.worldPacks=function(HOST){
          NWS's own UGC prefixes cover. */
       const ALSO={ nws:['PRI','VIR','GUM','MNP','ASM','PLW','FSM','MHL'] };
       Object.keys(ALSO).forEach(f=>{ ALSO[f].forEach(c=>{ if(!FEEDS[c]) FEEDS[c]=f; }); });
+      /* ══ ⚠⚠⚠ (#R288) …AND THE REST OF IT IS LEARNED, BECAUSE A HAND-WRITTEN LIST GOES STALE ═════
+         「対応国も増やせ。」 #R284 found eight of these by reading the NWS's zone codes and writing
+         them down. MEASURED this round, the same defect is elsewhere and the list does not have it:
+         the Finnish service issues for 「Ahvenanmaa」 — ÅLAND, which is its own country on this map —
+         so a Finnish warning polygon was being drawn on an island the country layer was hatching as
+         「未対応」 underneath. There is no reason to believe that is the last one, and every reason
+         to believe a table of them would be wrong again within a few months (#R271: 「手書きの対象
+         一覧は、その一覧に増える日に嘘になる」).
+         So it is not written down. A drawn unit's own centroid is put through `countryAt`, and if it
+         lands in a country that has NO feed of its own, that country is covered BY THE SERVICE THAT
+         DREW IT. The evidence is the polygon, which is the same evidence #R284 used by hand.
+         ⚠ THE CENTROID, not any vertex: a coarse outline that spills a few kilometres over a border
+         must not claim the neighbour. ⚠ And it can only ADD — a country with its own feed is never
+         re-assigned, so 「ソースは一国一ソース」 holds.
+         ⚠ It is not persisted: it is re-derived from whatever is on the map right now, so a service
+         that stops issuing for a territory stops covering it. */
+      const LEARNED=Object.create(null);       /* iso3 → the feed whose polygon proved it */
+      function learnCoverage(list){
+        let added=0;
+        (list||[]).forEach(f=>{
+          try{
+            const q=f.properties||{}; if(!q.iso||!(q.norm>0)) return;
+            const c=centroidOf(f.geometry); if(!c) return;
+            const at=countryAt(c[0],c[1]);
+            if(!at||at===q.iso||FEEDS[at]||LEARNED[at]) return;
+            LEARNED[at]=q.feed||FEEDS[q.iso]||'';
+            added++;
+          }catch(_){}
+        });
+        return added; }
+      function centroidOf(g){
+        if(!g) return null;
+        const polys=(g.type==='Polygon')?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:null);
+        if(!polys||!polys.length) return null;
+        /* the largest ring's average vertex — cheap, and inside for the convex-ish units services use */
+        let best=null,bn=0;
+        polys.forEach(p=>{ const r=p&&p[0]; if(r&&r.length>bn){ bn=r.length; best=r; } });
+        if(!best||!best.length) return null;
+        let x=0,y=0,n=0;
+        for(let i=0;i<best.length;i++){ const pt=best[i]; if(!pt||!isFinite(pt[0])||!isFinite(pt[1])) continue; x+=pt[0]; y+=pt[1]; n++; }
+        return n?[x/n,y/n]:null; }
       const MA={ AUT:'austria', BEL:'belgium', BIH:'bosnia-herzegovina', BGR:'bulgaria', HRV:'croatia',
         CYP:'cyprus', CZE:'czechia', DNK:'denmark', EST:'estonia', FIN:'finland', FRA:'france',
         GRC:'greece', HUN:'hungary', ISL:'iceland', IRL:'ireland', ISR:'israel',
@@ -1412,12 +1469,25 @@ window.IntMapModules.worldPacks=function(HOST){
          read longest ago (never-read first, which keeps the original first-load order). Two batches
          of six a tick over 35 countries is a full cycle every ~90 s, and the panel prints the feed's
          own clock, so the number is never hidden. */
+      /* ══ ⚠⚠ (#R288) 「更新が遅すぎる。リアルタイムにと言っている。」 (5回目) — WHOSE CLOCK? ══════
+         The steady-state cycle has been at the transport's own floor since #R284 (the relay's edge
+         cache is 60 s; asking sooner returns the same bytes), and the cold start was fixed there
+         too. What was still slow is not the CYCLE, it is the reader's own country's PLACE in it:
+         a rotation ordered purely by age treats the country under the cursor exactly like one on
+         the other side of the world, so the reader waits a full sweep for the only country they can
+         see. Ordering the SAME rotation by 「in view first, then oldest」 costs no extra request and
+         makes the visible part of the map the freshest part. */
+      function inViewISO(iso){ try{
+        const f=(HOST.countryGeo&&HOST.countryGeo.features||[]).find(x=>String(x.id)===iso);
+        return f?inView(f):false; }catch(_){ return false; } }
+      function viewFirst(list){ const a=[],b=[];
+        list.forEach(k=>{ (inViewISO(k)?a:b).push(k); }); return a.concat(b); }
       function maNext(n){
         const all=Object.keys(MA);
         const fresh=all.filter(k=>maData[k]);
         const cold=all.filter(k=>!maData[k]);
         cold.sort((a,b)=>(maAsked.indexOf(a)>=0?0:1)-(maAsked.indexOf(b)>=0?0:1));
-        const byAge=fresh.sort((a,b)=>(maAt[a]||0)-(maAt[b]||0));
+        const byAge=viewFirst(fresh.sort((a,b)=>(maAt[a]||0)-(maAt[b]||0)));
         const now=Date.now();
         const take=cold.concat(byAge).filter(k=>!maPend[k]&&(!maAt[k]||now-maAt[k]>=MIN_AGE_MS))
           .slice(0,Math.max(0,n||MA_PER_TICK));
@@ -1447,7 +1517,8 @@ window.IntMapModules.worldPacks=function(HOST){
       function swicNext(n){
         const hot=swicHot();
         const cold=hot.filter(k=>!swicData[k]);
-        const byAge=hot.filter(k=>swicData[k]).sort((a,b)=>(swicAt[a]||0)-(swicAt[b]||0));
+        /* (#R288) — see the note on maNext: in view first, then oldest */
+        const byAge=viewFirst(hot.filter(k=>swicData[k]).sort((a,b)=>(swicAt[a]||0)-(swicAt[b]||0)));
         const now=Date.now();
         return cold.concat(byAge).filter(k=>!swicPend[k]&&(!swicAt[k]||now-swicAt[k]>=MIN_AGE_MS))
           .slice(0,Math.max(0,n||SWIC_PER_TICK)); }
@@ -2081,7 +2152,7 @@ window.IntMapModules.worldPacks=function(HOST){
       const swicGeoAsked={};     /* iso → asked already (a FAILURE clears it, so it is retried) */
       const SHAPELIB={};         /* iso → how many shapes that library holds (printed, not assumed) */
       let swicGeoInflight=0;
-      const SWIC_GEO_MAX=2;      /* at most two libraries in flight, so a tick cannot become a storm */
+      const SWIC_GEO_MAX=3;      /* at most three libraries in flight, so a tick cannot become a storm */
       /* ══ ⚠⚠⚠ (#R284) THE REGISTER'S SHAPES ARE WHAT IS IN FORCE **NOW**, AND THAT EMPTIES ════
          `?swicgeo=` returns the member's CURRENT CAP areas, so the library is only as complete as
          that member's weather. MEASURED this build, same minute: Austria 112 shapes, Poland 126,
@@ -2094,10 +2165,21 @@ window.IntMapModules.worldPacks=function(HOST){
          rather than replacing it, and a member that answered with nothing is asked again later
          instead of being written off for ever. */
       const swicGeoAt={};              /* iso → when its library was last read */
-      const SWIC_GEO_RETRY_MS=600000;  /* an empty answer is re-asked, but not every tick */
+      /* ⚠ (#R288) 「警報の塗漏れが多すぎる」 — the register only ever holds what that member has in
+         force RIGHT NOW (#R284), so the library grows by being asked again while the country still
+         has areas it could not place. Ten minutes was the interval for BOTH cases; it is now the
+         interval for a member that answered with something, and three minutes for one that is still
+         short — the difference between a library that converges within a session and one that does
+         not. MEASURED before this change: Spain 107 of 157 placed, Croatia 6 of 13, Moldova 32/42. */
+      const SWIC_GEO_RETRY_MS=600000;  /* an answer that helped — ask again eventually */
+      const SWIC_GEO_SHORT_MS=180000;  /* …still short of a full library — ask again sooner */
       function askSwicGeo(iso){
         if(swicGeoInflight>=SWIC_GEO_MAX) return;
-        if(swicGeoAsked[iso]&&(swicGeoBy[iso]||Date.now()-(swicGeoAt[iso]||0)<SWIC_GEO_RETRY_MS)) return;
+        /* (#R288) a country that STILL cannot place everything is on the short interval, whether or
+           not it has a partial library — 「持っている」 is not 「足りている」 */
+        const short=!!(UNPL[iso]||((PLACED[iso]||[])[0]<(PLACED[iso]||[])[1]));
+        const wait=short?SWIC_GEO_SHORT_MS:SWIC_GEO_RETRY_MS;
+        if(swicGeoAsked[iso]&&Date.now()-(swicGeoAt[iso]||0)<wait) return;
         const mid=swicMeta.mid[iso]; if(!mid) return;     /* the member table has not landed yet */
         const u=relay('swicgeo='+encodeURIComponent(mid)); if(!u) return;
         swicGeoAsked[iso]=true; swicGeoAt[iso]=Date.now(); swicGeoInflight++;
@@ -2362,7 +2444,8 @@ window.IntMapModules.worldPacks=function(HOST){
          (#R271), so «this country's own units are on the map» stays a measurement rather than a
          hand-written table. */
       let drawnISO=Object.create(null);
-      const supported=(c)=>!!FEEDS[c];
+      /* (#R288) …or a service whose own polygon proved it covers this country — see learnCoverage */
+      const supported=(c)=>!!(FEEDS[c]||LEARNED[c]);
       /* 0 = no feed (hatched) · 1 = a feed, everything placed (grey) · 11–14 = a feed and areas at
          that normalised rank whose location could not be resolved */
       /* ⚠⚠⚠ (#R273) A COUNTRY IS DRAWN AT ITS UNITS **OR** WASHED, NEVER BOTH ═══════════════════
@@ -2382,7 +2465,7 @@ window.IntMapModules.worldPacks=function(HOST){
          「発表なし」 for a service nobody had asked. During that window the country is HATCHED, which
          is the appearance that means 「この地図はこの国について何も述べていない」 — and the tap says
          which of the two hatched states it is, in words. */
-      function readState(c){ const f=FEEDS[c];
+      function readState(c){ const f=FEEDS[c]||LEARNED[c];
         if(!f) return 'none';
         if(f==='meteoalarm') return maData[c]?(maData[c].error?'error':'ok'):(FEED_STATE.meteoalarm==='error'?'error':'loading');
         if(f==='swic') return swicData[c]?'ok':(FEED_STATE.swic==='error'?'error':'loading');
@@ -2396,46 +2479,162 @@ window.IntMapModules.worldPacks=function(HOST){
          one state along: a feed that could not be fetched is not a feed that answered 「nothing」.
          → only `ok` earns the grey. Everything else is HATCHED, which says nothing, and the tap
          says WHICH nothing it is, in words. */
-      /* ══ ⚠⚠⚠ (#R284) THE HATCH MEANS 「未対応」 AND NOTHING ELSE ════════════════════════
-         「対応国まで斜線で塗るのを辞めろ。」
+      /* ══ ⚠⚠⚠ (#R288) THE HATCH MEANS 「この地図はここについて何も述べていない」 ═══════════
+         「気象警報はまだ対応していない、もしくはデータがまだ入っていないところは灰色斜線で、
+           発令されていないだけの地域は灰色に。個々の区別はちゃんとやれ。」
 
-         #R275 stopped 「発表なし」 grey being painted over a country nobody had read yet, and #R277
-         did the same for one whose feed had errored — both correct, and both answered with THE HATCH,
-         which is the appearance reserved for 「this map has no feed for this country」. So a country
-         that IS wired spent the whole of its first read looking exactly like one that is not.
-         MEASURED on the built page, layer on: at t+45 s **22 wired countries were hatched** — fifteen
-         WMO members mid-rotation and five MeteoAlarm ones — and North Macedonia stayed hatched for
-         ever, because feeds.meteoalarm.org answers `upstream_error` for it.
+         #R284 read the previous round's 「対応国まで斜線で塗るのを辞めろ」 as 「a country that is
+         wired but unread must draw NOTHING」 and returned −1 for it. The reader has now said which
+         of the two they meant, in the same sentence as the rule: 未対応 **もしくは** データがまだ
+         入っていない → hatched. The 「対応地域まで斜線で塗るのを辞めろ」 half is unchanged and still
+         holds — a country whose data IS in is never hatched, whatever it turns out to say.
 
-         There are FOUR states and only three of them are a claim, so the fourth draws nothing:
-             0    no feed at all             → hatched   (「未対応」)
-            -1    wired, not read yet / could not be read → NOTHING, the basemap
-             1    read, nothing in force     → grey      (「発令なし」)
+         So there are THREE claims and three appearances, and the fourth state does not exist:
+             0    no feed at all, or a feed this map has not read yet   → hatched
+             1    read, and nothing in force                            → grey (per UNIT, see below)
             11-14 read, and areas at that rank that could not be placed → the rank, washed
-         An empty country among grey ones reads as 「no answer yet」 without teaching a fourth
-         pattern, and the tap card still says WHICH nothing it is, in words. `-1` is also what the
-         paint expressions already default to, so neither the hatch (`== 0`) nor the wash (`> 0`)
-         needed a line changed. */
+         「個々の区別」 lives in the tap card, which says WHICH of the two silences it is in words
+         (「順番待ち」 / 「取得できませんでした」 / 「未対応」), and in the panel, which counts them.
+
+         ── the note this replaces, kept because the measurement in it is still the reason −1 existed:
+         #R275 stopped 「発表なし」 grey being painted over a country nobody had read yet, and #R277
+         did the same for one whose feed had errored — both correct, and both answered with THE HATCH.
+         MEASURED then: at t+45 s **22 wired countries were hatched**. What made that a defect was
+         that the hatch stayed on for a whole cold sweep; #R284's own fix for THAT (a 6-slot cold
+         rotation) is what makes the same appearance honest now — measured this round, the sweep is
+         over in well under a minute and the hatch is transient rather than the opening state. */
       function washTier(c){
         if(!supported(c)) return 0;
-        if(readState(c)!=='ok') return -1;
+        if(readState(c)!=='ok') return 0;      /* (#R288) 未対応 もしくは データがまだ入っていない */
         const u=UNPL[c]||0;
         if(u&&!drawnISO[c]) return 10+Math.min(4,u);
-        return 1; }
+        /* (#R288) 2 = 「read, quiet, AND this map holds this country's own units」 — the grey is
+           painted per unit below, so the country-wide sheet must not paint it a second time (two
+           42 % greys over each other is a different colour, and a wrong one). 2 matches no arm of
+           `washExpr`, so it lands on the transparent default. */
+        return unitsOf(c)?2:1; }
+      /* ══ ⚠⚠⚠ (#R288) THE COUNTRY IS NOT THE UNIT 「発令なし」 IS TRUE OF ═══════════════════
+         「日本以外でも区分単位、発令単位ごとに色分けしろ」「個々の区別はちゃんとやれ」
+
+         What was in force has been drawn at the issuing unit since #R271. What was NOT in force was
+         still a single sheet of grey over the whole country — so a reader looking at a warned
+         Landkreis beside a quiet one saw a coloured shape floating on an undivided wash, and could
+         not tell the quiet neighbour from the rest of the country. The claim 「発令なし」 is true of
+         each unit separately, so it is drawn on each unit separately.
+
+         ⚠ THE UNITS ARE THE ONES THIS MAP ALREADY HOLDS. Every index here is one the placement
+         ladder builds for its own reasons — the JMA's municipalities, Eurostat's NUTS-3, the CMA's
+         divisions, the CWA's townships, Natural Earth's admin-1, geoBoundaries' ADM1 — so a unit
+         drawn grey is a unit this map could have coloured, which is what makes the grey a claim
+         rather than a decoration. A country whose units are NOT held keeps the country-wide grey
+         (`washTier` returns 1 for it) and the panel PRINTS how many countries are in each state,
+         because 「持っていない」 is a fact about this map and not about the country.
+         ⚠ geoBoundaries is asked for at most two countries at a time and only for countries the
+         reader is actually looking at — the全世界分 would be tens of megabytes for a picture nobody
+         has scrolled to. */
+      const UNITS=Object.create(null);        /* iso3 → [geometry, …] */
+      const unitAsked=Object.create(null);
+      const NO_UNITS=Object.create(null);     /* iso3 → this map has looked and has none */
+      let gbInflight=0;
+      const GB_MAX=2;
+      function unitsOf(iso){ const u=UNITS[iso]; return (u&&u.length)?u:null; }
+      function setUnits(iso,geoms){
+        const g=(geoms||[]).filter(Boolean);
+        if(!g.length){ NO_UNITS[iso]=1; return false; }
+        UNITS[iso]=g; delete NO_UNITS[iso];
+        if(on){ publishQuiet(); paintCountries(); }
+        return true; }
+      const uniq=(idx)=>{ const seen=[], out=[];
+        Object.keys(idx||{}).forEach(k=>{ const f=idx[k]; if(!f||seen.indexOf(f)>=0) return; seen.push(f); out.push(f); });
+        return out; };
+      /* one country's own subdivisions, from whichever index this map holds for it */
+      function askUnits(iso){
+        if(unitAsked[iso]||UNITS[iso]) return;
+        unitAsked[iso]=true;
+        const fail=()=>{ unitAsked[iso]=false; };
+        if(iso==='JPN'){ jpMuniGeo().then(by=>setUnits(iso,Object.keys(by).map(k=>multi(by[k].parts)))).catch(fail); return; }
+        if(iso==='CHN'){ cnGeo().then(by=>setUnits(iso,Object.keys(by).filter(k=>by[k].level!=='province').map(k=>by[k].geometry))).catch(fail); return; }
+        if(iso==='TWN'){ twTownGeo().then(x=>setUnits(iso,uniq(x.by).map(f=>f.geometry))).catch(fail); return; }
+        const cc=NUTS_CC[iso];
+        if(cc){ nutsGeo().then(by=>{ const idx=by[cc]||null;
+          /* NUTS-3 only: the index also holds level 2, and drawing both stacks two greys */
+          const l3=uniq(idx).filter(f=>String((f.properties||{}).NUTS_ID||'').length===5);
+          setUnits(iso,(l3.length?l3:uniq(idx)).map(f=>f.geometry)); }).catch(fail); return; }
+        adm1Geo().then(by=>{ const idx=by[iso]||null; const l=uniq(idx);
+          if(l.length){ setUnits(iso,l.map(f=>f.geometry)); return; }
+          askUnitsGB(iso); }).catch(()=>{ askUnitsGB(iso); });
+      }
+      /* the last resort, and the only one that costs a download of its own */
+      function askUnitsGB(iso){
+        if(gbBy[iso]){ setUnits(iso,uniq(gbBy[iso]).map(f=>f.geometry)); return; }
+        if(gbInflight>=GB_MAX){ unitAsked[iso]=false; return; }
+        gbInflight++;
+        gbIndex(iso,'ADM1').catch(()=>null)
+          .then(by=>{ if(by){ gbBy[iso]=Object.assign(gbBy[iso]||Object.create(null),by); setUnits(iso,uniq(by).map(f=>f.geometry)); }
+            else NO_UNITS[iso]=1; })
+          .catch(()=>{ unitAsked[iso]=false; })
+          .then(()=>{ gbInflight--; });
+      }
+      /* the countries the reader can actually see, so a world of downloads is never started at once */
+      function bboxOf(f){ if(f.__bb) return f.__bb;
+        let w=180,e=-180,s2=90,n=-90;
+        const walk=(a)=>{ if(typeof a[0]==='number'){ if(a[0]<w)w=a[0]; if(a[0]>e)e=a[0]; if(a[1]<s2)s2=a[1]; if(a[1]>n)n=a[1]; return; }
+          for(let i=0;i<a.length;i++) walk(a[i]); };
+        try{ walk((f.geometry||{}).coordinates||[]); }catch(_){}
+        f.__bb=[w,s2,e,n]; return f.__bb; }
+      function inView(f){ try{ const b=GE().camera.getBounds();
+        const bb=bboxOf(f);
+        return !(bb[2]<b.getWest()||bb[0]>b.getEast()||bb[3]<b.getSouth()||bb[1]>b.getNorth()); }catch(_){ return true; } }
+      function askUnitsInView(){ if(!on) return;
+        try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||'');
+          if(!c||!supported(c)||readState(c)!=='ok') return;
+          if(UNITS[c]||unitAsked[c]||NO_UNITS[c]) return;
+          if(!inView(f)) return;
+          askUnits(c); }); }catch(_){} }
+      function quietFeatures(){
+        const out=[];
+        Object.keys(UNITS).forEach(iso=>{
+          if(!supported(iso)||readState(iso)!=='ok') return;
+          UNITS[iso].forEach(g=>{ if(g) out.push({type:'Feature',properties:{iso:iso},geometry:g}); }); });
+        return out; }
+      function publishQuiet(){
+        if(!_imCanDraw()) return false;
+        if(!ensureQuiet()) return false;
+        try{ GE().layers.setSourceData(QSRC,{type:'FeatureCollection',features:quietFeatures()}); }catch(_){ return false; }
+        applyAlertVis();
+        return true; }
+      function ensureQuiet(){ if(GE().layers.has(QFILL)&&GE().layers.has(QLINE)) return true;
+        if(!_imCanDraw()) return false;
+        const before=GE().layers.has('wp-alert-fill')?'wp-alert-fill'
+          :(GE().layers.has('tool-poly')?'tool-poly':undefined);
+        try{
+          if(!GE().layers.hasSource(QSRC)) GE().layers.addSource(QSRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+          if(!GE().layers.has(QFILL)) GE().layers.add({id:QFILL,type:'fill',source:QSRC,layout:{visibility:'none'},
+            paint:{'fill-color':QUIET_COL,'fill-opacity':1}},before);
+          /* the DIVISION is half the answer — without an outline a hundred grey units are one grey
+             country again, which is the report this is fixing */
+          if(!GE().layers.has(QLINE)) GE().layers.add({id:QLINE,type:'line',source:QSRC,layout:{visibility:'none'},
+            paint:{'line-color':'rgba(120,124,132,0.55)',
+              'line-width':['interpolate',['linear'],['zoom'],2,0.25,6,0.5,10,0.8],'line-opacity':0.9}},before);
+        }catch(_){ return false; }
+        return true; }
       function paintCountries(){ withCountrySource().then(()=>{ if(!on) return;
         if(!ensureChoro()) { whenDrawable(()=>{ if(on&&ensureChoro()) paintCountries(); }); return; }
         try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||''); if(!c) return;
           GE().layers.setFeatureState({source:'countries',id:f.id},{wpAlert:washTier(c)}); }); }catch(_){}
-        setVis([CHORO,HATCH],on); }); }
+        applyAlertVis(); }); }
 
       /* ══ ONE PUBLISHER (#R271) — a late feed can never blank an early one ══════════════════════ */
       let baseFeats=[];
       function publish(){
         feats=baseFeats.concat(SIDE.cma,SIDE.bom,SIDE.ma,SIDE.phl,SIDE.cwa,SIDE.nzl,SIDE.swic);
+        learnCoverage(feats);            /* (#R288) the polygons are the evidence — see learnCoverage */
         drawnISO=Object.create(null);
         feats.forEach(f=>{ const g=f.geometry; if(g&&f.properties&&f.properties.iso&&(f.properties.norm||0)>0) drawnISO[f.properties.iso]=1; });
-        whenDrawable(()=>{ if(ensureLayers()){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,on); } });
+        whenDrawable(()=>{ if(ensureLayers()) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); applyAlertVis(); });
+        whenDrawable(()=>{ publishQuiet(); });          /* (#R288) 「発令なし」 at the unit */
         paintCountries();
+        askUnitsInView();
         if(on&&panel.shown()) overview(); }
 
       /* ══ ⚠⚠ (#R277) A LANGUAGE CHANGE RELABELS WHAT IS ALREADY DRAWN ════════════════════
@@ -2597,15 +2796,16 @@ window.IntMapModules.worldPacks=function(HOST){
           return d?(d+' · '+L('via WMO SWIC','WMO SWIC 経由','über WMO SWIC','через WMO SWIC','vía WMO SWIC')):AGENCY_NAME.swic; }
         return AGENCY_NAME[feed]||feed; }
       function legendFor(iso3){
-        const feed=FEEDS[iso3];
+        const feed=FEEDS[iso3]||LEARNED[iso3];   /* (#R288) — a learned territory names the service that covers it */
         const mine=feats.filter(f=>f.properties.iso===iso3&&(f.properties.norm||0)>0);
         let h='<div style="font-weight:700;font-size:13px;">'+esc(countryName(iso3))+'</div>';
         if(feed&&readState(iso3)!=='ok'){
-          /* ⚠ (#R284) an EMPTY swatch, because an empty country is what the map draws — the hatch
-             belongs to 「未対応」 and to nothing else. `readState` may also be `error` here, and the
-             sentence below says so rather than calling a failure a queue. */
+          /* ⚠ (#R288) THE HATCHED swatch, because a hatched country is what the map draws again —
+             「もしくはデータがまだ入っていないところは灰色斜線で」. The swatch matches the map; the
+             SENTENCE is where 「個々の区別」 lives, and it says which of the two silences this is
+             (`readState` may be `error` as well as `loading`). */
           h+='<div style="margin-top:6px;display:flex;align-items:center;gap:7px;font-size:11.5px;">'
-            +'<span style="width:14px;height:14px;border-radius:3px;flex:none;background:transparent;border:1px dashed rgba(128,132,140,0.75);"></span>'
+            +'<span style="width:14px;height:14px;border-radius:3px;flex:none;background:repeating-linear-gradient(45deg,rgba(128,132,140,0.75) 0 2px,transparent 2px 5px);border:1px solid rgba(128,132,140,0.55);"></span>'
             +esc(readState(iso3)==='error'?L('Could not be read','取得できませんでした','Nicht lesbar','Не удалось прочитать','No se pudo leer')
                                           :L('Not read yet','未取得','Noch nicht gelesen','Ещё не прочитано','Aún no leído'))+'</div>'
             +'<div style="margin-top:6px;color:var(--text-main);font-size:11.5px;line-height:1.6;">'
@@ -2845,6 +3045,25 @@ window.IntMapModules.worldPacks=function(HOST){
             +'<span style="opacity:.6;flex:none;min-width:52px;text-align:right;">'
             +esc(g==='error'?GRADE_TXT('error'):g==='loading'?GRADE_TXT('loading'):(ageTxt(k)||GRADE_TXT(g)))+'</span></div>'; }).join(''); }
 
+      /* ⚠ (#R288) 「発令なし」 IS DRAWN AT THE UNIT WHERE THIS MAP HOLDS THE UNITS, AND AT THE
+         COUNTRY WHERE IT DOES NOT — that difference is a fact about this map, so it is printed
+         rather than left for the reader to infer from the picture. */
+      function unitLine(){
+        let uc=0, cc=0;
+        try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||'');
+          if(!c||!supported(c)||readState(c)!=='ok') return;
+          if(unitsOf(c)) uc++; else cc++; }); }catch(_){}
+        const units=Object.keys(UNITS).reduce((n,k)=>n+((UNITS[k]||[]).length),0);
+        /* ⚠ ONE sentence per language with placeholders, not four fragments concatenated: a
+           sentence broken into pieces cannot be re-ordered by a translator, and every piece
+           becomes its own row in the i18n tables (#R239's 「翻訳済みの定義」 problem, in miniature). */
+        const txt=L('Nothing in force is drawn per administrative unit in {u} countries ({n} units), and country-wide in {c}.',
+          '「発令なし」は {u} か国で区分単位ごとに（{n} 区分）、{c} か国で国全体として描いています。',
+          'Nichts in Kraft wird in {u} Ländern je Verwaltungseinheit ({n} Einheiten) und in {c} Ländern landesweit gezeichnet.',
+          '«Ничего не действует» показано по единицам в {u} странах ({n} единиц) и по стране целиком в {c}.',
+          'Nada vigente se dibuja por unidad administrativa en {u} países ({n} unidades) y por país entero en {c}.');
+        return '<div style="font-size:10.5px;color:var(--text-muted);line-height:1.55;">'
+          +esc(txt.replace('{u}',uc).replace('{n}',units).replace('{c}',cc))+'</div>'; }
       function placedLine(){
         const gaps=Object.keys(PLACED).filter(k=>PLACED[k]&&PLACED[k][1]>PLACED[k][0]);
         if(!gaps.length) return '<div style="font-size:10.5px;color:var(--text-muted);">'
@@ -2920,7 +3139,7 @@ window.IntMapModules.worldPacks=function(HOST){
       function closePointCard(){ try{ if(ptCard&&ptCard.parentNode) ptCard.parentNode.removeChild(ptCard); }catch(_){} ptCard=null; }
       function pointBody(lng,lat,iso){
         const hits=alertsAt(lng,lat);
-        const feed=FEEDS[iso];
+        const feed=FEEDS[iso]||LEARNED[iso];   /* (#R288) */
         let h='<div style="font-size:11px;color:var(--text-muted);">'
           +esc((+lat).toFixed(4)+'°, '+(+lng).toFixed(4)+'°')+(iso?(' · '+esc(countryName(iso))):'')+'</div>';
         if(!hits.length){
@@ -3037,7 +3256,8 @@ window.IntMapModules.worldPacks=function(HOST){
                    'El reloj es el elemento más nuevo del feed, no cuándo se descargó.'))+'</div>'
             +'<details class="im-more" style="margin-top:6px;"><summary style="font-size:10.5px;">'
               +esc(L('Diagnostics','診断','Diagnose','Диагностика','Diagnóstico'))+'</summary>'
-              +'<div style="margin-top:4px;">'+placedLine()+'</div></details>'
+              +'<div style="margin-top:4px;">'+placedLine()+'</div>'
+              +'<div style="margin-top:4px;">'+unitLine()+'</div></details>'
           +'</details>'
           +'<div style="margin-top:8px;font-size:11px;color:var(--text-main);">'
           +L('Tap any country for its own agency’s scale and the areas in force.','国をタップすると、その機関自身の階級と発表中の区域が出ます。','Land antippen für die Skala der Behörde.','Нажмите страну — шкала её службы.','Toque un país para la escala de su agencia.')+'</div>'
@@ -3051,15 +3271,25 @@ window.IntMapModules.worldPacks=function(HOST){
           +'</div>');
         wireControls(b); }
 
-      function tick(){ if(on&&!document.hidden) refresh(); }
+      /* (#R288) panning is when a country becomes worth its units — bounded by `GB_MAX` and by
+         「asked once per session」, so a sweep across the world is a walk, never a storm */
+      try{ GE().events.on('moveend',()=>{ if(on) askUnitsInView(); }); }catch(_){}
+      try{ GE().events.on('idle',()=>{ if(on) applyAlertVis(); }); }catch(_){}   /* the re-assert — see applyAlertVis */
+      /* ⚠ (#R288) the tick re-asserts too. MEASURED: something outside this module sets
+         `wp-alert-fill` to `visibility:none` once during the first minute (the saved-layer
+         re-apply, js/map-ui.js — see #R276's note about it switching off ids not in the share
+         hash), and until this round nothing put it back until the next publish happened to run.
+         The result was warnings drawn as outlines with no fill, which is not a state anything
+         chose. `idle` catches it in a moving map; this catches it in a still one. */
+      function tick(){ if(on) applyAlertVis(); if(on&&!document.hidden) refresh(); }
       function toggle(v){ on=v;
         if(!on){ if(timer){ clearInterval(timer); timer=null; } panel.hide(); closePointCard();
-          setVis(LYR,false); setVis([CHORO,HATCH],false); return; }
+          applyAlertVis(); return; }
         whenDrawable(()=>ensureLayers()); overview(); refresh(); hiResCountries(()=>{ if(on) paintCountries(); });
         if(!timer) timer=setInterval(tick,TICK_MS); }
       document.addEventListener('visibilitychange',()=>{ if(on&&!document.hidden) refresh(); });
 
-      onRestyle(()=>{ if(on) whenDrawable(()=>{ if(ensureLayers()) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,true); paintCountries(); }); });
+      onRestyle(()=>{ if(on) whenDrawable(()=>{ if(ensureLayers()) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); applyAlertVis(); publishQuiet(); paintCountries(); }); });
       mapClick((e)=>{ if(!on) return false;
         const lng=e.lngLat.lng, lat=e.lngLat.lat;
         const c=countryAt(lng,lat);
@@ -3117,7 +3347,15 @@ window.IntMapModules.worldPacks=function(HOST){
         /* (#R275) wired but not yet read — the countries the hatch is covering for a REASON that is
            not 「未対応」, and a number that must go to zero as the rotation comes round */
         unread:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
-            const c=String(f.id||''); if(supported(c)&&readState(c)!=='ok') n++; }); }catch(_){} return n; })() });
+            const c=String(f.id||''); if(supported(c)&&readState(c)!=='ok') n++; }); }catch(_){} return n; })(),
+        /* (#R288) 「発令なし」 is drawn at the unit for these, and country-wide for the rest — the
+           difference is a fact about this map, so it is counted rather than assumed */
+        learned:Object.assign({},LEARNED),
+        unitCountries:Object.keys(UNITS).filter(k=>UNITS[k]&&UNITS[k].length).sort(),
+        unitCount:Object.keys(UNITS).reduce((n,k)=>n+((UNITS[k]||[]).length),0),
+        quietDrawn:(function(){ try{ return quietFeatures().length; }catch(_){ return 0; } })(),
+        countryGrey:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
+            if(washTier(String(f.id||''))===1) n++; }); }catch(_){} return n; })() });
       STATE.alertsLegend=(iso3)=>legendFor(String(iso3||'').toUpperCase());
       window.__wpAlerts={ toggle, refresh, ask:(iso)=>loadMA([String(iso||'').toUpperCase()]),
         /* (#R275) the tap's own answer, as a call — so a test can ask 「この地点で何が出ているか」

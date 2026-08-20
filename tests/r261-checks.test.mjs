@@ -251,8 +251,15 @@ test('R261 ⑩: Others is emptied into named families and the demoted rows stay 
      レイヤーは削除」), so «is gxtruecolor still in Beta» no longer has a subject. The three EC
      weather rows are the demotions that still exist, and #R266 ① asserts the deletions separately —
      between them nothing about #R40's decision goes unchecked. */
-  for (const id of ['ec-temp','ec-precip','ec-wind'])
+  /* ⚠ (#R288) `ec-temp` LEFT THIS LIST, and not because #R40's demotion was overturned. It absorbed
+     `temp` — the MERRA-2 air-temperature row that lived on the Climate shelf — by instruction
+     (「気温（2m・再解析）レイヤーも統合し、一つのレイヤー…ソースだけ切り替えられる仕様に」), so the
+     merged row is where the row it absorbed was. The other two demotions are unchanged, and the
+     merged row must be on the Climate shelf rather than nowhere. */
+  for (const id of ['ec-precip','ec-wind'])
     assert.ok(!groups.includes("'" + id + "'"), id + ' stays in Beta — it was demoted per request');
+  assert.ok(groups.includes("'ec-temp'"), 'the merged air-temperature row is where the row it absorbed was');
+  assert.ok(!s.includes("['temp','lyrTemp']"), '…and the row it absorbed is not declared twice');
   for (const id of ['gxtruecolor','gxlst','gxcloud'])
     assert.ok(!s.includes("'" + id + "'"), id + ' was deleted in #R266 and must not come back');
   /* every id in a GROUP has to be resolvable, which is what the `ox-` prefix gap broke */

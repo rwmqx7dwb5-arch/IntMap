@@ -235,8 +235,12 @@ test('R275 ⑩ every feed is on a rotation, and none of them is a first-load que
   const s = WP();
   const fn = /function maNext\(n\)\{([\s\S]*?)\n        return take; \}/.exec(s);
   assert.ok(fn, 'maNext must exist');
-  assert.match(fn[1], /const byAge=fresh\.sort\(\(a,b\)=>\(maAt\[a\]\|\|0\)-\(maAt\[b\]\|\|0\)\);/,
-    'the next batch is the countries read longest ago');
+  /* ⚠ (#R288) the same ordering, with the countries the reader can SEE taken first — the cycle was
+     already at the transport's floor, and what was slow was the visible country's place in it. The
+     age order #R275 established is still the order; `viewFirst` only partitions it. */
+  assert.match(fn[1], /const byAge=viewFirst\(fresh\.sort\(\(a,b\)=>\(maAt\[a\]\|\|0\)-\(maAt\[b\]\|\|0\)\)\);/,
+    'the next batch is the countries read longest ago, in view first');
+  assert.match(s, /function viewFirst\(list\)\{/, '…and that partition has a name');
   assert.match(fn[1], /const cold=all\.filter\(k=>!maData\[k\]\)/, '…with the never-read ones first');
   assert.ok(!/maAsked\.filter\(k=>!maData\[k\]\)\.concat\(maNext\(\)\)/.test(s),
     'the queue that excluded a country the moment it arrived is gone');
@@ -250,7 +254,8 @@ test('R275 ⑩ every feed is on a rotation, and none of them is a first-load que
 /* ── ⑪ grey is a statement, so it has to have been checked ──────────────────────────────────── */
 test('R275 ⑪ a country is only painted «nothing in force» once its service has been read', () => {
   const s = WP();
-  assert.match(s, /function readState\(c\)\{ const f=FEEDS\[c\];/, 'what is known per country has a name');
+  assert.match(s, /function readState\(c\)\{ const f=FEEDS\[c\]\|\|LEARNED\[c\];/,
+    'what is known per country has a name (#R288: including a country a service was learned to cover)');
   /* ⚠ (#R277) THE RULE GOT STRICTER AND THIS CHECK PINNED THE OLD ONE. `loading` was not the only
      state that has not READ anything: `error` and `idle` were painting the 「発表なし」 grey too, and
      MEASURED this round China came out grey with 1,235 warnings in force because www.nmc.cn was
@@ -259,7 +264,11 @@ test('R275 ⑪ a country is only painted «nothing in force» once its service h
      was right; painting the HATCH instead was not, because the hatch means 「未対応」 — measured, 22
      wired countries wore it 45 s after the layer went on. The property this test is about — a
      service that has not answered does not earn the 「発表なし」 grey — is what is asserted. */
-  assert.match(s, /if\(readState\(c\)!=='ok'\) return -1;/,
+  /* ⚠ (#R288) …and the reader has since chosen the appearance for that state:
+     「まだ対応していない、もしくはデータがまだ入っていないところは灰色斜線で」. The property #R275
+     is about is unchanged and is what is asserted — a service that has not answered does not
+     earn the 「発表なし」 grey. What it earns instead is the hatch, which claims nothing. */
+  assert.match(s, /if\(readState\(c\)!=='ok'\) return 0;/,
     'a country whose service has not answered is not washed with the 「発表なし」 grey');
   /* the three states are still three appearances (#R273) */
   assert.match(s, /1,'rgba\(200,200,203,0\.42\)'/, 'read and quiet is grey');

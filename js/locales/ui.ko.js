@@ -4275,4 +4275,12 @@ window.IntMapLang.define('ko', { ui: {
   "Thunderstorms": "뇌우",
   "The reachable area is computed for 1 to 120 minutes — ask again inside that range.": "도달권은 1~120분 범위에서 계산합니다. 그 범위 안에서 다시 요청해 주세요.",
   "The reachable area was computed, but the map layer could not be created (the map style was still loading) — try again in a moment.": "도달권은 계산되었지만 지도 레이어를 만들 수 없었습니다(지도 스타일을 아직 불러오는 중) — 잠시 후 다시 시도해 주세요.",   /* (#R267) */
+  "Temperature": "기온",   /* (#R288) */
+  "Month": "대상 월",   /* (#R288) */
+  "Forecast": "예보",   /* (#R288) */
+  "ECMWF IFS forecast": "ECMWF IFS 예보",   /* (#R288) */
+  "MERRA-2 reanalysis": "MERRA-2 재분석",   /* (#R288) */
+  "monthly mean": "월평균",   /* (#R288) */
+  "Open the time machine": "타임머신 열기",   /* (#R288) */
+  "Nothing in force is drawn per administrative unit in {u} countries ({n} units), and country-wide in {c}.": "「발표 없음」은 {u}개국에서 행정구역 단위로({n}개 구역), {c}개국에서는 국가 전체로 표시합니다.",   /* (#R288) */
 } });

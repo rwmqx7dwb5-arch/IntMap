@@ -74,6 +74,7 @@ window.IntMapModules.wind=function(HOST){
        the only other multiplier and it defaults to 1. */
     function addField(key){
       if(!_imCanDraw()) return false;
+      if(!EC().registerProtocol()) return false;   /* (#R288) — see the note in weatherEC.addSlot */
       const s=SLOT[slot], url=EC().omUrl(VAR);
       if(!url) return false;
       try{
@@ -121,6 +122,11 @@ window.IntMapModules.wind=function(HOST){
       try{ GE().events.once('idle',()=>{ if(on&&liveKey!==key) addField(key); }); }catch(_){}
     }
     /* ── the data ─────────────────────────────────────────────────────────────────────────────*/
+    /* ⚠⚠ (#R288) THE PARTICLES ASK FOR THE LATITUDE BAND THEY ARE DRAWN IN — see the long note on
+       IntMapECMWF.load. Same samples, same speeds, a sixth of the wait. The band spans every
+       longitude, so only a north/south move can leave it. */
+    function band(){ try{ const b=GE().camera.getBounds();
+      return EC().bandFor(b.getSouth(),b.getNorth()); }catch(_){ return null; } }
     function load(opt){
       if(!EC()) return Promise.resolve(null);
       const want=()=>EC().stateKey(VAR,'');
@@ -129,7 +135,7 @@ window.IntMapModules.wind=function(HOST){
       return EC().ready().then(()=>{
         const key=want();
         if(key&&key!==liveKey) ensureField(key);
-        return EC().load(VAR);
+        return EC().load(VAR,null,band());
       }).then(f=>{
         loading=false;
         if(!f){ lastErr='load';
@@ -233,7 +239,11 @@ window.IntMapModules.wind=function(HOST){
     window.addEventListener('resize',()=>{ if(on) resize(); });
     if(GE().hasRenderer()){
       GE().events.on('movestart',()=>{ moving=true; });
-      GE().events.on('moveend',()=>{ moving=false; if(on){ resize(); } });
+      GE().events.on('moveend',()=>{ moving=false; if(on){ resize();
+        /* the view left the band that was read — the particles would sample NaN there, so read the
+           new one. `bandCovers` is what stops this firing on every small pan. */
+        try{ if(!EC().bandCovers(EC().heldBand(),band())) load(); }catch(_){}
+      } });
       /* a style swap drops custom sources — put the field back rather than leaving only streaks */
       GE().events.on('styledata',()=>{ if(!on) return; setTimeout(()=>{ if(on&&!GE().layers.has(SLOT[0].lyr)&&!GE().layers.has(SLOT[1].lyr)){ liveKey=''; load(); } },120); });
       /* …and if the data is already here but the layer is not, put it back rather than waiting for a
@@ -356,8 +366,16 @@ window.IntMapModules.weatherEC=function(HOST){
        Ocean temperature is still on the map — it is the GHRSST MUR layer in js/data-layers.js,
        which is an observation rather than a model field. `wind_gusts_10m` takes the freed row. */
     const LAYERS=[
+      /* ══ ⚠⚠⚠ (#R288) ONE TEMPERATURE LAYER, TWO SOURCES ═══════════════════════════════════════
+         「名前は単に気温に。気温（2m・再解析）レイヤーも統合し、一つのレイヤー、同じ色分け、
+           グラフィックに。ソースだけ切り替えられる仕様に。」
+         There were two rows for air temperature — this one and js/data-layers.js's GIBS MERRA-2
+         raster — with two legends, two date controls and two colour schemes for one quantity. They
+         are one row now: `sources` lists what can answer, the legend carries the switch, and both
+         answers are painted with the SAME ramp (see js/wx-reanalysis.js). */
       {id:'ec-temp',    variable:'temperature_2m',      type:'raster', op:1,    kind:'temp',
-       label:LA('Temperature 2 m (ECMWF)','気温 2m（ECMWF）','Temperatur 2 m (ECMWF)','Температура 2 м (ECMWF)','Temperatura 2 m (ECMWF)'),
+       sources:['ecmwf','merra2'],
+       label:LA('Temperature','気温','Temperatur','Температура','Temperatura'),
        desc:LA('Air temperature 2 m above the ground.','地上2mの気温。','Lufttemperatur 2 m über Grund.','Температура воздуха на высоте 2 м.','Temperatura del aire a 2 m del suelo.')},
       {id:'ec-precip',  variable:'precipitation',       type:'raster', op:1,    kind:'raw',
        label:LA('Precipitation (ECMWF)','降水量（ECMWF）','Niederschlag (ECMWF)','Осадки (ECMWF)','Precipitación (ECMWF)'),
@@ -386,9 +404,15 @@ window.IntMapModules.weatherEC=function(HOST){
     ];
     const ecLbl=(l)=>L.arr(l.label);
     const ecDesc=(l)=>L.arr(l.desc);
-    const state={};   /* id → {on, op} */
-    LAYERS.forEach(l=>state[l.id]={on:false, op:l.op});
+    const state={};   /* id → {on, op, src, month} */
+    /* (#R288) `src` is only meaningful for a layer that declares `sources`; `month` is the
+       reanalysis month, which the master clock writes when the reader travels into the past. */
+    LAYERS.forEach(l=>state[l.id]={on:false, op:l.op,
+      src:(l.sources&&l.sources[0])||null,
+      month:(l.sources&&l.sources.indexOf('merra2')>=0&&window.IntMapReanalysis)?window.IntMapReanalysis.latestMonth():null});
     let mounted=false, rowsMounted=false;
+    const RE=()=>window.IntMapReanalysis;
+    const srcOf=(cfg)=>(cfg&&cfg.sources)?((state[cfg.id]&&state[cfg.id].src)||cfg.sources[0]):'ecmwf';
 
     function omUrl(cfg,extra){ return EC().omUrl(cfg.variable,extra); }
 
@@ -406,7 +430,26 @@ window.IntMapModules.weatherEC=function(HOST){
     const curIds=(cfg)=>slotIds(cfg,cfg._s|0);
     function addSlot(cfg,s){
       const sid=cfg.id+'-'+s+'-src', lid=cfg.id+'-'+s, lbl=lid+'-lbl';
-      const before=EC().before(); const url=omUrl(cfg,cfg.type==='arrows'?'&arrows=true':'');
+      const before=EC().before();
+      /* (#R288) the reanalysis source is a tile TEMPLATE rather than an om:// url — same layer id,
+         same slot machinery, same ramp; only where the numbers come from differs. */
+      if(srcOf(cfg)==='merra2'){
+        if(!RE()||!RE().register()) return false;
+        try{
+          if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'raster',tiles:RE().tiles(state[cfg.id].month),tileSize:256,maxzoom:RE().MAXZOOM});
+          if(!GE().layers.has(lid)) GE().layers.add({id:lid,type:'raster',source:sid,layout:{visibility:'none'},
+            paint:{'raster-opacity':cfg.op,'raster-opacity-transition':{duration:220},'raster-fade-duration':0,'raster-resampling':'linear'}},before);
+          slotIds(cfg,s).forEach(l=>{ try{ EC().lift(l); }catch(_){} });
+          return true;
+        }catch(e){ try{ console.warn('reanalysis add fail',cfg.id,e); }catch(_){} return false; }
+      }
+      /* ⚠⚠ (#R288) NO `om://` URL BEFORE THE PROTOCOL EXISTS. `state[id].on` is set synchronously
+         by `toggle`, and the styledata/idle re-add hooks below fire off that flag — so a layer
+         could be rebuilt while the 340 kB tile SDK was still downloading, handing MapLibre a
+         scheme with no handler. It then fetches it natively, which is a CSP violation and never a
+         tile. The retry ladders already re-call this, so refusing is the whole fix. */
+      if(!EC().registerProtocol()) return false;
+      const url=omUrl(cfg,cfg.type==='arrows'?'&arrows=true':'');
       if(!url) return false;
       try{
         if(cfg.type==='isobars'){
@@ -440,7 +483,10 @@ window.IntMapModules.weatherEC=function(HOST){
       state[id].on=on;
       syncLegend();
       if(!on){ setVis(cfg,false); return; }
-      EC().ready().then(()=>{
+      /* (#R288) the reanalysis source needs neither the 340 kB tile SDK nor the forecast metadata —
+         asking for them would spend a reader's bandwidth on a model this picture never touches. */
+      const gate=(srcOf(cfg)==='merra2')?Promise.resolve():EC().ready();
+      gate.then(()=>{
         /* ⚠ (#R276 追記) A RETRY LADDER, not a single `once('idle')`. `addLayer` can refuse for two
            different reasons — the style cannot accept a layer yet, or the metadata has not arrived so
            `omUrl` is empty — and only the first of them is an idle away. Poll for ~16 s as well, and
@@ -464,9 +510,12 @@ window.IntMapModules.weatherEC=function(HOST){
     function anyOn(){ return LAYERS.some(l=>state[l.id].on); }
     function activeLayers(){ return LAYERS.filter(l=>state[l.id].on); }
 
-    /* ── the forecast step changed: build the new hour beside the old one, then swap ─────────── */
-    function applyTime(){
-      activeLayers().forEach(cfg=>{
+    /* ── the forecast step changed: build the new hour beside the old one, then swap ───────────
+       ⚠ (#R288) `only` rebuilds ONE layer — the source switch and the reanalysis month are the same
+       operation as a time step (a new picture in the free slot, revealed once it has painted), so
+       they share this rather than growing a second, subtly different swap. */
+    function applyTime(only){
+      (only?[only]:activeLayers()).forEach(cfg=>{
         const old=cfg._s|0, nu=1-old;
         dropSlot(cfg,nu);                       /* whatever a superseded step left there */
         let n=0;
@@ -482,8 +531,14 @@ window.IntMapModules.weatherEC=function(HOST){
         };
         go(); });
       renderLegend();
-      try{ const nx=Math.min(EC().count()-1,EC().index()+1);
-        EC().prefetch(activeLayers().map(c=>c.variable).concat(['wind_u_component_10m','wind_v_component_10m']),nx); }catch(_){}
+      /* (#R288) BOTH neighbours, not just the next one. A reader who has stepped forward is as
+         likely to step back, and a warmed frame costs 1.0–1.6 s against 8.7 s cold (#R276's
+         measurement) — the block cache is shared, so warming the one behind is the difference
+         between an instant step back and another full read. */
+      try{ const vars=activeLayers().filter(c=>srcOf(c)!=='merra2').map(c=>c.variable).concat(['wind_u_component_10m','wind_v_component_10m']);
+        const i=EC().index(), n=EC().count();
+        EC().prefetch(vars,Math.min(n-1,i+1));
+        if(i>0) EC().prefetch(vars,i-1); }catch(_){}
     }
 
     /* ── UNITS ───────────────────────────────────────────────────────────────────────────────
@@ -532,7 +587,6 @@ window.IntMapModules.weatherEC=function(HOST){
     }
 
     const boxes={};            /* layer id → its own legend element */
-    let timeEl=null;
     const dragHandle=()=>'<span class="dl-drag" title="'+L('Drag to move','ドラッグして移動','Zum Verschieben ziehen','Потяните, чтобы переместить','Arrastre para mover')+'">⋮⋮</span>';
     function newBox(id){
       const mc=document.getElementById('map-container')||document.body;
@@ -543,7 +597,6 @@ window.IntMapModules.weatherEC=function(HOST){
       return el;
     }
     function boxFor(cfg){ return boxes[cfg.id]||(boxes[cfg.id]=newBox(cfg.id)); }
-    function ensureLegend(){ return timeEl||(timeEl=newBox('ec-time')); }
     function closeBtn(el){ const x=el.querySelector('.layer-popup-x');
       if(x) x.onclick=()=>{ el.style.display='none'; try{ window._tileLegends&&window._tileLegends(); }catch(_){} }; }
 
@@ -552,60 +605,116 @@ window.IntMapModules.weatherEC=function(HOST){
         if(dh===0) return L('now','現在','jetzt','сейчас','ahora');
         return (dh>0?'+':'')+dh+' '+L('h','時間','h','ч','h'); }catch(_){ return ''; }
     }
-    function renderTime(){
-      const el=ensureLegend();
-      const E=EC(); const n=E.count(), i=E.index();
-      const vt=E.validTime(), ref=E.referenceTime();
-      const playing=E.isPlaying();
-      const playTxt=playing?L('Pause','一時停止','Pause','Пауза','Pausa'):L('Play','再生','Abspielen','Воспроизвести','Reproducir');
-      el.innerHTML=dragHandle()
-        +'<button class="layer-popup-x" title="'+t('close')+'">×</button>'
-        +'<h4>'+L('ECMWF forecast time','ECMWF 予報時刻','ECMWF-Vorhersagezeit','Время прогноза ECMWF','Hora de pronóstico del ECMWF')+'</h4>'
-        +'<div class="ecl-timebody">'
-        +'<div class="ecl-model">'+E.MODEL+' · '+E.RESOLUTION_KM+' km · '
-          +L('run','初期時刻','Lauf','прогон','pasada')+' '+(ref?E.fmt(ref,{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric',timeZone:'UTC'})+' UTC':'—')+'</div>'
-        +'<div class="ecl-player">'
-          +_b('first',L('First step','最初の時刻','Erster Schritt','Первый шаг','Primer paso'),IC.first)
-          +_b('prev',L('One step back','1つ前の時刻','Ein Schritt zurück','На шаг назад','Un paso atrás'),IC.prev)
-          +_b('play',playTxt,playing?IC.pause:IC.play,'ecl-play')
-          +_b('next',L('One step forward','1つ次の時刻','Ein Schritt vor','На шаг вперёд','Un paso adelante'),IC.next)
-          +_b('now',L('Back to now','現在に戻る','Zurück zu jetzt','К текущему времени','Volver a ahora'),L('Now','現在','Jetzt','Сейчас','Ahora'),'ecl-now')
-        +'</div>'
-        +'<input type="range" id="ec-time" min="0" max="'+Math.max(0,n-1)+'" step="1" value="'+i+'" style="width:100%;accent-color:var(--primary-color);">'
-        +'<div id="ec-validtime">'+(vt?(L('valid','有効時刻','gültig','действ.','válido')+' '+E.fmt(vt)+' · '+relTxt(vt)):L('loading…','読み込み中…','wird geladen…','загрузка…','cargando…'))+'</div>'
-        +'</div>';
-      closeBtn(el);
-      const sl=el.querySelector('#ec-time');
-      /* ⚠ (#R284) `input` fires on every pixel of a drag — `EC().setIndex` is what coalesces the
-         axis moves, so this only has to hand it the value. See the note on `emit('time')`. */
-      if(sl){ sl.oninput=()=>{ E.pause(); E.setIndex(+sl.value); }; }
-      el.querySelectorAll('.ecl-b').forEach(b=>{ b.onclick=()=>{ const a=b.getAttribute('data-act');
-        if(a==='first') { E.pause(); E.setIndex(0,{now:true}); }
-        else if(a==='prev'){ E.pause(); E.step(-1); }
-        else if(a==='next'){ E.pause(); E.step(1); }
-        else if(a==='now'){ E.pause(); E.setIndex(E.nowIndex(),{now:true}); }
-        else if(a==='play') E.togglePlay(); }; });
+    /* ══ ⚠⚠⚠ (#R288) THERE IS NO ECMWF CLOCK ANY MORE ══════════════════════════════════════════
+       「ECMWF系レイヤーを開くと勝手にECMWFの時間ポップアップが出るのを辞めろ。わざわざ分けるな。」
+
+       #R284 gave the forecast axis a floating box of its own — 「ECMWF 予報時刻」 — that appeared by
+       itself the moment ANY ECMWF layer was switched on, and it was a SECOND clock beside the one
+       this app has had since #R94 (window.IntMapTime, the master clock every other time-aware layer
+       already follows). Both halves of the complaint are the same fact.
+
+       So the box is gone. The instant lives in the master clock; js/wx-ecmwf.js snaps it to the
+       nearest hour the model publishes; the reader moves it from the time machine, which now
+       reaches into the forecast (js/news-timeline.js). What a layer's own legend states is what a
+       legend is for — WHICH INSTANT THIS PICTURE IS OF — and the line is a button that opens that
+       one shared control rather than a copy of it. */
+    function openClock(){
+      try{
+        const tl=document.getElementById('news-timeline');
+        if(tl){ tl.classList.remove('collapsed'); }
+        if(window._imTimeMachineForecast) window._imTimeMachineForecast();
+        if(tl&&tl.scrollIntoView) tl.scrollIntoView({block:'nearest'});
+      }catch(_){}
+    }
+    /* the reanalysis month, and the forecast hour, in the same place and the same words */
+    function whenLine(cfg){
+      const E=EC();
+      if(srcOf(cfg)==='merra2'){
+        const m=String((state[cfg.id]&&state[cfg.id].month)||'').slice(0,7);
+        return L('Month','対象月','Monat','Месяц','Mes')+' '+(m||'—');
+      }
+      const vt=E.validTime();
+      if(!vt) return L('loading…','読み込み中…','wird geladen…','загрузка…','cargando…');
+      return L('valid','有効時刻','gültig','действ.','válido')+' '+E.fmt(vt)+' · '+relTxt(vt);
+    }
+    const SRC_NAME={
+      ecmwf:()=>L('ECMWF IFS forecast','ECMWF IFS 予報','ECMWF-IFS-Vorhersage','Прогноз ECMWF IFS','Pronóstico ECMWF IFS'),
+      merra2:()=>L('MERRA-2 reanalysis','MERRA-2 再解析','MERRA-2-Reanalyse','Реанализ MERRA-2','Reanálisis MERRA-2')
+    };
+    function srcLine(cfg){
+      if(!cfg.sources||cfg.sources.length<2) return '';
+      const cur=srcOf(cfg);
+      return '<div class="kl-period" style="margin:7px 0 2px;"><label>'+L('Source','データ源','Quelle','Источник','Fuente')+'</label>'
+        +'<select class="ec-srcsel" data-for="'+cfg.id+'">'
+        +cfg.sources.map(s=>'<option value="'+s+'"'+(s===cur?' selected':'')+'>'+SRC_NAME[s]()+'</option>').join('')
+        +'</select></div>';
+    }
+    function modelLine(cfg){
+      const E=EC();
+      if(srcOf(cfg)==='merra2') return '<div class="ecl-model">NASA MERRA-2 · '
+        +L('monthly mean','月平均','Monatsmittel','среднемесячное','media mensual')+' · ~50 km</div>';
+      const ref=E.referenceTime();
+      return '<div class="ecl-model">'+E.MODEL+' · '+E.RESOLUTION_KM+' km'
+        +(ref?(' · '+L('run','初期時刻','Lauf','прогон','pasada')+' '+E.fmt(ref,{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric',timeZone:'UTC'})+' UTC'):'')+'</div>';
     }
     function renderOne(cfg){
       const el=boxFor(cfg);
       el.innerHTML=dragHandle()
         +'<button class="layer-popup-x" title="'+t('close')+'">×</button>'
         +'<h4>'+ecLbl(cfg)+'</h4>'
-        +'<div class="ecl-one">'+barBody(cfg)+'</div>';
+        +'<div class="ecl-one">'+barBody(cfg)+srcLine(cfg)+modelLine(cfg)
+        +'<button class="ecl-when" data-for="'+cfg.id+'" title="'+L('Open the time machine','タイムマシンを開く','Zeitmaschine öffnen','Открыть машину времени','Abrir la máquina del tiempo')+'">'+whenLine(cfg)+'</button>'
+        +'</div>';
       closeBtn(el);
+      const ss=el.querySelector('.ec-srcsel');
+      if(ss) ss.onchange=()=>{ setSource(cfg.id,ss.value); };
+      const wb=el.querySelector('.ecl-when');
+      if(wb) wb.onclick=openClock;
+    }
+    /* ⚠ the switch REBUILDS the picture through the same two-slot swap a time step uses, so the map
+       never goes blank between two sources — and it re-renders the legend, because the ramp's unit
+       line, the model line and the 「いつの絵か」 line all change with it. */
+    function setSource(id,src){
+      const cfg=LAYERS.find(l=>l.id===id); if(!cfg||!cfg.sources||cfg.sources.indexOf(src)<0) return;
+      if(state[id].src===src) return;
+      state[id].src=src;
+      if(src==='merra2'&&!state[id].month&&RE()) state[id].month=RE().latestMonth();
+      if(!state[id].on){ renderLegend(); return; }
+      const gate=(src==='merra2')?Promise.resolve():EC().ready();
+      gate.then(()=>{ applyTime(cfg); }).catch(()=>{});
+      renderLegend();
     }
     function renderLegend(){
-      renderTime();
       activeLayers().forEach(renderOne);
       try{ window._tileLegends&&window._tileLegends(); }catch(_){}
     }
     function syncLegend(){ const show=anyOn();
-      ensureLegend().style.display=show?'block':'none';
       LAYERS.forEach(l=>{ const el=boxes[l.id]; if(el&&!(state[l.id]&&state[l.id].on)) el.style.display='none'; });
       if(show){ activeLayers().forEach(l=>{ boxFor(l).style.display='block'; }); renderLegend(); }
       /* the tiler owns where the legends sit; opening or closing one moves every box below it */
       try{ window._tileLegends&&window._tileLegends(); }catch(_){} }
     window._ecSyncTimeLegend=syncLegend;
+    /* (#R288) the master clock's month drives the reanalysis picture — one clock, two granularities */
+    function applyMonth(iso){
+      let changed=false;
+      LAYERS.forEach(l=>{ if(!l.sources||l.sources.indexOf('merra2')<0||!RE()) return;
+        const m=RE().clampMonth(iso);
+        if(state[l.id].month===m) return;
+        state[l.id].month=m;
+        if(state[l.id].on&&srcOf(l)==='merra2'){ applyTime(l); changed=true; } });
+      if(anyOn()) renderLegend();
+      return changed;
+    }
+    window._ecApplyMonth=applyMonth;
+    /* ⚠⚠ (#R288) …AND THE MASTER CLOCK IS WHAT WRITES IT. The reanalysis is monthly and the
+       forecast is hourly, but they are two granularities of ONE instant — a reader who travels to
+       1998 should see 1998's temperature, not the latest month, and nothing else in the app makes
+       that decision twice. `clampMonth` keeps it inside what GIBS actually publishes.
+       ⚠ Poll for the kernel: js/app-body.js declares it and is imported LAST (src/main.js). */
+    (function wireClock(n){ try{ const C=window.IntMapTime;
+      if(C&&C.on){ C.on(e=>{ try{ applyMonth(e.isLive?(RE()&&RE().latestMonth()):e.iso); }catch(_){} }); return; }
+    }catch(_){}
+      if((n|0)<60) setTimeout(()=>wireClock((n|0)+1),200); })(0);
 
     /* ── the Layers-panel rows ───────────────────────────────────────────────────────────────── */
     function relabelRows(){ LAYERS.forEach(l=>{ const s=document.querySelector('#lyrrow-'+l.id+' .ec-lbl'); if(s) s.textContent=ecLbl(l); }); if(anyOn()) renderLegend(); }
@@ -621,7 +730,6 @@ window.IntMapModules.weatherEC=function(HOST){
         cb.addEventListener('change',()=>{ w.classList.toggle('on',cb.checked); toggle(l.id,cb.checked); });
         op.addEventListener('input',()=>{ state[l.id].op=+op.value; const cfg=LAYERS.find(x=>x.id===l.id); if(cfg) setOp(cfg,+op.value); });
       });
-      ensureLegend();
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
       /* ⚠ the metadata is a 3 kB JSON and needs no SDK, so the forecast axis is real from boot;
          the 340 kB tile SDK is only fetched when a layer is actually switched on. */
@@ -642,12 +750,13 @@ window.IntMapModules.weatherEC=function(HOST){
     GE().events.on('styledata',()=>{ if(anyOn()){ setTimeout(()=>{ if(!_imCanDraw())return; activeLayers().forEach(cfg=>{ if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } }); },80); } });
     GE().events.on('idle',()=>{ if(!anyOn()) return; activeLayers().forEach(cfg=>curIds(cfg).forEach(l=>{ try{ EC().lift(l); }catch(_){} })); });
     /* ⚠ (#R284) `index` fires on EVERY slider pixel and `time` once the drag has settled — see
-       IntMapECMWF.setIndex. `index` therefore updates the two things that must feel instant, IN
-       PLACE: rebuilding the box would replace the very `<input>` the finger is holding. */
-    function touchTime(){ try{ const E=EC(); const el=timeEl; if(!el) return;
-      const v=el.querySelector('#ec-validtime'); const vt=E.validTime();
-      if(v&&vt) v.textContent=L('valid','有効時刻','gültig','действ.','válido')+' '+E.fmt(vt)+' · '+relTxt(vt);
-      const sl=el.querySelector('#ec-time'); if(sl&&document.activeElement!==sl) sl.value=String(E.index());
+       IntMapECMWF.setIndex. `index` therefore updates the one thing that must feel instant, IN
+       PLACE: re-rendering the box would replace the button under the reader's finger.
+       ⚠ (#R288) …and that thing is each layer's own 「いつの絵か」 line, because the separate clock
+       box that used to hold a copy of it is gone. */
+    function touchTime(){ try{
+      activeLayers().forEach(cfg=>{ const el=boxes[cfg.id]; if(!el) return;
+        const w=el.querySelector('.ecl-when'); if(w) w.textContent=whenLine(cfg); });
     }catch(_){} }
     EC().on(ev=>{ if(ev.type==='index'){ touchTime(); return; }
       if(ev.type==='time'){ if(anyOn()) applyTime(); renderLegend(); }
@@ -683,10 +792,15 @@ window.IntMapModules.weatherEC=function(HOST){
         }).catch(()=>{});
       } }; }
 
-    return { open(){ const el=ensureLegend(); el.style.display='block'; renderLegend(); },
+    return { open(){ if(!anyOn()) return; activeLayers().forEach(l=>{ boxFor(l).style.display='block'; }); renderLegend(); },
       toggle, setOp:(id,op)=>{ const c=LAYERS.find(l=>l.id===id); if(c) setOp(c,op); },
       layerFor:(id)=>LAYERS.find(l=>l.id===id)||null,
-      activeVariable:()=>{ const a=activeLayers().filter(l=>l.type==='raster'); return a.length?a[a.length-1]:null; },
+      /* (#R288) the source switch, as a call — every feature is operable (CONSTITUTION §2) */
+      setSource, source:(id)=>srcOf(LAYERS.find(l=>l.id===id)),
+      setMonth:(iso)=>applyMonth(iso), month:(id)=>(state[id]||{}).month||null,
+      /* ⚠ the reanalysis raster has no point-value service, so the readout must not claim the
+         forecast's number for it — `activeVariable` answers only for a source that can be sampled. */
+      activeVariable:()=>{ const a=activeLayers().filter(l=>l.type==='raster'&&srcOf(l)!=='merra2'); return a.length?a[a.length-1]:null; },
       _layers:LAYERS, _state:state };
   })();
 };

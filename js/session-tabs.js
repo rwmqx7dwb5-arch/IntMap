@@ -105,7 +105,7 @@ export function makeSessionTabs(HOST, CTX) {
          flat turf disc; `dl-nightside` is the day/night shading that replaced it. A session that had
          the old row on wants the night side on, which is what it now gets — and since the shading is
          on by default anyway, the translation is usually a no-op rather than a surprise. */
-      const RETIRED={ 'dl-oceancur':'wp-dl-currents', 'dl-night':'dl-nightside' };
+      const RETIRED={ 'dl-oceancur':'wp-dl-currents', 'dl-night':'dl-nightside', 'dl-temp':'dl-ec-temp' };
       for(let i=want.length-1;i>=0;i--){ const to=RETIRED[want[i]];
         if(!to) continue;
         if(want.indexOf(to)<0) want[i]=to; else want.splice(i,1); }

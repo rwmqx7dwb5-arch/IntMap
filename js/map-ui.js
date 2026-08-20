@@ -147,7 +147,20 @@ window.IntMapModules.layerRegistry=function(HOST){
         return s.label+(bits.length?(' ['+bits.join(' · ')+']'):''); }).filter(Boolean); }catch(_){ return []; } }
     /* ---- first registration set: the layers with REAL live data hooks ---- */
     const _ld=k=>{ try{ return (window._imLayerDates&&window._imLayerDates[k])||null; }catch(_){ return null; } };
-    register('temp',   { label:()=>L5('Air temperature','気温','Lufttemperatur','Темп. воздуха','Temp. del aire'), sampleAt:(x,y)=>_om('temp',x,y), time:()=>_ld('temp'), source:()=>'NASA GIBS (AIRS) / Open-Meteo' });
+    /* ⚠ (#R288) `dl-temp` is not a checkbox any more — air temperature is ONE layer with two
+       sources (js/weather.js). The registry follows that row, answers from the SAME field the
+       picture is drawn from when the forecast source is up, and only falls back to a live point
+       request when it cannot (the reanalysis raster has no point-value service). */
+    const _wxEC=()=>{ try{ return window.IntMapWeatherEC; }catch(_){ return null; } };
+    const _tempSrc=()=>{ try{ const W=_wxEC(); return (W&&W.source)?W.source('ec-temp'):'ecmwf'; }catch(_){ return 'ecmwf'; } };
+    register('temp',   { label:()=>L5('Air temperature','気温','Lufttemperatur','Темп. воздуха','Temp. del aire'),
+      on:()=>isOn('ec-temp'),
+      sampleAt:(x,y)=>{ try{ if(_tempSrc()!=='merra2'){ const v=window.IntMapECMWF.valueNow('temperature_2m',y,x);
+          if(v!=null) return (Math.round(v*10)/10)+'°C'; } }catch(_){}
+        return (_tempSrc()==='merra2')?null:_om('temp',x,y); },
+      time:()=>{ try{ const W=_wxEC(); if(_tempSrc()==='merra2') return (W&&W.month)?W.month('ec-temp'):null;
+          return window.IntMapECMWF.validTime(); }catch(_){ return null; } },
+      source:()=>(_tempSrc()==='merra2')?'NASA GIBS · MERRA-2':'ECMWF IFS HRES · Open-Meteo' });
     register('sst',    { label:()=>L5('Sea surface temp','海面水温','Meerestemperatur','Темп. моря','Temp. del mar'), sampleAt:(x,y)=>_om('sst',x,y), time:()=>_ld('sst'), source:()=>'NASA GIBS / Open-Meteo marine' });
     register('wind',   { label:()=>L5('Wind','風','Wind','Ветер','Viento'), sampleAt:(x,y)=>_om('wind',x,y), source:()=>'Open-Meteo' });
     register('precip', { label:()=>L5('Precipitation','降水','Niederschlag','Осадки','Precipitación'), sampleAt:(x,y)=>_om('precip',x,y), time:()=>_ld('precip'), source:()=>'NASA GIBS (IMERG) / Open-Meteo' });
