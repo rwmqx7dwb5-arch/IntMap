@@ -1696,6 +1696,15 @@ Open-Meteo の spatial アーカイブ（**ECMWF IFS HRES・O1280 縮約ガウ�
   全 117 件の状態を一覧する。
 - `scripts/arch-files-check.mjs` — Architecture §3 と `js/` の突き合わせ。
 - `scripts/engine-coupling.mjs` — レンダラ脱依存のゲート。
+- `scripts/master-sync.mjs` — **原本（main worktree）が merge 後の状態かを見るツール**。
+  `npm run master:check` は原本が `origin/main` と一致し、`main` にいて、作業ツリーが
+  clean でなければ exit 1。`npm run master:sync` は fetch して原本を早送りする。
+  原本の場所は**ハードコードせず** `git rev-parse --git-common-dir` から導出するので、
+  どの worktree から実行しても原本を指す。作業ツリーが汚れている場合と、
+  `origin/main` に含まれない branch にいる場合は**何もせずに断る**（他セッションの作業を奪わない）。
+  ⚠ **`npm test` には入れない**——CI のチェックアウトは detached な PR ref なので、
+  そこでは「`origin/main` より遅れている」ことが正しい状態。規則そのものは
+  `tests/r282-checks.test.mjs` が合成リポジトリを作って測る。
 - `playwright.config.js` — hermetic なスモーク＋内部 QA（webServer＝`scripts/serve.mjs`・UTC/en-US・
   SW ブロック・prod-smoke は除外）。`playwright.prod.config.js` — 実 URL 用（webServer 無し・retry 3）。
 - `tests/helpers/network.js` — hermetic なルーティング（同一オリジンのみ許可、他は全 `abort`）＋
