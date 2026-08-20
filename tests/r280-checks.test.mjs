@@ -303,3 +303,22 @@ test('R280 ⑨ every asset the verbatim-copied pages load is in the build’s co
   }
   assert.deepEqual(missing, [], 'these are loaded by a verbatim-copied page but would be absent from dist/');
 });
+
+/* ── the footer links reach the pages, and a merge cannot quietly take that back ──────────── */
+test('R280 ⑩ the app footer links carry the real URLs of the two policy pages', () => {
+  /* 本番検証で1件: the pages shipped and the anchors still said "#". Both merges this round
+     conflicted on index.html and both were settled by taking the other side's file WHOLE —
+     right for the build stamp, which must never move backwards, and wrong for everything else
+     in the same file. A file-level resolution is not a decision about the file's other lines. */
+  const html = rd('index.html');
+  for (const [id, page] of [['link-terms', 'terms.html'], ['link-privacy', 'privacy.html']]) {
+    const m = html.match(new RegExp('<a href="([^"]*)" id="' + id + '"'));
+    assert.ok(m, `the ${id} anchor is gone from index.html`);
+    assert.equal(m[1], './' + page,
+      `${id} points at "${m[1]}" — the policy has a URL now, so the link that names it must be that URL`);
+    assert.ok(has(page), `${page} does not exist, so ${id} would 404`);
+  }
+  /* the modal still opens on click — the href is additive, not a replacement */
+  assert.match(rd('js/legal.js'), /link-terms[\s\S]{0,120}preventDefault\(\); openLegal\('terms'\)/,
+    'the in-app modal no longer intercepts the click — the link would leave the app instead of opening the panel');
+});
