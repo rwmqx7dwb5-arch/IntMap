@@ -52,9 +52,16 @@ test('R270 ① the terrain panel joins the window band and is placed against a M
 
 test('R270 ① one row height in the panel, and the disclosures are on the list', () => {
   const s = codeOnly(read('js/terrain-water.js'));
-  const row = /'\.tw-row\{[^']*'/.exec(s);
+  /* ⚠ (#R275) ONE ROW HEIGHT IS STILL THE POINT; the NUMBER is now a declaration shared with the
+     block and the disclosure, and it differs between a thumb and a desktop legend column (see the
+     note on TW_ROW). Pinning 44 made a fix to the SCALE look like a regression of the RHYTHM. */
+  const row = /'\.tw-row\{[\s\S]{0,320}/.exec(s);
   assert.ok(row, '.tw-row must be styled here');
-  assert.match(row[0], /min-height:44px/, 'the grouped-list row is 44 px');
+  assert.match(row[0], /min-height:'\+TW_ROW\+'/, 'the grouped-list row height is the one declaration');
+  for (const sel of ['.tw-blk', '.tw-note > summary'])
+    assert.ok(s.indexOf("'" + sel + '{') > 0 || s.indexOf(sel) > 0, sel + ' must be styled here');
+  assert.equal((s.match(/min-height:'\+TW_ROW\+'/g) || []).length, 3,
+    'the row, the prose block and the disclosure summary all read the same height');
   assert.match(s, /'\.tw-val \.tw-segwrap\{/, 'a segmented control inside a row must be sized for it');
   /* the two <details> are cards, so their text starts on the same left edge as every row.
      ⚠ these declarations are written as CONCATENATED string literals, so a rule is the run of
@@ -68,11 +75,13 @@ test('R270 ① one row height in the panel, and the disclosures are on the list'
      but it was not on the rhythm. The summary is a ROW now (44 px, inset 12 like every other row
      inside a bordered card), so what #R270 asserted — one left edge — is asserted of the element
      that actually carries the text. */
+  /* (#R275) …and the rhythm is a declaration, not a number — see the note above `row`. */
   const sum = rule('.tw-note > summary');
-  assert.match(sum, /min-height:44px/, 'a disclosure sits on the row rhythm');
-  const pad = /padding:\s*0 (\d+)px/.exec(sum);
-  assert.ok(pad, '.tw-note > summary must state its inset');
-  assert.equal(pad[1], '12', 'the horizontal inset must be the row’s, so the column has one left edge');
+  assert.match(sum, /min-height:'\+TW_ROW\+'/, 'a disclosure sits on the row rhythm');
+  /* (#R275) the inset is `TW_INSET`, the SAME token the caption and the block read, which is what
+     「one left edge」 means once the panel has two device scales. */
+  assert.match(sum, /padding:0 '\+TW_INSET\+'px/, '.tw-note > summary must state its inset');
+  assert.match(rule('.tw-cap'), /padding:0 '\+TW_INSET\+'px/, '…and it is the caption’s inset too');
   assert.match(card, /border-radius/, '.tw-card is the shape .tw-note now matches');
 });
 

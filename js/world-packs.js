@@ -1279,17 +1279,71 @@ window.IntMapModules.worldPacks=function(HOST){
       Object.keys(MA).forEach(k=>{ FEEDS[k]='meteoalarm'; });
       const MA_DEFAULT=['DEU','FRA','ITA','GBR'];
       const maData={};
+      const maAt={};                /* iso → when THIS country's rows were last read (#R275) */
       let maAsked=MA_DEFAULT.slice();
-      const MA_PER_TICK=6;
-      function maNext(){ const todo=Object.keys(MA).filter(k=>!maData[k]&&maAsked.indexOf(k)<0);
-        const take=todo.slice(0,MA_PER_TICK); take.forEach(k=>maAsked.push(k)); return take; }
+      const MA_PER_TICK=6;          /* the relay's own per-request bound — see alerts-relay */
+      const MA_CALLS=2;             /* …and two requests a tick, so a full cycle is ~90 s */
+      /* ══ ⚠⚠⚠ (#R275) 「更新が遅すぎる。リアルタイムにと言っている。」 (2回目) ═══════════════════════
+         #R273 answered this by halving the tick — 60 s to 30 s — and the tick was never what was
+         wrong for most of the map. MEASURED on the built page, layer on, refresh() driven 80 times
+         over eight minutes: MeteoAlarm made **THREE** requests in total. It reached 35/35 countries
+         and then issued NOTHING for the remaining seventy-seven refreshes. Europe's thirty-five
+         services — three quarters of every country this layer covered — were frozen at whatever they
+         said when the page was opened, for the whole session.
+
+         The cause is one predicate used twice:
+
+             loadMA( maAsked.filter(k => !maData[k]).concat(maNext()) )
+                                  ^^^^^^^^^^^^^^^                      and maNext() filters the same
+
+         Both halves mean 「countries we do not have yet」, so the moment a country arrives it is
+         excluded from every future request. It was a first-load queue, and nothing ever turned it
+         into a refresh cycle.
+
+         → A ROTATION BY AGE. `maAt` is when each country was last read; the next batch is the ones
+         read longest ago (never-read first, which keeps the original first-load order). Two batches
+         of six a tick over 35 countries is a full cycle every ~90 s, and the panel prints the feed's
+         own clock, so the number is never hidden. */
+      function maNext(n){
+        const all=Object.keys(MA);
+        const fresh=all.filter(k=>maData[k]);
+        const cold=all.filter(k=>!maData[k]);
+        cold.sort((a,b)=>(maAsked.indexOf(a)>=0?0:1)-(maAsked.indexOf(b)>=0?0:1));
+        const byAge=fresh.sort((a,b)=>(maAt[a]||0)-(maAt[b]||0));
+        const take=cold.concat(byAge).slice(0,Math.max(0,n||MA_PER_TICK));
+        take.forEach(k=>{ if(maAsked.indexOf(k)<0) maAsked.push(k); });
+        return take; }
+      /* ══ ⚠⚠⚠ (#R275) THE WMO REGISTER — 「対応国も増やせ。ソースは一国一ソース。」 ═══════════════
+         Ninety-four more countries, each from its OWN national service. See the long note in
+         supabase/functions/alerts-relay for why the transport is the WMO's Severe Weather
+         Information Centre and why that is not GDACS coming back: SWIC republishes each member's own
+         CAP, polygon and wording intact, and the panel names the MEMBER'S service as the source.
+         ⚠ A country that already has a feed never asks here — one source per country. */
+      const SWIC_PER_TICK=6, SWIC_CALLS=2;
+      const swicMeta={ mid:Object.create(null), dept:Object.create(null), status:Object.create(null), at:0, asked:false };
+      const swicData={};            /* iso → the member summary */
+      const swicAt={};              /* iso → when it was last read */
+      /* ⚠ (#R275) THE MEMBERS THIS MAP ACTUALLY READS, WHICH IS NOT «every WMO member without
+         another feed». `loadSWICMeta` writes `FEEDS[c]='swic'` for exactly the members the WMO's own
+         register marks CAP-Completed; `!FEEDS[c]` would have added the Development and Not-started
+         ones too — measured, 152 instead of 94 — i.e. this layer would have been asking for
+         countries that file nothing and counting them as covered. */
+      const swicISO=()=>Object.keys(swicMeta.mid).filter(c=>FEEDS[c]==='swic');
+      const swicScan={ at:0, by:Object.create(null) };   /* mid → {areas,worst,sent}, from ?swicscan */
+      /* which of our members the scan says has something in force — the only ones worth a shape call */
+      const swicHot=()=>swicISO().filter(c=>((swicScan.by[swicMeta.mid[c]]||{}).areas||0)>0);
+      function swicNext(n){
+        const hot=swicHot();
+        const cold=hot.filter(k=>!swicData[k]);
+        const byAge=hot.filter(k=>swicData[k]).sort((a,b)=>(swicAt[a]||0)-(swicAt[b]||0));
+        return cold.concat(byAge).slice(0,Math.max(0,n||SWIC_PER_TICK)); }
       let bomRec=null, hkoRec=null;
       /* the loaders that are NOT awaited with the others still put shapes on the map, so the
          published collection is the awaited half plus whatever each of them has landed (#R271). */
-      const SIDE={cma:[],bom:[],ma:[],phl:[],cwa:[],nzl:[]};
+      const SIDE={cma:[],bom:[],ma:[],phl:[],cwa:[],nzl:[],swic:[]};
       const PLACED={};            /* iso → [placed, published] — printed, never assumed (#R185) */
       const UNPL={};              /* iso → worst rank among the areas that could NOT be placed */
-      let cmaBusy=false, maBusy=false, phlBusy=false, capBusy={};
+      let cmaBusy=false, maBusy=false, phlBusy=false, capBusy={}, swicBusy=false;
       const relay=(qs)=>{ let b=''; try{ b=String(window.SUPABASE_URL||'').replace(/\/$/,''); }catch(_){ b=''; }
         return b?(b+'/functions/v1/alerts-relay?'+qs):''; };
       const CN_PROV={'11':'北京市','12':'天津市','13':'河北省','14':'山西省','15':'内蒙古自治区','21':'辽宁省',
@@ -1812,9 +1866,75 @@ window.IntMapModules.worldPacks=function(HOST){
         const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('meteoalarm '+r.status);
         const j=await r.json();
         list.forEach(k=>{ const n=MA[k]; const d=(j.countries||{})[n]; if(d){ maData[k]=d;
+          maAt[k]=Date.now();                       /* (#R275) the rotation orders by this */
           seenAt('meteoalarm',d.fetchedAt); } });
         await maFeatures();
       }
+
+      /* ══ (#R275) THE WMO REGISTER: the member table first, then the members' own warnings ══════
+         The two static tables are read ONCE (they change monthly at most) and they are what decides
+         which countries this map claims to cover: `status[iso] === 1` is the WMO's own 「CAP
+         implementation Completed」. Everything else stays hatched, because 「発表なし」 over a country
+         that files nothing would be exactly the lie the hatch exists to prevent. */
+      async function loadSWICMeta(){
+        if(swicMeta.at||swicMeta.asked) return;
+        swicMeta.asked=true;
+        const u=relay('swicmeta=1'); if(!u) throw new Error('no relay');
+        const j=await fetchJSON(u,{cache:'no-store'});
+        (j.members||[]).forEach(m=>{ const c=String(m.code||'').toUpperCase();
+          if(!c||!m.mid) return; swicMeta.mid[c]=String(m.mid); swicMeta.dept[c]=String(m.dept||''); });
+        Object.keys(j.status||{}).forEach(c=>{ swicMeta.status[String(c).toUpperCase()]=+j.status[c]||0; });
+        /* a member the WMO records as Completed, and that no other feed already covers, is ours */
+        Object.keys(swicMeta.mid).forEach(c=>{ if(!FEEDS[c]&&swicMeta.status[c]===1) FEEDS[c]='swic'; });
+        Object.keys(swicMeta.mid).forEach(c=>{ if(FEEDS[c]==='swic'&&swicMeta.status[c]!==1) delete FEEDS[c]; });
+        swicMeta.at=Date.now(); }
+      /* ⚠⚠ (#R275) THE SCAN IS WHAT MAKES 「発表なし」 AN OBSERVATION. Without it, ninety-three
+         members fetched six at a time is a four-minute sweep during which the map paints grey over
+         countries it has not read — 「発令されていないだけの地域は灰色に」 would be a guess for most of
+         them. One geometry-free call answers every member at once (see the relay), so a country the
+         scan does not list is READ and quiet from the first tick, and only the ones with something
+         in force cost a shape download. */
+      async function loadSWICScan(){
+        const u=relay('swicscan=1'); if(!u) throw new Error('no relay');
+        const j=await fetchJSON(u,{cache:'no-store'});
+        swicScan.by=(j&&j.members)||Object.create(null);
+        swicScan.at=Date.now();
+        seenAt('swic',j&&(j.newest||j.fetchedAt));
+        /* every wired member the scan does NOT list has been read and has nothing in force */
+        const now=Date.now();
+        swicISO().forEach(c=>{ const m=swicMeta.mid[c];
+          if(((swicScan.by[m]||{}).areas||0)>0) return;
+          const had=swicData[c];
+          if(had&&(had.areas||[]).length) delete swicData[c];
+          swicData[c]={ source:'WMO Severe Weather Information Centre', mid:m,
+            fetchedAt:(j&&j.fetchedAt)||new Date().toISOString(), count:0, areas:[], areaTotal:0 };
+          swicAt[c]=now; });
+        swicFeatures(); }
+      async function loadSWIC(list){
+        const isos=(list||[]).filter(c=>swicMeta.mid[c]);
+        if(!isos.length) return;
+        const mids=isos.map(c=>swicMeta.mid[c]);
+        const u=relay('swic='+encodeURIComponent(mids.join(','))); if(!u) throw new Error('no relay');
+        const j=await fetchJSON(u,{cache:'no-store'});
+        isos.forEach(c=>{ const d=(j.members||{})[swicMeta.mid[c]];
+          if(d&&!d.error){ swicData[c]=d; swicAt[c]=Date.now(); seenAt('swic',d.fetchedAt); } });
+        swicFeatures(); }
+      function swicFeatures(){
+        const out=[];
+        Object.keys(swicData).forEach(iso=>{ const d=swicData[iso]||{}; let placed=0, u=0;
+          (d.areas||[]).forEach(a=>{
+            const lv=+a.tier||1;
+            if(!a.geom){ if(normOf('swic',lv)>u) u=normOf('swic',lv); return; }
+            placed++;
+            const ev=(a.events&&a.events.length)?a.events:[{event:'',severity:'',tier:lv}];
+            const rows=ev.slice(0,40).map(e=>({ area:String(a.name||''), adm:String(a.name||''),
+              sub:String(e.event||a.name||''), unit:'area', lv:(+e.tier||lv), tier:normOf('swic',+e.tier||lv),
+              kind:String(e.event||''), status:String(e.severity||'') }));
+            const ft=unitFeature(iso,'swic',a.geom,'area',String(a.name||''),rows,String(d.fetchedAt||''));
+            if(ft) out.push(ft); });
+          PLACED[iso]=[placed,(d.areas||[]).length];
+          UNPL[iso]=u; });
+        SIDE.swic=out; }
 
       /* ══ THE CAP-INDEX SERVICES — the Philippines, Taiwan and New Zealand ══════════════════════
          All three publish an RSS/Atom index of CAP bulletins, and the relay reads them through ONE
@@ -1888,8 +2008,21 @@ window.IntMapModules.worldPacks=function(HOST){
          everywhere else is stated in words — the panel prints «placed / published» per country and
          the country's own legend repeats it, which is the #R185 requirement without a fill that
          contradicts the shapes underneath it. */
+      /* ══ ⚠⚠ (#R275) GREY IS A STATEMENT, SO IT HAS TO HAVE BEEN CHECKED ═════════════════════
+         「発令されていないだけの地域は灰色に。」 — grey means 「読んだ。何も出ていない」. Both of the
+         rotating feeds have a window in which a wired country has NOT been read yet (MeteoAlarm
+         sweeps 35 countries and the WMO register 93), and painting those grey would be answering
+         「発表なし」 for a service nobody had asked. During that window the country is HATCHED, which
+         is the appearance that means 「この地図はこの国について何も述べていない」 — and the tap says
+         which of the two hatched states it is, in words. */
+      function readState(c){ const f=FEEDS[c];
+        if(!f) return 'none';
+        if(f==='meteoalarm') return maData[c]?(maData[c].error?'error':'ok'):(FEED_STATE.meteoalarm==='error'?'error':'loading');
+        if(f==='swic') return swicData[c]?'ok':(FEED_STATE.swic==='error'?'error':'loading');
+        return FEED_STATE[f]||'idle'; }
       function washTier(c){
         if(!supported(c)) return 0;
+        if(readState(c)==='loading') return 0;
         const u=UNPL[c]||0;
         if(u&&!drawnISO[c]) return 10+Math.min(4,u);
         return 1; }
@@ -1902,7 +2035,7 @@ window.IntMapModules.worldPacks=function(HOST){
       /* ══ ONE PUBLISHER (#R271) — a late feed can never blank an early one ══════════════════════ */
       let baseFeats=[];
       function publish(){
-        feats=baseFeats.concat(SIDE.cma,SIDE.bom,SIDE.ma,SIDE.phl,SIDE.cwa,SIDE.nzl);
+        feats=baseFeats.concat(SIDE.cma,SIDE.bom,SIDE.ma,SIDE.phl,SIDE.cwa,SIDE.nzl,SIDE.swic);
         drawnISO=Object.create(null);
         feats.forEach(f=>{ const g=f.geometry; if(g&&f.properties&&f.properties.iso&&(f.properties.norm||0)>0) drawnISO[f.properties.iso]=1; });
         whenDrawable(()=>{ if(ensureLayers()){ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,on); } });
@@ -1913,7 +2046,7 @@ window.IntMapModules.worldPacks=function(HOST){
          tab is visible, and an immediate refresh when the tab comes back. The relay's edge cache is
          what stops that becoming thirty upstream requests a minute. */
       const TICK_MS=30000;
-      const FEED_KEYS=['jma','nws','eccc','meteoalarm','cma','bom','inmet','hko','dwd','metno','pagasa','cwa','metservice'];
+      const FEED_KEYS=['jma','nws','eccc','meteoalarm','swic','cma','bom','inmet','hko','dwd','metno','pagasa','cwa','metservice'];
       async function refresh(){ if(busy) return; busy=true;
         FEED_KEYS.forEach(k=>{ if(FEED_STATE[k]!=='ok') FEED_STATE[k]='loading'; });
         try{ const parts=await Promise.all([
@@ -1940,10 +2073,27 @@ window.IntMapModules.worldPacks=function(HOST){
               .then(()=>{ capBusy[k]=false; }); });
           loadHKO().then(v=>{ FEED_STATE.hko='ok'; hkoRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
             .catch(e=>{ FEED_STATE.hko='error'; console.warn('HKO warnings',e); if(on&&panel.shown()) overview(); });
+          /* ⚠ (#R275) A ROTATION, NOT A FIRST-LOAD QUEUE — see the note on `maNext`. Each call takes
+             the relay's own maximum and the batches are disjoint, so a tick advances the cycle by
+             `MA_CALLS × MA_PER_TICK` countries and never asks for the same one twice. */
           if(!maBusy){ maBusy=true;
-            loadMA(maAsked.filter(k=>!maData[k]).concat(maNext())).then(()=>{ FEED_STATE.meteoalarm='ok'; if(on) publish(); })
+            const batches=[]; const claimed=[];
+            for(let i=0;i<MA_CALLS;i++){ const b=maNext(MA_PER_TICK+claimed.length).filter(k=>claimed.indexOf(k)<0).slice(0,MA_PER_TICK);
+              if(b.length){ b.forEach(k=>claimed.push(k)); batches.push(b); } }
+            Promise.all(batches.map(b=>loadMA(b))).then(()=>{ FEED_STATE.meteoalarm='ok'; if(on) publish(); })
               .catch(e=>{ FEED_STATE.meteoalarm='error'; console.warn('MeteoAlarm',e); if(on&&panel.shown()) overview(); })
               .then(()=>{ maBusy=false; }); }
+          /* (#R275) the WMO register — the member table once, then the members' own warnings, on the
+             same age-ordered rotation MeteoAlarm uses */
+          if(!swicBusy){ swicBusy=true;
+            Promise.resolve(loadSWICMeta()).then(()=>loadSWICScan()).then(()=>{
+              const claimed=[]; const batches=[];
+              for(let i=0;i<SWIC_CALLS;i++){ const b=swicNext(SWIC_PER_TICK+claimed.length).filter(k=>claimed.indexOf(k)<0).slice(0,SWIC_PER_TICK);
+                if(b.length){ b.forEach(k=>claimed.push(k)); batches.push(b); } }
+              return Promise.all(batches.map(b=>loadSWIC(b))); })
+              .then(()=>{ FEED_STATE.swic='ok'; if(on){ publish(); paintCountries(); } })
+              .catch(e=>{ FEED_STATE.swic='error'; console.warn('WMO SWIC',e); if(on&&panel.shown()) overview(); })
+              .then(()=>{ swicBusy=false; }); }
           publish();
         } finally { busy=false; } }
 
@@ -1987,11 +2137,30 @@ window.IntMapModules.worldPacks=function(HOST){
       const AGENCY_NAME={ jma:'気象庁 JMA', nws:'US National Weather Service', eccc:'ECCC', cma:'中国气象局 CMA',
         bom:'Bureau of Meteorology', inmet:'INMET', hko:'香港天文台 HKO', dwd:'Deutscher Wetterdienst',
         metno:'MET Norway', pagasa:'PAGASA', cwa:'中央氣象署 CWA', metservice:'MetService',
-        meteoalarm:'MeteoAlarm (EUMETNET)' };
+        meteoalarm:'MeteoAlarm (EUMETNET)', swic:'WMO Severe Weather Information Centre' };
+      /* ⚠ (#R275) FOR A WMO-REGISTER COUNTRY THE AUTHOR IS THE MEMBER'S OWN SERVICE, and that is the
+         name the reader is given — 「各国の気象台やその他それに相当する機関の情報をもとにしろ」. The WMO
+         is named too, as the route the file travelled, not as the author. */
+      function agencyFor(feed,iso3){
+        if(feed==='swic'){ const d=swicMeta.dept[iso3]||'';
+          return d?(d+' · '+L('via WMO SWIC','WMO SWIC 経由','über WMO SWIC','через WMO SWIC','vía WMO SWIC')):AGENCY_NAME.swic; }
+        return AGENCY_NAME[feed]||feed; }
       function legendFor(iso3){
         const feed=FEEDS[iso3];
         const mine=feats.filter(f=>f.properties.iso===iso3&&(f.properties.norm||0)>0);
         let h='<div style="font-weight:700;font-size:13px;">'+esc(countryName(iso3))+'</div>';
+        if(feed&&readState(iso3)==='loading'){
+          h+='<div style="margin-top:6px;display:flex;align-items:center;gap:7px;font-size:11.5px;">'
+            +'<span style="width:14px;height:14px;border-radius:3px;flex:none;background:repeating-linear-gradient(45deg,rgba(96,100,108,0.75) 0 2px,rgba(160,164,170,0.30) 2px 5px);"></span>'
+            +esc(L('Not read yet','未取得','Noch nicht gelesen','Ещё не прочитано','Aún no leído'))+'</div>'
+            +'<div style="margin-top:6px;color:var(--text-main);font-size:11.5px;line-height:1.6;">'
+            +esc(agencyFor(feed,iso3))+' — '
+            +L('this service is in the update cycle and has not been read yet, so the map is not saying anything about this country until it has.',
+               'この機関は更新の順番待ちで、まだ取得できていません。取得できるまで、この地図はこの国について何も述べません。',
+               'Dieser Dienst ist noch nicht gelesen — bis dahin sagt die Karte nichts über dieses Land.',
+               'Эта служба ещё не прочитана — до тех пор карта ничего не утверждает об этой стране.',
+               'Este servicio aún no se ha leído — hasta entonces el mapa no afirma nada sobre este país.')+'</div>';
+          return h; }
         if(!feed){
           /* ⚠ 「『警報なし』と『データなし』を区別できない」 — this is the second of those two, and it
              is a sentence rather than an empty map. */
@@ -2009,10 +2178,10 @@ window.IntMapModules.worldPacks=function(HOST){
         const stLine=(s)=>s==='loading'?('<div style="margin-top:8px;color:var(--text-muted);">'+L('Reading the feed…','フィードを取得中…','Feed wird gelesen…','Загрузка фида…','Leyendo el feed…')+'</div>')
           :s==='error'?('<div style="margin-top:8px;color:#ff9f0a;">⚠ '+L('This feed could not be fetched just now, so nothing below is a statement about what is in force.','このフィードを取得できませんでした。したがって以下は「発表状況」を示すものではありません。','Feed nicht abrufbar — die Anzeige sagt nichts über geltende Warnungen.','Не удалось получить фид — показанное ничего не говорит о действующих предупреждениях.','No se pudo obtener el feed — lo mostrado no indica qué avisos están vigentes.')+'</div>')
           :'';
-        h+='<div style="margin-top:3px;font-size:11px;color:var(--text-muted);">'+esc(AGENCY_NAME[feed]||feed)
+        h+='<div style="margin-top:3px;font-size:11px;color:var(--text-muted);">'+esc(agencyFor(feed,iso3))
           +' · '+esc(unitWord(feed))+'</div>';
         h+=keyHead(L('This agency’s own ranks','この機関自身の階級','Stufen dieser Behörde','Ступени этой службы','Rangos de esta agencia'))+agencyKey(feed);
-        h+=stLine(st==='ok'&&feed==='meteoalarm'?(maData[iso3]?(maData[iso3].error?'error':'ok'):'loading'):st);
+        h+=stLine(readState(iso3));
         const rows=[];
         if(feed==='cma'&&cmaRec) cmaRec.items.forEach(x=>rows.push(x));
         else if(feed==='bom'&&bomRec) bomRec.items.forEach(x=>rows.push(x));
@@ -2033,6 +2202,7 @@ window.IntMapModules.worldPacks=function(HOST){
           :feed==='bom'?L('by state','州単位','nach Bundesstaat','по штатам','por estado')
           :feed==='hko'?L('territory-wide','全域が発令単位','gesamtes Gebiet','вся территория','todo el territorio')
           :feed==='meteoalarm'?L('by region','地域単位','nach Region','по регионам','por región')
+          :feed==='swic'?L('by the area the service names','発表機関が指定した区域単位','nach dem Gebiet der Behörde','по зонам самой службы','por la zona que indica el servicio')
           :L('by warning area','警報区域単位','nach Warngebiet','по зонам','por zona de aviso'); }
 
       /* ══ ⚠ THE TAP IS A LIST OF ADMINISTRATIVE UNITS, NOT A LIST OF ROWS (#R266/#R268) ══════════
@@ -2141,38 +2311,65 @@ window.IntMapModules.worldPacks=function(HOST){
          So the first thing in the box is what is in force, worst first, one line per country-and-
          hazard: WHERE · WHAT · HOW BAD · how many units. The source list is still complete, and it
          is folded; the placement diagnostics are folded one level below that. */
+      /* ══ ⚠⚠⚠ (#R275) 「今発表されている警報欄は、一国一行までにしろ。」 ═══════════════════════════
+         This list keyed on COUNTRY × HAZARD, so one country took as many lines as it had kinds of
+         warning in force. MEASURED on the built page, fourteen visible rows: **five of them were
+         China** (雷電黄色 / 暴雨黄色 / 暴雨橙色 / 暴雨紅色 / 強対流黄色), four were Italy and two were
+         Australia — three countries occupying eleven of the fourteen lines while 「+59」 stood for
+         everywhere else. A reader asking 「どこで何が起きているか」 was shown one country five times.
+
+         One country is one line: its worst rank decides the colour and the word, the hazards are
+         named on the same line (worst first, and the ones that do not fit are counted), and the
+         number on the right is how many issuing units of that country are drawn.
+         ⚠ AND THE RANK ON THE LINE IS NOW THE RANK OF THE LINE. The old row printed the WORST rank
+         of the whole country beside ONE hazard's name — measured, 「雷电黄色」 (a CMA yellow) captioned
+         「Red (I)」, because the feature it came from carried its unit's worst level. A country row's
+         worst rank is that country's worst rank, so the two cannot disagree again. */
       function hotList(){
         const by=new Map();
         feats.forEach(f=>{ const p=f.properties; if(!(p.norm>0)) return;
+          const g=by.get(p.iso)||{iso:p.iso,feed:p.feed,norm:0,lv:0,units:0,kinds:new Map()};
+          by.set(p.iso,g);
+          g.units++; if(p.norm>g.norm){ g.norm=p.norm; g.lv=p.lv; }
           let it=[]; try{ it=JSON.parse(p.items||'[]'); }catch(_){}
-          const kinds=[]; it.forEach(x=>{ const k=String(x.kind||'').trim(); if(k&&kinds.indexOf(k)<0) kinds.push(k); });
-          (kinds.length?kinds:[String(p.hz||'').replace(/\s\+\d+$/,'')]).forEach(k=>{
-            const key=p.iso+''+k;
-            const g=by.get(key)||{iso:p.iso,feed:p.feed,kind:k,norm:0,lv:0,units:0}; by.set(key,g);
-            g.units++; if(p.norm>g.norm){ g.norm=p.norm; g.lv=p.lv; } }); });
+          /* ⚠ A HAZARD'S RANK IS ITS OWN, not the unit's worst. The rows carry `tier`, and using the
+             feature's `norm` here would order 「雷電黄色」 as if it were the province's 「暴雨紅色」 —
+             the same conflation that captioned a CMA yellow 「Red (I)」, one level down. */
+          const add=(k,t)=>{ k=String(k||'').trim(); if(!k) return;
+            const cur=g.kinds.get(k)||{n:0,norm:0};
+            cur.n++; if(t>cur.norm) cur.norm=t; g.kinds.set(k,cur); };
+          if(it.length) it.forEach(x=>add(x.kind,+x.tier||p.norm));
+          else add(String(p.hz||'').replace(/\s\+\d+$/,''),p.norm); });
         const list=[...by.values()].sort((a,b)=>(b.norm-a.norm)||(b.units-a.units));
         if(!list.length) return '<div style="margin-top:6px;font-size:11.5px;color:var(--text-muted);">'
           +L('Nothing in force in any connected service right now.','接続中のいずれの機関にも、現在発表中のものはありません。','Derzeit nichts in Kraft.','Сейчас ничего не действует.','Nada vigente ahora.')+'</div>';
-        const N=14;
+        const N=16, KN=3;
         return '<div style="margin-top:6px;display:flex;flex-direction:column;gap:2px;">'
-          +list.slice(0,N).map(g=>'<div style="display:flex;gap:6px;align-items:center;font-size:11.5px;">'
-            +'<span style="width:10px;height:10px;border-radius:3px;flex:none;background:'+(mode==='agency'?agCol(g.feed,g.lv):PAL_NORM[g.norm])+';border:1px solid rgba(128,128,128,0.35);"></span>'
-            +'<b style="flex:none;max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(countryName(g.iso))+'</b>'
-            +'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(g.kind||'—')+'</span>'
-            +'<span style="opacity:.8;flex:none;">'+esc(mode==='agency'?rankName(g.feed,g.lv):NORM_NAME(g.norm))+'</span>'
-            +'<span style="opacity:.6;flex:none;font-variant-numeric:tabular-nums;">'+g.units+'</span></div>').join('')
-          +(list.length>N?('<div style="font-size:10.5px;opacity:.7;">+'+(list.length-N)+'</div>'):'')
+          +list.slice(0,N).map(g=>{
+            const ks=[...g.kinds.entries()].sort((a,b)=>(b[1].norm-a[1].norm)||(b[1].n-a[1].n)).map(x=>x[0]);
+            const shown=ks.slice(0,KN).join('・')+(ks.length>KN?(' +'+(ks.length-KN)):'');
+            return '<div style="display:flex;gap:6px;align-items:center;font-size:11.5px;">'
+              +'<span style="width:10px;height:10px;border-radius:3px;flex:none;background:'+(mode==='agency'?agCol(g.feed,g.lv):PAL_NORM[g.norm])+';border:1px solid rgba(128,128,128,0.35);"></span>'
+              +'<b style="flex:none;max-width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(countryName(g.iso))+'</b>'
+              +'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(shown||'—')+'</span>'
+              +'<span style="opacity:.8;flex:none;">'+esc(mode==='agency'?rankName(g.feed,g.lv):NORM_NAME(g.norm))+'</span>'
+              +'<span style="opacity:.6;flex:none;font-variant-numeric:tabular-nums;">'+g.units+'</span></div>'; }).join('')
+          +(list.length>N?('<div style="font-size:10.5px;opacity:.7;">+'+(list.length-N)+' '
+            +esc(L('more countries','か国','weitere Länder','стран','países'))+'</div>'):'')
           +'</div>'; }
 
       function sourceList(){
         const rowsFor=[['jma','JPN'],['nws','USA'],['eccc','CAN'],['dwd','DEU'],['metno','NOR'],
-          ['meteoalarm',null],['cma','CHN'],['bom','AUS'],['inmet','BRA'],['pagasa','PHL'],
+          ['meteoalarm',null],['swic',null],['cma','CHN'],['bom','AUS'],['inmet','BRA'],['pagasa','PHL'],
           ['cwa','TWN'],['metservice','NZL'],['hko','HKG']];
         return rowsFor.map(function(pair){ const k=pair[0], iso=pair[1];
-          const g=grade(k), n=iso?drawnCount(iso):feedCount('meteoalarm');
+          const g=grade(k), n=iso?drawnCount(iso):feedCount(k);
           const who=(k==='meteoalarm')
             ? (L('Europe — MeteoAlarm','ヨーロッパ — MeteoAlarm','Europa — MeteoAlarm','Европа — MeteoAlarm','Europa — MeteoAlarm')
                +' ('+Object.keys(maData).length+'/'+Object.keys(MA).length+')')
+            : (k==='swic')
+            ? (L('National services via the WMO register','各国の気象機関（WMO 登録経由）','Nationale Dienste über das WMO-Register','Национальные службы (реестр ВМО)','Servicios nacionales vía el registro de la OMM')
+               +' ('+Object.keys(swicData).length+'/'+swicISO().length+')')
             : (countryName(iso)+' — '+(AGENCY_NAME[k]||k));
           return '<div style="display:flex;gap:6px;align-items:center;font-size:11px;padding:2px 0;">'
             +'<span style="width:8px;height:8px;border-radius:50%;flex:none;background:'+GRADE_COL[g]+';"></span>'
@@ -2222,6 +2419,116 @@ window.IntMapModules.worldPacks=function(HOST){
               repaintMode(); overview(); }
           }); }); }); }
 
+
+      /* ══ ⚠⚠⚠ (#R275) 「押した地点の警報情報が別ポップアップで出るようにしろ。」 ═══════════════════
+         A tap used to REPLACE the legend's body with the whole country's list — so the answer to
+         「この地点は何が出ているのか」 was a country-wide document, and getting it destroyed the
+         「いま発表されている警報」 overview the same box was showing. Two different questions were
+         sharing one surface, and the narrower one could not be asked at all.
+
+         #R264 wrote the rule this follows: a question about the point under the finger FLOATS; a
+         question about the layer belongs to the layer's own legend. So the tap opens a separate card
+         — the app's own `.country-popup` shell, the one the aircraft, data-centre and facility
+         details use — listing the warnings whose ISSUING AREA CONTAINS THAT POINT, and the legend
+         keeps the overview it was showing.
+         ⚠ THE HIT TEST IS THE DRAWN GEOMETRY, not the country. `feats` is what is on the map, so
+         「その地点で発令されているもの」 is exactly the features that contain the point — a municipality
+         in Japan, a Landkreis in Germany, the polygon the service itself drew elsewhere. */
+      function ptInGeom(lng,lat,g){
+        if(!g) return false;
+        const polys=(g.type==='Polygon')?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:null);
+        if(!polys) return false;
+        for(let a=0;a<polys.length;a++){ const rings=polys[a]||[];
+          if(!rings.length||!ptInRing([lng,lat],rings[0])) continue;
+          let hole=false;
+          for(let h=1;h<rings.length;h++){ if(ptInRing([lng,lat],rings[h])){ hole=true; break; } }
+          if(!hole) return true; }
+        return false; }
+      function alertsAt(lng,lat){
+        const hit=[];
+        feats.forEach(f=>{ const pr=f.properties||{};
+          if(!(pr.norm>0)) return;
+          if(ptInGeom(lng,lat,f.geometry)) hit.push(f); });
+        return hit.sort((a,b)=>(b.properties.norm-a.properties.norm)); }
+      let ptCard=null;
+      function closePointCard(){ try{ if(ptCard&&ptCard.parentNode) ptCard.parentNode.removeChild(ptCard); }catch(_){} ptCard=null; }
+      function pointBody(lng,lat,iso){
+        const hits=alertsAt(lng,lat);
+        const feed=FEEDS[iso];
+        let h='<div style="font-size:11px;color:var(--text-muted);">'
+          +esc((+lat).toFixed(4)+'°, '+(+lng).toFixed(4)+'°')+(iso?(' · '+esc(countryName(iso))):'')+'</div>';
+        if(!hits.length){
+          h+='<div style="margin-top:9px;font-size:12px;color:var(--text-main);line-height:1.6;">'
+            +(!iso?esc(L('No country here.','ここには国がありません。','Hier ist kein Land.','Здесь нет страны.','No hay país aquí.'))
+              :(feed&&readState(iso)==='loading')?esc(L('This country’s service is in the update cycle and has not been read yet.',
+                           'この国の機関は更新の順番待ちで、まだ取得できていません。',
+                           'Dieser Dienst wurde noch nicht gelesen.',
+                           'Эта служба ещё не прочитана.',
+                           'Este servicio aún no se ha leído.'))
+              :!feed?esc(L('IntMap is not connected to this country’s warning service, so it is saying nothing about this point — not that nothing is in force.',
+                           'この国の警報機関には接続していないため、この地点について何も述べていません——「発表されていない」という意味ではありません。',
+                           'Kein Anschluss an den Warndienst dieses Landes — über diesen Punkt wird nichts ausgesagt.',
+                           'Нет подключения к службе этой страны — об этой точке ничего не утверждается.',
+                           'Sin conexión al servicio de este país — no se afirma nada sobre este punto.'))
+              :esc(L('Nothing in force at this point.','この地点に発表中の警報はありません。','Hier ist nichts in Kraft.','В этой точке ничего не действует.','Nada vigente en este punto.')))
+            +'</div>';
+        } else {
+          h+='<div style="margin-top:8px;display:flex;flex-direction:column;gap:7px;">'
+            +hits.slice(0,12).map(f=>{ const pr=f.properties;
+              let items=[]; try{ items=JSON.parse(pr.items||'[]'); }catch(_){}
+              const col=(mode==='agency'?pr.colA:pr.colN);
+              const kinds=[]; items.forEach(x=>{ const k=String(x.kind||'').trim(); if(k&&kinds.indexOf(k)<0) kinds.push(k); });
+              return '<div style="border-left:3px solid '+col+';padding-left:8px;">'
+                +'<div style="display:flex;gap:7px;align-items:baseline;font-size:12.5px;">'
+                +'<b style="flex:1;">'+esc(pr.name||countryName(pr.iso))+'</b>'
+                +'<span style="flex:none;opacity:.85;">'+esc(mode==='agency'?rankName(pr.feed,pr.lv):NORM_NAME(pr.norm))+'</span></div>'
+                +'<div style="margin-top:2px;font-size:11.5px;color:var(--text-main);line-height:1.55;">'
+                +esc((kinds.length?kinds:[String(pr.hz||'')]).join('・'))+'</div>'
+                +'<div style="margin-top:1px;font-size:10px;color:var(--text-muted);">'
+                +esc(agencyFor(pr.feed,pr.iso))+'</div></div>'; }).join('')
+            +(hits.length>12?('<div style="font-size:10.5px;opacity:.7;">+'+(hits.length-12)+'</div>'):'')
+            +'</div>';
+        }
+        if(iso&&feed){
+          h+=keyHead(L('This agency’s own ranks','この機関自身の階級','Stufen dieser Behörde','Ступени этой службы','Rangos de esta agencia'))+agencyKey(feed)
+            +'<div style="margin-top:9px;"><button type="button" class="wpa-more-btn" style="width:100%;min-height:30px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'
+            +esc(L('All areas in force in this country','この国で発表中の区域をすべて見る','Alle Gebiete dieses Landes','Все зоны этой страны','Todas las zonas de este país'))+'</button></div>';
+        }
+        h+='<div style="margin-top:9px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
+          +esc(L('Educational display — follow the official authorities.','表示は参考です。実際には公的機関の発表に従ってください。','Bildungsanzeige — den amtlichen Stellen folgen.','Справочно — следуйте официальным службам.','Visualización educativa — siga a las autoridades oficiales.'))+'</div>';
+        return h; }
+      function openPointCard(lng,lat,iso){
+        closePointCard();
+        const el=document.createElement('div'); el.className='country-popup'; el.id='wpa-point';
+        el.style.display='block';
+        el.innerHTML='<button class="country-popup-close wpa-x" type="button" aria-label="'+esc(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">×</button>'
+          +'<div style="padding:14px 16px 16px;">'
+          +'<div class="wpa-drag" style="display:flex;align-items:center;gap:8px;margin-bottom:2px;padding-right:30px;cursor:move;user-select:none;">'
+          +'<span style="font-weight:700;font-size:13.5px;color:var(--text-main);">⚠ '
+          +esc(L('Warnings at this point','この地点の警報','Warnungen an diesem Punkt','Предупреждения в этой точке','Avisos en este punto'))+'</span></div>'
+          +'<div class="wpa-pt-body"></div></div>';
+        const b=el.querySelector('.wpa-pt-body'); if(b) b.innerHTML=pointBody(lng,lat,iso);
+        document.body.appendChild(el); ptCard=el;
+        /* ⚠ (#R255) `.country-popup` is `position:absolute` with no left/top of its own — an element
+           appended to <body> without them lands below the whole document. Placed explicitly, in PAGE
+           coordinates (`project()` is canvas-relative — #R252). */
+        try{
+          const vw=window.innerWidth||1200, vh=window.innerHeight||800, w=el.offsetWidth||360, h=el.offsetHeight||280;
+          const rs=(()=>{ try{ const s2=document.getElementById('layer-sidebar-r');
+            return (s2&&document.body.classList.contains('lsr-open'))?s2.getBoundingClientRect().width:0; }catch(_){ return 0; } })();
+          const px=(()=>{ try{ const q=GE().coords.project({lng:+lng,lat:+lat});
+            const r2=GE().render.canvas().getBoundingClientRect(); return r2.left+q.x; }catch(_){ return null; } })();
+          let left=(px!=null)?(px+18):(vw-rs-w-24);
+          left=Math.max(12,Math.min(left,vw-rs-w-12));
+          el.style.left=Math.round(Math.max(12,left))+'px';
+          el.style.top=Math.round(Math.max(12,Math.min(96,vh-h-16)))+'px';
+        }catch(_){ el.style.left='16px'; el.style.top='96px'; }
+        try{ HOST.makeDraggable&&HOST.makeDraggable(el,el.querySelector('.wpa-drag')); }catch(_){}
+        try{ el.querySelector('.wpa-x').onclick=closePointCard; }catch(_){}
+        try{ const mb=el.querySelector('.wpa-more-btn');
+          if(mb) mb.onclick=()=>{ panel.open('<div class="wp-a-body">'+legendFor(iso)+'</div>'); }; }catch(_){}
+        return el; }
+
       /* what is in force RIGHT NOW, worldwide — shown the moment the layer is on, without a tap */
       function overview(){
         ensureSegCss();
@@ -2267,24 +2574,43 @@ window.IntMapModules.worldPacks=function(HOST){
 
       function tick(){ if(on&&!document.hidden) refresh(); }
       function toggle(v){ on=v;
-        if(!on){ if(timer){ clearInterval(timer); timer=null; } panel.hide(); setVis(LYR,false); setVis([CHORO,HATCH],false); return; }
+        if(!on){ if(timer){ clearInterval(timer); timer=null; } panel.hide(); closePointCard();
+          setVis(LYR,false); setVis([CHORO,HATCH],false); return; }
         whenDrawable(()=>ensureLayers()); overview(); refresh(); hiResCountries(()=>{ if(on) paintCountries(); });
         if(!timer) timer=setInterval(tick,TICK_MS); }
       document.addEventListener('visibilitychange',()=>{ if(on&&!document.hidden) refresh(); });
 
       onRestyle(()=>{ if(on) whenDrawable(()=>{ if(ensureLayers()) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); setVis(LYR,true); paintCountries(); }); });
       mapClick((e)=>{ if(!on) return false;
-        const c=countryAt(e.lngLat.lng,e.lngLat.lat); if(!c) return false;
-        panel.open('<div class="wp-a-body">'+legendFor(c)+'</div>');
-        if(MA[c]&&!maData[c]){ if(maAsked.indexOf(c)<0) maAsked.push(c);
-          loadMA([c]).then(()=>{ if(on&&panel.shown()) panel.open('<div class="wp-a-body">'+legendFor(c)+'</div>'); publish(); })
-            .catch(()=>{ maData[c]={error:'fetch'}; if(on&&panel.shown()) panel.open('<div class="wp-a-body">'+legendFor(c)+'</div>'); }); }
+        const lng=e.lngLat.lng, lat=e.lngLat.lat;
+        const c=countryAt(lng,lat);
+        openPointCard(lng,lat,c);
+        /* a country whose rows have not been fetched yet is fetched NOW and the card re-renders —
+           the tap is the one moment the reader is definitely waiting for THIS country */
+        const again=()=>{ try{ if(ptCard){ const b=ptCard.querySelector('.wpa-pt-body');
+          if(b){ b.innerHTML=pointBody(lng,lat,c);
+            const mb=ptCard.querySelector('.wpa-more-btn');
+            if(mb) mb.onclick=()=>{ panel.open('<div class="wp-a-body">'+legendFor(c)+'</div>'); } } } }catch(_){} };
+        if(c&&MA[c]&&!maData[c]){ if(maAsked.indexOf(c)<0) maAsked.push(c);
+          loadMA([c]).then(()=>{ publish(); again(); })
+            .catch(()=>{ maData[c]={error:'fetch'}; again(); }); }
+        else if(c&&FEEDS[c]==='swic'&&!swicData[c]){
+          loadSWIC([c]).then(()=>{ publish(); again(); }).catch(()=>{ again(); }); }
         return true; });
 
       STATE.alerts=()=>({ on, areas:feats.filter(f=>(f.properties.norm||0)>0).length, feeds:Object.keys(FEEDS),
         state:Object.assign({},FEED_STATE), at:lastAt,
         worst:feats.reduce((m,f)=>Math.max(m,f.properties.norm||0),0),
         national:Object.keys(FEEDS).length, meteoalarm:Object.keys(MA).length,
+        /* (#R275) the WMO register: how many countries it makes supported and how many are read */
+        swic:{ members:Object.keys(swicMeta.mid).length, wired:swicISO().length,
+          loaded:Object.keys(swicData).length, areas:feats.filter(f=>f.properties.feed==='swic'&&(f.properties.norm||0)>0).length,
+          oldestS:(function(){ const t=swicISO().map(c=>swicAt[c]||0).filter(Boolean);
+            return t.length?Math.round((Date.now()-Math.min.apply(null,t))/1000):null; })() },
+        /* (#R275) the MeteoAlarm ROTATION — the age of the country read longest ago, in seconds.
+           A number that only ever grows is the frozen-feed defect this round found. */
+        maOldestS:(function(){ const t=Object.keys(maData).map(c=>maAt[c]||0).filter(Boolean);
+          return t.length?Math.round((Date.now()-Math.min.apply(null,t))/1000):null; })(),
         maLoaded:Object.keys(maData).length, maWarnings:Object.keys(maData).reduce((n,k)=>n+(((maData[k]||{}).warnings||[]).length),0),
         cma:cmaCount, canada:drawnCount('CAN'), intervalMs:TICK_MS,
         /* (#R273) the palette mode, and the two properties every feature carries so the mode is a
@@ -2308,9 +2634,22 @@ window.IntMapModules.worldPacks=function(HOST){
         washed:(function(){ const o={}; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
             const t=washTier(String(f.id||'')); o[String(f.id)]=t; }); }catch(_){} return o; })(),
         unsupported:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
-            if(!supported(String(f.id||''))) n++; }); }catch(_){} return n; })() });
+            if(!supported(String(f.id||''))) n++; }); }catch(_){} return n; })(),
+        /* (#R275) wired but not yet read — the countries the hatch is covering for a REASON that is
+           not 「未対応」, and a number that must go to zero as the rotation comes round */
+        unread:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
+            const c=String(f.id||''); if(supported(c)&&readState(c)==='loading') n++; }); }catch(_){} return n; })() });
       STATE.alertsLegend=(iso3)=>legendFor(String(iso3||'').toUpperCase());
       window.__wpAlerts={ toggle, refresh, ask:(iso)=>loadMA([String(iso||'').toUpperCase()]),
+        /* (#R275) the tap's own answer, as a call — so a test can ask 「この地点で何が出ているか」
+           without a pointer, and so Atlas can (standing rule: every feature is operable) */
+        at:(lng,lat)=>alertsAt(+lng,+lat).map(f=>({ iso:f.properties.iso, feed:f.properties.feed,
+          unit:f.properties.unit, name:f.properties.name, lv:f.properties.lv, norm:f.properties.norm,
+          hazard:f.properties.hz })),
+        openAt:(lng,lat)=>openPointCard(+lng,+lat,countryAt(+lng,+lat)),
+        closeAt:closePointCard,
+        swicMeta:()=>({ members:Object.keys(swicMeta.mid).length, wired:swicISO().slice().sort(),
+          loaded:Object.keys(swicData).sort() }),
         grouped:(rows)=>grouped(rows), maCountries:()=>Object.keys(MA),
         setPalette:(m)=>{ mode=(m==='norm')?'norm':'agency'; try{ localStorage.setItem('im.alertPal',mode); }catch(_){}
           repaintMode(); if(on&&panel.shown()) overview(); return mode; },

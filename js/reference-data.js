@@ -242,6 +242,9 @@ window.IntMapRefData=(function(){
     {n:'Weather advisories, the Philippines — PAGASA-DOST public alert feed (CAP)',u:'https://publicalert.pagasa.dost.gov.ph/feeds/'},
     {n:'災害告警 — 中央氣象署 CWA (Taiwan), via the NCDR CAP aggregator',u:'https://alerts.ncdr.nat.gov.tw/'},
     {n:'Weather warnings, New Zealand — MetService public CAP alerts',u:'https://alerts.metservice.com/cap/rss'},
+    /* (#R275) every other country: its OWN national service, republished by the WMO's register */
+    {n:'Weather warnings worldwide — national meteorological services via the WMO Severe Weather Information Centre (CAP)',u:'https://severeweather.wmo.int/'},
+    {n:'WMO Members and their CAP implementation status (which national service files CAP, and which does not)',u:'https://severeweather.wmo.int/'},
     {n:'AWS Global Infrastructure — regions',u:'https://aws.amazon.com/about-aws/global-infrastructure/regions_az/'},
     {n:'Microsoft Azure — datacenter locations',u:'https://datacenters.microsoft.com/globe/explore/'},
     {n:'Google Cloud — locations',u:'https://cloud.google.com/about/locations'},

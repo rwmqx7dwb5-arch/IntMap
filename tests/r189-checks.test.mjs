@@ -139,8 +139,13 @@ test('R189 water: the course follows the ground, at one resolution, with a setta
   assert.ok(!/demAt\([^)]*,\s*(?:B\.z\s*[-+]|z\s*[-+])/.test(src), 'never at a level derived from it');
   /* the discharge control (#R189 「水の水流は設定可能に」) is still here, and is now an INPUT */
   assert.match(src, /let flowM3s=null;/, 'a settable discharge state');
-  assert.match(src, /sources\.forEach\(x=>\{ if\(x\.cont&&flowM3s!=null\) x\.rate=flowM3s; \}\);/,
-    '…and it sets what the model is actually fed');
+  /* ⚠ (#R275) …OF EVERY SOURCE. This pinned `if(x.cont&&flowM3s!=null)`, i.e. the discharge only
+     reached the continuous half. 「一回きりと継続の差は、水が継続的に発生し続けるか否かしかないように
+     するべき」 — a one-shot is a tap with a bottom now, so it has a discharge too, and a rate that
+     reached half the sources would be exactly the second difference that instruction removed.
+     What #R189 is about — 「水の水流は設定可能に」, and the setting reaching the model — is asserted. */
+  assert.match(src, /sources\.forEach\(x=>\{ if\(flowM3s!=null\) x\.rate=flowM3s; \}\);/,
+    '…and it sets what the model is actually fed, for every source');
 });
 test('R189 water/seismic: the panels are opaque', () => {
   for (const f of ['js/terrain-water.js', 'js/seismic.js']) {

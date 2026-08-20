@@ -72,6 +72,10 @@ function allowed(raw) {
   if (h === "www.nmc.cn") {
     return u.pathname === "/rest/findAlarm" ? u : null;
   }
+  // WMO Severe Weather Information Centre — see the `?swic=` block below.
+  if (h === "severeweather.wmo.int") {
+    return (u.pathname === "/f/wfs" || /^\/json\/[a-z_-]{3,30}\.json$/.test(u.pathname)) ? u : null;
+  }
   return null;
 }
 
@@ -88,6 +92,39 @@ function allowed(raw) {
    ⚠ THE SUMMARY IS A PROJECTION, NOT AN EDIT: nothing is reworded, reclassified or dropped for
    being small — every warning in the feed produces a row. */
 const SEV = { Extreme: 3, Severe: 2, Moderate: 1, Minor: 1, Unknown: 1 };
+
+/* ══ ⚠⚠⚠ GREEN IS NOT A WARNING, AND THE MAP WAS PAINTING IT AS ONE ═══════════════════════════
+   「発令されていないだけの地域は灰色に。」「正確にリアルタイムな情報に基づき正確で忠実な色分けを。」
+
+   MEASURED against feeds.meteoalarm.org, this build: Italy publishes 474 warnings and **201 of them
+   are 「Green Thunderstorm Warning」** — MeteoAlarm's own awareness level 1, which means NO awareness
+   is required. Belgium's whole feed is green (67 heatwave + 18 rain, ten regions, tier 1 on every
+   one), and Belgium came out of this relay as ten warned regions. The summary read `severity`, and
+   CAP severity for a green row is 「Minor」 or 「Moderate」, which `SEV` mapped to a warning tier.
+
+   The level is published as a PARAMETER and it is language-independent:
+
+       { valueName: "awareness_level", value: "1; green; Minor" }     ← nothing in force
+       { valueName: "awareness_level", value: "2; yellow; Moderate" }
+       { valueName: "awareness_level", value: "3; orange; Severe" }
+       { valueName: "awareness_level", value: "4; red; Extreme" }
+
+   ⚠ THE EVENT TEXT IS NOT A SUBSTITUTE. Italy names the colour in the event («Green Thunderstorm
+   Warning»); Austria does not («Thunderstormwarning», 796 of them, every one awareness level 2).
+   Reading the word out of a translated string would have found Italy and missed Austria entirely.
+
+   So: level 1 is DROPPED (and counted, so the panel can say how many), and 2/3/4 become the CAP
+   ladder tiers 1/2/3 the rest of this layer paints. A feed without the parameter falls back to
+   `severity`, which is what it did before. */
+const AWARENESS = /^\s*([1-4])\s*;/;
+function awarenessOf(info) {
+  const p = ((info && info.parameter) || []).find(
+    (x) => String((x && x.valueName) || "").toLowerCase() === "awareness_level",
+  );
+  if (!p) return 0;
+  const m = AWARENESS.exec(String(p.value || ""));
+  return m ? Number(m[1]) : 0;
+}
 
 /* == (#R271) THE AREA IS WHAT GETS COLOURED, SO THE AREA HAS TO SURVIVE THE SUMMARY ============
    The layer used to paint whole countries because that is all this summary told it: every area of a
@@ -110,6 +147,7 @@ function summariseMeteoAlarm(raw, lang) {
   const j = JSON.parse(raw);
   const rows = [];
   const areaMap = new Map();
+  let green = 0;
   for (const w of (j.warnings || [])) {
     const infos = (w?.alert?.info) || [];
     if (!infos.length) continue;
@@ -117,7 +155,11 @@ function summariseMeteoAlarm(raw, lang) {
       || infos.find((i) => String(i.language || "").toLowerCase().startsWith("en"))
       || infos[0];
     const areas = (pick.area || []).map((a) => String(a.areaDesc || "")).filter(Boolean);
-    const tier = SEV[String(pick.severity)] || 1;
+    /* ⚠ the awareness level decides both whether this is a warning at all and how bad it is —
+       see the note on `awarenessOf`. Level 1 is green: the service is saying nothing is needed. */
+    const aw = awarenessOf(pick);
+    if (aw === 1) { green++; continue; }
+    const tier = aw ? Math.max(1, aw - 1) : (SEV[String(pick.severity)] || 1);
     for (const a of (pick.area || [])) {
       const name = String(a.areaDesc || "").trim();
       if (!name) continue;
@@ -143,13 +185,15 @@ function summariseMeteoAlarm(raw, lang) {
     });
   }
   const areas = [...areaMap.values()].sort((a, b) => b.tier - a.tier).slice(0, AREA_CAP);
+  /* `green` is printed rather than hidden: 「nothing in force」 for a country whose feed is all
+     green is a STATEMENT, and the number is the evidence for it (no silent filtering). */
   /* ⚠ (#R269) `fetchedAt` — WHEN THIS SUMMARY WAS READ FROM MeteoAlarm. The rows carry `onset` and
      `expires`, which are the VALIDITY WINDOW and are normally in the FUTURE: the app's freshness
      instrument used them and reported MeteoAlarm as 82 hours «newer than now». A validity window is
      not an issue time, and a feed with no clock at all is the blind spot the instrument exists for,
      so the relay states the one timestamp it can actually vouch for. */
   return { source: "MeteoAlarm (EUMETNET)", fetchedAt: new Date().toISOString(), count: rows.length,
-    warnings: rows, areas, areaTotal: areaMap.size };
+    warnings: rows, areas, areaTotal: areaMap.size, green };
 }
 
 /* ══ ⚠⚠ (#R271 追記2) THE PHILIPPINES — A NEW COUNTRY, AND ITS OWN PROVINCE POLYGONS ══════════
@@ -360,11 +404,241 @@ async function summariseCAP(key) {
     areaTotal: areas.size, capTotal, capRead: Math.min(cfg.max, capTotal) };
 }
 
+
+/* ══ ⚠⚠⚠ (#R275) 「対応国も増やせ。」 — NINETY-FOUR MORE COUNTRIES, FROM THEIR OWN SERVICES ═══════
+   #R273 answered the same sentence with two hand-picked countries (Taiwan, New Zealand), because
+   every candidate had to be probed, mapped to a geometry source and wired one at a time. MEASURED
+   this round, one by one: India needs its caller's IP whitelisted (401), Türkiye's MGM answers
+   「Not allowed by MGM」 (500), Argentina's SMN is 503, Mexico's and South Africa's warning services
+   serve HTML pages, Korea's RSS path returns the portal, Chile's JSON is a 404. Wiring countries by
+   hand does not scale, and it was never the bottleneck — the bottleneck was that most NMHSs do not
+   publish a CORS-open machine-readable feed OF THEIR OWN.
+
+   They publish CAP into the WMO's register, and the WMO republishes it, VERBATIM AND WITH GEOMETRY:
+
+       severeweather.wmo.int/f/wfs   GeoServer, `local_postgis:postgis_geojsons`
+                                    → one GeoJSON feature per CAP <area>, carrying the issuing
+                                      member (`mem`), the member's own `event` wording, the CAP
+                                      severity (`s`, 0–4 = Unknown/Minor/Moderate/Severe/Extreme,
+                                      the site's own `severityMapping`), `sent`, `expires` and the
+                                      member's `capurl`.
+   MEASURED, one minute, live: 4,358 warning polygons; Kazakhstan 150 areas, Russia 84, Saudi Arabia
+   37, Indonesia 5, Korea 6, Chile 4, Thailand 1, Ukraine 1 — all countries this map was drawing as
+   「未対応」 an hour ago, including the two (Russia, Korea) that #R266 recorded as having no
+   machine-readable public feed at all.
+
+   ⚠ THIS IS NOT GDACS COMING BACK. 「GDACSを完全に撤廃しろ。」 GDACS was an EVENT feed: its own model,
+   its own severity, its unit a whole COUNTRY. This is the national service's OWN warning, at the
+   polygon that service drew, with that service's own words and its own CAP severity — one source
+   per country, which is what 「ソースは一国一ソース。各国の気象台やその他それに相当する機関の情報をもと
+   にしろ」 asks for. The WMO is the transport, not the author, and the panel names the AUTHOR.
+   ⚠ AND A COUNTRY WITH ANOTHER FEED DOES NOT GET THIS ONE. The app asks only for members it has no
+   national or MeteoAlarm feed for, so Canada is still ECCC and Italy is still MeteoAlarm.
+
+   ⚠ 「SUPPORTED」 IS THE WMO'S OWN REGISTER, NOT 「we saw a warning once」. `/json/cap-status.json`
+   states, per member, whether its CAP implementation is 1 Completed / 2 Development / 3 Not started.
+   Only 1 is wired, because drawing 「発表なし」 grey over a country that files nothing would be the
+   exact lie the hatch exists to prevent. */
+const SWIC = "https://severeweather.wmo.int";
+const SWIC_TYPE = "local_postgis:postgis_geojsons";
+const SWIC_MAX_MEMBERS = 6;
+const SWIC_MAX_BYTES = 24 * 1024 * 1024;   /* Saudi Arabia measured 5.3 MB; the largest bound here */
+const SWIC_TIMEOUT_MS = 45000;
+/* one area's geometry can be a coastline; a member's whole answer is bounded and what was dropped
+   for the bound is COUNTED and returned (no silent truncation — #R185) */
+const SWIC_GEOM_BYTES = 1_400_000;
+const SWIC_SEV = ["Unknown", "Minor", "Moderate", "Severe", "Extreme"];
+
+/* ══ ⚠⚠ THE SCAN: WHO HAS ANYTHING IN FORCE, WITHOUT DOWNLOADING ANY SHAPES ═══════════════════
+   Ninety-three wired members fetched six at a time is a four-minute first sweep, and for most of it
+   the map would be painting 「発表なし」 grey over countries it had not read yet — a claim, not an
+   observation. GeoServer honours `propertyName` for the geometry column as well (that is the trap
+   the note on `swicUrl` records), so the SAME query with `wkb_geometry` left OUT is the whole
+   register with every shape stripped: MEASURED 1.53 MB and 1.5 s for all 4,427 warning areas
+   worldwide, against ~20 MB if the polygons came too.
+
+   So one call answers 「どの国に何かが出ているか」 for every member at once — measured, 40 of them —
+   and the per-member geometry calls are only made for those. A member the scan does not list has
+   been READ and has nothing in force, which is the grey the map is entitled to draw. */
+function swicScanUrl() {
+  return SWIC + "/f/wfs?service=WFS&version=1.1.0&request=GetFeature"
+    + "&typeName=" + encodeURIComponent(SWIC_TYPE)
+    + "&outputFormat=" + encodeURIComponent("application/json")
+    + "&propertyName=" + encodeURIComponent("mem,areadesc,s,sent,expires")
+    + "&cql_filter=" + encodeURIComponent("row_type='POLYGON'");
+}
+function summariseSWICScan(raw) {
+  const j = JSON.parse(raw);
+  const now = Date.now();
+  const by = new Map();
+  let total = 0, expired = 0, newest = "";
+  for (const f of (j.features || [])) {
+    const pr = (f && f.properties) || {};
+    const mem = String(pr.mem || "").trim();
+    const name = String(pr.areadesc || "").trim();
+    if (!mem || !name) continue;
+    const exp = Date.parse(String(pr.expires || ""));
+    if (Number.isFinite(exp) && exp < now) { expired++; continue; }
+    total++;
+    const sent = String(pr.sent || "");
+    if (sent > newest) newest = sent;
+    const b = by.get(mem) || { areas: new Set(), worst: 0, sent: "" };
+    by.set(mem, b);
+    b.areas.add(name);
+    const sev = Math.max(0, Math.min(4, Number(pr.s) || 0));
+    if (sev > b.worst) b.worst = sev;
+    if (sent > b.sent) b.sent = sent;
+  }
+  const members = {};
+  for (const [mem, b] of by) members[mem] = { areas: b.areas.size, worst: b.worst, sent: b.sent };
+  return { fetchedAt: new Date().toISOString(), newest, total, expired, members };
+}
+
+function swicUrl(mid) {
+  const cql = "row_type='POLYGON' AND mem='" + String(mid).replace(/[^0-9A-Za-z]/g, "") + "'";
+  return SWIC + "/f/wfs?service=WFS&version=1.1.0&request=GetFeature"
+    + "&typeName=" + encodeURIComponent(SWIC_TYPE)
+    + "&outputFormat=" + encodeURIComponent("application/json")
+    /* ⚠ `wkb_geometry` HAS TO BE NAMED. GeoServer honours `propertyName` for the geometry column
+       too: leaving it out returns every feature with `"geometry": null` — measured, 37 Korean areas
+       with no shape at all and a summary that looked complete. */
+    + "&propertyName=" + encodeURIComponent("event,areadesc,sent,mem,s,expires,capurl,wkb_geometry")
+    + "&cql_filter=" + encodeURIComponent(cql);
+}
+
+/* One member → one row per AREA, the way MeteoAlarm and the CAP services are summarised: the worst
+   severity in force there, the distinct hazards by the member's own name for them, and ONE geometry
+   — the one from the most recently SENT warning, because that is the shape currently in force. */
+function summariseSWIC(raw, mid) {
+  const j = JSON.parse(raw);
+  const now = Date.now();
+  const areas = new Map();
+  let total = 0, expired = 0, geomBytes = 0, geomDropped = 0;
+  for (const f of (j.features || [])) {
+    const pr = (f && f.properties) || {};
+    const name = String(pr.areadesc || "").trim();
+    if (!name) continue;
+    /* an expired bulletin is not in force — the number the panel prints has to be current */
+    const exp = Date.parse(String(pr.expires || ""));
+    if (Number.isFinite(exp) && exp < now) { expired++; continue; }
+    total++;
+    const sev = Math.max(0, Math.min(4, Number(pr.s) || 0));
+    const tier = sev >= 4 ? 3 : sev === 3 ? 2 : 1;
+    const event = String(pr.event || "").slice(0, 80);
+    const sent = String(pr.sent || "");
+    const b = areas.get(name) || { name, tier: 0, events: [], geom: null, sent: "", capurl: "" };
+    areas.set(name, b);
+    if (tier > b.tier) b.tier = tier;
+    if (sent > b.sent) { b.sent = sent; b.capurl = String(pr.capurl || "").slice(0, 200); }
+    if (event && !b.events.some((x) => x.event === event)) {
+      b.events.push({ event, severity: SWIC_SEV[sev] || "Unknown", tier });
+    }
+    /* ⚠ THE SHAPE COMES FROM THE NEWEST BULLETIN FOR THIS AREA, and «newest» has to be tracked
+       separately from `b.sent`: that field is already updated above, so comparing against it would
+       be comparing this row with itself and every row would win in turn. */
+    if (f.geometry && (!b._pendAt || sent >= b._pendAt)) { b._pending = f.geometry; b._pendAt = sent; }
+  }
+  const out = [...areas.values()].sort((a, b) => b.tier - a.tier).slice(0, AREA_CAP);
+  for (const a of out) {
+    const g = a._pending || null;
+    delete a._pending; delete a._pendAt;
+    if (!g) continue;
+    const n = JSON.stringify(g).length;
+    if (geomBytes + n > SWIC_GEOM_BYTES) { geomDropped++; continue; }
+    geomBytes += n;
+    a.geom = g;
+  }
+  return { source: "WMO Severe Weather Information Centre", mid: String(mid),
+    fetchedAt: new Date().toISOString(), count: total, expired,
+    areas: out, areaTotal: areas.size, geomDropped };
+}
+
 Deno.serve(async (req) => {
   const gate = methodGate(req, CORS);
   if (gate) return gate;
 
   const q = new URL(req.url).searchParams;
+  /* `?swicmeta=1` — the WMO's own two tables: which member is which country, which service issues
+     for it, and whether that member's CAP implementation is Completed. Small, and it is what
+     decides which countries this map claims to cover at all. */
+  if (q.get("swicmeta")) {
+    try {
+      const [mr, cr] = await Promise.all([
+        fetchGuarded(SWIC + "/json/wmo_member.json", { timeoutMs: SWIC_TIMEOUT_MS, maxBytes: 2 * 1024 * 1024, contentTypeRe: /json|text\//i,
+          headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" } }),
+        fetchGuarded(SWIC + "/json/cap-status.json", { timeoutMs: SWIC_TIMEOUT_MS, maxBytes: 512 * 1024, contentTypeRe: /json|text\//i,
+          headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" } }),
+      ]);
+      if (!mr.ok || !cr.ok) throw new Error("upstream_error");
+      const members = [];
+      for (const ra of JSON.parse(mr.text())) {
+        for (const m of ((ra && ra.members) || [])) {
+          if (m && m.code && m.mid) members.push({ mid: String(m.mid), code: String(m.code), dept: String(m.dept || m.name || "") });
+        }
+      }
+      const cs = JSON.parse(cr.text());
+      const status = {};
+      for (const k of Object.keys(cs)) {
+        if (!/^ra/.test(k)) continue;
+        for (const [iso, v] of Object.entries(cs[k])) status[iso] = Number(v) || 0;
+      }
+      return new Response(JSON.stringify({ members, status, month: cs.month || "", year: cs.year || "" }), {
+        headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=21600, s-maxage=21600" },
+      });
+    } catch (_e) {
+      return new Response(JSON.stringify({ error: "upstream unreachable" }), {
+        status: 502, headers: { ...CORS, "content-type": "application/json" },
+      });
+    }
+  }
+  /* `?swicscan=1` — which members have anything in force at all, shapes excluded (see above) */
+  if (q.get("swicscan")) {
+    try {
+      const r = await fetchGuarded(swicScanUrl(), {
+        timeoutMs: SWIC_TIMEOUT_MS,
+        maxBytes: SWIC_MAX_BYTES,
+        contentTypeRe: /json|text\//i,
+        headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
+      });
+      if (!r.ok) throw new Error("upstream_error");
+      return new Response(JSON.stringify(summariseSWICScan(r.text())), {
+        headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": CACHE },
+      });
+    } catch (_e) {
+      return new Response(JSON.stringify({ error: "upstream unreachable" }), {
+        status: 502, headers: { ...CORS, "content-type": "application/json" },
+      });
+    }
+  }
+  /* `?swic=070,107,…` — the warnings those WMO members have in force, one summary each */
+  const swic = (q.get("swic") || "").trim();
+  if (swic) {
+    const mids = [...new Set(
+      swic.split(",").map((x) => x.trim()).filter((x) => /^[0-9A-Za-z]{2,4}$/.test(x)),
+    )].slice(0, SWIC_MAX_MEMBERS);
+    if (!mids.length) {
+      return new Response(JSON.stringify({ error: "no member named" }), { status: 400, headers: { ...CORS, "content-type": "application/json" } });
+    }
+    /* ⚠ ONE AT A TIME. Six members in parallel is up to six × SWIC_MAX_BYTES held in one isolate,
+       which is how a relay walks into its memory ceiling and takes every concurrent caller with it
+       (the reason _shared/relay-guard exists). Measured, each member answers in 0.2–1.3 s. */
+    const out = {};
+    for (const m of mids) {
+      try {
+        const r = await fetchGuarded(swicUrl(m), {
+          timeoutMs: SWIC_TIMEOUT_MS,
+          maxBytes: SWIC_MAX_BYTES,
+          contentTypeRe: /json|text\//i,
+          headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
+        });
+        if (!r.ok) { out[m] = { error: "upstream_error" }; continue; }
+        out[m] = summariseSWIC(r.text(), m);
+      } catch (_e) { out[m] = { error: "unreachable" }; }
+    }
+    return new Response(JSON.stringify({ members: out }), {
+      headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": CACHE },
+    });
+  }
   /* `?ph=1` — the Philippines, summarised the same way MeteoAlarm is (see summarisePAGASA) */
   if (q.get("ph")) {
     try {

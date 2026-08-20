@@ -181,7 +181,11 @@ test('R269 ④ a timestamp in the future is refused as evidence of freshness', (
 test('R269 ④ the two relay-backed loaders run one call at a time', () => {
   const s = WP();
   /* (#R273) …and the CAP-index services joined them, so the flags are a set rather than two names */
-  assert.match(s, /let cmaBusy=false, maBusy=false, phlBusy=false, capBusy=\{\};/, 'the in-flight flags must exist');
+  /* ⚠ (#R275) the set grew again (the WMO register), so the assertion names the FLAGS rather than
+     the declaration line — a new feed with its own guard must not read as a regression. */
+  for (const flag of ['cmaBusy', 'maBusy', 'phlBusy', 'swicBusy'])
+    assert.match(s, new RegExp('let [^\\n]*\\b' + flag + '=false'), `${flag} must exist`);
+  assert.match(s, /capBusy=\{\}/, 'the CAP-index services share one keyed flag');
   assert.match(s, /if\(!cmaBusy\)\{ cmaBusy=true;/, 'CMA is guarded');
   assert.match(s, /if\(!maBusy\)\{ maBusy=true;/, 'MeteoAlarm is guarded');
   assert.match(s, /if\(capBusy\[k\]\) return; capBusy\[k\]=true;/, 'every CAP-index service is guarded');

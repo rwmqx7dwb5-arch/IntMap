@@ -192,9 +192,14 @@ test('R271 ⑤ the panel’s scrollbar width is measured and given to the panes 
   /* the section heading and the row it labels start at the same inset */
   /* (#R273) 12, not 11: a row lives inside a card whose 1 px border pushes its text to x+12, so a
      caption inset by 11 started ONE pixel left of every word it labels (measured 440.0 vs 441.0). */
-  assert.match(s, /\.tw-cap\{[^}]*padding:0 12px/, 'a section heading is inset like the rows under it');
+  /* ⚠ (#R275) the inset and the row height are DECLARATIONS now (`TW_INSET`, `TW_ROW`) rather than
+     numbers repeated at each rule, which is what makes 「one left edge」 and 「one rhythm」 checkable
+     rather than coincidental — and it is what let the panel be rescaled to the legends' size
+     without any of them drifting apart. */
+  assert.match(s, /\.tw-cap\{[^}]*padding:0 '\+TW_INSET\+'px/, 'a section heading is inset like the rows under it');
+  assert.match(s, /\.tw-note > summary\{[^}]*padding:0 '\+TW_INSET\+'px/, '…and so is a disclosure');
   /* a one-line prose block is a row, not something shorter than one */
-  assert.match(s, /\.tw-blk\{[^}]*min-height:44px/, 'a prose block must sit on the row rhythm');
+  assert.match(s, /\.tw-blk\{[^}]*min-height:'\+TW_ROW\+'/, 'a prose block must sit on the row rhythm');
 });
 
 /* ── ⑥ a new source must not restart the water that is already flowing ──────────────────────── */

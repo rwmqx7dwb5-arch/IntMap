@@ -1461,14 +1461,21 @@ window.IntMapLang.define('zh', {
     "A published cloud region or campus. The point is the location the operator publishes (a city or county), not a surveyed building; fields the operator does not publish are left out rather than estimated.": "已公布的雲端區域或園區。點位是營運者公布的地點（城市或郡），並非實測建物；營運者未公布的欄位一律略過，不做估算。",   /* datacenters.js */
     "AI compute": "AI 運算",   /* datacenters.js */
     "AI compute campus": "AI 運算園區",   /* datacenters.js */
+  "All areas in force in this country": "此國家所有生效中的區域",   /* (#R275) */
     "Cloud region": "雲端區域",   /* datacenters.js */
     "Colocation": "主機代管",   /* datacenters.js */
     "Colocation / carrier hotel": "主機代管／電信匯集點",   /* datacenters.js */
     "Country": "國家",   /* datacenters.js */
     "Data center": "資料中心",   /* datacenters.js */
+  "Educational display — follow the official authorities.": "僅供參考，請以官方機關發布為準。",   /* (#R275) */
     "HPC / research computing": "HPC／研究運算",   /* datacenters.js */
     "In service": "啟用時間",   /* datacenters.js */
     "IT capacity": "IT 容量",   /* datacenters.js */
+  "IntMap is not connected to this country’s warning service, so it is saying nothing about this point — not that nothing is in force.": "IntMap 未連接此國家的警報機關，因此對此地點不作任何陳述——並非表示沒有發布警報。",   /* (#R275) */
+  "National services via the WMO register": "各國氣象機關（經 WMO 登錄）",   /* (#R275) */
+  "No country here.": "此處沒有國家。",   /* (#R275) */
+  "Not read yet": "尚未取得",   /* (#R275) */
+  "Nothing in force at this point.": "此地點沒有生效中的警報。",   /* (#R275) */
     "Operator’s own page": "營運者官方頁面",   /* datacenters.js */
     "OSM object": "OSM 物件",   /* datacenters.js */
     "Other (OpenStreetMap)": "其他（OpenStreetMap）",   /* datacenters.js */
@@ -1736,6 +1743,9 @@ window.IntMapLang.define('zh', {
     "Output": "出力",   /* (#R258) */
     "Place water on the map first": "請先在地圖上放置水",   /* (#R258) */
     "OpenStreetMap did not answer — pan or zoom to try again": "OpenStreetMap 沒有回應——移動或縮放地圖可再試一次",   /* (#R262) */
+  "The water has come to rest — press ↺ to run it again, or place more": "水已靜止——按 ↺ 重新播放，或再放置更多水",   /* (#R275) */
+  "This country’s service is in the update cycle and has not been read yet.": "此國家的機關正在更新排程中，尚未取得。",   /* (#R275) */
+  "Warnings at this point": "此地點的警報",   /* (#R275) */
     "across": "／",   /* (#R261) */
     "Airport / airfield": "機場／飛行場",   /* (#R261) */
     "Airports & air infrastructure": "機場與航空設施",   /* (#R261) */
@@ -1748,11 +1758,13 @@ window.IntMapLang.define('zh', {
     "Change the values and press Analyze to re-run at this site; “Move the site…” puts it somewhere else.": "變更數值後按「分析」可重算同一地點；「變更地點…」可移到別處。",   /* (#R261) */
     "Cleared. Press Analyze to re-run here, or “Move the site…” to place it somewhere else.": "已清除。按「分析」重算，或用「變更地點…」放到別處。",   /* (#R261) */
     "College": "學院",   /* (#R261) */
+  "by the area the service names": "以發布機關指定的區域為單位",   /* (#R275) */
     "continuous": "持續",   /* (#R261) */
     "continuous (▶ pours these)": "持續（▶ 注水的是這些）",   /* (#R261) */
     "Control tower": "塔臺",   /* (#R261) */
     "Counts and capacity are for what is on screen. A capacity is shown only where the operator or OpenStreetMap publishes one — nothing here is estimated. Tap a class to take it off the map.": "件數與容量為畫面可見範圍的統計。容量僅在營運者或 OpenStreetMap 公布時顯示，絕不估算。點選分類可將該類自地圖移除。",   /* (#R261) */
     "Crane": "裝卸起重機",   /* (#R261) */
+  "continuous — never stops": "持續——不會停止",   /* (#R275) */
     "curated": "收錄",   /* (#R261) */
     "Data centers & AI infrastructure": "資料中心與 AI 基礎設施",   /* (#R261) */
     "Dish diameter": "天線直徑",   /* (#R261) */
@@ -1775,6 +1787,7 @@ window.IntMapLang.define('zh', {
     "Next source": "下一個水源",   /* (#R261) */
     "No site in view publishes a capacity figure.": "顯示範圍內沒有公布容量的設施。",   /* (#R261) */
     "Observatory": "天文台／觀測站",   /* (#R261) */
+  "more countries": "個國家",   /* (#R275) */
     "of": "／全",   /* (#R261) */
     "On the map": "已配置",   /* (#R261) */
     "one shot": "單次",   /* (#R261) */
@@ -1783,6 +1796,7 @@ window.IntMapLang.define('zh', {
     "Port / harbour": "港灣",   /* (#R261) */
     "Ports, harbours & terminals": "港灣與碼頭",   /* (#R261) */
     "Ports, harbours, ferry terminals, container and cargo terminals and cranes mapped in OpenStreetMap for the current view — where cargo physically changes vehicle.": "目前顯示範圍內 OpenStreetMap 收錄的港灣、漁港、渡輪碼頭、貨櫃／貨運碼頭與裝卸起重機——貨物實際換載的地方。",   /* (#R261) */
+  "one shot — stops when its volume is used up": "單次——水量用完即停止",   /* (#R275) */
     "published capacity": "公布容量",   /* (#R261) */
     "Pumping station": "抽水站",   /* (#R261) */
     "Radio telescope": "電波望遠鏡",   /* (#R261) */
@@ -2551,6 +2565,8 @@ window.IntMapLang.define('zh', {
   "No list yet — press to load": "尚無列表——請按此載入",
   "Loading the recent earthquakes…": "正在載入最近的地震…",
   " events": " 件事件",
+  "this service is in the update cycle and has not been read yet, so the map is not saying anything about this country until it has.": "此機關正在更新排程中，尚未取得；在取得之前，本地圖對此國家不作任何陳述。",   /* (#R275) */
+  "via WMO SWIC": "經 WMO SWIC",   /* (#R275) */
   "✓ Copied": "✓ 已複製",
   "📍 Places": "📍 地點",
   "🗓 Events": "🗓 事件",

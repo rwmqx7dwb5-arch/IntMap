@@ -228,8 +228,15 @@ test('R265 ⑦ the pour tick advances the shallow-water state, and ⏭ is the st
   /* the model note must describe the model that is there */
   assert.doesNotMatch(s, /波の到達速度は扱いません/, 'the note no longer denies what the model now does');
   assert.match(s, /局所慣性形：Bates 2010／q中心化 de Almeida 2012/, 'it names the scheme, in Japanese too');
-  /* the water is delivered once, however many times the routing re-reads the running total */
-  assert.match(s, /if\(want<=had\)\{ sc\._fed=want; return; \}/);
+  /* the water is delivered once, however many times the routing re-reads the running total.
+     ⚠ (#R275) `_fed` IS GONE AND THE PROPERTY IS STRONGER. It existed because `x.m3` was a target
+     the routing kept re-reading, so the delivery needed a second number to remember itself by. `m3`
+     IS the delivery now — for both kinds of source — and `owed()` is what is left to give, so
+     «delivered once» is arithmetic rather than book-keeping: a source that has delivered its
+     capacity owes nothing and `feedTaps` skips it. */
+  assert.match(s, /const owed=\(x\)=>Math\.max\(0,srcCap\(x\)-Math\.max\(0,\+\(\(x\|\|\{\}\)\.m3\)\|\|0\)\);/);
+  assert.ok(!/_fed/.test(s), 'nothing needs a second number for what has been delivered');
+  assert.match(s, /const left=owed\(sc\); if\(!\(left>0\)\) return;/, 'and a source that owes nothing is skipped');
   /* a hole the relaxation could not reach is no longer filled with sea level */
   assert.doesNotMatch(s, /for\(let k=0;k<a\.length;k\+\+\) if\(isNaN\(a\[k\]\)\) a\[k\]=0;/);
 });
