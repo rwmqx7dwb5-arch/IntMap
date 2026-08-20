@@ -28,7 +28,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（920行・83 KB）＋ `css/`（3本）＋ `js/`（149本・8.5 MB）＋ `src/`（8本）。**
+- **本体は `index.html`（919行・83 KB）＋ `css/`（3本）＋ `js/`（151本・8.5 MB）＋ `src/`（8本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -208,7 +208,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 ### 3.1 ルート
 
 ```
-index.html                      公開用SPAのマークアップ＋ブート script（920行）。アプリ本体は js/app-body.js
+index.html                      公開用SPAのマークアップ＋ブート script（919行）。アプリ本体は js/app-body.js
 admin.html                      管理コンソール（geo_pins / dashboard_cards / コミュニティ通報 / feedback）。
                                 バンドラを通らない独立ページ。Supabase SDK は同梱版を読む
 sw.js                           Service Worker。タイル等のキャッシュとオフライン補助。キャッシュ名は
@@ -456,6 +456,8 @@ premium-plan.js                   プレミアムの節——ただしその全�
 monitors.js                       Area Monitors IntMapMonitors
 weather.js                        気象 IntMapModules.{wind,weatherEC,weatherPanel}
 wx-source.js                      ガードされた唯一の気象／UV ソース window.IntMapWx
+wx-ecmwf.js                       ECMWF IFS モデル本体 window.IntMapECMWF——予報時刻軸・.om URL・復号済みの場・配色表
+wx-wind.js                        風の粒子レンダラ window.IntMapWindGL——WebGL 1描画呼び出し／実経過時間基準
 place-framing.js                  どこまで寄るか window.IntMapPlaceFraming
 proxy-fetch.js                    CORS プロキシ経由の取得（相手先ごとに効くものが違う）
 perf-hud.js                       実機の計器 `?perf=1`
@@ -1232,6 +1234,54 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
 - ⚠ **2つ目の時計を作らない**（フッタと詳細が別々の到達時刻を出さない）。
 
 ---
+### 7.10 気象モデル（ECMWF IFS）・風・レーダー
+
+**気象の数値はすべて 1 つのモデルから来る。** `window.IntMapECMWF`（`js/wx-ecmwf.js`）が
+Open-Meteo の spatial アーカイブ（**ECMWF IFS HRES・O1280 縮約ガウス格子・約 9 km**）を持つ。
+色面（ラスタ）・粒子・カーソル下の地点値・共有リンクの4つが**同じ変数・同じ初期時刻・同じ有効時刻**を読む。
+
+- **`.om` ファイルの場所は自分で組み立てる。**
+  `<base>/<初期 YYYY>/<MM>/<DD>/<HH>00Z/<有効 YYYY-MM-DD>T<HH>00.om`。
+  ⚠ **SDK に `latest.json` を渡してはならない。** `normalizeUrl` は `time=` を無視して
+  `valid_times[0]` に解決し、キャッシュ鍵（`DATA_RELEVANT_PARAMS` は `['variable']` のみ）も
+  時刻を含まない。**ファイル名に有効時刻が入っていることが、予報時刻が実在する唯一の理由**。
+- **予報時刻は全部使う**（実測 109 ステップ＝3日は毎時、6日目まで3時間毎）。既定は「今」に最も近い段。
+  再生・一時停止・前後・「今へ戻る」。**モデル初期時刻（run）と有効時刻の両方を印字する。**
+  モデルランが更新されたら、**同じ添字ではなく同じ壁時計の瞬間**へ移す。
+- **凡例はレンダラ自身の配色表から作る**（`IntMapECMWF.legend(variable)`）。目盛は 5 点・単位つき、
+  気温は `imUnitTemp`、風は風速単位の選択に従う。**凡例の最大値が LUT と食い違うことは構造上起きない。**
+- **風の配色は Windy 相当の独自表**（`WINDY_WIND`：静穏＝青紫 → 青 → 青緑 → 緑 → 黄 → 橙 → 赤 →
+  マゼンタ → 白、**全域 α=1**）。SDK 既定の風配色は最初の 7 m/s で α を 0→1 に上げるため、
+  静穏域が「穴」になり Windy の絵にならない。プロトコルは**この表で**登録する。
+- ⚠⚠ **気象の面は昼夜シェーディングより上に置く。** `im-night-shade` は装飾、気象はデータ。
+  実測（z3・150°E 20°N・夜側）：LUT が要求する `rgb(40,130,180)` に対し実際の画素は `rgb(15,43,64)`＝**0.36 倍**。
+  `IntMapECMWF.before()` が夜側スタックの直後を返し、`lift()` が**毎 idle** で位置を再主張する
+  （`js/night-side.js` は自分の層をタイマーで貼り直すため）。
+- **不透明度は1回だけ掛ける。** 面の α は配色表（風速の意味を持つ）、スライダーはただ1つの倍率で既定 1.0。
+- **粒子は WebGL・1フレーム1描画呼び出し**（`js/wx-wind.js`）。移動量・寿命・残像はすべて**実経過時間**基準
+  （`dt` 秒／`exp(-dt/τ)`）なので、60 Hz と 144 Hz で同じ絵になる。WebGL が無ければ**束ねた Canvas2D**。
+  粒子はネイティブ格子を直接サンプルする（実測 14,000 回 2.2 ms）——低解像度の地点格子は存在しない。
+- **地点値**：ECMWF ラスタが出ていれば `valueNow(variable, lat, lng)`＝**タイルを描いたのと同じ配列**。
+  NASA GIBS のラスタ（`temp`/`sst` など）は地点値サービスを持たないので、**データセット名と表示中の日付**を
+  出して止まる。⚠ **別のデータセットの現在値を代わりに出してはならない。**
+- **レーダー**：RainViewer の `radar.past`（実測 13 コマ・10 分間隔・直近2時間）を**ループできる**。
+  コマ時刻と経過（「13:30 · −11 分 · 13/13」）を出す。タイルは差し替え（`setSourceTiles`）なので
+  コマ送りは点滅せずクロスフェードする。⚠ 無料枠の配色番号は**2種類しか返らない**
+  （0/2/3/6/7/8 と 1/4/5/9 でバイト一致）ので、`RV_SCHEME` が実際に得られる方を名指しする。
+- **雲（赤外）**：RainViewer の衛星 IR は**廃止済み**（`satellite.infrared` は実測 0 コマ）。
+  NASA GIBS の静止衛星 clean-IR（**Himawari + GOES-East + GOES-West**、10 分間隔）に置き換えた。
+  ⚠ **Meteosat は GIBS に無い**ので、およそ西経 20°〜東経 75°（欧州・アフリカ）は範囲外。
+  凡例が**その旨を文字で書く**（空白を「雲が無い」と読ませない）。
+- **地点天気ポップアップ**は `window.IntMapWx`（`js/wx-source.js`）経由。突風・海面更正気圧・
+  **データの有効時刻**（ブラウザ時刻ではない）・**実際のモデル名**を出す。
+  ⚠ Open-Meteo の `models=` 無指定は **Best match**（GFS ではない）。⟳ は `ttl:0` で
+  **両方の**梯子（Open-Meteo と MET Norway）のキャッシュを無効化する。
+- ⚠ **Open-Meteo への直接 fetch は残っていない。** すべて `IntMapWx.guardedJSON`（キャッシュ・
+  重複排除・日次 429 のサーキットブレーカ）を通る。`IntMapWx.isOpenMeteo(url)` が**ホストで**判定する
+  （部分文字列ではない）ので、`sims.js` / `atlas-console.js` の共有ローダも自動的に通る。
+- **共有リンク**は選択中のレイヤー（`dl-*`）に加えて **ECMWF の有効時刻（瞬間）と各層の不透明度**を運ぶ
+  （`IntMapShareState.register('weatherEC')`）。⚠ 添字ではなく**瞬間**——開いた人のモデルランは別かもしれない。
+
 ## 8. UI/UX の構造
 
 ### 8.1 画面の骨格

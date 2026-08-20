@@ -282,6 +282,34 @@ window.IntMapLang.define('zh', {
   /* ② the inline strings — every L(…) call site in js/*.js, keyed by its English text.
      1882 of them. A key left untranslated renders in English. */
   inline: {
+    'Air pressure reduced to sea level — highs, lows and the storm centre.': "換算至海平面的氣壓——高壓、低壓與風暴中心。",
+    'Air temperature 2 m above the ground.': "地面上方 2 公尺處的氣溫。",
+    'Animate': "播放動畫",
+    'Clouds · infrared (GOES + Himawari)': "雲・紅外線（GOES＋向日葵）",
+    'Convective available potential energy: how much lift a thunderstorm could draw on.': "對流可用位能：雷雨可以動用的上升能量。",
+    'drag to move': "拖曳可移動",
+    'First step': "第一個時刻",
+    'Fraction of the sky covered by cloud.': "天空被雲覆蓋的比例。",
+    'Gusts': "陣風",
+    'Latest frame': "最新影格",
+    'Lines of equal sea-level pressure, labelled in hPa.': "海平面氣壓相等的等值線，標示單位為 hPa。",
+    'Loading the wind model…': "正在載入風場模式…",
+    'NASA GIBS clean-IR, 10 min. GOES-East · GOES-West · Himawari — no Meteosat, so ~20°W–75°E (Europe, Africa) is not covered.': "NASA GIBS 紅外線，每 10 分鐘。GOES-East · GOES-West · 向日葵——不含 Meteosat，因此約西經 20 度至東經 75 度（歐洲、非洲）沒有涵蓋。",
+    'Next frame': "下一影格",
+    'Next hour': "下一個時刻",
+    'no frames': "沒有影格",
+    'Oldest frame': "最舊的影格",
+    'Pressure (MSL)': "海平面氣壓",
+    'Previous frame': "上一影格",
+    'Previous hour': "上一個時刻",
+    'RainViewer radar — the last two hours, 10 min apart': "RainViewer 雷達——最近兩小時，每 10 分鐘一張",
+    'run': "初始時刻",
+    'Strongest gust expected in the hour ending at the valid time.': "至有效時刻為止的一小時內，預期最強的瞬間陣風。",
+    'Temperature at which the air would saturate — the moisture field.': "空氣達到飽和的溫度——即水氣場。",
+    'Total precipitation forecast for the hour ending at the valid time.': "至有效時刻為止一小時的預測總降水量。",
+    'Valid at': "有效時刻",
+    'Wind direction arrows at 10 m, coloured by speed.': "高度 10 公尺的風向箭頭，依風速上色。",
+    'Wind gusts (ECMWF)': "陣風（ECMWF）",
     ' · right-drag to rotate': " ・右鍵拖曳可旋轉",   /* map-tools.js */
     ' · Shift afterburner': " ・Shift 後燃器",   /* flight-sim.js */
     ' biggest shown — click an item or pin to fly': " 個最大者，點擊項目或圖釘即可飛往",   /* atlas-console.js */
@@ -2470,7 +2498,6 @@ window.IntMapLang.define('zh', {
     'Only visible from here': "僅從此處可見",
     'Open in new tab': "在新分頁開啟",
     'Open original': "開啟原文",
-    'Open-Meteo GFS (10 m wind)': "Open-Meteo GFS（10 公尺風）",
     'Peaks': "山峰",
     'Please choose an image file': "請選擇圖片檔",
     'Pop. density': "人口密度",

@@ -540,3 +540,182 @@ test('(#R178) prod service worker caches every terrarium DEM alias', async () =>
   const missed = aliases.filter((u) => !isTile(u));
   expect(missed, `DEM aliases still bypassing the cache: ${missed.join(', ')}`).toEqual([]);
 });
+
+/* ══ (#R276) THE WEATHER MODEL, AGAINST REAL DATA ════════════════════════════════════════════════
+   These three cannot live in tests/smoke.spec.js: that context blocks every host but the two boot
+   CDNs, on purpose, and what is being asked here is whether the ECMWF field the live site actually
+   downloads produces the right PICTURE and the right NUMBER. This file already drives the deployed
+   site with real network and retries, so it is where they belong — and it is also this round's
+   production verification (CLAUDE.md §5). They reuse the shared page, like every test above, so
+   they cost assertions rather than boots.
+
+   ⚠ EACH ONE STATES WHAT IT MEASURED WHEN IT SKIPS. A test that quietly passes because the thing it
+   is about was absent is the failure this project has paid for most often. */
+
+test('(#R276) prod draws the wind from the model, and the pixel is the colour the table asks for', async () => {
+  await page.waitForFunction(() => { try { return window.IntMapGeoEngine.ready(); } catch { return false; } }, null, { timeout: 60_000 });
+  const on = await page.evaluate(() => {
+    const b = document.getElementById('btn-view-flat'); if (b) b.click();
+    window.IntMapGeoEngine.camera.jumpTo({ center: [150, 20], zoom: 3 });
+    const cb = document.getElementById('dl-wind');
+    if (!cb) return false;
+    if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+    return true;
+  });
+  test.skip(!on, 'no wind row on the deployed build');
+  await page.waitForFunction(() => { const d = window.Wind && window.Wind._dbg(); return d && d.hasField && d.hasLyr && d.rasterOpacity > 0; }, null, { timeout: 75_000 });
+  await page.waitForTimeout(6000);   /* the raster's own tiles */
+
+  const m = await page.evaluate(() => new Promise((res) => {
+    const map = window.IntMapGeoEngine.raw();
+    map.once('render', () => {
+      const c = map.getCanvas();
+      const gl = c.getContext('webgl2') || c.getContext('webgl');
+      const px = new Uint8Array(4);
+      gl.readPixels(Math.round(c.width * 0.5), Math.round(c.height * 0.5), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      const ll = window.IntMapGeoEngine.coords.unproject([c.clientWidth * 0.5, c.clientHeight * 0.5]);
+      const EC = window.IntMapECMWF;
+      const sp = EC.valueNow('wind_u_component_10m', ll.lat, ll.lng);
+      const sc = EC.scale('wind_u_component_10m', true);
+      let want = null;
+      try { want = EC.sdk().getColor(sc, sp, true); } catch { /* older SDK */ }
+      return res({ px: Array.from(px), sp, want, model: window.Wind.model(), stats: window.Wind._dbg() });
+    });
+    map.triggerRepaint();
+  }));
+
+  expect(m.model.name, 'the field names the model it came from').toBe('ECMWF IFS HRES');
+  expect(m.model.resolutionKm).toBe(9);
+  expect(m.model.referenceTime, 'and the run it came from').toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/);
+  expect(m.stats.webgl, 'the particles are drawn with WebGL').toBe(true);
+  expect(m.stats.drawn, 'and there really are particles on screen').toBeGreaterThan(200);
+  expect(typeof m.sp, 'the field answers for the point under the middle of the map').toBe('number');
+  /* ⚠⚠ THE INVARIANT THIS ROUND EXISTS FOR. Before it, the pixel here was 0.36× the colour the
+     table asks for, because the day/night shading sat on top of the weather. Exact equality is the
+     only version of this worth asserting: anything looser passes while half the planet is grey. */
+  test.skip(!m.want, 'this SDK build does not expose getColor');
+  expect(m.px.slice(0, 3), 'the painted pixel IS the LUT entry for the wind speed there')
+    .toEqual(m.want.slice(0, 3).map((v) => Math.round(v)));
+  expect(m.px[3], 'and it is opaque').toBe(255);
+});
+
+test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind', async () => {
+  const found = await page.evaluate(async () => {
+    const EC = window.IntMapECMWF;
+    await EC.meta();
+    const f = await EC.load('wind_u_component_10m');
+    if (!f) return { err: 'field did not load' };
+    const s = EC.sampler('wind_u_component_10m');
+    /* Sweep the tropics on a half-degree lattice for the strongest wind, then look for an eye:
+       a point within 1.5° whose speed is at most 60 % of the peak. That IS the structure — a warm
+       core with a light-wind centre inside its eyewall — and it needs no storm list to find. */
+    let peak = { sp: -1 };
+    for (let la = -40; la <= 40; la += 0.5) {
+      for (let lo = -180; lo < 180; lo += 0.5) {
+        const v = s.value(la, lo);
+        if (v > peak.sp) peak = { sp: v, la, lo };
+      }
+    }
+    let eye = null;
+    if (peak.sp >= 25) {
+      for (let dla = -1.5; dla <= 1.5 && !eye; dla += 0.1) {
+        for (let dlo = -1.5; dlo <= 1.5; dlo += 0.1) {
+          const v = s.value(peak.la + dla, peak.lo + dlo);
+          if (v <= peak.sp * 0.6) { eye = { sp: v, la: +(peak.la + dla).toFixed(2), lo: +(peak.lo + dlo).toFixed(2) }; break; }
+        }
+      }
+    }
+    return { peak, eye, validTime: EC.validTime() };
+  });
+  expect(found.err, 'the ECMWF wind field loaded on the deployed site').toBeUndefined();
+  /* the strong-wind area always exists somewhere; the eye only when a cyclone does */
+  expect(found.peak.sp, 'there is a strong-wind area somewhere on the planet').toBeGreaterThan(15);
+  test.skip(!found.eye,
+    'no cyclone eye in this model hour — strongest wind measured ' + found.peak.sp.toFixed(1) + ' m/s at '
+    + found.peak.la + ', ' + found.peak.lo + ' (valid ' + found.validTime + ')');
+
+  /* Now the VISUAL half: fly to the eye and read the two pixels. The eye must be painted with a
+     calmer colour than its eyewall, which is what "you can see the eye" means on a colour field. */
+  const pic = await page.evaluate(async (e) => {
+    const cb = document.getElementById('dl-wind');
+    if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+    const b = document.getElementById('btn-view-flat'); if (b) b.click();
+    window.IntMapGeoEngine.camera.jumpTo({ center: [e.eye.lo, e.eye.la], zoom: 5 });
+    const t0 = Date.now();
+    while (Date.now() - t0 < 60000) {
+      const d = window.Wind._dbg();
+      if (d.hasField && d.hasLyr && d.rasterOpacity > 0) break;
+      await new Promise((r) => setTimeout(r, 400));
+    }
+    await new Promise((r) => setTimeout(r, 6000));
+    return new Promise((res) => {
+      const map = window.IntMapGeoEngine.raw();
+      map.once('render', () => {
+        const c = map.getCanvas();
+        const gl = c.getContext('webgl2') || c.getContext('webgl');
+        const read = (lng, lat) => {
+          const p = window.IntMapGeoEngine.coords.project([lng, lat]);
+          const rx = c.width / c.clientWidth, ry = c.height / c.clientHeight;
+          const sx = Math.round(p.x * rx), sy = Math.round(c.height - p.y * ry);
+          if (sx < 0 || sy < 0 || sx >= c.width || sy >= c.height) return null;
+          const px = new Uint8Array(4);
+          gl.readPixels(sx, sy, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+          return Array.from(px);
+        };
+        const EC = window.IntMapECMWF;
+        res({
+          eyePx: read(e.eye.lo, e.eye.la), ringPx: read(e.peak.lo, e.peak.la),
+          eyeV: EC.valueNow('wind_u_component_10m', e.eye.la, e.eye.lo),
+          ringV: EC.valueNow('wind_u_component_10m', e.peak.la, e.peak.lo),
+          particles: window.Wind._dbg().drawn,
+        });
+      });
+      map.triggerRepaint();
+    });
+  }, found);
+
+  expect(pic.eyePx, 'the eye is on screen').not.toBeNull();
+  expect(pic.ringPx, 'and so is the eyewall').not.toBeNull();
+  expect(pic.ringV, 'the eyewall is the strong half of the pair').toBeGreaterThan(pic.eyeV * 1.6);
+  /* "hotness" on this ramp rises with red and falls with blue, so the difference is VISIBLE rather
+     than merely present: the eyewall must be measurably redder than the eye. */
+  const hot = (p) => p[0] - p[2];
+  expect(hot(pic.ringPx) - hot(pic.eyePx),
+    'the eyewall is painted hotter than the eye: eye ' + JSON.stringify(pic.eyePx) + ' vs ring ' + JSON.stringify(pic.ringPx))
+    .toBeGreaterThan(30);
+  expect(pic.particles, 'and the particles are running over it').toBeGreaterThan(100);
+});
+
+test('(#R276) prod offers the whole forecast, and stepping it changes the file AND the numbers', async () => {
+  const r = await page.evaluate(async () => {
+    const EC = window.IntMapECMWF;
+    const meta = await EC.meta();
+    if (!meta) return { err: 'no metadata' };
+    const nowI = EC.nowIndex();
+    EC.setIndex(nowI);
+    await EC.load('temperature_2m');
+    const a = { key: EC._state().held, vt: EC.validTime(), v: EC.valueNow('temperature_2m', 35.68, 139.76) };
+    EC.setIndex(Math.min(EC.count() - 1, nowI + 24));
+    await EC.load('temperature_2m');
+    const b = { key: EC._state().held, vt: EC.validTime(), v: EC.valueNow('temperature_2m', 35.68, 139.76) };
+    return {
+      count: EC.count(), ref: EC.referenceTime(), nowI, a, b,
+      lastAhead: (Date.parse(EC.validTime(EC.count() - 1)) - Date.now()) / 3600000,
+      missing: ['temperature_2m', 'precipitation', 'cape', 'pressure_msl', 'cloud_cover', 'dew_point_2m',
+        'wind_gusts_10m', 'wind_u_component_10m', 'wind_v_component_10m'].filter((v) => !EC.has(v)),
+    };
+  });
+  expect(r.err, 'the model metadata is reachable from production').toBeUndefined();
+  /* 「提供される全予報時刻を利用可能にする」 — the axis is the feed's, not a window on it */
+  expect(r.count, 'the whole published axis is offered').toBeGreaterThan(40);
+  expect(r.lastAhead, 'and it reaches days into the future, not one hour').toBeGreaterThan(48);
+  expect(r.nowI, 'while the default step is inside it').toBeGreaterThanOrEqual(0);
+  expect(r.missing, 'every layer this app declares has a variable in the feed').toEqual([]);
+  /* the defect this round found: the step used to change nothing at all */
+  expect(r.b.key, 'a step forward reads a DIFFERENT file').not.toBe(r.a.key);
+  expect(r.b.key, 'whose name carries the new valid hour')
+    .toContain(r.b.vt.slice(0, 13).replace(':', '') + '00.om');
+  expect(r.b.vt, 'the valid time moved with it').not.toBe(r.a.vt);
+  expect(typeof r.a.v, 'and both hours answer for a point').toBe('number');
+  expect(typeof r.b.v).toBe('number');
+});
