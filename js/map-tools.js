@@ -1119,8 +1119,16 @@ window.IntMapModules.objectList=function(HOST){
     const ICON={ pin:'📍', radius:'⭕', annot:'✏️', poly:'⬠', outline:'▢', upload:'📂', route:'🧭', iso:'🎯' };
     function kindLbl(k){ return ({ pin:OL('Pins','ピン','Pins','Метки','Pines'), radius:OL('Radius circles','半径円','Radien','Радиусы','Radios'), annot:OL('Drawings','図形','Zeichnungen','Фигуры','Dibujos'), poly:OL('Polygons','ポリゴン','Polygone','Полигоны','Polígonos'), outline:OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'), upload:OL('Uploaded data','アップロードデータ','Uploads','Загрузки','Cargas'), route:OL('Route','経路','Route','Маршрут','Ruta'), iso:OL('Reachable area','到達圏','Erreichbarkeit','Доступность','Alcanzable') })[k]||k; }
     let _objs=[];
+    /* ⚠⚠ (#R293) 「オブジェクト一覧ポップアップは、オブジェクトの数がゼロになったら自動的に消えるように」
+       「になったら」 is a TRANSITION, so this closes on the edge — the panel had objects and now has
+       none (the last delete, or 「全消去」). Opening it deliberately with nothing on the map still
+       shows the sentence that says what the panel is for; closing THAT would make the entry point
+       look broken. */
+    let _had=0;
     function renderList(){ if(!panel) return; const body=panel.querySelector('.iol-body'); if(!body) return;
-      _objs=collect(); const order=['pin','radius','annot','poly','outline','upload','route','iso']; const groups={}; _objs.forEach(o=>{ (groups[o.kind]=groups[o.kind]||[]).push(o); });   /* (#R120) + poly/outline */
+      _objs=collect();
+      if(!_objs.length&&_had>0&&panel.style.display!=='none'){ _had=0; close(); return; }
+      _had=_objs.length; const order=['pin','radius','annot','poly','outline','upload','route','iso']; const groups={}; _objs.forEach(o=>{ (groups[o.kind]=groups[o.kind]||[]).push(o); });   /* (#R120) + poly/outline */
       if(!_objs.length){ body.innerHTML='<div style="color:var(--text-muted);font-size:12px;padding:14px 4px;line-height:1.6;">'+OL('No objects yet. Drop a pin, draw, add a radius, upload GeoJSON, or make a route — they all show up here to manage in one place.','まだオブジェクトがありません。ピン・図形・半径・GeoJSON・経路を作ると、ここで一括管理できます。','Noch keine Objekte.','Пока нет объектов.','Aún no hay objetos.')+'</div>'; return; }
       let h=''; order.forEach(k=>{ const g=groups[k]; if(!g||!g.length) return;
         h+='<div class="iol-grp"><span>'+ICON[k]+' '+esc(kindLbl(k))+'</span><span style="color:var(--text-muted);font-weight:600;">'+g.length+'</span></div>';
@@ -1195,6 +1203,10 @@ window.IntMapModules.objectList=function(HOST){
        FAB (#iol-fab, now mobile-only since the top-right toolbar is hidden on phones). Both show only when >=1 object
        exists — a faithful relocation of the FAB's visibility, not a behaviour change. */
     function tickFab(){ try{ ensureFab(); const n=count();
+      /* (#R293) the same edge as in renderList, seen from the one place that runs whoever emptied
+         the list — Atlas's clearAll and the tool panel do not go through renderList at all */
+      if(!n&&_had>0&&openState&&panel&&panel.style.display!=='none'){ _had=0; close(); }
+      else if(n) _had=n;
       const ns=fab.querySelector('.iol-fab-n'); if(ns) ns.textContent=n;
       const tb=document.getElementById('btn-tool-objects');
       if(tb){ if(!tb.__wired){ tb.__wired=1; tb.onclick=()=>toggle(); tb.title=OL('Manage all map objects','地図上のオブジェクトを管理','Objekte verwalten','Управление объектами','Gestionar objetos'); }

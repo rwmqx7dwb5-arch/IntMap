@@ -1512,6 +1512,10 @@ window.IntMapLang.define('zh', {
     "Colocation / carrier hotel": "主機代管／電信匯集點",   /* datacenters.js */
     "Country": "國家",   /* datacenters.js */
     "Data center": "資料中心",   /* datacenters.js */
+  "Educational — follow the official authorities.": "僅供參考——請以官方機構發布為準。",   /* world-packs.js (#R293) */
+  "IntMap read": "IntMap 取得",   /* world-packs.js (#R293) */
+  "issued": "發布",   /* world-packs.js (#R293) */
+  "Not covered, or not read yet (diagonal hatching)": "未支援或尚未取得（斜線）",   /* world-packs.js (#R293) */
   "Educational display — follow the official authorities.": "僅供參考，請以官方機關發布為準。",   /* (#R275) */
     "HPC / research computing": "HPC／研究運算",   /* datacenters.js */
     "In service": "啟用時間",   /* datacenters.js */

@@ -52,10 +52,13 @@ test('#R284 ① a wired country never gets the 「未対応」 hatch', () => {
   assert.ok(!/return\s*-1;/.test(body), '#R284’s fourth state must be gone');
   assert.match(WP(), /const COLD_CALLS=6;/, '…and the burst that makes the hatch transient survives');
   /* and the two paint expressions still read the tier the way the four states assume */
-  assert.match(src, /'fill-opacity':\['case',\['==',\['to-number',\['feature-state','wpAlert'\],-1\],0\],0\.9,0\]/,
+  /* ⚠ (#R293) the condition moved into `hatchOp(v)` — the opacity slider used to write its scalar
+     straight over the inline expression, so EVERY country was hatched at 38 % (measured). The
+     claim is unchanged: tier 0, and nothing else, earns the pattern. */
+  assert.match(src, /const hatchOp=\(v\)=>\['case',\['==',\['to-number',\['feature-state','wpAlert'\],-1\],0\],/,
     'the hatch paints on tier 0 only');
-  assert.match(src, /'fill-opacity':\['case',\['>',\['to-number',\['feature-state','wpAlert'\],-1\],0\],1,0\]/,
-    'the country wash paints on tiers above 0 only');
+  assert.match(src, /const choroOp=\(v\)=>\['case',\['>',\['to-number',\['feature-state','wpAlert'\],-1\],0\],/,
+    'the country wash paints on tiers above 0 only');   /* (#R293) …in a builder — see above */
 });
 
 /* ── ② the services that issue beyond their own border ───────────────────────────────────────
@@ -211,9 +214,12 @@ test('#R284 ⑧ the wind colour table is resampled, not rewritten', () => {
   assert.match(src, /var WIND_ANCHORS = \{/, 'the anchors are declared on their own');
   assert.match(src, /var WINDY_WIND = rampFrom\(WIND_ANCHORS, 0\.1\);/, 'and resampled at 0.1 m/s');
   const a = src.match(/var WIND_ANCHORS = \{[\s\S]*?\n  \};/)[0];
-  for (const c of ['[98, 113, 184, 1]', '[240, 220, 245, 1]', '[224, 56, 60, 1]'])
+  /* (#R293) windy.com's own colours now — the two that changed are the ones that were furthest
+     from Windy's (「高風速帯でも同じになるように」): 25 m/s was red and is slate blue, and the top of
+     the scale was near-white and is grey. The first entry is unchanged because it always matched. */
+  for (const c of ['[98, 113, 184, 1]', '[129, 129, 129, 1]', '[91, 101, 158, 1]'])
     assert.ok(a.includes(c), 'the colour ' + c + ' is unchanged');
-  assert.ok(a.includes('[0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20, 23, 26, 30, 36, 45, 60]'),
+  assert.ok(a.includes('[0, 1.1, 3, 5, 7, 9, 10, 10.5, 11, 13, 15, 17, 19, 19.7, 21, 24, 25.3, 27, 29,'),   /* (#R293) windy.com's own, measured */
     'and so are the seventeen speeds they sit at');
   /* a 601-stop table must not become a 601-stop CSS gradient in the legend */
   assert.match(src, /if \(draw\.length > 64\)/, 'the legend thins the gradient it draws');

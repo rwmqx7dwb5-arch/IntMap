@@ -36,16 +36,27 @@ const EC = () => codeOnly(read('js/wx-ecmwf.js'));
    「ここの区別はちゃんとやれ。混同するな。」 forbids. The two claims have to be visually exclusive. */
 test('R290 ① the hatch is lines on transparent, and grey means one thing', () => {
   const src = WP();
-  const h = src.indexOf('function ensureHatch(');
-  assert.ok(h > 0, 'ensureHatch must exist');
+  /* ⚠ (#R293) the drawing moved into `hatchCanvas()` — one declaration, two surfaces (the map
+     tile and the legend swatch). The claim being made is the same one. */
+  const h = src.indexOf('function hatchCanvas(');
+  assert.ok(h > 0, 'hatchCanvas must exist');
   const body = src.slice(h, h + 900);
   assert.ok(!/fillRect\(/.test(body), 'the hatch tile paints no backing sheet of its own');
   assert.match(body, /g\.clearRect\(0,0,S,S\);/, 'it starts transparent');
-  assert.match(body, /g\.strokeStyle='rgba\(88,92,100,0\.82\)'/, 'the diagonals carry the whole signal');
+  /* ⚠ (#R293) 「斜線塗をもっと見やすい感じにしろ」 — the single mid-grey line is legible over a pale
+     basemap and nearly invisible over satellite imagery and the dark theme, so each diagonal now
+     carries its own light halo. The property #R290 measured is unchanged and is asserted above:
+     the tile opens with `clearRect` and the GAPS stay transparent — a halo is still a line. */
+  assert.match(body, /g\.strokeStyle=HATCH_HALO;[\s\S]{0,80}g\.strokeStyle=HATCH_LINE;/,
+    'the diagonals carry the whole signal — a haloed line, never a backing sheet');
+  assert.ok(!/fillRect\(0,0,S,S\)/.test(body), 'and nothing fills the tile');
   /* …and the grey that DOES mean 「発令なし」 is still exactly one colour, in both places it is used */
-  assert.match(src, /const QUIET_COL='rgba\(200,200,203,0\.42\)';/);
-  assert.match(src, /1,'rgba\(200,200,203,0\.42\)',/, 'the country-wide sheet uses the same one');
-  assert.equal((src.match(/rgba\(200,200,203,0\.42\)/g) || []).length, 2, 'and there is no third grey');
+  /* ⚠ (#R293) 「灰色塗の色味は少しだけ白に近づけろ」 — the hex changed, the invariant did not, and it
+     is now stronger: the wash names the CONSTANT, so there is exactly ONE place the grey exists. */
+  assert.match(src, /const QUIET_COL='rgba\(\d+,\d+,\d+,0\.42\)';/);
+  assert.match(src, /\n\s+1,QUIET_COL,/, 'the country-wide sheet paints from the same declaration');
+  assert.equal((src.match(/rgba\(\d+,\d+,\d+,0\.42\)/g) || []).length, 1,
+    'and the literal appears exactly once — there is no second grey to drift');
 });
 
 /* ── ② 「日本以外でも区分単位、発令単位ごとに色分けしろ」 — ONE WORLD INDEX, SHIPPED ────────────
@@ -216,9 +227,22 @@ test('R290 ⑧ window.IntMapTimeZones is one object, and every publisher extends
 /* ── ⑨ 「未来を見てるときに『過去を表示中・タップ』と出てくる」 / 「反映内容…はいらない」 ─────── */
 test('R290 ⑨ the collapsed Chronos button reads the instant, and the Applied block is gone', () => {
   const tl = read('js/news-timeline.js');
-  assert.match(tl, /e\.when\.getTime\(\)>Date\.now\(\)/, 'which side of now the instant is on decides the words');
+  /* ⚠⚠⚠ (#R293) THE SAME CLAIM WAS BEING MADE BY TWO ELEMENTS AND ONLY ONE OF THEM WAS FIXED.
+     「Chronosポップアップの『過去表示中』は未来でもその表示。」 #R290 taught the COLLAPSED button's
+     subtitle to read the instant; `#ntl-badge` — the one inside the open panel, which is the one
+     the reader named — was still written from the localiser with the word hard-coded. MEASURED on
+     production with the clock two days ahead: `#ntl-open-s` 「Viewing the future」 and `#ntl-badge`
+     「Viewing the past」 in the same frame.
+     → one function decides the word, and this test now requires that BOTH readers call it. */
+  assert.match(tl, /function sideWord\(w\)\{[\s\S]{0,200}w\.getTime\(\)>Date\.now\(\)/,
+    'which side of now the instant is on decides the words');
   assert.match(tl, /L5\('Viewing the future','未来を表示中'/);
   assert.match(tl, /L5\('Viewing the past','過去を表示中'/);
+  assert.equal((codeOnly(tl).match(/sideWord\(/g) || []).length, 4,
+    'one declaration and three callers — the badge twice (localise + refresh) and the subtitle');
+  assert.match(tl, /if\(badge&&!e\.isLive\) badge\.textContent=sideWord\(e\.when\);/,
+    'the badge is written where the instant arrives, not once from the localiser');
+  assert.match(tl, /os\.textContent=sideWord\(e\.when\);/, '…and so is the collapsed subtitle');
   assert.ok(!/Viewing the past · tap/.test(codeOnly(tl)), '「タップ」 is gone — the element is a button already');
   /* the 「反映内容」 block and everything that existed only to fill it */
   const code = codeOnly(tl);
@@ -366,7 +390,16 @@ test('R290 ⑭ the readout arrow points and does not move', () => {
    ΔE00 ≈ 2.3 is the just-noticeable difference for large flat areas. The eleven NATO waves were
    sampled out of a ten-anchor viridis ramp, which put the closest pair at 8.1 — across country
    fills at 55 % opacity over a basemap that is not a distinction anyone can hold. This test
-   COMPUTES the separation rather than trusting a number in a comment. */
+   COMPUTES the separation rather than trusting a number in a comment.
+
+   ⚠⚠ (#R293) THE CRITERION CHANGED, BECAUSE THE READER CHANGED IT: 「ランダムな色の分け方ではなく、
+   古いのから新しいのまで、赤から紫に連続的に。」 #R290 maximised separation and got 26.1 by sweeping
+   hue a full turn — which begins at dark blue, ends at lavender and passes red in the middle, i.e.
+   it is far apart and it is not an ORDER. A ramp constrained to run red → purple cannot also be
+   the furthest-apart set, so this test now asserts BOTH of the things that are actually required:
+   the sweep is monotone from red to purple, and the separation is still far above the JND and far
+   above what it replaced. MEASURED for the shipped ramp: closest pair 23.9 (CIE76), and it is
+   always an ADJACENT pair — two waves that could be confused are neighbours in time. */
 test('R290 ⑮ the accession palette is measurably easier to tell apart', () => {
   const dl = read('js/data-layers.js');
   const m = /const _WAVEPAL=(\[[^\]]*\]);/.exec(dl);
@@ -391,11 +424,27 @@ test('R290 ⑮ the accession palette is measurably easier to tell apart', () => 
     return Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
   };
   const labs = PAL.map((c) => lab(hex(c)));
-  let worst = Infinity;
-  for (let i = 0; i < labs.length; i++) for (let j = i + 1; j < labs.length; j++) worst = Math.min(worst, de(labs[i], labs[j]));
-  /* CIE76 on the eleven entries: 26.1 for this palette, 12.8 for the viridis sampling it replaces
-     (CIEDE2000, the stricter metric used while choosing it: 19.7 against 8.1). */
-  assert.ok(worst >= 24, `the closest pair in the whole set is ΔE ${worst.toFixed(1)} — it must stay far apart`);
+  let worst = Infinity, worstPair = [-1, -1];
+  for (let i = 0; i < labs.length; i++) for (let j = i + 1; j < labs.length; j++) {
+    const d = de(labs[i], labs[j]); if (d < worst) { worst = d; worstPair = [i, j]; } }
+  /* CIE76: 23.9 for this ramp, 26.1 for #R290's hue-wheel set, 12.8 for the viridis sampling both
+     of them replace. Ten times the 2.3 JND either way. */
+  assert.ok(worst >= 20, `the closest pair in the whole set is ΔE ${worst.toFixed(1)} — it must stay far apart`);
+  /* (#R293) …and the pair that is closest is a NEIGHBOUR. On a continuous ramp the only colours
+     that come near each other are consecutive waves; two DISTANT waves resolving to nearly the
+     same colour would be the 「ランダム」 the reader is objecting to, whatever the minimum is. */
+  assert.equal(worstPair[1] - worstPair[0], 1,
+    `the closest pair is ${worstPair.join('/')} — on a continuous ramp it has to be adjacent`);
+  /* (#R293) 「赤から紫に連続的に」 — the hue sweeps ONE WAY, from red, all the way round to purple. */
+  const hueOf = (l) => { const h = Math.atan2(l[2], l[1]) * 180 / Math.PI; return h < 0 ? h + 360 : h; };
+  const hues = labs.map(hueOf);
+  assert.ok(hues[0] < 60, `the oldest wave must be RED — its hue is ${hues[0].toFixed(0)}°`);
+  let prev = -Infinity, span = 0;
+  for (const x of hues) { let v = x; if (v < prev - 180) v += 360;
+    assert.ok(v >= prev, `the hue sweep must be monotone — ${x.toFixed(0)}° follows ${prev.toFixed(0)}°`);
+    prev = v; }
+  span = prev - hues[0];
+  assert.ok(span > 250 && span < 400, `the sweep must reach purple the long way round — it spans ${span.toFixed(0)}°`);
   /* the viridis sampling this replaces, computed the same way, for the comparison to be a fact */
   const VIR = ['#440154', '#482878', '#3e4a89', '#31688e', '#26828e', '#1f9e89', '#35b779', '#6ece58', '#b5de2b', '#fde725'];
   const mix = (a, b, t) => { const A = hex(a), B = hex(b); return A.map((v, i) => Math.round(v + (B[i] - v) * t)); };

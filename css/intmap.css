@@ -937,6 +937,14 @@
     .ntl-slider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:16px; height:16px; border-radius:50%; background:#fff; border:2px solid var(--primary-color); box-shadow:0 1px 4px rgba(0,0,0,0.35); cursor:pointer; }
     .ntl-slider::-moz-range-thumb{ width:14px; height:14px; border-radius:50%; background:#fff; border:2px solid var(--primary-color); box-shadow:0 1px 4px rgba(0,0,0,0.35); cursor:pointer; }
     .ntl-scale{ display:flex; justify-content:space-between; font-size:9.5px; color:var(--text-muted); padding:0 2px; }
+    /* (#R293) 「タイムスライダーをつけろ」 — each weather legend's own axis, wearing the shell Chronos's
+       slider already wears, because they are two views of one kind of control and a second look
+       would read as a second kind of thing. Every step it can occupy is a published valid time. */
+    .ecl-timerange{ -webkit-appearance:none; appearance:none; width:100%; height:5px; border-radius:99px; margin:6px 0 1px; cursor:pointer; outline:none;
+      background:linear-gradient(90deg,var(--primary-color) 0%,var(--primary-color) var(--ntl-fill,0%),rgba(128,128,128,0.22) var(--ntl-fill,0%),rgba(128,128,128,0.22) 100%); }
+    .ecl-timerange::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:15px; height:15px; border-radius:50%; background:#fff; border:2px solid var(--primary-color); box-shadow:0 1px 4px rgba(0,0,0,0.3); cursor:pointer; }
+    .ecl-timerange::-moz-range-thumb{ width:13px; height:13px; border-radius:50%; background:#fff; border:2px solid var(--primary-color); box-shadow:0 1px 4px rgba(0,0,0,0.3); cursor:pointer; }
+    .ecl-timescale{ display:flex; justify-content:space-between; font-size:9px; color:var(--text-muted); padding:0 2px 2px; font-variant-numeric:tabular-nums; }
     /* (#R94k) header: a proper (not all-caps) title + a deep-time year field and a "what's synced" readout */
     .ntl-title{ font-size:13.5px; font-weight:700; letter-spacing:-0.01em; color:var(--text-main); text-transform:none; margin:0 0 2px; display:flex; align-items:center; gap:7px; }
     /* (#R289) 「⌛絵文字は削除です。」 — the hourglass that stood before the title is gone. */

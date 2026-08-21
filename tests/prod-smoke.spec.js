@@ -647,8 +647,11 @@ test('(#R276) prod draws the wind from the model, and the pixel is the colour th
           field really takes under that pixel             → it is THIS field, here, now.
      Neither carries a colour tolerance. */
   expect(m.ramp, 'the deployed build exposes the colour table its own tiles are rendered from').not.toBeNull();
-  expect(m.ramp.breakpoints.length, 'and it is the resampled ramp (#R284), not the seventeen anchors')
-    .toBe(601);
+  /* (#R293) 1,041 entries now — windy.com's own table spans 0–104 m/s (「Windyと完全に同じ風速と色の
+     対応に」) rather than the old 0–60, at the same 0.1 m/s step. The claim is 「resampled, not a
+     staircase」, which is a floor rather than a count. */
+  expect(m.ramp.breakpoints.length, 'and it is the resampled ramp (#R284), not the anchors alone')
+    .toBeGreaterThan(600);
   /* the table is read here exactly as the SDK reads it — pinned against the SDK itself, so the
      verdict below cannot drift from the renderer by an off-by-one in the bucket search */
   if (m.want) {

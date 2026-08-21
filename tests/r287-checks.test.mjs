@@ -61,6 +61,24 @@ function anchors() {
   return { breakpoints: bp, colors };
 }
 
+/* ══ ⚠⚠⚠ (#R293) THE INCIDENTS BELOW ARE ABOUT A PARTICULAR PALETTE, SO THEY CARRY IT ═════════
+   ④, ⑤ and ⑥ are three RECORDED PRODUCTION READINGS — [44,168,123], [43,167,127], [42,166,132] —
+   and the whole value of this file is that the envelope logic has been watched failing against
+   real numbers. Those numbers are entries of the table that was shipped when they were measured.
+   「Windyと完全に同じ風速と色の対応にしてください」 replaced that table with windy.com's own
+   (measured through `RGBA()`, 27 stops, worst error 3/255), so the recordings are no longer
+   entries of the LIVE ramp — and re-pointing them at whatever ships today would quietly delete the
+   failure this file exists to reproduce.
+   → the incidents keep the palette they happened on, declared here as data; every structural claim
+   (declared before WINDY_WIND, resampled at a fixed step, the bucket rule) still reads the SOURCE
+   through `anchors()` above. */
+const R284_ANCHORS = {
+  breakpoints: [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20, 23, 26, 30, 36, 45, 60],
+  colors: [[98, 113, 184], [61, 99, 174], [40, 130, 180], [36, 160, 168], [44, 168, 120],
+    [62, 175, 80], [110, 185, 60], [160, 195, 55], [214, 202, 60], [236, 170, 50], [240, 130, 46],
+    [235, 92, 50], [224, 56, 60], [210, 40, 110], [200, 70, 175], [214, 140, 220], [240, 220, 245]],
+};
+
 /* The ramp, stated INDEPENDENTLY of `rampFrom` — 「同じ17色を 0.1 m/s へ再標本化、あいだは sRGB で
    線形」. js/wx-ecmwf.js holds the implementation and tests/r284-checks.test.mjs ⑧ guards the call
    site; this is the specification, so a rewrite that changes the arithmetic is caught by the two
@@ -162,11 +180,12 @@ test('#R287 ③ a pixel dimmed by the night shading is refused, and by a wide ma
    nearest entry [44,168,122] at 6.9 m/s, distance 1.0, footprint 6.69…8.69 m/s — which crosses the
    7 m/s anchor. A correct render, refused by a claim that was too strong.                        */
 test('#R287 ④ the production pixel that crossed the 7 m/s anchor is accepted', () => {
-  const ramp = resample(anchors(), 0.1);
+  const ramp = resample(R284_ANCHORS, 0.1);   /* (#R293) the palette the reading was taken on */
   const PX = [44, 168, 123];
   assert.equal(indicesPainted(ramp, PX).length, 0, 'it is genuinely not a table entry…');
   assert.equal(nearestEntry(ramp, PX).distance, 1, '…it is one unit from [44,168,122] at 6.9 m/s');
-  assert.ok(anchors().breakpoints.includes(7), 'and 7 m/s is one of the seventeen anchors');
+  assert.ok(R284_ANCHORS.breakpoints.includes(7), 'and 7 m/s is one of the seventeen anchors');
+  assert.ok(anchors().breakpoints.includes(7), 'and 7 m/s is still an anchor of the shipped table');
   const v = readPixel(ramp, PX, 6.69, 8.69);
   assert.equal(v.inRange, true, 'the chord is inside the envelope: ' + explain(PX, v));
   assert.equal(v.speedInFootprint, true, 'and 6.9 m/s is a speed that footprint contains');
@@ -177,9 +196,13 @@ test('#R287 ④ the production pixel that crossed the 7 m/s anchor is accepted',
    retries. This is that failure, and the point of the test is that NEITHER number is wrong: they
    are the table's entries for 6.7 m/s and 6.5 m/s, two readings of the same air 0.2 m/s apart.  */
 test('#R287 ⑤ both numbers the failed deployment printed are entries of the app\'s own table', () => {
-  const ramp = resample(anchors(), 0.1);
+  const ramp = resample(R284_ANCHORS, 0.1);   /* (#R293) the palette the deployment shipped */
   assert.equal(ramp.breakpoints.length, 601, 'the ramp is the resampled one');
   assert.equal(Math.round((ramp.breakpoints[1] - ramp.breakpoints[0]) * 1000) / 1000, 0.1, 'at 0.1 m/s');
+  /* …and the SHIPPED table is resampled the same way, at the same step, over its own range */
+  const live = resample(anchors(), 0.1);
+  assert.equal(Math.round((live.breakpoints[1] - live.breakpoints[0]) * 1000) / 1000, 0.1);
+  assert.ok(live.breakpoints.length > 600, 'the live ramp is a gradient, not a staircase');
 
   const WANT = [43, 167, 127];    /* what getColor(scale, valueNow) returned */
   const PAINTED = [42, 166, 132]; /* what the canvas actually carried        */
@@ -207,7 +230,7 @@ test('#R287 ⑤ both numbers the failed deployment printed are entries of the ap
    very failure being fixed, one step down — MEASURED at the map centre: point value 6.788,
    footprint 6.74…6.84, painted colour the 6.7 entry.                                            */
 test('#R287 ⑥ an entry covers the speeds up to the next one, not just its own number', () => {
-  const ramp = resample(anchors(), 0.1);
+  const ramp = resample(R284_ANCHORS, 0.1);   /* (#R293) as above — a recorded reading */
   const px = colourFor(ramp, 6.75);
   assert.deepEqual(px, [43, 167, 127], 'ie. the 6.7 entry, exactly as production paints it');
   assert.equal(readPixel(ramp, px, 6.74, 6.84).speedInFootprint, true,
@@ -228,8 +251,8 @@ test('#R287 ⑦ tests/prod-smoke.spec.js asserts both claims and drops the point
     'the old point-value equality is gone from the wind-pixel test');
   /* what must survive: the SDK is still the authority on how the table is read */
   assert.match(src, /colourFor\(m\.ramp, m\.sp\)/, 'the bucket rule is still pinned against the SDK');
-  assert.match(src, /m\.ramp\.breakpoints\.length[\s\S]{0,120}\.toBe\(601\)/,
-    'and the deployed build is still required to ship the resampled ramp');
+  assert.match(src, /m\.ramp\.breakpoints\.length[\s\S]{0,160}\.toBeGreaterThan\(600\)/,
+    'and the deployed build is still required to ship the resampled ramp');   /* (#R293) 1,041 now */
   /* the sibling test keeps ITS form — #R276 追記3's comparison is not collateral damage */
   assert.match(src, /the eye is painted nearer the entry for its own speed/, 'the eyewall pair is untouched');
   assert.equal((src.match(/gl\.readPixels\(/g) || []).length, 2,

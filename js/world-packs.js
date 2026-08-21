@@ -1035,7 +1035,7 @@ window.IntMapModules.worldPacks=function(HOST){
       const QSRC='wp-alert-quiet-src', QFILL='wp-alert-quiet', QLINE='wp-alert-quiet-line';
       /* the SAME grey the country-wide sheet uses (`washExpr`'s tier 1), because it is the same
          claim at a finer unit — a second shade would read as a second meaning */
-      const QUIET_COL='rgba(200,200,203,0.42)';
+      const QUIET_COL='rgba(220,220,224,0.42)';
       /* ══ ⚠⚠ (#R288) ONE PLACE DECIDES WHETHER THIS LAYER IS SHOWING ═══════════════════════════
          Visibility was set in four places over three different lists (LYR in publish, [CHORO,HATCH]
          in paintCountries, LYR again in the restyle hook), and any of them could run while the style
@@ -1057,6 +1057,15 @@ window.IntMapModules.worldPacks=function(HOST){
          valid JSON of the expected shape the whole time. Every loader records the newest timestamp
          IT COULD FIND IN ITS OWN PAYLOAD, and the panel prints the age beside the service. */
       const FEED_AT={};           /* feed key → the newest item timestamp in that feed's own payload */
+      /* ══ ⚠⚠ (#R293) 「いつ発表の情報か、そしてIntMapがいつ取得した情報かも書け」 — TWO CLOCKS ═══════
+         `FEED_AT` is the AGENCY's clock (the newest timestamp inside its own payload) and this is
+         IntMap's (when THIS browser last read that service successfully). They answer different
+         questions and #R269 is the round that paid for confusing them: a feed frozen for eighty-
+         three days answered 200 with valid JSON the whole time, so 「いつ取得したか」 looked fresh
+         while 「いつ発表されたか」 was three months old. A card that prints only one of them cannot
+         tell the reader which situation they are in. */
+      const FEED_GOT={};          /* feed key → epoch ms when THIS browser last read that feed OK */
+      const feedOK=(k)=>{ FEED_STATE[k]='ok'; FEED_GOT[k]=Date.now(); };
       /* ⚠ A TIMESTAMP IN THE FUTURE IS NOT EVIDENCE OF FRESHNESS (#R269): MeteoAlarm's rows carry the
          warning's VALIDITY WINDOW and a warning in force normally expires tomorrow. */
       const seenAt=(k,t)=>{ const v=Date.parse(t||''); if(!isFinite(v)) return;
@@ -1152,9 +1161,19 @@ window.IntMapModules.worldPacks=function(HOST){
         jma:{20:'#f2e700',30:'#ff2800',40:'#aa00aa',50:'#0c000c'},
         cma:{1:'#3b6fd4',2:'#f2e700',3:'#ff8c00',4:'#e60000'},
         cap:{1:'#ffd200',2:'#ff8c00',3:'#e60000'}};
-      /* IntMap's own normalised four — deliberately not any agency's palette */
-      const PAL_NORM={1:'#ffd60a',2:'#ff8c42',3:'#e5383b',4:'#6a040f'};
-      const NONE_COL='#c8c8cb';          /* the JMA's own 「発表なし」 grey */
+      /* ══ ⚠⚠ (#R293) THE NORMALISED LADDER IS THE FIVE COLOURS THE READER NAMED ══════════════
+         「IntMap独自階級は、灰色、黄色、赤色、紫色、黒にしろ。」 Five names for the five rows this key has
+         always had — the four ranks plus 「発令なし」 — so grey keeps the one meaning it has carried
+         since #R273 (「読んだ。何も出ていない」) and the ranks run yellow → red → purple → black.
+         ⚠ #R273 chose the previous four so they could never be mistaken for an agency's own scale,
+         and this ladder is the ORDER the JMA publishes on. The values below are IntMap's (the app's
+         own iOS system hues), not the JMA's table — and `worldKey()` still says in words that the
+         conversion is IntMap's own and not a claim that two countries' ranks mean the same thing. */
+      const PAL_NORM={1:'#ffd60a',2:'#ff3b30',3:'#af52de',4:'#141418'};
+      /* ⚠ (#R293) 「灰色塗の色味は少しだけ白に近づけろ」 — ONE declaration, because the map's quiet fill,
+         the country-wide wash and every legend swatch are the SAME claim and #R270 is the round that
+         paid for letting a colour and its name travel separately. Was the JMA's own #c8c8cb. */
+      const NONE_COL='#dcdce0';          /* 「発令なし」 — read, and nothing in force */
       const NORM_NAME=(n)=>n>=4?L('Emergency','緊急（最高階級）','Notfall','Экстренный','Emergencia')
         :n===3?L('Danger','危険','Gefahr','Опасность','Peligro')
         :n===2?L('Warning','警戒','Warnung','Предупреждение','Aviso')
@@ -1220,19 +1239,43 @@ window.IntMapModules.worldPacks=function(HOST){
          ていない」 and nothing else. The lines carry the whole signal, so they are a little darker
          and a little wider than before to stay legible without a backing sheet. */
       const HATCH_IMG='wp-alert-hatch-img';
+      /* ══ ⚠⚠ (#R293) 「斜線塗をもっと見やすい感じにしろ」 — AND THE SWATCH IS THE SAME TILE ══════
+         #R290 took the backing sheet OFF the tile, which was right, and left the whole signal to a
+         single mid-grey line: legible over a pale basemap, nearly invisible over satellite imagery
+         and over the dark theme. So each diagonal now carries its own light halo — the same trick
+         the hazard labels beside it already use — and it reads on any ground WITHOUT the sheet
+         coming back: the gaps are still exactly transparent, which is the property #R290 measured
+         and `tests/r293` re-measures.
+         ⚠ ONE DECLARATION, TWO SURFACES. `hatchCanvas()` is what the map draws AND what the legend
+         swatch is a picture of — #R270 is the round that paid for a key disagreeing with the thing
+         it names, and a hand-written `repeating-linear-gradient` beside this is exactly that bug
+         waiting to happen (there were two of them here, with different numbers, before this). */
+      const HATCH_S=13, HATCH_HW=3.4, HATCH_LW=1.9;
+      const HATCH_HALO='rgba(255,255,255,0.74)', HATCH_LINE='rgba(34,38,48,0.94)';
+      let _hatchCv=null;
+      function hatchCanvas(){ if(_hatchCv) return _hatchCv;
+        const S=HATCH_S, c=document.createElement('canvas'); c.width=c.height=S;
+        const g=c.getContext('2d');
+        g.clearRect(0,0,S,S);                       /* (#R290) NO backing sheet — see above */
+        g.lineCap='square';
+        const path=()=>{ g.beginPath();
+          g.moveTo(-2,S+2); g.lineTo(S+2,-2);
+          g.moveTo(S-2,S+2); g.lineTo(S+2,S-2);
+          g.moveTo(-2,2); g.lineTo(2,-2); };
+        g.strokeStyle=HATCH_HALO; g.lineWidth=HATCH_HW; path(); g.stroke();
+        g.strokeStyle=HATCH_LINE; g.lineWidth=HATCH_LW; path(); g.stroke();
+        return (_hatchCv=c); }
+      let _hatchURL='';
+      const hatchSwatch=(px)=>{ let u=''; try{ u=(_hatchURL=_hatchURL||hatchCanvas().toDataURL()); }catch(_){}
+        const n=px||12;
+        return 'width:'+n+'px;height:'+n+'px;border-radius:3px;flex:none;'
+          +(u?('background-image:url('+u+');background-repeat:repeat;background-size:'+HATCH_S+'px '+HATCH_S+'px;'):'background:rgba(128,132,140,0.4);')
+          +'box-shadow:0 0 0 1px rgba(128,128,128,0.32);'; };
       let _hatchOn=false;
       function ensureHatch(){ if(_hatchOn) return true;
         try{ if(GE().scene.hasImage(HATCH_IMG)){ _hatchOn=true; return true; } }catch(_){}
         try{
-          const S=10, c=document.createElement('canvas'); c.width=c.height=S;
-          const g=c.getContext('2d');
-          g.clearRect(0,0,S,S);                       /* (#R290) NO backing sheet — see above */
-          g.strokeStyle='rgba(88,92,100,0.82)'; g.lineWidth=1.7; g.lineCap='square';
-          g.beginPath();
-          g.moveTo(-1,S+1); g.lineTo(S+1,-1);
-          g.moveTo(S-1,S+1); g.lineTo(S+1,S-1);
-          g.moveTo(-1,1); g.lineTo(1,-1);
-          g.stroke();
+          const S=HATCH_S, g=hatchCanvas().getContext('2d');
           const im=g.getImageData(0,0,S,S);
           if(!GE().scene.addImage(HATCH_IMG,{width:S,height:S,data:new Uint8Array(im.data.buffer.slice(0))})) return false;
           _hatchOn=true; return true;
@@ -1351,7 +1394,7 @@ window.IntMapModules.worldPacks=function(HOST){
         const hz=named[0]||rankName(feed,lv);
         const extra=Math.max(0,named.length-1);
         return { hz:hz+(extra?(' +'+extra):''), hzs:shortHz(hz)+(extra?('+'+extra):''), nh:named.length||1 }; }
-      function unitFeature(iso,feed,geometry,unit,name,rows,at){
+      function unitFeature(iso,feed,geometry,unit,name,rows,at,got){
         let lv=0; const kinds=[];
         (rows||[]).forEach(r=>{ const v=+r.lv||0; if(v>lv) lv=v;
           const k=String(r.kind||'').trim(); if(k&&kinds.indexOf(k)<0) kinds.push(k); });
@@ -1365,13 +1408,13 @@ window.IntMapModules.worldPacks=function(HOST){
           iso, feed, unit, name:String(name||''), lv, norm,
           colA:agCol(feed,lv), colN:PAL_NORM[norm],
           hzr, hz:f.hz, hzs:f.hzs,
-          nh:f.nh, n:(rows||[]).length, at:String(at||''),
+          nh:f.nh, n:(rows||[]).length, at:String(at||''), got:String(got||''),
           items:JSON.stringify((rows||[]).slice(0,400))}}; }
       /* a unit with a feed and nothing in force — the JMA's own 「発表なし」 grey (Japan only, where
          the issuing units are all known; elsewhere the country wash below says the same thing) */
       function quietFeature(iso,feed,geometry,unit,name){
         return {type:'Feature',geometry,properties:{ iso, feed, unit, name:String(name||''),
-          lv:0, norm:0, colA:NONE_COL, colN:NONE_COL, hzr:'', hz:'', hzs:'', nh:0, n:0, at:'', items:'[]'}}; }
+          lv:0, norm:0, colA:NONE_COL, colN:NONE_COL, hzr:'', hz:'', hzs:'', nh:0, n:0, at:'', got:'', items:'[]'}}; }
 
       /* ══ ⚠⚠ (#R273) 「対応国も増やせ」「ソースは一国一ソース」 ══════════════════════════════════
          Fourteen national services plus the thirty-five MeteoAlarm carries, and each country appears
@@ -1622,9 +1665,15 @@ window.IntMapModules.worldPacks=function(HOST){
          with one scalar for every layer it owns (#R270). */
       const _wash=(hex)=>{ const h=String(hex||'').replace('#',''); if(h.length!==6) return hex;
         return 'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+',0.62)'; };
+      /* (#R293) the two country-wide layers paint from a STATE and are dimmed by a SLIDER, and the
+         two facts have to survive each other — see the note in ensureChoro */
+      const hatchOp=(v)=>['case',['==',['to-number',['feature-state','wpAlert'],-1],0],
+        Math.max(0,Math.min(1,(+v||0)*2.2)),0];
+      const choroOp=(v)=>['case',['>',['to-number',['feature-state','wpAlert'],-1],0],
+        Math.max(0,Math.min(1,(+v||0)*2.6)),0];
       const washExpr=()=>{ const P=(mode==='agency')?PAL.cap:PAL_NORM;
         return ['match',['to-number',['feature-state','wpAlert'],-1],
-          1,'rgba(200,200,203,0.42)',
+          1,QUIET_COL,
           11,_wash(P[1]),12,_wash(P[2]||P[1]),13,_wash(P[3]||P[2]),14,_wash(PAL_NORM[4]),
           'rgba(0,0,0,0)']; };
       function ensureChoro(){ if(GE().layers.has(CHORO)&&GE().layers.has(HATCH)) return true;
@@ -1645,12 +1694,18 @@ window.IntMapModules.worldPacks=function(HOST){
           if(!GE().layers.has(HATCH)){
             ensureHatch();
             GE().layers.add({id:HATCH,type:'fill',source:'countries',layout:{visibility:'none'},
-              paint:{'fill-pattern':'wp-alert-hatch-img',
-                'fill-opacity':['case',['==',['to-number',['feature-state','wpAlert'],-1],0],0.9,0]}},before); }
+              paint:{'fill-pattern':'wp-alert-hatch-img','fill-opacity':hatchOp(OPACITY_DEFAULT)}},before); }
           if(!GE().layers.has(CHORO))
             GE().layers.add({id:CHORO,type:'fill',source:'countries',layout:{visibility:'none'},
-              paint:{'fill-color':washExpr(),
-                'fill-opacity':['case',['>',['to-number',['feature-state','wpAlert'],-1],0],1,0]}},before);
+              paint:{'fill-color':washExpr(),'fill-opacity':choroOp(OPACITY_DEFAULT)}},before);
+        /* ⚠⚠⚠ (#R293) …AND THE SLIDER MUST NOT FLATTEN THEM. Both expressions above decide WHICH
+           countries are painted, and `_applyGenericOpacity` used to write its scalar straight over
+           them — MEASURED, `fill-opacity` on the hatch read back as **0.38**, so every country on
+           Earth was hatched, warnings in force or not. That is the 「塗りすぎ」 in the report.
+           Registering a builder keeps both facts: the state decides WHO, the slider decides HOW
+           STRONGLY (js/data-layers.js `_opacityExpr`). */
+        try{ const OE=(window._opacityExpr=window._opacityExpr||{});
+          OE[HATCH]=hatchOp; OE[CHORO]=choroOp; }catch(_){}
         }catch(_){ return false; }
         return true; }
 
@@ -1670,8 +1725,15 @@ window.IntMapModules.worldPacks=function(HOST){
              Australia   the BoM's state · Hong Kong  the territory IS the issuing unit          */
       const SUBDIV={};
       function fetchJSON(u,opt){ return fetch(u,opt||{}).then(r=>{ if(!r.ok) throw new Error(String(u).slice(0,60)+' '+r.status); return r.json(); }); }
+      /* ⚠⚠ (#R293) — EVERY BOUNDARY SET GOES THROUGH THE CACHE, NOT JUST geoBoundaries'.
+         MEASURED on production: NUTS level 2+3 is 2.29 MB, Natural Earth's 10 m countries 4.23 MB,
+         China's city polygons 1.90 MB, and all of them were re-downloaded on every single visit.
+         `bndJSON` is declared further down beside the geoBoundaries loader (one owner, one note);
+         these call sites are boundary sets, so they use it. A WARNING is never cached — only the
+         shapes it is drawn on, which is the whole distinction the alerts layer already draws
+         between 「この地図が持っている索引」 and 「その機関が今発表しているもの」. */
       function jmaClass10Geo(){ return SUBDIV.jma||(SUBDIV.jma=
-        fetchJSON('https://www.jma.go.jp/bosai/common/const/geojson/class10s.json').then(j=>{
+        bndJSON('https://www.jma.go.jp/bosai/common/const/geojson/class10s.json').then(j=>{
           const by=Object.create(null);
           (j.features||[]).forEach(f=>{ const c=(f.properties&&f.properties.code)||''; if(c) by[String(c)]=f; });
           if(!Object.keys(by).length) throw new Error('jma class10 geometry empty');
@@ -1682,7 +1744,7 @@ window.IntMapModules.worldPacks=function(HOST){
          codes are derived from — 国土交通省 国土数値情報 (行政区域), 1,897 features, one file, keyed on
          the JIS X 0402 code that is the first five digits of a class20 code. */
       const JP_MUNI_URL='https://cdn.jsdelivr.net/gh/smartnews-smri/japan-topography@main/data/municipality/geojson/s0001/N03-21_210101.json';
-      function jpMuniGeo(){ return SUBDIV.jpmuni||(SUBDIV.jpmuni=fetchJSON(JP_MUNI_URL).then(j=>{
+      function jpMuniGeo(){ return SUBDIV.jpmuni||(SUBDIV.jpmuni=bndJSON(JP_MUNI_URL).then(j=>{
         const by=Object.create(null);
         (j.features||[]).forEach(f=>{ const p=f.properties||{}; const c=String(p.N03_007||''); if(!c) return;
           const nm=(p.N03_004&&p.N03_003&&p.N03_004!==p.N03_003)?(p.N03_003+p.N03_004):(p.N03_004||p.N03_003||p.N03_001||c);
@@ -1792,7 +1854,7 @@ window.IntMapModules.worldPacks=function(HOST){
          province and the Australian state — units where 50 m and 10 m differ by less than a pixel at
          the zoom anyone reads them at. */
       function adm1Geo(){ return SUBDIV.adm1||(SUBDIV.adm1=
-        fetchJSON('https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_50m_admin_1_states_provinces.geojson').then(j=>{
+        bndJSON('https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_50m_admin_1_states_provinces.geojson').then(j=>{
           const by=Object.create(null);
           (j.features||[]).forEach(f=>{ const p=f.properties||{}; const iso=String(p.adm0_a3||'').toUpperCase();
             if(!iso) return; const m=by[iso]=by[iso]||Object.create(null);
@@ -1852,8 +1914,8 @@ window.IntMapModules.worldPacks=function(HOST){
             worldWaiting.splice(0).forEach(f=>{ try{ f(null); }catch(_){} }); });
       }
       function nutsGeo(){ return SUBDIV.nuts||(SUBDIV.nuts=Promise.all([
-          fetchJSON('https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_20M_2021_4326_LEVL_2.geojson'),
-          fetchJSON('https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_20M_2021_4326_LEVL_3.geojson')])
+          bndJSON('https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_20M_2021_4326_LEVL_2.geojson'),
+          bndJSON('https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_20M_2021_4326_LEVL_3.geojson')])
         .then(function(r){ const by=Object.create(null);
           r.forEach(j=>(j.features||[]).forEach(f=>{ const p=f.properties||{};
             const cc=String(p.CNTR_CODE||'').toUpperCase(); if(!cc) return;
@@ -2069,7 +2131,7 @@ window.IntMapModules.worldPacks=function(HOST){
          ⚠ The direct url stays as the fallback for a build with no relay configured (a localhost
          preview, where it works), and the relay is preferred whenever there is one. */
       const cnUrl=(n)=>relay('cngeo='+encodeURIComponent(n))||('https://geo.datav.aliyun.com/areas_v3/bound/'+n+'.json');
-      function cnGeo(){ return SUBDIV.cn||(SUBDIV.cn=Promise.all([fetchJSON(cnUrl('100000_full_city')),fetchJSON(cnUrl('100000_full'))])
+      function cnGeo(){ return SUBDIV.cn||(SUBDIV.cn=Promise.all([bndJSON(cnUrl('100000_full_city')),bndJSON(cnUrl('100000_full'))])
         .then(([city,prov])=>{ const by=Object.create(null);
           (city.features||[]).forEach(f=>{ const q=f.properties||{}; const c=String(q.adcode||'');
             if(c&&f.geometry) by[c]={name:String(q.name||c),level:String(q.level||''),geometry:f.geometry}; });
@@ -2325,25 +2387,72 @@ window.IntMapModules.worldPacks=function(HOST){
          Source & terms: geoBoundaries (gbOpen), Runfola et al. 2020 — declared in sources.html,
          js/reference-data.js and js/legal.js. */
       const GB_BASE='https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/';
-      const gbAsked={}, gbBy={};
+      /* ══ ⚠⚠⚠ (#R293) 「警報レイヤーが重すぎる。品質保ったまま爆速にしろ」 — MEASURED FIRST ════════
+         #R290 answered the same sentence by stopping the layer from PUBLISHING the same collection
+         190 times, and that worked: on production this round the steady state is 60 fps exactly
+         (frame interval p50 16.7 ms, p90 17.8 ms — the same as with the layer switched off).
+         What it never touched is the LOADING, and that is where the report still lives. MEASURED on
+         production, 80 s from switching the layer on:
+
+             total downloaded by this layer            46.37 MB
+             …of which geoBoundaries, one country at a time   23.07 MB  (30 requests)
+             …and the bundled world ADM1 file          2.27 MB   (#R290 added it to AVOID the above)
+             longest single main-thread task           7,597 ms   (13 tasks over 200 ms)
+
+         So the page freezes for seven and a half seconds while it parses boundary sets it is
+         downloading TWICE OVER: #R290 shipped `data/admin1-world.json.gz` precisely so the world
+         would not be fetched a country at a time, and left this path running beside it.
+
+         Three changes, none of which drops a single warning or coarsens a single outline:
+           ① ADM2 IS NOT FETCHED UNTIL ADM1 HAS BEEN TRIED AND SOMETHING IS STILL UNPLACED. ADM2 is
+             the expensive half (ESP 3.59 MB, POL 2.77, LVA 2.31, HRV 2.10 — about 14 of the 23 MB),
+             and it can only ever help with areas ADM1 did NOT place. Quality is preserved by
+             construction: the condition for skipping it is that it had nothing left to do.
+           ② THE SAME CONCURRENCY GATE the quiet-unit loader has always had, so twenty countries'
+             boundary sets cannot land in one tick — which is what makes one 7.6 s task instead of
+             twenty short ones.
+           ③ CACHE STORAGE. Administrative boundaries are not news; the same bytes were being pulled
+             on every visit. Cached under `intmap-bnd-v1`, a second session pays nothing for them.
+         ⚠ THE CACHE IS KEYED ON THE URL AND HAS NO TTL ON PURPOSE: geoBoundaries publishes a NEW
+         release path when a boundary set changes, so a stale entry is a stale URL nobody asks for. */
+      const BND_CACHE='intmap-bnd-v1';
+      async function bndCached(u){ try{ if(!self.caches) return null;
+        const c=await caches.open(BND_CACHE); const r=await c.match(u); if(!r) return null;
+        const j=await r.json(); return (j&&j.features)?j:null; }catch(_){ return null; } }
+      async function bndStore(u,j){ try{ if(!self.caches||!j||!j.features) return;
+        const c=await caches.open(BND_CACHE);
+        await c.put(u,new Response(JSON.stringify(j),{headers:{'content-type':'application/json'}})); }catch(_){} }
+      async function bndJSON(u){ const hit=await bndCached(u); if(hit) return hit;
+        const j=await fetchJSON(u); bndStore(u,j); return j; }
+      const gbAsked={}, gbBy={}, gbLvl={};
       function gbIndex(iso,lvl){
         const u=GB_BASE+iso+'/'+lvl+'/geoBoundaries-'+iso+'-'+lvl+'_simplified.geojson';
-        return fetchJSON(u).then(j=>{ const by=Object.create(null); let n=0;
+        return bndJSON(u).then(j=>{ const by=Object.create(null); let n=0;
           (j.features||[]).forEach(f=>{ const nm=(f.properties||{}).shapeName; if(!nm||!f.geometry) return; n++;
             _alias(nm).forEach(x=>{ const k=_norm(x); if(k&&!by[k]) by[k]=f; }); });
           return n?by:null; }); }
+      const gbMerge=(iso,x)=>{ if(!x) return false;
+        const by=gbBy[iso]||(gbBy[iso]=Object.create(null));
+        Object.keys(x).forEach(k=>{ if(!by[k]) by[k]=x[k]; });
+        SHAPELIB[iso+'/gb']=Object.keys(by).length; return true; };
+      /* how many of this country's areas the ladder still cannot place — the ONLY reason to spend
+         a second download on it (see ① above) */
+      function stillMissing(iso){ const p=PLACED[iso]; return p?Math.max(0,p[1]-p[0]):1; }
       function askGB(iso){
         if(gbAsked[iso]||!/^[A-Z]{3}$/.test(String(iso||''))) return;
-        gbAsked[iso]=true;
+        if(gbInflight>=GB_MAX) return;                 /* ② — it will be asked again next publish */
+        gbAsked[iso]=true; gbInflight++;
         gbIndex(iso,'ADM1').catch(()=>null)
-          .then(a=>gbIndex(iso,'ADM2').catch(()=>null).then(b=>{
-            if(!a&&!b) return;
-            /* ADM1 first — the coarser unit is the one a met service usually names */
-            const by=Object.create(null);
-            [a,b].forEach(x=>{ if(!x) return; Object.keys(x).forEach(k=>{ if(!by[k]) by[k]=x[k]; }); });
-            gbBy[iso]=by; SHAPELIB[iso+'/gb']=Object.keys(by).length;
-            return maFeatures().then(()=>{ if(on) publish(); }); }))
-          .catch(()=>{ gbAsked[iso]=false; }); }
+          .then(a=>{ gbLvl[iso]=1;
+            if(!gbMerge(iso,a)) return null;
+            return maFeatures().then(()=>{ if(on) publish(); }); })
+          .then(()=>{
+            if(!stillMissing(iso)) return null;         /* ① ADM1 answered everything — stop here */
+            return gbIndex(iso,'ADM2').catch(()=>null).then(b=>{ gbLvl[iso]=2;
+              if(!gbMerge(iso,b)) return null;
+              return maFeatures().then(()=>{ if(on) publish(); }); }); })
+          .catch(()=>{ gbAsked[iso]=false; })
+          .then(()=>{ gbInflight--; }); }
       /* ⚠ (#R284) HUNGARY NAMES ITS NUTS-2 REGIONS **IN ENGLISH**, and Eurostat publishes them only
          in Hungarian (`NAME_LATN` = 「Dél-Alföld」), so 「Southern Great Plain」 matched nothing at any
          rung — measured 0 of 7, i.e. the whole country blank. The NUTS index is also keyed by
@@ -2409,7 +2518,7 @@ window.IntMapModules.worldPacks=function(HOST){
             const rows=ev.slice(0,40).map(e=>({ area:String(a.name||''), adm:String(a.name||''),
               sub:String(e.event||a.name||''), unit:'region', lv:(e.tier||lv), tier:normOf('meteoalarm',e.tier||lv),
               kind:String(e.event||''), status:String(e.severity||'') }));
-            const ft=unitFeature(iso,'meteoalarm',g,'region',String(a.name||''),rows,String(d.fetchedAt||''));
+            const ft=unitFeature(iso,'meteoalarm',g,'region',String(a.name||''),rows,String(a.sent||''),String(d.fetchedAt||''));
             if(ft) out.push(ft); });
           PLACED[iso]=[placed,(d.areas||[]).length];
           let u=0; (d.areas||[]).forEach(a=>{ if(!shapeOf(a)){ const n=normOf('meteoalarm',a.tier||1); if(n>u) u=n; } });
@@ -2501,7 +2610,7 @@ window.IntMapModules.worldPacks=function(HOST){
             const rows=ev.slice(0,40).map(e=>({ area:String(a.name||''), adm:String(a.name||''),
               sub:String(e.event||a.name||''), unit:'area', lv:(+e.tier||lv), tier:normOf('swic',+e.tier||lv),
               kind:String(e.event||''), status:String(e.severity||'') }));
-            const ft=unitFeature(iso,'swic',a.geom,'area',String(a.name||''),rows,String(d.fetchedAt||''));
+            const ft=unitFeature(iso,'swic',a.geom,'area',String(a.name||''),rows,String(a.sent||''),String(d.fetchedAt||''));
             if(ft) out.push(ft); });
           PLACED[iso]=[placed,(d.areas||[]).length];
           UNPL[iso]=u; });
@@ -2569,7 +2678,7 @@ window.IntMapModules.worldPacks=function(HOST){
           const rows=ev.slice(0,20).map(e=>({ area:String(a.name||''), adm:String(a.name||''),
             sub:String(e.event||''), unit:cfg.unit, lv:(e.tier||lv), tier:normOf(feed,e.tier||lv),
             kind:String(e.event||''), status:String(e.severity||a.acol||'') }));
-          const ft=unitFeature(cfg.iso,feed,g,cfg.unit,String(a.name||''),rows,String(j.fetchedAt||''));
+          const ft=unitFeature(cfg.iso,feed,g,cfg.unit,String(a.name||''),rows,String(a.sent||''),String(j.fetchedAt||''));
           if(ft) out.push(ft); });
         PLACED[cfg.iso]=[out.length,areas.length];
         let u2=0; areas.forEach(a=>{ if(!shapeOf(a)){ const n=normOf(feed,a.tier||1); if(n>u2) u2=n; } });
@@ -2679,15 +2788,30 @@ window.IntMapModules.worldPacks=function(HOST){
          reader is actually looking at — the全世界分 would be tens of megabytes for a picture nobody
          has scrolled to. */
       const UNITS=Object.create(null);        /* iso3 → [geometry, …] */
+      /* ══ ⚠⚠⚠ (#R293) 「境界線解像度が低すぎる」 — WHICH SET A COUNTRY'S UNITS CAME FROM ═════════════
+         #R290 shipped `data/admin1-world.json.gz` so every country could be drawn by unit at all:
+         247 countries and 4,515 subdivisions, Douglas–Peucker at 0.01° (≈1.1 km) and four decimal
+         places, in 2.38 MB. That tolerance is invisible at the zoom the file exists for — the world
+         view — and it is exactly what the reader is looking at when they zoom in to a coastline.
+         It cannot be fixed by making the bundle finer: the same file is what makes the overview
+         affordable, and Natural Earth's own 10 m source is 40.7 MB before simplification.
+         → the bundled index is a FLOOR, not an answer. Above `UNIT_HIRES_Z` a country that is on
+         screen and is still being drawn from the world file is upgraded to its OWN boundary set —
+         geoBoundaries ADM1, the same source the placement ladder already trusts, at that country's
+         published resolution. It is fetched for what is on screen, at two countries at a time, and
+         it is cached (see bndJSON), so the upgrade is paid once per country per browser. */
+      const UNIT_SRC=Object.create(null);     /* iso3 → which index the shapes came from */
+      const UNIT_HIRES_Z=5;                   /* below this the world file and the real one are the same picture */
+      const COARSE=/^(world|ne50)$/;
       const unitAsked=Object.create(null);
       const NO_UNITS=Object.create(null);     /* iso3 → this map has looked and has none */
       let gbInflight=0;
       const GB_MAX=2;
       function unitsOf(iso){ const u=UNITS[iso]; return (u&&u.length)?u:null; }
-      function setUnits(iso,geoms){
+      function setUnits(iso,geoms,src){
         const g=(geoms||[]).filter(Boolean);
         if(!g.length){ NO_UNITS[iso]=1; return false; }
-        UNITS[iso]=g; delete NO_UNITS[iso];
+        UNITS[iso]=g; UNIT_SRC[iso]=src||'?'; delete NO_UNITS[iso];
         /* (#R290) COALESCED. This fired twice per country, and the world index makes 147 countries
            land inside a second — 147 uploads of a collection that grows with each one. */
         if(on) publish();
@@ -2700,37 +2824,48 @@ window.IntMapModules.worldPacks=function(HOST){
         if(unitAsked[iso]||UNITS[iso]) return;
         unitAsked[iso]=true;
         const fail=()=>{ unitAsked[iso]=false; };
-        if(iso==='JPN'){ jpMuniGeo().then(by=>setUnits(iso,Object.keys(by).map(k=>multi(by[k].parts)))).catch(fail); return; }
-        if(iso==='CHN'){ cnGeo().then(by=>setUnits(iso,Object.keys(by).filter(k=>by[k].level!=='province').map(k=>by[k].geometry))).catch(fail); return; }
-        if(iso==='TWN'){ twTownGeo().then(x=>setUnits(iso,uniq(x.by).map(f=>f.geometry))).catch(fail); return; }
+        if(iso==='JPN'){ jpMuniGeo().then(by=>setUnits(iso,Object.keys(by).map(k=>multi(by[k].parts)),'jp')).catch(fail); return; }
+        if(iso==='CHN'){ cnGeo().then(by=>setUnits(iso,Object.keys(by).filter(k=>by[k].level!=='province').map(k=>by[k].geometry),'cn')).catch(fail); return; }
+        if(iso==='TWN'){ twTownGeo().then(x=>setUnits(iso,uniq(x.by).map(f=>f.geometry),'tw')).catch(fail); return; }
         const cc=NUTS_CC[iso];
         if(cc){ nutsGeo().then(by=>{ const idx=by[cc]||null;
           /* NUTS-3 only: the index also holds level 2, and drawing both stacks two greys */
           const l3=uniq(idx).filter(f=>String((f.properties||{}).NUTS_ID||'').length===5);
-          setUnits(iso,(l3.length?l3:uniq(idx)).map(f=>f.geometry)); }).catch(fail); return; }
+          setUnits(iso,(l3.length?l3:uniq(idx)).map(f=>f.geometry),'nuts'); }).catch(fail); return; }
         adm1Geo().then(by=>{ const idx=by[iso]||null; const l=uniq(idx);
-          if(l.length){ setUnits(iso,l.map(f=>f.geometry)); return; }
+          if(l.length){ setUnits(iso,l.map(f=>f.geometry),'ne50'); return; }
           askUnitsWorld(iso); }).catch(()=>{ askUnitsWorld(iso); });
       }
       /* (#R290) the shipped world index — ONE request for every country that has no closer one */
       function askUnitsWorld(iso){
         const use=(w)=>{ const g=w&&w.geoms[iso];
-          if(g&&g.length){ setUnits(iso,g.slice()); return true; }
+          if(g&&g.length){ setUnits(iso,g.slice(),'world'); return true; }
           return false; };
         if(WORLD){ if(!use(WORLD)) askUnitsGB(iso); return; }
         askWorldAdm1(w=>{ if(!use(w)&&unitAsked[iso]) askUnitsGB(iso); });
       }
       /* the last resort, and the only one that costs a download of its own */
       function askUnitsGB(iso){
-        if(gbBy[iso]){ setUnits(iso,uniq(gbBy[iso]).map(f=>f.geometry)); return; }
-        if(gbInflight>=GB_MAX){ unitAsked[iso]=false; return; }
+        if(gbBy[iso]&&Object.keys(gbBy[iso]).length){ setUnits(iso,uniq(gbBy[iso]).map(f=>f.geometry),'gb'); return; }
+        if(gbInflight>=GB_MAX){ if(COARSE.test(UNIT_SRC[iso]||'')) return; unitAsked[iso]=false; return; }
         gbInflight++;
         gbIndex(iso,'ADM1').catch(()=>null)
-          .then(by=>{ if(by){ gbBy[iso]=Object.assign(gbBy[iso]||Object.create(null),by); setUnits(iso,uniq(by).map(f=>f.geometry)); }
-            else NO_UNITS[iso]=1; })
-          .catch(()=>{ unitAsked[iso]=false; })
+          .then(by=>{ if(by){ gbBy[iso]=Object.assign(gbBy[iso]||Object.create(null),by); setUnits(iso,uniq(by).map(f=>f.geometry),'gb'); }
+            else if(!UNITS[iso]) NO_UNITS[iso]=1; })
+          .catch(()=>{ if(!UNITS[iso]) unitAsked[iso]=false; })
           .then(()=>{ gbInflight--; });
       }
+      /* (#R293) the upgrade pass — see the note on UNIT_SRC. A country only ever moves from the
+         bundled world index to its own boundary set, never back, and only while it is on screen. */
+      const upAsked=Object.create(null);
+      function upgradeUnitsInView(){ if(!on) return;
+        let z=0; try{ z=GE().camera.getZoom(); }catch(_){ return; }
+        if(!(z>=UNIT_HIRES_Z)) return;
+        try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||'');
+          if(!c||upAsked[c]||!UNITS[c]||!COARSE.test(UNIT_SRC[c]||'')) return;
+          if(!inView(f)) return;
+          if(gbInflight>=GB_MAX) return;
+          upAsked[c]=1; askUnitsGB(c); }); }catch(_){} }
       /* the countries the reader can actually see, so a world of downloads is never started at once */
       function bboxOf(f){ if(f.__bb) return f.__bb;
         let w=180,e=-180,s2=90,n=-90;
@@ -2749,7 +2884,8 @@ window.IntMapModules.worldPacks=function(HOST){
           if(!c||!supported(c)||readState(c)!=='ok') return;
           if(UNITS[c]||unitAsked[c]||NO_UNITS[c]) return;
           if(!inView(f)) return;
-          askUnits(c); }); }catch(_){} }
+          askUnits(c); }); }catch(_){}
+        upgradeUnitsInView(); }
       /* ══ ⚠⚠ (#R290) THE COLLECTION IS BOUNDED BY THE VIEW, NOT BY THE CACHE ═══════════════════
          `UNITS` accumulates: once a country's subdivisions are in hand they stay. Emitting all of
          them made the grey collection grow with every pan — MEASURED at world zoom with the new
@@ -2939,7 +3075,7 @@ window.IntMapModules.worldPacks=function(HOST){
         while(maBusy<MA_CALLS){
           const b=maNext(MA_PER_TICK); if(!b.length) break;
           maBusy++; b.forEach(k=>{ maPend[k]=1; });
-          loadMA(b).then(()=>{ FEED_STATE.meteoalarm='ok'; if(on) publish(); })
+          loadMA(b).then(()=>{ feedOK('meteoalarm'); if(on) publish(); })
             .catch(e=>{ FEED_STATE.meteoalarm='error'; console.warn('MeteoAlarm',e); if(on&&panel.shown()) overview(); })
             .then(()=>{ maBusy--; b.forEach(k=>{ delete maPend[k]; }); pumpMA(); }); } }
       function pumpSWIC(){ if(!on||!swicMeta.at) return;
@@ -2947,35 +3083,35 @@ window.IntMapModules.worldPacks=function(HOST){
         while(swicBusy<SWIC_CALLS){
           const b=swicNext(SWIC_PER_TICK); if(!b.length) break;
           swicBusy++; b.forEach(k=>{ swicPend[k]=1; });
-          loadSWIC(b).then(()=>{ FEED_STATE.swic='ok'; if(on){ publish(); paintCountries(); } })
+          loadSWIC(b).then(()=>{ feedOK('swic'); if(on){ publish(); paintCountries(); } })
             .catch(e=>{ FEED_STATE.swic='error'; console.warn('WMO SWIC',e); if(on&&panel.shown()) overview(); })
             .then(()=>{ swicBusy--; b.forEach(k=>{ delete swicPend[k]; }); pumpSWIC(); }); } }
 
       async function refresh(){ if(busy) return; busy=true;
         FEED_KEYS.forEach(k=>{ if(FEED_STATE[k]!=='ok') FEED_STATE[k]='loading'; });
         try{ const parts=await Promise.all([
-            loadJMA().then(v=>{ FEED_STATE.jma='ok'; return v; }).catch(e=>{ FEED_STATE.jma='error'; console.warn('JMA warnings',e); return []; }),
-            loadNWS().then(v=>{ FEED_STATE.nws='ok'; return v; }).catch(e=>{ FEED_STATE.nws='error'; console.warn('NWS warnings',e); return []; }),
-            loadECCC().then(v=>{ FEED_STATE.eccc='ok'; return v; }).catch(e=>{ FEED_STATE.eccc='error'; console.warn('ECCC warnings',e); return []; }),
-            loadINMET().then(v=>{ FEED_STATE.inmet='ok'; return v; }).catch(e=>{ FEED_STATE.inmet='error'; console.warn('INMET warnings',e); return []; }),
-            loadDWD().then(v=>{ FEED_STATE.dwd='ok'; return v; }).catch(e=>{ FEED_STATE.dwd='error'; console.warn('DWD warnings',e); return []; }),
-            loadMETNO().then(v=>{ FEED_STATE.metno='ok'; return v; }).catch(e=>{ FEED_STATE.metno='error'; console.warn('MET Norway warnings',e); return []; })]);
+            loadJMA().then(v=>{ feedOK('jma'); return v; }).catch(e=>{ FEED_STATE.jma='error'; console.warn('JMA warnings',e); return []; }),
+            loadNWS().then(v=>{ feedOK('nws'); return v; }).catch(e=>{ FEED_STATE.nws='error'; console.warn('NWS warnings',e); return []; }),
+            loadECCC().then(v=>{ feedOK('eccc'); return v; }).catch(e=>{ FEED_STATE.eccc='error'; console.warn('ECCC warnings',e); return []; }),
+            loadINMET().then(v=>{ feedOK('inmet'); return v; }).catch(e=>{ FEED_STATE.inmet='error'; console.warn('INMET warnings',e); return []; }),
+            loadDWD().then(v=>{ feedOK('dwd'); return v; }).catch(e=>{ FEED_STATE.dwd='error'; console.warn('DWD warnings',e); return []; }),
+            loadMETNO().then(v=>{ feedOK('metno'); return v; }).catch(e=>{ FEED_STATE.metno='error'; console.warn('MET Norway warnings',e); return []; })]);
           baseFeats=parts.flat(); lastAt=Date.now();
           /* ⚠ (#R266) THE RELAY-BACKED FEEDS ARE NOT AWAITED WITH THE OTHERS — a `Promise.all` that
              includes them means Japan's and America's warnings, which arrived in milliseconds, sit
              unrendered until Europe answers. ⚠ (#R269) …and each gets its own in-flight guard,
              because `busy` only covers the awaited half. */
           if(!cmaBusy){ cmaBusy=true;
-            loadCMA().then(v=>{ FEED_STATE.cma='ok'; cmaRec=v; if(on) publish(); })
+            loadCMA().then(v=>{ feedOK('cma'); cmaRec=v; if(on) publish(); })
               .catch(e=>{ FEED_STATE.cma='error'; console.warn('CMA warnings',e); if(on&&panel.shown()) overview(); })
               .then(()=>{ cmaBusy=false; }); }
-          loadBOM().then(v=>{ FEED_STATE.bom='ok'; bomRec=v; if(on) publish(); })
+          loadBOM().then(v=>{ feedOK('bom'); bomRec=v; if(on) publish(); })
             .catch(e=>{ FEED_STATE.bom='error'; console.warn('BoM warnings',e); if(on&&panel.shown()) overview(); });
           ['pagasa','cwa','metservice'].forEach(k=>{ if(capBusy[k]) return; capBusy[k]=true;
-            loadCAP(k).then(()=>{ FEED_STATE[k]='ok'; if(on) publish(); })
+            loadCAP(k).then(()=>{ feedOK(k); if(on) publish(); })
               .catch(e=>{ FEED_STATE[k]='error'; console.warn(k+' warnings',e); if(on&&panel.shown()) overview(); })
               .then(()=>{ capBusy[k]=false; }); });
-          loadHKO().then(v=>{ FEED_STATE.hko='ok'; hkoRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
+          loadHKO().then(v=>{ feedOK('hko'); hkoRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
             .catch(e=>{ FEED_STATE.hko='error'; console.warn('HKO warnings',e); if(on&&panel.shown()) overview(); });
           /* ⚠ (#R275) A ROTATION, NOT A FIRST-LOAD QUEUE — see the note on `maNext`. Each call takes
              the relay's own maximum and the batches are disjoint, so a tick advances the cycle by
@@ -2995,7 +3131,7 @@ window.IntMapModules.worldPacks=function(HOST){
              same age-ordered rotation MeteoAlarm uses (#R277: and the same independent slots) */
           if(!swicMetaBusy){ swicMetaBusy=true;
             Promise.resolve(loadSWICMeta()).then(()=>loadSWICScan())
-              .then(()=>{ FEED_STATE.swic='ok'; if(on){ publish(); paintCountries(); } })
+              .then(()=>{ feedOK('swic'); if(on){ publish(); paintCountries(); } })
               .catch(e=>{ FEED_STATE.swic='error'; console.warn('WMO SWIC',e); if(on&&panel.shown()) overview(); })
               .then(()=>{ swicMetaBusy=false; }); }
           pumpSWIC();
@@ -3005,15 +3141,39 @@ window.IntMapModules.worldPacks=function(HOST){
       /* ── the keys ─────────────────────────────────────────────────────────────────────────────── */
       /* ⚠ (#R270) A KEY TAKES ITS COLOURS FROM THE THING IT IS A KEY TO — the palette travels with
          the names, so a swatch and its label can never be about different scales. */
+      /* ⚠⚠ (#R293) 「日本の特別警報の凡例だけ、図形の形が違うのを辞めろ」 — AND IT WAS THE BORDER ══════
+         Every row here is the same 12 px rounded square, so nothing here CHOSE a different shape.
+         What differed was the only thing that can: the JMA's 特別警報 is #0c000c, darker than the
+         panel it sits on, so `1px solid rgba(128,128,128,0.35)` was the brightest thing in the chip
+         and the eye read a RING where the yellow/red/magenta chips beside it read as filled squares.
+         → the outline is drawn INSIDE, as a hairline inset shadow that is dark on pale chips and
+         pale on dark ones, so every swatch is a filled square whatever colour it carries. */
       function keyRows(pairs){ return '<div style="margin-top:6px;display:flex;flex-direction:column;gap:3px;">'
         +pairs.map(p=>'<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;">'
-          +'<span style="width:12px;height:12px;border-radius:3px;flex:none;background:'+p[0]
-          +';border:1px solid rgba(128,128,128,0.35);"></span>'+esc(p[1])+'</div>').join('')+'</div>'; }
+          +'<span style="'+(p[0]===HATCH_KEY?hatchSwatch(12):swatchStyle(p[0],12))+'"></span>'+esc(p[1])+'</div>').join('')+'</div>'; }
       const keyHead=(t)=>'<div style="margin-top:9px;font-size:10.5px;font-weight:600;color:var(--text-muted);">'+esc(t)+'</div>';
+      const HATCH_ROW=()=>[HATCH_KEY,L('Not covered, or not read yet (diagonal hatching)','未対応・未取得（斜線）','Nicht abgedeckt / noch nicht gelesen (Schraffur)','Нет данных / ещё не прочитано (штриховка)','Sin cobertura o aún no leído (rayado)')];
+      /* the sentinel is an OBJECT, compared by identity: no string can collide with it and no
+         encoding can mangle it (a control-character sentinel put a real NUL byte in this file) */
+      const HATCH_KEY={hatch:true};
+      /* ══ ⚠⚠ (#R293) 「日本の特別警報の凡例だけ、図形の形が違うのを辞めろ」 — MEASURED, TWO CAUSES ═════
+         ① THE DELIMITER WAS INSIDE THE CHIP'S OWN CONTRAST. Every swatch carried
+         `border:1px solid rgba(128,128,128,0.35)`, and a border's contrast is against the FILL.
+         The JMA's 特別警報 is #0c000c — the only chip in any of these keys that is DARKER than that
+         grey — so alone among them it was ringed in something brighter than itself and read as an
+         OUTLINED square beside four filled ones. → the delimiter moves OUTSIDE, as a spread shadow,
+         where its contrast is against the PANEL and therefore the same for every row.
+         ② AND THE PANEL HELD THREE SIZES. MEASURED on production, one open legend: the country
+         list drew 10 px chips, `keyRows` 12 px and the hatched swatch in `legendFor` 14 px — three
+         sizes for one idea. → `SW_PX`, once. (The source-status dots stay circles: a status light
+         is not a colour key, and they are consistent with each other.) */
+      const SW_PX=12;
+      const swatchStyle=(col,px)=>'width:'+(px||SW_PX)+'px;height:'+(px||SW_PX)+'px;border-radius:3px;flex:none;'
+        +'background:'+col+';box-shadow:0 0 0 1px rgba(128,128,128,0.32);';
       const agencyKey=(feed)=>keyRows(Object.keys(palOf(feed)).map(Number).sort((a,b)=>b-a)
         .map(lv=>[palOf(feed)[lv],rankName(feed,lv)]).concat([[NONE_COL,L('Nothing in force','発表なし','Nichts in Kraft','Ничего не действует','Nada vigente')]]));
       const normKey=()=>keyRows([4,3,2,1].map(n=>[PAL_NORM[n],NORM_NAME(n)])
-        .concat([[NONE_COL,L('Nothing in force','発表なし','Nichts in Kraft','Ничего не действует','Nada vigente')]]));
+        .concat([[NONE_COL,L('Nothing in force','発表なし','Nichts in Kraft','Ничего не действует','Nada vigente')],HATCH_ROW()]));
       /* ⚠⚠ (#R273) 「気象庁の階級をまるで世界共通かのように、日本を選択していなくても表示するのを辞めろ。」
          The world panel shows an agency's OWN ranks only in that agency's own legend, which is what a
          tap opens. In agency mode the world key can only say what is true of every agency at once —
@@ -3030,7 +3190,7 @@ window.IntMapModules.worldPacks=function(HOST){
         return keyHead(L('Each agency’s own published scale','各機関が公表している配色','Skala der jeweiligen Behörde','Собственная шкала службы','Escala propia de cada agencia'))
           +keyRows([[PAL.cap[1],L('lower rank','下位の階級','niedrigere Stufe','низкая ступень','rango menor')],
                     [PAL.cap[3],L('higher rank','上位の階級','höhere Stufe','высокая ступень','rango mayor')],
-                    [NONE_COL,L('Nothing in force','発表なし','Nichts in Kraft','Ничего не действует','Nada vigente')]])
+                    [NONE_COL,L('Nothing in force','発表なし','Nichts in Kraft','Ничего не действует','Nada vigente')],HATCH_ROW()])
           +'<div style="margin-top:4px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
           +esc(L('Colours are the issuing agency’s own — Japan’s are the JMA’s yellow / red / magenta / black, China’s the CMA’s four signal colours, and the rest the CAP awareness ladder. Tap a country for that agency’s exact scale.',
                  '色はその機関自身の配色です——日本は気象庁の 黄／赤／紫／黒、中国は中国気象局の四色予警信号、その他は CAP の階級です。国をタップすると、その機関の正確な階級が出ます。',
@@ -3060,7 +3220,7 @@ window.IntMapModules.worldPacks=function(HOST){
              SENTENCE is where 「個々の区別」 lives, and it says which of the two silences this is
              (`readState` may be `error` as well as `loading`). */
           h+='<div style="margin-top:6px;display:flex;align-items:center;gap:7px;font-size:11.5px;">'
-            +'<span style="width:14px;height:14px;border-radius:3px;flex:none;background:repeating-linear-gradient(45deg,rgba(128,132,140,0.75) 0 2px,transparent 2px 5px);border:1px solid rgba(128,132,140,0.55);"></span>'
+            +'<span style="'+hatchSwatch()+'"></span>'
             +esc(readState(iso3)==='error'?L('Could not be read','取得できませんでした','Nicht lesbar','Не удалось прочитать','No se pudo leer')
                                           :L('Not read yet','未取得','Noch nicht gelesen','Ещё не прочитано','Aún no leído'))+'</div>'
             +'<div style="margin-top:6px;color:var(--text-main);font-size:11.5px;line-height:1.6;">'
@@ -3081,7 +3241,7 @@ window.IntMapModules.worldPacks=function(HOST){
           /* ⚠ 「『警報なし』と『データなし』を区別できない」 — this is the second of those two, and it
              is a sentence rather than an empty map. */
           h+='<div style="margin-top:6px;display:flex;align-items:center;gap:7px;font-size:11.5px;">'
-            +'<span style="width:14px;height:14px;border-radius:3px;flex:none;background:repeating-linear-gradient(45deg,rgba(96,100,108,0.75) 0 2px,rgba(160,164,170,0.30) 2px 5px);"></span>'
+            +'<span style="'+hatchSwatch()+'"></span>'
             +esc(L('No feed connected','未対応（フィード未接続）','Kein Feed angebunden','Фид не подключён','Sin feed conectado'))+'</div>'
             +'<div style="margin-top:6px;color:var(--text-main);font-size:11.5px;line-height:1.6;">'
             +L('IntMap has no connection to this country’s warning service, so it is saying nothing about it — not that nothing is in force. Follow the national authority.',
@@ -3270,7 +3430,7 @@ window.IntMapModules.worldPacks=function(HOST){
             const ks=[...g.kinds.entries()].sort((a,b)=>(b[1].norm-a[1].norm)||(b[1].n-a[1].n)).map(x=>x[0]);
             const shown=ks.slice(0,KN).join('・')+(ks.length>KN?(' +'+(ks.length-KN)):'');
             return '<div style="display:flex;gap:6px;align-items:center;font-size:11.5px;">'
-              +'<span style="width:10px;height:10px;border-radius:3px;flex:none;background:'+(mode==='agency'?agCol(g.feed,g.lv):PAL_NORM[g.norm])+';border:1px solid rgba(128,128,128,0.35);"></span>'
+              +'<span style="'+swatchStyle(mode==='agency'?agCol(g.feed,g.lv):PAL_NORM[g.norm])+'"></span>'
               +'<b style="flex:none;max-width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(countryName(g.iso))+'</b>'
               +'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(shown||'—')+'</span>'
               +'<span style="opacity:.8;flex:none;">'+esc(mode==='agency'?rankName(g.feed,g.lv):NORM_NAME(g.norm))+'</span>'
@@ -3394,6 +3554,18 @@ window.IntMapModules.worldPacks=function(HOST){
           if(!(pr.norm>0)) return;
           if(ptInGeom(lng,lat,f.geometry)) hit.push(f); });
         return hit.sort((a,b)=>(b.properties.norm-a.properties.norm)); }
+      /* ⚠⚠ (#R293) THE TWO CLOCKS, ON ONE LINE — the agency's issue time and IntMap's read time.
+         Each is printed only if it is really known; a dash is an honest answer, and a FETCH time
+         printed under the word 「発表」 would be #R269's defect in miniature. */
+      function stampAt(v){ const t=(typeof v==='number')?v:Date.parse(String(v||''));
+        if(!isFinite(t)) return '';
+        try{ return new Date(t).toLocaleString(window.IntMapLang.locale(HOST.lang,'en-US'),
+          {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return ''; } }
+      function stampLine(pr){
+        const issued=stampAt(pr.at)||stampAt(FEED_AT[pr.feed]);
+        const got=stampAt(pr.got)||stampAt(FEED_GOT[pr.feed]);
+        return esc(L('issued','発表','ausgegeben','выпущено','emitido')+' '+(issued||'—')
+          +' · '+L('IntMap read','IntMap取得','IntMap gelesen','IntMap прочитал','IntMap leyó')+' '+(got||'—')); }
       let ptCard=null;
       function closePointCard(){ try{ if(ptCard&&ptCard.parentNode) ptCard.parentNode.removeChild(ptCard); }catch(_){} ptCard=null; }
       function pointBody(lng,lat,iso){
@@ -3425,8 +3597,8 @@ window.IntMapModules.worldPacks=function(HOST){
               :esc(L('Nothing in force at this point.','この地点に発表中の警報はありません。','Hier ist nichts in Kraft.','В этой точке ничего не действует.','Nada vigente en este punto.')))
             +'</div>';
         } else {
-          h+='<div style="margin-top:8px;display:flex;flex-direction:column;gap:7px;">'
-            +hits.slice(0,12).map(f=>{ const pr=f.properties;
+          h+='<div style="margin-top:7px;display:flex;flex-direction:column;gap:5px;">'
+            +hits.slice(0,6).map(f=>{ const pr=f.properties;
               let items=[]; try{ items=JSON.parse(pr.items||'[]'); }catch(_){}
               const col=(mode==='agency'?pr.colA:pr.colN);
               /* (#R277) ⚠ THE AGENCY'S OWN WORDING IS NOT REPLACED, IT IS ACCOMPANIED. The reader's
@@ -3435,33 +3607,43 @@ window.IntMapModules.worldPacks=function(HOST){
               const kinds=[]; items.forEach(x=>{ const k=String(x.kind||'').trim(); if(!k) return;
                 const t=hazardLabel(k); const shown=(t&&t!==k)?(t+' （'+k+'）'):k;
                 if(kinds.indexOf(shown)<0) kinds.push(shown); });
-              return '<div style="border-left:3px solid '+col+';padding-left:8px;">'
-                +'<div style="display:flex;gap:7px;align-items:baseline;font-size:12.5px;">'
+              return '<div style="border-left:3px solid '+col+';padding-left:7px;">'
+                +'<div style="display:flex;gap:6px;align-items:baseline;font-size:12px;">'
                 +'<b style="flex:1;">'+esc(pr.name||countryName(pr.iso))+'</b>'
                 +'<span style="flex:none;opacity:.85;">'+esc(mode==='agency'?rankName(pr.feed,pr.lv):NORM_NAME(pr.norm))+'</span></div>'
-                +'<div style="margin-top:2px;font-size:11.5px;color:var(--text-main);line-height:1.55;">'
+                +'<div style="margin-top:1px;font-size:11px;color:var(--text-main);line-height:1.4;">'
                 +esc((kinds.length?kinds:[String(pr.hz||'')]).join('・'))+'</div>'
-                +'<div style="margin-top:1px;font-size:10px;color:var(--text-muted);">'
-                +esc(agencyFor(pr.feed,pr.iso))+'</div></div>'; }).join('')
-            +(hits.length>12?('<div style="font-size:10.5px;opacity:.7;">+'+(hits.length-12)+'</div>'):'')
+                +'<div style="margin-top:1px;font-size:9.5px;color:var(--text-muted);line-height:1.45;">'
+                +esc(agencyFor(pr.feed,pr.iso))+'<br>'+stampLine(pr)+'</div></div>'; }).join('')
+            +(hits.length>6?('<div style="font-size:10.5px;opacity:.7;">+'+(hits.length-6)+'</div>'):'')
             +'</div>';
         }
+        /* ══ ⚠⚠ (#R293) 「ポップアップがでかすぎるからコンパクトに」 — WHAT WAS ACTUALLY BIG ═══════════
+           MEASURED on production with ONE warning in force at the tapped point: the card came out
+           about 300 px tall and only ~90 px of that was the warning. The rest was the agency's FULL
+           rank key — five rows, repeated verbatim from the layer legend three centimetres away — a
+           full-width button, a two-line disclaimer, and the part nothing on screen could have
+           explained: `.country-popup` carries `padding:18px 22px` and this card added a SECOND
+           `padding:14px 16px` inside it.
+           → the rank key goes (it is in the legend and in the country card, and the rank of THIS
+           warning is already on its own row); one padding, not two; a narrower shell; the
+           disclaimer is one line; twelve stacked warnings become six. */
         if(iso&&feed){
-          h+=keyHead(L('This agency’s own ranks','この機関自身の階級','Stufen dieser Behörde','Ступени этой службы','Rangos de esta agencia'))+agencyKey(feed)
-            +'<div style="margin-top:9px;"><button type="button" class="wpa-more-btn" style="width:100%;min-height:30px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'
+          h+='<div style="margin-top:7px;"><button type="button" class="wpa-more-btn" style="width:100%;min-height:26px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;cursor:pointer;">'
             +esc(L('All areas in force in this country','この国で発表中の区域をすべて見る','Alle Gebiete dieses Landes','Все зоны этой страны','Todas las zonas de este país'))+'</button></div>';
         }
-        h+='<div style="margin-top:9px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-          +esc(L('Educational display — follow the official authorities.','表示は参考です。実際には公的機関の発表に従ってください。','Bildungsanzeige — den amtlichen Stellen folgen.','Справочно — следуйте официальным службам.','Visualización educativa — siga a las autoridades oficiales.'))+'</div>';
+        h+='<div style="margin-top:6px;font-size:9px;color:var(--text-muted);line-height:1.4;">'
+          +esc(L('Educational — follow the official authorities.','参考表示。公的機関の発表に従ってください。','Bildungsanzeige — amtlichen Stellen folgen.','Справочно — следуйте официальным службам.','Educativo — siga a las autoridades.'))+'</div>';
         return h; }
       function openPointCard(lng,lat,iso){
         closePointCard();
         const el=document.createElement('div'); el.className='country-popup'; el.id='wpa-point';
         el.style.display='block';
+        el.style.width='min(316px,92vw)'; el.style.padding='0';   /* (#R293) ONE padding — see pointBody */
         el.innerHTML='<button class="country-popup-close wpa-x" type="button" aria-label="'+esc(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">×</button>'
-          +'<div style="padding:14px 16px 16px;">'
-          +'<div class="wpa-drag" style="display:flex;align-items:center;gap:8px;margin-bottom:2px;padding-right:30px;cursor:move;user-select:none;">'
-          +'<span style="font-weight:700;font-size:13.5px;color:var(--text-main);">⚠ '
+          +'<div style="padding:11px 13px 12px;">'
+          +'<div class="wpa-drag" style="display:flex;align-items:center;gap:8px;margin-bottom:2px;padding-right:26px;cursor:move;user-select:none;">'
+          +'<span style="font-weight:700;font-size:12.5px;color:var(--text-main);">⚠ '
           +esc(L('Warnings at this point','この地点の警報','Warnungen an diesem Punkt','Предупреждения в этой точке','Avisos en este punto'))+'</span></div>'
           +'<div class="wpa-pt-body"></div></div>';
         const b=el.querySelector('.wpa-pt-body'); if(b) b.innerHTML=pointBody(lng,lat,iso);

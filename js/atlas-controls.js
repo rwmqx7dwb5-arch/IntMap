@@ -71,7 +71,7 @@ export function makeAtlasControls(HOST, CTX) {
       return String((sp?sp.textContent:row.textContent)||'').replace(/\s+/g,' ').trim().slice(0,40); }catch(_){ return ''; } }
     function _uiNameSweep(){ try{ const jp=HOST.lang==='jp';
       document.querySelectorAll('button.lyr-star:not([aria-label])').forEach(b=>{ const l2=_rowLbl(b); if(l2) b.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'favorite: ','お気に入り: ','Favorit: ','избранное: ','favorito: '))+l2); });
-      document.querySelectorAll('input.lyr-op:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) i2.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'opacity: ','透明度: ','Deckkraft: ','непрозрачность: ','opacidad: '))+l2); });
+      document.querySelectorAll('input.lyr-op:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) i2.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'opacity: ','不透明度: ','Deckkraft: ','непрозрачность: ','opacidad: '))+l2); });
       document.querySelectorAll('input.dl-date:not([aria-label])').forEach(i2=>{ let l2=_rowLbl(i2);
         if(!l2){ const lg=i2.closest('[id^="data-legend-"]'); if(lg) l2=lg.id.replace(/^data-legend-/,''); }   /* date inputs live in the layer's LEGEND, not its row */
         if(l2) i2.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'date: ','日付: ','Datum: ','дата: ','fecha: '))+l2); });

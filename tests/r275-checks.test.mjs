@@ -271,7 +271,8 @@ test('R275 ⑪ a country is only painted «nothing in force» once its service h
   assert.match(s, /if\(readState\(c\)!=='ok'\) return 0;/,
     'a country whose service has not answered is not washed with the 「発表なし」 grey');
   /* the three states are still three appearances (#R273) */
-  assert.match(s, /1,'rgba\(200,200,203,0\.42\)'/, 'read and quiet is grey');
+  /* (#R293) the wash reads the ONE declared grey rather than repeating its literal — see r290 ① */
+  assert.match(s, /\n\s+1,QUIET_COL,/, 'read and quiet is grey');
   assert.match(s, /'fill-pattern':'wp-alert-hatch-img'/, 'and nothing-to-say is hatched');
   /* the hatch now covers two different reasons, and the tap says which */
   assert.match(s, /L\('Not read yet','未取得'/, 'the tap distinguishes them in words');
