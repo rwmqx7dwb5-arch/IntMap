@@ -95,7 +95,11 @@ test('R273 ③ a country with no feed is hatched, a quiet one is grey, and they 
   const wi = s.indexOf('function washTier(c){');
   const w = s.slice(wi, s.indexOf('function paintCountries', wi));
   assert.match(w, /if\(!supported\(c\)\) return 0;/, 'no feed → state 0');
-  assert.match(w, /return unitsOf\(c\)\?2:1;/, 'a feed and nothing in force → grey (#R288: per unit where this map holds them)');
+  /* ⚠ (#R290) …and the question is 「is the unit layer drawing this country RIGHT NOW」 rather than
+     「are its shapes in the cache」: the quiet collection is bounded by the view and by the zoom
+     (see quietISOs), so a country whose units are held but off-screen must keep the country-wide
+     sheet or nothing would paint it at all. */
+  assert.match(w, /return quietSet\[c\]\?2:1;/, 'a feed and nothing in force → grey (#R288: per unit where this map holds them)');
   assert.match(s, /function ensureHatch\(\)/, 'the hatch must be drawn, once');
   assert.match(s, /GE\(\)\.scene\.addImage\(HATCH_IMG/, '…through the image API the engine actually has');
   assert.match(s, /'fill-pattern':'wp-alert-hatch-img'/, '…and used as a pattern');

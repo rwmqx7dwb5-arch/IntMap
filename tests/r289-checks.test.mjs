@@ -73,18 +73,21 @@ test('R289 ② the wind arrow points downwind and carries its animation phase ac
     'the direction is a word from the one table');
   assert.match(s, /const to=\(\(w\.dir\+180\)%360\)\.toFixed\(1\);/,
     'the arrow points DOWNWIND — `dir` is the meteorological FROM bearing');
-  assert.match(s, /const dur=Math\.max\(0\.34,Math\.min\(3,1\.5\/\(0\.35\+\(\+w\.speed\|\|0\)\*0\.09\)\)\);/,
-    'the drift rate comes from the wind speed');
-  assert.match(s, /const ph=\(\(typeof performance!=='undefined'\?performance\.now\(\):Date\.now\(\)\)\/1000\)%dur;/,
-    'the phase comes from a shared clock');
-  assert.match(s, /animation-delay:-'\+ph\.toFixed\(2\)\+'s/,
-    'and it is applied as a NEGATIVE delay, which is what makes the drift continuous');
-  /* the keyframes exist, and the rotation is on the OUTER element so the drift runs along the bearing */
+  /* ⚠ (#R290) THE DRIFT IS GONE, BY REQUEST — 「風の流れる向きに動かさなくてよい。向きだけ表示しろ。」
+     What #R289 built here was the motion and the machinery that kept its phase continuous across
+     the readout's `innerHTML` rebuild. Both are removed; the ROTATION, which is the direction and
+     is what the reader kept, is asserted above and again below. The removal is asserted too, so a
+     later round cannot quietly put the animation back. */
+  assert.ok(!/animation-duration:'\+dur/.test(s), 'no speed-scaled drift duration');
+  assert.ok(!/animation-delay:-'\+ph/.test(s), 'no phase carry — there is no animation to carry');
   const css = read('css/intmap.css');
-  assert.match(css, /@keyframes cr-wind-fly\{/, 'the drift keyframes must exist');
-  assert.match(css, /\.coord-readout \.cr-warr i\{[^}]*animation-name:cr-wind-fly/, 'the inner element drifts');
-  assert.match(css, /@media \(prefers-reduced-motion:reduce\)\{ \.coord-readout \.cr-warr i\{ animation:none; \} \}/,
-    'a reader who asked for less motion gets none');
+  assert.ok(!/@keyframes cr-wind-fly\{/.test(css), 'the drift keyframes are gone with it');
+  assert.ok(!/\.coord-readout \.cr-warr i\{[^}]*animation-name/.test(css), 'and the inner element does not animate');
+  /* (#R290) the reduced-motion escape hatch went with the motion — there is nothing left to
+     suppress, and a rule for an animation that does not exist is a rule that will outlive its
+     subject. Every reader now gets what 「prefers-reduced-motion」 asked for. */
+  assert.ok(!/prefers-reduced-motion:reduce\)\{ \.coord-readout \.cr-warr/.test(css),
+    'and the reduced-motion escape hatch is gone with it — nothing moves for anybody');
 });
 
 /* ── ③ THE COASTLINE IS THE BORDER LINE, DRAWN ROUND THE WATER ──────────────────────────────
@@ -298,7 +301,18 @@ test('R289 ⑧ Chronos reads and writes wall-clock time in the zone the reader p
   assert.ok(!/base\.setHours\(Math\.floor\(mins\/60\)/.test(s), 'the device-local read-back is gone');
   /* the boundaries the «map centre» option needs have ONE owner, and asking never fetches */
   const lp = read('js/layer-packs.js');
-  assert.match(lp, /window\.IntMapTimeZones=\{/, 'the tz layer publishes the accessor');
+  /* ⚠⚠ (#R290) AND IT IS THE ONLY OBJECT UNDER THAT NAME. MEASURED on the built page before this
+     round: `Object.keys(window.IntMapTimeZones)` was ['highlight','highlighted','clear'] — the
+     #R204 accessor further down the same file assigned the name outright and erased this one, so
+     `ensure` / `ready` / `offsetAt` never existed and Chronos's 「地図の中心の標準時」 fell back to
+     the device for everybody. Every assignment must EXTEND. */
+  assert.match(lp, /window\.IntMapTimeZones=Object\.assign\(window\.IntMapTimeZones\|\|\{\},\{/,
+    'the tz layer publishes the accessor by extending the name');
+  assert.ok(!/window\.IntMapTimeZones=\{/.test(lp), 'and nothing replaces it');
+  assert.equal((lp.match(/window\.IntMapTimeZones=/g) || []).length, 2,
+    'the two publishers are both extenders — a third assignment is what this is guarding against');
+  for (const m of ['ensure:', 'ready:', 'offsetAt:', 'highlight:', 'highlighted:', 'clear:'])
+    assert.ok(lp.includes(m), `the one object carries ${m}`);
   assert.match(lp, /offsetAt:function\(lng,lat\)\{ if\(!geo\|\|!geo\.features\|\|!window\._imPipGeo\) return null;/,
     'offsetAt must answer null rather than start a fetch');
 });
@@ -323,8 +337,16 @@ test('R289 ⑨ the satellites move with the clock, and the forecast axis still d
   assert.match(ec, /function _followClock\(e\) \{/, 'the forecast axis follows the master clock');
   assert.match(ec, /if \(!covers\(ms\)\) return;/,
     'an instant OUTSIDE the forecast window is declined, never snapped onto today');
-  assert.match(ec, /if \(C && C\.on\) \{ C\.on\(_followClock\); _clockWired = true; return; \}/,
-    'and it subscribes to the one kernel rather than reading a clock of its own');
+  /* ⚠⚠ (#R290) IT NO LONGER SUBSCRIBES, BY REQUEST — 「ECMWF系レイヤーで、時間選択をChronosに受け
+     流さなくてよい。個別の時間選択UIを使え。」 Both directions of #R288's coupling are removed: a
+     forecast step no longer writes the app-wide instant (which used to drag the news, the borders
+     and the terminator with it), and an app-wide move no longer overwrites the hour the reader
+     chose in the weather legend. `_followClock` stays DECLARED and exported, because asking for
+     the weather at a named instant is a deliberate action Atlas can take. */
+  assert.ok(!/C\.on\(_followClock\)/.test(ec), 'nothing subscribes the axis to the master clock');
+  assert.match(ec, /function _pushNow\(\) \{ clearTimeout\(pushT\); pushT = 0; \}/,
+    'and a step no longer pushes the master clock');
+  assert.match(ec, /followClock: _followClock,/, 'it is still reachable by name');
   /* 「変更された瞬間に」 — on the broadcast, not on whatever redraws next */
   const body = read('js/app-body.js');
   assert.match(body, /window\.IntMapSatellites&&window\.IntMapSatellites\.refresh\) window\.IntMapSatellites\.refresh\(\);/,

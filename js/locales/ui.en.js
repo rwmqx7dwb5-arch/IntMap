@@ -132,7 +132,7 @@ window.IntMapLang.define('en', { ui: {
       lyrSnow:"Snow & ice cover",
       lyrAOD:"Aerosol / haze",
       lyrNightSat:"Night lights (satellite)",
-      lyrWind:"Wind (animated)",
+      lyrWind:"Wind",
       lgdRadarTitle:"Rain rate",
       lgdSSTTitle:"Sea-surface temp",
       lgdWindTitle:"Wind speed",

@@ -169,7 +169,7 @@ window.IntMapLang.define('zh', {
     "lyrTFR":"總生育率",
     "lyrTemp":"氣溫（2 公尺）",
     "lyrTimeMonth":"月份",
-    "lyrWind":"風（動畫）",
+    "lyrWind":"風",
     "mDone":"完成",
     "mTitleMap":"地圖",
     "mTitleTools":"工具",
@@ -2273,6 +2273,7 @@ window.IntMapLang.define('zh', {
     'view': "畫面",   /* night-sky.js */
     'View': "檢視",   /* cameras.js workspace.js */
     'View report': "檢視報告",   /* monitors.js */
+    'Viewing the future': "正在檢視未來",   /* news-timeline.js */
     'Viewing the past': "正在檢視過去",   /* news-timeline.js */
     'Viewing the past · tap': "正在檢視過去・點擊",   /* news-timeline.js */
     'Viewpoint altitude': "視點高度",   /* atlas-console.js */
