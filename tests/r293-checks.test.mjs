@@ -415,3 +415,37 @@ test('R293 ⑮ the wind readout survives a time step, and says which hour it ans
   assert.match(w, /if\(GE\(\)\.layers\.has\(old\.lyr\)\) GE\(\)\.layers\.remove\(old\.lyr\);/,
     '…and the old slot is only dropped once the new one has painted');
 });
+
+/* ── ⑯ 「塗りすぎ」 — A SLIDER THAT WRITES A SCALAR ERASES AN EXPRESSION ──────────────────────
+   MEASURED on the built app with the warnings layer on:
+     getPaint('wp-alert-hatch','fill-opacity')  →  0.38          ← a plain number
+   That layer is declared with `['case', ['==', feature-state, 0], 0.9, 0]`, i.e. the EXPRESSION IS
+   WHAT DECIDES WHICH COUNTRIES ARE HATCHED. `_applyGenericOpacity` wrote the slider's value over
+   it, so every country on Earth — the ones with warnings in force included — was hatched at 38 %.
+   #R273 met the same mechanism one property along (`line-opacity` on the outline) and answered it
+   with a per-layer EXEMPTION. An exemption is the wrong shape here: the reader does want the hatch
+   to follow the slider; what they do not want is the slider deciding WHO is hatched.               */
+test('R293 ⑯ the opacity slider dims the country layers without deciding who they paint', () => {
+  const d = DL();
+  assert.match(d, /window\._opacityExpr=window\._opacityExpr\|\|\{\};/, 'a layer may register a builder');
+  assert.match(d, /const build=window\._opacityExpr\[lid\];\s*if\(build\)\{ GE\(\)\.layers\.setPaint\(lid,p,build\(v\)\); return; \}/,
+    'and the builder is asked BEFORE the scalar is written');
+  /* …and it is asked before the scalar, not after — a `return` rather than an overwrite */
+  const i = d.indexOf('function _applyGenericOpacity');
+  const body = d.slice(i, d.indexOf('window._applyGenericOpacity=', i));
+  assert.ok(body.indexOf('window._opacityExpr[lid]') < body.lastIndexOf('setPaint(lid,p,'),
+    'the builder path comes first');
+
+  const s = WP();
+  /* both country-wide layers keep a CONDITION, and the slider multiplies inside it */
+  assert.match(s, /const hatchOp=\(v\)=>\['case',\['==',\['to-number',\['feature-state','wpAlert'\],-1\],0\],/,
+    'the hatch still asks whether this country is state 0');
+  assert.match(s, /const choroOp=\(v\)=>\['case',\['>',\['to-number',\['feature-state','wpAlert'\],-1\],0\],/,
+    '…and the wash whether it is above 0');
+  assert.match(s, /OE\[HATCH\]=hatchOp; OE\[CHORO\]=choroOp;/, 'both are registered');
+  assert.match(s, /'fill-opacity':hatchOp\(OPACITY_DEFAULT\)/, 'and they are what the layer is built with');
+  assert.match(s, /'fill-opacity':choroOp\(OPACITY_DEFAULT\)/);
+  /* the raw conditionals must not be written anywhere else, or one copy drifts */
+  assert.equal((s.match(/\['case',\['==',\['to-number',\['feature-state','wpAlert'\],-1\],0\]/g) || []).length, 1,
+    'the hatch condition exists exactly once');
+});

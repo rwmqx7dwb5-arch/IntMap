@@ -1665,6 +1665,12 @@ window.IntMapModules.worldPacks=function(HOST){
          with one scalar for every layer it owns (#R270). */
       const _wash=(hex)=>{ const h=String(hex||'').replace('#',''); if(h.length!==6) return hex;
         return 'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+',0.62)'; };
+      /* (#R293) the two country-wide layers paint from a STATE and are dimmed by a SLIDER, and the
+         two facts have to survive each other — see the note in ensureChoro */
+      const hatchOp=(v)=>['case',['==',['to-number',['feature-state','wpAlert'],-1],0],
+        Math.max(0,Math.min(1,(+v||0)*2.2)),0];
+      const choroOp=(v)=>['case',['>',['to-number',['feature-state','wpAlert'],-1],0],
+        Math.max(0,Math.min(1,(+v||0)*2.6)),0];
       const washExpr=()=>{ const P=(mode==='agency')?PAL.cap:PAL_NORM;
         return ['match',['to-number',['feature-state','wpAlert'],-1],
           1,QUIET_COL,
@@ -1688,12 +1694,18 @@ window.IntMapModules.worldPacks=function(HOST){
           if(!GE().layers.has(HATCH)){
             ensureHatch();
             GE().layers.add({id:HATCH,type:'fill',source:'countries',layout:{visibility:'none'},
-              paint:{'fill-pattern':'wp-alert-hatch-img',
-                'fill-opacity':['case',['==',['to-number',['feature-state','wpAlert'],-1],0],0.9,0]}},before); }
+              paint:{'fill-pattern':'wp-alert-hatch-img','fill-opacity':hatchOp(OPACITY_DEFAULT)}},before); }
           if(!GE().layers.has(CHORO))
             GE().layers.add({id:CHORO,type:'fill',source:'countries',layout:{visibility:'none'},
-              paint:{'fill-color':washExpr(),
-                'fill-opacity':['case',['>',['to-number',['feature-state','wpAlert'],-1],0],1,0]}},before);
+              paint:{'fill-color':washExpr(),'fill-opacity':choroOp(OPACITY_DEFAULT)}},before);
+        /* ⚠⚠⚠ (#R293) …AND THE SLIDER MUST NOT FLATTEN THEM. Both expressions above decide WHICH
+           countries are painted, and `_applyGenericOpacity` used to write its scalar straight over
+           them — MEASURED, `fill-opacity` on the hatch read back as **0.38**, so every country on
+           Earth was hatched, warnings in force or not. That is the 「塗りすぎ」 in the report.
+           Registering a builder keeps both facts: the state decides WHO, the slider decides HOW
+           STRONGLY (js/data-layers.js `_opacityExpr`). */
+        try{ const OE=(window._opacityExpr=window._opacityExpr||{});
+          OE[HATCH]=hatchOp; OE[CHORO]=choroOp; }catch(_){}
         }catch(_){ return false; }
         return true; }
 

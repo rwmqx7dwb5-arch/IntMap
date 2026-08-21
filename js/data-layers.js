@@ -5218,10 +5218,28 @@ window.IntMapModules.dataLayers=function(HOST){
        (js/layer-packs.js) rather than as a special case in here. */
     window._opacityOpaqueText=window._opacityOpaqueText||{};
     const _OP_PROP={fill:'fill-opacity',line:'line-opacity',raster:'raster-opacity',circle:'circle-opacity',heatmap:'heatmap-opacity','fill-extrusion':'fill-extrusion-opacity',hillshade:'hillshade-exaggeration','color-relief':'color-relief-opacity'};
+    /* ══ ⚠⚠⚠ (#R293) A SLIDER THAT WRITES A SCALAR ERASES AN EXPRESSION ═══════════════════════
+       「日本含め警報の塗漏れ、塗りすぎが多すぎる。」 MEASURED on the built app with the warnings layer
+       on: `getPaint('wp-alert-hatch','fill-opacity')` came back **0.38** — a plain number. That
+       layer is declared with
+           ['case', ['==', ['to-number',['feature-state','wpAlert'],-1], 0], 0.9, 0]
+       i.e. THE EXPRESSION IS WHAT DECIDES WHICH COUNTRIES ARE HATCHED AT ALL. This function
+       overwrote it with the slider's value, so every country on Earth — including the ones with
+       warnings in force — was hatched at 38 %. That is the 「塗りすぎ」 in the report, and it is
+       also why the hatch looked like a sheet over the whole map rather than a state.
+       #R273 hit the same mechanism one property along (`line-opacity` on the outline) and answered
+       it with `_opacityOpaqueText`, which is a per-layer EXEMPTION. An exemption is the wrong shape
+       here: the reader does want the hatch to follow the slider — what they do not want is the
+       slider deciding WHO is hatched.
+       → a layer may register a BUILDER: given the slider's value, it returns the paint value to
+       write. The conditional survives and the slider multiplies inside it. */
+    window._opacityExpr=window._opacityExpr||{};
     function _applyGenericOpacity(ids,v){ (ids||[]).forEach(lid=>{ try{ const L=GE().layers.get(lid); if(!L) return;
       if(L.type==='symbol'){ const keep=!!window._opacityOpaqueText[lid];
         try{ GE().layers.setPaint(lid,'icon-opacity',keep?1:v); }catch(_){} try{ GE().layers.setPaint(lid,'text-opacity',keep?1:v); }catch(_){} return; }
       const p=_OP_PROP[L.type]; if(!p) return;
+      const build=window._opacityExpr[lid];
+      if(build){ GE().layers.setPaint(lid,p,build(v)); return; }
       GE().layers.setPaint(lid,p,(p==='hillshade-exaggeration')?Math.max(0.05,v):v); }catch(_){} }); }
     window._applyGenericOpacity=_applyGenericOpacity;
     window._registerLayerOpacity=function(id,namesEnJp,layerIds,cbId){ try{

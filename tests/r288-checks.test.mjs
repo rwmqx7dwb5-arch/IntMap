@@ -56,10 +56,11 @@ test('#R288 ① the hatch covers both silences, and the other three states survi
      but off-screen has to keep the country-wide sheet or nothing would paint it. */
   assert.match(body, /return\s*quietSet\[c\]\?2:1;/, '「read and quiet」 is still its own tier');
   /* the paint expressions still read the tier the way those states assume */
-  assert.match(src, /'fill-opacity':\['case',\['==',\['to-number',\['feature-state','wpAlert'\],-1\],0\],0\.9,0\]/,
+  /* ⚠ (#R293) the condition moved into `hatchOp(v)` — see tests/r293 ⑯ for what was writing over it */
+  assert.match(src, /const hatchOp=\(v\)=>\['case',\['==',\['to-number',\['feature-state','wpAlert'\],-1\],0\],/,
     'the hatch paints on tier 0 only');
-  assert.match(src, /'fill-opacity':\['case',\['>',\['to-number',\['feature-state','wpAlert'\],-1\],0\],1,0\]/,
-    'the wash paints on a positive tier only');
+  assert.match(src, /const choroOp=\(v\)=>\['case',\['>',\['to-number',\['feature-state','wpAlert'\],-1\],0\],/,
+    'the wash paints on a positive tier only');   /* (#R293) …in a builder — see tests/r293 ⑯ */
   /* ══ ⚠⚠⚠ (#R290) AND THE HATCH TILE MUST NOT BE A GREY SHEET WITH LINES ON IT ════════════════
      「灰色塗と灰色斜線が両方ある地域があるが、どうなっとんねんごら。」 The tile opened with a
      `fillRect` in rgba(158,162,170,0.26) and stroked the diagonals over it, so 「未対応 / 未取得」

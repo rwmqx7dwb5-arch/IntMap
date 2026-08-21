@@ -52,10 +52,13 @@ test('#R284 ① a wired country never gets the 「未対応」 hatch', () => {
   assert.ok(!/return\s*-1;/.test(body), '#R284’s fourth state must be gone');
   assert.match(WP(), /const COLD_CALLS=6;/, '…and the burst that makes the hatch transient survives');
   /* and the two paint expressions still read the tier the way the four states assume */
-  assert.match(src, /'fill-opacity':\['case',\['==',\['to-number',\['feature-state','wpAlert'\],-1\],0\],0\.9,0\]/,
+  /* ⚠ (#R293) the condition moved into `hatchOp(v)` — the opacity slider used to write its scalar
+     straight over the inline expression, so EVERY country was hatched at 38 % (measured). The
+     claim is unchanged: tier 0, and nothing else, earns the pattern. */
+  assert.match(src, /const hatchOp=\(v\)=>\['case',\['==',\['to-number',\['feature-state','wpAlert'\],-1\],0\],/,
     'the hatch paints on tier 0 only');
-  assert.match(src, /'fill-opacity':\['case',\['>',\['to-number',\['feature-state','wpAlert'\],-1\],0\],1,0\]/,
-    'the country wash paints on tiers above 0 only');
+  assert.match(src, /const choroOp=\(v\)=>\['case',\['>',\['to-number',\['feature-state','wpAlert'\],-1\],0\],/,
+    'the country wash paints on tiers above 0 only');   /* (#R293) …in a builder — see above */
 });
 
 /* ── ② the services that issue beyond their own border ───────────────────────────────────────
