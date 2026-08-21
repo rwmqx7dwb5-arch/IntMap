@@ -1207,6 +1207,18 @@ window.IntMapModules.worldPacks=function(HOST){
          be a fourth thing to learn and 「未対応」 is not a severity. */
       /* ⚠ the image API is `GE().scene` — «`GE().layers.addImage` is simply undefined» is a mistake
          this file has already made once (see the note in the arrows block above). */
+      /* ══ ⚠⚠⚠ (#R290) THE HATCH TILE WAS PAINTING A GREY SHEET UNDER ITS OWN LINES ═════════════
+         「灰色塗と灰色斜線が両方ある地域があるが、どうなっとんねんごら。」 — the two appearances this
+         layer asks the reader to tell apart were BOTH being drawn, in the same place, by one
+         layer. The 10×10 tile opened with `fillRect` in `rgba(158,162,170,0.26)` and then stroked
+         the diagonals over it, so 「未対応 / 未取得」 rendered as **grey fill PLUS lines** while
+         「発令なし」 renders as grey fill alone. Every hatched country therefore carried the quiet
+         country's appearance underneath its own, which is exactly the state the reader described
+         and exactly the confusion 「ここの区別はちゃんとやれ。混同するな。」 forbids.
+         → THE TILE IS LINES ON TRANSPARENT. The two claims are now visually exclusive: grey means
+         「読んだ。何も出ていない」 and nothing else; diagonals mean 「この地図はここについて何も述べ
+         ていない」 and nothing else. The lines carry the whole signal, so they are a little darker
+         and a little wider than before to stay legible without a backing sheet. */
       const HATCH_IMG='wp-alert-hatch-img';
       let _hatchOn=false;
       function ensureHatch(){ if(_hatchOn) return true;
@@ -1214,8 +1226,8 @@ window.IntMapModules.worldPacks=function(HOST){
         try{
           const S=10, c=document.createElement('canvas'); c.width=c.height=S;
           const g=c.getContext('2d');
-          g.fillStyle='rgba(158,162,170,0.26)'; g.fillRect(0,0,S,S);
-          g.strokeStyle='rgba(92,96,104,0.72)'; g.lineWidth=1.5; g.lineCap='square';
+          g.clearRect(0,0,S,S);                       /* (#R290) NO backing sheet — see above */
+          g.strokeStyle='rgba(88,92,100,0.82)'; g.lineWidth=1.7; g.lineCap='square';
           g.beginPath();
           g.moveTo(-1,S+1); g.lineTo(S+1,-1);
           g.moveTo(S-1,S+1); g.lineTo(S+1,S-1);
@@ -1403,11 +1415,22 @@ window.IntMapModules.worldPacks=function(HOST){
          ⚠ It is not persisted: it is re-derived from whatever is on the map right now, so a service
          that stops issuing for a territory stops covering it. */
       const LEARNED=Object.create(null);       /* iso3 → the feed whose polygon proved it */
+      /* ⚠⚠ (#R290) …AND EACH UNIT IS ONLY ASKED ONCE. `countryAt` is a point-in-polygon sweep over
+         every country outline, and this ran it for EVERY drawn feature on EVERY publish — up to
+         3,713 features × 258 outlines, dozens of times a minute. MEASURED before: a 2,418 ms main-
+         thread task while the layer settled. The answer for a given unit cannot change (the shape
+         and the point are the same every time), so a unit that has been asked is remembered by its
+         own identity and never asked again. Nothing is skipped: a NEW unit is still measured the
+         first time it appears. */
+      const _learnSeen=Object.create(null);
       function learnCoverage(list){
         let added=0;
         (list||[]).forEach(f=>{
           try{
             const q=f.properties||{}; if(!q.iso||!(q.norm>0)) return;
+            const id=q.iso+''+(q.feed||'')+''+(q.unit||'')+''+(q.name||'');
+            if(_learnSeen[id]) return;
+            _learnSeen[id]=1;
             const c=centroidOf(f.geometry); if(!c) return;
             const at=countryAt(c[0],c[1]);
             if(!at||at===q.iso||FEEDS[at]||LEARNED[at]) return;
@@ -1546,7 +1569,8 @@ window.IntMapModules.worldPacks=function(HOST){
       let mode=(function(){ try{ return localStorage.getItem('im.alertPal')==='norm'?'norm':'agency'; }catch(_){ return 'agency'; } })();
       const colField=()=>(mode==='agency'?'colA':'colN');
       function ensureLayers(){ if(!_imCanDraw()) return false; try{
-        if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        /* (#R290) a fresh source is an empty one — the content signature has to go with it */
+        if(!GE().layers.hasSource(SRC)){ featsSig=''; GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }
         if(!GE().layers.has('wp-alert-fill')) GE().layers.add({id:'wp-alert-fill',type:'fill',source:SRC,
           layout:{visibility:'none'},paint:{'fill-color':['get',colField()],'fill-opacity':OPACITY_DEFAULT}});
         /* the rank is in the OUTLINE too, so it survives a fill you can see through */
@@ -1697,6 +1721,32 @@ window.IntMapModules.worldPacks=function(HOST){
       const _IDXKEYS=(typeof WeakMap==='function')?new WeakMap():null;
       const _keysOf=(idx)=>{ if(!_IDXKEYS) return Object.keys(idx);
         let k=_IDXKEYS.get(idx); if(!k){ k=Object.keys(idx); _IDXKEYS.set(idx,k); } return k; };
+      /* ══ ⚠⚠⚠ (#R290) A BOUNDARY SET CAN SPELL ITS OWN UNITS WRONG ═══════════════════════════
+         「警報の塗漏れが多すぎる。」 MEASURED against the live feeds this round: **Slovakia 0 of 48**.
+         SHMÚ warns by okres and geoBoundaries holds all 79 of them — but its `shapeName` field has
+         had every non-ASCII letter mangled: 「District of Trebi ov」 for Trebišov, 「District of
+         Ronnava」 for Rožňava, 「District of Piertany」 for Piešťany, 「District of Banskk vtiavnica」
+         for Banská Štiavnica. Exact matching cannot see through that, and neither can a stem.
+         So the LAST rung is a bounded edit distance, and it is safe for exactly one reason: it
+         answers only when **exactly one** key in the index is within the bound (the same rule the
+         stem rung already follows — 「a stem that fits two units is a coin toss」), the first letter
+         must agree, and the bound is 1 for a short name and 2 for one of nine characters or more.
+         MEASURED with that rule: Slovakia 0 → 25 (the widened prefix list below) → **39 of 48**;
+         Moldova 28 → 32; Greece 0 → 3; Belgium 1 → 2. Every recovered pair was checked by eye and
+         every one is the same district. */
+      function _lev(a,b,cap){
+        const n=a.length, m=b.length;
+        if(Math.abs(n-m)>cap) return cap+1;
+        let prev=new Array(m+1), cur=new Array(m+1);
+        for(let j=0;j<=m;j++) prev[j]=j;
+        for(let i=1;i<=n;i++){
+          cur[0]=i; let best=i;
+          for(let j=1;j<=m;j++){
+            const d=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a.charCodeAt(i-1)===b.charCodeAt(j-1)?0:1));
+            cur[j]=d; if(d<best) best=d; }
+          if(best>cap) return cap+1;
+          const t=prev; prev=cur; cur=t; }
+        return prev[m]; }
       function lookupUnit(idx,name){ if(!idx) return null;
         const k=_norm(name); if(k&&idx[k]) return idx[k];
         const w=String(name||'').split(/\s+/).filter(Boolean);
@@ -1710,11 +1760,21 @@ window.IntMapModules.worldPacks=function(HOST){
           for(let i=0;i<keys.length;i++){ const q=keys[i];
             if(q.length>k.length&&q.slice(0,k.length)===k&&idx[q]!==hit){ hit=idx[q]; if(++n>1) break; } }
           if(n===1) return hit; }
+        if(k.length>=5){ const cap=(k.length>=9)?2:1; let hit=null,n=0;
+          const keys=_keysOf(idx);
+          for(let i=0;i<keys.length;i++){ const q=keys[i];
+            if(Math.abs(q.length-k.length)>cap||q.charCodeAt(0)!==k.charCodeAt(0)) continue;
+            if(_lev(k,q,cap)>cap||idx[q]===hit) continue;
+            hit=idx[q]; if(++n>1) break; }
+          if(n===1) return hit; }
         return null; }
       /* ⚠ (#R277) …and a leading administrative word is not part of the name. Eurostat writes
          「Prov. West-Vlaanderen」 and 「Région de Bruxelles-Capitale」; the agency writes 「West
          Flanders」 and 「Brussels」. The prefix is registered as an alias so both spellings resolve. */
-      const _LEAD=/^(prov\.?|provincia(?:\s+d[ie])?|province\s+(?:of|de|du)|région\s+(?:de|du|des)|regione|região|región(?:\s+de)?|comunidad(?:\s+de)?|kreis|landkreis|kanton|okres|powiat|département|departement|zupanija|županija)\s+/i;
+      /* ⚠ (#R290) …and geoBoundaries writes the WHOLE FAMILY of them in English — 「District of
+         Bardejov」, 「Region of Košice」, 「Governorate of …」. MEASURED: adding those spellings took
+         Slovakia from 0 to 25 of 48 before the edit-distance rung below was consulted at all. */
+      const _LEAD=/^(prov\.?|provincia(?:\s+d[ie])?|province\s+(?:of|de|du)|région\s+(?:de|du|des)|regione|região|región(?:\s+de)?|comunidad(?:\s+de)?|kreis|landkreis|kanton|okres|powiat|département|departement|zupanija|županija|district\s+(?:of|de|du)|region\s+of|state\s+of|county\s+of|governorate\s+of|prefecture\s+of|municipality\s+of|city\s+of|canton\s+of|department\s+of|oblast\s+of|voivodeship\s+of|republic\s+of|autonomous\s+\S+\s+of)\s+/i;
       const _alias=(v)=>{ const out=[];
         String(v||'').split('|').forEach(part=>{ const t=part.trim(); if(!t) return;
           out.push(t);
@@ -1741,6 +1801,56 @@ window.IntMapModules.worldPacks=function(HOST){
               .forEach(k=>{ _alias(p[k]).forEach(x=>names.push(x)); });
             names.forEach(n=>{ const k=_norm(n); if(k&&!m[k]) m[k]=f; }); });
           return by; })); }
+      /* ══ ⚠⚠⚠ (#R290) ONE FIRST-LEVEL INDEX FOR THE WHOLE PLANET ═══════════════════════════════
+         「日本以外でも区分単位、発令単位ごとに色分けしろ」 — MEASURED on production before this round:
+         **95 countries were still a single country-wide sheet of grey** and only 50 were drawn at
+         the unit, because the only worldwide index this map held (`adm1Geo`, Natural Earth 50 m)
+         covers **9 countries / 294 features** and everything else fell to geoBoundaries ONE COUNTRY
+         AT A TIME, two downloads in flight, 0.3–2 MB each. That is both halves of the report at
+         once: not by unit, and 「重すぎる」.
+         So the world set is simplified ONCE at build time and shipped — `scripts/build-admin1.mjs`
+         → `data/admin1-world.json.gz`, **4,515 units across 247 countries, 2.38 MB gzipped**, from
+         Natural Earth 10 m (public domain). One request replaces the stampede.
+         ⚠ IT IS A GEOMETRY SOURCE, NOT A SECOND OPINION ABOUT THE WEATHER — the same rule NUTS and
+         国土数値情報 already follow. What is warned, its rank and its wording stay the service's.
+         ⚠ AND IT IS THE **LAST** NAMING RUNG. Measured against the live feeds, it is better than
+         nothing (Slovakia 0 → 8, Bosnia 0 → 6) and worse than the closer indexes where those exist
+         (Poland: NUTS 231/234 against 153/234 here), so it is consulted only for what the rungs
+         above could not answer. */
+      const ADM1_URL='data/admin1-world.json.gz';
+      function worldAdm1(){ return SUBDIV.world||(SUBDIV.world=(function(){
+        if(typeof DecompressionStream!=='function') return Promise.reject(new Error('DecompressionStream unavailable'));
+        return fetch(ADM1_URL).then(r=>{ if(!r.ok||!r.body) throw new Error('admin1 '+r.status);
+          return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text(); })
+          .then(txt=>{ const j=JSON.parse(txt);
+            const geoms=Object.create(null), names=Object.create(null);
+            (j.f||[]).forEach(f=>{ const iso=String(f.i||''); if(!iso||!f.g) return;
+              (geoms[iso]=geoms[iso]||[]).push(f.g);
+              const m=names[iso]=names[iso]||Object.create(null);
+              _alias(f.n).forEach(x=>{ const k=_norm(x); if(k&&!m[k]) m[k]={geometry:f.g}; }); });
+            if(!Object.keys(geoms).length) throw new Error('admin1 empty');
+            return {geoms:geoms,names:names,units:(j.f||[]).length,countries:Object.keys(geoms).length}; });
+      })()); }
+      let WORLD=null, worldAsked=false;
+      /* ⚠⚠ EVERY CALLER IS ANSWERED, NOT JUST THE FIRST. A dozen countries reach this inside one
+         tick; the first starts the download and the rest arrive while it is in flight. An
+         `if(worldAsked) return;` that dropped their callbacks would leave those countries marked
+         「asked」 with no units and nothing to re-ask them — 「呼ばれていない1行」, the shape this
+         project has paid for five times. They queue, and they are all called with the same frame.
+         ⚠ …AND WITH `null` ON FAILURE, so each of them falls to its own last resort rather than
+         waiting for ever on a file that is not coming. */
+      const worldWaiting=[];
+      function askWorldAdm1(then){
+        if(WORLD){ if(then) then(WORLD); return; }
+        if(then) worldWaiting.push(then);
+        if(worldAsked) return;
+        worldAsked=true;
+        worldAdm1().then(w=>{ WORLD=w;
+          worldWaiting.splice(0).forEach(f=>{ try{ f(w); }catch(_){} });
+          if(on) publish(); })
+          .catch(()=>{ worldAsked=false;
+            worldWaiting.splice(0).forEach(f=>{ try{ f(null); }catch(_){} }); });
+      }
       function nutsGeo(){ return SUBDIV.nuts||(SUBDIV.nuts=Promise.all([
           fetchJSON('https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_20M_2021_4326_LEVL_2.geojson'),
           fetchJSON('https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_20M_2021_4326_LEVL_3.geojson')])
@@ -2252,6 +2362,7 @@ window.IntMapModules.worldPacks=function(HOST){
         if(k!==_norm(countryName(iso))&&k!==_norm(iso)) return null;
         try{ const f=(HOST.countryGeo&&HOST.countryGeo.features||[]).find(x=>String(x.id)===String(iso));
           return (f&&f.geometry)||null; }catch(_){ return null; } }
+      const _shapeMemo=Object.create(null);   /* (#R290) iso → {k:<indexes in hand>, m:{name→geometry}} */
       async function maFeatures(){
         const isos=Object.keys(maData).filter(k=>((maData[k]||{}).areas||[]).length);
         if(!isos.length){ SIDE.ma=[]; return; }
@@ -2261,14 +2372,34 @@ window.IntMapModules.worldPacks=function(HOST){
         isos.forEach(iso=>{ const d=maData[iso]||{}; const cc=NUTS_CC[iso];
           const idx=(nuts&&cc&&nuts[cc])||null; const lib=swicGeoBy[iso]||null;
           const gb=gbBy[iso]||null; let placed=0, missed=0;
-          const shapeOf=(a)=>{
+          const wa=(WORLD&&WORLD.names[iso])||null;    /* (#R290) the shipped world ADM1 index */
+          /* ⚠⚠ (#R290) THE LADDER IS WALKED ONCE PER NAME, NOT ONCE PER REBUILD. `maFeatures()`
+             runs after EVERY MeteoAlarm batch and rebuilds all thirty-five countries — up to
+             fourteen thousand `shapeOf` calls a time — and the rungs are not cheap: the edit-
+             distance rung added this round sweeps the whole index for a name none of the exact
+             rungs matched. The answer for a given (country, area name) cannot change while the
+             indexes it consults are the same, so it is remembered; a NEW index arriving (the WMO
+             register's shapes, geoBoundaries, the world file) invalidates that country's memo,
+             which is what keeps a late-arriving boundary set from being ignored. */
+          const mkey=(gb?'g':'-')+(wa?'w':'-')+(lib?'l':'-')+(idx?'n':'-');
+          let memo=_shapeMemo[iso];
+          if(!memo||memo.k!==mkey){ memo=_shapeMemo[iso]={k:mkey,m:Object.create(null)}; }
+          const shapeOfRaw=(a)=>{
             if(a.poly){ const g=capPolygon(a.poly); if(g) return g; }
             if(lib){ const f=lookupUnit(lib,a.name); if(f&&f.geometry) return f.geometry; }
             if(idx){ const f=lookupUnit(idx,a.name); if(f&&f.geometry) return f.geometry;
               const al=aliasUnit(idx,iso,a.name); if(al) return al.geometry; }
             /* (#R284) the stable administrative index, for a unit none of the above names */
             if(gb){ const f=lookupUnit(gb,a.name); if(f&&f.geometry) return f.geometry; }
+            /* (#R290) …and the world index LAST, because the closer rungs measure better where they
+               exist (Poland: NUTS 231/234 against 153/234 here) and this one is better than the
+               country-wide fallback below where they do not (Bosnia 0 → 6, Slovakia 0 → 8) */
+            if(wa){ const f=lookupUnit(wa,a.name); if(f&&f.geometry) return f.geometry; }
             return wholeCountryShape(iso,a.name); };
+          const shapeOf=(a)=>{ if(a.poly) return shapeOfRaw(a);   /* its own polygon: no index, no memo */
+            const k=String(a.name||'');
+            if(k in memo.m) return memo.m[k];
+            return (memo.m[k]=shapeOfRaw(a)); };
           (d.areas||[]).forEach(a=>{
             const g=shapeOf(a);
             if(!g){ missed++; return; }
@@ -2286,7 +2417,7 @@ window.IntMapModules.worldPacks=function(HOST){
           /* a country that could not place everything asks the register for that service’s shapes,
              and — (#R284) — the stable administrative index as well, because the register only
              holds what that member has in force right now */
-          if(missed){ askSwicGeo(iso); askGB(iso); } });
+          if(missed){ askSwicGeo(iso); askGB(iso); askWorldAdm1(); } });
         SIDE.ma=out; }
 
       async function loadMA(list){
@@ -2351,10 +2482,20 @@ window.IntMapModules.worldPacks=function(HOST){
         swicFeatures(); }
       function swicFeatures(){
         const out=[];
+        let anyMissed=false;
         Object.keys(swicData).forEach(iso=>{ const d=swicData[iso]||{}; let placed=0, u=0;
+          const lib=swicGeoBy[iso]||null;
+          const wa=(WORLD&&WORLD.names[iso])||null;
           (d.areas||[]).forEach(a=>{
             const lv=+a.tier||1;
-            if(!a.geom){ if(normOf('swic',lv)>u) u=normOf('swic',lv); return; }
+            /* ⚠ (#R290) THE REGISTER'S OWN SHAPE FIRST, THEN A NAME. A member whose bulletin names
+               its province but files no polygon used to be dropped entirely — the whole reason
+               「塗漏れ」 is a hundred-country problem rather than a European one. The library this
+               map has already built for that member is tried first (it is that service's own
+               geometry), then the world administrative index. */
+            if(!a.geom&&lib){ const f=lookupUnit(lib,a.name); if(f&&f.geometry) a.geom=f.geometry; }
+            if(!a.geom&&wa){ const f=lookupUnit(wa,a.name); if(f&&f.geometry) a.geom=f.geometry; }
+            if(!a.geom){ anyMissed=true; if(normOf('swic',lv)>u) u=normOf('swic',lv); return; }
             placed++;
             const ev=(a.events&&a.events.length)?a.events:[{event:'',severity:'',tier:lv}];
             const rows=ev.slice(0,40).map(e=>({ area:String(a.name||''), adm:String(a.name||''),
@@ -2364,6 +2505,7 @@ window.IntMapModules.worldPacks=function(HOST){
             if(ft) out.push(ft); });
           PLACED[iso]=[placed,(d.areas||[]).length];
           UNPL[iso]=u; });
+        if(anyMissed) askWorldAdm1();
         SIDE.swic=out; }
 
       /* ══ THE CAP-INDEX SERVICES — the Philippines, Taiwan and New Zealand ══════════════════════
@@ -2511,8 +2653,12 @@ window.IntMapModules.worldPacks=function(HOST){
         /* (#R288) 2 = 「read, quiet, AND this map holds this country's own units」 — the grey is
            painted per unit below, so the country-wide sheet must not paint it a second time (two
            42 % greys over each other is a different colour, and a wrong one). 2 matches no arm of
-           `washExpr`, so it lands on the transparent default. */
-        return unitsOf(c)?2:1; }
+           `washExpr`, so it lands on the transparent default.
+           ⚠ (#R290) …and the question is whether the unit layer is drawing this country RIGHT NOW,
+           not whether its shapes are in the cache: the quiet collection is bounded by the view, so
+           a country whose units are held but off-screen must keep the country-wide sheet or it
+           would be painted by nobody at all. */
+        return quietSet[c]?2:1; }
       /* ══ ⚠⚠⚠ (#R288) THE COUNTRY IS NOT THE UNIT 「発令なし」 IS TRUE OF ═══════════════════
          「日本以外でも区分単位、発令単位ごとに色分けしろ」「個々の区別はちゃんとやれ」
 
@@ -2542,7 +2688,9 @@ window.IntMapModules.worldPacks=function(HOST){
         const g=(geoms||[]).filter(Boolean);
         if(!g.length){ NO_UNITS[iso]=1; return false; }
         UNITS[iso]=g; delete NO_UNITS[iso];
-        if(on){ publishQuiet(); paintCountries(); }
+        /* (#R290) COALESCED. This fired twice per country, and the world index makes 147 countries
+           land inside a second — 147 uploads of a collection that grows with each one. */
+        if(on) publish();
         return true; }
       const uniq=(idx)=>{ const seen=[], out=[];
         Object.keys(idx||{}).forEach(k=>{ const f=idx[k]; if(!f||seen.indexOf(f)>=0) return; seen.push(f); out.push(f); });
@@ -2562,7 +2710,15 @@ window.IntMapModules.worldPacks=function(HOST){
           setUnits(iso,(l3.length?l3:uniq(idx)).map(f=>f.geometry)); }).catch(fail); return; }
         adm1Geo().then(by=>{ const idx=by[iso]||null; const l=uniq(idx);
           if(l.length){ setUnits(iso,l.map(f=>f.geometry)); return; }
-          askUnitsGB(iso); }).catch(()=>{ askUnitsGB(iso); });
+          askUnitsWorld(iso); }).catch(()=>{ askUnitsWorld(iso); });
+      }
+      /* (#R290) the shipped world index — ONE request for every country that has no closer one */
+      function askUnitsWorld(iso){
+        const use=(w)=>{ const g=w&&w.geoms[iso];
+          if(g&&g.length){ setUnits(iso,g.slice()); return true; }
+          return false; };
+        if(WORLD){ if(!use(WORLD)) askUnitsGB(iso); return; }
+        askWorldAdm1(w=>{ if(!use(w)&&unitAsked[iso]) askUnitsGB(iso); });
       }
       /* the last resort, and the only one that costs a download of its own */
       function askUnitsGB(iso){
@@ -2586,21 +2742,68 @@ window.IntMapModules.worldPacks=function(HOST){
         const bb=bboxOf(f);
         return !(bb[2]<b.getWest()||bb[0]>b.getEast()||bb[3]<b.getSouth()||bb[1]>b.getNorth()); }catch(_){ return true; } }
       function askUnitsInView(){ if(!on) return;
+        /* (#R290) …and only at the zoom the units are drawn at, so a world view neither downloads
+           nor indexes anything it is not going to draw */
+        try{ if(!(GE().camera.getZoom()>=QUIET_UNIT_Z)) return; }catch(_){}
         try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||'');
           if(!c||!supported(c)||readState(c)!=='ok') return;
           if(UNITS[c]||unitAsked[c]||NO_UNITS[c]) return;
           if(!inView(f)) return;
           askUnits(c); }); }catch(_){} }
+      /* ══ ⚠⚠ (#R290) THE COLLECTION IS BOUNDED BY THE VIEW, NOT BY THE CACHE ═══════════════════
+         `UNITS` accumulates: once a country's subdivisions are in hand they stay. Emitting all of
+         them made the grey collection grow with every pan — MEASURED at world zoom with the new
+         world index: **6,101 features / 10.0 MB**, re-uploaded whenever anything about it changed.
+         Nothing off-screen is visible, so nothing off-screen is published. The set is padded by a
+         viewport's width so a small pan does not change it, and the signature below means a pan
+         that leaves the set alone costs nothing at all. */
+      /* ⚠⚠ (#R290) …AND BY THE ZOOM, BECAUSE A UNIT NOBODY CAN SEE IS NOT A DISTINCTION.
+         Below `QUIET_UNIT_Z` the whole planet is on screen: a Landkreis is a fraction of a pixel,
+         the dividing outline is 0.25 px wide, and the country-wide sheet and five hundred unit
+         sheets are the SAME PICTURE in the same colour. Measured at world zoom, drawing it by unit
+         cost 5,445 features and 6.1 MB to produce an image indistinguishable from one polygon per
+         country. Zoom in and the units take over — which is the moment they mean something. */
+      const QUIET_UNIT_Z=3;
+      function quietISOs(){
+        const out=[];
+        let z=0; try{ z=GE().camera.getZoom(); }catch(_){ z=0; }
+        if(!(z>=QUIET_UNIT_Z)) return out;
+        let vb=null; try{ const b=GE().camera.getBounds();
+          const w=b.getEast()-b.getWest(), h=b.getNorth()-b.getSouth();
+          vb=[b.getWest()-w*0.5,b.getSouth()-h*0.5,b.getEast()+w*0.5,b.getNorth()+h*0.5]; }catch(_){}
+        Object.keys(UNITS).forEach(iso=>{
+          if(!supported(iso)||readState(iso)!=='ok'||!UNITS[iso]||!UNITS[iso].length) return;
+          if(vb){ const f=countryFeature(iso); if(f){ const bb=bboxOf(f);
+            if(bb[2]<vb[0]||bb[0]>vb[2]||bb[3]<vb[1]||bb[1]>vb[3]) return; } }
+          out.push(iso); });
+        return out.sort(); }
+      let _cFeat=Object.create(null);   /* cleared when the countries source is swapped — paintCountries(true) */
+      function countryFeature(iso){ if(_cFeat[iso]!==undefined) return _cFeat[iso];
+        let f=null; try{ f=(HOST.countryGeo&&HOST.countryGeo.features||[]).find(x=>String(x.id)===iso)||null; }catch(_){}
+        _cFeat[iso]=f; return f; }
+      /* which countries the grey is CURRENTLY drawn at the unit for — `washTier` reads this, so the
+         country-wide sheet covers exactly the countries the unit layer is not covering and the two
+         can never both be on (or both be off) over the same ground */
+      let quietSet=Object.create(null), quietList=[];
+      function refreshQuietSet(){ quietList=quietISOs();
+        const s=Object.create(null); quietList.forEach(c=>{ s[c]=1; }); quietSet=s; return quietList; }
       function quietFeatures(){
         const out=[];
-        Object.keys(UNITS).forEach(iso=>{
-          if(!supported(iso)||readState(iso)!=='ok') return;
-          UNITS[iso].forEach(g=>{ if(g) out.push({type:'Feature',properties:{iso:iso},geometry:g}); }); });
+        quietList.forEach(iso=>{
+          (UNITS[iso]||[]).forEach(g=>{ if(g) out.push({type:'Feature',properties:{iso:iso},geometry:g}); }); });
         return out; }
-      function publishQuiet(){
-        if(!_imCanDraw()) return false;
-        if(!ensureQuiet()) return false;
+      /* (#R290) the content of the quiet collection, as a string — see the note on publishNow */
+      let quietSig='';
+      function publishQuiet(force){
+        /* ⚠ (#R290) the set and the LAYER move together. `washTier` returns 2 — 「the unit layer has
+           this country」 — off `quietSet`, so a set that says yes while the layer is not up would
+           leave those countries painted by nobody. */
+        if(!_imCanDraw()||!ensureQuiet()){ quietSet=Object.create(null); quietList=[]; return false; }
+        refreshQuietSet();
+        const sig=quietList.map(c=>c+':'+UNITS[c].length).join(',');
+        if(!force&&sig===quietSig){ applyAlertVis(); return true; }
         try{ GE().layers.setSourceData(QSRC,{type:'FeatureCollection',features:quietFeatures()}); }catch(_){ return false; }
+        quietSig=sig;
         applyAlertVis();
         return true; }
       function ensureQuiet(){ if(GE().layers.has(QFILL)&&GE().layers.has(QLINE)) return true;
@@ -2608,7 +2811,10 @@ window.IntMapModules.worldPacks=function(HOST){
         const before=GE().layers.has('wp-alert-fill')?'wp-alert-fill'
           :(GE().layers.has('tool-poly')?'tool-poly':undefined);
         try{
-          if(!GE().layers.hasSource(QSRC)) GE().layers.addSource(QSRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+          /* ⚠ (#R290) a style reload drops the source, so the content signature that lets
+             `publishQuiet` skip an identical upload has to be cleared with it — otherwise the
+             optimisation would leave an empty source on the map after every basemap change. */
+          if(!GE().layers.hasSource(QSRC)){ quietSig=''; GE().layers.addSource(QSRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }
           if(!GE().layers.has(QFILL)) GE().layers.add({id:QFILL,type:'fill',source:QSRC,layout:{visibility:'none'},
             paint:{'fill-color':QUIET_COL,'fill-opacity':1}},before);
           /* the DIVISION is half the answer — without an outline a hundred grey units are one grey
@@ -2618,21 +2824,70 @@ window.IntMapModules.worldPacks=function(HOST){
               'line-width':['interpolate',['linear'],['zoom'],2,0.25,6,0.5,10,0.8],'line-opacity':0.9}},before);
         }catch(_){ return false; }
         return true; }
-      function paintCountries(){ withCountrySource().then(()=>{ if(!on) return;
-        if(!ensureChoro()) { whenDrawable(()=>{ if(on&&ensureChoro()) paintCountries(); }); return; }
+      /* (#R290) the tier each country was last WRITTEN with — `setFeatureState` was being called
+         25,713 times in 75 seconds to write the value that was already there */
+      let tierWritten=Object.create(null);
+      function paintCountries(force){ withCountrySource().then(()=>{ if(!on) return;
+        if(!ensureChoro()) { whenDrawable(()=>{ if(on&&ensureChoro()) paintCountries(true); }); return; }
+        if(force){ tierWritten=Object.create(null); _cFeat=Object.create(null); }
         try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||''); if(!c) return;
-          GE().layers.setFeatureState({source:'countries',id:f.id},{wpAlert:washTier(c)}); }); }catch(_){}
+          const t=washTier(c); if(tierWritten[c]===t) return; tierWritten[c]=t;
+          GE().layers.setFeatureState({source:'countries',id:f.id},{wpAlert:t}); }); }catch(_){}
         applyAlertVis(); }); }
 
       /* ══ ONE PUBLISHER (#R271) — a late feed can never blank an early one ══════════════════════ */
+      /* ══ ⚠⚠⚠ (#R290) 「警報レイヤーが重すぎる。品質保ったまま爆速にしろ。」 ═══════════════════════
+         MEASURED on production, 75 seconds with the layer on and nothing else touched:
+
+             wp-alert          **64** setSourceData calls · up to 3,713 features · **10.3 MB** of
+                               GeoJSON re-uploaded each time
+             wp-alert-quiet    **126** setSourceData calls · up to 4,811 features · **18.5 MB** each
+             setFeatureState   **25,713** calls
+             main thread       long tasks of 2,418 / 681 / 670 / 615 / 567 ms …
+
+         That is 190 whole-collection uploads in 75 seconds — 2.5 per second — because `publish()`
+         runs to completion on EVERY batch that lands, and there are dozens per tick (six cold
+         rotation slots, MeteoAlarm, the WMO register, and each national feed). Nothing about the
+         PICTURE needed any of it: the same collection was re-parsed and re-tiled over and over.
+
+         Nothing here is dropped, sampled or simplified. Three properties are added:
+           ① the publish is COALESCED (trailing, one animation frame's worth) — the data still lands
+              the moment it arrives, only the announcement waits, and a burst of eight batches costs
+              one upload instead of eight;
+           ② the quiet-unit collection is uploaded only when its CONTENT changed (a signature of the
+              countries in it and how many units each contributes) — panning and re-reads do not
+              rebuild an 18 MB collection that is identical to the one already on the map;
+           ③ `paintCountries` writes a feature state only where the tier actually CHANGED.
+         `publishNow()` stays available for the one caller that must not wait (`toggle`). */
       let baseFeats=[];
-      function publish(){
+      let pubT=0, featsSig='';
+      /* a 32-bit rolling hash of the properties the style paints from — cheap (one pass, no
+         allocation) and it changes whenever the picture would */
+      function featSig(list){ let h=2166136261>>>0;
+        const mix=(s)=>{ s=String(s==null?'':s); for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } h^=124; h=Math.imul(h,16777619)>>>0; };
+        for(let i=0;i<list.length;i++){ const q=list[i]&&list[i].properties; if(!q) continue;
+          mix(q.iso); mix(q.feed); mix(q.name); mix(q.norm); mix(q.lv); mix(q.colA); mix(q.colN); mix(q.hz); mix(q.nh); }
+        return list.length+':'+h; }
+      function publish(){ if(pubT) return;
+        pubT=setTimeout(()=>{ pubT=0; publishNow(); },160); }
+      function publishNow(){
+        clearTimeout(pubT); pubT=0;
         feats=baseFeats.concat(SIDE.cma,SIDE.bom,SIDE.ma,SIDE.phl,SIDE.cwa,SIDE.nzl,SIDE.swic);
         learnCoverage(feats);            /* (#R288) the polygons are the evidence — see learnCoverage */
         drawnISO=Object.create(null);
         feats.forEach(f=>{ const g=f.geometry; if(g&&f.properties&&f.properties.iso&&(f.properties.norm||0)>0) drawnISO[f.properties.iso]=1; });
-        whenDrawable(()=>{ if(ensureLayers()) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); applyAlertVis(); });
-        whenDrawable(()=>{ publishQuiet(); });          /* (#R288) 「発令なし」 at the unit */
+        /* ⚠ (#R290) …and an upload that would put back the collection already on the map is not
+           an upload. A feed re-read that returns the same warnings — which is most of them, most
+           ticks — used to cost a full re-parse and re-tile of every drawn polygon. The signature
+           is over what the STYLE reads (identity, rank, colour, wording); anything the map draws
+           differently changes it. */
+        const sig=featSig(feats);
+        whenDrawable(()=>{ if(!ensureLayers()) return;
+          if(sig!==featsSig){ featsSig=sig; GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }
+          applyAlertVis(); });
+        publishQuiet();                                 /* (#R288) 「発令なし」 at the unit — and it
+                                                           refreshes `quietSet`, which `washTier`
+                                                           reads, so it runs BEFORE the sheet */
         paintCountries();
         askUnitsInView();
         if(on&&panel.shown()) overview(); }
@@ -2644,7 +2899,7 @@ window.IntMapModules.worldPacks=function(HOST){
       function relabel(){
         try{ feats.forEach(f=>{ const q=f&&f.properties; if(!q||!q.hzr) return;
           const x=hzFields(q.hzr,q.feed,q.lv); q.hz=x.hz; q.hzs=x.hzs; q.nh=x.nh; }); }catch(_){}
-        whenDrawable(()=>{ if(ensureLayers()) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); });
+        whenDrawable(()=>{ if(ensureLayers()){ featsSig=featSig(feats); GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); } });
         if(on&&panel.shown()) overview(); }
       try{ window.addEventListener('intmap-lang',()=>{ if(on) relabel(); }); }catch(_){}
 
@@ -3050,10 +3305,14 @@ window.IntMapModules.worldPacks=function(HOST){
          rather than left for the reader to infer from the picture. */
       function unitLine(){
         let uc=0, cc=0;
+        /* ⚠ (#R290) `quietSet`, not the CACHE — the sentence is in the present tense, and the unit
+           layer is bounded by the view and the zoom, so 「持っている」 and 「描いている」 are two
+           different numbers. Printing the first under a sentence that claims the second is the
+           shape #R185 exists to prevent. */
         try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||'');
           if(!c||!supported(c)||readState(c)!=='ok') return;
-          if(unitsOf(c)) uc++; else cc++; }); }catch(_){}
-        const units=Object.keys(UNITS).reduce((n,k)=>n+((UNITS[k]||[]).length),0);
+          if(quietSet[c]) uc++; else cc++; }); }catch(_){}
+        const units=quietList.reduce((n,k)=>n+((UNITS[k]||[]).length),0);
         /* ⚠ ONE sentence per language with placeholders, not four fragments concatenated: a
            sentence broken into pieces cannot be re-ordered by a translator, and every piece
            becomes its own row in the i18n tables (#R239's 「翻訳済みの定義」 problem, in miniature). */
@@ -3273,7 +3532,11 @@ window.IntMapModules.worldPacks=function(HOST){
 
       /* (#R288) panning is when a country becomes worth its units — bounded by `GB_MAX` and by
          「asked once per session」, so a sweep across the world is a walk, never a storm */
-      try{ GE().events.on('moveend',()=>{ if(on) askUnitsInView(); }); }catch(_){}
+      try{ GE().events.on('moveend',()=>{ if(!on) return; askUnitsInView();
+        /* (#R290) the quiet collection is bounded by the view (see quietISOs), so a pan that brings
+           a new country on screen has to republish it — and the signature makes a pan that changes
+           nothing cost nothing. */
+        publishQuiet(); paintCountries(); }); }catch(_){}
       try{ GE().events.on('idle',()=>{ if(on) applyAlertVis(); }); }catch(_){}   /* the re-assert — see applyAlertVis */
       /* ⚠ (#R288) the tick re-asserts too. MEASURED: something outside this module sets
          `wp-alert-fill` to `visibility:none` once during the first minute (the saved-layer
@@ -3285,14 +3548,23 @@ window.IntMapModules.worldPacks=function(HOST){
       function toggle(v){ on=v;
         if(!on){ if(timer){ clearInterval(timer); timer=null; } panel.hide(); closePointCard();
           applyAlertVis(); return; }
-        whenDrawable(()=>ensureLayers()); overview(); refresh(); hiResCountries(()=>{ if(on) paintCountries(); });
+        whenDrawable(()=>ensureLayers()); overview(); refresh(); hiResCountries(()=>{ if(on) paintCountries(true); });
         if(!timer) timer=setInterval(tick,TICK_MS); }
       document.addEventListener('visibilitychange',()=>{ if(on&&!document.hidden) refresh(); });
 
-      onRestyle(()=>{ if(on) whenDrawable(()=>{ if(ensureLayers()) GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); applyAlertVis(); publishQuiet(); paintCountries(); }); });
+      onRestyle(()=>{ if(on) whenDrawable(()=>{ if(ensureLayers()){ featsSig=featSig(feats); GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); } applyAlertVis(); publishQuiet(true); paintCountries(true); }); });
       mapClick((e)=>{ if(!on) return false;
         const lng=e.lngLat.lng, lat=e.lngLat.lat;
         const c=countryAt(lng,lat);
+        /* ══ ⚠⚠ (#R290) A CARD WITH NOTHING TO SAY IS NOT AN ANSWER ═══════════════════════════
+           「海などをクリックするとここには国がありませんと出てくるが、そんなの分かりきってるので、
+             わざわざポップアップを出すな。」 — a tap on open water had no country and no warning, so
+           the whole card was the sentence 「ここには国がありません。」 over a blank. It says nothing
+           the reader cannot already see, and it took the click from whatever else was under it.
+           ⚠ 「no country」 IS NOT 「nothing to say」: a marine warning is issued over water and
+           carries its own polygon, so the card still opens when something IS in force at that
+           point. Only the empty combination is silent, and then the click falls through. */
+        if(!c&&!alertsAt(lng,lat).length){ closePointCard(); return false; }
         openPointCard(lng,lat,c);
         /* a country whose rows have not been fetched yet is fetched NOW and the card re-renders —
            the tap is the one moment the reader is definitely waiting for THIS country */
@@ -3348,6 +3620,15 @@ window.IntMapModules.worldPacks=function(HOST){
            not 「未対応」, and a number that must go to zero as the rotation comes round */
         unread:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
             const c=String(f.id||''); if(supported(c)&&readState(c)!=='ok') n++; }); }catch(_){} return n; })(),
+        /* (#R290) …and WHICH of the two silences it is. MEASURED: after the rotation has been round
+           once (MeteoAlarm 35/35 at t+46 s, the WMO register 93/93 at t+40 s) the count does not
+           reach zero and never will — what is left is countries whose service ERRORED, and those
+           are hatched for a different reason and for as long as the upstream is down. Counting
+           them together made 「まだ読んでいない」 look like it never finished. */
+        errored:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
+            const c=String(f.id||''); if(supported(c)&&readState(c)==='error') n++; }); }catch(_){} return n; })(),
+        pending:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
+            const c=String(f.id||''); const st=readState(c); if(supported(c)&&st!=='ok'&&st!=='error') n++; }); }catch(_){} return n; })(),
         /* (#R288) 「発令なし」 is drawn at the unit for these, and country-wide for the rest — the
            difference is a fact about this map, so it is counted rather than assumed */
         learned:Object.assign({},LEARNED),

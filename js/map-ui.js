@@ -64,6 +64,37 @@ window.IntMapClearGlyph=function(){ return '×'; };
    however the wrapper is padded. Re-measured when the button appears, when the window resizes and
    whenever the field itself changes size. ONE definition, because there are two search boxes and
    #R239's standing lesson is a defect fixed in one copy and left in the other. */
+/* ══ ⚠⚠ (#R290) TYPING IN A BOX THAT HAS SCROLLED OFF THE TOP ═════════════════════════════════
+   「レイヤー検索欄に入力があったり変更があったら、レイヤー検索欄の最上部の位置に自動的になるように。」
+   #R23 took this box OUT of sticky position on the reader's own instruction (「レイヤー検索窓の上部
+   固定はやめて」), so it scrolls with the list — and a reader who has scrolled a thousand pixels down
+   and then types is filtering a list they cannot see the top of, with the box they are typing in
+   somewhere above the viewport. Sticky is not the answer twice; scrolling to it on input is: the
+   box comes to the top of its own scroll container the moment there is a query, and stays put
+   otherwise.
+   ⚠ IT SCROLLS A PANEL, NOT THE MAP. The camera is untouched — CONSTITUTION §3, 「レイヤーを選択
+   しても視点を一切動かさない」 — and it scrolls only the nearest ancestor that is actually
+   scrollable, so on a phone (where the sheet is the scroller) it is the sheet that moves.
+   ⚠ ONE DEFINITION, BOTH SEARCH BOXES — the classic panel's `#layer-search` (js/map-extras.js) and
+   this file's tile-grid `.lsr-q`. #R239's lesson is a defect fixed in one of two copies. */
+window.IntMapSearchToTop=function(el){
+  try{
+    if(!el||!el.getBoundingClientRect) return false;
+    var sc=el.parentElement;
+    while(sc&&sc!==document.body&&sc!==document.documentElement){
+      var cs=window.getComputedStyle(sc);
+      if(/(auto|scroll)/.test(cs.overflowY)&&sc.scrollHeight>sc.clientHeight+2) break;
+      sc=sc.parentElement;
+    }
+    if(!sc||sc===document.body||sc===document.documentElement) return false;
+    var pad=parseFloat(window.getComputedStyle(sc).paddingTop)||0;
+    var top=sc.scrollTop+(el.getBoundingClientRect().top-sc.getBoundingClientRect().top)-pad;
+    top=Math.max(0,Math.round(top));
+    if(Math.abs(top-sc.scrollTop)<2) return false;
+    try{ sc.scrollTo({top:top,behavior:'smooth'}); }catch(_){ sc.scrollTop=top; }
+    return true;
+  }catch(_){ return false; }
+};
 window.IntMapPlaceClear=function(inp,btn,gap){
   if(!inp||!btn) return function(){};
   var pad=(typeof gap==='number')?gap:9;
@@ -568,7 +599,8 @@ window.IntMapModules.layerSidebar=function(HOST){
       })();
       sb.querySelector('.lsr-x').onclick=close;
       _hosts.push(sb);   /* (#R232) the sidebar is simply the FIRST host */
-      sb.querySelector('#lsr-q').addEventListener('input',()=>filterTiles(sb));   /* ⚠ (#R232) not `filterTiles` bare — it takes a host now, and an Event is not one */
+      sb.querySelector('#lsr-q').addEventListener('input',(ev)=>{ filterTiles(sb);   /* ⚠ (#R232) not `filterTiles` bare — it takes a host now, and an Event is not one */
+        try{ window.IntMapSearchToTop(ev.target.closest('.lsr-search')||ev.target); }catch(_){} });
       wireSearchClear(sb);   /* (#R255) the × that empties it */
       sb.addEventListener('click',e=>e.stopPropagation());
       /* keep every tile's ✓ in sync with its real checkbox, whoever toggles it (classic panel, Atlas, legends) */
@@ -1010,7 +1042,8 @@ window.IntMapModules.layerSidebar=function(HOST){
         host=document.createElement('div'); host.className='lsr-mount';
         host.innerHTML='<div class="lsr-search"><input class="lsr-q" type="text" placeholder="'+T('Search layers…','レイヤーを検索…','Ebenen suchen…','Поиск слоёв…','Buscar capas…')+'"></div><div class="lsr-body"></div>';
         container.insertBefore(host, container.firstChild);
-        host.querySelector('.lsr-q').addEventListener('input',()=>filterTiles(host));
+        host.querySelector('.lsr-q').addEventListener('input',(ev)=>{ filterTiles(host);
+          try{ window.IntMapSearchToTop(ev.target.closest('.lsr-search')||ev.target); }catch(_){} });
         wireSearchClear(host);   /* (#R255) …and the phone's sheet gets the same button, from the same code */
         _hosts.push(host);
       }

@@ -122,8 +122,10 @@ test('R277 ④ a warning without a polygon is looked for in the agency’s own s
   assert.match(ma, /if\(idx\)\{ const f=lookupUnit\(idx,a\.name\);/, '③ Eurostat NUTS');
   assert.match(ma, /if\(gb\)\{ const f=lookupUnit\(gb,a\.name\);/, '④ (#R284) a stable administrative index');
   assert.match(ma, /return wholeCountryShape\(iso,a\.name\);/, '⑤ the country, when the area IS the country');
-  assert.match(ma, /if\(missed\)\{ askSwicGeo\(iso\); askGB\(iso\); \}/,
-    'and a shortfall is what asks for both libraries');
+  assert.match(ma, /if\(wa\)\{ const f=lookupUnit\(wa,a\.name\); if\(f&&f\.geometry\) return f\.geometry; \}/,
+    '⑤ (#R290) the shipped world administrative index, last');
+  assert.match(ma, /if\(missed\)\{ askSwicGeo\(iso\); askGB\(iso\); askWorldAdm1\(\); \}/,
+    'and a shortfall is what asks for every library');
   /* the library is a NAME→SHAPE index and carries no warning of its own — 「ソースは一国一ソース」 */
   assert.match(s, /function askSwicGeo\(iso\)\{/, 'the library has one loader');
   const ask = s.slice(s.indexOf('function askSwicGeo(iso)'), s.indexOf('function gbIndex('));

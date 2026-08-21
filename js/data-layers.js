@@ -167,8 +167,10 @@ window.IntMapModules.dataLayers=function(HOST){
       .data-legend .ecl-desc{ color:var(--text-main); opacity:0.8; margin-top:3px; font-size:9.5px; line-height:1.4; }
       /* (#R288) each weather legend states WHICH INSTANT its picture is of, and the line opens the
          one shared time control rather than carrying a second copy of it. */
-      .data-legend .ecl-when{ display:block; width:100%; margin-top:5px; padding:4px 6px; border:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:7px; background:var(--input-bg); color:var(--text-main); font-weight:600; font-size:9.5px; text-align:center; cursor:pointer; font-variant-numeric:tabular-nums; }
-      .data-legend .ecl-when:hover{ background:var(--primary-color); color:#fff; border-color:transparent; }
+      /* (#R290) 「いつの絵か」 is a READING now, not a button — the hour is chosen in this same box
+         (window.IntMapWxPlayer.timeUI) rather than in a control somewhere else. */
+      .data-legend .ecl-when{ display:block; width:100%; margin-top:5px; padding:4px 6px; border:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:7px; background:var(--input-bg); color:var(--text-main); font-weight:600; font-size:9.5px; text-align:center; font-variant-numeric:tabular-nums; }
+      .data-legend .ecl-timesel{ font-variant-numeric:tabular-nums; }
       .data-legend #ec-validtime, .data-legend #wind-validtime{ color:var(--text-main); font-weight:600; font-size:9.5px; margin-top:3px; text-align:center; }
       .data-legend .rv-player{ margin:5px 0 2px; }
       .data-legend .rv-btns{ display:flex; gap:3px; justify-content:center; margin-bottom:3px; }
@@ -1774,21 +1776,43 @@ window.IntMapModules.dataLayers=function(HOST){
        since #R14/#R26 and both already have a year slider driven by it. A second colouring makes
        that year visible instead of only filterable, and the switch is in the legend beside the
        slider that uses the same numbers.
-       ⚠ ONE PALETTE FOR BOTH, and it is perceptually ordered (viridis, sampled): eleven NATO
-       waves and eight EU ones cannot be told apart as eleven blues, and a rainbow would imply an
-       order the eye has to be taught. Dark = founding, bright = newest, monotonically.
+       ⚠ ONE PALETTE FOR BOTH.
        ⚠ AND THE BAR GOES AWAY WITH IT. #R270's defect was a legend whose gradient contradicted
        the colours on the map; a flat blue bar over a year-coloured map is the same statement. So
        the mode hides `.dl-bar`/`.dl-scale` and shows a chip per wave instead. */
-    const _VIRIDIS=['#440154','#482878','#3e4a89','#31688e','#26828e','#1f9e89','#35b779','#6ece58','#b5de2b','#fde725'];
+    /* ══ ⚠⚠⚠ (#R290) 「加盟年別の色分けの色味が分かりにくい」 — AND THAT IS MEASURABLE ═══════════
+       #R289 chose viridis for this on the argument that 「a rainbow would imply an order the eye
+       has to be taught」. The reader has now looked at the result and cannot read it, so the
+       trade-off is settled by the other criterion: how far apart two waves actually LOOK.
+       MEASURED, CIEDE2000 between the closest pair in the set (which for a monotone ramp is
+       always an adjacent pair — the one a reader has to tell apart on the legend):
+
+           waves   viridis (before)   this palette (after)
+             8         ΔE00 12.2            ΔE00 19.7      ← the EU
+            11         ΔE00  8.1            ΔE00 19.7      ← NATO
+            14         ΔE00  6.1            ΔE00 13.0
+
+       ΔE00 ≈ 2.3 is the just-noticeable difference for large flat areas; 8.1 across eleven country
+       fills at 55 % opacity over a basemap is not enough, and it is why 「分かりにくい」 is a fact
+       about the palette rather than about the reader. The new set sweeps hue a full turn instead
+       of a third of one, so the separation stops shrinking as waves are added — at eleven it is
+       the same 19.7 as at eight. Order is still read off the sequence and off the legend chips,
+       which name the year beside every swatch.
+       ⚠ AND IT IS INDEXED, NOT INTERPOLATED. Sampling eleven colours out of a ten-anchor gradient
+       is what put the closest pair at 8.1 in the first place; when there are no more waves than
+       entries, each wave takes an ENTRY, so the measured separation is the separation on screen.
+       (More entries than that — no such layer today — falls back to interpolation.) */
+    const _WAVEPAL=['#25307d','#3167cf','#2aa7d8','#1f9d70','#74c23f','#e6cf35','#f2932c','#e2532f','#c22f66','#8c46ad','#cfaee0'];
     function _mixHex(a,b,t){ const p=(h)=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
       const A=p(a),B=p(b),o=A.map((v,i)=>Math.round(v+(B[i]-v)*t));
       return '#'+o.map(v=>v.toString(16).padStart(2,'0')).join(''); }
-    function _rampAt(f){ const x=Math.max(0,Math.min(1,f))*(_VIRIDIS.length-1), i=Math.min(_VIRIDIS.length-2,Math.floor(x));
-      return _mixHex(_VIRIDIS[i],_VIRIDIS[i+1],x-i); }
+    function _rampAt(f){ const x=Math.max(0,Math.min(1,f))*(_WAVEPAL.length-1), i=Math.min(_WAVEPAL.length-2,Math.floor(x));
+      return _mixHex(_WAVEPAL[i],_WAVEPAL[i+1],x-i); }
     /* year → colour, ordered oldest-first. ONE entry means one colour, not a division by zero. */
-    function yearColors(years){ const o={}; const n=years.length;
-      years.forEach((y,i)=>{ o[y]=_rampAt(n<2?0:i/(n-1)); }); return o; }
+    function yearColors(years){ const o={}; const n=years.length, P=_WAVEPAL.length;
+      years.forEach((y,i)=>{ o[y]=(n<2)?_WAVEPAL[0]
+        :(n<=P)?_WAVEPAL[Math.round(i*(P-1)/(n-1))]
+        :_rampAt(i/(n-1)); }); return o; }
     /* the fill expression: an exact match on the accession year, with the uniform colour as the
        fallback so a member whose year is missing is never invisible. */
     function yearFillExpr(years,colors,fallback){

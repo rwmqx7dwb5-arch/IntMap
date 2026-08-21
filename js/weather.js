@@ -38,7 +38,54 @@ window.IntMapModules=window.IntMapModules||{};
       next:_svg('<path d="M11.4 6.6v10.8a.9.9 0 0 0 1.38.76l8.5-5.4a.9.9 0 0 0 0-1.52l-8.5-5.4a.9.9 0 0 0-1.38.76z"></path><path d="M2 6.6v10.8a.9.9 0 0 0 1.38.76l8.5-5.4a.9.9 0 0 0 0-1.52L3.38 5.84A.9.9 0 0 0 2 6.6z"></path>')
     };
     const _b=(act,label,inner,cls)=>'<button class="ecl-b'+(cls?' '+cls:'')+'" data-act="'+act+'" aria-label="'+label+'" title="'+label+'">'+inner+'</button>';
-    return { svg:_svg, IC:IC, b:_b };
+    /* ══ ⚠⚠⚠ (#R290) EVERY WEATHER LAYER GETS ITS OWN CLOCK BACK, AND ITS STEPS ARE DISCRETE ═══
+       「ECMWF系レイヤーで、時間選択をChronosに受け流さなくてよい。個別の時間選択UIを使え。」
+       「時刻をそれぞれの時間選択UIで選択するとき、データのある時間のみを選べる、離散的な感じに。
+         データのない時間を選べないように。」
+
+       #R288 removed the ECMWF box and routed the forecast hour through Chronos, the app-wide
+       clock — which means moving the weather also moved the news, the borders, the terminator and
+       the statistics, and it means the reader picks the hour with a control whose Year and Date
+       tabs offer instants the model has never published. Both halves of the report are that one
+       decision. The axis is the model's own again (see the note on `_pushClock` in js/wx-ecmwf.js),
+       and the control is HERE, in each layer's legend, next to the picture it moves.
+
+       ⚠ IT IS A `<select>`, NOT A SLIDER. A range input over an index LOOKS continuous, and「デー
+       タのない時間を選べない」 is a claim about the control, not about what it happens to snap to.
+       Every option is one of `IntMapECMWF.times()` — the model's published valid times, nothing
+       between them and nothing outside them — so an hour with no data cannot be chosen at all.
+       ⚠ ONE DECLARATION, TWO LEGENDS. The wind box and the ECMWF boxes both build from here, which
+       is the rule that keeps two views of one axis from disagreeing about which button is 「再生」. */
+    function _timeUI(id,E,L){
+      if(!E) return '';
+      const n=E.count(); if(!n) return '';
+      const i=E.index(), playing=!!E.isPlaying(), times=E.times(), now=E.nowIndex();
+      const opt=(k)=>'<option value="'+k+'"'+(k===i?' selected':'')+'>'+E.fmt(times[k])
+        +(k===now?(' · '+L('now','現在','jetzt','сейчас','ahora')):'')+'</option>';
+      let o=''; for(let k=0;k<n;k++) o+=opt(k);
+      return '<div class="ecl-player">'
+        +_b('first',L('First step','最初の時刻','Erster Schritt','Первый шаг','Primer paso'),IC.first)
+        +_b('prev',L('One step back','1つ前の時刻','Ein Schritt zurück','На шаг назад','Un paso atrás'),IC.prev)
+        +_b('play',(playing?L('Pause','一時停止','Pause','Пауза','Pausa'):L('Play','再生','Abspielen','Воспроизвести','Reproducir')),(playing?IC.pause:IC.play),'ecl-play')
+        +_b('next',L('One step forward','1つ次の時刻','Ein Schritt vor','На шаг вперёд','Un paso adelante'),IC.next)
+        +_b('now',L('Back to now','現在に戻る','Zurück zu jetzt','К текущему времени','Volver a ahora'),L('Now','現在','Jetzt','Сейчас','Ahora'),'ecl-now')
+        +'</div>'
+        +'<div class="kl-period" style="margin:6px 0 2px;"><label>'+L('Time','時刻','Zeit','Время','Hora')+'</label>'
+        +'<select class="ecl-timesel" id="'+id+'">'+o+'</select></div>';
+    }
+    /* the handlers for the block above — again once, for both legends */
+    function _wireTimeUI(root,id,E){
+      if(!root||!E) return;
+      const sel=root.querySelector('#'+id);
+      if(sel) sel.onchange=()=>{ E.pause(); E.setIndex(+sel.value,{now:true}); };
+      root.querySelectorAll('.ecl-b').forEach(b=>{ b.onclick=()=>{ const a=b.getAttribute('data-act');
+        if(a==='first'){ E.pause(); E.setIndex(0,{now:true}); }
+        else if(a==='prev'){ E.pause(); E.step(-1); }
+        else if(a==='next'){ E.pause(); E.step(1); }
+        else if(a==='now'){ E.pause(); E.setIndex(E.nowIndex(),{now:true}); }
+        else if(a==='play') E.togglePlay(); }; });
+    }
+    return { svg:_svg, IC:IC, b:_b, timeUI:_timeUI, wireTimeUI:_wireTimeUI };
   })();
 
 window.IntMapModules.wind=function(HOST){
@@ -72,6 +119,16 @@ window.IntMapModules.wind=function(HOST){
        a 40 m/s jet was as washed out as a breeze. The SDK's wind scale carries a MEANINGFUL alpha
        (0 at calm, 1 from ~7 m/s up), which is what fades still air into the basemap; the slider is
        the only other multiplier and it defaults to 1. */
+    /* (#R290) the same rule the ECMWF rasters follow — see whenSourceLoaded in weatherEC below */
+    function _whenSrcLoaded(sid,then,maxMs){
+      let done=false;
+      const fin=()=>{ if(done) return; done=true;
+        try{ GE().events.off('sourcedata',h); }catch(_){}
+        try{ then(); }catch(_){} };
+      const h=(e)=>{ if(e&&e.sourceId===sid&&e.isSourceLoaded) fin(); };
+      try{ GE().events.on('sourcedata',h); }catch(_){ setTimeout(fin,600); return; }
+      setTimeout(fin,maxMs||12000);
+    }
     function addField(key){
       if(!_imCanDraw()) return false;
       if(!EC().registerProtocol()) return false;   /* (#R288) — see the note in weatherEC.addSlot */
@@ -91,8 +148,8 @@ window.IntMapModules.wind=function(HOST){
         if(GE().layers.has(old.lyr)) GE().layers.remove(old.lyr);
         if(GE().layers.hasSource(old.src)) GE().layers.removeSource(old.src);
       }catch(_){} };
-      try{ GE().events.once('idle',reveal); }catch(_){}
-      setTimeout(reveal,2500);                    /* backstop: 'idle' can be far away on a busy map */
+      /* (#R290) the SOURCE says when it is showing — see the note on whenSourceLoaded above */
+      _whenSrcLoaded(s.src,reveal,12000);
       slot=1-slot; liveKey=key;
       return true;
     }
@@ -145,7 +202,18 @@ window.IntMapModules.wind=function(HOST){
           try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
           try{ satToast(L('Wind data unavailable','風データを取得できませんでした','Winddaten nicht verfügbar','Данные о ветре недоступны','Datos de viento no disponibles')); }catch(_){}
           return null; }
-        if(renderer) renderer.setField(EC().sampler(VAR));
+        if(renderer){ renderer.setField(EC().sampler(VAR));
+          /* ══ ⚠⚠ (#R290) THE PREVIOUS HOUR DOES NOT SURVIVE INTO THE NEW ONE ═════════════════
+             「時刻を変えたときに、前の時刻のパーティクルの残像がしばらくの間残るのをやめろ。」
+             #R284 deliberately keeps the old hour animating while the new one downloads, so the
+             map never goes blank — that part is right and stays. What it did not do is END the old
+             hour when the new one arrived: every live particle was mid-flight on the OLD field and
+             kept its position and its accumulated streak, so the picture the reader ended up with
+             was the new hour's colours with the previous hour's trails drawn through them. On a
+             step, the moment the new frame is in hand the particles are re-seeded and the trail
+             texture is dropped — one frame, and everything on screen belongs to the hour on the
+             label. (Not on the FIRST load: there is no previous hour to leave behind.) */
+          if(opt&&opt.step){ try{ renderer.reseed(); }catch(_){} } }
         try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
         /* ⚠ (#R276 追記) THE NEXT HOUR IS WARMED ON A TIME CHANGE, NOT ON THE FIRST LOAD. 「時刻変更時
            は隣接フレームを先読みし」 is the instruction, and it is also the cheaper reading: warming a
@@ -227,6 +295,7 @@ window.IntMapModules.wind=function(HOST){
       if(v&&vt) v.textContent=L('valid','有効時刻','gültig','действ.','válido')+' '+E.fmt(vt)+' · '+relTxt(vt);
       const sl=document.getElementById('wind-time'); if(sl&&document.activeElement!==sl) sl.value=String(E.index());
     }catch(_){} }
+    /* (#R290) the layer name is 「風」 — see the note in js/data-layers.js where the row is built */
     try{ (window.IntMapECMWF||{on:()=>{}}).on(ev=>{
       if(ev.type==='index'){ touchWindTime(); return; }
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
@@ -242,7 +311,7 @@ window.IntMapModules.wind=function(HOST){
       GE().events.on('moveend',()=>{ moving=false; if(on){ resize();
         /* the view left the band that was read — the particles would sample NaN there, so read the
            new one. `bandCovers` is what stops this firing on every small pan. */
-        try{ if(!EC().bandCovers(EC().heldBand(),band())) load(); }catch(_){}
+        try{ if(!EC().bandCovers(EC().heldBand(VAR),band())) load(); }catch(_){}
       } });
       /* a style swap drops custom sources — put the field back rather than leaving only streaks */
       GE().events.on('styledata',()=>{ if(!on) return; setTimeout(()=>{ if(on&&!GE().layers.has(SLOT[0].lyr)&&!GE().layers.has(SLOT[1].lyr)){ liveKey=''; load(); } },120); });
@@ -290,18 +359,9 @@ window.IntMapModules.wind=function(HOST){
       }
       const units='<div class="kl-period" style="margin:7px 0 2px;"><label>'+L('Units','単位','Einheiten','Единицы','Unidades')+'</label>'
         +'<select id="wind-unit-sel">'+(window.WIND_UNITS||[]).map(u=>'<option value="'+u[0]+'"'+(u[0]===window.windUnit?' selected':'')+'>'+u[1]+'</option>').join('')+'</select></div>';
-      const n=E?E.count():0, i=E?E.index():0, vt=E?E.validTime():'', ref=E?E.referenceTime():'';
-      const playing=!!(E&&E.isPlaying());
-      /* (#R284) the SAME drawn icons the ECMWF box uses — one declaration, so the two views of one
-         clock can never disagree about which button is 「再生」 and which is 「次へ」. */
-      const player=n?('<div class="ecl-player">'
-        +_b('first',L('First step','最初の時刻','Erster Schritt','Первый шаг','Primer paso'),IC.first)
-        +_b('prev',L('One step back','1つ前の時刻','Ein Schritt zurück','На шаг назад','Un paso atrás'),IC.prev)
-        +_b('play',(playing?L('Pause','一時停止','Pause','Пауза','Pausa'):L('Play','再生','Abspielen','Воспроизвести','Reproducir')),(playing?IC.pause:IC.play),'ecl-play')
-        +_b('next',L('One step forward','1つ次の時刻','Ein Schritt vor','На шаг вперёд','Un paso adelante'),IC.next)
-        +_b('now',L('Back to now','現在に戻る','Zurück zu jetzt','К текущему времени','Volver a ahora'),L('Now','現在','Jetzt','Сейчас','Ahora'),'ecl-now')
-        +'</div>'
-        +'<input type="range" id="wind-time" min="0" max="'+Math.max(0,n-1)+'" step="1" value="'+i+'" style="width:100%;accent-color:var(--primary-color);">'):'';
+      const vt=E?E.validTime():'', ref=E?E.referenceTime():'';
+      /* (#R290) the layer's own discrete clock — window.IntMapWxPlayer.timeUI, the one declaration */
+      const player=window.IntMapWxPlayer.timeUI('wind-time',E,L);
       const model='<div class="ecl-model">'+(E?E.MODEL:'ECMWF IFS HRES')+' · '+(E?E.RESOLUTION_KM:9)+' km · '+ul
         +(ref?(' · '+L('run','初期時刻','Lauf','прогон','pasada')+' '+E.fmt(ref,{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric',timeZone:'UTC'})+' UTC'):'')+'</div>';
       const valid='<div id="wind-validtime" class="dl-hint">'+(vt
@@ -313,15 +373,8 @@ window.IntMapModules.wind=function(HOST){
       if(sel) sel.onchange=()=>{ window.windUnit=sel.value; try{ localStorage.setItem('intmap_wind_unit',window.windUnit); }catch(_){}
         try{ window.dispatchEvent(new Event('intmap-units')); }catch(_){}
         window._updateWindLegend(); try{ window.renderCoordReadout&&window.renderCoordReadout(); }catch(_){} };
-      const sl=body.querySelector('#wind-time');
-      if(sl) sl.oninput=()=>{ E.pause(); E.setIndex(+sl.value); };
+      window.IntMapWxPlayer.wireTimeUI(body,'wind-time',E);
       try{ window._tileLegends&&window._tileLegends(); }catch(_){}
-      body.querySelectorAll('.ecl-b').forEach(b=>{ b.onclick=()=>{ const a=b.getAttribute('data-act');
-        if(a==='first'){ E.pause(); E.setIndex(0,{now:true}); }
-        else if(a==='prev'){ E.pause(); E.step(-1); }
-        else if(a==='next'){ E.pause(); E.step(1); }
-        else if(a==='now'){ E.pause(); E.setIndex(E.nowIndex(),{now:true}); }
-        else if(a==='play') E.togglePlay(); }; });
     };
     window.addEventListener('intmap-units',()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} });
     window.addEventListener('intmap-lang',()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} });
@@ -483,6 +536,14 @@ window.IntMapModules.weatherEC=function(HOST){
       state[id].on=on;
       syncLegend();
       if(!on){ setVis(cfg,false); return; }
+      /* (#R290) 「気温レイヤーをオンにしたときも海岸線・湖岸線を自動オン。」 — the same latch the wind
+         uses (js/coast-line.js `_imCoastAuto`), for the same reason: a full-planet colour field
+         hides the basemap, and the coast is what tells the reader where they are looking. It fires
+         ONCE per session, so it is a default rather than a coupling — a reader who switches the
+         coast back off keeps it off. One layer draws both the sea and the lake shores.
+         ⚠ THE TEMPERATURE LAYER, NOT EVERY RASTER. The argument would fit the other eight too; the
+         instruction names this one, and widening it is a change nobody asked for. */
+      if(id==='ec-temp'){ try{ window._imCoastAuto&&window._imCoastAuto(); }catch(_){} }
       /* (#R288) the reanalysis source needs neither the 340 kB tile SDK nor the forecast metadata —
          asking for them would spend a reader's bandwidth on a model this picture never touches. */
       const gate=(srcOf(cfg)==='merra2')?Promise.resolve():EC().ready();
@@ -494,7 +555,7 @@ window.IntMapModules.weatherEC=function(HOST){
            instruction puts it: see the note in the wind module.) */
         let n=0;
         const go=()=>{ if(!state[id].on) return;
-          if(_imCanDraw()&&addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); renderLegend(); return; }
+          if(_imCanDraw()&&addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); renderLegend(); warmReadout(); return; }
           if(n++<80) setTimeout(go,200);
         };
         go();
@@ -509,11 +570,51 @@ window.IntMapModules.weatherEC=function(HOST){
     window.toggleWeatherLayer=toggle;
     function anyOn(){ return LAYERS.some(l=>state[l.id].on); }
     function activeLayers(){ return LAYERS.filter(l=>state[l.id].on); }
+    /* ══ ⚠⚠ (#R290) THE FIELD THE READOUT NEEDS IS WARMED WITH THE PICTURE ═══════════════════
+       The colour tiles are decoded inside the SDK; the NUMBER under the cursor comes from a
+       decoded field this module has to hold (js/wx-ecmwf.js `valueNow`). Asking for it only when
+       a reader hovers means the first hover waits for the whole read — MEASURED at 13.6 s in a
+       cold browser. It is the same latitude band the wind already reads, for the variable that is
+       actually on top, so it is started when the layer is switched on and when the hour changes,
+       and it is a no-op when that frame is already in hand. */
+    function warmReadout(){
+      try{ const cfg=LAYERS.filter(l=>state[l.id].on&&l.type==='raster'&&srcOf(l)!=='merra2').pop();
+        if(!cfg) return;
+        let band=null; try{ const b=GE().camera.getBounds(); band=EC().bandFor(b.getSouth(),b.getNorth()); }catch(_){}
+        EC().load(cfg.variable,null,band).catch(()=>{});
+      }catch(_){}
+    }
 
     /* ── the forecast step changed: build the new hour beside the old one, then swap ───────────
        ⚠ (#R288) `only` rebuilds ONE layer — the source switch and the reanalysis month are the same
        operation as a time step (a new picture in the free slot, revealed once it has painted), so
        they share this rather than growing a second, subtly different swap. */
+    /* ══ ⚠⚠⚠ (#R290) 「読み込み次第差し替える」 — AND `idle` IS NOT 「読み込んだ」 ═══════════════
+       「気象系のレイヤーで時間を選択したとき、変えてから読み込まれるまでいったん地図が何もなくなるのを
+         辞めろ。読み込み次第差し替える形式にしろ。」
+
+       The two-slot swap (#R284) is right: the new hour is built beside the old one and the old one
+       is dropped only when the new one is showing. What was wrong is WHEN it decided the new one
+       was showing — `once('idle')`, plus a 2,500 ms backstop that fired whether or not anything
+       had arrived. `idle` means 「the map has nothing left to draw for the tiles it HAS」, and a
+       source whose first tile has not come back yet has nothing to draw, so on a slow read the
+       reveal ran immediately, removed the old slot, and left the reader looking at the basemap
+       for the rest of the download. That is 「いったん地図が何もなくなる」, and it was the backstop
+       and the idle BOTH firing early rather than either firing late.
+       → the signal is the SOURCE's own: `sourcedata` with `isSourceLoaded` for that source id.
+       The backstop is long and exists only so a source that never loads cannot strand two slots;
+       until it fires the old picture stays up, which is the whole point. */
+    function whenSourceLoaded(sid,then,maxMs){
+      let done=false;
+      const fin=()=>{ if(done) return; done=true;
+        try{ GE().events.off('sourcedata',h); }catch(_){}
+        try{ then(); }catch(_){} };
+      const h=(e)=>{ if(e&&e.sourceId===sid&&e.isSourceLoaded) fin(); };
+      try{ GE().events.on('sourcedata',h); }catch(_){ setTimeout(fin,600); return; }
+      /* already in? MapLibre will not re-fire for a source that finished before we subscribed */
+      try{ if(GE().layers.sourceData&&GE().layers.sourceData(sid)) { /* geojson only — rasters fall through */ } }catch(_){}
+      setTimeout(fin,maxMs||12000);
+    }
     function applyTime(only){
       (only?[only]:activeLayers()).forEach(cfg=>{
         const old=cfg._s|0, nu=1-old;
@@ -526,8 +627,7 @@ window.IntMapModules.weatherEC=function(HOST){
             if((cfg._s|0)!==nu){ cfg._s=nu; }
             setOpSlot(cfg,nu,state[cfg.id].op);
             dropSlot(cfg,old); };
-          try{ GE().events.once('idle',reveal); }catch(_){}
-          setTimeout(reveal,2500);              /* backstop: 'idle' can be far away on a busy map */
+          whenSourceLoaded(cfg.id+'-'+nu+'-src',reveal,12000);
         };
         go(); });
       renderLegend();
@@ -539,6 +639,7 @@ window.IntMapModules.weatherEC=function(HOST){
         const i=EC().index(), n=EC().count();
         EC().prefetch(vars,Math.min(n-1,i+1));
         if(i>0) EC().prefetch(vars,i-1); }catch(_){}
+      warmReadout();
     }
 
     /* ── UNITS ───────────────────────────────────────────────────────────────────────────────
@@ -605,27 +706,17 @@ window.IntMapModules.weatherEC=function(HOST){
         if(dh===0) return L('now','現在','jetzt','сейчас','ahora');
         return (dh>0?'+':'')+dh+' '+L('h','時間','h','ч','h'); }catch(_){ return ''; }
     }
-    /* ══ ⚠⚠⚠ (#R288) THERE IS NO ECMWF CLOCK ANY MORE ══════════════════════════════════════════
-       「ECMWF系レイヤーを開くと勝手にECMWFの時間ポップアップが出るのを辞めろ。わざわざ分けるな。」
+    /* ══ ⚠⚠⚠ (#R290) …AND IT HAS ONE AGAIN, IN EACH LEGEND ═══════════════════════════════════
+       「ECMWF系レイヤーで、時間選択をChronosに受け流さなくてよい。個別の時間選択UIを使え。」
 
-       #R284 gave the forecast axis a floating box of its own — 「ECMWF 予報時刻」 — that appeared by
-       itself the moment ANY ECMWF layer was switched on, and it was a SECOND clock beside the one
-       this app has had since #R94 (window.IntMapTime, the master clock every other time-aware layer
-       already follows). Both halves of the complaint are the same fact.
-
-       So the box is gone. The instant lives in the master clock; js/wx-ecmwf.js snaps it to the
-       nearest hour the model publishes; the reader moves it from the time machine, which now
-       reaches into the forecast (js/news-timeline.js). What a layer's own legend states is what a
-       legend is for — WHICH INSTANT THIS PICTURE IS OF — and the line is a button that opens that
-       one shared control rather than a copy of it. */
-    function openClock(){
-      try{
-        const tl=document.getElementById('news-timeline');
-        if(tl){ tl.classList.remove('collapsed'); }
-        if(window._imTimeMachineForecast) window._imTimeMachineForecast();
-        if(tl&&tl.scrollIntoView) tl.scrollIntoView({block:'nearest'});
-      }catch(_){}
-    }
+       #R288 removed the floating 「ECMWF 予報時刻」 box (which opened by itself — that part stays
+       removed) and routed the forecast hour through the app-wide clock instead. The reader has
+       now said what they wanted the other half to be: the hour belongs to the LAYER, in the
+       layer's own legend, and it does not move the news, the borders or the terminator with it.
+       This line is therefore a READING of which instant the picture is of, and the control that
+       changes it is directly above it — `window.IntMapWxPlayer.timeUI`, whose steps are the
+       model's own published valid times and nothing between them. `openClock()`, which used to
+       open Chronos on its forecast tab, is gone with the button that called it. */
     /* the reanalysis month, and the forecast hour, in the same place and the same words */
     function whenLine(cfg){
       const E=EC();
@@ -657,19 +748,39 @@ window.IntMapModules.weatherEC=function(HOST){
       return '<div class="ecl-model">'+E.MODEL+' · '+E.RESOLUTION_KM+' km'
         +(ref?(' · '+L('run','初期時刻','Lauf','прогон','pasada')+' '+E.fmt(ref,{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric',timeZone:'UTC'})+' UTC'):'')+'</div>';
     }
+    /* ══ ⚠⚠⚠ (#R290) THE OPACITY CONTROL WAS IN A PANEL THAT HIDES IT ═══════════════════════════
+       「気温レイヤーに透明度選択がない。」 MEASURED on the built page: `#lyrrow-ec-temp` DOES contain
+       an `<input class="ec-op">`, and its computed `display` is **none** — with the layer on and
+       the row `.on`. css/intmap.css has hidden every slider in the Layers panel since #R16
+       («ABSOLUTE RULE — NO sliders / date-pickers / filters anywhere in the Layers panel. Every
+       such control lives in that layer's LEGEND only»), and the ECMWF rows were never given the
+       legend half of that rule. So the slider existed, was wired, held the right value — and no
+       reader could reach it, for any of the nine ECMWF layers.
+       → the control moves to the legend, in the same `.dl-op-row` shape every other layer's
+       opacity uses (js/data-layers.js `ensureLegendOpacity`), so it looks and behaves identically. */
+    function opRow(cfg){
+      const v=state[cfg.id].op;
+      return '<div class="dl-op-row">'+L('Opacity','透明度','Deckkraft','Прозрачность','Opacidad')
+        +'<input type="range" class="ec-oplg" data-for="'+cfg.id+'" min="0" max="1" step="0.05" value="'+v+'">'
+        +'<span class="dl-op-val">'+Math.round(v*100)+'%</span></div>';
+    }
     function renderOne(cfg){
       const el=boxFor(cfg);
+      const clock=(srcOf(cfg)==='merra2')?'':window.IntMapWxPlayer.timeUI('ec-time-'+cfg.id,EC(),L);
       el.innerHTML=dragHandle()
         +'<button class="layer-popup-x" title="'+t('close')+'">×</button>'
         +'<h4>'+ecLbl(cfg)+'</h4>'
-        +'<div class="ecl-one">'+barBody(cfg)+srcLine(cfg)+modelLine(cfg)
-        +'<button class="ecl-when" data-for="'+cfg.id+'" title="'+L('Open the time machine','タイムマシンを開く','Zeitmaschine öffnen','Открыть машину времени','Abrir la máquina del tiempo')+'">'+whenLine(cfg)+'</button>'
+        +'<div class="ecl-one">'+barBody(cfg)+opRow(cfg)+srcLine(cfg)+modelLine(cfg)+clock
+        +'<div class="ecl-when" data-for="'+cfg.id+'">'+whenLine(cfg)+'</div>'
         +'</div>';
       closeBtn(el);
       const ss=el.querySelector('.ec-srcsel');
       if(ss) ss.onchange=()=>{ setSource(cfg.id,ss.value); };
-      const wb=el.querySelector('.ecl-when');
-      if(wb) wb.onclick=openClock;
+      const op=el.querySelector('.ec-oplg');
+      if(op) op.oninput=()=>{ const v=+op.value; state[cfg.id].op=v; setOp(cfg,v);
+        const lbl=el.querySelector('.dl-op-val'); if(lbl) lbl.textContent=Math.round(v*100)+'%';
+        const row=document.querySelector('.ec-op[data-for="'+cfg.id+'"]'); if(row) row.value=String(v); };
+      if(clock) window.IntMapWxPlayer.wireTimeUI(el,'ec-time-'+cfg.id,EC());
     }
     /* ⚠ the switch REBUILDS the picture through the same two-slot swap a time step uses, so the map
        never goes blank between two sources — and it re-renders the legend, because the ramp's unit
