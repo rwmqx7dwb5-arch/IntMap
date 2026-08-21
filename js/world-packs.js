@@ -1507,7 +1507,14 @@ window.IntMapModules.worldPacks=function(HOST){
         return (_hzMemo[key]={ hz:hz+(extra?(' +'+extra):''), hzs:shortHz(hz)+(extra?('+'+extra):''), nh:named.length||1 }); }
       /* (#R297) unit identity → the agency's own rows for it. See the note inside unitFeature. */
       const ROWS=Object.create(null);
-      const rowsOf=(pr)=>{ try{ return (pr&&pr.rid&&ROWS[pr.rid])||[]; }catch(_){ return []; } };
+      /* (#R298 追記) rid → the rows of the OTHER shapes folded into this one — see dedupeSameShape.
+         Rebuilt from scratch on every publish, and never written into `ROWS` itself: `unitFeature`
+         owns `ROWS[rid]` and rewrites it whenever that feed lands, so merging in place would either
+         compound on every window or discard the fresh rows on the next feed. */
+      const MERGED=Object.create(null);
+      const rowsOf=(pr)=>{ try{ if(!pr||!pr.rid) return [];
+        const a=ROWS[pr.rid]||[], b=MERGED[pr.rid]||[];
+        return b.length?a.concat(b).slice(0,400):a; }catch(_){ return []; } };
       function unitFeature(iso,feed,geometry,unit,name,rows,at,got){
         let lv=0; const kinds=[];
         (rows||[]).forEach(r=>{ const v=+r.lv||0; if(v>lv) lv=v;
@@ -3441,6 +3448,7 @@ window.IntMapModules.worldPacks=function(HOST){
       function publishNow(){
         clearTimeout(pubT); pubT=0; pubLast=Date.now();
         feats=baseFeats.concat(SIDE.cma,SIDE.bom,SIDE.ma,SIDE.phl,SIDE.cwa,SIDE.nzl,SIDE.swic);
+        feats=dedupeSameShape(feats);    /* (#R298 追記) 同じ形を二度塗らない — see below */
         learnCoverage(feats);            /* (#R288) the polygons are the evidence — see learnCoverage */
         drawnISO=Object.create(null);
         feats.forEach(f=>{ const g=f.geometry; if(g&&f.properties&&f.properties.iso&&(f.properties.norm||0)>0) drawnISO[f.properties.iso]=1; });
@@ -3462,6 +3470,42 @@ window.IntMapModules.worldPacks=function(HOST){
         paintCountries();
         askUnitsInView();
         if(on&&panel.shown()) showPanel(); }
+
+      /* ══ ⚠⚠⚠ (#R298 追記) 同じ形を<b>二度塗らない</b> ═════════════════════════════════════════
+         「警報の塗漏れ、塗りすぎが多すぎる。」 MEASURED on production the moment this round shipped:
+         `queryRenderedFeatures` at ONE point returned the same unit four and five times —
+         `DEU/dwd「Kreis und Stadt Regensburg」` ×4 (ranks 1,1,1,2) and `JPN/jma「日光市」` ×5 (all rank 1)
+         — because a service that files several warnings for one area produces one feature per warning,
+         and two of them are the same polygon. At `fill-opacity` 0.38 four coats of the same colour
+         paint **0.85**: a unit with four warnings was more than twice as dark as its own legend says.
+         The 「発表なし」 stacking this round removed was the LOUDEST case of over-painting; this is the
+         other one, and it is between warnings.
+         → one feature per (country, shape). The WORST rank survives — a unit is as dangerous as the
+           most dangerous thing in force there — and the others' rows are merged into the survivor's
+           side table, so the card that opens on a tap still lists every warning in force.
+         ⚠ THE MERGE IS BUILT FRESH EACH PUBLISH. Appending to `ROWS[rid]` in place would grow it on
+         every window, because publishing happens more often than a feed lands.
+         ⚠ The shape is compared by its bounding box to four decimals (~11 m), not by object identity:
+         the duplicates come from different rows of the same feed and are separate objects. */
+      function dedupeSameShape(list){
+        const key=new Map(), win=new Map();
+        (list||[]).forEach(f=>{ const q=f&&f.properties;
+          if(!q||!q.iso||!((+q.norm||0)>0)||!f.geometry) return;
+          const bb=geomBox(f.geometry); if(!bb) return;
+          const k=q.iso+'|'+bb[0].toFixed(4)+','+bb[1].toFixed(4)+','+bb[2].toFixed(4)+','+bb[3].toFixed(4);
+          key.set(f,k);
+          const p=win.get(k);
+          if(!p||(+q.norm||0)>(+((p.properties||{}).norm)||0)) win.set(k,f); });
+        Object.keys(MERGED).forEach(k=>{ delete MERGED[k]; });
+        if(!key.size) return list;
+        const out=[];
+        (list||[]).forEach(f=>{ const k=key.get(f);
+          if(k===undefined){ out.push(f); return; }
+          const w=win.get(k);
+          if(w===f){ out.push(f); return; }
+          try{ const rid=w.properties.rid, b=ROWS[f.properties.rid];
+            if(rid&&b&&b.length) MERGED[rid]=(MERGED[rid]||[]).concat(b); }catch(_){} });
+        return out; }
 
       /* ══ ⚠⚠ (#R277) A LANGUAGE CHANGE RELABELS WHAT IS ALREADY DRAWN ════════════════════
          「警報名は設定言語で書け。」 Every feature carries `hzr` — the issuing agency's own wording — so
