@@ -698,7 +698,9 @@ window.IntMapModules.mapReadout=function(HOST){
       const EC=window.IntMapECMWF; if(!EC) return;
       if(!_fieldSub){ _fieldSub=true;
         try{ EC.on(ev=>{ if(ev&&ev.type==='field'){ try{ window.renderCoordReadout&&window.renderCoordReadout(); }catch(_){} } }); }catch(_){} }
-      let band=null; try{ const b=GE().camera.getBounds(); band=EC.bandFor(b.getSouth(),b.getNorth()); }catch(_){}
+      /* ⚠ (#R290 追記) `bandNear`, not `bandFor` — a POINT value must never ask for the planet, or
+         it evicts the wind's field. See the note on FRAME_SAMPLES in js/wx-ecmwf.js. */
+      let band=null; try{ const b=GE().camera.getBounds(); band=EC.bandNear(b.getSouth(),b.getNorth()); }catch(_){}
       /* ⚠ THE BAND IS PART OF THE REQUEST, so it has to be part of the 「already asked」 key. The
          field is read for the latitudes on screen (#R288); a reader who scrolls north out of that
          band gets NaN from the sampler, and a key that named only the variable and the hour would

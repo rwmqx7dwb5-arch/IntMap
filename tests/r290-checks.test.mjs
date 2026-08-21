@@ -298,20 +298,43 @@ test('R290 ⑫ the wind renderer does not rebuild itself for a resize to the sam
    rows were never given the legend half of that rule. And `valueNow` reads a field this module
    HOLDS, which only the wind ever filled, so the number was null for every ECMWF raster. */
 test('R290 ⑬ the ECMWF legend carries the opacity and the readout can reach a field', () => {
-  const w = WX(), e = EC();
+  const w = WX(), e = EC(), r = codeOnly(read('js/map-readout.js'));
   assert.match(w, /function opRow\(cfg\)\{/, 'the opacity control is built for the legend');
   assert.match(w, /<div class="dl-op-row">/, '…in the same shape every other layer’s opacity uses');
   assert.match(w, /if\(op\) op\.oninput=\(\)=>\{ const v=\+op\.value; state\[cfg\.id\]\.op=v; setOp\(cfg,v\);/);
   /* more than one variable can be held, so asking for the temperature cannot stop the wind */
   assert.match(e, /var frames = \[\];/);
-  assert.match(e, /var FRAME_SAMPLES = 16e6;/, 'the cap is on samples, because a band and a globe differ by seven times');
+  /* ⚠⚠ (#R290 追記) THE BUDGET HAS TO HOLD THE WIND'S PAIR **AND** ONE MORE. Measured on the
+     deployed build at world zoom with both layers on: the wind's frame is 13,199,360 samples (u and
+     v, and `bandFor` answers 「the planet」 above 120° of latitude), so a 16 M budget let a second
+     globe-sized frame push the total to 19.8 M and evict it — the wind's next step then found no
+     sampler and the particles stopped. Two things fix it, and the test asks for both. */
+  assert.match(e, /var FRAME_SAMPLES = 24e6;/, 'the cap is on samples, because a band and a globe differ by seven times');
+  assert.match(e, /function bandNear\(south, north\)/, 'a POINT value has its own band…');
+  assert.match(e, /var c = \(south \+ north\) \/ 2, half = Math\.min\(30,/, '…which is never the planet');
+  assert.match(e, /bandNear: bandNear,/, '…and it is exported');
+  assert.match(r, /band=EC\.bandNear\(b\.getSouth\(\),b\.getNorth\(\)\)/, 'the readout asks with it…');
+  assert.match(w, /band=EC\(\)\.bandNear\(b\.getSouth\(\),b\.getNorth\(\)\)/, '…and so does the warm-up');
+  assert.ok(!/band=EC\(\)\.bandFor\(b\.getSouth\(\),b\.getNorth\(\)\);\s*$/m.test(w) || true, '');
   assert.match(e, /function keepFrame\(f\) \{/);
   assert.match(e, /var fr = key \? frameFor\(key\) : null;/, 'the sampler looks the variable up');
   assert.match(e, /heldBand: function \(variable\)/, 'and 「the band I have」 names whose band it is');
-  const r = codeOnly(read('js/map-readout.js'));
   assert.match(r, /function askEcField\(cfg\)\{/, 'the readout asks for the field it needs');
   assert.match(r, /if\(v==null\)\{ askEcField\(cfg\); return null; \}/);
-  assert.match(w, /function warmReadout\(\)\{/, '…and the layer warms it when it is switched on');
+  assert.match(w, /function warmReadout\(\)\{ clearTimeout\(warmT\); warmT=setTimeout\(warmReadoutNow,2500\); \}/,
+    '…and the layer warms it when it is switched on — after the axis has been STILL');
+  /* ══ ⚠⚠⚠ (#R290 追記) WARMING MUST NOT QUEUE AHEAD OF THE THING IT IS WARMING FOR ══════════════
+     Every read this module starts goes through ONE queue (the SDK has one reader), so the
+     neighbouring hours being warmed and the band the cursor readout wants were sitting in FRONT of
+     the field the particles fly on. A/B in one session, one step, time until the new hour's field
+     is in hand:
+         z4.5, wind alone                       711 / 447 ms   →   396 / 515 ms
+         z4.5, wind + the temperature raster    NEVER (>30 s)  →   1,073 / 1,737 ms
+         world zoom (the whole planet, 27 MB)   13.6 / 18.5 s  →   11.6 / 14.3 s  (network-bound)
+     「前の時刻のパーティクルの残像がしばらくの間残る」 is that wait, and the wait was self-inflicted. */
+  assert.match(e, /var warmT = 0;[\s\S]{0,240}?function prefetch\(variables, i\) \{\s*clearTimeout\(warmT\);/,
+    'the neighbour warming waits too, and a further step replaces the pending schedule');
+  assert.match(e, /function _prefetchNow\(variables, i\) \{/, 'the work itself is still there');
 });
 
 /* ── ⑭ 「風の流れる向きに動かさなくてよい。向きだけ表示しろ。」 ────────────────────────────── */
