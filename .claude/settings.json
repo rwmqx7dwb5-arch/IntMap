@@ -2,6 +2,48 @@
   "permissions": {
     "deny": [
       "Edit(GPT-HANDOFF/HANDOFF.md)"
+    ],
+    "allow": [
+      "Bash(node scripts/worktree.mjs:*)",
+      "Bash(node scripts/master-sync.mjs:*)",
+      "Bash(node scripts/static-checks.mjs:*)",
+      "Bash(node scripts/i18n-audit.mjs:*)",
+      "Bash(node scripts/doc-facts.mjs:*)",
+      "Bash(node scripts/atlas-catalog.mjs:*)",
+      "Bash(node scripts/engine-coupling.mjs:*)",
+      "Bash(node scripts/test-budget.mjs:*)",
+      "Bash(node --test:*)",
+      "Bash(npm test)",
+      "Bash(npm run check:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run build)",
+      "Bash(npx playwright test:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git worktree list:*)",
+      "Bash(git fetch:*)",
+      "Bash(git grep:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/worktree.mjs status --brief",
+            "timeout": 20
+          }
+        ]
+      }
     ]
   }
 }

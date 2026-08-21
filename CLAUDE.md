@@ -33,6 +33,15 @@
 - **現在の Git 状態**（ブランチ、未コミット変更、他セッションの worktree）
 - **既存の PR** と **CI 状態**
 
+Git 側の確認は 1 コマンドで済む——**手で `git status` / `worktree list` / ラウンド番号を数えない**:
+
+```bash
+node scripts/worktree.mjs status
+```
+
+これが、branch・未コミット変更・全 worktree・`origin/main` との差・`DEV-NOTES.md` の最新ラウンド・
+**空いているラウンド番号**をまとめて出す。ここに出ないものだけ個別に見る。
+
 報告されたバグについては、**実際に観測される挙動として再現したうえで**、表面的な対処ではなく
 **根本原因のレベルで**修正すること。
 
@@ -48,6 +57,9 @@
 | Admin | `admin.html` |
 | Supabase project ref | `vpekfwdpurzejrrmacac` |
 | **文書の索引** | **`docs/README.md`** — どれが何の正本か・対象読者・更新条件（**まずここ**） |
+| **実行戦略** | **`.claude/rules/execution-strategy.md`** — 並列化・委譲・隔離・検証の段（§5.0） |
+| **ラウンドの手順** | **`/intmap-round`**（`.claude/skills/intmap-round/`）・作業場は `node scripts/worktree.mjs` |
+| 専用 subagent | `.claude/agents/` — scout（全数調査）／verifier（テストとログ）／i18n（9言語）／implementer（隔離実装）／prod-verifier（本番検証） |
 | 現状仕様書 | `Architecture.md`（＋ `docs/FILES.md` ファイル台帳・`docs/MAP-LAYERS.md` レイヤー実装） |
 | 製品 | `PRODUCT.md`（目的・機能一覧・Atlas の到達点） |
 | 技術判断 | `DECISIONS.md`（今も有効な判断とその理由だけ） |
@@ -111,6 +123,24 @@ Bash から直接起動しない。
 
 ## 5. ワークフロー（原則として最後まで完走する）
 
+### 5.0 実行戦略は Claude が決める（利用者に管理させない）
+
+ユーザーは「これを実装して」「これを直して」としか言わない。
+**分解・並列化・subagent への委譲・worktree による隔離・検証の段は、毎回 Claude 自身が判断する。**
+worktree・subagent・agent 設定の手動管理をユーザーに要求してはならない。
+
+- 独立した調査・分析・実装は**積極的に並列化**する（ただし**小さい仕事まで並列化しない**）
+- リポジトリ探索・大量ログ解析・独立調査は **subagent へ委譲**し、メインの context を浪費しない
+- 並列編集が有効なら **worktree で安全に分離**する（同じファイルを 2 体に書かせない）
+- 作業中は**対象テストだけ**で高速に検証し、広い網は**適切な段階で 1 回**
+- **速度のために IntMap の品質を落とさない**
+
+⚠ **正本は [`.claude/rules/execution-strategy.md`](.claude/rules/execution-strategy.md)**
+（判断基準・委譲先の agent・検証の段の表）。ラウンド 1 本を通す**具体的な手順**は
+**`/intmap-round`**（`.claude/skills/intmap-round/`）。ここに書き写して二重にしない。
+
+### 5.1 工程
+
 問題によって妨げられない限り、本規程の確認要件を遵守し、並行作業の存在を考慮したうえで、
 **以下のワークフロー全体を完了まで実行する**こと。
 
@@ -168,6 +198,9 @@ GitHub は共有と CI のための remote、USB は §11 のバックアップ�
 - **作業は必ず、専用 branch と独立した worktree で行う。**
   worktree は OneDrive の外（`%LOCALAPPDATA%\Temp` 以下）に置く。
   そこで完結した作業は**原本に 1 バイトも書き込まない**——だから次の工程が要る。
+  **手で組み立てない**——`node scripts/worktree.mjs new <slug>` が、空きラウンド番号の決定・
+  branch・OneDrive 外の worktree・`node_modules` の junction・preview 設定までを 1 回で行う。
+  終わったら `node scripts/worktree.mjs done`（**自分のものだけ**片付ける）。
 
 - **§5 の最終工程で原本を merge 後の状態にする。** `node scripts/master-sync.mjs --sync`。
   これを行わない限り、その作業は原本に存在しない。
