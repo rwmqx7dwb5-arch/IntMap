@@ -75,7 +75,11 @@ window.IntMapWidgetLayout = (function () {
       },
       savePlace: function (p) { savePlace(p); },
       openMonitors: function () { return runCommand('tab.monitors') || WC.toast(L('Monitors are in the sidebar', '監視はサイドバーにあります', 'Die Überwachung liegt in der Seitenleiste', 'Мониторы — в боковой панели', 'Los monitores están en la barra lateral')); },
-      openRoutePanel: function () { try { if (window.IntMapRouting && window.IntMapRouting.openPanel) { window.IntMapRouting.openPanel(); return true; } } catch (e) {} return runCommand('tool.route'); },
+      /* ⚠ (#R299) THE FALLBACK NAMED A COMMAND THAT DOES NOT EXIST. `tool.route` is registered
+         nowhere — the Tools row's id is `tool.directions` (js/map-ui.js) — so on the one path that
+         reaches it (IntMapRouting absent, i.e. the router module has not been built) the card's
+         「経路パネルを開く」 returned false and nothing happened, silently. */
+      openRoutePanel: function () { try { if (window.IntMapRouting && window.IntMapRouting.openPanel) { window.IntMapRouting.openPanel(); return true; } } catch (e) {} return runCommand('tool.directions'); },
       openAtlasBrief: function () { openAtlasBrief(); },
       addCountryWatch: function (cc) { addCountryWatch(cc); },
       chronosNow: function () { try { window.IntMapTime.setNow({ source: 'widget' }); } catch (e) {} WC.invalidateContext(); repaintAll(); },

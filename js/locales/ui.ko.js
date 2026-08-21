@@ -1610,7 +1610,6 @@ window.IntMapLang.define('ko', { ui: {
   "in ": "· ",
   "in eclipse": "식 중",
   "In eclipse": "식 중",
-  "In force now": "현재 발효 중",
   "in-window verified events": "기간 내 확인된 사건",
   "incl.": "경사",
   "Inclination": "궤도 경사각",
@@ -4232,13 +4231,11 @@ window.IntMapLang.define('ko', { ui: {
   "by state": "주(州) 단위",
   "by warning area": "경보 구역 단위",
   "Colours": "색상",
-  "Colours are the issuing agency’s own — Japan’s are the JMA’s yellow / red / magenta / black, China’s the CMA’s four signal colours, and the rest the CAP awareness ladder. Tap a country for that agency’s exact scale.": "색상은 발표 기관 자체의 배색입니다 — 일본은 기상청의 노랑/빨강/자홍/검정, 중국은 기상국의 4색 예경보 신호, 그 밖은 CAP 등급입니다. 국가를 누르면 해당 기관의 정확한 등급이 나옵니다.",
   "Danger": "위험",
   "Danger warning": "위험경보",
   "Delayed": "다소 오래됨",
   "Diagnostics": "진단",
   "Each agency’s own published scale": "각 기관이 공표한 등급",
-  "Each agency’s ranks are mapped onto these four by IntMap. Two countries at the same step do NOT necessarily face the same danger — the warning systems themselves differ. Tap a country for its own agency’s scale.": "각 기관의 등급을 IntMap이 독자적으로 이 4단계로 환산한 것입니다. 같은 단계라도 두 나라의 위험도가 같다는 뜻이 아닙니다 — 경보 제도 자체가 다릅니다. 국가를 누르면 해당 기관의 등급이 나옵니다.",
   "Each country is drawn from its own agency, at the unit that agency issues for. Educational display — follow the official authorities.": "각 나라는 그 나라 기관의 발표 단위로 그립니다. 참고용 표시이므로 공식 기관의 발표를 따르십시오.",
   "Europe — MeteoAlarm": "유럽 — MeteoAlarm",
   "every 30 s": "30초마다",
@@ -4253,7 +4250,6 @@ window.IntMapLang.define('ko', { ui: {
   "lower rank": "하위 등급",
   "No feed connected": "미대응(피드 미연결)",
   "Nothing in force": "발표 없음",
-  "Nothing in force in any connected service right now.": "접속 중인 어느 기관에도 현재 발표 중인 것이 없습니다.",
   "Nothing in force right now — this country’s service was read and had nothing to publish.": "현재 발표 중인 것이 없습니다(이 나라의 기관을 정상적으로 읽었고 발표가 없습니다).",
   "Official": "각국 공식",
   "oldest feed": "가장 오래된 피드",
@@ -4271,7 +4267,6 @@ window.IntMapLang.define('ko', { ui: {
   "The clock is the newest item in that feed, not how long ago it was fetched. A national service with nothing to publish is quiet, not broken.": "표시된 시간은 그 피드에서 가장 최신 항목의 시각이며, 내려받은 시각이 아닙니다. 발표할 것이 없는 기관은 「조용한」 것이지 「고장난」 것이 아닙니다.",
   "This agency’s own ranks": "이 기관 자체의 등급",
   "Ultra": "초고",
-  "What is in force now": "지금 발표 중인 경보",
   "Yellow (III)": "노랑(III급)",
   "Air quality": "대기질",
   "Amount to pour": "방류 총량",
@@ -4887,4 +4882,13 @@ window.IntMapLang.define('ko', { ui: {
   "Find routes": "경로 검색",   /* (#R298) */
   "Tap the map to choose a point": "지도를 탭해 지점을 선택하세요",   /* (#R298) */
   "The map is not ready to choose a point yet": "지도가 아직 지점을 선택할 준비가 되지 않았습니다",   /* (#R298) */
+  "Countries at Danger or above": "위험 등급 이상인 국가",   /* (#R299) */
+  "No country is at Danger or above right now.": "지금 위험 등급 이상인 국가는 없습니다.",   /* (#R299) */
+  "IntMap’s own conversion — the same step is not the same danger. Tap a country for its agency’s scale.": "IntMap 자체 환산입니다 — 같은 등급이라도 위험도는 같지 않습니다. 국가를 누르면 해당 기관의 등급.",   /* (#R299) */
+  "Each agency’s own colours. Tap a country for its exact scale.": "색상은 각 기관 자체의 배색입니다. 국가를 누르면 정확한 등급.",   /* (#R299) */
+  "No point placed yet": "아직 지점이 설정되지 않았습니다",   /* (#R299) */
+  "Place the point on the map": "지도에서 지점 설정",   /* (#R299) */
+  "The route planner is open on the map — fill in the two fields there, or say the places here.": "지도에 길찾기 패널을 열었습니다 — 그곳의 두 칸을 채우거나, 여기서 장소를 말씀해 주세요.",   /* (#R299) */
+  "Where from? Give a place (or lng/lat).": "어디에서 보는 하늘인가요? 장소(또는 경도/위도)를 알려 주세요.",   /* (#R299) */
+  "Where? Give the transmitter site (place, or lng/lat).": "송신기 위치는 어디인가요? 장소 또는 경도/위도를 알려 주세요.",   /* (#R299) */
 } });

@@ -54,7 +54,7 @@ test('#R288 ① the hatch covers both silences, and the other three states survi
   /* (#R290) …and «this map holds its units» became «the unit layer is drawing it right now», because
      the quiet collection is bounded by the view and by the zoom — a country whose units are cached
      but off-screen has to keep the country-wide sheet or nothing would paint it. */
-  assert.match(body, /return\s*quietSet\[c\]\?2:1;/, '「read and quiet」 is still its own tier');
+  assert.match(body, /return\s*\(?[^;]*quietSet\[c\][^;]*\?\s*2\s*:\s*1;/, '「read and quiet」 is still its own tier');
   /* the paint expressions still read the tier the way those states assume */
   /* ⚠ (#R293) the condition moved into `hatchOp(v)` — see tests/r293 ⑯ for what was writing over it */
   assert.match(src, /const hatchOp=\(v\)=>\['case',\['==',\['to-number',\['feature-state','wpAlert'\],-1\],0\],/,
@@ -109,7 +109,7 @@ test('#R288 ② the quiet grey is a unit layer, under the warnings, in the same 
   /* the division is still half the answer: the outline tells norm-0 units apart from each other */
   assert.match(src, /'line-color':\['case',\['>',\['get','norm'\],0\],\['get',colField\(\)\],'rgba\(/);
   /* a country the unit layer is drawing must not ALSO get the country-wide sheet */
-  assert.match(src, /return\s*quietSet\[c\]\?2:1;/);
+  assert.match(src, /return\s*\(?[^;]*quietSet\[c\][^;]*\?\s*2\s*:\s*1;/);
   /* the unit sets are the ones the placement ladder already builds */
   const u = src.indexOf('function askUnits(');
   const ub = src.slice(u, src.indexOf('function askUnitsWorld(', u));

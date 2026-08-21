@@ -31,6 +31,7 @@
    have changed meaning. */
 /* (#R199) Real ES imports, not window.IntMapModules: each is a named binding the bundler resolves, so it cannot be missing at runtime and cannot depend on load order. */
 import { makeThemeSky } from './theme-sky.js';
+import { makeSidebarStyle } from './sidebar-style.js';   /* (#R299) the sidebar's material + the frosted mode's camera inset */
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
 /* (#R203) the opening view: a lit Earth rather than a black one — see the file for the measurement. */
 import { OpeningView } from './opening-view.js';
@@ -650,13 +651,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   else sidebar.classList.toggle('collapsed',!_sessUI.left);
   document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
     /* (#R160) DELIBERATELY minimal. The LEFT sidebar keeps its ORIGINAL mechanism (solid = flex sibling with the map
-       beside it; frosted = overlay). The toggle touches the map camera NOTHING at all — it only flips `collapsed` and
-       syncs the material classes. The existing ResizeObserver re-fits the canvas on its own. Every "compensation" tried
-       here made things worse: setPadding/easeTo drove the camera, and panBy — on the default GLOBE projection — ROTATES
-       the planet ("地球が回る"). So there is no pin, no padding, no anchor, no per-frame loop, and no map.resize() call
-       from here. The toggle must not move the camera. */
+       beside it; frosted = overlay). The toggle itself drives NOTHING: it flips `collapsed` and lets the two things
+       that own geometry re-derive themselves. The existing ResizeObserver re-fits the canvas on its own. Every
+       "compensation" tried HERE made things worse: an easeTo/pin drove the camera, and panBy — on the default GLOBE
+       projection — ROTATES the planet ("地球が回る"). So there is no pin, no anchor, no per-frame loop, and no map.resize()
+       call from here. ⚠ (#R299) …and the ONE number that follows the column is DERIVED, not driven: `applySidebarStyle`
+       re-reads how much of the map the sidebar is covering (0 unless the frosted overlay is actually over it) and writes
+       it as camera padding when — and only when — that width changed. See the ⚠⚠⚠ box on that function. */
     sidebar.classList.toggle('collapsed');
-    try{ applySidebarStyle(false); }catch(_){}   /* material classes only (blur/translucency) — never the camera */
+    try{ applySidebarStyle(false); }catch(_){}   /* material classes + (#R299) the frosted overlay's own width */
     try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){}   /* recompute the search-pill layout only */
     try{ window._imSaveSession&&window._imSaveSession(); }catch(_){}   /* (#R195) remember it for the next load */
   });
@@ -3372,19 +3375,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){}   /* (#R20) mirror to the account when logged in */
   }
   window.imSaveSettings=saveSettings;
-  function applySidebarStyle(animate){ const s=window.imSidebarStyle;
-    const frosted=(s==='translucent'||s==='glass2');
-    document.body.classList.toggle('sidebar-translucent', frosted);
-    document.body.classList.toggle('sidebar-glass2', s==='glass2');
-    document.body.classList.toggle('sidebar-glass', frosted);   /* drives the desktop overlay-frost MATERIAL only (blur/translucency) */
-    /* (#R160) NO camera padding on toggle or style change anymore. Both solid and frosted sidebars overlay a
-       FIXED full-width map (see the layout CSS), so the map keeps its own centre and must never be optically
-       shifted — that optical shift was exactly the "地図が勝手に動いてしまう" the user reported. The `animate`
-       argument is kept only for call-site compatibility and is now a no-op. Mobile bottom-sheet padding is
-       owned by the detent system elsewhere and is deliberately left untouched. As a one-time safety net, clear
-       any stray desktop left/right map padding a prior build may have set (fresh maps already start at 0). */
-    try{ if(GE().camera.getPadding && GE().camera.setPadding && !isMobile()){ const cur=GE().camera.getPadding(); if(cur && (cur.left||cur.right)) GE().camera.setPadding({top:cur.top||0,right:0,bottom:cur.bottom||0,left:0}); } }catch(_){}
-  }
+  /* (#R299) moved to js/sidebar-style.js — a real ES module (see the import at the top of this file), not a
+     window.IntMapModules entry and not a line in src/main.js's ordered list. It carries the frosted mode's
+     camera inset with it; the note that explains why frosted needs one and solid does not is in that file. */
+  /* ⚠ (#R167's DEAD-ZONE RULE, caught by tests/r167 #5 the moment this moved) js/mobile-ui.js binds
+     `applySidebarStyle` AT FACTORY TIME, so the name has to be a HOISTED declaration — a `const`
+     assigned here would have been `undefined` for every factory that ran above this line. The body
+     is in the module; the name stays a function. */
+  function applySidebarStyle(animate){ return _sidebarStyle(animate); }
+  const _sidebarStyle = makeSidebarStyle({ GE, isMobile });
 
   /* (#R167) moved to js/mobile-ui.js — see Architecture.md §3.1. */
   window.IntMapModules.layoutReflow(IM_HOST);

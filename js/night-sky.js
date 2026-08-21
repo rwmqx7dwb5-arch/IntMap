@@ -568,7 +568,10 @@ window.IntMapNightSky = (function () {
          keeps them stacked in the corner panel, where the width is not there to use. */
       + '<div class="ns-cols">'
       + '<div class="ns-col">'
-      + '<div class="ns-read" style="margin-bottom:8px;"></div></div>'
+      + '<div class="ns-read" style="margin-bottom:8px;"></div>'
+      /* (#R299) the site this whole sky is for — the title names it, this moves it (see pickSite) */
+      + '<button class="ns-site" style="border:1px solid rgba(255,255,255,.2);background:#1b2233;color:#e8eef8;'
+      + 'border-radius:8px;padding:4px 9px;cursor:pointer;font:inherit;margin-bottom:8px;"></button></div>'
       + '<div class="ns-col">'
       /* (#R214) the two views of the same sky — a chart of the whole hemisphere, or standing in it */
       + '<div class="ns-modes" style="display:flex;margin-bottom:8px;border:1px solid rgba(255,255,255,.18);'
@@ -615,6 +618,7 @@ window.IntMapNightSky = (function () {
       live = false; playing = false; whenMs = v; syncControls(); draw();
     };
     panel.querySelector('.ns-rate').onchange = (e) => { rate = +e.target.value || 3600; };
+    panel.querySelector('.ns-site').onclick = () => pickSite();
     rate = 3600;
     panel.querySelectorAll('.ns-mode').forEach((b) => { b.onclick = () => setMode(b.getAttribute('data-m')); });
     panel.querySelectorAll('.ns-face').forEach((b) => { b.onclick = () => { lookAz = +b.getAttribute('data-az'); lookAlt = Math.min(lookAlt, 25); syncControls(); draw(); }; });
@@ -759,6 +763,10 @@ window.IntMapNightSky = (function () {
         ? L('horizon', '地平線', 'Horizont', 'горизонт', 'horizonte')
         : L('zenith', '天頂', 'Zenit', 'зенит', 'cenit');
     }
+    /* (#R299) the same two-state wording js/viewshed.js `#los-move` uses, so the gesture reads the same */
+    panel.querySelector('.ns-site').textContent = site
+      ? '📍 ' + L('Move the site…', '地点を変える…', 'Standort verschieben…', 'Перенести точку…', 'Mover el punto…')
+      : '◎ ' + L('Place the point on the map', '地図で地点を設定', 'Punkt auf der Karte setzen', 'Задать точку на карте', 'Colocar el punto en el mapa');
     panel.querySelector('.ns-title').textContent =
       (mode === 'stand'
         ? L('Standing here', 'ここに立って', 'Hier stehen', 'Стоя здесь', 'De pie aquí')
@@ -770,6 +778,46 @@ window.IntMapNightSky = (function () {
         'Sterne: Hipparcos (ESA 1997). Sonne, Mond, Planeten: JPL. Gelände: Terrarium DEM.',
         'Звёзды: Hipparcos (ESA 1997). Солнце, Луна, планеты: JPL. Рельеф: Terrarium DEM.',
         'Estrellas: Hipparcos (ESA 1997). Sol, Luna y planetas: JPL. Terreno: Terrarium DEM.');
+  }
+
+  /* ══ ⚠ (#R299) THE SKY COULD NOT BE MOVED ONCE IT WAS OPEN ═════════════════════════════════════
+     「まずは地点を選ばせろってこと。」 The tools row asks for a point before opening this now
+     (js/map-ui.js `_askPoint`), and once open the panel had no control that changes it: the only
+     road to another horizon was to close the sky and start over. The gesture is #R196's shared bar,
+     with the one difference this view forces — `#night-sky` is a FULL-SCREEN overlay at z-index
+     9,400 standing on the map, so the map cannot be tapped through it and the bar (z-index 1,600)
+     would be behind it. The sky therefore steps aside for the length of the gesture and comes back
+     with the reader's time, mode and heading untouched: what moves is the SITE, exactly the way
+     js/viewshed.js `moveTo` moves its own — the derived answer (the measured skyline, the per-star
+     cache) is dropped because it describes somewhere else, and is measured again for the new point. */
+  function pickSite() {
+    const P = window.IntMapPick; if (!P || !P.start || !root) return false;
+    /* ⚠ the sky MUST come back, and one of the ways the bar ends notifies nobody: `abort()` (another
+       panel tearing its own gesture down) fires no callback at all, so the gesture is also watched. */
+    let watch = 0, restored = false;
+    const back = () => {
+      if (restored) return; restored = true;
+      if (watch) { clearInterval(watch); watch = 0; }
+      root.style.display = 'block'; open = true;
+      applyChrome(); syncControls(); draw();
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+    root.style.display = 'none'; open = false;
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    const armed = P.start({
+      hint: L('Night sky from here', 'ここからの星空', 'Sternhimmel von hier', 'Ночное небо отсюда', 'El cielo nocturno desde aquí')
+        + ' — ' + L('Tap the map to choose a point', '地図をタップして地点を選んでください', 'Zum Wählen eines Punktes auf die Karte tippen',
+                    'Нажмите на карту, чтобы выбрать точку', 'Toca el mapa para elegir un punto'),
+      onPick: (ll) => {
+        site = { lng: +ll.lng, lat: +ll.lat, elevM: null, demZ: null };
+        horizon = null; horizonErr = null; skyCache = null;
+        back(); measureHorizon(site.lng, site.lat);
+      },
+      onCancel: back,
+    });
+    if (!armed) { back(); return false; }
+    watch = setInterval(() => { try { if (!P.active()) back(); } catch (_) { back(); } }, 400);
+    return true;
   }
 
   function tick(t) {
