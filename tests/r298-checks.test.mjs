@@ -188,6 +188,42 @@ test('R298 ⑭ the candidates can be clicked, one thing answers 「is there a ro
   assert.match(ui, /else if \(ST\(\)\._pure\.ready\(ST\(\)\.get\(\)\)\) schedule\(0\);/);
 });
 
+/* ── ⑮ what production found AFTER this round shipped ─────────────────────────────────────── */
+test('R298 ⑮ a predicate is CALLED, a shape is painted once, and a pan repairs the cage', () => {
+  /* ⑴ MEASURED on production the moment this round shipped: `#route-panel` carried
+     `data-detent="full"` on a 1,280 px desktop, and only `setDetent` writes that — which `open()`
+     calls behind `if (isMob())`. `HOST.isMobile` is the PREDICATE (js/app-body.js: `get isMobile(){
+     return isMobile; }`), so `!!HOST.isMobile` was true on every device, `enableWindowing()`
+     early-returned, and THIS ROUND'S drag and resize never bound at all. */
+  const ui = read('js/routing-ui.js');
+  assert.ok(!/!!HOST\.isMobile\s*\|\|/.test(ui), 'the function object must not be the answer');
+  assert.match(ui, /typeof HOST\.isMobile === 'function' \? !!HOST\.isMobile\(\)/,
+    'the predicate is called');
+  /* every other module in this app already calls it — this file was the only one that did not */
+  const others = ['js/countries-ui.js', 'js/data-layers.js', 'js/map-ui.js']
+    .map(read).join('\n');
+  assert.ok(!/!!HOST\.isMobile\s*[|&]/.test(others), 'and nothing else spells it that way either');
+
+  /* ⑵ MEASURED: one point returned the SAME unit four and five times
+     (DEU/dwd Kreis und Stadt Regensburg ×4, JPN/jma 日光市 ×5). At 0.38 four coats paint 0.85. */
+  const s = WP();
+  assert.match(s, /feats=dedupeSameShape\(feats\);/, 'the collection is deduplicated before it is published');
+  const d = s.slice(s.indexOf('function dedupeSameShape(list){'), s.indexOf('function dedupeSameShape(list){') + 1800);
+  assert.match(d, /if\(!p\|\|\(\+q\.norm\|\|0\)>\(\+\(\(p\.properties\|\|\{\}\)\.norm\)\|\|0\)\) win\.set\(k,f\);/,
+    'the worst rank survives');
+  assert.match(d, /MERGED\[rid\]=\(MERGED\[rid\]\|\|\[\]\)\.concat\(b\);/,
+    'and the folded-in rows are kept, so the tap card still lists every warning');
+  assert.match(d, /Object\.keys\(MERGED\)\.forEach\(k=>\{ delete MERGED\[k\]; \}\);/,
+    'rebuilt from scratch each publish — appending in place would compound');
+  assert.match(s, /const a=ROWS\[pr\.rid\]\|\|\[\], b=MERGED\[pr\.rid\]\|\|\[\];/,
+    'and the reader of the rows consults both, so ROWS stays owned by unitFeature');
+
+  /* ⑶ MEASURED: a caged map stayed caged for 21 s because `idle` never came. */
+  const p = read('js/map-projection.js');
+  assert.match(p, /GE\(\)\.events\.on\('moveend',_reassertFlatPan\);/,
+    'dragging the map — the reader’s first instinct — repairs it');
+});
+
 /* ── ⑬ the message tools moved out rather than the ceiling moving up ─────────────────────── */
 test('R298 ⑬ the Atlas kernel is under its ceiling because a subject left', () => {
   const n = (p) => read(p).split('\n').length;
