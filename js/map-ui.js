@@ -821,10 +821,17 @@ window.IntMapModules.layerSidebar=function(HOST){
          all. That is the same shape as #R261's five simulators with no door, one notch worse,
          because this one is the everyday feature rather than a specialist one — which is also why
          it sits ABOVE the simulators rather than at the end of them.
-         ⚠ `isOpen` / `close` ARE THE PANEL, NOT THE ROUTE. A second press closes the panel and the
-         route stays drawn (§2.2); pressing again re-opens the SAME journey. Only 「経路を消去」
-         inside the panel throws it away. `dot` lights when a route exists but the panel is shut, so
-         the row can say 「there is a route out there」 without claiming to be open.
+         ⚠ (#R299 追記) THIS PARAGRAPH DESCRIBED #R291's RULE, WHICH #R296 INVERTED FOUR ROUNDS AGO.
+         It said 「a second press closes the panel and the route stays drawn (§2.2); only 『経路を消去』
+         throws it away」. MEASURED on production R299: a second press leaves `hasRoute()` false and
+         every `imroute-*` layer at 0 features — because 「経路機能を閉じても地図に経路が残り続ける
+         のをやめろ」 made CLOSING mean CLEARING, and this row closes through the same `close()` as
+         the × does. The behaviour is the instruction; the sentence was the stale copy, in the third
+         of three files that stated the same fact.
+         ⚠ `isOpen` / `close` are still THE PANEL's — the row asks them to decide whether a press
+         opens or closes. What follows from closing belongs to js/routing-ui.js `close()`.
+         `dot` reads the store, so it goes out with the route rather than lying about one that is
+         no longer drawn.
          ⚠ NO NEW FLOATING BUTTON ANYWHERE — 「地図上へ新しい常設フローティングボタンを追加しない」. */
       { id:'tool.directions', mod:'IntMapRouteUI', ic:SVG_DIRECTIONS, en:'Directions', group:'tool',
         keys:'route directions navigation journey trip 経路 ルート 道順 経路案内 ナビ Route Wegbeschreibung маршрут путь ruta indicaciones',

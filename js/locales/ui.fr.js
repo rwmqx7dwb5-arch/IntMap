@@ -4894,7 +4894,7 @@ window.IntMapLang.define('fr', { ui: {
   "The map is not ready to choose a point yet": "La carte n’est pas encore prête pour choisir un point",   /* (#R298) */
   "Countries at Danger or above": "Pays au niveau Danger ou au-dessus",   /* (#R299) */
   "No country is at Danger or above right now.": "Aucun pays n’atteint le niveau Danger actuellement.",   /* (#R299) */
-  "IntMap’s own conversion — the same step is not the same danger. Tap a country for its agency’s scale.": "Conversion propre à IntMap — un même niveau n’est pas le même danger. Touchez un pays pour l’échelle de son service.",   /* (#R299) */
+  "IntMap’s own conversion — the same step is not the same danger.": "Conversion propre à IntMap — un même niveau n’est pas le même danger.",   /* (#R299) */
   "Each agency’s own colours. Tap a country for its exact scale.": "Couleurs propres à chaque service. Touchez un pays pour son échelle exacte.",   /* (#R299) */
   "No point placed yet": "Aucun point n’est encore placé",   /* (#R299) */
   "Place the point on the map": "Placer le point sur la carte",   /* (#R299) */

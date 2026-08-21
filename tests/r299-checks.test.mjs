@@ -327,3 +327,88 @@ test('R299 ⑩ the shell moved a feature OUT rather than raising its ceiling', (
   assert.ok(/sidebar-style\.js/.test(read('docs/FILES.md')), 'and the ledger describes the new file');
 });
 
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+   #R299 追記 — what production said when the round was measured on the live site.
+   Four of these pin things the round's OWN comments claimed and had not checked.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── ⑪ choosing an alternative repaints, it does not re-frame ──────────────────────────────── */
+test('R299 追記 ⑪ selectAlt repaints without fitting — a selection never moves the camera', () => {
+  const code = noComments(read('js/routing.js'));
+  const i = code.indexOf('function selectAlt(');
+  assert.ok(i > 0, 'selectAlt is still one function');
+  const s = code.slice(i, i + 700);
+  /* MEASURED on production R299: a tap on the line moved the camera by Δzoom −0.0359 and ~5 px,
+     because `_drawAlts` always hands `_paint` the selected alternative's coordinates as `fitCoords`.
+     The relation: the selection path suppresses the fit with the same switch `repaint()` uses. */
+  assert.ok(/_noFit\s*=\s*true/.test(s), 'the selection suppresses the fit');
+  assert.ok(/finally/.test(s), '…and restores the switch, so a NEW route set still fits');
+  /* ⚠ and the deliberate one is untouched: asking for one step MEANS flying to it */
+  const j = code.indexOf('function selectStep(');
+  assert.ok(j > 0 && /easeTo|flyTo|fitBounds/.test(code.slice(j, j + 1600)),
+    'selectStep still moves the camera on purpose');
+});
+
+/* ── ⑫ 「open」 is not 「visible」 ──────────────────────────────────────────────────────────── */
+test('R299 追記 ⑫ a tap on the line reveals a MINIMISED panel, and does not steal focus', () => {
+  const rt = noComments(read('js/routing.js'));
+  const i = rt.indexOf('function _revealPanel(');
+  assert.ok(i > 0, '_revealPanel is still one function');
+  const p = rt.slice(i, i + 600);
+  /* the early return on isOpen() is what left a minimised panel minimised (measured: sel 0→1,
+     .rtp-min still on, height 46). `open()` is idempotent and `reveal` is what drops the class. */
+  assert.ok(!/isOpen\(\)\)\s*return;/.test(p), 'it no longer decides from isOpen() that there is nothing to do');
+  assert.ok(/reveal:\s*true/.test(p) && /keepView:\s*true/.test(p), 'it asks to be seen without a re-frame');
+  /* …and because open() is now re-entrant, the two opening-only side effects are guarded */
+  const ui = noComments(read('js/routing-ui.js'));
+  const j = ui.indexOf('function open(o)');
+  assert.ok(j > 0, 'open() is still one function');
+  const o = ui.slice(j, j + 3000);
+  assert.ok(/const wasOpen = openState;/.test(o), 'open() knows whether it was already open');
+  assert.ok(/if \(!wasOpen\)[\s\S]{0,120}focusReturn/.test(o), 'the focus-return target is captured once');
+  assert.ok(/if \(!wasOpen\) setTimeout/.test(o), 'and the cursor does not jump into the field on every tap');
+});
+
+/* ── ⑬ closing is clearing, in all three files that say so ─────────────────────────────────── */
+test('R299 追記 ⑬ no file still claims the Tools row leaves the route drawn', () => {
+  /* This is a check ON THE PROSE, deliberately: the defect was three files stating one fact and one
+     of them being four rounds out of date. MEASURED: a second press leaves hasRoute() false and every
+     imroute-* layer at 0 features. */
+  /* ⚠⚠ AND IT HAD TO LEARN THE DIFFERENCE BETWEEN A CLAIM AND A QUOTATION — the first version of
+     this check went red on the very note that corrects the defect, because that note QUOTES the
+     sentence it is retiring. (This project's twenty-fifth time; see the header of this file.)
+     A retired sentence is allowed to appear as a quotation — inside 「」, which is how every note in
+     this codebase quotes — and is not allowed to appear as an assertion. */
+  const RETIRED = [/the route stays drawn/, /the Tools row still only closes the panel/];
+  for (const p of ['js/routing.js', 'js/map-ui.js', 'js/routing-ui.js']) {
+    const lines = read(p).split(/\r?\n/);
+    for (const re of RETIRED) {
+      lines.forEach((l, n) => {
+        if (!re.test(l)) return;
+        const quoted = /「[^」]*$/.test(l.slice(0, l.search(re))) || /「/.test(l);
+        assert.ok(quoted, p + ':' + (n + 1) + ' states a retired rule outside a quotation: ' + l.trim().slice(0, 70));
+      });
+    }
+  }
+  /* and the behaviour the prose now describes is the one that runs */
+  const ui = noComments(read('js/routing-ui.js'));
+  const i = ui.indexOf('function close(');
+  assert.ok(i > 0 && /clear\(\)/.test(ui.slice(i, i + 900)), 'close() still clears the route');
+});
+
+/* ── ⑭ 「簡潔に」 is measured against the OTHER note, not against the old one ────────────────── */
+test('R299 追記 ⑭ the normalised legend note is no longer than the agency one', () => {
+  const code = noComments(alertsModule(WP()));
+  const one = code.match(/L\('IntMap’s own conversion[^)]*\)/);
+  const two = code.match(/L\('Each agency’s own colours[^)]*\)/);
+  assert.ok(one && two, 'both notes are still there');
+  /* production, panel width 330 px: the agency note was 14 px (one line) and this one 29 px (two).
+     The claims are what had to survive; the repeated 「tap a country」 hint is said in full below. */
+  assert.ok(/same step is not the same danger/.test(one[0]), 'the caveat survives');
+  assert.ok(/IntMap/.test(one[0]), 'and whose arithmetic it is');
+  assert.ok(!/Tap a country/.test(one[0]), 'the hint the panel already gives in full is not repeated here');
+  const longest = (lit) => Math.max(...(lit.match(/'((?:[^'\\]|\\.)*)'/g) || ["''"]).map((a) => a.length - 2));
+  assert.ok(longest(one[0]) <= longest(two[0]) + 20,
+    'and it is not materially longer than the note that measured one line');
+});
+

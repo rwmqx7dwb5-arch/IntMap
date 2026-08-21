@@ -78,7 +78,14 @@ window.IntMapModules.routeUi = function (HOST) {
     function open(o) {
       o = o || {};
       build();
-      try { focusReturn = document.activeElement; } catch (_) { focusReturn = null; }
+      /* ⚠ (#R299 追記) THIS IS NOW CALLED ON A PANEL THAT IS ALREADY OPEN — js/routing.js `_revealPanel`
+         asks for `reveal` on every tap of a route line, because a MINIMISED panel is open and had to
+         be un-minimised. Two things here belong to the OPENING and must not happen again on a tap:
+         the element focus is returned to when the panel closes, and the cursor that lands in the
+         「from」 field. Stealing focus out of whatever the reader was doing, on every tap on the map,
+         is exactly the kind of quiet damage a re-entrant `open()` does. */
+      const wasOpen = openState;
+      if (!wasOpen) { try { focusReturn = document.activeElement; } catch (_) { focusReturn = null; } }
       openState = true; ST().setOpen(true);
       el.hidden = false;
       /* ⚠⚠ (#R299) MINIMISED IS A STATE THE READER CHOSE, and `restoreGeom` brings it back with the
@@ -138,7 +145,7 @@ window.IntMapModules.routeUi = function (HOST) {
       /* (#R299) a tap on the map picked an alternative while the panel was shut — bring the card it
          chose into view now that there is a panel to show it in (js/routing.js `_onLineClick`) */
       if (o.reveal) { try { revealSelected(); } catch (_) { } }
-      setTimeout(() => { try { const f = el.querySelector('.rtp-field[data-f="from"] input'); if (f && !ST().get().from.place) f.focus(); } catch (_) { } }, 60);
+      if (!wasOpen) setTimeout(() => { try { const f = el.querySelector('.rtp-field[data-f="from"] input'); if (f && !ST().get().from.place) f.focus(); } catch (_) { } }, 60);
       return true;
     }
     /* ⚠⚠ (#R296) CLOSING IS CLEARING — see the header. The drawn route and any keep-out areas go
