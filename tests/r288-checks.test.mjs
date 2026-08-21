@@ -122,9 +122,12 @@ test('#R288 ③ coverage is learned from a drawn polygon, adds only, and is not 
   assert.ok(i > 0, 'learnCoverage must exist');
   const body = src.slice(i, src.indexOf('function centroidOf(', i));
   assert.match(body, /centroidOf\(f\.geometry\)/, 'the CENTROID, not any vertex');
-  assert.match(body, /countryAt\(c\[0\],c\[1\]\)/);
-  assert.match(body, /if\(!at\|\|at===q\.iso\|\|FEEDS\[at\]\|\|LEARNED\[at\]\)\s*return;/,
+  /* ⚠ (#R297) the same question, asked only of the countries whose answer would be USED. The
+     unqualified walk cost 5,562 ms of point-in-polygon per 50 s (it walks every ring of every
+     hi-res country outline); the predicate IS the old three-way test, moved into the search. */
+  assert.match(body, /countryAtWhere\(c\[0\],c\[1\],\(iso\)=>iso!==q\.iso&&!FEEDS\[iso\]&&!LEARNED\[iso\]\)/,
     'a country with its own feed is never re-assigned — 「ソースは一国一ソース」');
+  assert.match(src, /function countryAtWhere\(lng,lat,pred\)\{/, 'and that search has a name of its own');
   assert.match(src, /const supported=\(c\)=>!!\(FEEDS\[c\]\|\|LEARNED\[c\]\);/);
   assert.match(src, /learnCoverage\(feats\);/, 'publish() is where the evidence is read');
   /* the hand-written list #R284 measured is still there — this ADDS to it, it does not replace it */
@@ -140,8 +143,14 @@ test('#R288 ④ the rotation is view-first, and the shape library retries sooner
   assert.match(src, /const SWIC_GEO_SHORT_MS=180000;/);
   assert.match(src, /const wait=short\?SWIC_GEO_SHORT_MS:SWIC_GEO_RETRY_MS;/);
   /* …and the floor the transport imposes is still respected (#R284) */
-  assert.match(src, /const MIN_AGE_MS=45000;/, 'the relay’s own 60 s edge cache is still the floor');
-  assert.match(src, /const COLD_CALLS=6;/, 'the cold burst survives');
+  /* ⚠ (#R297) pin the RELATION, not the numbers. The floor exists because asking a country again
+     inside the relay's own edge cache returns THE SAME BYTES — so the invariant is 「the floor is at
+     or under the cache」, and #R297 shortened both together for 「更新が遅すぎる」. */
+  const floor = +(/const MIN_AGE_MS=(\d+);/.exec(src) || [])[1];
+  const smax = +(/s-maxage=(\d+)/.exec(read('supabase/functions/alerts-relay/index.ts')) || [])[1] * 1000;
+  assert.ok(floor > 0 && floor <= smax,
+    `the relay's own edge cache is still the floor (${floor} ms against ${smax} ms)`);
+  assert.match(src, /const COLD_CALLS=\d+;/, 'the cold burst survives');
 });
 
 /* ── ⑤ one call decides whether the layer is showing ────────────────────────────────────────── */
@@ -265,7 +274,11 @@ test('#R288 ⑧ the field is read as the latitude band in view, warmed before it
   /* the wind asks for its own band and re-reads only when the view has left it */
   const w = WX();
   assert.match(w, /return EC\(\)\.bandFor\(b\.getSouth\(\),b\.getNorth\(\)\);/);
-  assert.match(w, /EC\(\)\.load\(VAR,null,band\(\)\)/);
+  /* ⚠ (#R297) the read is still ONE band-limited read of ONE variable; which band is decided
+     first — the band around the view, then the whole view behind it (`bandFor` answers 「the
+     planet」 at the opening view, which was 14.5 s before a particle moved). */
+  assert.match(w, /return EC\(\)\.load\(VAR,null,b\);/);
+  assert.match(w, /EC\(\)\.load\(VAR,null,want\)/, 'and the wide band follows');
   /* (#R290) …of ITS OWN variable: more than one frame can be held now, so 「the band I have」 has to
      name whose band it is or the wind would read the temperature's. */
   assert.match(w, /if\(!EC\(\)\.bandCovers\(EC\(\)\.heldBand\(VAR\),band\(\)\)\) load\(\);/);

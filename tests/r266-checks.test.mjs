@@ -310,7 +310,11 @@ test('R266 ⑭: the alert relay is an allow-list, not an open proxy', () => {
      object came with them — a literal grep in this file could only ever find a copy. */
   assert.match(s, /corsFor\(/, 'the relay does not build its CORS headers from the shared guard');
   assert.match(read('supabase/functions/_shared/relay-guard.js'), /"Access-Control-Allow-Origin": "\*"/);
-  assert.match(s, /max-age=60/, 'a warning must not be cached for minutes');
+  /* ⚠ (#R297) the number moved (60 → 30 s, for 「更新が遅すぎる」) and the PROPERTY did not: a
+     warning is cached for SECONDS, never minutes, and `tests/r288 ④` ties the app's rotation floor
+     to whatever this is. */
+  const smax = +(/s-maxage=(\d+)/.exec(s) || [])[1];
+  assert.ok(smax > 0 && smax <= 60, `a warning must not be cached for minutes (s-maxage=${smax})`);
   /* Canada sends its own ACAO — a relay that is not needed is another thing to be down */
   assert.ok(!/api\.weather\.gc\.ca/.test(s.slice(s.indexOf('function allowed'), s.indexOf('Deno.serve'))),
     'Canada is being relayed even though it sends ACAO');

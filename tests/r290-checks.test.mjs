@@ -152,7 +152,12 @@ test('R290 ④ a generic prefix is not part of a name, and a damaged name still 
 test('R290 ⑤ the publish path does each piece of work once', () => {
   const src = WP();
   /* ① the publish is coalesced, and the immediate one is still reachable for the toggle */
-  assert.match(src, /function publish\(\)\{ if\(pubT\) return;[\s\S]{0,120}?publishNow\(\); \},160\); \}/);
+  /* ⚠ (#R297) the window is a NAMED constant now and it is longer, because 160 ms merges only two
+     batches that land in the same frame — and #R297 found the uploads were not coming through this
+     path at all (see ⑬ in tests/r297). The property #R290 pinned is unchanged: the publish is
+     coalesced, trailing, and the immediate one stays reachable for the toggle. */
+  assert.match(src, /const PUBLISH_MS=\d+;/);
+  assert.match(src, /function publish\(\)\{ if\(pubT\) return;[\s\S]{0,200}?publishNow\(\); \},wait\); \}/);
   assert.match(src, /function publishNow\(\)\{/, 'the real work has a name of its own');
   /* ② a collection identical to the one on the map is not uploaded again */
   assert.match(src, /function featSig\(list\)\{/, 'the warning collection has a content signature');
@@ -290,8 +295,12 @@ test('R290 ⑪ a slot is revealed by its own source, never by idle', () => {
   const w = WX();
   assert.match(w, /function whenSourceLoaded\(sid,then,maxMs\)\{/, 'the ECMWF rasters have the waiter');
   assert.match(w, /function _whenSrcLoaded\(sid,then,maxMs\)\{/, '…and so does the wind field');
-  for (const f of [/const h=\(e\)=>\{ if\(e&&e\.sourceId===sid&&e\.isSourceLoaded\) fin\(\); \};/g])
-    assert.equal((w.match(f) || []).length, 2, 'both wait on the SOURCE’s own signal');
+  /* ⚠ (#R297) …and on a TILE of that source, because `isSourceLoaded` is true for a raster source
+     that has not been asked for one yet — so the new slot was uncovered and the old one removed
+     while the new one had nothing to draw. Same property, one condition stronger. */
+  const waiters = (w.match(/const h=\(e\)=>\{ if\(e&&e\.sourceId===sid&&[^;]*e\.isSourceLoaded\) fin\(\); \};/g) || []);
+  assert.equal(waiters.length, 2, 'both wait on the SOURCE’s own signal');
+  assert.ok(waiters.some(x => /e\.tile&&/.test(x)), 'and the wind field waits for a tile of it');
   assert.match(w, /whenSourceLoaded\(cfg\.id\+'-'\+nu\+'-src',reveal,12000\);/);
   assert.match(w, /_whenSrcLoaded\(s\.src,reveal,12000\);/);
   assert.ok(!/GE\(\)\.events\.once\('idle',reveal\)/.test(w), 'the idle reveal is gone');

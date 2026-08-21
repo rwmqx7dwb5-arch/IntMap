@@ -455,11 +455,19 @@ test('R276 ⑲ the wind legend is the renderer\'s own colour table, ends where t
     const sc = EC.scale('wind_u_component_10m', true);
     const raw = EC.sdk().getColorScale('wind_u_component_10m', true);   /* the SDK's own default */
     return { lg, unit: sc && sc.unit, max: sc && sc.breakpoints && sc.breakpoints[sc.breakpoints.length - 1],
+      bps: sc && sc.breakpoints,
       alphas: [...new Set((sc.colors || []).map((c) => c[3]))],
       overridden: JSON.stringify(raw) !== JSON.stringify(sc) };
   });
   expect(r.unit, 'the scale carries its unit').toBe('m/s');
-  expect(r.lg.max, 'and the legend ends exactly where the table ends').toBe(r.max);
+  /* ⚠ (#R297) 「風レイヤーのカラー凡例は、30m/sまでにして。」 — the KEY now ends at 30 m/s while the
+     TABLE still paints to Windy's own clamp at 104. The property #R276 pinned was 「the legend does
+     not invent a range」, and that is what is asserted: the key ends on a real breakpoint of the
+     table, and when it ends short it SAYS so (`capped`), because a key that stopped at 30 without
+     a mark would be claiming 30 is the maximum. */
+  expect(r.lg.max, 'the legend ends on a breakpoint of the table').toBeLessThanOrEqual(r.max);
+  expect(r.bps, 'and that breakpoint is one the table really has').toContain(r.lg.max);
+  expect(r.lg.capped, 'a key that stops short says so').toBe(r.lg.max < r.max);
   expect(r.lg.min).toBe(0);
   expect(r.lg.stops.length, 'every breakpoint is a stop in the printed ramp').toBeGreaterThan(8);
   expect(r.lg.css, 'which is what the swatch is painted with').toMatch(/^linear-gradient\(to right,rgb\(/);

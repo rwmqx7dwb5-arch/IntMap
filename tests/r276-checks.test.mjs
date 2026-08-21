@@ -75,7 +75,14 @@ test('R276 ③ the wind field is the model\'s own data, sampled directly', () =>
   /* ⚠ (#R288) …and it names the LATITUDE BAND it is drawn in. Same variable, same model, same
      samples; what the third argument removes is the part of the planet that is not on the screen
      (measured: 6,599,680 samples / 17.96 MB global against 935,400 / 1.64 MB for a 21° band). */
-  assert.match(w, /EC\(\)\.load\(VAR,null,band\(\)\)/, '…loads it once, for the band in view…');
+  /* ⚠ (#R297) the band is CHOSEN before the read: the first read is the band around the view
+     (`bandNear`) and the full band the view covers is read behind it and replaces it — `bandFor`
+     answers 「the planet」 at the opening view, and that was 14.5 s before anything moved.
+     What #R276 pinned is unchanged — ONE variable, ONE read, for a BAND rather than a lattice. */
+  assert.match(w, /return EC\(\)\.load\(VAR,null,b\);/, '…loads it once, for a band…');
+  assert.match(w, /if\(!EC\(\)\.bandCovers\(EC\(\)\.heldBand\(VAR\),b\)\) b=nearBand\(\)\|\|b;/,
+    '…the band around the view first…');
+  assert.match(w, /EC\(\)\.load\(VAR,null,want\)/, '…and the whole view behind it');
   /* ⚠ (#R293) the sampler is named on its own line now, because the READOUT keeps the last one that
      answered (`sampler()` is null between a step and the new hour — measured 0 → 2,144 ms). What
      #R276 pinned is unchanged: the particles are handed the sampler of the SAME variable this

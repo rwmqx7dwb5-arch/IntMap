@@ -72,7 +72,6 @@ window.IntMapLang.define('de', { ui: {
       lblAiLocate:"KI-Standortanalyse", aiLocManual:"Manuell (Schaltfläche)", aiLocAuto:"Automatisch für alle Nachrichten",
       lblSidebarStyle:"Seitenleiste", sidebarOpaque:"Solide (Standard)", sidebarTranslucent:"Mattglas", sidebarGlass2:"Mattglas (transparenter)",
       lblLabelLang:"Ortsbeschriftungen", labelLangUi:"Wie App-Sprache", labelLangLocal:"Lokale Sprache (Originalschrift)", labelLangEn:"Immer Englisch",
-      lblFlatPan:"Flache Kartenansicht", flatPanFixed:"Fester Ausschnitt (Europa)", flatPanFree:"Frei schwenken (Welt umrunden)",
       /* (#R180) Render-Engine */
       lblEngine:"Karten-Engine", engineMapLibre:"MapLibre — 2-D/3-D-Karte (Vorgabe)", engineCesium:"Cesium — echter 3-D-Globus mit realem Gelände",
       engineHint:"Cesium stellt die Erde in jedem Zoom als echtes Ellipsoid dar, mit denselben Satellitenbildern und denselben Höhendaten. Sie wird nur bei Auswahl heruntergeladen, und der Wechsel lädt die Seite neu. Höhenlinien und das geschlossene 3-D-Körper-Werkzeug bleiben MapLibre vorbehalten.",
