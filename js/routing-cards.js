@@ -184,6 +184,24 @@ window.IntMapRouteCards = (function () {
     return '<span class="rt-badge" style="color:' + col + ';">● ' + esc(delayText(late, o)) + '</span>';
   }
 
+  /* ⚠ (#R291 追記) THE DIFFERENTIATOR, RENDERED NOW. `a.labelKey` is the descriptor js/routing.js
+     produces («fastest» / «shortest» / «+N min» / «route», plus the avoid list); `a.label` is the
+     sentence it produced AT THE TIME, which is what an old Atlas message keeps. Rendering from the
+     descriptor is what makes a card follow a language switch — see js/routing.js's `_labelRoad`. */
+  function altLabel(a, o) {
+    o = use(o);
+    var k = a && a.labelKey;
+    if (!k) return a && a.label ? String(a.label) : '';
+    var head = k.k === 'fastest' ? L('Fastest', '最速', 'Schnellste', 'Быстрейший', 'Más rápido')
+      : k.k === 'shortest' ? L('Shortest', '最短距離', 'Kürzeste', 'Кратчайший', 'Más corto')
+      : k.k === 'delta' ? (k.min > 0 ? ('+' + k.min + ' ' + L('min', '分', 'Min', 'мин', 'min'))
+        : L('Alternative', '代替', 'Alternative', 'Альтернатива', 'Alternativa'))
+      : L('Route', '経路', 'Route', 'Маршрут', 'Ruta');
+    if (!k.avoid || !k.avoid.length) return head;
+    var W = { toll: L('tolls', '有料', 'Maut', 'платн.', 'peajes'), motorway: L('highways', '高速', 'Autobahn', 'магистр.', 'autopistas'), ferry: L('ferries', 'フェリー', 'Fähren', 'паромы', 'ferris') };
+    return head + ' · ' + L('avoids ', '回避: ', 'ohne ', 'без ', 'evita ') + k.avoid.map(function (x) { return W[x] || x; }).join(', ');
+  }
+
   /* ══ ALTERNATIVE CARDS — one implementation, both surfaces ════════════════════════════════════ */
   function altCards(alts, o) {
     o = use(o);
@@ -205,10 +223,10 @@ window.IntMapRouteCards = (function () {
         } else {
           head = '<span class="rt-alt-main">' + esc(duration(a.duration, o)) + '</span>';
           sub = '<span class="rt-alt-sub">' + esc(distance(a.distance, o))
-            + (a.label ? (' · ' + esc(a.label)) : '')
+            + (altLabel(a, o) ? (' · ' + esc(altLabel(a, o))) : '')
             + (a.roads && a.roads.length ? (' · ' + esc(a.roads.slice(0, 2).join(' / '))) : '')
             + ' · ' + esc(L('arrive', '到着', 'Ankunft', 'прибытие', 'llegada')) + ' ' + esc(eta(startMs, a.duration, o)) + '</span>';
-          aria = duration(a.duration, o) + ', ' + distance(a.distance, o) + (a.label ? (', ' + a.label) : '');
+          aria = duration(a.duration, o) + ', ' + distance(a.distance, o) + (altLabel(a, o) ? (', ' + altLabel(a, o)) : '');
         }
         var seq = transit ? ('<span class="rt-alt-seq">' + (a.legs || []).filter(function (l) { return !l.walk; }).slice(0, 6).map(function (l) {
           return '<span class="rt-veh" style="color:' + esc(l.color || '#1a73e8') + ';" title="' + esc(vehicleLabel(l.mode, o)) + '">' + glyph(vehicleKey(l.mode), { size: 14 })
@@ -326,7 +344,7 @@ window.IntMapRouteCards = (function () {
     duration: duration, distance: distance, clock: clock, eta: eta,
     modeLabel: modeLabel, vehicleKey: vehicleKey, vehicleLabel: vehicleLabel,
     realtimeOf: realtimeOf, realtimeText: realtimeText, delayText: delayText, legBadge: legBadge,
-    altCards: altCards, stepRows: stepRows, legRows: legRows, laneText: laneText,
+    altCards: altCards, stepRows: stepRows, legRows: legRows, laneText: laneText, altLabel: altLabel,
     note: note, providerLine: providerLine,
     esc: esc, setLang: function (l) { _lang = l || 'en'; },
   };

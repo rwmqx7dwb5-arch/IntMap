@@ -567,6 +567,38 @@ test('R291 ㉗b the comment-free reader keeps the code and drops the prose', () 
   assert.match(bare('js/routing-geocode.js'), /https:\/\/nominatim\.openstreetmap\.org\/search/);
 });
 
+/* ⚠⚠ ㉗c (追記) THE CARD FOLLOWS A LANGUAGE SWITCH ────────────────────────────────────────────
+   Found by PRODUCTION VERIFICATION: compute a route, switch the app to Japanese, and the card still
+   read 「Fastest」. Every other string on it is produced at render time; this one was a STRING baked
+   when the route was computed, which is the «translation held as data» shape one level up. */
+test('R291 ㉗c an alternative’s differentiator is a descriptor, so it re-renders in the new language', () => {
+  const w = fresh(); const C = w.IntMapRouteCards;
+  const fastest = { duration: 2160, distance: 31000, labelKey: { k: 'fastest', avoid: null }, label: 'Fastest' };
+  const delta = { duration: 2460, distance: 39000, labelKey: { k: 'delta', min: 5, avoid: ['toll'] }, label: '+5 min · avoids tolls' };
+  assert.equal(C.altLabel(fastest, { lang: 'en' }), 'Fastest');
+  assert.equal(C.altLabel(fastest, { lang: 'jp' }), '最速', 'the SAME object must answer in Japanese');
+  assert.equal(C.altLabel(delta, { lang: 'en' }), '+5 min · avoids tolls');
+  assert.equal(C.altLabel(delta, { lang: 'jp' }), '+5 分 · 回避: 有料');
+  assert.equal(C.altLabel({ labelKey: { k: 'shortest' } }, { lang: 'de' }), 'Kürzeste');
+  assert.equal(C.altLabel({ labelKey: { k: 'route' } }, { lang: 'es' }), 'Ruta');
+  /* an alternative from BEFORE this change still has only the sentence — it is printed, not lost */
+  assert.equal(C.altLabel({ label: 'Fastest' }, { lang: 'jp' }), 'Fastest');
+  assert.equal(C.altLabel({}, { lang: 'en' }), '');
+  /* and the card really uses it: the same alternatives, two languages, two different card texts */
+  const en = C.altCards([fastest, delta], { lang: 'en', units: 'metric', sel: 0, setId: 'rs1' });
+  const jp = C.altCards([fastest, delta], { lang: 'jp', units: 'metric', sel: 0, setId: 'rs1' });
+  assert.match(en, /Fastest/); assert.equal(/Fastest/.test(jp), false, 'the Japanese card must not carry the English word');
+  assert.match(jp, /最速/);
+  /* ⚠ AND THE ROUTER STILL WRITES BOTH — an Atlas message already in the transcript prints `label` */
+  const src = read('js/routing.js');
+  assert.match(src, /a\.labelKey=\{k:'fastest'/);
+  assert.match(src, /a\.label=LL\('Fastest'/, 'the sentence is still produced for older callers');
+  assert.match(src, /label:a\.label,labelKey:a\.labelKey/, 'and both travel in the result');
+  /* the panel rebuilds its ANSWERS on a language switch, not only its chrome */
+  const ui = read('js/routing-ui.js');
+  assert.match(ui, /addEventListener\('intmap-lang', \(\) => \{ if \(!el\) return; el\.innerHTML = shell\(\); wire\(\); render\(\); \}\)/);
+});
+
 /* ⚠ ㉘ THE DATELINE (§14.2/§11.3) ────────────────────────────────────────────────────────────── */
 test('R291 ㉘ a keep-out box drawn across the antimeridian is the strip, not its complement', () => {
   const r = read('js/routing.js');

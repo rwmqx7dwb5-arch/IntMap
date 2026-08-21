@@ -95,6 +95,11 @@ window.IntMapModules.routeUi = function (HOST) {
       wire();
       unsub = ST().on((s, why) => { if (!openState) return; if (why === 'result' || why === 'clear' || why === 'sel' || why === 'request') render(); });
       try { window.addEventListener('resize', applyInsets); } catch (_) { }
+      /* ⚠ (#R291 追記) THE WHOLE PANEL IS REBUILT, INCLUDING THE ANSWERS. `render()` redraws the
+         cards from `s.result`, and js/routing-cards.js resolves every string at that moment — which
+         is only true because the alternative's differentiator is a descriptor rather than a
+         sentence (js/routing.js `_labelRoad`). Production verification found the one string that
+         was not. */
       try { window.addEventListener('intmap-lang', () => { if (!el) return; el.innerHTML = shell(); wire(); render(); }); } catch (_) { }
       return el;
     }

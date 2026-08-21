@@ -230,12 +230,25 @@ window.IntMapModules.routing=function(HOST){
       const dup=out.find(b=>{ let inter=0; const small=(a._sig.size<b._sig.size)?a._sig:b._sig, big=(a._sig.size<b._sig.size)?b._sig:a._sig; small.forEach(k=>{ if(big.has(k)) inter++; }); const ov=small.size?(inter/small.size):0;
         const dt=Math.abs((a.duration||0)-(b.duration||0))/Math.max(1,Math.min(a.duration||1,b.duration||1)); return ov>0.92&&dt<0.03; });
       if(dup){ if(a.duration<dup.duration){ const i=out.indexOf(dup); out[i]=a; } } else out.push(a); }); return out; }
+    /* ⚠⚠ (#R291 追記) THE LABEL IS A DESCRIPTOR, NOT A SENTENCE — because it outlives the language.
+       PRODUCTION VERIFICATION caught this: compute a route, then switch the app to Japanese, and the
+       card still read 「Fastest」 while everything around it was Japanese. Every OTHER string on the
+       card is produced at RENDER time (the notes are keys, the distances go through
+       js/routing-cards.js, the turn text is `maneuver()` called per render), so the panel's
+       `intmap-lang` rebuild fixed all of them — and could not fix this one, because `a.label` was a
+       STRING baked when the route was computed. That is [[intmap-recurring-lessons]]'s
+       «translation held as data»: a tuple resolved once is a tuple that cannot be resolved again.
+       ⚠ `a.label` IS STILL WRITTEN. js/atlas-console.js prints it into a message that is a permanent
+       transcript entry, `_routeExport` has carried it, and tests/r184-routing reads it; what is new
+       is `a.labelKey`, which js/routing-cards.js renders in the language of the moment. */
     function _labelRoad(alts,avoid){ if(!alts.length) return; const fast=alts[0];
       let si=0,sd=alts[0].distance; for(let i=1;i<alts.length;i++){ if(alts[i].distance<sd){ sd=alts[i].distance; si=i; } }
-      const avoidTx=(avoid&&avoid.length)?(' · '+LL('avoids ','回避: ','ohne ','без ','evita ')+avoid.map(x=>({toll:LL('tolls','有料','Maut','платн.','peajes'),motorway:LL('highways','高速','Autobahn','магистр.','autopistas'),ferry:LL('ferries','フェリー','Fähren','паромы','ferris')}[x]||x)).join(', ')):'';
-      alts.forEach((a,i)=>{ if(i===0) a.label=LL('Fastest','最速','Schnellste','Быстрейший','Más rápido')+avoidTx;
-        else if(i===si) a.label=LL('Shortest','最短距離','Kürzeste','Кратчайший','Más corto')+avoidTx;
-        else { const dMin=Math.round((a.duration-fast.duration)/60); a.label=(dMin>0?('+'+dMin+' '+LL('min','分','Min','мин','min')):LL('Alternative','代替','Alternative','Альтернатива','Alternativa'))+avoidTx; } }); }
+      const av=(avoid&&avoid.length)?avoid.slice():null;
+      const avoidTx=av?(' · '+LL('avoids ','回避: ','ohne ','без ','evita ')+av.map(x=>({toll:LL('tolls','有料','Maut','платн.','peajes'),motorway:LL('highways','高速','Autobahn','магистр.','autopistas'),ferry:LL('ferries','フェリー','Fähren','паромы','ferris')}[x]||x)).join(', ')):'';
+      alts.forEach((a,i)=>{ if(i===0){ a.labelKey={k:'fastest',avoid:av}; a.label=LL('Fastest','最速','Schnellste','Быстрейший','Más rápido')+avoidTx; }
+        else if(i===si){ a.labelKey={k:'shortest',avoid:av}; a.label=LL('Shortest','最短距離','Kürzeste','Кратчайший','Más corto')+avoidTx; }
+        else { const dMin=Math.round((a.duration-fast.duration)/60); a.labelKey={k:'delta',min:dMin,avoid:av};
+          a.label=(dMin>0?('+'+dMin+' '+LL('min','分','Min','мин','min')):LL('Alternative','代替','Alternative','Альтернатива','Alternativa'))+avoidTx; } }); }
     /* (#R132) 経路10-10 §7.3/§4.7: AVOID toll / highway / ferry. The public OSRM demo REJECTS `exclude=` ("Exclude
        flag combination is not supported"), so an avoid request would be a broken button — instead we route it on
        Valhalla (FOSSGIS, keyless — the same server used for isochrones), which honours costing_options.use_* and
@@ -292,6 +305,7 @@ window.IntMapModules.routing=function(HOST){
       const avoidTx=(opts.avoid&&opts.avoid.length)?(LL('avoids ','回避: ','ohne ','без ','evita ')+opts.avoid.map(x=>({toll:LL('tolls','有料道路','Maut','платные','peajes'),motorway:LL('highways','高速道路','Autobahn','магистрали','autopistas'),ferry:LL('ferries','フェリー','Fähren','паромы','ferris')}[x]||x)).join(', ')):LL('Route','経路','Route','Маршрут','Ruta');
       const alt={lines:[{coords:shape,walk:0,col:'#1a73e8'}],stops:[],geometry:{type:'LineString',coordinates:shape},coords:shape,steps:steps,
         duration:trip.summary.time,distance:(trip.summary.length||0)*1000,color:ALT_PAL[0],label:avoidTx,
+        labelKey:{k:'route',avoid:(opts.avoid&&opts.avoid.length)?opts.avoid.slice():null},
         legDurations:(trip.legs||[]).map(l=>(l.summary&&l.summary.time)||0)};
       alt.roads=_majorRoads(steps,3);
       const setId=_rsNew([alt],_ends(from,to,opts.via)); _drawAlts(0,setId);
@@ -302,7 +316,7 @@ window.IntMapModules.routing=function(HOST){
         mode:(costing==='pedestrian'?'walking':costing==='bicycle'?'cycling':'driving'),
         avoid:opts.avoid, avoidAreas:ex.length||0, avoidAreasAsked:(Array.isArray(opts.avoidAreas)?opts.avoidAreas.length:0),
         distance:alt.distance,duration:alt.duration,steps:steps,coords:shape,legDurations:alt.legDurations,
-        alternatives:[{duration:alt.duration,distance:alt.distance,steps:steps,label:alt.label,color:alt.color,coords:shape,roads:alt.roads}]}; }
+        alternatives:[{duration:alt.duration,distance:alt.distance,steps:steps,label:alt.label,labelKey:alt.labelKey,color:alt.color,coords:shape,roads:alt.roads}]}; }
     /* (#R125) plan fetch extracted from transit() so the intercity JR bridge can reuse it for ACCESS/EGRESS legs.
        (#R126) 経路10-10 §3.2/§24.1: public CORS proxies REMOVED from the routing path (api.transitous.org serves CORS
        headers directly — proxying routed third parties through corsproxy.io/allorigins leaked origin/destination
@@ -607,7 +621,7 @@ window.IntMapModules.routing=function(HOST){
            「経由地を含むため、このプロバイダーでは代替経路を取得できません」 (§9.2). */
         altsSuppressed:(via.length&&alts.length<2)?'via':'',
         distance:b0.distance,duration:b0.duration,steps:b0.steps,coords:b0.coords,legDurations:b0.legDurations,
-        alternatives:alts.map(a=>({duration:a.duration,distance:a.distance,steps:a.steps,label:a.label,color:a.color,coords:a.coords,legDurations:a.legDurations,roads:a.roads}))}); }
+        alternatives:alts.map(a=>({duration:a.duration,distance:a.distance,steps:a.steps,label:a.label,labelKey:a.labelKey,color:a.color,coords:a.coords,legDurations:a.legDurations,roads:a.roads}))}); }
     /* (#R126) §3.7: restore from the module's OWN last-paint store on style swap — not MapLibre's private source._data */
     try{ GE().events.on('styledata',()=>{ setTimeout(()=>{ try{ if(_lastPaint&&_lastPaint.feats&&_lastPaint.feats.length) _paint(_lastPaint.feats,_lastPaint.fit,_lastPaint.mz); }catch(_){} },160); }); }catch(_){}
     /* ===== (#R84) RICH ROUTING UI ("経路のUIをもっと充実させて。Google MapやApple Mapのように") — a proper
