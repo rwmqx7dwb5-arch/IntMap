@@ -24,9 +24,9 @@
  *   · Nominatim — everything Open-Meteo has no row for: street addresses, stations, airports,
  *     ports and POIs.
  *  ⚠ NOMINATIM'S USAGE POLICY IS ONE REQUEST PER SECOND per application. `suggest()` is therefore
- *  debounced by its caller AND rate-limited here (a request inside the window is dropped, not
- *  queued), and identical queries are served from an LRU for 5 minutes. A reader typing 「東京駅」
- *  costs at most one Nominatim call, not six.
+ *  debounced by its caller AND rate-limited here — (#R298) by WAITING for the next free slot rather
+ *  than by returning an empty array, with at most one call ever queued — and identical queries are
+ *  served from an LRU for 5 minutes. A reader typing 「東京駅」 costs at most one Nominatim call, not six.
  *
  *  ⚠ NO COORDINATE OF THE READER'S IS SENT ANYWHERE BY THIS FILE. The bias point (`near`) is used
  *  for RANKING, which happens after the response arrives — it is never a query parameter.
@@ -123,6 +123,26 @@ window.IntMapRouteGeocode = (function () {
   var lastNominatim = 0, NOMINATIM_GAP_MS = 1100;
   function cacheGet(k) { var v = cache.get(k); if (!v) return null; if (Date.now() - v.t > CACHE_MS) { cache.delete(k); return null; } return v.v; }
   function cacheSet(k, v) { cache.set(k, { t: Date.now(), v: v }); if (cache.size > CACHE_N) cache.delete(cache.keys().next().value); }
+  /* ══ ⚠⚠⚠ (#R298) THE FLOOR WAS DROPPING THE SEARCH, NOT DELAYING IT ═══════════════════════════
+     「経路機能で、地点を入力する欄がくそ。ほぼ座標ぐらいしか対応していない。検索機能なし。」
+     `nominatim()` opened with 「a request inside the window is dropped, not queued」 and returned an
+     EMPTY ARRAY. A reader types a place, waits for the 240 ms debounce, and the one source that
+     knows about stations, addresses and POIs answers 「[]」 because the PREVIOUS keystroke used the
+     second — every keystroke after the first within 1.1 s searched Open-Meteo alone. The policy
+     Nominatim publishes is «at most one request per second», which is a RATE, not a ban: `reverse()`
+     three functions down has always honoured it by WAITING. So does the search now.
+     ⚠ THE SLOT IS RESERVED SYNCHRONOUSLY, so two callers cannot both decide the window is free, and
+     the queue is capped at ONE — a caller that would have to wait longer than the gap itself is
+     still dropped, because by then the reader has typed something else. */
+  function nominatimSlot() {
+    var now = Date.now();
+    var at = Math.max(now, lastNominatim + NOMINATIM_GAP_MS);
+    if (at - now > NOMINATIM_GAP_MS) return -1;      /* one is already queued — this keystroke is stale */
+    lastNominatim = at;
+    return at - now;
+  }
+  function wait(ms) { return ms > 0 ? new Promise(function (r) { setTimeout(r, ms); }) : Promise.resolve(); }
+  function abortError() { var e = new Error('aborted'); e.name = 'AbortError'; return e; }
 
   function jsonFetch(url, signal) {
     return fetch(url, { signal: signal }).then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.json(); });
@@ -142,9 +162,10 @@ window.IntMapRouteGeocode = (function () {
     });
   }
   async function nominatim(q, signal) {
-    var now = Date.now();
-    if (now - lastNominatim < NOMINATIM_GAP_MS) return [];      /* the policy floor — dropped, not queued */
-    lastNominatim = now;
+    var hold = nominatimSlot();
+    if (hold < 0) throw new Error('rate_floor');                /* one is already queued — see nominatimSlot */
+    if (hold) await wait(hold);                                 /* the policy floor is a RATE: wait for it */
+    if (signal && signal.aborted) throw abortError();           /* the reader typed on while we waited */
     var url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8&accept-language='
       + encodeURIComponent(window.IntMapLang.locale(_lang, 'en')) + '&q=' + encodeURIComponent(q);
     var j = await jsonFetch(url, signal);
@@ -175,11 +196,19 @@ window.IntMapRouteGeocode = (function () {
     var ll = parseLatLng(q);
     if (ll) return { items: [ll], error: '' };
 
-    var key = _lang + ' ' + q.toLowerCase();
+    /* ⚠ (#R298) THE SEPARATOR IS WRITTEN AS AN ESCAPE. It used to be a LITERAL NUL byte in the
+       source — 0x00, not the two characters that spell the escape — which makes every byte-oriented
+       tool classify this file as binary and skip it whole (ripgrep does, so a search of the
+       repository for anything in here returned nothing at all). The key is the same string either way. */
+    var key = _lang + '\u0000' + q.toLowerCase();
     var hit = cacheGet(key);
     if (hit) return { items: rank(hit.slice(), o.near).slice(0, o.limit || 8), error: '' };
 
-    var items = [], errs = 0, tried = 0;
+    /* ⚠ `ran` COUNTS THE SOURCES THAT ACTUALLY REACHED THE NETWORK, which `tried` never did: a
+       Nominatim call refused by the rate floor resolved to `[]` through the SUCCESS path, so
+       「everything failed」 could not be told from 「nothing was asked」 — and a search that never
+       happened printed 「該当する地点がありません」, a fact this file had not established. */
+    var items = [], errs = 0, ran = 0;
 
     /* the exact station match first — it is local, free, and it is the row a reader typing a station
        name is looking for. `exact` pins it to the top of the ranking without hiding the others. */
@@ -188,18 +217,34 @@ window.IntMapRouteGeocode = (function () {
       if (st) items.push({ lng: st.lng, lat: st.lat, name: st.name, kind: 'station', source: 'registry', exact: true, id: 'jr:' + st.name });
     } catch (e) { /* the registry is optional */ }
 
-    var jobs = [openMeteo(q, o.signal).then(function (r) { tried++; return r; }, function (e) { tried++; if (!isAbort(e)) errs++; return []; })];
-    /* Nominatim is asked only once the query is long enough to be a real search — a single character
-       is 8 rows of noise and one of that server's per-second budget. */
-    if (q.length >= 3) jobs.push(nominatim(q, o.signal).then(function (r) { tried++; return r; }, function (e) { tried++; if (!isAbort(e)) errs++; return []; }));
+    var settle = function (r) { ran++; return r; };
+    var fail = function (e) {
+      if (isAbort(e)) return [];                       /* the reader moved on — not a failure of the source */
+      if (e && e.message === 'rate_floor') return [];  /* not asked, so it neither ran nor failed */
+      ran++; errs++; return [];
+    };
+    var jobs = [openMeteo(q, o.signal).then(settle, fail)];
+    if (longEnough(q)) jobs.push(nominatim(q, o.signal).then(settle, fail));
 
     var got = await Promise.all(jobs);
     got.forEach(function (arr) { items = items.concat(arr); });
     items = dedupe(items.filter(function (c) { return isFinite(+c.lng) && isFinite(+c.lat); }));
     if (items.length) cacheSet(key, items.slice());
-    return { items: rank(items, o.near).slice(0, o.limit || 8), error: (!items.length && errs === tried && tried > 0) ? 'provider_unavailable' : '' };
+    /* nothing found AND nothing that ran succeeded — the caller must say 「could not be reached」
+       rather than 「no such place」, because no source ever got to answer the question. */
+    var dead = !items.length && !(o.signal && o.signal.aborted) && (ran === 0 || errs === ran);
+    return { items: rank(items, o.near).slice(0, o.limit || 8), error: dead ? 'provider_unavailable' : '' };
   }
   function isAbort(e) { return !!(e && (e.name === 'AbortError' || /abort/i.test(String(e.message || '')))); }
+  /* ══ ⚠⚠ (#R298) 「LONG ENOUGH TO BE A REAL SEARCH」 IS NOT A NUMBER OF CHARACTERS ═══════════════
+     The rule was `q.length >= 3`, written for a Latin query where three letters are the shortest
+     thing worth sending. 「東京」 is TWO characters and 「堺」 is ONE — the two most common shapes a
+     Japanese reader types — and neither one ever reached the source that knows about stations,
+     addresses and POIs. What the rule is actually trying to exclude is a query too vague to mean a
+     place, and in a logographic script one character already is a place name. So the floor is per
+     SCRIPT: one character of CJK (or Hangul), three of anything else. */
+  var CJK_RE = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f\uac00-\ud7af]/;
+  function longEnough(q) { return CJK_RE.test(q) ? q.length >= 1 : String(q).trim().length >= 3; }
 
   /* ══ REVERSE — what to call a point the reader picked on the map ══════════════════════════════
      Best-effort: the point is usable as a coordinate the instant it is clicked, and this only ever
@@ -210,9 +255,11 @@ window.IntMapRouteGeocode = (function () {
     var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&accept-language='
       + encodeURIComponent(window.IntMapLang.locale(_lang, 'en'))
       + '&lat=' + (+lat).toFixed(6) + '&lon=' + (+lng).toFixed(6);
-    var now = Date.now();
-    if (now - lastNominatim < NOMINATIM_GAP_MS) await new Promise(function (r) { setTimeout(r, NOMINATIM_GAP_MS - (now - lastNominatim)); });
-    lastNominatim = Date.now();
+    /* (#R298) the same reservation the search uses, so a reverse lookup and a suggestion cannot both
+       decide the second is theirs. A label is worth waiting for, so this one never gives up its turn. */
+    var hold = nominatimSlot();
+    await wait(hold < 0 ? NOMINATIM_GAP_MS : hold);
+    if (hold < 0) lastNominatim = Date.now();
     var j = await jsonFetch(url, o.signal);
     if (!j || !j.display_name) return null;
     var a = j.address || {};
@@ -235,7 +282,7 @@ window.IntMapRouteGeocode = (function () {
 
   return {
     suggest: suggest, reverse: reverse, rank: rank, dedupe: dedupe,
-    parseLatLng: parseLatLng, kindOf: kindOf, kindLabel: kindLabel,
+    parseLatLng: parseLatLng, kindOf: kindOf, kindLabel: kindLabel, longEnough: longEnough,
     remember: remember, recent: recent,
     setLang: function (l) { _lang = l || 'en'; },
     _cache: function () { return { size: cache.size }; },

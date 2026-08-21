@@ -125,8 +125,20 @@ window.IntMapModules.wind=function(HOST){
        exactly the interval in which there is nothing on the map — 「タイルの消失や点滅を抑える」. The
        new frame is built in the free slot at opacity 0 and the old one is only removed once the new
        one has painted, so the map never goes blank between two hours. */
+    /* ══ ⚠⚠⚠ (#R298) …AND THE FREE SLOT IS THE ONE THE READER IS NOT LOOKING AT ═══════════════
+       「時間を選択したとき、変えてから読み込まれるまでいったん地図から何もなくなるのを辞めろ。」
+       #R284's two slots alternated off a counter that was flipped the moment a slot was BUILT, and
+       #R297 then made the reveal wait for a tile — so for the whole interval between those two
+       events the counter already pointed at the slot that is ON SCREEN. A second step inside that
+       interval (the player steps every 700 ms, and 「次へ」 is a button people press twice) therefore
+       tore down the visible slot to build the new hour in it, leaving zero layers above opacity 0 —
+       which is the blank in the report. The first step's reveal then removed 「its old slot」, which
+       by that point was holding the newer hour.
+       → the slot to build in is derived from the slot that is actually SHOWN, and a reveal carries
+       the sequence number of the build that scheduled it: an overtaken reveal uncovers nothing and
+       removes nothing. `slot` is that derived choice now, not a counter. */
     const SLOT=[{src:'wind-field-a-src',lyr:'wind-field-a'},{src:'wind-field-b-src',lyr:'wind-field-b'}];
-    let slot=0, liveKey='';
+    let slot=0, shownSlot=-1, fieldSeq=0, liveKey='';
     let on=false, raf=0, moving=false, opacity=1, renderer=null, loading=false, lastErr='';
     /* (#R293) the last field that answered, and the hour it is of — see `sampleAt` below */
     let _lastField=null, _lastFieldAt=null;
@@ -163,8 +175,32 @@ window.IntMapModules.wind=function(HOST){
       try{ GE().events.on('sourcedata',h); }catch(_){ setTimeout(fin,600); return; }
       setTimeout(fin,maxMs||12000);
     }
+    /* ══ ⚠⚠⚠ (#R298) NOTHING THAT IS NOT ON SCREEN QUEUES IN FRONT OF WHAT IS ═══════════════════
+       「パーティクルは比較的すぐ表示されるが、背景のカラーが、時間を変えるとなかなか表示されない。」
+       The SDK keeps ONE `omFileReader` (see the note on `serial()` in js/wx-ecmwf.js) and the
+       colour tiles are decoded through that same one — so every read this layer starts is a read
+       the tiles have to wait behind. On a time change THREE of them started before the colour had
+       drawn a single tile: the neighbouring hour's prefetch (which re-points the shared reader at
+       a DIFFERENT FILE, the most expensive thing that can happen to it), the wide-band read that
+       follows the narrow one, and — whenever an ECMWF raster is also on — that module's cursor
+       warm-up. All three are work for a picture the reader is not looking at yet, and the reader
+       is watching the one they asked for not arrive.
+       → they wait until the colour slot has been uncovered, plus a short grace so the tiles behind
+       the first one land too. THE WAIT CANNOT BE FOREVER: it is the reveal that releases it, and
+       the reveal has its own 12 s backstop, so a source that never paints still lets everything
+       queued here run. ⚠ The particles' own first read is NOT deferred — it is the picture that
+       arrives first, and holding it back would only make the layer slower to say anything. */
+    let fieldPending=false, shownWaiters=[];
+    function afterFieldShown(fn,graceMs){
+      const run=()=>{ setTimeout(()=>{ try{ fn(); }catch(_){} },(graceMs==null?150:graceMs)); };
+      if(!fieldPending){ run(); return; }
+      shownWaiters.push(run);
+    }
+    function fieldShown(){ fieldPending=false;
+      const w=shownWaiters; shownWaiters=[]; w.forEach(r=>{ try{ r(); }catch(_){} }); }
     function addField(key){
       if(!_imCanDraw()) return false;
+      slot=(shownSlot===0)?1:0;                    /* (#R298) 「free」 means 「not the one on screen」 */
       if(!EC().registerProtocol()) return false;   /* (#R288) — see the note in weatherEC.addSlot */
       const s=SLOT[slot], url=EC().omUrl(VAR);
       if(!url) return false;
@@ -175,20 +211,32 @@ window.IntMapModules.wind=function(HOST){
         GE().layers.add({id:s.lyr,type:'raster',source:s.src,
           paint:{'raster-opacity':0,'raster-opacity-transition':{duration:260},'raster-fade-duration':0,'raster-resampling':'linear'}},EC().before());
       }catch(_){ return false; }
-      const old=SLOT[1-slot];
-      const reveal=()=>{ try{ if(!on) return;
-        EC().lift(s.lyr);                        /* the terminator must not dim the data — see EC.before */
-        if(GE().layers.has(s.lyr)) GE().layers.setPaint(s.lyr,'raster-opacity',opacity);
-        if(GE().layers.has(old.lyr)) GE().layers.remove(old.lyr);
-        if(GE().layers.hasSource(old.src)) GE().layers.removeSource(old.src);
-      }catch(_){} };
+      const use=slot, mine=++fieldSeq;
+      fieldPending=true;
+      const reveal=()=>{
+        /* (#R298) overtaken by a later step: uncover nothing, and above all REMOVE nothing */
+        if(!on||mine!==fieldSeq) return;
+        try{
+          EC().lift(s.lyr);                      /* the terminator must not dim the data — see EC.before */
+          if(GE().layers.has(s.lyr)) GE().layers.setPaint(s.lyr,'raster-opacity',opacity);
+          shownSlot=use;
+          /* whatever is NOT the slot now showing goes — decided HERE rather than captured when this
+             reveal was scheduled, because by now the other slot may hold a newer hour than this one */
+          SLOT.forEach((o,i)=>{ if(i===use) return;
+            try{ if(GE().layers.has(o.lyr)) GE().layers.remove(o.lyr); }catch(_){}
+            try{ if(GE().layers.hasSource(o.src)) GE().layers.removeSource(o.src); }catch(_){} });
+        }catch(_){}
+        fieldShown();                            /* (#R298) …and now the deferred reads may run */
+      };
       /* (#R290) the SOURCE says when it is showing — see the note on whenSourceLoaded above */
       _whenSrcLoaded(s.src,reveal,12000);
-      slot=1-slot; liveKey=key;
+      liveKey=key;
       return true;
     }
     function removeField(){ SLOT.forEach(s=>{ try{ if(GE().layers.has(s.lyr)) GE().layers.remove(s.lyr); }catch(_){}
-      try{ if(GE().layers.hasSource(s.src)) GE().layers.removeSource(s.src); }catch(_){} }); liveKey=''; }
+      try{ if(GE().layers.hasSource(s.src)) GE().layers.removeSource(s.src); }catch(_){} }); liveKey='';
+      /* (#R298) nothing is on screen any more, and any reveal still in flight is superseded */
+      shownSlot=-1; fieldSeq++; fieldPending=false; shownWaiters=[]; }
     function setOpacity(v){ opacity=Math.max(0,Math.min(1,+v)); if(!on) return;
       SLOT.forEach(s=>{ try{ if(GE().layers.has(s.lyr)&&GE().layers.getPaint(s.lyr,'raster-opacity')>0) GE().layers.setPaint(s.lyr,'raster-opacity',opacity); }catch(_){} });
       try{ cv.style.opacity=String(Math.max(0.25,opacity)); }catch(_){}
@@ -248,11 +296,31 @@ window.IntMapModules.wind=function(HOST){
       const want=band();
       try{ if(EC().bandCovers(EC().heldBand(VAR),want)) return; }catch(_){ return; }
       widening=true;
-      EC().load(VAR,null,want).then(f=>{ widening=false;
-        if(!on||!f||!renderer) return;
-        const sf=EC().sampler(VAR); if(sf){ _lastField=sf; _lastFieldAt=EC().validTime(); renderer.setField(sf); }
-      }).catch(()=>{ widening=false; });
+      /* (#R298) …and BEHIND the colour, not in front of it — see the note on `afterFieldShown`.
+         The wide read is still started immediately in the sense that matters (nothing else can
+         claim the reader in the meantime); it just does not take the one reader away from the
+         tiles the reader is waiting to see. */
+      afterFieldShown(()=>{
+        if(!on){ widening=false; return; }
+        EC().load(VAR,null,want).then(f=>{ widening=false;
+          if(!on||!f||!renderer) return;
+          const sf=EC().sampler(VAR); if(sf){ _lastField=sf; _lastFieldAt=EC().validTime(); renderer.setField(sf); }
+        }).catch(()=>{ widening=false; });
+      });
     }
+    /* ══ ⚠⚠⚠ (#R298) ONE FAILED READ IS NOT 「データを取得できませんでした」 ═══════════════════════
+       「「風データを取得できませんでした。」←ふざけるな。」 `EC().load` answers falsy for several
+       reasons that are not 「the data is unavailable」: the metadata has not landed yet, the 340 kB
+       tile SDK has not landed yet, a ranged request came back empty once — and, by design, the
+       read was OVERTAKEN by a newer one (`if (seq === mine)` in js/wx-ecmwf.js keeps only the
+       current frame). Every one of those raised the toast, and the last is GUARANTEED for a reader
+       who steps the axis twice, which is the reader who saw this message.
+       → a short ladder, and the toast only once every rung of it has failed. Nothing is hidden
+       while it runs: the previous hour keeps flying (the `_lastField` rule below) and the legend
+       keeps saying 「読み込み中…」, because a layer that says nothing at all is the defect this
+       project keeps paying for. */
+    const FAIL_MS=[900,2000,4000];
+    let failN=0, retryT=0;
     function load(opt){
       if(!EC()) return Promise.resolve(null);
       const want=()=>EC().stateKey(VAR,'');
@@ -268,14 +336,30 @@ window.IntMapModules.wind=function(HOST){
       }).then(f=>{
         loading=false;
         if(!f){ lastErr='load';
+          /* (#R298) …and one rung of the ladder above is not a failure to report */
+          const again=on&&failN<FAIL_MS.length;
+          if(again){ loading=true;                 /* still trying, and the legend has to say so */
+            const ms=FAIL_MS[failN++];
+            clearTimeout(retryT); retryT=setTimeout(()=>{ retryT=0; if(on) load(opt); },ms); }
           /* ⚠ THE LEGEND HAS TO BE REDRAWN ON THE FAILURE PATH TOO, or a layer that could not load
              keeps printing 「読み込み中…」 for ever — which is the silent shape this project keeps
              paying for. The toast is the notification; the legend is the standing answer. */
           try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
-          try{ satToast(L('Wind data unavailable','風データを取得できませんでした','Winddaten nicht verfügbar','Данные о ветре недоступны','Datos de viento no disponibles')); }catch(_){}
+          if(!again){ try{ satToast(L('Wind data unavailable','風データを取得できませんでした','Winddaten nicht verfügbar','Данные о ветре недоступны','Datos de viento no disponibles')); }catch(_){} }
           return null; }
-        if(renderer){ const sf=EC().sampler(VAR); _lastField=sf||_lastField; _lastFieldAt=EC().validTime();
-          renderer.setField(sf);
+        failN=0; if(retryT){ clearTimeout(retryT); retryT=0; }
+        /* ══ ⚠⚠⚠ (#R298) A READ THAT WAS OVERTAKEN MUST NOT ERASE THE PARTICLES ═══════════════
+           `EC().load` resolving with a frame does not mean THIS hour is the frame in hand: a
+           superseded read is deliberately not kept (js/wx-ecmwf.js), so `sampler()` — which builds
+           the key for the CURRENT index — can answer null on the very next line. That null went
+           straight into `setField`, and the renderer reads null as 「draw nothing」 (js/wx-wind.js
+           `tick` returns 0 before it touches a particle), so every streak on the map disappeared
+           until some later hour finished decoding. 「読み込み次第差し替える」 means the field that is
+           flying stays flying until there is a new one to put in its place. */
+        if(renderer){ const fresh=EC().sampler(VAR);
+          if(fresh){ _lastField=fresh; _lastFieldAt=EC().validTime(); }   /* the hour travels with the field */
+          const sf=fresh||_lastField;
+          if(sf) renderer.setField(sf);
           /* ══ ⚠⚠ (#R290) THE PREVIOUS HOUR DOES NOT SURVIVE INTO THE NEW ONE ═════════════════
              「時刻を変えたときに、前の時刻のパーティクルの残像がしばらくの間残るのをやめろ。」
              #R284 deliberately keeps the old hour animating while the new one downloads, so the
@@ -295,7 +379,11 @@ window.IntMapModules.wind=function(HOST){
            competes with the picture they DID ask for. `opt.step` is true only when the axis moved. */
         /* (#R290 追記2) …for the SAME band this layer reads. Warming the planet in front of a step
            that needs one band is how the wait got worse rather than better — see wx-ecmwf. */
-        if(opt&&opt.step){ try{ EC().prefetch(['wind_u_component_10m','wind_v_component_10m'],Math.min(EC().count()-1,EC().index()+1),band()); }catch(_){} }
+        /* (#R298) …and behind the colour, for the reason in the note on `afterFieldShown`: this one
+           points the shared reader at ANOTHER FILE, so started early it does not merely queue in
+           front of the tiles, it takes the reader away from them. */
+        afterFieldShown(()=>{ if(!on) return;
+          if(opt&&opt.step){ try{ EC().prefetch(['wind_u_component_10m','wind_v_component_10m'],Math.min(EC().count()-1,EC().index()+1),band()); }catch(_){} } });
         /* (#R297) …and the rest of what is on screen, behind the picture that is already moving */
         setTimeout(widen,0);
         return f;
@@ -355,6 +443,10 @@ window.IntMapModules.wind=function(HOST){
     }
     function stop(){
       on=false; cancelAnimationFrame(raf); raf=0;
+      /* (#R298) a switched-off layer is not still trying, and it is not still widening either — the
+         deferred wide read is dropped with the waiters below, so its flag has to come down with it
+         or the next `start()` would find `widening` true for ever and never read the full band */
+      clearTimeout(retryT); retryT=0; failN=0; loading=false; widening=false;
       removeField();
       if(renderer){ renderer.clearTrails(); }
       cv.style.display='none';
@@ -397,12 +489,13 @@ window.IntMapModules.wind=function(HOST){
         try{ if(!EC().bandCovers(EC().heldBand(VAR),band())) load(); }catch(_){}
       } });
       /* a style swap drops custom sources — put the field back rather than leaving only streaks */
-      GE().events.on('styledata',()=>{ if(!on) return; setTimeout(()=>{ if(on&&!GE().layers.has(SLOT[0].lyr)&&!GE().layers.has(SLOT[1].lyr)){ liveKey=''; load(); } },120); });
+      GE().events.on('styledata',()=>{ if(!on) return; setTimeout(()=>{ if(on&&!GE().layers.has(SLOT[0].lyr)&&!GE().layers.has(SLOT[1].lyr)){ liveKey=''; shownSlot=-1; load(); } },120); });
       /* …and if the data is already here but the layer is not, put it back rather than waiting for a
          style event that may never come (the #R85 defect above, seen from the other side) */
       GE().events.on('idle',()=>{ if(!on) return;
         try{ if(GE().layers.has(SLOT[0].lyr)||GE().layers.has(SLOT[1].lyr)) return; }catch(_){ return; }
-        const key=EC()&&EC().stateKey(VAR,''); if(key){ liveKey=''; ensureField(key); } });
+        /* (#R298) …and neither slot is on screen, whatever the last reveal thought */
+        const key=EC()&&EC().stateKey(VAR,''); if(key){ liveKey=''; shownSlot=-1; ensureField(key); } });
       /* js/night-side.js re-adds its terminator on a timer and lands above whatever is there, so the
          field re-asserts its place whenever the style settles rather than only when it is created */
       GE().events.on('idle',()=>{ if(!on) return; SLOT.forEach(s=>{ try{ EC().lift(s.lyr); }catch(_){} }); });
@@ -466,6 +559,10 @@ window.IntMapModules.wind=function(HOST){
 
     return {
       toggle(v){ v?start():stop(); }, on:()=>on, stop, refetch:load, setOpacity,
+      /* (#R298) the colour slot's own signal, published because the ECMWF rasters share ONE reader
+         with this layer and their cursor warm-up has to queue behind the same picture — see the
+         note on `afterFieldShown` above and `warmReadout` in the weatherEC module */
+      afterFieldShown,
       /* ══ ⚠⚠ (#R293) THE NUMBER SURVIVES A TIME STEP, AND IT SAYS WHICH HOUR IT IS FROM ═══════
          「変えてから読み込まれるまでいったん地図が何もなくなるのを辞めろ。読み込み次第差し替える
            形式にしろ。」 MEASURED across one step on the built app, polling every 150 ms for 12 s:
@@ -489,7 +586,10 @@ window.IntMapModules.wind=function(HOST){
       model:()=>{ const E=window.IntMapECMWF; if(!E) return null;
         return { name:E.MODEL, resolutionKm:E.RESOLUTION_KM, referenceTime:E.referenceTime(), validTime:E.validTime(), variable:VAR }; },
       loading:()=>loading,
-      _dbg:()=>{ let hasLyr=false,op=null; const s=SLOT[1-slot];
+      /* (#R298) the colour slot the READER is looking at, which is what every probe of this asks —
+         `shownSlot` is −1 only while the first one has yet to be uncovered, and then the slot being
+         built is the honest answer */
+      _dbg:()=>{ let hasLyr=false,op=null; const s=SLOT[shownSlot>=0?shownSlot:slot];
         try{ hasLyr=!!GE().layers.has(s.lyr); if(hasLyr) op=GE().layers.getPaint(s.lyr,'raster-opacity'); }catch(_){}
         const smp=window.IntMapECMWF&&window.IntMapECMWF.sampler(VAR);
         const st=renderer?renderer.stats():{};
@@ -662,9 +762,21 @@ window.IntMapModules.weatherEC=function(HOST){
        shares the module's one queue with the field the particles are flying on, and it is a number
        in a corner. Deferred until the axis has been still, and a further step replaces the pending
        schedule. Measured: with a raster on, a wind step went from 10.5 s to about a second. */
+    /* ⚠⚠ (#R298) …AND BEHIND THE WIND'S COLOUR FIELD WHEN THAT LAYER IS ON. A fixed 2,500 ms
+       answers 「has the axis been still」 and says nothing at all about whether the picture the
+       reader asked for has arrived — so on a slow read the timer fires into the one reader both
+       layers share (js/wx-ecmwf.js `serial`) while the colour is still decoding through it. The
+       wind publishes the moment its slot is uncovered, so the wait is on THAT when there is a wind
+       layer to wait for; with none on there is no signal, and the timer is the whole answer, as
+       before. The schedule above is unchanged: this is a second condition, not a longer delay. */
     let warmT=0;
     function warmReadout(){ clearTimeout(warmT); warmT=setTimeout(warmReadoutNow,2500); }
     function warmReadoutNow(){
+      try{ const W=window.Wind;
+        if(W&&W.on&&W.on()&&W.afterFieldShown){ W.afterFieldShown(warmReadNow); return; } }catch(_){}
+      warmReadNow();
+    }
+    function warmReadNow(){
       try{ const cfg=LAYERS.filter(l=>state[l.id].on&&l.type==='raster').pop();
         if(!cfg) return;
         /* ⚠ (#R290 追記) `bandNear` — this frame exists for the cursor readout, not for the picture,
@@ -693,12 +805,22 @@ window.IntMapModules.weatherEC=function(HOST){
        → the signal is the SOURCE's own: `sourcedata` with `isSourceLoaded` for that source id.
        The backstop is long and exists only so a source that never loads cannot strand two slots;
        until it fires the old picture stays up, which is the whole point. */
+    /* ══ ⚠⚠⚠ (#R298) 「まだ1枚も頼まれていない」 SOURCE ALSO REPORTS ITSELF LOADED ═══════════════
+       #R297 fixed exactly this one source along — the animated field's `_whenSrcLoaded` — and left
+       this copy on `isSourceLoaded` alone. `isSourceLoaded` answers 「is anything in flight for this
+       source」, and for a source that was added a moment ago and has not been ASKED for a tile yet
+       the answer is yes-it-is-loaded, immediately. So a time step on the raster / isobar / arrow
+       layers uncovered an empty slot and removed the one holding the picture: 「時間を選択したとき、
+       変えてから読み込まれるまでいったん地図から何もなくなる」, still true here after #R297.
+       → a TILE has to have landed as well. `sourcedata` carries a tile for VECTOR sources too, so
+       the isobars and the arrows are covered by the same condition; the 12 s backstop stays,
+       because a source whose tiles are all off-screen never gets a tile event at all. */
     function whenSourceLoaded(sid,then,maxMs){
       let done=false;
       const fin=()=>{ if(done) return; done=true;
         try{ GE().events.off('sourcedata',h); }catch(_){}
         try{ then(); }catch(_){} };
-      const h=(e)=>{ if(e&&e.sourceId===sid&&e.isSourceLoaded) fin(); };
+      const h=(e)=>{ if(e&&e.sourceId===sid&&e.tile&&e.isSourceLoaded) fin(); };
       try{ GE().events.on('sourcedata',h); }catch(_){ setTimeout(fin,600); return; }
       /* already in? MapLibre will not re-fire for a source that finished before we subscribed */
       try{ if(GE().layers.sourceData&&GE().layers.sourceData(sid)) { /* geojson only — rasters fall through */ } }catch(_){}
@@ -708,11 +830,18 @@ window.IntMapModules.weatherEC=function(HOST){
       (only?[only]:activeLayers()).forEach(cfg=>{
         const old=cfg._s|0, nu=1-old;
         dropSlot(cfg,nu);                       /* whatever a superseded step left there */
+        /* ⚠⚠ (#R298) …AND THE STEP IT LEFT BEHIND MUST NOT STILL BE HOLDING THE SWAP. Two steps in
+           a row both compute `nu` from `cfg._s`, which the first one has not moved yet (it moves on
+           the reveal), so both build into the SAME slot — and the first reveal, when its handler
+           fires on the rebuilt source, would then drop the slot the reader is looking at while the
+           second build has nothing painted. Both slots gone is a blank map. The token is what an
+           overtaken reveal checks: it uncovers nothing and drops nothing. */
+        const mine=cfg._seq=(cfg._seq|0)+1;
         let n=0;
-        const go=()=>{ if(!state[cfg.id].on) return;
+        const go=()=>{ if(!state[cfg.id].on||mine!==cfg._seq) return;
           if(!(_imCanDraw()&&addSlot(cfg,nu))){ if(n++<40) setTimeout(go,200); return; }
           setVisSlot(cfg,nu,true); setOpSlot(cfg,nu,0);
-          const reveal=()=>{ if(!state[cfg.id].on) return;
+          const reveal=()=>{ if(!state[cfg.id].on||mine!==cfg._seq) return;
             if((cfg._s|0)!==nu){ cfg._s=nu; }
             setOpSlot(cfg,nu,state[cfg.id].op);
             dropSlot(cfg,old); };

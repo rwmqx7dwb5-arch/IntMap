@@ -4983,5 +4983,10 @@ window.IntMapLang.define('zh-hans', {
   "Use my current location": "使用目前位置",   /* (#R296) */
   "Use my location (permission was refused)": "使用目前位置（权限遭拒）",   /* (#R296) */
   "Window (h)": "追踪时间 (h)",   /* (#R296) */
+  "Edit message": "编辑讯息",   /* (#R298) */
+  "every {0} s": "每 {0} 秒",   /* (#R298) */
+  "Find routes": "搜索路线",   /* (#R298) */
+  "Tap the map to choose a point": "点一下地图以选择地点",   /* (#R298) */
+  "The map is not ready to choose a point yet": "地图尚未就绪，无法选择地点",   /* (#R298) */
   }
 });

@@ -209,9 +209,12 @@ test('R297 ⑬ the style-swap recovery runs on a swap, not on every mutation it 
      `ensureLayers()` clears the signature when it builds a fresh source (#R290), so that is the
      signal — not a flag somebody has to remember to set. */
   assert.match(s, /const fresh=\(featsSig===''\);/);
-  assert.match(s, /if\(fresh\)\{ featsSig=featSig\(feats\); GE\(\)\.layers\.setSourceData\(SRC,/);
-  assert.match(s, /publishQuiet\(fresh\); paintCountries\(fresh\);/,
-    'and the forced quiet upload and the forced 258-country repaint go with it');
+  assert.match(s, /if\(fresh\)\{ const shown=quietFeatures\(\)\.concat\(feats\);/);
+  assert.match(s, /featsSig=featSig\(shown\); GE\(\)\.layers\.setSourceData\(SRC,/);
+  /* ⚠ (#R298) the quiet units ride in that one upload now, so what has to go with the recovery is
+     the SET (`washTier` reads it) and the forced 258-country repaint — not a second upload. */
+  assert.match(s, /refreshQuietLayer\(\);/);
+  assert.match(s, /paintCountries\(fresh\);/);
   /* the recovery must still EXIST — #R72 recorded what happens when nothing puts the layers back */
   assert.match(s, /onRestyle\(\(\)=>\{ if\(!on\) return; whenDrawable\(\(\)=>\{\n\s*if\(!ensureLayers\(\)\) return;/);
 });

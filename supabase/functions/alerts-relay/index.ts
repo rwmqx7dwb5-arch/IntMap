@@ -36,8 +36,12 @@ const CORS = corsFor();
    sits just under (js/world-packs.js MIN_AGE_MS): asking a country again inside this window
    returns the same bytes, so it bounds how fresh the map can be. 60 s → 30 s halves that bound.
    `stale-while-revalidate` is what keeps the edge answering instantly while it refreshes, so the
-   READER never waits for the upstream; what doubles is how often the edge asks it. */
-const CACHE = "public, max-age=30, s-maxage=30, stale-while-revalidate=300";
+   READER never waits for the upstream; what doubles is how often the edge asks it.
+   ⚠ (#R298) 「更新が遅すぎる。リアルタイムにと言っている。」（5回目）— 30 s → 15 s. The app's floor
+   (`MIN_AGE_MS`) and its tick move with it (20 s → 10 s). `stale-while-revalidate` is unchanged at
+   300 s, so the edge still answers instantly and the upstream is still asked at most once per
+   window per country — what changes is the size of that window. */
+const CACHE = "public, max-age=15, s-maxage=15, stale-while-revalidate=300";
 
 /* ══ ⚠⚠ ONE CALLER-SIZED REQUEST WAS BUYING FORTY UPSTREAM-SIZED ONES ═══════════════════════════
    `?ma=` took `.slice(0, 40)` country slugs and fetched them ALL, in parallel, with a 45-second
@@ -735,9 +739,17 @@ Deno.serve(async (req) => {
         out[m] = summariseSWICGeo(r.text(), m);
       } catch (_e) { out[m] = { error: "unreachable" }; }
     }
-    /* a district boundary is not this minute's weather — an hour of edge cache, not sixty seconds */
+    /* ⚠⚠⚠ (#R298) A DISTRICT BOUNDARY IS NOT THIS MINUTE'S WEATHER — BUT **WHICH** DISTRICTS ARE
+       IN THIS ANSWER IS. The register only ever holds the areas that member has in force RIGHT NOW
+       (#R284), so this response is 「the shapes we can learn this minute」 and an hour of cache is an
+       hour in which the library cannot grow. The app asks again every three minutes precisely
+       because it is still short of a full library — and with `max-age=3600` that retry re-read a
+       body that could not have changed. The SHAPES are still kept for seven days, on the client,
+       in Cache Storage, merged rather than replaced; that is where the 「a boundary is not weather」
+       saving belongs. `stale-while-revalidate` is what keeps the upstream from being asked more
+       often than this window, so lowering the window does not multiply upstream requests. */
     return new Response(JSON.stringify({ members: out }), {
-      headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400" },
+      headers: { ...CORS, "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=60, s-maxage=60, stale-while-revalidate=86400" },
     });
   }
   /* ══ ⚠⚠⚠ `?cngeo=100000_full_city` — THE CHINESE DIVISION BOUNDARIES ════════════════

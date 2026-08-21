@@ -237,7 +237,8 @@ window.IntMapRouteCards = (function () {
     o = use(o);
     var sel = o.sel | 0, setId = o.setId || '', transit = !!o.transit;
     var startMs = o.startMs || Date.now();
-    return '<div class="rt-alts" role="radiogroup" aria-label="' + esc(L('Route options', '経路候補', 'Routenoptionen', 'Варианты маршрута', 'Opciones de ruta')) + '" data-rset="' + esc(setId) + '">'
+    /* (#R298) the set says which KIND it is, so `refreshDetail` can redraw it without being told */
+    return '<div class="rt-alts" role="radiogroup" aria-label="' + esc(L('Route options', '経路候補', 'Routenoptionen', 'Варианты маршрута', 'Opciones de ruta')) + '" data-rset="' + esc(setId) + '" data-kind="' + (transit ? 'transit' : 'road') + '">'
       + (alts || []).map(function (a, i) {
         var on = (i === sel);
         var head, sub, aria;
@@ -276,7 +277,14 @@ window.IntMapRouteCards = (function () {
           + ' data-ai="' + i + '" aria-label="' + esc(aria) + '">'
           + '<span class="rt-alt-row">'
           + '<span class="rt-alt-key" style="background:' + esc(a.color || '#1a73e8') + ';" aria-hidden="true">' + (i + 1) + '</span>'
-          + '<span class="rt-alt-body">' + head + sub + seq + '</span></span>'
+          + '<span class="rt-alt-body">' + head + sub + seq + '</span>'
+          /* ⚠ (#R298) 「経路カード…選ばれているものが明らかに分かるように」 — the chosen row was told apart
+             by a 2 px border and a faint fill, which on a dark basemap through a translucent panel is
+             most of the difference between «selected» and «hovered». A filled tick is the third
+             signal beside `aria-checked` and the border, and it is drawn in CSS (no glyph, no
+             emoji), so it cannot arrive in the wrong language or fail to load. */
+          + (on ? '<span class="rt-alt-tick" aria-hidden="true"></span>' : '')
+          + '</span>'
           + (det ? ('<div class="rt-alt-detail">' + det + '</div>') : '') + '</div>';
       }).join('') + '</div>';
   }
@@ -367,21 +375,30 @@ window.IntMapRouteCards = (function () {
     return '<div class="rt-prov">' + esc(L('Routed by ', '経路提供: ', 'Berechnet von ', 'Маршрут от ', 'Ruta de ') + p.name + ' · ' + p.attribution) + '</div>';
   }
 
-  /* ⚠ (#R291) RE-RENDER ONE REPLY'S DETAIL BLOCK. A list of step BUTTONS cannot be nested inside a
-     card that is itself a button, so the cards and their turn/leg list are siblings — and selecting a
-     card has to redraw the sibling. It lives here rather than in js/atlas-console.js because it is
-     rendering, and because that file has a line ceiling that only ever comes down (#R199 ⑤). The set
-     is addressed by its routeSetId, which is unique per computed set (#R126 §24.3), so an Atlas
-     message from ten replies ago redraws ITS OWN detail and never the active route's. */
+  /* ══ ⚠⚠⚠ (#R298) 「Atlas内の経路UIを勝手に例外にするな」 — ONE SHAPE, BOTH SURFACES ═══════════
+     #R291 put the turn list BELOW the cards because 「a list of step BUTTONS cannot be nested inside a
+     card that is itself a button」, and #R296 removed that constraint for the PANEL by making the card
+     a `role=radio` row instead of a `<button>` — but Atlas kept the sibling block, so the same
+     renderer drew two different layouts depending on which surface asked. The reader named it.
+     Selecting a card now REDRAWS THE SET, which is the only thing that can move the detail from one
+     card into another, and it is what the panel's own subscription already did.
+     ⚠ The set is addressed by its routeSetId, unique per computed set (#R126 §24.3), so an Atlas
+     message from ten replies ago redraws ITS OWN cards and never the active route's. This lives here
+     rather than in js/atlas-console.js because it is rendering, and because that file has a line
+     ceiling that only ever comes down (#R199 ⑤). */
   function refreshDetail(setId, ai, o) {
     try {
-      var box = document.querySelector('.atl-rdetail[data-rset="' + String(setId || '').replace(/[^A-Za-z0-9_-]/g, '') + '"]');
+      var sid = String(setId || '').replace(/[^A-Za-z0-9_-]/g, '');
+      var box = document.querySelector('.rt-alts[data-rset="' + sid + '"]');
       if (!box) return false;
-      var alt = (window.IntMapRouting.altsOf(setId) || [])[ai];
-      if (!alt) return false;
-      box.innerHTML = (box.getAttribute('data-kind') === 'transit')
-        ? legRows(alt.legs, o)
-        : stepRows(alt.steps, Object.assign({}, o, { maneuver: function (s) { return window.IntMapRouting.maneuver(s); } }));
+      var alts = window.IntMapRouting.altsOf(setId) || [];
+      if (!alts.length) return false;
+      var transit = box.getAttribute('data-kind') === 'transit';
+      var det = function (i2, a2) {
+        return transit ? legRows(a2.legs, o)
+          : stepRows(a2.steps, Object.assign({}, o, { maneuver: function (s) { return window.IntMapRouting.maneuver(s); } }));
+      };
+      box.outerHTML = altCards(alts, Object.assign({}, o, { sel: ai | 0, setId: setId, transit: transit, detail: det }));
       return true;
     } catch (e) { return false; }
   }

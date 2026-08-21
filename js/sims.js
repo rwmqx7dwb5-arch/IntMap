@@ -523,6 +523,21 @@ window.IntMapModules.sun=function(HOST){
     const SRC='imsun-src'; const rad=Math.PI/180, J1970=2440588, J2000=2451545, dayMs=86400000, e=rad*23.4397;
     let panel=null, when=new Date(), busy=false, moveT=null, playing=0, bbldCache=null, bboxKey='';
     const SN=window.IntMapLang.pick(()=>HOST.lang);
+    /* ══ ⚠⚠⚠ (#R298) THE POINT THIS PANEL IS ANSWERING FOR ════════════════════════════════════════
+       「地点を選ばないといけない系のツール、押したら勝手に地図中心を選択しているものとして結果を出すの
+         を辞めろ。」 Everything this panel prints is a function of ONE coordinate — the sun's altitude
+       and azimuth, sunrise, noon, sunset, the direction the building shadows fall, which hemisphere's
+       solstice is the short day — and all five read `GE().camera.getCenter()` directly, so the panel
+       answered for wherever the camera happened to be pointing and never said that it had.
+       ⚠ THE CENTRE IS STILL THE DEFAULT, AND IT IS NOW NAMED. `site` is null until somebody hands the
+       panel a point (the tools list, the map's right-click item, the ◎ probe below), and while it is
+       null `.sun-where` says so in the reader's own language rather than leaving the numbers to be
+       read as though the reader had chosen the place. `mine` travels with the coordinate exactly as
+       it does in js/space.js's observer, so a caller cannot forget which of the two it is holding. */
+    let site=null;
+    function siteLL(){ if(site&&isFinite(site.lng)&&isFinite(site.lat)) return { lng:+site.lng, lat:+site.lat, mine:true };
+      try{ const c=GE().camera.getCenter(); return { lng:c.lng, lat:c.lat, mine:false }; }catch(_){ return { lng:0, lat:0, mine:false }; } }
+    function setSite(ll){ if(ll&&isFinite(ll.lng)&&isFinite(ll.lat)) site={ lng:+ll.lng, lat:+ll.lat }; return site; }
     /* (#R176) shared style for the three engine buttons added below */
     const SBTN='flex:1 1 auto;padding:5px 7px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;white-space:nowrap;';
     const toDays=d=>d.valueOf()/dayMs-0.5+J1970-J2000;
@@ -578,7 +593,7 @@ window.IntMapModules.sun=function(HOST){
         bbldCache=bld; return bld; }catch(_){} }
       return bbldCache||[]; }
     async function drawShadows(){ if(busy) return; busy=true; try{ ensure();
-      const c=GE().camera.getCenter(); const sp=sunPos(when,c.lat,c.lng);
+      const c=siteLL(); const sp=sunPos(when,c.lat,c.lng);   /* (#R298) the chosen point, or the centre — and the panel says which */
       updatePanel(sp);
       try{ if(sp.altDeg>0) GE().scene.setLight&&GE().scene.setLight({anchor:'map',position:[1.5,sp.azCompass,Math.max(1,90-sp.altDeg)],color:'#fff5e6',intensity:0.5}); else GE().scene.setLight&&GE().scene.setLight({anchor:'map',position:[1.5,0,60],color:'#213',intensity:0.25}); }catch(_){}
       if(sp.altDeg<=0.5){ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} busy=false; return; }   /* sun down → no cast shadows */
@@ -591,7 +606,13 @@ window.IntMapModules.sun=function(HOST){
       try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
     }catch(_){} busy=false; }
     function fmtT(d){ try{ return d.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}); }catch(_){ return '—'; } }
-    function updatePanel(sp){ if(!panel) return; const c=GE().camera.getCenter(); const st=sunTimes(when,c.lat,c.lng);
+    function updatePanel(sp){ if(!panel) return; const c=siteLL(); const st=sunTimes(when,c.lat,c.lng);
+      /* (#R298) 「どの地点の話なのか」 — one line, above the numbers it belongs to, in every state the
+         panel has. The 'using the map’s center as the observer' wording is the one js/space.js's event
+         list already uses for the same fact, so the two cannot drift apart in nine languages. */
+      const wh=panel.querySelector('.sun-where');
+      if(wh) wh.textContent='◎ '+c.lat.toFixed(4)+', '+c.lng.toFixed(4)
+        +(c.mine?'':' · '+SN('using the map’s center as the observer','観測地点は地図の中心','Beobachter = Kartenmitte','наблюдатель — центр карты','observador: centro del mapa'));
       const rd=panel.querySelector('.sun-read'); if(rd){ const dir=window.IntMapCompass.point(sp.azCompass,HOST.lang,8);   /* (#R289) one table, nine languages */
         rd.innerHTML='<b>'+(sp.altDeg>0?'☀️':'🌙')+' '+SN('Altitude','高度','Höhe','Высота','Altura')+' '+sp.altDeg.toFixed(1)+'° · '+SN('Azimuth','方位','Azimut','Азимут','Azimut')+' '+Math.round(sp.azCompass)+'° '+dir+'</b>'
           +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">'+(st.polar?SN('polar '+st.polar,st.polar==='day'?'白夜':'極夜','Polar','полярный','polar'):('🌅 '+fmtT(st.rise)+' · ☀️ '+fmtT(st.noon)+' · 🌇 '+fmtT(st.set)))+'</div>'; } }
@@ -605,6 +626,8 @@ window.IntMapModules.sun=function(HOST){
         +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
         +'<div style="display:flex;gap:8px;align-items:center;"><input type="date" class="sun-date" style="flex:1;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;"><button class="sun-now" style="height:30px;padding:0 10px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+SN('Now','現在','Jetzt','Сейчас','Ahora')+'</button><button class="sun-play" style="height:30px;width:34px;border:none;border-radius:8px;background:var(--primary-color);color:#fff;font-size:13px;cursor:pointer;">▶</button></div>'
         +'<div style="display:flex;align-items:center;gap:8px;"><input type="range" class="sun-slider" min="0" max="1439" value="720" style="flex:1;"><span class="sun-time" style="font-size:12px;font-weight:700;color:var(--text-main);min-width:44px;text-align:right;">12:00</span></div>'
+        /* (#R298) the coordinate every number below is for — filled by updatePanel() */
+        +'<div class="sun-where" style="font-size:11px;color:var(--text-muted);"></div>'
         +'<div class="sun-read" style="font-size:12px;color:var(--text-main);"></div>'
         /* (#R210) 「影の透明度を選択可能に」 — one control for BOTH shadow layers (the buildings'
            cast polygons and the terrain shade raster), because to a user there is one shadow. */
@@ -653,7 +676,7 @@ window.IntMapModules.sun=function(HOST){
       b.style.background=terrainOn?'var(--primary-color)':'var(--input-bg)'; b.style.color=terrainOn?'#fff':'var(--text-main)'; }
     const nf=(v,d)=>Number(v).toLocaleString(undefined,{maximumFractionDigits:d==null?0:d});
     async function drawTerrain(){ if(!terrainOn||engBusy||!ENG()) return; engBusy=true;
-      try{ const r=await ENG().shade(when,{refit:true});
+      try{ const r=await ENG().shade(when,{refit:true,at:siteLL()});   /* (#R298) the sun is read at the panel's point */
         if(r) engSay('⛰ '+SN('Terrain shadow','地形の影','Geländeschatten','Тень рельефа','Sombra del terreno')+': '
           +nf(r.shadedFrac*100,1)+'% '+SN('of the view','が影','der Ansicht','вида','de la vista')
           +' · '+SN('sun','太陽','Sonne','солнце','sol')+' '+nf(r.altDeg,1)+'° / '+nf(r.azDeg)+'°'
@@ -665,9 +688,9 @@ window.IntMapModules.sun=function(HOST){
     async function solsticeShade(){ if(engBusy||!ENG()) return; engBusy=true;
       engSay(SN('Stepping through the solstice day…','冬至の1日を計算中…','Sonnenwendtag wird durchlaufen…','Расчёт дня солнцестояния…','Recorriendo el solsticio…'));
       try{
-        const lat=GE().camera.getCenter().lat, y=when.getFullYear();
+        const at=siteLL(), lat=at.lat, y=when.getFullYear();          /* (#R298) the panel's own point */
         const d=new Date(y, lat>=0?11:5, 21, 12, 0, 0);               /* the SHORT day for this hemisphere */
-        const r=await ENG().dayShadow(d,{refit:true});
+        const r=await ENG().dayShadow(d,{refit:true,at});
         terrainOn=true; syncTerrBtn();
         if(r) engSay('❄ '+SN('Never sunlit on','日照ゼロ（','Nie besonnt am ','Без солнца ','Sin sol el ')+r.day+SN('','）',': ',': ',': ')+' — <b>'+nf(r.neverSunFrac*100,1)+'%</b> '
           +SN('of the view','の面積','der Ansicht','вида','de la vista')+' · '+r.steps+' '+SN('sun positions','時刻で判定','Sonnenstände','положений','posiciones')
@@ -687,6 +710,8 @@ window.IntMapModules.sun=function(HOST){
       pickH=async e=>{ endPick(); await analysePoint(e.lngLat.lng,e.lngLat.lat); };
       try{ GE().events.once('click',pickH); }catch(_){} }
     async function analysePoint(lng,lat){ if(engBusy||!ENG()) return null; engBusy=true;
+      /* (#R298) the probe IS a choice of place — the rest of the panel follows it instead of the camera */
+      setSite({lng,lat}); try{ drawShadows(); }catch(_){}
       engSay(SN('Building the 360° horizon and stepping a year…','360°の地平線と1年分を計算中…','360°-Horizont und ein Jahr…','Горизонт 360° и целый год…','Horizonte de 360° y un año…'));
       let a=null;
       try{ a=await ENG().analyse(lng,lat,{});
@@ -717,8 +742,14 @@ window.IntMapModules.sun=function(HOST){
       if(playing){ clearInterval(playing); playing=0; }
       try{ panel.remove(); }catch(_){} panel=null;
       if(wasOpen) open(); });
-    function open(){ ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); syncTerrBtn(); drawShadows(); if(terrainOn) drawTerrain(); }
-    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } endPick(); try{ ENG()&&ENG().clear(); }catch(_){} try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} try{ GE().scene.setLight&&GE().scene.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }
+    /* (#R298) `at` is the point the caller was given by the reader — the tools list asks for one now
+       (js/map-ui.js `_askPoint`), the map's right-click item has the coordinate it was opened on.
+       Without one the panel falls back to the camera's centre AND SAYS SO, which is the whole change:
+       the fallback is allowed to exist, it is not allowed to be silent. */
+    function open(at){ setSite(at); ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); syncTerrBtn(); drawShadows(); if(terrainOn) drawTerrain(); }
+    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } endPick();
+      site=null;   /* (#R298) shutting the panel forgets its subject — the next open states its own */
+      try{ ENG()&&ENG().clear(); }catch(_){} try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} try{ GE().scene.setLight&&GE().scene.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }
     return { open, close, setTime, _sunPos:sunPos, _sunTimes:sunTimes,
       /* (#R176) the new half, so Atlas and the tests can drive it */
       terrainShadow:(on)=>{ const want=(on==null)?!terrainOn:!!on; if(want!==terrainOn) toggleTerrain(); return terrainOn; },

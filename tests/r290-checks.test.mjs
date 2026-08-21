@@ -162,11 +162,13 @@ test('R290 ⑤ the publish path does each piece of work once', () => {
   /* ② a collection identical to the one on the map is not uploaded again */
   assert.match(src, /function featSig\(list\)\{/, 'the warning collection has a content signature');
   assert.match(src, /if\(sig!==featsSig\)\{ featsSig=sig; GE\(\)\.layers\.setSourceData\(SRC,/);
-  assert.match(src, /if\(!force&&sig===quietSig\)\{ applyAlertVis\(\); return true; \}/,
-    'and so does the quiet-unit collection');
+  /* ⚠ (#R298) the quiet units are IN that collection now, so its signature covers them too —
+     there is no second signature to keep in step, which is one fewer thing that can disagree. */
+  assert.match(src, /const shown=quietFeatures\(\)\.concat\(feats\);/);
+  assert.match(src, /const sig=featSig\(shown\);/);
   /* ⚠ …and a fresh source resets both signatures, or a style reload would leave an empty map */
   assert.match(src, /if\(!GE\(\)\.layers\.hasSource\(SRC\)\)\{ featsSig=''; /);
-  assert.match(src, /if\(!GE\(\)\.layers\.hasSource\(QSRC\)\)\{ quietSig=''; /);
+  assert.ok(!/quietSig/.test(src), 'and there is no second signature left to reset');
   /* ③ a feature state is written only where the tier changed */
   assert.match(src, /const t=washTier\(c\); if\(tierWritten\[c\]===t\) return; tierWritten\[c\]=t;/);
   assert.match(src, /if\(force\)\{ tierWritten=Object\.create\(null\); _cFeat=Object\.create\(null\); \}/,
@@ -194,8 +196,8 @@ test('R290 ⑥ the quiet units are bounded by the view and by the zoom, and the 
   assert.match(src, /return quietSet\[c\]\?2:1;/);
   assert.ok(!/return unitsOf\(c\)\?2:1;/.test(src), 'the cache-based test must be gone');
   assert.match(src, /function refreshQuietSet\(\)\{/, 'the set is computed in one place…');
-  assert.match(src, /if\(!_imCanDraw\(\)\|\|!ensureQuiet\(\)\)\{ quietSet=Object\.create\(null\); quietList=\[\]; return false; \}/,
-    'and the set empties with the layer, so the sheet can never be off where the units are not drawn');
+  assert.match(src, /if\(!_imCanDraw\(\)\)\{ quietSet=Object\.create\(null\); quietList=\[\]; return false; \}/,
+    'and the set empties when nothing can be drawn, so the sheet is never off where the units are not');
   /* a pan republishes it, because the view is what decides its contents */
   assert.match(src, /GE\(\)\.events\.on\('moveend',\(\)=>\{ if\(!on\) return; askUnitsInView\(\);/);
 });

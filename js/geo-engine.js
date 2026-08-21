@@ -1895,6 +1895,11 @@ function _m(){ return window.__imap||null; }
     panBy(off,o){ const m=_m(); if(m&&m.panBy){ _declare(m,{center:true}); m.panBy(off,o); } },
     setMaxBounds(b){ const m=_m(); try{ if(m&&m.setMaxBounds) m.setMaxBounds(b); }catch(_){} },
     setRenderWorldCopies(v){ const m=_m(); try{ if(m&&m.setRenderWorldCopies) m.setRenderWorldCopies(v); }catch(_){} },
+    /* ⚠ (#R298) …and the app can ASK. 「平面地図は自由スクロールに一本化して」 is an invariant, and an
+       invariant nothing can read is one nothing can re-assert: writing it on every style event would
+       cost an `_update()` per mutation (the oscillation #R297 measured), and writing it never is how
+       a flat map ends up caged. Reading is free. */
+    getRenderWorldCopies(){ const m=_m(); try{ return !!(m&&m.getRenderWorldCopies&&m.getRenderWorldCopies()); }catch(_){ return false; } },
     /* "what camera looks FROM here TO there" — the flight simulator's cockpit and the drone
        navigator both fly by asking this rather than by setting a pitch (#R158). */
     cameraFromTo(from,fromAlt,to,toAlt){ const m=_m(); try{ return (m&&m.calculateCameraOptionsFromTo)?m.calculateCameraOptionsFromTo(from,fromAlt,to,toAlt):null; }catch(_){ return null; } },
@@ -2051,6 +2056,7 @@ function _m(){ return window.__imap||null; }
       /* (#R178) the remainder of the camera surface — see the adapter block */
       setCenter:c=>A().setCenter(c), panBy:(o,opt)=>A().panBy(o,opt),
       setMaxBounds:b=>A().setMaxBounds(b), setRenderWorldCopies:v=>A().setRenderWorldCopies(v),
+      getRenderWorldCopies:()=>A().getRenderWorldCopies(),
       fromTo:(f,fa,t,ta)=>A().cameraFromTo?A().cameraFromTo(f,fa,t,ta):null },
     coords:{ project:ll=>A().project(ll), unproject:pt=>A().unproject(pt), terrainElevation:(ll,o)=>A().terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>A().queryRenderedFeatures(g,o),
       /* (#R173) the screen position of a point AT ALTITUDE — what picking anything lifted needs */

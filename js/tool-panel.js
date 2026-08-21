@@ -526,7 +526,10 @@ window.IntMapModules.toolPanel=function(HOST){
       {label:`⛰💧 ${L('Terrain & water flow','地形編集・水流シミュレーター','Gelände & Wasser bearbeiten','Рельеф и водоток','Terreno y flujo de agua')}`, action:()=>{ window.IntMapLazy.need('terrainWater').then(()=>{ try{ window.IntMapTerrainWater&&window.IntMapTerrainWater.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
       /* (#R232) 🌐 removed with the panel header's — same feature, same instruction. */
       {label:`${L('Earthquake simulator (set as epicentre)','地震シミュレーター（震源に設定）','Erdbeben-Simulator (als Epizentrum)','Симулятор землетрясений (как эпицентр)','Simulador de terremotos (como epicentro)')}`, action:()=>{ window.IntMapLazy.need('seismic').then(()=>{ try{ window.IntMapSeismic&&window.IntMapSeismic.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
-      {label:`🌇 ${L('Sunlight hours & shade','日照時間・影を解析','Sonnenstunden & Schatten','Часы солнца и тени','Horas de sol y sombra')}`, action:()=>{ try{ if(window.IntMapSun){ window.IntMapSun.open(); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(lngLat.lng,lngLat.lat); } }catch(_){} }},
+      /* ⚠ (#R298) THE PANEL OPENS ON THE POINT THAT WAS TAPPED, not on the map centre and then the
+         point. `open()` with no argument names the camera's centre in its own heading, so between
+         the two calls the reader was shown numbers for a place they did not pick. */
+      {label:`🌇 ${L('Sunlight hours & shade','日照時間・影を解析','Sonnenstunden & Schatten','Часы солнца и тени','Horas de sol y sombra')}`, action:()=>{ try{ if(window.IntMapSun){ window.IntMapSun.open({lng:lngLat.lng,lat:lngLat.lat}); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(lngLat.lng,lngLat.lat); } }catch(_){} }},
       /* (#R208) 「ある地点からの星空」— the all-sky view a person standing here has, with the skyline
          measured off the DEM so the ground really does hide the part of the sky it hides. */
       /* ══ (#R255) ONE ENTRY, TWO VIEWS — THE SWITCH IS THE PANEL'S OWN ══════════════════════════════
