@@ -72,10 +72,16 @@ test('R160 (B5) the RIGHT sidebar no longer pushes the map; right HUD slides to 
   gone('body:not(.ws-mode) .coord-readout{ left:calc(var(--sidebar-w) + 16px); }', 'left HUD is NOT shifted in solid (beside) mode');
 });
 
-test('R160 (C) settings save no longer force-reopens the right sidebar', () => {
-  // apply() (which always re-opens on desktop) now runs ONLY when the layer-panel MODE actually changed
-  ok('const _oldLP=window.imLayerPanel; window.imLayerPanel=v(\'setting-layerpanel\').value;', 'capture the previous layer-panel mode before overwriting it');
-  ok('if(_oldLP!==window.imLayerPanel){ try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.apply(); }catch(_){} } }', 'reconcile the panel ONLY on a real mode change');
+/* ⚠ (#R296) #R160's defect was 「設定を変更すると勝手に右サイドバーが出てくる」: `apply()` re-opens the
+   panel and ran on EVERY settings save. Its fix was to run it only when the layer-panel mode changed.
+   This round removed the mode, and with it the save path — so the guard is not weakened, its whole
+   subject is gone. What must stay true is that saving a setting cannot call `apply()` at all. */
+test('R160 (C) / R296: saving a setting cannot reopen the layer sidebar', () => {
+  gone("v('setting-layerpanel')", 'the layer-panel control is not read on save');
+  gone('_oldLP', 'the previous-mode capture the guard needed is gone with the mode');
+  /* ⚠ `IntMapLayerSidebar.apply()` itself STAYS — js/workspace.js calls it when a workspace window
+     is torn down, which is a real reconciliation and not a settings save. The check is about the
+     SETTINGS path, so it names what only that path had. */
 });
 
 // (D) MapLibre-dependency reduction — Phase 2 of the IntMapGeoEngine renderer abstraction (R152 was Phase 1).

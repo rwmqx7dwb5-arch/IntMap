@@ -13,9 +13,13 @@
  *     a phone — 「幅約346pxの小さな固定フローティングパネルへ全機能を詰め込む構成を廃止」.
  *   · THE SEARCH SHOWS CANDIDATES. The old field geocoded on Enter and picked one hit for you
  *     (js/routing-geocode.js's header measures what that cost); this one is a combobox.
- *   · CLOSING IT DOES NOT DELETE THE ROUTE. `.rp-close` used to call `clear()`. §2.2 forbids that:
- *     the route survives, the Tools row stays lit, pressing it again brings the same journey back,
- *     and only 「経路を消去」 throws it away.
+ *   · ⚠⚠ (#R296) CLOSING IT DOES DELETE THE ROUTE. 「経路機能を閉じても地図に経路が残り続けるのをやめろ」
+ *     — #R291 made the × keep the drawing, on its own reading of §2.2, and the reader has now said
+ *     the opposite in as many words. Closing the panel takes the route off the map with it, so the
+ *     map is never carrying a journey whose controls are gone. 「経路を消去」 still exists and still
+ *     does the same thing WITHOUT closing, for a reader who wants a clean map and the panel open.
+ *     ⚠ THE STORE'S ENDPOINTS SURVIVE the close (only the drawn route and the areas go), so
+ *     re-opening the panel shows the same from/to and one press recomputes the same journey.
  *   · SWAP REVERSES THE ITINERARY, stops included (§5.3) — see js/routing-store.js.
  *   · THE ANALYSES ARE NOT IN THE WAY. Three sections: Route / Options / Analysis (§3), so a reader
  *     who wants a journey is not looking at ⛰ 🛂 🌦 🕒 ⇄ before they have one.
@@ -40,7 +44,11 @@ window.IntMapModules.routeUi = function (HOST) {
     const isMob = () => { try { return !!HOST.isMobile || window.innerWidth < 768; } catch (_) { return false; } };
     const units = () => { try { return HOST.unitMode || 'metric'; } catch (_) { return 'metric'; } };
     const tz = () => { try { return HOST.userTZ && HOST.userTZ !== 'auto' ? HOST.userTZ : ''; } catch (_) { return ''; } };
-    const opt = () => ({ lang: HOST.lang, units: units(), tz: tz() });
+    /* ⚠ (#R296) `at` is WHERE the times in these cards happen — the destination, because an ETA is
+       an arrival. js/routing-cards.js turns it into the local wall clock unless the reader pinned a
+       zone in Settings. The lookup needs its polygons, so it is asked for once the panel opens. */
+    const destLL = () => { try { const p = ST().get().to.place; return (p && isFinite(+p.lng)) ? [+p.lng, +p.lat] : null; } catch (_) { return null; } };
+    const opt = () => ({ lang: HOST.lang, units: units(), tz: tz(), at: destLL() });
 
     let el = null, sug = null, openState = false, tab = 'route';
     let recomputeTimer = null, sugTimer = null, sugAC = null, sugFor = null, sugIdx = -1;
@@ -59,6 +67,13 @@ window.IntMapModules.routeUi = function (HOST) {
       el.classList.remove('rtp-min');
       document.body.classList.add('rtp-open');
       if (isMob()) setDetent(ST().get().result ? 'mid' : 'full');
+      /* ⚠ (#R296) THE ZONE LOOKUP IS ASKED FOR HERE, ONCE. `IntMapTimeZones.offsetAt` answers null until
+         its polygons are in hand, and #R293 ⑧ is the round where a `ready()` that nobody had called
+         made 「地図中心の標準時」 quietly fall back to the device clock for anyone who had chosen it
+         earlier. 「経路機能で、現地の時刻に合わせろ」 depends on the same data, so the panel asks and
+         re-renders when it lands rather than assuming somebody else did. */
+      try{ const TZ = window.IntMapTimeZones;
+        if (TZ && TZ.ensure && (!TZ.ready || !TZ.ready())) Promise.resolve(TZ.ensure()).then(() => { if (openState) render(); }, () => {}); }catch(_){}
       render();
       applyInsets();
       /* a restored share link recomputes rather than trusting a stored geometry (§16.2) */
@@ -67,13 +82,16 @@ window.IntMapModules.routeUi = function (HOST) {
       setTimeout(() => { try { const f = el.querySelector('.rtp-field[data-f="from"] input'); if (f && !ST().get().from.place) f.focus(); } catch (_) { } }, 60);
       return true;
     }
-    /* ⚠ CLOSING IS NOT CLEARING (§2.2). The drawn route, the store and the Tools row's lit state all
-       survive; what closes is this panel. */
+    /* ⚠⚠ (#R296) CLOSING IS CLEARING — see the header. The drawn route and any keep-out areas go
+       with the panel; the ENDPOINTS stay in the store, so re-opening shows the same journey to
+       recompute rather than an empty form. */
     function close() {
       openState = false;
       try { ST().setOpen(false); } catch (_) { }
       if (el) el.hidden = true;
       document.body.classList.remove('rtp-open');
+      lastKey = '';                                  /* (#R296) …and so does closing — see clearRoute */
+      try { RT().clear(); RT().clearAreas(); } catch (_) { }
       closeSuggest(); try { RT().endPick(); RT().endAreaDraw(true); } catch (_) { }
       try { RT().setInsets({}); } catch (_) { }
       try { if (focusReturn && focusReturn.isConnected) focusReturn.focus(); } catch (_) { }
@@ -81,8 +99,12 @@ window.IntMapModules.routeUi = function (HOST) {
     }
     function isOpen() { return !!openState; }
     function hasRoute() { try { return !!RT().hasRoute(); } catch (_) { return false; } }
-    /** the ONLY way a route is thrown away from this UI */
-    function clearRoute() { try { RT().clear(); RT().clearAreas(); } catch (_) { } render(); }
+    /** ⚠ (#R296) THROWING THE ROUTE AWAY ALSO FORGETS THAT WE ASKED FOR IT. `schedule()` refuses to
+       re-run an identical request within 1.5 s — which is right while a route EXISTS (a re-render is
+       not a new question) and wrong the moment it does not: pressing 「経路を消去」 and then asking for
+       the same journey again is a NEW request for something that is no longer on the map, and the
+       reader would have watched nothing happen. Found by the smoke spec, not by eye. */
+    function clearRoute() { lastKey = ''; try { RT().clear(); RT().clearAreas(); } catch (_) { } render(); }
 
     /* ══ CONSTRUCTION ═════════════════════════════════════════════════════════════════════════════ */
     function build() {
@@ -112,7 +134,7 @@ window.IntMapModules.routeUi = function (HOST) {
         + '<span class="rtp-ic" aria-hidden="true">' + CD().glyph('pin', { size: 18 }) + '</span>'
         + '<h2 id="rtp-title">' + T(L('Directions', '経路', 'Route', 'Маршрут', 'Cómo llegar')) + '</h2>'
         + '<button type="button" class="rtp-btn-ico rtp-minb" aria-label="' + T(L('Minimise', '最小化', 'Minimieren', 'Свернуть', 'Minimizar')) + '"><span aria-hidden="true">–</span></button>'
-        + '<button type="button" class="rtp-btn-ico rtp-closeb" aria-label="' + T(L('Close the directions panel (the route stays on the map)', '経路パネルを閉じる（経路は地図に残ります）', 'Panel schließen (die Route bleibt)', 'Закрыть панель (маршрут останется)', 'Cerrar el panel (la ruta permanece)')) + '"><span aria-hidden="true">×</span></button>'
+        + '<button type="button" class="rtp-btn-ico rtp-closeb" aria-label="' + T(L('Close the directions panel (this also removes the route from the map)', '経路パネルを閉じる（地図の経路も消えます）', 'Panel schließen (die Route wird ebenfalls entfernt)', 'Закрыть панель (маршрут тоже уберётся)', 'Cerrar el panel (la ruta también se elimina)')) + '"><span aria-hidden="true">×</span></button>'
         + '</header>'
         + '<div class="rtp-fixed">'
         + '<div class="rtp-modes" role="group" aria-label="' + T(L('Travel mode', '交通手段', 'Verkehrsmittel', 'Способ передвижения', 'Modo de transporte')) + '">'
@@ -156,6 +178,12 @@ window.IntMapModules.routeUi = function (HOST) {
     }
 
     /* ══ FIELDS — one row per waypoint, lettered A / 1 / 2 / B exactly like the map ═══════════════ */
+    /* (#R296) one label, four states — a control that is asking, or that was refused, says so */
+    function hereLabel() {
+      return hereState === 'asking' ? L('Getting your location…', '現在地を取得中…', 'Standort wird ermittelt…', 'Определяем местоположение…', 'Obteniendo su ubicación…')
+        : hereState === 'denied' ? L('Use my location (permission was refused)', '現在地を使う（許可が拒否されています）', 'Meinen Standort verwenden (verweigert)', 'Использовать моё местоположение (отказано)', 'Usar mi ubicación (permiso denegado)')
+          : L('Use my current location', '現在地を使う', 'Meinen Standort verwenden', 'Использовать моё местоположение', 'Usar mi ubicación actual');
+    }
     function fieldRow(which, i, n) {
       const s = ST().get();
       const f = ST().field(which);
@@ -174,6 +202,18 @@ window.IntMapModules.routeUi = function (HOST) {
         + ' role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="rtp-suggest"'
         + ' placeholder="' + esc(ph) + '" value="' + esc(val) + '">'
         + (val ? '<button type="button" class="rtp-btn-ico rtp-x" aria-label="' + esc(L('Clear this field', 'この欄をクリア', 'Feld leeren', 'Очистить поле', 'Borrar campo')) + '"><span aria-hidden="true">×</span></button>' : '')
+        /* ══ ⚠⚠⚠ (#R296) 「経路機能は現在地を地点に楽に選べるように。」 — AND `useHere` WAS NEVER CALLED ═════
+           MEASURED before writing this: `useHere(which)` has existed in this file since #R291, complete
+           with its permission handling, its accuracy warning and its three named failure messages — and
+           searching the whole program for a caller found NONE. The only way to reach the reader's own
+           position was to type into the field and hope 「現在地」 appeared among the suggestions. That is
+           the shape #R291 itself found for `openPanel` and #R268 counted three times in one round: a
+           finished feature with no door.
+           → every field gets the button, beside the one that picks a point on the map, because those are
+           the same kind of act. It reports its own state: asking / denied are not silent. */
+        + '<button type="button" class="rtp-btn-ico rtp-here' + (hereState === 'asking' ? ' rtp-busy' : '') + '"'
+        + ' aria-label="' + esc(hereLabel()) + '" title="' + esc(hereLabel()) + '"' + (hereState === 'asking' ? ' disabled' : '') + '>'
+        + '<span aria-hidden="true">' + CD().glyph('here', { size: 16 }) + '</span></button>'
         + '<button type="button" class="rtp-btn-ico rtp-pick" aria-label="' + esc(L('Pick this point on the map', '地図でこの地点を選ぶ', 'Punkt auf der Karte wählen', 'Выбрать точку на карте', 'Elegir en el mapa')) + '">'
         + '<span aria-hidden="true">' + CD().glyph('pin', { size: 16 }) + '</span></button>'
         + (canMove
@@ -339,8 +379,15 @@ window.IntMapModules.routeUi = function (HOST) {
       } else if (!at.hidden) at.value = s.when.local || at.value;
       /* ⚠ 「入力時刻がどのタイムゾーンか分からない状態を作らないでください」 — the zone is PRINTED, and it
          is the app's clock zone, which js/routing-store.js converts from (never the device's). */
-      const zone = tz() || (function () { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (_) { return ''; } })();
-      z.textContent = at.hidden ? '' : (zone || '');
+      /* ⚠ (#R296) …and when no zone is pinned, the times in the cards are the LOCAL ones at the ends of
+         the journey (「経路機能で、現地の時刻に合わせろ」), so saying 「Asia/Tokyo」 here would be
+         a different fact from the one on screen. The picker itself is still typed in the device's zone
+         — that is what a `datetime-local` input is — so the label names that, and says so. */
+      const pinned = tz();
+      const dev = (function () { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (_) { return ''; } })();
+      const zone = pinned || dev;
+      z.textContent = at.hidden ? '' : (pinned ? zone
+        : (zone ? (zone + ' · ' + L('times below are local to each place', '下の時刻は各地点の現地時間', 'Zeiten unten sind Ortszeit', 'время ниже — местное', 'las horas de abajo son locales')) : ''));
       z.hidden = at.hidden;
       /* road modes: the time is arithmetic, not a traffic forecast (§7.2) */
       const road = s.mode !== 'transit';
@@ -428,15 +475,26 @@ window.IntMapModules.routeUi = function (HOST) {
       if (!s.result) { pane.innerHTML = emptyRouteHTML(); return; }
       const r = s.result;
       const alts = r.alternatives || [];
+      /* ⚠ (#R296) 「経路の選択肢からひとつをえらんだときに、詳細が経路候補一覧の下に表示されるのでは
+         なく、経路カードが広がって詳細が表示されるUIに。」 — the detail is produced by the SAME two
+         renderers as before and handed to `altCards`, which puts it inside the chosen card. With a
+         single alternative there is no list to expand, so the detail stands on its own as it always
+         did — a card that is the only card is a heading, not a choice. */
+      const detailFor = (a2) => (r.transit
+        ? '<div class="rtp-legs">' + CD().legRows(a2.legs || r.legs, opt()) + '</div>'
+        : '<div class="rtp-steps" role="list">' + CD().stepRows(a2.steps || r.steps || [], Object.assign(opt(), { maneuver: (x) => RT().maneuver(x), step: s.step })) + '</div>');
       let h = '';
-      if (alts.length > 1) h += CD().altCards(alts, Object.assign(opt(), { sel: s.sel, setId: r.routeSetId, transit: !!r.transit, startMs: departMs() }));
-      (s.notes || []).forEach((k) => { h += CD().note(k, Object.assign(opt(), { mode: s.mode })); });
-      if (r.provider) h += CD().providerLine(r.provider, opt());
-      const a = alts[s.sel] || alts[0] || r;
-      if (r.transit) h += '<div class="rtp-legs">' + CD().legRows(a.legs || r.legs, opt()) + '</div>';
-      else {
-        const steps = a.steps || r.steps || [];
-        h += '<div class="rtp-steps" role="list">' + CD().stepRows(steps, Object.assign(opt(), { maneuver: (x) => RT().maneuver(x), step: s.step })) + '</div>';
+      if (alts.length > 1) {
+        h += CD().altCards(alts, Object.assign(opt(), {
+          sel: s.sel, setId: r.routeSetId, transit: !!r.transit, startMs: departMs(),
+          detail: (i2, a2) => detailFor(a2),
+        }));
+        (s.notes || []).forEach((k) => { h += CD().note(k, Object.assign(opt(), { mode: s.mode })); });
+        if (r.provider) h += CD().providerLine(r.provider, opt());
+      } else {
+        (s.notes || []).forEach((k) => { h += CD().note(k, Object.assign(opt(), { mode: s.mode })); });
+        if (r.provider) h += CD().providerLine(r.provider, opt());
+        h += detailFor(alts[0] || r);
       }
       pane.innerHTML = h;
     }
@@ -598,6 +656,7 @@ window.IntMapModules.routeUi = function (HOST) {
       const field = q('.rtp-field');
       const which = field ? field.dataset.f : null;
       if (q('.rtp-x')) { ST().setText(which, ''); ST().setPlace(which, null); render(); try { field.querySelector('input').focus(); } catch (_) { } return; }
+      if (q('.rtp-here')) { useHere(which); return; }   /* (#R296) the caller `useHere` never had */
       if (q('.rtp-pick')) { startPickFor(which); return; }
       if (q('.rtp-del')) { ST().removeVia(+which.split(':')[1]); render(); schedule(0); return; }
       if (q('.rtp-up')) { const i = +which.split(':')[1]; ST().moveVia(i, i - 1); render(); schedule(0); try { el.querySelector('.rtp-field[data-f="via:' + Math.max(0, i - 1) + '"] .rtp-up').focus(); } catch (_) { } return; }
@@ -627,8 +686,13 @@ window.IntMapModules.routeUi = function (HOST) {
          Written `.rtp-alt` here — this file's own prefix — the branch simply never matched and a tap
          on an alternative did nothing at all. It is the same one-character class mismatch that left
          the honest notes unstyled two hours earlier; both were found by a test rather than by eye. */
-      const alt = q('.rt-alt'); if (alt) { const i = +alt.getAttribute('data-ai'); ST().setSel(i); try { RT().selectAlt(i, ST().get().routeSetId); } catch (_) { } render(); return; }
+      /* ⚠⚠ (#R296) THE STEP IS TESTED FIRST, BECAUSE IT IS NOW INSIDE THE CARD. The turn list used to
+         be a sibling of the card list, so the order of these two branches could not matter; with the
+         detail nested in the selected card, `closest('.rt-alt')` matches for a press on a STEP as well,
+         and testing the card first would swallow every turn press — re-selecting the alternative that
+         was already selected and re-rendering, which looks exactly like 「押しても何も起きない」. */
       const st = q('.rt-step'); if (st) { const i = +st.getAttribute('data-si'); ST().setStep(i); try { RT().selectStep(ST().get().routeSetId, i); } catch (_) { } render(); return; }
+      const alt = q('.rt-alt'); if (alt) { const i = +alt.getAttribute('data-ai'); ST().setSel(i); try { RT().selectAlt(i, ST().get().routeSetId); } catch (_) { } render(); return; }
       const act = q('.rtp-act'); if (act) { onAction(act.getAttribute('data-act')); return; }
       const op = q('.rtp-op'); if (op) { runOp(op.getAttribute('data-op')); return; }
     }

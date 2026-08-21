@@ -109,7 +109,7 @@ sources-list.js                   sources.html の出典レジストリ（生成
 map-ui.js                         地図の周りの UI（レイヤーレジストリ／レイヤーサイドバー／ティッカー／
                                   レイヤープリセット／ラベルのポップアップ／GeoJSON 取り込み／共有ハッシュ）
 map-tools.js                      対話ツール（投影ビュー・描画・Isolate・海路・見通し線・オブジェクト一覧・
-                                  アウトライン・図形移動・到達圏・3-D 弧）
+                                  アウトライン・図形移動・到達圏（車・徒歩・自転車・公共交通）・3-D 弧）
 map-readout.js                    座標・標高・レイヤー値・コンパスの読み出しと経緯線
 map-extras.js                     残りの自己完結した地図表面モジュール
 map-pick.js                       地図上の1点を拾う window.IntMapPick
@@ -237,8 +237,8 @@ widget-smart.js                   Smart Stack IntMapWidgetSmart —— 文脈に
                                   「なぜ表示されたか」の説明、切替のちらつき防止
 tool-panel.js                     計測／半径ツールのパネルと地図のコンテキストメニュー
 elevation-profile.js              標高断面のパネル
-sims.js                           物理シミュレーションと太陽幾何（範囲人口・傾斜・電波・日照・到達圏・
-                                  災害・地震リプレイ・放射性物質拡散）
+sims.js                           物理シミュレーションと太陽幾何（放射性物質拡散・範囲人口・傾斜・
+                                  日照・鉄道の到達圏）
 seismic.js                        地震波シミュレータ（477 KB）
 seismic-events.js                 過去の地震——公表された震源パラメータ
 seismic-site.js                   場址項は周波数の関数である window.IntMapSiteAmp
@@ -250,7 +250,7 @@ tsunami.js                        津波の伝播 window.IntMapTsunami
 terrain-water.js                  地形の編集と水の流れ（194 KB）
 water-dynamics.js                 水は届くまでに時間がかかる window.IntMapWaterDynamics
 insolation.js                     地形の影と日照時間のエンジン
-viewshed.js                       見通し線——高精度の地形可視領域
+viewshed.js                       電波・通信圏／見通し線——同じ可視領域の2つの解析
 volume3d.js                       Measure ▸ 3-D 体積——実スケールの箱が空中に立つ
 river-course.js                   どの区間が同じ川か window.IntMapRiverCourse
 drone-nav.js                      ドローン航法——地形を見た飛行計画

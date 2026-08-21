@@ -4870,4 +4870,26 @@ window.IntMapLang.define('fr', { ui: {
   "Your most recent data": "Vos données les plus récentes",
   "Zone": "Fuseau",
   "zoom": "zoom",   /* (#R291) */
+  "Arrival": "Arrivée",   /* (#R296) */
+  "Close the directions panel (this also removes the route from the map)": "Fermer le panneau d’itinéraire (l’itinéraire est également retiré de la carte)",   /* (#R296) */
+  "Could not run — the live wind field was unavailable.": "Impossible d’exécuter : le champ de vent en direct n’était pas disponible.",   /* (#R296) */
+  "Getting your location…": "Localisation en cours…",   /* (#R296) */
+  "Lagrangian dispersion over the live wind field, with decay and wet deposition. Educational — in a real emergency follow the official authorities.": "Dispersion lagrangienne sur le champ de vent en direct, avec décroissance et dépôt humide. Usage pédagogique — en cas d’urgence réelle, suivez les autorités officielles.",   /* (#R296) */
+  "No source placed yet": "Aucune source placée",   /* (#R296) */
+  "Place the source on the map": "Placer la source sur la carte",   /* (#R296) */
+  "Radio coverage & line of sight": "Couverture radio et ligne de visée",   /* (#R296) */
+  "Radioactive dispersion": "Dispersion radioactive",   /* (#R296) */
+  "Reach": "Portée",   /* (#R296) */
+  "Reachable area (drive/walk/cycle/transit)": "Zone accessible (voiture/à pied/vélo/transports)",   /* (#R296) */
+  "Release (h)": "Émission (h)",   /* (#R296) */
+  "Rides the real rail network (OpenStreetMap), at typical speeds per line class — not a published timetable. Walk to the nearest station is included.": "Emprunte le vrai réseau ferré (OpenStreetMap), à des vitesses typiques par classe de ligne — ce n’est pas un horaire publié. La marche jusqu’à la gare la plus proche est incluse.",   /* (#R296) */
+  "Run the dispersion": "Lancer la dispersion",   /* (#R296) */
+  "Signal from a transmitter here, and what the terrain hides": "Portée d’un émetteur placé ici, et ce que le relief masque",   /* (#R296) */
+  "Tap the map to place the release source.": "Touchez la carte pour placer la source du rejet.",   /* (#R296) */
+  "Time — the rail model solves one budget, so the largest is used": "Durée — le modèle ferroviaire ne résout qu’un seul budget : la plus grande valeur est utilisée",   /* (#R296) */
+  "Times are typical (no live traffic).": "Les durées sont indicatives (sans trafic en temps réel).",   /* (#R296) */
+  "times below are local to each place": "les heures ci-dessous sont locales à chaque lieu",   /* (#R296) */
+  "Use my current location": "Utiliser ma position actuelle",   /* (#R296) */
+  "Use my location (permission was refused)": "Utiliser ma position (autorisation refusée)",   /* (#R296) */
+  "Window (h)": "Fenêtre (h)",   /* (#R296) */
 } });

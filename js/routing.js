@@ -498,7 +498,18 @@ window.IntMapModules.routing=function(HOST){
              so the reply can say "real-time" only when it truly is — never dress a static timetable as live. */
           const rt=(l.realTime===true); let delay=0;
           try{ if(rt&&l.startTime&&l.scheduledStartTime){ delay=Math.round((new Date(l.startTime).getTime()-new Date(l.scheduledStartTime).getTime())/60000); if(!isFinite(delay)) delay=0; } }catch(_){ delay=0; }
-          legOut.push({mode:l.mode,walk,route:(l.routeShortName||l.tripShortName||l.routeLongName||l.route||''),headsign:(l.headsign||l.tripHeadsign||''),from:(l.from&&l.from.name)||'',to:(l.to&&l.to.name)||'',duration:l.duration||0,dep:l.startTime||l.scheduledStartTime||'',arr:l.endTime||l.scheduledEndTime||'',color:col,rt:rt,delay:delay}); });
+          /* ⚠⚠ (#R296) 「「徒歩 → END」ではなく「徒歩 → 到着」でいい」 — THE PROVIDER'S SENTINEL, NOT A PLACE ═══
+             MOTIS names the two ends of a trip `START` and `END` — they are not place names, they are
+             the API saying 「the coordinate you gave me」. They were being passed through as if they
+             were, so the last walk of every itinerary read 「徒歩 → END」 in every language.
+             ⚠ THE FLAG TRAVELS, NOT THE WORD. #R291 追記's lesson is that a translated string baked into
+             route DATA is resolved once and can never follow a language change, so this records WHICH
+             end it is and js/routing-cards.js says it in the reader's language at render time. */
+          const _sent=(n)=>/^(START|END)$/i.test(String(n||''));
+          const _fN=(l.from&&l.from.name)||'', _tN=(l.to&&l.to.name)||'';
+          /* (#R296) …and WHERE each end is, so js/routing-cards.js can print the local wall clock there */
+          const _ll=(x)=>(x&&isFinite(+x.lon)&&isFinite(+x.lat))?[+x.lon,+x.lat]:((x&&isFinite(+x.lng)&&isFinite(+x.lat))?[+x.lng,+x.lat]:null);
+          legOut.push({mode:l.mode,walk,route:(l.routeShortName||l.tripShortName||l.routeLongName||l.route||''),headsign:(l.headsign||l.tripHeadsign||''),from:_sent(_fN)?'':_fN,to:_sent(_tN)?'':_tN,fromStart:_sent(_fN)&&/^START$/i.test(_fN)?1:0,toEnd:_sent(_tN)&&/^END$/i.test(_tN)?1:0,fromLL:_ll(l.from),toLL:_ll(l.to),duration:l.duration||0,dep:l.startTime||l.scheduledStartTime||'',arr:l.endTime||l.scheduledEndTime||'',color:col,rt:rt,delay:delay}); });
         const anyRt=legOut.some(l=>!l.walk&&l.rt);
         return {lines:lines,stops:stops,legs:legOut,shapeGap:!!legOut._gap,realtime:anyRt,duration:it.duration||0,transfers:(it.transfers!=null?it.transfers:Math.max(0,legOut.filter(l=>!l.walk).length-1)),startTime:it.startTime,endTime:it.endTime}; }
     function _transitBuild(its,from,to){

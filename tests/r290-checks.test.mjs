@@ -469,6 +469,10 @@ test('R290 ⑯ both search boxes scroll themselves to the top on input', () => {
   assert.ok(!/camera|flyTo|easeTo|jumpTo/.test(fn), 'and it never touches the map');
   assert.equal((ui.match(/window\.IntMapSearchToTop\(ev\.target\.closest\('\.lsr-search'\)\|\|ev\.target\)/g) || []).length, 2,
     'both tile-grid search boxes call it');
-  assert.match(codeOnly(read('js/map-extras.js')), /window\.IntMapSearchToTop\(box\)/,
-    'and so does the classic panel’s');
+  /* ⚠ (#R296) THERE IS ONLY ONE LAYER-SEARCH BOX NOW — 「レイヤー選択欄はclassic dropdownを完全削除」.
+     #R239's lesson (a defect fixed in one of two copies and left in the other) is what made these
+     checks assert BOTH boxes; deleting one copy is the strongest possible answer to it, so the
+     assertion becomes 「the classic one is gone」 rather than 「it matches」. */
+  assert.doesNotMatch(codeOnly(read('js/map-extras.js')), /window\.IntMapSearchToTop\(/,
+    'and the classic panel’s box, which also had to, is gone');
 });
