@@ -4397,5 +4397,107 @@ window.IntMapLang.define('zh', {
   "monthly mean": "月平均",   /* (#R288) */
   "Open the time machine": "開啟時光機",   /* (#R288) */
   "Nothing in force is drawn per administrative unit in {u} countries ({n} units), and country-wide in {c}.": "「未發布」在 {u} 個國家以行政區為單位繪製（共 {n} 個區），在 {c} 個國家則以整國繪製。",   /* (#R288) */
+  ' km from the nearest routable road.': ' 公里（距離最近的可通行道路）。',   /* (#R291) */
+  ' of the points returned no forecast (the shared weather client is rate-limited); the others are real.': ' 個地點未取得預報（共用天氣用戶端受速率限制），其餘為實測資料。',   /* (#R291) */
+  '“Avoid highways” is a strong preference on this provider, not a prohibition.': '在此供應商，「避開高速公路」是強偏好而非禁止。',   /* (#R291) */
+  '“Near the route” means within 250 km for earthquakes and 60 km for geolocated news, measured to the nearest sample point.': '「路線附近」指地震 250 公里、具座標的新聞 60 公里以內，以最近的取樣點量測。',   /* (#R291) */
+  '(next day)': '（隔天）',   /* (#R291) */
+  'active': '使用中',   /* (#R291) */
+  'Alternatives are not available with stops on this provider — showing one route.': '此供應商在有經由地時不提供替代路線 — 僅顯示一條。',   /* (#R291) */
+  'Area ': '範圍 ',   /* (#R291) */
+  'arrive': '抵達',   /* (#R291) */
+  'At least one service has to stay selected — a transit route with nothing to ride is not a route.': '至少要保留一種交通工具 — 沒有可搭乘工具的大眾運輸路線不成立。',   /* (#R291) */
+  'At least one service has to stay selected.': '至少要保留一種交通工具。',   /* (#R291) */
+  'Avoid': '迴避',   /* (#R291) */
+  'Choose a destination': '選擇目的地',   /* (#R291) */
+  'Choose a start': '選擇出發地',   /* (#R291) */
+  'Choose a start and a destination.': '請選擇出發地與目的地。',   /* (#R291) */
+  'City': '城市',   /* (#R291) */
+  'Clear this field': '清除此欄',   /* (#R291) */
+  'Click the map to set this point. Esc cancels.': '點擊地圖以指定此地點，按 Esc 取消。',   /* (#R291) */
+  'Click two corners… (Esc cancels)': '點擊對角兩點…（Esc 取消）',   /* (#R291) */
+  'Click two opposite corners on the map to draw a box the route may not enter.': '在地圖上點擊對角兩點，即可畫出路線不得進入的方框。',   /* (#R291) */
+  'Close the directions panel (the route stays on the map)': '關閉路線面板（路線仍留在地圖上）',   /* (#R291) */
+  'Compute a route first — these describe a route that exists.': '請先計算路線 — 這些分析是針對既有路線的。',   /* (#R291) */
+  'Date and time': '日期與時間',   /* (#R291) */
+  'Departure or arrival': '出發或抵達',   /* (#R291) */
+  'Directions sections': '路線區段',   /* (#R291) */
+  'Enter a start and a destination to see routes.': '輸入出發地與目的地即可顯示路線。',   /* (#R291) */
+  'estimate': '概估',   /* (#R291) */
+  'Finding routes…': '搜尋路線中…',   /* (#R291) */
+  'Getting a location took too long — try again, or pick a point on the map.': '取得目前位置耗時過久 — 請重試，或在地圖上選點。',   /* (#R291) */
+  'High-speed rail': '高速鐵路',   /* (#R291) */
+  'Highlight this area': '強調此範圍',   /* (#R291) */
+  'Historical network': '過去的路網',   /* (#R291) */
+  'Includes real-time departures and delays where the operator publishes them.': '在業者公開的範圍內，包含即時發車與誤點資訊。',   /* (#R291) */
+  'Intercity Japan: real Shinkansen lines and stations, with times estimated from the operators’ published timetables — not live departures. The alignment between stations is schematic.': '日本城際鐵路：採用真實的新幹線路線與車站，所需時間依業者公布的時刻表推估（非即時）。站間線形為示意。',   /* (#R291) */
+  'Keep out of an area': '禁止通過範圍',   /* (#R291) */
+  'Lanes: use ': '車道：使用 ',   /* (#R291) */
+  'live traffic': '即時路況',   /* (#R291) */
+  'Local service': '在地路線',   /* (#R291) */
+  'Location permission was refused — type a place or pick one on the map instead.': '位置權限遭拒 — 請改為輸入地點或在地圖上選取。',   /* (#R291) */
+  'min early': '分鐘提前',   /* (#R291) */
+  'Minimise': '最小化',   /* (#R291) */
+  'Most I will walk': '步行上限',   /* (#R291) */
+  'Move this stop earlier': '將此經由地上移',   /* (#R291) */
+  'Move this stop later': '將此經由地下移',   /* (#R291) */
+  'Network kind': '路網種類',   /* (#R291) */
+  'No areas drawn.': '尚未畫出任何範圍。',   /* (#R291) */
+  'No limit': '無限制',   /* (#R291) */
+  'No place matches that.': '找不到相符的地點。',   /* (#R291) */
+  'No provider IntMap can use publishes ': 'IntMap 可使用的供應商皆未提供：',   /* (#R291) */
+  'No public-transit route here — this area may have no open timetable data.': '此區間沒有大眾運輸路線 — 該地區可能尚無公開時刻表資料。',   /* (#R291) */
+  'Not available': '未支援',   /* (#R291) */
+  'One point is about ': '其中一個地點距離約 ',   /* (#R291) */
+  'OpenStreetMap’s own record of when lines existed — not a historical atlas. Its date coverage is uneven, and the answer says how much of the route ran on dated line.': '依 OpenStreetMap 自身對「何時存在」的記錄，並非歷史地圖。其年代資料涵蓋不均，結果會標明路線中有多少比例行經有年代記錄的路線。',   /* (#R291) */
+  'Options': '選項',   /* (#R291) */
+  'Partly real-time': '部分即時',   /* (#R291) */
+  'Pick a point on the map': '在地圖上選點',   /* (#R291) */
+  'Pick this point on the map': '在地圖上選取此地點',   /* (#R291) */
+  'Plan routes by car, transit, walking or cycling': '規劃汽車、大眾運輸、步行或自行車路線',   /* (#R291) */
+  'Point on the map': '地圖上的地點',   /* (#R291) */
+  'Real-time': '即時',   /* (#R291) */
+  'Recent': '最近',   /* (#R291) */
+  'Remove this area': '刪除此範圍',   /* (#R291) */
+  'Remove this stop': '刪除此經由地',   /* (#R291) */
+  'Resize the panel': '調整面板高度',   /* (#R291) */
+  'Reverse': '對調',   /* (#R291) */
+  'road incidents and closures': '事故與封路',   /* (#R291) */
+  'Route options': '路線候選',   /* (#R291) */
+  'Routed by ': '路線提供：',   /* (#R291) */
+  'Search is unavailable right now.': '目前無法使用搜尋。',   /* (#R291) */
+  'Searching…': '搜尋中…',   /* (#R291) */
+  'Share': '分享',   /* (#R291) */
+  'Some ride segments have no usable shape — those legs are listed but not drawn (no straight-line substitutes).': '部分乘車區間沒有可用的線形 — 這些區間會列出但不繪製（不以直線替代）。',   /* (#R291) */
+  'Station': '車站',   /* (#R291) */
+  'That box is too small to keep a route out of — draw a larger one.': '此範圍太小，無法排除路線 — 請畫得大一些。',   /* (#R291) */
+  'That request could not be understood by the routing service.': '路線服務無法解讀此請求。',   /* (#R291) */
+  'The analyses did not load.': '分析模組載入失敗。',   /* (#R291) */
+  'The avoid options could NOT be applied (the provider was unreachable) — this is the ordinary route.': '無法套用迴避條件（無法連線至供應商）— 這是一般路線。',   /* (#R291) */
+  'The keep-out area could NOT be applied (the provider was unreachable) — this route may pass through it.': '無法套用禁止通過範圍（無法連線至供應商）— 此路線可能穿越該範圍。',   /* (#R291) */
+  'The link includes the places in this route: ': '此連結包含路線中的地點：',   /* (#R291) */
+  'The location fix is only accurate to about ': '目前位置的精度約為 ',   /* (#R291) */
+  'The location is unavailable right now.': '目前無法取得位置。',   /* (#R291) */
+  'The place search could not be reached — check the connection and try again.': '無法連線至地點搜尋 — 請檢查連線後重試。',   /* (#R291) */
+  'The routing service is unreachable (outage or no network) — the route was NOT computed.': '無法連線至路線服務（故障或網路問題）— 路線並未計算。',   /* (#R291) */
+  'The routing service timed out.': '路線服務逾時。',   /* (#R291) */
+  'The time you set shifts the arrival calculation only; the road provider has no traffic forecast to give it to.': '所設定的時間僅用於計算抵達時刻；道路供應商並無可套用的路況預測。',   /* (#R291) */
+  'There is no road connection between these points.': '這兩個地點之間沒有道路連結。',   /* (#R291) */
+  'This browser cannot provide a location.': '此瀏覽器無法提供位置資訊。',   /* (#R291) */
+  'This device is offline.': '此裝置目前離線。',   /* (#R291) */
+  'This provider accepts at most ': '此供應商最多接受 ',   /* (#R291) */
+  'Timetable': '時刻表',   /* (#R291) */
+  'Timetable-based — no real-time data is published for this trip.': '以時刻表為準 — 此行程未公開即時資訊。',   /* (#R291) */
+  'Too many requests to the routing service — wait a moment.': '對路線服務的請求過多 — 請稍候。',   /* (#R291) */
+  'transfers': '次轉乘',   /* (#R291) */
+  'Travel mode': '交通工具',   /* (#R291) */
+  'Try driving': '改用汽車',   /* (#R291) */
+  'Try transit': '改用大眾運輸',   /* (#R291) */
+  'Try walking': '改用步行',   /* (#R291) */
+  'Typical travel time — live traffic is not included.': '標準所需時間 — 未納入即時路況。',   /* (#R291) */
+  'Use these services': '使用的交通工具',   /* (#R291) */
+  'Where routes differ': '路線分歧之處',   /* (#R291) */
+  'Working back from the arrival deadline.': '自抵達時刻反推計算。',   /* (#R291) */
+  'Your avoid options are honoured by a provider that returns one route, so there are no alternatives to compare.': '迴避條件由僅回傳單一路線的供應商處理，因此沒有可比較的替代路線。',   /* (#R291) */
   }
 });

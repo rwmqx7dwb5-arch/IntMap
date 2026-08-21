@@ -4301,4 +4301,106 @@ window.IntMapLang.define('ko', { ui: {
   "monthly mean": "월평균",   /* (#R288) */
   "Open the time machine": "타임머신 열기",   /* (#R288) */
   "Nothing in force is drawn per administrative unit in {u} countries ({n} units), and country-wide in {c}.": "「발표 없음」은 {u}개국에서 행정구역 단위로({n}개 구역), {c}개국에서는 국가 전체로 표시합니다.",   /* (#R288) */
+  ' km from the nearest routable road.': ' km 떨어져 있습니다(가장 가까운 통행 가능 도로에서).',   /* (#R291) */
+  ' of the points returned no forecast (the shared weather client is rate-limited); the others are real.': '개 지점에서 예보를 받지 못했습니다(공용 날씨 클라이언트가 요청 제한 중). 나머지는 실제 데이터입니다.',   /* (#R291) */
+  '“Avoid highways” is a strong preference on this provider, not a prohibition.': '이 제공자에서 ‘고속도로 회피’는 강한 선호이며 절대 금지가 아닙니다.',   /* (#R291) */
+  '“Near the route” means within 250 km for earthquakes and 60 km for geolocated news, measured to the nearest sample point.': '‘경로 부근’은 지진은 250 km, 위치 정보가 있는 뉴스는 60 km 이내이며, 가장 가까운 표본 지점 기준입니다.',   /* (#R291) */
+  '(next day)': '(다음 날)',   /* (#R291) */
+  'active': '사용 중',   /* (#R291) */
+  'Alternatives are not available with stops on this provider — showing one route.': '이 제공자는 경유지가 있으면 대체 경로를 제공하지 않습니다 — 한 경로만 표시합니다.',   /* (#R291) */
+  'Area ': '범위 ',   /* (#R291) */
+  'arrive': '도착',   /* (#R291) */
+  'At least one service has to stay selected — a transit route with nothing to ride is not a route.': '교통수단은 최소 하나를 남겨야 합니다 — 탈 것이 없는 대중교통 경로는 경로가 아닙니다.',   /* (#R291) */
+  'At least one service has to stay selected.': '교통수단은 최소 하나를 남겨야 합니다.',   /* (#R291) */
+  'Avoid': '회피',   /* (#R291) */
+  'Choose a destination': '목적지 선택',   /* (#R291) */
+  'Choose a start': '출발지 선택',   /* (#R291) */
+  'Choose a start and a destination.': '출발지와 목적지를 선택하세요.',   /* (#R291) */
+  'City': '도시',   /* (#R291) */
+  'Clear this field': '이 항목 지우기',   /* (#R291) */
+  'Click the map to set this point. Esc cancels.': '지도를 클릭해 이 지점을 지정합니다. Esc로 취소.',   /* (#R291) */
+  'Click two corners… (Esc cancels)': '대각선 두 점을 클릭…(Esc로 취소)',   /* (#R291) */
+  'Click two opposite corners on the map to draw a box the route may not enter.': '지도에서 대각선 두 점을 클릭하면 경로가 지날 수 없는 사각형을 만듭니다.',   /* (#R291) */
+  'Close the directions panel (the route stays on the map)': '경로 패널 닫기(경로는 지도에 남습니다)',   /* (#R291) */
+  'Compute a route first — these describe a route that exists.': '먼저 경로를 계산하세요 — 이 분석은 이미 있는 경로에 대한 것입니다.',   /* (#R291) */
+  'Date and time': '날짜와 시각',   /* (#R291) */
+  'Departure or arrival': '출발 또는 도착',   /* (#R291) */
+  'Directions sections': '경로 섹션',   /* (#R291) */
+  'Enter a start and a destination to see routes.': '출발지와 목적지를 입력하면 경로가 표시됩니다.',   /* (#R291) */
+  'estimate': '추정',   /* (#R291) */
+  'Finding routes…': '경로 검색 중…',   /* (#R291) */
+  'Getting a location took too long — try again, or pick a point on the map.': '현재 위치를 얻는 데 너무 오래 걸렸습니다 — 다시 시도하거나 지도에서 지점을 선택하세요.',   /* (#R291) */
+  'High-speed rail': '고속철도',   /* (#R291) */
+  'Highlight this area': '이 범위 강조',   /* (#R291) */
+  'Historical network': '과거 노선망',   /* (#R291) */
+  'Includes real-time departures and delays where the operator publishes them.': '운영사가 공개하는 범위에서 실시간 출발·지연 정보를 포함합니다.',   /* (#R291) */
+  'Intercity Japan: real Shinkansen lines and stations, with times estimated from the operators’ published timetables — not live departures. The alignment between stations is schematic.': '일본 도시간 철도: 실제 신칸센 노선과 역을 사용하며, 소요 시간은 운영사가 공표한 시각표에서 추정한 값입니다(실시간 아님). 역과 역 사이의 선형은 개략도입니다.',   /* (#R291) */
+  'Keep out of an area': '통과 금지 범위',   /* (#R291) */
+  'Lanes: use ': '차로: ',   /* (#R291) */
+  'live traffic': '실시간 교통량',   /* (#R291) */
+  'Local service': '지역 노선',   /* (#R291) */
+  'Location permission was refused — type a place or pick one on the map instead.': '위치 정보 사용이 거부되었습니다 — 지점을 입력하거나 지도에서 선택하세요.',   /* (#R291) */
+  'min early': '분 조기',   /* (#R291) */
+  'Minimise': '최소화',   /* (#R291) */
+  'Most I will walk': '도보 상한',   /* (#R291) */
+  'Move this stop earlier': '이 경유지를 앞으로',   /* (#R291) */
+  'Move this stop later': '이 경유지를 뒤로',   /* (#R291) */
+  'Network kind': '노선 종류',   /* (#R291) */
+  'No areas drawn.': '설정된 범위가 없습니다.',   /* (#R291) */
+  'No limit': '제한 없음',   /* (#R291) */
+  'No place matches that.': '해당하는 지점이 없습니다.',   /* (#R291) */
+  'No provider IntMap can use publishes ': 'IntMap이 사용할 수 있는 제공자가 공개하지 않는 항목: ',   /* (#R291) */
+  'No public-transit route here — this area may have no open timetable data.': '이 구간의 대중교통 경로가 없습니다 — 공개 시각표 데이터가 없는 지역일 수 있습니다.',   /* (#R291) */
+  'Not available': '미지원',   /* (#R291) */
+  'One point is about ': '한쪽 지점이 약 ',   /* (#R291) */
+  'OpenStreetMap’s own record of when lines existed — not a historical atlas. Its date coverage is uneven, and the answer says how much of the route ran on dated line.': 'OpenStreetMap에 기록된 “언제 존재했는가”에 기반합니다(역사 지도가 아닙니다). 연대 기록에 편차가 있어, 결과에 경로 중 연대가 기록된 구간의 비율을 표시합니다.',   /* (#R291) */
+  'Options': '옵션',   /* (#R291) */
+  'Partly real-time': '일부 실시간',   /* (#R291) */
+  'Pick a point on the map': '지도에서 지점 선택',   /* (#R291) */
+  'Pick this point on the map': '지도에서 이 지점 선택',   /* (#R291) */
+  'Plan routes by car, transit, walking or cycling': '차·대중교통·도보·자전거 경로를 검색',   /* (#R291) */
+  'Point on the map': '지도상의 지점',   /* (#R291) */
+  'Real-time': '실시간',   /* (#R291) */
+  'Recent': '최근',   /* (#R291) */
+  'Remove this area': '이 범위 삭제',   /* (#R291) */
+  'Remove this stop': '이 경유지 삭제',   /* (#R291) */
+  'Resize the panel': '패널 높이 조절',   /* (#R291) */
+  'Reverse': '뒤집기',   /* (#R291) */
+  'road incidents and closures': '사고·통행 금지',   /* (#R291) */
+  'Route options': '경로 후보',   /* (#R291) */
+  'Routed by ': '경로 제공: ',   /* (#R291) */
+  'Search is unavailable right now.': '지금은 검색을 사용할 수 없습니다.',   /* (#R291) */
+  'Searching…': '검색 중…',   /* (#R291) */
+  'Share': '공유',   /* (#R291) */
+  'Some ride segments have no usable shape — those legs are listed but not drawn (no straight-line substitutes).': '일부 승차 구간의 형상 데이터를 쓸 수 없습니다 — 해당 구간은 목록에 표시하되 지도에는 그리지 않습니다(직선으로 대체하지 않습니다).',   /* (#R291) */
+  'Station': '역',   /* (#R291) */
+  'That box is too small to keep a route out of — draw a larger one.': '그 범위는 너무 작아 경로를 막을 수 없습니다 — 조금 더 크게 그려 주세요.',   /* (#R291) */
+  'That request could not be understood by the routing service.': '경로 서비스가 이 요청을 해석하지 못했습니다.',   /* (#R291) */
+  'The analyses did not load.': '분석 모듈을 불러오지 못했습니다.',   /* (#R291) */
+  'The avoid options could NOT be applied (the provider was unreachable) — this is the ordinary route.': '회피 조건을 적용하지 못했습니다(제공자에 접속 불가) — 일반 경로입니다.',   /* (#R291) */
+  'The keep-out area could NOT be applied (the provider was unreachable) — this route may pass through it.': '통과 금지 범위를 적용하지 못했습니다(제공자에 접속 불가) — 이 경로는 범위 안을 지날 수 있습니다.',   /* (#R291) */
+  'The link includes the places in this route: ': '이 링크에는 경로의 지점이 포함됩니다: ',   /* (#R291) */
+  'The location fix is only accurate to about ': '현재 위치의 정확도는 약 ',   /* (#R291) */
+  'The location is unavailable right now.': '지금은 현재 위치를 얻을 수 없습니다.',   /* (#R291) */
+  'The place search could not be reached — check the connection and try again.': '지점 검색에 접속하지 못했습니다 — 연결을 확인하고 다시 시도하세요.',   /* (#R291) */
+  'The routing service is unreachable (outage or no network) — the route was NOT computed.': '경로 서비스에 접속할 수 없습니다(장애 또는 네트워크) — 경로는 계산되지 않았습니다.',   /* (#R291) */
+  'The routing service timed out.': '경로 서비스가 시간 초과되었습니다.',   /* (#R291) */
+  'The time you set shifts the arrival calculation only; the road provider has no traffic forecast to give it to.': '지정한 시각은 도착 시각 계산에만 쓰입니다. 도로 측 제공자에 넘길 교통 예측이 없습니다.',   /* (#R291) */
+  'There is no road connection between these points.': '이 두 지점 사이에 도로 연결이 없습니다.',   /* (#R291) */
+  'This browser cannot provide a location.': '이 브라우저는 위치 정보를 제공할 수 없습니다.',   /* (#R291) */
+  'This device is offline.': '이 기기는 오프라인입니다.',   /* (#R291) */
+  'This provider accepts at most ': '이 제공자가 받는 경유지는 최대 ',   /* (#R291) */
+  'Timetable': '시각표',   /* (#R291) */
+  'Timetable-based — no real-time data is published for this trip.': '시각표 기반 — 이 여정의 실시간 정보는 공개되지 않습니다.',   /* (#R291) */
+  'Too many requests to the routing service — wait a moment.': '경로 서비스 요청이 너무 많습니다 — 잠시 기다려 주세요.',   /* (#R291) */
+  'transfers': '회 환승',   /* (#R291) */
+  'Travel mode': '교통수단',   /* (#R291) */
+  'Try driving': '차로 시도',   /* (#R291) */
+  'Try transit': '대중교통으로 시도',   /* (#R291) */
+  'Try walking': '도보로 시도',   /* (#R291) */
+  'Typical travel time — live traffic is not included.': '표준 소요 시간 — 실시간 교통량은 반영되지 않습니다.',   /* (#R291) */
+  'Use these services': '이용할 교통수단',   /* (#R291) */
+  'Where routes differ': '경로가 갈리는 구간',   /* (#R291) */
+  'Working back from the arrival deadline.': '도착 시각에서 역산합니다.',   /* (#R291) */
+  'Your avoid options are honoured by a provider that returns one route, so there are no alternatives to compare.': '회피 조건은 경로를 하나만 반환하는 제공자가 처리하므로, 비교할 대체 경로가 없습니다.',   /* (#R291) */
 } });

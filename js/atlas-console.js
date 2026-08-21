@@ -2200,12 +2200,9 @@ window.IntMapModules.atlasConsole=function(HOST){
             const _ic=m=>{ m=String(m||'').toUpperCase(); return /WALK|FOOT/.test(m)?'🚶':/SUBWAY|METRO/.test(m)?'🚇':/TRAM|LIGHT_RAIL|STREETCAR/.test(m)?'🚊':/BUS|COACH/.test(m)?'🚌':/FERRY|BOAT/.test(m)?'⛴':/HIGHSPEED|LONG_DISTANCE/.test(m)?'🚄':/RAIL|TRAIN|REGIONAL|SUBURBAN|NIGHT/.test(m)?'🚆':'🚈'; };
             const _tm=iso=>{ try{ const d=new Date(iso); return isFinite(d.getTime())?d.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}):''; }catch(_){ return ''; } };
             const seq=(r.legs||[]).map(l=>_ic(l.mode)+(l.route&&!l.walk?(' '+esc(l.route)):'')).join(' → ');
-            const _legRow=(l)=>{ const mn=Math.round((l.duration||0)/60);
-              /* (#R132) §2.4/§9.6/§9.12: live badge + delay for a real-time leg (green = on time, orange = +N late) */
-              const rtTag=(!l.walk&&l.rt)?('<span style="font-size:9px;font-weight:700;color:'+((l.delay||0)>0?'#ff9f0a':'#34a853')+';margin-left:5px;">● '+((l.delay||0)>0?('+'+l.delay+' '+L('min late','分遅れ','Min Versp.','мин опозд.','min tarde')):L('on time','定刻','pünktlich','по расписанию','a tiempo'))+'</span>'):'';
-              const head=l.walk?(L('Walk','徒歩','Zu Fuß','Пешком','A pie')+(l.to?(' → '+esc(l.to)):'')):((l.route?('<b>'+esc(l.route)+'</b> '):'')+esc(l.headsign||l.to||'')+rtTag);
-              const sub=l.walk?'':(esc(l.from||'')+(l.dep?(' · '+_tm(l.dep)):''));
-              return '<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="width:18px;text-align:center;">'+_ic(l.mode)+'</span><span style="flex:0 0 auto;width:3px;align-self:stretch;border-radius:2px;background:'+(l.color||'#7a7f87')+';"></span><span style="flex:1;min-width:0;font-size:11.5px;line-height:1.4;">'+head+(sub?('<div style="color:var(--text-muted);font-size:10px;">'+sub+'</div>'):'')+'</span><span style="flex:0 0 auto;color:var(--text-muted);font-size:10px;">'+mn+' '+L('min','分','Min','мин','min')+'</span></div>'; };
+            /* ⚠ (#R291) NOT WRITTEN HERE ANY MORE (§17): this and js/routing.js's `legRows()` had drifted apart — Atlas badged a live leg, the panel did not. */
+            const _cardOpt=()=>({lang:HOST.lang,units:(typeof HOST.unitMode!=='undefined'?HOST.unitMode:'metric'),tz:(HOST.userTZ&&HOST.userTZ!=='auto')?HOST.userTZ:''});
+            const _legRow=(l)=>window.IntMapRouteCards.legRows([l],_cardOpt());
             const legHtml=(r.legs||[]).map(_legRow).join('');
             const summ=r.railEstimate?('<b>~'+dur+'</b> · '+Math.round(r.railKm).toLocaleString()+' km'+(r.lines&&r.lines.length?(' · '+r.lines.slice(0,3).map(esc).join(' → ')):(' '+L('by rail','鉄道','per Bahn','по ж/д','por vía')))):('<b>'+(r.jrEstimate?'~':'')+dur+'</b> · '+tf+' '+L('transfer'+(tf===1?'':'s'),'回乗換','Umst.','пересадок','transb.')+(r.startTime?(' · '+_tm(r.startTime)+'→'+_tm(r.endTime)):''));
             /* (#R86) list EVERY alternative itinerary (Google/Apple-Maps style — the Berlin→Amsterdam screenshot); the
@@ -2213,11 +2210,9 @@ window.IntMapModules.atlasConsole=function(HOST){
             const alts=(!r.railEstimate&&r.alternatives&&r.alternatives.length>1)?r.alternatives:null;
             let body;
             if(alts){ const selI=r.sel||0;
-              body='<div class="atl-trips" data-rset="'+esc(r.routeSetId||'')+'">'+alts.map((av,i)=>{ const am=Math.round((av.duration||0)/60), ah2=Math.floor(am/60), arm=am%60, adur=ah2?(ah2+' h '+arm+' min'):(am+' min'); const atf=av.transfers||0;
-                const times=av.startTime?(_tm(av.startTime)+'–'+_tm(av.endTime)):('<b>'+adur+'</b>');
-                const aseq=(av.legs||[]).map(l=>_ic(l.mode)+(l.route&&!l.walk?(' '+esc(l.route)):'')).join(' → ');
-                const dot='<span class="atl-trip-dot" style="background:'+(av.color||'#1a73e8')+';"></span>';
-                return '<div class="atl-trip'+(i===selI?' on':'')+'" data-ai="'+i+'" style="border-left:3px solid '+(av.color||'#1a73e8')+';"><div class="atl-trip-head"><span class="atl-trip-time">'+dot+times+'</span><span class="atl-trip-dur">'+(av.startTime?('<b>'+adur+'</b> · '):'')+atf+' '+L('transfer'+(atf===1?'':'s'),'乗換','Umst.','пер.','transb.')+'</span></div><div class="atl-trip-seq">'+aseq+'</div><div class="atl-trip-legs">'+(av.legs||[]).map(_legRow).join('')+'</div></div>'; }).join('')+'</div>';
+              /* ⚠ (#R291) the SHARED cards (§17) — one renderer, two surfaces. */
+              body=window.IntMapRouteCards.altCards(alts,Object.assign(_cardOpt(),{sel:selI,setId:r.routeSetId,transit:true}))
+                +'<div class="atl-rdetail" data-kind="transit" data-rset="'+esc(r.routeSetId||'')+'" style="max-height:240px;overflow:auto;">'+window.IntMapRouteCards.legRows((alts[selI]||{}).legs,_cardOpt())+'</div>';
             } else { body='<div style="font-size:13px;margin:3px 0 3px;">'+summ+'</div><div style="font-size:12px;margin-bottom:4px;">'+seq+'</div><div style="max-height:220px;overflow:auto;">'+legHtml+'</div>'; }
             let h=_hdr+(alts?('<div style="font-size:11px;color:var(--text-muted);margin:2px 0 5px;">'+alts.length+' '+L('options — tap one to show it on the map','件の候補 — タップで地図に表示','Optionen — zum Anzeigen antippen','вариантов — нажмите, чтобы показать','opciones — toca para ver en el mapa')+'</div>'):'')+body
               +note(r.jrEstimate
@@ -2246,14 +2241,15 @@ window.IntMapModules.atlasConsole=function(HOST){
           const _rdur=sec=>{ const t=Math.round(sec/60),hh=Math.floor(t/60),mm=t%60; return hh?(hh+' h '+mm+' min'):(t+' min'); };
           const _rkm=m=>{ const k=m/1000; return (k<10?k.toFixed(1):Math.round(k).toLocaleString())+' km'; };
           const _mvr=s=>{ try{ return window.IntMapRouting.maneuver(s); }catch(_){ return {icon:'↑',text:String(s.name||''),lane:''}; } };
-          const _stepList=(steps)=>(steps||[]).map((s,i)=>{ const dm=s.distance||0; const mv=_mvr(s); const dist=dm>=1000?((dm/1000).toFixed(1)+' km'):(Math.round(dm)+' m');
-            const lane=mv.lane?('<span style="letter-spacing:1px;color:var(--primary-color);font-size:10.5px;margin-left:5px;">'+mv.lane+'</span>'):'';
-            return '<div class="atl-rstep" data-si="'+i+'" style="display:flex;gap:8px;align-items:baseline;padding:4px 0;border-top:1px solid rgba(128,128,128,0.1);cursor:pointer;"><span style="flex:0 0 auto;width:18px;text-align:center;">'+mv.icon+'</span><span style="flex:1;min-width:0;">'+esc(mv.text)+lane+'</span><span style="flex:0 0 auto;color:var(--text-muted);font-size:10.5px;">'+dist+'</span></div>'; }).join('');
+          /* ⚠ (#R291) same rule as `_legRow`: one step renderer, so glyphs, lanes and units match. `data-si` is unchanged. */
+          const _cardOpt2=()=>({lang:HOST.lang,units:(typeof HOST.unitMode!=='undefined'?HOST.unitMode:'metric'),tz:(HOST.userTZ&&HOST.userTZ!=='auto')?HOST.userTZ:''});
+          const _stepList=(steps)=>window.IntMapRouteCards.stepRows(steps,Object.assign(_cardOpt2(),{maneuver:_mvr}));
           const ralts=(r.alternatives&&r.alternatives.length>1)?r.alternatives:null;
           let h=_hdr;
           if(ralts){ h+='<div style="font-size:11px;color:var(--text-muted);margin:2px 0 5px;">'+ralts.length+' '+L('routes — tap one to show it on the map','経路候補 — タップで地図に表示','Routen — zum Anzeigen antippen','маршрутов — нажмите, чтобы показать','rutas — toca para ver en el mapa')+'</div>'
-              +'<div class="atl-trips" data-rset="'+esc(r.routeSetId||'')+'">'+ralts.map((a,i)=>
-                '<div class="atl-trip'+(i===0?' on':'')+'" data-ai="'+i+'" style="border-left:3px solid '+(a.color||'#1a73e8')+';"><div class="atl-trip-head"><span class="atl-trip-time"><span class="atl-trip-dot" style="background:'+(a.color||'#1a73e8')+';"></span><b>'+_rdur(a.duration)+'</b></span><span class="atl-trip-dur">'+esc(a.label||'')+' · '+_rkm(a.distance)+'</span></div><div class="atl-trip-legs">'+_stepList(a.steps)+'</div></div>').join('')+'</div>';
+              /* ⚠ (#R291) THE SAME CARDS THE PANEL DRAWS (§17), with the same `data-rset` / `data-ai`. */
+              +window.IntMapRouteCards.altCards(ralts,Object.assign(_cardOpt2(),{sel:0,setId:r.routeSetId,transit:false}))
+              +'<div class="atl-rdetail atl-rsteps" data-kind="road" data-rset="'+esc(r.routeSetId||'')+'" style="max-height:240px;overflow:auto;">'+_stepList((ralts[0]||{}).steps)+'</div>';
           } else { h+='<div style="font-size:13px;margin:3px 0 5px;"><b>'+_rdur(r.duration)+'</b> · '+_rkm(r.distance)+'</div>'
               +'<div style="max-height:220px;overflow:auto;font-size:11.5px;line-height:1.5;" class="atl-rsteps" data-rset="'+esc(r.routeSetId||'')+'">'+_stepList(r.steps)+'</div>'; }
           h+=note(r.provider==='valhalla'
@@ -4312,18 +4308,22 @@ window.IntMapModules.atlasConsole=function(HOST){
         /* (#R132) 経路10-10 §12.5: tap a turn-by-turn step in a road reply → highlight that segment on the map + fly to it.
            MUST run BEFORE the .atl-trip card handler below, because a step lives INSIDE a card — otherwise the card
            handler swallows the click and re-selects the alternative instead of highlighting the step. */
-        const rst=e.target.closest&&e.target.closest('.atl-rstep[data-si]');
+        /* ⚠ (#R291) BOTH SPELLINGS — js/routing-cards.js emits `.rt-step` / `.rt-alt`; replies already in the transcript carry `.atl-rstep` / `.atl-trip`. */
+        const rst=e.target.closest&&e.target.closest('.atl-rstep[data-si],.rt-step[data-si]');
         if(rst){ const si=+rst.getAttribute('data-si'); const host=rst.closest('[data-rset]'); const rset=(host&&host.getAttribute('data-rset'))||undefined;
-          const card=rst.closest('.atl-trip[data-ai]'); if(card){ const bx=card.parentElement; if(bx){ bx.querySelectorAll('.atl-trip').forEach(t=>t.classList.remove('on')); } card.classList.add('on');
+          const card=rst.closest('.atl-trip[data-ai],.rt-alt[data-ai]'); if(card){ const bx=card.parentElement; if(bx){ bx.querySelectorAll('.atl-trip,.rt-alt').forEach(t=>{ t.classList.remove('on'); if(t.hasAttribute('aria-checked')) t.setAttribute('aria-checked','false'); }); } card.classList.add('on'); if(card.hasAttribute('aria-checked')) card.setAttribute('aria-checked','true');
             try{ window.IntMapRouting&&window.IntMapRouting.selectAlt&&window.IntMapRouting.selectAlt(+card.getAttribute('data-ai'),rset); }catch(_){} }
           try{ window.IntMapRouting&&window.IntMapRouting.selectStep&&window.IntMapRouting.selectStep(rset,si); }catch(_){}
-          try{ rst.parentElement.querySelectorAll('.atl-rstep').forEach(x=>x.style.background=(x===rst)?'rgba(255,210,63,0.14)':''); }catch(_){} return; }
-        const trp=e.target.closest&&e.target.closest('.atl-trip[data-ai]');
+          try{ rst.parentElement.querySelectorAll('.atl-rstep').forEach(x=>x.style.background=(x===rst)?'rgba(255,210,63,0.14)':''); }catch(_){}
+          try{ rst.parentElement.querySelectorAll('.rt-step').forEach(x=>x.classList.toggle('on',x===rst)); }catch(_){} return; }
+        const trp=e.target.closest&&e.target.closest('.atl-trip[data-ai],.rt-alt[data-ai]');
         if(trp){ const ai=+trp.getAttribute('data-ai'); const box=trp.parentElement;   /* (#R86) select a transit alternative → expand it + redraw on the map */
-          if(box){ box.querySelectorAll('.atl-trip').forEach(t=>t.classList.remove('on')); } trp.classList.add('on');
+          if(box){ box.querySelectorAll('.atl-trip,.rt-alt').forEach(t=>{ t.classList.remove('on'); if(t.hasAttribute('aria-checked')) t.setAttribute('aria-checked','false'); }); } trp.classList.add('on'); if(trp.hasAttribute('aria-checked')) trp.setAttribute('aria-checked','true');
           /* (#R126) §16.4/§24.3: select within THIS message's routeSetId — never "alternative i of whatever was computed last" */
           const rset=(box&&box.getAttribute('data-rset'))||undefined;
-          try{ window.IntMapRouting&&window.IntMapRouting.selectAlt&&window.IntMapRouting.selectAlt(ai,rset); }catch(_){} return; }
+          try{ window.IntMapRouting&&window.IntMapRouting.selectAlt&&window.IntMapRouting.selectAlt(ai,rset); }catch(_){}
+          /* (#R291) the detail list is the card's SIBLING — IntMapRouteCards.refreshDetail redraws it from THIS message's own set. */
+          window.IntMapRouteCards.refreshDetail(rset,ai,{lang:HOST.lang,units:(typeof HOST.unitMode!=='undefined'?HOST.unitMode:'metric'),tz:(HOST.userTZ&&HOST.userTZ!=='auto')?HOST.userTZ:''}); return; }
         const rmb=e.target.closest&&e.target.closest('.atl-route-mode[data-rmode]');
         if(rmb){ const m=rmb.getAttribute('data-rmode');   /* (#R85d) re-route in the message on a different mode */
           /* (#R126) §16.2/§16.3: use the ctx embedded in THIS message's mode-button row (data-rctx), not the shared last-route global */
