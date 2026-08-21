@@ -76,7 +76,11 @@ test('#R255 ④ the raise fires on wheel and focus too, and cannot lift the map 
 
 /* ── ⑤ both layer-search boxes have a clear button ───────────────────────────────────────────── */
 test('#R255 ⑤ the clear button exists on BOTH search inputs', () => {
-  assert.match(code(read('js/map-extras.js')), /class="ls-clear"/, 'the classic panel search has no clear button');
+  /* ⚠ (#R296) THERE IS ONLY ONE LAYER-SEARCH BOX NOW — 「レイヤー選択欄はclassic dropdownを完全削除」.
+     #R239's lesson (a defect fixed in one of two copies and left in the other) is what made these
+     checks assert BOTH boxes; deleting one copy is the strongest possible answer to it, so the
+     assertion becomes 「the classic one is gone」 rather than 「it matches」. */
+  assert.doesNotMatch(code(read('js/map-extras.js')), /class="ls-clear"/, 'the classic panel search is gone, button and all');
   const mu = code(read('js/map-ui.js'));
   assert.match(mu, /function wireSearchClear\(/, 'the tile grid search has no clear button');
   /* every mount calls it — the sidebar and the phone sheet (#R239: one of two copies is the trap) */

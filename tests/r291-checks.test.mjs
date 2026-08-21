@@ -276,7 +276,15 @@ test('R291 ⑬ an alternative card is selectable, labelled and not distinguished
   assert.match(html, /role="radiogroup"/);
   assert.equal((html.match(/role="radio"/g) || []).length, 2);
   assert.equal((html.match(/aria-checked="true"/g) || []).length, 1, 'exactly one is selected');
-  assert.match(html, /aria-checked="true" data-ai="1"/, 'and it is the one the caller named');
+  /* ⚠ (#R296) `tabindex` sits between the two attributes now, because the card is a `div[role=radio]`
+     rather than a `<button>` — 「経路カードが広がって詳細が表示されるUIに」, and a list of step BUTTONS
+     cannot be nested inside a button (which is the reason #R291 put the detail below the list). What
+     is asserted is unchanged: the selected card is the one the caller named. */
+  assert.match(html, /aria-checked="true"[^>]*data-ai="1"/, 'and it is the one the caller named');
+  assert.match(html, /<div class="rt-alt on"/, 'a card is an element that can contain the turn list');
+  const withDetail = C.altCards(alts, { lang: 'en', units: 'metric', sel: 1, setId: 'rs7', detail: () => '<b id="dtl">x</b>' });
+  assert.match(withDetail, /aria-checked="true"[\s\S]*?rt-alt-detail[\s\S]*?id="dtl"/, 'and the SELECTED card holds it');
+  assert.equal((withDetail.match(/rt-alt-detail/g) || []).length, 1, 'only the selected one');
   assert.match(html, /aria-label="[^"]*Fastest/, 'the label is in the accessible name, not only in colour');
   assert.match(html, /rt-alt-key[^>]*>1</, 'each card carries its own number, matching the map');
   assert.match(html, /A1/, 'the road that makes this route different is named (§9.1)');
@@ -379,15 +387,22 @@ test('R291 ⑱ the official door is Layers → Tools → Directions, and nothing
   assert.deepEqual(ids, ['route-panel', 'rtp-suggest']);
 });
 
-/* ⚠ ⑲ CLOSING IS NOT CLEARING (§2.2) ─────────────────────────────────────────────────────────── */
-test('R291 ⑲ only an explicit clear throws the route away', () => {
+/* ⚠⚠ ⑲ (#R296) CLOSING **IS** CLEARING NOW, AND THAT IS THE READER'S DECISION ─────────────────
+   #R291 read §2.2 as 「the panel's × must not destroy the route」 and made closing keep the drawing.
+   「経路機能を閉じても地図に経路が残り続けるのをやめろ」 says the opposite in as many words, so the
+   invariant is inverted rather than dropped: closing takes the route with it, and 「経路を消去」 still
+   exists for a reader who wants a clean map with the panel open. ⚠ The ENDPOINTS survive either way,
+   which is what keeps re-opening the panel a continuation rather than a blank form. */
+test('R291 ⑲ / R296 closing the panel takes the route off the map', () => {
   const src = read('js/routing-ui.js');
   const close = /function close\(\)\s*\{([\s\S]*?)\n    \}/.exec(src);
   assert.ok(close, 'close() must be findable');
-  assert.equal(/\bclear\(\)|clearRoute\(\)|RT\(\)\.clear\b/.test(close[1]), false,
-    'closing the panel must not clear the route — that is the defect §2.2 names');
+  assert.match(close[1], /RT\(\)\.clear\(\); RT\(\)\.clearAreas\(\)/,
+    'closing the panel clears the drawn route and the keep-out areas');
+  assert.equal(/setPlace|clearEndpoints|reset\(\)/.test(close[1]), false,
+    'and does NOT throw away the endpoints — re-opening shows the same journey');
   assert.match(src, /\.rtp-clear'\)\.addEventListener\('click', clearRoute\)/,
-    'and the explicit button must be the thing that does');
+    'the explicit button still clears WITHOUT closing');
   /* the old panel's × called clear() — the shape must be gone from js/routing.js too */
   const r = bare('js/routing.js');
   assert.equal(/rp-close/.test(r), false, 'the old close-and-clear handler is gone from the code');

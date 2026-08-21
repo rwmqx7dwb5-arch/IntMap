@@ -197,7 +197,9 @@ test('R214 ⑥: every simulator #R211 left out now registers with the share regi
     ['js/tsunami.js', 'tsunami', true],      /* lazy → the key must be the lazy-module name */
     ['js/viewshed.js', 'los', true],         /* lazy, and its lazy name is 'los', not 'viewshed' */
     ['js/sims.js', 'sun', false],
-    ['js/sims.js', 'disaster', false],
+    /* ⚠ (#R296) 'disaster' left this list with its module — 「4つのうち、放射性物質拡散シミュ
+       レーションを残し全削除」. A share link cannot restore a panel that does not exist, and
+       'radiation' below is the one that survives (it is what the fourth hazard opened). */
     ['js/sims.js', 'radiation', false],
     ['js/drone-nav.js', 'drone', false],
   ];

@@ -90,9 +90,18 @@ test('Atlas geolocation asks / gives actionable denial (not a dead-end)', () => 
   assert.match(index, /err&&err\.code===1/, 'distinguishes PERMISSION_DENIED');
 });
 
-test('Layer panel: right default only overridden by an explicit choice', () => {
-  assert.match(index, /s\.layerPanelSet===true && \(s\.layerPanel==='right'\|\|s\.layerPanel==='classic'\)/, 'explicit-choice gate');
-  assert.match(index, /window\.imLayerPanelSet=true/, 'explicit choice records the flag');
+/* ⚠ (#R296) the explicit-choice gate this asserted existed to let a saved 'classic' survive the
+   right-hand default. 「classic dropdownを完全削除」 removed the thing that was chosen, so the gate is
+   gone and the invariant is that NO stored value reaches `imLayerPanel` — a reader who had picked
+   'classic' gets the sidebar rather than a panel that no longer opens. */
+/* ⚠ (#R296) READ THE CODE, NOT THE PROSE — this is the twentieth round in which a check aimed at a
+   removed name matched the COMMENT that explains the removal. `appSource` concatenates whole files,
+   so the note beside the `collect()` line (「layerPanel / layerPanelSet are no longer saved」) is a
+   perfectly good occurrence of the very word this asserts is gone. Assert about what RUNS. */
+test('R155 / R296: no stored value can select a layer panel, because there is only one', () => {
+  const code = index.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1 ');
+  assert.doesNotMatch(code, /layerPanelSet/, 'the explicit-choice flag is gone from the settings round trip');
+  assert.doesNotMatch(code, /layerPanel:\s*window\.imLayerPanel/, 'and the value is no longer saved');
 });
 
 test('Atlas typography: forceful format mandate + sharper heading render', () => {

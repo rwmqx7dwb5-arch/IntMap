@@ -1,8 +1,21 @@
 /* ============================================================================
  *  IntMap · the layers menu and its accordion  (#R200)
  * ----------------------------------------------------------------------------
- *  Opening and closing the Layers dropdown, the outside-click that dismisses it, and the collapsible
- *  group headers (which fold themselves on a phone so the panel never fills the screen).
+ *  ══ ⚠⚠⚠ (#R296) THERE IS NO CLASSIC DROPDOWN ANY MORE ════════════════════════════════════════
+ *  「レイヤー選択欄はclassic dropdownを完全削除。（右サイドバー形式に一本化し、設定から該当項目を削除。）」
+ *
+ *  What is gone is the SURFACE: the panel that opened under the Layers button, its outside-click
+ *  dismissal, its hoist-and-position, its own search box (js/map-extras.js) and the Settings row that
+ *  chose between it and the right sidebar. `#btn-layers` opens `IntMapLayerSidebar` and nothing else,
+ *  on every device — the phone's «Map & layers» sheet already mounted that same tile grid (#R232).
+ *
+ *  ⚠ WHAT IS NOT GONE, AND WHY. `#layer-dropdown` is not only a panel — it is where EVERY layer
+ *  checkbox in this program lives. Counted before touching it: 71 references across 20 files, and the
+ *  right sidebar itself is built by walking it (`rowsFromDropdown()` in js/map-ui.js), as are the
+ *  layer presets, Atlas's layer catalogue, the feedback report and the share links. So the element
+ *  stays as the REGISTRY it always also was, permanently `display:none`, and every module that puts a
+ *  checkbox in it keeps working unchanged. Deleting the node would not have removed a dropdown; it
+ *  would have removed the layers.
  *
  *  Lifted verbatim out of js/app-body.js (#R200): 82 of its 82 lines are byte-identical,
  *  and the 0 that are not are all the same rule — #R165's: a closure value js/app-body.js
@@ -19,31 +32,14 @@ export function makeLayerDropdown(HOST, CTX) {
   const GE=CTX.GE;
   /* ===== Layer dropdown ===== */
   const layerDropdown=document.getElementById('layer-dropdown');
+  /* ⚠ (#R296) ONE DESTINATION. The button used to have three behaviours (right sidebar / classic
+     dropdown / phone sheet) chosen by a setting that no longer exists; now it has one, and the phone
+     reaches the same grid through its own sheet. The `.show` class, the hoist into #map-container and
+     the document-level click that dismissed the panel all went with the surface — there is nothing to
+     dismiss, so the legend-× exception that existed only to stop it dismissing went too. */
   document.getElementById('btn-layers').addEventListener('click',(e)=>{ e.stopPropagation();
-    /* (#R62) opt-in RIGHT layer sidebar (Settings → Layer panel) intercepts on desktop */
-    if(window.imLayerPanel==='right' && window.IntMapLayerSidebar){ try{ window.IntMapLayerSidebar.toggle(); return; }catch(_){} }   /* (#R107) also intercept on mobile — the right sidebar layer panel now works on phones */
-    layerDropdown.classList.toggle('show');
-    /* (#R18) Frosted-glass fix: a backdrop-filter NESTED inside another backdrop-filtered surface
-       (.map-view-group toolbar) can only sample within the parent's backdrop root — the map behind was
-       never blurred, so in the frosted modes the dropdown read as "完全に透明". Hoist it out to
-       #map-container (top of the stacking/backdrop tree) and aim it under the Layers button; the shared
-       --glass-* material then frosts it exactly like every other surface. Mobile keeps its sheet mount. */
-    try{
-      if(layerDropdown.classList.contains('show') && !(window.matchMedia&&window.matchMedia('(max-width:768px)').matches)){
-        const mc=document.getElementById('map-container');
-        if(!layerDropdown.__home && layerDropdown.parentNode){ const ph=document.createComment('home'); layerDropdown.parentNode.insertBefore(ph,layerDropdown); layerDropdown.__home=ph; }
-        if(mc && layerDropdown.parentElement!==mc) mc.appendChild(layerDropdown);
-        const br=e.currentTarget.getBoundingClientRect(), mr=mc.getBoundingClientRect();
-        layerDropdown.style.top=(br.bottom-mr.top+8)+'px';
-        layerDropdown.style.right=Math.max(8,Math.round(mr.right-br.right))+'px';
-        layerDropdown.style.left='auto'; layerDropdown.style.marginTop='0'; layerDropdown.style.zIndex='1300';
-      }
-    }catch(_){}
+    try{ if(window.IntMapLayerSidebar) window.IntMapLayerSidebar.toggle(); }catch(_){}
   });
-  /* (#R7-legend-x) A click anywhere on the document used to collapse the Layers dropdown — including a
-     click on a layer's legend × (which sits OUTSIDE the dropdown). Keep the dropdown open when the
-     click originates inside any legend / its controls, so toggling a legend off doesn't shut the tab. */
-  document.addEventListener('click',(e)=>{ if(e.target.closest&&e.target.closest('.data-legend,.koppen-legend,.koppen-info-pop,.layer-popup-x,.legend-min,#layer-sidebar-r')) return; if(layerDropdown.classList.contains('lsr-mode')) return; layerDropdown.classList.remove('show'); });
   /* (#R27) Robust, idempotent fallback for every legend × that carries a data-x layer id. A legend's
      innerHTML is rebuilt on date/opacity/era changes, which replaces the × node and can drop its direct
      .onclick — leaving "凡例の×を押しても反応しない". This delegated listener survives every rebuild. It is
@@ -91,13 +87,12 @@ export function makeLayerDropdown(HOST, CTX) {
        — unless the user has explicitly opened it this session. Every other group stays expanded. */
     try{ if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){ const oh=Array.from(layerDropdown.querySelectorAll('.lyr-head')).find(h=>h.getAttribute('data-i18n')==='lyrGrpOthers'); if(oh && !oh.dataset.userToggled) _collapseGroup(oh); } }catch(_){}
   }catch(_){} };
-  layerDropdown.addEventListener('click',(e)=>{ const h=e.target.closest('.layer-group-title,.lyr-head,.premium-group-title'); if(h && !h.classList.contains('lyr-section-label') && layerDropdown.contains(h)){ e.stopPropagation();
-    /* (#R29) Mobile: every group is expanded EXCEPT "Others (beta)", which IS a pulldown the user can
-       collapse/expand ("Others(beta)だけプルダウン…元に戻せ"). Other headers stay plain labels on mobile. */
-    if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){ if(h.getAttribute('data-i18n')!=='lyrGrpOthers') return; }
-    _layerGroupToggle(h); } });
-  /* On each open, collapse any group the user hasn't explicitly opened (covers late-added groups). */
-  document.getElementById('btn-layers').addEventListener('click',()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} setTimeout(()=>{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ if(!h.dataset.userToggled && !h.classList.contains('lyr-section-label')) _collapseGroup(h); }); },30); });
-  layerDropdown.addEventListener('click',(e)=>e.stopPropagation());
+  /* ⚠ (#R296) THREE LISTENERS ON THE REGISTRY WENT WITH THE SURFACE — a click handler on a node that
+     is permanently `display:none` can never fire, and #R268's lesson is that a line nothing calls is
+     worse than no line: the accordion toggle, the collapse-on-open pass and the stopPropagation guard
+     all only ever ran because the panel was on screen. `_collapseGroup` and `_expandAllLayerGroups`
+     STAY — they are called from js/data-layers.js and js/map-extras.js, which reorganise the registry
+     itself, and the right sidebar reads that structure (`rowsFromDropdown`) to group its tiles. */
+  document.getElementById('btn-layers').addEventListener('click',()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} });
   return { _collapseGroup };
 }

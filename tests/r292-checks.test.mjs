@@ -261,9 +261,18 @@ test('R292 ⑪: v3 is read and never deleted, and the legacy API keeps its shape
   assert.ok(/_active: function \(\)/.test(w) && /_setActive: function \(/.test(w),
     'window.IntMapWidgets2 keeps _active/_setActive');
   assert.ok(/sync: sync/.test(w) && /render: render/.test(w), 'window.IntMapWidgets2 keeps sync/render');
-  /* the account sync still calls it */
+  /* ⚠⚠ (#R296) THE ACCOUNT SYNC CALLS IT — AND IT HAS TO ASK THE MODULE FOR THE BOARD TOO.
+     「消したはずのウィジェットが勝手に復元して出現するのを辞めろ」, MEASURED: the down-trip existed and the
+     UP-trip read `intmap_widgets3` — the v3 key #R292 left as a migration SOURCE and never writes
+     again. So the account held the pre-migration board for ever and fed it back on every sign-in.
+     This file's own header says the sync 「round-trips a board through the last two」; asserting only
+     half of that is what let the other half be a different key entirely. */
   const body = read('js/app-body.js');
-  assert.ok(/IntMapWidgets2\._setActive\(d\.widgets\)/.test(body), 'the preference sync still restores a board');
+  assert.ok(/IntMapWidgets2\._setActive\(d\.widgets/.test(body), 'the preference sync still restores a board');
+  assert.ok(/W\._active\(\)/.test(body), '…and reads it back through the module, not a storage key');
+  assert.ok(/W\._payload\(\)/.test(body), '…with the v4 record beside it, so sizes and stacks survive');
+  assert.equal(/d\.widgets=JSON\.parse\(localStorage\.getItem\('intmap_widgets3'\)\|\|'\[\]'\)/.test(body), false,
+    'and never straight off the legacy key');
 });
 
 /* ── ⑫ THE SMART STACK IS RUN, AND IT IS DETERMINISTIC ──────────────────────────────────────── */

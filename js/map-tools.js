@@ -939,8 +939,22 @@ window.IntMapModules.isochrone=function(HOST){
   window.IntMapIsochrone=(function(){
     const LL=window.IntMapLang.pick(()=>HOST.lang);
     const SRC='im-iso-src';
-    const COST={auto:'auto',car:'auto',drive:'auto',driving:'auto',walk:'pedestrian',walking:'pedestrian',foot:'pedestrian',pedestrian:'pedestrian',bike:'bicycle',bicycle:'bicycle',cycle:'bicycle',cycling:'bicycle'};
-    const ICON={auto:'🚗',pedestrian:'🚶',bicycle:'🚲'};
+    /* ══ ⚠⚠ (#R296) 「到達圏と公共交通機関の到達圏に分離するのを辞めろ」 ═════════════════════════
+       They were two rows in the tools list and two separate models: this one (Valhalla contours over
+       the road network) and js/sims.js's `IntMapTransitReach` (a Dijkstra over the OSM rail graph),
+       which had no panel at all — its only controls were the coordinate and number a caller passed.
+       A reader asking 「how far can I get in 30 minutes」 is asking ONE question; which engine answers
+       it is an implementation detail. `transit` is a fourth mode of this panel now, and the row that
+       used to open the other one is gone (js/map-ui.js).
+       ⚠ THE TWO ENGINES STAY TWO ENGINES. Nothing about the rail Dijkstra is reimplemented here —
+       this panel calls it. What is unified is the DOOR and the controls, not the mathematics, so the
+       transit answer is exactly the answer that module has always given.
+       ⚠ AND THE DIFFERENCE IS SAID OUT LOUD: the rail model solves ONE budget, not nested contours,
+       so with `transit` chosen the panel uses the largest selected time and prints that it did. */
+    const COST={auto:'auto',car:'auto',drive:'auto',driving:'auto',walk:'pedestrian',walking:'pedestrian',foot:'pedestrian',pedestrian:'pedestrian',bike:'bicycle',bicycle:'bicycle',cycle:'bicycle',cycling:'bicycle',
+      transit:'transit',rail:'transit',train:'transit','public':'transit',pt:'transit'};
+    const ICON={auto:'🚗',pedestrian:'🚶',bicycle:'🚲',transit:'🚆'};
+    const TR=()=>window.IntMapTransitReach||null;
     const PAL=['#0a84ff','#34c759','#ff9f0a','#ff375f'];   /* smallest → largest contour */
     let panel=null, center=null, mode='auto', mins=[15,30], busy=false, lastMinutes=[15,30];
     function ensureLayers(){ try{ if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
@@ -948,7 +962,10 @@ window.IntMapModules.isochrone=function(HOST){
       if(!GE().layers.has('im-iso-line')) GE().layers.add({id:'im-iso-line',type:'line',source:SRC,filter:['==','$type','Polygon'],layout:{'line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#0a84ff'],'line-width':2.2,'line-opacity':0.92}});
       if(!GE().layers.has('im-iso-ctr')) GE().layers.add({id:'im-iso-ctr',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#fff','circle-stroke-color':'#0a84ff','circle-stroke-width':3}});
       return true; }catch(_){ return false; } }
-    function clear(){ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} if(panel) panel.style.display='none'; }
+    /* (#R296) one panel, two sources — closing has to take BOTH off, or 「閉じたのに残っている」 */
+    function clear(){ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){}
+      try{ const t=TR(); if(t&&t.clear) t.clear(); }catch(_){}
+      if(panel) panel.style.display='none'; }
     async function fetchIso(c,cost,minutes){
       const body={locations:[{lat:+c.lat,lon:+c.lng}],costing:cost,contours:minutes.map(t=>({time:t})),polygons:true,denoise:0.5,generalize:60};
       const url='https://valhalla1.openstreetmap.de/isochrone?json='+encodeURIComponent(JSON.stringify(body));
@@ -958,6 +975,22 @@ window.IntMapModules.isochrone=function(HOST){
       return null; }
     async function run(lngLat,opts){ opts=opts||{}; if(lngLat&&lngLat.lng!=null) center={lng:+lngLat.lng,lat:+lngLat.lat}; if(!center) return {ok:false,reason:'no-point'};
       const cost=COST[String(opts.mode||mode).toLowerCase()]||'auto'; mode=cost;
+      /* (#R296) the transit branch — a different engine behind the same controls (see the note on COST) */
+      if(cost==='transit'){
+        const t=TR(); if(!t||!t.open){ renderPanel('err'); return {ok:false,reason:'render'}; }
+        let mm=Array.isArray(opts.minutes)?opts.minutes.slice():(opts.minutes!=null?[+opts.minutes]:mins.slice());
+        mm=mm.map(x=>Math.round(+x)).filter(x=>x>0&&x<=120); if(!mm.length) mm=[30];
+        mins=[...new Set(mm)].sort((a,b)=>a-b).slice(0,4);
+        const budget=mins[mins.length-1];
+        try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){}   /* the road contours are not this answer */
+        busy=true; renderPanel();
+        let r=null; try{ r=await t.open({lng:center.lng,lat:center.lat},budget); }catch(_){ r=null; }
+        busy=false;
+        if(!r||!r.ok){ renderPanel('err'); return {ok:false,reason:(r&&r.reason)||'api'}; }
+        lastMinutes=[budget]; renderPanel();
+        return {ok:true,minutes:[budget],mode:'transit',stations:(r.stations||[]).length};
+      }
+      try{ const t=TR(); if(t&&t.clear) t.clear(); }catch(_){}   /* leaving transit takes its drawing with it */
       let minutes=Array.isArray(opts.minutes)?opts.minutes.slice():(opts.minutes!=null?[+opts.minutes]:mins.slice());
       minutes=minutes.map(x=>Math.round(+x)).filter(x=>x>0&&x<=120); minutes=[...new Set(minutes)].sort((a,b)=>a-b).slice(0,4); if(!minutes.length) minutes=[15,30];
       /* ⚠⚠⚠ (#R278) THIS FUNCTION USED TO REPORT ok:true WITHOUT EVER PUTTING A POLYGON ON THE MAP.
@@ -998,13 +1031,18 @@ window.IntMapModules.isochrone=function(HOST){
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.iso-head')); }catch(_){}
       return panel; }
     function renderPanel(state){ const p=ensurePanel(); const body=p.querySelector('.iso-body'); if(!body) return;
-      const modes=[['auto','🚗',LL('Drive','車','Auto','Авто','Coche')],['pedestrian','🚶',LL('Walk','徒歩','Zu Fuß','Пешком','A pie')],['bicycle','🚲',LL('Cycle','自転車','Rad','Вело','Bici')]];
+      const modes=[['auto','🚗',LL('Drive','車','Auto','Авто','Coche')],['pedestrian','🚶',LL('Walk','徒歩','Zu Fuß','Пешком','A pie')],['bicycle','🚲',LL('Cycle','自転車','Rad','Вело','Bici')],
+        ['transit','🚆',LL('Transit','公共交通','ÖPNV','Транспорт','Transporte')]];
       const presets=[10,15,20,30,45,60]; const bs='height:30px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-muted);border-radius:8px;cursor:pointer;font-size:12px;';
       body.innerHTML='<div style="display:flex;gap:5px;">'+modes.map(m=>'<button class="iso-mode" data-m="'+m[0]+'" style="flex:1;'+bs+(m[0]===mode?'background:var(--primary-color);color:#fff;border-color:var(--primary-color);':'')+'">'+m[1]+' '+m[2]+'</button>').join('')+'</div>'
-        +'<div style="font-size:11px;color:var(--text-muted);">'+LL('Time — tap to add/remove (max 3)','時間 — タップで追加/削除（最大3）','Zeit — antippen (max. 3)','Время — нажмите (макс. 3)','Tiempo — toca (máx. 3)')+'</div>'
+        +'<div style="font-size:11px;color:var(--text-muted);">'+(mode==='transit'
+            ? LL('Time — the rail model solves one budget, so the largest is used','時間 — 鉄道モデルは1つの持ち時間を解くため、最大値を使います','Zeit — das Bahnmodell löst ein Budget, also gilt der größte Wert','Время — ж/д модель решает один бюджет: берётся максимум','Tiempo — el modelo ferroviario resuelve un solo presupuesto: se usa el mayor')
+            : LL('Time — tap to add/remove (max 3)','時間 — タップで追加/削除（最大3）','Zeit — antippen (max. 3)','Время — нажмите (макс. 3)','Tiempo — toca (máx. 3)'))+'</div>'
         +'<div style="display:flex;flex-wrap:wrap;gap:5px;">'+presets.map(v=>'<button class="iso-min" data-v="'+v+'" style="flex:1;min-width:38px;'+bs+(mins.indexOf(v)>=0?'background:var(--primary-color);color:#fff;border-color:var(--primary-color);':'')+'">'+v+'</button>').join('')+'</div>'
         +(busy?'<div style="font-size:11.5px;color:var(--text-muted);">'+LL('Computing…','計算中…','Berechne…','Расчёт…','Calculando…')+'</div>':(state==='err'?'<div style="font-size:11.5px;color:#ff9f0a;">'+LL('Could not compute (service busy) — try again','算出できませんでした（混雑）— 再試行を','Fehlgeschlagen — erneut versuchen','Не удалось — снова','No se pudo — reintenta')+'</div>':(lastMinutes.length?'<div style="display:flex;flex-direction:column;gap:3px;">'+lastMinutes.slice().sort((a,b)=>a-b).map((v,i)=>'<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text-main);"><span style="width:13px;height:13px;border-radius:3px;background:'+PAL[Math.min(PAL.length-1,i)]+';opacity:0.75;"></span>'+ICON[mode]+' '+v+' '+LL('min','分','Min','мин','min')+'</div>').join('')+'</div>':'')))
-        +'<div style="font-size:10px;color:var(--text-muted);line-height:1.4;">'+LL('Follows the real road network (Valhalla / OpenStreetMap) — not a distance circle.','実際の道路網に沿った範囲（Valhalla／OpenStreetMap）— 距離の円ではありません。','Entlang des echten Straßennetzes (Valhalla/OSM) — kein Distanzkreis.','По реальной дорожной сети (Valhalla/OSM) — не круг расстояния.','Sigue la red vial real (Valhalla/OSM) — no un círculo.')+'</div>';
+        +'<div style="font-size:10px;color:var(--text-muted);line-height:1.4;">'+(mode==='transit'
+            ? LL('Rides the real rail network (OpenStreetMap), at typical speeds per line class — not a published timetable. Walk to the nearest station is included.','実在の鉄道網（OpenStreetMap）を路線種別の標準速度で辿った範囲です（公表時刻表ではありません）。最寄駅までの徒歩を含みます。','Über das echte Schienennetz (OSM), mit typischen Geschwindigkeiten je Linienklasse — kein Fahrplan. Fußweg zum nächsten Bahnhof inklusive.','По реальной ж/д сети (OSM), по типовым скоростям — не расписание. Включён пеший подход к станции.','Por la red ferroviaria real (OSM), a velocidades típicas por clase de línea — no un horario publicado. Incluye el paseo hasta la estación.')
+            : LL('Follows the real road network (Valhalla / OpenStreetMap) — not a distance circle.','実際の道路網に沿った範囲（Valhalla／OpenStreetMap）— 距離の円ではありません。','Entlang des echten Straßennetzes (Valhalla/OSM) — kein Distanzkreis.','По реальной дорожной сети (Valhalla/OSM) — не круг расстояния.','Sigue la red vial real (Valhalla/OSM) — no un círculo.'))+'</div>';
       body.querySelectorAll('.iso-mode').forEach(b=>b.onclick=()=>{ mode=b.getAttribute('data-m'); run(center,{mode,minutes:mins}); });
       body.querySelectorAll('.iso-min').forEach(b=>b.onclick=()=>{ const v=+b.getAttribute('data-v'); const i=mins.indexOf(v); if(i>=0){ if(mins.length>1) mins.splice(i,1); } else { if(mins.length>=3) mins.shift(); mins.push(v); } run(center,{mode,minutes:mins}); }); }
     function open(lngLat){ if(lngLat&&lngLat.lng!=null) center={lng:+lngLat.lng,lat:+lngLat.lat}; ensurePanel().style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(panel); }catch(_){} if(center) run(center,{mode,minutes:mins}); else renderPanel(); return true; }

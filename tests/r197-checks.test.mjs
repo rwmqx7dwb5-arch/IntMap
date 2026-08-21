@@ -147,14 +147,13 @@ test('R197 ①e a divergent run is reported, never drawn', () => {
 
 test('R197 ②a the disaster simulator has no tsunami hazard at all', () => {
   const sims = rd('js/sims.js');
-  const haz = sims.match(/const HAZ=\(\)=>\[[^\n]*/);
-  assert.ok(haz, 'the hazard list is still there');
-  assert.doesNotMatch(haz[0], /'tsunami'/, 'and tsunami is not one of them');
-  assert.doesNotMatch(sims, /hazard==='tsunami'/, 'no branch of the model is a tsunami any more');
-  assert.doesNotMatch(sims, /waveH/, 'and the wave-height parameter went with it');
-  /* an unknown hazard is refused rather than stored — otherwise setHazard('tsunami') leaves the panel
-     in a state no button shows and no parameter belongs to */
-  assert.match(sims, /setHazard:\(h\)=>\{ if\(!HAZ\(\)\.some\(k=>k\[0\]===h\)\) return false;/, 'setHazard refuses');
+  /* ⚠ (#R296) #R197's subject was 「災害シミュレータからは津波シミュレータを削除しろ」 and its check was
+     that the hazard list has no tsunami and that `setHazard` refuses an unknown one. 「災害シミュレー
+     ターは4つのうち、放射性物質拡散シミュレーションを残し全削除」 removed the list, the setter and the
+     module. The requirement survives its implementation: nothing in js/sims.js may offer a tsunami. */
+  const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ');   /* (#R296) 21st round: a check for a removed name must not match the comment that explains the removal */
+  assert.doesNotMatch(code(sims), /hazard/i, 'there is no hazard list left to put a tsunami in');
+  assert.doesNotMatch(code(sims), /IntMapTsunami/, 'and js/sims.js does not open the propagation model either');
 });
 
 test('R197 ②b nothing opens a tsunami inside the disaster simulator', () => {
@@ -168,9 +167,11 @@ test('R197 ②b nothing opens a tsunami inside the disaster simulator', () => {
   const atlas = rd('js/atlas-console.js');
   assert.match(atlas, /case 'tsunami': case 'tsunamiSim': case 'tsunamiPropagation':/,
     'Atlas routes tsunami to its own model');
-  assert.match(atlas, /if\(\/tsunami\|津波\|цунами\/i\.test\(String\(a\.hazard\|\|''\)\)\) return await dispatch/,
-    '…including a free-text hazard that says tsunami');
-  assert.match(atlas, /TSUNAMI PROPAGATION \(its own model — NOT a hazard of the disaster simulator\)/,
+  /* ⚠ (#R296) the free-text forward stood in the `disaster` case, which is gone with its module —
+     a sentence saying 「tsunami」 reaches the model by naming it, and there is no longer a nearer
+     hazard for it to be captured by. The SYS entry keeps its subject and loses the comparison. */
+  assert.doesNotMatch(atlas, /case 'disaster':/, 'and there is no disaster case to capture it first');
+  assert.match(atlas, /TSUNAMI PROPAGATION \(its own model/,
     'and the SYS catalogue says which model it is (#R115: an action the catalogue omits does not exist)');
 });
 

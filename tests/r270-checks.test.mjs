@@ -94,7 +94,11 @@ test('R270 ② both layer-search clear buttons draw the SAME geometric ✕, and 
   assert.equal(defs, 1, 'the mark must be defined exactly once');
   assert.match(ui, /window\.IntMapClearGlyph=function/, 'js/map-ui.js is where it is defined');
   assert.match(ui, /stroke-linecap="round"/, 'it is two strokes, not a character');
-  assert.match(ex, /window\.IntMapClearGlyph\(\)/, 'the classic box must read the same definition');
+  /* ⚠ (#R296) THERE IS ONLY ONE LAYER-SEARCH BOX NOW — 「レイヤー選択欄はclassic dropdownを完全削除」.
+     #R239's lesson (a defect fixed in one of two copies and left in the other) is what made these
+     checks assert BOTH boxes; deleting one copy is the strongest possible answer to it, so the
+     assertion becomes 「the classic one is gone」 rather than 「it matches」. */
+  assert.doesNotMatch(ex, /window\.IntMapClearGlyph\(\)/, 'and the classic box that had to match it no longer exists');
   /* the glyph itself must not come back in either clear button */
   const X = String.fromCharCode(0x2715);
   assert.ok(!new RegExp('ls-clear[^;]*>' + X).test(ex), 'the classic clear button must not print U+2715');

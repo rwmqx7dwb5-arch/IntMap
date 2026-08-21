@@ -251,7 +251,11 @@ test('R196 ⑤ every "place this on the map" button steps its panel aside', () =
      the epicentre must also clear the observation points. The BEHAVIOUR asserted is unchanged. */
   assert.match(onPick[1], /(?:epi\s*=|setEpi\(\s*)\[\s*ll\.lng\s*,\s*ll\.lat\s*\]/, 'and sets the epicenter from the pick');
   const sims = rd('js/sims.js');
-  assert.equal((sims.match(/window\.IntMapPick/g) || []).length, 6, 'the three pickers in js/sims.js use it');
+  /* ⚠ (#R296) two pickers, not three: the RF one left with `IntMapRF` (「電波・通信圏と見通し線解析を
+     統合して」) and the disaster one with `IntMapDisaster`, while the radioactive-dispersion panel this
+     round BUILT brought one of its own. The count is 2 × 2 (`abort` + `start`), and counting is still
+     the point — a picker that forgets `IntMapPick` is a panel that covers the map it asks you to tap. */
+  assert.equal((sims.match(/window\.IntMapPick/g) || []).length, 4, 'both pickers in js/sims.js use it');
 });
 
 /* ── ⑤b ATLAS DRIVES IT ───────────────────────────────────────────────

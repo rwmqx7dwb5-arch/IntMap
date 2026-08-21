@@ -216,7 +216,12 @@ test('R224 ⑥b Atlas is on demand, and every entry point fetches it', () => {
     ['js/map-ui.js', /IntMapAtlas\.ensure\(\)/],
     ['js/tool-panel.js', /IntMapAtlas\.ensure\(\)/],
     ['js/countries-ui.js', /IntMapAtlas\.ensure\(\)/],
-    ['js/sims.js', /IntMapAtlas\.call\('dispatch'/]]) assert.match(read(f), re, `${f} must reach Atlas through the loader`);
+    /* ⚠ (#R296) js/sims.js left this list: its only `IntMapAtlas.call('dispatch')` was the disaster
+       panel's 「放射性物質」 choice handing off to the fallout model, and 「4つのうち…全削除」
+       removed the wrapper. The fallout model has its own panel now and needs no dispatch to reach
+       itself. What this test is FOR — no file may reach Atlas except through the loader — is
+       unchanged, and every file that still does is still checked. */
+  ]) assert.match(read(f), re, `${f} must reach Atlas through the loader`);
   /* ⚠ once the kernel is here, call() is SYNCHRONOUS — deferring is the price of FETCHING, not a
      thing to pay for ever. The sidebar's Atlas tab used to mount inside the click, and an
      unconditional promise moved that a turn later (tests/r145 ⑦ caught it in CI). */
