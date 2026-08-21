@@ -495,6 +495,22 @@ try {
   err('split-scope', 'could not run the split-scope check: ' + (e && e.message));
 }
 
+// ── 10. (#R301) every node test file on disk is in the list `npm test` actually runs ──
+// A per-round checks file that nobody added to `test:checks` is not a weaker test — it is not a
+// test. tests/r260-checks.test.mjs ⑥ asks that question about ITSELF, so it only protects the
+// rounds whose author was already thinking about the hazard; tests/r210 and tests/r211 were both
+// left out anyway, and r211 sat RED with five failing assertions for ninety rounds.
+// ⚠ IT LIVES HERE AND NOT IN `test:checks` ON PURPOSE: a guard for a list cannot be an entry in
+// the list it guards. The comparison itself is in scripts/check-test-list.mjs so that
+// tests/r301-checks.test.mjs can EXERCISE it on a repository that is wrong on purpose, rather
+// than grep this file for the call and count that as proof.
+try {
+  const { checkTestListHere } = await import('./check-test-list.mjs');
+  for (const p of checkTestListHere(ROOT)) err('node-tests', p.msg);
+} catch (e) {
+  err('node-tests', 'could not run the test-list check: ' + (e && e.message));
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byCheck = (arr) => arr.reduce((m, x) => ((m[x.check] = (m[x.check] || 0) + 1), m), {});
 console.log(`\nIntMap static checks — scanned ${ALL.length} files (${codeFiles.length} JS/TS, ${yamlFiles.length} YAML)\n`);

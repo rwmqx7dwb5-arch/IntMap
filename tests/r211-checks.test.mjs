@@ -24,68 +24,92 @@ const read = (p) => (p === 'js/i18n.js'
   : readFileSync(join(ROOT, p), 'utf8'));
 
 /* ── 1 · terrain & water: the two objects the round was told to remove, and the one that stays ── */
-test('R211 water: the dashed rectangle and the pond pins are gone, the ending label is not', () => {
+/* ⚠⚠⚠ (#R301) THIS FILE WAS NEVER RUN. tests/r211-checks.test.mjs was left out of the `test:checks`
+   list in package.json, so from #R211 until #R301 it was never once executed — the mirror image of
+   the hazard tests/r260-checks.test.mjs ⑥ guards against («green for ever»), and just as invisible,
+   because nothing ran it either way. When #R301 finally did, five of its twelve tests failed on
+   `main`. They did not all fail at once: each went red as the later instruction that deleted what
+   it pinned landed, the first of them at #R212 — and nothing printed any of it.
+   What #R211 was asked for has not changed. What HAD changed is that several assertions pinned a
+   SPELLING, and later rounds were instructed to delete the thing that was spelled that way — the
+   exact trap this file's own header warns about («a literal pinned here is a literal the next
+   instruction breaks»), left to rot because nobody ever saw it break. Each one is rewritten below
+   as the relation it was standing in for, with the instruction that moved it named. */
+test('R211 water: the working rectangle, the pond pins and the red arrows are gone; the ending label is not', () => {
   const src = read('js/terrain-water.js');
   assert.ok(!/id:'tw-area'/.test(src), 'the working rectangle layer is gone');
   assert.ok(!/properties:\{kind:'area'\}/.test(src), 'and so is the feature that fed it');
   assert.ok(!/id:'tw-lake'/.test(src), 'the per-pond pins are gone');
   assert.match(src, /kind:'end'/, 'the ending label stays — the picture cannot carry it');
-  /* the ponds themselves are still COLLECTED; only the second drawing of them went */
-  assert.match(src, /collectPond\(/, 'ponds are still collected and drawn as water');
-  assert.match(src, /trace\.lakes\.length/, '…and still counted in the panel');
-  /* the red volume beside the breach arrow */
-  assert.match(src, /label:'➤'/, 'the spill arrow stays');
-  assert.ok(!/label:'➤ '\+fmtM3/.test(src), 'without a volume in red beside it');
+  /* ⚠ WAS `collectPond(` + `trace.lakes.length`. #R211 kept a second pass that collected the ponds
+     the trace crossed so they could be drawn as water and counted; #R267 made standing water the
+     FIELD's own (a cell is deep and still because the integration made it so), so there is no list
+     of ponds left to collect, to draw or to count. The relation those two assertions were standing
+     in for survives that intact: ponded water is drawn ONCE, and is still reported in words. */
+  const kinds = [...new Set([...src.matchAll(/kind:'([a-z]+)'/g)].map((m) => m[1]))];
+  for (const gone of ['lake', 'pond', 'area']) {
+    assert.ok(!kinds.includes(gone), `no vector feature re-draws water the field already draws (kinds: ${kinds.join(',')})`);
+  }
+  assert.match(src, /setMore\('<b>'\+L\('Ponded'/, 'the ponded water is still reported in the panel');
+  assert.match(src, /result\.storedM3/, '…read off the one field, not off a list of ponds');
+  /* ⚠ WAS `label:'➤'` («the spill arrow stays»). #R212's instruction was 「また、赤い矢印はいらない。
+     一切不要。」 and it removed the layer rather than emptying it, so a session that had the arrows
+     drawn loses them too. A test pinning the arrow is a test that fails the NEXT instruction — which
+     is precisely what this one did, silently, for ninety rounds. The relation that has to hold is
+     that the spill points are still COMPUTED and still SAID, because silence would be a claim. */
+  assert.ok(!/label:'➤/.test(src), 'no spill arrow is drawn any more (#R212)');
+  assert.match(src, /GE\(\)\.layers\.remove\('tw-breach'\)/, '…and the layer is removed, not emptied');
+  assert.match(src, /result\.breaches\.length/, 'the overtopping is still counted and still reported');
+  assert.ok(!/label:'➤ '\+fmtM3/.test(src), 'and no volume is printed in red beside it');
 });
 
-/* ── 2 · the flat-crossing machinery ─────────────────────────────────────────────────────────── */
-/* ⚠ THE REPORTED DEFECT (northern Shiga → Seta → Yodo) IS NOT FIXED. Four hypotheses were measured
-   and all four missed — DEV-NOTES #R211 §1 has the four traces and what each one showed. What IS
-   asserted here is the machinery that WAS measured to be an improvement on wandering 600 km and
-   calling it "still flowing" from the middle of a lake. A test claiming the defect fixed would be
-   the most expensive kind of green there is. */
-test('R211 water: a flat is left by its spill, and a stall nobody can escape ends', () => {
+/* ── 2 · where the water ends up ──────────────────────────────────────────────────────────────── */
+/* ⚠⚠⚠ (#R301) THE MACHINE THIS TEST DESCRIBED WAS DELETED ON PURPOSE, AND THE TEST NEVER SAID SO.
+   #R211 asserted the escalation ladder for wide flats, `flatOutlet()`, `FLAT_DROP_M`, the stall
+   counter and the DEM level derived from the window — all of it the downstream WALK that #R186
+   built: 600 km of polyline computed the moment the water was placed. #R267 was told
+   「上流から下流まで全部同じモデル、描画にしろ」 and deleted the walk rather than porting it, saying so
+   in the file: «Everything else the walk carried — the escalation ladder for wide flats, the
+   corridor refinement, the cross-section solve, the kinematic-wave arrival — is deleted rather than
+   ported. Each existed to make a POLYLINE behave like water; there is no polyline.»
+   The REQUIREMENT is unchanged and is still #R186's:
+   「水は流れなくなる地点または海に到達した地点まで高精度に実データに忠実に描画すること。」
+   So this test now asserts that requirement against the machine that answers it, which is the one
+   model — and it asserts the deletion too, because a resurrected second calculation is the defect
+   #R267 removed. ⚠ IT STILL DOES NOT CLAIM THE #R211 DEFECT (northern Shiga → Seta → Yodo) IS
+   FIXED; DEV-NOTES #R211 §1 has the four traces that all missed. A test claiming that would be the
+   most expensive kind of green there is. */
+test('R211 water: the two endings are read off the field, not computed beside it', () => {
   const src = read('js/terrain-water.js');
-  /* ⚠ ANCHOR ON THE ESCALATION, NOT ON THE FIRST `mult` IN THE FILE. `pitEscape()` has a ladder of
-     its own ([1,3]) and is dead code kept for the note it carries — matching it made this test pass
-     on the wrong ladder while it was still failing. The one under test is the trace's, identified by
-     the `escal` budget it checks on its first line. */
-  const m = /for\(const mult of \[([0-9,\s]+)\]\)\{\s*[\r\n]+\s*if\(escaped\|\|escal>=\d+\) break;/.exec(src);
-  assert.ok(m, 'the escalation is a ladder of multipliers, not one rung');
-  const rungs = m[1].split(',').map((s) => +s.trim()).filter(Number.isFinite);
-  assert.ok(rungs.length >= 3, `at least three rungs (got ${rungs.length})`);
-  for (let i = 1; i < rungs.length; i++) {
-    assert.ok(rungs[i] > rungs[i - 1], 'each rung is wider than the last');
+  /* the answer is DERIVED — one `trace`, filled in from the running field, never a second walk */
+  assert.match(src, /let trace=null;/, 'there is one answer object');
+  assert.match(src, /function frontCell\(\)\{/, 'and it is read off the leading wet cell of the field');
+  assert.match(src, /async function courseCheck\(\)\{/, '…on the clock, not at the moment water is placed');
+  /* ⚠ THE TWO ENDINGS THE INSTRUCTION NAMES, each measured rather than ruled */
+  assert.match(src, /async function seaCheck\(lng,lat\)\{/, '「海に到達した地点」 is a question about the DEM');
+  assert.match(src, /if\(v&&v\.sea\) end='sea';/, '…and only a connected answer names the sea');
+  assert.match(src, /const STILL_S=\d+;\s+\/\* simulated seconds/, '「流れなくなる地点」 is a stretch of SIMULATED time');
+  assert.match(src, /let end=stalled\?'still':'running'/, '…measured on this run rather than ruled about basins');
+  assert.match(src, /!contSources\(\)\.length/, 'and a tap that is still running has not stopped, however still the front is');
+  /* the honest third and fourth answers: still going, and gone off the edge of what is modelled */
+  const cases = [...src.matchAll(/case '([a-z]+)': return/g)].map((m) => m[1]);
+  for (const c of ['sea', 'still', 'extent', 'running']) {
+    assert.ok(cases.includes(c), `the label has an answer for '${c}' (has: ${cases.join(',')})`);
   }
-  /* ⚠ THE RELATION THAT MATTERS: the acceptance threshold must NOT be a function of the rung. A
-     coarser window over-estimates the fill a place needs, so a fixed number gets STRICTER as the
-     window widens — the safe direction. Multiplying it by `mult` would let a wide window escape a
-     genuinely closed basin. */
-  assert.match(src, /<=LAKE_STOP_M\*3\)/, 'the gate is a fixed multiple of the lake-stop depth');
-  assert.ok(!/LAKE_STOP_M\*mult/.test(src), 'and it is NOT scaled by the rung');
-  /* the widest rung must be able to hold a lake bigger than the fine window: 161 samples × 27 is
-     well over 100 km at any DEM level the trace uses */
-  assert.ok(Math.max(...rungs) >= 9, 'the widest rung spans more than a hundred kilometres');
-  /* and the DEM level follows the window, or a 400 km look-ahead would be tens of thousands of tiles */
-  assert.match(src, /const wantPx=spacing\*mult\/1\.5;/, 'the sampling asked for follows the window');
-  assert.match(src, /const zc=Math\.max\(5,Math\.min\(z,Math\.round\(Math\.log2\(/, '…and the zoom is derived from it');
-
-  /* ⚠ A FLAT IS LEFT BY ITS SPILL, NOT BY ITS DRAINAGE TREE. With no slope the flood's `parent`
-     chain leads to whichever border the heap reached first — a direction only by accident, and
-     measured, it sent the walk back and forth across Lake Biwa until the 600 km cap. */
-  assert.match(src, /function flatOutlet\(W,k0,tolM\)\{/, 'the spill of a flat is its own question');
-  assert.match(src, /else if\(e<bestE\)\{ bestE=e; best=nk; \}/, 'and it is the lowest cell TOUCHING the flat');
-  /* the two 'no answer' cases stay apart: widen only when nothing lower was found either */
-  assert.match(src, /if\(!usable&&fo&&fo\.touchedEdge\)\{ escalMult=mult; continue; \}/,
-    'a flat wider than the window widens instead of letting the talweg guess a direction');
-  /* the fall a wide jump must show is bigger than the data's own noise */
-  assert.match(src, /const FLAT_DROP_M=/, 'a real fall is named');
-  assert.match(src, /eExit<eHere-FLAT_DROP_M/, 'and the talweg gate uses it, not a sign test');
-  assert.ok(!/eExit<=eHere\+0\.5/.test(src), "#R189's +0.5 m gate is gone — on a lake every direction passed it");
-  /* and a stall nobody can escape ENDS, rather than spending the budget looking like flow */
-  assert.match(src, /if\(stallRun>=4\)\{/, 'four windows with no fall is an ending');
-  assert.match(src, /end='lake'; break;/, 'and it is named as the lake it is');
-  assert.match(src, /_dbgTrace:\(\)=>\{/, 'the diagnostic that settled all four hypotheses is kept');
+  assert.match(src, /if\(basinCapped&&end==='running'\) end='extent';/,
+    'running out of modelled area is not the same as arriving anywhere');
+  /* ⚠ AND THE WALK STAYS DELETED. Every one of these was the polyline pretending to be water; each
+     is asserted absent by NAME, so re-introducing one fails here instead of quietly restoring the
+     two-models-two-answers shape #R267 removed. */
+  for (const [rx, what] of [[/for\(const mult of \[/, 'the escalation ladder'],
+                            [/function flatOutlet\(/, 'the flat-spill solve'],
+                            [/const FLAT_DROP_M=/, 'the talweg fall gate'],
+                            [/if\(stallRun>=/, 'the stall counter'],
+                            [/const wantPx=spacing\*mult/, 'the window-derived DEM level']]) {
+    assert.ok(!rx.test(src), `${what} is not back — the field answers this now (#R267)`);
+  }
+  /* the diagnostic that settled #R211's four hypotheses is kept, because the defect is not closed */
+  assert.match(src, /_dbgTrace:\(\)=>\{/, 'the diagnostic stays');
 });
 
 /* ── 3 · one water, one palette, one primitive ────────────────────────────────────────────────── */
@@ -115,15 +139,31 @@ test('R211 water: undo takes back one operation, whatever kind it was', () => {
   for (const field of ['sculpt', 'levees', 'sources', 'rainMm']) {
     assert.ok(new RegExp(`snapState[\\s\\S]{0,400}${field}`).test(src), `${field} is part of an undo entry`);
   }
-  /* every mutating entry point pushes exactly one entry BEFORE it mutates */
-  const mustPush = [
-    /function placeSource\(lng,lat\)\{ pushUndo\(\);/,
-    /pushUndo\(\); levees\.push\(drafting\)/,
-    /panel\.querySelector\('\.tw-rain'\)\.onchange=e=>\{ pushUndo\(\);/,
-    /addSource\(lng,lat,m3\)\{ pushUndo\(\);/,
-    /addLevee\(pts,crest,width\)\{[^}]*pushUndo\(\);/,
-  ];
-  for (const rx of mustPush) assert.match(src, rx, `an operation that changes the answer must push: ${rx}`);
+  /* ⚠ (#R301) THE RELATION IS «PUSH BEFORE MUTATE», NOT A SIGNATURE. #R211 wrote each entry point
+     out literally — `addSource(lng,lat,m3){ pushUndo();` — and #R271 gave that one an options
+     argument, made it async, and put the three await'ed reaches-the-point steps AHEAD of the push,
+     all of which is correct: an undo entry taken before a rebuild that returns null is an entry for
+     nothing. Spelled as a signature the assertion failed a change that made the code better and
+     said 「an operation that changes the answer must push」 while it still did. Spelled as an ORDER
+     it passes that change and still fails the thing that actually breaks undo. */
+  const pushesFirst = (label, entry, mutation) => {
+    const i = src.search(entry);
+    assert.ok(i >= 0, `${label}: no entry point matches ${entry}`);
+    const body = src.slice(i, i + 3000);
+    const p = body.indexOf('pushUndo()');
+    const m = body.search(mutation);
+    assert.ok(p >= 0, `${label} must take an undo entry`);
+    assert.ok(m >= 0, `${label} must actually mutate something, or this asserts nothing`);
+    assert.ok(p < m, `${label} takes its undo entry BEFORE it mutates (push at +${p}, mutation at +${m})`);
+  };
+  pushesFirst('placeSource', /function placeSource\(/, /sources\.push\(/);
+  pushesFirst('the levee commit', /\n\s+if\(p\.length>=2\)\{/, /levees\.push\(/);
+  pushesFirst('the rain field', /\.tw-rain'\)\.onchange=/, /rainMm=[^=]/);
+  /* the same four operations through Atlas, which is the other door into every one of them */
+  pushesFirst('Atlas addSource', /\n\s+(?:async\s+)?addSource\(/, /sources\.push\(/);
+  pushesFirst('Atlas addLevee', /\n\s+(?:async\s+)?addLevee\(/, /levees\.push\(/);
+  pushesFirst('Atlas brush', /\n\s+(?:async\s+)?brush\(/, /paintBrush\(/);
+  pushesFirst('Atlas setRain', /\n\s+(?:async\s+)?setRain\(/, /rainMm=[^=]/);
 });
 
 /* ── 5 · the panel the round was asked for ────────────────────────────────────────────────────── */
@@ -164,24 +204,49 @@ test('R211 trade: the width is a square root of a ratio, and the value is never 
 
 test('R211 world layers: nothing is shipped, every fetch is checked, and silence is never a claim', () => {
   const src = read('js/world-packs.js');
-  /* (#R183) an unchecked response is a silent 「—」 */
-  const fetches = src.match(/await fetch\(/g) || [];
-  assert.ok(fetches.length >= 4, 'the pack fetches its data');
-  for (const rx of [/if\(!r\.ok\) throw new Error\('owid /, /if\(!r\.ok\) throw new Error\('oec /,
-                    /if\(!r\.ok\) throw new Error\('nws /, /if\(!r\.ok\) throw new Error\('marine /]) {
-    assert.match(src, rx, `every source checks its status: ${rx}`);
-  }
+  /* ⚠⚠⚠ (#R301) DERIVED, NOT LISTED — AND IT FOUND ONE. #R183's rule is «an unchecked response is a
+     silent 「—」». #R211 wrote it down as four throws named by their text (`'owid '`, `'oec '`,
+     `'nws '`, `'marine '`); the tide fetch later moved behind window.IntMapWx.guardedJSON, which
+     checks the status FOR it, so the named-throw assertion went red for a file that had got more
+     careful rather than less — and, because nothing ran this file, it went red unread while a
+     genuinely unchecked fetch was added to the crop layer and nobody heard about it (that one
+     turned an ArcGIS error into 「no cultivation recorded in this cell」 — a server outage reported
+     to the reader as a measured fact about the ground). Derived over every call site, this cannot
+     go stale and cannot be satisfied by keeping a string. */
+  /* ⚠ COMMENTS ARE STRIPPED FIRST, both ways round: a note that happens to contain `.ok` is not
+     a status test, and a nine-line note BETWEEN a call and its guard is not a missing one. */
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
+  const sites = [...code.matchAll(/\bfetch\(/g)].map((m) => m.index);
+  assert.ok(sites.length >= 4, 'the pack fetches its data');
+  assert.equal(sites.length, (src.match(/\bfetch\(/g) || []).length,
+    'stripping the comments did not remove a call site — if it did, this scan is looking at the wrong text');
+  const unchecked = sites
+    .filter((i) => !/\.ok\b/.test(code.slice(i, i + 300)))
+    .map((i) => code.slice(i, i + 64).replace(/\s+/g, ' '));
+  assert.deepEqual(unchecked, [], `every response has its status looked at before it is read:\n  ${unchecked.join('\n  ')}`);
+  /* the paths that do NOT call fetch themselves are guarded by the helper that does, and an empty
+     answer from it is an error rather than a value */
+  assert.match(src, /throw new Error\('marine'\)/, 'the tide model that comes back empty is an error, not a reading');
   /* the warnings layer must never let an empty map read as "nothing in force" */
-  assert.match(src, /const FEEDS=\{ JPN:'jma', USA:'nws' \};/, 'the feeds that exist are named');
-  assert.match(src, /that is not the same as "no warnings in force"/, 'and a country without one says so');
-  /* Japan at the issuing unit: both area tiers are read */
-  assert.match(src, /\(o\.areaTypes\|\|\[\]\)\.forEach\(\(at,ti\)=>/, 'both JMA area tiers are read');
-  assert.match(src, /unit:ti===0\?'pref':'muni'/, '…and kept apart as prefecture and municipality');
+  assert.match(src, /const FEEDS=\{[^}]*JPN:'jma'[^}]*\}/, 'the feeds that exist are named, Japan among them');
+  assert.match(src, /const FEEDS=\{[^}]*USA:'nws'[^}]*\}/, '…and the United States');
+  /* ⚠ ASSERTED AS A FLOOR, NOT A LITERAL. #R211 pinned the whole table — `{ JPN:'jma', USA:'nws' }` —
+     and eleven rounds since have added a national agency to it. The invariant is that it only ever
+     grows and that a country outside it is HATCHED rather than painted 「no warnings in force」. */
+  const feeds = ((src.match(/const FEEDS=\{([\s\S]*?)\};/) || [, ''])[1].match(/[A-Z]{3}:'/g) || []).length;
+  assert.ok(feeds >= 12, `the national feeds only ever grow (got ${feeds})`);
+  assert.match(src, /const HATCH_ROW=\(\)=>/, 'a country with no feed reads as a country with no feed');
+  assert.match(src, /Not covered, or not read yet/, '…and the legend says which of the two it is');
+  /* Japan at the issuing unit: both area tiers are read and kept apart (#R299 re-spelled the pair) */
+  assert.match(src, /\[\['class10Items','region'\],\['class20Items','muni'\]\]/, 'both JMA area tiers are read');
+  assert.match(src, /if\(unit==='muni'\)/, '…and kept apart as region and municipality');
   /* the tide extremum is refined between samples rather than pinned to the hour */
   assert.match(src, /const off=\(Math\.abs\(den\)>1e-9\)\?\(0\.5\*\(a-c\)\/den\):0;/,
     'high and low water are refined by a parabola through the three samples');
-  /* crops: the national statistic and the 10 m extent are kept apart, and said so */
-  assert.match(src, /No keyless crop-by-crop raster exists/, 'the crop layer states what it is not');
+  /* ⚠ #R211 asserted the crop layer said «No keyless crop-by-crop raster exists». One does now —
+     FAO GAEZ v4, a 5-arcminute grid — so the layer states what it IS rather than what it is not. */
+  assert.match(src, /FAO GAEZ v4/, 'the crop layer names the raster it is showing');
+  assert.match(src, /reference years 2000 and 2010/, '…and the reference years it is showing it for');
 });
 
 test('R211 world layers: a refused layer add is retried, and a style swap puts them back', () => {
@@ -221,21 +286,35 @@ test('R211 share: the simulators register by their lazy-module name, and a pendi
 });
 
 /* ── 8 · the transparency page ────────────────────────────────────────────────────────────────── */
-test('R211 science page: it exists, it ships, and Settings links to it in five languages', () => {
+/* ⚠ (#R301) #R218 TURNED THIS PAGE INTO A SHELL and #R221 split the UI table into one file per
+   language, so the two things #R211 asserted — anchors written as `id="water"` in the markup, and
+   the Settings label counted as «2 in i18n-late + 3 in i18n.js» — are both spellings of a structure
+   that no longer exists. The requirement has not changed: the page has to exist, ship, cover every
+   model, state each model's limits, and be reachable in every language the app has. Written against
+   the language REGISTRY instead of a count of five, adding a tenth language cannot make it stale. */
+test('R211 science page: it exists, it ships, and Settings links to it in every language', () => {
   assert.ok(existsSync(join(ROOT, 'science.html')), 'the page exists');
-  const page = read('science.html');
+  const shell = read('science.html');
+  assert.match(shell, /IntMapPageI18N\.mount\(\{ page: 'science'/, 'and it mounts the science page (#R218)');
   /* it must document METHOD, and it must be the one place that says what each model does NOT answer */
-  for (const anchor of ['id="water"', 'id="seismic"', 'id="tsunami"', 'id="tides"', 'id="trade"', 'id="energy"', 'id="crops"', 'id="alerts"']) {
-    assert.ok(page.includes(anchor), `the page covers ${anchor}`);
+  const en = read('js/locales/pages.en.js');
+  for (const anchor of ['water', 'seismic', 'tsunami', 'tides', 'trade', 'energy', 'crops', 'alerts']) {
+    assert.match(en, new RegExp(`id:\\s*'${anchor}'`), `the page covers ${anchor}`);
   }
-  assert.ok(/steady-state routing model/.test(page), 'and states the limits of each model');
+  assert.match(en, /steady-state routing model/, 'and states the limits of each model');
   /* it is copied by the build (it is markup, not a bundle entry) */
   assert.match(read('vite.config.js'), /'science\.html',/, 'the build copies it');
-  /* the app links to it, and the label exists in all five languages */
+  /* the app links to it, and the label exists in every language the app ships — DERIVED from the
+     locale files, so a new language is caught here the same way it is caught by check:i18n */
   assert.match(read('index.html'), /id="link-science"[^>]*href="\.\/science\.html"/, 'Settings links to it');
-  const late = read('js/i18n-late.js'), i18n = read('js/i18n.js');
-  assert.equal((late.match(/viewScience:/g) || []).length, 2, 'en + jp');
-  assert.equal((i18n.match(/viewScience:/g) || []).length, 3, 'de + ru + es');
+  const uiFiles = readdirSync(new URL('../js/locales/', import.meta.url)).filter((f) => /^ui\.[a-z-]+\.js$/.test(f));
+  const pgFiles = readdirSync(new URL('../js/locales/', import.meta.url)).filter((f) => /^pages\.[a-z-]+\.js$/.test(f));
+  assert.ok(uiFiles.length >= 9, `the app ships at least nine languages (got ${uiFiles.length})`);
+  assert.deepEqual(uiFiles.filter((f) => !/viewScience/.test(read('js/locales/' + f))), [],
+    'the Settings label exists in every language');
+  assert.equal(pgFiles.length, uiFiles.length, 'and the page itself is written in every one of them');
+  assert.deepEqual(pgFiles.filter((f) => !/id:\s*'water'/.test(read('js/locales/' + f))), [],
+    '…including the sections, not only the chrome');
 });
 
 /* ── 9 · POI labels ───────────────────────────────────────────────────────────────────────────── */

@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-20): the **core** tier that
 gates a push is **6 spec files / 1.1 min**; the **whole** suite is **65 measured spec files /
 86.5 min** of serial browser time against a ceiling of 86.7 min; and `npm run test:checks` runs
-**144 Node test files** with no browser at all (counted from `package.json` on 2026-08-22; the
+**147 Node test files** with no browser at all (counted from `package.json` on 2026-08-22; the
 line above it is the 2026-08-20 measurement). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -214,6 +214,19 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   build. The Supabase **publishable** (anon) key is public on purpose and is allowlisted.
 - **Referenced assets** — a static `src`/`href`/`url(...)` in `index.html` / `admin.html`
   pointing at a missing local file fails (dynamic `'+x+'` refs are ignored).
+- **The node-test list** (#R301, `scripts/check-test-list.mjs`) — `test:checks` is one long
+  hand-maintained literal in `package.json`, and a `tests/*.test.mjs` file left out of it is not a
+  weaker test, it is **not a test**: it never runs, so it never fails and never passes. Measured
+  in #R301, `tests/r210-checks.test.mjs` and `tests/r211-checks.test.mjs` had never once been
+  executed — and when they finally were, **five of r211's twelve tests failed**, the earliest of
+  them broken by #R212, ninety rounds before anybody saw it. The check compares the list against
+  `tests/` **in both directions** (unlisted test
+  file → fail; listed path that is not on disk → fail, because `node --test` takes the whole
+  tier down for that). Fixtures, corpora and the shared helpers are `.mjs` but not `*.test.mjs`,
+  and are not demanded.
+  ⚠ It lives **here** rather than in `test:checks` on purpose: a guard for a list cannot be an
+  entry in the list it guards. `tests/r260-checks.test.mjs` ⑥ asks the same question about itself
+  — which only ever protected the rounds whose author was already thinking about the hazard.
 
 It deliberately does **not** reformat or style-lint existing code.
 

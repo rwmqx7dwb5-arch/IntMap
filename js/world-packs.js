@@ -5316,8 +5316,19 @@ window.IntMapModules.worldPacks=function(HOST){
         stat(L('Reading this cell…','このセルを取得中…','Zelle wird gelesen…','Чтение ячейки…','Leyendo la celda…'));
         try{ const mr=encodeURIComponent(JSON.stringify({mosaicMethod:'esriMosaicNone',where:'OBJECTID='+lastMeta.oid}));
           const g=encodeURIComponent(JSON.stringify({x:lng,y:lat,spatialReference:{wkid:4326}}));
+          /* ⚠⚠⚠ (#R301) AN UNCHECKED RESPONSE HERE IS NOT A SILENT 「—」 — IT IS A FALSE READING.
+             This was the only fetch in the file with no status test, and the miss was invisible
+             because tests/r211-checks.test.mjs — which asserts #R183's rule for this file — was
+             never added to `test:checks` and so has never once run. Without the two guards below
+             an outage arrives as `j.value == null` and the next line prints 「no cultivation
+             recorded in this cell」: a server error reported to the reader as a measured fact
+             about the ground. ArcGIS answers BOTH ways — an HTTP status, and 200 with an error
+             body — so both are asked, and a throw lands in the catch below, which says nothing
+             rather than something untrue. */
           const r=await fetch(GAEZ+'/identify?geometry='+g+'&geometryType=esriGeometryPoint&mosaicRule='+mr+'&f=json&returnCatalogItems=false');
+          if(!r.ok) throw new Error('gaez identify '+r.status);
           const j=await r.json();
+          if(j&&j.error) throw new Error('gaez identify '+((j.error&&j.error.code)||'error'));
           const v=j&&j.value;
           const nm=countryName(countryAt(lng,lat)||'');
           if(v==null||v==='NoData'){ stat(cropName(crop)+' · '+(nm?nm+' · ':'')+L('no cultivation recorded in this cell','このセルには栽培の記録がありません','keine Anbaufläche in dieser Zelle','в этой ячейке нет посевов','sin cultivo en esta celda')); return; }
