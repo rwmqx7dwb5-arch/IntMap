@@ -604,15 +604,28 @@
      can wait: it is deferred until the axis has been STILL for a while, and a further step replaces
      the pending schedule rather than adding to it. */
   var warmT = 0;
-  function prefetch(variables, i) {
+  function prefetch(variables, i, bounds) {
     clearTimeout(warmT);
-    warmT = setTimeout(function () { warmT = 0; _prefetchNow(variables, i); }, 2500);
+    warmT = setTimeout(function () { warmT = 0; _prefetchNow(variables, i, bounds); }, 2500);
   }
-  function _prefetchNow(variables, i) {
+  /* ⚠⚠⚠ (#R290 追記2) WARM WHAT WILL BE READ, NOT THE PLANET.
+     `prefetchVariable(v, null)` warms the WHOLE variable — the globe — and that was right while the
+     frame on screen was also the globe (#R288). It stopped being right the moment the reader zoomed
+     in: since #R288 the field is read as the latitude BAND in view (935 k samples against 6.6 M), so
+     warming three whole variables queued about 80 MB in front of a step that needed 1.6 MB.
+     MEASURED on the deployed build, wind + temperature at z4.5: the field for the new hour had still
+     not arrived **after 39 s**, and the frame in hand was the old hour's. Deferring the warm-up
+     (追記 ②) moved it behind the read; scoping it is what makes it small enough to matter.
+     The ranges come from a state built with the SAME bounds `load()` would use, so the bytes warmed
+     are the bytes the next read asks for. `null` still means the planet — which is what the raster
+     TILES want, and what a reader at world zoom is going to read anyway. */
+  function _prefetchNow(variables, i, bounds) {
     if (!sdk || !meta) return;
     var f = fileUrl(i);
-    if (!f || warmed[f]) return;
-    warmed[f] = 1;
+    var band = (bounds && bounds.length === 4) ? bounds : null;
+    var mark = f + (band ? ('#' + band[1] + ',' + band[3]) : '');
+    if (!f || warmed[mark]) return;
+    warmed[mark] = 1;
     /* ⚠ THROUGH THE QUEUE, LIKE EVERY OTHER READ. This is the call that caught the collision above:
        warming the next hour re-points the shared reader, and doing it beside a load of the current
        hour is how `valueNow` came back null in production. Queued, it starts only once whatever is
@@ -622,9 +635,18 @@
       var inst = sdk.getProtocolInstance(omSettings());
       var reader = inst && inst.omFileReader;
       if (!reader || !reader.setToOmFile || !reader.prefetchVariable) return null;
+      var dom = band ? sdk.domainOptions.find(function (d) { return d.value === DOMAIN; }) : null;
       return reader.setToOmFile(f).then(function () {
         return Promise.all((variables || []).map(function (v) {
-          try { return reader.prefetchVariable(v, null); } catch (_) { return null; }
+          try {
+            var ranges = null;
+            if (dom) {
+              var skey = stateKey(v, '', i) + '#' + band[1].toFixed(1) + ',' + band[3].toFixed(1);
+              var st = sdk.getOrCreateState(inst.stateByKey, skey, { domain: dom, variable: v, bounds: band }, f);
+              ranges = st && st.ranges;
+            }
+            return reader.prefetchVariable(v, ranges);
+          } catch (_) { return null; }
         }));
       });
     }).catch(function () {});
