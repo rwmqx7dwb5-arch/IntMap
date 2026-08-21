@@ -332,9 +332,22 @@ test('R290 ⑬ the ECMWF legend carries the opacity and the readout can reach a 
          z4.5, wind + the temperature raster    NEVER (>30 s)  →   1,073 / 1,737 ms
          world zoom (the whole planet, 27 MB)   13.6 / 18.5 s  →   11.6 / 14.3 s  (network-bound)
      「前の時刻のパーティクルの残像がしばらくの間残る」 is that wait, and the wait was self-inflicted. */
-  assert.match(e, /var warmT = 0;[\s\S]{0,240}?function prefetch\(variables, i\) \{\s*clearTimeout\(warmT\);/,
+  assert.match(e, /var warmT = 0;\s*function prefetch\(variables, i, bounds\) \{\s*clearTimeout\(warmT\);/,
     'the neighbour warming waits too, and a further step replaces the pending schedule');
-  assert.match(e, /function _prefetchNow\(variables, i\) \{/, 'the work itself is still there');
+  assert.match(e, /function _prefetchNow\(variables, i, bounds\) \{/, 'the work itself is still there');
+  /* ⚠⚠⚠ (#R290 追記2) …AND IT WARMS WHAT WILL BE READ, NOT THE PLANET. `prefetchVariable(v, null)`
+     warms the whole variable, which was right while the frame on screen was also the whole planet
+     (#R288) and wrong the moment the field became a latitude BAND: three whole variables is about
+     80 MB queued in front of a step that needs 1.6 MB. MEASURED on the deployed build, wind +
+     temperature at z4.5: the new hour's field had **still not arrived after 39 s**. Scoped to the
+     same band the read uses: **1,364 ms and 742 ms**. */
+  assert.match(e, /var st = sdk\.getOrCreateState\(inst\.stateByKey, skey, \{ domain: dom, variable: v, bounds: band \}, f\);/,
+    'the ranges come from a state built with the SAME bounds the read would use');
+  assert.match(e, /return reader\.prefetchVariable\(v, ranges\);/);
+  assert.match(e, /var mark = f \+ \(band \? \('#' \+ band\[1\] \+ ',' \+ band\[3\]\) : ''\);/,
+    'and 「already warmed」 is per file AND band, or a band warm would mask the globe it did not do');
+  assert.match(w, /EC\(\)\.prefetch\(\['wind_u_component_10m','wind_v_component_10m'\],Math\.min\(EC\(\)\.count\(\)-1,EC\(\)\.index\(\)\+1\),band\(\)\)/,
+    'the wind warms its own band');
 });
 
 /* ── ⑭ 「風の流れる向きに動かさなくてよい。向きだけ表示しろ。」 ────────────────────────────── */

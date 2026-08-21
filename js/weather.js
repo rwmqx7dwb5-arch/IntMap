@@ -220,7 +220,9 @@ window.IntMapModules.wind=function(HOST){
            frame costs the same ranged reads as the one on screen, so doing it for a reader who has not
            touched the player spends their bandwidth on a picture they may never ask for — and it
            competes with the picture they DID ask for. `opt.step` is true only when the axis moved. */
-        if(opt&&opt.step){ try{ EC().prefetch(['wind_u_component_10m','wind_v_component_10m'],Math.min(EC().count()-1,EC().index()+1)); }catch(_){} }
+        /* (#R290 追記2) …for the SAME band this layer reads. Warming the planet in front of a step
+           that needs one band is how the wait got worse rather than better — see wx-ecmwf. */
+        if(opt&&opt.step){ try{ EC().prefetch(['wind_u_component_10m','wind_v_component_10m'],Math.min(EC().count()-1,EC().index()+1),band()); }catch(_){} }
         return f;
       }).catch(()=>{ loading=false; lastErr='load';
         try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
@@ -645,8 +647,9 @@ window.IntMapModules.weatherEC=function(HOST){
          between an instant step back and another full read. */
       try{ const vars=activeLayers().filter(c=>srcOf(c)!=='merra2').map(c=>c.variable).concat(['wind_u_component_10m','wind_v_component_10m']);
         const i=EC().index(), n=EC().count();
-        EC().prefetch(vars,Math.min(n-1,i+1));
-        if(i>0) EC().prefetch(vars,i-1); }catch(_){}
+        /* ⚠ (#R290 追記2) ONE schedule survives (the call is debounced and replaces the pending one),
+           so ask for the neighbour a reader is most likely to want — the next hour. */
+        EC().prefetch(vars,Math.min(n-1,i+1)); }catch(_){}
       warmReadout();
     }
 
