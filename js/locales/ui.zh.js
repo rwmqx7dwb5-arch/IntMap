@@ -4981,7 +4981,7 @@ window.IntMapLang.define('zh', {
   "The map is not ready to choose a point yet": "地圖尚未就緒，無法選擇地點",   /* (#R298) */
   "Countries at Danger or above": "危險等級以上的國家",   /* (#R299) */
   "No country is at Danger or above right now.": "目前沒有國家達到危險等級以上。",   /* (#R299) */
-  "IntMap’s own conversion — the same step is not the same danger. Tap a country for its agency’s scale.": "IntMap 自行換算——同一等級不代表危險程度相同。點選國家可查看該機關的等級。",   /* (#R299) */
+  "IntMap’s own conversion — the same step is not the same danger.": "IntMap 自行換算——同一等級不代表危險程度相同。",   /* (#R299) */
   "Each agency’s own colours. Tap a country for its exact scale.": "顏色為各機關自身的配色。點選國家可查看確切等級。",   /* (#R299) */
   "No point placed yet": "尚未設定地點",   /* (#R299) */
   "Place the point on the map": "在地圖上設定地點",   /* (#R299) */

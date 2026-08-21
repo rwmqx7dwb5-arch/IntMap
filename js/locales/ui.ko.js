@@ -4884,7 +4884,7 @@ window.IntMapLang.define('ko', { ui: {
   "The map is not ready to choose a point yet": "지도가 아직 지점을 선택할 준비가 되지 않았습니다",   /* (#R298) */
   "Countries at Danger or above": "위험 등급 이상인 국가",   /* (#R299) */
   "No country is at Danger or above right now.": "지금 위험 등급 이상인 국가는 없습니다.",   /* (#R299) */
-  "IntMap’s own conversion — the same step is not the same danger. Tap a country for its agency’s scale.": "IntMap 자체 환산입니다 — 같은 등급이라도 위험도는 같지 않습니다. 국가를 누르면 해당 기관의 등급.",   /* (#R299) */
+  "IntMap’s own conversion — the same step is not the same danger.": "IntMap 자체 환산 — 같은 등급이라도 위험도는 같지 않습니다.",   /* (#R299) */
   "Each agency’s own colours. Tap a country for its exact scale.": "색상은 각 기관 자체의 배색입니다. 국가를 누르면 정확한 등급.",   /* (#R299) */
   "No point placed yet": "아직 지점이 설정되지 않았습니다",   /* (#R299) */
   "Place the point on the map": "지도에서 지점 설정",   /* (#R299) */
