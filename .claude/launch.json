@@ -2,17 +2,30 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "intmap-preview-r300",
+      "name": "intmap-preview-r303",
       "runtimeExecutable": "node",
       "runtimeArgs": [
         "scripts/serve.mjs",
         "--root",
         "dist",
         "--port",
-        "4300"
+        "4303"
       ],
-      "port": 4300,
-      "url": "http://127.0.0.1:4300"
+      "port": 4303,
+      "url": "http://127.0.0.1:4303"
+    },
+    {
+      "name": "intmap-preview-r301",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4301"
+      ],
+      "port": 4301,
+      "url": "http://127.0.0.1:4301"
     },
     {
       "name": "intmap-preview-r299",

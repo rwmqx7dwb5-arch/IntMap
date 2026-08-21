@@ -146,7 +146,12 @@ window.IntMapModules.routing=function(HOST){
        idempotent) and never a camera move. The UI is a lazy module, so it may still have to arrive. */
     function _revealPanel(){ try{
       const UI=window.IntMapRouteUI;
-      if(UI&&typeof UI.isOpen==='function'&&UI.isOpen()) return;   /* already open — the store's 'sel' did the rest */
+      /* ⚠⚠⚠ (#R299 追記) 「OPEN」 AND 「VISIBLE」 ARE NOT THE SAME STATE. A minimised panel is open —
+         `openState` is true — so this returned early and the tap selected a route inside a strip of
+         header the reader could not read. MEASURED on production R299: the store went `sel 0 → 1`
+         and `.rtp-min` stayed on, height 46 px. `open()` is idempotent and its `reveal` flag is what
+         takes `rtp-min` off (js/routing-ui.js), so the answer is to CALL it rather than to guess
+         from `isOpen()` that there is nothing left to do. */
       if(UI&&typeof UI.open==='function'){ UI.open({reveal:true,keepView:true}); return; }
       window.IntMapLazy.need('routeUi').then(()=>{ try{ window.IntMapRouteUI.open({reveal:true,keepView:true}); }catch(_){} },()=>{});
     }catch(_){} }
@@ -156,7 +161,12 @@ window.IntMapModules.routing=function(HOST){
        のをやめろ」 inverted the rule. js/routing-ui.js `close()` has called `RT().clear()` ever since,
        so the same fact was written down twice in two files with opposite signs, and this was the copy
        a reader of js/routing.js would have believed. The callers are: 「経路を消去」, Atlas's
-       「経路を消して」, and the panel's × — the Tools row still only closes the panel.
+       「経路を消して」, and the panel's ×.
+       ⚠ (#R299 追記) …AND THE TOOLS ROW, which the line above used to exempt («the Tools row still
+       only closes the panel»). MEASURED on production R299: a second press on Layers ▸ Tools ▸
+       Directions left `hasRoute()` false and every `imroute-*` layer at 0 features. It goes
+       `_toolOff` → `IntMapRouteUI.close()` → here, like every other way of closing, and it has done
+       since #R296 inverted the rule. The exemption was a leftover of #R291 in a third file.
        ⚠ EVERY SOURCE THIS SUBSYSTEM DRAWS INTO IS EMPTIED, not merely hidden — see js/routing-ops.js.
        The four are `imroute-src` (here), `imroute-diff-src` and `imroute-hist-src` (the two calls
        below) and `imroute-area-src` (`clearAreas`, which the panel calls beside this one). */
@@ -305,7 +315,24 @@ window.IntMapModules.routing=function(HOST){
       ends.forEach((p,i)=>{ if(!p) return; feats.push({type:'Feature',geometry:{type:'Point',coordinates:p},properties:{color:_wpColor(i,ends.length),wp:_wpLabel(i,ends.length)}}); });
       const fc=[]; (sa.lines||[]).forEach(ln=>ln.coords.forEach(p=>fc.push(p)));
       _paint(feats,fc.length?fc:null,15); }
-    function selectAlt(i,setId){ const rs=_rsets.get(setId||_rsActive); if(rs&&rs.alts[i]){ _drawAlts(i,setId||_rsActive);
+    /* ══ ⚠⚠⚠ (#R299 追記) SELECTING AN ALTERNATIVE RE-FRAMED THE CAMERA — FOR SEVEN ROUNDS ══════════
+       MEASURED on production R299, tapping a route line at z10.91: Δlng **+0.001934°**, Δlat
+       **−0.002779°**, **Δzoom −0.0359** — about 2.7 px east, 4.7 px south and 2.5 % out. Two
+       independent runs gave the identical delta, and the gesture was move→down→60 ms→up with no
+       movement in between and a ZOOM change, so it was not a synthesised drag.
+       `_drawAlts` ALWAYS hands `_paint` the selected alternative's coordinates as `fitCoords`, and
+       `_paint` fits whenever they are non-null. #R291's rule — 「Only a NEW route set fits, and only
+       once」 — was enforced only for the style-swap repaint (`_lastPaint.fit=null`), never for a
+       selection. So every tap on the map and every press of a candidate card flew the camera.
+       ⚠ AND THE COMMENT ABOVE `_onLineClick` SAID THE OPPOSITE («THE CAMERA DOES NOT MOVE»), because
+       `open({keepView:true})` really does skip the panel's own re-frame — the move was coming from
+       the line the same function calls one statement earlier. A note that names the mechanism it
+       checked is still wrong if it did not check the other one.
+       → the selection repaints WITHOUT fitting (`_noFit`, the switch `repaint()` already uses).
+       ⚠ `selectStep` still flies, deliberately: 「fly to it」 is what asking for one step MEANS, and
+       it is a different gesture from choosing which of two journeys to look at. */
+    function selectAlt(i,setId){ const rs=_rsets.get(setId||_rsActive); if(rs&&rs.alts[i]){
+      const keep=_noFit; _noFit=true; try{ _drawAlts(i,setId||_rsActive); } finally { _noFit=keep; }
       /* (#R291) the SELECTION lives in the store, so the panel's card, Atlas's card and the map are
          ONE fact — which is what lets a tap on the map drive the card and the card drive the map. */
       try{ const ST=window.IntMapRouteStore; if(ST&&ST.get().routeSetId===(setId||_rsActive)) ST.setSel(i); }catch(_){}
