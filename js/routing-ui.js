@@ -41,7 +41,23 @@ window.IntMapModules.routeUi = function (HOST) {
     const PV = () => window.IntMapRouteProviders;
     const GC = () => window.IntMapRouteGeocode;
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    const isMob = () => { try { return !!HOST.isMobile || window.innerWidth < 768; } catch (_) { return false; } };
+    /* ══ ⚠⚠⚠ (#R298 追記) `HOST.isMobile` IS A FUNCTION, SO `!!HOST.isMobile` WAS ALWAYS TRUE ═══════
+       MEASURED on production immediately after this round shipped: `#route-panel` carried
+       `data-detent="full"` on a 1,280 px desktop — and `data-detent` is only ever written by
+       `setDetent`, which `open()` calls behind `if (isMob())`. That attribute is the fingerprint.
+       `js/app-body.js` exposes `get isMobile(){ return isMobile; }`, i.e. the PREDICATE; every other
+       module in this app rebinds it and CALLS it (`js/countries-ui.js`: `HOST.isMobile&&HOST.isMobile()`).
+       Here the parentheses were missing, so the truthiness of the function object decided, and this
+       panel believed it was on a phone on every device.
+       ⚠ WHAT THAT COST: `enableWindowing()` opens with `if (!el || isMob()) return;`, so THIS ROUND'S
+       drag and resize — 「移動もリサイズも何もかもできないとかクソ」 — never bound at all. Measured:
+       no `data-edge-resize` attribute, `.rtp-head.onmousedown === null`, and a full
+       mousedown/mousemove/mouseup on the header moved the panel zero pixels. `bringToFront` and the
+       saved geometry went with it. The node checks were green because they ask whether the CALLS are
+       written, and they were: the call site was simply never reached.
+       ⚠ AND THE CURSOR LIED. `.rtp-head{cursor:move}` is a stylesheet fact, so a local check that
+       read the cursor saw 「draggable」 on a panel nothing had bound a handler to. */
+    const isMob = () => { try { return (typeof HOST.isMobile === 'function' ? !!HOST.isMobile() : !!HOST.isMobile) || window.innerWidth < 768; } catch (_) { return false; } };
     const units = () => { try { return HOST.unitMode || 'metric'; } catch (_) { return 'metric'; } };
     const tz = () => { try { return HOST.userTZ && HOST.userTZ !== 'auto' ? HOST.userTZ : ''; } catch (_) { return ''; } };
     /* ⚠ (#R296) `at` is WHERE the times in these cards happen — the destination, because an ETA is
@@ -1153,7 +1169,12 @@ window.IntMapModules.routeUi = function (HOST) {
        must not survive into the phone layout, where `left`/`height` are what make it a bottom sheet. */
     function clampGeom() {
       if (!el) return;
-      if (isMob()) { stripGeom(); applyInsets(); return; }
+      /* ⚠ (#R298 追記) …AND THE SHEET NEEDS A DETENT, or the grip has no height to move between.
+         `setDetent` was only ever called from `open()`, so a panel opened on a wide window and then
+         narrowed had none — which nothing noticed while `isMob()` was true on every device and every
+         open() set one. Measured at 320 px: `data-detent` was null and the three-height sheet had
+         nothing to snap to. */
+      if (isMob()) { stripGeom(); if (!el.getAttribute('data-detent')) setDetent(ST().get().result ? 'mid' : 'full'); applyInsets(); return; }
       if (el.getAttribute('data-dragged') !== '1') { enableWindowing(); return; }
       const r = el.getBoundingClientRect();
       const opr = ((el.offsetParent || document.documentElement)).getBoundingClientRect();

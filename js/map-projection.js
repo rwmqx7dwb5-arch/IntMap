@@ -113,7 +113,11 @@ export function makeProjection(CTX){
   }
 
   function watch(){
-    try{ if(GE().hasRenderer()){ GE().events.on('styledata',_reassertFlatPan); GE().events.on('idle',_reassertFlatPan); } }catch(_){}
+    /* ⚠ (#R298 追記) …AND ON `moveend`. MEASURED on production: with a throttled renderer the map sat
+       caged for twenty-one seconds, because `idle` never came and nothing mutated the style — and the
+       reader's first instinct when a map will not scroll is to DRAG it, which was the one event this
+       did not listen for. A pan repairs it now. */
+    try{ if(GE().hasRenderer()){ GE().events.on('styledata',_reassertFlatPan); GE().events.on('idle',_reassertFlatPan); GE().events.on('moveend',_reassertFlatPan); } }catch(_){}
   }
 
   return { flatMinZoom, applyFlatPanSetting, boot, wire, watch };
