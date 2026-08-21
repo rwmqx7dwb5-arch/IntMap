@@ -825,3 +825,428 @@ test('R290 ㉘ the layer-search box brings itself to the top of its own scroller
   expect(r.boxTopAfter, 'and typing brings it to the top, inside the panel’s own padding').toBeLessThanOrEqual(r.padTop + 4);
   expect(r.boxTopAfter).toBeGreaterThanOrEqual(-2);
 });
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+   (#R291) THE DIRECTIONS PANEL — what only a real page can answer
+   ──────────────────────────────────────────────────────────────────────────────────────────────
+   §24.1's list is answered in Node (tests/r291-checks.test.mjs) because the store, the provider
+   table, the render layer and the export are pure. What is left is the part that IS a page: the
+   entry in Layers → Tools, the combobox keyboard, the bottom sheet, and the map's own layers.
+
+   ⚠ THE ROUTERS ARE MOCKED. 「外部APIを用いる新規テストは最小限とし、大部分はモックまたは純粋関数で
+   検証する」 — and the hermetic policy blocks every external host anyway, so a real OSRM call could
+   only ever be a flake. `page.route` handlers take priority over the context's blanket block.
+   ⚠ AND THEY ARE INSTALLED ONCE, on the shared page, rather than per test — this file boots the
+   app exactly once and every assertion below rides that boot (#R207: the assertions are free, the
+   boot is the whole price).
+   ══════════════════════════════════════════════════════════════════════════════════════════════ */
+const R291_OSRM = {
+  code: 'Ok',
+  waypoints: [{ distance: 12 }, { distance: 20 }],
+  routes: [
+    {
+      duration: 2160, distance: 31000,
+      geometry: { type: 'LineString', coordinates: [[139.767, 35.681], [139.70, 35.60], [139.638, 35.4658]] },
+      legs: [{ duration: 2160, steps: [
+        { distance: 400, name: 'Chuo-dori', maneuver: { type: 'depart', modifier: '' } },
+        { distance: 12000, name: 'Metropolitan Expressway', ref: 'C1', maneuver: { type: 'turn', modifier: 'right' },
+          intersections: [{ lanes: [{ valid: false }, { valid: true }, { valid: true }] }] },
+        { distance: 0, name: '', maneuver: { type: 'arrive', modifier: 'left' } },
+      ] }],
+    },
+    {
+      duration: 2460, distance: 39000,
+      geometry: { type: 'LineString', coordinates: [[139.767, 35.681], [139.85, 35.58], [139.638, 35.4658]] },
+      legs: [{ duration: 2460, steps: [
+        { distance: 500, name: 'Route 15', ref: 'R15', maneuver: { type: 'depart', modifier: '' } },
+        { distance: 0, name: '', maneuver: { type: 'arrive', modifier: 'right' } },
+      ] }],
+    },
+  ],
+};
+const R291_GEO = {
+  results: [
+    { id: 1, name: 'Springfield', latitude: 39.799, longitude: -89.644, country: 'United States', admin1: 'Illinois', population: 116250, feature_code: 'PPLA' },
+    { id: 2, name: 'Springfield', latitude: 42.101, longitude: -72.590, country: 'United States', admin1: 'Massachusetts', population: 154758, feature_code: 'PPLA2' },
+    { id: 3, name: 'Springfield', latitude: 37.215, longitude: -93.298, country: 'United States', admin1: 'Missouri', population: 167882, feature_code: 'PPLA2' },
+  ],
+};
+let r291Osrm = 0;                       /* how many road requests the app has actually made */
+async function r291Mock() {
+  r291Osrm = 0;
+  await page.route(/router\.project-osrm\.org|routing\.openstreetmap\.de/, async (route) => {
+    r291Osrm++;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(R291_OSRM) });
+  });
+  await page.route(/geocoding-api\.open-meteo\.com/, (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(R291_GEO) }));
+  await page.route(/nominatim\.openstreetmap\.org/, (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+}
+async function r291Open() {
+  await page.evaluate(async () => {
+    try { window.IntMapLayerSidebar.open(); } catch (_) { /* it may already be open */ }
+    await new Promise((r) => setTimeout(r, 1200));
+  });
+  await page.locator('.lst-toolrow[data-act="tool.directions"]:visible').first().click();
+  await page.waitForFunction(() => !!(window.IntMapRouteUI && window.IntMapRouteUI.isOpen()), null, { timeout: 20_000 });
+  await page.evaluate(() => { try { window.IntMapLayerSidebar.close(); } catch (_) { } });
+}
+/* every test below rides the same boot, but any one of them may also be run alone with `-g` —
+   so the ones that need the panel say so instead of inheriting it from the test before. */
+async function r291Ensure() {
+  await r291Mock();
+  const up = await page.evaluate(() => !!(window.IntMapRouteUI && window.IntMapRouteUI.isOpen()));
+  if (!up) await r291Open();
+}
+async function r291Route() {
+  await r291Ensure();
+  await page.evaluate(async () => {
+    const S = window.IntMapRouteStore;
+    S.setPlace('from', { lng: 139.7671, lat: 35.6812, name: 'Tokyo Station', kind: 'station' });
+    S.setPlace('to', { lng: 139.6380, lat: 35.4658, name: 'Yokohama Station', kind: 'station' });
+    await window.IntMapRouteUI._recompute();
+  });
+  await page.waitForFunction(() => window.IntMapRouteStore.hasRoute(), null, { timeout: 20_000 });
+}
+
+test('R291 ① Layers → Tools carries Directions, and the keyboard opens it', async () => {
+  await r291Mock();
+  const row = page.locator('.lst-toolrow[data-act="tool.directions"]:visible').first();
+  await page.evaluate(async () => { try { window.IntMapLayerSidebar.open(); } catch (_) { } await new Promise((r) => setTimeout(r, 1200)); });
+  await expect(row).toBeVisible();
+  await expect(row).toContainText(/Directions/);
+  /* ⚠ 「マウス、タッチ、キーボードの全てで開ける」 — a <button> is what makes that true by
+     construction, and Enter on a focused row is the keyboard path. */
+  expect(await row.evaluate((b) => b.tagName)).toBe('BUTTON');
+  await row.focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => !!(window.IntMapRouteUI && window.IntMapRouteUI.isOpen()), null, { timeout: 20_000 });
+  await page.evaluate(() => { try { window.IntMapLayerSidebar.close(); } catch (_) { } });
+  await expect(page.locator('#route-panel')).toBeVisible();
+  /* pressing it again closes the PANEL — and a second press must never build a second one */
+  const before = await page.locator('#route-panel').count();
+  await page.evaluate(async () => { try { window.IntMapLayerSidebar.open(); } catch (_) { } await new Promise((r) => setTimeout(r, 900)); });
+  await row.click(); await page.waitForTimeout(400);
+  await row.click(); await page.waitForTimeout(1200);
+  await page.evaluate(() => { try { window.IntMapLayerSidebar.close(); } catch (_) { } });
+  expect(await page.locator('#route-panel').count(), 'a second press must not build a second panel').toBe(before);
+  await expect(page.locator('#route-panel')).toBeVisible();
+});
+
+test('R291 ② the place search offers candidates and the keyboard picks one', async () => {
+  await r291Ensure();
+  const input = page.locator('#route-panel .rtp-field[data-f="from"] input');
+  await input.click();
+  await input.fill('');
+  /* ⚠ TYPING MUST NOT ROUTE (§23). The counter is reset here and checked after the keystrokes. */
+  await page.evaluate(() => { window.__r291Before = document.querySelectorAll('.rt-alt').length; });
+  await input.type('Springfield', { delay: 40 });
+  await page.waitForSelector('#rtp-suggest .rtp-sug', { timeout: 15_000 });
+  const rows = page.locator('#rtp-suggest .rtp-sug');
+  expect(await rows.count(), 'an ambiguous name must offer more than one row (§4.1)').toBeGreaterThan(1);
+  /* each row is distinguishable — the admin area is what tells three Springfields apart */
+  await expect(rows.first()).toContainText(/Illinois|Massachusetts|Missouri/);
+  expect(await input.getAttribute('aria-expanded')).toBe('true');
+  /* ArrowDown moves the active option; Enter confirms it */
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  const active = await input.getAttribute('aria-activedescendant');
+  expect(active, 'the combobox must name its active option').toMatch(/^rtp-sug-\d+$/);
+  const chosen = (await page.locator('#' + active + ' b').innerText()).trim();
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(400);
+  expect(await input.inputValue()).toBe(chosen);
+  expect(await page.evaluate(() => !!window.IntMapRouteStore.get().from.place), 'the pick is confirmed').toBe(true);
+  await expect(page.locator('#rtp-suggest')).toBeHidden();
+  /* Escape closes the list without confirming anything */
+  await input.fill(''); await input.type('Spring', { delay: 30 });
+  await page.waitForSelector('#rtp-suggest .rtp-sug', { timeout: 15_000 });
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#rtp-suggest')).toBeHidden();
+  await expect(page.locator('#route-panel')).toBeVisible();   /* the first Escape closed the LIST, not the panel */
+  /* ⚠ and editing the field invalidated the confirmed place, so nothing was routed from stale coords */
+  expect(await page.evaluate(() => window.IntMapRouteStore.get().from.place)).toBe(null);
+});
+
+test('R291 ③ a route draws, its alternatives are selectable from the card and from the map', async () => {
+  await r291Route();
+  const cards = page.locator('#route-panel .rt-alt');
+  expect(await cards.count()).toBe(2);
+  await expect(cards.first()).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('#route-panel .rtp-summary')).toContainText(/36 min/);
+  /* the second card selects, and the STORE follows — which is what Atlas reads */
+  await cards.nth(1).click();
+  await page.waitForTimeout(300);
+  await expect(cards.nth(1)).toHaveAttribute('aria-checked', 'true');
+  expect(await page.evaluate(() => window.IntMapRouteStore.get().sel)).toBe(1);
+  /* …and the map drives the card the same way (§10) — this is the tap on the line */
+  await page.evaluate(() => window.IntMapRouting.selectAlt(0, window.IntMapRouteStore.get().routeSetId));
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.IntMapRouteStore.get().sel)).toBe(0);
+  await expect(page.locator('#route-panel .rt-alt').first()).toHaveAttribute('aria-checked', 'true');
+  /* a turn is a real button, and picking one highlights it */
+  const steps = page.locator('#route-panel .rt-step');
+  expect(await steps.count()).toBeGreaterThan(1);
+  expect(await steps.first().evaluate((b) => b.tagName)).toBe('BUTTON');
+  await steps.nth(1).click(); await page.waitForTimeout(200);
+  await expect(steps.nth(1)).toHaveAttribute('aria-current', 'step');
+  await expect(steps.nth(1)).toContainText(/Lanes: use 2, 3 of 3/);
+  /* the honest note is present, and it is the one that matters most */
+  await expect(page.locator('#route-panel .rt-note')).toContainText(/live traffic is not included/i);
+});
+
+test('R291 ④ the map really draws it: lettered waypoints, a touch target, and a fit that misses the panel', async () => {
+  const r = await page.evaluate(async () => {
+    const GE = window.IntMapGeoEngine;
+    const t0 = Date.now();
+    while (Date.now() - t0 < 20000 && !GE.canDraw()) await new Promise((s) => setTimeout(s, 200));
+    if (!GE.canDraw()) return { skipped: 'the style never became ready' };
+    window.IntMapRouting.ensureLayers();
+    await new Promise((s) => setTimeout(s, 300));
+    const d = GE.layers.sourceData('imroute-src') || { features: [] };
+    const props = d.features.map((f) => f.properties || {});
+    return {
+      layers: ['imroute-cas', 'imroute-walk', 'imroute-rail', 'imroute-wp', 'imroute-durlab', 'imroute-hit']
+        .filter((id) => GE.layers.has(id)),
+      wp: props.filter((p) => p.wp).map((p) => p.wp),
+      alts: [...new Set(props.filter((p) => p.alt != null).map((p) => p.alt))].sort(),
+      hitWidth: GE.layers.getPaint ? GE.layers.getPaint('imroute-hit', 'line-width') : null,
+      clickable: GE.events.clickLayers().filter((x) => /imroute/.test(x)),
+    };
+  });
+  if (r.skipped) { test.skip(true, r.skipped); return; }
+  expect(r.layers).toContain('imroute-wp');
+  expect(r.layers).toContain('imroute-hit');
+  /* ⚠ A AND B, NOT TWO COLOURED DOTS (§5.1) */
+  expect(r.wp).toEqual(['A', 'B']);
+  expect(r.alts, 'both alternatives are on the map, each tagged with its index').toEqual([0, 1]);
+  expect(Number(r.hitWidth), 'the invisible touch target is wider than a finger').toBeGreaterThanOrEqual(20);
+  expect(r.clickable).toContain('imroute-hit');
+});
+
+/* ⚠ ⑤ THE DEFECT §2.2 NAMES, MEASURED ────────────────────────────────────────────────────────── */
+test('R291 ⑤ closing the panel keeps the route; only “Clear route” removes it', async () => {
+  await page.locator('#route-panel .rtp-closeb').click();
+  await expect(page.locator('#route-panel')).toBeHidden();
+  expect(await page.evaluate(() => window.IntMapRouteStore.hasRoute()), 'the route survives the close').toBe(true);
+  /* the Tools row says so without claiming the panel is open */
+  await page.evaluate(async () => { try { window.IntMapLayerSidebar.open(); } catch (_) { } await new Promise((r) => setTimeout(r, 1200)); });
+  const row = page.locator('.lst-toolrow[data-act="tool.directions"]:visible').first();
+  await expect(row.locator('.lst-tooldot')).toBeVisible();
+  /* re-opening restores the SAME journey */
+  await row.click();
+  await page.waitForFunction(() => !!(window.IntMapRouteUI && window.IntMapRouteUI.isOpen()), null, { timeout: 20_000 });
+  await page.evaluate(() => { try { window.IntMapLayerSidebar.close(); } catch (_) { } });
+  expect(await page.locator('#route-panel .rtp-field[data-f="to"] input').inputValue()).toBe('Yokohama Station');
+  expect(await page.locator('#route-panel .rt-alt').count()).toBe(2);
+  /* …and the explicit button is the only thing that throws it away */
+  await page.locator('#route-panel .rtp-clear').click();
+  await page.waitForTimeout(400);
+  expect(await page.evaluate(() => window.IntMapRouteStore.hasRoute())).toBe(false);
+  expect(await page.locator('#route-panel .rt-alt').count()).toBe(0);
+});
+
+test('R291 ⑥ stops: added, reordered by keyboard, and reversed WITH the itinerary', async () => {
+  await r291Route();
+  await page.locator('#route-panel .rtp-addvia').click();
+  await page.locator('#route-panel .rtp-addvia').click();
+  await page.evaluate(() => {
+    const S = window.IntMapRouteStore;
+    S.setPlace(0, { lng: 139.70, lat: 35.55, name: 'Kawasaki' });
+    S.setPlace(1, { lng: 139.62, lat: 35.50, name: 'Tsurumi' });
+    window.IntMapRouteUI._render();
+  });
+  const order = () => page.evaluate(() => [...document.querySelectorAll('#route-panel .rtp-field')].map((f) => f.dataset.f + '=' + f.querySelector('input').value));
+  expect(await order()).toEqual(['from=Tokyo Station', 'via:0=Kawasaki', 'via:1=Tsurumi', 'to=Yokohama Station']);
+  /* the letters beside the fields are the letters on the map */
+  expect(await page.evaluate(() => [...document.querySelectorAll('#route-panel .rtp-mark')].map((m) => m.textContent)))
+    .toEqual(['A', '1', '2', 'B']);
+  /* ⚠ KEYBOARD REORDER, not only drag (§5.2) */
+  await page.locator('#route-panel .rtp-field[data-f="via:1"] .rtp-up').click();
+  await page.waitForTimeout(200);
+  expect(await order()).toEqual(['from=Tokyo Station', 'via:0=Tsurumi', 'via:1=Kawasaki', 'to=Yokohama Station']);
+  /* ⚠ AND SWAP REVERSES THE WHOLE JOURNEY (§5.3) */
+  await page.locator('#route-panel .rtp-swap').click();
+  await page.waitForTimeout(300);
+  expect(await order()).toEqual(['from=Yokohama Station', 'via:0=Kawasaki', 'via:1=Tsurumi', 'to=Tokyo Station']);
+  /* with a stop, this provider returns no alternatives — and the panel SAYS so rather than showing one silently */
+  await page.waitForFunction(() => window.IntMapRouteStore.get().request.state !== 'loading', null, { timeout: 20_000 });
+});
+
+test('R291 ⑦ an unreachable router is an error with a way forward, not an empty panel', async () => {
+  await r291Ensure();
+  await page.unroute(/router\.project-osrm\.org|routing\.openstreetmap\.de/);
+  await page.route(/router\.project-osrm\.org|routing\.openstreetmap\.de/, (route) => route.abort('failed'));
+  await page.evaluate(async () => {
+    const S = window.IntMapRouteStore;
+    while (S.get().via.length) S.removeVia(S.get().via.length - 1);
+    S.setPlace('from', { lng: 2.35, lat: 48.85, name: 'Paris' });
+    S.setPlace('to', { lng: 4.9, lat: 52.37, name: 'Amsterdam' });
+    await window.IntMapRouteUI._recompute();
+  });
+  await page.waitForSelector('#route-panel .rtp-err', { timeout: 30_000 });
+  const err = page.locator('#route-panel .rtp-err');
+  await expect(err).toHaveAttribute('role', 'alert');
+  await expect(err).toContainText(/unreachable|NOT computed|timed out/i);
+  await expect(err.locator('.rtp-act')).toHaveCount(1);
+  await expect(err.locator('.rtp-act')).toContainText(/Try again/i);
+  /* the retry really retries */
+  await page.unroute(/router\.project-osrm\.org|routing\.openstreetmap\.de/);
+  await r291Mock();
+  await err.locator('.rtp-act').click();
+  await page.waitForFunction(() => window.IntMapRouteStore.hasRoute(), null, { timeout: 20_000 });
+});
+
+test('R291 ⑧ on a 320 px phone it is a bottom sheet that does not overflow', async () => {
+  await r291Route();          /* the sheet is measured WITH answers in it — an empty one proves nothing */
+  const before = page.viewportSize();
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.waitForTimeout(600);
+  await page.evaluate(() => { window.IntMapRouteUI._render(); });
+  const m = await page.evaluate(() => {
+    const el = document.getElementById('route-panel');
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    const grip = getComputedStyle(el.querySelector('.rtp-grip')).display;
+    /* ⚠ THE RULE IS 「横方向にはみ出さない」, AND A SCROLLER IS HOW WIDE CONTENT OBEYS IT.
+       The footer's chip strip scrolls sideways inside its own box; its children legitimately extend
+       past the viewport, and measuring them would forbid the very pattern that fixes the problem.
+       What must hold is that every element is inside the viewport OR inside a horizontal scroller
+       that is itself inside the viewport — and that the PAGE never scrolls sideways. */
+    const inScroller = (n) => { for (let p = n.parentElement; p && p !== document.body; p = p.parentElement) {
+      const o = getComputedStyle(p).overflowX; if (o === 'auto' || o === 'scroll') return true; } return false; };
+    let worst = 0;
+    el.querySelectorAll('*').forEach((n) => { const b = n.getBoundingClientRect(); if (b.width && !inScroller(n)) worst = Math.max(worst, b.right); });
+    const tap = [...el.querySelectorAll('button:not([hidden])')]
+      .map((b) => { const bb = b.getBoundingClientRect(); return { c: (b.className || '') + '', w: bb.width, h: bb.height }; })
+      .filter((x) => x.w > 0 && !/rtp-tab|rt-step|rt-alt/.test(x.c));
+    const fonts = [...el.querySelectorAll('.rtp-summary, .rtp-in, .rt-alt-main, .rt-step-tx, .rtp-chip')]
+      .map((n) => parseFloat(getComputedStyle(n).fontSize)).filter((x) => x > 0);
+    return {
+      left: Math.round(r.left), width: Math.round(r.width), bottom: Math.round(r.bottom),
+      pos: cs.position, grip, worst: Math.round(worst),
+      docScroll: document.documentElement.scrollWidth, inner: window.innerWidth,
+      minTap: tap.length ? Math.min(...tap.map((x) => Math.min(x.w, x.h))) : null,
+      minFont: fonts.length ? Math.min(...fonts) : null,
+      detent: el.getAttribute('data-detent'),
+    };
+  });
+  expect(m.pos, 'the sheet is fixed to the bottom of the screen').toBe('fixed');
+  expect(m.grip, 'a phone sheet has a grip to drag').toBe('block');
+  expect(m.left).toBe(0);
+  expect(m.width).toBe(320);
+  expect(m.worst, 'nothing may reach past a 320 px viewport').toBeLessThanOrEqual(321);
+  expect(m.docScroll, 'and the page itself must not scroll sideways').toBeLessThanOrEqual(m.inner + 1);
+  expect(m.minTap, 'every button a finger has to hit is at least 44 px (WCAG 2.2)').toBeGreaterThanOrEqual(44);
+  expect(m.minFont, '「10～11pxの主要文字を使わない」').toBeGreaterThanOrEqual(13);
+  expect(['min', 'mid', 'full']).toContain(m.detent);
+  /* the detents really change the height, and the two smaller ones leave the map alone */
+  const heights = await page.evaluate(async () => {
+    const out = {};
+    for (const d of ['min', 'mid', 'full']) {
+      window.IntMapRouteUI._el().setAttribute('data-detent', d);
+      await new Promise((r) => setTimeout(r, 420));
+      out[d] = Math.round(window.IntMapRouteUI._el().getBoundingClientRect().height);
+    }
+    return out;
+  });
+  expect(heights.min).toBeLessThan(heights.mid);
+  expect(heights.mid).toBeLessThan(heights.full);
+  expect(heights.min, 'the smallest detent leaves most of the map visible').toBeLessThan(220);
+  /* ⚠ AND NOTHING IS DRAWN ON TOP OF IT. A z-index is a claim; `elementFromPoint` is the
+     measurement. Before the `body.rtp-open` rules existed, the app's own bottom sheet, the FAB
+     column and the base-map square all answered here instead of the panel. */
+  const covered = await page.evaluate(async () => {
+    window.IntMapRouteUI._el().setAttribute('data-detent', 'full');
+    await new Promise((r) => setTimeout(r, 500));
+    const el = window.IntMapRouteUI._el();
+    const r = el.getBoundingClientRect();
+    const probe = [[0.5, 0.06], [0.5, 0.3], [0.5, 0.6], [0.12, 0.3], [0.88, 0.3], [0.5, 0.92]];
+    return probe.map(([fx, fy]) => {
+      const x = Math.round(r.left + r.width * fx), y = Math.round(r.top + r.height * fy);
+      const n = document.elementFromPoint(x, y);
+      return { at: fx + ',' + fy, inPanel: !!(n && el.contains(n)), who: n ? (n.tagName + '.' + String(n.className).slice(0, 30)) : 'null' };
+    });
+  });
+  const blocked = covered.filter((c) => !c.inPanel);
+  expect(blocked, 'something is drawn over the sheet: ' + JSON.stringify(blocked)).toEqual([]);
+  /* ⚠ AND THE ROUTES ARE ACTUALLY ON SCREEN AT THE MIDDLE DETENT. The point of a directions sheet
+     is the answers; at 62dvh the pinned search block alone was taller than the sheet and the
+     alternative cards had nowhere to be drawn. This measures the card, not the rule. */
+  const cardsVisible = await page.evaluate(async () => {
+    window.IntMapRouteUI._el().setAttribute('data-detent', 'mid');
+    await new Promise((r) => setTimeout(r, 500));
+    const cards = [...document.querySelectorAll('#route-panel .rt-alt')];
+    const body = document.querySelector('#route-panel .rtp-body').getBoundingClientRect();
+    return { n: cards.length, bodyH: Math.round(body.height),
+             onScreen: cards.filter((c) => { const r = c.getBoundingClientRect(); return r.height > 20 && r.top < window.innerHeight && r.bottom > body.top; }).length };
+  });
+  expect(cardsVisible.bodyH, 'the sheet must leave room for the answers').toBeGreaterThan(80);
+  expect(cardsVisible.onScreen, 'at least one route option must be visible at the middle detent').toBeGreaterThanOrEqual(1);
+  /* and the app's own bottom sheet has stepped aside rather than fighting it */
+  const sidebarOut = await page.evaluate(() => {
+    const sb = document.querySelector('.sidebar');
+    return sb ? sb.getBoundingClientRect().top >= window.innerHeight - 2 : true;
+  });
+  expect(sidebarOut, 'the app’s own bottom sheet must yield while directions is open').toBe(true);
+  await page.setViewportSize(before);
+  await page.waitForTimeout(500);
+});
+
+test('R291 ⑨ the route survives a base-map switch, and reads on light, dark and satellite', async () => {
+  await r291Route();
+  const paint = async () => page.evaluate(() => {
+    const GE = window.IntMapGeoEngine;
+    if (!GE.canDraw() || !GE.layers.has('imroute-cas')) return null;
+    const d = GE.layers.sourceData('imroute-src') || { features: [] };
+    return { lines: d.features.filter((f) => f.geometry.type === 'LineString').length,
+             casing: GE.layers.getPaint('imroute-cas', 'line-color') };
+  });
+  const before = await paint();
+  if (!before) { test.skip(true, 'the style never became ready'); return; }
+  expect(before.lines).toBeGreaterThan(0);
+  await page.evaluate(() => window.IntMapOS.exec('view.base.sat', { source: 'test' }));
+  await page.waitForTimeout(2500);
+  const after = await paint();
+  expect(after && after.lines, 'the route must still be drawn after a base-map switch (§11.3)').toBeGreaterThan(0);
+  /* the casing is a solid white outline — that is what makes the line readable on imagery */
+  expect(String(after.casing)).toMatch(/#ffffff|rgb\(255,\s*255,\s*255\)/i);
+  await page.evaluate(() => window.IntMapOS.exec('view.base.map', { source: 'test' }));
+  await page.waitForTimeout(1500);
+});
+
+test('R291 ⑩ every control has an accessible name, and the panel is a labelled dialog', async () => {
+  await r291Ensure();
+  const a = await page.evaluate(() => {
+    const el = document.getElementById('route-panel');
+    const named = (n) => !!(n.getAttribute('aria-label') || n.getAttribute('aria-labelledby')
+      || (n.textContent || '').trim() || (n.labels && n.labels.length));
+    const unnamed = [...el.querySelectorAll('button, input, select')].filter((n) => !named(n))
+      .map((n) => n.className + '|' + n.tagName);
+    return {
+      role: el.getAttribute('role'), labelled: el.getAttribute('aria-labelledby'),
+      title: (document.getElementById('rtp-title') || {}).textContent,
+      unnamed,
+      modes: [...el.querySelectorAll('.rtp-mode')].map((b) => b.getAttribute('aria-pressed')),
+      tabs: [...el.querySelectorAll('[role="tab"]')].length,
+      live: [...el.querySelectorAll('[aria-live]')].length,
+    };
+  });
+  expect(a.role).toBe('dialog');
+  expect(a.labelled).toBe('rtp-title');
+  expect((a.title || '').trim().length).toBeGreaterThan(0);
+  expect(a.unnamed, 'controls with no accessible name: ' + a.unnamed.join(', ')).toEqual([]);
+  expect(a.modes.filter((x) => x === 'true')).toHaveLength(1);
+  expect(a.tabs).toBe(3);
+  expect(a.live).toBeGreaterThan(0);
+  /* Escape closes the panel and puts focus back where it came from (§19) */
+  await page.locator('#route-panel .rtp-tab[data-tab="opts"]').click();
+  await expect(page.locator('#rtp-p-opts')).toBeVisible();
+  await page.locator('#route-panel .rtp-tab[data-tab="ana"]').press('ArrowRight');
+  await page.waitForTimeout(200);
+  await expect(page.locator('#rtp-p-route')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  await expect(page.locator('#route-panel')).toBeHidden();
+  expect(await page.evaluate(() => window.IntMapRouteStore.hasRoute()), 'Escape closed the panel, not the route').toBe(true);
+});

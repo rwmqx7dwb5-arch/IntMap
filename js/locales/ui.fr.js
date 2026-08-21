@@ -4311,4 +4311,106 @@ window.IntMapLang.define('fr', { ui: {
   "monthly mean": "moyenne mensuelle",   /* (#R288) */
   "Open the time machine": "Ouvrir la machine à remonter le temps",   /* (#R288) */
   "Nothing in force is drawn per administrative unit in {u} countries ({n} units), and country-wide in {c}.": "L’absence d’alerte est dessinée par unité administrative dans {u} pays ({n} unités) et à l’échelle du pays dans {c}.",   /* (#R288) */
+  ' km from the nearest routable road.': ' km de la route carrossable la plus proche.',   /* (#R291) */
+  ' of the points returned no forecast (the shared weather client is rate-limited); the others are real.': ' des points n’ont renvoyé aucune prévision (le client météo partagé est limité en débit) ; les autres sont réels.',   /* (#R291) */
+  '“Avoid highways” is a strong preference on this provider, not a prohibition.': '« Éviter les autoroutes » est une forte préférence chez ce fournisseur, pas une interdiction.',   /* (#R291) */
+  '“Near the route” means within 250 km for earthquakes and 60 km for geolocated news, measured to the nearest sample point.': '« Près de l’itinéraire » signifie 250 km pour les séismes et 60 km pour les actualités géolocalisées, mesurés au point d’échantillonnage le plus proche.',   /* (#R291) */
+  '(next day)': '(le lendemain)',   /* (#R291) */
+  'active': 'actif',   /* (#R291) */
+  'Alternatives are not available with stops on this provider — showing one route.': 'Les itinéraires alternatifs ne sont pas disponibles avec des étapes chez ce fournisseur — un seul itinéraire est affiché.',   /* (#R291) */
+  'Area ': 'Zone ',   /* (#R291) */
+  'arrive': 'arrivée',   /* (#R291) */
+  'At least one service has to stay selected — a transit route with nothing to ride is not a route.': 'Au moins un mode doit rester sélectionné — un itinéraire en transports sans rien à emprunter n’est pas un itinéraire.',   /* (#R291) */
+  'At least one service has to stay selected.': 'Au moins un mode doit rester sélectionné.',   /* (#R291) */
+  'Avoid': 'Éviter',   /* (#R291) */
+  'Choose a destination': 'Choisir une destination',   /* (#R291) */
+  'Choose a start': 'Choisir un point de départ',   /* (#R291) */
+  'Choose a start and a destination.': 'Choisissez un départ et une destination.',   /* (#R291) */
+  'City': 'Ville',   /* (#R291) */
+  'Clear this field': 'Effacer ce champ',   /* (#R291) */
+  'Click the map to set this point. Esc cancels.': 'Cliquez sur la carte pour définir ce point. Échap annule.',   /* (#R291) */
+  'Click two corners… (Esc cancels)': 'Cliquez deux coins… (Échap annule)',   /* (#R291) */
+  'Click two opposite corners on the map to draw a box the route may not enter.': 'Cliquez deux coins opposés sur la carte pour tracer une zone que l’itinéraire ne peut pas traverser.',   /* (#R291) */
+  'Close the directions panel (the route stays on the map)': 'Fermer le panneau d’itinéraire (la route reste sur la carte)',   /* (#R291) */
+  'Compute a route first — these describe a route that exists.': 'Calculez d’abord un itinéraire — ces analyses portent sur un itinéraire existant.',   /* (#R291) */
+  'Date and time': 'Date et heure',   /* (#R291) */
+  'Departure or arrival': 'Départ ou arrivée',   /* (#R291) */
+  'Directions sections': 'Sections de l’itinéraire',   /* (#R291) */
+  'Enter a start and a destination to see routes.': 'Saisissez un départ et une destination pour voir les itinéraires.',   /* (#R291) */
+  'estimate': 'estimation',   /* (#R291) */
+  'Finding routes…': 'Recherche d’itinéraires…',   /* (#R291) */
+  'Getting a location took too long — try again, or pick a point on the map.': 'La localisation a pris trop de temps — réessayez ou choisissez un point sur la carte.',   /* (#R291) */
+  'High-speed rail': 'Train à grande vitesse',   /* (#R291) */
+  'Highlight this area': 'Mettre cette zone en évidence',   /* (#R291) */
+  'Historical network': 'Réseau historique',   /* (#R291) */
+  'Includes real-time departures and delays where the operator publishes them.': 'Inclut les départs et retards en temps réel là où l’exploitant les publie.',   /* (#R291) */
+  'Intercity Japan: real Shinkansen lines and stations, with times estimated from the operators’ published timetables — not live departures. The alignment between stations is schematic.': 'Interurbain au Japon : lignes et gares Shinkansen réelles, horaires estimés d’après les grilles publiées par les exploitants — pas de départs en direct. Le tracé entre les gares est schématique.',   /* (#R291) */
+  'Keep out of an area': 'Zone à ne pas traverser',   /* (#R291) */
+  'Lanes: use ': 'Voies : prendre ',   /* (#R291) */
+  'live traffic': 'trafic en temps réel',   /* (#R291) */
+  'Local service': 'Desserte locale',   /* (#R291) */
+  'Location permission was refused — type a place or pick one on the map instead.': 'L’autorisation de localisation a été refusée — saisissez un lieu ou choisissez-en un sur la carte.',   /* (#R291) */
+  'min early': 'min d’avance',   /* (#R291) */
+  'Minimise': 'Réduire',   /* (#R291) */
+  'Most I will walk': 'Marche maximale',   /* (#R291) */
+  'Move this stop earlier': 'Déplacer cette étape vers le haut',   /* (#R291) */
+  'Move this stop later': 'Déplacer cette étape vers le bas',   /* (#R291) */
+  'Network kind': 'Type de réseau',   /* (#R291) */
+  'No areas drawn.': 'Aucune zone tracée.',   /* (#R291) */
+  'No limit': 'Sans limite',   /* (#R291) */
+  'No place matches that.': 'Aucun lieu ne correspond.',   /* (#R291) */
+  'No provider IntMap can use publishes ': 'Aucun fournisseur utilisable par IntMap ne publie ',   /* (#R291) */
+  'No public-transit route here — this area may have no open timetable data.': 'Aucun itinéraire en transports en commun ici — cette zone n’a peut-être pas de données horaires ouvertes.',   /* (#R291) */
+  'Not available': 'Non disponible',   /* (#R291) */
+  'One point is about ': 'Un point se trouve à environ ',   /* (#R291) */
+  'OpenStreetMap’s own record of when lines existed — not a historical atlas. Its date coverage is uneven, and the answer says how much of the route ran on dated line.': 'Le relevé d’OpenStreetMap sur l’existence des lignes — pas un atlas historique. Sa couverture de dates est inégale, et la réponse indique quelle part de l’itinéraire emprunte une ligne datée.',   /* (#R291) */
+  'Options': 'Options',   /* (#R291) */
+  'Partly real-time': 'Partiellement en temps réel',   /* (#R291) */
+  'Pick a point on the map': 'Choisir un point sur la carte',   /* (#R291) */
+  'Pick this point on the map': 'Choisir ce point sur la carte',   /* (#R291) */
+  'Plan routes by car, transit, walking or cycling': 'Planifier un itinéraire en voiture, transports, à pied ou à vélo',   /* (#R291) */
+  'Point on the map': 'Point sur la carte',   /* (#R291) */
+  'Real-time': 'Temps réel',   /* (#R291) */
+  'Recent': 'Récents',   /* (#R291) */
+  'Remove this area': 'Supprimer cette zone',   /* (#R291) */
+  'Remove this stop': 'Supprimer cette étape',   /* (#R291) */
+  'Resize the panel': 'Redimensionner le panneau',   /* (#R291) */
+  'Reverse': 'Inverser',   /* (#R291) */
+  'road incidents and closures': 'incidents et fermetures de route',   /* (#R291) */
+  'Route options': 'Itinéraires proposés',   /* (#R291) */
+  'Routed by ': 'Itinéraire calculé par ',   /* (#R291) */
+  'Search is unavailable right now.': 'La recherche est indisponible pour le moment.',   /* (#R291) */
+  'Searching…': 'Recherche…',   /* (#R291) */
+  'Share': 'Partager',   /* (#R291) */
+  'Some ride segments have no usable shape — those legs are listed but not drawn (no straight-line substitutes).': 'Certains tronçons parcourus n’ont pas de tracé exploitable — ils sont listés mais non dessinés (aucun substitut en ligne droite).',   /* (#R291) */
+  'Station': 'Gare',   /* (#R291) */
+  'That box is too small to keep a route out of — draw a larger one.': 'Cette zone est trop petite pour écarter un itinéraire — tracez-en une plus grande.',   /* (#R291) */
+  'That request could not be understood by the routing service.': 'Le service d’itinéraire n’a pas pu interpréter cette requête.',   /* (#R291) */
+  'The analyses did not load.': 'Les analyses ne se sont pas chargées.',   /* (#R291) */
+  'The avoid options could NOT be applied (the provider was unreachable) — this is the ordinary route.': 'Les options d’évitement N’ONT PAS pu être appliquées (fournisseur injoignable) — voici l’itinéraire ordinaire.',   /* (#R291) */
+  'The keep-out area could NOT be applied (the provider was unreachable) — this route may pass through it.': 'La zone à éviter N’A PAS pu être appliquée (fournisseur injoignable) — cet itinéraire peut la traverser.',   /* (#R291) */
+  'The link includes the places in this route: ': 'Le lien contient les lieux de cet itinéraire : ',   /* (#R291) */
+  'The location fix is only accurate to about ': 'La position n’est précise qu’à environ ',   /* (#R291) */
+  'The location is unavailable right now.': 'La position est indisponible pour le moment.',   /* (#R291) */
+  'The place search could not be reached — check the connection and try again.': 'La recherche de lieux est injoignable — vérifiez la connexion et réessayez.',   /* (#R291) */
+  'The routing service is unreachable (outage or no network) — the route was NOT computed.': 'Le service d’itinéraire est injoignable (panne ou absence de réseau) — l’itinéraire N’A PAS été calculé.',   /* (#R291) */
+  'The routing service timed out.': 'Le service d’itinéraire a expiré.',   /* (#R291) */
+  'The time you set shifts the arrival calculation only; the road provider has no traffic forecast to give it to.': 'L’heure choisie ne décale que le calcul d’arrivée ; le fournisseur routier n’a aucune prévision de trafic à qui la transmettre.',   /* (#R291) */
+  'There is no road connection between these points.': 'Il n’existe aucune liaison routière entre ces points.',   /* (#R291) */
+  'This browser cannot provide a location.': 'Ce navigateur ne peut pas fournir de position.',   /* (#R291) */
+  'This device is offline.': 'Cet appareil est hors ligne.',   /* (#R291) */
+  'This provider accepts at most ': 'Ce fournisseur accepte au maximum ',   /* (#R291) */
+  'Timetable': 'Horaire',   /* (#R291) */
+  'Timetable-based — no real-time data is published for this trip.': 'Basé sur l’horaire — aucune donnée en temps réel n’est publiée pour ce trajet.',   /* (#R291) */
+  'Too many requests to the routing service — wait a moment.': 'Trop de requêtes vers le service d’itinéraire — patientez un instant.',   /* (#R291) */
+  'transfers': 'corresp.',   /* (#R291) */
+  'Travel mode': 'Mode de transport',   /* (#R291) */
+  'Try driving': 'Essayer en voiture',   /* (#R291) */
+  'Try transit': 'Essayer les transports',   /* (#R291) */
+  'Try walking': 'Essayer à pied',   /* (#R291) */
+  'Typical travel time — live traffic is not included.': 'Temps de trajet habituel — le trafic en temps réel n’est pas pris en compte.',   /* (#R291) */
+  'Use these services': 'Utiliser ces modes',   /* (#R291) */
+  'Where routes differ': 'Où les itinéraires diffèrent',   /* (#R291) */
+  'Working back from the arrival deadline.': 'Calcul à rebours depuis l’heure d’arrivée souhaitée.',   /* (#R291) */
+  'Your avoid options are honoured by a provider that returns one route, so there are no alternatives to compare.': 'Vos options d’évitement sont assurées par un fournisseur qui ne renvoie qu’un itinéraire : il n’y a donc rien à comparer.',   /* (#R291) */
 } });

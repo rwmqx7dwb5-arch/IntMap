@@ -230,7 +230,13 @@ volume3d.js                       Measure ▸ 3-D 体積——実スケールの
 river-course.js                   どの区間が同じ川か window.IntMapRiverCourse
 drone-nav.js                      ドローン航法——地形を見た飛行計画
 drone-ops.js                      ドローンの運航条件 window.IntMapDroneOps
-routing.js                        車／徒歩／自転車／公共交通の経路 IntMapRouting
+routing.js                        車／徒歩／自転車／公共交通の経路計算と地図描画 IntMapRouting
+routing-store.js                  経路の唯一の状態 window.IntMapRouteStore（Atlas とパネルが共有）
+routing-providers.js              各ルーターが実際にできること window.IntMapRouteProviders
+routing-geocode.js                地点の候補検索・順位付け window.IntMapRouteGeocode
+routing-cards.js                  経路候補カード／手順／区間の共通描画 window.IntMapRouteCards
+routing-export.js                 GPX・GeoJSON・共有状態 window.IntMapRouteExport
+routing-ui.js                     経路パネル（Layers ▸ Tools ▸ Directions・遅延取得）window.IntMapRouteUI
 routing-ops.js                    経路の分析 window.IntMapRoutingOps
 ```
 
