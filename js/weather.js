@@ -290,23 +290,97 @@ window.IntMapModules.wind=function(HOST){
        one — `bandCovers` is what asks for it and `keepFrame` is what swaps it in. */
     function nearBand(){ try{ const b=GE().camera.getBounds();
       return EC().bandNear(b.getSouth(),b.getNorth()); }catch(_){ return null; } }
-    let widening=false;
-    function widen(){
-      if(widening||!on) return;
-      const want=band();
-      try{ if(EC().bandCovers(EC().heldBand(VAR),want)) return; }catch(_){ return; }
+    /* ══ ⚠⚠⚠ (#R299) THE WIDE READ IS A STAIRCASE, AND EVERY RUNG OF IT IS INTERRUPTIBLE ═════════
+       「風レイヤーが重すぎる。品質保ったまま、起動から日時変更からすべてに至るまで爆速にしろ。」
+       #R297 made the FIRST read the band around the view and put the band the view actually covers
+       behind it. What it did not do is ask what that second band IS at the view the app opens on:
+       `bandFor` answers `null` — the planet — for anything spanning more than 120° of latitude, and
+       the opening view (z1.7) is the planet. So `widen()` asked for **13,199,360 samples (≈18 MB)**
+       at boot AND AGAIN ON EVERY TIME CHANGE, because `heldBand(VAR)` is keyed on the hour and a
+       new hour has no frame at all. A reader stepping the axis once a second was starting an 18 MB
+       read once a second, down the one queue the colour tiles are decoded in (see `serial()` in
+       js/wx-ecmwf.js) — which is why the colour 「なかなか表示されない」 is worst at world zoom.
+       → the widening is a STAIRCASE. Each rung roughly DOUBLES the half-width of the band in hand,
+       and a rung only starts once the map has been STILL and the axis has not moved for STILL_MS.
+       ⚠ THE WIDE READ IS NOT SKIPPED. #R297's rule is unchanged and this is its ORDER, not its
+       content: the last rung is `band()` itself, so a reader who stays where they are ends up with
+       exactly the frame they would have had before — same file, same 9 km spacing, same samples,
+       same colours. What a reader who is still scrubbing, or still panning, no longer pays for is
+       eighteen megabytes of a picture they are about to replace.
+       ⚠ `wideGen` is `seq` (js/wx-ecmwf.js) one level up: a rung scheduled for the hour that is
+       going away does not start. `widening` is deliberately NOT cleared when the axis moves — the
+       rung already in the queue finishes, and its own completion re-arms the staircase for whatever
+       the current hour is by then, so two rungs can never be in flight at once. */
+    const STILL_MS=900;
+    let widening=false, widenT=0, wideGen=0, stillAt=0;
+    function stir(axis){ stillAt=Date.now(); if(axis){ wideGen++; clearTimeout(widenT); widenT=0; } }
+    /* ⚠ ONE RUNG: twice the half-width of what is in hand, centred on what still has to be covered,
+       never NARROWER than what is in hand (a rung that dropped part of the frame would take the
+       particles off the part of the screen it dropped — `heldBand` is what `randomLL` spawns
+       inside), and `full` itself — which at world zoom IS the globe — as soon as the rung would
+       span it, OR would cost most of it anyway.
+       ⚠ THE COST OF A BAND IS NOT ITS WIDTH. The ECMWF domain is a REDUCED Gaussian grid: a row
+       holds points in proportion to cos φ, so the points inside a band are proportional to
+       sin n − sin s, and most of the planet's 6,599,680 of them are near the equator. A rung twice
+       as wide as the opening band (±30° → ±60°) already holds **87%** of them — so reading that
+       rung AND then the globe moves MORE bytes than reading the globe once, which is the opposite
+       of what this is for. Past RUNG_MAX of the target's cost the target IS the next rung, which is
+       why at world zoom the staircase is 「the band on screen, then the planet」 — exactly #R297's
+       two reads, with the second one held back until the reader has stopped asking for something
+       else. */
+    const RUNG_MAX=0.6;
+    const gpts=(s,n)=>Math.sin(n*R)-Math.sin(s*R);     /* ∝ the grid points between two latitudes */
+    function wideStep(have,full){
+      if(have===null) return full;                       /* the globe is in hand — nothing wider exists */
+      /* nothing in hand at all: the rung is the narrow band the first read would have taken */
+      if(!have||have.length!==4){ const nb=nearBand(); return nb||full; }
+      const fs=full?full[1]:-90, fn=full?full[3]:90;
+      const c=(Math.min(have[1],fs)+Math.max(have[3],fn))/2, half=Math.max(3,(have[3]-have[1])/2)*2;
+      /* outward, so rounding can never shave a rung back inside the frame it is growing from */
+      const s=Math.floor(Math.max(-90,Math.min(c-half,have[1]))*10)/10;
+      const n=Math.ceil(Math.min(90,Math.max(c+half,have[3]))*10)/10;
+      if(s<=fs+1e-6&&n>=fn-1e-6) return full;
+      if(gpts(s,n)>=gpts(fs,fn)*RUNG_MAX) return full;
+      return [-180,s,180,n];
+    }
+    /* did the rung actually enlarge what is in hand? the staircase re-arms on GROWTH, or a read
+       that cannot land would be asked for again every STILL_MS for ever. */
+    function wider(a,b){
+      if(b===null) return a!==null;
+      if(!b||b.length!==4) return false;
+      if(!a||a.length!==4) return a!==null;
+      return b[1]<a[1]-1e-6||b[3]>a[3]+1e-6;
+    }
+    function runWiden(gen){
+      if(!on||gen!==wideGen) return;
+      /* 「still」 means the last moveend AND the last time request are both STILL_MS behind us */
+      const rest=moving?STILL_MS:(STILL_MS-(Date.now()-stillAt));
+      if(rest>0){ clearTimeout(widenT); widenT=setTimeout(()=>{ widenT=0; runWiden(gen); },rest); return; }
+      const full=band();
+      let have=false; try{ have=EC().heldBand(VAR); }catch(_){ return; }
+      try{ if(EC().bandCovers(have,full)) return; }catch(_){ return; }
+      const want=wideStep(have,full);
       widening=true;
       /* (#R298) …and BEHIND the colour, not in front of it — see the note on `afterFieldShown`.
          The wide read is still started immediately in the sense that matters (nothing else can
          claim the reader in the meantime); it just does not take the one reader away from the
          tiles the reader is waiting to see. */
       afterFieldShown(()=>{
-        if(!on){ widening=false; return; }
+        if(!on||gen!==wideGen){ widening=false; if(on) widen(); return; }
         EC().load(VAR,null,want).then(f=>{ widening=false;
-          if(!on||!f||!renderer) return;
-          const sf=EC().sampler(VAR); if(sf){ _lastField=sf; _lastFieldAt=EC().validTime(); renderer.setField(sf); }
+          if(on&&f&&renderer){ const sf=EC().sampler(VAR); if(sf){ _lastField=sf; _lastFieldAt=EC().validTime(); renderer.setField(sf); } }
+          /* (#R299) …and the next rung, which `widen` holds back until the map is still again */
+          let now=false; try{ now=EC().heldBand(VAR); }catch(_){}
+          if(on&&wider(have,now)) widen();
         }).catch(()=>{ widening=false; });
       });
+    }
+    function widen(){
+      if(widening||!on) return;
+      const want=band();
+      try{ if(EC().bandCovers(EC().heldBand(VAR),want)) return; }catch(_){ return; }
+      clearTimeout(widenT); widenT=0;
+      runWiden(wideGen);
     }
     /* ══ ⚠⚠⚠ (#R298) ONE FAILED READ IS NOT 「データを取得できませんでした」 ═══════════════════════
        「「風データを取得できませんでした。」←ふざけるな。」 `EC().load` answers falsy for several
@@ -437,6 +511,9 @@ window.IntMapModules.wind=function(HOST){
       on=true; cv.style.display='block';
       ensureRenderer();
       setOpacity(opacity);
+      /* (#R299) switching the layer on starts the quiet window the widening staircase waits for,
+         and retires any rung left owed by a previous session of this layer */
+      stir(true);
       load();
       cancelAnimationFrame(raf); raf=requestAnimationFrame(step);
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
@@ -447,6 +524,8 @@ window.IntMapModules.wind=function(HOST){
          deferred wide read is dropped with the waiters below, so its flag has to come down with it
          or the next `start()` would find `widening` true for ever and never read the full band */
       clearTimeout(retryT); retryT=0; failN=0; loading=false; widening=false;
+      /* (#R299) …and no rung of the widening staircase is still scheduled or still owed */
+      clearTimeout(widenT); widenT=0; wideGen++;
       removeField();
       if(renderer){ renderer.clearTrails(); }
       cv.style.display='none';
@@ -472,6 +551,11 @@ window.IntMapModules.wind=function(HOST){
     }catch(_){} }
     /* (#R290) the layer name is 「風」 — see the note in js/data-layers.js where the row is built */
     try{ (window.IntMapECMWF||{on:()=>{}}).on(ev=>{
+      /* (#R299) `index` is the EARLIEST word that a new hour is being asked for — it fires under
+         the finger, `time` only once the axis has settled, and `meta` when a new model run re-bases
+         the axis under both. All three restart the widening staircase, so a rung aimed at the hour
+         the reader is leaving never starts — see the note on `widen`. */
+      if(ev.type==='index'||ev.type==='time'||ev.type==='meta') stir(true);
       if(ev.type==='index'){ touchWindTime(); return; }
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
       if(!on) return;
@@ -482,8 +566,9 @@ window.IntMapModules.wind=function(HOST){
 
     window.addEventListener('resize',()=>{ if(on) resize(); });
     if(GE().hasRenderer()){
-      GE().events.on('movestart',()=>{ moving=true; });
-      GE().events.on('moveend',()=>{ moving=false; if(on){ resize();
+      /* (#R299) a map that is moving is not 「still」, and the staircase waits for still — see widen */
+      GE().events.on('movestart',()=>{ moving=true; stir(false); });
+      GE().events.on('moveend',()=>{ moving=false; stir(false); if(on){ resize();
         /* the view left the band that was read — the particles would sample NaN there, so read the
            new one. `bandCovers` is what stops this firing on every small pan. */
         try{ if(!EC().bandCovers(EC().heldBand(VAR),band())) load(); }catch(_){}

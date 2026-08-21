@@ -1030,11 +1030,31 @@ window.IntMapModules.isochrone=function(HOST){
       panel.querySelector('.iso-x').onclick=()=>clear();
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.iso-head')); }catch(_){}
       return panel; }
+    /* ══ ⚠⚠ (#R299) THE PANEL HAD NO WAY TO NAME ITS OWN POINT ═══════════════════════════════════════
+       「まずは地点を選ばせろってこと。」 The tools row now asks for the origin before this opens
+       (js/map-ui.js `_askPoint`) — and once open there was nothing here that could change it. Every
+       sibling tool that answers for a coordinate carries that control (js/sims.js `.rad-pick` and
+       `.sun-point`, js/viewshed.js `#los-move`); this one had four transports, six times and no
+       「where」 at all, so a reader who wanted a different origin had to close the panel and reopen it
+       from somewhere else. The gesture is #R196's shared bar, which ghosts this panel while the map
+       is live (js/map-pick.js) so the contours and the legend stay readable under it.
+       ⚠ SAME WORDING AS THE SIBLINGS, not a new one: 「地図で…を設定」 before there is a point,
+       「地点を変える…」 after — the two-state label `.rad-pick` and `#los-move` already use. */
+    function pickSite(){ const P=window.IntMapPick; if(!P||!P.start) return false;
+      return !!P.start({ panel:ensurePanel(),
+        hint:LL('Reachable area','到達圏','Erreichbarkeit','Зона доступности','Área alcanzable')+' — '
+          +LL('Tap the map to choose a point','地図をタップして地点を選んでください','Zum Wählen eines Punktes auf die Karte tippen','Нажмите на карту, чтобы выбрать точку','Toca el mapa para elegir un punto'),
+        onPick:(ll)=>{ run({lng:+ll.lng,lat:+ll.lat},{mode,minutes:mins}); } }); }
     function renderPanel(state){ const p=ensurePanel(); const body=p.querySelector('.iso-body'); if(!body) return;
       const modes=[['auto','🚗',LL('Drive','車','Auto','Авто','Coche')],['pedestrian','🚶',LL('Walk','徒歩','Zu Fuß','Пешком','A pie')],['bicycle','🚲',LL('Cycle','自転車','Rad','Вело','Bici')],
         ['transit','🚆',LL('Transit','公共交通','ÖPNV','Транспорт','Transporte')]];
       const presets=[10,15,20,30,45,60]; const bs='height:30px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-muted);border-radius:8px;cursor:pointer;font-size:12px;';
-      body.innerHTML='<div style="display:flex;gap:5px;">'+modes.map(m=>'<button class="iso-mode" data-m="'+m[0]+'" style="flex:1;'+bs+(m[0]===mode?'background:var(--primary-color);color:#fff;border-color:var(--primary-color);':'')+'">'+m[1]+' '+m[2]+'</button>').join('')+'</div>'
+      body.innerHTML='<button class="iso-pick" style="width:100%;'+bs+(center?'':'background:var(--primary-color);color:#fff;border-color:var(--primary-color);')+'">'
+          +(center?('📍 '+LL('Move the site…','地点を変える…','Standort verschieben…','Перенести точку…','Mover el punto…'))
+                  :('◎ '+LL('Place the point on the map','地図で地点を設定','Punkt auf der Karte setzen','Задать точку на карте','Colocar el punto en el mapa')))+'</button>'
+        +'<div style="font-size:11px;color:var(--text-muted);">'+(center?(center.lat.toFixed(3)+', '+center.lng.toFixed(3))
+          :LL('No point placed yet','地点が未設定です','Kein Punkt gesetzt','Точка не задана','Sin punto colocado'))+'</div>'
+        +'<div style="display:flex;gap:5px;">'+modes.map(m=>'<button class="iso-mode" data-m="'+m[0]+'" style="flex:1;'+bs+(m[0]===mode?'background:var(--primary-color);color:#fff;border-color:var(--primary-color);':'')+'">'+m[1]+' '+m[2]+'</button>').join('')+'</div>'
         +'<div style="font-size:11px;color:var(--text-muted);">'+(mode==='transit'
             ? LL('Time — the rail model solves one budget, so the largest is used','時間 — 鉄道モデルは1つの持ち時間を解くため、最大値を使います','Zeit — das Bahnmodell löst ein Budget, also gilt der größte Wert','Время — ж/д модель решает один бюджет: берётся максимум','Tiempo — el modelo ferroviario resuelve un solo presupuesto: se usa el mayor')
             : LL('Time — tap to add/remove (max 3)','時間 — タップで追加/削除（最大3）','Zeit — antippen (max. 3)','Время — нажмите (макс. 3)','Tiempo — toca (máx. 3)'))+'</div>'
@@ -1043,8 +1063,11 @@ window.IntMapModules.isochrone=function(HOST){
         +'<div style="font-size:10px;color:var(--text-muted);line-height:1.4;">'+(mode==='transit'
             ? LL('Rides the real rail network (OpenStreetMap), at typical speeds per line class — not a published timetable. Walk to the nearest station is included.','実在の鉄道網（OpenStreetMap）を路線種別の標準速度で辿った範囲です（公表時刻表ではありません）。最寄駅までの徒歩を含みます。','Über das echte Schienennetz (OSM), mit typischen Geschwindigkeiten je Linienklasse — kein Fahrplan. Fußweg zum nächsten Bahnhof inklusive.','По реальной ж/д сети (OSM), по типовым скоростям — не расписание. Включён пеший подход к станции.','Por la red ferroviaria real (OSM), a velocidades típicas por clase de línea — no un horario publicado. Incluye el paseo hasta la estación.')
             : LL('Follows the real road network (Valhalla / OpenStreetMap) — not a distance circle.','実際の道路網に沿った範囲（Valhalla／OpenStreetMap）— 距離の円ではありません。','Entlang des echten Straßennetzes (Valhalla/OSM) — kein Distanzkreis.','По реальной дорожной сети (Valhalla/OSM) — не круг расстояния.','Sigue la red vial real (Valhalla/OSM) — no un círculo.'))+'</div>';
-      body.querySelectorAll('.iso-mode').forEach(b=>b.onclick=()=>{ mode=b.getAttribute('data-m'); run(center,{mode,minutes:mins}); });
-      body.querySelectorAll('.iso-min').forEach(b=>b.onclick=()=>{ const v=+b.getAttribute('data-v'); const i=mins.indexOf(v); if(i>=0){ if(mins.length>1) mins.splice(i,1); } else { if(mins.length>=3) mins.shift(); mins.push(v); } run(center,{mode,minutes:mins}); }); }
+      { const pk=body.querySelector('.iso-pick'); if(pk) pk.onclick=()=>pickSite(); }
+      /* ⚠ (#R299) with no point `run()` returns early, so a press here would change the state and
+         repaint NOTHING — the transport and the times are choosable before the origin exists. */
+      body.querySelectorAll('.iso-mode').forEach(b=>b.onclick=()=>{ mode=b.getAttribute('data-m'); if(center) run(center,{mode,minutes:mins}); else renderPanel(); });
+      body.querySelectorAll('.iso-min').forEach(b=>b.onclick=()=>{ const v=+b.getAttribute('data-v'); const i=mins.indexOf(v); if(i>=0){ if(mins.length>1) mins.splice(i,1); } else { if(mins.length>=3) mins.shift(); mins.push(v); } if(center) run(center,{mode,minutes:mins}); else renderPanel(); }); }
     function open(lngLat){ if(lngLat&&lngLat.lng!=null) center={lng:+lngLat.lng,lat:+lngLat.lat}; ensurePanel().style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(panel); }catch(_){} if(center) run(center,{mode,minutes:mins}); else renderPanel(); return true; }
     /* (#R264) the tools list lights the row of a running tool and shuts it on a second press, so
        this answers both. `clear()` already did exactly what closing means here — it takes the

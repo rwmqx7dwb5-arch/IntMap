@@ -104,7 +104,7 @@ test('R273 ③ a country with no feed is hatched, a quiet one is grey, and they 
      「are its shapes in the cache」: the quiet collection is bounded by the view and by the zoom
      (see quietISOs), so a country whose units are held but off-screen must keep the country-wide
      sheet or nothing would paint it at all. */
-  assert.match(w, /return quietSet\[c\]\?2:1;/, 'a feed and nothing in force → grey (#R288: per unit where this map holds them)');
+  assert.match(w, /return\s*\(?[^;]*quietSet\[c\][^;]*\?\s*2\s*:\s*1;/, 'a feed and nothing in force → grey (#R288: per unit where this map holds them)');
   assert.match(s, /function ensureHatch\(\)/, 'the hatch must be drawn, once');
   assert.match(s, /GE\(\)\.scene\.addImage\(HATCH_IMG/, '…through the image API the engine actually has');
   assert.match(s, /'fill-pattern':'wp-alert-hatch-img'/, '…and used as a pattern');
@@ -123,9 +123,15 @@ test('R273 ④ the map paints in the agency’s own colours or in IntMap’s, an
   assert.match(s, /function repaintMode\(\)/, '…and there is one place that swaps it');
   /* the normalisation is stated, not hidden inside a colour */
   assert.match(s, /function normOf\(feed,lv\)/, 'one normaliser');
-  assert.match(s, /Each agency’s ranks are mapped onto these four by IntMap\./,
-    'and the panel must say the conversion is IntMap’s own');
-  assert.match(s, /the warning systems themselves differ/,
+  /* ⚠ (#R299) THIS PINNED THE SENTENCE AND THE SENTENCE WAS THE THING THE READER ASKED TO CHANGE
+     (「文章が長すぎる。簡潔に。」). What #R273 was protecting is not the wording — it is that the
+     normalised legend makes TWO claims: that the conversion is IntMap's own, and that the same step
+     is not the same danger. So the claims are what is checked, in whatever words carry them. */
+  const wk = s.slice(s.indexOf('function worldKey()'), s.indexOf('function worldKey()') + 1500);
+  const note = wk.match(/esc\(L\('((?:[^'\\]|\\.)*)'/);
+  assert.ok(note, 'the normalised legend still carries a note under the swatches');
+  assert.match(note[1], /IntMap/, 'and the panel must say the conversion is IntMap’s own');
+  assert.match(note[1], /not the same|do NOT|does not|differ/,
     '…and that the same step does not mean the same danger');
 });
 

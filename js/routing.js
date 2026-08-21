@@ -22,7 +22,21 @@ window.IntMapModules.routing=function(HOST){
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const bringToFront=HOST.bringToFront, makeDraggable=HOST.makeDraggable;
   return (function(){
-    if(!GE().hasRenderer()||!GE().hasRenderer()) return { route(){ return Promise.resolve({ok:false}); }, clear(){} };
+    /* ══ ⚠⚠⚠ (#R299) 「経路機能を使っても、経路が地図にマッピングされない！」 — THIS LINE WAS THE FIRST
+       CANDIDATE, AND IT WAS A TYPO. It read `if(!GE().hasRenderer()||!GE().hasRenderer())` — the same
+       test written twice, where the second half was meant to be something else — and what it RETURNED
+       was a module with two methods. `ensureLayers` / `frame` / `setInsets` / `clearAreas` /
+       `openPanel` / `selectAlt` / `hasRoute` / `summary` were all `undefined` on that object, and
+       every call to them in js/routing-ui.js is inside `try{}catch(_){}`, so a panel built against
+       the stub SAID NOTHING AND DREW NOTHING. js/app-body.js constructs this module ONCE, while the
+       app is loading; if the renderer was not up at that instant the stub was what the whole session
+       got, and no message anywhere said so.
+       ⚠ THE GUARD IS GONE RATHER THAN CORRECTED, because the reduced surface is the defect and a
+       correct condition still produces one. `GE()` is a LIVE getter (above), every method that
+       touches the renderer already asks `_imCanDraw()` / `ensureLayers()` at CALL time, and `_paint`
+       stashes what it could not draw for the `styledata` repaint. A module built before the renderer
+       exists is therefore the same module, and it starts working the moment the renderer does.
+       ⚠ THE ONE THING THAT WAS NOT CALL-TIME is the `styledata` subscription — see `_watchStyle`. */
     const SRC='imroute-src';
     /* (#R85) per-mode leg styling ("どこで徒歩、どこで鉄道なのか地図上で一切わからない") — walking legs draw as a
        DOTTED line in grey, transit legs as a SOLID line coloured by vehicle mode (rail blue, subway orange, tram
@@ -53,7 +67,16 @@ window.IntMapModules.routing=function(HOST){
       const rd=()=>{ let shift=0,result=0,b; do{ b=str.charCodeAt(index++)-63; result+=(b&0x1f)*Math.pow(2,shift); shift+=5; }while(b>=0x20);
         return (result%2===1)?(-(result+1)/2):(result/2); };
       while(index<str.length){ lat+=rd(); lng+=rd(); coords.push([lng/factor,lat/factor]); } return coords; }
-    function ensureLayers(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
+    /* ⚠⚠ (#R299) THE LAYERS ARE WHAT «ALREADY DRAWN» MEANS — NOT THE SOURCE. The early return was
+       `if(GE().layers.hasSource(SRC)) return true;`, so a style in which the source had survived and
+       the LAYERS had not could never be repaired: `_paint` wrote features into a source that nothing
+       drew, reported success, and the journey was 「地図にマッピングされない」 with no error anywhere.
+       The engine's `addSource` and `addLayer` are both no-ops when the id already exists
+       (js/geo-engine.js), so simply re-running the block below is how a partial style is completed. */
+    const LAYERS=['imroute-cas','imroute-walk','imroute-rail','imroute-line','imroute-transfer','imroute-pt','imroute-wp','imroute-durlab','imroute-hit'];
+    function _layersOK(){ try{ if(!GE().layers.hasSource(SRC)) return false;
+      for(let i=0;i<LAYERS.length;i++) if(!GE().layers.has(LAYERS[i])) return false; return true; }catch(_){ return false; } }
+    function ensureLayers(){ _watchStyle(); try{ if(_layersOK()) return true; if(!_imCanDraw()) return false;
       GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       /* ⚠ (#R291) THE CASING IS OPAQUE NOW. At 0.6 alpha the white under-line took the colour of
          whatever it sat on, so on satellite imagery and on the dark basemap the route read as a
@@ -85,17 +108,47 @@ window.IntMapModules.routing=function(HOST){
          zoom is what says when: zoomed in the alternatives are far apart on screen and a finger-sized
          target cannot pick the wrong one, zoomed out they are not and it keeps the old 22. */
       GE().layers.add({id:'imroute-hit',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'LineString'],['has','alt']],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#000000','line-opacity':0.01,'line-width':['interpolate',['linear'],['zoom'],10,22,14,44]}});
+      _wireLineEvents();
+      return _layersOK(); }catch(_){ return false; } }
+    /* ⚠ (#R299) BOUND ONCE PER MAP, NOT ONCE PER STYLE. These three used to sit inside the block
+       above, which re-runs whenever the style is replaced — and a layer listener is held by the MAP
+       rather than by the style (js/geo-engine.js `onLayer`), so every basemap switch added another
+       copy and one tap on a route ran `selectAlt` as many times as the reader had changed basemaps.
+       The canvas element is the map's identity: a re-created renderer brings a new one and is wired
+       again, which is the same shape the engine's own hover hub uses (it keys on the map instance). */
+    let _evtKey=null;
+    function _wireLineEvents(){ try{ const k=GE().render.canvas(); if(!k||_evtKey===k) return; _evtKey=k;
       try{ GE().events.onLayer('click','imroute-hit',_onLineClick); }catch(_){}
       try{ GE().events.onLayer('mouseenter','imroute-hit',()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} }); }catch(_){}
       try{ GE().events.onLayer('mouseleave','imroute-hit',()=>{ try{ if(!_pickTarget) GE().render.canvas().style.cursor=''; }catch(_){} }); }catch(_){}
-      return true; }catch(_){ return false; } }
+    }catch(_){} }
     /* ⚠ (#R291) THE MAP IS A SELECTOR, NOT A PICTURE (§10). Tapping an alternative on the map picks
        it, and because selection lives in the store the panel's card and Atlas's card follow — this
        is the half that could not exist while the two surfaces each kept their own «selected». */
+    /* ⚠⚠⚠ (#R299) …AND A SELECTOR NOBODY CAN SEE IS NOT ONE. 「地図上で経路を押したら、自動的にパネル
+       側でもその経路が選択されるように。」 The chain #R291 built ends in the store and #R298 added
+       `revealSelected()` at the panel end — but BOTH halves begin with `if (!openState) return;`, so
+       with the panel shut a tap re-drew the map and nothing else happened. The panel is opened here.
+       ⚠ THE SET COMES OFF THE FEATURE, not off `_rsActive`. Only the active set is drawn today, so
+       the two always agreed; reading the tapped line's own `rs` makes that a property of the data
+       instead of a coincidence, and a tap can never select alternative 2 of one journey inside
+       another. `selectAlt` only writes the store when the store is showing that same set.
+       ⚠ THE CAMERA DOES NOT MOVE. `open({reveal:true, keepView:true})` skips the re-frame — 「レイヤー
+       を選択しても視点を一切動かさない」 (CONSTITUTION §3); `revealSelected()` scrolls the panel only. */
     function _onLineClick(e){ try{
       const f=(e&&e.features&&e.features[0])||null; if(!f||!f.properties) return;
       const i=+f.properties.alt; if(!isFinite(i)) return;
-      selectAlt(i,_rsActive);
+      const sid=String(f.properties.rs||'')||_rsActive;
+      selectAlt(i,sid);
+      _revealPanel();
+    }catch(_){} }
+    /* the panel, opened where it is and with what it was showing — never a second one (`open()` is
+       idempotent) and never a camera move. The UI is a lazy module, so it may still have to arrive. */
+    function _revealPanel(){ try{
+      const UI=window.IntMapRouteUI;
+      if(UI&&typeof UI.isOpen==='function'&&UI.isOpen()) return;   /* already open — the store's 'sel' did the rest */
+      if(UI&&typeof UI.open==='function'){ UI.open({reveal:true,keepView:true}); return; }
+      window.IntMapLazy.need('routeUi').then(()=>{ try{ window.IntMapRouteUI.open({reveal:true,keepView:true}); }catch(_){} },()=>{});
     }catch(_){} }
     /* ⚠⚠ (#R298) THIS IS THE ONE PLACE A ROUTE IS THROWN AWAY, AND CLOSING THE PANEL CALLS IT.
        The note that stood here said the opposite — 「Closing the panel does not call it」 — which was
@@ -118,7 +171,7 @@ window.IntMapModules.routing=function(HOST){
        ⚠ ONLY THE ACTIVE SET IS DETACHED. `_rsets` also holds the sets of Atlas replies still in the
        transcript, which `altsOf(setId)` and `IntMapRouteCards.refreshDetail` address by id — wiping
        the map would make a reply from ten turns ago stop responding to its own cards. */
-    function clear(){ _lastPaint=null; _abortInflight();
+    function clear(){ _lastPaint=null; _painted=false; _abortInflight();   /* (#R299) …and «is it on the map» goes with it */
       try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){}
       _rsActive='';
       try{ window.IntMapRouteStore.clearRoute(); }catch(_){}
@@ -166,6 +219,9 @@ window.IntMapModules.routing=function(HOST){
     /* (#R126) §2.1/§24.2: CALC and DRAW are separate — _paint stashes the last feature set and repaints it once the
        style is ready (styledata below), so a route computed while the style is loading still SUCCEEDS. */
     let _lastPaint=null;
+    /* (#R299) `_painted` — did the last `_paint` reach the source; `_noFit` — a repaint that must not
+       touch the camera (see `repaint`). Both are about the MAP's state, never about the journey. */
+    let _painted=false, _noFit=false;
     function _bounds(coords){ if(!coords||!coords.length) return null;
       /* §3.19/§14.6 dateline-safe: unwrap longitudes onto a continuous axis before min/max */
       let lo=1e9,hi=-1e9; coords.forEach(p=>{ if(p[0]<lo)lo=p[0]; if(p[0]>hi)hi=p[0]; });
@@ -191,10 +247,34 @@ window.IntMapModules.routing=function(HOST){
        under the reader's hands. Only a NEW route set fits, and only once. */
     function _paint(feats,fitCoords,maxZoom){ _lastPaint={feats:feats,fit:fitCoords||null,mz:maxZoom||14};
       if(!ensureLayers()) return false;   /* stashed — styledata repaints (and fits, once) when the style is ready */
-      try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
-      if(fitCoords){ try{ const bb=_bounds(fitCoords); if(bb) GE().camera.fitBounds(bb,{padding:_pad(28),maxZoom:maxZoom||14,duration:900}); }catch(_){} }
+      /* ⚠ (#R299) 「渡した」 IS NOT 「乗っている」. `setSourceData` is inside a catch, so a failure here
+         was indistinguishable from a success to every caller — and js/routing-ui.js re-opens the
+         panel on the strength of it. The flag is set only when the call RETURNED, and `painted()`
+         re-checks the layers, because the other way a drawn route disappears is a style swap. */
+      _painted=false;
+      try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); _painted=!!(feats&&feats.length); }catch(_){}
+      if(fitCoords&&!_noFit){ try{ const bb=_bounds(fitCoords); if(bb) GE().camera.fitBounds(bb,{padding:_pad(28),maxZoom:maxZoom||14,duration:900}); }catch(_){} }
       _lastPaint.fit=null;   /* fit only once — a later style-swap repaint must not re-fly the camera */
       return true; }
+    /** is the CURRENT route actually on the map right now — the source has it AND the layers draw it */
+    function painted(){ try{ return !!(_painted&&_rsActive&&_rsets.get(_rsActive)&&_layersOK()); }catch(_){ return false; } }
+    /** ⚠ (#R299) draw the active set again WITHOUT re-computing and WITHOUT moving the camera.
+        `_drawAlts` re-frames only through `_paint`'s `fitCoords`, and it passes them — so the
+        re-frame is suppressed here and the reader's view is left where they put it. */
+    function repaint(){ try{ const rs=_rsets.get(_rsActive); if(!rs||!rs.alts.length) return false;
+      const keep=_noFit; _noFit=true; try{ _drawAlts(rs.sel,_rsActive); } finally { _noFit=keep; }
+      return painted(); }catch(_){ return false; } }
+    /** ⚠ (#R299) is the drawn route VISIBLE — a layer that exists but is switched off is not on the
+        map, and the surfaces that light a dot for 「there is a route」 have no other way to ask
+        (js/atlas-console.js's in-message overlay toggle switches these off).
+        ⚠ IT ASKS THE THREE THAT DRAW THE LINE, not all nine. The letters, the duration labels and
+        the invisible hit target are decoration and hit-testing; a route whose casing and coloured
+        legs are all hidden is not on the map however many of those are still switched on — and one
+        of them, `imroute-line`, has drawn nothing since #R86 (its filter matches no feature). */
+    const LINE_LAYERS=['imroute-cas','imroute-walk','imroute-rail'];
+    function visible(){ try{ if(!painted()) return false;
+      for(let i=0;i<LINE_LAYERS.length;i++) if(GE().layers.isVisible(LINE_LAYERS[i])) return true;
+      return false; }catch(_){ return false; } }
     /** re-frame the CURRENT route on demand — the panel calls this when it is resized or re-opened */
     function frame(){ try{ const rc=_routeCoords(); if(!rc||!rc.coords.length) return false;
       const bb=_bounds(rc.coords); if(!bb) return false;
@@ -212,9 +292,10 @@ window.IntMapModules.routing=function(HOST){
       return coords[Math.floor(coords.length/2)]; }
     function _durLabel(sec){ try{ return window.IntMapRouteCards.duration(sec,{lang:HOST.lang}); }catch(_){ return Math.round((sec||0)/60)+' min'; } }
     function _drawAlts(sel,setId){ const rs=_rsets.get(setId||_rsActive); if(!rs||!rs.alts.length) return;
+      const sid=setId||_rsActive;   /* (#R299) the id every line carries, so a tap resolves to the set that drew it */
       const alts=rs.alts; sel=Math.max(0,Math.min(alts.length-1,sel|0)); rs.sel=sel; if(setId) _rsActive=setId;
       const feats=[]; const order=[]; for(let i=0;i<alts.length;i++) if(i!==sel) order.push(i); order.push(sel);   /* selected last = on top within each layer */
-      order.forEach(i=>{ const a=alts[i], on=(i===sel); (a.lines||[]).forEach(ln=>{ const col=on?(ln.col||a.color):a.color; feats.push({type:'Feature',geometry:{type:'LineString',coordinates:ln.coords},properties:{alt:i,col:col,walk:ln.walk,w:on?(ln.walk?5:6.5):(ln.walk?3.5:4),op:on?1:0.55,cop:on?0.95:0.5}}); }); });   /* (#R86d) selected route → each leg its MODE colour (walk grey-dotted, subway orange, rail blue, bus purple, tram green, ferry teal); other alternatives → their distinct palette colour, dimmed */
+      order.forEach(i=>{ const a=alts[i], on=(i===sel); (a.lines||[]).forEach(ln=>{ const col=on?(ln.col||a.color):a.color; feats.push({type:'Feature',geometry:{type:'LineString',coordinates:ln.coords},properties:{alt:i,rs:sid,col:col,walk:ln.walk,w:on?(ln.walk?5:6.5):(ln.walk?3.5:4),op:on?1:0.55,cop:on?0.95:0.5}}); }); });   /* (#R86d) selected route → each leg its MODE colour (walk grey-dotted, subway orange, rail blue, bus purple, tram green, ferry teal); other alternatives → their distinct palette colour, dimmed */
       const sa=alts[sel]; (sa.stops||[]).forEach(s=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:s},properties:{k:'stop',col:sa.color}}));
       /* (#R291) a duration label per alternative, at that alternative's own midpoint */
       if(alts.length>1) alts.forEach((a,i)=>{ const co=(a.lines&&a.lines[0]&&a.lines[0].coords)||a.coords; const mid=_midOf(co);
@@ -657,7 +738,17 @@ window.IntMapModules.routing=function(HOST){
         distance:b0.distance,duration:b0.duration,steps:b0.steps,coords:b0.coords,legDurations:b0.legDurations,
         alternatives:alts.map(a=>({duration:a.duration,distance:a.distance,steps:a.steps,label:a.label,labelKey:a.labelKey,color:a.color,coords:a.coords,legDurations:a.legDurations,roads:a.roads}))}); }
     /* (#R126) §3.7: restore from the module's OWN last-paint store on style swap — not MapLibre's private source._data */
-    try{ GE().events.on('styledata',()=>{ setTimeout(()=>{ try{ if(_lastPaint&&_lastPaint.feats&&_lastPaint.feats.length) _paint(_lastPaint.feats,_lastPaint.fit,_lastPaint.mz); }catch(_){} },160); }); }catch(_){}
+    /* ⚠⚠ (#R299) …AND IT IS ATTACHED WHEN THERE IS SOMETHING TO ATTACH TO. This was one bare
+       `try{ GE().events.on('styledata', …) }catch(_){}` at module scope: with the renderer not yet
+       up when js/app-body.js builds this module, the `catch` swallowed the failure and the ONLY
+       thing that repaints a stashed route was never wired for the rest of the session. It is now a
+       function keyed on the map's canvas — called at load, and again from `ensureLayers()` BEFORE
+       its own draw test, so the first thing that ever asks to draw also completes the wiring. */
+    let _styleKey=null;
+    function _watchStyle(){ try{ const k=GE().render.canvas(); if(!k||_styleKey===k) return; _styleKey=k;
+      GE().events.on('styledata',()=>{ setTimeout(()=>{ try{ if(_lastPaint&&_lastPaint.feats&&_lastPaint.feats.length) _paint(_lastPaint.feats,_lastPaint.fit,_lastPaint.mz); }catch(_){} },160); });
+    }catch(_){ _styleKey=null; } }
+    _watchStyle();
     /* ===== (#R84) RICH ROUTING UI ("経路のUIをもっと充実させて。Google MapやApple Mapのように") — a proper
        directions panel: editable start/destination, one-tap mode switch (drive/walk/cycle), swap, live recompute,
        distance + time, and a scrollable turn-by-turn list. ===== */
@@ -831,7 +922,10 @@ window.IntMapModules.routing=function(HOST){
         if(from) ST.setPlace('from',(typeof from==='object'&&from.lng!=null)?from:await geo1(String(from)));
         if(to) ST.setPlace('to',(typeof to==='object'&&to.lng!=null)?to:await geo1(String(to))); }
       try{ await window.IntMapLazy.need('routeUi'); }catch(_){}
-      try{ return !!(window.IntMapRouteUI&&window.IntMapRouteUI.open()); }catch(_){ return false; }
+      /* ⚠ (#R299) `reveal` — this caller ASKED to see a journey (Atlas, the widget board, a tap on
+         the line), so a panel the reader left minimised is opened up rather than opened as a title
+         bar. A plain press on the Tools row carries no such intent and keeps what was left. */
+      try{ return !!(window.IntMapRouteUI&&window.IntMapRouteUI.open({reveal:true})); }catch(_){ return false; }
     }
     /* (#R125) exact station lookup for the curated Shinkansen registry ("仙台駅" → the real 仙台駅, not a fuzzy
        POI hit like 仙太鮨) — accepts the name with/without 駅 and the English name, case-insensitive. */
@@ -926,8 +1020,12 @@ window.IntMapModules.routing=function(HOST){
         bbox:[w,s,e,n],
         coords:rc.coords };
     }
+    /* (#R299) `painted` / `repaint` / `visible` — 「その経路は今この地図に乗っているか」, which is a
+       different question from `hasRoute` (「計算された経路はあるか」) and had no answer before. The
+       panel asks the first two when it is re-opened; the surfaces that light a 「there is a route」
+       dot (js/map-ui.js's Tools row, the widget board) can ask the third rather than assume. */
     return { route, clear, ensureLayers, openPanel, _src:SRC, selectAlt, selectStep, maneuver:_maneuver,
-             stationLL, geoNear:geo1, exportRoute, _routeExport, hasRoute,
+             stationLL, geoNear:geo1, exportRoute, _routeExport, hasRoute, painted, repaint, visible,
              alts, altAt, altsOf, routeCoords:_routeCoords, exportPayload, frame, setInsets,
              startPick, endPick, picking,
              startAreaDraw, endAreaDraw:_endAreaDraw, areas, removeArea, clearAreas, highlightArea, drawingArea,

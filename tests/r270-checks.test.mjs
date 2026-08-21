@@ -347,7 +347,17 @@ test('R270 ⑧ a country whose agency draws areas is never washed as a whole cou
      「are its shapes in the cache」: the quiet collection is bounded by the view and by the zoom
      (see quietISOs), so a country whose units are held but off-screen must keep the country-wide
      sheet or nothing would paint it at all. */
-  assert.match(w, /return quietSet\[c\]\?2:1;/, 'a country whose service is read but quiet is grey — per unit where it can be');
+  /* ⚠ (#R299) …AND THE OTHER HALF OF #R270's OWN SENTENCE FINALLY REACHED THE ZOOMS IT DID NOT COVER.
+     `quietSet` is empty below `QUIET_UNIT_Z` and while a unit index is still landing, so in both
+     windows this line fell through to tier 1 — the country-wide 「読んだ。何も出ていない」 grey — over
+     countries that were DRAWING WARNINGS. 「a country whose agency draws areas is never washed as a
+     whole country」 is the title of this very test. So the relation is what is pinned, not the
+     spelling: the last answer chooses between 「the units carry it」 and 「the country sheet carries
+     it」, and a country that is drawing something takes the first arm. */
+  assert.match(w, /return\s*\(?[^;]*quietSet\[c\][^;]*\?\s*2\s*:\s*1;/,
+    'a country whose service is read but quiet is grey — per unit where it can be');
+  assert.match(w, /\(quietSet\[c\]\|\|drawnISO\[c\]\)|drawnISO\[c\][^;]*\|\|[^;]*quietSet\[c\]/,
+    '…and a country that IS drawing is never washed whole — which is this test’s own title');
   /* the paint must know all three states, or one of them falls through to «nothing» */
   const pi = s.indexOf("'match',['to-number',['feature-state','wpAlert'],-1]");
   assert.ok(pi > 0, 'the choropleth must paint from that field');

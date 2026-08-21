@@ -81,7 +81,12 @@ window.IntMapModules.routeUi = function (HOST) {
       try { focusReturn = document.activeElement; } catch (_) { focusReturn = null; }
       openState = true; ST().setOpen(true);
       el.hidden = false;
-      el.classList.remove('rtp-min');
+      /* ⚠⚠ (#R299) MINIMISED IS A STATE THE READER CHOSE, and `restoreGeom` brings it back with the
+         rectangle it belongs to. What un-minimises is INTENT: a caller that asked to SEE a journey
+         — Atlas's 「経路案内」, a tap on the line, a shared link — passes `reveal`, and a plain press
+         on the Tools row does not, so it re-opens exactly what was left. On a phone `.rtp-min` is
+         not the mechanism at all (the three detents are), so the class is always dropped there. */
+      if (o.reveal || isMob()) el.classList.remove('rtp-min'); else restoreMin();
       document.body.classList.add('rtp-open');
       if (isMob()) setDetent(ST().get().result ? 'mid' : 'full');
       /* ⚠ (#R298) THE SENTENCE ABOVE THIS FUNCTION SAID 「brings the existing panel to the front」 and
@@ -90,7 +95,7 @@ window.IntMapModules.routeUi = function (HOST) {
          floating windows and still under an open sidebar, which is the band css/intmap.css defines.
          ⚠ Desktop only: the phone sheet's z-index is a stylesheet fact and an inline one would put it
          into the desktop band, above the surfaces `body.rtp-open` deliberately steps aside for. */
-      enableWindowing(); restoreGeom();
+      enableWindowing(); restoreGeom(); renderMinBtn();
       if (!isMob()) { try { if (typeof HOST.bringToFront === 'function') HOST.bringToFront(el); } catch (_) { } }
       /* the local place index the field merges into its candidates is loaded lazily by the app; ask
          for it the way js/search-geocode.js's own box does, without waiting for it (§4.1) */
@@ -113,9 +118,26 @@ window.IntMapModules.routeUi = function (HOST) {
          reading 「Enter a start and a destination to see routes.」 with nothing drawn, because the
          result had been thrown away and nothing asked for it again. A sentence in two documents that
          the app does not do is worse than a missing feature; this is the line that makes it true. */
+      /* ⚠⚠⚠ (#R299) 「経路が地図にマッピングされない」 — AND THIS BRANCH TRUSTED A SIDE EFFECT. A store
+         holding a result meant «the map is already drawing it», which is only true while `close()`
+         is the only way the drawing goes away. It is not: a style swap that dropped the layers, a
+         `_paint` whose `setSourceData` threw, or a route computed before the renderer was up all
+         leave a result in the store with nothing on the map — and `frame()` then flew the camera to
+         an empty rectangle. So the MAP is asked instead of assumed: draw it again if it is not
+         there, and only re-frame once something really is. If even the redraw finds no set to draw
+         (the alternatives live in js/routing.js and a reload does not restore them), the journey is
+         computed again rather than the pane silently staying empty. */
       if (o.restored) schedule(0);
-      else if (ST().get().result) { try { RT().frame(); } catch (_) { } }
+      else if (ST().get().result) {
+        let drew = false;
+        try { drew = RT().painted() || RT().repaint(); } catch (_) { drew = false; }
+        if (drew) { if (!o.keepView) { try { RT().frame(); } catch (_) { } } }
+        else if (ST()._pure.ready(ST().get())) schedule(0);
+      }
       else if (ST()._pure.ready(ST().get())) schedule(0);
+      /* (#R299) a tap on the map picked an alternative while the panel was shut — bring the card it
+         chose into view now that there is a panel to show it in (js/routing.js `_onLineClick`) */
+      if (o.reveal) { try { revealSelected(); } catch (_) { } }
       setTimeout(() => { try { const f = el.querySelector('.rtp-field[data-f="from"] input'); if (f && !ST().get().from.place) f.focus(); } catch (_) { } }, 60);
       return true;
     }
@@ -178,7 +200,9 @@ window.IntMapModules.routeUi = function (HOST) {
         + '<header class="rtp-head">'
         + '<span class="rtp-ic" aria-hidden="true">' + CD().glyph('pin', { size: 18 }) + '</span>'
         + '<h2 id="rtp-title">' + T(L('Directions', '経路', 'Route', 'Маршрут', 'Cómo llegar')) + '</h2>'
-        + '<button type="button" class="rtp-btn-ico rtp-minb" aria-label="' + T(L('Minimise', '最小化', 'Minimieren', 'Свернуть', 'Minimizar')) + '"><span aria-hidden="true">–</span></button>'
+        /* (#R299) `title` as well as `aria-label` — the glyph is a dash and a pointer has no other
+           way to read the control. `renderMinBtn()` keeps both in step with what pressing it does. */
+        + '<button type="button" class="rtp-btn-ico rtp-minb" aria-label="' + T(L('Minimise', '最小化', 'Minimieren', 'Свернуть', 'Minimizar')) + '" title="' + T(L('Minimise', '最小化', 'Minimieren', 'Свернуть', 'Minimizar')) + '"><span aria-hidden="true">–</span></button>'
         + '<button type="button" class="rtp-btn-ico rtp-closeb" aria-label="' + T(L('Close the directions panel (this also removes the route from the map)', '経路パネルを閉じる（地図の経路も消えます）', 'Panel schließen (die Route wird ebenfalls entfernt)', 'Закрыть панель (маршрут тоже уберётся)', 'Cerrar el panel (la ruta también se elimina)')) + '"><span aria-hidden="true">×</span></button>'
         + '</header>'
         + '<div class="rtp-fixed">'
@@ -710,8 +734,20 @@ window.IntMapModules.routeUi = function (HOST) {
              the header, and an inline `height:…!important` written by a resize is the one thing the
              stylesheet cannot override — so a minimised panel would have stayed a full-height empty
              rectangle. `restoreGeom` puts the stored size back on the way out. */
+          /* ⚠ (#R299) …AND THE PANEL STAYS A WINDOW WHILE IT IS MINIMISED. The header keeps its
+             drag handler (nothing unbinds it), `saveGeom` writes the state beside the rectangle so
+             it comes back, and the button re-labels itself — one control with two meanings was
+             telling a reader 「最小化」 while it restored. */
+          /* ⚠⚠⚠ (#R299 verified by pressing it) THE SIZE HAS TO BE BANKED BEFORE IT IS TAKEN AWAY.
+             `saveGeom` runs off a 400 ms-debounced MutationObserver, so a reader who resizes the
+             panel and minimises it inside that window has never had the new height written down —
+             and `restoreGeom` then puts back whatever was stored, or `MIN_H` when nothing was.
+             MEASURED locally at 1280×720: resize to 642 px, minimise, restore → **360 px**, i.e. the
+             panel came back smaller than it was sent away. Banking first makes the restore exact. */
+          if (!el.classList.contains('rtp-min')) saveGeom();
           const shrunk = el.classList.toggle('rtp-min');
           if (shrunk) el.style.removeProperty('height'); else restoreGeom();
+          renderMinBtn(); saveGeom();
           applyInsets();
         }
       });
@@ -775,6 +811,7 @@ window.IntMapModules.routeUi = function (HOST) {
       });
       makeSheet();
       enableWindowing();   /* (#R298) the header is new after a language rebuild — see enableWindowing */
+      renderMinBtn();      /* (#R299) …and so is the minimise button, which has to say which half it is on */
     }
 
     function onClick(e) {
@@ -1095,8 +1132,17 @@ window.IntMapModules.routeUi = function (HOST) {
       try {
         /* re-bound after every shell rebuild: a language switch replaces the header element, and a
            handler on the old one moves nothing. `addEdgeResize` and `registerWindow` guard themselves. */
+        /* ⚠⚠ (#R299) …AND `makeDraggable` DOES NOT. This function is called TWICE on every open —
+           once at the end of `wire()` and once by `open()` — and js/window-manager.js binds the
+           mouse path by ASSIGNMENT (`handle.onmousedown=…`, which survives that) and the touch path
+           with `addEventListener('touchstart', …)`, which does not. So each open added another
+           touch handler to the same header, and one drag on a phone-sized window ran the move maths
+           as many times as the panel had been opened.
+           ⚠ THE MARK IS ON THE HEADER, NOT ON THE PANEL. A language switch replaces `.rtp-head`
+           with a fresh element that carries no mark and is therefore bound — which is the whole
+           reason `wire()` calls this in the first place. */
         const head = el.querySelector('.rtp-head');
-        if (head && typeof HOST.makeDraggable === 'function') HOST.makeDraggable(el, head);
+        if (head && !head.dataset.rtpDrag && typeof HOST.makeDraggable === 'function') { head.dataset.rtpDrag = '1'; HOST.makeDraggable(el, head); }
         if (typeof HOST.addEdgeResize === 'function') HOST.addEdgeResize(el, { min: [MIN_W, MIN_H] });
       } catch (_) { }
       if (wmOn) return;
@@ -1104,8 +1150,18 @@ window.IntMapModules.routeUi = function (HOST) {
       /* ⚠ THERE IS NO 「the gesture ended」 EVENT. Both helpers write inline left/top/width/height, so
          the geometry is read back from the attribute that changed, debounced — which also catches a
          resize that ends outside the panel. */
+      /* ⚠⚠ (#R299) …AND IT IS ALSO WHERE A MINIMISED PANEL GETS ITS HEIGHT TAKEN BACK OFF. `.rtp-min`
+         hides every row but the header and has no height of its own, but `addEdgeResize` writes one
+         inline and `!important` — so dragging the bottom edge of a collapsed panel grew a tall EMPTY
+         rounded rectangle. That is #R298's defect arriving from the other direction, and the answer
+         is the same: the inline height comes straight off, and `saveGeom` keeps the size the panel
+         will be restored to. Removing it is itself a style mutation, but the second pass finds no
+         height to remove, so this settles in one step rather than oscillating. */
       try {
-        geomObs = new MutationObserver(() => { if (geomT) clearTimeout(geomT); geomT = setTimeout(saveGeom, 400); });
+        geomObs = new MutationObserver(() => {
+          if (el.classList.contains('rtp-min') && el.style.height) el.style.removeProperty('height');
+          if (geomT) clearTimeout(geomT); geomT = setTimeout(saveGeom, 400);
+        });
         geomObs.observe(el, { attributes: true, attributeFilter: ['style'] });
       } catch (_) { }
       try { window.addEventListener('resize', clampGeom); } catch (_) { }
@@ -1142,25 +1198,51 @@ window.IntMapModules.routeUi = function (HOST) {
       ['width', 'height', 'left', 'top', 'right', 'bottom'].forEach((k) => { try { el.style.removeProperty(k); } catch (_) { } });
       el.removeAttribute('data-dragged');
     }
+    function readGeom() {
+      try { return JSON.parse(localStorage.getItem(GEOM_KEY) || 'null'); } catch (_) { return null; }
+    }
     function restoreGeom() {
       if (!el || isMob()) return;
-      let g = null;
-      try { g = JSON.parse(localStorage.getItem(GEOM_KEY) || 'null'); } catch (_) { g = null; }
+      const g = readGeom();
       if (!g || !isFinite(+g.w) || !isFinite(+g.h)) return;
       applyGeom(g);
+    }
+    /* ⚠ (#R299) THE MINIMISED STATE IS PART OF THE STORED RECTANGLE, and it is put back SEPARATELY
+       from `restoreGeom` on purpose: `restoreGeom` is also what the restore half of the button calls
+       to get the size back, and a version of it that re-read `min` would minimise the panel again in
+       the same gesture. This one only ever ADDS the class, and only when nothing asked to reveal. */
+    function restoreMin() {
+      if (!el || isMob()) return;
+      const g = readGeom();
+      if (g && g.min) el.classList.add('rtp-min');
+    }
+    /* ⚠ (#R299) ONE BUTTON, TWO MEANINGS — so it must not carry one name. It said 「最小化」 while it
+       restored, and it had no `title` at all, so with a pointer the only thing to read was a dash.
+       Both strings already exist in this app (js/atlas-console.js's window button is the same pair). */
+    function renderMinBtn() {
+      const b = el && el.querySelector('.rtp-minb'); if (!b) return;
+      const shrunk = el.classList.contains('rtp-min');
+      const lb = shrunk ? L('Restore', '元に戻す', 'Wiederherstellen', 'Развернуть', 'Restaurar')
+        : L('Minimise', '最小化', 'Minimieren', 'Свернуть', 'Minimizar');
+      b.setAttribute('aria-label', lb); b.setAttribute('title', lb);
+      const g = b.querySelector('span'); if (g) g.textContent = shrunk ? '▢' : '–';
     }
     function saveGeom() {
       if (!el || el.hidden || isMob() || el.getAttribute('data-dragged') !== '1') return;
       try {
         const r = el.getBoundingClientRect();
         const opr = ((el.offsetParent || document.documentElement)).getBoundingClientRect();
-        let prev = null; try { prev = JSON.parse(localStorage.getItem(GEOM_KEY) || 'null'); } catch (_) { prev = null; }
+        const prev = readGeom();
         /* a minimised panel is a header, not a size — the size it will be restored to is kept */
-        const shrunk = el.classList.contains('rtp-min') && prev;
+        const min = el.classList.contains('rtp-min');
+        const keep = min && prev;
         localStorage.setItem(GEOM_KEY, JSON.stringify({
           l: Math.round(r.left - opr.left), t: Math.round(r.top - opr.top),
-          w: shrunk ? prev.w : Math.round(r.width),
-          h: shrunk ? prev.h : Math.round(r.height),
+          w: keep ? prev.w : Math.round(r.width),
+          /* ⚠ (#R299) …and never the HEADER's height as the panel's size. With no previous entry the
+             old line stored `r.height` — 42 px for a minimised panel — as the size to come back to. */
+          h: keep ? prev.h : (min ? MIN_H : Math.round(r.height)),
+          min: min,
         }));
       } catch (_) { }
       applyInsets();
@@ -1174,7 +1256,10 @@ window.IntMapModules.routeUi = function (HOST) {
          narrowed had none — which nothing noticed while `isMob()` was true on every device and every
          open() set one. Measured at 320 px: `data-detent` was null and the three-height sheet had
          nothing to snap to. */
-      if (isMob()) { stripGeom(); if (!el.getAttribute('data-detent')) setDetent(ST().get().result ? 'mid' : 'full'); applyInsets(); return; }
+      /* ⚠ (#R299) …AND `.rtp-min` IS A DESKTOP MECHANISM. Its rules hide every row but the header at
+         any width, while the phone's own way of being small is the `min` detent — so a panel
+         minimised on a wide window and then narrowed became a sheet whose grip had nothing to open. */
+      if (isMob()) { stripGeom(); el.classList.remove('rtp-min'); renderMinBtn(); if (!el.getAttribute('data-detent')) setDetent(ST().get().result ? 'mid' : 'full'); applyInsets(); return; }
       if (el.getAttribute('data-dragged') !== '1') { enableWindowing(); return; }
       const r = el.getBoundingClientRect();
       const opr = ((el.offsetParent || document.documentElement)).getBoundingClientRect();

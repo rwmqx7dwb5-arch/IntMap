@@ -43,10 +43,20 @@ test('R160 (B2) the R158/R159 per-frame resize + edge-anchor machinery is DELETE
   ok('const coalescedResize=()=>{ if(_rsRAF) return;', 'plain coalesced resize kept for real window/container resizes');
 });
 
-test('R160 (B3) the LEFT toggle does NOTHING to the camera (no pin, no panBy — panBy ROTATES a globe)', () => {
+test('R160 (B3) the LEFT toggle never PANS the camera (no pin, no panBy — panBy ROTATES a globe)', () => {
   // The whole point: the toggle only flips `collapsed` + syncs material classes + nudges the pill. It must not call
-  // panBy / setPadding / easeTo / map.resize — every one of those moved or rotated the map. The ResizeObserver re-fits.
-  ok("try{ applySidebarStyle(false); }catch(_){}   /* material classes only (blur/translucency) — never the camera */", 'toggle syncs material classes only (never the camera)');
+  // panBy / easeTo / map.resize — every one of those moved or rotated the map. The ResizeObserver re-fits.
+  /* ⚠ (#R299) THIS PINNED A TRAILING COMMENT AND THE COMMENT HAD BECOME FALSE. 「フロストガラス設定の時だけ、
+     左サイドバーの余白に地図中心を合わせるという機構がない。同じ動きになるようにしろ。」 In SOLID mode the sidebar
+     is a flex sibling, so the canvas itself is narrower and no compensation is owed — that is #R160's finding and
+     it still holds. In FROSTED mode the canvas keeps the whole window and the sidebar stands ON it, so the two
+     modes were not doing the same thing at all. Camera PADDING is the statement 「the usable box is narrower than
+     the canvas」; it is not a pan, and it is exactly what the flex layout already states for solid.
+     So the relation is pinned instead of the sentence: the toggle still routes through `applySidebarStyle`, and
+     the padding it may write is FROSTED-ONLY and is 0 for solid. */
+  ok('try{ applySidebarStyle(false); }catch(_){}', 'toggle routes through the one style/material function');
+  ok('function _glassInset()', 'the frosted overlay measures its own width');
+  ok("if(!document.body.classList.contains('sidebar-glass')) return 0;", 'solid gets no inset — #R160’s double shift stays gone');
   ok("try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){}   /* recompute the search-pill layout only */", 'toggle only nudges the search-pill layout');
   // no camera manipulation of ANY kind lives in the toggle handler
   gone('if(solidBeside && map){', 'the R160 edge-pin block is gone');
