@@ -305,7 +305,7 @@ window.IntMapModules.dataLayers=function(HOST){
       aurora:LA('Modeled auroral oval — where the northern/southern lights are likely visible right now.','オーロラ帯のモデル — 今オーロラが見える可能性が高い場所。','Modelliertes Polarlichtoval — wo Nord-/Südlichter gerade sichtbar sein dürften.','Модельный авроральный овал — где сейчас вероятно видно полярное сияние.','Óvalo auroral modelado — dónde es probable ver ahora las auroras boreales o australes.'),
       thermal:LA('Satellite-detected heat sources in the last hours — mostly wildfires, also flares and volcanoes.','直近数時間に衛星が検知した熱源 — 主に山火事、ガスフレアや火山も。','Vom Satelliten in den letzten Stunden erkannte Wärmequellen — meist Waldbrände, auch Abfackelung und Vulkane.','Тепловые источники, обнаруженные спутником за последние часы — в основном пожары, а также факелы и вулканы.','Focos de calor detectados por satélite en las últimas horas — sobre todo incendios, también antorchas y volcanes.'),
       cpi:LA('Transparency International score (0–100) of perceived public-sector corruption. Higher = cleaner.','トランスペアレンシーによる公的部門の汚職体感指数（0〜100）。高いほど清廉。','Wert von Transparency International (0–100) für wahrgenommene Korruption im öffentlichen Sektor. Höher = sauberer.','Индекс Transparency International (0–100) восприятия коррупции в госсекторе. Выше = чище.','Puntuación de Transparency International (0–100) de corrupción percibida en el sector público. Mayor = más limpio.'),
-      wbco2:LA('Carbon-dioxide emissions per person per year (tonnes) — a country’s per-capita climate footprint.','1人当たりの年間CO₂排出量（トン）— 国民1人の気候負荷。','Kohlendioxid-Ausstoß pro Person und Jahr (Tonnen) — der Pro-Kopf-Klimafußabdruck eines Landes.','Выбросы углекислого газа на человека в год (тонны) — климатический след страны на душу населения.','Emisiones de dióxido de carbono por persona y año (toneladas) — la huella climática per cápita del país.'),
+      wbco2:LA('Carbon-dioxide emissions — the country total in megatonnes a year, or the same series divided by population; switch between the two in this legend.','年間のCO₂排出量。国全体の総量（百万t）と、それを人口で割った国民1人当たり（t）を、この凡例で切り替えられます。','Kohlendioxid-Ausstoß — die Landessumme in Megatonnen pro Jahr oder dieselbe Reihe pro Kopf; in dieser Legende umschaltbar.','Выбросы углекислого газа — итог по стране в мегатоннах в год либо тот же ряд на душу населения; переключается в этой легенде.','Emisiones de dióxido de carbono — el total del país en megatoneladas al año, o la misma serie por persona; se alterna en esta leyenda.'),
       wbgini:LA('Gini index of income inequality (0 = perfectly equal, 100 = maximally unequal).','所得格差のジニ指数（0=完全平等、100=最大格差）。','Gini-Index der Einkommensungleichheit (0 = völlig gleich, 100 = maximal ungleich).','Индекс Джини неравенства доходов (0 = полное равенство, 100 = максимальное неравенство).','Índice de Gini de desigualdad de ingresos (0 = igualdad total, 100 = desigualdad máxima).'),
       wbpov:LA('Share of people living on less than ~$2.15 a day (extreme poverty).','1日約2.15ドル未満で暮らす人の割合（極度の貧困）。','Anteil der Menschen, die von weniger als etwa 2,15 $ am Tag leben (extreme Armut).','Доля людей, живущих менее чем на ~2,15 $ в день (крайняя бедность).','Proporción de personas que viven con menos de ~2,15 $ al día (pobreza extrema).'),
       wbinfmort:LA('Infant deaths before age 1 per 1,000 live births — a core health/development indicator.','出生1000人当たりの満1歳未満の死亡数 — 基本的な保健・開発指標。','Säuglingssterblichkeit vor dem 1. Lebensjahr je 1.000 Lebendgeburten — ein zentraler Gesundheits- und Entwicklungsindikator.','Смертность детей до 1 года на 1000 живорождений — ключевой показатель здравоохранения и развития.','Muertes de menores de 1 año por cada 1.000 nacidos vivos — un indicador central de salud y desarrollo.'),
@@ -687,6 +687,9 @@ window.IntMapModules.dataLayers=function(HOST){
       try{ const kl=document.getElementById('koppen-legend'); if(kl&&getComputedStyle(kl).display!=='none'&&typeof buildLegend==='function') buildLegend(); }catch(_){}
       try{ tileLegends(); }catch(_){}
       try{ _refreshLegendDates(); }catch(_){}
+      /* (#R289) the 国防費 mode switch is INSIDE those two legends, so a rebuild drops it; re-assert
+         the mode rather than leaving a row that can no longer be switched. */
+      try{ applyMilMode(); }catch(_){}
     }
     window.addEventListener('intmap-lang', _rebuildCoreLegends);
     /* The Köppen legend's drag handle is (re)injected inside buildLegend() so it survives the
@@ -699,7 +702,7 @@ window.IntMapModules.dataLayers=function(HOST){
        on (#30). */
     const head=document.createElement('div'); head.className='lyr-head lyr-section-label'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[HOST.lang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:1,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,nightsat:1,nightside:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,'clouds-goese':0.75,'clouds-goesw':0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:1,subcables:0.95,sats:0.95};   /* (#R122) Köppen climate default opacity = 100% */
+    const opacities={climate:1,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,nightsat:1,nightside:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.60,wind:1,subcables:0.95,sats:0.95};   /* (#R122) Köppen climate default opacity = 100% */
     if(window._seaLevelM==null) window._seaLevelM=2;   /* default +2 m sea-level rise (#24) */
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
@@ -844,11 +847,12 @@ window.IntMapModules.dataLayers=function(HOST){
        Hazards & night sky · Population & economy · Geopolitics & defense. */
     [
       ['__grp','lyrGrpClimate'],
-      /* (#R276) 'clouds' has a row again. Its layer id, its opacity entry, its legend and its
-         toggleLayer branch have all been here since #R7 — the ROW never was, so the only reachable
-         switch for it was a share link, and the RainViewer product behind it was retired anyway. It
-         is NASA GIBS geostationary clean-IR now (see IR_SATS) and it is switchable. */
-      ['climate','lyrClimate'],['precip','lyrPrecip'],['radar','lyrRadar'],['clouds','lyrClouds'],['wind','lyrWind'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],
+      /* ⚠ (#R289) THERE IS NO 'clouds' ROW HERE ANY MORE — 「雲・赤外（実時間）レイヤーは削除して」.
+         #R276 gave it one (it had been reachable only through a share link since #R7). The three
+         NASA GIBS geostationary discs, their opacity entries, their legend hint and their
+         toggleLayer branches all go with it. The ECMWF cloud-cover layer `ec-cloud` is a
+         DIFFERENT layer and stays — and so is `ec-temp`, which is where 「気温」 lives since #R288. */
+      ['climate','lyrClimate'],['precip','lyrPrecip'],['radar','lyrRadar'],['wind','lyrWind'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],
       ['__grp','lyrGrpTerrain'],
       ['relief','lyrRelief'],['hillshade','lyrHillshade'],['contours','lyrContours'],['sealevel','lyrSeaLevel'],
       ['__grp','lyrGrpMaritime'],
@@ -877,7 +881,11 @@ window.IntMapModules.dataLayers=function(HOST){
       ['__grp','lyrGrpDemo'],
       ['pop','lyrPop'],['popgrid','lyrPopGrid'],['gdppc','lyrGDPpc'],['tfr','lyrTFR'],['hdi','lyrHDI'],['dem','lyrDem'],
       ['__grp','lyrGrpGeoPol'],
-      ['milSpend','lyrMilSpend'],['milSpendGDP','lyrMilSpendGDP'],['nato','lyrNATO'],['eu','lyrEU']
+      /* (#R289) ONE 国防費 ROW. 「一人当たりレイヤーとその元の対となるレイヤーがあるものは統合して
+         一つに」 — the same shape as the CO₂ pair: the total ($B) and the same quantity divided (%
+         of GDP) were two rows of one series. `milMode` switches between them inside the legend, so
+         both fills, both ramps and both legends stay exactly as they were. */
+      ['milSpend','lyrMilSpend'],['nato','lyrNATO'],['eu','lyrEU']
     ].forEach(([id,key])=>{
       if(id==='__grp'){ const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=i18n[HOST.lang][key]||''; dd.appendChild(h); return; }
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+id;
@@ -910,8 +918,8 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R15c) EVERY opacity layer now owns a legend (specific, generic, or the wind legend), so the
          opacity control lives THERE and the inline Layers-panel slider is hidden for all of them. */
       const HAS_LEGEND=new Set(['climate','hdi','dem','pop','popgrid','eez','thermal','radar','sst','relief','sealevel',
-        'gdppc','tfr','milSpend','milSpendGDP','snow','aod','nightsat','wind',
-        'precip','clouds','ships','planes','sats','hillshade','contours','subcables','nato','eu']);   /* (#R232) 'night' removed with its row */
+        'gdppc','tfr','milSpend','snow','aod','nightsat','wind',
+        'precip','ships','planes','sats','hillshade','contours','subcables','nato','eu']);   /* (#R232) 'night' removed with its row */
       if(HAS_LEGEND.has(id)) w.classList.add('has-legend');
       /* (#R186) 「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。」 — these two rows ship
          CHECKED. window.IntMapDefaultLayers is the single list; app-body dispatches the change event for
@@ -968,7 +976,7 @@ window.IntMapModules.dataLayers=function(HOST){
          accented the mobile FAB as though a thematic overlay were on. The other nine basics are
          skipped precisely because they are views of the map rather than data on top of it, and which
          half of the planet the Sun is lighting is the same kind of statement. */
-      const skip=new Set(['cb-names','cb-geolabels','cb-poi','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2','dl-nightside']);
+      const skip=new Set(['cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2','dl-nightside']);
       const seen=new Set(), chips=[];
       dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{
         if(!cb.checked || skip.has(cb.id) || seen.has(cb)) return; seen.add(cb);   /* key by ELEMENT — geo/strategic rows have no id, so an id key collapsed them all to one */
@@ -1219,7 +1227,7 @@ window.IntMapModules.dataLayers=function(HOST){
                · `wbpm25` PM2.5大気汚染 : Health → Climate & atmosphere, where the other three air
                  -composition rasters (AOD, UV aerosol index, CO) already are. Air pollution was
                  split across two shelves by whether the number came from a satellite or a table. */
-          ['lyrGrpClimate',['climate','ec-temp','annprecip','wind','radar','clouds','ec-cloud','snow','aod','gxaero','gxco','wbpm25','wbco2','wbco2t']],   /* (#R261) +total CO₂ emissions, beside the per-capita row it belongs with */   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
+          ['lyrGrpClimate',['climate','ec-temp','annprecip','wind','radar','ec-cloud','snow','aod','wbpm25','wbco2']],   /* (#R289) the two CO₂ rows (#R261) are ONE row with a total/per-capita switch in its own legend; 紫外線エアロゾル指数・一酸化炭素・雲・赤外 are deleted */
           /* (#R202) `sats` moved OUT of Maritime and into its own group, second from the top — see the
              lyrGrpOrbit note above. Nothing else moved: live aircraft stay where they were. */
           ['lyrGrpOrbit',['sats','osmspace','aurora']],   /* (#R261) +spaceports and satellite ground stations — a one-row shelf is not a category */
@@ -1328,7 +1336,7 @@ window.IntMapModules.dataLayers=function(HOST){
              「任せる」 for the obviously-wrong rows is not a licence to re-sort a list somebody chose.
              オーロラ予測 and 夜間光 stay in 「災害・夜空 / Hazards & night sky」 — that heading names
              them; the shelf is not only about disasters. */
-          ['lyrGrpSecurity',['milSpend','milSpendGDP','nato','ukrfront','wbmilgdp','wbmilppl','osmmil']],
+          ['lyrGrpSecurity',['milSpend','nato','ukrfront','wbmilgdp','wbmilppl','osmmil']],   /* (#R289) 国防費 is one row with a $B / %GDP switch */
           /* (#R273) −clean cooking fuel access (→ Energy: it is an energy-access rate and sits
              beside electricity access), −undernourishment (→ Agriculture & food: it measures food),
              −adolescent fertility (→ Population), −pharma hubs (→ Economy: they are factories).
@@ -1438,7 +1446,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const order=[];
         const fav=document.getElementById('layer-fav-section'); if(fav) order.push(fav);
         /* (#R33) Requested order: Place names, Country borders, State/province, Roads, Railways, Grid, Countries(info). */
-        ['cb-names','cb-geolabels','cb-poi','cb-borders','cb-admin1','cb-roads','cb-rail2','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
+        ['cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-admin1','cb-roads','cb-rail2','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
         /* (#R233) …and the day/night shading, which is the same KIND of switch as the nine above (a view
            of the whole planet that is either on or off) rather than a data layer about a hazard. It is a
            .lyr-row rather than a bare label, so it is fetched through rowFor() and marked `placed` — the
@@ -1502,7 +1510,7 @@ window.IntMapModules.dataLayers=function(HOST){
         dd.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option').forEach(r=>{
           if(placed.has(r)) return;
           const cb=r.querySelector('input[type=checkbox]'); if(!cb) return;
-          if(['cb-names','cb-geolabels','cb-poi','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
+          if(['cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
           otherRows.push(r); placed.add(r);
         });
         if(otherRows.length){
@@ -1760,6 +1768,63 @@ window.IntMapModules.dataLayers=function(HOST){
        Polynesia, Hawaii, Puerto Rico, Guam, … — while keeping all mainlands and the Atlantic islands
        (Azores, Madeira, Canaries) that ARE covered. Mainland polygons aren't clipped (centroid is north),
        so e.g. southern Florida/Texas stay whole. */
+    /* ══ ⚠ (#R289) 「加盟年ごとに色分けされたバージョンも用意して」 ═══════════════════════════════════
+       NATO and the EU each paint every member ONE colour, which answers 「who is in」 and says
+       nothing about 「since when」 — although both layers have carried the real accession year
+       since #R14/#R26 and both already have a year slider driven by it. A second colouring makes
+       that year visible instead of only filterable, and the switch is in the legend beside the
+       slider that uses the same numbers.
+       ⚠ ONE PALETTE FOR BOTH, and it is perceptually ordered (viridis, sampled): eleven NATO
+       waves and eight EU ones cannot be told apart as eleven blues, and a rainbow would imply an
+       order the eye has to be taught. Dark = founding, bright = newest, monotonically.
+       ⚠ AND THE BAR GOES AWAY WITH IT. #R270's defect was a legend whose gradient contradicted
+       the colours on the map; a flat blue bar over a year-coloured map is the same statement. So
+       the mode hides `.dl-bar`/`.dl-scale` and shows a chip per wave instead. */
+    const _VIRIDIS=['#440154','#482878','#3e4a89','#31688e','#26828e','#1f9e89','#35b779','#6ece58','#b5de2b','#fde725'];
+    function _mixHex(a,b,t){ const p=(h)=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+      const A=p(a),B=p(b),o=A.map((v,i)=>Math.round(v+(B[i]-v)*t));
+      return '#'+o.map(v=>v.toString(16).padStart(2,'0')).join(''); }
+    function _rampAt(f){ const x=Math.max(0,Math.min(1,f))*(_VIRIDIS.length-1), i=Math.min(_VIRIDIS.length-2,Math.floor(x));
+      return _mixHex(_VIRIDIS[i],_VIRIDIS[i+1],x-i); }
+    /* year → colour, ordered oldest-first. ONE entry means one colour, not a division by zero. */
+    function yearColors(years){ const o={}; const n=years.length;
+      years.forEach((y,i)=>{ o[y]=_rampAt(n<2?0:i/(n-1)); }); return o; }
+    /* the fill expression: an exact match on the accession year, with the uniform colour as the
+       fallback so a member whose year is missing is never invisible. */
+    function yearFillExpr(years,colors,fallback){
+      const e=['match',['to-number',['get','__y'],0]];
+      years.forEach(y=>{ e.push(y,colors[y]); });
+      e.push(fallback); return e; }
+    /* the chips: one per wave that is actually on the map at the selected year, with its count */
+    function yearKeyHTML(years,colors,joinTable,upTo,leftTable){
+      const rows=[];
+      years.forEach(y=>{ if(upTo!=null&&y>upTo) return;
+        let n=0; Object.keys(joinTable).forEach(code=>{ if(joinTable[code]!==y) return;
+          if(upTo!=null&&leftTable&&leftTable[code]&&upTo>=leftTable[code]) return; n++; });
+        if(!n) return;
+        rows.push('<span style="display:inline-flex;align-items:center;gap:4px;"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+colors[y]+';"></i>'+y+' ('+n+')</span>'); });
+      return '<div class="dl-yearkey" style="display:flex;flex-wrap:wrap;gap:5px 9px;margin-top:6px;font-size:10px;color:var(--text-muted);font-variant-numeric:tabular-nums;">'+rows.join('')+'</div>'; }
+    /* the two-button switch every one of these legends gets. `get`/`set` keep the state with its
+       own layer rather than making a second copy here. */
+    function styleModeRow(el,cls,get,set){ if(!el) return;
+      let r=el.querySelector('.'+cls);
+      const OPT=[['uniform',()=>window.IntMapLang.t(HOST.lang,'One colour','単色','Eine Farbe','Один цвет','Un color')],
+                 ['byYear', ()=>window.IntMapLang.t(HOST.lang,'By accession year','加盟年別','Nach Beitrittsjahr','По году вступления','Por año de ingreso')]];
+      if(!r){ r=document.createElement('div'); r.className=cls;
+        r.style.cssText='display:flex;gap:5px;margin-top:7px;';
+        r.innerHTML=OPT.map(o=>'<button type="button" data-s="'+o[0]+'" style="flex:1;min-width:0;border:1px solid rgba(128,128,128,0.3);border-radius:7px;padding:4px 6px;font-size:10.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></button>').join('');
+        const bar=el.querySelector('.dl-scale'); if(bar&&bar.parentNode===el) el.insertBefore(r,bar.nextSibling); else el.appendChild(r);
+        r.addEventListener('click',(ev)=>{ const b=ev.target.closest('button[data-s]'); if(b&&r.contains(b)) set(b.getAttribute('data-s')); }); }
+      r.querySelectorAll('button[data-s]').forEach(b=>{ const k=b.getAttribute('data-s');
+        const o=OPT.filter(x=>x[0]===k)[0]; if(o) b.textContent=o[1]();
+        const act=(k===get());
+        b.style.background=act?'var(--primary-color)':'var(--input-bg)';
+        b.style.color=act?'#fff':'var(--text-main)';
+        b.setAttribute('aria-pressed',act?'true':'false'); });
+      /* the gradient bar describes the uniform colouring only — see the note above */
+      const byYear=(get()==='byYear');
+      ['.dl-bar','.dl-scale'].forEach(sel=>{ const e2=el.querySelector(sel); if(e2) e2.style.display=byYear?'none':''; });
+      return r; }
     function _ringCentroidLat(ring){ if(!ring||!ring.length) return 0; let sy=0; for(const p of ring) sy+=p[1]; return sy/ring.length; }
     function _dropSouthOfTropic(geom){
       if(!geom) return null;
@@ -1776,7 +1841,8 @@ window.IntMapModules.dataLayers=function(HOST){
              selected year (based on each country's real accession year). */
           const jy=NATO_JOIN[code]; if(jy && _natoYear && jy>_natoYear) return;
           const g=_dropSouthOfTropic(f.geometry);
-          if(g) feats.push({type:'Feature',id:code,properties:{__code:code},geometry:g});
+          /* (#R289) the accession year travels WITH the feature, so the fill can colour by it */
+          if(g) feats.push({type:'Feature',id:code,properties:{__code:code,__y:(jy||0)},geometry:g});
         });
       }
       return {type:'FeatureCollection',features:feats};
@@ -1784,13 +1850,23 @@ window.IntMapModules.dataLayers=function(HOST){
     function tropicFC(){ const c=[]; for(let lo=-180;lo<=180;lo+=5) c.push([lo,TROPIC_CANCER]); return {type:'FeatureCollection',features:[{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:c}}]}; }
     function addNato(){
       if(!GE().layers.hasSource('src-nato')) GE().layers.addSource('src-nato',{type:'geojson',data:buildNatoFC(),promoteId:'__code'});
-      if(!GE().layers.has('nato-fill')) GE().layers.add({id:'nato-fill',type:'fill',source:'src-nato',layout:{visibility:'none'},paint:{'fill-color':'#2f6bff','fill-opacity':opacities.nato}},beforeId);
+      if(!GE().layers.has('nato-fill')) GE().layers.add({id:'nato-fill',type:'fill',source:'src-nato',layout:{visibility:'none'},paint:{'fill-color':natoFillColor(),'fill-opacity':opacities.nato}},beforeId);
       if(!GE().layers.has('nato-line')) GE().layers.add({id:'nato-line',type:'line',source:'src-nato',layout:{visibility:'none'},paint:{'line-color':'#7fb0ff','line-width':1.6}},beforeId);
       if(!GE().layers.hasSource('src-tropic')) GE().layers.addSource('src-tropic',{type:'geojson',data:tropicFC()});
       if(!GE().layers.has('nato-tropic-line')) GE().layers.add({id:'nato-tropic-line',type:'line',source:'src-tropic',layout:{visibility:'none'},paint:{'line-color':'#f4b740','line-width':1.4,'line-dasharray':[3,3],'line-opacity':0.9}},beforeId);
       if(!GE().layers.has('nato-tropic-label')) GE().layers.add({id:'nato-tropic-label',type:'symbol',source:'src-tropic',layout:{visibility:'none','symbol-placement':'line','text-field':(window.IntMapLang.t(HOST.lang,'Tropic of Cancer (23.4°N)','北回帰線 (北緯23.4°)','Wendekreis des Krebses (23,4°N)','Северный тропик (23,4° с.ш.)','Trópico de Cáncer (23,4°N)')),'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']],'symbol-spacing':340,'text-letter-spacing':0.04},paint:{'text-color':'#f4b740','text-halo-color':'rgba(0,0,0,0.65)','text-halo-width':1.3}},beforeId);
     }
-    function applyNato(){ try{ GE().layers.setSourceData('src-nato',buildNatoFC()); }catch(_){} }
+    function natoFillColor(){ return (_natoStyle==='byYear')
+      ? yearFillExpr(NATO_YEARS,yearColors(NATO_YEARS),'#2f6bff') : '#2f6bff'; }
+    function applyNato(){ try{ GE().layers.setSourceData('src-nato',buildNatoFC()); }catch(_){}
+      /* (#R289) the colouring is re-asserted on every repaint, not only at creation — the same
+         rule the World-Bank ramp needed: the addLayer branch runs once and the mode can change
+         afterwards. */
+      try{ if(GE().layers.has('nato-fill')) GE().layers.setPaint('nato-fill','fill-color',natoFillColor()); }catch(_){}
+      /* ⚠ the legend is only re-drawn while the layer is ON — `_registerLayerOpacity` SHOWS the
+         box, so calling it from a repaint that ran with the layer off would open a legend for a
+         layer that is not on the map. */
+      try{ const cb=document.getElementById('dl-nato'); if(cb&&cb.checked) natoLegend(); }catch(_){} }
     function setNatoVis(on){ ['nato-fill','nato-line','nato-tropic-line','nato-tropic-label'].forEach(l=>setVis(l,on)); }
     /* NATO accession years (#14) — shown on hover alongside the member's defense spend as % of GDP. */
     const NATO_JOIN={USA:1949,CAN:1949,GBR:1949,FRA:1949,ITA:1949,NLD:1949,BEL:1949,LUX:1949,DNK:1949,NOR:1949,ISL:1949,PRT:1949,GRC:1952,TUR:1952,DEU:1955,ESP:1982,CZE:1999,HUN:1999,POL:1999,BGR:2004,EST:2004,LVA:2004,LTU:2004,ROU:2004,SVK:2004,SVN:2004,ALB:2009,HRV:2009,MNE:2017,MKD:2020,FIN:2023,SWE:2024};
@@ -1798,11 +1874,22 @@ window.IntMapModules.dataLayers=function(HOST){
        members fill to those who had joined by the chosen year. NATO_YEARS = the distinct accession years. */
     const NATO_YEARS=[...new Set(Object.values(NATO_JOIN))].sort((a,b)=>a-b);
     let _natoYear=NATO_YEARS[NATO_YEARS.length-1];   /* default: latest = all current members */
+    let _natoStyle='uniform';                        /* (#R289) 'uniform' | 'byYear' */
+    function setNatoStyle(k){ if(k!=='uniform'&&k!=='byYear') return; if(k===_natoStyle) return; _natoStyle=k; applyNato(); }
+    window._imNatoStyle=(k)=>{ if(k==null) return _natoStyle; setNatoStyle(k); return _natoStyle; };
     function natoMemberCount(){ try{ return Object.values(NATO_JOIN).filter(y=>y<=_natoYear).length; }catch(_){ return ''; } }
     function natoLegend(){
       try{
         const el=window._registerLayerOpacity&&window._registerLayerOpacity('nato',LA('NATO members','NATO加盟国','NATO-Mitglieder','Страны НАТО','Países de la OTAN'),['nato-fill','nato-line'],'dl-nato');
-        if(!el || el.querySelector('.nato-year-row')) { const lbl=el&&el.querySelector('.nato-year-val'); if(lbl) lbl.textContent=_natoYear; return; }
+        if(!el) return;
+        /* ⚠ (#R289) THE «BUILT ONCE» GUARD IS NOW A BRANCH, NOT A RETURN. It used to leave the
+           function the moment the year row existed, which is right for the row (rebuilding a
+           <select> under the finger that opened it is #R266's defect) and wrong for everything
+           added after it: the colouring switch's own selected state and its key CHANGE while the
+           legend stays up, so a return would have made this round's control build once and never
+           update — which looks exactly like a button that does nothing. */
+        if(el.querySelector('.nato-year-row')){ const lbl=el.querySelector('.nato-year-val'); if(lbl) lbl.textContent=_natoYear; }
+        else {
         const jp=HOST.lang==='jp';
         const row=document.createElement('div'); row.className='nato-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:7px;display:flex;align-items:center;gap:7px;';
         if(typeof isMobile==='function'&&isMobile()){
@@ -1821,8 +1908,61 @@ window.IntMapModules.dataLayers=function(HOST){
           row.querySelector('input').addEventListener('input',(e)=>{ _natoYear=NATO_YEARS[+e.target.value]||_natoYear; const v=el.querySelector('.nato-year-val'); if(v) v.textContent=_natoYear; clearTimeout(natoLegend._t); natoLegend._t=setTimeout(applyNato,120); });
         }
         el.appendChild(row);
+        }
       }catch(_){}
+      /* (#R289) …and the colouring switch, which is OUTSIDE the «built once» early return above
+         because its selected state and its key both change while the legend stays up. */
+      try{ const el2=document.getElementById('data-legend-nato'); if(el2){
+        styleModeRow(el2,'nato-style-row',()=>_natoStyle,setNatoStyle);
+        let k=el2.querySelector('.nato-yearkey-wrap');
+        if(!k){ k=document.createElement('div'); k.className='nato-yearkey-wrap';
+          const r=el2.querySelector('.nato-style-row'); if(r&&r.parentNode===el2) el2.insertBefore(k,r.nextSibling); else el2.appendChild(k); }
+        k.innerHTML=(_natoStyle==='byYear')?yearKeyHTML(NATO_YEARS,yearColors(NATO_YEARS),NATO_JOIN,_natoYear,null):'';
+        try{ tileLegends(); }catch(_){}
+      } }catch(_){}
     }
+    /* ══ (#R289) 国防費: ONE ROW, TWO WAYS OF EXPRESSING THE SAME BUDGET ═════════════════════════
+       Total US$ billions and the same figure as a share of the country's GDP were `dl-milSpend` and
+       `dl-milSpendGDP`: two rows side by side in 政治・軍事 painting one series. They are one row
+       now, with the switch in the legend — and NOTHING about either picture changed. Both fills,
+       both ramps, both legends and both `applyChoro` expressions are the ones that were already
+       there; this function only decides which of the two is showing.
+       ⚠ THE MODE BUTTONS GO IN BOTH LEGENDS, because the legend a reader is looking at is the one
+       for the ACTIVE mode — a switch that lived in only one of them would be unreachable from the
+       other half of its own toggle. */
+    let milMode='total';                       /* 'total' = US$ billions · 'gdp' = % of GDP */
+    const MIL_MODES=[['total',()=>window.IntMapLang.t(HOST.lang,'Total ($B)','総額（$B）','Gesamt ($ Mrd.)','Всего ($ млрд)','Total ($ mil M)')],
+                     ['gdp',  ()=>window.IntMapLang.t(HOST.lang,'% of GDP','対GDP比','% des BIP','% ВВП','% del PIB')]];
+    function milIsOn(){ try{ const cb=document.getElementById('dl-milSpend'); return !!(cb&&cb.checked); }catch(_){ return false; } }
+    function milModeRow(el){ if(!el) return;
+      let r=el.querySelector('.dl-milmode');
+      if(!r){ r=document.createElement('div'); r.className='dl-milmode';
+        r.style.cssText='display:flex;gap:5px;margin-top:7px;';
+        r.innerHTML=MIL_MODES.map(m=>'<button type="button" data-m="'+m[0]+'" style="flex:1;min-width:0;border:1px solid rgba(128,128,128,0.3);border-radius:7px;padding:4px 6px;font-size:10.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></button>').join('');
+        const bar=el.querySelector('.dl-scale'); if(bar&&bar.parentNode===el) el.insertBefore(r,bar.nextSibling); else el.appendChild(r);
+        r.addEventListener('click',(ev)=>{ const b=ev.target.closest('button[data-m]'); if(b&&r.contains(b)) setMilMode(b.getAttribute('data-m')); }); }
+      r.querySelectorAll('button[data-m]').forEach(b=>{ const k=b.getAttribute('data-m');
+        const m=MIL_MODES.filter(x=>x[0]===k)[0]; if(m) b.textContent=m[1]();
+        const act=(k===milMode);
+        b.style.background=act?'var(--primary-color)':'var(--input-bg)';
+        b.style.color=act?'#fff':'var(--text-main)';
+        b.setAttribute('aria-pressed',act?'true':'false'); }); }
+    function applyMilMode(){
+      const gdp=(milMode==='gdp'), on=milIsOn();
+      try{ if(lgdMil) lgdMil.style.display=(on&&!gdp)?'block':'none'; }catch(_){}
+      try{ if(lgdMilGDP) lgdMilGDP.style.display=(on&&gdp)?'block':'none'; }catch(_){}
+      try{ milModeRow(lgdMil); milModeRow(lgdMilGDP); }catch(_){}
+      try{ tileLegends(); }catch(_){}
+      try{ setVis('milSpend-fill',on&&!gdp); }catch(_){}
+      try{ setVis('milSpendGDP-fill',on&&gdp); }catch(_){}
+      if(!on) return;
+      withCountries(()=>{ try{
+        if(gdp){ addChoro('milSpendGDP'); applyChoro('milSpendGDP',s=>(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null); setVis('milSpendGDP-fill',true); }
+        else   { addChoro('milSpend');    applyChoro('milSpend',   s=>s.milSpend);                                          setVis('milSpend-fill',true); }
+      }catch(e){ console.warn('milSpend choro fail',e); } });
+    }
+    function setMilMode(k){ if(k!=='gdp'&&k!=='total') return; if(k===milMode) return; milMode=k; applyMilMode(); }
+    window._imMilMode=(k)=>{ if(k==null) return milMode; setMilMode(k); return milMode; };
     function defensePctGDP(s){ if(!s||s.milSpend==null||!s.gdp) return null; const p=(s.milSpend/s.gdp)*100; return isFinite(p)?p:null; }
     function wireNatoHover(){
       if(_natoHoverWired) return; _natoHoverWired=true;
@@ -1846,18 +1986,40 @@ window.IntMapModules.dataLayers=function(HOST){
     const EU_YEARS=[1958,1973,1981,1986,1995,2004,2007,2013,2020,2024];
     let _euYear=EU_YEARS[EU_YEARS.length-1];
     function euMemberAt(code,y){ const j=EU_JOIN[code]; if(j==null||j>y) return false; const l=EU_LEFT[code]; if(l&&y>=l) return false; return true; }
-    function buildEuFC(){ const feats=[]; if(HOST.countryGeo&&HOST.countryGeo.features){ HOST.countryGeo.features.forEach(f=>{ const code=String(f.id); if(!EU.has(code)) return; if(!euMemberAt(code,_euYear)) return; feats.push({type:'Feature',id:code,properties:{__code:code},geometry:f.geometry}); }); } return {type:'FeatureCollection',features:feats}; }
+    function buildEuFC(){ const feats=[]; if(HOST.countryGeo&&HOST.countryGeo.features){ HOST.countryGeo.features.forEach(f=>{ const code=String(f.id); if(!EU.has(code)) return; if(!euMemberAt(code,_euYear)) return; feats.push({type:'Feature',id:code,properties:{__code:code,__y:(EU_JOIN[code]||0)},geometry:f.geometry}); }); } return {type:'FeatureCollection',features:feats}; }
+    /* (#R289) 2020 and 2024 are in EU_YEARS as SLIDER stops (Brexit, and «today»); nobody joined in
+       either, so the colour key is built from the years countries actually acceded in — otherwise
+       the ramp would spend two of its eight steps on waves with no members. */
+    const EU_JOIN_YEARS=[...new Set(Object.values(EU_JOIN))].sort((a,b)=>a-b);
+    let _euStyle='uniform';                          /* (#R289) 'uniform' | 'byYear' */
+    function euFillColor(){ return (_euStyle==='byYear')
+      ? yearFillExpr(EU_JOIN_YEARS,yearColors(EU_JOIN_YEARS),'#1c3faa') : '#1c3faa'; }
+    function setEuStyle(k){ if(k!=='uniform'&&k!=='byYear') return; if(k===_euStyle) return; _euStyle=k; applyEu(); }
+    window._imEuStyle=(k)=>{ if(k==null) return _euStyle; setEuStyle(k); return _euStyle; };
     function addEu(){
       if(!GE().layers.hasSource('src-eu')) GE().layers.addSource('src-eu',{type:'geojson',data:buildEuFC(),promoteId:'__code'});
-      if(!GE().layers.has('eu-fill')) GE().layers.add({id:'eu-fill',type:'fill',source:'src-eu',layout:{visibility:'none'},paint:{'fill-color':'#1c3faa','fill-opacity':opacities.eu!=null?opacities.eu:0.5}},beforeId);
+      if(!GE().layers.has('eu-fill')) GE().layers.add({id:'eu-fill',type:'fill',source:'src-eu',layout:{visibility:'none'},paint:{'fill-color':euFillColor(),'fill-opacity':opacities.eu!=null?opacities.eu:0.5}},beforeId);
       if(!GE().layers.has('eu-line')) GE().layers.add({id:'eu-line',type:'line',source:'src-eu',layout:{visibility:'none'},paint:{'line-color':'#ffd617','line-width':1.5}},beforeId);
     }
-    function applyEu(){ try{ GE().layers.setSourceData('src-eu',buildEuFC()); }catch(_){} }
+    function applyEu(){ try{ GE().layers.setSourceData('src-eu',buildEuFC()); }catch(_){}
+      try{ if(GE().layers.has('eu-fill')) GE().layers.setPaint('eu-fill','fill-color',euFillColor()); }catch(_){}
+      /* ⚠ the legend is only re-drawn while the layer is ON — `_registerLayerOpacity` SHOWS the
+         box, so calling it from a repaint that ran with the layer off would open a legend for a
+         layer that is not on the map. */
+      try{ const cb=document.getElementById('dl-eu'); if(cb&&cb.checked) euLegend(); }catch(_){} }
     function setEuVis(on){ ['eu-fill','eu-line'].forEach(l=>setVis(l,on)); }
     function euLegend(){
       try{
         const el=window._registerLayerOpacity&&window._registerLayerOpacity('eu',LA('EU members','EU加盟国','EU-Mitglieder','Страны ЕС','Países de la UE'),['eu-fill','eu-line'],'dl-eu');
-        if(!el || el.querySelector('.eu-year-row')){ const lbl=el&&el.querySelector('.eu-year-val'); if(lbl) lbl.textContent=_euYear; return; }
+        if(!el) return;
+        /* ⚠ (#R289) THE «BUILT ONCE» GUARD IS NOW A BRANCH, NOT A RETURN. It used to leave the
+           function the moment the year row existed, which is right for the row (rebuilding a
+           <select> under the finger that opened it is #R266's defect) and wrong for everything
+           added after it: the colouring switch's own selected state and its key CHANGE while the
+           legend stays up, so a return would have made this round's control build once and never
+           update — which looks exactly like a button that does nothing. */
+        if(el.querySelector('.eu-year-row')){ const lbl=el.querySelector('.eu-year-val'); if(lbl) lbl.textContent=_euYear; }
+        else {
         const jp=HOST.lang==='jp';
         const row=document.createElement('div'); row.className='eu-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:7px;display:flex;align-items:center;gap:7px;';
         if(typeof isMobile==='function'&&isMobile()){
@@ -1874,7 +2036,21 @@ window.IntMapModules.dataLayers=function(HOST){
           row.querySelector('input').addEventListener('input',(e)=>{ _euYear=EU_YEARS[+e.target.value]||_euYear; const v=el.querySelector('.eu-year-val'); if(v) v.textContent=_euYear; clearTimeout(euLegend._t); euLegend._t=setTimeout(applyEu,120); });
         }
         el.appendChild(row);
+        }
       }catch(_){}
+      /* (#R289) …and the same colouring switch the NATO legend gets, for the same instruction:
+         「EU加盟国レイヤーでも同じことをやって。」 ⚠ The key is built from EU_JOIN_YEARS and it
+         subtracts a member who has LEFT by the selected year — the United Kingdom is in EU_JOIN
+         for ever and off the map from 2020, so counting the 1973 wave as three after Brexit would
+         put a number in the legend that is not on the map. */
+      try{ const el2=document.getElementById('data-legend-eu'); if(el2){
+        styleModeRow(el2,'eu-style-row',()=>_euStyle,setEuStyle);
+        let k=el2.querySelector('.eu-yearkey-wrap');
+        if(!k){ k=document.createElement('div'); k.className='eu-yearkey-wrap';
+          const r=el2.querySelector('.eu-style-row'); if(r&&r.parentNode===el2) el2.insertBefore(k,r.nextSibling); else el2.appendChild(k); }
+        k.innerHTML=(_euStyle==='byYear')?yearKeyHTML(EU_JOIN_YEARS,yearColors(EU_JOIN_YEARS),EU_JOIN,_euYear,EU_LEFT):'';
+        try{ tileLegends(); }catch(_){}
+      } }catch(_){}
     }
     function wireEuHover(){
       if(_euHoverWired) return; _euHoverWired=true;
@@ -2677,7 +2853,7 @@ window.IntMapModules.dataLayers=function(HOST){
     }catch(_){} }
     window._ensureContourDensity=ensureContourDensity;
     /* (#R15c) Generic legend for layers that previously had ONLY an inline opacity slider in the Layers
-       panel and no legend of their own (precip, clouds, ships, planes, hillshade, contours, day/night).
+       panel and no legend of their own (precip, ships, planes, hillshade, contours, day/night).
        Now every opacity lives in a legend, so the Layers panel can drop its inline sliders. The opacity row
        + minimise button are added automatically by tileLegends()/ensureLegendOpacity() (id matches
        data-legend-<id> → opacities[<id>]). */
@@ -2688,7 +2864,6 @@ window.IntMapModules.dataLayers=function(HOST){
        positional audit checks the five slots and the inline table carries the rest. */
     const GENERIC_LEG={
       precip:LA('Precipitation (IMERG)','降水量 (IMERG)','Niederschlag (IMERG)','Осадки (IMERG)','Precipitación (IMERG)'),
-      clouds:LA('Clouds · infrared (GOES + Himawari)','雲・赤外（GOES＋ひまわり）','Wolken · Infrarot (GOES + Himawari)','Облака · ИК (GOES + Himawari)','Nubes · infrarrojo (GOES + Himawari)'),   /* (#R276) NASA GIBS geostationary clean-IR — see IR_SATS */
       ships:LA('Live ship traffic','船舶（リアルタイム）','Schiffsverkehr (live)','Суда (в реальном времени)','Tráfico marítimo en vivo'),
       planes:LA('Live aircraft traffic','航空機（リアルタイム）','Flugverkehr (live)','Самолёты (в реальном времени)','Tráfico aéreo en vivo'),
       sats:LA('Live satellites','人工衛星（リアルタイム）','Live-Satelliten','Спутники в реальном времени','Satélites en vivo'),
@@ -4656,43 +4831,6 @@ window.IntMapModules.dataLayers=function(HOST){
         }
       }); },240000);
     }
-    /* ── the Clouds layer, on a source that still exists ─────────────────────────
-       NASA GIBS geostationary Band-13 「clean infrared」 — Himawari, GOES-East and GOES-West, each a
-       near-real-time WMTS on a 10-minute cadence, stacked so the three discs make one picture.
-       ⚠ WHAT IS NOT IN IT: the Meteosat sector. NASA GIBS carries no Meteosat imagery, so roughly
-       20°W–75°E — Europe, Africa and the western Indian Ocean — has no cloud disc here. The legend
-       says so in words rather than leaving a hole the reader has to explain to themselves (#R273). */
-    const IR_SATS=[['clouds','Himawari_AHI_Band13_Clean_Infrared'],
-                   ['clouds-goese','GOES-East_ABI_Band13_Clean_Infrared'],
-                   ['clouds-goesw','GOES-West_ABI_Band13_Clean_Infrared']];
-    function addCloudsIR(){
-      let any=false;
-      IR_SATS.forEach(([id,layer])=>{
-        try{ addRaster(id,gibs(layer,6,'png','default'),6); setVis('lyr-'+id,true); any=true; }catch(_){}
-        try{ if(GE().layers.has('lyr-'+id)) GE().layers.setPaint('lyr-'+id,'raster-opacity',opacities.clouds); }catch(_){}
-      });
-      cloudsLegendHint();
-      return any;
-    }
-    /* ⚠ THE GAP IS NAMED, NOT LEFT FOR THE READER TO EXPLAIN TO THEMSELVES (#R273). Three discs cover
-       the Americas, the Pacific and Asia–Australia; NASA GIBS carries no Meteosat, so ~20°W–75°E has
-       no imagery here at all. A blank Atlantic-to-India band with nothing saying why is the exact
-       shape of 「対応していない」 being mistaken for 「雲がない」. */
-    function cloudsLegendHint(){
-      try{
-        const el=document.getElementById('data-legend-clouds'); if(!el||el.querySelector('.cl-cov')) return;
-        const d=document.createElement('div'); d.className='dl-hint cl-cov';
-        d.textContent=window.IntMapLang.t(HOST.lang,
-          'NASA GIBS clean-IR, 10 min. GOES-East · GOES-West · Himawari — no Meteosat, so ~20°W–75°E (Europe, Africa) is not covered.',
-          'NASA GIBS 赤外（10分間隔）。GOES-East・GOES-West・ひまわり。Meteosat は含まれないため、西経20度〜東経75度（欧州・アフリカ）は範囲外。',
-          'NASA GIBS Infrarot, 10 min. GOES-East · GOES-West · Himawari — kein Meteosat, daher ist ~20°W–75°O (Europa, Afrika) nicht abgedeckt.',
-          'NASA GIBS ИК, 10 мин. GOES-East · GOES-West · Himawari — без Meteosat, поэтому ~20°з.д.–75°в.д. (Европа, Африка) не покрыты.',
-          'NASA GIBS infrarrojo, 10 min. GOES-East · GOES-West · Himawari — sin Meteosat, por lo que ~20°O–75°E (Europa, África) no está cubierto.');
-        el.appendChild(d);
-      }catch(_){}
-    }
-    function setCloudsVis(on){ IR_SATS.forEach(([id])=>{ try{ if(GE().layers.has('lyr-'+id)) setVis('lyr-'+id,on); }catch(_){} }); }
-    window._setCloudsOpacity=(v)=>{ IR_SATS.forEach(([id])=>{ try{ if(GE().layers.has('lyr-'+id)) GE().layers.setPaint('lyr-'+id,'raster-opacity',v); }catch(_){} }); };
     /* === Refresh tiles for dated layers when the date selector changes === */
     function refreshDatedLayer(id){
       const date=layerDates[id]||GIBS_DATE;
@@ -4732,7 +4870,6 @@ window.IntMapModules.dataLayers=function(HOST){
             rvAutoRefresh();
           });
         }
-        else if(id==='clouds'){ whenStyleReady().then(()=>{ addCloudsIR(); setCloudsVis(true); }); }
         else if(id==='sst'){
           lgdSST.style.display='block'; tileLegends();
           whenStyleReady().then(()=>{ try{ addRaster('sst',gibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',layerDates.sst),7); }catch(_){} try{ setVis('lyr-sst',true); }catch(_){} });
@@ -4746,7 +4883,10 @@ window.IntMapModules.dataLayers=function(HOST){
           try{ _refreshLegendDates(); }catch(_){}
           whenStyleReady().then(()=>{ try{ addRaster('popgrid',popgridTiles(),7); }catch(_){} try{ GE().layers.setSourceTiles('src-popgrid',popgridTiles()); }catch(_){} try{ setVis('lyr-popgrid',true); }catch(_){} });
         }
-        else if(id==='wind'){ try{ const l=document.getElementById('data-legend-wind'); if(l){ l.style.display='block'; tileLegends(); window._updateWindLegend&&window._updateWindLegend(); } window.Wind&&window.Wind.toggle(true); }catch(_){} }
+        /* (#R289) 「風レイヤーオン時は（海岸線が）デフォルトでオン」 — a colour field covers the basemap,
+           so the coast is what tells you where you are looking. `_imCoastAuto` latches, so this is a
+           DEFAULT and not a coupling: a reader who switches the coast back off keeps it off. */
+        else if(id==='wind'){ try{ const l=document.getElementById('data-legend-wind'); if(l){ l.style.display='block'; tileLegends(); window._updateWindLegend&&window._updateWindLegend(); } window.Wind&&window.Wind.toggle(true); window._imCoastAuto&&window._imCoastAuto(); }catch(_){} }
         else if(id==='relief'){
           /* Color elevation relief (#5) — MapLibre v5 color-relief over the DEM, hypsometric tint. */
           whenStyleReady().then(()=>{ try{
@@ -4797,14 +4937,7 @@ window.IntMapModules.dataLayers=function(HOST){
           lgdDem.style.display='block'; tileLegends();
           withCountries(()=>{ try{ addChoro('dem'); applyChoro('dem',s=>s.dem); setVis('dem-fill',true); }catch(e){ console.warn('dem choro fail',e); } });
         }
-        else if(id==='milSpend'){
-          lgdMil.style.display='block'; tileLegends();
-          withCountries(()=>{ try{ addChoro('milSpend'); applyChoro('milSpend',s=>s.milSpend); setVis('milSpend-fill',true); }catch(e){ console.warn('milSpend choro fail',e); } });
-        }
-        else if(id==='milSpendGDP'){
-          lgdMilGDP.style.display='block'; tileLegends();
-          withCountries(()=>{ try{ addChoro('milSpendGDP'); applyChoro('milSpendGDP',s=>(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null); setVis('milSpendGDP-fill',true); }catch(e){ console.warn('milSpendGDP choro fail',e); } });
-        }
+        else if(id==='milSpend'){ applyMilMode(); }   /* (#R289) whichever of the two modes is selected */
         else if(id==='gdppc'){
           lgdGdppc.style.display='block'; tileLegends();
           withCountries(()=>{ try{ addChoro('gdppc'); applyChoro('gdppc',s=>s.gdppc!=null?s.gdppc:null); setVis('gdppc-fill',true); }catch(e){ console.warn('gdppc choro fail',e); } });
@@ -4839,7 +4972,7 @@ window.IntMapModules.dataLayers=function(HOST){
            toggleLayer(id,false) runs the full per-id hide path, so map ⇄ checkbox ⇄ active-list stay in sync. */
         { const _dlid='dl-'+id; [600,1500,3200].forEach(ms=>setTimeout(()=>{ try{ const cb=document.getElementById(_dlid); if(cb && !cb.checked){ toggleLayer(id,false); try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){} } }catch(_){} }, ms)); }
       } else {
-        if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'||id==='gdppc'||id==='tfr'){ setVis(id+'-fill',false); }
+        if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='gdppc'||id==='tfr'){ setVis(id+'-fill',false); }
         else if(id==='nato'){ setNatoVis(false); try{ window._hideGenericLegend&&window._hideGenericLegend('nato'); }catch(_){} }
         else if(id==='eu'){ setEuVis(false); try{ window._hideGenericLegend&&window._hideGenericLegend('eu'); }catch(_){} }
         else if(id==='ships'||id==='planes'){ stopTraffic(id); }
@@ -4872,14 +5005,12 @@ window.IntMapModules.dataLayers=function(HOST){
         if(id==='sst') lgdSST.style.display='none';
         if(id==='gdppc') lgdGdppc.style.display='none';
         if(id==='tfr') lgdTfr.style.display='none';
-        if(id==='milSpend') lgdMil.style.display='none';
-        if(id==='milSpendGDP') lgdMilGDP.style.display='none';
+        if(id==='milSpend'){ lgdMil.style.display='none'; lgdMilGDP.style.display='none'; setVis('milSpendGDP-fill',false); }   /* (#R289) both halves of the one row */
         if(id==='snow') lgdSnow.style.display='none';
         if(id==='aod') lgdAod.style.display='none';
         if(id==='nightsat') lgdNightsat.style.display='none';
         if(GENERIC_LEG[id]){ const gl=document.getElementById('data-legend-'+id); if(gl){ gl.style.display='none'; tileLegends(); } }   /* (#R15c) */
         if(id==='radar'){ if(_rvTimer){ clearInterval(_rvTimer); _rvTimer=null; } try{ rvSetPlay(false); }catch(_){} }
-        if(id==='clouds') setCloudsVis(false);
         tileLegends();
         if(id==='nightside'){ _setNightSide(false); }   /* (#R232) */
       }
@@ -4948,7 +5079,7 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R38) NEVER re-dispatch on the 7 utility toggles. They are not async-race layers, and several have
          stateful handlers (cb-grid's setGrid; borders/roads/rail have their OWN multi-retry re-assert) — a
          re-dispatched change here is what flipped Grid back ON ("何度消しても自動的にチェックされる"). */
-      if(['cb-names','cb-geolabels','cb-poi','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
+      if(['cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
       [500,1400,3000].forEach(ms=>setTimeout(()=>{ try{ if(cb.checked||!cb.isConnected) return; cb.__reassertGuard=1; cb.dispatchEvent(new Event('change',{bubbles:true})); cb.__reassertGuard=0; }catch(_){ try{cb.__reassertGuard=0;}catch(__){} } },ms));
     }); }catch(_){}
     /* Expose for the lyr-row dt-/ft- handlers above */
@@ -5026,8 +5157,6 @@ window.IntMapModules.dataLayers=function(HOST){
          handing it on, on top of a colour field that was already being painted at 0.50 — 「風色面の
          二重透過を解消する」. The module applies it to the raster and to the particle canvas itself. */
       else if(id==='wind'){ try{ window.Wind&&window.Wind.setOpacity&&window.Wind.setOpacity(v); }catch(_){} }
-      /* (#R276) the IR clouds picture is THREE geostationary discs, so one slider drives all three */
-      else if(id==='clouds'){ try{ window._setCloudsOpacity&&window._setCloudsOpacity(v); }catch(_){} }
       else if(id==='subcables'){ if(GE().layers.has('lyr-subcables'))GE().layers.setPaint('lyr-subcables','line-opacity',v); }
       else if(id==='thermal'){ try{ window._setThermalOpacity(v); }catch(_){} }
       else if(window._opacityTargets&&window._opacityTargets[id]){ _applyGenericOpacity(window._opacityTargets[id],v); }
@@ -5146,7 +5275,7 @@ window.IntMapModules.dataLayers=function(HOST){
         'dl-subcables':['lyr-subcables','lyr-subcables-glow','lyr-subcables-pts'],
         'dl-thermal':['lyr-thermal','lyr-thermal-1','lyr-thermal-2','lyr-thermal-3'],
         'dl-pop':['pop-fill'],'dl-hdi':['hdi-fill'],'dl-dem':['dem-fill'],'dl-gdppc':['gdppc-fill'],
-        'dl-tfr':['tfr-fill'],'dl-milSpend':['milSpend-fill'],'dl-milSpendGDP':['milSpendGDP-fill']
+        'dl-tfr':['tfr-fill'],'dl-milSpend':['milSpend-fill','milSpendGDP-fill']   /* (#R289) one row, two fills — whichever mode is on */
       };
       /* (#R79) the base VECTOR toggles were never audited (idsFor returned null) — yet they are the most
          VISIBLE layers of all: default-on country borders, place names, water labels, state lines. Those are
@@ -5159,6 +5288,7 @@ window.IntMapModules.dataLayers=function(HOST){
         'cb-geolabels':['ofm-water','ofm-water2','ofm-river','ofm-peak','geo-sea'],
         'cb-poi':['ofm-poi','ofm-poi-dot'],   /* (#R186) shop/facility names — audited like every other label group */
         'cb-borders':['borders-only-line','borders-only-casing'],'cb-countries':['country-fill'],
+        'cb-coast':['coast-only-line','coast-only-casing'],   /* (#R289) same source, same race, same heal */
         'cb-admin1':['ref-admin1'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
       };
       const sus={}, healed={}, log=[];

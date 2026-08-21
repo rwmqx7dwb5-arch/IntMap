@@ -260,7 +260,34 @@ window.IntMapModules.mapReadout=function(HOST){
     if(HOST.lastLayerVal) parts.push(`<span class="cr-sat">${HOST.lastLayerVal}</span>`);
     /* (#R8c) Live wind speed/direction under the cursor while the Wind layer is on. */
     /* (#R19) No emoji in the always-on readout ("🌬みたいな絵文字は…いらない") — value + direction only. */
-    try{ if(window.Wind&&window.Wind.on&&window.Wind.on()){ const w=window.Wind.sampleAt(HOST._crLng,HOST._crLat); if(w){ const card=['N','NE','E','SE','S','SW','W','NW'][Math.round(w.dir/45)%8]; const sp=window.fmtWindSpeed?window.fmtWindSpeed(w.speed):(w.speed.toFixed(1)+' m/s'); parts.push(`<span class="cr-wind">${sp} ${card}</span>`); } } }catch(_){}
+    /* ══ (#R289) THE DIRECTION IS A WORD IN THE READER'S LANGUAGE, AND AN ARROW THAT MOVES ═════════
+       「風向きも、矢印を動的に動くように表示してください。また、日本語設定でも…NEと表示されますが、
+         ちゃんと北東と書くように。」
+       · the WORD comes from js/compass.js — the one table, so this chip cannot say 「NE」 in Japanese
+         while some other chip says 北東 (that is why the table is a file and not a line here);
+       · the ARROW points DOWNWIND, i.e. `dir + 180`, because `dir` is the meteorological FROM
+         bearing (js/weather.js: atan2(-u,-v)) and the particles on the map beside it fly the other
+         way. An arrow that disagreed with the animation it sits next to would be worse than none.
+       ⚠ THE ANIMATION'S PHASE IS CARRIED, NOT RESTARTED. This whole readout is rebuilt with
+       `innerHTML` on every mousemove, so a CSS keyframe animation on a freshly created node would be
+       re-seeded at t=0 sixty times a second and the arrow would sit still while the pointer moves —
+       a "dynamic" arrow that is only dynamic when nobody is touching the map. A NEGATIVE
+       `animation-delay` taken from a shared clock puts each new node at the phase the old one had
+       reached, so the drift is continuous across every rebuild. */
+    try{ if(window.Wind&&window.Wind.on&&window.Wind.on()){ const w=window.Wind.sampleAt(HOST._crLng,HOST._crLat); if(w){
+      const card=window.IntMapCompass.point(w.dir,HOST.lang,8);
+      const sp=window.fmtWindSpeed?window.fmtWindSpeed(w.speed):(w.speed.toFixed(1)+' m/s');
+      const to=((w.dir+180)%360).toFixed(1);
+      /* seconds per drift cycle: a calm breeze crawls, a jet streaks. Clamped so neither end stops
+         nor strobes. */
+      const dur=Math.max(0.34,Math.min(3,1.5/(0.35+(+w.speed||0)*0.09)));
+      const ph=((typeof performance!=='undefined'?performance.now():Date.now())/1000)%dur;
+      const tip=L('Wind from the {d} — the arrow points the way it is blowing','{d}の風 — 矢印は風が吹いていく向き','Wind aus {d} — der Pfeil zeigt die Windrichtung','Ветер с направления {d} — стрелка показывает, куда он дует','Viento del {d} — la flecha apunta hacia donde sopla').replace('{d}',card);
+      parts.push('<span class="cr-wind" title="'+window.IntMapSafe.html(tip)+'">'
+        +'<span class="cr-warr" style="transform:rotate('+to+'deg)"><i style="animation-duration:'+dur.toFixed(2)+'s;animation-delay:-'+ph.toFixed(2)+'s">'
+        +'<svg viewBox="0 0 14 14" width="13" height="13" aria-hidden="true" focusable="false" fill="currentColor"><path d="M7 0.9 L11.1 10.2 L7 8.1 L2.9 10.2 Z"></path></svg>'
+        +'</i></span>'+sp+' '+card+'</span>');
+    } } }catch(_){}
     /* ══ (#R190) THE INTENSITY UNDER THE CURSOR ═══════════════════════════════════════════════════
        「ホバー地点の震度は色付きで左下の座標標高常時表示欄に表示して。」 The value and its colour come
        from the seismic simulator's OWN painted field (IntMapSeismic.intensityAt), not from a second

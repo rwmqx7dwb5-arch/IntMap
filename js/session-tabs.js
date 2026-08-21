@@ -105,7 +105,12 @@ export function makeSessionTabs(HOST, CTX) {
          flat turf disc; `dl-nightside` is the day/night shading that replaced it. A session that had
          the old row on wants the night side on, which is what it now gets — and since the shading is
          on by default anyway, the translation is usually a no-op rather than a surprise. */
-      const RETIRED={ 'dl-oceancur':'wp-dl-currents', 'dl-night':'dl-nightside', 'dl-temp':'dl-ec-temp' };
+      /* (#R289) …and the two MERGES of this round, which are the same situation seen from the other
+         side: 「1人当たりCO₂排出レイヤーとCO₂排出量（百万t）レイヤーは一つに統合」 and the same for
+         国防費. A session that had the row that went wants the row that stayed — it is the same
+         quantity, and the mode switch in the legend is where the other view now lives. */
+      const RETIRED={ 'dl-oceancur':'wp-dl-currents', 'dl-night':'dl-nightside', 'dl-temp':'dl-ec-temp',
+                      'bx-wbco2t':'bx-wbco2', 'dl-milSpendGDP':'dl-milSpend' };
       for(let i=want.length-1;i>=0;i--){ const to=RETIRED[want[i]];
         if(!to) continue;
         if(want.indexOf(to)<0) want[i]=to; else want.splice(i,1); }

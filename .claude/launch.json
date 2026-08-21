@@ -2,12 +2,25 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "intmap-preview-r289",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4289"
+      ],
+      "port": 4289,
+      "url": "http://127.0.0.1:4289"
+    },
+    {
       "name": "intmap-preview-r288",
       "runtimeExecutable": "node",
       "runtimeArgs": [
         "scripts/serve.mjs",
         "--root",
-        "C:/Users/gyuuk/AppData/Local/Temp/claude/C--Users-gyuuk-OneDrive-IntMap/fa51bdaa-27da-4985-ad4f-c398dd2b853b/scratchpad/wt-r287/dist",
+        "dist",
         "--port",
         "4288"
       ],
