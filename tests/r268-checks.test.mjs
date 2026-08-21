@@ -241,8 +241,13 @@ test('R268 ⑨ three more national services are wired, and each is loaded and re
   /* ⚠ (#R293) a good fetch is recorded through `feedOK(k)` now, because there are TWO clocks to
      write — the state AND when this browser read it (「IntMapがいつ取得した情報かも書け」) — and
      thirteen call sites each writing both by hand is twelve chances to write only one. */
-  assert.match(s, /const feedOK=\(k\)=>\{ FEED_STATE\[k\]='ok'; FEED_GOT\[k\]=Date\.now\(\); \};/,
-    'one setter writes the state and the read time together');
+  /* ⚠ (#R298) …and the panel's own 「Updated」 is the THIRD thing that setter writes. It was written
+     in one place only (the base sweep), so every rotated feed landed without touching it — measured
+     on production, the panel said 「Updated 0:56:52」 for seventeen and a half minutes across ninety
+     successful reads. The property this line pins is 「one setter, every clock」, not the number of
+     clocks, so it asks for the prefix and lets the setter grow. */
+  assert.match(s, /const feedOK=\(k\)=>\{ FEED_STATE\[k\]='ok'; FEED_GOT\[k\]=Date\.now\(\);/,
+    'one setter writes the state and every clock that goes with it');
   for (const k of ['bom', 'inmet', 'hko']) {
     assert.ok(new RegExp("feedOK\\('" + k + "'\\)").test(s), k + ' must record a good fetch');
     assert.ok(new RegExp("FEED_STATE\\." + k + "='error'").test(s), k + ' must record a failed fetch');

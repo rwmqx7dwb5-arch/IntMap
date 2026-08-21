@@ -476,6 +476,15 @@
      which covers everything — so a caller that needs an arbitrary point (`valueAt`, the drone
      forecast) still gets the global read it always got. */
   function bandCovers(have, want) {
+    /* ══ ⚠⚠⚠ (#R298) 「持っていない」と「地球を持っている」を同じ値で表してはならなかった ═══════
+       MEASURED consequence: `heldBand()` answered `null` BOTH when a global frame was in hand and
+       when NO frame was in hand, and the line below reads `null` as 「the globe, which covers
+       everything」. So on the very first load — the one #R297 wrote `bandNear` for — the caller's
+       test `if(!bandCovers(heldBand(VAR), b)) b = nearBand()` was FALSE, the narrowing was skipped,
+       and the opening view (the globe, so `bandFor` is null too) read the whole planet:
+       13,199,360 samples before a single particle moved. #R297's fix existed and never ran.
+       ⚠ 「nothing is held」 is now `false`, which is a different answer from 「the globe」. */
+    if (have === false) return false;                              /* (#R298) no frame at all */
     if (have === null || have === undefined) return true;          /* the globe covers everything */
     if (!want) return false;                                       /* the globe is not covered by a band */
     return have[1] <= want[1] + 1e-6 && have[3] >= want[3] - 1e-6;
@@ -1018,7 +1027,9 @@
     bandCovers: bandCovers,
     /* (#R290) …of a NAMED variable, because there is more than one frame now: the wind asks whether
        ITS band still covers the view, and the answer must not be the temperature's. */
-    heldBand: function (variable) { var f = variable ? frameFor(stateKey(variable, '')) : held; return f ? (f.band || null) : null; },
+    /* ⚠ (#R298) `false` = 「this variable has no frame at all」, `null` = 「it has a GLOBAL frame」.
+       They are different answers and `bandCovers` treats them differently — see the note there. */
+    heldBand: function (variable) { var f = variable ? frameFor(stateKey(variable, '')) : held; return f ? (f.band || null) : false; },
     heldFrames: function () { return frames.map(function (f) { return { variable: f.variable, key: f.key, band: f.band, samples: frameSize(f) }; }); },
     valueAt: valueAt,
     valueNow: valueNow,

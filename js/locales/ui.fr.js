@@ -4892,4 +4892,9 @@ window.IntMapLang.define('fr', { ui: {
   "Use my current location": "Utiliser ma position actuelle",   /* (#R296) */
   "Use my location (permission was refused)": "Utiliser ma position (autorisation refusée)",   /* (#R296) */
   "Window (h)": "Fenêtre (h)",   /* (#R296) */
+  "Edit message": "Modifier le message",   /* (#R298) */
+  "every {0} s": "toutes les {0} s",   /* (#R298) */
+  "Find routes": "Rechercher des itinéraires",   /* (#R298) */
+  "Tap the map to choose a point": "Touchez la carte pour choisir un point",   /* (#R298) */
+  "The map is not ready to choose a point yet": "La carte n’est pas encore prête pour choisir un point",   /* (#R298) */
 } });

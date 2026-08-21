@@ -47,6 +47,7 @@ import { makeLabelOcclusion } from './label-occlusion.js';
 import { makeWheelZoom } from './wheel-zoom.js';
 import { makeLayerDropdown } from './layer-dropdown.js';
 import { makeLayerFavs } from './layer-favs.js';
+import { makeProjection } from './map-projection.js';   /* (#R298) Globe / Flat and the flat map's free scroll — one subject, five places, see the file */
 import { makePremiumPlan } from './premium-plan.js';
 import { makeScreenshot } from './screenshot.js';
 import { makeSessionTabs } from './session-tabs.js';
@@ -1529,7 +1530,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       /* (#R178) the contract takes a MODE ('flat' | 'globe' | 'globe-true'), not a MapLibre projection
          spec — the point of the seam is that "a globe" is a request, and each engine decides what
          object expresses it. __imap is published at construction now (see there), not here. */
-      try{ if(!/[?&]flat\b/.test(location.search)) GE().camera.setProjection('globe'); }catch(e){}
+      PROJ.boot();   /* (#R298) 「平面地図は自由スクロールに一本化して」 — the projection this session opens in, `?flat` included, through the kernel command. js/map-projection.js */
       setupIntelLayers(); setupPinLayers(); applyTheme(); try{ satSetup(); }catch(_){} if(countryGeo)addCountryLayers(); renderUI();
       /* (#R207) the satellite default goes through the SAME kernel command the button does, so the
          provider controller and `_reassertBase` are set up identically. `IntMapOS.has` is real (it is
@@ -2602,15 +2603,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* Self-heal: whenever the style changes (a layer add/remove can re-stack or reset basemap visibility),
      re-assert the basemap if it no longer matches the chosen mode. Guarded to a real mismatch → no loop. */
   if(GE().hasRenderer()) GE().events.on('styledata',()=>{ try{ if(!GE().ready()||!GE().layers.has('layer-sat')) return; const wantSat=(currentMapType==='sat'); const isSat=(GE().layers.getLayout('layer-sat','visibility')==='visible'); if(wantSat!==isSat) applyTheme(); }catch(_){} });
-  /* (#R7-mobile-zoom) Mobile Mercator must zoom out far enough to see the whole world. A min-zoom of
-     1.4 left the world bigger than a portrait phone, so it felt "stuck" — phones get 0 (full world),
-     desktop keeps a sensible floor. */
-  function flatMinZoom(){ return isMobile()?0:1.2; }
-  /* projection — TRUE kernel commands (UI + Atlas both call these). */
-  IntMapOS.register('view.proj.flat', ()=>{ currentProj='flat'; document.getElementById('btn-view-flat').classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!GE().hasRenderer())return; GE().camera.setProjection('flat'); GE().camera.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Flat map', btn:'btn-view-flat', group:'view'});
-  IntMapOS.register('view.proj.globe', ()=>{ currentProj='globe'; document.getElementById('btn-view-globe').classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!GE().hasRenderer())return; try{ GE().camera.setMaxBounds(null); GE().camera.setRenderWorldCopies(false); }catch(_){} GE().camera.setMinZoom(0); GE().camera.setProjection('globe'); updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Globe', btn:'btn-view-globe', group:'view'});
-  document.getElementById('btn-view-flat').onclick=()=>IntMapOS.exec('view.proj.flat',{source:'ui'});
-  document.getElementById('btn-view-globe').onclick=()=>IntMapOS.exec('view.proj.globe',{source:'ui'});
+  /* (#R298) PROJECTION — Globe / Flat, the min-zoom floor, the rule that a flat map wraps and the
+     watchdog that keeps it wrapping, all in js/map-projection.js (its header says what moved and what
+     changed). `wire()` runs from exactly where the two registrations stood, because the `load` handler
+     above looks `view.proj.flat` up BY NAME. ⚠ `currentProj` stays HERE, because IM_HOST publishes it
+     as `proj` and ten other modules read that — so it goes over as a live pair, never as a copy. */
+  const PROJ=makeProjection({ GE, os:IntMapOS, isMobile, updateOcclusion:()=>updateOcclusion(),
+    getProj:()=>currentProj, setProj:(v)=>{ currentProj=v; }, cmpFollowProj:()=>{ try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} } });
+  PROJ.wire();
 
   /* ===== 3D terrain (Google-Earth-style relief) ===== */
   let terrain3D=false;
@@ -3479,23 +3479,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* Persist on the simpler toggles too (these have their own handlers; we just add saving) */
   ['lang-en','lang-jp','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(saveSettings,0)); });
 
-  /* ══ ⚠⚠ (#R297) THE FLAT MAP WRAPS. THERE IS NO OTHER KIND ═══════════════════════════════════
-     「平面地図は自由スクロールに一本化し、ヨーロッパ中心の固定地図は完全削除。設定の該当項目も削除。」
-     「Fixed extent (Europe-centered)」 was a single, non-repeating world: pan east from Japan and the
-     map stopped dead at the antimeridian, in a frame centred on Europe because that is where
-     longitude 0 is. #R223 made 「free」 the default and kept 「fixed」 behind an explicit-choice latch;
-     this removes the MODE — option, saved value, latch, Settings row — so `imFlatPan` no longer
-     exists anywhere in the app. ⚠ NEVER cage the camera with maxBounds (the original 「locked near
-     Europe」 bug); the line below clears a cage anything else may have set, and it stays. */
-  function applyFlatPanSetting(){
-    if(!GE().hasRenderer()) return;
-    try{ GE().camera.setMaxBounds(null); }catch(_){}
-    if(currentProj!=='flat') return;
-    try{ GE().camera.setRenderWorldCopies(true); }catch(_){}
-    /* (#R28) keep the compare map's world-copies in step with the main map's free-pan setting */
-    try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){}
-  }
+  /* (#R298) the wrap rule (#R297) and its watchdog moved with the rest of the projection; the local
+     name survives because the Settings commit above calls it and the global because it is a public
+     one, and `watch()` registers the styledata/idle listeners from exactly the position they had. */
+  const applyFlatPanSetting=PROJ.applyFlatPanSetting;
   window.applyFlatPanSetting=applyFlatPanSetting;
+  PROJ.watch();
 
   /* ---------- Unified time slider → dated weather layers + community (#8) ---------- */
   window.applyGlobalDate=function(){

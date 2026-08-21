@@ -81,20 +81,33 @@ test('#R288 ① the hatch covers both silences, and the other three states survi
 /* ── ② 「発令なし」 is decided at the administrative unit ────────────────────────────────────── */
 test('#R288 ② the quiet grey is a unit layer, under the warnings, in the same grey', () => {
   const src = WP();
-  assert.match(src, /const QSRC='wp-alert-quiet-src',\s*QFILL='wp-alert-quiet',\s*QLINE='wp-alert-quiet-line';/);
+  /* ⚠ (#R298) THIS CHECK USED TO NAME THE STRUCTURE, AND THE STRUCTURE WAS THE DEFECT.
+     It required a SECOND source and a SECOND pair of layers for the quiet grey — which is exactly
+     what made Japan's 「発表なし」 a different colour, at a different opacity, in a different layer
+     from everyone else's, and what put a grey sheet UNDER every warned unit. The invariant this
+     test exists for is 「発表なし is drawn per unit, in one grey, and never under the answer」, and
+     that is the question it asks now. */
+  assert.ok(!/wp-alert-quiet/.test(src),
+    'there is no second quiet source or layer — one collection, one fill, one grey');
   /* ⚠ (#R293) the VALUE moved (「灰色塗の色味は少しだけ白に近づけろ」) and the PROPERTY did not: one
      declaration, and the country-wide sheet paints from that same constant rather than a copy of
      its literal — which is now enforced by construction instead of by two matching regexes. */
   assert.match(src, /const QUIET_COL='rgba\(\d+,\d+,\d+,0\.42\)';/,
     'the unit grey is declared once — a second shade would be a second meaning');
   assert.match(src, /\n\s+1,QUIET_COL,/, '…and the country-wide sheet paints from that declaration');
-  const i = src.indexOf('function ensureQuiet(');
-  assert.ok(i > 0, 'ensureQuiet must exist');
-  const body = src.slice(i, i + 1400);
-  assert.match(body, /GE\(\)\.layers\.has\('wp-alert-fill'\)\?'wp-alert-fill'/,
-    'the quiet units go UNDER the warning fills, by NAME (#R277’s rule)');
-  assert.match(body, /id:QFILL,type:'fill'/);
-  assert.match(body, /id:QLINE,type:'line'/, 'the division is half the answer — the outline is required');
+  /* the unit grey is produced in ONE place, and that place is not country-specific */
+  assert.match(src, /function quietFeature\(iso,feed,geometry,unit,name\)\{/);
+  assert.match(src, /colA:NONE_COL, colN:NONE_COL/, 'one grey for every country');
+  assert.ok(!/quietFeature\('JPN'/.test(src),
+    'no country gets a quiet path of its own — that was why Japan looked different');
+  /* it rides in the SAME collection as the warnings, ahead of them (array order is draw order) */
+  assert.match(src, /quietFeatures\(\)\.concat\(feats\)/,
+    'quiet first, warnings after — one source, one fill layer');
+  /* and a unit a warning is drawn on does not ALSO get a grey underneath it */
+  assert.match(src, /if\(coveredByWarning\(iso,g\)\) return;/);
+  assert.match(src, /function coveredByWarning\(iso,g\)\{/);
+  /* the division is still half the answer: the outline tells norm-0 units apart from each other */
+  assert.match(src, /'line-color':\['case',\['>',\['get','norm'\],0\],\['get',colField\(\)\],'rgba\(/);
   /* a country the unit layer is drawing must not ALSO get the country-wide sheet */
   assert.match(src, /return\s*quietSet\[c\]\?2:1;/);
   /* the unit sets are the ones the placement ladder already builds */
@@ -156,7 +169,7 @@ test('#R288 ④ the rotation is view-first, and the shape library retries sooner
 /* ── ⑤ one call decides whether the layer is showing ────────────────────────────────────────── */
 test('#R288 ⑤ alert visibility is one list, one call, re-asserted', () => {
   const src = WP();
-  assert.match(src, /const ALL_LYR=\(\)=>LYR\.concat\(\[CHORO,HATCH,QFILL,QLINE\]\);/);
+  assert.match(src, /const ALL_LYR=\(\)=>LYR\.concat\(\[CHORO,HATCH\]\);/);
   assert.match(src, /function applyAlertVis\(\)\{ setVis\(ALL_LYR\(\),on\); \}/);
   assert.match(src, /GE\(\)\.events\.on\('idle',\(\)=>\{ if\(on\) applyAlertVis\(\); \}\)/, 're-asserted when the map settles');
   assert.match(src, /function tick\(\)\{ if\(on\) applyAlertVis\(\);/, '…and when it does not');

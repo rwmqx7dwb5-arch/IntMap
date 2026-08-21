@@ -149,8 +149,19 @@ test('R273 ⑤ the area carries the hazard’s own name, and says when more than
   const reg = /legendId:'wpalerts', layers:\(\)=>\[([^\]]*)\]/.exec(s);
   assert.ok(reg, 'the opacity targets must be declared');
   assert.ok(reg[1].includes("'wp-alert-fill'"), 'the fill follows the slider');
-  assert.ok(!reg[1].includes('wp-alert-line'), 'the outline does NOT — it carries the rank');
-  assert.ok(!reg[1].includes('wp-alert-lbl'), 'nor does the hazard name');
+  /* ⚠ (#R298) THE RULE IS ABOUT THE RANK, NOT ABOUT THE LAYER. The outline layer draws two
+     different things: the outline of a WARNED unit, which carries the rank and must survive a fill
+     you can see through, and the outline of a `norm` 0 unit, which is the DIVISION between two
+     greys and is part of the wash. MEASURED on production: with the slider at 0 the quiet units and
+     their outlines were still painted at full strength — 「発表無しポリゴンだけ不透明度選択の対象外
+     なのを辞めろ」. So the layer IS a target and its opacity is an EXPRESSION: 0.95 where the rank
+     is, the slider where it is not — the same shape `hatchOp`/`choroOp` already use, and ⑯ below is
+     what stops the slider flattening it back to a scalar. */
+  assert.ok(reg[1].includes("'wp-alert-line'"), 'the outline is a target…');
+  assert.match(s, /const lineOp=\(v\)=>\['case',\['>',\['get','norm'\],0\],0\.95,/,
+    '…but the rank keeps its own opacity, and only the quiet division follows the slider');
+  assert.match(s, /OE\['wp-alert-line'\]=lineOp;/, 'and the builder is registered, so the scalar never lands');
+  assert.ok(!reg[1].includes('wp-alert-lbl'), 'the hazard name does not follow the slider');
 });
 
 /* ── ⑥ four grades, not one green dot ──────────────────────────────────────────────────────── */

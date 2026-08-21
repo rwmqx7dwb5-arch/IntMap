@@ -510,7 +510,19 @@ window.IntMapModules.satellitesLive=function(HOST){
   /* ── observer geometry ────────────────────────────────────────────────────────────────────────
      "Can I see it from here?" is a look-angle question, not a distance-on-screen question: a
      satellite 2,000 km up looks adjacent on a world map and is still under the horizon. */
-  function observer(){ try{ const c=GE().camera.getCenter();
+  /* ══ ⚠⚠ (#R298) …AND «HERE» IS THE MAP'S CENTRE ON PURPOSE ═══════════════════════════════════════
+     「地点を選ばないといけない系のツール、押したら勝手に地図中心を選択しているものとして結果を出すのを
+       辞めろ。」 Five point tools were doing exactly that and now ask (js/map-ui.js `_askPoint`). This
+     one is deliberately not one of them: it is not opened and then asked about a place — it is a LIVE
+     LAYER whose answer changes as the camera moves, read off a hover over a moving dot, so the sky it
+     describes is the sky over what is on screen. Stopping to ask for a tap on every hover would be a
+     question with no reader waiting for it. What the report is really about — answering for a point
+     nobody named — is met by SAYING which point: the hover card's 「地図中心から」 line and the detail
+     card's 「From the map center」 section header both name this observer where its numbers are printed.
+     ⚠ `at` IS THE DOOR FOR A CALLER THAT HAS A POINT. Atlas holds the exact spot the reader clicked
+     (`_herePoint`) and asks this module 「ここから見えるか」 with nothing, so it answers about the camera
+     instead; that call site is in another file. Given nothing, the behaviour is what it always was. */
+  function observer(at){ try{ const c=(at&&isFinite(at.lng)&&isFinite(at.lat))?at:GE().camera.getCenter();
       return { longitude:c.lng*D2R, latitude:c.lat*D2R, height:0 }; }catch(_){ return null; } }
   function lookFrom(obs,f){
     if(!SAT||!obs||!f||!f.eci) return null;
@@ -525,9 +537,9 @@ window.IntMapModules.satellitesLive=function(HOST){
   /* THE NEXT PASS, by search rather than by formula. Coarse 30 s steps until the elevation crosses
      the horizon, then a bisection onto the crossing and a scan for the maximum. Bounded by
      `horizonH` hours so a satellite that simply never rises here says so instead of spinning. */
-  function nextPass(id,fromT,horizonH){
+  function nextPass(id,fromT,horizonH,at){
     if(!SAT) return null;
-    const obs=observer(); if(!obs) return null;
+    const obs=observer(at); if(!obs) return null;   /* (#R298) the caller's point when it has one */
     let s=null; for(let i=0;i<sats.length;i++) if(sats[i].id===id){ s=sats[i]; break; }
     if(!s) return null;
     const t0=(fromT||new Date()).getTime(), horizon=(horizonH||24)*3600000;
@@ -834,10 +846,14 @@ window.IntMapModules.satellitesLive=function(HOST){
       +(f.periodMin?('<div>'+S(L('Period','周期','Umlaufzeit','Период','Periodo'))+': '+f.periodMin.toFixed(1)+' min · '+S(L('incl.','傾斜角','Neig.','накл.','incl.'))+' '+(f.inclDeg==null?'—':f.inclDeg.toFixed(1)+'°')+'</div>'):'')
       +(la?('<div>'+S(L('From the map center','地図中心から','Von der Kartenmitte','От центра карты','Desde el centro'))+': '
           +S(L('elev.','仰角','Elev.','возв.','elev.'))+' '+la.elDeg.toFixed(1)+'° · '+S(L('az.','方位','Az.','азим.','az.'))+' '+la.azDeg.toFixed(0)+'° · '+n0(la.rangeKm)+' km</div>'):'')
-      +'<div style="color:'+(up?'#30d158':'var(--text-muted)')+';">'
-        +S(up?L('Above the horizon here','ここでは地平線の上','Über dem Horizont','Над горизонтом','Sobre el horizonte')
-             :L('Below the horizon here','ここでは地平線の下','Unter dem Horizont','Под горизонтом','Bajo el horizonte'))
-      +(f.sunlit==null?'':' · '+S(f.sunlit?L('sunlit','太陽光を受けている','sonnenbeschienen','освещён Солнцем','iluminado'):L('in eclipse','影の中','im Erdschatten','в тени Земли','en eclipse')))+'</div>'
+      /* ⚠ (#R298) NO OBSERVER, NO HORIZON CLAIM. `up` is false both when the satellite is under the
+         horizon and when `lookFrom` returned nothing at all, so this line printed 「ここでは地平線の下」
+         for a look angle that was never computed — an answer manufactured out of a failure. The part
+         that belongs to the satellite itself (sunlit / in eclipse) is true either way and stays. */
+      +((la||f.sunlit!=null)?('<div style="color:'+(up?'#30d158':'var(--text-muted)')+';">'
+        +(la?S(up?L('Above the horizon here','ここでは地平線の上','Über dem Horizont','Над горизонтом','Sobre el horizonte')
+                 :L('Below the horizon here','ここでは地平線の下','Unter dem Horizont','Под горизонтом','Bajo el horizonte')):'')
+        +(f.sunlit==null?'':((la?' · ':'')+S(f.sunlit?L('sunlit','太陽光を受けている','sonnenbeschienen','освещён Солнцем','iluminado'):L('in eclipse','影の中','im Erdschatten','в тени Земли','en eclipse'))))+'</div>'):'')
       +'<div style="font-size:10px;color:var(--text-muted);margin-top:4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:3px;">'
       +(bundled?S(L('Bundled catalog','同梱カタログ','Mitgelieferter Katalog','Встроенный каталог','Catálogo incluido')):'CelesTrak')
       +' · SGP4/SDP4</div>';

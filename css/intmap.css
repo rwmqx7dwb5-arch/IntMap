@@ -3261,10 +3261,28 @@ body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
 .rtp.rtp-min{ max-height:none; }
 .rtp.rtp-min .rtp-fixed, .rtp.rtp-min .rtp-tabs, .rtp.rtp-min .rtp-body, .rtp.rtp-min .rtp-foot{ display:none; }
 .rtp-grip{ display:none; }
+/* ══ ⚠⚠ (#R298) 「移動もリサイズも何もかもできないとかクソ」 ═══════════════════════════════════════
+   The declarations above are the panel's STARTING rectangle and nothing more. js/routing-ui.js hands
+   the element to js/window-manager.js's `makeDraggable` / `addEdgeResize`, which write left / top /
+   width / height inline and `!important` — so `width:clamp(…)` is what the panel opens at and the
+   reader's own size is what it keeps. `max-height` has to give way for the same reason: a height the
+   reader dragged is a height, not a suggestion. `data-dragged` is the window manager's own mark. */
+.rtp[data-dragged="1"]{ max-height:none; }
 
-.rtp-head{ flex:0 0 auto; display:flex; align-items:center; gap:9px; padding:11px 12px 9px 14px; border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16)); }
+/* ══ ⚠⚠⚠ (#R298) 「UIのサイズがアンバランス。不要なものが大きく、必要なものが小さい。」 ══════════════
+   MEASURED on the desktop panel before touching it: title bar 55 px, mode switch 54 px, section tabs
+   41 px — 150 px of chrome — while the two controls the whole panel exists for, the start and the
+   destination, were 40 px tall with 14 px type, and the primary action did not exist at all. The
+   export row was four 36 px chips for things a reader presses once, after the journey is planned.
+     title 55→48 · modes 54→44 · tabs 41→35 · export chips 36→30
+     fields 40→48 with 15.5 px type · a 44 px filled 「経路を検索」 beside them · card title 16→17 px
+   ⚠ NOTHING IS REMOVED. All four export buttons are still there, at the size a secondary control
+   should be — 「フッタの GPX / GeoJSON / 共有 / 消去は消さない」. */
+.rtp-head{ flex:0 0 auto; display:flex; align-items:center; gap:9px; padding:7px 10px 6px 14px; border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16)); cursor:move; user-select:none; }
 .rtp-head .rtp-ic{ display:inline-flex; color:var(--primary-color); }
-.rtp-head h2{ flex:1; margin:0; font-size:16px; font-weight:650; letter-spacing:-0.2px; }
+.rtp-head h2{ flex:1; margin:0; font-size:15px; font-weight:650; letter-spacing:-0.2px; }
+/* the header is the drag handle, so its own controls must still read as controls */
+.rtp-head .rtp-btn-ico{ cursor:pointer; }
 .rtp-btn-ico{
   flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center;
   width:34px; height:34px; min-width:34px; padding:0;
@@ -3278,15 +3296,22 @@ body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
   outline:2px solid var(--primary-color); outline-offset:2px;
 }
 
-.rtp-fixed{ flex:0 0 auto; padding:10px 14px 6px; display:flex; flex-direction:column; gap:9px; }
-.rtp-modes{ display:flex; gap:4px; background:var(--input-bg); border-radius:12px; padding:4px; }
+/* ⚠ (#R298) `flex:0 1` — IT MAY SHRINK NOW, because the panel's height is the reader's. With
+   `flex:0 0 auto` a panel dragged short simply CLIPPED this block against `overflow:hidden`, and the
+   footer and half the form went behind the edge with no way to reach them. It gives way last (the
+   answers below it absorb the shrink first) and scrolls inside itself for the remainder. */
+.rtp-fixed{ flex:0 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:10px 14px 6px; display:flex; flex-direction:column; gap:9px; }
+/* the mode switch is a chooser between four things, not the reason the panel is open — 44 px, not 54 */
+.rtp-modes{ display:flex; gap:4px; background:var(--input-bg); border-radius:12px; padding:3px; }
 .rtp-mode{
-  flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:2px;
-  min-height:46px; padding:5px 2px; border:none; border-radius:9px;
+  flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:1px;
+  min-height:36px; padding:2px; border:none; border-radius:9px;
   background:transparent; color:var(--text-muted); cursor:pointer; font:inherit; font-size:12px;
   transition:background .14s ease, color .14s ease;
 }
-.rtp-mode .rtp-mode-tx{ font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+/* an inline <svg> in an inline span carries a text line's descender with it — 4 px of nothing */
+.rtp-mode .rtp-mode-ic{ display:flex; align-items:center; justify-content:center; }
+.rtp-mode .rtp-mode-tx{ font-size:12px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
 .rtp-mode:hover{ color:var(--text-main); }
 /* the selected mode is NOT signalled by colour alone (§6/§19): background, weight and aria-pressed */
 .rtp-mode.on{ background:var(--card-bg); color:var(--primary-color); font-weight:650; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
@@ -3303,13 +3328,33 @@ body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
   font-size:12px; font-weight:700; color:#fff; background:#1a73e8;
 }
 .rtp-mark-a{ background:#1e8e3e; } .rtp-mark-b{ background:#d93025; }
+/* ⚠ (#R298) THE BIGGEST CONTROL ON THE PANEL, because it is the one the reader came to use.
+   48 px is also over the 44 px target size WCAG 2.2 asks for, on the desktop as well as the phone. */
 .rtp-in{
-  flex:1 1 auto; min-width:0; height:40px; padding:0 11px; box-sizing:border-box;
-  border-radius:11px; border:1px solid var(--glass-border,rgba(128,128,128,0.28));
-  background:var(--input-bg); color:var(--text-main); font:inherit; font-size:14px; outline:none;
+  flex:1 1 auto; min-width:0; height:48px; padding:0 12px; box-sizing:border-box;
+  border-radius:12px; border:1px solid var(--glass-border,rgba(128,128,128,0.28));
+  background:var(--input-bg); color:var(--text-main); font:inherit; font-size:15.5px; outline:none;
 }
 .rtp-field.ok .rtp-in{ border-color:rgba(0,122,255,0.55); }
-.rtp-fieldbar{ display:flex; gap:7px; flex-wrap:wrap; }
+.rtp-fieldbar{ display:flex; gap:7px; flex-wrap:wrap; align-items:center; }
+/* ══ ⚠⚠ (#R298) 「経路を検索ボタンがないのもおかしい。」 THE PRIMARY ACTION, AND IT LOOKS LIKE ONE ══
+   A filled iOS-style button beside the fields it acts on: it grows into whatever the two chips leave
+   and takes the whole row when they do not leave enough, so it is the widest thing on the line in
+   every language. `rtp-busy` is the working state — the label says so too (js/routing-ui.js). */
+.rtp-go{
+  flex:1 1 auto; min-width:132px; min-height:44px; padding:0 16px; box-sizing:border-box;
+  display:inline-flex; align-items:center; justify-content:center;
+  border:none; border-radius:12px; background:var(--primary-color); color:#fff;
+  font:inherit; font-size:15px; font-weight:650; letter-spacing:-0.2px; cursor:pointer;
+  transition:filter .13s ease, opacity .13s ease;
+}
+.rtp-go:hover:not(:disabled){ filter:brightness(1.08); }
+.rtp-go:active:not(:disabled){ filter:brightness(0.94); }
+.rtp-go:disabled{ opacity:0.45; cursor:not-allowed; }
+/* ⚠ NOT `.rtp-busy` — that class already means 「small muted footnote text」 further down this file,
+   and wearing it would have shrunk and greyed the label ON a filled button. */
+.rtp-go.rtp-go-busy{ cursor:progress; opacity:0.7; }
+.rtp .rtp-go:focus-visible{ outline:2px solid var(--primary-color); outline-offset:2px; }
 
 .rtp-when{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
 .rtp-when select, .rtp-when input, .rtp .rtp-hyear, .rtp .rtp-hkind{
@@ -3325,14 +3370,23 @@ body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
 .rtp-busy{ font-size:13px; color:var(--text-muted); }
 
 .rtp-tabs{ flex:0 0 auto; display:flex; gap:2px; padding:2px 12px 0; border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16)); }
+/* (#R298) a section switch is navigation, not the answer — 41 px of the panel was too much of it */
 .rtp-tab{
-  flex:1 1 0; min-height:38px; padding:8px 6px; border:none; background:transparent;
+  flex:1 1 0; min-height:32px; padding:5px 6px; border:none; background:transparent;
   color:var(--text-muted); font:inherit; font-size:13px; font-weight:600; cursor:pointer;
   border-bottom:2px solid transparent; transition:color .13s ease, border-color .13s ease;
 }
 .rtp-tab.on{ color:var(--text-main); border-bottom-color:var(--primary-color); }
 
-.rtp-body{ flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:10px 14px 12px; }
+/* ⚠ (#R298) THE SCROLLBAR IS HELD 9 px OFF THE PANEL EDGE, which is exactly the width of the
+   invisible border zone `addEdgeResize` hit-tests. Without the inset the two occupy the same pixels,
+   and grabbing the scrollbar of a resizable panel starts a resize instead of a scroll. The right
+   margin and the reduced right padding add up to the 14 px the left side has, so nothing moves. */
+/* ⚠ SHRINK 100, not 1. Flexbox weights shrinking by `flex-shrink × content size`, so a plain `1` on
+   both split a squeezed panel PROPORTIONALLY — measured at the 360 px floor: the pinned form got
+   71 px and the answers 157, i.e. the form the panel exists to fill was the part that vanished. The
+   answers give way first and completely; only then does the form start to scroll inside itself. */
+.rtp-body{ flex:1 100 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:10px 5px 12px 14px; margin-right:9px; }
 .rtp-pane[hidden]{ display:none; }
 .rtp-empty, .rtp-help{ font-size:12.5px; color:var(--text-muted); line-height:1.55; margin:6px 0; }
 .rtp-dim{ font-size:12.5px; color:var(--text-muted); }
@@ -3386,16 +3440,30 @@ body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
 .rt-alt-row{ display:flex; align-items:flex-start; gap:10px; min-width:0; }
 .rt-alt-detail{ margin-top:9px; padding-top:9px; border-top:1px solid var(--glass-border,rgba(128,128,128,0.18)); cursor:default; }
 .rt-alt-detail .rtp-legs, .rt-alt-detail .rtp-steps{ margin:0; }
+/* ⚠ (#R298) 「Atlas内の経路UIを勝手に例外にするな」 — the chat draws the SAME card, so the detail that
+   used to be a sibling with an inline `max-height:240px` is now inside it and keeps that bound here.
+   A reply is a message in a scrolling log: a forty-step turn list must not push the rest of the
+   conversation off the screen, which is the reason the sibling had the bound in the first place. */
+#atlas-panel .rt-alt-detail{ max-height:240px; overflow:auto; }
 .rt-alt:hover{ background:var(--input-bg); }
 /* ⚠ (#R296) …and hovering the OPEN one must not tint the detail as if the whole thing were one
    pressable target — only the summary row is. */
-.rt-alt.on:hover{ background:transparent; }
-.rt-alt.on .rt-alt-row:hover{ background:var(--input-bg); border-radius:9px; }
-/* selection is a BORDER + a filled key + aria-checked, never colour alone (§10) */
-.rt-alt.on{ border-color:var(--primary-color); border-width:2px; padding:8px 10px; background:var(--input-bg); }
+/* ⚠ (#R298) …and it keeps its SELECTED tint while hovered rather than falling back to transparent:
+   the selected fill is no longer `--input-bg`, so «transparent» here would have made the chosen card
+   lose its own colour under the pointer. Only the summary row lights up. */
+.rt-alt.on:hover{ background:rgba(0,122,255,0.12); }
+.rt-alt.on .rt-alt-row:hover{ background:rgba(0,122,255,0.10); border-radius:9px; }
+/* selection is a BORDER + a filled key + a tick + aria-checked, never colour alone (§10) */
+/* ⚠ (#R298) 「選ばれているものが明らかに分かる」 — the fill was `--input-bg`, which is also what an
+   UNSELECTED card takes on hover, so the two states were one step apart and the step was a border.
+   A tinted fill in the accent colour plus the tick below is what tells them apart at a glance. */
+.rt-alt.on{ border-color:var(--primary-color); border-width:2px; padding:8px 10px; background:rgba(0,122,255,0.12); }
 .rt-alt-key{ flex:0 0 auto; width:22px; height:22px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:700; }
+/* the tick is drawn, not typed: no glyph to translate, no font to fail to load, no emoji */
+.rt-alt-tick{ flex:0 0 auto; position:relative; align-self:center; width:21px; height:21px; border-radius:50%; background:var(--primary-color); }
+.rt-alt-tick::after{ content:''; position:absolute; left:7.5px; top:4.5px; width:4px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
 .rt-alt-body{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px; }
-.rt-alt-main{ font-size:16px; font-weight:650; letter-spacing:-0.2px; }
+.rt-alt-main{ font-size:17px; font-weight:650; letter-spacing:-0.2px; }
 .rt-alt-sub{ font-size:12.5px; color:var(--text-muted); }
 .rt-alt-seq{ display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:3px; font-size:12px; }
 .rt-veh{ display:inline-flex; align-items:center; gap:3px; }
@@ -3429,13 +3497,28 @@ body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
 .rt-badge{ margin-left:6px; font-size:12px; font-weight:700; white-space:nowrap; }
 .rt-sr, .rtp-sr{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
 
-.rtp-foot{ flex:0 0 auto; display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:9px 14px calc(11px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); }
+/* ⚠ (#R298) THE EXPORT ROW IS SECONDARY, AND NOW LOOKS IT — 「小さくまとめる」. All four buttons are
+   still here and still say what they are (「フッタの…は消さない」); what changed is that they no longer
+   claim the same 36 px a route field used to have. The phone block below keeps them at 44 px, because
+   a finger is a finger whatever the button means. */
+.rtp-foot{ flex:0 0 auto; display:flex; gap:5px; flex-wrap:wrap; align-items:center; padding:7px 14px calc(9px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); }
+.rtp-foot .rtp-chip{ min-height:30px; padding:0 10px; font-size:12.5px; border-radius:15px; }
 .rtp-foot.rtp-off{ opacity:0.4; pointer-events:none; }
 .rtp-foot .rtp-clear{ margin-left:auto; }
 
 /* ── the candidate list (a fixed popup so a scrolling panel cannot clip it) ────────────────── */
+/* ══ ⚠⚠⚠ (#R298) 「経路で、地点を入力する欄がくそ。ほぼ座標ぐらいしか対応していない。検索機能なし。」
+   THE CANDIDATES WERE THERE AND COULD NOT BE CLICKED. MEASURED on production: typing 「Tokyo」 in the
+   start field produced EIGHT candidates in 2.5 s — and `document.elementFromPoint` on all six visible
+   rows returned `#rtp-in-to` / `.rtp-fixed` / `.rtp-hint` / `#rtp-tab-opts` / `.rtp-body` /
+   `#route-panel`. **Every row was covered by the panel itself.** This popup sat at `z-index:1600`
+   while `.im-front` puts a fronted window at `z-index:2650 !important` (and the window manager's own
+   band runs to 2,599). So a reader who typed a place name saw a list and could not reach it with a
+   mouse — only the ↓/Enter keyboard path worked — which is indistinguishable from 「検索機能なし」.
+   ⚠ It has to clear the WHOLE window band, not just `.rtp`: it belongs to whichever panel is on top,
+   and it lives on <body> precisely so no panel's `overflow` can clip it. */
 .rtp-suggest{
-  position:fixed; z-index:1600; max-height:min(320px,52vh); overflow-y:auto;
+  position:fixed; z-index:2700; max-height:min(320px,52vh); overflow-y:auto;
   background:var(--card-bg); color:var(--text-main);
   border:1px solid var(--glass-border,rgba(128,128,128,0.28)); border-radius:13px;
   box-shadow:var(--shadow); padding:4px;
@@ -3474,12 +3557,20 @@ body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
      own — more than the whole sheet — so at 62dvh the ROUTES had nowhere to be drawn and the reader
      saw a search form with no answers. It is capped and scrolls internally instead: nothing becomes
      unreachable, and the alternatives always have room. Measured by the smoke test, not by eye. */
-  .rtp-fixed{ min-height:0; max-height:32dvh; overflow-y:auto; overscroll-behavior:contain; gap:7px; padding:7px 12px 6px; }
+  /* ⚠ (#R298) THE PHONE KEEPS THE #R291 SPLIT EXACTLY. The desktop shrink weights above exist because
+     a panel the reader can resize can be squeezed past its content; a sheet cannot — the detents are
+     fixed fractions of the screen and the pinned block is already capped at 32dvh, which is the rule
+     that put the ROUTES back on screen (measured then: at 62dvh the cards had nowhere to be drawn).
+     Reusing the desktop weights here took the answers from 206 px to 91. Measured both ways. */
+  .rtp-fixed{ flex:0 0 auto; min-height:0; max-height:32dvh; overflow-y:auto; overscroll-behavior:contain; gap:7px; padding:7px 12px 6px; }
+  .rtp-body{ flex:1 1 auto; }
   .rtp[data-detent="full"] .rtp-fixed{ max-height:52dvh; }
   /* ⚠ THE FOOTER IS ONE ROW, NOT THREE. At 320 px the four chips wrapped to 115 px — a quarter of
      the sheet spent on export buttons while the ROUTES had 22 px. It scrolls sideways instead. */
   .rtp-foot{ flex-wrap:nowrap; overflow-x:auto; overflow-y:hidden; padding:8px 12px calc(9px + env(safe-area-inset-bottom,0px)); }
-  .rtp-foot .rtp-chip{ flex:0 0 auto; min-height:44px; padding:0 12px; }   /* 44, not 40 — it is a finger target like every other */
+  /* (#R298) …and it takes back the 30 px / 12.5 px the desktop footer was reduced to: a finger is a
+     finger whatever the button means, so the size these lose is a DESKTOP saving only. */
+  .rtp-foot .rtp-chip{ flex:0 0 auto; min-height:44px; padding:0 12px; font-size:13px; border-radius:18px; }
   /* on a phone the strip is scrolled, so pushing the last chip to the far right would put it past
      the edge with nothing to say it is there — natural order keeps 「Clear route」 one swipe away */
   .rtp-foot .rtp-clear{ margin-left:0; }
@@ -3493,14 +3584,19 @@ body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
   .rtp-grip::before{ content:''; position:absolute; top:9px; left:50%; transform:translateX(-50%); width:44px; height:5px; border-radius:3px; background:rgba(128,128,128,0.45); }
   .rtp-head{ padding-top:2px; }
   .rtp-fixed{ padding-left:12px; padding-right:12px; }
-  .rtp-body{ padding-left:12px; padding-right:12px; }
+  /* (#R298) no edge-resize on a phone, so the scrollbar inset the desktop needs is not wanted here */
+  .rtp-body{ padding-left:12px; padding-right:12px; margin-right:0; }
   .rtp-foot{ padding-left:12px; padding-right:12px; }
   /* every control a finger has to hit is at least 44 px (WCAG 2.2 target size) */
   .rtp-btn-ico{ width:44px; height:44px; min-width:44px; }
   .rtp-chip{ min-height:44px; padding:0 15px; }
   .rtp-mode{ min-height:52px; }
-  .rtp-in{ height:44px; font-size:16px; }        /* 16 px also stops iOS zooming the page on focus */
+  .rtp-in{ height:48px; font-size:16px; }        /* 16 px also stops iOS zooming the page on focus */
+  .rtp-go{ min-height:48px; font-size:16px; width:100%; }
   .rtp-tab{ min-height:44px; }
+  /* ⚠ (#R298) THE SHEET IS NOT A WINDOW. The header is the drag handle on the desktop only — here
+     the grip above it is, and js/routing-ui.js binds neither drag nor edge-resize on a phone. */
+  .rtp-head{ cursor:auto; user-select:auto; }
   .rtp-when select, .rtp-when input, .rtp .rtp-hyear, .rtp .rtp-hkind{ height:44px; font-size:15px; }
 }
 @media (max-width:767px){

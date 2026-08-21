@@ -4882,4 +4882,9 @@ window.IntMapLang.define('ko', { ui: {
   "Use my current location": "현재 위치 사용",   /* (#R296) */
   "Use my location (permission was refused)": "현재 위치 사용 (권한이 거부되었습니다)",   /* (#R296) */
   "Window (h)": "추적 시간 (h)",   /* (#R296) */
+  "Edit message": "메시지 편집",   /* (#R298) */
+  "every {0} s": "{0}초마다",   /* (#R298) */
+  "Find routes": "경로 검색",   /* (#R298) */
+  "Tap the map to choose a point": "지도를 탭해 지점을 선택하세요",   /* (#R298) */
+  "The map is not ready to choose a point yet": "지도가 아직 지점을 선택할 준비가 되지 않았습니다",   /* (#R298) */
 } });
