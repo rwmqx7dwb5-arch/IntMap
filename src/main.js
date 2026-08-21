@@ -110,7 +110,7 @@ import './sat-worker-client.js';
 import './tsunami-worker-client.js';
 import '../js/data-layers.js';
 import '../js/workspace.js';
-import '../js/widgets.js';
+import '../js/widgets.js';   /* (#R292) …and with it the ten js/widget-*.js modules it imports itself: the platform's load order is the PLATFORM's business, so the entry keeps the one line it had before the board was split. Roles: docs/FILES.md §3; structure: Architecture.md §7.5 */
 import '../js/wb-layers.js';
 import '../js/us-elections.js';
 import '../js/beta-overlays.js';

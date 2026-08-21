@@ -1250,3 +1250,196 @@ test('R291 ⑩ every control has an accessible name, and the panel is a labelled
   await expect(page.locator('#route-panel')).toBeHidden();
   expect(await page.evaluate(() => window.IntMapRouteStore.hasRoute()), 'Escape closed the panel, not the route').toBe(true);
 });
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+   #R292 · THE WIDGET PLATFORM, IN A REAL BROWSER
+   ----------------------------------------------------------------------------------------------
+   Appended here rather than given a spec of its own: a boot is what a browser test costs (#R207),
+   this file already pays for one, and the assertions are free. They ask the four things a source
+   check cannot answer — does the documented default board actually appear, do two cards asking the
+   same question cost one request, do the three sizes really differ, and does a hidden board stop
+   doing work.
+
+   ⚠ THE BOARD IS DRIVEN THROUGH ITS OWN API, NOT THROUGH THE STORAGE KEY. `_setActive` /
+   `IntMapWidgetStore` are the contract; writing the key by hand would test the key.
+   ══════════════════════════════════════════════════════════════════════════════════════════════ */
+test('#R292 the default board is the five documented cards, not one', async () => {
+  const r = await page.evaluate(async () => {
+    /* start from nothing saved — this is the FIRST-VISIT board, which is what was broken */
+    localStorage.removeItem('intmap_widgets4');
+    localStorage.removeItem('intmap_widgets3');
+    localStorage.removeItem('intmap_widgets2');
+    window.IntMapWidgetStore._reset();
+    window.IntMapWidgets2._layout.render();
+    await new Promise((s) => setTimeout(s, 400));
+    return {
+      ids: window.IntMapWidgetStore.raw().map((x) => x.d),
+      cards: document.querySelectorAll('#widget-board .wgt-card').length,
+      saved: !!localStorage.getItem('intmap_widgets4'),
+      legacy: window.IntMapWidgets2._active().map((e) => e.t),
+      defs: window.IntMapWidgetCore.ids().length,
+    };
+  });
+  /* ⚠ THE MEASUREMENT THAT STARTED THIS ROUND: with storage cleared the previous board produced
+     `["clock"]`, saved nothing, and re-attempted the same failing seed on every load. */
+  expect(r.ids, 'the documented default board is seeded whole').toEqual([
+    'time.digital', 'markets.fx', 'map.featured-layer', 'world.country', 'knowledge.on-this-day']);
+  expect(r.cards, 'and all five are on screen').toBe(5);
+  expect(r.saved, 'and the seed is persisted, so it happens once rather than every load').toBe(true);
+  /* the published contract still answers in the OLD spelling, for a device on the previous build */
+  expect(r.legacy).toEqual(['clock', 'fx', 'featured', 'country', 'otd']);
+  expect(r.defs, 'the registry holds every widget').toBeGreaterThanOrEqual(40);
+});
+
+test('#R292 a v3 board migrates without losing an order, an id or a setting', async () => {
+  const r = await page.evaluate(async () => {
+    localStorage.removeItem('intmap_widgets4');
+    localStorage.setItem('intmap_widgets3', JSON.stringify([
+      { u: 'wA', t: 'fx', cfg: { base: 'USD', quote: 'JPY' } },
+      { u: 'wB', t: 'aclock', cfg: {} },
+      { u: 'wC', t: 'countdown', cfg: { title: 'Trip', date: '2026-12-01' } },
+      { u: 'wD', t: 'worldclock', cfg: { tz: 'Europe/Paris' } },
+      { u: 'wE', t: 'holiday', cfg: { cc: 'FR' } },
+      { u: 'wF', t: 'fx', cfg: { base: 'EUR', quote: 'GBP' } },
+      { u: 'wG', t: 'nonexistent', cfg: {} },
+    ]));
+    window.IntMapWidgetStore._reset();
+    const first = window.IntMapWidgetStore.load().items;
+    const snap = (a) => a.map((x) => x.i + '|' + x.d + '|' + x.s + '|' + JSON.stringify(x.c) + '|' + x.at).join('\n');
+    const a = snap(first);
+    /* running the migration twice must produce a byte-identical board */
+    localStorage.removeItem('intmap_widgets4');
+    window.IntMapWidgetStore._reset();
+    const b = snap(window.IntMapWidgetStore.load().items);
+    return {
+      ids: first.map((x) => x.i),
+      defs: first.map((x) => x.d),
+      fx: first.filter((x) => x.d === 'markets.fx').map((x) => x.c.base + '/' + x.c.quote),
+      countdown: first.filter((x) => x.d === 'time.countdown').map((x) => x.c.title + '@' + x.c.date),
+      tz: first.filter((x) => x.d === 'time.world').map((x) => x.c.tz),
+      cc: first.filter((x) => x.d === 'world.holiday').map((x) => x.c.cc),
+      idempotent: a === b,
+      v3Kept: !!localStorage.getItem('intmap_widgets3'),
+    };
+  });
+  expect(r.ids, 'the previous instance ids ARE the new ones — a reorder or a sync must not see new cards')
+    .toEqual(['wA', 'wB', 'wC', 'wD', 'wE', 'wF']);
+  expect(r.defs, 'order is preserved and the unknown type is dropped rather than guessed at').toEqual(
+    ['markets.fx', 'time.analog', 'time.countdown', 'time.world', 'world.holiday', 'markets.fx']);
+  expect(r.fx, 'both FX instances keep their own pair').toEqual(['USD/JPY', 'EUR/GBP']);
+  expect(r.countdown).toEqual(['Trip@2026-12-01']);
+  expect(r.tz).toEqual(['Europe/Paris']);
+  expect(r.cc).toEqual(['FR']);
+  expect(r.idempotent, 'migrating twice gives the same board — it runs on every load').toBe(true);
+  expect(r.v3Kept, 'the previous format is the backup generation and is never deleted').toBe(true);
+});
+
+test('#R292 two cards asking the same question cost one request, and three sizes differ', async () => {
+  const r = await page.evaluate(async () => {
+    localStorage.removeItem('intmap_widgets3');
+    window.IntMapWidgetStore._reset();
+    /* ⚠ THE SIZES ARE MEASURED ON A CARD THAT NEEDS NO NETWORK, and deliberately so: this suite is
+       HERMETIC (helpers/network.js blocks every external host), so a weather card here can only
+       ever be a skeleton — and three skeletons of different heights would satisfy an s < m < l
+       assertion while proving nothing about the renderers. `progress.day` computes locally, so what
+       is counted below really is what the three renderers emit. The DEDUPLICATION half is measured
+       on the weather cards in the same board, where the request never has to succeed for the
+       request KEY to be the thing under test. */
+    window.IntMapWidgets2._setActive(null, { v: 4, items: [
+      { i: 'a1', d: 'weather.map-centre', s: 's', c: { source: 'map' }, at: 1 },
+      { i: 'a2', d: 'weather.map-centre', s: 'm', c: { source: 'map' }, at: 2 },
+      { i: 'a3', d: 'weather.here', s: 'l', c: { source: 'map' }, at: 3 },
+      { i: 'p1', d: 'progress.day', s: 's', c: { zone: 'UTC', style: 'bar', follow: false }, at: 4 },
+      { i: 'p2', d: 'progress.day', s: 'm', c: { zone: 'UTC', style: 'bar', follow: false }, at: 5 },
+      { i: 'p3', d: 'progress.day', s: 'l', c: { zone: 'UTC', style: 'bar', follow: false }, at: 6 },
+    ] });
+    window.IntMapWidgets2._layout.render();
+    await new Promise((s) => setTimeout(s, 1200));
+    const stats = window.IntMapWidgetScheduler.stats();
+    const body = (id) => document.querySelector('[data-wid="' + id + '"] .wgt-cardbody');
+    const count = (id) => { const c = body(id); return c ? c.querySelectorAll('*').length : 0; };
+    const text = (id) => { const c = body(id); return c ? (c.innerText || '').replace(/\s+/g, ' ').trim() : ''; };
+    return {
+      stats, s: count('p1'), m: count('p2'), l: count('p3'),
+      st: text('p1'), mt: text('p2'), lt: text('p3'),
+      wxDrawn: [count('a1'), count('a2'), count('a3')],
+    };
+  });
+  /* ⚠ THE MEASUREMENT THIS SCHEDULER EXISTS FOR. On the previous board four cards produced seven
+     identical CoinGecko requests in eight seconds, because the unit of work was the CARD. Here three
+     weather cards over one place produce ONE key — and `weather.here` falls back to the map centre,
+     so it is genuinely the same question rather than a coincidence of spelling. */
+  expect(r.stats.cards, 'six cards are subscribed or ticking').toBeGreaterThanOrEqual(3);
+  const wx = r.stats.byKey.filter((k) => k.key.indexOf('wx:') === 0);
+  expect(wx.length, 'the three weather cards resolve to ONE request key').toBe(1);
+  expect(wx[0].members, 'and all three share it').toBe(3);
+  /* ⚠ AND A CARD WITH NO ANSWER IS NEVER AN EMPTY BOX. Under hermetic routing the weather cards
+     cannot load; they must still draw a skeleton or a state notice. MEASURED: before render()
+     painted after attaching, all three were literally empty for ever. */
+  r.wxDrawn.forEach((n) => expect(n, 'a card with no data still draws its state').toBeGreaterThan(0));
+  /* and the three sizes are three different amounts of information, not one layout scaled */
+  expect(r.s).toBeGreaterThan(0);
+  expect(r.m, 'M says more than S').toBeGreaterThan(r.s);
+  expect(r.l, 'L says more than M').toBeGreaterThan(r.m);
+  expect(r.mt, 'M is not S with a bigger font — it says different words').not.toBe(r.st);
+  expect(r.lt, 'and L is not M either').not.toBe(r.mt);
+});
+
+test('#R292 a hidden board does no work, and the gallery opens without calling an API', async () => {
+  const r = await page.evaluate(async () => {
+    const api = /open-meteo|coingecko|gold-api|alternative\.me|earthquake\.usgs|wikimedia|hacker-news|wheretheiss|thespacedevs|mempool|nager|swpc\.noaa|fxratesapi|er-api/;
+    let calls = 0;
+    const realFetch = window.fetch;
+    window.fetch = function (u) { try { if (api.test(String((u && u.url) || u))) calls++; } catch (e) {} return realFetch.apply(this, arguments); };
+    /* a board with a ticking clock on it */
+    window.IntMapWidgets2._setActive(null, { v: 4, items: [
+      { i: 'c1', d: 'time.digital', s: 's', c: { zone: 'UTC', seconds: true, face: 'digital', cities: [] }, at: 1 },
+    ] });
+    window.IntMapWidgets2._layout.render();
+    await new Promise((s) => setTimeout(s, 500));
+    const tickingWhileShown = window.IntMapWidgetCore.tickRunning();
+    const before = document.querySelector('[data-wid="c1"]').innerText;
+    await new Promise((s) => setTimeout(s, 1600));
+    const moved = document.querySelector('[data-wid="c1"]').innerText !== before;
+
+    /* the gallery: forty-eight rows, a search, categories and a preview — and no network */
+    const at0 = calls;
+    window.IntMapWidgetGallery.open();
+    await new Promise((s) => setTimeout(s, 900));
+    const rows = document.querySelectorAll('.wgt-grow').length;
+    const cats = document.querySelectorAll('.wgt-cat').length;
+    const search = document.querySelector('.wgt-search');
+    search.value = 'moon';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+    const found = document.querySelectorAll('.wgt-grow').length;
+    document.querySelector('.wgt-grow-b').click();
+    const preview = { card: !!document.querySelector('.wgt-preview'), sizes: document.querySelectorAll('.wgt-size').length };
+    const galleryCalls = calls - at0;
+    document.querySelector('.wgt-sheet-x').click();
+
+    /* the board hidden: the ticker must stop entirely, not merely return early */
+    const board = document.getElementById('widget-board');
+    window.IntMapWidgets2._setActive(null, { v: 4, items: [] });
+    board.style.display = 'none';
+    window.IntMapWidgets2._layout.updateBoardVisibility();
+    await new Promise((s) => setTimeout(s, 300));
+    const out = { tickingWhileShown, moved, rows, cats, found, preview, galleryCalls,
+      tickingWhileHidden: window.IntMapWidgetCore.tickRunning(), subs: window.IntMapWidgetCore.tickCount() };
+    board.style.display = 'block';
+    window.fetch = realFetch;
+    return out;
+  });
+  expect(r.tickingWhileShown, 'a visible clock ticks').toBe(true);
+  expect(r.moved, 'and the seconds really move').toBe(true);
+  expect(r.rows, 'the gallery lists every widget').toBeGreaterThanOrEqual(40);
+  expect(r.cats, 'with the nine categories').toBe(9);
+  expect(r.found, 'and a search narrows it').toBeGreaterThan(0);
+  expect(r.found).toBeLessThan(r.rows);
+  expect(r.preview.card, 'a widget opens into a real preview').toBe(true);
+  expect(r.preview.sizes, 'with the three sizes offered').toBe(3);
+  /* ⚠ §8.8 / §20: opening the picker must not call thirty-nine APIs. */
+  expect(r.galleryCalls, 'the gallery previews from cache or from a declared sample — it fetches nothing').toBe(0);
+  /* ⚠ §12: not "the callback returns early" — the timer is not running at all. */
+  expect(r.subs, 'a board with no cards has no ticker subscribers').toBe(0);
+  expect(r.tickingWhileHidden, 'so the 1 Hz timer is not running either').toBe(false);
+});

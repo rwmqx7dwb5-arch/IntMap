@@ -222,9 +222,16 @@ test('R235 day/night: not counted, not chipped, not offered as a layer to discov
   const dl = code(read('js/data-layers.js'));
   assert.match(dl, /const skip=new Set\(\[[^\]]*'dl-nightside'\]\)/,
     'it is skipped by the Active-layers list, like the other nine basics');
-  const w = code(read('js/widgets.js'));
-  assert.match(w, /const FEAT_IDS=\[/, 'the featured-layer roulette exists');
-  assert.doesNotMatch(w, /FEAT_IDS=\[[^\]]*'dl-nightside'/, 'and no longer offers the day/night switch');
+  /* ⚠ (#R292) THE ROULETTE BECAME A SUGGESTION, AND THE REQUIREMENT SURVIVED THE CHANGE. There is
+     no hand-written `FEAT_IDS` list any more: the featured-layer card scores the app's OWN layer
+     registry (js/widget-defs-map.js `featuredList`), so a layer the registry stops listing is one
+     the card stops offering — which is a stronger version of what #R235 pinned by name. What must
+     still hold is that day/night is not IN that registry's list, and `skip` above is what keeps it
+     out. This asserts the card reads the registry rather than a table of its own. */
+  const w = code(read('js/widget-defs-map.js'));
+  assert.match(w, /var all = \(ctx\.layers && ctx\.layers\.all\) \|\| \[\];/,
+    'the featured-layer card offers what the layer registry lists, not a list of its own');
+  assert.doesNotMatch(w, /'dl-nightside'/, 'and it never names the day/night switch');
   /* the row itself must STILL be in the basic-display block — this is a re-classification, not a removal */
   assert.match(dl, /const nsRow=rowFor\('nightside'\); if\(nsRow\)/, 'the row is still placed among the basics');
 });
