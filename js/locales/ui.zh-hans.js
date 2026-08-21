@@ -1516,6 +1516,10 @@ window.IntMapLang.define('zh-hans', {
     "Colocation / carrier hotel": "主机代管／电信汇集点",   /* datacenters.js */
     "Country": "国家",   /* datacenters.js */
     "Data center": "数据中心",   /* datacenters.js */
+  "Educational — follow the official authorities.": "仅供参考——请以官方机构发布为准。",   /* world-packs.js (#R293) */
+  "IntMap read": "IntMap 取得",   /* world-packs.js (#R293) */
+  "issued": "发布",   /* world-packs.js (#R293) */
+  "Not covered, or not read yet (diagonal hatching)": "未支持或尚未取得（斜线）",   /* world-packs.js (#R293) */
   "Educational display — follow the official authorities.": "仅供参考，请以官方机关发布为准。",   /* (#R275) */
     "HPC / research computing": "HPC／研究运算",   /* datacenters.js */
     "In service": "启用时间",   /* datacenters.js */

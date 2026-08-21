@@ -76,7 +76,12 @@ test('R276 ③ the wind field is the model\'s own data, sampled directly', () =>
      samples; what the third argument removes is the part of the planet that is not on the screen
      (measured: 6,599,680 samples / 17.96 MB global against 935,400 / 1.64 MB for a 21° band). */
   assert.match(w, /EC\(\)\.load\(VAR,null,band\(\)\)/, '…loads it once, for the band in view…');
-  assert.match(w, /renderer\.setField\(EC\(\)\.sampler\(VAR\)\)/, '…and hands THAT to the particles');
+  /* ⚠ (#R293) the sampler is named on its own line now, because the READOUT keeps the last one that
+     answered (`sampler()` is null between a step and the new hour — measured 0 → 2,144 ms). What
+     #R276 pinned is unchanged: the particles are handed the sampler of the SAME variable this
+     module loaded, not a second source of numbers. */
+  assert.match(w, /const sf=EC\(\)\.sampler\(VAR\);[\s\S]{0,120}renderer\.setField\(sf\);/,
+    '…and hands THAT to the particles');
   assert.match(w, /url=EC\(\)\.omUrl\(VAR\)/, 'while the colour raster is the same variable');
   /* the sampler reads the decoded field itself — no lattice, no resample, no point API */
   const s = EC();
@@ -179,16 +184,25 @@ test('R276 ⑧ the two forecast players are two views of one state, with differe
     'and so does every ECMWF legend, under its own layer id');
   assert.match(w, /<select class="ecl-timesel"/,
     'and it is a <select>, so only a time the model publishes can be chosen');
+  /* ⚠ (#R293) 「また、タイムスライダーをつけろ」 — and the range does not weaken that claim: it steps
+     over the model's own INDEX with step=1, so every position it can occupy is a published valid
+     time, and the <select> beside it names the one it is standing on. */
+  assert.match(w, /<input type="range" class="ecl-timerange"[\s\S]{0,120}step="1"/,
+    'the slider steps over the index, so no reachable position lacks data');
+  assert.match(w, /min="0" max="'\+Math\.max\(0,n-1\)\+'"/, '…over exactly the published steps');
   assert.ok(!/function buildPanel\(\)|panel\.className='tool-panel'/.test(w),
     'the second ECMWF panel — the one that duplicated them — is gone');
   assert.match(w, /return \{ open\(\)\{ if\(!anyOn\(\)\) return; activeLayers\(\)\.forEach\(l=>\{ boxFor\(l\)\.style\.display='block'; \}\); renderLegend\(\); \}/,
     'open() shows the one legend instead of building a rival');
   /* both players drive the SAME module */
-  assert.match(w, /if\(sel\) sel\.onchange=\(\)=>\{ E\.pause\(\); E\.setIndex\(\+sel\.value,\{now:true\}\); \};/,
-    'the one control writes the axis…');
-  /* …and the other view is the time machine's forecast tab, which writes to the same axis */
+  assert.match(w, /if\(sel\) sel\.onchange=\(\)=>\{ E\.pause\(\); E\.setIndex\(\+sel\.value,\{now:true\}\);/,
+    'the one control writes the axis…');   /* (#R293) …and keeps the slider beside it in step */
+  /* ⚠ (#R293) …and the other view no longer writes the MODEL's index at all. 「時刻と予報タブを
+     分けるな」 merged the forecast tab into 「時刻」, and both halves of that tab now write the ONE
+     thing — the master clock — which js/wx-ecmwf.js follows. Two views of one state, still. */
   assert.match(codeOnly(read('js/news-timeline.js')),
-    /if\(mode==='forecast'\)\{ const E=EC\(\); if\(E\)\{ E\.pause\(\); E\.setIndex\(\+slider\.value\); \}/, '…and the shared one');
+    /function fcGo\(i\)\{[\s\S]{0,200}window\.IntMapTime\.set\(new Date\(t\),\{allowFuture:true,source:'ui'\}\);/,
+    '…and the shared one moves the clock, which the model follows');
 });
 
 /* ── ⑨ the number under the cursor belongs to the picture under the cursor ────────────────────

@@ -165,8 +165,16 @@ function summariseMeteoAlarm(raw, lang) {
       if (!name) continue;
       const emma = ((a.geocode || []).find((g) => String(g.valueName || "") === "EMMA_ID") || {}).value || "";
       const key = String(emma || name);
-      const bucket = areaMap.get(key) || { name, emma: String(emma || ""), tier: 0, events: [], poly: "" };
+      const bucket = areaMap.get(key) || { name, emma: String(emma || ""), tier: 0, events: [], poly: "", sent: "" };
       areaMap.set(key, bucket);
+      /* ⚠⚠ (#R293) 「いつ発表の情報か、そしてIntMapがいつ取得した情報かも書け」 — TWO CLOCKS, AND THIS
+         IS THE AGENCY'S. `fetchedAt` (below) is when the RELAY read the service; the CAP bulletin's
+         own `sent` is when the service ISSUED the warning, and until now only the first of them
+         reached the map — so a card could not answer 「この情報はいつのものか」 at all. An area keeps
+         the NEWEST `sent` among the bulletins folded into it. (SWIC already tracked this; MeteoAlarm
+         and the CAP services did not.) */
+      { const st = String((w?.alert?.sent) || pick.onset || pick.effective || "");
+        if (st > bucket.sent) bucket.sent = st; }
       if (tier > bucket.tier) bucket.tier = tier;
       if (!bucket.poly && a.polygon) bucket.poly = String(Array.isArray(a.polygon) ? a.polygon[0] : a.polygon).slice(0, 20000);
       const ev = String(pick.event || "").slice(0, 80);
@@ -276,8 +284,9 @@ async function summarisePAGASA() {
         const name = unesc(xmlOne(a, "areaDesc"));
         if (!name || PH_PAR.test(name)) continue;
         const poly = xmlOne(a, "polygon");
-        const b = areas.get(name) || { name, tier: 0, events: [], poly: "" };
+        const b = areas.get(name) || { name, tier: 0, events: [], poly: "", sent: "" };
         areas.set(name, b);
+        if (sent > b.sent) b.sent = sent;      /* (#R293) the agency's own issue time — see MeteoAlarm above */
         if (tier > b.tier) b.tier = tier;
         if (!b.poly && poly) b.poly = poly.replace(/\s+/g, " ").trim().slice(0, 20000);
         if (event && !b.events.some((x) => x.event === event)) b.events.push({ event, severity, tier });
@@ -388,8 +397,9 @@ async function summariseCAP(key) {
         const name = unesc(xmlOne(a, "areaDesc"));
         if (!name || AREA_SKIP.test(name)) continue;
         const poly = xmlOne(a, "polygon");
-        const b = areas.get(name) || { name, tier: 0, events: [], poly: "", acol: "" };
+        const b = areas.get(name) || { name, tier: 0, events: [], poly: "", acol: "", sent: "" };
         areas.set(name, b);
+        if (sent > b.sent) b.sent = sent;      /* (#R293) the agency's own issue time — see MeteoAlarm above */
         if (tier > b.tier) { b.tier = tier; b.acol = acol; }
         if (!b.poly && poly) b.poly = poly.replace(/\s+/g, " ").trim().slice(0, 20000);
         if (event && !b.events.some((x) => x.event === event)) b.events.push({ event, severity, tier, acol });

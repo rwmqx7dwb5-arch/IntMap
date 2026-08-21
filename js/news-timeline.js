@@ -28,8 +28,15 @@ window.IntMapModules.newsTimeline=function(HOST){
     const bigval=document.getElementById('ntl-bigval');
     const badge=document.getElementById('ntl-badge'), btnNow=document.getElementById('ntl-today');
     const modeYear=document.getElementById('ntl-mode-year'), modeDate=document.getElementById('ntl-mode-date'), modeTime=document.getElementById('ntl-mode-time');
-    /* (#R288) the fourth tab and its transport — see the note on `fcReady` below */
-    const modeFc=document.getElementById('ntl-mode-fc'), playerEl=document.getElementById('ntl-player');
+    /* ══ ⚠⚠⚠ (#R293) 「時刻と予報タブを分けるな」 — THE FOURTH TAB IS GONE, ITS TRANSPORT IS NOT ═════
+       #R288 gave the forecast its own tab beside 「時刻」, which put the same question — 「which
+       instant am I looking at」 — behind two buttons. They are ONE tab now: 「時刻」 carries the
+       time-of-day slider AND the model's transport, and both write the SAME thing, the master
+       clock. What made two tabs necessary was that the transport used to move the MODEL's index
+       directly while the slider moved the clock; now the clock is the only thing either of them
+       touches and js/wx-ecmwf.js follows it (`followClock`), which is also the whole of
+       「Chronosで時間を変更したら、IntMap内の対応するすべての要素をChronosの時間に合わせるように」. */
+    const playerEl=document.getElementById('ntl-player');
     const timePicker=document.getElementById('ntl-time');
     const scale=document.getElementById('ntl-scale'), closeX=document.getElementById('ntl-x'), title=document.getElementById('ntl-title');
     if(!tl||!slider) return;
@@ -47,7 +54,6 @@ window.IntMapModules.newsTimeline=function(HOST){
     const EC=()=>{ try{ return window.IntMapECMWF; }catch(_){ return null; } };
     const fcReady=()=>{ try{ const E=EC(); return !!(E&&E.count()>0); }catch(_){ return false; } };
     const fcCount=()=>{ try{ return EC().count(); }catch(_){ return 0; } };
-    const fcIndex=()=>{ try{ return EC().index(); }catch(_){ return 0; } };
     const zoneSel=document.getElementById('ntl-zone'), zoneLbl=document.getElementById('ntl-zone-lbl'), subEl=document.getElementById('ntl-sub');
     /* ══ ⚠⚠ (#R289) WHICH CLOCK CHRONOS SPEAKS IN ═══════════════════════════════════════════════
        「タイムマシンのUIに、どこの時刻を採用するかのプルダウンを付けて。デフォルトはユーザーが設定
@@ -196,11 +202,19 @@ window.IntMapModules.newsTimeline=function(HOST){
       if(subEl) subEl.textContent=L5('Control IntMap’s unified time','IntMapの統一時間を操作','IntMaps einheitliche Zeit steuern','Управление единым временем IntMap','Controla el tiempo unificado de IntMap');
       if(modeYear) modeYear.textContent=L5('Year','年','Jahr','Год','Año');
       if(modeDate) modeDate.textContent=L5('Date','日付','Datum','Дата','Fecha');
-      if(modeTime) modeTime.textContent=L5('Time','時刻','Zeit','Время','Hora');   /* (#R137) time-of-day tab */
-      if(modeFc) modeFc.textContent=L5('Forecast','予報','Vorhersage','Прогноз','Pronóstico');   /* (#R288) */
-      syncFcTab();
+      if(modeTime) modeTime.textContent=L5('Time','時刻','Zeit','Время','Hora');   /* (#R137) time-of-day · (#R293) and the forecast transport */
+      buildPlayer();
       if(btnNow) btnNow.textContent=L5('Back to now','現在へ戻る','Zurück zu heute','К настоящему','Volver al presente');
-      if(badge) badge.textContent=L5('Viewing the past','過去表示中','Vergangenheit','Прошлое','Viendo el pasado');
+      /* ⚠⚠⚠ (#R293) 「Chronosポップアップの『過去表示中』は未来でもその表示」 — TWO ELEMENTS, ONE CLAIM ════
+         #R290 answered the same sentence by teaching the COLLAPSED button's subtitle (`#ntl-open-s`)
+         to read the instant and choose its word. This badge — the one INSIDE the open panel, which
+         is the one the reader named — is a different element, and it was still being written here,
+         from the localiser, with the word hard-coded. MEASURED on production: with the clock set two
+         days ahead, `#ntl-open-s` said 「Viewing the future」 and `#ntl-badge` said 「Viewing the past」
+         in the same frame.
+         → the badge is no longer written by `localizeChrome`; `refreshUI` owns it, beside the other
+         element that makes the same claim, so one instant can only produce one word (`sideWord`). */
+      if(badge) badge.textContent=sideWord(window.IntMapTime.state().when);
       /* (#R289) 「Chronosボタンは、いまは「過去の世界を見る／1900年から現在」となっていますが、
          「Chronos／地図の時間を操作」にして。」 — the collapsed entry point, same name, same shape. */
       try{ const ot=document.getElementById('ntl-open-t'), os=document.getElementById('ntl-open-s');
@@ -209,29 +223,54 @@ window.IntMapModules.newsTimeline=function(HOST){
       buildZones();
       buildScale();
     }
-    /* the tab appears the moment the model's metadata lands, and never before */
-    function syncFcTab(){ try{ if(modeFc) modeFc.style.display=fcReady()?'':'none'; }catch(_){} }
+    /* the ONE place an instant is turned into 「past」 or 「future」 — both the badge in the panel and
+       the subtitle on the collapsed button read it, so they cannot disagree (#R293) */
+    function sideWord(w){ try{ return (w&&w.getTime()>Date.now())
+      ? L5('Viewing the future','未来を表示中','Zukunft','Будущее','Viendo el futuro')
+      : L5('Viewing the past','過去を表示中','Vergangenheit','Прошлое','Viendo el pasado'); }catch(_){ return ''; } }
     function fcValid(i){ try{ return EC().validTime(i); }catch(_){ return ''; } }
-    function fcFmt(iso){ try{ return EC().fmt(iso,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso||''; } }
+    /* the model's valid times, as instants — the transport below moves the CLOCK to one of them */
+    const fcMs=(i)=>{ const t=Date.parse(fcValid(i)||''); return isFinite(t)?t:null; };
+    function fcNearest(ms){ let b=-1,d=Infinity; const n=fcCount();
+      for(let k=0;k<n;k++){ const t=fcMs(k); if(t==null) continue; const g=Math.abs(t-ms); if(g<d){ d=g; b=k; } }
+      return b; }
+    /* which step the CLOCK is standing on (− 1 when it is outside the model's window) */
+    function fcAtClock(){ if(!fcReady()) return -1;
+      const st=window.IntMapTime.state(); const ms=st.when.getTime();
+      const i=fcNearest(ms); if(i<0) return -1;
+      const t=fcMs(i); return (t!=null&&Math.abs(t-ms)<=3600000)?i:-1; }
+    function fcGo(i){ const n=fcCount(); if(!n) return;
+      i=Math.max(0,Math.min(n-1,i)); const t=fcMs(i); if(t==null) return;
+      window.IntMapTime.set(new Date(t),{allowFuture:true,source:'ui'}); }
     /* the SAME icon declaration the weather legends read (#R284), so the two views of one clock can
        never disagree about which button is 「再生」 and which is 「次へ」 */
+    /* (#R293) the transport plays the CLOCK, not the model's index: one interval, one writer */
+    let fcTimer=0;
+    const fcPlaying=()=>!!fcTimer;
+    function fcStop(){ if(fcTimer){ clearInterval(fcTimer); fcTimer=0; } }
+    function fcPlay(){ fcStop(); if(!fcReady()) return;
+      fcTimer=setInterval(()=>{ const i=fcAtClock(); const n=fcCount();
+        if(i<0){ fcGo(Math.max(0,EC().nowIndex?EC().nowIndex():0)); return; }
+        fcGo(i+1>=n?0:i+1); },900); }
     function buildPlayer(){
       if(!playerEl) return;
-      if(mode!=='forecast'||!fcReady()){ playerEl.style.display='none'; playerEl.innerHTML=''; return; }
+      if(mode!=='time'||!fcReady()){ fcStop(); playerEl.style.display='none'; playerEl.innerHTML=''; return; }
       const P=window.IntMapWxPlayer; if(!P){ playerEl.style.display='none'; return; }
-      const E=EC(), playing=!!(E&&E.isPlaying());
+      const playing=fcPlaying();
       playerEl.style.display='flex';
       playerEl.innerHTML=P.b('first',L5('First step','最初の時刻','Erster Schritt','Первый шаг','Primer paso'),P.IC.first)
         +P.b('prev',L5('One step back','1つ前の時刻','Ein Schritt zurück','На шаг назад','Un paso atrás'),P.IC.prev)
         +P.b('play',(playing?L5('Pause','一時停止','Pause','Пауза','Pausa'):L5('Play','再生','Abspielen','Воспроизвести','Reproducir')),(playing?P.IC.pause:P.IC.play),'ecl-play')
         +P.b('next',L5('One step forward','1つ次の時刻','Ein Schritt vor','На шаг вперёд','Un paso adelante'),P.IC.next)
         +P.b('now',L5('Back to now','現在に戻る','Zurück zu jetzt','К текущему времени','Volver a ahora'),L5('Now','現在','Jetzt','Сейчас','Ahora'),'ecl-now');
-      playerEl.querySelectorAll('.ecl-b').forEach(b=>{ b.onclick=()=>{ const a=b.getAttribute('data-act'); const E2=EC(); if(!E2) return;
-        if(a==='first'){ E2.pause(); E2.setIndex(0,{now:true}); }
-        else if(a==='prev'){ E2.pause(); E2.step(-1); }
-        else if(a==='next'){ E2.pause(); E2.step(1); }
-        else if(a==='now'){ E2.pause(); E2.setIndex(E2.nowIndex(),{now:true}); }
-        else if(a==='play') E2.togglePlay();
+      playerEl.querySelectorAll('.ecl-b').forEach(b=>{ b.onclick=()=>{ const a=b.getAttribute('data-act');
+        const E2=EC(); if(E2&&E2.pause) { try{ E2.pause(); }catch(_){} }
+        const i=fcAtClock();
+        if(a==='first'){ fcStop(); fcGo(0); }
+        else if(a==='prev'){ fcStop(); fcGo((i<0?0:i)-1); }
+        else if(a==='next'){ fcStop(); fcGo((i<0?-1:i)+1); }
+        else if(a==='now'){ fcStop(); window.IntMapTime.setNow({source:'ui'}); }
+        else if(a==='play'){ if(fcPlaying()) fcStop(); else fcPlay(); }
         buildPlayer(); refreshUI(window.IntMapTime.state()); }; });
     }
     /* built once and only its VALUE re-set afterwards — the same rule the year <select> follows
@@ -249,29 +288,50 @@ window.IntMapModules.newsTimeline=function(HOST){
       zoneSel.value=zone;
       if(zoneLbl){ try{ zoneLbl.title=zoneOffText(window.IntMapTime.when()); }catch(_){} }
     }
+    /* ══ ⚠⚠⚠ (#R293) 「Chronosの地図中心の標準時にする機能、機能していない」 — THE THIRD TIME, AND THE
+       THIRD DIFFERENT CAUSE ═══════════════════════════════════════════════════════════════════
+       #R289 published the accessor; #R290 found that a second `window.IntMapTimeZones=` forty lines
+       below replaced it and fixed that. MEASURED on production THIS round, with all six members
+       present and `offsetAt` answering correctly (Tokyo +9, New York −5): a reader who had chosen
+       the option in an EARLIER SESSION still got their own device clock.
+
+           localStorage intmap_chronos_zone = 'map'   (restored)
+           the <select>                     = 'map'   (restored)
+           IntMapTimeZones.ready()          = FALSE
+           map centred on New York, panel says 17:58 · UTC+09:00   ← the device, in Tokyo
+
+       `ensure()` — the only thing that FETCHES the polygons — was called from ONE place: this
+       change handler. A preference restored from localStorage fires no change event, so the data
+       was never asked for, `offsetAt` returned null for ever, and `zSpec()` fell to `{local:true}`
+       — the fallback #R290 already knew was written to be silent.
+       → asking is a function, and it is called from BOTH doors: when the reader picks the option
+       AND when a restored preference already is it.
+
+       ⚠ AND IT HAS TO FOLLOW THE MAP. 「地図中心の」 is a claim about where the camera is, so an
+       answer computed once when the option was chosen is only right until the reader pans. The
+       panel closes on `dragstart`, so this costs one recomputation per view, not one per frame. */
+    function zoneEnsure(){ if(zone!=='map') return;
+      try{ const TZ=window.IntMapTimeZones;
+        if(TZ&&TZ.ensure&&!(TZ.ready&&TZ.ready()))
+          TZ.ensure().then(()=>{ try{ refreshUI(window.IntMapTime.state()); }catch(_){} });
+      }catch(_){} }
     if(zoneSel) zoneSel.addEventListener('change',()=>{ zone=zoneSel.value||'user';
       try{ localStorage.setItem(ZKEY,zone); }catch(_){}
-      /* 'map' needs the boundary set; ask for it once and re-render when it lands */
-      if(zone==='map'){ try{ window.IntMapTimeZones&&window.IntMapTimeZones.ensure&&window.IntMapTimeZones.ensure().then(()=>{ try{ refreshUI(window.IntMapTime.state()); }catch(_){} }); }catch(_){} }
+      zoneEnsure();
       try{ refreshUI(window.IntMapTime.state()); }catch(_){} });
     function buildScale(){ if(!scale) return; const now=L5('Now','現在','Jetzt','Сейчас','Ahora');
-      if(mode==='forecast'){ const n=fcCount();
-        scale.innerHTML=n?('<span>'+fcFmt(fcValid(0))+'</span><span>'+fcFmt(fcValid(n-1))+'</span>'):'';
-        return; }
       scale.innerHTML=(mode==='year')
         ? '<span>1900</span><span>1960</span><span>2000</span><span>'+now+'</span>'
         : (mode==='time')
         ? '<span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>'
         : '<span>'+L5('−10y','10年前','−10 J','−10 л','−10 a')+'</span><span>'+L5('−5y','5年前','−5 J','−5 л','−5 a')+'</span><span>'+now+'</span>'; }
-    function applyMode(m){ if(m==='forecast'&&!fcReady()) m='date'; mode=m;
+    function applyMode(m){ mode=m;
       if(modeYear) modeYear.classList.toggle('on',m==='year');
       if(modeDate) modeDate.classList.toggle('on',m==='date');
       if(modeTime) modeTime.classList.toggle('on',m==='time');
-      if(modeFc) modeFc.classList.toggle('on',m==='forecast');
       if(datePicker) datePicker.style.display=(m==='date')?'':'none';
       if(timePicker) timePicker.style.display=(m==='time')?'':'none';
-      if(m==='forecast'){ slider.min='0'; slider.max=String(Math.max(0,fcCount()-1)); slider.step='1'; }
-      else if(m==='year'){ slider.min='1900'; slider.max=String(curY); slider.step='1'; }
+      if(m==='year'){ slider.min='1900'; slider.max=String(curY); slider.step='1'; }
       else if(m==='time'){ slider.min='0'; slider.max=String(_timeMaxMins()); slider.step='1'; _updTimeMax(); }   /* (#R137) minutes-of-day; (#R210) the whole day, today included */
       else { slider.min='0'; slider.max='3650'; slider.step='1'; }
       if(m!=='time') _tmTerminator(false);   /* (#R137) leaving Time mode clears the day/night overlay */
@@ -288,15 +348,11 @@ window.IntMapModules.newsTimeline=function(HOST){
     if(closeX) closeX.onclick=()=>{ tl.classList.add('collapsed'); _tmSyncTerminator(); };
     if(modeYear) modeYear.onclick=()=>applyMode('year');
     if(modeDate) modeDate.onclick=()=>applyMode('date');
-    if(modeTime) modeTime.onclick=()=>applyMode('time');   /* (#R137) */
-    if(modeFc) modeFc.onclick=()=>applyMode('forecast');   /* (#R288) */
+    if(modeTime) modeTime.onclick=()=>applyMode('time');   /* (#R137) · (#R293) and the forecast */
     /* the one entry point a weather legend uses to reach this control — it opens the strip on the
-       forecast tab rather than growing a second copy of it (「わざわざ分けるな」) */
-    window._imTimeMachineForecast=()=>{ try{ tl.classList.remove('collapsed'); localizeChrome(); applyMode(fcReady()?'forecast':'date'); }catch(_){} };
+       「時刻」 tab, which is where the model's transport now lives (「わざわざ分けるな」, twice over) */
+    window._imTimeMachineForecast=()=>{ try{ tl.classList.remove('collapsed'); localizeChrome(); applyMode('time'); }catch(_){} };
     slider.addEventListener('input',()=>{ if(_self) return;
-      /* ⚠ the forecast tab writes to the MODEL's axis, which pushes the master clock itself (and
-         coalesces that push) — writing to both from here would be two clocks again. */
-      if(mode==='forecast'){ const E=EC(); if(E){ E.pause(); E.setIndex(+slider.value); } bigval.textContent=fcFmt(fcValid(+slider.value)); return; }
       if(mode==='year'){ const y=parseInt(slider.value,10); if(y>=curY) window.IntMapTime.setNow({source:'ui'}); else if(y>=1900) window.IntMapTime.setYear(y,{source:'ui'}); }
       else if(mode==='time'){ _applyTimeOfDay(parseInt(slider.value,10)||0); }   /* (#R137) minutes-of-day → clock */
       else { window.IntMapTime.setDaysAgo(3650-parseInt(slider.value,10),{source:'ui'}); } });
@@ -305,14 +361,10 @@ window.IntMapModules.newsTimeline=function(HOST){
     if(btnNow) btnNow.onclick=()=>window.IntMapTime.setNow({source:'ui'});
     /* READ side: kernel → this widget's UI */
     function refreshUI(e){ _self=true; try{
-      if(mode==='forecast'){
-        const n=fcCount(), i=fcIndex();
-        if(slider.max!==String(Math.max(0,n-1))) slider.max=String(Math.max(0,n-1));
-        if(+slider.value!==i) slider.value=i;
-        bigval.textContent=fcFmt(fcValid(i));
-        tl.classList.toggle('active',!e.isLive);
-      }
-      else if(mode==='time'){ /* (#R137) Time tab: show the time-of-day of the current instant (now when live).
+      /* (#R293) the badge is a claim about the CHOSEN INSTANT, so it is written where the instant
+         arrives — not once, from the localiser, in the word that happened to be true in #R105 */
+      if(badge&&!e.isLive) badge.textContent=sideWord(e.when);
+      if(mode==='time'){ /* (#R137) Time tab: show the time-of-day of the current instant (now when live).
                            (#R139) keep the slider/picker max at "now" while the selected date is today (no future). */
         const w=e.when; const base=e.isLive?new Date():new Date(e.when); const maxM=_timeMaxMins();
         if(slider.max!==String(maxM)) slider.max=String(maxM); _updTimeMax();
@@ -322,6 +374,8 @@ window.IntMapModules.newsTimeline=function(HOST){
         if(timePicker) timePicker.value=_hm(w);
         if(+slider.value!==mins) slider.value=mins;
         _tmSyncTerminator();
+        /* (#R293) the model's transport lives in this tab and its ▶/⏸ state is local to it */
+        if(playerEl&&playerEl.style.display==='none'&&fcReady()) buildPlayer();
       }
       else if(e.isLive){ tl.classList.remove('active'); if(datePicker) datePicker.value='';
         bigval.textContent=(mode==='year')?yLabel(curY):L5('Today','今日','Heute','Сегодня','Hoy');
@@ -350,18 +404,14 @@ window.IntMapModules.newsTimeline=function(HOST){
                time there was no other kind. It reads the instant and says which side of now it is
                on. And 「タップ」 goes: the whole element is a button, it is already labelled as
                one, and telling a reader to tap the thing they are looking at is not information. */
-            os.textContent=(e.when.getTime()>Date.now())
-              ? L5('Viewing the future','未来を表示中','Zukunft','Будущее','Viendo el futuro')
-              : L5('Viewing the past','過去を表示中','Vergangenheit','Прошлое','Viendo el pasado'); }
+            os.textContent=sideWord(e.when); }
         }
       }catch(_){}
     }catch(_){} _self=false; }
     /* the axis and the tab keep each other honest: a step taken from a weather legend moves this
        slider, and the tab appears as soon as the model's metadata lands */
     try{ (window.IntMapECMWF||{on:()=>{}}).on(ev=>{ try{
-      if(ev.type==='meta'){ syncFcTab(); if(mode==='forecast'){ applyMode('forecast'); } }
-      if(ev.type==='play') buildPlayer();
-      if(mode==='forecast') refreshUI(window.IntMapTime.state());
+      if(ev.type==='meta'){ buildPlayer(); if(datePicker) datePicker.max=fcMaxISO(); }
     }catch(_){} }); }catch(_){}
     window.IntMapTime.on(e=>{ refreshUI(e);
       /* Refetch the news feed only when the DAY (or live-state) actually changed. */
@@ -383,10 +433,23 @@ window.IntMapModules.newsTimeline=function(HOST){
       document.addEventListener('pointerdown',ev=>{ try{ if(tl.classList.contains('collapsed')) return; if(ev.target&&ev.target.closest&&ev.target.closest('#news-timeline')) return; closeIf(); }catch(_){} },true); })();
     window.addEventListener('intmap-lang',()=>{ try{ localizeChrome(); refreshUI(window.IntMapTime.state()); }catch(_){} });
     /* init */
-    if(datePicker){ datePicker.max=ymdISO(new Date()); datePicker.min=ymdISO(new Date(Date.now()-3650*864e5)); }
+    /* (#R293) the date picker reaches as far as the MODEL does — 「時刻」 can now name a future
+       instant, and a picker that stopped at today would be the one control that could not follow */
+    function fcMaxISO(){ try{ const n=fcCount(); if(n){ const t=fcMs(n-1); if(t!=null) return ymdISO(new Date(t)); } }catch(_){}
+      return ymdISO(new Date()); }
+    if(datePicker){ datePicker.max=fcMaxISO(); datePicker.min=ymdISO(new Date(Date.now()-3650*864e5)); }
     tl.classList.add('collapsed'); localizeChrome(); applyMode('year');
-    /* the metadata is a 3 kB JSON with no SDK behind it, so the tab can be honest from boot */
-    try{ (window.IntMapECMWF||{meta:()=>Promise.resolve()}).meta().then(syncFcTab).catch(()=>{}); }catch(_){}
-    setTimeout(syncFcTab,2500);
+    /* (#R293) the OTHER door into `zoneEnsure` — a preference restored from localStorage, which
+       fires no change event and was therefore never asking for the data at all (see above) */
+    zoneEnsure();
+    /* …and 「地図中心の」 has to keep meaning the centre it is centred on now */
+    (function followCamera(n){ try{ const E=GE();
+      if(E&&E.hasRenderer()){ E.events.on('moveend',()=>{ try{ if(zone==='map'&&!tl.classList.contains('collapsed'))
+        refreshUI(window.IntMapTime.state()); }catch(_){} }); return; }
+    }catch(_){}
+      if((n|0)<40) setTimeout(()=>followCamera((n|0)+1),300); })(0);
+    /* the metadata is a 3 kB JSON with no SDK behind it, so the transport can be honest from boot */
+    try{ (window.IntMapECMWF||{meta:()=>Promise.resolve()}).meta()
+      .then(()=>{ buildPlayer(); if(datePicker) datePicker.max=fcMaxISO(); }).catch(()=>{}); }catch(_){}
   })();
 };

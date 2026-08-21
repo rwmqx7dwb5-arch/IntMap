@@ -308,7 +308,6 @@ monitors.js                       Area Monitors IntMapMonitors
 weather.js                        気象 IntMapModules.{wind,weatherEC,weatherPanel}
 wx-source.js                      ガードされた唯一の気象／UV ソース window.IntMapWx
 wx-ecmwf.js                       ECMWF IFS モデル本体 window.IntMapECMWF——予報時刻軸・.om URL・復号済みの場・配色表
-wx-reanalysis.js                  再解析の気温 window.IntMapReanalysis——GIBS の MERRA-2 タイルを色から値へ戻し、予報と同じ配色で塗り直す `imwxre://`
 wx-wind.js                        風の粒子レンダラ window.IntMapWindGL——WebGL 1描画呼び出し／実経過時間基準
 place-framing.js                  どこまで寄るか window.IntMapPlaceFraming
 proxy-fetch.js                    CORS プロキシ経由の取得（相手先ごとに効くものが違う）

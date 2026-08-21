@@ -1055,7 +1055,7 @@ window.IntMapModules.dataLayers=function(HOST){
           const src=findOp(c.el);
           if(src){ const rg=document.createElement('input'); rg.type='range';
             rg.min=src.min||0; rg.max=src.max||1; rg.step=src.step||'any'; rg.value=src.value;
-            rg.title=(window.IntMapLang.t(lang,'Opacity','透明度','Deckkraft','Непрозрачность','Opacidad'));
+            rg.title=(window.IntMapLang.t(lang,'Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad'));
             rg.oninput=()=>{ try{ src.value=rg.value; src.dispatchEvent(new Event('input',{bubbles:true})); src.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} };
             row.appendChild(rg); }
           const x=document.createElement('button'); x.className='alc-x'; x.textContent='×'; x.title=(window.IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
@@ -1802,7 +1802,20 @@ window.IntMapModules.dataLayers=function(HOST){
        is what put the closest pair at 8.1 in the first place; when there are no more waves than
        entries, each wave takes an ENTRY, so the measured separation is the separation on screen.
        (More entries than that — no such layer today — falls back to interpolation.) */
-    const _WAVEPAL=['#25307d','#3167cf','#2aa7d8','#1f9d70','#74c23f','#e6cf35','#f2932c','#e2532f','#c22f66','#8c46ad','#cfaee0'];
+    /* ══ ⚠⚠ (#R293) 「ランダムな色の分け方ではなく、古いのから新しいのまで、赤から紫に連続的に」 ═══
+       #R290 maximised how far apart the waves LOOK and got 26.1 (CIE76) by sweeping hue a full turn
+       — which starts at dark blue, ends at lavender, and passes red in the middle. That is far apart
+       and it is not an ORDER anybody can read off the map, which is what 「ランダム」 names.
+       This ramp is the one the reader asked for: hue sweeps MONOTONICALLY from red (oldest) through
+       orange, yellow, green and blue to purple (newest), so where a country sits in the sequence is
+       legible without the key.
+       ⚠ THE SEPARATION IS NOW A CONSEQUENCE, NOT THE OBJECTIVE, AND IT IS SMALLER — MEASURED:
+       closest pair 23.9 (CIE76) against #R290's 26.1, and the closest pair is always an ADJACENT
+       one, which is the signature of a continuous ramp: two waves that could be confused are
+       neighbours in time, and no two distant waves ever are. It is still an order of magnitude
+       above the 2.3 JND and roughly twice the 12.8 of the viridis sampling both of these replace.
+       `tests/r293` asserts the monotone red→purple sweep AND re-computes the separation. */
+    const _WAVEPAL=['#cf0032','#ea4a1c','#fa8b00','#f2c200','#c9df00','#5fbb46','#00a878','#0096bf','#2f66cf','#5a3cc4','#902fa6'];
     function _mixHex(a,b,t){ const p=(h)=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
       const A=p(a),B=p(b),o=A.map((v,i)=>Math.round(v+(B[i]-v)*t));
       return '#'+o.map(v=>v.toString(16).padStart(2,'0')).join(''); }
@@ -2854,7 +2867,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const id=legendIdOf(el); if(!id||opacities[id]==null) return;
       if(el.querySelector('.dl-op-row')) return;
       const row=document.createElement('div'); row.className='dl-op-row';
-      row.innerHTML=`${window.IntMapLang.t(HOST.lang,'Opacity','透明度','Deckkraft','Прозрачность','Opacidad')}<input type="range" min="0" max="1" step="0.05" value="${opacities[id]}"><span class="dl-op-val">${Math.round(opacities[id]*100)}%</span>`;
+      row.innerHTML=`${window.IntMapLang.t(HOST.lang,'Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')}<input type="range" min="0" max="1" step="0.05" value="${opacities[id]}"><span class="dl-op-val">${Math.round(opacities[id]*100)}%</span>`;
       const hint=el.querySelector('.dl-hint, .kl-hint'); if(hint && hint.parentNode===el) el.insertBefore(row,hint); else el.appendChild(row);
       const r=row.querySelector('input'), val=row.querySelector('.dl-op-val');
       r.addEventListener('input',()=>{ const v=parseFloat(r.value); setLayerOpacity(id,v); if(val) val.textContent=Math.round(v*100)+'%'; });
@@ -5205,10 +5218,28 @@ window.IntMapModules.dataLayers=function(HOST){
        (js/layer-packs.js) rather than as a special case in here. */
     window._opacityOpaqueText=window._opacityOpaqueText||{};
     const _OP_PROP={fill:'fill-opacity',line:'line-opacity',raster:'raster-opacity',circle:'circle-opacity',heatmap:'heatmap-opacity','fill-extrusion':'fill-extrusion-opacity',hillshade:'hillshade-exaggeration','color-relief':'color-relief-opacity'};
+    /* ══ ⚠⚠⚠ (#R293) A SLIDER THAT WRITES A SCALAR ERASES AN EXPRESSION ═══════════════════════
+       「日本含め警報の塗漏れ、塗りすぎが多すぎる。」 MEASURED on the built app with the warnings layer
+       on: `getPaint('wp-alert-hatch','fill-opacity')` came back **0.38** — a plain number. That
+       layer is declared with
+           ['case', ['==', ['to-number',['feature-state','wpAlert'],-1], 0], 0.9, 0]
+       i.e. THE EXPRESSION IS WHAT DECIDES WHICH COUNTRIES ARE HATCHED AT ALL. This function
+       overwrote it with the slider's value, so every country on Earth — including the ones with
+       warnings in force — was hatched at 38 %. That is the 「塗りすぎ」 in the report, and it is
+       also why the hatch looked like a sheet over the whole map rather than a state.
+       #R273 hit the same mechanism one property along (`line-opacity` on the outline) and answered
+       it with `_opacityOpaqueText`, which is a per-layer EXEMPTION. An exemption is the wrong shape
+       here: the reader does want the hatch to follow the slider — what they do not want is the
+       slider deciding WHO is hatched.
+       → a layer may register a BUILDER: given the slider's value, it returns the paint value to
+       write. The conditional survives and the slider multiplies inside it. */
+    window._opacityExpr=window._opacityExpr||{};
     function _applyGenericOpacity(ids,v){ (ids||[]).forEach(lid=>{ try{ const L=GE().layers.get(lid); if(!L) return;
       if(L.type==='symbol'){ const keep=!!window._opacityOpaqueText[lid];
         try{ GE().layers.setPaint(lid,'icon-opacity',keep?1:v); }catch(_){} try{ GE().layers.setPaint(lid,'text-opacity',keep?1:v); }catch(_){} return; }
       const p=_OP_PROP[L.type]; if(!p) return;
+      const build=window._opacityExpr[lid];
+      if(build){ GE().layers.setPaint(lid,p,build(v)); return; }
       GE().layers.setPaint(lid,p,(p==='hillshade-exaggeration')?Math.max(0.05,v):v); }catch(_){} }); }
     window._applyGenericOpacity=_applyGenericOpacity;
     window._registerLayerOpacity=function(id,namesEnJp,layerIds,cbId){ try{

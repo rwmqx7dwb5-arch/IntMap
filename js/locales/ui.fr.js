@@ -339,6 +339,10 @@ window.IntMapLang.define('fr', { ui: {
     "Click to start, click each corner, and click the first point again to finish.":"Cliquez pour commencer, cliquez chaque sommet, puis cliquez à nouveau sur le premier point pour terminer.",
     "Draw the rupture area on the map.":"Tracez la zone de rupture sur la carte.",
     "Each point is added to the table below. Press the button again to turn this off.":"Chaque point s’ajoute au tableau ci-dessous. Appuyez de nouveau sur le bouton pour désactiver.",
+  "Educational — follow the official authorities.": "Informatif — suivez les autorités officielles.",   /* world-packs.js (#R293) */
+  "IntMap read": "Lu par IntMap",   /* world-packs.js (#R293) */
+  "issued": "émis",   /* world-packs.js (#R293) */
+  "Not covered, or not read yet (diagonal hatching)": "Non couvert ou pas encore lu (hachures)",   /* world-packs.js (#R293) */
   "Educational display — follow the official authorities.": "Affichage éducatif — suivez les autorités officielles.",   /* (#R275) */
     "If one is already placed, tapping moves it. Press the button again to turn this off.":"Si un épicentre existe déjà, le toucher le déplace. Appuyez de nouveau sur le bouton pour désactiver.",
   "IntMap is not connected to this country’s warning service, so it is saying nothing about this point — not that nothing is in force.": "IntMap n’est pas connecté au service d’alerte de ce pays : la carte n’affirme rien sur ce point — cela ne veut pas dire qu’aucune alerte n’est en vigueur.",   /* (#R275) */

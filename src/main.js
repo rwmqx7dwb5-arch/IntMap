@@ -182,7 +182,7 @@ import '../js/tile-warm.js';
 import '../js/insolation.js';               /* (#R176) terrain shadow + the annual sunlight budget */
 /* (#R276) the ECMWF IFS model (forecast axis, .om URLs, decoded field, colour scales) and the WebGL particle renderer that draws the wind from it — both publish a window global synchronously and js/weather.js reads both, so they precede it. */
 import '../js/wx-ecmwf.js';
-import '../js/wx-wind.js'; import '../js/wx-reanalysis.js';   /* (#R288) …and the reanalysis half of the ONE temperature layer, which re-colours NASA GIBS' MERRA-2 tiles through js/wx-ecmwf.js's ramp — one line, because the app shell has a LINE BUDGET (tests/r168 #8) and a round that adds to it pays for it */
+import '../js/wx-wind.js';   /* (#R293) js/wx-reanalysis.js went with the MERRA-2 source it existed for — 「気温レイヤーで、MERRA-2 再解析は削除。」 */
 import '../js/weather.js';
 import '../js/layer-packs.js';   /* (#R254) …which imports js/datacenters.js itself — see the note there */
 /* (#R211) the sixth pack — trade, energy, warnings, tides, crops. Same shape as layer-packs.js
