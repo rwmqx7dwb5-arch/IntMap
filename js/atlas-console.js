@@ -4163,7 +4163,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        (「Atlasはユーザーが送ったメッセージもコピーできるように」): ONE function, so the two cannot disagree.
        A user bubble gets Copy, not Retry — their own sentence's Retry is under the reply it produced. */
     function copyBtn(src){
-      const cpSvg='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h1';
+      const cpSvg='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
       const b=document.createElement('button');
       b.type='button';
       b.innerHTML=cpSvg+'<span>'+L('Copy','コピー','Kopieren','Копировать','Copiar')+'</span>';

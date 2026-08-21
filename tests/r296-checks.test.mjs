@@ -345,6 +345,24 @@ test('R296 ⑪ a reader’s own message can be copied, by the same button', () =
   /* Retry stays on the reply only — re-running the reader's own sentence is that same Retry */
   const u = /if\(who==='u'\)\{([\s\S]{0,300})/.exec(a);
   assert.ok(u && !/Retry|再試行/.test(u[1]), 'a user bubble gets Copy and not Retry');
+  /* ══ ⚠⚠⚠ (#R296 追記) THE ICON MUST CLOSE ITS OWN TAG, AND THE LABEL MUST SURVIVE IT ═══════════
+     MEASURED ON PRODUCTION after this round's deploy: BOTH copy buttons — the reply's and the
+     reader's — rendered as a half-drawn rectangle with NO text beside it. The cause was in the
+     source above, and it was mine: `cpSvg` was pasted from a TRUNCATED console print and ended
+     mid-attribute (`…<path d="M5 15V5a2 2 0 0 1 2-2h1`), so the HTML parser swallowed everything
+     after it — the closing `</svg>` AND the `<span>` carrying the word 「Copy」.
+     ⚠ `node --check` cannot see this: the JavaScript is valid, the HTML inside the string is not.
+     ⚠ And it broke a button that ALREADY WORKED — #R72's Copy on every reply — which is precisely
+     what 「余計な変更をするな」 exists to prevent. The check is about the STRING, because that is
+     where the defect was, and it is cheap enough to run on every commit. */
+  const cp = /const cpSvg='([^']*)';/.exec(a);
+  assert.ok(cp, 'the copy icon must be findable');
+  assert.match(cp[1], /^<svg[ >]/, 'it starts as an svg…');
+  assert.match(cp[1], /<\/svg>$/, '…and CLOSES as one');
+  assert.equal((cp[1].match(/</g) || []).length, (cp[1].match(/>/g) || []).length,
+    'every tag in the icon is terminated — an unterminated one eats whatever follows it');
+  assert.match(a, /b\.innerHTML=cpSvg\+'<span>'\+L\('Copy'/, 'the label follows the icon…');
+  assert.match(a, /'Copiar'\)\+'<\/span>'/, '…and the span is closed');
   /* ⚠ and the auto-scroll that assumed the reply's previous sibling IS the user message still works */
   assert.match(a, /while\(ub&&ub\.classList&&ub\.classList\.contains\('atl-msgt'\)\) ub=ub\.previousElementSibling;/,
     'the scroll walk skips the copy bar it now has to step over');
