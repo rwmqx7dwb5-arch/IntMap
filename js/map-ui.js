@@ -193,7 +193,29 @@ window.IntMapModules.layerRegistry=function(HOST){
           return window.IntMapECMWF.validTime(); }catch(_){ return null; } },
       source:()=>(_tempSrc()==='merra2')?'NASA GIBS · MERRA-2':'ECMWF IFS HRES · Open-Meteo' });
     register('sst',    { label:()=>L5('Sea surface temp','海面水温','Meerestemperatur','Темп. моря','Temp. del mar'), sampleAt:(x,y)=>_om('sst',x,y), time:()=>_ld('sst'), source:()=>'NASA GIBS / Open-Meteo marine' });
-    register('wind',   { label:()=>L5('Wind','風','Wind','Ветер','Viento'), sampleAt:(x,y)=>_om('wind',x,y), source:()=>'Open-Meteo' });
+    /* ⚠ (#R302) THE WIND ANSWERS FROM THE FIELD THAT IS ON SCREEN, THE WAY `temp` ABOVE DOES.
+       This row asked api.open-meteo.com for a point value while the ECMWF field the particles and the
+       colour slot are drawn from was already decoded IN RAM — a live 「now」 reading from a different
+       hour, printed under a picture of another one. That is precisely what #R276 forbade
+       (「地図上の地点値は、表示中のレイヤー・モデル・時刻と同じデータから取得する」); #R288 fixed the `temp`
+       row against it and this one alone was never carried over.
+       ⚠ `window.Wind.sampleAt` IS that field — `IntMapECMWF.sampler('wind_u_component_10m').uv`, through
+       the single accessor js/map-readout.js's corner already reads (js/weather.js) — so the bearing and
+       the frame's own hour come with it instead of the u/v maths being written a second time here.
+       Open-Meteo stays as the fallback for when no frame is held: the layer off, or the first one still
+       downloading. `time` is null on that path because an Open-Meteo `current=` reading is not of the
+       hour the axis is standing on. */
+    const _WIND_VAR='wind_u_component_10m';
+    const _windFld=()=>{ try{ return !!(window.IntMapECMWF&&window.IntMapECMWF.sampler(_WIND_VAR)); }catch(_){ return false; } };
+    register('wind',   { label:()=>L5('Wind','風','Wind','Ветер','Viento'),
+      sampleAt:(x,y)=>{ try{ const w=window.Wind.sampleAt(x,y);
+          if(w&&isFinite(w.speed)){ const sp=window.fmtWindSpeed?window.fmtWindSpeed(w.speed):((Math.round(w.speed*10)/10)+' m/s');
+            /* (#R289) one compass table for the whole app — the word, not just the number */
+            const card=(()=>{ try{ return window.IntMapCompass.point(w.dir,HOST.lang,8); }catch(_){ return ''; } })();
+            return sp+' '+(card?(card+' '):'')+'@'+Math.round(w.dir)+'°'; } }catch(_){}
+        return _om('wind',x,y); },
+      time:()=>{ try{ return _windFld()?window.IntMapECMWF.validTime():null; }catch(_){ return null; } },
+      source:()=>_windFld()?'ECMWF IFS HRES · Open-Meteo':'Open-Meteo' });
     register('precip', { label:()=>L5('Precipitation','降水','Niederschlag','Осадки','Precipitación'), sampleAt:(x,y)=>_om('precip',x,y), time:()=>_ld('precip'), source:()=>'NASA GIBS (IMERG) / Open-Meteo' });
     register('snow',   { label:()=>L5('Snow & ice','積雪・氷','Schnee & Eis','Снег и лёд','Nieve y hielo'), sampleAt:(x,y)=>_om('snow',x,y), time:()=>_ld('snow'), source:()=>'NASA GIBS / Open-Meteo' });
     register('aod',    { label:()=>L5('Aerosol / haze','エアロゾル','Aerosol','Аэрозоль','Aerosol'), sampleAt:(x,y)=>_om('aod',x,y), time:()=>_ld('aod'), source:()=>'NASA GIBS / Open-Meteo air-quality' });
@@ -765,16 +787,21 @@ window.IntMapModules.layerSidebar=function(HOST){
             It is the 「あたらしいピルUI」 the reader means, and `_hereLL()` went with it: no row in this
             file names the camera's centre any more, so there is no door left for it to come back
             through. #R196's bar itself — crosshair, one line of instruction, × and Esc — is untouched.
-         ② `_askPoint` is on THREE rows, not five. A tool is asked for a point only when it cannot open
-            without one: `sim.los` (js/viewshed.js `open()` dereferences `lngLat.lng`), `sim.nightSky`
-            (an invalid ll returns false) and `sim.reach` (its panel had no way to name a point at all
-            until the ◎ button this round adds to it). `sim.terrainWater` opens on the CURRENT VIEW
-            RECTANGLE when given nothing (js/terrain-water.js `build()`), and `sim.sun`'s panel names
-            its own observer in `.sun-where` and re-picks with ◎ — so both open straight away.
+         ② `_askPoint` is on the rows that cannot answer without a point: `sim.los` (js/viewshed.js
+            `open()` dereferences `lngLat.lng`), `sim.nightSky` (an invalid ll returns false) and
+            `sim.reach` (its panel had no way to name a point at all until the ◎ button #R299 adds to
+            it). `sim.terrainWater` opens on the CURRENT VIEW RECTANGLE when given nothing
+            (js/terrain-water.js `build()`), so it is not asked — 「最初に地点選ぶ必要のないものまで全部
+            最初に選ばせようとするな」 is the other half of the same sentence.
        ⚠ AND `sim.sun` NO LONGER RUNS THE ANNUAL ANALYSIS ON OPENING. `analysePoint(centre)` printed a
        year's sunlight hours for a coordinate nobody had chosen, which is the second half of the
        sentence above; the ◎ 「地点の日照時間」 button and Atlas's `sunHours` still run it, for a point
-       somebody named. Nothing is removed — the automatic guess is. */
+       somebody named. Nothing is removed — the automatic guess is.
+       ══ ⚠⚠⚠ (#R302) …AND `sim.sun` IS ASKED TOO, BECAUSE NAMING THE GUESS IS STILL GUESSING ═══════
+       The sentence came a third time. #R299's exemption for this row rested on the panel WRITING
+       「観測地点は地図の中心」 above its numbers — but the numbers were still computed, still printed and
+       still drawn on the map for a coordinate nobody chose. It is a fourth `_askPoint` row now, and
+       js/sims.js treats 「no point」 as a real state instead of falling back to the camera. */
     let _picked=null;                       /* the point the reader last chose here, this session */
     const _inView=(ll)=>{ try{ const b=GE().camera.getBounds();
         const s=b.getSouth(), n=b.getNorth(); let w=b.getWest(), e=b.getEast();
@@ -799,12 +826,21 @@ window.IntMapModules.layerSidebar=function(HOST){
         const end=(ll)=>{ if(done) return; done=true; tidy();
           if(!ll){ resolve(false); return; }
           Promise.resolve(fire(ll)).then(resolve,()=>resolve(false)); };
+        /* ⚠ (#R302) THE APP'S OWN RED MESSAGE SAYS IT, NOT A NEW PIECE OF CHROME ═══════════════════
+           「普通の既存の赤メッセージ使ってください。…まずは地点を選ばせろってこと。」 #R298 answered the same
+           sentence by inventing a pill on the shared bar and #R299 took it away again, which left the bar
+           arming SILENTLY: the map waits for a tap and nothing in the reader's own language says so.
+           `imToast` is the app's existing toast — `.sat-toast` on --info-mil (#ff3b30), the same red
+           js/community.js's 「まず初めに場所を選ばせろ」 uses — and the sentence it carries is the SAME one
+           the bar's hint carries, so the two cannot drift apart in nine languages. No new element, no
+           new class, no new string. */
+        const ask=(name?(name+' — '):'')+T('Tap the map to choose a point','地図をタップして地点を選んでください','Zum Wählen eines Punktes auf die Karte tippen','Нажмите на карту, чтобы выбрать точку','Toca el mapa para elegir un punto');
         let armed=false;
-        try{ armed=!!(P&&P.start&&P.start({ onPick:(ll)=>end(ll), onCancel:()=>end(null),
-          hint:(name?(name+' — '):'')+T('Tap the map to choose a point','地図をタップして地点を選んでください','Zum Wählen eines Punktes auf die Karte tippen','Нажмите на карту, чтобы выбрать точку','Toca el mapa para elegir un punto') })); }catch(_){ armed=false; }
+        try{ armed=!!(P&&P.start&&P.start({ onPick:(ll)=>end(ll), onCancel:()=>end(null), hint:ask })); }catch(_){ armed=false; }
         /* a tool that cannot ask says why, rather than quietly answering for the centre instead */
         if(!armed){ try{ HOST.satToast(T('The map is not ready to choose a point yet','地図がまだ地点を選べる状態ではありません','Die Karte ist noch nicht bereit, einen Punkt zu wählen','Карта ещё не готова к выбору точки','El mapa aún no está listo para elegir un punto')); }catch(_){}
           end(null); return; }
+        try{ (HOST.imToast||HOST.satToast)(ask); }catch(_){}   /* (#R302) armed → the red toast that says so */
         /* the bar can also be torn down by `abort()` — a panel closing, the engine swapping — and that
            path notifies nobody, so a gesture that stopped existing is noticed by watching it. */
         watch=setInterval(()=>{ try{ if(!P.active()) end(null); }catch(_){ end(null); } },400);
@@ -884,8 +920,14 @@ window.IntMapModules.layerSidebar=function(HOST){
         label:()=>T('Reachable area (drive/walk/cycle/transit)','到達圏（車・徒歩・自転車・公共交通）','Erreichbarkeit (Auto/Fuß/Rad/ÖPNV)','Зона доступности (авто/пешком/вело/транспорт)','Área alcanzable (coche/pie/bici/transporte)'),
         hint:()=>T('How far you get in a given time','決めた時間でどこまで行けるか','Wie weit man in einer Zeit kommt','Как далеко можно уехать за время','Hasta dónde se llega en un tiempo') },
       { id:'sim.sun', mod:'IntMapSun', ic:SVG_SUN, en:'Sunlight hours & shade',
-        /* (#R299) NO POINT IS ASKED FOR — the panel names its own observer (`.sun-where`) and ◎ re-picks */
-        run:()=>{ try{ if(!window.IntMapSun) return false; window.IntMapSun.open(); return true; }catch(_){ return false; } },
+        /* ⚠⚠⚠ (#R302) THIS ROW WAS THE ONE THE SENTENCE WAS ABOUT ═══════════════════════════════════
+           「いきなり勝手に地図中心を選択しているという前提で勝手に計算して結果を表示するのを辞めろってこと。
+             まずは地点を選ばせろってこと。」 #R299 exempted this row on the grounds that the panel NAMES its
+           own observer. MEASURED on that build: pressing it printed the sun's altitude, its azimuth,
+           sunrise, noon and sunset, and drew the cast shadows, for `GE().camera.getCenter()` — with
+           「観測地点は地図の中心」 written above them. Naming the guess is not the same as not guessing, and
+           the reader has now said so. It asks first, like the three rows above it. */
+        run:()=>_askPoint((ll)=>{ try{ if(!window.IntMapSun) return false; window.IntMapSun.open(ll); return true; }catch(_){ return false; } },'sim.sun'),
         label:()=>T('Sunlight hours & shade','日照時間・影の解析','Sonnenstunden & Schatten','Часы солнца и тени','Horas de sol y sombra'),
         hint:()=>T('Where the sun reaches, hour by hour','時間ごとに日が当たる場所','Wo die Sonne stündlich hinkommt','Куда солнце попадает по часам','Dónde llega el sol, hora a hora') },
       { id:'sim.nightSky', mod:'IntMapNightSky', ic:SVG_STAR, en:'Night sky from here',

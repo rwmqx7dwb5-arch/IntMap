@@ -373,8 +373,15 @@ test('R276 ⑰ the prefetch is on the time change, not on the first load', () =>
   assert.match(w, /if\(opt&&opt\.step\)\{ try\{ EC\(\)\.prefetch\(\['wind_u_component_10m','wind_v_component_10m'\]/,
     'the wind warms the next hour only when the axis moved');
   assert.match(w, /load\(\{step:ev\.type==='time'\}\)/, 'and that is what a time event passes');
-  assert.match(w, /function applyTime\(only\)\{[\s\S]{0,1600}?EC\(\)\.prefetch\(vars,Math\.min\(n-1,i\+1\)\)/,
+  /* ⚠ (#R302) THIS PINNED THE CLOSING PARENTHESES. It required
+       `EC().prefetch(vars,Math.min(n-1,i+1))` — the exact arity of the day — so passing the VIEW as
+     the third argument read as a regression, when it is the fix: without it `prefetch` fell through
+     to `band=null` and warmed the variable over the WHOLE GLOBE (13.2 M samples) for a reader
+     looking at one country. The relation the check is for is 「warmed from the time change」. */
+  assert.match(w, /function applyTime\(only\)\{[\s\S]{0,1600}?EC\(\)\.prefetch\(vars,Math\.min\(n-1,i\+1\)/,
     'the ECMWF rasters warm theirs from the time change too');
+  assert.match(w, /EC\(\)\.prefetch\(vars,Math\.min\(n-1,i\+1\),\s*\w+\s*\)/,
+    '…and they warm the VIEW, not the globe — no third argument means band=null means everything');
 });
 
 /* ── ⑱ one layer's teardown is not a global "forget everything" ───────────────────────────────

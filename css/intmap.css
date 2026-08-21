@@ -3547,58 +3547,116 @@ body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
 .rtp-sug-d{ flex:0 0 auto; font-size:12.5px; color:var(--text-muted); }
 .rtp-sug-msg{ padding:12px 10px; font-size:13px; color:var(--text-muted); }
 
-/* ══ ⚠⚠⚠ (#R299) THE DESKTOP PANEL, ONE STEP SMALLER — AND THE BOTTOM HALF GETS A FLOOR ═════════
+/* ══ ⚠⚠⚠ (#R302) THE SAME SENTENCE CAME BACK — SO THIS TIME THE NUMBERS ARE MEASURED ═══════════
    「経路ポップアップ、UIがでかすぎな箇所が多々ある。見やすいのはいいが、デカすぎはやめろ。
      上半分がでかすぎて肝心の下半分が見にくい。」
 
-   TWO SEPARATE FAULTS, and the second one is the reason the first one hurt.
+   #R299 lowered fourteen declarations against this exact sentence and the reader sent it again,
+   because HALF OF THEM WERE NOT WHAT DECIDED THE HEIGHT. Measured in a browser this time — 1,280 px
+   wide, no stops, a route on screen — rather than computed from the declarations:
 
-   ① COMPUTED from the declarations above, for the desktop panel: header 7+34+6+1 = 48 · one field
-      48 · 「経路を検索」 44 · the time row 36 · the section tabs 2+32+1 = 35 — and that is before a
-      single stop is added, each of which is another 48. Each comes down ONE step here: header 44 ·
-      field 40 · button 38 · time row 32 · tabs 31, with the type that sits in them following.
-      ⚠ THE MODE SWITCH IS THE ONE EXCEPTION, and its `min-height` is honest about being a floor:
-      that row is as tall as its CONTENT (an 18 px glyph over a label, set in js/routing-ui.js), so
-      36→32 buys nothing on its own — what the smaller label buys is about 1 px. It is left at a
-      floor rather than shrunk by making the glyph smaller, because a mode icon that stops reading
-      as a car / a train / a walker is a worse panel, not a smaller one.
-   ② …and the answers had NO FLOOR. `.rtp-fixed` is `flex:0 1 auto` (shrink 1) while `.rtp-body` is
-      `flex:1 100 auto` (shrink 100) — #R298 chose those weights so a panel dragged shorter than its
-      own form scrolls the form rather than clipping the footer, which is right. But flexbox weights
-      shrinking by `shrink × content size`, and the answers are the LONG side: a turn list of 40
-      steps outweighs a 300 px form by two orders of magnitude, so when the panel met its
-      `max-height` the ROUTES absorbed essentially all of the shrink and 「下半分が見にくい」 is what
-      that looks like. A `min-height` on the body is the floor the weights cannot cross; past it the
-      pinned block gives way and scrolls inside itself, which it is already set up to do
-      (`overflow-y:auto`), and its own cap stops it claiming half the panel before that.
+                     was                                                is
+     header           44 = 5 + 34(.rtp-btn-ico) + 4 + 1                 36 = 4 + 28 + 3 + 1
+     .rtp-fixed      269 = 14 pad + 28 gap(7×4) + modes 42.8           224 = 11 + 20(5×4) + 37.2
+                           + fields 87 + fieldbar 38 + when 32                + 73 + 32 + 28 + 23
+                           + summary 27
+     .rtp-tabs        33 = 2 + 30.1(.rtp-tab) + 1                       28 = 2 + 25.4 + 1
+     ───────────────────────────────────────────────────────────────────────────────────────────
+     upper half      346                                               289   (−57 px, −17%)
+
+   ⚠ TWO OF THOSE ROWS NEVER REACHED THE `min-height` #R299 LOWERED. `.rtp-mode` measured 36.8
+   against a 32 px floor — an 18 px glyph over a 13.8 px label inside 4 px of padding — and
+   `.rtp-tab` measured 30.1 against a 28 px floor: 17.4 px of line inside 10 px of padding over a
+   2 px border. A floor UNDER the content decides nothing. What decides those two is the GLYPH and
+   the PADDING, so that is what comes down here, together with the icon buttons that were deciding
+   the header (34 → 28) rather than the header padding #R299 trimmed.
+   ⚠ NOTHING IS REMOVED, AND NOTHING FALLS BELOW A FLOOR WORTH KEEPING. The smallest pointer target
+   left on the desktop panel is 28 px (the header buttons) and the smallest type is the mode label
+   at 11 px — a control label beside its own icon, which the base section above already argues is
+   not 主要文字. Everything else is 12 px or more.
+   ⚠ AND THE BOTTOM HALF IS NOT MADE SMALLER — 「見やすいのはいいが」 is half the sentence. `.rt-alt` /
+   `.rt-step` and every size inside `.rtp-body` keep what #R298 gave them; what they get is the room
+   the top half gave up. Measured at three window heights: 459 → 516 px · 309 → 367 · 202 → 250.
+
+   ⚠ THE OTHER HALF OF #R299 IS STILL LOAD-BEARING, and it is why the answers have a floor at all.
+   `.rtp-fixed` is `flex:0 1 auto` (shrink 1) while `.rtp-body` is `flex:1 100 auto` (shrink 100) —
+   #R298 chose those weights so a panel dragged shorter than its own form scrolls the form rather
+   than clipping the footer, which is right. But flexbox shrinks by `shrink × content size`, and the
+   answers are the LONG side: a turn list of 40 steps outweighs a 300 px form by two orders of
+   magnitude, so when the panel meets its `max-height` the ROUTES absorb essentially all of the
+   shrink, and 「下半分が見にくい」 is what that looks like. The `min-height` below is the floor those
+   weights cannot cross; past it the pinned block gives way and scrolls inside itself, which it is
+   already set up to do (`overflow-y:auto`), and its own cap stops it claiming half the panel first.
 
    ⚠ THE PHONE IS UNTOUCHED, deliberately: a finger is a finger, so `@media (max-width:767px)` below
    keeps every 44 px target and every ≥13 px type size, and tests/smoke.spec.js R291 ⑧ measures both
    at 320 px. That is also why this block is a MIN-WIDTH block rather than edits in place — several
-   of these declarations (`.rt-alt`, `.rt-step`, `.rtp-mode-tx`, `.rtp-tab` font) have no phone
-   override to protect them, so lowering them at the base would have lowered them on a phone too.
+   of these declarations (`.rt-alt`, `.rt-step`, `.rtp-mode-tx`, `.rtp-mode-ic`, `.rtp-tab` padding,
+   `.rtp-mark`) have no phone override to protect them, so lowering them at the base would have
+   lowered them on a phone too.
    ⚠ AND `.rtp[data-dragged="1"]{max-height:none}` STILL WINS — a panel the reader sized is sized. */
 @media (min-width:768px){
-  .rtp-head{ padding:5px 8px 4px 12px; }
+  /* ⚠ THE CAP COMES DOWN, THE COEFFICIENT DOES NOT — the panel was the app's widest surface at 440
+     and Atlas's 400 is the house maximum, but 30vw is what keeps a turn instruction on ONE line.
+     MEASURED with real instruction strings, 40 steps, English: at 1,280 px a 27vw panel is 346 px
+     wide and wraps 10 of the 40 to two lines, which cancels most of the height won above (11 steps
+     fully visible, exactly what it was before). At 30vw it is 384 and wraps 5 — 12 visible. The
+     narrower panel was costing the bottom half the very room this whole block is freeing up. */
+  .rtp{ width:clamp(330px,30vw,400px); }
+  .rtp-head{ padding:4px 8px 3px 12px; }
   .rtp-head h2{ font-size:14px; }
+  /* ⚠ THIS is what the header's height was — not its padding. A row of 34 px icon buttons under a
+     14 px title made every one of them the tallest thing on the line. */
+  .rtp-btn-ico{ width:28px; height:28px; min-width:28px; font-size:15px; }
   /* ⚠ THE CAP, and it is a viewport unit rather than a percentage on purpose: an un-dragged `.rtp`
      has `height:auto` (only a `max-height`), and a percentage max-height against an auto-height
      parent resolves to «none» — the rule would have been silently absent exactly when it is needed. */
-  .rtp-fixed{ gap:7px; padding:8px 14px 6px; max-height:42vh; }
-  .rtp-mode{ min-height:32px; font-size:11.5px; }
-  .rtp-mode .rtp-mode-tx{ font-size:11.5px; }
-  .rtp-in{ height:40px; font-size:14.5px; }
-  .rtp-go{ min-height:38px; font-size:14px; }
-  .rtp-when select, .rtp-when input, .rtp .rtp-hyear, .rtp .rtp-hkind{ height:32px; font-size:12.5px; }
-  .rtp-tab{ min-height:28px; font-size:12.5px; }
-  /* ⚠ THE FLOOR. Below it the pinned block above gives way and scrolls inside itself (see ② above).
-     `.rtp` is 360 px at its smallest (js/routing-ui.js `MIN_H`), so a panel squeezed right down is
-     header 44 + tabs 31 + footer 47 + 180 = 302, leaving 58 px of form to scroll — nothing clips.
-     ⚠ AND THE FLOOR ITSELF YIELDS ON A SHORT WINDOW. A fixed 180 on a viewport only 400 px tall
+  .rtp-fixed{ gap:5px; padding:6px 12px 5px; max-height:42vh; }
+  .rtp-modes{ padding:2px; }
+  .rtp-mode{ min-height:28px; font-size:11px; }
+  .rtp-mode .rtp-mode-tx{ font-size:11px; }
+  /* ⚠ AND THIS is what the mode row's height was. js/routing-ui.js writes `width="18" height="18"`
+     on the glyph, which is a presentational attribute and loses to any rule at all — so the size
+     the desktop wants is stated here rather than by asking that file for a second number. The car,
+     the train and the walker are still legible at 15; the row stops being 36.8 px tall. */
+  .rtp-mode .rtp-mode-ic svg{ width:15px; height:15px; }
+  .rtp-fields{ gap:5px; }
+  .rtp-field{ gap:5px; }
+  .rtp-mark{ width:19px; height:19px; }
+  .rtp-in{ height:34px; font-size:14px; }
+  .rtp-fieldbar{ gap:5px; }
+  /* ⚠ `.rtp-fieldbar .rtp-chip`, NOT `.rtp-chip` — the footer's chips are already 30 px (#R298) and
+     the ones inside `.rtp-body` (the Options pane) are the bottom half, which is not touched. */
+  .rtp-fieldbar .rtp-chip{ min-height:30px; padding:0 11px; font-size:12.5px; }
+  /* the min-width comes down with the height, or the label wraps and the button grows again */
+  .rtp-go{ min-height:32px; min-width:112px; font-size:13.5px; }
+  .rtp-when{ gap:5px; }
+  .rtp-when select, .rtp-when input, .rtp .rtp-hyear, .rtp .rtp-hkind{ height:28px; font-size:12px; }
+  .rtp-summary b{ font-size:17px; }
+  /* ⚠ the tab's own floor never bound (10 px of padding + a 2 px border + the line already made 30),
+     so the padding is what comes down; 25 is left as the floor it is. */
+  .rtp-tab{ min-height:25px; padding:3px 6px; font-size:12px; }
+  /* ⚠ THE FLOOR the shrink weights above cannot cross — the answers may not be squeezed below it.
+     ⚠ AND THE FLOOR ITSELF YIELDS ON A SHORT WINDOW. A fixed 240 on a viewport only 400 px tall
      would push the footer past `.rtp`'s own `max-height:calc(100% - 96px)` and `overflow:hidden`
      would eat it — the exact 「reachable controls behind the edge」 #R298 fixed for the pinned block.
      `min()` keeps the guarantee where there is room and drops it in proportion where there is not. */
-  .rtp-body{ min-height:min(180px,28vh); }
+  .rtp-body{ min-height:min(240px,34vh); }
+  /* ══ ⚠⚠ (#R302) …AND A PANEL THE READER SIZED KEEPS THE OLD FLOOR, BECAUSE `min()` CANNOT SEE IT.
+     The `34vh` term above is what makes the floor safe on a short window — but a dragged panel's
+     height is an inline `!important` pixel value that has nothing to do with the viewport, so on a
+     tall screen the 240 stands while the box is 360 (js/routing-ui.js `MIN_H`).
+     MEASURED at exactly that size, with 240: header 36 + `.rtp-fixed` 11 (it cannot go below its
+     own padding — `min-height:0` is a CONTENT-box floor) + tabs 28 + body 262 (240 + its 22 px of
+     padding, same reason) + footer 47 = 384 in a 358 px box, and `overflow:hidden` eats the bottom
+     25 px of the export row. Raising the floor is for the panel at its FULL height, which is what
+     「下半分が見にくい」 is about; the reader's own size keeps exactly the floor it has today. */
+  .rtp[data-dragged="1"] .rtp-body{ min-height:min(180px,28vh); }
+  /* (#R302) one gutter down the panel. Trimming `.rtp-fixed` to 12 px above left it 2 px narrower
+     than the body and the footer, which still had the base 14 — a step in the left edge exactly
+     where the eye runs down the turn list. 12 is what `.rtp-head` and `.rtp-tabs` already use. */
+  .rtp-body{ padding-left:12px; padding-right:12px; }
+  .rtp-foot{ padding-left:12px; padding-right:12px; }
   .rt-alt{ min-height:44px; padding:7px 10px; }
   .rt-alt.on{ padding:6px 9px; }
   .rt-alt-main{ font-size:15.5px; }

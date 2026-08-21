@@ -168,10 +168,18 @@ test('R277 ⑥ China is drawn at the division its alert id names, not at the pro
   assert.match(s, /cnTotal=\+pg\.count\|\|0;/, '…and the real total is read, never assumed');
   assert.match(s, /function cnUnitOf\(idx,id\)\{/, 'the unit comes from the code');
   const u = s.slice(s.indexOf('function cnUnitOf(idx,id)'), s.indexOf('const CN_PAGE='));
-  assert.match(u, /const c=d\.slice\(0,4\)\+'00', p=d\.slice\(0,2\)\+'0000';/,
-    'district → prefecture-city → province');
+  /* ⚠ (#R302) THE TITLE OF THIS TEST SAID 「not at the province」 AND THE ASSERTION PINNED THE LINE
+     THAT FELL TO ONE. `p=d.slice(0,2)+'0000'` was the last rung of the ladder, so an id that matched
+     neither its own district nor `slice(0,4)+'00'` painted a whole province: MEASURED,
+     `500157 重慶市両江新区` → `500100` is absent from DataV → all 82,400 km² of 重慶市 coloured for a
+     district-level 大风蓝色预警, about 69× the ground the CMA named. An id this map cannot place is
+     counted instead, which is what the last assertion here has always been about. */
+  assert.match(u, /const c=d\.slice\(0,4\)\+'00';/, 'district → prefecture-city, and there it stops');
+  assert.ok(!/d\.slice\(0,2\)\+'0000'/.test(u), 'the province rung must not come back');
   assert.match(u, /if\(idx\[d\]&&idx\[d\]\.level!=='province'\) return \{code:d,rec:idx\[d\]\};/,
-    '…in that order');
+    '…in that order, and neither rung may resolve to a province');
+  assert.match(u, /if\(idx\[c\]&&idx\[c\]\.level!=='province'\) return \{code:c,rec:idx\[c\]\};/,
+    'the city rung refuses a province too — some province codes ARE city codes (the four 直轄市)');
   assert.match(s, /PLACED\.CHN=\[items\.length-lost,items\.length\];/, 'and what could not be placed is counted');
 });
 

@@ -4901,4 +4901,6 @@ window.IntMapLang.define('fr', { ui: {
   "The route planner is open on the map — fill in the two fields there, or say the places here.": "Le planificateur d’itinéraire est ouvert sur la carte — remplissez-y les deux champs, ou indiquez les lieux ici.",   /* (#R299) */
   "Where from? Give a place (or lng/lat).": "Depuis où ? Indiquez un lieu (ou lng/lat).",   /* (#R299) */
   "Where? Give the transmitter site (place, or lng/lat).": "Où ? Indiquez l’emplacement de l’émetteur (lieu ou lng/lat).",   /* (#R299) */
+  "Where? Give the point (place, or lng/lat).": "Où ? Indiquez le point (lieu, ou lng/lat).",   /* (#R302) */
+  "Arrival times need a point — name a place, or tap the map first.": "Les heures d’arrivée nécessitent un point — indiquez un lieu, ou touchez d’abord la carte.",   /* (#R302) */
 } });

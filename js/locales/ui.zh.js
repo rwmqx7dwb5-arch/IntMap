@@ -4988,5 +4988,7 @@ window.IntMapLang.define('zh', {
   "The route planner is open on the map — fill in the two fields there, or say the places here.": "已在地圖上開啟路線指引面板——請在面板中填入起點與目的地，或在這裡告訴我地點。",   /* (#R299) */
   "Where from? Give a place (or lng/lat).": "從哪裡看的天空？請指定地點（或經緯度）。",   /* (#R299) */
   "Where? Give the transmitter site (place, or lng/lat).": "發射機位置在哪裡？請指定地點或經緯度。",   /* (#R299) */
+  "Where? Give the point (place, or lng/lat).": "在哪裡？請提供地點（地名，或經緯度）。",   /* (#R302) */
+  "Arrival times need a point — name a place, or tap the map first.": "到達時刻需要一個地點——請指定地名，或先點一下地圖。",   /* (#R302) */
   }
 });

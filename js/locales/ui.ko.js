@@ -4891,4 +4891,6 @@ window.IntMapLang.define('ko', { ui: {
   "The route planner is open on the map — fill in the two fields there, or say the places here.": "지도에 길찾기 패널을 열었습니다 — 그곳의 두 칸을 채우거나, 여기서 장소를 말씀해 주세요.",   /* (#R299) */
   "Where from? Give a place (or lng/lat).": "어디에서 보는 하늘인가요? 장소(또는 경도/위도)를 알려 주세요.",   /* (#R299) */
   "Where? Give the transmitter site (place, or lng/lat).": "송신기 위치는 어디인가요? 장소 또는 경도/위도를 알려 주세요.",   /* (#R299) */
+  "Where? Give the point (place, or lng/lat).": "어디인가요? 지점을 지정하세요 (장소 또는 경도/위도).",   /* (#R302) */
+  "Arrival times need a point — name a place, or tap the map first.": "도달 시각에는 지점이 필요합니다 — 장소를 지정하거나, 먼저 지도를 탭하세요.",   /* (#R302) */
 } });
