@@ -751,7 +751,7 @@ window.IntMapNightSky = (function () {
     const lk = panel.querySelector('.ns-look');
     lk.style.display = (mode === 'stand') ? 'flex' : 'none';
     if (mode === 'stand') {
-      const dir = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'][Math.round(wrapAz(lookAz) / 22.5) % 16];
+      const dir = window.IntMapCompass.point(wrapAz(lookAz), lang(), 16);   /* (#R289) one table, nine languages */
       lk.querySelector('.ns-lookread').textContent =
         dir + ' ' + Math.round(wrapAz(lookAz)) + '° · ' + (lookAlt >= 0 ? '+' : '') + Math.round(lookAlt) + '° · '
         + L('view', '画角', 'Blickfeld', 'поле зрения', 'campo') + ' ' + Math.round(fovDeg) + '°';

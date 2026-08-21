@@ -187,8 +187,26 @@ const HAND = {
 /* ── the third-party state wins the compilation files under 「Other」 ──────────────────────────── */
 const OVERRIDE = {
   1828: S({ 1: 'CT DE ME MD MA NH NJ RI VT' }),                     /* J. Q. Adams, National Republican */
-  1832: S({ 1: 'CT DE KY MD MA RI VT', 2: 'SC' }),                  /* Clay; Floyd (Nullifier) in South Carolina */
-  1892: S({ 2: 'CO ID KS NV ND' }),                                 /* Weaver, Populist */
+  /* ⚠⚠ (#R289) TWO CELLS IN THIS TABLE WERE WRONG, AND THE PER-STATE RETURNS ARE WHAT FOUND THEM.
+     This round reads the compilation's VOTE and ELECTORAL-VOTE columns (not only its party label)
+     so that a click on a state can show its own result — and the new build then CHECKS that the
+     candidate with the most electoral votes in a state is the candidate this table colours it for.
+     Two of ~2,300 cells disagreed, and in both the table was the one that was wrong:
+       · 1832 Vermont — 「Clay」. Vermont's 7 electors went to WILLIAM WIRT (Anti-Masonic), the only
+         state he carried: 13,112 votes (40.5 %) against Clay's 11,161 and Jackson's 7,865. The
+         compilation files it as 「Other」, which is why it needed an override at all; the override
+         named the wrong man.
+       · 1892 Wyoming — 「Cleveland」, taken from the compilation's own party label, which is an
+         error in the compilation: Harrison took Wyoming's 3 electoral votes with 8,454 votes
+         (50.6 %) to Weaver's 7,722, and Cleveland was not on the ballot (the Democrats fused with
+         the Populists there — his column is a literal 0). An OVERRIDE beats the label, so this is
+         where it is corrected.
+     ⚠ NORTH DAKOTA 1892 IS NOT AN ERROR AND IS NOT CHANGED: it split its three electors one each
+     between Cleveland, Harrison and Weaver. A state that divided cannot be one colour, the fill
+     keeps the override's answer, and the new per-state panel shows the 1/1/1 it really was — which
+     is why the validation below treats a TIE as a split rather than as a contradiction. */
+  1832: S({ 1: 'CT DE KY MD MA RI', 2: 'SC', 3: 'VT' }),           /* Clay; Floyd (Nullifier) in South Carolina; Wirt (Anti-Masonic) in Vermont */
+  1892: S({ 1: 'WY', 2: 'CO ID KS NV ND' }),                       /* Harrison (the label says Democratic and is wrong); Weaver, Populist */
   1912: S({ 1: 'CA MI MN PA SD WA' }),                              /* Theodore Roosevelt, Progressive */
   1924: S({ 2: 'WI' }),                                             /* La Follette, Progressive */
   1948: S({ 2: 'AL LA MS SC' }),                                    /* Thurmond, States' Rights */
@@ -223,21 +241,192 @@ async function matrix() {
   const r = await fetch(CSV_URL);
   if (!r.ok) throw new Error('election compilation: HTTP ' + r.status);
   const rows = (await r.text()).split(/\r?\n/).filter(Boolean);
-  const out = {};
+  const out = {}, detail = {};
+  const num = (v) => { const x = parseFloat(String(v == null ? '' : v).trim()); return isFinite(x) ? x : null; };
   for (let i = 1; i < rows.length; i++) {
     const c = rows[i].split(',');
     if (c.length < 17 || !/^\d{4}/.test(c[0])) continue;
     const y = +c[0].slice(0, 4);
     const name = NAME_FIX[c[1]] || c[1];
     (out[y] = out[y] || {})[name] = c[15];
+    /* (#R289) …and the four positional candidate columns behind that label: votes, share, electors.
+       `party.1…4` are NOT named anywhere in the file — the mapping to THIS file's candidates is
+       derived below and then checked against the state matrix, rather than assumed. */
+    const cols = [];
+    for (let k = 0; k < 4; k++) cols.push({ v: num(c[3 + k * 3]), pct: num(c[4 + k * 3]), ev: num(c[5 + k * 3]) });
+    (detail[y] = detail[y] || {})[name] = { total: num(c[2]), cols, note: (c[16] || '').trim() };
+  }
+  return { label: out, detail };
+}
+
+/* ══ (#R289) THE STATE-BY-STATE RESULT, AND HOW ITS COLUMNS ARE IDENTIFIED ══════════════════════
+ *  「クリックした州内での票のグラフを表示して。選挙人の数も記載。」
+ *
+ *  The compilation's four candidate columns are POSITIONAL — there is no header naming them and the
+ *  order changes from election to election (in 2016 column 1 is Clinton; in 1824 it is Adams). So
+ *  the mapping is DERIVED from the thing this file already validates: for every state, the column
+ *  with the most electoral votes should be the candidate the state matrix colours the state for.
+ *  Counting those agreements over ~50 states gives one assignment per year, and the same rule then
+ *  re-checks every cell — which is how the two wrong OVERRIDE cells above were found.
+ *
+ *  ⚠ BEFORE 1824 (and for a legislature-chosen state after it) THE NUMBER IN THE VOTE COLUMN IS AN
+ *  ELECTORAL VOTE, not a popular vote — the compilation says so in its Notes column («Electoral
+ *  votes only», «Chosen by state legislature») and there was no popular vote to report. Reading
+ *  those cells as ballots would put 「69 votes」 under George Washington in Connecticut.
+ *  ⚠ AN ASTERISK IS NOT A NUMBER. Mississippi 1960 carries `*` in both elector cells (the unpledged
+ *  slate), so that state has a popular vote and no per-candidate elector count here. It is left
+ *  absent rather than filled in from the national total, which would be inventing it.
+ */
+function stateResults(el, det, problems) {
+  const src = det[el.y];
+  if (!src) return null;
+  const nc = el.c.length;
+  /* ⚠ a year with no elector column ANYWHERE is a pre-1824 one, where the vote column IS the
+     elector count. A single row whose elector cells are not numbers is NOT that — Mississippi
+     1960 carries `*` in both (the unpledged slate), and reading its 108,362 ballots as electors
+     is how this check first failed. */
+  const yearHasEV = Object.keys(src).some((k) => src[k].cols.some((x) => x.ev != null));
+  const rowsOf = [];
+  for (const name of Object.keys(src)) {
+    const st = POSTAL[name]; if (!st) continue;
+    const r = src[name];
+    /* electors-in-the-vote-column rows, named by the compilation itself */
+    const evOnly = /electoral votes only|state legislature/i.test(r.note) || !yearHasEV;
+    const ev = r.cols.map((x) => (evOnly ? x.v : x.ev));
+    const pv = evOnly ? r.cols.map(() => null) : r.cols.map((x) => x.v);
+    rowsOf.push({ st, total: evOnly ? null : r.total, ev, pv, evOnly });
+  }
+  if (!rowsOf.length) return null;
+  /* ── derive column → candidate ─────────────────────────────────────────────────────────── */
+  const M = Array.from({ length: 4 }, () => new Array(nc).fill(0));
+  const topCol = (row) => { let b = -1, bv = 0; for (let k = 0; k < 4; k++) { const v = row.ev[k] || 0; if (v > bv) { bv = v; b = k; } } return b; };
+  for (const row of rowsOf) { const cand = el.s[row.st]; if (cand == null) continue; const k = topCol(row); if (k >= 0) M[k][cand]++; }
+  const map = new Array(4).fill(-1); const taken = new Set(); const pairs = [];
+  for (let k = 0; k < 4; k++) for (let j = 0; j < nc; j++) if (M[k][j]) pairs.push([M[k][j], k, j]);
+  pairs.sort((a, b) => b[0] - a[0]);
+  for (const [, k, j] of pairs) { if (map[k] >= 0 || taken.has(j)) continue; map[k] = j; taken.add(j); }
+  /* ── check it, cell by cell ────────────────────────────────────────────────────────────── */
+  /* ⚠⚠ A COLUMN IS NOT ALWAYS THE SAME CANDIDATE IN EVERY STATE. The compilation's fourth column
+     is an «Other» bucket, so in 1832 column 3 holds Floyd's 11 South Carolina electors AND Wirt's
+     7 Vermont ones — two different men in one column, which no single per-year assignment can
+     express. Where the winning column is one of those thinly-supported buckets, the STATE's own
+     validated answer wins for that state and the rest of its columns keep the year's assignment.
+     ⚠ AND THAT IS EXACTLY WHY THE THRESHOLD EXISTS. A column that carries the same candidate in
+     three or more states is a real per-year assignment, and a state disagreeing with it means the
+     MATRIX is wrong rather than the column — which is how 1892 Wyoming was caught. Below the
+     threshold the check cannot tell those two apart, so it does not claim to: it re-maps and says
+     nothing, and the two cells this round corrected were found by reading the returns, not by it. */
+  const SUPPORT_MIN = 3;
+  const sv = {};
+  for (const row of rowsOf) {
+    const cand = el.s[row.st];
+    const e = new Array(nc).fill(0), v = new Array(nc).fill(0);
+    let anyE = false, anyV = false;
+    const local = map.slice();
+    const top = topCol(row);
+    if (top >= 0 && cand != null && local[top] !== cand) {
+      const support = (local[top] >= 0) ? M[top][local[top]] : 0;
+      if (support < SUPPORT_MIN) {
+        for (let k = 0; k < 4; k++) if (local[k] === cand) local[k] = -1;
+        local[top] = cand;
+      }
+    }
+    for (let k = 0; k < 4; k++) {
+      const j = local[k]; if (j < 0) continue;
+      if (row.ev[k] != null) { e[j] = row.ev[k]; if (row.ev[k]) anyE = true; }
+      if (row.pv[k] != null) { v[j] = row.pv[k]; if (row.pv[k]) anyV = true; }
+    }
+    if (anyE && cand != null) {
+      const best = e.indexOf(Math.max.apply(null, e));
+      const tie = e.filter((x) => x === e[best]).length > 1;   /* a split state — see the note above */
+      if (!tie && best !== cand) problems.push(el.y + ' ' + row.st + ': the returns give the electors to ' + el.c[best].n + ' (' + e[best] + ') but the state matrix says ' + el.c[cand].n);
+    }
+    const o = {};
+    if (anyE) o.e = e;
+    if (anyV) { o.v = v; if (row.total) o.t = row.total; }
+    if (anyE || anyV) sv[row.st] = o;
+  }
+  return Object.keys(sv).length ? sv : null;
+}
+
+/* ══ (#R289) 2020 AND 2024 — PAST THE COMPILATION'S LAST YEAR ═══════════════════════════════════
+ *  The state-by-state POPULAR vote comes from the county-level compilation of the certified
+ *  results at github.com/tonmcg/US_County_Level_Election_Results_08-24, summed to states here
+ *  (spot-checked against the certified canvass: Georgia 2020 Biden 2,473,633 / Trump 2,461,854 and
+ *  Georgia 2024 Trump 2,663,117 / Harris 2,548,017 both reproduce exactly).
+ *  The ELECTORS are the census apportionment — the 2010 one for 2020, the 2020 one for 2024 —
+ *  written out below and CHECKED two ways: each table must sum to 538, and winner-take-all plus
+ *  the split districts this file already records must reproduce the national totals in the spine
+ *  (306/232 and 312/226). An apportionment table with a typo cannot pass both.
+ */
+const APPORTION = {
+  /* 2010 census — the 2012, 2016 and 2020 elections */
+  2010: { AL: 9, AK: 3, AZ: 11, AR: 6, CA: 55, CO: 9, CT: 7, DE: 3, DC: 3, FL: 29, GA: 16, HI: 4, ID: 4, IL: 20,
+    IN: 11, IA: 6, KS: 6, KY: 8, LA: 8, ME: 4, MD: 10, MA: 11, MI: 16, MN: 10, MS: 6, MO: 10, MT: 3, NE: 5,
+    NV: 6, NH: 4, NJ: 14, NM: 5, NY: 29, NC: 15, ND: 3, OH: 18, OK: 7, OR: 7, PA: 20, RI: 4, SC: 9, SD: 3,
+    TN: 11, TX: 38, UT: 6, VT: 3, VA: 13, WA: 12, WV: 5, WI: 10, WY: 3 },
+  /* 2020 census — the 2024 and 2028 elections */
+  2020: { AL: 9, AK: 3, AZ: 11, AR: 6, CA: 54, CO: 10, CT: 7, DE: 3, DC: 3, FL: 30, GA: 16, HI: 4, ID: 4, IL: 19,
+    IN: 11, IA: 6, KS: 6, KY: 8, LA: 8, ME: 4, MD: 10, MA: 11, MI: 15, MN: 10, MS: 6, MO: 10, MT: 4, NE: 5,
+    NV: 6, NH: 4, NJ: 14, NM: 5, NY: 28, NC: 16, ND: 3, OH: 17, OK: 7, OR: 8, PA: 19, RI: 4, SC: 9, SD: 3,
+    TN: 11, TX: 40, UT: 6, VT: 3, VA: 13, WA: 12, WV: 4, WI: 10, WY: 3 },
+};
+/* the districts Maine and Nebraska awarded away from their statewide winner, per year */
+const DISTRICT_SPLIT = { 2020: { ME: 1, NE: 1 }, 2024: { ME: 1, NE: 1 } };
+const CTY_URL = (y) => 'https://raw.githubusercontent.com/tonmcg/US_County_Level_Election_Results_08-24/master/'
+  + y + '_US_County_Level_Presidential_Results.csv';
+async function countyStates(y) {
+  const r = await fetch(CTY_URL(y));
+  if (!r.ok) throw new Error('county results ' + y + ': HTTP ' + r.status);
+  const rows = (await r.text()).split(/\r?\n/).filter(Boolean);
+  const h = rows[0].split(',');
+  const iS = h.indexOf('state_name'), iG = h.indexOf('votes_gop'), iD = h.indexOf('votes_dem'), iT = h.indexOf('total_votes');
+  if (iS < 0 || iG < 0 || iD < 0 || iT < 0) throw new Error('county results ' + y + ': unexpected columns');
+  const out = {};
+  for (let i = 1; i < rows.length; i++) {
+    const c = rows[i].split(','); const st = POSTAL[c[iS]]; if (!st) continue;
+    const o = out[st] = out[st] || { R: 0, D: 0, t: 0 };
+    o.R += +c[iG] || 0; o.D += +c[iD] || 0; o.t += +c[iT] || 0;
   }
   return out;
+}
+function modernStateResults(el, cty, apportionYear, problems) {
+  const ap = APPORTION[apportionYear];
+  const total = Object.keys(ap).reduce((a, k) => a + ap[k], 0);
+  if (total !== 538) { problems.push(el.y + ': the ' + apportionYear + ' apportionment sums to ' + total + ', not 538'); return null; }
+  const nc = el.c.length;
+  const iOf = (party) => el.c.findIndex((x) => x.p === party);
+  const iR = iOf('R'), iD = iOf('D');
+  if (iR < 0 || iD < 0) { problems.push(el.y + ': expected one R and one D candidate'); return null; }
+  const split = DISTRICT_SPLIT[el.y] || {};
+  const tally = new Array(nc).fill(0);
+  const sv = {};
+  for (const st of Object.keys(ap)) {
+    const cand = el.s[st];
+    if (cand == null) { problems.push(el.y + ': ' + st + ' has no result in the state matrix'); continue; }
+    const e = new Array(nc).fill(0);
+    const away = split[st] || 0;
+    e[cand] = ap[st] - away;
+    if (away) { const other = (cand === iR) ? iD : iR; e[other] = away; }
+    e.forEach((n, j) => { tally[j] += n; });
+    const o = { e };
+    const c2 = cty[st];
+    if (c2) { const v = new Array(nc).fill(0); v[iR] = c2.R; v[iD] = c2.D; o.v = v; o.t = c2.t; }
+    else problems.push(el.y + ': ' + st + ' has no county returns');
+    sv[st] = o;
+  }
+  el.c.forEach((c, j) => { if (tally[j] !== c.ev) problems.push(el.y + ': the per-state electors give ' + c.n + ' ' + tally[j] + ', the record says ' + c.ev); });
+  return sv;
 }
 
 const geo = await geometry();
 const POSTAL = {}; geo.features.forEach((f) => { POSTAL[f.properties.name] = f.properties.st; });
 const CODES = new Set(geo.features.map((f) => f.properties.st));
-const raw = await matrix();
+const rawAll = await matrix();
+const raw = rawAll.label;
+/* (#R289) 2020 and 2024 are past the compilation; their popular vote comes from the county-level
+   compilation of the certified results, summed to states. */
+const CTY = { 2020: await countyStates(2020), 2024: await countyStates(2024) };
 
 const problems = [];
 const elections = ELECTIONS.map((e) => {
@@ -272,6 +461,12 @@ const elections = ELECTIONS.map((e) => {
   const o = { y: e.y, t: e.t, c: e.c, s, w: (e.won != null ? e.won : 0) };
   if (e.note) o.note = e.note;
   if (e.split) o.split = e.split;
+  /* (#R289) …and the state's own result, so a click on it can show one */
+  const sv = (e.y >= 2020)
+    ? modernStateResults(o, CTY[e.y] || {}, e.y === 2020 ? 2010 : 2020, problems)
+    : stateResults(o, rawAll.detail, problems);
+  if (sv) o.sv = sv;
+  else problems.push(e.y + ': no per-state returns at all');
   return o;
 }).filter(Boolean);
 
@@ -279,8 +474,10 @@ if (problems.length) { console.error('✗ ' + problems.length + ' problem(s):');
 
 const payload = {
   _: 'U.S. presidential elections 1789–2024. Electoral College results: National Archives (1789–2020) '
-   + 'and the American Presidency Project (UCSB); state-by-state returns compiled via '
-   + 'zonination/election-history; 2020 and 2024 entered from the certified results. '
+   + 'and the American Presidency Project (UCSB); state-by-state returns (votes and electors) compiled '
+   + 'via zonination/election-history for 1789–2016; for 2020 and 2024 the state popular vote is summed '
+   + 'from the county-level compilation of the certified results at tonmcg/US_County_Level_Election_Results_08-24 '
+   + 'and the electors are the 2010 and 2020 census apportionments. '
    + 'Geometry: Natural Earth 1:110m admin-1 (public domain).',
   parties: PARTIES,
   elections,
@@ -297,6 +494,8 @@ if (CHECK) {
 writeFileSync(OUT_E, JSON.stringify(payload));
 writeFileSync(OUT_G, JSON.stringify(geo));
 const cells = elections.reduce((a, e) => a + Object.keys(e.s).length, 0);
+const svCells = elections.reduce((a, e) => a + Object.keys(e.sv || {}).length, 0);
+console.log('✓ ' + svCells + ' state results with votes and/or electors');
 console.log('✓ ' + elections.length + ' elections, ' + cells + ' state results → data/us-elections.json ('
   + Math.round(JSON.stringify(payload).length / 1024) + ' KB)');
 console.log('✓ ' + geo.features.length + ' state polygons → data/us-states.json ('

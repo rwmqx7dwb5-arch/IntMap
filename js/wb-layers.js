@@ -88,10 +88,25 @@ window.IntMapModules.wbLayers=function(HOST){
        so the tile and the map disagreed about the layer's colours. One owner, read at draw time. */
     try{ window.IntMapWB={ fetch:wbFetch, get:(code)=>wbCache[_wbKey(code)]||null,
       series:wbSeries, seriesOf:(code)=>wbSeriesCache[_wbKey(code)]||null,
-      rampOf:(id)=>{ const L=WB.find(x=>x.id===id); return L?L.ramp.slice():null; } }; }catch(_){}
+      rampOf:(id)=>{ const L=WB.find(x=>x.id===id); return L?V(L).ramp.slice():null; },
+      /* (#R289) …and the INDICATOR, for the same reason #R270 published the ramp: a modal layer's
+         code changes with its mode, and js/layer-previews.js's copy would then draw the other
+         series through this one's colours. One owner, read at draw time. */
+      codeOf:(id)=>{ const L=WB.find(x=>x.id===id); return L?V(L).code:null; } }; }catch(_){}
     const LA=window.IntMapLang.pickArgs(), LWB=window.IntMapLang.pick(()=>HOST.lang);
     const WB=[
-      {id:'wbco2', code:'EN.GHG.CO2.PC.CE.AR5', n:LA('CO₂ per capita','1人当たりCO₂排出','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita'), ramp:[0,'#1a9850',2,'#a6d96a',5,'#fee08b',10,'#f46d43',20,'#a50026'], unit:' t'},   /* (#R32) old EN.ATM.CO2E.PC was discontinued by the World Bank (returned 0 rows) → current AR5 per-capita series */
+      /* ══ ⚠ (#R289) ONE LAYER, TWO WAYS OF DIVIDING THE SAME QUANTITY ═══════════════════════════
+         「1人当たりCO₂排出レイヤーとCO₂排出量（百万t）レイヤーは一つに統合し、一人当たりにも切り替え
+           られる形式に。」 They were two rows painting the same World Bank AR5 series, one divided by
+         population and one not, sitting next to each other in 気候・気象 since #R261. A `modes` array
+         makes them one row with a switch in its own legend: `V(L)` below resolves the entry to the
+         active mode, so every generic path in this file (the ramp key, the hover, the point-value
+         contract, the source note) reads the right code, ramp and unit without knowing modes exist.
+         ⚠ THE FIRST MODE IS THE DEFAULT, and it is the TOTAL — that is the quantity the layer's own
+         name has always meant; per capita is the derived view you switch to. */
+      {id:'wbco2', modes:[
+        {key:'total', code:'EN.GHG.CO2.MT.CE.AR5', n:LA('CO₂ emissions (Mt)','CO₂排出量（百万t）','CO₂-Emissionen (Mt)','Выбросы CO₂ (млн т)','Emisiones de CO₂ (Mt)'), ramp:[5,'#1a9850',50,'#a6d96a',300,'#fee08b',1500,'#f46d43',10000,'#a50026'], unit:' Mt'},
+        {key:'pc',    code:'EN.GHG.CO2.PC.CE.AR5', n:LA('CO₂ per capita','1人当たりCO₂排出','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita'),          ramp:[0,'#1a9850',2,'#a6d96a',5,'#fee08b',10,'#f46d43',20,'#a50026'],       unit:' t'}]},   /* (#R32) EN.ATM.CO2E.PC was discontinued by the World Bank → the AR5 series */
       {id:'wburb', code:'SP.URB.TOTL.IN.ZS', n:LA('Urban population %','都市人口比率 %','Stadtbevölkerung %','Городское население %','Población urbana %'), ramp:[20,'#edf8e9',40,'#bae4b3',60,'#74c476',80,'#31a354',95,'#006d2c'], unit:'%'},   /* (#R266) 「都市人口率」と「都市人口比率 %」は同じ SP.URB.TOTL.IN.ZS だった — 色違いの完全な重複。1本に統合 */
       {id:'wbelec', code:'EG.ELC.ACCS.ZS', n:LA('Electricity access %','電力アクセス率','Stromzugang %','Доступ к электричеству %','Acceso a electricidad %'), ramp:[20,'#a50026',50,'#f46d43',80,'#fee08b',95,'#a6d96a',100,'#1a9850'], unit:'%'},
       {id:'wbhealth', code:'SH.XPD.CHEX.GD.ZS', n:LA('Health spend %GDP','医療支出 対GDP','Gesundheitsausgaben % BIP','Расходы на здравоохранение % ВВП','Gasto en salud % PIB'), ramp:[2,'#fff7ec',4,'#fdd49e',8,'#fc8d59',12,'#d7301f',18,'#7f0000'], unit:'%'},
@@ -138,7 +153,6 @@ window.IntMapModules.wbLayers=function(HOST){
       {id:'wbrnd', code:'GB.XPD.RSDV.GD.ZS', n:LA('R&D spending % GDP','研究開発費 対GDP %','F&E-Ausgaben % BIP','Расходы на НИОКР % ВВП','Gasto en I+D % PIB'), ramp:[0.1,'#fff7ec',0.5,'#fdd49e',1.5,'#a6d96a',2.5,'#66bd63',4.5,'#006837'], unit:'%'},
       {id:'wbtour', code:'ST.INT.ARVL', n:LA('Intl. tourist arrivals','外国人観光客数','Touristenankünfte','Прибытия туристов','Llegadas de turistas int.'), ramp:[500000,'#fff7ec',3000000,'#fdd49e',10000000,'#fc8d59',40000000,'#d7301f',90000000,'#7f0000'], unit:''},
       {id:'wbref', code:['SM.POP.RHCR.EA','SM.POP.RRWA.EA'], n:LA('Refugees hosted','難民受入数','Aufgenommene Flüchtlinge','Принято беженцев','Refugiados acogidos'), ramp:[1000,'#fff7ec',20000,'#fee08b',100000,'#fc8d59',500000,'#d7301f',2000000,'#7f0000'], unit:''},
-      {id:'wbco2t', code:'EN.GHG.CO2.MT.CE.AR5', n:LA('CO₂ emissions (Mt)','CO₂排出量（百万t）','CO₂-Emissionen (Mt)','Выбросы CO₂ (млн т)','Emisiones de CO₂ (Mt)'), ramp:[5,'#1a9850',50,'#a6d96a',300,'#fee08b',1500,'#f46d43',10000,'#a50026'], unit:' Mt'},
       {id:'wbpatent', code:'IP.PAT.RESD', n:LA('Patent applications (resident)','特許出願数（居住者）','Patentanmeldungen','Патентные заявки','Solicitudes de patentes (residentes)'), ramp:[10,'#fff7ec',500,'#fdd49e',5000,'#fc8d59',50000,'#d7301f',500000,'#7f0000'], unit:''},
       {id:'wbwomparl', code:'SG.GEN.PARL.ZS', n:LA('Women in parliament %','女性議員比率 %','Frauen im Parlament %','Женщины в парламенте %','Mujeres en el parlamento %'), ramp:[5,'#a50026',15,'#f46d43',30,'#fee08b',45,'#a6d96a',60,'#1a9850'], unit:'%'},
       /* (#R123) +8 NEW beta choropleths (World Bank, latest value per country — same resilient mrnev fetch, hover
@@ -172,6 +186,28 @@ window.IntMapModules.wbLayers=function(HOST){
       {id:'wbsmoke', code:'SH.PRV.SMOK', n:LA('Smoking prevalence %','喫煙率 %','Raucherquote %','Распространённость курения %','Prevalencia de tabaquismo %'), ramp:[8,'#1a9850',15,'#a6d96a',22,'#fee08b',30,'#f46d43',40,'#a50026'], unit:'%'},
       {id:'wbagremp', code:'SL.AGR.EMPL.ZS', n:LA('Employment in agriculture %','農業就業率 %','Beschäftigung Landwirtschaft %','Занятость в сельском хоз-ве %','Empleo en agricultura %'), ramp:[2,'#fff7ec',10,'#fdd49e',25,'#fc8d59',45,'#d7301f',70,'#7f0000'], unit:'%'}
     ];
+    /* ══ (#R289) THE ACTIVE MODE OF A MODAL LAYER ═══════════════════════════════════════════════
+       An entry with `modes` is ONE row that can be divided two ways (today: CO₂ total vs per capita).
+       `V(L)` returns the entry as the active mode makes it — the same shape every other entry
+       already has — so nothing downstream needs to know modes exist. `modes` survives the copy
+       because the legend has to be able to draw the switch, and because V(V(L)) must be V(L).
+       ⚠ A PLAIN ENTRY IS RETURNED UNCHANGED, not copied: sixty rows go through here on every
+       repaint and identity is what the `window['_wbhov_'+fill]` latch and the source cache read. */
+    const wbMode={};                    /* id → the active mode key */
+    const wbById={}; WB.forEach(L=>{ wbById[L.id]=L; });
+    function V(L){ if(!L||!L.modes) return L;
+      const k=wbMode[L.id]||L.modes[0].key;
+      const m=L.modes.filter(x=>x.key===k)[0]||L.modes[0];
+      return { id:L.id, modes:L.modes, mode:m.key, code:m.code, n:m.n, ramp:m.ramp, unit:m.unit }; }
+    function wbSetMode(id,key){ const B=wbById[id]; if(!B||!B.modes) return;
+      if((wbMode[id]||B.modes[0].key)===key) return;
+      wbMode[id]=key;
+      /* ⚠ THE YEAR IS DROPPED WITH THE MODE. The two series are different indicators; carrying a
+         year across would silently fall back to «latest per country» whenever the new one has no
+         such year, which looks identical to a year that was honoured. */
+      delete wbYear[id];
+      try{ const sp=document.querySelector('#lyrrow-'+id+' .bx-name'); if(sp) sp.textContent=bxLabel(B); }catch(_){}
+      choroOn(B); }
     /* (#R32) Hover tooltip for every beta choropleth ("ホバーして数値が出るように") — reuses the shared map
        tooltip so it matches HDI/pop. Shows the country name, the metric and its value. */
     /* ══ ⚠⚠⚠ (#R270) THE KEY WAS A STAIRCASE FOR A LAYER THAT PAINTS A GRADIENT ═══════════════════
@@ -212,10 +248,13 @@ window.IntMapModules.wbLayers=function(HOST){
         +'background:linear-gradient(90deg,'+stops.join(',')+');"></div>'
         +'<div style="position:relative;height:13px;margin-top:3px;font-variant-numeric:tabular-nums;">'+ticks+'</div>';
     }
-    function _wbHover(L,fill){ if(window['_wbhov_'+fill]) return; window['_wbhov_'+fill]=true;
-      const fmt=(v)=>{ if(v==null) return '—'; const a=Math.abs(v); const r=(a>=100?Math.round(v):Math.round(v*10)/10); return r+(L.unit||''); };
+    /* ⚠ (#R289) THE HANDLER IS WIRED ONCE AND THE LAYER CAN CHANGE MODE UNDER IT, so it re-resolves
+       the entry on every move instead of closing over the one that happened to paint it first. */
+    function _wbHover(L0,fill){ if(window['_wbhov_'+fill]) return; window['_wbhov_'+fill]=true;
+      const L=()=>V(wbById[L0.id]||L0);
+      const fmt=(v)=>{ if(v==null) return '—'; const a=Math.abs(v); const r=(a>=100?Math.round(v):Math.round(v*10)/10); return r+(L().unit||''); };
       GE().events.onLayer('mousemove',fill,(e)=>{ if(!e.features||!e.features.length) return; GE().render.canvas().style.cursor='pointer'; const p=e.features[0].properties||{};
-        try{ const el=window.ensureMapTooltip(); el.style.display='block'; el.innerHTML='<div style="font-weight:600;">'+(p.nm||'')+'</div><div style="color:var(--text-muted);font-size:11px;margin-top:2px;">'+(bxLabel(L))+'</div><div style="font-weight:700;margin-top:3px;">'+fmt(p.v)+'</div>'; window.positionTooltip(e.point); }catch(_){} });
+        try{ const el=window.ensureMapTooltip(); el.style.display='block'; el.innerHTML='<div style="font-weight:600;">'+(p.nm||'')+'</div><div style="color:var(--text-muted);font-size:11px;margin-top:2px;">'+(bxLabel(L()))+'</div><div style="font-weight:700;margin-top:3px;">'+fmt(p.v)+'</div>'; window.positionTooltip(e.point); }catch(_){} });
       GE().events.onLayer('mouseleave',fill,()=>{ GE().render.canvas().style.cursor=''; try{ const el=window.ensureMapTooltip(); el.style.display='none'; }catch(_){} });
     }
     const _nmOf=(p)=>{ p=p||{}; return p.NAME_EN||p.ADMIN||p.name_en||p.NAME||p.name||p.NAME_LONG||p.ADM0_A3||''; };
@@ -236,7 +275,7 @@ window.IntMapModules.wbLayers=function(HOST){
        kept because for a survey indicator reported once a decade it is the only mode that fills the
        map — but it is no longer the default, because 「同一年度で比較しないと意味がない」. */
     const wbYear={};
-    function choroOn(L){ ensureGeo(geo=>{ if(!geo) return; wbSeries(L.code).then(S=>{
+    function choroOn(L){ L=V(L); ensureGeo(geo=>{ if(!geo) return; wbSeries(L.code).then(S=>{
       const key=_wbKey(L.code);
       const year=(wbYear[L.id]!==undefined)?wbYear[L.id]:((S&&S.best)||'');
       let m;
@@ -256,9 +295,32 @@ window.IntMapModules.wbLayers=function(HOST){
       try{ if(GE().layers.hasSource(src)) GE().layers.setSourceData(src,fc); else { GE().layers.addSource(src,{type:'geojson',data:fc});
         GE().layers.add({id:fill,type:'fill',source:src,paint:{'fill-color':['case',['has','v'],['interpolate',['linear'],['get','v']].concat(L.ramp),'#9aa0a6'],'fill-opacity':['case',['has','v'],0.62,0.42]}});
         GE().layers.add({id:line,type:'line',source:src,paint:{'line-color':'rgba(0,0,0,0.16)','line-width':0.3}}); _wbHover(L,fill); } }catch(_){}
+      /* ⚠ (#R289) THE RAMP IS RE-ASSERTED, NOT ONLY SET AT CREATION. A modal layer changes its
+         scale when it changes mode (0–20 t per head, 5–10,000 Mt in total), and the branch above
+         only paints on the FIRST switch-on — so without this the map would draw megatonnes through
+         the per-capita ramp and every country past 20 Mt would be the same dark red. Idempotent
+         for the fifty-odd entries that have one ramp for ever. */
+      try{ if(GE().layers.has(fill)) GE().layers.setPaint(fill,'fill-color',['case',['has','v'],['interpolate',['linear'],['get','v']].concat(L.ramp),'#9aa0a6']); }catch(_){}
       const cb=document.getElementById('bx-'+L.id), on=cb?cb.checked:true;
       [fill,line].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity(L.id,L.n,[fill,line],'bx-'+L.id); if(el){ let kk=el.querySelector('.bx-key'); if(!kk){ kk=document.createElement('div'); kk.className='bx-key'; kk.style.cssText='margin-top:6px;font-size:10px;color:var(--text-muted);'; el.appendChild(kk); } kk.innerHTML=rampKey(L);
+        /* ── (#R289) the mode switch, for an entry that has one. Built once and only its selected
+              state re-set, for the same reason the year <select> is: this whole block re-runs on
+              every repaint and rebuilding the control would move it under the finger pressing it. ── */
+        if(L.modes){ let mr=el.querySelector('.bx-moderow');
+          if(!mr){ mr=document.createElement('div'); mr.className='bx-moderow';
+            mr.style.cssText='display:flex;gap:5px;margin-top:7px;';
+            mr.innerHTML=L.modes.map(m=>'<button type="button" class="bx-mode" data-k="'+m.key+'" style="flex:1;min-width:0;border:1px solid rgba(128,128,128,0.3);border-radius:7px;padding:4px 6px;font-size:10.5px;font-weight:600;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></button>').join('');
+            el.insertBefore(mr,kk);
+            mr.addEventListener('click',(ev)=>{ const b=ev.target.closest('.bx-mode'); if(b&&mr.contains(b)) wbSetMode(L.id,b.getAttribute('data-k')); }); }
+          /* the button says WHAT IT WILL SHOW — the mode's own name, which is the name the row
+             carries while that mode is on. No second table of words to go stale. */
+          mr.querySelectorAll('.bx-mode').forEach(b=>{ const k=b.getAttribute('data-k');
+            const m=L.modes.filter(x=>x.key===k)[0]; if(m) b.textContent=LWB.arr(m.n);
+            const act=(k===L.mode);
+            b.style.background=act?'var(--primary-color)':'var(--input-bg)';
+            b.style.color=act?'#fff':'var(--text-main)';
+            b.setAttribute('aria-pressed',act?'true':'false'); }); }
         /* ── the year picker. Built once, then only its VALUE is set: rebuilding the <select> on every
               repaint would close the dropdown under the finger that just opened it. ── */
         if(S){ let yr=el.querySelector('.bx-yearrow');
@@ -320,7 +382,13 @@ window.IntMapModules.wbLayers=function(HOST){
     }
     function heatOff(){ try{ if(GE().layers.has('heat-h')) GE().layers.setLayout('heat-h','visibility','none'); }catch(_){} try{ window._hideGenericLegend&&window._hideGenericLegend('heat'); }catch(_){} }
 
-    const ALL=WB.map(L=>({id:L.id,n:L.n,on:()=>choroOn(L),off:()=>choroOff(L)}))
+    /* ⚠ (#R289) `modes` TRAVELS WITH THE COPY, AND THE ROW'S NAME IS WHY. This list is a SHALLOW
+       copy of each entry, and a modal entry carries no top-level `n` — its name belongs to the
+       mode that is showing. Without `modes` here, `V()` had nothing to resolve and `bxLabel`
+       returned the empty string: MEASURED in the browser, the CO₂ row rendered with a blank label
+       and nothing else was wrong, which is exactly the kind of silence this project keeps paying
+       for. tests/r289 ④ now measures the label rather than the mechanism. */
+    const ALL=WB.map(L=>({id:L.id,n:L.n,modes:L.modes,on:()=>choroOn(L),off:()=>choroOff(L)}))
       .concat([{id:'eq',n:LA('Earthquakes (live + history)','地震（ライブ＋過去）','Erdbeben (live + Verlauf)','Землетрясения (онлайн + история)','Terremotos (en vivo + histórico)'),on:eqOn,off:eqOff},
                {id:'heat',n:LA('Heat of Attention','注目度ヒートマップ','Aufmerksamkeits-Heatmap','Карта внимания','Mapa de calor de atención'),on:heatOn,off:heatOff}]);
     /* ⚠ (#R246) ONE NAME, ONE PLACE. (#R38) gave every beta row a German and Russian label. Every indicator's name was an `{en,jp}` object with a SECOND
@@ -329,7 +397,7 @@ window.IntMapModules.wbLayers=function(HOST){
        fr/ko/zh/zh-Hans, which read the English. `LA(…)` is IntMapLang.pickArgs(): both tables are now
        ONE call per indicator, and `LWB.arr()` resolves it through pick() itself — de/ru/es from the
        arguments, the rest from the inline table keyed by the English name. BX_TR is gone. */
-    const bxLabel=(L)=> LWB.arr(L.n);
+    const bxLabel=(L)=> LWB.arr(V(L).n);   /* (#R289) a modal row is named by the mode it is showing */
     /* (#R121) point-value hooks for the layer-data contract (IntMapLayers 'choropleth'): the value of every
        VISIBLE bx World-Bank choropleth at (lng,lat), read from the layer's OWN painted source data by
        point-in-polygon — works on- and off-screen. Registered here because this module owns these layers. */
@@ -340,7 +408,7 @@ window.IntMapModules.wbLayers=function(HOST){
         WB.forEach(L=>{ if(!_bxVis(L)) return;
           const d=GE().layers.sourceData('src-'+L.id); if(!d||!d.features) return;
           for(const f of d.features){ if(f&&f.geometry&&window._imPipGeo(lng,lat,f.geometry)){ const p=f.properties||{};
-            if(p.v!=null){ const a=Math.abs(+p.v); const rv=(a>=100?Math.round(+p.v):Math.round(+p.v*10)/10); out.push(bxLabel(L)+': '+rv+(L.unit||'')+(p.nm?(' ('+p.nm+')'):'')); }
+            if(p.v!=null){ const a=Math.abs(+p.v); const rv=(a>=100?Math.round(+p.v):Math.round(+p.v*10)/10); out.push(bxLabel(L)+': '+rv+(V(L).unit||'')+(p.nm?(' ('+p.nm+')'):'')); }
             else out.push(bxLabel(L)+': — '+(p.nm?('('+p.nm+')'):''));   /* gray no-data country = honest dash */
             break; } } }); }catch(_){}
       return out; };

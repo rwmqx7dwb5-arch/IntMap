@@ -93,18 +93,62 @@ window.IntMapModules.usElections=function(HOST){
       return true;
     }catch(_){ return false; }
   }
+  /* ══ (#R289) A CLICK ON A STATE SHOWS THAT STATE'S OWN RESULT ═══════════════════════════════
+     「クリックした州内での票のグラフを表示して。選挙人の数も記載。」 The popup used to name the
+     winner and nothing else — the same fact the colour already carried. It now carries the state's
+     ELECTORS (per candidate, so Maine and Nebraska read correctly) and its POPULAR VOTE as a bar
+     per candidate, from `sv` in data/us-elections.json — see scripts/build-us-elections.mjs for
+     where those numbers come from and how every one of them is checked.
+     ⚠ WHAT IS ABSENT IS ABSENT, NOT ZERO. Before 1824 most states had no popular vote at all (their
+     electors were appointed by the legislature) and South Carolina's were until 1860. Those states
+     get the elector row and a line saying why there is no vote to chart — never a bar of length 0
+     standing for a ballot nobody cast.
+     ⚠ AND THE BARS ARE A SHARE OF THE STATE'S OWN TURNOUT, so they do not add to 100 % wherever
+     somebody else was on the ballot: Mississippi 1960's unpledged slate outpolled both named
+     candidates and is not in the record's columns. Bars normalised to the two names would quietly
+     turn Kennedy's 36 % into 60 %. */
+  function stateHtml(e,st,name){
+    const esc=(x)=>HOST.escapeHtml(String(x==null?'':x));
+    const sv=(e.sv&&e.sv[st])||null;
+    const nf=(n)=>{ try{ return Number(n).toLocaleString(window.IntMapLang.locale(HOST.lang,'en-US')); }catch(_){ return String(n); } };
+    const evTot=(sv&&sv.e)?sv.e.reduce((a,b)=>a+(b||0),0):0;
+    let h='<div class="usel-pop"><b class="usel-pop-h">'+esc(name)+'</b>'
+      +'<div class="usel-pop-y">'+e.y+(evTot?(' · '+L('Electoral votes','選挙人票','Wahlmännerstimmen','Голоса выборщиков','Votos electorales')+' <b>'+evTot+'</b>'):'')+'</div>';
+    if(!sv) return h+'<div class="usel-note">'+L('No state-level return is recorded for this election.','この選挙の州別記録はありません。','Für diese Wahl ist kein Ergebnis dieses Staates verzeichnet.','Результат этого штата за эти выборы не зафиксирован.','No hay resultado estatal registrado para esta elección.')+'</div></div>';
+    const tot=sv.t||0;
+    const maxV=sv.v?Math.max.apply(null,sv.v):0;
+    const maxE=sv.e?Math.max.apply(null,sv.e):0;
+    const order=e.c.map((c,i)=>i).sort((a,b)=>{
+      const ea=(sv.e&&sv.e[a])||0, eb=(sv.e&&sv.e[b])||0; if(eb!==ea) return eb-ea;
+      const va=(sv.v&&sv.v[a])||0, vb=(sv.v&&sv.v[b])||0; return vb-va; });
+    order.forEach(i=>{
+      const c=e.c[i], col=colourOf(e,i)||'#888';
+      const v=(sv.v&&sv.v[i])||0, evv=(sv.e&&sv.e[i])||0;
+      if(!v&&!evv) return;
+      const pct=(tot&&v)?(v/tot*100):null;
+      const w=sv.v?(maxV?Math.max(1.5,Math.round(v/maxV*100)):0):(maxE?Math.max(1.5,Math.round(evv/maxE*100)):0);
+      h+='<div class="usel-row">'
+        +'<span class="usel-nm"><i style="background:'+esc(col)+';"></i><b>'+esc(c.n)+'</b></span>'
+        +'<span class="usel-ev">'+(sv.e?(evv+' '+L('EV','人','WS','ГВ','VE')):'')+'</span>'
+        +'<span class="usel-bar"><i style="width:'+w+'%;background:'+esc(col)+';"></i></span>'
+        +'<span class="usel-pv">'+esc((data.parties[c.p]||{}).en||c.p)
+          +(sv.v?(' · '+nf(v)+(pct!=null?(' · '+pct.toFixed(1)+'%'):'')):'')
+        +'</span></div>';
+    });
+    if(sv.v&&tot) h+='<div class="usel-note">'+L('Total votes cast','総投票数','Abgegebene Stimmen','Всего голосов','Votos emitidos')+': '+nf(tot)+'</div>';
+    if(!sv.v) h+='<div class="usel-note">'+L('No popular vote — this state\u2019s electors were appointed by its legislature.','一般投票なし — この州の選挙人は州議会が選出しました。','Keine Volkswahl — die Wahlmänner dieses Staates wurden von seinem Parlament bestimmt.','Всенародного голосования не было — выборщиков штата назначил его законодательный орган.','Sin voto popular: los electores de este estado los designó su legislatura.')+'</div>';
+    else if(!sv.e) h+='<div class="usel-note">'+L('The record does not break this state\u2019s electors down by candidate.','この州の選挙人票の候補者別内訳は記録にありません。','Die Aufteilung der Wahlmänner dieses Staates auf die Kandidaten ist nicht verzeichnet.','Распределение выборщиков этого штата по кандидатам не зафиксировано.','El registro no desglosa por candidato los electores de este estado.')+'</div>';
+    return h+'</div>';
+  }
   function onClick(ev){
     try{
       const f=(ev&&ev.features&&ev.features[0]); if(!f) return;
       const p=f.properties||{}; if(!p.who) return;
       const e=election(year); if(!e) return;
-      const html='<div style="font-size:12px;line-height:1.5;min-width:150px;">'
-        +'<b style="font-size:13px;">'+HOST.escapeHtml(String(p.name||p.st||''))+'</b><br>'
-        +'<span style="color:var(--text-muted);">'+e.y+'</span><br>'
-        +'<span style="display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:baseline;background:'+HOST.escapeHtml(String(p.col||'#888'))+';"></span> '
-        +HOST.escapeHtml(String(p.who))+'<br><span style="color:var(--text-muted);">'+HOST.escapeHtml(String(p.party))+'</span></div>';
+      _css();
+      const html=stateHtml(e,String(p.st||''),p.name||p.st||'');
       if(popup){ try{ popup.remove(); }catch(_){} }
-      popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(ev.lngLat).setHTML(html));
+      popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'300px'}).setLngLat(ev.lngLat).setHTML(html));
     }catch(_){}
   }
 
@@ -117,8 +161,14 @@ window.IntMapModules.usElections=function(HOST){
       '.usel-yr select{flex:1;min-width:0;box-sizing:border-box;padding:6px 8px;border-radius:9px;'
         +'border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:12.5px;'
         +'font-variant-numeric:tabular-nums;}',
-      '.usel-step{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid rgba(128,128,128,0.24);'
-        +'background:var(--input-bg);color:var(--text-main);font-size:13px;line-height:1;cursor:pointer;padding:0;}',
+      /* (#R289) 「年度を送るボタンは、<>のサイズが小さすぎる。」 A 30 px box with a 13 px glyph is under
+         the 44 px a finger is measured against, and the chevron itself was the small part of it. The
+         box is 38 px and the glyph 22 px — on a phone the box is a full 44. */
+      '.usel-step{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(128,128,128,0.24);'
+        +'background:var(--input-bg);color:var(--text-main);font-size:22px;font-weight:600;line-height:1;cursor:pointer;padding:0;'
+        +'display:flex;align-items:center;justify-content:center;}',
+      '.usel-step:hover:not(:disabled){background:var(--primary-color);color:#fff;border-color:transparent;}',
+      '@media(max-width:768px){.usel-step{width:44px;height:44px;font-size:24px;}}',
       '.usel-step:disabled{opacity:.35;cursor:default;}',
       '.usel-row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:baseline;margin-bottom:7px;}',
       '.usel-nm{font-size:11.5px;color:var(--text-main);display:flex;align-items:center;gap:5px;min-width:0;}',
@@ -131,6 +181,11 @@ window.IntMapModules.usElections=function(HOST){
       '.usel-maj{position:relative;height:0;}',
       '.usel-note{font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-top:6px;}',
       '.usel-win{font-size:10.5px;color:var(--text-muted);margin:-3px 0 8px;}',
+      /* (#R289) the state popup reuses the legend's row/bar shapes, so a state reads like the nation */
+      '.usel-pop{font-size:12px;line-height:1.5;min-width:190px;color:var(--text-main);}',
+      '.usel-pop-h{font-size:13.5px;display:block;}',
+      '.usel-pop-y{color:var(--text-muted);font-size:11px;margin:1px 0 8px;}',
+      '.usel-pop .usel-ev{white-space:nowrap;}',
     ].join('');
     document.head.appendChild(s);
   }

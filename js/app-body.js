@@ -41,6 +41,7 @@ import { makeRuntime } from './runtime.js';
 import { makeDemSource } from './dem-source.js';
 import { gridLayerSpecs } from './grid-style.js';
 import { BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH } from './border-style.js';
+import { makeCoastLine } from './coast-line.js';   /* (#R289) the border line, drawn round the water */
 import { fetchViaProxy } from './proxy-fetch.js';
 import { makeLabelOcclusion } from './label-occlusion.js';
 import { makeWheelZoom } from './wheel-zoom.js';
@@ -1305,7 +1306,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       return m==='f' ? (f(a)+' °F') : (mm+' ('+f(a)+' °F)'); }); }
   window.convTempText=convTempText;
   function bearingDeg(a,b){ return (turf.bearing(turf.point(a),turf.point(b))+360)%360; }
-  function compassDir(deg){ const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW']; return dirs[Math.round(deg/22.5)%16]; }
+  /* (#R289) the sixteen points come from js/compass.js — see its header for why 「NE」 was the
+     answer in nine languages until this round. */
+  function compassDir(deg){ return window.IntMapCompass.point(deg,currentLang,16); }
 
   let measureSnapClose=false;        /* true while the cursor hovers the first measure vertex */
   const SNAP_PX=22;                  /* screen-space radius that counts as "on the first point" */
@@ -1865,6 +1868,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }
     return true; }catch(e){ return false; } }
   window.ensureBordersLayer=ensureBordersLayer;
+  makeCoastLine({ GE, canDraw, ensurePlaceLabels, BORDER_COLOR, BORDER_WIDTH, BORDER_CASING });   /* (#R289) 「海岸線も国境線が全く同じ手法で」 */
   function ensureRefLayers(){
     try{
       if(!canDraw()) return false;
@@ -1912,7 +1916,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R38) re-assert any checked state/road/rail ref layer the moment the OFM vector tiles (re)load. */
   try{ GE().events.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ ['cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&c.__refApply) c.__refApply(); });
     /* (#R40) re-assert OFM-sourced country borders the moment the vector tiles (re)load too */
-    try{ if(bordersOn) ensureBordersLayer(); window._applyBorders(); }catch(_){} } }); }catch(_){}
+    try{ if(bordersOn) ensureBordersLayer(); window._applyBorders(); }catch(_){}
+    try{ window._imCoastReassert&&window._imCoastReassert(); }catch(_){}   /* (#R289) the coastline rides the same source, so the same race */ } }); }catch(_){}
   /* (#R40) Country borders / State-province / Roads / Railways now DEFAULT ON (HTML `checked`). Fire their
      (retry-hardened) change handlers once at startup so the layers are created + shown on first load; they
      self-heal if the style/ofm source isn't ready yet. These 4 utility toggles are NOT persisted in the URL
@@ -2459,53 +2464,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   let newsDate=null;
   function ymdISO(d){ return d.toISOString().slice(0,10); }
 
-  /* ============================================================================
-   *  (#R94) INTMAP TIME — the SPACETIME KERNEL. One master clock the whole app runs on.
-   *  The time slider, the date/year inputs, Earth Replay and Atlas all WRITE to this
-   *  single kernel; every time-aware subsystem (news, the dated NASA rasters, the
-   *  Countries statistics, the NATO/EU accession fills, historical borders, the Köppen
-   *  climate era and the day/night terminator) SUBSCRIBES to it (IntMapTime.on) and
-   *  reconstructs itself for the chosen instant. `newsDate` stays the recent-archive
-   *  facet (kept in lock-step) so every existing news/raster reader is untouched; the
-   *  kernel adds deep-time reach (back to 1900) for the subsystems that carry a real
-   *  historical series. Single source of truth = _when (a Date, or null = LIVE/now).
-   *  When LIVE, every subsystem holds its own independent default; the moment you travel
-   *  to a past instant they all sync to it, and returning to "Now" releases them. ====== */
-  window.IntMapTime=(function(){
-    const subs=[]; let _when=null; let _bcast=false; const YMIN=1900;
-    const now=()=>new Date();
-    function ev(source){ const w=_when, live=(w==null); const d=live?now():new Date(w);
-      return { date: live?null:new Date(w), when:d, iso: ymdISO(d), year:d.getFullYear(), isLive:live, source:source||'api' }; }
-    function broadcast(source){ if(_bcast) return; _bcast=true;
-      const e=ev(source);
-      /* keep the recent-archive facet in lock-step: past → the instant, live → null */
-      try{ newsDate = e.isLive ? null : new Date(e.when); }catch(_){}
-      subs.forEach(f=>{ try{ f(e); }catch(_){} });
-      _bcast=false; return e; }
-    const OS={};
-    OS.get=()=>_when?new Date(_when):null;         /* the raw instant, or null when live */
-    OS.when=()=>_when?new Date(_when):now();       /* always a Date (now when live) */
-    OS.iso=()=>ymdISO(_when||now());
-    OS.year=()=>(_when||now()).getFullYear();
-    OS.isLive=()=>_when==null;
-    OS.min=YMIN;
-    OS.state=()=>ev('query');
-    OS.on=function(fn){ if(typeof fn==='function'){ subs.push(fn); return ()=>{ const i=subs.indexOf(fn); if(i>=0) subs.splice(i,1); }; } return ()=>{}; };
-    OS.set=function(d,opts){ opts=opts||{};
-      let nd=(d instanceof Date)?new Date(d):(d!=null?new Date(d):null);
-      if(nd && isNaN(nd.getTime())) return OS;
-      if(nd){ const floor=new Date(Date.UTC(YMIN,0,1)); if(nd<floor) nd=floor;
-        if(!opts.allowFuture){ const n=now(); if(nd.getTime()>n.getTime()) nd=null; } }   /* future → live */
-      _when=nd; return broadcast(opts.source), OS; };
-    OS.setYear=function(y,opts){ y=Math.round(+y); if(!(y>=YMIN)) return OS;
-      const n=now(); if(y>=n.getFullYear()) return OS.setNow(opts);
-      return OS.set(new Date(Date.UTC(y,5,15,12,0,0)), opts); };   /* mid-June noon UTC: neutral season/terminator */
-    OS.setDaysAgo=function(days,opts){ days=Math.round(+days||0);
-      if(days<=0) return OS.setNow(opts);
-      const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-days); return OS.set(d,opts); };
-    OS.setNow=function(opts){ _when=null; return broadcast((opts||{}).source), OS; };
-    return OS;
-  })();
+  /* (#R289) THE KERNEL MOVED TO js/chronos.js — 「IntMap統一時間機能を、これよりChronosという名称に」,
+     and a thing with a name is a subject, which gets its own file (tests/r168 #8: this round adds
+     to the shell, so something coherent has to leave it). What stays here is the ONE thing it used
+     to reach into this closure for — `newsDate`, the recent-archive facet every news reader tests.
+     Registered FIRST, so «the kernel keeps newsDate in lock-step before anybody else runs» is still
+     exactly true. */
+  try{ window.IntMapTime.on(e=>{ try{ newsDate = e.isLive ? null : new Date(e.when); }catch(_){} }); }catch(_){}
   /* (#R169) moved verbatim to js/news-feed.js — see Architecture.md §3.1. */
   /* (#R40) TEMPORARY per request ("AIで解析済みのニュースをサーバーから取得というシステムは一時的に停止し、
      フロントエンドでの非AI地点解析システムのみを使って。全言語で"): force the client-side, non-AI gazetteer
@@ -3604,6 +3569,19 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     let d=e.isLive?maxIso:e.iso; if(d>maxIso) d=maxIso;
     ['no2','co','fire','truecolor','viirs'].forEach(k=>{ try{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked){ LD[k]=d; if(window.refreshDatedLayer&&GE().layers.has('lyr-'+k)&&GE().layers.getLayout('lyr-'+k,'visibility')==='visible') window.refreshDatedLayer(k); } }catch(_){} });
   }catch(_){} }); }catch(_){}
+
+  /* ══ ⚠ (#R289) THE SUBSYSTEM THAT KEPT ITS OWN CLOCK ═══════════════════════════════════════
+     「時間で変わるものは、IntMapの統一時間にすべて合わせること。（タイムマシンで変更された瞬間に）」
+     Everything else here already subscribes — news, Countries, borders, the Köppen era, the dated
+     NASA rasters, the day/night side, the sky — and #R288 brought the ECMWF forecast axis in, from
+     inside js/wx-ecmwf.js. The live-satellite layer was the one left: SGP4 takes an instant and was
+     being handed `new Date()`, so the one layer whose entire content is a function of time was the
+     one layer the clock did not move.
+     ⚠ 「変更された瞬間に」 IS THE REQUIREMENT — this runs on the broadcast, not on whatever redraws
+     next. Re-propagating is arithmetic on elements already in hand, so there is nothing to debounce. */
+  try{ window.IntMapTime.on(()=>{
+    try{ if(window.IntMapSatellites&&window.IntMapSatellites.refresh) window.IntMapSatellites.refresh(); }catch(_){}
+  }); }catch(_){}
 
   /* ============================================================================
    *  PROJECTION VIEWER (#16 flat-map projections, #17 azimuthal-equidistant on a pin)

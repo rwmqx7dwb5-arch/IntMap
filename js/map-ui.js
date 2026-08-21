@@ -1145,7 +1145,7 @@ window.IntMapModules.layerPresets=function(HOST){
     function cbKey(cb){ if(cb.id) return 'id:'+cb.id; const dl=cb.getAttribute&&cb.getAttribute('data-layer'); return dl?('dl:'+dl):null; }
     function findCb(key){ if(!key) return null; if(key.startsWith('id:')) return document.getElementById(key.slice(3));
       if(key.startsWith('dl:')){ const dd=document.getElementById('layer-dropdown'); return dd&&dd.querySelector('input[data-layer="'+key.slice(3)+'"]'); } return null; }
-    const SKIP=new Set(['cb-names','cb-geolabels','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2']);
+    const SKIP=new Set(['cb-names','cb-geolabels','cb-borders','cb-coast','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2']);
     function capture(){ const dd=document.getElementById('layer-dropdown'); if(!dd) return null;
       const ids=[]; dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(!cb.checked||SKIP.has(cb.id)) return; const k=cbKey(cb); if(k&&!ids.includes(k)) ids.push(k); });
       let ops={}; try{ ops=JSON.parse(JSON.stringify(opacities)); }catch(_){}

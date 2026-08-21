@@ -60,8 +60,6 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       'gx-gxseaice':G('GHRSST_L4_MUR_Sea_Ice_Concentration',7,'2024-01-15','png',3,-45,72),    /* Greenland ice edge */
       'gx-gxsstanom':G('GHRSST_L4_MUR_Sea_Surface_Temperature_Anomalies',7,'2024-07-04','png',3,-120,0),   /* El-Niño tongue */
       'gx-gxrelief':G('ASTER_GDEM_Color_Shaded_Relief',12,'2024-01-01','jpg',5,-72.5,-13.5),  /* Andes */
-      'gx-gxaero':G('OMPS_Aerosol_Index',6,'2025-06-15','png',3,-20,18),                       /* Saharan dust plume */
-      'gx-gxco':G('AIRS_L3_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Daily_Day',6,'2025-06-15','png',3,22,-4),  /* African burning season */
       'gx-gxsoil':G('AMSRU2_Soil_Moisture_SCA_Day',6,'2025-06-15','png',3,90,24),              /* Bengal delta */
       'eco-dl-worldcover':'https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX=6&TILEROW='+_tNile.y+'&TILECOL='+_tNile.x+'&FORMAT=image/png&TIME=2021-01-01',   /* Nile delta: crops vs desert */
       /* (#R79i) ACTUAL IntMap screenshots ("IntMapやぞ…スクショ取るだけで済むこと") — captured from the live map
@@ -83,6 +81,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       'cb-names':'preview_basemap.png',        /* (#R79i) actual IntMap base map & labels captured over Central Europe (names + borders + roads) */
       'cb-geolabels':CT('rastertiles/voyager',6,23.0,37.8),        /* Aegean — sea & island labels */
       'cb-borders':CT('light_all',6,8.2,48.9),                     /* Alpine borders — DE/FR/CH/AT crisp */
+      'cb-coast':CT('light_all',6,138.5,35.0),                     /* (#R289) Izu/Suruga — coast and lakes together */
       'cb-admin1':CT('light_all',6,-96.0,39.5),                    /* US Great Plains — state lines */
       'cb-countries':CT('rastertiles/voyager',5,105.0,14.0)        /* mainland SE Asia — distinct country shapes */
     };
@@ -151,7 +150,10 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
     /* ---- 3) World-Bank choropleths — the layer's own indicator + its own ramp, via the layer's own cached
        loader (window.IntMapWB). Lazy: fetched only when the tile is on screen; max 2 concurrent. ---- */
     const WBP={
-      'bx-wbco2':{c:'EN.GHG.CO2.PC.CE.AR5',r:[0,'#1a9850',2,'#a6d96a',5,'#fee08b',10,'#f46d43',20,'#a50026']},
+      /* (#R289) the CO₂ row is MODAL now (total ↔ per capita) and this copy is only the answer
+         BEFORE js/wb-layers.js has registered — so it is the DEFAULT mode's series and ramp.
+         `IntMapWB.codeOf`/`rampOf` answer for whichever mode is actually on. */
+      'bx-wbco2':{c:'EN.GHG.CO2.MT.CE.AR5',r:[5,'#1a9850',50,'#a6d96a',300,'#fee08b',1500,'#f46d43',10000,'#a50026']},
       'bx-wburb':{c:'SP.URB.TOTL.IN.ZS',r:[20,'#edf8e9',40,'#bae4b3',60,'#74c476',80,'#31a354',95,'#006d2c']},
       'bx-wbelec':{c:'EG.ELC.ACCS.ZS',r:[20,'#a50026',50,'#f46d43',80,'#fee08b',95,'#a6d96a',100,'#1a9850']},
       'bx-wbhealth':{c:'SH.XPD.CHEX.GD.ZS',r:[2,'#fff7ec',4,'#fdd49e',8,'#fc8d59',12,'#d7301f',18,'#7f0000']},
@@ -204,7 +206,11 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
        has registered, which is the only state in which it can still be reached. */
     function wbRamp(id,spec){ try{ const r=window.IntMapWB&&window.IntMapWB.rampOf&&window.IntMapWB.rampOf(String(id).replace(/^bx-/,''));
       if(r&&r.length>=4) return r; }catch(_){} return spec.r; }
-    function wbChoro(spec,id){ return wbValues(spec).then(m=>{ if(!m||Object.keys(m).length<5) return null;
+    /* (#R289) the same rule for the INDICATOR. A modal layer (CO₂ total ↔ per capita) changes which
+       series it paints, and the WBP copy is the pre-load answer only — exactly as the ramp copy is. */
+    function wbCode(id,spec){ try{ const c=window.IntMapWB&&window.IntMapWB.codeOf&&window.IntMapWB.codeOf(String(id).replace(/^bx-/,''));
+      if(c) return c; }catch(_){} return spec.c; }
+    function wbChoro(spec,id){ return wbValues({url:spec.url,c:wbCode(id,spec)}).then(m=>{ if(!m||Object.keys(m).length<5) return null;
       const c=cnv(),ctx=c.getContext('2d'); ocean(ctx);
       const r=wbRamp(id,spec);
       const ok=drawLand(ctx,cd=>{ const e=m[cd]; return e?rampColor(r,e.v):'#1b2a3d'; });
@@ -260,6 +266,8 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       'cb-names':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; ctx.fillStyle='#fff'; ctx.font='700 11px sans-serif'; ctx.shadowColor='#000'; ctx.shadowBlur=3; ctx.fillText('Tokyo',X(139.7),Y(35.7)); ctx.fillText('Paris',X(2.3),Y(48.9)); ctx.fillText('Cairo',X(31.2),Y(30)); ctx.fillText('Lima',X(-77),Y(-12)); ctx.shadowBlur=0; return c.toDataURL('image/png'); },
       'cb-geolabels':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; ctx.fillStyle='#8fd0ff'; ctx.font='italic 10.5px serif'; ctx.fillText('Pacific Ocean',X(-160),Y(10)); ctx.fillText('Sahara',X(5),Y(23)); ctx.fillStyle='#e7dcc8'; ctx.font='10px sans-serif'; ctx.fillText('▲ Everest',X(86.9),Y(28)); return c.toDataURL('image/png'); },
       'cb-borders':()=>{ const b=base(()=> '#22344c'); if(!b) return null; const {c,ctx}=b; drawLand(ctx,()=>null,'rgba(255,255,255,0.75)'); return c.toDataURL('image/png'); },
+      /* (#R289) the same picture, and honestly so: the bundled country outline IS the coastline everywhere it is not a land border. */
+      'cb-coast':()=>{ const b=base(()=> '#12314f'); if(!b) return null; const {c,ctx}=b; drawLand(ctx,()=>'#1d3a55','rgba(217,219,224,0.9)'); return c.toDataURL('image/png'); },
       'cb-admin1':()=>{ const b=base(()=> '#22344c'); if(!b) return null; const {c,ctx}=b; drawLand(ctx,()=>null,'rgba(255,255,255,0.45)');
         for(let i=0;i<7;i++){ path(ctx,[[-105+i*4,49],[-105+i*4,30]],'rgba(255,255,255,0.35)',0.7,[2,2]); } return c.toDataURL('image/png'); },
       'cb-roads':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; path(ctx,[[-118,34],[-87,41],[-74,40.7]],'#ff9f0a',1.6); path(ctx,[[-8,43],[2,48],[13,52],[37,55]],'#ff9f0a',1.6); path(ctx,[[103,1.3],[100,13],[116,39]],'#ff9f0a',1.6); return c.toDataURL('image/png'); },

@@ -54,7 +54,8 @@ window.IntMapModules.streetView=function(HOST){
       panel.querySelector('.sv-back').onclick=()=>_moveHere(-1);
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.sv-head')); }catch(_){}
       return panel; }
-    function _compass(h){ h=((h%360)+360)%360; const dirs=['N','NE','E','SE','S','SW','W','NW']; return dirs[Math.round(h/45)%8]+'&nbsp;'+Math.round(h)+'°'; }
+    /* (#R289) the eight points come from js/compass.js — one table, nine languages */
+    function _compass(h){ h=((h%360)+360)%360; return window.IntMapCompass.point(h,HOST.lang,8)+'&nbsp;'+Math.round(h)+'°'; }
     /* (#R85) "現在のストリートビュー表示箇所はどこを映しているのか地図上に表示" — a live marker + facing cone on the
        map showing the exact spot (and initial heading) the Street View panel is viewing. Painted INSTANTLY on
        select so there is immediate feedback while Google's embed loads (the embed reload is the only slow part

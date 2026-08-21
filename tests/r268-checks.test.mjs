@@ -141,7 +141,10 @@ test('R268 ⑦ the GIBS date range is measured data, and every dated layer has o
   const r = json('data/gibs-range.json');
   const s = codeOnly(read('js/layer-packs.js'));
   const ids = [...s.matchAll(/\{id:'(gx[a-z0-9]+)',\s*gibs:'([^']+)'/g)].map((m) => [m[1], m[2]]);
-  assert.ok(ids.length >= 6, `expected the GIBS list, found ${ids.length}`);
+  /* ⚠ (#R289) 6 → 5. 「紫外線エアロゾル指数」 and 「一酸化炭素 (CO)」 were deleted BY NAME this
+     round, so a floor of six would report a requested removal as a regression. The floor is what
+     stops the list being quietly emptied; it follows the list DOWN, exactly as the line ceilings do. */
+  assert.ok(ids.length >= 5, `expected the GIBS list, found ${ids.length}`);
   for (const [id, gibs] of ids) {
     if (/staticDate/.test(s.slice(s.indexOf("{id:'" + id + "'"), s.indexOf("{id:'" + id + "'") + 260))) continue;
     const row = r.layers[id];

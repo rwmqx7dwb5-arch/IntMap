@@ -59,6 +59,12 @@ import '../js/label-scale.js';
    UI's CJK family for the ideographic blocks) and how wide a news band comes out. It must precede the
    map's construction, which reads `cjkFamily()` and `glyphRewrite` out of it. */
 import '../js/map-typography.js';
+/* (#R289) …and the third such decision: what a BEARING is called. Six files each carried their own
+   copy of the sixteen English abbreviations — see js/compass.js. Pure data, verified in Node. */
+import '../js/compass.js';
+/* (#R289) CHRONOS — the one master clock, window.IntMapTime. Published at IMPORT time now, which
+   is strictly earlier than the closure it used to live in. See js/chronos.js. */
+import '../js/chronos.js';
 /* ══ (#R232) THE LANGUAGE REGISTRY, THEN THE DIRECTORY THAT IS THE LANGUAGE LIST ═══════════════
    「今後IntMapの設定言語を追加するのが、1発で終わるように。」
    ⚠ ADDING A LANGUAGE IS NOW ONE FILE — `js/locales/ui.<code>.js` — AND NOTHING HERE. The seven

@@ -825,8 +825,9 @@ window.IntMapModules.weatherPanel=function(HOST){
       95:{i:'⛈',d:LA('Thunderstorm','雷雨','Gewitter','Гроза','Tormenta')},96:{i:'⛈',d:LA('Thunderstorm, hail','雹を伴う雷雨','Gewitter, Hagel','Гроза с градом','Tormenta, granizo')},99:{i:'⛈',d:LA('Thunderstorm, hail','雹を伴う雷雨','Gewitter, Hagel','Гроза с градом','Tormenta, granizo')} };
       /* ⚠ (#R241) THE ICON IS NOT A TRANSLATION, so it is no longer element 0 of a language array. */
       const e=M[code]; return e?{icon:e.i,desc:L.arr(e.d)}:{icon:'🌡',desc:'—'}; }
-    const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-    const dir=(d)=>(d==null||isNaN(d))?'':COMPASS[Math.round(d/22.5)%16];
+    /* (#R289) the sixteen points come from js/compass.js. 「日本語設定でも…NEと表示される」 was reported
+       against the always-on readout; it was true of this popup too, and of four other panels. */
+    const dir=(d)=>(d==null||isNaN(d))?'':window.IntMapCompass.point(d,HOST.lang,16);
     /* 「地図の単位設定を反映する」 — the wind figure follows the SAME unit pulldown the wind legend
        has (m/s · km/h · kn · mph), not a private km/h-plus-mph string of its own. */
     const wind=(kmh)=>{ if(kmh==null||isNaN(kmh)) return '—';

@@ -35,7 +35,10 @@ test('R266 ①: the eight GIBS rasters named for deletion are gone from every su
   }
   /* …and the ones that were NOT named are still there — a deletion instruction is a list, not a sweep */
   const lp = read('js/layer-packs.js');
-  for (const id of ['gxndvi', 'gxseaice', 'gxsstanom', 'gxrelief', 'gxaero', 'gxco', 'gxsoil']) {
+  /* ⚠ (#R289) `gxaero` and `gxco` LEFT THIS LIST BECAUSE THEY WERE ASKED FOR BY NAME — 「紫外線エアロゾル
+     指数」「一酸化炭素 (CO)」 are deleted this round, so a check that they still exist would report a
+     requested change as a regression. The list is otherwise unchanged, which is the point of it. */
+  for (const id of ['gxndvi', 'gxseaice', 'gxsstanom', 'gxrelief', 'gxsoil']) {
     assert.ok(lp.includes("{id:'" + id + "'"), id + ' was deleted and nobody asked for that');
   }
 });

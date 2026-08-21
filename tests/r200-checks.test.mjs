@@ -263,8 +263,15 @@ test('R200 ⑥b: every window.IntMapTime.<method> a module calls is one the cloc
      invisible: the guard is simply false forever and every one of them silently used the wall clock,
      so the sky, the terminator, the city lights, the star field and Cesium's own solar lighting all
      ignored the time machine. The surface below is READ OUT of js/app-body.js, not written down. */
-  const iife = /window\.IntMapTime=\(function\(\)\{[\s\S]*?\n  \}\)\(\);/.exec(CORE);
-  assert.ok(iife, 'the master clock is still built in js/app-body.js');
+  /* ⚠ (#R289) THE CLOCK MOVED TO js/chronos.js AND THE QUESTION DID NOT. 「IntMap統一時間機能を、
+     これよりChronosという名称に」 made it a subject and a subject gets its own file; a check that
+     insisted on the old ADDRESS would call a rename a regression — the trap #R254 and #R282 both had
+     to remove. What #R200 was really asserting — that the surface below is READ OUT of the clock's
+     own source rather than written down here — is unchanged. */
+  const CLOCK = read('js/chronos.js');
+  const iife = /window\.IntMapTime=\(function\(\)\{[\s\S]*?\n\}\)\(\);/.exec(CLOCK);
+  assert.ok(iife, 'the master clock is still one IIFE, wherever it lives');
+  assert.ok(!/window\.IntMapTime=\(function/.test(CORE), 'the clock must not be built in the shell as well');
   const api = new Set([...iife[0].matchAll(/\bOS\.(\w+)\s*=/g)].map((m) => m[1]));
   assert.ok(api.has('when') && api.has('on') && api.has('isLive'), `the clock exposes ${[...api].join('/')}`);
   const dir = join(ROOT, 'js');

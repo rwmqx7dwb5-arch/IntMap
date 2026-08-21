@@ -29,7 +29,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R288';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R289';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -44,7 +44,7 @@ window.__imBuild='R288';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-21-R288';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-21-R289';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -464,6 +464,8 @@ window.__imBuild='R288';/* (#R121) build marker — bump when verifying that a r
                   and only appears from z14, so it starts OFF like Grid and Countries do. -->
              <label class="layer-option"><input type="checkbox" id="cb-poi" checked> <span data-i18n="poiLabels">Places, businesses &amp; facilities</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-borders" checked> <span data-i18n="borders">Country borders</span></label>
+             <!-- (#R289) 「海岸線も国境線が全く同じ手法で」 — js/coast-line.js. Ships OFF; the Wind layer switches it on once. -->
+             <label class="layer-option"><input type="checkbox" id="cb-coast"> <span data-i18n="coastline">Coastlines &amp; shores</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-grid"> <span data-i18n="gridLayer">🌐 Grid &amp; labels</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-countries"> <span data-i18n="countries">Countries (info)</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-admin1" checked> <span data-i18n="adminBounds">State / province borders</span></label>
@@ -499,13 +501,17 @@ window.__imBuild='R288';/* (#R121) build marker — bump when verifying that a r
          era marks, and a "What's applied" chip row. Closes when the user operates elsewhere on the map. -->
     <div id="news-timeline" class="news-timeline collapsed">
       <!-- (#R102/#27) collapsed = the labeled "See the past world / 1900 to present" button (per the attached mock) -->
-      <button class="ntl-open" id="ntl-toggle" type="button" title="Time machine" data-i18n-title="tlMachine">
+      <button class="ntl-open" id="ntl-toggle" type="button" title="Chronos" data-i18n-title="tlMachine">
         <span class="ntl-open-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l2.5 1.7"/></svg></span>
-        <span class="ntl-open-txt"><b id="ntl-open-t">See the past world</b><small id="ntl-open-s">1900 to present</small></span>
+        <span class="ntl-open-txt"><b id="ntl-open-t">Chronos</b><small id="ntl-open-s">Control the map’s time</small></span>
       </button>
       <div class="ntl-body" id="ntl-body">
         <div class="ntl-title-row">
-          <div class="ntl-title" id="ntl-title" data-i18n="tlMachine">Time machine</div>
+          <!-- (#R289) 「Chronos／IntMapの統一時間を操作」 — the name is not translated; the line under it is. -->
+          <div class="ntl-titlebox">
+            <div class="ntl-title" id="ntl-title" data-i18n="tlMachine">Chronos</div>
+            <div class="ntl-sub" id="ntl-sub"></div>
+          </div>
           <span class="ntl-badge" id="ntl-badge"></span>
           <button class="ntl-x" id="ntl-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close">×</button>
         </div>
@@ -514,6 +520,8 @@ window.__imBuild='R288';/* (#R121) build marker — bump when verifying that a r
           <button class="ntl-mode" id="ntl-mode-date" type="button" data-mode="date"></button>
           <button class="ntl-mode" id="ntl-mode-time" type="button" data-mode="time"></button><button class="ntl-mode" id="ntl-mode-fc" type="button" data-mode="forecast" style="display:none;"></button><!-- (#R137) time-of-day tab · (#R288) the forecast axis: the ONE clock reaches forward, so ECMWF needs no clock of its own -->
         </div>
+        <!-- (#R289) 「どこの時刻を採用するかのプルダウン」 — the clock Chronos reads and writes wall-clock time in. -->
+        <div class="ntl-zonerow"><span id="ntl-zone-lbl"></span><select class="ntl-zone" id="ntl-zone"></select></div>
         <div class="ntl-valrow">
           <div class="ntl-bigval" id="ntl-bigval">—</div>
           <button class="ntl-now" id="ntl-today" type="button"></button>

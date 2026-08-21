@@ -24,6 +24,7 @@ export function makeLayerFavs(HOST, CTX) {
     if(cb.id==='cb-geolabels') return {key:'geolabels', label:t('geoLabels')||'Water & terrain labels'};
     if(cb.id==='cb-poi')       return {key:'poi', label:t('poiLabels')||'Shop & facility names'};   /* (#R186) */
     if(cb.id==='cb-borders')   return {key:'borders', label:t('borders')};
+    if(cb.id==='cb-coast')     return {key:'coast', label:t('coastline')||'Coastlines & shores'};   /* (#R289) */
     if(cb.id==='cb-countries') return {key:'countries', label:i18n[HOST.lang].countries||'Countries'};
     /* (#R225) the `geo:` key belonged to the nine geopolitics layers; they are deleted, and so is
        the only kind of checkbox that carried `.geo-layer-cb`. A `geo:` favourite saved long ago simply

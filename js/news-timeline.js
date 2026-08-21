@@ -48,8 +48,88 @@ window.IntMapModules.newsTimeline=function(HOST){
     const fcReady=()=>{ try{ const E=EC(); return !!(E&&E.count()>0); }catch(_){ return false; } };
     const fcCount=()=>{ try{ return EC().count(); }catch(_){ return 0; } };
     const fcIndex=()=>{ try{ return EC().index(); }catch(_){ return 0; } };
+    const zoneSel=document.getElementById('ntl-zone'), zoneLbl=document.getElementById('ntl-zone-lbl'), subEl=document.getElementById('ntl-sub');
+    /* ══ ⚠⚠ (#R289) WHICH CLOCK CHRONOS SPEAKS IN ═══════════════════════════════════════════════
+       「タイムマシンのUIに、どこの時刻を採用するかのプルダウンを付けて。デフォルトはユーザーが設定
+         した時刻だが、UTCも選ぶことができるというように。」
+
+       ⚠ THE INSTANT IS NOT WHAT CHANGES. window.IntMapTime holds one instant and every subsystem
+       reads it; a time zone is a way of WRITING an instant down, not a second clock (which is the
+       「2つの時計」 #R265 and #R267 each had to remove). So this setting decides two things and
+       nothing else: how this panel PRINTS the instant, and how the Time tab's 「14:30」 is READ
+       BACK into one. The terminator, the news, the borders and the statistics are unaffected —
+       they were never told a time zone in the first place.
+
+       ⚠ AND THE READ-BACK IS THE HALF THAT CAN BE WRONG. `base.setHours(h,m)` writes DEVICE local
+       time, so before this the Time tab silently meant «the device's 14:30» however the reader
+       had set the app's time zone. `zSet` inverts the chosen zone properly — build the wall clock
+       as if it were UTC, subtract that zone's offset AT THAT INSTANT, then re-measure the offset
+       and correct once, because the offset of a zone depends on the instant you are asking about
+       and a DST boundary moves it under the first guess.
+
+       Four kinds of answer, and each is a fact rather than a guess:
+         · 'user'  — the app's own Settings time zone, or the device when that is 「auto」;
+         · 'UTC'   — no offset at all;
+         · an IANA name — resolved by Intl, so it carries that zone's real DST rules;
+         · 'map'   — the STANDARD offset where the map is centred, read from the same Natural
+                     Earth time-zone polygons the Time-zones layer draws (window.IntMapTimeZones).
+                     ⚠ STANDARD time: that dataset has no DST rules, and the option says so.
+       ⚠ A ZONE WHOSE DATA HAS NOT ARRIVED FALLS BACK TO THE DEVICE and re-renders when it does —
+       never to a made-up offset. */
+    const ZONES=['Pacific/Auckland','Australia/Sydney','Asia/Tokyo','Asia/Seoul','Asia/Shanghai','Asia/Singapore',
+      'Asia/Bangkok','Asia/Kolkata','Asia/Dubai','Europe/Moscow','Africa/Nairobi','Europe/Istanbul','Europe/Athens',
+      'Europe/Berlin','Europe/Paris','Europe/London','Atlantic/Reykjavik','America/Sao_Paulo','America/New_York',
+      'America/Chicago','America/Denver','America/Los_Angeles','America/Anchorage','Pacific/Honolulu'];
+    const ZKEY='intmap_chronos_zone';
+    let zone='user';
+    try{ const z0=localStorage.getItem(ZKEY); if(z0&&(z0==='user'||z0==='UTC'||z0==='map'||ZONES.indexOf(z0)>=0)) zone=z0; }catch(_){}
+    /* resolve the SELECTION to something the arithmetic below can use */
+    function zSpec(){
+      if(zone==='UTC') return {tz:'UTC'};
+      if(zone==='map'){ let h=null;
+        try{ const c=GE().hasRenderer()?GE().camera.getCenter():null;
+          if(c&&window.IntMapTimeZones) h=window.IntMapTimeZones.offsetAt(c.lng,c.lat); }catch(_){}
+        return (h==null)?{local:true}:{off:h}; }
+      if(zone!=='user') return {tz:zone};
+      let u=null; try{ u=HOST.userTZ; }catch(_){}
+      return (u&&u!=='auto')?{tz:u}:{local:true};
+    }
+    /* the offset of an IANA zone AT a given instant, in ms */
+    function tzOffMs(d,tz){ try{
+      const f=new Intl.DateTimeFormat('en-US',{timeZone:tz,hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const o={}; f.formatToParts(d).forEach(x=>{ if(x.type!=='literal') o[x.type]=x.value; });
+      const asUTC=Date.UTC(+o.year,+o.month-1,+o.day,(+o.hour)%24,+o.minute,+o.second);
+      return asUTC-(Math.floor(d.getTime()/1000)*1000); }catch(_){ return 0; } }
+    /* an instant → its wall-clock fields in the chosen zone */
+    function zFields(d){ const sp=zSpec();
+      if(sp.local) return {Y:d.getFullYear(),M:d.getMonth()+1,D:d.getDate(),h:d.getHours(),m:d.getMinutes()};
+      const shift=sp.tz?tzOffMs(d,sp.tz):(sp.off*3600000);
+      const t=new Date(d.getTime()+shift);
+      return {Y:t.getUTCFullYear(),M:t.getUTCMonth()+1,D:t.getUTCDate(),h:t.getUTCHours(),m:t.getUTCMinutes()}; }
+    /* wall-clock fields in the chosen zone → the instant they name */
+    function zInstant(F){ const sp=zSpec();
+      if(sp.local) return new Date(F.Y,F.M-1,F.D,F.h,F.m,0,0);
+      const naive=Date.UTC(F.Y,F.M-1,F.D,F.h,F.m,0,0);
+      if(sp.off!=null) return new Date(naive-sp.off*3600000);
+      let t=naive-tzOffMs(new Date(naive),sp.tz);
+      t=naive-tzOffMs(new Date(t),sp.tz);            /* one correction: the offset depends on the instant */
+      return new Date(t); }
+    /* what the reader should see this zone called */
+    function zoneName(k){
+      if(k==='user'){ let u=null; try{ u=HOST.userTZ; }catch(_){}
+        return (u&&u!=='auto')?(L5('Your setting','設定の時間帯','Ihre Einstellung','Ваша настройка','Su ajuste')+' · '+u.replace(/_/g,' '))
+          :L5('Your device','端末の時刻','Ihr Gerät','Ваше устройство','Su dispositivo'); }
+      if(k==='UTC') return 'UTC';
+      if(k==='map') return L5('Where the map is centred (standard time)','地図の中心の標準時','Kartenmitte (Normalzeit)','Центр карты (стандартное время)','Centro del mapa (hora estándar)');
+      return k.replace(/_/g,' '); }
+    /* the printed offset, so the choice is a fact on screen rather than a name to be trusted */
+    function zoneOffText(d){ const sp=zSpec();
+      const ms=sp.local?(-d.getTimezoneOffset()*60000):(sp.tz?tzOffMs(d,sp.tz):sp.off*3600000);
+      const mins=Math.round(ms/60000), sg=mins<0?'−':'+', a=Math.abs(mins);
+      return 'UTC'+sg+String(Math.floor(a/60)).padStart(2,'0')+':'+String(a%60).padStart(2,'0'); }
     /* (#R137) HH:MM (24h) label used by the Time tab. */
-    const _hm=(w)=>String(w.getHours()).padStart(2,'0')+':'+String(w.getMinutes()).padStart(2,'0');
+    /* (#R289) …in the zone the reader picked, not the device's — see the zone kernel above */
+    const _hm=(w)=>{ const f=zFields(w); return String(f.h).padStart(2,'0')+':'+String(f.m).padStart(2,'0'); };
     /* (#R137/#R139) Time tab writes the chosen time-of-day onto the date SELECTED BY the Year/Date tabs (today when
        live) and pushes it to the master clock. (#R139) When that date is TODAY, times AFTER the current moment are NOT
        selectable (no future) — a PAST date is fully scrubbable 0–24h. Time-of-day data (day/night terminator, sun/shadow)
@@ -66,9 +146,14 @@ window.IntMapModules.newsTimeline=function(HOST){
        `_timeMaxMins` is kept as the one place the range is stated, rather than deleted and inlined. */
     function _timeMaxMins(){ return 1439; }
     function _updTimeMax(){ try{ if(timePicker) timePicker.removeAttribute('max'); }catch(_){} }
+    /* ⚠ (#R289) THE MINUTES ARE READ BACK IN THE CHOSEN ZONE. `setHours` writes DEVICE local time,
+       so with «UTC» selected the slider used to say 14:30 and set 14:30 of wherever the reader's
+       computer is — the control and the clock meaning two different things, which is the whole
+       defect a zone selector exists to prevent. The DATE the time is applied TO is the one the
+       reader sees in the same zone, so scrubbing past midnight stays on the day on screen. */
     function _applyTimeOfDay(mins){ try{ const base=_timeBase(); mins=Math.max(0,Math.min(_timeMaxMins(),mins|0));
-      base.setHours(Math.floor(mins/60),mins%60,0,0);
-      window.IntMapTime.set(base,{allowFuture:true,source:'ui'}); }catch(_){} }
+      const f=zFields(base); f.h=Math.floor(mins/60); f.m=mins%60;
+      window.IntMapTime.set(zInstant(f),{allowFuture:true,source:'ui'}); }catch(_){} }
     /* (#R137) genuine, visible time-of-day effect: the day/night terminator for the selected instant (computed via the
        existing Earth-Replay solar math). Drawn while the Time tab is open; cleared otherwise. Fully guarded. */
     /* (#R180) through the contract. This held window.__imap under the name `m` and drove it raw —
@@ -89,6 +174,14 @@ window.IntMapModules.newsTimeline=function(HOST){
     }catch(_){} }
     function _tmSyncTerminator(){ try{ _tmTerminator(); }catch(_){} }   /* (#R210) js/night-side.js is the day/night line — this only clears the old duplicate */
     const curY=new Date().getFullYear();
+    /* (#R289) ONE DATE FORMATTER, and it prints the day the CHOSEN zone is on — which is not always
+       the day the device is on. `zFields` already answers that; formatting the fields back as a
+       UTC noon keeps the calendar arithmetic out of the formatter, so no zone can shift the day a
+       second time. */
+    function _dateText(d){ try{ const f=zFields(d);
+      return new Date(Date.UTC(f.Y,f.M-1,f.D,12,0,0))
+        .toLocaleDateString(window.IntMapLang.locale(HOST.lang,'en-US'),{year:'numeric',month:'short',day:'numeric',timeZone:'UTC'});
+    }catch(_){ return d.toLocaleDateString(); } }
     const L5=window.IntMapLang.pick(()=>HOST.lang);
     const on=(id)=>{ try{ const c=document.getElementById(id); return !!(c&&c.checked); }catch(_){ return false; } };
     const yLabel=(y)=>HOST.lang==='jp'?(y+'年'):(''+y);
@@ -103,7 +196,11 @@ window.IntMapModules.newsTimeline=function(HOST){
       return ((next-y)<(y-prev)&&(next-prev)<=20)?next:prev; }
     /* localize the static chrome (title / mode buttons / back-to-now / badge / scale) */
     function localizeChrome(){
-      if(title) title.textContent=L5('Time machine','タイムマシン','Zeitmaschine','Машина времени','Máquina del tiempo');
+      /* ⚠ (#R289) THE NAME IS NOT TRANSLATED — it is a name. 「IntMap統一時間機能を、これより
+         Chronosという名称に。マスターUIであるタイムマシンも、Chronosという名前に改名。」 What IS
+         translated is the line under it, which says what the name operates. */
+      if(title) title.textContent='Chronos';
+      if(subEl) subEl.textContent=L5('Control IntMap’s unified time','IntMapの統一時間を操作','IntMaps einheitliche Zeit steuern','Управление единым временем IntMap','Controla el tiempo unificado de IntMap');
       if(modeYear) modeYear.textContent=L5('Year','年','Jahr','Год','Año');
       if(modeDate) modeDate.textContent=L5('Date','日付','Datum','Дата','Fecha');
       if(modeTime) modeTime.textContent=L5('Time','時刻','Zeit','Время','Hora');   /* (#R137) time-of-day tab */
@@ -111,10 +208,12 @@ window.IntMapModules.newsTimeline=function(HOST){
       syncFcTab();
       if(btnNow) btnNow.textContent=L5('Back to now','現在へ戻る','Zurück zu heute','К настоящему','Volver al presente');
       if(badge) badge.textContent=L5('Viewing the past','過去表示中','Vergangenheit','Прошлое','Viendo el pasado');
-      /* (#27) the collapsed "See the past world / 1900 to present" button labels */
+      /* (#R289) 「Chronosボタンは、いまは「過去の世界を見る／1900年から現在」となっていますが、
+         「Chronos／地図の時間を操作」にして。」 — the collapsed entry point, same name, same shape. */
       try{ const ot=document.getElementById('ntl-open-t'), os=document.getElementById('ntl-open-s');
-        if(ot) ot.textContent=L5('See the past world','過去の世界を見る','Die Welt der Vergangenheit','Мир прошлого','Ver el mundo del pasado');
-        if(os) os.textContent=L5('1900 to present','1900年から現在まで','1900 bis heute','с 1900 до наших дней','1900 hasta hoy'); }catch(_){}
+        if(ot) ot.textContent='Chronos';
+        if(os) os.textContent=L5('Control the map’s time','地図の時間を操作','Die Zeit der Karte steuern','Управление временем карты','Controla el tiempo del mapa'); }catch(_){}
+      buildZones();
       buildScale();
     }
     /* the tab appears the moment the model's metadata lands, and never before */
@@ -142,6 +241,26 @@ window.IntMapModules.newsTimeline=function(HOST){
         else if(a==='play') E2.togglePlay();
         buildPlayer(); refreshUI(window.IntMapTime.state()); }; });
     }
+    /* built once and only its VALUE re-set afterwards — the same rule the year <select> follows
+       (#R266): rebuilding the list would close the dropdown under the finger that opened it. */
+    function buildZones(){ if(!zoneSel) return;
+      if(zoneLbl) zoneLbl.textContent=L5('Clock','時刻の基準','Uhr','Часы','Reloj');
+      const sig=String(HOST.lang)+'|'+String((()=>{ try{ return HOST.userTZ; }catch(_){ return ''; } })());
+      if(zoneSel.getAttribute('data-built')!==sig){
+        const esc=(x)=>window.IntMapSafe.html(String(x));
+        const opt=(v)=>'<option value="'+esc(v)+'">'+esc(zoneName(v))+'</option>';
+        zoneSel.innerHTML=opt('user')+opt('UTC')+opt('map')
+          +'<optgroup label="'+esc(L5('Time zones','タイムゾーン','Zeitzonen','Часовые пояса','Husos horarios'))+'">'
+          +ZONES.map(opt).join('')+'</optgroup>';
+        zoneSel.setAttribute('data-built',sig); }
+      zoneSel.value=zone;
+      if(zoneLbl){ try{ zoneLbl.title=zoneOffText(window.IntMapTime.when()); }catch(_){} }
+    }
+    if(zoneSel) zoneSel.addEventListener('change',()=>{ zone=zoneSel.value||'user';
+      try{ localStorage.setItem(ZKEY,zone); }catch(_){}
+      /* 'map' needs the boundary set; ask for it once and re-render when it lands */
+      if(zone==='map'){ try{ window.IntMapTimeZones&&window.IntMapTimeZones.ensure&&window.IntMapTimeZones.ensure().then(()=>{ try{ refreshUI(window.IntMapTime.state()); }catch(_){} }); }catch(_){} }
+      try{ refreshUI(window.IntMapTime.state()); }catch(_){} });
     function buildScale(){ if(!scale) return; const now=L5('Now','現在','Jetzt','Сейчас','Ahora');
       if(mode==='forecast'){ const n=fcCount();
         scale.innerHTML=n?('<span>'+fcFmt(fcValid(0))+'</span><span>'+fcFmt(fcValid(n-1))+'</span>'):'';
@@ -221,7 +340,7 @@ window.IntMapModules.newsTimeline=function(HOST){
                            (#R139) keep the slider/picker max at "now" while the selected date is today (no future). */
         const w=e.when; const base=e.isLive?new Date():new Date(e.when); const maxM=_timeMaxMins();
         if(slider.max!==String(maxM)) slider.max=String(maxM); _updTimeMax();
-        let mins=w.getHours()*60+w.getMinutes(); if(mins>maxM) mins=maxM;
+        const zf=zFields(w); let mins=zf.h*60+zf.m; if(mins>maxM) mins=maxM;   /* (#R289) in the chosen zone */
         tl.classList.toggle('active',!e.isLive);
         bigval.textContent=_hm(w);
         if(timePicker) timePicker.value=_hm(w);
@@ -234,19 +353,20 @@ window.IntMapModules.newsTimeline=function(HOST){
       else { tl.classList.add('active');
         const today=new Date(); today.setHours(0,0,0,0); const t=new Date(e.when); t.setHours(0,0,0,0); const da=Math.round((today-t)/864e5);
         if(mode==='year'){ bigval.textContent=yLabel(e.year); const sv=Math.max(1900,Math.min(curY,e.year)); if(+slider.value!==sv) slider.value=sv; }
-        else { bigval.textContent=e.when.toLocaleDateString(HOST.lang==='jp'?'ja-JP':HOST.lang==='de'?'de-DE':HOST.lang==='ru'?'ru-RU':HOST.lang==='es'?'es-ES':'en-US',{year:'numeric',month:'short',day:'numeric'});
+        else { bigval.textContent=_dateText(e.when);   /* (#R289) in the chosen zone */
           const sv=Math.max(0,Math.min(3650,3650-da)); if(+slider.value!==sv) slider.value=sv; }
         if(datePicker) datePicker.value=(da>=0&&da<=3650)?ymdISO(e.when):'';   /* deep-past has no valid recent-picker value */
       }
+      buildZones();
       const mn=+slider.min, mx=+slider.max; slider.style.setProperty('--ntl-fill',(mx>mn?((+slider.value-mn)/(mx-mn)*100):0)+'%');
       buildSynced(e);
-      /* (#R105) reflect the set year/date on the COLLAPSED "See the past world" button (it turns blue via .active) —
+      /* (#R105) reflect the set year/date on the COLLAPSED Chronos button (it turns blue via .active) —
          same button, just its two label lines swap to the applied period; restored to the default on "Now". */
       try{ const ot=document.getElementById('ntl-open-t'), os=document.getElementById('ntl-open-s');
         if(ot&&os){
-          if(e.isLive){ ot.textContent=L5('See the past world','過去の世界を見る','Die Welt der Vergangenheit','Мир прошлого','Ver el mundo del pasado');
-            os.textContent=L5('1900 to present','1900年から現在まで','1900 bis heute','с 1900 до наших дней','1900 hasta hoy'); }
-          else { ot.textContent=(mode==='year')?yLabel(e.year):(mode==='time')?_hm(e.when):e.when.toLocaleDateString(HOST.lang==='jp'?'ja-JP':HOST.lang==='de'?'de-DE':HOST.lang==='ru'?'ru-RU':HOST.lang==='es'?'es-ES':'en-US',{year:'numeric',month:'short',day:'numeric'});
+          if(e.isLive){ ot.textContent='Chronos';
+            os.textContent=L5('Control the map’s time','地図の時間を操作','Die Zeit der Karte steuern','Управление временем карты','Controla el tiempo del mapa'); }
+          else { ot.textContent=(mode==='year')?yLabel(e.year):(mode==='time')?_hm(e.when):_dateText(e.when);
             os.textContent=L5('Viewing the past · tap','過去を表示中 · タップ','Vergangenheit · tippen','Прошлое · нажмите','Viendo el pasado · toca'); }
         }
       }catch(_){}

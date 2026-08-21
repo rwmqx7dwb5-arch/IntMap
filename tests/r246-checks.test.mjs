@@ -50,7 +50,9 @@ test('r246 ① the language-keyed object is gone from js/, and its readers resol
     ['js/community-board.js', /\.arr\(c\.label\)/],
     ['js/companies-ui.js', /\.arr\(e\)\)\|\|b/],
     ['js/news-sources.js', /LNS\.arr\(f\.name\)/],
-    ['js/wb-layers.js', /const bxLabel=\(L\)=> LWB\.arr\(L\.n\)/],
+    /* (#R289) `V(L)` resolves a MODAL entry (CO₂ total ↔ per capita) to the mode that is showing;
+       the reader is still `pick().arr(…)`, which is what this list is about. */
+    ['js/wb-layers.js', /const bxLabel=\(L\)=> LWB\.arr\(V\(L\)\.n\)/],
     ['js/time-borders.js', /const n=_LTB\.arr\(E\[1\]\)/],
   ]) assert.match(code(read(file)), re, `${file} still reads its tuple without pick()`);
   /* the second table wb-layers kept for de/ru is gone — one name, one place (recurring-lessons G) */

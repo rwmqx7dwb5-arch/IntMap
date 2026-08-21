@@ -1189,6 +1189,26 @@ window.IntMapModules.timeZones=function(HOST){
           fetch(TZURL).then(r=>r.json()).then(j=>{ geo=j; loading=false; if(on) go(); }).catch(()=>{ loading=false; try{ satToast(T('Time-zone data unavailable','タイムゾーンデータを取得できません','Zeitzonendaten nicht verfügbar','Данные часовых поясов недоступны','Datos de husos no disponibles')); }catch(_){} const cb=document.getElementById('dl-tz'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } }); }
         else go();
       } else { setVis(false); if(timer){ clearInterval(timer); timer=null; } try{ window._hideGenericLegend&&window._hideGenericLegend('tz'); }catch(_){} } }
+    /* ══ (#R289) THE SAME BOUNDARIES, ASKED A DIFFERENT QUESTION — window.IntMapTimeZones ═════════
+       Chronos's clock selector offers 「the standard time where the map is centred」, and the answer
+       to that is already downloaded here whenever this layer has been on. Publishing an accessor
+       beside the layer keeps ONE owner of the dataset ([[intmap-recurring-lessons]] G) instead of a
+       second fetch of the same 10 m polygons from js/news-timeline.js.
+       ⚠ `ensure()` is what fetches; `offsetAt()` NEVER does. A getter that starts a network request
+       would be called once per repaint of a panel, and the caller could not tell 「not yet」 from
+       「no zone here」 — so it answers null until the data is in hand and the caller re-renders.
+       ⚠ THE OFFSET IS STANDARD TIME. Natural Earth's `zone` is the UTC offset with no DST rules in
+       it, and the option in the picker says so rather than implying a wall clock it cannot give. */
+    try{ window.IntMapTimeZones={
+      ensure:function(){ if(geo) return Promise.resolve(true);
+        if(!this._p) this._p=fetch(TZURL).then(r=>r.json()).then(j=>{ geo=j; return true; }).catch(()=>{ this._p=null; return false; });
+        return this._p; },
+      ready:function(){ return !!geo; },
+      offsetAt:function(lng,lat){ if(!geo||!geo.features||!window._imPipGeo) return null;
+        for(const f of geo.features){ const z=f.properties&&f.properties.zone;
+          if(z==null||!f.geometry) continue;
+          try{ if(window._imPipGeo(lng,lat,f.geometry)) return +z; }catch(_){} }
+        return null; } }; }catch(_){}
     GE().events.on('styledata',()=>{ if(on) setTimeout(()=>{ if(_imCanDraw()&&geo){ addLayers(); setVis(true); refreshTimes(); } },80); });
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-tz')) return;
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-tz';
@@ -1254,17 +1274,11 @@ window.IntMapModules.gibsScience=function(HOST){
       {id:'gxrelief', gibs:'ASTER_GDEM_Color_Shaded_Relief', max:12, ext:'jpg', staticDate:'2024-01-01', sw:'#8d6e63',
         label:LA('Color relief (ASTER GDEM)','カラー段彩・陰影（ASTER）','Farbrelief (ASTER GDEM)','Цветной рельеф (ASTER GDEM)','Relieve en color (ASTER GDEM)'),
         note:LA('ASTER global DEM color + shaded relief (static)','ASTER 全球標高モデルのカラー段彩＋陰影起伏（静止画）','ASTER globales DEM, Farb- + Schummerung (statisch)','ASTER глобальная ЦМР: цвет + отмывка (статично)','MDE global ASTER: color + relieve sombreado (estático)')},
-      /* (#R41) +OMPS UV Aerosol Index — endpoint curl-verified (HTTP 200/png). Highlights UV-absorbing aerosols
-         (smoke, dust, volcanic ash); distinct from the existing AOD layer. */
-      {id:'gxaero', gibs:'OMPS_Aerosol_Index', max:6, ext:'png', sw:'#c97b3c',
-        label:LA('UV Aerosol Index','紫外線エアロゾル指数','UV-Aerosolindex','УФ-индекс аэрозолей','Índice UV de aerosoles'),
-        note:LA('OMPS UV-absorbing aerosols — smoke, dust, volcanic ash','煙・砂じん・火山灰など紫外線を吸収するエアロゾルを検出（OMPS）','OMPS UV-absorbierende Aerosole — Rauch, Staub, Vulkanasche','OMPS поглощающие УФ аэрозоли — дым, пыль, пепел','OMPS aerosoles que absorben UV — humo, polvo, ceniza')},
-      /* (#R42) THREE new objective NASA GIBS science rasters (endpoints + colormaps curl-verified). Distinct new
-         categories — ocean biology / air pollution / soil — placed straight into REAL groups (same objective+
-         sourced+legend bar as gxaero/gxndvi). Daily products at −2 d via the shared GDATE(). */
-      {id:'gxco', gibs:'AIRS_L3_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Daily_Day', max:6, ext:'png', sw:'#cb3220',
-        label:LA('Carbon monoxide (CO)','一酸化炭素 (CO)','Kohlenmonoxid (CO)','Угарный газ (CO)','Monóxido de carbono (CO)'),
-        note:LA('Mid-tropospheric CO — wildfire smoke, combustion & air pollution (AIRS)','対流圏中層のCO濃度 — 山火事の煙・燃焼・大気汚染の指標（AIRS）','CO in der mittleren Troposphäre — Rauch, Verbrennung, Luftverschmutzung (AIRS)','CO в средней тропосфере — дым пожаров, горение, загрязнение (AIRS)','CO en la troposfera media — humo, combustión y contaminación (AIRS)')},
+      /* ⚠ (#R289) TWO ENTRIES ARE GONE FROM THIS LIST — 「紫外線エアロゾル指数」(gxaero, OMPS_Aerosol_Index,
+         #R41) and 「一酸化炭素 (CO)」(gxco, AIRS mid-tropospheric CO, #R42), deleted per request together
+         with the 雲・赤外 layer in js/data-layers.js. Their colour scales, their previews, their Atlas
+         aliases, their probe rows and their measured extents in data/gibs-range.json went with them.
+         ⚠ THE OTHER FIVE ARE UNTOUCHED: a deletion instruction is a list, not a sweep (#R266 ①). */
       {id:'gxsoil', gibs:'AMSRU2_Soil_Moisture_SCA_Day', max:6, ext:'png', sw:'#1bf74d',
         label:LA('Soil moisture','土壌水分','Bodenfeuchte','Влажность почвы','Humedad del suelo'),
         note:LA('Surface soil moisture — drought & agriculture (AMSR2)','表層土壌の水分量 — 干ばつ・農業の指標（AMSR2）','Oberflächen-Bodenfeuchte — Dürre & Landwirtschaft (AMSR2)','Влажность поверхностного слоя почвы — засуха и сельское хозяйство (AMSR2)','Humedad superficial del suelo — sequía y agricultura (AMSR2)')}
@@ -1286,8 +1300,6 @@ window.IntMapModules.gibsScience=function(HOST){
       gxsstanom:{anom:[-3,3],grad:'#6b00db,#7f1ad1,#0094ff,#18fce5,#88ff84,#bff4a3,#cacab7,#fff679,#ffb601,#ff7100,#f90113,#d30085,#800000'},
       gxndvi:{loK:LA('sparse','まばら','spärlich','редкая','escasa'),hiK:LA('dense','密','dicht','густая','densa'),grad:'#f1ecec,#ddc9bc,#b19883,#bfde77,#78ad01,#3e8a01,#086701,#001801'},
       gxrelief:{loK:LA('low','低い','niedrig','низко','bajo'),hiK:LA('high','高い','hoch','высоко','alto'),grad:'#1a7a3c,#a6d96a,#e6e08b,#a87b52,#ffffff'},
-      gxaero:{lo:'0',hi:'≥5',grad:'#ffffff,#dddd8d,#f1f12a,#e5e300,#de8800,#f30f00,#c60001,#730019'},
-      gxco:{loK:LA('low','低い','niedrig','низкий','bajo'),hiK:LA('high','高い','hoch','высокий','alto'),grad:'#fffdda,#fffcbb,#fcd76e,#fd704e,#cb3220,#a12259,#8a34f0,#2f054a'},
       gxsoil:{loK:LA('dry','乾燥','trocken','сухо','seco'),hiK:LA('wet','湿潤','feucht','влажно','húmedo'),grad:'#cc8029,#cadb25,#65eb21,#1bf74d,#16f7cc,#0e97e8,#0714d9,#6600cc'}
     };
     const _lx=(arr)=>LGX.arr(arr);
@@ -1462,7 +1474,6 @@ window.IntMapModules.gibsScience=function(HOST){
       const useF=(window.imUnitTemp==='f');
       if(sc.temp){ let v=sc.temp[0]+fr*(sc.temp[1]-sc.temp[0]); if(useF) v=v*9/5+32; return Math.round(v)+(useF?'°F':'°C'); }
       if(sc.anom){ let v=sc.anom[0]+fr*(sc.anom[1]-sc.anom[0]); if(useF) v=v*9/5; return (v>0?'+':'')+v.toFixed(1)+(useF?'°F':'°C'); }
-      if(L.id==='gxaero') return (fr*5).toFixed(1)+' AI';
       if(sc.lo!=null&&/%$/.test(String(sc.hi))) return Math.round(fr*100)+'%';
       if(sc.loK) return Math.round(fr*100)+'% ('+_lx(sc.loK)+' → '+_lx(sc.hiK)+')';
       return Math.round(fr*100)+'%'; }

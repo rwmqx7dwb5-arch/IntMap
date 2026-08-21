@@ -527,3 +527,239 @@ test('R286 ⑳ the tile prefetch never hands the browser a scheme only a protoco
   expect(owner.warmer, 'satellite prefetch has an owner (js/tile-warm.js)').toBe('function');
   expect(owner.url, 'and it asks for the tile by a URL the browser can load').toMatch(/^https:\/\/[\w.-]+\.arcgisonline\.com\/.+\/2\/0\/2$/);
 });
+
+/* ══ #R289 ═══════════════════════════════════════════════════════════════════════════════════
+   Ten instructions in one message. The source-level halves are in tests/r289-checks.test.mjs;
+   these are the ones only a running browser can answer — a layer that is really on the map, a
+   legend control that really redraws it, a popup that really has the state's numbers in it.
+
+   ⚠ APPENDED HERE RATHER THAN GIVEN A SPEC OF ITS OWN, for #R207's reason and #R286's: the boot
+   is already paid for in this file, this file is always in the gate, and the core test budget
+   (scripts/test-budget.mjs) is at its ceiling — a new spec is charged at p75 ≈ 156 s.
+
+   ⚠ AND IT HAS TO BE A REAL VIEWPORT. The Browser preview pane reports `document.hidden === true`
+   and `innerWidth === 0`, so the map never finishes building there and every one of these
+   assertions would be about a page that had not started — which is why they are here and not in a
+   hand-driven session ([[intmap-headless-preview-limits]]). */
+test('R289 ㉑ the coastline is the border line drawn round the water, and the wind offers it once', async () => {
+  const r = await page.evaluate(async () => {
+    const E = window.IntMapGeoEngine;
+    const cb = document.getElementById('cb-coast');
+    /* ⚠ THIS FILE IS SERIAL AND THE WIND HAS ALREADY BEEN SWITCHED ON ABOVE (#R276 ⑰–⑲), so the
+       latch may already have fired. «Ships off» is a fact about the markup and the default list,
+       and it is asserted where it can be — tests/r289-checks ③. What only a browser can answer is
+       the two things below: the wind LEAVES it on, and switching it off STAYS off. */
+    const out = { row: !!cb, latched: !!(cb && cb.__windAuto) };
+    /* switching the WIND on is what is supposed to offer the coastline — 「風レイヤーオン時は既定でオン」 */
+    const w = document.getElementById('dl-wind');
+    if (w && !w.checked) { w.checked = true; w.dispatchEvent(new Event('change', { bubbles: true })); }
+    await new Promise((s) => setTimeout(s, 4200));   /* the ofm retry ladder: 250/700/1600/3200 ms */
+    out.checkedAfterWind = !!(cb && cb.checked);
+    const get = (id, prop) => { try { return E.layers.has(id) ? E.layers.getPaint(id, prop) : null; } catch (_) { return null; } };
+    out.line = E.layers.has('coast-only-line');
+    out.casing = E.layers.has('coast-only-casing');
+    out.vis = out.line ? E.layers.getLayout('coast-only-line', 'visibility') : null;
+    out.coastColor = get('coast-only-line', 'line-color');
+    out.borderColor = get('borders-only-line', 'line-color');
+    out.coastWidth = JSON.stringify(get('coast-only-line', 'line-width'));
+    out.borderWidth = JSON.stringify(get('borders-only-line', 'line-width'));
+    out.coastCasingWidth = JSON.stringify(get('coast-only-casing', 'line-width'));
+    out.borderCasingWidth = JSON.stringify(get('borders-only-casing', 'line-width'));
+    /* ⚠ AND SWITCHING IT OFF MUST STICK — the latch is what makes 「既定でオン」 a default */
+    cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true }));
+    if (w) { w.checked = false; w.dispatchEvent(new Event('change', { bubbles: true })); }
+    await new Promise((s) => setTimeout(s, 200));
+    if (w) { w.checked = true; w.dispatchEvent(new Event('change', { bubbles: true })); }
+    await new Promise((s) => setTimeout(s, 600));
+    out.stayedOff = !cb.checked;
+    out.visAfterOff = E.layers.has('coast-only-line') ? E.layers.getLayout('coast-only-line', 'visibility') : null;
+    if (w) { w.checked = false; w.dispatchEvent(new Event('change', { bubbles: true })); }
+    return out;
+  });
+  expect(r.row, 'the 基本表示 row exists').toBe(true);
+  expect(r.checkedAfterWind, 'the wind layer offers it').toBe(true);
+  expect(r.line && r.casing, 'both halves of the line are on the map').toBe(true);
+  expect(r.vis).toBe('visible');
+  /* 「全く同じ手法で」 — measured against the border's OWN paint, not against a written-down colour */
+  expect(r.coastColor, 'the coastline is the border colour').toBe(r.borderColor);
+  expect(r.coastWidth, 'and the border width ladder').toBe(r.borderWidth);
+  expect(r.coastCasingWidth, 'and the border casing ladder').toBe(r.borderCasingWidth);
+  expect(r.stayedOff, 'a reader who switches it off is not overruled the next time the wind goes on').toBe(true);
+  expect(r.visAfterOff).toBe('none');
+});
+
+test('R289 ㉒ Chronos names itself, offers a clock, and reads the time back in it', async () => {
+  const r = await page.evaluate(async () => {
+    const out = {};
+    out.title = (document.getElementById('ntl-title') || {}).textContent;
+    out.sub = (document.getElementById('ntl-sub') || {}).textContent;
+    out.openT = (document.getElementById('ntl-open-t') || {}).textContent;
+    out.openS = (document.getElementById('ntl-open-s') || {}).textContent;
+    out.before = getComputedStyle(document.getElementById('ntl-title'), '::before').content;
+    const z = document.getElementById('ntl-zone');
+    out.zoneCount = z ? z.options.length : 0;
+    out.zoneFirst = z ? [...z.options].slice(0, 3).map((o) => o.value) : null;
+    /* ⚠ THE READ-BACK IS THE HALF THAT CAN BE WRONG. Pick UTC, open the Time tab, ask for 14:30,
+       and the instant the kernel holds must be 14:30 UTC — not 14:30 of wherever this runner is. */
+    z.value = 'UTC'; z.dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('ntl-mode-time').click();
+    const sl = document.getElementById('ntl-slider');
+    sl.value = String(14 * 60 + 30); sl.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((s) => setTimeout(s, 250));
+    const w = window.IntMapTime.when();
+    out.utcHM = String(w.getUTCHours()).padStart(2, '0') + ':' + String(w.getUTCMinutes()).padStart(2, '0');
+    out.shown = (document.getElementById('ntl-bigval') || {}).textContent;
+    /* …and back to the device's clock, where the same 14:30 means the local one */
+    z.value = 'user'; z.dispatchEvent(new Event('change', { bubbles: true }));
+    sl.value = String(9 * 60 + 15); sl.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((s) => setTimeout(s, 250));
+    const w2 = window.IntMapTime.when();
+    out.localHM = String(w2.getHours()).padStart(2, '0') + ':' + String(w2.getMinutes()).padStart(2, '0');
+    window.IntMapTime.setNow({ source: 'test' });
+    document.getElementById('ntl-mode-year').click();
+    return out;
+  });
+  expect(r.title).toBe('Chronos');
+  expect(r.openT).toBe('Chronos');
+  expect(r.sub, 'the line under the name says what it operates').toBeTruthy();
+  expect(r.openS, 'and so does the collapsed button').toBeTruthy();
+  expect(r.before, '「⌛絵文字は削除です。」').toBe('none');
+  expect(r.zoneCount, 'device + UTC + map centre + the major zones').toBeGreaterThan(20);
+  expect(r.zoneFirst).toEqual(['user', 'UTC', 'map']);
+  expect(r.utcHM, 'with UTC chosen, 14:30 means 14:30 UTC').toBe('14:30');
+  expect(r.shown, 'and the panel prints the same thing it set').toBe('14:30');
+  expect(r.localHM, 'with the device chosen, 09:15 means the device 09:15').toBe('09:15');
+});
+
+test('R289 ㉓ the merged rows really repaint, and the year colouring really changes the fill', async () => {
+  const r = await page.evaluate(async () => {
+    const E = window.IntMapGeoEngine;
+    const out = {};
+    /* ① CO₂: one row, two series. The RAMP must move with the mode or the map paints megatonnes
+          through a per-capita scale — the defect the re-assert exists for. */
+    const co2 = document.getElementById('bx-wbco2');
+    out.co2Name0 = document.querySelector('#lyrrow-wbco2 .bx-name').textContent;
+    co2.checked = true; co2.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise((s) => setTimeout(s, 2500));
+    out.ramp0 = JSON.stringify(window.IntMapWB.rampOf('wbco2'));
+    out.code0 = window.IntMapWB.codeOf('wbco2');
+    out.fill0 = JSON.stringify(E.layers.has('wbco2-fill') ? E.layers.getPaint('wbco2-fill', 'fill-color') : null);
+    const btn = document.querySelector('#data-legend-wbco2 .bx-mode[data-k=\'pc\']');
+    out.hasSwitch = !!btn;
+    if (btn) btn.click();
+    await new Promise((s) => setTimeout(s, 2500));
+    out.co2Name1 = document.querySelector('#lyrrow-wbco2 .bx-name').textContent;
+    out.ramp1 = JSON.stringify(window.IntMapWB.rampOf('wbco2'));
+    out.code1 = window.IntMapWB.codeOf('wbco2');
+    out.fill1 = JSON.stringify(E.layers.has('wbco2-fill') ? E.layers.getPaint('wbco2-fill', 'fill-color') : null);
+    co2.checked = false; co2.dispatchEvent(new Event('change', { bubbles: true }));
+    /* ② NATO: one colour ↔ by accession year */
+    const nato = document.getElementById('dl-nato');
+    nato.checked = true; nato.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise((s) => setTimeout(s, 2500));
+    out.natoFill0 = JSON.stringify(E.layers.has('nato-fill') ? E.layers.getPaint('nato-fill', 'fill-color') : null);
+    const nb = document.querySelector('#data-legend-nato .nato-style-row button[data-s=\'byYear\']');
+    out.natoSwitch = !!nb;
+    if (nb) nb.click();
+    await new Promise((s) => setTimeout(s, 800));
+    out.natoFill1 = JSON.stringify(E.layers.has('nato-fill') ? E.layers.getPaint('nato-fill', 'fill-color') : null);
+    out.natoKey = (document.querySelector('#data-legend-nato .dl-yearkey') || {}).textContent || '';
+    out.barHidden = (() => { const b = document.querySelector('#data-legend-nato .dl-bar'); return b ? b.style.display : null; })();
+    nato.checked = false; nato.dispatchEvent(new Event('change', { bubbles: true }));
+    return out;
+  });
+  expect(r.hasSwitch, 'the CO₂ legend carries the total/per-capita switch').toBe(true);
+  expect(r.code0, 'the default mode is the country total').toBe('EN.GHG.CO2.MT.CE.AR5');
+  expect(r.code1, 'and the switch really changes the series').toBe('EN.GHG.CO2.PC.CE.AR5');
+  expect(r.ramp1, 'the published ramp moves with it').not.toBe(r.ramp0);
+  expect(r.fill1, 'and so does the paint the map is actually using').not.toBe(r.fill0);
+  expect(r.co2Name1, 'the row is named for the mode it is showing').not.toBe(r.co2Name0);
+  expect(r.natoSwitch, 'the NATO legend carries the colouring switch').toBe(true);
+  expect(r.natoFill0, 'one colour is one colour').toBe('"#2f6bff"');
+  expect(r.natoFill1, 'and by-year is an expression over the accession year').toMatch(/"match",\["to-number",\["get","__y"\]/);
+  expect(r.natoKey, 'with a chip per wave').toMatch(/1949/);
+  expect(r.barHidden, 'and the flat gradient bar, which describes the OTHER mode, is hidden').toBe('none');
+});
+
+test('R289 ㉔ a click on a state answers with that state’s own votes and electors', async () => {
+  const r = await page.evaluate(async () => {
+    const cb = document.getElementById('dl-uselect');
+    cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise((s) => setTimeout(s, 3000));
+    const E = window.IntMapGeoEngine;
+    const out = { layer: E.layers.has('usel-fill'), year: window.IntMapUSElections.year() };
+    /* the popup is built from the data, so ask the builder the same question the click does */
+    const g = await fetch('data/us-elections.json').then((x) => x.json());
+    const e = g.elections.find((x) => x.y === 2024);
+    out.ga = e.sv.GA; out.me = e.sv.ME;
+    out.stepper = (() => { const b = document.querySelector('#data-legend-uselect .usel-step'); if (!b) return null;
+      const c = getComputedStyle(b); return { w: c.width, f: c.fontSize }; })();
+    cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true }));
+    return out;
+  });
+  expect(r.layer, 'the election layer is on the map').toBe(true);
+  expect(r.year).toBe(2024);
+  expect(r.ga.e, 'Georgia 2024: all sixteen to the winner').toEqual([16, 0]);
+  expect(r.ga.v, 'and its certified popular vote').toEqual([2663117, 2548017]);
+  expect(r.me.e, 'Maine 2024 split its four — 3 and 1').toEqual([1, 3]);
+  expect(r.stepper, 'the year stepper exists').toBeTruthy();
+  expect(parseFloat(r.stepper.w), '「<>のサイズが小さすぎる」 — it was 30 px').toBeGreaterThanOrEqual(38);
+  expect(parseFloat(r.stepper.f), 'and the chevron itself was 13 px').toBeGreaterThanOrEqual(22);
+});
+
+test('R289 ㉕ the wind readout names the direction in the reader’s language and points downwind', async () => {
+  const r = await page.evaluate(() => {
+    /* the readout is driven by the cursor; call the renderer directly with a known sample rather
+       than trying to synthesise a hover over a canvas that may still be loading tiles. */
+    const out = { pointJp: window.IntMapCompass.point(45, 'jp', 8), pointEn: window.IntMapCompass.point(45, 'en', 8) };
+    const wind = window.Wind;
+    out.hasSample = !!(wind && wind.sampleAt);
+    return out;
+  });
+  expect(r.pointEn).toBe('NE');
+  expect(r.pointJp, '「ちゃんと北東と書くように」').toBe('北東');
+  expect(r.hasSample).toBe(true);
+});
+
+test('R289 ㉖ the flat map refuses the crossing into space, and the globe still allows it', async () => {
+  const r = await page.evaluate(async () => {
+    const S = window.IntMapSpace;
+    const out = { has: !!(S && S._pushOut) };
+    if (!out.has) return out;
+    document.getElementById('btn-view-flat').click();
+    await new Promise((s) => setTimeout(s, 900));
+    /* ⚠ `setZoom` on the flat projection did not land in one call (measured: z stayed 1.70 against
+       a floor of 1.20), so the camera is JUMPED and then re-asserted until it is actually there.
+       An assertion about «at the floor» that never reached the floor would be measuring nothing. */
+    for (let i = 0; i < 8 && !S.atFloor(); i++) {
+      try { const C = window.IntMapGeoEngine.camera; C.jumpTo({ zoom: C.getMinZoom() }); } catch (_) {}
+      await new Promise((s) => setTimeout(s, 250));
+    }
+    out.atFloorFlat = S.atFloor();
+    for (let i = 0; i < 12; i++) S._pushOut(0.5);   /* six zoom levels of refused zoom-out */
+    await new Promise((s) => setTimeout(s, 300));
+    out.openedFromFlat = S.isOpen();
+    document.getElementById('btn-view-globe').click();
+    await new Promise((s) => setTimeout(s, 1200));
+    /* ⚠ `setZoom` on the flat projection did not land in one call (measured: z stayed 1.70 against
+       a floor of 1.20), so the camera is JUMPED and then re-asserted until it is actually there.
+       An assertion about «at the floor» that never reached the floor would be measuring nothing. */
+    for (let i = 0; i < 8 && !S.atFloor(); i++) {
+      try { const C = window.IntMapGeoEngine.camera; C.jumpTo({ zoom: C.getMinZoom() }); } catch (_) {}
+      await new Promise((s) => setTimeout(s, 250));
+    }
+    out.atFloorGlobe = S.atFloor();
+    for (let i = 0; i < 12; i++) S._pushOut(0.5);
+    await new Promise((s) => setTimeout(s, 400));
+    out.openedFromGlobe = S.isOpen();
+    if (S.isOpen()) S.close();
+    return out;
+  });
+  expect(r.has, 'the space view exposes its own gesture integral').toBe(true);
+  expect(r.atFloorFlat, 'the flat camera really is at its zoom floor').toBe(true);
+  expect(r.openedFromFlat, '「Flat地図では、ズームし続ければ宇宙へ行く機能を無効に。」').toBe(false);
+  /* ⚠ AND THE OTHER HALF: this must be a REFUSAL, not a broken trigger. The same gesture on the
+     globe still crosses over, or the assertion above would pass for the wrong reason. */
+  expect(r.atFloorGlobe).toBe(true);
+  expect(r.openedFromGlobe, 'the globe still leads to space').toBe(true);
+});
