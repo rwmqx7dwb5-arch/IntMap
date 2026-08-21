@@ -38,8 +38,8 @@
 - 並列実装のときは、`node scripts/worktree.mjs new <slug>` で**作業ごとに worktree を用意**し、
   各 implementer には**その絶対パスと、触ってよいファイルの一覧**を渡す。
 - ⚠ **Agent tool の `isolation: "worktree"` を IntMap では使わない。** それが作る worktree は
-  `<repo>/.claude/worktrees/` ＝ **OneDrive の中**で、実測 611 MB・11,615 ファイルが同期対象になった
-  （#R282）。`scripts/worktree.mjs` は OneDrive の外に作る。
+  `<repo>/.claude/worktrees/` ＝ **OneDrive の中**になる（実測した影響は `CLAUDE.md` §6 の ⚠ 箱）。
+  `scripts/worktree.mjs` は OneDrive の外に作る。
 - **統合・commit・push・merge はメインだけが行う。** agent にさせない。
 - 他セッションの branch・worktree・未コミット変更・stash に触れない（`CLAUDE.md` §6）。
 - ラウンド番号は `node scripts/worktree.mjs status` が示す**空き番号**を使い、**push の直前に取り直す**
