@@ -10,22 +10,22 @@ tools: Bash, Read, Grep, Glob
 
 ## 何を実行するか
 
-呼び出し元が指定した段だけを走らせる（`.claude/rules/execution-strategy.md` の §4）。
-指定が無ければ、変更されたファイルから該当する段を自分で選び、**選んだ理由を書く**。
+**どの段をいつ走らせるかは、`.claude/rules/execution-strategy.md` §4 の表が唯一の正本。**
+ここには書き写さない——呼び出し元が指定した段を走らせ、指定が無ければ変更されたファイルから
+選んで**選んだ理由を書く**。
 
-| 段 | コマンド | 何を主張するか |
-|---|---|---|
-| 0 | `node --test tests/r<N>-checks.test.mjs` | その回の検査だけ |
-| 1 | `npm run check:static` | 構文・JSON/YAML・merge marker・秘密・資産 |
-| 1 | `npm run check:i18n` | 9 言語 × 全 surface |
-| 1 | `npm run check:docs` | 文書間の事実の突き合わせ |
-| 1 | `npm run check:catalog` | Atlas catalogue（押せるのに届かない機能が出ない） |
-| 1 | `npm run check:engine` | レンダラ脱依存 |
-| 2 | `npx playwright test tests/r<N>.spec.js` | 該当 spec だけ |
-| 3 | `npm test` | CI と同じ門（source 半分と browser 半分が並列に走る） |
-| 4 | `npm run test:deep` | Cesium・地形・飛行・物理・シミュレータ |
+各ゲートが**何を主張しているか**（この役が失敗を読むために要る知識。段の割り当てではない）:
 
-- `npm test` は長い。**呼び出し元が段 3 を求めたときだけ**走らせる。
+| コマンド | 何を主張するか |
+|---|---|
+| `npm run check:static` | 構文・JSON/YAML・merge marker・秘密・資産 |
+| `npm run check:i18n` | 9 言語 × 全 surface |
+| `npm run check:docs` | 文書間の事実の突き合わせ |
+| `npm run check:catalog` | Atlas catalogue（押せるのに届かない機能が出ない） |
+| `npm run check:engine` | レンダラ脱依存 |
+| `npm run check:testbudget` | 試験時間の天井（下がるだけの数） |
+| `npm test` | CI と同じ門（source 半分と browser 半分が並列に走る） |
+
 - 途中経過をポーリングしない。1 回走らせて、終わったログを読む。
 - 読みにくい失敗は `npm run test:seq`（同じ内容を直列で）に落として切り分けてよい。
 

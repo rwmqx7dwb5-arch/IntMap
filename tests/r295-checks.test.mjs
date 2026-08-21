@@ -248,8 +248,19 @@ test('#R295 ⑪ scripts/worktree.mjs derives the master and builds outside it', 
     'the master must be DERIVED (git rev-parse --git-common-dir), never hard-coded (#R282)');
   assert.ok(!/OneDrive/.test(src), 'scripts/worktree.mjs hard-codes OneDrive in executable code');
   assert.match(src, /tmpdir\(\)/, 'worktrees must be created outside OneDrive (CLAUDE.md §6)');
-  /* -d, not -D: an unmerged branch is refused by git, which is the safety rule (CLAUDE.md §6). */
-  assert.ok(!/'branch',\s*'-D'/.test(src), "`git branch -D` would discard another session's work");
+  /* ⚠ `-D` IS PERMITTED, BUT ONLY BEHIND THE TREE COMPARISON. The first draft of this check simply
+     banned `-D`, and it was right until CLAUDE.md §5's squash merge made `-d` refuse every finished
+     round (see §⑭). The honest assertion is not «never force-delete» but «never force-delete
+     something main does not already contain», so what is measured is the GUARD, not the verb. */
+  const forced = src.indexOf("'branch', '-D'");
+  if (forced > 0) {
+    const guard = src.indexOf('sameTree');
+    assert.ok(guard > 0 && guard < forced,
+      "`git branch -D` is not guarded by the origin/main tree comparison — it could discard work");
+    assert.match(src, /'diff',\s*'--quiet',\s*'origin\/main'/,
+      'the guard must compare against origin/main, not against a local ref that may be stale');
+  }
+  assert.match(src, /'branch',\s*'-d'/, 'the safe delete is gone — every removal would be forced');
 });
 
 /* ── ⑫ `done` FINISHES THE JOB EVEN WHEN `git worktree remove` PARTIALLY FAILS ─────────────────
@@ -323,4 +334,100 @@ test('#R295 ⑬ `done` decides by re-reading the worktree list, not by the remov
   const guard = after.indexOf('stillListed');
   const exit = after.indexOf('process.exit(1)');
   assert.ok(guard > 0 && exit > guard, 'the failure exit is not guarded by the list re-read');
+});
+
+/* ── ⑭ A SQUASH-MERGED BRANCH IS CLEANED UP; A DIVERGENT ONE IS NOT ────────────────────────────
+   CLAUDE.md §5 merges every round with `--squash`, so the branch's commits never become ancestors
+   of main and `git branch -d` calls EVERY finished round «unmerged». A cleanup step that refuses
+   in the normal case is a cleanup step nobody uses, and the branches accumulate.
+   The replacement asks whether the branch still carries anything main lacks, by comparing trees.
+   ⚠ BOTH DIRECTIONS ARE PROVED HERE, because a comparison that answers «identical» to everything
+   is exactly how this would be «fixed» by weakening it (#R283's rule). */
+test('#R295 ⑭ done deletes a squash-merged branch but keeps one that still has work', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'im-r295s-'));
+  const g = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  try {
+    const origin = join(tmp, 'origin');
+    mkdirSync(origin);
+    g(['init', '-q', '-b', 'main'], origin);
+    g(['config', 'user.email', 'r295@test'], origin);
+    g(['config', 'user.name', 'r295'], origin);
+    mkdirSync(join(origin, 'scripts'));
+    cpSync(resolve(ROOT, 'scripts/worktree.mjs'), join(origin, 'scripts/worktree.mjs'));
+    writeFileSync(join(origin, 'DEV-NOTES.md'), '- **#R100** seed\n');
+    g(['add', '-A'], origin); g(['commit', '-qm', 'seed'], origin);
+
+    /* A branch with a real commit, then main gets the SAME content as one squashed commit —
+       which is what `gh pr merge --squash` leaves behind. */
+    g(['worktree', 'add', '-q', '-b', 'feat/r101-squashed', join(tmp, 'wt-a'), 'main'], origin);
+    writeFileSync(join(tmp, 'wt-a', 'feature.txt'), 'work\n');
+    g(['add', '-A'], join(tmp, 'wt-a')); g(['commit', '-qm', 'work'], join(tmp, 'wt-a'));
+    writeFileSync(join(origin, 'feature.txt'), 'work\n');
+    g(['add', '-A'], origin); g(['commit', '-qm', 'squashed (#1)'], origin);
+    /* `done` compares against origin/main, so the fixture needs that ref to exist. */
+    g(['update-ref', 'refs/remotes/origin/main', 'main'], origin);
+
+    const outA = execFileSync(process.execPath, [join(tmp, 'wt-a', 'scripts/worktree.mjs'), 'done'],
+      { cwd: tmp, encoding: 'utf8' });
+    assert.match(outA, /squash merge 済み/, 'the squash-merged branch was not recognised');
+    assert.equal(g(['branch', '--list', 'feat/r101-squashed'], origin).trim(), '',
+      'a squash-merged branch was left behind — every round would leave one');
+
+    /* …and one that still carries work main does not have must SURVIVE. */
+    g(['worktree', 'add', '-q', '-b', 'feat/r102-live', join(tmp, 'wt-b'), 'main'], origin);
+    writeFileSync(join(tmp, 'wt-b', 'unmerged.txt'), 'not in main\n');
+    g(['add', '-A'], join(tmp, 'wt-b')); g(['commit', '-qm', 'later work'], join(tmp, 'wt-b'));
+
+    const outB = execFileSync(process.execPath, [join(tmp, 'wt-b', 'scripts/worktree.mjs'), 'done'],
+      { cwd: tmp, encoding: 'utf8' });
+    assert.match(outB, /残した/, 'a branch with unmerged work was not reported as kept');
+    assert.match(g(['branch', '--list', 'feat/r102-live'], origin), /feat\/r102-live/,
+      'unmerged work was deleted — the safety rule is gone');
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+/* ── ⑮ ADDING A SIXTH SUBAGENT CANNOT SILENTLY STALE THE TWO ROSTERS ───────────────────────────
+   `CLAUDE.md` §2 and `docs/README.md` both spell the five roles out. `scripts/doc-facts.mjs`
+   builds its DOCS list from the repository root and docs/ ONLY (see its readdirSync calls), so
+   `.claude/**` is outside the sweep that enforces 「同じ事実を2か所に書くな」 — dropping a sixth
+   file into .claude/agents/ would leave both rosters wrong with every gate still green. That is
+   the #R280 shape: 一覧に無いものは、その一覧では落ちようがない.
+   ⚠ MEASURED, NOT ASSUMED: the direction that goes stale is agents → prose, so the sweep is over
+   the DIRECTORY and the documents are asked about each name found there. */
+test('#R295 ⑮ every subagent on disk is named in both rosters', () => {
+  const names = readdirSync(AGENT_DIR).filter((f) => f.endsWith('.md')).map((f) => basename(f, '.md'));
+  assert.ok(names.length >= 5, 'the agent directory is empty — this check has no subject');
+  const claude = read('CLAUDE.md');
+  const idx = read('docs/README.md');
+  for (const n of names) {
+    /* The rosters use the short role name (「scout（全数調査）」), not the file name. */
+    const role = n.replace(/^intmap-/, '');
+    assert.ok(claude.includes(role), `CLAUDE.md's roster does not mention "${role}" (.claude/agents/${n}.md)`);
+    assert.ok(idx.includes(role), `docs/README.md's roster does not mention "${role}" (.claude/agents/${n}.md)`);
+  }
+});
+
+/* ── ⑯ THE VERIFICATION LADDER HAS EXACTLY ONE OWNER ───────────────────────────────────────────
+   R295's first draft stated the stage table three times — in the rule, in intmap-verifier.md and
+   in the skill — while the rule was declared the 正本 by CLAUDE.md and docs/README.md. An audit
+   of the round found it; this is the gate so the next round cannot re-introduce it.
+   The signature of the table is a STAGE NUMBER BOUND TO A COMMAND (「段 3」 beside `npm test`,
+   「段0」 beside `node --test`). One file may carry that; the others must link. */
+test('#R295 ⑯ only one file binds a stage number to a command', () => {
+  const candidates = [RULE, '.claude/skills/intmap-round/SKILL.md',
+    ...readdirSync(AGENT_DIR).filter((f) => f.endsWith('.md')).map((f) => '.claude/agents/' + f)];
+  const carriers = [];
+  for (const f of candidates) {
+    const text = read(f);
+    /* Two shapes count as carrying the table, and the first draft of this check only had the
+       second — so it matched NOTHING, not even the owner, because in the owner's markdown table
+       the word 段 is a column HEADER and the numbers live in later rows. A signature that cannot
+       match the thing it is protecting proves nothing (#R272). */
+    const asTable = /\|\s*段\s*\|/.test(text);
+    const asLine = /段\s*[0-9０-９][^\n]{0,80}(npm |node |npx )|(npm |node |npx )[^\n]{0,80}段\s*[0-9０-９]/.test(text);
+    if (asTable || asLine) carriers.push(f);
+  }
+  assert.ok(carriers.length, 'no file carries the stage table at all — the signature matches nothing');
+  assert.deepEqual(carriers, [RULE],
+    `the stage→command table must live only in ${RULE}; these also bind stages to commands: ${carriers.join(', ')}`);
 });
