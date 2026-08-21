@@ -255,7 +255,27 @@ test('R196 ⑤ every "place this on the map" button steps its panel aside', () =
      統合して」) and the disaster one with `IntMapDisaster`, while the radioactive-dispersion panel this
      round BUILT brought one of its own. The count is 2 × 2 (`abort` + `start`), and counting is still
      the point — a picker that forgets `IntMapPick` is a panel that covers the map it asks you to tap. */
-  assert.equal((sims.match(/window\.IntMapPick/g) || []).length, 4, 'both pickers in js/sims.js use it');
+  /* ⚠ (#R302) …AND THE COUNT WAS THE LITERAL ALL OVER AGAIN. It was `=== 4`, so ADDING a picker —
+     which is exactly what 「まずは地点を選ばせろ」 asks for — read as a regression. The thing being
+     counted is a proxy for a relation: every panel that asks the reader to tap the map must go
+     through `IntMapPick`, because that is what steps the panel out of the way, and every one that
+     starts a pick must be able to abort one. So the relation is asserted directly. */
+  const starts = [...sims.matchAll(/P\.start\(\{/g)].map(m => sims.slice(m.index, m.index + 260));
+  assert.ok(starts.length >= 3, `js/sims.js must drive the shared picker (${starts.length} start sites)`);
+  /* THE TITLE OF THIS TEST IS THE INVARIANT: passing `panel` is what steps it out of the way, so a
+     new picker that forgets it is a panel covering the map it just asked you to tap. */
+  for (const b of starts) assert.match(b, /\bpanel\b/, 'every pick hands the picker its panel');
+  /* …and no panel may start a pick without first cancelling one already in flight */
+  assert.ok(/P&&P\.active\(\)\) P\.abort\(\)/.test(sims), 'a pick in flight is aborted before a new one');
+  /* ⚠ (#R302) NO RegExp BUILT OUT OF A STRING. The first draft escaped `(` and `)` in the name and
+     fed it to `new RegExp` — CodeQL is right that a half-escape is not an escape (a backslash in the
+     input goes straight through), and the question does not need a regex at all: find the function
+     and read the first line of it. */
+  for (const fn of ['function startPick()', 'function askSite()', 'function pickPoint()']) {
+    const i = sims.indexOf(fn);
+    assert.ok(i > 0, `${fn} must exist`);
+    assert.match(sims.slice(i, i + 140), /_?[eE]ndPick\(\)/, `${fn} clears the pick in flight first`);
+  }
 });
 
 /* ── ⑤b ATLAS DRIVES IT ───────────────────────────────────────────────

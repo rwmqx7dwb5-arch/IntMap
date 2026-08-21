@@ -2015,11 +2015,21 @@ window.IntMapModules.worldPacks=function(HOST){
          codes are derived from — 国土交通省 国土数値情報 (行政区域), 1,897 features, one file, keyed on
          the JIS X 0402 code that is the first five digits of a class20 code. */
       const JP_MUNI_URL='https://cdn.jsdelivr.net/gh/smartnews-smri/japan-topography@main/data/municipality/geojson/s0001/N03-21_210101.json';
+      /* (#R302) one row of 国土数値情報 行政区域 → the name this map shows for it, and the 政令市 it is
+         a WARD of. `N03_003` is the 郡 or 政令市 a row sits under and `N03_004` is the row itself, so a
+         row whose `N03_003` ends in 市 is a ward — which is what `jpWards` groups on (see `jpShape`).
+         ⚠ ONE OWNER: the nationwide floor and the per-prefecture upgrade both build rows, and a name
+         derived two slightly different ways would make the same municipality change its label when it
+         was upgraded. */
+      function jpRow(p,c){
+        const nm=(p.N03_004&&p.N03_003&&p.N03_004!==p.N03_003)?(p.N03_003+p.N03_004):(p.N03_004||p.N03_003||p.N03_001||c);
+        const rec={name:nm,parts:[]};
+        if(p.N03_003&&p.N03_004&&p.N03_004!==p.N03_003&&/市$/.test(String(p.N03_003))) rec.city=String(p.N03_003);
+        return rec; }
       function jpMuniGeo(){ return SUBDIV.jpmuni||(SUBDIV.jpmuni=bndJSON(JP_MUNI_URL).then(j=>{
         const by=Object.create(null);
         (j.features||[]).forEach(f=>{ const p=f.properties||{}; const c=String(p.N03_007||''); if(!c) return;
-          const nm=(p.N03_004&&p.N03_003&&p.N03_004!==p.N03_003)?(p.N03_003+p.N03_004):(p.N03_004||p.N03_003||p.N03_001||c);
-          const rec=by[c]=by[c]||{name:nm,parts:[]};
+          const rec=by[c]=by[c]||jpRow(p,c);
           const g=f.geometry; if(!g) return;
           if(g.type==='Polygon') rec.parts.push(g.coordinates);
           else if(g.type==='MultiPolygon') g.coordinates.forEach(x=>rec.parts.push(x)); });
@@ -2049,7 +2059,7 @@ window.IntMapModules.worldPacks=function(HOST){
       const JP_FINE_BASE='https://cdn.jsdelivr.net/gh/smartnews-smri/japan-topography@main/data/municipality/geojson/s0010/N03-21_';
       const jpFineURL=(pp)=>JP_FINE_BASE+pp+'_210101.json';
       const jpFineAsked=Object.create(null);   /* '13' → 1 once asked (never re-asked) */
-      let jpFineBusy=0, jpFineOn=0, jpFineT=0;
+      let jpFineBusy=0, jpFineOn=0, jpFineT=0, jpFineAdd=0;   /* (#R302) municipalities the nationwide floor did not have */
       const JP_FINE_MAX=2;
       /* prefecture → bbox, built once from the coarse index (the fine files are keyed the same way) */
       let _jpPrefBB=null;
@@ -2076,14 +2086,33 @@ window.IntMapModules.worldPacks=function(HOST){
           want.slice(0,JP_FINE_MAX-jpFineBusy).forEach(pp=>{
             jpFineAsked[pp]=1; jpFineBusy++;
             bndJSON(jpFineURL(pp))
-              .then(j=>{ let n=0;
+              .then(j=>{ let n=0, added=0;
                 (j.features||[]).forEach(f=>{ const q=f.properties||{}; const c=String(q.N03_007||'');
-                  if(!c||!idx[c]) return;
+                  if(!c) return;
                   const g=f.geometry; if(!g) return;
-                  if(!idx[c].__fine){ idx[c].__fine=1; idx[c].parts=[]; }
-                  if(g.type==='Polygon') idx[c].parts.push(g.coordinates);
-                  else if(g.type==='MultiPolygon') g.coordinates.forEach(x=>idx[c].parts.push(x));
+                  /* ══ ⚠⚠⚠ (#R302) THE UPGRADE MAY ADD A MUNICIPALITY, NOT ONLY SHARPEN ONE ═════════
+                     「何も発令されていないのに、灰色に塗られていない場所がある。」
+                     This said `if(!c||!idx[c]) return;` — a key the nationwide floor does not have was
+                     thrown away even though the file in hand had it. MEASURED on the two builds this
+                     layer reads: the nationwide `s0001` is missing **EIGHT municipalities outright**
+                     that the per-prefecture `s0010` carries —
+                         13362 利島村 · 13402 青ヶ島村 · 31384 日吉津村 · 38356 上島町 ·
+                         44322 姫島村 · 47354 座間味村 · 47355 粟国村 · 47356 渡名喜村
+                     and 日吉津村 is not an island: it is a village enclaved inside 米子市.
+                     A municipality this map holds NO polygon for is painted by nobody — not the
+                     warning (the JMA had all eight in `class20Items`), and not the 「発表なし」 grey,
+                     because the grey is drawn per unit off this very index. It is a hole in both
+                     claims, which is what 「灰色に塗られていない」 is describing.
+                     → a row the floor lacks is ADDED at the resolution it arrived in. `jpRow` builds
+                     it exactly the way `jpMuniGeo` would have, and `_jpWards` is dropped because the
+                     ward grouping is derived from these rows. */
+                  let rec=idx[c];
+                  if(!rec){ rec=idx[c]=jpRow(q,c); rec.__fine=1; _jpWards=null; added++; }
+                  if(!rec.__fine){ rec.__fine=1; rec.parts=[]; }
+                  if(g.type==='Polygon') rec.parts.push(g.coordinates);
+                  else if(g.type==='MultiPolygon') g.coordinates.forEach(x=>rec.parts.push(x));
                   n++; });
+                if(added) jpFineAdd+=added;
                 if(!n) return;
                 jpFineOn++;
                 jpSetUnits(idx);
@@ -2103,14 +2132,49 @@ window.IntMapModules.worldPacks=function(HOST){
          union of its wards, so the WARDS' own codes are used up by it. Without that list the wards
          would each be emitted again as a «nothing in force» grey — drawn later in the same fill
          layer, i.e. ON TOP of the warning that was just painted over them. */
+      /* ══ ⚠⚠⚠ (#R302) A DESIGNATED CITY'S WARDS ARE NOT AN ARITHMETIC RANGE ═══════════════════
+         「発令されていないのに都道府県単位で塗られてしまい、発令判定になっている市町村がある。」
+         #R273 read 「a designated city files as `PP100` and its wards are `PP101…PP199`」 out of the
+         first example it looked at, and that is true of the FIRST designated city in a prefecture
+         and of no other. MEASURED against the boundary file this layer actually reads:
+
+             横浜市 14100 → the scan took 14101–14199 = **28 keys**: 横浜's own 18 wards PLUS
+                            川崎市 (14131–14137) and 相模原市 (14151–14153)
+             静岡市 22100 → 静岡 3 + **浜松 7**   大阪市 27100 → 大阪 24 + **堺 7**
+             北九州市 40100 → 北九州 7 + **福岡 7**
+
+         So 横浜's warning was painted over 川崎 and 相模原 — and the other half of the same defect is
+         that those cities can never be painted by their OWN warning, because their codes (14130,
+         14150, 22130, 27140, 40130) do not end in `00` and fell straight through to `null`.
+         MEASURED on the live feed: **5 class20 codes in force were unplaceable for this reason**
+         (川崎市・相模原市西部/東部・浜松市南部/北部). Today both cities happen to be at the same rank,
+         which is exactly why it was invisible — it is a coin toss, not a picture.
+
+         → THE FILE ALREADY SAYS WHICH WARDS BELONG TO WHICH CITY. `N03_003` carries the 政令市 a ward
+         sits under (recorded as `.city` in `jpMuniGeo`), so the grouping is read rather than derived,
+         and the city's own JIS code is its lowest ward rounded down to the ten (14101→14100,
+         14131→14130, 27102→27100) — which is the code the JMA files under.
+         ⚠ NOT 「ends in 0」: 札幌市清田区 is 01110 and ends in 0. The grouping is by NAME, not by digit.
+         ⚠ IT STILL RETURNS THE KEYS IT CONSUMED — a designated city's shape is the union of its wards,
+         so the WARDS' own codes are used up by it. Without that list the wards would each be emitted
+         again as a «nothing in force» grey, drawn later in the same fill layer, i.e. ON TOP of the
+         warning that was just painted over them. */
+      let _jpWards=null;
+      function jpWards(idx){ if(_jpWards) return _jpWards;
+        const byCity=Object.create(null);
+        Object.keys(idx).forEach(jis=>{ const c=idx[jis]&&idx[jis].city; if(!c) return;
+          const k=jis.slice(0,2)+'|'+c; (byCity[k]=byCity[k]||[]).push(jis); });
+        const out=Object.create(null);
+        Object.keys(byCity).forEach(k=>{ const list=byCity[k].sort();
+          const code=list[0].slice(0,2)+String(Math.floor((+list[0].slice(2))/10)*10).padStart(3,'0');
+          out[code]={name:k.slice(3),wards:list}; });
+        return (_jpWards=out); }
       function jpShape(idx,code){ const jis=String(code).slice(0,5);
         if(idx[jis]) return {name:idx[jis].name,geom:multi(idx[jis].parts),used:[jis]};
-        if(/00$/.test(jis)){ const pref=jis.slice(0,2), lo=+jis.slice(2)+1, hi=+jis.slice(2)+100;
-          const parts=[], used=[]; let nm='';
-          Object.keys(idx).forEach(k=>{ if(k.slice(0,2)!==pref) return; const n=+k.slice(2);
-            if(n>=lo&&n<hi){ idx[k].parts.forEach(p=>parts.push(p)); used.push(k);
-              if(!nm) nm=String(idx[k].name||'').replace(/[市区]?$/,''); } });
-          if(parts.length) return {name:nm||jis,geom:multi(parts),used}; }
+        const c=jpWards(idx)[jis];
+        if(c&&c.wards.length){ const parts=[], used=[];
+          c.wards.forEach(k=>{ if(!idx[k]) return; idx[k].parts.forEach(p=>parts.push(p)); used.push(k); });
+          if(parts.length) return {name:c.name||jis,geom:multi(parts),used}; }
         return null; }
       const _norm=(s)=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()
         .replace(/[\s　.,\-_'’«»"]/g,'').replace(/[()]/g,'')
@@ -2298,8 +2362,22 @@ window.IntMapModules.worldPacks=function(HOST){
             Object.keys(by).forEach(cc=>{ const src=by[cc], dst=before[cc]=before[cc]||Object.create(null);
               Object.keys(src).forEach(k=>{ if(!dst[k]) dst[k]=src[k]; }); });
             SUBDIV.nuts=Promise.resolve(before); nutsFineOn=true;
+            /* ══ ⚠⚠ (#R302) …AND THE QUIET UNITS COME OUT OF THIS SAME INDEX ═══════════════════
+               #R297 raised the index the WARNINGS are placed against and left `UNITS[iso]` on the
+               20M build it was seeded with, so across 34 European countries a warned region was
+               drawn at 03M while its quiet neighbour was drawn at 20M — two simplifications of one
+               boundary, i.e. a sliver of unpainted ground along every shared edge. It is exactly the
+               mismatch #R298 removed and #R299 wrote the rule for on the Japanese side
+               (「昇格したら警報も置き直す」); this is the same rule read from the other end. */
+            nutsSetUnits(before);
             return maFeatures().then(()=>{ if(on) publish(); }); })
           .catch(()=>{ nutsFineAsked=false; }); }
+      /* rebuild the quiet units of every NUTS country that is currently drawn from this index */
+      function nutsSetUnits(by){ try{ Object.keys(NUTS_CC).forEach(iso=>{
+          if(!UNITS[iso]||UNIT_SRC[iso]!=='nuts') return;
+          const idx=by[NUTS_CC[iso]]||null;
+          const all=uniq(idx), l3=all.filter(f=>String((f.properties||{}).NUTS_ID||'').length===5);
+          const l=(l3.length?l3:all); if(l.length) setUnits(iso,l.map(f=>named(f.geometry,UNAME(f))),'nuts'); }); }catch(_){} }
       const NUTS_CC={ AUT:'AT', BEL:'BE', BGR:'BG', HRV:'HR', CYP:'CY', CZE:'CZ', DNK:'DK', EST:'EE',
         FIN:'FI', FRA:'FR', DEU:'DE', GRC:'EL', HUN:'HU', ISL:'IS', IRL:'IE', ITA:'IT', LVA:'LV',
         LTU:'LT', LUX:'LU', MLT:'MT', NLD:'NL', MKD:'MK', NOR:'NO', POL:'PL', PRT:'PT', ROU:'RO',
@@ -2371,10 +2449,11 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!(jmaAgeH!=null&&jmaAgeH<JMA_MAX_AGE_H))
           throw new Error('jma: newest bulletin is '+(jmaAgeH==null?'undated':(Math.round(jmaAgeH)+' h old')));
         /* ⚠⚠ (#R273) THE BUCKET IS THE MUNICIPALITY. class20Items ARE municipalities and class10Items
-           are the region above them; a class10 row is spread over the municipalities inside it so a
-           regional 注意報 does not leave those towns looking quiet, and a municipality's OWN row wins
-           wherever it has one. Rolling both up to the prefecture is what painted the quiet 28 % of
-           Japan in #R270. */
+           are the region above them; a class10 row fills the municipalities inside it so a regional
+           注意報 does not leave those towns looking quiet — but only the ones its own bulletin does
+           not name, because a municipality's OWN row wins wherever it has one (#R302 made that true;
+           see the measurement below). Rolling both up to the prefecture is what painted the quiet
+           28 % of Japan in #R270. */
         const kidsOf=Object.create(null);
         try{ const t20=(area&&area.class20s)||{};
           Object.keys(t20).forEach(c=>{ const r10=regionOf(c); if(!r10) return;
@@ -2385,6 +2464,29 @@ window.IntMapModules.worldPacks=function(HOST){
           if(String(at||'')>String(rec.reportedAt||'')) rec.reportedAt=at||'';
           rec.items.push(row); };
         kept.forEach(b=>{ const w=b.warning||{};
+          /* ══ ⚠⚠⚠ (#R302) THE BULLETIN'S OWN MUNICIPALITY LIST OUTRANKS ITS REGION ROW ═══════════
+             「発令されていないのに都道府県単位で塗られてしまい、発令判定になっている市町村がある。」
+             `class10Items` is the 一次細分区域 above the municipalities, and #R273 spread it over ALL
+             of them so a regional 注意報 would not leave those towns looking quiet. But THE SAME
+             BULLETIN lists those towns in `class20Items`, and for most of them it says
+             「発表警報・注意報はなし」 — which the loop below drops, so the region row could not be
+             contradicted by the agency's own municipality-level answer.
+             MEASURED on the live feed against the JMA's own map algorithm (extracted from
+             jma.go.jp/bosai/map.html, which unions every row and skips only 「解除」):
+                 青森地方気象台 VPWW61 · 020010 津軽（濃霧）  19 children, **14 say 「なし」**
+                 名瀬測候所     VPWW59 · 460040 奄美地方（波浪）13 children, **7 say 「なし」**
+                 前橋地方気象台 VPWW56 · 100010 南部（土砂）   24 children, 22 say 「なし」
+             → **21 municipalities painted with nothing at all in force**, whole regions at a time,
+             and 宮古郡多良間村 painted 土砂災害警戒情報 (rank 3, purple) when the JMA has it at 注意報.
+             ⚠ The JMA itself never does this: its map draws class10s at z4–7 and class20s at z8–11,
+             two separate layers, and never spreads one onto the other.
+             → A REGION ROW ONLY FILLS THE MUNICIPALITIES ITS OWN BULLETIN DOES NOT NAME. #R273's
+             intent survives (a town the bulletin never mentions still gets the regional warning);
+             what goes is the part that overrode the agency. MEASURED after this change, against the
+             same live file: 塗りすぎ 21 → **0**, 階級違い 1 → **0**, 塗り漏れ **0** — i.e. exactly the
+             JMA's own picture, municipality for municipality. */
+          const spoken=Object.create(null);
+          (w.class20Items||[]).forEach(a=>{ spoken[String(a.areaCode||'')]=1; });
           [['class10Items','region'],['class20Items','muni']].forEach(function(pair){
             const key=pair[0], unit=pair[1];
             (w[key]||[]).forEach(a=>{
@@ -2401,7 +2503,9 @@ window.IntMapModules.worldPacks=function(HOST){
                 const mk=(mcode)=>({ area:nameOf(mcode), sub:r10?nameOf(r10):nameOf(code),
                   adm:pn, unit:'muni', lv, tier:normOf('jma',lv), kind:kind?L.arr(kind):('#'+k.code), status:k.status });
                 if(unit==='muni'){ put(byM,code,mk(code),b.reportDatetime,pref); }
-                else if(r10&&kidsOf[r10]&&kidsOf[r10].length){ kidsOf[r10].forEach(mc=>put(byM,mc,mk(mc),b.reportDatetime,pref)); }
+                else if(r10&&kidsOf[r10]&&kidsOf[r10].length){
+                  kidsOf[r10].forEach(mc=>{ if(spoken[mc]) return;    /* (#R302) this bulletin already answers for it */
+                    put(byM,mc,mk(mc),b.reportDatetime,pref); }); }
                 else if(r10){ put(byC10,String(r10),mk(r10),b.reportDatetime,pref); }
                 put(byPref,String(pref),mk(code),b.reportDatetime,pref); }); }); }); });
         /* the municipality shapes; class10 is the fallback and the panel says which one is up */
@@ -2454,7 +2558,23 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!r.ok) throw new Error('nws '+r.status);
         const j=await r.json();
         const out=[];
-        (j.features||[]).forEach(f=>{ if(!f.geometry) return;
+        /* ══ ⚠⚠⚠ (#R302) 71.5 % OF THE FEED HAS NO GEOMETRY, AND THE COUNTER SAID 「all placed」 ══
+           MEASURED on the live feed: **281 alerts in force, 201 of them `geometry: null`** — the NWS
+           files those against UGC zone codes and leaves the shape to the client. They were dropped
+           one line below, and then `PLACED.USA=[out.length,out.length]` reported 80 of 80 with
+           `UNPL.USA=0`, so nothing anywhere said a word about the other 201.
+           The visible cost is the opposite of the rest of this round: **twelve jurisdictions with a
+           warning in force and no drawable shape** — WA(16) · OR(9) · AR(5) · CA(3) · TN · MT · MA ·
+           HI, plus Guam, the Northern Marianas, Palau and Micronesia, all of which the 「発表なし」
+           grey then covered, because the grey is drawn per unit and knows only about what was PLACED.
+           → the denominator is what the agency published. `UNPL` is the worst rank among the ones
+           this map could not draw, so the country wash and the panel both stop claiming success.
+           ⚠ THIS DOES NOT DRAW THEM. Turning a UGC code into a shape needs the NWS zone index; what
+           it stops is the map saying 「nothing in force」 where the answer is 「we could not place it」. */
+        let noGeom=0, worstNG=0;
+        (j.features||[]).forEach(f=>{ if(!f.geometry){ noGeom++;
+            try{ const n=normOf('nws',SEV3[(f.properties||{}).severity]||1); if(n>worstNG) worstNG=n; }catch(_){}
+            return; }
           const p=f.properties||{}; const lv=SEV3[p.severity]||1;
           let st=''; try{ const u=(p.geocode&&(p.geocode.UGC||p.geocode.SAME))||[]; st=String(u[0]||'').slice(0,2).toUpperCase(); }catch(_){}
           if(!/^[A-Z]{2}$/.test(st)) st=String(p.areaDesc||'').split(',').pop().trim().slice(-2).toUpperCase();
@@ -2462,7 +2582,7 @@ window.IntMapModules.worldPacks=function(HOST){
           const ft=unitFeature('USA','nws',f.geometry,'zone',p.areaDesc||p.event||'',
             [{area:p.areaDesc||'',adm:st,unit:'zone',lv,tier:normOf('nws',lv),kind:p.event||'',status:p.severity||''}],p.sent||'');
           if(ft) out.push(ft); });
-        PLACED.USA=[out.length,out.length]; UNPL.USA=0;
+        PLACED.USA=[out.length,out.length+noGeom]; UNPL.USA=noGeom?worstNG:0;
         return out; }
 
       /* ── Canada: Environment and Climate Change Canada, alert polygons, grouped by province ── */
@@ -2471,7 +2591,23 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!r.ok) throw new Error('eccc '+r.status);
         const j=await r.json(); const out=[];
         const en=()=>HOST.lang!=='fr';
+        /* ══ ⚠⚠⚠ (#R302) 「発令されていないのに塗られている」 — CANADA WAS PAINTING ENDED WARNINGS ═══
+           MEASURED on the live feed: **159 items, of which 35 carry `status_en:"ended"`** — and this
+           loop read `status` only to PRINT it. Fourteen consecutive rural municipalities across the
+           Manitoba Interlake were coloured for warnings the ECCC had already lifted. Every other
+           loader in this file already drops its agency's own word for 「over」 — `loadHKO` drops
+           CANCEL, `loadINMET` drops `encerrado`, and the relay drops CAP `msgType: cancel` — so this
+           was the one feed that showed a warning nobody was under.
+           ⚠ MATCH ON THE ENGLISH FIELD AND THE FRENCH ONE. `status_en`/`status_fr` are both present
+           on every row and the reader's language decides which one this module happens to read. */
+        let caEnded=0;
         (j.features||[]).forEach(f=>{ if(!f.geometry) return; const p=f.properties||{};
+          /* ⚠ THE FRENCH FIELD AGREES IN GENDER: MEASURED, the same 35 rows carry `terminé` (19) and
+             `terminée` (16), so an exact word is the wrong test on that side. Nothing else in this
+             feed's status vocabulary begins with 「termin」 — the whole of it is
+             ended/issued/continued and terminé(e)/émis/maintenu(e). */
+          if(/^(ended|termin)/i.test(String(p.status_en||'').trim())
+           ||/^(ended|termin)/i.test(String(p.status_fr||'').trim())){ caEnded++; return; }
           const lv=/warning/i.test(p.alert_type||'')?2:1;
           const kind=(en()?p.alert_name_en:p.alert_name_fr)||p.alert_name_en||p.alert_code||'';
           const areaN=(en()?p.feature_name_en:p.feature_name_fr)||p.feature_name_en||'';
@@ -2480,7 +2616,9 @@ window.IntMapModules.worldPacks=function(HOST){
             [{area:areaN,adm:p.province||'',unit:'zone',lv,tier:normOf('eccc',lv),kind,status:(en()?p.status_en:p.status_fr)||''}],
             p.publication_datetime||'');
           if(ft) out.push(ft); });
-        PLACED.CAN=[out.length,out.length]; UNPL.CAN=0;
+        /* (#R302) the denominator is what the feed OFFERED that is still in force, so a shape this
+           map could not draw shows up as a shortfall instead of as 「all of them, placed」 */
+        PLACED.CAN=[out.length,Math.max(out.length,(j.features||[]).length-caEnded)]; UNPL.CAN=0;
         return out; }
 
       /* ══ ONE PLACE TURNS «THE AGENCY SAID THIS UNIT» INTO A SHAPE (#R271) ═══════════════════════
@@ -2542,12 +2680,25 @@ window.IntMapModules.worldPacks=function(HOST){
             if(c&&f.geometry&&!by[c]) by[c]={name:String(q.name||c),level:'province',geometry:f.geometry}; });
           if(!Object.keys(by).length) throw new Error('cn division geometry empty');
           return by; })); }
-      /* the unit an alert id names: district → prefecture-city → province, first one that exists */
+      /* ══ ⚠⚠⚠ (#R302) THE PROVINCE RUNG WAS THE SAME LIE JAPAN'S 「県単位で塗られる」 WAS ══════════
+         「発令されていないのに都道府県単位で塗られてしまい、発令判定になっている」 — the reader wrote that
+         about Japan, and this ladder was doing it to China. A GB/T 2260 id that resolved to neither
+         its own district nor `slice(0,4)+'00'` fell all the way to the PROVINCE and painted it whole.
+         MEASURED on the live feed: `500157 重慶市両江新区` → `500100` is not in DataV's index → the
+         alert was drawn over **all 82,400 km² of 重慶市** for a district-level 大风蓝色预警 — roughly
+         **69× the ground the CMA named**. The same fall waits for every 省直轄県級行政区
+         (`429004 仙桃市` → `429000`, `469001`, `659001 石河子市`), whose `slice(0,4)+'00'` city
+         simply does not exist; they had no warning in force on the day this was measured.
+         → the province rung is gone. An id this map cannot place is COUNTED (`UNPL`) and the country
+         is washed at its rank, which is the answer this file already gives everywhere else:
+         「something is in force here and this map cannot say where」 — not a province-sized guess.
+         ⚠ THE CITY RUNG STAYS. DataV's `100000_full_city` holds 477 units and not one county, so a
+         county-level signal genuinely has no finer shape here; the panel says which unit is drawn.
+         MEASURED: 941 alerts in force resolve as district 146 / city 794 / province 1. */
       function cnUnitOf(idx,id){ const d=String(id||'').slice(0,6); if(d.length<6||!idx) return null;
-        const c=d.slice(0,4)+'00', p=d.slice(0,2)+'0000';
+        const c=d.slice(0,4)+'00';
         if(idx[d]&&idx[d].level!=='province') return {code:d,rec:idx[d]};
-        if(idx[c]) return {code:c,rec:idx[c]};
-        if(idx[p]) return {code:p,rec:idx[p]};
+        if(idx[c]&&idx[c].level!=='province') return {code:c,rec:idx[c]};
         return null; }
       const CN_PAGE=1000, CN_PAGES=2;      /* the relay states `count`; this is the bound on pages */
       let cnTotal=0;
@@ -2623,7 +2774,10 @@ window.IntMapModules.worldPacks=function(HOST){
           seenAt('hko',a.issueTime||a.updateTime);
           items.push({ area:'Hong Kong', sub:String(a.name||key), adm:'Hong Kong', unit:'territory',
             lv, tier:normOf('hko',lv), kind:String(a.name||key), status:String(a.issueTime||'') }); });
-        PLACED.HKG=[items.length?1:0,items.length?1:0];
+        /* (#R302) this loader produces no GEOMETRY — the territory is named in the panel and washed at
+           its rank by `UNPL`. Saying 「1 placed of 1」 while nothing is drawn is the same false success
+           the NWS counter was giving; the honest pair is 「none placed, one to place」. */
+        PLACED.HKG=[0,items.length?1:0];
         UNPL.HKG=items.length?normOf('hko',worst):0;
         return { items, worst }; }
 
@@ -4488,6 +4642,9 @@ window.IntMapModules.worldPacks=function(HOST){
         bom:(bomRec&&bomRec.items.length)||0, hko:(hkoRec&&hkoRec.items.length)||0,
         brazil:drawnCount('BRA'), maAll:Object.keys(MA).length,
         jmaUnit, jmaAreas, jmaPlaced, jmaQuiet,
+        /* (#R302) how many prefectures are on their own `s0010` build, and how many municipalities
+           those builds ADDED that the nationwide floor did not have at all (see `askJpFine`) */
+        jpFineOn, jpFineAdd, jpUnits:((UNITS.JPN||[]).length),
         drawn:Object.keys(drawnISO).sort(),
         placed:Object.keys(PLACED).sort().reduce((o,k)=>{ o[k]=PLACED[k].slice(); return o; },{}),
         germany:drawnCount('DEU'), philippines:drawnCount('PHL'), norway:drawnCount('NOR'),

@@ -523,20 +523,26 @@ window.IntMapModules.sun=function(HOST){
     const SRC='imsun-src'; const rad=Math.PI/180, J1970=2440588, J2000=2451545, dayMs=86400000, e=rad*23.4397;
     let panel=null, when=new Date(), busy=false, moveT=null, playing=0, bbldCache=null, bboxKey='';
     const SN=window.IntMapLang.pick(()=>HOST.lang);
-    /* ══ ⚠⚠⚠ (#R298) THE POINT THIS PANEL IS ANSWERING FOR ════════════════════════════════════════
+    /* ══ ⚠⚠⚠ (#R298→#R302) THE POINT THIS PANEL IS ANSWERING FOR ═════════════════════════════════
        「地点を選ばないといけない系のツール、押したら勝手に地図中心を選択しているものとして結果を出すの
          を辞めろ。」 Everything this panel prints is a function of ONE coordinate — the sun's altitude
        and azimuth, sunrise, noon, sunset, the direction the building shadows fall, which hemisphere's
        solstice is the short day — and all five read `GE().camera.getCenter()` directly, so the panel
        answered for wherever the camera happened to be pointing and never said that it had.
-       ⚠ THE CENTRE IS STILL THE DEFAULT, AND IT IS NOW NAMED. `site` is null until somebody hands the
-       panel a point (the tools list, the map's right-click item, the ◎ probe below), and while it is
-       null `.sun-where` says so in the reader's own language rather than leaving the numbers to be
-       read as though the reader had chosen the place. `mine` travels with the coordinate exactly as
-       it does in js/space.js's observer, so a caller cannot forget which of the two it is holding. */
+       #R298 kept the centre and NAMED it in `.sun-where`. The reader sent the sentence again:
+       「いきなり勝手に地図中心を選択しているという前提で勝手に計算して結果を表示するのを辞めろってこと。
+         まずは地点を選ばせろってこと。」 — so the fallback itself is gone, not just its silence.
+       ⚠ 「NO POINT」 IS A REAL STATE. `site` is null until somebody hands the panel a point (the tools
+       list — which asks with #R196's shared bar now — the map's right-click item, Atlas, or the ◎
+       probe below), and while it is null NOTHING is computed and NOTHING is drawn: `siteLL()` returns
+       null, the readout is blank, the shadow source is empty, and the panel asks for a tap. `mine` is
+       gone with the fallback — null and a coordinate are the two states, so nothing can confuse them. */
     let site=null;
-    function siteLL(){ if(site&&isFinite(site.lng)&&isFinite(site.lat)) return { lng:+site.lng, lat:+site.lat, mine:true };
-      try{ const c=GE().camera.getCenter(); return { lng:c.lng, lat:c.lat, mine:false }; }catch(_){ return { lng:0, lat:0, mine:false }; } }
+    /* the one sentence this panel uses to ask, in the reader's own language — the SAME English source
+       string js/map-ui.js and #R196's bar carry, so the three cannot drift apart in nine languages */
+    const _pickMsg=()=>SN('Tap the map to choose a point','地図をタップして地点を選んでください','Zum Wählen eines Punktes auf die Karte tippen','Нажмите на карту, чтобы выбрать точку','Toca el mapa para elegir un punto');
+    function hasSite(){ return !!(site&&isFinite(site.lng)&&isFinite(site.lat)); }
+    function siteLL(){ return hasSite()?{ lng:+site.lng, lat:+site.lat }:null; }
     function setSite(ll){ if(ll&&isFinite(ll.lng)&&isFinite(ll.lat)) site={ lng:+ll.lng, lat:+ll.lat }; return site; }
     /* (#R176) shared style for the three engine buttons added below */
     const SBTN='flex:1 1 auto;padding:5px 7px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;white-space:nowrap;';
@@ -593,7 +599,12 @@ window.IntMapModules.sun=function(HOST){
         bbldCache=bld; return bld; }catch(_){} }
       return bbldCache||[]; }
     async function drawShadows(){ if(busy) return; busy=true; try{ ensure();
-      const c=siteLL(); const sp=sunPos(when,c.lat,c.lng);   /* (#R298) the chosen point, or the centre — and the panel says which */
+      const c=siteLL();
+      /* ⚠ (#R302) NO POINT → NO NUMBERS AND NO SHADOW. The cast polygons are laid out along the sun's
+         bearing AT THE OBSERVER, so drawing them for the centre would be the same invented answer the
+         readout used to print, only harder to notice because it looks like geometry. */
+      if(!c){ updatePanel(null); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} busy=false; return; }
+      const sp=sunPos(when,c.lat,c.lng);
       updatePanel(sp);
       try{ if(sp.altDeg>0) GE().scene.setLight&&GE().scene.setLight({anchor:'map',position:[1.5,sp.azCompass,Math.max(1,90-sp.altDeg)],color:'#fff5e6',intensity:0.5}); else GE().scene.setLight&&GE().scene.setLight({anchor:'map',position:[1.5,0,60],color:'#213',intensity:0.25}); }catch(_){}
       if(sp.altDeg<=0.5){ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} busy=false; return; }   /* sun down → no cast shadows */
@@ -606,14 +617,15 @@ window.IntMapModules.sun=function(HOST){
       try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
     }catch(_){} busy=false; }
     function fmtT(d){ try{ return d.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}); }catch(_){ return '—'; } }
-    function updatePanel(sp){ if(!panel) return; const c=siteLL(); const st=sunTimes(when,c.lat,c.lng);
+    function updatePanel(sp){ if(!panel) return; const c=siteLL();
       /* (#R298) 「どの地点の話なのか」 — one line, above the numbers it belongs to, in every state the
-         panel has. The 'using the map’s center as the observer' wording is the one js/space.js's event
-         list already uses for the same fact, so the two cannot drift apart in nine languages. */
-      const wh=panel.querySelector('.sun-where');
-      if(wh) wh.textContent='◎ '+c.lat.toFixed(4)+', '+c.lng.toFixed(4)
-        +(c.mine?'':' · '+SN('using the map’s center as the observer','観測地点は地図の中心','Beobachter = Kartenmitte','наблюдатель — центр карты','observador: centro del mapa'));
-      const rd=panel.querySelector('.sun-read'); if(rd){ const dir=window.IntMapCompass.point(sp.azCompass,HOST.lang,8);   /* (#R289) one table, nine languages */
+         panel has. ⚠ (#R302) and one of those states is 「none yet」: with no point the line asks for
+         one and the readout stays EMPTY, instead of naming the camera's centre and printing its sun. */
+      const wh=panel.querySelector('.sun-where'), rd=panel.querySelector('.sun-read');
+      if(!c||!sp){ if(wh) wh.textContent=_pickMsg(); if(rd) rd.innerHTML=''; return; }
+      const st=sunTimes(when,c.lat,c.lng);
+      if(wh) wh.textContent='◎ '+c.lat.toFixed(4)+', '+c.lng.toFixed(4);
+      if(rd){ const dir=window.IntMapCompass.point(sp.azCompass,HOST.lang,8);   /* (#R289) one table, nine languages */
         rd.innerHTML='<b>'+(sp.altDeg>0?'☀️':'🌙')+' '+SN('Altitude','高度','Höhe','Высота','Altura')+' '+sp.altDeg.toFixed(1)+'° · '+SN('Azimuth','方位','Azimut','Азимут','Azimut')+' '+Math.round(sp.azCompass)+'° '+dir+'</b>'
           +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">'+(st.polar?SN('polar '+st.polar,st.polar==='day'?'白夜':'極夜','Polar','полярный','polar'):('🌅 '+fmtT(st.rise)+' · ☀️ '+fmtT(st.noon)+' · 🌇 '+fmtT(st.set)))+'</div>'; } }
     function setTime(d){ when=(d instanceof Date)?d:new Date(d); if(when<0||isNaN(when)) when=new Date(); syncInputs(); drawShadows();
@@ -675,20 +687,28 @@ window.IntMapModules.sun=function(HOST){
     function syncTerrBtn(){ const b=panel&&panel.querySelector('.sun-terr'); if(!b) return;
       b.style.background=terrainOn?'var(--primary-color)':'var(--input-bg)'; b.style.color=terrainOn?'#fff':'var(--text-main)'; }
     const nf=(v,d)=>Number(v).toLocaleString(undefined,{maximumFractionDigits:d==null?0:d});
-    async function drawTerrain(){ if(!terrainOn||engBusy||!ENG()) return; engBusy=true;
-      try{ const r=await ENG().shade(when,{refit:true,at:siteLL()});   /* (#R298) the sun is read at the panel's point */
+    async function drawTerrain(){ if(!terrainOn||engBusy||!ENG()) return;
+      const at=siteLL(); if(!at) return;   /* (#R302) the sun's altitude is a property of ONE point — with none there is nothing to shade */
+      engBusy=true;
+      try{ const r=await ENG().shade(when,{refit:true,at});   /* (#R298) the sun is read at the panel's point */
         if(r) engSay('⛰ '+SN('Terrain shadow','地形の影','Geländeschatten','Тень рельефа','Sombra del terreno')+': '
           +nf(r.shadedFrac*100,1)+'% '+SN('of the view','が影','der Ansicht','вида','de la vista')
           +' · '+SN('sun','太陽','Sonne','солнце','sol')+' '+nf(r.altDeg,1)+'° / '+nf(r.azDeg)+'°'
           +' · '+nf(r.cellM)+' m '+SN('cells','セル','Zellen','ячейки','celdas')+' · DEM z'+r.z);
       }catch(_){ } engBusy=false; }
     function toggleTerrain(){ terrainOn=!terrainOn; syncTerrBtn();
-      if(terrainOn){ engSay(SN('Reading the terrain…','地形を読み込み中…','Gelände wird gelesen…','Чтение рельефа…','Leyendo el terreno…')); drawTerrain(); }
+      /* (#R302) a button that quietly does nothing is the defect this round is here for — with no
+         point chosen it asks for one instead of shading the view from a sun nobody placed */
+      if(terrainOn){ if(!hasSite()){ engSay(_pickMsg()); askSite(); return; }
+        engSay(SN('Reading the terrain…','地形を読み込み中…','Gelände wird gelesen…','Чтение рельефа…','Leyendo el terreno…')); drawTerrain(); }
       else { try{ ENG()&&ENG().clear(); }catch(_){} engSay(''); } }
-    async function solsticeShade(){ if(engBusy||!ENG()) return; engBusy=true;
+    async function solsticeShade(){ if(engBusy||!ENG()) return;
+      /* (#R302) WHICH hemisphere's solstice is the short day is a question about a latitude */
+      const at=siteLL(); if(!at){ engSay(_pickMsg()); askSite(); return; }
+      engBusy=true;
       engSay(SN('Stepping through the solstice day…','冬至の1日を計算中…','Sonnenwendtag wird durchlaufen…','Расчёт дня солнцестояния…','Recorriendo el solsticio…'));
       try{
-        const at=siteLL(), lat=at.lat, y=when.getFullYear();          /* (#R298) the panel's own point */
+        const lat=at.lat, y=when.getFullYear();                       /* (#R298) the panel's own point */
         const d=new Date(y, lat>=0?11:5, 21, 12, 0, 0);               /* the SHORT day for this hemisphere */
         const r=await ENG().dayShadow(d,{refit:true,at});
         terrainOn=true; syncTerrBtn();
@@ -699,6 +719,17 @@ window.IntMapModules.sun=function(HOST){
     function endPick(){ try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null;
       try{ const P=window.IntMapPick; if(P&&P.active()) P.abort(); }catch(_){}
       try{ GE().render.canvas().style.cursor=''; }catch(_){} }
+    /* ══ ⚠ (#R302) THE PANEL ASKS FOR ITS OBSERVER — 「まずは地点を選ばせろってこと。」 ══════════════
+       Opened without a point (Atlas, a restored share link, anything that forgot), this arms #R196's
+       SHARED bar — `#im-pick-bar`, js/map-pick.js, the same crosshair every other tool asks with —
+       so the reader answers with one tap and can cancel with × or Esc. No new element and no new
+       class: the reader has twice said not to invent chrome for this.
+       ⚠ NOT `pickPoint()`. That one runs the whole-year horizon analysis, which #R299 deliberately
+       took off the opening path; this only names the observer the panel is already missing. */
+    function askSite(){ endPick();
+      try{ const P=window.IntMapPick;
+        return !!(P&&P.start&&P.start({ panel, hint:_pickMsg(),
+          onPick:(ll)=>{ setSite(ll); drawShadows(); try{ drawTerrain(); }catch(_){} } })); }catch(_){ return false; } }
     /* (#R196) the panel steps aside while the map is being tapped — see js/map-pick.js */
     function pickPoint(){ endPick();
       engSay(SN('Click the point to analyze.','解析する地点をクリックしてください。','Punkt anklicken.','Кликните точку.','Haga clic en el punto.'));
@@ -742,11 +773,13 @@ window.IntMapModules.sun=function(HOST){
       if(playing){ clearInterval(playing); playing=0; }
       try{ panel.remove(); }catch(_){} panel=null;
       if(wasOpen) open(); });
-    /* (#R298) `at` is the point the caller was given by the reader — the tools list asks for one now
-       (js/map-ui.js `_askPoint`), the map's right-click item has the coordinate it was opened on.
-       Without one the panel falls back to the camera's centre AND SAYS SO, which is the whole change:
-       the fallback is allowed to exist, it is not allowed to be silent. */
-    function open(at){ setSite(at); ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); syncTerrBtn(); drawShadows(); if(terrainOn) drawTerrain(); }
+    /* (#R298→#R302) `at` is the point the caller was given by the reader — the tools list asks for one
+       (js/map-ui.js `_askPoint`), the map's right-click item has the coordinate it was opened on, Atlas
+       resolves the place in the sentence. There is NO camera fallback left: with nothing to answer for,
+       the panel opens empty and asks. ⚠ `setSite(undefined)` KEEPS an existing point on purpose — the
+       language switch below rebuilds the panel through this same door and must not lose its subject. */
+    function open(at){ setSite(at); ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); syncTerrBtn(); drawShadows(); if(terrainOn) drawTerrain();
+      if(!hasSite()) askSite(); }
     function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } endPick();
       site=null;   /* (#R298) shutting the panel forgets its subject — the next open states its own */
       try{ ENG()&&ENG().clear(); }catch(_){} try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} try{ GE().scene.setLight&&GE().scene.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }

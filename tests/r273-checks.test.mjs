@@ -62,10 +62,20 @@ test('R273 ② Japan is drawn at the municipality, from the JMA’s own codes', 
   assert.match(s, /N03_007/, '…and keyed on the JIS code the file publishes');
   assert.match(s, /function jpShape\(idx,code\)\{ const jis=String\(code\)\.slice\(0,5\);/,
     'a class20 code’s first five digits ARE the JIS code');
-  /* a designated city files as PP100 and its wards as PP101…PP199 — the union is the city */
-  assert.match(s, /if\(\/00\$\/\.test\(jis\)\)/, 'a designated city must fall back to the union of its wards');
-  assert.match(s, /return \{name:nm\|\|jis,geom:multi\(parts\),used\}/,
-    '…and must say WHICH ward codes it consumed');
+  /* ⚠ (#R302) THIS FIXED THE ARITHMETIC, NOT THE INVARIANT. It read
+       `if(/00$/.test(jis))` — 「a designated city files as PP100 and its wards as PP101…PP199」 —
+     which is true of the FIRST designated city in a prefecture and of no other, so 横浜市's shape
+     took in 川崎市 and 相模原市 and those cities' own warnings could never be placed at all.
+     The invariant it was reaching for is what is asserted now: a designated city resolves to the
+     union of ITS OWN wards, the grouping is READ out of the boundary file rather than guessed from
+     the digits, and the resolver says which ward codes it consumed. */
+  assert.match(s, /function jpWards\(idx\)\{/, 'the ward grouping must be its own, named thing');
+  assert.match(s, /idx\[jis\]&&idx\[jis\]\.city/, '…built from the city each row says it belongs to');
+  assert.match(s, /\/市\$\/\.test\(String\(p\.N03_003\)\)/,
+    '…and a row is a ward because its N03_003 is a 市, not because of its code');
+  assert.ok(!/if\(\/00\$\/\.test\(jis\)\)/.test(s),
+    'the PP100+1…PP100+99 range scan must not come back — it swallowed the next city');
+  assert.match(s, /geom:multi\(parts\),used\}/, '…and must say WHICH ward codes it consumed');
   /* ⚠ or every consumed ward is emitted again as a «nothing in force» grey, LATER in the same
      array, i.e. painted over the warning it was just given */
   assert.match(s, /\(s\.used\|\|\[\]\)\.forEach\(k=>\{ drawn\[k\]=1; \}\)/, 'the consumed codes mark the shape drawn');
