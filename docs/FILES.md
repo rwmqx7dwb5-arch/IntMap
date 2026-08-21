@@ -116,8 +116,11 @@ map-pick.js                       地図上の1点を拾う window.IntMapPick
 map-typography.js                 このアプリの文字——どの書体が描き、どれだけの幅で出るか
 place-labels.js                   地名・海洋名ラベルと、そのローカライズ
 label-scale.js                    ラベルの大きさ window.IntMapLabelScale
+compass.js                        方位の呼び名（9言語・16方位）window.IntMapCompass
+chronos.js                        Chronos＝統一時間カーネル window.IntMapTime
 label-occlusion.js                名前を最前面に、地球の裏側のマーカーを隠す
 border-style.js                   国境線を1本にまとめるスタイル層
+coast-line.js                     海岸線・湖岸線——国境線と同じ手法で makeCoastLine()
 grid-style.js                     経緯線のスタイル層
 layer-dropdown.js                 レイヤーメニューとそのアコーディオン
 layer-favs.js                     ★を付けたレイヤーとクイックピックのチップ
@@ -161,7 +164,7 @@ beta-overlays.js                  ベータのオーバーレイ IntMapModules.b
 time-borders.js                   時間軸の上の歴史的国境 IntMapTimeBorders
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
-us-elections.js                   すべての米大統領選挙 IntMapUSElections
+us-elections.js                   すべての米大統領選挙 IntMapUSElections（州をクリックするとその州の票と選挙人）
 industry-web.js                   産業の相関 window.IntMapIndustry
 companies.js                      企業データセットと時価総額のライブ算出 IntMapCompanies
 reference-data.js                 参照データ表
@@ -301,7 +304,7 @@ precip-year.png / .json           年別の年降水量（1枚に縦積み）
 hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
 maddison.json                     マディソン・プロジェクトの歴史 GDP・人口
 data/cshapes.js                   歴史的国境
-us-elections.json / us-states.json  米大統領選挙
+us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
 religion.json / language.json     宗教・言語の分布
 osm-space.json / osm-diplo.json   宇宙基地・地上局／外交公館の全球スナップショット
 ocean-currents*.bin.gz / .json    海流の場

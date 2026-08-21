@@ -219,10 +219,11 @@ test('R276 ⑩ RainViewer animates its past frames, and its retired satellite pr
   assert.match(s, /GE\(\)\.layers\.setSourceTiles\('src-radar',tiles\)/, 'a step re-points the source');
   /* the scheme number is named for what the free tier actually returns */
   assert.match(s, /const RV_SCHEME=4;/, 'the palette is a named constant, not a magic number in a URL');
-  /* …and the clouds layer is on a source that still exists, WITH a row to switch it on */
-  assert.match(s, /const IR_SATS=\[\['clouds','Himawari_AHI_Band13_Clean_Infrared'\]/, 'clouds are GIBS clean-IR');
-  assert.match(s, /\['clouds','lyrClouds'\]/, 'and the layer finally has a row in the panel');
-  assert.match(s, /function cloudsLegendHint\(\)/, 'whose legend states the sector it does not cover');
+  /* ⚠ (#R289) THE THREE CLOUD ASSERTIONS ARE GONE BECAUSE THE LAYER IS — 「雲・赤外（実時間）」 was
+     deleted by name this round, so IR_SATS, the row and cloudsLegendHint no longer exist and a check
+     for them would call a requested deletion a regression. What #R276 was really measuring here — the
+     RainViewer player above — is untouched, and js/data-layers.js must now name none of it. */
+  assert.ok(!/IR_SATS|cloudsLegendHint|setCloudsVis|_setCloudsOpacity/.test(s), 'the deleted IR-clouds layer left something behind');
 });
 
 /* ── ⑪ nothing bypasses the one guarded weather client ────────────────────────────────────────*/

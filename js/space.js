@@ -2602,7 +2602,18 @@ window.IntMapModules.space=function(HOST){
     const NEAR_FLOOR=2.0;
     function nearFloor(){ return zoomNow()<=minZoom()+NEAR_FLOOR; }
     /* the integral, in zoom levels; `dz` is how much zoom-out the gesture just asked for */
+    /* ══ ⚠ (#R289) THE FLAT MAP DOES NOT LEAD TO SPACE ══════════════════════════════════════════
+       「Flat地図では、ズームし続ければ宇宙へ行く機能を無効に。」 The crossing is written for the
+       globe: it hands the space camera the size and the FACE the Earth had on screen (see
+       handoverRadiusPx and the axis note above), which is a statement about a sphere. On the flat
+       projection there is no such face — Web Mercator at the zoom floor is a rectangle — so the
+       gesture was arriving somewhere the map had not been.
+       ⚠ THE GAUGE GOES WITH IT, not just the trigger: a primed hint that can never fire is the
+       worse half of the defect. `leaveToMap()` is untouched, so a session that is already in space
+       and switches to flat can still come back the same way it always could. */
+    function flatProj(){ try{ return HOST.proj!=='globe'; }catch(_){ return false; } }
     function pushOut(dz){
+      if(flatProj()){ if(over){ over=0; paintGauge(0); } return; }
       if(open||!(dz>0)) return;
       if(!atFloor()){
         if(over){ over=0; }

@@ -122,8 +122,7 @@ window.IntMapLang.define('zh', {
     "lgdWindTitle":"風速",
     "lyrAOD":"氣膠／煙霾",
     "lyrClimate":"柯本氣候分類",
-    "lyrClouds":"雲・紅外線（即時）",
-    "lyrContours":"等高線",
+   "lyrContours":"等高線",
     "lyrDem":"民主指數（2023）",
     "lyrEU":"歐盟成員國",
     "lyrGDPpc":"人均 GDP",
@@ -152,8 +151,7 @@ window.IntMapLang.define('zh', {
     "lyrGrpWeather":"天氣與環境",
     "lyrHDI":"人類發展指數（2022）",
     "lyrHillshade":"地形起伏（陰影）",
-    "lyrMilSpend":"國防支出（十億美元）",
-    "lyrMilSpendGDP":"國防支出（佔 GDP %）",
+    "lyrMilSpend":"國防支出",
     "lyrNATO":"NATO 成員國",
     "lyrNightSide":"晝夜著色",
     "lyrNightSat":"夜間燈光（衛星）",
@@ -258,11 +256,11 @@ window.IntMapLang.define('zh', {
       details:"詳細資料 ↗", loadingData:"正在載入國家資料…", dataNA:"無資料", noData:"查無國家資料。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"A–Z", sortHDI:"HDI", sortMil:"軍費", elev:"海拔", bearing:"方位", presetNone:"— 請選擇 —", presetLbl:"距離預設", opacity:"不透明度", circumference:"圓周長", lblUnits:"度量單位", unitBoth:"公制＋英制", unitMetric:"僅公制", unitImperial:"僅英制", msPh:"搜尋地球上任何地點…",
       spRunway:"跑道", spGarrison:"駐軍", spOperator:"營運者", spEstd:"設立", spAircraft:"機種", spType:"類型", spCapacity:"容量", spDepth:"深度", spOutput:"產量", spReserves:"蘊藏量",
       flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 經緯格線", gridLayer:"🌐 格線與標註", widgetsBtn:"小工具", lblTempUnit:"溫度", tempBoth:"°C＋°F", tempC:"僅 °C", tempF:"僅 °F", measureBtn:"📏 測量", measureMenuBtn:"測量", measureDistBtn:"📏 距離／面積", areaBtn:"📐 面積", drawBtn:"✏️ 繪製", vol3dBtn:"🧊 立體體積", droneBtn:"🛸 無人機", radiusBtn:"⭕ 半徑", objectsBtn:"🗂 物件", mScreenshot:"地圖螢幕擷取", shareMenuBtn:"分享", shareLinkBtn:"分享／複製連結", layersBtn:"圖層 ▾",
-      ctxDropPin:"放置圖釘", ctxMeasureFrom:"從此開始測量", ctxPostHere:"發佈到社群", ctxDistFrom:"與前一個圖釘的距離", ctxCopy:"複製座標", ctxClearPins:"移除所有圖釘", ctxThisPoint:"此地點", coords:"座標", depth:"深度", climate:"氣候", tlToday:"今天", tlTitle:"時光機", tlMachine:"時光機", tl10y:"−10年", tl5y:"−5年", tlNow:"現在",
+      ctxDropPin:"放置圖釘", ctxMeasureFrom:"從此開始測量", ctxPostHere:"發佈到社群", ctxDistFrom:"與前一個圖釘的距離", ctxCopy:"複製座標", ctxClearPins:"移除所有圖釘", ctxThisPoint:"此地點", coords:"座標", depth:"深度", climate:"氣候", tlToday:"今天", tlTitle:"Chronos", tlMachine:"Chronos", tl10y:"−10年", tl5y:"−5年", tlNow:"現在",
       lblPinMode:"新聞圖釘位置", pinModeLoc:"事件發生地", pinModePub:"媒體所在地",
       lyrEEZ:"專屬經濟海域／12浬", lyrShips:"即時船舶動態", lyrPlanes:"即時航班動態", lyrSats:"即時衛星", lyrThermal:"熱異常（火點）", planesZoomHint:"放大以載入即時航班", planesAreaHint:"請放大 — 即時航班只涵蓋畫面中央區域", poiLabels:"地點、商家與設施", shipsZoomHint:"放大以載入即時船舶", aisNoKey:"即時船舶需要免費的 AISstream.io API 金鑰 — 請在設定中新增。", aisKeyLabel:"即時船舶動態（AISstream 金鑰）", aisKeyHint:"在 aisstream.io 申請免費金鑰並貼在此處即可看到即時船舶。金鑰僅儲存在這個瀏覽器中。",
       filtCiv:"民用", filtMil:"軍用", filtAll:"全部", trafficFilter:"篩選", lyrTime:"圖層日期", thermWin24:"過去 24 小時", thermWin48:"過去 48 小時", thermWin72:"過去 72 小時",
-      tabCommunity:"社群", commAdd:"＋ 新貼文", commAddArmed:"點擊地圖放置圖釘", commTitle:"標題", commBody:"分享你的觀察、問題或推論…", commPost:"發佈", commCancel:"取消", commEmpty:"目前還沒有貼文。點「＋ 新貼文」開始討論。", commComment:"留言", commLocate:"在地圖上顯示", commDelete:"刪除", commReply:"回覆", commWrite:"寫下留言…", commPostNew:"新貼文", commPlacedAt:"放置於", commSortHot:"熱門", commSortNew:"最新", commSortTop:"最高分", commSearchPh:"搜尋貼文…", commInView:"畫面範圍內", commCat:"分類", commCatAll:"全部", commEdit:"編輯", commEdited:"已編輯", commEditPost:"編輯貼文", commSaveEdit:"儲存變更", commNoMatch:"沒有符合篩選條件的貼文。", borders:"國界", compare:"比較", compareEmpty:"點選國家列以選取並比較。", coCompareEmpty:"點選企業列以選取並比較。", compareView:"顯示比較", compareClear:"清除", back:"返回", deletePin:"刪除",
+      tabCommunity:"社群", commAdd:"＋ 新貼文", commAddArmed:"點擊地圖放置圖釘", commTitle:"標題", commBody:"分享你的觀察、問題或推論…", commPost:"發佈", commCancel:"取消", commEmpty:"目前還沒有貼文。點「＋ 新貼文」開始討論。", commComment:"留言", commLocate:"在地圖上顯示", commDelete:"刪除", commReply:"回覆", commWrite:"寫下留言…", commPostNew:"新貼文", commPlacedAt:"放置於", commSortHot:"熱門", commSortNew:"最新", commSortTop:"最高分", commSearchPh:"搜尋貼文…", commInView:"畫面範圍內", commCat:"分類", commCatAll:"全部", commEdit:"編輯", commEdited:"已編輯", commEditPost:"編輯貼文", commSaveEdit:"儲存變更", commNoMatch:"沒有符合篩選條件的貼文。", borders:"國界", coastline:"海岸線與湖岸線", compare:"比較", compareEmpty:"點選國家列以選取並比較。", coCompareEmpty:"點選企業列以選取並比較。", compareView:"顯示比較", compareClear:"清除", back:"返回", deletePin:"刪除",
       satCtrlTitle:"衛星影像", satProvider:"提供者", satDate:"拍攝日期", satLatest:"最新可用", satMosaicSuffix:"無雲鑲嵌影像", satLocked:"需 API 金鑰", satPrevDay:"前一天", satNextDay:"後一天", satKeysTitle:"衛星影像（自備金鑰）", satKeyHint:"輸入 API 金鑰即可在衛星面板中使用這些提供者。金鑰僅儲存在這個瀏覽器中。", satKeyConnected:"已連線", satKeyNone:"無金鑰", satErrAuth:"{provider}：驗證失敗 — 請檢查 API 金鑰", satErrTiles:"{provider}：影像無法取得 — 已切換為替代來源",
       aiSecTitle:"AI 功能", aiSecHint:"內建 AI — 登入使用者免費（每日最多 10 次），不需要 API 金鑰。",
       aiProvider:"AI 提供者", aiModel:"模型", aiApiKey:"API 金鑰", aiKeyConnected:"已連線", aiKeyNone:"無金鑰", aiGetKey:"取得金鑰 ↗", aiOnDevice:"在 Chrome 上本機執行 — 不需要 API 金鑰。",
@@ -282,6 +280,25 @@ window.IntMapLang.define('zh', {
   /* ② the inline strings — every L(…) call site in js/*.js, keyed by its English text.
      1882 of them. A key left untranslated renders in English. */
   inline: {
+    "% of GDP": "佔 GDP %",
+    "By accession year": "依加入年份",
+    "Carbon-dioxide emissions — the country total in megatonnes a year, or the same series divided by population; switch between the two in this legend.": "二氧化碳排放量 — 全國每年的總量（百萬公噸），或同一組資料除以人口的每人排放量；可在此圖例中切換。",
+    "Chronos reaches back to 1900": "Chronos 可回溯到 1900 年",
+    "Coastlines": "海岸線",
+    "Control IntMap’s unified time": "操作 IntMap 的統一時間",
+    "Control the map’s time": "操作地圖的時間",
+    "EV": "票",
+    "No popular vote — this state’s electors were appointed by its legislature.": "沒有普選 — 這一州的選舉人由州議會指派。",
+    "No state-level return is recorded for this election.": "這次選舉沒有留下這一州的紀錄。",
+    "One colour": "單一顏色",
+    "The record does not break this state’s electors down by candidate.": "紀錄中沒有把這一州的選舉人依候選人分列。",
+    "Time zones": "時區",
+    "Total ($B)": "總額（十億美元）",
+    "Total votes cast": "總投票數",
+    "Where the map is centred (standard time)": "地圖中心所在地的標準時間",
+    "Wind from the {d} — the arrow points the way it is blowing": "{d}風 — 箭頭指向風吹去的方向",
+    "Your device": "裝置時間",
+    "Your setting": "你設定的時區",
     'Air pressure reduced to sea level — highs, lows and the storm centre.': "換算至海平面的氣壓——高壓、低壓與風暴中心。",
     'Air temperature 2 m above the ground.': "地面上方 2 公尺處的氣溫。",
     'Animate': "播放動畫",
@@ -1063,7 +1080,7 @@ window.IntMapLang.define('zh', {
     'Intercity Japan rail: real Shinkansen lines and stations, with times estimated from the operators’ published timetables (express pattern + service frequency) — not live times. Local segments use open GTFS (Transitous) where available; where none exists (e.g. Nagoya) they are distance-based estimates, marked as such. The line between stations is schematic.': "日本城際鐵路：真實的新幹線路線與車站，時間依營運者公布的時刻表推估（快車模式＋班次密度）— 並非即時時刻。地方路段在有開放 GTFS（Transitous）時採用之；沒有的地方（例如名古屋）則以距離推估並標示。站與站之間的連線為示意線。",   /* atlas-console.js */
     'International designator': "國際識別碼",   /* satellite-detail.js */
     'Interplanetary spacecraft, from JPL Horizons trajectories': "行星際探測器，依 JPL Horizons 軌跡",   /* space.js */
-    'IntMap is an interactive world atlas — and I (Atlas) can operate all of it in plain language. You can: turn on 100+ DATA LAYERS (climate, population, economy, live weather) from the Layers panel; read LIVE NEWS pinned where events happen; use the TIME MACHINE (bottom-right) to travel 1900→now; open COUNTRIES to sort & compare country data; and switch to WORKSPACE mode for movable windows. Just ask me things like: "fly to Kenya", "show the population layer", "compare Japan and Germany", "highlight the top 10 by GDP per capita", "directions from Tokyo to Osaka by train", "which countries have the highest life expectancy?", or "brief me on the South China Sea". Ask "how do I …" for any specific feature.': "IntMap 是一個互動式世界地圖集 — 而我（Atlas）可以用日常語言操作它的全部功能。你可以：從圖層面板開啟 100 種以上的資料圖層（氣候、人口、經濟、即時天氣）；閱讀釘在事件發生地的即時新聞；用時光機（右下角）從 1900 年走到現在；開啟「國家」分頁排序與比較各國資料；並切換到工作區模式使用可移動的視窗。你可以直接問我：「飛到肯亞」「顯示人口圖層」「比較日本和德國」「標出人均 GDP 前十名」「東京到大阪的鐵路路線」「哪些國家平均壽命最長？」或「幫我簡報南海情勢」。任何功能都可以問「我要怎麼…」。",   /* atlas-console.js */
+    'IntMap is an interactive world atlas — and I (Atlas) can operate all of it in plain language. You can: turn on 100+ DATA LAYERS (climate, population, economy, live weather) from the Layers panel; read LIVE NEWS pinned where events happen; use CHRONOS (bottom-right, formerly the time machine) to travel 1900→now; open COUNTRIES to sort & compare country data; and switch to WORKSPACE mode for movable windows. Just ask me things like: "fly to Kenya", "show the population layer", "compare Japan and Germany", "highlight the top 10 by GDP per capita", "directions from Tokyo to Osaka by train", "which countries have the highest life expectancy?", or "brief me on the South China Sea". Ask "how do I …" for any specific feature.': "IntMap 是一個互動式世界地圖集 — 而我（Atlas）可以用日常語言操作它的全部功能。你可以：從圖層面板開啟 100 種以上的資料圖層（氣候、人口、經濟、即時天氣）；閱讀釘在事件發生地的即時新聞；用 Chronos（右下角，舊名時光機）從 1900 年走到現在；開啟「國家」分頁排序與比較各國資料；並切換到工作區模式使用可移動的視窗。你可以直接問我：「飛到肯亞」「顯示人口圖層」「比較日本和德國」「標出人均 GDP 前十名」「東京到大阪的鐵路路線」「哪些國家平均壽命最長？」或「幫我簡報南海情勢」。任何功能都可以問「我要怎麼…」。",   /* atlas-console.js */
     'Inundated area': "淹沒範圍",   /* sims.js */
     'Invalid area': "範圍無效",   /* monitors.js */
     'isolate': "單獨顯示",   /* atlas-console.js */

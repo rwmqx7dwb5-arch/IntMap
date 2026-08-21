@@ -179,7 +179,11 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
   assert.ok(ids.every(i => /^wb/.test(i)), 'Others holds something that is not a World-Bank indicator row');
   const R254_OTHERS = ['wburb','wbelec','wbrenew','wbinfl','wbgdpgrow','wblit','wbpov','wbgini','wbtrade',
     'wbtax','wbschool','wbelecuse','wbrenelec','wbfdi','wbunemp','wbdebt','wbmanuf','wbpopgrow','wbenergy',
-    'wbtour','wbref','wbco2t','wbflfp','wbtert','wbrural','wbgni','wbaging','wbremit',
+    'wbtour','wbref','wbflfp','wbtert','wbrural','wbgni','wbaging','wbremit',
+    /* ⚠ (#R289) 'wbco2t' IS GONE FROM THIS LIST FOR THE SAME REASON 'wburban'/'wbtourism' ARE:
+       「1人当たりCO₂排出レイヤーとCO₂排出量（百万t）レイヤーは一つに統合し」. The two rows are one row
+       with a mode switch, so the QUANTITY is still on a shelf and it is the second ROW that left.
+       The check below proves the merge (both indicators, declared once, inside one entry). */
     /* ⚠ (#R266) 'wburban' and 'wbtourism' ARE GONE, BY INSTRUCTION, AND THAT IS NOT A LOSS.
        They were byte-for-byte the same World-Bank indicators as 'wburb' (SP.URB.TOTL.IN.ZS)
        and 'wbtour' (ST.INT.ARVL) with a different colour ramp — 「都市人口率と都市人口比率 %
@@ -198,6 +202,15 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
     const n = wb.split("code:'" + ind + "'").length - 1;
     assert.equal(n, 1, ind + ' is declared by exactly one layer — that is what «merged» means');
   });
+  /* (#R289) the CO₂ merge, stated the same way: both indicators are declared exactly once, and both
+     live inside ONE entry — the second half is what makes it a merge rather than a deletion. */
+  const CO2 = ['EN.GHG.CO2.MT.CE.AR5', 'EN.GHG.CO2.PC.CE.AR5'];
+  CO2.forEach((ind) => assert.equal(wb.split("code:'" + ind + "'").length - 1, 1, ind + ' must be declared exactly once'));
+  const co2i = wb.indexOf("{id:'wbco2', modes:[");
+  assert.ok(co2i > 0, 'the CO2 row must be the modal entry');
+  const co2Block = wb.slice(co2i, co2i + 1400);
+  CO2.forEach((ind) => assert.ok(co2Block.includes(ind), ind + ' is not inside the merged CO2 entry'));
+  assert.ok(!wb.includes("{id:'wbco2t'"), 'the separate total-CO2 row came back');
   /* the two indicators the World Bank retired: the API answers «not found» for these, which is
      what 「難民受入数レイヤーはデータを取得できませんでした」 was */
   /* ⚠ the DECLARATION, not the id in prose: #R266's own note has to name the archived ids to explain

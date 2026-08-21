@@ -413,9 +413,19 @@ window.IntMapModules.satellitesLive=function(HOST){
   /* One instant, every satellite. Returns the sub-satellite point plus the quantities the card
      shows — all of them computed here rather than copied from the feed, because the feed carries
      ELEMENTS, not positions. */
+  /* ⚠⚠ (#R289) THE INSTANT IS CHRONOS'S, NOT `new Date()` ═══════════════════════════════════
+     「時間で変わるものは、IntMapの統一時間にすべて合わせること。」 SGP4 takes an instant and this
+     module was passing it the wall clock, so the one layer in the app whose whole content is a
+     function of time was the one layer the time machine did not move. `IntMapTime.when()` IS the
+     wall clock while the clock is live, so nothing about a normal session changes.
+     ⚠ AND THE ELEMENT AGE IS MEASURED AGAINST THE SAME INSTANT (see elementAgeH), because the
+     honesty of this layer rests on that number: an SGP4 fix propagated ten minutes and one
+     propagated three weeks are different claims, and travelling makes the second kind common.
+     The panel already prints it; it now prints the truth about the frame being drawn. */
+  function clockNow(){ try{ const T=window.IntMapTime; if(T&&T.when) return T.when(); }catch(_){} return new Date(); }
   function propagateAll(when){
     if(!SAT) return [];
-    const t=when||new Date();
+    const t=when||clockNow();
     const gmst=SAT.gstime(t), sun=sunAt(t);
     const out=[];
     let dropped=0;
@@ -810,7 +820,7 @@ window.IntMapModules.satellitesLive=function(HOST){
     try{ const raw=(f&&f.epoch)?String(f.epoch):'';
       if(!raw) return null;
       const e=Date.parse(/[Zz]|[+-]\d\d:?\d\d$/.test(raw)?raw:(raw+'Z'));
-      return isFinite(e)?(Date.now()-e)/3600000:null; }catch(_){ return null; }
+      return isFinite(e)?(clockNow().getTime()-e)/3600000:null; }catch(_){ return null; }   /* (#R289) against the frame's own instant */
   }
 
   /* ── tooltip ───────────────────────────────────────────────────────────────────────────────── */
@@ -924,6 +934,8 @@ window.IntMapModules.satellitesLive=function(HOST){
     group:()=>group, setGroup,
     setOpacity, opacity:()=>opacity,
     reload(){ tleAt=0; return load(group).then(ok=>{ if(on) paint(); return ok; }); },
+    /* (#R289) re-propagate at the current master instant — what the clock subscriber calls */
+    refresh(){ if(on) paint(); return on; },
     pickAt, select, selected:()=>selected, get, find,
     list:()=>fixes.slice(), shown,
     /* REAL positions without turning the layer on — what the Layers-panel preview tile paints, and
@@ -937,6 +949,9 @@ window.IntMapModules.satellitesLive=function(HOST){
     /* diagnostics — Atlas and the tests read these instead of poking at the renderer (#R183: a
        GeoJSON source's data is not readable back out of MapLibre 5, so it would lie) */
     state:()=>({ on, group, catalogue:sats.length, drawn:shown().length, computed:fixes.length,
+      /* (#R289) the instant these positions are for, and how far it is from now — a reader who has
+         travelled is looking at a propagation, not at a report, and this is what says so. */
+      when:clockNow().toISOString(), clockOffsetH:+(((clockNow().getTime()-Date.now())/3600000).toFixed(2)),
       selected, opacity,
       tleAgeH:tleAt?(Date.now()-tleAt)/3600000:null, loading, err:lastErr,
       bundled, bundledSource:(bundledMeta&&bundledMeta.source)||null,

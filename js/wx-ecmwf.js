@@ -673,9 +673,13 @@
     if (!covers(ms)) return;
     setIndex(nearestTo(ms), { now: true, fromClock: true });
   }
-  /* ⚠ js/app-body.js — which DECLARES window.IntMapTime — is imported LAST (src/main.js), so the
-     kernel does not exist while this file is being evaluated. Poll for it rather than subscribing
-     into a hole: 「呼ばれていない1行」 is the shape this project has paid for four times. */
+  /* ⚠ #R288 wrote this poll because js/app-body.js — which DECLARED window.IntMapTime — is imported
+     LAST (src/main.js), so the kernel did not exist while this file was being evaluated, and
+     subscribing into a hole is 「呼ばれていない1行」, the shape this project has paid for four times.
+     ⚠ (#R289) THE KERNEL NOW LIVES IN js/chronos.js AND IS IMPORTED EARLY, so the first attempt
+     succeeds and the ladder never runs. It stays because it is what makes the claim independent of
+     import order — the thing that was true and then quietly stopped being true is exactly what a
+     retry ladder is for (#R85, #R276 追記). */
   var _clockWired = false;
   (function wireClock(n) {
     if (_clockWired) return;

@@ -31,8 +31,6 @@ const LAYERS = [
   { id: 'gxndvi', gibs: 'MODIS_Terra_NDVI_8Day', lvl: 9, ext: 'png', period: 8 },
   { id: 'gxseaice', gibs: 'GHRSST_L4_MUR_Sea_Ice_Concentration', lvl: 7, ext: 'png', period: 1 },
   { id: 'gxsstanom', gibs: 'GHRSST_L4_MUR_Sea_Surface_Temperature_Anomalies', lvl: 7, ext: 'png', period: 1 },
-  { id: 'gxaero', gibs: 'OMPS_Aerosol_Index', lvl: 6, ext: 'png', period: 1 },
-  { id: 'gxco', gibs: 'AIRS_L3_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Daily_Day', lvl: 6, ext: 'png', period: 1 },
   { id: 'gxsoil', gibs: 'AMSRU2_Soil_Moisture_SCA_Day', lvl: 6, ext: 'png', period: 1 },
 ];
 

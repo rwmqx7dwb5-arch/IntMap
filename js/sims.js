@@ -606,7 +606,7 @@ window.IntMapModules.sun=function(HOST){
     }catch(_){} busy=false; }
     function fmtT(d){ try{ return d.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}); }catch(_){ return '—'; } }
     function updatePanel(sp){ if(!panel) return; const c=GE().camera.getCenter(); const st=sunTimes(when,c.lat,c.lng);
-      const rd=panel.querySelector('.sun-read'); if(rd){ const dir=['N','NE','E','SE','S','SW','W','NW'][Math.round(sp.azCompass/45)%8];
+      const rd=panel.querySelector('.sun-read'); if(rd){ const dir=window.IntMapCompass.point(sp.azCompass,HOST.lang,8);   /* (#R289) one table, nine languages */
         rd.innerHTML='<b>'+(sp.altDeg>0?'☀️':'🌙')+' '+SN('Altitude','高度','Höhe','Высота','Altura')+' '+sp.altDeg.toFixed(1)+'° · '+SN('Azimuth','方位','Azimut','Азимут','Azimut')+' '+Math.round(sp.azCompass)+'° '+dir+'</b>'
           +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">'+(st.polar?SN('polar '+st.polar,st.polar==='day'?'白夜':'極夜','Polar','полярный','polar'):('🌅 '+fmtT(st.rise)+' · ☀️ '+fmtT(st.noon)+' · 🌇 '+fmtT(st.set)))+'</div>'; } }
     function setTime(d){ when=(d instanceof Date)?d:new Date(d); if(when<0||isNaN(when)) when=new Date(); syncInputs(); drawShadows();

@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-20): the **core** tier that
 gates a push is **6 spec files / 1.1 min**; the **whole** suite is **65 measured spec files /
 86.5 min** of serial browser time against a ceiling of 86.7 min; and `npm run test:checks` runs
-**134 Node test files** with no browser at all (counted from `package.json` on 2026-08-21; the
+**135 Node test files** with no browser at all (counted from `package.json` on 2026-08-21; the
 line above it is the 2026-08-20 measurement). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
