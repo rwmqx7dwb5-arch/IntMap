@@ -300,7 +300,10 @@ window.IntMapModules.layerSearch=function(HOST){
         const place=window.IntMapPlaceClear(inp,clr);
         const sync=()=>{ clr.style.display=inp.value?'flex':'none'; if(inp.value) place(); };
         inp.placeholder=ph(); clr.title=cl(); clr.setAttribute('aria-label',cl());
-        inp.addEventListener('input',()=>{ filter(inp.value); sync(); });
+        /* (#R290) 「入力があったり変更があったら…最上部の位置に自動的になるように」 — one helper,
+           both search boxes (window.IntMapSearchToTop, js/map-ui.js) */
+        inp.addEventListener('input',()=>{ filter(inp.value); sync();
+          try{ window.IntMapSearchToTop(box); }catch(_){} });
         inp.addEventListener('click',e=>e.stopPropagation());
         inp.addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Escape'&&inp.value){ inp.value=''; filter(''); sync(); } });
         clr.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); inp.value=''; filter(''); sync(); inp.focus(); });

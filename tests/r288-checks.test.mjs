@@ -20,7 +20,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -51,12 +51,26 @@ test('#R288 ① the hatch covers both silences, and the other three states survi
   assert.ok(!/return\s*-1;/.test(body), '#R284’s fourth state must be gone');
   /* …and the claims that are NOT the hatch are still made */
   assert.match(body, /if\(u&&!drawnISO\[c\]\)\s*return\s*10\+Math\.min\(4,u\);/, 'the unplaced-rank wash survives');
-  assert.match(body, /return\s*unitsOf\(c\)\?2:1;/, '「read and quiet」 is still its own tier');
+  /* (#R290) …and «this map holds its units» became «the unit layer is drawing it right now», because
+     the quiet collection is bounded by the view and by the zoom — a country whose units are cached
+     but off-screen has to keep the country-wide sheet or nothing would paint it. */
+  assert.match(body, /return\s*quietSet\[c\]\?2:1;/, '「read and quiet」 is still its own tier');
   /* the paint expressions still read the tier the way those states assume */
   assert.match(src, /'fill-opacity':\['case',\['==',\['to-number',\['feature-state','wpAlert'\],-1\],0\],0\.9,0\]/,
     'the hatch paints on tier 0 only');
   assert.match(src, /'fill-opacity':\['case',\['>',\['to-number',\['feature-state','wpAlert'\],-1\],0\],1,0\]/,
     'the wash paints on a positive tier only');
+  /* ══ ⚠⚠⚠ (#R290) AND THE HATCH TILE MUST NOT BE A GREY SHEET WITH LINES ON IT ════════════════
+     「灰色塗と灰色斜線が両方ある地域があるが、どうなっとんねんごら。」 The tile opened with a
+     `fillRect` in rgba(158,162,170,0.26) and stroked the diagonals over it, so 「未対応 / 未取得」
+     was drawn as grey fill PLUS lines while 「発令なし」 is grey fill alone — every hatched country
+     wearing the quiet country's appearance underneath its own. The two claims have to be visually
+     exclusive, so the tile is lines on transparent and nothing else. */
+  const h = src.indexOf('function ensureHatch(');
+  const hb = src.slice(h, src.indexOf('const HAZ', h) > h ? src.indexOf('const HAZ', h) : h + 1200);
+  assert.ok(!/fillRect\(0,0,S,S\)/.test(hb), 'the hatch tile paints no backing sheet');
+  assert.match(hb, /g\.clearRect\(0,0,S,S\);/, '…it starts transparent');
+  assert.match(hb, /g\.strokeStyle=/, '…and the diagonals are the whole signal');
 });
 
 /* ── ② 「発令なし」 is decided at the administrative unit ────────────────────────────────────── */
@@ -73,15 +87,24 @@ test('#R288 ② the quiet grey is a unit layer, under the warnings, in the same 
     'the quiet units go UNDER the warning fills, by NAME (#R277’s rule)');
   assert.match(body, /id:QFILL,type:'fill'/);
   assert.match(body, /id:QLINE,type:'line'/, 'the division is half the answer — the outline is required');
-  /* a country whose units this map holds must not ALSO get the country-wide sheet */
-  assert.match(src, /return\s*unitsOf\(c\)\?2:1;/);
+  /* a country the unit layer is drawing must not ALSO get the country-wide sheet */
+  assert.match(src, /return\s*quietSet\[c\]\?2:1;/);
   /* the unit sets are the ones the placement ladder already builds */
   const u = src.indexOf('function askUnits(');
-  const ub = src.slice(u, src.indexOf('function askUnitsGB(', u));
+  const ub = src.slice(u, src.indexOf('function askUnitsWorld(', u));
   ['jpMuniGeo()', 'cnGeo()', 'twTownGeo()', 'nutsGeo()', 'adm1Geo()'].forEach(fn =>
     assert.ok(ub.includes(fn), 'askUnits must read ' + fn));
   assert.match(src, /const GB_MAX=2;/, 'geoBoundaries is asked for at most two countries at a time');
   assert.match(src, /function askUnitsInView\(/, 'and only for countries the reader can see');
+  /* ══ ⚠⚠ (#R290) …AND THERE IS A WORLD INDEX BEFORE THAT LAST RESORT ═══════════════════════
+     MEASURED on production before this round: 95 countries were still one sheet of country-wide
+     grey and only 50 were drawn at the unit, because everything outside the five closer indexes
+     fell to geoBoundaries one country at a time. `data/admin1-world.json.gz` is 4,515 units across
+     247 countries in 2.38 MB, fetched once. */
+  assert.match(src, /const ADM1_URL='data\/admin1-world\.json\.gz';/, 'the world index is a shipped file');
+  assert.match(src, /function askUnitsWorld\(iso\)\{/, 'and askUnits falls to it before geoBoundaries');
+  assert.match(src, /DecompressionStream\('gzip'\)/, 'it is read the way the gazetteer is read');
+  assert.ok(existsSync(resolve(ROOT, 'data/admin1-world.json.gz')), 'and the file is in the repository');
 });
 
 /* ── ③ 対応国も増やせ — learned from the geometry, not written down ─────────────────────────── */
@@ -233,7 +256,9 @@ test('#R288 ⑧ the field is read as the latitude band in view, warmed before it
   const w = WX();
   assert.match(w, /return EC\(\)\.bandFor\(b\.getSouth\(\),b\.getNorth\(\)\);/);
   assert.match(w, /EC\(\)\.load\(VAR,null,band\(\)\)/);
-  assert.match(w, /if\(!EC\(\)\.bandCovers\(EC\(\)\.heldBand\(\),band\(\)\)\) load\(\);/);
+  /* (#R290) …of ITS OWN variable: more than one frame can be held now, so 「the band I have」 has to
+     name whose band it is or the wind would read the temperature's. */
+  assert.match(w, /if\(!EC\(\)\.bandCovers\(EC\(\)\.heldBand\(VAR\),band\(\)\)\) load\(\);/);
 });
 
 /* ── ⑨ わざわざ分けるな — there is no ECMWF clock ──────────────────────────────────────────── */
@@ -243,17 +268,24 @@ test('#R288 ⑨ the forecast axis is the app clock, and the separate box is gone
   assert.ok(!/ec-validtime/.test(w), '…nor its readout');
   assert.ok(!/function ensureLegend\(/.test(w), '…nor the function that made it');
   assert.match(w, /class="ecl-when"/, 'each legend states WHICH INSTANT its picture is of');
-  assert.match(w, /function openClock\(\)/);
-  assert.match(w, /window\._imTimeMachineForecast\(\)/, '…and the line opens the ONE shared control');
+  /* ══ ⚠⚠⚠ (#R290) …AND IT NO LONGER PASSES THAT INSTANT TO THE APP CLOCK ════════════════════
+     「ECMWF系レイヤーで、時間選択をChronosに受け流さなくてよい。個別の時間選択UIを使え。」
+     The half of #R288 that stays is the one it was asked for: no floating box appears by itself.
+     The half the reader has now reversed is the coupling — a forecast step used to write
+     window.IntMapTime, which dragged the news feed, the historical borders, the terminator and the
+     country statistics to that hour, and a master-clock move used to overwrite the hour the reader
+     had chosen. Neither direction exists; the hour is chosen in the layer's own legend. */
+  assert.ok(!/function openClock\(\)/.test(w), 'nothing opens Chronos on a layer’s behalf');
+  assert.match(w, /window\.IntMapWxPlayer\.timeUI\('ec-time-'\+cfg\.id,EC\(\),L\)/,
+    '…and the hour is chosen in that legend');
   /* the wind legend keeps its player — this is a consolidation, not a removal */
-  assert.match(w, /id="wind-time"/, 'the wind legend’s own view of the clock survives');
-  /* the module writes the instant into the master clock, coalesced */
+  assert.match(w, /window\.IntMapWxPlayer\.timeUI\('wind-time',E,L\)/, 'the wind legend’s own view of the clock survives');
   const e = EC();
-  assert.match(e, /C\.set\(new Date\(tms\(vt\)\), \{ allowFuture: true, source: 'ecmwf' \}\)/);
-  assert.match(e, /if \(playing\) return;[\s\S]{0,120}pushT = setTimeout\(_pushNow, 220\);/,
-    'playback does not broadcast 145 times');
-  assert.match(e, /C\.on\(_followClock\); _clockWired = true;/, '…and follows it back');
-  assert.match(e, /function _followClock\(e\)/);
+  assert.ok(!/C\.set\(new Date\(tms\(vt\)\), \{ allowFuture: true, source: 'ecmwf' \}\)/.test(e),
+    'a step does not write the master clock');
+  assert.ok(!/C\.on\(_followClock\)/.test(e), '…and the master clock does not write the axis');
+  assert.match(e, /function _followClock\(e\)/, 'the seek stays declared — Atlas can ask for it by name');
+  assert.match(e, /followClock: _followClock,/, '…and it is exported');
   /* the time machine grew the tab that makes that possible */
   const t = TL();
   assert.match(t, /const modeFc=document\.getElementById\('ntl-mode-fc'\)/);

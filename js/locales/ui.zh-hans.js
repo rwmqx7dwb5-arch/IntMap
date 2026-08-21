@@ -173,7 +173,7 @@ window.IntMapLang.define('zh-hans', {
     "lyrTFR":"总生育率",
     "lyrTemp":"气温（2 米）",
     "lyrTimeMonth":"月份",
-    "lyrWind":"风（动画）",
+    "lyrWind":"风",
     "mDone":"完成",
     "mTitleMap":"地图",
     "mTitleTools":"工具",
@@ -2277,6 +2277,7 @@ window.IntMapLang.define('zh-hans', {
     'view': "画面",   /* night-sky.js */
     'View': "检视",   /* cameras.js workspace.js */
     'View report': "检视报告",   /* monitors.js */
+    'Viewing the future': "正在检视未来",   /* news-timeline.js */
     'Viewing the past': "正在检视过去",   /* news-timeline.js */
     'Viewing the past · tap': "正在检视过去・点击",   /* news-timeline.js */
     'Viewpoint altitude': "视点高度",   /* atlas-console.js */

@@ -1199,7 +1199,18 @@ window.IntMapModules.timeZones=function(HOST){
        「no zone here」 — so it answers null until the data is in hand and the caller re-renders.
        ⚠ THE OFFSET IS STANDARD TIME. Natural Earth's `zone` is the UTC offset with no DST rules in
        it, and the option in the picker says so rather than implying a wall clock it cannot give. */
-    try{ window.IntMapTimeZones={
+    /* ══ ⚠⚠⚠ (#R290) TWO OBJECTS, ONE NAME — AND THE SECOND ONE WON ═══════════════════════════
+       「Chronosの地図中心の標準時にする機能、機能していない。」 MEASURED on the built page:
+       `Object.keys(window.IntMapTimeZones)` was **['highlight','highlighted','clear']** — the
+       #R204 accessor forty lines below this one is assigned unconditionally at module evaluation,
+       AFTER this block, so `ensure` / `ready` / `offsetAt` never existed by the time anything
+       could call them. js/news-timeline.js's `zSpec()` therefore fell to `{local:true}` for every
+       reader who chose 「地図の中心の標準時」, i.e. the option silently gave them their own device
+       clock — and the fallback was written to be silent, so nothing said so.
+       → ONE object with all five members, assigned once. The #R204 assignment below now EXTENDS
+       this one instead of replacing it, and `tests/r290` counts the members so a third assignment
+       cannot quietly win again. */
+    try{ window.IntMapTimeZones=Object.assign(window.IntMapTimeZones||{},{
       ensure:function(){ if(geo) return Promise.resolve(true);
         if(!this._p) this._p=fetch(TZURL).then(r=>r.json()).then(j=>{ geo=j; return true; }).catch(()=>{ this._p=null; return false; });
         return this._p; },
@@ -1208,7 +1219,7 @@ window.IntMapModules.timeZones=function(HOST){
         for(const f of geo.features){ const z=f.properties&&f.properties.zone;
           if(z==null||!f.geometry) continue;
           try{ if(window._imPipGeo(lng,lat,f.geometry)) return +z; }catch(_){} }
-        return null; } }; }catch(_){}
+        return null; } }); }catch(_){}
     GE().events.on('styledata',()=>{ if(on) setTimeout(()=>{ if(_imCanDraw()&&geo){ addLayers(); setVis(true); refreshTimes(); } },80); });
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-tz')) return;
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-tz';
@@ -1223,7 +1234,8 @@ window.IntMapModules.timeZones=function(HOST){
     window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-tz-lbl'); if(s) s.textContent='🕒 '+lbl(); });
     /* (#R204) the highlight as a fact the app publishes — Atlas and the E2E tests both ask it here
        rather than reading a filter expression back off the renderer. */
-    window.IntMapTimeZones={ highlight:(z)=>setHighlight(z), highlighted:()=>hlZone, clear:()=>setHighlight(null) };
+    /* ⚠ (#R290) EXTENDS — it used to REPLACE, and that is the whole of the defect above. */
+    window.IntMapTimeZones=Object.assign(window.IntMapTimeZones||{},{ highlight:(z)=>setHighlight(z), highlighted:()=>hlZone, clear:()=>setHighlight(null) });
     if(document.readyState!=='loading') setTimeout(buildUI,1000); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,1000));
   })();
 };

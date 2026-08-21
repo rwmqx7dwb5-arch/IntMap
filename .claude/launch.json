@@ -1079,6 +1079,19 @@
       ],
       "port": 4280,
       "url": "http://127.0.0.1:4280"
+    },
+    {
+      "name": "intmap-preview-r290",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4290"
+      ],
+      "port": 4290,
+      "url": "http://127.0.0.1:4290"
     }
   ]
 }

@@ -132,7 +132,7 @@ window.IntMapLang.define('jp', { ui: {
       lyrSnow:"積雪・海氷",
       lyrAOD:"エアロゾル・煙霧",
       lyrNightSat:"夜間光（衛星）",
-      lyrWind:"風（アニメーション）",
+      lyrWind:"風",
       lgdRadarTitle:"降水強度",
       lgdSSTTitle:"海面水温",
       lgdWindTitle:"風速",

@@ -25,7 +25,7 @@ window.IntMapModules.newsTimeline=function(HOST){
   (function(){
     const tl=document.getElementById('news-timeline'), tg=document.getElementById('ntl-toggle');
     const slider=document.getElementById('ntl-slider'), datePicker=document.getElementById('ntl-date');
-    const synced=document.getElementById('ntl-synced'), bigval=document.getElementById('ntl-bigval');
+    const bigval=document.getElementById('ntl-bigval');
     const badge=document.getElementById('ntl-badge'), btnNow=document.getElementById('ntl-today');
     const modeYear=document.getElementById('ntl-mode-year'), modeDate=document.getElementById('ntl-mode-date'), modeTime=document.getElementById('ntl-mode-time');
     /* (#R288) the fourth tab and its transport — see the note on `fcReady` below */
@@ -183,17 +183,10 @@ window.IntMapModules.newsTimeline=function(HOST){
         .toLocaleDateString(window.IntMapLang.locale(HOST.lang,'en-US'),{year:'numeric',month:'short',day:'numeric',timeZone:'UTC'});
     }catch(_){ return d.toLocaleDateString(); } }
     const L5=window.IntMapLang.pick(()=>HOST.lang);
-    const on=(id)=>{ try{ const c=document.getElementById(id); return !!(c&&c.checked); }catch(_){ return false; } };
     const yLabel=(y)=>HOST.lang==='jp'?(y+'年'):(''+y);
-    /* Köppen climate era covering a given year (matches window.KOPPEN_PERIODS). */
-    function kEra(y){ if(y>=1991) return '1991-2020'; if(y>=1961) return '1961-1990'; if(y>=1931) return '1931-1960'; return '1901-1930'; }
-    /* Historical-borders snapshot for a year — delegate to IntMapTimeBorders._nearest (closest snapshot, forward
-       only across a ≤20yr gap; #R94o), with a local fallback mirroring that logic. */
-    const HBY=[1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
-    function hbAt(y){ try{ const TB=window.IntMapTimeBorders; if(TB&&TB._nearest) return TB._nearest(y); }catch(_){}
-      let prev=null,next=null; for(const v of HBY){ if(v<=y){ if(prev===null||v>prev) prev=v; } else if(next===null||v<next) next=v; }
-      if(prev===null) return next!=null?next:HBY[0]; if(next===null) return prev;
-      return ((next-y)<(y-prev)&&(next-prev)<=20)?next:prev; }
+    /* (#R290) `on()`, `kEra()`, `HBY` and `hbAt()` lived here to fill the 「反映内容」 chips — the
+       Köppen era, the historical-borders snapshot and which of the year-driven layers were on.
+       That block is gone (see the note further down), and so is everything that only fed it. */
     /* localize the static chrome (title / mode buttons / back-to-now / badge / scale) */
     function localizeChrome(){
       /* ⚠ (#R289) THE NAME IS NOT TRANSLATED — it is a name. 「IntMap統一時間機能を、これより
@@ -285,28 +278,11 @@ window.IntMapModules.newsTimeline=function(HOST){
       buildScale(); buildPlayer();
       try{ refreshUI(window.IntMapTime.state()); }catch(_){}
     }
-    function buildSynced(e){ if(!synced) return;
-      const lbl='<span class="ntl-sync-lbl">'+L5('Applied','反映内容','Angewendet','Применено','Aplicado')+'</span>';
-      const chip=(dot,txt,title)=>'<span class="ntl-chip"'+(title?(' title="'+title.replace(/"/g,'&quot;')+'"'):'')+'><span class="ntl-dot '+dot+'">'+(dot==='ok'?'✓':'')+'</span>'+txt+'</span>';
-      if(e.isLive){ synced.innerHTML=lbl+'<div class="ntl-chips">'+chip('ok',L5('Live (present)','ライブ（現在）','Live (Gegenwart)','Прямой эфир','En vivo'))+'</div>'; return; }
-      const y=e.year; const within=((new Date()-e.when)/864e5)<=3660;
-      const bY=(y>hbAt(y)&&y>2010)?L5('current','現在','aktuell','текущие','actuales'):hbAt(y);
-      /* (#R103) chips live in their own row UNDER the "Applied" label so they stay compact & don't line-break awkwardly. */
-      let chips='';
-      /* (#R137) in Time mode, surface the day/night terminator as the applied-at-this-time effect. */
-      if(mode==='time') chips+=chip('ok', L5('Day/night','昼夜','Tag/Nacht','День/ночь','Día/noche')+' <b>'+_hm(e.when)+'</b>');
-      /* (#R94i) country data + map borders always follow the clock; GDP/pop are real (Maddison) up to 2018. */
-      chips+=chip('ok', L5('Countries','国データ','Länder','Страны','Países')+' <b>'+y+'</b>');
-      chips+=chip('ok', L5('Borders','国境','Grenzen','Границы','Fronteras')+' <b>'+bY+'</b>');
-      /* (#R104) News chip TEXT is now constant ("News") — the ok/amber dot (+ tooltip) conveys in/out of range, so the
-         label width never changes as the slider crosses the news-range boundary → no re-flow ("スライダーを操作しても改行しない"). */
-      chips+=chip(within?'ok':'warn', L5('News','ニュース','Nachrichten','Новости','Noticias'), within?'':L5('Out of the news range (about the last 10 years)','ニュースの対象期間外（約10年以内）','Außerhalb des News-Zeitraums (ca. 10 Jahre)','Вне диапазона новостей (последние ~10 лет)','Fuera del rango de noticias (últimos ~10 años)'));
-      if(on('dl-climate')) chips+=chip('ok','Köppen <b>'+kEra(y)+'</b>');
-      if(on('dl-nato')) chips+=chip('ok','NATO <b>'+y+'</b>');
-      if(on('dl-eu')) chips+=chip('ok','EU <b>'+y+'</b>');
-      synced.innerHTML=lbl+'<div class="ntl-chips">'+chips+'</div>';
-    }
-    window._imTimeSyncedRefresh=()=>{ try{ buildSynced(window.IntMapTime.state()); }catch(_){} };
+    /* (#R290) 「反映内容を表示する箇所はいらない」 — `buildSynced` built the 「Applied」 label and one
+       chip per time-aware subsystem. It is gone with its markup. The hook other modules poke when
+       their own year changes stays declared and does nothing, so a caller that has not been
+       rebuilt is not a TypeError (js/time-countries.js calls it defensively already). */
+    window._imTimeSyncedRefresh=()=>{};
     /* WRITE side: inputs → kernel */
     tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(window.IntMapTime.state()); }catch(_){} } _tmSyncTerminator(); };
     if(closeX) closeX.onclick=()=>{ tl.classList.add('collapsed'); _tmSyncTerminator(); };
@@ -359,7 +335,6 @@ window.IntMapModules.newsTimeline=function(HOST){
       }
       buildZones();
       const mn=+slider.min, mx=+slider.max; slider.style.setProperty('--ntl-fill',(mx>mn?((+slider.value-mn)/(mx-mn)*100):0)+'%');
-      buildSynced(e);
       /* (#R105) reflect the set year/date on the COLLAPSED Chronos button (it turns blue via .active) —
          same button, just its two label lines swap to the applied period; restored to the default on "Now". */
       try{ const ot=document.getElementById('ntl-open-t'), os=document.getElementById('ntl-open-s');
@@ -367,7 +342,17 @@ window.IntMapModules.newsTimeline=function(HOST){
           if(e.isLive){ ot.textContent='Chronos';
             os.textContent=L5('Control the map’s time','地図の時間を操作','Die Zeit der Karte steuern','Управление временем карты','Controla el tiempo del mapa'); }
           else { ot.textContent=(mode==='year')?yLabel(e.year):(mode==='time')?_hm(e.when):_dateText(e.when);
-            os.textContent=L5('Viewing the past · tap','過去を表示中 · タップ','Vergangenheit · tippen','Прошлое · нажмите','Viendo el pasado · toca'); }
+            /* ══ ⚠⚠ (#R290) THE CLOCK REACHES FORWARD, AND THE LABEL DID NOT ═══════════════════
+               「Chronosで時間を変更したとき、未来を見てるときに、『過去を表示中・タップ』と出てくる。
+                 表示変えろ。タップも書かなくていい。」
+               #R288 gave Chronos a forecast tab, so a chosen instant can be AFTER now — and this
+               line has said 「過去を表示中」 for every non-live instant since #R105, because at the
+               time there was no other kind. It reads the instant and says which side of now it is
+               on. And 「タップ」 goes: the whole element is a button, it is already labelled as
+               one, and telling a reader to tap the thing they are looking at is not information. */
+            os.textContent=(e.when.getTime()>Date.now())
+              ? L5('Viewing the future','未来を表示中','Zukunft','Будущее','Viendo el futuro')
+              : L5('Viewing the past','過去を表示中','Vergangenheit','Прошлое','Viendo el pasado'); }
         }
       }catch(_){}
     }catch(_){} _self=false; }

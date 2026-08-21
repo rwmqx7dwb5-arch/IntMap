@@ -165,19 +165,27 @@ test('R276 ⑦ a variable the feed does not publish cannot leave a dead row behi
    document (2 and 2). */
 test('R276 ⑧ the two forecast players are two views of one state, with different ids', () => {
   const w = WX();
+  /* ⚠ (#R290) THE IDS ARE BUILT, NOT WRITTEN. Every weather legend has its own discrete time
+     control again (「個別の時間選択UIを使え」), and the ECMWF ones are named after their layer —
+     `ec-time-ec-temp`, `ec-time-ec-cape`, … — so counting literal ids cannot be the instrument any
+     more. The PROPERTY it protects is stated directly instead: there is exactly ONE builder for
+     that control and exactly one wirer, so two views of one clock cannot become two clocks. */
   const ids = (w.match(/id="(ec-time|ec-validtime|wind-time|wind-validtime)"/g) || []).sort();
-  /* ⚠ (#R288) THE ECMWF CONTROL IDS ARE GONE, because the box that held them is gone: the forecast
-     axis is window.IntMapTime now and the reader moves it from the time machine
-     (「わざわざ分けるな」). The property #R276 asserted — an id is declared exactly once, so two
-     views of one clock cannot become two clocks — is unchanged; one of the views lives elsewhere. */
-  assert.deepEqual(ids, ['id="wind-time"', 'id="wind-validtime"'],
-    'each control id is declared exactly once');
+  assert.deepEqual(ids, ['id="wind-validtime"'], 'no control id is written twice as a literal');
+  assert.equal((w.match(/function _timeUI\(/g) || []).length, 1, 'ONE builder for the time control');
+  assert.equal((w.match(/function _wireTimeUI\(/g) || []).length, 1, 'ONE wirer for it');
+  assert.match(w, /window\.IntMapWxPlayer\.timeUI\('wind-time',E,L\)/, 'the wind legend uses it');
+  assert.match(w, /window\.IntMapWxPlayer\.timeUI\('ec-time-'\+cfg\.id,EC\(\),L\)/,
+    'and so does every ECMWF legend, under its own layer id');
+  assert.match(w, /<select class="ecl-timesel"/,
+    'and it is a <select>, so only a time the model publishes can be chosen');
   assert.ok(!/function buildPanel\(\)|panel\.className='tool-panel'/.test(w),
     'the second ECMWF panel — the one that duplicated them — is gone');
   assert.match(w, /return \{ open\(\)\{ if\(!anyOn\(\)\) return; activeLayers\(\)\.forEach\(l=>\{ boxFor\(l\)\.style\.display='block'; \}\); renderLegend\(\); \}/,
     'open() shows the one legend instead of building a rival');
   /* both players drive the SAME module */
-  assert.match(w, /if\(sl\) sl\.oninput=\(\)=>\{ E\.pause\(\); E\.setIndex\(\+sl\.value\); \};/, 'the wind player…');
+  assert.match(w, /if\(sel\) sel\.onchange=\(\)=>\{ E\.pause\(\); E\.setIndex\(\+sel\.value,\{now:true\}\); \};/,
+    'the one control writes the axis…');
   /* …and the other view is the time machine's forecast tab, which writes to the same axis */
   assert.match(codeOnly(read('js/news-timeline.js')),
     /if\(mode==='forecast'\)\{ const E=EC\(\); if\(E\)\{ E\.pause\(\); E\.setIndex\(\+slider\.value\); \}/, '…and the shared one');
@@ -277,7 +285,11 @@ test('R276 ⑬ movement, lifetime and trail are all real elapsed time, and the d
   assert.match(s, /function draw2D\(dt, moving\)/, 'a browser without WebGL still gets a picture…');
   assert.match(s, /for \(var b = 0; b < BUCKETS; b\+\+\)/, '…drawn in a handful of batched strokes');
   /* the budget follows the measured cost rather than a guess about the machine */
-  assert.match(s, /function govern\(\) \{[\s\S]{0,300}?if \(frameMs > 9/, 'the particle count follows the frame time');
+  /* (#R290) …with hysteresis. The thresholds were 9 ms / 4.5 ms decided every 30 frames, so a
+     machine sitting near either of them cut 18 % of its particles and put 12 % back for ever — a
+     density that pulses twice a second, which is 「点滅」 from the other side. */
+  assert.match(s, /function govern\(\) \{[\s\S]{0,300}?frameMs > 11/, 'the particle count follows the frame time');
+  assert.match(s, /want !== _verdict\) \{ _verdict = want; return; \}/, 'and it never acts on one noisy window');
 });
 
 /* ── ⑭ the palette is ONE table, and it is the one the reader asked for ───────────────────────*/
@@ -352,9 +364,13 @@ test('R276 ⑰ the prefetch is on the time change, not on the first load', () =>
    after boot, switching OFF anything not in the share hash. */
 test('R276 ⑱ a layer releases its own frame, never somebody else\'s', () => {
   const s = EC();
-  assert.match(s, /function release\(variable\) \{[\s\S]{0,500}?if \(!mine\) return false;/,
-    'release takes the variable it belongs to and refuses when the held frame is another\'s');
-  assert.match(s, /var mine = held \? \(held\.variable === variable\)/, 'the held frame decides…');
+  /* (#R290) …and «the held frame» is now «the frames it holds»: more than one variable can be in
+     hand (the wind's, and whichever raster the cursor is over — see the note on `frames`), so a
+     release drops that variable's frames and refuses when it holds none of them. */
+  assert.match(s, /function release\(variable\) \{[\s\S]{0,900}?if \(!had && !mineLoading\) return false;/,
+    "release takes the variable it belongs to and refuses when it holds none of that variable's frames");
+  assert.match(s, /frames = frames\.filter\(function \(f\) \{ return f\.variable !== variable; \}\);/,
+    'and it drops only that variable…');
   assert.match(s, /loadingKey\.indexOf\('variable=' \+ encodeURIComponent\(variable\)\) >= 0/,
     '…and when nothing is held, the load in flight does');
   assert.match(WX(), /EC\(\)\.release\(VAR\)/, 'the wind layer names itself when it lets go');

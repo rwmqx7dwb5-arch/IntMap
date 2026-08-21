@@ -152,7 +152,7 @@ window.IntMapLang.define('es', { ui: {
       lyrSnow:"Nieve y hielo",
       lyrAOD:"Aerosol / calima",
       lyrNightSat:"Luces nocturnas (satélite)",
-      lyrWind:"Viento (animado)",
+      lyrWind:"Viento",
       lgdRadarTitle:"Intensidad de lluvia",
       lgdSSTTitle:"Temp. del mar",
       lgdWindTitle:"Velocidad del viento",

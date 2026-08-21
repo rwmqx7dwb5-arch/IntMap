@@ -288,6 +288,9 @@ admin-literal.js                  admin.html の初期データ読み取り—�
 ### 3.11 `data/`
 
 ```
+admin1-world.json.gz              世界の第1級行政区画（Natural Earth 10m 由来・247か国 4,515区分・2.38 MB）。
+                                  気象警報レイヤーが「発令なし」を区分単位で塗るための索引で、警報の
+                                  形を引く最後の段でもある。生成は scripts/build-admin1.mjs
 gazetteer-world.json.gz           世界の地名の長い尾（cities1000 由来・18言語）。必要になった時に取得する
 gazetteer-phone.json.gz           携帯が取りに行くのはこちら。上のファイルの先頭 12,000 行を切り出したもの
 ecoregions_2017.geojson / .js     エコリージョン（自前ホスト）
@@ -356,7 +359,8 @@ scripts/
   engine-coupling.mjs             レンダラ脱依存のゲート
   i18n-*.mjs                      翻訳の被覆と形の監査（§10）
   eol.mjs                         ソース検査は**バイト列ではなく内容**を読む（改行はチェックアウトの性質）
-  build-*.mjs                     data/ の生成（実行時には不要）
+  build-*.mjs                     data/ の生成（実行時には不要）。`build-admin1.mjs` は Natural Earth 10m
+                                  admin-1 を 0.01°（≈1.1 km）で間引いて data/admin1-world.json.gz を書く
   run-tests.mjs / test-parallel.mjs / shard-plan.mjs / test-budget.mjs   テストの実行と予算
   backup-db.sh / restore-test.sh  DB のバックアップと隔離復元
 tests/
@@ -365,7 +369,7 @@ tests/
   tests/prod-smoke.spec.js              実 URL に対するスモーク（PROD_URL）
   tests/security.spec.js                実ブラウザでの無害化確認
   helpers/network.js              hermetic なルーティングと console の分類
-  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（129本）
+  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（135本）
   *.spec.js                       ブラウザ回帰（67本）
 .github/workflows/
   ci.yml                          PR ＋ push main ＋ 手動。静的検査＋hermetic ブラウザ試験
