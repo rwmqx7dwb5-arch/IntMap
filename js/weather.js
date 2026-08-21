@@ -63,13 +63,36 @@ window.IntMapModules=window.IntMapModules||{};
        for the ECMWF index/time events, in the control that produces them.
        ⚠ ONE DECLARATION, TWO LEGENDS. The wind box and the ECMWF boxes both build from here, which
        is the rule that keeps two views of one axis from disagreeing about which button is 「再生」. */
+    /* ══ ⚠⚠⚠ (#R302) 一つの option の中身は、軸が動かないかぎり毎回同じ文字列である ═══════════
+       「風レイヤーは品質保ったまま、起動から日時変更からすべてに至るまで爆速にしろ。」
+       この `<select>` はモデルが公表する valid time を**全件**並べる——現在およそ 109 件——ので、
+       凡例を1回組むたびに `E.fmt()` が 109 回呼ばれ、そのたびに Intl の formatter が1つできて
+       いた（js/wx-ecmwf.js の `fmt` の注記）。しかも凡例は 1 回の時刻変更で何度も描き直される：
+       `load()` の開始で1回、答えが返って1回、`time` / `play` / `meta` のたびに1回。
+       軸の同一性（本数と両端）・「現在」がどれか・言語・表示タイムゾーンが同じなら、出てくる
+       文字列は 1 文字も違わない。違うのは `selected` がどれに付くかだけなので、**中身だけ**を
+       覚えて、外側の `<option …>` は毎回組む。
+       ⚠ 表示は 1 文字も変えていない——`_optLabels` が返すのは、以前 `opt(k)` が `<option>` の中に
+       書いていた文字列そのもの。
+       ⚠ 鍵には `E.fmt` が読むものが全部入っている。`lang` と `userTZ` は利用者が設定でいつでも
+       変えられるし、`MODEL` は「これは同じ軸か」を名前でも訊いておくため。 */
+    let _optMemo=null;
+    function _optLabels(E,times,n,now,nowTxt){
+      const H=window.IM_HOST||{};
+      const k=(E.MODEL||'')+'|'+n+'|'+times[0]+'|'+times[n-1]+'|'+now+'|'+nowTxt+'|'+(H.lang||'')+'|'+(H.userTZ||'');
+      if(_optMemo&&_optMemo.k===k) return _optMemo.v;
+      const v=new Array(n);
+      for(let j=0;j<n;j++) v[j]=E.fmt(times[j])+(j===now?nowTxt:'');
+      _optMemo={k:k,v:v};
+      return v;
+    }
     function _timeUI(id,E,L){
       if(!E) return '';
       const n=E.count(); if(!n) return '';
       const i=E.index(), playing=!!E.isPlaying(), times=E.times(), now=E.nowIndex();
-      const opt=(k)=>'<option value="'+k+'"'+(k===i?' selected':'')+'>'+E.fmt(times[k])
-        +(k===now?(' · '+L('now','現在','jetzt','сейчас','ahora')):'')+'</option>';
-      let o=''; for(let k=0;k<n;k++) o+=opt(k);
+      const nowTxt=' · '+L('now','現在','jetzt','сейчас','ahora');
+      const lbl=_optLabels(E,times,n,now,nowTxt);
+      let o=''; for(let k=0;k<n;k++) o+='<option value="'+k+'"'+(k===i?' selected':'')+'>'+lbl[k]+'</option>';
       const pct=(n>1)?((i/(n-1))*100):0;
       return '<div class="ecl-player">'
         +_b('first',L('First step','最初の時刻','Erster Schritt','Первый шаг','Primer paso'),IC.first)
@@ -138,7 +161,7 @@ window.IntMapModules.wind=function(HOST){
        the sequence number of the build that scheduled it: an overtaken reveal uncovers nothing and
        removes nothing. `slot` is that derived choice now, not a counter. */
     const SLOT=[{src:'wind-field-a-src',lyr:'wind-field-a'},{src:'wind-field-b-src',lyr:'wind-field-b'}];
-    let slot=0, shownSlot=-1, fieldSeq=0, liveKey='';
+    let slot=0, shownSlot=-1, fieldSeq=0, liveKey='', liveSlot=-1;
     let on=false, raf=0, moving=false, opacity=1, renderer=null, loading=false, lastErr='';
     /* (#R293) the last field that answered, and the hour it is of — see `sampleAt` below */
     let _lastField=null, _lastFieldAt=null;
@@ -200,6 +223,16 @@ window.IntMapModules.wind=function(HOST){
       const w=shownWaiters; shownWaiters=[]; w.forEach(r=>{ try{ r(); }catch(_){} }); }
     function addField(key){
       if(!_imCanDraw()) return false;
+      /* ══ ⚠⚠ (#R302) 同じ時刻を、もう一度いちから建て直さない ═══════════════════════════════════
+         この関数の本体は無条件に remove → removeSource → addSource で、そこには
+         **タイルを取りに行っている最中のソース**も含まれる。同じ key で二度届く窓が実際にある：
+         `load()` は非同期なので、その `.then` が `ensureField(key)` に着く前に `idle` が来ると
+         そちらが先に建て（`ensureField` のはしごも `once('idle')` の側と時計の側の二本ある）、
+         あとから届いた側が同じ URL で建て直す。捨てられるのは「もうすぐ着くタイル」で、
+         `_whenSrcLoaded` の待ちも `fieldSeq` も最初からやり直しになる——時刻を変えてから色が
+         出るまでが、そのぶん丸ごと伸びる。
+         建っているものがその key のものなら、それが答えである。 */
+      if(key&&liveKey===key&&liveSlot>=0){ try{ if(GE().layers.has(SLOT[liveSlot].lyr)) return true; }catch(_){} }
       slot=(shownSlot===0)?1:0;                    /* (#R298) 「free」 means 「not the one on screen」 */
       if(!EC().registerProtocol()) return false;   /* (#R288) — see the note in weatherEC.addSlot */
       const s=SLOT[slot], url=EC().omUrl(VAR);
@@ -230,11 +263,11 @@ window.IntMapModules.wind=function(HOST){
       };
       /* (#R290) the SOURCE says when it is showing — see the note on whenSourceLoaded above */
       _whenSrcLoaded(s.src,reveal,12000);
-      liveKey=key;
+      liveKey=key; liveSlot=use;                 /* (#R302) …and WHICH slot it was built in */
       return true;
     }
     function removeField(){ SLOT.forEach(s=>{ try{ if(GE().layers.has(s.lyr)) GE().layers.remove(s.lyr); }catch(_){}
-      try{ if(GE().layers.hasSource(s.src)) GE().layers.removeSource(s.src); }catch(_){} }); liveKey='';
+      try{ if(GE().layers.hasSource(s.src)) GE().layers.removeSource(s.src); }catch(_){} }); liveKey=''; liveSlot=-1;
       /* (#R298) nothing is on screen any more, and any reveal still in flight is superseded */
       shownSlot=-1; fieldSeq++; fieldPending=false; shownWaiters=[]; }
     function setOpacity(v){ opacity=Math.max(0,Math.min(1,+v)); if(!on) return;
@@ -467,6 +500,31 @@ window.IntMapModules.wind=function(HOST){
     }
 
     /* ── the renderer ─────────────────────────────────────────────────────────────────────────*/
+    /* ══ ⚠⚠⚠ (#R302) 粒子1つが生まれ直すたびに、視野と帯を訊き直していた ═══════════════════════
+       「風レイヤーは品質保ったまま、起動から日時変更からすべてに至るまで爆速にしろ。」
+       `randomLL` は寿命の尽きた粒子ごと・画面の外へ出た粒子ごとに呼ばれる。寿命は 1.2〜3.6 s で
+       粒子は最大 6,000 なので、定常状態でも毎秒 2,500 回前後。その1回ごとに
+       `GE().camera.getBounds()` と `EC().heldBand(VAR)` を訊いていて、後者は `stateKey()` を
+       通る——つまり `Date.parse` が 2 回と `new URLSearchParams` が 2 回、粒子1つにつき。
+       ⚠ どちらの答えも **1 フレームの中では変わらない**。カメラは 1 フレームに 1 回しか動かず、
+       新しいフレームが `held` に入るのは promise の中＝`tick()` の外である。だから rAF の本体で
+       1 回だけ捨て、そのフレームで最初に呼ばれたときに 1 回だけ訊く。撒き方・撒く範囲・
+       やり直しの回数は 1 つも変えていない——同じ値を、同じ回数だけ読むのをやめただけ。
+       ⚠ rAF の外から来る経路（`resize()` → js/wx-wind.js の `ensure()` → `spawn()`）でも
+       壊れないよう、手元に無ければその場で訊く。次の rAF が捨てるので、1 フレームより長くは
+       生きない。 */
+    let _spawnCtx=null;
+    function spawnCtx(){
+      if(_spawnCtx) return _spawnCtx;
+      let b=null; try{ b=GE().camera.getBounds(); }catch(_){}
+      /* (#R297) …and inside the band that is actually loaded. While the first, narrow read is
+         the only frame in hand (see `widen`), a particle spawned outside it samples NaN and is
+         thrown away again on the next frame — so the band would look thin rather than full.
+         The check is the field's own answer, which costs one grid lookup. */
+      let hb=null; try{ hb=EC().heldBand(VAR); }catch(_){ hb=null; }
+      _spawnCtx={b:b,hb:hb};
+      return _spawnCtx;
+    }
     function ensureRenderer(){
       if(renderer) return renderer;
       renderer=window.IntMapWindGL.create(cv,{
@@ -476,12 +534,8 @@ window.IntMapModules.wind=function(HOST){
         visible:visibleLL,
         zoom:()=>{ try{ return GE().camera.getZoom(); }catch(_){ return 2; } },
         randomLL:()=>{
-          let b=null; try{ b=GE().camera.getBounds(); }catch(_){}
-          /* (#R297) …and inside the band that is actually loaded. While the first, narrow read is
-             the only frame in hand (see `widen`), a particle spawned outside it samples NaN and is
-             thrown away again on the next frame — so the band would look thin rather than full.
-             The check is the field's own answer, which costs one grid lookup. */
-          const hb=(()=>{ try{ return EC().heldBand(VAR); }catch(_){ return null; } })();
+          /* (#R302) …both of them read once per FRAME rather than once per particle — see spawnCtx */
+          const cx=spawnCtx(), b=cx.b, hb=cx.hb;
           for(let k=0;k<8;k++){
             let lo,la;
             if(b){ const w=b.getWest(),e=b.getEast(),s=Math.max(-89,b.getSouth()),n=Math.min(89,b.getNorth());
@@ -498,11 +552,16 @@ window.IntMapModules.wind=function(HOST){
       return renderer;
     }
     function resize(){ const cont=document.getElementById('map-container'); if(!cont||!renderer) return;
+      /* (#R302) a real size change re-seeds through `ensure()` → `spawn()`, from OUTSIDE the frame
+         loop — so the frame's answers are dropped here rather than reused for a view that has just
+         changed shape. Everything else about spawnCtx's window is unchanged. */
+      _spawnCtx=null;
       renderer.resize(cont.clientWidth,cont.clientHeight,Math.min(2,window.devicePixelRatio||1)); }
 
     function step(ts){
       if(!on) return;
       refreshView();
+      _spawnCtx=null;                            /* (#R302) the view and the band are asked once a frame */
       try{ renderer&&renderer.tick(ts||performance.now(),moving); }catch(_){}
       raf=requestAnimationFrame(step);
     }
@@ -938,11 +997,27 @@ window.IntMapModules.weatherEC=function(HOST){
          likely to step back, and a warmed frame costs 1.0–1.6 s against 8.7 s cold (#R276's
          measurement) — the block cache is shared, so warming the one behind is the difference
          between an instant step back and another full read. */
-      try{ const vars=activeLayers().map(c=>c.variable).concat(['wind_u_component_10m','wind_v_component_10m']);
+      /* ══ ⚠⚠⚠ (#R302) THIS WARM-UP WAS WARMING THE WHOLE PLANET, EVERY TIME ═══════════════════
+         「日時変更…に至るまで爆速にしろ。」 `prefetch` takes the bounds as its THIRD argument and
+         this call has never passed one, so js/wx-ecmwf.js `_prefetchNow` saw `band = null` and
+         `prefetchVariable(v, null)` warmed each variable in full — the globe. #R290 追記2 measured
+         what that costs when the read that follows is a latitude band: about 80 MB queued in front
+         of a step that needs 1.6 MB, and a new hour that had **still not arrived after 39 s**. The
+         wind's own call one module along already passes `band()`; this one was left behind, and it
+         is the one that runs whenever an ECMWF raster is on.
+         → the same band the read will use, obtained the way this file already obtains it. `null`
+         still means the planet, which is what a reader at world zoom is going to read anyway.
+         ⚠⚠ AND THE WIND'S TWO VARIABLES ONLY BELONG HERE WHEN THE WIND IS ON. They were appended
+         unconditionally, so a reader with only the temperature raster up paid for u AND v — two
+         more variables, the most expensive pair in the feed (the reader derives speed from both) —
+         on every single time change, for a picture that is not on the map. */
+      try{ const W=window.Wind, vars=activeLayers().map(c=>c.variable);
+        if(W&&W.on&&W.on()) vars.push('wind_u_component_10m','wind_v_component_10m');
         const i=EC().index(), n=EC().count();
+        let pb=null; try{ const b=GE().camera.getBounds(); pb=EC().bandFor(b.getSouth(),b.getNorth()); }catch(_){}
         /* ⚠ (#R290 追記2) ONE schedule survives (the call is debounced and replaces the pending one),
            so ask for the neighbour a reader is most likely to want — the next hour. */
-        EC().prefetch(vars,Math.min(n-1,i+1)); }catch(_){}
+        EC().prefetch(vars,Math.min(n-1,i+1),pb); }catch(_){}
       warmReadout();
     }
 

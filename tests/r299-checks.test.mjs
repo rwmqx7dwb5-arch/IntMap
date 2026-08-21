@@ -268,21 +268,30 @@ test('R299 ⑨ the extra 「use the map centre」 pill is gone, and the shared b
   assert.ok(/im-pick-bar/.test(read('js/map-pick.js')), 'js/map-pick.js still owns the bar');
 });
 
-test('R299 ⑨ only the three tools that cannot open without a point are asked', () => {
+/* ⚠ (#R302) THE LIST MOVED, AND THE CHECK HAD THE LIST IN IT. This named `sim.sun` as a tool that
+   must NOT ask — 「its panel can name a point itself」 — and the panel then answered for the camera's
+   centre, printed 「観測地点は地図の中心」 and drew building shadows for a place nobody chose. The
+   reader's reply: 「いきなり勝手に地図中心を選択しているという前提で勝手に計算して結果を表示するのを
+   辞めろ。まずは地点を選ばせろ」. So `sim.sun` is now in the first group and the SECOND half of the same
+   sentence — 「最初に地点選ぶ必要のないものまで全部最初に選ばせようとするな」 — is what keeps
+   `sim.terrainWater` in the second. The rule is the DISTINCTION, not either list: a tool whose whole
+   answer is a function of one coordinate asks first; a tool that has something to show without one
+   opens. */
+test('R299 ⑨ a tool whose answer IS a point asks first, and no other tool does', () => {
   const code = noComments(read('js/map-ui.js'));
   const asked = (code.match(/_askPoint\(/g) || []).length;
   /* one definition plus one call per row that needs it */
-  assert.ok(asked >= 3, '_askPoint is still used');
-  for (const id of ['sim.los', 'sim.reach', 'sim.nightSky']) {
+  assert.ok(asked >= 4, '_askPoint is still used');
+  for (const id of ['sim.los', 'sim.reach', 'sim.nightSky', 'sim.sun']) {
     const i = code.indexOf("'" + id + "'");
     assert.ok(i > 0, id + ' is still a row');
     assert.ok(/_askPoint/.test(code.slice(i, i + 400)), id + ' asks for a point');
   }
-  for (const id of ['sim.terrainWater', 'sim.sun']) {
+  for (const id of ['sim.terrainWater', 'sim.drone']) {
     const i = code.indexOf("'" + id + "'");
     assert.ok(i > 0, id + ' is still a row');
     assert.ok(!/_askPoint/.test(code.slice(i, i + 400)),
-      id + ' opens straight away — its panel can name a point itself');
+      id + ' opens straight away — it has something to show before any point is named');
   }
 });
 

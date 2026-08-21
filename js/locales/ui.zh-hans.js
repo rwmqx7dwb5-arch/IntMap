@@ -4992,5 +4992,7 @@ window.IntMapLang.define('zh-hans', {
   "The route planner is open on the map — fill in the two fields there, or say the places here.": "已在地图上开启路线指引面板——请在面板中填入起点与目的地，或在这里告诉我地点。",   /* (#R299) */
   "Where from? Give a place (or lng/lat).": "从哪里看的天空？请指定地点（或经纬度）。",   /* (#R299) */
   "Where? Give the transmitter site (place, or lng/lat).": "发射机位置在哪里？请指定地点或经纬度。",   /* (#R299) */
+  "Where? Give the point (place, or lng/lat).": "在哪里？请提供地点（地名，或经纬度）。",   /* (#R302) */
+  "Arrival times need a point — name a place, or tap the map first.": "到达时刻需要一个地点——请指定地名，或先点一下地图。",   /* (#R302) */
   }
 });
