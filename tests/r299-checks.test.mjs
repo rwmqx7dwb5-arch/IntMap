@@ -421,3 +421,24 @@ test('R299 追記 ⑭ the normalised legend note is no longer than the agency on
     'and it is not materially longer than the note that measured one line');
 });
 
+/* ── ⑯ the fine NUTS tier covers BOTH levels, because MeteoAlarm issues at either ───────────── */
+test('R299 追記2 ⑯ the NUTS upgrade fetches LEVL_2 as well as LEVL_3', () => {
+  const code = noComments(alertsModule(WP()));
+  const i = code.indexOf('function askNutsFine(');
+  assert.ok(i > 0, 'askNutsFine is still one function');
+  const f = code.slice(i, i + 1200);
+  /* MEASURED on production: Rome's centre sits inside Lazio's HOLE, and that hole is the Vatican
+     inflated by the 20M generalisation from 0.44 km² to 73.93 km² — 323 grid points with nothing
+     painted at all. Italy is the only country MeteoAlarm issues for at NUTS-2, so LEVL_3's fine
+     tier never reached it. The relation: whatever level a country's units come from, the upgrade
+     has to offer a finer build of it. */
+  assert.ok(/03M_2021_4326_LEVL_3/.test(f), 'the fine tier still upgrades LEVL_3');
+  assert.ok(/03M_2021_4326_LEVL_2/.test(f), '…and LEVL_2, which is where Italy lives');
+  /* and the FLOOR is untouched — a finer floor is what #R297 measured and rejected */
+  const g = code.indexOf('function nutsGeo(');
+  const n = code.slice(g, g + 500);
+  assert.ok(/20M_2021_4326_LEVL_2/.test(n) && /20M_2021_4326_LEVL_3/.test(n),
+    'the floor is still 20M for both levels');
+  assert.ok(!/03M/.test(n), 'and the floor does not quietly become the fine build');
+});
+

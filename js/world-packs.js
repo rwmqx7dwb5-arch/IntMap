@@ -2325,7 +2325,7 @@ window.IntMapModules.worldPacks=function(HOST){
          and a Greek island group is a blob. #R273 already moved this once (60M → 20M) for the same
          report; the sizes are published, so the next step is a measurement rather than a guess:
              LEVL_3   20M 1.68 MB · 10M 2.58 MB · 03M 6.77 MB · 01M 28.18 MB
-             LEVL_2   20M 0.72 MB · 10M 1.21 MB
+             LEVL_2   20M 0.69 MB · 10M 1.21 MB · 03M 3.97 MB   (#R299 追記2 measured the third)
          → 20M stays the FLOOR and 03M is fetched for the countries the reader is actually looking
            at once they are past `UNIT_HIRES_Z` — the same two-tier rule #R293 wrote for the quiet
            units, applied to the index the warnings themselves are placed against. Both are cached
@@ -2352,13 +2352,40 @@ window.IntMapModules.worldPacks=function(HOST){
       /* the finer tier — one file, and only when the reader is close enough for it to be a
          different picture. `nutsFineOn` is what `mkey` reads. */
       let nutsFineOn=false, nutsFineAsked=false;
+      /* ══ ⚠⚠⚠ (#R299 追記2) 「何も発令されていないのに、灰色に塗られていない場所がある。」— ROME ═══════
+         The one place in Europe that measured EMPTY. Production, z9, a 0.005° grid over Lazio:
+         **323 points return nothing from `wp-alert-fill`**, in a bbox of **12.95 km × 9.48 km**, and
+         the same 323 points at z11 — so it is not tile simplification. `wp-alert-choro` and
+         `wp-alert-hatch` do hit those points, but ITA's `feature-state.wpAlert` is **2**, which is the
+         transparent default in one and 0 opacity in the other: **nothing is painted there at all.**
+         Read out of the shipped geometry rather than guessed: Rome's centre is inside Lazio's OUTER
+         ring and inside its **hole**. Lazio is the only Italian feature with a hole, and across the
+         whole published collection (3,384 features, 94 holes) it is **the only hole with nothing
+         inside it** — every other one contains a separate unit, which is what a hole is for.
+         The hole is the Vatican, and it is the GENERALISATION that is wrong, not IntMap: the same
+         ring, to nine decimals, is in Eurostat's file.
+             NUTS_RG_**20M**_2021_4326_LEVL_2   Vatican hole **73.93 km²**  ← Rome's centre is inside
+             NUTS_RG_**03M**_2021_4326_LEVL_2   Vatican hole  **1.66 km²**  ← Rome's centre is outside
+             NUTS_RG_**01M**_2021_4326_LEVL_2   Vatican hole  **0.50 km²**   (the real one is 0.44)
+         168× too big, swallowing the historic centre.
+         ⚠ WHY ONLY ITALY. #R297 built the fine tier for **LEVL_3**, and MeteoAlarm issues for Italy
+         at the REGION — NUTS-**2**. Every other country's units come through LEVL_3 and are healed
+         when 03M lands; Italy had no path off 20M at all. The same hole is in 20M LEVL_3 and does
+         self-heal there, which is exactly why the symptom is Italy-shaped.
+         → the fine tier fetches BOTH levels. 03M LEVL_2 is **3.97 MB**, `bndJSON`-cached like its
+         sibling, and asked for only past `UNIT_HIRES_Z` — the floor is untouched. */
       function askNutsFine(){
         if(nutsFineAsked||!SUBDIV.nuts) return; nutsFineAsked=true;
-        Promise.all([SUBDIV.nuts,bndJSON(NUTS_BASE+'NUTS_RG_03M_2021_4326_LEVL_3.geojson')])
-          .then(([by,j])=>{ const before=Object.create(null);
+        Promise.all([SUBDIV.nuts,
+                     bndJSON(NUTS_BASE+'NUTS_RG_03M_2021_4326_LEVL_3.geojson'),
+                     bndJSON(NUTS_BASE+'NUTS_RG_03M_2021_4326_LEVL_2.geojson')])
+          .then(([by,j,j2])=>{ const before=Object.create(null);
             /* the finer feature WINS for a name both files carry, so this rebuilds the index with
-               03M first and the 10M entries filling whatever it does not name */
+               03M first and the 10M entries filling whatever it does not name.
+               ⚠ LEVL_3 IS INDEXED FIRST and LEVL_2 second, because `nutsIndex` keeps the first
+               feature it sees for a name — the order that was already true of the coarse pair. */
             nutsIndex(before,j);
+            nutsIndex(before,j2);
             Object.keys(by).forEach(cc=>{ const src=by[cc], dst=before[cc]=before[cc]||Object.create(null);
               Object.keys(src).forEach(k=>{ if(!dst[k]) dst[k]=src[k]; }); });
             SUBDIV.nuts=Promise.resolve(before); nutsFineOn=true;
