@@ -393,8 +393,20 @@
     for (var i = 0; i < frames.length; i++) if (frames[i].key === key && bandCovers(frames[i].band, band)) return frames[i];
     return null;
   }
+  /* ══ ⚠⚠⚠ (#R299) THE LIST HAD AN LRU IN IT AND WAS BEING EMPTIED BY HAND EVERY TIME ═══════════
+     「風レイヤーが重すぎる。品質保ったまま、起動から日時変更からすべてに至るまで爆速にしろ。」
+     This dropped every frame of the SAME VARIABLE whatever hour it was of, so the list #R290 built
+     to hold several frames never held more than one per variable — and 「one hour forward, then
+     back again」 re-decoded the hour it had just had in hand, every single time. READ FROM THE
+     CODE: a step forward and a step back is TWO reads before this line changed and ONE after it,
+     and every later return to an hour already visited is free.
+     → only what has actually been REPLACED goes: the same `key` (same variable AND same valid
+     time) whose band the new frame COVERS. Everything else is the LRU's business, and the LRU is
+     the loop below — untouched, on the budget #R290 measured. Nothing about any picture changes;
+     what changes is whether the bytes have to arrive again.
+     ⚠ `held = frames[0]` still means 「the one that landed last」. */
   function keepFrame(f) {
-    frames = [f].concat(frames.filter(function (x) { return !(x.variable === f.variable); }));
+    frames = [f].concat(frames.filter(function (x) { return !(x.key === f.key && bandCovers(f.band, x.band)); }));
     var n = 0;
     for (var i = 0; i < frames.length; i++) { n += frameSize(frames[i]); if (n > FRAME_SAMPLES && i > 0) { frames.length = i; break; } }
     held = frames[0] || null;
@@ -512,6 +524,19 @@
       return serial(function () {
         /* the queue may have been waiting a while — if the reader has moved on, so have we */
         var h3 = frameCovering(key2, band); if (h3) return h3;
+        /* ══ ⚠⚠⚠ (#R299) 「THE READER HAS MOVED ON」 IS ALSO TRUE OF A READ THAT WAS OVERTAKEN ══════
+           `seq` was consulted only AFTER the bytes had arrived (see the `if (seq === mine)` below),
+           so a request a newer one had already superseded still spent its ranged requests, its
+           decode and — the part that costs everyone else — its turn in this ONE queue, before being
+           thrown away. READ FROM THE CODE: dragging the slider across twenty steps enqueued twenty
+           full reads and nineteen of them were for pictures nobody would ever see; the hour the
+           reader stopped on was last in line behind all of them. Now those nineteen cost nothing.
+           ⚠ IT MUST NOT ANSWER `null`. js/weather.js reads a falsy answer as 「the data is
+           unavailable」 and starts the FAIL_MS ladder that ends in a toast (#R298). Any frame of
+           this variable is 「a superseded picture is still a picture that loaded」, which is the
+           rule stated below for the reads that DID complete; which hour is current is decided by
+           the caller through `sampler()`, and that is keyed on the hour. */
+        if (seq !== mine) return frames.filter(function (x) { return x.variable === variable; })[0] || null;
         var warm = Promise.resolve();
         if (band) {
           var rd = inst.omFileReader;
@@ -943,33 +968,74 @@
      under the labels, the borders and the tools, which is the Windy arrangement. `before()` returns
      the first layer after the night stack; `lift()` re-applies it, because js/night-side.js re-adds
      its own layers on a timer and each re-add would otherwise put the sheet back on top. */
-  function _layerIds() {
-    try { return ((window.IntMapGeoEngine.scene.getStyle() || {}).layers || []).map(function (l) { return l.id; }); }
-    catch (_) { return []; }
+  /* ══ ⚠⚠ (#R299) THE STYLE IS SERIALISED ONCE PER STYLE, NOT ONCE PER CALL ═════════════════════
+     「風レイヤーが重すぎる。…すべてに至るまで爆速にしろ。」 — `getStyle()` SERIALISES THE WHOLE
+     STYLE: every layer's paint and layout, every source, the sprite and the glyph URL. And it sat
+     on the path that runs on EVERY `idle` — js/weather.js lifts both wind slots and both slots of
+     every ECMWF raster that is switched on, so a map with the wind and two rasters up rebuilt the
+     whole style object SIX times after every pan, every zoom and every tile settle. None of those
+     rebuilds can change the answer, because the answer only changes when the STYLE changes.
+     MapLibre says exactly when that is: `styledata` fires after a basemap swap AND after any
+     addLayer / removeLayer / moveLayer, from inside the same render pass that ends in `idle` — so
+     a list an idle handler reads is never one frame behind the map it is describing.
+     ⚠ A CACHE MUST NOT OUTLIVE ITS STYLE. The subscription is the invalidation, and there is no
+     cache at all until there is a subscription to invalidate it. For the one window the event does
+     not cover — between a layer being added or removed and the next render — `_hasLayer` is the
+     O(1) second answer (`getLayer` is a map lookup, not a serialisation), so neither `before()` nor
+     `lift()` can hand back an id the style no longer has. */
+  var _lys = null, _ids = null, _idsHooked = false;
+  function _idsDrop() { _lys = null; _ids = null; }
+  function _styleLayers() {
+    if (_lys) return _lys;
+    var ls = null;
+    try { ls = (window.IntMapGeoEngine.scene.getStyle() || {}).layers || null; } catch (_) { ls = null; }
+    if (!ls || !ls.length) return [];                   /* nothing to describe — ask again next time */
+    if (!_idsHooked) { try { window.IntMapGeoEngine.events.on('styledata', _idsDrop); _idsHooked = true; } catch (_) {} }
+    if (!_idsHooked) return ls;                         /* no invalidation signal, therefore no cache */
+    _lys = ls; _ids = null;
+    return _lys;
   }
+  function _layerIds() {
+    if (_ids) return _ids;
+    var ls = _styleLayers();
+    if (!ls.length) return [];
+    var out = ls.map(function (l) { return l.id; });
+    if (_lys === ls) _ids = out;                        /* …only alongside the list it was built from */
+    return out;
+  }
+  function _hasLayer(id) { try { return !!window.IntMapGeoEngine.layers.has(id); } catch (_) { return false; } }
   var OURS = /^(wind-field-|ec-)/;
   function firstSymbolId() {
-    try {
-      var ls = (window.IntMapGeoEngine.scene.getStyle() || {}).layers || [];
-      for (var i = 0; i < ls.length; i++) if (ls[i].type === 'symbol') return ls[i].id;
-    } catch (_) {}
+    var ls = _styleLayers();
+    for (var i = 0; i < ls.length; i++) if (ls[i].type === 'symbol') return ls[i].id;
     return undefined;
   }
+  var _beforeRe = false;
   function before() {
     var ids = _layerIds(), last = -1, i;
     for (i = 0; i < ids.length; i++) if (ids[i].indexOf('im-night') === 0) last = i;
-    if (last >= 0) for (i = last + 1; i < ids.length; i++) { if (OURS.test(ids[i])) continue; return ids[i]; }
+    if (last >= 0) for (i = last + 1; i < ids.length; i++) { if (OURS.test(ids[i])) continue;
+      /* (#R299) …and the anchor is still in the style: `addLayer(…, <a layer that has gone>)`
+         throws, so a list that predates a removal is rebuilt ONCE — from the live style, which is
+         the best answer there is — rather than handed on. `_beforeRe` keeps that to once. */
+      if (_beforeRe || _hasLayer(ids[i])) return ids[i];
+      _idsDrop(); _beforeRe = true;
+      try { return before(); } finally { _beforeRe = false; } }
     return firstSymbolId();
   }
   function lift(layerId) {
     try {
       var ids = _layerIds();
       var wi = ids.indexOf(layerId);
-      if (wi < 0) return false;
+      /* (#R299) not in the list is either 「not in the style」 or 「the list predates the add」, and
+         one O(1) lookup tells them apart — see the note above. */
+      if (wi < 0) { if (!_hasLayer(layerId)) return false;
+        _idsDrop(); ids = _layerIds(); wi = ids.indexOf(layerId); if (wi < 0) return false; }
       var ni = -1;
       for (var i = 0; i < ids.length; i++) if (ids[i].indexOf('im-night') === 0) ni = i;
       if (ni <= wi) return false;                       /* already above the shading */
       window.IntMapGeoEngine.layers.move(layerId, before());
+      _idsDrop();                                       /* (#R299) the order just changed under it */
       return true;
     } catch (_) { return false; }
   }

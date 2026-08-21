@@ -193,7 +193,7 @@ test('R290 ⑥ the quiet units are bounded by the view and by the zoom, and the 
   /* ⚠ THE COUNTRY-WIDE SHEET HAS TO KNOW. Tier 2 means 「the unit layer is drawing this country」;
      if it meant 「its shapes are cached」, a country whose units are off-screen would be painted by
      nobody at all. */
-  assert.match(src, /return quietSet\[c\]\?2:1;/);
+  assert.match(src, /return\s*\(?[^;]*quietSet\[c\][^;]*\?\s*2\s*:\s*1;/);
   assert.ok(!/return unitsOf\(c\)\?2:1;/.test(src), 'the cache-based test must be gone');
   assert.match(src, /function refreshQuietSet\(\)\{/, 'the set is computed in one place…');
   assert.match(src, /if\(!_imCanDraw\(\)\)\{ quietSet=Object\.create\(null\); quietList=\[\]; return false; \}/,

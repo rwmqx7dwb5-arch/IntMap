@@ -1620,7 +1620,6 @@ window.IntMapLang.define('fr', { ui: {
   "in ": "dans ",
   "in eclipse": "en éclipse",
   "In eclipse": "En éclipse",
-  "In force now": "En vigueur actuellement",
   "in-window verified events": "événements vérifiés dans la fenêtre",
   "incl.": "incl.",
   "Inclination": "Inclinaison",
@@ -4242,13 +4241,11 @@ window.IntMapLang.define('fr', { ui: {
   "by state": "par État",
   "by warning area": "par zone d’alerte",
   "Colours": "Couleurs",
-  "Colours are the issuing agency’s own — Japan’s are the JMA’s yellow / red / magenta / black, China’s the CMA’s four signal colours, and the rest the CAP awareness ladder. Tap a country for that agency’s exact scale.": "Les couleurs sont celles du service émetteur : au Japon le jaune / rouge / magenta / noir de la JMA, en Chine les quatre couleurs de signal du CMA, ailleurs l’échelle CAP. Touchez un pays pour son échelle exacte.",
   "Danger": "Danger",
   "Danger warning": "Avertissement de danger",
   "Delayed": "En retard",
   "Diagnostics": "Diagnostics",
   "Each agency’s own published scale": "Échelle publiée par chaque service",
-  "Each agency’s ranks are mapped onto these four by IntMap. Two countries at the same step do NOT necessarily face the same danger — the warning systems themselves differ. Tap a country for its own agency’s scale.": "Conversion propre à IntMap : un même niveau ne signifie PAS un même danger — les systèmes d’alerte diffèrent. Touchez un pays pour l’échelle de son service.",
   "Each country is drawn from its own agency, at the unit that agency issues for. Educational display — follow the official authorities.": "Chaque pays provient de son propre service, dans les unités qu’il utilise. Affichage à titre indicatif : suivez les autorités officielles.",
   "Europe — MeteoAlarm": "Europe — MeteoAlarm",
   "every 30 s": "toutes les 30 s",
@@ -4263,7 +4260,6 @@ window.IntMapLang.define('fr', { ui: {
   "lower rank": "niveau inférieur",
   "No feed connected": "Aucun flux raccordé",
   "Nothing in force": "Rien en vigueur",
-  "Nothing in force in any connected service right now.": "Aucune alerte en vigueur dans les services raccordés.",
   "Nothing in force right now — this country’s service was read and had nothing to publish.": "Rien en vigueur : le service de ce pays a bien été lu et n’avait rien à publier.",
   "Official": "Officielles",
   "oldest feed": "flux le plus ancien",
@@ -4281,7 +4277,6 @@ window.IntMapLang.define('fr', { ui: {
   "The clock is the newest item in that feed, not how long ago it was fetched. A national service with nothing to publish is quiet, not broken.": "L’heure indiquée est celle de l’élément le plus récent du flux, pas celle du téléchargement. Un service qui n’a rien à publier est silencieux, pas en panne.",
   "This agency’s own ranks": "Niveaux propres à ce service",
   "Ultra": "Ultra",
-  "What is in force now": "En vigueur actuellement",
   "Yellow (III)": "Jaune (III)",
   "Air quality": "Qualité de l’air",
   "Amount to pour": "Quantité à verser",
@@ -4897,4 +4892,13 @@ window.IntMapLang.define('fr', { ui: {
   "Find routes": "Rechercher des itinéraires",   /* (#R298) */
   "Tap the map to choose a point": "Touchez la carte pour choisir un point",   /* (#R298) */
   "The map is not ready to choose a point yet": "La carte n’est pas encore prête pour choisir un point",   /* (#R298) */
+  "Countries at Danger or above": "Pays au niveau Danger ou au-dessus",   /* (#R299) */
+  "No country is at Danger or above right now.": "Aucun pays n’atteint le niveau Danger actuellement.",   /* (#R299) */
+  "IntMap’s own conversion — the same step is not the same danger. Tap a country for its agency’s scale.": "Conversion propre à IntMap — un même niveau n’est pas le même danger. Touchez un pays pour l’échelle de son service.",   /* (#R299) */
+  "Each agency’s own colours. Tap a country for its exact scale.": "Couleurs propres à chaque service. Touchez un pays pour son échelle exacte.",   /* (#R299) */
+  "No point placed yet": "Aucun point n’est encore placé",   /* (#R299) */
+  "Place the point on the map": "Placer le point sur la carte",   /* (#R299) */
+  "The route planner is open on the map — fill in the two fields there, or say the places here.": "Le planificateur d’itinéraire est ouvert sur la carte — remplissez-y les deux champs, ou indiquez les lieux ici.",   /* (#R299) */
+  "Where from? Give a place (or lng/lat).": "Depuis où ? Indiquez un lieu (ou lng/lat).",   /* (#R299) */
+  "Where? Give the transmitter site (place, or lng/lat).": "Où ? Indiquez l’emplacement de l’émetteur (lieu ou lng/lat).",   /* (#R299) */
 } });

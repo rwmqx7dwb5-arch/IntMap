@@ -293,6 +293,7 @@ session-tabs.js                   タブバーと、その裏の OS 登録と、
 keyboard-shortcuts.js             キーボードと、それを一覧するカード
 onboarding.js                     ウェルカムカード・案内デモ・進捗コントロール
 screenshot.js                     スクリーンショットのボタン
+sidebar-style.js                  左サイドバーの材質（不透明／フロスト2種）と、フロスト時にカメラへ渡す左 inset
 search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード
 compare.js                        並べて／スワイプで比べる地図 IntMapCompare
 playground.js                     Playground (beta) IntMapModules.playground

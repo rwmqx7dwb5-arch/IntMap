@@ -2112,7 +2112,9 @@ window.IntMapModules.atlasConsole=function(HOST){
           else if(op==='rename') ok=O.rename(id,a.name||a.to||'');
           return R(ok, ok?note('✓ '+op+' · '+esc(id)):warn('⚠ '+esc(id))); }
         case 'isochrone': case 'reach': case 'reachability': case 'reachable': case 'catchment': {   /* ⚠ (#R278) lng/lat used to be DROPPED here: every sibling case (rfCoverage, earthquake, tsunami, nightSky, sunHours…) reads explicit coordinates first, this one only ever called geocode(a.place||…), and geocode('') falls back to the last place or the map centre. So {type:'isochrone',lng:136.934,lat:35.133} answered «✓ 60分の到達圏» and drew it at 10°E 20°N — measured, not supposed. A wrong place reported as success is the same lie as a circle reported as a reach. */
-          const ll=(a.lng!=null&&a.lat!=null&&isFinite(+a.lng)&&isFinite(+a.lat))?{lng:+a.lng,lat:+a.lat,name:String(a.place||a.from||'')}:await geocode(a.place||a.from||a.origin||a.center); if(!ll) return R(false, warn('⚠ '+L('From where? Give a place.','どこから？地点を指定してください。','Von wo? Ort angeben.','Откуда? Укажите место.','¿Desde dónde? Indica un lugar.')+' '+esc(a.place||a.from||'')));
+          /* ⚠ (#R299) …AND WITH NO PLACE NAMED IT ASKED `geocode('')`, whose documented answer is the last place or THE MAP CENTRE
+             (js/atlas-geo-resolve.js): 「到達圏」 alone drew an area around whatever was on screen and reported it. A name, a coordinate or the reader's own pinned point — otherwise the question comes back. */
+          const _org=a.place||a.from||a.origin||a.center; const ll=(a.lng!=null&&a.lat!=null&&isFinite(+a.lng)&&isFinite(+a.lat))?{lng:+a.lng,lat:+a.lat,name:String(a.place||a.from||'')}:(_org?await geocode(_org):((typeof _herePoint!=='undefined'&&_herePoint)?_herePoint:null)); if(!ll) return R(false, warn('⚠ '+L('From where? Give a place.','どこから？地点を指定してください。','Von wo? Ort angeben.','Откуда? Укажите место.','¿Desde dónde? Indica un lugar.')+' '+esc(a.place||a.from||'')));
           const rawM=String(a.mode||a.profile||a.by||'').toLowerCase();
           if(/transit|train|rail|metro|subway|tram|電車|鉄道|地下鉄|列車|公共/.test(rawM)){   /* (#R91) rail reachability isochrone */
             let tmin=Array.isArray(a.minutes)?Math.max.apply(null,a.minutes.map(Number)):(+a.minutes||+a.time||+a.mins||60);
@@ -2155,7 +2157,10 @@ window.IntMapModules.atlasConsole=function(HOST){
              増設するな。Atlas内のメッセージでUIやれ"). */
           /* ⚠⚠ (#R296) 「交通手段選択タブを表示しないように」「返答の冒頭の文言は削除」 — both were the header:
              the question restated and a second mode switch in a transcript. EMPTIED not deleted: six branches prefix it. */
-          if(!a.from&&!a.to&&!a.place){ return R(true, note('🧭 '+L('Tell me a start and destination — e.g. "directions from Tokyo to Osaka" or "電車で新宿から横浜".','出発地と目的地を教えてください（例：「東京から大阪への経路」「電車で新宿から横浜」）。','Nenne Start und Ziel.','Укажите начало и цель.','Dime origen y destino.'))); }
+          /* ⚠⚠ (#R299) A BARE 「経路案内」 OPENS THE PANEL — the parser rule that lands here says so in as many words («open the empty
+             directions panel»), and this branch only ever printed a sentence: the one ask that is a REQUEST FOR THE TOOL got told to type more. `IntMapRouteUI` is lazy — fetched as js/map-ui.js's row does. */
+          if(!a.from&&!a.to&&!a.place){ let ok=false; try{ await window.IntMapLazy.need('routeUi'); ok=!!(window.IntMapRouteUI&&window.IntMapRouteUI.open()); }catch(_){}
+            return R(true, note('🧭 '+L('Tell me a start and destination — e.g. "directions from Tokyo to Osaka" or "電車で新宿から横浜".','出発地と目的地を教えてください（例：「東京から大阪への経路」「電車で新宿から横浜」）。','Nenne Start und Ziel.','Укажите начало и цель.','Dime origen y destino.'))+(ok?note(L('The route planner is open on the map — fill in the two fields there, or say the places here.','経路パネルを地図上に開きました。パネルに入力するか、ここで地点を伝えてください。','Der Routenplaner ist geöffnet — dort ausfüllen oder die Orte hier nennen.','Планировщик маршрута открыт — заполните поля там или назовите места здесь.','El planificador de rutas está abierto — complétalo allí o dime los lugares aquí.')):'')); }
           /* (#R125) endpoint resolution hardened for rail asks: an exact Shinkansen-station name resolves to the
              REAL station (geocode fuzzy-matched 仙台駅 to a POI named 仙太鮨…), and a query ending in 駅/station
              whose geocode hit doesn't even CONTAIN the base name retries with the base (city) name instead. */
@@ -2520,7 +2525,10 @@ window.IntMapModules.atlasConsole=function(HOST){
           return R(true, note('⛰ '+(m==='aspect'?L('Slope aspect (direction each slope faces)','斜面の向き（方位）','Hangexposition','Экспозиция склона','Orientación'):L('Slope steepness (angle)','傾斜の急さ（角度）','Hangneigung','Крутизна склона','Pendiente'))+' — '+L('computed from the real elevation model for the current view; pan/zoom to update.','現在の表示範囲の標高データから算出。移動・拡大で更新。','aus dem echten Höhenmodell.','по реальной модели высот.','del modelo de elevación real.'))); }
         /* (#R89) RF / radio coverage from an antenna */
         case 'rfCoverage': case 'coverage': case 'radioCoverage': case 'signalCoverage': case 'reception': case 'lineOfSight': case 'viewshed': {
-          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; else { const c=GE().camera.getCenter(); ll={lng:c.lng,lat:c.lat}; } }catch(_){}
+          /* ⚠ (#R299) NO MAST IS PLANTED AT THE CAMERA'S CENTRE — 「勝手に地図中心を選択している…のを辞めろ」. The service area, the farthest
+             sight line and the terrain shadow are all functions of ONE coordinate, and the fallback here was wherever the reader happened to be looking. It asks now, the way `tsunami` below does. */
+          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; }catch(_){}
+          if(!ll) return R(false, warn('⚠ '+L('Where? Give the transmitter site (place, or lng/lat).','送信点はどこですか（地名または経緯度）。','Wo? Senderstandort angeben.','Где передатчик?','¿Dónde? Indica el emplazamiento del emisor.')));
           /* ⚠ (#R296) ONE PANEL — 「電波・通信圏と見通し線解析を統合して」. `IntMapRF` is gone; this is `IntMapLOS` with a frequency. */
           try{ if(window.IntMapLOS){ const L2=window.IntMapLOS;
             if(L2.setMode) L2.setMode(/^(los|lineOfSight|viewshed)$/.test(String(a.type||''))?'los':'radio');
@@ -2601,8 +2609,10 @@ window.IntMapModules.atlasConsole=function(HOST){
         /* (#R208) 「ある地点からの星空」— reachable from Atlas as well as the right-click item (#R112) */
         case 'nightSky': case 'starsFromHere': case 'skyFromHere': case 'stargazing': case 'standHere': case 'skyStanding': {   /* (#R214) +「立った」モード */
           await window.IntMapLazy.need('nightSky'); const NS=window.IntMapNightSky; if(!NS||!NS.open) return R(false, warn('⚠'));
-          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; else { const c=GE().camera.getCenter(); ll={lng:c.lng,lat:c.lat}; } }catch(_){}
-          if(!ll) return R(false, warn('⚠'));
+          /* ⚠ (#R299) 「ここからの星空」 IS NOT 「ここを見ている星空」 — the sky, the measured skyline and the rise
+             times belong to ONE standing point, and the reply quoted the centre back as though it were chosen. */
+          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; }catch(_){}
+          if(!ll) return R(false, warn('⚠ '+L('Where from? Give a place (or lng/lat).','どこからの空ですか（地名または経緯度）。','Von wo aus? Ort angeben.','Откуда? Укажите место.','¿Desde dónde? Indica un lugar.')));
           await NS.open({lng:ll.lng, lat:ll.lat, when:(a.when||a.time||a.date||null), az:a.az, alt:a.alt, fov:a.fov, bearing:a.bearing, mode:(a.type==='standHere'||a.type==='skyStanding')?'stand':a.mode, view:a.view, stand:a.stand});   /* (#R214) the view is a parameter — js/night-sky.js resolves the spellings */
           if(a.rate!=null&&NS.setRate) NS.setRate(+a.rate); if(a.play&&NS.play) NS.play(true);   /* (#R208) */
           const st=NS.state(), facing=(st.mode==='stand'&&st.look)?(' · '+L('facing','向き','Blick','взгляд','mirando')+' '+Math.round(st.look.az)+'°'):''; return R(true, note((st.mode==='stand'?'🧍 ':'✨ ')+L('Sky from','星空：','Himmel von','Небо от','Cielo desde')+' '+ll.lat.toFixed(3)+'°, '+ll.lng.toFixed(3)+facing+(st.last?' — '+st.last.starsDrawn.toLocaleString()+' '+L('stars above the measured skyline','個が実測した稜線の上に','Sterne über der Skyline','звёзд над горизонтом','estrellas sobre el horizonte'):''))); }
@@ -4413,7 +4423,12 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R84) MAP-OVERLAY TOGGLE ("Atlasによって地図上にマッピングされた類のものは、Atlasのメッセージ内から
        オンオフできるように"): a reply that painted something on the map gets a live on/off switch. */
     const _OVL={ highlight:['nlq-fill','nlq-line','nlq-poly-fill','nlq-poly-line'], choropleth:['nlq-choro'], compare:['imcmp-fill','imcmp-line'],
-      poi:['nlq-poi-c','nlq-poi-t'], elevation:['nlq-elev-fill'], historical:['nlq-fac-fill','nlq-fac-line'], route:['imroute-cas','imroute-line','imroute-pt','imroute-walk','imroute-rail','imroute-transfer'],
+      poi:['nlq-poi-c','nlq-poi-t'], elevation:['nlq-elev-fill'], historical:['nlq-fac-fill','nlq-fac-line'],
+      /* ══ ⚠⚠ (#R299) EVERY LAYER THE ROUTE DRAWS — 「オブジェクトに経路が残り続ける」. This row held the ones js/routing.js drew in #R84 and
+         none added since, so switching a journey OFF left the waypoint labels, the leg times, the drawn keep-out and js/routing-ops.js's two
+         analyses standing. ⚠ `imroute-hit` matters most: the INVISIBLE 22–44 px pick target over the line, so hiding without it left the route
+         still CLICKABLE with nothing on screen to explain it. ⚠ ONE LIST — `_ovlVisible` / `overlayToggle` / `_ovlSnapshot` / `_ovlRestore` read it. */
+      route:['imroute-cas','imroute-line','imroute-pt','imroute-walk','imroute-rail','imroute-transfer','imroute-wp','imroute-durlab','imroute-hit','imroute-area','imroute-area-line','imroute-diff','imroute-hist'],
       radiation:['imrad-heat','imrad-pt','imrad-srcpt','imrad-dep'], blast:['nlq-blast-fill','nlq-blast-line'], lines:['nlq-line'], outline:['pl-outline-fill','pl-outline-line'],
       /* (#R85) close the "できないものもある" gap — flight paths, line-of-sight, isolate mask, pins and street-view marker were painted but had no in-message on/off. */
       fly:['nlq-fly-line','nlq-fly-head'], los:['los-cover','los-shadow','los-cover-line','los-site'], isolate:['iso-mask'], pin:['user-pin-dot','user-pin-shadow'], streetview:['sv-here-pt','sv-here-cone'], isochrone:['im-iso-fill','im-iso-line','im-iso-ctr'] };

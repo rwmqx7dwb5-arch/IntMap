@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（928行・84 KB）＋ `css/`（3本）＋ `js/`（176本・9.3 MB）＋ `src/`（8本）。**
+- **本体は `index.html`（928行・84 KB）＋ `css/`（3本）＋ `js/`（177本・9.3 MB）＋ `src/`（8本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -523,6 +523,14 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
 
 - **サイドバー（左）**：タブ（News / Companies / Countries / Atlas）、検索、ニュースフィード／
   企業ランキング／Atlas。
+  ⚠⚠⚠ **左サイドバーには2つのレイアウトがあり、地図の中心の合わせ方が違う**（設定「Sidebar appearance」・
+  `js/sidebar-style.js`）。**不透明**では `.operation-room` の flex 列なので **canvas 自体が狭まり**、
+  中心は既に可視領域の中心にある——ここで補正すると**二重にずれる**。
+  **フロスト2種**（`body.sidebar-glass`）では `.map-container{position:absolute;inset:0;width:100%}` で
+  **canvas は全幅のまま**サイドバーが上に重なるので、camera padding の `left` に**可視幅**を書く。
+  ⚠ 折り畳みは `width` を残して負マージンで外へ出すだけなので、幅ではなく**状態**を読む。
+  ⚠ `bottom` は携帯シートの持ち物なので**書く前に読む**。⚠ **値が変わったときだけ書く**
+  （レイヤートグル・テーマ変更・設定保存でカメラを動かさない）。
 - **マップ上コントロール（右上）**：Map/Sat、Flat/Globe/3D/コンパス、Grid、Measure、Radius、Layers。
   コンパスの**右クリック**で方位・仰角・ズームを数値入力できる（デスクトップのみ）。傾き上限が
   「無制限」のときは仰角欄が 0〜360° を受け付け、180° 超は方位を反転した等価な視線に解決される。
@@ -545,6 +553,13 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
 - **ドック中はドラッグもリサイズもしない。** ⚠ **ドラッグ実装は2つある**——`js/window-manager.js` の
   `makeDraggable` と `js/data-layers.js` の `wireDrag`（凡例専用の委譲ドラッグ）。**両方**が
   `im-docked` クラスを見る。⋮⋮ のグリップは CSS で隠す（嘘をつく余地を残さない）。
+- ⚠⚠⚠ **辺のリサイズは要素の listener、角のリサイズは document の capture。** `border-radius` は
+  **当たり判定も切る**ので、丸い角の内側数 px では `elementFromPoint` が返すのは**下にあるもの**
+  （地図の canvas）であり、要素に付けた listener には**原理的に届かない**。当たり幅 `M` を上げても
+  足りない画素は要素の外にあるので直らない。だから角だけは document で受け、`getBoundingClientRect()`
+  との**座標**で判定する。⚠ **角だけ**（辺まで document で取るとパネルの縁 9 px のクリックを全部奪う）、
+  ⚠ **z 最上位の窓が勝つ**（`bringToFront` が保つ順序）、⚠ カーソルは `document.body` に書いて
+  **角を出た瞬間に消す**（地図の上に残ったリサイズカーソルは、直した欠陥より悪い）。
 - **剥がすのは幾何プロパティだけ。** `_flatten()` が `position/left/top/width/height/transform/
   z-index/margin/resize` などを `removeProperty` する。⚠ **`display` は剥がさない**
   （所有者が持っている開閉の状態を奪わない）。

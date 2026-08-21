@@ -1263,6 +1263,10 @@ window.IntMapModules.worldPacks=function(HOST){
         :n===3?L('Danger','危険','Gefahr','Опасность','Peligro')
         :n===2?L('Warning','警戒','Warnung','Предупреждение','Aviso')
         :L('Advisory','注意','Hinweis','Внимание','Advertencia');
+      /* (#R299) the step the country list cuts at — 「IntMap独自分類で『危険』以上のものがある国だけ
+         出すこと」. It is `NORM_NAME(3)` = Danger / 危険, named once so the heading, the empty line
+         and the filter cannot say three different things. */
+      const HOT_MIN=3;
       /* which of the three published palettes a feed files its ranks in */
       const FEED_PAL={ jma:'jma', cma:'cma' };
       const palOf=(feed)=>PAL[FEED_PAL[feed]||'cap'];
@@ -1667,6 +1671,20 @@ window.IntMapModules.worldPacks=function(HOST){
           const x0=Math.floor(bb[0]), x1=Math.floor(bb[2]), y0=Math.floor(bb[1]), y1=Math.floor(bb[3]);
           for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++){ const k=x+':'+y;
             (rec.cells[k]||(rec.cells[k]=[])).push(f.geometry); }
+          /* ⚠⚠⚠ (#R299) …AND ITS OUTLINE, BECAUSE THE WARNING IS OFTEN **THE UNIT ITSELF**.
+             Production, z8 over Aomori: 上北郡野辺地町 was in the collection TWICE — once as the JMA's
+             「Dense fog」 (norm 1, `#f2e700`) and once as 「発表なし」 (norm 0, `#dcdce0`) — so
+             `fill-opacity` 0.38 was applied twice and the effective α was 0.616, the two-coat defect
+             #R298 removed, surviving in one unit out of 138.
+             It survived because BOTH point tests below can miss when the two shapes are THE SAME
+             shape: `jpShape()` builds a fresh MultiPolygon out of the same index the quiet unit is
+             built from, so `===` is false, and 野辺地町 wraps a bay — its centroid is in the water,
+             i.e. OUTSIDE its own polygon, so 「is the unit's centre inside the warning」 is false of a
+             warning drawn on that very outline. Every country whose warnings are placed on this map's
+             own units (Japan, China, Taiwan, MeteoAlarm's named regions) can hit it.
+             → ask identity of the OUTLINE first. Same country and the same bbox to four decimals
+             (≈11 m) is the same unit — the test `dedupeSameShape` already trusts for the same job. */
+          const bk=_bboxKey(bb); if(bk) (rec.boxes||(rec.boxes=Object.create(null)))[bk]=1;
           /* ⚠ (#R298) …and its CENTRE, bucketed the same way — see the second half of coveredByWarning */
           const wc=geomCentre(f.geometry);
           if(wc){ const k=Math.floor(wc[0])+':'+Math.floor(wc[1]); (rec.pts[k]||(rec.pts[k]=[])).push(wc); } });
@@ -1684,8 +1702,11 @@ window.IntMapModules.worldPacks=function(HOST){
          three points was 「Vogtlandkreis」(DE, quiet) under 「Karlovarský kraj」(CZ, warned) — two
          boundary sets overlapping slightly across a border, where the German district really does
          have nothing in force from the DWD. That one is CORRECT and is left alone. */
+      const _bboxKey=(bb)=>bb?(bb[0].toFixed(4)+','+bb[1].toFixed(4)+','+bb[2].toFixed(4)+','+bb[3].toFixed(4)):'';
       function coveredByWarning(iso,g){
         const rec=warnIndex()[iso]; if(!rec) return false;
+        /* (#R299) the outline test — see the note in `warnIndex` */
+        if(rec.boxes){ const bk=_bboxKey(geomBox(g)); if(bk&&rec.boxes[bk]) return true; }
         const c=geomCentre(g); if(!c) return false;
         const bin=rec.cells[Math.floor(c[0])+':'+Math.floor(c[1])];
         for(let i=0;bin&&i<bin.length;i++){
@@ -2004,6 +2025,77 @@ window.IntMapModules.worldPacks=function(HOST){
           else if(g.type==='MultiPolygon') g.coordinates.forEach(x=>rec.parts.push(x)); });
         if(!Object.keys(by).length) throw new Error('jp municipality geometry empty');
         return by; })); }
+      /* ══ ⚠⚠⚠ (#R299) 「ポリゴンの境界線の解像度が低すぎる場所が多々ある。」— 日本の床 ═══════════
+         MEASURED on the file this layer actually reads: the nationwide `s0001` build holds
+         **33,394 vertices for 1,894 municipalities = 17.6 vertices each**. 千代田区 is SEVEN points,
+         足立区 ELEVEN, 青梅市 SIXTEEN. No `tolerance` on the map side can put back detail the source
+         never had — #R298 lowered the source tolerance to the MapLibre default and measured 2.75 px
+         edges, which is a correctly drawn SEVEN-SIDED 千代田区.
+         The same repository publishes `s0010`: one file per prefecture, same 2021 vintage, same JIS
+         keys. MEASURED for Tokyo — the 60 shared codes go 561 → 6,132 vertices (**10.9×**):
+         千代田区 7 → 41, 足立区 11 → 125, 青梅市 16 → 185, 小笠原村 17 → 773. Tokyo's file is 254 kB
+         and Chiba's 135 kB, so the whole country at this resolution is ~8–12 MB and cannot be the
+         floor the world view is paid for.
+         → the nationwide file stays the FLOOR, and a prefecture is upgraded when it is ON SCREEN and
+         past `UNIT_HIRES_Z` — the same rule `upgradeUnitsInView` already applies to every other
+         country. Two at a time, cached by `bndJSON`, so it is paid once per prefecture per browser.
+         ⚠ EVERY PREFECTURE THE VIEW TOUCHES IS UPGRADED, not only the warned ones: two builds of the
+         same boundary differ by up to the simplification tolerance, so a fine prefecture beside a
+         coarse one shows a sliver along their shared edge. Upgrading by VIEW keeps that seam off
+         screen, which is the same reason the rest of the ladder is view-bounded.
+         ⚠ AND THE WARNINGS ARE RE-PLACED, not just the quiet units: `jpShape` reads this index, so
+         publishing finer quiet units without re-running the feed would draw a fine 「発表なし」 beside
+         a coarse warning — the mismatched-edge defect #R298 removed, re-created from the other side. */
+      const JP_FINE_BASE='https://cdn.jsdelivr.net/gh/smartnews-smri/japan-topography@main/data/municipality/geojson/s0010/N03-21_';
+      const jpFineURL=(pp)=>JP_FINE_BASE+pp+'_210101.json';
+      const jpFineAsked=Object.create(null);   /* '13' → 1 once asked (never re-asked) */
+      let jpFineBusy=0, jpFineOn=0, jpFineT=0;
+      const JP_FINE_MAX=2;
+      /* prefecture → bbox, built once from the coarse index (the fine files are keyed the same way) */
+      let _jpPrefBB=null;
+      function jpPrefBoxes(idx){ if(_jpPrefBB) return _jpPrefBB;
+        const bb=Object.create(null);
+        Object.keys(idx).forEach(jis=>{ const pp=jis.slice(0,2); const b=bb[pp]||(bb[pp]=[180,90,-180,-90]);
+          (idx[jis].parts||[]).forEach(poly=>{ const ring=poly&&poly[0]; if(!ring) return;
+            for(let i=0;i<ring.length;i++){ const p=ring[i];
+              if(p[0]<b[0])b[0]=p[0]; if(p[1]<b[1])b[1]=p[1];
+              if(p[0]>b[2])b[2]=p[0]; if(p[1]>b[3])b[3]=p[1]; } }); });
+        _jpPrefBB=bb; return bb; }
+      /* rebuild UNITS['JPN'] from whatever resolution the index currently holds */
+      function jpSetUnits(idx){ setUnits('JPN',Object.keys(idx).map(k=>named(multi(idx[k].parts),idx[k].name)),'jp'); }
+      function askJpFine(){
+        if(jpFineBusy>=JP_FINE_MAX||!UNITS.JPN) return;
+        const p=SUBDIV.jpmuni; if(!p) return;
+        p.then(idx=>{
+          if(jpFineBusy>=JP_FINE_MAX) return;
+          let b=null; try{ b=GE().camera.getBounds(); }catch(_){ return; }
+          const boxes=jpPrefBoxes(idx);
+          const want=Object.keys(boxes).filter(pp=>{ if(jpFineAsked[pp]) return false;
+            const q=boxes[pp];
+            return !(q[2]<b.getWest()||q[0]>b.getEast()||q[3]<b.getSouth()||q[1]>b.getNorth()); });
+          want.slice(0,JP_FINE_MAX-jpFineBusy).forEach(pp=>{
+            jpFineAsked[pp]=1; jpFineBusy++;
+            bndJSON(jpFineURL(pp))
+              .then(j=>{ let n=0;
+                (j.features||[]).forEach(f=>{ const q=f.properties||{}; const c=String(q.N03_007||'');
+                  if(!c||!idx[c]) return;
+                  const g=f.geometry; if(!g) return;
+                  if(!idx[c].__fine){ idx[c].__fine=1; idx[c].parts=[]; }
+                  if(g.type==='Polygon') idx[c].parts.push(g.coordinates);
+                  else if(g.type==='MultiPolygon') g.coordinates.forEach(x=>idx[c].parts.push(x));
+                  n++; });
+                if(!n) return;
+                jpFineOn++;
+                jpSetUnits(idx);
+                /* the warnings are placed from this same index — re-run the feed so both halves of
+                   the picture are at the same resolution (see the ⚠ above).
+                   ⚠ COALESCED: several prefectures land within a second of each other and `refresh()`
+                   is six network calls, not one. */
+                clearTimeout(jpFineT); jpFineT=setTimeout(()=>{ jpFineT=0; try{ refresh(); }catch(_){} },600);
+              })
+              .catch(()=>{ jpFineAsked[pp]=0; })
+              .then(()=>{ jpFineBusy--; }); });
+        }).catch(()=>{}); }
       const multi=(parts)=>({type:'MultiPolygon',coordinates:parts});
       /* a class20 code → the municipality shape. A designated city files as `PP100` and its wards are
          `PP101…PP199`, so where the exact code is absent the wards are unioned — which is the city. */
@@ -2223,9 +2315,11 @@ window.IntMapModules.worldPacks=function(HOST){
       /* ══ ⚠⚠⚠ (#R269) THE FEED THE APP READ HAD STOPPED THREE MONTHS EARLIER ═════════════════════
          `…/warning/data/warning/map.json` answers 200 and parses, and it is FROZEN. The JMA's OWN
          warning page requests `…/warning/data/r8/map.json`, which is live and is a LIST OF BULLETINS.
-         ⚠ THE STATE IS THE NEWEST BULLETIN PER OFFICE, NOT THE UNION OF ALL OF THEM. ⚠ AND THE AGE
-         IS CHECKED RATHER THAN ASSUMED — a file whose newest bulletin is more than three days old is
-         REFUSED rather than presented as 「in force now」. */
+         ⚠ (#R299) THE STATE IS THE NEWEST BULLETIN PER OFFICE **PER BULLETIN TYPE** — the file holds
+         exactly one row per (office, dataTypeCode) and each type is a different hazard family, so
+         the union of all of them IS the current state. See the measurement at the reduce below.
+         ⚠ AND THE AGE IS CHECKED RATHER THAN ASSUMED — a file whose newest bulletin is more than
+         three days old is REFUSED rather than presented as 「in force now」. */
       const JMA_R8='https://www.jma.go.jp/bosai/warning/data/r8/map.json';
       const JMA_MAX_AGE_H=72;
       let jmaAgeH=null, jmaSuperseded=0, jmaAt='';
@@ -2243,8 +2337,31 @@ window.IntMapModules.worldPacks=function(HOST){
           for(let i=0;i<4;i++){ if(area&&area.class10s&&area.class10s[c]) return c;
             const q=parentOf(c); if(!q||q===c) break; c=q; }
           return null; };
+        /* ══ ⚠⚠⚠ (#R299) 「発令されているのに、ごっそり都道府県単位でもれ落ちていたりする。」 ═══════
+           THE STATE IS ONE BULLETIN PER OFFICE **PER BULLETIN TYPE**, AND #R269 KEPT ONE PER OFFICE.
+           r8/map.json is not a rolling log of an office's history: MEASURED on the live file, it holds
+           **exactly one row per (publishingOffice, dataTypeCode)** — 287 rows, 58 offices, and
+           `bulletins per (office,type): min 1, max 1`. Each dataTypeCode is a DIFFERENT HAZARD FAMILY
+           and each row is the complete current state for that family over every class20 of that
+           office, listing the quiet ones as 「発表警報・注意報はなし」:
+               VPWW55 → 03,10 (rain)   VPWW56 → 09,29,49 (landslide)   VPWW57 → 48 (storm surge)
+               VPWW58 → 15 (wind)      VPWW59 → 16 (waves)             VPWW61 → 14,20,21 (thunder/fog/dry)
+           So 「the newest bulletin per office」 kept ONE family and threw away the other four.
+           MEASURED against the same file: 790 municipalities are in force, the old reduce found
+           **555 and lost 235 (29.7 %)** — and the loss is not spread thinly, it is whole prefectures,
+           because a prefecture's only live family is often not the one that reported last:
+               千葉県 54/54 · 東京都 53/53 · 熊本県 46/46 · 山梨県 27/27 · 石川県 19/19 lost
+           which is exactly 「都道府県単位でごっそり」.
+           → KEEP ONE ROW PER (office, dataTypeCode) and take the union. A family that has not been
+           re-issued for weeks is still that family's current state — MEASURED: of the 41 rows older
+           than 14 days, **0 carry an active item**, and of the 119 rows 3–14 days old, 1 does. The
+           file is a snapshot, not a log, so nothing stale is resurrected by reading all of it.
+           ⚠ THE AGE GATE STILL LOOKS AT THE NEWEST ROW OF ALL (`jmaAt` below): that is the question
+           「is this feed alive」, and it must not become 「is every family fresh」 — the quiet families
+           are the ones that are legitimately old. */
         const newest=Object.create(null);
-        list.forEach(b=>{ const k=String(b.publishingOffice||''); const t=String(b.reportDatetime||'');
+        list.forEach(b=>{ const k=String(b.publishingOffice||'')+'~'+String(b.dataTypeCode||'');
+          const t=String(b.reportDatetime||'');
           if(!newest[k]||t>String(newest[k].reportDatetime||'')) newest[k]=b; });
         const kept=Object.values(newest);
         jmaSuperseded=list.length-kept.length;
@@ -3175,7 +3292,24 @@ window.IntMapModules.worldPacks=function(HOST){
            not whether its shapes are in the cache: the quiet collection is bounded by the view, so
            a country whose units are held but off-screen must keep the country-wide sheet or it
            would be painted by nobody at all. */
-        return quietSet[c]?2:1; }
+        /* ══ ⚠⚠⚠ (#R299) 「発令されているのに、灰色になっている場所がある。」 ═══════════════════════
+           THE COUNTRY-WIDE GREY SAYS 「読んだ。何も出ていない」 AND IT WAS SAID OVER COUNTRIES THAT
+           HAD WARNINGS ON THEM. `quietSet` is deliberately empty below `QUIET_UNIT_Z` (a Landkreis
+           is a fraction of a pixel there, #R290) and it is also empty for the seconds before a
+           country's unit index has landed — and in BOTH windows this line fell through to 1, i.e.
+           it painted `QUIET_COL` at 42 % over the whole country and then let the warning polygons
+           sit on top of it at 38 %. A warned area under a grey sheet is 「灰色になっている」, and it
+           is the claim itself that is false: 「nothing is in force here」 is not true of a country
+           that is drawing warnings.
+           → a country that is DRAWING something is never washed. `drawnISO` is rebuilt from the
+           features that actually reached the source on every publish, so this is the same
+           measurement #R271 already trusted, asked one question earlier.
+           ⚠ The consequence is deliberate: at world zoom a warned country is transparent except
+           where its warnings are. That is the honest picture — 「read, and something is in force,
+           and you are too far out for this map to say where it is NOT」 — and it is the rule
+           #R270 ⑧ already wrote (「区域を描く国は国全体で wash しない」), which simply never reached
+           the zooms where `quietSet` is empty. */
+        return (quietSet[c]||drawnISO[c])?2:1; }
       /* ══ ⚠⚠⚠ (#R288) THE COUNTRY IS NOT THE UNIT 「発令なし」 IS TRUE OF ═══════════════════
          「日本以外でも区分単位、発令単位ごとに色分けしろ」「個々の区別はちゃんとやれ」
 
@@ -3283,6 +3417,9 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!(z>=UNIT_HIRES_Z)) return;
         /* (#R297) …and the index the WARNINGS are placed against, not only the quiet units */
         askNutsFine();
+        /* (#R299) …and Japan, whose floor is the coarsest of the three (17.6 vertices per
+           municipality — see the note beside `jpFineURL`) */
+        askJpFine();
         try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||'');
           if(!c||upAsked[c]||!UNITS[c]||!COARSE.test(UNIT_SRC[c]||'')) return;
           if(!inView(f)) return;
@@ -3673,21 +3810,30 @@ window.IntMapModules.worldPacks=function(HOST){
         if(mode==='norm') return keyHead(L('IntMap normalised scale — IntMap’s own conversion','IntMap 換算（IntMap 独自の換算）','IntMap-Skala (eigene Umrechnung)','Шкала IntMap (собственный пересчёт)','Escala IntMap (conversión propia)'))
           +normKey()
           +'<div style="margin-top:4px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-          +esc(L('Each agency’s ranks are mapped onto these four by IntMap. Two countries at the same step do NOT necessarily face the same danger — the warning systems themselves differ. Tap a country for its own agency’s scale.',
-                 '各機関の階級を IntMap が独自にこの4段階へ換算したものです。同じ段でも国どうしの危険度が等しいという意味ではありません——制度そのものが違います。国をタップすると、その機関自身の階級が出ます。',
-                 'Von IntMap umgerechnet — gleiche Stufe heißt nicht gleiche Gefahr.',
-                 'Пересчёт IntMap — одинаковая ступень не означает одинаковую опасность.',
-                 'Conversión propia de IntMap — el mismo nivel no implica el mismo peligro.'))+'</div>';
+          /* ⚠ (#R299) 「文章が長すぎる。簡潔に。」 — three sentences of 120 Japanese characters became
+             one line. What had to survive is the CLAIM (this is IntMap's arithmetic, not an agency's)
+             and the WARNING that goes with it (the same step is not the same danger); the reasoning
+             behind the warning and the enumeration of who publishes what live one tap away, in
+             `legendFor`, which is where a reader who wants them is already going. */
+          +esc(L('IntMap’s own conversion — the same step is not the same danger. Tap a country for its agency’s scale.',
+                 'IntMap 独自の換算です。同じ段でも危険度は同じではありません。国をタップで機関の階級。',
+                 'Eigene Umrechnung von IntMap — gleiche Stufe heißt nicht gleiche Gefahr. Land antippen für die Skala der Behörde.',
+                 'Собственный пересчёт IntMap — одинаковая ступень не значит одинаковую опасность. Нажмите страну для шкалы службы.',
+                 'Conversión propia de IntMap — el mismo nivel no es el mismo peligro. Toque un país para la escala de su agencia.'))+'</div>';
         return keyHead(L('Each agency’s own published scale','各機関が公表している配色','Skala der jeweiligen Behörde','Собственная шкала службы','Escala propia de cada agencia'))
           +keyRows([[PAL.cap[1],L('lower rank','下位の階級','niedrigere Stufe','низкая ступень','rango menor')],
                     [PAL.cap[3],L('higher rank','上位の階級','höhere Stufe','высокая ступень','rango mayor')],
                     [NONE_COL,L('Nothing in force','発表なし','Nichts in Kraft','Ничего не действует','Nada vigente')],HATCH_ROW()])
           +'<div style="margin-top:4px;font-size:9.5px;color:var(--text-muted);line-height:1.5;">'
-          +esc(L('Colours are the issuing agency’s own — Japan’s are the JMA’s yellow / red / magenta / black, China’s the CMA’s four signal colours, and the rest the CAP awareness ladder. Tap a country for that agency’s exact scale.',
-                 '色はその機関自身の配色です——日本は気象庁の 黄／赤／紫／黒、中国は中国気象局の四色予警信号、その他は CAP の階級です。国をタップすると、その機関の正確な階級が出ます。',
-                 'Farben sind die der jeweiligen Behörde. Land antippen für deren genaue Skala.',
-                 'Цвета — самой службы. Нажмите страну для её точной шкалы.',
-                 'Los colores son los de cada agencia. Toque un país para su escala exacta.'))+'</div>'; }
+          /* ⚠ (#R299) 「長すぎ。」 — the roll-call of JMA yellow/red/magenta/black, the CMA's four signal
+             colours and the CAP ladder was a legend for THREE agencies printed over a map that draws
+             fifty-five. The one fact this line owes the reader is that the colours are not IntMap's;
+             which agency and which exact rank is what the tap answers, per country, in `legendFor`. */
+          +esc(L('Each agency’s own colours. Tap a country for its exact scale.',
+                 '色は各機関自身のものです。国をタップで正確な階級。',
+                 'Farben der jeweiligen Behörde. Land antippen für die genaue Skala.',
+                 'Цвета самой службы. Нажмите страну для точной шкалы.',
+                 'Colores de cada agencia. Toque un país para su escala exacta.'))+'</div>'; }
 
       /* ── the per-country legend a tap opens ────────────────────────────────────────────────────── */
       const AGENCY_NAME={ jma:'気象庁 JMA', nws:'US National Weather Service', eccc:'ECCC', cma:'中国气象局 CMA',
@@ -3912,9 +4058,19 @@ window.IntMapModules.worldPacks=function(HOST){
             cur.n++; if(t>cur.norm) cur.norm=t; g.kinds.set(k,cur); };
           if(it.length) it.forEach(x=>add(x.kind,+x.tier||p.norm));
           else add(String(p.hz||'').replace(/\s\+\d+$/,''),p.norm); });
-        const list=[...by.values()].sort((a,b)=>(b.norm-a.norm)||(b.units-a.units));
+        /* ══ ⚠⚠⚠ (#R299) 「IntMap独自分類で『危険』以上のものがある国だけ出すこと」 ═══════════════
+           The cut is on the COUNTRY's worst rank, which is what the row is captioned with, and the
+           threshold is `HOT_MIN` = the normalised `Danger` step (`NORM_NAME(3)`), stated once here
+           so the heading and the empty line cannot drift away from the rule that produced the list.
+           ⚠ The hazards named on a qualifying country's line are still ALL of that country's hazards.
+           The instruction selects which countries appear; it does not ask this map to hide a 注意報
+           that is in force in a country it is already talking about. */
+        const list=[...by.values()].filter(g=>g.norm>=HOT_MIN).sort((a,b)=>(b.norm-a.norm)||(b.units-a.units));
         if(!list.length) return '<div style="margin-top:6px;font-size:11.5px;color:var(--text-muted);">'
-          +L('Nothing in force in any connected service right now.','接続中のいずれの機関にも、現在発表中のものはありません。','Derzeit nichts in Kraft.','Сейчас ничего не действует.','Nada vigente ahora.')+'</div>';
+          /* ⚠ NOT 「nothing is in force」 — that was true when the list was every rank, and it is a
+             FALSE statement now: lower ranks can be in force and drawn on the map while this box is
+             empty. The line has to say which question it answered. */
+          +L('No country is at Danger or above right now.','いま「危険」以上に達している国はありません。','Derzeit kein Land ab Stufe „Gefahr“.','Сейчас нет стран со степенью «Опасность» и выше.','Ningún país está en nivel Peligro o superior ahora.')+'</div>';
         const N=16, KN=3;
         return '<div style="margin-top:6px;display:flex;flex-direction:column;gap:2px;">'
           +list.slice(0,N).map(g=>{
@@ -4192,7 +4348,12 @@ window.IntMapModules.worldPacks=function(HOST){
         const oldest=FEED_KEYS.map(k=>ageH(k)).filter(v=>v!=null).reduce((m,v)=>Math.max(m,v),0);
         const bad=FEED_KEYS.filter(k=>FEED_STATE[k]==='error').length;
         const b=panel.open('<div class="wp-a-body">'
-          +'<div style="font-weight:700;font-size:13px;">'+L('What is in force now','いま発表されている警報','Aktuell in Kraft','Действует сейчас','Vigente ahora')+'</div>'
+          /* ⚠ (#R299) 「『いま発表されている警報』はふさわしい名称に改名すること。」 — the box no longer
+             lists warnings and no longer lists everything: it lists the COUNTRIES whose worst
+             normalised rank has reached `HOT_MIN` (Danger). A heading that says 「いま発表されている
+             警報」 over a filtered list of countries is the same kind of false caption this layer has
+             paid for before, so the heading names both halves of what the list actually is. */
+          +'<div style="font-weight:700;font-size:13px;">'+L('Countries at Danger or above','危険以上の警報が出ている国','Länder ab Stufe „Gefahr“','Страны со степенью «Опасность» и выше','Países en nivel Peligro o superior')+'</div>'
           +'<div style="margin-top:2px;font-size:10.5px;color:var(--text-muted);">'
           +esc(L('Updated','最終取得','Aktualisiert','Обновлено','Actualizado'))+' '
           +esc(lastAt?new Date(lastAt).toLocaleTimeString():'—')

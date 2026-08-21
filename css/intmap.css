@@ -3237,6 +3237,14 @@
 
    ⚠ NOTHING HERE IS SMALLER THAN 13 px EXCEPT `.rtp-help` / `.rtp-dim` (12.5 px), which are the
    footnote voice, and they are never the only place a fact appears.
+   ⚠⚠ (#R299) THAT SENTENCE IS ABOUT THE PHONE, AND IT IS THE PHONE THAT KEEPS IT. It was not true
+   of the desktop even when it was written — `.rtp-mode-tx` has been 12 px since #R291 and
+   `.rtp-when-tz` / `.rtp-prov` are 12 — and the desktop block further down takes the mode label to
+   11.5 and the tabs / time row to 12.5. What holds without exception is the rule those numbers
+   exist for: 「10～11pxの主要文字を使わない」 on a phone, measured at 320 px by tests/smoke.spec.js
+   R291 ⑧ over `.rtp-summary` / `.rtp-in` / `.rt-alt-main` / `.rt-step-tx` / `.rtp-chip`, and every
+   one of those is left at its full size on a phone. A control label beside an 18 px glyph on a
+   1,280 px screen is not 主要文字; a route's duration is, and it is still 20 px.
    ══════════════════════════════════════════════════════════════════════════════════════════════ */
 .rtp{
   position:absolute; left:14px; top:74px; z-index:1401;
@@ -3277,7 +3285,12 @@ body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
      title 55→48 · modes 54→44 · tabs 41→35 · export chips 36→30
      fields 40→48 with 15.5 px type · a 44 px filled 「経路を検索」 beside them · card title 16→17 px
    ⚠ NOTHING IS REMOVED. All four export buttons are still there, at the size a secondary control
-   should be — 「フッタの GPX / GeoJSON / 共有 / 消去は消さない」. */
+   should be — 「フッタの GPX / GeoJSON / 共有 / 消去は消さない」.
+   ⚠⚠ (#R299) THE DESKTOP NUMBERS ABOVE ARE NO LONGER THE ONES THAT APPLY — 「UIがでかすぎな箇所が
+   多々ある。見やすいのはいいが、デカすぎはやめろ。」 The declarations here are still the shared base
+   (and still exactly what the phone block below builds on); the desktop takes one step off most of
+   them in the `@media (min-width:768px)` block that follows this section. Nothing is removed there
+   either, and the phone keeps every 44 px target and every 13 px type size it has. */
 .rtp-head{ flex:0 0 auto; display:flex; align-items:center; gap:9px; padding:7px 10px 6px 14px; border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16)); cursor:move; user-select:none; }
 .rtp-head .rtp-ic{ display:inline-flex; color:var(--primary-color); }
 .rtp-head h2{ flex:1; margin:0; font-size:15px; font-weight:650; letter-spacing:-0.2px; }
@@ -3533,6 +3546,64 @@ body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
 .rtp-sug-sub{ font-size:12.5px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .rtp-sug-d{ flex:0 0 auto; font-size:12.5px; color:var(--text-muted); }
 .rtp-sug-msg{ padding:12px 10px; font-size:13px; color:var(--text-muted); }
+
+/* ══ ⚠⚠⚠ (#R299) THE DESKTOP PANEL, ONE STEP SMALLER — AND THE BOTTOM HALF GETS A FLOOR ═════════
+   「経路ポップアップ、UIがでかすぎな箇所が多々ある。見やすいのはいいが、デカすぎはやめろ。
+     上半分がでかすぎて肝心の下半分が見にくい。」
+
+   TWO SEPARATE FAULTS, and the second one is the reason the first one hurt.
+
+   ① COMPUTED from the declarations above, for the desktop panel: header 7+34+6+1 = 48 · one field
+      48 · 「経路を検索」 44 · the time row 36 · the section tabs 2+32+1 = 35 — and that is before a
+      single stop is added, each of which is another 48. Each comes down ONE step here: header 44 ·
+      field 40 · button 38 · time row 32 · tabs 31, with the type that sits in them following.
+      ⚠ THE MODE SWITCH IS THE ONE EXCEPTION, and its `min-height` is honest about being a floor:
+      that row is as tall as its CONTENT (an 18 px glyph over a label, set in js/routing-ui.js), so
+      36→32 buys nothing on its own — what the smaller label buys is about 1 px. It is left at a
+      floor rather than shrunk by making the glyph smaller, because a mode icon that stops reading
+      as a car / a train / a walker is a worse panel, not a smaller one.
+   ② …and the answers had NO FLOOR. `.rtp-fixed` is `flex:0 1 auto` (shrink 1) while `.rtp-body` is
+      `flex:1 100 auto` (shrink 100) — #R298 chose those weights so a panel dragged shorter than its
+      own form scrolls the form rather than clipping the footer, which is right. But flexbox weights
+      shrinking by `shrink × content size`, and the answers are the LONG side: a turn list of 40
+      steps outweighs a 300 px form by two orders of magnitude, so when the panel met its
+      `max-height` the ROUTES absorbed essentially all of the shrink and 「下半分が見にくい」 is what
+      that looks like. A `min-height` on the body is the floor the weights cannot cross; past it the
+      pinned block gives way and scrolls inside itself, which it is already set up to do
+      (`overflow-y:auto`), and its own cap stops it claiming half the panel before that.
+
+   ⚠ THE PHONE IS UNTOUCHED, deliberately: a finger is a finger, so `@media (max-width:767px)` below
+   keeps every 44 px target and every ≥13 px type size, and tests/smoke.spec.js R291 ⑧ measures both
+   at 320 px. That is also why this block is a MIN-WIDTH block rather than edits in place — several
+   of these declarations (`.rt-alt`, `.rt-step`, `.rtp-mode-tx`, `.rtp-tab` font) have no phone
+   override to protect them, so lowering them at the base would have lowered them on a phone too.
+   ⚠ AND `.rtp[data-dragged="1"]{max-height:none}` STILL WINS — a panel the reader sized is sized. */
+@media (min-width:768px){
+  .rtp-head{ padding:5px 8px 4px 12px; }
+  .rtp-head h2{ font-size:14px; }
+  /* ⚠ THE CAP, and it is a viewport unit rather than a percentage on purpose: an un-dragged `.rtp`
+     has `height:auto` (only a `max-height`), and a percentage max-height against an auto-height
+     parent resolves to «none» — the rule would have been silently absent exactly when it is needed. */
+  .rtp-fixed{ gap:7px; padding:8px 14px 6px; max-height:42vh; }
+  .rtp-mode{ min-height:32px; font-size:11.5px; }
+  .rtp-mode .rtp-mode-tx{ font-size:11.5px; }
+  .rtp-in{ height:40px; font-size:14.5px; }
+  .rtp-go{ min-height:38px; font-size:14px; }
+  .rtp-when select, .rtp-when input, .rtp .rtp-hyear, .rtp .rtp-hkind{ height:32px; font-size:12.5px; }
+  .rtp-tab{ min-height:28px; font-size:12.5px; }
+  /* ⚠ THE FLOOR. Below it the pinned block above gives way and scrolls inside itself (see ② above).
+     `.rtp` is 360 px at its smallest (js/routing-ui.js `MIN_H`), so a panel squeezed right down is
+     header 44 + tabs 31 + footer 47 + 180 = 302, leaving 58 px of form to scroll — nothing clips.
+     ⚠ AND THE FLOOR ITSELF YIELDS ON A SHORT WINDOW. A fixed 180 on a viewport only 400 px tall
+     would push the footer past `.rtp`'s own `max-height:calc(100% - 96px)` and `overflow:hidden`
+     would eat it — the exact 「reachable controls behind the edge」 #R298 fixed for the pinned block.
+     `min()` keeps the guarantee where there is room and drops it in proportion where there is not. */
+  .rtp-body{ min-height:min(180px,28vh); }
+  .rt-alt{ min-height:44px; padding:7px 10px; }
+  .rt-alt.on{ padding:6px 9px; }
+  .rt-alt-main{ font-size:15.5px; }
+  .rt-step{ min-height:38px; font-size:13px; }
+}
 
 /* ══ THE PHONE (§3.2) — the same element, as a three-detent bottom sheet ═══════════════════════ */
 @media (max-width:767px){

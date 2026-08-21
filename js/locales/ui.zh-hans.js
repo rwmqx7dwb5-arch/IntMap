@@ -1064,7 +1064,6 @@ window.IntMapLang.define('zh-hans', {
     'in ': "于 ",   /* atlas-console.js space.js */
     'in eclipse': "进入食",   /* atlas-console.js satellites-live.js */
     'In eclipse': "进入食",   /* satellite-detail.js */
-    'In force now': "目前生效",   /* world-packs.js */
     'in-window verified events': "时间范围内已查证的事件",   /* atlas-console.js */
     'incl.': "含",   /* satellites-live.js */
     'Inclination': "轨道倾角",   /* satellite-detail.js space.js */
@@ -4332,13 +4331,11 @@ window.IntMapLang.define('zh-hans', {
   "by state": "以州为单位",
   "by warning area": "以警报区为单位",
   "Colours": "配色",
-  "Colours are the issuing agency’s own — Japan’s are the JMA’s yellow / red / magenta / black, China’s the CMA’s four signal colours, and the rest the CAP awareness ladder. Tap a country for that agency’s exact scale.": "颜色为发布机关自身的配色——日本为气象厅的黄／红／洋红／黑，中国为气象局的四色预警信号，其余为 CAP 等级。点击国家可查看该机关的确切等级。",
   "Danger": "危险",
   "Danger warning": "危险警报",
   "Delayed": "略旧",
   "Diagnostics": "诊断",
   "Each agency’s own published scale": "各机关公布的等级",
-  "Each agency’s ranks are mapped onto these four by IntMap. Two countries at the same step do NOT necessarily face the same danger — the warning systems themselves differ. Tap a country for its own agency’s scale.": "各机关的等级由 IntMap 自行换算为这四级。同一级并不代表两国的危险程度相同——警报制度本身不同。点击国家可查看该机关的等级。",
   "Each country is drawn from its own agency, at the unit that agency issues for. Educational display — follow the official authorities.": "各国均以该国机关的发布单位绘制。仅供参考，请以官方机关发布为准。",
   "Europe — MeteoAlarm": "欧洲 — MeteoAlarm",
   "every 30 s": "每 30 秒",
@@ -4353,7 +4350,6 @@ window.IntMapLang.define('zh-hans', {
   "lower rank": "下位等级",
   "No feed connected": "未支持（未连接数据来源）",
   "Nothing in force": "未发布",
-  "Nothing in force in any connected service right now.": "目前已连接的各机关皆无发布中的警报。",
   "Nothing in force right now — this country’s service was read and had nothing to publish.": "目前无发布中的警报（已正常读取该国机关，且无发布内容）。",
   "Official": "各国官方",
   "oldest feed": "最旧的来源",
@@ -4371,7 +4367,6 @@ window.IntMapLang.define('zh-hans', {
   "The clock is the newest item in that feed, not how long ago it was fetched. A national service with nothing to publish is quiet, not broken.": "显示的时间为该来源中最新项目的时刻，并非下载时刻。没有内容可发布的机关是「安静」，而非「故障」。",
   "This agency’s own ranks": "此机关自身的等级",
   "Ultra": "极高",
-  "What is in force now": "目前发布中的警报",
   "Yellow (III)": "黄色（III级）",
   "Air quality": "空气质量",
   "Amount to pour": "注水总量",
@@ -4988,5 +4983,14 @@ window.IntMapLang.define('zh-hans', {
   "Find routes": "搜索路线",   /* (#R298) */
   "Tap the map to choose a point": "点一下地图以选择地点",   /* (#R298) */
   "The map is not ready to choose a point yet": "地图尚未就绪，无法选择地点",   /* (#R298) */
+  "Countries at Danger or above": "危险等级以上的国家",   /* (#R299) */
+  "No country is at Danger or above right now.": "目前没有国家达到危险等级以上。",   /* (#R299) */
+  "IntMap’s own conversion — the same step is not the same danger. Tap a country for its agency’s scale.": "IntMap 自行换算——同一等级不代表危险程度相同。点击国家可查看该机关的等级。",   /* (#R299) */
+  "Each agency’s own colours. Tap a country for its exact scale.": "颜色为各机关自身的配色。点击国家可查看确切等级。",   /* (#R299) */
+  "No point placed yet": "尚未设置地点",   /* (#R299) */
+  "Place the point on the map": "在地图上设置地点",   /* (#R299) */
+  "The route planner is open on the map — fill in the two fields there, or say the places here.": "已在地图上开启路线指引面板——请在面板中填入起点与目的地，或在这里告诉我地点。",   /* (#R299) */
+  "Where from? Give a place (or lng/lat).": "从哪里看的天空？请指定地点（或经纬度）。",   /* (#R299) */
+  "Where? Give the transmitter site (place, or lng/lat).": "发射机位置在哪里？请指定地点或经纬度。",   /* (#R299) */
   }
 });

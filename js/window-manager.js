@@ -499,7 +499,7 @@ window.IntMapModules.windowManager=function(HOST){
     const _inWsWin2=()=>{ try{ if(isDocked(panel)) return true; if(panel.classList&&panel.classList.contains('atl-tab')) return true; return !!(panel.parentElement&&panel.parentElement.classList&&panel.parentElement.classList.contains('ws-body')); }catch(_){ return false; } }; /* (#R153) same fix as _inWsWin: only the window's own content (direct .ws-body child) is exempt from edge-resize — in-map popups nested in the relocated #map-container resize normally */
     panel.addEventListener('pointermove',(e)=>{ if(panel.dataset.resizing||_inWsWin2()) return; const d=edgeAt(e.clientX,e.clientY); panel.style.cursor=d?CUR[d]:''; });
     panel.addEventListener('pointerleave',()=>{ if(!panel.dataset.resizing) panel.style.cursor=''; });
-    panel.addEventListener('pointerdown',(e)=>{ if(_inWsWin2()) return; if(e.target.closest&&e.target.closest('button,input,select,textarea,a,[role="button"],.atl-go,.atl-in')) return; const d=edgeAt(e.clientX,e.clientY); if(!d) return; e.preventDefault(); e.stopPropagation(); panel.dataset.resizing=d; bringToFront(panel);
+    const start=(e,d)=>{ e.preventDefault(); e.stopPropagation(); panel.dataset.resizing=d; bringToFront(panel);
       const r=panel.getBoundingClientRect(), op=panel.offsetParent||document.documentElement, opr=op.getBoundingClientRect();
       /* (#R48) ROOT CAUSE of the buggy resize: the Atlas panel is centred with transform:translateX(-50%) (from
          left:50%). The old code pinned left to the VISUAL rect but LEFT THE TRANSFORM ON, so on grab the panel
@@ -515,8 +515,52 @@ window.IntMapModules.windowManager=function(HOST){
         panel.style.setProperty('width',w+'px','important'); panel.style.setProperty('height',h+'px','important');
         panel.style.setProperty('left',l+'px','important'); panel.style.setProperty('top',t+'px','important'); panel.setAttribute('data-dragged','1'); };
       const up=(ev)=>{ delete panel.dataset.resizing; try{ panel.releasePointerCapture&&panel.releasePointerCapture(ev.pointerId); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); panel.style.cursor=''; };
-      document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
-    registerWindow(panel); }
+      document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); };
+    panel.addEventListener('pointerdown',(e)=>{ if(_inWsWin2()) return; if(e.target.closest&&e.target.closest('button,input,select,textarea,a,[role="button"],.atl-go,.atl-in')) return; const d=edgeAt(e.clientX,e.clientY); if(!d) return; start(e,d); });
+    /* ══ ⚠⚠⚠ (#R299) THE CORNER — THE ONE PLACE A PERSON AIMS, AND THE ONE PLACE THIS NEVER FIRED ══
+       「移動もリサイズも最小化もできないとかクソ」. MEASURED in production on `#route-panel` (1280×800):
+       the E / S / W / N edges resize correctly (dW +70, dH +60, …), and the SE CORNER does nothing —
+       `cursor` does not even change. The cause is not this hit test, it is that the pointer never
+       arrives: the panel has `border-radius:18px`, and border-radius CLIPS HIT-TESTING, so
+       `document.elementFromPoint` at 1–5 px inside the corner returns `canvas.maplibregl-canvas`
+       — the map, not the panel. `M` is 9, so the band that both is inside the rounded shape AND is
+       within the edge zone is the 6–9 px sliver. Raising `M` cannot fix it: the missing pixels are
+       outside the ELEMENT, so a listener on the element can never see them.
+       → the corner is caught on the DOCUMENT, in the capture phase, and decided by COORDINATES
+       against the rect — the same `edgeAt` the element path uses.
+       ⚠ CORNERS ONLY (`d.length===2`). The edges already work through the element, and a document
+       listener that also claimed them would take every click that lands within 9 px of a panel edge.
+       ⚠ AND ONLY THE TOPMOST ONE. Two floating windows can overlap, so the candidate with the
+       highest z-index wins — the same order `bringToFront` maintains — and a press that already
+       landed INSIDE some resizable panel is left to that panel's own listener. */
+    registerWindow(panel);
+    panel.__imEdge={ edgeAt, start, skip:_inWsWin2 };
+    _armCornerCatch(); }
+  let __cornerArmed=false;
+  function _armCornerCatch(){
+    if(__cornerArmed) return; __cornerArmed=true;
+    const pick=(e)=>{ let best=null, bz=-1;
+      try{ __winReg.forEach(w=>{ const E=w&&w.__imEdge; if(!E||!w.isConnected||w.dataset.resizing) return;
+        if(E.skip&&E.skip()) return;
+        try{ const cs=getComputedStyle(w); if(cs.display==='none'||cs.visibility==='hidden') return; }catch(_){ return; }
+        const d=E.edgeAt(e.clientX,e.clientY); if(!d||d.length!==2) return;
+        const z=parseInt(w.style.zIndex,10)||0; if(z>bz){ bz=z; best={w:w,d:d}; } }); }catch(_){}
+      return best; };
+    try{
+      document.addEventListener('pointerdown',(e)=>{
+        try{ if(e.target&&e.target.closest&&e.target.closest('[data-edge-resize="1"]')) return; }catch(_){}
+        const p=pick(e); if(!p) return; p.w.__imEdge.start(e,p.d); },true);
+      /* the cursor for those pixels belongs to whatever is under them, so it is written on the body
+         and cleared the moment the pointer leaves the corner — a stuck resize cursor over the map is
+         a worse defect than the one this fixes */
+      let cur='';
+      document.addEventListener('pointermove',(e)=>{
+        let want=''; try{ if(!(e.target&&e.target.closest&&e.target.closest('[data-edge-resize="1"]'))){
+          const p=pick(e); if(p) want=(p.d==='nw'||p.d==='se')?'nwse-resize':'nesw-resize'; } }catch(_){}
+        if(want===cur) return; cur=want;
+        try{ document.body.style.cursor=want; }catch(_){} },true);
+    }catch(_){}
+  }
   /* ══ ⚠⚠ (#R238) THE APP-SIDE GLUE, HERE RATHER THAN IN THE SHELL ═════════════════════════════════
      Three things, and only three: the tab exists while the setting is on, the panels are re-parented
      above, and leaving the mode while the dock tab is open has to leave the reader somewhere. It
