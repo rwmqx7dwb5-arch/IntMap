@@ -577,10 +577,18 @@ window.IntMapModules.weatherEC=function(HOST){
        cold browser. It is the same latitude band the wind already reads, for the variable that is
        actually on top, so it is started when the layer is switched on and when the hour changes,
        and it is a no-op when that frame is already in hand. */
-    function warmReadout(){
+    /* ⚠ (#R290 追記) …AND IT WAITS, for the reason in js/wx-ecmwf.js's note on `prefetch`: this read
+       shares the module's one queue with the field the particles are flying on, and it is a number
+       in a corner. Deferred until the axis has been still, and a further step replaces the pending
+       schedule. Measured: with a raster on, a wind step went from 10.5 s to about a second. */
+    let warmT=0;
+    function warmReadout(){ clearTimeout(warmT); warmT=setTimeout(warmReadoutNow,2500); }
+    function warmReadoutNow(){
       try{ const cfg=LAYERS.filter(l=>state[l.id].on&&l.type==='raster'&&srcOf(l)!=='merra2').pop();
         if(!cfg) return;
-        let band=null; try{ const b=GE().camera.getBounds(); band=EC().bandFor(b.getSouth(),b.getNorth()); }catch(_){}
+        /* ⚠ (#R290 追記) `bandNear` — this frame exists for the cursor readout, not for the picture,
+           and a globe-sized request here evicts the wind's field (see FRAME_SAMPLES). */
+        let band=null; try{ const b=GE().camera.getBounds(); band=EC().bandNear(b.getSouth(),b.getNorth()); }catch(_){}
         EC().load(cfg.variable,null,band).catch(()=>{});
       }catch(_){}
     }

@@ -342,7 +342,18 @@
      to avoid. */
   var frames = [];          /* most-recent first: [{key, variable, file, data, grid, band}, …] */
   var held = null;          /* frames[0] — the most recent, kept as a name the module already uses */
-  var FRAME_SAMPLES = 16e6;
+  /* ⚠⚠⚠ (#R290 追記) THE WIND'S GLOBE IS TWO ARRAYS, AND IT NEARLY FILLED THE BUDGET ON ITS OWN.
+     MEASURED on the deployed build, world zoom, wind + temperature both on: the wind's frame is
+     **13,199,360 samples** (u AND v, 6.6 M each — `bandFor` returns null when the view spans more
+     than 120° of latitude, so at world zoom it reads the planet). Against a 16 M budget, a second
+     globe-sized frame of ANY variable pushed the total to 19.8 M and `keepFrame` dropped the older
+     entry — so the wind and the readout EVICTED EACH OTHER, and on the wind's next time step
+     `sampler()` came back null and the particles stopped. That is #R276 追記's defect wearing a
+     different hat: one layer's request taking another layer's field away.
+     → the budget has room for the wind's pair PLUS one ordinary globe (24 M ≈ 96 MB of Float32),
+     and — the half that actually matters — the READOUT never asks for a globe at all. See
+     `bandNear`: a point value needs the latitudes on screen, not the planet. */
+  var FRAME_SAMPLES = 24e6;
   function frameSize(f) { try { return (f.data.values ? f.data.values.length : 0) + (f.data.directions ? f.data.directions.length : 0); } catch (_) { return 0; } }
   function frameFor(key) { for (var i = 0; i < frames.length; i++) if (frames[i].key === key) return frames[i]; return null; }
   function frameCovering(key, band) {
@@ -491,6 +502,17 @@
     if (n2 - s2 >= 120) return null;
     return [-180, Math.round(s2 * 10) / 10, 180, Math.round(n2 * 10) / 10];
   }
+  /* ⚠ (#R290 追記) …AND A BAND THAT IS NEVER THE PLANET, for a reader that wants a POINT.
+     `bandFor` answers 「what does this picture cover」 and honestly says 「everything」 at world
+     zoom. The cursor readout is not a picture: it needs the value under one point, so it asks for
+     the latitudes on screen capped at ±30° of the centre — about 2.2 M samples against 6.6 M — and
+     re-asks when the reader leaves that band (the band is part of its 「already asked」 key). */
+  function bandNear(south, north) {
+    if (!isFinite(south) || !isFinite(north)) return bandFor(south, north);
+    var c = (south + north) / 2, half = Math.min(30, Math.max(6, (north - south) / 2 * 1.35));
+    var s2 = Math.max(-90, c - half), n2 = Math.min(90, c + half);
+    return [-180, Math.round(s2 * 10) / 10, 180, Math.round(n2 * 10) / 10];
+  }
   /* ⚠⚠ (#R276 追記2) `release(variable)` — A LAYER MAY ONLY DROP ITS OWN FRAME.
      MEASURED: switching the wind layer OFF called `release()` unqualified, which cleared `held` AND
      `loadingKey` — so a load of a DIFFERENT variable that was in flight at that moment resolved,
@@ -570,7 +592,23 @@
      file's index blocks are cached, so this is the difference between a step that stutters and one
      that does not. */
   var warmed = Object.create(null);
+  /* ⚠⚠⚠ (#R290 追記) WARMING MUST NOT QUEUE AHEAD OF THE THING IT IS WARMING FOR.
+     「時刻を変えたときに、前の時刻のパーティクルの残像がしばらくの間残るのをやめろ。」 — MEASURED,
+     one step, time until the new hour's field is actually in hand:
+         z4.5, wind alone                     1.0 s
+         world zoom, wind alone               3.5 s
+         z4.5, wind + the temperature raster  **10.5 s**
+     Every read this module starts goes through ONE queue (see `serial` — it has to, the SDK has one
+     reader). So the neighbouring hours being warmed, and the band the cursor readout wants, were
+     sitting in front of the picture the reader is watching. Warming is by definition the work that
+     can wait: it is deferred until the axis has been STILL for a while, and a further step replaces
+     the pending schedule rather than adding to it. */
+  var warmT = 0;
   function prefetch(variables, i) {
+    clearTimeout(warmT);
+    warmT = setTimeout(function () { warmT = 0; _prefetchNow(variables, i); }, 2500);
+  }
+  function _prefetchNow(variables, i) {
     if (!sdk || !meta) return;
     var f = fileUrl(i);
     if (!f || warmed[f]) return;
@@ -887,6 +925,7 @@
     release: release,
     sampler: sampler,
     bandFor: bandFor,
+    bandNear: bandNear,
     bandCovers: bandCovers,
     /* (#R290) …of a NAMED variable, because there is more than one frame now: the wind asks whether
        ITS band still covers the view, and the answer must not be the temperature's. */
