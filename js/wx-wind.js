@@ -160,8 +160,20 @@
     ok = initGL();
     if (!ok) { try { ctx2d = canvas.getContext('2d'); } catch (_) { ctx2d = null; } }
 
+    /* ══ ⚠⚠⚠ (#R290) THE FLASH WAS A RESIZE THAT RESIZED NOTHING ══════════════════════════════
+       「点滅してしまうバグが発生する。」 js/weather.js calls `resize()` from the map's `moveend`, i.e.
+       at the end of EVERY pan and EVERY zoom — and this ran unconditionally. Assigning
+       `canvas.width` clears a canvas **even when the value is identical**, `makeTargets()` deletes
+       and re-creates both trail framebuffers, and `cleared = true` throws away the streaks. So the
+       whole animation was wiped and rebuilt from nothing every time the reader let go of the map:
+       one blank frame followed by three-quarters of a second of the trail growing back. That is
+       the blink, and the window was never a different size.
+       → a resize to the size it already is returns immediately. A real size change still does the
+       full rebuild, because then the buffers genuinely have the wrong dimensions. */
     function resize(w, h, ratio) {
-      W = Math.max(1, w | 0); H = Math.max(1, h | 0); dpr = ratio || 1;
+      var nw = Math.max(1, w | 0), nh = Math.max(1, h | 0), nd = ratio || 1;
+      if (nw === W && nh === H && nd === dpr && canvas.width === Math.round(nw * nd)) return;
+      W = nw; H = nh; dpr = nd;
       canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
       if (gl) { gl.viewport(0, 0, canvas.width, canvas.height); makeTargets(); }
@@ -284,11 +296,21 @@
     }
 
     /* The particle budget follows the MEASURED cost of drawing it. A machine that cannot hold the
-       frame gets fewer particles rather than a slideshow, and one that has room gets them back. */
+       frame gets fewer particles rather than a slideshow, and one that has room gets them back.
+       ⚠ (#R290) …WITH HYSTERESIS. The thresholds were 9 ms to shrink and 4.5 ms to grow, decided
+       every 30 frames from a 30-frame mean — so a machine whose frame cost sits near either of
+       them cut 18 % of its particles, measured under budget on the next window, put 12 % back, and
+       oscillated for ever. A density that pulses twice a second is 「点滅」 too, from the other
+       side. A change now needs the SAME verdict twice in a row, the dead band is wider, and the
+       steps are smaller — so the governor still reacts to a machine that genuinely cannot hold the
+       frame, and stops reacting to noise. */
+    var _verdict = 0;
     function govern() {
-      if (frameMs > 9 && parts.length > 900) parts.length = Math.floor(parts.length * 0.82);
-      else if (frameMs < 4.5 && parts.length < target) {
-        var add = Math.min(target - parts.length, Math.ceil(target * 0.12));
+      var want = (frameMs > 11) ? -1 : (frameMs < 5.5 && parts.length < target) ? 1 : 0;
+      if (want === 0 || want !== _verdict) { _verdict = want; return; }
+      if (want < 0 && parts.length > 900) parts.length = Math.floor(parts.length * 0.90);
+      else if (want > 0) {
+        var add = Math.min(target - parts.length, Math.ceil(target * 0.08));
         for (var i = 0; i < add; i++) parts.push(spawn({}));
       }
     }

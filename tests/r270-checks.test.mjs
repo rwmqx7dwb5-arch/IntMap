@@ -339,7 +339,11 @@ test('R270 ⑧ a country whose agency draws areas is never washed as a whole cou
      it (tier 2, which no arm of the paint expression claims). The property #R270 asserted — a
      country is never painted whole where its own units are on the map — is unchanged and is what
      the two arms below say together. */
-  assert.match(w, /return unitsOf\(c\)\?2:1;/, 'a country whose service is read but quiet is grey — per unit where it can be');
+  /* ⚠ (#R290) …and the question is 「is the unit layer drawing this country RIGHT NOW」 rather than
+     「are its shapes in the cache」: the quiet collection is bounded by the view and by the zoom
+     (see quietISOs), so a country whose units are held but off-screen must keep the country-wide
+     sheet or nothing would paint it at all. */
+  assert.match(w, /return quietSet\[c\]\?2:1;/, 'a country whose service is read but quiet is grey — per unit where it can be');
   /* the paint must know all three states, or one of them falls through to «nothing» */
   const pi = s.indexOf("'match',['to-number',['feature-state','wpAlert'],-1]");
   assert.ok(pi > 0, 'the choropleth must paint from that field');

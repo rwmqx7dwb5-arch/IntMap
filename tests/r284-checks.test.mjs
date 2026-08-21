@@ -92,9 +92,16 @@ test('#R284 ③ the shape library accumulates, and there is a rung that does not
   /* the stable administrative index, and the host that actually serves the bytes */
   assert.match(src, /media\.githubusercontent\.com\/media\/wmgeolab\/geoBoundaries/,
     'raw.githubusercontent returns the Git-LFS pointer; the media host serves the file, with CORS');
-  const sh = src.match(/const shapeOf=\(a\)=>\{[\s\S]*?wholeCountryShape\(iso,a\.name\); \};/);
+  /* (#R290) the ladder is `shapeOfRaw` now — `shapeOf` wraps it in a per-(country, name) memo,
+     because it runs after every MeteoAlarm batch over all thirty-five countries and the rungs are
+     not cheap (the edit-distance one added this round sweeps the whole index). The ORDER is the
+     property this test owns, and a sixth rung joined it: the shipped world administrative index,
+     LAST, because it measures worse than the closer indexes where those exist. */
+  const sh = src.match(/const shapeOfRaw=\(a\)=>\{[\s\S]*?wholeCountryShape\(iso,a\.name\); \};/);
   assert.ok(sh, 'the MeteoAlarm ladder must exist');
-  const order = ['a.poly', 'lib', 'idx', 'aliasUnit', 'gb', 'wholeCountryShape'];
+  assert.match(src, /const shapeOf=\(a\)=>\{ if\(a\.poly\) return shapeOfRaw\(a\);/,
+    'and it is consulted through a memo, once per name');
+  const order = ['a.poly', 'lib', 'idx', 'aliasUnit', 'gb', 'wa', 'wholeCountryShape'];
   let at = -1;
   for (const step of order) {
     const k = sh[0].indexOf(step);
@@ -154,9 +161,18 @@ test('#R284 ⑥ every ECMWF layer has its own legend box and its own title', () 
      (「わざわざ分けるな」). What #R284 asserted here is still true: the forecast axis is not crammed
      into a layer's legend under a family name. Each legend states WHICH INSTANT its own picture is
      of, and that line opens the one shared control. */
+  /* ⚠ (#R290) …AND THE CONTROL IS BACK IN THE LEGEND — 「個別の時間選択UIを使え」. The floating box
+     that opened by itself stays gone (that is what #R288 was asked for, and it is still asserted).
+     What changed is where the hour is CHOSEN: in the layer's own legend, from the shared builder,
+     with an option per published valid time; `.ecl-when` is now the READING of which instant the
+     picture is of rather than a button that opens somebody else's control. */
   assert.ok(!/L\('ECMWF forecast time','ECMWF 予報時刻'/.test(src), 'the separate clock box is gone');
   assert.match(src, /class="ecl-when"/, '…and each legend says which instant its picture is of');
-  assert.match(src, /window\._imTimeMachineForecast\(\)/, '…by opening the ONE shared control');
+  assert.ok(!/function openClock\(\)/.test(src), 'and nothing opens Chronos on the layer’s behalf');
+  assert.match(src, /window\.IntMapWxPlayer\.timeUI\('ec-time-'\+cfg\.id,EC\(\),L\)/,
+    '…and the hour is chosen in this box, from the one shared builder');
+  assert.match(src, /class="dl-op-row"/,
+    '…as is the opacity, which css/intmap.css hides in the Layers panel (#R16)');
   /* the tiler has to be able to see them, or a legend sits on top of the one below it (#R276) */
   const DL = codeOnly(read('js/data-layers.js'));
   assert.match(DL, /querySelectorAll\('\[id\^="data-legend-ec-"\]'\)/,

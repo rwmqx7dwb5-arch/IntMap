@@ -153,7 +153,7 @@ window.IntMapLang.define('ru', { ui: {
       lyrSnow:"Снег и лёд",
       lyrAOD:"Аэрозоль / дымка",
       lyrNightSat:"Ночные огни (спутник)",
-      lyrWind:"Ветер (анимация)",
+      lyrWind:"Ветер",
       lgdRadarTitle:"Интенсивность дождя",
       lgdSSTTitle:"Температура моря",
       lgdWindTitle:"Скорость ветра",

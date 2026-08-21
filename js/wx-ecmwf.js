@@ -326,7 +326,35 @@
      any moment. Holding our own reference to the current frame is what keeps the particles alive
      across that eviction; holding more than one would be 100 MB+ for a picture nobody is looking
      at, so the previous frame is released the moment a new one lands. */
-  var held = null;          /* {key, variable, file, data, grid} */
+  /* ══ ⚠⚠⚠ (#R290) ONE SLOT WAS ONE VARIABLE, AND THE READOUT WANTED A SECOND ═══════════════
+     「気温レイヤーに…ホバー地点の数値を座標標高常時表示欄に表示しろ。」 — `sampler()` answers only
+     for the frame in `held`, and the ONLY thing that ever filled `held` was the wind, because the
+     raster layers are drawn by the SDK straight from `om://` tiles and never call `load()`. So
+     `IntMapECMWF.valueNow('temperature_2m', …)` was null for every reader, always, and
+     js/map-readout.js printed nothing — measured by reading, and the same is true of precipitation,
+     gusts, cloud, dew point, pressure and CAPE.
+     One slot is also why a second variable could not simply be loaded: it would EVICT the wind's
+     frame and stop the particles.
+     → a small most-recent-first list. The cap is on SAMPLES rather than on entries, because the
+     two sizes differ by seven times: a latitude band is ~935 k samples (#R288) and the whole globe
+     is 6.6 M. `FRAME_SAMPLES` is ~16 M, i.e. two globes or seventeen bands — enough for the wind
+     and whatever raster the cursor is over, and nothing like the 100 MB the single slot existed
+     to avoid. */
+  var frames = [];          /* most-recent first: [{key, variable, file, data, grid, band}, …] */
+  var held = null;          /* frames[0] — the most recent, kept as a name the module already uses */
+  var FRAME_SAMPLES = 16e6;
+  function frameSize(f) { try { return (f.data.values ? f.data.values.length : 0) + (f.data.directions ? f.data.directions.length : 0); } catch (_) { return 0; } }
+  function frameFor(key) { for (var i = 0; i < frames.length; i++) if (frames[i].key === key) return frames[i]; return null; }
+  function frameCovering(key, band) {
+    for (var i = 0; i < frames.length; i++) if (frames[i].key === key && bandCovers(frames[i].band, band)) return frames[i];
+    return null;
+  }
+  function keepFrame(f) {
+    frames = [f].concat(frames.filter(function (x) { return !(x.variable === f.variable); }));
+    var n = 0;
+    for (var i = 0; i < frames.length; i++) { n += frameSize(frames[i]); if (n > FRAME_SAMPLES && i > 0) { frames.length = i; break; } }
+    held = frames[0] || null;
+  }
   var loadingKey = '';
   /* ══ ⚠⚠⚠ ONE READER, THEREFORE ONE QUEUE ═════════════════════════════════════════════════════
      The SDK keeps a SINGLE `omFileReader` behind `getProtocolInstance`, and `ensureData` re-points it
@@ -411,11 +439,12 @@
   function load(variable, i, bounds) {
     var band = (bounds && bounds.length === 4) ? bounds : null;
     var key = stateKey(variable, '', i);
-    if (held && key && held.key === key && bandCovers(held.band, band)) return Promise.resolve(held);
+    var have = key && frameCovering(key, band);
+    if (have) return Promise.resolve(have);
     var mine = ++seq;
     return ready().then(function () {
       var key2 = stateKey(variable, '', i);          /* meta may have arrived meanwhile */
-      if (held && held.key === key2 && bandCovers(held.band, band)) return held;
+      var h2 = frameCovering(key2, band); if (h2) return h2;
       if (!key2) return null;
       loadingKey = key2;
       var inst = sdk.getProtocolInstance(omSettings());
@@ -429,7 +458,7 @@
       var st = sdk.getOrCreateState(inst.stateByKey, skey, { domain: dom, variable: variable, bounds: band || undefined }, f);
       return serial(function () {
         /* the queue may have been waiting a while — if the reader has moved on, so have we */
-        if (held && held.key === key2 && bandCovers(held.band, band)) return held;
+        var h3 = frameCovering(key2, band); if (h3) return h3;
         var warm = Promise.resolve();
         if (band) {
           var rd = inst.omFileReader;
@@ -445,7 +474,7 @@
           if (!g) return null;
           var frame = { key: key2, variable: variable, file: f, data: data, grid: g, band: band };
           if (seq === mine) {
-            held = frame; loadingKey = '';
+            keepFrame(frame); loadingKey = '';
             emit('field', { variable: variable, band: band });
           }
           return frame;
@@ -473,15 +502,22 @@
      later, in the middle of somebody else's read. Unqualified, one layer's teardown was a global
      `forget everything`. */
   function release(variable) {
+    /* (#R290) …and it drops that variable's frames, not everything held. A layer switching off
+       must not take the readout's field or the wind's with it — which is #R276 追記's rule, one
+       list along. */
     if (variable) {
-      var mine = held ? (held.variable === variable)
-        : (loadingKey ? loadingKey.indexOf('variable=' + encodeURIComponent(variable)) >= 0 : true);
-      if (!mine) return false;
+      var mineLoading = loadingKey ? loadingKey.indexOf('variable=' + encodeURIComponent(variable)) >= 0 : false;
+      var had = frames.some(function (f) { return f.variable === variable; });
+      if (!had && !mineLoading) return false;
+      frames = frames.filter(function (f) { return f.variable !== variable; });
+      held = frames[0] || null;
+      if (mineLoading) { seq++; loadingKey = ''; }
+      return true;
     }
     /* (#R288) a deliberate drop supersedes whatever is in flight, so an older read cannot land
        afterwards and put the frame back — but it still RESOLVES to its caller (see `load`). */
     seq++;
-    held = null; loadingKey = '';
+    frames = []; held = null; loadingKey = '';
     return true;
   }
 
@@ -490,11 +526,12 @@
      native 9 km field affordable instead of resampling it onto a lattice first. */
   function sampler(variable, i) {
     var key = stateKey(variable, '', i);
-    if (!held || !key || held.key !== key) return null;
-    var g = held.grid, d = held.data;
+    var fr = key ? frameFor(key) : null;
+    if (!fr) return null;
+    var g = fr.grid, d = fr.data;
     return {
       variable: variable,
-      file: held.file,
+      file: fr.file,
       hasDirection: !!d.directions,
       value: function (lat, lon) { return _lin(g, d.values, lat, lon); },
       /* speed is interpolated, bearing is nearest — a bearing is an angle and linear interpolation
@@ -631,26 +668,23 @@
     return [tms(meta.validTimes[0]), tms(meta.validTimes[meta.validTimes.length - 1])];
   }
   function covers(ms) { var s = span(); return !!(s && ms >= s[0] - 1800000 && ms <= s[1] + 1800000); }
-  /* ⚠ A BROADCAST IS NOT FREE. `IntMapTime.set` wakes every time-aware subsystem in the app — the
-     news archive, the dated NASA rasters, the historical borders, the terminator — so pushing on
-     every pixel of a drag, or on every 700 ms frame of playback, would spend the reader's machine
-     re-deriving a dozen unrelated layers for an instant they are about to leave. The push is
-     therefore TRAILING (the axis itself has already moved; only the app-wide announcement waits)
-     and is suppressed entirely while the player is running, landing once when it stops. */
+  /* ══ ⚠⚠⚠ (#R290) THE FORECAST HOUR IS NOT THE APP'S INSTANT ═══════════════════════════════
+     「ECMWF系レイヤーで、時間選択をChronosに受け流さなくてよい。個別の時間選択UIを使え。」
+
+     #R288 wired this axis to window.IntMapTime in BOTH directions: a forecast step pushed the
+     master clock (`_pushClock`), and a master-clock move pulled the axis (`_followClock`). The
+     first meant choosing an hour of weather also moved the news feed, the historical borders, the
+     day/night terminator and the country statistics to that hour — 「受け流す」 exactly. The second
+     meant the reader's chosen hour was overwritten whenever anything else touched the clock.
+     Both are gone. The model's axis is the model's; the control for it is in each weather layer's
+     own legend (js/weather.js, window.IntMapWxPlayer.timeUI), and Chronos's forecast tab still
+     drives THIS axis directly — a second view of one state, which is not a second clock.
+     `_pushNow` / `_pushClock` are kept as no-ops rather than deleted so `setIndex`'s call site
+     stays one shape, and `followClock` stays EXPORTED because it is a deliberate, explicit action
+     (Atlas asks for it when a reader says 「その時刻の天気」) rather than an automatic subscription. */
   var pushT = 0;
-  function _pushNow() {
-    clearTimeout(pushT); pushT = 0;
-    var C = _clock(); if (!C || !meta) return;
-    var vt = meta.validTimes[idx]; if (!vt) return;
-    _fromClock = true;
-    try { C.set(new Date(tms(vt)), { allowFuture: true, source: 'ecmwf' }); } catch (_) {}
-    _fromClock = false;
-  }
-  function _pushClock() {
-    if (playing) return;
-    clearTimeout(pushT);
-    pushT = setTimeout(_pushNow, 220);
-  }
+  function _pushNow() { clearTimeout(pushT); pushT = 0; }
+  function _pushClock() {}
   function setIndex(i, opt) {
     if (!meta) return;
     var n = meta.validTimes.length;
@@ -673,20 +707,9 @@
     if (!covers(ms)) return;
     setIndex(nearestTo(ms), { now: true, fromClock: true });
   }
-  /* ⚠ #R288 wrote this poll because js/app-body.js — which DECLARED window.IntMapTime — is imported
-     LAST (src/main.js), so the kernel did not exist while this file was being evaluated, and
-     subscribing into a hole is 「呼ばれていない1行」, the shape this project has paid for four times.
-     ⚠ (#R289) THE KERNEL NOW LIVES IN js/chronos.js AND IS IMPORTED EARLY, so the first attempt
-     succeeds and the ladder never runs. It stays because it is what makes the claim independent of
-     import order — the thing that was true and then quietly stopped being true is exactly what a
-     retry ladder is for (#R85, #R276 追記). */
-  var _clockWired = false;
-  (function wireClock(n) {
-    if (_clockWired) return;
-    var C = _clock();
-    if (C && C.on) { C.on(_followClock); _clockWired = true; return; }
-    if ((n | 0) < 60) setTimeout(function () { wireClock((n | 0) + 1); }, 200);
-  })(0);
+  /* (#R290) NOT SUBSCRIBED. See the note on `_pushClock`: the master clock no longer drives this
+     axis, so there is nothing to wire. `_followClock` remains callable by name for a reader who
+     explicitly asks for the weather at a given instant. */
   function step(n) { if (!meta) return; var c = meta.validTimes.length; setIndex(((idx + n) % c + c) % c, { now: true }); }
   function play() {
     if (playing || !meta) return;
@@ -865,7 +888,10 @@
     sampler: sampler,
     bandFor: bandFor,
     bandCovers: bandCovers,
-    heldBand: function () { return held ? (held.band || null) : null; },
+    /* (#R290) …of a NAMED variable, because there is more than one frame now: the wind asks whether
+       ITS band still covers the view, and the answer must not be the temperature's. */
+    heldBand: function (variable) { var f = variable ? frameFor(stateKey(variable, '')) : held; return f ? (f.band || null) : null; },
+    heldFrames: function () { return frames.map(function (f) { return { variable: f.variable, key: f.key, band: f.band, samples: frameSize(f) }; }); },
     valueAt: valueAt,
     valueNow: valueNow,
     prefetch: prefetch,
@@ -882,6 +908,6 @@
     off: function (f) { var i = listeners.indexOf(f); if (i >= 0) listeners.splice(i, 1); return this; },
     /* test seam — never called by the app */
     _settings: omSettings,
-    _state: function () { return { meta: meta, idx: idx, playing: playing, held: held ? held.key : null, variable: held ? held.variable : null }; }
+    _state: function () { return { meta: meta, idx: idx, playing: playing, held: held ? held.key : null, variable: held ? held.variable : null, frames: frames.length }; }
   };
 })();

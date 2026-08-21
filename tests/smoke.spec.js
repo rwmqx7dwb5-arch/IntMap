@@ -763,3 +763,65 @@ test('R289 ㉖ the flat map refuses the crossing into space, and the globe still
   expect(r.atFloorGlobe).toBe(true);
   expect(r.openedFromGlobe, 'the globe still leads to space').toBe(true);
 });
+
+/* ══ (#R290) THE CLAIMS THAT ONLY A BROWSER CAN SETTLE ═════════════════════════════════════════
+   Three of this round's defects were invisible to a source-level check because each one was a
+   fact about what the page ENDED UP with, not about what any one file says:
+     · `window.IntMapTimeZones` had six members declared across two blocks of js/layer-packs.js and
+       three on the page, because the second block assigned the name instead of extending it —
+       measured, Object.keys() was ['highlight','highlighted','clear'];
+     · the collapsed Chronos button said 「過去を表示中」 for an instant in the FUTURE;
+     · the layer-search box scrolls with its list (#R23), so typing in it while scrolled down
+       filtered a list whose top — and whose search box — were off-screen.                       */
+test('R290 ㉗ the time-zone accessor survives to the page, and Chronos names the side of now', async () => {
+  const r = await page.evaluate(async () => {
+    const out = { keys: Object.keys(window.IntMapTimeZones || {}).sort() };
+    try { await window.IntMapTimeZones.ensure(); } catch (_) {}
+    out.ready = !!(window.IntMapTimeZones.ready && window.IntMapTimeZones.ready());
+    out.tokyo = window.IntMapTimeZones.offsetAt(139.7, 35.7);
+    out.newYork = window.IntMapTimeZones.offsetAt(-74.0, 40.7);
+    const os = document.getElementById('ntl-open-s');
+    window.IntMapTime.set(new Date(Date.now() + 36 * 3600e3), { allowFuture: true, source: 'test' });
+    out.future = os.textContent;
+    window.IntMapTime.set(new Date(Date.now() - 36 * 3600e3), { source: 'test' });
+    out.past = os.textContent;
+    window.IntMapTime.setNow({ source: 'test' });
+    out.applied = !!document.getElementById('ntl-synced');
+    return out;
+  });
+  expect(r.keys, 'one object, both publishers').toEqual(['clear', 'ensure', 'highlight', 'highlighted', 'offsetAt', 'ready']);
+  expect(r.ready).toBe(true);
+  expect(r.tokyo, 'Natural Earth’s STANDARD offset for Tokyo').toBe(9);
+  expect(r.newYork).toBe(-5);
+  expect(r.future, '「未来を見てるときに『過去を表示中』と出てくる」').toMatch(/future|未来|Zukunft|Будущее|futuro/i);
+  expect(r.past).toMatch(/past|過去|Vergangenheit|Прошлое|pasado/i);
+  expect(r.future).not.toMatch(/tap|タップ/i);
+  expect(r.applied, '「反映内容を表示する箇所はいらない」').toBe(false);
+});
+
+test('R290 ㉘ the layer-search box brings itself to the top of its own scroller', async () => {
+  const r = await page.evaluate(async () => {
+    const dd = document.getElementById('layer-dropdown');
+    const mc = document.getElementById('map-container');
+    if (dd.parentElement !== mc) mc.appendChild(dd);
+    dd.classList.add('show'); dd.style.top = '80px'; dd.style.right = '24px';
+    await new Promise((s) => setTimeout(s, 500));
+    const box = document.getElementById('layer-search-wrap');
+    const out = { scrollable: dd.scrollHeight > dd.clientHeight + 2 };
+    if (!out.scrollable) return out;
+    dd.scrollTop = dd.scrollHeight - dd.clientHeight - 5;
+    out.boxTopBefore = Math.round(box.getBoundingClientRect().top - dd.getBoundingClientRect().top);
+    const inp = box.querySelector('input');
+    inp.value = 'wind'; inp.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((s) => setTimeout(s, 900));
+    out.boxTopAfter = Math.round(box.getBoundingClientRect().top - dd.getBoundingClientRect().top);
+    out.padTop = Math.round(parseFloat(getComputedStyle(dd).paddingTop) || 0);
+    inp.value = ''; inp.dispatchEvent(new Event('input', { bubbles: true }));
+    dd.classList.remove('show');
+    return out;
+  });
+  expect(r.scrollable, 'the panel really is taller than its box, or this measures nothing').toBe(true);
+  expect(r.boxTopBefore, 'the box starts far above the visible area').toBeLessThan(-200);
+  expect(r.boxTopAfter, 'and typing brings it to the top, inside the panel’s own padding').toBeLessThanOrEqual(r.padTop + 4);
+  expect(r.boxTopAfter).toBeGreaterThanOrEqual(-2);
+});

@@ -280,11 +280,15 @@ window.IntMapModules.mapReadout=function(HOST){
       const to=((w.dir+180)%360).toFixed(1);
       /* seconds per drift cycle: a calm breeze crawls, a jet streaks. Clamped so neither end stops
          nor strobes. */
-      const dur=Math.max(0.34,Math.min(3,1.5/(0.35+(+w.speed||0)*0.09)));
-      const ph=((typeof performance!=='undefined'?performance.now():Date.now())/1000)%dur;
+      /* ══ (#R290) THE ARROW POINTS. IT DOES NOT DRIFT. ═══════════════════════════════════════
+         「風レイヤーのホバー地点の風向きの座標標高常時表示欄での表示は、風の流れる向きに動かさなくて
+           よい。向きだけ表示しろ。」 #R289 gave this glyph a speed-scaled drift along its own axis,
+         carried across the `innerHTML` rebuild with a negative animation-delay. The reader has
+         asked for the direction and nothing else, so the motion — and the machinery that existed
+         only to keep it continuous — is gone. The rotation stays: it IS the direction. */
       const tip=L('Wind from the {d} — the arrow points the way it is blowing','{d}の風 — 矢印は風が吹いていく向き','Wind aus {d} — der Pfeil zeigt die Windrichtung','Ветер с направления {d} — стрелка показывает, куда он дует','Viento del {d} — la flecha apunta hacia donde sopla').replace('{d}',card);
       parts.push('<span class="cr-wind" title="'+window.IntMapSafe.html(tip)+'">'
-        +'<span class="cr-warr" style="transform:rotate('+to+'deg)"><i style="animation-duration:'+dur.toFixed(2)+'s;animation-delay:-'+ph.toFixed(2)+'s">'
+        +'<span class="cr-warr" style="transform:rotate('+to+'deg)"><i>'
         +'<svg viewBox="0 0 14 14" width="13" height="13" aria-hidden="true" focusable="false" fill="currentColor"><path d="M7 0.9 L11.1 10.2 L7 8.1 L2.9 10.2 Z"></path></svg>'
         +'</i></span>'+sp+' '+card+'</span>');
     } } }catch(_){}
@@ -673,13 +677,45 @@ window.IntMapModules.mapReadout=function(HOST){
     temp:()=>L('MERRA-2 monthly mean','MERRA-2 月平均','MERRA-2 Monatsmittel','MERRA-2 среднемесячное','MERRA-2 media mensual'),
     sst:()=>L('GHRSST MUR L4','GHRSST MUR L4','GHRSST MUR L4','GHRSST MUR L4','GHRSST MUR L4')
   };
+  /* ══ ⚠⚠⚠ (#R290) THE NUMBER EXISTED FOR ONE LAYER AND ONE ONLY ═════════════════════════════
+     「気温レイヤーに…ホバー地点の数値を座標標高常時表示欄に表示しろ。」
+     `IntMapECMWF.valueNow` reads the decoded field the module is HOLDING, and the only thing that
+     ever asked it to hold one was the animated wind — the raster layers are painted by the tile
+     SDK straight from `om://` and never call `load()`. So this function returned null for every
+     ECMWF raster there has ever been, silently, and the corner printed nothing.
+     Two halves to the fix: js/wx-ecmwf.js can now hold more than one variable's frame at a time
+     (a single slot would evict the wind's and stop the particles), and this asks for the one the
+     cursor is actually over — ONCE per variable and valid time, for the latitude band on screen,
+     which is the same ~1.6 MB read the wind already makes. `field` is emitted when it lands and
+     the readout re-renders, so the number appears without a second hover. */
+  /* ⚠ SUBSCRIBED FROM INSIDE, NOT AT FACTORY LEVEL. `tests/r169 #4` requires that a factory body
+     only DECLARES — a statement that runs while the factory runs takes its side effect with it and
+     reads closure state in the #R167 dead zone. The hook is attached the first time a reader
+     hovers over an ECMWF layer, which is the first moment it can matter. */
+  let _fieldAsk='', _fieldSub=false;
+  function askEcField(cfg){
+    try{
+      const EC=window.IntMapECMWF; if(!EC) return;
+      if(!_fieldSub){ _fieldSub=true;
+        try{ EC.on(ev=>{ if(ev&&ev.type==='field'){ try{ window.renderCoordReadout&&window.renderCoordReadout(); }catch(_){} } }); }catch(_){} }
+      let band=null; try{ const b=GE().camera.getBounds(); band=EC.bandFor(b.getSouth(),b.getNorth()); }catch(_){}
+      /* ⚠ THE BAND IS PART OF THE REQUEST, so it has to be part of the 「already asked」 key. The
+         field is read for the latitudes on screen (#R288); a reader who scrolls north out of that
+         band gets NaN from the sampler, and a key that named only the variable and the hour would
+         refuse to ask again — the value would simply never come back. */
+      const key=EC.stateKey(cfg.variable,'')+'#'+(band?(band[1]+','+band[3]):'*');
+      if(!key||_fieldAsk===key) return;
+      _fieldAsk=key;
+      EC.load(cfg.variable,null,band).then(()=>{ try{ window.renderCoordReadout&&window.renderCoordReadout(); }catch(_){} }).catch(()=>{});
+    }catch(_){}
+  }
   function ecmwfReadout(lng,lat){
     try{
       const EC=window.IntMapECMWF, W=window.IntMapWeatherEC;
       if(!EC||!W||!W.activeVariable) return null;
       const cfg=W.activeVariable(); if(!cfg) return null;
       const v=EC.valueNow(cfg.variable,lat,lng);
-      if(v==null) return null;
+      if(v==null){ askEcField(cfg); return null; }
       const lg=EC.legend(cfg.variable,true);
       let out, unit=(lg&&lg.unit)||'';
       if(cfg.kind==='temp'){ const um=window.imUnitTemp||'both';

@@ -254,7 +254,13 @@ test('R204 ⑦ pressing an offset highlights every band on it', () => {
   assert.match(lp, /if\(fromLabel && e\) e\.__tzTaken=true;/);
   assert.ok(lp.indexOf("['tzl-time',true]") < lp.indexOf("['tzl-fill',false]"), 'the label is wired first');
   assert.match(lp, /setHighlight\(\(hlZone!=null&&\+z===hlZone\)\?null:z\)/, 'a second press clears it');
-  assert.match(lp, /window\.IntMapTimeZones=\{ highlight:/, 'published so Atlas and the tests can ask');
+  /* ⚠ (#R290) EXTENDED, NOT ASSIGNED. This literal used to REPLACE the object #R289 published two
+     screens above it, which is why 「地図の中心の標準時」 silently gave every reader their device
+     clock. The published name has to end up with BOTH sets of members, so that is what is asked. */
+  assert.match(lp, /window\.IntMapTimeZones=Object\.assign\(window\.IntMapTimeZones\|\|\{\},\{ highlight:/,
+    'published so Atlas and the tests can ask — by extending, never by replacing');
+  assert.ok(!/window\.IntMapTimeZones=\{/.test(lp),
+    'nothing in this file assigns the name outright: a second assignment would erase the first');
 });
 
 /* ── ⑦b THE BUILD STAMP — the EXACT pin lives in the current round's file (#R202) ─────────────── */
