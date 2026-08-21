@@ -310,10 +310,21 @@ window.IntMapModules.newsTimeline=function(HOST){
        ⚠ AND IT HAS TO FOLLOW THE MAP. 「地図中心の」 is a claim about where the camera is, so an
        answer computed once when the option was chosen is only right until the reader pans. The
        panel closes on `dragstart`, so this costs one recomputation per view, not one per frame. */
-    function zoneEnsure(){ if(zone!=='map') return;
-      try{ const TZ=window.IntMapTimeZones;
-        if(TZ&&TZ.ensure&&!(TZ.ready&&TZ.ready()))
-          TZ.ensure().then(()=>{ try{ refreshUI(window.IntMapTime.state()); }catch(_){} });
+    /* ⚠⚠⚠ (#R293 追記) …AND THE FIRST VERSION OF THIS FIX FELL INTO THE SAME SILENCE IT WAS FIXING.
+       MEASURED on the deployed build, preference restored, map centred on New York:
+           <select> = 'map'   ·   IntMapTimeZones.ready() = FALSE   ·   panel 19:56 · UTC+09:00
+       i.e. the device clock, again. The accessor is published by js/layer-packs.js, which
+       js/app-body.js calls at line 4296; this module is called at 3041. So at init
+       `window.IntMapTimeZones` DOES NOT EXIST YET, and `TZ&&TZ.ensure` — written to be safe — was
+       a second silent fallback in the same place as the first.
+       → poll for the owner, the way every other cross-module reader in this app does
+       (js/weather.js `wireClock`, js/wx-ecmwf.js `wireClock`). Sixty tries at 200 ms is twelve
+       seconds; a reader whose zone is not 'map' never enters the ladder at all. */
+    function zoneEnsure(n){ if(zone!=='map') return;
+      let TZ=null; try{ TZ=window.IntMapTimeZones; }catch(_){}
+      if(!TZ||!TZ.ensure){ if((n|0)<60) setTimeout(()=>zoneEnsure((n|0)+1),200); return; }
+      try{ if(TZ.ready&&TZ.ready()){ refreshUI(window.IntMapTime.state()); return; }
+        TZ.ensure().then(()=>{ try{ refreshUI(window.IntMapTime.state()); }catch(_){} });
       }catch(_){} }
     if(zoneSel) zoneSel.addEventListener('change',()=>{ zone=zoneSel.value||'user';
       try{ localStorage.setItem(ZKEY,zone); }catch(_){}

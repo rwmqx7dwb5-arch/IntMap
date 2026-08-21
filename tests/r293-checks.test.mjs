@@ -226,11 +226,21 @@ test('R293 ⑥ the bundled world index is a floor, upgraded per country when it 
 /* ── ⑦ 「Chronosの地図中心の標準時にする機能、機能していない」 — the third cause ─────────────── */
 test('R293 ⑦ the map-centre clock asks for its data from BOTH doors, and follows the camera', () => {
   const t = TL();
-  assert.match(t, /function zoneEnsure\(\)\{ if\(zone!=='map'\) return;/, 'asking is a function');
+  assert.match(t, /function zoneEnsure\(n\)\{ if\(zone!=='map'\) return;/, 'asking is a function');
+  /* ⚠⚠⚠ (#R293 追記) …AND IT WAITS FOR ITS OWNER. js/app-body.js calls this module at line 3041 and
+     publishes the accessor at 4296, so at init `window.IntMapTimeZones` does not exist yet — the
+     first version of this fix guarded with `TZ&&TZ.ensure` and thereby became a SECOND silent
+     fallback in the same place as the first (measured on the deployed build: ready() false, the
+     device clock shown for a map centred on New York). */
+  assert.match(t, /if\(!TZ\|\|!TZ\.ensure\)\{ if\(\(n\|0\)<60\) setTimeout\(\(\)=>zoneEnsure\(\(n\|0\)\+1\),200\); return; \}/,
+    'and it polls for the owner rather than giving up silently');
   assert.match(t, /TZ\.ensure\(\)\.then\(\(\)=>\{ try\{ refreshUI/, '…and it re-renders when the data lands');
   /* the two doors: the reader choosing it, and a preference restored from localStorage */
-  assert.equal((t.match(/zoneEnsure\(\)/g) || []).length, 3,
-    'one declaration and TWO callers — the change handler and boot');
+  /* the change handler and boot both call it; the retry ladder calls itself with a counter */
+  assert.equal((t.match(/zoneEnsure\(\)/g) || []).length, 2,
+    'TWO callers — the change handler and boot');
+  assert.equal((t.match(/zoneEnsure\(/g) || []).length, 4,
+    '…one declaration, two callers, and the retry');
   assert.match(t, /tl\.classList\.add\('collapsed'\); localizeChrome\(\); applyMode\('year'\);\s*zoneEnsure\(\);/,
     'a restored preference fires no change event, so boot has to ask');
   /* 「地図中心の」 is a claim about where the camera IS */
