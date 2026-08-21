@@ -110,8 +110,13 @@ test('⑥ tides get a date field and playback, and no clock of their own', () =>
   const s = read('js/world-packs.js');
   assert.match(s, /class="wp-t-when"\s+type="datetime-local"/, 'no date/time field');
   assert.match(s, /class="wp-t-play"/, 'no play button');
-  assert.match(s, /window\.IntMapTime\.set\(new Date\(ms\),\{allowFuture:true,source:'tides'\}\)/,
+  /* ⚠ (#R297) the instant is SNAPPED to the marine model's own hour on the way in — 「データのある
+     時間のみを選べる、離散的な感じに」. What #R216 pinned is unchanged and is what is asserted here:
+     the tide layer writes the ONE master clock and keeps no clock of its own. */
+  assert.match(s, /window\.IntMapTime\.set\(new Date\(snapHour\(ms\)\),\{allowFuture:true,source:'tides'\}\)/,
     'playback does not go through the master clock');
+  assert.match(s, /const snapHour=\(ms\)=>Math\.round\(ms\/TIDE_STEP_MS\)\*TIDE_STEP_MS;/,
+    'and nothing reaches that clock on an hour the model does not publish');
   /* and a step inside the cached window must not be a request */
   assert.match(s, /function covered\(t0\)/, 'there is no cached-window test');
   assert.match(s, /function restatAll\(t0\)/, 'there is no recompute-from-cache path');

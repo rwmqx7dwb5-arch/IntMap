@@ -240,12 +240,12 @@ window.IntMapModules.compare=function(HOST){
     const _normCenter=()=>{ const c=GE().camera.getCenter(); return {lng:_wrapLng(c.lng), lat:c.lat}; };
     const _rawCenter=()=>{ const c=GE().camera.getCenter(); return {lng:c.lng, lat:c.lat}; };
     /* (#R28) The compare map must render the SAME world copies as the main map or it drifts on big
-       horizontal scrolls. The main flat map wraps ONLY in free-pan ("free"); globe and fixed-flat don't.
+       horizontal scrolls. The main flat map ALWAYS wraps (#R297 removed the fixed-extent mode); the globe does not.
        When the main wraps, the compare must wrap too — so its basemap + overlays repeat across copies and
        stay registered with the main map's copies — and we sync the RAW (unwrapped) center so both cameras
        sit in the SAME copy. Fix for "free panのflat mapで大きくスクロールするとレイヤーと地図がずれる" (#5)
        and the zoomed-out X-ray drift (#8). */
-    function _cmpWorldCopies(){ try{ return (typeof HOST.proj!=='undefined'&&HOST.proj==='flat'&&window.imFlatPan==='free'); }catch(_){ return false; } }
+    function _cmpWorldCopies(){ try{ return (typeof HOST.proj!=='undefined'&&HOST.proj==='flat'); }catch(_){ return false; } }
     function _syncCopies(){ const want=_cmpWorldCopies(); try{ if(_copiesApplied!==want){ _copiesApplied=want; cmap.camera.setRenderWorldCopies(want); } }catch(_){} return want; }
     function syncFromMain(){ if(mode==='free'||!cmap||syncing) return; syncing=true; const _copies=_syncCopies();
       try{

@@ -3294,7 +3294,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
   makeI18nLate(IM_HOST, { i18n });
   /* ---------- Settings persistence (#48) ---------- */
-  window.imLabelLang='ui'; window.imFlatPan='free';   /* (#R223) 「平面地図の表示はデフォルトでは自由スクロールに」— a saved 'fixed' from before the flip migrates ONCE, by the `…Set` latch #R155 gave the layer panel (see loadSettings). DEV-NOTES #R223 §10 */ window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imDockPanels='off';   /* (#R238) 「規定オフ」 — the dock is opt-in on every device */ window.imLayerPanel='right';   /* ⚠ (#R296) NOT A SETTING ANY MORE — 「classic dropdownを完全削除…設定から該当項目を削除」. It is still read by js/map-ui.js `apply()`, which is the one place that decides whether to build and open the sidebar, so the name survives as a constant rather than as a choice. A saved 'classic' from before this round is ignored: see loadSettings. */
+  window.imLabelLang='ui';   /* (#R297) 「平面地図は自由スクロールに一本化し、ヨーロッパ中心の固定地図は完全削除。設定の該当項目も削除。」 — `imFlatPan` is gone: a flat map ALWAYS wraps (see applyFlatPanSetting). */ window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imDockPanels='off';   /* (#R238) 「規定オフ」 — the dock is opt-in on every device */ window.imLayerPanel='right';   /* ⚠ (#R296) NOT A SETTING ANY MORE — 「classic dropdownを完全削除…設定から該当項目を削除」. It is still read by js/map-ui.js `apply()`, which is the one place that decides whether to build and open the sidebar, so the name survives as a constant rather than as a choice. A saved 'classic' from before this round is ignored: see loadSettings. */
   /* (#R170) ticker defaults to OFF everywhere ("ティッカーはオフをデフォルトに"). This also removes a long-standing
      lie: the Settings dropdown has said "Off (default)" since #R63 while #R101 actually defaulted desktop to ON.
      A saved 'on' still wins (see loadSettings); mobile hides the bar via CSS regardless. */
@@ -3346,7 +3346,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(s.newsPinMode) newsPinMode=s.newsPinMode;
     if(s.sidebarStyle) window.imSidebarStyle=s.sidebarStyle;
     if(s.labelLang) window.imLabelLang=s.labelLang;
-    if(s.flatPanSet===true && (s.flatPan==='fixed'||s.flatPan==='free')){ window.imFlatPan=s.flatPan; window.imFlatPanSet=true; }   /* (#R223) only an EXPLICIT choice survives the default flip — `flatPanSet` is written when Settings is applied */
     if(s.mapColor) window.imMapColor=s.mapColor;   if(s.dockPanels==='on'||s.dockPanels==='off') window.imDockPanels=s.dockPanels;   /* (#R238) */
     /* ⚠ (#R296) A SAVED 'classic' NO LONGER WINS, because there is no classic panel to win with. #R155
        made an explicit choice outlive the right-hand default; this round removed the thing that was
@@ -3366,7 +3365,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function saveSettings(){
     try{ localStorage.setItem('intmap_settings',JSON.stringify({
       theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, newsPinMode, accent:(window.imAccent||'default'),   /* (#R114) accent colour */
-      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, flatPanSet:window.imFlatPanSet===true, mapColor:window.imMapColor, dockPanels:window.imDockPanels, /* (#R296) layerPanel / layerPanelSet are no longer saved — the setting is gone */ ticker:window.imTicker, showRank:window.imShowRank,
+      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, mapColor:window.imMapColor, dockPanels:window.imDockPanels, /* (#R296) layerPanel / layerPanelSet are no longer saved — the setting is gone */ ticker:window.imTicker, showRank:window.imShowRank,
       newsCountries:window.imNewsCountries, newsSources:window.imNewsSources, layerFavs:window.imLayerFavs,
       navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia)
     })); }catch(_){}
@@ -3429,7 +3428,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const v=(id)=>document.getElementById(id);
       if(v('setting-sidebar-style')) v('setting-sidebar-style').value=window.imSidebarStyle;
       if(v('setting-label-lang'))    v('setting-label-lang').value=window.imLabelLang;
-      if(v('setting-flat-pan'))      v('setting-flat-pan').value=window.imFlatPan;
       if(v('setting-map-color'))     v('setting-map-color').value=window.imMapColor;   if(v('setting-dock-panels')) v('setting-dock-panels').value=(window.imDockPanels||'off');   /* (#R238) */
       if(v('setting-showrank'))      v('setting-showrank').value=(window.imShowRank||'on');   /* (#R139) default ON */
       if(v('setting-ticker'))        v('setting-ticker').value=(window.imTicker||'off');
@@ -3449,7 +3447,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(window._accentPending!=null){ window.imAccent=window._accentPending; try{ applyAccent(); }catch(_){} }   /* (#R114) commit the previewed accent (saveSettings below persists it) */
       if(v('setting-sidebar-style')) window.imSidebarStyle=v('setting-sidebar-style').value;
       if(v('setting-label-lang'))    window.imLabelLang=v('setting-label-lang').value;
-      if(v('setting-flat-pan')){     window.imFlatPan=v('setting-flat-pan').value; window.imFlatPanSet=true; }   /* (#R223) an explicit choice latches — see the default-flip note above */
       if(v('setting-map-color'))     window.imMapColor=v('setting-map-color').value;   if(v('setting-dock-panels')){ window.imDockPanels=v('setting-dock-panels').value; try{ applyDockMode(); }catch(_){} }   /* (#R238) */
       /* ⚠ (#R296) the `setting-layerpanel` commit stood here — removed with the control. */
       if(v('setting-showrank')){ window.imShowRank=v('setting-showrank').value; try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){} }   /* (#R137) re-render Countries so the rank column appears/disappears immediately */
@@ -3482,15 +3479,19 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* Persist on the simpler toggles too (these have their own handlers; we just add saving) */
   ['lang-en','lang-jp','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(saveSettings,0)); });
 
-  /* ---------- Flat-map pan mode ----------
-     Fixed = a single, non-repeating world (no infinite horizontal wrap) — you can still pan/zoom
-     to the whole globe; it just doesn't tile sideways. Free = world copies repeat left/right.
-     NEVER cage the camera with maxBounds (that was the "locked near Europe" bug). */
+  /* ══ ⚠⚠ (#R297) THE FLAT MAP WRAPS. THERE IS NO OTHER KIND ═══════════════════════════════════
+     「平面地図は自由スクロールに一本化し、ヨーロッパ中心の固定地図は完全削除。設定の該当項目も削除。」
+     「Fixed extent (Europe-centered)」 was a single, non-repeating world: pan east from Japan and the
+     map stopped dead at the antimeridian, in a frame centred on Europe because that is where
+     longitude 0 is. #R223 made 「free」 the default and kept 「fixed」 behind an explicit-choice latch;
+     this removes the MODE — option, saved value, latch, Settings row — so `imFlatPan` no longer
+     exists anywhere in the app. ⚠ NEVER cage the camera with maxBounds (the original 「locked near
+     Europe」 bug); the line below clears a cage anything else may have set, and it stays. */
   function applyFlatPanSetting(){
     if(!GE().hasRenderer()) return;
     try{ GE().camera.setMaxBounds(null); }catch(_){}
     if(currentProj!=='flat') return;
-    try{ GE().camera.setRenderWorldCopies(window.imFlatPan==='free'); }catch(_){}
+    try{ GE().camera.setRenderWorldCopies(true); }catch(_){}
     /* (#R28) keep the compare map's world-copies in step with the main map's free-pan setting */
     try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){}
   }

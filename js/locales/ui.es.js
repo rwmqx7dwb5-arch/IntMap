@@ -72,7 +72,6 @@ window.IntMapLang.define('es', { ui: {
       lblAiLocate:"Análisis de ubicación por IA", aiLocManual:"Manual (botón)", aiLocAuto:"Automático para todas las noticias",
       lblSidebarStyle:"Barra lateral", sidebarOpaque:"Sólida (predeterminada)", sidebarTranslucent:"Vidrio esmerilado", sidebarGlass2:"Vidrio esmerilado (más transparente)",
       lblLabelLang:"Etiquetas de lugares", labelLangUi:"Como el idioma de la app", labelLangLocal:"Idioma local (alfabeto original)", labelLangEn:"Siempre en inglés",
-      lblFlatPan:"Vista de mapa plano", flatPanFixed:"Encuadre fijo (Europa)", flatPanFree:"Desplazamiento libre (dar la vuelta al mundo)",
       /* (#R180) motor de renderizado */
       lblEngine:"Motor del mapa", engineMapLibre:"MapLibre — mapa 2-D/3-D (predeterminado)", engineCesium:"Cesium — globo 3-D real con relieve real",
       engineHint:"Cesium dibuja la Tierra como un elipsoide real en cualquier zoom, con las mismas imágenes de satélite y los mismos datos de elevación. Solo se descarga al seleccionarlo, y cambiar recarga la página. Las curvas de nivel y la herramienta de sólido 3-D cerrado siguen siendo exclusivas de MapLibre.",

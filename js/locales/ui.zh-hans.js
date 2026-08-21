@@ -83,8 +83,6 @@ window.IntMapLang.define('zh-hans', {
     "eyeAltOff":"关闭（默认）",
     "eyeAltOn":"开启 — 显示相机高度",
     "favLayers":"常用图层",
-    "flatPanFixed":"范围固定（以欧洲为中心）",
-    "flatPanFree":"自由卷动（可绕行世界）",
     "labelLangEn":"一律英文",
     "labelLangLocal":"当地语言（原生文字）",
     "labelLangUi":"与应用语言相同",
@@ -95,7 +93,6 @@ window.IntMapLang.define('zh-hans', {
     "lblEngine":"地图引擎",
     "lblEyeAlt":"读数中的视点高度",
     "lblFeedback":"意见回馈与错误回报",
-    "lblFlatPan":"平面地图的显示",
     "lblKbd":"键盘快捷键",
     "lblLabelLang":"地名标注",
     "lblLang":"语言",
@@ -533,6 +530,7 @@ window.IntMapLang.define('zh-hans', {
     'az.': "方位",   /* satellites-live.js */
     'Azimuth': "方位角",   /* satellite-detail.js sims.js */
     'back a quarter cycle (6h12m)': "回退四分之一周期（6小时12分）",   /* world-packs.js */
+    'back about a quarter cycle (6 h)': "回退约四分之一周期（6小时）",   /* world-packs.js */
     'back to now': "回到现在",   /* night-sky.js */
     'Back to now': "回到现在",   /* atlas-console.js news-timeline.js */
     'Back to statistics': "回到统计",   /* stats-compare.js */
@@ -1445,6 +1443,8 @@ window.IntMapLang.define('zh-hans', {
     'off-field': "场外",   /* flight-sim.js */
     'on': "开",   /* atlas-console.js */
     'on a quarter cycle (6h12m)': "前进四分之一周期（6小时12分）",   /* world-packs.js */
+    'on about a quarter cycle (6 h)': "前进约四分之一周期（6小时）",   /* world-packs.js */
+    'Worldwide': "全球",   /* world-packs.js */
     'on the ground': "在地面",   /* aircraft-detail.js */
     'on the ground — released just above the field, flying': "在地面 — 于场区上空稍高处释放，飞行中",   /* aircraft-detail.js */
     'on the line': "在在线",   /* analysis-panels.js */
