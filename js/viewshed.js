@@ -61,6 +61,22 @@ window.IntMapModules.los=function(HOST){
         losR=60,            /* range, km */
         losK=1.3333,        /* effective-earth-radius factor */
         losF=0;             /* MHz; 0 = geometry only (no Fresnel, no diffraction) */
+    /* ══ ⚠⚠ (#R296) 「電波・通信圏と見通し線解析を統合して」 ═══════════════════════════════
+       They were two tools and two models, and the second one was a SUBSET of this one. js/sims.js's
+       `IntMapRF` solved a 52×52 cell viewshed with a 4/3-earth horizon and free-space path loss;
+       this module already solves the same viewshed at raster resolution AND adds refraction as a
+       parameter, first-Fresnel clearance and knife-edge diffraction. `losF` was already the switch
+       between them — 0 is geometry, a frequency is radio — so the merge is a NAME for a state this
+       model was always able to be in, plus the one thing the other module had that this did not:
+       a transmit power, from which the link budget gives a range.
+       ⚠ NOTHING IS APPROXIMATED MORE COARSELY THAN BEFORE. The removed module's physics is a strict
+       subset of what runs here, which is why 「統合」 loses nothing — measured against its own
+       formulas: `horizonKm` is 4.12(√h+√2) and `fsplKm` is the same budget, both ported below. */
+    let losMode='los';      /* 'los' = geometry / radar shadow · 'radio' = service area */
+    let losTx=30;           /* dBm — 1 W, the ported RF default */
+    const horizonKm=(h)=>4.12*(Math.sqrt(Math.max(1,h))+Math.sqrt(2));            /* 4/3-earth radio horizon, RX at 2 m */
+    const fsplKm=(dbm,mhz)=>{ const budget=dbm-(-100)+3;                          /* RX sensitivity −100 dBm, small antenna gain */
+      const d=Math.pow(10,(budget-32.44-20*Math.log10(Math.max(1,mhz)))/20); return isFinite(d)?d:60; };
     const DIFF_DB=25;       /* knife-edge loss below which the shadow is still called usable */
 
     /* ---- the physics ------------------------------------------------------------------------- */
@@ -450,7 +466,14 @@ window.IntMapModules.los=function(HOST){
     function fmtKm(v){ return (v>=100?Math.round(v):v.toFixed(1))+' km'; }
     function render(){
       const p=panel; if(!p) return;
-      p.innerHTML='<div class="tp-header"><span class="tp-title">📡 '+L('Line of sight','見通し線解析','Sichtlinie','Линия видимости','Línea de visión')+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
+      const MB='flex:1;height:28px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-muted);border-radius:8px;cursor:pointer;font-size:11.5px;';
+      const MBON='background:var(--primary-color);color:#fff;border-color:var(--primary-color);';
+      p.innerHTML='<div class="tp-header"><span class="tp-title">📡 '+L('Radio coverage & line of sight','電波・通信圏／見通し線','Funkabdeckung & Sichtlinie','Радиопокрытие и линия видимости','Cobertura de radio y línea de visión')+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
+        /* (#R296) the two analyses, as the one switch the merged tool needs */
+        +'<div class="tp-row" style="gap:5px;">'
+          +'<button id="los-m-los" style="'+MB+(losMode==='los'?MBON:'')+'">📐 '+L('Line of sight','見通し線','Sichtlinie','Линия видимости','Línea de visión')+'</button>'
+          +'<button id="los-m-rf" style="'+MB+(losMode==='radio'?MBON:'')+'">📶 '+L('Radio coverage','電波・通信圏','Funkabdeckung','Радиопокрытие','Cobertura de radio')+'</button>'
+        +'</div>'
         +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'
         +'<label style="'+ROW+'">'+L('Antenna height (m)','アンテナ高 (m)','Antennenhöhe (m)','Высота антенны (м)','Altura de antena (m)')+'<input id="los-h" type="number" value="'+losH+'" min="0" step="5" style="'+IN+'"></label>'
         +'<label style="'+ROW+'">'+L('Target height (m)','対象物の高さ (m)','Zielhöhe (m)','Высота цели (м)','Altura del objetivo (m)')+'<input id="los-t" type="number" value="'+losT+'" min="0" step="1" style="'+IN+'"></label>'
@@ -462,6 +485,8 @@ window.IntMapModules.los=function(HOST){
           +'<option value="1.3333">'+L('radio 4/3','電波 4/3','Funk 4/3','радио 4/3','radio 4/3')+'</option>'
           +'</select></label>'
         +'<label style="'+ROW+'">'+L('Frequency (MHz)','周波数 (MHz)','Frequenz (MHz)','Частота (МГц)','Frecuencia (MHz)')+'<input id="los-f" type="number" value="'+(losF||'')+'" min="0" max="100000" step="10" placeholder="—" style="'+IN+'"></label>'
+        /* (#R296) the one control the merged-away module had that this did not */
+        +(losMode==='radio'?('<label style="'+ROW+'">'+L('TX power (dBm)','送信出力 (dBm)','Sendeleistung (dBm)','Мощность (дБм)','Potencia TX (dBm)')+'<input id="los-tx" type="number" value="'+losTx+'" min="0" max="60" step="1" style="'+IN+'"></label>'):'')
         +'</div>'
         +'<button class="tp-clear" id="los-go" style="width:100%;margin-top:6px;">'+L('Analyze','解析する','Analysieren','Анализ','Analizar')+'</button>'
         /* (#R183) the point-to-point link. Arming it makes the NEXT map click the far end — the same
@@ -484,6 +509,18 @@ window.IntMapModules.los=function(HOST){
            'Задайте высоты и дальность, затем анализ. Пустая частота = чистая геометрия; с частотой ещё зона Френеля и дифракция.',
            'Fije las alturas y el alcance y analice. Frecuencia vacía = geometría pura; con frecuencia también Fresnel y difracción.')+'</div>';
       const k=p.querySelector('#los-k'); if(k) k.value=String(losK===1?1:losK===1.13?1.13:1.3333);
+      /* ══ (#R296) THE SWITCH SETS THE PARAMETERS, IT DOES NOT HIDE A SECOND MODEL ═════════════════
+         「電波・通信圏」 is this same viewshed with the refraction the radio world uses (k = 4/3), a
+         frequency (which is what turns on Fresnel and diffraction), and a range taken from the link
+         budget instead of typed. 「見通し線」 is the same solver with the frequency cleared. Every
+         number stays visible and editable in both, so the reader can see WHAT the switch did. */
+      const _sync=()=>{ try{ const f=p.querySelector('#los-f'); if(f) f.value=losF||''; const r=p.querySelector('#los-r'); if(r) r.value=losR;
+        const kk=p.querySelector('#los-k'); if(kk) kk.value=String(losK===1?1:losK===1.13?1.13:1.3333); }catch(_){} };
+      const _budget=()=>{ losR=Math.max(1,Math.min(400,Math.round(Math.min(horizonKm(losH),fsplKm(losTx,losF||900))))); };
+      { const b=p.querySelector('#los-m-los'); if(b) b.onclick=()=>{ if(losMode==='los') return; losMode='los'; losF=0; render(); if(site) run(); }; }
+      { const b=p.querySelector('#los-m-rf'); if(b) b.onclick=()=>{ if(losMode==='radio') return; losMode='radio';
+          if(!losF) losF=900; losK=1.3333; _budget(); render(); if(site) run(); }; }
+      { const b=p.querySelector('#los-tx'); if(b) b.onchange=()=>{ const v=+b.value; if(isFinite(v)) losTx=Math.max(0,Math.min(60,v)); _budget(); _sync(); if(site) run(); }; }
       p.querySelector('.tp-close').onclick=()=>close();   /* (#R264) one implementation — see close() */
       p.querySelector('#los-go').onclick=()=>run();
       p.querySelector('#los-clr').onclick=()=>{ clear(); clearLink(); };
@@ -692,6 +729,16 @@ window.IntMapModules.los=function(HOST){
         stepM:linkLast.stepM, samples:linkLast.samples, missing:linkLast.missing,
         obstacleKm:linkLast.worst?linkLast.worst.d1/1000:null,
         clearanceM:linkLast.worst?linkLast.worst.clearance:null }:null,
+      /* (#R296) which of the two analyses the panel is showing — see the note beside `losMode`. Atlas's
+         `rfCoverage` capability is 「radio」 and its `los` capability is 「geometry」, and they are the
+         same solver, so this is the whole difference between them. */
+      setMode:(m)=>{ const want=(String(m||'').toLowerCase()==='radio')?'radio':'los';
+        if(want===losMode) return losMode;
+        losMode=want;
+        if(losMode==='radio'){ if(!losF) losF=900; losK=1.3333; losR=Math.max(1,Math.min(400,Math.round(Math.min(horizonKm(losH),fsplKm(losTx,losF))))); }
+        else losF=0;
+        if(panel&&panel.style.display!=='none') render(); return losMode; },
+      mode:()=>losMode,
       setParams:(h,r,tg,k,f)=>{ if(h!=null) losH=Math.max(0,+h||0); if(r!=null) losR=Math.min(400,Math.max(1,+r||60));
         if(tg!=null) losT=Math.max(0,+tg||0); if(k!=null) losK=Math.max(0.5,Math.min(5,+k||1.3333)); if(f!=null) losF=Math.max(0,+f||0);
         if(panel&&panel.style.display!=='none') render(); return true; },

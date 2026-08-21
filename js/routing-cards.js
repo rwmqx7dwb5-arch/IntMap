@@ -50,6 +50,8 @@ window.IntMapRouteCards = (function () {
     highspeed: '<path d="M4 15.5h13.5a3 3 0 0 0 0-6H9"/><path d="M4 9.5h3"/><path d="M2.5 12.5h5"/><path d="M6 18.5h11"/>',
     local: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.4v5l3.2 2"/>',
     pin: '<path d="M12 21.5s7-6.2 7-11.1A7 7 0 0 0 5 10.4c0 4.9 7 11.1 7 11.1z"/><circle cx="12" cy="10.2" r="2.4"/>',
+    /* (#R296) 「現在地」 — the crosshair every map app uses for it, distinct from `pin` (a place) at 16 px */
+    here: '<circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.4"/><path d="M12 1.8v3M12 19.2v3M1.8 12h3M19.2 12h3"/>',
     flag: '<path d="M6 21V4"/><path d="M6 5h11l-2.2 3.5L17 12H6"/>',
     here: '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 1.5v2.5M12 20v2.5M1.5 12H4M20 12h2.5"/>',
     left: '<path d="M15 20V12a4 4 0 0 0-4-4H6"/><path d="M9.5 4.5L6 8l3.5 3.5"/>',
@@ -89,14 +91,42 @@ window.IntMapRouteCards = (function () {
     var imp = (mi < 0.19) ? (Math.round((+metres) * 3.28084).toLocaleString() + ' ft') : ((mi < 10 ? mi.toFixed(1) : Math.round(mi).toLocaleString()) + ' mi');
     return units === 'imperial' ? imp : units === 'both' ? (met + ' (' + imp + ')') : met;
   }
-  function clock(when, o) {
+  /* ══ ⚠⚠ (#R296) 「経路機能で、現地の時刻に合わせろ」 ═══════════════════════════════════════════════
+     A departure at 08:40 in Paris is 08:40 in PARIS. Until now every clock in a route was rendered in
+     the reader's own zone — the Settings zone when they had pinned one, the device otherwise — so a
+     Tokyo→Paris itinerary read out in Tokyo time from end to end and the arrival looked like it landed
+     before it left. What a traveller needs is the wall clock at the place the event happens.
+     ⚠ THE ZONE COMES FROM THE COORDINATE, NOT FROM A NAME. `window.IntMapTimeZones.offsetAt(lng,lat)`
+     is the app's own zone lookup (#R289–#R293, the same one Chronos's 「地図中心の標準時」 uses) and it
+     answers with an OFFSET, so the wall clock is computed rather than handed to `Intl` as an IANA id
+     this program does not have. Formatting is then done in UTC on the shifted instant, which is the
+     one arrangement where the digits are the local ones on every platform.
+     ⚠ AN EXPLICIT SETTING STILL WINS. A reader who pinned a zone in Settings asked for every time in
+     the app to be in it, and this does not overrule that — `o.tz` short-circuits the whole thing. */
+  function zoneOffsetAt(ll) {
+    try {
+      if (!ll || !isFinite(+ll[0]) || !isFinite(+ll[1])) return null;
+      var TZ = window.IntMapTimeZones;
+      if (!TZ || typeof TZ.offsetAt !== 'function') return null;
+      var off = TZ.offsetAt(+ll[0], +ll[1]);
+      return (off == null || !isFinite(+off)) ? null : +off;
+    } catch (e) { return null; }
+  }
+  function offLabel(off) {
+    var s = off < 0 ? '-' : '+', a = Math.abs(off), h = Math.floor(a), m = Math.round((a - h) * 60);
+    return 'UTC' + s + (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  }
+  function clock(when, o, ll) {
     o = use(o);
     try {
       var d = (when instanceof Date) ? when : new Date(when);
       if (!isFinite(d.getTime())) return '';
       var opt = { hour: '2-digit', minute: '2-digit' };
-      if (o.tz && o.tz !== 'auto') opt.timeZone = o.tz;
-      return d.toLocaleTimeString(window.IntMapLang.locale(_lang, 'en-GB'), opt);
+      if (o.tz && o.tz !== 'auto') { opt.timeZone = o.tz; return d.toLocaleTimeString(window.IntMapLang.locale(_lang, 'en-GB'), opt); }
+      var off = zoneOffsetAt(ll || o.at);
+      if (off == null) return d.toLocaleTimeString(window.IntMapLang.locale(_lang, 'en-GB'), opt);
+      opt.timeZone = 'UTC';
+      return new Date(d.getTime() + off * 3600000).toLocaleTimeString(window.IntMapLang.locale(_lang, 'en-GB'), opt);
     } catch (e) { return ''; }
   }
   /** the clock time of arrival, and the day offset when the journey lands on another date */
@@ -232,10 +262,22 @@ window.IntMapRouteCards = (function () {
           return '<span class="rt-veh" style="color:' + esc(l.color || '#1a73e8') + ';" title="' + esc(vehicleLabel(l.mode, o)) + '">' + glyph(vehicleKey(l.mode), { size: 14 })
             + (l.route ? ('<b>' + esc(l.route) + '</b>') : '') + '</span>';
         }).join('<span class="rt-seq-arrow" aria-hidden="true">›</span>') + '</span>') : '';
-        return '<button type="button" class="rt-alt' + (on ? ' on' : '') + '" role="radio" aria-checked="' + (on ? 'true' : 'false')
-          + '" data-ai="' + i + '" aria-label="' + esc(aria) + '">'
+        /* ══ ⚠⚠ (#R296) THE CARD OPENS — 「経路カードが広がって詳細が表示されるUIに」 ═══════════════════
+           #R291 put the turn list BELOW the card list and wrote down why: 「a list of step BUTTONS
+           cannot be nested inside a card that is itself a button」. That is true of a <button>, and it
+           was the card's element that made it true — so the card stops being one. It is a `role=radio`
+           row with a tabindex, which is what the radiogroup around it already declared it to be, and
+           the steps inside are ordinary buttons in ordinary markup.
+           ⚠ `data-ai` and `.rt-alt` are UNCHANGED, so every existing handler and test still addresses
+           the same thing; only the tag and the extra child are new. `o.detail` is a function so the
+           unselected cards cost nothing to render. */
+        var det = (on && typeof o.detail === 'function') ? (o.detail(i, a) || '') : '';
+        return '<div class="rt-alt' + (on ? ' on' : '') + '" role="radio" aria-checked="' + (on ? 'true' : 'false') + '" tabindex="' + (on ? '0' : '-1') + '"'
+          + ' data-ai="' + i + '" aria-label="' + esc(aria) + '">'
+          + '<span class="rt-alt-row">'
           + '<span class="rt-alt-key" style="background:' + esc(a.color || '#1a73e8') + ';" aria-hidden="true">' + (i + 1) + '</span>'
-          + '<span class="rt-alt-body">' + head + sub + seq + '</span></button>';
+          + '<span class="rt-alt-body">' + head + sub + seq + '</span></span>'
+          + (det ? ('<div class="rt-alt-detail">' + det + '</div>') : '') + '</div>';
       }).join('') + '</div>';
   }
 
@@ -271,11 +313,16 @@ window.IntMapRouteCards = (function () {
     return (legs || []).map(function (l) {
       var k = vehicleKey(l.mode);
       var mins = Math.round((l.duration || 0) / 60);
+      /* (#R296) the provider's `END` sentinel, said in the reader's language — see js/routing.js */
+      var endTx = l.toEnd ? L('Arrival', '到着', 'Ankunft', 'Прибытие', 'Llegada') : '';
+      var toTx = l.to || endTx;
       var head = l.walk
-        ? (esc(L('Walk', '徒歩', 'Zu Fuß', 'Пешком', 'A pie')) + (l.to ? (' → ' + esc(l.to)) : ''))
-        : ((l.route ? ('<b>' + esc(l.route) + '</b> ') : '') + esc(l.headsign || l.to || '') + legBadge(l, o));
-      var sub = l.walk ? '' : (esc(l.from || '') + (l.dep ? (' · ' + esc(clock(l.dep, o))) : '')
-        + (l.arr ? (' → ' + esc(clock(l.arr, o))) : ''));
+        ? (esc(L('Walk', '徒歩', 'Zu Fuß', 'Пешком', 'A pie')) + (toTx ? (' → ' + esc(toTx)) : ''))
+        : ((l.route ? ('<b>' + esc(l.route) + '</b> ') : '') + esc(l.headsign || toTx || '') + legBadge(l, o));
+      /* (#R296) each end of a ride is clocked WHERE IT HAPPENS — a night train crossing a zone shows
+         the boarding time in the boarding city and the arrival in the arriving one. */
+      var sub = l.walk ? '' : (esc(l.from || '') + (l.dep ? (' · ' + esc(clock(l.dep, o, l.fromLL))) : '')
+        + (l.arr ? (' → ' + esc(clock(l.arr, o, l.toLL))) : ''));
       var est = l.est ? ('<span class="rt-leg-est">' + esc(L('estimate', '目安', 'Schätzung', 'оценка', 'estimación')) + '</span>') : '';
       return '<div class="rt-leg"><span class="rt-leg-ic" style="color:' + esc(l.color || '#7a7f87') + ';" aria-hidden="true">' + glyph(k, { size: 16 }) + '</span>'
         + '<span class="rt-leg-bar" style="background:' + esc(l.color || '#7a7f87') + ';" aria-hidden="true"></span>'

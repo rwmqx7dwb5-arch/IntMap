@@ -3294,7 +3294,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
   makeI18nLate(IM_HOST, { i18n });
   /* ---------- Settings persistence (#48) ---------- */
-  window.imLabelLang='ui'; window.imFlatPan='free';   /* (#R223) 「平面地図の表示はデフォルトでは自由スクロールに」— a saved 'fixed' from before the flip migrates ONCE, by the `…Set` latch #R155 gave the layer panel (see loadSettings). DEV-NOTES #R223 §10 */ window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imDockPanels='off';   /* (#R238) 「規定オフ」 — the dock is opt-in on every device */ window.imLayerPanel='right';   /* (#R154) normal-mode layer panel now defaults to the RIGHT sidebar ("通常モードのLayer panelはright sidebarをデフォルトに"); a saved 'classic' setting still wins (line ~17447) */
+  window.imLabelLang='ui'; window.imFlatPan='free';   /* (#R223) 「平面地図の表示はデフォルトでは自由スクロールに」— a saved 'fixed' from before the flip migrates ONCE, by the `…Set` latch #R155 gave the layer panel (see loadSettings). DEV-NOTES #R223 §10 */ window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imDockPanels='off';   /* (#R238) 「規定オフ」 — the dock is opt-in on every device */ window.imLayerPanel='right';   /* ⚠ (#R296) NOT A SETTING ANY MORE — 「classic dropdownを完全削除…設定から該当項目を削除」. It is still read by js/map-ui.js `apply()`, which is the one place that decides whether to build and open the sidebar, so the name survives as a constant rather than as a choice. A saved 'classic' from before this round is ignored: see loadSettings. */
   /* (#R170) ticker defaults to OFF everywhere ("ティッカーはオフをデフォルトに"). This also removes a long-standing
      lie: the Settings dropdown has said "Off (default)" since #R63 while #R101 actually defaulted desktop to ON.
      A saved 'on' still wins (see loadSettings); mobile hides the bar via CSS regardless. */
@@ -3348,10 +3348,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(s.labelLang) window.imLabelLang=s.labelLang;
     if(s.flatPanSet===true && (s.flatPan==='fixed'||s.flatPan==='free')){ window.imFlatPan=s.flatPan; window.imFlatPanSet=true; }   /* (#R223) only an EXPLICIT choice survives the default flip — `flatPanSet` is written when Settings is applied */
     if(s.mapColor) window.imMapColor=s.mapColor;   if(s.dockPanels==='on'||s.dockPanels==='off') window.imDockPanels=s.dockPanels;   /* (#R238) */
-    /* (#R155) Right sidebar is the default (#R154). Only a saved value the user EXPLICITLY chose
-       (layerPanelSet) may override it — a stale 'classic' left over from before the default flipped is
-       ignored, so returning users actually get the right sidebar they asked for (re-reported request). */
-    if(s.layerPanelSet===true && (s.layerPanel==='right'||s.layerPanel==='classic')){ window.imLayerPanel=s.layerPanel; window.imLayerPanelSet=true; }
+    /* ⚠ (#R296) A SAVED 'classic' NO LONGER WINS, because there is no classic panel to win with. #R155
+       made an explicit choice outlive the right-hand default; this round removed the thing that was
+       chosen, so the saved value is dropped on load rather than migrated — a reader who had picked
+       'classic' gets the sidebar, which is now the only layer panel there is. */
     if(s.showRank==='on'||s.showRank==='off') window.imShowRank=s.showRank;   /* (#R137) Countries rank numbers (default off) */
     if(s.ticker==='on'||s.ticker==='off') window.imTicker=s.ticker;   /* (#R63) */
     if(Array.isArray(s.newsCountries)) window.imNewsCountries=s.newsCountries;
@@ -3366,7 +3366,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function saveSettings(){
     try{ localStorage.setItem('intmap_settings',JSON.stringify({
       theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, newsPinMode, accent:(window.imAccent||'default'),   /* (#R114) accent colour */
-      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, flatPanSet:window.imFlatPanSet===true, mapColor:window.imMapColor, dockPanels:window.imDockPanels, layerPanel:window.imLayerPanel, layerPanelSet:window.imLayerPanelSet===true, ticker:window.imTicker, showRank:window.imShowRank,
+      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, flatPanSet:window.imFlatPanSet===true, mapColor:window.imMapColor, dockPanels:window.imDockPanels, /* (#R296) layerPanel / layerPanelSet are no longer saved — the setting is gone */ ticker:window.imTicker, showRank:window.imShowRank,
       newsCountries:window.imNewsCountries, newsSources:window.imNewsSources, layerFavs:window.imLayerFavs,
       navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia)
     })); }catch(_){}
@@ -3431,7 +3431,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(v('setting-label-lang'))    v('setting-label-lang').value=window.imLabelLang;
       if(v('setting-flat-pan'))      v('setting-flat-pan').value=window.imFlatPan;
       if(v('setting-map-color'))     v('setting-map-color').value=window.imMapColor;   if(v('setting-dock-panels')) v('setting-dock-panels').value=(window.imDockPanels||'off');   /* (#R238) */
-      if(v('setting-layerpanel'))    v('setting-layerpanel').value=(window.imLayerPanel||'classic');
       if(v('setting-showrank'))      v('setting-showrank').value=(window.imShowRank||'on');   /* (#R139) default ON */
       if(v('setting-ticker'))        v('setting-ticker').value=(window.imTicker||'off');
       try{ window._populateTickerSyms&&window._populateTickerSyms(); }catch(_){}   /* (#R102) ticker symbol/item picker */
@@ -3452,12 +3451,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(v('setting-label-lang'))    window.imLabelLang=v('setting-label-lang').value;
       if(v('setting-flat-pan')){     window.imFlatPan=v('setting-flat-pan').value; window.imFlatPanSet=true; }   /* (#R223) an explicit choice latches — see the default-flip note above */
       if(v('setting-map-color'))     window.imMapColor=v('setting-map-color').value;   if(v('setting-dock-panels')){ window.imDockPanels=v('setting-dock-panels').value; try{ applyDockMode(); }catch(_){} }   /* (#R238) */
-      if(v('setting-layerpanel')){ const _oldLP=window.imLayerPanel; window.imLayerPanel=v('setting-layerpanel').value; window.imLayerPanelSet=true; /* (#R155) explicit choice → now it persists across the right-default */
-        /* (#R160) ROOT CAUSE of "設定を変更すると勝手に右サイドバーが出てくる": apply() ALWAYS re-opens the right
-           panel (if(!isMob()) open()), and it ran on EVERY settings save — so changing any unrelated setting
-           (theme, units, …) reopened a panel the user had deliberately closed. Only reconcile when the layer-panel
-           MODE actually changed; otherwise leave the panel's open/closed state exactly as the user left it. */
-        if(_oldLP!==window.imLayerPanel){ try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.apply(); }catch(_){} } }
+      /* ⚠ (#R296) the `setting-layerpanel` commit stood here — removed with the control. */
       if(v('setting-showrank')){ window.imShowRank=v('setting-showrank').value; try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){} }   /* (#R137) re-render Countries so the rank column appears/disappears immediately */
       if(v('setting-ticker')){ window.imTicker=v('setting-ticker').value; try{ window.IntMapTicker&&window.IntMapTicker.apply(); }catch(_){} }
       /* (#R207) both news pickers commit in js/news-sources.js. The COUNTRY one changes which feeds
@@ -3846,7 +3840,20 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     let upT=null, applying=false;
     function collect(){ const d={};
       try{ d.settings=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); }catch(_){ d.settings={}; }
-      try{ d.widgets=JSON.parse(localStorage.getItem('intmap_widgets3')||'[]'); }catch(_){ d.widgets=[]; }
+      /* ⚠⚠⚠ (#R296) 「消したはずのウィジェットが勝手に復元して出現するのを辞めろ」 — MEASURED: one key.
+         #R292 moved the board to `intmap_widgets4` and left v3 as a migration SOURCE the new store
+         never writes again; this line still read v3, so the account held the pre-migration board,
+         frozen, and `_syncPrefsDown` fed it back through `_setActive` — which REPLACES the board.
+         Every deleted card returned on the next sign-in, on every device. ⚠ And `_payload()` (the
+         v4 record #R292 published for this round trip) was never called, so stacks came back as
+         loose cards. ⚠ `[]` must survive too: an empty board is a board (js/widget-store.js). */
+      try{ const W=window.IntMapWidgets2;
+        if(W&&W._active){ d.widgets=W._active(); if(W._payload) d.widgets4=W._payload(); }
+        else { const v4=JSON.parse(localStorage.getItem('intmap_widgets4')||'null');
+          d.widgets=(v4&&Array.isArray(v4.items))?v4.items.map(function(x){ return {u:x.i,t:x.d,cfg:x.c||{}}; })
+            :JSON.parse(localStorage.getItem('intmap_widgets3')||'[]');
+          if(v4) d.widgets4=v4; }
+      }catch(_){ d.widgets=[]; }
       try{ d.presets=JSON.parse(localStorage.getItem('intmap_layer_presets')||'[]'); }catch(_){ d.presets=[]; }
       try{ d.tempUnit=localStorage.getItem('intmap_temp_unit')||null; }catch(_){}
       try{ d.newsLang=localStorage.getItem('intmap_news_lang')||null; d.newsLangs=JSON.parse(localStorage.getItem('intmap_news_langs')||'null'); }catch(_){}
@@ -3873,7 +3880,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
         if(d.aiLocate) localStorage.setItem('intmap_ai_locate',d.aiLocate);
         if(d.avatar){ localStorage.setItem('intmap_avatar',d.avatar); } if(d.avatarImg){ localStorage.setItem('intmap_avatar_img',d.avatarImg); } try{ if(d.avatar||d.avatarImg) updateAccountButton(); }catch(_){}
         if(Array.isArray(d.presets)&&window.IntMapPresets) window.IntMapPresets._set(d.presets);
-        if(Array.isArray(d.widgets)&&window.IntMapWidgets2&&window.IntMapWidgets2._setActive) window.IntMapWidgets2._setActive(d.widgets);
+        /* (#R296) …and the same trip back down, with the v4 record when the account has one. */
+        if(Array.isArray(d.widgets)&&window.IntMapWidgets2&&window.IntMapWidgets2._setActive) window.IntMapWidgets2._setActive(d.widgets,(d.widgets4&&d.widgets4.v===4)?d.widgets4:null);
         try{ applyTheme(); }catch(_){} try{ updateI18n(); }catch(_){} try{ applySidebarStyle(); }catch(_){}
       }finally{ applying=false; }
     }catch(_){ applying=false; } };
@@ -3993,8 +4001,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     window.IntMapACLED={load:loadEvents};
   })();
 
-  /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
-  window.IntMapModules.layerSearch(IM_HOST);
+  /* ⚠ (#R296) `layerSearch` is gone — it filtered the classic dropdown, which no longer opens. */
 
   /* ===== (#R20) EDUCATION MODE — quizzes + learning cards built on the bundled country data
      ("世界地理…を学べるモード。クイズ、解説カード"). Entry: Layers → Tools → 🎓 Learn. Three quiz
@@ -4248,12 +4255,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
   window.IntMapModules.slope(IM_HOST);
 
-  /* ===== (#R89) RF / RADIO COVERAGE ("電波・通信圏") — from an antenna (position, height, power, frequency),
-     draw the terrain-aware line-of-sight service area: 360 rays marched over the real DEM, each stopped at the
-     first ridge that breaks line of sight, capped by the radio horizon (4/3-earth) and the free-space-path-loss
-     range from the link budget. Keyless (terrarium DEM). Real viewshed, not a distance circle. ===== */
-  /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.rf(IM_HOST);
+  /* ⚠ (#R296) `rf` is gone — 「電波・通信圏と見通し線解析を統合して」. Its physics was a strict
+     subset of js/viewshed.js, which is the merged tool; the TX power and link budget moved there. */
 
   /* ===== (#R90) SUN & SHADOW ("日照・影") — pick a date+time and see the sun's position, the day's sun-path times,
      and REAL cast shadows: OSM buildings in view are projected along the sun vector (length = height / tan(altitude))
@@ -4267,24 +4270,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      graph, Dijkstra from the nearest station (edge time = length / class speed), then every station reached within
      budget is plotted (coloured by minutes) and a reachable-area hull (stations buffered by the leftover walk time)
      is drawn. Complements the drive/walk/cycle Valhalla isochrone. Keyless. ===== */
-  /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
+  /* (#R166) moved to js/sims.js. ⚠ (#R296) it still LOADS and has no row of its own: it is the
+     `transit` mode of the reachable-area panel (js/map-tools.js). Only the door moved. */
   window.IntMapModules.transitReach(IM_HOST);
 
-  /* ===== (#R92) UNIFIED DISASTER SIMULATOR ("災害シミュレーター") — one framework, one panel, one time slider for
-     FLOOD & TSUNAMI (connected DEM flood-fill / inundation from real elevation), ASHFALL & SMOKE (wind-advected
-     downwind plume on live Open-Meteo wind), and RADIOACTIVE fallout (delegates to the existing Lagrangian
-     IntMapRadiation). Pick a hazard + origin + conditions; the slider steps the impact area through time. Keyless.
-     EDUCATIONAL approximation — in a real emergency follow official authorities. ===== */
-  /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.disaster(IM_HOST);
+  /* ⚠ (#R296) `disaster` is gone — 「4つのうち、放射性物質拡散シミュレーションを残し全削除」. Its
+     fourth hazard only opened `IntMapRadiation`, which has its own row — and, now, its own panel. */
 
-  /* ===== (#R93) EARTH REPLAY — "世界を巻き戻す" — a master clock that reconstructs the world at a chosen moment by
-     driving EVERY dated layer from one time axis: a real day/night terminator computed for the datetime (works for
-     ANY date), plus — for dates within the archives' reach — the time-travel of news / satellite imagery / quakes
-     (existing timeTravel engine) and any dated raster layers (temp/precip/SST/… via refreshDatedLayer). Not a
-     separate history map — it puts the existing dated features onto one shared globe clock. ▶ plays time forward. ===== */
-  /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.earthReplay(IM_HOST);
+  /* ⚠ (#R296) `earthReplay` is gone — 「存在意義が不明だから全削除」. Chronos is that clock. */
 
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
   window.IntMapModules.railSeaOverlays(IM_HOST);

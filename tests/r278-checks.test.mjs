@@ -78,9 +78,16 @@ test('R278 ② no capability is implemented and invisible', () => {
      failure with its name on it rather than a count that moved */
   const lines = ATLAS().split(/\r?\n/);
   const sys = catalogueText(lines);
-  for (const t of ['isochrone', 'optimizeRoute', 'objects', 'slope', 'rfCoverage', 'earthReplay']) {
+  /* ⚠ (#R296) FIVE, NOT SIX. `earthReplay` was deleted whole this round — 「「地球リプレイ」は存在
+     意義が不明だから全削除」 — dispatch case, module, tools row, local matcher and catalogue entry
+     together, so it is neither implemented nor described. #R278's rule is about the GAP between the
+     two, and a capability that exists in neither place opens no gap; scripts/atlas-catalog.mjs
+     (which runs in `npm test`) is what keeps the general form of that rule. The named five stay named. */
+  for (const t of ['isochrone', 'optimizeRoute', 'objects', 'slope', 'rfCoverage']) {
     assert.ok(sys.includes(`{"type":"${t}"`), `${t} must be catalogued as an emittable action`);
   }
+  assert.ok(!sys.includes('{"type":"earthReplay"'), 'and earthReplay is described nowhere, having been removed');
+  assert.ok(!ATLAS().includes("case 'earthReplay':"), '…including in the dispatch');
   /* The mirror question — «does the catalogue offer anything the dispatch cannot run?» — is NOT
      asserted here, and the reason is worth writing down rather than leaving as an omission: the
      catalogue uses {"type":…} for NESTED schemas too, not only for actions. Running it once found
@@ -192,13 +199,26 @@ test('R278 ⑥ the isochrone reports failure when nothing reached the map', () =
   assert.match(body, /reason:'render'/, 'a map that could not be written to is its own failure, distinct from the router');
   assert.match(body, /!polys\.length/, 'a response carrying no polygon is not a success either');
 
-  const iSet = body.indexOf('setSourceData');
+  /* ⚠ (#R296) ANCHOR ON THE WRITE THAT REPORTS SUCCESS, not on the first `setSourceData` in the
+     function. 「到達圏と公共交通機関の到達圏に分離するのを辞めろ」 added a `transit` branch that
+     CLEARS this source before handing to the rail model — a legitimate write, earlier in the body,
+     which made the slice land on a call that never claimed anything. The claim is `features:feats`. */
+  const iSet = body.indexOf('features:feats');
   const after = body.slice(iSet, iSet + 400);
   assert.match(after, /hasSource\(SRC\)/, 'the write is confirmed against the source that had to exist');
   assert.ok(/if\(!\w+\)\s*\{[^}]*reason:'render'/.test(after), 'and an unconfirmed write returns before the ok:true line');
 
-  const iOk = body.indexOf('return {ok:true');
-  assert.ok(iOk > iSet, 'ok:true still comes last');
+  /* ⚠ (#R296) THE FUNCTION NOW HAS TWO SUCCESSES, and each must be earned by ITS OWN engine.
+     The road path's `ok:true` still follows the confirmed write; the `transit` branch added this
+     round returns through the rail model, so what it must not do is claim success without one. */
+  const iOk = body.lastIndexOf('return {ok:true');
+  assert.ok(iOk > iSet, 'the road path’s ok:true still comes after its confirmed write');
+  const tr = body.slice(body.indexOf("if(cost==='transit')"), iSet);
+  assert.ok(tr.length > 0, 'the transit branch is in this function');
+  assert.match(tr, /if\(!r\|\|!r\.ok\)\{[^}]*renderPanel\('err'\)/,
+    'and a transit answer that did not come back is a failure, not a silent ok');
+  assert.ok(tr.indexOf('return {ok:true') > tr.indexOf('if(!r||!r.ok)'),
+    '…which is returned BEFORE its own ok:true line');
   assert.ok(!/try\{ GE\(\)\.layers\.setSourceData\(SRC,\{type:'FeatureCollection',features:feats\}\); \}catch\(_\)\{\}/.test(body),
     'the swallowed write is gone, in the syntax it was written in');
 });

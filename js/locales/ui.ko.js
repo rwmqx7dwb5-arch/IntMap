@@ -4860,4 +4860,26 @@ window.IntMapLang.define('ko', { ui: {
   "Your most recent data": "마지막으로 가져온 데이터",
   "Zone": "타임존",
   "zoom": "줌",   /* (#R291) */
+  "Arrival": "도착",   /* (#R296) */
+  "Close the directions panel (this also removes the route from the map)": "경로 패널 닫기 (지도의 경로도 함께 사라집니다)",   /* (#R296) */
+  "Could not run — the live wind field was unavailable.": "실행할 수 없습니다 — 실시간 바람 데이터를 가져오지 못했습니다.",   /* (#R296) */
+  "Getting your location…": "현재 위치를 가져오는 중…",   /* (#R296) */
+  "Lagrangian dispersion over the live wind field, with decay and wet deposition. Educational — in a real emergency follow the official authorities.": "실시간 바람장 위의 라그랑주 확산 모델(감쇠·습성 침착 포함). 교육용 근사이며, 실제 재난 시에는 공식 기관의 지시를 따르십시오.",   /* (#R296) */
+  "No source placed yet": "방출원이 아직 설정되지 않았습니다",   /* (#R296) */
+  "Place the source on the map": "지도에서 방출원 설정",   /* (#R296) */
+  "Radio coverage & line of sight": "전파 도달권 / 가시선",   /* (#R296) */
+  "Radioactive dispersion": "방사성 물질 확산",   /* (#R296) */
+  "Reach": "도달",   /* (#R296) */
+  "Reachable area (drive/walk/cycle/transit)": "도달권 (자동차·도보·자전거·대중교통)",   /* (#R296) */
+  "Release (h)": "방출 시간 (h)",   /* (#R296) */
+  "Rides the real rail network (OpenStreetMap), at typical speeds per line class — not a published timetable. Walk to the nearest station is included.": "실제 철도망(OpenStreetMap)을 노선 등급별 표준 속도로 따라간 범위입니다(공표 시각표가 아닙니다). 가장 가까운 역까지의 도보 시간을 포함합니다.",   /* (#R296) */
+  "Run the dispersion": "확산 실행",   /* (#R296) */
+  "Signal from a transmitter here, and what the terrain hides": "여기에 둔 송신기의 도달 범위와 지형이 가리는 곳",   /* (#R296) */
+  "Tap the map to place the release source.": "지도를 눌러 방출원을 놓으십시오.",   /* (#R296) */
+  "Time — the rail model solves one budget, so the largest is used": "시간 — 철도 모델은 하나의 소요 시간만 풀기 때문에 가장 큰 값을 사용합니다",   /* (#R296) */
+  "Times are typical (no live traffic).": "소요 시간은 실시간 교통 상황을 반영하지 않은 표준값입니다.",   /* (#R296) */
+  "times below are local to each place": "아래 시각은 각 지점의 현지 시간입니다",   /* (#R296) */
+  "Use my current location": "현재 위치 사용",   /* (#R296) */
+  "Use my location (permission was refused)": "현재 위치 사용 (권한이 거부되었습니다)",   /* (#R296) */
+  "Window (h)": "추적 시간 (h)",   /* (#R296) */
 } });

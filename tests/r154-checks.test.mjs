@@ -103,9 +103,16 @@ test('R154 #7 Atlas voice input', () => {
   assert.match(html, /L\('Voice input','音声入力','Spracheingabe','Голосовой ввод','Entrada de voz'\)/, 'mic title localized to 5 languages');
 });
 
-test('R154 #8 Layer panel defaults to the right sidebar (normal mode)', () => {
-  assert.match(html, /window\.imLayerPanel='right';/, "default is 'right'");
-  assert.match(html, /if\(s\.layerPanelSet===true && \(s\.layerPanel==='right'\|\|s\.layerPanel==='classic'\)\)\{ window\.imLayerPanel=s\.layerPanel;/, 'R155: only an EXPLICITLY-chosen saved value overrides the right default (stale classic no longer wins)');
+/* ⚠ (#R296) THIS ROUND REMOVED THE CHOICE, SO THE CHECK BECAME AN INVARIANT ABOUT THERE BEING ONE.
+   「レイヤー選択欄はclassic dropdownを完全削除。（右サイドバー形式に一本化し、設定から該当項目を削除。）」
+   #R154 asserted the DEFAULT was 'right' and #R155 that a saved value could override it. There is no
+   longer anything to default away from: what has to stay true is that the value is fixed and that no
+   saved setting can move it — which is a stronger statement than either of the two it replaces. */
+test('R154 #8 / R296: the layer panel is the right sidebar, and nothing can choose otherwise', () => {
+  assert.match(html, /window\.imLayerPanel='right';/, "the one value");
+  assert.doesNotMatch(html, /window\.imLayerPanel=s\.layerPanel/, 'a saved setting cannot reassign it');
+  assert.doesNotMatch(html, /window\.imLayerPanel=v\('setting-layerpanel'\)/, 'and neither can a control');
+  assert.doesNotMatch(html, /id="setting-layerpanel"/, 'the Settings row is gone');
 });
 
 test('R154 #9 Right sidebar resizable + smaller default', () => {

@@ -68,7 +68,11 @@ const MOVED = {
   'js/weather.js': ['wind', 'weatherEC', 'weatherPanel'],
   'js/layer-packs.js': ['earthSky', 'landCover', 'betaPack2', 'religionLang', 'timeZones', 'gibsScience'],
   'js/analysis-panels.js': ['timeSeries', 'aiResearch', 'correlate', 'worldEvents', 'edu'],
-  'js/sims.js': ['radiation', 'popArea', 'slope', 'rf', 'sun', 'transitReach', 'disaster', 'earthReplay'],
+  /* ⚠ (#R296) rf / disaster / earthReplay left this file with their features — 「電波・通信圏と
+     見通し線解析を統合」, 「4つのうち…全削除」, 「存在意義が不明だから全削除」. What this list is FOR is
+     that every factory a file DECLARES is instantiated — shortening it is the honest edit; the check
+     is unchanged and still fails if a declared factory goes uninstantiated. */
+  'js/sims.js': ['radiation', 'popArea', 'slope', 'sun', 'transitReach'],
 };
 const ALL_FACS = Object.values(MOVED).flat();
 /* (#R209) …of which these are fetched on demand: the factories whose file the loader import()s. */
@@ -85,7 +89,7 @@ const ORDER = [
   'layerPresets', 'aiResearch', 'correlate', 'worldEvents', 'edu',
   'labelPopup', 'geojsonUpload', 'weatherPanel', 'viewHash', 'share',
   'outline', 'moveShape', 'isochrone', 'radiation', 'arc3d',
-  'objectList', 'popArea', 'slope', 'rf', 'sun', 'transitReach', 'disaster', 'earthReplay',
+  'objectList', 'popArea', 'slope', 'sun', 'transitReach',
   'timeZones', 'gibsScience',
 ];
 

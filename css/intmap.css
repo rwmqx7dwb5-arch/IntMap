@@ -454,7 +454,13 @@
        not lines ("不要な横線が多い"). Keep only a faint top accent on group headers. */
     .layer-dropdown > hr{ display:none !important; }
     .layer-dropdown .lyr-head{ border-bottom:none !important; }
-    .layer-dropdown.show{ display:flex; }
+    /* ══ ⚠⚠ (#R296) `.layer-dropdown.show` STOOD HERE, AND IT WAS THE ONLY WAY THIS PANEL WAS EVER SEEN ══
+       「レイヤー選択欄はclassic dropdownを完全削除。（右サイドバー形式に一本化し、設定から該当項目を削除。）」
+       The base rule above is `display:none`; this class was what the Layers button toggled. With it
+       gone the element can no longer be shown on a desktop by any path, and on a phone it has been the
+       hidden data source rather than the UI since #R232 (`body.m-lyr-tiles`). The rules BELOW that
+       still name `.layer-dropdown` are not the panel — they style the rows this registry holds while
+       they are mounted inside the phone sheet, and they stay for exactly that. */
     /* (#R24) touch-action:manipulation kills the iOS ~300ms delayed SYNTHETIC click. Without it, tapping a
        row fired its change handler, the Active-layers section appeared and shoved the rows DOWN, and the
        late synthetic click then landed on the row that slid into that spot — the one ABOVE — so pressing
@@ -3242,6 +3248,15 @@
   box-shadow:var(--shadow); backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px);
   overflow:hidden; font-size:14px; line-height:1.45;
 }
+/* ══ ⚠⚠ (#R296) 「経路ポップアップは無条件で透過するな」 ══════════════════════════════
+   「無条件で」 is the word that names the defect. Every other surface in this app follows the reader's
+   own Settings ▸ サイドバーの質感 choice — `body.sidebar-translucent` / `.sidebar-glass2` when they asked
+   for glass, and an OPAQUE panel otherwise, which is the default. This one asked nobody: it declared
+   `--popup-bg` (rgba … 0.72) plus a 20 px backdrop-filter unconditionally, so the map showed through
+   a directions panel even for a reader who had turned translucency off everywhere else.
+   → the same shape js/map-ui.js already uses for #layer-sidebar-r: opaque unless glass was chosen. */
+body:not(.sidebar-translucent):not(.sidebar-glass2) .rtp{
+  background:var(--panel-bg,var(--card-bg)); backdrop-filter:none; -webkit-backdrop-filter:none; }
 .rtp[hidden]{ display:none; }
 .rtp.rtp-min{ max-height:none; }
 .rtp.rtp-min .rtp-fixed, .rtp.rtp-min .rtp-tabs, .rtp.rtp-min .rtp-body, .rtp.rtp-min .rtp-foot{ display:none; }
@@ -3277,6 +3292,9 @@
 .rtp-mode.on{ background:var(--card-bg); color:var(--primary-color); font-weight:650; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
 
 .rtp-fields{ display:flex; flex-direction:column; gap:7px; }
+/* (#R296) the 「現在地を使う」 button — same 32 px icon button as its neighbours, and it says when it
+   is asking (the browser prompt can take seconds and a dead-looking control is what gets pressed twice). */
+.rtp-here.rtp-busy{ opacity:.55; cursor:progress; }
 .rtp-field{ display:flex; align-items:center; gap:7px; }
 .rtp-field.drag{ opacity:0.45; }
 .rtp-mark{
@@ -3354,14 +3372,25 @@
 
 /* ── alternative cards ─────────────────────────────────────────────────────────────────────── */
 .rt-alts{ display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+/* ⚠ (#R296) THE CARD IS A COLUMN NOW, because the selected one holds its own detail
+   (「経路カードが広がって詳細が表示されるUIに」): the summary row is `.rt-alt-row`, the turn or leg
+   list is `.rt-alt-detail` under it. It is also a `div[role=radio]` rather than a `<button>` — the
+   step list inside it is made of real buttons and a button cannot contain one. */
 .rt-alt{
-  display:flex; align-items:flex-start; gap:10px; width:100%; box-sizing:border-box;
+  display:flex; flex-direction:column; width:100%; box-sizing:border-box;
   min-height:52px; padding:9px 11px; text-align:left; cursor:pointer; font:inherit;
   border:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:13px;
   background:transparent; color:var(--text-main);
   transition:border-color .13s ease, background .13s ease;
 }
+.rt-alt-row{ display:flex; align-items:flex-start; gap:10px; min-width:0; }
+.rt-alt-detail{ margin-top:9px; padding-top:9px; border-top:1px solid var(--glass-border,rgba(128,128,128,0.18)); cursor:default; }
+.rt-alt-detail .rtp-legs, .rt-alt-detail .rtp-steps{ margin:0; }
 .rt-alt:hover{ background:var(--input-bg); }
+/* ⚠ (#R296) …and hovering the OPEN one must not tint the detail as if the whole thing were one
+   pressable target — only the summary row is. */
+.rt-alt.on:hover{ background:transparent; }
+.rt-alt.on .rt-alt-row:hover{ background:var(--input-bg); border-radius:9px; }
 /* selection is a BORDER + a filled key + aria-checked, never colour alone (§10) */
 .rt-alt.on{ border-color:var(--primary-color); border-width:2px; padding:8px 10px; background:var(--input-bg); }
 .rt-alt-key{ flex:0 0 auto; width:22px; height:22px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:700; }
@@ -3569,6 +3598,25 @@ body.sidebar-glass2{ --widget-surface:rgba(255,255,255,0.20); }
 
 /* ── the board ─────────────────────────────────────────────────────────────────────────────── */
 .wgt-board{ margin:0 0 14px; }
+/* ══ ⚠⚠⚠ (#R296) 「ウィジェット画面をスクロールできない」 — THERE WAS NO SCROLL CONTAINER ═══════════
+   MEASURED on the built page, walking every ancestor of #widget-board and reading `overflow-y`:
+       #widget-board.wgt-board   visible
+       #sidebar.sidebar          visible    (clientHeight 900, scrollHeight 903)
+       .operation-room           hidden
+       body                      hidden
+   — not one of them scrolls. The sidebar's scrolling region is `.content-area`, and the board is
+   NOT inside it: `ensureBoard()` inserts the board as a SIBLING of #live-news-feed (which is itself
+   a .content-area), so the board is a direct flex child of .sidebar with nowhere to go. Anything
+   past the viewport height was clipped by .operation-room and simply unreachable — no scrollbar,
+   no wheel, no drag. A board of a dozen cards is taller than the sidebar on any laptop.
+   → the board becomes the sidebar's scrolling region when it is the pane being shown, with exactly
+   the geometry .content-area already declares (`flex:1 1 auto; min-height:0; overflow-y:auto`) so the
+   two panes behave identically. ⚠ SCOPED TO `.sidebar >`: the same element is also mounted in a
+   Workspace pane and inside the phone sheet, and those hosts scroll themselves — a second scroller
+   inside them is the nested-scroll trap #R34 spent a round on. */
+.sidebar > .wgt-board{ flex:1 1 auto; min-height:0; margin-bottom:0;
+  overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+  margin-right:-10px; padding-right:10px; }
 .wgt-titlerow{ display:flex; align-items:center; gap:8px; margin:2px 2px 10px; }
 .wgt-title{ margin:0; font-size:15px; font-weight:600; color:var(--widget-text-primary); }
 .wgt-editbtn,.wgt-addbtn{

@@ -204,10 +204,16 @@ test('R258 ⑧b: click-to-front orders the windows inside the band, not above it
 /* ── ⑨ the tools list, and the rename ──────────────────────────────────────────────────────── */
 test('R258 ⑨: every non-layer simulation is a row in the tools list', () => {
   const s = read('js/map-ui.js');
-  ['sim.seismic', 'sim.tsunami', 'sim.terrainWater', 'sim.radiation',
+  /* ⚠ (#R296) `sim.tsunami` left this list — 「津波シミュレータはボタンを設置しないように。（地震シミュ
+     レータありきの機能なため、直接アクセスUIは不要。）」. The MODULE is untouched: the earthquake simulator
+     opens it once a source has a magnitude and a depth, which is the only state in which it has
+     anything to solve. What #R258 is FOR — a simulation that is not a layer must be reachable — is
+     asserted for every row that remains, and the tsunami's reachability is asserted in R197 ②b. */
+  ['sim.seismic', 'sim.terrainWater', 'sim.radiation',
     'sim.los', 'sim.reach', 'sim.sun', 'sim.nightSky'].forEach((id) => {
     assert.ok(s.includes("id:'" + id + "'"), id + ' is a row');
   });
+  assert.ok(!s.includes("id:'sim.tsunami'"), 'and the tsunami has no row of its own');
   assert.match(s, /function registerSimTools\(\)/, 'each is an IntMapOS action…');
   assert.match(s, /function toolsBlock\(\)\{ registerSimTools\(\);/,
     '…registered when the browser is built, not in the factory body (IntMapOS does not exist yet then)');

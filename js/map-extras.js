@@ -238,93 +238,15 @@ window.IntMapModules.layerHoverPopup=function(HOST){
   })();
 };
 
-window.IntMapModules.layerSearch=function(HOST){
-  /* ===== (#R21) LAYER SEARCH — a filter box pinned to the top of the Layers panel. Matches the
-     visible label text of every layer row (EN or JP), expands groups while filtering, hides section
-     headers with no hits, and restores the normal panel (incl. the mobile beta pulldown) on clear. ===== */
-  (function(){
-    const jp=()=>HOST.lang==='jp';
-    function dd(){ return document.getElementById('layer-dropdown'); }
-    function filter(qs){
-      const d=dd(); if(!d) return;
-      const q=String(qs||'').trim().toLowerCase();
-      const rows=d.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option');
-      const extras=d.querySelectorAll(':scope > hr, :scope > .lyr-others-note, :scope > #layer-fav-section, :scope > #layer-active-section, :scope > #layer-tools');
-      if(!q){
-        rows.forEach(r=>{ r.style.display=''; });
-        extras.forEach(el=>{ el.style.display=''; });
-        d.querySelectorAll(':scope > .lyr-head, :scope > .layer-group-title').forEach(h=>{ h.style.display=''; });
-        try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){}
-        return;
-      }
-      d.querySelectorAll(':scope > .lyr-head, :scope > .layer-group-title').forEach(h=>h.classList.remove('lyr-collapsed'));
-      rows.forEach(r=>{ const t=(r.textContent||'').toLowerCase(); r.style.display=t.indexOf(q)>=0?'':'none'; });
-      extras.forEach(el=>{ el.style.display='none'; });
-      d.querySelectorAll(':scope > .lyr-head, :scope > .layer-group-title').forEach(h=>{
-        let el=h.nextElementSibling, any=false;
-        while(el && !el.matches('.lyr-head,.layer-group-title') && el.tagName!=='HR'){
-          if((el.matches('.lyr-row')||el.matches('label.layer-option')) && el.style.display!=='none'){ any=true; break; }
-          el=el.nextElementSibling; }
-        h.style.display=any?'':'none';
-      });
-    }
-    function ensureBox(){
-      const d=dd(); if(!d) return;
-      let box=document.getElementById('layer-search-wrap');
-      if(!box){
-        box=document.createElement('div'); box.id='layer-search-wrap';
-        /* (#R23) NO longer pinned/sticky — the user asked the desktop layer-search box to sit in normal
-           flow and scroll with the list ("レイヤー検索窓の上部固定はやめて"). */
-        box.style.cssText='position:relative;z-index:6;padding:2px 0 7px;';
-        /* ══ (#R255) A CLEAR BUTTON, ON BOTH SEARCH BOXES ═══════════════════════════════════════════
-           「レイヤー検索欄に入力内容をクリアするボタンを。」 There are TWO layer-search inputs in this
-           app — this one (the classic panel, `#layer-search`) and the tile sidebar's `.lsr-q`
-           (js/map-ui.js). #R239's lesson was a defect fixed in one of two implementations and left in
-           the other; both get the button, and both clear through their OWN filter so no third code
-           path can drift. `type=search` is left alone: WebKit's native × is invisible on Firefox and
-           on Chrome-for-Android, which is why this is drawn rather than relied upon.
-           ⚠ `aria-label`, so the control is not an unlabelled glyph to a screen reader. */
-        box.innerHTML='<input id="layer-search" type="search" autocomplete="off" style="width:100%;box-sizing:border-box;padding:7px 30px 7px 11px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;">'
-          /* (#R268) no background disc — see the twin rule in js/map-ui.js */
-          /* ⚠ (#R273) …and the MARK is `×` (U+00D7), which Inter actually draws, rather than the
-             U+2715 no family in this app's stack has: `window.IntMapClearGlyph()` in js/map-ui.js is
-             the one definition, so the two search boxes cannot drift apart. The native WebKit ×
-             that `type=search` adds is suppressed by the rule in that same file — without it Chrome
-             drew a second mark underneath this one, which is the other half of 「不自然な形の×」. */
-          +'<button type="button" class="ls-clear" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:19px;height:19px;padding:0;border:0;background:transparent;color:var(--text-muted);cursor:pointer;align-items:center;justify-content:center;line-height:1;">'
-          +window.IntMapClearGlyph()+'</button>';
-        const inp=box.querySelector('input'), clr=box.querySelector('.ls-clear');
-        const ph=()=>window.IntMapLang.t(HOST.lang,"Search layers…","レイヤーを検索…","Ebenen suchen…","Поиск слоёв…","Buscar capas…");
-        const cl=()=>window.IntMapLang.t(HOST.lang,"Clear search","検索をクリア","Suche leeren","Очистить поиск","Borrar búsqueda");
-        /* (#R271) …and so does this one: one helper, both boxes (see js/map-ui.js) */
-        const place=window.IntMapPlaceClear(inp,clr);
-        const sync=()=>{ clr.style.display=inp.value?'flex':'none'; if(inp.value) place(); };
-        inp.placeholder=ph(); clr.title=cl(); clr.setAttribute('aria-label',cl());
-        /* (#R290) 「入力があったり変更があったら…最上部の位置に自動的になるように」 — one helper,
-           both search boxes (window.IntMapSearchToTop, js/map-ui.js) */
-        inp.addEventListener('input',()=>{ filter(inp.value); sync();
-          try{ window.IntMapSearchToTop(box); }catch(_){} });
-        inp.addEventListener('click',e=>e.stopPropagation());
-        inp.addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Escape'&&inp.value){ inp.value=''; filter(''); sync(); } });
-        clr.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); inp.value=''; filter(''); sync(); inp.focus(); });
-        window.addEventListener('intmap-lang',()=>{ inp.placeholder=ph(); clr.title=cl(); clr.setAttribute('aria-label',cl()); });
-      }
-      /* (#R65) the Active-layers bar owns the very top (sticky) — the search box slots in right below it */
-      { const act=document.getElementById('layer-active-section');
-        if(act&&act.parentElement===d){ if(act.nextSibling!==box) d.insertBefore(box,act.nextSibling); }
-        else if(d.firstChild!==box) d.insertBefore(box,d.firstChild); }
-      /* re-apply an active query after a panel rebuild */
-      const inp=box.querySelector('input'); if(inp&&inp.value) filter(inp.value);
-      try{ const c=box.querySelector('.ls-clear'); if(c) c.style.display=(inp&&inp.value)?'flex':'none'; }catch(_){}
-    }
-    /* keep the box pinned across every reorganize (the panel is rebuilt on each open) */
-    function hook(){ const orig=window.reorganizeLayerPanel;
-      if(typeof orig!=='function'||orig.__lsWrapped){ setTimeout(hook,800); return; }
-      const w=function(){ const r=orig.apply(this,arguments); try{ ensureBox(); }catch(_){} return r; };
-      w.__lsWrapped=true; window.reorganizeLayerPanel=w; ensureBox(); }
-    if(document.readyState!=='loading') setTimeout(hook,600); else document.addEventListener('DOMContentLoaded',()=>setTimeout(hook,600));
-  })();
-};
+/* ══ ⚠⚠ (#R296) THE CLASSIC PANEL'S SEARCH BOX STOOD HERE ══════════════════════════════
+   `IntMapModules.layerSearch` built `#layer-search-wrap` inside `#layer-dropdown` and filtered its
+   rows. Both of its hosts are gone as SURFACES: the dropdown no longer opens on a desktop
+   (「レイヤー選択欄はclassic dropdownを完全削除」) and on a phone the same wrap has been
+   `display:none !important` since #R232's tile grid. A control nobody can reach is the shape the
+   standing rules forbid keeping, and #R255/#R271 went to some trouble to keep this box and the tile
+   sidebar's `.lsr-q` in step — there is one search now, so they cannot drift at all.
+   ⚠ `window.IntMapClearGlyph()` and `window.IntMapPlaceClear()` (js/map-ui.js) STAY: the surviving
+   box calls both, and they were shared helpers rather than this module's own. */
 
 window.IntMapModules.runwaySearch=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */

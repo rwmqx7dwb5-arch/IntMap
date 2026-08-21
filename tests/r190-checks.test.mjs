@@ -269,9 +269,14 @@ test('R190 seismic: frequency-dependent Q, a slope measured at the DEM’s own s
   assert.match(src, /_tsuShown=!!tsunamiCase\(\);/, 'render records what it drew…');
   assert.match(src, /if\(opened&&_t!==_tsuShown\)\{ _tsuShown=_t; render\(\); \}/,
     '…so the panel re-renders exactly once, when the availability flips');
+  /* ⚠ (#R296) the second half of this assertion named `IntMapDisaster.open`, which took a hazard
+     with the location so a hand-off could not run under the PREVIOUS hazard. 「災害シミュレーターは
+     4つのうち、放射性物質拡散シミュレーションを残し全削除」 removed that module, so there is no second
+     panel for a hand-off to land in the wrong state of — what is left to assert is that nothing in
+     js/sims.js reaches for it, which is the same defect stated where it can still occur. */
   const sims = read('js/sims.js');
-  assert.match(sims, /if\(ll&&ll\.hazard&&HAZ\(\)\.some\(h=>h\[0\]===ll\.hazard\)\)/,
-    'which accepts the hazard with the location, so it never runs once under the previous one');
+  const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ');   /* (#R296) 21st round: a check for a removed name must not match the comment that explains the removal */
+  assert.doesNotMatch(code(sims), /IntMapDisaster/, 'nothing hands off to a disaster panel any more');
 });
 
 /* ── 8 · the two engines ─────────────────────────────────────────────────────────────────────── */

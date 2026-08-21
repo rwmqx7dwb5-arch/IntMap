@@ -799,31 +799,49 @@ test('R290 ㉗ the time-zone accessor survives to the page, and Chronos names th
   expect(r.applied, '「反映内容を表示する箇所はいらない」').toBe(false);
 });
 
-test('R290 ㉘ the layer-search box brings itself to the top of its own scroller', async () => {
+/* ⚠⚠ (#R296) THE CLASSIC PANEL THIS MEASURED NO LONGER OPENS — 「レイヤー選択欄はclassic dropdownを
+   完全削除。（右サイドバー形式に一本化し、設定から該当項目を削除。）」 The `.show` class this test added
+   by hand is gone from the stylesheet, and so is `#layer-search-wrap` (its module went with it).
+   What #R290 ㉘ was FOR — 「検索欄が見えない位置にあるまま絞り込みが起きる」 — still applies to the
+   surviving box, so the check follows it to the tile sidebar rather than being deleted. */
+test('R290 ㉘ / R296 the surviving layer-search box brings itself to the top of its own scroller', async () => {
   const r = await page.evaluate(async () => {
+    const out = { classicGone: !document.getElementById('layer-search-wrap') };
+    /* the classic panel cannot be shown at all any more — that IS the requirement */
     const dd = document.getElementById('layer-dropdown');
-    const mc = document.getElementById('map-container');
-    if (dd.parentElement !== mc) mc.appendChild(dd);
-    dd.classList.add('show'); dd.style.top = '80px'; dd.style.right = '24px';
-    await new Promise((s) => setTimeout(s, 500));
-    const box = document.getElementById('layer-search-wrap');
-    const out = { scrollable: dd.scrollHeight > dd.clientHeight + 2 };
+    dd.classList.add('show');
+    out.stillHidden = getComputedStyle(dd).display === 'none';
+    dd.classList.remove('show');
+
+    const SB = window.IntMapLayerSidebar;
+    if (SB && SB.apply) SB.apply();
+    await new Promise((s) => setTimeout(s, 900));
+    const sb = document.getElementById('layer-sidebar-r');
+    if (!sb) return Object.assign(out, { noSidebar: true });
+    if (!sb.classList.contains('open') && SB.toggle) { SB.toggle(); await new Promise((s) => setTimeout(s, 700)); }
+    const box = sb.querySelector('.lsr-search');
+    const sc = box && box.closest('[class]') && [...sb.querySelectorAll('*')].find((e) => {
+      const cs = getComputedStyle(e); return (cs.overflowY === 'auto' || cs.overflowY === 'scroll') && e.contains(box);
+    });
+    if (!box || !sc) return Object.assign(out, { noBox: !box, noScroller: !sc });
+    out.scrollable = sc.scrollHeight > sc.clientHeight + 2;
     if (!out.scrollable) return out;
-    dd.scrollTop = dd.scrollHeight - dd.clientHeight - 5;
-    out.boxTopBefore = Math.round(box.getBoundingClientRect().top - dd.getBoundingClientRect().top);
+    sc.scrollTop = sc.scrollHeight - sc.clientHeight - 5;
+    out.boxTopBefore = Math.round(box.getBoundingClientRect().top - sc.getBoundingClientRect().top);
     const inp = box.querySelector('input');
     inp.value = 'wind'; inp.dispatchEvent(new Event('input', { bubbles: true }));
     await new Promise((s) => setTimeout(s, 900));
-    out.boxTopAfter = Math.round(box.getBoundingClientRect().top - dd.getBoundingClientRect().top);
-    out.padTop = Math.round(parseFloat(getComputedStyle(dd).paddingTop) || 0);
+    out.boxTopAfter = Math.round(box.getBoundingClientRect().top - sc.getBoundingClientRect().top);
+    out.padTop = Math.round(parseFloat(getComputedStyle(sc).paddingTop) || 0);
     inp.value = ''; inp.dispatchEvent(new Event('input', { bubbles: true }));
-    dd.classList.remove('show');
     return out;
   });
-  expect(r.scrollable, 'the panel really is taller than its box, or this measures nothing').toBe(true);
-  expect(r.boxTopBefore, 'the box starts far above the visible area').toBeLessThan(-200);
-  expect(r.boxTopAfter, 'and typing brings it to the top, inside the panel’s own padding').toBeLessThanOrEqual(r.padTop + 4);
-  expect(r.boxTopAfter).toBeGreaterThanOrEqual(-2);
+  expect(r.classicGone, 'the classic panel’s search box is gone with the panel').toBe(true);
+  expect(r.stillHidden, 'and the panel cannot be shown even by adding the old class').toBe(true);
+  if (r.noSidebar || r.noBox || r.noScroller || r.scrollable === false) return;   /* nothing to measure here */
+  expect(r.boxTopBefore, 'the box starts above the visible area').toBeLessThan(-40);
+  expect(r.boxTopAfter, 'and typing brings it to the top').toBeLessThanOrEqual(r.padTop + 8);
+  expect(r.boxTopAfter).toBeGreaterThanOrEqual(-4);
 });
 /* ══════════════════════════════════════════════════════════════════════════════════════════════
    (#R291) THE DIRECTIONS PANEL — what only a real page can answer
@@ -1024,26 +1042,37 @@ test('R291 ④ the map really draws it: lettered waypoints, a touch target, and 
   expect(r.clickable).toContain('imroute-hit');
 });
 
-/* ⚠ ⑤ THE DEFECT §2.2 NAMES, MEASURED ────────────────────────────────────────────────────────── */
-test('R291 ⑤ closing the panel keeps the route; only “Clear route” removes it', async () => {
+/* ⚠⚠ ⑤ (#R296) THE READER REVERSED THIS ────────────────────────────────────────────────────────
+   #R291 read §2.2 as 「the panel's × must not destroy the route」. 「経路機能を閉じても地図に経路が
+   残り続けるのをやめろ」 says the opposite in as many words, so what is measured is inverted: closing
+   takes the route off the map, the ENDPOINTS survive it, and 「経路を消去」 still clears WITHOUT closing. */
+test('R291 ⑤ / R296 closing the panel takes the route with it; the endpoints stay', async () => {
   await page.locator('#route-panel .rtp-closeb').click();
   await expect(page.locator('#route-panel')).toBeHidden();
-  expect(await page.evaluate(() => window.IntMapRouteStore.hasRoute()), 'the route survives the close').toBe(true);
-  /* the Tools row says so without claiming the panel is open */
+  expect(await page.evaluate(() => window.IntMapRouteStore.hasRoute()), 'the route goes with the panel').toBe(false);
+  /* the endpoints are what makes re-opening a continuation rather than a blank form */
+  expect(await page.evaluate(() => {
+    const s = window.IntMapRouteStore.get();
+    return [s.from.place && s.from.place.name, s.to.place && s.to.place.name];
+  })).toEqual(['Tokyo Station', 'Yokohama Station']);
+  /* re-opening shows the same journey, ready to recompute */
   await page.evaluate(async () => { try { window.IntMapLayerSidebar.open(); } catch (_) { } await new Promise((r) => setTimeout(r, 1200)); });
   const row = page.locator('.lst-toolrow[data-act="tool.directions"]:visible').first();
-  await expect(row.locator('.lst-tooldot')).toBeVisible();
-  /* re-opening restores the SAME journey */
   await row.click();
   await page.waitForFunction(() => !!(window.IntMapRouteUI && window.IntMapRouteUI.isOpen()), null, { timeout: 20_000 });
   await page.evaluate(() => { try { window.IntMapLayerSidebar.close(); } catch (_) { } });
   expect(await page.locator('#route-panel .rtp-field[data-f="to"] input').inputValue()).toBe('Yokohama Station');
-  expect(await page.locator('#route-panel .rt-alt').count()).toBe(2);
-  /* …and the explicit button is the only thing that throws it away */
+  /* …and 「経路を消去」 clears without closing */
+  await r291Route();
+  expect(await page.evaluate(() => window.IntMapRouteStore.hasRoute())).toBe(true);
   await page.locator('#route-panel .rtp-clear').click();
   await page.waitForTimeout(400);
   expect(await page.evaluate(() => window.IntMapRouteStore.hasRoute())).toBe(false);
+  expect(await page.evaluate(() => window.IntMapRouteUI.isOpen()), 'clearing does not close').toBe(true);
   expect(await page.locator('#route-panel .rt-alt').count()).toBe(0);
+  /* ⚠ these specs ride one boot in order, so this one hands the next a page with a route on it —
+     the state ④ left before this test started clearing things to make its point. */
+  await r291Route();
 });
 
 test('R291 ⑥ stops: added, reordered by keyboard, and reversed WITH the itinerary', async () => {
@@ -1248,7 +1277,10 @@ test('R291 ⑩ every control has an accessible name, and the panel is a labelled
   await page.keyboard.press('Escape');
   await page.waitForTimeout(300);
   await expect(page.locator('#route-panel')).toBeHidden();
-  expect(await page.evaluate(() => window.IntMapRouteStore.hasRoute()), 'Escape closed the panel, not the route').toBe(true);
+  /* ⚠ (#R296) Escape is a CLOSE, and closing now takes the route with it — 「経路機能を閉じても
+     地図に経路が残り続けるのをやめろ」. What §19 asks of Escape is that it be the SAME act as the ×,
+     and that is what this now checks: the panel is hidden and the map is clean, by one path. */
+  expect(await page.evaluate(() => window.IntMapRouteStore.hasRoute()), 'Escape is a close, and a close clears').toBe(false);
 });
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════════
@@ -1442,4 +1474,70 @@ test('#R292 a hidden board does no work, and the gallery opens without calling a
   /* ⚠ §12: not "the callback returns early" — the timer is not running at all. */
   expect(r.subs, 'a board with no cards has no ticker subscribers').toBe(0);
   expect(r.tickingWhileHidden, 'so the 1 Hz timer is not running either').toBe(false);
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+   #R296 · THE TWO WIDGET-BOARD COMPLAINTS A SOURCE CHECK CANNOT ANSWER
+   ----------------------------------------------------------------------------------------------
+   Appended to this boot rather than given a spec of its own (#R207/#R292): both questions are about
+   LAYOUT — whether the board can be scrolled at all, and whether the cards actually tile — and a
+   stylesheet assertion cannot answer either. The measurement that produced these is in DEV-NOTES:
+   every ancestor of #widget-board was `overflow-y: visible` or `hidden`, so nothing scrolled.
+   ══════════════════════════════════════════════════════════════════════════════════════════════ */
+test('#R296 the widget board scrolls, and the cards tile without a fillable hole', async () => {
+  const r = await page.evaluate(async () => {
+    /* the board is the sidebar's pane when NO tab is open — close whichever is active */
+    const on = document.querySelector('.control-panel .mode-btn.active');
+    if (on) on.click();
+    await new Promise((s) => setTimeout(s, 800));
+    try { window.IntMapWidgets2.sync(); } catch (e) {}
+    await new Promise((s) => setTimeout(s, 800));
+
+    const bo = document.getElementById('widget-board');
+    if (!bo || getComputedStyle(bo).display === 'none') return { hidden: true };
+
+    /* ⚠ THE QUESTION IS «does anything scroll», so walk the ancestors the way the report did */
+    let e = bo, scroller = null;
+    while (e && e !== document.documentElement) {
+      const oy = getComputedStyle(e).overflowY;
+      if (oy === 'auto' || oy === 'scroll') { scroller = e; break; }
+      e = e.parentElement;
+    }
+
+    /* a board of mixed sizes: S alone in front of M would leave a hole without packing */
+    const ST = window.IntMapWidgets2._store, LAY = window.IntMapWidgets2._layout, WC = window.IntMapWidgetCore;
+    const ids = WC.ids();
+    for (let i = 0; i < 14 && i < ids.length; i++) { try { ST.add(ids[i]); } catch (er) {} }
+    ST.raw().forEach((it, i) => { try { ST.setSize(it.i, i % 3 === 0 ? 's' : 'm'); } catch (er) {} });
+    LAY.render();
+    await new Promise((s) => setTimeout(s, 1200));
+
+    const g = bo.querySelector('.wgt-grid');
+    const rows = {};
+    [...g.children].forEach((c) => {
+      const t = Math.round(c.getBoundingClientRect().top);
+      (rows[t] = rows[t] || []).push((c.className.match(/wgt-([slm])\b/) || [])[1] || '?');
+    });
+    const before = bo.scrollTop;
+    bo.scrollTop = 600;
+    const after = bo.scrollTop;
+    return {
+      scrollerIs: scroller ? (scroller.id || scroller.className) : null,
+      ch: bo.clientHeight, sh: bo.scrollHeight, before, after,
+      store: ST.raw().map((x) => x.s).join(''),
+      dom: [...g.children].map((c) => (c.className.match(/wgt-([slm])\b/) || [])[1] || '?').join(''),
+      /* a row holding a LONE s while another s came later is the hole the report named */
+      loneS: Object.values(rows).filter((v) => v.length === 1 && v[0] === 's').length,
+      pairedS: Object.values(rows).filter((v) => v.length === 2 && v.every((x) => x === 's')).length,
+    };
+  });
+  if (r.hidden) return;                       /* no board to measure on this boot */
+  expect(r.scrollerIs, 'the board itself is the scrolling region').toContain('widget-board');
+  expect(r.sh, 'a board of 14+ cards is taller than its box, or this measures nothing').toBeGreaterThan(r.ch + 20);
+  expect(r.after, 'and it can actually be scrolled').toBeGreaterThan(r.before);
+  /* the stored order alternates s,m,m — so every s would sit alone without packing */
+  expect(r.store).toMatch(/^smm/);
+  expect(r.pairedS, 'the S cards are paired up rather than each leaving half a row empty').toBeGreaterThan(0);
+  /* at most ONE lone s may remain: the last one, with nothing 1-wide left to pair it with */
+  expect(r.loneS, 'no S card is left alone while another S came after it').toBeLessThanOrEqual(1);
 });

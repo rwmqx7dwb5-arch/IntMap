@@ -1,9 +1,9 @@
 /* ============================================================================
- *  IntMap · Physical simulations & solar geometry — IntMapModules.{popArea,slope,rf,sun,transitReach,disaster,earthReplay,radiation}  (#R166)
+ *  IntMap · Physical simulations & solar geometry — IntMapModules.{radiation,popArea,slope,sun,transitReach}  (#R166 / #R296)
  * ----------------------------------------------------------------------------
  *  Simulations computed from real data on the client: population inside a drawn area, DEM
- *  slope/aspect, RF line-of-sight coverage, the solar terminator, transit reachability, flood/tsunami
- *  hazard, the Earth-replay sun animation and the radioactive-plume model.
+ *  slope/aspect, the solar terminator, transit reachability and the radioactive-plume model.
+ *  ⚠ (#R296) three of the eight left this file with their features — see the notes where each stood.
  *
  *  Moved verbatim out of index.html's DOMContentLoaded closure (#R166): each body below is
  *  byte-identical to the block that used to live there, except that closure values which are
@@ -22,7 +22,7 @@ window.IntMapModules.radiation=function(HOST){
      isStyleLoaded() test only if the host is somehow absent. */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   window.IntMapRadiation=(function(){
-    if(!GE().hasRenderer()||!GE().hasRenderer()) return { run(){ return Promise.resolve({ok:false}); }, clear(){}, openPanel(){}, ISOTOPES:{}, SOURCES:{} };
+    if(!GE().hasRenderer()||!GE().hasRenderer()) return { run(){ return Promise.resolve({ok:false}); }, clear(){}, openPanel(){}, closePanel(){}, isOpen(){ return false; }, ISOTOPES:{}, SOURCES:{} };
     const LL=window.IntMapLang.pick(()=>HOST.lang);
     const SRC='imrad-src', DEP='imrad-dep-src'; let _run=null, _gen=0;
     /* (#R85) isotope + source-term presets ("放出量や放出時間、日時等も選べるように"). Half-lives in HOURS. */
@@ -184,15 +184,90 @@ window.IntMapModules.radiation=function(HOST){
       return {ok:true,reachKm:estReach,windSpeed:spd,windToward:toward,wet,hours,emitHours,bq,iso:iso.n,halfLifeHours,
         zoneKm2:dz.zoneKm2,peakKBqM2:dz.peak,peakDoseUSvH:dz.peakDoseUSvH,peakLL:dz.peakLL,startISO:F.startISO,zones:ZONES}; }
     try{ GE().events.on('styledata',()=>{ setTimeout(()=>{ try{ const d=GE().layers.sourceData(SRC); if(d&&d.features&&d.features.length) ensureLayers(); }catch(_){} },160); }); }catch(_){}
-    /* ══ (#R264) NO PANEL HERE EITHER — THE PLUME ON THE MAP IS THE STATE ═════════════════════════
-       Read off the source this module fills, so it cannot disagree with what is drawn. `clear()` is
-       what «close» means for a layer-shaped tool, so close() is clear() named for the tools list.
-       ⚠ MEASURED THIS ROUND: the Tools row for this simulator (js/map-ui.js `sim.radiation`) calls
-       `openPanel()`, WHICH THIS MODULE HAS NEVER HAD — pressing it returns false and nothing
-       happens. That is a separate defect from the one this round was asked about and it is reported
-       rather than patched over; these two doors are real and are what the row's highlight reads. */
-    const isOpen=()=>{ try{ const d=GE().layers.sourceData(SRC); return !!(d&&d.features&&d.features.length); }catch(_){ return false; } };
-    return { run, clear, isOpen, close:()=>{ if(!isOpen()) return false; clear(); return true; }, ISOTOPES, SOURCES, ZONES, resolveSite,
+    /* ══ ⚠⚠⚠ (#R296) THE PANEL #R264 MEASURED MISSING, BUILT ═══════════════════════════════════════
+       #R264 measured that the Tools row for this simulator calls `openPanel()` and that this module
+       has never had one — `typeof` it was `undefined`, the call threw, the catch returned false, and
+       `IntMapOS.exec('sim.radiation')` measured **false**. It reported that rather than fixing it,
+       for a stated reason: picking an isotope and a release rate on the reader's behalf is invented
+       data. That reason argues against DEFAULTS THAT RUN, not against a panel — a panel is exactly
+       where the reader states them, and nothing here computes until they press 実行.
+       ⚠ AND THIS ROUND IT BECAME THE ONLY DOOR. 「災害シミュレーターは4つのうち、放射性物質拡散
+       シミュレーションを残し全削除」 removed the wrapper whose fourth choice used to reach this model,
+       so a row that has never opened anything would have been the whole feature.
+       ⚠ EVERY NUMBER IS THE READER'S: the source term, the isotope, the release duration and the
+       window come from the controls, and the presets are the ones this module already publishes
+       (`SOURCES`), named as the scales they are. */
+    let panel=null, site=null, picking=false, pickH=null;
+    let uiSrc='fukushima', uiIso='cs137', uiEmit=8, uiHours=48;
+    const _esc=(x)=>String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    function _endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null;
+      try{ const P=window.IntMapPick; if(P&&P.active()) P.abort(); }catch(_){}
+      try{ GE().render.canvas().style.cursor=''; }catch(_){} }
+    function startPick(){ _endPick(); picking=true;
+      const P=window.IntMapPick;
+      const hint=LL('Tap the map to place the release source.','地図をタップして放出源を置いてください。','Zum Setzen der Quelle auf die Karte tippen.','Нажмите на карту, чтобы задать источник.','Toca el mapa para colocar la fuente.');
+      if(P&&P.start&&P.start({ panel, hint,
+        onPick:(ll)=>{ picking=false; site={lng:ll.lng,lat:ll.lat,name:''}; renderPanel(); },
+        onCancel:()=>{ picking=false; renderPanel(); } })) return;
+      try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
+      pickH=e=>{ site={lng:e.lngLat.lng,lat:e.lngLat.lat,name:''}; _endPick(); renderPanel(); };
+      try{ GE().events.once('click',pickH); }catch(_){} }
+    function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='rad-panel';
+      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(316px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+      (document.getElementById('map-container')||document.body).appendChild(panel);
+      return panel; }
+    function renderPanel(state){ const p=ensurePanel();
+      const IN='width:100%;box-sizing:border-box;height:30px;padding:0 8px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;';
+      const LB='font-size:10.5px;color:var(--text-muted);';
+      const where=site?((site.name?site.name+' · ':'')+site.lat.toFixed(3)+', '+site.lng.toFixed(3))
+        :LL('No source placed yet','放出源が未設定です','Keine Quelle gesetzt','Источник не задан','Sin fuente colocada');
+      p.innerHTML='<div class="rad-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">☢ '
+          +LL('Radioactive dispersion','放射性物質の拡散','Radioaktive Ausbreitung','Рассеивание радиации','Dispersión radiactiva')+'</span><button class="rad-x" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
+        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;">'
+        +'<button class="rad-pick" style="height:34px;border:none;border-radius:9px;background:var(--primary-color);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;">◎ '
+          +LL('Place the source on the map','地図で放出源を設定','Quelle auf der Karte setzen','Задать источник на карте','Colocar la fuente en el mapa')+'</button>'
+        +'<div style="font-size:11.5px;color:var(--text-main);">'+_esc(where)+'</div>'
+        +'<label style="'+LB+'">'+LL('Source term','放出量','Quellterm','Выброс','Término fuente')+'<select class="rad-src" style="'+IN+'">'
+          +Object.keys(SOURCES).map(k=>'<option value="'+k+'"'+(k===uiSrc?' selected':'')+'>'+_esc(SOURCES[k].n)+'</option>').join('')+'</select></label>'
+        +'<label style="'+LB+'">'+LL('Isotope','核種','Isotop','Изотоп','Isótopo')+'<select class="rad-iso" style="'+IN+'">'
+          +Object.keys(ISOTOPES).map(k=>'<option value="'+k+'"'+(k===uiIso?' selected':'')+'>'+_esc(ISOTOPES[k].n)+'</option>').join('')+'</select></label>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+        +'<label style="'+LB+'">'+LL('Release (h)','放出時間 (h)','Freisetzung (h)','Выброс (ч)','Emisión (h)')+'<input class="rad-emit" type="number" min="0.25" max="80" step="0.25" value="'+uiEmit+'" style="'+IN+'"></label>'
+        +'<label style="'+LB+'">'+LL('Window (h)','追跡時間 (h)','Zeitfenster (h)','Окно (ч)','Ventana (h)')+'<input class="rad-hours" type="number" min="6" max="80" step="1" value="'+uiHours+'" style="'+IN+'"></label>'
+        +'</div>'
+        +'<button class="rad-go" style="height:34px;border:none;border-radius:9px;background:'+(site?'var(--primary-color)':'var(--input-bg)')+';color:'+(site?'#fff':'var(--text-muted)')+';font-size:12.5px;font-weight:700;cursor:'+(site?'pointer':'default')+';">'
+          +LL('Run the dispersion','拡散を実行','Ausbreitung rechnen','Рассчитать','Ejecutar')+'</button>'
+        +'<div class="rad-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;">'+_esc(state||'')+'</div>'
+        +'<button class="rad-clr" style="height:30px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));border-radius:9px;background:var(--input-bg);color:var(--text-muted);font-size:12px;cursor:pointer;">'
+          +LL('Clear','消去','Löschen','Очистить','Borrar')+'</button>'
+        +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'
+          +LL('Lagrangian dispersion over the live wind field, with decay and wet deposition. Educational — in a real emergency follow the official authorities.','実際の風の場でのラグランジュ拡散（減衰・湿性沈着を含む）。教育目的の近似です。実際の災害時は公的機関の指示に従ってください。','Lagrange-Ausbreitung im echten Windfeld. Nur zu Bildungszwecken.','Лагранжева модель в реальном поле ветра. Только для обучения.','Dispersión lagrangiana con viento real. Solo educativo.')+'</div></div>';
+      p.querySelector('.rad-x').onclick=()=>closePanel();
+      p.querySelector('.rad-pick').onclick=()=>startPick();
+      p.querySelector('.rad-src').onchange=(e)=>{ uiSrc=e.target.value; };
+      p.querySelector('.rad-iso').onchange=(e)=>{ uiIso=e.target.value; };
+      p.querySelector('.rad-emit').onchange=(e)=>{ const v=+e.target.value; if(isFinite(v)) uiEmit=Math.max(0.25,Math.min(80,v)); };
+      p.querySelector('.rad-hours').onchange=(e)=>{ const v=+e.target.value; if(isFinite(v)) uiHours=Math.max(6,Math.min(80,v)); };
+      p.querySelector('.rad-clr').onclick=()=>{ clear(); renderPanel(''); };
+      p.querySelector('.rad-go').onclick=async ()=>{ if(!site) return;
+        renderPanel(LL('Computing…','計算中…','Berechne…','Расчёт…','Calculando…'));
+        let r=null; try{ r=await run(site,{source:uiSrc,isotope:uiIso,emitHours:uiEmit,hours:uiHours}); }catch(_){ r=null; }
+        if(r&&r.ok) renderPanel(LL('Reach','到達','Reichweite','Дальность','Alcance')+' ~'+r.reachKm+' km · '+LL('wind','風','Wind','ветер','viento')+' '+r.windSpeed.toFixed(1)+' m/s');
+        else renderPanel(LL('Could not run — the live wind field was unavailable.','実行できませんでした（風のデータを取得できません）。','Nicht möglich — keine Winddaten.','Не удалось — нет данных о ветре.','No se pudo — sin datos de viento.')); };
+      try{ if(typeof HOST.makeDraggable==='function') HOST.makeDraggable(p,p.querySelector('.rad-head')); }catch(_){}
+      return p; }
+    function openPanel(ll){ if(ll&&ll.lng!=null&&isFinite(+ll.lng)) site={lng:+ll.lng,lat:+ll.lat,name:ll.name||''};
+      renderPanel(''); ensurePanel().style.display='flex';
+      try{ if(typeof HOST.bringToFront==='function') HOST.bringToFront(panel); }catch(_){}
+      return true; }
+    function closePanel(){ _endPick(); if(panel) panel.style.display='none'; return true; }
+    const panelOpen=()=>!!(panel&&panel.style.display!=='none');
+    /* ══ (#R264) …AND THE PLUME ON THE MAP IS ALSO STATE ═══════════════════════════════════════════
+       Read off the source this module fills, so it cannot disagree with what is drawn. The tools row
+       lights when EITHER is true — a panel the reader opened, or a plume Atlas drew without one. */
+    const isOpen=()=>{ if(panelOpen()) return true; try{ const d=GE().layers.sourceData(SRC); return !!(d&&d.features&&d.features.length); }catch(_){ return false; } };
+    return { run, clear, isOpen, openPanel, closePanel,
+      close:()=>{ if(!isOpen()) return false; closePanel(); clear(); return true; }, ISOTOPES, SOURCES, ZONES, resolveSite,
       /* ⚠ (#R214) THE ONLY WAY TO RESTORE A PLUME IS TO RUN IT AGAIN. There is no stored field to
          reopen: the answer is a Lagrangian solve over a LIVE wind field, so the state of this
          module is the QUESTION, not the picture. `set` therefore re-runs — which is the honest
@@ -428,101 +503,12 @@ window.IntMapModules.slope=function(HOST){
     return { toggle, run, clear:()=>toggle(false), setMode }; })();
 };
 
-window.IntMapModules.rf=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
-  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
-     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
-     isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
-  /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
-  const makeDraggable=HOST.makeDraggable;
-  window.IntMapRF=(function(){
-    if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, run(){}, clear(){} };
-    const SRC='imrf-src'; let panel=null, ant=null, busy=false, picking=false, pickH=null;
-    let antH=30, txDbm=30, freq=900;   /* metres, dBm (1 W), MHz */
-    const RF=window.IntMapLang.pick(()=>HOST.lang);
-    const R2=6371008, Reff=R2*4/3;
-    function dest(lng,lat,brg,dkm){ const dr=dkm/6371, la=lat*Math.PI/180, lo=lng*Math.PI/180; const la2=Math.asin(Math.sin(la)*Math.cos(dr)+Math.cos(la)*Math.sin(dr)*Math.cos(brg)); const lo2=lo+Math.atan2(Math.sin(brg)*Math.sin(dr)*Math.cos(la),Math.cos(dr)-Math.sin(la)*Math.sin(la2)); return [lo2*180/Math.PI,la2*180/Math.PI]; }
-    function horizonKm(h){ return 4.12*(Math.sqrt(Math.max(1,h))+Math.sqrt(2)); }   /* 4/3-earth radio horizon, RX at 2 m */
-    function fsplKm(){ const budget=txDbm-(-100)+3;   /* RX sensitivity −100 dBm, small antenna gain */ const d=Math.pow(10,(budget-32.44-20*Math.log10(freq))/20); return isFinite(d)?d:60; }
-    function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
-      GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      GE().layers.add({id:'imrf-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':'#12b886','fill-opacity':0.32}});
-      GE().layers.add({id:'imrf-line',type:'line',source:SRC,filter:['==','$type','Polygon'],paint:{'line-color':'#0ca678','line-width':1.6}});
-      GE().layers.add({id:'imrf-ant',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#ff3b30','circle-stroke-color':'#fff','circle-stroke-width':2.5}});
-      return true; }catch(_){ return false; } }
-    /* proper terrain VIEWSHED: a cell is covered only if NO closer terrain rises into the line of sight from the
-       mast top to that cell (4/3-earth curvature drop applied). Marks true shadow gaps — no overstated coverage. */
-    async function compute(lng,lat){ const maxR=Math.min(horizonKm(antH), fsplKm(), 80);
-      const buf=maxR/110*1.12, z=Math.max(6,Math.min(13,Math.round(14-Math.log2(maxR+1))));
-      const samp=await window.IntMapTerrain.sampler([lng-buf,lat-buf,lng+buf,lat+buf],z); if(!samp) return null;
-      const g0=samp.elevAt(lng,lat); if(g0==null) return null; const top=g0+antH;
-      const N=52, w0=lng-buf, s0=lat-buf, dLng=(2*buf)/N, dLat=(2*buf)/N;
-      const mLat=110540, mLng=111320*Math.cos(lat*Math.PI/180); const feats=[]; let covered=0;
-      for(let i=0;i<N;i++)for(let j=0;j<N;j++){ const clng=w0+(i+0.5)*dLng, clat=s0+(j+0.5)*dLat;
-        const dx=(clng-lng)*mLng, dy=(clat-lat)*mLat, dm=Math.hypot(dx,dy); if(dm<60) continue; if(dm/1000>maxR) continue;
-        const ce=samp.elevAt(clng,clat); if(ce==null) continue;
-        const steps=Math.max(3,Math.min(70,Math.round(dm/(dLng*mLng)))); let maxAng=-Infinity;
-        for(let k=1;k<steps;k++){ const t=k/steps, plng=lng+(clng-lng)*t, plat=lat+(clat-lat)*t, pe=samp.elevAt(plng,plat); if(pe==null) continue;
-          const pdm=dm*t, drop=pdm*pdm/(2*Reff), ang=Math.atan2((pe-drop)-top,pdm); if(ang>maxAng) maxAng=ang; }
-        const cdrop=dm*dm/(2*Reff), cAng=Math.atan2((ce-cdrop)-top,dm);
-        if(cAng>=maxAng-1e-9){ covered++; feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[w0+i*dLng,s0+j*dLat],[w0+(i+1)*dLng,s0+j*dLat],[w0+(i+1)*dLng,s0+(j+1)*dLat],[w0+i*dLng,s0+(j+1)*dLat],[w0+i*dLng,s0+j*dLat]]]},properties:{}}); }
-      }
-      return { maxR, g0, feats, covered, cellKm2:(dLng*mLng/1000)*(dLat*mLat/1000) }; }
-    async function run(){ if(!ant||busy) return; busy=true; try{ ensure();
-      if(panel){ const st=panel.querySelector('.rf-stat'); if(st) st.textContent=RF('Computing…','計算中…','Berechne…','Расчёт…','Calculando…'); }
-      const r=await compute(ant.lng,ant.lat);
-      if(r){ const feats=r.feats.concat([{type:'Feature',geometry:{type:'Point',coordinates:[ant.lng,ant.lat]},properties:{}}]);
-        try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
-        try{ GE().camera.fitBounds([[ant.lng-r.maxR/95,ant.lat-r.maxR/111],[ant.lng+r.maxR/95,ant.lat+r.maxR/111]],{padding:50,duration:800}); }catch(_){}
-        if(panel){ const st=panel.querySelector('.rf-stat'); if(st) st.innerHTML='<b>'+RF('Max range','最大到達','Max. Reichweite','Дальность','Alcance')+':</b> '+r.maxR.toFixed(1)+' km · <b>'+RF('covered','受信域','abgedeckt','покрытие','cubierto')+':</b> ~'+Math.round(r.covered*r.cellKm2).toLocaleString()+' km² · '+RF('base','基地標高','Basis','база','base')+' '+Math.round(r.g0)+' m'; }
-      } else if(panel){ const st=panel.querySelector('.rf-stat'); if(st) st.textContent=RF('No terrain data here.','この地点の地形データがありません。','Keine Geländedaten.','Нет данных.','Sin datos.'); }
-    }catch(_){}
-      busy=false; }
-    function _endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null;
-      try{ const P=window.IntMapPick; if(P&&P.active()) P.abort(); }catch(_){}
-      try{ GE().render.canvas().style.cursor=''; }catch(_){} }
-    /* (#R196) the panel steps aside while the map is being tapped — see js/map-pick.js */
-    function startPick(){ _endPick(); picking=true;
-      const P=window.IntMapPick;
-      if(P&&P.start&&P.start({ panel,
-        hint:RF('Tap the map to place the antenna.','地図をタップしてアンテナを設置してください。','Zum Setzen der Antenne auf die Karte tippen.','Нажмите на карту, чтобы разместить антенну.','Toca el mapa para colocar la antena.'),
-        onPick:(ll)=>{ picking=false; ant={lng:ll.lng,lat:ll.lat}; run(); },
-        onCancel:()=>{ picking=false; } })) return;
-      try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ ant={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ GE().events.once('click',pickH); }catch(_){} }
-    function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='rf-panel';
-      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(320px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
-      const inC='width:100%;box-sizing:border-box;height:30px;padding:0 8px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;';
-      panel.innerHTML='<div class="rf-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">📡 '+RF('Radio coverage','電波・通信圏','Funkabdeckung','Радиопокрытие','Cobertura')+'</span><button class="rf-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
-        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;">'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
-        +'<label style="font-size:10.5px;color:var(--text-muted);">'+RF('Antenna height (m)','アンテナ高 (m)','Höhe (m)','Высота (м)','Altura (m)')+'<input class="rf-h" type="number" min="1" max="1000" value="'+antH+'" style="'+inC+'"></label>'
-        +'<label style="font-size:10.5px;color:var(--text-muted);">'+RF('TX power (dBm)','送信出力 (dBm)','Leistung (dBm)','Мощность','Potencia')+'<input class="rf-p" type="number" min="0" max="60" value="'+txDbm+'" style="'+inC+'"></label>'
-        +'<label style="font-size:10.5px;color:var(--text-muted);grid-column:1 / span 2;">'+RF('Frequency (MHz)','周波数 (MHz)','Frequenz (MHz)','Частота','Frecuencia')+'<input class="rf-f" type="number" min="30" max="6000" value="'+freq+'" style="'+inC+'"></label>'
-        +'</div>'
-        +'<button class="rf-pick" style="height:34px;border:none;border-radius:9px;background:var(--primary-color);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;">◎ '+RF('Place antenna on map','地図でアンテナを設置','Antenne setzen','Разместить','Colocar')+'</button>'
-        +'<div class="rf-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;"></div>'
-        +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'+RF('Line-of-sight service area over real terrain (4/3-earth horizon + free-space path loss). A first approximation — no diffraction/clutter.','実地形上の見通し（4/3地球の電波見通し＋自由空間損失）。回折・遮蔽物は未考慮の一次近似です。','Sichtlinie über echtem Gelände.','Прямая видимость по рельефу.','Línea de vista sobre terreno real.')+'</div></div>';
-      document.body.appendChild(panel);
-      panel.querySelector('.rf-close').onclick=()=>close();   /* (#R264) one implementation — see close() */
-      const gv=(sel,d)=>{ const el=panel.querySelector(sel); const v=+el.value; return isFinite(v)?v:d; };
-      panel.querySelector('.rf-h').onchange=()=>{ antH=Math.max(1,gv('.rf-h',30)); if(ant) run(); };
-      panel.querySelector('.rf-p').onchange=()=>{ txDbm=gv('.rf-p',30); if(ant) run(); };
-      panel.querySelector('.rf-f').onchange=()=>{ freq=Math.max(30,gv('.rf-f',900)); if(ant) run(); };
-      panel.querySelector('.rf-pick').onclick=()=>startPick();
-      try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.rf-head')); }catch(_){}
-      return panel; }
-    function open(ll){ ensure(); ensurePanel(); panel.style.display='flex'; if(ll&&ll.lng!=null){ ant={lng:ll.lng,lat:ll.lat}; run(); } return true; }
-    /* ══ (#R264) A SIMULATION HAS TO BE ABLE TO SAY WHETHER IT IS OPEN, AND TO SHUT ═══════════════
-       「Toolsのカードは…選択中はハイライト…もう一度押したら選択解除されるように。」 The tools list can
-       only light a row for a running tool if the tool answers; five of the thirteen had no such
-       answer and four had no way to be closed from outside. This is the module's own state (its
-       panel), not a second copy of it, and the × in the header goes through the same function. */
-    function isOpen(){ return !!(panel&&panel.style.display!=='none'); }
-    function close(){ if(!isOpen()) return false; panel.style.display='none'; _endPick();
-      try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
-    return { open, close, isOpen, run, clear:()=>{ if(panel) panel.style.display='none'; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} }, _compute:compute, setParams:(h,p,f)=>{ if(h)antH=h; if(p!=null)txDbm=p; if(f)freq=f; } }; })();
-};
+/* ══ ⚠⚠ (#R296) 「電波・通信圏と見通し線解析を統合して」 ═══════════════════════════════
+   `IntMapModules.rf` / `window.IntMapRF` stood here. Its physics is a strict subset of js/viewshed.js
+   (a 52×52 cell 4/3-earth viewshed vs. the same viewshed at raster resolution with refraction as a
+   parameter, first-Fresnel clearance and knife-edge diffraction), so the merged tool is that one,
+   with 「電波・通信圏」 as a mode. The only thing this module had that the other did not — the TX
+   power and the free-space link budget — was ported, formula for formula. */
 
 window.IntMapModules.sun=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -837,224 +823,18 @@ window.IntMapModules.transitReach=function(HOST){
     return { run, open, draw, isOpen, close, clear:()=>{ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
 };
 
-window.IntMapModules.disaster=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
-  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
-     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
-     isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
-  /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
-  const makeDraggable=HOST.makeDraggable;
-  window.IntMapDisaster=(function(){
-    if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, run(){}, clear(){} };
-    const SRC='imdis-src'; let panel=null, origin=null, hazard='flood', busy=false, tstep=3, picking=false, pickH=null;
-    const DZ=window.IntMapLang.pick(()=>HOST.lang);
-    const _hav=(a,b)=>{ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
-    function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
-      GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      GE().layers.add({id:'imdis-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['coalesce',['get','col'],'#1e6fd0'],'fill-opacity':['coalesce',['get','op'],0.45]}});
-      GE().layers.add({id:'imdis-line',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'Polygon'],['==',['get','edge'],1]],paint:{'line-color':'#0b3d91','line-width':1.2}});
-      GE().layers.add({id:'imdis-pt',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#ff3b30','circle-stroke-color':'#fff','circle-stroke-width':2.5}});
-      return true; }catch(_){ return false; } }
-    /* connected inundation (bathtub flood-fill) over the real DEM: flood cells reachable from the origin whose
-       ground is below the water surface — a uniform level that rises with the time step.
-       ⚠ (#R197) THERE IS NO TSUNAMI HAZARD HERE ANY MORE. 「災害シミュレータからは津波シミュレータを削除しろ」.
-       #R190 had put one in — the same flood-fill with the level set to a wave height and an attenuation of
-       0.35 m/km inland — and #R192 then wrote the real thing (js/tsunami.js: shallow-water propagation over
-       the whole sea floor). Two models for one phenomenon, one of them a bathtub, and the seismic panel and
-       Atlas could both land on the bathtub. The bathtub is gone; the propagation model is the tsunami. */
-    async function inund(){ const bufKm=14, buf=bufKm/111;
-      const z=Math.max(6,Math.min(12,Math.round(13-Math.log2(bufKm)))); const bbox=[origin.lng-buf/Math.cos(origin.lat*Math.PI/180),origin.lat-buf,origin.lng+buf/Math.cos(origin.lat*Math.PI/180),origin.lat+buf];
-      const samp=await window.IntMapTerrain.sampler(bbox,z); if(!samp) return null;
-      const N=100, w0=bbox[0], s0=bbox[1], dLng=(bbox[2]-bbox[0])/N, dLat=(bbox[3]-bbox[1])/N;
-      const E=new Float32Array(N*N); for(let j=0;j<N;j++)for(let i=0;i<N;i++){ const e=samp.elevAt(w0+(i+0.5)*dLng,s0+(j+0.5)*dLat); E[j*N+i]=(e==null?9999:e); }
-      const g0=samp.elevAt(origin.lng,origin.lat); if(g0==null) return null;
-      const level = g0 + floodM*(tstep/6);                          /* flood level rises over the step */
-      const ci=Math.min(N-1,Math.max(0,Math.round((origin.lng-w0)/dLng-0.5))), cj=Math.min(N-1,Math.max(0,Math.round((origin.lat-s0)/dLat-0.5)));
-      const fl=new Uint8Array(N*N), dep=new Float32Array(N*N); const q=[cj*N+ci]; fl[cj*N+ci]=1; let head=0;
-      const lvlAt=()=>level;
-      const SEA=-1;   /* elevations below this are existing ocean (terrarium bathymetry) — traversed for connectivity but never counted as "inundated land" */
-      dep[cj*N+ci]=Math.max(0,lvlAt(ci,cj)-E[cj*N+ci]);
-      while(head<q.length){ const cell=q[head++]; const i=cell%N, j=(cell/N)|0;
-        [[1,0],[-1,0],[0,1],[0,-1]].forEach(d=>{ const ni=i+d[0], nj=j+d[1]; if(ni<0||nj<0||ni>=N||nj>=N) return; const nc=nj*N+ni; if(fl[nc]) return; const lv=lvlAt(ni,nj); if(lv<0) return; const e=E[nc]; if(e<lv&&e<9000){ fl[nc]=1; dep[nc]=Math.max(0,lv-e); q.push(nc); } }); }
-      const cap=floodM*(tstep/6)+0.5;   /* newly-inundated LAND can only be as deep as the water rise; deeper cells were already below the water body (guards a source dropped on high ground) */
-      const feats=[]; let cells=0, maxDep=0; for(let j=0;j<N;j++)for(let i=0;i<N;i++){ const c=j*N+i; if(!fl[c]||dep[c]<=0.05||dep[c]>cap||E[c]<SEA) continue; cells++; if(dep[c]>maxDep)maxDep=dep[c];
-        const dd=dep[c], col=dd<1?'#7ec8ff':dd<3?'#3a9bef':dd<6?'#1e6fd0':dd<12?'#12459e':'#0b2f6e';
-        feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[w0+i*dLng,s0+j*dLat],[w0+(i+1)*dLng,s0+j*dLat],[w0+(i+1)*dLng,s0+(j+1)*dLat],[w0+i*dLng,s0+(j+1)*dLat],[w0+i*dLng,s0+j*dLat]]]},properties:{col:col,op:0.5}}); }
-      const cellKm2=(dLng*111.32*Math.cos(origin.lat*Math.PI/180))*(dLat*110.54);
-      return { feats, areaKm2:Math.round(cells*cellKm2), maxDep:+maxDep.toFixed(1), level:+(floodM*(tstep/6)).toFixed(1) }; }
-    /* wind-advected downwind plume (ashfall / smoke): a widening cone from the source along the wind, banded by
-       concentration; reach grows with the time step. Uses live Open-Meteo surface wind at the source. */
-    let _wind=null, _windKey='';
-    async function getWind(){ const key=origin.lng.toFixed(2)+','+origin.lat.toFixed(2); if(key===_windKey&&_wind) return _wind; _windKey=key;
-      try{ const j=await window.IntMapWx.guardedJSON('https://api.open-meteo.com/v1/forecast?latitude='+origin.lat.toFixed(3)+'&longitude='+origin.lng.toFixed(3)+'&current=wind_speed_10m,wind_direction_10m',300000); const c=(j&&j.current)||{}; _wind={spd:+c.wind_speed_10m||12,dir:+c.wind_direction_10m||270}; }catch(_){ _wind={spd:12,dir:270}; }
-      return _wind; }
-    function dest(lng,lat,brgDeg,dkm){ const dr=dkm/6371, br=brgDeg*Math.PI/180, la=lat*Math.PI/180, lo=lng*Math.PI/180; const la2=Math.asin(Math.sin(la)*Math.cos(dr)+Math.cos(la)*Math.sin(dr)*Math.cos(br)); const lo2=lo+Math.atan2(Math.sin(br)*Math.sin(dr)*Math.cos(la),Math.cos(dr)-Math.sin(la)*Math.sin(la2)); return [lo2*180/Math.PI,la2*180/Math.PI]; }
-    async function plume(){ const w=await getWind(); const toward=(w.dir+180)%360;   /* wind blows FROM dir → plume goes toward dir+180 */
-      const isAsh=hazard==='ash'; const reach=Math.min(isAsh?300:120, w.spd*3.6*tstep*(isAsh?1.1:0.9));   /* km downwind over the step */
-      const half=(isAsh?9:14)*Math.PI/180;   /* half-angle of the dispersion cone */
-      const bands=[[1,isAsh?'#6b4b2a':'#555',0.5],[0.6,isAsh?'#a07845':'#888',0.4],[0.32,isAsh?'#cbb089':'#bbb',0.3]]; const feats=[];
-      bands.forEach(bd=>{ const rr=reach*bd[0]; const ring=[[origin.lng,origin.lat]]; const steps=26;
-        for(let k=0;k<=steps;k++){ const t=k/steps; const ang=toward-half*180/Math.PI+(2*half*180/Math.PI)*t; const wobble=0.15+0.85*Math.sin(Math.PI*t); ring.push(dest(origin.lng,origin.lat,ang,rr*(0.6+0.4*wobble))); }
-        ring.push([origin.lng,origin.lat]); feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[ring]},properties:{col:bd[1],op:bd[2]}}); });
-      return { feats, reach:Math.round(reach), windSpd:w.spd, toward }; }
-    async function run(){ if(!origin||busy) return; busy=true; try{ ensure(); setStat(DZ('Computing…','計算中…','Berechne…','Расчёт…','Calculando…'));
-      /* (#R224) Atlas is on demand — fetch it before dispatching, or this quietly did nothing */
-      if(hazard==='radiation'){ try{ if(window.IntMapAtlas) await window.IntMapAtlas.call('dispatch',{type:'radiation',place:(origin.name||(origin.lat.toFixed(3)+','+origin.lng.toFixed(3)))}); else if(window.IntMapConsole&&window.IntMapConsole.dispatch) await window.IntMapConsole.dispatch({type:'radiation',place:(origin.name||(origin.lat.toFixed(3)+','+origin.lng.toFixed(3)))}); }catch(_){} setStat(DZ('Opened the radioactive-fallout model.','放射性物質の拡散モデルを起動しました。','Fallout-Modell geöffnet.','Модель радиации открыта.','Modelo de lluvia radiactiva.')); busy=false; return; }
-      let r=null; if(hazard==='flood') r=await inund(); else r=await plume();
-      if(r){ const feats=(r.feats||[]).concat([{type:'Feature',geometry:{type:'Point',coordinates:[origin.lng,origin.lat]},properties:{}}]);
-        try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
-        if(hazard==='flood') setStat('<b>'+DZ('Inundated area','浸水域','Überflutet','Затоплено','Inundado')+':</b> ~'+r.areaKm2.toLocaleString()+' km² · '+DZ('max depth','最大水深','max. Tiefe','глубина','profundidad')+' '+r.maxDep+' m · '+DZ('water','水位','Wasser','вода','agua')+' +'+r.level+' m');
-        else setStat('<b>'+DZ('Plume reach','到達距離','Reichweite','дальность','alcance')+':</b> ~'+r.reach+' km '+DZ('downwind','風下','abwind','по ветру','a favor')+' · '+DZ('wind','風速','Wind','ветер','viento')+' '+r.windSpd.toFixed(1)+' m/s');
-      } else setStat(DZ('No terrain/wind data here.','この地点のデータがありません。','Keine Daten.','Нет данных.','Sin datos.'));
-    }catch(_){ setStat(DZ('Simulation failed — try again.','計算に失敗しました。','Fehlgeschlagen.','Ошибка.','Falló.')); } busy=false; }
-    function setStat(h){ if(panel){ const s=panel.querySelector('.dz-stat'); if(s) s.innerHTML=h; } }
-    let floodM=5;
-    function _endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null;
-      try{ const P=window.IntMapPick; if(P&&P.active()) P.abort(); }catch(_){}
-      try{ GE().render.canvas().style.cursor=''; }catch(_){} }
-    /* (#R196) the panel steps aside while the map is being tapped — see js/map-pick.js */
-    function startPick(){ _endPick(); picking=true;
-      const P=window.IntMapPick;
-      if(P&&P.start&&P.start({ panel,
-        hint:DZ('Tap the map to place the source.','地図をタップして発生地点を置いてください。','Zum Setzen der Quelle auf die Karte tippen.','Нажмите на карту, чтобы указать источник.','Toca el mapa para colocar el origen.'),
-        onPick:(ll)=>{ picking=false; origin={lng:ll.lng,lat:ll.lat}; run(); },
-        onCancel:()=>{ picking=false; } })) return;
-      try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ origin={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ GE().events.once('click',pickH); }catch(_){} }
-    /* (#R197) NO TSUNAMI. The tsunami is js/tsunami.js — the propagation model — and it is not opened
-       from here, nor is one launched behind the user's back by anything that lands in this panel. */
-    const HAZ=()=>[['flood','🌊 '+DZ('Flood','洪水','Hochwasser','Наводнение','Inundación')],['ash','🌋 '+DZ('Ashfall','火山灰','Aschefall','Пепел','Ceniza')],['smoke','💨 '+DZ('Smoke','煙','Rauch','Дым','Humo')],['radiation','☢ '+DZ('Radioactive','放射性物質','Radioaktiv','Радиация','Radiactivo')]];
-    function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='dz-panel';
-      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
-      panel.innerHTML='<div class="dz-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌐 '+DZ('Disaster simulator','災害シミュレーター','Katastrophen-Simulator','Симулятор ЧС','Simulador de desastres')+'</span><button class="dz-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
-        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
-        +'<div class="dz-haz" style="display:flex;flex-wrap:wrap;gap:5px;">'+HAZ().map(h=>'<button class="dz-hz" data-h="'+h[0]+'" style="flex:1 1 auto;padding:5px 7px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;white-space:nowrap;">'+h[1]+'</button>').join('')+'</div>'
-        +'<div class="dz-param"></div>'
-        +'<button class="dz-pick" style="height:34px;border:none;border-radius:9px;background:var(--primary-color);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;">◎ '+DZ('Place source on map','発生地点を設置','Quelle setzen','Разместить','Colocar origen')+'</button>'
-        +'<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:10.5px;color:var(--text-muted);white-space:nowrap;">'+DZ('Time','経過時間','Zeit','Время','Tiempo')+'</span><input type="range" class="dz-t" min="1" max="12" value="3" style="flex:1;"><span class="dz-tv" style="font-size:11px;font-weight:700;color:var(--text-main);min-width:36px;text-align:right;">3 h</span></div>'
-        +'<div class="dz-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;"></div>'
-        +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'+DZ('Educational approximation only — in a real emergency follow official authorities. Flood = connected inundation from the real elevation model; ash/smoke = wind-advected plume on live wind; radioactive = the Lagrangian fallout model. Tsunamis are modeled separately, by the propagation simulator.','教育目的の近似です。実際の災害時は公的機関の指示に従ってください。洪水＝実標高データからの連結浸水、火山灰・煙＝実風のプルーム、放射性物質＝ラグランジュ拡散モデル。津波は別の伝播シミュレーターで扱います。','Nur Bildungsnäherung. Tsunamis: eigener Ausbreitungssimulator.','Только образовательная модель. Цунами — отдельный симулятор.','Solo aproximación educativa. Los tsunamis tienen su propio simulador.')+'</div></div>';
-      document.body.appendChild(panel);
-      panel.querySelector('.dz-close').onclick=()=>close();
-      panel.querySelector('.dz-pick').onclick=()=>startPick();
-      panel.querySelectorAll('.dz-hz').forEach(b=>b.onclick=()=>{ hazard=b.getAttribute('data-h'); syncHaz(); renderParam(); if(origin) run(); });
-      const tl=panel.querySelector('.dz-t'); tl.oninput=()=>{ tstep=+tl.value; panel.querySelector('.dz-tv').textContent=tstep+' h'; if(origin){ clearTimeout(panel._t); panel._t=setTimeout(run,150); } };
-      try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.dz-head')); }catch(_){}
-      syncHaz(); renderParam(); return panel; }
-    function syncHaz(){ if(!panel) return; panel.querySelectorAll('.dz-hz').forEach(b=>{ const on=b.getAttribute('data-h')===hazard; b.style.background=on?'var(--primary-color)':'var(--input-bg)'; b.style.color=on?'#fff':'var(--text-main)'; }); }
-    function renderParam(){ if(!panel) return; const p=panel.querySelector('.dz-param'); if(!p) return; const inC='width:100%;box-sizing:border-box;height:28px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 7px;';
-      if(hazard==='flood'){ p.innerHTML='<label style="font-size:10.5px;color:var(--text-muted);">'+DZ('Peak water rise (m)','最大水位上昇 (m)','Pegelanstieg (m)','Подъём воды (м)','Subida (m)')+'<input type="number" class="dz-fm" min="1" max="60" value="'+floodM+'" style="'+inC+'"></label>'; const el=p.querySelector('.dz-fm'); el.onchange=()=>{ floodM=Math.max(1,+el.value||5); if(origin) run(); }; }
-      else if(hazard==='radiation'){ p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+DZ('Opens the full radioactive-fallout model (source term, isotope, wind).','放出量・核種・風を扱う放射性物質拡散モデルを開きます。','Öffnet das Fallout-Modell.','Открывает модель радиации.','Abre el modelo de lluvia radiactiva.')+'</div>'; }
-      else p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+DZ('Plume follows the live wind at the source; the time slider extends it downwind.','プルームは発生地点の実風に沿い、時間スライダーで風下へ伸びます。','Fahne folgt dem Live-Wind.','След по ветру.','La pluma sigue el viento real.')+'</div>'; }
-    /* (#R190) `hazard` and the hazard's own parameter may arrive WITH the location, so a caller can say
-       "this hazard, this place, this parameter" in one call rather than running the model once under the
-       previous hazard first. Every other caller passes {lng,lat} only and behaves exactly as before.
-       ⚠ (#R197) `hazard:'tsunami'` is no longer one of HAZ(), so it no longer selects anything here —
-       the test below is the same membership test it always was, and it now REFUSES the removed hazard
-       rather than mapping it to a neighbour. */
-    function open(ll){ ensure(); ensurePanel(); panel.style.display='flex';
-      if(ll&&ll.hazard&&HAZ().some(h=>h[0]===ll.hazard)){ hazard=ll.hazard; try{ syncHaz&&syncHaz(); }catch(_){} }
-      if(ll&&ll.floodM!=null&&isFinite(+ll.floodM)) floodM=Math.max(1,Math.min(60,+ll.floodM));
-      try{ renderParam&&renderParam(); }catch(_){}
-      if(ll&&ll.lng!=null){ origin=ll; run(); } return true; }
-    function close(){ if(panel) panel.style.display='none'; _endPick(); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
-    const isOpen=()=>!!(panel&&panel.style.display!=='none');   /* (#R264) the tools list reads this — see js/map-ui.js */
-    return { open, close, isOpen, run, clear:close,
-      /* (#R197) an unknown hazard is refused rather than stored: `setHazard('tsunami')` used to leave the
-         panel in a state no button could show and no parameter belonged to. */
-      setHazard:(h)=>{ if(!HAZ().some(k=>k[0]===h)) return false; hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); return true; },
-      hazards:()=>HAZ().map(h=>h[0]),
-      state:()=>({ hazard, floodM, origin:origin?{lng:origin.lng,lat:origin.lat}:null }),   /* (#R190) */
-      _inund:async(o,hz,ts,fm)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; return await inund(); },
-      /* (#R214) 「再読み込みした際に、できる限りその状態に戻ってくるように」 — the hazard, the water
-         depth and WHERE it is coming from are the whole question this panel was asked. Registered
-         under the lazy-module name so js/map-ui.js can fetch the module back before applying. */
-      _share:{ get(){ if(!panel||panel.style.display==='none') return null;
-          const o={ hz:hazard, f:floodM }; if(origin&&origin.lng!=null){ o.o=[+(+origin.lng).toFixed(5),+(+origin.lat).toFixed(5)]; } return o; },
-        set(v){ if(!v) return; const ll=(Array.isArray(v.o)&&v.o.length===2)?{lng:+v.o[0],lat:+v.o[1]}:{};
-          try{ open(Object.assign({hazard:v.hz, floodM:v.f}, ll)); }catch(_){} } } }; })();
-  /* (#R214) 「再読み込みした際に、できる限りその状態に戻ってくるようにして。」 — the simulators
-     #R211 left unregistered. `_share` is the module's own {get,set}; this is the one line that
-     hands it to the registry js/map-ui.js packs into the link's `s=` parameter. ⚠ The KEY is the
-     lazy-module name where there is one, because `apply()` fetches by that name at restore. */
-  try{ if(window.IntMapDisaster._share){ const _io=window.IntMapDisaster._share;
-    if(window.IntMapShareState) window.IntMapShareState.register('disaster',_io);
-    else (window._imShareEarly||(window._imShareEarly=[])).push(['disaster',_io]); } }catch(_){}
+/* ══ ⚠⚠ (#R296) 「災害シミュレーターは4つのうち、放射性物質拡散シミュレーションを残し全削除」 ═════
+   `IntMapModules.disaster` / `window.IntMapDisaster` stood here with four hazards — 洪水 / 火山灰 /
+   煙 / 放射性物質 — and the fourth was never a model of its own: picking it dispatched to
+   `IntMapRadiation`, which is a separate simulator with its own tools row. Deleting the other three
+   leaves a one-choice panel whose only act is to open another panel, which is the placeholder the
+   standing rules forbid, so the wrapper goes and the radioactive-dispersion model stays — with the
+   panel it has never had (see `openPanel` above), because it is now the only door. */
 
-};
-
-window.IntMapModules.earthReplay=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
-  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
-     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
-     isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
-  /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
-  const makeDraggable=HOST.makeDraggable;
-  window.IntMapEarthReplay=(function(){
-    if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, close(){}, setWhen(){} };
-    const SRC='imrep-src'; const rad=Math.PI/180, J1970=2440588, J2000=2451545, dayMs=86400000, e=rad*23.4397;
-    let panel=null, when=new Date(), playing=0;
-    const ER=window.IntMapLang.pick(()=>HOST.lang);
-    const toDays=d=>d.valueOf()/dayMs-0.5+J1970-J2000;
-    function solar(date){ const d=toDays(date); const M=rad*(357.5291+0.98560028*d), C=rad*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M)), L=M+C+rad*102.9372+Math.PI;
-      const dec=Math.asin(Math.sin(e)*Math.sin(L)), ra=Math.atan2(Math.sin(L)*Math.cos(e),Math.cos(L)); return { d, dec, ra }; }
-    /* day/night terminator polygon for the datetime: terminator latitude at each longitude is atan(−cos H / tan dec),
-       and the ring is closed over whichever pole is in polar night (the winter pole). */
-    function terminatorFC(date){ const {d,dec,ra}=solar(date); if(Math.abs(dec)<1e-4) return null;
-      const pts=[]; for(let lng=-180;lng<=180;lng+=3){ const th=rad*(280.16+360.9856235*d)+rad*lng; const H=th-ra; let lat=Math.atan(-Math.cos(H)/Math.tan(dec))/rad; lat=Math.max(-89.5,Math.min(89.5,lat)); pts.push([lng,lat]); }
-      const darkPole=dec>0?-90:90;   /* dec>0 = N summer → S pole dark */
-      const ring=pts.concat([[180,darkPole],[-180,darkPole],[pts[0][0],pts[0][1]]]);
-      return { type:'Feature', geometry:{type:'Polygon',coordinates:[ring]}, properties:{} }; }
-    function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
-      GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      GE().layers.add({id:'imrep-night',type:'fill',source:SRC,paint:{'fill-color':'#04070f','fill-opacity':0.42}});
-      return true; }catch(_){ return false; } }
-    function ymd(d){ try{ return d.toISOString().slice(0,10); }catch(_){ return ''; } }
-    function drawTerminator(){ try{ ensure(); const t=terminatorFC(when); GE().layers.setSourceData(SRC,t?{type:'FeatureCollection',features:[t]}:{type:'FeatureCollection',features:[]}); }catch(_){} }
-    /* (#R94) Earth Replay is now a SHELL on the IntMapTime kernel: it draws the day/night terminator for the
-       shared instant and plays it forward, while the kernel itself drives news / imagery / quakes / dated
-       rasters / countries / borders. apply() therefore only paints the terminator + read-out. */
-    function apply(){ drawTerminator(); updateReadout(); }
-    function updateReadout(){ if(!panel) return; const r=panel.querySelector('.er-read'); if(!r) return; const now=new Date(), yrsBack=(now-when)/(365.25*dayMs);
-      const S=solar(when); const dpole=S.dec>0?ER('S pole in polar night','南極は極夜','Südpol Polarnacht','Ю. полюс — полярная ночь','Polo sur noche polar'):ER('N pole in polar night','北極は極夜','Nordpol Polarnacht','С. полюс — полярная ночь','Polo norte noche polar');
-      let scope; if(when>now) scope=ER('future — terminator only','未来 — 昼夜のみ','Zukunft','будущее','futuro'); else if(yrsBack<=10) scope=ER('news · imagery · quakes time-traveled to this date','ニュース・衛星画像・地震をこの日付へ','News/Bilder/Beben zeitversetzt','новости/снимки/толчки','noticias/imágenes/sismos');
-        else scope=ER('pre-archive date — day/night terminator + any historical layers','アーカイブ以前 — 昼夜境界＋歴史レイヤー','vor Archiv','до архива','antes del archivo');
-      r.innerHTML='<b>🌍 '+ymd(when)+' '+String(when.getUTCHours()).padStart(2,'0')+':'+String(when.getUTCMinutes()).padStart(2,'0')+' UTC</b><div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">☀️ '+ER('sub-solar lat','太陽直下点緯度','subsolar','подсолнечная','subsolar')+' '+(S.dec/rad).toFixed(1)+'° · '+dpole+'</div><div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">'+scope+'</div>'; }
-    /* setWhen now WRITES the shared kernel (allowFuture: the terminator is valid for any date, incl. the
-       future); the kernel's broadcast calls our subscriber below, which mirrors `when` and repaints. */
-    function setWhen(d){ const nd=(d instanceof Date&&!isNaN(d))?d:new Date();
-      try{ if(window.IntMapTime) return window.IntMapTime.set(nd,{allowFuture:true,source:'earthreplay'}); }catch(_){}
-      when=nd; syncInputs(); apply(); }
-    function syncInputs(){ if(!panel) return; const di=panel.querySelector('.er-date'), yl=panel.querySelector('.er-year'), tl=panel.querySelector('.er-time'), tv=panel.querySelector('.er-tv');
-      try{ if(di) di.value=ymd(when); }catch(_){} if(yl) yl.value=when.getUTCFullYear(); const mins=when.getUTCHours()*60+when.getUTCMinutes(); if(tl) tl.value=mins; if(tv) tv.textContent=String(when.getUTCHours()).padStart(2,'0')+':'+String(when.getUTCMinutes()).padStart(2,'0')+'Z'; }
-    function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='er-panel';
-      panel.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:96px;width:min(440px,94vw);z-index:1402;display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.5);';
-      panel.innerHTML='<div class="er-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">⏳ '+ER('Earth Replay','アース・リプレイ（世界を巻き戻す）','Earth Replay','Реплей Земли','Earth Replay')+'</span><button class="er-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
-        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
-        +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
-          +'<input type="date" class="er-date" style="height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;">'
-          +'<input type="number" class="er-year" min="1800" max="2100" style="width:74px;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;">'
-          +'<button class="er-now" style="height:30px;padding:0 10px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+ER('Now','現在','Jetzt','Сейчас','Ahora')+'</button>'
-          +'<button class="er-play" style="height:30px;width:36px;border:none;border-radius:8px;background:var(--primary-color);color:#fff;font-size:13px;cursor:pointer;">▶</button></div>'
-        +'<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:10px;color:var(--text-muted);">UTC</span><input type="range" class="er-time" min="0" max="1439" value="720" style="flex:1;"><span class="er-tv" style="font-size:11px;font-weight:700;color:var(--text-main);min-width:52px;text-align:right;">12:00Z</span></div>'
-        +'<div class="er-read" style="font-size:12px;color:var(--text-main);"></div>'
-        +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'+ER('One clock for the whole globe: the day/night terminator is computed for any date; within ~10 years the news, satellite imagery and earthquakes time-travel to the date, and any dated weather/air layers reload for it. Turn on the layers you want to replay.','地球全体を1つの時計で再生：昼夜境界はどの日付でも計算し、約10年以内ならニュース・衛星画像・地震がその日付へ移動、日付付きの気象・大気レイヤーも再読込します。再生したいレイヤーをオンにしてください。','Eine Uhr für die ganze Erde.','Одни часы для всей планеты.','Un reloj para todo el globo.')+'</div></div>';
-      document.body.appendChild(panel);
-      panel.querySelector('.er-close').onclick=()=>close();
-      panel.querySelector('.er-now').onclick=()=>{ try{ if(window.IntMapTime) return window.IntMapTime.setNow({source:'earthreplay'}); }catch(_){} setWhen(new Date()); };
-      panel.querySelector('.er-date').onchange=e=>{ const p=(e.target.value||'').split('-'); if(p.length===3){ const nd=new Date(when); nd.setUTCFullYear(+p[0],+p[1]-1,+p[2]); setWhen(nd); } };
-      panel.querySelector('.er-year').onchange=e=>{ const y=+e.target.value; if(y>=1800&&y<=2100){ const nd=new Date(when); nd.setUTCFullYear(y); setWhen(nd); } };
-      panel.querySelector('.er-time').oninput=e=>{ const m=+e.target.value; const nd=new Date(when); nd.setUTCHours(Math.floor(m/60),m%60,0,0); when=nd; syncInputs(); clearTimeout(panel._t); panel._t=setTimeout(()=>{ try{ if(window.IntMapTime) window.IntMapTime.set(nd,{allowFuture:true,source:'earthreplay'}); else apply(); }catch(_){ apply(); } },140); };
-      const pb=panel.querySelector('.er-play'); pb.onclick=()=>{ if(playing){ clearInterval(playing); playing=0; pb.textContent='▶'; } else { pb.textContent='⏸'; playing=setInterval(()=>{ setWhen(new Date(when.getTime()+3*3600000)); },900); } };   /* +3 h per tick */
-      try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.er-head')); }catch(_){}
-      return panel; }
-    GE().events.on('styledata',()=>{ if(panel&&panel.style.display!=='none') setTimeout(drawTerminator,90); });
-    /* (#R94) mirror the shared kernel: any time change (this panel, the main slider, or Atlas) redraws the
-       terminator + read-out while the panel is open. */
-    try{ if(window.IntMapTime) window.IntMapTime.on(e=>{ when=e.when; syncInputs(); if(panel&&panel.style.display!=='none'){ drawTerminator(); updateReadout(); } }); }catch(_){}
-    function open(){ ensure(); ensurePanel(); try{ if(window.IntMapTime) when=window.IntMapTime.when(); }catch(_){} panel.style.display='flex'; syncInputs(); apply(); return true; }
-    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.er-play'); if(pb) pb.textContent='▶'; } try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
-    const isOpen=()=>!!(panel&&panel.style.display!=='none');   /* (#R264) the tools list reads this — see js/map-ui.js */
-    return { open, close, isOpen, setWhen, _terminatorFC:terminatorFC, _solar:solar }; })();
-};
+/* ══ ⚠⚠ (#R296) 「「地球リプレイ」は存在意義が不明だから全削除」 ═══════════════════════════
+   `IntMapModules.earthReplay` / `window.IntMapEarthReplay` stood here — a play button that swept the
+   master clock through a day and let the night-side terminator follow it. Everything it could show,
+   Chronos shows: the same clock, the same terminator, with a date, a time and a transport of its own
+   (#R293 put the model's player in Chronos's Time tab). Removed whole rather than left as a second
+   door onto the same state — the tools row (js/map-ui.js), the Atlas `sunPath` branch that opened it
+   (js/atlas-console.js) and the module go together. */

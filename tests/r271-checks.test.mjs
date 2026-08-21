@@ -179,7 +179,11 @@ test('R271 ④ the ✕ is measured against the input, not the box around it', ()
   assert.match(m[0], /inp\.offsetHeight/, '…and from its height, not the wrapper’s');
   /* both boxes must use it — #R239's standing lesson */
   assert.match(codeOnly(read('js/map-ui.js')), /IntMapPlaceClear\(inp,b\)/, 'the sidebar box calls it');
-  assert.match(codeOnly(read('js/map-extras.js')), /IntMapPlaceClear\(inp,clr\)/, 'the classic panel box calls it');
+  /* ⚠ (#R296) THERE IS ONLY ONE LAYER-SEARCH BOX NOW — 「レイヤー選択欄はclassic dropdownを完全削除」.
+     #R239's lesson (a defect fixed in one of two copies and left in the other) is what made these
+     checks assert BOTH boxes; deleting one copy is the strongest possible answer to it, so the
+     assertion becomes 「the classic one is gone」 rather than 「it matches」. */
+  assert.doesNotMatch(codeOnly(read('js/map-extras.js')), /IntMapPlaceClear\(/, 'and the classic panel box is gone');
 });
 
 /* ── ⑤ one column in the terrain & water panel ──────────────────────────────────────────────── */

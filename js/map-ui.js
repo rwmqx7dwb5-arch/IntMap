@@ -733,7 +733,7 @@ window.IntMapModules.layerSidebar=function(HOST){
        point the coordinate readout is describing. */
     const _svg=(d)=>'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
     const SVG_QUAKE=_svg('<path d="M2 13h3.2l2.1-6.4 3 12.2 2.6-9.1 1.9 3.3H22"/>');
-    const SVG_WAVE=_svg('<path d="M2 8c2.5 0 2.5 2.4 5 2.4S9.5 8 12 8s2.5 2.4 5 2.4S19.5 8 22 8"/><path d="M2 15c2.5 0 2.5 2.4 5 2.4s2.5-2.4 5-2.4 2.5 2.4 5 2.4 2.5-2.4 5-2.4"/>');
+    /* ⚠ (#R296) SVG_WAVE / SVG_FLOOD / SVG_TRANSIT / SVG_RF / SVG_REPLAY stood here — the five icons of the rows removed below. An icon nothing draws is dead weight in the shell budget. */
     const SVG_TERR=_svg('<path d="M2 19l6-9 4 5.5 3-4L22 19z"/><path d="M2 19h20"/>');
     const SVG_LOS=_svg('<path d="M3 20V9"/><path d="M3 9l16 5"/><circle cx="20" cy="14.5" r="1.8"/><path d="M3 5v2"/>');
     const SVG_REACH=_svg('<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/>');
@@ -742,10 +742,6 @@ window.IntMapModules.layerSidebar=function(HOST){
     const SVG_PLUME=_svg('<path d="M4 20c0-5 3-6 3-9a3 3 0 016 0c0 4 4 3 4 7"/><path d="M3 20h18"/>');
     /* (#R261) the five below — see the ⚠⚠⚠ note on SIM_TOOLS */
     const SVG_DRONE=_svg('<circle cx="12" cy="12" r="2.4"/><path d="M10 10L6.5 6.5M14 10l3.5-3.5M10 14l-3.5 3.5M14 14l3.5 3.5"/><circle cx="5" cy="5" r="2.1"/><circle cx="19" cy="5" r="2.1"/><circle cx="5" cy="19" r="2.1"/><circle cx="19" cy="19" r="2.1"/>');
-    const SVG_FLOOD=_svg('<path d="M2 17c2.2 0 2.2 2 4.5 2S9 17 11.2 17s2.2 2 4.5 2 2.3-2 4.5-2"/><path d="M2 12.5c2.2 0 2.2 2 4.5 2s2.2-2 4.4-2 2.2 2 4.5 2 2.3-2 4.5-2"/><path d="M6 8.5l6-5.5 6 5.5"/>');
-    const SVG_TRANSIT=_svg('<rect x="6" y="3" width="12" height="13" rx="2.5"/><path d="M6 11h12"/><path d="M9 20l-2 2M15 20l2 2"/><circle cx="9" cy="13.7" r=".9"/><circle cx="15" cy="13.7" r=".9"/>');
-    const SVG_RF=_svg('<circle cx="12" cy="12" r="1.9"/><path d="M8.4 8.4a5 5 0 000 7.2M15.6 8.4a5 5 0 010 7.2"/><path d="M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"/>');
-    const SVG_REPLAY=_svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.2v5l3.2 2"/><path d="M4.6 8.2L3 5.6M3 5.6l3 .4"/>');
     /* (#R291) a signpost: the fork this app has been unable to show anybody for seven rounds */
     const SVG_DIRECTIONS=_svg('<path d="M12 21.5v-6.2"/><path d="M12 15.3L6.6 9.9V5.4"/><path d="M12 15.3l5.4-5.4V5.4"/><circle cx="6.6" cy="4" r="1.6"/><circle cx="17.4" cy="4" r="1.6"/>');
     /* the camera's centre, as the coordinate a point tool needs when it is opened from a list */
@@ -775,10 +771,14 @@ window.IntMapModules.layerSidebar=function(HOST){
       { id:'sim.seismic', mod:'IntMapSeismic', ic:SVG_QUAKE, run:null,   /* registered in js/app-body.js beside the OS kernel */
         label:()=>T('Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos'),
         hint:()=>T('Place a source and watch the shaking spread','震源を置いて揺れの広がりを見る','Herd setzen und die Erschütterung verfolgen','Задайте очаг и смотрите, как расходятся колебания','Coloque una fuente y vea propagarse el temblor') },
-      { id:'sim.tsunami', mod:'IntMapTsunami', ic:SVG_WAVE, en:'Tsunami simulator',
-        run:_lazy('tsunami',()=>window.IntMapTsunami&&window.IntMapTsunami.open(_hereLL())),
-        label:()=>T('Tsunami simulator','津波シミュレーター','Tsunami-Simulator','Симулятор цунами','Simulador de tsunamis'),
-        hint:()=>T('Solve the wave from a sea-floor rupture','海底の断層から波を解く','Welle aus einem Seebeben lösen','Волна от подводного разрыва','Resuelve la ola de una ruptura submarina') },
+      /* ══ ⚠ (#R296) NO ROW FOR THE TSUNAMI — 「津波シミュレータはボタンを設置しないように。（地震シミュ
+         レータありきの機能なため、直接アクセスUIは不要。）」 ═════════════════════════════════════════════
+         `IntMapTsunami` (js/tsunami.js) is NOT removed and nothing about it changes: it is the shallow-
+         water propagation model the earthquake simulator opens once a source has a magnitude and a
+         depth, which is the only state in which it has anything to solve. A row here offered it from a
+         standing start, where the reader would have had to invent a rupture for it — the same
+         「invented data」 the standing rules forbid. Atlas still reaches it, and so does #R261's share
+         link; what is gone is the button that starts with nothing. */
       { id:'sim.terrainWater', mod:'IntMapTerrainWater', ic:SVG_TERR, en:'Terrain & water simulator',
         run:_lazy('terrainWater',()=>window.IntMapTerrainWater&&window.IntMapTerrainWater.open(_hereLL())),
         label:()=>T('Terrain & water simulator','地形編集・水流シミュレーター','Gelände- & Wasser-Simulator','Симулятор рельефа и водотока','Simulador de terreno y agua'),
@@ -795,13 +795,21 @@ window.IntMapModules.layerSidebar=function(HOST){
         run:()=>{ try{ return !!(window.IntMapRadiation&&window.IntMapRadiation.openPanel()); }catch(_){ return false; } },
         label:()=>T('Radioactive plume simulator','放射性プルーム拡散シミュレーター','Simulator radioaktiver Fahnen','Симулятор радиоактивного шлейфа','Simulador de pluma radiactiva'),
         hint:()=>T('Disperse a release on the live wind field','実際の風の場で放出を拡散させる','Freisetzung im realen Windfeld ausbreiten','Выброс в реальном поле ветра','Dispersa una emisión con el viento real') },
-      { id:'sim.los', mod:'IntMapLOS', ic:SVG_LOS, en:'Line of sight (radar shadow)',
+      /* ⚠ (#R296) ONE ROW FOR BOTH — 「電波・通信圏と見通し線解析を統合して」. The panel switches between
+         「見通し線」 (geometry / radar shadow) and 「電波・通信圏」 (the same viewshed with refraction, a
+         frequency and a link-budget range); the `sim.rf` row that stood below is gone with it. */
+      { id:'sim.los', mod:'IntMapLOS', ic:SVG_LOS, en:'Radio coverage & line of sight',
+        keys:'radio rf coverage signal antenna line of sight viewshed radar shadow 電波 通信圏 アンテナ 見通し線 レーダー Funkabdeckung Sichtlinie радиопокрытие видимость cobertura visión',
         run:_lazy('los',()=>window.IntMapLOS&&window.IntMapLOS.open(_hereLL())),
-        label:()=>T('Line of sight (radar shadow)','見通し線解析（レーダー死角）','Sichtlinie (Radarschatten)','Линия видимости (радиотень)','Línea de visión (sombra de radar)'),
-        hint:()=>T('What the terrain hides from a point','ある地点から地形が隠すもの','Was das Gelände von einem Punkt verbirgt','Что рельеф скрывает от точки','Lo que el terreno oculta desde un punto') },
+        label:()=>T('Radio coverage & line of sight','電波・通信圏／見通し線','Funkabdeckung & Sichtlinie','Радиопокрытие и линия видимости','Cobertura de radio y línea de visión'),
+        hint:()=>T('Signal from a transmitter here, and what the terrain hides','ここに置いた送信機の到達範囲と、地形が隠すもの','Reichweite eines Senders hier und was das Gelände verbirgt','Дальность передатчика здесь и что скрывает рельеф','Alcance de un emisor aquí y lo que oculta el terreno') },
+      /* ⚠ (#R296) ONE REACHABILITY ROW — 「到達圏と公共交通機関の到達圏に分離するのを辞めろ」. 公共交通 is
+         a fourth transport in this panel now (js/map-tools.js), answered by the same rail model that
+         used to have a row of its own; the `sim.transitReach` row that stood below is gone with it. */
       { id:'sim.reach', mod:'IntMapIsochrone', ic:SVG_REACH, en:'Reachable area',
+        keys:'isochrone reach transit rail 到達圏 公共交通 鉄道 電車 Erreichbarkeit ÖPNV доступность транспорт alcanzable transporte',
         run:()=>{ try{ return !!(window.IntMapIsochrone&&window.IntMapIsochrone.open(_hereLL())); }catch(_){ return false; } },
-        label:()=>T('Reachable area (drive/walk/cycle)','到達圏（車・徒歩・自転車）','Erreichbarkeit (Auto/Fuß/Rad)','Зона доступности (авто/пешком/вело)','Área alcanzable (coche/pie/bici)'),
+        label:()=>T('Reachable area (drive/walk/cycle/transit)','到達圏（車・徒歩・自転車・公共交通）','Erreichbarkeit (Auto/Fuß/Rad/ÖPNV)','Зона доступности (авто/пешком/вело/транспорт)','Área alcanzable (coche/pie/bici/transporte)'),
         hint:()=>T('How far you get in a given time','決めた時間でどこまで行けるか','Wie weit man in einer Zeit kommt','Как далеко можно уехать за время','Hasta dónde se llega en un tiempo') },
       { id:'sim.sun', mod:'IntMapSun', ic:SVG_SUN, en:'Sunlight hours & shade',
         run:()=>{ try{ if(!window.IntMapSun) return false; window.IntMapSun.open();
@@ -836,22 +844,17 @@ window.IntMapModules.layerSidebar=function(HOST){
         run:()=>{ try{ return !!(window.IntMapDrone&&window.IntMapDrone.open()); }catch(_){ return false; } },
         label:()=>T('Drone flight planner','ドローン飛行計画','Drohnen-Flugplanung','Планировщик полёта дрона','Planificador de vuelo de dron'),
         hint:()=>T('Battery, clearance and no-fly zones over the real terrain','実地形の上で電池・対地高度・飛行禁止区域を解く','Akku, Bodenabstand und Sperrzonen über echtem Gelände','Батарея, высота над землёй и бесполётные зоны над реальным рельефом','Batería, margen sobre el suelo y zonas prohibidas en terreno real') },
-      { id:'sim.disaster', mod:'IntMapDisaster', ic:SVG_FLOOD, en:'Flood & tsunami hazard',
-        run:()=>{ try{ return !!(window.IntMapDisaster&&window.IntMapDisaster.open(_hereLL())); }catch(_){ return false; } },
-        label:()=>T('Flood & tsunami hazard','浸水・津波ハザード','Hochwasser- & Tsunami-Gefahr','Опасность наводнения и цунами','Riesgo de inundación y tsunami'),
-        hint:()=>T('What a given water level reaches from here','ある水位がここからどこまで届くか','Wohin ein gegebener Wasserstand reicht','Куда доходит заданный уровень воды','Hasta dónde llega un nivel de agua dado') },
-      { id:'sim.transitReach', mod:'IntMapTransitReach', ic:SVG_TRANSIT, en:'Transit reachability',
-        run:()=>{ try{ return !!(window.IntMapTransitReach&&window.IntMapTransitReach.open(_hereLL())); }catch(_){ return false; } },
-        label:()=>T('Transit reachability','公共交通の到達圏','Erreichbarkeit mit ÖPNV','Доступность общественным транспортом','Alcance en transporte público'),
-        hint:()=>T('How far the timetable takes you, not the road','道路ではなく時刻表で行ける範囲','Wie weit der Fahrplan trägt, nicht die Straße','Куда довезёт расписание, а не дорога','Hasta dónde lleva el horario, no la carretera') },
-      { id:'sim.rf', mod:'IntMapRF', ic:SVG_RF, en:'Radio coverage',
-        run:()=>{ try{ return !!(window.IntMapRF&&window.IntMapRF.open(_hereLL())); }catch(_){ return false; } },
-        label:()=>T('Radio coverage','電波到達範囲','Funkabdeckung','Зона радиопокрытия','Cobertura de radio'),
-        hint:()=>T('Signal strength from a transmitter placed here','ここに置いた送信機の受信強度','Feldstärke eines Senders an dieser Stelle','Уровень сигнала передатчика в этой точке','Intensidad de señal de un emisor aquí') },
-      { id:'sim.earthReplay', mod:'IntMapEarthReplay', ic:SVG_REPLAY, en:'Earth replay (sun over time)',
-        run:()=>{ try{ return !!(window.IntMapEarthReplay&&window.IntMapEarthReplay.open()); }catch(_){ return false; } },
-        label:()=>T('Earth replay (sun over time)','地球リプレイ（太陽の動き）','Erd-Wiedergabe (Sonnenlauf)','Проигрывание Земли (ход Солнца)','Reproducción de la Tierra (el Sol)'),
-        hint:()=>T('Run the day and night round the planet','昼と夜を地球上で回して見る','Tag und Nacht um den Planeten laufen lassen','Прогнать день и ночь вокруг планеты','Haga girar el día y la noche por el planeta') },
+      /* ══ ⚠⚠ (#R296) FOUR ROWS STOOD HERE AND NONE OF THEM DOES ANY MORE ═══════════════════════════
+         · `sim.disaster` 「浸水・津波ハザード」 — 「災害シミュレーターは4つのうち、放射性物質拡散シミュ
+           レーションを残し全削除」. Its fourth hazard only opened `IntMapRadiation`, which has its own row
+           above (and, this round, its own panel), so nothing it could do is unreachable.
+         · `sim.transitReach` 「公共交通の到達圏」 — 「到達圏と…分離するのを辞めろ」: the same model, as the
+           `transit` transport of the reachable-area row above.
+         · `sim.rf` 「電波到達範囲」 — 「電波・通信圏と見通し線解析を統合して」: a mode of the row above.
+         · `sim.earthReplay` 「地球リプレイ」 — 「存在意義が不明だから全削除」: Chronos is that clock.
+         ⚠ THE MODULES WENT WITH THEM where nothing else uses them (js/sims.js), which is what keeps this
+         list from being a menu of names that no longer resolve. `IntMapTransitReach` and `IntMapTsunami`
+         are the two that STAY — both are called by something else now. */
     ];
     /* one door per tool — the palette, Atlas and this row all press the same one (#R242).
        ⚠ CALLED FROM `toolsBlock()`, not from the factory body: this module is constructed during

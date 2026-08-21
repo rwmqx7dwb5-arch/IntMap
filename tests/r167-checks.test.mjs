@@ -62,7 +62,9 @@ const MOVED = {
   'js/mobile-ui.js': ['mobileUI', 'layoutReflow'],
   'js/news-timeline.js': ['newsTimeline'],
   'js/dash-extended.js': ['dashExtended'],
-  'js/map-extras.js': ['locate', 'annotations', 'layerHoverPopup', 'layerSearch', 'runwaySearch', 'terrain', 'railSeaOverlays'],
+  /* ⚠ (#R296) `layerSearch` is gone: it filtered the classic dropdown, which no longer opens
+     (「classic dropdownを完全削除」). The tile sidebar has the only layer-search box now. */
+  'js/map-extras.js': ['locate', 'annotations', 'layerHoverPopup', 'runwaySearch', 'terrain', 'railSeaOverlays'],
 };
 const ALL_FACS = Object.values(MOVED).flat();
 /* mobileUI is the one factory whose RETURN VALUE is bound: index.html still calls initMobileUI()
@@ -75,7 +77,7 @@ const callOf = (f) => (RETURNED[f]
 /* The order the blocks occupied in the closure = the order their calls must appear in index.html. */
 const ORDER = [
   'feedback', 'legal', 'newsTimeline', 'locate', 'mobileUI', 'layoutReflow', 'dashExtended',
-  'annotations', 'layerHoverPopup', 'layerSearch', 'runwaySearch', 'onboarding', 'progressCtl',
+  'annotations', 'layerHoverPopup', 'runwaySearch', 'onboarding', 'progressCtl',
   'terrain', 'railSeaOverlays',
 ];
 

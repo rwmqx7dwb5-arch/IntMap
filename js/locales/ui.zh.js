@@ -4957,5 +4957,27 @@ window.IntMapLang.define('zh', {
   "Zone": "時區",
   "zoom": "縮放",
   "My location": "我的位置",   /* (#R291) */
+  "Arrival": "抵達",   /* (#R296) */
+  "Close the directions panel (this also removes the route from the map)": "關閉路線面板（地圖上的路線也會一併移除）",   /* (#R296) */
+  "Could not run — the live wind field was unavailable.": "無法執行——取不到即時風場資料。",   /* (#R296) */
+  "Getting your location…": "正在取得您的位置…",   /* (#R296) */
+  "Lagrangian dispersion over the live wind field, with decay and wet deposition. Educational — in a real emergency follow the official authorities.": "在即時風場上的拉格朗日擴散模式（含衰變與濕沉降）。僅供教學參考——實際災害時請遵循官方機關的指示。",   /* (#R296) */
+  "No source placed yet": "尚未設定釋放源",   /* (#R296) */
+  "Place the source on the map": "在地圖上設定釋放源",   /* (#R296) */
+  "Radio coverage & line of sight": "電波涵蓋範圍／視通線",   /* (#R296) */
+  "Radioactive dispersion": "放射性物質擴散",   /* (#R296) */
+  "Reach": "到達",   /* (#R296) */
+  "Reachable area (drive/walk/cycle/transit)": "可達範圍（開車／步行／單車／大眾運輸）",   /* (#R296) */
+  "Release (h)": "釋放時間 (h)",   /* (#R296) */
+  "Rides the real rail network (OpenStreetMap), at typical speeds per line class — not a published timetable. Walk to the nearest station is included.": "沿真實鐵路網（OpenStreetMap）以各線種的標準速度推算的範圍（並非公告時刻表）。已含步行至最近車站的時間。",   /* (#R296) */
+  "Run the dispersion": "執行擴散",   /* (#R296) */
+  "Signal from a transmitter here, and what the terrain hides": "設在此處的發射機能到達哪裡，以及地形擋住了什麼",   /* (#R296) */
+  "Tap the map to place the release source.": "點一下地圖以放置釋放源。",   /* (#R296) */
+  "Time — the rail model solves one budget, so the largest is used": "時間——鐵路模式一次只解一個時間預算，因此採用最大值",   /* (#R296) */
+  "Times are typical (no live traffic).": "所需時間為不含即時路況的標準值。",   /* (#R296) */
+  "times below are local to each place": "以下時刻為各地點的當地時間",   /* (#R296) */
+  "Use my current location": "使用目前位置",   /* (#R296) */
+  "Use my location (permission was refused)": "使用目前位置（權限遭拒）",   /* (#R296) */
+  "Window (h)": "追蹤時間 (h)",   /* (#R296) */
   }
 });

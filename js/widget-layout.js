@@ -11,9 +11,14 @@
  *
  *      S  1×1        M  2×1        L  2×2
  *
- *  ⚠ DOM ORDER IS VISUAL ORDER. Nothing is positioned; `grid-auto-flow: dense` is deliberately NOT
- *  used, because it reorders cards visually without moving them in the DOM — which silently breaks
- *  both keyboard reordering and every screen reader (§18). A gap in the grid is cheaper than that.
+ *  ⚠ DOM ORDER IS VISUAL ORDER, AND THE BOARD TILES ITSELF (#R296). `grid-auto-flow: dense` is still
+ *  not used — it fills holes by moving cards VISUALLY while leaving them where they were in the DOM,
+ *  which silently breaks keyboard reordering and every screen reader (§18). #R292 accepted the hole
+ *  as the price of that rule; 「自動でウィジェットを敷き詰めてくれない」 says the price is too high. MEASURED on the
+ *  default board: an S card (1 col) followed by four M cards (2 cols) left a 171×131 px hole in row 1.
+ *  → `packOrder()` below does dense placement IN THE DOM: the same tiling, with reading order and
+ *  visual order still identical, so neither the keyboard path nor a screen reader can disagree with
+ *  what is on screen. It only ever pulls a later card FORWARD into a hole that would stay empty.
  *
  *  ══ ⚠ RENDERING AND FETCHING ARE DIFFERENT ACTS ════════════════════════════════════════════════
  *  `render()` used to end with `refreshAll()`, so every re-render re-fetched the whole board
@@ -156,6 +161,52 @@ window.IntMapWidgetLayout = (function () {
     return board;
   }
 
+  /* ══ ⚠⚠ (#R296) THE TILING, AS A PURE FUNCTION ════════════════════════════════════
+     Dense grid placement, computed here so it can be applied to the DOM rather than only to the
+     picture. It walks the cells in reading order and puts into each free cell the FIRST remaining
+     card that fits there — so a card is only ever pulled FORWARD, into a hole that would otherwise
+     stay empty, and a board that already tiles is returned unchanged (the function is idempotent,
+     which is what lets it run on every render without the order drifting).
+     ⚠ IT IS 2-D. An L card is 2×2, so the row below it is partly occupied before that row starts;
+     a column cursor alone would hand back an order the browser then re-flows differently, and the
+     DOM and the picture would disagree again — which is the whole defect this replaces. */
+  function packOrder(items, nCols) {
+    var n = Math.max(1, nCols | 0);
+    var wOf = function (it) { var s = (WC.SPAN[it && it.s] || WC.SPAN.m); return Math.min(n, s.cols); };
+    var hOf = function (it) { return (WC.SPAN[it && it.s] || WC.SPAN.m).rows; };
+    var taken = [];
+    var busy = function (r, c) { return !!(taken[r] && taken[r][c]); };
+    var fits = function (r, c, w, h) {
+      if (c + w > n) return false;
+      for (var y = r; y < r + h; y++) for (var x = c; x < c + w; x++) if (busy(y, x)) return false;
+      return true;
+    };
+    var claim = function (r, c, w, h) {
+      for (var y = r; y < r + h; y++) { taken[y] = taken[y] || []; for (var x = c; x < c + w; x++) taken[y][x] = 1; }
+    };
+    var rest = items.slice(), out = [], r = 0, c = 0, guard = 0;
+    while (rest.length && guard++ < 10000) {
+      if (busy(r, c)) { c++; if (c >= n) { c = 0; r++; } continue; }
+      var pick = -1;
+      for (var k = 0; k < rest.length; k++) { if (fits(r, c, wOf(rest[k]), hOf(rest[k]))) { pick = k; break; } }
+      if (pick < 0) { c++; if (c >= n) { c = 0; r++; } continue; }
+      var it = rest.splice(pick, 1)[0];
+      claim(r, c, wOf(it), hOf(it));
+      out.push(it);
+    }
+    return out.concat(rest);
+  }
+
+  /* the packed order, applied to the cards already built — moving a node is a move, not a rebuild,
+     so a column-count change costs no fetches and no re-render (see the header on §RENDERING) */
+  function applyPack() {
+    if (!grid) return;
+    var byId = {};
+    [].forEach.call(grid.querySelectorAll(':scope > [data-wid]'), function (n) { byId[n.getAttribute('data-wid')] = n; });
+    var ordered = packOrder(ST.raw(), cols);
+    ordered.forEach(function (it) { var n = byId[it.i]; if (n) grid.appendChild(n); });
+  }
+
   function measure() {
     if (!grid) return;
     var w = grid.clientWidth || 320;
@@ -166,6 +217,8 @@ window.IntMapWidgetLayout = (function () {
       cols = next;
       grid.style.setProperty('--wgt-cols', String(cols));
       grid.setAttribute('data-cols', String(cols));
+      /* (#R296) the tiling depends on the column count, so it is recomputed WITH it */
+      applyPack();
     }
   }
 
@@ -208,7 +261,8 @@ window.IntMapWidgetLayout = (function () {
         el('button', { type: 'button', class: 'wgt-act', text: L('Restore the default board', '既定のボードに戻す', 'Standard-Board wiederherstellen', 'Восстановить доску по умолчанию', 'Restaurar el tablero por defecto'), onclick: function () { ST.resetBoard(); render(); } }),
       ]));
     }
-    items.forEach(function (it) { grid.appendChild(it.k === 'stack' ? buildStack(it) : buildCard(it)); });
+    /* (#R296) …in the order that tiles. `packOrder` is the display order AND the DOM order. */
+    packOrder(items, cols).forEach(function (it) { grid.appendChild(it.k === 'stack' ? buildStack(it) : buildCard(it)); });
 
     if (!ro && typeof ResizeObserver === 'function') { ro = new ResizeObserver(measure); }
     if (ro) { try { ro.disconnect(); ro.observe(grid); } catch (e) {} }
@@ -619,6 +673,19 @@ window.IntMapWidgetLayout = (function () {
     });
   }
 
+  /* (#R296) one step along the DISPLAYED sequence — see the note at the ArrowKey branch. Returns
+     false when the card is already at the end it was asked to move towards, exactly like ST.move. */
+  function moveDisplayed(id, delta) {
+    var seq = packOrder(ST.raw(), cols).map(function (x) { return x.i; });
+    var i = seq.indexOf(id);
+    if (i < 0) return false;
+    var j = Math.max(0, Math.min(seq.length - 1, i + delta));
+    if (j === i) return false;
+    seq.splice(j, 0, seq.splice(i, 1)[0]);
+    ST.reorder(seq);
+    return true;
+  }
+
   /* ⚠ KEYBOARD REORDER IS NOT A SECOND IMPLEMENTATION — it moves the SAME store and re-renders.
      Space/Enter picks a card up, the arrows move it, Space/Enter drops it, Escape puts it back. */
   var picked = null, pickedFrom = null;
@@ -648,11 +715,17 @@ window.IntMapWidgetLayout = (function () {
     if (picked === id && /^Arrow(Left|Right|Up|Down)$/.test(e.key)) {
       e.preventDefault();
       var step = (e.key === 'ArrowLeft') ? -1 : (e.key === 'ArrowRight') ? 1 : (e.key === 'ArrowUp') ? -cols : cols;
-      if (ST.move(id, step)) {
+      /* ⚠ (#R296) THE MOVE IS RELATIVE TO WHAT IS ON SCREEN. The board is rendered in packed order,
+         so 「one to the right」 has to mean one position along THAT sequence; `ST.move` walks the
+         stored one, and the two are the same list only when nothing was pulled forward. An explicit
+         reorder is also the moment the two are allowed to converge, so the packed order is written
+         through — the reader has just decided where a card goes. */
+      if (moveDisplayed(id, step)) {
         render();
         var next = grid.querySelector('[data-wid="' + id + '"]');
         if (next) { next.classList.add('picked'); next.focus(); }
-        announce(L('Position', '位置', 'Position', 'Позиция', 'Posición') + ' ' + (ST.indexOf(id) + 1) + ' / ' + ST.raw().length);
+        announce(L('Position', '位置', 'Position', 'Позиция', 'Posición') + ' '
+          + (packOrder(ST.raw(), cols).map(function (x) { return x.i; }).indexOf(id) + 1) + ' / ' + ST.raw().length);
       }
       return;
     }
@@ -756,6 +829,9 @@ window.IntMapWidgetLayout = (function () {
   B.el = function () { return board; };
   B.grid = function () { return grid; };
   B.cols = function () { return cols; };
+  /* (#R296) the tiling, exposed so `tests/r296 ①` can put an S in front of four Ms and assert that
+     no cell is left empty — the defect was a HOLE, so the check has to be able to see cells. */
+  B.packOrder = packOrder;
   B.cards = function () { return cards; };
   B.updateBoardVisibility = updateBoardVisibility;
   B.openConfig = openConfig;

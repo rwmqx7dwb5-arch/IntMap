@@ -210,16 +210,26 @@ test('R261 ⑧: the LOS panel has a Move-the-site control, armed like the link',
    reachable ONLY from js/atlas-console.js — no button, no menu, not even a right-click. */
 test('R261 ⑨: every non-layer simulation is a row in the Tools list', () => {
   const s = read('js/map-ui.js');
-  for (const id of ['sim.seismic','sim.tsunami','sim.terrainWater','sim.radiation','sim.los','sim.reach',
-                    'sim.sun','sim.nightSky','sim.drone','sim.disaster','sim.transitReach','sim.rf','sim.earthReplay']) {
+  for (const id of ['sim.seismic','sim.terrainWater','sim.radiation','sim.los','sim.reach',
+                    'sim.sun','sim.nightSky','sim.drone']) {
     assert.match(s, new RegExp("id:'" + id.replace('.', '\\.') + "'"), id + ' is a tool row');
   }
   /* each one presses the module it names */
   assert.match(s, /window\.IntMapDrone&&window\.IntMapDrone\.open\(\)/);
-  assert.match(s, /window\.IntMapDisaster&&window\.IntMapDisaster\.open\(_hereLL\(\)\)/);
-  assert.match(s, /window\.IntMapTransitReach&&window\.IntMapTransitReach\.open\(_hereLL\(\)\)/);
-  assert.match(s, /window\.IntMapRF&&window\.IntMapRF\.open\(_hereLL\(\)\)/);
-  assert.match(s, /window\.IntMapEarthReplay&&window\.IntMapEarthReplay\.open\(\)/);
+  /* ⚠ (#R296) FOUR OF #R261's FIVE ROWS ARE GONE, AND NONE OF THEM LOST ITS FEATURE.
+     `disaster` — 「4つのうち、放射性物質拡散シミュレーションを残し全削除」: what its fourth hazard opened
+       is `sim.radiation`, which has a row above and, this round, a panel of its own.
+     `transitReach` — 「到達圏と公共交通機関の到達圏に分離するのを辞めろ」: the transport of `sim.reach`.
+     `rf` — 「電波・通信圏と見通し線解析を統合して」: a mode of `sim.los`.
+     `earthReplay` — 「存在意義が不明だから全削除」: Chronos is that clock.
+     #R261's finding was that five simulations had NO door; the invariant it left behind is that a
+     simulation is reachable, not that it has a row. So the check follows each one to its new door. */
+  assert.match(s, /id:'sim\.radiation'/, 'the radioactive dispersion model still has its row…');
+  assert.match(read('js/sims.js'), /openPanel\(ll\)\{/, '…and, since #R296, a panel behind it');
+  assert.match(read('js/map-tools.js'), /transit:'transit'/, 'transit reach is a transport of the reachable-area panel');
+  assert.match(read('js/viewshed.js'), /setMode:\(m\)=>/, 'radio coverage is a mode of the viewshed panel');
+  for (const dead of ['sim.disaster', 'sim.transitReach', 'sim.rf', 'sim.earthReplay'])
+    assert.ok(!s.includes("id:'" + dead + "'"), dead + ' no longer has a row of its own');
 });
 
 /* ── ⑩ the four new shelves, and what did NOT move ──────────────────────────────────────────────
