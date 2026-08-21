@@ -112,7 +112,7 @@ test('R185 satellites: the layer is not empty when the live feed is unreachable'
     const cb = document.getElementById('dl-sats');
     if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
   });
-  /* ⚠ (#R300) WAIT FOR THE SENTENCE TOO, NOT ONLY FOR THE PIXELS. js/satellites-live.js primes from
+  /* ⚠ (#R304) WAIT FOR THE SENTENCE TOO, NOT ONLY FOR THE PIXELS. js/satellites-live.js primes from
      the bundled catalogue, DRAWS, and only then finishes losing the live race and rewrites `lastErr`
      to say 「live feed unreachable」 — so 「drawn > 0」 arrives before the message this test is about.
      MEASURED on a busy machine: `bundled: true` with `err: ''`, which is the honest state one

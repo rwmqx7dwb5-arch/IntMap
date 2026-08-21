@@ -77,7 +77,7 @@ export function lazyFiles(root) {
   return lazyModules(root).map((m) => m.file).filter(Boolean);
 }
 
-/* ══ (#R300) …AND THE SAME LOADER ANSWERS THREE MORE QUESTIONS, SO STOP COPYING THE ANSWERS ══════
+/* ══ (#R304) …AND THE SAME LOADER ANSWERS THREE MORE QUESTIONS, SO STOP COPYING THE ANSWERS ══════
    `lazyFiles()` above was written because a hand-kept list of the lazy FILES goes stale. The names
    and the globals go stale in exactly the same way and were copied anyway: tests/r209.spec.js said
    「and it knows all eight」 with the eight globals written out beside it, and by the time anybody
@@ -128,7 +128,7 @@ export function lazyModules(root) {
   return out;
 }
 
-/* ══ (#R300) WHICH GLOBAL EACH MOVED BLOCK PUBLISHES — DERIVED, NOT LISTED ══════════════════════
+/* ══ (#R304) WHICH GLOBAL EACH MOVED BLOCK PUBLISHES — DERIVED, NOT LISTED ══════════════════════
    tests/r166.spec.js asks the one question static analysis cannot answer: did the factory RUN, and
    did the object it owns actually reach `window`? It asked it of a list of 31 names typed out by
    hand — and #R296 deleted three features on the user's instruction (「電波・通信圏と見通し線解析
@@ -201,7 +201,7 @@ function runsWithTheFactory(node, out) {
   return out;
 }
 
-/* ══ (#R300) A CONSTANT A TEST WOULD OTHERWISE COPY ═════════════════════════════════════════════
+/* ══ (#R304) A CONSTANT A TEST WOULD OTHERWISE COPY ═════════════════════════════════════════════
    tests/r191.spec.js asserted the aircraft glyph is `rgb(30,144,255)`, and js/data-layers.js says
    `#00D9FF` — a round changed the colour and the spec went on demanding dodger blue, red on the
    nightly ever since. A colour, a threshold or a gain that a test has to KNOW is a fact about the
@@ -226,7 +226,7 @@ export function jsFiles(root) {
   return readdirSync(dir).filter((f) => f.endsWith('.js')).sort().map((f) => 'js/' + f);
 }
 
-/* ══ (#R300) WHAT A `window.X=(function(){ … return {a,b,c}; })()` MODULE ACTUALLY EXPORTS ══════
+/* ══ (#R304) WHAT A `window.X=(function(){ … return {a,b,c}; })()` MODULE ACTUALLY EXPORTS ══════
    The same disease as the two above, one shape along: tests/r167.spec.js said 「all 27 tables are
    exported」 and js/tables.js exports 25, because #R225 deleted `geoLayersDB` and `GEO_LABEL_JP`
    with the nine geopolitics layers the user asked to be rid of (「大昔に捨てたはずの地政学レイヤーが

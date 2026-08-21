@@ -109,7 +109,7 @@ test('the cockpit contains a real world, with the viewpoint at the aeroplane (#R
   await page.evaluate(async () => { const S = window.IntMapFlightSim._st(), t = (S._terrF || 0) + 250, a0 = S.alt;
     for (let i = 0; i < 25; i++) { S.alt = a0 + (t - a0) * (i + 1) / 25; await new Promise(r => setTimeout(r, 60)); } });
   await page.waitForTimeout(5000);                          // the camera follows the altitude every frame
-  /* ⚠ (#R300) PAUSE BEFORE MEASURING, WHICH IS THIS FILE'S OWN RULE AND WAS APPLIED ONLY ONCE.
+  /* ⚠ (#R304) PAUSE BEFORE MEASURING, WHICH IS THIS FILE'S OWN RULE AND WAS APPLIED ONLY ONCE.
      The block above says it: 「Everything asserted below is a property of the camera and the frame on
      screen, not of the aeroplane moving」. The descent measurement never paused, so the physics kept
      flying — and with the DEM not yet under the aircraft (measured: `_terrF` 0, so the ramp targets

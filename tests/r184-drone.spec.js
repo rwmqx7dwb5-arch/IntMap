@@ -30,7 +30,7 @@ const BOOT = { timeout: 90_000 };
    name that no longer exists. */
 const boot = async page => { await bootPage(page); };
 /* Interlaken → the Jungfrau massif. Real places, real terrain. */
-/* ⚠ (#R300) THE ALPS HAVE TO BE THERE BEFORE THE ROUTE IS SOLVED. Every claim below is about
+/* ⚠ (#R304) THE ALPS HAVE TO BE THERE BEFORE THE ROUTE IS SOLVED. Every claim below is about
    2,000 m of rock between two points, and the rock is a live terrarium tile fetch
    (js/map-extras.js → s3.amazonaws.com/elevation-tiles-prod). When it has not landed the sampler
    answers 0 everywhere and the walk finds a clear line of sight over the Bernese Oberland — ④ then

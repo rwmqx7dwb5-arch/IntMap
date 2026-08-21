@@ -90,7 +90,7 @@ test('a dug basin holds exactly what it can, and spills exactly the rest', async
     await new Promise(res => setTimeout(res, 400));
     TW.brush(139.85, 35.90, 'lower', { radiusM: 500, heightM: 25 });
     const dug = TW.probe(139.85, 35.90);
-    /* ══ ⚠⚠⚠ (#R300) A SOURCE IS A TAP NOW, NOT A PARCEL — SO THE WATER HAS TO BE GIVEN TIME ══════
+    /* ══ ⚠⚠⚠ (#R304) A SOURCE IS A TAP NOW, NOT A PARCEL — SO THE WATER HAS TO BE GIVEN TIME ══════
        This placed a volume and probed on the next line. #R267/#R275 made every source a RATE:
        MEASURED IN PRODUCTION, handing the whole interval's volume to `addVolume` at once reported
        「max depth 21,290.1 m」 — 1.08×10⁸ m³ in one 71 m cell — so `feedTaps(dt)` delivers rate·dt
@@ -120,7 +120,7 @@ test('a dug basin holds exactly what it can, and spills exactly the rest', async
   expect(r.part.basin.full).toBe(false);
   expect(r.part.basin.overflowM3).toBe(0);
   expect(r.part.basin.levelM).toBeLessThan(r.part.basin.spillM);
-  /* ⚠ (#R300) BOTH FIELDS, because #R267 split them: `depthM` is the water that is ON SCREEN (the
+  /* ⚠ (#R304) BOTH FIELDS, because #R267 split them: `depthM` is the water that is ON SCREEN (the
      integration) and `restDepthM` is the routing's t → ∞ answer, named beside it. At rest they are
      answers to the same question and both must be real — asserting only one would let the case where
      the OTHER model has nothing in it pass unseen. */
@@ -149,7 +149,7 @@ test('a levee drawn on flat ground creates a basin that holds water', async ({ p
     TW.addLevee([[139.85 - d, 35.90 - d], [139.85 + d, 35.90 - d], [139.85 + d, 35.90 + d],
                  [139.85 - d, 35.90 + d], [139.85 - d, 35.90 - d]], 10, 80);
     const after = TW.probe(139.85, 35.90);
-    TW.clearWater(); await TW.addSource(139.85, 35.90, 4e6); TW.settle();   /* ⚠ (#R300) a tap, not a parcel — see ③ */
+    TW.clearWater(); await TW.addSource(139.85, 35.90, 4e6); TW.settle();   /* ⚠ (#R304) a tap, not a parcel — see ③ */
     const wet = TW.probe(139.85, 35.90);
     return { before, after, wet, leveeLayer: !!m.getLayer('tw-levee-line') };
   });

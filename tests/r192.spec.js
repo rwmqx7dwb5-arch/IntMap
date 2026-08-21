@@ -97,7 +97,7 @@ test('R192 seismic: the field is bounded by what can be felt, and never covers t
   /* THE REPORTED BUG: the far field only ever paints land, and it is not drawn at all without a mask */
   if (r.far) {
     expect(r.far.landMask, 'the far field had a mask').toBe(true);
-  /* ══ ⚠ (#R300) 'bundled' WAS THE ONLY ANSWER WHEN THIS WAS WRITTEN, AND #R250 ADDED A BETTER ONE ══
+  /* ══ ⚠ (#R304) 'bundled' WAS THE ONLY ANSWER WHEN THIS WAS WRITTEN, AND #R250 ADDED A BETTER ONE ══
      The claim is 「the mask cannot half-arrive」 — a DEM read that lands in pieces draws stripes. #R250
      answered the far field's coastline from js/coast-mask.js at the raster's OWN cell when the country
      outlines are loaded (1.14 km instead of a 19.6 km staircase drawn at 1.17 km), keeping the bundled

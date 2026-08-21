@@ -270,7 +270,7 @@ test('R186 aircraft: the sweep covers the viewport with tiled circles, not one',
        a test of a timer under whatever load the runner is carrying. Re-arm the layer instead: that
        is the same entry point a poll uses, and it plans the sweep synchronously before it asks the
        network for anything — so this measures the PLAN, which is what the test is about.
-       ══ ⚠⚠ (#R300) …AND THE CENTRE HAS TO MOVE, WHICH IS #R188's RULE AND NOT A TRICK ══════════
+       ══ ⚠⚠ (#R304) …AND THE CENTRE HAS TO MOVE, WHICH IS #R188's RULE AND NOT A TRICK ══════════
        This zoomed out over the SAME centre. #R188 made a request that arrives while a sweep is
        running yield to it 「when it is about the same sky」 and take over only 「when the centre has
        moved more than half the covered block」 — a 128-circle sweep takes 154 s to issue, and
@@ -324,7 +324,7 @@ test('R186 water: a source outside the working rectangle is not silently dropped
              hasFlowLine: window.IntMapGeoEngine.layers.has('tw-flow'),
              solveMs: before.result && before.result.solveMs };
   });
-  /* ══ ⚠ (#R300) 384 WAS THE DEFAULT WHEN THIS WAS WRITTEN, AND #R273 RAISED IT AND MADE IT A DIAL ══
+  /* ══ ⚠ (#R304) 384 WAS THE DEFAULT WHEN THIS WAS WRITTEN, AND #R273 RAISED IT AND MADE IT A DIAL ══
      「水流シミュレーションの解像度が低すぎる。」 — the desktop default went 384 → 512 and the reader
      was given the steps 384/512/768/1024, so a number written down here could only ever be wrong
      again. The claim #R186 made is that the working grid is not resampling many DEM samples into one

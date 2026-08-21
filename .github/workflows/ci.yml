@@ -129,7 +129,7 @@ jobs:
         with: { tier: core, suite: "${{ matrix.suite }}", shard: "${{ matrix.shard }}", of: "${{ matrix.of }}" }
 
   # ══ (#R203) THE OTHER 78 MINUTES — NIGHTLY AND ON DEMAND ══════════════════════════════════════
-  # ⚠ (#R300) 「27 spec files」 was true when this was written and is not now: #R204/#R207 turned the
+  # ⚠ (#R304) 「27 spec files」 was true when this was written and is not now: #R204/#R207 turned the
   # split into a PRICE rather than a list (scripts/tiers.mjs, CORE_MAX_S = 1 s), so the core gate is
   # SIX files and this tier is FIFTY-NINE. The families are unchanged — the Cesium camera comparisons,
   # the terrain reads,
@@ -253,7 +253,7 @@ jobs:
           test "${{ needs.browser.result }}" = "success"
           case "${{ needs.browser-deep.result }}" in success|skipped) ;; *) exit 1 ;; esac
 
-  # ══ (#R300) …AND SOMEBODY HAS TO BE TOLD ═══════════════════════════════════════════════════════
+  # ══ (#R304) …AND SOMEBODY HAS TO BE TOLD ═══════════════════════════════════════════════════════
   # #R203 wrote 「NOTHING IS DELETED BY BEING DEEP. Every assertion still runs, every night.」 and it
   # was true: the schedule above has run the deep tier every night since. What was never arranged is
   # anybody FINDING OUT — and the measurement is unambiguous. The nightly was RED on all fourteen

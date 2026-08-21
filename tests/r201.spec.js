@@ -47,7 +47,7 @@ test('R201 ① the terminator is a per-pixel gradient, and full night is the nig
      DEFAULT. This reads the ratio between a lit pixel and the same pixel under the night shading,
      and its own premise below is `px.off > 60` — comfortably true of the light Carto base this was
      written against, and false over open ocean now that 「初回時にはmapではなくsatelliteに」.
-     ⚠⚠ (#R300) …AND #R207 ANSWERED THAT BY SWITCHING TO THE MAP BASEMAP, WHICH IS THE ONE PLACE
+     ⚠⚠ (#R304) …AND #R207 ANSWERED THAT BY SWITCHING TO THE MAP BASEMAP, WHICH IS THE ONE PLACE
      THE NIGHT SIDE NO LONGER EXISTS. js/night-side.js gates on `satelliteUp()` — the effect is a
      stand-in for the shading a satellite globe would have, so #R228 tore it down everywhere else
      (「モバイル版がまだ劇的に遅い」, five times: at every working zoom the renderer was drawing a

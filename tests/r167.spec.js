@@ -93,7 +93,7 @@ test('R167 #2 THE TABLE PROOF: every moved table reaches its consumers, not just
   // A rebind that produced `undefined` would not throw here — the panels would simply render empty,
   // which reads exactly like "no data for this country". So probe VALUES that only the real tables
   // can produce, through the index.html code that consumes them.
-  /* ══ ⚠⚠ (#R300) 「27」 WAS A COPY OF A FACT, AND THE FACT MOVED ═══════════════════════════════
+  /* ══ ⚠⚠ (#R304) 「27」 WAS A COPY OF A FACT, AND THE FACT MOVED ═══════════════════════════════
      js/tables.js exports 25. #R225 deleted `geoLayersDB` and `GEO_LABEL_JP` with the nine
      geopolitics layers the user asked to be rid of — 「大昔に捨てたはずの地政学レイヤーが勝手に
      オンになる。ふざけるな。」 → 「レイヤー自体を削除してほしい」 — and this file went on demanding
@@ -123,7 +123,7 @@ test('R167 #2 THE TABLE PROOF: every moved table reaches its consumers, not just
 
   // CONSUMER 1 — the country tables feed the Countries tab. Load the real boundary data, then read
   // a country's detail card: capital / currency / language all come out of the moved tables.
-  /* ⚠ (#R300) THROUGH `window.IntMapAtlas`, WHICH IS THE DOOR THE APP USES. #R224 moved the Atlas
+  /* ⚠ (#R304) THROUGH `window.IntMapAtlas`, WHICH IS THE DOOR THE APP USES. #R224 moved the Atlas
      kernel behind js/lazy-modules.js — 658 kB parsed by every session, most of which never open it —
      so `window.IntMapConsole` is undefined until something asks. This called it directly and threw
      「Cannot read properties of undefined (reading 'dispatch')」 on every nightly run since. The

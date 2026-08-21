@@ -199,7 +199,7 @@ test('R166 #7 index.html actually shrank and no moved block came back inline', (
   const lines = html.split('\n').length;
   assert.ok(lines < 12_500, `index.html should be well under the pre-R166 16,740 lines; it is ${lines}`);
   /* Blocks that opened with `window.X=(function(){` are the easy half to check directly.
-     ⚠ (#R300) THE LIST IS READ OFF THE FILES NOW, NOT TYPED OUT. It went on naming `IntMapRF`,
+     ⚠ (#R304) THE LIST IS READ OFF THE FILES NOW, NOT TYPED OUT. It went on naming `IntMapRF`,
      `IntMapDisaster` and `IntMapEarthReplay` four rounds after #R296 deleted them — harmless in
      itself, because this is a NEGATIVE assertion, but the same staleness in the other direction is
      not: a global that left index.html AFTER this list was written was never guarded against coming

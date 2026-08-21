@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
 import { loadLazyModules } from './helpers/app.js';
 import { publishedGlobals, lazyFiles, jsFiles } from './app-source.mjs';
 
-/* ══ (#R300) 「THE WHOLE INTMAP SURFACE IS PUBLISHED」, SAID AS THE SURFACE RATHER THAN A COUNT ══
+/* ══ (#R304) 「THE WHOLE INTMAP SURFACE IS PUBLISHED」, SAID AS THE SURFACE RATHER THAN A COUNT ══
    ④ below asserted `Object.keys(window).filter(/^IntMap/).length > 75`, and the figure went under
    75 the moment #R224 and #R291 moved the Atlas kernel and the directions panel behind
    js/lazy-modules.js — correctly, on purpose. The nightly deep run has been red for it ever since,
@@ -228,7 +228,7 @@ test('the Vite bundle boots the whole app', async ({ page }) => {
   // The exact value is pinned once, in that round's own checks file.
   expect(s.build, 'the bundle carries a dated round stamp').toMatch(/^\d{4}-\d{2}-\d{2}-R\d+$/);
   expect(errors, 'the built page throws nothing on boot').toEqual([]);
-  /* ══ ⚠⚠ (#R300) THEY DO NOT ARRIVE ANY MORE, AND THAT IS THE POINT OF THE ROUND THAT CHANGED IT ══
+  /* ══ ⚠⚠ (#R304) THEY DO NOT ARRIVE ANY MORE, AND THAT IS THE POINT OF THE ROUND THAT CHANGED IT ══
      This waited 30 s for `window.katex` and `window.html2canvas` to turn up on their own. src/vendor.js
      later keyed both to their FIRST USE — memoised dynamic imports behind `window.IntMapVendor` —
      because they were 258 kB and 198 kB arriving at t = 1.04 s on a phone «for two features most

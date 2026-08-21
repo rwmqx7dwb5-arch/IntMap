@@ -24,7 +24,7 @@ test.describe.configure({ mode: 'serial' });
 
 let page, diag;
 
-/* ══ (#R300) THE GLOBALS THE MOVED BLOCKS PUBLISH — READ OFF THE BLOCKS ═════════════════════════
+/* ══ (#R304) THE GLOBALS THE MOVED BLOCKS PUBLISH — READ OFF THE BLOCKS ═════════════════════════
    This was a list of 31 names typed out by hand, and #R296 deleted three of the features on the
    user's own instruction — 「電波・通信圏と見通し線解析を統合して」, 「災害シミュレーターは4つのうち、
    放射性物質拡散シミュレーションを残し全削除」, 「「地球リプレイ」は存在意義が不明だから全削除」. From
@@ -82,7 +82,7 @@ test('R166 #1 every file loaded, every factory ran, and every moved global is pr
   expect(check, 'the boot-time module check ran').toBeTruthy();
   expect(check.missing, 'no required module global is missing').toEqual([]);
   expect(check.missingFactories, 'no module factory is missing').toEqual([]);
-  /* ⚠ (#R300) THE DERIVATION HAS TO HAVE FOUND SOMETHING. A list read out of the source is only
+  /* ⚠ (#R304) THE DERIVATION HAS TO HAVE FOUND SOMETHING. A list read out of the source is only
      stronger than a hand-kept one while it is not EMPTY: a renamed file, a factory written in a
      shape the walk does not recognise, or a parse that quietly returned nothing would all leave
      `[].filter(…)` equal to `[]` and this test green for having stopped checking. So each file
@@ -114,7 +114,7 @@ test('R166 #2 the REAL objects were built, not the no-map stubs each block opens
   expect(api.route).toEqual(expect.arrayContaining(['open', 'clear', 'setStart', 'active']));
   expect(api.isolate).toEqual(expect.arrayContaining(['enter', 'exit', 'active']));
   expect(api.radiation).toEqual(expect.arrayContaining(['run', 'clear', 'ISOTOPES', 'SOURCES']));
-  /* ⚠ (#R300) `IntMapDisaster` STOOD HERE. #R296 deleted it — 「災害シミュレーターは4つのうち、放射性
+  /* ⚠ (#R304) `IntMapDisaster` STOOD HERE. #R296 deleted it — 「災害シミュレーターは4つのうち、放射性
      物質拡散シミュレーションを残し全削除」 — and the hazard that stayed is the radiation model above,
      which now has the panel it never had. Its absence is asserted in tests/r197.spec.js ⑥, in a
      browser, after every on-demand module has loaded; keeping a probe for it here would only be a

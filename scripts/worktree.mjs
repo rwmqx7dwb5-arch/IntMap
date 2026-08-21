@@ -89,7 +89,7 @@ const nextRound = (master) => {
   return seen.size ? Math.max(...seen) + 1 : 200;
 };
 
-/* ══ (#R300) THE NIGHTLY'S ANSWER, IN FRONT OF EVERY SESSION ════════════════════════════════════
+/* ══ (#R304) THE NIGHTLY'S ANSWER, IN FRONT OF EVERY SESSION ════════════════════════════════════
    The deep tier (27 spec files, 78 minutes) has run every night since #R203 and has been RED every
    night from 2026-08-08 to 2026-08-21 — fourteen consecutive runs, all five `Deep rest` shards, and
    the aggregate job reported it honestly each time. Nobody looked. Two of the failures were a spec

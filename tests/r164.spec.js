@@ -93,7 +93,7 @@ test('R164 #5 LIVE getters: modules built in English follow a runtime language s
     cams: (document.getElementById('dl-webcams-lbl') || {}).textContent || '',
     ukr: (document.getElementById('beta-dl-ukrfront-lbl') || {}).textContent || '',
   }));
-  /* ⚠ (#R300) WAIT FOR THE EVENT, NOT FOR 700 ms. Every `intmap-lang` listener in this app re-bakes
+  /* ⚠ (#R304) WAIT FOR THE EVENT, NOT FOR 700 ms. Every `intmap-lang` listener in this app re-bakes
      its own labels on a short timer of its own (js/beta-overlays.js uses `setTimeout(relabel, 20)`),
      so a fixed sleep is a race against whatever else the machine is doing. MEASURED: at two workers
      this test failed on 「the beta-overlay label follows the switch」 and passed 6/6 run alone — the

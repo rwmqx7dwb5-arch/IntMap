@@ -50,7 +50,7 @@ async function canvasPoint(fxs = [0.72, 0.8, 0.62], fys = [0.55, 0.42, 0.68]) {
 
 /* ── ① 「別の震源地を選びなおせない。地図に白い丸が出るだけ」 ───────────────────────────────── */
 test('R205 ① a plain map click moves the epicentre; the station table is the other half of a switch', async () => {
-  /* ══ ⚠ (#R300) THE ARMING STEP IS NEW, AND IT IS THE POINT OF TWO LATER ROUNDS ═══════════════
+  /* ══ ⚠ (#R304) THE ARMING STEP IS NEW, AND IT IS THE POINT OF TWO LATER ROUNDS ═══════════════
      This opened the panel WITH an epicentre and then asserted `clickMode === 'epi'`. #R218 gave the
      segmented control an off state — 「どちらも、もう一度クリックしたら選択解除されるように。」 —
      and #R240 made a panel opened ON an epicentre start disarmed: 「with no epicentre there is exactly

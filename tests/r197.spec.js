@@ -1,7 +1,7 @@
 // @ts-check
 /* ============================================================================
  *  R197 — in a real renderer: the space explorer, the button that opens it,
- *         the global tsunami, and (#R300) the disaster panel that is no longer there at all
+ *         the global tsunami, and (#R304) the disaster panel that is no longer there at all
  * ----------------------------------------------------------------------------
  *  tests/r197-checks.test.mjs runs the physics in Node. This runs the parts that only exist when
  *  there is a page: a WebGL context, a canvas that is actually painted, a zoom floor a camera can
@@ -125,7 +125,7 @@ test('R197 ⑤ both scales are honest, and closing returns to the map', async ()
   expect(await page.evaluate(() => document.getElementById('space-view').style.display)).toBe('none');
 });
 
-/* ══ ⚠⚠ (#R300) ⑥ ASKED A DELETED MODULE WHETHER IT STILL OFFERED A TSUNAMI ════════════════════
+/* ══ ⚠⚠ (#R304) ⑥ ASKED A DELETED MODULE WHETHER IT STILL OFFERED A TSUNAMI ════════════════════
    It opened `window.IntMapDisaster`, counted its hazard buttons and required that none of them was
    the tsunami. #R296 deleted that panel outright on the user's instruction — 「災害シミュレーターは
    4つのうち、放射性物質拡散シミュレーションを残し全削除」 — so from that round on ⑥ threw on its first

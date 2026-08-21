@@ -10,7 +10,7 @@ import { loadLazyModules } from './helpers/app.js';
 import { constFrom } from './app-source.mjs';
 
 const R191_ROOT = new URL('../', import.meta.url);
-/* ══ ⚠⚠ (#R300) THE GLYPH'S COLOUR IS A FACT ABOUT js/data-layers.js, SO READ IT FROM THERE ══════
+/* ══ ⚠⚠ (#R304) THE GLYPH'S COLOUR IS A FACT ABOUT js/data-layers.js, SO READ IT FROM THERE ══════
    This said 「the glyph is #1e90ff = (30,144,255)」 with the three numbers typed out, and the civil
    aircraft are `#00D9FF` — a later round changed the colour and the spec went on demanding dodger
    blue, red on the nightly deep run ever since.
@@ -134,7 +134,7 @@ test('R191 seismic: the field reaches the end of the lowest class, and only over
   /* …on LAND only, exactly like the fine field. Painting the ocean is what punched a rectangle
      through the middle of the rings the first time this was built. */
   expect(r.far.landMask, 'the land mask loaded').toBe(true);
-  /* ══ ⚠ (#R300) 'bundled' WAS THE ONLY ANSWER WHEN THIS WAS WRITTEN, AND #R250 ADDED A BETTER ONE ══
+  /* ══ ⚠ (#R304) 'bundled' WAS THE ONLY ANSWER WHEN THIS WAS WRITTEN, AND #R250 ADDED A BETTER ONE ══
      The claim is 「the mask cannot half-arrive」 — a DEM read that lands in pieces draws stripes. #R250
      answered the far field's coastline from js/coast-mask.js at the raster's OWN cell when the country
      outlines are loaded (1.14 km instead of a 19.6 km staircase drawn at 1.17 km), keeping the bundled

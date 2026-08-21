@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · #R300 — source-level checks
+ *  IntMap · #R304 — source-level checks
  * ----------------------------------------------------------------------------
  *  The round is about a tier of tests that ran every night, went red, and told nobody — and about
  *  two assertions inside it that were COPIES of facts rather than statements about them.
@@ -40,7 +40,7 @@ const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^
    Everything the two rewritten specs assert rests on this derivation working. If a round rewrote
    js/lazy-modules.js into a shape tests/app-source.mjs cannot read, `lazyModules()` would return an
    empty list and BOTH specs would pass vacuously — the exact failure this round exists to end. */
-test('R300 ① every deferred module names a file and a global, both read out of the loader', () => {
+test('R304 ① every deferred module names a file and a global, both read out of the loader', () => {
   const L = lazyModules(rootURL);
   assert.ok(L.length >= 10, `js/lazy-modules.js declares ${L.length} modules — the derivation found nothing`);
   for (const m of L) {
@@ -62,7 +62,7 @@ test('R300 ① every deferred module names a file and a global, both read out of
    comment says so), which only works while the two agree. It was checked in the browser by naming
    ONE member of it — and a list that is spot-checked drifts by exactly the members nobody named.
    Here rather than only in the deep tier, because this is a source fact and `npm test` can have it. */
-test('R300 ② the boot guard names every deferred factory, and only those', () => {
+test('R304 ② the boot guard names every deferred factory, and only those', () => {
   const L = lazyModules(rootURL);
   const want = L.filter((m) => m.factory).map((m) => m.name).sort();
   const m = /const LAZY_FACTORIES = \[([^\]]*)\]/.exec(read('src/main.js'));
@@ -78,7 +78,7 @@ test('R300 ② the boot guard names every deferred factory, and only those', () 
    The #R296 deletions are the concrete case: the derived list must NOT contain them, and must still
    contain the ones that stayed. A derivation that returned everything, or nothing, would pass one
    of those and fail the other — so both directions are asserted. */
-test('R300 ③ publishedGlobals() tracks js/, in both directions', () => {
+test('R304 ③ publishedGlobals() tracks js/, in both directions', () => {
   const FILES = ['js/map-ui.js', 'js/map-tools.js', 'js/weather.js', 'js/layer-packs.js',
     'js/analysis-panels.js', 'js/sims.js', 'js/playground.js', 'js/viewshed.js', 'js/dash-extended.js'];
   const t = publishedGlobals(rootURL, FILES);
@@ -98,7 +98,7 @@ test('R300 ③ publishedGlobals() tracks js/, in both directions', () => {
 /* ── ④ NO SPEC COUNTS THE DEFERRED MODULES ANY MORE ───────────────────────────────────────────
    The literal defect: `expect(s.names.length, …).toBe(8)`. Asked of the code that runs, so the
    sentence above explaining what went wrong does not trip it. */
-test('R300 ④ the lazy-module list is derived wherever it is asserted, never counted', () => {
+test('R304 ④ the lazy-module list is derived wherever it is asserted, never counted', () => {
   for (const f of ['tests/r209.spec.js', 'tests/r209-checks.test.mjs']) {
     const src = noComments(read(f));
     assert.doesNotMatch(src, /names\(\)[^\n]*\.length[^\n]*(toBe|equal)\(\s*\d+/,
@@ -114,7 +114,7 @@ test('R300 ④ the lazy-module list is derived wherever it is asserted, never co
    #R203 attached the deep tier to a schedule and #R207 deliberately took it off `push` (「テスト時間
    が短くなりさえすればなんでもいい」). Neither is reopened here — what is added is that the answer it
    already produces reaches a reader. */
-test('R300 ⑤ ci.yml runs the deep tier nightly and raises an issue when it is red', () => {
+test('R304 ⑤ ci.yml runs the deep tier nightly and raises an issue when it is red', () => {
   const ci = read('.github/workflows/ci.yml');
   assert.match(ci, /schedule:\s*\n\s*- cron: '0 18 \* \* \*'/, 'the nightly schedule is still there');
   assert.match(ci, /browser-deep:/, 'the deep matrix is still there');
@@ -138,7 +138,7 @@ test('R300 ⑤ ci.yml runs the deep tier nightly and raises an issue when it is 
    The issue is only worth opening if it says WHAT failed. A retried test that passed the second
    time is not a failure (CI retries once precisely so a blip clears itself, #R207) — reporting it
    would teach the reader to skip the issue, which is the disease this is treating. */
-test('R300 ⑥ deep-alarm reads the shards\' junit.xml and reports only what really failed', () => {
+test('R304 ⑥ deep-alarm reads the shards\' junit.xml and reports only what really failed', () => {
   const dir = mkdtempSync(join(tmpdir(), 'imalarm-'));
   const shard = join(dir, 'playwright-report-deep-rest-1', 'test-results');
   mkdirSync(shard, { recursive: true });
@@ -169,7 +169,7 @@ test('R300 ⑥ deep-alarm reads the shards\' junit.xml and reports only what rea
    CLAUDE.md §1 sends every session through `node scripts/worktree.mjs status` before it starts, so
    that is where the answer is guaranteed to be read. ⚠ It must never make a session wait or fail:
    the header of that file says `status` never exits non-zero, and gh may be missing or offline. */
-test('R300 ⑦ worktree.mjs status reports the nightly, and cannot break a session doing it', () => {
+test('R304 ⑦ worktree.mjs status reports the nightly, and cannot break a session doing it', () => {
   const src = read('scripts/worktree.mjs');
   assert.match(src, /function nightly\(\)/, 'status can ask about the nightly');
   const fn = src.slice(src.indexOf('function nightly()'), src.indexOf('/* ── STATUS'));
@@ -187,8 +187,8 @@ test('R300 ⑦ worktree.mjs status reports the nightly, and cannot break a sessi
 
 /* ── ⑧ THIS FILE RUNS ─────────────────────────────────────────────────────────────────────────
    The round's own subject, applied to itself: a check that is not in the list nobody runs it. */
-test('R300 ⑧ this round\'s checks are in package.json\'s test:checks list', () => {
+test('R304 ⑧ this round\'s checks are in package.json\'s test:checks list', () => {
   const pkg = JSON.parse(read('package.json'));
-  assert.match(pkg.scripts['test:checks'], /tests\/r300-checks\.test\.mjs/,
-    'tests/r300-checks.test.mjs is in test:checks');
+  assert.match(pkg.scripts['test:checks'], /tests\/r304-checks\.test\.mjs/,
+    'tests/r304-checks.test.mjs is in test:checks');
 });

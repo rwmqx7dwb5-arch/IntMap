@@ -331,7 +331,7 @@ test('the viewpoint altitude appears in the always-on readout and tracks the cam
 test('Atlas can drive both new switches', async ({ page }) => {
   test.setTimeout(120000);
   await boot(page);
-  /* ⚠ (#R300) THROUGH `window.IntMapAtlas`, WHICH IS THE DOOR THE APP USES. #R224 moved the Atlas
+  /* ⚠ (#R304) THROUGH `window.IntMapAtlas`, WHICH IS THE DOOR THE APP USES. #R224 moved the Atlas
      kernel behind js/lazy-modules.js — 658 kB parsed by every session, most of which never open it —
      so `window.IntMapConsole` is undefined until something asks. Calling it directly threw
      「Cannot read properties of undefined (reading 'dispatch')」 on every nightly run since. The facade
@@ -351,7 +351,7 @@ test('Atlas can drive both new switches', async ({ page }) => {
 test('Atlas can draw a circular 3-D volume in a colour', async ({ page }) => {
   test.setTimeout(150000);
   await boot(page);
-  /* ⚠ (#R300) THROUGH `window.IntMapAtlas`, WHICH IS THE DOOR THE APP USES. #R224 moved the Atlas
+  /* ⚠ (#R304) THROUGH `window.IntMapAtlas`, WHICH IS THE DOOR THE APP USES. #R224 moved the Atlas
      kernel behind js/lazy-modules.js — 658 kB parsed by every session, most of which never open it —
      so `window.IntMapConsole` is undefined until something asks. Calling it directly threw
      「Cannot read properties of undefined (reading 'dispatch')」 on every nightly run since. The facade

@@ -257,7 +257,7 @@ test('R184 route ⑨: Bedford → Cambridge connects by rail in 1950 and does no
     const now = await O.historicalRoute(A, B, { year: new Date().getUTCFullYear(), kind: 'rail' });
     return { then, now };
   });
-  /* ⚠ (#R300) EITHER QUERY, NOT JUST THE FIRST. This test asks Overpass TWICE — 1950 and today —
+  /* ⚠ (#R304) EITHER QUERY, NOT JUST THE FIRST. This test asks Overpass TWICE — 1950 and today —
      and the guard only covered the first, so a run whose second query was rate-limited failed with
      `Expected 'disconnected', Received 'overpass'`: a statement about the API's mood presented as a
      statement about the Varsity Line. MEASURED as exactly that on the nightly deep run. Overpass

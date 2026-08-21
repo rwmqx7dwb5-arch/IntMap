@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-20): the **core** tier that
 gates a push is **6 spec files / 1.1 min**; the **whole** suite is **65 measured spec files /
 86.5 min** of serial browser time against a ceiling of 86.7 min; and `npm run test:checks` runs
-**147 Node test files** with no browser at all (counted from `package.json` on 2026-08-22; the
+**148 Node test files** with no browser at all (counted from `package.json` on 2026-08-22; the
 line above it is the 2026-08-20 measurement). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -183,7 +183,7 @@ engine, regenerate the mirror — `npm run check:static` fails if the two drift:
 node scripts/sync-newsgeo.mjs
 ```
 
-## The deep tier, and who is told when it goes red (#R300)
+## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
 tier: `npm run test:deep`, **59 spec files** against core's 6, because #R204/#R207 turned the split
@@ -195,7 +195,7 @@ deep. Nothing is deleted by being deep — every assertion still runs.
 and on `workflow_dispatch`, and deliberately **not** on `push` — #R207 measured that attaching it to
 every merge cost ten minutes a merge. Locally, `npm run test:deep`.
 
-> ⚠ **A tier that nobody watches drifts red and stays red.** MEASURED in #R300: the nightly was red
+> ⚠ **A tier that nobody watches drifts red and stays red.** MEASURED in #R304: the nightly was red
 > on **all fourteen runs from 2026-08-08 to 08-21** — every one of the five `Deep rest` shards — and
 > the aggregate job reported it honestly each time. Nobody was lied to; nobody looked, because a
 > nightly is one row among the dozens a working day of pushes and PRs puts above it in `gh run list`.
@@ -216,7 +216,7 @@ npx playwright test tests/r209.spec.js --workers=1
 ```
 
 ⚠ **Prove a failure is real before fixing it.** This suite has measured contention flakes (#R186,
-#R196): in #R300's own triage `tests/r164.spec.js` failed at two workers and passed alone, and two
+#R196): in #R304's own triage `tests/r164.spec.js` failed at two workers and passed alone, and two
 more failures were `Target crashed` from a second Playwright process on the same machine. Run the
 file by itself at one worker first; `node scripts/baseline.mjs --classify test-results/junit.xml`
 says which of a run's failures `main` already has.

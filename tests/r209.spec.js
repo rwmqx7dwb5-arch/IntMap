@@ -12,7 +12,7 @@
  *  path itself, not by the test — plus the two facts the boot guard can no longer see: that none of
  *  them is present BEFORE it is asked for, and that all of them are present after.
  *
- *  ⚠ (#R300) …AND «EVERY ONE OF THEM» IS READ OUT OF js/lazy-modules.js. It was eight when this
+ *  ⚠ (#R304) …AND «EVERY ONE OF THEM» IS READ OUT OF js/lazy-modules.js. It was eight when this
  *  file was written and ten by #R291, and the file went on demanding eight — red on every nightly
  *  for a fortnight, because a count is a copy. See the note above test ① and tests/app-source.mjs.
  *
@@ -23,7 +23,7 @@ import { lazyModules } from './app-source.mjs';
 
 test.describe.configure({ mode: 'serial' });
 
-/* ══ (#R300) THE LOADER'S OWN TABLES, NOT A COPY OF THEM ════════════════════════════════════════
+/* ══ (#R304) THE LOADER'S OWN TABLES, NOT A COPY OF THEM ════════════════════════════════════════
    This file used to say 「and it knows all eight」 with the eight globals written out beside it. By
    the time anybody ran it the loader knew TEN — #R224 moved the Atlas kernel behind it, #R291 the
    directions panel — and the spec had been failing on the nightly for a fortnight for saying `8`.
@@ -34,7 +34,7 @@ const LAZY = lazyModules(new URL('../', import.meta.url));
 const GLOBALS = Object.fromEntries(LAZY.map((m) => [m.name, m.global]));
 const FACTORIES = LAZY.filter((m) => m.factory).map((m) => m.name);
 
-/* ══ ⚠⚠ (#R300) A PAGE NOTHING HAS ASKED ANYTHING OF — ① AND ② BOTH NEED ONE, AND IT IS NOT THE
+/* ══ ⚠⚠ (#R304) A PAGE NOTHING HAS ASKED ANYTHING OF — ① AND ② BOTH NEED ONE, AND IT IS NOT THE
    SHARED ONE. `app.page` is WORKER-scoped, and four other specs use the same fixture; one of them
    (tests/r170.spec.js) calls `loadLazyModules()` on it, so whenever the planner puts that file and
    this one on the same machine, every deferred module is already fetched before ① or ② look. ③ in
@@ -48,7 +48,7 @@ let VIRGIN = null;
 const untouched = async (app) => (VIRGIN || (VIRGIN = await app.freshPage()));
 
 test('R209 ①: none of the deferred modules is in the boot bundle, and the boot guard is still clean', async ({ app }) => {
-  /* ⚠ (#R300) ON A FRESH PAGE, WHICH IS WHAT THIS TEST'S SUBJECT REQUIRES. The shared page is the
+  /* ⚠ (#R304) ON A FRESH PAGE, WHICH IS WHAT THIS TEST'S SUBJECT REQUIRES. The shared page is the
      right default for the rest of the file, and it is the wrong one here: ③ below asks for EVERY
      module on that same page, so a retry of this serial group — CI runs one (#R207) — would re-run
      this test against a page where all ten had already been fetched. Measured: it did, and the
@@ -77,7 +77,7 @@ test('R209 ①: none of the deferred modules is in the boot bundle, and the boot
   /* ══ ⚠⚠ THE POINT OF THE ROUND, AS «NOT WITHOUT BEING ASKED» RATHER THAN «NOT YET» ═════════════
      If a deferred global were present with nothing pending, its file would be in the boot bundle
      after all and the split would be a comment; the sizes in DEV-NOTES would be measuring nothing.
-     ⚠ (#R300) IT CANNOT BE «typeof === undefined» FULL STOP, AND FINDING OUT WHY IS WHAT THIS ROUND
+     ⚠ (#R304) IT CANNOT BE «typeof === undefined» FULL STOP, AND FINDING OUT WHY IS WHAT THIS ROUND
      BOUGHT. The old version wrote out eight globals by hand and `atlasConsole` was not among them —
      so #R224's rule that a DESKTOP warms the Atlas kernel 1.2 s after the map goes idle (never on a
      phone, never on Save-Data, never before first paint) has had no browser guard at all since the
@@ -103,7 +103,7 @@ test('R209 ①: none of the deferred modules is in the boot bundle, and the boot
   /* …and the boot guard, which no longer knows about them, is clean rather than noisy. */
   expect(s.check.missingFactories, 'no EAGER factory is missing').toEqual([]);
   expect(s.check.missing, 'no required global is missing').toEqual([]);
-  /* ⚠ (#R300) 「one list knows every factory」 IS A RELATION BETWEEN TWO FILES, SO STATE IT AS ONE.
+  /* ⚠ (#R304) 「one list knows every factory」 IS A RELATION BETWEEN TWO FILES, SO STATE IT AS ONE.
      src/main.js's LAZY_FACTORIES exists so that a deleted or renamed module still has somewhere to
      be missing from — which only works while it agrees with the loader. It used to be checked by
      naming one member of it, and a list that is only spot-checked drifts by exactly the members
@@ -133,7 +133,7 @@ test('R209 ②: asking for the seismic simulator brings the tsunami model with i
   expect(after.failed).toEqual([]);
 });
 
-/* ⚠ (#R300) THE LIST IS DERIVED; THE MEMBER IS DECLARED — AND EVERY MODULE MUST DECLARE ONE. A
+/* ⚠ (#R304) THE LIST IS DERIVED; THE MEMBER IS DECLARED — AND EVERY MODULE MUST DECLARE ONE. A
    `typeof !== 'undefined'` check passes for a module that loaded and registered half of itself, so
    this names one member each caller actually uses. WHICH member cannot be derived — that is
    knowledge about the feature — but the KEYS are checked against the loader below, so an eleventh

@@ -47,7 +47,7 @@ test.describe('R196 ① the epicentre, on a phone', () => {
 
     const seen = [];
     for (const nth of [0, 1]) {
-      /* ⚠ (#R300) PRESS ◎ UNTIL THE PICK IS LIVE, WHICH IS AT MOST TWICE. #R212 merged the two
+      /* ⚠ (#R304) PRESS ◎ UNTIL THE PICK IS LIVE, WHICH IS AT MOST TWICE. #R212 merged the two
          controls into this one and #R218 then gave it an OFF state — 「どちらも、もう一度クリック
          したら選択解除されるように。」 — so a single press ARMS from 'none' and DISARMS from 'epi'.
          After the first tap the segment is still lit while the pick itself has ended, so the second
@@ -69,7 +69,7 @@ test.describe('R196 ① the epicentre, on a phone', () => {
          readable. The premise above (the panel covers >50 % of a phone map) is unchanged, and so is
          the assertion below it; what changes is that "out of the way" now means untouchable rather
          than invisible.
-         ══ ⚠⚠ (#R300) …AND THE POINT IS FOUND, NOT WRITTEN DOWN, BECAUSE #R219 MADE THE ANSWER
+         ══ ⚠⚠ (#R304) …AND THE POINT IS FOUND, NOT WRITTEN DOWN, BECAUSE #R219 MADE THE ANSWER
          DEPEND ON WHAT IS UNDER IT. Two fixed coordinates stood here and one of them now lands on a
          `.sq-row`, which is CORRECT: 「◎ をクリックしたら、その後にポップアップ上でクリックしても、
          その直下の地図がクリックされた判定になってしまう」 — so `.im-pick-ghost` puts the box at
