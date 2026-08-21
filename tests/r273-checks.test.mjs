@@ -81,7 +81,12 @@ test('R273 ② the JMA’s own colours, read from the JMA’s own page', () => {
   for (const e of m[1].matchAll(/(\d+):'([^']*)'/g)) pal[e[1]] = e[2];
   assert.deepEqual(pal, { 20: '#f2e700', 30: '#ff2800', 40: '#aa00aa', 50: '#0c000c' },
     'these are `.contents-levelNN` on jma.go.jp/bosai/warning — not a palette chosen here');
-  assert.match(s, /const NONE_COL='#c8c8cb'/, '…and `.contents-missing` is 「発表なし」');
+  /* ⚠ (#R293) 「灰色塗の色味は少しだけ白に近づけろ」 — the grey is no longer the JMA's own #c8c8cb.
+     What #R273 was pinning is that 「発表なし」 has ONE colour and it is declared once; the value is
+     the reader's to choose, so this asserts the declaration rather than the hex. */
+  assert.match(s, /const NONE_COL='#[0-9a-f]{6}';/, '…and 「発表なし」 is one declared colour');
+  assert.equal((s.match(/const NONE_COL=/g) || []).length, 1, '…declared exactly once');
+  assert.ok(!/'#c8c8cb'/.test(s), 'and it is no longer the JMA\'s own grey (#R293)');
 });
 
 /* ── ③ 「警報なし」と「データなし」 are different states and look different ─────────────────── */

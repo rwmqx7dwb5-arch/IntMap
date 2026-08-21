@@ -189,15 +189,48 @@
      post-hoc tint: the tiles are rendered from it in the SDK's worker, and `legend()` reads the SAME
      object, so the ramp under the map and the ramp in the legend are one declaration. `wind_gusts_10m`
      resolves to the same family, which is right — it is the same quantity in the same unit. */
+  /* ══ ⚠⚠⚠ (#R293) 「Windyと完全に同じ風速と色の対応にしてください。RGB単位で、Windyの実物もとに
+     比較し修正して。高風速帯でも同じになるように。」 — AND IT WAS NEVER WINDY'S TABLE ════════
+
+     The seventeen anchors this replaces were written from a screenshot: they borrowed Windy's
+     BREAKPOINT POSITIONS (0,1,3,5,7,9,11,13,15,17…) and invented the colours, so the two pictures
+     agreed at 0 m/s and diverged from about 2 m/s on. MEASURED against windy.com's own paint
+     function, worst channel difference:
+
+         v (m/s)    IntMap (before)   Windy (real)     Δmax
+            5        36,160,168        77,141,123        45
+           15       214,202, 60       161,108, 92        94
+           25       228, 68, 57        95,100,156       133
+           60       240,220,245       214,209,127       118
+
+     i.e. at 25 m/s this map painted RED where Windy paints slate blue, and above 45 m/s it
+     saturated to near-white while Windy goes khaki then grey. 「高風速帯でも同じに」 is the half
+     that was furthest off.
+
+     ⚠ THE GROUND TRUTH IS THE FUNCTION THE MAP IS PAINTED THROUGH, NOT THE DECLARED TABLE — the
+     same finding #R288 made for temperature, and it repeats exactly: `W.colors.wind
+     .defaultColorGradient` is twenty stops, but `RGBA(v)` (a 2048-step precomputed table over
+     0–104 m/s) does NOT equal their linear interpolation — measured, 20/255 apart at 32.25 m/s.
+     So `RGBA` was sampled every 0.1 m/s from 0 to 104 (1,041 points, alpha 255 throughout — there
+     is no calm-air hole in it) and the smallest set of stops whose LINEAR interpolation reproduces
+     that sampling was fitted: **27 stops, worst channel error 3/255**, which is the standard #R288
+     held the temperature ramp to. Above 104 m/s Windy clamps to grey and so does this table.
+     The stops at 10.0/10.5, 19.7, 25.3 and 30.6/31.9/33.2 are not noise — they are where Windy's
+     own interpolation stops being linear in RGB.
+     `rampFrom(…, 0.1)` then resamples to 1,041 entries so the map is a gradient rather than a
+     staircase, which is #R284's requirement and is unaffected by whose colours these are. */
   var WIND_ANCHORS = {
     unit: 'm/s',
-    breakpoints: [0, 1, 3, 5, 7, 9, 11, 13, 15, 17, 20, 23, 26, 30, 36, 45, 60],
+    breakpoints: [0, 1.1, 3, 5, 7, 9, 10, 10.5, 11, 13, 15, 17, 19, 19.7, 21, 24, 25.3, 27, 29,
+      30.6, 31.9, 33.2, 35.9, 46, 51, 76.6, 104],
     colors: [
-      [98, 113, 184, 1], [61, 99, 174, 1], [40, 130, 180, 1], [36, 160, 168, 1],
-      [44, 168, 120, 1], [62, 175, 80, 1], [110, 185, 60, 1], [160, 195, 55, 1],
-      [214, 202, 60, 1], [236, 170, 50, 1], [240, 130, 46, 1], [235, 92, 50, 1],
-      [224, 56, 60, 1], [210, 40, 110, 1], [200, 70, 175, 1], [214, 140, 220, 1],
-      [240, 220, 245, 1]
+      [98, 113, 184, 1], [58, 99, 160, 1], [74, 148, 170, 1], [77, 142, 124, 1],
+      [83, 165, 84, 1], [53, 160, 53, 1], [103, 164, 54, 1], [136, 161, 62, 1],
+      [166, 158, 80, 1], [160, 127, 58, 1], [162, 109, 92, 1], [130, 59, 79, 1],
+      [176, 80, 137, 1], [160, 76, 142, 1], [118, 74, 148, 1], [109, 97, 164, 1],
+      [91, 101, 158, 1], [69, 105, 142, 1], [92, 144, 153, 1], [92, 129, 167, 1],
+      [102, 111, 177, 1], [113, 95, 178, 1], [125, 69, 166, 1], [232, 216, 216, 1],
+      [220, 213, 136, 1], [206, 203, 113, 1], [129, 129, 129, 1]
     ]
   };
   /* ══ ⚠⚠⚠ (#R284) A BREAKPOINT TABLE IS A STAIRCASE, AND THAT IS WHAT WAS ON THE MAP ══════════
@@ -767,9 +800,20 @@
     if (!covers(ms)) return;
     setIndex(nearestTo(ms), { now: true, fromClock: true });
   }
-  /* (#R290) NOT SUBSCRIBED. See the note on `_pushClock`: the master clock no longer drives this
-     axis, so there is nothing to wire. `_followClock` remains callable by name for a reader who
-     explicitly asks for the weather at a given instant. */
+  /* ══ ⚠⚠⚠ (#R293) SUBSCRIBED AGAIN — BUT ONLY IN THIS DIRECTION ═══════════════════════
+     「Chronosで時間を変更したら、IntMap内の対応するすべての要素をChronosの時間に合わせるように。」
+     #R290 cut BOTH wires because #R288 had wired both, and the one that hurt was the PUSH: choosing
+     an hour of weather also dragged the news feed, the historical borders, the terminator and the
+     country statistics to that hour. That one stays cut — `_pushClock` is still a no-op and each
+     layer's own legend still owns its axis (「個別の時間選択UIを使え」).
+     The PULL is what the reader is asking for here, and it is the opposite trade: Chronos is the
+     app's one clock, so an instant chosen THERE has to be the instant every time-aware layer is
+     showing. `covers()` is what keeps it honest — travelling to 1972 is not a request for a
+     forecast, so the axis holds where it is and the legend prints the caveat. */
+  (function wireClock(n){ try{ var C=window.IntMapTime;
+    if(C&&C.on){ C.on(function(e){ try{ _followClock(e); }catch(_){} }); return; }
+  }catch(_){}
+    if((n|0)<60) setTimeout(function(){ wireClock((n|0)+1); },200); })(0);
   function step(n) { if (!meta) return; var c = meta.validTimes.length; setIndex(((idx + n) % c + c) % c, { now: true }); }
   function play() {
     if (playing || !meta) return;

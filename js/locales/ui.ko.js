@@ -329,6 +329,10 @@ window.IntMapLang.define('ko', { ui: {
     "Click to start, click each corner, and click the first point again to finish.":"클릭해서 시작하고 모서리를 차례로 클릭한 뒤, 첫 점을 다시 클릭하면 끝납니다.",
     "Draw the rupture area on the map.":"지도 위에 진원역을 그려 주세요.",
     "Each point is added to the table below. Press the button again to turn this off.":"추가한 지점은 아래 표에 나타납니다. 버튼을 다시 누르면 해제됩니다.",
+  "Educational — follow the official authorities.": "참고용입니다 — 공식 기관의 발표를 따르세요.",   /* world-packs.js (#R293) */
+  "IntMap read": "IntMap 수신",   /* world-packs.js (#R293) */
+  "issued": "발표",   /* world-packs.js (#R293) */
+  "Not covered, or not read yet (diagonal hatching)": "미지원 또는 미수신 (빗금)",   /* world-packs.js (#R293) */
   "Educational display — follow the official authorities.": "참고용 표시입니다. 공식 기관의 발표를 따르세요.",   /* (#R275) */
     "If one is already placed, tapping moves it. Press the button again to turn this off.":"이미 설정되어 있으면 탭한 위치로 이동합니다. 버튼을 다시 누르면 해제됩니다.",
   "IntMap is not connected to this country’s warning service, so it is saying nothing about this point — not that nothing is in force.": "IntMap은 이 나라의 경보 기관에 연결되어 있지 않으므로, 이 지점에 대해 아무것도 말하지 않습니다 — 발표가 없다는 뜻이 아닙니다.",   /* (#R275) */

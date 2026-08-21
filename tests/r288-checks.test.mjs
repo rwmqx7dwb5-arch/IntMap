@@ -31,7 +31,7 @@ const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\
 const WP = () => codeOnly(read('js/world-packs.js'));
 const WX = () => codeOnly(read('js/weather.js'));
 const EC = () => codeOnly(read('js/wx-ecmwf.js'));
-const RE = () => codeOnly(read('js/wx-reanalysis.js'));
+/* (#R293) js/wx-reanalysis.js is gone — see ⑩ and ⑪ */
 const DL = () => codeOnly(read('js/data-layers.js'));
 const TL = () => codeOnly(read('js/news-timeline.js'));
 
@@ -66,7 +66,11 @@ test('#R288 ① the hatch covers both silences, and the other three states survi
      was drawn as grey fill PLUS lines while 「発令なし」 is grey fill alone — every hatched country
      wearing the quiet country's appearance underneath its own. The two claims have to be visually
      exclusive, so the tile is lines on transparent and nothing else. */
-  const h = src.indexOf('function ensureHatch(');
+  /* ⚠ (#R293) the tile is BUILT in `hatchCanvas()` now, because the legend swatch is a picture of
+     the same tile (「斜線塗がなんなのか分かるように、凡例に追加しろ」) and two hand-written patterns
+     that have to agree is the #R270 defect waiting to happen. The property is unchanged and is
+     asserted where the drawing now lives. */
+  const h = src.indexOf('function hatchCanvas(');
   const hb = src.slice(h, src.indexOf('const HAZ', h) > h ? src.indexOf('const HAZ', h) : h + 1200);
   assert.ok(!/fillRect\(0,0,S,S\)/.test(hb), 'the hatch tile paints no backing sheet');
   assert.match(hb, /g\.clearRect\(0,0,S,S\);/, '…it starts transparent');
@@ -77,9 +81,12 @@ test('#R288 ① the hatch covers both silences, and the other three states survi
 test('#R288 ② the quiet grey is a unit layer, under the warnings, in the same grey', () => {
   const src = WP();
   assert.match(src, /const QSRC='wp-alert-quiet-src',\s*QFILL='wp-alert-quiet',\s*QLINE='wp-alert-quiet-line';/);
-  assert.match(src, /const QUIET_COL='rgba\(200,200,203,0\.42\)';/,
-    'the unit grey is the SAME grey the country-wide sheet uses — a second shade would be a second meaning');
-  assert.match(src, /1,'rgba\(200,200,203,0\.42\)',/, '…and the country-wide sheet still uses it');
+  /* ⚠ (#R293) the VALUE moved (「灰色塗の色味は少しだけ白に近づけろ」) and the PROPERTY did not: one
+     declaration, and the country-wide sheet paints from that same constant rather than a copy of
+     its literal — which is now enforced by construction instead of by two matching regexes. */
+  assert.match(src, /const QUIET_COL='rgba\(\d+,\d+,\d+,0\.42\)';/,
+    'the unit grey is declared once — a second shade would be a second meaning');
+  assert.match(src, /\n\s+1,QUIET_COL,/, '…and the country-wide sheet paints from that declaration');
   const i = src.indexOf('function ensureQuiet(');
   assert.ok(i > 0, 'ensureQuiet must exist');
   const body = src.slice(i, i + 1400);
@@ -171,9 +178,11 @@ test('#R288 ⑥ the temperature ramp is 23 measured stops in °C, on the SDK’s
   assert.match(src, /var WINDY_TEMP = rampFrom\(TEMP_ANCHORS, 0\.05\);/);
   assert.match(src, /\{ wind: WINDY_WIND, temperature: WINDY_TEMP \}/,
     'registered on the SDK’s FAMILY name, so every temperature variable moves together');
-  /* …and the wind ramp #R284 measured is untouched */
+  /* …and the wind ramp is built the same way, from its own anchors. ⚠ (#R293) it is no longer the
+     seventeen #R284 measured: 「Windyと完全に同じ風速と色の対応に」 replaced them with windy.com's own
+     table, sampled through `RGBA()`. What this line pins is that the two ramps are built by the
+     SAME routine at their own steps — not what either table happens to contain. */
   assert.match(src, /var WINDY_WIND = rampFrom\(WIND_ANCHORS, 0\.1\);/);
-  assert.match(src, /breakpoints:\s*\[0,\s*1,\s*3,\s*5,\s*7,\s*9,\s*11,\s*13,\s*15,\s*17,\s*20,\s*23,\s*26,\s*30,\s*36,\s*45,\s*60\]/);
 });
 
 /* the ramp is not asserted only as text: build it and check it reproduces the anchors exactly and
@@ -283,34 +292,47 @@ test('#R288 ⑨ the forecast axis is the app clock, and the separate box is gone
   const e = EC();
   assert.ok(!/C\.set\(new Date\(tms\(vt\)\), \{ allowFuture: true, source: 'ecmwf' \}\)/.test(e),
     'a step does not write the master clock');
-  assert.ok(!/C\.on\(_followClock\)/.test(e), '…and the master clock does not write the axis');
+  /* ══ ⚠⚠⚠ (#R293) THE PULL IS BACK, AND ONLY THE PULL ══════════════════════════════════════
+     「Chronosで時間を変更したら、IntMap内の対応するすべての要素をChronosの時間に合わせるように。」
+     #R290 cut both wires because #R288 had wired both; the one that hurt was the PUSH, and it is
+     still cut (the assertion above). The reader is now asking for the other direction, which is
+     the opposite trade — Chronos is the app's one clock, so an instant chosen there has to be the
+     instant the weather is showing. `covers()` keeps it honest: travelling to 1972 is not a
+     request for a forecast. */
   assert.match(e, /function _followClock\(e\)/, 'the seek stays declared — Atlas can ask for it by name');
   assert.match(e, /followClock: _followClock,/, '…and it is exported');
-  /* the time machine grew the tab that makes that possible */
+  assert.match(e, /C\.on\(function\(e\)\{ try\{ _followClock\(e\); \}/,
+    '…and the master clock DOES drive the axis again (#R293)');
+  assert.match(e, /function _pushClock\(\) \{\}/, 'but a forecast step still writes nothing back');
+  /* (#R293) 「時刻と予報タブを分けるな」 — the fourth tab is gone and its transport moved into 「時刻」 */
   const t = TL();
-  assert.match(t, /const modeFc=document\.getElementById\('ntl-mode-fc'\)/);
-  assert.match(t, /const fcReady=\(\)=>/, 'the tab is present only when the model published an axis');
-  assert.match(t, /if\(modeFc\) modeFc\.style\.display=fcReady\(\)\?'':'none';/);
+  assert.ok(!/ntl-mode-fc/.test(t), 'the separate forecast tab is gone');
+  assert.match(t, /const fcReady=\(\)=>/, 'the transport is present only when the model published an axis');
+  assert.match(t, /if\(mode!=='time'\|\|!fcReady\(\)\)\{ fcStop\(\); playerEl\.style\.display='none'/,
+    '…and it lives inside the Time tab');
   assert.match(t, /window\._imTimeMachineForecast=/);
-  assert.match(read('index.html'), /id="ntl-mode-fc"/);
-  assert.match(read('index.html'), /id="ntl-player"/);
+  assert.ok(!/id="ntl-mode-fc"/.test(read('index.html')), 'the fourth tab is gone from the markup too');
+  assert.match(read('index.html'), /id="ntl-player"/, '…and its transport is not');
 });
 
 /* ── ⑩ 一つのレイヤー、同じ色分け、ソースだけ切り替え ─────────────────────────────────────── */
-test('#R288 ⑩ air temperature is one layer with two sources and one ramp', () => {
+/* ⚠⚠ (#R293) 「気温レイヤーで、MERRA-2 再解析は削除。」 — the second source is gone, and so is
+   everything that only served it. What #R288 was really pinning is that air temperature is ONE row
+   with ONE ramp and no duplicate in js/data-layers.js; that half is unchanged and is what this
+   test asserts now. The removal is asserted too, because an unreachable branch that still looks
+   like a feature is exactly what this project forbids. */
+test('#R288 ⑩ air temperature is one layer with one ramp, and the reanalysis is gone', () => {
   const w = WX();
-  assert.match(w, /id:'ec-temp',\s*variable:'temperature_2m'[\s\S]{0,200}sources:\['ecmwf','merra2'\]/);
+  assert.match(w, /id:'ec-temp',\s*variable:'temperature_2m'/);
   assert.match(w, /label:LA\('Temperature','気温'/, '「名前は単に気温に」');
   assert.ok(!/Temperature 2 m \(ECMWF\)/.test(w), 'the old name must be gone');
-  assert.match(w, /class="ec-srcsel"/, 'the switch is in the legend');
-  assert.match(w, /function setSource\(id,src\)\{/);
-  assert.match(w, /if\(srcOf\(cfg\)==='merra2'\)\{/, 'the reanalysis is a source of the SAME layer');
-  assert.match(w, /RE\(\)\.tiles\(state\[cfg\.id\]\.month\)/);
-  /* the reanalysis month is written by the SAME clock the forecast hour is — one instant, two
-     granularities, so a reader who travels to 1998 sees 1998's temperature */
-  assert.match(w, /function applyMonth\(iso\)\{/);
-  assert.match(w, /C\.on\(e=>\{ try\{ applyMonth\(e\.isLive\?\(RE\(\)&&RE\(\)\.latestMonth\(\)\):e\.iso\); \}/,
-    'the master clock writes the reanalysis month');
+  /* (#R293) the source picker, the month clock and the reanalysis module went together */
+  assert.ok(!/merra2/.test(w), 'no branch of the weather module mentions the reanalysis');
+  assert.ok(!/class="ec-srcsel"/.test(w), '…the source picker is gone');
+  assert.ok(!/function setSource\(id,src\)\{/.test(w), '…and the switch behind it');
+  assert.ok(!/function applyMonth\(iso\)\{/.test(w), '…and the month clock that only it used');
+  assert.ok(!/IntMapReanalysis/.test(w), '…and the module reference');
+  assert.ok(!/wx-reanalysis/.test(codeOnly(read('src/main.js'))), 'the file is not imported');   /* (#R293) comments stripped — see ⑪ */
   /* the second row is gone from the panel, and a saved session is translated rather than dropped */
   const d = DL();
   assert.ok(!/\['temp','lyrTemp'\]/.test(d), 'the duplicate row must not be declared');
@@ -322,25 +344,27 @@ test('#R288 ⑩ air temperature is one layer with two sources and one ramp', () 
   assert.match(codeOnly(read('js/session-tabs.js')), /'dl-temp':'dl-ec-temp'/, 'a saved session is migrated');
 });
 
-/* ── ⑪ the reanalysis tile is inverted through NASA’s own published palette ─────────────────── */
-test('#R288 ⑪ the reanalysis re-colour reads the colormap rather than copying it', () => {
-  const src = RE();
-  assert.match(src, /https:\/\/gibs\.earthdata\.nasa\.gov\/colormaps\/v1\.3\//, 'the palette is fetched, not transcribed');
-  assert.match(src, /if \(ref === 1\) return 219\.75;/);
-  assert.match(src, /return 220 \+ \(ref - 2\) \* 0\.5 \+ 0\.25;/, '180 half-degree bins, 220 K → 310 K');
-  assert.match(src, /if \(ref >= 182\) return 310\.25;/);
-  assert.match(src, /if \(\/nodata="true"\/\.test\(a\)\) continue;/, 'the no-data entry is not a temperature');
-  assert.match(src, /ctx\.imageSmoothingEnabled = false;/,
-    'a resampled pixel is a colour in no palette entry, i.e. a temperature that was never measured');
-  assert.match(src, /window\.IntMapECMWF && window\.IntMapECMWF\.WINDY_TEMP/, 'one ramp, read from its owner');
-  assert.match(src, /addProtocol\('imwxre'/);
-  assert.match(codeOnly(read('src/main.js')), /import '\.\.\/js\/wx-reanalysis\.js';/);
-  /* binK is arithmetic, so run it */
-  const binK = (ref) => (ref <= 0 ? null : ref === 1 ? 219.75 : ref >= 182 ? 310.25 : 220 + (ref - 2) * 0.5 + 0.25);
-  assert.equal(binK(0), null);
-  assert.equal(binK(2), 220.25);
-  assert.equal(binK(181), 309.75);
-  assert.ok(binK(181) < binK(182), 'the bins increase to the last one');
+/* ── ⑪ the reanalysis is GONE, and nothing is left half-wired ────────────────────────────────
+   ⚠⚠ (#R293) 「気温レイヤーで、MERRA-2 再解析は削除。」 #R288 ⑪ asserted that the reanalysis tile was
+   inverted through NASA's own published colormap rather than a transcribed copy of it. There is no
+   longer a reanalysis tile. What this test protects now is the OTHER half of a removal — that it
+   went all the way: no module, no import, no protocol, and no caller left pointing at any of them.
+   A half-removed feature is the shape this project keeps paying for. */
+test('#R288 ⑪ the reanalysis is removed end to end, with nothing left pointing at it', () => {
+  assert.ok(!existsSync(resolve(ROOT, 'js/wx-reanalysis.js')), 'the module is deleted');
+  /* ⚠ (#R293) COMMENTS ARE STRIPPED FIRST. The removal is explained in a comment that names the
+     file it removed — and an earlier draft of this very test matched its own explanation. That is
+     the nineteenth time this project has hit that shape; `codeOnly` is the standing answer. */
+  const all = ['src/main.js', 'js/weather.js', 'js/wx-ecmwf.js', 'js/data-layers.js'];
+  for (const f of all) {
+    const s = codeOnly(read(f));
+    assert.ok(!/wx-reanalysis/.test(s), f + ' does not import it');
+    assert.ok(!/IntMapReanalysis/.test(s), f + ' does not reach for the global');
+    assert.ok(!/imwxre:/.test(s), f + ' does not use its protocol');
+  }
+  assert.ok(!/MERRA2_2m_Air_Temperature_Monthly/.test(read('js/data-layers.js')), '…nor its tiles');
+  /* the documents say so too — a removal the ledger still lists is a document that has gone stale */
+  assert.ok(!/^wx-reanalysis\.js/m.test(read('docs/FILES.md')), 'the file ledger no longer lists it');
 });
 
 /* ── ⑫ an `om://` url is never handed to MapLibre without the protocol behind it ────────────── */

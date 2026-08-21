@@ -349,8 +349,8 @@ test('R270 ⑧ a country whose agency draws areas is never washed as a whole cou
   assert.ok(pi > 0, 'the choropleth must paint from that field');
   const paint = s.slice(pi, pi + 400);
   /* one case = a state number followed by the colour it paints — `_wash(...)` for the four unplaced
-     ranks and a literal rgba for the grey; anything else in that slice is not a case */
-  const cases = [...paint.matchAll(/(\d+),(?:_wash\(|'rgba)/g)].map((m) => +m[1]).sort((a, b) => a - b);
+     ranks and, since #R293, the NAMED grey constant rather than a second copy of its literal */
+  const cases = [...paint.matchAll(/(\d+),(?:_wash\(|QUIET_COL|'rgba)/g)].map((m) => +m[1]).sort((a, b) => a - b);
   assert.deepEqual(cases, [1, 11, 12, 13, 14], `expected grey plus the four unplaced ranks, got ${cases}`);
   assert.match(s, /'fill-pattern':'wp-alert-hatch-img'/, 'and «no feed» is a hatch, not a colour');
   /* the wash carries its own alpha, because the opacity slider overwrites fill-opacity wholesale.

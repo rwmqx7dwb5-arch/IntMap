@@ -97,7 +97,7 @@ test('R277 ③ hatched / grey / coloured are three states, and the wash sits und
     'the wash and the hatch are inserted UNDER the unit fills, by name');
   /* the three states themselves are unchanged and still distinct */
   assert.match(s, /'fill-pattern':'wp-alert-hatch-img'/, 'no feed → a pattern, not a fourth grey');
-  assert.match(s, /1,'rgba\(200,200,203,0\.42\)'/, 'a feed and nothing in force → grey');
+  assert.match(s, /\n\s+1,QUIET_COL,/, 'a feed and nothing in force → grey');   /* (#R293) one declaration */
   assert.match(s, /function readState\(c\)\{/, '…and 「read」 is a state that is checked, not assumed');
   /* ⚠ (#R284) …and loading / error / idle are no longer HATCHED either: the hatch means 「未対応」,
      so a wired country that has not answered draws nothing at all (`-1`). What #R277 asserted —
@@ -304,8 +304,12 @@ test('R277 ⑪ hail, 山洪, a bare “Fire” and the awareness_type codes all 
 test('R277 ⑫ the Chinese boundaries are read through the relay, not from the page', () => {
   const s = WP();
   assert.match(s, /const cnUrl=\(n\)=>relay\('cngeo='/, 'the relay is the route');
-  assert.match(s, /Promise\.all\(\[fetchJSON\(cnUrl\('100000_full_city'\)\),fetchJSON\(cnUrl\('100000_full'\)\)\]/,
+  /* (#R293) through `bndJSON`, which is `fetchJSON` plus Cache Storage — boundaries are not news,
+     and re-downloading 1.90 MB of Chinese city polygons on every visit was part of 「重すぎる」 */
+  assert.match(s, /Promise\.all\(\[bndJSON\(cnUrl\('100000_full_city'\)\),bndJSON\(cnUrl\('100000_full'\)\)\]/,
     '…for both files');
+  assert.match(s, /async function bndJSON\(u\)\{ const hit=await bndCached\(u\); if\(hit\) return hit;/,
+    '…and that route is the cached one');
   const r = RELAY();
   assert.match(r, /const cngeo = \(q\.get\("cngeo"\) \|\| ""\)\.trim\(\);/, 'the relay answers it');
   assert.match(r, /\^\[0-9\]\{6\}\(_full\(_city\)\?\)\?\$/, '…and the name is a shape, not a path');
