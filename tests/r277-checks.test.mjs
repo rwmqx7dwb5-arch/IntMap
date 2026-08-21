@@ -119,7 +119,13 @@ test('R277 ④ a warning without a polygon is looked for in the agency’s own s
   const ma = s.slice(s.indexOf('async function maFeatures()'), s.indexOf('async function loadMA('));
   assert.match(ma, /if\(a\.poly\)\{ const g=capPolygon\(a\.poly\); if\(g\) return g; \}/, '① the CAP polygon');
   assert.match(ma, /if\(lib\)\{ const f=lookupUnit\(lib,a\.name\);/, '② the same service’s own shapes');
-  assert.match(ma, /if\(idx\)\{ const f=lookupUnit\(idx,a\.name\);/, '③ Eurostat NUTS');
+  /* ⚠ (#R297) the ALIAS is asked before the fuzzy rungs inside `lookupUnit` can answer with
+     something merely close — it is an explicit statement about one name (「Ahvenanmaa」 is
+     Eurostat's 「Åland」 and no normalisation reaches it). The rung itself is unchanged. */
+  assert.match(ma, /if\(idx\)\{ const al=aliasUnit\(idx,iso,a\.name\); if\(al\) return al\.geometry;/,
+    '③ Eurostat NUTS, with the agency’s own word for a region first');
+  assert.match(ma, /const f=lookupUnit\(idx,a\.name\); if\(f&&f\.geometry\) return f\.geometry; \}/,
+    '③ …then the index itself');
   assert.match(ma, /if\(gb\)\{ const f=lookupUnit\(gb,a\.name\);/, '④ (#R284) a stable administrative index');
   assert.match(ma, /return wholeCountryShape\(iso,a\.name\);/, '⑤ the country, when the area IS the country');
   assert.match(ma, /if\(wa\)\{ const f=lookupUnit\(wa,a\.name\); if\(f&&f\.geometry\) return f\.geometry; \}/,

@@ -32,7 +32,12 @@
 import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
 
 const CORS = corsFor();
-const CACHE = "public, max-age=60, s-maxage=60, stale-while-revalidate=300";
+/* (#R297) 「更新が遅すぎる。リアルタイムにと言っている。」 — this is the floor the app's rotation
+   sits just under (js/world-packs.js MIN_AGE_MS): asking a country again inside this window
+   returns the same bytes, so it bounds how fresh the map can be. 60 s → 30 s halves that bound.
+   `stale-while-revalidate` is what keeps the edge answering instantly while it refreshes, so the
+   READER never waits for the upstream; what doubles is how often the edge asks it. */
+const CACHE = "public, max-age=30, s-maxage=30, stale-while-revalidate=300";
 
 /* ══ ⚠⚠ ONE CALLER-SIZED REQUEST WAS BUYING FORTY UPSTREAM-SIZED ONES ═══════════════════════════
    `?ma=` took `.slice(0, 40)` country slugs and fetched them ALL, in parallel, with a 45-second

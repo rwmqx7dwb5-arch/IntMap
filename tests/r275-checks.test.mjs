@@ -177,13 +177,20 @@ test('R275 ⑦ a tap answers about the point, in a card of its own', () => {
   /* ⚠ THE PROPERTY IS «A TAP DOES NOT TAKE THE OVERVIEW AWAY», not «legendFor is never named here»:
      the card carries a button that opens the country list, and re-rendering the card after a late
      fetch has to re-wire it. So every `panel.open` inside the handler must belong to that button. */
-  for (const m of click[1].matchAll(/panel\.open\(/g)) {
-    const before = click[1].slice(Math.max(0, m.index - 70), m.index);
-    assert.match(before, /mb\.onclick=\(\)=>\{ $/,
-      'a tap may only open the country legend from the card’s own button');
-  }
-  /* …but the country list is still reachable, from the card */
-  assert.match(s, /mb\.onclick=\(\)=>\{ panel\.open\('<div class="wp-a-body">'\+legendFor\(/,
+  /* ⚠ (#R297) THE READER ASKED FOR THE OPPOSITE HALF OF THIS: 「クリックした国の凡例が表示される
+     ように」. So a tap now opens the country's own key IN THE PANEL as well — and #R275's property
+     survives, restated: the panel must never be left showing a view nothing chose. It knows which
+     of the two it is showing (`panelISO`), a publish re-renders THAT one rather than replacing it
+     with the worldwide list, and closing the card returns it to the overview. */
+  assert.match(click[1], /if\(c\) countryPanel\(c\);/, 'a tap opens the country’s own key');
+  for (const m of click[1].matchAll(/panel\.open\(/g))
+    assert.fail('the handler must go through countryPanel(), which is the one place that remembers');
+  assert.match(s, /function showPanel\(\)\{ if\(!on\) return; if\(panelISO\) countryPanel\(panelISO\); else overview\(\); \}/,
+    'and every refresh renders whichever view is up');
+  assert.match(s, /const closeTap=\(\)=>\{ closePointCard\(\); if\(panelISO&&on\)\{ panelISO='';/,
+    'closing the card gives the overview back');
+  /* …and the country list is still reachable from the card itself */
+  assert.match(s, /if\(mb\) mb\.onclick=\(\)=>\{ countryPanel\(iso\); \};/,
     'the country legend is one button away');
   assert.match(s, /at:\(lng,lat\)=>alertsAt\(/, 'and the same answer is a call, for Atlas and for a test');
 });

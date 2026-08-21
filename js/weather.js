@@ -143,13 +143,23 @@ window.IntMapModules.wind=function(HOST){
        a 40 m/s jet was as washed out as a breeze. The SDK's wind scale carries a MEANINGFUL alpha
        (0 at calm, 1 from ~7 m/s up), which is what fades still air into the basemap; the slider is
        the only other multiplier and it defaults to 1. */
-    /* (#R290) the same rule the ECMWF rasters follow — see whenSourceLoaded in weatherEC below */
+    /* ══ ⚠⚠⚠ (#R297) 「変えてから読み込まれるまでいったん地図が何もなくなるのを辞めろ」 ═══════════
+       #R290 wrote the rule for the ECMWF rasters — 「`once('idle')` is not 「loaded」」 — and this is
+       the same defect one source along. `isSourceLoaded` asks 「is there anything still in flight
+       for this source」, and for a raster source that has just been added and has not been asked
+       for a single tile yet the answer is YES, immediately. So the new slot was uncovered and the
+       OLD one removed while the new one had nothing to draw: the colour field went away and came
+       back when the tiles arrived, which is exactly the blank in the report.
+       → a slot is only revealed once a TILE of that source has landed (`e.tile`) AND the source
+       reports itself loaded. The old hour stays up until then, which is what #R284's two slots
+       were built for. The timeout stays as the last resort — a source whose tiles are all
+       off-screen never gets a tile event, and holding two slots for ever would be worse. */
     function _whenSrcLoaded(sid,then,maxMs){
       let done=false;
       const fin=()=>{ if(done) return; done=true;
         try{ GE().events.off('sourcedata',h); }catch(_){}
         try{ then(); }catch(_){} };
-      const h=(e)=>{ if(e&&e.sourceId===sid&&e.isSourceLoaded) fin(); };
+      const h=(e)=>{ if(e&&e.sourceId===sid&&e.tile&&e.isSourceLoaded) fin(); };
       try{ GE().events.on('sourcedata',h); }catch(_){ setTimeout(fin,600); return; }
       setTimeout(fin,maxMs||12000);
     }
@@ -208,6 +218,41 @@ window.IntMapModules.wind=function(HOST){
        longitude, so only a north/south move can leave it. */
     function band(){ try{ const b=GE().camera.getBounds();
       return EC().bandFor(b.getSouth(),b.getNorth()); }catch(_){ return null; } }
+    /* ══ ⚠⚠⚠ (#R297) 「風レイヤーが重すぎる。品質保ったまま爆速にしろ。」 ═══════════════════════════
+       MEASURED on production, from switching the layer on to the first particle moving:
+       **14.5 s** at the opening view and **74.9 s** zoomed in over Japan. None of it is drawing —
+       the renderer measures a couple of milliseconds a frame. It is ONE READ: `bandFor` answers
+       `null` whenever the view spans more than 120° of latitude, and the opening view is the globe,
+       so the layer reads the whole planet — **13,199,360 samples, ~18 MB** — before anything moves.
+       Measured directly, a global read costs 8–16 s and is BANDWIDTH-bound (its ranges are two
+       contiguous blocks, so #R288's prefetch trick, which collapses many small ranges into one
+       round trip, has nothing to collapse: A/B on production, 16.4 / 7.8 s plain against 7.8 / 9.4 s
+       warmed — no difference).
+       ⚠ AND IT BLOCKS THE COLOUR TOO. The SDK keeps ONE `omFileReader` (see the note on `serial()`
+       in js/wx-ecmwf.js) and the raster tiles are read through the same one, so the tiles cannot
+       decode until the field read is done. MEASURED: the colour slot was revealed at 15.9 s, i.e.
+       right behind the field.
+       → THE FIRST READ IS THE LATITUDES ON SCREEN, NOT THE PLANET. `bandNear` (#R290 追記) is the
+       band around the centre the point readout already uses — about 2.2 M samples against 13.2 M —
+       and it is banded, so it also gets the prefetch. The particles start on it; the full band the
+       view actually covers is read immediately behind it and REPLACES it when it lands. Nothing is
+       lost: the final frame is the same frame, at the same 9 km spacing, from the same file.
+       ⚠ THE WIDE READ IS NOT SKIPPED. A frame that covers less than the view would leave the top
+       and bottom of the screen without a field for ever, which is a worse picture, not a faster
+       one — `bandCovers` is what asks for it and `keepFrame` is what swaps it in. */
+    function nearBand(){ try{ const b=GE().camera.getBounds();
+      return EC().bandNear(b.getSouth(),b.getNorth()); }catch(_){ return null; } }
+    let widening=false;
+    function widen(){
+      if(widening||!on) return;
+      const want=band();
+      try{ if(EC().bandCovers(EC().heldBand(VAR),want)) return; }catch(_){ return; }
+      widening=true;
+      EC().load(VAR,null,want).then(f=>{ widening=false;
+        if(!on||!f||!renderer) return;
+        const sf=EC().sampler(VAR); if(sf){ _lastField=sf; _lastFieldAt=EC().validTime(); renderer.setField(sf); }
+      }).catch(()=>{ widening=false; });
+    }
     function load(opt){
       if(!EC()) return Promise.resolve(null);
       const want=()=>EC().stateKey(VAR,'');
@@ -216,7 +261,10 @@ window.IntMapModules.wind=function(HOST){
       return EC().ready().then(()=>{
         const key=want();
         if(key&&key!==liveKey) ensureField(key);
-        return EC().load(VAR,null,band());
+        /* the narrow band unless a frame that already covers the view is in hand */
+        let b=band();
+        try{ if(!EC().bandCovers(EC().heldBand(VAR),b)) b=nearBand()||b; }catch(_){}
+        return EC().load(VAR,null,b);
       }).then(f=>{
         loading=false;
         if(!f){ lastErr='load';
@@ -248,6 +296,8 @@ window.IntMapModules.wind=function(HOST){
         /* (#R290 追記2) …for the SAME band this layer reads. Warming the planet in front of a step
            that needs one band is how the wait got worse rather than better — see wx-ecmwf. */
         if(opt&&opt.step){ try{ EC().prefetch(['wind_u_component_10m','wind_v_component_10m'],Math.min(EC().count()-1,EC().index()+1),band()); }catch(_){} }
+        /* (#R297) …and the rest of what is on screen, behind the picture that is already moving */
+        setTimeout(widen,0);
         return f;
       }).catch(()=>{ loading=false; lastErr='load';
         try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
@@ -265,12 +315,18 @@ window.IntMapModules.wind=function(HOST){
         zoom:()=>{ try{ return GE().camera.getZoom(); }catch(_){ return 2; } },
         randomLL:()=>{
           let b=null; try{ b=GE().camera.getBounds(); }catch(_){}
-          for(let k=0;k<6;k++){
+          /* (#R297) …and inside the band that is actually loaded. While the first, narrow read is
+             the only frame in hand (see `widen`), a particle spawned outside it samples NaN and is
+             thrown away again on the next frame — so the band would look thin rather than full.
+             The check is the field's own answer, which costs one grid lookup. */
+          const hb=(()=>{ try{ return EC().heldBand(VAR); }catch(_){ return null; } })();
+          for(let k=0;k<8;k++){
             let lo,la;
             if(b){ const w=b.getWest(),e=b.getEast(),s=Math.max(-89,b.getSouth()),n=Math.min(89,b.getNorth());
               lo=(e<w)?(w+(e+360-w)*Math.random()):(w+(e-w)*Math.random()); if(lo>180) lo-=360;
               la=s+(n-s)*Math.random(); }
             else { lo=Math.random()*360-180; la=Math.random()*178-89; }
+            if(hb&&(la<hb[1]||la>hb[3])) continue;
             if(HOST.proj!=='globe'||visibleLL(lo,la)) return [lo,la];
           }
           return null;
@@ -380,7 +436,9 @@ window.IntMapModules.wind=function(HOST){
       const ul=(()=>{ try{ return window.windUnitLabel(); }catch(_){ return 'm/s'; } })();
       let bar='';
       if(lg){
-        const ticks=[0,0.25,0.5,0.75,1].map(k=>({pos:k*100,txt:Math.round((lg.min+(lg.max-lg.min)*k)*f)}));
+        /* (#R297) the key reads to 30 m/s — see IntMapECMWF.legend. `capped` is true when the ramp
+           continues past the last tick, and the 「+」 is what says so. */
+        const ticks=[0,0.25,0.5,0.75,1].map(k=>({pos:k*100,txt:Math.round((lg.min+(lg.max-lg.min)*k)*f)+((k===1&&lg.capped)?'+':'')}));
         bar='<div class="ecl-bar" style="background:'+lg.css+';"></div>'
           +'<div class="ecl-ticks">'+ticks.map(k=>'<span style="left:'+k.pos.toFixed(1)+'%">'+k.txt+'</span>').join('')+'</div>';
       }
@@ -712,7 +770,9 @@ window.IntMapModules.weatherEC=function(HOST){
       const lg=EC().legend(cfg.variable,dark);
       if(!lg) return '<div class="ecl-desc">'+ecDesc(cfg)+'</div>';
       const u=unitOf(cfg.kind,lg.unit);
-      const ticks=[0,0.25,0.5,0.75,1].map(f=>{ const v=lg.min+(lg.max-lg.min)*f; return { pos:f*100, txt:nice(convert(cfg.kind,v)) }; });
+      /* (#R297) …and the same 「+」 rule as the wind box when the ramp runs past the last tick */
+      const ticks=[0,0.25,0.5,0.75,1].map(f=>{ const v=lg.min+(lg.max-lg.min)*f;
+        return { pos:f*100, txt:nice(convert(cfg.kind,v))+((f===1&&lg.capped)?'+':'') }; });
       return '<div class="ecl-unitline">'+u+'</div>'
         +'<div class="ecl-bar" style="background:'+lg.css+';"></div>'
         +'<div class="ecl-ticks">'+ticks.map(k=>'<span style="left:'+k.pos.toFixed(1)+'%">'+k.txt+'</span>').join('')+'</div>'

@@ -50,7 +50,12 @@ test('#R284 ① a wired country never gets the 「未対応」 hatch', () => {
   assert.match(body, /if\(readState\(c\)!=='ok'\)\s*return\s*0;/,
     '「未対応」 and 「データがまだ入っていない」 are the same silence, and it is the hatch');
   assert.ok(!/return\s*-1;/.test(body), '#R284’s fourth state must be gone');
-  assert.match(WP(), /const COLD_CALLS=6;/, '…and the burst that makes the hatch transient survives');
+  /* ⚠ (#R297) pin the RELATION rather than the number: what makes the hatch transient is that the
+     burst is WIDER than the steady rotation. #R297 widened it after measuring that every country is
+     READ inside 45 s and what keeps moving afterwards is shapes, not reads. */
+  const cold = +(/const COLD_CALLS=(\d+);/.exec(WP()) || [])[1];
+  const slots = +(/const MA_SLOTS=(\d+);/.exec(WP()) || [])[1];
+  assert.ok(cold > slots, `the burst that makes the hatch transient survives (${cold} vs ${slots})`);
   /* and the two paint expressions still read the tier the way the four states assume */
   /* ⚠ (#R293) the condition moved into `hatchOp(v)` — the opacity slider used to write its scalar
      straight over the inline expression, so EVERY country was hatched at 38 % (measured). The
@@ -87,8 +92,12 @@ test('#R284 ③ the shape library accumulates, and there is a rung that does not
   const src = WP();
   const i = src.indexOf('function askSwicGeo(');
   const body = src.slice(i, src.indexOf('function gbIndex(', i));
-  assert.match(body, /const by=swicGeoBy\[iso\]\|\|Object\.create\(null\)/,
+  /* ⚠ (#R297) the merge moved into `_swicGeoApply`, which the network read AND the library kept
+     between visits both go through — the same property, now covering one more caller. */
+  const apply = src.slice(src.indexOf('function _swicGeoApply('), src.indexOf('function warmSwicGeo('));
+  assert.match(apply, /const by=swicGeoBy\[iso\]\|\|Object\.create\(null\)/,
     'a later read MERGES into the library instead of replacing it');
+  assert.match(body, /_swicGeoApply\(iso,d\.areas\)/, 'and the network read goes through it');
   assert.ok(!/const by=Object\.create\(null\); let n=0;[\s\S]{0,200}swicGeoBy\[iso\]=by; SHAPELIB\[iso\]=n;/.test(body),
     'the replace-wholesale version must be gone');
   assert.match(body, /SWIC_GEO_RETRY_MS/, 'a member that answered with nothing is asked again later');

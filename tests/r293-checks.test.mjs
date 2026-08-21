@@ -195,9 +195,15 @@ test('R293 ⑤ boundary sets are cached, gated, and ADM2 is earned rather than a
   /* ③ boundaries are cached — they are not news */
   assert.match(s, /const BND_CACHE='intmap-bnd-v1';/);
   assert.match(s, /async function bndJSON\(u\)\{ const hit=await bndCached\(u\); if\(hit\) return hit;/);
-  for (const u of ['class10s.json', 'JP_MUNI_URL', 'ne_50m_admin_1', 'NUTS_RG_20M', 'cnUrl'])
+  /* ⚠ (#R297) the Eurostat urls are built from a base constant now (a finer generalisation was
+     added for 「境界線解像度が低すぎる」, and two literals would have been two places to change), so
+     the needle is that constant. Everything else is unchanged. */
+  for (const u of ['class10s.json', 'JP_MUNI_URL', 'ne_50m_admin_1', 'NUTS_BASE+', 'cnUrl'])
     assert.ok(new RegExp('bndJSON\\((?:\'[^\']*)?' + u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(s),
       u + ' is fetched through the cache');
+  assert.match(s, /const NUTS_BASE='https:\/\/gisco-services\.ec\.europa\.eu[^']*';/,
+    'and that base is the Eurostat distribution');
+  assert.match(s, /NUTS_RG_20M_2021_4326_LEVL_3\.geojson/, '…still holding the floor generalisation');
   /* ⚠ a WARNING is never cached — only the shapes it is drawn on */
   assert.ok(!/bndJSON\(relay\(/.test(s), 'no live warning feed goes through the boundary cache');
   assert.ok(!/bndJSON\([^)]*swic/.test(s), '…including the register’s own shapes, which are today’s');

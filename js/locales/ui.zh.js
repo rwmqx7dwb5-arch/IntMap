@@ -79,8 +79,6 @@ window.IntMapLang.define('zh', {
     "eyeAltOff":"關閉（預設）",
     "eyeAltOn":"開啟 — 顯示相機高度",
     "favLayers":"常用圖層",
-    "flatPanFixed":"範圍固定（以歐洲為中心）",
-    "flatPanFree":"自由捲動（可繞行世界）",
     "labelLangEn":"一律英文",
     "labelLangLocal":"當地語言（原生文字）",
     "labelLangUi":"與應用語言相同",
@@ -91,7 +89,6 @@ window.IntMapLang.define('zh', {
     "lblEngine":"地圖引擎",
     "lblEyeAlt":"讀數中的視點高度",
     "lblFeedback":"意見回饋與錯誤回報",
-    "lblFlatPan":"平面地圖的顯示",
     "lblKbd":"鍵盤快速鍵",
     "lblLabelLang":"地名標註",
     "lblLang":"語言",
@@ -529,6 +526,7 @@ window.IntMapLang.define('zh', {
     'az.': "方位",   /* satellites-live.js */
     'Azimuth': "方位角",   /* satellite-detail.js sims.js */
     'back a quarter cycle (6h12m)': "回退四分之一週期（6小時12分）",   /* world-packs.js */
+    'back about a quarter cycle (6 h)': "回退約四分之一週期（6小時）",   /* world-packs.js */
     'back to now': "回到現在",   /* night-sky.js */
     'Back to now': "回到現在",   /* atlas-console.js news-timeline.js */
     'Back to statistics': "回到統計",   /* stats-compare.js */
@@ -1441,6 +1439,8 @@ window.IntMapLang.define('zh', {
     'off-field': "場外",   /* flight-sim.js */
     'on': "開",   /* atlas-console.js */
     'on a quarter cycle (6h12m)': "前進四分之一週期（6小時12分）",   /* world-packs.js */
+    'on about a quarter cycle (6 h)': "前進約四分之一週期（6小時）",   /* world-packs.js */
+    'Worldwide': "全球",   /* world-packs.js */
     'on the ground': "在地面",   /* aircraft-detail.js */
     'on the ground — released just above the field, flying': "在地面 — 於場區上空稍高處釋放，飛行中",   /* aircraft-detail.js */
     'on the line': "在線上",   /* analysis-panels.js */

@@ -136,14 +136,50 @@ window.IntMapModules.worldPacks=function(HOST){
         const xi=ring[i][0], yi=ring[i][1], xj=ring[j][0], yj=ring[j][1];
         if(((yi>pt[1])!==(yj>pt[1]))&&(pt[0]<(xj-xi)*(pt[1]-yi)/((yj-yi)||1e-15)+xi)) inside=!inside; }
       return inside; }
-    function countryAt(lng,lat){
+    /* ══ ⚠⚠⚠ (#R297) A BOX BEFORE A RING ═══════════════════════════════════════════════════════
+       MEASURED with a CPU profile of the deployed build, 50 s with the warnings layer on:
+       **`ptInRing` ← `countryAt` ← `learnCoverage` ← `publishNow` = 5,562 ms**, i.e. one ninth of
+       all the JavaScript the page ran. This walked EVERY ring of EVERY country until it found a
+       hit — and `hiResCountries()` swaps the outlines for the detailed set the moment the layer is
+       switched on, so each of those rings is thousands of vertices.
+       A bounding box rejects almost all of them in four comparisons. The boxes are built once per
+       country collection and rebuilt when the collection itself is swapped (the hi-res upgrade is
+       exactly that), which is why the source object's identity is the key rather than a flag.
+       ⚠ THE ANSWER IS UNCHANGED: a box is a superset of the shape, so nothing a ring would have
+       matched is skipped. #R290 made this callable once per unit; this makes the call cheap. */
+    let _cBoxes=null, _cBoxSrc=null;
+    function countryBoxes(){
       const g=HOST.countryGeo; if(!g||!g.features) return null;
-      for(const f of g.features){ const gm=f.geometry; if(!gm) continue;
-        const polys=(gm.type==='Polygon')?[gm.coordinates]:(gm.type==='MultiPolygon'?gm.coordinates:[]);
-        for(const p of polys){ if(!p||!p[0]) continue;
-          if(!ptInRing([lng,lat],p[0])) continue;
-          let hole=false; for(let h=1;h<p.length;h++) if(ptInRing([lng,lat],p[h])){ hole=true; break; }
-          if(!hole) return String(f.id); } }
+      if(_cBoxes&&_cBoxSrc===g) return _cBoxes;
+      const out=[];
+      g.features.forEach(f=>{ const gm=f.geometry; if(!gm) return;
+        let w=180,e=-180,s2=90,n=-90;
+        const walk=(a)=>{ if(typeof a[0]==='number'){ if(a[0]<w)w=a[0]; if(a[0]>e)e=a[0]; if(a[1]<s2)s2=a[1]; if(a[1]>n)n=a[1]; return; }
+          for(let i=0;i<a.length;i++) walk(a[i]); };
+        try{ walk(gm.coordinates); }catch(_){ return; }
+        out.push({f:f,id:String(f.id),b:[w,s2,e,n]}); });
+      _cBoxSrc=g; return (_cBoxes=out); }
+    function _inCountry(rec,lng,lat){
+      const b=rec.b; if(lng<b[0]||lng>b[2]||lat<b[1]||lat>b[3]) return false;
+      const gm=rec.f.geometry;
+      const polys=(gm.type==='Polygon')?[gm.coordinates]:(gm.type==='MultiPolygon'?gm.coordinates:[]);
+      for(const p of polys){ if(!p||!p[0]) continue;
+        if(!ptInRing([lng,lat],p[0])) continue;
+        let hole=false; for(let h=1;h<p.length;h++) if(ptInRing([lng,lat],p[h])){ hole=true; break; }
+        if(!hole) return true; }
+      return false; }
+    function countryAt(lng,lat){
+      const list=countryBoxes(); if(!list) return null;
+      for(let i=0;i<list.length;i++) if(_inCountry(list[i],lng,lat)) return list[i].id;
+      return null; }
+    /* (#R297) …and the only caller that runs thousands of times asks a narrower question: 「is this
+       point in a country NOBODY covers」. `pred` is given the iso so the caller can skip the 150-odd
+       countries whose answer it would throw away. */
+    function countryAtWhere(lng,lat,pred){
+      const list=countryBoxes(); if(!list) return null;
+      for(let i=0;i<list.length;i++){ const r=list[i];
+        if(pred&&!pred(r.id)) continue;
+        if(_inCountry(r,lng,lat)) return r.id; }
       return null; }
     function countryName(iso3){
       try{ const s=HOST.countryStats&&HOST.countryStats[iso3]; if(s) return HOST.cName(s); }catch(_){}
@@ -330,9 +366,33 @@ window.IntMapModules.worldPacks=function(HOST){
     function whenDrawable(fn,tries){ tries=(tries==null)?80:tries;
       (function t(){ if(_imCanDraw()){ try{ fn(); }catch(e){ console.warn('worldPacks draw',e); } return; }
         if(--tries<=0) return; setTimeout(t,250); })(); }
+    /* ══ ⚠⚠⚠ (#R297) `styledata` IS NOT 「THE BASEMAP CHANGED」 — IT IS 「ANYTHING CHANGED」 ═══════
+       「警報レイヤーが重すぎる。品質保ったまま爆速にしろ。」 MEASURED with a control on the deployed
+       build (z4 over Europe, 60 s): the map ran at **3.4 fps** with this layer on against **36.5 fps**
+       with nothing on, and 78 seconds produced **62** whole-collection uploads and **9,990**
+       feature-state writes. None of the coalescing added this round moved those numbers, which is
+       the clue: the uploads were not coming through `publish()` at all.
+       MapLibre fires `styledata` for EVERY style mutation — `addLayer`, `setPaint`, `setLayout` and
+       **`setSourceData`** included, not only for a `setStyle()`. This handler existed for the ONE
+       case a basemap swap creates (the style drops every layer this file added, and #R72 records
+       what happens when nothing puts them back), and it ran on all of them. So one publish fired
+       `styledata`, which 80 ms later re-uploaded the same collection, forced a full quiet upload
+       and forced a repaint of all 258 countries — and that re-upload fired `styledata` again.
+       **A publish therefore did not settle; it oscillated,** at whatever rate the browser could
+       re-tile four thousand polygons.
+       Two things stop it, and both are needed:
+         · the dispatcher COALESCES, so a burst of mutations is one pass rather than one each;
+         · a pack's recovery must be able to tell 「my layers are gone」 from 「something changed」.
+           `ensureLayers()` already clears the content signature when it has to create a fresh
+           source (#R290), so `featsSig===''` IS that signal — the recovery re-uploads only then.
+       ⚠ THE RECOVERY ITSELF IS UNCHANGED. A real basemap swap still re-adds every layer, re-uploads
+       every collection and re-asserts every feature state; what is gone is doing it when nothing
+       was dropped. */
     const _restyle=[];
     const onRestyle=(fn)=>_restyle.push(fn);
-    try{ GE().events.on('styledata',()=>setTimeout(()=>_restyle.forEach(f=>{ try{ f(); }catch(_){} }),80)); }catch(_){}
+    let _reT=0;
+    try{ GE().events.on('styledata',()=>{ if(_reT) return;
+      _reT=setTimeout(()=>{ _reT=0; _restyle.forEach(f=>{ try{ f(); }catch(_){} }); },400); }); }catch(_){}
 
     /* ⚠ (#R210) A MAP-LEVEL CLICK HANDLER MUST CLAIM AND MUST ASK. Every family below hit-tests the
        country polygons itself, so it appears in no layer registry — exactly the class of owner that
@@ -1388,12 +1448,28 @@ window.IntMapModules.worldPacks=function(HOST){
       function hzName(w){ const t=hazardLabel(w); if(!t) return '';
         if(hazardKey(w)) return t;
         return String(t).split(/[\s,·()]+/).some(x=>x&&!HZ_DROP.test(x))?t:''; }
+      /* ══ ⚠⚠ (#R297) THE WORDING IS COMPUTED ONCE PER (WORDING, FEED, RANK), NOT PER REBUILD ══
+         `maFeatures()` rebuilds every MeteoAlarm country after every batch and `swicFeatures()`
+         does the same for the register, so this ran on the order of ten thousand times a minute —
+         and it is not cheap: `hazardKey` runs twenty-seven regular expressions over the text and
+         `shortHz` splits and re-cases it. The answer depends on the agency's words, the feed, the
+         rank and the READER'S LANGUAGE and on nothing else, so it is remembered under exactly that
+         key. ⚠ The language is part of the key because `relabel()` exists to re-word what is
+         already drawn (#R277) — a memo that ignored it would freeze the map in one language. */
+      let _hzMemo=Object.create(null), _hzLang='';
       function hzFields(raw,feed,lv){
+        let lang=''; try{ lang=String(HOST.lang||''); }catch(_){}
+        if(lang!==_hzLang){ _hzLang=lang; _hzMemo=Object.create(null); }
+        const key=feed+'\u0000'+lv+'\u0000'+raw;
+        const hit=_hzMemo[key]; if(hit) return hit;
         const words=String(raw||'').split(HZSEP).filter(Boolean);
         const named=[]; words.forEach(w=>{ const t=hzName(w); if(t&&named.indexOf(t)<0) named.push(t); });
         const hz=named[0]||rankName(feed,lv);
         const extra=Math.max(0,named.length-1);
-        return { hz:hz+(extra?(' +'+extra):''), hzs:shortHz(hz)+(extra?('+'+extra):''), nh:named.length||1 }; }
+        return (_hzMemo[key]={ hz:hz+(extra?(' +'+extra):''), hzs:shortHz(hz)+(extra?('+'+extra):''), nh:named.length||1 }); }
+      /* (#R297) unit identity → the agency's own rows for it. See the note inside unitFeature. */
+      const ROWS=Object.create(null);
+      const rowsOf=(pr)=>{ try{ return (pr&&pr.rid&&ROWS[pr.rid])||[]; }catch(_){ return []; } };
       function unitFeature(iso,feed,geometry,unit,name,rows,at,got){
         let lv=0; const kinds=[];
         (rows||[]).forEach(r=>{ const v=+r.lv||0; if(v>lv) lv=v;
@@ -1404,17 +1480,25 @@ window.IntMapModules.worldPacks=function(HOST){
            translated name and what `relabel()` re-reads when the reader changes language. */
         const hzr=kinds.join(HZSEP);
         const f=hzFields(hzr,feed,lv);
+        /* ⚠⚠⚠ (#R297) THE ROWS DO NOT TRAVEL IN THE GEOJSON. 「警報レイヤーが重すぎる。」
+           This property was `JSON.stringify(rows.slice(0,400))` — an agency's whole bulletin list,
+           re-serialised for every feature every time any feed landed, and then structure-cloned to
+           the tile worker and re-parsed there with the geometry. Nothing in the style ever read it:
+           it is what the TAP CARD and the country legend print. So it stays on this side of the
+           worker boundary, in a table keyed by the unit's own identity, and the feature carries the
+           key. Same rows, same cards, none of it in the collection the map re-tiles. */
+        const rid=iso+'\u0000'+feed+'\u0000'+unit+'\u0000'+String(name||'');
+        ROWS[rid]=(rows||[]).slice(0,400);
         return {type:'Feature',geometry,properties:{
           iso, feed, unit, name:String(name||''), lv, norm,
           colA:agCol(feed,lv), colN:PAL_NORM[norm],
           hzr, hz:f.hz, hzs:f.hzs,
-          nh:f.nh, n:(rows||[]).length, at:String(at||''), got:String(got||''),
-          items:JSON.stringify((rows||[]).slice(0,400))}}; }
+          nh:f.nh, n:(rows||[]).length, at:String(at||''), got:String(got||''), rid}}; }
       /* a unit with a feed and nothing in force — the JMA's own 「発表なし」 grey (Japan only, where
          the issuing units are all known; elsewhere the country wash below says the same thing) */
       function quietFeature(iso,feed,geometry,unit,name){
         return {type:'Feature',geometry,properties:{ iso, feed, unit, name:String(name||''),
-          lv:0, norm:0, colA:NONE_COL, colN:NONE_COL, hzr:'', hz:'', hzs:'', nh:0, n:0, at:'', got:'', items:'[]'}}; }
+          lv:0, norm:0, colA:NONE_COL, colN:NONE_COL, hzr:'', hz:'', hzs:'', nh:0, n:0, at:'', got:'', rid:''}}; }
 
       /* ══ ⚠⚠ (#R273) 「対応国も増やせ」「ソースは一国一ソース」 ══════════════════════════════════
          Fourteen national services plus the thirty-five MeteoAlarm carries, and each country appears
@@ -1475,8 +1559,10 @@ window.IntMapModules.worldPacks=function(HOST){
             if(_learnSeen[id]) return;
             _learnSeen[id]=1;
             const c=centroidOf(f.geometry); if(!c) return;
-            const at=countryAt(c[0],c[1]);
-            if(!at||at===q.iso||FEEDS[at]||LEARNED[at]) return;
+            /* (#R297) only a country with NO feed can be learned, so only those are tested — the
+               question this asks is the same one, over a hundred-odd shapes instead of 258 */
+            const at=countryAtWhere(c[0],c[1],(iso)=>iso!==q.iso&&!FEEDS[iso]&&!LEARNED[iso]);
+            if(!at) return;
             LEARNED[at]=q.feed||FEEDS[q.iso]||'';
             added++;
           }catch(_){}
@@ -1513,7 +1599,10 @@ window.IntMapModules.worldPacks=function(HOST){
          returns the same bytes — i.e. 60 s is the floor, and 90 s was above it for no reason.
          18 a tick × two ticks = 35 countries in 60 s, exactly on the floor. Asking faster would not
          make any answer newer; it would only multiply requests EUMETNET has to serve. */
-      const MA_SLOTS=3;             /* …so a full cycle is 60 s, which is the edge cache's own age */
+      /* (#R297) …and a full cycle has to come round inside the relay's edge cache, which #R297
+         halved to 30 s for 「更新が遅すぎる」: 35 countries / (6 × 6) is one tick, i.e. 20 s.
+         `tests/r277 ⑧` computes that from the two ends and fails if the cycle outruns the cache. */
+      const MA_SLOTS=6;
       /* ══ ⚠⚠⚠ (#R275) 「更新が遅すぎる。リアルタイムにと言っている。」 (2回目) ═══════════════════════
          #R273 answered this by halving the tick — 60 s to 30 s — and the tick was never what was
          wrong for most of the map. MEASURED on the built page, layer on, refresh() driven 80 times
@@ -1567,7 +1656,7 @@ window.IntMapModules.worldPacks=function(HOST){
          ⚠ A country that already has a feed never asks here — one source per country. */
       /* (#R277) three calls here too — the scan says which members have anything in force at all
          (measured, 38 of 93), so a full cycle of the ones that matter is two ticks. */
-      const SWIC_PER_TICK=6, SWIC_SLOTS=3;
+      const SWIC_PER_TICK=6, SWIC_SLOTS=6;   /* (#R297) — see the note on MA_SLOTS */
       const swicMeta={ mid:Object.create(null), dept:Object.create(null), status:Object.create(null), at:0, asked:false };
       const swicData={};            /* iso → the member summary */
       const swicAt={};              /* iso → when it was last read */
@@ -1613,7 +1702,20 @@ window.IntMapModules.worldPacks=function(HOST){
       const colField=()=>(mode==='agency'?'colA':'colN');
       function ensureLayers(){ if(!_imCanDraw()) return false; try{
         /* (#R290) a fresh source is an empty one — the content signature has to go with it */
-        if(!GE().layers.hasSource(SRC)){ featsSig=''; GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }
+        /* ══ ⚠⚠ (#R297) THE TILER IS TOLD WHAT IT MAY DROP, PER ZOOM ═════════════════════════════
+           MEASURED with a control on the deployed build: with this layer on, the profile is
+           dominated by `(program)` — the renderer itself — because at z4 over Europe the map is
+           drawing **2,557 warned units plus 1,839 quiet ones**, each with an outline, plus their
+           labels. Every re-upload re-tiles all of it.
+           `tolerance` is Douglas–Peucker in TILE units (1/4096 of a tile) and MapLibre applies it
+           PER ZOOM, so it drops what cannot be resolved at the zoom being drawn and nothing else:
+           the default 0.375 is about a tenth of a pixel of error, and 1.2 is about a third. A
+           third of a pixel is below what a 1 px outline can express, which is why this is not the
+           same knob as 「境界線解像度が低すぎる」 — that one is about which SOURCE the shape comes
+           from (see nutsGeo), and this one is about vertices no screen can show.
+           ⚠ THE QUIET LAYER GETS MORE OF IT. Its fill is one flat grey and its outline is a hair;
+           it is the background against which the answer is read, not the answer. */
+        if(!GE().layers.hasSource(SRC)){ featsSig=''; GE().layers.addSource(SRC,{type:'geojson',tolerance:1.2,buffer:64,data:{type:'FeatureCollection',features:[]}}); }
         if(!GE().layers.has('wp-alert-fill')) GE().layers.add({id:'wp-alert-fill',type:'fill',source:SRC,
           layout:{visibility:'none'},paint:{'fill-color':['get',colField()],'fill-opacity':OPACITY_DEFAULT}});
         /* the rank is in the OUTLINE too, so it survives a fill you can see through */
@@ -1630,8 +1732,17 @@ window.IntMapModules.worldPacks=function(HOST){
            whole page down. `minzoom`/`maxzoom` are layer properties rather than expressions, so the
            same rule is expressed where it cannot be mis-typed: the abbreviation below z5, the full
            name above it. */
+        /* ══ ⚠⚠ (#R297) THE ABBREVIATION HAS A FLOOR, BECAUSE A LABEL NOBODY CAN READ STILL COSTS ══
+           `text-allow-overlap:false` means MapLibre runs symbol COLLISION over every feature in this
+           layer on every re-tile, and this layer had no `minzoom`: at the opening view that is four
+           thousand labels being placed and rejected against each other, for a picture in which the
+           whole of Belgium is nine pixels wide and not one of them could be read. Below z2.5 the
+           colour and the outline carry the answer, which is what they were given the rank for
+           (#R273); from z2.5 the abbreviation appears and above z5 the full name takes over.
+           ⚠ NOTHING IS DROPPED FROM THE DATA — this is a zoom range on a label layer, and the tap
+           card and the panel say the same thing at every zoom. */
         if(!GE().layers.has('wp-alert-lbls')) GE().layers.add({id:'wp-alert-lbls',type:'symbol',source:SRC,
-          filter:['>',['get','norm'],0], maxzoom:5,
+          filter:['>',['get','norm'],0], minzoom:2.5, maxzoom:5,
           layout:{visibility:'none','text-field':['get','hzs'],
             'text-font':['Noto Sans Regular'],
             'text-size':['interpolate',['linear'],['zoom'],2,9.5,5,11],
@@ -1913,15 +2024,51 @@ window.IntMapModules.worldPacks=function(HOST){
           .catch(()=>{ worldAsked=false;
             worldWaiting.splice(0).forEach(f=>{ try{ f(null); }catch(_){} }); });
       }
+      /* ══ ⚠⚠⚠ (#R297) 「境界線解像度が低すぎる。」 — EUROPE WAS BEING DRAWN AT 1:20 MILLION ═════════
+         Thirty-five countries' warning regions are placed against Eurostat's NUTS, and this asked
+         for the **20M** generalisation: at that scale a French département is a handful of vertices
+         and a Greek island group is a blob. #R273 already moved this once (60M → 20M) for the same
+         report; the sizes are published, so the next step is a measurement rather than a guess:
+             LEVL_3   20M 1.68 MB · 10M 2.58 MB · 03M 6.77 MB · 01M 28.18 MB
+             LEVL_2   20M 0.72 MB · 10M 1.21 MB
+         → 20M stays the FLOOR and 03M is fetched for the countries the reader is actually looking
+           at once they are past `UNIT_HIRES_Z` — the same two-tier rule #R293 wrote for the quiet
+           units, applied to the index the warnings themselves are placed against. Both are cached
+           (`bndJSON`), so the upgrade is paid once per browser.
+         ⚠ THE FLOOR IS NOT RAISED, AND THAT IS MEASURED RATHER THAN CAUTIOUS. A finer floor makes
+           every MeteoAlarm polygon heavier in the ONE collection this layer re-tiles, and at the
+           zoom the floor exists for — the whole of Europe on screen — 20M and 10M are the same
+           picture. Buying resolution nobody can see with re-tiling cost everybody pays is the
+           opposite of 「品質保ったまま爆速に」.
+         ⚠ THE FINE INDEX IS MERGED, NOT SWAPPED: a name that only the coarse file carries still
+           resolves, so the upgrade can only add detail and can never lose a placement.
+         ⚠ AND IT HAS TO REBUILD WHAT IS DRAWN. `mkey` in maFeatures names every index in hand, so a
+           fine index arriving invalidates that country's memo and its features are re-placed on the
+           finer geometry — a fix that arrives and is ignored is the shape this file has paid for. */
+      const NUTS_BASE='https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/';
+      const nutsIndex=(by,j)=>{ (j&&j.features||[]).forEach(f=>{ const p=f.properties||{};
+        const cc=String(p.CNTR_CODE||'').toUpperCase(); if(!cc||!f.geometry) return;
+        const m=by[cc]=by[cc]||Object.create(null);
+        [p.NAME_LATN,p.NUTS_NAME,p.NUTS_ID].forEach(n=>_alias(n).forEach(x=>{ const k=_norm(x); if(k&&!m[k]) m[k]=f; })); }); return by; };
       function nutsGeo(){ return SUBDIV.nuts||(SUBDIV.nuts=Promise.all([
-          bndJSON('https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_20M_2021_4326_LEVL_2.geojson'),
-          bndJSON('https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_20M_2021_4326_LEVL_3.geojson')])
-        .then(function(r){ const by=Object.create(null);
-          r.forEach(j=>(j.features||[]).forEach(f=>{ const p=f.properties||{};
-            const cc=String(p.CNTR_CODE||'').toUpperCase(); if(!cc) return;
-            const m=by[cc]=by[cc]||Object.create(null);
-            [p.NAME_LATN,p.NUTS_NAME,p.NUTS_ID].forEach(n=>_alias(n).forEach(x=>{ const k=_norm(x); if(k&&!m[k]) m[k]=f; })); }));
-          return by; })); }
+          bndJSON(NUTS_BASE+'NUTS_RG_20M_2021_4326_LEVL_2.geojson'),
+          bndJSON(NUTS_BASE+'NUTS_RG_20M_2021_4326_LEVL_3.geojson')])
+        .then(function(r){ const by=Object.create(null); r.forEach(j=>nutsIndex(by,j)); return by; })); }
+      /* the finer tier — one file, and only when the reader is close enough for it to be a
+         different picture. `nutsFineOn` is what `mkey` reads. */
+      let nutsFineOn=false, nutsFineAsked=false;
+      function askNutsFine(){
+        if(nutsFineAsked||!SUBDIV.nuts) return; nutsFineAsked=true;
+        Promise.all([SUBDIV.nuts,bndJSON(NUTS_BASE+'NUTS_RG_03M_2021_4326_LEVL_3.geojson')])
+          .then(([by,j])=>{ const before=Object.create(null);
+            /* the finer feature WINS for a name both files carry, so this rebuilds the index with
+               03M first and the 10M entries filling whatever it does not name */
+            nutsIndex(before,j);
+            Object.keys(by).forEach(cc=>{ const src=by[cc], dst=before[cc]=before[cc]||Object.create(null);
+              Object.keys(src).forEach(k=>{ if(!dst[k]) dst[k]=src[k]; }); });
+            SUBDIV.nuts=Promise.resolve(before); nutsFineOn=true;
+            return maFeatures().then(()=>{ if(on) publish(); }); })
+          .catch(()=>{ nutsFineAsked=false; }); }
       const NUTS_CC={ AUT:'AT', BEL:'BE', BGR:'BG', HRV:'HR', CYP:'CY', CZE:'CZ', DNK:'DK', EST:'EE',
         FIN:'FI', FRA:'FR', DEU:'DE', GRC:'EL', HUN:'HU', ISL:'IS', IRL:'IE', ITA:'IT', LVA:'LV',
         LTU:'LT', LUX:'LU', MLT:'MT', NLD:'NL', MKD:'MK', NOR:'NO', POL:'PL', PRT:'PT', ROU:'RO',
@@ -2324,7 +2471,7 @@ window.IntMapModules.worldPacks=function(HOST){
       const swicGeoAsked={};     /* iso → asked already (a FAILURE clears it, so it is retried) */
       const SHAPELIB={};         /* iso → how many shapes that library holds (printed, not assumed) */
       let swicGeoInflight=0;
-      const SWIC_GEO_MAX=3;      /* at most three libraries in flight, so a tick cannot become a storm */
+      const SWIC_GEO_MAX=5;      /* (#R297) five, because a cached library costs no request at all */
       /* ══ ⚠⚠⚠ (#R284) THE REGISTER'S SHAPES ARE WHAT IS IN FORCE **NOW**, AND THAT EMPTIES ════
          `?swicgeo=` returns the member's CURRENT CAP areas, so the library is only as complete as
          that member's weather. MEASURED this build, same minute: Austria 112 shapes, Poland 126,
@@ -2337,6 +2484,35 @@ window.IntMapModules.worldPacks=function(HOST){
          rather than replacing it, and a member that answered with nothing is asked again later
          instead of being written off for ever. */
       const swicGeoAt={};              /* iso → when its library was last read */
+      /* ══ ⚠⚠⚠ (#R297) THE LIBRARY A SESSION BUILDS IS KEPT ═══════════════════════════════════
+         「警報の塗漏れが多すぎる。」 (again). MEASURED on production, 78 s after switching the layer on:
+         Spain 99 of 153 areas placed, Austria 109/116, Greece 11/16, Croatia 6/13, Finland 4/9,
+         Slovakia 54/60 — about a hundred published areas with no shape.
+         WHY: every MeteoAlarm area carries an EMMA_ID and NOT ONE carries a polygon (measured, ten
+         countries, 850 areas: `poly=0` everywhere, `emma` on all of them), so those thirty-five
+         countries are placed by NAME against whatever boundary index this map holds. The index that
+         actually names 「Prelitoral de Girona」 or 「Meseta cacereña」 is the one the SAME service
+         files with the WMO — and #R284 measured why it is thin: the register holds what that member
+         has in force RIGHT NOW, so the library is only as complete as this minute's weather.
+         #R284 made it accumulate WITHIN a session. It still started empty on every visit, so every
+         reader paid the same three-minute climb, every time.
+         → the library is stored in the browser's Cache API, like every other boundary set here
+           (`bndJSON`). It is GEOMETRY, not weather: what is warned, its rank and its wording still
+           come from the country's own feed on every read. A cached entry is used immediately AND a
+           fresh read is still made, and the two are MERGED — so the library only ever grows.
+         ⚠ IT IS NOT A CACHE OF THE WARNINGS. Only `{name → geometry}` is stored; `swicData` (what
+         is in force) is never cached and is re-read on the rotation as before. */
+      const SWIC_GEO_CACHE='intmap-swicgeo-v1';
+      const SWIC_GEO_TTL=7*24*3600e3;      /* a warning region is not redrawn weekly */
+      async function swicGeoCached(mid){ try{ if(!self.caches) return null;
+        const c=await caches.open(SWIC_GEO_CACHE); const r=await c.match('swicgeo/'+mid); if(!r) return null;
+        const j=await r.json();
+        if(!j||!j.at||Date.now()-j.at>SWIC_GEO_TTL||!j.areas) return null;
+        return j.areas; }catch(_){ return null; } }
+      async function swicGeoStore(mid,areas){ try{ if(!self.caches||!areas||!areas.length) return;
+        const c=await caches.open(SWIC_GEO_CACHE);
+        await c.put('swicgeo/'+mid,new Response(JSON.stringify({at:Date.now(),areas:areas}),
+          {headers:{'content-type':'application/json'}})); }catch(_){} }
       /* ⚠ (#R288) 「警報の塗漏れが多すぎる」 — the register only ever holds what that member has in
          force RIGHT NOW (#R284), so the library grows by being asked again while the country still
          has areas it could not place. Ten minutes was the interval for BOTH cases; it is now the
@@ -2345,7 +2521,22 @@ window.IntMapModules.worldPacks=function(HOST){
          not. MEASURED before this change: Spain 107 of 157 placed, Croatia 6 of 13, Moldova 32/42. */
       const SWIC_GEO_RETRY_MS=600000;  /* an answer that helped — ask again eventually */
       const SWIC_GEO_SHORT_MS=180000;  /* …still short of a full library — ask again sooner */
+      /* (#R297) the cached library is applied at once, before anything is asked for */
+      const swicGeoWarm={};
+      function _swicGeoApply(iso,areas){
+        const by=swicGeoBy[iso]||Object.create(null); let n=0;
+        (areas||[]).forEach(a=>{ if(!a||!a.geom) return; n++;
+          _alias(a.name).forEach(x=>{ const k=_norm(x); if(k&&!by[k]) by[k]={geometry:a.geom}; }); });
+        if(!n) return false;
+        swicGeoBy[iso]=by; SHAPELIB[iso]=Object.keys(by).length;
+        return true; }
+      function warmSwicGeo(iso){
+        if(swicGeoWarm[iso]) return; swicGeoWarm[iso]=true;
+        const mid=swicMeta.mid[iso]; if(!mid) { swicGeoWarm[iso]=false; return; }
+        swicGeoCached(mid).then(areas=>{ if(areas&&_swicGeoApply(iso,areas)){
+          return maFeatures().then(()=>{ swicFeatures(); if(on) publish(); }); } }).catch(()=>{}); }
       function askSwicGeo(iso){
+        warmSwicGeo(iso);
         if(swicGeoInflight>=SWIC_GEO_MAX) return;
         /* (#R288) a country that STILL cannot place everything is on the short interval, whether or
            not it has a partial library — 「持っている」 is not 「足りている」 */
@@ -2356,12 +2547,13 @@ window.IntMapModules.worldPacks=function(HOST){
         const u=relay('swicgeo='+encodeURIComponent(mid)); if(!u) return;
         swicGeoAsked[iso]=true; swicGeoAt[iso]=Date.now(); swicGeoInflight++;
         fetchJSON(u).then(j=>{ const d=(j.members||{})[mid]; if(!d||d.error) return;
-            const by=swicGeoBy[iso]||Object.create(null); let n=0;
-            (d.areas||[]).forEach(a=>{ if(!a.geom) return; n++;
-              _alias(a.name).forEach(x=>{ const k=_norm(x); if(k&&!by[k]) by[k]={geometry:a.geom}; }); });
-            if(!n) return;
-            swicGeoBy[iso]=by; SHAPELIB[iso]=Object.keys(by).length;
-            return maFeatures().then(()=>{ if(on) publish(); }); })
+            if(!_swicGeoApply(iso,d.areas)) return;
+            /* (#R297) …and it is kept, merged with whatever was already stored for this member */
+            swicGeoCached(mid).then(old=>{ const seen=Object.create(null); const keep=[];
+              (old||[]).concat(d.areas||[]).forEach(a=>{ if(!a||!a.geom||!a.name) return;
+                const k=String(a.name); if(seen[k]) return; seen[k]=1; keep.push({name:a.name,geom:a.geom}); });
+              return swicGeoStore(mid,keep); }).catch(()=>{});
+            return maFeatures().then(()=>{ swicFeatures(); if(on) publish(); }); })
           .catch(()=>{ swicGeoAsked[iso]=false; })
           .then(()=>{ swicGeoInflight--; }); }
 
@@ -2458,7 +2650,20 @@ window.IntMapModules.worldPacks=function(HOST){
          rung — measured 0 of 7, i.e. the whole country blank. The NUTS index is also keyed by
          `NUTS_ID`, so the standard English name of each region is registered as an alias of its ID.
          This is a NAMING table, not a boundary: the shapes are still Eurostat's. */
-      const MA_ALIAS={ HUN:{ 'Central Hungary':'HU11', 'Budapest':'HU11', 'Pest':'HU12',
+      /* ══ ⚠⚠ (#R297) A COUNTRY THE LEARNING COULD NOT REACH, BECAUSE OF A NAME ══════════════════
+         「対応国も増やせ。」 #R288 made coverage a MEASUREMENT rather than a table: a drawn unit whose
+         centroid lands in a country with no feed proves that country is covered by whichever
+         service drew it. #R284 named the example it was built for — the Finnish service issues for
+         **Ahvenanmaa, which is ÅLAND, a country of its own on this map** — and it still is not
+         learned, for a reason one line down: that area cannot be PLACED. MeteoAlarm gives its
+         Finnish name and Eurostat gives the Swedish one (`FI20 · Åland`), and no amount of
+         normalising turns 「Ahvenanmaa」 into 「Åland」. So the alias table this file already keeps
+         for exactly this case gets the pair, the area is drawn, and ÅLAND is learned from its own
+         polygon rather than written into a list of supported countries.
+         ⚠ THIS IS NOT A COVERAGE TABLE. It maps ONE agency's word to ONE boundary id; who covers
+         Åland is still decided by `learnCoverage` from the shape that gets drawn. */
+      const MA_ALIAS={ FIN:{ 'Ahvenanmaa':'FI20' },
+        HUN:{ 'Central Hungary':'HU11', 'Budapest':'HU11', 'Pest':'HU12',
         'Central Transdanubia':'HU21', 'Western Transdanubia':'HU22', 'Southern Transdanubia':'HU23',
         'Northern Hungary':'HU31', 'Northern Great Plain':'HU32', 'Southern Great Plain':'HU33' } };
       function aliasUnit(idx,iso,name){ const t=MA_ALIAS[iso]&&MA_ALIAS[iso][String(name||'').trim()];
@@ -2472,12 +2677,27 @@ window.IntMapModules.worldPacks=function(HOST){
         try{ const f=(HOST.countryGeo&&HOST.countryGeo.features||[]).find(x=>String(x.id)===String(iso));
           return (f&&f.geometry)||null; }catch(_){ return null; } }
       const _shapeMemo=Object.create(null);   /* (#R290) iso → {k:<indexes in hand>, m:{name→geometry}} */
+      /* ══ ⚠⚠⚠ (#R297) ONE COUNTRY'S BATCH REBUILDS ONE COUNTRY ═════════════════════════════════
+         「警報レイヤーが重すぎる。品質保ったまま爆速にしろ。」 MEASURED on production with a control:
+         with this layer on, the map ran at **4.2 fps** against **36.1 fps** with nothing on, and
+         44.1 s of the 60 s window was main-thread blocking (control: 18.0 s).
+         This function runs after EVERY MeteoAlarm batch — six countries at a time, three to six
+         batches in flight — and it rebuilt all thirty-five countries every time, walking the
+         placement ladder and building every feature again. The answer for a country cannot change
+         while its data and the indexes it consults are the same, so the built features are kept per
+         country and only the ones whose inputs moved are rebuilt.
+         ⚠ THE KEY HAS TO NAME EVERY INPUT. `maAt[iso]` moves when that country was re-read; `mkey`
+         moves when a boundary set it can consult arrives; the language moves when the reader
+         changes it (the wording is in the feature). Miss one and a late index is ignored for ever,
+         which is the defect `_shapeMemo` was careful about one level down. */
+      const _maFeat=Object.create(null);      /* iso → {k, f:[features]} */
       async function maFeatures(){
         const isos=Object.keys(maData).filter(k=>((maData[k]||{}).areas||[]).length);
         if(!isos.length){ SIDE.ma=[]; return; }
         let nuts=null; try{ nuts=await nutsGeo(); }catch(_){ nuts=null; }
         try{ await withCountryGeo(); }catch(_){}
         const out=[];
+        let _lang=''; try{ _lang=String(HOST.lang||''); }catch(_){}
         isos.forEach(iso=>{ const d=maData[iso]||{}; const cc=NUTS_CC[iso];
           const idx=(nuts&&cc&&nuts[cc])||null; const lib=swicGeoBy[iso]||null;
           const gb=gbBy[iso]||null; let placed=0, missed=0;
@@ -2490,14 +2710,22 @@ window.IntMapModules.worldPacks=function(HOST){
              indexes it consults are the same, so it is remembered; a NEW index arriving (the WMO
              register's shapes, geoBoundaries, the world file) invalidates that country's memo,
              which is what keeps a late-arriving boundary set from being ignored. */
-          const mkey=(gb?'g':'-')+(wa?'w':'-')+(lib?'l':'-')+(idx?'n':'-');
+          const mkey=(gb?'g':'-')+(wa?'w':'-')+(lib?'l':'-')+(idx?(nutsFineOn?'N':'n'):'-')
+            +(SHAPELIB[iso]||0)+'/'+(gb?Object.keys(gb).length:0);
+          /* (#R297) …and the whole country's features under the same key plus its own read time */
+          const fkey=mkey+'\u0000'+(maAt[iso]||0)+'\u0000'+_lang;
+          const done=_maFeat[iso];
+          if(done&&done.k===fkey){ done.f.forEach(x=>out.push(x)); return; }
           let memo=_shapeMemo[iso];
           if(!memo||memo.k!==mkey){ memo=_shapeMemo[iso]={k:mkey,m:Object.create(null)}; }
+          const mine=[];
           const shapeOfRaw=(a)=>{
             if(a.poly){ const g=capPolygon(a.poly); if(g) return g; }
             if(lib){ const f=lookupUnit(lib,a.name); if(f&&f.geometry) return f.geometry; }
-            if(idx){ const f=lookupUnit(idx,a.name); if(f&&f.geometry) return f.geometry;
-              const al=aliasUnit(idx,iso,a.name); if(al) return al.geometry; }
+            /* (#R297) the alias is an EXPLICIT statement about one name, so it is asked before the
+               fuzzy rungs inside lookupUnit can answer with something merely close */
+            if(idx){ const al=aliasUnit(idx,iso,a.name); if(al) return al.geometry;
+              const f=lookupUnit(idx,a.name); if(f&&f.geometry) return f.geometry; }
             /* (#R284) the stable administrative index, for a unit none of the above names */
             if(gb){ const f=lookupUnit(gb,a.name); if(f&&f.geometry) return f.geometry; }
             /* (#R290) …and the world index LAST, because the closer rungs measure better where they
@@ -2519,7 +2747,8 @@ window.IntMapModules.worldPacks=function(HOST){
               sub:String(e.event||a.name||''), unit:'region', lv:(e.tier||lv), tier:normOf('meteoalarm',e.tier||lv),
               kind:String(e.event||''), status:String(e.severity||'') }));
             const ft=unitFeature(iso,'meteoalarm',g,'region',String(a.name||''),rows,String(a.sent||''),String(d.fetchedAt||''));
-            if(ft) out.push(ft); });
+            if(ft){ out.push(ft); mine.push(ft); } });
+          _maFeat[iso]={k:fkey,f:mine};
           PLACED[iso]=[placed,(d.areas||[]).length];
           let u=0; (d.areas||[]).forEach(a=>{ if(!shapeOf(a)){ const n=normOf('meteoalarm',a.tier||1); if(n>u) u=n; } });
           UNPL[iso]=u;
@@ -2557,7 +2786,16 @@ window.IntMapModules.worldPacks=function(HOST){
         /* a member the WMO records as Completed, and that no other feed already covers, is ours */
         Object.keys(swicMeta.mid).forEach(c=>{ if(!FEEDS[c]&&swicMeta.status[c]===1) FEEDS[c]='swic'; });
         Object.keys(swicMeta.mid).forEach(c=>{ if(FEEDS[c]==='swic'&&swicMeta.status[c]!==1) delete FEEDS[c]; });
-        swicMeta.at=Date.now(); }
+        swicMeta.at=Date.now();
+        /* ══ ⚠⚠ (#R297) THE STORED LIBRARY IS APPLIED BEFORE ANYTHING IS ASKED FOR ═════════════
+           `askSwicGeo` is only reached once a country has FAILED to place something, so a reader
+           who returns to the map paid the whole climb again before the library they already had was
+           consulted. The member table is the first moment `mid` is known for every country, so it is
+           the first moment the cache can be read — and reading it costs no request at all.
+           ⚠ ONLY the countries this map places by NAME need it: a member whose own feed carries its
+           polygons (`swic`) is answered by its own data, and asking for a library it will not use
+           would be a cache read per country for nothing. */
+        Object.keys(MA).forEach(c=>{ if(swicMeta.mid[c]) warmSwicGeo(c); }); }
       /* ⚠⚠ (#R275) THE SCAN IS WHAT MAKES 「発表なし」 AN OBSERVATION. Without it, ninety-three
          members fetched six at a time is a four-minute sweep during which the map paints grey over
          countries it has not read — 「発令されていないだけの地域は灰色に」 would be a guess for most of
@@ -2589,12 +2827,19 @@ window.IntMapModules.worldPacks=function(HOST){
         isos.forEach(c=>{ const d=(j.members||{})[swicMeta.mid[c]];
           if(d&&!d.error){ swicData[c]=d; swicAt[c]=Date.now(); seenAt('swic',d.fetchedAt); } });
         swicFeatures(); }
+      /* (#R297) …and the register's members are rebuilt the same way — see the note on maFeatures */
+      const _swFeat=Object.create(null);
       function swicFeatures(){
         const out=[];
         let anyMissed=false;
+        let _lang=''; try{ _lang=String(HOST.lang||''); }catch(_){}
         Object.keys(swicData).forEach(iso=>{ const d=swicData[iso]||{}; let placed=0, u=0;
           const lib=swicGeoBy[iso]||null;
           const wa=(WORLD&&WORLD.names[iso])||null;
+          const fkey=(swicAt[iso]||0)+'\u0000'+(SHAPELIB[iso]||0)+'\u0000'+(WORLD?1:0)+'\u0000'+_lang;
+          const done=_swFeat[iso];
+          if(done&&done.k===fkey){ done.f.forEach(x=>out.push(x)); if(done.missed) anyMissed=true; return; }
+          const mine=[]; let missed=false;
           (d.areas||[]).forEach(a=>{
             const lv=+a.tier||1;
             /* ⚠ (#R290) THE REGISTER'S OWN SHAPE FIRST, THEN A NAME. A member whose bulletin names
@@ -2604,14 +2849,18 @@ window.IntMapModules.worldPacks=function(HOST){
                geometry), then the world administrative index. */
             if(!a.geom&&lib){ const f=lookupUnit(lib,a.name); if(f&&f.geometry) a.geom=f.geometry; }
             if(!a.geom&&wa){ const f=lookupUnit(wa,a.name); if(f&&f.geometry) a.geom=f.geometry; }
-            if(!a.geom){ anyMissed=true; if(normOf('swic',lv)>u) u=normOf('swic',lv); return; }
+            /* (#R297) …and a member that files a bulletin with no polygon asks for ITS OWN shape
+               library, exactly as a MeteoAlarm country does — same source, same agency, and the
+               library is kept between visits (see swicGeoCached). */
+            if(!a.geom){ anyMissed=true; missed=true; askSwicGeo(iso); if(normOf('swic',lv)>u) u=normOf('swic',lv); return; }
             placed++;
             const ev=(a.events&&a.events.length)?a.events:[{event:'',severity:'',tier:lv}];
             const rows=ev.slice(0,40).map(e=>({ area:String(a.name||''), adm:String(a.name||''),
               sub:String(e.event||a.name||''), unit:'area', lv:(+e.tier||lv), tier:normOf('swic',+e.tier||lv),
               kind:String(e.event||''), status:String(e.severity||'') }));
             const ft=unitFeature(iso,'swic',a.geom,'area',String(a.name||''),rows,String(a.sent||''),String(d.fetchedAt||''));
-            if(ft) out.push(ft); });
+            if(ft){ out.push(ft); mine.push(ft); } });
+          _swFeat[iso]={k:fkey,f:mine,missed:missed};
           PLACED[iso]=[placed,(d.areas||[]).length];
           UNPL[iso]=u; });
         if(anyMissed) askWorldAdm1();
@@ -2861,6 +3110,8 @@ window.IntMapModules.worldPacks=function(HOST){
       function upgradeUnitsInView(){ if(!on) return;
         let z=0; try{ z=GE().camera.getZoom(); }catch(_){ return; }
         if(!(z>=UNIT_HIRES_Z)) return;
+        /* (#R297) …and the index the WARNINGS are placed against, not only the quiet units */
+        askNutsFine();
         try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||'');
           if(!c||upAsked[c]||!UNITS[c]||!COARSE.test(UNIT_SRC[c]||'')) return;
           if(!inView(f)) return;
@@ -2950,7 +3201,7 @@ window.IntMapModules.worldPacks=function(HOST){
           /* ⚠ (#R290) a style reload drops the source, so the content signature that lets
              `publishQuiet` skip an identical upload has to be cleared with it — otherwise the
              optimisation would leave an empty source on the map after every basemap change. */
-          if(!GE().layers.hasSource(QSRC)){ quietSig=''; GE().layers.addSource(QSRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }
+          if(!GE().layers.hasSource(QSRC)){ quietSig=''; GE().layers.addSource(QSRC,{type:'geojson',tolerance:2.5,buffer:48,data:{type:'FeatureCollection',features:[]}}); }
           if(!GE().layers.has(QFILL)) GE().layers.add({id:QFILL,type:'fill',source:QSRC,layout:{visibility:'none'},
             paint:{'fill-color':QUIET_COL,'fill-opacity':1}},before);
           /* the DIVISION is half the answer — without an outline a hundred grey units are one grey
@@ -2963,7 +3214,18 @@ window.IntMapModules.worldPacks=function(HOST){
       /* (#R290) the tier each country was last WRITTEN with — `setFeatureState` was being called
          25,713 times in 75 seconds to write the value that was already there */
       let tierWritten=Object.create(null);
-      function paintCountries(force){ withCountrySource().then(()=>{ if(!on) return;
+      /* ══ ⚠⚠ (#R297) …AND SO IS THE COUNTRY SHEET ══════════════════════════════════════════════
+         `paintCountries()` is called from the publish, from `moveend`, and from six feed callbacks,
+         and each call walks all 258 countries and asks `withCountrySource()` for a promise first.
+         `tierWritten` already stops it WRITING a state that has not changed (#R290), but the walk
+         and the promise happen anyway. Coalesced on the same window as the publish, a burst of
+         batches costs one walk. `paintCountries(true)` — a style reload, or the layer being switched
+         on — still runs at once, because those are the moments the whole thing has to be re-asserted. */
+      let paintT=0;
+      function paintCountries(force){
+        if(!force){ if(paintT) return; paintT=setTimeout(()=>{ paintT=0; _paintCountriesNow(false); },PUBLISH_MS); return; }
+        clearTimeout(paintT); paintT=0; _paintCountriesNow(true); }
+      function _paintCountriesNow(force){ withCountrySource().then(()=>{ if(!on) return;
         if(!ensureChoro()) { whenDrawable(()=>{ if(on&&ensureChoro()) paintCountries(true); }); return; }
         if(force){ tierWritten=Object.create(null); _cFeat=Object.create(null); }
         try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||''); if(!c) return;
@@ -3004,10 +3266,25 @@ window.IntMapModules.worldPacks=function(HOST){
         for(let i=0;i<list.length;i++){ const q=list[i]&&list[i].properties; if(!q) continue;
           mix(q.iso); mix(q.feed); mix(q.name); mix(q.norm); mix(q.lv); mix(q.colA); mix(q.colN); mix(q.hz); mix(q.nh); }
         return list.length+':'+h; }
+      /* ══ ⚠⚠ (#R297) THE COLLECTION IS UPLOADED ONCE PER BURST, NOT ONCE PER BATCH ═════════════
+         #R290 coalesced this at 160 ms, which merges two batches that land in the same frame and
+         nothing else: MEASURED on production, **62 whole-collection uploads in 78 seconds** with up
+         to 3,792 polygons in each — the cold rotation alone lands six batches a second at the start.
+         Each upload is a structured clone to the tile worker plus a full re-tile and a buffer
+         upload on the way back, and that is where the 4.2 fps went.
+         So the window is the rate at which a READER can see a change rather than the rate at which
+         batches land — a warning that lands is drawn within `PUBLISH_MS`, and the data itself is up
+         to a minute old because that is the relay's edge cache. At most one upload per window,
+         trailing, so the last batch of a burst
+         is always the one that gets drawn. `publishNow()` stays available for the caller that must
+         not wait (`toggle`), and nothing is dropped — the data is in `feats` the moment it lands. */
+      const PUBLISH_MS=1500;
+      let pubLast=0;
       function publish(){ if(pubT) return;
-        pubT=setTimeout(()=>{ pubT=0; publishNow(); },160); }
+        const wait=Math.max(60,PUBLISH_MS-(Date.now()-pubLast));
+        pubT=setTimeout(()=>{ pubT=0; publishNow(); },wait); }
       function publishNow(){
-        clearTimeout(pubT); pubT=0;
+        clearTimeout(pubT); pubT=0; pubLast=Date.now();
         feats=baseFeats.concat(SIDE.cma,SIDE.bom,SIDE.ma,SIDE.phl,SIDE.cwa,SIDE.nzl,SIDE.swic);
         learnCoverage(feats);            /* (#R288) the polygons are the evidence — see learnCoverage */
         drawnISO=Object.create(null);
@@ -3026,7 +3303,7 @@ window.IntMapModules.worldPacks=function(HOST){
                                                            reads, so it runs BEFORE the sheet */
         paintCountries();
         askUnitsInView();
-        if(on&&panel.shown()) overview(); }
+        if(on&&panel.shown()) showPanel(); }
 
       /* ══ ⚠⚠ (#R277) A LANGUAGE CHANGE RELABELS WHAT IS ALREADY DRAWN ════════════════════
          「警報名は設定言語で書け。」 Every feature carries `hzr` — the issuing agency's own wording — so
@@ -3036,13 +3313,13 @@ window.IntMapModules.worldPacks=function(HOST){
         try{ feats.forEach(f=>{ const q=f&&f.properties; if(!q||!q.hzr) return;
           const x=hzFields(q.hzr,q.feed,q.lv); q.hz=x.hz; q.hzs=x.hzs; q.nh=x.nh; }); }catch(_){}
         whenDrawable(()=>{ if(ensureLayers()){ featsSig=featSig(feats); GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); } });
-        if(on&&panel.shown()) overview(); }
+        if(on&&panel.shown()) showPanel(); }
       try{ window.addEventListener('intmap-lang',()=>{ if(on) relabel(); }); }catch(_){}
 
       /* ⚠ 「更新が遅すぎる。リアルタイムにと言っている。」 — thirty seconds while the layer is on and the
          tab is visible, and an immediate refresh when the tab comes back. The relay's edge cache is
          what stops that becoming thirty upstream requests a minute. */
-      const TICK_MS=30000;
+      const TICK_MS=20000;
       const FEED_KEYS=['jma','nws','eccc','meteoalarm','swic','cma','bom','inmet','hko','dwd','metno','pagasa','cwa','metservice'];
       /* ══ ⚠⚠ (#R277) THE ROTATION REFILLS ITS OWN SLOTS ═════════════════════════════
          Starting batches only ON the tick caps the cycle at `MA_CALLS` countries-worth every 30 s
@@ -3053,7 +3330,7 @@ window.IntMapModules.worldPacks=function(HOST){
          own sixty seconds of edge cache: a country read more recently than that would answer with
          the SAME BYTES, so asking is pure cost — for us and for the service. 「リアルタイム」 here
          means 「as new as the transport can be」, and the transport says sixty seconds. */
-      const MIN_AGE_MS=45000;
+      const MIN_AGE_MS=25000;
       /* ══ ⚠⚠ (#R284) A COLD ROTATION SPRINTS; A WARM ONE CRUISES ═══════════════════════════════
          「更新が遅すぎる。リアルタイムにと言っている。」 (4回目). The steady-state cycle is already at the
          floor the transport allows — the relay's edge cache is sixty seconds, so asking a country
@@ -3067,7 +3344,15 @@ window.IntMapModules.worldPacks=function(HOST){
          → while any wired country is still unread the rotation runs at `COLD_CALLS` slots and drops
          back to `MA_CALLS` the moment it has been round once. The burst is bounded by the number of
          countries, so it happens once per session and never repeats. */
-      const COLD_CALLS=6;
+      /* (#R297) 「更新が遅すぎる。リアルタイムにと言っている。」 (5回目) — MEASURED on production, from
+         switching the layer on: every MeteoAlarm country and every WMO member was READ by t+45 s
+         (35/35 and 93/93), and the steady-state age of the oldest country was 34 and 39 seconds,
+         i.e. one edge-cache lifetime. What was still moving after that was the number of areas on
+         the map — 1,361 at t+20 s, 2,454 at t+45 s, 2,691 at t+75 s — and that rise is not new
+         READS, it is shapes arriving. So the cold burst is wider and the shape libraries are kept
+         between visits (see swicGeoCached); the poll interval below moves too, but it was never
+         the thing that made the first minute slow. */
+      const COLD_CALLS=10;
       const maCold=()=>Object.keys(MA).some(k=>!maData[k]);
       const swicCold=()=>swicHot().some(k=>!swicData[k]);
       function pumpMA(){ if(!on) return;
@@ -3076,7 +3361,7 @@ window.IntMapModules.worldPacks=function(HOST){
           const b=maNext(MA_PER_TICK); if(!b.length) break;
           maBusy++; b.forEach(k=>{ maPend[k]=1; });
           loadMA(b).then(()=>{ feedOK('meteoalarm'); if(on) publish(); })
-            .catch(e=>{ FEED_STATE.meteoalarm='error'; console.warn('MeteoAlarm',e); if(on&&panel.shown()) overview(); })
+            .catch(e=>{ FEED_STATE.meteoalarm='error'; console.warn('MeteoAlarm',e); if(on&&panel.shown()) showPanel(); })
             .then(()=>{ maBusy--; b.forEach(k=>{ delete maPend[k]; }); pumpMA(); }); } }
       function pumpSWIC(){ if(!on||!swicMeta.at) return;
         const SWIC_CALLS=swicCold()?COLD_CALLS:SWIC_SLOTS;
@@ -3084,7 +3369,7 @@ window.IntMapModules.worldPacks=function(HOST){
           const b=swicNext(SWIC_PER_TICK); if(!b.length) break;
           swicBusy++; b.forEach(k=>{ swicPend[k]=1; });
           loadSWIC(b).then(()=>{ feedOK('swic'); if(on){ publish(); paintCountries(); } })
-            .catch(e=>{ FEED_STATE.swic='error'; console.warn('WMO SWIC',e); if(on&&panel.shown()) overview(); })
+            .catch(e=>{ FEED_STATE.swic='error'; console.warn('WMO SWIC',e); if(on&&panel.shown()) showPanel(); })
             .then(()=>{ swicBusy--; b.forEach(k=>{ delete swicPend[k]; }); pumpSWIC(); }); } }
 
       async function refresh(){ if(busy) return; busy=true;
@@ -3103,16 +3388,16 @@ window.IntMapModules.worldPacks=function(HOST){
              because `busy` only covers the awaited half. */
           if(!cmaBusy){ cmaBusy=true;
             loadCMA().then(v=>{ feedOK('cma'); cmaRec=v; if(on) publish(); })
-              .catch(e=>{ FEED_STATE.cma='error'; console.warn('CMA warnings',e); if(on&&panel.shown()) overview(); })
+              .catch(e=>{ FEED_STATE.cma='error'; console.warn('CMA warnings',e); if(on&&panel.shown()) showPanel(); })
               .then(()=>{ cmaBusy=false; }); }
           loadBOM().then(v=>{ feedOK('bom'); bomRec=v; if(on) publish(); })
-            .catch(e=>{ FEED_STATE.bom='error'; console.warn('BoM warnings',e); if(on&&panel.shown()) overview(); });
+            .catch(e=>{ FEED_STATE.bom='error'; console.warn('BoM warnings',e); if(on&&panel.shown()) showPanel(); });
           ['pagasa','cwa','metservice'].forEach(k=>{ if(capBusy[k]) return; capBusy[k]=true;
             loadCAP(k).then(()=>{ feedOK(k); if(on) publish(); })
-              .catch(e=>{ FEED_STATE[k]='error'; console.warn(k+' warnings',e); if(on&&panel.shown()) overview(); })
+              .catch(e=>{ FEED_STATE[k]='error'; console.warn(k+' warnings',e); if(on&&panel.shown()) showPanel(); })
               .then(()=>{ capBusy[k]=false; }); });
-          loadHKO().then(v=>{ feedOK('hko'); hkoRec=v; if(on){ paintCountries(); if(panel.shown()) overview(); } })
-            .catch(e=>{ FEED_STATE.hko='error'; console.warn('HKO warnings',e); if(on&&panel.shown()) overview(); });
+          loadHKO().then(v=>{ feedOK('hko'); hkoRec=v; if(on){ paintCountries(); if(panel.shown()) showPanel(); } })
+            .catch(e=>{ FEED_STATE.hko='error'; console.warn('HKO warnings',e); if(on&&panel.shown()) showPanel(); });
           /* ⚠ (#R275) A ROTATION, NOT A FIRST-LOAD QUEUE — see the note on `maNext`. Each call takes
              the relay's own maximum and the batches are disjoint, so a tick advances the cycle by
              `MA_CALLS × MA_PER_TICK` countries and never asks for the same one twice. */
@@ -3132,7 +3417,7 @@ window.IntMapModules.worldPacks=function(HOST){
           if(!swicMetaBusy){ swicMetaBusy=true;
             Promise.resolve(loadSWICMeta()).then(()=>loadSWICScan())
               .then(()=>{ feedOK('swic'); if(on){ publish(); paintCountries(); } })
-              .catch(e=>{ FEED_STATE.swic='error'; console.warn('WMO SWIC',e); if(on&&panel.shown()) overview(); })
+              .catch(e=>{ FEED_STATE.swic='error'; console.warn('WMO SWIC',e); if(on&&panel.shown()) showPanel(); })
               .then(()=>{ swicMetaBusy=false; }); }
           pumpSWIC();
           publish();
@@ -3262,8 +3547,8 @@ window.IntMapModules.worldPacks=function(HOST){
         if(feed==='cma'&&cmaRec) cmaRec.items.forEach(x=>rows.push(x));
         else if(feed==='bom'&&bomRec) bomRec.items.forEach(x=>rows.push(x));
         else if(feed==='hko'&&hkoRec) hkoRec.items.forEach(x=>rows.push(x));
-        else mine.forEach(f=>{ let it=[]; try{ it=JSON.parse(f.properties.items||'[]'); }catch(_){}
-          it.forEach(x=>rows.push(Object.assign({pref:f.properties.name},x))); });
+        else mine.forEach(f=>{ rowsOf(f.properties)
+          .forEach(x=>rows.push(Object.assign({pref:f.properties.name},x))); });
         if(rows.length) h+=grouped(rows);
         else if(st==='ok') h+='<div style="margin-top:8px;color:var(--text-muted);">'
           +L('Nothing in force right now — this country’s service was read and had nothing to publish.','現在、発表中のものはありません（この国の機関を取得できており、発表がありません）。','Derzeit nichts in Kraft.','Сейчас ничего не действует.','Nada vigente ahora.')+'</div>';
@@ -3411,7 +3696,7 @@ window.IntMapModules.worldPacks=function(HOST){
           const g=by.get(p.iso)||{iso:p.iso,feed:p.feed,norm:0,lv:0,units:0,kinds:new Map()};
           by.set(p.iso,g);
           g.units++; if(p.norm>g.norm){ g.norm=p.norm; g.lv=p.lv; }
-          let it=[]; try{ it=JSON.parse(p.items||'[]'); }catch(_){}
+          const it=rowsOf(p);
           /* ⚠ A HAZARD'S RANK IS ITS OWN, not the unit's worst. The rows carry `tier`, and using the
              feature's `norm` here would order 「雷電黄色」 as if it were the province's 「暴雨紅色」 —
              the same conflation that captioned a CMA yellow 「Red (I)」, one level down. */
@@ -3520,7 +3805,7 @@ window.IntMapModules.worldPacks=function(HOST){
             const v=bt.getAttribute('data-v');
             if(kind==='pal'){ mode=(v==='norm')?'norm':'agency';
               try{ localStorage.setItem('im.alertPal',mode); }catch(_){}
-              repaintMode(); overview(); }
+              repaintMode(); showPanel(); }
           }); }); }); }
 
 
@@ -3568,6 +3853,9 @@ window.IntMapModules.worldPacks=function(HOST){
           +' · '+L('IntMap read','IntMap取得','IntMap gelesen','IntMap прочитал','IntMap leyó')+' '+(got||'—')); }
       let ptCard=null;
       function closePointCard(){ try{ if(ptCard&&ptCard.parentNode) ptCard.parentNode.removeChild(ptCard); }catch(_){} ptCard=null; }
+      /* (#R297) the tap card and the country key open together, so they close together — a panel
+         pinned to a country the reader has dismissed is a view nothing on screen explains */
+      const closeTap=()=>{ closePointCard(); if(panelISO&&on){ panelISO=''; if(panel.shown()) overview(); } };
       function pointBody(lng,lat,iso){
         const hits=alertsAt(lng,lat);
         const feed=FEEDS[iso]||LEARNED[iso];   /* (#R288) */
@@ -3599,7 +3887,7 @@ window.IntMapModules.worldPacks=function(HOST){
         } else {
           h+='<div style="margin-top:7px;display:flex;flex-direction:column;gap:5px;">'
             +hits.slice(0,6).map(f=>{ const pr=f.properties;
-              let items=[]; try{ items=JSON.parse(pr.items||'[]'); }catch(_){}
+              const items=rowsOf(pr);
               const col=(mode==='agency'?pr.colA:pr.colN);
               /* (#R277) ⚠ THE AGENCY'S OWN WORDING IS NOT REPLACED, IT IS ACCOMPANIED. The reader's
                  name for the hazard first, and what the service itself wrote in brackets after it —
@@ -3663,13 +3951,37 @@ window.IntMapModules.worldPacks=function(HOST){
           el.style.top=Math.round(Math.max(12,Math.min(96,vh-h-16)))+'px';
         }catch(_){ el.style.left='16px'; el.style.top='96px'; }
         try{ HOST.makeDraggable&&HOST.makeDraggable(el,el.querySelector('.wpa-drag')); }catch(_){}
-        try{ el.querySelector('.wpa-x').onclick=closePointCard; }catch(_){}
+        try{ el.querySelector('.wpa-x').onclick=closeTap; }catch(_){}
         try{ const mb=el.querySelector('.wpa-more-btn');
-          if(mb) mb.onclick=()=>{ panel.open('<div class="wp-a-body">'+legendFor(iso)+'</div>'); }; }catch(_){}
+          if(mb) mb.onclick=()=>{ countryPanel(iso); }; }catch(_){}
         return el; }
 
+      /* ══ ⚠⚠⚠ (#R297) 「クリックした国の凡例が表示されるように。」 ═══════════════════════════════════
+         The per-country key has existed since #R273 — the agency's own name, the unit it issues at,
+         its OWN rank ladder in its own colours, every area in force, and the count of areas it could
+         not place — and the only way to reach it was a button at the bottom of the tap card. A
+         reader who taps France sees a card about the POINT they tapped; the key that says what
+         France's colours mean was one more click away, and nothing on screen said so.
+         → a tap on a country opens that country's key in the layer's own panel, beside the map,
+         while the point card keeps answering 「what is in force HERE」. The panel remembers which of
+         the two views it is showing, because a publish lands every second or so and would otherwise
+         overwrite the country with the worldwide list a moment after it opened — which is the
+         「押しても何も起きない」 shape (#R268) with the click landing and then being undone.
+         ⚠ ONE RENDERER FOR BOTH. `showPanel()` is what every caller uses, so the two views can
+         never disagree about which one is up. */
+      let panelISO='';           /* '' = the worldwide view; otherwise the country whose key is up */
+      function showPanel(){ if(!on) return; if(panelISO) countryPanel(panelISO); else overview(); }
+      function countryPanel(iso){
+        panelISO=iso;
+        const b=panel.open('<div class="wp-a-body">'
+          +'<button type="button" class="wpa-back" style="width:100%;min-height:24px;margin-bottom:7px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;cursor:pointer;">← '
+          +esc(L('Worldwide','世界の状況','Weltweit','По миру','En todo el mundo'))+'</button>'
+          +legendFor(iso)+'</div>');
+        try{ const bk=b&&b.querySelector('.wpa-back'); if(bk) bk.onclick=()=>{ panelISO=''; overview(); }; }catch(_){}
+        return b; }
       /* what is in force RIGHT NOW, worldwide — shown the moment the layer is on, without a tap */
       function overview(){
+        panelISO='';
         ensureSegCss();
         const oldest=FEED_KEYS.map(k=>ageH(k)).filter(v=>v!=null).reduce((m,v)=>Math.max(m,v),0);
         const bad=FEED_KEYS.filter(k=>FEED_STATE[k]==='error').length;
@@ -3734,7 +4046,16 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!timer) timer=setInterval(tick,TICK_MS); }
       document.addEventListener('visibilitychange',()=>{ if(on&&!document.hidden) refresh(); });
 
-      onRestyle(()=>{ if(on) whenDrawable(()=>{ if(ensureLayers()){ featsSig=featSig(feats); GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); } applyAlertVis(); publishQuiet(true); paintCountries(true); }); });
+      /* ⚠⚠⚠ (#R297) THE RECOVERY ONLY RECOVERS. See the note on the dispatcher: this used to run on
+         every style mutation — including the one this very function makes — so a publish oscillated
+         instead of settling. `ensureLayers()` clears `featsSig` exactly when it had to build a new
+         source, so an empty signature is 「the style really did drop us」 and nothing else. */
+      onRestyle(()=>{ if(!on) return; whenDrawable(()=>{
+        if(!ensureLayers()) return;
+        const fresh=(featsSig==='');
+        if(fresh){ featsSig=featSig(feats); GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }
+        applyAlertVis();
+        publishQuiet(fresh); paintCountries(fresh); }); });
       mapClick((e)=>{ if(!on) return false;
         const lng=e.lngLat.lng, lat=e.lngLat.lat;
         const c=countryAt(lng,lat);
@@ -3748,12 +4069,14 @@ window.IntMapModules.worldPacks=function(HOST){
            point. Only the empty combination is silent, and then the click falls through. */
         if(!c&&!alertsAt(lng,lat).length){ closePointCard(); return false; }
         openPointCard(lng,lat,c);
+        /* (#R297) …and the country's own key, in the panel — see countryPanel */
+        if(c) countryPanel(c);
         /* a country whose rows have not been fetched yet is fetched NOW and the card re-renders —
            the tap is the one moment the reader is definitely waiting for THIS country */
         const again=()=>{ try{ if(ptCard){ const b=ptCard.querySelector('.wpa-pt-body');
           if(b){ b.innerHTML=pointBody(lng,lat,c);
             const mb=ptCard.querySelector('.wpa-more-btn');
-            if(mb) mb.onclick=()=>{ panel.open('<div class="wp-a-body">'+legendFor(c)+'</div>'); } } } }catch(_){} };
+            if(mb) mb.onclick=()=>{ countryPanel(c); } } } }catch(_){} };
         if(c&&MA[c]&&!maData[c]){ if(maAsked.indexOf(c)<0) maAsked.push(c);
           loadMA([c]).then(()=>{ publish(); again(); })
             .catch(()=>{ maData[c]={error:'fetch'}; again(); }); }
@@ -3814,6 +4137,9 @@ window.IntMapModules.worldPacks=function(HOST){
         /* (#R288) 「発令なし」 is drawn at the unit for these, and country-wide for the rest — the
            difference is a fact about this map, so it is counted rather than assumed */
         learned:Object.assign({},LEARNED),
+        /* (#R297) the shape libraries this browser holds — the thing that decides 「塗漏れ」 */
+        shapeLib:Object.assign({},SHAPELIB),
+        shapeLibTotal:Object.keys(SHAPELIB).reduce((n,k)=>n+(SHAPELIB[k]||0),0),
         unitCountries:Object.keys(UNITS).filter(k=>UNITS[k]&&UNITS[k].length).sort(),
         unitCount:Object.keys(UNITS).reduce((n,k)=>n+((UNITS[k]||[]).length),0),
         quietDrawn:(function(){ try{ return quietFeatures().length; }catch(_){ return 0; } })(),
@@ -3870,7 +4196,7 @@ window.IntMapModules.worldPacks=function(HOST){
           loaded:Object.keys(swicData).sort() }),
         grouped:(rows)=>grouped(rows), maCountries:()=>Object.keys(MA),
         setPalette:(m)=>{ mode=(m==='norm')?'norm':'agency'; try{ localStorage.setItem('im.alertPal',mode); }catch(_){}
-          repaintMode(); if(on&&panel.shown()) overview(); return mode; },
+          repaintMode(); if(on&&panel.shown()) showPanel(); return mode; },
         palette:()=>mode, shortHz,
         /* (#R277) what this table makes of one agency's word — so the classifier is testable
            without a map, and so an unlearned name can be FOUND rather than guessed at */
@@ -3905,7 +4231,7 @@ window.IntMapModules.worldPacks=function(HOST){
          ⚠ AND PLAYBACK MUST NOT BE A REQUEST LOOP. Each station keeps the hourly series it was
          already given, so stepping the clock inside that window is arithmetic; the network is only
          asked again when the instant leaves the window every station actually covers. */
-      let playTmr=0, playStep=20*60e3, floodTick=0;
+      let playTmr=0, playStep=3600e3, floodTick=0;   /* (#R297) one published hour per frame */
       const panel=makePanel('wp-tide-panel',()=>'🌊 '+L('Tides','潮汐','Gezeiten','Приливы','Mareas'),'wp-dl-tides',
         { legendId:'wptides', layers:()=>[LYR,PT,SEL,LBL,SELLBL],
           names:()=>(LA('🌊 Tides','🌊 潮汐（満潮・干潮）','🌊 Gezeiten','🌊 Приливы','🌊 Mareas')) });
@@ -4205,23 +4531,35 @@ window.IntMapModules.worldPacks=function(HOST){
          the instant. Steps are the shape of the phenomenon — an hour, and 6h12m, which is a quarter
          of the mean semi-diurnal period (12h25m), i.e. high water → slack → low water. */
       const TB='padding:3px 6px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;line-height:1.1;';
+      /* ══ ⚠⚠ (#R297) 「データのある時間のみを選べる、離散的な感じに。」 ═══════════════════════════════
+         The marine model publishes an HOURLY series, and this control was a bare
+         `<input type="datetime-local">` — minute resolution, so 14:37 was reachable and no sample
+         exists there — plus a 「quarter cycle」 button of 6 h 12 m, which lands on :12 for the same
+         reason. The ECMWF clocks step over the model's own index (#R290/#R293) and this one now
+         does the same thing at its own step: the field is `step=3600`, anything typed is snapped,
+         and the quarter-cycle button is six whole hours. 6 h against the mean semi-diurnal quarter
+         of 6 h 12 m is twelve minutes, and twelve minutes is not a sample. */
+      const TIDE_STEP_MS=3600e3;
+      const snapHour=(ms)=>Math.round(ms/TIDE_STEP_MS)*TIDE_STEP_MS;
       function localValue(ms){ const d=new Date(ms-new Date(ms).getTimezoneOffset()*60e3); return d.toISOString().slice(0,16); }
       function timeBar(){
         const live=isLive();
         return '<div class="wp-t-time" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:5px;">'
-          +'<button class="wp-t-step" data-d="-6.2" title="'+esc(L('back a quarter cycle (6h12m)','1/4周期戻る（6時間12分）','ein Viertelzyklus zurück','на четверть цикла назад','un cuarto de ciclo atrás'))+'" style="'+TB+'">«</button>'
+          +'<button class="wp-t-step" data-d="-6" title="'+esc(L('back about a quarter cycle (6 h)','1/4周期ほど戻る（6時間）','etwa ein Viertelzyklus zurück','примерно на четверть цикла назад','un cuarto de ciclo atrás (6 h)'))+'" style="'+TB+'">«</button>'
           +'<button class="wp-t-step" data-d="-1" title="'+esc(L('an hour back','1時間前','eine Stunde zurück','на час назад','una hora atrás'))+'" style="'+TB+'">‹</button>'
           +'<button class="wp-t-play" style="'+TB+'min-width:26px;">'+(playTmr?'⏸':'▶')+'</button>'
           +'<button class="wp-t-step" data-d="1" title="'+esc(L('an hour on','1時間後','eine Stunde weiter','на час вперёд','una hora adelante'))+'" style="'+TB+'">›</button>'
-          +'<button class="wp-t-step" data-d="6.2" title="'+esc(L('on a quarter cycle (6h12m)','1/4周期進む（6時間12分）','ein Viertelzyklus weiter','на четверть цикла вперёд','un cuarto de ciclo adelante'))+'" style="'+TB+'">»</button>'
-          +'<input class="wp-t-when" type="datetime-local" style="flex:1 1 152px;min-width:132px;'+TB+'cursor:auto;font-variant-numeric:tabular-nums;">'
+          +'<button class="wp-t-step" data-d="6" title="'+esc(L('on about a quarter cycle (6 h)','1/4周期ほど進む（6時間）','etwa ein Viertelzyklus weiter','примерно на четверть цикла вперёд','un cuarto de ciclo adelante (6 h)'))+'" style="'+TB+'">»</button>'
+          +'<input class="wp-t-when" type="datetime-local" step="3600" style="flex:1 1 152px;min-width:132px;'+TB+'cursor:auto;font-variant-numeric:tabular-nums;">'
           +'<button class="wp-t-live" style="'+TB+(live?'background:var(--primary-color);color:#fff;border-color:var(--primary-color);':'')+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
           +'</div>'; }
-      function setWhen(ms){ try{ window.IntMapTime.set(new Date(ms),{allowFuture:true,source:'tides'}); }catch(_){} }
+      function setWhen(ms){ try{ window.IntMapTime.set(new Date(snapHour(ms)),{allowFuture:true,source:'tides'}); }catch(_){} }
       function stopPlay(){ if(playTmr){ clearInterval(playTmr); playTmr=0; } }
       function togglePlay(){
         if(playTmr){ stopPlay(); }
-        else playTmr=setInterval(()=>{ if(!on){ stopPlay(); return; } setWhen(when()+playStep); },240);
+        /* (#R297) playback steps over the model's own hours too — 20 minutes was three frames per
+           published sample, i.e. two of every three frames were the same picture */
+        else playTmr=setInterval(()=>{ if(!on){ stopPlay(); return; } setWhen(when()+playStep); },420);
         const b=panel.body(), pb=b&&b.querySelector('.wp-t-play'); if(pb) pb.textContent=playTmr?'⏸':'▶'; }
       function wireTime(b){
         if(!b) return;

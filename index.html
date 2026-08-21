@@ -29,7 +29,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R296';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R297';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -44,7 +44,7 @@ window.__imBuild='R296';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-21-R296';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-21-R297';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -600,7 +600,6 @@ window.__imBuild='R296';/* (#R121) build marker — bump when verifying that a r
     <div class="setting-group"><label data-i18n="lblDockPanels">Legends and tool windows</label><select id="setting-dock-panels"><option value="off" data-i18n="dockPanelsOff">On the map (default)</option><option value="on" data-i18n="dockPanelsOn">Collected in a sidebar tab</option></select>
       <div class="sat-keys-hint" data-i18n="dockPanelsHint">Every legend, readout and tool window moves into one “Panels” tab in the left sidebar, so the map is left clear. Popups anchored to a place you clicked stay on the map.</div></div>
     <div class="setting-group"><label data-i18n="lblLabelLang">Place-name labels</label><select id="setting-label-lang"><option value="ui" data-i18n="labelLangUi">Match app language</option><option value="local" data-i18n="labelLangLocal">Local language (native script)</option><option value="en" data-i18n="labelLangEn">Always English</option></select></div>
-    <div class="setting-group"><label data-i18n="lblFlatPan">Flat map view</label><select id="setting-flat-pan"><option value="fixed" data-i18n="flatPanFixed">Fixed extent (Europe-centerd)</option><option value="free" data-i18n="flatPanFree">Free pan (wrap around the world)</option></select></div>
     <!-- (#R171) Tilt ceiling. Standard is the long-standing 78°; Unlimited hands over the renderer's whole
          range (0-180°, i.e. straight down → horizon → straight up). -->
     <div class="setting-group"><label data-i18n="lblTiltLimit">Map tilt limit</label><select id="setting-tilt-limit"><option value="standard" data-i18n="tiltStandard">Standard — up to 78° (default)</option><option value="unlimited" data-i18n="tiltUnlimited">Unlimited — the full 0–180° range</option></select>

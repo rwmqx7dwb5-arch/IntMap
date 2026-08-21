@@ -50,13 +50,21 @@ test('R223 ② the World-data speed ramp is derived from SPEED_COL, never writte
   assert.ok(!/9fc6e8,#2f7fe0,#0a2f78/.test(s), 'the legend must not carry a gradient the map no longer draws');
 });
 
-/* ── ③ the flat map scrolls freely by default, and the migration is a latch ────────────────────── */
-test('R223 ③ imFlatPan defaults to free and only an explicit choice overrides it', () => {
+/* ── ③ the flat map wraps, and there is no other mode (#R297 removed the fixed extent) ────────── */
+test('R223 ③ the flat map always renders world copies — the fixed-extent mode is gone', () => {
   const s = read('js/app-body.js');
-  assert.match(s, /window\.imFlatPan='free'/);
-  assert.match(s, /if\(s\.flatPanSet===true\s*&&\s*\(s\.flatPan==='fixed'\|\|s\.flatPan==='free'\)\)/);
-  assert.match(s, /flatPanSet:window\.imFlatPanSet===true/, 'the latch is persisted');
-  assert.match(s, /window\.imFlatPanSet=true;/, 'and set when the Settings panel is applied');
+  /* #R223's own requirement (「平面地図の表示はデフォルトでは自由スクロールに」) is now unconditional */
+  assert.match(s, /setRenderWorldCopies\(true\)/, 'a flat map always wraps');
+  /* …and the mode it replaced is gone from the app, not merely defaulted away (#R297) */
+  assert.ok(!/imFlatPan\s*=/.test(s), 'no imFlatPan state is written any more');
+  assert.ok(!/flatPanSet/.test(s), 'the explicit-choice latch is gone with it');
+  assert.ok(!/setting-flat-pan/.test(s), 'and nothing reads a Settings control for it');
+  const html = read('index.html');
+  assert.ok(!/setting-flat-pan|lblFlatPan/.test(html), 'the Settings row is removed from the markup');
+  /* the compare map follows the main map rather than a setting that no longer exists */
+  const c = read('js/compare.js');
+  assert.ok(!/imFlatPan/.test(c), 'the compare map no longer consults the removed setting');
+  assert.match(c, /function _cmpWorldCopies\(\)\{[^\n]*proj==='flat'\)/, 'it wraps whenever the main map is flat');
 });
 
 /* ── ④ the point source IS a finite rupture, and there is ONE distance conversion ──────────────── */

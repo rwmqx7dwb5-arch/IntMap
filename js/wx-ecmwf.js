@@ -849,16 +849,38 @@
     } catch (_) { return OWN[variable] || null; }
   }
   function rgbaCss(c) { return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; }
-  /* {unit, min, max, css:<linear-gradient>, stops:[{v,pos,css}]} — all a numeric legend needs. */
+  /* ══ ⚠⚠ (#R297) 「風レイヤーのカラー凡例は、30m/sまでにして。」 ═══════════════════════════════
+     The wind ramp runs to 104 m/s because that is where Windy's own paint function clamps, and
+     104 m/s is a category-5 core: nine tenths of the bar was colour nobody reading a map of Europe
+     will ever see, so the range that matters — a breeze to a gale — was squeezed into the first
+     third of it. The KEY now reads to 30 m/s and its ticks are spaced over that range.
+     ⚠ THE MAP IS NOT RE-COLOURED. The colour table is untouched (#R293 fitted it to Windy's own
+     `RGBA()` to within 3/255), so a 60 m/s jet is painted exactly as before; what changed is how
+     much of the scale the key draws. The top tick therefore carries a 「+」, because the ramp does
+     continue past it — a key that ended at 30 with no mark would be claiming 30 is the maximum,
+     which is the kind of quiet lie #R270 is about.
+     ⚠ ONE DECLARATION. `legend()` is what the wind box AND the ECMWF gust box draw from, and both
+     are the same family in the same unit, so the cap belongs here rather than in either caller. */
+  var LEGEND_MAX = { wind: 30 };
+  function legendMax(variable) {
+    try {
+      if (/^wind_(u|v)_component|^wind_gusts|^wind_speed/.test(String(variable))) return LEGEND_MAX.wind;
+    } catch (_) {}
+    return null;
+  }
+  /* {unit, min, max, css:<linear-gradient>, stops:[{v,pos,css}], capped} — all a numeric legend needs. */
   function legend(variable, dark) {
     var s = scale(variable, dark);
     if (!s) return null;
     var stops = [], min, max, i;
+    var cap = legendMax(variable);
     if (s.type === 'breakpoint') {
       var bp = s.breakpoints, cols = s.colors;
       min = bp[0]; max = bp[bp.length - 1];
+      if (cap != null && cap > min && cap < max) max = cap;
       var span = (max - min) || 1;
       for (i = 0; i < bp.length; i++) {
+        if (bp[i] > max) break;
         stops.push({ v: bp[i], pos: (bp[i] - min) / span * 100, css: rgbaCss(cols[Math.min(i, cols.length - 1)]) });
       }
     } else {
@@ -887,7 +909,8 @@
     var css = 'linear-gradient(to right,' + draw.map(function (st) {
       return st.css + ' ' + st.pos.toFixed(2) + '%';
     }).join(',') + ')';
-    return { unit: s.unit || '', min: min, max: max, stops: stops, css: css, type: s.type };
+    return { unit: s.unit || '', min: min, max: max, stops: stops, css: css, type: s.type,
+      capped: (cap != null && s.type === 'breakpoint' && s.breakpoints[s.breakpoints.length - 1] > max) };
   }
 
   /* ══ WHERE A WEATHER FIELD BELONGS IN THE STACK ═══════════════════════════════════════════════
@@ -1008,6 +1031,7 @@
     lift: lift,
     colorScales: function () { var st = omSettings(); return st && st.colorScales; },
     WINDY_WIND: WINDY_WIND,
+    LEGEND_MAX: LEGEND_MAX,
     fmt: fmt,
     on: function (f) { if (typeof f === 'function' && listeners.indexOf(f) < 0) listeners.push(f); return this; },
     off: function (f) { var i = listeners.indexOf(f); if (i >= 0) listeners.splice(i, 1); return this; },

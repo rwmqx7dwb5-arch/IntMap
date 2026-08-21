@@ -22,7 +22,14 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
    `paint(true)` again. The handler must not rebuild a layer that is still standing. */
 test('R258 ①: the crop layer only rebuilds when its layer is actually gone', () => {
   const s = read('js/world-packs.js');
-  const m = s.match(/onRestyle\(\(\)=>\{ if\(!on\) return;[\s\S]{0,400}?\}\);/);
+  /* ⚠ (#R297) NAME THE HANDLER. This matched the FIRST `onRestyle(()=>{ if(!on) return;` in the
+     file, and #R297 gave the warnings layer one that opens the same way — so the test silently
+     began asserting about a different family. The crop one is the one after the crop layer's ids.
+     (#R297 found the same loop in the warnings layer, from the other end: `styledata` fires for
+     `setSourceData` too, so an unconditional rebuild in this handler re-fires itself.) */
+  const crop = s.slice(s.indexOf("LYR='wp-crop"));
+  assert.ok(crop.length > 1000, 'the crop family was not found');
+  const m = crop.match(/onRestyle\(\(\)=>\{ if\(!on\) return;[\s\S]{0,400}?\}\);/);
   assert.ok(m, 'the crop onRestyle handler is written as an early-return guard');
   assert.match(m[0], /GE\(\)\.layers\.has\(LYR\)&&GE\(\)\.layers\.hasSource\(IMG\)\)\s*return;/,
     'it returns without touching the style when the layer and its source are both present');
