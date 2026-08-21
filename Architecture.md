@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（927行・83 KB）＋ `css/`（3本）＋ `js/`（164本・8.9 MB）＋ `src/`（8本）。**
+- **本体は `index.html`（927行・84 KB）＋ `css/`（3本）＋ `js/`（175本・9.3 MB）＋ `src/`（8本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -404,6 +404,78 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
   プロジェクト（`data/maddison.json`）。歴史的国家のクリックは**当時の名称・当時の記事**に解決する
   （現代のページへは決して飛ばさない）。
 - **年次系列を持たない指標に、誤った年を付さない。** 公開系列が無いものは版を明示するだけにする。
+
+### 7.5 ウィジェット基盤
+
+サイドバーのウィジェット板は、**定義を1つのレジストリから供給する基盤**。1ファイルではなく責務ごとの
+モジュールで、`js/widgets.js` は HOST との接続だけを持つ（ファイルの一覧は
+[`docs/FILES.md`](docs/FILES.md) §3）。
+
+- **レジストリ `window.IntMapWidgetCore`** — 定義（`id` は `family.variant`）・カテゴリ（9つ）・
+  対応サイズ・設定スキーマ・更新方針・ローダ・**サイズ別レンダラ**・操作・旧IDの別名を1つの形で持つ。
+  ⚠ **既定の設定値は関数**（`defaultConfig(context)`）。カードが作られる瞬間に評価されるので、
+  ファイル内のどこに書いたかに依存しない。
+- **WidgetContext** — レンダラが知ってよいことの全部（言語・テーマ・単位・位置情報の許可状態・
+  地図の中心と範囲・選択中の国／地点・有効レイヤー・Chronos・経路・監視・保存地点・オンライン状態）。
+  ⚠ **レンダラはグローバルを直接読まない。** 渡されたものだけを読むので、純関数として検査できる。
+- **状態モデル**は12状態（`idle` / `loading` / `ready` / `refreshing` / `stale` / `offline` /
+  `permission-required` / `permission-denied` / `empty` / `rate-limited` / `temporary-error` /
+  `permanent-error`）。**それぞれが理由を文で述べる**。⚠ **取得に失敗しても前回成功した値は消さない**
+  ——値を保つ状態は `WC.keepsValue()` 1か所で定義する。
+- **サイズ S / M / L は論理サイズ**で、列と行の数（S=1×1・M=2×1・L=2×2）と**別々のレンダラ**を持つ。
+  列数はウィンドウではなく**盤面の実測幅**から決まる（`ResizeObserver`）ので、同じセッションで
+  サイドバーの1列と Workspace の広い面の両方に正しく答える。
+  ⚠ `grid-auto-flow:dense` は使わない——DOM を動かさずに見た目だけ並べ替えるため、キーボード操作と
+  読み上げの順序が視覚順と食い違う。
+- **保存は `intmap_widgets4`**（`{v:4, items:[…]}`）。`intmap_widgets3` は**読むだけで、消さない**
+  ——それが世代バックアップそのもので、v4 が壊れたときの復元元になる。移行は**何度実行しても同じ
+  結果**になるよう、インスタンス ID を旧 `u` から取り、`createdAt` を位置から導く。
+  `window.IntMapWidgets2._active()` / `._setActive()` は**旧来の `[{u,t,cfg}]` のまま**で、
+  アカウント設定同期と前バージョンの端末が読める。サイズとスタックは旧形式に綴りが無いので
+  併走する `widgets4` 側が運ぶ。
+- **更新は `window.IntMapWidgetScheduler`** が `requestKey` 単位で行う。同じ鍵は**1要求**（飛んでいる
+  Promise を共有）・TTL・stale-while-revalidate・`AbortController`・タイムアウト・**ジッタ付きの
+  指数バックオフ**・同時実行数の上限。可視性は `IntersectionObserver` で見る。
+  ⚠ **描画と取得は別の行為**——再描画は1件も要求を出さない。言語変更は**再取得ではなく再構成**、
+  テーマ変更は CSS が担当する。
+- **局所計算のカードは盤面で1本だけのティッカー**に購読する（`WC.tick('second'|'minute')`）。
+  購読が0になるとタイマー自体が止まる。⚠ **定義の中で `setInterval` を開かない。**
+- **スタック**は手動と Smart の2つ。Smart は `window.IntMapWidgetSmart` が文脈から**決定論的に**
+  順位を付け（固定 → 重大警報 → 実行中の経路／監視 → 選択中の国 → 現在地 → 地図の範囲 → Chronos →
+  時間帯 → 直近使用 → 通常）、**「なぜ表示されたか」を同じ計算から答える**。差が小さいときは
+  前面のカードを動かさない（`MARGIN` / `SETTLE`）が、重大警報は即座に前へ出る（`URGENT`）。
+- **追加は `window.IntMapWidgetGallery`**（モバイルはボトムシート／デスクトップはモーダル）。検索・
+  カテゴリ・**実レンダラによるプレビュー**・サイズ切替・追加前設定。⚠ **プレビューは通信しないし、
+  位置情報の許可も要求しない**——プレビュー用の context は位置状態を `prompt` に固定してある。
+  実データはキャッシュにあるときだけ使い、無ければ宣言された見本を**見本と明示して**描く。
+- **DOM は `WC.el()` だけが作る。** `innerHTML` へ至る経路が存在しないので、外部文字列がマークアップに
+  なることがない。URL は**スキームの許可制**（http / https のみ）。
+- **IntMap 固有のカードは既存の subsystem を読む**——警報は `IntMapWorld.alertsQuery()`（地図が塗るのと
+  **同じ正規化済みの `feats`**）、経路は `IntMapRouting.summary()`（読み手が見ている代替経路から導出）、
+  レイヤーは `window.IntMapDefaultLayers` とアプリ自身のチェックボックス経由の切替、ニュースは
+  `HOST.newsFeatures`（`IntMapNewsGeo` の結果）。⚠ **カードが2つ目の真実を作らない。**
+- **Atlas ブリーフィングのカードは AI を呼ばない。** 更新方針は `manual`、ローダ無し。
+  読み手が Atlas に頼んだブリーフを `window.IntMapWidgetBriefStore.remember()` が**渡してくる**だけ。
+- **スタイルは `css/intmap.css` の1節**（`--widget-*` トークン）。JS は `<style>` を作らない。
+  ライト／ダーク・透明サイドバー・`prefers-reduced-motion`・`prefers-reduced-transparency`・
+  `forced-colors` に答える。**通常状態のカードに外側のぼんやりした影は付けない**（内側のガラス縁だけ）。
+
+#### 7.5.1 ネイティブ（WidgetKit）との境界
+
+⚠ **これは Web ページの中のカードであって、iOS のホーム画面／ロック画面／StandBy のウィジェットではない。**
+今回ネイティブアプリは作っていない。将来 WidgetKit の Extension を作るときのために、**何が共有でき、
+何が再実装になるか**をここに1か所だけ書いておく（新しい文書は作らない）。
+
+| 事項 | Web 側から共有できるもの | ネイティブ側で必要になるもの |
+|---|---|---|
+| **定義** | `id` / `family` / `variant` / `category` / `supportedSizes` / `defaultSize` / 設定スキーマ / 更新方針 — **JSON にできる部分**。`IntMapWidgetCore.all()` から書き出せる | 同じ id 体系を持つ Swift 側の `IntentConfiguration`。**レンダラは共有できない**（DOM を返す関数） |
+| **表示** | 何を出すかの決定（S/M/L でどの情報を出すか）は仕様として共有できる | **SwiftUI で全面的に再実装**。`systemSmall` / `systemMedium` / `systemLarge` は本文の S/M/L と1対1に対応させる |
+| **認証** | 無し。Web はブラウザのセッションを使う | App Group ＋ Keychain 共有。**Extension は独自にトークンを持つ**必要がある（アカウント制 AI とアカウント同期はログインが要る） |
+| **位置情報** | 無し | Extension 自身の `NSLocationWhenInUseUsageDescription`。**Web の許可状態は引き継げない** |
+| **キャッシュ** | `intmap_widget_cache1` の**形**（requestKey → {at, ttl, data}） | App Group の共有コンテナに同じ形で置く。Extension はネットワークに長く居られないので、**本体アプリが書き、ウィジェットは読むだけ**にする |
+| **更新** | `refreshPolicy`（`minIntervalMs` / `staleAfterMs` / `cacheTtlMs`） | **WidgetKit の timeline に翻訳する**。⚠ OS が更新回数を決めるので、`interval` は「希望」であって保証ではない——`stale` の表示（何分前か）は Web 以上に重要になる |
+| **操作** | `actions` の一覧と、それぞれが何をするか | **ディープリンク**（`intmap://widget/<action>?…`）。カード内で完結する操作は Extension では実行できず、本体アプリを開く形になる |
+| **プライバシー** | 出典・取得先・保存先は `js/legal-text.js` が正本 | ⚠ **App Store のプライバシー表示は Extension のネットワーク利用も含む。** データの流れを変えたら法務文面も同じ変更で直す（`CONSTITUTION.md` §6） |
 
 ## 8. UI/UX の構造
 

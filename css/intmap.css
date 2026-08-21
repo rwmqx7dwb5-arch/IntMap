@@ -3496,3 +3496,532 @@
 @media (prefers-reduced-motion:reduce){
   .rtp, .rtp-skel i{ transition:none !important; animation:none !important; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+   #R292 · THE WIDGET BOARD
+   ----------------------------------------------------------------------------------------------
+   ⚠ THIS USED TO BE A ~14 KB STRING BUILT BY CONCATENATION INSIDE js/widgets.js AND APPENDED TO
+   <head> AT IMPORT TIME. Three things were wrong with that and only the third was cosmetic: a
+   stylesheet inside a JS string is one back-tick away from blanking the site (CONSTITUTION §2), no
+   CSS tooling can see it, and the same rules were therefore duplicated rather than shared. It is
+   one section of the real stylesheet now, and js/widgets.js appends no <style> at all.
+
+   ⚠ NO AMBIENT DROP SHADOW ON A RESTING CARD (#R186/#R188, restated by §16 and §23.24). The lift
+   belongs to a card being DRAGGED and to nothing else; the inset highlight is the glass edge and
+   stays.
+   ══════════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── tokens. Everything below reads these; nothing below hard-codes a colour. ───────────────── */
+:root{
+  --widget-surface:rgba(255,255,255,0.55);
+  --widget-surface-elevated:rgba(255,255,255,0.86);
+  --widget-border:rgba(255,255,255,0.55);
+  --widget-text-primary:var(--text-main);
+  --widget-text-secondary:var(--text-muted);
+  --widget-accent:var(--primary-color);
+  --widget-success:#248a3d;
+  --widget-warning:#a34d00;
+  --widget-danger:#c9302c;
+  --widget-focus:var(--primary-color);
+  --widget-chart-grid:rgba(128,128,128,0.26);
+  --widget-chart-ink:var(--primary-color);
+  --widget-skeleton:rgba(128,128,128,0.18);
+  --widget-blur:24px;
+  --widget-sat:180%;
+  --widget-radius-s:16px;
+  --widget-radius-m:20px;
+  --widget-radius-l:22px;
+  --widget-gap-s:6px;
+  --widget-gap-m:10px;
+  --widget-gap-l:14px;
+  --widget-row:118px;
+  /* severity — a hue per level, always paired with a shape and a word in the markup */
+  --widget-sev0:rgba(128,128,128,0.55);
+  --widget-sev1:#0a7d33;
+  --widget-sev2:#8a5a00;
+  --widget-sev3:#b04e00;
+  --widget-sev4:#b3261e;
+}
+[data-theme="dark"]{
+  --widget-surface:rgba(30,30,38,0.44);
+  --widget-surface-elevated:rgba(44,44,54,0.9);
+  --widget-border:rgba(255,255,255,0.13);
+  --widget-success:#32d74b;
+  --widget-warning:#ff9f0a;
+  --widget-danger:#ff453a;
+  --widget-chart-grid:rgba(255,255,255,0.16);
+  --widget-skeleton:rgba(255,255,255,0.10);
+  --widget-sev1:#30d158;
+  --widget-sev2:#ffd60a;
+  --widget-sev3:#ff9f0a;
+  --widget-sev4:#ff453a;
+}
+body.sidebar-glass2{ --widget-surface:rgba(255,255,255,0.20); }
+[data-theme="dark"] body.sidebar-glass2{ --widget-surface:rgba(22,22,30,0.26); }
+
+/* ── the board ─────────────────────────────────────────────────────────────────────────────── */
+.wgt-board{ margin:0 0 14px; }
+.wgt-titlerow{ display:flex; align-items:center; gap:8px; margin:2px 2px 10px; }
+.wgt-title{ margin:0; font-size:15px; font-weight:600; color:var(--widget-text-primary); }
+.wgt-editbtn,.wgt-addbtn{
+  min-height:32px; padding:5px 12px; border:none; border-radius:999px; cursor:pointer;
+  font-size:12.5px; font-weight:600; line-height:1.2;
+  background:rgba(128,128,128,0.16); color:var(--widget-text-primary);
+  display:inline-flex; align-items:center; gap:5px;
+}
+.wgt-editbtn{ margin-left:auto; }
+.wgt-editbtn.on{ background:var(--widget-accent); color:#fff; }
+.wgt-addbtn:hover,.wgt-editbtn:hover{ background:rgba(128,128,128,0.28); }
+.wgt-editbtn:focus-visible,.wgt-addbtn:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2px; }
+.wgt-live{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
+
+/* ⚠ THE GRID IS DRIVEN BY --wgt-cols, WHICH js/widget-layout.js SETS FROM A ResizeObserver ON THE
+   GRID ITSELF. A media query would answer for the WINDOW, and the same board is a 300 px sidebar
+   column and a 900 px Workspace pane in one session.
+   ⚠ `grid-auto-flow:dense` is deliberately NOT used: it would reorder cards visually without moving
+   them in the DOM, which breaks keyboard reordering and every screen reader (§18). */
+.wgt-grid{
+  --wgt-cols:2;
+  display:grid; grid-template-columns:repeat(var(--wgt-cols),minmax(0,1fr));
+  grid-auto-rows:var(--widget-row); gap:var(--widget-gap-m);
+}
+.wgt-emptyboard{ grid-column:1/-1; display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:16px; border:1.5px dashed rgba(128,128,128,0.4); border-radius:var(--widget-radius-l); }
+.wgt-emptyboard p{ margin:0; font-size:13px; color:var(--widget-text-secondary); }
+
+/* ── the card ──────────────────────────────────────────────────────────────────────────────── */
+.wgt-card,.wgt-stack{
+  position:relative; overflow:hidden; min-width:0;
+  border-radius:var(--widget-radius-l); padding:12px 13px;
+  background:var(--widget-surface); border:1px solid var(--widget-border);
+  backdrop-filter:saturate(var(--widget-sat)) blur(var(--widget-blur));
+  -webkit-backdrop-filter:saturate(var(--widget-sat)) blur(var(--widget-blur));
+  box-shadow:0 1px 0 rgba(255,255,255,0.10) inset;   /* the glass edge — NOT an ambient shadow */
+  display:flex; flex-direction:column; gap:var(--widget-gap-s);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  color:var(--widget-text-primary);
+  transition:transform .16s cubic-bezier(0.2,0.7,0.2,1);
+  container-type:inline-size;
+}
+.wgt-card.wgt-s{ border-radius:var(--widget-radius-m); padding:11px 12px; }
+.wgt-card::before{
+  content:""; position:absolute; inset:0; z-index:0; border-radius:inherit; pointer-events:none;
+  background:linear-gradient(155deg,rgba(255,255,255,0.08),rgba(255,255,255,0) 46%);
+}
+.wgt-card > *,.wgt-stack > *{ position:relative; z-index:1; min-width:0; }
+.wgt-card:focus-visible,.wgt-stack:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2px; }
+@media(hover:hover){ .wgt-card:not(.editing):hover{ transform:translateY(-1.5px); } }
+
+.wgt-cardbody{ flex:1 1 auto; min-height:0; overflow:hidden; display:flex; flex-direction:column; }
+.wgt-body{ display:flex; flex-direction:column; gap:var(--widget-gap-s); min-width:0; flex:1 1 auto; }
+.wgt-body.center{ align-items:center; justify-content:center; }
+.wgt-row{ display:flex; align-items:center; min-width:0; }
+.wgt-row.gap{ gap:10px; }
+
+/* ── header ────────────────────────────────────────────────────────────────────────────────── */
+.wgt-h{ display:flex; align-items:center; gap:6px; min-width:0; }
+.wgt-h-i{ display:inline-flex; color:var(--widget-text-secondary); flex:0 0 auto; }
+.wgt-h-t{ font-size:12px; font-weight:600; color:var(--widget-text-secondary); letter-spacing:.1px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.wgt-h-x{ margin-left:auto; display:inline-flex; flex:0 0 auto; }
+
+/* ── value ─────────────────────────────────────────────────────────────────────────────────── */
+.wgt-value{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.wgt-val{ display:flex; align-items:baseline; gap:4px; min-width:0;
+  font-size:clamp(21px,7.2cqw,30px); font-weight:500; line-height:1.12; letter-spacing:-0.5px;
+  font-variant-numeric:tabular-nums; }
+.wgt-val.sm{ font-size:clamp(14.5px,4.8cqw,19px); font-weight:600; letter-spacing:-0.2px; line-height:1.24; }
+.wgt-val-n{ overflow-wrap:anywhere; word-break:normal; line-break:strict; min-width:0; }
+.wgt-val-u{ font-size:0.54em; font-weight:600; opacity:.72; letter-spacing:0; white-space:nowrap; }
+.wgt-cap{ font-size:12px; color:var(--widget-text-secondary); line-height:1.4; overflow-wrap:anywhere; }
+.wgt-sub{ font-size:12px; color:var(--widget-text-secondary); }
+.wgt-where{ font-size:12px; color:var(--widget-text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wgt-para{ margin:0; font-size:12.5px; line-height:1.6; color:var(--widget-text-primary); overflow-wrap:anywhere; }
+.wgt-flag{ font-size:26px; line-height:1; flex:0 0 auto; }
+.wgt-flag.big{ font-size:34px; }
+
+/* ⚠ AN ARROW AND A SIGN, NOT JUST A HUE (§16). The colour is the third cue, never the only one. */
+.wgt-delta{ display:inline-flex; align-items:baseline; gap:3px; font-size:12.5px; font-weight:600; font-variant-numeric:tabular-nums; }
+.wgt-delta.up{ color:var(--widget-success); }
+.wgt-delta.down{ color:var(--widget-danger); }
+.wgt-delta.flat{ color:var(--widget-text-secondary); }
+.wgt-delta-a{ font-size:0.82em; }
+.wgt-delta-u{ font-size:0.86em; opacity:.8; }
+
+/* ── list ──────────────────────────────────────────────────────────────────────────────────── */
+.wgt-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; min-width:0; }
+.wgt-li{ min-width:0; }
+.wgt-li-hit{
+  display:flex; align-items:center; gap:8px; width:100%; min-width:0;
+  min-height:36px; padding:5px 6px; border:none; border-radius:10px;
+  background:transparent; color:inherit; font:inherit; text-align:start; text-decoration:none; cursor:pointer;
+}
+.wgt-li-hit.static{ cursor:default; }
+.wgt-li-hit:hover:not(.static){ background:rgba(128,128,128,0.12); }
+.wgt-li-hit:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:-2px; }
+.wgt-li-m{ flex:0 0 auto; min-width:30px; font-size:12px; font-weight:700; font-variant-numeric:tabular-nums;
+  color:var(--widget-text-secondary); display:inline-flex; align-items:center; justify-content:center; }
+.wgt-li-b{ display:flex; flex-direction:column; min-width:0; flex:1 1 auto; }
+.wgt-li-t{ font-size:12.5px; line-height:1.35; color:var(--widget-text-primary);
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
+.wgt-li-s{ font-size:12px; color:var(--widget-text-secondary); line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wgt-li-x{ flex:0 0 auto; font-size:12px; color:var(--widget-text-secondary); font-variant-numeric:tabular-nums; }
+.wgt-list.dense .wgt-li-hit{ min-height:32px; padding:3px 6px; }
+.wgt-li-m.sev0{ color:var(--widget-sev0); } .wgt-li-m.sev1{ color:var(--widget-sev1); }
+.wgt-li-m.sev2{ color:var(--widget-sev2); } .wgt-li-m.sev3{ color:var(--widget-sev3); }
+.wgt-li-m.sev4{ color:var(--widget-sev4); }
+
+/* ── series / bars / progress ──────────────────────────────────────────────────────────────── */
+.wgt-serieswrap{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.wgt-series{ width:100%; height:auto; display:block; }
+.wgt-series-l{ fill:none; stroke:var(--widget-chart-ink); stroke-width:1.8; stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
+.wgt-series-a{ fill:var(--widget-chart-ink); opacity:.13; stroke:none; }
+.wgt-series-0{ stroke:var(--widget-chart-grid); stroke-width:1; vector-effect:non-scaling-stroke; }
+.wgt-series-ax{ display:flex; justify-content:space-between; font-size:12px; color:var(--widget-text-secondary); }
+.wgt-bars{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+.wgt-bar-r{ display:grid; grid-template-columns:minmax(48px,auto) 1fr minmax(38px,auto); gap:7px; align-items:center; font-size:12px; }
+.wgt-bar-l{ color:var(--widget-text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wgt-bar-t{ height:7px; border-radius:4px; background:rgba(128,128,128,0.22); overflow:hidden; }
+.wgt-bar-f{ display:block; height:100%; border-radius:4px; background:var(--widget-accent); }
+.wgt-bar-f.up{ background:var(--widget-success); } .wgt-bar-f.down{ background:var(--widget-danger); }
+.wgt-bar-v{ text-align:end; color:var(--widget-text-primary); font-variant-numeric:tabular-nums; }
+.wgt-prog{ display:block; height:7px; border-radius:4px; background:rgba(128,128,128,0.22); overflow:hidden; }
+.wgt-prog-f{ display:block; height:100%; border-radius:4px; background:var(--widget-accent); }
+.wgt-prog-f.accent{ background:var(--widget-accent); }
+.wgt-ringwrap{ position:relative; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; }
+.wgt-ring-t{ fill:none; stroke:rgba(128,128,128,0.22); stroke-width:6; }
+.wgt-ring-f{ fill:none; stroke:var(--widget-accent); stroke-width:6; stroke-linecap:round; }
+.wgt-ring-n{ position:absolute; font-size:12.5px; font-weight:600; font-variant-numeric:tabular-nums; }
+.wgt-tl{ display:flex; flex-direction:column; gap:3px; }
+.wgt-tl-hd{ display:flex; justify-content:space-between; font-size:12px; color:var(--widget-text-secondary); }
+.wgt-tl-t{ position:relative; height:8px; border-radius:4px; background:rgba(128,128,128,0.22); overflow:visible; }
+.wgt-tl-f{ position:absolute; inset:0 auto 0 0; border-radius:4px; background:var(--widget-accent); opacity:.55; }
+.wgt-tl-n{ position:absolute; top:-3px; width:3px; height:14px; border-radius:2px; background:var(--widget-text-primary); transform:translateX(-1.5px); }
+.wgt-tl-m{ position:absolute; top:1px; width:2px; height:6px; background:var(--widget-chart-grid); }
+.wgt-proglist{ display:flex; flex-direction:column; gap:6px; }
+.wgt-progrow{ display:grid; grid-template-columns:minmax(52px,auto) 1fr auto; gap:6px; align-items:center; font-size:12px; }
+.wgt-progrow.on{ font-weight:600; }
+.wgt-progrow-l{ color:var(--widget-text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wgt-progrow-v{ font-variant-numeric:tabular-nums; }
+.wgt-progrow-n{ grid-column:2/-1; font-size:12px; color:var(--widget-text-secondary); }
+
+/* ── geo locator / moon / clock face ───────────────────────────────────────────────────────── */
+.wgt-geowrap{ min-width:0; }
+.wgt-geo{ width:100%; height:auto; display:block; border-radius:10px; overflow:hidden; }
+.wgt-geo-bg{ fill:rgba(128,128,128,0.12); }
+.wgt-geo-g{ stroke:var(--widget-chart-grid); stroke-width:.6; }
+.wgt-geo-eq{ stroke:var(--widget-chart-grid); stroke-width:1.1; stroke-dasharray:3 3; }
+.wgt-geo-tr{ fill:none; stroke:var(--widget-accent); stroke-width:1.4; opacity:.75; }
+.wgt-geo-p{ fill:var(--widget-accent); stroke:var(--widget-surface-elevated); stroke-width:1; }
+.wgt-geo-p.accent{ fill:var(--widget-accent); }
+.wgt-geo-p.sev2{ fill:var(--widget-sev2); } .wgt-geo-p.sev3{ fill:var(--widget-sev3); } .wgt-geo-p.sev4{ fill:var(--widget-sev4); }
+.wgt-moon{ flex:0 0 auto; }
+.wgt-moon-dark{ fill:rgba(128,128,128,0.32); }
+.wgt-moon-lit{ fill:#f2e9c9; }
+[data-theme="dark"] .wgt-moon-lit{ fill:#f6efd6; }
+.wgt-moon-rim{ fill:none; stroke:var(--widget-chart-grid); stroke-width:.8; }
+.wgt-moonstrip{ display:flex; justify-content:space-between; gap:2px; }
+.wgt-moonstep{ display:flex; flex-direction:column; align-items:center; gap:2px; font-size:12px; color:var(--widget-text-secondary); }
+.wgt-clockface{ flex:0 0 auto; }
+.wgt-cf-t{ stroke:var(--widget-text-secondary); stroke-width:1.2; }
+.wgt-cf-t.major{ stroke-width:2.4; }
+.wgt-cf-h{ stroke:var(--widget-text-primary); stroke-width:4.4; stroke-linecap:round; }
+.wgt-cf-m{ stroke:var(--widget-text-primary); stroke-width:3; stroke-linecap:round; }
+.wgt-cf-s{ stroke:var(--widget-accent); stroke-width:1.6; stroke-linecap:round; }
+.wgt-cf-c{ fill:var(--widget-accent); }
+.wgt-faces{ display:grid; grid-template-columns:repeat(auto-fit,minmax(74px,1fr)); gap:8px; }
+.wgt-face{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+.wgt-face-n{ font-size:12px; color:var(--widget-text-primary); }
+.wgt-face-o{ font-size:12px; color:var(--widget-text-secondary); }
+
+/* ── calendar ──────────────────────────────────────────────────────────────────────────────── */
+.wgt-cal-t{ font-size:12.5px; font-weight:600; color:var(--widget-text-primary); }
+.wgt-cal{ display:flex; flex-direction:column; gap:2px; }
+.wgt-cal-h,.wgt-cal-b{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; text-align:center; }
+.wgt-cal-h span{ font-size:12px; font-weight:700; color:var(--widget-text-secondary); }
+.wgt-cal-d{ font-size:12px; line-height:20px; height:20px; border-radius:50%; color:var(--widget-text-primary); font-variant-numeric:tabular-nums; }
+.wgt-cal-d.pad{ visibility:hidden; }
+.wgt-cal-d.today{ background:var(--widget-accent); color:#fff; font-weight:700; }
+.wgt-cal-d.mark{ box-shadow:inset 0 0 0 1.5px var(--widget-accent); }
+.wgt-datechip{ display:flex; flex-direction:column; align-items:center; }
+.wgt-datechip-m{ font-size:12px; font-weight:700; color:var(--widget-danger); }
+.wgt-datechip-d{ font-size:clamp(28px,10cqw,42px); font-weight:400; line-height:1.05; font-variant-numeric:tabular-nums; }
+.wgt-datechip-w{ font-size:12px; color:var(--widget-text-secondary); }
+
+/* ── chips / facts / articles / source ─────────────────────────────────────────────────────── */
+.wgt-chips{ display:flex; flex-wrap:wrap; gap:5px; min-width:0; }
+.wgt-chip{ display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:999px;
+  background:rgba(128,128,128,0.14); font-size:12px; color:var(--widget-text-secondary); max-width:100%; }
+.wgt-chip b{ font-weight:600; color:var(--widget-text-primary); font-variant-numeric:tabular-nums; }
+.wgt-facts{ display:grid; grid-template-columns:1fr; gap:2px 10px; margin:0; }
+.wgt-facts.c2{ grid-template-columns:1fr 1fr; }
+.wgt-facts dt{ font-size:12px; color:var(--widget-text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wgt-facts dd{ margin:0 0 4px; font-size:12.5px; color:var(--widget-text-primary); font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.wgt-art{ display:flex; flex-direction:column; gap:2px; text-decoration:none; color:inherit; min-width:0; border-radius:10px; }
+a.wgt-art:hover{ background:rgba(128,128,128,0.10); }
+a.wgt-art:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2px; }
+.wgt-art-t{ font-size:13px; line-height:1.36; color:var(--widget-text-primary);
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
+.wgt-art-m{ font-size:12px; color:var(--widget-text-secondary); }
+.wgt-art-x{ font-size:12px; color:var(--widget-text-secondary); line-height:1.5;
+  display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
+.wgt-src{ margin-top:auto; font-size:12px; color:var(--widget-text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wgt-fresh{ font-size:12px; color:var(--widget-text-secondary); }
+.wgt-fresh-live{ color:var(--widget-accent); }
+.wgt-group{ display:flex; flex-direction:column; gap:3px; }
+.wgt-groups{ display:flex; flex-direction:column; gap:8px; min-width:0; }
+.wgt-group-h{ font-size:12px; font-weight:700; color:var(--widget-text-secondary); }
+.wgt-scalebar{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--widget-text-secondary); }
+.wgt-scalebar-b{ display:block; width:100px; height:8px; border:1px solid var(--widget-text-secondary); border-top:none; }
+
+/* ── actions. ⚠ 44 x 44 CSS px MINIMUM ON TOUCH (§10, §18). ────────────────────────────────── */
+.wgt-acts{ display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; padding-top:2px; }
+.wgt-act{
+  display:inline-flex; align-items:center; justify-content:center; gap:5px;
+  min-height:32px; padding:6px 11px; border:none; border-radius:999px; cursor:pointer;
+  font:inherit; font-size:12px; font-weight:600; line-height:1.2; text-decoration:none;
+  background:rgba(128,128,128,0.16); color:var(--widget-text-primary);
+  max-width:100%; overflow:hidden; text-overflow:ellipsis;
+}
+.wgt-act.primary{ background:var(--widget-accent); color:#fff; }
+.wgt-act.on{ background:var(--widget-accent); color:#fff; }
+.wgt-act:hover:not(:disabled){ background:rgba(128,128,128,0.28); }
+.wgt-act.primary:hover:not(:disabled){ filter:brightness(1.06); }
+.wgt-act:disabled{ opacity:.5; cursor:default; }
+.wgt-act:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2px; }
+.wgt-act-t{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wgt-act.wgt-act-sm{ min-height:30px; font-size:12px; }
+.wgt-iact{ display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px;
+  border:none; border-radius:16px; background:rgba(128,128,128,0.16); color:var(--widget-text-primary); cursor:pointer; }
+.wgt-link{ color:var(--widget-accent); text-decoration:none; }
+.wgt-link:hover{ text-decoration:underline; }
+.wgt-link:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2px; }
+.wgt-sw{ position:relative; flex:0 0 auto; width:42px; height:26px; border:none; border-radius:13px;
+  background:rgba(128,128,128,0.32); cursor:pointer; padding:0; transition:background .16s; }
+.wgt-sw.on{ background:var(--widget-success); }
+.wgt-sw-k{ position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:10px; background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,0.28); transition:transform .16s cubic-bezier(0.2,0.7,0.2,1); }
+.wgt-sw.on .wgt-sw-k{ transform:translateX(16px); }
+.wgt-sw:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2px; }
+.wgt-togglelist{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+.wgt-togglerow{ display:flex; align-items:center; gap:8px; min-height:34px; min-width:0; }
+.wgt-togglerow-l{ flex:1 1 auto; min-width:0; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ── states ────────────────────────────────────────────────────────────────────────────────── */
+.wgt-state{ flex:1 1 auto; display:flex; }
+.wgt-skel{ display:flex; flex-direction:column; gap:7px; width:100%; padding-top:2px; }
+.wgt-skel-b{ height:11px; border-radius:6px; background:var(--widget-skeleton);
+  animation:wgtShimmer 1.5s ease-in-out infinite; }
+.wgt-skel-b.big{ height:24px; width:64%; }
+.wgt-skel-b:nth-child(3){ width:78%; } .wgt-skel-b:nth-child(4){ width:58%; } .wgt-skel-b:nth-child(5){ width:70%; }
+@keyframes wgtShimmer{ 0%,100%{ opacity:.55; } 50%{ opacity:1; } }
+.wgt-note{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:12px; line-height:1.45;
+  color:var(--widget-text-secondary); }
+.wgt-note-i{ display:inline-flex; flex:0 0 auto; }
+.wgt-note-t{ min-width:0; overflow-wrap:anywhere; }
+.wgt-note-warn{ color:var(--widget-warning); }
+.wgt-note-danger{ color:var(--widget-danger); }
+
+/* the severity tint a card may take. Kept to a HAIRLINE and a wash — never an opaque slab, so the
+   glass material and the type contrast both survive (#R188). */
+.wgt-card.wgt-tone-sev2{ border-color:color-mix(in srgb,var(--widget-sev2) 55%,transparent); }
+.wgt-card.wgt-tone-sev3{ border-color:color-mix(in srgb,var(--widget-sev3) 60%,transparent); }
+.wgt-card.wgt-tone-sev4{ border-color:color-mix(in srgb,var(--widget-sev4) 70%,transparent); }
+.wgt-card.wgt-tone-sev3 .wgt-val,.wgt-card.wgt-tone-sev4 .wgt-val{ color:var(--widget-sev4); }
+
+/* ── edit mode ─────────────────────────────────────────────────────────────────────────────── */
+.wgt-card.editing,.wgt-stack.editing{ outline:1.5px solid var(--widget-border); cursor:grab; touch-action:none; overflow:visible;
+  animation:wgtJiggle .35s ease-in-out infinite alternate; }
+.wgt-card.editing:active{ cursor:grabbing; }
+@keyframes wgtJiggle{ from{ transform:rotate(-0.45deg); } to{ transform:rotate(0.45deg); } }
+.wgt-card.picked,.wgt-stack.picked{ outline:2.5px solid var(--widget-accent); animation:none; transform:scale(1.03); }
+.wgt-del{ position:absolute; top:-8px; left:-8px; z-index:4; width:26px; height:26px; border:none; border-radius:50%;
+  background:rgba(60,60,67,0.94); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 1px 5px rgba(0,0,0,0.4); }
+.wgt-grip{ position:absolute; top:7px; right:7px; z-index:2; color:var(--widget-text-secondary); opacity:.7; display:flex; }
+.wgt-cfg{ display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border:none;
+  border-radius:14px; background:rgba(128,128,128,0.16); color:var(--widget-text-secondary); cursor:pointer; }
+.wgt-cfg:hover{ background:rgba(128,128,128,0.3); color:var(--widget-text-primary); }
+.wgt-cfg:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2px; }
+.wgt-cfgbox{ border-top:1px solid var(--widget-border); padding-top:7px; margin-top:5px; }
+
+/* ── the card menu ─────────────────────────────────────────────────────────────────────────── */
+.wgt-menu{ position:fixed; z-index:10050; min-width:212px; max-width:min(300px,92vw); padding:5px;
+  border-radius:14px; border:1px solid var(--widget-border); background:var(--widget-surface-elevated);
+  backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px);
+  box-shadow:0 10px 34px rgba(0,0,0,0.24); display:flex; flex-direction:column; gap:1px; }
+.wgt-menu-i{ display:flex; align-items:center; gap:9px; width:100%; min-height:40px; padding:8px 10px;
+  border:none; border-radius:9px; background:transparent; color:var(--widget-text-primary);
+  font:inherit; font-size:13px; text-align:start; cursor:pointer; }
+.wgt-menu-i:hover{ background:rgba(128,128,128,0.16); }
+.wgt-menu-i:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:-2px; }
+.wgt-menu-i.danger{ color:var(--widget-danger); }
+.wgt-undo{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:10060;
+  display:flex; align-items:center; gap:12px; padding:9px 12px 9px 16px; border-radius:999px;
+  background:var(--widget-surface-elevated); border:1px solid var(--widget-border);
+  box-shadow:0 8px 28px rgba(0,0,0,0.26); font-size:12.5px; color:var(--widget-text-primary); }
+
+/* ── stacks ────────────────────────────────────────────────────────────────────────────────── */
+.wgt-stack{ padding:0; }
+.wgt-stack-pages{ flex:1 1 auto; min-height:0; display:flex; }
+.wgt-stack .wgt-card{ flex:1 1 auto; border:none; background:transparent; backdrop-filter:none;
+  -webkit-backdrop-filter:none; box-shadow:none; border-radius:inherit; }
+.wgt-stack .wgt-card::before{ display:none; }
+.wgt-stack-nav{ display:flex; align-items:center; justify-content:center; gap:6px; padding:2px 6px 7px; flex:0 0 auto; }
+.wgt-stack-b{ display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border:none;
+  border-radius:15px; background:transparent; color:var(--widget-text-secondary); cursor:pointer; }
+.wgt-stack-b:hover{ background:rgba(128,128,128,0.16); }
+.wgt-stack-b:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2px; }
+.wgt-stack-dots{ display:flex; align-items:center; gap:4px; }
+.wgt-stack-dot{ width:22px; height:22px; padding:0; border:none; background:transparent; cursor:pointer; position:relative; }
+.wgt-stack-dot::after{ content:""; position:absolute; inset:8px; border-radius:50%; background:var(--widget-text-secondary); opacity:.35; }
+.wgt-stack-dot.on::after{ opacity:1; background:var(--widget-accent); }
+.wgt-stack-dot:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:-2px; border-radius:11px; }
+
+/* ── the add gallery ───────────────────────────────────────────────────────────────────────── */
+.wgt-sheet{ position:fixed; inset:0; z-index:10040; display:flex; }
+.wgt-scrim{ position:absolute; inset:0; background:rgba(0,0,0,0.34); }
+.wgt-sheet-p{ position:relative; display:flex; flex-direction:column; min-height:0;
+  background:var(--widget-surface-elevated); border:1px solid var(--widget-border);
+  backdrop-filter:saturate(180%) blur(24px); -webkit-backdrop-filter:saturate(180%) blur(24px);
+  box-shadow:0 14px 48px rgba(0,0,0,0.3); }
+.wgt-sheet.desktop .wgt-sheet-p{ margin:auto; width:min(560px,94vw); max-height:min(84vh,760px); border-radius:20px; }
+/* ⚠ MOBILE IS A BOTTOM SHEET, AND IT REACHES THE BOTTOM OF THE SCREEN — env(safe-area-inset-bottom)
+   is what keeps the primary button above the home indicator instead of under it. */
+.wgt-sheet.mobile .wgt-sheet-p{ margin-top:auto; width:100%; max-height:88vh;
+  border-radius:20px 20px 0 0; padding-bottom:env(safe-area-inset-bottom,0px); }
+.wgt-sheet-h{ display:flex; align-items:center; gap:8px; padding:12px 14px 6px; flex:0 0 auto; }
+.wgt-sheet-t{ margin:0; font-size:16px; font-weight:600; }
+.wgt-sheet-x{ display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px;
+  border:none; border-radius:16px; background:rgba(128,128,128,0.16); color:var(--widget-text-primary); cursor:pointer; }
+.wgt-searchrow{ display:flex; align-items:center; gap:7px; margin:0 14px 8px; padding:0 11px; flex:0 0 auto;
+  border:1px solid rgba(128,128,128,0.3); border-radius:11px; background:var(--input-bg); color:var(--widget-text-secondary); }
+.wgt-search{ flex:1 1 auto; min-width:0; min-height:38px; border:none; background:transparent; color:var(--widget-text-primary);
+  font:inherit; font-size:16px; }   /* 16px: anything smaller makes iOS Safari zoom the page on focus */
+.wgt-search:focus{ outline:none; }
+.wgt-searchrow:focus-within{ border-color:var(--widget-accent); box-shadow:0 0 0 3px rgba(10,132,255,0.18); }
+.wgt-cats{ display:flex; gap:6px; overflow-x:auto; padding:0 14px 8px; flex:0 0 auto; scrollbar-width:none; }
+.wgt-cats::-webkit-scrollbar{ display:none; }
+.wgt-cat{ display:inline-flex; align-items:center; gap:5px; flex:0 0 auto; min-height:34px; padding:6px 12px;
+  border:none; border-radius:999px; background:rgba(128,128,128,0.14); color:var(--widget-text-secondary);
+  font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; white-space:nowrap; }
+.wgt-cat.on{ background:var(--widget-accent); color:#fff; }
+.wgt-cat:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2px; }
+.wgt-sheet-body{ flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 14px 16px; }
+.wgt-nores{ font-size:13px; color:var(--widget-text-secondary); }
+.wgt-glist{ display:flex; flex-direction:column; gap:2px; }
+.wgt-gfam{ font-size:12px; font-weight:700; color:var(--widget-text-secondary); margin:10px 0 2px; }
+.wgt-grow-b{ display:flex; align-items:flex-start; gap:11px; width:100%; min-height:52px; padding:9px 8px;
+  border:none; border-radius:12px; background:transparent; color:inherit; font:inherit; text-align:start; cursor:pointer; }
+.wgt-grow-b:hover{ background:rgba(128,128,128,0.12); }
+.wgt-grow-b:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:-2px; }
+.wgt-grow-i{ flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px;
+  border-radius:9px; background:rgba(128,128,128,0.14); color:var(--widget-text-primary); }
+.wgt-grow-txt{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1 1 auto; }
+.wgt-grow-n{ font-size:13.5px; font-weight:600; }
+.wgt-grow-d{ font-size:12px; color:var(--widget-text-secondary); line-height:1.4; }
+.wgt-grow-m{ display:flex; flex-wrap:wrap; gap:4px; margin-top:2px; }
+.wgt-badge{ font-size:12px; padding:1px 7px; border-radius:999px; background:rgba(128,128,128,0.16); color:var(--widget-text-secondary); }
+.wgt-badge.on{ background:color-mix(in srgb,var(--widget-accent) 22%,transparent); color:var(--widget-accent); }
+.wgt-grow-a{ flex:0 0 auto; color:var(--widget-text-secondary); display:inline-flex; align-self:center; }
+.wgt-gdetail{ display:flex; flex-direction:column; gap:10px; padding-top:6px; }
+.wgt-gdetail-h{ display:flex; }
+.wgt-back{ display:inline-flex; align-items:center; gap:4px; min-height:34px; padding:6px 10px 6px 6px; border:none;
+  border-radius:999px; background:transparent; color:var(--widget-accent); font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; }
+.wgt-back:hover{ background:rgba(128,128,128,0.12); }
+.wgt-gdetail-t{ display:flex; align-items:flex-start; gap:10px; }
+.wgt-gdetail-t h3{ margin:0; font-size:15px; }
+.wgt-gdetail-t p{ margin:2px 0 0; font-size:12.5px; color:var(--widget-text-secondary); line-height:1.45; }
+.wgt-sizes{ display:flex; gap:6px; }
+.wgt-size{ flex:1 1 0; min-height:36px; border:1px solid var(--widget-border); border-radius:10px;
+  background:rgba(128,128,128,0.10); color:var(--widget-text-primary); font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; }
+.wgt-size.on{ background:var(--widget-accent); color:#fff; border-color:transparent; }
+.wgt-size:disabled{ opacity:.4; cursor:not-allowed; }
+.wgt-size:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:2px; }
+.wgt-pvwrap{ display:flex; flex-direction:column; gap:6px; }
+/* the preview stage reproduces the board's own column widths, so a card that will be 2 columns
+   wide is previewed 2 columns wide instead of at some invented size */
+.wgt-pvstage{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--widget-gap-m);
+  padding:12px; border-radius:16px; background:rgba(128,128,128,0.10); }
+.wgt-pvstage[data-cols="1"] > .wgt-card{ grid-column:span 1; }
+.wgt-pvstage[data-cols="2"] > .wgt-card{ grid-column:span 2; }
+.wgt-preview{ min-height:var(--widget-row); }
+.wgt-preview.wgt-l{ min-height:calc(var(--widget-row)*2 + var(--widget-gap-m)); }
+.wgt-pvnote{ font-size:12px; color:var(--widget-text-secondary); }
+.wgt-gcfg h4{ margin:0 0 5px; font-size:12.5px; color:var(--widget-text-secondary); }
+.wgt-gadd{ position:sticky; bottom:0; padding:10px 0 2px; background:linear-gradient(to top,var(--widget-surface-elevated) 62%,transparent); }
+.wgt-gadd .wgt-act{ width:100%; min-height:44px; font-size:14px; }
+.wgt-form{ display:flex; flex-direction:column; gap:7px; }
+.wgt-field{ display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--widget-text-secondary); }
+.wgt-field-l{ flex:0 0 40%; min-width:0; }
+.wgt-input{ flex:1 1 auto; min-width:0; min-height:36px; padding:5px 9px; font:inherit; font-size:16px;
+  border:1px solid rgba(128,128,128,0.3); border-radius:9px; background:var(--input-bg); color:var(--widget-text-primary); }
+.wgt-input:focus-visible{ outline:2px solid var(--widget-focus); outline-offset:1px; }
+select.wgt-input[multiple]{ min-height:88px; }
+.wgt-check{ width:22px; height:22px; accent-color:var(--widget-accent); }
+
+/* ══ TOUCH: 44 x 44 CSS px MINIMUM (§10, §18, §23.17) ═════════════════════════════════════════
+   ⚠ THE HIT AREA GROWS, THE PAINTED CONTROL DOES NOT. A 44 px pill everywhere would wreck the
+   card's proportions on a phone, so the target is enlarged with a pseudo-element that reaches
+   outside the visual bounds — which is what the guideline is actually about. */
+@media(pointer:coarse){
+  .wgt-act,.wgt-iact,.wgt-cfg,.wgt-sw,.wgt-stack-b,.wgt-stack-dot,.wgt-sheet-x,.wgt-cat,.wgt-size,.wgt-del,.wgt-editbtn,.wgt-addbtn,.wgt-back{ position:relative; }
+  .wgt-act::after,.wgt-iact::after,.wgt-cfg::after,.wgt-sw::after,.wgt-stack-b::after,.wgt-stack-dot::before,
+  .wgt-sheet-x::after,.wgt-cat::after,.wgt-size::after,.wgt-del::after,.wgt-editbtn::after,.wgt-addbtn::after,.wgt-back::after{
+    content:""; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:max(100%,44px); height:max(100%,44px);
+  }
+  .wgt-li-hit{ min-height:44px; }
+  .wgt-menu-i{ min-height:44px; }
+  .wgt-togglerow{ min-height:44px; }
+}
+
+/* ══ REDUCED MOTION (§16, §18, §23.18) ════════════════════════════════════════════════════════
+   ⚠ THE JIGGLE STOPS COMPLETELY — not "slows down". */
+@media(prefers-reduced-motion:reduce){
+  .wgt-card,.wgt-stack,.wgt-sw-k,.wgt-skel-b{ transition:none !important; animation:none !important; }
+  .wgt-card.editing,.wgt-stack.editing{ animation:none !important; transform:none !important;
+    outline:2px dashed var(--widget-accent); }   /* the state still READS as "editable" */
+  .wgt-skel-b{ opacity:.75; }
+}
+
+/* ══ REDUCED TRANSPARENCY (§16, §23.19) ══════════════════════════════════════════════════════ */
+@media(prefers-reduced-transparency:reduce){
+  :root{ --widget-surface:var(--card-bg); --widget-surface-elevated:var(--card-bg); --widget-border:rgba(128,128,128,0.34); }
+  [data-theme="dark"]{ --widget-surface:var(--card-bg); --widget-surface-elevated:#2c2c2e; }
+  .wgt-card,.wgt-stack,.wgt-menu,.wgt-sheet-p,.wgt-undo{ backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+  .wgt-card::before{ display:none; }
+  .wgt-scrim{ background:rgba(0,0,0,0.62); }
+}
+
+/* ══ HIGH CONTRAST / FORCED COLORS (§16, §18) ═════════════════════════════════════════════════
+   In forced-colors the OS owns every colour, so the job here is to make sure nothing DEPENDS on a
+   colour we no longer control: borders become visible, the glass goes away, and the two states
+   that were carried by hue (a switch that is on, a selected category) get a border as well. */
+@media(forced-colors:active){
+  .wgt-card,.wgt-stack,.wgt-menu,.wgt-sheet-p,.wgt-undo{
+    backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+    background:Canvas !important; border:1px solid CanvasText !important; box-shadow:none !important; }
+  .wgt-card::before{ display:none; }
+  .wgt-act,.wgt-cat,.wgt-size,.wgt-iact,.wgt-cfg{ border:1px solid CanvasText !important; background:ButtonFace !important; color:ButtonText !important; }
+  .wgt-act.primary,.wgt-act.on,.wgt-cat.on,.wgt-size.on{ background:Highlight !important; color:HighlightText !important; }
+  .wgt-sw{ border:1px solid CanvasText; background:ButtonFace; }
+  .wgt-sw.on{ background:Highlight; }
+  .wgt-sw-k{ background:CanvasText; }
+  .wgt-prog-f,.wgt-bar-f,.wgt-tl-f{ background:Highlight !important; forced-color-adjust:none; }
+  .wgt-series-l,.wgt-ring-f{ stroke:CanvasText; }
+  .wgt-geo-p{ fill:CanvasText; }
+  .wgt-series-a{ display:none; }
+  .wgt-badge.on{ border:1px solid CanvasText; }
+}
+
+/* ══ NARROW SCREENS ══════════════════════════════════════════════════════════════════════════
+   ⚠ AT 360 px THE BOARD IS STILL TWO COLUMNS. A single column would make every S card a banner,
+   which is the opposite of what a small size is for. What gives is the GAP and the padding. */
+@media(max-width:400px){
+  .wgt-grid{ gap:var(--widget-gap-s); --widget-row:112px; }
+  .wgt-card{ padding:10px 11px; }
+  .wgt-acts{ gap:5px; }
+}
+/* ⚠ AND WHEN THE READER'S TYPE IS LARGER, THE ROW GROWS WITH IT — otherwise a large card clips its
+   own content at 200 % zoom. `em` here is the reader's own font size. */
+.wgt-grid{ --widget-row:max(112px,8.2em); }

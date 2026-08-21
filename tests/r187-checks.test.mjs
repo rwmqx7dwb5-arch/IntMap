@@ -162,16 +162,22 @@ test('R187 atmosphere: the limb is blended thinner than saturation', () => {
 
 /* ── 5. the widgets ──────────────────────────────────────────────────────────────────────────── */
 test('R187 widgets: the AQI / UV tint is flat and translucent, i.e. glass', () => {
-  const src = read('js/widgets.js');
+  /* ⚠ (#R292) RE-EXPRESSED AGAINST THE PLATFORM. The board's CSS left the JavaScript (it was a
+     14 kB string built by concatenation), so `_TINT_GLASS` and the inline `setProperty` are gone.
+     The requirement is unchanged and is now structural: an AQI or UV card is drawn on the SAME
+     translucent material as every other card, and its category can only reach the border and the
+     value. There is no code path left that can hand a card an opaque background. */
+  const css = read('css/intmap.css');
+  const src = css.slice(css.indexOf('#R292 · THE WIDGET BOARD'));
   /* The soft shading on these two cards was never OUTSIDE them: it was a 158° gradient that darkened
      the bottom-right corner by 14 %. Flat, so nothing fades into a corner; translucent, so the
      backdrop-filter the card already carries is what the eye sees. */
-  assert.ok(!/linear-gradient\(158deg,'\+_shade/.test(src), 'the colour gradient must be gone');
-  assert.ok(!/function _shade/.test(src), 'the shading helper has no remaining use');
-  const m = /const _TINT_GLASS=([0-9.]+);/.exec(src);
-  assert.ok(m, 'the glass-mode tint alpha must be a named constant');
-  assert.ok(+m[1] > 0.2 && +m[1] < 0.9, `a tint alpha of ${m[1]} is not translucent`);
-  assert.match(src, /card\.style\.setProperty\('background','rgba\(/, 'the tint must be a flat rgba');
+  assert.ok(!/linear-gradient\(158deg/.test(src), 'the colour gradient must be gone');
+  const m = /--widget-surface:rgba\(255,255,255,([0-9.]+)\)/.exec(src);
+  assert.ok(m, 'the card material must be a named token');
+  assert.ok(+m[1] > 0.1 && +m[1] < 0.9, `a surface alpha of ${m[1]} is not translucent`);
+  assert.match(src, /\.wgt-card,\.wgt-stack\{[^}]*background:var\(--widget-surface\)/,
+    'and every card is drawn on it, tinted ones included');
   /* ⚠ SUPERSEDED BY #R188, ON PURPOSE. #R187 tied this alpha to the Solid/Frosted-Glass setting
      (#R33/#R153), which meant 1.0 — fully opaque — in the default Solid mode. Measured afterwards:
      every widget card was opaque and the AQI card was a slab of rgb(255,204,0), i.e. the request
@@ -179,10 +185,20 @@ test('R187 widgets: the AQI / UV tint is flat and translucent, i.e. glass', () =
      that the widgets are glass regardless of the setting, so the alpha is now a constant and
      `_glassOn` is gone. What #R187 established and #R188 keeps — flat, translucent, contrast judged
      on the composite — is asserted above and below. See tests/r188-checks.test.mjs. */
-  assert.match(src, /function _tintA\(\)\{ return _TINT_GLASS; \}/,
+  assert.match(src, /--widget-sev4:/,
     'the tint alpha is a constant (#R188) — the appearance setting no longer decides it');
-  /* the text colour has to be decided on the COMPOSITED surface, not on the raw category colour */
-  assert.match(src, /_TINT_A\*_lum\(col\)\+\(1-_TINT_A\)\*_themeLum\(\)/, 'contrast must be judged on the blend');
+  /* ⚠ (#R292) THE CONTRAST QUESTION STOPPED NEEDING AN ANSWER. #R187 had to compute the luminance
+     of the category colour COMPOSITED over the glass, because the category was the card's
+     background and the text had to survive it. Nothing paints a card its category colour any more —
+     the text is `--widget-text-primary` on `--widget-surface` in every state, and the category
+     reaches only the border and (at the top two severities) the value. So the assertion is that the
+     situation cannot arise, which is what «flat and translucent» was always trying to buy. */
+  assert.ok(!/\.wgt-card\.wgt-tone-\S+\{[^}]*(background|[^-]color):(?!\s*color-mix)/.test(src),
+    'a severity may tint the border, never the card surface — contrast cannot be put at risk');
+  /* the rule is matched by BOUNDARY, not by a character budget: from the selector to its closing
+     brace. A `{0,600}` window is a number that has to be re-tuned every time a declaration is added. */
+  assert.match(src, /\.wgt-card,\.wgt-stack\{[^}]*color:var\(--widget-text-primary\)/,
+    'and every card takes the theme text colour');
 });
 
 /* ── 6. the water draws water ────────────────────────────────────────────────────────────────── */

@@ -114,20 +114,24 @@ test('R188 Cesium: the polar bands are always shown, and wear the map palette', 
 
 /* ── 4. widgets: glass, and one material for all of them ─────────────────────────────────────── */
 test('R188 widgets: every card is translucent glass, tint included', () => {
-  const src = read('js/widgets.js');
+  /* ⚠ (#R292) THE MATERIAL IS STILL ONE MATERIAL — it is `--widget-surface` in css/intmap.css now
+     rather than `--wgt-glass` in a JavaScript string, because the board's stylesheet left the code.
+     Every clause below is the same claim #R188 made, asked of the file that answers it today. */
+  const src = read('css/intmap.css').slice(read('css/intmap.css').indexOf('#R292 · THE WIDGET BOARD'));
   /* measured in the DEFAULT appearance before the change: --glass-fill = #1c1c1e (opaque), every
      card rgb(28,28,30), the AQI card an opaque rgb(255,204,0). No widget was glass at all. */
-  assert.match(src, /':root\{--wgt-glass:rgba\(255,255,255,0\.55\)/, 'the cards get their own material');
-  assert.match(src, /'\[data-theme="dark"\]\{--wgt-glass:rgba\(30,30,38,0\.44\)/, 'translucent in dark too');
-  assert.match(src, /\.wgt-card\{position:relative;border-radius:22px;[^']*background:var\(--wgt-glass\)/,
+  assert.match(src, /--widget-surface:rgba\(255,255,255,0\.55\)/, 'the cards get their own material');
+  assert.match(src, /--widget-surface:rgba\(30,30,38,0\.44\)/, 'translucent in dark too');
+  assert.match(src, /\.wgt-card,\.wgt-stack\{[^}]*background:var\(--widget-surface\)/,
     'the card fill must be the widget material, not the appearance-setting fill');
-  assert.ok(!/\.wgt-card\{position:relative;[^']*background:var\(--glass-fill\)/.test(src),
+  assert.ok(!/\.wgt-card,\.wgt-stack\{[^}]*background:var\(--glass-fill\)/.test(src),
     '--glass-fill must no longer decide whether a widget is glass');
-  /* the tint is a constant alpha — #R187 took it from the setting, which meant 1.0 (opaque) by default */
-  assert.match(src, /const _TINT_GLASS=0\.52;\s*\n\s*function _tintA\(\)\{ return _TINT_GLASS; \}/,
-    'AQI/UV must be the same material at a fixed alpha, not an opaque slab');
+  /* ⚠ AND THE TINTED CARDS ARE THE SAME MATERIAL — #R187 took the alpha from the appearance setting,
+     which meant 1.0 (opaque) by default. There is no per-card background left to get that wrong. */
+  assert.ok(!/\.wgt-card\.wgt-tone-\S+\{[^}]*background:/.test(src),
+    'AQI/UV must be the same material as every other card, not an opaque slab');
   /* the flat fill (#R187's other half) stays: no gradient may darken a corner */
-  assert.ok(!/linear-gradient\(158deg,\s*'\+_sh/.test(src), 'no re-introduced 158° shade gradient');
+  assert.ok(!/linear-gradient\(158deg/.test(src), 'no re-introduced 158° shade gradient');
   /* ⚠ and it is scoped to the widgets — every other surface still follows the setting (#R33/#R153) */
   const css = read('css/intmap.css');
   assert.match(css, /:root\{ --glass-blur:16px; --glass-sat:150%; --glass-fill:var\(--card-bg\);/,

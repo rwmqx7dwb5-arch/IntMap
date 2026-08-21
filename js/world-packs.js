@@ -3638,6 +3638,44 @@ window.IntMapModules.worldPacks=function(HOST){
         countryGrey:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
             if(washTier(String(f.id||''))===1) n++; }); }catch(_){} return n; })() });
       STATE.alertsLegend=(iso3)=>legendFor(String(iso3||'').toUpperCase());
+      /* ══ (#R292) THE WARNINGS, AS RECORDS — for the widget board's Saved-place alerts / Viewport
+         situation / Country watch cards. ⚠ THIS IS A READ OF `feats`, NOT A SECOND PIPELINE. The
+         requirement those cards are built to («既存の警報フィードと同じ正規化済みデータを使用し、
+         別の簡略処理を作らない») is only satisfiable if there is exactly one normalisation, and it
+         is the one above: `norm` is the 0–4 severity every feed has already been mapped onto, `hzr`
+         the hazard's own words, `at` the issuing time, `unit`/`name` the area it was issued for.
+         Nothing is recomputed here and nothing is fetched; a caller that asks before the layer has
+         ever been switched on gets an empty list and `on:false`, which is the truthful answer.
+         `bbox` is memoised on the feature object so a per-frame caller does not re-walk geometry. */
+      function _fBbox(f){
+        if(f._bb) return f._bb;
+        let w=180,s=90,e=-180,n=-90;
+        const eat=(c)=>{ if(typeof c[0]==='number'){ if(c[0]<w)w=c[0]; if(c[0]>e)e=c[0]; if(c[1]<s)s=c[1]; if(c[1]>n)n=c[1]; } else c.forEach(eat); };
+        try{ if(f.geometry&&f.geometry.coordinates) eat(f.geometry.coordinates); }catch(_){}
+        f._bb=(e<w)?null:[w,s,e,n];
+        return f._bb;
+      }
+      STATE.alertsQuery=(opt)=>{
+        opt=opt||{};
+        const out=[];
+        const bb=opt.bbox&&opt.bbox.length===4?opt.bbox:null;
+        const pt=(opt.lng!=null&&opt.lat!=null)?[+opt.lng,+opt.lat]:null;
+        const pad=(opt.padDeg==null?0:+opt.padDeg);
+        feats.forEach(f=>{
+          const p=f.properties||{};
+          if(!(p.norm>0)) return;                       /* 「発令なし」 is not an alert */
+          if(opt.iso&&String(p.iso)!==String(opt.iso).toUpperCase()) return;
+          const b=_fBbox(f);
+          if(bb){ if(!b) return; if(b[2]<bb[0]||b[0]>bb[2]||b[3]<bb[1]||b[1]>bb[3]) return; }
+          if(pt){ if(!b) return; if(pt[0]<b[0]-pad||pt[0]>b[2]+pad||pt[1]<b[1]-pad||pt[1]>b[3]+pad) return; }
+          let at=0; try{ const t=Date.parse(p.at); if(isFinite(t)) at=t; }catch(_){}
+          out.push({ iso:p.iso, feed:p.feed, unit:p.unit, place:String(p.name||''),
+            level:Math.max(0,Math.min(4,p.norm|0)), kind:String(p.hzr||p.hz||''), at:at||null,
+            colour:p.colA||p.colN||null, count:p.n|0, bbox:b });
+        });
+        out.sort((a,b2)=>(b2.level-a.level)||((b2.at||0)-(a.at||0)));
+        return { on, at:lastAt, alerts:opt.limit?out.slice(0,opt.limit):out, total:out.length };
+      };
       window.__wpAlerts={ toggle, refresh, ask:(iso)=>loadMA([String(iso||'').toUpperCase()]),
         /* (#R275) the tap's own answer, as a call — so a test can ask 「この地点で何が出ているか」
            without a pointer, and so Atlas can (standing rule: every feature is operable) */
