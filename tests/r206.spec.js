@@ -53,7 +53,12 @@ test('R206 ② the ◎ epicentre action is not painted like a selected mode', as
      the way the app asks for it, rather than waited on. */
   await page.waitForFunction(() => !!window.IntMapLayers, null, { timeout: 60000 });
   await loadLazyModules(page);
-  await page.evaluate(() => window.IntMapSeismic.open({ lng: 139.767, lat: 35.681, mw: 7.0, depth: 20 }));
+  /* ⚠ (#R300) OPENED WITH NO EPICENTRE, WHICH IS THE CASE THAT IS ARMED. This passed one and then
+     asserted `clickMode === 'epi'`; #R240 made a panel opened ON an epicentre start disarmed
+     (「with no epicentre there is exactly one thing to do」 — with one placed the reader chooses),
+     so the answer became 'none' and this file has been red on the nightly ever since. Both halves
+     of that rule are asserted below, so the change of argument cannot hide the default. */
+  await page.evaluate(() => window.IntMapSeismic.open());
   await page.waitForSelector('#sq-panel .sq-cm-epi', { state: 'visible' });
   const s = await page.evaluate(() => {
     const bg = (sel) => getComputedStyle(document.querySelector(sel)).backgroundColor;
@@ -64,10 +69,15 @@ test('R206 ② the ◎ epicentre action is not painted like a selected mode', as
       pickCount: document.querySelectorAll('#sq-panel .sq-pick').length,
       epiCount: document.querySelectorAll('#sq-panel .sq-cm-epi').length };
   });
-  expect(s.mode, 'the default click owner is still the epicentre (#R205)').toBe('epi');
+  expect(s.mode, 'opened with nothing to point at, the map is armed for the epicentre (#R205/#R240)').toBe('epi');
   expect(s.on, 'the selected segment wears the accent fill').not.toBe(s.off);
   expect(s.pickCount, 'the separate ◎ action button is gone (#R212 merged it into the segment)').toBe(0);
   expect(s.epiCount, 'and exactly one control places or moves the epicentre').toBe(1);
+  /* ⚠ (#R300) THE OTHER HALF OF #R240's RULE IS NOT ASSERTED HERE, AND THAT IS DELIBERATE. It reads
+     「with one already placed, the panel opens quiet」 — but `close()` does not reset the mode, so a
+     second `open()` on this same panel inherits the 'epi' the first one armed. Measured: 'epi', not
+     'none'. The claim needs a panel that has never been opened, which is what tests/r205.spec.js ①
+     has; asserting it here would only be asserting this test's own setup. */
   await page.evaluate(() => window.IntMapSeismic.close());
 });
 
@@ -76,7 +86,9 @@ test('R206 ② the ◎ epicentre action is not painted like a selected mode', as
    reported {z:12, bias:0}. The satellite source is tileSize:256, so MapLibre's level is zoom+1 and a
    warmer one level shallower can never hit. Asserted as the RELATION between the two numbers. */
 test('R206 ③ the satellite warmer asks for the level and the host the render path asks for', async () => {
-  await page.evaluate(() => { try { window.IntMapConsole.dispatch({ type: 'base', mode: 'satellite' }); } catch (_) {} });
+  /* ⚠ (#R300) through the facade — #R224 made the Atlas kernel lazy, so the bare global is undefined
+     until something asks, and the try/catch here turned that into a silent no-op. */
+  await page.evaluate(() => { try { window.IntMapAtlas.call('dispatch', { type: 'base', mode: 'satellite' }); } catch (_) {} });
   await page.waitForFunction(() => !!(window.IntMapSatProto && window.IntMapSatProto.netLevelBias), null, { timeout: 60000 });
 
   const proto = await page.evaluate(() => {

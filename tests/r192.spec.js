@@ -85,7 +85,9 @@ test('R192 seismic: the field is bounded by what can be felt, and never covers t
     await new Promise(res => setTimeout(res, 2000));
     const st = S.state();
     const at = (lo, la) => { const a = S.at(lo, la); return a ? { km: Math.round(a.km), jma: +a.jma.toFixed(2), mmi: +a.mmi.toFixed(2) } : null; };
+    const CM = window.IntMapCoastMask;
     return { has: true, field: st.field, far: st.far, mask: (window.IntMapLandMask ? window.IntMapLandMask.state() : null),
+      coast: { ready: !!(CM && CM.ready()), source: (CM && CM.ready()) ? CM.source() : null },
       sendai: at(140.87, 38.27), osaka: at(135.50, 34.69), beijing: at(116.40, 39.90), manila: at(121.0, 14.6) };
   });
   test.skip(!r.has, 'the seismic simulator is not installed here');
@@ -95,7 +97,17 @@ test('R192 seismic: the field is bounded by what can be felt, and never covers t
   /* THE REPORTED BUG: the far field only ever paints land, and it is not drawn at all without a mask */
   if (r.far) {
     expect(r.far.landMask, 'the far field had a mask').toBe(true);
-    expect(r.far.landSource, 'and it is the bundled one, not a DEM read that can half-arrive').toBe('bundled');
+  /* ══ ⚠ (#R300) 'bundled' WAS THE ONLY ANSWER WHEN THIS WAS WRITTEN, AND #R250 ADDED A BETTER ONE ══
+     The claim is 「the mask cannot half-arrive」 — a DEM read that lands in pieces draws stripes. #R250
+     answered the far field's coastline from js/coast-mask.js at the raster's OWN cell when the country
+     outlines are loaded (1.14 km instead of a 19.6 km staircase drawn at 1.17 km), keeping the bundled
+     raster as the fallback, and this line went on demanding the fallback. Red on the nightly ever since.
+     Both sources are WHOLE — neither is a tile read — so the honest statement is the relation #R250
+     actually established: the far field names the mask that answered it, and that is the coast mask
+     when the coast mask was ready and the bundled raster when it was not. A source that half-arrived
+     would be neither. */
+    expect(r.far.landSource, 'the far field names the whole mask that answered it (#R250)')
+      .toBe(r.coast.ready ? r.coast.source : 'bundled');
     expect(r.far.sea, 'most of a whole-world annulus around Japan is sea, and none of it is painted').toBeGreaterThan(r.far.painted);
   }
   /* 「現在の分布は過大評価すぎに思える」 — an M9's 震度1 used to run 7,100 km, i.e. across Asia. The

@@ -128,8 +128,11 @@ jobs:
       - uses: ./.github/actions/browser-tier
         with: { tier: core, suite: "${{ matrix.suite }}", shard: "${{ matrix.shard }}", of: "${{ matrix.of }}" }
 
-  # ══ (#R203) THE OTHER 78 MINUTES — NIGHTLY, AFTER EVERY MERGE, AND ON DEMAND ════════════════════
-  # 27 spec files, 4,699 s of measured serial time: the Cesium camera comparisons, the terrain reads,
+  # ══ (#R203) THE OTHER 78 MINUTES — NIGHTLY AND ON DEMAND ══════════════════════════════════════
+  # ⚠ (#R300) 「27 spec files」 was true when this was written and is not now: #R204/#R207 turned the
+  # split into a PRICE rather than a list (scripts/tiers.mjs, CORE_MAX_S = 1 s), so the core gate is
+  # SIX files and this tier is FIFTY-NINE. The families are unchanged — the Cesium camera comparisons,
+  # the terrain reads,
   # the flight simulator, the drone planner, the satellite catalogue, the seismic and tsunami fields.
   # Each of those is a handful of tests that take MINUTES apiece by nature, and none of them is a
   # thing an ordinary edit breaks — which is exactly why they are the wrong thing to make somebody
@@ -249,3 +252,51 @@ jobs:
           echo "core: ${{ needs.browser.result }}   deep: ${{ needs.browser-deep.result }}"
           test "${{ needs.browser.result }}" = "success"
           case "${{ needs.browser-deep.result }}" in success|skipped) ;; *) exit 1 ;; esac
+
+  # ══ (#R300) …AND SOMEBODY HAS TO BE TOLD ═══════════════════════════════════════════════════════
+  # #R203 wrote 「NOTHING IS DELETED BY BEING DEEP. Every assertion still runs, every night.」 and it
+  # was true: the schedule above has run the deep tier every night since. What was never arranged is
+  # anybody FINDING OUT — and the measurement is unambiguous. The nightly was RED on all fourteen
+  # runs from 2026-08-08 to 08-21, every one of the five `Deep rest` shards, and `browser-gate`
+  # reported it honestly each time. Two of the failures had been true since the round that caused
+  # them. Nobody was lied to; nobody looked, because a nightly is one row among the dozens a working
+  # day of pushes and PRs puts above it in `gh run list`.
+  #
+  # A result that lives only in a log is a result nobody has. So it is written to the one place in
+  # this repository that is FOR unfinished business — an issue, OPENED when the nightly goes red,
+  # REWRITTEN each night so it always describes the latest run, and CLOSED the night it goes green.
+  # ⚠ One issue edited, never a comment a night: fourteen 「still red」 comments are the same silence
+  # in a louder font. The logic, and the reason for every part of it, is scripts/deep-alarm.mjs.
+  #
+  # ⚠ THIS ADDS NOTHING TO A MERGE. It runs on the schedule only — #R207 measured that attaching the
+  # deep tier to `push` costs every merge ten minutes, and that decision is not reopened here. What
+  # changes is that the answer it already produces now reaches a reader.
+  deep-alarm:
+    name: Nightly deep tier — raise or clear the alarm
+    runs-on: ubuntu-latest
+    needs: [browser-deep]
+    if: ${{ github.event_name == 'schedule' && always() && needs.browser-deep.result != 'skipped' }}
+    permissions:
+      contents: read
+      issues: write          # ⚠ the ONLY job in this workflow with a write scope, and only for this
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version-file: .nvmrc
+      # The shards upload their Playwright report — junit.xml included — whenever they are not
+      # cancelled, so the failing tests can be NAMED rather than linked to. A miss is survivable:
+      # deep-alarm.mjs says "the shards uploaded no report" instead of printing an empty list.
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        continue-on-error: true
+        with:
+          pattern: playwright-report-deep-*
+          path: _deep
+      - name: Open, rewrite or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          node scripts/deep-alarm.mjs
+          --result "${{ needs.browser-deep.result }}"
+          --reports _deep
+          --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

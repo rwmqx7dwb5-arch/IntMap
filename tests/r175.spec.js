@@ -8,6 +8,23 @@
 //   4. the Vite bundle boots the same app: every module present, every vendor global republished
 import { test, expect } from '@playwright/test';
 import { loadLazyModules } from './helpers/app.js';
+import { publishedGlobals, lazyFiles, jsFiles } from './app-source.mjs';
+
+/* ══ (#R300) 「THE WHOLE INTMAP SURFACE IS PUBLISHED」, SAID AS THE SURFACE RATHER THAN A COUNT ══
+   ④ below asserted `Object.keys(window).filter(/^IntMap/).length > 75`, and the figure went under
+   75 the moment #R224 and #R291 moved the Atlas kernel and the directions panel behind
+   js/lazy-modules.js — correctly, on purpose. The nightly deep run has been red for it ever since,
+   and a count never said WHICH global anyway: seventy-six of the wrong ones would have passed.
+   The claim the test's title actually makes is that the BUILT bundle ships the same app, so that
+   is what it asks: every global an eager factory publishes is on `window` after boot. The files
+   the loader fetches on demand are removed here and asserted in tests/r209.spec.js instead. */
+const R175_ROOT = new URL('../', import.meta.url);
+const EAGER_GLOBALS = (() => {
+  const lazy = new Set(lazyFiles(R175_ROOT));
+  const t = publishedGlobals(R175_ROOT, jsFiles(R175_ROOT).filter((f) => !lazy.has(f)));
+  return [...new Set(Object.values(t).flatMap((f) => Object.values(f).flat()))]
+    .filter((g) => /^IntMap/.test(g)).sort();
+})();
 
 const boot = async page => {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
@@ -194,22 +211,39 @@ test('the Vite bundle boots the whole app', async ({ page }) => {
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
   await boot(page);
-  const s = await page.evaluate(() => ({
+  const s = await page.evaluate((EAGER) => ({
     modules: window.__imModuleCheck,
     vendor: { maplibregl: typeof window.maplibregl, mlcontour: typeof window.mlcontour, turf: typeof window.turf,
       topojson: typeof window.topojson, supabase: typeof window.supabase, sb: !!window.sb },
-    intMapGlobals: Object.keys(window).filter(k => /^IntMap/.test(k)).length,
+    missingEager: EAGER.filter((g) => typeof window[g] === 'undefined'),
     build: window.INTMAP_BUILD,
-  }));
+  }), EAGER_GLOBALS);
   expect(s.modules.missing, 'no required global is missing from the bundle').toEqual([]);
   expect(s.modules.missingFactories, 'no module factory is missing from the bundle').toEqual([]);
   expect(s.vendor).toEqual({ maplibregl: 'object', mlcontour: 'object', turf: 'object', topojson: 'object', supabase: 'object', sb: true });
-  expect(s.intMapGlobals, 'the whole IntMap surface is published').toBeGreaterThan(75);
+  expect(EAGER_GLOBALS.length, 'the eager surface was derived from js/, not from nothing').toBeGreaterThan(50);
+  expect(s.missingEager, 'the whole eager IntMap surface is published by the built bundle').toEqual([]);
   // (#R176) What this line is checking is that the bundle carries the stamp at all — pinning the round
   // that happened to be current when it was written makes it fail on every subsequent round instead.
   // The exact value is pinned once, in that round's own checks file.
   expect(s.build, 'the bundle carries a dated round stamp').toMatch(/^\d{4}-\d{2}-\d{2}-R\d+$/);
   expect(errors, 'the built page throws nothing on boot').toEqual([]);
-  // the lazy chunks arrive without blocking boot
-  await page.waitForFunction(() => typeof window.katex === 'object' && typeof window.html2canvas === 'function', null, { timeout: 30000 });
+  /* ══ ⚠⚠ (#R300) THEY DO NOT ARRIVE ANY MORE, AND THAT IS THE POINT OF THE ROUND THAT CHANGED IT ══
+     This waited 30 s for `window.katex` and `window.html2canvas` to turn up on their own. src/vendor.js
+     later keyed both to their FIRST USE — memoised dynamic imports behind `window.IntMapVendor` —
+     because they were 258 kB and 198 kB arriving at t = 1.04 s on a phone «for two features most
+     sessions never touch»: html2canvas runs when the reader presses 📷 Screenshot, katex when an Atlas
+     answer contains LaTeX. So the honest claim is the stronger one that file makes: absent until first
+     use, present after it, never half-loaded. The nightly deep run has been red on this line ever since. */
+  const vendor = await page.evaluate(async () => {
+    const before = { katex: typeof window.katex, html2canvas: typeof window.html2canvas };
+    const h = await window.IntMapVendor.html2canvas();
+    const k = await window.IntMapVendor.katex();
+    return { before, after: { katex: typeof window.katex, html2canvas: typeof window.html2canvas },
+      same: { katex: k === window.katex, html2canvas: h === window.html2canvas } };
+  });
+  expect(vendor.before, 'neither heavy library is on the boot path').toEqual({ katex: 'undefined', html2canvas: 'undefined' });
+  expect(vendor.after.html2canvas, 'html2canvas arrives when its first use asks for it').toBe('function');
+  expect(vendor.after.katex, 'and so does KaTeX').toBe('object');
+  expect(vendor.same, 'and each promise resolves to the library it published').toEqual({ katex: true, html2canvas: true });
 });

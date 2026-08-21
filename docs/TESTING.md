@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-20): the **core** tier that
 gates a push is **6 spec files / 1.1 min**; the **whole** suite is **65 measured spec files /
 86.5 min** of serial browser time against a ceiling of 86.7 min; and `npm run test:checks` runs
-**144 Node test files** with no browser at all (counted from `package.json` on 2026-08-22; the
+**145 Node test files** with no browser at all (counted from `package.json` on 2026-08-22; the
 line above it is the 2026-08-20 measurement). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -183,6 +183,43 @@ engine, regenerate the mirror — `npm run check:static` fails if the two drift:
 node scripts/sync-newsgeo.mjs
 ```
 
+## The deep tier, and who is told when it goes red (#R300)
+
+`npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
+tier: `npm run test:deep`, **59 spec files** against core's 6, because #R204/#R207 turned the split
+from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
+front of a push only if it costs at most one second, so nearly every per-round regression file is
+deep. Nothing is deleted by being deep — every assertion still runs.
+
+**Where it runs.** `.github/workflows/ci.yml` runs it on the `schedule` (`0 18 * * *` = 03:00 JST)
+and on `workflow_dispatch`, and deliberately **not** on `push` — #R207 measured that attaching it to
+every merge cost ten minutes a merge. Locally, `npm run test:deep`.
+
+> ⚠ **A tier that nobody watches drifts red and stays red.** MEASURED in #R300: the nightly was red
+> on **all fourteen runs from 2026-08-08 to 08-21** — every one of the five `Deep rest` shards — and
+> the aggregate job reported it honestly each time. Nobody was lied to; nobody looked, because a
+> nightly is one row among the dozens a working day of pushes and PRs puts above it in `gh run list`.
+> Two of the failures had been true since the round that caused them.
+
+So the nightly's answer is written where unfinished business lives, and printed where every session
+starts:
+
+| | |
+|---|---|
+| `scripts/deep-alarm.mjs` | the `deep-alarm` CI job runs it after the nightly. RED → open the issue if it is not open and **rewrite its body** with tonight's failing tests (named, read out of the shards' `junit.xml`); GREEN → close it. One issue edited, never a comment a night. `cancelled` is not a pass. |
+| `node scripts/worktree.mjs status` | prints last night's verdict — which CLAUDE.md §1 puts in front of every session before any work starts. The `--brief` form (the SessionStart hook) shouts only when it is not green; the full form always answers, including 「不明」 when `gh` could not be asked, so silence is never read as a pass. |
+
+Reproduce a nightly failure locally with `npm run test:deep`, or one file at a time:
+
+```bash
+npx playwright test tests/r209.spec.js --workers=1
+```
+
+⚠ **Prove a failure is real before fixing it.** This suite has measured contention flakes (#R186,
+#R196): in #R300's own triage `tests/r164.spec.js` failed at two workers and passed alone, and two
+more failures were `Target crashed` from a second Playwright process on the same machine. Run the
+file by itself at one worker first; `node scripts/baseline.mjs --classify test-results/junit.xml`
+says which of a run's failures `main` already has.
 ## When a test fails
 
 Playwright captures artefacts on failure:

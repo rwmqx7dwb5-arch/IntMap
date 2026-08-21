@@ -112,8 +112,15 @@ test('R185 satellites: the layer is not empty when the live feed is unreachable'
     const cb = document.getElementById('dl-sats');
     if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
   });
+  /* ⚠ (#R300) WAIT FOR THE SENTENCE TOO, NOT ONLY FOR THE PIXELS. js/satellites-live.js primes from
+     the bundled catalogue, DRAWS, and only then finishes losing the live race and rewrites `lastErr`
+     to say 「live feed unreachable」 — so 「drawn > 0」 arrives before the message this test is about.
+     MEASURED on a busy machine: `bundled: true` with `err: ''`, which is the honest state one
+     moment before the sentence lands. Waiting for the whole claim is not weaker: if the message
+     never comes, the wait times out and the test fails, which is what it did when it raced. */
   await page.waitForFunction(() => {
-    try { const s = window.IntMapSatellites && window.IntMapSatellites.state(); return !!(s && s.catalogue > 0 && s.drawn > 0); }
+    try { const s = window.IntMapSatellites && window.IntMapSatellites.state();
+      return !!(s && s.catalogue > 0 && s.drawn > 0 && /shipped with the app/.test(String(s.err || ''))); }
     catch (_) { return false; }
   }, null, { timeout: 90_000 });
   const s = await page.evaluate(() => window.IntMapSatellites.state());

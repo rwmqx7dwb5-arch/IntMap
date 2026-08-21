@@ -257,7 +257,14 @@ test('R184 route ⑨: Bedford → Cambridge connects by rail in 1950 and does no
     const now = await O.historicalRoute(A, B, { year: new Date().getUTCFullYear(), kind: 'rail' });
     return { then, now };
   });
-  test.skip(r.then && r.then.err === 'overpass', 'Overpass unreachable from this runner');
+  /* ⚠ (#R300) EITHER QUERY, NOT JUST THE FIRST. This test asks Overpass TWICE — 1950 and today —
+     and the guard only covered the first, so a run whose second query was rate-limited failed with
+     `Expected 'disconnected', Received 'overpass'`: a statement about the API's mood presented as a
+     statement about the Varsity Line. MEASURED as exactly that on the nightly deep run. Overpass
+     rate-limits by IP, and a CI runner shares one, so the second call is the likelier of the two
+     to be refused — the 2.5 s courtesy sleep between them is not a quota. */
+  test.skip(!!(r.then && r.then.err === 'overpass') || !!(r.now && r.now.err === 'overpass'),
+    'Overpass unreachable or rate-limited from this runner');
   /* THE POINT OF THE FEATURE: the Varsity Line closed in 1967, so the two years disagree */
   expect(r.then.err, 'a 1950 rail route between Bedford and Cambridge exists').toBeUndefined();
   expect(r.then.lengthM / 1000).toBeGreaterThan(35);

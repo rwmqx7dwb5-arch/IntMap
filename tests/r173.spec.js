@@ -109,6 +109,17 @@ test('the cockpit contains a real world, with the viewpoint at the aeroplane (#R
   await page.evaluate(async () => { const S = window.IntMapFlightSim._st(), t = (S._terrF || 0) + 250, a0 = S.alt;
     for (let i = 0; i < 25; i++) { S.alt = a0 + (t - a0) * (i + 1) / 25; await new Promise(r => setTimeout(r, 60)); } });
   await page.waitForTimeout(5000);                          // the camera follows the altitude every frame
+  /* ⚠ (#R300) PAUSE BEFORE MEASURING, WHICH IS THIS FILE'S OWN RULE AND WAS APPLIED ONLY ONCE.
+     The block above says it: 「Everything asserted below is a property of the camera and the frame on
+     screen, not of the aeroplane moving」. The descent measurement never paused, so the physics kept
+     flying — and with the DEM not yet under the aircraft (measured: `_terrF` 0, so the ramp targets
+     250 m and the model then climbs away from it at ~10 m/s) the reading lands wherever the five
+     seconds happened to end. MEASURED as exactly that: this test passes alone and on CI, and failed
+     twice on a busy machine by ~250 m. ⚠ THE CAMERA IS NOT THE SUSPECT — sampled every 2 s through
+     the whole descent, `eyeAlt` tracks `alt` to within 0.1 m at every step, terrain arriving
+     mid-descent included. Freezing the model is what makes the number the camera's rather than the
+     stopwatch's. */
+  await pause(page);
   const low = await page.evaluate(() => ({ globeness: window.IntMapGeoEngine.camera.globeness(),
     zoom: window.__imap.getZoom(), alt: window.IntMapFlightSim._st().alt,
     eyeAlt: window.IntMapGeoEngine.camera.altitude() }));

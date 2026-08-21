@@ -269,8 +269,18 @@ test('R186 aircraft: the sweep covers the viewport with tiled circles, not one',
     /* The view-driven refetch is DEBOUNCED against the poll interval, so waiting for it makes this
        a test of a timer under whatever load the runner is carrying. Re-arm the layer instead: that
        is the same entry point a poll uses, and it plans the sweep synchronously before it asks the
-       network for anything — so this measures the PLAN, which is what the test is about. */
-    G.camera.jumpTo({ center: [8, 50], zoom: 4.2 }); await wait(600);
+       network for anything — so this measures the PLAN, which is what the test is about.
+       ══ ⚠⚠ (#R300) …AND THE CENTRE HAS TO MOVE, WHICH IS #R188's RULE AND NOT A TRICK ══════════
+       This zoomed out over the SAME centre. #R188 made a request that arrives while a sweep is
+       running yield to it 「when it is about the same sky」 and take over only 「when the centre has
+       moved more than half the covered block」 — a 128-circle sweep takes 154 s to issue, and
+       abandoning it on every moveend was measured as an aircraft track with 2 legs where five fixes
+       had been fed to it (tests/r174). Nothing here has a network, so the first sweep never finishes
+       and never releases; with the centre unmoved the second request was refused for ever and
+       `state().cover` stayed the close-in plan. MEASURED: same centre → 1 circle after 45 s; centre
+       moved → 48 circles (8 × 6) in the first 250 ms. So the view MOVES as well as widening, which
+       is what a reader does and what the rule is written for. */
+    G.camera.jumpTo({ center: [-40, 20], zoom: 4.2 }); await wait(600);
     cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true })); await wait(200);
     cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true }));
     for (let i = 0; i < 40 && ((window.IntMapPlanes3D.state().cover || {}).circles || 1) === 1; i++) await wait(250);
@@ -309,12 +319,20 @@ test('R186 water: a source outside the working rectangle is not silently dropped
       ? null : null;
     const before = TW.state();
     return { nx: g.nx, cellM: Math.round(g.cellM), bbox: g.bbox,
+             res: before.resolution, resList: before.resolutions,
              hasAreaLayer: window.IntMapGeoEngine.layers.has('tw-area'),
              hasFlowLine: window.IntMapGeoEngine.layers.has('tw-flow'),
              solveMs: before.result && before.result.solveMs };
   });
-  /* 384 cells over the view, not 256 — the grid was resampling 17 DEM samples into one cell */
-  expect(r.nx).toBe(384);
+  /* ══ ⚠ (#R300) 384 WAS THE DEFAULT WHEN THIS WAS WRITTEN, AND #R273 RAISED IT AND MADE IT A DIAL ══
+     「水流シミュレーションの解像度が低すぎる。」 — the desktop default went 384 → 512 and the reader
+     was given the steps 384/512/768/1024, so a number written down here could only ever be wrong
+     again. The claim #R186 made is that the working grid is not resampling many DEM samples into one
+     cell, i.e. it is the resolution the module SAYS it is and never back down to the old 256.
+     The module publishes both, so ask it. */
+  expect(r.resList, 'the module offers its resolution steps').toEqual(expect.arrayContaining([r.res]));
+  expect(r.nx, 'the working grid IS the resolution the module reports').toBe(r.res);
+  expect(r.nx, 'and never back to the 256 that resampled 17 DEM samples into one cell').toBeGreaterThanOrEqual(384);
   /* ⚠ (#R211) REVERSED BY A LATER INSTRUCTION — 「水を配置すると謎の点線長方形が出る」. #R186 drew the
      working rectangle so a click outside it would not look like a broken feature; the OTHER half of
      that fix (a click outside rebuilds the grid there) is what actually removed the failure, and it

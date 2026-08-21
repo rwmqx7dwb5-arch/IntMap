@@ -7,6 +7,22 @@
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 import { loadLazyModules } from './helpers/app.js';
+import { constFrom } from './app-source.mjs';
+
+const R191_ROOT = new URL('../', import.meta.url);
+/* ══ ⚠⚠ (#R300) THE GLYPH'S COLOUR IS A FACT ABOUT js/data-layers.js, SO READ IT FROM THERE ══════
+   This said 「the glyph is #1e90ff = (30,144,255)」 with the three numbers typed out, and the civil
+   aircraft are `#00D9FF` — a later round changed the colour and the spec went on demanding dodger
+   blue, red on the nightly deep run ever since.
+   ⚠ AND «every other channel has to be exact» CANNOT BE TRUE OF A CHANNEL AT ZERO. `_feHex` clamps
+   `want/dir − AMBIENT` at 0, so a channel the glyph draws below the shader's fixed ambient term is
+   ALREADY over-lit at a declared 0 and there is nothing the layer can ask for to bring it down —
+   the same shape as the blue ceiling the source already describes at the other end. So the claim is
+   stated at both ends: where the layer could reach the glyph's channel it lands on it, and where it
+   could not, the reason is the floor or the ceiling rather than a colour that disagrees. */
+const GLYPH = String(constFrom(R191_ROOT, 'js/data-layers.js', 'PLANE_CIV'));
+const AMBIENT = Number(constFrom(R191_ROOT, 'js/data-layers.js', '_FE_AMBIENT'));
+const CIV = [1, 3, 5].map((i) => parseInt(GLYPH.slice(i, i + 2), 16));
 
 async function boot(page) {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -52,13 +68,23 @@ test('R191 aircraft: the lifted mark is the glyph — same silhouette, same stro
       rimGlobe: globeCase[2], rimMerc: mercCase[2] };
   });
   test.skip(!r.has, 'the aircraft layer is not installed here');
-  /* the glyph is #1e90ff = (30,144,255); blue saturates at the renderer's ceiling under the globe,
-     which is stated in the source — every other channel has to be exact */
-  expect(Math.abs(r.merc[0] - 30), 'Mercator red').toBeLessThan(1.5);
-  expect(Math.abs(r.merc[1] - 144), 'Mercator green').toBeLessThan(1.5);
-  expect(Math.abs(r.globe[0] - 30), 'globe red').toBeLessThan(1.5);
-  expect(Math.abs(r.globe[1] - 144), 'globe green').toBeLessThan(1.5);
-  expect(r.globe[2], 'globe blue is at the ceiling the extrusion can reach').toBeGreaterThan(240);
+  /* every channel the layer could ask for lands on the glyph; the ones it could not are named */
+  const FLOOR = AMBIENT * 255;   /* a glyph channel below this is over-lit at a declared 0 */
+  expect(CIV.some((v) => v === 255), 'the glyph has a saturated channel, so the ceiling case is exercised').toBe(true);
+  for (const [proj, got] of [['Mercator', r.merc], ['globe', r.globe]]) {
+    for (let c = 0; c < 3; c++) {
+      const want = CIV[c];
+      if (want <= FLOOR) {
+        expect(got[c], `${proj} channel ${c} sits at the shader's ambient floor, which is as low as it goes`)
+          .toBeLessThan(FLOOR + 1.5);
+      } else if (want < 255) {
+        expect(Math.abs(got[c] - want), `${proj} channel ${c} lands on the glyph (${GLYPH})`).toBeLessThan(1.5);
+      } else {
+        /* 255 under the globe: `directional` is < 1, so the channel needs more than a channel has */
+        expect(got[c], `${proj} channel ${c} is at the ceiling the extrusion can reach`).toBeGreaterThan(240);
+      }
+    }
+  }
   /* and the stroke case exists in both halves of the ramp */
   expect(String(r.rimGlobe), 'the stroke is white under the globe').toMatch(/^#f{0,2}[0-9a-f]/i);
   expect(String(r.rimMerc), 'and under Mercator').toMatch(/^#f{0,2}[0-9a-f]/i);
@@ -79,7 +105,9 @@ test('R191 seismic: the field reaches the end of the lowest class, and only over
     await S.rebuildField();
     await new Promise(res => setTimeout(res, 2000));
     const st = S.state();
+    const CM = window.IntMapCoastMask;
     return { has: true, field: st.field, far: st.far, tsunami: st.tsunami,
+      coast: { ready: !!(CM && CM.ready()), source: (CM && CM.ready()) ? CM.source() : null },
       terrainKm: st.terrainKm, maxKm: st.maxKm,
       layers: { fine: window.IntMapGeoEngine.layers.has('seis-mmi-fill'),
                 far: window.IntMapGeoEngine.layers.has('seis-mmi-far') } };
@@ -106,7 +134,17 @@ test('R191 seismic: the field reaches the end of the lowest class, and only over
   /* …on LAND only, exactly like the fine field. Painting the ocean is what punched a rectangle
      through the middle of the rings the first time this was built. */
   expect(r.far.landMask, 'the land mask loaded').toBe(true);
-  expect(r.far.landSource, '(#R192) …and it is the bundled one, which cannot half-arrive').toBe('bundled');
+  /* ══ ⚠ (#R300) 'bundled' WAS THE ONLY ANSWER WHEN THIS WAS WRITTEN, AND #R250 ADDED A BETTER ONE ══
+     The claim is 「the mask cannot half-arrive」 — a DEM read that lands in pieces draws stripes. #R250
+     answered the far field's coastline from js/coast-mask.js at the raster's OWN cell when the country
+     outlines are loaded (1.14 km instead of a 19.6 km staircase drawn at 1.17 km), keeping the bundled
+     raster as the fallback, and this line went on demanding the fallback. Red on the nightly ever since.
+     Both sources are WHOLE — neither is a tile read — so the honest statement is the relation #R250
+     actually established: the far field names the mask that answered it, and that is the coast mask
+     when the coast mask was ready and the bundled raster when it was not. A source that half-arrived
+     would be neither. */
+  expect(r.far.landSource, 'the far field names the whole mask that answered it (#R250)')
+    .toBe(r.coast.ready ? r.coast.source : 'bundled');
   expect(r.far.sea, 'and most of a whole-world annulus around Japan is sea').toBeGreaterThan(r.far.painted);
   /* the fine field read a frozen DEM — the striping fix */
   expect(r.field.demTiles, 'the field snapshotted its own DEM tiles').toBeGreaterThan(0);

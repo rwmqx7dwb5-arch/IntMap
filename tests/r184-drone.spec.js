@@ -30,13 +30,28 @@ const BOOT = { timeout: 90_000 };
    name that no longer exists. */
 const boot = async page => { await bootPage(page); };
 /* Interlaken → the Jungfrau massif. Real places, real terrain. */
-const ALPINE = async (page) => page.evaluate(async () => {
-  const D = window.IntMapDrone;
-  D.newRoute(); D.usePreset('prosumer');
-  D.addWaypoint(7.8632, 46.6863, 100, 'agl');
-  D.addWaypoint(7.9800, 46.5900, 100, 'agl');
-  return !!(await D.compute());
-});
+/* ⚠ (#R300) THE ALPS HAVE TO BE THERE BEFORE THE ROUTE IS SOLVED. Every claim below is about
+   2,000 m of rock between two points, and the rock is a live terrarium tile fetch
+   (js/map-extras.js → s3.amazonaws.com/elevation-tiles-prod). When it has not landed the sampler
+   answers 0 everywhere and the walk finds a clear line of sight over the Bernese Oberland — ④ then
+   fails with `losBreaks 0`, which is a true statement about a flat world. MEASURED: it failed at two
+   workers and passed run alone, twice. So the fixture waits for the DEM to actually report a
+   mountain, and a DEM that never arrives times out instead of quietly flattening the Alps. */
+const ALPINE = async (page) => {
+  await page.waitForFunction(async () => {
+    try {
+      const S = await window.IntMapTerrain.sampler([7.85, 46.58, 7.99, 46.70], 11);
+      return !!(S && S.elevAt(7.92, 46.63) > 1500);
+    } catch (_) { return false; }
+  }, null, { timeout: 60_000 });
+  return page.evaluate(async () => {
+    const D = window.IntMapDrone;
+    D.newRoute(); D.usePreset('prosumer');
+    D.addWaypoint(7.8632, 46.6863, 100, 'agl');
+    D.addWaypoint(7.9800, 46.5900, 100, 'agl');
+    return !!(await D.compute());
+  });
+};
 
 /* ── ① THE SEAMS ARE FILLED ───────────────────────────────────────────────────────────────── */
 test('R184 drone ①: the wind field and all four hazard sources are registered into the planner', async ({ app }) => {

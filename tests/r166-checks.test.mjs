@@ -18,7 +18,7 @@
 // module allowed to write, for mode + satPanelDismissed).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appShell, lazyFiles } from './app-source.mjs';
+import { appShell, lazyFiles, publishedGlobals } from './app-source.mjs';
 import { readFileSync } from 'node:fs';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
 
@@ -198,12 +198,16 @@ test('R166 #6 the boot guard names every new factory, so one missing file cannot
 test('R166 #7 index.html actually shrank and no moved block came back inline', () => {
   const lines = html.split('\n').length;
   assert.ok(lines < 12_500, `index.html should be well under the pre-R166 16,740 lines; it is ${lines}`);
-  // Blocks that opened with `window.X=(function(){` are the easy half to check directly.
-  for (const g of ['IntMapLayers', 'IntMapLayerSidebar', 'IntMapTicker', 'IntMapShare', 'ProjView', 'DrawTool',
-    'IntMapIsolate', 'IntMapRoute', 'IntMapLOS', 'IntMapOutline', 'IntMapMoveShape', 'IntMapIsochrone',
-    'IntMapArc3D', 'IntMapObjects', 'Wind', 'IntMapWeatherEC', 'IntMapWeather', 'IntMapTimeSeries',
-    'IntMapAIResearch', 'IntMapEdu', 'IntMapRadiation', 'IntMapPopArea', 'IntMapSlope', 'IntMapRF',
-    'IntMapSun', 'IntMapTransitReach', 'IntMapDisaster', 'IntMapEarthReplay']) {
+  /* Blocks that opened with `window.X=(function(){` are the easy half to check directly.
+     ⚠ (#R300) THE LIST IS READ OFF THE FILES NOW, NOT TYPED OUT. It went on naming `IntMapRF`,
+     `IntMapDisaster` and `IntMapEarthReplay` four rounds after #R296 deleted them — harmless in
+     itself, because this is a NEGATIVE assertion, but the same staleness in the other direction is
+     not: a global that left index.html AFTER this list was written was never guarded against coming
+     back. Derived, it follows js/ in both directions. */
+  const moved = [...new Set(Object.values(publishedGlobals(root, Object.keys(MOVED)))
+    .flatMap((f) => Object.values(f).flat()))];
+  assert.ok(moved.length > 20, `the moved-global list derived from js/ is ${moved.length} — it collapsed`);
+  for (const g of moved) {
     assert.ok(!new RegExp(`window\\.${g}\\s*=\\s*\\(function`).test(html),
       `${g} must not be defined inline in index.html again`);
   }

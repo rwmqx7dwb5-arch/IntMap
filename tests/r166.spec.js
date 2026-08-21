@@ -18,33 +18,42 @@ import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
 import { loadLazyModules } from './helpers/app.js';
+import { publishedGlobals } from './app-source.mjs';
 
 test.describe.configure({ mode: 'serial' });
 
 let page, diag;
 
-/* The globals the 41 moved blocks publish. Every one is built by a factory in one of the seven new
-   files; if a file failed to load or a factory threw, the matching name is missing here. */
-const MOVED_GLOBALS = [
-  // js/map-ui.js
-  'IntMapLayers', 'IntMapLayerSidebar', 'IntMapTicker', 'IntMapShare', '_imPlacePopup',
-  // js/map-tools.js
-  // ⚠ (#R209) IntMapLOS stays in this list, but it is no longer here at boot: the line-of-sight
-  // block became js/viewshed.js behind js/lazy-modules.js, published only when something asks. The
-  // list still means "every global the moved blocks publish", so beforeAll asks for the on-demand
-  // ones first (see below) rather than the name being dropped and the check with it.
-  'ProjView', 'DrawTool', 'IntMapIsolate', 'IntMapRoute', 'IntMapLOS', 'IntMapOutline',
-  'IntMapMoveShape', 'IntMapIsochrone', 'IntMapArc3D', 'IntMapObjects',
-  // js/weather.js
-  'Wind', 'IntMapWeatherEC', 'IntMapWeather',
-  // js/layer-packs.js
-  'IntMapOverlays', 'IntMapLayers9', 'IntMapBeta2',
-  // js/analysis-panels.js
-  'IntMapTimeSeries', 'IntMapAIResearch', 'IntMapEdu',
-  // js/sims.js
-  'IntMapRadiation', 'IntMapPopArea', 'IntMapSlope', 'IntMapRF', 'IntMapSun', 'IntMapTransitReach',
-  'IntMapDisaster', 'IntMapEarthReplay',
+/* ══ (#R300) THE GLOBALS THE MOVED BLOCKS PUBLISH — READ OFF THE BLOCKS ═════════════════════════
+   This was a list of 31 names typed out by hand, and #R296 deleted three of the features on the
+   user's own instruction — 「電波・通信圏と見通し線解析を統合して」, 「災害シミュレーターは4つのうち、
+   放射性物質拡散シミュレーションを残し全削除」, 「「地球リプレイ」は存在意義が不明だから全削除」. From
+   that round on this file demanded `IntMapRF`, `IntMapDisaster` and `IntMapEarthReplay`, which the
+   program is not supposed to have; it was red on the nightly deep run for a fortnight before
+   anybody looked. tests/r166-checks.test.mjs's own table WAS shortened in that commit, because
+   something ran it.
+
+   So the list is derived from the factories themselves: for each file, the `window.<X>=` assignments
+   that run WHEN THE FACTORY RUNS (tests/app-source.mjs explains exactly what that includes and what
+   it deliberately does not). Deleting a feature now shortens this list in the same commit; adding
+   one lengthens it. What the check MEANS is unchanged and it is strictly wider than the old list —
+   52 names from these files rather than 27, because the hand-kept version had also simply never
+   caught up with several blocks that publish more than one thing.
+
+   ⚠ js/dash-extended.js IS NOT ONE OF THIS ROUND'S SEVEN and it is here on purpose: `IntMapOverlays`
+   was in the old list, filed under a 「js/layer-packs.js」 heading it has never belonged to. Dropping
+   it while rewriting the list would be this round quietly buying itself a smaller job, which is the
+   move this whole file exists to catch. */
+const R166_FILES = [
+  'js/map-ui.js', 'js/map-tools.js', 'js/weather.js', 'js/layer-packs.js', 'js/analysis-panels.js',
+  'js/sims.js', 'js/playground.js',
+  /* (#R176/#R209) `los` left js/map-tools.js for js/viewshed.js, which the loader now fetches on
+     demand — the factory name, the signature and the single call site are unchanged. */
+  'js/viewshed.js',
+  'js/dash-extended.js',
 ];
+const PUBLISHED = publishedGlobals(new URL('../', import.meta.url), R166_FILES);
+const MOVED_GLOBALS = [...new Set(Object.values(PUBLISHED).flatMap((f) => Object.values(f).flat()))].sort();
 
 test.beforeAll(async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 1280, height: 820 }, storageState: seededStorageState() });
@@ -68,12 +77,19 @@ test.afterAll(async () => {
   await page?.context()?.close();
 });
 
-test('R166 #1 all seven files loaded, all 41 factories ran, and every moved global is present', async () => {
+test('R166 #1 every file loaded, every factory ran, and every moved global is present', async () => {
   const check = await page.evaluate(() => window.__imModuleCheck);
   expect(check, 'the boot-time module check ran').toBeTruthy();
   expect(check.missing, 'no required module global is missing').toEqual([]);
   expect(check.missingFactories, 'no module factory is missing').toEqual([]);
-  const missing = await page.evaluate((names) => names.filter((n) => !window[n]), MOVED_GLOBALS);
+  /* ⚠ (#R300) THE DERIVATION HAS TO HAVE FOUND SOMETHING. A list read out of the source is only
+     stronger than a hand-kept one while it is not EMPTY: a renamed file, a factory written in a
+     shape the walk does not recognise, or a parse that quietly returned nothing would all leave
+     `[].filter(…)` equal to `[]` and this test green for having stopped checking. So each file
+     must have contributed, and the whole must still be the size the split produced. */
+  for (const f of R166_FILES) expect(Object.keys(PUBLISHED[f] || {}).length, `${f} still publishes globals from its factories`).toBeGreaterThan(0);
+  expect(MOVED_GLOBALS.length, 'the moved blocks publish the globals this file is about').toBeGreaterThan(40);
+  const missing = await page.evaluate((names) => names.filter((n) => typeof window[n] === 'undefined'), MOVED_GLOBALS);
   expect(missing, 'every global the moved blocks publish exists').toEqual([]);
 });
 
@@ -85,7 +101,7 @@ test('R166 #2 the REAL objects were built, not the no-map stubs each block opens
     return {
       drawTool: keys(window.DrawTool), objects: keys(window.IntMapObjects), los: keys(window.IntMapLOS),
       route: keys(window.IntMapRoute), isolate: keys(window.IntMapIsolate), radiation: keys(window.IntMapRadiation),
-      disaster: keys(window.IntMapDisaster), sun: keys(window.IntMapSun), wind: keys(window.Wind),
+      sun: keys(window.IntMapSun), wind: keys(window.Wind),
       layers: keys(window.IntMapLayers), sidebar: keys(window.IntMapLayerSidebar),
     };
   });
@@ -98,7 +114,11 @@ test('R166 #2 the REAL objects were built, not the no-map stubs each block opens
   expect(api.route).toEqual(expect.arrayContaining(['open', 'clear', 'setStart', 'active']));
   expect(api.isolate).toEqual(expect.arrayContaining(['enter', 'exit', 'active']));
   expect(api.radiation).toEqual(expect.arrayContaining(['run', 'clear', 'ISOTOPES', 'SOURCES']));
-  expect(api.disaster).toEqual(expect.arrayContaining(['open', 'run', 'clear']));
+  /* ⚠ (#R300) `IntMapDisaster` STOOD HERE. #R296 deleted it — 「災害シミュレーターは4つのうち、放射性
+     物質拡散シミュレーションを残し全削除」 — and the hazard that stayed is the radiation model above,
+     which now has the panel it never had. Its absence is asserted in tests/r197.spec.js ⑥, in a
+     browser, after every on-demand module has loaded; keeping a probe for it here would only be a
+     second copy of that. */
   expect(api.sun).toEqual(expect.arrayContaining(['open', 'close', 'setTime']));
   // Wind's no-canvas stub is exactly {toggle,stop,setOpacity} — refetch/sampleAt/dataTime only
   // exist on the real field, so requiring them is the discriminator here.

@@ -46,8 +46,20 @@ test.describe('R196 ① the epicentre, on a phone', () => {
     expect(covers, 'the panel really does cover most of a phone screen — that is the premise').toBeGreaterThan(0.5);
 
     const seen = [];
-    for (const [x, y] of [[195, 480], [120, 620]]) {
-      await page.click('#sq-panel .sq-cm-epi');   /* (#R212) the two controls were merged into this one */
+    for (const nth of [0, 1]) {
+      /* ⚠ (#R300) PRESS ◎ UNTIL THE PICK IS LIVE, WHICH IS AT MOST TWICE. #R212 merged the two
+         controls into this one and #R218 then gave it an OFF state — 「どちらも、もう一度クリック
+         したら選択解除されるように。」 — so a single press ARMS from 'none' and DISARMS from 'epi'.
+         After the first tap the segment is still lit while the pick itself has ended, so the second
+         time round one press turned it off and this file has been red on the nightly ever since.
+         The loop is bounded and asserts nothing: if two presses cannot make the pick live, the
+         assertion below still fails, which is the point. */
+      await page.evaluate(async () => {
+        const p = document.getElementById('sq-panel'), b = p.querySelector('.sq-cm-epi');
+        for (let i = 0; i < 2 && getComputedStyle(p).pointerEvents !== 'none'; i++) {
+          b.click(); await new Promise((r) => setTimeout(r, 300));
+        }
+      });
       await page.waitForTimeout(350);
       /* ⚠ (#R207) THIS ASSERTED THE MECHANISM, NOT THE MEASUREMENT. What #R196 measured is that the
          tap point is the CANVAS — that the panel is not standing between the user and the map — and
@@ -56,22 +68,42 @@ test.describe('R196 ① the epicentre, on a phone', () => {
          so `elementsFromPoint` at the tap point still returns the canvas while the panel is still
          readable. The premise above (the panel covers >50 % of a phone map) is unchanged, and so is
          the assertion below it; what changes is that "out of the way" now means untouchable rather
-         than invisible. */
-      const mid = await page.evaluate(([px, py]) => {
+         than invisible.
+         ══ ⚠⚠ (#R300) …AND THE POINT IS FOUND, NOT WRITTEN DOWN, BECAUSE #R219 MADE THE ANSWER
+         DEPEND ON WHAT IS UNDER IT. Two fixed coordinates stood here and one of them now lands on a
+         `.sq-row`, which is CORRECT: 「◎ をクリックしたら、その後にポップアップ上でクリックしても、
+         その直下の地図がクリックされた判定になってしまう」 — so `.im-pick-ghost` puts the box at
+         `pointer-events:none` and its own interactive descendants back at `auto`. The panel's
+         SURFACE lets a tap through; its CONTROLS are still controls. Both halves are asserted here,
+         and the tap uses a surface point the scan actually found — which is also the only way this
+         test survives the panel's layout changing again. */
+      const probe = await page.evaluate(() => {
         const p = document.getElementById('sq-panel');
-        const e = document.elementsFromPoint(px, py)[0];
+        const r = p.getBoundingClientRect();
+        const surface = [], controls = [];
+        for (let y = Math.ceil(r.top) + 2; y < r.bottom - 2; y += 6) {
+          for (let x = Math.ceil(r.left) + 2; x < r.right - 2; x += 6) {
+            const e = document.elementsFromPoint(x, y)[0];
+            if (!e) continue;
+            if (e.tagName === 'CANVAS') surface.push([x, y]);
+            else if (p.contains(e)) controls.push([x, y, e.tagName + '.' + String(e.className).slice(0, 24)]);
+          }
+        }
         return {
+          surface, controls,
           panelStepsAside: getComputedStyle(p).pointerEvents === 'none' || p.style.display === 'none',
           panelVisible: p.style.display !== 'none',
           barShown: !!document.getElementById('im-pick-bar') && getComputedStyle(document.getElementById('im-pick-bar')).display !== 'none',
-          top: e ? e.tagName + '.' + String(e.className).slice(0, 24) : 'none',
         };
-      }, [x, y]);
-      expect(mid.panelStepsAside, 'the panel is out of the way of the pointer while the pick is live').toBe(true);
-      expect(mid.panelVisible, '…without disappearing (#R207)').toBe(true);
-      expect(mid.barShown, 'and a banner says what is being placed').toBe(true);
-      expect(mid.top, 'so the tap point really is the map').toContain('CANVAS');
+      });
+      expect(probe.panelStepsAside, 'the panel is out of the way of the pointer while the pick is live').toBe(true);
+      expect(probe.panelVisible, '…without disappearing (#R207)').toBe(true);
+      expect(probe.barShown, 'and a banner says what is being placed').toBe(true);
+      expect(probe.surface.length, 'the panel SURFACE lets a tap through to the map (#R196/#R207)').toBeGreaterThan(20);
+      expect(probe.controls.length, '…and its own controls are still controls (#R219)').toBeGreaterThan(0);
 
+      /* two different surface points, so the two taps really are two different places */
+      const [x, y] = probe.surface[Math.floor(probe.surface.length * (nth ? 0.75 : 0.25))];
       await page.mouse.click(x, y);
       await page.waitForTimeout(900);
       const st = await page.evaluate(() => { const p = document.getElementById('sq-panel');
