@@ -3815,11 +3815,17 @@ window.IntMapModules.worldPacks=function(HOST){
              and the WARNING that goes with it (the same step is not the same danger); the reasoning
              behind the warning and the enumeration of who publishes what live one tap away, in
              `legendFor`, which is where a reader who wants them is already going. */
-          +esc(L('IntMap’s own conversion — the same step is not the same danger. Tap a country for its agency’s scale.',
-                 'IntMap 独自の換算です。同じ段でも危険度は同じではありません。国をタップで機関の階級。',
-                 'Eigene Umrechnung von IntMap — gleiche Stufe heißt nicht gleiche Gefahr. Land antippen für die Skala der Behörde.',
-                 'Собственный пересчёт IntMap — одинаковая ступень не значит одинаковую опасность. Нажмите страну для шкалы службы.',
-                 'Conversión propia de IntMap — el mismo nivel no es el mismo peligro. Toque un país para la escala de su agencia.'))+'</div>';
+          /* ⚠ (#R299 追記) 「簡潔に」 IS A MEASUREMENT, AND THIS ONE STILL FAILED IT. Production, panel
+             width 330 px: the agency note rendered at 14 px = ONE line, and this one at 29 px = TWO.
+             What made it long was the third sentence — 「Tap a country for its agency’s scale」 —
+             which the panel already says in full two blocks below (「Tap any country for its own
+             agency’s scale and the areas in force.」). A hint repeated inside the same box is not a
+             hint; it is the length the reader asked to be rid of. The two claims stay. */
+          +esc(L('IntMap’s own conversion — the same step is not the same danger.',
+                 'IntMap 独自の換算です。同じ段でも危険度は同じではありません。',
+                 'Eigene Umrechnung von IntMap — gleiche Stufe heißt nicht gleiche Gefahr.',
+                 'Собственный пересчёт IntMap — одинаковая ступень не значит одинаковую опасность.',
+                 'Conversión propia de IntMap — el mismo nivel no es el mismo peligro.'))+'</div>';
         return keyHead(L('Each agency’s own published scale','各機関が公表している配色','Skala der jeweiligen Behörde','Собственная шкала службы','Escala propia de cada agencia'))
           +keyRows([[PAL.cap[1],L('lower rank','下位の階級','niedrigere Stufe','низкая ступень','rango menor')],
                     [PAL.cap[3],L('higher rank','上位の階級','höhere Stufe','высокая ступень','rango mayor')],
