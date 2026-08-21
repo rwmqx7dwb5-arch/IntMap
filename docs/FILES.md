@@ -386,6 +386,17 @@ scripts/
                                   ⚠ **早送りだけ＝冪等**なので並行セッションが同時に走らせてよく、
                                   排他ロックを必要としない。
                                   ⚠ `npm test` には入れない——CI のチェックアウトは detached な PR ref。
+  worktree.mjs                    **セッションの作業場**（`status` / `new <slug>` / `done`）。`CLAUDE.md` §6 が
+                                  手作業で求めていた 6 工程——空きラウンド番号・branch・OneDrive 外の
+                                  worktree・`node_modules` の junction・preview 設定——を 1 コマンドにする。
+                                  原本の場所は `master-sync.mjs` と同じく `--git-common-dir` から導出。
+                                  ⚠ **空き番号は 5 つの出典から取る**（`DEV-NOTES.md`・branch・worktree・
+                                  `launch.json`・`tests/`）。索引だけを見ると **merge 済み**しか見えず、
+                                  いま走っている `feat/r<N>-…` と衝突する（過去 3 回）。
+                                  ⚠ `done` は **`git worktree remove` のエラーを判定にしない**——原本の
+                                  `.git/worktrees/` は OneDrive が掴んでいて消せないので、`prune` してから
+                                  一覧に訊く。branch は `-d`、断られたら `origin/main` と**木を比べて**
+                                  同一のときだけ消す（§5 は `--squash` で merge するので `-d` は必ず断る）。
   engine-coupling.mjs             レンダラ脱依存のゲート
   i18n-*.mjs                      翻訳の被覆と形の監査（§10）
   eol.mjs                         ソース検査は**バイト列ではなく内容**を読む（改行はチェックアウトの性質）

@@ -254,7 +254,26 @@ function done() {
   if (branch && branch !== 'main' && branch !== 'HEAD') {
     /* -d, never -D: git refuses an unmerged branch, and that refusal is the safety rule. */
     try { git(['branch', '-d', branch], master); console.log(`  ✓ branch ${branch} を削除`); }
-    catch { console.log(`  ⚠ ${branch} は未 merge なので残した（消すなら merge を先に）`); }
+    catch {
+      /* ⚠ AND IT WILL ALWAYS REFUSE HERE, BECAUSE CLAUDE.md §5 MERGES BY SQUASH. A squashed
+         branch's commits are not ancestors of main, so `-d` calls every finished round «unmerged»
+         and the branches pile up — the rule would be technically safe and useless in practice.
+         So ask the question -d is a proxy for: does this branch still carry anything main lacks?
+         `git diff --quiet origin/main <branch>` compares the two TREES, which is exactly right
+         after a squash: identical content means nothing would be lost. Any difference at all —
+         including work committed after the merge — leaves the branch alone. */
+      const sameTree = (() => {
+        try { git(['diff', '--quiet', 'origin/main', branch], master); return true; } catch { return false; }
+      })();
+      if (sameTree) {
+        try {
+          git(['branch', '-D', branch], master);
+          console.log(`  ✓ branch ${branch} を削除（squash merge 済み——origin/main と同一内容）`);
+        } catch (e) { console.log(`  ⚠ ${branch} を削除できなかった: ${e.message}`); }
+      } else {
+        console.log(`  ⚠ ${branch} は origin/main に無い変更を持っているので残した（消すなら merge を先に）`);
+      }
+    }
   }
   console.log('\n  ⚠ まだなら:  node scripts/master-sync.mjs --sync  →  pwsh -File scripts/backup-usb.ps1');
 }

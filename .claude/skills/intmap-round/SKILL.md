@@ -82,17 +82,12 @@ node scripts/worktree.mjs new <slug>
 
 ---
 
-## 4. 検証（段を上げる。段 3 は push の直前に 1 回だけ）
+## 4. 検証
 
-```bash
-node --test tests/r<N>-checks.test.mjs   # 段0
-npm run check:i18n                       # 段1（主題に応じて check:docs / catalog / engine / static）
-npx playwright test tests/r<N>.spec.js   # 段2
-npm test                                 # 段3 ← push の直前
-npm run test:deep                        # 段4 3-D・Cesium・物理を触ったときだけ
-```
+**段とコマンドの表は [`.claude/rules/execution-strategy.md`](../../rules/execution-strategy.md) §4
+が正本。**ここには書き写さない——そこを見て、この工程では段 0 から順に上げる。
 
-その回の回帰検査 `tests/r<N>-checks.test.mjs` を書いたら、**`package.json` の `test:checks` の
+このラウンド固有の義務だけ書く: その回の回帰検査 `tests/r<N>-checks.test.mjs` を書いたら、**`package.json` の `test:checks` の
 一覧に足す**——足し忘れたファイルは永久に緑になる（#R260 ⑥ が実際に赤で捕まえた）。
 
 大量ログの読み分けは `intmap-verifier` に渡す。
