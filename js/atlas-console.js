@@ -21,6 +21,7 @@
 import { makeAtlasReply } from './atlas-reply.js';
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy. Every system prompt below opens with personaPrompt('<its task role>') and adds ONLY its task rules. */
 import { attachLightbox, atlFileKind, atlFmtBytes, atlReadText, LIGHTBOX_CSS } from './atlas-attach.js';   /* (#R232) attachments + the full-screen viewer */
+import { MSG_TOOLS_CSS, MSG_TOOLS_CSS_MOBILE, makeMsgTools } from './atlas-msg-tools.js';   /* (#R298) the per-message tool bar + the in-place editor */
 import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';
 import { makeAtlasControls } from './atlas-controls.js';
 import { makeAtlasSources } from './atlas-sources.js';
@@ -136,8 +137,11 @@ window.IntMapModules.atlasConsole=function(HOST){
     function rampFrom(c){ return [_mixc('#ffffff',c,0.12),_mixc('#ffffff',c,0.38),_mixc('#ffffff',c,0.68),c,_mixc(c,'#000000',0.35)]; }
     /* (#R44) conversation MEMORY + last-referenced place — the user reported "文脈理解が壊滅的": Atlas was sending
        ONLY the current message to the model with no history and no map state, so follow-ups ("there", "turn it
-       off", "more", "the same country over time") had nothing to resolve against. */
+       off", "more", "the same country over time") had nothing to resolve against. ⚠ (#R298) AN ENTRY IS `{t,s}`, NOT A
+       BARE STRING: `s` is what the model reads, `t` is the turn that produced it — the array is capped at 16, so an
+       absolute position means nothing, and an edited message must rewind history as far as it rewinds the chat. */
     let _hist=[]; let _lastPlace=null; let _lastMissileCtx=null; let _lastRadCtx=null; let _lastRouteCtx=null;   /* (#R85) last missile / radiation / route → in-message controls re-run it */
+    let _turnSeq=0, _curTurn=0;   /* (#R298) the monotone turn id: run() stamps it on the user bubble and recordTurn files the exchange under it. ⚠ its own line — tests/r199 pins `let _hist=[]; let _lastPlace=null;` verbatim to prove the kernel still owns _lastPlace, so nothing may be spliced between them */
     /* (#R86c) multi-stop route optimisation (TSP): order N points shortest-first via nearest-neighbour + 2-opt on
        great-circle distance (keyless, instant), keeping the first point as the fixed start; the ordered tour is then
        driven on the real OSM road network (OSRM). Good for "10地点を最短順に並べ替える". */
@@ -1320,7 +1324,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       try{ const pr=profile||_requestProfile(q); const pb=_profileBlock(pr); if(pb) p+=pb+'\n'; }catch(_){}   /* (#R135) machine-parsed temporal/geo/evidence hints + enforced action-choice rules */
       if(_herePoint&&isFinite(_herePoint.lng)) p+='[PINNED POINT] The user clicked an EXACT spot on the map: latitude '+(+_herePoint.lat).toFixed(4)+', longitude '+(+_herePoint.lng).toFixed(4)+(_herePoint.name?(' (near '+_herePoint.name+')'):'')+'. Words like "here / this spot / this place / この地点 / ここ / hier / здесь / aquí" refer to THIS coordinate. First work out what is at or near it (country, region, city, terrain, sea) and answer about it specifically; if it is ocean or uninhabited say so. You may also pass place:"there" to actions and it resolves to this point.\n\n';
       const wc=wctxBlock(); if(wc) p+='[WORKING CONTEXT] (what this conversation is currently about — resolve "the same/them/それ/同じ条件" against this)\n'+wc+'\n\n';
-      if(_hist.length) p+='[RECENT CONVERSATION] (oldest→newest; resolve pronouns/follow-ups against this)\n'+_hist.slice(-8).join('\n')+'\n\n';
+      if(_hist.length) p+='[RECENT CONVERSATION] (oldest→newest; resolve pronouns/follow-ups against this)\n'+_hist.slice(-8).map(x=>x.s).join('\n')+'\n\n';   /* (#R298) an entry is {t,s} — the model reads `s`, `t` exists so an edited message can rewind the history */
       p+='[NEW REQUEST]\n'+q+'\n\nInterpret the request IN CONTEXT of the state and conversation above. Resolve references like "it / that / there / here / this country / the same / again / now / turn it off / make it bigger / the Nth one / zoom in more" using them. If the request is a tweak of the previous one, keep the parts that still apply.'
         /* (#R118) clarification-loop killer (the "ワルシャワ条約機構→何年?" death-spiral): resolve deictic references
            from context, one clarifying question MAX, and on pushback COMMIT to the best-faith reading. */
@@ -2211,8 +2215,10 @@ window.IntMapModules.atlasConsole=function(HOST){
             let body;
             if(alts){ const selI=r.sel||0;
               /* ⚠ (#R291) the SHARED cards (§17) — one renderer, two surfaces. */
-              body=window.IntMapRouteCards.altCards(alts,Object.assign(_cardOpt(),{sel:selI,setId:r.routeSetId,transit:true}))
-                +'<div class="atl-rdetail" data-kind="transit" data-rset="'+esc(r.routeSetId||'')+'" style="max-height:240px;overflow:auto;">'+window.IntMapRouteCards.legRows((alts[selI]||{}).legs,_cardOpt())+'</div>';
+              /* ⚠ (#R298) …and the SAME SHAPE: the chosen card OPENS, exactly as it does in the panel.
+                 It was a sibling block here and an in-card block there — one renderer, two layouts. */
+              body=window.IntMapRouteCards.altCards(alts,Object.assign(_cardOpt(),{sel:selI,setId:r.routeSetId,transit:true,
+                detail:(i2,a2)=>window.IntMapRouteCards.legRows(a2.legs,_cardOpt())}));
             } else { body='<div style="font-size:13px;margin:3px 0 3px;">'+summ+'</div><div style="font-size:12px;margin-bottom:4px;">'+seq+'</div><div style="max-height:220px;overflow:auto;">'+legHtml+'</div>'; }
             let h=_hdr+(alts?('<div style="font-size:11px;color:var(--text-muted);margin:2px 0 5px;">'+alts.length+' '+L('options — tap one to show it on the map','件の候補 — タップで地図に表示','Optionen — zum Anzeigen antippen','вариантов — нажмите, чтобы показать','opciones — toca para ver en el mapa')+'</div>'):'')+body
               +note(r.jrEstimate
@@ -2248,8 +2254,8 @@ window.IntMapModules.atlasConsole=function(HOST){
           let h=_hdr;
           if(ralts){ h+='<div style="font-size:11px;color:var(--text-muted);margin:2px 0 5px;">'+ralts.length+' '+L('routes — tap one to show it on the map','経路候補 — タップで地図に表示','Routen — zum Anzeigen antippen','маршрутов — нажмите, чтобы показать','rutas — toca para ver en el mapa')+'</div>'
               /* ⚠ (#R291) THE SAME CARDS THE PANEL DRAWS (§17), with the same `data-rset` / `data-ai`. */
-              +window.IntMapRouteCards.altCards(ralts,Object.assign(_cardOpt2(),{sel:0,setId:r.routeSetId,transit:false}))
-              +'<div class="atl-rdetail atl-rsteps" data-kind="road" data-rset="'+esc(r.routeSetId||'')+'" style="max-height:240px;overflow:auto;">'+_stepList((ralts[0]||{}).steps)+'</div>';
+              +window.IntMapRouteCards.altCards(ralts,Object.assign(_cardOpt2(),{sel:0,setId:r.routeSetId,transit:false,
+                detail:(i2,a2)=>_stepList(a2.steps)}));   /* (#R298) the card opens — see routing-cards.refreshDetail */
           } else { h+='<div style="font-size:13px;margin:3px 0 5px;"><b>'+_rdur(r.duration)+'</b> · '+_rkm(r.distance)+'</div>'
               +'<div style="max-height:220px;overflow:auto;font-size:11.5px;line-height:1.5;" class="atl-rsteps" data-rset="'+esc(r.routeSetId||'')+'">'+_stepList(r.steps)+'</div>'; }
           h+=note(r.provider==='valhalla'
@@ -2580,7 +2586,10 @@ window.IntMapModules.atlasConsole=function(HOST){
         case 'sunHours': case 'shadeHours': case 'terrainShadow': case 'solarHours': case 'insolationYear': {
           let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g){ ll={lng:g.lng,lat:g.lat}; try{ GE().camera.flyTo({center:[g.lng,g.lat],zoom:Math.max(GE().camera.getZoom(),12)}); }catch(_){} } } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; else { const c=GE().camera.getCenter(); ll={lng:c.lng,lat:c.lat}; } }catch(_){}
           let ok=false, txt='';
-          try{ if(window.IntMapSun){ window.IntMapSun.open(); ok=true;
+          /* ⚠ (#R298) THE PANEL IS OPENED ON THE POINT THIS ACTION RESOLVED. `open()` with no argument
+             names the camera's centre in its own heading, and the `flyTo` above has not landed yet, so
+             the reader was shown a heading for the place they were looking at BEFORE they asked. */
+          try{ if(window.IntMapSun){ window.IntMapSun.open(ll||undefined); ok=true;
             if(a.solstice){ await window.IntMapSun.solsticeShade(); }
             else if(a.terrainOnly){ window.IntMapSun.terrainShadow(true); }
             else if(ll){ const r=await window.IntMapSun.analysePoint(ll.lng,ll.lat);
@@ -3608,7 +3617,9 @@ window.IntMapModules.atlasConsole=function(HOST){
             try{ A.select(found.id); }catch(_){}
             try{ window.IntMapSatPanel&&window.IntMapSatPanel.open(found.id); }catch(_){}
             try{ GE().camera.easeTo({center:[found.lng,found.lat],duration:900}); }catch(_){}
-            const la=A.lookFrom(A.observer(),found);
+            /* ⚠ (#R298) the observer is the point the reader chose when there is one — this asked the
+               camera about a satellite the reader had just named a place for. */
+            const la=A.lookFrom(A.observer((typeof _herePoint!=='undefined'&&_herePoint)||undefined),found);
             const det=' — '+L('altitude','高度','Höhe','высота','altitud')+' '+Math.round(found.altKm).toLocaleString()+' km'
               +(found.velKmS?(' · '+found.velKmS.toFixed(2)+' km/s'):'')
               +(found.periodMin?(' · '+L('period','周期','Umlaufzeit','период','periodo')+' '+found.periodMin.toFixed(1)+' min'):'')
@@ -4082,13 +4093,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         +'#atlas-panel .atl-go.idle:hover{background:#f0f0f4;filter:none;}'
         +'#atlas-panel .atl-go.busy{background:var(--primary-color);box-shadow:0 2px 8px rgba(0,0,0,0.2);color:#fff;border-color:transparent;}'   /* (#R156) Stop-answering button = accent fill + white square icon */
         +'#atlas-panel .atl-go.busy:hover{filter:brightness(1.07);}'
-        /* (#R72) per-message tools (copy / retry) under every Atlas reply — ChatGPT-style, user bubbles get none */
-        +'#atlas-panel .atl-msgt{display:flex;gap:2px;margin:4px 0 0;align-self:flex-start;opacity:0.55;transition:opacity .15s ease;}'
-        +'#atlas-panel .atl-b.a:hover + .atl-msgt,#atlas-panel .atl-b.u:hover + .atl-msgt,#atlas-panel .atl-msgt:hover{opacity:1;}'
-        /* (#R296) the reader's own message is right-aligned, so its copy bar is too */
-        +'#atlas-panel .atl-msgt-u{align-self:flex-end;}'
-        +'#atlas-panel .atl-msgt button{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:3px 6px;border-radius:7px;display:inline-flex;align-items:center;gap:4px;font-size:10.5px;}'
-        +'#atlas-panel .atl-msgt button:hover{background:var(--input-bg);color:var(--text-main);}'
+        +MSG_TOOLS_CSS
         /* (#R72) scroll-to-bottom jump button */
         +'#atlas-panel .atl-jump{position:absolute;left:50%;transform:translateX(-50%);bottom:72px;z-index:5;width:32px;height:32px;border-radius:50%;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--popup-bg);color:var(--text-main);cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.22);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:0;}'
         +'#atlas-panel .atl-jump.show{display:flex;}'
@@ -4152,47 +4157,23 @@ window.IntMapModules.atlasConsole=function(HOST){
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ainote{font-size:10px;padding:2px 12px calc(6px + env(safe-area-inset-bottom,0px));}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ctl-lbl{font-size:13px;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-msgt button{font-size:11.5px;padding:4px 8px;}'
+        +MSG_TOOLS_CSS_MOBILE
         +'}';
       document.head.appendChild(s); }
-    function bubble(who,html){ const d=document.createElement('div'); d.className='atl-b '+(who==='u'?'u':'a'); d.innerHTML=html; chatEl.appendChild(d);
-      /* (#R296) 「Atlasはユーザーが送ったメッセージもコピーできるように」 — see `copyBtn` */
+    /* (#R298) the per-message tool bar and the in-place editor are js/atlas-msg-tools.js — the note at the top of
+       that file says why. What cannot travel with them is bound here, LAZILY: `chatEl` is null until the panel is
+       built, `run` / `_stopRun` are this closure's own, and only this closure may truncate `_hist`. */
+    const { copyBtn, editBtn, msgTools } = makeMsgTools({ L:L, esc:esc, chat:()=>chatEl,
+      run:(q,imgs,files)=>run(q,imgs,files), stopRun:()=>{ try{ _stopRun(); }catch(_){} },
+      rewindHist:(t)=>{ _hist=_hist.filter(x=>x&&x.t<t); } });
+    /* (#R296) 「Atlasはユーザーが送ったメッセージもコピーできるように」 — see `copyBtn`. (#R298) `ed` = what the turn was RUN
+       with ({turn,q,imgs,files,edit}): the turn id is stamped on the bubble so an edit can rewind to it, and a bubble
+       that carries a request (not a bare image row) gets Edit next to Copy. */
+    function bubble(who,html,ed){ const d=document.createElement('div'); d.className='atl-b '+(who==='u'?'u':'a'); d.innerHTML=html; chatEl.appendChild(d);
+      if(ed&&ed.turn!=null) d.dataset.turn=String(ed.turn);
       if(who==='u'){ try{ const bar=document.createElement('div'); bar.className='atl-msgt atl-msgt-u';
-        bar.appendChild(copyBtn(d)); d.insertAdjacentElement('afterend',bar); }catch(_){} }
+        bar.appendChild(copyBtn(d)); if(ed&&ed.edit) bar.appendChild(editBtn(d,ed)); d.insertAdjacentElement('afterend',bar); }catch(_){} }
       try{ chatEl.scrollTop=chatEl.scrollHeight; }catch(_){} return d; }
-    /* (#R72) per-reply tools: copy + retry on ATLAS messages. ⚠⚠ (#R296) …AND ON THE READER'S OWN
-       (「Atlasはユーザーが送ったメッセージもコピーできるように」): ONE function, so the two cannot disagree.
-       A user bubble gets Copy, not Retry — their own sentence's Retry is under the reply it produced. */
-    function copyBtn(src){
-      const cpSvg='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
-      const b=document.createElement('button');
-      b.type='button';
-      b.innerHTML=cpSvg+'<span>'+L('Copy','コピー','Kopieren','Копировать','Copiar')+'</span>';
-      b.title=L('Copy message','メッセージをコピー','Nachricht kopieren','Скопировать','Copiar mensaje');
-      b.onclick=()=>{ try{ navigator.clipboard.writeText(src.innerText||''); const sp=b.querySelector('span'); if(sp){ const t2=sp.textContent; sp.textContent='✓'; setTimeout(()=>{ sp.textContent=t2; },1200); } }catch(_){} };
-      return b; }
-    /* (#R122) when a reply is finalized, position the conversation so the USER's message that triggered it sits at
-       the TOP of the chat viewport (read the answer from its start) — unless the whole exchange already fits, in
-       which case bottom-align so nothing is cut off. Deferred over two frames to survive late/async reply layout. */
-    function _scrollUserTop(ub){ if(!ub||!chatEl) return;
-      const doit=()=>{ try{ const ubR=ub.getBoundingClientRect(), cR=chatEl.getBoundingClientRect();
-        const rel=ubR.top-cR.top+chatEl.scrollTop;
-        if(chatEl.scrollHeight-rel<=chatEl.clientHeight+4) chatEl.scrollTop=chatEl.scrollHeight;
-        else chatEl.scrollTop=Math.max(0,rel-8); }catch(_){} };
-      try{ requestAnimationFrame(()=>{ doit(); setTimeout(doit,70); }); }catch(_){ doit(); } }
-    function msgTools(aiEl,q){ try{ if(!aiEl||!aiEl.parentElement) return;
-      /* (#R122) auto-scroll: user message to top. ⚠ (#R296) the previous sibling is now that message's own copy bar, so the walk skips `.atl-msgt`. */
-      try{ let ub=aiEl.previousElementSibling;
-        while(ub&&ub.classList&&ub.classList.contains('atl-msgt')) ub=ub.previousElementSibling;
-        if(ub&&ub.classList&&ub.classList.contains('u')) _scrollUserTop(ub); }catch(_){}
-      const old=aiEl.nextElementSibling; if(old&&old.classList&&old.classList.contains('atl-msgt')) old.remove();
-      const bar=document.createElement('div'); bar.className='atl-msgt';
-      const rtSvg='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
-      bar.appendChild(copyBtn(aiEl));   /* (#R296) the same button the reader's own message gets */
-      if(q){ const rt=document.createElement('button'); rt.innerHTML=rtSvg+'<span>'+L('Retry','再試行','Erneut','Повторить','Reintentar')+'</span>'; rt.title=L('Run this request again','この指示をもう一度実行','Erneut ausführen','Выполнить снова','Ejecutar de nuevo');
-        rt.onclick=()=>{ try{ run(q); }catch(_){} };
-        bar.appendChild(rt); }
-      aiEl.insertAdjacentElement('afterend',bar);
-    }catch(_){} }
     /* (#R101) example prompts REWRITTEN to showcase what only Atlas can do — cross-country comparison, analytical
        ranking, a transit-isochrone and a cross-data brief — instead of trivial one-tap actions (dark mode / fly to X
        / satellite) that the normal UI already does ("わざわざAtlasでやる必要のない無駄な動作"). */
@@ -4330,7 +4311,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           /* (#R126) §16.4/§24.3: select within THIS message's routeSetId — never "alternative i of whatever was computed last" */
           const rset=(box&&box.getAttribute('data-rset'))||undefined;
           try{ window.IntMapRouting&&window.IntMapRouting.selectAlt&&window.IntMapRouting.selectAlt(ai,rset); }catch(_){}
-          /* (#R291) the detail list is the card's SIBLING — IntMapRouteCards.refreshDetail redraws it from THIS message's own set. */
+          /* (#R291→#R298) the detail is INSIDE the chosen card, so selecting one redraws the SET — IntMapRouteCards.refreshDetail does it from THIS message's own set. */
           window.IntMapRouteCards.refreshDetail(rset,ai,{lang:HOST.lang,units:(typeof HOST.unitMode!=='undefined'?HOST.unitMode:'metric'),tz:(HOST.userTZ&&HOST.userTZ!=='auto')?HOST.userTZ:''}); return; }
         /* (#R296) the `.atl-route-mode` branch stood here — a handler for markup that cannot exist. */
         const rdb=e.target.closest&&e.target.closest('.atl-traj-btn[data-rad]');
@@ -5049,13 +5030,14 @@ window.IntMapModules.atlasConsole=function(HOST){
       _lastUserMsg=q;   /* (#R64) replies mirror the language of THIS message, not the UI setting */
       /* (#R73) a new message CANCELS any turn still thinking/executing */
       const gen=++_runGen;
+      const turn=(_curTurn=++_turnSeq);   /* (#R298) the turn id every bubble and every history entry of THIS exchange carries, so an edit can rewind to exactly here */
       try{ chatEl.querySelectorAll('.atl-b.a .atl-dots').forEach(d=>{ const b=d.closest('.atl-b'); if(b) b.innerHTML=_cancelledNote(); }); }catch(_){}
       /* (#R231) 「画像については…吹き出しで囲わなくてそのまま表示でいい」 — the image row is its own
          element. It keeps the `u` class (_scrollUserTop reads previousElementSibling.classList) and
          `.atl-imgrow` takes the fill/padding/radius off; the 74 px square crop is gone with it.
          ⚠ FILE CHIPS STAY IN THE BUBBLE — a file is NAMED, not shown. Images-only makes no bubble. */
-      if(imgs.length) bubble('u','<div class="atl-imgrow-in">'+imgs.map(u=>'<img src="'+esc(u)+'" alt="" loading="lazy">').join('')+'</div>').classList.add('atl-imgrow');
-      if(q||files.length) bubble('u',(files.length?'<div style="display:flex;flex-wrap:wrap;gap:5px;'+(q?'margin-bottom:6px;':'')+'">'+files.map(f=>'<span class="atl-fchip atl-fchip-msg"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="atl-fchip-n">'+esc(f.name)+'</span></span>').join('')+'</div>':'')+esc(q));   /* (#R158) file chips are named, not shown, so they stay in the bubble with the text */
+      if(imgs.length) bubble('u','<div class="atl-imgrow-in">'+imgs.map(u=>'<img src="'+esc(u)+'" alt="" loading="lazy">').join('')+'</div>',{turn:turn}).classList.add('atl-imgrow');   /* (#R298) stamped with the turn but NOT editable — a picture has no text to edit; the request bubble below carries the Edit */
+      if(q||files.length) bubble('u',(files.length?'<div style="display:flex;flex-wrap:wrap;gap:5px;'+(q?'margin-bottom:6px;':'')+'">'+files.map(f=>'<span class="atl-fchip atl-fchip-msg"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="atl-fchip-n">'+esc(f.name)+'</span></span>').join('')+'</div>':'')+esc(q),{turn:turn,q:q,imgs:imgs,files:files,edit:true});   /* (#R158) file chips are named, not shown, so they stay in the bubble with the text; (#R298) this bubble carries the whole request, so this is the one Edit re-runs */
       /* (#R142) generating state → the send button becomes a Stop button; a fresh AbortController lets Stop kill the
          in-flight request. The whole turn is wrapped so EVERY exit path (return / throw / early-out) restores the button. */
       try{ _abortCtl=(typeof AbortController!=='undefined')?new AbortController():null; }catch(_){ _abortCtl=null; }
@@ -5188,7 +5170,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     function recordTurn(q, say, acts, fails){ try{ updateWctx(acts,fails); }catch(_){} try{ _parseExclusions(q); }catch(_){}
       try{ const did=(acts||[]).filter(a=>(fails||[]).indexOf(a)<0).map(actLabel).filter(Boolean);
       let a='Atlas: '+String(say||'(done)').slice(0,180); if(did.length) a+=' [did: '+did.join('; ').slice(0,260)+']'; if((fails||[]).length) a+=' [failed: '+fails.map(actLabel).join('; ').slice(0,160)+']';
-      _hist.push('User: '+q.slice(0,260)); _hist.push(a); if(_hist.length>16) _hist=_hist.slice(-16); }catch(_){} }
+      _hist.push({t:_curTurn,s:'User: '+q.slice(0,260)}); _hist.push({t:_curTurn,s:a}); if(_hist.length>16) _hist=_hist.slice(-16); }catch(_){} }   /* (#R298) both halves are filed under whichever turn is current. The brief / runDirect entry points bump _runGen but open no turn of their own, so what they record belongs to the last one — which is right: rewinding to before that turn should drop them too */
     /* (#R112) Atlas is a REAL sidebar TAB in normal + mobile mode — the console mounts, IN NORMAL FLOW, into its own
        content area (#atlas-feed) BELOW the sidebar tab bar, exactly like the News / Information / Countries tabs. The
        header + tabs stay visible; there is NO popup overlay (the old "popup forcibly pasted onto the sidebar"

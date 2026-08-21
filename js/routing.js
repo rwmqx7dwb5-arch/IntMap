@@ -77,9 +77,14 @@ window.IntMapModules.routing=function(HOST){
       GE().layers.add({id:'imroute-durlab',type:'symbol',source:SRC,filter:['all',['==',['geometry-type'],'Point'],['has','dur']],
         layout:{'text-field':['get','dur'],'text-font':['literal',['Noto Sans Regular']],'text-size':11.5,'text-padding':6,'text-offset':[0,-0.2]},
         paint:{'text-color':['coalesce',['get','col'],'#1a73e8'],'text-halo-color':'#ffffff','text-halo-width':1.8}});
-      /* (#R291) 「経路線をクリックまたはタップしやすい透明ヒット領域を別途持たせる」 — a 22 px invisible
-         line under everything. A 4 px route line is not a touch target; this is. */
-      GE().layers.add({id:'imroute-hit',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'LineString'],['has','alt']],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#000000','line-opacity':0.01,'line-width':22}});
+      /* (#R291) 「経路線をクリックまたはタップしやすい透明ヒット領域を別途持たせる」 — an invisible line
+         under everything. A 4 px route line is not a touch target; this is.
+         ⚠⚠ (#R298) AND 22 px IS NOT A FINGER (WCAG 2.2 asks for 44). It was a constant, so widening
+         it everywhere would have made the alternatives — which at world zoom lie within a few pixels
+         of each other — impossible to tell apart by tapping. The width is what MAY be widened, and
+         zoom is what says when: zoomed in the alternatives are far apart on screen and a finger-sized
+         target cannot pick the wrong one, zoomed out they are not and it keeps the old 22. */
+      GE().layers.add({id:'imroute-hit',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'LineString'],['has','alt']],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#000000','line-opacity':0.01,'line-width':['interpolate',['linear'],['zoom'],10,22,14,44]}});
       try{ GE().events.onLayer('click','imroute-hit',_onLineClick); }catch(_){}
       try{ GE().events.onLayer('mouseenter','imroute-hit',()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} }); }catch(_){}
       try{ GE().events.onLayer('mouseleave','imroute-hit',()=>{ try{ if(!_pickTarget) GE().render.canvas().style.cursor=''; }catch(_){} }); }catch(_){}
@@ -92,12 +97,30 @@ window.IntMapModules.routing=function(HOST){
       const i=+f.properties.alt; if(!isFinite(i)) return;
       selectAlt(i,_rsActive);
     }catch(_){} }
-    /* ⚠ (#R291) THIS IS THE ONLY THING THAT THROWS A ROUTE AWAY (§2.2). Closing the panel does not
-       call it; the Tools row does not call it; only an explicit 「経路を消去」 and Atlas's own
-       「経路を消して」 do. Before this round `panel.querySelector('.rp-close').onclick` called it, so
-       shutting the panel destroyed the route — which is exactly the behaviour §2.2 forbids. */
+    /* ⚠⚠ (#R298) THIS IS THE ONE PLACE A ROUTE IS THROWN AWAY, AND CLOSING THE PANEL CALLS IT.
+       The note that stood here said the opposite — 「Closing the panel does not call it」 — which was
+       true of #R291 and stopped being true in #R296, when 「経路機能を閉じても地図に経路が残り続ける
+       のをやめろ」 inverted the rule. js/routing-ui.js `close()` has called `RT().clear()` ever since,
+       so the same fact was written down twice in two files with opposite signs, and this was the copy
+       a reader of js/routing.js would have believed. The callers are: 「経路を消去」, Atlas's
+       「経路を消して」, and the panel's × — the Tools row still only closes the panel.
+       ⚠ EVERY SOURCE THIS SUBSYSTEM DRAWS INTO IS EMPTIED, not merely hidden — see js/routing-ops.js.
+       The four are `imroute-src` (here), `imroute-diff-src` and `imroute-hist-src` (the two calls
+       below) and `imroute-area-src` (`clearAreas`, which the panel calls beside this one). */
+    /* ⚠⚠⚠ (#R298) …AND THE IN-MEMORY SET GOES WITH IT, OR TWO THINGS ANSWER 「is there a route」.
+       MEASURED on production, in the same frame right after the panel was closed:
+         IntMapRouteStore.hasRoute()      false
+         IntMapRouteUI.state().hasRoute   TRUE
+       because this module's `hasRoute()` reads `_rsets`/`_rsActive` — which `clear()` did not touch —
+       while the store had been emptied one line below. The footer's 「経路を消去」, the analysis tab's
+       gate and both exporters read the stale one. Same shape as #R293 ⑮ and #R270: one fact, two
+       owners, and they disagree the moment one of them is updated.
+       ⚠ ONLY THE ACTIVE SET IS DETACHED. `_rsets` also holds the sets of Atlas replies still in the
+       transcript, which `altsOf(setId)` and `IntMapRouteCards.refreshDetail` address by id — wiping
+       the map would make a reply from ten turns ago stop responding to its own cards. */
     function clear(){ _lastPaint=null; _abortInflight();
       try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){}
+      _rsActive='';
       try{ window.IntMapRouteStore.clearRoute(); }catch(_){}
       try{ window.IntMapRoutingOps&&window.IntMapRoutingOps.clearDifferences(); }catch(_){}
       try{ window.IntMapRoutingOps&&window.IntMapRoutingOps.clearHistorical(); }catch(_){} }

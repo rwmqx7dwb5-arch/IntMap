@@ -4979,5 +4979,10 @@ window.IntMapLang.define('zh', {
   "Use my current location": "使用目前位置",   /* (#R296) */
   "Use my location (permission was refused)": "使用目前位置（權限遭拒）",   /* (#R296) */
   "Window (h)": "追蹤時間 (h)",   /* (#R296) */
+  "Edit message": "編輯訊息",   /* (#R298) */
+  "every {0} s": "每 {0} 秒",   /* (#R298) */
+  "Find routes": "搜尋路線",   /* (#R298) */
+  "Tap the map to choose a point": "點一下地圖以選擇地點",   /* (#R298) */
+  "The map is not ready to choose a point yet": "地圖尚未就緒，無法選擇地點",   /* (#R298) */
   }
 });

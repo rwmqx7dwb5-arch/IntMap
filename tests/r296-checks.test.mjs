@@ -334,14 +334,24 @@ test('R296 ⑩ the route reply opens with the answer, and says one honest senten
   assert.doesNotMatch(code(a), /Clear it with "clear the route"/, 'and so is the instruction');
 });
 
-/* ═══ ⑪ 「Atlasはユーザーが送ったメッセージもコピーできるように」 ══════════════════════════════════ */
+/* ═══ ⑪ 「Atlasはユーザーが送ったメッセージもコピーできるように」 ══════════════════════════════════
+   ⚠ (#R298) THE SUBJECT MOVED FILES; THE RELATION DID NOT. The tool bar and the in-place editor are
+   js/atlas-msg-tools.js now — js/atlas-console.js sits under #R199's shrink-only ceiling and the rule
+   written beside it is that a feature moves out, never that the ceiling moves up. So this reads BOTH
+   files and asserts the same relation ACROSS them: one copy button, built in one place, reachable
+   from the kernel only by name, and attached to the reader's bubble and to Atlas's reply alike. */
 test('R296 ⑪ a reader’s own message can be copied, by the same button', () => {
   const a = read('js/atlas-console.js');
-  assert.match(a, /function copyBtn\(src\)\{/, 'there is ONE copy button');
-  assert.equal((a.match(/navigator\.clipboard\.writeText\(src\.innerText/g) || []).length, 1,
+  const m = read('js/atlas-msg-tools.js');
+  assert.match(m, /function copyBtn\(src\)\{/, 'there is ONE copy button');
+  assert.doesNotMatch(code(a), /function copyBtn\s*\(/, 'and the kernel did not keep a second copy of it');
+  assert.equal(((a + m).match(/navigator\.clipboard\.writeText\(src\.innerText/g) || []).length, 1,
     'and one implementation of what 「copy」 means');
+  /* the kernel reaches the one button the only way it can now: a named import the bundler resolves */
+  assert.match(a, /import \{[^}]*\bmakeMsgTools\b[^}]*\} from '\.\/atlas-msg-tools\.js';/, 'the kernel imports the module');
+  assert.match(code(a), /const \{ copyBtn, editBtn, msgTools \} = makeMsgTools\(\{/, 'and takes the builders from it, once');
   assert.match(a, /if\(who==='u'\)\{[\s\S]{0,200}bar\.appendChild\(copyBtn\(d\)\)/, 'a user bubble gets it');
-  assert.match(a, /bar\.appendChild\(copyBtn\(aiEl\)\)/, 'and so does a reply');
+  assert.match(m, /bar\.appendChild\(copyBtn\(aiEl\)\)/, 'and so does a reply');
   /* Retry stays on the reply only — re-running the reader's own sentence is that same Retry */
   const u = /if\(who==='u'\)\{([\s\S]{0,300})/.exec(a);
   assert.ok(u && !/Retry|再試行/.test(u[1]), 'a user bubble gets Copy and not Retry');
@@ -355,17 +365,23 @@ test('R296 ⑪ a reader’s own message can be copied, by the same button', () =
      ⚠ And it broke a button that ALREADY WORKED — #R72's Copy on every reply — which is precisely
      what 「余計な変更をするな」 exists to prevent. The check is about the STRING, because that is
      where the defect was, and it is cheap enough to run on every commit. */
-  const cp = /const cpSvg='([^']*)';/.exec(a);
+  const cp = /const cpSvg='([^']*)';/.exec(m);
   assert.ok(cp, 'the copy icon must be findable');
   assert.match(cp[1], /^<svg[ >]/, 'it starts as an svg…');
   assert.match(cp[1], /<\/svg>$/, '…and CLOSES as one');
   assert.equal((cp[1].match(/</g) || []).length, (cp[1].match(/>/g) || []).length,
     'every tag in the icon is terminated — an unterminated one eats whatever follows it');
-  assert.match(a, /b\.innerHTML=cpSvg\+'<span>'\+L\('Copy'/, 'the label follows the icon…');
-  assert.match(a, /'Copiar'\)\+'<\/span>'/, '…and the span is closed');
+  assert.match(m, /b\.innerHTML=cpSvg\+'<span>'\+L\('Copy'/, 'the label follows the icon…');
+  assert.match(m, /'Copiar'\)\+'<\/span>'/, '…and the span is closed');
   /* ⚠ and the auto-scroll that assumed the reply's previous sibling IS the user message still works */
-  assert.match(a, /while\(ub&&ub\.classList&&ub\.classList\.contains\('atl-msgt'\)\) ub=ub\.previousElementSibling;/,
+  assert.match(m, /while\(ub&&ub\.classList&&ub\.classList\.contains\('atl-msgt'\)\) ub=ub\.previousElementSibling;/,
     'the scroll walk skips the copy bar it now has to step over');
+  /* ⚠ and the styles travelled WITH the bar: the kernel owns the one <style>, so a rule that stayed
+     behind while its markup left would be the same silent half-move this file exists to catch. */
+  assert.match(m, /export const MSG_TOOLS_CSS = ''/, 'the desktop rules are the module’s');
+  assert.match(m, /#atlas-panel \.atl-msgt\{display:flex;/, 'including the bar itself');
+  assert.match(code(a), /\+MSG_TOOLS_CSS\b/, 'and the kernel concatenates them where they stood');
+  assert.match(code(a), /\+MSG_TOOLS_CSS_MOBILE\b/, 'the mobile overrides too, inside its @media block');
 });
 
 /* ═══ ⑫ THE CARD OPENS ═══════════════════════════════════════════════════════════════════════

@@ -967,7 +967,13 @@ test('R291 ② the place search offers candidates and the keyboard picks one', a
   /* ⚠ TYPING MUST NOT ROUTE (§23). The counter is reset here and checked after the keystrokes. */
   await page.evaluate(() => { window.__r291Before = document.querySelectorAll('.rt-alt').length; });
   await input.type('Springfield', { delay: 40 });
-  await page.waitForSelector('#rtp-suggest .rtp-sug', { timeout: 15_000 });
+  /* ⚠ (#R298) WAIT FOR THE LIST, NOT FOR ITS FIRST ROW. The field now shows the SHIPPED place index
+     the instant it matches and merges the network's answer into it when that lands (「打鍵のたびに
+     候補を『検索中…』で消していた」), so the first `.rtp-sug` appears in milliseconds and this used to
+     count one row and stop. The property #R291 pins — an ambiguous name offers more than one — is
+     unchanged and is still required within the same fifteen seconds; only the moment it is sampled
+     moved to when the list has actually filled. */
+  await page.waitForFunction(() => document.querySelectorAll('#rtp-suggest .rtp-sug').length > 1, null, { timeout: 15_000 });
   const rows = page.locator('#rtp-suggest .rtp-sug');
   expect(await rows.count(), 'an ambiguous name must offer more than one row (§4.1)').toBeGreaterThan(1);
   /* each row is distinguishable — the admin area is what tells three Springfields apart */
@@ -1046,7 +1052,18 @@ test('R291 ④ the map really draws it: lettered waypoints, a touch target, and 
   /* ⚠ A AND B, NOT TWO COLOURED DOTS (§5.1) */
   expect(r.wp).toEqual(['A', 'B']);
   expect(r.alts, 'both alternatives are on the map, each tagged with its index').toEqual([0, 1]);
-  expect(Number(r.hitWidth), 'the invisible touch target is wider than a finger').toBeGreaterThanOrEqual(20);
+  /* ⚠ (#R298) THE WIDTH IS A ZOOM RAMP NOW, SO THE QUESTION IS ABOUT ITS SMALLEST STOP. 22 px was a
+     constant, and WCAG 2.2 asks for 44 — but widening it everywhere would make two alternatives that
+     lie a few pixels apart at world zoom impossible to tell apart by tapping. So it runs 22 at z10 to
+     44 at z14, and what this test pins is unchanged: the invisible target is never narrower than a
+     finger's worth, at any zoom the ramp can produce. */
+  /* `['interpolate',['linear'],['zoom'], z1,w1, z2,w2, …]` — the widths are the odd slots after the input */
+  const hitStops = Array.isArray(r.hitWidth)
+    ? r.hitWidth.slice(3).filter((v, i) => i % 2 === 1 && typeof v === 'number')
+    : [Number(r.hitWidth)];
+  expect(hitStops.length, 'the width is a number or a zoom ramp of numbers').toBeGreaterThan(0);
+  const narrowest = Math.min(...hitStops);
+  expect(narrowest, 'the invisible touch target is wider than a finger at every zoom').toBeGreaterThanOrEqual(20);
   expect(r.clickable).toContain('imroute-hit');
 });
 

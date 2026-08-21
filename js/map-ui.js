@@ -728,9 +728,9 @@ window.IntMapModules.layerSidebar=function(HOST){
        js/app-body.js is at the tests/r200 ⑤ line ceiling (4,400) with 22 lines of headroom, and the
        standing lesson from #R253 ⑥ / #R254 ⑨ is that a dependency goes to the CONSUMER.
        ⚠ A TOOL OPENED FROM A LIST HAS NO POINT UNDER THE CURSOR. The right-click menu hands each of
-       these the coordinate it was opened on; from here the subject is «where I am looking», so the
-       camera's own centre is passed. That is a real answer, not a placeholder — it is the same
-       point the coordinate readout is describing. */
+       these the coordinate it was opened on; from here there is none, so (#R298) the row ASKS —
+       `_askPoint` below. Until then the camera's own centre was passed as though it had been chosen,
+       which is the report this round answers. */
     const _svg=(d)=>'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
     const SVG_QUAKE=_svg('<path d="M2 13h3.2l2.1-6.4 3 12.2 2.6-9.1 1.9 3.3H22"/>');
     /* ⚠ (#R296) SVG_WAVE / SVG_FLOOD / SVG_TRANSIT / SVG_RF / SVG_REPLAY stood here — the five icons of the rows removed below. An icon nothing draws is dead weight in the shell budget. */
@@ -744,9 +744,75 @@ window.IntMapModules.layerSidebar=function(HOST){
     const SVG_DRONE=_svg('<circle cx="12" cy="12" r="2.4"/><path d="M10 10L6.5 6.5M14 10l3.5-3.5M10 14l-3.5 3.5M14 14l3.5 3.5"/><circle cx="5" cy="5" r="2.1"/><circle cx="19" cy="5" r="2.1"/><circle cx="5" cy="19" r="2.1"/><circle cx="19" cy="19" r="2.1"/>');
     /* (#R291) a signpost: the fork this app has been unable to show anybody for seven rounds */
     const SVG_DIRECTIONS=_svg('<path d="M12 21.5v-6.2"/><path d="M12 15.3L6.6 9.9V5.4"/><path d="M12 15.3l5.4-5.4V5.4"/><circle cx="6.6" cy="4" r="1.6"/><circle cx="17.4" cy="4" r="1.6"/>');
-    /* the camera's centre, as the coordinate a point tool needs when it is opened from a list */
+    /* the camera's centre — the coordinate the reader can ASK for by name (see `_askPoint` below) */
     const _hereLL=()=>{ try{ const c=GE().camera.getCenter(); return { lng:c.lng, lat:c.lat }; }catch(_){ return { lng:0, lat:0 }; } };
-    const _lazy=(name,fn)=>()=>window.IntMapLazy.need(name).then(()=>{ try{ return !!fn(); }catch(_){ return false; } });
+    /* ══ ⚠⚠⚠ (#R298) A TOOL THAT NEEDS A POINT ASKS FOR THE POINT ═════════════════════════════════
+       「地点を選ばないといけない系のツール、押したら勝手に地図中心を選択しているものとして結果を出すのを
+         辞めろ。」 Five rows below handed `_hereLL()` — the CAMERA's centre — to a tool as though the
+       reader had chosen it: pressing 「ここからの星空」 produced a sky, a horizon and a set of rise times
+       for a coordinate nobody named, and because the answer looks exactly like an answer there is
+       nothing about it to notice. The comment two blocks up said so in as many words («from here the
+       subject is «where I am looking»»), which is a decision the reader never made.
+
+       ⚠ THE CENTRE IS NOT DELETED, IT IS DEMOTED TO A CHOICE. #R196's pick bar (js/map-pick.js) already
+       owns this gesture for the epicentre and the sunlight probe — crosshair, one line of instruction,
+       × and Esc — so the point arrives the same way here, and that bar carries ONE extra button that
+       does precisely what these rows used to do silently. Nothing that could be reached before is out
+       of reach (CONSTITUTION §0-3); what changed is that the reader is the one who says so.
+       ⚠ A POINT THE READER HAS ALREADY CHOSEN IS NOT ASKED FOR TWICE — a pin they dropped, or the point
+       they picked for the previous tool — but only while it is ON SCREEN. A pin on the other side of
+       the world is not «the point I mean by this tool», and the current view is the one test that
+       separates the two without inventing a rule about how old a choice may be.
+       ⚠ CHOOSING THE CENTRE IS NOT REMEMBERED. If it were, one press of 「地図の中心を使う」 would make
+       every later tool answer for a centre nobody chose again — the defect, one indirection further. */
+    let _picked=null;                       /* the point the reader last chose here, this session */
+    const _inView=(ll)=>{ try{ const b=GE().camera.getBounds();
+        const s=b.getSouth(), n=b.getNorth(); let w=b.getWest(), e=b.getEast();
+        if(!(ll.lat>=s&&ll.lat<=n)) return false;
+        let x=+ll.lng; if(e<w) e+=360; if(x<w) x+=360;                /* a view across the antimeridian */
+        return x>=w&&x<=e; }catch(_){ return false; } };
+    const _chosenLL=()=>{
+      if(_picked&&isFinite(_picked.lng)&&_inView(_picked)) return { lng:_picked.lng, lat:_picked.lat };
+      try{ const ps=HOST.userPins; if(ps&&ps.length){ const p=ps[ps.length-1];
+        if(p&&isFinite(p.lng)&&isFinite(p.lat)&&_inView(p)) return { lng:+p.lng, lat:+p.lat }; } }catch(_){}
+      return null; };
+    /* the old behaviour, as a button INSIDE #R196's bar — one gesture, one place to look */
+    const _pickAlt=(label,go)=>{ try{
+      const bar=document.getElementById('im-pick-bar'); if(!bar) return null;
+      bar.querySelectorAll('.im-pick-alt').forEach(n=>n.remove());
+      const b=document.createElement('button'); b.type='button'; b.className='im-pick-alt'; b.textContent=label;
+      b.style.cssText='flex:none;border:none;border-radius:999px;background:rgba(128,128,128,0.22);'
+        +'color:var(--text-main,#fff);font:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;'
+        +'cursor:pointer;white-space:nowrap;';
+      const x=bar.querySelector('.im-pick-x'); if(x) bar.insertBefore(b,x); else bar.appendChild(b);
+      b.onclick=(ev)=>{ try{ ev.preventDefault(); ev.stopPropagation(); }catch(_){} go(); };
+      return b; }catch(_){ return null; } };
+    function _askPoint(run,id){
+      const fire=(ll,keep)=>{ if(keep!==false) _picked={ lng:+ll.lng, lat:+ll.lat };
+        try{ return Promise.resolve(run({ lng:+ll.lng, lat:+ll.lat })); }catch(_){ return Promise.resolve(false); } };
+      const had=_chosenLL(); if(had) return fire(had);
+      const P=window.IntMapPick;
+      const name=(()=>{ try{ const t=TOOLS.find(x=>x.id===id); return t?t.label():''; }catch(_){ return ''; } })();
+      return new Promise(resolve=>{
+        let done=false, watch=0, alt=null;
+        const tidy=()=>{ if(watch){ clearInterval(watch); watch=0; } if(alt){ try{ alt.remove(); }catch(_){} alt=null; } };
+        const end=(ll,keep)=>{ if(done) return; done=true; tidy();
+          if(!ll){ resolve(false); return; }
+          Promise.resolve(fire(ll,keep)).then(resolve,()=>resolve(false)); };
+        let armed=false;
+        try{ armed=!!(P&&P.start&&P.start({ onPick:(ll)=>end(ll,true), onCancel:()=>end(null),
+          hint:(name?(name+' — '):'')+T('Tap the map to choose a point','地図をタップして地点を選んでください','Zum Wählen eines Punktes auf die Karte tippen','Нажмите на карту, чтобы выбрать точку','Toca el mapa para elegir un punto') })); }catch(_){ armed=false; }
+        /* a tool that cannot ask says why, rather than quietly answering for the centre instead */
+        if(!armed){ try{ HOST.satToast(T('The map is not ready to choose a point yet','地図がまだ地点を選べる状態ではありません','Die Karte ist noch nicht bereit, einen Punkt zu wählen','Карта ещё не готова к выбору точки','El mapa aún no está listo para elegir un punto')); }catch(_){}
+          end(null); return; }
+        alt=_pickAlt(T('Use the map centre','地図の中心を使う','Kartenmitte verwenden','Использовать центр карты','Usar el centro del mapa'),
+          ()=>{ const ll=_hereLL(); try{ P.abort(); }catch(_){} end(ll,false); });
+        /* the bar can also be torn down by `abort()` — a panel closing, the engine swapping — and that
+           path notifies nobody, so the extra button is cleared off the shared bar by watching it. */
+        watch=setInterval(()=>{ try{ if(!P.active()) end(null); }catch(_){ end(null); } },400);
+      });
+    }
+    const _lazy=(name,fn)=>(a)=>window.IntMapLazy.need(name).then(()=>{ try{ return !!fn(a); }catch(_){ return false; } });
     const SIM_TOOLS=[
       /* ══ ⚠⚠⚠ (#R291) THE ROUTING ENTRY, AND WHY IT IS THE FIRST ROW ═════════════════════════════
          「経路機能の正式な入口は、必ず Layers → Tools → Directions / 経路 に置いてください。」
@@ -780,7 +846,7 @@ window.IntMapModules.layerSidebar=function(HOST){
          「invented data」 the standing rules forbid. Atlas still reaches it, and so does #R261's share
          link; what is gone is the button that starts with nothing. */
       { id:'sim.terrainWater', mod:'IntMapTerrainWater', ic:SVG_TERR, en:'Terrain & water simulator',
-        run:_lazy('terrainWater',()=>window.IntMapTerrainWater&&window.IntMapTerrainWater.open(_hereLL())),
+        run:()=>_askPoint(_lazy('terrainWater',(ll)=>window.IntMapTerrainWater&&window.IntMapTerrainWater.open(ll)),'sim.terrainWater'),
         label:()=>T('Terrain & water simulator','地形編集・水流シミュレーター','Gelände- & Wasser-Simulator','Симулятор рельефа и водотока','Simulador de terreno y agua'),
         hint:()=>T('Sculpt the ground, pour water, build a levee','地形を盛る・削る、水を流す、堤防を引く','Gelände formen, Wasser gießen, Deich ziehen','Лепите рельеф, лейте воду, стройте дамбу','Modele el terreno, vierta agua, trace un dique') },
       /* ⚠⚠ (#R264) THIS ROW HAS NEVER OPENED ANYTHING, AND THAT IS NOT THIS ROUND'S FIX. MEASURED on
@@ -800,7 +866,7 @@ window.IntMapModules.layerSidebar=function(HOST){
          frequency and a link-budget range); the `sim.rf` row that stood below is gone with it. */
       { id:'sim.los', mod:'IntMapLOS', ic:SVG_LOS, en:'Radio coverage & line of sight',
         keys:'radio rf coverage signal antenna line of sight viewshed radar shadow 電波 通信圏 アンテナ 見通し線 レーダー Funkabdeckung Sichtlinie радиопокрытие видимость cobertura visión',
-        run:_lazy('los',()=>window.IntMapLOS&&window.IntMapLOS.open(_hereLL())),
+        run:()=>_askPoint(_lazy('los',(ll)=>window.IntMapLOS&&window.IntMapLOS.open(ll)),'sim.los'),
         label:()=>T('Radio coverage & line of sight','電波・通信圏／見通し線','Funkabdeckung & Sichtlinie','Радиопокрытие и линия видимости','Cobertura de radio y línea de visión'),
         hint:()=>T('Signal from a transmitter here, and what the terrain hides','ここに置いた送信機の到達範囲と、地形が隠すもの','Reichweite eines Senders hier und was das Gelände verbirgt','Дальность передатчика здесь и что скрывает рельеф','Alcance de un emisor aquí y lo que oculta el terreno') },
       /* ⚠ (#R296) ONE REACHABILITY ROW — 「到達圏と公共交通機関の到達圏に分離するのを辞めろ」. 公共交通 is
@@ -808,16 +874,16 @@ window.IntMapModules.layerSidebar=function(HOST){
          used to have a row of its own; the `sim.transitReach` row that stood below is gone with it. */
       { id:'sim.reach', mod:'IntMapIsochrone', ic:SVG_REACH, en:'Reachable area',
         keys:'isochrone reach transit rail 到達圏 公共交通 鉄道 電車 Erreichbarkeit ÖPNV доступность транспорт alcanzable transporte',
-        run:()=>{ try{ return !!(window.IntMapIsochrone&&window.IntMapIsochrone.open(_hereLL())); }catch(_){ return false; } },
+        run:()=>_askPoint((ll)=>{ try{ return !!(window.IntMapIsochrone&&window.IntMapIsochrone.open(ll)); }catch(_){ return false; } },'sim.reach'),
         label:()=>T('Reachable area (drive/walk/cycle/transit)','到達圏（車・徒歩・自転車・公共交通）','Erreichbarkeit (Auto/Fuß/Rad/ÖPNV)','Зона доступности (авто/пешком/вело/транспорт)','Área alcanzable (coche/pie/bici/transporte)'),
         hint:()=>T('How far you get in a given time','決めた時間でどこまで行けるか','Wie weit man in einer Zeit kommt','Как далеко можно уехать за время','Hasta dónde se llega en un tiempo') },
       { id:'sim.sun', mod:'IntMapSun', ic:SVG_SUN, en:'Sunlight hours & shade',
-        run:()=>{ try{ if(!window.IntMapSun) return false; window.IntMapSun.open();
-          const ll=_hereLL(); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(ll.lng,ll.lat); return true; }catch(_){ return false; } },
+        run:()=>_askPoint((ll)=>{ try{ if(!window.IntMapSun) return false; window.IntMapSun.open(ll);
+          if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(ll.lng,ll.lat); return true; }catch(_){ return false; } },'sim.sun'),
         label:()=>T('Sunlight hours & shade','日照時間・影の解析','Sonnenstunden & Schatten','Часы солнца и тени','Horas de sol y sombra'),
         hint:()=>T('Where the sun reaches, hour by hour','時間ごとに日が当たる場所','Wo die Sonne stündlich hinkommt','Куда солнце попадает по часам','Dónde llega el sol, hora a hora') },
       { id:'sim.nightSky', mod:'IntMapNightSky', ic:SVG_STAR, en:'Night sky from here',
-        run:_lazy('nightSky',()=>window.IntMapNightSky&&window.IntMapNightSky.open(_hereLL())),
+        run:()=>_askPoint(_lazy('nightSky',(ll)=>window.IntMapNightSky&&window.IntMapNightSky.open(ll)),'sim.nightSky'),
         label:()=>T('Night sky from here','ここからの星空','Sternhimmel von hier','Ночное небо отсюда','El cielo nocturno desde aquí'),
         hint:()=>T('The sky a person standing here has','ここに立つ人に見える空','Der Himmel, den man hier hat','Небо, которое видно отсюда','El cielo que se ve desde aquí') },
       /* ══ ⚠⚠⚠ (#R261) FIVE MORE, AND THEY HAD NO UI DOOR AT ALL ═════════════════════════════════════

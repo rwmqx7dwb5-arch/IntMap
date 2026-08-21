@@ -2171,6 +2171,7 @@ window.IntMapCesiumEngine=(function(){
              v.setCamera({center:ll},(o&&o.duration)?{duration:o.duration}:null); }catch(_){} },
       setMaxBounds(){ /* Cesium has no camera bounding box; the app only ever clears it */ },
       setRenderWorldCopies(){ /* a globe has exactly one copy of the world, always */ },
+      getRenderWorldCopies(){ return false; },   /* (#R298) …and it says so, rather than staying silent */
       /* THE VIEWPOINT — free on this engine. Cesium's camera IS a position, so
          "where is the eye" and "put it back" are reads and writes, not a solve;
          that is why capabilities.eyeControl was declared true for Cesium in #R172

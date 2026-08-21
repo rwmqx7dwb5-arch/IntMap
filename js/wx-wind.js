@@ -107,6 +107,13 @@
 
     var gl = null, ok = false;
     var progLine = null, progQuad = null, vbo = null, quadVbo = null;
+    /* ⚠ (#R298) THE LOCATIONS ARE LOOKED UP ONCE. `getAttribLocation` / `getUniformLocation` are
+       synchronous queries into the driver's copy of the linked program, and both draw paths were
+       asking for all six of them EVERY FRAME (three per `drawQuad`, and `drawQuad` runs twice a
+       frame). A program's locations cannot change after it is linked, so this is pure overhead —
+       and it changes not one pixel to hoist it. */
+    var locLine = null, locQuad = null;
+    var vboFloats = 0;         /* what `vbo` is currently sized for — see the note in drawGL */
     var tex = [null, null], fbo = [null, null], cur = 0;
     var ctx2d = null;
 
@@ -128,7 +135,16 @@
       progLine = program(gl, VS_LINE, FS_LINE);
       progQuad = program(gl, VS_QUAD, FS_QUAD);
       if (!progLine || !progQuad) { gl = null; return false; }
+      locLine = {
+        pos: gl.getAttribLocation(progLine, 'a_pos'), alpha: gl.getAttribLocation(progLine, 'a_alpha'),
+        res: gl.getUniformLocation(progLine, 'u_res'), color: gl.getUniformLocation(progLine, 'u_color')
+      };
+      locQuad = {
+        xy: gl.getAttribLocation(progQuad, 'a_xy'),
+        tex: gl.getUniformLocation(progQuad, 'u_tex'), opacity: gl.getUniformLocation(progQuad, 'u_opacity')
+      };
       vbo = gl.createBuffer();
+      vboFloats = 0;
       quadVbo = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, quadVbo);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
@@ -209,11 +225,10 @@
       gl.bindFramebuffer(gl.FRAMEBUFFER, toFbo);
       gl.useProgram(progQuad);
       gl.bindBuffer(gl.ARRAY_BUFFER, quadVbo);
-      var loc = gl.getAttribLocation(progQuad, 'a_xy');
-      gl.enableVertexAttribArray(loc);
-      gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-      gl.uniform1i(gl.getUniformLocation(progQuad, 'u_tex'), 0);
-      gl.uniform1f(gl.getUniformLocation(progQuad, 'u_opacity'), opacity);
+      gl.enableVertexAttribArray(locQuad.xy);
+      gl.vertexAttribPointer(locQuad.xy, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform1i(locQuad.tex, 0);
+      gl.uniform1f(locQuad.opacity, opacity);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -244,7 +259,15 @@
         if (!(u === u) || !(v === v)) { spawn(p); continue; }
         /* the START point is the END point of the previous frame — one projection per particle per
            frame instead of two. MEASURED: map.project costs 5.8 ms per 12,000 calls, so halving the
-           count is 2.9 ms of a 16.7 ms budget. */
+           count is 2.9 ms of a 16.7 ms budget.
+           ⚠ (#R298) `!moving` STAYS, and the second projection while the map moves is not waste.
+           `p.sx` is a SCREEN position, and while the camera is moving it is a screen position under
+           the PREVIOUS camera — so reusing it would draw every segment from where the particle was
+           on the old screen to where it is on the new one, i.e. the camera's own displacement added
+           to every particle. A pan would streak the whole field in the direction of the drag (the
+           `len > 90` respawn only catches the fast ones), which is a broken picture rather than a
+           cheaper one. The saving is real only while the camera is still, which is when it is
+           already taken. */
         var s0 = (p.sx != null && !moving) ? { x: p.sx, y: p.sy } : project(p.lng, p.lat);
         if (!s0) { p.age += dt; if (p.age > p.life) spawn(p); continue; }
         var cosLat = Math.max(0.15, Math.cos(p.lat * R));
@@ -270,7 +293,12 @@
         /* fade in and out so a respawn is not a flash: a triangular envelope over the lifetime */
         var f = p.age / p.life;
         var env = f < 0.15 ? (f / 0.15) : (f > 0.75 ? (1 - (f - 0.75) / 0.25) : 1);
-        var a = (0.50 + Math.min(0.45, sp / 34)) * env;
+        /* ⚠ (#R298) 「パーティクルの不透明度を少しさげて。」 — the floor and the ceiling both come
+           down (0.50 → 0.34 in still air, 0.95 → 0.68 in a jet) and the SPREAD stays: a fast
+           particle is still visibly denser than a slow one, which is what the alpha is FOR. The
+           divisor moves with the range, so a given speed sits at nearly the same fraction of it as
+           before (7 m/s: 0.74 of the ceiling then, 0.75 now; saturation 15.3 → 14.3 m/s). */
+        var a = (0.34 + Math.min(0.34, sp / 42)) * env;
         var wdt = (0.75 + Math.min(0.95, sp / 26)) * dpr;
         if (len < 0.35) { dx = 0.35; dy = 0; len = 0.35; }
         var nx = -dy / len * wdt * 0.5, ny = dx / len * wdt * 0.5;
@@ -330,12 +358,18 @@
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[next]);
         gl.useProgram(progLine);
         gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-        gl.bufferData(gl.ARRAY_BUFFER, verts.subarray(0, vcount * 3), gl.DYNAMIC_DRAW);
-        var lp = gl.getAttribLocation(progLine, 'a_pos'), la = gl.getAttribLocation(progLine, 'a_alpha');
-        gl.enableVertexAttribArray(lp); gl.vertexAttribPointer(lp, 2, gl.FLOAT, false, 12, 0);
-        gl.enableVertexAttribArray(la); gl.vertexAttribPointer(la, 1, gl.FLOAT, false, 12, 8);
-        gl.uniform2f(gl.getUniformLocation(progLine, 'u_res'), canvas.width, canvas.height);
-        gl.uniform3f(gl.getUniformLocation(progLine, 'u_color'), color[0], color[1], color[2]);
+        /* ⚠ (#R298) THE BUFFER IS ALLOCATED ONCE AND WRITTEN INTO. `bufferData` with a view asks
+           the driver to throw the old store away and make a new one of that size EVERY FRAME —
+           the segment count barely changes between two frames, so the allocation is the waste, not
+           the upload. `bufferSubData` writes into the store that is already there; a re-allocation
+           happens only when the frame genuinely needs more room than the last one did. */
+        var need = vcount * 3;
+        if (need > vboFloats) { vboFloats = Math.max(600 * 18, need); gl.bufferData(gl.ARRAY_BUFFER, vboFloats * 4, gl.DYNAMIC_DRAW); }
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, verts.subarray(0, need));
+        gl.enableVertexAttribArray(locLine.pos); gl.vertexAttribPointer(locLine.pos, 2, gl.FLOAT, false, 12, 0);
+        gl.enableVertexAttribArray(locLine.alpha); gl.vertexAttribPointer(locLine.alpha, 1, gl.FLOAT, false, 12, 8);
+        gl.uniform2f(locLine.res, canvas.width, canvas.height);
+        gl.uniform3f(locLine.color, color[0], color[1], color[2]);
         gl.drawArrays(gl.TRIANGLES, 0, vcount);
       }
       /* 3. blit to the visible canvas */
@@ -368,7 +402,9 @@
         for (var k = 0; k < vcount; k += 6) {
           var o = k * 3;
           var a = verts[o + 2];
-          var bucket = Math.min(BUCKETS - 1, Math.floor(a * BUCKETS / 0.95));
+          /* (#R298) …over the alpha CEILING the loop above writes, which came down with it. Left at
+             0.95 the top bucket would be unreachable and every streak would be drawn thinner. */
+          var bucket = Math.min(BUCKETS - 1, Math.floor(a * BUCKETS / 0.68));
           if (bucket !== b) continue;
           c.moveTo((verts[o] + verts[o + 3]) / 2 / dpr, (verts[o + 1] + verts[o + 4]) / 2 / dpr);
           c.lineTo((verts[o + 6] + verts[o + 15]) / 2 / dpr, (verts[o + 7] + verts[o + 16]) / 2 / dpr);
@@ -377,7 +413,9 @@
         if (!any) continue;
         c.lineWidth = wdt;
         c.strokeStyle = col;
-        c.globalAlpha = Math.min(0.95, 0.2 + b * 0.19);
+        /* (#R298) the same 0.72 the WebGL alpha came down by, so the two renderers still draw the
+           same picture — a reader with no WebGL must not get a denser field than one with it. */
+        c.globalAlpha = Math.min(0.68, 0.144 + b * 0.137);
         c.stroke();
       }
       c.globalAlpha = 1;
@@ -389,6 +427,7 @@
         try {
           for (var i = 0; i < 2; i++) { if (tex[i]) gl.deleteTexture(tex[i]); if (fbo[i]) gl.deleteFramebuffer(fbo[i]); }
           if (vbo) gl.deleteBuffer(vbo); if (quadVbo) gl.deleteBuffer(quadVbo);
+          vboFloats = 0;
           if (progLine) gl.deleteProgram(progLine); if (progQuad) gl.deleteProgram(progQuad);
         } catch (_) {}
       }

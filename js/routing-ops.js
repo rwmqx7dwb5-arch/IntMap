@@ -303,8 +303,17 @@ window.IntMapModules.routingOps=function(HOST){
       GE().layers.setVisible(DIFF_LYR,true); }catch(_){}
     lastDiff={ n:feats.length, drawn:true, per, sameThresholdM:SAME_M };
     return lastDiff; }
+  /* ⚠⚠ (#R298) CLEARING IS EMPTYING THE SOURCE, NOT HIDING THE LAYER. 「経路機能を閉じても地図に経路が
+     残り続けるのをやめろ」 is answered by js/routing-ui.js `close()` → `RT().clear()`, and `clear()`
+     calls this — but this only set `visibility:none`, so the geometry of the last comparison stayed
+     in `imroute-diff-src` for the rest of the session. A layer's visibility is a property something
+     else can set (a style reload re-adds layers from their own definitions, which default to
+     visible); the SOURCE holding nothing is the only state that cannot come back. That is what
+     js/routing.js `clear()` does to `imroute-src` and `_drawAreas` to `imroute-area-src`. */
   function clearDifferences(){
-    try{ const E=GE(); if(E.layers.has(DIFF_LYR)) E.layers.setVisible(DIFF_LYR,false); }catch(_){}
+    try{ const E=GE();
+      if(E.layers.hasSource(DIFF_SRC)) E.layers.setSourceData(DIFF_SRC,{type:'FeatureCollection',features:[]});
+      if(E.layers.has(DIFF_LYR)) E.layers.setVisible(DIFF_LYR,false); }catch(_){}
     lastDiff=null; return true; }
 
   /* ══ ROUTING ON A HISTORICAL NETWORK ════════════════════════════════════════════════════════ */
@@ -510,7 +519,11 @@ window.IntMapModules.routingOps=function(HOST){
       return true;
     }catch(_){ return false; }
   }
-  function clearHistorical(){ try{ const E=GE(); if(E.layers.has(HIST_LYR)) E.layers.setVisible(HIST_LYR,false); }catch(_){} return true; }
+  /* (#R298) same as `clearDifferences` above, and for the same reason: the source is emptied, so a
+     year's network cannot reappear under a route that has been thrown away. */
+  function clearHistorical(){ try{ const E=GE();
+    if(E.layers.hasSource(HIST_SRC)) E.layers.setSourceData(HIST_SRC,{type:'FeatureCollection',features:[]});
+    if(E.layers.has(HIST_LYR)) E.layers.setVisible(HIST_LYR,false); }catch(_){} lastHist=null; return true; }
 
   const API={
     elevation, borders, along, schedule,

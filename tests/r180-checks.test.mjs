@@ -250,6 +250,7 @@ test('R180 ③: the Cesium adapter implements the same surface as the MapLibre o
     'getBounds', 'setBearing', 'setPitch', 'getRoll', 'setRoll', 'getMaxPitch', 'setMaxPitch',
     'getMinPitch', 'setMinZoom', 'getMinZoom', 'setMaxZoom', 'getMaxZoom', 'zoomRange', 'zoomTo',
     'zoomIn', 'zoomOut', 'stop', 'setCenter', 'panBy', 'setMaxBounds', 'setRenderWorldCopies',
+    'getRenderWorldCopies',
     'cameraFromTo', 'cameraAltitude', 'eyePosition', 'setEye', 'setCenterClamped', 'setTiltPivot',
     'eyePivotDiag', 'isAnimating', 'project', 'unproject', 'projectAltitude', 'terrainElevation',
     'queryRenderedFeatures', 'querySourceFeatures', 'worldSize', 'lngLat', 'hasSource', 'addSource',

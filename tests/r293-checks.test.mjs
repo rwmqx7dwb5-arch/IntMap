@@ -148,8 +148,12 @@ test('R293 ④ the point card is compact and prints both clocks', () => {
 
   /* TWO clocks, and they are different questions — #R269 is the round that paid for confusing them */
   assert.match(s, /const FEED_GOT=\{\};/, 'when THIS browser read the feed');
-  assert.match(s, /const feedOK=\(k\)=>\{ FEED_STATE\[k\]='ok'; FEED_GOT\[k\]=Date\.now\(\); \};/,
-    'one setter writes the state and the read time together');
+  /* ⚠ (#R298) …and the PANEL's 「Updated」 is written by the same setter now. It used to be written
+     in one place only — the base sweep — so every rotated feed (MeteoAlarm, the WMO register, the
+     CMA, the CAP providers) landed without touching it. MEASURED on production: 「Updated 0:56:52」
+     at 01:05 and still 「Updated 0:56:52」 at 01:14, across ninety successful reads. */
+  assert.match(s, /const feedOK=\(k\)=>\{ FEED_STATE\[k\]='ok'; FEED_GOT\[k\]=Date\.now\(\); lastAt=FEED_GOT\[k\]; \};/,
+    'one setter writes the state, the read time and the panel’s own clock together');
   assert.ok(!/FEED_STATE\.[a-z]+='ok'/.test(s), 'no loader writes only half of it');
   assert.match(s, /function stampLine\(pr\)\{/, 'the card has one line for both');
   assert.match(s, /L\('issued','発表'/, '…the agency’s own issue time');
@@ -217,7 +221,11 @@ test('R293 ⑤ boundary sets are cached, gated, and ADM2 is earned rather than a
 test('R293 ⑥ the bundled world index is a floor, upgraded per country when it can be seen', () => {
   const s = WP();
   assert.match(s, /const UNIT_SRC=Object\.create\(null\);/, 'which index a country came from is recorded');
-  assert.match(s, /const UNIT_HIRES_Z=5;/);
+  /* ⚠ (#R298) the VALUE moved (5 → 4, 「境界線解像度が低すぎる」) and the PROPERTY did not: there is
+     one zoom at which a country stops being drawn from the bundled index, and the upgrade pass
+     reads that same constant. Pinning the number again would only pin the number. */
+  assert.match(s, /const UNIT_HIRES_Z=\d+;/);
+  assert.match(s, /if\(!\(z>=UNIT_HIRES_Z\)\) return;/, 'and the upgrade pass reads it');
   assert.match(s, /const COARSE=\/\^\(world\|ne50\)\$\/;/, 'and which of them are the coarse ones');
   /* every producer labels what it produced, or the upgrade cannot know what to upgrade */
   for (const src of ['jp', 'cn', 'tw', 'nuts', 'ne50', 'world', 'gb'])
@@ -418,8 +426,17 @@ test('R293 ⑭ the accession ramp runs oldest-red to newest-purple', () => {
 test('R293 ⑮ the wind readout survives a time step, and says which hour it answered from', () => {
   const w = WX();
   assert.match(w, /let _lastField=null, _lastFieldAt=null;/, 'the last field that answered is kept');
-  assert.match(w, /const sf=EC\(\)\.sampler\(VAR\); _lastField=sf\|\|_lastField; _lastFieldAt=EC\(\)\.validTime\(\);/,
-    'and it is captured where the new one arrives');
+  /* ⚠ (#R298) THIS PINNED THE LINE THAT WAS THE DEFECT, AND CONTRADICTED THIS TEST'S OWN RULE.
+     The text it required passed `sf` — which is null whenever a superseded read was not kept —
+     straight into `renderer.setField`, and the renderer reads null as 「draw nothing」: every streak
+     on the map went out. It also re-stamped `_lastFieldAt` UNCONDITIONALLY, so a field that was
+     kept from the previous hour was labelled with the new hour — the very thing the note four
+     lines below forbids. The relation is: the hour is stamped only when a NEW field arrived, and
+     null never reaches the renderer. */
+  assert.match(w, /const fresh=EC\(\)\.sampler\(VAR\);\s*\n?\s*if\(fresh\)\{ _lastField=fresh; _lastFieldAt=EC\(\)\.validTime\(\); \}/,
+    'the hour is re-stamped only when a new field actually arrived');
+  assert.match(w, /const sf=fresh\|\|_lastField;\s*\n?\s*if\(sf\) renderer\.setField\(sf\);/,
+    'and the field that is flying keeps flying until there is a new one to put in its place');
   assert.match(w, /const s=live\|\|_lastField; if\(!s\) return null;/,
     'the readout falls back to it while the new hour downloads');
   /* ⚠ and it is HONEST about which hour the number is from — a value labelled with an hour it was
@@ -428,8 +445,14 @@ test('R293 ⑮ the wind readout survives a time step, and says which hour it ans
   assert.match(w, /time:at \}; \},/, 'the stale value carries its own hour, not the axis’s');
   /* the two slots that keep the COLOUR field on screen are untouched */
   assert.match(w, /_whenSrcLoaded\(s\.src,reveal,12000\);/, 'the field still reveals on its own source');
-  assert.match(w, /if\(GE\(\)\.layers\.has\(old\.lyr\)\) GE\(\)\.layers\.remove\(old\.lyr\);/,
-    '…and the old slot is only dropped once the new one has painted');
+  /* ⚠ (#R298) WHICH slot is dropped is decided when the reveal RUNS, not when it was scheduled.
+     `old` was captured at schedule time, so two steps in quick succession made the first reveal
+     delete the SECOND one's layer — measured with a harness against the previous file: two steps
+     left both slots present and neither visible. The relation: everything that is not the slot now
+     showing goes, and a superseded reveal drops nothing at all. */
+  assert.match(w, /if\(!on\|\|mine!==fieldSeq\) return;/, 'a superseded reveal neither shows nor removes');
+  assert.match(w, /SLOT\.forEach\(\(o,i\)=>\{ if\(i===use\) return;/,
+    '…and the old slot is only dropped once the new one has painted, decided at that moment');
 });
 
 /* ── ⑯ 「塗りすぎ」 — A SLIDER THAT WRITES A SCALAR ERASES AN EXPRESSION ──────────────────────

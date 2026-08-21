@@ -52,7 +52,12 @@ test('R223 ② the World-data speed ramp is derived from SPEED_COL, never writte
 
 /* ── ③ the flat map wraps, and there is no other mode (#R297 removed the fixed extent) ────────── */
 test('R223 ③ the flat map always renders world copies — the fixed-extent mode is gone', () => {
-  const s = read('js/app-body.js');
+  /* ⚠ (#R298) THE SUBJECT MOVED, AND THE NEGATIVES HAVE TO MOVE WITH IT. The projection commands and
+     the flat-pan rule left js/app-body.js for js/map-projection.js when the app shell hit its line
+     budget (tests/r168 #8). Reading only the old file would leave the three 「…is gone」 assertions
+     below asserting nothing at all — the exact failure mode this project keeps paying for — so the
+     question is asked of BOTH halves of the subject. */
+  const s = read('js/app-body.js') + '\n' + read('js/map-projection.js');
   /* #R223's own requirement (「平面地図の表示はデフォルトでは自由スクロールに」) is now unconditional */
   assert.match(s, /setRenderWorldCopies\(true\)/, 'a flat map always wraps');
   /* …and the mode it replaced is gone from the app, not merely defaulted away (#R297) */

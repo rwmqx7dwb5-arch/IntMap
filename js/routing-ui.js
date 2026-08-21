@@ -54,6 +54,7 @@ window.IntMapModules.routeUi = function (HOST) {
     let recomputeTimer = null, sugTimer = null, sugAC = null, sugFor = null, sugIdx = -1;
     let lastKey = '', opsBusy = '', geoWatch = null, hereState = 'idle', herePos = null;
     let unsub = null, focusReturn = null;
+    let wmOn = false, geomT = null, geomObs = null;
 
     /* ══ THE DOOR ═════════════════════════════════════════════════════════════════════════════════
        `open()` is idempotent: a second press brings the existing panel to the front with its state
@@ -67,6 +68,18 @@ window.IntMapModules.routeUi = function (HOST) {
       el.classList.remove('rtp-min');
       document.body.classList.add('rtp-open');
       if (isMob()) setDetent(ST().get().result ? 'mid' : 'full');
+      /* ⚠ (#R298) THE SENTENCE ABOVE THIS FUNCTION SAID 「brings the existing panel to the front」 and
+         nothing did it — `bringToFront` was bound in js/routing.js and called nowhere. It is the
+         app-wide window register (js/window-manager.js), so «in front» means in front of the other
+         floating windows and still under an open sidebar, which is the band css/intmap.css defines.
+         ⚠ Desktop only: the phone sheet's z-index is a stylesheet fact and an inline one would put it
+         into the desktop band, above the surfaces `body.rtp-open` deliberately steps aside for. */
+      enableWindowing(); restoreGeom();
+      if (!isMob()) { try { if (typeof HOST.bringToFront === 'function') HOST.bringToFront(el); } catch (_) { } }
+      /* the local place index the field merges into its candidates is loaded lazily by the app; ask
+         for it the way js/search-geocode.js's own box does, without waiting for it (§4.1) */
+      try { if (typeof HOST.loadCountryData === 'function' && !(HOST.countryStats && Object.keys(HOST.countryStats).length)) HOST.loadCountryData(); } catch (_) { }
+      try { if (window.IntMapGazetteer && window.IntMapGazetteer.warm) window.IntMapGazetteer.warm(); } catch (_) { }
       /* ⚠ (#R296) THE ZONE LOOKUP IS ASKED FOR HERE, ONCE. `IntMapTimeZones.offsetAt` answers null until
          its polygons are in hand, and #R293 ⑧ is the round where a `ready()` that nobody had called
          made 「地図中心の標準時」 quietly fall back to the device clock for anyone who had chosen it
@@ -77,8 +90,16 @@ window.IntMapModules.routeUi = function (HOST) {
       render();
       applyInsets();
       /* a restored share link recomputes rather than trusting a stored geometry (§16.2) */
+      /* ⚠⚠ (#R298) …AND SO DOES RE-OPENING, because #R296 made closing CLEAR the route. The comment
+         on `close()` says 「the ENDPOINTS stay in the store, so re-opening shows the same journey to
+         recompute rather than an empty form」 and PRODUCT.md says the same — MEASURED on production,
+         neither was true: closing and re-opening left the two field texts in place and the pane
+         reading 「Enter a start and a destination to see routes.」 with nothing drawn, because the
+         result had been thrown away and nothing asked for it again. A sentence in two documents that
+         the app does not do is worse than a missing feature; this is the line that makes it true. */
       if (o.restored) schedule(0);
       else if (ST().get().result) { try { RT().frame(); } catch (_) { } }
+      else if (ST()._pure.ready(ST().get())) schedule(0);
       setTimeout(() => { try { const f = el.querySelector('.rtp-field[data-f="from"] input'); if (f && !ST().get().from.place) f.focus(); } catch (_) { } }, 60);
       return true;
     }
@@ -115,7 +136,15 @@ window.IntMapModules.routeUi = function (HOST) {
       el.innerHTML = shell();
       (document.getElementById('map-container') || document.body).appendChild(el);
       wire();
-      unsub = ST().on((s, why) => { if (!openState) return; if (why === 'result' || why === 'clear' || why === 'sel' || why === 'request') render(); });
+      unsub = ST().on((s, why) => {
+        if (!openState) return;
+        if (why === 'result' || why === 'clear' || why === 'sel' || why === 'request') render();
+        /* ⚠⚠ (#R298) 「地図上で経路を押したら、自動的にパネル側もその経路が選択されるように。」 The chain
+           was already whole — js/routing.js `selectAlt` writes the store and the panel re-renders —
+           but a card can be several screens down a scrolling list, or on a tab that is not showing,
+           and a selection nobody can see is indistinguishable from one that did not happen. */
+        if (why === 'sel') revealSelected();
+      });
       try { window.addEventListener('resize', applyInsets); } catch (_) { }
       /* ⚠ (#R291 追記) THE WHOLE PANEL IS REBUILT, INCLUDING THE ANSWERS. `render()` redraws the
          cards from `s.result`, and js/routing-cards.js resolves every string at that moment — which
@@ -139,13 +168,20 @@ window.IntMapModules.routeUi = function (HOST) {
         + '<div class="rtp-fixed">'
         + '<div class="rtp-modes" role="group" aria-label="' + T(L('Travel mode', '交通手段', 'Verkehrsmittel', 'Способ передвижения', 'Modo de transporte')) + '">'
         + ST().MODES.map((m) => '<button type="button" class="rtp-mode" data-m="' + m + '" aria-pressed="false">'
-          + '<span class="rtp-mode-ic" aria-hidden="true">' + CD().glyph(m, { size: 20 }) + '</span>'
+          /* (#R298) 18, not 20 — the mode switch gave up 10 px of the panel to the fields below it */
+          + '<span class="rtp-mode-ic" aria-hidden="true">' + CD().glyph(m, { size: 18 }) + '</span>'
           + '<span class="rtp-mode-tx">' + T(CD().modeLabel(m, opt())) + '</span></button>').join('')
         + '</div>'
         + '<div class="rtp-fields"></div>'
         + '<div class="rtp-fieldbar">'
         + '<button type="button" class="rtp-chip rtp-addvia">' + T(L('Add a stop', '経由地を追加', 'Zwischenziel', 'Промежуточная точка', 'Añadir parada')) + '</button>'
         + '<button type="button" class="rtp-chip rtp-swap">' + T(L('Reverse', '入替', 'Umkehren', 'Обратно', 'Invertir')) + '</button>'
+        /* ══ ⚠⚠ (#R298) 「経路を検索ボタンがないのもおかしい。」 ═══════════════════════════════════════
+           #R291 wrote §23 as 「never recompute on a keystroke」 and then had nothing else say «now»:
+           every request came from a confirmed change, silently, and the reader had no control that
+           MEANT «search». The automatic recompute is untouched — this is the missing half of it, the
+           one control on the panel that is the primary action, next to the fields it acts on. */
+        + '<button type="button" class="rtp-go">' + T(L('Find routes', '経路を検索', 'Routen suchen', 'Найти маршруты', 'Buscar rutas')) + '</button>'
         + '</div>'
         + '<div class="rtp-when">'
         + '<select class="rtp-when-kind" aria-label="' + T(L('Departure or arrival', '出発／到着', 'Abfahrt oder Ankunft', 'Отправление или прибытие', 'Salida o llegada')) + '">'
@@ -300,6 +336,31 @@ window.IntMapModules.routeUi = function (HOST) {
       closeSuggest(); renderFields(); schedule(0);
       try { const inp = el.querySelector('.rtp-field[data-f="' + CSS.escape(String(which)) + '"] input'); if (inp) inp.focus(); } catch (_) { }
     }
+    /* ══ ⚠⚠⚠ (#R298) 「地点を入力する欄がくそ。ほぼ座標ぐらいしか対応していない。検索機能なし。」 ═══════
+       THE APP ALREADY OWNS A PLACE INDEX AND THIS FIELD WAS THE ONE SEARCH BOX NOT CONSULTING IT.
+       `localFuzzyPlaces` (js/search-geocode.js, reached through HOST like every other module reaches
+       it) resolves country names, capitals and the 3,482-row world gazetteer with typo tolerance, on
+       the device, in no time at all — it is what the map's own search box has used since #R15. Merged
+       here, a reader gets rows on the FIRST keystroke, and gets them with no network at all.
+       ⚠ ITS VOCABULARY IS NOT THIS PANEL'S. It answers «country» / «capital» / a gazetteer type;
+       `kindLabel` prints an unrecognised kind VERBATIM, which would put an untranslated English word
+       into a Japanese list. Mapped onto the six kinds this file labels — never passed through. */
+    function localCandidates(q) {
+      const out = [];
+      try {
+        const hits = (typeof HOST.localFuzzyPlaces === 'function') ? HOST.localFuzzyPlaces(q) : null;
+        (hits || []).forEach((h) => {
+          if (!h || !isFinite(+h.lng) || !isFinite(+h.lat)) return;
+          const kind = (h.kind === 'country') ? 'region' : (h.kind === 'capital') ? 'city' : 'place';
+          const row = { lng: +h.lng, lat: +h.lat, name: String(h.name || ''), kind: kind, source: 'local', id: 'loc:' + h.name };
+          /* a name the local index matched EXACTLY is pinned to the top by the same `exact` flag the
+             station registry uses (js/routing-geocode.js `rank`) — one mechanism, not two */
+          if ((+h.score || 0) >= 88) row.exact = true;
+          out.push(row);
+        });
+      } catch (_) { }
+      return out.slice(0, 5);
+    }
     function askSuggest(which, input) {
       const q = input.value.trim();
       sugFor = which; sugIdx = -1;
@@ -310,17 +371,31 @@ window.IntMapModules.routeUi = function (HOST) {
         if (r.length) showSuggest(input, r, ''); else closeSuggest();
         return;
       }
-      showSuggest(input, [], L('Searching…', '検索中…', 'Suche…', 'Поиск…', 'Buscando…'));
+      /* ⚠⚠ THE LIST IS NOT EMPTIED WHILE THE NETWORK IS ASKED. Every keystroke used to replace the
+         rows with the single word 「Searching…」, and between the 240 ms debounce and Nominatim's
+         1.1 s floor that is what the reader looked at — candidates VANISHING as they typed. A search
+         that shows nothing is a search that is not working, whatever it is doing underneath. Local
+         rows stand until the network's arrive, and 「Searching…」 is only for when there are none. */
+      const near = nearRef(which);
+      const seed = GC().rank(GC().dedupe(localCandidates(q)), near);
+      if (seed.length) showSuggest(input, seed, '');
+      else showSuggest(input, [], L('Searching…', '検索中…', 'Suche…', 'Поиск…', 'Buscando…'));
       /* ⚠ 200–300 ms, and the previous search is CANCELLED — 「入力中に複数APIへ同時アクセスしない」 */
       sugTimer = setTimeout(async () => {
-        sugAC = new AbortController();
+        /* ⚠ THE CONTROLLER IS HELD LOCALLY. `sugAC` is reassigned by the next keystroke, so the old
+           closure reading the module variable was testing the NEW request's signal and painting a
+           superseded answer over a fresh list. */
+        const ac = new AbortController();
+        sugAC = ac;
         let res = null;
-        try { res = await GC().suggest(q, { near: nearRef(which), lang: HOST.lang, limit: 8, signal: sugAC.signal }); } catch (_) { res = null; }
-        if (sugFor !== which) return;                       /* the reader moved to another field */
+        try { res = await GC().suggest(q, { near: near, lang: HOST.lang, limit: 8, signal: ac.signal }); } catch (_) { res = null; }
+        if (sugFor !== which || ac.signal.aborted) return;   /* the reader moved on */
+        const net = (res && res.items) ? res.items : [];
+        const all = GC().rank(GC().dedupe(seed.concat(net)), near).slice(0, 8);
+        if (all.length) { showSuggest(input, all, ''); return; }
         if (!res) { showSuggest(input, [], L('Search is unavailable right now.', '検索を利用できません。', 'Suche nicht verfügbar.', 'Поиск недоступен.', 'Búsqueda no disponible.')); return; }
         if (res.error) { showSuggest(input, [], L('The place search could not be reached — check the connection and try again.', '地点検索に接続できませんでした。接続を確認して再試行してください。', 'Ortssuche nicht erreichbar.', 'Поиск мест недоступен.', 'No se pudo contactar la búsqueda.')); return; }
-        if (!res.items.length) { showSuggest(input, [], L('No place matches that.', '該当する地点がありません。', 'Kein Ort gefunden.', 'Ничего не найдено.', 'Sin resultados.')); return; }
-        showSuggest(input, res.items, '');
+        showSuggest(input, [], L('No place matches that.', '該当する地点がありません。', 'Kein Ort gefunden.', 'Ничего не найдено.', 'Sin resultados.'));
       }, 240);
     }
     /** the point candidates are ranked against: the other endpoint if it is known, else the view */
@@ -413,16 +488,39 @@ window.IntMapModules.routeUi = function (HOST) {
         b.classList.toggle('on', on);
       });
       ['route', 'opts', 'ana'].forEach((k) => { const p = el.querySelector('#rtp-p-' + k); if (p) p.hidden = (k !== tab); });
-      renderSummary(); renderRoutePane(); renderOptsPane(); renderAnaPane();
+      renderSummary(); renderGo(); renderRoutePane(); renderOptsPane(); renderAnaPane();
       const foot = el.querySelector('.rtp-foot');
       if (foot) foot.classList.toggle('rtp-off', !hasRoute());
+    }
+    /* ⚠ (#R298) THE PRIMARY ACTION REPORTS ITS OWN STATE. Three of them: it can be pressed, it is
+       working (so a second press is not what is needed), or it cannot run yet — and in the last case
+       it names the sentence that says why rather than staying a grey rectangle. The two strings are
+       the SAME `L()` calls `renderSummary` uses, so the button and the summary cannot disagree. */
+    function renderGo() {
+      const b = el.querySelector('.rtp-go'); if (!b) return;
+      const s = ST().get();
+      const busy = s.request.state === 'loading';
+      const can = ST()._pure.ready(s);
+      b.disabled = busy || !can;
+      b.classList.toggle('rtp-go-busy', busy);   /* ⚠ not `rtp-busy` — see css/intmap.css */
+      b.textContent = busy
+        ? L('Finding routes…', '経路を検索中…', 'Routen werden gesucht…', 'Поиск маршрутов…', 'Buscando rutas…')
+        : L('Find routes', '経路を検索', 'Routen suchen', 'Найти маршруты', 'Buscar rutas');
+      if (!busy && !can) {
+        b.title = L('Choose a start and a destination.', '出発地と目的地を選んでください。', 'Start und Ziel wählen.', 'Выберите начало и цель.', 'Elige origen y destino.');
+        b.setAttribute('aria-describedby', 'rtp-why');
+      } else { b.removeAttribute('title'); b.removeAttribute('aria-describedby'); }
     }
 
     function renderSummary() {
       const s = ST().get(), box = el.querySelector('.rtp-summary');
       if (s.request.state === 'loading') { box.innerHTML = '<span class="rtp-busy">' + esc(L('Finding routes…', '経路を検索中…', 'Routen werden gesucht…', 'Поиск маршрутов…', 'Buscando rutas…')) + '</span>'; return; }
       if (!ST()._pure.ready(s)) {
-        box.innerHTML = '<span class="rtp-hint">' + esc(L('Choose a start and a destination.', '出発地と目的地を選んでください。', 'Start und Ziel wählen.', 'Выберите начало и цель.', 'Elige origen y destino.')) + '</span>';
+        /* ⚠ (#R298) THE ID IS WHAT LETS 「経路を検索」 EXPLAIN ITSELF WITHOUT A SECOND SENTENCE.
+           A disabled control that says nothing is the defect; a disabled control whose reason is
+           written twice is #R293's — two elements making the same claim, one of which goes stale.
+           So the button points AT this sentence (`aria-describedby`) instead of repeating it. */
+        box.innerHTML = '<span class="rtp-hint" id="rtp-why">' + esc(L('Choose a start and a destination.', '出発地と目的地を選んでください。', 'Start und Ziel wählen.', 'Выберите начало и цель.', 'Elige origen y destino.')) + '</span>';
         return;
       }
       if (s.request.state === 'error') { box.innerHTML = errorHTML(s.request.status); return; }
@@ -474,29 +572,32 @@ window.IntMapModules.routeUi = function (HOST) {
       const s = ST().get(), pane = el.querySelector('#rtp-p-route');
       if (!s.result) { pane.innerHTML = emptyRouteHTML(); return; }
       const r = s.result;
-      const alts = r.alternatives || [];
-      /* ⚠ (#R296) 「経路の選択肢からひとつをえらんだときに、詳細が経路候補一覧の下に表示されるのでは
-         なく、経路カードが広がって詳細が表示されるUIに。」 — the detail is produced by the SAME two
-         renderers as before and handed to `altCards`, which puts it inside the chosen card. With a
-         single alternative there is no list to expand, so the detail stands on its own as it always
-         did — a card that is the only card is a heading, not a choice. */
+      /* ⚠⚠⚠ (#R298) ONE ARRANGEMENT, WHATEVER THE COUNT — 「経路の選択肢からひとつをえらんだときに、
+         詳細が経路候補一覧の下に表示されるのではなく、経路カードが広がって詳細が表示されるUIに。」
+         #R296 answered that for two or more alternatives and left the OLD layout standing for one,
+         reasoning that 「a card that is the only card is a heading, not a choice」. It is still a card,
+         and one route is what most journeys come back with — so the arrangement the reader asked to
+         be rid of was the one they saw most often. A list of one is a list; the card still opens. */
+      const alts = (r.alternatives && r.alternatives.length) ? r.alternatives : [r];
       const detailFor = (a2) => (r.transit
         ? '<div class="rtp-legs">' + CD().legRows(a2.legs || r.legs, opt()) + '</div>'
         : '<div class="rtp-steps" role="list">' + CD().stepRows(a2.steps || r.steps || [], Object.assign(opt(), { maneuver: (x) => RT().maneuver(x), step: s.step })) + '</div>');
-      let h = '';
-      if (alts.length > 1) {
-        h += CD().altCards(alts, Object.assign(opt(), {
-          sel: s.sel, setId: r.routeSetId, transit: !!r.transit, startMs: departMs(),
-          detail: (i2, a2) => detailFor(a2),
-        }));
-        (s.notes || []).forEach((k) => { h += CD().note(k, Object.assign(opt(), { mode: s.mode })); });
-        if (r.provider) h += CD().providerLine(r.provider, opt());
-      } else {
-        (s.notes || []).forEach((k) => { h += CD().note(k, Object.assign(opt(), { mode: s.mode })); });
-        if (r.provider) h += CD().providerLine(r.provider, opt());
-        h += detailFor(alts[0] || r);
-      }
+      let h = CD().altCards(alts, Object.assign(opt(), {
+        sel: Math.max(0, Math.min(alts.length - 1, s.sel | 0)), setId: r.routeSetId, transit: !!r.transit, startMs: departMs(),
+        detail: (i2, a2) => detailFor(a2),
+      }));
+      (s.notes || []).forEach((k) => { h += CD().note(k, Object.assign(opt(), { mode: s.mode })); });
+      if (r.provider) h += CD().providerLine(r.provider, opt());
       pane.innerHTML = h;
+    }
+    /** (#R298) bring the chosen alternative into view — the section that holds it first, then the row */
+    function revealSelected() {
+      if (!el || el.hidden) return;
+      if (tab !== 'route') { tab = 'route'; render(); }
+      try {
+        const card = el.querySelector('#rtp-p-route .rt-alt.on');
+        if (card && card.scrollIntoView) card.scrollIntoView({ block: 'nearest' });
+      } catch (_) { }
     }
     function emptyRouteHTML() {
       const s = ST().get();
@@ -588,7 +689,15 @@ window.IntMapModules.routeUi = function (HOST) {
       el.querySelector('.rtp-closeb').addEventListener('click', close);
       el.querySelector('.rtp-minb').addEventListener('click', () => {
         if (isMob()) setDetent(ST().get().detent === 'min' ? 'mid' : 'min');
-        else { el.classList.toggle('rtp-min'); applyInsets(); }
+        else {
+          /* ⚠ (#R298) MINIMISING HAS TO TAKE THE RESIZED HEIGHT OFF. `.rtp-min` hides every row but
+             the header, and an inline `height:…!important` written by a resize is the one thing the
+             stylesheet cannot override — so a minimised panel would have stayed a full-height empty
+             rectangle. `restoreGeom` puts the stored size back on the way out. */
+          const shrunk = el.classList.toggle('rtp-min');
+          if (shrunk) el.style.removeProperty('height'); else restoreGeom();
+          applyInsets();
+        }
       });
       el.querySelectorAll('.rtp-mode').forEach((b) => b.addEventListener('click', () => {
         ST().setMode(b.getAttribute('data-m')); render(); schedule(0);
@@ -609,6 +718,7 @@ window.IntMapModules.routeUi = function (HOST) {
           }
         });
       });
+      el.querySelector('.rtp-go').addEventListener('click', runNow);
       el.querySelector('.rtp-swap').addEventListener('click', () => { ST().swap(); render(); schedule(0); });
       el.querySelector('.rtp-addvia').addEventListener('click', () => {
         const i = ST().addVia(null); render();
@@ -648,6 +758,7 @@ window.IntMapModules.routeUi = function (HOST) {
         el.querySelectorAll('.rtp-field.drag').forEach((x) => x.classList.remove('drag'));
       });
       makeSheet();
+      enableWindowing();   /* (#R298) the header is new after a language rebuild — see enableWindowing */
     }
 
     function onClick(e) {
@@ -756,6 +867,17 @@ window.IntMapModules.routeUi = function (HOST) {
     function schedule(ms) {
       if (recomputeTimer) clearTimeout(recomputeTimer);
       recomputeTimer = setTimeout(recompute, ms || 0);
+    }
+    /** ⚠⚠ (#R298) THE PRESS IS A NEW QUESTION, so it steps over the 1.5 s identical-request guard.
+       That guard is right for a RE-RENDER — redrawing the same cards is not a new request — and
+       wrong for a button: a reader who presses 「経路を検索」 and watches nothing happen has met
+       exactly the 「押しても何も起きない」 shape #R268 counted three times in one round. Clearing
+       `lastKey` is the same door `clearRoute` already uses, for the same reason. */
+    function runNow() {
+      if (!ST()._pure.ready(ST().get())) { render(); return; }
+      closeSuggest();
+      lastKey = '';
+      schedule(0);
     }
     let lastAt = 0;
     async function recompute() {
@@ -932,6 +1054,111 @@ window.IntMapModules.routeUi = function (HOST) {
           vv.addEventListener('resize', follow); vv.addEventListener('scroll', follow);
         }
       } catch (_) { }
+    }
+
+    /* ══ ⚠⚠⚠ (#R298) THE DESKTOP PANEL MOVES AND RESIZES — 「移動もリサイズも何もかもできないとかクソ」
+       MEASURED before writing this: js/routing.js line 23 binds `HOST.bringToFront` and
+       `HOST.makeDraggable` and uses NEITHER — zero call sites — and this file never named them at
+       all. #R291 wrote the panel as 「a docked panel, not a draggable box」 and that reading is what
+       the reader has now answered: a window pinned at left:14px/top:74px with a clamped width covers
+       the part of the map a journey is being planned across, and nothing could be done about it.
+       ⚠ THE HELPERS ARE THE APP'S OWN (js/window-manager.js), not new ones — so this panel joins the
+       same register every other floating window is in: click-to-front among windows, drag by the
+       header, resize from any edge with no visible grab-mark, and the sidebar still covers it.
+       ⚠ THE PHONE IS UNCHANGED. There it is the three-detent bottom sheet `makeSheet()` builds
+       (§3.2); a sheet that could also be dragged sideways is two gestures fighting one surface. */
+    /* ⚠ THE FLOOR IS NOT 「as small as the helper allows」 (its default is 220×130). MEASURED on the
+       desktop panel: header 48 + the pinned form 300 + tabs 35 + footer 47 = 430 px before a single
+       route is drawn, and `.rtp` clips what does not fit — at 130 px the footer and half the form
+       would be behind the edge with no way to reach them. 360 keeps the form and the footer usable,
+       and css/intmap.css lets the pinned block scroll inside itself for the last of it. */
+    const GEOM_KEY = 'im.rtp.geom';
+    const MIN_W = 320, MIN_H = 360;
+    function enableWindowing() {
+      if (!el || isMob()) return;
+      try {
+        /* re-bound after every shell rebuild: a language switch replaces the header element, and a
+           handler on the old one moves nothing. `addEdgeResize` and `registerWindow` guard themselves. */
+        const head = el.querySelector('.rtp-head');
+        if (head && typeof HOST.makeDraggable === 'function') HOST.makeDraggable(el, head);
+        if (typeof HOST.addEdgeResize === 'function') HOST.addEdgeResize(el, { min: [MIN_W, MIN_H] });
+      } catch (_) { }
+      if (wmOn) return;
+      wmOn = true;
+      /* ⚠ THERE IS NO 「the gesture ended」 EVENT. Both helpers write inline left/top/width/height, so
+         the geometry is read back from the attribute that changed, debounced — which also catches a
+         resize that ends outside the panel. */
+      try {
+        geomObs = new MutationObserver(() => { if (geomT) clearTimeout(geomT); geomT = setTimeout(saveGeom, 400); });
+        geomObs.observe(el, { attributes: true, attributeFilter: ['style'] });
+      } catch (_) { }
+      try { window.addEventListener('resize', clampGeom); } catch (_) { }
+    }
+    function geomBox() {
+      const op = (el && el.offsetParent) || document.documentElement;
+      return { w: op.clientWidth || window.innerWidth, h: op.clientHeight || window.innerHeight };
+    }
+    /* ⚠ INLINE !important, exactly as js/window-manager.js writes its own moves: anything weaker
+       loses to `width:clamp(…)` in the stylesheet, and on a phone to the sheet rules. */
+    function applyGeom(g) {
+      const b = geomBox();
+      /* ⚠⚠ A MINIMISED PANEL HAS NO HEIGHT OF ITS OWN. `.rtp-min` hides everything but the header, so
+         an inline height left over from a resize would leave an empty box the size of the open panel
+         — and inline `!important` is exactly what a stylesheet cannot take back. The stored size is
+         kept (see `saveGeom`) and written again when the panel is restored. */
+      const shrunk = el.classList.contains('rtp-min');
+      const w = Math.max(MIN_W, Math.min(Math.max(MIN_W, b.w - 12), Math.round(+g.w) || MIN_W));
+      const h = shrunk ? Math.max(1, Math.round(+g.h) || 1)
+        : Math.max(MIN_H, Math.min(Math.max(MIN_H, b.h - 12), Math.round(+g.h) || MIN_H));
+      const l = Math.max(6, Math.min(Math.max(6, b.w - w - 6), Math.round(+g.l) || 0));
+      const t = Math.max(6, Math.min(Math.max(6, b.h - h - 6), Math.round(+g.t) || 0));
+      el.style.setProperty('width', w + 'px', 'important');
+      if (shrunk) el.style.removeProperty('height');
+      else el.style.setProperty('height', h + 'px', 'important');
+      el.style.setProperty('left', l + 'px', 'important');
+      el.style.setProperty('top', t + 'px', 'important');
+      el.style.setProperty('right', 'auto', 'important');
+      el.style.setProperty('bottom', 'auto', 'important');
+      el.setAttribute('data-dragged', '1');
+    }
+    function stripGeom() {
+      if (!el) return;
+      ['width', 'height', 'left', 'top', 'right', 'bottom'].forEach((k) => { try { el.style.removeProperty(k); } catch (_) { } });
+      el.removeAttribute('data-dragged');
+    }
+    function restoreGeom() {
+      if (!el || isMob()) return;
+      let g = null;
+      try { g = JSON.parse(localStorage.getItem(GEOM_KEY) || 'null'); } catch (_) { g = null; }
+      if (!g || !isFinite(+g.w) || !isFinite(+g.h)) return;
+      applyGeom(g);
+    }
+    function saveGeom() {
+      if (!el || el.hidden || isMob() || el.getAttribute('data-dragged') !== '1') return;
+      try {
+        const r = el.getBoundingClientRect();
+        const opr = ((el.offsetParent || document.documentElement)).getBoundingClientRect();
+        let prev = null; try { prev = JSON.parse(localStorage.getItem(GEOM_KEY) || 'null'); } catch (_) { prev = null; }
+        /* a minimised panel is a header, not a size — the size it will be restored to is kept */
+        const shrunk = el.classList.contains('rtp-min') && prev;
+        localStorage.setItem(GEOM_KEY, JSON.stringify({
+          l: Math.round(r.left - opr.left), t: Math.round(r.top - opr.top),
+          w: shrunk ? prev.w : Math.round(r.width),
+          h: shrunk ? prev.h : Math.round(r.height),
+        }));
+      } catch (_) { }
+      applyInsets();
+    }
+    /* ⚠ 「画面外に出たら戻す」, and the other direction too: a rectangle written for a wide desktop
+       must not survive into the phone layout, where `left`/`height` are what make it a bottom sheet. */
+    function clampGeom() {
+      if (!el) return;
+      if (isMob()) { stripGeom(); applyInsets(); return; }
+      if (el.getAttribute('data-dragged') !== '1') { enableWindowing(); return; }
+      const r = el.getBoundingClientRect();
+      const opr = ((el.offsetParent || document.documentElement)).getBoundingClientRect();
+      applyGeom({ l: r.left - opr.left, t: r.top - opr.top, w: r.width, h: r.height });
+      applyInsets();
     }
 
     /* the panel's REAL rectangle, so the camera frames a route into the visible map (§11.3) */

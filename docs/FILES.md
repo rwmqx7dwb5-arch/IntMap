@@ -128,6 +128,7 @@ layer-previews.js                 レイヤーのサムネイル IntMapLayerPrev
 tile-warm.js                      カメラがこれから必要とするタイルを温める
 wheel-zoom.js                     ホイールと、地図がどれだけ速く応えるか
 view-controls.js                  傾きの上限と、視点高度の読み出し
+map-projection.js                 投影——地球儀か平面か。平面地図は必ず巻き、それが再確認され続ける
 basemap-switch.js                 携帯のベースマップ切替 window.IntMapBasemapSwitch
 opening-view.js                   アプリが開く視点——黒い地球ではなく、光の当たった地球
 theme-sky.js                      テーマと空——アプリの色と、太陽の位置
@@ -197,6 +198,7 @@ atlas-sims.js                     Atlas — 飛行・弾道・爆風・標高・
 atlas-sources.js                  Atlas — 外部の証拠源（首脳・ライブニュース・POI カタログ）
 atlas-verify.js                   Atlas — 回答のコード側検証（内容分類・算術・出典・地図化の可否）
 atlas-attach.js                   Atlas — 添付ファイルの正体判定と全画面ビューア
+atlas-msg-tools.js                Atlas — メッセージごとの操作バー（コピー／再試行／編集）とその場編集
 atlas-loader.js                   Atlas に手を伸ばすと Atlas を取りに行く window.IntMapAtlas
 ai-core.js                        Atlas の AI 通信・利用枠・設定
 ```

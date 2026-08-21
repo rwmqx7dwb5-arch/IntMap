@@ -156,13 +156,21 @@ window.IntMapModules.insolation=function(HOST){
       try{ if(GE().layers.has(LYR)) GE().layers.remove(LYR); }catch(_){}
       try{ if(GE().layers.hasSource(IMG)) GE().layers.removeSource(IMG); }catch(_){} }
 
+    /* ══ (#R298) WHERE THE SUN IS READ FROM ═══════════════════════════════════════════════════════
+       The mask is computed over the grid, but the sun's own altitude and azimuth are a property of ONE
+       coordinate, and both entry points below took the camera's centre for it without being asked and
+       without saying so — 「押したら勝手に地図中心を選択しているものとして結果を出すのを辞めろ」. `o.at`
+       is the point the caller was actually given (js/sims.js hands over the sun panel's own site); with
+       nothing there the centre is still used, and the panel that asked names it. */
+    const _sunAt=(o)=>{ const a=o&&o.at; if(a&&isFinite(a.lng)&&isFinite(a.lat)) return { lat:+a.lat, lng:+a.lng };
+      try{ const c=GE().camera.getCenter(); return { lat:c.lat, lng:c.lng }; }catch(_){ return { lat:0, lng:0 }; } };
     /* The terrain shadow for one moment. */
     let busy=false, lastShade=null;
     async function shade(when,o){
       if(busy) return null; busy=true;
       try{
         const g=await grid(o&&o.refit); if(!g) return null;
-        const c=GE().camera.getCenter(); const sp=sunPos(when instanceof Date?when:new Date(when),c.lat,c.lng);
+        const c=_sunAt(o); const sp=sunPos(when instanceof Date?when:new Date(when),c.lat,c.lng);
         const mask=shadowMask(g,sp.azCompass,sp.altDeg);
         let shaded=0; for(let k=0;k<mask.length;k++) if(mask[k]) shaded++;
         paint(g,mask);
@@ -177,7 +185,7 @@ window.IntMapModules.insolation=function(HOST){
       if(busy) return null; busy=true;
       try{
         const g=await grid(o&&o.refit); if(!g) return null;
-        const c=GE().camera.getCenter(); const acc=new Uint8Array(g.NX*g.NY).fill(1);
+        const c=_sunAt(o); const acc=new Uint8Array(g.NX*g.NY).fill(1);
         const d0=new Date(date); d0.setHours(0,0,0,0);
         let steps=0, anySun=false;
         /* up to 96 sweeps over a quarter-million cells — yield between them, or the tab locks for

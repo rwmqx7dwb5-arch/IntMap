@@ -144,6 +144,16 @@ window.IntMapModules.dataLayers=function(HOST){
       .data-legend .dl-hint{ color:var(--text-muted); margin-top:5px; font-size:9.5px; }
       /* (#R39) Short "what is this data" explanation for the non-obvious metrics. */
       .data-legend .dl-desc{ color:var(--text-main); opacity:0.82; margin-top:5px; font-size:9.5px; line-height:1.45; border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); padding-top:5px; }
+      /* (#R298) A dated layer's calendar and its two one-frame steps. NOT scoped under .data-legend —
+         the same box is built twice, once in the legend and once in the Layers-panel row, and a reader
+         who moves the day in one must see the other move with it. Sized from the radar/ECMWF player
+         pill (.rv-b / .ecl-b, 22×20) so a date control looks like a time control everywhere. */
+      .dl-datebox{ display:inline-flex; align-items:center; gap:4px; }
+      .dl-step{ flex:0 0 auto; width:22px; height:20px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--glass-border,rgba(128,128,128,0.2)); border-radius:6px; background:var(--input-bg); color:var(--text-main); cursor:pointer; }
+      .dl-step:hover:not(:disabled){ background:var(--primary-color); color:#fff; border-color:transparent; }
+      .dl-step:disabled{ opacity:0.35; cursor:default; }
+      .dl-step svg{ display:block; }
+      .dl-note{ display:none; width:100%; color:var(--text-muted); font-size:9.5px; line-height:1.35; margin-top:3px; font-variant-numeric:tabular-nums; }
       /* ══ (#R276) THE NUMERIC WEATHER LEGEND AND ITS FORECAST PLAYER ═══════════════════════════
          Sized from the SAME declarations the rest of the legend uses (10.5px body, 9.5px hints) — a
          panel whose inner controls are twice the size of the legend beside it is #R275's report. */
@@ -718,6 +728,237 @@ window.IntMapModules.dataLayers=function(HOST){
     /* thermal is NOT date-keyed any more (#5): NASA FIRMS publishes rolling time-window layers, so the
        thermal row carries a window selector in its legend instead of a calendar date. */
     const layerDates={precip:PRECIP_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
+    /* ══ ⚠⚠⚠ (#R298) WHICH DAYS EACH DATED RASTER ACTUALLY HAS ═════════════════════════════════════
+       「気象系レイヤーは、時刻をそれぞれの時間選択UIで選択するとき、データのある時間のみを選べる、
+         離散的な感じに。データのない時間を選べないように。」
+
+       The calendar these layers carried was one line of markup with `max="今日"` and NO `min` at all,
+       and setGlobalLayerDate clamped every one of them to the SAME 今日−2. So a reader could ask
+       IMERG for 1998, MODIS AOD for 2005, or MUR SST for a day it has not processed yet — and GIBS
+       answers a day it does not have with fully transparent tiles. A layer that is ON and draws
+       nothing is indistinguishable from a broken layer, which is the report.
+
+       ⚠ THE THREE NUMBERS PER PRODUCT ARE MEASURED, NOT ASSUMED. Read out of GIBS's own WMTS
+       capabilities (…/wmts/epsg3857/best/1.0.0/WMTSCapabilities.xml, the Time dimension of each
+       layer) on 2026-08-21:
+
+         IMERG_Precipitation_Rate                2000-06-01 … 2026-08-20   P1D    6 ranges
+         GHRSST_L4_MUR_Sea_Surface_Temperature   2002-06-01 … 2026-08-20   P1D   10 ranges
+         MODIS_Terra_NDSI_Snow_Cover             2000-02-24 … 2026-08-21   P1D    8 ranges
+         MODIS_Combined_Value_Added_AOD          2017-04-19 … 2026-08-20   P1D   13 ranges
+
+       `lagDays` is (the day that was measured − the newest day the product had), i.e. the PIPELINE's
+       delay, so it does not go stale the way a date would: 1 day for the three that publish
+       overnight, 0 for MODIS Terra snow cover, which GIBS advertises for the current UTC day.
+       All four measured P1D, so `cadence` is 'daily' for all four — none of these is an 8-day or a
+       monthly composite. The other two cadence shapes are implemented because the domain document
+       below expresses them (P8D → {everyDays,epoch}, P1M → 'monthly'), not because a layer here uses
+       one today.
+
+       ⚠ AND THE HOLES ARE NOT GUESSABLE, SO THEY ARE NOT GUESSED. Every one of these products is
+       published as SEVERAL ranges with days missing between them (AOD has thirteen — 2018-09-20 …
+       2018-09-29 is simply absent), and that list moves. GIBS publishes it as a ~600-byte CORS-open
+       document per layer, so _ensureDateDomain() asks for it once, the first time a reader touches
+       that layer's calendar. Until it answers — and if it never does — the declared triple is what
+       the calendar uses. Right at boot, exact a moment later. */
+    const DATED_SPEC={
+      precip:{ gibs:'IMERG_Precipitation_Rate',              tms:'GoogleMapsCompatible_Level6', start:'2000-06-01', lagDays:1, cadence:'daily' },
+      sst   :{ gibs:'GHRSST_L4_MUR_Sea_Surface_Temperature', tms:'GoogleMapsCompatible_Level7', start:'2002-06-01', lagDays:1, cadence:'daily' },
+      snow  :{ gibs:'MODIS_Terra_NDSI_Snow_Cover',           tms:'GoogleMapsCompatible_Level8', start:'2000-02-24', lagDays:0, cadence:'daily' },
+      aod   :{ gibs:'MODIS_Combined_Value_Added_AOD',        tms:'GoogleMapsCompatible_Level6', start:'2017-04-19', lagDays:1, cadence:'daily' }
+    };
+    /* A GIBS day IS a UTC day, so every comparison below is in UTC day numbers rather than in Date
+       objects — local midnight is a different day for half the planet. */
+    const _dayNum=(iso)=>Math.floor(Date.parse(String(iso).slice(0,10)+'T00:00:00Z')/864e5);
+    const _dayISO=(n)=>new Date(n*864e5).toISOString().slice(0,10);
+    const _todayISO=()=>new Date().toISOString().slice(0,10);
+    /* month arithmetic that cannot land on a day the target month does not have (Jan 31 + 1 month) */
+    function _addMonths(iso,k){ const d=new Date(String(iso).slice(0,10)+'T00:00:00Z');
+      const y=d.getUTCFullYear(), m=d.getUTCMonth()+k, last=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+      return new Date(Date.UTC(y,m,Math.min(d.getUTCDate(),last))).toISOString().slice(0,10); }
+    const _liveDomain={};   /* id → the ranges GIBS itself published, once it has answered */
+    /* One layer's availability as a list of ranges. The live document wins when it is here; otherwise
+       the declared triple, which is a single range ending at 今日 − that product's own lagDays. */
+    function _dateRanges(id){
+      if(_liveDomain[id]&&_liveDomain[id].length) return _liveDomain[id];
+      const s=DATED_SPEC[id]; if(!s) return null;
+      return [{from:s.start,to:_dayISO(_dayNum(_todayISO())-s.lagDays),cadence:s.cadence}];
+    }
+    /* The grid points of ONE range around `iso`: the one below, the one on/above, the one below that,
+       plus the range's own first and last. That set is everything a nearest-day search or a one-frame
+       step can need, including "the reader is standing on the near edge of a hole". */
+    function _rangeGrid(r,iso){
+      const a=_dayNum(r.from), b=_dayNum(r.to), cad=r.cadence, out=[];
+      if(cad==='monthly'||cad==='yearly'){
+        const stepM=(cad==='monthly')?1:12;
+        const F=new Date(r.from+'T00:00:00Z'), W=new Date(String(iso).slice(0,10)+'T00:00:00Z');
+        const k=Math.floor(((W.getUTCFullYear()-F.getUTCFullYear())*12+(W.getUTCMonth()-F.getUTCMonth()))/stepM);
+        [k-1,k,k+1].forEach(kk=>out.push(_dayNum(_addMonths(r.from,kk*stepM))));
+        const T=new Date(r.to+'T00:00:00Z');
+        const kb=Math.floor(((T.getUTCFullYear()-F.getUTCFullYear())*12+(T.getUTCMonth()-F.getUTCMonth()))/stepM);
+        out.push(a,_dayNum(_addMonths(r.from,Math.max(0,kb)*stepM)));
+      } else {
+        const n=(cad&&cad.everyDays)||1, o=(cad&&cad.epoch)?_dayNum(cad.epoch):a;
+        const k=Math.floor((_dayNum(iso)-o)/n);
+        out.push(o+(k-1)*n,o+k*n,o+(k+1)*n);
+        out.push(o+n*Math.ceil((a-o)/n),o+n*Math.floor((b-o)/n));
+      }
+      return out.filter(x=>isFinite(x)&&x>=a&&x<=b);
+    }
+    /* The day this product actually publishes that is nearest to the day asked for. A tie — a day in
+       the exact middle of a hole — resolves to the LATER side, i.e. the fresher picture. */
+    function _snapLayerDate(id,iso){
+      const rs=_dateRanges(id), want=String(iso||'').slice(0,10);
+      if(!rs||!rs.length||!/^\d{4}-\d{2}-\d{2}$/.test(want)) return want||null;
+      const w=_dayNum(want); let best=null,bd=Infinity;
+      rs.forEach(r=>_rangeGrid(r,want).forEach(c=>{ const d=Math.abs(c-w);
+        if(d<bd||(d===bd&&best!=null&&c>best)){ bd=d; best=c; } }));
+      return best==null?want:_dayISO(best);
+    }
+    function _dateBounds(id){ const rs=_dateRanges(id); if(!rs||!rs.length) return null;
+      return { min:_snapLayerDate(id,rs[0].from), max:_snapLayerDate(id,rs[rs.length-1].to) }; }
+    /* ONE FRAME in one direction: the nearest published day strictly past the current one — a day for
+       a daily product, eight for an 8-day composite, and the far side of a hole when the reader is on
+       the edge of one. null at either end, which is what disables the button. */
+    function _stepDate(id,dir){
+      const cur=layerDates[id], rs=_dateRanges(id);
+      if(!cur||!rs||!rs.length||!dir) return null;
+      const c=_dayNum(cur); let best=null;
+      rs.forEach(r=>_rangeGrid(r,cur).forEach(x=>{
+        if(dir>0?x<=c:x>=c) return;
+        if(best==null||(dir>0?x<best:x>best)) best=x; }));
+      return best==null?null:_dayISO(best);
+    }
+    /* is one frame of this product one day, here? — decides which label the step buttons carry */
+    function _dailyAt(id,iso){ const rs=_dateRanges(id); if(!rs||!rs.length) return true;
+      const w=_dayNum(iso||_todayISO());
+      const r=rs.filter(x=>_dayNum(x.from)<=w&&w<=_dayNum(x.to))[0]||rs[rs.length-1];
+      return r.cadence==='daily'; }
+    /* ⚠ the document Worldview itself reads — <Domain>from/to/period,from/to/period,…</Domain>.
+       Never fetched at boot: only when a reader focuses one of these calendars, presses one of the
+       step buttons, or the master clock drives the layers through setGlobalLayerDate. */
+    const _domainAsked={};
+    function _parseDateDomain(tx){
+      const m=String(tx||'').match(/<Domain>([^<]*)<\/Domain>/); if(!m) return null;
+      const out=[];
+      m[1].split(',').forEach(part=>{
+        const bit=part.trim().split('/');
+        const from=(bit[0]||'').slice(0,10), to=(bit[1]||bit[0]||'').slice(0,10);
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(from)||!/^\d{4}-\d{2}-\d{2}$/.test(to)) return;
+        const p=String(bit[2]||'P1D').toUpperCase(); let cad='daily';
+        if(p==='P1M') cad='monthly';
+        else if(p==='P1Y') cad='yearly';
+        else { const d=p.match(/^P(\d+)D$/); if(d&&+d[1]>1) cad={everyDays:+d[1],epoch:from}; }
+        out.push({from,to,cadence:cad});
+      });
+      out.sort((x,y)=>_dayNum(x.from)-_dayNum(y.from));
+      return out;
+    }
+    function _ensureDateDomain(id){
+      const s=DATED_SPEC[id]; if(!s||_domainAsked[id]) return; _domainAsked[id]=1;
+      fetch('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/1.0.0/'+s.gibs+'/default/'+s.tms+'/all/all.xml')
+        .then(r=>r.ok?r.text():null)
+        .then(tx=>{ const rs=_parseDateDomain(tx); if(!rs||!rs.length) return;
+          _liveDomain[id]=rs;
+          /* the day the reader is standing on may not exist in what GIBS actually has — move it onto
+             the nearest day that does, say so beside the calendar, and redraw if it is showing */
+          _applyLayerDate(id,layerDates[id]);
+          _syncDateUI(id); try{ _refreshLegendDates(); }catch(_){} })
+        .catch(()=>{});   /* offline / blocked → the declared triple keeps the calendar honest enough */
+    }
+    /* ⚠ ONE WRITER for layerDates. Both calendars, both pairs of step buttons and the master clock
+       (setGlobalLayerDate) go through here, so the day the reader is shown and the day the tiles are
+       requested for cannot drift apart. It also refuses anything that is not YYYY-MM-DD, which is what
+       makes the #R138 note further down provable rather than hopeful. */
+    const _dateAsked={};   /* id → the day the reader asked for, ONLY while it is not the day we draw */
+    function _applyLayerDate(id,iso,opt){
+      const want=String(iso||'').slice(0,10);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(want)) return layerDates[id];
+      const got=_snapLayerDate(id,want)||want;
+      _dateAsked[id]=(got===want)?null:want;
+      const changed=(layerDates[id]!==got); layerDates[id]=got;
+      /* redraw only when the day actually moved — refreshDatedLayer removes and re-adds the source,
+         and doing that for a date that did not change is a visible flash for nothing */
+      if(changed&&!(opt&&opt.draw===false)){
+        try{ if(GE().layers.has('lyr-'+id)&&GE().layers.getLayout('lyr-'+id,'visibility')==='visible') refreshDatedLayer(id); }catch(_){}
+      }
+      return got;
+    }
+    /* 「その日はデータがない」, said ONCE and where the date is — a line under the calendar and in the
+       legend's as-of text, never a toast (a master-clock sweep would fire five of them). */
+    function _dateNote(id){ const a=_dateAsked[id]; if(!a||a===layerDates[id]) return '';
+      return a+': '+window.IntMapLang.t(HOST.lang,'no data','データなし','keine Daten','нет данных','sin datos'); }
+    const _CHEV_L='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg>';
+    const _CHEV_R='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>';
+    /* the calendar and its two steps, ONE markup for both the legend and the Layers-panel row */
+    function _dateBoxHTML(id,inputAttrs){
+      const b=_dateBounds(id)||{min:'',max:''};
+      const esc=(v)=>window.IntMapSafe.html(v==null?'':v);
+      return '<span class="dl-datebox" data-dl="'+id+'">'
+        +'<button type="button" class="dl-step" data-step="-1">'+_CHEV_L+'</button>'
+        +'<input type="date" '+(inputAttrs||'')+' value="'+esc(layerDates[id])+'" min="'+esc(b.min)+'" max="'+esc(b.max)+'">'
+        +'<button type="button" class="dl-step" data-step="1">'+_CHEV_R+'</button>'
+        +'</span>';
+    }
+    /* one wiring for both boxes: touching the calendar asks GIBS what it really has, a change is
+       snapped onto that product's own grid and WRITTEN BACK into the field (so the value the reader
+       is looking at is the day the map is drawing), and a step button moves exactly one frame. */
+    function _wireDateBox(id,root){
+      const box=root.querySelector('.dl-datebox[data-dl="'+id+'"]'); if(!box) return;
+      const inp=box.querySelector('input[type=date]');
+      if(inp){
+        inp.addEventListener('focus',()=>_ensureDateDomain(id));
+        /* an emptied field is not a day — keep the one being drawn rather than jumping somewhere */
+        inp.addEventListener('change',()=>{ _ensureDateDomain(id);
+          _applyLayerDate(id,inp.value||layerDates[id]);
+          _syncDateUI(id); try{ _refreshLegendDates(); }catch(_){} });
+      }
+      box.querySelectorAll('.dl-step').forEach(btn=>btn.addEventListener('click',()=>{
+        _ensureDateDomain(id);
+        const to=_stepDate(id,+btn.getAttribute('data-step')||0); if(!to) return;
+        _applyLayerDate(id,to); _syncDateUI(id); try{ _refreshLegendDates(); }catch(_){} }));
+    }
+    /* every box of one layer wears the same value, the same bounds and the same step state — there
+       are two of them (legend + panel row) and #R293's lesson is that two things making the same
+       claim will disagree unless one function writes both. */
+    function _syncDateUI(id){
+      const v=layerDates[id]; if(!v||!DATED_SPEC[id]) return;
+      const b=_dateBounds(id), prev=_stepDate(id,-1), next=_stepDate(id,1);
+      const daily=_dailyAt(id,v), note=_dateNote(id);
+      const label=(dir)=>{ const to=(dir<0?prev:next); if(!to) return '';
+        if(!daily) return to;   /* an 8-day or monthly frame is not 「1日」 — name the day it lands on */
+        return (dir<0?window.IntMapLang.t(HOST.lang,'A day earlier','1日前','Ein Tag früher','На день раньше','Un día antes')
+                    :window.IntMapLang.t(HOST.lang,'A day later','1日後','Ein Tag später','На день позже','Un día después'))+' · '+to; };
+      document.querySelectorAll('.dl-datebox[data-dl="'+id+'"]').forEach(box=>{
+        const inp=box.querySelector('input[type=date]');
+        if(inp){ if(inp.value!==v) inp.value=v;
+          if(b){ inp.min=b.min; inp.max=b.max; }
+          /* `step` is only meaningful when the whole product is ONE evenly spaced run — the browser
+             counts it from `min`, so a second range with its own phase would make it lie. When it
+             cannot be stated it stays at one day and the snap on change is what is authoritative. */
+          const rr=_dateRanges(id)||[], n=(rr.length===1&&rr[0].cadence&&rr[0].cadence.everyDays)||0;
+          inp.step=(n>1)?String(n):'1'; }
+        box.querySelectorAll('.dl-step').forEach(btn=>{
+          const dir=+btn.getAttribute('data-step')||0, txt=label(dir);
+          btn.disabled=!(dir<0?prev:next); btn.title=txt; btn.setAttribute('aria-label',txt);
+        });
+      });
+      document.querySelectorAll('.dl-note[data-dl="'+id+'"]').forEach(n=>{
+        n.textContent=note; n.style.display=note?'block':'none'; });
+    }
+    function _syncAllDateUI(){ Object.keys(DATED_SPEC).forEach(_syncDateUI); }
+    /* the day the app opens on has to be a day these products actually have, too */
+    Object.keys(DATED_SPEC).forEach(id=>{ layerDates[id]=_snapLayerDate(id,layerDates[id])||layerDates[id]; });
+    /* (#R298) what bounds the calendars, for Atlas' state context and for the tests. The OPERATING
+       entry points are unchanged: the two calendars, and window.setGlobalLayerDate for the clock. */
+    window.IntMapDatedLayers={
+      ids:()=>Object.keys(DATED_SPEC), spec:id=>DATED_SPEC[id]||null,
+      ranges:id=>(_dateRanges(id)||[]).map(r=>({from:r.from,to:r.to,cadence:r.cadence})),
+      bounds:id=>_dateBounds(id), snap:(id,iso)=>_snapLayerDate(id,iso), step:(id,dir)=>_stepDate(id,dir),
+      date:id=>layerDates[id]||null, asked:id=>_dateAsked[id]||null,
+      set:(id,iso)=>{ const g=_applyLayerDate(id,iso); _syncDateUI(id); try{ _refreshLegendDates(); }catch(_){} return g; },
+      live:id=>!!(_liveDomain[id]&&_liveDomain[id].length), load:id=>{ _ensureDateDomain(id); }
+    };
     /* ══ (#R268) THE NIGHT-LIGHTS EPOCHS, MEASURED ════════════════════════════════════════════════
        「年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 — and night
        lights is the layer where a decade of difference is the whole subject (a city that was dark in
@@ -748,7 +989,10 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R268 追記) …before the `layerDates` gate: this layer's year is an EPOCH, not a date */
       if(id==='popgrid') return (window.IntMapLang.t(HOST.lang,'Data: ','データ: ','Daten: ','данные: ','datos: '))+window._popgridYear;
       const d=layerDates[id]; if(!d) return '';
-      return (window.IntMapLang.t(HOST.lang,'Data: ','データ: ','Daten: ','данные: ','datos: '))+d;
+      /* (#R298) …and when the day being drawn is NOT the day that was asked for, this line says both:
+         「いつの絵か」 is the whole point of an as-of line, and a silent substitution defeats it. */
+      const n=_dateNote(id);
+      return (window.IntMapLang.t(HOST.lang,'Data: ','データ: ','Daten: ','данные: ','datos: '))+d+(n?(' · '+n):'');
     }
     /* (#R15d) The date/window control now lives IN the legend (not the Layers panel). For radar (live) we
        just show the as-of text; temp gets a month picker; sst/snow/aod a date picker; thermal a 24/48/72 h
@@ -776,12 +1020,16 @@ window.IntMapModules.dataLayers=function(HOST){
             e.addEventListener('change',()=>{ window._popgridYear=e.value;
               try{ GE().layers.setSourceTiles('src-popgrid',popgridTiles()); }catch(_){}
               _refreshLegendDates(); }); }
-          else { w.innerHTML='🕒 <input type="date" class="dl-date" max="'+_today()+'" style="'+inSty+'">';
-            const d=w.querySelector('.dl-date'); d.value=layerDates[id]||_today(); d.addEventListener('change',()=>{ layerDates[id]=d.value||_today(); if(GE().layers.has('lyr-'+id)&&GE().layers.getLayout('lyr-'+id,'visibility')==='visible') refreshDatedLayer(id); _refreshLegendDates(); }); }
+          /* (#R298) the calendar is bounded by what THIS product publishes and carries a one-frame
+             step on either side — `max` used to be one shared 今日−2 and there was no `min` at all. */
+          else { w.innerHTML='🕒 '+_dateBoxHTML(id,'class="dl-date" style="'+inSty+'"')
+              +'<span class="dl-note" data-dl="'+id+'"></span>';
+            _wireDateBox(id,w); }
           lg.appendChild(w);
         }
         /* keep values in sync */
-        const dt=w.querySelector('.dl-date'); if(dt){ dt.value = layerDates[id]||_today(); }
+        const dt=w.querySelector('.dl-date');
+        if(dt){ if(DATED_SPEC[id]) _syncDateUI(id); else dt.value = layerDates[id]||_today(); }   /* (#R298) value AND bounds AND step state, both boxes at once */
         const wn=w.querySelector('.dl-win'); if(wn) wn.value=window._thermalWindow||'24';
         const ep=w.querySelector('.dl-epoch'); if(ep) ep.value=(id==='popgrid')?window._popgridYear:window._nightsatEpoch;
         const tt=w.querySelector('.dl-when-t'); if(tt) tt.textContent=_legendWhenText(id);
@@ -899,10 +1147,14 @@ window.IntMapModules.dataLayers=function(HOST){
          flow into the innerHTML a few lines down and calls it high severity. Nothing realistic rides
          it (same origin, and a `type=date` value is browser-validated), but "nothing realistic" is not
          "nothing", and #R138's rule is that a value which came from outside our own code reaches the
-         DOM through window.IntMapSafe. So it does. */
-      const _esc=(v)=>window.IntMapSafe.html(v==null?'':v);
+         DOM through window.IntMapSafe. So it does — inside _dateBoxHTML, which is the one place that
+         builds a calendar now, and (#R298) _applyLayerDate refuses to store anything that is not
+         YYYY-MM-DD in the first place, so the barrier is a second lock rather than the only one. */
       if(isDated){
-        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('lyrTime')||'Date'}: <input type="date" id="dt-${id}" value="${_esc(layerDates[id])}" max="${_esc(new Date().toISOString().slice(0,10))}" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"></label></div>`;
+        /* (#R298) 「データのない時間を選べないように」 — the field is bounded by what THIS product
+           publishes (DATED_SPEC), with a one-frame step on either side and a line underneath for the
+           days it does not have. It used to be `max="今日"` with no `min` and no steps at all. */
+        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('lyrTime')||'Date'}: ${_dateBoxHTML(id,'id="dt-'+id+'" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"')}</label><div class="dl-note" data-dl="${id}"></div></div>`;
       }
       if(isTraffic){
         extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('trafficFilter')||'Filter'}: <select id="ft-${id}" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="all" data-i18n="filtAll">${t('filtAll')||'All'}</option><option value="civilian" data-i18n="filtCiv">${t('filtCiv')||'Civilian'}</option><option value="military" data-i18n="filtMil">${t('filtMil')||'Military'}</option></select></label></div>`;
@@ -944,7 +1196,13 @@ window.IntMapModules.dataLayers=function(HOST){
       });
       w.querySelector('#op-'+id).addEventListener('input',e=>setLayerOpacity(id,parseFloat(e.target.value)));
       if(isDated){
-        w.querySelector('#dt-'+id).addEventListener('change',e=>{ layerDates[id]=e.target.value||GIBS_DATE; if(cb.checked){ /* reload tiles for new date */ refreshDatedLayer(id); } try{ _refreshLegendDates(); }catch(_){} });
+        /* (#R298) the change handler is _wireDateBox now — it snaps the chosen day onto the days this
+           product actually publishes, writes the snapped day BACK into the field, and reloads only
+           when the day really moved. The step buttons beside the field go through the same path. */
+        _wireDateBox(id,w);
+        _syncDateUI(id);
+        /* switching the layer ON is the moment its bounds start to matter — ask GIBS then, not at boot */
+        cb.addEventListener('change',()=>{ if(cb.checked) _ensureDateDomain(id); });
       }
       if(isTraffic){
         w.querySelector('#ft-'+id).addEventListener('change',e=>{ trafficFilters[id]=e.target.value; refreshTrafficLayer(id); });
@@ -5158,15 +5416,28 @@ window.IntMapModules.dataLayers=function(HOST){
           trackVisible:(()=>{ try{ const l=planes3D?TRACK_3D:TRACK_LINE; return !!(GE().layers.has(l)&&GE().layers.getLayout(l,'visibility')==='visible'); }catch(_){ return false; } })(),
           synthetic:planesSynthetic }; } };
     /* Unified time slider (#8): drive the day-based weather layers from the global news date.
-       GIBS imagery lags ~2 days, so clamp future-ish dates back to the freshest processed day. */
+       ⚠ (#R298) ONE clamp of 今日−2 for all five is what this used to be, and it was wrong in both
+       directions: it let a reader through to days before a product existed (MODIS AOD begins in 2017,
+       MUR SST in 2002) and it withheld days that DO exist (MODIS Terra snow cover is published for the
+       current UTC day). Each layer is now rounded by its OWN min/max/cadence, and a clock date outside
+       one product's range leaves THAT layer on the nearest day it has — never removed, never sent to
+       fetch tiles that come back empty, and the substitution is stated beside the calendar. */
     window.setGlobalLayerDate=function(iso){
-      const maxIso=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
-      let d = iso || maxIso; if(d>maxIso) d=maxIso;
       ['sst','snow','aod','thermal','precip'].forEach(id=>{
-        layerDates[id]=d;
-        const dp=document.getElementById('dt-'+id); if(dp) dp.value=d;
-        if(GE().layers.has('lyr-'+id) && GE().layers.getLayout('lyr-'+id,'visibility')==='visible') refreshDatedLayer(id);
+        if(!DATED_SPEC[id]){
+          /* thermal is the one member of this list that is NOT a GIBS-dated product: it is a rolling
+             FIRMS window (see addFirmsThermal), refreshDatedLayer has no branch for it, and its own
+             legend control is a 24/48/72 h select. Its entry here is state Atlas reads, so it keeps
+             the clamp it has always had rather than being silently dropped from the sweep. */
+          const maxIso=_dayISO(_dayNum(_todayISO())-2);
+          let d=iso||maxIso; if(d>maxIso) d=maxIso;
+          layerDates[id]=d; return;
+        }
+        const b=_dateBounds(id);
+        _applyLayerDate(id, iso || (b&&b.max) || layerDates[id]);
+        _ensureDateDomain(id);   /* …and find out what GIBS really has, for the next sweep */
       });
+      _syncAllDateUI();
       try{ _refreshLegendDates(); }catch(_){}
     };
     window._trafficFilters=trafficFilters;
