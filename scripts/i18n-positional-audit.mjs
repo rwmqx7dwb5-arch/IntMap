@@ -154,6 +154,17 @@ const SAME_AS_EN = {
        differ in German (Gewitter, Starkregen, Waldbrand, …), which is what makes this a claim
        about the word rather than a forgotten argument. */
     'Tornado',
+    /* (#R292) …and five the widget board brought in, read against Duden one at a time:
+         Format  — the German noun IS «Format» (the coordinate-notation picker's label).
+         analog  — the German adjective IS «analog»; it is a SEARCH KEYWORD for the analog clock,
+                   and the clock's own labels at the same definition are «Analoguhr» /
+                   «Analoganzeige», which is what makes this a claim about the word.
+         lunar   — the German adjective IS «lunar» (a search keyword beside «Mond», «Mondphase»).
+         Ring    — the German noun IS «Ring»; the progress card's other style at the same call site
+                   is «Balken», so the pair is translated and only this word coincides.
+         Winter  — the German season IS «Winter»; the other three at the same call site are
+                   Frühling / Sommer / Herbst. */
+    'Format', 'analog', 'lunar', 'Ring', 'Winter',
   ]),
   ru: new Set([]),
   es: new Set([
@@ -185,6 +196,15 @@ const SAME_AS_EN = {
        other twenty-four hazards at the same table differ in Spanish (Tormenta, Lluvia intensa,
        Incendios, …), which is what makes this a claim about the word. */
     'Tornado',
+    /* (#R292) …and six the widget board brought in, read against the RAE one at a time:
+         Digital     — the Spanish adjective IS «digital» (the clock-face picker); the other option
+                       at the same call site is «Analógico», so only this word coincides.
+         Hexadecimal — the Spanish noun IS «hexadecimal».
+         metal / aurora / monitor / lunar — SEARCH KEYWORDS, and each is the Spanish word. The
+                       labels those keywords sit beside are translated at the same definitions
+                       (Oro, Plata, Actividad geomagnética, Monitores de zona, Fase lunar).
+         24 h        — the Spanish abbreviation of «24 horas» is «24 h», the same three characters. */
+    'Digital', 'Hexadecimal', 'metal', 'aurora', 'monitor', 'lunar', '24 h',
   ]),
 };
 /* ⚠ …and the polity names the ERA MAP prints that carry no exonym in either language. Sub-Saharan

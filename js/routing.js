@@ -853,10 +853,36 @@ window.IntMapModules.routing=function(HOST){
       try{ if(window.IntMapShareState) window.IntMapShareState.register('routeUi',io2);
         else (window._imShareEarly||(window._imShareEarly=[])).push(['routeUi',io2]); }catch(_){}
     })();
+    /* ══ (#R292) THE ROUTE, AS A RECORD — what the widget board's Route status card reads.
+       ⚠ READ-ONLY AND DERIVED: every field already exists on the alternative the reader is looking
+       at (`_routeCoords()` resolves which one that is), so this cannot disagree with the panel. A
+       card must never be a second place where "how long is the route" is worked out. When nothing
+       is routed it answers `{active:false}` — which is an EMPTY state on the card, not an error. */
+    function summary(){
+      const rc=_routeCoords();
+      if(!rc||!rc.coords.length) return { active:false };
+      const rs=_rsets.get(_rsActive), a=rc.alt;
+      let w=180,s=90,e=-180,n=-90;
+      rc.coords.forEach(c=>{ if(c[0]<w)w=c[0]; if(c[0]>e)e=c[0]; if(c[1]<s)s=c[1]; if(c[1]>n)n=c[1]; });
+      return { active:true,
+        distance:a.distance!=null?+a.distance:null,          /* metres, from the router */
+        duration:a.duration!=null?+a.duration:null,          /* seconds, from the router */
+        mode:a.mode||a.profile||null,
+        label:a.label||null,
+        alternatives:rs?rs.alts.length:1, selected:rs?rs.sel:0,
+        steps:(a.steps||[]).length,
+        nextSteps:(a.steps||[]).slice(0,3).map(st=>({
+          name:(st.name||''), distance:st.distance!=null?+st.distance:null,
+          type:(st.maneuver&&st.maneuver.type)||'' })),
+        ends:(rs&&rs.ends)||null,
+        bbox:[w,s,e,n],
+        coords:rc.coords };
+    }
     return { route, clear, ensureLayers, openPanel, _src:SRC, selectAlt, selectStep, maneuver:_maneuver,
              stationLL, geoNear:geo1, exportRoute, _routeExport, hasRoute,
              alts, altAt, altsOf, routeCoords:_routeCoords, exportPayload, frame, setInsets,
              startPick, endPick, picking,
-             startAreaDraw, endAreaDraw:_endAreaDraw, areas, removeArea, clearAreas, highlightArea, drawingArea };
+             startAreaDraw, endAreaDraw:_endAreaDraw, areas, removeArea, clearAreas, highlightArea, drawingArea,
+             summary };
   })();
 };

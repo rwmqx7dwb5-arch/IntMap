@@ -209,7 +209,32 @@ stats-compare.js                  多国統計比較 IntMapStatsCompare
 countries-ui.js                   Countries タブと国の詳細
 companies-ui.js                   Companies タブ・比較ビュー・ダッシュボード
 dash-extended.js                  ダッシュボードのキャッシュと拡張情報カード
-widgets.js                        ウィジェット板 IntMapModules.widgets
+widgets.js                        ウィジェット板の入口 IntMapModules.widgets ——
+                                  HOST との接続と window.IntMapWidgets2 の公開契約だけを持つ
+widget-core.js                    ウィジェット基盤の中核 IntMapWidgetCore ——
+                                  定義レジストリ・WidgetContext・状態モデル（12状態）・
+                                  DOM ツールキット（innerHTML 連結の経路が無い）・自前SVGアイコン・
+                                  盤面で1本だけ動く共有ティッカー
+widget-store.js                   保存と移行 IntMapWidgetStore —— intmap_widgets4 /
+                                  intmap_widgets3 からの無損失移行（冪等）/ config 検証 /
+                                  前回成功データの TTL キャッシュ
+widget-scheduler.js               更新スケジューラ IntMapWidgetScheduler —— requestKey ごとに1要求・
+                                  共有 Promise・TTL・stale-while-revalidate・abort・指数バックオフ・
+                                  IntersectionObserver による可視性管理
+widget-render.js                  レンダーキット IntMapWidgetRender —— カードが取りうる7つの形
+                                  （値・時系列・一覧・地理・警報・記事・カレンダー＋進捗）
+widget-defs-time.js               定義：時計・進捗・月・太陽・カレンダー・カウントダウン（全て局所計算）
+widget-defs-data.js               定義：天気・大気/UV・地震・国・人口・祝日・知識・宇宙
+widget-defs-markets.js            定義：為替・暗号資産・Fear&Greed・金銀・Bitcoin ネットワーク
+widget-defs-map.js                定義：地図中心／縮尺／おすすめレイヤー、および IntMap 固有の
+                                  9種（有効レイヤー・表示範囲の状況・地図上のニュース・保存地点の警報・
+                                  国のウォッチ・地域監視・経路・Atlas ブリーフィング・Chronos）
+widget-layout.js                  盤面 IntMapWidgetLayout —— S/M/L グリッド・並べ替え（ポインタと
+                                  キーボード）・スタック・カードメニュー・Undo・設定フォーム
+widget-gallery.js                 追加ギャラリー IntMapWidgetGallery —— 検索・カテゴリ・実レンダラーの
+                                  プレビュー・サイズ切替・追加前設定（プレビューは通信も権限要求もしない）
+widget-smart.js                   Smart Stack IntMapWidgetSmart —— 文脈による決定論的な優先順位と
+                                  「なぜ表示されたか」の説明、切替のちらつき防止
 tool-panel.js                     計測／半径ツールのパネルと地図のコンテキストメニュー
 elevation-profile.js              標高断面のパネル
 sims.js                           物理シミュレーションと太陽幾何（範囲人口・傾斜・電波・日照・到達圏・

@@ -130,12 +130,15 @@ test('r247 ⑤ the helper-ternary audit counts container arms, and the count is 
    UI text at all but DATA that has a per-language answer, and a table would have had to be extended
    by hand for every language ever added. */
 test('r247 ⑤ the calendar and the Wikipedia widgets answer from the registry, not from a table', () => {
-  const w = code(read('js/widgets.js'));
-  assert.match(w, /new Intl\.DateTimeFormat\(window\.IntMapLang\.locale\(HOST\.lang\),\{weekday:'narrow'/,
-    'the weekday initials come from CLDR');
-  assert.match(w, /const wikiLangs=\(\)=>/, 'and the Wikipedia edition is derived from the reader\'s own tag');
-  assert.match(w, /window\.IntMapLang\.htmlTag\(HOST\.lang\)/, '…from the registry, so a new language needs no edit here');
-  assert.doesNotMatch(w, /jp\(\)\?\['ja','en'\]:\['en'\]/, 'the two-language list is gone');
+  /* ⚠ (#R292) BOTH ANSWERS MOVED FILE AND NEITHER CHANGED ITS NATURE. The calendar grid is
+     js/widget-render.js now and the Wikipedia edition js/widget-defs-data.js; both still derive
+     from the registry rather than from a table that a new language would have to be typed into. */
+  const r = code(read('js/widget-render.js'));
+  assert.match(r, /WC\.date\(dow, \{ weekday: 'narrow'/, 'the weekday initials come from CLDR');
+  const w = code(read('js/widget-defs-data.js'));
+  assert.match(w, /function wikiLangs\(\)/, 'and the Wikipedia edition is derived from the reader\'s own tag');
+  assert.match(w, /window\.IntMapLang\.htmlTag\(WC\.lang\(\)\)/, '…from the registry, so a new language needs no edit here');
+  assert.doesNotMatch(w, /\['ja','en'\]/, 'the two-language list is gone');
 });
 
 /* ── ⑤b THE FEEDBACK TYPES ────────────────────────────────────────────────────────────────────

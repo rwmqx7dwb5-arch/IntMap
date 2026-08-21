@@ -1979,7 +1979,7 @@ window.IntMapModules.atlasConsole=function(HOST){
              (meta.webUsed) so a search-less brief is never mistaken for fresh "latest" intelligence. */
           let asofB=''; try{ const _m=window._aiLastMeta||{}; asofB='<div style="font-size:10.5px;color:var(--text-muted);margin-top:7px;">'+L('As of','時点','Stand','На дату','A fecha de')+' '+today+(_m.webUsed?(' · '+L('live web search','ライブWeb検索','Live-Websuche','поиск в интернете','búsqueda web en vivo')):'')+'</div>'; }catch(_){}
           /* (#R232) …and the model's own version of it — dropLeadTitle is in js/atlas-reply.js. */
-          const bodyB=dropLeadTitle(txtB,nm3);
+          const bodyB=dropLeadTitle(txtB,nm3); try{ if(window.IntMapWidgetBriefStore) window.IntMapWidgetBriefStore.remember({place:nm3,text:bodyB,at:Date.now()}); }catch(_){}   /* (#R292) the widget board is SHOWN this brief and never asks for one — see js/widget-defs-map.js. ⚠ ON THIS LINE because #R199's ceiling is never raised (#R272): the file had one line of headroom and this addition pays for itself. */
           return R(true,'<div style="font-size:14px;line-height:1.68;">'+mdMini(bodyB)+'</div>'+asofB+srcCardsB); }
         case 'askHere': { /* (#R83) absorbed into Atlas — pin the point HERE so the ongoing conversation resolves
             "here/there" to it; if a concrete question came with it, answer it straight away via analyze. */

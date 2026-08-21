@@ -61,7 +61,18 @@ test('R154 #5 Draw — elevation profile for freehand lines', () => {
 });
 
 test('R154 #6 AQI / UV widgets — iOS colour-fill rebuild', () => {
-  assert.match(html, /function _wgtColor\(u,col\)\{/, 'card-colouring helper');
+  /* ⚠ (#R292) THIS CHECK MOVED HOUSE. The widget board is a platform now (js/widget-*.js), so the
+     spellings below — `_wgtColor`, `_TINT_A`, `.wgt-colored` — no longer exist. What #R154 asked for
+     does: the AQI and UV cards still take their category's colour, the AQI scale is still all six
+     tiers, and the category words are still translated. The mechanism is a `tone(state)` on the
+     definition returning `sev0…sev4`, which js/widget-layout.js turns into a class the stylesheet
+     paints — so the card can no longer be an opaque slab even by accident, which is what #R187 and
+     #R188 spent two rounds undoing. */
+  const dd = html;   /* appSource already concatenates every js/ file and css/intmap.css */
+  assert.match(dd, /tone: function \(st\) \{ return st\.data \? 'sev' \+ aqiCat\(st\.data\.us_aqi\)\.level : null; \}/,
+    'the AQI card still colours itself from its category');
+  assert.match(dd, /tone: function \(st\) \{ return st\.data \? 'sev' \+ uvCat\(peakUV\(st\.data\.j\)\.v\)\.level : null; \}/,
+    'and so does the UV card');
   /* (#R187) 「AQI, UVIウィジェットはぼんやりと影を付けなくてよい。そして、全ウィジェットはガラス風の
      質感に。」 — the 158° gradient WAS the soft shading (it darkened the bottom-right corner by 14 %),
      and being opaque it also overrode --glass-fill, making these the only two non-glass widgets. It
@@ -69,16 +80,19 @@ test('R154 #6 AQI / UV widgets — iOS colour-fill rebuild', () => {
      takes the category colour, inline-!important so it beats the sidebar-glass override, and the
      text colour is still chosen by luminance — now on the COMPOSITED surface, because behind 58 %
      alpha the raw colour is no longer what the eye sees. */
-  assert.match(html, /card\.classList\.toggle\('wgt-on-light',eff>0\.5\)/, 'luminance picks dark text on pale colours');
-  assert.match(html, /_TINT_A\*_lum\(col\)\+\(1-_TINT_A\)\*_themeLum\(\)/, 'and it is judged on the colour composited over the glass');
-  assert.match(html, /card\.style\.setProperty\('background','rgba\('[\s\S]{0,140}'important'\)/, 'flat translucent tint set inline!important (beats the glass override)');
-  assert.match(html, /function _aqiCat\(v\)\{[\s\S]*Very unhealthy[\s\S]*Hazardous/, 'AQI uses the full 6-tier scale');
-  assert.match(html, /function _uvCat\(v\)\{/, 'UV category helper');
-  assert.match(html, /\.wgt-card\.wgt-colored\{color:#fff;min-height:122px;/, 'colored-card CSS present');
-  assert.match(html, /const cat=_aqiCat\(v\); +\/\* \(#R154\) 6-tier scale \+ colour-fill \*\/[\s\S]*_wgtColor\(e\.u, cat\.col\)/, 'refreshAqi colours the card');
-  assert.match(html, /const cat=_uvCat\(uv\);[\s\S]*_wgtColor\(e\.u, cat\.col\)/, 'refreshUv colours the card');
-  // 5-language category labels (standing rule)
-  assert.match(html, /_WL\('Good','良好','Gut','Хорошо','Buena'\)/, 'AQI labels localized to 5 languages');
+  assert.match(dd, /function aqiCat\(v\) \{[\s\S]*Very unhealthy[\s\S]*Hazardous/, 'AQI uses the full 6-tier scale');
+  assert.match(dd, /function uvCat\(v\) \{/, 'UV category helper');
+  /* ⚠ AND THE TINT CANNOT BE AN OPAQUE SLAB ANY MORE. #R154 painted the whole card; #R187 and #R188
+     then spent two rounds establishing that it must be flat and translucent. The stylesheet now
+     tints only the BORDER and the value, over the same `--widget-surface` every other card uses, so
+     the two ways this went wrong before are both unreachable by construction. */
+  const wcss = html.slice(html.indexOf('#R292 · THE WIDGET BOARD'));
+  assert.match(wcss, /\.wgt-card\.wgt-tone-sev4\{ *border-color:/, 'the severity tint is a border, not a fill');
+  assert.ok(!/\.wgt-card\.wgt-tone-\S+\{[^}]*background:(?!\s*var\(--widget-surface)/.test(wcss),
+    'no severity class may give a card its own background');
+  // 5-language category labels (standing rule) — the helper is `L` in the platform (#R292),
+  // and the i18n gate carries the remaining four languages from the inline table.
+  assert.match(dd, /L\('Good', '良い', 'Gut', 'Хорошо', 'Buena'\)/, 'AQI labels localized to 5 languages');
 });
 
 test('R154 #7 Atlas voice input', () => {

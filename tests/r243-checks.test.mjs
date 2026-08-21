@@ -185,10 +185,24 @@ test('R243 ⑦ «did not vote» is expressed in the colour, because the opacity 
 
 /* ── ⑧ the UV widget's sub-line is three answers, not one run-on ───────────────────────────────── */
 test('R243 ⑧ the UV card states the peak, the time and the qualifiers on their own lines', () => {
-  const c = code(read('js/widgets.js'));
-  const uv = c.slice(c.indexOf('async function refreshUv('), c.indexOf('async function refreshUv(') + 2200);
-  assert.ok(/lines\.map\(t=>'<div>'\+t\+'<\/div>'\)/.test(uv), 'three lines, not one interpunct run');
-  assert.ok(/wide\?'（':'\('/.test(uv), 'the brackets follow the script');
+  /* ⚠ (#R292) SAME REQUIREMENT, STRUCTURAL INSTEAD OF STRING-BUILT. The complaint was that the UV
+     card ran its three answers together into one interpunct-separated line. The card no longer
+     assembles a line at all: the peak is the value, the two readings are rows of a `<dl>` fact grid,
+     and the qualifier is its own element — so they cannot be concatenated back together, and the
+     bracket-per-script problem the old code hand-coded does not arise because no bracket is typed. */
+  const c = code(read('js/widget-defs-data.js'));
+  const uv = c.slice(c.indexOf("id: 'env.uv'"), c.indexOf("function peakUV("));
+  assert.ok(uv.length > 500, 'the UV definition was found');
+  assert.ok(/R\.facts\(\[/.test(uv), 'the readings are separate rows, not one run-on line');
+  assert.ok(/R\.where\(/.test(uv), 'and the qualifier is its own line');
+  /* ⚠ THREE ELEMENTS, NOT THREE SUBSTRINGS. The old defect was a single `wgt-s` line carrying the
+     peak, the time and the qualifiers joined by interpuncts; what makes that impossible now is that
+     the value, the readings and the qualifier are three separate NODES. (An interpunct still joins
+     the place to «clear sky» INSIDE the qualifier line — two facts on one line was never the
+     complaint; three answers crushed into one was.) */
+  assert.ok(/R\.value\(\{[\s\S]{0,220}unit: 'UV'/.test(uv), 'the peak is the card value');
+  assert.ok((uv.match(/R\.facts\(\[/g) || []).length >= 1 && /k: L\('Now'/.test(uv),
+    'the current and peak readings are labelled rows');
 });
 
 /* ── ⑨ the translation gates ──────────────────────────────────────────────────────────────────── */
