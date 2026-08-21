@@ -93,6 +93,8 @@ import '../js/monitors.js';
 import '../js/companies.js';
 import '../js/stats-compare.js';
 import '../js/compare.js';
+/* (#R291) the routing subsystem — five pure modules then the router; the PANEL is lazy. Architecture.md §8.4. */
+import '../js/routing-store.js'; import '../js/routing-providers.js'; import '../js/routing-geocode.js'; import '../js/routing-cards.js'; import '../js/routing-export.js';
 import '../js/routing.js';
 /* (#R184) the six route ANALYSES (elevation, borders, conditions along the way, the schedule,
    alternative differences, and routing on OSM's record of a historical network). The three
@@ -352,9 +354,9 @@ const MODULE_FACTORIES = [
    failure in window.__imLazyCheck.failed — which tests/r209.spec.js asserts is empty after asking
    for all eight. Naming them here keeps ONE list of every factory the program has, so a file that
    is deleted or renamed still has somewhere to be missing from. */
-const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole'];
+const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi'];
 (function () {
-  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom'].filter((k) => !window[k]);
+  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};
   const missFac = MODULE_FACTORIES.filter((k) => typeof M[k] !== 'function');
   if (miss.length) console.error('[IntMap] required module file(s) failed to load: ' + miss.join(', ') + ' — check the js/ directory is deployed');

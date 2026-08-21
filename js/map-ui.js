@@ -531,7 +531,10 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'#layer-sidebar-r .lst-toolrow.on,.lsr-mount .lst-toolrow.on{border-color:var(--primary-color);box-shadow:0 0 0 1px var(--primary-color);}'
         +'#layer-sidebar-r .lst-toolic,.lsr-mount .lst-toolic{flex:0 0 auto;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;'
           +'background:color-mix(in srgb, var(--primary-color) 16%, transparent);color:var(--primary-color);}'
-        +'#layer-sidebar-r .lst-toolt,.lsr-mount .lst-toolt{flex:1;min-width:0;}'
+        +'#layer-sidebar-r .lst-toolt,.lsr-mount .lst-toolt{flex:1;min-width:0;position:relative;}'
+        /* (#R291) 「現在経路が存在する場合は、控えめなアクティブ表示」 — a route outlives its panel, so a
+           row needs a way to say «there is one» that is not the same signal as «the panel is open». */
+        +'#layer-sidebar-r .lst-tooldot,.lsr-mount .lst-tooldot{position:absolute;top:2px;right:-2px;width:7px;height:7px;border-radius:50%;background:var(--primary-color);}'
         +'#layer-sidebar-r .lst-toolgo,.lsr-mount .lst-toolgo{flex:0 0 auto;color:var(--text-muted);font-size:15px;}'
         /* Active-layers bar pinned at the top of the tile browser — COMPACT here: the chip strip is hidden
            (it turns into clutter as layers pile up — "選択レイヤーが増加すると煩雑"); the counter + List
@@ -743,10 +746,32 @@ window.IntMapModules.layerSidebar=function(HOST){
     const SVG_TRANSIT=_svg('<rect x="6" y="3" width="12" height="13" rx="2.5"/><path d="M6 11h12"/><path d="M9 20l-2 2M15 20l2 2"/><circle cx="9" cy="13.7" r=".9"/><circle cx="15" cy="13.7" r=".9"/>');
     const SVG_RF=_svg('<circle cx="12" cy="12" r="1.9"/><path d="M8.4 8.4a5 5 0 000 7.2M15.6 8.4a5 5 0 010 7.2"/><path d="M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"/>');
     const SVG_REPLAY=_svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.2v5l3.2 2"/><path d="M4.6 8.2L3 5.6M3 5.6l3 .4"/>');
+    /* (#R291) a signpost: the fork this app has been unable to show anybody for seven rounds */
+    const SVG_DIRECTIONS=_svg('<path d="M12 21.5v-6.2"/><path d="M12 15.3L6.6 9.9V5.4"/><path d="M12 15.3l5.4-5.4V5.4"/><circle cx="6.6" cy="4" r="1.6"/><circle cx="17.4" cy="4" r="1.6"/>');
     /* the camera's centre, as the coordinate a point tool needs when it is opened from a list */
     const _hereLL=()=>{ try{ const c=GE().camera.getCenter(); return { lng:c.lng, lat:c.lat }; }catch(_){ return { lng:0, lat:0 }; } };
     const _lazy=(name,fn)=>()=>window.IntMapLazy.need(name).then(()=>{ try{ return !!fn(); }catch(_){ return false; } });
     const SIM_TOOLS=[
+      /* ══ ⚠⚠⚠ (#R291) THE ROUTING ENTRY, AND WHY IT IS THE FIRST ROW ═════════════════════════════
+         「経路機能の正式な入口は、必ず Layers → Tools → Directions / 経路 に置いてください。」
+         MEASURED before writing this: js/routing.js exported `openPanel` and NOTHING in the program
+         called it — not this list, not the right-click menu, not IntMapOS, not index.html. A rich
+         directions panel with via points, avoid options, drawn keep-out areas and six analyses had
+         been unreachable since #R84; typing a sentence at Atlas was the only way into routing at
+         all. That is the same shape as #R261's five simulators with no door, one notch worse,
+         because this one is the everyday feature rather than a specialist one — which is also why
+         it sits ABOVE the simulators rather than at the end of them.
+         ⚠ `isOpen` / `close` ARE THE PANEL, NOT THE ROUTE. A second press closes the panel and the
+         route stays drawn (§2.2); pressing again re-opens the SAME journey. Only 「経路を消去」
+         inside the panel throws it away. `dot` lights when a route exists but the panel is shut, so
+         the row can say 「there is a route out there」 without claiming to be open.
+         ⚠ NO NEW FLOATING BUTTON ANYWHERE — 「地図上へ新しい常設フローティングボタンを追加しない」. */
+      { id:'tool.directions', mod:'IntMapRouteUI', ic:SVG_DIRECTIONS, en:'Directions', group:'tool',
+        keys:'route directions navigation journey trip 経路 ルート 道順 経路案内 ナビ Route Wegbeschreibung маршрут путь ruta indicaciones',
+        run:_lazy('routeUi',()=>window.IntMapRouteUI&&window.IntMapRouteUI.open()),
+        dot:()=>{ try{ return !!(window.IntMapRouteStore&&window.IntMapRouteStore.hasRoute()); }catch(_){ return false; } },
+        label:()=>T('Directions','経路','Route','Маршрут','Cómo llegar'),
+        hint:()=>T('Plan routes by car, transit, walking or cycling','車・公共交通・徒歩・自転車の経路を検索','Routen mit Auto, ÖPNV, zu Fuß oder Rad planen','Маршруты на авто, транспорте, пешком или на велосипеде','Rutas en coche, transporte, a pie o en bici') },
       { id:'sim.seismic', mod:'IntMapSeismic', ic:SVG_QUAKE, run:null,   /* registered in js/app-body.js beside the OS kernel */
         label:()=>T('Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos'),
         hint:()=>T('Place a source and watch the shaking spread','震源を置いて揺れの広がりを見る','Herd setzen und die Erschütterung verfolgen','Задайте очаг и смотрите, как расходятся колебания','Coloque una fuente y vea propagarse el temblor') },
@@ -859,7 +884,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       try{ return m.close()!==false; }catch(_){ return false; } };
     function registerSimTools(){ try{ const OS=window.IntMapOS; if(!OS||!OS.register) return;
       SIM_TOOLS.forEach(t=>{ if(!t.run) return; try{ if(OS.has&&OS.has(t.id)) return;
-        OS.register(t.id,()=>Promise.resolve(t.run()),{label:t.en,group:'sim'}); }catch(_){} }); }catch(_){} }
+        OS.register(t.id,()=>Promise.resolve(t.run()),{label:t.en,group:t.group||'sim'}); }catch(_){} }); }catch(_){} }
     const TOOLS=SIM_TOOLS;
     function toolsBlock(){ registerSimTools();
       const wrap=document.createElement('div'); wrap.className='lst-tools';
@@ -874,6 +899,12 @@ window.IntMapModules.layerSidebar=function(HOST){
         const hn=document.createElement('span'); hn.style.cssText='display:block;font-size:11px;color:var(--text-muted);line-height:1.35;margin-top:1px;'; hn.textContent=t.hint();
         tx.appendChild(nm); tx.appendChild(hn);
         const go=document.createElement('span'); go.className='lst-toolgo'; go.textContent='›';
+        /* (#R291) a tool may own something that outlives its panel — a drawn route is the first —
+           so a row can carry a quiet mark that says so without claiming the panel is open. */
+        if(t.dot){ const d=document.createElement('span'); d.className='lst-tooldot'; d.hidden=!_toolDot(t);
+          d.setAttribute('aria-label',T('active','使用中','aktiv','активно','activo')); tx.appendChild(d); }
+        /* (#R291) the row is findable by what it IS as well as by its name in this language */
+        b.dataset.nm=((t.label()+' '+t.hint()+' '+(t.en||'')+' '+(t.keys||'')).toLowerCase());
         b.appendChild(ic); b.appendChild(tx); b.appendChild(go);
         /* ⚠ (#R264) THE SECOND PRESS CLOSES — and it asks the module, not the class on this button.
            A row rebuilt while its tool is running, or a tool closed by its own × since this row was
@@ -906,8 +937,10 @@ window.IntMapModules.layerSidebar=function(HOST){
        The cheapest honest signal is that closing anything is a POINTER RELEASE somewhere on the page,
        so the rows re-read the modules just after one — 13 property reads, and only while a tools
        block is actually mounted. No timer, no observer, no second copy of the state. */
+    const _toolDot=(t)=>{ try{ return !!(t&&t.dot&&t.dot()); }catch(_){ return false; } };
     function syncTools(){ try{ _liveHosts().forEach(h=>h.querySelectorAll('.lst-toolrow').forEach(b=>{
-      const t=TOOLS.find(x=>x.id===b.dataset.act); if(!t) return; b.classList.toggle('on',_toolOn(t)); })); }catch(_){} }
+      const t=TOOLS.find(x=>x.id===b.dataset.act); if(!t) return; b.classList.toggle('on',_toolOn(t));
+      const d=b.querySelector('.lst-tooldot'); if(d) d.hidden=!_toolDot(t); })); }catch(_){} }
     try{ document.addEventListener('pointerup',()=>{ try{ if(document.querySelector('.lst-toolrow')) setTimeout(syncTools,60); }catch(_){} },true); }catch(_){}
     /* cheap state re-sync (no rebuild): reflect the live checkboxes onto the existing tiles */
     function syncTiles(){ try{ _liveHosts().forEach(h=>h.querySelectorAll('.lst-tile').forEach(t2=>{ const id=t2.dataset.lid; if(!id) return;
@@ -940,7 +973,13 @@ window.IntMapModules.layerSidebar=function(HOST){
       root.querySelectorAll('.lst-grid').forEach(g=>{ let vis=0;
         g.querySelectorAll('.lst-tile').forEach(t2=>{ const show=!q||t2.dataset.nm.indexOf(q)>=0; t2.style.display=show?'':'none'; if(show) vis++; });
         /* while searching, a collapsed section with matches is forced open (inline display beats .closed) */
-        g.style.display=vis?(q?'grid':''):'none'; const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')) h.style.display=vis?'':'none'; }); }
+        g.style.display=vis?(q?'grid':''):'none'; const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')) h.style.display=vis?'':'none'; });
+      /* (#R291) 「Layersの検索で route / directions / 経路 / ルート / 道順 等から発見できるように」 — the
+         tool rows were outside this filter entirely, so a search narrowed the layers and left the
+         tools alone. They match on their own name, their hint, their English id and a keyword list. */
+      try{ const tw=root.querySelector('.lst-tools'); if(tw){ let tv=0;
+        tw.querySelectorAll('.lst-toolrow').forEach(b=>{ const show=!q||String(b.dataset.nm||'').indexOf(q)>=0; b.style.display=show?'':'none'; if(show) tv++; });
+        tw.style.display=tv?'':'none'; } }catch(_){} }
     function open(){ build();   /* (#R107) mobile allowed — the right-sidebar layer panel now works on phones too (overlay, no map push) */
       /* (#R72) SPEED ("layersをクリックしたときの反応が非常に遅い"): the full reorganize+rebuild ran on EVERY
          open. Now the grid is rebuilt only when the row set actually changed; an unchanged grid just re-syncs

@@ -83,6 +83,10 @@ export function makeLazyModules(HOST) {
          Every one of them now goes through `window.IntMapAtlas` (js/app-body.js), which fetches the
          kernel first — so «Atlas can drive everything» is unchanged and only the MOMENT it arrives is. */
       atlasConsole: 'IntMapConsole',
+      /* (#R291) the directions PANEL. The router (js/routing.js) is eager — Atlas must be able to
+         route with no panel — and this is the ~30 kB of UI a session that never opens Layers →
+         Tools → Directions never downloads (§2.3). */
+      routeUi: 'IntMapRouteUI',
     };
 
     function record(name, why) {
@@ -113,6 +117,7 @@ export function makeLazyModules(HOST) {
         case 'streetView': return import('./street-view.js');
         case 'nightSky': return import('./night-sky.js');
         case 'atlasConsole': return import('./atlas-console.js');
+        case 'routeUi': return import('./routing-ui.js');
         default: return Promise.reject(new Error('no such lazy module: ' + name));
       }
     }
@@ -133,6 +138,7 @@ export function makeLazyModules(HOST) {
         case 'streetView': window.IntMapStreetView=window.IntMapModules.streetView(IM_HOST); return true;
         case 'nightSky': return !!window.IntMapNightSky;    /* publishes itself at import time */
         case 'atlasConsole': window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST); return true;
+        case 'routeUi': window.IntMapRouteUI=window.IntMapModules.routeUi(IM_HOST); return true;
         default: return !!M;
       }
     }
