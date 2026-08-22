@@ -1,8 +1,8 @@
 {
   "eager": {
-    "raw": 4454836,
-    "gzip": 1490060,
-    "brotli": 1132052,
+    "raw": 4457973,
+    "gzip": 1491089,
+    "brotli": 1132821,
     "requests": 6,
     "modules": 270,
     "cssRaw": 300309,
@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 8641858,
-    "gzip": 2717208,
+    "gzip": 2717207,
     "chunks": {
       "aircraft-detail": 17221,
       "atlas-console": 724614,
@@ -50,8 +50,8 @@
     }
   },
   "dist": {
-    "total": 111049495,
+    "total": 111052632,
     "data": 58506430,
-    "assets": 15719672
+    "assets": 15722809
   }
 }
