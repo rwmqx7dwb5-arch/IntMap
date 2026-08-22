@@ -2303,6 +2303,10 @@ window.IntMapModules.dataLayers=function(HOST){
     const EU_YEARS=[1958,1973,1981,1986,1995,2004,2007,2013,2020,2024];
     let _euYear=EU_YEARS[EU_YEARS.length-1];
     function euMemberAt(code,y){ const j=EU_JOIN[code]; if(j==null||j>y) return false; const l=EU_LEFT[code]; if(l&&y>=l) return false; return true; }
+    /* (#R313) the collection this layer paints, published so js/layer-home.js frames the geometry
+       that is actually on screen — including whichever accession year the reader has Chronos set to —
+       instead of a box somebody typed. See that file for why it takes each member's largest landmass. */
+    window.IntMapEuFC=()=>{ try{ return buildEuFC(); }catch(_){ return null; } };
     function buildEuFC(){ const feats=[]; if(HOST.countryGeo&&HOST.countryGeo.features){ HOST.countryGeo.features.forEach(f=>{ const code=String(f.id); if(!EU.has(code)) return; if(!euMemberAt(code,_euYear)) return; feats.push({type:'Feature',id:code,properties:{__code:code,__y:(EU_JOIN[code]||0)},geometry:f.geometry}); }); } return {type:'FeatureCollection',features:feats}; }
     /* (#R289) 2020 and 2024 are in EU_YEARS as SLIDER stops (Brexit, and «today»); nobody joined in
        either, so the colour key is built from the years countries actually acceded in — otherwise
@@ -5275,7 +5279,13 @@ window.IntMapModules.dataLayers=function(HOST){
         }
         else if(id==='eu'){
           /* (#R26) EU members fill + accession-year time-travel control (mirrors NATO). */
-          withCountries(()=>{ try{ addEu(); applyEu(); wireEuHover(); setEuVis(true); euLegend(); }catch(e){ console.warn('eu fail',e); } });
+          withCountries(()=>{ try{ addEu(); applyEu(); wireEuHover(); setEuVis(true); euLegend();
+            /* ⚠ (#R313) 「EU membersレイヤーをオンにしたら、自動的にEUに行くように。」 Inside
+               `withCountries` because the frame is the union of the members' own footprints and
+               those arrive with the country table. The «may this layer move the camera / has it
+               already / did the READER ask» decision is js/layer-home.js's, not this branch's. */
+            try{ window.IntMapLayerHome&&window.IntMapLayerHome.arrive('dl-eu'); }catch(_){}
+          }catch(e){ console.warn('eu fail',e); } });
         }
         /* (#R232) the day/night SHADING — one call to its owner, and the Settings picker follows. */
         else if(id==='nightside'){ _setNightSide(true); }

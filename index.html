@@ -29,7 +29,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R310';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R313';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -44,7 +44,7 @@ window.__imBuild='R310';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-23-R310';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-23-R313';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -528,8 +528,18 @@ window.__imBuild='R310';/* (#R121) build marker — bump when verifying that a r
         </div>
         <!-- (#R289) 「どこの時刻を採用するかのプルダウン」 — the clock Chronos reads and writes wall-clock time in. -->
         <div class="ntl-zonerow"><span id="ntl-zone-lbl"></span><select class="ntl-zone" id="ntl-zone"></select></div>
+        <!-- (#R313) 「ChronosのTimeの時刻表示してるところに、日付も書くように。」 The Time tab printed
+             HH:MM and nothing else, so the one tab whose whole subject is "which instant" never said
+             which DAY that instant was on. The date goes on its own line UNDER the time rather than
+             beside it: .ntl-bigval is 26 px with `text-overflow:ellipsis` inside a 314 px body minus a
+             non-shrinking 「現在へ戻る」 button, so a single line would have silently truncated — and a
+             truncated readout is harder to notice than a broken one. #ntl-bigval itself still holds the
+             time ALONE, which is also what tests/smoke.spec.js reads. -->
         <div class="ntl-valrow">
-          <div class="ntl-bigval" id="ntl-bigval">—</div>
+          <div class="ntl-valcol">
+            <div class="ntl-bigval" id="ntl-bigval">—</div>
+            <div class="ntl-bigdate" id="ntl-bigdate"></div>
+          </div>
           <button class="ntl-now" id="ntl-today" type="button"></button>
         </div>
         <input type="date" id="ntl-date" class="ntl-date" style="display:none;">

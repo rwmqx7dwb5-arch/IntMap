@@ -1686,11 +1686,23 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R170) 3-D volume — same Measure menu, same point-collection path as Distance/Area (measurePoints); the
      altitude band and the extrusion live in js/volume3d.js. */
   { const bv=document.getElementById('btn-tool-volume'); if(bv) bv.onclick=()=>{ setTool('volume'); if(window._closeMeasureMenu) window._closeMeasureMenu(); }; }
+  /* ══ ⚠ (#R313) THE TWO MENUS ARE ONE CHOICE, SO ONE PLACE KNOWS THE SET ══════════════════════
+     「MeasureとShareは、もう一方を開いているときに、もう一方をおしたら、これまで開いてたものが
+       消えて、新しくクリックした方が展開されるように。」 Both triggers call `e.stopPropagation()`, so
+     neither one's click ever reaches the document-level click-away listener the OTHER one
+     installed — that is why both could stand open at once, and why adding a second click-away
+     rule would not have fixed it. Closing the other one is not a new rule, it is the SAME choice
+     being made, so the set of menus lives in ONE function: a third menu added here cannot be
+     taught to one trigger and forgotten in the other. */
+  window._closeMapMenus=function(except){
+    if(except!=='measure'){ try{ window._closeMeasureMenu&&window._closeMeasureMenu(); }catch(_){} }
+    if(except!=='share'){ try{ window._closeShareMenu&&window._closeShareMenu(); }catch(_){} }
+  };
   /* (#R9) "Measure ▾" groups Measure + Draw under one trigger; click-away closes it. */
   (function(){
     const c=document.querySelector('.measure-menu-container'), trig=document.getElementById('btn-measure-menu');
     window._closeMeasureMenu=()=>{ if(c) c.classList.remove('open'); };
-    if(trig){ trig.onclick=(e)=>{ e.stopPropagation(); if(c) c.classList.toggle('open'); }; }
+    if(trig){ trig.onclick=(e)=>{ e.stopPropagation(); window._closeMapMenus('measure'); if(c) c.classList.toggle('open'); }; }   /* (#R313) opening this one closes the other */
     document.addEventListener('click',(e)=>{ if(c && !c.contains(e.target)) c.classList.remove('open'); });
     const dr=document.getElementById('btn-tool-draw'); if(dr) dr.addEventListener('click',()=>window._closeMeasureMenu&&window._closeMeasureMenu());
   })();
@@ -1699,7 +1711,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   (function(){
     const c=document.querySelector('.share-menu-container'), trig=document.getElementById('btn-share-menu');
     window._closeShareMenu=()=>{ if(c) c.classList.remove('open'); };
-    if(trig){ trig.onclick=(e)=>{ e.stopPropagation(); if(c) c.classList.toggle('open'); }; }
+    if(trig){ trig.onclick=(e)=>{ e.stopPropagation(); window._closeMapMenus('share'); if(c) c.classList.toggle('open'); }; }   /* (#R313) — as above */
     document.addEventListener('click',(e)=>{ if(c && !c.contains(e.target)) c.classList.remove('open'); });
     ['btn-screenshot','btn-share'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>window._closeShareMenu&&window._closeShareMenu()); });
   })();

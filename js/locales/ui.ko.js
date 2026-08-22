@@ -304,6 +304,7 @@ window.IntMapLang.define('ko', { ui: {
     "Next hour": "다음 시각",
     "no frames": "프레임 없음",
     "Oldest frame": "가장 오래된 프레임",
+    "Particles": "입자",   /* weather.js (#R313) */
     "Pressure (MSL)": "해면기압",
     "Previous frame": "이전 프레임",
     "Previous hour": "이전 시각",
@@ -315,6 +316,7 @@ window.IntMapLang.define('ko', { ui: {
     "Valid at": "유효 시각",
     "Wind direction arrows at 10 m, coloured by speed.": "고도 10 m의 풍향 화살표, 풍속에 따라 색이 달라집니다.",
     "Wind gusts (ECMWF)": "돌풍 (ECMWF)",
+    "Wind particles": "바람 입자",   /* atlas-console.js (#R313) */
     /* ⚠ KEYED BY THE ENGLISH SOURCE STRING — see the header. `node scripts/i18n-report.mjs --template ko`
        regenerates the full skeleton; anything absent renders in English, per string. */
     /* (#R234) the seismic panel's new instruction banners, its 詳細設定 disclosure and the
@@ -4901,4 +4903,31 @@ window.IntMapLang.define('ko', { ui: {
   "Which countries spend the most on defense relative to GDP?": "GDP 대비 국방비가 가장 높은 나라는?",   /* atlas-console.js (#R309) */
   "Brief me on the South China Sea — the latest": "남중국해 상황 브리핑 — 최신 정보",   /* atlas-console.js (#R309) */
   "Which countries have the highest life expectancy?": "기대 수명이 가장 높은 나라는?",   /* atlas-console.js (#R309) */
+  "Which weather warnings are in force over {place} right now, and who issued them?": "{place} 지역에 지금 발효 중인 기상 경보는? 발표한 기관은 어디인가요?",   /* atlas-examples.js (#R313) */
+  "What has been shaking near {place}, and which fault or plate boundary is behind it?": "{place} 주변에서 최근 지진이 난 곳은? 어느 단층이나 판 경계 때문인가요?",   /* atlas-examples.js (#R313) */
+  "Which volcanoes near {place} are restless, and what would an eruption reach?": "{place} 주변에서 활동이 활발한 화산은? 분화하면 어디까지 영향이 미치나요?",   /* atlas-examples.js (#R313) */
+  "What is driving the wind pattern over {place} today?": "오늘 {place} 상공의 바람 흐름은 무엇이 결정하고 있나요?",   /* atlas-examples.js (#R313) */
+  "Which submarine cables land in {place}, and what happens if one is cut?": "{place}에 상륙하는 해저 케이블은? 한 가닥이 끊기면 어떻게 되나요?",   /* atlas-examples.js (#R313) */
+  "What is flying over {place} right now, and where are those aircraft going?": "지금 {place} 상공을 날고 있는 항공기는? 어디로 향하고 있나요?",   /* atlas-examples.js (#R313) */
+  "What is moving through {place}’s waters right now, and what is it carrying?": "지금 {place} 해역을 지나는 선박은? 무엇을 싣고 있나요?",   /* atlas-examples.js (#R313) */
+  "What was happening in {place} in {year}?": "{year}년 {place}에서는 무슨 일이 있었나요?",   /* atlas-examples.js (#R313) */
+  "{place} is one of the most crowded countries on Earth — how does it absorb that?": "{place}, 세계에서 손꼽히는 인구 밀집 국가 — 그 인구를 어떻게 감당하고 있나요?",   /* atlas-examples.js (#R313) */
+  "Almost nobody lives per square kilometre in {place} — so where do people actually live?": "{place}, 인구 밀도가 세계 최저 수준 — 사람들은 실제로 어디에 모여 사나요?",   /* atlas-examples.js (#R313) */
+  "{place} spans enormous distances — how is it physically held together?": "{place}, 국토가 극단적으로 넓은 나라 — 물리적으로 무엇이 이어 주고 있나요?",   /* atlas-examples.js (#R313) */
+  "{place} is tiny — what does its economy actually run on?": "{place}, 아주 작은 나라 — 경제는 실제로 무엇으로 돌아가나요?",   /* atlas-examples.js (#R313) */
+  "{place} is one of the largest economies in the world — what is actually carrying it?": "{place}, 세계 최대 규모의 경제 가운데 하나 — 실제로 떠받치고 있는 것은 무엇인가요?",   /* atlas-examples.js (#R313) */
+  "How does {place} sustain one of the highest incomes per person anywhere?": "{place}, 1인당 소득이 세계 최고 수준 — 어떻게 유지하고 있나요?",   /* atlas-examples.js (#R313) */
+  "{place} spends an unusually large share of its economy on defense — on what, and against what?": "{place}, 경제 규모에 비해 국방비 비중이 유난히 큰 나라 — 무엇에, 무엇에 대비해 쓰나요?",   /* atlas-examples.js (#R313) */
+  "What single change would do the most for everyday life in {place}?": "{place}에서 일상생활을 가장 크게 바꿀 한 가지 변화는 무엇일까요?",   /* atlas-examples.js (#R313) */
+  "How is {place} actually governed, and who really decides?": "{place}, 실제로 어떻게 통치되고 있나요? 진짜 결정권은 누구에게 있나요?",   /* atlas-examples.js (#R313) */
+  "What keeps {place}’s institutions working as well as they do?": "{place}의 제도는 어떻게 이렇게 잘 작동하고 있나요?",   /* atlas-examples.js (#R313) */
+  "Why do people in {place} live longer than almost anywhere else?": "{place} 사람들은 왜 세계에서 손꼽히게 오래 사나요?",   /* atlas-examples.js (#R313) */
+  "How much of {place} is actually online, and what is the bottleneck?": "{place}에서 실제로 인터넷에 연결된 비율은? 무엇이 병목인가요?",   /* atlas-examples.js (#R313) */
+  "Where are {place}’s people concentrated, and where is that shifting?": "{place}의 인구는 어디에 몰려 있고, 어디로 이동하고 있나요?",   /* atlas-examples.js (#R313) */
+  "What happens in {capital} that matters beyond {place}?": "{capital}에서 일어나는 일 가운데 {place} 밖까지 영향을 주는 것은?",   /* atlas-examples.js (#R313) */
+  "How does {place} differ from the rest of {sub}?": "{place}, {sub} 지역의 다른 나라들과 무엇이 다른가요?",   /* atlas-examples.js (#R313) */
+  "What did the world look like in {year}?": "{year}년의 세계는 어떤 모습이었나요?",   /* atlas-examples.js (#R313) */
+  "Where in the world are the most severe weather warnings in force right now?": "지금 세계에서 가장 심각한 기상 경보가 발효 중인 곳은 어디인가요?",   /* atlas-examples.js (#R313) */
+  "Which plate boundaries have been most active in the past week?": "최근 일주일 동안 가장 활발했던 판 경계는 어디인가요?",   /* atlas-examples.js (#R313) */
+  "Which submarine cable chokepoints carry the most of the world’s traffic?": "세계 통신량이 가장 많이 몰리는 해저 케이블 요충지는 어디인가요?",   /* atlas-examples.js (#R313) */
 } });
