@@ -19,6 +19,8 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+/* (#R308 追記2) 5本が同じ1行を逐語で固定していたので、規則ごとに1つの読み手へ — tests/wash-tier.mjs */
+import { assertUnreadNeverGreys } from './wash-tier.mjs';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -275,8 +277,13 @@ test('R275 ⑪ a country is only painted «nothing in force» once its service h
      「まだ対応していない、もしくはデータがまだ入っていないところは灰色斜線で」. The property #R275
      is about is unchanged and is what is asserted — a service that has not answered does not
      earn the 「発表なし」 grey. What it earns instead is the hatch, which claims nothing. */
-  assert.match(s, /if\(readState\(c\)!=='ok'\) return 0;/,
-    'a country whose service has not answered is not washed with the 「発表なし」 grey');
+  /* ⚠ (#R308 追記2) …AND IT PINNED THE LINE RATHER THAN THE RULE. 「取得できていない国は「発表なし」の
+     灰色をもらわない」 is what this asserts, and it is unchanged; what moved is the OTHER arm of that
+     same line. A country whose service failed but whose own units are STILL ON THE MAP is not a
+     silence — 本番実測、カシミール z6 の上塗り 525 点のうち **276 点が `CHN OVER CHN/W`**、中国の斜線が
+     中国自身の発令中の区域の上に乗っていた——so it takes 2 (transparent). Asked as the rule: whatever
+     that line returns, it is never the grey (1) and never a wash rank (11–14). */
+  assertUnreadNeverGreys(s);
   /* the three states are still three appearances (#R273) */
   /* (#R293) the wash reads the ONE declared grey rather than repeating its literal — see r290 ① */
   assert.match(s, /\n\s+1,QUIET_COL,/, 'read and quiet is grey');

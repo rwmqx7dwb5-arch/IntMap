@@ -19,6 +19,8 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+/* (#R308 追記2) 5本が同じ1行を逐語で固定していたので、規則ごとに1つの読み手へ — tests/wash-tier.mjs */
+import { assertUnreadNeverGreys } from './wash-tier.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -106,8 +108,8 @@ test('R277 ③ hatched / grey / coloured are three states, and the wash sits und
      「まだ対応していない、もしくはデータがまだ入っていないところは灰色斜線で」. #R277's rule is
      untouched — only a READ earns the grey — and this is the other half of it, written the way the
      reader asked for. */
-  assert.match(s, /if\(readState\(c\)!=='ok'\) return 0;/,
-    'only a country whose service ANSWERED earns the grey');
+  /* ⚠ (#R308 追記2) …AND IT PINNED THE LINE RATHER THAN THE RULE — see tests/wash-tier.mjs */
+  assertUnreadNeverGreys(s);
 });
 
 /* ── ④ 「漏れが多すぎる」 — the shape ladder ────────────────────────────────────────────────────
