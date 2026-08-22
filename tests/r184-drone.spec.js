@@ -30,13 +30,23 @@ const BOOT = { timeout: 90_000 };
    name that no longer exists. */
 const boot = async page => { await bootPage(page); };
 /* Interlaken → the Jungfrau massif. Real places, real terrain. */
-/* ⚠ (#R304) THE ALPS HAVE TO BE THERE BEFORE THE ROUTE IS SOLVED. Every claim below is about
-   2,000 m of rock between two points, and the rock is a live terrarium tile fetch
-   (js/map-extras.js → s3.amazonaws.com/elevation-tiles-prod). When it has not landed the sampler
-   answers 0 everywhere and the walk finds a clear line of sight over the Bernese Oberland — ④ then
-   fails with `losBreaks 0`, which is a true statement about a flat world. MEASURED: it failed at two
-   workers and passed run alone, twice. So the fixture waits for the DEM to actually report a
-   mountain, and a DEM that never arrives times out instead of quietly flattening the Alps. */
+/* ══ ⚠⚠⚠ (#R304) THROUGH `prepare()`, WHICH IS THE DOOR THE APP USES ═══════════════════════════
+   This called `D.compute()` directly, and every claim below about the RADIO LINK then measured a
+   world with no terrain in it: `losBreaks` was 0 over 2 km of rock, twice on CI and on fourteen
+   consecutive nightlies. js/drone-ops.js does not re-implement the link physics — it reads
+   `window.IntMapLOS._phys` (the same dropAt / fresnel1 / knifeEdgeDb the viewshed uses, so the two
+   tools cannot disagree about what «blocked» means) — and js/viewshed.js is fetched ON DEMAND since
+   #R209. `linkSource()` is a synchronous hazard callback that cannot await, so `prepare()` asks for
+   it at the one async step that always precedes a plan, and that file says why in as many words:
+   without it 「the link analysis would quietly fall back to free-space loss with no terrain — a
+   silent downgrade of the kind #R205 is about, not an error」.
+   MEASURED through `compute()` alone: `losBreaks 0` while the route's OWN result reports two
+   `terrain-collision` violations and `minClearance −756 m` — the plan is inside the mountain and the
+   radio check called the sky clear. Through `prepare()` the same walk has the physics it names.
+   ⚠ THE DEM ALSO HAS TO BE THERE. `prepare()` fetches what the sources need, but the terrain tiles
+   come from the network (js/map-extras.js → elevation-tiles-prod); with none of them the sampler
+   answers 0 everywhere and the Alps are a plain. Waiting for a mountain makes that a timeout rather
+   than a green run over flat ground. */
 const ALPINE = async (page) => {
   await page.waitForFunction(async () => {
     try {
@@ -49,7 +59,9 @@ const ALPINE = async (page) => {
     D.newRoute(); D.usePreset('prosumer');
     D.addWaypoint(7.8632, 46.6863, 100, 'agl');
     D.addWaypoint(7.9800, 46.5900, 100, 'agl');
-    return !!(await D.compute());
+    /* the app's own pre-plan step: it fetches what the enabled hazard sources need — the viewshed
+       physics among them — and then re-computes. `compute()` on its own reads whatever is in hand. */
+    return !!(await window.IntMapDroneOps.prepare());
   });
 };
 
