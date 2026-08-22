@@ -20,6 +20,8 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+/* (#R308 追記2) 5本が同じ1行を逐語で固定していたので、規則ごとに1つの読み手へ — tests/wash-tier.mjs */
+import { assertUnreadIsTheHatch } from './wash-tier.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,9 +48,8 @@ test('#R288 ① the hatch covers both silences, and the other three states survi
   assert.ok(i > 0, 'washTier must exist');
   const body = src.slice(i, src.indexOf('function paintCountries(', i));
   assert.match(body, /if\(!supported\(c\)\)\s*return\s*0;/, 'no feed at all → hatched');
-  assert.match(body, /if\(readState\(c\)!=='ok'\)\s*return\s*0;/,
-    '「データがまだ入っていない」 → hatched, the same appearance as 「未対応」');
-  assert.ok(!/return\s*-1;/.test(body), '#R284’s fourth state must be gone');
+  /* ⚠ (#R308 追記2) …asked of the RULE rather than of the line — see tests/wash-tier.mjs */
+  assertUnreadIsTheHatch(src);
   /* …and the claims that are NOT the hatch are still made */
   assert.match(body, /if\(u&&!drawnISO\[c\]\)\s*return\s*10\+Math\.min\(4,u\);/, 'the unplaced-rank wash survives');
   /* (#R290) …and «this map holds its units» became «the unit layer is drawing it right now», because

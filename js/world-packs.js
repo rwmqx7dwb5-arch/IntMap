@@ -3838,7 +3838,21 @@ window.IntMapModules.worldPacks=function(HOST){
          over in well under a minute and the hatch is transient rather than the opening state. */
       function washTier(c){
         if(!supported(c)) return 0;
-        if(readState(c)!=='ok') return 0;      /* (#R288) 未対応 もしくは データがまだ入っていない */
+        /* ══ ⚠⚠⚠ (#R308 追記2) 自分の警報の上に自分の斜線を敷いていた ═══════════════════════════
+           「情報あるのに、そこに斜線が上塗りされてるところ。」 本番実測（カシミール z6・キャンバス
+           880×720・12 px 格子）: 上塗り **525 点のうち 276 点が `CHN OVER CHN/W`**——**中国の斜線が、
+           中国自身の発令中の区域の上に乗っている**。CMA の取得が一度失敗すると `readState` が 'ok' で
+           なくなり、この行が 0（＝斜線）を返す一方、**直前まで読めていた警報は `feats` に残ったまま
+           描かれ続ける**からである。#R308 の引き算はこれを直さない——候補から**同じ国の地物を除いて
+           いる**（他人の答えの上に乗る場合だけを見ていた）。
+           → 斜線は「この地図はここについて何も述べていない」という主張である。**その国自身の単位を
+           いま描いているなら、それは述べているということ**なので、斜線にはならない。#R288 の言葉が
+           そのまま根拠になる——「データが入った国は決して斜線にならない」。取得が失敗していることは
+           タップカードとパネルが**言葉で**言い続ける（#R277 の「'ok' だけが灰色に値する」は
+           国 1 枚の**灰色**についての規則で、こちらは 2＝透明である。灰色は今も 'ok' しか得られない）。
+           ⚠ これは引き算より先に効く: 中国の輪郭は 54,752 頂点で `CUT_ONE_V` の外にあり、
+           clipper では届かない。 */
+        if(readState(c)!=='ok') return (drawnISO[c]||quietSet[c])?2:0;   /* (#R288) 未対応 もしくは データがまだ入っていない */
         const u=UNPL[c]||0;
         if(u&&!drawnISO[c]) return 10+Math.min(4,u);
         /* (#R288) 2 = 「read, quiet, AND this map holds this country's own units」 — the grey is
