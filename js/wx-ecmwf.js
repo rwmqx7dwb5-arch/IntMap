@@ -228,6 +228,13 @@
      leave before the far ones, ahead further than behind because that is where the reader is going.
      ⚠ PLAYBACK ASKS FOR EVERY HOUR IN TURN at `playMs` (700 ms), so a window that only reaches eight
      hours ahead is overtaken in six seconds — while playing the run is staged twice as far. */
+  /* ⚠ (#R310) TRIED AND REMOVED: warming the file's TRAILER (`bytes=-65536`) from `ready()`, so the
+     SDK's own read of the same region would come from the browser's cache while the 340 kB bundle
+     was still downloading. Two reasons it is not here. It never ran — the boot stage-in (#R308) has
+     already claimed the file by then, so it would have needed a second ledger of its own. And the
+     window it could win is the one request it replaces: MEASURED on the built page, the SDK's
+     trailer read is **75–221 ms** of a **3,855 ms** cold switch-on. That is under the spread of the
+     measurement, so shipping it would be claiming a speed-up this round cannot show. */
   var _touchDir = 1;
   function touchAround(i, ahead) {
     var n = Math.max(1, ahead || TOUCH_AHEAD), j;
@@ -475,6 +482,169 @@
     };
   }
   var BLOCK_BYTES = 64 * 1024, BLOCK_MAX = 512;
+  /* ══ ⚠⚠⚠ (#R310) 64 kB WAS NOT A SIZE, IT WAS A RATE — AND IT COST 3.4× ═══════════════════════
+     「風レイヤーは品質保ったまま、起動から日時変更からすべてに至るまで、爆速にしろ。」 (5回目)
+
+     #R307 asked whether the BLOCK should be bigger and answered no, for a reason that was true:
+     `blockSize()` is the HTTP request size, so a 512 kB block over-fetches at both ends of every
+     span (MEASURED there: 6.31 MB became 9.00 MB) and the raster tiles share the reader. What that
+     round did not measure is what a 64 kB REQUEST costs, as distinct from what it fetches. Measured
+     here, in the browser, same origin, same file, same eight megabytes, same moment — only the size
+     of each request changes:
+
+         64 kB × 128, all at once     2,448 / 2,341 ms    3.3 / 3.4 MB/s
+         64 kB × 128, 24 at a time    3,713 ms            2.2 MB/s
+         256 kB × 32                  1,255 ms            6.4 MB/s
+         512 kB × 16                    723 /   683 ms   11.1 / 11.7 MB/s
+         8 MB × 1                       455 /   708 ms   17.6 / 11.3 MB/s
+
+     The bytes are identical in every row. **A ranged request has a fixed cost at the edge, and at
+     64 kB the app was paying it 139 times for one hour of wind** — which is the whole of the 8.69 MB
+     that took 4.0 s while the same bytes in one request take 0.5 s. That is the wait these five
+     rounds have been circling: not the bytes, not the queue, not the decode, but the RATE.
+
+     ⚠ AND THE ANSWER IS STILL NOT A BIGGER BLOCK. #R307's objection stands word for word — a bigger
+     block over-fetches, and it drags the tiles with it. The two things it conflated are what the
+     CACHE stores and what the NETWORK asks for, and they do not have to be the same number:
+
+     → the block stays 64 kB, and the REQUESTS ARE MERGED. The SDK's cached reader asks its HTTP
+     backend for one block at a time, in a synchronous loop, so every block of a span is requested
+     inside one microtask. This wrapper collects them, joins the ones that are ADJACENT IN THE FILE,
+     issues one request per run and hands each caller its own slice. Nothing is over-fetched: a run
+     is exactly the blocks that were asked for. #R307 measured that the 195 requests of one band read
+     cover **two contiguous spans**, so the merge is not a hopeful optimisation — the runs are there.
+
+     ⚠ ONLY JOBS THAT SHARE A SIGNAL ARE MERGED, or aborting one read would abort another's bytes.
+     ⚠ A RUN IS CAPPED (`RUN_MAX`), because the table above stops improving above about 512 kB and an
+     unbounded run would hold the whole read in one all-or-nothing request.
+     ⚠ EACH BLOCK IS COPIED OUT of the run's buffer rather than kept as a view of it: a 64 kB block
+     living in a 32 MB LRU must not pin four megabytes of the request it arrived in. */
+  var RUN_MAX = 4 * 1024 * 1024;
+  function coalesceBackend(be) {
+    if (!be || be._imCoalesced || typeof be.getBytes !== 'function') return be;
+    var orig = be.getBytes.bind(be);
+    var pending = [], scheduled = false;
+    function flush() {
+      scheduled = false;
+      var jobs = pending; pending = [];
+      /* group by signal first — a merged request can only carry one */
+      var lanes = [];
+      jobs.forEach(function (j) {
+        for (var i = 0; i < lanes.length; i++) if (lanes[i].sig === j.sig) { lanes[i].jobs.push(j); return; }
+        lanes.push({ sig: j.sig, jobs: [j] });
+      });
+      lanes.forEach(function (ln) {
+        var js = ln.jobs.sort(function (x, y) { return x.a - y.a; });
+        var runs = [];
+        for (var i = 0; i < js.length; i++) {
+          var last = runs.length ? runs[runs.length - 1] : null;
+          if (last && js[i].a <= last.b + 1 && (js[i].b - last.a + 1) <= RUN_MAX) {
+            if (js[i].b > last.b) last.b = js[i].b;
+            last.jobs.push(js[i]);
+          } else runs.push({ a: js[i].a, b: js[i].b, jobs: [js[i]] });
+        }
+        runs.forEach(function (r) {
+          if (r.jobs.length === 1) { var j = r.jobs[0]; orig(j.a, j.b - j.a + 1, j.sig).then(j.res, j.rej); return; }
+          orig(r.a, r.b - r.a + 1, r.sig).then(function (buf) {
+            r.jobs.forEach(function (j) { try { j.res(buf.slice(j.a - r.a, j.b - r.a + 1)); } catch (e) { j.rej(e); } });
+          }, function (e) { r.jobs.forEach(function (j) { j.rej(e); }); });
+        });
+      });
+    }
+    be.getBytes = function (a, n, sig) {
+      if (!(n > 0)) return orig(a, n, sig);
+      return new Promise(function (res, rej) {
+        pending.push({ a: a, b: a + n - 1, res: res, rej: rej, sig: sig });
+        if (!scheduled) { scheduled = true; Promise.resolve().then(flush); }
+      });
+    };
+    be._imCoalesced = 1;
+    return be;
+  }
+  /* the SDK builds the chain `FileReader.reader → cachedReader.backend → httpBackend` on every
+     `setToOmFile`, and every one of those property names survives minification (they are assigned in
+     constructors, not exported). This is the only place that reaches into it. */
+  function coalesceReader(rd) {
+    try { coalesceBackend(rd && rd.reader && rd.reader.backend && rd.reader.backend.backend); } catch (_) {}
+    return rd;
+  }
+  /* ══ ⚠⚠⚠ (#R310) EVERY READ RE-OPENED THE FILE, AND THE RE-OPEN IS A ROUND TRIP ═══════════════
+     「風レイヤーは品質保ったまま、起動から日時変更からすべてに至るまで、爆速にしろ。」 (5回目)
+
+     READ OUT OF THE SHIPPED BUNDLE, then MEASURED. `ensureData` opens the file EVERY time it is
+     called — `await A.setToOmFile(state.omFileUrl)` is its first line, unconditionally — and
+     `setToOmFile` is not cheap:
+
+         setToOmFile(url) → this.dispose()                 // throw the variable tree away
+                          → new HttpBackend({url})
+                          → backend.fetchMetadata()        // *** a HEAD request ***
+                          → OmFileReader.create(…)         // read the trailer, walk the tree
+
+     So a band read paid TWO of them (this module warms the ranges first, then reads), the raster
+     tiles paid one per state, and none of them could be reused because the reader is a singleton
+     that every caller re-points. MEASURED on the built page, one step of the time axis:
+
+         HEAD  at 223 ms · 389 ms      ← the field's warm-up
+         HEAD  at 227 ms · 576 ms      ← the colour tiles, same file, same second
+         HEAD  at 1878 ms · 236 ms     ← the widening rung
+         …and a step onto an hour whose bytes were ALREADY in the block cache still cost
+         2,118 ms, of which ONE HEAD was 1,870 ms and there was no other network at all.
+
+     → ONE READER PER FILE, and the file is opened ONCE. `WeatherMapLayerFileReader` is exported by
+     the SDK (`h.WeatherMapLayerFileReader`) and `ensureData(state, reader, …)` takes the reader as
+     an ARGUMENT, so nothing here is a patch of the bundle: this module simply stops handing it the
+     singleton. `pinReader` makes `setToOmFile` idempotent, which is what turns the second and third
+     open of a file into a no-op.
+
+     ⚠ THE BLOCK CACHE IS SHARED AND THAT IS SAFE, because its keys are not block numbers:
+     `withBigIntKeys(backend, cache, backend.cacheKeyBigInt)` and `cacheKeyBigInt` is
+     `hash(url) ^ hash(eTag) ^ hash(lastModified)`. Two readers on two files cannot collide, and two
+     readers on the SAME file share every block they fetch.
+     ⚠ AND IT IS WHY `serial()` CAN STOP BEING A LAW. The single reader is the whole reason two
+     reads of different files corrupted each other (#R288); with one reader each they do not touch.
+     What remains in `serial` is a POLICY about bandwidth, not a rule about correctness. */
+  var READER_MAX = 4;
+  var readers = [];              /* most-recent-first: [{url, rd}] — one open .om file each */
+  function pinReader(rd) {
+    if (!rd || rd._imPinned) return rd;
+    var orig = null;
+    try { orig = rd.setToOmFile.bind(rd); } catch (_) { return rd; }
+    var at = '', open = null;
+    rd.setToOmFile = function (u) {
+      if (u === at && open) return open;              /* already open on this file — nothing to do */
+      at = u;
+      /* ⚠ the HTTP backend is a NEW object on every open, so the merge is re-applied here and
+         nowhere else — see `coalesceBackend`. */
+      open = orig(u).then(function (v) { coalesceReader(rd); return v; },
+        function (e) { if (at === u) { at = ''; open = null; } throw e; });
+      return open;
+    };
+    rd._imPinned = 1;
+    return rd;
+  }
+  function readerFor(url) {
+    if (!url || !sdk || !sdk.WeatherMapLayerFileReader) return null;
+    for (var i = 0; i < readers.length; i++) {
+      if (readers[i].url === url) { var hit = readers.splice(i, 1)[0]; readers.unshift(hit); return hit; }
+    }
+    var st = omSettings(); if (!st) return null;
+    var rd = null;
+    try { rd = pinReader(new sdk.WeatherMapLayerFileReader(st.fileReaderConfig)); } catch (_) { return null; }
+    var h = { url: url, rd: rd };
+    readers.unshift(h);
+    /* ⚠ AN OPEN READER HOLDS A WASM VARIABLE TREE, so the pool is small and the tail is disposed.
+       The BLOCKS it fetched are not lost with it — they live in the shared cache above. */
+    while (readers.length > READER_MAX) { var old = readers.pop(); try { old.rd.dispose(); } catch (_) {} }
+    return h;
+  }
+  /* Open a forecast file AHEAD OF THE READ that needs it. The HEAD and the trailer are a round trip
+     each and they do not depend on anything the reader is about to ask for, so they belong beside
+     `touch` (#R307/#R308) rather than in front of the bytes. Returns the reader, already opening. */
+  function openReader(url) {
+    var h = readerFor(url); if (!h) return null;
+    try { h.open = h.rd.setToOmFile(url); h.open.catch(function () {}); } catch (_) { return null; }
+    return h;
+  }
   var settings = null;
   function omSettings() {
     if (settings || !sdk) return settings;
@@ -501,7 +671,19 @@
     if (!sdk || !sdk.omProtocol) return false;
     var st = omSettings();
     var ok = false;
-    try { ok = !!window.IntMapGeoEngine.scene.addProtocol('om', function (params, ctl) { return sdk.omProtocol(params, ctl, st); }); } catch (_) { ok = false; }
+    /* ⚠ (#R310) THE TILES RE-OPEN THE FILE TOO. `ensureData` opens unconditionally (see `pinReader`),
+       so every tile state paid a HEAD and a tree walk for a file the reader already had open — and
+       two tile states of the same file could `dispose()` the reader out from under each other,
+       which is the collision the note on `serial` describes, on the one path `serial` never covered
+       (the tiles are called by MapLibre, not by this module). Pinning makes the second open a no-op
+       and therefore removes both. `getProtocolInstance` is the SDK's own singleton, so this pins the
+       reader the tiles actually use, once. */
+    try {
+      ok = !!window.IntMapGeoEngine.scene.addProtocol('om', function (params, ctl) {
+        try { pinReader(sdk.getProtocolInstance(st).omFileReader); } catch (_) {}
+        return sdk.omProtocol(params, ctl, st);
+      });
+    } catch (_) { ok = false; }
     protoReg = ok;
     return ok;
   }
@@ -610,8 +792,13 @@
      the loop below — untouched, on the budget #R290 measured. Nothing about any picture changes;
      what changes is whether the bytes have to arrive again.
      ⚠ `held = frames[0]` still means 「the one that landed last」. */
-  function keepFrame(f) {
-    frames = [f].concat(frames.filter(function (x) { return !(x.key === f.key && bandCovers(f.band, x.band)); }));
+  /* ⚠ (#R310) `quiet` — an hour READ AHEAD (see `readAhead`) goes into the list so `sampler()` can
+     find it, but it is not 「the one that landed last」: the reader is still looking at the hour
+     before it, and `held` is what names that. It goes in SECOND, so the LRU still protects it from
+     everything older than the picture on screen. */
+  function keepFrame(f, quiet) {
+    var rest = frames.filter(function (x) { return !(x.key === f.key && bandCovers(f.band, x.band)); });
+    frames = (quiet && rest.length) ? [rest[0], f].concat(rest.slice(1)) : [f].concat(rest);
     var n = 0;
     for (var i = 0; i < frames.length; i++) { n += frameSize(frames[i]); if (n > FRAME_SAMPLES && i > 0) { frames.length = i; break; } }
     held = frames[0] || null;
@@ -648,24 +835,56 @@
      ⚠ `fn` used to be passed as BOTH handlers of `.then` so that a rejected predecessor could not
      strand the queue. That property is kept — a job's failure is delivered to ITS caller and the
      pump moves on — and it is now explicit rather than a trick of the chain. */
-  var qHi = [], qLo = [], pumping = false;
-  function _pump() {
-    if (pumping) return;
-    var job = qHi.shift() || qLo.shift();
-    if (!job) return;
-    pumping = true;
+  /* ══ ⚠⚠⚠ (#R310) …AND THE HALF #R305 COULD NOT FIX WAS THAT A RUNNING JOB CANNOT BE TAKEN BACK ══
+     #R305 wrote it down itself: 「a background read already running still has to finish (the SDK
+     cannot be interrupted)」 — and MEASURED the consequence, a step at 2,393 ms followed by one at
+     7,343 ms. That was true of ONE reader. With a reader per file (see `readerFor`) the reads do
+     not touch each other at all, so the foreground no longer WAITS for the background; it starts
+     beside it.
+     What is left is a decision about BANDWIDTH, and it is the same decision as before: a background
+     read does not start while the reader is waiting for one, because the only thing sharing the
+     connection with the picture on screen would be a picture nobody has asked for yet. So
+       · foreground: starts as soon as no other foreground read is running (one at a time — two
+         would halve each other's share of a connection the reader is watching);
+       · background: starts only when the foreground is completely idle, and once started it is NOT
+         in anybody's way.  */
+  var qHi = [], qLo = [], runHi = 0, runLo = 0;
+  var HI_MAX = 1, LO_MAX = 1;
+  function _start(job, hi) {
+    if (hi) runHi++; else runLo++;
     Promise.resolve().then(job.fn).then(job.res, job.rej)
-      .then(function () { pumping = false; _pump(); });
+      .then(function () { if (hi) runHi--; else runLo--; _pump(); });
+  }
+  function _pump() {
+    while (runHi < HI_MAX && qHi.length) _start(qHi.shift(), 1);
+    while (runLo < LO_MAX && !qHi.length && runHi === 0 && qLo.length) _start(qLo.shift(), 0);
   }
   function serial(fn, bg) {
-    return new Promise(function (res, rej) {
-      (bg ? qLo : qHi).push({ fn: fn, res: res, rej: rej });
+    var job = { fn: fn, res: null, rej: null };
+    var p = new Promise(function (res, rej) {
+      job.res = res; job.rej = rej;
+      (bg ? qLo : qHi).push(job);
       _pump();
     });
+    p._imJob = job;                 /* so a foreground caller can lift it — see `promote` */
+    return p;
+  }
+  /* ⚠⚠ (#R310) JOINING A QUEUED BACKGROUND READ WOULD INHERIT ITS PRIORITY. `load()` lets a step
+     JOIN the read-ahead of the hour it is stepping onto rather than starting a second one, which is
+     right — but if that read-ahead is still WAITING in the low lane, the reader is now waiting on a
+     job that by construction does not start while the reader is waiting for something. The join has
+     to carry the caller's priority with it: a queued job moves lanes, a running one is already
+     running and needs nothing. */
+  function promote(p) {
+    var job = p && p._imJob;
+    if (!job) return p;
+    var i = qLo.indexOf(job);
+    if (i >= 0) { qLo.splice(i, 1); qHi.push(job); _pump(); }
+    return p;
   }
   /* is the reader waiting for something right now? — the background readers ask before they start
      one more rung, so a queue that is already busy on the reader's behalf does not grow */
-  function foregroundBusy() { return qHi.length > 0; }
+  function foregroundBusy() { return qHi.length > 0 || runHi > 0; }
 
   function _grid(state) {
     try { return sdk.GridFactory.create(state.dataOptions.domain.grid, state.ranges); } catch (_) { return null; }
@@ -739,7 +958,14 @@
   /* `bg` — a read this MODULE started (a widening rung), not one the reader is waiting for. It is
      the same read down the same one reader; what changes is that it yields its place in the queue
      to anything the reader asks for while it is still waiting (#R305, see `serial`). */
-  function load(variable, i, bounds, bg) {
+  /* ⚠⚠ (#R310) `ahead` — a read for an hour NOBODY IS LOOKING AT YET (see `readAhead`). It is a
+     background read like a widening rung, with one difference that matters: it must not take part
+     in `seq`. `seq` answers 「has the reader asked for something newer than this」, and an hour the
+     reader has not arrived at is newer than everything by construction — bumping it would supersede
+     the read of the picture ON SCREEN, and checking it would cancel the ahead read the instant the
+     reader stepped, which is the one moment it is about to become useful. */
+  var reading = Object.create(null);      /* skey -> Promise<frame|null> — see the note below */
+  function load(variable, i, bounds, bg, ahead) {
     var band = (bounds && bounds.length === 4) ? bounds : null;
     var key = stateKey(variable, '', i);
     var have = key && frameCovering(key, band);
@@ -749,13 +975,14 @@
        ⚠ `meta` may not be here yet; `fileUrl` answers '' then and `touch` does nothing. `ready()`
        below warms it the moment the axis lands. */
     touch(i == null ? idx : i);
-    var mine = ++seq;
+    var mine = ahead ? 0 : ++seq;
     return ready().then(function () {
       var key2 = stateKey(variable, '', i);          /* meta may have arrived meanwhile */
       var h2 = frameCovering(key2, band); if (h2) return h2;
       if (!key2) return null;
-      loadingKey = key2;
+      if (!ahead) loadingKey = key2;
       var inst = sdk.getProtocolInstance(omSettings());
+      try { pinReader(inst.omFileReader); } catch (_) {}   /* (#R310) the tiles re-open too — see pinReader */
       var dom = sdk.domainOptions.find(function (d) { return d.value === DOMAIN; });
       if (!dom) return null;
       var f = fileUrl(i);
@@ -763,8 +990,19 @@
          but its key is ours to choose, and two different bands under one key would hand the second
          reader the first one's ranges. */
       var skey = key2 + (band ? ('#' + band[1].toFixed(1) + ',' + band[3].toFixed(1)) : '');
+      /* ══ ⚠⚠⚠ (#R310) THE STEP THE READ-AHEAD IS FOR MUST NOT START THE READ AGAIN ═══════════════
+         `readAhead` exists so that stepping onto the next hour costs nothing, and it can only do
+         that if the step JOINS the read instead of opening a second one beside it. The SDK's own
+         `state.dataPromise` de-duplicates, but only while the SDK still holds that state — its
+         `stateByKey` is a TWO-ENTRY LRU that the colour tiles evict — so the join is kept here,
+         where the key is ours and the lifetime is the read's. */
+      var join = reading[skey];
+      if (join) {
+        if (!ahead) promote(join);      /* the reader is waiting for it now — see `promote` */
+        return join.then(function (fr) { return fr || null; }, function () { return null; });
+      }
       var st = sdk.getOrCreateState(inst.stateByKey, skey, { domain: dom, variable: variable, bounds: band || undefined }, f);
-      return serial(function () {
+      var p = serial(function () {
         /* the queue may have been waiting a while — if the reader has moved on, so have we */
         var h3 = frameCovering(key2, band); if (h3) return h3;
         /* ══ ⚠⚠⚠ (#R299) 「THE READER HAS MOVED ON」 IS ALSO TRUE OF A READ THAT WAS OVERTAKEN ══════
@@ -779,34 +1017,83 @@
            this variable is 「a superseded picture is still a picture that loaded」, which is the
            rule stated below for the reads that DID complete; which hour is current is decided by
            the caller through `sampler()`, and that is keyed on the hour. */
-        if (seq !== mine) return frames.filter(function (x) { return x.variable === variable; })[0] || null;
+        if (!ahead && seq !== mine) return frames.filter(function (x) { return x.variable === variable; })[0] || null;
         /* ⚠ (#R307) THE GLOBE STILL DOES NOT GET THIS, AND THAT IS #R297'S MEASUREMENT, NOT AN
            OVERSIGHT: a global read's ranges are two contiguous blocks, so there is nothing for the
            concurrency to collapse (A/B on production: 16.4 / 7.8 s plain against 7.8 / 9.4 s warmed).
            This round un-gated it, found no reason to believe it helps, and put the gate back — the
            four seconds a cold hour was spending are `touch`'s, not this one's. */
-        var warm = Promise.resolve();
-        if (band) {
-          var rd = inst.omFileReader;
-          if (rd && rd.setToOmFile && rd.prefetchVariable) {
-            warm = rd.setToOmFile(f).then(function () { return rd.prefetchVariable(variable, st.ranges); }).catch(function () {});
-          }
+        /* (#R310) …and the reader is THIS FILE'S, opened once — see `readerFor`. The open may
+           already have finished: `setIndex` starts it beside the stage-in, before this read exists. */
+        var rh = openReader(f);
+        var rdr = (rh && rh.rd) || inst.omFileReader;
+        /* ⚠ the fallback has to open too. `ensureData` would do it anyway, but `prefetchVariable`
+           below reads through whatever file the reader is currently on. */
+        var warm = (rh && rh.open) ? rh.open.catch(function () {})
+          : (rdr && rdr.setToOmFile ? rdr.setToOmFile(f).catch(function () {}) : Promise.resolve());
+        if (band && rdr && rdr.prefetchVariable) {
+          warm = warm.then(function () { return rdr.prefetchVariable(variable, st.ranges); }).catch(function () {});
         }
         return warm.then(function () {
-          return sdk.ensureData(st, inst.omFileReader, undefined);
+          return sdk.ensureData(st, rdr, undefined);
         }).then(function (data) {
           if (!data || !data.values) return null;
           var g = _grid(st);
           if (!g) return null;
           var frame = { key: key2, variable: variable, file: f, data: data, grid: g, band: band };
-          if (seq === mine) {
+          /* ⚠ (#R310) an ahead read installs its frame QUIETLY: it is a picture nobody has asked
+             for yet, so it must be findable by `sampler()` (that is the whole point) without
+             becoming `held` — 「the one that landed last」 belongs to the hour on screen. */
+          if (ahead) keepFrame(frame, true);
+          else if (seq === mine) {
             keepFrame(frame); loadingKey = '';
             emit('field', { variable: variable, band: band });
           }
           return frame;
         });
-      }, !!bg).catch(function () { return null; });
+      }, !!bg);
+      var q = p.catch(function () { return null; });
+      q._imJob = p._imJob;          /* the handle travels with the promise the joiner receives */
+      p = q;
+      reading[skey] = p;
+      p.then(function () { if (reading[skey] === p) delete reading[skey]; },
+             function () { if (reading[skey] === p) delete reading[skey]; });
+      return p;
     }).catch(function () { return null; });
+  }
+  /* ══ ⚠⚠⚠ (#R310) 「日時変更から…爆速にしろ」 — THE ONLY HOUR THAT IS FAST IS THE ONE IN HAND ═════
+     MEASURED on the built page, at the opening view, one step of the axis: **2,107 / 2,168 /
+     2,204 ms** to the new hour — and an hour already decoded answers in **45 ms** (#R305 measured
+     the same 41–46 ms). Between those two numbers there is nothing to optimise: the wait IS the
+     8.6 MB the new hour costs, moving at whatever the reader's connection gives (2.1–2.5 MB/s on
+     the machine these were taken on). Four rounds have now made those bytes leave earlier, arrive
+     concurrently and stop being fetched twice; what none of them did is spend them BEFORE the
+     reader asks.
+
+     `prefetch` (#R276 追記 / #R290 追記2 / #R305) already asks for exactly the right bytes for
+     exactly the right hour — and then throws away everything except their presence in the block
+     cache, so the step still pays the open, the index walk and the decode. It also could not be
+     allowed to run early, because it went down the ONE reader in front of the picture on screen.
+     With a reader per file (see `readerFor`) neither is true any more:
+
+       · the read of the next hour is a REAL read — it decodes, and `keepFrame` holds the frame, so
+         the step is `frameCovering` → 45 ms;
+       · it starts the moment the current hour is on screen instead of 2,500 ms later, because it
+         can no longer be in front of anything;
+       · and `reading[skey]` means a reader who steps while it is still running JOINS it rather
+         than starting a second read of the same bytes.
+
+     ⚠ ONLY AFTER THE READER HAS ACTUALLY MOVED THE AXIS. #R276 追記's rule is unchanged and it is
+     the honest one: a reader who has not touched the player is not asking for another hour, and
+     8.6 MB is not something to spend on a guess. The caller passes the direction (#R305).
+     ⚠ ONE HOUR, NOT A WINDOW. `touch` stages twelve files because a stage-in is one byte; this
+     moves the whole band, so it is the next hour and nothing else. */
+  function readAhead(variable, i, bounds) {
+    if (!meta || i == null || i < 0 || i >= meta.validTimes.length) return Promise.resolve(null);
+    var band = (bounds && bounds.length === 4) ? bounds : null;
+    var key = stateKey(variable, '', i);
+    if (key && frameCovering(key, band)) return Promise.resolve(null);
+    return load(variable, i, band, true, true);
   }
   /* the band that covers a view, or null when the view is most of the planet (where the whole grid
      is cheaper than pretending otherwise). Padded, so a small pan does not cost a read. */
@@ -957,7 +1244,10 @@
        than the one that might be asked for next. */
     serial(function () {
       var inst = sdk.getProtocolInstance(omSettings());
-      var reader = inst && inst.omFileReader;
+      /* (#R310) this file's own reader, so warming an hour cannot re-point the reader the colour
+         tiles are decoding through — which is the collision the note on `serial` describes. */
+      var rh = openReader(f);
+      var reader = (rh && rh.rd) || (inst && inst.omFileReader);
       if (!reader || !reader.setToOmFile || !reader.prefetchVariable) { delete warmed[mark]; return null; }
       var dom = band ? sdk.domainOptions.find(function (d) { return d.value === DOMAIN; }) : null;
       return reader.setToOmFile(f).then(function () {
@@ -1082,7 +1372,15 @@
        `ready()`, which only a real consumer reaches. The clock moves this axis on every tick
        (`_followClock`) whether or not a weather layer is on, and staging files for a layer nobody
        switched on is bytes nobody asked for. */
-    if (sdk && !(opt && opt.quiet)) touchAround(idx, playing ? TOUCH_PLAY_AHEAD : TOUCH_AHEAD);
+    if (sdk && !(opt && opt.quiet)) {
+      touchAround(idx, playing ? TOUCH_PLAY_AHEAD : TOUCH_AHEAD);
+      /* ⚠ (#R310) …AND THE OPEN, WHICH IS TWO MORE ROUND TRIPS NOBODY WAS OVERLAPPING. The HEAD and
+         the trailer read that `setToOmFile` costs depend on the file name and on nothing else, so
+         they belong here beside the stage-in — 140 ms of coalescing and a whole stage-in ahead of
+         the read that needs them. MEASURED before this line existed: the two HEADs of a step landed
+         at 223 and 227 ms and took 389 and 576 ms, in front of the first byte of data. */
+      try { openReader(fileUrl(idx)); } catch (_) {}
+    }
     if (!(opt && opt.fromClock)) _pushClock();
     if (opt && opt.quiet) { clearTimeout(timeT); timeT = 0; return; }
     emit('index', { index: idx, validTime: meta.validTimes[idx] });
@@ -1388,6 +1686,8 @@
     valueAt: valueAt,
     valueNow: valueNow,
     prefetch: prefetch,
+    /* (#R310) read — not merely warm — the hour the reader is about to step onto */
+    readAhead: readAhead,
     /* (#R305) is the reader waiting for a read right now — see `serial` */
     foregroundBusy: foregroundBusy,
     scale: scale,
