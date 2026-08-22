@@ -204,7 +204,14 @@ test('R209 ④: the right-click menu still opens a deferred simulator', async ({
      said 「Target page… has been closed」, which names the symptom and not one thing about the loader.
      ③ above already carries its own budget for the same reason. */
   test.setTimeout(150_000);
-  const page = app.page;
+  /* ⚠⚠ (#R304) ON A PAGE OF ITS OWN, BECAUSE THAT IS WHAT THE CLAIM IS. 「the file arriving in
+     between」 cannot be shown on the shared page: ③ above asks for all ten modules on it, so by the
+     time this test runs the seismic module is already there and the right-click only proves the menu
+     item exists. ③ also leaves whatever those ten factories mounted on screen — measured here as the
+     diagnostic below firing, «no point on the map is reachable», at all twenty-five probed points,
+     where the older version had simply reported 「#ctx-menu is hidden」 and left the reason unsaid.
+     A fresh page costs one boot and buys back both halves of the test. */
+  const page = await app.freshPage();
   await page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ center: [138.73, 35.36], zoom: 9, pitch: 0, bearing: 0 }));
   await page.waitForTimeout(400);
   /* ⚠ (#R304) RIGHT-CLICK A POINT THAT REALLY IS THE MAP. This clicked the centre of `#map` and
