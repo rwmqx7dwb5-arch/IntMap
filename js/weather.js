@@ -183,6 +183,43 @@ window.IntMapModules.wind=function(HOST){
        them at a time; the last move is the only evidence of which, and +1 is the honest default for
        the first step of a session (the player's own ▶ goes forward). */
     let _lastIdx=-1, _stepDir=1;
+    /* ══ ⚠⚠⚠ (#R314) ONE HOUR AHEAD IS EXACTLY ONE STEP OF HEADROOM ═══════════════════════════
+       #R310 wrote 「ONE HOUR, NOT A WINDOW」 and gave the size of a read as the reason — 8.6 MB for
+       the planet. That reason is about the BAND, not about the COUNT: the band a future hour is
+       actually read at is `nearBand()` (#R305's rule, four lines from the call), and MEASURED on
+       this build that read is **4.5 MB and ~520 ms**, not 8.6 MB. One hour of headroom means a
+       reader who is TRAVELLING — pressing 次へ again as soon as the picture lands — stands at the
+       edge of the window on every second step, which is the alternation the baseline shows:
+           0 / 1,180 / 0 / 1,279 / 0 / 1,724 ms
+       → a second hour, and only on EVIDENCE: at least `AHEAD_MAX` steps in a row in the same
+       direction, inside `TRAVEL_MS`. One step is a look; two in a row is a journey.
+       ⚠ THIS IS THE ONE PLACE THE LAYER SPENDS BYTES NOBODY ASKED FOR, so every guard is on:
+       it is the narrow band and never the planet, it is the background lane (`serial(fn,true)`),
+       it stands down while the reader is waiting for anything (`foregroundBusy`), and it does not
+       run at all for a reader who has not moved twice. `_runN` is reset by a turn or a pause.
+       ⚠⚠⚠ AND IT — ALONE — STILL WAITS FOR THE COLOUR (`afterFieldShown` at the call site).
+       MEASURED with both hours released by the field, against origin/main, six steps a session,
+       four sessions, 700 ms between clicks:
+           the particles' hour   802 → 447 ms   (better)
+           the COLOUR's hour   1,584 → 1,906 ms (WORSE by 322 ms)
+       and 「パーティクルは比較的すぐ表示されるが、背景のカラーが、時間を変えるとなかなか表示され
+       ない」 is a report this project has ALREADY had (#R298). A second hour nobody has asked for
+       must not be paid for out of the picture the reader is waiting to see. The hour they are
+       actually stepping onto is a different matter — that one is certain, and it is released by
+       the field, which is the thing it is a read of. */
+    const TRAVEL_MS=6000, AHEAD_MAX=2;
+    let _runN=0, _runAt=0;
+    function aheadMore(nx){
+      if(!on||_runN<AHEAD_MAX) return;
+      try{
+        /* the reader is waiting for something right now — #R305 wrote this door and nobody had
+           opened it (`foregroundBusy` had no caller until this line) */
+        if(EC().foregroundBusy()) return;
+        const n=EC().count(), n2=Math.max(0,Math.min(n-1,nx+_stepDir));
+        if(n2===nx||n2===EC().index()) return;
+        EC().readAhead(VAR,n2,nearBand()||band());
+      }catch(_){}
+    }
     const _view={x:1,y:0,z:0,th:Math.cos(87*R)};
     function refreshView(){ try{ const c=GE().camera.getCenter(), cla=c.lat*R, clo=c.lng*R;
       _view.x=Math.cos(cla)*Math.cos(clo); _view.y=Math.cos(cla)*Math.sin(clo); _view.z=Math.sin(cla); }catch(_){} }
@@ -556,9 +593,31 @@ window.IntMapModules.wind=function(HOST){
            colour is on screen rather than 2,500 ms later, because with a reader per file it is no
            longer in front of anything, and a step that arrives while it is still running JOINS it.
            ⚠ STILL ONLY WHEN THE AXIS HAS MOVED (`opt.step`) — #R276 追記's rule, unchanged. */
-        afterFieldShown(()=>{ if(!on) return;
-          if(opt&&opt.step){ try{ const n=EC().count(), nx=Math.max(0,Math.min(n-1,EC().index()+_stepDir));
-            if(nx!==EC().index()) EC().readAhead(VAR,nx,nearBand()||band()); }catch(_){} } });
+        /* ══ ⚠⚠⚠ (#R314) IT WAS RELEASED BY THE COLOUR, AND THE COLOUR IS THE SLOW HALF ═══════════
+           「風レイヤーは品質保ったまま、起動から日時変更からすべてに至るまで、爆速にしろ。」(6回目)
+           #R298 put every read this module starts on its own behind `afterFieldShown`, for one
+           stated reason: 「this one points the shared reader at ANOTHER FILE, so started early it
+           does not merely queue in front of the tiles, it takes the reader away from them.」
+           #R310 then gave every file its own reader (`readerFor`, four of them) and pinned the
+           singleton the TILES use, and wrote in its own note that 「with a reader per file it is no
+           longer in front of anything」 — and left the gate standing anyway. THE GATE'S REASON HAS
+           BEEN GONE FOR A ROUND: `load()` reads through `openReader(f).rd`, which is this file's
+           own reader, and only falls back to `inst.omFileReader` when the pool refuses.
+           MEASURED on the built page, opening view, one step, colour suppressed vs not:
+               the particles' own field lands at      513 / 521 / 534 / 537 ms
+               one colour tile (`omProtocol`) takes 1,266 / 1,381 / 1,772 ms
+           so the release fired at ~1.4–1.9 s, +150 ms grace, and the read itself costs ~520 ms —
+           the next hour was ready at about 2.1–2.6 s. A reader stepping every ~1.2 s never reached
+           it, which is exactly the alternation the baseline shows:
+               0 / 1,180 / 0 / 1,279 / 0 / 1,724 / 0 ms
+           — every other step free, every other step paying the whole read.
+           → it is released by the FIELD, which is the thing it is a read of. The read is still in
+           the BACKGROUND lane (`serial(fn,true)`), so it still cannot get in front of anything the
+           reader asks for; what changes is only that it stops waiting for a picture it does not
+           depend on. ⚠ `widen` below stays behind the colour — a rung is a read of the SAME file
+           the tiles are reading, so #R298's argument is still true of it. */
+        if(opt&&opt.step){ try{ if(on){ const n=EC().count(), nx=Math.max(0,Math.min(n-1,EC().index()+_stepDir));
+          if(nx!==EC().index()) EC().readAhead(VAR,nx,nearBand()||band()).then(()=>afterFieldShown(()=>aheadMore(nx))); } }catch(_){} }
         /* (#R297) …and the rest of what is on screen, behind the picture that is already moving */
         setTimeout(widen,0);
         return f;
@@ -704,6 +763,11 @@ window.IntMapModules.wind=function(HOST){
       if(ev.type==='index'||ev.type==='time'||ev.type==='meta') stir(true);
       /* (#R305) the direction of travel, from the axis itself — see `_stepDir` */
       if(ev.type==='index'||ev.type==='time'){ try{ const i=EC().index();
+        /* (#R314) …and how many of those in a row went the SAME way, which is the evidence
+           `aheadMore` asks for. It is counted BEFORE `_stepDir` is updated on the next line,
+           because 「the same direction」 means the one the PREVIOUS step went in. */
+        if(_lastIdx>=0&&i!==_lastIdx){ const d=(i>_lastIdx)?1:-1;
+          _runN=(d===_stepDir&&(Date.now()-_runAt)<TRAVEL_MS)?_runN+1:1; _runAt=Date.now(); }
         if(_lastIdx>=0&&i!==_lastIdx) _stepDir=(i>_lastIdx)?1:-1;
         _lastIdx=i; }catch(_){} }
       if(ev.type==='index'){ touchWindTime(); return; }
@@ -713,6 +777,32 @@ window.IntMapModules.wind=function(HOST){
     /* the forecast axis exists without the tile SDK — fetch it so the legend can name the run and
        the hour the moment the layer is switched on, rather than after a 340 kB script lands */
     try{ (window.IntMapECMWF||{meta:()=>Promise.resolve()}).meta().then(()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} }).catch(()=>{}); }catch(_){}
+
+    /* ══ ⚠⚠⚠ (#R314) THE POINTER ARRIVING ON THE ROW IS THE EARLIEST HONEST SIGNAL ════════════════
+       MEASURED (see the note on `IntMapECMWF.warm`): 1.36 s of a 3.65 s cold switch-on is spent
+       before a single byte of forecast data is asked for — the 340 kB SDK, the first wasm
+       instantiation and the open of the file the axis is already sitting on. None of it depends on
+       the click, and all of it can be done while the reader is still moving the pointer towards the
+       checkbox. `warm()` is idempotent and answers false once it has run, so the listeners take
+       themselves off after the first weather row anyone points at.
+       ⚠ IT IS THE ROW, NOT THE PANEL. A reader scrolling past 「地形」 has not said anything about
+       the weather; a pointer that has come to rest on 「風」 has. The rows are matched by the id of
+       their own checkbox (`dl-wind`, `dl-ec-…`), which is 「THE PUBLIC NAME OF A LAYER IS ITS ROW
+       ID」 — the rule js/weather.js already states where the ECMWF rows are mounted.
+       ⚠ `focusin` IS NOT DECORATION: a reader tabbing to the checkbox never fires `pointerover`,
+       and on a touch screen `pointerover` arrives with the tap — a few hundred milliseconds before
+       `change`, which is still the SDK's script request leaving that much earlier. */
+    try{
+      const WXROW=/^dl-(wind|ec-)/;
+      function _wxWarmOff(){ ['pointerover','focusin'].forEach(n=>{ try{ document.removeEventListener(n,_wxWarmSniff,true); }catch(_){} }); }
+      function _wxWarmSniff(e){
+        const t=e&&e.target; if(!t||!t.closest) return;
+        const row=t.closest('.lyr-row'); if(!row) return;
+        const inp=row.querySelector('input[id^="dl-"]'); if(!inp||!WXROW.test(inp.id)) return;
+        try{ if(EC()&&EC().warm&&EC().warm()) _wxWarmOff(); }catch(_){}
+      }
+      ['pointerover','focusin'].forEach(n=>{ try{ document.addEventListener(n,_wxWarmSniff,true); }catch(_){} });
+    }catch(_){}
 
     window.addEventListener('resize',()=>{ if(on) resize(); });
     if(GE().hasRenderer()){
