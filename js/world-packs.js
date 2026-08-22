@@ -4178,8 +4178,10 @@ window.IntMapModules.worldPacks=function(HOST){
       const CUT_MIN_DEG2=0.02;
       /* ⚠ 1国ぶんの上限。`subtractWarnings` の `CLIP_MAX_V`（60,000）は「単位 − 20 の発令」のための
          天井で、こちらは 1 回が 300 ms を超えることがあった（MEASURED: スイスの輪郭 − 12 単位）。
-         上塗りされている飛び地と係争地はどれもこれよりずっと小さい。 */
-      const CUT_ONE_V=12000;
+         ⚠ (#R308 追記) **12,000 まで下げたらカシミールが落ちた**——パキスタンの輪郭＋8 単位で
+         **18,971 頂点**、そこは z6 で **519 点**の上塗りである。1 回が長いことの本当の対処は
+         予算（`tCut`）と安い順であって、係争地を天井の外に置くことではない。 */
+      const CUT_ONE_V=20000;
       let hatchCutISO=[], hatchCutFC={type:'FeatureCollection',features:[]}, hatchCutKey='', hatchCutN=0;
       /* ⚠ (#R308) WHAT THE SUBTRACTION ANSWERED, PER COUNTRY — 'gone' 覆われた · 'cut' 一部 ·
          'same' 重なっていない · 'no' 引き算できなかった（clipper 未着／頂点が天井超え）· 'alone' 篩で落ちた。
