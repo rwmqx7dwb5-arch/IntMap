@@ -71,7 +71,9 @@ test('there is no drone button anywhere, and the planner still opens', async ({ 
   expect(await page.evaluate(() => !!document.getElementById('btn-tool-drone'))).toBe(false);
   expect(await page.evaluate(() => document.querySelectorAll('[data-proxy="btn-tool-drone"]').length)).toBe(0);
   const r = await page.evaluate(async () => {
-    const ok = await window.IntMapConsole.dispatch({ type: 'tool', name: 'drone' });
+    /* ⚠ (#R304) through `window.IntMapAtlas`, the door the app itself uses: #R224 moved the Atlas
+       kernel behind js/lazy-modules.js, so the bare global is undefined until something asks. */
+    const ok = await window.IntMapAtlas.call('dispatch', { type: 'tool', name: 'drone' });
     return { ok: !!(ok && ok.ok), open: window.IntMapDrone.state().open };
   });
   expect(r.open, 'Atlas still opens the planner directly').toBe(true);

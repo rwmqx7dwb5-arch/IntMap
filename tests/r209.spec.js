@@ -20,6 +20,7 @@
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
 import { lazyModules } from './app-source.mjs';
+import { readFileSync } from 'node:fs';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -46,6 +47,20 @@ const FACTORIES = LAZY.filter((m) => m.factory).map((m) => m.name);
    place — the answer is one extra boot, not a wrong precondition. */
 let VIRGIN = null;
 const untouched = async (app) => (VIRGIN || (VIRGIN = await app.freshPage()));
+
+/* ══ ⚠⚠ (#R304) THE MENU ITEM IS FOUND BY WHAT IT DOES, NOT BY WHAT IT SAYS ═══════════════════
+   ④ below clicked 「Seismic waves from here」 and the entry reads 「Earthquake simulator (set as
+   epicentre)」 — a later round reworded it, and the click then waited out the whole test budget and
+   reported 「Target page … has been closed」, which names the symptom and nothing about the loader.
+   The claim is that the RIGHT-CLICK ENTRY WHICH ASKS THE LOADER FOR `seismic` opens the simulator,
+   so the entry is identified by exactly that: the label of the js/tool-panel.js item whose action
+   calls `IntMapLazy.need('seismic')`. Reword it and this follows; delete the `need` call and this
+   stops finding an entry, which is the failure worth having. */
+const CTX_SEISMIC = (() => {
+  const src = readFileSync(new URL('../js/tool-panel.js', import.meta.url), 'utf8');
+  const m = /label:`\$\{L\('([^']+)'[\s\S]{0,600}?need\('seismic'\)/.exec(src);
+  return m ? m[1] : null;
+})();
 
 test('R209 ①: none of the deferred modules is in the boot bundle, and the boot guard is still clean', async ({ app }) => {
   /* ⚠ (#R304) ON A FRESH PAGE, WHICH IS WHAT THIS TEST'S SUBJECT REQUIRES. The shared page is the
@@ -182,17 +197,44 @@ test('R209 ③: every deferred module actually arrives, registers and publishes'
 test('R209 ④: the right-click menu still opens a deferred simulator', async ({ app }) => {
   /* The end-to-end claim: the door the user actually uses works, with the file arriving in between.
      Anything less tests the loader rather than the feature. */
+  /* ⚠ (#R304) THE TEST'S OWN BUDGET HAS TO COVER THE WAIT IT CONTAINS. The last step below allows 45 s
+     for js/seismic.js (and js/tsunami.js with it) to arrive and mount, and everything before it —
+     the camera move, the menu, two clicks — regularly costs another twenty. The file's default is 60,
+     so a slow fetch ran the TEST out of time and Playwright closed the page mid-click: the report then
+     said 「Target page… has been closed」, which names the symptom and not one thing about the loader.
+     ③ above already carries its own budget for the same reason. */
+  test.setTimeout(150_000);
   const page = app.page;
   await page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ center: [138.73, 35.36], zoom: 9, pitch: 0, bearing: 0 }));
   await page.waitForTimeout(400);
-  const box = await page.locator('#map').boundingBox();
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
+  /* ⚠ (#R304) RIGHT-CLICK A POINT THAT REALLY IS THE MAP. This clicked the centre of `#map` and
+     sometimes found `#ctx-menu` still hidden — a right-click that lands on a panel, a legend or a
+     control opens nothing, and the failure then says 「the menu is hidden」 rather than 「something
+     was in the way」. The shared page has been through every test before this one, so what sits over
+     the centre is not fixed. Asking `elementsFromPoint` first turns a mystery into a diagnosis, and
+     the search is bounded: if NO point on the map is reachable, that is the failure. */
+  const at = await page.evaluate(() => {
+    const m = document.getElementById('map').getBoundingClientRect();
+    for (const fy of [0.5, 0.42, 0.58, 0.35, 0.65]) for (const fx of [0.5, 0.42, 0.58, 0.35, 0.65]) {
+      const x = Math.round(m.left + m.width * fx), y = Math.round(m.top + m.height * fy);
+      const e = document.elementsFromPoint(x, y)[0];
+      if (e && e.tagName === 'CANVAS') return { x, y };
+    }
+    return null;
+  });
+  expect(at, 'no point on the map is reachable — something is covering the canvas').not.toBeNull();
+  await page.mouse.click(at.x, at.y, { button: 'right' });
   await expect(page.locator('#ctx-menu')).toBeVisible({ timeout: 10_000 });
   /* the menu opens with its four groups collapsed — the simulators live under the last one */
   await page.locator('#ctx-menu').getByText(/Analysis & simulation/i).first().click();
-  await page.locator('#ctx-menu').getByText(/Seismic waves from here/i).click();
+  expect(CTX_SEISMIC, 'js/tool-panel.js still has a right-click entry that asks the loader for the seismic module').toBeTruthy();
+  await page.locator('#ctx-menu').getByText(CTX_SEISMIC, { exact: false }).first().click();
   /* the panel only exists once the file has arrived and its factory has run */
-  await expect(page.locator('#sq-panel, .sq-panel, [id*="seismic"]').first()).toBeVisible({ timeout: 45_000 });
+  /* ⚠ (#R304) `#sq-panel`, WHICH IS THE PANEL — the old net `'#sq-panel, .sq-panel, [id*="seismic"]'`
+     also matches `#btn-seismic-sim`, a hidden button that exists at boot, and `.first()` picks it in
+     DOM order. Measured: 87 polls against that button while the panel it was waiting for was already
+     open. js/seismic.js gives the panel that id and nothing else has it. */
+  await expect(page.locator('#sq-panel')).toBeVisible({ timeout: 45_000 });
   const st = await page.evaluate(() => ({ open: !!(window.IntMapSeismic && window.IntMapSeismic.state().open), failed: window.__imLazyCheck.failed }));
   expect(st.failed, 'and it arrived cleanly').toEqual([]);
   expect(st.open, 'the simulator is open').toBe(true);

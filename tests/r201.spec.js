@@ -130,8 +130,15 @@ test('R201 ① the terminator is a per-pixel gradient, and full night is the nig
      same-origin, identical on every run, and makes the ratio below mean exactly what it says. */
   await page.evaluate(() => {
     const m = window.__imap;
+    /* ⚠ (#R304) DIRECTLY UNDER THE EFFECT, NOT AT THE BOTTOM OF THE STYLE. The paragraph above is
+       exactly right — 「What is under the effect is not what is being measured; HOW MUCH OF IT
+       SURVIVES is」 — and putting the grey at the very bottom stopped delivering it once the night
+       side became satellite-only (#R228): the blocked satellite raster sits between the two and
+       measures 36.1, under this test's own premise of 60. Inserted just below the night image, the
+       flat grey IS what the effect is measured against, whatever basemap the feature requires. */
+    const under = m.getLayer('im-night-lights-lyr') ? 'im-night-lights-lyr' : m.getStyle().layers[0].id;
     if (!m.getLayer('r201-bg')) m.addLayer({ id: 'r201-bg', type: 'background',
-      paint: { 'background-color': '#c9c9c9' } }, m.getStyle().layers[0].id);
+      paint: { 'background-color': '#c9c9c9' } }, under);
   });
   await page.waitForTimeout(1200);
 
