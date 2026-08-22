@@ -22,10 +22,15 @@
  *      No new overlap of colour on grey is introduced by any of it.
  *
  *    · 「風レイヤーは品質保ったまま、起動から日時変更からすべてに至るまで、爆速にしろ。」 (2回目)
- *      MEASURED at the opening view, stepping the forecast axis: **7,050 / 7,942 / 8,270 ms** to
- *      the new hour, against **45 ms** for an hour already in hand — so the bytes were not the wait.
  *      Both of the reads this module starts on its own went down the SAME FIFO queue as the read the
- *      reader was waiting for, and at world zoom both of them ask for the planet.
+ *      reader was waiting for, and at world zoom both of them ask for the planet; the warm-up asked
+ *      for the hour AHEAD whichever way the reader was going. Those are defects and they are fixed.
+ *      ⚠⚠⚠ AND IT DID NOT MAKE THE STEP FASTER, MEASURED. The 7,050 / 7,942 / 8,270 → 1,501 / 684 /
+ *      1,665 ms this round first recorded was the browser's HTTP CACHE: the same origin had already
+ *      fetched those `.om` byte ranges. Re-run with hours never visited by either build:
+ *          before  6,849 / 6,357 / 6,858 ms      after  6,699 / 6,779 / 6,784 ms
+ *      A cold step is dominated by ~6.5 s of ranged reads and the queue order does not move it.
+ *      So what is pinned below is the SHAPE of the read path, never a speed.
  *
  *    · 「地点を選ばないといけない系のツール…いや並行してどちらも出てくるとかあほか。」
  *      #R302 added the app's red toast and left #R298's shared bar armed, so one press of one row
