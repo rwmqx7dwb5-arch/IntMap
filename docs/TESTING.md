@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-20): the **core** tier that
 gates a push is **6 spec files / 1.1 min**; the **whole** suite is **65 measured spec files /
 86.5 min** of serial browser time against a ceiling of 86.7 min; and `npm run test:checks` runs
-**154 Node test files** with no browser at all (counted from `package.json` on 2026-08-23; the
+**155 Node test files** with no browser at all (counted from `package.json` on 2026-08-23; the
 line above it is the 2026-08-20 measurement). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -211,14 +211,21 @@ at 20.8, which is larger than most of the effects being looked for.
 
 ### On-demand modules (#R209)
 
-Eight feature modules are no longer in the boot bundle; `js/lazy-modules.js` fetches them when the
-user reaches for the feature. Two suites guard that, and they guard different things:
+**Sixteen** feature modules are no longer in the boot bundle; `js/lazy-modules.js` fetches them when
+the user reaches for the feature. Two suites guard that, and they guard different things:
 
-* `tests/r209-checks.test.mjs` — source level: none of the eight is still in `src/main.js`, every
+(#R209 moved eight, #R224 the Atlas kernel, #R291 the directions panel, and #R311 six more —
+data centres, the aircraft card, the 3-D volume tool, the country comparison, live satellites and
+the satellite panel. ⚠ `js/analysis-panels.js` was a candidate and is NOT one of them: measured,
+two of its five factories build Layers-panel buttons — `#btn-correlate` and `#btn-edu` — at boot,
+so deferring the file would take two buttons off the panel. The rule is the rule: a module may be
+deferred only when nothing a reader can see depends on it having run.)
+
+* `tests/r209-checks.test.mjs` — source level: none of them is still in `src/main.js`, every
   dynamic specifier is a literal (nothing else is visible to `scripts/static-checks.mjs`), every
   entry point awaits the loader, and every `turf.<name>` the source calls is on the object
   `src/vendor.js` publishes.
-* `tests/r209.spec.js` — browser level, and the one that matters: the eight are absent before they
+* `tests/r209.spec.js` — browser level, and the one that matters: they are absent before they
   are asked for, ALL of them arrive when asked, and `window.__imLazyCheck.failed` is empty. The last
   is the loader's own verdict — it checks that the factory registered and that the module's global
   appeared — not the test's.
