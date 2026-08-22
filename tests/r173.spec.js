@@ -29,7 +29,16 @@ const clearDefaultLayers = async (page) => {
 
 const boot = async page => {
   await clearDefaultLayers(page);
-  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  /* ⚠⚠ (#R304) `?rafshim=1`, AS FOURTEEN OTHER SPECS ALREADY DO. This file's subject is a flight
+     model and a camera that are driven ENTIRELY by requestAnimationFrame, and a Playwright page that
+     is not the focused one has rAF throttled to nearly zero — so at two workers the camera stops
+     being rewritten while `S.alt` is driven straight down, and the descent measurement reads a
+     viewpoint that is one ramp step (~230 m) behind. MEASURED: the gap is 0.1 m at every sample when
+     the page gets frames, and ~250 m at two workers; the test passed alone and failed in the suite,
+     three times each way. The shim (index.html, dev-only, never active for a visitor) replaces rAF
+     with a timer, which a background tab does not throttle — the same reason r196/r197/r200/r201/
+     r204/r205 and the Cesium family use it. */
+  await page.goto('/index.html?rafshim=1', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(600);   /* (#R212) the style is already loaded — this tail was 1.5 s in 20 specs */
