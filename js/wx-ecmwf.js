@@ -131,6 +131,63 @@
       + p2(r.getUTCHours()) + '00Z/'
       + t.getUTCFullYear() + '-' + p2(t.getUTCMonth() + 1) + '-' + p2(t.getUTCDate()) + 'T' + p2(t.getUTCHours()) + '00.om';
   }
+  /* ══ ⚠⚠⚠ (#R307) 「起動から日時変更からすべてに至るまで、爆速にしろ。」— IT IS ONE 64 kB REQUEST ═══
+     #R297 / #R298 / #R299 / #R305 all measured the BYTES (18 MB globe → 6 MB band) and all four were
+     measuring the wrong two thirds. Timed request by request, with the body read, a cold hour at the
+     opening view splits like this (production, forecast index 30, never visited):
+
+         2 × metadata request (no Range)                       526 / 522 ms   (in parallel)
+         **1 × 64 kB range at the END of the file            4,130 ms**       ← the file's own tree
+         93 × 64 kB data ranges, 5.63 MB                     ~1,480 ms        (26–100 ms each)
+         decode                                                     1 ms
+         ───────────────────────────────────────────────────────────────
+         total                                                6,135 ms
+
+     `afterNetMs = 1` — none of it is decoding, and only a quarter of it is the data. **The wait is
+     the FIRST byte-range request against an object the CDN has not staged**, which takes four to five
+     seconds while every subsequent range on that same object takes twenty-six. Each forecast hour is
+     its own ~114 MB `.om` file, so every single time step pays it once.
+
+     → touch the file first. One `fetch` for the last 64 kB — which is EXACTLY the block the reader
+     asks for first, so it is a browser-cache hit when the reader gets there — issued the moment the
+     hour is known, outside the SDK's one-reader queue and in parallel with everything else.
+     MEASURED, same page, same view, same axis, the next never-visited hour:
+
+         untouched (index 30)   6,135 ms   ·   trailer request 4,130 ms
+         touched   (index 33)   1,670 ms   ·   trailer request     11 ms      (6.75 MB, MORE data)
+
+     ⚠ THE TOUCH IS NOT A SECOND FETCH PATH. It reads no data and decodes nothing; it exists only so
+     that the request the SDK is about to make is one the CDN has already staged. The reader still
+     reads the same file, the same ranges, the same 9 km samples — 「品質保ったまま」 is literal.
+     ⚠ ONE PER FILE, EVER (`touched`), and 64 kB each, so scrubbing the whole 109-hour axis costs
+     7 MB — against the 6 MB EACH of those hours would cost to actually read.
+     ⚠ AND IT IS DELIBERATELY NOT QUEUED. `serial()` exists because the SDK has one reader and two
+     reads of different files corrupt each other; this touches no reader at all. */
+  var TOUCH_BYTES = 64 * 1024;
+  var touched = Object.create(null);
+  var touchN = 0;
+  function touch(i) {
+    var f = fileUrl(i);
+    if (!f || touched[f]) return false;
+    touched[f] = 1; touchN++;
+    try {
+      fetch(f, { headers: { Range: 'bytes=-' + TOUCH_BYTES } })
+        .then(function (r) { return r.arrayBuffer(); })
+        .catch(function () { delete touched[f]; });
+    } catch (_) { delete touched[f]; return false; }
+    return true;
+  }
+  /* ⚠ THE HOURS AROUND IT, AND WHY IT IS TWO AHEAD RATHER THAN ONE. #R305's warm-up already stages
+     the next hour — correctly, in the direction the axis is moving — but it waits for the axis to be
+     STILL for 2.5 s and then queues behind the reader. A reader who steps every second therefore
+     never gets it, and a reader who turns round gets it in the wrong direction. Staging is 64 kB and
+     no reader, so it can be done for both neighbours and two ahead: 256 kB buys about eight seconds
+     of head start along the axis, in whichever direction the reader is actually going. */
+  var _touchDir = 1;
+  function touchAround(i) {
+    touch(i);
+    touch(i + _touchDir); touch(i + 2 * _touchDir); touch(i - _touchDir);
+  }
   function omUrl(variable, extra, i) {
     var f = fileUrl(i);
     if (!f) return '';
@@ -316,13 +373,69 @@
      nothing on the map (`legend()` thins the stops it DRAWS, see below). */
   var WINDY_TEMP = rampFrom(TEMP_ANCHORS, 0.05);
 
+  /* ══ ⚠⚠⚠ (#R307) THE READ EVICTS ITS OWN BLOCKS WHILE IT IS STILL USING THEM ═══════════════════
+     MEASURED by patching `fetch` and reading the Range headers of one cold band read (`nearBand`,
+     u+v) at the opening view:
+
+         195 requests · EVERY ONE OF THEM EXACTLY 64 kB · 12.19 MB transferred
+         …covering only TWO contiguous spans:  83.05–91.55 MB (8.50 MB, the data)
+                                               113.80–113.93 MB (0.13 MB, the file's tree)
+         **57 of the 195 were the SAME RANGE FETCHED TWICE**
+
+     The duplicates come from one object nobody had looked at: the SDK's block cache, which
+     `FileReader` constructs as `new BlockCache(64 * 1024, 128)` — 64 kB blocks and **128 of them,
+     i.e. an 8 MB ceiling** — against an 8.63 MB working set. The read therefore throws away blocks it
+     has not finished with and downloads 3.5 MB of them again.
+
+     → the same 64 kB block, with room for **512 of them (32 MB)**. The block size is deliberately NOT
+     raised: `blockSize()` IS the HTTP request size, so a bigger block over-fetches at both ends of
+     every span, and that was measured too — 512 kB blocks turned 6.31 MB into **9.00 MB** for an 11 %
+     time saving, which is a worse trade than it looks. What is wrong here is the CEILING, not the
+     granularity, and the ceiling costs nothing to raise (an LRU only fills to what is used; a
+     whole-globe read is ~16 MB, which now fits).
+     ⚠ THE RASTER TILES SHARE THIS READER: `omProtocol` builds a state from the tile's own bounds and
+     reads it through the same `ensureData`, so a bigger block would have made every tile over-fetch
+     as well. Keeping 64 kB keeps that path exactly as it was.
+     ⚠ The interface is the one the SDK's cached reader calls — `keyKind`, `blockSize`, `size`, `get`,
+     `prefetch`, `clear` — because the SDK does not export its own class. Same LRU, different bound. */
+  function blockCache(blockBytes, maxBlocks) {
+    var map = new Map(), inflight = new Map();
+    return {
+      keyKind: 'bigint',
+      blockSize: function () { return blockBytes; },
+      size: function () { return Promise.resolve(undefined); },
+      get: function (k, make) {
+        var hit = map.get(k);
+        if (hit) { map.delete(k); map.set(k, hit); return Promise.resolve(hit); }
+        var p = inflight.get(k);
+        if (!p) {
+          p = Promise.resolve().then(make);
+          inflight.set(k, p);
+          p.then(function (v) {
+            if (map.size >= maxBlocks) { var old = map.keys().next().value; if (old !== undefined) map.delete(old); }
+            map.set(k, v);
+          }, function () {}).then(function () { inflight.delete(k); });
+        }
+        return p;
+      },
+      prefetch: function (k, make) {
+        if (map.has(k) || inflight.has(k)) return Promise.resolve();
+        return this.get(k, make).catch(function () {});
+      },
+      clear: function () { map.clear(); inflight.clear(); }
+    };
+  }
+  var BLOCK_BYTES = 64 * 1024, BLOCK_MAX = 512;
   var settings = null;
   function omSettings() {
     if (settings || !sdk) return settings;
     var base = sdk.defaultOmProtocolSettings;
     var scales = Object.assign({}, sdk.COLOR_SCALES_WITH_ALIASES || base.colorScales,
       { wind: WINDY_WIND, temperature: WINDY_TEMP });
-    settings = Object.assign({}, base, { colorScales: scales });
+    /* ⚠ THE FIRST CALLER WINS — `getProtocolInstance` says so itself, and every call in this app
+       passes this one memoised object, so the reader is built with this cache and no other. */
+    settings = Object.assign({}, base, { colorScales: scales,
+      fileReaderConfig: Object.assign({}, base.fileReaderConfig, { cache: blockCache(BLOCK_BYTES, BLOCK_MAX) }) });
     return settings;
   }
   /* ══ ⚠⚠⚠ (#R288) THE FLAG ONLY GOES UP IF THE REGISTRATION ACTUALLY HAPPENED ═══════════════════
@@ -380,6 +493,14 @@
     var s = loadSDK().then(function (t) { registerProtocol(); return t; });
     var m = fetchMeta(metaDue());
     if (meta) { m.catch(function () {}); m = Promise.resolve(meta); }   /* an axis in hand does not wait */
+    /* ⚠⚠ (#R307) THE EARLIEST MOMENT A **CONSUMER** KNOWS THE FILE NAME. The stage-in cannot start
+       before the axis has landed, and it must not start for a reader who has only asked for the axis:
+       `fetchMeta` runs at boot for the time slider and the news timeline whether or not a weather
+       layer is ever switched on (js/weather.js, js/news-timeline.js both say so), so warming from
+       THERE would put 256 kB on every session's boot for a layer nobody turned on. `ready()` is
+       reached only from `load()` and `addField`, i.e. from something that is about to read — and it
+       runs in parallel with the 340 kB SDK download, which is the overlap 「起動から」 can have. */
+    m.then(function () { touchAround(idx); }, function () {});
     return Promise.all([s, m]).then(function (r) { return r[0]; });
   }
 
@@ -574,6 +695,11 @@
     var key = stateKey(variable, '', i);
     var have = key && frameCovering(key, band);
     if (have) return Promise.resolve(have);
+    /* ⚠ (#R307) every read path — the particles, the readout, the drone forecast — pays the cold
+       stage-in once per file, so every read path warms it first. Free where it has already happened.
+       ⚠ `meta` may not be here yet; `fileUrl` answers '' then and `touch` does nothing. `ready()`
+       below warms it the moment the axis lands. */
+    touch(i == null ? idx : i);
     var mine = ++seq;
     return ready().then(function () {
       var key2 = stateKey(variable, '', i);          /* meta may have arrived meanwhile */
@@ -605,6 +731,11 @@
            rule stated below for the reads that DID complete; which hour is current is decided by
            the caller through `sampler()`, and that is keyed on the hour. */
         if (seq !== mine) return frames.filter(function (x) { return x.variable === variable; })[0] || null;
+        /* ⚠ (#R307) THE GLOBE STILL DOES NOT GET THIS, AND THAT IS #R297'S MEASUREMENT, NOT AN
+           OVERSIGHT: a global read's ranges are two contiguous blocks, so there is nothing for the
+           concurrency to collapse (A/B on production: 16.4 / 7.8 s plain against 7.8 / 9.4 s warmed).
+           This round un-gated it, found no reason to believe it helps, and put the gate back — the
+           four seconds a cold hour was spending are `touch`'s, not this one's. */
         var warm = Promise.resolve();
         if (band) {
           var rd = inst.omFileReader;
@@ -769,6 +900,7 @@
        the life of the page. The mark stays up when the bytes actually arrive; a failure un-marks
        itself, so the next step for that hour and band may warm it again. */
     warmed[mark] = 1;
+    touch(i);   /* (#R307) …and the stage-in first, so the warm-up itself is not the one that pays it */
     /* ⚠ THROUGH THE QUEUE, LIKE EVERY OTHER READ. This is the call that caught the collision above:
        warming the next hour re-points the shared reader, and doing it beside a load of the current
        hour is how `valueNow` came back null in production. Queued, it starts only once whatever is
@@ -893,7 +1025,15 @@
     var n = meta.validTimes.length;
     i = Math.max(0, Math.min(n - 1, i | 0));
     if (i === idx && idxSet) return;
+    /* ⚠ (#R307) BEFORE ANYTHING ELSE — the four seconds this saves are spent on a request nobody has
+       issued yet, so the earlier it leaves the more of it overlaps with the rest of the step. */
+    if (idxSet && i !== idx) _touchDir = (i > idx) ? 1 : -1;
     idx = i; idxSet = true; _prevValid = meta.validTimes[idx] || '';
+    /* ⚠ `sdk` IS THE TEST FOR 「somebody is actually reading this model」 — it is only ever loaded by
+       `ready()`, which only a real consumer reaches. The clock moves this axis on every tick
+       (`_followClock`) whether or not a weather layer is on, and staging files for a layer nobody
+       switched on is bytes nobody asked for. */
+    if (sdk && !(opt && opt.quiet)) touchAround(idx);
     if (!(opt && opt.fromClock)) _pushClock();
     if (opt && opt.quiet) { clearTimeout(timeT); timeT = 0; return; }
     emit('index', { index: idx, validTime: meta.validTimes[idx] });
@@ -1215,6 +1355,8 @@
     off: function (f) { var i = listeners.indexOf(f); if (i >= 0) listeners.splice(i, 1); return this; },
     /* test seam — never called by the app */
     _settings: omSettings,
-    _state: function () { return { meta: meta, idx: idx, playing: playing, held: held ? held.key : null, variable: held ? held.variable : null, frames: frames.length }; }
+    /* (#R307) `touched` — how many forecast files have had their cold stage-in paid ahead of the
+       reader. It is the number the wind's speed is made of, so it is printed rather than assumed. */
+    _state: function () { return { meta: meta, idx: idx, playing: playing, held: held ? held.key : null, variable: held ? held.variable : null, frames: frames.length, touched: touchN }; }
   };
 })();

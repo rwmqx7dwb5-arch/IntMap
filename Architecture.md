@@ -50,6 +50,10 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   `maplibregl` / `turf` / `topojson` / `mlcontour` / `supabase` / `sb` を同じグローバル名で
   再公開するので、呼び出し側は1行も変わらない。KaTeX と html2canvas は動的 import で別チャンク。
   `package.json` の `dependencies` がアプリに入る依存の唯一のリスト。
+  ⚠ **他のモジュールが自分で動的 import する依存も、そこに宣言する。** 警報レイヤーの
+  `polygon-clipping`（「発表なし」の形＝区分 − 発表 を計算する。`js/world-packs.js` が最初に
+  レイヤーを点けたときに別チャンクで取る）は turf の下にも入っているが、**推移的に届いているものは
+  依存ではない**——上流が版を変えれば黙って消える。
 - **Supabase の接続先は `src/vendor.js`**（`window.SUPABASE_URL` / `window.SUPABASE_ANON_KEY`）。
   `admin.html` はバンドラを通らない別ページなので、同じ2つを自分のインライン script で持つ。
   どちらも publishable(anon) キー＝**公開前提**で、保護は RLS が行う（§17）。

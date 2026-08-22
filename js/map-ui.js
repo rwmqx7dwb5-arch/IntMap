@@ -774,10 +774,10 @@ window.IntMapModules.layerSidebar=function(HOST){
        nothing about it to notice. The comment two blocks up said so in as many words («from here the
        subject is «where I am looking»»), which is a decision the reader never made.
 
-       ⚠ A POINT THE READER HAS ALREADY CHOSEN IS NOT ASKED FOR TWICE — a pin they dropped, or the point
-       they picked for the previous tool — but only while it is ON SCREEN. A pin on the other side of
-       the world is not «the point I mean by this tool», and the current view is the one test that
-       separates the two without inventing a rule about how old a choice may be.
+       ⚠⚠ #R298 ALSO WROTE 「a point the reader has already chosen is not asked for twice — a pin they
+       dropped, or the point they picked for the previous tool — but only while it is on screen」, AND
+       #R307 REMOVED THAT: it is the 「そのあとのやつも全部その地点で強制開始」 the reader named. See the
+       note beside `_askPoint` below; there is no remembered point and no pin fallback in this file.
        ══ ⚠⚠⚠ (#R299) …AND THE ROWS THAT DO NOT NEED ONE ARE NOT ASKED AT ALL ════════════════════════
        「いやあたらしいピルUI勝手に作るな。既存のやつを、いきなり勝手に地図中心を選択しているという前提で
          勝手に計算して結果を表示するのを辞めろってこと。まずは地点を選ばせろってこと。最初に地点選ぶ必要
@@ -802,21 +802,24 @@ window.IntMapModules.layerSidebar=function(HOST){
        「観測地点は地図の中心」 above its numbers — but the numbers were still computed, still printed and
        still drawn on the map for a coordinate nobody chose. It is a fourth `_askPoint` row now, and
        js/sims.js treats 「no point」 as a real state instead of falling back to the camera. */
-    let _picked=null;                       /* the point the reader last chose here, this session */
-    const _inView=(ll)=>{ try{ const b=GE().camera.getBounds();
-        const s=b.getSouth(), n=b.getNorth(); let w=b.getWest(), e=b.getEast();
-        if(!(ll.lat>=s&&ll.lat<=n)) return false;
-        let x=+ll.lng; if(e<w) e+=360; if(x<w) x+=360;                /* a view across the antimeridian */
-        return x>=w&&x<=e; }catch(_){ return false; } };
-    const _chosenLL=()=>{
-      if(_picked&&isFinite(_picked.lng)&&_inView(_picked)) return { lng:_picked.lng, lat:_picked.lat };
-      try{ const ps=HOST.userPins; if(ps&&ps.length){ const p=ps[ps.length-1];
-        if(p&&isFinite(p.lng)&&isFinite(p.lat)&&_inView(p)) return { lng:+p.lng, lat:+p.lat }; } }catch(_){}
-      return null; };
+    /* ══ ⚠⚠⚠ (#R307) 「一回地点選んだらそのあとのやつも全部その地点で強制開始とかあほか。」 ═══════
+       #R298 wrote 「A POINT THE READER HAS ALREADY CHOSEN IS NOT ASKED FOR TWICE — a pin they dropped,
+       or the point they picked for the previous tool — but only while it is ON SCREEN」, and that
+       second half is what the reader has now rejected. `_picked` was remembered for the session, so
+       the FIRST tool asked and every tool after it opened silently on that coordinate: 「ここからの
+       星空」 answered for wherever the reachable-area origin happened to be, and nothing on screen
+       said which point it had used. A point chosen for one question is not the answer to the next
+       one, and 「まずは地点を選ばせろ」 has now been said four times.
+       → A ROW IN THIS LIST ALWAYS ASKS. There is no remembered point and no pin fallback left here,
+         so there is no door for a coordinate nobody chose FOR THIS TOOL to come back through.
+       ⚠ NOTHING IS REMOVED FROM THE TOOLS THEMSELVES. Every one of them still opens on a named point
+         from the doors that HAVE one — the map's right-click item (the coordinate it was opened on),
+         Atlas, and each panel's own ◎ 「地点を変える…」 button. What is gone is the guess.
+       ⚠ AND THE ROWS THAT DO NOT NEED A POINT ARE STILL NOT ASKED (#R299): `sim.terrainWater` opens
+         on the current view rectangle, and the four rows below are the only callers of this. */
     function _askPoint(run,id){
-      const fire=(ll)=>{ _picked={ lng:+ll.lng, lat:+ll.lat };
+      const fire=(ll)=>{
         try{ return Promise.resolve(run({ lng:+ll.lng, lat:+ll.lat })); }catch(_){ return Promise.resolve(false); } };
-      const had=_chosenLL(); if(had) return fire(had);
       const P=window.IntMapPick;
       const name=(()=>{ try{ const t=TOOLS.find(x=>x.id===id); return t?t.label():''; }catch(_){ return ''; } })();
       return new Promise(resolve=>{
