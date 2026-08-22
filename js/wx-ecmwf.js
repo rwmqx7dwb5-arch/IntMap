@@ -344,8 +344,43 @@
     return ok;
   }
   /* everything a layer needs, in one await */
+  /* ══ ⚠⚠⚠ (#R302) TWO ROUND TRIPS THAT NEED NOTHING FROM EACH OTHER WERE IN SERIES ════════════
+     「風レイヤーは品質保ったまま、起動から日時変更からすべてに至るまで爆速にしろ。」
+     `loadSDK()` fetches a 340 kB third-party bundle from a CDN; `fetchMeta()` fetches a 3 kB JSON
+     from the data host. THE COMMENT ON `fetchMeta` ITSELF SAYS 「The metadata below needs no SDK at
+     all」 — and this still waited for the bundle before it asked for the JSON. So every layer that
+     was switched on paid script-latency PLUS metadata-latency end to end, when the two can overlap
+     and cost only the slower of them. Nothing about either request changes; what changes is that
+     they leave at the same time.
+     ⚠ `registerProtocol()` still runs THE MOMENT THE SDK LANDS rather than after the metadata —
+     it is the SDK it needs, and `addField` calls it directly on its own path (#R288). */
+  /* ⚠⚠ (#R302) …AND `fetchMeta(force)` HAD NO CALLER THAT PASSED `force`. `metaP` memoises the
+     first fetch for the life of the page, so the branch below it — 「A new model run re-bases the
+     whole axis」, which exists precisely to move the reader onto the new run at the same wall-clock
+     instant — was UNREACHABLE. A tab left open across a model run kept offering the run it booted
+     on, and its 「now」 drifted away from the axis by an hour at a time.
+     → the run is re-asked once the metadata is older than META_MAX_AGE. It is asked IN THE
+     BACKGROUND when an axis is already in hand: a freshness check that makes the reader wait for a
+     round trip is the opposite of what this round is for, and the re-based axis arrives the way
+     every other axis change arrives — as the `meta` event the branch already emits. */
+  var META_MAX_AGE = 900000;              /* 15 min */
+  var metaRefreshedAt = 0;
+  function metaDue() {
+    if (!meta || !meta.fetchedAt) return false;               /* nothing in hand: the cold path asks anyway */
+    var t = Date.now();
+    if (t - meta.fetchedAt <= META_MAX_AGE) return false;
+    /* ⚠ ONCE PER WINDOW, NOT ONCE PER READ. `meta.fetchedAt` only moves on a SUCCESSFUL fetch, so
+       without this stamp a host that is down would be re-asked by every `load()` — and each answer
+       re-emits `meta`, which js/weather.js reads as 「the axis moved」 and reloads the field for. */
+    if (t - metaRefreshedAt <= META_MAX_AGE) return false;
+    metaRefreshedAt = t;
+    return true;
+  }
   function ready() {
-    return loadSDK().then(function (s) { registerProtocol(); return fetchMeta().then(function () { return s; }); });
+    var s = loadSDK().then(function (t) { registerProtocol(); return t; });
+    var m = fetchMeta(metaDue());
+    if (meta) { m.catch(function () {}); m = Promise.resolve(meta); }   /* an axis in hand does not wait */
+    return Promise.all([s, m]).then(function (r) { return r[0]; });
   }
 
   /* ── the decoded field ────────────────────────────────────────────────────────────────────────
@@ -692,6 +727,14 @@
     var band = (bounds && bounds.length === 4) ? bounds : null;
     var mark = f + (band ? ('#' + band[1] + ',' + band[3]) : '');
     if (!f || warmed[mark]) return;
+    /* ⚠⚠ (#R302) THE FLAG GOES UP BEFORE THE WORK — SO IT HAS TO COME DOWN WHEN THE WORK FAILS.
+       This is #R288's own lesson (「the flag only goes up if the registration actually happened」)
+       one function along, with the sign reversed: `warmed[mark]` is latched here, ahead of an
+       asynchronous read, and NOTHING ever cleared it. A warm-up that threw — a ranged request that
+       came back empty, a reader that was not there yet — therefore recorded itself as done, and the
+       step it exists to make instant paid the full cold read with no second attempt possible for
+       the life of the page. The mark stays up when the bytes actually arrive; a failure un-marks
+       itself, so the next step for that hour and band may warm it again. */
     warmed[mark] = 1;
     /* ⚠ THROUGH THE QUEUE, LIKE EVERY OTHER READ. This is the call that caught the collision above:
        warming the next hour re-points the shared reader, and doing it beside a load of the current
@@ -701,7 +744,7 @@
     serial(function () {
       var inst = sdk.getProtocolInstance(omSettings());
       var reader = inst && inst.omFileReader;
-      if (!reader || !reader.setToOmFile || !reader.prefetchVariable) return null;
+      if (!reader || !reader.setToOmFile || !reader.prefetchVariable) { delete warmed[mark]; return null; }
       var dom = band ? sdk.domainOptions.find(function (d) { return d.value === DOMAIN; }) : null;
       return reader.setToOmFile(f).then(function () {
         return Promise.all((variables || []).map(function (v) {
@@ -716,7 +759,7 @@
           } catch (_) { return null; }
         }));
       });
-    }).catch(function () {});
+    }).catch(function () { delete warmed[mark]; });          /* (#R302) …and a failure is not 「warmed」 */
   }
 
   /* ── time ─────────────────────────────────────────────────────────────────────────────────────*/
@@ -1041,6 +1084,26 @@
   }
 
   /* ── formatting ───────────────────────────────────────────────────────────────────────────────*/
+  /* ══ ⚠⚠ (#R302) `toLocaleString` BUILDS A FORMATTER EVERY TIME IT IS CALLED ════════════════════
+     `Date.prototype.toLocaleString(locale, options)` is specified as 「construct an
+     Intl.DateTimeFormat from these arguments and format with it」, and constructing one is where
+     the cost of this function is: it resolves the locale, the calendar, the numbering system and
+     the time zone. The forecast axis publishes ~109 valid times and the weather legends name EVERY
+     ONE of them in a `<select>` (js/weather.js `_timeUI`), so one redraw of one legend built ~109
+     of these — and the legend is redrawn on the load, on the answer, and on every `time` / `play` /
+     `meta` event. The point readout calls it under the cursor as well.
+     A formatter is a pure function of [locale, options], so the same one answers for every hour on
+     the axis. NOTHING ABOUT THE OUTPUT CHANGES — same locale, same options, same string.
+     ⚠ `o` always carries month/day/hour/minute (`opt` only overrides), so `ToDateTimeOptions` adds
+     no defaults and `DateTimeFormat(locale, o).format(d)` is `d.toLocaleString(locale, o)` exactly.
+     ⚠ AN UNPARSEABLE INSTANT STILL PRINTS WHAT IT PRINTED. `format()` THROWS on an invalid Date
+     where `toLocaleString` answers 「Invalid Date」, and that string is what a reader would have
+     seen, so the invalid case is left on the old path rather than turned into something new. */
+  var _dtf = Object.create(null);
+  function _fmtOf(locale, o) {
+    var k = locale + '|' + JSON.stringify(o);
+    return _dtf[k] || (_dtf[k] = new Intl.DateTimeFormat(locale, o));
+  }
   function fmt(iso, opt) {
     if (!iso) return '';
     try {
@@ -1048,7 +1111,10 @@
       if (H.userTZ && H.userTZ !== 'auto') tz = H.userTZ;
       var lang = H.lang || 'en';
       var o = Object.assign({ timeZone: tz, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }, opt || {});
-      return new Date(tms(iso)).toLocaleString(window.IntMapLang.locale(lang, 'en-GB'), o);
+      var loc = window.IntMapLang.locale(lang, 'en-GB');
+      var d = new Date(tms(iso));
+      if (!isFinite(d.getTime())) return d.toLocaleString(loc, o);
+      return _fmtOf(loc, o).format(d);
     } catch (_) { return iso; }
   }
 

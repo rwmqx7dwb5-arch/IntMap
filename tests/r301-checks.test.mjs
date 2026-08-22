@@ -124,16 +124,18 @@ test('#R301 ⑦ the round is in DEV-NOTES and the node-tier size is stated corre
   const m = /\*\*(\d+) Node test files\*\*/.exec(read('docs/TESTING.md'));
   assert.ok(m, 'docs/TESTING.md still states how large the node tier is');
   assert.equal(Number(m[1]), n, 'and states the size the list actually has');
-  /* ⚠ (#R304) BOTH BUILD STAMPS NAME THE CURRENT ROUND — WHICHEVER ROUND THAT IS. This read
-     `='R301'` literally, which is the shape tests/r175.spec.js already warns about in as many words:
-     「pinning the round that happened to be current when it was written makes it fail on every
-     subsequent round instead」. It did — the very next round. The rule (#R174) is that the two stamps
-     agree with each other and with the newest round in DEV-NOTES, which is what they are for. */
+  /* ⚠ (#R302) BOTH STAMPS NAME **THIS** ROUND, AND 「THIS」 IS NOT A LITERAL. These two lines read
+     `='R301'` and `-R301'`, which every subsequent round breaks by doing the one thing #R174 requires
+     of it — bumping them. The relation is what #R174 actually wrote down: the two stamps name the
+     SAME round, and it is the newest round DEV-NOTES has. */
   const idx = read('index.html');
-  const newest = Math.max(...[...dn.matchAll(/^## R(\d{2,4}) /gm)].map((m) => +m[1]));
-  assert.ok(newest > 0, 'DEV-NOTES has a newest round heading');
-  assert.match(idx, new RegExp(`window\.__imBuild='R${newest}';`), 'the first build stamp names the newest round');
-  assert.match(idx, new RegExp(`window\.INTMAP_BUILD='[0-9-]+-R${newest}';`), '…and so does the second');
+  const a = /window\.__imBuild='R(\d+)';/.exec(idx);
+  const b = /window\.INTMAP_BUILD='[0-9-]+-R(\d+)';/.exec(idx);
+  assert.ok(a, 'the first build stamp names a round');
+  assert.ok(b, '…and so does the second');
+  assert.equal(a[1], b[1], 'and they name the SAME round — the pair #R174 found three rounds apart');
+  const newest = Math.max(...[...dn.matchAll(/^## R(\d+)/gm)].map((x) => Number(x[1])));
+  assert.equal(Number(a[1]), newest, 'and it is the round DEV-NOTES leads with');
   /* and the new script is a tracked, documented file rather than a stray */
   assert.ok(existsSync(join(ROOT, 'scripts/check-test-list.mjs')), 'the guard exists');
   assert.ok(readdirSync(join(ROOT, 'scripts')).includes('check-test-list.mjs'), '…in scripts/');

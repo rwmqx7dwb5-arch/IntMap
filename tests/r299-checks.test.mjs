@@ -268,21 +268,30 @@ test('R299 ⑨ the extra 「use the map centre」 pill is gone, and the shared b
   assert.ok(/im-pick-bar/.test(read('js/map-pick.js')), 'js/map-pick.js still owns the bar');
 });
 
-test('R299 ⑨ only the three tools that cannot open without a point are asked', () => {
+/* ⚠ (#R302) THE LIST MOVED, AND THE CHECK HAD THE LIST IN IT. This named `sim.sun` as a tool that
+   must NOT ask — 「its panel can name a point itself」 — and the panel then answered for the camera's
+   centre, printed 「観測地点は地図の中心」 and drew building shadows for a place nobody chose. The
+   reader's reply: 「いきなり勝手に地図中心を選択しているという前提で勝手に計算して結果を表示するのを
+   辞めろ。まずは地点を選ばせろ」. So `sim.sun` is now in the first group and the SECOND half of the same
+   sentence — 「最初に地点選ぶ必要のないものまで全部最初に選ばせようとするな」 — is what keeps
+   `sim.terrainWater` in the second. The rule is the DISTINCTION, not either list: a tool whose whole
+   answer is a function of one coordinate asks first; a tool that has something to show without one
+   opens. */
+test('R299 ⑨ a tool whose answer IS a point asks first, and no other tool does', () => {
   const code = noComments(read('js/map-ui.js'));
   const asked = (code.match(/_askPoint\(/g) || []).length;
   /* one definition plus one call per row that needs it */
-  assert.ok(asked >= 3, '_askPoint is still used');
-  for (const id of ['sim.los', 'sim.reach', 'sim.nightSky']) {
+  assert.ok(asked >= 4, '_askPoint is still used');
+  for (const id of ['sim.los', 'sim.reach', 'sim.nightSky', 'sim.sun']) {
     const i = code.indexOf("'" + id + "'");
     assert.ok(i > 0, id + ' is still a row');
     assert.ok(/_askPoint/.test(code.slice(i, i + 400)), id + ' asks for a point');
   }
-  for (const id of ['sim.terrainWater', 'sim.sun']) {
+  for (const id of ['sim.terrainWater', 'sim.drone']) {
     const i = code.indexOf("'" + id + "'");
     assert.ok(i > 0, id + ' is still a row');
     assert.ok(!/_askPoint/.test(code.slice(i, i + 400)),
-      id + ' opens straight away — its panel can name a point itself');
+      id + ' opens straight away — it has something to show before any point is named');
   }
 });
 
@@ -410,5 +419,63 @@ test('R299 追記 ⑭ the normalised legend note is no longer than the agency on
   const longest = (lit) => Math.max(...(lit.match(/'((?:[^'\\]|\\.)*)'/g) || ["''"]).map((a) => a.length - 2));
   assert.ok(longest(one[0]) <= longest(two[0]) + 20,
     'and it is not materially longer than the note that measured one line');
+});
+
+/* ── ⑰ 「簡潔に」 is true in a LANGUAGE or it is not true ─────────────────────────────────────── */
+test('R299 追記3 ⑰ both legend notes fit one line in all NINE languages, not just English', () => {
+  /* MEASURED on production at the panel's fixed 330 px content width: en and jp were one line while
+     **de wrapped at 339 px, fr at 334 and ru at 414**. Shortening only the English is answering the
+     instruction in the language it happened to be discussed in (CLAUDE.md §3-5).
+     The bound is a WIDTH MODEL, not a character count: a CJK ideograph, kana or Hangul syllable takes
+     about two Latin advances at this size. Production's own numbers calibrate it — the German agency
+     note is 66 units and measured 304 px, i.e. ≈4.6 px/unit, so the 330 px box holds ≈71 units. */
+  const WIDE = /[ᄀ-ᅟ⺀-꓏ꥠ-꥿가-힣豈-﫿︐-︙︰-﹯＀-｠￠-￦]/;
+  const units = (s) => [...s].reduce((n, ch) => n + (WIDE.test(ch) ? 2 : 1), 0);
+  const LIMIT = 68;                       /* ≈313 px — one line with room, on the 330 px box */
+  const wp = WP();
+  const five = (head) => {
+    const i = wp.indexOf("L('" + head);
+    assert.ok(i > 0, 'the note beginning ' + head + ' is still one L() call');
+    const seg = wp.slice(i, i + 900), out = [];
+    for (const m of seg.matchAll(/'((?:[^'\\]|\\.)*)'/g)) { out.push(m[1]); if (out.length === 5) break; }
+    assert.equal(out.length, 5, 'five positional arguments');
+    return out;
+  };
+  const EXTRA = { fr: 'ui.fr.js', ko: 'ui.ko.js', zh: 'ui.zh.js', 'zh-hans': 'ui.zh-hans.js' };
+  for (const head of ['IntMap’s own conversion', 'Each agency’s own colours']) {
+    const args = five(head);
+    const rows = [['en', args[0]], ['jp', args[1]], ['de', args[2]], ['ru', args[3]], ['es', args[4]]];
+    const key = args[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    for (const [code, f] of Object.entries(EXTRA)) {
+      const m = read('js/locales/' + f).match(new RegExp('"' + key + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"'));
+      assert.ok(m, code + ' still translates: ' + args[0].slice(0, 40));
+      rows.push([code, m[1]]);
+    }
+    for (const [code, s] of rows) {
+      assert.ok(units(s) <= LIMIT,
+        code + ' wraps this legend note (' + units(s) + ' > ' + LIMIT + '): ' + s.slice(0, 60));
+    }
+  }
+});
+
+/* ── ⑯ the fine NUTS tier covers BOTH levels, because MeteoAlarm issues at either ───────────── */
+test('R299 追記2 ⑯ the NUTS upgrade fetches LEVL_2 as well as LEVL_3', () => {
+  const code = noComments(alertsModule(WP()));
+  const i = code.indexOf('function askNutsFine(');
+  assert.ok(i > 0, 'askNutsFine is still one function');
+  const f = code.slice(i, i + 1200);
+  /* MEASURED on production: Rome's centre sits inside Lazio's HOLE, and that hole is the Vatican
+     inflated by the 20M generalisation from 0.44 km² to 73.93 km² — 323 grid points with nothing
+     painted at all. Italy is the only country MeteoAlarm issues for at NUTS-2, so LEVL_3's fine
+     tier never reached it. The relation: whatever level a country's units come from, the upgrade
+     has to offer a finer build of it. */
+  assert.ok(/03M_2021_4326_LEVL_3/.test(f), 'the fine tier still upgrades LEVL_3');
+  assert.ok(/03M_2021_4326_LEVL_2/.test(f), '…and LEVL_2, which is where Italy lives');
+  /* and the FLOOR is untouched — a finer floor is what #R297 measured and rejected */
+  const g = code.indexOf('function nutsGeo(');
+  const n = code.slice(g, g + 500);
+  assert.ok(/20M_2021_4326_LEVL_2/.test(n) && /20M_2021_4326_LEVL_3/.test(n),
+    'the floor is still 20M for both levels');
+  assert.ok(!/03M/.test(n), 'and the floor does not quietly become the fine build');
 });
 
