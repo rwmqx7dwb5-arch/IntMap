@@ -65,11 +65,7 @@ import '../js/compass.js';
 /* (#R289) CHRONOS — the one master clock, window.IntMapTime. Published at IMPORT time now, which
    is strictly earlier than the closure it used to live in. See js/chronos.js. */
 import '../js/chronos.js';
-/* (#R313) THE SET OF LAYERS THAT MAY MOVE THE CAMERA — window.IntMapLayerHome. CONSTITUTION §3
-   says a layer toggle must not move the view; the reader narrowed that to exclude layers whose data
-   only exists in one region (EU / U.S. elections / Ukraine frontline). Imported here, before the
-   layer files that call it, so the set is one table rather than a fitBounds in each of them. */
-import '../js/layer-home.js';
+import '../js/layer-home.js';   /* (#R313) the SET of layers allowed to move the camera on a toggle — CONSTITUTION §3's one exception, and the one table that holds it */
 /* ══ (#R232) THE LANGUAGE REGISTRY, THEN THE DIRECTORY THAT IS THE LANGUAGE LIST ═══════════════
    「今後IntMapの設定言語を追加するのが、1発で終わるように。」
    ⚠ ADDING A LANGUAGE IS NOW ONE FILE — `js/locales/ui.<code>.js` — AND NOTHING HERE. The seven

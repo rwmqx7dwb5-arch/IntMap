@@ -198,6 +198,7 @@ atlas-persona.js                  Atlas の人格の**正本**（名前・立場
 atlas-console.js                  Atlas カーネル（自然言語コンソール／OS コマンド面。846 KB）
 atlas-controls.js                 Atlas — 実 UI コントロールとモジュールメソッドへの全操作面
 atlas-examples.js                 Atlas — 起動時の例文チップ（地図中心の国で組み立てる。#R309）
+atlas-styles.js                   Atlas パネルのスタイルシート 1 本（atlasPanelCSS）
 atlas-geo-resolve.js              Atlas — 場所・地域の解決とカメラの寄せ方
 atlas-reply.js                    Atlas — 返答の描画（安全な markdown・コード／数式・GFM 表・出典カード）
 atlas-sims.js                     Atlas — 飛行・弾道・爆風・標高・勢力のアニメーション表示

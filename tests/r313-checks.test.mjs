@@ -338,32 +338,35 @@ test('R313 ⑦ opening one menu closes the other, and one function knows the set
    ═══════════════════════════════════════════════════════════════════════ */
 test('R313 ⑧ one indicator, shimmering the label itself, and every selector that means "still working" names it', () => {
   const at = code('js/atlas-console.js');
+  /* ⚠ the panel's stylesheet is js/atlas-styles.js since this round — the kernel's line ceiling is
+     never raised, so a subject left instead. The RULES are asked of that file; the MARKUP and the
+     selectors that scan for a working bubble are asked of the kernel. */
+  const css = code('js/atlas-styles.js');
 
   /* the old graphic is gone from the CODE. ⚠ read through code(): #R313's own comments name it. */
-  assert.ok(!/atl-dots/.test(at), 'no live reference to the bouncing-dot element remains');
-  assert.ok(!/atlDot\b/.test(at), 'nor to its keyframes');
+  assert.ok(!/atl-dots/.test(at + css), 'no live reference to the bouncing-dot element remains');
+  assert.ok(!/atlDot\b/.test(at + css), 'nor to its keyframes');
 
   /* the technique measured on chatgpt.com: a gradient clipped to the glyphs, swept by an animation */
-  const rule = /#atlas-panel \.atl-stage\{[\s\S]{0,60}?/.test(at);
-  assert.ok(rule, 'the stage label has its own rule');
+  assert.match(css, /#atlas-panel \.atl-stage\{/, 'the stage label has its own rule');
   for (const part of ['background-clip:text', '-webkit-text-fill-color:transparent',
                       'background-size:50% 200%', 'animation:atlShimmer']) {
-    assert.ok(at.includes(part), 'the shimmer keeps ' + part);
+    assert.ok(css.includes(part), 'the shimmer keeps ' + part);
   }
-  assert.match(at, /@keyframes atlShimmer\{0%\{background-position:-100% 0;\}100%\{background-position:250% 0;\}\}/,
+  assert.match(css, /@keyframes atlShimmer\{0%\{background-position:-100% 0;\}100%\{background-position:250% 0;\}\}/,
     'and the sweep runs the same span the measured stylesheet uses');
 
   /* ⚠ THE BAND MOVES TOWARD THE PAGE, NOT AWAY FROM IT — which is why it needs a per-theme value.
      One literal in both themes would be a highlight, a different effect using the same technique. */
-  assert.match(at, /#atlas-panel\{--atl-shimmer-band:/, 'a light-theme band');
-  assert.match(at, /\[data-theme="dark"\] #atlas-panel\{--atl-shimmer-band:/, 'and a dark-theme band');
+  assert.match(css, /#atlas-panel\{--atl-shimmer-band:/, 'a light-theme band');
+  assert.match(css, /\[data-theme="dark"\] #atlas-panel\{--atl-shimmer-band:/, 'and a dark-theme band');
   assert.notEqual(
-    /#atlas-panel\{--atl-shimmer-band:([^;}]+)/.exec(at)[1],
-    /\[data-theme="dark"\] #atlas-panel\{--atl-shimmer-band:([^;}]+)/.exec(at)[1],
+    /#atlas-panel\{--atl-shimmer-band:([^;}]+)/.exec(css)[1],
+    /\[data-theme="dark"\] #atlas-panel\{--atl-shimmer-band:([^;}]+)/.exec(css)[1],
     'and they are not the same colour');
 
   /* a transparent text-fill with no animation is an invisible word */
-  assert.match(at, /prefers-reduced-motion:reduce\)\{#atlas-panel \.atl-stage\{[^}]*animation:none[^}]*text-fill-color:currentColor/,
+  assert.match(css, /prefers-reduced-motion:reduce\)\{#atlas-panel \.atl-stage\{[^}]*animation:none[^}]*text-fill-color:currentColor/,
     'reduced motion stops the sweep AND gives the glyphs their colour back');
 
   /* ⚠ THE MARKER AND THE SCAN MUST BE THE SAME SPELLING. The cancel pass looks for bubbles that are

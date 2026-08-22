@@ -528,18 +528,8 @@ window.__imBuild='R313';/* (#R121) build marker — bump when verifying that a r
         </div>
         <!-- (#R289) 「どこの時刻を採用するかのプルダウン」 — the clock Chronos reads and writes wall-clock time in. -->
         <div class="ntl-zonerow"><span id="ntl-zone-lbl"></span><select class="ntl-zone" id="ntl-zone"></select></div>
-        <!-- (#R313) 「ChronosのTimeの時刻表示してるところに、日付も書くように。」 The Time tab printed
-             HH:MM and nothing else, so the one tab whose whole subject is "which instant" never said
-             which DAY that instant was on. The date goes on its own line UNDER the time rather than
-             beside it: .ntl-bigval is 26 px with `text-overflow:ellipsis` inside a 314 px body minus a
-             non-shrinking 「現在へ戻る」 button, so a single line would have silently truncated — and a
-             truncated readout is harder to notice than a broken one. #ntl-bigval itself still holds the
-             time ALONE, which is also what tests/smoke.spec.js reads. -->
-        <div class="ntl-valrow">
-          <div class="ntl-valcol">
-            <div class="ntl-bigval" id="ntl-bigval">—</div>
-            <div class="ntl-bigdate" id="ntl-bigdate"></div>
-          </div>
+        <div class="ntl-valrow">   <!-- (#R313) the Time tab's date sits UNDER the clock: .ntl-bigval is 26px with `text-overflow:ellipsis` in a fixed-width body, so one line would truncate it silently. DEV-NOTES #R313 §5. -->
+          <div class="ntl-valcol"><div class="ntl-bigval" id="ntl-bigval">—</div><div class="ntl-bigdate" id="ntl-bigdate"></div></div>
           <button class="ntl-now" id="ntl-today" type="button"></button>
         </div>
         <input type="date" id="ntl-date" class="ntl-date" style="display:none;">

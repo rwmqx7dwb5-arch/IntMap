@@ -1687,18 +1687,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      altitude band and the extrusion live in js/volume3d.js. */
   /* (#R311) THE DOOR — mobile's data-proxy tile and Atlas's clickId arrive here too; the tool panel reads the global synchronously, so the fetch is BEFORE setTool. */
   { const bv=document.getElementById('btn-tool-volume'); if(bv) bv.onclick=()=>{ window.IntMapLazy.need('volume3d').then(()=>{ setTool('volume'); if(window._closeMeasureMenu) window._closeMeasureMenu(); }); }; }
-  /* ══ ⚠ (#R313) THE TWO MENUS ARE ONE CHOICE, SO ONE PLACE KNOWS THE SET ══════════════════════
-     「MeasureとShareは、もう一方を開いているときに、もう一方をおしたら、これまで開いてたものが
-       消えて、新しくクリックした方が展開されるように。」 Both triggers call `e.stopPropagation()`, so
-     neither one's click ever reaches the document-level click-away listener the OTHER one
-     installed — that is why both could stand open at once, and why adding a second click-away
-     rule would not have fixed it. Closing the other one is not a new rule, it is the SAME choice
-     being made, so the set of menus lives in ONE function: a third menu added here cannot be
-     taught to one trigger and forgotten in the other. */
-  window._closeMapMenus=function(except){
-    if(except!=='measure'){ try{ window._closeMeasureMenu&&window._closeMeasureMenu(); }catch(_){} }
-    if(except!=='share'){ try{ window._closeShareMenu&&window._closeShareMenu(); }catch(_){} }
-  };
+  /* (#R313) ONE place knows the pair — both triggers stopPropagation(), so neither reaches the other's click-away. DEV-NOTES #R313 §5. */
+  window._closeMapMenus=function(except){ if(except!=='measure'){ try{ window._closeMeasureMenu&&window._closeMeasureMenu(); }catch(_){} } if(except!=='share'){ try{ window._closeShareMenu&&window._closeShareMenu(); }catch(_){} } };
   /* (#R9) "Measure ▾" groups Measure + Draw under one trigger; click-away closes it. */
   (function(){
     const c=document.querySelector('.measure-menu-container'), trig=document.getElementById('btn-measure-menu');
