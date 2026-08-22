@@ -117,6 +117,7 @@ test('the 3-D volume is a closed body, has no altitude ceiling, and takes a unit
   test.setTimeout(120000);
   await boot(page);
   await page.evaluate(() => document.getElementById('btn-tool-volume').click());
+  await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
   await page.waitForTimeout(800);
 
   const st = await page.evaluate(() => {
@@ -160,6 +161,7 @@ test('every footprint shape draws, not only the polygon', async ({ page }) => {
   test.setTimeout(180000);
   await boot(page);
   await page.evaluate(() => { window.__imap.jumpTo({ center: [138.73, 35.36], zoom: 11, pitch: 55, bearing: 20 }); document.getElementById('btn-tool-volume').click(); });
+  await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
   await page.waitForTimeout(1200);
 
   const out = {};

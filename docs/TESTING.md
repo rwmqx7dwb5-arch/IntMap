@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-20): the **core** tier that
 gates a push is **6 spec files / 1.1 min**; the **whole** suite is **65 measured spec files /
 86.5 min** of serial browser time against a ceiling of 86.7 min; and `npm run test:checks` runs
-**156 Node test files** with no browser at all (counted from `package.json` on 2026-08-23; the
+**157 Node test files** with no browser at all (counted from `package.json` on 2026-08-23; the
 line above it is the 2026-08-20 measurement). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -112,6 +112,48 @@ npm run preview          # serve an existing dist/ without rebuilding it
 Use `npm run dev` while editing and `npm run serve` when you want to see exactly what ships.
 `file://` is still unsupported, and now doubly so: the entry is an ES module.
 
+### Gating: the startup budget — `npm run check:perf` (#R311)
+
+Until this existed, **the only thing CI weighed was test TIME.** Not one byte of the deploy was
+under a gate: `vite build` printed «Some chunks are larger than 3000 kB» on every run and exited 0,
+which asserts exactly as much as printing nothing.
+
+```bash
+npm run build            # writes .perf/build-report.json as a side effect of building
+npm run check:perf       # judge it against tests/perf-baseline.json
+npm run perf:report      # the same measurement, printed, without judging
+node scripts/perf-budget.mjs --update   # accept the current numbers as the new ceilings
+```
+
+**It weighs the two halves of the bundle separately, and that is the whole point.** The largest
+chunk in this repo is Cesium at 4.7 MB, and a MapLibre session never asks for it — a gate on "the
+biggest chunk" would be loudest about the one number a default session does not pay, and silent
+about a hundred kilobytes moving into the entry. `scripts/build-report.mjs` therefore DERIVES the
+split from the graph Rollup finished with (the entry chunk of `index.html` plus the transitive
+closure of its static imports = what Vite emits `modulepreload` for) rather than reading it off
+filenames, and the budget applies two different rules:
+
+* **EAGER — a ratchet in both directions.** Over the ceiling fails as a regression. *Under* it by
+  more than a little also fails, and says so: a ceiling with permanent headroom has stopped
+  asserting anything, which is the rule #R194 already gave the test-time budget.
+* **ASYNC and `dist/` — a ceiling only.** They may shrink freely without anyone editing the
+  baseline; they may not grow past the ceiling without someone deciding to raise it. Per chunk as
+  well as in total, so one feature cannot double while another that shrank hides it.
+
+⚠ **`requests` and `modules` are counts, not bytes, and are matched exactly.** A byte-sized slack
+swallows them whole — `6 > 6 + 2048` is false for every value a count can take — so both rows would
+have sat in the table looking gated while being incapable of failing. `tests/r311-checks.test.mjs`
+drives `judge()` with synthetic numbers and requires an error from a regression, from an improvement
+that leaves the ceiling behind, and from a ±1 change in each count.
+
+**What is deliberately NOT in this gate:** first map pixel, interaction-ready, long-task counts and
+heap. Those need a browser and are genuinely noisy, and a flaky gate in front of every push teaches
+people to re-run it rather than read it. Bytes are deterministic — the same tree gives the same
+numbers — so bytes stand in front of every push and the runtime numbers are measured with the
+instrument below. ⚠ That instrument needs `.frame-cache/`, which is gitignored and holds recorded
+third-party tiles, so it is a LOCAL measurement: a CI runner with an empty cache would block every
+external request and measure a map that never drew.
+
 ### Measuring, not gating: `scripts/frame-profile.mjs` (#R209)
 
 Frame time and start-up are MEASUREMENTS, so they are a standalone runner rather than a spec file —
@@ -124,6 +166,9 @@ node scripts/frame-profile.mjs --boot --record                 # once, to fill t
 node scripts/frame-profile.mjs --boot --net fast4g             # start-up, iPhone-13 profile, CPU/4
 node scripts/frame-profile.mjs --sweep --sat                   # frame time over a zoom + hover sweep
 node scripts/frame-profile.mjs --boot --desktop --cpu 1        # …or the desktop profile
+node scripts/frame-profile.mjs --mem --cycles 10               # heap/nodes/listeners over open-close cycles
+npx vite --port 5311 --strictPort &                            # …and attribution needs the DEV server
+node scripts/frame-profile.mjs --attribute --base http://localhost:5311
 ```
 
 Every external request is answered from `.frame-cache/` (gitignored), so two runs replay identical
@@ -143,16 +188,44 @@ A/B comparisons must alternate (ABAB…) and report the median of the PAIRED dif
 A-vs-A null run to establish the noise floor: #R206 watched a control leave at 24.4 ms and come back
 at 20.8, which is larger than most of the effects being looked for.
 
+(#R311) three things it also reports now, because none of them was visible before:
+
+* `--boot` separates **first map pixel** from **interaction-ready**. The launch screen covers the
+  map until `__imBoot` (index.html) decides the app is up, so "first draw" is not "usable" — the
+  gap between them is where a start-up regression hides. It also prints `__imBoot`'s own milestones,
+  the long tasks (`≥50 ms` / `≥100 ms` / max / total) and the heap after a forced collection.
+  ⚠ the long-task observer is installed with `addInitScript`, i.e. **before the first script**:
+  `longtask` entries are not retained the way marks are, so an observer created after boot reports
+  zero for a boot that froze the main thread for a second.
+* `--mem` answers 「10回開閉してもヒープが一方向に増え続けないか」. It drives the app through
+  `window.IntMapOS.exec` — the same commands the buttons and Atlas run, never a private entry point
+  — and reports heap, DOM nodes and listeners after each cycle, each preceded by a real GC. The
+  verdict is the SLOPE over the second half: the first cycles legitimately fill caches a re-open is
+  supposed to reuse.
+* `--attribute` gives **self time per `js/` file** over the boot, from a CPU profile.
+  ⚠ **point it at the dev server.** In a production build every `js/` file is inside one hashed
+  chunk, so every sample says `main-XXXX.js` — true and useless. Dev serves each module at its own
+  URL, which is what turns a sample into a file name. That makes it an ATTRIBUTION instrument, not
+  a timing one: dev is unbundled and unminified, so the RANKING transfers and the milliseconds do
+  not, and must not be quoted as production numbers.
+
 ### On-demand modules (#R209)
 
-Eight feature modules are no longer in the boot bundle; `js/lazy-modules.js` fetches them when the
-user reaches for the feature. Two suites guard that, and they guard different things:
+**Sixteen** feature modules are no longer in the boot bundle; `js/lazy-modules.js` fetches them when
+the user reaches for the feature. Two suites guard that, and they guard different things:
 
-* `tests/r209-checks.test.mjs` — source level: none of the eight is still in `src/main.js`, every
+(#R209 moved eight, #R224 the Atlas kernel, #R291 the directions panel, and #R311 six more —
+data centres, the aircraft card, the 3-D volume tool, the country comparison, live satellites and
+the satellite panel. ⚠ `js/analysis-panels.js` was a candidate and is NOT one of them: measured,
+two of its five factories build Layers-panel buttons — `#btn-correlate` and `#btn-edu` — at boot,
+so deferring the file would take two buttons off the panel. The rule is the rule: a module may be
+deferred only when nothing a reader can see depends on it having run.)
+
+* `tests/r209-checks.test.mjs` — source level: none of them is still in `src/main.js`, every
   dynamic specifier is a literal (nothing else is visible to `scripts/static-checks.mjs`), every
   entry point awaits the loader, and every `turf.<name>` the source calls is on the object
   `src/vendor.js` publishes.
-* `tests/r209.spec.js` — browser level, and the one that matters: the eight are absent before they
+* `tests/r209.spec.js` — browser level, and the one that matters: they are absent before they
   are asked for, ALL of them arrive when asked, and `window.__imLazyCheck.failed` is empty. The last
   is the loader's own verdict — it checks that the factory registered and that the module's global
   appeared — not the test's.

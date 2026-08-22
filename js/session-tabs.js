@@ -220,7 +220,9 @@ export function makeSessionTabs(HOST, CTX) {
     /* ⚠ (#R224) CLOSE DOES NOT FETCH. Downloading the kernel in order to close a panel that was never
        opened is the same defect as loading it eagerly, so this one keeps the plain guard. */
     ['atlas.close',()=>{ window.IntMapConsole&&window.IntMapConsole.close(); }, 'Atlas · close','atlas'],
-    ['compare.open',(p)=>{ if(!window.IntMapStatsCompare) return {ok:false,err:'no module'}; window.IntMapStatsCompare.open(p&&p.countries,p&&p.indicators,p&&p.source); return {ok:true}; }, 'Country comparison · open (params.countries/indicators)','compare'],
+    /* (#R311) the panel is on-demand, so the kernel command FETCHES it — the same shape flightsim.setup
+       has used since #R209. The «no module» answer is kept for a fetch that genuinely fails. */
+    ['compare.open',async(p)=>{ await window.IntMapLazy.need('statsCompare'); if(!window.IntMapStatsCompare) return {ok:false,err:'no module'}; window.IntMapStatsCompare.open(p&&p.countries,p&&p.indicators,p&&p.source); return {ok:true}; }, 'Country comparison · open (params.countries/indicators)','compare'],
     ['compare.clear',()=>{ window.IntMapStatsCompare&&window.IntMapStatsCompare.clearMap&&window.IntMapStatsCompare.clearMap(); }, 'Country comparison · clear map paint','compare'],
     ['flightsim.setup',(p)=>{ window.IntMapLazy.need('flightSim').then(()=>{ window.IntMapFlightSim&&window.IntMapFlightSim.setup(p||{}); }); }, 'Flight simulator · pre-flight screen','sim'],
     ['flightsim.stop', ()=>{ window.IntMapFlightSim&&window.IntMapFlightSim.stop(); }, 'Flight simulator · stop','sim'],

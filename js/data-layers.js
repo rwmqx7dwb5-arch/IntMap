@@ -3256,11 +3256,18 @@ window.IntMapModules.dataLayers=function(HOST){
           const A=()=>window.IntMapSatellites;
           const fr=document.createElement('div'); fr.className='gl-filter-row'; fr.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
           const _gL=window.IntMapLang.t(HOST.lang,'Catalog','カタログ','Katalog','Каталог','Catálogo');
-          let opts='';
-          try{ (A()?A().groups():[]).forEach(g=>{ opts+='<option value="'+HOST.escapeHtml(g.id)+'">'+HOST.escapeHtml(g.name)+(g.kb>=1000?(' ('+Math.round(g.kb/1000)+' MB)'):'')+'</option>'; }); }catch(_){}
-          fr.innerHTML=_gL+' <select class="gl-satgrp" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;max-width:170px;">'+opts+'</select>';
+          fr.innerHTML=_gL+' <select class="gl-satgrp" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;max-width:170px;"></select>';
           el.appendChild(fr);
-          const gs=fr.querySelector('.gl-satgrp'); try{ gs.value=A()?A().group():'visual'; }catch(_){}
+          const gs=fr.querySelector('.gl-satgrp');
+          /* ⚠ (#R311) THE CATALOGUE LIST IS THE MODULE'S, AND THE MODULE ARRIVES AFTER THIS RUNS.
+             This legend is built in the SAME TICK as startSats(), which now fetches js/satellites-live.js
+             — so reading groups() once would leave the Catalog dropdown empty on the first tick of the
+             row in a session, and empty is indistinguishable from "this layer has no catalogues".
+             Filled now (it may already be here) and again when the module lands; same markup either way. */
+          const _fillGrp=()=>{ let opts='';
+            try{ (A()?A().groups():[]).forEach(g=>{ opts+='<option value="'+HOST.escapeHtml(g.id)+'">'+HOST.escapeHtml(g.name)+(g.kb>=1000?(' ('+Math.round(g.kb/1000)+' MB)'):'')+'</option>'; }); }catch(_){}
+            if(!opts) return; gs.innerHTML=opts; try{ gs.value=A()?A().group():'visual'; }catch(_){} };
+          _fillGrp(); try{ window.IntMapLazy.need('satellitesLive').then(_fillGrp); }catch(_){}
           gs.addEventListener('change',()=>{ try{ A().setGroup(gs.value); }catch(_){} try{ _satLegendCount(); }catch(_){} });
           const cnt=document.createElement('div'); cnt.className='gl-satcount'; cnt.style.cssText='font-size:10px;color:var(--text-muted);margin-top:3px;';
           el.appendChild(cnt);
@@ -4739,13 +4746,17 @@ window.IntMapModules.dataLayers=function(HOST){
                the feed carries, and "fly from these conditions". The pinned tooltip stays as the fallback
                for the case where js/aircraft-detail.js did not load, so the click never becomes a no-op;
                when the card does open it takes the tooltip's place rather than sitting on top of it. */
-            if(selectedPlane){
+            /* (#R311) THIS CLICK IS THE CARD'S ONLY DOOR, so it is where js/aircraft-detail.js is
+               fetched. The branch below is unchanged, including the fallback: `need()` resolves
+               either way, so a chunk that genuinely fails to arrive still lands on the pinned
+               tooltip rather than turning the click into a no-op. */
+            if(selectedPlane){ window.IntMapLazy.need('aircraftDetail').then(()=>{
               if(openPlaneCard(d)){ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; }
               else { const el=ensureMapTooltip(); el.style.display='block';
                 el.innerHTML=trafficTooltipHTML('planes',props||{ type:d.type, sel:1, callsign:d.callsign||'', icao24:d.icao24||'',
                   reg:d.reg||'', acType:d.acType||'', desc:d.desc||'', baroAlt:d.baroAlt, geoAlt:d.geoAlt, vel:d.vel,
                   heading:d.heading, vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) });
-                positionTooltip(e.point); } }
+                positionTooltip(e.point); } }); }
             return; }
           if(selectedPlane&&!_planesClearT) _planesClearT=setTimeout(()=>{ _planesClearT=null; if(selectedPlane) selectPlane(null); },320);
         }; GE().events.on('click',_planesClear); }
@@ -4810,7 +4821,10 @@ window.IntMapModules.dataLayers=function(HOST){
       box.textContent = jp ? (drawn.toLocaleString('ja-JP')+' / '+total.toLocaleString('ja-JP')+' 機を表示中'+(s.sunlit?('・'+s.sunlit+' 機が太陽光下'):''))
         : (drawn.toLocaleString()+' / '+total.toLocaleString()+' shown'+(s.sunlit?(' · '+s.sunlit+' sunlit'):''));
     }
-    function startSats(){
+    /* (#R311) THE ROW IS THE DOOR: js/satellites-live.js (and its detail card) are fetched here, and
+       the "unavailable" branch below now answers a fetch that FAILED rather than one that never ran. */
+    function startSats(){ window.IntMapLazy.need('satellitesLive').then(_startSats); }
+    function _startSats(){
       const A=window.IntMapSatellites;
       if(!A){ try{ satToast(window.IntMapLang.t(HOST.lang,'The satellite layer is unavailable','人工衛星レイヤーを読み込めませんでした','Satellitenebene nicht verfügbar','Слой спутников недоступен','La capa de satélites no está disponible')); }catch(_){}
         const cb=document.getElementById('dl-sats'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } return; }
