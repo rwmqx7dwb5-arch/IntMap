@@ -5021,7 +5021,7 @@ window.IntMapLang.define('zh', {
   "Why do people in {place} live longer than almost anywhere else?": "{place}的人為什麼比世界上幾乎任何地方都長壽？",   /* atlas-examples.js (#R313) */
   "How much of {place} is actually online, and what is the bottleneck?": "{place}實際上有多少人能上網？瓶頸在哪裡？",   /* atlas-examples.js (#R313) */
   "Where are {place}’s people concentrated, and where is that shifting?": "{place}的人口集中在哪裡？又正往哪裡移動？",   /* atlas-examples.js (#R313) */
-  "What happens in {capital} that matters beyond {place}?": "{capital}發生的事情裡，有哪些影響會超出{place}？",   /* atlas-examples.js (#R313) */
+  "What happens in {place}’s capital that matters beyond its borders?": "{place}：首都發生的事情裡，有哪些影響會超出國界？",   /* atlas-examples.js (#R313) */
   "How does {place} differ from the rest of {sub}?": "{place}與{sub}地區的其他國家有什麼不同？",   /* atlas-examples.js (#R313) */
   "What did the world look like in {year}?": "{year} 年的世界是什麼樣子？",   /* atlas-examples.js (#R313) */
   "Where in the world are the most severe weather warnings in force right now?": "目前全球哪裡發布了最嚴重的氣象警報？",   /* atlas-examples.js (#R313) */
