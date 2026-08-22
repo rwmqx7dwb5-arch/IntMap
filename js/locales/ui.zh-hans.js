@@ -317,6 +317,7 @@ window.IntMapLang.define('zh-hans', {
     'Next hour': "下一个时刻",
     'no frames': "没有影格",
     'Oldest frame': "最旧的影格",
+    'Particles': "粒子",   /* weather.js (#R313) */
     'Pressure (MSL)': "海平面气压",
     'Previous frame': "上一影格",
     'Previous hour': "上一个时刻",
@@ -328,6 +329,7 @@ window.IntMapLang.define('zh-hans', {
     'Valid at': "有效时刻",
     'Wind direction arrows at 10 m, coloured by speed.': "高度 10 米的风向箭头，依风速上色。",
     'Wind gusts (ECMWF)': "阵风（ECMWF）",
+    'Wind particles': "风场粒子",   /* atlas-console.js (#R313) */
     ' · right-drag to rotate': " ・右键拖动可旋转",   /* map-tools.js */
     ' · Shift afterburner': " ・Shift 后燃器",   /* flight-sim.js */
     ' biggest shown — click an item or pin to fly': " 个最大者，点击项目或图钉即可飞往",   /* atlas-console.js */
@@ -5002,5 +5004,32 @@ window.IntMapLang.define('zh-hans', {
   "Which countries spend the most on defense relative to GDP?": "哪些国家的国防支出占 GDP 比重最高？",   /* atlas-console.js (#R309) */
   "Brief me on the South China Sea — the latest": "帮我简报南海的最新情势",   /* atlas-console.js (#R309) */
   "Which countries have the highest life expectancy?": "哪些国家平均寿命最长？",   /* atlas-console.js (#R309) */
+  "Which weather warnings are in force over {place} right now, and who issued them?": "{place}：目前生效中的气象警报有哪些？由哪个机关发布？",   /* atlas-examples.js (#R313) */
+  "What has been shaking near {place}, and which fault or plate boundary is behind it?": "{place}：附近最近哪里发生了地震？背后是哪条断层或板块边界？",   /* atlas-examples.js (#R313) */
+  "Which volcanoes near {place} are restless, and what would an eruption reach?": "{place}：附近有哪些火山正在活动？一旦喷发会波及到哪里？",   /* atlas-examples.js (#R313) */
+  "What is driving the wind pattern over {place} today?": "{place}：今天上空的风场是由什么主导的？",   /* atlas-examples.js (#R313) */
+  "Which submarine cables land in {place}, and what happens if one is cut?": "{place}：有哪些海底电缆在此登陆？其中一条被切断会怎么样？",   /* atlas-examples.js (#R313) */
+  "What is flying over {place} right now, and where are those aircraft going?": "{place}：现在有哪些飞机在上空飞行？要飞往哪里？",   /* atlas-examples.js (#R313) */
+  "What is moving through {place}’s waters right now, and what is it carrying?": "{place}：现在有哪些船正通过其海域？载运的是什么？",   /* atlas-examples.js (#R313) */
+  "What was happening in {place} in {year}?": "{year} 年的{place}发生了什么事？",   /* atlas-examples.js (#R313) */
+  "{place} is one of the most crowded countries on Earth — how does it absorb that?": "{place}是世界上人口最密集的国家之一——它是怎么承受下来的？",   /* atlas-examples.js (#R313) */
+  "Almost nobody lives per square kilometre in {place} — so where do people actually live?": "{place}的人口密度是全球最低之一——那么人们实际上都住在哪里？",   /* atlas-examples.js (#R313) */
+  "{place} spans enormous distances — how is it physically held together?": "{place}幅员极为辽阔——是什么在实体上把它维系在一起？",   /* atlas-examples.js (#R313) */
+  "{place} is tiny — what does its economy actually run on?": "{place}是个很小的国家——经济实际上靠什么运转？",   /* atlas-examples.js (#R313) */
+  "{place} is one of the largest economies in the world — what is actually carrying it?": "{place}是世界最大的经济体之一——真正撑起它的是什么？",   /* atlas-examples.js (#R313) */
+  "How does {place} sustain one of the highest incomes per person anywhere?": "{place}的人均收入是全球最高之一——是怎么维持的？",   /* atlas-examples.js (#R313) */
+  "{place} spends an unusually large share of its economy on defense — on what, and against what?": "{place}的国防支出占经济的比重异常地高——花在什么上？又是为了防备什么？",   /* atlas-examples.js (#R313) */
+  "What single change would do the most for everyday life in {place}?": "{place}：哪一项改变最能改善当地的日常生活？",   /* atlas-examples.js (#R313) */
+  "How is {place} actually governed, and who really decides?": "{place}实际上是怎么治理的？真正做决定的是谁？",   /* atlas-examples.js (#R313) */
+  "What keeps {place}’s institutions working as well as they do?": "{place}的制度为什么能维持得这么好？",   /* atlas-examples.js (#R313) */
+  "Why do people in {place} live longer than almost anywhere else?": "{place}的人为什么比世界上几乎任何地方都长寿？",   /* atlas-examples.js (#R313) */
+  "How much of {place} is actually online, and what is the bottleneck?": "{place}实际上有多少人能上网？瓶颈在哪里？",   /* atlas-examples.js (#R313) */
+  "Where are {place}’s people concentrated, and where is that shifting?": "{place}的人口集中在哪里？又正往哪里移动？",   /* atlas-examples.js (#R313) */
+  "What happens in {capital} that matters beyond {place}?": "{capital}发生的事情里，有哪些影响会超出{place}？",   /* atlas-examples.js (#R313) */
+  "How does {place} differ from the rest of {sub}?": "{place}与{sub}地区的其他国家有什么不同？",   /* atlas-examples.js (#R313) */
+  "What did the world look like in {year}?": "{year} 年的世界是什么样子？",   /* atlas-examples.js (#R313) */
+  "Where in the world are the most severe weather warnings in force right now?": "目前全球哪里发布了最严重的气象警报？",   /* atlas-examples.js (#R313) */
+  "Which plate boundaries have been most active in the past week?": "过去一周最活跃的板块边界是哪些？",   /* atlas-examples.js (#R313) */
+  "Which submarine cable chokepoints carry the most of the world’s traffic?": "全球流量最集中的海底电缆咽喉点在哪里？",   /* atlas-examples.js (#R313) */
   }
 });

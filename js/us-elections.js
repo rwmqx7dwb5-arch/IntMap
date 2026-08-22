@@ -255,8 +255,13 @@ window.IntMapModules.usElections=function(HOST){
       LA('U.S. presidential elections','アメリカ大統領選挙','US-Präsidentschaftswahlen','Президентские выборы в США','Elecciones presidenciales de EE. UU.'),
       IDS,'dl-uselect'); }catch(_){}
     apply();
-    /* the layer is about one country, so the first switch-on flies to it */
-    try{ if(!toggle._flew){ toggle._flew=1; GE().camera.fitBounds([[-127,23],[-65,50]],{padding:40,duration:900}); } }catch(_){}
+    /* the layer is about one country, so the first switch-on flies to it.
+       ⚠ (#R313) THE BOX AND THE «ONCE» RULE MOVED TO js/layer-home.js. This was the only place in
+       the app that moved the camera on a layer toggle, and when the reader asked for the same
+       behaviour on EU and Ukraine it would have become three private copies of «once» in three
+       files. It is one table now, and it also learned something this line never knew: a session
+       RESTORED with the layer on did not ask to be flown anywhere. */
+    try{ window.IntMapLayerHome&&window.IntMapLayerHome.arrive('dl-uselect'); }catch(_){}
     return true;
   }
 

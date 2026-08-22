@@ -494,12 +494,19 @@ window.IntMapModules.layerSidebar=function(HOST){
            nothing stretched), tightened typography, quieter card chrome ("素人が作ったようなダサい"対策). */
         /* (#R72) category headers: real COLLAPSIBLE section controls (chevron + name + count), normal-case,
            readable size — the old tiny all-caps row read as decoration ("形骸化しており、折りたたみが不可能かつ
-           …テキストやフォント、UIがダサい"). */
-        +'#layer-sidebar-r .lst-sech{font-size:13.5px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--text-main);margin:16px 0 8px;display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;padding:3px 2px;border-radius:8px;}'   /* (#R108) slightly larger, not bold */
+           …テキストやフォント、UIがダサい").
+           ⚠ (#R313) 「レイヤーカテゴリの見出しをもっと大きく目立つ感じにしろ。」 #R108 had pulled these to
+           13.5px/500 ("slightly larger, NOT bold") and at that weight a section title read as one more
+           row of the list rather than as the thing the rows hang under. They are titles now — 17px/700,
+           with the chevron and the count pill scaled to sit beside a title instead of beside a row.
+           ⚠ THE MOBILE SHEET CARRIES ITS OWN COPY of these declarations (css/intmap.css, `.m-sheet
+           .lsr-mount .lst-sech`) because this block is injected under an #id selector that never matches
+           there — both were moved together. */
+        +'#layer-sidebar-r .lst-sech{font-size:17px;font-weight:700;letter-spacing:-0.015em;text-transform:none;color:var(--text-main);margin:20px 0 9px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:4px 2px;border-radius:8px;}'   /* (#R313) a title, not a row */
         +'#layer-sidebar-r .lst-sech:hover{background:var(--input-bg);}'
-        +'#layer-sidebar-r .lst-sech .lst-chev{flex:0 0 auto;width:7px;height:7px;border-right:1.8px solid var(--text-muted);border-bottom:1.8px solid var(--text-muted);transform:rotate(45deg);transition:transform .18s ease;position:relative;top:-1px;}'
+        +'#layer-sidebar-r .lst-sech .lst-chev{flex:0 0 auto;width:8.5px;height:8.5px;border-right:2px solid var(--text-muted);border-bottom:2px solid var(--text-muted);transform:rotate(45deg);transition:transform .18s ease;position:relative;top:-2px;}'
         +'#layer-sidebar-r .lst-sech.closed .lst-chev{transform:rotate(-45deg);top:0;}'
-        +'#layer-sidebar-r .lst-sech .lst-cnt{font-weight:500;font-size:10.5px;color:var(--text-muted);background:var(--input-bg);border-radius:999px;padding:1px 7px;}'
+        +'#layer-sidebar-r .lst-sech .lst-cnt{font-weight:600;font-size:11px;color:var(--text-muted);background:var(--input-bg);border-radius:999px;padding:2px 8px;letter-spacing:0;}'
         +'#layer-sidebar-r .lst-sech::after{content:"";flex:1;height:1px;background:rgba(128,128,128,0.14);}'
         +'#layer-sidebar-r .lst-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}'
         +'#layer-sidebar-r .lst-grid.closed{display:none;}'

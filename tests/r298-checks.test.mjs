@@ -264,7 +264,18 @@ test('R298 ⑬ the Atlas kernel is under its ceiling because a subject left', ()
   assert.match(m, /function copyBtn\(src\)\{/, 'the one copy button lives here now');
   assert.match(m, /\.atl-msgt\{display:flex/, 'and so do its rules');
   const k = read('js/atlas-console.js');
-  assert.match(k, /^import \{ MSG_TOOLS_CSS, MSG_TOOLS_CSS_MOBILE, makeMsgTools \} from '\.\/atlas-msg-tools\.js';/m);
+  /* ⚠ (#R313) THIS PINNED THE IMPORT LINE VERBATIM, which made it a test of a spelling rather than of
+     a relation — the twenty-sixth time in this repository that a legitimate change was turned red by
+     one. The kernel's ceiling is never raised, so #R313 moved the PANEL STYLESHEET out to
+     js/atlas-styles.js, and the two CSS constants went with it: they are rules, and they now arrive
+     where the rules are assembled. The msg-tools subject is no less whole for that — it is still one
+     module exporting its behaviour AND its CSS, which is what the assertions above check. So ask who
+     imports what, not how the line reads. */
+  assert.match(k, /import \{[^}]*\bmakeMsgTools\b[^}]*\} from '\.\/atlas-msg-tools\.js';/,
+    'the kernel takes the behaviour from the module that owns it');
+  assert.match(read('js/atlas-styles.js'),
+    /import \{[^}]*\bMSG_TOOLS_CSS\b[^}]*\bMSG_TOOLS_CSS_MOBILE\b[^}]*\} from '\.\/atlas-msg-tools\.js';/,
+    '…and whoever builds the panel stylesheet takes the rules from that same module — not a copy of them');
   assert.match(k, /const \{ copyBtn, editBtn, msgTools \} = makeMsgTools\(/);
   assert.ok(!/function copyBtn\(/.test(k), 'a second copy button cannot be written in the kernel');
   /* the reader's own bar is hidden until hovered, and only theirs */

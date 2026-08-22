@@ -163,6 +163,18 @@ window.IntMapModules.wind=function(HOST){
     const SLOT=[{src:'wind-field-a-src',lyr:'wind-field-a'},{src:'wind-field-b-src',lyr:'wind-field-b'}];
     let slot=0, shownSlot=-1, fieldSeq=0, liveKey='', liveSlot=-1;
     let on=false, raf=0, moving=false, opacity=1, renderer=null, loading=false, lastErr='';
+    /* ══ ⚠⚠⚠ (#R313) THE PARTICLES ARE A SECOND SWITCH, INDEPENDENT OF THE LAYER ══════════════
+       「風レイヤーの凡例に、パーティクルをオンオフできるトグルを付けて。」
+       This layer draws TWO things from one field — a colour raster and the animated streaks — and
+       until now both hung off the single `on` above, so the only way to stop the animation was to
+       switch the whole layer off and lose the colours with it. `partsOn` is the streaks alone.
+       ⚠ DEFAULT ON, AND THE KEY IS ITS OWN. Nothing about the layer changes for a reader who never
+       touches the switch; an absent key reads as on, and only an explicit '0' turns them off.
+       ⚠ IT GATES THE FRAME LOOP, NOT JUST THE CANVAS. Hiding #wind-canvas while `step()` kept asking
+       for frames would have left the whole particle simulation running for something nobody can see —
+       the reader asked to turn them OFF, and that has to mean the work stops too. */
+    const PARTS_KEY='intmap_wind_parts';
+    let partsOn=true; try{ const _p=localStorage.getItem(PARTS_KEY); if(_p!=null) partsOn=(_p!=='0'); }catch(_){}
     /* (#R293) the last field that answered, and the hour it is of — see `sampleAt` below */
     let _lastField=null, _lastFieldAt=null;
     /* ⚠ (#R305) WHICH WAY THE READER IS GOING. #R276 追記 warms 「the next hour」 and spelled that
@@ -623,14 +635,33 @@ window.IntMapModules.wind=function(HOST){
     }
 
     function start(){
-      on=true; cv.style.display='block';
-      ensureRenderer();
+      on=true;
       setOpacity(opacity);
       /* (#R299) switching the layer on starts the quiet window the widening staircase waits for,
          and retires any rung left owed by a previous session of this layer */
       stir(true);
       load();
-      cancelAnimationFrame(raf); raf=requestAnimationFrame(step);
+      _applyParts();   /* (#R313) the canvas and the frame loop follow the particle switch */
+      try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
+    }
+    /* the ONE place that decides whether streaks are being drawn. Both switches have to be on:
+       the layer's, and the reader's particle switch. Called from start(), and from setParts(). */
+    function _applyParts(){
+      if(on&&partsOn){ ensureRenderer(); cv.style.display='block'; setOpacity(opacity);
+        cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
+      else { cancelAnimationFrame(raf); raf=0;
+        /* the trails are pixels already on the canvas — hiding it is not enough, they would be
+           there again the moment it is shown (#R284's blink, from the other direction) */
+        if(renderer){ try{ renderer.clearTrails(); }catch(_){} }
+        cv.style.display='none'; }
+    }
+    function partsAreOn(){ return partsOn; }
+    function setParts(v){ partsOn=!!v;
+      try{ localStorage.setItem(PARTS_KEY,partsOn?'1':'0'); }catch(_){}
+      _applyParts();
+      /* the legend body is rebuilt whole on every render (see _renderWindLegendBody), so the
+         switch inside it re-reads this state rather than holding its own copy — which is what
+         lets Atlas and the legend disagree about nothing. */
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
     }
     function stop(){
@@ -739,6 +770,14 @@ window.IntMapModules.wind=function(HOST){
         bar='<div class="ecl-bar" style="background:'+lg.css+';"></div>'
           +'<div class="ecl-ticks">'+ticks.map(k=>'<span style="left:'+k.pos.toFixed(1)+'%">'+k.txt+'</span>').join('')+'</div>';
       }
+      /* ⚠ (#R313) the particle switch, in the legend — not in the Layers panel. #R16's rule is that
+         a control that belongs to ONE layer lives in that layer's legend (see docs/MAP-LAYERS.md
+         §7.10); the Layers panel stays a list of layers. Same shape as the 「At real altitude」 box
+         the planes legend carries. `checked` is read from the module state on every render because
+         this whole body is replaced by innerHTML below — the box never holds the answer itself. */
+      const parts='<label class="kl-period wind-parts-row" style="margin:7px 0 2px;cursor:pointer;">'
+        +'<input type="checkbox" id="wind-parts-sw"'+(partsOn?' checked':'')+' style="accent-color:var(--primary-color);margin:0;cursor:pointer;">'
+        +'<span style="font-size:11px;color:var(--text-muted);">'+L('Particles','パーティクル','Partikel','Частицы','Partículas')+'</span></label>';
       const units='<div class="kl-period" style="margin:7px 0 2px;"><label>'+L('Units','単位','Einheiten','Единицы','Unidades')+'</label>'
         +'<select id="wind-unit-sel">'+(window.WIND_UNITS||[]).map(u=>'<option value="'+u[0]+'"'+(u[0]===window.windUnit?' selected':'')+'>'+u[1]+'</option>').join('')+'</select></div>';
       const vt=E?E.validTime():'', ref=E?E.referenceTime():'';
@@ -750,7 +789,9 @@ window.IntMapModules.wind=function(HOST){
         ? (L('valid','有効時刻','gültig','действ.','válido')+' '+E.fmt(vt)+' · '+relTxt(vt))
         : (loading?L('Loading the wind model…','風モデルを読み込み中…','Windmodell wird geladen…','Загрузка модели ветра…','Cargando el modelo de viento…')
                   :L('Wind data unavailable','風データを取得できませんでした','Winddaten nicht verfügbar','Данные о ветре недоступны','Datos de viento no disponibles')))+'</div>';
-      body.innerHTML=bar+units+player+model+valid;
+      body.innerHTML=bar+units+parts+player+model+valid;
+      const psw=body.querySelector('#wind-parts-sw');
+      if(psw) psw.onchange=()=>{ setParts(psw.checked); };   /* (#R313) the switch reports; the module decides */
       const sel=body.querySelector('#wind-unit-sel');
       if(sel) sel.onchange=()=>{ window.windUnit=sel.value; try{ localStorage.setItem('intmap_wind_unit',window.windUnit); }catch(_){}
         try{ window.dispatchEvent(new Event('intmap-units')); }catch(_){}
@@ -763,6 +804,9 @@ window.IntMapModules.wind=function(HOST){
 
     return {
       toggle(v){ v?start():stop(); }, on:()=>on, stop, refetch:load, setOpacity,
+      /* (#R313) the streaks alone. `on()` is still the LAYER; these two are the animation inside it,
+         and they are the only door — the legend switch, Atlas and the tests all come through here. */
+      particles:partsAreOn, setParticles:setParts,
       /* (#R298) the colour slot's own signal, published because the ECMWF rasters share ONE reader
          with this layer and their cursor warm-up has to queue behind the same picture — see the
          note on `afterFieldShown` above and `warmReadout` in the weatherEC module */
@@ -797,7 +841,7 @@ window.IntMapModules.wind=function(HOST){
         try{ hasLyr=!!GE().layers.has(s.lyr); if(hasLyr) op=GE().layers.getPaint(s.lyr,'raster-opacity'); }catch(_){}
         const smp=window.IntMapECMWF&&window.IntMapECMWF.sampler(VAR);
         const st=renderer?renderer.stats():{};
-        return Object.assign({ on, hasField:!!smp, hasLyr, rasterOpacity:op, loading, lastErr,
+        return Object.assign({ on, particles:partsOn, hasField:!!smp, hasLyr, rasterOpacity:op, loading, lastErr,
           model:(window.IntMapECMWF||{}).MODEL, validTime:(window.IntMapECMWF?window.IntMapECMWF.validTime():''),
           referenceTime:(window.IntMapECMWF?window.IntMapECMWF.referenceTime():''),
           styleLoaded:(()=>{try{return GE().ready();}catch(_){return null;}})() }, st); }

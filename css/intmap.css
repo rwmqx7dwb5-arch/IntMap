@@ -986,7 +986,13 @@
     /* (#11) bigval fills the left (fixed body width) so the "現在へ戻る" button never shifts as the date text length
        changes ("Dateスライダーを動かすと…激しくUIが動いてしまう"); and the value is NOT bold ("太字にするな"). */
     .ntl-valrow{ display:flex; align-items:center; gap:10px; margin:0; }
-    .ntl-bigval{ flex:1 1 auto; min-width:0; font-size:26px; font-weight:500; letter-spacing:-0.02em; color:var(--text-main); line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* (#R313) the Time tab carries a date under the clock, so the value side of the row is a COLUMN.
+       The column takes the flex growth the value used to take; #ntl-bigval keeps `min-width:0` so its
+       own ellipsis still works, and the date line is empty (and therefore absent) in Year/Date mode. */
+    .ntl-valcol{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:1px; }
+    .ntl-bigdate{ max-width:100%; font-size:12px; font-weight:500; letter-spacing:0; color:var(--text-muted); line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ntl-bigdate:empty{ display:none; }
+    .ntl-bigval{ max-width:100%; min-width:0; font-size:26px; font-weight:500; letter-spacing:-0.02em; color:var(--text-main); line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .ntl-now{ flex:0 0 auto; background:transparent; border:1px solid var(--primary-color); color:var(--primary-color); font-size:12px; font-weight:600; padding:6px 12px; border-radius:10px; cursor:pointer; white-space:nowrap; }
     .ntl-now:hover{ background:var(--primary-color); color:#fff; }
     /* (#R103) "反映内容" label on its own line, chips in a compact NON-WRAPPING row below (smaller so they never
@@ -1013,6 +1019,7 @@
       .ntl-badge{ font-size:10px; padding:2px 8px; }
       .ntl-mode{ padding:5px 11px; font-size:11.5px; }
       .ntl-bigval{ font-size:20px; }
+      .ntl-bigdate{ font-size:11px; }   /* (#R313) the body is 24px narrower here; the date line shrinks with the clock */
       .ntl-now{ font-size:11px; padding:5px 10px; }
       .ntl-date,.ntl-year{ font-size:11.5px; padding:5px 7px; }
       .ntl-slider{ margin:3px 0 0; }
@@ -1823,14 +1830,18 @@
         font-size:13px; padding:0 15px; outline:none; }
       .m-sheet .lsr-mount .lsr-search input:focus{ border-color:var(--primary-color); }
       .m-sheet .lsr-mount .lsr-body{ padding:0; }
-      .m-sheet .lsr-mount .lst-sech{ font-size:13.5px; font-weight:500; color:var(--text-main); margin:12px 0 7px;
-        display:flex; align-items:center; gap:7px; cursor:pointer; user-select:none; padding:3px 2px; border-radius:8px; }
-      .m-sheet .lsr-mount .lst-sech .lst-chev{ flex:0 0 auto; width:7px; height:7px;
-        border-right:1.8px solid var(--text-muted); border-bottom:1.8px solid var(--text-muted);
-        transform:rotate(45deg); transition:transform .18s ease; position:relative; top:-1px; }
+      /* ⚠ (#R313) THE SAME SIZES AS THE DESKTOP BLOCK IN js/map-ui.js — that block is written under
+         `#layer-sidebar-r`, an id that is not on the phone's mount, so these are not an override but
+         the phone's only copy. 「レイヤーカテゴリの見出しをもっと大きく目立つ感じにしろ。」 moved both.
+         One step under the desktop 17px because the sheet is 360 px wide, not 400. */
+      .m-sheet .lsr-mount .lst-sech{ font-size:16px; font-weight:700; letter-spacing:-0.015em; color:var(--text-main); margin:16px 0 8px;
+        display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; padding:4px 2px; border-radius:8px; }
+      .m-sheet .lsr-mount .lst-sech .lst-chev{ flex:0 0 auto; width:8.5px; height:8.5px;
+        border-right:2px solid var(--text-muted); border-bottom:2px solid var(--text-muted);
+        transform:rotate(45deg); transition:transform .18s ease; position:relative; top:-2px; }
       .m-sheet .lsr-mount .lst-sech.closed .lst-chev{ transform:rotate(-45deg); top:0; }
-      .m-sheet .lsr-mount .lst-sech .lst-cnt{ font-weight:500; font-size:10.5px; color:var(--text-muted);
-        background:var(--input-bg); border-radius:999px; padding:1px 7px; }
+      .m-sheet .lsr-mount .lst-sech .lst-cnt{ font-weight:600; font-size:11px; color:var(--text-muted);
+        background:var(--input-bg); border-radius:999px; padding:2px 8px; letter-spacing:0; }
       .m-sheet .lsr-mount .lst-sech::after{ content:""; flex:1; height:1px; background:rgba(128,128,128,0.14); }
       /* (#R233) 「モバイル版のレイヤー選択欄は、横に3つタイルを置く形式に。」 Three across, and the gap
          tightens with them so the tiles keep a usable width on a 360 px phone (3×~104 px + 2×7 px). */

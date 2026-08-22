@@ -312,6 +312,7 @@ window.IntMapLang.define('fr', { ui: {
     "Next hour": "Heure suivante",
     "no frames": "aucune image",
     "Oldest frame": "Image la plus ancienne",
+    "Particles": "Particules",   /* weather.js (#R313) */
     "Pressure (MSL)": "Pression (niveau de la mer)",
     "Previous frame": "Image précédente",
     "Previous hour": "Heure précédente",
@@ -323,6 +324,7 @@ window.IntMapLang.define('fr', { ui: {
     "Valid at": "Valide à",
     "Wind direction arrows at 10 m, coloured by speed.": "Flèches de direction du vent à 10 m, colorées selon la vitesse.",
     "Wind gusts (ECMWF)": "Rafales de vent (ECMWF)",
+    "Wind particles": "Particules de vent",   /* atlas-console.js (#R313) */
     /* ⚠ FILLED FROM THE ENGLISH SOURCE STRING, which is argument 0 of every L(…) call — see the
        header. `node scripts/i18n-report.mjs --template fr` regenerates the full skeleton, and
        `node scripts/i18n-report.mjs` prints how much of it is done. Anything absent renders in
@@ -4911,4 +4913,31 @@ window.IntMapLang.define('fr', { ui: {
   "Which countries spend the most on defense relative to GDP?": "Quels pays consacrent la plus grande part de leur PIB à la défense ?",   /* atlas-console.js (#R309) */
   "Brief me on the South China Sea — the latest": "Fais-moi un point sur la mer de Chine méridionale — les dernières nouvelles",   /* atlas-console.js (#R309) */
   "Which countries have the highest life expectancy?": "Quels pays ont l’espérance de vie la plus élevée ?",   /* atlas-console.js (#R309) */
+  "Which weather warnings are in force over {place} right now, and who issued them?": "{place} : quelles alertes météo sont en vigueur en ce moment, et qui les a émises ?",   /* atlas-examples.js (#R313) */
+  "What has been shaking near {place}, and which fault or plate boundary is behind it?": "{place} : où la terre a-t-elle tremblé récemment à proximité, et quelle faille ou limite de plaques est en cause ?",   /* atlas-examples.js (#R313) */
+  "Which volcanoes near {place} are restless, and what would an eruption reach?": "{place} : quels volcans proches montrent des signes d’activité, et jusqu’où irait une éruption ?",   /* atlas-examples.js (#R313) */
+  "What is driving the wind pattern over {place} today?": "{place} : qu’est-ce qui gouverne le régime des vents aujourd’hui ?",   /* atlas-examples.js (#R313) */
+  "Which submarine cables land in {place}, and what happens if one is cut?": "{place} : quels câbles sous-marins y atterrissent, et que se passe-t-il si l’un est coupé ?",   /* atlas-examples.js (#R313) */
+  "What is flying over {place} right now, and where are those aircraft going?": "{place} : quels appareils survolent le territoire en ce moment, et vers où se dirigent-ils ?",   /* atlas-examples.js (#R313) */
+  "What is moving through {place}’s waters right now, and what is it carrying?": "{place} : quels navires traversent ses eaux en ce moment, et que transportent-ils ?",   /* atlas-examples.js (#R313) */
+  "What was happening in {place} in {year}?": "{place} : que s’y passait-il en {year} ?",   /* atlas-examples.js (#R313) */
+  "{place} is one of the most crowded countries on Earth — how does it absorb that?": "{place} : l’un des pays les plus densément peuplés du monde — comment absorbe-t-il une telle densité ?",   /* atlas-examples.js (#R313) */
+  "Almost nobody lives per square kilometre in {place} — so where do people actually live?": "{place} : l’une des densités de population les plus faibles du monde — alors où vivent réellement les gens ?",   /* atlas-examples.js (#R313) */
+  "{place} spans enormous distances — how is it physically held together?": "{place} : des distances gigantesques — qu’est-ce qui relie physiquement le territoire ?",   /* atlas-examples.js (#R313) */
+  "{place} is tiny — what does its economy actually run on?": "{place} : un territoire minuscule — de quoi vit réellement son économie ?",   /* atlas-examples.js (#R313) */
+  "{place} is one of the largest economies in the world — what is actually carrying it?": "{place} : l’une des plus grandes économies du monde — qu’est-ce qui la porte réellement ?",   /* atlas-examples.js (#R313) */
+  "How does {place} sustain one of the highest incomes per person anywhere?": "{place} : comment le pays maintient-il l’un des revenus par habitant les plus élevés du monde ?",   /* atlas-examples.js (#R313) */
+  "{place} spends an unusually large share of its economy on defense — on what, and against what?": "{place} : une part inhabituellement grande de son économie va à la défense — pour quoi, et face à quoi ?",   /* atlas-examples.js (#R313) */
+  "What single change would do the most for everyday life in {place}?": "{place} : quel changement, à lui seul, améliorerait le plus la vie quotidienne ?",   /* atlas-examples.js (#R313) */
+  "How is {place} actually governed, and who really decides?": "{place} : comment le pays est-il réellement gouverné, et qui décide vraiment ?",   /* atlas-examples.js (#R313) */
+  "What keeps {place}’s institutions working as well as they do?": "{place} : qu’est-ce qui fait fonctionner ses institutions aussi bien ?",   /* atlas-examples.js (#R313) */
+  "Why do people in {place} live longer than almost anywhere else?": "{place} : pourquoi y vit-on plus longtemps que presque partout ailleurs ?",   /* atlas-examples.js (#R313) */
+  "How much of {place} is actually online, and what is the bottleneck?": "{place} : quelle part de la population est réellement connectée, et où est le goulet d’étranglement ?",   /* atlas-examples.js (#R313) */
+  "Where are {place}’s people concentrated, and where is that shifting?": "{place} : où sa population se concentre-t-elle, et vers où se déplace-t-elle ?",   /* atlas-examples.js (#R313) */
+  "What happens in {capital} that matters beyond {place}?": "{place} : que se passe-t-il à {capital} qui compte au-delà de ses frontières ?",   /* atlas-examples.js (#R313) */
+  "How does {place} differ from the rest of {sub}?": "{place} : quelles différences avec le reste de la région « {sub} » ?",   /* atlas-examples.js (#R313) */
+  "What did the world look like in {year}?": "À quoi ressemblait le monde en {year} ?",   /* atlas-examples.js (#R313) */
+  "Where in the world are the most severe weather warnings in force right now?": "Où dans le monde les alertes météo les plus graves sont-elles en vigueur en ce moment ?",   /* atlas-examples.js (#R313) */
+  "Which plate boundaries have been most active in the past week?": "Quelles limites de plaques tectoniques ont été les plus actives cette dernière semaine ?",   /* atlas-examples.js (#R313) */
+  "Which submarine cable chokepoints carry the most of the world’s traffic?": "Quels points de passage obligés des câbles sous-marins portent la plus grande part du trafic mondial ?",   /* atlas-examples.js (#R313) */
 } });

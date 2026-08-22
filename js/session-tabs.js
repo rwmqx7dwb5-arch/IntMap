@@ -139,7 +139,12 @@ export function makeSessionTabs(HOST, CTX) {
           else left.push(id); });
         if(left.length&&offTries<25){ defOff.length=0; defOff.push.apply(defOff,left); setTimeout(pollOff,220); } })();
       (function poll(){ tries++; const pending=[];
-        want.forEach(id=>{ const cb=document.getElementById(id); if(cb){ if(!cb.checked){ try{ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } } else pending.push(id); });
+        /* ⚠ (#R313) MARK THE BOX AS «THE RESTORE DID THIS», NOT THE READER. js/layer-home.js lets a
+           handful of region-only layers frame their region on switch-on; the event below is the same
+           `change` a finger produces, and this poll runs for up to 5.5 s while `_restoring` clears at
+           1.6 s — so timing cannot tell them apart and the mark does. The mark is SPENT, not
+           permanent: the reader's own toggle later in the same session still flies. */
+        want.forEach(id=>{ const cb=document.getElementById(id); if(cb){ if(!cb.checked){ try{ cb.__imRestored=1; cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } } else pending.push(id); });
         if(pending.length&&tries<25){ want.length=0; want.push.apply(want,pending); setTimeout(poll,220); } })();
       /* open the saved tab */
       /* (#R231) `monitors:'tab.monitors'` was here. A saved session that last had the Monitors tab open

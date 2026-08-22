@@ -33,6 +33,9 @@ window.IntMapModules.betaOverlays=function(HOST){
     /* ---------- Ukraine frontline (DeepState — curl-verified 200 + Access-Control-Allow-Origin:*) ---------- */
     const UKR_IDS=['ukr-fill','ukr-line','ukr-front'];
     let ukrFC=null, ukrTimer=null;
+    /* (#R313) published so js/layer-home.js frames the data that was actually downloaded rather
+       than a typed-in box. Null until the first load lands; that module falls back to Ukraine. */
+    window.IntMapUkrFrontFC=()=>ukrFC;
     function ukrEnsure(){ if(GE().layers.hasSource('ukr-src')) return true; if(!_imCanDraw()) return false;
       try{
         GE().layers.addSource('ukr-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'DeepStateMap'});
@@ -111,13 +114,16 @@ window.IntMapModules.betaOverlays=function(HOST){
     function ukrToggle(on){ state.ukr=on;
       const a=()=>{ if(!ukrEnsure()){ GE().events.once('idle',a); return; } setVis(UKR_IDS,on); if(on) ukrLoad(false).then(()=>{ if(ukrFC) ukrKeyFromData(ukrFC.features); }); };
       a();
-      /* (#R30) NEVER move the camera on a layer toggle ("レイヤーを選択しても視点を一切動かさない") — the
-         R21 auto-flyTo to Ukraine violated that. The layer only exists around Ukraine, so instead of moving
-         the view we just HINT (once) that the user can pan there. */
-      if(on){ try{ const c=GE().camera.getCenter();
-        if((c.lng<18||c.lng>46||c.lat<40||c.lat>57||GE().camera.getZoom()<3.4) && !window._ukrHinted){ window._ukrHinted=true;
-          const t=(window.IntMapLang.t(HOST.lang,'Ukraine frontline on — pan to Ukraine to see it','ウクライナ前線を表示中（ウクライナ周辺へ移動すると見えます）','Ukraine-Frontlinie aktiv — zur Ukraine schwenken, um sie zu sehen','Линия фронта включена — переместитесь к Украине, чтобы увидеть её','Línea del frente de Ucrania activada — desplázate a Ucrania para verla'));
-          try{ if(typeof imToast==='function') imToast(t); else if(typeof satToast==='function') satToast(t); }catch(_){} } }catch(_){} }
+      /* ══ ⚠⚠⚠ (#R313) THE READER REVERSED #R30 — THIS LAYER MAY TAKE THEM TO UKRAINE ══════════
+         「いや、それを言ったらアメリカ大統領選挙もですよね？ EUも、ウクライナも、両方自動で
+           行くようにして。」
+         #R30 removed R21's auto-flyTo to honour CONSTITUTION §3 and left a toast in its place — a
+         sentence asking the reader to do by hand the one thing the layer needed. The rule is now
+         narrowed rather than restored wholesale: js/layer-home.js holds the SET of layers whose data
+         only exists in one region, and it alone decides «once per session» and «the reader asked,
+         a session restore did not». The toast is gone because the map now answers instead.
+         ⚠ The frame is the frontline collection's OWN extent when it has landed — see there. */
+      if(on){ try{ window.IntMapLayerHome&&window.IntMapLayerHome.arrive('beta-dl-ukrfront'); }catch(_){} }
       if(on){ if(!ukrTimer) ukrTimer=setInterval(()=>{ if(state.ukr) ukrLoad(true); },10*60*1000); }   /* refresh every 10 min while on */
       else if(ukrTimer){ clearInterval(ukrTimer); ukrTimer=null; }
       try{ if(on&&window._registerLayerOpacity){

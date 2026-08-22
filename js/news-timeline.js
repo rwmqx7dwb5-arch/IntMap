@@ -26,6 +26,10 @@ window.IntMapModules.newsTimeline=function(HOST){
     const tl=document.getElementById('news-timeline'), tg=document.getElementById('ntl-toggle');
     const slider=document.getElementById('ntl-slider'), datePicker=document.getElementById('ntl-date');
     const bigval=document.getElementById('ntl-bigval');
+    /* (#R313) the Time tab's date line — a SECOND element beside the big value, not a longer
+       string inside it: #ntl-bigval is what tests/smoke.spec.js reads to prove the panel prints the
+       time it was set to, and it is the element with `text-overflow:ellipsis`. */
+    const bigdate=document.getElementById('ntl-bigdate');
     const badge=document.getElementById('ntl-badge'), btnNow=document.getElementById('ntl-today');
     const modeYear=document.getElementById('ntl-mode-year'), modeDate=document.getElementById('ntl-mode-date'), modeTime=document.getElementById('ntl-mode-time');
     /* ══ ⚠⚠⚠ (#R293) 「時刻と予報タブを分けるな」 — THE FOURTH TAB IS GONE, ITS TRANSPORT IS NOT ═════
@@ -382,6 +386,10 @@ window.IntMapModules.newsTimeline=function(HOST){
         const zf=zFields(w); let mins=zf.h*60+zf.m; if(mins>maxM) mins=maxM;   /* (#R289) in the chosen zone */
         tl.classList.toggle('active',!e.isLive);
         bigval.textContent=_hm(w);
+        /* ⚠ (#R313) THE SAME `_dateText` THE DATE TAB USES — so the two tabs can never name different
+           days for one instant. It resolves the day in the zone the reader CHOSE (#R289), which is
+           the only day this readout could honestly claim: the clock beside it is that zone's. */
+        if(bigdate) bigdate.textContent=_dateText(w);
         if(timePicker) timePicker.value=_hm(w);
         if(+slider.value!==mins) slider.value=mins;
         _tmSyncTerminator();
@@ -389,9 +397,11 @@ window.IntMapModules.newsTimeline=function(HOST){
         if(playerEl&&playerEl.style.display==='none'&&fcReady()) buildPlayer();
       }
       else if(e.isLive){ tl.classList.remove('active'); if(datePicker) datePicker.value='';
+        if(bigdate) bigdate.textContent='';   /* (#R313) Year prints a year and Date prints the date itself — neither has a second line */
         bigval.textContent=(mode==='year')?yLabel(curY):L5('Today','今日','Heute','Сегодня','Hoy');
         if(mode==='year'){ if(+slider.value!==curY) slider.value=curY; } else { if(+slider.value!==3650) slider.value=3650; } }
       else { tl.classList.add('active');
+        if(bigdate) bigdate.textContent='';   /* (#R313) — as above */
         const today=new Date(); today.setHours(0,0,0,0); const t=new Date(e.when); t.setHours(0,0,0,0); const da=Math.round((today-t)/864e5);
         if(mode==='year'){ bigval.textContent=yLabel(e.year); const sv=Math.max(1900,Math.min(curY,e.year)); if(+slider.value!==sv) slider.value=sv; }
         else { bigval.textContent=_dateText(e.when);   /* (#R289) in the chosen zone */
