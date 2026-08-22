@@ -28,15 +28,23 @@
  *  replaced — #R313's own notes name the bouncing-dot class it removed — so a check that greps the
  *  raw file proves nothing. That mistake has been made eight times; it was made once more while
  *  writing this file, and caught by the assertion below.
+ *
+ *  ⚠ AND EVERY READ GOES THROUGH `readLF()` (#R283, scripts/eol.mjs). Line endings belong to
+ *  the CHECKOUT, not to the file: js/layer-home.js is `i/lf w/crlf`, so ⑤'s lift-out pattern
+ *  `/function bboxOfFC[\s\S]*?\n  \}\n/` — which demands a BARE line break after the closing
+ *  brace — could not match on a Windows working copy and could not fail on Linux: red here,
+ *  green in CI, for a reason that has nothing to do with the camera. Third time this defect has
+ *  been paid for; the fix is the READER, never the pattern. tests/r283-checks ② names this file.
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readLF } from '../scripts/eol.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
+const read = (p) => readLF(resolve(ROOT, p));
 const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══════════════════════════════════════════════════════════════════════════
