@@ -291,3 +291,28 @@ test('R305 ⑯ the deleted source PDF is gone from the tree and from the ledger'
   const sm = noComments(read('js/seismic.js'));
   assert.match(sm, /MMI/, 'the seismic module still carries the scale it was read into');
 });
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+ *  #R306 追記 — 「何も発令されていないのに、灰色に塗られていない場所がある。」(same report)
+ *  MEASURED on production after #R305 shipped: 275 of 3,400 land samples were still painted by
+ *  nothing, and **83 of them were in Russia** — a country whose warnings this map places on ITS OWN
+ *  admin-1 units. Two features out of one index cannot overlap, so neither can be a hole in the
+ *  other; what put them there was `geomCentre`, the average vertex of the largest ring, landing
+ *  outside its own concave subject and inside a neighbour's.
+ * ==========================================================================================*/
+test('R306 ⑰ a neighbour is not something inside this unit', () => {
+  const s = WP();
+  assert.match(s, /function unitBoxes\(iso\)\{/, 'the outlines this country holds are indexed');
+  assert.match(s, /_uBoxOf\[iso\]=\{of:u,set:set\};/,
+    "…once per country per publish, keyed on the unit array's own identity");
+  const wm = /function warnMeeting\(iso,g\)\{[\s\S]{0,1600}?return \{ covering:false, inside:inside \}; \}/.exec(s);
+  assert.ok(wm, 'warnMeeting must be findable');
+  assert.match(wm[0], /const isNeighbourUnit=\(wg\)=>\{ const k=_bboxKey\(geomBox\(wg\)\); return !!\(k&&k!==myKey&&boxes\[k\]\); \};/,
+    'a warning whose outline IS one of this country’s units is that unit');
+  assert.match(wm[0], /const add=\(wg\)=>\{ if\(wg!==g&&!isNeighbourUnit\(wg\)&&inside\.indexOf\(wg\)<0\) inside\.push\(wg\); \};/,
+    '…so it is never collected as something inside this one');
+  assert.match(wm[0], /if\(isNeighbourUnit\(bin\[i\]\)\) continue;/,
+    '…and it can never COVER this one either, however big its bounding box is');
+  /* the unit that warning really belongs to is still dropped, by the test that was already there */
+  assert.match(s, /function sameOutline\(iso,g\)\{/, 'the unit that IS the warning is still dropped');
+});
