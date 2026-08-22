@@ -735,6 +735,51 @@
     return Promise.all([s, m]).then(function (r) { return r[0]; });
   }
 
+  /* ══ ⚠⚠⚠ (#R314) EVERYTHING IN FRONT OF THE FIRST BYTE OF DATA, BEFORE THE CLICK ═══════════════
+     「風レイヤーは品質保ったまま、起動から日時変更からすべてに至るまで、爆速にしろ。」(6回目)
+     MEASURED on the built page, a cold switch-on of the wind, timed from the click:
+
+         0 ms        the click
+         121 / 640   the 340 kB SDK <script> resolves
+         842         the open of the file begins (HEAD)
+         976         …the HEAD is answered
+         1,010       the wasm is instantiated for the first time
+         1,354       …and compiled (344 / 460 / 556 ms across three runs)
+         1,355       THE FIRST RANGE OF FORECAST DATA IS ASKED FOR
+         3,664       the field is in hand
+
+     **1.36 s of a 3.65 s switch-on is spent before a single byte of the forecast is requested**,
+     and not one of those steps depends on the click: the script, the wasm and the open of the file
+     the axis is ALREADY SITTING ON are the same work whenever they happen. `ready()` starts them
+     at the click because that is the first moment it is certain they are wanted.
+
+     `warm()` is that same work, started at the first moment they are LIKELY — the pointer arriving
+     on a weather row (js/weather.js). That is evidence rather than a guess, and it is the only
+     signal this module has ever had that predicts a switch-on. It stays a complete no-op for a
+     reader who never goes near those rows, which is the rule #R307 wrote for the stage-in
+     (「staging files for a layer nobody switched on is bytes nobody asked for」) and this keeps.
+
+     ⚠ IT ADDS NO SECOND OF ANYTHING. `loadSDK` and `fetchMeta` memoise, `registerProtocol` latches
+     on its own return value (#R288), and `openReader` is idempotent per file (`pinReader`), so the
+     click's `ready()` finds all of it done and asks for data immediately.
+     ⚠ IT IS ONE HEAD AND ONE TRAILER (64 kB) — not the band. The bytes of the picture are still
+     only fetched by a reader who actually switched the layer on. */
+  var warmed1 = false;
+  function warm() {
+    if (warmed1) return false;
+    warmed1 = true;
+    try {
+      var m = fetchMeta(false);                       /* memoised — the axis is normally here from boot */
+      loadSDK().then(function () {
+        registerProtocol();
+        return m.catch(function () { return null; });
+      }).then(function () {
+        try { openReader(fileUrl(idx)); } catch (_) {}
+      }).catch(function () { warmed1 = false; });
+    } catch (_) { warmed1 = false; return false; }
+    return true;
+  }
+
   /* ── the decoded field ────────────────────────────────────────────────────────────────────────
      `values` is the variable itself, EXCEPT for a wind component: the reader's derivation rule
      reads u AND v and returns `values` = speed (m/s) with `directions` = the meteorological FROM
@@ -1644,6 +1689,7 @@
     meta: fetchMeta,
     metaSync: function () { return meta; },
     ready: ready,
+    warm: warm,                       /* (#R314) — see the note on `warm` */
     loadSDK: loadSDK,
     sdk: function () { return sdk; },
     registerProtocol: registerProtocol,

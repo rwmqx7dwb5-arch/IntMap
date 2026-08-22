@@ -338,8 +338,28 @@ test('R298 ⑧ the reads that do not draw wait for the colour field', () => {
      the cursor readout were all queued ahead of the tiles the reader is waiting to see. */
   assert.match(w, /function afterFieldShown\(fn,graceMs\)\{/, 'there is one place that defers');
   /* ⚠ (#R310) `readAhead` replaced `prefetch` for the wind — same hour, same band, but it keeps
-     the decoded frame. It still waits for the colour, which is what this check is for. */
-  assert.match(w, /afterFieldShown\(\(\)=>\{[\s\S]{0,240}EC\(\)\.(readAhead|prefetch)\(/, 'the next hour waits');
+     the decoded frame. */
+  /* ══ ⚠⚠⚠ (#R314) THE HOUR THE READER IS STEPPING **ONTO** NO LONGER WAITS, AND THAT IS THIS
+     CHECK'S OWN PREMISE EXPIRING RATHER THAN A REGRESSION ═══════════════════════════════════════
+     The premise stated three lines above is 「one reader, one queue … so the next hour's prefetch
+     (A DIFFERENT FILE, WHICH RE-POINTS THE READER) … queued ahead of the tiles」. #R310 gave every
+     file its own reader (`readerFor`, four of them) and pinned the singleton the tiles use, so a
+     read of another hour cannot re-point anything the tiles are holding; #R310's own note says as
+     much (「with a reader per file it is no longer in front of anything」) and left the gate up.
+     What that cost, MEASURED by suppressing the colour raster and stepping the axis:
+         the particles' band read      513 / 521 / 534 / 537 ms
+         ONE colour tile               1,266 / 1,381 / 1,772 ms
+     — so waiting for the colour started the read-ahead about 2.1–2.6 s after the step, and a
+     reader stepping every ~1.2 s never reached it (0 / 1,180 / 0 / 1,279 / 0 / 1,724 ms).
+     ⚠ THE RULE THIS CHECK PROTECTS IS STILL HERE, AND IT IS STILL LOAD-BEARING. It now applies to
+     the read that is actually a GUESS — the SECOND hour ahead (`aheadMore`). An intermediate build
+     released both by the field and bought 802 → 447 ms for the particles by spending
+     1,584 → 1,906 ms of the colour, which is the complaint this very round of the project was
+     opened by (「背景のカラーが、時間を変えるとなかなか表示されない」). See tests/r314-checks. */
+  assert.match(w, /afterFieldShown\([\s\S]{0,60}?aheadMore\(/,
+    'the SPECULATIVE second hour ahead still waits for the colour (#R314)');
+  assert.ok(!/afterFieldShown\([\s\S]{0,240}?EC\(\)\.readAhead\(/.test(w),
+    '…and the CERTAIN next hour no longer does, because #R310 removed the reason it ever had to');
   assert.match(w, /afterFieldShown\(\(\)=>\{[\s\S]{0,700}EC\(\)\.load\(VAR,null,want,true\)/, 'the wide band waits');
   assert.match(w, /if\(W&&W\.on&&W\.on\(\)&&W\.afterFieldShown\)\{ W\.afterFieldShown\(warmReadNow\); return; \}/,
     'and so does the cursor readout, but only while the wind is the layer holding the reader');
