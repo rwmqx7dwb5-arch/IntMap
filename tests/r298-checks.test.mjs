@@ -326,7 +326,9 @@ test('R298 ⑧ the reads that do not draw wait for the colour field', () => {
      so the next hour's prefetch (a DIFFERENT file, which re-points the reader), the wide band and
      the cursor readout were all queued ahead of the tiles the reader is waiting to see. */
   assert.match(w, /function afterFieldShown\(fn,graceMs\)\{/, 'there is one place that defers');
-  assert.match(w, /afterFieldShown\(\(\)=>\{[\s\S]{0,240}EC\(\)\.prefetch\(/, 'the next hour waits');
+  /* ⚠ (#R310) `readAhead` replaced `prefetch` for the wind — same hour, same band, but it keeps
+     the decoded frame. It still waits for the colour, which is what this check is for. */
+  assert.match(w, /afterFieldShown\(\(\)=>\{[\s\S]{0,240}EC\(\)\.(readAhead|prefetch)\(/, 'the next hour waits');
   assert.match(w, /afterFieldShown\(\(\)=>\{[\s\S]{0,700}EC\(\)\.load\(VAR,null,want,true\)/, 'the wide band waits');
   assert.match(w, /if\(W&&W\.on&&W\.on\(\)&&W\.afterFieldShown\)\{ W\.afterFieldShown\(warmReadNow\); return; \}/,
     'and so does the cursor readout, but only while the wind is the layer holding the reader');
