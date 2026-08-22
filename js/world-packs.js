@@ -4178,7 +4178,9 @@ window.IntMapModules.worldPacks=function(HOST){
       const CUT_MIN_DEG2=0.02;
       /* ⚠ 1国ぶんの上限。`subtractWarnings` の `CLIP_MAX_V`（60,000）は「単位 − 20 の発令」のための
          天井で、こちらは 1 回が 300 ms を超えることがあった（MEASURED: スイスの輪郭 − 12 単位）。
-         上塗りされている飛び地と係争地はどれもこれよりずっと小さい。 */
+         ⚠ (#R308 追記) **12,000 まで下げたらカシミールが落ちた**——パキスタンの輪郭＋8 単位で
+         **18,971 頂点**、そこは z6 で **519 点**の上塗りである。1 回が長いことの本当の対処は
+         予算（`tCut`）と安い順であって、係争地を天井の外に置くことではない。 */
       const CUT_ONE_V=20000;
       let hatchCutISO=[], hatchCutFC={type:'FeatureCollection',features:[]}, hatchCutKey='', hatchCutN=0;
       /* ⚠ (#R308) WHAT THE SUBTRACTION ANSWERED, PER COUNTRY — 'gone' 覆われた · 'cut' 一部 ·
@@ -4199,7 +4201,11 @@ window.IntMapModules.worldPacks=function(HOST){
         const zero=[];
         for(let i=0;i<geo.length;i++){ const c=String(geo[i].id||''); if(!c||!geo[i].geometry) continue;
           if(washTier(c)===0) zero.push(c); }
-        const key=sig+'|'+zero.join(',');
+        /* ⚠ (#R308 追記) 視野が鍵の一部である——切る集合が視野で決まるようになったので、
+           パンしただけで作り直されなければ、前の視野の答えがそのまま残る。 */
+        let vk=''; try{ const b=GE().camera.getBounds();
+          vk=[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].map(v=>Math.round(v*4)/4).join(','); }catch(_){}
+        const key=sig+'|'+vk+'|'+zero.join(',');
         if(key===hatchCutKey) return false;
         /* この層が答えを描いている地面 */
         const ans=[];
@@ -4221,19 +4227,47 @@ window.IntMapModules.worldPacks=function(HOST){
           for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++) fn(y*CW+x); };
         for(let i=0;i<ans.length;i++) cellsOf(ans[i].b,(k)=>{ let a=grid.get(k); if(!a){ a=[]; grid.set(k,a); } a.push(i); });
         /* ⚠ 画面の中の国から先に。予算を使い切ったとき、読み手が見ているものが後回しにならない。 */
-        /* ⚠ 「画面の中か」は<b>比較の外で</b>1回だけ数える。`inViewISO` は国の一覧を毎回線形に探すので、
+        /* ══ ⚠⚠⚠ (#R308 追記) 画面の中だけ。「先に」ではなく「だけ」である ═══════════════════════
+           最初の版は画面の中の国を**先に**やり、残りは予算の続きに回した。MEASURED on production:
+           リヒテンシュタインは直った（87/87 → 0/0）が、**コソボ 379・北キプロス 420 は一度も切られない**
+           ——`hatchCut.isos` が空のまま `more:true` で回り続ける。理由は、本番では警報が絶えず届いて
+           `shown` が変わるので、**予算を使い切るたびに最初からやり直し**になり、順番の後ろは永久に
+           順番が来ないこと。ローカルは feed が落ち着くので収束していた＝**本番でしか出ない**。
+           → 画面の外の国は**そもそも切らない**。斜線が誰かの答えの上に乗っているかどうかは、
+           読み手が見ている地面についてしか意味がない——`quietISOs` が単位を視野で区切るのと同じ理由で、
+           同じ境（`inView` の padded box）を使う。⚠ 視野から出た国は `isos` からも外れるので、
+           `countries` 側の斜線が戻る＝**画面の外で何かが消えることはない**。
+           ⚠ 「画面の中か」は<b>ループの外で</b>1回だけ数える。`inViewISO` は国の一覧を毎回線形に探すので、
            比較関数の中で呼ぶと 250 か国の整列だけで 50 万回の文字列比較になる。 */
         const inv=Object.create(null);
         for(let i=0;i<geo.length;i++){ const c=String(geo[i].id||''); if(!c) continue;
           try{ inv[c]=!!inView(geo[i]); }catch(_){ inv[c]=false; } }
-        const order=geo.slice();
-        try{ order.sort((x,y)=>(inv[String(y.id||'')]?1:0)-(inv[String(x.id||'')]?1:0)); }catch(_){}
+        /* ⚠⚠ …AND WITHIN THE VIEW, THE CHEAPEST FIRST. MEASURED on the built page at z8 over Cyprus:
+           five countries are in view and the budget was gone before the third — one of them cost
+           171 ms on its own, because Turkey's and Syria's outlines are thousands of vertices while
+           the thing this round exists to cut (北キプロス) is a few hundred. The small ones are also
+           the ones that are WHOLLY on somebody else's answer, so cheapest-first is also
+           most-defective-first; the big ones get whatever budget is left, and are free once memoised. */
+        const order=geo.filter(f=>inv[String(f.id||'')]);
+        const _vc=(f)=>{ if(f.__vc!=null) return f.__vc;
+          let v=0; try{ v=_vcount(_polysOf(f.geometry)||[]); }catch(_){ v=1e9; }
+          try{ Object.defineProperty(f,'__vc',{value:v,enumerable:false,configurable:true}); }catch(_){}
+          return v; };
+        order.sort((x,y)=>_vc(x)-_vc(y));
+        /* ⚠⚠⚠ (#R308 追記2) THE BUDGET IS THE CLIPPER'S, NOT THE WHOLE FUNCTION'S. `t0` is taken at the
+           very top, so the parts that always run — `washTier` for 250 countries, the answered list,
+           the 10° grid, the in-view flags — were spending it before a single difference was computed.
+           MEASURED on the built page at z8 over Cyprus: `ms` 43 with the budget at 25, and 北キプロス
+           reported `later` for ever while two tiny neighbours got cut. The clock that gates the work
+           starts where the work does. */
+        const tCut=_now();
         const isos=[], out=[], seen=new Set(); const why=Object.create(null);
         let spent=false;
         for(let i=0;i<order.length;i++){ const f=order[i], c=String(f.id||'');
           if(!c||!f.geometry||washTier(c)!==0) continue;
           const b=geomBox(f.geometry); if(!b) continue;
           const cand=[]; seen.clear();
+          /* (#R308 追記) `order` は視野の中だけなので、ここに来る国は必ず画面に出ている */
           const bArea=Math.max(1e-9,(b[2]-b[0])*(b[3]-b[1]));
           cellsOf(b,(k)=>{ const a=grid.get(k); if(!a) return;
             for(let j=0;j<a.length;j++){ const idx=a[j]; if(seen.has(idx)) continue; seen.add(idx);
@@ -4248,7 +4282,7 @@ window.IntMapModules.worldPacks=function(HOST){
           const ck=near.map(g=>_bboxKey(geomBox(g))||'?').sort().join(';');
           let hit=cutMemo[c];
           if(!hit||hit.k!==ck){
-            if(_now()-t0>CUT_BUDGET_MS){ spent=true; why[c]='later'; if(!hit) continue; }
+            if(_now()-tCut>CUT_BUDGET_MS){ spent=true; why[c]='later'; if(!hit) continue; }
             else hit=cutMemo[c]=Object.assign({k:ck},_cutOne(c,f.geometry,near)); }
           why[c]=hit.why;
           if(hit.g==='same') continue;                 /* 何も減らない／答えられない → 従来どおり */
