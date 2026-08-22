@@ -1729,6 +1729,7 @@ window.IntMapModules.worldPacks=function(HOST){
              → ask identity of the OUTLINE first. Same country and the same bbox to four decimals
              (≈11 m) is the same unit — the test `dedupeSameShape` already trusts for the same job. */
           const bk=_bboxKey(bb); if(bk) (rec.boxes||(rec.boxes=Object.create(null)))[bk]=1;
+          (rec.all||(rec.all=[])).push(f.geometry);   /* (#R307) the flat list — see `warnsNear` */
           /* ⚠ (#R298) …and its CENTRE, bucketed the same way — see `warnMeeting` */
           const wc=geomInside(f.geometry); /* (#R306) a point that is REALLY in the warning */
           /* ⚠ (#R305) THE SHAPE TRAVELS WITH THE CENTRE. This used to bucket the bare point, which
@@ -1816,7 +1817,9 @@ window.IntMapModules.worldPacks=function(HOST){
           if(isNeighbourUnit(bin[i])) continue;
           if(_bbInside(ub,bb)){ covering=true; break; }
           add(bin[i]); }
-        if(covering) return { covering:true, inside:null };
+        /* (#R307) 「near」 is carried even here — the difference is a better answer than this bbox
+           test, and `quietGeomFor` prefers it whenever the clipper is in hand. */
+        if(covering) return { covering:true, inside:null, near:warnsNear(rec,g,ub,isNeighbourUnit) };
         /* …and the other direction: what is in force for a SMALLER area inside this unit */
         if(rec.pts){
           const x0=Math.floor(ub[0]), x1=Math.floor(ub[2]), y0=Math.floor(ub[1]), y1=Math.floor(ub[3]);
@@ -1825,7 +1828,33 @@ window.IntMapModules.worldPacks=function(HOST){
             for(let i=0;i<ps.length;i++){ const w=ps[i];
               if(w.g===g||!inGeom(w.c,g)) continue;
               add(w.g); } } }
-        return { covering:false, inside:inside }; }
+        return { covering:false, inside:inside, near:warnsNear(rec,g,ub,isNeighbourUnit) }; }
+      /* ══ ⚠⚠⚠ (#R307) EVERY WARNING WHOSE BOX MEETS THIS UNIT'S — not only the ones a POINT found ══
+         The two tests above ask 「is one of these inside the other」, which is the question the punch
+         needed: a warning has to be strictly inside a unit to be a hole in it. The DIFFERENCE below
+         needs the whole candidate set, because the case that costs the most is neither — a warning
+         that merely OVERLAPS an edge. Both point tests are false of it, so the unit was published
+         whole and the grey lay under the colour, and where a point test did fire the unit was thrown
+         away whole. The set is the same one the cell index was built for; a unit whose box spans more
+         of the planet than the index is worth walking falls back to the flat list. */
+      const NEAR_CELLS=2000;
+      function warnsNear(rec,g,ub,skip){
+        const out=[];
+        if(!rec) return out;
+        const keep=(wg)=>{ if(wg===g) return; const bb=geomBox(wg); if(!bb) return;
+          if(bb[2]<ub[0]||bb[0]>ub[2]||bb[3]<ub[1]||bb[1]>ub[3]) return;
+          if(skip(wg)) return;
+          if(out.indexOf(wg)<0) out.push(wg); };
+        const x0=Math.floor(ub[0]), x1=Math.floor(ub[2]), y0=Math.floor(ub[1]), y1=Math.floor(ub[3]);
+        const cells=(x1-x0+1)*(y1-y0+1);
+        if(rec.cells&&cells>0&&cells<=NEAR_CELLS){
+          for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++){
+            const bin=rec.cells[x+':'+y]; if(!bin) continue;
+            for(let i=0;i<bin.length;i++) keep(bin[i]); }
+          return out; }
+        const all=rec.all||[];
+        for(let i=0;i<all.length;i++) keep(all[i]);
+        return out; }
       /* ══ ⚠⚠⚠ (#R305) 「何も発令されていないのに、灰色に塗られていない場所がある。」 ══════════════════
          ② USED TO THROW THE WHOLE UNIT AWAY. #R298 added it so that 「Valais」's grey could not lie
          under 「Monthey - Val d'Illiez」's colour — correctly — but the remedy was to stop drawing
@@ -1875,13 +1904,104 @@ window.IntMapModules.worldPacks=function(HOST){
             const oA=ringArea2(out[put][0]), hA=ringArea2(ring);
             out[put].push(((oA>0)===(hA>0))?ring.slice().reverse():ring); } }
         return { type:'MultiPolygon', coordinates:out }; }
-      let _qPunched=0, _qDropped=0, _qNoPunch=0;
+      /* ══ ⚠⚠⚠ (#R307) 「単位の索引と、警報が置かれた索引が別物である」——だから差を計算する ═════════
+         「何も発令されていないのに、灰色に塗られていない場所がある。」 (4回目)
+
+         #R305 の穴 (`punchQuiet`)・#R306 の中の点 (`geomInside`) は、どちらもそれ自体は正しく、どちらも
+         **手前**を直していた。#R306 の追記が名指しした本当の原因はこれである——**警報を公表している
+         索引と、この地図が灰色を描く単位の索引が、そもそも同じ分割ではない。** 分割が違えば、警報は
+         単位の中にも外にもまたがる。またがったものは穴にできないので、単位は丸ごと捨てられていた。
+
+         MEASURED on production (R306 のビルド・z2・陸 3,732 標本):
+             498 点 (13.34 %) が何にも塗られていない — CAN 230 · RUS 197 · DZA 25 · KAZ 16 · ほか 30
+             カナダ  警報 159（ECCC 自前の予報区）· 単位 13（州・準州）· 灰色として出せた単位 **6**
+             ロシア  警報  80 · 灰色として出せた単位 **18** · 陸標本 698 のうち **197 が無塗装**
+         そして層全体では **単位 2,230 が灰色になり、2,388 が捨てられ、穴が開けられたのは 6 個**だった
+         ——「穴を開けられるか」で分けている限り、ほとんど全部が捨てる側に落ちる。
+
+         → 「穴を開けられるか」を訊くのをやめ、**引き算そのものを計算する**。灰色は
+         `単位 − ∪(その単位に重なる警報)` である。またぐ警報は切り取られ、単位より小さい警報は穴になり、
+         単位を覆う警報は結果を空にする——3つの場合が1つの式の3つの答えになる。
+         ⚠ 五條市のように**1つの市町村が複数の発令単位に分かれている**場合も、これで正しく出る:
+            警報が北部の形で置かれれば、灰色は市 − 北部 ＝ 南部になる（`jpSubShape` を見よ）。
+         ⚠ 重ねないという規則（#R298）は**強くなる**。以前は「点の判定に引っかかった警報」だけを避けて
+            いたので、辺にまたがる警報の上には灰色が残り得た。いまは箱が重なる警報を全部引く。
+         ⚠ THE CLIPPER IS LAZY AND OPTIONAL. `polygon-clipping` はこのレイヤーを最初に点けたときに
+            別チャンクで届く。届くまで（あるいは届かなかったとき）は #R305 の穴と #R298 の切り捨てが
+            そのまま動く——**機能が減る瞬間は無い**。届いた時点で publish し直す。 */
+      let PC=null, _pcAsked=false, _pcOut=false;
+      function clipper(){
+        if(PC||_pcOut) return PC;
+        if(!_pcAsked){ _pcAsked=true;
+          import('polygon-clipping').then(m=>{
+            const lib=(m&&(m.default||m))||null;
+            if(lib&&typeof lib.difference==='function'){ PC=lib; _qCache=null; if(on) publish(); }
+            else _pcOut=true;
+          }).catch(()=>{ _pcOut=true; }); }
+        return null; }
+      const _polysOf=(g)=>(g&&g.type==='Polygon')?[g.coordinates]:((g&&g.type==='MultiPolygon')?g.coordinates:null);
+      function _vcount(polys){ let n=0; for(let i=0;i<polys.length;i++){ const p=polys[i];
+        for(let k=0;k<p.length;k++) n+=(p[k]||[]).length; } return n; }
+      /* ⚠ A CEILING, MEASURED RATHER THAN GUESSED. The largest unit this map holds for a warned
+         country is Nunavut at **15,133 vertices**, and subtracting twenty warning areas from it
+         costs **129 ms** — worth paying once and remembering, not worth paying without a bound. Above
+         this the unit keeps the #R305 behaviour rather than stalling a frame. */
+      const CLIP_MAX_V=60000, DIFF_MAX=3000;
+      const _diff=new Map();
+      /* ⚠ MAPLIBRE DECIDES 「ring or hole」 BY WINDING (#R305). polygon-clipping already returns the
+         outer ring and its holes with opposite signs — verified on this version — but the picture
+         must not depend on that staying true, so the signs are forced from the rings themselves. */
+      function _wound(polys){
+        const out=[];
+        for(let i=0;i<polys.length;i++){ const p=polys[i]; if(!p||!p.length) continue;
+          const rings=[]; let first=false;
+          for(let k=0;k<p.length;k++){ const r=p[k]; if(!r||r.length<4) continue;
+            const a=ringArea2(r); if(!a) continue;
+            if(!rings.length){ first=(a>0); rings.push(r); }
+            else rings.push(((a>0)===first)?r.slice().reverse():r); }
+          if(rings.length) out.push(rings); }
+        return out; }
+      /* `undefined` = the clipper could not answer (fall back) · `null` = nothing of this unit is
+         quiet · `g` = nothing was removed · otherwise the cut geometry */
+      function subtractWarnings(iso,g,warns){
+        const pc=clipper(); if(!pc) return undefined;
+        const mine=_polysOf(g); if(!mine||!mine.length) return undefined;
+        const cut=[], keys=[];
+        for(let i=0;i<warns.length;i++){ const wp=_polysOf(warns[i]); if(!wp||!wp.length) continue;
+          const k=_bboxKey(geomBox(warns[i])); if(!k) continue;
+          cut.push(wp); keys.push(k); }
+        if(!cut.length) return g;
+        keys.sort();
+        const ck=iso+'|'+_bboxKey(geomBox(g))+'|'+keys.join(';');
+        if(_diff.has(ck)){ const hit=_diff.get(ck); return (hit==='same')?g:hit; }
+        let v=_vcount(mine); for(let i=0;i<cut.length;i++) v+=_vcount(cut[i]);
+        if(v>CLIP_MAX_V) return undefined;
+        let out=null, ok=true;
+        try{ out=pc.difference(mine,...cut); }catch(_){ ok=false; }
+        if(!ok) return undefined;
+        let res;
+        if(!out||!out.length) res=null;
+        else if(out.length===mine.length&&_vcount(out)===_vcount(mine)) res='same';
+        else { const w=_wound(out); res=w.length?{type:'MultiPolygon',coordinates:w}:null; }
+        if(_diff.size>=DIFF_MAX) _diff.clear();
+        _diff.set(ck,res);
+        return (res==='same')?g:res; }
+      let _qPunched=0, _qDropped=0, _qNoPunch=0, _qCut=0, _qCleared=0;
       /* what 「発表なし」 is true of, for this unit: all of it, all of it but the warned parts, or
          none of it */
       function quietGeomFor(iso,g){
         if(sameOutline(iso,g)){ _qDropped++; return null; }
         const m=warnMeeting(iso,g);
         if(!m) return g;
+        /* (#R307) the difference answers all three cases, so it is asked BEFORE 「covering」 —
+           which is a bbox-and-a-point approximation of the same question. */
+        const near=m.near;
+        if(near&&near.length){
+          const d=subtractWarnings(iso,g,near);
+          if(d!==undefined){
+            if(d===null){ _qCleared++; _qDropped++; return null; }
+            if(d!==g) _qCut++;
+            return d; } }
         if(m.covering){ _qDropped++; return null; }
         const ins=m.inside;
         if(!ins||!ins.length) return g;
@@ -2287,7 +2407,14 @@ window.IntMapModules.worldPacks=function(HOST){
                    the picture are at the same resolution (see the ⚠ above).
                    ⚠ COALESCED: several prefectures land within a second of each other and `refresh()`
                    is six network calls, not one. */
-                clearTimeout(jpFineT); jpFineT=setTimeout(()=>{ jpFineT=0; try{ refresh(); }catch(_){} },600);
+                /* ⚠ (#R307) …AND IT WAITS FOR THE REFRESH TO BE FREE, for the reason measured beside
+                   `askJpSub`: `refresh()` returns immediately when one is already running, so this
+                   call — the one that re-places the warnings at the finer resolution — was being
+                   dropped whenever a prefecture landed during a sweep, leaving the two halves of the
+                   picture at different resolutions until the next tick. Same one-line shape. */
+                clearTimeout(jpFineT); jpFineT=setTimeout(function go(){
+                  if(busy){ jpFineT=setTimeout(go,700); return; }
+                  jpFineT=0; try{ refresh(); }catch(_){} },600);
               })
               .catch(()=>{ jpFineAsked[pp]=0; })
               .then(()=>{ jpFineBusy--; }); });
@@ -2592,6 +2719,64 @@ window.IntMapModules.worldPacks=function(HOST){
          the union of all of them IS the current state. See the measurement at the reduce below.
          ⚠ AND THE AGE IS CHECKED RATHER THAN ASSUMED — a file whose newest bulletin is more than
          three days old is REFUSED rather than presented as 「in force now」. */
+      /* ══ ⚠⚠⚠ (#R307) 同じ市町村が、発令単位では分かれていることがある ═══════════════════════════
+         「五條市のように、同じ市町村でも発令単位では分かれている場合なども考慮して。」
+         MEASURED against the JMA's own `area.json`: **40 municipalities are issued for as 89 class20
+         units** — 五條市北部/南部, 横浜市北部/南部, 日光市（五つ）, 田辺市（五つ）, 富山市（三つ）…
+         and NOT ONE of those codes ends in `00`. `jpShape` reads the first five digits of a class20
+         code, so every one of them resolved to THE WHOLE MUNICIPALITY: 五條市北部 に注意報が出ている
+         あいだ、何も出ていない南部まで同じ色で塗られていた。
+         The JMA publishes each class20's own outline at `geojson/class20s/<code>.json` — 1–3 kB,
+         `Access-Control-Allow-Origin: *`, and 五條市南部 is one of them. #R273 was right that 1,805
+         of those is not a download this map can make; **89 is a different number**, and only the
+         codes a bulletin actually names are ever asked for.
+         ⚠ A SUB-MUNICIPAL WARNING DOES NOT CONSUME THE MUNICIPALITY'S QUIET UNIT — `used` is empty
+         for it, so `UNITS['JPN']` still offers 五條市 and the exact difference (`subtractWarnings`)
+         cuts the warned half out of it. 北部 in the warning's colour, 南部 grey, no shared pixel.
+         ⚠ AND THE FALLBACK IS THE OLD PICTURE, NOT A HOLE: until the outline lands, the code resolves
+         to the whole municipality exactly as before, and the bulletin is re-run when it does. */
+      const JP_SUB_URL=(c)=>'https://www.jma.go.jp/bosai/common/const/geojson/class20s/'+c+'.json';
+      const jpSub=Object.create(null);      /* class20 code → its own geometry (null: asked, in flight) */
+      let jpSubBusy=0, jpSubT=0, jpSubOn=0;
+      const JP_SUB_MAX=4;
+      let _jpSplit=null;
+      function jpSplitCodes(area){
+        if(_jpSplit) return _jpSplit;
+        const by=Object.create(null), out=Object.create(null);
+        try{ Object.keys((area&&area.class20s)||{}).forEach(c=>{ const p=String(c).slice(0,5);
+          (by[p]=by[p]||[]).push(String(c)); }); }catch(_){ return out; }
+        Object.keys(by).forEach(p=>{ if(by[p].length>1) by[p].forEach(c=>{ out[c]=1; }); });
+        return (_jpSplit=out); }
+      /* ⚠ A QUEUE, NOT A CAP THAT DROPS. The first version asked for at most `JP_SUB_MAX` per
+         bulletin and simply forgot the rest until the next refresh thirty seconds later — MEASURED
+         on the built page: four of them arrived and 五條市 was still being drawn whole. Everything
+         asked for is asked for; only how many are in flight at once is bounded. */
+      const jpSubQ=[];
+      function pumpJpSub(){
+        while(jpSubBusy<JP_SUB_MAX&&jpSubQ.length){
+          const c=jpSubQ.shift(); jpSubBusy++;
+          bndJSON(JP_SUB_URL(c))
+            .then(j=>{ const parts=[];
+              ((j&&j.features)||[]).forEach(f=>{ const g=f&&f.geometry; if(!g) return;
+                if(g.type==='Polygon') parts.push(g.coordinates);
+                else if(g.type==='MultiPolygon') g.coordinates.forEach(x=>parts.push(x)); });
+              if(!parts.length) return;
+              jpSub[c]=multi(parts); jpSubOn++;
+              /* ⚠ COALESCED, like the fine-boundary upgrade beside it: several of these land within a
+                 second of each other and `refresh()` is six network calls, not one.
+                 ⚠⚠ AND IT WAITS FOR THE REFRESH TO BE FREE. `refresh()` opens with `if(busy) return;`,
+                 so a call made during the boot sweep is DROPPED — MEASURED on the built page: all 40
+                 outlines were in hand and 五條市 was still being drawn whole, because the one call
+                 that would have used them landed while the sweep was running. */
+              clearTimeout(jpSubT); jpSubT=setTimeout(function go(){
+                if(busy){ jpSubT=setTimeout(go,700); return; }
+                jpSubT=0; try{ refresh(); }catch(_){} },900); })
+            .catch(()=>{ delete jpSub[c]; })
+            .then(()=>{ jpSubBusy--; pumpJpSub(); }); } }
+      function askJpSub(codes){
+        let n=0;
+        (codes||[]).forEach(c=>{ if(c in jpSub) return; jpSub[c]=null; jpSubQ.push(c); n++; });
+        if(n) pumpJpSub(); }
       const JMA_R8='https://www.jma.go.jp/bosai/warning/data/r8/map.json';
       const JMA_MAX_AGE_H=72;
       let jmaAgeH=null, jmaSuperseded=0, jmaAt='';
@@ -2708,8 +2893,15 @@ window.IntMapModules.worldPacks=function(HOST){
         if(muni){
           jmaUnit='muni'; jmaAreas=Object.keys(byM).length; jmaPlaced=0; jmaQuiet=0;
           const drawn=Object.create(null); const hot=[];
+          /* (#R307) 発令単位が市町村より小さいとき、その単位自身の形で置く — see `jpSplitCodes` */
+          const split=jpSplitCodes(area), wantSub=[];
+          const shapeFor=(c)=>{
+            if(split[c]){ const g=jpSub[c];
+              if(g) return { name:nameOf(c), geom:g, used:[] };
+              if(!(c in jpSub)) wantSub.push(c); }
+            return jpShape(muni,c); };
           Object.keys(byM).forEach(c=>{ const rec=byM[c]; if(!rec.lv) return;
-            const s=jpShape(muni,c); if(!s) return;
+            const s=shapeFor(c); if(!s) return;
             jmaPlaced++; (s.used||[]).forEach(k=>{ drawn[k]=1; });
             const f=unitFeature('JPN','jma',s.geom,'muni',s.name||nameOf(c),rec.items,rec.reportedAt);
             if(f) hot.push(f); });
@@ -2722,6 +2914,7 @@ window.IntMapModules.worldPacks=function(HOST){
              数はここで数える（パネルが印字するので）。 */
           jmaQuiet=0; Object.keys(muni).forEach(jis=>{ if(!drawn[jis]) jmaQuiet++; });
           hot.forEach(f=>out.push(f));
+          askJpSub(wantSub);   /* (#R307) the sub-municipal outlines this bulletin needs and we lack */
           UNPL.JPN=0; Object.keys(byM).forEach(c=>{ const r=byM[c];
             if(!jpShape(muni,c)&&(r.lv||0)>0){ const n=normOf('jma',r.lv); if(n>UNPL.JPN) UNPL.JPN=n; } });
           PLACED.JPN=[jmaPlaced,jmaAreas];
@@ -3881,7 +4074,7 @@ window.IntMapModules.worldPacks=function(HOST){
         const key=quietList.map(c=>c+':'+((UNITS[c]||[]).length)).join(',');
         if(_qCache&&_qCacheOf===feats&&_qCacheKey===key) return _qCache;
         const out=[];
-        _qPunched=0; _qDropped=0; _qNoPunch=0;
+        _qPunched=0; _qDropped=0; _qNoPunch=0; _qCut=0; _qCleared=0;
         quietList.forEach(iso=>{
           const feed=FEEDS[iso]||LEARNED[iso]||'';
           (UNITS[iso]||[]).forEach(g=>{ if(!g) return;
@@ -4886,6 +5079,8 @@ window.IntMapModules.worldPacks=function(HOST){
         /* (#R302) how many prefectures are on their own `s0010` build, and how many municipalities
            those builds ADDED that the nationwide floor did not have at all (see `askJpFine`) */
         jpFineOn, jpFineAdd, jpUnits:((UNITS.JPN||[]).length),
+        /* (#R307) how many of the 89 sub-municipal issuing units this browser holds an outline for */
+        jpSubOn, jpSubHeld:Object.keys(jpSub).filter(k=>!!jpSub[k]).length,
         drawn:Object.keys(drawnISO).sort(),
         placed:Object.keys(PLACED).sort().reduce((o,k)=>{ o[k]=PLACED[k].slice(); return o; },{}),
         germany:drawnCount('DEU'), philippines:drawnCount('PHL'), norway:drawnCount('NOR'),
@@ -4924,6 +5119,11 @@ window.IntMapModules.worldPacks=function(HOST){
         quietPunched:(function(){ try{ quietFeatures(); return _qPunched; }catch(_){ return 0; } })(),
         quietSuppressed:(function(){ try{ quietFeatures(); return _qDropped; }catch(_){ return 0; } })(),
         quietNoPunch:(function(){ try{ quietFeatures(); return _qNoPunch; }catch(_){ return 0; } })(),
+        /* (#R307) …and the two the exact difference answers: units whose grey was CUT to the shape
+           of the ground that has nothing in force, and units the difference emptied */
+        quietCut:(function(){ try{ quietFeatures(); return _qCut; }catch(_){ return 0; } })(),
+        quietCleared:(function(){ try{ quietFeatures(); return _qCleared; }catch(_){ return 0; } })(),
+        quietClipper:(function(){ try{ return PC?'on':(_pcOut?'failed':'pending'); }catch(_){ return '?'; } })(),
         quietUnitISOs:(function(){ try{ return quietList.slice(); }catch(_){ return []; } })(),
         countryGrey:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
             if(washTier(String(f.id||''))===1) n++; }); }catch(_){} return n; })() });
