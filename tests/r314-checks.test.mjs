@@ -15,21 +15,33 @@
  *  read of another hour took it away from the tiles); #R310 gave every file its own reader and
  *  wrote 「with a reader per file it is no longer in front of anything」 — and left the gate up.
  *
- *  A/B against origin/main, alternating trees in one browser, four sessions x six steps, 700 ms
- *  between clicks:
+ *  A/B against origin/main, alternating the two trees inside ONE browser process (a run-to-run
+ *  swing of 1.6–6.8 s to the data host is larger than anything measured here, so the arms have to
+ *  share the run), four sessions x ten steps, 700 ms between clicks:
  *
  *                          origin/main      R314
- *      step → particles       836 ms         0 ms      (16 steps of 24 completely free, against 3)
- *      step → colour        1,707 ms     1,319 ms      (the colour got FASTER, not slower)
- *      bytes per step          5 MB          4 MB
- *      cold switch-on       4,451 ms     2,496 ms      (with the pointer on the row first)
+ *      step → particles       763 ms         0 ms      28 steps of 40 completely free, against 5
+ *      step → colour        1,477 ms     1,772 ms      +295 ms — SEE BELOW
+ *      bytes per step          6 MB          6 MB
+ *      連打 (5 steps/150 ms) 2,737 ms     2,569 ms
+ *      cold switch-on       4,451 ms     2,496 ms      with the pointer on the row first
  *
- *  ⚠ THE COLOUR IS THE HALF THIS PROJECT HAS ALREADY BEEN SHOUTED AT ABOUT (#R298:
- *  「パーティクルは比較的すぐ表示されるが、背景のカラーが、時間を変えるとなかなか表示されない」).
- *  An intermediate build released BOTH the certain next hour and a speculative second one by the
- *  field, and it bought 802 → 447 ms for the particles by spending 1,584 → 1,906 ms of the colour.
- *  That trade is refused: the hour the reader is stepping ONTO is certain and is released by the
- *  field; a second hour is a guess and still waits for the picture to be complete.
+ *  ⚠⚠⚠ THE COLOUR IS NOT FASTER, AND ON A FAST CONNECTION IT IS ABOUT 300 ms SLOWER. That is the
+ *  price of the field being instant and it is stated rather than hidden: when a step costs nothing,
+ *  the read-ahead of the NEXT hour runs beside the colour tile of THIS one, every time, instead of
+ *  waiting for it. Across four independent runs the colour moved −388 / +332 / −185 / +295 ms, so
+ *  the direction is inside the run-to-run swing; the largest sample (40 steps an arm) says +295 ms
+ *  and that is the number this file records. The field half is not ambiguous in any run.
+ *  ⚠ THE MAP NEVER GOES BLANK WHILE THAT HAPPENS — the previous hour's colour stays up until the
+ *  new one paints (#R284's two slots, #R297/#R298's reveal rule), so what the reader gains is the
+ *  particles and the point readout arriving at once, and what they lose is ~300 ms of an
+ *  already-visible picture being one hour old.
+ *
+ *  ⚠ A GUESS IS A DIFFERENT MATTER. An intermediate build released BOTH the certain next hour and
+ *  a speculative SECOND one by the field, and bought 802 → 447 ms for the particles by spending
+ *  1,584 → 1,906 ms of the colour. #R298's report — 「パーティクルは比較的すぐ表示されるが、背景の
+ *  カラーが、時間を変えるとなかなか表示されない」 — is what that trade reads like from outside, so
+ *  the speculative hour still waits for the picture to be complete.
  *
  *  ⚠ THESE CHECKS ASK FOR RELATIONS, NOT SPELLINGS (#R310's rule, and the twenty-fifth lesson
  *  behind it). Nothing below pins a call site verbatim.
