@@ -460,12 +460,42 @@
      `state.dataPromise`. It is only two different FILES that collide.)
      Every read this module starts therefore goes through one chain, so it can never be the second
      party to that collision. */
-  var chain = Promise.resolve();
-  function serial(fn) {
-    var p = chain.then(fn, fn);
-    chain = p.then(function () {}, function () {});
-    return p;
+  /* ══ ⚠⚠⚠ (#R305) ONE QUEUE IS NOT THE SAME THING AS ONE ORDER ═══════════════════════════════
+     「風レイヤーは品質保ったまま、起動から日時変更からすべてに至るまで、爆速にしろ。」 (2回目)
+     The single chain above is correct about the reader — two reads of different FILES corrupt each
+     other — and it is also FIFO, which is a different decision that was never made on purpose. Two
+     kinds of read go down it: the one the reader is waiting for, and the two this module starts on
+     its own (the widening staircase and the warm-up of the next hour). MEASURED on the built page at
+     the opening view, stepping the time axis: **7,050 / 7,942 / 8,270 ms** to the new hour, and a
+     re-visited hour in **45 ms** — i.e. the bytes are not the wait, the QUEUE is. At world zoom the
+     warm-up asked for the planet (see the note on `prefetch` in js/weather.js) and the staircase's
+     first rung IS the planet, so every step landed behind eighteen megabytes of a picture nobody had
+     asked for.
+     → the same one-at-a-time reader, with the reader's own request going FIRST. A background read
+     that has not STARTED yet waits behind a foreground one; a background read already running still
+     has to finish (the SDK cannot be interrupted), which is why the other half of this round is that
+     the background reads are much smaller than they were.
+     ⚠ `fn` used to be passed as BOTH handlers of `.then` so that a rejected predecessor could not
+     strand the queue. That property is kept — a job's failure is delivered to ITS caller and the
+     pump moves on — and it is now explicit rather than a trick of the chain. */
+  var qHi = [], qLo = [], pumping = false;
+  function _pump() {
+    if (pumping) return;
+    var job = qHi.shift() || qLo.shift();
+    if (!job) return;
+    pumping = true;
+    Promise.resolve().then(job.fn).then(job.res, job.rej)
+      .then(function () { pumping = false; _pump(); });
   }
+  function serial(fn, bg) {
+    return new Promise(function (res, rej) {
+      (bg ? qLo : qHi).push({ fn: fn, res: res, rej: rej });
+      _pump();
+    });
+  }
+  /* is the reader waiting for something right now? — the background readers ask before they start
+     one more rung, so a queue that is already busy on the reader's behalf does not grow */
+  function foregroundBusy() { return qHi.length > 0; }
 
   function _grid(state) {
     try { return sdk.GridFactory.create(state.dataOptions.domain.grid, state.ranges); } catch (_) { return null; }
@@ -536,7 +566,10 @@
     if (!want) return false;                                       /* the globe is not covered by a band */
     return have[1] <= want[1] + 1e-6 && have[3] >= want[3] - 1e-6;
   }
-  function load(variable, i, bounds) {
+  /* `bg` — a read this MODULE started (a widening rung), not one the reader is waiting for. It is
+     the same read down the same one reader; what changes is that it yields its place in the queue
+     to anything the reader asks for while it is still waiting (#R305, see `serial`). */
+  function load(variable, i, bounds, bg) {
     var band = (bounds && bounds.length === 4) ? bounds : null;
     var key = stateKey(variable, '', i);
     var have = key && frameCovering(key, band);
@@ -592,7 +625,7 @@
           }
           return frame;
         });
-      }).catch(function () { return null; });
+      }, !!bg).catch(function () { return null; });
     }).catch(function () { return null; });
   }
   /* the band that covers a view, or null when the view is most of the planet (where the whole grid
@@ -759,7 +792,7 @@
           } catch (_) { return null; }
         }));
       });
-    }).catch(function () { delete warmed[mark]; });          /* (#R302) …and a failure is not 「warmed」 */
+    }, true).catch(function () { delete warmed[mark]; });    /* (#R302) …and a failure is not 「warmed」 · (#R305) background */
   }
 
   /* ── time ─────────────────────────────────────────────────────────────────────────────────────*/
@@ -1166,6 +1199,8 @@
     valueAt: valueAt,
     valueNow: valueNow,
     prefetch: prefetch,
+    /* (#R305) is the reader waiting for a read right now — see `serial` */
+    foregroundBusy: foregroundBusy,
     scale: scale,
     legend: legend,
     WINDY_TEMP: WINDY_TEMP,

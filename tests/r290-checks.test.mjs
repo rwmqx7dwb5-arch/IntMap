@@ -185,8 +185,16 @@ test('R290 ⑤ the publish path does each piece of work once', () => {
 test('R290 ⑥ the quiet units are bounded by the view and by the zoom, and the sheet agrees', () => {
   const src = WP();
   assert.match(src, /const QUIET_UNIT_Z=3;/);
-  assert.match(src, /if\(!\(z>=QUIET_UNIT_Z\)\) return out;/, 'below that zoom no unit is published…');
-  assert.match(src, /try\{ if\(!\(GE\(\)\.camera\.getZoom\(\)>=QUIET_UNIT_Z\)\) return; \}catch\(_\)\{\}/,
+  /* ⚠⚠ (#R305) THE FLOOR IS ABOUT DISTINCTIONS, NOT ABOUT WHETHER THE GROUND IS PAINTED. What
+     #R290 measured — a Landkreis is a fraction of a pixel at world zoom, so 500 unit sheets and one
+     country sheet are the same picture for seven times the bytes — is true of a country with
+     NOTHING in force, which keeps the country sheet. It is not true of a country that is DRAWING,
+     because `washTier` takes the country sheet away from that one (#R270 ⑧ / #R299 ②) and then
+     nobody painted its quiet ground: measured at z2, 20.5 % of every land sample was painted by
+     nothing. So the floor now has one exception, and it is exactly that country. */
+  assert.match(src, /if\(!\(z>=QUIET_UNIT_Z\|\|warned\[iso\]\)\) return;/,
+    'below that zoom no unit of a QUIET country is published…');
+  assert.match(src, /if\(lowZ&&!warned\[c\]\) return;/,
     '…and none is even asked for');
   assert.match(src, /if\(bb\[2\]<vb\[0\]\|\|bb\[0\]>vb\[2\]\|\|bb\[3\]<vb\[1\]\|\|bb\[1\]>vb\[3\]\) return;/,
     'and only what the reader can see is in the collection');
@@ -381,8 +389,15 @@ test('R290 ⑬ the ECMWF legend carries the opacity and the readout can reach a 
   assert.match(e, /return reader\.prefetchVariable\(v, ranges\);/);
   assert.match(e, /var mark = f \+ \(band \? \('#' \+ band\[1\] \+ ',' \+ band\[3\]\) : ''\);/,
     'and 「already warmed」 is per file AND band, or a band warm would mask the globe it did not do');
-  assert.match(w, /EC\(\)\.prefetch\(\['wind_u_component_10m','wind_v_component_10m'\],Math\.min\(EC\(\)\.count\(\)-1,EC\(\)\.index\(\)\+1\),band\(\)\)/,
-    'the wind warms its own band');
+  /* ⚠⚠⚠ (#R305) …AND 「its own band」 WAS SPELLED `band()`, WHICH IS THE PLANET AT WORLD ZOOM.
+     `bandFor` answers null for any view spanning more than 120° of latitude, i.e. for the view this
+     app opens on — so the rule this check is FOR was inverted by its own spelling. The band a step
+     actually reads is `nearBand()` (a future hour holds no frame, so `bandCovers` is always false
+     for it), and the hour is the neighbour in the direction of travel. */
+  assert.match(w, /EC\(\)\.prefetch\(\['wind_u_component_10m','wind_v_component_10m'\],nx,nearBand\(\)\|\|band\(\)\)/,
+    'the wind warms the band that hour will be read at, not the globe');
+  assert.ok(!/prefetch\(\['wind_u_component_10m','wind_v_component_10m'\][^)]*,band\(\)\)/.test(w),
+    'and never the globe alone');
 });
 
 /* ── ⑭ 「風の流れる向きに動かさなくてよい。向きだけ表示しろ。」 ────────────────────────────── */

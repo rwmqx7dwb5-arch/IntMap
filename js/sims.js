@@ -699,12 +699,12 @@ window.IntMapModules.sun=function(HOST){
     function toggleTerrain(){ terrainOn=!terrainOn; syncTerrBtn();
       /* (#R302) a button that quietly does nothing is the defect this round is here for — with no
          point chosen it asks for one instead of shading the view from a sun nobody placed */
-      if(terrainOn){ if(!hasSite()){ engSay(_pickMsg()); askSite(); return; }
+      if(terrainOn){ if(!hasSite()){ askSite(); return; }
         engSay(SN('Reading the terrain…','地形を読み込み中…','Gelände wird gelesen…','Чтение рельефа…','Leyendo el terreno…')); drawTerrain(); }
       else { try{ ENG()&&ENG().clear(); }catch(_){} engSay(''); } }
     async function solsticeShade(){ if(engBusy||!ENG()) return;
       /* (#R302) WHICH hemisphere's solstice is the short day is a question about a latitude */
-      const at=siteLL(); if(!at){ engSay(_pickMsg()); askSite(); return; }
+      const at=siteLL(); if(!at){ askSite(); return; }
       engBusy=true;
       engSay(SN('Stepping through the solstice day…','冬至の1日を計算中…','Sonnenwendtag wird durchlaufen…','Расчёт дня солнцестояния…','Recorriendo el solsticio…'));
       try{
@@ -726,10 +726,15 @@ window.IntMapModules.sun=function(HOST){
        class: the reader has twice said not to invent chrome for this.
        ⚠ NOT `pickPoint()`. That one runs the whole-year horizon analysis, which #R299 deliberately
        took off the opening path; this only names the observer the panel is already missing. */
-    function askSite(){ endPick();
+    /* ⚠ (#R305) 「いや並行してどちらも出てくるとかあほか。」 — ONE VOICE PER GESTURE. This said the
+       sentence twice: `.sun-eng` printed it inside the panel the reader is looking at AND #R196's
+       bar printed it again over the map. The panel's own line is the one that belongs to the panel,
+       so it keeps it and the banner is armed silently (`announce:false`, js/map-pick.js). The
+       ghosting, the crosshair and Esc are unchanged — only the second copy of the sentence is gone. */
+    function askSite(){ endPick(); engSay(_pickMsg());
       try{ const P=window.IntMapPick;
-        return !!(P&&P.start&&P.start({ panel, hint:_pickMsg(),
-          onPick:(ll)=>{ setSite(ll); drawShadows(); try{ drawTerrain(); }catch(_){} } })); }catch(_){ return false; } }
+        return !!(P&&P.start&&P.start({ panel, hint:_pickMsg(), announce:false,
+          onPick:(ll)=>{ engSay(''); setSite(ll); drawShadows(); try{ drawTerrain(); }catch(_){} } })); }catch(_){ return false; } }
     /* (#R196) the panel steps aside while the map is being tapped — see js/map-pick.js */
     function pickPoint(){ endPick();
       engSay(SN('Click the point to analyze.','解析する地点をクリックしてください。','Punkt anklicken.','Кликните точку.','Haga clic en el punto.'));
