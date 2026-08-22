@@ -48,12 +48,16 @@
  * ══════════════════════════════════════════════════════════════════════════════════════════════ */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+/* ⚠ (#R283) READ THROUGH `readLF`. A checkout on Windows has CRLF in the working tree, so any
+   pattern that names a bare `
+` — this file has none today, and the next edit might — is false
+   here and true in CI. `scripts/eol.mjs` NORMALISES; IT DOES NOT RELAX. */
+import { readLF } from '../scripts/eol.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const read = (p) => readFileSync(join(ROOT, p), 'utf8');
+const read = (p) => readLF(join(ROOT, p));
 /* comments carry this round's own prose, and prose about a rule is not the rule */
 const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1 ');
 /* the body of a named function, by brace matching — never by a character count (#R283/#R306) */
