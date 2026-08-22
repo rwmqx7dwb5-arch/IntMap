@@ -331,9 +331,14 @@ test('the viewpoint altitude appears in the always-on readout and tracks the cam
 test('Atlas can drive both new switches', async ({ page }) => {
   test.setTimeout(120000);
   await boot(page);
+  /* ⚠ (#R304) THROUGH `window.IntMapAtlas`, WHICH IS THE DOOR THE APP USES. #R224 moved the Atlas
+     kernel behind js/lazy-modules.js — 658 kB parsed by every session, most of which never open it —
+     so `window.IntMapConsole` is undefined until something asks. Calling it directly threw
+     「Cannot read properties of undefined (reading 'dispatch')」 on every nightly run since. The facade
+     fetches the kernel first and is what the button, Ctrl+K and js/app-body.js all press. */
   const r = await page.evaluate(async () => {
-    const a = await window.IntMapConsole.dispatch({ type: 'tiltLimit', on: true });
-    const b = await window.IntMapConsole.dispatch({ type: 'eyeAltitude', on: true });
+    const a = await window.IntMapAtlas.call('dispatch', { type: 'tiltLimit', on: true });
+    const b = await window.IntMapAtlas.call('dispatch', { type: 'eyeAltitude', on: true });
     return { a: !!a.ok, b: !!b.ok, max: window.__imap.getMaxPitch(), eye: window.IntMapEyeAlt.isOn(), htmlA: String(a.html || '').slice(0, 160) };
   });
   expect(r.a).toBe(true);
@@ -346,8 +351,13 @@ test('Atlas can drive both new switches', async ({ page }) => {
 test('Atlas can draw a circular 3-D volume in a colour', async ({ page }) => {
   test.setTimeout(150000);
   await boot(page);
+  /* ⚠ (#R304) THROUGH `window.IntMapAtlas`, WHICH IS THE DOOR THE APP USES. #R224 moved the Atlas
+     kernel behind js/lazy-modules.js — 658 kB parsed by every session, most of which never open it —
+     so `window.IntMapConsole` is undefined until something asks. Calling it directly threw
+     「Cannot read properties of undefined (reading 'dispatch')」 on every nightly run since. The facade
+     fetches the kernel first and is what the button, Ctrl+K and js/app-body.js all press. */
   const st = await page.evaluate(async () => {
-    await window.IntMapConsole.dispatch({ type: 'volume3d', place: 'Mount Fuji', km: 8, base: 2000, top: 9000, shape: 'circle', color: '#ff3b30' });
+    await window.IntMapAtlas.call('dispatch', { type: 'volume3d', place: 'Mount Fuji', km: 8, base: 2000, top: 9000, shape: 'circle', color: '#ff3b30' });
     await new Promise(r => setTimeout(r, 1200));
     return { s: window.IntMapVolume3D.state(), fill: window.__imap.getPaintProperty('imv3d-vol', 'fill-extrusion-color') };
   });

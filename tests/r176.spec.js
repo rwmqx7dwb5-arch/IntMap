@@ -71,7 +71,9 @@ test('there is no drone button anywhere, and the planner still opens', async ({ 
   expect(await page.evaluate(() => !!document.getElementById('btn-tool-drone'))).toBe(false);
   expect(await page.evaluate(() => document.querySelectorAll('[data-proxy="btn-tool-drone"]').length)).toBe(0);
   const r = await page.evaluate(async () => {
-    const ok = await window.IntMapConsole.dispatch({ type: 'tool', name: 'drone' });
+    /* ⚠ (#R304) through `window.IntMapAtlas`, the door the app itself uses: #R224 moved the Atlas
+       kernel behind js/lazy-modules.js, so the bare global is undefined until something asks. */
+    const ok = await window.IntMapAtlas.call('dispatch', { type: 'tool', name: 'drone' });
     return { ok: !!(ok && ok.ok), open: window.IntMapDrone.state().open };
   });
   expect(r.open, 'Atlas still opens the planner directly').toBe(true);
@@ -90,9 +92,22 @@ test('a dug basin holds exactly what it can, and spills exactly the rest', async
     await new Promise(res => setTimeout(res, 400));
     TW.brush(139.85, 35.90, 'lower', { radiusM: 500, heightM: 25 });
     const dug = TW.probe(139.85, 35.90);
-    TW.addSource(139.85, 35.90, 3e6);                                // under capacity
+    /* ══ ⚠⚠⚠ (#R304) A SOURCE IS A TAP NOW, NOT A PARCEL — SO THE WATER HAS TO BE GIVEN TIME ══════
+       This placed a volume and probed on the next line. #R267/#R275 made every source a RATE:
+       MEASURED IN PRODUCTION, handing the whole interval's volume to `addVolume` at once reported
+       「max depth 21,290.1 m」 — 1.08×10⁸ m³ in one 71 m cell — so `feedTaps(dt)` delivers rate·dt
+       before every step and `x.m3` is the running total, which starts at ZERO. #R271 also made
+       `addSource` async. Probed immediately, the routing therefore saw `own[] = 0`: measured
+       `inflowM3 0`, `levelM === groundM`, `depthM 0` — and the three assertions under 「nothing
+       spills」 were passing VACUOUSLY on an empty basin while the fourth failed honestly.
+       `settle()` is the module's own ⏭: it feeds every tap its whole cap and integrates to rest,
+       then re-solves. That is exactly what 「holds exactly what it can, and spills exactly the rest」
+       asserts, so it is what the test asks for. MEASURED after it: inflow 3,000,000 / level −0.44 vs
+       rim 4.00 / depth 20.2 m, then inflow 33,000,000 / level = rim exactly / overflow 26,988,177
+       = 33,000,000 − 6,011,823 to the cubic metre. */
+    await TW.addSource(139.85, 35.90, 3e6); TW.settle();             // under capacity
     const part = TW.probe(139.85, 35.90);
-    TW.addSource(139.85, 35.90, 3e7);                                // over capacity
+    await TW.addSource(139.85, 35.90, 3e7); TW.settle();             // over capacity (cumulative)
     const full = TW.probe(139.85, 35.90);
     return { grid: TW.state().grid, dug, part, full, solveMs: TW.state().result.solveMs,
              layer: !!m.getLayer('tw-water') };
@@ -107,7 +122,12 @@ test('a dug basin holds exactly what it can, and spills exactly the rest', async
   expect(r.part.basin.full).toBe(false);
   expect(r.part.basin.overflowM3).toBe(0);
   expect(r.part.basin.levelM).toBeLessThan(r.part.basin.spillM);
+  /* ⚠ (#R304) BOTH FIELDS, because #R267 split them: `depthM` is the water that is ON SCREEN (the
+     integration) and `restDepthM` is the routing's t → ∞ answer, named beside it. At rest they are
+     answers to the same question and both must be real — asserting only one would let the case where
+     the OTHER model has nothing in it pass unseen. */
   expect(r.part.depthM, 'and it is genuinely deep').toBeGreaterThan(5);
+  expect(r.part.restDepthM, '…in the resting field too, which is a different model').toBeGreaterThan(5);
   // over capacity: the level is the rim and the overflow is EXACTLY the excess (this is the bug that
   // reported zero inflow for twenty million cubic metres)
   expect(r.full.basin.full).toBe(true);
@@ -131,7 +151,7 @@ test('a levee drawn on flat ground creates a basin that holds water', async ({ p
     TW.addLevee([[139.85 - d, 35.90 - d], [139.85 + d, 35.90 - d], [139.85 + d, 35.90 + d],
                  [139.85 - d, 35.90 + d], [139.85 - d, 35.90 - d]], 10, 80);
     const after = TW.probe(139.85, 35.90);
-    TW.clearWater(); TW.addSource(139.85, 35.90, 4e6);
+    TW.clearWater(); await TW.addSource(139.85, 35.90, 4e6); TW.settle();   /* ⚠ (#R304) a tap, not a parcel — see ③ */
     const wet = TW.probe(139.85, 35.90);
     return { before, after, wet, leveeLayer: !!m.getLayer('tw-levee-line') };
   });
@@ -152,6 +172,7 @@ test('a levee drawn on flat ground creates a basin that holds water', async ({ p
   // the rim is the ground plus the crest the user asked for
   expect(r.after.basin.spillM - r.after.groundM).toBeGreaterThan(4);
   expect(r.wet.depthM, 'and it holds water').toBeGreaterThan(1);
+  expect(r.wet.restDepthM, '…in the resting field too (#R267 split the two)').toBeGreaterThan(1);
 });
 
 /* ── ⑤ seismic ─────────────────────────────────────────────────────────────────────────────── */

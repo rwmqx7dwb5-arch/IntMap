@@ -18,6 +18,7 @@
 //      code to RE-DERIVE the UI from the bare closure variable afterwards.
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
+import { exportedKeys } from './app-source.mjs';
 import { seededStorageState } from './helpers/session-seed.js';
 
 test.describe.configure({ mode: 'serial' });
@@ -88,41 +89,52 @@ test('R167 #1 all eight files loaded, all 15 factories ran, and every moved glob
   expect(state.prog).toBe('function');
 });
 
-test('R167 #2 THE TABLE PROOF: the 27 moved tables reach their consumers, not just window', async () => {
+test('R167 #2 THE TABLE PROOF: every moved table reaches its consumers, not just window', async () => {
   // A rebind that produced `undefined` would not throw here — the panels would simply render empty,
   // which reads exactly like "no data for this country". So probe VALUES that only the real tables
   // can produce, through the index.html code that consumes them.
+  /* ══ ⚠⚠ (#R304) 「27」 WAS A COPY OF A FACT, AND THE FACT MOVED ═══════════════════════════════
+     js/tables.js exports 25. #R225 deleted `geoLayersDB` and `GEO_LABEL_JP` with the nine
+     geopolitics layers the user asked to be rid of — 「大昔に捨てたはずの地政学レイヤーが勝手に
+     オンになる。ふざけるな。」 → 「レイヤー自体を削除してほしい」 — and this file went on demanding
+     both the count and the deleted table itself, red on every nightly run since.
+     So the number is read out of the module's own `return {…}`: the page must export exactly what
+     the file says it exports, no more and no less. A table quietly dropped still fails. */
+  const EXPORTED = exportedKeys(new URL('../', import.meta.url), 'js/tables.js', 'IntMapTables');
   const t = await page.evaluate(() => {
     const T = window.IntMapTables || {};
     return {
-      count: Object.keys(T).length,
+      keys: Object.keys(T).sort(),
       gdp: T.GDP && T.GDP.USA, cap: T.CAPITAL && T.CAPITAL.JPN, cur: T.CURRENCY && T.CURRENCY.DEU,
       hdi: T.HDI && T.HDI.NOR, sat: (T.SAT_PROVIDERS || []).length, sea: (window.SEA_LABELS || []).length,
       feeds: Object.keys(window.NEWS_COUNTRY_FEEDS || {}).length,
-      geoLayers: Object.keys(T.geoLayersDB || {}).length,
+      /* #R225 deleted this one. Nothing may put it back without saying so here. */
+      geoLayers: typeof T.geoLayersDB,
     };
   });
-  expect(t.count, 'all 27 tables are exported').toBe(27);
+  expect(EXPORTED.length, 'js/tables.js is readable and still exports its tables').toBeGreaterThan(20);
+  expect(t.keys, 'the page exports exactly the tables js/tables.js returns').toEqual(EXPORTED);
   expect(t).toMatchObject({ gdp: 27361, cap: 'Tokyo', cur: 'EUR' });
   expect(t.hdi).toBeCloseTo(0.966, 3);
   expect(t.sat, 'the satellite provider table survived').toBeGreaterThan(3);
   expect(t.sea, 'the sea-label table survived').toBeGreaterThan(50);
   expect(t.feeds, 'the per-country news feeds survived').toBeGreaterThan(5);
-  expect(t.geoLayers, 'the geo-theory layer catalogue survived').toBeGreaterThan(5);
+  expect(t.geoLayers, 'the geo-theory layer catalogue was deleted in #R225 and stays deleted').toBe('undefined');
 
-  // CONSUMER 1 — geoLayersDB builds the geo-theory checkboxes index.html owns.
-  expect(await page.evaluate(() => document.querySelectorAll('.geo-layer-cb').length),
-    'geoLayersDB still builds the geo-theory layer rows').toBeGreaterThan(4);
-
-  // CONSUMER 2 — the country tables feed the Countries tab. Load the real boundary data, then read
+  // CONSUMER 1 — the country tables feed the Countries tab. Load the real boundary data, then read
   // a country's detail card: capital / currency / language all come out of the moved tables.
+  /* ⚠ (#R304) THROUGH `window.IntMapAtlas`, WHICH IS THE DOOR THE APP USES. #R224 moved the Atlas
+     kernel behind js/lazy-modules.js — 658 kB parsed by every session, most of which never open it —
+     so `window.IntMapConsole` is undefined until something asks. This called it directly and threw
+     「Cannot read properties of undefined (reading 'dispatch')」 on every nightly run since. The
+     facade fetches the kernel first and is what js/app-body.js, the sidebar and Ctrl+K all press. */
   const detail = await page.evaluate(async () => {
-    await window.IntMapConsole.dispatch({ type: 'country', name: 'Japan' }).catch(() => null);
-    return null;
+    await window.IntMapAtlas.call('dispatch', { type: 'country', name: 'Japan' }).catch(() => null);
+    return typeof window.IntMapConsole;
   }).catch(() => null);
-  void detail;
+  expect(detail, 'reaching for Atlas fetched Atlas (#R224)').toBe('object');
 
-  // CONSUMER 3 — the DE/RU/ES gazetteer add-ons are merged into geoDB by rebuildGeoIndex(), which
+  // CONSUMER 2 — the DE/RU/ES gazetteer add-ons are merged into geoDB by rebuildGeoIndex(), which
   // the non-AI locator scores against. A German demonym only resolves if _DERU_GZ survived the move.
   const geo = await page.evaluate(() => {
     const f = window._imAnalyzeContext;

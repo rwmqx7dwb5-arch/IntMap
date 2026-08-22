@@ -400,12 +400,23 @@ scripts/
                                   `.git/worktrees/` は OneDrive が掴んでいて消せないので、`prune` してから
                                   一覧に訊く。branch は `-d`、断られたら `origin/main` と**木を比べて**
                                   同一のときだけ消す（§5 は `--squash` で merge するので `-d` は必ず断る）。
+                                  ⚠ `status` は**前夜の deep tier の判定**も出す（`scripts/deep-alarm.mjs` と
+                                  同じ答え）。`gh` が無い・未ログイン・オフラインは**黙って省略**し、
+                                  6 秒で打ち切る——`status` は決して非ゼロで終わらない（#R304）。
   engine-coupling.mjs             レンダラ脱依存のゲート
   i18n-*.mjs                      翻訳の被覆と形の監査（§10）
   eol.mjs                         ソース検査は**バイト列ではなく内容**を読む（改行はチェックアウトの性質）
   build-*.mjs                     data/ の生成（実行時には不要）。`build-admin1.mjs` は Natural Earth 10m
                                   admin-1 を 0.01°（≈1.1 km）で間引いて data/admin1-world.json.gz を書く
   run-tests.mjs / test-parallel.mjs / shard-plan.mjs / test-budget.mjs   テストの実行と予算
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 59 本。
+  baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
+  deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
+                                  赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
+                                  `junit.xml` から採る）、緑→ 閉じる。**1本を書き直す**——毎晩コメントを
+                                  足すのは同じ沈黙を大きな字で書くだけ。⚠ `cancelled` は合格ではない。
+                                  ⚠ 実測: 2026-08-08〜08-21 の nightly は**14回連続で赤**、集約ジョブは
+                                  毎回正直に報告していた——誰も見ていなかっただけ（#R304）。
   backup-db.sh / restore-test.sh  DB のバックアップと隔離復元
 tests/
   tests/smoke.spec.js                   hermetic なスモーク

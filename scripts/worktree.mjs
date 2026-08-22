@@ -89,6 +89,43 @@ const nextRound = (master) => {
   return seen.size ? Math.max(...seen) + 1 : 200;
 };
 
+/* ══ (#R304) THE NIGHTLY'S ANSWER, IN FRONT OF EVERY SESSION ════════════════════════════════════
+   The deep tier (27 spec files, 78 minutes) has run every night since #R203 and has been RED every
+   night from 2026-08-08 to 2026-08-21 — fourteen consecutive runs, all five `Deep rest` shards, and
+   the aggregate job reported it honestly each time. Nobody looked. Two of the failures were a spec
+   that counted to eight while the loader had grown to ten, and a list of globals naming three
+   features #R296 was told to delete; both had been true since the round that caused them.
+
+   `gh run list` sorted by time is the reason: a nightly is one run among the dozens a working day
+   produces, so «is the deep tier green» is a question nobody thought to ask rather than one anybody
+   answered wrongly. CLAUDE.md §1 already sends every session through this command before it starts,
+   which makes this the one place the answer is guaranteed to be read.
+
+   ⚠ IT NEVER MAKES A SESSION WAIT OR FAIL. `gh` may be missing, logged out, offline or rate-limited;
+   every one of those prints nothing at all rather than an error, and the call is capped at six
+   seconds. `status` must never exit non-zero (see the header). */
+function nightly() {
+  let raw = '';
+  try {
+    raw = execFileSync('gh', ['run', 'list', '--workflow=ci.yml', '--event=schedule', '--limit', '1',
+      '--json', 'conclusion,createdAt,databaseId'],
+    { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 6000 }).trim();
+  } catch { return null; }
+  let r; try { r = JSON.parse(raw)[0]; } catch { return null; }
+  if (!r || !r.createdAt) return null;
+  const days = Math.floor((Date.now() - Date.parse(r.createdAt)) / 86400000);
+  /* ⚠ «cancelled» IS NOT «green». A run that was cut short proved nothing, and a gate that reads
+     silence as a pass is the shape this whole round is about. */
+  const ok = r.conclusion === 'success';
+  return {
+    ok,
+    day: String(r.createdAt).slice(0, 10),
+    age: days > 1 ? `・${days}日前` : '',
+    id: r.databaseId,
+    what: ok ? '緑' : (r.conclusion === 'cancelled' ? '中断（何も証明していない）' : '赤'),
+  };
+}
+
 /* ── STATUS ─────────────────────────────────────────────────────────────────────────────────── */
 function status(brief) {
   const master = masterDir();
@@ -105,6 +142,8 @@ function status(brief) {
       + (onRound ? ` · このセッションは R${onRound}` : ` · 空きラウンド R${round}`));
     console.log(`原本: ${master}`);
     if (isMaster) console.log('⚠ 原本では作業しない。node scripts/worktree.mjs new <slug> で worktree を作る（CLAUDE.md §6）。');
+    const nb = nightly();
+    if (nb && !nb.ok) console.log(`⚠ deep tier (nightly ${nb.day}${nb.age}): ${nb.what}  → gh run view ${nb.id} --log-failed`);
     console.log('実行戦略は .claude/rules/execution-strategy.md ／ ラウンドの手順は /intmap-round。');
     return;
   }
@@ -134,6 +173,8 @@ function status(brief) {
   console.log(`  DEV-NOTES の最新    ${latest}`);
   if (mine) console.log(`  このセッションの番号 R${mine}`);
   console.log(`  空きラウンド番号    R${round}   ⚠ push の直前にもう一度取り直すこと`);
+  const nf = nightly();
+  console.log(`  deep tier (nightly) ${nf ? `${nf.what}${nf.ok ? '' : `   → gh run view ${nf.id} --log-failed`}   (${nf.day}${nf.age})` : '不明（gh が無い・未ログイン・オフラインのいずれか）'}`);
 
   const wts = q(['worktree', 'list']).split('\n').filter(Boolean);
   console.log(`\n  worktree ${wts.length}本（${wts.length - 1}本は別セッションのものかもしれない——触らない）`);

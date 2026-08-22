@@ -93,9 +93,20 @@ test('R164 #5 LIVE getters: modules built in English follow a runtime language s
     cams: (document.getElementById('dl-webcams-lbl') || {}).textContent || '',
     ukr: (document.getElementById('beta-dl-ukrfront-lbl') || {}).textContent || '',
   }));
+  /* ⚠ (#R304) WAIT FOR THE EVENT, NOT FOR 700 ms. Every `intmap-lang` listener in this app re-bakes
+     its own labels on a short timer of its own (js/beta-overlays.js uses `setTimeout(relabel, 20)`),
+     so a fixed sleep is a race against whatever else the machine is doing. MEASURED: at two workers
+     this test failed on 「the beta-overlay label follows the switch」 and passed 6/6 run alone — the
+     contention flake #R186/#R196 already describe, and one of five in the nightly's 23 failures that
+     were not regressions at all. Waiting for the row this test is about to actually change makes it
+     deterministic without weakening it: if the relabel never happens the wait times out, which is
+     still a failure, and every assertion below still runs on the settled text. */
   const setLang = async (code) => {
+    const was = await page.evaluate(() => (document.getElementById('beta-dl-ukrfront-lbl') || {}).textContent || '');
     await page.evaluate((c) => document.getElementById('lang-' + c)?.click(), code);
-    await page.waitForTimeout(700);
+    await page.waitForFunction((w) => ((document.getElementById('beta-dl-ukrfront-lbl') || {}).textContent || '') !== w,
+      was, { timeout: 20_000 });
+    await page.waitForTimeout(200);   /* the other listeners fire on the same tick, not later */
   };
 
   const en = await probe();

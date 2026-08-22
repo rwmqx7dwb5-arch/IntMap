@@ -43,13 +43,23 @@ test.afterAll(async () => { try { await page.context().close(); } catch { /* ign
 /* ── ① 「夜と昼の部分の変遷が階段状で不自然」「夜の部分は完全に夜間光レイヤーと同じ画像に」 ───── */
 test('R201 ① the terminator is a per-pixel gradient, and full night is the night-lights image', async () => {
   test.setTimeout(240_000);
-  /* ⚠ (#R207) THE MEASUREMENT NEEDS A BRIGHT UNSHADED BASEMAP, AND IT NO LONGER GETS ONE BY DEFAULT.
-     This reads the ratio between a lit pixel and the same pixel under the night shading, and its own
-     premise below is `px.off > 60` — comfortably true of the light Carto base this was written
-     against, and false over open ocean now that 「初回時にはmapではなくsatelliteに」. The subject is
-     the terminator, not the basemap, so the basemap is chosen rather than inherited. */
-  await page.evaluate(() => document.getElementById('btn-view-map')?.click());
+  /* ⚠ (#R207) THE MEASUREMENT NEEDS A BRIGHT UNSHADED BACKGROUND, AND IT NO LONGER GETS ONE BY
+     DEFAULT. This reads the ratio between a lit pixel and the same pixel under the night shading,
+     and its own premise below is `px.off > 60` — comfortably true of the light Carto base this was
+     written against, and false over open ocean now that 「初回時にはmapではなくsatelliteに」.
+     ⚠⚠ (#R304) …AND #R207 ANSWERED THAT BY SWITCHING TO THE MAP BASEMAP, WHICH IS THE ONE PLACE
+     THE NIGHT SIDE NO LONGER EXISTS. js/night-side.js gates on `satelliteUp()` — the effect is a
+     stand-in for the shading a satellite globe would have, so #R228 tore it down everywhere else
+     (「モバイル版がまだ劇的に遅い」, five times: at every working zoom the renderer was drawing a
+     full-screen raster at opacity 0). So `built` could never become true after that click, and the
+     wait below sat out its full minute on every nightly run since.
+     The basemap is therefore the one the feature lives on, asserted rather than assumed — and the
+     bright background #R207 was really after is the flat mid-grey this test adds for itself further
+     down, which is same-origin and identical on every run. */
+  await page.evaluate(() => { if (!document.getElementById('btn-view-sat')?.classList.contains('active')) document.getElementById('btn-view-sat')?.click(); });
   await page.waitForTimeout(1200);
+  expect(await page.evaluate(() => { try { return window.IntMapGeoEngine.layers.getLayout('layer-sat', 'visibility'); } catch (_) { return null; } }),
+    'the night side only exists over the satellite basemap (#R228)').toBe('visible');
   await page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ center: [0, 10], zoom: 1.2, pitch: 0, bearing: 0 }));
   await page.waitForFunction(() => window.IntMapNightSide.state().built, null, { timeout: 60_000 });
 
@@ -120,8 +130,15 @@ test('R201 ① the terminator is a per-pixel gradient, and full night is the nig
      same-origin, identical on every run, and makes the ratio below mean exactly what it says. */
   await page.evaluate(() => {
     const m = window.__imap;
+    /* ⚠ (#R304) DIRECTLY UNDER THE EFFECT, NOT AT THE BOTTOM OF THE STYLE. The paragraph above is
+       exactly right — 「What is under the effect is not what is being measured; HOW MUCH OF IT
+       SURVIVES is」 — and putting the grey at the very bottom stopped delivering it once the night
+       side became satellite-only (#R228): the blocked satellite raster sits between the two and
+       measures 36.1, under this test's own premise of 60. Inserted just below the night image, the
+       flat grey IS what the effect is measured against, whatever basemap the feature requires. */
+    const under = m.getLayer('im-night-lights-lyr') ? 'im-night-lights-lyr' : m.getStyle().layers[0].id;
     if (!m.getLayer('r201-bg')) m.addLayer({ id: 'r201-bg', type: 'background',
-      paint: { 'background-color': '#c9c9c9' } }, m.getStyle().layers[0].id);
+      paint: { 'background-color': '#c9c9c9' } }, under);
   });
   await page.waitForTimeout(1200);
 

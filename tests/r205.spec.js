@@ -50,15 +50,31 @@ async function canvasPoint(fxs = [0.72, 0.8, 0.62], fys = [0.55, 0.42, 0.68]) {
 
 /* ── ① 「別の震源地を選びなおせない。地図に白い丸が出るだけ」 ───────────────────────────────── */
 test('R205 ① a plain map click moves the epicentre; the station table is the other half of a switch', async () => {
-  const before = await page.evaluate(async () => {
+  /* ══ ⚠ (#R304) THE ARMING STEP IS NEW, AND IT IS THE POINT OF TWO LATER ROUNDS ═══════════════
+     This opened the panel WITH an epicentre and then asserted `clickMode === 'epi'`. #R218 gave the
+     segmented control an off state — 「どちらも、もう一度クリックしたら選択解除されるように。」 —
+     and #R240 made a panel opened ON an epicentre start disarmed: 「with no epicentre there is exactly
+     one thing to do」, and with one placed the reader chooses. So `'none'` is now the correct answer
+     to the question this line asked, and the nightly deep run has been red for it since #R240.
+     What #R205 is ABOUT is untouched and still asserted below: with the ◎ segment lit, a plain click
+     MOVES the epicentre and drops no white circle. Both halves of #R240's rule are pinned first, so
+     the arming step cannot quietly become a way of not testing the default. */
+  const opened = await page.evaluate(async () => {
     window.IntMapGeoEngine.camera.jumpTo({ center: [140, 35], zoom: 4 });
     await new Promise(r => setTimeout(r, 450));
     window.IntMapSeismic.open({ lng: 140, lat: 35, mw: 7.5, depth: 20 });
     await new Promise(r => setTimeout(r, 450));
     return window.IntMapSeismic.state();
   });
-  expect(before.clickMode).toBe('epi');            /* the DEFAULT is the epicentre, which is the report */
-  expect(before.epi[0]).toBeCloseTo(140, 3);
+  expect(opened.clickMode, 'opened ON an epicentre, the map is not armed (#R240)').toBe('none');
+  expect(opened.epi[0]).toBeCloseTo(140, 3);
+
+  const before = await page.evaluate(async () => {
+    document.querySelector('#sq-panel .sq-cm-epi').click();
+    await new Promise(r => setTimeout(r, 250));
+    return window.IntMapSeismic.state();
+  });
+  expect(before.clickMode, 'pressing ◎ arms the map for the epicentre').toBe('epi');
 
   const pt = await canvasPoint();
   const px = pt.x, py = pt.y;
@@ -79,7 +95,6 @@ test('R205 ① a plain map click moves the epicentre; the station table is the o
   await page.evaluate(() => window.IntMapSeismic.close());
 });
 
-/* ── ② 「プレート境界レイヤーのプレート名は透過するな」 ──────────────────────────────────────── */
 test('R205 ② the plate name is opaque, and stays opaque when the layer opacity slider moves', async () => {
   const r = await page.evaluate(async () => {
     const G = window.IntMapGeoEngine;
