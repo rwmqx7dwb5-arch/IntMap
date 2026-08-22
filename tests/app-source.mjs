@@ -15,6 +15,7 @@
  *  keeps future splits from breaking the suites again.
  * ==========================================================================*/
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { parse as acornParse } from 'acorn';
 
 /**
  * (#R175) THE PAGE — what `index.html` alone used to be.
@@ -73,11 +74,197 @@ export function appShell(root) {
  * @returns {string[]} e.g. ['js/flight-sim.js', …]
  */
 export function lazyFiles(root) {
+  return lazyModules(root).map((m) => m.file).filter(Boolean);
+}
+
+/* ══ (#R304) …AND THE SAME LOADER ANSWERS THREE MORE QUESTIONS, SO STOP COPYING THE ANSWERS ══════
+   `lazyFiles()` above was written because a hand-kept list of the lazy FILES goes stale. The names
+   and the globals go stale in exactly the same way and were copied anyway: tests/r209.spec.js said
+   「and it knows all eight」 with the eight globals written out beside it, and by the time anybody
+   ran it the loader knew TEN (#R224 moved the Atlas kernel behind it, #R291 the directions panel).
+   The spec had been red on the nightly for a fortnight for saying `8`.
+
+   So this reads the loader's own two tables instead — the `PUBLISHES` map (name → the global that
+   module must have published) and the literal specifiers in its `fetchModule` switch (name → file).
+   Both are load-bearing for reasons written down in js/lazy-modules.js itself, so neither can be
+   rewritten into something this cannot read without that file's own gates failing first.
+   @returns {{name: string, file: string|null, global: string, factory: boolean}[]} in the loader's own order */
+export function lazyModules(root) {
   const u = new URL('js/lazy-modules.js', root);
   if (!existsSync(u)) return [];
-  const src = readFileSync(u, 'utf8');
-  return [...src.matchAll(/import\(\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*\)/g)].map((m) => 'js/' + m[1]);
+  const ast = parse(readFileSync(u, 'utf8'));
+
+  /* Two literal switches, read in one pass over the cases:
+       · `fetchModule` — `case 'name': return import('./x.js');`   → which FILE the module is
+       · `mount`       — `case 'name': …window.IntMapModules.name(IM_HOST)…` → whether it has a
+         FACTORY at all. `nightSky` is the one that does not: it publishes itself at import time,
+         which is why src/main.js's LAZY_FACTORIES is the loader's names minus that one. Reading it
+         from the mount switch means the exception stays a fact about the loader rather than a
+         second place to remember it. */
+  const files = new Map(), factory = new Set();
+  walk(ast, (n) => {
+    if (n.type !== 'SwitchCase' || !n.test || n.test.type !== 'Literal') return;
+    walk(n, (m) => {
+      if (m.type === 'ImportExpression' && m.source.type === 'Literal' && typeof m.source.value === 'string') {
+        files.set(n.test.value, m.source.value.replace(/^\.\//, 'js/'));
+      }
+      if (m.type === 'CallExpression' && m.callee.type === 'MemberExpression' && !m.callee.computed
+        && m.callee.property.type === 'Identifier' && m.callee.property.name === n.test.value
+        && isWindowProp(m.callee.object, 'IntMapModules')) factory.add(n.test.value);
+    });
+  });
+
+  /* name → the global it publishes, from the PUBLISHES object literal */
+  const out = [];
+  walk(ast, (n) => {
+    if (n.type !== 'VariableDeclarator' || n.id.type !== 'Identifier' || n.id.name !== 'PUBLISHES') return;
+    if (!n.init || n.init.type !== 'ObjectExpression') return;
+    for (const p of n.init.properties) {
+      if (p.type !== 'Property' || p.computed || p.value.type !== 'Literal') continue;
+      const name = p.key.type === 'Identifier' ? p.key.name : p.key.value;
+      out.push({ name, file: files.get(name) || null, global: String(p.value.value), factory: factory.has(name) });
+    }
+  });
+  return out;
 }
+
+/* ══ (#R304) WHICH GLOBAL EACH MOVED BLOCK PUBLISHES — DERIVED, NOT LISTED ══════════════════════
+   tests/r166.spec.js asks the one question static analysis cannot answer: did the factory RUN, and
+   did the object it owns actually reach `window`? It asked it of a list of 31 names typed out by
+   hand — and #R296 deleted three features on the user's instruction (「電波・通信圏と見通し線解析
+   を統合して」/「4つのうち…全削除」/「存在意義が不明だから全削除」), so from that round on the spec
+   demanded three globals the program is not supposed to have. Nightly, for a fortnight.
+
+   The source of truth is the factory itself: `window.IntMapModules.<name>=function(HOST){ … }`, and
+   inside it the assignments to `window.<Global>` that run WHEN THE FACTORY RUNS. That last clause is
+   what makes this a relation rather than a grep — an assignment inside a click handler is a promise
+   about later, not a fact about boot. So the walk descends only through code that is certain to
+   execute with the factory body: the body's own statements, `try`/`finally` blocks, bare blocks, and
+   immediately-invoked function expressions (which is how nearly every one of these modules is
+   written: `window.X=(function(){ … })();`). It does NOT descend into `if` branches, loops, handlers
+   or any function that is merely DEFINED there, because none of those is a fact about boot.
+   @returns {Record<string, Record<string, string[]>>} file → factory → globals it publishes */
+export function publishedGlobals(root, files) {
+  const out = {};
+  for (const rel of (files || jsFiles(root))) {
+    const u = new URL(rel, root);
+    if (!existsSync(u)) continue;
+    const ast = parse(readFileSync(u, 'utf8'));
+    for (const st of ast.body) {
+      const fac = moduleFactory(st);
+      if (!fac) continue;
+      const pub = [...new Set(runsWithTheFactory(fac.fn.body, []))];
+      if (pub.length) ((out[rel] ||= {})[fac.name] = pub);
+    }
+  }
+  return out;
+}
+
+/** `window.IntMapModules.<name>=function(HOST){…}` as a top-level statement, or null */
+function moduleFactory(st) {
+  if (st.type !== 'ExpressionStatement' || st.expression.type !== 'AssignmentExpression') return null;
+  const L = st.expression.left, R = st.expression.right;
+  if (L.type !== 'MemberExpression' || L.computed || L.property.type !== 'Identifier') return null;
+  if (!isWindowProp(L.object, 'IntMapModules')) return null;
+  if (R.type !== 'FunctionExpression' && R.type !== 'ArrowFunctionExpression') return null;
+  return { name: L.property.name, fn: R };
+}
+
+/** is this node `window.<prop>`? */
+function isWindowProp(n, prop) {
+  return !!n && n.type === 'MemberExpression' && !n.computed
+    && n.object.type === 'Identifier' && n.object.name === 'window'
+    && n.property.type === 'Identifier' && (!prop || n.property.name === prop);
+}
+
+/** the body of an immediately-invoked function expression, or null */
+function iifeBody(n) {
+  if (!n || n.type !== 'CallExpression') return null;
+  const c = n.callee;
+  return (c.type === 'FunctionExpression' || c.type === 'ArrowFunctionExpression') ? c.body : null;
+}
+
+/** `window.<X>=…` assignments in code that runs when the enclosing function is called (see above) */
+function runsWithTheFactory(node, out) {
+  for (const s of (node.type === 'BlockStatement' ? node.body : [node])) {
+    if (s.type === 'TryStatement') { runsWithTheFactory(s.block, out); if (s.finalizer) runsWithTheFactory(s.finalizer, out); continue; }
+    if (s.type === 'BlockStatement') { runsWithTheFactory(s, out); continue; }
+    if (s.type !== 'ExpressionStatement') continue;
+    const e = s.expression;
+    if (e.type === 'AssignmentExpression' && isWindowProp(e.left)) {
+      out.push(e.left.property.name);
+      const b = iifeBody(e.right); if (b) runsWithTheFactory(b, out);
+      continue;
+    }
+    const b = iifeBody(e); if (b) runsWithTheFactory(b, out);
+  }
+  return out;
+}
+
+/* ══ (#R304) A CONSTANT A TEST WOULD OTHERWISE COPY ═════════════════════════════════════════════
+   tests/r191.spec.js asserted the aircraft glyph is `rgb(30,144,255)`, and js/data-layers.js says
+   `#00D9FF` — a round changed the colour and the spec went on demanding dodger blue, red on the
+   nightly ever since. A colour, a threshold or a gain that a test has to KNOW is a fact about the
+   module: read it from there.
+   @returns {string|number|null} the initialiser of `const <name> = <literal>` in `file` */
+export function constFrom(root, file, name) {
+  const u = new URL(file, root);
+  if (!existsSync(u)) return null;
+  let found = null;
+  walk(parse(readFileSync(u, 'utf8')), (n) => {
+    if (found !== null) return;
+    if (n.type !== 'VariableDeclarator' || n.id.type !== 'Identifier' || n.id.name !== name) return;
+    if (n.init && n.init.type === 'Literal') found = n.init.value;
+  });
+  return found;
+}
+
+/** every `js/*.js` module file, as `js/<name>.js`, sorted — one level, no js/locales/ */
+export function jsFiles(root) {
+  const dir = new URL('js/', root);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).filter((f) => f.endsWith('.js')).sort().map((f) => 'js/' + f);
+}
+
+/* ══ (#R304) WHAT A `window.X=(function(){ … return {a,b,c}; })()` MODULE ACTUALLY EXPORTS ══════
+   The same disease as the two above, one shape along: tests/r167.spec.js said 「all 27 tables are
+   exported」 and js/tables.js exports 25, because #R225 deleted `geoLayersDB` and `GEO_LABEL_JP`
+   with the nine geopolitics layers the user asked to be rid of (「大昔に捨てたはずの地政学レイヤーが
+   勝手にオンになる。ふざけるな。」). A count is a copy of a fact; this reads the fact.
+   @returns {string[]} the keys of the object literal the module's IIFE returns, sorted */
+export function exportedKeys(root, file, globalName) {
+  const u = new URL(file, root);
+  if (!existsSync(u)) return [];
+  const ast = parse(readFileSync(u, 'utf8'));
+  for (const st of ast.body) {
+    if (st.type !== 'ExpressionStatement' || st.expression.type !== 'AssignmentExpression') continue;
+    if (!isWindowProp(st.expression.left, globalName)) continue;
+    const body = iifeBody(st.expression.right);
+    if (!body || body.type !== 'BlockStatement') continue;
+    /* the IIFE's OWN return, not one belonging to a function defined inside it */
+    for (const s of body.body) {
+      if (s.type !== 'ReturnStatement' || !s.argument || s.argument.type !== 'ObjectExpression') continue;
+      return s.argument.properties
+        .filter((p) => p.type === 'Property' && !p.computed)
+        .map((p) => (p.key.type === 'Identifier' ? p.key.name : String(p.key.value)))
+        .sort();
+    }
+  }
+  return [];
+}
+
+/** every AST node, once — acorn-walk's `full` without the visitor table */
+function walk(node, fn) {
+  if (!node || typeof node.type !== 'string') return;
+  fn(node);
+  for (const k of Object.keys(node)) {
+    if (k === 'type' || k === 'start' || k === 'end' || k === 'loc') continue;
+    const v = node[k];
+    if (Array.isArray(v)) { for (const c of v) walk(c, fn); } else if (v && typeof v === 'object') walk(v, fn);
+  }
+}
+
+const parse = (src) => acornParse(src, { ecmaVersion: 'latest', sourceType: 'module' });
 
 /** index.html + css/intmap.css + every js/*.js + src/*.js, concatenated. */
 export function appSource(root) {

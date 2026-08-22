@@ -30,13 +30,40 @@ const BOOT = { timeout: 90_000 };
    name that no longer exists. */
 const boot = async page => { await bootPage(page); };
 /* Interlaken → the Jungfrau massif. Real places, real terrain. */
-const ALPINE = async (page) => page.evaluate(async () => {
-  const D = window.IntMapDrone;
-  D.newRoute(); D.usePreset('prosumer');
-  D.addWaypoint(7.8632, 46.6863, 100, 'agl');
-  D.addWaypoint(7.9800, 46.5900, 100, 'agl');
-  return !!(await D.compute());
-});
+/* ══ ⚠⚠⚠ (#R304) THROUGH `prepare()`, WHICH IS THE DOOR THE APP USES ═══════════════════════════
+   This called `D.compute()` directly, and every claim below about the RADIO LINK then measured a
+   world with no terrain in it: `losBreaks` was 0 over 2 km of rock, twice on CI and on fourteen
+   consecutive nightlies. js/drone-ops.js does not re-implement the link physics — it reads
+   `window.IntMapLOS._phys` (the same dropAt / fresnel1 / knifeEdgeDb the viewshed uses, so the two
+   tools cannot disagree about what «blocked» means) — and js/viewshed.js is fetched ON DEMAND since
+   #R209. `linkSource()` is a synchronous hazard callback that cannot await, so `prepare()` asks for
+   it at the one async step that always precedes a plan, and that file says why in as many words:
+   without it 「the link analysis would quietly fall back to free-space loss with no terrain — a
+   silent downgrade of the kind #R205 is about, not an error」.
+   MEASURED through `compute()` alone: `losBreaks 0` while the route's OWN result reports two
+   `terrain-collision` violations and `minClearance −756 m` — the plan is inside the mountain and the
+   radio check called the sky clear. Through `prepare()` the same walk has the physics it names.
+   ⚠ THE DEM ALSO HAS TO BE THERE. `prepare()` fetches what the sources need, but the terrain tiles
+   come from the network (js/map-extras.js → elevation-tiles-prod); with none of them the sampler
+   answers 0 everywhere and the Alps are a plain. Waiting for a mountain makes that a timeout rather
+   than a green run over flat ground. */
+const ALPINE = async (page) => {
+  await page.waitForFunction(async () => {
+    try {
+      const S = await window.IntMapTerrain.sampler([7.85, 46.58, 7.99, 46.70], 11);
+      return !!(S && S.elevAt(7.92, 46.63) > 1500);
+    } catch (_) { return false; }
+  }, null, { timeout: 60_000 });
+  return page.evaluate(async () => {
+    const D = window.IntMapDrone;
+    D.newRoute(); D.usePreset('prosumer');
+    D.addWaypoint(7.8632, 46.6863, 100, 'agl');
+    D.addWaypoint(7.9800, 46.5900, 100, 'agl');
+    /* the app's own pre-plan step: it fetches what the enabled hazard sources need — the viewshed
+       physics among them — and then re-computes. `compute()` on its own reads whatever is in hand. */
+    return !!(await window.IntMapDroneOps.prepare());
+  });
+};
 
 /* ── ① THE SEAMS ARE FILLED ───────────────────────────────────────────────────────────────── */
 test('R184 drone ①: the wind field and all four hazard sources are registered into the planner', async ({ app }) => {

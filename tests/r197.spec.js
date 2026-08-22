@@ -1,7 +1,7 @@
 // @ts-check
 /* ============================================================================
  *  R197 — in a real renderer: the space explorer, the button that opens it,
- *         the global tsunami, and the tsunami that is no longer in the disaster panel
+ *         the global tsunami, and (#R304) the disaster panel that is no longer there at all
  * ----------------------------------------------------------------------------
  *  tests/r197-checks.test.mjs runs the physics in Node. This runs the parts that only exist when
  *  there is a page: a WebGL context, a canvas that is actually painted, a zoom floor a camera can
@@ -125,22 +125,39 @@ test('R197 ⑤ both scales are honest, and closing returns to the map', async ()
   expect(await page.evaluate(() => document.getElementById('space-view').style.display)).toBe('none');
 });
 
-test('R197 ⑥ the disaster simulator no longer offers a tsunami', async () => {
-  const d = await page.evaluate(async () => {
-    window.IntMapDisaster.open({ lng: 139.7, lat: 35.6 });
-    await new Promise(r => setTimeout(r, 400));
-    const p = document.getElementById('dz-panel');
-    const btns = [...p.querySelectorAll('.dz-hz')].map(b => b.getAttribute('data-h'));
-    const took = window.IntMapDisaster.setHazard('tsunami');
-    const st = window.IntMapDisaster.state();
-    window.IntMapDisaster.clear();
-    return { btns, took, hazard: st.hazard, keys: Object.keys(st) };
-  });
-  expect(d.btns).not.toContain('tsunami');
-  expect(d.btns).toEqual(expect.arrayContaining(['flood', 'ash', 'smoke', 'radiation']));
-  expect(d.took, 'setHazard refuses a hazard it does not have').toBe(false);
-  expect(d.hazard).not.toBe('tsunami');
-  expect(d.keys).not.toContain('waveH');
+/* ══ ⚠⚠ (#R304) ⑥ ASKED A DELETED MODULE WHETHER IT STILL OFFERED A TSUNAMI ════════════════════
+   It opened `window.IntMapDisaster`, counted its hazard buttons and required that none of them was
+   the tsunami. #R296 deleted that panel outright on the user's instruction — 「災害シミュレーターは
+   4つのうち、放射性物質拡散シミュレーションを残し全削除」 — so from that round on ⑥ threw on its first
+   line, and the nightly deep run has been red for it ever since. The claim did not become false; its
+   SUBJECT stopped existing, which is a stronger version of the same answer.
+
+   Stating that is what this test is now. It is deliberately not a deletion (the shape ① above used,
+   because ①'s subject moved to another file and is asserted there): nothing else asks IN A BROWSER
+   whether those three globals are really absent. tests/r296-checks.test.mjs proves the source no
+   longer defines them; only a running page can prove that nothing puts a stub back at boot — which
+   is exactly what this codebase does everywhere else, and exactly what would make 「削除した」 false
+   again without a single source line saying so. The shared page has already loaded every on-demand
+   module (see beforeAll), so «not present» here means «not present anywhere». */
+test('R197 ⑥ the three deleted simulators are gone, and the hazard that stayed has its own door', async () => {
+  const d = await page.evaluate(() => ({
+    /* 「電波・通信圏と見通し線解析を統合して」 / 「4つのうち…全削除」 / 「存在意義が不明だから全削除」 */
+    rf: typeof window.IntMapRF,
+    disaster: typeof window.IntMapDisaster,
+    earthReplay: typeof window.IntMapEarthReplay,
+    /* the radioactive-dispersion model is the one hazard that stayed, and #R296 gave it the panel
+       it had never had — because the wrapper that used to open it is what went away. */
+    radiation: Object.keys(window.IntMapRadiation || {}).sort(),
+    isotopes: Object.keys((window.IntMapRadiation || {}).ISOTOPES || {}).length,
+    /* …and the radio analysis became a MODE of the viewshed rather than a module of its own */
+    losMode: typeof (window.IntMapLOS || {}).setMode,
+  }));
+  expect(d.rf, 'IntMapRF was merged into the viewshed').toBe('undefined');
+  expect(d.disaster, 'IntMapDisaster was deleted with three of its four hazards').toBe('undefined');
+  expect(d.earthReplay, 'IntMapEarthReplay was deleted — Chronos is that clock').toBe('undefined');
+  expect(d.radiation, 'the radioactive-dispersion model opens on its own').toEqual(expect.arrayContaining(['openPanel', 'closePanel', 'isOpen', 'run', 'clear']));
+  expect(d.isotopes, 'and it is the real model, not the no-renderer stub').toBeGreaterThan(1);
+  expect(d.losMode, 'the radio coverage is a mode of the viewshed now').toBe('function');
 });
 
 test('R197 ⑦ the tsunami model is global, and it is the only tsunami there is', async () => {
