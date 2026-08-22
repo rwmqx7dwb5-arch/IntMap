@@ -531,9 +531,22 @@ window.IntMapModules.wind=function(HOST){
            The band a step will ACTUALLY read is the one four lines above: a future hour has no frame
            at all, so `bandCovers` is false for it and the read is always `nearBand()`. Warming that
            is warming the bytes the next step will use, rather than seven times as many. */
+        /* ══ ⚠⚠⚠ (#R310) WARMING THE BYTES LEFT THE OPEN, THE INDEX WALK AND THE DECODE TO THE STEP ═
+           「風レイヤーは品質保ったまま、起動から日時変更からすべてに至るまで、爆速にしろ。」(5回目)
+           `prefetch` asks for exactly the right bytes for exactly the right hour and then keeps
+           nothing but their presence in the block cache, so the step still paid ~2.1 s: MEASURED on
+           the built page, three consecutive single steps at the opening view — **2,107 / 2,168 /
+           2,204 ms**, against **45 ms** for an hour already decoded. And it could not be allowed to
+           run early, because it went down the ONE reader in front of the picture on screen; it was
+           deferred 2,500 ms, which a reader stepping every two seconds never reaches at all.
+           → `readAhead` READS the hour (see js/wx-ecmwf.js): same bytes, same band, same direction,
+           but the frame is decoded and held, so the step is a list lookup. It runs the moment the
+           colour is on screen rather than 2,500 ms later, because with a reader per file it is no
+           longer in front of anything, and a step that arrives while it is still running JOINS it.
+           ⚠ STILL ONLY WHEN THE AXIS HAS MOVED (`opt.step`) — #R276 追記's rule, unchanged. */
         afterFieldShown(()=>{ if(!on) return;
           if(opt&&opt.step){ try{ const n=EC().count(), nx=Math.max(0,Math.min(n-1,EC().index()+_stepDir));
-            if(nx!==EC().index()) EC().prefetch(['wind_u_component_10m','wind_v_component_10m'],nx,nearBand()||band()); }catch(_){} } });
+            if(nx!==EC().index()) EC().readAhead(VAR,nx,nearBand()||band()); }catch(_){} } });
         /* (#R297) …and the rest of what is on screen, behind the picture that is already moving */
         setTimeout(widen,0);
         return f;

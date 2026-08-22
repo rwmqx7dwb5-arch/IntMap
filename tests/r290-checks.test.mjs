@@ -359,7 +359,7 @@ test('R290 ⑬ the ECMWF legend carries the opacity and the readout can reach a 
   assert.match(r, /band=EC\.bandNear\(b\.getSouth\(\),b\.getNorth\(\)\)/, 'the readout asks with it…');
   assert.match(w, /band=EC\(\)\.bandNear\(b\.getSouth\(\),b\.getNorth\(\)\)/, '…and so does the warm-up');
   assert.ok(!/band=EC\(\)\.bandFor\(b\.getSouth\(\),b\.getNorth\(\)\);\s*$/m.test(w) || true, '');
-  assert.match(e, /function keepFrame\(f\) \{/);
+  assert.match(e, /function keepFrame\(f(, quiet)?\) \{/);
   assert.match(e, /var fr = key \? frameFor\(key\) : null;/, 'the sampler looks the variable up');
   assert.match(e, /heldBand: function \(variable\)/, 'and 「the band I have」 names whose band it is');
   assert.match(r, /function askEcField\(cfg\)\{/, 'the readout asks for the field it needs');
@@ -394,9 +394,12 @@ test('R290 ⑬ the ECMWF legend carries the opacity and the readout can reach a 
      app opens on — so the rule this check is FOR was inverted by its own spelling. The band a step
      actually reads is `nearBand()` (a future hour holds no frame, so `bandCovers` is always false
      for it), and the hour is the neighbour in the direction of travel. */
-  assert.match(w, /EC\(\)\.prefetch\(\['wind_u_component_10m','wind_v_component_10m'\],nx,nearBand\(\)\|\|band\(\)\)/,
+  /* ⚠ (#R310) the wind's call is `readAhead` now — it keeps the decoded frame instead of only the
+     bytes' presence in the block cache — and it names the variable the layer draws rather than the
+     pair the SDK's derivation rule expands it to. The BAND is the relation this asks for. */
+  assert.match(w, /EC\(\)\.(readAhead\(VAR|prefetch\(\['wind_u_component_10m','wind_v_component_10m'\]),nx,nearBand\(\)\|\|band\(\)\)/,
     'the wind warms the band that hour will be read at, not the globe');
-  assert.ok(!/prefetch\(\['wind_u_component_10m','wind_v_component_10m'\][^)]*,band\(\)\)/.test(w),
+  assert.ok(!/(readAhead\(VAR|prefetch\(\['wind_u_component_10m','wind_v_component_10m'\])[^)]*,band\(\)\)/.test(w),
     'and never the globe alone');
 });
 

@@ -167,10 +167,13 @@ test('R299 ⑥ a frame is kept per TIME, not one per variable — a step back co
 
 test('R299 ⑥ a read that has been overtaken does not spend the network', () => {
   const s = read('js/wx-ecmwf.js');
-  const i = s.indexOf('return serial(function () {');
+  /* (#R310) the queued half is assigned to `p` now so the in-flight read can be joined — the
+     block, and everything this check asks of it, is unchanged. */
+  const i = s.indexOf('serial(function () {');
   assert.ok(i > 0, 'the queued half of load() is still one block');
   const q = s.slice(i, i + 2600);
   assert.ok(/seq\s*!==\s*mine/.test(q), 'the queue checks its generation before it reads');
+  assert.ok(/ahead/.test(q), '(#R310) …and an ahead read is the one case that has no generation to be behind');
   /* ⚠ BEFORE it reads, not after: the point is that the ranged requests are never issued. */
   assert.ok(q.indexOf('seq !== mine') < q.indexOf('ensureData'), 'the check comes before the fetch');
   /* ⚠ and it must NOT answer falsy: js/weather.js reads falsy as 「fetch failed」 and runs a retry

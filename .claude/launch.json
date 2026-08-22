@@ -2,6 +2,19 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "intmap-preview-r310",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4310"
+      ],
+      "port": 4310,
+      "url": "http://127.0.0.1:4310"
+    },
+    {
       "name": "intmap-preview-r309",
       "runtimeExecutable": "node",
       "runtimeArgs": [

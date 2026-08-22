@@ -296,7 +296,7 @@ test('#R287 ⑧ the coalesced time event drops the frame without cancelling the 
      What #R287 established is unchanged and is what is asserted: fireTime cancels nothing. */
   assert.ok(!/held = null/.test(body), 'and the stale frame is not dropped either — it is replaced');
   assert.ok(!/loadingKey/.test(body), 'fireTime touches no load state at all');
-  assert.match(src, /var mine = \+\+seq;/, 'which frame is current is explicit instead');
+  assert.match(src, /var mine = [^;]*\+\+seq;/, 'which frame is current is explicit instead');
   assert.match(src, /if \(seq === mine\) \{/, '…and a superseded read still resolves to its caller');
 
   /* what must survive elsewhere: release() is still there for the axis it was written for */

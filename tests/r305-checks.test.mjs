@@ -184,22 +184,36 @@ test('R305 ⑥ the instrument says how many units were cut and how many were dro
    a person was waiting for. */
 test('R305 ⑦ the read queue has a lane for the reader and a lane for this module', () => {
   const s = EC();
-  assert.match(s, /var qHi = \[\], qLo = \[\], pumping = false;/, 'two lanes, one pump');
+  assert.match(s, /var qHi = \[\], qLo = \[\], runHi = 0, runLo = 0;/, 'two lanes, one pump');
   assert.match(s, /function serial\(fn, bg\) \{[\s\S]{0,240}?\(bg \? qLo : qHi\)\.push/,
     'a background read goes in the low lane');
-  assert.match(s, /var job = qHi\.shift\(\) \|\| qLo\.shift\(\);/,
+  assert.match(s, /while \(runHi < HI_MAX && qHi\.length\)/,
     'and the foreground lane is drained first');
-  /* the reader's own read is still one-at-a-time — two different FILES corrupt the shared reader */
-  assert.match(s, /pumping = true;[\s\S]{0,200}?pumping = false; _pump\(\);/,
-    'only one job runs at a time');
+  /* ⚠⚠⚠ (#R310) THE HALF THIS ROUND COULD NOT FIX WAS THAT A RUNNING JOB CANNOT BE TAKEN BACK. It
+     wrote that down itself — 「a background read already running still has to finish (the SDK cannot
+     be interrupted)」 — and measured the consequence: a step at 2,393 ms and the next one at
+     7,343 ms. That was true of ONE reader. #R310 gives every file its own reader, so a foreground
+     read no longer WAITS for a background one; it starts beside it. The lane ORDER is what stays,
+     and it is now about bandwidth rather than corruption: a background read does not START while
+     the reader is waiting for one. */
+  assert.match(s, /while \(runLo < LO_MAX && !qHi\.length && runHi === 0 && qLo\.length\)/,
+    'a background read starts only when nothing the reader is waiting for is running');
+  assert.match(s, /var HI_MAX = 1, LO_MAX = 1;/,
+    "and neither lane runs two of its own at once, which would halve each read's share");
   assert.ok(!/var chain = Promise\.resolve\(\);/.test(s), 'the single FIFO chain is gone');
 });
 
 /* ── ⑧ …and the two reads this module starts on its own are IN that lane ─────────────────────*/
 test('R305 ⑧ the warm-up and the widening rung are background reads', () => {
   const s = EC();
-  assert.match(s, /function load\(variable, i, bounds, bg\) \{/, 'load carries the flag');
-  assert.match(s, /\}, !!bg\)\.catch\(function \(\) \{ return null; \}\);/, '…and passes it to the queue');
+  /* (#R310) …and a second one beside it: `ahead`, for a read of an hour nobody is looking at yet. */
+  assert.match(s, /function load\(variable, i, bounds, bg(, ahead)?\) \{/, 'load carries the flag');
+  /* (#R310) the queued half is assigned rather than chained straight into `.catch`, so the job
+     handle can travel with the promise a joiner receives (see `promote`). The relation — the flag
+     reaches the queue, and a failed read answers null rather than throwing — is unchanged. */
+  assert.match(s, /\}, !!bg\);/, '…and passes it to the queue');
+  assert.match(s, /\.catch\(function \(\) \{ return null; \}\)/, '…and a failed read answers null');
+  assert.match(s, /function readAhead\(variable, i, bounds\)/, '(#R310) …and the ahead read is one named door');
   assert.match(s, /\}, true\)\.catch\(function \(\) \{ delete warmed\[mark\]; \}\);/,
     'the next-hour warm-up is background');
   const wx = WX();
@@ -214,7 +228,11 @@ test('R305 ⑧ the warm-up and the widening rung are background reads', () => {
    NULL (「the planet」) for the view this app opens on. */
 test('R305 ⑨ the warm-up asks for the band, not the planet', () => {
   const s = WX();
-  assert.match(s, /EC\(\)\.prefetch\(\['wind_u_component_10m','wind_v_component_10m'\],nx,nearBand\(\)\|\|band\(\)\)/,
+  /* ⚠ (#R310) the call is `readAhead` now (it keeps the frame instead of only the bytes) and it
+     names the variable the layer draws rather than the pair the derivation rule expands it to. The
+     relation is the BAND: `nearBand()||band()`, which is what a future hour will actually be read
+     at — `band()` alone is the planet at world zoom, and that is what #R305 measured and removed. */
+  assert.match(s, /EC\(\)\.(readAhead\(VAR|prefetch\(\['wind_u_component_10m','wind_v_component_10m'\]),nx,nearBand\(\)\|\|band\(\)\)/,
     'the warm-up band is the one a future hour will be read at');
   assert.ok(!/prefetch\(\['wind_u_component_10m','wind_v_component_10m'\],Math\.min\(EC\(\)\.count\(\)-1,EC\(\)\.index\(\)\+1\),band\(\)\)/.test(s),
     'and never `band()` alone, which is the planet at world zoom');

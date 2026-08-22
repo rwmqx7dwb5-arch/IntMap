@@ -291,7 +291,9 @@ test('#R288 ⑧ the field is read as the latitude band in view, warmed before it
   const src = EC();
   assert.match(src, /function bandCovers\(have, want\)/);
   assert.match(src, /if \(have === null \|\| have === undefined\) return true;/, 'the globe covers everything');
-  assert.match(src, /rd\.prefetchVariable\(variable, st\.ranges\)/,
+  /* ⚠ (#R310) the receiver is this FILE'S reader now (`readerFor`), not the shared singleton —
+     the relation is that the band's ranges are warmed at the SDK's own concurrency before the read. */
+  assert.match(src, /\w+\.prefetchVariable\(variable, st\.ranges\)/,
     'the band is latency-bound, so it is warmed at the SDK’s own concurrency first');
   assert.match(src, /bounds: band \|\| undefined/);
   assert.match(src, /var skey = key2 \+ \(band \? \('#'/, 'two bands must not share one state key');

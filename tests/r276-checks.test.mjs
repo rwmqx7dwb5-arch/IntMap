@@ -376,8 +376,13 @@ test('R276 ⑰ the prefetch is on the time change, not on the first load', () =>
   /* ⚠ (#R305) …and the ARGUMENTS moved again, for the same reason #R302 wrote below: the hour is
      the neighbour in the DIRECTION OF TRAVEL and the band is the one that hour will actually be
      read at. The relation is 「warmed from the time change, and only from it」. */
-  assert.match(w, /if\(opt&&opt\.step\)\{[\s\S]{0,200}?EC\(\)\.prefetch\(\['wind_u_component_10m','wind_v_component_10m'\]/,
-    'the wind warms the next hour only when the axis moved');
+  /* ⚠ (#R310) …AND THE CALL IS A READ NOW, NOT A WARM-UP. `prefetch` kept only the bytes' presence
+     in the block cache, so the step still paid the open, the index walk and the decode (MEASURED:
+     2,107 / 2,168 / 2,204 ms a step, against 45 ms for an hour in hand). `readAhead` reads the same
+     bytes of the same band for the same neighbour and HOLDS the frame. The relation this check is
+     for — 「the wind asks for another hour only when the axis moved」 — is what is asserted. */
+  assert.match(w, /if\(opt&&opt\.step\)\{[\s\S]{0,200}?EC\(\)\.(readAhead|prefetch)\(/,
+    'the wind asks for the next hour only when the axis moved');
   assert.match(w, /load\(\{step:ev\.type==='time'\}\)/, 'and that is what a time event passes');
   /* ⚠ (#R302) THIS PINNED THE CLOSING PARENTHESES. It required
        `EC().prefetch(vars,Math.min(n-1,i+1))` — the exact arity of the day — so passing the VIEW as
@@ -424,7 +429,7 @@ test('R276 ⑱ a layer releases its own frame, never somebody else\'s', () => {
      explicit instead of leaving it to a slot that anything could clear. */
   const ft = s.slice(s.indexOf('function fireTime()'), s.indexOf('function _clock()'));
   assert.ok(!/release\(\)/.test(ft), 'a time change no longer throws the current frame away');
-  assert.match(s, /var mine = \+\+seq;/, 'which frame is current is explicit');
+  assert.match(s, /var mine = [^;]*\+\+seq;/, 'which frame is current is explicit');
   assert.match(s, /if \(seq === mine\) \{/, '…and a superseded read still resolves to its caller');
 });
 
@@ -434,19 +439,29 @@ test('R276 ⑱ a layer releases its own frame, never somebody else\'s', () => {
    behind the last, so it can never be the second party to that collision. */
 test('R276 ⑲ every read this module starts is serialised', () => {
   const s = EC();
-  /* ⚠ (#R305) THE CHAIN BECAME A PUMP WITH TWO LANES, and 「one at a time」 is what this pins —
-     `pumping` is the flag that lets exactly one job run, and the next one starts only when it is
-     cleared. Which LANE a job is in is #R305 ⑦'s business, not this one's. */
+  /* ⚠ (#R305) THE CHAIN BECAME A PUMP WITH TWO LANES. Which LANE a job is in is #R305 ⑦'s
+     business, not this one's; this one is about every read leaving through ONE door.
+     ⚠⚠⚠ (#R310) AND 「one at a time」 IS NO LONGER PART OF IT. That rule existed because the SDK
+     keeps a SINGLE `omFileReader` and `ensureData` re-points it at the state's file on every call,
+     so two reads of different files disposed the reader out from under each other (#R288 caught it
+     in production: `valueNow` came back null after a step). #R310 gives every FILE its own reader —
+     `WeatherMapLayerFileReader` is exported and `ensureData` takes the reader as an argument — so
+     the collision is gone at its source, and the queue is left holding a decision about BANDWIDTH:
+     the picture on screen does not share the connection with a picture nobody has asked for.
+     What this check asks for is therefore what it always meant: the reads go through the queue. */
   assert.match(s, /function serial\(fn, bg\) \{[\s\S]{0,240}?\(bg \? qLo : qHi\)\.push/,
     'there is one queue…');
-  assert.match(s, /pumping = true;[\s\S]{0,200}?pumping = false; _pump\(\);/,
-    '…and exactly one read runs at a time');
-  /* (#R288) …with the band's warm-up inside the SAME serialised body, so the prefetch cannot
-     re-point the shared reader beside a read either. */
-  assert.match(s, /return serial\(function \(\) \{[\s\S]{0,900}?sdk\.ensureData\(st, inst\.omFileReader/,
+  assert.match(s, /while \(runHi < HI_MAX && qHi\.length\)/,
+    "…the reader's own reads are drained first…");
+  assert.match(s, /while \(runLo < LO_MAX && !qHi\.length && runHi === 0 && qLo\.length\)/,
+    '…and a background read starts only when nothing the reader is waiting for is running');
+  /* (#R288) …with the band's warm-up inside the SAME queued body, so a warm-up cannot start beside
+     the read it is warming for. (#R310) The reader it points at is this FILE'S, not the singleton. */
+  assert.match(s, /serial\(function \(\) \{[\s\S]{0,1800}?sdk\.ensureData\(st, \w+/,
     '…the field load goes through it…');
-  assert.match(s, /serial\(function \(\) \{[\s\S]{0,700}?setToOmFile\(f\)/,
-    '…and so does the prefetch, which is the call that re-points the reader');
+  assert.match(s, /serial\(function \(\) \{[\s\S]{0,900}?setToOmFile\(f\)/,
+    '…and so does the prefetch, which is the call that opens a file');
+  assert.match(s, /function readerFor\(url\)/, '(#R310) …and the reader is per file, which is why');
 });
 
 /* ── ⑮ the point-weather panel says what the numbers are and when they are for ────────────────*/
