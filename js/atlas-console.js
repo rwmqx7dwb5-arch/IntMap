@@ -27,6 +27,7 @@ import { makeAtlasControls } from './atlas-controls.js';
 import { makeAtlasSources } from './atlas-sources.js';
 import { makeAtlasSims } from './atlas-sims.js';
 import { makeAtlasVerify } from './atlas-verify.js';
+import { makeAtlasExamples } from './atlas-examples.js';   /* (#R309) the starter chips — see the ceiling note there */
 
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.atlasConsole=function(HOST){
@@ -4166,6 +4167,8 @@ window.IntMapModules.atlasConsole=function(HOST){
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chip{font-size:12.5px;padding:8px 12px;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar{gap:8px;padding:8px 11px 6px;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-in{height:48px;min-height:48px;border-radius:24px;padding:12px 16px;font-size:16px;}'   /* (#R118) textarea paddings (16px font kills iOS zoom, unchanged) */
+        /* (#R309) the frosted-glass material for this input is in css/intmap.css, beside the three
+           search bars that needed the same fix and the #R39 rule it is copied from. */
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-go{width:44px;height:44px;}'
         /* (#R116) input LOWERED a bit from R115 (16px+safe-area was too high — "少し位置を下げて"). */
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ainote{font-size:10px;padding:2px 12px calc(6px + env(safe-area-inset-bottom,0px));}'
@@ -4191,14 +4194,8 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R101) example prompts REWRITTEN to showcase what only Atlas can do — cross-country comparison, analytical
        ranking, a transit-isochrone and a cross-data brief — instead of trivial one-tap actions (dark mode / fly to X
        / satellite) that the normal UI already does ("わざわざAtlasでやる必要のない無駄な動作"). */
-    /* (#R103) examples showcase what Atlas is UNIQUELY good at — multi-country comparison, computed rankings, live
-       news synthesis, cross-data analysis — NOT routing (still rough, so not advertised). JP stays Japan-flavoured. */
-    function examples(){ return L(
-      ['Compare the USA, China and India — GDP, defense and population','Which countries spend the most on defense relative to GDP?','Brief me on the South China Sea — the latest','Which countries have the highest life expectancy?'],
-      ['日本・ドイツ・インドを比較（GDP・国防費・人口）','GDP比で国防費が最も高い国は？','南シナ海でいま何が起きている？','日本の経済は1990年からどう変わった？'],
-      ['USA, China und Indien vergleichen — BIP, Militär, Bevölkerung','Welche Länder geben gemessen am BIP am meisten fürs Militär aus?','Lagebericht Südchinesisches Meer — was passiert gerade?','Welche Länder haben die höchste Lebenserwartung?'],
-      ['Сравнить США, Китай и Индию — ВВП, оборона, население','Какие страны тратят на оборону больше всего относительно ВВП?','Что происходит в Южно-Китайском море прямо сейчас?','В каких странах самая высокая продолжительность жизни?'],
-      ['Comparar EE. UU., China e India — PIB, defensa y población','¿Qué países gastan más en defensa respecto a su PIB?','¿Qué está pasando ahora en el Mar de China Meridional?','¿Qué países tienen mayor esperanza de vida?']); }
+    /* (#R309) the starter chips are their own subject now — js/atlas-examples.js. Accessors, because `panel` and `inEl` are assigned by ensure() after this line runs. */
+    const { renderExamples, wireExamples } = makeAtlasExamples(HOST, { L, GE, codeAtPoint, countryStats, cName, loadCountryData, panelEl:()=>panel, pick:(t)=>{ if(inEl){ inEl.value=t; fire(); } } });
     function ensure(){ if(panel) return panel; ensureStyle(); panel=document.createElement('div'); panel.id='atlas-panel'; panel.dataset.nodock='1';   /* ⚠⚠⚠ (#R242) ATLAS IS NEVER DOCKED, and the flag is written HERE, where the panel is born: #R238 wrote it in window-manager's applyDockMode(), which runs at boot while this lazy panel does not exist — so a reader whose SAVED setting is 「まとめる」 had #atlas-panel re-parented into #docked-feed with .im-docked (measured; the class survived mountTab and collapsed .atl-chat to nothing). 「元に戻せ」 */
       panel.innerHTML='<div class="atl-head"><span class="atl-title">Atlas <span class="atl-beta">beta</span></span><span class="atl-btns"><button class="atl-min-btn" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'">–</button><button class="atl-x" title="'+t('close')+'">×</button></span></div>'
         +'<div class="atl-sub">'+L('Ask in plain language — Atlas drives the map for you. Try:','自然言語で指示すると、Atlasが地図を操作します。例:','Stell deine Anfrage in normaler Sprache — Atlas steuert die Karte. Beispiele:','Спросите обычными словами — Atlas управляет картой. Примеры:','Pide en lenguaje natural — Atlas controla el mapa. Ejemplos:')+'</div>'
@@ -4227,7 +4224,10 @@ window.IntMapModules.atlasConsole=function(HOST){
         if(mn){ panel._restoreH=panel.style.height||''; panel.style.setProperty('height','auto','important'); }
         else { if(panel._restoreH){ panel.style.setProperty('height',panel._restoreH,'important'); } else { panel.style.removeProperty('height'); } }
         minBtn.textContent=mn?'▢':'–'; minBtn.title=mn?L('Restore','元に戻す','Wiederherstellen','Развернуть','Restaurar'):L('Minimize','最小化','Minimieren','Свернуть','Minimizar'); };
-      const exWrap=panel.querySelector('.atl-ex'); examples().forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex; b.onclick=()=>{ inEl.value=ex; fire(); }; exWrap.appendChild(b); });
+      /* (#R309) ONE renderer. It was written twice (here and in the language handler below), which is
+         how a third caller — the camera — would have become a third copy. */
+      renderExamples();
+      wireExamples();
       /* (#R105) re-localize the Atlas panel's static chrome immediately on a language change (was stuck until reload — the ws "すべてがすぐ変わらない" report).
          NOTE: the module's `L` mirrors the last MESSAGE's language, so use a currentLang-based helper for UI chrome. */
       try{ const _uiL=window.IntMapLang.pick(()=>HOST.lang);
@@ -4235,7 +4235,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         const sub=panel.querySelector('.atl-sub'); if(sub) sub.textContent=_uiL('Ask in plain language — Atlas drives the map for you. Try:','自然言語で指示すると、Atlasが地図を操作します。例:','Stell deine Anfrage in normaler Sprache — Atlas steuert die Karte. Beispiele:','Спросите обычными словами — Atlas управляет картой. Примеры:','Pide en lenguaje natural — Atlas controla el mapa. Ejemplos:');
         const nt=panel.querySelector('.atl-ainote'); if(nt) nt.textContent=_uiL('Atlas can be inaccurate — verify important facts.','Atlasの回答は不正確な場合があります。重要な情報は確認してください。','Atlas kann ungenau sein — wichtige Fakten prüfen.','Atlas может ошибаться — проверяйте важные факты.','Atlas puede equivocarse — verifica los datos importantes.');
         if(inEl) inEl.placeholder=_uiL('Ask Atlas anything…','Atlasに指示…','Atlas fragen…','Спросить Atlas…','Pregunta a Atlas…');
-        const ew=panel.querySelector('.atl-ex'); if(ew&&ew.style.display!=='none'){ ew.innerHTML=''; examples().forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex; b.onclick=()=>{ inEl.value=ex; fire(); }; ew.appendChild(b); }); }
+        renderExamples(true);   /* (#R309) a language change re-renders even if the place did not change */
       }catch(_){} }); }catch(_){}
       /* (#R118) Enter=send, Shift+Enter=NEWLINE (the input is a textarea now); the box auto-grows to 4-5 lines */
       const go=panel.querySelector('.atl-go'); go.onclick=fire; inEl.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); fire(); } });

@@ -15,6 +15,19 @@
       "url": "http://127.0.0.1:4311"
     },
     {
+      "name": "intmap-preview-r309",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "--root",
+        "dist",
+        "--port",
+        "4309"
+      ],
+      "port": 4309,
+      "url": "http://127.0.0.1:4309"
+    },
+    {
       "name": "intmap-preview-r308",
       "runtimeExecutable": "node",
       "runtimeArgs": [

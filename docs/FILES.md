@@ -109,7 +109,7 @@ map-ui.js                         地図の周りの UI（レイヤーレジス�
                                   レイヤープリセット／ラベルのポップアップ／GeoJSON 取り込み／共有ハッシュ）
 map-tools.js                      対話ツール（投影ビュー・描画・Isolate・海路・見通し線・オブジェクト一覧・
                                   アウトライン・図形移動・到達圏（車・徒歩・自転車・公共交通）・3-D 弧）
-map-readout.js                    座標・標高・レイヤー値・コンパスの読み出しと経緯線
+map-readout.js                    座標・標高・レイヤー値・コンパスの読み出しと経緯線
 map-tooltip.js                  地図のホバー用ツールチップ 1 面（`ensureMapTooltip` / `positionTooltip` /
                                 `setMapTooltipHTML`）。アプリ中のホバー処理が全部これを `window` 経由で使う。
                                 `js/app-body.js` から**まるごと**出したもので、幾何（クランプ・下側への
@@ -196,6 +196,7 @@ atlas-persona.js                  Atlas の人格の**正本**（名前・立場
                                   意見・感情表現・自己設定・非開示。全 system prompt の先頭に入る唯一の写し）
 atlas-console.js                  Atlas カーネル（自然言語コンソール／OS コマンド面。846 KB）
 atlas-controls.js                 Atlas — 実 UI コントロールとモジュールメソッドへの全操作面
+atlas-examples.js                 Atlas — 起動時の例文チップ（地図中心の国で組み立てる。#R309）
 atlas-geo-resolve.js              Atlas — 場所・地域の解決とカメラの寄せ方
 atlas-reply.js                    Atlas — 返答の描画（安全な markdown・コード／数式・GFM 表・出典カード）
 atlas-sims.js                     Atlas — 飛行・弾道・爆風・標高・勢力のアニメーション表示
