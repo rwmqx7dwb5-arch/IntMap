@@ -4940,4 +4940,33 @@ window.IntMapLang.define('fr', { ui: {
   "Where in the world are the most severe weather warnings in force right now?": "Où dans le monde les alertes météo les plus graves sont-elles en vigueur en ce moment ?",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "Quelles limites de plaques tectoniques ont été les plus actives cette dernière semaine ?",   /* atlas-examples.js (#R313) */
   "Which submarine cable chokepoints carry the most of the world’s traffic?": "Quels points de passage obligés des câbles sous-marins portent la plus grande part du trafic mondial ?",   /* atlas-examples.js (#R313) */
+  '{what} — done.': '{what} — terminé.',   /* atlas-results.js (#R314) atlas.result.completed.named */
+  'Still running…': 'Toujours en cours…',   /* atlas-results.js (#R314) atlas.result.running */
+  'Still running — {done} of {total}.': 'En cours — {done} sur {total}.',   /* atlas-results.js (#R314) atlas.result.running.progress */
+  'Partly done — {done} of {total}.': 'Partiellement terminé — {done} sur {total}.',   /* atlas-results.js (#R314) atlas.result.partial */
+  'That did not happen.': 'Cela n’a pas eu lieu.',   /* atlas-results.js (#R314) atlas.result.failed */
+  'Cancelled.': 'Annulé.',   /* atlas-results.js (#R314) atlas.result.cancelled */
+  'Replaced by your newer request.': 'Remplacé par votre demande plus récente.',   /* atlas-results.js (#R314) atlas.result.superseded */
+  'I need one more thing before I can do that.': 'Il me manque encore une information pour pouvoir le faire.',   /* atlas-results.js (#R314) atlas.result.needs_input */
+  'It was calculated but nothing was drawn on the map.': 'Le calcul a été fait, mais rien n’a été dessiné sur la carte.',   /* atlas-results.js (#R314) atlas.code.not_rendered */
+  'It is on the map but currently hidden.': 'C’est sur la carte, mais actuellement masqué.',   /* atlas-results.js (#R314) atlas.code.not_visible */
+  'Nothing on the map changed.': 'Rien n’a changé sur la carte.',   /* atlas-results.js (#R314) atlas.code.no_change */
+  'That is not available right now.': 'Ce n’est pas disponible pour le moment.',   /* atlas-results.js (#R314) atlas.code.unavailable */
+  'I do not have that operation.': 'Je n’ai pas cette opération.',   /* atlas-results.js (#R314) atlas.code.unknown_capability */
+  'The values given for that operation were not usable.': 'Les valeurs fournies pour cette opération étaient inutilisables.',   /* atlas-results.js (#R314) atlas.code.bad_args */
+  'Several things match — which one?': 'Plusieurs éléments correspondent — lequel ?',   /* atlas-results.js (#R314) atlas.code.ambiguous_target */
+  'It did not finish in time.': 'Cela ne s’est pas terminé à temps.',   /* atlas-results.js (#R314) atlas.code.timeout */
+  'It stopped with an error.': 'Cela s’est arrêté sur une erreur.',   /* atlas-results.js (#R314) atlas.code.threw */
+  'That one needs your confirmation first.': 'Cela nécessite d’abord votre confirmation.',   /* atlas-results.js (#R314) atlas.code.needs_confirm */
+  'Tap the point on the map you mean.': 'Touchez sur la carte le point que vous visez.',   /* atlas-results.js (#R314) atlas.input.point */
+  'Draw the line on the map.': 'Dessinez la ligne sur la carte.',   /* atlas-results.js (#R314) atlas.input.polyline */
+  'Draw the area on the map.': 'Dessinez la zone sur la carte.',   /* atlas-results.js (#R314) atlas.input.polygon */
+  'Choose one:': 'Choisissez-en un :',   /* atlas-results.js (#R314) atlas.input.choice */
+  'Tell me the value to use.': 'Indiquez-moi la valeur à utiliser.',   /* atlas-results.js (#R314) atlas.input.text */
+  'Tell me the number to use.': 'Indiquez-moi le nombre à utiliser.',   /* atlas-results.js (#R314) atlas.input.number */
+  'You asked for this on the map, and it is not on the map yet.': 'Vous l’avez demandé sur la carte, et ce n’est pas encore sur la carte.',   /* atlas-results.js (#R314) atlas.goal.map_missing */
+  'You asked for an explanation, and I only operated the map.': 'Vous avez demandé une explication, et je n’ai fait que manipuler la carte.',   /* atlas-results.js (#R314) atlas.goal.explanation_missing */
+  'You asked me to do something, and I only wrote about it.': 'Vous avez demandé une action, et je n’ai fait qu’en parler.',   /* atlas-results.js (#R314) atlas.goal.action_missing */
+  'Not every target was reached: {names}': 'Toutes les cibles n’ont pas été atteintes : {names}',   /* atlas-results.js (#R314) atlas.goal.targets_missing */
+  'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': 'Cette demande a nécessité trop de tentatives — rien de plus n’a été prélevé sur votre quota quotidien. Reformulez-la et réessayez.',   /* ai-core.js (#R314) aiTurnCallsMsg */
 } });

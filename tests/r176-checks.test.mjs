@@ -47,7 +47,9 @@ const water = R('js/terrain-water.js');
 const quake = R('js/seismic.js');
 const insol = R('js/insolation.js');
 const sims = R('js/sims.js');
-const atlas = R('js/atlas-console.js');
+/* (#R314) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+   The question below is unchanged; the read follows the answer to where it lives now. */
+const atlas = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
 const toolPanel = R('js/tool-panel.js');
 const refs = R('js/reference-data.js');
 /* (#R280) the policy TEXT is js/legal-text.js now — js/legal.js is the modal that renders it,

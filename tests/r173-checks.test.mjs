@@ -144,7 +144,8 @@ test('the clicked aircraft draws the track this browser has actually observed', 
   assert.match(d, /function legRing\(a,b,halfM\)/, 'each leg becomes a ribbon…');
   assert.match(d, /properties:\{kind:'leg',alt,top:alt\+thick\}/, '…extruded at the altitude that leg was flown at');
   assert.match(d, /Observed track:/, 'the tooltip says what the track is, because there is no history feed behind it');
-  const a = R('js/atlas-console.js');
+  /* (#R314) …plus js/atlas-catalog-text.js, where the action catalogue lives now. */
+  const a = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
   assert.match(a, /case 'aircraftTrack': case 'planeTrack':/, 'Atlas can do it too (#R82)');
   assert.match(a, /\{"type":"aircraftTrack","aircraft":str/, '…and the catalogue says so, or the planner cannot reach it (#R115)');
 });

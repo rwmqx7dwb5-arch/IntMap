@@ -270,7 +270,10 @@ test('R165 #4 the kernel never reads a live value as a bare identifier', () => {
   // (Verified shadow-free at extraction time: the module declares no local with any of these names.)
   const src = code(mod);
   for (const [name, prop] of Object.entries(LIVE)) {
-    const bare = new RegExp(`(?<![.\\w$])${name}(?![\\w$])`, 'g');
+    /* ⚠ (#R314) …and an object-literal KEY is not a read either. `{userPins:null}` in the state
+       provider names a SECTION of the snapshot; it never touches the live value. The lookbehind
+       already excludes `HOST.userPins`; this excludes `userPins:` for the same reason. */
+    const bare = new RegExp(`(?<![.\\w$])${name}(?![\\w$]|\\s*:)`, 'g');
     const hits = (src.match(bare) || []).length;
     assert.equal(hits, 0,
       `js/atlas-console.js still mentions ${name} as a bare identifier — it must use HOST.${prop} (${hits} hit(s))`);

@@ -11,7 +11,7 @@
 //       → over quota returns 429 {error:"limit", used, limit}.
 //    4. Calls the provider with a SERVER-HELD key (model fixed here — the user
 //       never sees a key or a model picker).
-//    5. Returns { text, used, limit, remaining, meta }. On a provider failure the
+//    5. Returns { text, used, limit, remaining, charged, meta }. On a provider failure the
 //       consumed slot is refunded so a failed call never costs the user a use.
 //
 //  Deploy:   supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac
@@ -80,14 +80,27 @@ import { createClient } from "@supabase/supabase-js";   // pinned in this functi
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  /* (#R314) x-intmap-turn — the turn key. It is a HEADER because the quota is consumed before the
+     body is read (see the consumption step), and a preflight that does not name it makes the whole
+     request fail in the browser rather than merely dropping the field. */
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 // ---- Plan → daily free-use limit. Extend here for future paid tiers. --------
-const PLAN_LIMITS: Record<string, number> = { free: 10, plus: 50, pro: 200, unlimited: 1_000_000 };   /* (#R101) free 10→30/day; (#R147) 30→10/day */
+const PLAN_LIMITS: Record<string, number> = { free: 10, plus: 50, pro: 200, unlimited: 1_000_000 };
+/* (#R314) ONE USER TURN = ONE USE. Atlas finishes one request with up to three calls (planner +
+   two bounded repairs, or a vision read + its self-check re-read), and charging three for one
+   question is a bill the user never agreed to. The client stamps a turn key; the FIRST call
+   carrying it pays, the rest are free — bounded HERE, not by the client:
+     · TURN_MAX_CALLS  — how many calls one key may carry. Above it: 429 {error:"turn_calls"}.
+     · TURN_TTL_S      — how long a key stays alive. A replayed old key opens a new, charged turn.
+   Both are constants in this file precisely so a caller cannot raise them. */
+const TURN_MAX_CALLS = 6;
+const TURN_TTL_S = 900;
+const MAX_TURN_KEY = 120;   /* (#R101) free 10→30/day; (#R147) 30→10/day */
 const DEFAULT_LIMIT = PLAN_LIMITS.free;
 
 // (#R150) OpenAI model = GPT-5.6 TERRA. In R148 this project had NO access to gpt-5.6-terra (403
@@ -652,20 +665,41 @@ Deno.serve(async (req) => {
   if (isDev) plan = "unlimited";
   const limit = PLAN_LIMITS[plan] ?? DEFAULT_LIMIT;
 
-  // 3) Atomically consume one use for today (the developer is exempt — no consumption).
+  /* (#R314) The turn key travels in a HEADER, not in the JSON body, because the body has not been
+     read yet at this point and must not be: consumption happens before parsing precisely so an
+     unbounded body cannot be parsed by an over-quota caller (the comment above MAX_BODY_BYTES).
+     It is a client-supplied string and is treated as one — see the migration's header for the
+     three things that make it safe to accept. */
+  const turnId = String(req.headers.get("x-intmap-turn") || "").slice(0, MAX_TURN_KEY);
+
+  // 3) Consume one use for TODAY, once per TURN (the developer is exempt — no consumption).
   let used = 0;
+  let charged = false;
   if (!isDev) try {
-    const { data: dec, error } = await db.rpc("increment_ai_usage", { p_user: user.id, p_limit: limit });
+    const { data: dec, error } = await db.rpc("consume_ai_turn", {
+      p_user: user.id, p_limit: limit, p_turn: turnId,
+      p_max_calls: TURN_MAX_CALLS, p_ttl_seconds: TURN_TTL_S,
+    });
     if (error) throw error;
     const row = Array.isArray(dec) ? dec[0] : dec;
     used = row?.used ?? 0;
-    if (!row?.allowed) return json({ error: "limit", used, limit }, 429);
+    charged = !!row?.charged;
+    if (!row?.allowed) {
+      /* Two different 429s, and the client must be able to tell them apart: one means "come back
+         tomorrow", the other means "this one request has asked enough times". */
+      const reason = String(row?.reason || "limit");
+      if (reason === "turn_calls") return json({ error: "turn_calls", used, limit, calls: row?.calls ?? 0 }, 429);
+      return json({ error: "limit", used, limit }, 429);
+    }
   } catch (_e) {
     /* ⚠ NOT the database error. `String(e.message)` from a PostgREST/RPC failure names the schema,
        the function signature and sometimes the row that tripped a constraint. */
     return json({ error: "quota_unavailable", message: "The usage counter is unavailable — please try again." }, 500);
   }
-  const refund = async () => { if (!isDev) try { await db.rpc("refund_ai_usage", { p_user: user.id }); } catch (_) { /* best-effort */ } };
+  /* ⚠ (#R314) A REFUND RELEASES THE CHARGE **AND** THE TURN. Refunding the use while leaving the
+     turn row behind would make the user's retry look like a free continuation of a turn nobody
+     paid for — the failure would end up costing less than nothing. */
+  const refund = async () => { if (!isDev) try { await db.rpc("refund_ai_turn", { p_user: user.id, p_turn: turnId }); charged = false; } catch (_) { /* best-effort */ } };
 
   // Parse the request body.
   // (#R113) `task` + `webMode` let the proxy configure output budget, JSON mode and
@@ -673,7 +707,7 @@ Deno.serve(async (req) => {
   let payload: {
     prompt?: string; system?: string; images?: string[]; lang?: string;
     web?: boolean; webMode?: string; task?: string; requestedCount?: number; schema?: unknown; imageDetail?: string;
-    effortHint?: string;
+    effortHint?: string; turnId?: string;
   } = {};
   /* ⚠ REFUSED BEFORE IT IS READ, when the caller declares a size. A body without content-length is
      still bounded, because the read below is capped and a longer one is discarded rather than parsed. */
@@ -797,6 +831,9 @@ Deno.serve(async (req) => {
     // 5) Success.
     return json({
       text: out.text, used, limit, remaining: Math.max(0, limit - used),
+      /* (#R314) whether THIS call consumed a use. The UI shows the count honestly instead of
+         letting the reader infer it from a number that sometimes moves and sometimes does not. */
+      charged,
       // (#R114) webUsed = the search tool ACTUALLY ran this turn (not just attached); the client uses
       // it to keep "latest" features honest (never present a search-less answer as fresh intelligence).
       meta: { provider, model, task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, finishReason: out.finishReason },

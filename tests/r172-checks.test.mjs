@@ -186,7 +186,9 @@ test('aircraft are lifted with real geometry, because this renderer cannot lift 
 /* ─── 5. Atlas is the control plane (#R115: uncatalogued = nonexistent) ─────────────────────── */
 
 test('every new switch is operable from Atlas AND catalogued', () => {
-  const atlas = R('js/atlas-console.js');
+  /* (#R314) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
   assert.ok(atlas.includes("case 'planeAltitude':"), 'Atlas must implement planeAltitude');
   assert.ok(atlas.includes('{"type":"planeAltitude"'), 'planeAltitude must appear in the SYS catalogue');
   assert.match(atlas, /\bplaneAltitude:\{ lbl:/, 'and offer an inline on/off switch in the reply');

@@ -282,7 +282,8 @@ test('R196 ⑤ every "place this on the map" button steps its panel aside', () =
    STANDING: every feature is operable from Atlas. ⚠ #R115's lesson is that an action parameter the SYS
    catalogue does not mention DOES NOT EXIST to the planner — so all three places are checked. */
 test('R196 ⑤b the night side is an Atlas action, in the dispatch AND in the catalogue', () => {
-  const a = rd('js/atlas-console.js');
+  /* (#R314) …plus js/atlas-catalog-text.js, where the action catalogue lives now. */
+  const a = rd('js/atlas-console.js') + '\n' + rd('js/atlas-catalog-text.js');
   assert.match(a, /case 'nightSide': \{/, 'the dispatch handles it');
   assert.match(a, /window\.IntMapNightSide\.setEnabled\(want\)/, 'and really drives the module');
   assert.match(a, /nightSide:\{ lbl:\(\)=>L\('Night side of the Earth'/, 'it is a listed on/off surface');

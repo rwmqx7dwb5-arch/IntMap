@@ -15,6 +15,16 @@
  * ==========================================================================*/
 export function makeAtlasSources(HOST, CTX) {
   const _fetchJSON=CTX._fetchJSON, askAIJSON=CTX.askAIJSON, countryStats=CTX.countryStats, nm=CTX.nm;
+    /* ══ (#R314) THE WIKIPEDIA LANGUAGE EDITION, DERIVED — NOT A FIVE-ROW TABLE ══════════════════
+       Two call sites below picked a wikipedia.org host from a literal {jp,de,ru,es} map, so a reader
+       of Traditional Chinese, Simplified Chinese, French or Korean was silently sent to the ENGLISH
+       Wikipedia however complete their UI was. The edition is not a new fact: it is the ISO-639
+       subtag of the BCP-47 tag the registry already carries for every language it has.
+       ⚠ THE SUBTAG, NOT THE TAG. There is ONE Chinese Wikipedia and it converts between scripts
+       itself, so both zh-Hant and zh-Hans resolve to zh.wikipedia.org — and zh-hans.wikipedia.org,
+       which the app's own code was composing, does not exist and never answered. Stripping the
+       script subtag is what makes the derivation right for nine languages instead of seven. */
+    function wikiLang(code){ try{ return String(window.IntMapLang.htmlTag(code)||'en').split('-')[0].toLowerCase()||'en'; }catch(_){ return 'en'; } }
     async function _leaderData(codes){ try{
       const iso=(codes||[]).filter(Boolean).slice(0,4); if(!iso.length) return null;
       const langQ=(HOST.lang==='jp'?'ja':HOST.lang)+',en';
@@ -51,8 +61,16 @@ export function makeAtlasSources(HOST, CTX) {
         const r=await fetch(p(url),c?{signal:c.signal}:undefined); if(t2) clearTimeout(t2); if(r&&r.ok){ const tx=await r.text(); if(tx&&tx.length>40) return tx; } }catch(_){} }
       return null; }
     async function _gnewsNews(q2,sink){ const query=String(q2||'').trim(); if(!query) return null;
-      const LOCS={jp:['ja','JP','JP:ja'],de:['de','DE','DE:de'],ru:['ru','RU','RU:ru'],es:['es','ES','ES:es']};
-      const locs=[LOCS[HOST.lang]||['en','US','US:en']]; if(HOST.lang!=='en'&&LOCS[HOST.lang]) locs.push(['en','US','US:en']);
+      /* (#R314) NINE EDITIONS, NOT FOUR — a reader of zh / zh-Hans / fr / ko was searching the US
+         English edition of Google News for a query in their own language.
+         ⚠ THIS TABLE STAYS LITERAL, and the two Chinese rows are the reason: hl is Google's UI
+         locale and wants a REGION ('zh-TW' / 'zh-CN'), while ceid is country:language and wants
+         the SCRIPT ('TW:zh-Hant' / 'CN:zh-Hans'). No single registry field carries both, so a
+         derivation would have to special-case exactly the languages it exists to get right.
+         'en' is a row here rather than a repeated literal, so the fallback below names it once. */
+      const LOCS={en:['en','US','US:en'],jp:['ja','JP','JP:ja'],de:['de','DE','DE:de'],ru:['ru','RU','RU:ru'],es:['es','ES','ES:es'],
+                  zh:['zh-TW','TW','TW:zh-Hant'],'zh-hans':['zh-CN','CN','CN:zh-Hans'],fr:['fr','FR','FR:fr'],ko:['ko','KR','KR:ko']};
+      const locs=[LOCS[HOST.lang]||LOCS.en]; if(HOST.lang!=='en'&&LOCS[HOST.lang]) locs.push(LOCS.en);
       for(const loc of locs){ try{
         const xml=await _fetchText('https://news.google.com/rss/search?q='+encodeURIComponent(query)+'&hl='+loc[0]+'&gl='+loc[1]+'&ceid='+encodeURIComponent(loc[2]));
         if(!xml) continue;
@@ -66,7 +84,7 @@ export function makeAtlasSources(HOST, CTX) {
         if(rows2.length) return rows2.join('\n'); }catch(_){} }
       return null; }
     async function _wikiSummary(topic){ const t2=String(topic||'').trim(); if(!t2) return null;
-      const langW=({jp:'ja',de:'de',ru:'ru',es:'es'})[HOST.lang]||'en';
+      const langW=wikiLang(HOST.lang);   /* (#R314) nine languages, from the registry's BCP-47 tag */
       let j=await _fetchJSON('https://'+langW+'.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(t2.replace(/ /g,'_')));
       if(!(j&&j.extract)&&langW!=='en') j=await _fetchJSON('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(t2.replace(/ /g,'_')));
       return (j&&j.extract)?String(j.extract).slice(0,900):null; }
@@ -172,7 +190,7 @@ export function makeAtlasSources(HOST, CTX) {
         ?('?country wdt:P298 "'+String(iso3).replace(/[^A-Z]/g,'')+'". ?item wdt:P17 ?country; wdt:P625 ?coord. ')
         :('SERVICE wikibase:box { ?item wdt:P625 ?coord. bd:serviceParam wikibase:cornerSouthWest "Point('+(+box[0][0]).toFixed(3)+' '+(+box[0][1]).toFixed(3)+')"^^geo:wktLiteral. bd:serviceParam wikibase:cornerNorthEast "Point('+(+box[1][0]).toFixed(3)+' '+(+box[1][1]).toFixed(3)+')"^^geo:wktLiteral. } ');
       /* (#R72) also pull the Wikipedia ARTICLE sitelink (UI language, then English) so the pin popup can link to it */
-      const wikiHost=(langWD&&langWD!=='en')?langWD:'en';
+      const wikiHost=wikiLang(HOST.lang);   /* (#R314) 'zh-hans.wikipedia.org' does not exist — wikiLang() strips the script subtag */
       const q2='SELECT ?item ?itemLabel ?coord ?artL ?artE WHERE { '+cls+scope
         +'OPTIONAL { ?artL schema:about ?item; schema:isPartOf <https://'+wikiHost+'.wikipedia.org/>. } '
         +'OPTIONAL { ?artE schema:about ?item; schema:isPartOf <https://en.wikipedia.org/>. } '

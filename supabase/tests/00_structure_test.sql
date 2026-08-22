@@ -13,12 +13,15 @@ from unnest(array[
   'bug_reports','community_posts','community_comments','community_votes',
   'community_comment_votes','community_reports','geo_pins','dashboard_cards',
   'current_news',
+  -- (#R314) the AI TURN ledger: one row per (account, turn). The first call of a turn charges
+  -- ai_usage and the rest are free, so a single question no longer costs three uses.
+  'ai_turns',
   -- (#R141) area-monitoring feature. (#R280) monitor_seen_items was created by the #R144
   -- hardening migration and never reached this list, so the ONE assertion that says "RLS is on
   -- for every table we have" was measuring 19 of the 20 that exist. A table missing from the
   -- list cannot fail the list.
   'area_monitors','monitor_runs','monitor_evidence','monitor_reports','monitor_seen_items'
-]) as t;                                                    -- 20 assertions
+]) as t;                                                    -- 21 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -29,9 +32,9 @@ from unnest(array[
   'profiles','ai_usage','user_prefs','favorites','donations','feedback',
   'bug_reports','community_posts','community_comments','community_votes',
   'community_comment_votes','community_reports','geo_pins','dashboard_cards',
-  'current_news',
+  'current_news','ai_turns',
   'area_monitors','monitor_runs','monitor_evidence','monitor_reports','monitor_seen_items'
-]) as t;                                                    -- 20 assertions
+]) as t;                                                    -- 21 assertions
 
 -- 3) Keys / relationships that the app depends on.
 select has_pk('public', 'profiles', 'profiles has a primary key');

@@ -357,7 +357,9 @@ test('R208 ⑤d: it borrows the catalogue, the ephemeris, the DEM and the clock'
   /* reachable from Atlas as well as from the right-click item (STANDING #R112) */
   assert.ok(/window\.IntMapNightSky&&window\.IntMapNightSky\.open/.test(read('js/tool-panel.js')),
     'the right-click menu opens it');
-  const atlas = read('js/atlas-console.js');
+  /* (#R314) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = read('js/atlas-console.js') + '\n' + read('js/atlas-catalog-text.js');
   assert.ok(/case 'nightSky':/.test(atlas), 'Atlas can open it');
   assert.ok(/NIGHT SKY FROM A POINT/.test(atlas),
     '…and it is in the SYS catalogue — an action the catalogue does not list does not exist to the '

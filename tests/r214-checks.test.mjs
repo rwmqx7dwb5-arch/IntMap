@@ -273,7 +273,9 @@ test('R214 ④c: the standing view is reachable by hand and by Atlas, and the pl
     'the right-click menu no longer opens the night sky at all');
   assert.ok(/class="ns-mode" data-m="stand"/.test(read('js/night-sky.js')),
     'the standing view is not reachable by hand — the panel has no switch to it');
-  const atlas = read('js/atlas-console.js');
+  /* (#R314) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = read('js/atlas-console.js') + '\n' + read('js/atlas-catalog-text.js');
   assert.ok(/case 'standHere':/.test(atlas), 'Atlas has an action for it');
   /* ⚠ #R115: a parameter the SYS catalogue does not name DOES NOT EXIST to the planner. */
   const sys = atlas.slice(atlas.indexOf('NIGHT SKY FROM A POINT:'), atlas.indexOf('NIGHT SKY FROM A POINT:') + 2000);

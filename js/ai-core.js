@@ -48,8 +48,28 @@ window.IntMapModules.aiCore=function(HOST){
     if(typeof limit==='number' && limit>0) HOST.aiUsage.limit=limit;
     try{ aiRenderSettings(); }catch(_){}
   }
+  /* ══ (#R314) WHICH LANGUAGE THE MODEL MUST ANSWER IN — moved here from js/app-body.js ═══════
+     It belongs with the transport: every prompt this file sends carries it, and the app shell it
+     used to live in has no line to spare (tests/r168 #8). ⚠ IT USED TO TELL THREE OF THE NINE
+     LANGUAGES TO ANSWER IN ENGLISH — `t()` is positional for five and falls back to the locale's
+     inline table for the rest, where 'English' is correctly translated (zh 英文) or absent (fr/ko),
+     so the instruction «Write your ENTIRE response in <name> only» named the wrong language. The
+     name a MODEL needs is the English one, and js/lang-registry.js derives it. */
+  function _aiLangName(){ try{ return window.IntMapLang.englishName(HOST.lang); }catch(_){ return 'English'; } }
+  function _aiLangLine(){ const L=_aiLangName(); return ' IMPORTANT: Write your ENTIRE response in '+L+' only — every sentence, heading and bullet must be in '+L+', regardless of the language of the input or these instructions. Do not reply in English unless '+L+' is English.'; }   /* (#R285 追記) THE THIRD COPY OF THE REGISTER RULE lived right here, and #R285 missed it: it looked for hand-written IDENTITY lines and this is a hand-written REGISTER line. It carried the escape the specification supersedes (「ただし常に自然な敬語」), and it is appended to four prompts — all four of which now open with personaPrompt(), whose `address` clause owns the register. What this line is FOR (the reply-language lock) is untouched. */
   function aiLoginMsg(){ return aiJP()?'AI機能を使うにはログインが必要です。':'Please log in to use AI features.'; }
   function aiLimitMsg(){ return aiJP()?'本日の無料AI使用回数に達しました。':'You have reached today’s free AI limit.'; }
+  /* (#R314) NOT the daily limit — this one request asked the model more times than a request may.
+     It means IntMap's own repair loop is stuck, so it must never read as "you are out of uses":
+     the reader has not spent anything they did not intend to. Nine languages, through the registry
+     (five positional, the rest from each locale's inline table keyed by the English string). */
+  function aiTurnCallsMsg(){ try{ return window.IntMapLang.t(HOST.lang,
+    'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.',
+    'この依頼で試行が多くなりすぎました。1日の利用回数はこれ以上消費していません。言い方を変えてもう一度お試しください。',
+    'Diese Anfrage brauchte zu viele Versuche — von deinem Tageskontingent wurde nichts weiter verbraucht. Bitte formuliere sie neu.',
+    'Этот запрос потребовал слишком много попыток — дневной лимит больше не расходовался. Переформулируйте и попробуйте снова.',
+    'Esta petición necesitó demasiados intentos; no se consumió nada más de tu cuota diaria. Reformúlala e inténtalo de nuevo.'); }
+    catch(_){ return 'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.'; } }
   /* Fetch today's usage for the logged-in user (RLS lets a user read only their own row). Lets the
      gate block + the Settings panel show "残り N/5" BEFORE any AI request is spent. */
   async function aiFetchUsage(){
@@ -106,12 +126,26 @@ window.IntMapModules.aiCore=function(HOST){
       if(opts.schema && typeof opts.schema==='object') body.schema=opts.schema;
       if(opts.effortHint) body.effortHint=String(opts.effortHint);   /* (#R117) complexity hint → planner/analysis may think at "high" server-side */
       if(opts.imageDetail) body.imageDetail=String(opts.imageDetail);   /* (#R156) "high" → OpenAI input_image detail:high (small-text/math OCR); server clamps by task */
+      /* ══ (#R314) THE TURN KEY — ONE USER REQUEST, ONE USE ══════════════════════════════════════
+         Atlas finishes one question with up to three calls: the planner, then up to two bounded
+         repairs (or, for an image, the read and its self-check re-read). Every one of them used to
+         consume a separate daily use, so a single question could cost three and nothing said so.
+         Calls stamped with the same key belong to ONE turn and the FIRST of them pays.
+         ⚠ IT IS A HEADER, NOT A BODY FIELD, because the server consumes the quota before it parses
+         the body (so an over-quota caller's body is never parsed). ⚠ AND IT IS NOT TRUSTED: the
+         server binds it to the account, caps how many calls one key may carry and expires it. */
+      if(opts.turnId) headers['x-intmap-turn']=String(opts.turnId).slice(0,120);
     }
     const fetchOpts={method:'POST',headers,body:JSON.stringify(body)};
     if(opts&&opts.signal) fetchOpts.signal=opts.signal;   /* (#R132) real Abort */
     const r=await fetch(cfg.url,fetchOpts);
     if(r.status===401){ try{ HOST.openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
-    if(r.status===429){ let j=null; try{ j=await r.json(); }catch(_){} if(j&&typeof j.used==='number') aiSetUsage(j.used, j.limit); else { HOST.aiUsage.date=aiToday(); HOST.aiUsage.used=aiDailyLimit(); } throw new Error(aiLimitMsg()); }
+    if(r.status===429){ let j=null; try{ j=await r.json(); }catch(_){} if(j&&typeof j.used==='number') aiSetUsage(j.used, j.limit); else { HOST.aiUsage.date=aiToday(); HOST.aiUsage.used=aiDailyLimit(); }
+      /* (#R314) two different 429s. "limit" = the day's free uses are gone. "turn_calls" = THIS one
+         request has already asked the model as many times as a request may — a bug in the repair
+         loop, not a bill the reader owes, so it must not read as "you are out of uses". */
+      if(j&&j.error==='turn_calls') throw new Error(aiTurnCallsMsg());
+      throw new Error(aiLimitMsg()); }
     if(!r.ok){
       /* (#R113) a typed PROVIDER error (502/503) is NOT the IntMap daily limit — surface a clear, distinct message
          (and never mislabel a Google-side 429 as "out of free uses"). */
@@ -122,6 +156,7 @@ window.IntMapModules.aiCore=function(HOST){
     const j=await r.json().catch(()=>null);
     if(j==null) return {text:'',meta:null,citations:[]};
     if(typeof j.used==='number') aiSetUsage(j.used, j.limit);
+    try{ window._aiLastCharged=(j&&typeof j.charged==='boolean')?j.charged:null; }catch(_){}   /* (#R314) did THIS call consume a use */
     const meta=(j&&typeof j==='object'&&j.meta&&typeof j.meta==='object')?j.meta:null;
     const citations=(j&&typeof j==='object'&&Array.isArray(j.citations))?j.citations:[];
     /* (#R114/#R131) still mirror to the globals for the many existing readers, but the ENVELOPE is authoritative per call. */
@@ -259,5 +294,5 @@ window.IntMapModules.aiCore=function(HOST){
   function aiWaitMapIdle(timeout){ return new Promise(res=>{ const E=window.IntMapGeoEngine; if(!E){ res(); return; } let done=false;
     const fin=()=>{ if(done)return; done=true; try{ E.events.off('idle',fin); }catch(_){} res(); };
     try{ E.events.on('idle',fin); }catch(_){ } setTimeout(fin,timeout||4500); }); }
-  return { aiDev, aiEsc, aiFetchUsage, aiGate, aiLimitMsg, aiLoginMsg, aiParseJSON, aiReady, aiRenderSettings, aiReport, aiSaveSettings, aiSetBtnBusy, aiSyncFeatureButtons, aiToast, aiToday, aiUsesLeft, aiVisionReady, aiWaitMapIdle, askAI, askAIJSON, askAIJSONEnvelope };
+  return { _aiLangLine, _aiLangName, aiDev, aiEsc, aiFetchUsage, aiGate, aiLimitMsg, aiLoginMsg, aiParseJSON, aiReady, aiRenderSettings, aiReport, aiSaveSettings, aiSetBtnBusy, aiSyncFeatureButtons, aiToast, aiToday, aiUsesLeft, aiVisionReady, aiWaitMapIdle, askAI, askAIJSON, askAIJSONEnvelope };
 };

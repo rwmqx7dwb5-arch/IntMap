@@ -190,7 +190,9 @@ test('the future-integration list has a seam, and it is one seam', () => {
 });
 
 test('the drone planner is operable from Atlas AND catalogued (#R115)', () => {
-  const atlas = R('js/atlas-console.js');
+  /* (#R314) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
   assert.ok(atlas.includes("case 'drone':"), 'Atlas implements it');
   assert.ok(atlas.includes('{"type":"drone"'), 'and advertises it in the SYS catalogue');
   assert.match(atlas, /"name":"measure"\|"radius"\|"draw"\|"volume"\|"drone"/, 'the tool switch lists it too');

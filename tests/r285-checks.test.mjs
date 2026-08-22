@@ -30,6 +30,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { personaPrompt } from '../js/atlas-persona.js';
+/* (#R314) the action catalogue lives in its own module now — see plannerPromptSize() below */
+import * as catalogModule from '../js/atlas-catalog-text.js';
 const ATLAS_PERSONA = personaPrompt.spec;   /* the specification hangs off the single export (#R175) */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -217,11 +219,22 @@ const LIVE_CATALOGUES = 3727 + 3750 + 1482;   /* controls + layers + modules, me
 
 function plannerPromptSize() {
   const lines = read('js/atlas-console.js').split(/\r?\n/);
-  const s = lines.findIndex((l) => /^\s*function SYS\(\)\s*\{/.test(l));
+  /* (#R314) SYS takes the capability selection now — `SYS(sel)`, where a null selection means the
+     WHOLE catalogue, i.e. the prompt this check has always measured. */
+  const s = lines.findIndex((l) => /^\s*function SYS\((sel)?\)\s*\{/.test(l));
   const e = lines.findIndex((l, i) => i > s && /^    \}$/.test(l));
   assert.ok(s >= 0 && e > s, 'function SYS() was not found — the planner prompt moved');
+  /* ⚠ (#R314) THE CATALOGUE HAS TO COME BACK IN, OR THIS CHECK STOPS MEASURING THE THING IT NAMES.
+     The 38 action blocks moved to js/atlas-catalog-text.js and SYS() composes them with
+     `_DOCS.text(...)`. Stubbing that with '' would shrink the measured prompt by 57 kB and the
+     assertion would pass on a prompt nobody sends. So the stub is the REAL module, asked for the
+     REAL full catalogue — which is also the honest worst case, since a low-confidence request
+     falls back to exactly that. */
+  const { makeAtlasCatalogText } = catalogModule;
+  const DOCS = makeAtlasCatalogText({}, {});
   const env = {
     personaPrompt,
+    _DOCS: DOCS,
     _langLine: () => 'English (write EVERYTHING in English, every sentence — a place, person or organization name in the request, even one written in Han/Chinese or Korean characters, NEVER changes the reply language)',
     controlCatalog: () => 'x'.repeat(3727),
     layerCatalogText: () => 'x'.repeat(3750),

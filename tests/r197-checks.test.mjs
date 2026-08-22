@@ -164,7 +164,9 @@ test('R197 ②b nothing opens a tsunami inside the disaster simulator', () => {
   const tsu = rd('js/tsunami.js');
   assert.doesNotMatch(tsu, /IntMapDisaster/, 'the propagation panel does not open the disaster panel either');
   assert.doesNotMatch(tsu, /openInundation/, 'and the button that did is gone');
-  const atlas = rd('js/atlas-console.js');
+  /* (#R314) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = rd('js/atlas-console.js') + '\n' + rd('js/atlas-catalog-text.js');
   assert.match(atlas, /case 'tsunami': case 'tsunamiSim': case 'tsunamiPropagation':/,
     'Atlas routes tsunami to its own model');
   /* ⚠ (#R296) the free-text forward stood in the `disaster` case, which is gone with its module —
@@ -213,5 +215,5 @@ test('R197 ②d thirty hours, everywhere it is written down', () => {
   assert.match(tsu, /\[3,6,9,12,18,24,30\]/, 'the panel offers it');
   assert.match(tsu, /setHours\(h\)\{ hours=Math\.max\(1,Math\.min\(30,\+h\|\|6\)\); /, 'the API accepts it');
   assert.match(rd('src/tsunami-worker.js'), /Math\.min\(30, m\.hours\)/, 'and the solver honours it');
-  assert.match(rd('js/atlas-console.js'), /"hours"\?:1-30/, 'and the catalogue documents it');
+  assert.match(rd('js/atlas-catalog-text.js'), /"hours"\?:1-30/, 'and the catalogue documents it');   /* (#R314) the catalogue moved out of SYS() */
 });
