@@ -229,7 +229,13 @@ test('R190 seismic: the field reaches the end of the lowest class and declares i
   const ro = read('js/map-readout.js');
   assert.match(ro, /S\.intensityAt\(HOST\._crLng,HOST\._crLat\)/,
     'the always-on corner readout asks the simulator, never a second computation');
-  assert.match(ro, /class="cr-seis" style="color:\$\{q\.col\}/, 'and shows it in the class colour');
+  /* ⚠ (#R311) THE TITLE IS THE INVARIANT, AND IT STILL HOLDS. This used to quote the innerHTML
+     the readout built; that readout is now assembled once and updated in place (the string was
+     rebuilt on every mousemove, 15,000 nodes created and destroyed per 3,000 renders). What has
+     to stay true is what the line above says: the COLOUR comes from the simulator's own value,
+     not from a second table here — so that is what is asked. */
+  assert.match(ro, /cr-seis/, 'the chip is still the .cr-seis one the stylesheet knows');
+  assert.match(ro, /\.style\.color\s*=\s*q\.col/, 'and shows it in the class colour the simulator gave it');
 });
 
 test('R190 seismic: frequency-dependent Q, a slope measured at the DEM’s own spacing, tsunami hand-off', () => {

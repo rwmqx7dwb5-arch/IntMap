@@ -65,6 +65,96 @@ window.IntMapModules.newsContext=function(HOST){
        ctxRe   — "is this place governed by a locational preposition / particle?"
                  EN: in/at/to/from/near/into <place>   ·   JP: <place>で/へ/に/を/から */
   function isCJKTerm(term){ return /[　-鿿]/.test(term); }
+  function _compileTerm(term){
+    const jp=isCJKTerm(term), cyr=/[Ѐ-ӿ]/.test(term), esc=term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    /* (#R39) Cyrillic/Russian path: JS `\b` word-boundaries don't fire around Cyrillic (it isn't `\w`),
+       AND Russian inflects heavily — so match the supplied STEM plus up to 4 trailing Cyrillic letters,
+       bounded by a non-Cyrillic-letter on the left (a consuming prefix, not lookbehind, for old-Safari
+       safety). e.g. stem «Москв» → Москва/Москве/Москвы/Москву; «Росси» → России/Россию. */
+    if(cyr){ return { term, jp:false, cyr:true,
+      matchRe: new RegExp('(?:^|[^А-Яа-яЁёІіЇїЄє])'+esc+'[а-яёіїєa-z]{0,4}','i'),
+      ctxRe:   new RegExp('(?:в|во|на|из|под|у|около)\\s+'+esc,'i') }; }
+    return { term, jp,
+      matchRe: jp?null:new RegExp(`\\b${esc}\\b`,'i'),
+      ctxRe:   jp?new RegExp(`${esc}(?:で|へ|に|を|から|では)`)
+                 :new RegExp(`\\b(?:in|at|to|from|near|into)\\s+${esc}\\b`,'i') };
+  }
+  /* ══ (#R311) FIVE REBUILDS PER BOOT, AND FOUR OF THEM COMPILE THE SAME MATCHERS AGAIN ═══════════
+     MEASURED on a desktop boot against the dev server (`frame-profile.mjs --attribute` puts 326.5 ms
+     of self time in this file, 212.9 ms of it in the compile loop at the end of rebuildGeoIndex —
+     the second-largest boot cost in IntMap's own code). The loop is not the problem; how often it
+     runs, and how little of each run is NEW work, is:
+
+       rebuildGeoIndex() is re-entered FIVE times on one boot, by five separate and CORRECT callers —
+       the boot's own heavy() (js/app-body.js), countryStats landing and then the 10 m upgrade
+       (js/countries-ui.js, twice), the world gazetteer arriving (this file's own
+       `intmap-gazetteer-world` hook below) and the geo_pins load (js/auth-ui.js). Each pass rebuilds
+       HOST.geoDB from scratch as fresh `{...g,type}` objects, so no `_terms` from the previous pass
+       can survive ON AN ENTRY, and every term was compiled again:
+
+         call   entries   terms compiled   of those, already compiled by an earlier call
+           1        650            1,210                                            123
+           2     15,650           47,248                                          1,388
+           3     15,827           47,766                                         47,470
+           4     16,121           48,395                                         48,325
+           5     16,121           48,395                                         48,395
+                              ──────────   ───────────────────────────────────────────
+                                 193,014                             145,701  (75.5 %)
+
+       …over 47,313 DISTINCT term strings. (The jump at call 2 is js/gazetteer.js's INDEX_WORLD_CAP:
+       BUILTIN_GAZETTEER takes the head of the world list once that file lands.) Three of the five
+       passes are ≥99.4 % re-compilation of strings this page has already compiled.
+
+     The entry object is new every pass, but ITS `terms` ARRAY IS NOT: js/gazetteer.js memoises the
+     matcher-shaped index and each of its rows keeps the row's own `terms` array, so passes 3-5 hand
+     this loop the very same arrays pass 2 was given. So the compiled array is cached against the
+     `terms` array itself, which is the one thing that does persist across a rebuild. RE-MEASURED
+     with the cache in, same machine, alternating with the old loop over seven boots:
+
+         call   cache hits / misses   terms compiled   median ms  (was)
+           1              0 / 650              1,210     2.4      (2.1)
+           2            334 / 15,316          46,514    88.2..184 (104.4)   ← the new arrays
+           3         15,334 / 610              1,105     11.2     (106.0)
+           4         15,628 / 493                994      9.9      (75.3)
+           5         15,628 / 493                994     12.8      (96.4)
+
+       193,014 compilations a boot become 50,817 (−73.7 %), and the whole loop's share of the boot
+       drops from a median 396.9 ms to 221.1 ms (median of the seven PAIRED differences −162.7 ms;
+       all seven negative). Pass 2 is the one that is not repeat work — those 46,514 matchers have
+       never existed on this page — and it is left alone: its paired median moves +7.2 ms, the cost
+       of 15,650 WeakMap probes. The ~500 misses that remain on every pass are the entries this
+       function BUILDS each time (countryStats, demonyms, orgs, the DE/RU/ES tables), whose arrays
+       are new by construction.
+
+     ⚠ THE CACHE IS VERIFIED, NOT ASSUMED. A WeakMap hit only says "this array object was compiled
+     before"; it does not say the array still holds those strings. Nothing in the repo mutates a
+     published `terms` array today (the two `terms.push` sites both fill a local array before handing
+     it out), but a stale matcher would be a SILENT wrong-place bug, so the hit is confirmed term by
+     term against the array before it is used — n pointer comparisons over arrays of one to four
+     strings, against the two `new RegExp` per term it skips. A mismatch simply recompiles.
+
+     ⚠ THE RegExp OBJECTS ARE THEREFORE SHARED BETWEEN PASSES, WHICH IS SAFE ONLY BECAUSE THESE
+     CARRY NO `g` OR `y` FLAG: `lastIndex` is consulted and written by `test`/`search` for a global
+     or sticky pattern only, so two readers cannot leave match state on one another. Nothing mutates
+     a compiled entry either — every reader of `_terms` (matchPublisher above, scoreGeo below) reads
+     term/jp/matchRe/ctxRe and nothing else.
+
+     ⚠ NOTHING ABOUT THE RESULT MOVES. The same terms in the same order, the same longest-first sort,
+     the same regex source and flags, the same scoring — only the number of `new RegExp` calls
+     changes. Built on first use and kept, exactly like _pubDomIdx above and _cfIdx below. */
+  let _termsCache=null;
+  function _compileTerms(terms){
+    if(!_termsCache) _termsCache=new WeakMap();
+    const hit=_termsCache.get(terms);
+    if(hit&&hit.length===terms.length){
+      let same=true;
+      for(let i=0;i<hit.length;i++){ if(hit[i].term!==terms[i]){ same=false; break; } }
+      if(same) return hit;
+    }
+    const out=terms.map(_compileTerm);
+    _termsCache.set(terms,out);
+    return out;
+  }
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   const {_DERU_GZ,_DERU_DEM,_ES_GZ,_ES_DEM}=window.IntMapTables;
   /* ── (#R208) hand the world rows to the locator a slice at a time ──────────────────────────────
@@ -239,22 +329,9 @@ window.IntMapModules.newsContext=function(HOST){
       } }catch(_){}
     /* longer keywords first → "Tel Aviv" wins over "Israel" (stable tiebreaker on equal scores) */
     HOST.geoDB.sort((a,b)=>Math.max(...b.terms.map(t=>t.length)) - Math.max(...a.terms.map(t=>t.length)));
-    HOST.geoDB.forEach(g=>{
-      g._terms=g.terms.map(term=>{
-        const jp=isCJKTerm(term), cyr=/[Ѐ-ӿ]/.test(term), esc=term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-        /* (#R39) Cyrillic/Russian path: JS `\b` word-boundaries don't fire around Cyrillic (it isn't `\w`),
-           AND Russian inflects heavily — so match the supplied STEM plus up to 4 trailing Cyrillic letters,
-           bounded by a non-Cyrillic-letter on the left (a consuming prefix, not lookbehind, for old-Safari
-           safety). e.g. stem «Москв» → Москва/Москве/Москвы/Москву; «Росси» → России/Россию. */
-        if(cyr){ return { term, jp:false, cyr:true,
-          matchRe: new RegExp('(?:^|[^А-Яа-яЁёІіЇїЄє])'+esc+'[а-яёіїєa-z]{0,4}','i'),
-          ctxRe:   new RegExp('(?:в|во|на|из|под|у|около)\\s+'+esc,'i') }; }
-        return { term, jp,
-          matchRe: jp?null:new RegExp(`\\b${esc}\\b`,'i'),
-          ctxRe:   jp?new RegExp(`${esc}(?:で|へ|に|を|から|では)`)
-                     :new RegExp(`\\b(?:in|at|to|from|near|into)\\s+${esc}\\b`,'i') };
-      });
-    });
+    /* (#R311) …through the cache above, so a `terms` array this page has already compiled is not
+       compiled again. Same entries, same order, same matchers. */
+    HOST.geoDB.forEach(g=>{ g._terms=_compileTerms(g.terms); });
   }
   /* ===== Scoring model (replaces the old "first geo term wins" loop) =====
      Every geo entry is scored over the title + description; the highest score is the Subject.

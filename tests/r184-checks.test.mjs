@@ -28,22 +28,35 @@ const rd = (p) => (p === 'js/i18n.js'
 test('R184 #1: every new module is in the import graph, the factory guard and app-body', () => {
   const main = rd('src/main.js');
   const body = rd('js/app-body.js');
+  /* ⚠ (#R311) THE TWO SATELLITE FILES ARE FETCHED ON DEMAND NOW, so "is it in the import graph" and
+     "where is it instantiated" have different answers for them — js/lazy-modules.js rather than
+     src/main.js + js/app-body.js. Both questions are still asked, of the file that now answers them,
+     and the guard list is still one list (LAZY_FACTORIES is the deferred half of it). What is no
+     longer asserted is that they are in the BOOT bundle, which this round made false on purpose:
+     70 kB of SGP4 and 21 kB of detail card for a session that never ticks the satellite row. */
+  const loader = rd('js/lazy-modules.js');
   const MODULES = [
-    ['js/satellites-live.js', 'satellitesLive'],
-    ['js/satellite-detail.js', 'satelliteDetail'],
-    ['js/drone-ops.js', 'droneOps'],
-    ['js/routing-ops.js', 'routingOps'],
+    ['js/satellites-live.js', 'satellitesLive', true],
+    ['js/satellite-detail.js', 'satelliteDetail', true],
+    ['js/drone-ops.js', 'droneOps', false],
+    ['js/routing-ops.js', 'routingOps', false],
   ];
-  for (const [file, factory] of MODULES) {
+  for (const [file, factory, lazy] of MODULES) {
     assert.ok(rd(file).length > 500, `${file} exists and has content`);
-    assert.ok(main.includes(`import '../${file}'`), `${file} is imported by src/main.js`);
+    const where = lazy ? loader : main, how = lazy ? `import('./${file.slice(3)}')` : `import '../${file}'`;
+    assert.ok(where.includes(how), `${file} is ${lazy ? 'fetched by js/lazy-modules.js' : 'imported by src/main.js'}`);
+    if (lazy) assert.ok(!main.includes(`import '../${file}'`), `${file} is ALSO in src/main.js — it would be downloaded at boot regardless`);
     assert.match(rd(file), new RegExp(`IntMapModules\\.${factory}\\s*=`),
       `${file} declares exactly the factory the guard looks for`);
     /* the guard list — a file that fails to deploy must say so loudly (#R162/#R163) */
-    assert.ok(new RegExp(`'${factory}'`).test(main), `${factory} is in MODULE_FACTORIES`);
-    assert.match(body, new RegExp(`IntMapModules\\.${factory}\\(IM_HOST\\)`),
-      `${factory} is instantiated once in js/app-body.js`);
+    assert.match(main, new RegExp(`const ${lazy ? 'LAZY' : 'MODULE'}_FACTORIES = \\[[^\\]]*'${factory}'`),
+      `${factory} is in ${lazy ? 'LAZY' : 'MODULE'}_FACTORIES`);
+    assert.match(lazy ? loader : body, new RegExp(`IntMapModules\\.${factory}\\(IM_HOST\\)`),
+      `${factory} is instantiated once in ${lazy ? 'js/lazy-modules.js' : 'js/app-body.js'}`);
   }
+  /* the pair travels together: the card must exist before the layer's click handler can find it */
+  assert.match(loader, /satellitesLive: \['satelliteDetail'\]/,
+    'asking for the satellite layer must also bring its detail card — js/satellites-live.js calls it by name');
 });
 
 /* ── ② THE ONE npm DEPENDENCY THIS ROUND ADDS IS DECLARED ─────────────────────────────────── */

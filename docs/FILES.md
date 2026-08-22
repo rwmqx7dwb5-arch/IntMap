@@ -110,6 +110,11 @@ map-ui.js                         地図の周りの UI（レイヤーレジス�
 map-tools.js                      対話ツール（投影ビュー・描画・Isolate・海路・見通し線・オブジェクト一覧・
                                   アウトライン・図形移動・到達圏（車・徒歩・自転車・公共交通）・3-D 弧）
 map-readout.js                    座標・標高・レイヤー値・コンパスの読み出しと経緯線
+map-tooltip.js                  地図のホバー用ツールチップ 1 面（`ensureMapTooltip` / `positionTooltip` /
+                                `setMapTooltipHTML`）。アプリ中のホバー処理が全部これを `window` 経由で使う。
+                                `js/app-body.js` から**まるごと**出したもので、幾何（クランプ・下側への
+                                反転・`--tip-ax`）は #R175 の本文そのまま。⚠ 出した理由は `tests/r168 #8` の
+                                shell 予算——**天井は上げず、同量以上を外へ出す**（#R195/#R196 の規則）
 map-extras.js                     残りの自己完結した地図表面モジュール
 map-pick.js                       地図上の1点を拾う window.IntMapPick
 map-typography.js                 このアプリの文字——どの書体が描き、どれだけの幅で出るか
@@ -326,7 +331,10 @@ admin1-world.json.gz              世界の第1級行政区画（Natural Earth 1
                                   形を引く最後の段でもある。生成は scripts/build-admin1.mjs
 gazetteer-world.json.gz           世界の地名の長い尾（cities1000 由来・18言語）。必要になった時に取得する
 gazetteer-phone.json.gz           携帯が取りに行くのはこちら。上のファイルの先頭 12,000 行を切り出したもの
-ecoregions_2017.geojson / .js     エコリージョン（自前ホスト）
+ecoregions_2017.geojson           エコリージョン（自前ホスト）。**配布されるのはこれだけ**
+  └ 同内容の JS グローバル版      `ecoregions_2017.js`（#R13b の `file://` 対策・`window.__ECOREGIONS_2017`）。
+                                  中身は上と**バイト同一**なので `vite.config.js` の `STATIC_EXCLUDE` で
+                                  dist から外してある。リポジトリからは消していない
 railways_gauge.json               世界の鉄道（軌間別）
 volcanoes_gvp.json                火山（Smithsonian GVP 完新世）
 crust1.bin.gz / .json             CRUST1.0（地殻構造）
@@ -403,6 +411,18 @@ scripts/
                                   ⚠ `status` は**前夜の deep tier の判定**も出す（`scripts/deep-alarm.mjs` と
                                   同じ答え）。`gh` が無い・未ログイン・オフラインは**黙って省略**し、
                                   6 秒で打ち切る——`status` は決して非ゼロで終わらない（#R304）。
+  build-report.mjs                **起動予算の計器**（vite プラグイン＋CLI）。Rollup の最終グラフから
+                                  eager（index.html のエントリ＋静的 import の推移閉包＝modulepreload
+                                  される集合）と async を**導出**し、raw / gzip / brotli とモジュール別の
+                                  内訳を `.perf/build-report.json` に書く（追跡対象外）。
+                                  ⚠ brotli は**2つの品質**を使う——ゲートが読む eager だけ 11、それ以外は 5。
+                                  全部を 11 にするとビルドが 40 秒延びる（Cesium だけで 4.8 MB）。
+  perf-budget.mjs                 **起動予算のゲート**（`npm run check:perf`・CI の静的 job）。
+                                  eager は**両方向のラチェット**（増えたら退行／減ったのに天井が
+                                  ついてこなければ「天井が古い」で落とす＝#R194 と同じ規則）、
+                                  async chunk と dist の合計は**天井だけ**（縮むのは自由）。
+                                  ⚠ `requests` と `modules` は**バイトではなく個数**なので完全一致で見る。
+                                  基準は `tests/perf-baseline.json`（追跡対象）。`--update` で更新。
   engine-coupling.mjs             レンダラ脱依存のゲート
   i18n-*.mjs                      翻訳の被覆と形の監査（§10）
   eol.mjs                         ソース検査は**バイト列ではなく内容**を読む（改行はチェックアウトの性質）

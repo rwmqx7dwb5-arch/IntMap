@@ -16,16 +16,15 @@
  *  Every factory is called at the exact spot its block used to occupy, so execution order is
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  *
- *  ⚠ (#R254) THE DATA-CENTER LAYER IS IMPORTED HERE, NOT FROM src/main.js. `betaPack2`'s `dcToggle`
- *  delegates to js/datacenters.js and instantiates it below, so the dependency belongs beside the
- *  consumer — and the shell (index.html + src/main.js + js/app-body.js + …) is BUDGETED at 8,200
- *  lines by tests/r168 #8. Routing the import and the instantiation through the shell cost it seven
- *  lines and tripped that budget, which is the tripwire doing its job: the shell is not where a
- *  module's dependencies go. Nothing about load order is lost — an ES import is hoisted, so
- *  `window.IntMapModules.dataCenters` exists before this file's body runs.
+ *  ⚠ (#R254/#R311) THE DATA-CENTER LAYER IS NOT IMPORTED AT ALL ANY MORE. #R254 moved the import
+ *  out of src/main.js and put it here, beside the consumer, because the shell (index.html +
+ *  src/main.js + js/app-body.js + …) is BUDGETED at 8,200 lines by tests/r168 #8. #R311 removed the
+ *  import from here too: 66 kB of curated table, Overpass client and detail card was downloaded by
+ *  every session for a row most of them never tick. The row below is unchanged — `dcToggle` is the
+ *  one door into that layer, and it now awaits `IntMapLazy.need('dataCenters')` before delegating,
+ *  so nothing about WHAT the row does changed, only WHEN the code behind it arrives.
  * ==========================================================================*/
-import './datacenters.js';
-/* (#R255) …and the four surveyed-facility layers (js/osm-facilities.js), for the same reason: the
+/* (#R255) the four surveyed-facility layers (js/osm-facilities.js): the
    shell's line budget is a real check (tests/r168 #8) and an import belongs beside a consumer
    rather than in src/main.js. This file is where the extra layer rows those four sit beside live. */
 import './osm-facilities.js';
@@ -334,20 +333,36 @@ window.IntMapModules.landCover=function(HOST){
        846 ecoregions, per-feature COLOR), lazy-loaded as a normal GeoJSON source — no external
        dependency, no dead URL, no plugin needed. */
     function ecoBefore(){ try{ for(const l of (GE().scene.getStyle().layers||[])){ if(l.type==='symbol') return l.id; } }catch(_){} return undefined; }
-    /* (#R13b) The public site is opened from `file://`, where `fetch()` of a LOCAL file is blocked by
-       Chrome (only http/https/data). So the ecoregions GeoJSON is shipped as a JS global
-       (`data/ecoregions_2017.js` → window.__ECOREGIONS_2017) and loaded with a <script> tag, which works
-       under file:// AND http. Falls back to fetch() of the .geojson when served over http. Exposed as
-       window.__loadEcoregions so the Compare window can reuse it. */
+    /* (#R13b) The public site was then opened from `file://`, where `fetch()` of a LOCAL file is
+       blocked by Chrome (only http/https/data), so the dataset was ALSO shipped as a JS global
+       (`data/ecoregions_2017.js` → window.__ECOREGIONS_2017) that a <script> tag could carry.
+       ⚠ (#R311) THAT IS HISTORY, NOT THE CURRENT ARRANGEMENT — the built site cannot run from
+       `file://` at all (ES-module entry since #R175), so only the .geojson ships now and fetch() is
+       the primary path. See the note inside the loader. Exposed as window.__loadEcoregions so the
+       Compare window (js/compare.js) reuses the one copy rather than fetching a second. */
     window.__loadEcoregions=function(cb){
       if(window.__ECOREGIONS_2017){ cb(window.__ECOREGIONS_2017); return; }
       if(window.__ecoQ){ window.__ecoQ.push(cb); return; }
       window.__ecoQ=[cb];
       const done=(d)=>{ if(d) window.__ECOREGIONS_2017=d; const q=window.__ecoQ||[]; window.__ecoQ=null; q.forEach(f=>{ try{ f(window.__ECOREGIONS_2017||null); }catch(_){} }); };
-      const s=document.createElement('script'); s.src='data/ecoregions_2017.js';
-      s.onload=()=>done(window.__ECOREGIONS_2017||null);
-      s.onerror=()=>{ fetch('data/ecoregions_2017.geojson').then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status))).then(gj=>done(gj)).catch(()=>done(null)); };
-      document.head.appendChild(s);
+      /* ══ (#R311) THE TWO PATHS SWAPPED PLACES. NEITHER WAS REMOVED. ═════════════════════════════
+         Both files carry the SAME object — verified byte-for-byte, see the note in vite.config.js —
+         and the deploy now ships only the .geojson, so fetch() is the path that can succeed and the
+         <script> tag is the fallback rather than the other way round. Two things follow, and both
+         are improvements rather than trade-offs:
+           · the deploy loses 9.76 MB it could never use;
+           · JSON.parse replaces "make V8 parse 9.76 MB of JavaScript source" on the main thread.
+         The <script> branch is kept, unchanged, for the case #R13b was written for (a tree opened
+         from `file://`, where fetch of a local file is blocked). That case cannot arise for the
+         built site — index.html has loaded `<script type="module" crossorigin>` since #R175 and
+         `file://` refuses it — but the branch costs nothing and deleting it would delete the only
+         record of how to serve this dataset without fetch. */
+      const viaScript=()=>{ const s=document.createElement('script'); s.src='data/ecoregions_2017.js';
+        s.onload=()=>done(window.__ECOREGIONS_2017||null);
+        s.onerror=()=>done(null);
+        document.head.appendChild(s); };
+      fetch('data/ecoregions_2017.geojson').then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status)))
+        .then(gj=>done(gj)).catch(()=>viaScript());
     };
     function ensureEco(cb){ if(GE().layers.hasSource('eco-regions')){ cb(true); return; }
       window.__loadEcoregions(gj=>{ if(!gj){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load ecoregions","生態地域データを読み込めませんでした","Ökoregionen konnten nicht geladen werden","Не удалось загрузить экорегионы","No se pudieron cargar las ecorregiones")); }catch(_){} cb(false); return; } addEcoLayers(gj); cb(true); }); }
@@ -483,8 +498,13 @@ window.IntMapModules.betaPack2=function(HOST){
     function fcPoints(arr,colFn){ return {type:'FeatureCollection',features:arr.map(d=>({type:'Feature',geometry:{type:'Point',coordinates:[d[0],d[1]]},properties:{n:d[2],k:d[3]||'',col:colFn(d)}}))}; }
     function load(key,cb){
       if(cache[key]){ cb(cache[key]); return; }
-      if(key==='dc'){ const M=window.IntMapDataCenters; if(!M||!M.features) return;   /* (#R254) one table, in js/datacenters.js */
-        cache.dc=M.features(); cb(cache.dc); }
+      /* (#R311) the SECOND door into the data-center module: js/compare.js draws the curated half in
+         its own map through IntMapBeta2.load('dc'), with no row and no toggle involved. It gets the
+         fetch too, or the Compare overlay would be empty in exactly the sessions that never ticked
+         the row — which is every session that opens Compare first. */
+      if(key==='dc'){ window.IntMapLazy.need('dataCenters').then(()=>{
+        const M=window.IntMapDataCenters; if(!M||!M.features) return;   /* (#R254) one table, in js/datacenters.js */
+        cache.dc=M.features(); cb(cache.dc); }); }
       else if(key==='pharma'){ cache.pharma=fcPoints(PH,()=> '#2bb3a3'); cb(cache.pharma); }
       else if(key==='rail'){ fetch('data/railways_gauge.json').then(r=>r.json()).then(j=>{ if(!j||!Array.isArray(j.features)) return;
         j.features.forEach(f=>{ f.properties.col=RAIL_COL[f.properties.g]||RAIL_COL[0]; }); cache.rail=j; cb(j); }).catch(()=>{ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load railway data","鉄道データを読み込めませんでした","Eisenbahndaten konnten nicht geladen werden","Не удалось загрузить данные о железных дорогах","No se pudieron cargar los datos ferroviarios")); }catch(_){} }); }
@@ -520,6 +540,11 @@ window.IntMapModules.betaPack2=function(HOST){
        ⚠ IF THE MODULE IS ABSENT THIS SAYS SO rather than silently drawing nothing — the shape this
        project keeps paying for is a toggle that looks alive and does nothing. */
     function dcToggle(on){ state.dc=on;
+      /* (#R311) THIS ROW IS THE ONE DOOR, so the fetch is here — the checkbox, the session restore's
+         `change` event and Atlas's `beta-dl-dc` all arrive through it. `state.dc` is set first and
+         synchronously, so the styledata self-heal below still knows the row is on. */
+      window.IntMapLazy.need('dataCenters').then(()=>_dcToggle(on)); }
+    function _dcToggle(on){
       const DCM=window.IntMapDataCenters;
       if(!DCM||!DCM.toggle){ try{ console.warn('IntMapDataCenters is not loaded — the data-center layer cannot draw'); }catch(_){} return; }
       DCM.toggle(on);

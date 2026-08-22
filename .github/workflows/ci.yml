@@ -60,6 +60,20 @@ jobs:
       # same list `npm test` uses, so the two can no longer drift. ~2 s for 200+ tests.
       - name: Source-level regression checks (Edge Function invariants, area-monitor engine, R1xx suites)
         run: npm run test:checks
+      # ══ (#R311) THE STARTUP BUDGET ═══════════════════════════════════════════════════════════════
+      # 「現在のCIでは、3,000KB超chunkを検出しても成功扱いになる構成があります。」 — measured, and it was
+      # exactly true: until this step the only thing CI weighed was TEST TIME. `vite build` printed
+      # «Some chunks are larger than 3000 kB» on every single run and exited 0, which asserts nothing.
+      #
+      # The build has to happen here for the report to exist, and it is worth its ~35 s: it is also
+      # the only place that proves the production tree still BUILDS before the browser shards spend
+      # ten machines finding out. scripts/perf-budget.mjs then judges the two halves separately —
+      # eager bytes ratcheted in both directions, async chunks and dist/ totals under a ceiling —
+      # because "the biggest chunk is big" is a fact about Cesium, not about start-up.
+      - name: Production build (also writes .perf/build-report.json)
+        run: npm run build
+      - name: Startup budget (eager bytes ratchet · async + deploy ceilings)
+        run: npm run check:perf
 
   # ══ (#R186) THE BROWSER SUITE RUNS ON TEN MACHINES, NOT TEN WORKERS ════════════════════════════
   # 360 real-browser tests on ONE runner took 70 minutes on a good day and over two hours on a bad

@@ -232,7 +232,7 @@ window.IntMapModules.newsUi=function(HOST){
         try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
       }
       const el=HOST.ensureMapTooltip(); el.style.display='block';
-      el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${IntMapSafe.html(f.properties.name)}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(f.properties.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${IntMapSafe.html(f.properties.title)}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${IntMapSafe.html(f.properties.publisher)}</div>`;   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
+      window.setMapTooltipHTML(el,`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${IntMapSafe.html(f.properties.name)}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(f.properties.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${IntMapSafe.html(f.properties.title)}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${IntMapSafe.html(f.properties.publisher)}</div>`);   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
       HOST.positionTooltip(GE.coords.project(f.geometry.coordinates));
     });
     GE.events.onLayer('mouseleave','news-dots',()=>{
@@ -278,7 +278,7 @@ window.IntMapModules.newsUi=function(HOST){
         try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
       }
       const el=HOST.ensureMapTooltip(); el.style.display='block';
-      el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${IntMapSafe.html(f.properties.name)}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(f.properties.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${IntMapSafe.html(f.properties.title)}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${IntMapSafe.html(f.properties.publisher)}</div>`;   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
+      window.setMapTooltipHTML(el,`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${IntMapSafe.html(f.properties.name)}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(f.properties.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${IntMapSafe.html(f.properties.title)}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${IntMapSafe.html(f.properties.publisher)}</div>`);   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
       HOST.positionTooltip(GE.coords.project(f.geometry.coordinates)); });
     GE.events.onLayer('mouseleave','news-labels',()=>{ GE.render.setCursor(''); if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none';
       if(hoveredNewsId!=null){ try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }   /* (#R159) restore the band when the pointer leaves it */ });
@@ -303,7 +303,7 @@ window.IntMapModules.newsUi=function(HOST){
           _xhrNewsId=f.id; try{GE().layers.setFeatureState({source:'news-points',id:f.id},{hover:true});}catch(_){} }
         _xhrLink=pr.link||null; _xhrProps=pr;
         const el=HOST.ensureMapTooltip(); el.style.display='block'; el.style.pointerEvents='auto'; el.style.cursor='pointer';
-        el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${pr.name}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(pr.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${pr.title}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${pr.publisher}${' · '+(window.IntMapLang.t(HOST.lang,'tap for details','タップで詳細','Für Details tippen','Нажмите для подробностей','toca para ver detalles'))}</div>`;
+        window.setMapTooltipHTML(el,`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${pr.name}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(pr.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${pr.title}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${pr.publisher}${' · '+(window.IntMapLang.t(HOST.lang,'tap for details','タップで詳細','Für Details tippen','Нажмите для подробностей','toca para ver detalles'))}</div>`);
         try{ HOST.positionTooltip(GE().coords.project(f.geometry.coordinates)); }catch(_){}
       } else { if(_xhrNewsId!=null){ try{GE().layers.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){} _xhrNewsId=null; } _xhrLink=null; _xhrProps=null; if(HOST.mapTooltipEl){ HOST.mapTooltipEl.style.display='none'; HOST.mapTooltipEl.style.pointerEvents='none'; } }
     }catch(_){} }
@@ -329,7 +329,7 @@ window.IntMapModules.newsUi=function(HOST){
         if(f.properties.layerRef) window.triggerLayerHover(f.properties.layerRef,true);
       }
       const el=HOST.ensureMapTooltip(); el.style.display='block';
-      el.innerHTML=`<div style="color:${f.properties.color};font-weight:600;font-size:14px;">${f.properties.title}</div><div style="line-height:1.4;margin-top:4px;color:var(--text-muted);">${f.properties.body}</div>`;
+      window.setMapTooltipHTML(el,`<div style="color:${f.properties.color};font-weight:600;font-size:14px;">${f.properties.title}</div><div style="line-height:1.4;margin-top:4px;color:var(--text-muted);">${f.properties.body}</div>`);
       HOST.positionTooltip(GE().coords.project(f.geometry.coordinates));
     });
     GE().events.onLayer('mouseleave','dash-dots',()=>{

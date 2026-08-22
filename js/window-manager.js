@@ -30,7 +30,7 @@ window.IntMapModules.windowManager=function(HOST){
     const move=(cx,cy)=>{ if(!HOST.panelDrag)return; const c=clampTo(HOST.panelDrag.l+cx-HOST.panelDrag.x, HOST.panelDrag.t+cy-HOST.panelDrag.y);
       panel.style.setProperty('left',c[0]+'px','important'); panel.style.setProperty('top',c[1]+'px','important');
       panel.style.setProperty('right','auto','important'); panel.style.setProperty('bottom','auto','important');
-      panel.setAttribute('data-dragged','1'); };
+      panel.setAttribute('data-dragged','1'); _geoBump(); };   /* (#R311) this file just moved the panel — the cached rect is stale NOW, not one microtask later */
     /* (#R79b) when this panel is wrapped inside a workspace window, the WINDOW owns drag/resize — the panel's
        own handlers would fight it (the Atlas input field "moved freely" while resizing). Bail out cleanly. */
     /* (#R79b/#R153) Disable a panel's OWN drag ONLY when it IS a workspace window's content — i.e. a DIRECT child of
@@ -481,10 +481,88 @@ window.IntMapModules.windowManager=function(HOST){
       _dockables().forEach(el=>{ _watchEl(el); _dockOne(el); });
     } finally { __dockBulk=false; }
     const n=dockedCount(); _dockEmptySync(); return n; }
+  /* ══ ⚠⚠⚠ (#R311) THE RECTANGLES ARE READ WHEN THEY CHANGE, NOT WHEN THE POINTER MOVES ═════════
+     MEASURED: `_armCornerCatch` below registers a DOCUMENT-level `pointermove` in the CAPTURE phase
+     the first time any window asks for edge-resize, and it stays armed for the rest of the session.
+     So every pointer move over the MAP ran `pick`, and `pick` called `getComputedStyle(w)` (style
+     recalc) and `edgeAt` → `getBoundingClientRect()` (synchronous layout) for EVERY registered
+     window, with no throttle. Panning or zooming paid a forced layout per window per pointer event.
+
+     ⚠ NOTHING ABOUT THE HIT TEST CHANGES. `edgeAt` is still the one function that decides, `M` is
+     still 9, and the corner catch #R299 built is untouched. What changes is WHEN the rectangle it
+     tests is read: a cached entry is valid exactly while its generation matches, and the generation
+     is bumped by every signal that can move or resize a managed window —
+       · this file's own drag (`move`) and edge-resize (`mv`/`up`), bumped in line, so the very next
+         event of the same gesture measures again;
+       · ANY other module writing the panel's inline style / class / hidden — a MutationObserver per
+         window (js/routing-ui.js's minimise, js/data-layers.js's legend `display`, the dock's
+         `_flatten` / `_restoreGeom` / `im-docked`, `bringToFront`'s z-index, …);
+       · the panel changing size for any reason at all — a ResizeObserver per window (content that
+         arrives late, a font that loads, a flex parent that gives it more room);
+       · the viewport — `resize` and `orientationchange`;
+       · SCROLL — a rect is in viewport coordinates, and scroll does NOT bubble, so the listener is
+         a CAPTURING one on the document and therefore sees every element's scroll (a docked panel
+         lives inside the sidebar's scrolling column);
+       · the app's global switches — `ws-mode`, `im-dock-mode`, the theme and the sidebar are
+         classes on <html>/<body>, and they relayout the containers these panels sit in without
+         ever touching the panels themselves.
+     ⚠ AND A BACKSTOP, BECAUSE «every signal» IS A CLAIM ABOUT CODE NOBODY HAS WRITTEN YET. An entry
+     older than GEO_TTL is stale whatever the observers saw, so the worst an unknown channel can
+     cost is a quarter of a second of late CURSOR. It can never cost a grab: `pick(e,true)` on the
+     PRESS reads the live rectangle, exactly as #R299 did, so what can be grabbed is unchanged by
+     construction — a press is one gesture, not a frame, and one read there is free. */
+  const GEO_TTL=250, HULL_PAD=2;
+  const __geo=new WeakMap();
+  let __geoGen=0, __geoAt=0, __geoMO=null, __geoRO=null, __geoArmed=false, __hullGen=-1, __hull=null;
+  function _geoBump(){ __geoGen++; }
+  /* the TTL is charged ONCE per event: the first caller pays it, everyone else in the same event
+     sees the number it settled on, so one pointer move never reads two different generations */
+  function _gen(){ const t=(window.performance&&performance.now)?performance.now():Date.now();
+    if(t-__geoAt>GEO_TTL){ __geoAt=t; __geoGen++; } return __geoGen; }
+  function _geoOf(w,fresh){
+    const gen=_gen(), had=__geo.get(w);
+    if(!fresh&&had&&had.gen===gen) return had;
+    const g={gen:gen,off:true,r:{left:0,top:0,width:0,height:0}};
+    try{ const cs=getComputedStyle(w);
+      if(cs.display!=='none'&&cs.visibility!=='hidden'){ const b=w.getBoundingClientRect();
+        g.off=false; g.r={left:b.left,top:b.top,width:b.width,height:b.height}; }
+    }catch(_){ return null; }   /* the old loop skipped a window whose style could not be read */
+    __geo.set(w,g); return g;
+  }
+  /* ⚠ THE PADDED BOX IS THE PLAIN RECTANGLE HERE, AND THAT IS NOT AN OVERSIGHT. `edgeAt` below
+     returns '' for `x<0 || y<0 || x>r.width || y>r.height`, so this hit test has NO reach outside
+     the element (js/workspace.js's has OUT=6; this one does not). The hull is the union of the very
+     rectangles `edgeAt` tests, so a point that would hit cannot fall outside it. The 2 px is slack
+     for sub-pixel rounding, and slack can only make the early-out fire LESS often, never more. */
+  function _hullBox(){ const gen=_gen(); if(__hullGen===gen) return __hull; __hullGen=gen;
+    let l=Infinity,t=Infinity,r=-Infinity,b=-Infinity;
+    /* ⚠ a SUPERSET: `dataset.resizing` and `skip()` change without a generation bump, so the hull
+       deliberately does not consult them — the per-window loop still does. */
+    try{ __winReg.forEach(w=>{ if(!w||!w.__imEdge||!w.isConnected) return; const g=_geoOf(w); if(!g||g.off) return;
+      if(g.r.left<l) l=g.r.left; if(g.r.top<t) t=g.r.top;
+      if(g.r.left+g.r.width>r) r=g.r.left+g.r.width; if(g.r.top+g.r.height>b) b=g.r.top+g.r.height; }); }catch(_){}
+    __hull=(l<=r&&t<=b)?{l:l-HULL_PAD,t:t-HULL_PAD,r:r+HULL_PAD,b:b+HULL_PAD}:null; return __hull; }
+  function _nearWindows(x,y){ const h=_hullBox(); return !!h&&x>=h.l&&x<=h.r&&y>=h.t&&y<=h.b; }
+  function _geoArm(){ if(__geoArmed) return; __geoArmed=true;
+    try{ window.addEventListener('resize',_geoBump); window.addEventListener('orientationchange',_geoBump); }catch(_){}
+    try{ document.addEventListener('scroll',_geoBump,{capture:true,passive:true}); }catch(_){ try{ document.addEventListener('scroll',_geoBump,true); }catch(__){} }
+    try{ if(window.MutationObserver){ const mo=new MutationObserver(_geoBump);
+      mo.observe(document.documentElement,{attributes:true,attributeFilter:['class','style']});
+      if(document.body) mo.observe(document.body,{attributes:true,attributeFilter:['class','style']}); } }catch(_){}
+  }
+  function _geoWatch(el){ if(!el) return; _geoArm();
+    try{ if(window.ResizeObserver){ if(!__geoRO) __geoRO=new ResizeObserver(_geoBump); __geoRO.observe(el); } }catch(_){}
+    try{ if(window.MutationObserver){ if(!__geoMO) __geoMO=new MutationObserver(_geoBump);
+      __geoMO.observe(el,{attributes:true,attributeFilter:['style','class','hidden']}); } }catch(_){}
+    _geoBump();   /* a window that has just joined changes the hull */
+  }
   function addEdgeResize(panel,opts){ opts=opts||{}; if(!panel||panel.dataset.edgeResize) return; panel.dataset.edgeResize='1';
     const M=9, minW=(opts.min&&opts.min[0])||220, minH=(opts.min&&opts.min[1])||130;
     const CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
-    const edgeAt=(cx,cy)=>{ const r=panel.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<0||y<0||x>r.width||y>r.height) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=M)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
+    /* (#R311) `rect` is the ONE addition: the arithmetic below is byte-for-byte what it was, and a
+       caller that passes nothing still measures live. Passing a cached rectangle is how the hover
+       paths stopped forcing a layout per pointer event — see the note above `GEO_TTL`. */
+    const edgeAt=(cx,cy,rect)=>{ const r=rect||panel.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<0||y<0||x>r.width||y>r.height) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=M)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
     /* (#R79b) inside a workspace window the WINDOW handles resize — skip the panel's own edge-resize */
     /* (#R79b) inside a workspace window the WINDOW handles resize — skip the panel's own edge-resize.
        (#R130) ALSO skip when the panel is the Atlas SIDEBAR TAB (class `atl-tab`): in tab mode the Atlas panel is
@@ -497,7 +575,12 @@ window.IntMapModules.windowManager=function(HOST){
        「サイドバー内Atlasに左右方向のリサイズ機構があり、変なことになる」 report #R130 fixed for
        `atl-tab`. 「中で左右に動かせないようにきちんと幅を左右詰めて固定して。」 */
     const _inWsWin2=()=>{ try{ if(isDocked(panel)) return true; if(panel.classList&&panel.classList.contains('atl-tab')) return true; return !!(panel.parentElement&&panel.parentElement.classList&&panel.parentElement.classList.contains('ws-body')); }catch(_){ return false; } }; /* (#R153) same fix as _inWsWin: only the window's own content (direct .ws-body child) is exempt from edge-resize — in-map popups nested in the relocated #map-container resize normally */
-    panel.addEventListener('pointermove',(e)=>{ if(panel.dataset.resizing||_inWsWin2()) return; const d=edgeAt(e.clientX,e.clientY); panel.style.cursor=d?CUR[d]:''; });
+    /* (#R311) hovering is CURSOR FEEDBACK, so it reads the cached rectangle; the PRESS below still
+       measures live, which is why the grab zone is unchanged. ⚠ AND THE CURSOR IS ONLY WRITTEN WHEN
+       IT DIFFERS: writing the same value back would churn the `style` attribute, the per-window
+       MutationObserver would bump the generation, and the cache would invalidate itself once per
+       pointer event — the exact cost this is removing. */
+    panel.addEventListener('pointermove',(e)=>{ if(panel.dataset.resizing||_inWsWin2()) return; const g=_geoOf(panel); const d=edgeAt(e.clientX,e.clientY,g?g.r:null); const cv=d?CUR[d]:''; if(panel.style.cursor!==cv) panel.style.cursor=cv; });
     panel.addEventListener('pointerleave',()=>{ if(!panel.dataset.resizing) panel.style.cursor=''; });
     const start=(e,d)=>{ e.preventDefault(); e.stopPropagation(); panel.dataset.resizing=d; bringToFront(panel);
       const r=panel.getBoundingClientRect(), op=panel.offsetParent||document.documentElement, opr=op.getBoundingClientRect();
@@ -513,8 +596,8 @@ window.IntMapModules.windowManager=function(HOST){
         if(d.indexOf('e')>=0) w=Math.max(minW,sw+dx); if(d.indexOf('s')>=0) h=Math.max(minH,sh+dy);
         if(d.indexOf('w')>=0){ w=Math.max(minW,sw-dx); l=sl+(sw-w); } if(d.indexOf('n')>=0){ h=Math.max(minH,sh-dy); t=st+(sh-h); }
         panel.style.setProperty('width',w+'px','important'); panel.style.setProperty('height',h+'px','important');
-        panel.style.setProperty('left',l+'px','important'); panel.style.setProperty('top',t+'px','important'); panel.setAttribute('data-dragged','1'); };
-      const up=(ev)=>{ delete panel.dataset.resizing; try{ panel.releasePointerCapture&&panel.releasePointerCapture(ev.pointerId); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); panel.style.cursor=''; };
+        panel.style.setProperty('left',l+'px','important'); panel.style.setProperty('top',t+'px','important'); panel.setAttribute('data-dragged','1'); _geoBump(); };   /* (#R311) …and the same for the resize */
+      const up=(ev)=>{ delete panel.dataset.resizing; try{ panel.releasePointerCapture&&panel.releasePointerCapture(ev.pointerId); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); panel.style.cursor=''; _geoBump(); };
       document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); };
     panel.addEventListener('pointerdown',(e)=>{ if(_inWsWin2()) return; if(e.target.closest&&e.target.closest('button,input,select,textarea,a,[role="button"],.atl-go,.atl-in')) return; const d=edgeAt(e.clientX,e.clientY); if(!d) return; start(e,d); });
     /* ══ ⚠⚠⚠ (#R299) THE CORNER — THE ONE PLACE A PERSON AIMS, AND THE ONE PLACE THIS NEVER FIRED ══
@@ -535,21 +618,26 @@ window.IntMapModules.windowManager=function(HOST){
        landed INSIDE some resizable panel is left to that panel's own listener. */
     registerWindow(panel);
     panel.__imEdge={ edgeAt, start, skip:_inWsWin2 };
+    _geoWatch(panel);   /* (#R311) this window's rectangle is now watched rather than re-measured per pointer event */
     _armCornerCatch(); }
   let __cornerArmed=false;
   function _armCornerCatch(){
     if(__cornerArmed) return; __cornerArmed=true;
-    const pick=(e)=>{ let best=null, bz=-1;
+    /* (#R311) `fresh` = «this is the PRESS»: it measures live, so the grab is decided against the
+       same rectangle #R299 decided against. The move path reads the cache and, over open map, is
+       out after one box test against the hull — four comparisons, no style recalc, no layout. */
+    const pick=(e,fresh)=>{ let best=null, bz=-1;
+      if(!fresh&&!_nearWindows(e.clientX,e.clientY)) return null;
       try{ __winReg.forEach(w=>{ const E=w&&w.__imEdge; if(!E||!w.isConnected||w.dataset.resizing) return;
         if(E.skip&&E.skip()) return;
-        try{ const cs=getComputedStyle(w); if(cs.display==='none'||cs.visibility==='hidden') return; }catch(_){ return; }
-        const d=E.edgeAt(e.clientX,e.clientY); if(!d||d.length!==2) return;
+        const g=_geoOf(w,fresh); if(!g||g.off) return;
+        const d=E.edgeAt(e.clientX,e.clientY,g.r); if(!d||d.length!==2) return;
         const z=parseInt(w.style.zIndex,10)||0; if(z>bz){ bz=z; best={w:w,d:d}; } }); }catch(_){}
       return best; };
     try{
       document.addEventListener('pointerdown',(e)=>{
         try{ if(e.target&&e.target.closest&&e.target.closest('[data-edge-resize="1"]')) return; }catch(_){}
-        const p=pick(e); if(!p) return; p.w.__imEdge.start(e,p.d); },true);
+        const p=pick(e,true); if(!p) return; p.w.__imEdge.start(e,p.d); },true);
       /* the cursor for those pixels belongs to whatever is under them, so it is written on the body
          and cleared the moment the pointer leaves the corner — a stuck resize cursor over the map is
          a worse defect than the one this fixes */

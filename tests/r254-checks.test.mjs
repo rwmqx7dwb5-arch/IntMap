@@ -313,16 +313,29 @@ test('#R254 ⑩ the data-center layer is its own module, sourced, and invents no
   assert.match(lp, /IntMapDataCenters/, 'the row does not delegate to the module');
   assert.match(lp, /DCM\.key\(\)/, 'the legend key is typed again instead of asked of the layer');
 
-  /* it is loaded, and before the pack that delegates to it */
-  /* ⚠ THE IMPORT AND THE CALL ARE IN DIFFERENT PLACES, ON PURPOSE. tests/r168 #8 budgets the shell
-     (index.html + src/main.js + js/app-body.js + …) at 8,200 lines, and routing BOTH through it put
-     it seven lines over — the tripwire doing its job. The dependency therefore sits beside its
-     consumer (js/layer-packs.js, whose dcToggle delegates), and the factory CALL stays in
-     js/app-body.js, where every factory call in this app is made and where tests/r168 #3 looks. */
-  assert.match(code(read('js/layer-packs.js')), /^import '\.\/datacenters\.js';/m,
-    'js/datacenters.js is not imported by the pack that delegates to it');
+  /* it is loaded — and (#R311) it is loaded ON DEMAND */
+  /* ⚠ THE QUESTION IS UNCHANGED AND THE ANSWER MOVED. #R254 asked "is this module reachable and is
+     it instantiated?", and answered it with a static import beside its consumer (js/layer-packs.js)
+     plus a factory call in js/app-body.js — deliberately in two places, because tests/r168 #8
+     budgets the shell and routing both through it put the shell seven lines over.
+     #R311 made js/datacenters.js an on-demand module: 66 kB every session downloaded for a row most
+     of them never tick. So BOTH halves are now js/lazy-modules.js — the literal `import('./…')` the
+     reachability gate reads, and the mount the factory-call gate reads. Asserting the old shape
+     would require the file back in the boot bundle; asserting nothing would let the layer silently
+     stop existing, which is what this test is for. Hence: the loader fetches it, the loader mounts
+     it, and the ROW awaits it before delegating. */
+  const loader = code(read('js/lazy-modules.js'));
+  assert.match(loader, /case 'dataCenters': return import\('\.\/datacenters\.js'\);/,
+    'js/datacenters.js is not fetched by the on-demand loader — nothing imports it at all');
+  assert.match(loader, /window\.IntMapModules\.dataCenters\(IM_HOST\)/, 'the module is never instantiated');
   assert.doesNotMatch(code(read('src/main.js')), /datacenters\.js/, 'the shell imports it again — that is what tripped the line budget');
-  assert.match(code(read('js/app-body.js')), /IntMapModules\.dataCenters\(IM_HOST\)/, 'the module is never instantiated');
+  assert.doesNotMatch(code(read('js/layer-packs.js')), /^import '\.\/datacenters\.js';/m,
+    'the pack imports it statically again — the whole layer is then back in the boot bundle');
+  /* every door into the layer, and there are two: the row, and Compare's own map */
+  assert.match(lp, /IntMapLazy\.need\('dataCenters'\)[\s\S]{0,80}_dcToggle/,
+    'the data-center ROW does not fetch its module before delegating');
+  assert.match(lp, /if\(key==='dc'\)\{ window\.IntMapLazy\.need\('dataCenters'\)/,
+    "IntMapBeta2.load('dc') does not fetch the module — js/compare.js's second map would draw nothing");
 });
 
 /* ── ⑪ THE SOURCES PAGE ──────────────────────────────────────────────────────────────────────── */

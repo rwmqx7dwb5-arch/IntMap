@@ -123,6 +123,7 @@ test('the 3-D volume is a closed body — one solid, with a floor', async ({ pag
   test.setTimeout(120000);
   await boot(page);
   await page.evaluate(() => document.getElementById('btn-tool-volume').click());
+  await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
   await page.waitForTimeout(800);
   const st = await page.evaluate(() => {
     const V = window.IntMapVolume3D;

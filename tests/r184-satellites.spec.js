@@ -19,9 +19,15 @@
 import { test, expect } from '@playwright/test';
 
 const BOOT = { timeout: 90_000 };
+/* ⚠ (#R209/#R311) THE LAYER IS FETCHED ON DEMAND, so waiting for window.IntMapSatellites as a BOOT
+   signal would wait for something that only the row's own switch brings. The tests below reach for
+   the global directly (state(), list(), snapshot()) before and after they tick the row, so this asks
+   the loader for it exactly as `startSats()` does — the same call, one step earlier. */
 const boot = async (page) => {
   await page.goto('/?rafshim=1');
-  await page.waitForFunction(() => !!window.__imap && !!window.IntMapSatellites, null, BOOT);
+  await page.waitForFunction(() => !!window.__imap && !!window.IntMapLazy, null, BOOT);
+  await page.evaluate(() => window.IntMapLazy.need('satellitesLive'));
+  await page.waitForFunction(() => !!window.IntMapSatellites, null, BOOT);
   await page.waitForFunction(() => window.IntMapGeoEngine.canDraw(), null, BOOT);
 };
 /* CelesTrak is keyless, unmetered and free, and it is entitled to stop answering a runner that has

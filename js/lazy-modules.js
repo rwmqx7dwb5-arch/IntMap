@@ -66,8 +66,10 @@ export function makeLazyModules(HOST) {
     const P = Object.create(null);
 
     /* Modules that cannot be asked for alone. The seismic panel offers the tsunami run and calls
-       window.IntMapTsunami directly (js/seismic.js), so asking for one means asking for both. */
-    const ALSO = { seismic: ['tsunami'] };
+       window.IntMapTsunami directly (js/seismic.js), so asking for one means asking for both.
+       (#R311) …and the satellite DETAIL CARD is the same shape — js/satellites-live.js calls
+       window.IntMapSatPanel from its own click handler, and this keeps the panel first. */
+    const ALSO = { seismic: ['tsunami'], satellitesLive: ['satelliteDetail'] };
 
     /* The global each module must have published by the time its promise resolves. Checked, not
        assumed — see the header. `playground` publishes a bare function, so it is named too. */
@@ -87,6 +89,14 @@ export function makeLazyModules(HOST) {
          route with no panel — and this is the ~30 kB of UI a session that never opens Layers →
          Tools → Directions never downloads (§2.3). */
       routeUi: 'IntMapRouteUI',
+      /* ══ (#R311) SIX MORE, PICKED BY A TEST RATHER THAN BY SIZE ═══════════════════════════════
+         The ten above are reached from a menu item. These six are the rest of what the entry pulled in
+         that registers NOTHING at boot — no layer row, no DOM, no IntMapOS command, no listener — so
+         there is a "before it is reached" to defer to, and every door awaits. ⚠ js/analysis-panels.js LOOKS
+         like one and is NOT: `correlate` builds #btn-correlate at boot and `edu` mounts #btn-edu and a
+         map-click listener — deferring it would delete two Layers buttons until something asked. */
+      dataCenters: 'IntMapDataCenters', aircraftDetail: 'IntMapAircraftPanel', volume3d: 'IntMapVolume3D', statsCompare: 'IntMapStatsCompare',
+      satellitesLive: 'IntMapSatellites', satelliteDetail: 'IntMapSatPanel',
     };
 
     function record(name, why) {
@@ -103,9 +113,9 @@ export function makeLazyModules(HOST) {
       } catch (_) { }
     }
 
-    /* ⚠ EVERY SPECIFIER HERE IS A LITERAL — see gate 1 in the header. Rewriting this as a table
-       keyed by name would pass `node --check`, pass the browser, and fail static-checks with
-       "exists but nothing imports it" for all eight files at once. */
+    /* ⚠ EVERY SPECIFIER HERE IS A LITERAL — see gate 1 in the header. Rewriting this as a table keyed by
+       name would pass `node --check`, pass the browser, and fail static-checks with "exists but nothing
+       imports it" for every one of these files at once. */
     function fetchModule(name) {
       switch (name) {
         case 'flightSim': return import('./flight-sim.js');
@@ -118,6 +128,12 @@ export function makeLazyModules(HOST) {
         case 'nightSky': return import('./night-sky.js');
         case 'atlasConsole': return import('./atlas-console.js');
         case 'routeUi': return import('./routing-ui.js');
+        case 'dataCenters': return import('./datacenters.js');
+        case 'aircraftDetail': return import('./aircraft-detail.js');
+        case 'volume3d': return import('./volume3d.js');
+        case 'statsCompare': return import('./stats-compare.js');
+        case 'satellitesLive': return import('./satellites-live.js');
+        case 'satelliteDetail': return import('./satellite-detail.js');
         default: return Promise.reject(new Error('no such lazy module: ' + name));
       }
     }
@@ -139,6 +155,12 @@ export function makeLazyModules(HOST) {
         case 'nightSky': return !!window.IntMapNightSky;    /* publishes itself at import time */
         case 'atlasConsole': window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST); return true;
         case 'routeUi': window.IntMapRouteUI=window.IntMapModules.routeUi(IM_HOST); return true;
+        case 'dataCenters': window.IntMapModules.dataCenters(IM_HOST); return true;
+        case 'aircraftDetail': window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST); return true;
+        case 'volume3d': window.IntMapVolume3D=window.IntMapModules.volume3d(IM_HOST); return true;
+        case 'statsCompare': window.IntMapStatsCompare=window.IntMapModules.statsCompare(IM_HOST); return true;
+        case 'satellitesLive': window.IntMapModules.satellitesLive(IM_HOST); return true;
+        case 'satelliteDetail': window.IntMapModules.satelliteDetail(IM_HOST); return true;
         default: return !!M;
       }
     }

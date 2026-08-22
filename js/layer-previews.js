@@ -659,7 +659,14 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
          遅い"). A small preload queue is immediate, ordered and bounded. */
       if(IMG[id]){ _queueImg(el,id,IMG[id]); return; }
       if(id==='dl-radar'){ radarURL().then(u=>{ if(u) store(u); }); return; }
-      const geoJob=(fn)=>{ if(_geoReady()){ try{ store(fn()); }catch(_){} } else { _needGeo.push(()=>{ try{ const u=fn(); if(u){ cache[id]=u; apply(el,u); } }catch(_){} }); _kickGeo(); } };
+      /* (#R311) THE CANVAS PAINTERS TAKE THE SAME GATE AS THE IMAGE QUEUE (see _paintJob below).
+         #R193 moved only the picture downloads off the boot path; these four routes still drew the
+         moment their row was built, and a boot CPU profile put js/layer-previews.js at 904.7 ms of
+         self time - the largest single IntMap file in it - with statChoro alone at 85.1 ms. All of
+         that is drawing for a panel nobody has opened. The geo test stays INSIDE the job, so the
+         order is 'gate opens -> is the country data here? -> paint', which also keeps _kickGeo()'s
+         loadCountryData() off the boot path rather than merely moving the drawing off it. */
+      const geoJob=(fn)=>_paintJob(()=>{ if(_geoReady()){ try{ store(fn()); }catch(_){} } else { _needGeo.push(()=>{ try{ const u=fn(); if(u){ cache[id]=u; apply(el,u); } }catch(_){} }); _kickGeo(); } },el,id);
       if(STAT[id]){ geoJob(()=>statChoro(STAT[id])); return; }
       if(MEMBERS[id]){ geoJob(()=>memberMap(MEMBERS[id])); return; }
       if(WBP[id]){ /* lazy: only fetch when the tile is actually visible */
@@ -671,11 +678,11 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
         const run=()=>{ Promise.resolve().then(fn2).then(u=>{ if(u){ cache[id]=u; apply(el,u); return; }
             const fb=PAINT[id]; if(!fb) return; const v=fb(); if(v&&v.then){ v.then(w=>{ if(w){ cache[id]=w; apply(el,w); } }); } else if(v){ cache[id]=v; apply(el,v); } }).catch(()=>{}); };
         const go=()=>{ if(_geoReady()) run(); else { _needGeo.push(run); _kickGeo(); } };
-        if(REAL_LAZY[id]) _observe(el,go); else go();
+        if(REAL_LAZY[id]) _observe(el,go); else _paintJob(go,el,id);   /* (#R311) the observer route is untouched; the eager one waits for the gate */
         return; }
       if(PAINT[id]){ const fn=PAINT[id];
         const run=()=>{ const u=fn(); if(u&&u.then){ u.then(v=>{ if(v){ cache[id]=v; apply(el,v); } }); } else if(u){ cache[id]=u; apply(el,u); } };
-        if(_geoReady()) run(); else { _needGeo.push(run); _kickGeo(); }
+        _paintJob(()=>{ if(_geoReady()) run(); else { _needGeo.push(run); _kickGeo(); } },el,id);   /* (#R311) same gate as geoJob above */
         return; }
       /* nothing matched → labelled gradient stays (should be near-zero rows) */ }
     /* (#R73) bounded image-preload queue — applies each tile as soon as ITS image arrived */
@@ -694,7 +701,27 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
        user who opens the panel in the first second sees the same thing they saw before, and a user
        who never opens it never pays for it during boot. */
     const _imgQ=[]; let _imgBusy=0, _imgOpen=false;
-    function _openQueue(){ if(_imgOpen) return; _imgOpen=true; _imgPump(); }
+    /* == (#R311) ...AND NEITHER MAY THE CANVAS PAINTERS =========================================
+       #R193 gated IMG[id] only. STAT / MEMBERS / REAL / PAINT in into() kept drawing as their rows
+       were built, which costs main-thread CPU rather than bandwidth: a boot profile measured
+       904.7 ms of self time in this file (statChoro 85.1 ms, the dl-ec-* painters 52-75 ms each),
+       spent drawing thumbnails for a panel that had not been opened.
+       (!) Still NOT an IntersectionObserver - the warning above is exactly why. This gate ALWAYS
+       opens (kick(), the map's first idle, or the 6 s ceiling), so a queued painter is a DELAYED
+       painter and never a lost one; no new path can leave a tile on its gradient forever.
+       (!) And a job re-reads the cache when it finally runs: into()'s own cache[id] short-circuit
+       can only spare a second row for the same layer once the first row has painted, which a queued
+       job has not - without this, a sidebar and a phone sheet built behind a closed gate would each
+       paint every tile, work the pre-#R311 code never did twice. */
+    const _paintQ=[];
+    function _paintJob(fn,el,id){ const job=()=>{ if(el&&id&&cache[id]){ try{ apply(el,cache[id]); }catch(_){} return; } try{ fn(); }catch(_){} };
+      if(_imgOpen){ job(); return; } _paintQ.push(job); }
+    function _openQueue(){ if(_imgOpen) return; _imgOpen=true; _imgPump();
+      /* (#R311) the painters are held back by the same flag, so they are released by the same call -
+         all three ways in (kick(), the map's idle, the 6 s ceiling) reach the gate through here.
+         _imgOpen is already true above, so a job queued from inside a painter runs straight away
+         and this drain runs exactly once. */
+      const q=_paintQ.splice(0); q.forEach(fn=>{ try{ fn(); }catch(_){} }); }
     (function(){ const go=()=>{ if(typeof requestIdleCallback==='function') requestIdleCallback(_openQueue,{timeout:9000}); else setTimeout(_openQueue,5000); };
       try{ const E=window.IntMapGeoEngine; if(E&&E.events&&E.events.once){ E.events.once('idle',()=>setTimeout(go,400)); } }catch(_){}
       setTimeout(go,6000); })();

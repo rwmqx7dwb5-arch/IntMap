@@ -122,6 +122,7 @@ test('Measure ▸ 3-D volume draws a real-scale box and honours the typed altitu
 
   await page.click('#btn-measure-menu');
   await page.click('#btn-tool-volume');
+  await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
   await expect(page.locator('.tp-title')).toContainText('3');
 
   const canvas = await page.locator('canvas.maplibregl-canvas').boundingBox();

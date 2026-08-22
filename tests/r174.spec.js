@@ -212,6 +212,7 @@ test('the 3-D volume survives the globe→flat handover at z12', async ({ page }
   test.setTimeout(180000);
   await boot(page);
   await page.evaluate(() => document.getElementById('btn-tool-volume').click());
+  await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
   await page.waitForTimeout(700);
   await page.evaluate(() => { const V = window.IntMapVolume3D;
     V.setAltitudes(1000, 3000); V.setStyle('#ff3b30', 0.6);
@@ -255,6 +256,7 @@ test('the 3-D volume polygon has a drawing-complete button that really stops the
   await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
   await page.evaluate(() => window.__imap.jumpTo({ center: [139.76, 35.68], zoom: 11, pitch: 0, bearing: 0 }));
   await page.evaluate(() => document.getElementById('btn-tool-volume').click());
+  await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
   await page.waitForTimeout(700);
   // three clicks on the map = a footprint
   for (const p of [[500, 250], [700, 250], [700, 430]]) { await page.mouse.click(p[0], p[1]); await page.waitForTimeout(350); }
