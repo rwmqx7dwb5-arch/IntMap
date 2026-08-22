@@ -243,6 +243,80 @@ window.IntMapModules.mapReadout=function(HOST){
   }
   const _elevCache=new Map();
   function fmtLL(lng,lat){ return `${Math.abs(lat).toFixed(3)}°${lat>=0?'N':'S'}  ${Math.abs(lng).toFixed(3)}°${lng>=0?'E':'W'}`; }
+  /* ══ ⚠⚠ (#R311) THE ROW IS BUILT ONCE AND UPDATED IN PLACE ═════════════════════════════════════
+     「pointer move や map move のたびに innerHTML を作り直している箇所を…DOM 構造は初回に一度だけ生成／
+       element reference を保持／変更された text node だけ更新／変更された attribute だけ更新／値が同じ
+       場合は更新しない。同じ画面出力を、DOM の再利用で実現してください。」
+
+     This is the app's hottest DOM writer. `updateCoord` already coalesces to ONE animation frame
+     (#R25), and that frame then ran `el.innerHTML=parts.join('')` — six elements plus an <svg>
+     thrown away and re-parsed sixty times a second, for a row in which usually nothing has changed
+     but the third decimal of the latitude.
+
+     The chips are created ONCE and kept. A frame writes a text node, a `style` property or an
+     attribute only where the value it would write differs from the one already there, so a cursor
+     moving inside the same metre writes nothing at all. The OUTPUT is unchanged by construction:
+     the same six chips, in the same order, from the same formatters (fmtLL / HOST.elevText /
+     fmtWindSpeed / IntMapCompass.point) — nothing here decides what a chip says.
+
+     ⚠ ABSENCE IS DETACHMENT, NOT `display:none`. A chip that is not in the row must not be in the
+     DOM: a hidden span would still be in `el.textContent` (which tests/r171.spec reads to prove the
+     Eye chip is up) and would still be counted by any structural selector a later round writes.
+     `_crOrder` moves the chips in and out, so the element holds exactly what `innerHTML` left.
+     ⚠ AND THE TEXT IS A TEXT NODE, NOT MARKUP. Audited, every producer: `HOST.lastElev` is
+     `elevText()` (a locale word + fmtElevVal) and `HOST.lastLayerVal` is built only by
+     updateLayerReadout below — tsunami/precip/ECMWF/choropleth/Köppen/GIBS, all plain text. One of
+     them, the GIBS date, is DOM text that left our code and came back (see the #R138/#R186 note in
+     js/data-layers.js): it used to reach `innerHTML` here UNESCAPED, and now it reaches a text node,
+     where the escaping is the browser's and cannot be forgotten. */
+  const CR_ARROW='<i><svg viewBox="0 0 14 14" width="13" height="13" aria-hidden="true" focusable="false" fill="currentColor"><path d="M7 0.9 L11.1 10.2 L7 8.1 L2.9 10.2 Z"></path></svg></i>';
+  const CR_LL=1, CR_ELEV=2, CR_EYE=4, CR_SAT=8, CR_WIND=16, CR_SEIS=32;
+  /* the order the row has always printed — ONE list, so `_crOrder` cannot disagree with the render */
+  const CR_SEQ=[{b:CR_LL,k:'ll'},{b:CR_ELEV,k:'elev'},{b:CR_EYE,k:'eye'},{b:CR_SAT,k:'sat'},{b:CR_WIND,k:'wind'},{b:CR_SEIS,k:'seis'}];
+  let _crEl=null, _crChips=null, _crBits=0;
+  /* the last value written to each chip — the comparison that makes an unchanged frame cost nothing */
+  let _crVll='', _crVelev='', _crVeye='', _crVsat='', _crVwind='', _crVtip='', _crVrot='', _crVseis='', _crVcol='';
+  /* ⚠ EACH CHIP OWNS ITS TEXT NODE, and the render writes `nodeValue`. `span.textContent=x` does not
+     edit a text node — it REPLACES the span's children with a NEW one, which is a tree mutation
+     (measured on 3,000 renders: 3,000 node creations and 3,000 destructions). Writing the node that
+     is already there is 「変更された text node だけ更新」 literally, and costs the tree nothing.
+     ⚠ No chip is ever in the row while its text is empty (the coordinates and the elevation always
+     say something — the elevation falls back to '·····' — and the other four are added only when
+     their value is truthy), so the empty node this creates is never in the document. */
+  function _crBuild(){
+    /* ⚠ no class ⇒ no `class` attribute, exactly like the bare <span> the coordinates used to get */
+    const mk=(cls)=>{ const s=document.createElement('span'); if(cls) s.className=cls;
+      const t=document.createTextNode(''); s.appendChild(t); return [s,t]; };
+    const [ll,llT]=mk(''), [elev,elevT]=mk('cr-elev'), [eye,eyeT]=mk('cr-eye'), [sat,satT]=mk('cr-sat');
+    const [seis,seisT]=mk('cr-seis'); seis.style.fontWeight='700';   /* the weight never varies; only the colour does */
+    const wind=document.createElement('span'); wind.className='cr-wind';
+    const warr=document.createElement('span'); warr.className='cr-warr';
+    warr.innerHTML=CR_ARROW;                                 /* the glyph is STATIC — parsed once, never again */
+    const windT=document.createTextNode('');
+    wind.appendChild(warr); wind.appendChild(windT);          /* arrow, then "speed word" — the old order */
+    return { ll, llT, elev, elevT, eye, eyeT, sat, satT, seis, seisT, wind, warr, windT };
+  }
+  /* Make the element's children exactly the chips `bits` names, in CR_SEQ order. Runs only when the
+     SET changes — a layer switched on, the cursor left the map — never on an ordinary move. */
+  function _crOrder(el,bits){
+    const C=_crChips; let n=el.firstChild;
+    for(let i=0;i<CR_SEQ.length;i++){
+      if(!(bits&CR_SEQ[i].b)) continue;
+      const w=C[CR_SEQ[i].k];
+      if(n===w){ n=n.nextSibling; continue; }
+      el.insertBefore(w,n);                       /* insertBefore MOVES a node that is already in the row */
+    }
+    while(n){ const nx=n.nextSibling; el.removeChild(n); n=nx; }
+  }
+  function _crShow(el,bits){
+    if(!bits){ el.style.display='none'; return; }
+    /* ⚠ `el` is re-resolved on every call, so if the row were ever emptied or replaced by someone
+       else the chips are moved back into whatever element is there now instead of being orphaned. */
+    if(el!==_crEl||bits!==_crBits){ _crEl=el; _crBits=bits; _crOrder(el,bits); }
+    /* ⚠ READ the inline style, do not remember it: the mouseout handler in js/app-body.js sets this
+       element's display to 'none' directly, and a remembered 'flex' would leave it hidden for good. */
+    if(el.style.display!=='flex') el.style.display='flex';
+  }
   function renderCoordReadout(lng,lat){
     const el=document.getElementById('coord-readout'); if(!el) return;
     if(lng!=null){ HOST._crLng=lng; HOST._crLat=lat; }
@@ -251,13 +325,16 @@ window.IntMapModules.mapReadout=function(HOST){
        readout therefore stays up — it is the "always-on" readout, and the request was for the viewpoint
        altitude to be in it ("常時表示欄に、視点位置の高度も出るように"). */
     const eye=(()=>{ try{ return window.IntMapEyeAlt?window.IntMapEyeAlt.text():''; }catch(_){ return ''; } })();
+    const C=_crChips||(_crChips=_crBuild());
     if(HOST._crLng==null){
       if(!eye){ el.style.display='none'; return; }
-      el.style.display='flex'; el.innerHTML=`<span class="cr-eye">${eye}</span>`; return; }
-    const parts=[];
-    parts.push(`<span>${fmtLL(HOST._crLng,HOST._crLat)}</span>`); parts.push(`<span class="cr-elev">${HOST.lastElev||'·····'}</span>`);
-    if(eye) parts.push(`<span class="cr-eye">${eye}</span>`);
-    if(HOST.lastLayerVal) parts.push(`<span class="cr-sat">${HOST.lastLayerVal}</span>`);
+      if(eye!==_crVeye){ _crVeye=eye; C.eyeT.nodeValue=eye; }
+      _crShow(el,CR_EYE); return; }
+    let bits=CR_LL|CR_ELEV;
+    const _ll=fmtLL(HOST._crLng,HOST._crLat); if(_ll!==_crVll){ _crVll=_ll; C.llT.nodeValue=_ll; }
+    const _ev=HOST.lastElev||'·····'; if(_ev!==_crVelev){ _crVelev=_ev; C.elevT.nodeValue=_ev; }
+    if(eye){ bits|=CR_EYE; if(eye!==_crVeye){ _crVeye=eye; C.eyeT.nodeValue=eye; } }
+    if(HOST.lastLayerVal){ bits|=CR_SAT; const _sv=HOST.lastLayerVal; if(_sv!==_crVsat){ _crVsat=_sv; C.satT.nodeValue=_sv; } }
     /* (#R8c) Live wind speed/direction under the cursor while the Wind layer is on. */
     /* (#R19) No emoji in the always-on readout ("🌬みたいな絵文字は…いらない") — value + direction only. */
     /* ══ (#R289) THE DIRECTION IS A WORD IN THE READER'S LANGUAGE, AND AN ARROW THAT MOVES ═════════
@@ -273,7 +350,11 @@ window.IntMapModules.mapReadout=function(HOST){
        re-seeded at t=0 sixty times a second and the arrow would sit still while the pointer moves —
        a "dynamic" arrow that is only dynamic when nobody is touching the map. A NEGATIVE
        `animation-delay` taken from a shared clock puts each new node at the phase the old one had
-       reached, so the drift is continuous across every rebuild. */
+       reached, so the drift is continuous across every rebuild.
+       ⚠ (#R311) THE PREMISE OF THAT PARAGRAPH NO LONGER HOLDS, and it is kept because it is why the
+       drift and its phase carry were built (#R290 then removed them, by request). The row is not
+       rebuilt any more: this arrow is ONE node for the life of the page, so nothing about it is
+       ever re-seeded, and only its `transform` is written — and only when the bearing changes. */
     try{ if(window.Wind&&window.Wind.on&&window.Wind.on()){ const w=window.Wind.sampleAt(HOST._crLng,HOST._crLat); if(w){
       const card=window.IntMapCompass.point(w.dir,HOST.lang,8);
       const sp=window.fmtWindSpeed?window.fmtWindSpeed(w.speed):(w.speed.toFixed(1)+' m/s');
@@ -287,10 +368,17 @@ window.IntMapModules.mapReadout=function(HOST){
          asked for the direction and nothing else, so the motion — and the machinery that existed
          only to keep it continuous — is gone. The rotation stays: it IS the direction. */
       const tip=L('Wind from the {d} — the arrow points the way it is blowing','{d}の風 — 矢印は風が吹いていく向き','Wind aus {d} — der Pfeil zeigt die Windrichtung','Ветер с направления {d} — стрелка показывает, куда он дует','Viento del {d} — la flecha apunta hacia donde sopla').replace('{d}',card);
-      parts.push('<span class="cr-wind" title="'+window.IntMapSafe.html(tip)+'">'
-        +'<span class="cr-warr" style="transform:rotate('+to+'deg)"><i>'
-        +'<svg viewBox="0 0 14 14" width="13" height="13" aria-hidden="true" focusable="false" fill="currentColor"><path d="M7 0.9 L11.1 10.2 L7 8.1 L2.9 10.2 Z"></path></svg>'
-        +'</i></span>'+sp+' '+card+'</span>');
+      /* (#R311) three values, three comparisons: the text beside the arrow, the tooltip, the bearing.
+         ⚠ THE TOOLTIP IS SET AS AN ATTRIBUTE, so `window.IntMapSafe.html()` is not merely unnecessary
+         here — it would be WRONG. That helper escapes a string on its way into HTML SOURCE; the
+         browser un-escapes it again when it parses the attribute, so the attribute VALUE has always
+         been the raw `tip`. Writing the escaped form straight into the attribute would show a reader
+         「Vent de &#39;Est」 the first time a translation contains an apostrophe. There is no HTML
+         string left to escape — the sink is a property, and the escaping is the browser's. */
+      const _wt=sp+' '+card;   if(_wt!==_crVwind){ _crVwind=_wt; C.windT.nodeValue=_wt; }
+      if(tip!==_crVtip){ _crVtip=tip; C.wind.title=tip; }
+      const _rot='rotate('+to+'deg)'; if(_rot!==_crVrot){ _crVrot=_rot; C.warr.style.transform=_rot; }
+      bits|=CR_WIND;
     } } }catch(_){}
     /* ══ (#R190) THE INTENSITY UNDER THE CURSOR ═══════════════════════════════════════════════════
        「ホバー地点の震度は色付きで左下の座標標高常時表示欄に表示して。」 The value and its colour come
@@ -300,11 +388,14 @@ window.IntMapModules.mapReadout=function(HOST){
        closed or the point is outside the painted area. */
     try{ const S=window.IntMapSeismic;
       if(S&&S.intensityAt){ const q=S.intensityAt(HOST._crLng,HOST._crLat);
-        if(q&&q.label) parts.push(`<span class="cr-seis" style="color:${q.col};font-weight:700;">${q.label}</span>`); } }catch(_){}
+        /* (#R311) the label and the colour move independently — a cursor crossing a contour changes
+           both, a cursor inside one class changes neither. `q.col` is a '#rrggbb' from the field's
+           own ramp (js/seismic.js `_mmiHex` / the JMA class table), so the CSSOM takes it verbatim. */
+        if(q&&q.label){ bits|=CR_SEIS;
+          if(q.label!==_crVseis){ _crVseis=q.label; C.seisT.nodeValue=q.label; }
+          if(q.col!==_crVcol){ _crVcol=q.col; C.seis.style.color=q.col; } } } }catch(_){}
     /* Satellite-imagery chip removed from the readout per request — coords + elevation only. */
-    if(!parts.length){ el.style.display='none'; return; }
-    el.style.display='flex';
-    el.innerHTML=parts.join('');
+    _crShow(el,bits);
   }
   /* === Instant elevation/depth from cached terrarium DEM tiles (includes ocean bathymetry) === */
   const _demCache=new Map();

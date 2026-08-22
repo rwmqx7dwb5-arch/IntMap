@@ -2392,7 +2392,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         case 'radius': { const ll=await geocode(a.place); if(ll){ try{ if(a.km!=null&&typeof HOST.radiusKm!=='undefined') HOST.radiusKm=Math.max(1,+a.km); }catch(_){} let cw=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc){ try{ HOST.radiusColor=pc; }catch(_){} } else cw=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); } try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),4)}); }catch(_){} let ok=false; try{ if(window._radiusFromPoint){ window._radiusFromPoint(ll.lng,ll.lat); ok=true; } }catch(_){} let _oid=null; try{ _oid=(HOST.radiusItems&&HOST.radiusItems.length)?String(HOST.radiusItems[HOST.radiusItems.length-1].id):null; }catch(_){} return R(ok, (ok?note('⭕ '+esc(ll.name||a.place||'')+(a.km?(' · '+a.km+' km'):'')):warn('⚠'))+cw, (ok&&_oid)?{objectIds:[_oid]}:null); } return R(false, warn('⚠ '+esc(a.place||''))); }
         /* (#R170) 3-D VOLUME — the Atlas face of Measure ▸ 3-D volume (js/volume3d.js). base/top are ALTITUDES
            ABOVE SEA LEVEL in metres; the module compensates for 3-D terrain so the band lands where it was asked for. */
-        case 'volume3d': case 'volume': { const ll=await geocode(a.place); if(!ll) return R(false, warn('⚠ '+esc(a.place||'')));
+        case 'volume3d': case 'volume': { const ll=await geocode(a.place); if(!ll) return R(false, warn('⚠ '+esc(a.place||''))); await window.IntMapLazy.need('volume3d');   /* (#R311) on-demand: fetch before reading the global */
           const V=window.IntMapVolume3D; if(!V) return R(false, warn('⚠ '+L('3-D volume tool unavailable','3D立体ツールを使えません','3-D-Volumen nicht verfügbar','Инструмент 3-D недоступен','Herramienta 3-D no disponible')));
           const km=Math.max(0.2,Math.min(500,+a.km||5));
           /* (#R172) base/top may now be given in any of the tool's units, and there is no ceiling — a
@@ -3601,7 +3601,7 @@ window.IntMapModules.atlasConsole=function(HOST){
            reply is read back out of the layer's own state, so a reply can never claim a satellite the
            map is not showing. */
         case 'satellites': case 'satellite': case 'sats': case 'orbit': {
-          const A=window.IntMapSatellites; if(!A) return R(false,warn('⚠'));
+          await window.IntMapLazy.need('satellitesLive'); const A=window.IntMapSatellites; if(!A) return R(false,warn('⚠'));   /* (#R311) on-demand, and the OFF branch reads A too */
           const offS=(a.on===false)||/^(off|hide|stop|clear|none)$/i.test(String(a.mode||''));
           if(offS){ try{ const cb=document.getElementById('dl-sats'); if(cb&&cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } else A.stop(); }catch(_){}
             return R(true,note('✓ '+L('Live satellites off','人工衛星レイヤーを非表示にしました','Live-Satelliten aus','Спутники выключены','Satélites en vivo desactivados'))); }
@@ -3648,7 +3648,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         case 'ticker': { const onT=!(a.on===false||/^(off|hide)$/i.test(String(a.mode||''))); let okT=false;
           try{ if(window.IntMapTicker){ window.imTicker=onT?'on':'off'; window.IntMapTicker.apply(); okT=true; try{ if(typeof saveSettings==='function') saveSettings(); }catch(_){} } }catch(_){}
           return R(okT, okT?note('✓ '+L('Bottom ticker','下部ティッカー','Ticker','Бегущая строка','Cinta inferior')+': '+(onT?'on':'off'))+_featTogHtml('ticker'):warn('⚠')); }   /* (#R149) offer the ticker on/off toggle */
-        case 'compareStats': case 'compareCountries': case 'statsCompare': { await ensureData();
+        case 'compareStats': case 'compareCountries': case 'statsCompare': { await ensureData(); await window.IntMapLazy.need('statsCompare');   /* (#R311) BEFORE _cmpMetricKeys — that resolver asks the panel for its real IND keys */
           const rawC=Array.isArray(a.countries)?a.countries:String(a.countries||a.country||'').split(/,|、|;| and | und | y | и |と| vs\.? |対/i).map(x=>x.trim()).filter(Boolean);
           const cds=[],missC=[]; for(const nm2 of rawC){ const c=await resolveCountry(nm2); if(c&&c.code){ if(cds.indexOf(c.code)<0) cds.push(c.code); } else missC.push(nm2); }
           if(!cds.length) return R(false, warn('⚠ '+L('Which countries should I compare?','どの国を比較しますか？','Welche Länder vergleichen?','Какие страны сравнить?','¿Qué países comparo?')));

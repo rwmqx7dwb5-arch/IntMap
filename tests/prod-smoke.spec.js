@@ -20,7 +20,14 @@ const CRITICAL_GLOBALS = ['IntMapOS', 'IntMapLayers', 'IntMapConsole', 'IntMapTi
 // "everything shipped": a js/ file missing from the deployment leaves the page working and one
 // feature silently gone — the same failure shape the split has to defend against, one layer up.
 // index.html's boot guard records the outcome in window.__imModuleCheck; assert both.
-const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare', 'IntMapRouting',
+const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapCompare', 'IntMapRouting',
+  /* ⚠ (#R311) 'IntMapStatsCompare' USED TO BE THE SECOND NAME ON THIS LINE, and 'IntMapVolume3D' /
+     'IntMapAircraftPanel' stood further down. js/stats-compare.js, js/volume3d.js,
+     js/aircraft-detail.js, js/satellites-live.js and js/satellite-detail.js left the boot bundle
+     this round, for the same reason and with the same replacement as #R209's two: at boot none of
+     those globals exists, so a boot-time presence check would report a healthy deployment as
+     broken. The (#R209) test below asks the loader for EVERY on-demand module — a list it reads out
+     of the deployed loader — so all of them are covered rather than the ones this list named. */
   /* ⚠ (#R209) 'IntMapStreetView' AND 'IntMapFlightSim' USED TO BE THE NEXT TWO NAMES ON THIS LINE.
      js/street-view.js and js/flight-sim.js left the boot bundle this round — js/lazy-modules.js
      fetches them the first time the user reaches for the feature — so at boot neither global exists
@@ -55,10 +62,8 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapStatsCompare', 'IntMapCompare'
   // (#R171) the two files written straight into js/ as new features rather than split out of
   // index.html. Same rule, same reason: without a global named here, a file that failed to deploy
   // leaves the app working and one feature silently missing.
-  'IntMapVolume3D',       // js/volume3d.js  (#R170, never listed here)
   'IntMapTilt',           // js/view-controls.js
   'IntMapDrone',          // js/drone-nav.js (#R174) — a whole feature, invisible if the file is missing
-  'IntMapAircraftPanel',  // js/aircraft-detail.js (#R175) — the live-aircraft detail card
   // (#R198) js/label-scale.js — if this file fails to deploy, every symbol layer that asks it for a
   // size throws inside its own try and the map comes up with NO LABELS AT ALL. Exactly the failure
   // shape this list exists for.
@@ -184,13 +189,16 @@ test('(#R209) prod serves every on-demand chunk — the deferred modules arrive 
       notReady: L ? L.names().filter((n) => !L.ready(n)) : null,
       rec: window.__imLazyCheck || null,
       lazyFactories: (window.__imModuleCheck || {}).lazy || null,
-      /* read straight off window — including the two names MODULE_GLOBALS used to carry, and the
-         pair of bare functions js/playground.js installs instead of a namespace */
+      /* read straight off window — including the names MODULE_GLOBALS used to carry (#R209's two and
+         #R311's five), and the pair of bare functions js/playground.js installs instead of a namespace */
       globals: {
         IntMapFlightSim: typeof window.IntMapFlightSim, IntMapStreetView: typeof window.IntMapStreetView,
         IntMapSeismic: typeof window.IntMapSeismic, IntMapTsunami: typeof window.IntMapTsunami,
         IntMapTerrainWater: typeof window.IntMapTerrainWater, IntMapLOS: typeof window.IntMapLOS,
         IntMapNightSky: typeof window.IntMapNightSky,
+        IntMapStatsCompare: typeof window.IntMapStatsCompare, IntMapVolume3D: typeof window.IntMapVolume3D,
+        IntMapAircraftPanel: typeof window.IntMapAircraftPanel, IntMapSatellites: typeof window.IntMapSatellites,
+        IntMapSatPanel: typeof window.IntMapSatPanel, IntMapDataCenters: typeof window.IntMapDataCenters,
         _openPlayground: typeof window._openPlayground, _pgWorldExplorer: typeof window._pgWorldExplorer,
       },
     };

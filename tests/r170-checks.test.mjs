@@ -184,11 +184,23 @@ test('the place-search pill sits at the top of the map', () => {
 /* ---------------------------------------------------------------- 3-D volume tool */
 
 test('the 3-D volume tool is wired from menu to renderer', () => {
-  /* (#R175) the tag became an import in the Vite entry (src/main.js), which appShell() includes. */
-  assert.match(INDEX, /import '\.\.\/js\/volume3d\.js';/, 'the module must be loaded by the Vite entry');
+  /* (#R175) the tag became an import in the Vite entry (src/main.js), which appShell() includes.
+     (#R311) …and then an ON-DEMAND import: the tool is 48 kB that only a session which opens
+     Measure ▸ 3-D volume needs. appShell() includes js/lazy-modules.js, so both halves of the
+     question this asks — is it loaded at all, is its factory instantiated exactly once — are still
+     asked of the file that now answers them. ⚠ The literal single-quoted `./` form is not styling:
+     scripts/static-checks.mjs sees no other shape (js/lazy-modules.js's header, gate 1). */
+  assert.match(INDEX, /import\('\.\/volume3d\.js'\)/, 'the module must be loaded by the on-demand loader');
+  assert.doesNotMatch(INDEX, /import '\.\.\/js\/volume3d\.js';/, 'and not ALSO by the Vite entry — it would be in the boot bundle regardless');
   assert.match(INDEX, /window\.IntMapVolume3D=window\.IntMapModules\.volume3d\((IM_HOST)\)/, 'and instantiated exactly once');
   assert.match(INDEX, /id="btn-tool-volume"/, 'the Measure menu needs the entry');
   assert.match(INDEX, /setTool\('volume'\)/, 'which activates the tool');
+  /* the two doors: the Measure-menu button (which the mobile tile and Atlas's clickId both reach
+     through) and the Atlas `volume3d` action, which reads the global itself */
+  assert.match(INDEX, /IntMapLazy\.need\('volume3d'\)\.then\(\(\)=>\{ setTool\('volume'\)/,
+    'the Measure-menu button must fetch the tool before switching to it — the panel reads the global synchronously');
+  assert.match(stripComments(R('js/atlas-console.js')), /await window\.IntMapLazy\.need\('volume3d'\);/,
+    'the Atlas volume3d action must fetch the tool before reading window.IntMapVolume3D');
   /* (#R171) release() = clear() plus handing the drag gesture back, now that the freehand / circle /
      rectangle shapes take the drag while they are armed. Closing the tool must do both. */
   assert.match(INDEX, /toolMode==='volume'&&window\.IntMapVolume3D\) window\.IntMapVolume3D\.release\(\)/, 'exitTool must drop the box');

@@ -63,7 +63,12 @@ const MOVED = [
    live members before this round; the other six getters are new in #R164.) */
 const LIVE = {
   currentLang: 'lang', currentMode: 'mode', countryGeo: 'countryGeo',
-  unitMode: 'unitMode', userTZ: 'userTZ', mapTooltipEl: 'mapTooltipEl',
+  unitMode: 'unitMode', userTZ: 'userTZ',
+  /* ⚠ (#R311) `mapTooltipEl` LEFT THIS LIST because it left the shell, not because the invariant
+     was relaxed. The hover tooltip is js/map-tooltip.js now, so there is no closure variable in
+     js/app-body.js to go stale — `IM_HOST.mapTooltipEl` is the #R198 DELEGATING getter, which
+     tests/r163 #2 checks by shape and which holds no value at all. Testing it here would assert
+     that a variable this file no longer has is still reassigned, i.e. it could only ever be red. */
   globalData: 'globalData', newsFeatures: 'newsFeatures', renderUI: 'renderUI',
 };
 

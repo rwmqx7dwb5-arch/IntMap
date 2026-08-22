@@ -475,7 +475,8 @@ window.IntMapModules.countriesUi=function(HOST){
         try{
           if(a==='isolate'){ if(window.IntMapIsolate) window.IntMapIsolate.enter((window._cpCurrent||{}).code); return; }
           if(a==='timeseries'){ if(window.IntMapTimeSeries) window.IntMapTimeSeries.open(); return; }
-          if(a==='compare'){ if(window.IntMapStatsCompare) window.IntMapStatsCompare.open(); return; }
+          /* (#R311) the country card's Compare item is a door into the on-demand comparison panel */
+          if(a==='compare'){ window.IntMapLazy.need('statsCompare').then(()=>{ try{ if(window.IntMapStatsCompare) window.IntMapStatsCompare.open(); }catch(_){} }); return; }
           if(a==='brief'){
             /* the SAME ladder the attribute used to spell out, verbatim: Atlas if it is (or can be)
                loaded, then the console's own brief, then the research panel. `_aiName` was already

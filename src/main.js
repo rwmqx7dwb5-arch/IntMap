@@ -91,7 +91,7 @@ import '../js/layer-previews.js';
 import '../js/history.js';
 import '../js/monitors.js';
 import '../js/companies.js';
-import '../js/stats-compare.js';
+/* (#R311) js/stats-compare.js is on-demand now (js/lazy-modules.js); js/compare.js below is the MAP-compare window, a different feature, and stays. */
 import '../js/compare.js';
 /* (#R291) the routing subsystem — five pure modules then the router; the PANEL is lazy. Architecture.md §8.4. */
 import '../js/routing-store.js'; import '../js/routing-providers.js'; import '../js/routing-geocode.js'; import '../js/routing-cards.js'; import '../js/routing-export.js';
@@ -238,7 +238,7 @@ import '../js/limb-layer.js';
    ⚠ THE RULE THIS BREAKS IS NOT ABOUT RENDERING. It is 「勝手なことを確認せずにやるな」 — do not
    decide anything on the reader's behalf without asking first. Anything that changes what the app
    looks like is theirs to approve, before it is written. */
-import '../js/volume3d.js';
+/* (#R311) js/volume3d.js is on-demand (js/lazy-modules.js): `#btn-tool-volume` and Atlas's volume3d action await it. */
 import '../js/view-controls.js';
 import '../js/drone-nav.js';
 /* (#R184) the ten operational capabilities that hang off js/drone-nav.js's #R174 seams — wind at
@@ -246,12 +246,10 @@ import '../js/drone-nav.js';
    comparison, return-to-home and multi-aircraft conflicts. After the planner, because it attaches
    to the planner's published API. */
 import '../js/drone-ops.js';
-import '../js/aircraft-detail.js';
-/* (#R184) the LIVE SATELLITE layer and its detail card — the aircraft layer's shape applied to orbit.
-   satellites-live.js is the only module in this graph with a real npm dependency of its own
-   (satellite.js, MIT): SGP4/SDP4 is not something to hand-roll, and the reason is in the file. */
-import '../js/satellites-live.js';
-import '../js/satellite-detail.js';
+/* (#R184/#R311) js/aircraft-detail.js, js/satellites-live.js and js/satellite-detail.js are on-demand
+   (js/lazy-modules.js): the aircraft click fetches the first, the `dl-sats` row the other two. The
+   satellite layer is the one module here with a real npm dependency of its own (satellite.js, MIT —
+   SGP4/SDP4 is not something to hand-roll), which now lands in that chunk rather than in the boot one. */
 import '../js/auth-ui.js';
 import '../js/community.js';
 import '../js/satellite.js';
@@ -266,6 +264,9 @@ import '../js/news-feed.js';
 import '../js/news-sources.js';
 import '../js/article-reader.js';
 import '../js/community-board.js';
+/* (#R311) the map hover tooltip — one surface used by every hover handler in the app, moved out of
+   js/app-body.js so the shell budget (tests/r168 #8) is paid rather than raised. See that file. */
+import '../js/map-tooltip.js';
 import '../js/map-readout.js';
 import '../js/elevation-profile.js';
 /* (#R186) the real night sky behind the globe (stars from the bundled Bright Star Catalogue, the Sun
@@ -325,7 +326,7 @@ import '../js/app-body.js';
       earlier file created it) while the feature it carries is gone. ── */
 const MODULE_FACTORIES = [
   'maddison', 'histStates', 'histId', 'layerPreviews', 'monitors', 'companies',
-  'statsCompare', 'compare', 'routing', 'timeBorders',
+  'compare', 'routing', 'timeBorders',
   'dataLayers', 'workspace', 'widgets', 'wbLayers', 'betaOverlays', 'cameras',
   'layerRegistry', 'layerSidebar', 'ticker', 'layerPresets', 'labelPopup',
   'geojsonUpload', 'viewHash', 'share', 'projView', 'drawTool',
@@ -339,22 +340,22 @@ const MODULE_FACTORIES = [
   'runwaySearch', 'terrain', 'railSeaOverlays', 'countriesUi', 'newsUi', 'companiesUi',
   'toolPanel', 'authUi', 'community', 'satellite', 'aiCore', 'placeLabels',
   'windowManager', 'searchGeocode', 'newsContext', 'newsFeed', 'articleReader', 'communityBoard',
-  'mapReadout', 'elevationProfile', 'volume3d', 'viewControls', 'solid3d', 'droneNav',
-  'aircraftDetail', 'satellitesLive', 'satelliteDetail', 'droneOps', 'routingOps',
+  'mapReadout', 'mapTooltip', 'elevationProfile', 'viewControls', 'solid3d', 'droneNav',
+  'droneOps', 'routingOps',
   'satProto', 'tileWarm', 'orbitPoints', 'limbLayer', 'newsSources', 'industryWeb',
   'oceanCurrents', 'usElections', 'precipAnnual',
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────
-   These eight files are not in the import list above: they are fetched by js/lazy-modules.js the
+   These files are not in the import list above: they are fetched by js/lazy-modules.js the
    first time the user reaches for the feature. The guard below therefore CANNOT check them at boot
    — `typeof M[k] !== 'function'` is the correct answer for a module nobody has asked for, and
    reporting it would make every clean boot look broken.
    ⚠ THE CHECK IS NOT DROPPED, IT IS MOVED. js/lazy-modules.js verifies, at the moment each one
    lands, that the factory registered AND that the global it owns was published, and records any
    failure in window.__imLazyCheck.failed — which tests/r209.spec.js asserts is empty after asking
-   for all eight. Naming them here keeps ONE list of every factory the program has, so a file that
-   is deleted or renamed still has somewhere to be missing from. */
-const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi'];
+   for every one of them. Naming them here keeps ONE list of every factory the program has, so a
+   file that is deleted or renamed still has somewhere to be missing from. (#R311) six more. */
+const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail'];
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};

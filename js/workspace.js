@@ -132,7 +132,7 @@ window.IntMapModules.workspace=function(HOST){
         try{ bringToFront(w); }catch(_){}
         const sx=e.clientX,sy=e.clientY,sl=w.offsetLeft,st=w.offsetTop,cx=xCands(w),cy=yCands(w),B=wsBounds();
         const mv=ev=>{ let l=sl+ev.clientX-sx,t=st+ev.clientY-sy; hideG();
-          if(ev.altKey){ l=Math.max(-w.offsetWidth+90,Math.min(innerWidth-90,l)); t=Math.max(B.top,Math.min(B.bottom-28,t)); w.style.left=l+'px'; w.style.top=t+'px'; try{ showAdjAny(w); }catch(_){} return; }   /* (#R117) Alt = free drag, no magnetism */
+          if(ev.altKey){ l=Math.max(-w.offsetWidth+90,Math.min(innerWidth-90,l)); t=Math.max(B.top,Math.min(B.bottom-28,t)); w.style.left=l+'px'; w.style.top=t+'px'; _wsBump(); try{ showAdjAny(w); }catch(_){} return; }   /* (#R117) Alt = free drag, no magnetism; (#R311) the window just moved */
           /* snap either edge (left/right, top/bottom) to any candidate line */
           const sxl=nearest(cx,l), sxr=nearest(cx,l+w.offsetWidth);
           if(sxl!=null&&(sxr==null||Math.abs(sxl-l)<=Math.abs(sxr-(l+w.offsetWidth)))){ l=sxl; showG('v',sxl); }
@@ -141,22 +141,69 @@ window.IntMapModules.workspace=function(HOST){
           if(syt!=null&&(syb==null||Math.abs(syt-t)<=Math.abs(syb-(t+w.offsetHeight)))){ t=syt; showG('h',syt); }
           else if(syb!=null){ t=syb-w.offsetHeight; showG('h',syb); }
           l=Math.max(-w.offsetWidth+90,Math.min(innerWidth-90,l)); t=Math.max(B.top,Math.min(B.bottom-28,t));   /* (#R79d) title bar stays below the menu & above the ticker */
-          w.style.left=l+'px'; w.style.top=t+'px'; try{ showAdjAny(w); }catch(_){} };
+          w.style.left=l+'px'; w.style.top=t+'px'; _wsBump(); try{ showAdjAny(w); }catch(_){} };   /* (#R311) the window just moved */
         const up=()=>{ hideG(); try{ hideAdj(); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); schedSave(); buildJunctions(); };
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
     }
+    /* ══ ⚠⚠⚠ (#R311) THE WINDOW'S RECTANGLE IS READ WHEN IT CHANGES, NOT WHEN THE POINTER MOVES ══
+       `wsResize` hangs a `pointermove` on the window itself, and in ws-mode #map-container IS the
+       body of the map window — so every pointer move while panning or zooming the map ran `edgeAt`,
+       and `edgeAt` called `w.getBoundingClientRect()`, which forces a synchronous layout. No
+       throttle. The hit test is unchanged (M/MN/OUT below are untouched); only the moment the
+       rectangle is read moves. A cached entry is valid while its generation matches, and the
+       generation is bumped by everything that can move or resize a `.ws-win`:
+         · this file's own movers — `wsDrag`'s mv, `wsResize`'s mv, `wsGrip`'s mv and the junction
+           drag — bumped in line, so the next event of the same gesture measures again;
+         · every OTHER write of a window's inline style / class (retile, applyRects, the traffic
+           lights' minimise / restore / close, enable / disable) — a MutationObserver per window;
+         · the window changing size for any other reason — a ResizeObserver per window;
+         · the viewport — `resize` and `orientationchange` (`wsBounds` is derived from innerWidth /
+           innerHeight, so a retile follows, but the cache must not wait for its 180 ms debounce).
+       ⚠ Scroll is deliberately absent: `.ws-win` is `position:fixed` (this file's own stylesheet),
+       so no scroller can move one, and a listener for it would be a claim that is not true.
+       ⚠ AND A BACKSTOP: an entry older than WS_GEO_TTL is stale whatever the observers saw. The
+       worst an unknown channel can cost is a quarter second of late CURSOR — never a grab, because
+       the pointerdown below still measures live, exactly as it did before. */
+    const WS_GEO_TTL=250;
+    const __wsGeo=new WeakMap();
+    let __wsGen=0, __wsAt=0, __wsMO=null, __wsRO=null, __wsGeoArmed=false;
+    function _wsBump(){ __wsGen++; }
+    /* the TTL is charged once per event, so one pointer move never sees two generations */
+    function _wsGen(){ const t=(window.performance&&performance.now)?performance.now():Date.now();
+      if(t-__wsAt>WS_GEO_TTL){ __wsAt=t; __wsGen++; } return __wsGen; }
+    function _wsRect(w){ const gen=_wsGen(), had=__wsGeo.get(w);
+      if(had&&had.gen===gen) return had.r;
+      const b=w.getBoundingClientRect(), r={left:b.left,top:b.top,width:b.width,height:b.height};
+      __wsGeo.set(w,{gen:gen,r:r}); return r; }
+    function _wsGeoWatch(w){
+      if(!__wsGeoArmed){ __wsGeoArmed=true;
+        try{ window.addEventListener('resize',_wsBump); window.addEventListener('orientationchange',_wsBump); }catch(_){} }
+      try{ if(window.ResizeObserver){ if(!__wsRO) __wsRO=new ResizeObserver(_wsBump); __wsRO.observe(w); } }catch(_){}
+      try{ if(window.MutationObserver){ if(!__wsMO) __wsMO=new MutationObserver(_wsBump);
+        __wsMO.observe(w,{attributes:true,attributeFilter:['style','class','hidden']}); } }catch(_){}
+      _wsBump(); }
     function wsResize(w){
       /* (#R116) BALANCED edge zones ("リサイズ判定ホバー範囲が広すぎたり、狭すぎたり"): R106's 22px band fixed the
          "too thin" feel but STOLE clicks on content near three window edges (a 22px frame where list taps started a
          resize instead). Now that the R107 cursor feedback works, 12px inside + 6px outside reach is comfortable to
          grab yet stops swallowing content clicks. The TOP edge stays a slim MN so it never steals the title-bar drag. */
       const M=12, MN=8, OUT=6, CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
-      const edgeAt=(cx,cy)=>{ const r=w.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<-OUT||y<-OUT||x>r.width+OUT||y>r.height+OUT) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=MN)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
+      /* (#R311) `rect` is the ONE addition; the arithmetic is byte-for-byte what it was, and a
+         caller that passes nothing still measures live. Note the reach: this test answers for
+         `-OUT … width+OUT`, so the box the hover path tests is the rectangle grown by OUT on every
+         side — the cached rectangle is fed to the SAME expression, so that reach is unchanged. */
+      const edgeAt=(cx,cy,rect)=>{ const r=rect||w.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<-OUT||y<-OUT||x>r.width+OUT||y>r.height+OUT) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=MN)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
+      _wsGeoWatch(w);   /* (#R311) …and this window's rectangle is watched instead of re-measured per event */
       /* (#R107) ROOT CAUSE of "リサイズのホバー判定範囲が狭すぎる" (re-report after R106 widened M): over the MAP CANVAS
          (and any child that sets its own cursor) the resize cursor set on `w` was OVERRIDDEN, so the edge felt dead
          even though the hit-zone was wide. Toggle a `.rz-hover` class in the edge zone; a CSS rule then forces every
          descendant to inherit `w`'s resize cursor while there — so the feedback shows over the canvas / lists too. */
-      w.addEventListener('pointermove',e=>{ if(w.dataset.resizing) return; const d=edgeAt(e.clientX,e.clientY); w.style.cursor=d?CUR[d]:''; w.classList.toggle('rz-hover',!!d); try{ showAdjFor(w,d); }catch(_){} });
+      /* (#R311) the hover reads the cached rectangle (the press below still measures live). ⚠ AND
+         THE CURSOR IS ONLY WRITTEN WHEN IT DIFFERS: writing the same value back would churn the
+         `style` attribute, the MutationObserver would bump the generation, and the cache would
+         invalidate itself once per pointer event — the exact cost this is removing. (`classList.
+         toggle` with an explicit force already performs no update when nothing changes.) */
+      w.addEventListener('pointermove',e=>{ if(w.dataset.resizing) return; const d=edgeAt(e.clientX,e.clientY,_wsRect(w)); const cv=d?CUR[d]:''; if(w.style.cursor!==cv) w.style.cursor=cv; w.classList.toggle('rz-hover',!!d); try{ showAdjFor(w,d); }catch(_){} });
       w.addEventListener('pointerleave',()=>{ if(!w.dataset.resizing){ w.style.cursor=''; w.classList.remove('rz-hover'); } try{ hideAdj(); }catch(_){} });
       w.addEventListener('pointerdown',e=>{ if(e.target.closest('button,input,select,textarea,a,[role="button"]')) return;
         const d=edgeAt(e.clientX,e.clientY); if(!d) return; if(w.dataset.min) return;
@@ -193,8 +240,9 @@ window.IntMapModules.workspace=function(HOST){
             ny=Math.max(lo,Math.min(hi,ny)); showG('h',ny);
             hTop.forEach(p=>{ p.o.style.top=p.t+'px'; p.o.style.height=Math.max(90,ny-p.t)+'px'; });
             hBot.forEach(p=>{ p.o.style.top=ny+'px'; p.o.style.height=Math.max(90,p.bt-ny)+'px'; }); }
+          _wsBump();   /* (#R311) the divider just moved every window on both sides of it */
           fitMap(); try{ showAdjFor(w,d); }catch(_){} };
-        const up=()=>{ delete w.dataset.resizing; hideG(); try{ hideAdj(); }catch(_){} w.style.cursor=''; document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); fitMap(); schedSave(); buildJunctions(); };
+        const up=()=>{ delete w.dataset.resizing; hideG(); try{ hideAdj(); }catch(_){} w.style.cursor=''; document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); _wsBump(); fitMap(); schedSave(); buildJunctions(); };
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
     }
     /* (#R79b) a big, visible bottom-right grip that resizes the window (no neighbour-splitter logic — a plain,
@@ -204,7 +252,7 @@ window.IntMapModules.workspace=function(HOST){
         const sx=e.clientX,sy=e.clientY,sw=w.offsetWidth,sh=w.offsetHeight,mn=minOf(w),B=wsBounds();
         try{ g.setPointerCapture&&g.setPointerCapture(e.pointerId); }catch(_){}
         /* (#R79d) clamp to the usable rect: right → screen edge, bottom → TICKER TOP (not the real screen bottom) */
-        const mv=ev=>{ const wd=Math.max(mn[0],Math.min(B.right-w.offsetLeft,sw+ev.clientX-sx)), hg=Math.max(mn[1],Math.min(B.bottom-w.offsetTop,sh+ev.clientY-sy)); w.style.width=wd+'px'; w.style.height=hg+'px'; fitMap(); try{ showAdjFor(w,'se'); }catch(_){} };
+        const mv=ev=>{ const wd=Math.max(mn[0],Math.min(B.right-w.offsetLeft,sw+ev.clientX-sx)), hg=Math.max(mn[1],Math.min(B.bottom-w.offsetTop,sh+ev.clientY-sy)); w.style.width=wd+'px'; w.style.height=hg+'px'; _wsBump(); fitMap(); try{ showAdjFor(w,'se'); }catch(_){} };   /* (#R311) the grip just resized it */
         const up=ev=>{ delete w.dataset.resizing; try{ g.releasePointerCapture&&g.releasePointerCapture(ev.pointerId); }catch(_){} try{ hideAdj(); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); fitMap(); schedSave(); buildJunctions(); };
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }); }
     function css(){ if(styled) return; styled=true; const st=document.createElement('style'); st.id='ws-style';
@@ -501,7 +549,7 @@ window.IntMapModules.workspace=function(HOST){
           R.forEach(o=>{ o.w.style.left=vx+'px'; o.w.style.width=(o.r-vx)+'px'; });
           TT.forEach(o=>{ o.w.style.height=(hy-o.t)+'px'; });
           D.forEach(o=>{ o.w.style.top=hy+'px'; o.w.style.height=(o.bt-hy)+'px'; });
-          h.style.left=vx+'px'; h.style.top=hy+'px'; fitMap(); };
+          h.style.left=vx+'px'; h.style.top=hy+'px'; _wsBump(); fitMap(); };   /* (#R311) the junction just moved every window that meets here */
         const up=ev=>{ try{ h.releasePointerCapture&&h.releasePointerCapture(ev.pointerId); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); buildJunctions(); schedSave(); };
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }); }
     function mkWin(def,rect,skipWrap){

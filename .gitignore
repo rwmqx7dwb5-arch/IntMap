@@ -66,3 +66,9 @@ dist/
 # tectonics keep their upstream downloads. All are re-fetchable, none ship.
 .cache/
 __pycache__/
+
+# ── (#R311) the build report the perf gate reads ─────────────────────────────
+# vite writes .perf/build-report.json on every build: it describes ONE build
+# (which chunks are eager, what each costs raw/gzip/brotli), not the repository.
+# The committed side is tests/perf-baseline.json — the numbers the gate ratchets.
+.perf/

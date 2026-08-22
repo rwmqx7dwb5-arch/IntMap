@@ -95,6 +95,13 @@ test('R175 ①: a zoom that also travels still carries the target altitude', () 
 
 /* ── ② the tooltip and the aircraft card ─────────────────────────────────────────────────── */
 test('R175 ②: the hover tooltip is clamped as the box it really is', () => {
+  /* ⚠ (#R311) THE GEOMETRY MOVED FILES; NOT ONE CHARACTER OF IT CHANGED. The hover tooltip is one
+     surface used by every hover handler in the app, and it left js/app-body.js whole so that the
+     shell budget (tests/r168 #8) could be PAID rather than raised — #R195's rule. The four
+     assertions below are the #R175 text verbatim; only the file they are asked of is different, and
+     asking the old file would now pass vacuously, which is the false signal tests/app-source.mjs's
+     header exists to warn about. */
+  const body = readFileSync(join(ROOT, 'js/map-tooltip.js'), 'utf8');
   assert.match(body, /const below=\(h\+TIP_GAP>py-TIP_EDGE\)&&\(h\+TIP_GAP<=mc\.height-py-TIP_EDGE\);/,
     'it must flip below the anchor when it cannot fit above');
   assert.match(body, /el\.classList\.toggle\('map-tooltip-below',below\)/, 'and say so, so the arrow can follow');
@@ -116,9 +123,23 @@ test('R175 ②: the click opens a detail card, and the ADS-B record carries the 
     'a click opens the card and stands the tooltip down');
   assert.ok(dl.includes('else { const el=ensureMapTooltip();'), 'and falls back to the pinned tooltip if the card module is absent');
   assert.match(dl, /P\.update\(d,\{track:_trackCard\(d\.icao24\)\}\)/, 'the open card is refreshed by the live poll');
-  assert.ok(body.includes('window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST);'),
+  /* ⚠ (#R311) THE CARD IS FETCHED WHEN THE AIRCRAFT IS CLICKED, so the factory call moved out of
+     js/app-body.js into js/lazy-modules.js's mount and the boot guard can no longer see the key.
+     The two things this asserted — «the factory is instantiated exactly once with the shared host»
+     and «one list knows this factory exists» — are both still asserted, of the places that now hold
+     them. What is NOT asserted any more is that it happens at boot, which this round made false on
+     purpose: 30 kB of detail card for a session that never clicks an aircraft. */
+  const loader = readFileSync(join(ROOT, 'js/lazy-modules.js'), 'utf8');
+  assert.ok(loader.includes('window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST);'),
     'the factory is instantiated');
-  assert.ok(/'droneNav',\s*'aircraftDetail'/.test(entry), 'both new factories are covered by the required-module guard');
+  assert.ok(!body.includes('window.IntMapModules.aircraftDetail('),
+    'js/app-body.js instantiates it at boot as well — the module is then in the boot bundle regardless');
+  assert.match(dl, /IntMapLazy\.need\('aircraftDetail'\)/,
+    'the aircraft click does not fetch the card module first — it would reach a global that has not been downloaded');
+  const inList = (name, list) => new RegExp(`const ${list} = \\[[^\\]]*'${name}'`).test(entry);
+  assert.ok(inList('droneNav', 'MODULE_FACTORIES'), 'droneNav is covered by the boot-time required-module guard');
+  assert.ok(inList('aircraftDetail', 'LAZY_FACTORIES'),
+    'aircraftDetail is covered by the deferred half of that guard — one list still knows every factory');
 });
 
 test('R175 ②: the flight starts from the aircraft’s OWN conditions', () => {

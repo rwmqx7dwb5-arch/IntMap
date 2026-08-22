@@ -43,11 +43,30 @@
  *  registered all 147,924 gazetteer rows instead of 12,000, which is visible in its own slice
  *  counts (37 = ceil(147924/4000), not ceil(12000/4000) = 3).
  *
+ *  ── (#R311) THREE THINGS THE INSTRUMENT COULD NOT SEE ──────────────────────────────────────────
+ *  「first map pixel」と「interaction-ready」を分けて測れ、long taskを数えろ、メモリを測れ.
+ *  `--boot` reported first draw, FCP and JS bytes. None of those is when the app becomes USABLE:
+ *  the launch screen is dismissed by real milestones (index.html's __imBoot), and the gap between
+ *  the first painted map and that moment is where a startup regression hides. So --boot now also
+ *  records __imBoot's own milestones, the long tasks the main thread ran while booting (a
+ *  PerformanceObserver installed before the first script — buffered:true is not enough, `longtask`
+ *  entries predate any observer added later), and the heap after a forced collection.
+ *
+ *  `--mem` is new and answers a different question: 「機能を10回開閉しても、heapとresource数が
+ *  一方向に増え続けないこと」. It drives the app through window.IntMapOS — the same commands the
+ *  buttons and Atlas run, never a private entry point (#R304's lesson, four times over) — and
+ *  reports heap, DOM nodes and listeners after each cycle, each preceded by a real GC.
+ *
  *  USAGE
- *    node scripts/frame-profile.mjs --boot            start-up: first draw, FCP, JS bytes
+ *    node scripts/frame-profile.mjs --boot            start-up: first draw, ready, long tasks, heap
  *    node scripts/frame-profile.mjs --sweep           frame time over a scripted zoom + hover
+ *    node scripts/frame-profile.mjs --mem             heap / nodes / listeners over N open-close cycles
+ *    node scripts/frame-profile.mjs --attribute --base http://127.0.0.1:5173
+ *                                                     self time per js/ file over the boot (dev server)
  *    …with  --desktop | --mobile (default)  --sat  --cpu N  --net fast4g|slow4g|none  --reps N
  *           --base http://127.0.0.1:4173   --cache <dir>   --record (allow cache misses to fetch)
+ *           --cycles N (--mem, default 10)   --cmd a,b (--mem, the OS commands to alternate)
+ *           --json <path>  write the run as JSON as well as printing it
  * ==========================================================================*/
 import { createHash } from 'node:crypto';
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -123,13 +142,52 @@ async function newContext(browser) {
     timezoneId: 'UTC', locale: 'en-US',
   });
   await ctx.route('**/*', replay);
+  /* (#R311) ⚠ BEFORE THE FIRST SCRIPT, not inside the page afterwards. `longtask` entries are not
+     kept in the performance buffer the way marks are, so an observer created after boot sees an
+     empty list and would report "0 long tasks" for a boot that stalled the main thread for a
+     second. addInitScript runs in every new document ahead of everything else. */
+  await ctx.addInitScript(() => {
+    window.__imLT = [];
+    try {
+      new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__imLT.push(Math.round(e.duration)); })
+        .observe({ type: 'longtask', buffered: true });
+    } catch (_) { /* Safari has no longtask observer; the number is simply absent there */ }
+  });
   return ctx;
 }
 async function throttle(ctx, page) {
   const cdp = await ctx.newCDPSession(page);
   if (CPU > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU });
   if (NETS[NET]) { await cdp.send('Network.enable'); await cdp.send('Network.emulateNetworkConditions', { offline: false, ...NETS[NET] }); }
+  try { await cdp.send('Performance.enable'); } catch (_) {}
+  /* ══ ⚠ (#R311) A NEW CONTEXT IS NOT A COLD BROWSER ══════════════════════════════════════════════
+     `browser.newContext()` gives a fresh cookie jar and a fresh Cache Storage, but Chromium's HTTP
+     cache is per PROCESS, so the app's own chunks stay cached across reps. MEASURED: inside a single
+     five-rep run the same page fetched 3,282 kB of JS in one rep and 1,792 kB in the next, and
+     "first draw" moved by half a second with it. Two builds compared under that are not being
+     compared at all — the arms differ by which reps happened to be warm.
+     `--boot` therefore disables the HTTP cache unless `--warm` says otherwise: a start-up
+     measurement is a COLD-start measurement, and the returning-visitor case is a different question
+     that has to be asked deliberately. It does NOT weaken the replay cache — third-party bytes still
+     come off disk through route(), which is what makes the external half deterministic. */
+  if (!has('--warm')) {
+    try { await cdp.send('Network.enable'); await cdp.send('Network.setCacheDisabled', { cacheDisabled: true }); } catch (_) {}
+  }
   return cdp;
+}
+/* (#R311) heap AFTER a real collection — `usedJSHeapSize` without one measures garbage that has
+   not been swept yet, which drifts by tens of MB between runs and hides the trend --mem looks for.
+   Nodes / JSEventListeners / Documents come from the same call: a leak that keeps a detached
+   subtree alive shows up in Nodes long before it is visible in the heap total. */
+async function heap(cdp) {
+  try { await cdp.send('HeapProfiler.collectGarbage'); } catch (_) {}
+  let m = { metrics: [] };
+  try { m = await cdp.send('Performance.getMetrics'); } catch (_) {}
+  const g = (n) => (m.metrics.find((x) => x.name === n) || {}).value || 0;
+  return {
+    heapMB: +(g('JSHeapUsedSize') / 1048576).toFixed(2),
+    nodes: g('Nodes'), listeners: g('JSEventListeners'), documents: g('Documents'),
+  };
 }
 /* ⚠ `/?rafshim=1` replaces requestAnimationFrame with a 33 ms timer (index.html) and
    tests/helpers/engine.js supplies it BY DEFAULT — reusing that helper here would silently make
@@ -207,29 +265,144 @@ async function runBoot() {
   for (let i = 0; i < REPS + 2; i++) {
     const ctx = await newContext(browser);
     const page = await ctx.newPage();
-    await throttle(ctx, page);
+    const cdp = await throttle(ctx, page);
     const t0 = Date.now();
     await page.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 180_000 });
     const tDom = Date.now() - t0;
     await page.waitForFunction(() => window.IntMapGeoEngine && window.IntMapGeoEngine.canDraw && window.IntMapGeoEngine.canDraw(), null, { timeout: 180_000 });
     const tDraw = Date.now() - t0;
+    /* (#R311) …and then the milestone the READER waits for. The launch screen covers the map until
+       __imBoot decides the app is up, so "first draw" is not "usable". A boot that never signals is
+       recorded as such rather than throwing — index.html's own failsafe reveals the app at 20 s. */
+    let ready = null;
+    try {
+      await page.waitForFunction(() => window.__imBoot && window.__imBoot.isDone(), null, { timeout: 60_000 });
+      ready = Date.now() - t0;
+    } catch (_) { /* left null — printed as "—" */ }
     const d = await page.evaluate(() => {
-      const js = performance.getEntriesByType('resource').filter((r) => /\.js(\?|$)/.test(r.name));
+      const res = performance.getEntriesByType('resource');
+      const js = res.filter((r) => /\.js(\?|$)/.test(r.name));
+      const lt = (window.__imLT || []).slice();
       return {
         jsFiles: js.length, jsBytes: Math.round(js.reduce((s, r) => s + (r.encodedBodySize || 0), 0) / 1024),
+        reqs: res.length,
         fcp: Math.round((performance.getEntriesByName('first-contentful-paint')[0] || {}).startTime || 0),
+        lt50: lt.filter((x) => x >= 50).length, lt100: lt.filter((x) => x >= 100).length,
+        ltMax: lt.length ? Math.max(...lt) : 0, ltTotal: lt.reduce((a, b) => a + b, 0),
+        marks: (window.__imBoot && window.__imBoot.marks) ? window.__imBoot.marks() : {},
       };
     });
-    rows.push({ tDom, tDraw, ...d });
-    console.log(`  rep${i + 1}${i < 2 ? ' (warm-up)' : '         '}  first draw ${String(tDraw).padStart(6)} ms  DOM ${String(tDom).padStart(6)}  FCP ${String(d.fcp).padStart(5)}  JS ${d.jsFiles} files / ${d.jsBytes} kB`);
+    const h = await heap(cdp);
+    rows.push({ tDom, tDraw, ready, ...d, ...h });
+    console.log(`  rep${i + 1}${i < 2 ? ' (warm-up)' : '         '}  draw ${String(tDraw).padStart(6)} ms  ready ${String(ready ?? '—').padStart(6)}  FCP ${String(d.fcp).padStart(5)}  JS ${d.jsFiles}f/${d.jsBytes}kB  reqs ${String(d.reqs).padStart(3)}  LT ${d.lt50}/${d.lt100} max ${String(d.ltMax).padStart(4)}  heap ${String(h.heapMB).padStart(6)} MB`);
     await ctx.close();
   }
   const keep = rows.slice(2);
-  const mean = (f) => Math.round(avg(keep.map((r) => r[f])));
-  console.log(`\nBOOT  mobile=${MOBILE} cpu=${CPU} net=${NET}  first draw ${mean('tDraw')} ms · FCP ${mean('fcp')} ms · DOM ${mean('tDom')} ms · JS ${mean('jsBytes')} kB over ${keep[0].jsFiles} files`);
+  const mean = (f) => Math.round(avg(keep.map((r) => r[f] || 0)));
+  const meanF = (f) => +avg(keep.map((r) => r[f] || 0)).toFixed(2);
+  console.log(`\nBOOT  mobile=${MOBILE} cpu=${CPU} net=${NET}  first draw ${mean('tDraw')} ms · ready ${mean('ready')} ms · FCP ${mean('fcp')} ms · DOM ${mean('tDom')} ms`);
+  console.log(`      JS ${mean('jsBytes')} kB over ${keep[0].jsFiles} files · ${mean('reqs')} requests · long tasks ${meanF('lt50')}≥50ms ${meanF('lt100')}≥100ms max ${mean('ltMax')} ms total ${mean('ltTotal')} ms`);
+  console.log(`      heap ${meanF('heapMB')} MB · ${mean('nodes')} nodes · ${mean('listeners')} listeners`);
+  console.log(`      milestones (last rep): ${JSON.stringify(keep[keep.length - 1].marks)}`);
   console.log(`cache: ${stats.hit} replayed, ${stats.miss} missed, ${stats.blocked} blocked`);
+  writeJson({ mode: 'boot', mobile: MOBILE, cpu: CPU, net: NET, reps: keep });
   await browser.close();
 }
 
+/* ── (#R311) --mem: does closing a feature give the memory back? ────────────
+   「機能を10回開閉しても、heapとresource数が一方向に増え続けないことを確認してください。」
+   Driven through IntMapOS.exec, which is the SAME path the button and Atlas take — measuring a
+   private entry point measures code the app never runs (#R304 §r184-drone). A pair of commands is
+   alternated `cycles` times; heap, nodes and listeners are read after a forced GC each time, and
+   the verdict is the SLOPE across the second half (the first cycles legitimately allocate caches
+   that a re-open is supposed to reuse — a flat line after warm-up is the property, not a flat line
+   from the first cycle). */
+async function runMem() {
+  const CYCLES = Number(val('--cycles', 10));
+  const pair = String(val('--cmd', 'view.base.sat,view.base.map')).split(',').map((s) => s.trim()).filter(Boolean);
+  const browser = await chromium.launch({ args: ['--use-angle=d3d11'] });
+  const ctx = await newContext(browser);
+  const page = await open(ctx);
+  const cdp = await throttle(ctx, page);
+  const known = await page.evaluate(() => (window.IntMapOS && window.IntMapOS.list) ? window.IntMapOS.list() : []);
+  const missing = pair.filter((c) => !known.includes(c));
+  if (missing.length) { console.log(`⚠ not registered commands, nothing was exercised: ${missing.join(', ')}\n  available: ${known.join(' ')}`); await browser.close(); return; }
+  await page.waitForTimeout(4000);
+  const base = await heap(cdp);
+  console.log(`  baseline            heap ${String(base.heapMB).padStart(7)} MB  nodes ${String(base.nodes).padStart(6)}  listeners ${String(base.listeners).padStart(5)}`);
+  const rows = [];
+  for (let i = 0; i < CYCLES; i++) {
+    for (const cmd of pair) {
+      await page.evaluate((c) => window.IntMapOS.exec(c, { source: 'ui' }), cmd);
+      await page.waitForTimeout(1200);
+    }
+    const h = await heap(cdp);
+    rows.push(h);
+    console.log(`  cycle ${String(i + 1).padStart(2)}            heap ${String(h.heapMB).padStart(7)} MB  nodes ${String(h.nodes).padStart(6)}  listeners ${String(h.listeners).padStart(5)}`);
+  }
+  const half = rows.slice(Math.floor(rows.length / 2));
+  const slope = (f) => +((half[half.length - 1][f] - half[0][f]) / Math.max(1, half.length - 1)).toFixed(2);
+  console.log(`\nMEM  ${pair.join(' ⇄ ')} ×${CYCLES}  drift per cycle over the second half: heap ${slope('heapMB')} MB · nodes ${slope('nodes')} · listeners ${slope('listeners')}`);
+  console.log(`     total since baseline: heap ${(rows[rows.length - 1].heapMB - base.heapMB).toFixed(2)} MB · nodes ${rows[rows.length - 1].nodes - base.nodes} · listeners ${rows[rows.length - 1].listeners - base.listeners}`);
+  writeJson({ mode: 'mem', cmds: pair, cycles: CYCLES, baseline: base, rows });
+  await browser.close();
+}
+
+/* ── (#R311) --attribute: WHICH FILE spends the boot ───────────────────────
+   「profiler上の証拠」. A CPU profile of the interval from navigation to the moment __imBoot
+   declares the app up, aggregated as SELF time per script URL and per function.
+
+   ⚠ POINT IT AT THE DEV SERVER (`npm run dev`, --base http://127.0.0.1:5173). In a production
+   build every js/ file is inside one hashed chunk, so every sample says `main-XXXX.js` and the
+   answer is "the bundle" — true and useless. Vite's dev server serves each module at its own URL,
+   which is what turns a sample into a file name. That makes this an ATTRIBUTION instrument, not a
+   timing one: dev is unminified and unbundled, so the absolute milliseconds are NOT the production
+   milliseconds and must not be quoted as such. What transfers is the RANKING. */
+async function runAttribute() {
+  const browser = await chromium.launch({ args: ['--use-angle=d3d11'] });
+  const ctx = await newContext(browser);
+  const page = await ctx.newPage();
+  const cdp = await throttle(ctx, page);
+  await cdp.send('Profiler.enable');
+  await cdp.send('Profiler.setSamplingInterval', { interval: 200 });
+  await cdp.send('Profiler.start');
+  await page.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 180_000 });
+  try { await page.waitForFunction(() => window.__imBoot && window.__imBoot.isDone(), null, { timeout: 120_000 }); }
+  catch (_) { console.log('  ⚠ never became ready — profiling what it did in the time it had'); }
+  const { profile } = await cdp.send('Profiler.stop');
+
+  /* self time = (hits on this node) × (average sample interval over the whole profile) */
+  const total = profile.endTime - profile.startTime;
+  const hits = profile.nodes.reduce((a, n) => a + (n.hitCount || 0), 0) || 1;
+  const per = total / hits / 1000;
+  const byUrl = new Map(); const byFn = new Map();
+  for (const n of profile.nodes) {
+    const h = n.hitCount || 0; if (!h) continue;
+    const cf = n.callFrame || {};
+    const url = (cf.url || '(no url)').replace(/^https?:\/\/[^/]+/, '').split('?')[0] || '(inline)';
+    byUrl.set(url, (byUrl.get(url) || 0) + h * per);
+    const fn = `${cf.functionName || '(anonymous)'}  ${url}:${(cf.lineNumber ?? -1) + 1}`;
+    byFn.set(fn, (byFn.get(fn) || 0) + h * per);
+  }
+  const top = (m, n) => [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, n);
+  console.log(`\nATTRIBUTION  ${(total / 1000).toFixed(0)} ms of wall clock, ${hits} samples, cpu=${CPU}, base=${BASE}`);
+  console.log('\n  self time by script:');
+  for (const [u, ms] of top(byUrl, 30)) console.log(`   ${ms.toFixed(1).padStart(8)} ms  ${u}`);
+  console.log('\n  self time by function:');
+  for (const [f, ms] of top(byFn, 25)) console.log(`   ${ms.toFixed(1).padStart(8)} ms  ${f}`);
+  writeJson({ mode: 'attribute', base: BASE, totalMs: total / 1000, byUrl: top(byUrl, 200), byFn: top(byFn, 200) });
+  await browser.close();
+}
+
+function writeJson(obj) {
+  const p = val('--json', null);
+  if (!p) return;
+  mkdirSync(dirname(p), { recursive: true });
+  writeFileSync(p, JSON.stringify(obj, null, 2));
+  console.log(`  → ${p}`);
+}
+
 if (has('--boot')) await runBoot();
+else if (has('--mem')) await runMem();
+else if (has('--attribute')) await runAttribute();
 else await runSweep();
