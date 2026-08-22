@@ -200,7 +200,9 @@ test('the tilt ceiling is the RENDERER\'s, never a literal', () => {
   assert.match(src, /function engineMax\(\)\{ try\{ const r=GE\(\)\.camera\.tiltRange\(\)/, 'the ceiling comes from the engine capability, so an engine with a different range is not lied about');
   assert.match(src, /const STANDARD=78/, '78 is the standard ceiling index.html sets at boot');
   assert.match(src, /function fromAngle\(deg,bearing\)/, 'angles past the top resolve into a real (pitch, bearing) pair');
-  const atlas = stripComments(R('js/atlas-console.js'));
+  /* (#R315) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = stripComments(R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js'));
   assert.ok(!/case 'pitch': case 'tilt':[\s\S]{0,400}?Math\.min\(85,tp\)/.test(atlas),
     'the Atlas tilt action must not clamp to a literal 85 — it has to honour the chosen ceiling');
   assert.match(atlas, /_cap=_T\?_T\.ceiling\(\):85/, 'Atlas reads the ceiling from IntMapTilt');
@@ -249,7 +251,9 @@ test('the eye altitude is derived from the renderer, not guessed from the zoom',
 /* ─── 5. Atlas is the control plane (the #R115 rule: uncatalogued = nonexistent) ─────────────── */
 
 test('every new switch is operable from Atlas AND catalogued', () => {
-  const atlas = R('js/atlas-console.js');
+  /* (#R315) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
   for (const a of ['tiltLimit', 'eyeAltitude']) {
     assert.ok(atlas.includes(`case '${a}':`), `Atlas must implement ${a}`);
     assert.ok(atlas.includes(`{"type":"${a}"`), `${a} must appear in the SYS catalogue or the planner does not know it exists`);

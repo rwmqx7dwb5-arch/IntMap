@@ -208,6 +208,17 @@ atlas-attach.js                   Atlas — 添付ファイルの正体判定と
 atlas-msg-tools.js                Atlas — メッセージごとの操作バー（コピー／再試行／編集）とその場編集
 atlas-loader.js                   Atlas に手を伸ばすと Atlas を取りに行く window.IntMapAtlas
 ai-core.js                        Atlas の AI 通信・利用枠・設定
+atlas-capabilities.js             **能力レジストリの正本**（#R315）— IntMap が何をできるかの唯一の一覧。
+                                  115 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）
+atlas-catalog-text.js             Atlas — planner に渡す能力の説明文 38 ブロック（旧 SYS() の本文を逐語で移設）。
+                                  各ブロックが「どの能力を説明しているか」を持つので関連分だけ送れる
+atlas-executor.js                 IntMapOS.execute() の中身（#R315）— 解決・可用性・引数検証・入力要求・
+                                  前後の観測・完了待ち・事後条件・構造化結果・ライフサイクル・競合の直列化
+atlas-results.js                  全操作が返す1つの形（#R315）。`ok` は `status==='completed'` からの導出で書けない
+atlas-state.js                    アプリの状態をデータとして持つ（#R315）。各サブシステムが provider を登録し、
+                                  モデル向けの文章はそこから派生する。ターン台帳（目標・計画・結果・objectId）
+atlas-planner.js                  計画の schema・検証・GoalSpec・依存グラフ実行（#R315。#R135 の時間軸ブロックを内包）
 ```
 
 ### 3.8 `js/` — 分析・パネル・シミュレーション
@@ -367,7 +378,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全8本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（7本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（8本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数。6本）
   functions/<name>/index.ts       Edge Functions（8本。§6.2）

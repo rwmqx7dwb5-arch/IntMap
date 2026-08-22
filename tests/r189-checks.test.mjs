@@ -284,7 +284,9 @@ test('R189 seismic: a free-drawn rupture with slip yields Mw, Rrup and finite-so
   assert.match(src, /train\(rad,ph\.col,ph\.w\)/, '…and it is what a drawn rupture uses');
   assert.doesNotMatch(src, /ringLines\(epi,rad\(null\)\)/, 'no front is drawn from a single bearing-free radius');
   assert.match(src, /DT\.currentGeometry/, 'captured from the SHARED free-draw tool (#R141), not a private one');
-  const atlas = read('js/atlas-console.js');
+  /* (#R315) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = read('js/atlas-console.js') + '\n' + read('js/atlas-catalog-text.js');
   assert.ok(atlas.includes('"scale"?:"mmi"|"jma"'), 'the SYS catalogue advertises the scale');
   assert.ok(atlas.includes('"slip"?:m'), '…and the slip');
 });

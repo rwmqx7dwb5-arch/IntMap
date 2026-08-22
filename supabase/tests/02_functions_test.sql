@@ -33,6 +33,34 @@ select is((select v from _cap where k='inc1'), '6/true',  'increment_ai_usage al
 select is((select v from _cap where k='inc2'), '6/false', 'increment_ai_usage BLOCKS the use past the limit (quota enforced)');
 select is((select v from _cap where k='after'),'5',       'refund_ai_usage returns one use');
 
+-- ══ (#R315) ONE USER TURN COSTS ONE USE, AND THE SERVER — NOT THE CLIENT — DECIDES ═══════════
+-- Atlas finishes one question with up to three calls (planner + two bounded repairs). The turn key
+-- makes the FIRST of them pay and the rest free, bounded and expiring, so a client that reuses a
+-- key gains nothing. ⚠ B starts this file at TWO uses (supabase/seed.sql §5), so the counts below
+-- run 3, 3, 3, (refused), 4, 3, 4 — not 1, 1, 1, …
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+set local role service_role;
+select _sel('t1', 'select used::text || ''/'' || charged::text from public.consume_ai_turn(''22222222-2222-2222-2222-222222222222'',6,''turn-A'',3,900)');  -- 3/true
+select _sel('t2', 'select used::text || ''/'' || charged::text from public.consume_ai_turn(''22222222-2222-2222-2222-222222222222'',6,''turn-A'',3,900)');  -- 3/false
+select _sel('t3', 'select used::text || ''/'' || charged::text from public.consume_ai_turn(''22222222-2222-2222-2222-222222222222'',6,''turn-A'',3,900)');  -- 3/false
+select _sel('t4', 'select allowed::text || ''/'' || reason from public.consume_ai_turn(''22222222-2222-2222-2222-222222222222'',6,''turn-A'',3,900)');      -- false/turn_calls
+select _sel('t5', 'select used::text || ''/'' || charged::text from public.consume_ai_turn(''22222222-2222-2222-2222-222222222222'',6,''turn-B'',3,900)');  -- 4/true
+select _run('tref','select public.refund_ai_turn(''22222222-2222-2222-2222-222222222222'',''turn-B'')');
+select _sel('t6', 'select count::text from public.ai_usage where user_id=''22222222-2222-2222-2222-222222222222'' and usage_date=current_date');            -- 3
+select _sel('t7', 'select used::text || ''/'' || charged::text from public.consume_ai_turn(''22222222-2222-2222-2222-222222222222'',6,''turn-B'',3,900)');  -- 4/true
+reset role;
+
+select is((select v from _cap where k='t1'), '3/true',  'the FIRST call of a turn pays');
+select is((select v from _cap where k='t2'), '3/false', 'the second call of the same turn is free');
+select is((select v from _cap where k='t3'), '3/false', 'and so is the third');
+select is((select v from _cap where k='t4'), 'false/turn_calls', 'past the ceiling the turn is refused — and NOT as the daily limit');
+select is((select v from _cap where k='t5'), '4/true',  'a different turn pays again');
+select is((select v from _cap where k='t6'), '3',       'refund_ai_turn releases the charge');
+select is((select v from _cap where k='t7'), '4/true',  '…and the turn with it, so the retry is a new, charged turn');
+
+select ok((select prosecdef from pg_proc where oid='public.consume_ai_turn(uuid,integer,text,integer,integer)'::regprocedure), 'consume_ai_turn is SECURITY DEFINER');
+select ok((select prosecdef from pg_proc where oid='public.refund_ai_turn(uuid,text)'::regprocedure),                          'refund_ai_turn is SECURITY DEFINER');
+
 -- ── SECURITY DEFINER surface is hardened (catalog assertions, as superuser) ──
 select ok((select prosecdef from pg_proc where oid='public.is_admin()'::regprocedure),                     'is_admin() is SECURITY DEFINER');
 select ok((select prosecdef from pg_proc where oid='public.increment_ai_usage(uuid,integer)'::regprocedure),'increment_ai_usage is SECURITY DEFINER');

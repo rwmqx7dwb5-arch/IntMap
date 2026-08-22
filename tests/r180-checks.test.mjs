@@ -308,7 +308,9 @@ test('R180 ③: every new user-visible string exists in all five languages', () 
 });
 
 test('R180 ③: Atlas can operate the engine, and the planner knows the action exists', () => {
-  const atlas = R('js/atlas-console.js');
+  /* (#R315) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
   assert.match(atlas, /case 'engine':/, 'the dispatcher handles it');
   /* #R115's rule: an action parameter not in the SYS catalogue does not exist to the planner */
   assert.match(atlas, /\{"type":"engine","name":"maplibre"\|"cesium"\}/,

@@ -58,6 +58,12 @@ const HALVES = [
          entry, so asking for 「徒歩1時間で行ける範囲」 returned a radius circle and then 「できません」.
          This compares the dispatch with the prompt on every run. See scripts/atlas-catalog.mjs. */
       ['node', ['scripts/atlas-catalog.mjs', '--check']],
+      /* ⚠ (#R315) …AND THE TWENTY QUESTIONS THAT ONE DOES NOT ASK. The gate above asks whether the
+         planner has been TOLD about a capability. It cannot ask whether the capability can be run,
+         whether anything watched it happen, whether it invented a target it was not given, or
+         whether it reported a promise as a result — which is what #R268, #R291, #R302 and #R309
+         each turned out to be. See scripts/atlas-capability-audit.mjs. */
+      ['node', ['scripts/atlas-capability-audit.mjs', '--check']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],

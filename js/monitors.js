@@ -388,7 +388,14 @@ window.IntMapModules.monitors=function(HOST){
     /* ---- Atlas bridge (structured results for the dispatch cases) ---- */
     const atlas={
       async create(o){ const r=await create(o||{}); return r; },
-      async openList(){ try{ IntMapOS.exec('tab.monitors',{source:'atlas'}); }catch(_){} return {ok:true}; },
+      /* ⚠ (#R315) THIS USED TO RETURN ok:true FOR A COMMAND THAT DOES NOT EXIST. `tab.monitors` is
+         deliberately unregistered — #R231 withdrew the tab — so `exec` answered {ok:false,'no
+         command'}, that answer was thrown away, and Atlas was told the list had opened. The
+         withdrawal is unchanged and is not being reversed here; only the report is. Reporting a
+         success for a no-op is the exact defect this round exists to remove. */
+      async openList(){ let r=null; try{ if(IntMapOS.has('tab.monitors')) r=IntMapOS.exec('tab.monitors',{source:'atlas'}); }catch(_){}
+        if(!r||r.ok===false) return {ok:false, err:'FEATURE_WITHDRAWN'};
+        return {ok:true}; },
       async open(id){ if(id) return openDetail(id); return this.openList(); },
       async listText(){ try{ if(!_loggedIn()) return {ok:false,error:'login'}; const rows=await _list(); return {ok:true,rows}; }catch(e){ return {ok:false,error:String(e&&e.message||e)}; } },
       async pause(id){ return {ok:await setEnabled(id,false)}; },

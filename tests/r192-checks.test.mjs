@@ -187,7 +187,9 @@ test('R192 tsunami: linear long waves over the real sea floor, from an Okada sou
   /* ⚠ (#R197) the assertion that used to live here — "and the inundation model is still the fallback,
      not removed" — was inverted by 「災害シミュレータからは津波シミュレータを削除しろ」. It is now the
      opposite claim, and tests/r197-checks.test.mjs holds the whole of it. */
-  const atlas = read('js/atlas-console.js');
+  /* (#R315) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = read('js/atlas-console.js') + '\n' + read('js/atlas-catalog-text.js');
   assert.match(atlas, /if\(a\.hours!=null&&T\.setHours\) T\.setHours\(\+a\.hours\);/, 'Atlas drives it');
   assert.match(atlas, /"hours"\?:1-30,"maximum"\?:bool,"play"\?:bool/, 'and the SYS catalogue documents the parameters');
   /* five languages */

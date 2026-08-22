@@ -51,6 +51,7 @@ import { makeLayerFavs } from './layer-favs.js';
 import { makeProjection } from './map-projection.js';   /* (#R298) Globe / Flat and the flat map's free scroll — one subject, five places, see the file */
 import { makePremiumPlan } from './premium-plan.js';
 import { makeScreenshot } from './screenshot.js';
+import { installCapabilityKernel } from './atlas-capabilities.js';   /* (#R315) EAGER: the 115 capability descriptors, so a capability is discoverable before its module loads (§3/§10). The executor, the result shape and the state ledger are NOT — installCapabilityKernel installs IntMapOS.execute() as a thin await over an import(), because nothing needs the machinery until something actually runs. #R311's startup budget measured what mounting all of it eagerly costs a reader who never asks a question: +18.9 kB brotli. */
 import { makeSessionTabs } from './session-tabs.js';
 import { makeTimeCountries } from './time-countries.js';
 
@@ -580,8 +581,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      EN/JP branches, so German/Russian users got English answers ("AI Briefがドイツ語・ロシア語では英語になる").
      Appended to the SYSTEM prompt of the free-TEXT generators ONLY — never the JSON geocoders (place names
      must stay canonical) nor the connectivity test. Harmless/​reinforcing for EN/JP. */
-  function _aiLangName(){ return window.IntMapLang.t(currentLang,'English','Japanese','German','Russian','Spanish'); }
-  window._aiLangLine=function(){ const L=_aiLangName(); return ' IMPORTANT: Write your ENTIRE response in '+L+' only — every sentence, heading and bullet must be in '+L+', regardless of the language of the input or these instructions. Do not reply in English unless '+L+' is English.'; };   /* (#R285 追記) THE THIRD COPY OF THE REGISTER RULE lived right here, and #R285 missed it: it looked for hand-written IDENTITY lines and this is a hand-written REGISTER line. It carried the escape the specification supersedes (「ただし常に自然な敬語」), and it is appended to four prompts — all four of which now open with personaPrompt(), whose `address` clause owns the register. What this line is FOR (the reply-language lock) is untouched. */
+  function _aiLangName(){ return IM_AI._aiLangName.apply(this,arguments); } function _aiLangLine(){ return IM_AI._aiLangLine.apply(this,arguments); } window._aiLangLine=_aiLangLine;   /* (#R315) both moved to js/ai-core.js — the instruction that names the reply language belongs with the transport that carries it, and the app shell has no line to spare (tests/r168 #8). ⚠ `_aiLangName` used to tell THREE of the nine languages to answer in English; js/lang-registry.js `englishName()` says why. */
   /* (#R169) moved verbatim to js/ai-core.js — see Architecture.md §3.1. */
   window.aiRenderSettings=aiRenderSettings;
   /* (#R169) moved verbatim to js/ai-core.js — see Architecture.md §3.1. */
@@ -2540,11 +2540,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     OS.emit=emit;
     OS.log=function(){ return _log.slice(-80); };
     /* exec(id, ctx) — run a registered COMMAND: the canonical, INVERTED path (real engine work). */
-    OS.exec=function(id, ctx){ ctx=ctx||{}; const c=commands[id];
+    OS.exec=function(id, ctx){ ctx=ctx||{}; const c=commands[id];   /* ⚠ (#R315) THE LOG NO LONGER CLAIMS A SUCCESS THE COMMAND HAS NOT REACHED. `ok:true` was written BEFORE `run` was called and downgraded only if the RETURN VALUE said `.ok===false` — which a Promise never does, so ten of the forty-two commands registered here were recorded as successful before their first await resumed, and a rejection after that was never recorded at all. Signature, return value and synchronous behaviour are UNCHANGED (41 call sites and every toolbar button depend on them); a thenable now settles the record it earned. js/atlas-executor.js's header has the long form. */
       const r={t:Date.now(), cmd:id, source:ctx.source||'ui', ok:true};
       if(!c){ r.ok=false; r.err='no command'; rec(r); return {ok:false,err:'no command: '+id}; }
-      let res; try{ res=c.run(ctx); if(res&&res.ok===false) r.ok=false; }catch(e){ r.ok=false; r.err=(e&&e.message)||'error'; }
-      rec(r); return (res===undefined)?{ok:r.ok}:res; };
+      let res, threw=false; try{ res=c.run(ctx); if(res&&res.ok===false) r.ok=false; }catch(e){ r.ok=false; threw=true; r.err=(e&&e.message)||'error'; } const pend=!threw&&res&&typeof res.then==='function'; if(pend) r.pending=true; rec(r);
+      if(pend) res.then(v=>{ r.pending=false; if(v&&v.ok===false){ r.ok=false; r.err=r.err||'command reported failure'; } emit(r); }, e=>{ r.pending=false; r.ok=false; r.err=(e&&e.message)||'error'; emit(r); });  return (res===undefined)?{ok:r.ok}:res; };
     /* dispatch(action) — the Atlas semantic (typed-action) layer, attached by Atlas at init. A bare
        {cmd:'id'} runs a registered command; everything else goes to the Atlas dispatcher. Both are logged. */
     OS.dispatch=function(a, ctx){ ctx=ctx||{};
@@ -2558,7 +2558,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     OS._bindCatalog=function(fn){ if(typeof fn==='function') OS.catalog=fn; };
     OS.ready=function(){ return !!_dispatch; };
     return OS;
-  })();
+  })();  try{ installCapabilityKernel(window.IntMapOS, IM_HOST, { GE:()=>window.IntMapGeoEngine, record:window.IntMapOS.emit }); }catch(e){ try{ console.warn('atlas capability registry not installed',e); }catch(_){} }   /* (#R315) execute() and the rest of the capability kernel — js/atlas-executor.js holds the eleven steps AND the reason they are not written out here (the app-shell budget, tests/r168 #8). ⚠ the lifecycle goes to `emit`, not into the 200-entry syscall ring: one operation emits four to six events and would flush the command log it shares. */
   /* map basemap — TRUE kernel commands (logic lives here; button + Atlas both call the SAME command). */
   /* ══ (#R243) 「自動で左サイドバーをあける動作もやれ」 — one action, not a second mechanism ═══════
      js/window-manager.js has to open this column when a panel arrives in it while the dock mode is
