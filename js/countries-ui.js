@@ -33,7 +33,11 @@
    declaration in js/, and this file has exactly one thing to publish. */
 window._imCldrRegion=function(a2,lang){
   try{
-    if(!a2||a2.length!==2) return '';
+    /* ⚠ (#R313 追記) A CLDR REGION IS NOT ONLY A TWO-LETTER COUNTRY. The same table names the UN M49
+       macro-regions — '030' is 「東アジア」 in ja and 'Eastern Asia' in en — and js/atlas-examples.js needs
+       exactly that to say which part of the world a country sits in. Accept both shapes; the code is
+       still handed straight to Intl, which rejects anything it does not know. */
+    if(!a2||!/^([A-Za-z]{2}|[0-9]{3})$/.test(String(a2))) return '';
     const tag=(window.IntMapLang&&window.IntMapLang.htmlTag)?window.IntMapLang.htmlTag(lang):'';
     if(!tag||tag==='en') return '';
     const c=window._imCldrRegion._c||(window._imCldrRegion._c={});
