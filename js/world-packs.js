@@ -4002,11 +4002,19 @@ window.IntMapModules.worldPacks=function(HOST){
              which the panel already says in full two blocks below (「Tap any country for its own
              agency’s scale and the areas in force.」). A hint repeated inside the same box is not a
              hint; it is the length the reader asked to be rid of. The two claims stay. */
+          /* ⚠⚠ (#R299 追記3) 「簡潔に」 IS TRUE IN A LANGUAGE OR IT IS NOT TRUE. MEASURED on production
+             at the panel's fixed 330 px, sweeping all nine: en and jp were one line, and **de wrapped
+             at 339 px, fr at 334, ru at 414**. Shortening only the English and letting the
+             translations run on is answering the instruction in the language it happened to be
+             discussed in. Every claim is kept; what goes is the scaffolding each language put round it.
+             ⚠ AND THE COMMENT GOES ABOVE THE CALL, NOT BETWEEN ITS ARGUMENTS — a block comment inside
+             `L(…)` is invisible to the reader and a trap for anything that reads the arguments
+             positionally (this round's own measuring script read it as the German string). */
           +esc(L('IntMap’s own conversion — the same step is not the same danger.',
                  'IntMap 独自の換算です。同じ段でも危険度は同じではありません。',
-                 'Eigene Umrechnung von IntMap — gleiche Stufe heißt nicht gleiche Gefahr.',
-                 'Собственный пересчёт IntMap — одинаковая ступень не значит одинаковую опасность.',
-                 'Conversión propia de IntMap — el mismo nivel no es el mismo peligro.'))+'</div>';
+                 'IntMap-Umrechnung — gleiche Stufe heißt nicht gleiche Gefahr.',
+                 'Пересчёт IntMap: ступень равна, опасность — нет.',
+                 'Conversión de IntMap: igual nivel no es igual peligro.'))+'</div>';
         return keyHead(L('Each agency’s own published scale','各機関が公表している配色','Skala der jeweiligen Behörde','Собственная шкала службы','Escala propia de cada agencia'))
           +keyRows([[PAL.cap[1],L('lower rank','下位の階級','niedrigere Stufe','низкая ступень','rango menor')],
                     [PAL.cap[3],L('higher rank','上位の階級','höhere Stufe','высокая ступень','rango mayor')],
