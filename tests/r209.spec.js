@@ -167,6 +167,16 @@ const MEMBER = {
   nightSky: ['IntMapNightSky', 'open'],
   atlasConsole: ['IntMapConsole', 'dispatch'],   /* Atlas is the control plane — it must dispatch */
   routeUi: ['IntMapRouteUI', 'open'],
+  /* (#R311) the six that moved this round. Each names the member its OWN doors call, so a module
+     that loaded and registered half of itself is still a failure here: the data-center row calls
+     toggle(), the aircraft click open(), the Measure tool setRing(), the comparison panel open(),
+     the satellite row start() and the satellite card open(). */
+  dataCenters: ['IntMapDataCenters', 'toggle'],
+  aircraftDetail: ['IntMapAircraftPanel', 'open'],
+  volume3d: ['IntMapVolume3D', 'setRing'],
+  statsCompare: ['IntMapStatsCompare', 'open'],
+  satellitesLive: ['IntMapSatellites', 'start'],
+  satelliteDetail: ['IntMapSatPanel', 'open'],
 };
 
 test('R209 ③: every deferred module actually arrives, registers and publishes', async ({ app }) => {

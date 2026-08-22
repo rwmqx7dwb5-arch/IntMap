@@ -218,7 +218,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      *    beta-overlays / cameras). Same rule as above: EVERY member is a getter. ── */
     /* mutable — reassigned at runtime, so a captured copy would go silently stale */
     get userTZ(){ return userTZ; },
-    get mapTooltipEl(){ return mapTooltipEl; },     get globalData(){ return globalData; },
+    /* (#R311) moved to js/map-tooltip.js → the #R198 delegating form: it holds no value at all. */
+    get mapTooltipEl(){ return window.IntMapMapTooltip.element(); },     get globalData(){ return globalData; },
     get newsFeatures(){ return newsFeatures; },     get renderUI(){ return renderUI; },
     /* stable helpers and tables (never rebound — getters anyway, see LAZY above) */
     get i18n(){ return i18n; },                     get escapeHtml(){ return escapeHtml; },
@@ -936,9 +937,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function _coCmpEnsureCss(){ return IM_COMPANIES_UI._coCmpEnsureCss.apply(this,arguments); }
   function _coCmpRender(){ return IM_COMPANIES_UI._coCmpRender.apply(this,arguments); }
   const IM_TOOL_PANEL=window.IntMapModules.toolPanel(IM_HOST);
-  /* (#R170) Measure ▸ 3-D volume. Built AFTER IntMapGeoEngine exists (it talks to nothing else), and exposed
-     globally because the tool panel, exitTool and the Atlas volume3d action all drive the same single box. */
-  window.IntMapVolume3D=window.IntMapModules.volume3d(IM_HOST);
+  /* (#R170) Measure ▸ 3-D volume. Exposed globally because the tool panel, exitTool and the Atlas volume3d
+     action all drive the same single box. (#R311) Built when the tool is OPENED, by its two doors
+     (`#btn-tool-volume` and Atlas's volume3d action); it polls for IntMapGeoEngine itself, so no order changes. */
   /* (#R171) The tilt-limit setting + the eye-altitude readout chip (window.IntMapTilt / window.IntMapEyeAlt).
      Engine-only like volume3d; both wait for IntMapGeoEngine themselves before touching the camera. */
   window.IntMapModules.viewControls(IM_HOST);
@@ -953,14 +954,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window.IntMapModules.droneOps(IM_HOST);
   /* (#R175) the live-aircraft DETAIL CARD (window.IntMapAircraftPanel). js/data-layers.js reaches for it by
      name when an aircraft is clicked and falls back to the pinned tooltip if it is not there, so this is a
-     pure addition to the traffic layer rather than a change to it. See js/aircraft-detail.js. */
-  window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST);
+     pure addition to the traffic layer rather than a change to it. See js/aircraft-detail.js.
+     (#R311) …and it is FETCHED by that click — its one door — so the factory call is the loader's mount. */
   /* (#R184) LIVE SATELLITES (window.IntMapSatellites) and their detail card (window.IntMapSatPanel).
      The layer owns its own feed, propagation, hover, click and timer — js/data-layers.js only turns it
      on and off and gives it a legend, exactly as it does for the two traffic layers. The panel is built
-     first so the layer's click handler can always find it. See js/satellites-live.js. */
-  window.IntMapModules.satelliteDetail(IM_HOST);
-  window.IntMapModules.satellitesLive(IM_HOST);
+     first so the layer's click handler can always find it. See js/satellites-live.js.
+     (#R311) Both on-demand now, fetched by `startSats()`; the loader's ALSO keeps the panel first. */
   function updateToolPanel(){ return IM_TOOL_PANEL.updateToolPanel.apply(this,arguments); }
   function buildToolFeatures(){ return IM_TOOL_PANEL.buildToolFeatures.apply(this,arguments); }
   function showContextMenu(){ return IM_TOOL_PANEL.showContextMenu.apply(this,arguments); }
@@ -1685,7 +1685,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   document.getElementById('btn-tool-radius').onclick=()=>{ setTool('radius'); if(window._closeMeasureMenu) window._closeMeasureMenu(); };   /* (#R151) Radius is a Measure-menu item → close the menu after picking it */
   /* (#R170) 3-D volume — same Measure menu, same point-collection path as Distance/Area (measurePoints); the
      altitude band and the extrusion live in js/volume3d.js. */
-  { const bv=document.getElementById('btn-tool-volume'); if(bv) bv.onclick=()=>{ setTool('volume'); if(window._closeMeasureMenu) window._closeMeasureMenu(); }; }
+  /* (#R311) THE DOOR — mobile's data-proxy tile and Atlas's clickId arrive here too; the tool panel reads the global synchronously, so the fetch is BEFORE setTool. */
+  { const bv=document.getElementById('btn-tool-volume'); if(bv) bv.onclick=()=>{ window.IntMapLazy.need('volume3d').then(()=>{ setTool('volume'); if(window._closeMeasureMenu) window._closeMeasureMenu(); }); }; }
   /* (#R9) "Measure ▾" groups Measure + Draw under one trigger; click-away closes it. */
   (function(){
     const c=document.querySelector('.measure-menu-container'), trig=document.getElementById('btn-measure-menu');
@@ -1947,42 +1948,17 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* ===== Date / TZ ===== */
   function parseDate(input){ if(input instanceof Date)return isNaN(input.getTime())?new Date():input; let d=new Date(input); if(isNaN(d.getTime())&&typeof input==='string')d=new Date(input.replace(' ','T')+'Z'); return isNaN(d.getTime())?new Date():d; }
 
-  let mapTooltipEl=null, newsFeatures=[], dashFeatures=[];
-
-  function ensureMapTooltip(){
-    if(mapTooltipEl) return mapTooltipEl;
-    mapTooltipEl=document.createElement('div'); mapTooltipEl.className='map-tooltip';
-    document.getElementById('map-container').appendChild(mapTooltipEl);
-    return mapTooltipEl;
-  }
-  /* (#R175) 「Live air traffic のホバー時に出るポップアップは、画面外に出ないように。」
-     The tooltip is drawn ABOVE its anchor — `transform: translate(-50%, calc(-100% - 18px))` — so the
-     box the user actually sees runs from point.y − h − 18 down to point.y − 18. Every clamp before this
-     round measured a box that STARTS at point.y, so the taller the tooltip the further off the top it
-     hung: the live-aircraft card is ~300 px of ADS-B fields, and `Math.max(160, …)` put its top edge at
-     160 − 300 − 18 = −158 px, i.e. the callsign, the aircraft type and the altitude were all above the
-     window. The bottom clamp had the opposite sign error — `mc.height − h − 12` pushed a tall tooltip
-     hundreds of pixels away from an aircraft near the bottom of the map, which is what made it read as
-     "floating somewhere else".
-     So: clamp the RENDERED box, flip it below the anchor when it cannot fit above (the arrow flips with
-     it), and keep the arrow on the anchor after a horizontal clamp via --tip-ax. */
-  const TIP_GAP=18, TIP_EDGE=8;
-  function positionTooltip(point){
-    const el=ensureMapTooltip();
-    const mc=document.getElementById('map-container').getBoundingClientRect();
-    const w=el.offsetWidth||280, half=w/2, h=el.offsetHeight||80;
-    const px=(+point.x||0), py=(+point.y||0);
-    const x=Math.max(half+TIP_EDGE, Math.min(Math.max(half+TIP_EDGE, mc.width-half-TIP_EDGE), px));
-    /* above is the long-standing look and stays the default; below only when above cannot fit and below can */
-    const below=(h+TIP_GAP>py-TIP_EDGE)&&(h+TIP_GAP<=mc.height-py-TIP_EDGE);
-    el.classList.toggle('map-tooltip-below',below);
-    let top=below?(py+TIP_GAP):(py-h-TIP_GAP);
-    top=Math.max(TIP_EDGE,Math.min(mc.height-h-TIP_EDGE,top));   /* a tooltip taller than the map keeps its HEAD on screen */
-    const y=below?(top-TIP_GAP):(top+h+TIP_GAP);
-    el.style.left=x+'px'; el.style.top=y+'px';
-    el.style.setProperty('--tip-ax',Math.max(12,Math.min(w-12,px-(x-half)))+'px');
-  }
-  window.ensureMapTooltip=ensureMapTooltip; window.positionTooltip=positionTooltip;   /* (#R23) beta choropleths reuse the same hover tooltip as HDI */
+  /* ══ (#R311) THE HOVER TOOLTIP LIVES IN js/map-tooltip.js NOW ══════════════════════════════════
+     One surface, moved whole (its own header says why and what did not change). Instantiated here,
+     on the line it used to be declared on, so nothing about the order moved with it. The three
+     forwarders below are function DECLARATIONS on purpose: `IM_HOST`'s getters (see the top of this
+     file) name them, and a getter read before this point would hit the temporal dead zone of a
+     `const`. */
+  const IM_TIP=window.IntMapModules.mapTooltip();
+  function ensureMapTooltip(){ return IM_TIP.ensureMapTooltip(); }
+  function positionTooltip(point){ return IM_TIP.positionTooltip(point); }
+  function setMapTooltipHTML(el,html){ return IM_TIP.setMapTooltipHTML(el,html); }
+  let newsFeatures=[], dashFeatures=[];
   /* (#R32) Is the current UI/map dark? The news band must FLIP color by theme — a dark pill is invisible on
      the dark map ("ダークモードでは視認性が悪い"). */
   function _newsUIDark(){ try{ return document.documentElement.getAttribute('data-theme')==='dark'; }catch(_){ return false; } }   /* (#R115) skin themes retired (R33) — dark = data-theme only */
@@ -2265,16 +2241,18 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     else if(compareSet.size<10) compareSet.add(code);
     else { const first=compareSet.values().next().value; compareSet.delete(first); compareSet.add(code); }
     document.querySelectorAll('#countries-feed .stat-row').forEach(r=>r.classList.toggle('compare-on',compareSet.has(r.getAttribute('data-ccn'))));
+    /* (#R311) ticking a country PAINTS THE MAP, so this is a door, not a passive read. Both calls unchanged. */
+    window.IntMapLazy.need('statsCompare').then(()=>{
     /* (#R122) highlight the current selection on the map AS it is built in the Countries tab (not only once the
        compare view opens) — "Countriesで国を選択した時点でハイライト". */
     try{ const C=window.IntMapStatsCompare; if(C&&C.previewOnMap){ if(compareSet.size) C.previewOnMap([...compareSet]); else C.clearMap&&C.clearMap(); } }catch(_){}
     /* (#R124) if the compare view is already open, mirror this toggle into it so its time-series updates without a
        reload (the Countries tray and an open compare view now stay in sync). */
-    try{ const C2=window.IntMapStatsCompare; if(C2&&C2.toggleCountry) C2.toggleCountry(code, compareSet.has(code)); }catch(_){}
+    try{ const C2=window.IntMapStatsCompare; if(C2&&C2.toggleCountry) C2.toggleCountry(code, compareSet.has(code)); }catch(_){} });
     renderCompareFixed();
   };
   window._clearCompare=function(){ compareSet.clear(); document.querySelectorAll('#countries-feed .stat-row.compare-on').forEach(r=>r.classList.remove('compare-on')); renderCompareFixed(); try{ window.IntMapStatsCompare&&window.IntMapStatsCompare.clearMap&&window.IntMapStatsCompare.clearMap(); }catch(_){} };
-  window._showCompare=function(){ if(compareSet.size<2) return; try{ window.IntMapStatsCompare&&window.IntMapStatsCompare.open([...compareSet]); }catch(_){} };
+  window._showCompare=function(){   /* (#R311) the tray's 「view comparison」 button — the main door into js/stats-compare.js */ if(compareSet.size<2) return; window.IntMapLazy.need('statsCompare').then(()=>{ try{ window.IntMapStatsCompare&&window.IntMapStatsCompare.open([...compareSet]); }catch(_){} }); };
   window._hideCompare=function(){ renderStats(searchVal()); };
   window._backToStats=function(){ renderStats(searchVal()); };
   /* (#R79b) Countries has its OWN search box in workspace mode (the shared #search-input lives in the News
@@ -3626,8 +3604,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      live) · Globe tour (slow auto-rotation). All rows land in "Others (beta)" via the
      reorganize sweep; data is lazy-loaded on first toggle and exposed through
      window.IntMapBeta2.load(key,cb) so the Compare view reuses the same FeatureCollections. ===== */
-  /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. (#R254) js/datacenters.js owns the data-center row's layer and is IMPORTED by layer-packs.js (its consumer); the CALL is here, where every factory call in this app lives, and before betaPack2 because `dcToggle` delegates to it. */
-  window.IntMapModules.dataCenters(IM_HOST);
+  /* (#R166) moved to js/layer-packs.js — see Architecture.md §3.1. (#R254) js/datacenters.js owns the data-center row's layer; (#R311) it is now the eleventh ON-DEMAND module, so the call that used to stand here is js/lazy-modules.js's mount and it runs when `dcToggle` (or Compare's `load('dc')`) asks for it. */
   window.IntMapModules.betaPack2(IM_HOST);
 
   /* ===== (#R243) 「それまでのアメリカ大統領選挙の結果をすべて見れるレイヤーを作れ。」 — all sixty
@@ -3756,8 +3733,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      economic series — different institutions report different GDP figures), latest values table + overlaid
      multi-country time-series charts with a shared crosshair, fully wired into Atlas (compareStats action).
      Desktop = wide modal; mobile = the same modal compacted (smaller charts, scrollable columns). ===== */
-  /* (#R163) moved to js/stats-compare.js — see Architecture.md §3.1. */
-  window.IntMapStatsCompare=window.IntMapModules.statsCompare(IM_HOST);
+  /* (#R163) moved to js/stats-compare.js — see Architecture.md §3.1. (#R311) …and fetched on demand: 113 kB of
+     comparison UI for a session that never opens it. Its doors — the Countries tray's two compare calls above, the
+     country card's Compare item (js/countries-ui.js), `compare.open` (js/session-tabs.js) and Atlas's compareStats
+     — all await it; the factory call is the loader's mount. */
 
   /* ===== (#R11) Line-of-sight / radar-shadow viewshed. Place a "radar site", set antenna height + range,
      and the terrain DEM is cast in 96 rays (earth-curvature-corrected) → terrain-blocked dead zones are

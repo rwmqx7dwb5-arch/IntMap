@@ -301,3 +301,28 @@ export function appSource(root) {
   }
   return parts.join('\n');
 }
+
+/**
+ * (#R311) THE BODY OF ONE FUNCTION, BY BRACE MATCHING.
+ *
+ * ⚠ This exists because of a defect this repo has now paid for twenty-five times: a check that
+ * quotes a WINDOW of source ("the 600 characters after `foo(`") is really asserting about byte
+ * offsets, and byte offsets move for reasons that have nothing to do with the property being
+ * checked. #R283 and #R306 both watched such a window go red purely because the file was checked out
+ * with CRLF instead of LF — 604 characters of source, 615 bytes on Windows — so CI was green and the
+ * author's machine was red for a change that was correct.
+ *
+ * Asking "does the BODY of this function still do X" has no window and no offsets. Three suites
+ * (#R228, #R305, #R307) each grew their own copy of this; new ones import it from here.
+ */
+export function fnBody(src, name) {
+  const start = src.indexOf('function ' + name + '(');
+  if (start < 0) throw new Error('no such function: ' + name);
+  const open = src.indexOf('{', start);
+  let depth = 0;
+  for (let i = open; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}') { depth--; if (!depth) return src.slice(open, i + 1); }
+  }
+  throw new Error('unbalanced braces in ' + name);
+}

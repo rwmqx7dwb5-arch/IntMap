@@ -26,6 +26,7 @@
 import { defineConfig } from 'vite';
 import { cpSync, createReadStream, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { buildReportPlugin } from './scripts/build-report.mjs';
 
 const ROOT = resolve(import.meta.dirname);
 
@@ -96,7 +97,31 @@ export const STATIC_ASSETS = [
   'fonts',
 ];
 /* (#R242) …minus the generator's input: it belongs in the repo, not in dist/. */
-export const STATIC_EXCLUDE = ['fonts/src'];
+export const STATIC_EXCLUDE = [
+  'fonts/src',
+  /* ══ ⚠ (#R311) THE SAME 9.76 MB, SHIPPED TWICE ══════════════════════════════════════════════════
+     `data` is copied whole (above), and it contained BOTH representations of one dataset:
+       data/ecoregions_2017.js       9,761,502 B   window.__ECOREGIONS_2017 = {…}
+       data/ecoregions_2017.geojson  9,761,476 B   the same object, as JSON
+     MEASURED: strip the 25-byte assignment prefix and the trailing semicolon from the .js and the
+     remainder is SHA-256-identical to the .geojson. A session loads exactly one of them, so the
+     second was 9.76 MB of deploy — 8 % of the whole tree — that no visitor could ever use.
+
+     The .js exists because of #R13b, and that round's reason is worth reading before undoing this:
+     the site was then opened as `file:///…/index.html`, where Chrome blocks fetch() of a local file,
+     so the data had to arrive through a <script> tag. That is no longer a situation this app can be
+     in — since #R175 index.html loads `<script type="module" crossorigin>`, which `file://` refuses
+     outright, and CLAUDE.md §2 records `file://` as unsupported. The scenario the second copy was
+     for cannot occur, and it was costing every visitor's CDN and every deploy.
+
+     ⚠ NOTHING IS DELETED. The .js stays in the repository (it is the input the .geojson-only deploy
+     could be rebuilt from, and #R13b's technique still works if a `file://` build is ever wanted);
+     it simply stops being copied into dist/. js/layer-packs.js `window.__loadEcoregions` keeps both
+     paths and only their ORDER changed — fetch first, <script> second — so no branch was removed.
+     JSON.parse is also the faster of the two: the <script> form makes V8 parse 9.76 MB as JavaScript
+     source, on the main thread, where JSON.parse has a dedicated fast path. */
+  'data/ecoregions_2017.js',
+];
 /* …plus every root-level PNG (the four Köppen periods × two resolutions, and the layer previews). */
 const ROOT_PNG = () => readdirSync(ROOT).filter((f) => f.endsWith('.png'));
 
@@ -244,6 +269,18 @@ export default defineConfig({
   resolve: {
     alias: [{ find: /^#wasm-(single|multi)-thread$/, replacement: resolve(ROOT, 'src/satellite-wasm-stub.js') }],
   },
+  /* ⚠ (#R311) …AND THE ALIAS ABOVE DOES NOT REACH THE DEV SERVER, so `npm run dev` did not start.
+     MEASURED on origin/main before this round touched anything: `npx vite` dies in dependency
+     pre-bundling with «Top-level await is not available in the configured target environment» from
+     satellite.js/wasm-build/pthreads-release/index.js. The reason is that `resolve.alias` is a Vite
+     resolver rule and the pre-bundler is esbuild running its own scan — it walks the package's
+     `imports` map itself and reaches the two Emscripten entry points the alias exists to replace.
+     Production was never affected (Rollup does honour the alias, which is why the build has always
+     worked), so this was invisible to CI and to every round that only ever ran `npm run build`.
+     Excluding the package from pre-bundling makes dev resolve it through the same aliased path the
+     build uses. The dependency is dynamically imported from ONE place (js/satellites-live.js) and
+     never at boot, so there is nothing here for the optimizer to have been saving. */
+  optimizeDeps: { exclude: ['satellite.js'] },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -299,5 +336,11 @@ export default defineConfig({
   },
   server: { port: 5173, strictPort: false },
   preview: { port: 4173, strictPort: false },
-  plugins: [copyStatic(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
+  /* (#R311) …and the instrument that measures the result. It writes .perf/build-report.json
+     from the graph Rollup finished with — which chunk is an entry, what each statically
+     imports, which source module landed where — so `eager` and `async` are DERIVED rather
+     than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
+     every build because the report is what stops "the biggest chunk is big" from being
+     mistaken for "startup is slow". */
+  plugins: [buildReportPlugin(), copyStatic(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
 });

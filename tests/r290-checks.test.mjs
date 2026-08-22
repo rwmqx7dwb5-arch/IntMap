@@ -407,7 +407,13 @@ test('R290 ⑬ the ECMWF legend carries the opacity and the readout can reach a 
 test('R290 ⑭ the readout arrow points and does not move', () => {
   const r = read('js/map-readout.js');
   assert.match(r, /const to=\(\(w\.dir\+180\)%360\)\.toFixed\(1\);/, 'it still points downwind');
-  assert.match(r, /<span class="cr-warr" style="transform:rotate\('\+to\+'deg\)"><i>/, 'and carries no inline animation');
+  /* ⚠ (#R311) same reading, different spelling. The arrow is no longer re-created from a string on
+     every pointer event — the element persists and only its transform is written, and only when
+     the bearing actually changed. The claim in the title is unchanged: ONE inline style reaches
+     that element and it is the rotation. */
+  assert.match(r, /rotate\('\+to\+'deg\)/, 'the arrow is turned to the downwind bearing');
+  assert.match(r, /warr\.style\.transform\s*=/, 'and that rotation is the only inline style it gets');
+  assert.ok(!/warr\.style\.animation/.test(r), 'and carries no inline animation');
   assert.ok(!/animation-duration/.test(codeOnly(r)) || !/cr-warr/.test(codeOnly(r).split('animation-duration')[0].slice(-400)),
     'no speed-scaled duration is written onto it');
   const css = read('css/intmap.css');

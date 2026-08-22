@@ -299,6 +299,23 @@ if (process.argv.includes('--gate')) {
      against the row's coordinate / ISO code / ticker / domain; this makes a failed validation stop
      the build rather than print a line nobody reads. */
   if (pairs.badMarkers && pairs.badMarkers.length) problems.push(`${pairs.badMarkers.length} misapplied @i18n-entity-data marker(s) — run scripts/i18n-pair-audit.mjs`);
+
+  /* ══ ⚠ (#R311) …AND THE OPEN GAP IS A RATCHET NOW, WHICH IS NOT THE SAME AS A GATE ═════════════
+     「性能改善でUI生成方法やdescriptor構造を変える前に、この領域も品質gateへ含めてください…
+       英語fallbackの新規発生なし」.
+     #R242's rule stands and is the reason this is not `=== 0`: a gate nobody can reach in one round
+     gets deleted by the next, and closing these 275 tuples means writing real text in four more
+     languages, which is a translation project rather than a check. What CAN be asked every push is
+     the thing the request actually names — that the number never goes UP. A new tuple written in
+     this shape is a new English fallback for fr / ko / zh-Hant / zh-Hans, and it is invisible to
+     every percentage above, so without this line it could only ever be found by a reader.
+     ⚠ It fails in BOTH directions, like scripts/test-budget.mjs: a ceiling that keeps headroom it
+     no longer needs has stopped asserting anything (#R194). Converting tuples is meant to cost one
+     edit here — that edit is the record that the number moved.
+     MEASURED when this line was written: 275 = 143 js/reference-data.js + 132 js/analysis-panels.js. */
+  const PAIR_CEILING = 275;
+  if (pairs.total > PAIR_CEILING) problems.push(`${pairs.total - PAIR_CEILING} NEW translation tuple(s) held as adjacent data (${pairs.total} > ${PAIR_CEILING}) — every one is a fresh English fallback in fr/ko/zh-Hant/zh-Hans that no percentage above can see. Convert with pickArgs(); run scripts/i18n-pair-audit.mjs --list`);
+  else if (pairs.total < PAIR_CEILING) problems.push(`the adjacent-data tuples are down to ${pairs.total} but PAIR_CEILING in scripts/i18n-audit.mjs still says ${PAIR_CEILING} — lower it, or the ratchet stops asserting anything`);
   if (problems.length) {
     console.error('\n✖ i18n gate: ' + problems.join('; '));
     console.error('  `node scripts/i18n-audit.mjs --todo <code>` prints the commands that close each gap.');

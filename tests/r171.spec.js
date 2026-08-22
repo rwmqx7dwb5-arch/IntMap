@@ -120,6 +120,7 @@ test('Measure ▸ 3-D volume: a whole number can actually be typed, and it reach
   });
   await page.click('#btn-measure-menu');
   await page.click('#btn-tool-volume');
+  await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
   const canvas = await page.locator('canvas.maplibregl-canvas').boundingBox();
   for (const [fx, fy] of [[0.42, 0.55], [0.58, 0.55], [0.58, 0.66], [0.42, 0.66]]) {
     await page.mouse.click(canvas.x + canvas.width * fx, canvas.y + canvas.height * fy);
@@ -165,6 +166,7 @@ test('Measure ▸ 3-D volume: the altitude fields fit inside the panel', async (
   await boot(page);
   await page.click('#btn-measure-menu');
   await page.click('#btn-tool-volume');
+  await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
   await page.waitForTimeout(300);
   const fit = await page.evaluate(() => {
     const p = document.getElementById('tool-panel');
@@ -190,6 +192,7 @@ test('Measure ▸ 3-D volume: freehand, circle and rectangle footprints', async 
   });
   await page.click('#btn-measure-menu');
   await page.click('#btn-tool-volume');
+  await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
   await page.waitForTimeout(250);
   const c = await page.locator('canvas.maplibregl-canvas').boundingBox();
   const cx = c.x + c.width * 0.5, cy = c.y + c.height * 0.5;
@@ -235,6 +238,7 @@ test('Measure ▸ 3-D volume: colour and opacity reach the renderer', async ({ p
   await page.evaluate(async () => { window.__imap.jumpTo({ center: [138.7274, 35.30], zoom: 9.5, pitch: 55 }); await new Promise(r => setTimeout(r, 1200)); });
   await page.click('#btn-measure-menu');
   await page.click('#btn-tool-volume');
+  await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
   await page.click('.v3d-shape[data-shape="rect"]');
   const c = await page.locator('canvas.maplibregl-canvas').boundingBox();
   const cx = c.x + c.width * 0.5, cy = c.y + c.height * 0.5;

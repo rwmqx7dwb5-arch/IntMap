@@ -1,0 +1,57 @@
+{
+  "eager": {
+    "raw": 4457973,
+    "gzip": 1491089,
+    "brotli": 1132821,
+    "requests": 6,
+    "modules": 270,
+    "cssRaw": 300309,
+    "cssGzip": 50625
+  },
+  "async": {
+    "raw": 8641858,
+    "gzip": 2717207,
+    "chunks": {
+      "aircraft-detail": 17221,
+      "atlas-console": 724614,
+      "cesium": 4840127,
+      "cesium-engine": 57211,
+      "cesium-input": 15013,
+      "cesium-layers": 17407,
+      "cesium-style": 16065,
+      "cesium-vector-tiles": 3696,
+      "datacenters": 41619,
+      "flight-sim": 117404,
+      "html2canvas.esm": 202363,
+      "index": 356613,
+      "katex": 263874,
+      "katex.min": 1,
+      "night-sky": 26005,
+      "playground": 42856,
+      "routing-ui": 58153,
+      "satellite-detail": 13783,
+      "satellite-wasm-stub": 199,
+      "satellites-live": 22851,
+      "seismic": 162910,
+      "stats-compare": 63837,
+      "street-view": 15377,
+      "terrain-water": 85308,
+      "tsunami": 37052,
+      "ui.de": 18958,
+      "ui.es": 19189,
+      "ui.fr": 332956,
+      "ui.jp": 20669,
+      "ui.ko": 328717,
+      "ui.ru": 27458,
+      "ui.zh": 296372,
+      "ui.zh-hans": 296296,
+      "viewshed": 32669,
+      "volume3d": 15717
+    }
+  },
+  "dist": {
+    "total": 111052632,
+    "data": 58506430,
+    "assets": 15722809
+  }
+}
