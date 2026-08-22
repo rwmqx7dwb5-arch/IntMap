@@ -79,7 +79,12 @@ test('R298 ② the grey is only where there is no warning', () => {
   const body = s.slice(i, i + 1400);
   /* the test is the unit's own centre, not object identity — an agency that files its own polygon
      (the DWD, the NWS, MET Norway, a CAP polygon) never touches the unit index, so === cannot see it */
-  assert.match(body, /geomCentre\(g\)/);
+  /* ⚠ (#R306) …and the point it asks WITH has to be a point OF the unit. `geomCentre` is the
+     average vertex of the largest ring, which for a concave or many-part subject lands outside its
+     own outline — measured, that is how Russia lost 83 land samples' worth of quiet units to
+     warnings that were in the NEIGHBOUR. `geomInside` scans a line across the middle and takes the
+     midpoint of the widest interior span, and it is verified against the geometry before use. */
+  assert.match(body, /geomInside\(g\)/);
   assert.match(body, /inGeom\(c,bin\[i\]\)/);
   assert.match(s, /function inGeom\(pt,g\)\{/, 'point-in-polygon, holes included');
   assert.match(s, /for\(let i=1;i<rings\.length;i\+\+\) if\(ptInRing\(pt,rings\[i\]\)\) return false;/,

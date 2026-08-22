@@ -1646,6 +1646,50 @@ window.IntMapModules.worldPacks=function(HOST){
         return _stash(g,'__abb',[w,s,e,n]); }
       function geomCentre(g){ if(!g) return null; if(g.__ac!==undefined) return g.__ac;
         return _stash(g,'__ac',centroidOf(g)); }
+      /* ══ ⚠⚠⚠ (#R306) A CENTRE THAT IS NOT IN ITS OWN SHAPE ANSWERS SOMEBODY ELSE'S QUESTION ═════
+         「何も発令されていないのに、灰色に塗られていない場所がある。」 (still, after two passes)
+         `centroidOf` is the average vertex of the largest ring. That is cheap and it is NOT a point
+         of the polygon: for anything concave, C-shaped, or spread over islands it lands outside its
+         own outline — very often inside a NEIGHBOUR. Every question this file asks with it
+         (「is something in force inside this unit」, 「does this warning cover this unit」) then gets
+         answered about the wrong shape, and the answer is used to throw a quiet unit's grey away.
+         MEASURED on production: Russia had **83 of 3,400 land samples painted by nothing** through
+         two rounds of fixes aimed at the symptom — #R306's first attempt asked 「is this warning one
+         of our own units?」 by outline, which works only where the warnings and the units come from
+         the SAME index. Russia's do not: the tap card says the warned area is 「Murmansk Region」 and
+         the quiet units are named 「Kaliningrad」 — two different published boundary sets, so no bbox
+         ever matched and the test could not fire.
+         → ask for a point that is REALLY IN THE SHAPE. A horizontal scan line across the middle of
+         the largest ring, the midpoint of its widest interior span: O(n), exact for the property
+         that matters (it is inside), and verified against the geometry before it is trusted.
+         ⚠ THE OLD CENTRE IS STILL USED FOR WHAT IT IS FOR — `dedupeSameShape` and the tap card's
+         「which area did I hit」 are about identity and proximity, not about containment. What
+         changes is only the two containment tests. */
+      function _ringInsidePoint(ring){
+        if(!ring||ring.length<4) return null;
+        let s=90,n=-90;
+        for(let i=0;i<ring.length;i++){ const p=ring[i]; if(!p) continue;
+          if(p[1]<s) s=p[1]; if(p[1]>n) n=p[1]; }
+        if(!(n>s)) return null;
+        const y=(s+n)/2, xs=[];
+        for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+          const a=ring[j], b=ring[i]; if(!a||!b) continue;
+          if((a[1]>y)!==(b[1]>y)) xs.push(a[0]+(y-a[1])*(b[0]-a[0])/(b[1]-a[1])); }
+        if(xs.length<2) return null;
+        xs.sort((p,q)=>p-q);
+        let x=null, w=-1;
+        for(let i=0;i+1<xs.length;i+=2){ const d=xs[i+1]-xs[i]; if(d>w){ w=d; x=(xs[i]+xs[i+1])/2; } }
+        return (x==null)?null:[x,y]; }
+      function geomInside(g){ if(!g) return null; if(g.__ip!==undefined) return g.__ip;
+        const polys=(g.type==='Polygon')?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:null);
+        let pt=null;
+        if(polys&&polys.length){
+          let best=null,bn=0;
+          for(let i=0;i<polys.length;i++){ const r=polys[i]&&polys[i][0]; if(r&&r.length>bn){ bn=r.length; best=r; } }
+          pt=_ringInsidePoint(best);
+          /* the scan line can cross a HOLE — take the answer only when the geometry agrees */
+          if(pt&&!inGeom(pt,g)) pt=null; }
+        return _stash(g,'__ip',pt||geomCentre(g)); }
       function _inRings(pt,rings){ if(!rings||!rings.length||!ptInRing(pt,rings[0])) return false;
         for(let i=1;i<rings.length;i++) if(ptInRing(pt,rings[i])) return false;
         return true; }
@@ -1686,7 +1730,7 @@ window.IntMapModules.worldPacks=function(HOST){
              (≈11 m) is the same unit — the test `dedupeSameShape` already trusts for the same job. */
           const bk=_bboxKey(bb); if(bk) (rec.boxes||(rec.boxes=Object.create(null)))[bk]=1;
           /* ⚠ (#R298) …and its CENTRE, bucketed the same way — see `warnMeeting` */
-          const wc=geomCentre(f.geometry);
+          const wc=geomInside(f.geometry); /* (#R306) a point that is REALLY in the warning */
           /* ⚠ (#R305) THE SHAPE TRAVELS WITH THE CENTRE. This used to bucket the bare point, which
              answers 「is something in force inside this unit」 and nothing else — and the answer was
              used to throw the unit's grey away whole. The geometry is what lets the unit keep the
@@ -1756,7 +1800,7 @@ window.IntMapModules.worldPacks=function(HOST){
       function warnMeeting(iso,g){
         const rec=warnIndex()[iso]; if(!rec) return null;
         const ub=geomBox(g); if(!ub) return null;
-        const c=geomCentre(g);
+        const c=geomInside(g); /* (#R306) …and one that is really in the unit */
         const myKey=_bboxKey(ub), boxes=unitBoxes(iso);
         const isNeighbourUnit=(wg)=>{ const k=_bboxKey(geomBox(wg)); return !!(k&&k!==myKey&&boxes[k]); };
         let covering=false; const inside=[];

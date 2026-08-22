@@ -233,7 +233,12 @@ test('R293 ⑥ the bundled world index is a floor, upgraded per country when it 
   assert.match(s, /function upgradeUnitsInView\(\)\{[\s\S]{0,400}COARSE\.test\(UNIT_SRC\[c\]\|\|''\)/);
   assert.match(s, /if\(!inView\(f\)\) return;[\s\S]{0,80}askUnitsGB\(c\);/,
     'only for a country the reader is actually looking at');
-  assert.match(s, /askUnitsInView[\s\S]{0,600}upgradeUnitsInView\(\);/,
+  /* ⚠ (#R306) THIS WAS A CHARACTER COUNT, AND A CHARACTER COUNT IS LINE-ENDING DEPENDENT.
+     The window was 600 and the body is 604 bytes with LF and **615 with CRLF** — so #R305, which
+     added two lines to `askUnitsInView`, made this red on every Windows checkout and green on CI.
+     That is #R283's trap exactly. The relation is 「the view pass ENDS by running the upgrade」, so
+     it is asked of the function's own body, from its declaration to the call that closes it. */
+  assert.match(s, /function askUnitsInView\(\)\{[\s\S]{0,1200}?upgradeUnitsInView\(\); \}/,
     'and it runs on the same view pass the loader already had');
 });
 
