@@ -421,6 +421,43 @@ test('R299 追記 ⑭ the normalised legend note is no longer than the agency on
     'and it is not materially longer than the note that measured one line');
 });
 
+/* ── ⑰ 「簡潔に」 is true in a LANGUAGE or it is not true ─────────────────────────────────────── */
+test('R299 追記3 ⑰ both legend notes fit one line in all NINE languages, not just English', () => {
+  /* MEASURED on production at the panel's fixed 330 px content width: en and jp were one line while
+     **de wrapped at 339 px, fr at 334 and ru at 414**. Shortening only the English is answering the
+     instruction in the language it happened to be discussed in (CLAUDE.md §3-5).
+     The bound is a WIDTH MODEL, not a character count: a CJK ideograph, kana or Hangul syllable takes
+     about two Latin advances at this size. Production's own numbers calibrate it — the German agency
+     note is 66 units and measured 304 px, i.e. ≈4.6 px/unit, so the 330 px box holds ≈71 units. */
+  const WIDE = /[ᄀ-ᅟ⺀-꓏ꥠ-꥿가-힣豈-﫿︐-︙︰-﹯＀-｠￠-￦]/;
+  const units = (s) => [...s].reduce((n, ch) => n + (WIDE.test(ch) ? 2 : 1), 0);
+  const LIMIT = 68;                       /* ≈313 px — one line with room, on the 330 px box */
+  const wp = WP();
+  const five = (head) => {
+    const i = wp.indexOf("L('" + head);
+    assert.ok(i > 0, 'the note beginning ' + head + ' is still one L() call');
+    const seg = wp.slice(i, i + 900), out = [];
+    for (const m of seg.matchAll(/'((?:[^'\\]|\\.)*)'/g)) { out.push(m[1]); if (out.length === 5) break; }
+    assert.equal(out.length, 5, 'five positional arguments');
+    return out;
+  };
+  const EXTRA = { fr: 'ui.fr.js', ko: 'ui.ko.js', zh: 'ui.zh.js', 'zh-hans': 'ui.zh-hans.js' };
+  for (const head of ['IntMap’s own conversion', 'Each agency’s own colours']) {
+    const args = five(head);
+    const rows = [['en', args[0]], ['jp', args[1]], ['de', args[2]], ['ru', args[3]], ['es', args[4]]];
+    const key = args[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    for (const [code, f] of Object.entries(EXTRA)) {
+      const m = read('js/locales/' + f).match(new RegExp('"' + key + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"'));
+      assert.ok(m, code + ' still translates: ' + args[0].slice(0, 40));
+      rows.push([code, m[1]]);
+    }
+    for (const [code, s] of rows) {
+      assert.ok(units(s) <= LIMIT,
+        code + ' wraps this legend note (' + units(s) + ' > ' + LIMIT + '): ' + s.slice(0, 60));
+    }
+  }
+});
+
 /* ── ⑯ the fine NUTS tier covers BOTH levels, because MeteoAlarm issues at either ───────────── */
 test('R299 追記2 ⑯ the NUTS upgrade fetches LEVL_2 as well as LEVL_3', () => {
   const code = noComments(alertsModule(WP()));
