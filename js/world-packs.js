@@ -1730,12 +1730,37 @@ window.IntMapModules.worldPacks=function(HOST){
         const bk=_bboxKey(geomBox(g)); return !!(bk&&rec.boxes[bk]); }
       /* every warning of this country that meets this unit at all, split into the ones that cover it
          and the ones that sit inside it */
+      /* ══ ⚠⚠⚠ (#R306) A NEIGHBOUR IS NOT SOMETHING **INSIDE** THIS UNIT ═══════════════════════════
+         「何も発令されていないのに、灰色に塗られていない場所がある。」 MEASURED on production after
+         #R305 shipped: 275 of 3,400 land samples were still painted by nothing, and **83 of them were
+         in Russia** — a country whose warnings this map places on ITS OWN admin-1 units (the tap card
+         names them: 「Republic of Karelia」, 「Novosibirsk Region」…). Two features out of the same
+         index cannot overlap, so neither of them can ever be a hole in the other.
+         What put them there is the CENTRE. `geomCentre` is the average vertex of the largest ring —
+         cheap, and for a concave or many-part subject it can land OUTSIDE its own shape and inside a
+         neighbour's. `warnMeeting` then read that as 「something is in force inside this unit」, the
+         punch could not fit a shape that is not inside anything, and the quiet neighbour was dropped
+         whole. The unit it actually belongs to was already handled by `sameOutline`.
+         → a warning whose OUTLINE is one of this country's own units is that unit, and it is skipped
+         here. Same test as `sameOutline` (the country plus the bbox to four decimals, ≈11 m), asked
+         of the unit index instead of the warning index.
+         ⚠ The set is built once per country per publish and cached on `UNITS[iso]`'s identity, which
+         is the same lifetime `_qCache` already uses. */
+      const _uBoxOf=Object.create(null);
+      function unitBoxes(iso){
+        const u=UNITS[iso]||[]; const c=_uBoxOf[iso];
+        if(c&&c.of===u) return c.set;
+        const set=Object.create(null);
+        for(let i=0;i<u.length;i++){ const k=_bboxKey(geomBox(u[i])); if(k) set[k]=1; }
+        _uBoxOf[iso]={of:u,set:set}; return set; }
       function warnMeeting(iso,g){
         const rec=warnIndex()[iso]; if(!rec) return null;
         const ub=geomBox(g); if(!ub) return null;
         const c=geomCentre(g);
+        const myKey=_bboxKey(ub), boxes=unitBoxes(iso);
+        const isNeighbourUnit=(wg)=>{ const k=_bboxKey(geomBox(wg)); return !!(k&&k!==myKey&&boxes[k]); };
         let covering=false; const inside=[];
-        const add=(wg)=>{ if(wg!==g&&inside.indexOf(wg)<0) inside.push(wg); };
+        const add=(wg)=>{ if(wg!==g&&!isNeighbourUnit(wg)&&inside.indexOf(wg)<0) inside.push(wg); };
         /* the unit's own centre — a warning that holds it either covers the unit or is a piece of it */
         const bin=c?rec.cells[Math.floor(c[0])+':'+Math.floor(c[1])]:null;
         for(let i=0;bin&&i<bin.length;i++){
@@ -1743,6 +1768,8 @@ window.IntMapModules.worldPacks=function(HOST){
           const bb=geomBox(bin[i]);
           if(bb&&(c[0]<bb[0]||c[0]>bb[2]||c[1]<bb[1]||c[1]>bb[3])) continue;
           if(!inGeom(c,bin[i])) continue;
+          /* (#R306) …and a neighbour cannot COVER this unit either, however big its box is */
+          if(isNeighbourUnit(bin[i])) continue;
           if(_bbInside(ub,bb)){ covering=true; break; }
           add(bin[i]); }
         if(covering) return { covering:true, inside:null };
