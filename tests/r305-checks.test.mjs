@@ -48,6 +48,23 @@ const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
    This project has paid for that twenty-five times; ask the question of the text that RUNS. */
 const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 const WP = () => noComments(read('js/world-packs.js'));
+/* ══ ⚠⚠⚠ (#R307) A WINDOW COUNTED IN CHARACTERS IS A TIMER ON THE NEXT ROUND ═══════════════════
+   Two of the checks below used `[\s\S]{0,600}` / `{0,1600}` to mean 「inside this function」, and both
+   went red the moment #R307 added lines to `quietGeomFor` and `warnMeeting` — for changes that make
+   the very thing they assert MORE true. It is #R306's own ⑥ (a {0,600} window whose body is 604
+   bytes with LF and 615 with CRLF, so CI was green and Windows red) with a different trigger.
+   → ask the FUNCTION BODY, brace-balanced. The claims are unchanged; what is gone is the distance. */
+function fnBody(src, name) {
+  const start = src.indexOf('function ' + name + '(');
+  assert.notEqual(start, -1, 'function ' + name + ' exists');
+  const open = src.indexOf('{', start);
+  let depth = 0;
+  for (let i = open; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}') { depth--; if (!depth) return src.slice(open, i + 1); }
+  }
+  throw new Error('unbalanced braces in ' + name);
+}
 const WX = () => noComments(read('js/weather.js'));
 const EC = () => noComments(read('js/wx-ecmwf.js'));
 
@@ -117,13 +134,17 @@ test('R305 ④ the quiet grey is cut, not dropped, where the warning is the smal
   assert.match(s, /if\(_bbInside\(ub,bb\)\)\{ covering=true; break; \}/,
     'only a warning at least as big as the unit COVERS it');
   assert.match(s, /function punchQuiet\(g,warns\)\{/, 'the smaller ones are punched out');
-  const q = /function quietGeomFor\(iso,g\)\{[\s\S]{0,600}?_qNoPunch\+\+; _qDropped\+\+; return null; \}/.exec(s);
-  assert.ok(q, 'quietGeomFor must be findable');
-  assert.match(q[0], /if\(sameOutline\(iso,g\)\)\{ _qDropped\+\+; return null; \}/,
+  const q = fnBody(s, 'quietGeomFor');
+  assert.match(q, /if\(sameOutline\(iso,g\)\)\{ _qDropped\+\+; return null; \}/,
     'a unit that IS the warning is still dropped whole (#R299)');
-  assert.match(q[0], /const cut=punchQuiet\(g,ins\);/, 'and everything else is punched');
-  assert.match(q[0], /_qNoPunch\+\+; _qDropped\+\+; return null; \}/,
-    'a warning that will not fit inside the unit falls back to dropping it, as before');
+  assert.match(q, /const cut=punchQuiet\(g,ins\);/, 'and a warning that fits inside a unit is punched out of it');
+  assert.match(q, /_qNoPunch\+\+; _qDropped\+\+; return null; \}/,
+    'a warning that will not fit inside the unit falls back to dropping it');
+  /* ⚠ (#R307) …and that whole path is now the FALLBACK: the exact difference answers first, and it
+     answers this case too. What this test protects — 「a warning smaller than a unit does not take
+     the unit with it」 — is what got stronger, so it is asserted of the first answer as well. */
+  assert.ok(q.indexOf('subtractWarnings(') < q.indexOf('punchQuiet('),
+    'the exact difference is asked before the punch');
 });
 
 /* ── ⑤ MapLibre decides 「ring or hole」 by WINDING ──────────────────────────────────────────
@@ -310,14 +331,17 @@ test('R306 ⑰ a neighbour is not something inside this unit', () => {
   assert.match(s, /function unitBoxes\(iso\)\{/, 'the outlines this country holds are indexed');
   assert.match(s, /_uBoxOf\[iso\]=\{of:u,set:set\};/,
     "…once per country per publish, keyed on the unit array's own identity");
-  const wm = /function warnMeeting\(iso,g\)\{[\s\S]{0,1600}?return \{ covering:false, inside:inside \}; \}/.exec(s);
-  assert.ok(wm, 'warnMeeting must be findable');
-  assert.match(wm[0], /const isNeighbourUnit=\(wg\)=>\{ const k=_bboxKey\(geomBox\(wg\)\); return !!\(k&&k!==myKey&&boxes\[k\]\); \};/,
+  const wm = fnBody(s, 'warnMeeting');
+  assert.match(wm, /const isNeighbourUnit=\(wg\)=>\{ const k=_bboxKey\(geomBox\(wg\)\); return !!\(k&&k!==myKey&&boxes\[k\]\); \};/,
     'a warning whose outline IS one of this country’s units is that unit');
-  assert.match(wm[0], /const add=\(wg\)=>\{ if\(wg!==g&&!isNeighbourUnit\(wg\)&&inside\.indexOf\(wg\)<0\) inside\.push\(wg\); \};/,
+  assert.match(wm, /const add=\(wg\)=>\{ if\(wg!==g&&!isNeighbourUnit\(wg\)&&inside\.indexOf\(wg\)<0\) inside\.push\(wg\); \};/,
     '…so it is never collected as something inside this one');
-  assert.match(wm[0], /if\(isNeighbourUnit\(bin\[i\]\)\) continue;/,
+  assert.match(wm, /if\(isNeighbourUnit\(bin\[i\]\)\) continue;/,
     '…and it can never COVER this one either, however big its bounding box is');
+  /* ⚠ (#R307) the same exclusion has to reach the bbox candidate set, or the difference would
+     subtract a neighbour from this unit — two features of one index never overlap, so it would be a
+     no-op, but the cost is real and the intent should be one rule, not two. */
+  assert.match(wm, /warnsNear\(rec,g,ub,isNeighbourUnit\)/, 'and the candidate set is filtered by it too');
   /* the unit that warning really belongs to is still dropped, by the test that was already there */
   assert.match(s, /function sameOutline\(iso,g\)\{/, 'the unit that IS the warning is still dropped');
 });
