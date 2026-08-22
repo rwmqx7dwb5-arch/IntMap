@@ -113,7 +113,19 @@ window.IntMapPick=(function(){
     return s;
   }
 
-  /* Start a pick. o = { panel, hint, hidePanel, onPick(lngLat), onCancel } */
+  /* ══ ⚠⚠⚠ (#R305) 「いや並行してどちらも出てくるとかあほか。」 ═══════════════════════════════════
+     The sentence 「地点を選ばせろ」 has now been answered three times and each answer left the
+     previous one standing. #R298 armed this bar from the tools list; #R299 replied 「あたらしいピル
+     UI勝手に作るな。普通の既存の赤メッセージ使ってください」 and #R302 added the red toast — and kept
+     the bar, so pressing one row produced TWO copies of the same sentence in two different pieces of
+     chrome at the same time. That is the report, in one word.
+     → a caller that says the sentence ITSELF arms the gesture with `announce:false`, and this module
+     draws nothing. The bar is untouched for every caller that has no other voice — the seismic ◎,
+     the reachable-area ◎, the night sky, the sun panel's own probe — so nothing is removed; what is
+     removed is the SECOND copy.
+     ⚠ Only the BANNER is silenced. The crosshair, the panel ghosting (#R207/#R219), Esc, `abort()`
+     and the one-shot click are what the gesture IS, and they are the same on both paths. */
+  /* Start a pick. o = { panel, hint, hidePanel, announce, onPick(lngLat), onCancel } */
   function start(o){
     o=o||{};
     cancel();                                  /* only one gesture at a time — a second ◎ replaces the first */
@@ -122,11 +134,13 @@ window.IntMapPick=(function(){
     /* (#R207) `hidePanel` keeps its name and its callers — what it does is now "get the panel out of
        the way of the pointer", which is the thing every caller actually wanted. */
     if(panel&&o.hidePanel!==false){ s.prevStyle=_ghost(panel); s.hid=true; }
-    const b=ensureBar();
-    b.querySelector('.im-pick-msg').textContent=o.hint
-      ||L('Tap the map to place it.','地図をタップして配置してください。','Zum Platzieren auf die Karte tippen.',
-           'Нажмите на карту, чтобы разместить.','Toca el mapa para colocarlo.');
-    b.style.display='flex';
+    if(o.announce!==false){
+      const b=ensureBar();
+      b.querySelector('.im-pick-msg').textContent=o.hint
+        ||L('Tap the map to place it.','地図をタップして配置してください。','Zum Platzieren auf die Karte tippen.',
+             'Нажмите на карту, чтобы разместить.','Toca el mapa para colocarlo.');
+      b.style.display='flex';
+    } else if(bar) bar.style.display='none';
     try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
     s.esc=(e)=>{ if(e.key==='Escape'){ e.preventDefault(); cancel(); } };
     document.addEventListener('keydown',s.esc,true);

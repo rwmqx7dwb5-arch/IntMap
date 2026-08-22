@@ -82,7 +82,10 @@ test('R276 ③ the wind field is the model\'s own data, sampled directly', () =>
   assert.match(w, /return EC\(\)\.load\(VAR,null,b\);/, '…loads it once, for a band…');
   assert.match(w, /if\(!EC\(\)\.bandCovers\(EC\(\)\.heldBand\(VAR\),b\)\) b=nearBand\(\)\|\|b;/,
     '…the band around the view first…');
-  assert.match(w, /EC\(\)\.load\(VAR,null,want\)/, '…and the whole view behind it');
+  /* ⚠ (#R305) the widening read carries a fourth argument now — it is the SAME read down the SAME
+     one reader, marked as 「this module started it, not the reader」 so it yields its place in the
+     queue. What #R276 pinned — 「the whole view is read behind the band」 — is the relation. */
+  assert.match(w, /EC\(\)\.load\(VAR,null,want(,true)?\)/, '…and the whole view behind it');
   /* ⚠ (#R293) the sampler is named on its own line now, because the READOUT keeps the last one that
      answered (`sampler()` is null between a step and the new hour — measured 0 → 2,144 ms). What
      #R276 pinned is unchanged: the particles are handed the sampler of the SAME variable this
@@ -370,7 +373,10 @@ test('R276 ⑯ a weather layer that is refused keeps trying, and stops when it l
    spends their bandwidth on a picture they may never ask for, and competes with the one they did. */
 test('R276 ⑰ the prefetch is on the time change, not on the first load', () => {
   const w = WX();
-  assert.match(w, /if\(opt&&opt\.step\)\{ try\{ EC\(\)\.prefetch\(\['wind_u_component_10m','wind_v_component_10m'\]/,
+  /* ⚠ (#R305) …and the ARGUMENTS moved again, for the same reason #R302 wrote below: the hour is
+     the neighbour in the DIRECTION OF TRAVEL and the band is the one that hour will actually be
+     read at. The relation is 「warmed from the time change, and only from it」. */
+  assert.match(w, /if\(opt&&opt\.step\)\{[\s\S]{0,200}?EC\(\)\.prefetch\(\['wind_u_component_10m','wind_v_component_10m'\]/,
     'the wind warms the next hour only when the axis moved');
   assert.match(w, /load\(\{step:ev\.type==='time'\}\)/, 'and that is what a time event passes');
   /* ⚠ (#R302) THIS PINNED THE CLOSING PARENTHESES. It required
@@ -428,8 +434,13 @@ test('R276 ⑱ a layer releases its own frame, never somebody else\'s', () => {
    behind the last, so it can never be the second party to that collision. */
 test('R276 ⑲ every read this module starts is serialised', () => {
   const s = EC();
-  assert.match(s, /function serial\(fn\) \{\s*var p = chain\.then\(fn, fn\);\s*chain = p\.then/,
-    'there is one chain…');
+  /* ⚠ (#R305) THE CHAIN BECAME A PUMP WITH TWO LANES, and 「one at a time」 is what this pins —
+     `pumping` is the flag that lets exactly one job run, and the next one starts only when it is
+     cleared. Which LANE a job is in is #R305 ⑦'s business, not this one's. */
+  assert.match(s, /function serial\(fn, bg\) \{[\s\S]{0,240}?\(bg \? qLo : qHi\)\.push/,
+    'there is one queue…');
+  assert.match(s, /pumping = true;[\s\S]{0,200}?pumping = false; _pump\(\);/,
+    '…and exactly one read runs at a time');
   /* (#R288) …with the band's warm-up inside the SAME serialised body, so the prefetch cannot
      re-point the shared reader beside a read either. */
   assert.match(s, /return serial\(function \(\) \{[\s\S]{0,900}?sdk\.ensureData\(st, inst\.omFileReader/,

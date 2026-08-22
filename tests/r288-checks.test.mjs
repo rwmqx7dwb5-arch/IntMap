@@ -103,9 +103,13 @@ test('#R288 ② the quiet grey is a unit layer, under the warnings, in the same 
   /* it rides in the SAME collection as the warnings, ahead of them (array order is draw order) */
   assert.match(src, /quietFeatures\(\)\.concat\(feats\)/,
     'quiet first, warnings after — one source, one fill layer');
-  /* and a unit a warning is drawn on does not ALSO get a grey underneath it */
-  assert.match(src, /if\(coveredByWarning\(iso,g\)\) return;/);
-  assert.match(src, /function coveredByWarning\(iso,g\)\{/);
+  /* and a unit a warning is drawn on does not ALSO get a grey underneath it
+     ⚠ (#R305) …and a unit a warning is drawn INSIDE gets its grey with that warning cut out of it,
+     rather than losing all of it. Either way the two never share a pixel, which is what this line
+     is for; `quietGeomFor` is where the three answers are decided. */
+  assert.match(src, /const qg=quietGeomFor\(iso,g\);\s+if\(!qg\) return;/);
+  assert.match(src, /function quietGeomFor\(iso,g\)\{/);
+  assert.match(src, /function punchQuiet\(g,warns\)\{/, 'and the cut is a hole in the unit, not an overlap');
   /* the division is still half the answer: the outline tells norm-0 units apart from each other */
   assert.match(src, /'line-color':\['case',\['>',\['get','norm'\],0\],\['get',colField\(\)\],'rgba\(/);
   /* a country the unit layer is drawing must not ALSO get the country-wide sheet */
@@ -259,7 +263,8 @@ test('#R288 ⑥b the resampled ramp lands on its anchors and never steps visibly
 /* ── ⑦ a read that succeeded is not reported as a failure ───────────────────────────────────── */
 test('#R288 ⑦ load() returns its own frame, and a time change no longer drops the held one', () => {
   const src = EC();
-  const i = src.indexOf('function load(variable, i, bounds)');
+  /* (#R305) …and a fourth argument that says whether the READER is waiting for this read */
+  const i = src.indexOf('function load(variable, i, bounds');
   assert.ok(i > 0, 'load must take the band');
   const body = src.slice(i, src.indexOf('function bandFor(', i));
   assert.match(body, /var frame = \{ key: key2, variable: variable, file: f, data: data, grid: g, band: band \};/);
@@ -291,7 +296,9 @@ test('#R288 ⑧ the field is read as the latitude band in view, warmed before it
      first — the band around the view, then the whole view behind it (`bandFor` answers 「the
      planet」 at the opening view, which was 14.5 s before a particle moved). */
   assert.match(w, /return EC\(\)\.load\(VAR,null,b\);/);
-  assert.match(w, /EC\(\)\.load\(VAR,null,want\)/, 'and the wide band follows');
+  /* ⚠ (#R305) the wide read is marked 「this module started it」 so it yields its queue place to a
+     read the reader is waiting for — the read itself, and the fact that it follows, are unchanged. */
+  assert.match(w, /EC\(\)\.load\(VAR,null,want(,true)?\)/, 'and the wide band follows');
   /* (#R290) …of ITS OWN variable: more than one frame can be held now, so 「the band I have」 has to
      name whose band it is or the wind would read the temperature's. */
   assert.match(w, /if\(!EC\(\)\.bandCovers\(EC\(\)\.heldBand\(VAR\),band\(\)\)\) load\(\);/);

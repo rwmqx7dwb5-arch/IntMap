@@ -105,7 +105,10 @@ test('R297 ⑤ the wind starts on the band around the view and widens behind it'
   assert.match(s, /function widen\(\)/, 'and the wide read follows');
   assert.match(s, /setTimeout\(widen,0\);/, 'it is started as soon as the first frame is in hand');
   /* the wide read must not be skipped, or the top and bottom of the screen never get a field */
-  assert.match(s, /EC\(\)\.load\(VAR,null,want\)\.then\(f=>\{ widening=false;/);
+  /* ⚠ (#R305) the rung carries a fourth argument — 「this module started it」, so it yields its
+     place in the queue to a read the reader is waiting for. The relation is unchanged: the wide
+     read still happens, and it still follows the narrow one. */
+  assert.match(s, /EC\(\)\.load\(VAR,null,want,true\)\.then\(f=>\{ widening=false;/);
 });
 
 /* ── ⑥ a slot is uncovered only when it has painted ───────────────────────────────────────────── */

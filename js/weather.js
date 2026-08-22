@@ -165,6 +165,12 @@ window.IntMapModules.wind=function(HOST){
     let on=false, raf=0, moving=false, opacity=1, renderer=null, loading=false, lastErr='';
     /* (#R293) the last field that answered, and the hour it is of — see `sampleAt` below */
     let _lastField=null, _lastFieldAt=null;
+    /* ⚠ (#R305) WHICH WAY THE READER IS GOING. #R276 追記 warms 「the next hour」 and spelled that
+       `index()+1`, so a reader stepping BACKWARDS along the axis warmed the hour behind them and
+       paid a cold read every single time. The axis has two directions and the player runs in one of
+       them at a time; the last move is the only evidence of which, and +1 is the honest default for
+       the first step of a session (the player's own ▶ goes forward). */
+    let _lastIdx=-1, _stepDir=1;
     const _view={x:1,y:0,z:0,th:Math.cos(87*R)};
     function refreshView(){ try{ const c=GE().camera.getCenter(), cla=c.lat*R, clo=c.lng*R;
       _view.x=Math.cos(cla)*Math.cos(clo); _view.y=Math.cos(cla)*Math.sin(clo); _view.z=Math.sin(cla); }catch(_){} }
@@ -350,7 +356,21 @@ window.IntMapModules.wind=function(HOST){
        going away does not start. `widening` is deliberately NOT cleared when the axis moves — the
        rung already in the queue finishes, and its own completion re-arms the staircase for whatever
        the current hour is by then, so two rungs can never be in flight at once. */
-    const STILL_MS=900;
+    /* ══ ⚠⚠⚠ (#R305) 「STILL」 HAS TO MEAN 「NOTHING HAS HAPPENED SINCE」, INCLUDING THE ARRIVAL ═══
+       MEASURED after the queue was given a priority lane: a step went 7,050 → **2,393 ms**, and the
+       step right after it went back to **7,343 ms**. The lane was working; what it could not do is
+       take back a rung that had ALREADY STARTED, and one starts the instant a read lands, because
+       `stillAt` was stamped when the READ WAS ASKED FOR. A read that takes 2.4 s has therefore been
+       「still」 for 1.5 s by the time it answers, so the reader's own 900 ms of quiet is spent before
+       they can see the picture they asked for, and the next step queues behind eighteen megabytes.
+       → the clock restarts when the field ARRIVES as well as when it is asked for.
+       ⚠ AND THE PLANET IS NOT WORTH THE SAME WAIT AS A BAND. At world zoom the target IS the globe
+       (`bandFor` says so) and a globe read is 13,199,360 samples / ~8 s down the one reader. A rung
+       that big is asked for only once the reader has been quiet for BIG_STILL_MS, so somebody
+       stepping the axis every second never starts one, and somebody who has stopped still gets the
+       whole picture — 1.6 s later than before, which is 1.6 s of a picture they are looking at
+       rather than 8 s of one they are not. */
+    const STILL_MS=900, BIG_STILL_MS=2500;
     let widening=false, widenT=0, wideGen=0, stillAt=0;
     function stir(axis){ stillAt=Date.now(); if(axis){ wideGen++; clearTimeout(widenT); widenT=0; } }
     /* ⚠ ONE RUNG: twice the half-width of what is in hand, centred on what still has to be covered,
@@ -392,13 +412,15 @@ window.IntMapModules.wind=function(HOST){
     }
     function runWiden(gen){
       if(!on||gen!==wideGen) return;
-      /* 「still」 means the last moveend AND the last time request are both STILL_MS behind us */
-      const rest=moving?STILL_MS:(STILL_MS-(Date.now()-stillAt));
-      if(rest>0){ clearTimeout(widenT); widenT=setTimeout(()=>{ widenT=0; runWiden(gen); },rest); return; }
       const full=band();
       let have=false; try{ have=EC().heldBand(VAR); }catch(_){ return; }
       try{ if(EC().bandCovers(have,full)) return; }catch(_){ return; }
       const want=wideStep(have,full);
+      /* 「still」 means the last moveend AND the last time request AND the last ARRIVAL are all
+         behind us — for a rung that reads the planet, by the longer of the two windows (#R305) */
+      const need=(want===null)?BIG_STILL_MS:STILL_MS;
+      const rest=moving?need:(need-(Date.now()-stillAt));
+      if(rest>0){ clearTimeout(widenT); widenT=setTimeout(()=>{ widenT=0; runWiden(gen); },rest); return; }
       widening=true;
       /* (#R298) …and BEHIND the colour, not in front of it — see the note on `afterFieldShown`.
          The wide read is still started immediately in the sense that matters (nothing else can
@@ -406,7 +428,9 @@ window.IntMapModules.wind=function(HOST){
          tiles the reader is waiting to see. */
       afterFieldShown(()=>{
         if(!on||gen!==wideGen){ widening=false; if(on) widen(); return; }
-        EC().load(VAR,null,want).then(f=>{ widening=false;
+        /* (#R305) a rung is this module's own read, not the reader's — it goes in the low-priority
+           lane so a time step or a pan started while it is still QUEUED is served first */
+        EC().load(VAR,null,want,true).then(f=>{ widening=false;
           if(on&&f&&renderer){ const sf=EC().sampler(VAR); if(sf){ _lastField=sf; _lastFieldAt=EC().validTime(); renderer.setField(sf); } }
           /* (#R299) …and the next rung, which `widen` holds back until the map is still again */
           let now=false; try{ now=EC().heldBand(VAR); }catch(_){}
@@ -461,6 +485,7 @@ window.IntMapModules.wind=function(HOST){
           if(!again){ try{ satToast(L('Wind data unavailable','風データを取得できませんでした','Winddaten nicht verfügbar','Данные о ветре недоступны','Datos de viento no disponibles')); }catch(_){} }
           return null; }
         failN=0; if(retryT){ clearTimeout(retryT); retryT=0; }
+        stillAt=Date.now();   /* (#R305) the reader's quiet window starts when they can SEE it */
         /* ══ ⚠⚠⚠ (#R298) A READ THAT WAS OVERTAKEN MUST NOT ERASE THE PARTICLES ═══════════════
            `EC().load` resolving with a frame does not mean THIS hour is the frame in hand: a
            superseded read is deliberately not kept (js/wx-ecmwf.js), so `sampler()` — which builds
@@ -495,8 +520,20 @@ window.IntMapModules.wind=function(HOST){
         /* (#R298) …and behind the colour, for the reason in the note on `afterFieldShown`: this one
            points the shared reader at ANOTHER FILE, so started early it does not merely queue in
            front of the tiles, it takes the reader away from them. */
+        /* ══ ⚠⚠⚠ (#R305) …AND 「the SAME band this layer reads」 IS NOT `band()` ═══════════════════
+           #R290 追記2 already wrote the rule — 「Warming the planet in front of a step that needs one
+           band is how the wait got worse rather than better」 — and then used `band()` to express it.
+           `band()` is `bandFor`, which answers NULL (「the planet」) for any view spanning more than
+           120° of latitude, i.e. for the view this app opens on. So at world zoom the warm-up asked
+           for the whole planet, every step, while the read the reader was waiting for queued behind
+           it. MEASURED before this line changed: **7,050 / 7,942 / 8,270 ms** per step at the
+           opening view, against 45 ms for an hour already in hand.
+           The band a step will ACTUALLY read is the one four lines above: a future hour has no frame
+           at all, so `bandCovers` is false for it and the read is always `nearBand()`. Warming that
+           is warming the bytes the next step will use, rather than seven times as many. */
         afterFieldShown(()=>{ if(!on) return;
-          if(opt&&opt.step){ try{ EC().prefetch(['wind_u_component_10m','wind_v_component_10m'],Math.min(EC().count()-1,EC().index()+1),band()); }catch(_){} } });
+          if(opt&&opt.step){ try{ const n=EC().count(), nx=Math.max(0,Math.min(n-1,EC().index()+_stepDir));
+            if(nx!==EC().index()) EC().prefetch(['wind_u_component_10m','wind_v_component_10m'],nx,nearBand()||band()); }catch(_){} } });
         /* (#R297) …and the rest of what is on screen, behind the picture that is already moving */
         setTimeout(widen,0);
         return f;
@@ -621,6 +658,10 @@ window.IntMapModules.wind=function(HOST){
          the axis under both. All three restart the widening staircase, so a rung aimed at the hour
          the reader is leaving never starts — see the note on `widen`. */
       if(ev.type==='index'||ev.type==='time'||ev.type==='meta') stir(true);
+      /* (#R305) the direction of travel, from the axis itself — see `_stepDir` */
+      if(ev.type==='index'||ev.type==='time'){ try{ const i=EC().index();
+        if(_lastIdx>=0&&i!==_lastIdx) _stepDir=(i>_lastIdx)?1:-1;
+        _lastIdx=i; }catch(_){} }
       if(ev.type==='index'){ touchWindTime(); return; }
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
       if(!on) return;

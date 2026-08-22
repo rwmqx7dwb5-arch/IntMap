@@ -67,10 +67,16 @@ test('R298 ① 「発表なし」 is one collection, one colour, one opacity —
 /* ── ② a warned unit does not also get a grey underneath it ──────────────────────────────── */
 test('R298 ② the grey is only where there is no warning', () => {
   const s = WP();
-  assert.match(s, /if\(coveredByWarning\(iso,g\)\) return;/, 'the quiet emitter skips warned units');
-  const i = s.indexOf('function coveredByWarning(iso,g){');
-  assert.ok(i > 0, 'coveredByWarning must exist');
-  const body = s.slice(i, i + 900);
+  /* ⚠⚠ (#R305) THE ANSWER GREW A THIRD VALUE. 「skip the warned unit」 and 「emit the quiet one」
+     were the only two, so a warning SMALLER than the unit threw away the whole unit's grey — and
+     with it the part of that unit where nothing is in force (measured: 20.3 % of Switzerland
+     unpainted). The third answer is 「emit it with the warning cut out of it」. What #R298 pinned —
+     grey and colour never share a pixel — is unchanged and is why the cut has to be exact. */
+  assert.match(s, /const qg=quietGeomFor\(iso,g\);\s+if\(!qg\) return;/,
+    'the quiet emitter asks what is true of this unit, and skips it when nothing is');
+  const i = s.indexOf('function warnMeeting(iso,g){');
+  assert.ok(i > 0, 'warnMeeting must exist');
+  const body = s.slice(i, i + 1400);
   /* the test is the unit's own centre, not object identity — an agency that files its own polygon
      (the DWD, the NWS, MET Norway, a CAP polygon) never touches the unit index, so === cannot see it */
   assert.match(body, /geomCentre\(g\)/);
@@ -79,7 +85,7 @@ test('R298 ② the grey is only where there is no warning', () => {
   assert.match(s, /for\(let i=1;i<rings\.length;i\+\+\) if\(ptInRing\(pt,rings\[i\]\)\) return false;/,
     'a hole is not the inside');
   /* and it is bounded: only the countries whose units are actually being drawn are indexed */
-  const wi = s.slice(s.indexOf('function warnIndex(){'), s.indexOf('function coveredByWarning'));
+  const wi = s.slice(s.indexOf('function warnIndex(){'), s.indexOf('function sameOutline'));
   assert.match(wi, /if\(!quietSet\[q\.iso\]\) return;/,
     'a country nobody is drawing grey for costs nothing');
   assert.match(wi, /_warnIdxOf===feats&&_warnIdxSet===setSig/,
@@ -91,7 +97,9 @@ test('R298 ③ a quiet unit can still say its own name', () => {
   const s = WP();
   assert.match(s, /function named\(g,nm\)\{/, 'the name is attached to the shape');
   assert.match(s, /_stash\(g,'__nm',String\(nm\)\)/);
-  assert.match(s, /quietFeature\(iso,feed,g,'unit',g\.__nm\|\|''\)/, 'and the feature carries it');
+  /* ⚠ (#R305) the GEOMETRY may now be the unit with the warned part cut out of it (`punchQuiet`),
+     and the NAME still comes off the unit the cut was made from — which is the point of this test. */
+  assert.match(s, /quietFeature\(iso,feed,qg,'unit',g\.__nm\|\|''\)/, 'and the feature carries it');
   /* every producer that HAS a name passes one — a shape with no name is a fact, not a bug */
   const ask = s.slice(s.indexOf('function askUnits(iso){'), s.indexOf('function askUnitsWorld(iso){'));
   ['jpMuniGeo', 'cnGeo', 'twTownGeo', 'nutsGeo', 'adm1Geo'].forEach(fn =>
@@ -299,7 +307,7 @@ test('R298 ⑧ the reads that do not draw wait for the colour field', () => {
      the cursor readout were all queued ahead of the tiles the reader is waiting to see. */
   assert.match(w, /function afterFieldShown\(fn,graceMs\)\{/, 'there is one place that defers');
   assert.match(w, /afterFieldShown\(\(\)=>\{[\s\S]{0,240}EC\(\)\.prefetch\(/, 'the next hour waits');
-  assert.match(w, /afterFieldShown\(\(\)=>\{[\s\S]{0,240}EC\(\)\.load\(VAR,null,want\)/, 'the wide band waits');
+  assert.match(w, /afterFieldShown\(\(\)=>\{[\s\S]{0,700}EC\(\)\.load\(VAR,null,want,true\)/, 'the wide band waits');
   assert.match(w, /if\(W&&W\.on&&W\.on\(\)&&W\.afterFieldShown\)\{ W\.afterFieldShown\(warmReadNow\); return; \}/,
     'and so does the cursor readout, but only while the wind is the layer holding the reader');
   assert.match(w, /fieldShown\(\);/, 'the reveal releases them');
