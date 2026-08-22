@@ -19,6 +19,8 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+/* (#R308 追記2) 5本が同じ1行を逐語で固定していたので、規則ごとに1つの読み手へ — tests/wash-tier.mjs */
+import { assertUnreadNeverGreys } from './wash-tier.mjs';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -80,7 +82,8 @@ test('R299 ② the country-wide 「nothing in force」 sheet is not painted over
   assert.ok(/drawnISO\[c\]/.test(m[0]),
     'a country with features on the map takes the transparent arm — 「発令されているのに灰色」');
   /* the grey itself is unchanged: it is still one colour and still means 「read, and quiet」 */
-  assert.ok(/readState\(c\)!=='ok'\)\s*return 0;/.test(code), 'unread still hatches rather than greys');
+  /* ⚠ (#R308 追記2) …asked of the RULE rather than of the line — see tests/wash-tier.mjs */
+  assertUnreadNeverGreys(code);
 });
 
 /* ── ③ Japan's units have a resolution ABOVE the nationwide floor ─────────────────────────── */

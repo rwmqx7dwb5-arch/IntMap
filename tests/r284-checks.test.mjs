@@ -17,6 +17,8 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+/* (#R308 追記2) 5本が同じ1行を逐語で固定していたので、規則ごとに1つの読み手へ — tests/wash-tier.mjs */
+import { assertUnreadIsTheHatch } from './wash-tier.mjs';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -47,9 +49,8 @@ test('#R284 ① a wired country never gets the 「未対応」 hatch', () => {
      What #R284 measured is still the reason the hatch is harmless now: its own cold burst
      (`COLD_CALLS`) takes the unread set to nearly zero inside a minute — measured this round,
      29 → 3 in 80 s — so no country wears it for a whole sweep. */
-  assert.match(body, /if\(readState\(c\)!=='ok'\)\s*return\s*0;/,
-    '「未対応」 and 「データがまだ入っていない」 are the same silence, and it is the hatch');
-  assert.ok(!/return\s*-1;/.test(body), '#R284’s fourth state must be gone');
+  /* ⚠ (#R308 追記2) …asked of the RULE rather than of the line — see tests/wash-tier.mjs */
+  assertUnreadIsTheHatch(WP());
   /* ⚠ (#R297) pin the RELATION rather than the number: what makes the hatch transient is that the
      burst is WIDER than the steady rotation. #R297 widened it after measuring that every country is
      READ inside 45 s and what keeps moving afterwards is shapes, not reads. */
