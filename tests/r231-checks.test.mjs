@@ -328,8 +328,12 @@ test('R231 Atlas: the image row is its own element, the text keeps the bubble', 
   assert.match(src, /if\(imgs\.length\) bubble\('u','<div class="atl-imgrow-in">/, 'images get their own row');
   assert.match(src, /classList\.add\('atl-imgrow'\)/, 'marked so the bubble styling comes off');
   assert.match(src, /if\(q\|\|files\.length\) bubble\('u',/, 'and no empty bubble when there is no text');
-  assert.match(src, /\.atl-b\.u\.atl-imgrow\{background:none;box-shadow:none;padding:0/, 'no fill, no shadow, no padding');
-  assert.ok(!/object-fit:cover;border-radius:8px/.test(noJs('js/atlas-console.js')), 'the 74 px square crop is gone');
+  /* ⚠ (#R313) THE RULES LIVE IN js/atlas-styles.js NOW — the kernel's line ceiling is never raised,
+     so the panel's whole stylesheet left as one subject. The markup is still the kernel's; only the
+     rules moved, so the two halves of this test now read the two files. The «crop is gone» half asks
+     BOTH, or it would pass by looking where the CSS no longer is. */
+  assert.match(read('js/atlas-styles.js'), /\.atl-b\.u\.atl-imgrow\{background:none;box-shadow:none;padding:0/, 'no fill, no shadow, no padding');
+  assert.ok(!/object-fit:cover;border-radius:8px/.test(noJs('js/atlas-console.js') + noJs('js/atlas-styles.js')), 'the 74 px square crop is gone');
 });
 
 /* ── ⑩ the AI research reply does not open by naming the place ──────────────────────────────── */

@@ -380,8 +380,12 @@ test('R296 ⑪ a reader’s own message can be copied, by the same button', () =
      behind while its markup left would be the same silent half-move this file exists to catch. */
   assert.match(m, /export const MSG_TOOLS_CSS = ''/, 'the desktop rules are the module’s');
   assert.match(m, /#atlas-panel \.atl-msgt\{display:flex;/, 'including the bar itself');
-  assert.match(code(a), /\+MSG_TOOLS_CSS\b/, 'and the kernel concatenates them where they stood');
-  assert.match(code(a), /\+MSG_TOOLS_CSS_MOBILE\b/, 'the mobile overrides too, inside its @media block');
+  /* ⚠ (#R313) …and the ONE <style> is assembled in js/atlas-styles.js now — the kernel's line ceiling
+     is never raised, so the whole stylesheet left as one subject. The property is unchanged: the bar's
+     rules are CONCATENATED into the panel's single stylesheet, never copied into it. */
+  const styles = code(read('js/atlas-styles.js'));
+  assert.match(styles, /\+MSG_TOOLS_CSS\b/, 'and the panel stylesheet concatenates them where they stood');
+  assert.match(styles, /\+MSG_TOOLS_CSS_MOBILE\b/, 'the mobile overrides too, inside its @media block');
 });
 
 /* ═══ ⑫ THE CARD OPENS ═══════════════════════════════════════════════════════════════════════

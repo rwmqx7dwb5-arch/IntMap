@@ -1287,6 +1287,19 @@
       ],
       "port": 4290,
       "url": "http://127.0.0.1:4290"
+    },
+    {
+      "name": "intmap-preview-r313",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Users/gyuuk/AppData/Local/Temp/intmap-worktrees/wt-r313-r313-ui-pass/scripts/serve.mjs",
+        "--root",
+        "C:/Users/gyuuk/AppData/Local/Temp/intmap-worktrees/wt-r313-r313-ui-pass/dist",
+        "--port",
+        "4313"
+      ],
+      "port": 4313,
+      "url": "http://127.0.0.1:4313"
     }
   ]
 }

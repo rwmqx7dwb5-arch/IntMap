@@ -258,25 +258,36 @@ test('r309 ⑦ the previews are the tile\'s own aspect ratio, so `cover` crops n
    which is also why this reads js/atlas-examples.js rather than the console. */
 const AC = code('js/atlas-examples.js');
 
-test('r309 ③ the starter chips are resolved from the map, not from four constants', () => {
+/* ⚠⚠ (#R313) THESE THREE NAMED `_exPlace` AND LOOKED FOR `L(` INSIDE `examples()`. #R313 replaced the
+   four templates with a fact-gated POOL — the resolver is `exFacts()`, the substitution is `fill()`,
+   and the chip strings live in the pool's own thunks — so all three went red on a change that made
+   the feature MORE of what they were written to protect. Rewritten to ask the PROPERTIES rather than
+   the identifiers: resolved from the camera, refuses to name a country from a hemisphere, one copy,
+   substituted rather than sent literally, redrawn only when the answer changes, and every chip
+   reachable by the translation gate. */
+test('r309 ③ the starter chips are resolved from the map, not from a fixed list', () => {
+  /* whatever the resolver is called, `examples()` must go through it rather than return constants */
   const ex = fnBody(AC, 'examples');
-  assert.ok(/_exPlace\(\)/.test(ex), 'examples() asks which place is on screen');
+  assert.ok(/exFacts\(\)/.test(ex), 'examples() asks what is true of what is on screen');
   /* and the console reaches it through an import, not a copy */
   const con = code('js/atlas-console.js');
   assert.ok(/from '\.\/atlas-examples\.js'/.test(con), 'js/atlas-console.js imports the subject');
   assert.ok(!/function examples\(/.test(con), 'and does not keep a second copy of it');
-  const place = fnBody(AC, '_exPlace');
+  const place = fnBody(AC, 'exFacts');
   assert.ok(/codeAtPoint\(/.test(place), 'it uses the resolver this file already had');
   assert.ok(/camera\.getCenter\(\)/.test(place), '…at the camera centre');
   assert.ok(/getZoom\(\)/.test(place), '…and refuses to name a country when the view is a hemisphere');
+  assert.ok(/2\.5/.test(place), '…which is what the zoom floor is for');
   /* the place-shaped chips must actually substitute, or they would send the literal token */
-  assert.ok(/\{place\}/.test(ex), 'the place-shaped chips carry the substitution token');
-  assert.ok(/replace\(\/\\\{place\\\}\/g/.test(ex), 'and every one of them is substituted');
+  assert.ok(/\{place\}/.test(AC), 'the place-shaped chips carry the substitution token');
+  assert.ok(/replace\(\/\\\{place\\\}\/g/.test(AC), 'and it is substituted before a chip is drawn');
+  assert.ok(!/\{place\}/.test(fnBody(AC, 'renderExamples')),
+    'the drawing step never sees an unsubstituted token');
 });
 
 test('r309 ③ the chips redraw when the subject changes, and only then', () => {
   const r = fnBody(AC, 'renderExamples');
-  assert.ok(/_exPlace\(\)/.test(r) && /_exKey/.test(r), 'the renderer compares the subject with the one it drew');
+  assert.ok(/exFacts\(\)/.test(r) && /_exKey/.test(r), 'the renderer compares the subject with the one it drew');
   const wire = fnBody(AC, '_wireExampleCamera');
   assert.ok(/onCamera|moveend/.test(wire), 'it is driven by the camera settling');
   assert.ok(/setTimeout/.test(wire), 'debounced rather than per-frame');
@@ -285,11 +296,12 @@ test('r309 ③ the chips redraw when the subject changes, and only then', () => 
 test('r309 ③ every chip is visible to the translation gate', () => {
   /* the old form passed ARRAYS to L(), which js/lang-registry.js only resolves positionally — so
      zh-Hant / zh-Hans / fr / ko silently read English on all four chips while check:i18n reported
-     100 %, because scripts/i18n-report.mjs drops an L() whose first argument is not a Literal. */
-  const ex = fnBody(AC, 'examples');
-  assert.ok(!/L\(\s*\[/.test(ex), 'no chip is declared as an array of arrays');
-  const calls = (ex.match(/\bL\(/g) || []).length;
-  assert.ok(calls >= 8, 'both the place-shaped set and the world-scale set are ordinary L() calls (' + calls + ')');
+     100 %, because scripts/i18n-report.mjs drops an L() whose first argument is not a Literal.
+     ⚠ (#R313) the chips are a pool now, so the count is taken over the FILE — but the shape rule is
+     unchanged and is what the gate can actually see. */
+  assert.ok(!/L\(\s*\[/.test(AC), 'no chip is declared as an array of arrays');
+  const calls = (AC.match(/\bL\(\s*'/g) || []).length;
+  assert.ok(calls >= 8, 'every chip is an ordinary L() call with a literal first argument (' + calls + ')');
 });
 
 /* ══ ①④⑤ フロストガラス — 三つとも「二度塗り」と「詳細度」の問題である ═══════════════════════════ */
