@@ -157,27 +157,40 @@ test('R307 ⑦ the block cache is given room for a whole read without making the
     'the reader is actually given it');
 });
 
-test('R307 ⑧ the forecast file is staged before it is read, and only for a reader who is reading', () => {
+/* ⚠⚠ (#R308) THIS TEST PINNED FOUR SPELLINGS AND #R308 WAS TOLD TO CHANGE THREE OF THEM. It required
+   the stage-in to be `bytes=-' + TOUCH_BYTES`, to be EXACTLY `BLOCK_BYTES`, and it wrote both call
+   sites out character by character. #R308 measured that the four seconds is the REQUEST and not its
+   size (a one-byte suffix range stages the object identically), which makes 「it is exactly the first
+   block the SDK will ask for」 a claim about a trade that is no longer worth making — 20 ms of CDN hit
+   against a quarter of a megabyte per hour. What #R307 actually established, and what survives, is
+   below, asked of the function bodies rather than of their spelling. */
+test('R307 ⑧ the forecast file is staged before it is read, and the window is a reader’s', () => {
   const s = code('js/wx-ecmwf.js');
   const t = fnBody(s, 'touch');
-  assert.ok(/Range: 'bytes=-' \+ TOUCH_BYTES/.test(t), 'the stage-in is a suffix range');
-  /* it has to BE the block the reader asks for first, or it warms the CDN and not the browser */
-  assert.equal(numFrom(s, 'TOUCH_BYTES'), numFrom(s, 'BLOCK_BYTES'),
-    'and it is exactly the first block the SDK will ask for');
+  assert.ok(/Range/.test(t), 'the stage-in is a ranged request');
+  const rng = /Range:\s*([A-Za-z_$][\w$]*)/.exec(t);
+  const where = rng ? s.slice(0, s.indexOf('function touch(')) + t : t;
+  assert.match(where, /bytes=-/,
+    'and what it asks for is a suffix range against the END of the file');
   assert.ok(/touched\[f\]/.test(t), 'once per file, ever');
+  assert.ok(!/omFileReader|serial\(/.test(t), 'and outside the one reader’s queue');
 
   /* the axis moves on every clock tick whether or not a weather layer is on (`_followClock`), and
-     `sdk` is only ever loaded by `ready()`, i.e. by something that is about to read */
+     `sdk` is only ever loaded by `ready()`, i.e. by something that is about to read. ⚠ #R308 stages
+     the OPENING hour from `fetchMeta` for every session — one request of one byte — but the WINDOW
+     around it still belongs to a reader who is actually reading. */
   const si = fnBody(s, 'setIndex');
-  assert.ok(/if \(sdk && !\(opt && opt\.quiet\)\) touchAround\(idx\);/.test(si),
-    'a session that never switches a weather layer on pays nothing for this');
+  assert.ok(/if \(sdk[\s\S]{0,80}?touchAround\(/.test(si),
+    'the window is only staged for a session that has loaded the reader');
   const rd = fnBody(s, 'ready');
-  assert.ok(/m\.then\(function \(\) \{ touchAround\(idx\); \}/.test(rd),
+  assert.ok(/touchAround\(idx/.test(rd),
     'and a consumer stages it the moment the axis lands, in parallel with the SDK download');
-  /* both directions and two ahead — #R305 measured that one-ahead-on-stillness is outrun */
+  /* both directions, and further ahead than behind — #R305 measured that one-ahead-on-stillness is
+     outrun by a reader who steps every second */
   const ta = fnBody(s, 'touchAround');
-  assert.ok(/_touchDir/.test(ta) && /2 \* _touchDir/.test(ta) && /- _touchDir/.test(ta),
-    'the neighbours warmed are ahead, further ahead, and behind');
+  assert.ok(/_touchDir/.test(ta), 'the window follows the direction the reader is going');
+  assert.ok(/\+ j \* _touchDir|\+ _touchDir/.test(ta) && /- .*_touchDir/.test(ta),
+    'and it reaches both ahead of the reader and behind them');
 });
 
 /* ══ ⑨ 地点を選ばせろ ═════════════════════════════════════════════════════════════════════════ */

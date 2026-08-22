@@ -56,8 +56,13 @@ test('R298 ① 「発表なし」 is one collection, one colour, one opacity —
   assert.match(s, /quietFeatures\(\)\.concat\(feats\)/,
     'array order is draw order: quiet first, the answer after');
   /* …and therefore the opacity control reaches it, because it is the same layer */
-  assert.match(s, /layers:\(\)=>\['wp-alert-fill',CHORO,HATCH,'wp-alert-line'\]/,
-    'the slider owns the fill the quiet units are drawn by, and their dividing outline');
+  /* ⚠ (#R308) …asked as a RELATION rather than as that array's spelling: the point is that the
+     control reaches the fill the quiet units are drawn by and their dividing outline, not that the
+     list has exactly four members (it gained a fifth when the hatch got a second surface). */
+  const pl = /legendId:'wpalerts', layers:\(\)=>\[([^\]]*)\]/.exec(s);
+  assert.ok(pl, 'the panel declares the layers the opacity control owns');
+  ["'wp-alert-fill'", "'wp-alert-line'", 'CHORO', 'HATCH'].forEach((k) =>
+    assert.ok(pl[1].split(',').includes(k), k + ' is owned by the slider'));
   const at = s.indexOf("id:'wp-alert-fill'");
   assert.ok(at > 0);
   assert.match(s.slice(at, at + 260), /'fill-opacity':OPACITY_DEFAULT/,
@@ -121,9 +126,19 @@ test('R298 ④ the warning source is simplified once, at the renderer default', 
   const m = s.match(/addSource\(SRC,\{type:'geojson',tolerance:([\d.]+),buffer:(\d+)/);
   assert.ok(m, 'the source declares its tolerance');
   assert.equal(m[1], '0.375', 'the renderer’s own default — about a twentieth of a pixel per zoom');
-  /* there is no second geojson source in this module to disagree with it */
-  const adds = (alertsModule(noComments(s)).match(/addSource\([A-Z_]+,\{type:'geojson'/g) || []).length;
-  assert.equal(adds, 1, 'one geojson source in the alerts module, got ' + adds);
+  /* ⚠ (#R308) THE RULE IS ABOUT THE WARNINGS AND THE 「発表なし」 UNITS, which must be ONE collection
+     at ONE tolerance — that is what 「日本と日本以外で色を変えるな」 came down to. It was written as
+     「exactly one geojson source in this module」, which is a different sentence, and #R308's hatch cut
+     (a source that carries no warning and no quiet unit — only the ground the hatch may still claim)
+     turned it red. Asked as the rule: every collection of alert FEATURES goes to that one source. */
+  const code = alertsModule(noComments(s));
+  const adds = (code.match(/addSource\(([A-Z_]+),\{type:'geojson'/g) || [])
+    .map((x) => /addSource\(([A-Z_]+),/.exec(x)[1]);
+  assert.ok(adds.includes('SRC'), 'the warnings and the quiet units have their source');
+  const feeds = [...new Set((code.match(/setSourceData\(([A-Z_]+),\{type:'FeatureCollection'/g) || [])
+    .map((x) => /setSourceData\(([A-Z_]+),/.exec(x)[1]))];
+  assert.deepEqual(feeds, ['SRC'],
+    'every collection of alert features goes to that one source, got ' + feeds.join(','));
 });
 
 /* ── ⑤ the boundaries a reader sees are the country's own, one zoom earlier ──────────────── */

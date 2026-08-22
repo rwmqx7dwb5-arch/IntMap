@@ -173,7 +173,15 @@ test('#R288 ④ the rotation is view-first, and the shape library retries sooner
 /* ── ⑤ one call decides whether the layer is showing ────────────────────────────────────────── */
 test('#R288 ⑤ alert visibility is one list, one call, re-asserted', () => {
   const src = WP();
-  assert.match(src, /const ALL_LYR=\(\)=>LYR\.concat\(\[CHORO,HATCH\]\);/);
+  /* ⚠ (#R308) THE INVARIANT IS 「one list」, NOT 「this list」. This pinned the members verbatim, so
+     the round that added a second hatch surface (the cut one) turned it red for doing exactly what
+     this test exists to require — putting the new layer in the ONE list. Asked as a relation: every
+     country-scale layer this module owns is in it, and nothing sets a partial list. */
+  const all = /const ALL_LYR=\(\)=>LYR\.concat\(\[([^\]]*)\]\);/.exec(src);
+  assert.ok(all, 'ALL_LYR is LYR plus the country-scale layers');
+  ['CHORO', 'HATCH'].forEach((h) => assert.ok(all[1].split(',').includes(h), h + ' is in the one list'));
+  (src.match(/const HCUT\s*=\s*'[^']+'/) ? ['HCUT'] : []).forEach(
+    (h) => assert.ok(all[1].split(',').includes(h), h + ' is in the one list'));
   assert.match(src, /function applyAlertVis\(\)\{ setVis\(ALL_LYR\(\),on\); \}/);
   assert.match(src, /GE\(\)\.events\.on\('idle',\(\)=>\{ if\(on\) applyAlertVis\(\); \}\)/, 're-asserted when the map settles');
   assert.match(src, /function tick\(\)\{ if\(on\) applyAlertVis\(\);/, '…and when it does not');
