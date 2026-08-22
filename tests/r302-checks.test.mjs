@@ -184,11 +184,21 @@ test('R302 ⑧ the time labels and the formatter are memoised on everything that
    `addField` removed the layer, removed the source and added it again unconditionally, and two
    callers can reach it for the same key (the `idle` ladder and `load().then`), so the tiles were
    ordered twice. */
-test('R302 ⑨ the colour raster is not re-ordered for a key it already has', () => {
+test('R302 ⑨ every path into addField has already asked whether the key is live', () => {
   const s = WX();
-  assert.match(s, /liveKey===key&&liveSlot>=0/, 'the slot the key was built in is remembered');
-  assert.match(s, /liveKey=key; liveSlot=use;/, '…and written when it is built');
+  /* ⚠ (#R302 追記) THE GUARD #R302 ADDED HERE COULD NOT FIRE, so it went. Every one of the four
+     call sites tests `liveKey` before it calls, and `liveKey=key` is written synchronously at the
+     end of a successful build — so `addField` is never entered with `liveKey===key`. Asserting the
+     guard would be asserting dead code; what has to hold is the property that made it dead. */
+  assert.ok(!/liveKey===key&&liveSlot>=0/.test(s), 'the unreachable early return must not come back');
+  assert.match(s, /if\(key&&key!==liveKey\) ensureField\(key\);/, 'the load path asks first');
+  assert.match(s, /if\(!on\|\|liveKey===key\) return;/, 'the retry ladder stops the moment the slot is live');
+  assert.match(s, /if\(on&&liveKey!==key\) addField\(key\)/, '…and so does the idle hook');
+  assert.match(s, /liveKey=key; liveSlot=use;/, 'the slot is recorded when it is built');
   assert.match(s, /liveKey=''; liveSlot=-1;/, '…and cleared together, so a torn-down slot is never reused');
+  /* and the ladder itself — #R85's defect — must still be able to rebuild a slot that never took */
+  assert.match(s, /function ensureField\(key\)\{\s*if\(addField\(key\)\) return;/,
+    'a build that is refused is retried, which is the whole point of the ladder');
 });
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════════
