@@ -220,8 +220,15 @@ test('R235 rupture: the outline is fetched from the published finite-fault model
 /* ── 7 · day/night is a basic display, not a layer ──────────────────────────────────────────── */
 test('R235 day/night: not counted, not chipped, not offered as a layer to discover', () => {
   const dl = code(read('js/data-layers.js'));
-  assert.match(dl, /const skip=new Set\(\[[^\]]*'dl-nightside'\]\)/,
-    'it is skipped by the Active-layers list, like the other nine basics');
+  /* ⚠ (#R309) THIS USED TO PIN THE SPELLING `const skip=new Set(['cb-names',…,'dl-nightside'])`, and
+     that literal was the defect it was guarding against: the section's membership existed in FOUR
+     hand-written copies, so #R271 and #R273 could move two more rows in without any counter learning.
+     The requirement was never the Set literal — it is that day/night is subtracted from the
+     Active-layers count. Ask that of the ONE published list, and of the counter that reads it. */
+  assert.match(dl, /window\.IntMapBasicLayers=window\.IntMapBasicLayerRows\.concat\(\[[^\]]*'dl-nightside'[^\]]*\]\)/,
+    'day/night is in the published base-map section');
+  assert.match(dl, /const skip=new Set\(window\.IntMapBasicLayers\)/,
+    'it is skipped by the Active-layers list, like the other basics');
   /* ⚠ (#R292) THE ROULETTE BECAME A SUGGESTION, AND THE REQUIREMENT SURVIVED THE CHANGE. There is
      no hand-written `FEAT_IDS` list any more: the featured-layer card scores the app's OWN layer
      registry (js/widget-defs-map.js `featuredList`), so a layer the registry stops listing is one

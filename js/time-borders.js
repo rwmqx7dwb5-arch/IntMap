@@ -270,13 +270,35 @@ window.IntMapModules.timeBorders=function(HOST){
          has not been evaluated, and they are the same numbers. */
       const _BS=(window.IntMapBorderStyle||{});
       if(!GE().layers.has('imtb-line')) GE().layers.add({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':_BS.color||'#d9dbe0','line-opacity':0.95,'line-width':_BS.width||['interpolate',['linear'],['zoom'],1,0.95,4,1.55,8,2.2,12,2.9]}}, before);
-      /* (#R101) RENAMED countries (name differs from the present, e.g. Siam, Soviet Union, German Empire) → the era
-         name, era style. Filtered to _same!=1 (see tagSame). */
-      if(!GE().layers.has('imtb-lbl')) GE().layers.add({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,filter:['!=',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-letter-spacing':0.06,'text-size':window.IntMapLabelScale.place('era'),'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
+      /* == (#R309) A PAST COUNTRY'S NAME IS A COUNTRY NAME ======================================
+         「昔の国名ラベルの見た目や挙動も今の国名ラベルと完全に同じに。」 #R101 gave the RENAMED half its
+         own smaller "era style" (that request was about the UNCHANGED half keeping the normal one), so
+         the two era layers disagreed with each other AND with `ofm-country`. MEASURED on the built site
+         at z4.2 in 1914, against js/place-labels.js `ofm-country`:
+             text-font        imtb 'Noto Sans Regular'   ofm ['Noto Sans JP','Noto Sans SC']
+             text-size (z1-4) imtb-lbl 8.5-12            ofm 12-17
+             letter-spacing   imtb-lbl 0.06              ofm 0.08
+             max-width        imtb-lbl 7                 ofm 8
+             halo-width       1.5 / 1.4                  ofm 1.7
+             colour           frozen #eef2ff / #e8eefc   ofm re-painted per basemap (applyLabelLang)
+             maxzoom          imtb-lbl none              ofm 7
+             minzoom          1.4                        ofm none
+         Every number below is now the one `ofm-country` uses.
+         ⚠ 'Noto Sans Regular' is the spelling js/map-typography.js documents as NOT AN INSTALLED
+         FAMILY - MapLibre 5 treats a stack name as a CSS family list, so it fell to `sans-serif` and
+         Windows drew one name in three system faces. The era text is ALREADY in the reader's language
+         (`_locName` / `_modName` come out of `_LTB.arr`), which is exactly the case `readerFont()` exists
+         for: `placeFont()` tests `name:ja` ON THE FEATURE, and an era feature carries no name keys at
+         all, so it would send every era label to the pan-Han face. The colours below are the literals
+         `ofm-country` is born with; `applyLabelLang` now re-applies them per basemap for these two too. */
+      const _ERAFONT=(function(){ try{ return window.IntMapMapTypography.readerFont(); }catch(_){ return ['Noto Sans SC']; } })();
+      /* (#R101) RENAMED countries (name differs from the present, e.g. Siam, Soviet Union, German Empire).
+         Filtered to _same!=1 (see tagSame). */
+      if(!GE().layers.has('imtb-lbl')) GE().layers.add({id:'imtb-lbl',type:'symbol',source:'imtb-src',maxzoom:7,filter:['!=',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':window.IntMapLabelScale.place('country'),'text-max-width':8,'text-padding':6},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}});
       /* (#R101) UNCHANGED countries (same name as today, e.g. Japan, France) keep their normal country label style
          (matching ofm-country) rather than the era style — per request "国名が変わってない国は既存の国名ラベルのまま".
          Filtered to _same==1. Rendered from the era data so no country ever loses its label. */
-      if(!GE().layers.has('imtb-lbl2')) GE().layers.add({id:'imtb-lbl2',type:'symbol',source:'imtb-src',minzoom:1.4,maxzoom:7,filter:['==',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-letter-spacing':0.08,'text-size':window.IntMapLabelScale.place('country'),'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}});
+      if(!GE().layers.has('imtb-lbl2')) GE().layers.add({id:'imtb-lbl2',type:'symbol',source:'imtb-src',maxzoom:7,filter:['==',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':window.IntMapLabelScale.place('country'),'text-max-width':8,'text-padding':6},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}});
       /* (#R94k) clicking a historical label/border opens the SAME country card as a modern country: resolve the
          era polygon's NAME to its countryStats entry (a former state, or a modern country renamed for the era). */
       if(!_clickWired){ _clickWired=true;
@@ -294,21 +316,54 @@ window.IntMapModules.timeBorders=function(HOST){
             try{ const specific=['ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
               if(specific.length&&e.point&&GE().coords.queryRenderedFeatures(e.point,{layers:specific}).length) return; }catch(_){}
           }
-          const f=e.features&&e.features[0]; if(!f) return; const nm=(f.properties&&(f.properties.NAME||f.properties.name))||''; if(!nm) return;
-          /* (#R94m) EXACTLY the modern-country reaction: the same place popup (Copy/Wikipedia/AI brief/Isolate)
-             + blue outline — here the era polygon is outlined. No bespoke behaviour.
-             (#R94n) resolve to the app's historical ENTITY → the era NAME + Wikipedia title (so the card/popup and
-             the Wikipedia link land on e.g. "German Empire", NOT modern Germany), and take the FULL source polygon
-             — the click event's feature.geometry is CLIPPED to the vector tile the tap landed in (a geojson-vt
-             artifact), which is what drew the highlight "cut off in straight lines" for big countries. */
-          const R=resolveHist(nm,e.lngLat); const dispName=R.name||nm; const geom=R.geometry||f.geometry;
-          if(typeof window._imPlacePopup==='function'){ window._imPlacePopup(e.lngLat,dispName,true,{geojson:geom,wiki:R.wiki||nm,flag:R.flag}); }
-          else if(R.code&&typeof showCountryDetail==='function'){ showCountryDetail(R.code); } }catch(_){} };
+          const f=e.features&&e.features[0]; if(!f) return; _openEra(f,e.lngLat,e); }catch(_){} };
+        /* (#R94m) EXACTLY the modern-country reaction: the same place popup (Copy/Wikipedia/AI brief/Isolate)
+           + blue outline — here the era polygon is outlined. No bespoke behaviour.
+           (#R94n) resolve to the app's historical ENTITY → the era NAME + Wikipedia title (so the card/popup and
+           the Wikipedia link land on e.g. "German Empire", NOT modern Germany), and take the FULL source polygon
+           — the click event's feature.geometry is CLIPPED to the vector tile the tap landed in (a geojson-vt
+           artifact), which is what drew the highlight "cut off in straight lines" for big countries.
+           (#R309) split out of `_clk` so the padded tap below reaches the same door with the same feature. */
+        function _openEra(f,lngLat,e){ const nm=(f&&f.properties&&(f.properties.NAME||f.properties.name))||''; if(!nm) return false;
+          const R=resolveHist(nm,lngLat); const dispName=R.name||nm; const geom=R.geometry||f.geometry;
+          /* == (#R309) SAY THAT THIS CLICK IS SPOKEN FOR =========================================
+             「昔の国の国名ラベルを、今とおなじでクリック可能にして。」 The wiring was never missing.
+             MEASURED on the built site at z4.2 in 1914: the delegated listener IS registered on both era
+             layers, it DOES fire, the cursor IS a pointer, and `_imPlacePopup` IS called and does not
+             throw. The popup was opened and destroyed inside the SAME MILLISECOND - a MutationObserver
+             over one era-label click logged '+33100' then '-33100'. js/map-ui.js's generic map-click
+             fallback calls `clearHL()`, which REMOVES the popup, whenever the tap missed everything in
+             its own `ALL_LBL`; the era labels are not in that list. It runs in a microtask
+             (`_deferLabel`), i.e. always AFTER this synchronous handler, so it could only ever undo it.
+             #R210 built the answer to exactly this collision and this handler simply never used it:
+             claim the click, and `_deferLabel`'s own `claimed()` check steps aside. */
+          try{ if(e) GE().events.claimClick(e); }catch(_){}
+          if(typeof window._imPlacePopup==='function'){ window._imPlacePopup(lngLat,dispName,true,{geojson:geom,wiki:R.wiki||nm,flag:R.flag}); return true; }
+          if(R.code&&typeof showCountryDetail==='function'){ showCountryDetail(R.code); return true; }
+          return false; }
         /* (#R122) ONLY the era country-NAME labels open the country card — NOT the whole-country fill/line. Clicking
            empty land inside a past country (no name label, no place label there) must NOT force a country-name click
            ("国名でも地名ラベルでもない場所をクリックしたら、強制的に国名をクリックした判定になる"). This mirrors the
            modern map, where clicking bare land opens nothing. The name labels (imtb-lbl / imtb-lbl2) remain clickable. */
         ['imtb-lbl','imtb-lbl2'].forEach(id=>{ GE().events.onLayer('click',id,_clk); GE().events.onLayer('mouseenter',id,()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} }); GE().events.onLayer('mouseleave',id,()=>{ try{ GE().render.canvas().style.cursor=''; }catch(_){} }); });
+        /* == (#R309) THE PADDED TAP - THE OTHER HALF OF "the same as today's labels" ==============
+           js/map-ui.js has given every modern place label a padded hit-box since #R23 (6 px on a
+           mouse, 15 px on a finger) because "a finger tap almost never lands on the exact label
+           glyph". The era labels only ever had the exact glyph, so on a phone they read as dead text.
+           Same rule, same radii, through the same door as the exact hit above.
+           ⚠ The exact hit is checked FIRST and returns: `_clk` already owns that click, and opening
+           the popup twice would leave the first one's outline behind. */
+        GE().events.on('click',(e)=>{ try{
+          if(!active) return;
+          if(GE().events.clickClaimed&&GE().events.clickClaimed(e)) return;
+          if(window.IntMapIsolate&&window.IntMapIsolate.active&&window.IntMapIsolate.active()) return;
+          const ids=['imtb-lbl','imtb-lbl2'].filter(id=>{ try{ return !!GE().layers.get(id); }catch(_){ return false; } });
+          if(!ids.length||!e.point) return;
+          if(GE().coords.queryRenderedFeatures(e.point,{layers:ids}).length) return;
+          let pad=6; try{ if(HOST.isMobile&&HOST.isMobile()) pad=15; }catch(_){}
+          const near=GE().coords.queryRenderedFeatures([[e.point.x-pad,e.point.y-pad],[e.point.x+pad,e.point.y+pad]],{layers:ids});
+          if(near.length) _openEra(near[0],e.lngLat,e);
+        }catch(_){} });
       }
       return true; }catch(_){ return false; } }
     /* visibility is owned by `window._applyBorders()`; `applyTheme()` additionally swaps the Carto base to its

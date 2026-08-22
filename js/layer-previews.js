@@ -35,7 +35,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
     const G=(id,lvl,date,ext,z,lon,lat)=>{ const zz=(z!=null)?z:2; const p=(z!=null)?tXY(z,lon,lat):{x:1,y:1};
       return 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+id+'/default/'+(date?(date+'/'):'')+'GoogleMapsCompatible_Level'+lvl+'/'+zz+'/'+p.y+'/'+p.x+'.'+(ext||'png'); };
     /* ---- 1) real example tiles, one per raster layer (same endpoints the layers render from) ---- */
-    const _t45=tXY(4,8.5,50.2), _t46=tXY(6,8.2,46.4), _tNile=tXY(6,31.2,30.4);
+    const _t45=tXY(4,8.5,50.2), _t46=tXY(6,8.2,46.4);
     /* (#R78e) REAL cartography for the vector-overlay layers ("まだクソみたいな手抜きレイヤー例画像が多すぎる"):
        borders / place names / admin lines / country outlines are basemap features — show an actual CARTO tile of
        a recognisable region instead of a hand-drawn sketch. @2x for crispness; distinct regions so no two look alike. */
@@ -47,21 +47,21 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
          capture of this app with the layer on, over monsoon Asia where the field is unmistakable;
          `node scripts/shot-layer-preview.mjs preview_precip.png` is how it is remade. */
       'dl-annprecip':'preview_precip.png',
-      'dl-ec-temp':G('MERRA2_2m_Air_Temperature_Monthly',6,'2024-06-01','png',3,25,22),          /* Sahara heat */
+      'dl-ec-temp':'preview_temperature.png',
       'dl-precip':G('IMERG_Precipitation_Rate',6,'2025-06-01T12:00:00Z','png',3,100,14),      /* SE-Asia monsoon */
-      'dl-sst':G('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'2024-07-04','png',3,-65,35),      /* Gulf Stream */
+      'dl-sst':'preview_sst.png',
       'dl-snow':G('MODIS_Terra_NDSI_Snow_Cover',8,'2024-01-15','png',4,10,46.4),              /* Alps in January */
       'dl-aod':G('MODIS_Combined_Value_Added_AOD',6,'2024-07-04','png',3,80,25),               /* N-India haze */
       'dl-nightsat':'preview_nightlights.png',   /* (#R79g) real VIIRS Black Marble of the Nile Delta + Israel (per request) */
       'dl-popgrid':G('GPW_Population_Density_2020',7,'','png',4,80,24),                       /* Ganges plain — STATIC product, no date segment (#R254) */
-      'dl-relief':G('ASTER_GDEM_Color_Shaded_Relief',12,'2024-01-01','jpg',5,86.9,27.9),/* Himalaya */
+      'dl-relief':'preview_elevation.png',
       'dl-hillshade':'https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/6/'+_t46.y+'/'+_t46.x,   /* Swiss Alps */
-      'gx-gxndvi':G('MODIS_Terra_NDVI_8Day',9,'2025-06-26','png',4,-62,-4),                    /* Amazon green — 8-day product: only recent period-boundary dates are served (probed live) */
-      'gx-gxseaice':G('GHRSST_L4_MUR_Sea_Ice_Concentration',7,'2024-01-15','png',3,-45,72),    /* Greenland ice edge */
-      'gx-gxsstanom':G('GHRSST_L4_MUR_Sea_Surface_Temperature_Anomalies',7,'2024-07-04','png',3,-120,0),   /* El-Niño tongue */
-      'gx-gxrelief':G('ASTER_GDEM_Color_Shaded_Relief',12,'2024-01-01','jpg',5,-72.5,-13.5),  /* Andes */
+      'gx-gxndvi':'preview_ndvi.png',
+      'gx-gxseaice':'preview_seaice.png',
+      'gx-gxsstanom':'preview_sstanom.png',
+      'gx-gxrelief':'preview_relief_aster.png',
       'gx-gxsoil':G('AMSRU2_Soil_Moisture_SCA_Day',6,'2025-06-15','png',3,90,24),              /* Bengal delta */
-      'eco-dl-worldcover':'https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX=6&TILEROW='+_tNile.y+'&TILECOL='+_tNile.x+'&FORMAT=image/png&TIME=2021-01-01',   /* Nile delta: crops vs desert */
+      'eco-dl-worldcover':'preview_landcover.png',
       /* (#R79i) ACTUAL IntMap screenshots ("IntMapやぞ…スクショ取るだけで済むこと") — captured from the live map
          canvas (render-tick capture) with each layer enabled, self-hosted. No external tiles, no synthetic art. */
       'eco-dl-ecoregions':'preview_ecoregions.png',   /* RESOLVE ecoregions on the real map (Africa-centred) */
@@ -83,7 +83,27 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       'cb-borders':CT('light_all',6,8.2,48.9),                     /* Alpine borders — DE/FR/CH/AT crisp */
       'cb-coast':CT('light_all',6,138.5,35.0),                     /* (#R289) Izu/Suruga — coast and lakes together */
       'cb-admin1':CT('light_all',6,-96.0,39.5),                    /* US Great Plains — state lines */
-      'cb-countries':CT('rastertiles/voyager',5,105.0,14.0)        /* mainland SE Asia — distinct country shapes */
+      'cb-countries':CT('rastertiles/voyager',5,105.0,14.0),       /* mainland SE Asia — distinct country shapes */
+      /* == (#R309) ELEVEN MORE LAYERS THAT HAD NO PHOTOGRAPH AT ALL ============================
+         「『レイヤーサムネイル』フォルダに、各レイヤー用のサムネイル画像を入れておいたので、それを
+           すべて使って実際にレイヤータイルにいれてください。」 Twenty-three captures were supplied,
+         one per layer, named by that layer's own English label. Eight of them REPLACED an upstream
+         tile above (a NASA / Terrascope tile is a picture of the DATA, not of this app), four
+         overwrote the `preview_*.png` an earlier round captured, and these eleven are rows that had
+         no entry in ANY table — their tile fell through `into()` to the labelled gradient.
+         Same shape as #R79i / #R268: real captures of THIS map with THAT layer on, self-hosted,
+         480x242 — the tile's own 240:121, so `cover` crops nothing. */
+      'wp-dl-alerts':'preview_alerts.png',
+      'wp-dl-crops':'preview_crops.png',
+      'wp-dl-currents':'preview_currents.png',
+      'bx-eq':'preview_earthquakes.png',
+      'dl-eez':'preview_eez.png',
+      'dl-eu':'preview_eu.png',
+      'dl-nato':'preview_nato.png',
+      'dl-sealevel':'preview_sealevel.png',
+      'dl-subcables':'preview_subcables.png',
+      'dl-uselect':'preview_uselect.png',
+      'beta-dl-volc2':'preview_volcanoes.png'
     };
     let _radar=null;
     function radarURL(){ if(_radar!==null) return Promise.resolve(_radar); return fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{ const p=j&&j.radar&&j.radar.past&&j.radar.past.length?j.radar.past[j.radar.past.length-1].path:null; const t4=tXY(4,8,50); _radar=p?((j.host||'https://tilecache.rainviewer.com')+p+'/256/4/'+t4.x+'/'+t4.y+'/2/1_1.png'):''; return _radar; }).catch(()=>{ _radar=''; return ''; }); }
