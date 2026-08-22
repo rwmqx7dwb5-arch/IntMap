@@ -53,7 +53,6 @@ koppen_mercator_*_4k.png        同・軽量版（携帯はこちらを使う。
 precip_mercator_1981-2010.png   年降水量の平年値（CHELSA V2.1 bio12）。_4k は軽量版
 og-image.jpg / IntMap.Icon*.png OGP 画像とアイコン
 TwemojiCountryFlags.woff2       国旗グリフ
-USGS.能登.pdf                    地震モデルの検証に使った公表資料
 _koppen_convert.py              ケッペン TIFF → PNG（データ前処理。実行時には不要）
 _precip_convert.py              CHELSA → メルカトル PNG（同上）
 _precip_years_convert.py        GPCC → 年別 PNG（同上）

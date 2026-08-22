@@ -833,10 +833,16 @@ window.IntMapModules.layerSidebar=function(HOST){
            `imToast` is the app's existing toast — `.sat-toast` on --info-mil (#ff3b30), the same red
            js/community.js's 「まず初めに場所を選ばせろ」 uses — and the sentence it carries is the SAME one
            the bar's hint carries, so the two cannot drift apart in nine languages. No new element, no
-           new class, no new string. */
+           new class, no new string.
+           ══ ⚠⚠⚠ (#R305) …AND IT SAYS IT **INSTEAD OF**, NOT AS WELL AS ═══════════════════════════
+           「いや並行してどちらも出てくるとかあほか。」 #R302 added the toast and left #R298's bar armed, so
+           one press of one row put the same sentence on the screen twice, in two different shapes, at
+           the same moment. The reader asked for the red message; the pill is the thing they asked
+           twice not to have. `announce:false` arms the same gesture — crosshair, Esc, one-shot click,
+           `abort()` — with the banner off (js/map-pick.js), so exactly one thing speaks. */
         const ask=(name?(name+' — '):'')+T('Tap the map to choose a point','地図をタップして地点を選んでください','Zum Wählen eines Punktes auf die Karte tippen','Нажмите на карту, чтобы выбрать точку','Toca el mapa para elegir un punto');
         let armed=false;
-        try{ armed=!!(P&&P.start&&P.start({ onPick:(ll)=>end(ll), onCancel:()=>end(null), hint:ask })); }catch(_){ armed=false; }
+        try{ armed=!!(P&&P.start&&P.start({ onPick:(ll)=>end(ll), onCancel:()=>end(null), hint:ask, announce:false })); }catch(_){ armed=false; }
         /* a tool that cannot ask says why, rather than quietly answering for the centre instead */
         if(!armed){ try{ HOST.satToast(T('The map is not ready to choose a point yet','地図がまだ地点を選べる状態ではありません','Die Karte ist noch nicht bereit, einen Punkt zu wählen','Карта ещё не готова к выбору точки','El mapa aún no está listo para elegir un punto')); }catch(_){}
           end(null); return; }

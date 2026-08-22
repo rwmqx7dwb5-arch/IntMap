@@ -1109,7 +1109,7 @@ window.IntMapModules.worldPacks=function(HOST){
          → 「発表なし」の表現は 1 つにする。単位の灰色は `wp-alert` の中の、norm 0 の地物である。
             色は `NONE_COL` 1 つ、塗るのは `wp-alert-fill` 1 枚、したがって不透明度スライダーは
             日本と日本以外を区別しない。そして警報が覆っている単位は灰色を出さない（下の
-            `coveredByWarning`）ので、重ねる構造そのものが無くなる。
+            `warnMeeting`）ので、重ねる構造そのものが無くなる。
          ⚠ 単位で塗るか国 1 枚で塗るかの切り替え（`QUIET_UNIT_Z`・`quietSet`・`washTier`）は
             そのまま——それは「発表なし」の色の話ではなく、どの大きさの単位で主張するかの話である。 */
       /* 国 1 枚の薄塗り（`washExpr` の tier 1）が読む灰色。単位側は `NONE_COL` を地物に焼き込む */
@@ -1685,10 +1685,21 @@ window.IntMapModules.worldPacks=function(HOST){
              → ask identity of the OUTLINE first. Same country and the same bbox to four decimals
              (≈11 m) is the same unit — the test `dedupeSameShape` already trusts for the same job. */
           const bk=_bboxKey(bb); if(bk) (rec.boxes||(rec.boxes=Object.create(null)))[bk]=1;
-          /* ⚠ (#R298) …and its CENTRE, bucketed the same way — see the second half of coveredByWarning */
+          /* ⚠ (#R298) …and its CENTRE, bucketed the same way — see `warnMeeting` */
           const wc=geomCentre(f.geometry);
-          if(wc){ const k=Math.floor(wc[0])+':'+Math.floor(wc[1]); (rec.pts[k]||(rec.pts[k]=[])).push(wc); } });
+          /* ⚠ (#R305) THE SHAPE TRAVELS WITH THE CENTRE. This used to bucket the bare point, which
+             answers 「is something in force inside this unit」 and nothing else — and the answer was
+             used to throw the unit's grey away whole. The geometry is what lets the unit keep the
+             ground that warning does NOT cover (see `punchQuiet`). */
+          if(wc){ const k=Math.floor(wc[0])+':'+Math.floor(wc[1]); (rec.pts[k]||(rec.pts[k]=[])).push({c:wc,g:f.geometry}); } });
         _warnIdxOf=feats; _warnIdxSet=setSig; return (_warnIdx=byIso); }
+      /* which countries have anything in force AT ALL — asked of `feats` directly, so it is true on
+         the SAME publish rather than one behind (`drawnISO` is written after the upload). */
+      let _wISOof=null, _wISO=null;
+      function warnedISOs(){ if(_wISOof===feats&&_wISO) return _wISO;
+        const s=Object.create(null);
+        (feats||[]).forEach(f=>{ const q=f&&f.properties; if(q&&q.iso&&(+q.norm||0)>0) s[q.iso]=1; });
+        _wISOof=feats; return (_wISO=s); }
       /* ══ ⚠⚠⚠ (#R298) 覆っているかは<b>両方向</b>で訊く ═══════════════════════════════════════════
          MEASURED on the built page (z5 over Europe, 246 sampled points): the centre-of-the-unit test
          alone left 3 points where grey still lay under colour, and 2 of the 3 were the SAME shape of
@@ -1703,24 +1714,109 @@ window.IntMapModules.worldPacks=function(HOST){
          boundary sets overlapping slightly across a border, where the German district really does
          have nothing in force from the DWD. That one is CORRECT and is left alone. */
       const _bboxKey=(bb)=>bb?(bb[0].toFixed(4)+','+bb[1].toFixed(4)+','+bb[2].toFixed(4)+','+bb[3].toFixed(4)):'';
-      function coveredByWarning(iso,g){
-        const rec=warnIndex()[iso]; if(!rec) return false;
-        /* (#R299) the outline test — see the note in `warnIndex` */
-        if(rec.boxes){ const bk=_bboxKey(geomBox(g)); if(bk&&rec.boxes[bk]) return true; }
-        const c=geomCentre(g); if(!c) return false;
-        const bin=rec.cells[Math.floor(c[0])+':'+Math.floor(c[1])];
+      /* ① THIS UNIT **IS** SOMETHING IN FORCE, or lies inside something bigger that is ═══════════
+         ⚠ (#R305) 「the unit's centre is inside a warning」 IS NOT 「the warning covers the unit」.
+         MEASURED at z2 with the punch below already in: China still had 86 unpainted samples out of
+         its land, all in Sichuan — Aba and Ganzi are prefectures the size of a small country, the
+         CMA warns at the COUNTY inside them, and when the county the prefecture's centre happens to
+         fall in is the warned one, this test threw the whole prefecture away. The bbox is the cheap
+         half of 「which of the two is the bigger shape」, and it decides which question is being
+         asked: a warning at least as big as the unit COVERS it (drop), a smaller one is INSIDE it
+         (punch). */
+      const _bbInside=(inner,outer)=>!!(inner&&outer&&outer[0]<=inner[0]+1e-9&&outer[1]<=inner[1]+1e-9
+        &&outer[2]>=inner[2]-1e-9&&outer[3]>=inner[3]-1e-9);
+      function sameOutline(iso,g){
+        const rec=warnIndex()[iso]; if(!rec||!rec.boxes) return false;
+        const bk=_bboxKey(geomBox(g)); return !!(bk&&rec.boxes[bk]); }
+      /* every warning of this country that meets this unit at all, split into the ones that cover it
+         and the ones that sit inside it */
+      function warnMeeting(iso,g){
+        const rec=warnIndex()[iso]; if(!rec) return null;
+        const ub=geomBox(g); if(!ub) return null;
+        const c=geomCentre(g);
+        let covering=false; const inside=[];
+        const add=(wg)=>{ if(wg!==g&&inside.indexOf(wg)<0) inside.push(wg); };
+        /* the unit's own centre — a warning that holds it either covers the unit or is a piece of it */
+        const bin=c?rec.cells[Math.floor(c[0])+':'+Math.floor(c[1])]:null;
         for(let i=0;bin&&i<bin.length;i++){
-          if(bin[i]===g) return true;
+          if(bin[i]===g){ covering=true; break; }
           const bb=geomBox(bin[i]);
           if(bb&&(c[0]<bb[0]||c[0]>bb[2]||c[1]<bb[1]||c[1]>bb[3])) continue;
-          if(inGeom(c,bin[i])) return true; }
-        /* the other direction: a warning issued for a smaller area INSIDE this unit */
-        const ub=geomBox(g); if(!ub) return false;
-        const x0=Math.floor(ub[0]), x1=Math.floor(ub[2]), y0=Math.floor(ub[1]), y1=Math.floor(ub[3]);
-        for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++){
-          const ps=rec.pts[x+':'+y]; if(!ps) continue;
-          for(let i=0;i<ps.length;i++) if(inGeom(ps[i],g)) return true; }
-        return false; }
+          if(!inGeom(c,bin[i])) continue;
+          if(_bbInside(ub,bb)){ covering=true; break; }
+          add(bin[i]); }
+        if(covering) return { covering:true, inside:null };
+        /* …and the other direction: what is in force for a SMALLER area inside this unit */
+        if(rec.pts){
+          const x0=Math.floor(ub[0]), x1=Math.floor(ub[2]), y0=Math.floor(ub[1]), y1=Math.floor(ub[3]);
+          for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++){
+            const ps=rec.pts[x+':'+y]; if(!ps) continue;
+            for(let i=0;i<ps.length;i++){ const w=ps[i];
+              if(w.g===g||!inGeom(w.c,g)) continue;
+              add(w.g); } } }
+        return { covering:false, inside:inside }; }
+      /* ══ ⚠⚠⚠ (#R305) 「何も発令されていないのに、灰色に塗られていない場所がある。」 ══════════════════
+         ② USED TO THROW THE WHOLE UNIT AWAY. #R298 added it so that 「Valais」's grey could not lie
+         under 「Monthey - Val d'Illiez」's colour — correctly — but the remedy was to stop drawing
+         Valais at all, and Monthey is a valley inside a canton. MEASURED on the built page, z5 over
+         central Europe, 3,213 sampled points: **73 of them were on land, in a country with a live
+         feed, with nothing in force there and NOTHING painted** — 25 of the 73 in Switzerland alone.
+         A unit is not 「warned」 because something inside it is; it is warned THERE and quiet
+         everywhere else, and that is a shape this map can state exactly.
+         → the warning becomes a HOLE in the unit's grey. No overlap (the standing instruction
+         「発表無しポリゴンの上に発表ありポリゴンを重ねる形式を今すぐ辞めろ」 is untouched — the two
+         still never share a pixel) and no hole in the reader's picture either.
+         ⚠ MAPLIBRE DECIDES 「ring or hole」 BY WINDING, NOT BY NESTING. `classifyRings` starts a NEW
+         polygon whenever a ring's signed area has the same sign as the first one's — so a hole ring
+         copied in as-is would be FILLED, i.e. the double coat this is here to avoid, in the one
+         place it would be hardest to notice. The winding is therefore forced opposite, measured
+         from the two rings rather than assumed from the source's convention.
+         ⚠ AND ONLY WHEN IT REALLY IS INSIDE. A warned area that leaves the unit cannot be a hole in
+         it (an interior ring that crosses its outer ring triangulates into nonsense), so the unit
+         falls back to being dropped, which is exactly what it did before this round. */
+      function ringArea2(r){ let s=0; for(let i=0,j=r.length-1;i<r.length;j=i++) s+=(r[j][0]*r[i][1]-r[i][0]*r[j][1]); return s/2; }
+      /* ⚠ (#R305) NO TOLERANCE HERE, AND THAT IS A MEASUREMENT RATHER THAN CAUTION. The first
+         version of this asked whether a ring 「nearly」 fitted, on the theory that the failures were
+         shared boundary vertices. Instrumented on the built page over central Europe, 289 rejected
+         rings: the fraction of a rejected ring's sampled vertices that were inside its candidate
+         unit peaks at **0.5–0.6**, i.e. these warnings genuinely straddle — MeteoAlarm's Swiss and
+         Austrian areas are not Eurostat's NUTS-3, they are another agency's regions that cross
+         them. A hole ring half of which lies outside its outer ring does not triangulate into
+         「the unit minus the warning」; it triangulates into nonsense. So a ring either fits or the
+         unit is dropped, which is what #R298 did with every one of them. */
+      function ringInside(r,outer){ const n=r.length; if(n<4||!outer||outer.length<4) return false;
+        const step=Math.max(1,Math.floor(n/24));
+        for(let i=0;i<n;i+=step) if(!ptInRing(r[i],outer)) return false;
+        return ptInRing(r[n-1],outer); }
+      function punchQuiet(g,warns){
+        const polys=(g.type==='Polygon')?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:null);
+        if(!polys||!polys.length) return null;
+        const out=polys.map(p=>p.slice());          /* shallow — the rings themselves are never mutated */
+        for(let w=0;w<warns.length;w++){
+          const wg=warns[w];
+          const wp=(wg.type==='Polygon')?[wg.coordinates]:(wg.type==='MultiPolygon'?wg.coordinates:null);
+          if(!wp||!wp.length) return null;
+          for(let k=0;k<wp.length;k++){
+            const ring=wp[k]&&wp[k][0]; if(!ring||ring.length<4) return null;
+            let put=-1;
+            for(let i=0;i<out.length;i++) if(ringInside(ring,out[i][0])){ put=i; break; }
+            if(put<0) return null;                  /* it leaves the unit — it cannot be a hole in it */
+            const oA=ringArea2(out[put][0]), hA=ringArea2(ring);
+            out[put].push(((oA>0)===(hA>0))?ring.slice().reverse():ring); } }
+        return { type:'MultiPolygon', coordinates:out }; }
+      let _qPunched=0, _qDropped=0, _qNoPunch=0;
+      /* what 「発表なし」 is true of, for this unit: all of it, all of it but the warned parts, or
+         none of it */
+      function quietGeomFor(iso,g){
+        if(sameOutline(iso,g)){ _qDropped++; return null; }
+        const m=warnMeeting(iso,g);
+        if(!m) return g;
+        if(m.covering){ _qDropped++; return null; }
+        const ins=m.inside;
+        if(!ins||!ins.length) return g;
+        const cut=punchQuiet(g,ins);
+        if(cut){ _qPunched++; return cut; }
+        _qNoPunch++; _qDropped++; return null; }
       const MA={ AUT:'austria', BEL:'belgium', BIH:'bosnia-herzegovina', BGR:'bulgaria', HRV:'croatia',
         CYP:'cyprus', CZE:'czechia', DNK:'denmark', EST:'estonia', FIN:'finland', FRA:'france',
         GRC:'greece', HUN:'hungary', ISL:'iceland', IRL:'ireland', ISR:'israel',
@@ -3490,6 +3586,17 @@ window.IntMapModules.worldPacks=function(HOST){
            and you are too far out for this map to say where it is NOT」 — and it is the rule
            #R270 ⑧ already wrote (「区域を描く国は国全体で wash しない」), which simply never reached
            the zooms where `quietSet` is empty. */
+        /* ══ ⚠⚠⚠ (#R305) …AND 「never washed」 WAS ANSWERED BY NOBODY AT ALL ═══════════════════════
+           「何も発令されていないのに、灰色に塗られていない場所がある。」 This line is RIGHT and it was
+           being asked at a moment when nothing else could answer: `drawnISO[c]` takes the country
+           sheet away, `quietSet[c]` is what puts the unit grey in its place, and below
+           `QUIET_UNIT_Z` the second one was deliberately empty. So a country with one warning in
+           force had its quiet ground painted by NOBODY. MEASURED at z2, 6,336 sampled points:
+           **625 of the 3,045 on land — 20.5 %** — Canada, China, the USA and Brazil among them.
+           → the fix is NOT here. The two arms stay exactly as #R270 ⑧ / #R299 ② require them
+           (「a country that is drawing is never washed whole」); what changed is that `quietISOs`
+           has no zoom floor for a country with something in force, so the arm that takes over is
+           actually running. See the note there. */
         return (quietSet[c]||drawnISO[c])?2:1; }
       /* ══ ⚠⚠⚠ (#R288) THE COUNTRY IS NOT THE UNIT 「発令なし」 IS TRUE OF ═══════════════════
          「日本以外でも区分単位、発令単位ごとに色分けしろ」「個々の区別はちゃんとやれ」
@@ -3616,14 +3723,26 @@ window.IntMapModules.worldPacks=function(HOST){
       function inView(f){ try{ const b=GE().camera.getBounds();
         const bb=bboxOf(f);
         return !(bb[2]<b.getWest()||bb[0]>b.getEast()||bb[3]<b.getSouth()||bb[1]>b.getNorth()); }catch(_){ return true; } }
+      /* ⚠ (#R305) THE SET THAT IS PUBLISHED AND THE SET THAT IS ASKED FOR HAVE TO BE THE SAME ONE.
+         `quietISOs` pads the view by half a screen so a small pan does not rebuild the collection,
+         and `askUnitsInView` used the bare bounds — so a country lying in that padding was published
+         as quiet the moment its units happened to exist and was never ASKED for them otherwise. One
+         box, one answer. */
+      function paddedView(){ try{ const b=GE().camera.getBounds();
+        const w=b.getEast()-b.getWest(), h=b.getNorth()-b.getSouth();
+        return [b.getWest()-w*0.5,b.getSouth()-h*0.5,b.getEast()+w*0.5,b.getNorth()+h*0.5]; }catch(_){ return null; } }
       function askUnitsInView(){ if(!on) return;
         /* (#R290) …and only at the zoom the units are drawn at, so a world view neither downloads
-           nor indexes anything it is not going to draw */
-        try{ if(!(GE().camera.getZoom()>=QUIET_UNIT_Z)) return; }catch(_){}
+           nor indexes anything it is not going to draw — (#R305) EXCEPT for a country that has
+           something in force, which is drawn by unit at every zoom (see `quietISOs`) */
+        let lowZ=false; try{ lowZ=!(GE().camera.getZoom()>=QUIET_UNIT_Z); }catch(_){}
+        const warned=warnedISOs();
+        const vb=paddedView();
         try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{ const c=String(f.id||'');
           if(!c||!supported(c)||readState(c)!=='ok') return;
           if(UNITS[c]||unitAsked[c]||NO_UNITS[c]) return;
-          if(!inView(f)) return;
+          if(lowZ&&!warned[c]) return;
+          if(vb){ const bb=bboxOf(f); if(bb[2]<vb[0]||bb[0]>vb[2]||bb[3]<vb[1]||bb[1]>vb[3]) return; }
           askUnits(c); }); }catch(_){}
         upgradeUnitsInView(); }
       /* ══ ⚠⚠ (#R290) THE COLLECTION IS BOUNDED BY THE VIEW, NOT BY THE CACHE ═══════════════════
@@ -3640,15 +3759,27 @@ window.IntMapModules.worldPacks=function(HOST){
          cost 5,445 features and 6.1 MB to produce an image indistinguishable from one polygon per
          country. Zoom in and the units take over — which is the moment they mean something. */
       const QUIET_UNIT_Z=3;
+      /* ══ ⚠⚠⚠ (#R305) …AND THE FLOOR DOES NOT APPLY TO A COUNTRY THAT IS DRAWING WARNINGS ═══════
+         The floor above is a statement about DISTINCTIONS — a Landkreis is a fraction of a pixel at
+         world zoom, so drawing five hundred of them in one colour is the same picture as one country
+         polygon in that colour, for seven times the bytes. It is not a statement about whether the
+         ground gets painted, and for a warned country #R299 made it exactly that: `washTier` stopped
+         washing any country that draws something, and below this zoom nothing else drew its quiet
+         ground either. MEASURED on the built page at z2, 6,336 sampled points: **625 of the 3,045
+         that were on land showed NOTHING — 20.5 %** — Canada, China, the United States and Brazil
+         among them, every one of them a country whose feed had been read and answered.
+         → a country with anything in force is drawn by unit at EVERY zoom, so that the grey can be
+         true of the units that are quiet without lying over the ones that are not. A country with
+         nothing in force keeps the floor and the single country-wide sheet, which is the same
+         picture for one feature. */
       function quietISOs(){
         const out=[];
         let z=0; try{ z=GE().camera.getZoom(); }catch(_){ z=0; }
-        if(!(z>=QUIET_UNIT_Z)) return out;
-        let vb=null; try{ const b=GE().camera.getBounds();
-          const w=b.getEast()-b.getWest(), h=b.getNorth()-b.getSouth();
-          vb=[b.getWest()-w*0.5,b.getSouth()-h*0.5,b.getEast()+w*0.5,b.getNorth()+h*0.5]; }catch(_){}
+        const warned=warnedISOs();
+        const vb=paddedView();
         Object.keys(UNITS).forEach(iso=>{
           if(!supported(iso)||readState(iso)!=='ok'||!UNITS[iso]||!UNITS[iso].length) return;
+          if(!(z>=QUIET_UNIT_Z||warned[iso])) return;
           if(vb){ const f=countryFeature(iso); if(f){ const bb=bboxOf(f);
             if(bb[2]<vb[0]||bb[0]>vb[2]||bb[3]<vb[1]||bb[1]>vb[3]) return; } }
           out.push(iso); });
@@ -3667,8 +3798,10 @@ window.IntMapModules.worldPacks=function(HOST){
          「発表無しポリゴンの上に発表ありポリゴンを重ねる形式を今すぐ辞めろ。」
          この関数は `UNITS[iso]` の**全部**を出していた——警報が出ている単位も含めて。その上に
          `wp-alert-fill` が色を重ねるので、半透明の色の下から灰色が透けていた（＝報告そのもの）。
-         いまは `coveredByWarning` が中心で判定し、覆われている単位は**出さない**。重なりが無く
+         いまは `warnMeeting` が中心で判定し、覆われている単位は**出さない**。重なりが無く
          なったので、灰色と色は同じレイヤーに同居できる。
+         ⚠ (#R305) **単位より小さい**警報は、単位を捨てるのではなく単位に**穴**を開ける
+         （`warnMeeting` → `punchQuiet`）。重ねないという規則はそのまま、塗り漏れだけが消える。
          ⚠ 日本もこの経路を通る（`loadJMA` が自前で灰色を出すのはやめた）。 */
       /* ⚠ (#R290) の「同じものを二度組み立てない」はここでも要る。灰色は publish のたびに作り直される
          ようになったので、**視野の集合も発令中の顔ぶれも変わっていないなら**前回のものを返す。 */
@@ -3677,11 +3810,13 @@ window.IntMapModules.worldPacks=function(HOST){
         const key=quietList.map(c=>c+':'+((UNITS[c]||[]).length)).join(',');
         if(_qCache&&_qCacheOf===feats&&_qCacheKey===key) return _qCache;
         const out=[];
+        _qPunched=0; _qDropped=0; _qNoPunch=0;
         quietList.forEach(iso=>{
           const feed=FEEDS[iso]||LEARNED[iso]||'';
           (UNITS[iso]||[]).forEach(g=>{ if(!g) return;
-            if(coveredByWarning(iso,g)) return;
-            out.push(quietFeature(iso,feed,g,'unit',g.__nm||'')); }); });
+            const qg=quietGeomFor(iso,g);
+            if(!qg) return;
+            out.push(quietFeature(iso,feed,qg,'unit',g.__nm||'')); }); });
         _qCacheOf=feats; _qCacheKey=key; return (_qCache=out); }
       /* ⚠ (#R290→#R298) the set and the SOURCE move together. `washTier` returns 2 —
          「the unit layer has this country」 — off `quietSet`, so a set that says yes while nothing
@@ -4713,6 +4848,12 @@ window.IntMapModules.worldPacks=function(HOST){
         unitCountries:Object.keys(UNITS).filter(k=>UNITS[k]&&UNITS[k].length).sort(),
         unitCount:Object.keys(UNITS).reduce((n,k)=>n+((UNITS[k]||[]).length),0),
         quietDrawn:(function(){ try{ return quietFeatures().length; }catch(_){ return 0; } })(),
+        /* (#R305) how many units kept their grey with the warned part cut out of them, and how many
+           still had to be dropped whole — the two halves of 「no overlap, and no hole either」 */
+        quietPunched:(function(){ try{ quietFeatures(); return _qPunched; }catch(_){ return 0; } })(),
+        quietSuppressed:(function(){ try{ quietFeatures(); return _qDropped; }catch(_){ return 0; } })(),
+        quietNoPunch:(function(){ try{ quietFeatures(); return _qNoPunch; }catch(_){ return 0; } })(),
+        quietUnitISOs:(function(){ try{ return quietList.slice(); }catch(_){ return []; } })(),
         countryGrey:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
             if(washTier(String(f.id||''))===1) n++; }); }catch(_){} return n; })() });
       STATE.alertsLegend=(iso3)=>legendFor(String(iso3||'').toUpperCase());
