@@ -1231,6 +1231,40 @@
        the frosted-box rule above no longer turns it into a bordered translucent square). */
     #ai-research-panel .air-go:hover{ filter:brightness(1.08); }
     body.sidebar-translucent #ai-research-panel .air-q, body.sidebar-glass2 #ai-research-panel .air-q{ border-color:transparent !important; }
+    /* (#R309) The three sidebar filter boxes — News (#sidebar-search-bar), Countries (#countries-search-bar) and
+       Companies (#info-search-bar) all share .search-bar — never joined the frosted modes at all: they stayed a
+       FULLY OPAQUE --card-bg pill (measured rgb(255,255,255) on the 0.34 panel) with no blur, i.e. exactly the
+       "四角い枠が見えてcheap" material #R39 above already answered for the AI panel's own free-text input.
+       Give them the SAME material as .air-free. ⚠ Deliberately NOT the .map-search recipe (--glass-fill + the
+       panel blur): that pill floats on the MAP, while these sit INSIDE the already-frosted panel, so repeating
+       the panel's own fill/blur would double it — the #R40 defect one block up. 6px is a hint of depth, not a
+       second frost. ⚠ border-color, never the `border` shorthand: the hairline width and the .on state below
+       belong to the base rules and must survive.
+       ⚠ .search-bar:focus-within (0,2,0) puts the opaque --card-bg straight back, and it wins over the base
+       .search-bar — so the focused fill is restated here at (0,3,1). Only the FILL is restated: the blue border
+       and the 3px focus ring stay exactly as declared up there (you must still see where the caret went). */
+    body.sidebar-translucent .search-bar, body.sidebar-glass2 .search-bar,
+    body.sidebar-translucent .csearch-pickbtn, body.sidebar-glass2 .csearch-pickbtn{
+      background:rgba(140,140,150,0.16); border-color:var(--glass-border,rgba(255,255,255,0.18)); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+    body.sidebar-translucent .search-bar:focus-within, body.sidebar-glass2 .search-bar:focus-within{ background:rgba(140,140,150,0.16); border-color:var(--primary-color); }
+    /* (#R309) the ◎ "pick a country on the map" button lives inside that same pill, so it gets the same glass —
+       but its two STATES are behaviour, not decoration: hover still reads as blue, and while picking is ARMED it
+       is still a solid primary tile. Restated at (0,3,1) because the frosted rule above outranks their (0,2,0). */
+    body.sidebar-translucent .csearch-pickbtn:hover, body.sidebar-glass2 .csearch-pickbtn:hover{ border-color:var(--primary-color); }
+    body.sidebar-translucent .csearch-pickbtn.on, body.sidebar-glass2 .csearch-pickbtn.on{ background:var(--primary-color); border-color:var(--primary-color); }
+    /* (#R309) …and the Atlas prompt box, which is the same object in the same situation and was the
+       other half of the same report (「フロストガラス時のAtlasの入力欄が、フロストガラスになっていない。
+       （News, Companies, Countriesの検索欄も）」). Its base rule is injected from js/atlas-console.js and
+       paints `--card-bg` — a THEME token with no path to the glass setting, so it is a solid lozenge in
+       either glass mode. It reads worst as a sidebar tab, where `.atl-tab` makes the panel itself
+       transparent and this pill is the only opaque object in the column. The frosted override lives HERE
+       rather than beside its base rule for two reasons: this is where the #R39 recipe it copies already
+       is, and js/atlas-console.js is at #R199's 5,300-line ceiling, which is never raised.
+       ⚠ (0,3,0) against the base rule's (0,2,0), so it wins wherever the two sheets end up in order. */
+    body.sidebar-translucent #atlas-panel .atl-in, body.sidebar-glass2 #atlas-panel .atl-in{
+      background:rgba(140,140,150,0.16); border:1px solid var(--glass-border,rgba(255,255,255,0.18));
+      -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); box-shadow:none; }
+    body.sidebar-translucent #atlas-panel .atl-in:focus, body.sidebar-glass2 #atlas-panel .atl-in:focus{ border-color:var(--primary-color); }
     /* (#R41) AI follow-up bar polish (applies in ALL sidebar modes + the place-popup AI). The sticky input
        strip painted a HARD --popup-bg RECTANGLE behind the pill + send button ("入力欄と送信ボタンの後ろに
        長方形の背景が見えてダサい") — fade it to transparent upward so it still masks the scrolling chat at the
@@ -1272,9 +1306,25 @@
        and in frosted (overlay-sidebar) mode center it within the VISIBLE map area. */
     @media(min-width:769px){
       .map-search{ max-width:min(380px, calc(100% - 330px)); min-width:170px; }
-      body.sidebar-glass:has(.sidebar:not(.collapsed)) .map-search{
+      /* (#R309) …but NOT while the JS watcher is anchoring the pill. `body.ms-narrow` below anchors left AND
+         right from the REAL measured edges of both overlays, and the two numbers only mean anything as a PAIR —
+         this selector is (0,4,1) and ms-narrow's is (0,2,1), so it used to win `left` + `max-width` while
+         ms-narrow kept `right`: half of one layout against half of the other. Measured at 1440×900 with both
+         sidebars open, that was left:920px against right:619px = an 18px sliver ("サイドバーを左右両方開けると
+         地名検索バーが潰れる"). Hand the whole layout to the watcher whenever it is in charge. */
+      body.sidebar-glass:not(.ms-narrow):has(.sidebar:not(.collapsed)) .map-search{
         left:calc(var(--sidebar-w) + (100% - var(--sidebar-w))/2);
         max-width:min(380px, calc(100% - var(--sidebar-w) - 350px));
+      }
+      /* (#R309) …and when the RIGHT layer sidebar is open the visible map ends --lsr-w short of the container
+         (it OVERLAYS that strip rather than shrinking the map, #R160), and the right-hand controls slide left
+         with it (`body.lsr-open:not(.ws-mode) .map-controls-top`). Both the centre and the 350px control
+         reservation are measured from the container edge, so both have to lose that strip too — otherwise the
+         pill is centred on a point that is behind the panel. Excluded in ws-mode like every other lsr-open
+         rule: there the pill is pinned inside the map window. */
+      body.sidebar-glass:not(.ms-narrow).lsr-open:not(.ws-mode):has(.sidebar:not(.collapsed)) .map-search{
+        left:calc(var(--sidebar-w) + (100% - var(--sidebar-w) - var(--lsr-w))/2);
+        max-width:min(380px, calc(100% - var(--sidebar-w) - var(--lsr-w) - 350px));
       }
       /* (#R25) Narrow desktop: the JS watcher computes a left/right that ALWAYS clears the (multi-row)
          right-hand view buttons and the left sidebar, so the search can never overlap them or get crushed
@@ -1417,6 +1467,13 @@
     #community-feed{ overflow:hidden !important; padding-bottom:0 !important; gap:0 !important; }
     #community-feed .comm-scroll{ flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:12px; padding:2px 0 8px; -webkit-overflow-scrolling:touch; }
     #community-feed .comm-toolbar-bottom{ flex:0 0 auto; display:flex; align-items:center; gap:8px; margin:0; padding:10px 0 max(10px,env(safe-area-inset-bottom)); background:var(--glass-fill); border-top:1px solid rgba(128,128,128,0.18); }
+    /* (#R309) …the same doubled coat as the two sort toolbars further down: in the frosted modes --glass-fill
+       is what .sidebar is already painting behind this bar, so the strip composes to roughly twice the alpha
+       and reads as a bright rectangle under New post / Hot-New-Top. Show the panel's single frost instead, and
+       add no second backdrop-filter (#R40). Solid keeps its opaque --card-bg strip. Nothing is lost by going
+       transparent here: unlike the sticky toolbars this bar is a flex sibling BELOW .comm-scroll, so no post
+       ever passes behind it — the border-top hairline is what separates it, and that is untouched. */
+    body.sidebar-translucent #community-feed .comm-toolbar-bottom, body.sidebar-glass2 #community-feed .comm-toolbar-bottom{ background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; }
     .compose-img-row{ display:flex; align-items:center; gap:12px; margin-bottom:10px; }
     .compose-img-btn{ display:inline-flex; align-items:center; gap:6px; background:var(--input-bg); border:1px dashed rgba(128,128,128,0.4); color:var(--text-main); padding:10px 14px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; }
     .compose-img-btn:hover{ border-color:var(--primary-color); color:var(--primary-color); }
@@ -2638,6 +2695,19 @@
     .content-area{ padding-top:0; }
     .dash-nav{ position:sticky; top:0; z-index:6; background:var(--glass-fill); margin:0 0 12px; padding:6px 0 8px; }
     #live-news-feed .stats-toolbar{ position:sticky; top:0; z-index:6; background:var(--glass-fill); margin:0 0 8px; padding:4px 0 8px; }
+    /* (#R309) …and both of these carry the SAME double-paint the Countries toolbar had (see the block below).
+       They name --glass-fill DIRECTLY rather than var(--panel-bg,…), so unlike that one they are correct in
+       Solid — there --glass-fill is the opaque --card-bg, a deliberately raised strip against the recessed
+       --panel-bg panel (#R104). In the two frosted modes it is the EXACT fill .sidebar is already painting
+       underneath, so the two coats compose and the strip reads as the reported bright rectangle. Let the
+       panel's single frost through; no second backdrop-filter (#R40 — re-blurring is what draws the box edge).
+       ⚠ MEASURED before deciding: a frosted sticky strip never masked the cards scrolling under it anyway —
+       at --glass-fill rgba(255,255,255,0.34) the row beneath was already legible through it, so this removes
+       a doubled coat, not a working mask. ⚠ `#live-news-feed .stats-toolbar` matches nothing today (the
+       country list moved to #countries-feed at #R78e and only a dead fallback still names this feed); it is
+       included so the defect cannot come back with the element. */
+    body.sidebar-translucent .dash-nav, body.sidebar-glass2 .dash-nav,
+    body.sidebar-translucent #live-news-feed .stats-toolbar, body.sidebar-glass2 #live-news-feed .stats-toolbar{ background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; }
     /* (#R104) Countries sort toolbar sticks to the TOP of the list and hugs the search field above / cards below;
        painted with the recessed panel tone so the cards scroll cleanly under it. */
     /* (#R106) tighter Countries toolbar: the pulldown ↔ asc/desc button gap 6→4 and less top padding so it hugs the
@@ -2645,6 +2715,17 @@
     /* (#R108) a SLIGHT gap above the sort toolbar — created by the toolbar's OWN padding-top so the strip is painted
        with the recessed panel tone, NOT a see-through void ("わずかだけ隙間を…後ろの画面が見えるような空白にしない"). */
     #countries-feed .stats-toolbar{ position:sticky; top:0; z-index:6; background:var(--panel-bg,var(--glass-fill)); margin:0 0 4px; padding:6px 0 4px; gap:2px; }
+    /* (#R309) …and in the two FROSTED modes it painted nothing but a second copy of the panel. --panel-bg is
+       declared only for `body:not(.sidebar-translucent):not(.sidebar-glass2)` (#R104), so with frosted glass the
+       fallback --glass-fill is picked — the EXACT fill .sidebar itself is already painting underneath. The two
+       0.34 layers compose to ~0.56 and the strip reads as a hard bright rectangle behind the metric pulldown and
+       the ascending/descending button ("CountriesのGDP/Descendingの行、フロストガラスにしたら四角の不要な背景が
+       出てくる"). Let the panel's single frost show through. ⚠ No backdrop-filter is added in its place: a SECOND
+       blur over an already-frosted parent is what draws the box edge — that is #R40's finding, and its answer for
+       the AI panel's sticky bar is the same three declarations. The strip still masks the cards scrolling under it
+       because the frosted panel behind it is opaque enough to. Solid mode is untouched: there --panel-bg is the
+       recessed tone that makes the cards read as raised tiles, and the strip is invisible against it anyway. */
+    body.sidebar-translucent #countries-feed .stats-toolbar, body.sidebar-glass2 #countries-feed .stats-toolbar{ background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; }
 
     /* --- Mobile compact tweaks (#1,#2): denser news cards + smaller measurement popups --- */
     @media(max-width:768px){

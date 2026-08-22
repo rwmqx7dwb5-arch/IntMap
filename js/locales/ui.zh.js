@@ -4990,5 +4990,13 @@ window.IntMapLang.define('zh', {
   "Where? Give the transmitter site (place, or lng/lat).": "發射機位置在哪裡？請指定地點或經緯度。",   /* (#R299) */
   "Where? Give the point (place, or lng/lat).": "在哪裡？請提供地點（地名，或經緯度）。",   /* (#R302) */
   "Arrival times need a point — name a place, or tap the map first.": "到達時刻需要一個地點——請指定地名，或先點一下地圖。",   /* (#R302) */
+  "Brief me on {place} — the latest": "幫我簡報{place}的最新情勢",   /* atlas-console.js (#R309) */
+  "Compare {place} with its neighbours — GDP, defense and population": "比較{place}與鄰國 — GDP、國防支出與人口",   /* atlas-console.js (#R309) */
+  "How has {place}'s economy changed since 1990?": "{place}的經濟從 1990 年以來有什麼變化？",   /* atlas-console.js (#R309) */
+  "What is the weather and any active warnings in {place}?": "{place}的天氣如何？有哪些生效中的警報？",   /* atlas-console.js (#R309) */
+  "Compare the USA, China and India — GDP, defense and population": "比較美國、中國與印度 — GDP、國防支出與人口",   /* atlas-console.js (#R309) */
+  "Which countries spend the most on defense relative to GDP?": "哪些國家的國防支出佔 GDP 比重最高？",   /* atlas-console.js (#R309) */
+  "Brief me on the South China Sea — the latest": "幫我簡報南海的最新情勢",   /* atlas-console.js (#R309) */
+  "Which countries have the highest life expectancy?": "哪些國家平均壽命最長？",   /* atlas-console.js (#R309) */
   }
 });
