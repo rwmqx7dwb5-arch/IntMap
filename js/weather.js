@@ -223,16 +223,22 @@ window.IntMapModules.wind=function(HOST){
       const w=shownWaiters; shownWaiters=[]; w.forEach(r=>{ try{ r(); }catch(_){} }); }
     function addField(key){
       if(!_imCanDraw()) return false;
-      /* ══ ⚠⚠ (#R302) 同じ時刻を、もう一度いちから建て直さない ═══════════════════════════════════
-         この関数の本体は無条件に remove → removeSource → addSource で、そこには
-         **タイルを取りに行っている最中のソース**も含まれる。同じ key で二度届く窓が実際にある：
-         `load()` は非同期なので、その `.then` が `ensureField(key)` に着く前に `idle` が来ると
-         そちらが先に建て（`ensureField` のはしごも `once('idle')` の側と時計の側の二本ある）、
-         あとから届いた側が同じ URL で建て直す。捨てられるのは「もうすぐ着くタイル」で、
-         `_whenSrcLoaded` の待ちも `fieldSeq` も最初からやり直しになる——時刻を変えてから色が
-         出るまでが、そのぶん丸ごと伸びる。
-         建っているものがその key のものなら、それが答えである。 */
-      if(key&&liveKey===key&&liveSlot>=0){ try{ if(GE().layers.has(SLOT[liveSlot].lyr)) return true; }catch(_){} }
+      /* ══ ⚠⚠ (#R302 追記) 「同じ key なら建て直さない」は<b>一度も走れない行だった</b> ═══════════════
+         #R302 はここに `if(key&&liveKey===key&&liveSlot>=0){ … return true; }` を入れ、「同じ時刻の
+         二重発注を止めた」と書いた。**その条件は成立しえない。** `addField(key)` を呼ぶ場所は4つしか
+         なく、**4つとも入る前に `liveKey!==key` を確かめている**:
+             ensureField 本体（296）… 呼び出し元 446 が `key!==liveKey`、650 が `liveKey=''` を先に置く
+             again()（299）………… `if(!on||liveKey===key) return;`
+             idle（302）…………… `if(on&&liveKey!==key) addField(key)`
+         そして `liveKey=key` はこの関数の**末尾で同期的に**書かれるので、成功した瞬間から梯子は自分で
+         黙る。想定した「`load()` の `.then` と `idle` が同じ key で二度届く窓」は、#R276 追記が梯子に
+         付けたこのガードによって**すでに閉じていた**。
+         → 消した。**走れない行より悪いのは、走ると書いてある注記のほうである。**
+         ⚠ 消した理由は本番のデプロイ後スモークではない。あの回（#261）は
+         `tests/prod-smoke.spec.js:556` の風の画素が落ちたが、**13分後に同じコードを載せた #262 の
+         デプロイでは同じ試験が通っている**ので、あれはタイルの着地待ち（`rasterOpacity>0` のあと 6 秒）
+         の取りこぼしであって、このラウンドの変更ではない。
+         ⚠ `liveKey`/`liveSlot` はそのまま——梯子が読んでおり、`removeField` が消す。 */
       slot=(shownSlot===0)?1:0;                    /* (#R298) 「free」 means 「not the one on screen」 */
       if(!EC().registerProtocol()) return false;   /* (#R288) — see the note in weatherEC.addSlot */
       const s=SLOT[slot], url=EC().omUrl(VAR);
