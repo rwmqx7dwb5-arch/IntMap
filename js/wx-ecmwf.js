@@ -109,6 +109,13 @@
         idx = nowIndex();
       }
       _prevValid = meta.validTimes[idx] || '';
+      /* ⚠⚠ (#R308) 「起動から」 — THE EARLIEST MOMENT THE FILE NAME EXISTS AT ALL, and the first
+         moment anything can be done about the four seconds the CDN takes to stage it. `fetchMeta`
+         runs at boot for the time slider and the news timeline whether or not a weather layer is
+         ever switched on (js/weather.js, js/news-timeline.js), so this is one request, of ONE BYTE,
+         per session — see the note on `touch`. It is deliberately just the hour the app will open
+         on: the window around it belongs to a reader who has actually asked for weather (`ready`). */
+      try { touch(idx); } catch (_) {}
       emit('meta');
       return meta;
     });
@@ -148,9 +155,11 @@
      seconds while every subsequent range on that same object takes twenty-six. Each forecast hour is
      its own ~114 MB `.om` file, so every single time step pays it once.
 
-     → touch the file first. One `fetch` for the last 64 kB — which is EXACTLY the block the reader
-     asks for first, so it is a browser-cache hit when the reader gets there — issued the moment the
-     hour is known, outside the SDK's one-reader queue and in parallel with everything else.
+     → touch the file first: one `fetch` for the END of it, issued the moment the hour is known,
+     outside the SDK's one-reader queue and in parallel with everything else. (#R307 asked for the
+     last 64 kB, i.e. exactly the block the reader asks for first, so that it was a browser-cache hit
+     when the reader got there. ⚠ IT IS ONE BYTE NOW — see #R308 below, which measured that the size
+     of the request has nothing to do with the four seconds.)
      MEASURED, same page, same view, same axis, the next never-visited hour:
 
          untouched (index 30)   6,135 ms   ·   trailer request 4,130 ms
@@ -159,11 +168,45 @@
      ⚠ THE TOUCH IS NOT A SECOND FETCH PATH. It reads no data and decodes nothing; it exists only so
      that the request the SDK is about to make is one the CDN has already staged. The reader still
      reads the same file, the same ranges, the same 9 km samples — 「品質保ったまま」 is literal.
-     ⚠ ONE PER FILE, EVER (`touched`), and 64 kB each, so scrubbing the whole 109-hour axis costs
-     7 MB — against the 6 MB EACH of those hours would cost to actually read.
      ⚠ AND IT IS DELIBERATELY NOT QUEUED. `serial()` exists because the SDK has one reader and two
      reads of different files corrupt each other; this touches no reader at all. */
-  var TOUCH_BYTES = 64 * 1024;
+  /* ══ ⚠⚠⚠ (#R308) 「風レイヤーは品質保ったまま、起動から日時変更からすべてに至るまで、爆速にしろ。」
+     THE STAGE-IN NEEDS **ONE BYTE**, AND IT PARALLELISES ═══════════════════════════════════════════
+     #R307 was right that the wait is one range request against an object the CDN has not staged, and
+     it read that fact as 「so ask for exactly the 64 kB the SDK will ask for, and let the browser
+     cache serve it」. Two things were never measured, and both of them are what 「起動から…」 was
+     asking about. MEASURED on production, twelve forecast hours nobody had opened:
+
+        ① WHAT COSTS THE FOUR SECONDS IS THE REQUEST, NOT ITS SIZE.
+              bytes=0-0    (one byte, head)   562 ms   and the tail is STILL cold afterwards
+              bytes=-1     (one byte, tail) 5,081 ms   and a 64 kB tail after it is 188 ms
+              bytes=-65536 (64 kB,   tail) 4,867 ms
+           A ONE-BYTE suffix range stages the object exactly as the 64 kB one does. Twelve of them:
+              stage 12 files · 12 BYTES of body · 5,329 ms wall clock
+              then a real 64 kB tail read on each: 27–50 ms   (against 4,483–5,195 ms unstaged)
+           So the stage-in is 65,536× smaller and buys the same four seconds. The 27–50 ms is a CDN
+           hit rather than #R307's 11 ms browser-cache hit — twenty milliseconds, for a quarter of a
+           megabyte per hour.
+
+        ② TWELVE COLD OBJECTS STAGE IN THE TIME OF ONE. The four seconds is latency, not bandwidth,
+           and the requests do not queue behind each other: the same twelve took 5,329 ms together
+           and ~55,000 ms one after another. #R307 staged four hours because four × 64 kB was as
+           much as it could justify; at one byte each the number is chosen by what the reader can
+           plausibly reach next, not by what the bytes cost.
+
+     → the window below, all of it fired in the same turn so the CDN sees it as one burst, and
+       ⚠ THE OPENING HOUR IS STAGED FROM `fetchMeta` — i.e. AT BOOT, for every session. That is the
+       decision #R307 explicitly declined («256 kB on every session's boot for a layer nobody turned
+       on»), and the only thing that made it wrong was the 256 kB. One byte to a host this app is
+       already asking for `latest.json` at boot is not a cost worth four seconds of the first thing
+       the reader sees, so the first hour is staged while the page is still loading.
+     ⚠ STILL ONE PER FILE, EVER (`touched`), and still no reader — see above. */
+  var TOUCH_RANGE = 'bytes=-1';
+  /* how far along the axis, in steps, in the direction the reader is going and behind them. 8 + 3 +
+     the hour itself is the twelve measured above; ⚠ NOT the whole 109-hour axis — a staged object is
+     work the CDN does on our behalf, and staging hours nobody is heading towards would be asking a
+     free service to do it for nothing. */
+  var TOUCH_AHEAD = 8, TOUCH_BACK = 3, TOUCH_PLAY_AHEAD = 16;
   var touched = Object.create(null);
   var touchN = 0;
   function touch(i) {
@@ -171,22 +214,28 @@
     if (!f || touched[f]) return false;
     touched[f] = 1; touchN++;
     try {
-      fetch(f, { headers: { Range: 'bytes=-' + TOUCH_BYTES } })
+      fetch(f, { headers: { Range: TOUCH_RANGE } })
         .then(function (r) { return r.arrayBuffer(); })
         .catch(function () { delete touched[f]; });
     } catch (_) { delete touched[f]; return false; }
     return true;
   }
-  /* ⚠ THE HOURS AROUND IT, AND WHY IT IS TWO AHEAD RATHER THAN ONE. #R305's warm-up already stages
-     the next hour — correctly, in the direction the axis is moving — but it waits for the axis to be
-     STILL for 2.5 s and then queues behind the reader. A reader who steps every second therefore
-     never gets it, and a reader who turns round gets it in the wrong direction. Staging is 64 kB and
-     no reader, so it can be done for both neighbours and two ahead: 256 kB buys about eight seconds
-     of head start along the axis, in whichever direction the reader is actually going. */
+  /* ⚠ THE HOURS AROUND IT, IN THE ORDER THEY MATTER. #R305's warm-up already stages the next hour —
+     correctly, in the direction the axis is moving — but it waits for the axis to be STILL for 2.5 s
+     and then queues behind the reader. A reader who steps every second therefore never gets it, and
+     a reader who turns round gets it in the wrong direction. This costs one byte and no reader, so
+     it runs on every index change: the hour itself first, then alternating out so the near ones
+     leave before the far ones, ahead further than behind because that is where the reader is going.
+     ⚠ PLAYBACK ASKS FOR EVERY HOUR IN TURN at `playMs` (700 ms), so a window that only reaches eight
+     hours ahead is overtaken in six seconds — while playing the run is staged twice as far. */
   var _touchDir = 1;
-  function touchAround(i) {
+  function touchAround(i, ahead) {
+    var n = Math.max(1, ahead || TOUCH_AHEAD), j;
     touch(i);
-    touch(i + _touchDir); touch(i + 2 * _touchDir); touch(i - _touchDir);
+    for (j = 1; j <= n; j++) {
+      touch(i + j * _touchDir);
+      if (j <= TOUCH_BACK) touch(i - j * _touchDir);
+    }
   }
   function omUrl(variable, extra, i) {
     var f = fileUrl(i);
@@ -1033,7 +1082,7 @@
        `ready()`, which only a real consumer reaches. The clock moves this axis on every tick
        (`_followClock`) whether or not a weather layer is on, and staging files for a layer nobody
        switched on is bytes nobody asked for. */
-    if (sdk && !(opt && opt.quiet)) touchAround(idx);
+    if (sdk && !(opt && opt.quiet)) touchAround(idx, playing ? TOUCH_PLAY_AHEAD : TOUCH_AHEAD);
     if (!(opt && opt.fromClock)) _pushClock();
     if (opt && opt.quiet) { clearTimeout(timeT); timeT = 0; return; }
     emit('index', { index: idx, validTime: meta.validTimes[idx] });

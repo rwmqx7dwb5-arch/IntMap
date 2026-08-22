@@ -1091,6 +1091,8 @@ window.IntMapModules.worldPacks=function(HOST){
     (function alerts(){
       const SRC='wp-alert', LYR=['wp-alert-fill','wp-alert-line','wp-alert-lbl','wp-alert-lbls'];
       const CHORO='wp-alert-choro', HATCH='wp-alert-hatch';
+      /* (#R308) the same hatch, drawn from geometry this layer cut itself — see rebuildHatchCut */
+      const HCUT='wp-alert-hatch-cut', HCUT_SRC='wp-alert-hatch-cut-src';
       /* ══ ⚠⚠⚠ (#R298) 「発表なし」の表現は<b>1つ</b>しかない ═══════════════════════════════════
          「日本と日本以外で、発表無しポリゴンの色を変えるのを辞めろ。また、発表無しポリゴンだけ不透明度
            選択の対象外なのを辞めろ。発表無しポリゴンの上に発表ありポリゴンを重ねる形式を今すぐ辞めろ。」
@@ -1123,7 +1125,7 @@ window.IntMapModules.worldPacks=function(HOST){
          were visible, i.e. the warnings were on the map as thin coloured lines with no fill.
          So the whole family is ONE list and ONE call, re-asserted whenever the map goes idle — the
          same treatment the weather field needed in #R276, for the same reason. */
-      const ALL_LYR=()=>LYR.concat([CHORO,HATCH]);
+      const ALL_LYR=()=>LYR.concat([CHORO,HATCH,HCUT]);
       function applyAlertVis(){ setVis(ALL_LYR(),on); }
       let on=false, feats=[], busy=false, timer=null;
       /* ⚠ (#R212) 「現在出てるのに、何も発令されてないと日本の場合は出てくる。」 — AND THAT WAS THE FEED
@@ -1172,7 +1174,7 @@ window.IntMapModules.worldPacks=function(HOST){
          characters to check every family passes a row id, and a comment inside the argument list
          pushes the closing brace past that window. */
       const panel=makePanel('wp-alert-panel',()=>'⚠ '+L('Warnings','気象・災害警報','Warnungen','Предупреждения','Avisos'),'wp-dl-alerts',
-        { legendId:'wpalerts', layers:()=>['wp-alert-fill',CHORO,HATCH,'wp-alert-line'],
+        { legendId:'wpalerts', layers:()=>['wp-alert-fill',CHORO,HATCH,HCUT,'wp-alert-line'],
           names:()=>(LA('⚠ Weather & disaster warnings','⚠ 気象・災害警報','⚠ Wetter- und Katastrophenwarnungen','⚠ Метеопредупреждения','⚠ Avisos meteorológicos')) });
 
       /* ══ ⚠⚠⚠ (#R269) THE JMA CODE TABLE IS THE JMA'S OWN, NOT ONE WRITTEN FROM MEMORY ═══════════
@@ -1935,7 +1937,7 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!_pcAsked){ _pcAsked=true;
           import('polygon-clipping').then(m=>{
             const lib=(m&&(m.default||m))||null;
-            if(lib&&typeof lib.difference==='function'){ PC=lib; _qCache=null; if(on) publish(); }
+            if(lib&&typeof lib.difference==='function'){ PC=lib; _qCache=null; hatchCutKey=''; if(on) publish(); }
             else _pcOut=true;
           }).catch(()=>{ _pcOut=true; }); }
         return null; }
@@ -2229,12 +2231,15 @@ window.IntMapModules.worldPacks=function(HOST){
         Math.max(0,Math.min(1,(+v||0)*2.2)),0];
       const choroOp=(v)=>['case',['>',['to-number',['feature-state','wpAlert'],-1],0],
         Math.max(0,Math.min(1,(+v||0)*2.6)),0];
+      /* (#R308) the cut source holds ONLY hatched ground, so there is no state to ask — but the
+         slider still owns it, exactly like the two above */
+      const hatchCutOp=(v)=>Math.max(0,Math.min(1,(+v||0)*2.2));
       const washExpr=()=>{ const P=(mode==='agency')?PAL.cap:PAL_NORM;
         return ['match',['to-number',['feature-state','wpAlert'],-1],
           1,QUIET_COL,
           11,_wash(P[1]),12,_wash(P[2]||P[1]),13,_wash(P[3]||P[2]),14,_wash(PAL_NORM[4]),
           'rgba(0,0,0,0)']; };
-      function ensureChoro(){ if(GE().layers.has(CHORO)&&GE().layers.has(HATCH)) return true;
+      function ensureChoro(){ if(GE().layers.has(CHORO)&&GE().layers.has(HATCH)&&GE().layers.has(HCUT)) return true;
         if(!_imCanDraw()||!GE().layers.hasSource('countries')) return false;
         /* ══ ⚠⚠⚠ (#R277) THE COUNTRY-SCALE GREY WAS ON TOP OF THE UNITS ══════════════════
            MEASURED on the built page with the layer on: `wp-alert-fill` sat at style index 34 and
@@ -2256,6 +2261,16 @@ window.IntMapModules.worldPacks=function(HOST){
           if(!GE().layers.has(CHORO))
             GE().layers.add({id:CHORO,type:'fill',source:'countries',layout:{visibility:'none'},
               paint:{'fill-color':washExpr(),'fill-opacity':choroOp(OPACITY_DEFAULT)}},before);
+          /* ⚠ (#R308) THE SAME PATTERN, ON GROUND NOBODY ELSE HAS ANSWERED FOR. Same image, same
+             opacity rule, one layer above `HATCH` and still under the wash and the unit fills —
+             the two hatch layers are disjoint by construction (the filter on `HATCH` names exactly
+             the countries this source carries), so no ground is ever hatched twice. */
+          if(!GE().layers.hasSource(HCUT_SRC))
+            GE().layers.addSource(HCUT_SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+          if(!GE().layers.has(HCUT)){
+            ensureHatch();
+            GE().layers.add({id:HCUT,type:'fill',source:HCUT_SRC,layout:{visibility:'none'},
+              paint:{'fill-pattern':'wp-alert-hatch-img','fill-opacity':hatchCutOp(OPACITY_DEFAULT)}},before); }
         /* ⚠⚠⚠ (#R293) …AND THE SLIDER MUST NOT FLATTEN THEM. Both expressions above decide WHICH
            countries are painted, and `_applyGenericOpacity` used to write its scalar straight over
            them — MEASURED, `fill-opacity` on the hatch read back as **0.38**, so every country on
@@ -2263,7 +2278,8 @@ window.IntMapModules.worldPacks=function(HOST){
            Registering a builder keeps both facts: the state decides WHO, the slider decides HOW
            STRONGLY (js/data-layers.js `_opacityExpr`). */
         try{ const OE=(window._opacityExpr=window._opacityExpr||{});
-          OE[HATCH]=hatchOp; OE[CHORO]=choroOp; OE['wp-alert-line']=lineOp; }catch(_){}
+          OE[HATCH]=hatchOp; OE[CHORO]=choroOp; OE[HCUT]=hatchCutOp; OE['wp-alert-line']=lineOp; }catch(_){}
+        try{ applyHatchCut(); }catch(_){}
         }catch(_){ return false; }
         return true; }
 
@@ -4101,6 +4117,175 @@ window.IntMapModules.worldPacks=function(HOST){
          batches costs one walk. `paintCountries(true)` — a style reload, or the layer being switched
          on — still runs at once, because those are the moments the whole thing has to be re-asserted. */
       let paintT=0;
+      /* ══ ⚠⚠⚠ (#R308) 「情報あるのに、そこに斜線が上塗りされてる」 ═════════════════════════════════
+         「警報レイヤー、発令されている・されてない地域にまで斜線かけるな。」
+
+         斜線の意味は #R273 以来ひとつ——「この地図はここについて何も述べていない」。だからそれは、
+         **この地図が何か述べている地面の上に描かれてはならない。** MEASURED on production（各地点で
+         `queryRenderedFeatures` を撃ち、斜線が塗られている点のうち、同じ点に発令中／発表なしの単位が
+         あるものを数えた。z と地点は下記のとおり・キャンバス 880×720）:
+
+             リヒテンシュタイン z9   斜線  87 点 · うち **87 (100 %)** が CHE の発令中の上
+             北キプロス       z8   斜線 447 点 · うち **420 ( 94 %)** が CYP の発表なしの上
+             マカオ           z10  斜線  43 点 · うち **43 (100 %)** が CHN の発令中／発表なしの上
+             ソマリランド     z6   斜線 838 点 · うち **791 ( 94 %)** が SOM の発表なしの上
+             カシミール       z6   斜線1,598 点 · うち **532** が IND の発表なしの上（PAK の輪郭）
+             コソボ           z7   斜線1,147 点 · うち **375** が SRB の発令中の上
+             モナコ           z10  斜線  45 点 · うち  38 が FRA の発令中の上
+             サンマリノ       z9   斜線  35 点 · うち  12 が ITA の発令中の上
+
+         原因は塗り順ではない（斜線は #R277 以来ちゃんと単位の**下**にある）。原因は、**斜線を描く索引と
+         答えを描く索引が同じ分割ではない**ことである——`countries` は飛び地と係争地を別のポリゴンとして
+         持ち、単位の索引（NUTS・admin-1・気象機関自身の予報区）はそれらを刳り抜いていない。だから
+         「配信元の無い国」の輪郭が、隣国が答えている地面の上に重なる。そして単位の塗りは半透明（0.38）
+         なので、下にある斜線はそのまま透けて見える——読み手にはまさに「上塗り」に見える。
+
+         → #R307 が灰色のために書いた引き算を、そのまま斜線に使う: **斜線 = 国 − ∪(この層が答えを
+           描いている地面)**。3つの場合が1つの式の3つの答えになる——地面ぜんぶが答えられていれば
+           斜線は消え（北キプロス・マカオ・ソマリランド）、一部なら残りだけが斜線になり（カシミールの
+           パキスタン側）、重なりが無ければ何も変わらない（モンゴル・ベネズエラ…＝斜線は従来どおり）。
+         ⚠ 「答えている地面」は**この層が実際に描いている地物**である——発令中・発表なしの単位ぜんぶと、
+            国 1 枚で薄塗りしている国の輪郭。`washTier` が 0 でない国は、何かを述べている。
+         ⚠ 引き算できたものだけを `HCUT_SRC` へ移し、`HATCH` のフィルタでその国を外す。だから
+            **二重には決して塗られない**し、引き算が答えられなかったとき（clipper が未着・頂点が
+            `CLIP_MAX_V` 超え）は従来の斜線がそのまま残る——**機能が減る瞬間は無い**（#R307 と同じ規則）。
+         ⚠ 費用は publish ごとではない。`shown` の署名と tier 0 の集合が両方とも同じなら作り直さない。 */
+      /* ══ ⚠⚠⚠ (#R308) 段は3つあり、どれも「面」ではない ═══════════════════════════════════════
+         この引き算を素直に書くと、このレイヤーが #R290 / #R297 で払ったのと同じ費用の払い方になる。
+         MEASURED on the built page（z2・起動直後は tier 0 がほぼ全世界なので最悪ケース）:
+
+             ① 箱が重なる相手を全部 clipper へ            `rebuildHatchCut` **19,588 ms**
+             ② その前に「内点で重なるか」を標本で訊く      **16,263 ms**（環の長さが効くものは全部高い）
+             ③ 箱の比だけで篩う（O(1)）＋ 時間の予算       下記
+
+         → 段は O(1) の**比**にする: 重なりの箱が、どちらかの箱の 6 割以上を占めているか。飛び地
+           （バチカン・サンマリノ・モナコ・リヒテンシュタイン・マカオ）は相手の箱の中に丸ごと入るので必ず
+           当たり、係争地（カシミールのインド側の単位はパキスタンの箱の 7 割が中）も当たり、ただ隣り合って
+           いるだけの国（フランスとスペイン、アンゴラとナミビア）は当たらない。段は篩であって答えではない
+           ——当たったものだけ clipper が面で答える。⚠ 篩が見落としても失うものは無い: その国は従来どおり
+           斜線のままになる。
+         ⚠ そして**予算**を持つ。1 回の `publish` で新しく計算してよいのは `CUT_BUDGET_MS` まで。使い切ったら
+           そこで止め、`hatchCutKey` を空にして次の publish が続きから進む——**画面の中の国から先に**。
+           答えは国ごとに `cutMemo` に残るので、2 回目以降はどの国も無料である。
+         ⚠ そして**2 % の閾**。境界に沿って数十メートルの薄片を切り出したところで読み手には見えないし、
+           そのために国ぜんぶの輪郭を GeoJSON ソースへ移すのは #R290 が数えた費用そのものである。
+           減った面積が国の 2 % 未満なら「重なっていない」として扱い、共有ベクタソースに残す。 */
+      const CUT_NEAR_MAX=12, CUT_STEP_V=6000, CUT_RATIO=0.4, CUT_BUDGET_MS=25, CUT_MIN_LOSS=0.02;
+      /* ⚠ …AND A FRACTION ALONE IS THE WRONG QUESTION. MEASURED: パキスタンの輪郭からインドの
+         ジャンムー・カシミール／ラダックを引いた結果は、**国の 2 % に届かない**ので「薄片」に落ちて
+         いた——本番でそこは z6 で **519 点**の上塗りである。大きい国の一部は、割合では小さくても面積では
+         大きい。→ 割合か**絶対面積**のどちらかで足りていればよい（0.02 平方度 ≒ 250 km²）。 */
+      const CUT_MIN_DEG2=0.02;
+      /* ⚠ 1国ぶんの上限。`subtractWarnings` の `CLIP_MAX_V`（60,000）は「単位 − 20 の発令」のための
+         天井で、こちらは 1 回が 300 ms を超えることがあった（MEASURED: スイスの輪郭 − 12 単位）。
+         上塗りされている飛び地と係争地はどれもこれよりずっと小さい。 */
+      const CUT_ONE_V=20000;
+      let hatchCutISO=[], hatchCutFC={type:'FeatureCollection',features:[]}, hatchCutKey='', hatchCutN=0;
+      /* ⚠ (#R308) WHAT THE SUBTRACTION ANSWERED, PER COUNTRY — 'gone' 覆われた · 'cut' 一部 ·
+         'same' 重なっていない · 'no' 引き算できなかった（clipper 未着／頂点が天井超え）· 'alone' 篩で落ちた。
+         読める計器が無いと「効かなかった」と「動いていない」の区別がつかない（#R306）。 */
+      let hatchCutWhy=Object.create(null), hatchCutMs=0, hatchCutLeftOver=false;
+      /* iso → { k:候補の指紋, g:結果（null＝全部答えられている · 'same'＝従来どおり）, why } */
+      const cutMemo=Object.create(null);
+      function boxHit(a,b){ return !!(a&&b&&a[0]<=b[2]&&b[0]<=a[2]&&a[1]<=b[3]&&b[1]<=a[3]); }
+      const _now=()=>{ try{ return performance.now(); }catch(_){ return 0; } };
+      function _absArea(g){ const p=_polysOf(g); if(!p) return 0; let a=0;
+        for(let i=0;i<p.length;i++){ const r=p[i][0]; if(r&&r.length>3) a+=Math.abs(ringArea2(r)); } return a; }
+      function rebuildHatchCut(shown,sig){
+        const t0=_now();
+        const geo=(HOST.countryGeo&&HOST.countryGeo.features)||[];
+        if(!geo.length) return false;
+        /* tier 0 の集合が変わったか、描かれている地物が変わったかのどちらかでだけ作り直す */
+        const zero=[];
+        for(let i=0;i<geo.length;i++){ const c=String(geo[i].id||''); if(!c||!geo[i].geometry) continue;
+          if(washTier(c)===0) zero.push(c); }
+        const key=sig+'|'+zero.join(',');
+        if(key===hatchCutKey) return false;
+        /* この層が答えを描いている地面 */
+        const ans=[];
+        for(let i=0;i<shown.length;i++){ const f=shown[i], g=f&&f.geometry; if(!g) continue;
+          const b=geomBox(g); if(!b) continue;
+          ans.push({iso:String((f.properties||{}).iso||''),g:g,b:b}); }
+        /* ⚠⚠ 「答えている地面」は<b>単位</b>である。国 1 枚の薄塗り（tier 1 / 11-14）の輪郭は
+           `countries` の同じ索引から来るので、係争地を除けば斜線の輪郭と重ならない——そして係争地は
+           MEASURED した 8 か所すべてで「斜線 × 相手の<b>単位</b>」だった（`/WASH` は 1 点も無い）。
+           入れると、ロシアやカザフスタンのような 1 万頂点どうしの差を境界の薄片のために計算することに
+           なる——それがこの関数の 3 度目の費用超過の原因だった。 */
+        /* ⚠ 10° の格子に入れてから訊く。答えの地物は数千あり、tier 0 の国は百を超えるので、
+           総当たりだと publish のたびに百万回の箱比較になる（#R290・#R297 がこの層で払った費用）。
+           格子に入れる費用は 1 回・線形で、各国が見るのは自分の箱にかかるセルだけになる。 */
+        const CELL=10, CW=Math.ceil(360/CELL), CH=Math.ceil(180/CELL);
+        const grid=new Map();
+        const cellsOf=(b,fn)=>{ const x0=Math.max(0,Math.floor((b[0]+180)/CELL)), x1=Math.min(CW-1,Math.floor((b[2]+180)/CELL));
+          const y0=Math.max(0,Math.floor((b[1]+90)/CELL)), y1=Math.min(CH-1,Math.floor((b[3]+90)/CELL));
+          for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++) fn(y*CW+x); };
+        for(let i=0;i<ans.length;i++) cellsOf(ans[i].b,(k)=>{ let a=grid.get(k); if(!a){ a=[]; grid.set(k,a); } a.push(i); });
+        /* ⚠ 画面の中の国から先に。予算を使い切ったとき、読み手が見ているものが後回しにならない。 */
+        /* ⚠ 「画面の中か」は<b>比較の外で</b>1回だけ数える。`inViewISO` は国の一覧を毎回線形に探すので、
+           比較関数の中で呼ぶと 250 か国の整列だけで 50 万回の文字列比較になる。 */
+        const inv=Object.create(null);
+        for(let i=0;i<geo.length;i++){ const c=String(geo[i].id||''); if(!c) continue;
+          try{ inv[c]=!!inView(geo[i]); }catch(_){ inv[c]=false; } }
+        const order=geo.slice();
+        try{ order.sort((x,y)=>(inv[String(y.id||'')]?1:0)-(inv[String(x.id||'')]?1:0)); }catch(_){}
+        const isos=[], out=[], seen=new Set(); const why=Object.create(null);
+        let spent=false;
+        for(let i=0;i<order.length;i++){ const f=order[i], c=String(f.id||'');
+          if(!c||!f.geometry||washTier(c)!==0) continue;
+          const b=geomBox(f.geometry); if(!b) continue;
+          const cand=[]; seen.clear();
+          const bArea=Math.max(1e-9,(b[2]-b[0])*(b[3]-b[1]));
+          cellsOf(b,(k)=>{ const a=grid.get(k); if(!a) return;
+            for(let j=0;j<a.length;j++){ const idx=a[j]; if(seen.has(idx)) continue; seen.add(idx);
+              const q=ans[idx]; if(q.iso===c||!boxHit(b,q.b)) continue;
+              const ov=Math.max(0,Math.min(b[2],q.b[2])-Math.max(b[0],q.b[0]))*Math.max(0,Math.min(b[3],q.b[3])-Math.max(b[1],q.b[1]));
+              const qa=Math.max(1e-9,(q.b[2]-q.b[0])*(q.b[3]-q.b[1]));
+              if(ov/bArea<CUT_RATIO&&ov/qa<CUT_RATIO) continue;
+              cand.push({g:q.g,ov:ov}); } });
+          if(!cand.length){ why[c]='alone'; delete cutMemo[c]; continue; }
+          cand.sort((x,y)=>y.ov-x.ov);
+          const near=cand.slice(0,CUT_NEAR_MAX).map(x=>x.g);
+          const ck=near.map(g=>_bboxKey(geomBox(g))||'?').sort().join(';');
+          let hit=cutMemo[c];
+          if(!hit||hit.k!==ck){
+            if(_now()-t0>CUT_BUDGET_MS){ spent=true; why[c]='later'; if(!hit) continue; }
+            else hit=cutMemo[c]=Object.assign({k:ck},_cutOne(c,f.geometry,near)); }
+          why[c]=hit.why;
+          if(hit.g==='same') continue;                 /* 何も減らない／答えられない → 従来どおり */
+          isos.push(c);
+          if(hit.g) out.push({type:'Feature',properties:{iso:c},geometry:hit.g}); }
+        hatchCutISO=isos; hatchCutN=out.length; hatchCutWhy=why; hatchCutMs=Math.round(_now()-t0);
+        hatchCutLeftOver=spent;
+        hatchCutFC={type:'FeatureCollection',features:out};
+        /* 予算を使い切ったなら、この署名はまだ「済み」ではない——次の publish が続きをやる */
+        hatchCutKey=spent?'':key;
+        return true; }
+      /* 1国ぶんの引き算。⚠ 束ねて引けないときは 1 つずつ引ける: 欧州の単位は #R298/#R299 以降ひとつで
+         数千頂点あるので、6 つ束ねただけで `subtractWarnings` の `CLIP_MAX_V` に当たる（MEASURED:
+         リヒテンシュタイン `no:19`・モナコ `no:6`・バチカン `no:6`）。飛び地は 1 つの単位に覆われている
+         のだから束ねる必要はそもそも無く、重なりの大きい順に 1 つずつ引けば最初の 1 回で空になる。 */
+      function _cutOne(c,geom,near){
+        let v=_vcount(_polysOf(geom)||[]);
+        for(let k=0;k<near.length;k++) v+=_vcount(_polysOf(near[k])||[]);
+        if(v>CUT_ONE_V) return {g:'same',why:'big:'+near.length+':'+v};
+        let d=subtractWarnings('hatch:'+c,geom,near), how='one';
+        if(d===undefined&&_vcount(_polysOf(geom)||[])<=CUT_STEP_V){
+          how='step'; let g=geom, any=false;
+          for(let k=0;k<near.length;k++){ const one=subtractWarnings('hatch:'+c,g,[near[k]]);
+            if(one===undefined) continue;
+            if(one===null){ any=true; g=null; break; }
+            if(one!==g){ any=true; g=one; } }
+          d=any?g:geom; }
+        if(d===undefined) return {g:'same',why:'no:'+near.length+':'+how};
+        if(d===geom) return {g:'same',why:'same:'+near.length+':'+how};
+        if(!d) return {g:null,why:'gone:'+near.length+':'+how};
+        const a0=_absArea(geom), a1=_absArea(d), lost=a0-a1;
+        if(a0>0&&lost<CUT_MIN_DEG2&&lost/a0<CUT_MIN_LOSS) return {g:'same',why:'sliver:'+near.length+':'+how};
+        return {g:d,why:'cut:'+near.length+':'+how}; }
+      function applyHatchCut(){
+        try{ if(GE().layers.hasSource(HCUT_SRC)) GE().layers.setSourceData(HCUT_SRC,hatchCutFC); }catch(_){}
+        try{ if(GE().layers.has(HATCH)) GE().layers.setFilter(HATCH,
+          hatchCutISO.length?['!',['in',['get','__code'],['literal',hatchCutISO.slice()]]]:null); }catch(_){} }
       function paintCountries(force){
         if(!force){ if(paintT) return; paintT=setTimeout(()=>{ paintT=0; _paintCountriesNow(false); },PUBLISH_MS); return; }
         clearTimeout(paintT); paintT=0; _paintCountriesNow(true); }
@@ -4181,10 +4366,17 @@ window.IntMapModules.worldPacks=function(HOST){
         refreshQuietLayer();
         const shown=quietFeatures().concat(feats);
         const sig=featSig(shown);
+        /* (#R308) 斜線は、この層が答えを描いている地面の上には出ない——see rebuildHatchCut.
+           `washTier` を読むので `refreshQuietLayer()` と `drawnISO` の後、`paintCountries()` と同じ段。 */
+        let cutChanged=false; try{ cutChanged=rebuildHatchCut(shown,sig); }catch(_){}
         whenDrawable(()=>{ if(!ensureLayers()) return;
           if(sig!==featsSig){ featsSig=sig; GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:shown}); }
+          if(cutChanged) applyHatchCut();
           applyAlertVis(); });
         paintCountries();
+        /* (#R308) 予算を使い切って残した国があるなら、次の窓で続きをやる。`featsSig` は変わらないので
+           ソースの再アップロードは起きない——動くのは引き算だけで、残りが無くなれば自然に止まる。 */
+        if(hatchCutLeftOver&&on) publish();
         askUnitsInView();
         if(on&&panel.shown()) showPanel(); }
 
@@ -5125,6 +5317,8 @@ window.IntMapModules.worldPacks=function(HOST){
         quietCleared:(function(){ try{ quietFeatures(); return _qCleared; }catch(_){ return 0; } })(),
         quietClipper:(function(){ try{ return PC?'on':(_pcOut?'failed':'pending'); }catch(_){ return '?'; } })(),
         quietUnitISOs:(function(){ try{ return quietList.slice(); }catch(_){ return []; } })(),
+        /* (#R308) 斜線を引き算した国と、引き算のあと残った斜線の地物の数 */
+        hatchCut:(function(){ try{ return { isos:hatchCutISO.slice(), left:hatchCutN, ms:hatchCutMs, more:hatchCutLeftOver, why:Object.assign({},hatchCutWhy) }; }catch(_){ return {isos:[],left:0,ms:0,more:false,why:{}}; } })(),
         countryGrey:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
             if(washTier(String(f.id||''))===1) n++; }); }catch(_){} return n; })() });
       STATE.alertsLegend=(iso3)=>legendFor(String(iso3||'').toUpperCase());
