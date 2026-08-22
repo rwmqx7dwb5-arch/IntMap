@@ -541,6 +541,26 @@ window.IntMapModules.placeLabels=function(HOST){
       GE().layers.setPaint(id,'text-halo-color', (id==='ofm-admin1'||lightText)?'rgba(0,0,0,0.9)':'rgba(255,255,255,0.96)');
       GE().layers.setPaint(id,'text-halo-width', id==='ofm-country'?1.7:id==='ofm-city'?1.6:1.45);
     });
+    /* == (#R309) THE ERA COUNTRY LABELS ARE COUNTRY LABELS, SO THEY FOLLOW THE SAME BASEMAP RULE ==
+       「昔の国名ラベルの見た目や挙動も今の国名ラベルと完全に同じに。」 `imtb-lbl` / `imtb-lbl2`
+       (js/time-borders.js) were painted ONCE, at layer-creation time, with frozen light-on-dark
+       literals — so on a light basemap the past looked nothing like the present, which is the report.
+       This is the one function that decides how a country name is drawn for the current basemap and
+       language, so it drives those two as well.
+       ⚠ ONLY the face and the colours. `text-field` is the ERA name (`_locName` / `_modName`, baked
+       per-language by time-borders' own `intmap-lang` handler) and `visibility` belongs to
+       `window._applyBorders` (#R94l: era names show WHENEVER travelling, not gated by a toggle) —
+       writing either from here would be two owners for one value.
+       ⚠ `fontSea`, not `fontExpr`: the era text is already in the reader's language and an era feature
+       carries no `name:*` keys at all, so `placeFont()`'s per-label `case` would send every one of them
+       to the pan-Han face. Same reason the curated sea gazetteer uses it (#R242). */
+    try{ const _eraLight = sat || isDark;
+      ['imtb-lbl','imtb-lbl2'].forEach(id=>{ if(!GE().layers.has(id)) return;
+        GE().layers.setLayout(id,'text-font',fontSea);
+        GE().layers.setPaint(id,'text-color', _eraLight?'#ffffff':'#000000');
+        GE().layers.setPaint(id,'text-halo-color', _eraLight?'rgba(0,0,0,0.9)':'rgba(255,255,255,0.96)');
+        GE().layers.setPaint(id,'text-halo-width', 1.7);
+      }); }catch(_){}
   }
   return { applyLabelLang, ensurePlaceLabels };
 };

@@ -37,6 +37,28 @@ window.IntMapDefaultLayers=['dl-climate','dl-subcables'];
    what the restore's off-sweep reads. Adding a default-on row means adding it here, once. */
 window.IntMapDefaultOn=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-admin1','cb-roads','cb-rail2']
   .concat(window.IntMapDefaultLayers);
+/* ══ ⚠⚠⚠ (#R309) WHAT "Base map & labels" CONTAINS, AS ONE LIST ═══════════════════════════════════
+   「Base map & labelsのオン数をレイヤーのオン数にみなすな。」 The reason it was counted is that the
+   membership of that section existed in FOUR hand-written copies and they disagreed. Measured against
+   the section the panel actually draws (13 rows):
+       js/data-layers.js `skip` (the "Active layers (N)" counter)  11 ids — missing dl-tz, beta-dl-bldg3d
+       js/data-layers.js reorganizeLayerPanel's ordering           10 ids + three appended rows
+       js/data-layers.js the unplaced-rows sweep                   10 ids
+       js/widget-core.js `activeLayers` (the "N layers on" card)   excluded the ten cb-* only BY ACCIDENT
+                                                                   (they are bare labels, not .lyr-row),
+                                                                   so it counted the other three
+   #R235 already fixed this once for `dl-nightside` by adding an eleventh literal to one of the copies —
+   #R271 and #R273 then moved `dl-tz` and `beta-dl-bldg3d` into the section and neither copy learned.
+   `IntMapBasicLayerRows` is the ten checkbox rows in the order the panel shows them;
+   `IntMapBasicLayers` is the whole section, and it is what any counter must subtract.
+   ⚠ NOT the re-assert exclusion further down: that list answers a different question («which toggles
+   have stateful handlers that a re-dispatched change would flip back on», #R38) and the three rows
+   added here are ordinary async layers that DO want the re-assert. Same ids, different rule.
+   ⚠ BOTH halves are on `window`, not module-level `const`s. This file is a module (#R175), so a
+   top-level binding would be private to it and invisible to js/widget-core.js — and
+   tests/r175-checks.test.mjs fails the whole shape on sight, which is how that was caught here. */
+window.IntMapBasicLayerRows=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-admin1','cb-roads','cb-rail2','cb-grid','cb-countries'];
+window.IntMapBasicLayers=window.IntMapBasicLayerRows.concat(['dl-nightside','dl-tz','beta-dl-bldg3d']);
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.dataLayers=function(HOST){
   const LDL=window.IntMapLang.pick(()=>HOST.lang);
@@ -1236,7 +1258,7 @@ window.IntMapModules.dataLayers=function(HOST){
          accented the mobile FAB as though a thematic overlay were on. The other nine basics are
          skipped precisely because they are views of the map rather than data on top of it, and which
          half of the planet the Sun is lighting is the same kind of statement. */
-      const skip=new Set(['cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2','dl-nightside']);
+      const skip=new Set(window.IntMapBasicLayers);   /* (#R309) the whole section, from the one list */
       const seen=new Set(), chips=[];
       dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{
         if(!cb.checked || skip.has(cb.id) || seen.has(cb)) return; seen.add(cb);   /* key by ELEMENT — geo/strategic rows have no id, so an id key collapsed them all to one */
@@ -1706,7 +1728,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const order=[];
         const fav=document.getElementById('layer-fav-section'); if(fav) order.push(fav);
         /* (#R33) Requested order: Place names, Country borders, State/province, Roads, Railways, Grid, Countries(info). */
-        ['cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-admin1','cb-roads','cb-rail2','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
+        window.IntMapBasicLayerRows.forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });   /* (#R309) one list */
         /* (#R233) …and the day/night shading, which is the same KIND of switch as the nine above (a view
            of the whole planet that is either on or off) rather than a data layer about a hazard. It is a
            .lyr-row rather than a bare label, so it is fetched through rowFor() and marked `placed` — the
@@ -1770,7 +1792,7 @@ window.IntMapModules.dataLayers=function(HOST){
         dd.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option').forEach(r=>{
           if(placed.has(r)) return;
           const cb=r.querySelector('input[type=checkbox]'); if(!cb) return;
-          if(['cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
+          if(window.IntMapBasicLayerRows.indexOf(cb.id)>=0) return;   /* (#R309) one list */
           otherRows.push(r); placed.add(r);
         });
         if(otherRows.length){

@@ -52,7 +52,18 @@ window.IntMapModules.companiesUi=function(HOST){
 
   function _coCmpEnsureCss(){ if(_coCmpCss) return; _coCmpCss=1; const st=document.createElement('style');
     st.textContent='#co-cmp-view{container-type:inline-size;}'
+      /* == (#R309) ...and NOT a second time over the sidebar's own glass ====================
+         Same defect as `#countries-feed .stats-toolbar`: `--panel-bg` is declared only under
+         `body:not(.sidebar-translucent):not(.sidebar-glass2)`, so in the frosted modes this
+         falls through to `--glass-fill` — which the sidebar behind it has ALREADY painted.
+         MEASURED with the compare view open: this strip and `.sidebar` both come out
+         `rgba(255,255,255,0.34)` (light) / `rgba(30,30,38,0.42)` (dark), and the doubled alpha
+         reads as a bright hard-edged rectangle behind the Back / title / view-mode row.
+         #R40's answer, unchanged: drop the fill, and do NOT add a second backdrop-filter —
+         re-blurring an already-frosted surface is what draws the 「四角い枠」 in the first place.
+         The opaque mode keeps the panel tone it has always had. */
       +'#co-cmp-view .scp-stickhead{position:sticky;top:0;z-index:8;background:var(--panel-bg,var(--glass-fill));display:flex;flex-direction:column;gap:6px;margin:0 0 6px;padding:8px 0 6px;}'
+      +'body.sidebar-translucent #co-cmp-view .scp-stickhead,body.sidebar-glass2 #co-cmp-view .scp-stickhead{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;}'
       +'#co-cmp-view .scp-back{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(0,0,0,0.12);border-radius:10px;background:#fff;color:#111;padding:3px 12px 3px 9px;font-size:12px;font-weight:600;cursor:pointer;flex:0 0 auto;}'
       +'#co-cmp-view .scp-back:hover{background:#f2f2f4;}'
       +'#co-cmp-view .scp-cmptitle{font-weight:700;font-size:13px;line-height:1.15;}'

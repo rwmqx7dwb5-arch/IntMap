@@ -515,6 +515,34 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'#layer-sidebar-r .lst-tile:hover .lst-star,#layer-sidebar-r .lst-star.on{display:flex;}'
         +'#layer-sidebar-r .lst-star.on{color:#ffd60a;}'
         +'#layer-sidebar-r .lst-empty{color:var(--text-muted);font-size:12px;padding:18px 4px;text-align:center;}'
+        /* == (#R309) "Base map & labels" IS A LIST OF SWITCHES, NOT A GRID OF PICTURES ============
+           「Base map & labelsは、タイル形式ではなく、トグルで行で並べる形式に。サムネイル画像はいらない。」
+           Every section of this browser was drawn by the same `buildTiles` loop, so the basics were
+           thirteen 3-up cards whose thumbnails are pictures of the map itself — a photograph of «Place
+           names» tells a reader nothing that the words do not. The rows keep the `lst-tile` class on
+           purpose: `syncTiles`, `filterTiles`, `_setTileOn` and the three rebuild-if-the-count-changed
+           guards all query `.lst-tile`, and a second class name would have meant finding every one of
+           them. `.lst-row` only re-shapes what the card looks like.
+           The switch is the `.wgt-sw` geometry (42x26, 20 px knob, 16 px throw) so the one iOS switch
+           this app draws is the same object in the widget deck and here; the ON colour is the panel's
+           own `--primary-color`, which is what `.lst-tile.on` already used to say.
+           ⚠ Both mounts, exactly as `.lst-toolrow` above does it — the phone sheet builds through the
+           SAME `buildTiles(host)`, so a rule written only for the sidebar would leave the sheet with
+           thumbnail-less cards. */
+        +'#layer-sidebar-r .lst-grid.lst-rows,.lsr-mount .lst-grid.lst-rows{display:flex;flex-direction:column;gap:6px;}'
+        +'#layer-sidebar-r .lst-grid.lst-rows.closed,.lsr-mount .lst-grid.lst-rows.closed{display:none;}'
+        +'#layer-sidebar-r .lst-tile.lst-row,.lsr-mount .lst-tile.lst-row{display:flex;align-items:center;gap:10px;box-sizing:border-box;min-height:46px;padding:8px 12px;border-radius:12px;overflow:visible;}'
+        /* ⚠ the accent RING is what a picture card needs to say "on" from across a grid. A row says it
+           with the switch, so the ring would be a second, louder voice for the same fact. */
+        +'#layer-sidebar-r .lst-tile.lst-row.on,.lsr-mount .lst-tile.lst-row.on{border-color:rgba(128,128,128,0.18);box-shadow:none;}'
+        +'#layer-sidebar-r .lst-tile.lst-row:hover,.lsr-mount .lst-tile.lst-row:hover{box-shadow:none;border-color:rgba(128,128,128,0.38);background:var(--input-bg);}'
+        +'#layer-sidebar-r .lst-tile.lst-row .lst-nm,.lsr-mount .lst-tile.lst-row .lst-nm{flex:1;min-width:0;padding:0;min-height:0;font-size:12.5px;}'
+        +'#layer-sidebar-r .lst-tile.lst-row .lst-star,.lsr-mount .lst-tile.lst-row .lst-star{position:static;flex:0 0 auto;background:transparent;color:var(--text-muted);width:20px;height:20px;font-size:12px;}'
+        +'#layer-sidebar-r .lst-tile.lst-row .lst-star.on,.lsr-mount .lst-tile.lst-row .lst-star.on{color:#ffd60a;}'
+        +'#layer-sidebar-r .lst-sw,.lsr-mount .lst-sw{position:relative;flex:0 0 auto;width:42px;height:26px;border-radius:13px;background:rgba(128,128,128,0.32);transition:background .16s;pointer-events:none;}'
+        +'#layer-sidebar-r .lst-tile.on .lst-sw,.lsr-mount .lst-tile.on .lst-sw{background:var(--primary-color);}'
+        +'#layer-sidebar-r .lst-sw i,.lsr-mount .lst-sw i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:10px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.28);transition:transform .16s cubic-bezier(0.2,0.7,0.2,1);}'
+        +'#layer-sidebar-r .lst-tile.on .lst-sw i,.lsr-mount .lst-tile.on .lst-sw i{transform:translateX(16px);}'
         /* ══ ⚠⚠⚠ (#R243) THE TOOL ROW — 「地震シミュレータはレイヤー欄からも開けるようにしろ。」 ══════
            #R242 answered this by appending a button to `#layer-tools`, which lives inside
            `#layer-dropdown` — the CLASSIC dropdown, and `imLayerPanel` has defaulted to `'right'`
@@ -652,13 +680,18 @@ window.IntMapModules.layerSidebar=function(HOST){
           continue; }
         if(ch.children&&ch.children.length) walk(ch); } };
       walk(dd); return out; }
-    function tileFor(r){ const d=document.createElement('div'); d.className='lst-tile'+(r.cb.checked?' on':''); d.dataset.lid=r.id; d.dataset.nm=r.name.toLowerCase();
-      const pv=document.createElement('div'); pv.className='lst-prev'; if(r.gk) pv.dataset.gk=r.gk;
-      try{ window.IntMapLayerPreviews&&window.IntMapLayerPreviews.into(pv,r.id,r.name); }catch(_){}
+    /* (#R309) `asRow` — the "Base map & labels" shape: a full-width switch row with no thumbnail.
+       Same element, same dataset, same click path; only the children and the class differ. */
+    function tileFor(r,asRow){ const d=document.createElement('div'); d.className='lst-tile'+(asRow?' lst-row':'')+(r.cb.checked?' on':''); d.dataset.lid=r.id; d.dataset.nm=r.name.toLowerCase();
       const nm=document.createElement('div'); nm.className='lst-nm'; nm.textContent=r.name; nm.title=r.name;
-      /* (#R114) no ✓ badge on the ON-layer highlight (requested): the `.on` accent border already marks an
-         enabled layer, and a bare ✓ is exactly what the standing UI rule tells us to drop. */
-      d.appendChild(pv); d.appendChild(nm);
+      if(asRow){ d.setAttribute('role','switch'); d.setAttribute('aria-checked',r.cb.checked?'true':'false'); d.appendChild(nm); }
+      else{
+        const pv=document.createElement('div'); pv.className='lst-prev'; if(r.gk) pv.dataset.gk=r.gk;
+        try{ window.IntMapLayerPreviews&&window.IntMapLayerPreviews.into(pv,r.id,r.name); }catch(_){}
+        /* (#R114) no ✓ badge on the ON-layer highlight (requested): the `.on` accent border already marks an
+           enabled layer, and a bare ✓ is exactly what the standing UI rule tells us to drop. */
+        d.appendChild(pv); d.appendChild(nm);
+      }
       /* ★ favorite — the SAME store as the classic panel (imLayerFavs), mirrored both ways */
       try{ if(typeof layerCbInfo==='function'&&Array.isArray(window.imLayerFavs)){ const info=layerCbInfo(r.cb);
         if(info){ const st=document.createElement('button'); st.className='lst-star'+(window.imLayerFavs.includes(info.key)?' on':''); st.type='button'; st.textContent='★'; st.title='Favorite';
@@ -668,6 +701,7 @@ window.IntMapModules.layerSidebar=function(HOST){
             try{ saveSettings(); }catch(_){} try{ renderLayerFavs(); }catch(_){}
             try{ const cls=document.querySelector('#layer-dropdown .lyr-star[data-key="'+info.key+'"]'); if(cls) cls.classList.toggle('on',st.classList.contains('on')); }catch(_){} };
           d.appendChild(st); } } }catch(_){}
+      if(asRow){ const sw=document.createElement('span'); sw.className='lst-sw'; sw.appendChild(document.createElement('i')); d.appendChild(sw); }
       /* (#R72) toggle the LIVE checkbox, not a possibly-stale captured node ("押しても反応しないレイヤーがある" /
          "レイヤーのオンオフが地図上と一致していない"): reorganizeLayerPanel / language switches can rebuild the
          classic dropdown, detaching the element this tile captured — clicking it then toggled a dead node and
@@ -681,7 +715,8 @@ window.IntMapModules.layerSidebar=function(HOST){
         if(!cb) return;
         cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true}));
         d.classList.toggle('on',cb.checked);
-        setTimeout(()=>{ try{ d.classList.toggle('on',cb.checked); }catch(_){} },320);
+        if(asRow) d.setAttribute('aria-checked',cb.checked?'true':'false');   /* (#R309) role=switch has to say so */
+        setTimeout(()=>{ try{ d.classList.toggle('on',cb.checked); if(asRow) d.setAttribute('aria-checked',cb.checked?'true':'false'); }catch(_){} },320);
       }catch(_){} });
       return d; }
     /* (#R72) collapse state per section title — default OPEN, Others (beta) starts CLOSED ("デフォルト状態では
@@ -705,7 +740,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       const rows=rowsFromDropdown(); if(!rows.length) return;
       const root=document.createElement('div'); root.className='lst-root';
       const basics=T('Base map & labels','基本表示','Grundkarte & Labels','Основа и подписи','Base y etiquetas');
-      let curSec=null,curGrid=null;
+      let curSec=null,curGrid=null,curRow=false;
       rows.forEach(r=>{ const secName=r.sec||basics;
         if(secName!==curSec){ curSec=secName;
           /* (#R101) default the beta section CLOSED, detected by the header's data-i18n (robust across languages) */
@@ -719,12 +754,16 @@ window.IntMapModules.layerSidebar=function(HOST){
           const ch=document.createElement('span'); ch.className='lst-chev'; h.appendChild(ch);
           const tt=document.createElement('span'); tt.textContent=secName; h.appendChild(tt);
           root.appendChild(h);
-          curGrid=document.createElement('div'); curGrid.className='lst-grid'+(closed?' closed':''); root.appendChild(curGrid);
+          /* (#R309) the basics are the one section drawn as rows — see the CSS note on `.lst-row`.
+             It is identified the same way the section itself is: `rowsFromDropdown` gives every row
+             before the first `.lyr-head` an empty `sec`, and `basics` is the name those get. */
+          curRow=(secName===basics);
+          curGrid=document.createElement('div'); curGrid.className='lst-grid'+(curRow?' lst-rows':'')+(closed?' closed':''); root.appendChild(curGrid);
           h.addEventListener('click',()=>{ const now=!h.classList.contains('closed');
             h.classList.toggle('closed',now); h.setAttribute('aria-expanded',now?'false':'true');
             const g2=h.nextElementSibling; if(g2&&g2.classList.contains('lst-grid')) g2.classList.toggle('closed',now);
             _secClosed[secName]=now; }); }
-        curGrid.appendChild(tileFor(r)); });
+        curGrid.appendChild(tileFor(r,curRow)); });
       root.querySelectorAll('.lst-grid').forEach(g=>{ const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')){ const c=document.createElement('span'); c.className='lst-cnt'; c.textContent=g.children.length; h.appendChild(c); } });
       root.appendChild(toolsBlock());   /* (#R243) 「地震シミュレータはレイヤー欄からも」 — see the CSS note */
       /* ⚠ (#R232) `#lst-root` was an ID and there can now be two of them on the page at once, so the
@@ -1099,7 +1138,9 @@ window.IntMapModules.layerSidebar=function(HOST){
       root.querySelectorAll('.lst-grid').forEach(g=>{ let vis=0;
         g.querySelectorAll('.lst-tile').forEach(t2=>{ const show=!q||t2.dataset.nm.indexOf(q)>=0; t2.style.display=show?'':'none'; if(show) vis++; });
         /* while searching, a collapsed section with matches is forced open (inline display beats .closed) */
-        g.style.display=vis?(q?'grid':''):'none'; const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')) h.style.display=vis?'':'none'; });
+        /* (#R309) …and a section drawn as rows is `flex`, not `grid` — this inline value is what forces a
+           collapsed section open while a search is running, so it has to name that section's own display. */
+        g.style.display=vis?(q?(g.classList.contains('lst-rows')?'flex':'grid'):''):'none'; const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')) h.style.display=vis?'':'none'; });
       /* (#R291) 「Layersの検索で route / directions / 経路 / ルート / 道順 等から発見できるように」 — the
          tool rows were outside this filter entirely, so a search narrowed the layers and left the
          tools alone. They match on their own name, their hint, their English id and a keyword list. */

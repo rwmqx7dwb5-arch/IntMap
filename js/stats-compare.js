@@ -312,7 +312,18 @@ window.IntMapModules.statsCompare=function(HOST){
         +'#scp-view .scp-back:hover{background:#f2f2f4;}'
         +'#scp-view .scp-back .scp-backarr{flex:0 0 auto;display:block;}'
         /* (#R105) sticky compact header: title + view modes + Indicators toggle pinned to the top of the compare view. */
-        +'#scp-view .scp-stickhead{position:sticky;top:0;z-index:8;background:var(--panel-bg,var(--glass-fill));display:flex;flex-direction:column;gap:6px;margin:0 0 6px;padding:8px 0 6px;}'   /* (#R109) slight painted gap above the Back button (2→8) */
+        /* == (#R309) ...and NOT a second time over the sidebar's own glass ====================
+           Same defect as `#countries-feed .stats-toolbar`: `--panel-bg` is declared only under
+           `body:not(.sidebar-translucent):not(.sidebar-glass2)`, so in the frosted modes this
+           falls through to `--glass-fill` — which the sidebar behind it has ALREADY painted.
+           MEASURED with the compare view open: this strip and `.sidebar` both come out
+           `rgba(255,255,255,0.34)` (light) / `rgba(30,30,38,0.42)` (dark), and the doubled alpha
+           reads as a bright hard-edged rectangle behind the Back / title / view-mode row.
+           #R40's answer, unchanged: drop the fill, and do NOT add a second backdrop-filter —
+           re-blurring an already-frosted surface is what draws the 「四角い枠」 in the first place.
+           The opaque mode keeps the panel tone it has always had. */
+        +'#scp-view .scp-stickhead{position:sticky;top:0;z-index:8;background:var(--panel-bg,var(--glass-fill));display:flex;flex-direction:column;gap:6px;margin:0 0 6px;padding:8px 0 6px;}'
+        +'body.sidebar-translucent #scp-view .scp-stickhead,body.sidebar-glass2 #scp-view .scp-stickhead{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;}'   /* (#R109) slight painted gap above the Back button (2→8) */
         +'#scp-view .scp-cmptitle{font-weight:700;font-size:13px;text-transform:none;line-height:1.15;}'
         +'#scp-view .scp-cmpsub{font-weight:500;font-size:10.5px;color:var(--text-muted);}'
         /* (#R64) proper country picker ("国を選択するときのUIがくそ"): search box + scrollable flag list with

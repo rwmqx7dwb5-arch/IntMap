@@ -4994,5 +4994,13 @@ window.IntMapLang.define('zh-hans', {
   "Where? Give the transmitter site (place, or lng/lat).": "发射机位置在哪里？请指定地点或经纬度。",   /* (#R299) */
   "Where? Give the point (place, or lng/lat).": "在哪里？请提供地点（地名，或经纬度）。",   /* (#R302) */
   "Arrival times need a point — name a place, or tap the map first.": "到达时刻需要一个地点——请指定地名，或先点一下地图。",   /* (#R302) */
+  "Brief me on {place} — the latest": "帮我简报{place}的最新情势",   /* atlas-console.js (#R309) */
+  "Compare {place} with its neighbours — GDP, defense and population": "比较{place}与邻国 — GDP、国防支出与人口",   /* atlas-console.js (#R309) */
+  "How has {place}'s economy changed since 1990?": "{place}的经济从 1990 年以来有什么变化？",   /* atlas-console.js (#R309) */
+  "What is the weather and any active warnings in {place}?": "{place}的天气如何？有哪些生效中的警报？",   /* atlas-console.js (#R309) */
+  "Compare the USA, China and India — GDP, defense and population": "比较美国、中国与印度 — GDP、国防支出与人口",   /* atlas-console.js (#R309) */
+  "Which countries spend the most on defense relative to GDP?": "哪些国家的国防支出占 GDP 比重最高？",   /* atlas-console.js (#R309) */
+  "Brief me on the South China Sea — the latest": "帮我简报南海的最新情势",   /* atlas-console.js (#R309) */
+  "Which countries have the highest life expectancy?": "哪些国家平均寿命最长？",   /* atlas-console.js (#R309) */
   }
 });

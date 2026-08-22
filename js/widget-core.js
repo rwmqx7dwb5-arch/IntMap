@@ -487,9 +487,17 @@ window.IntMapWidgetCore = (function () {
     var out = [], seen = {};
     try {
       var ids = window.IntMapDefaultLayers || [];
+      /* ⚠ (#R309) 「Base map & labelsのオン数をレイヤーのオン数にみなすな。」 This card says "N layers on"
+         and it never subtracted the base-map section. It LOOKED as if it did, because nine of those
+         thirteen rows are bare `label.layer-option` and this query asks for `.lyr-row` — an accident,
+         not a rule, and it left `dl-nightside` / `dl-tz` / `beta-dl-bldg3d` (moved into that section by
+         #R233 / #R271 / #R273) counted here while the panel's own "Active layers (N)" skipped them.
+         Both counters now subtract the same published list, so they cannot disagree again. */
+      var basics = window.IntMapBasicLayers || [];
       var rows = document.querySelectorAll('.lyr-row input[type=checkbox]');
       [].forEach.call(rows, function (cb) {
         if (!cb.id || seen[cb.id]) return;
+        if (basics.indexOf(cb.id) >= 0) return;
         seen[cb.id] = 1;
         var lab = cb.closest('label');
         var sp = lab && lab.querySelector('span:not(.lyr-sw):not(.lsr-thumb)');

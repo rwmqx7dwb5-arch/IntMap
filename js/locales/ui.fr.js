@@ -4903,4 +4903,12 @@ window.IntMapLang.define('fr', { ui: {
   "Where? Give the transmitter site (place, or lng/lat).": "Où ? Indiquez l’emplacement de l’émetteur (lieu ou lng/lat).",   /* (#R299) */
   "Where? Give the point (place, or lng/lat).": "Où ? Indiquez le point (lieu, ou lng/lat).",   /* (#R302) */
   "Arrival times need a point — name a place, or tap the map first.": "Les heures d’arrivée nécessitent un point — indiquez un lieu, ou touchez d’abord la carte.",   /* (#R302) */
+  "Brief me on {place} — the latest": "{place} : point de situation — les dernières nouvelles",   /* atlas-console.js (#R309) */
+  "Compare {place} with its neighbours — GDP, defense and population": "{place} : comparer avec ses pays voisins — PIB, défense et population",   /* atlas-console.js (#R309) */
+  "How has {place}'s economy changed since 1990?": "{place} : comment son économie a-t-elle évolué depuis 1990 ?",   /* atlas-console.js (#R309) */
+  "What is the weather and any active warnings in {place}?": "{place} : quel temps fait-il et quelles alertes sont en vigueur ?",   /* atlas-console.js (#R309) */
+  "Compare the USA, China and India — GDP, defense and population": "Comparer les États-Unis, la Chine et l’Inde — PIB, défense et population",   /* atlas-console.js (#R309) */
+  "Which countries spend the most on defense relative to GDP?": "Quels pays consacrent la plus grande part de leur PIB à la défense ?",   /* atlas-console.js (#R309) */
+  "Brief me on the South China Sea — the latest": "Fais-moi un point sur la mer de Chine méridionale — les dernières nouvelles",   /* atlas-console.js (#R309) */
+  "Which countries have the highest life expectancy?": "Quels pays ont l’espérance de vie la plus élevée ?",   /* atlas-console.js (#R309) */
 } });

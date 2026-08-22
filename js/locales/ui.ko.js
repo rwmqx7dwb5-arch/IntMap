@@ -4893,4 +4893,12 @@ window.IntMapLang.define('ko', { ui: {
   "Where? Give the transmitter site (place, or lng/lat).": "송신기 위치는 어디인가요? 장소 또는 경도/위도를 알려 주세요.",   /* (#R299) */
   "Where? Give the point (place, or lng/lat).": "어디인가요? 지점을 지정하세요 (장소 또는 경도/위도).",   /* (#R302) */
   "Arrival times need a point — name a place, or tap the map first.": "도달 시각에는 지점이 필요합니다 — 장소를 지정하거나, 먼저 지도를 탭하세요.",   /* (#R302) */
+  "Brief me on {place} — the latest": "{place} 상황 브리핑 — 최신 정보",   /* atlas-console.js (#R309) */
+  "Compare {place} with its neighbours — GDP, defense and population": "{place} 및 주변국 비교 — GDP, 국방비, 인구",   /* atlas-console.js (#R309) */
+  "How has {place}'s economy changed since 1990?": "{place}의 경제는 1990년 이후 어떻게 바뀌었나요?",   /* atlas-console.js (#R309) */
+  "What is the weather and any active warnings in {place}?": "{place}의 날씨와 발효 중인 경보는?",   /* atlas-console.js (#R309) */
+  "Compare the USA, China and India — GDP, defense and population": "미국, 중국, 인도 비교 — GDP, 국방비, 인구",   /* atlas-console.js (#R309) */
+  "Which countries spend the most on defense relative to GDP?": "GDP 대비 국방비가 가장 높은 나라는?",   /* atlas-console.js (#R309) */
+  "Brief me on the South China Sea — the latest": "남중국해 상황 브리핑 — 최신 정보",   /* atlas-console.js (#R309) */
+  "Which countries have the highest life expectancy?": "기대 수명이 가장 높은 나라는?",   /* atlas-console.js (#R309) */
 } });
