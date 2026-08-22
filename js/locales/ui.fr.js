@@ -4934,7 +4934,7 @@ window.IntMapLang.define('fr', { ui: {
   "Why do people in {place} live longer than almost anywhere else?": "{place} : pourquoi y vit-on plus longtemps que presque partout ailleurs ?",   /* atlas-examples.js (#R313) */
   "How much of {place} is actually online, and what is the bottleneck?": "{place} : quelle part de la population est réellement connectée, et où est le goulet d’étranglement ?",   /* atlas-examples.js (#R313) */
   "Where are {place}’s people concentrated, and where is that shifting?": "{place} : où sa population se concentre-t-elle, et vers où se déplace-t-elle ?",   /* atlas-examples.js (#R313) */
-  "What happens in {capital} that matters beyond {place}?": "{place} : que se passe-t-il à {capital} qui compte au-delà de ses frontières ?",   /* atlas-examples.js (#R313) */
+  "What happens in {place}’s capital that matters beyond its borders?": "{place} : que se passe-t-il dans la capitale qui compte au-delà des frontières du pays ?",   /* atlas-examples.js (#R313) */
   "How does {place} differ from the rest of {sub}?": "{place} : quelles différences avec le reste de la région « {sub} » ?",   /* atlas-examples.js (#R313) */
   "What did the world look like in {year}?": "À quoi ressemblait le monde en {year} ?",   /* atlas-examples.js (#R313) */
   "Where in the world are the most severe weather warnings in force right now?": "Où dans le monde les alertes météo les plus graves sont-elles en vigueur en ce moment ?",   /* atlas-examples.js (#R313) */

@@ -264,7 +264,11 @@ test('R313 ⑤ exactly one file moves the camera on a layer toggle, and it is th
      one-polygon feature through, and the EU frame came out [[-109.23,10.28],[33.70,70.08]] — a view
      of the eastern Pacific. The pick has to be per COUNTRY CODE. This runs the shipped function over
      exactly that shape rather than trusting the comment beside it. */
-  const fnSrc = /function bboxOfFC[\s\S]*?\n  \}\n/.exec(read('js/layer-home.js'));
+  /* ⚠ (#R313 追記) `\n  }\n` DID NOT SURVIVE A CRLF CHECKOUT. This passed on the worktree that wrote
+     the file with LF and went red the moment git handed the same file back with CRLF — #R283's defect
+     exactly, and it would have been green in CI and red on Windows for ever. Line endings are not part
+     of the property being asserted, so the pattern must not care about them. */
+  const fnSrc = /function bboxOfFC[\s\S]*?\r?\n {2}\}\r?\n/.exec(read('js/layer-home.js'));
   assert.ok(fnSrc, 'bboxOfFC is a named function this test can lift out');
   const bboxOfFC = new Function('return (' + fnSrc[0].replace('function bboxOfFC', 'function') + ')')();
   const ring = (w, s2, e, n) => [[[w, s2], [e, s2], [e, n], [w, n], [w, s2]]];

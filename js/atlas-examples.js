@@ -244,12 +244,20 @@ export function makeAtlasExamples(HOST, CTX) {
                 '{place}: где сосредоточено население и куда оно смещается?',
                 '{place}: ¿dónde se concentra la población y hacia dónde se desplaza?') },
       /* ── attributes every country has, so these only ever fill the tail ─────────────────── */
+      /* ⚠⚠ (#R313 追記) THIS CHIP NAMED THE CAPITAL, AND THE APP ONLY HAS THAT NAME IN ENGLISH.
+         `CAPITAL` in js/tables.js is an English table — CLDR has no city names, and OSM's `name:xx`
+         values live inside vector tiles, not in anything this module can ask. So a Japanese reader
+         was handed 「Ulaanbaatarで起きていることのうち…」: a fully translated sentence with an
+         untranslated value dropped into the middle of it. ⚠ `npm run check:i18n` CANNOT SEE THIS —
+         the TEMPLATE is complete in all nine languages; it is the substituted value that is not.
+         Measured on production in ja: six countries, six English city names.
+         → the question keeps its subject and loses the name it could not translate. */
       { k:'capital', w:5, on:(f)=>f.st&&!!f.st.capital,
-        t:()=>L('What happens in {capital} that matters beyond {place}?',
-                '{capital}で起きていることのうち、{place}の外にまで効くのは？',
-                '{place}: Was passiert in {capital}, das über das Land hinaus zählt?',
-                '{place}: что происходит в {capital} и имеет значение за пределами страны?',
-                '{place}: ¿qué ocurre en {capital} que importe más allá del país?') },
+        t:()=>L('What happens in {place}’s capital that matters beyond its borders?',
+                '{place}の首都で起きていることのうち、国外にまで効くのは？',
+                '{place}: Was passiert in der Hauptstadt, das über das Land hinaus zählt?',
+                '{place}: что происходит в столице и имеет значение за пределами страны?',
+                '{place}: ¿qué ocurre en su capital que importe más allá del país?') },
       { k:'subregion', w:5, on:(f)=>f.st&&!!f.st.subregion,
         t:()=>L('How does {place} differ from the rest of {sub}?',
                 '{place}は{sub}の他の国とどこが違う？',
@@ -294,12 +302,37 @@ export function makeAtlasExamples(HOST, CTX) {
                  .sort((a,b)=>(b.w-a.w)||(a.k<b.k?-1:a.k>b.k?1:0))
                  .slice(0,4);
     }
+    /* ⚠⚠ (#R313 追記) EVERY VALUE THAT LANDS IN A CHIP IS IN THE READER'S LANGUAGE, OR IT DOES NOT LAND.
+       `{place}` always was (cName → CLDR). `{sub}` was not: `countryStats.subregion` is Natural Earth's
+       English string, so ja read 「モンゴル国はEastern Asiaの他の国とどこが違う？」 — the same defect as
+       the capital above, and just as invisible to the i18n gate, because what is missing is not a
+       template but a VALUE.
+       ⚠ Those strings are not arbitrary: they are the UN M49 macro-regions, and CLDR names every one of
+       them in all nine languages. So this is a CODE table, not a translation table — the answer comes
+       from the same door the country names come from (`window._imCldrRegion`, taught about three-digit
+       codes in js/countries-ui.js). ⚠ ENGLISH NEVER REACHES CLDR — `_imCldrRegion` short-circuits on
+       'en' — and that is load-bearing rather than incidental: CLDR's English REWORDS three of these
+       ('Southeast Asia' for 035, 'Australasia' for 053, 'Micronesian Region' for 057), so routing en
+       through it would change the one language that never needed translating.
+       ⚠ MEASURED AGAINST THE SHIPPED DATA, NOT ASSUMED COMPLETE: the countries file carries 22 distinct
+       subregions over 177 features; this table names 20 of them, covering 175. The two it does not are
+       「Antarctica」 and 「Seven seas (open ocean)」 — neither is an M49 macro-region and CLDR has no name
+       for either, so they fall through to the English string, which is the honest answer rather than a
+       wrong one. Any subregion added upstream falls through the same way. */
+    const M49={ 'Eastern Asia':'030','South-Eastern Asia':'035','Southern Asia':'034','Central Asia':'143',
+      'Western Asia':'145','Northern Europe':'154','Western Europe':'155','Southern Europe':'039',
+      'Eastern Europe':'151','Northern Africa':'015','Western Africa':'011','Middle Africa':'017',
+      'Eastern Africa':'014','Southern Africa':'018','Northern America':'021','Central America':'013',
+      'Caribbean':'029','South America':'005','Australia and New Zealand':'053','Melanesia':'054',
+      'Micronesia':'057','Polynesia':'061' };
+    function subName(st){ const s=(st&&st.subregion)||''; if(!s) return '';
+      try{ const c=M49[s]; if(c&&window._imCldrRegion){ const n=window._imCldrRegion(c,HOST.lang); if(n) return n; } }catch(_){}
+      return s; }
     function fill(txt,f){
       const st=f&&f.st;
       return String(txt)
         .replace(/\{place\}/g,(f&&f.name)||'')
-        .replace(/\{capital\}/g,(st&&st.capital)||'')
-        .replace(/\{sub\}/g,(st&&st.subregion)||'')
+        .replace(/\{sub\}/g,subName(st))
         .replace(/\{year\}/g,String((f&&f.year)||''));
     }
     function examples(){
