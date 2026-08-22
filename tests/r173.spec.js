@@ -29,16 +29,7 @@ const clearDefaultLayers = async (page) => {
 
 const boot = async page => {
   await clearDefaultLayers(page);
-  /* ⚠⚠ (#R304) `?rafshim=1`, AS FOURTEEN OTHER SPECS ALREADY DO. This file's subject is a flight
-     model and a camera that are driven ENTIRELY by requestAnimationFrame, and a Playwright page that
-     is not the focused one has rAF throttled to nearly zero — so at two workers the camera stops
-     being rewritten while `S.alt` is driven straight down, and the descent measurement reads a
-     viewpoint that is one ramp step (~230 m) behind. MEASURED: the gap is 0.1 m at every sample when
-     the page gets frames, and ~250 m at two workers; the test passed alone and failed in the suite,
-     three times each way. The shim (index.html, dev-only, never active for a visitor) replaces rAF
-     with a timer, which a background tab does not throttle — the same reason r196/r197/r200/r201/
-     r204/r205 and the Cesium family use it. */
-  await page.goto('/index.html?rafshim=1', { waitUntil: 'domcontentloaded' });
+  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(600);   /* (#R212) the style is already loaded — this tail was 1.5 s in 20 specs */
@@ -118,17 +109,6 @@ test('the cockpit contains a real world, with the viewpoint at the aeroplane (#R
   await page.evaluate(async () => { const S = window.IntMapFlightSim._st(), t = (S._terrF || 0) + 250, a0 = S.alt;
     for (let i = 0; i < 25; i++) { S.alt = a0 + (t - a0) * (i + 1) / 25; await new Promise(r => setTimeout(r, 60)); } });
   await page.waitForTimeout(5000);                          // the camera follows the altitude every frame
-  /* ⚠ (#R304) PAUSE BEFORE MEASURING, WHICH IS THIS FILE'S OWN RULE AND WAS APPLIED ONLY ONCE.
-     The block above says it: 「Everything asserted below is a property of the camera and the frame on
-     screen, not of the aeroplane moving」. The descent measurement never paused, so the physics kept
-     flying — and with the DEM not yet under the aircraft (measured: `_terrF` 0, so the ramp targets
-     250 m and the model then climbs away from it at ~10 m/s) the reading lands wherever the five
-     seconds happened to end. MEASURED as exactly that: this test passes alone and on CI, and failed
-     twice on a busy machine by ~250 m. ⚠ THE CAMERA IS NOT THE SUSPECT — sampled every 2 s through
-     the whole descent, `eyeAlt` tracks `alt` to within 0.1 m at every step, terrain arriving
-     mid-descent included. Freezing the model is what makes the number the camera's rather than the
-     stopwatch's. */
-  await pause(page);
   const low = await page.evaluate(() => ({ globeness: window.IntMapGeoEngine.camera.globeness(),
     zoom: window.__imap.getZoom(), alt: window.IntMapFlightSim._st().alt,
     eyeAlt: window.IntMapGeoEngine.camera.altitude() }));
