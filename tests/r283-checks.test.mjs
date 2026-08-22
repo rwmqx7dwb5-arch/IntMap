@@ -62,9 +62,16 @@ test('R283 ①: CRLF bytes defeat a newline-anchored pattern, and the content do
   assert.equal(lf('ab'), 'ab', 'and nothing is inserted');
 });
 
-/* ── ② the two files that were red on Windows read content ──────────────────────────────────── */
+/* ── ② the source-level checks that were red on Windows read content ──────────────────────────
+ *  ⚠ THIS IS A LIST, AND A LIST IS ONLY AS GOOD AS ITS LAST ENTRY. #R313 ⑤ lifted bboxOfFC out
+ *  of js/layer-home.js with `/function bboxOfFC[\s\S]*?\n  \}\n/`
+ *  — a pattern that demands a BARE line break after the brace — and read the file with a bare
+ *  readFileSync — the same defect this round diagnosed, written fresh thirty rounds later, red
+ *  on every Windows run and green in CI from the day it was committed. Adding a file here is
+ *  what stops it being un-fixed again; it is NOT what finds the next one. */
 test('R283 ②: the source-level checks that broke read their files as content', () => {
-  for (const f of ['tests/r261-checks.test.mjs', 'tests/r232-checks.test.mjs']) {
+  for (const f of ['tests/r261-checks.test.mjs', 'tests/r232-checks.test.mjs',
+                   'tests/r313-checks.test.mjs']) {
     const src = codeOnly(raw(f));
     assert.match(src, /import \{ readLF \} from '\.\.\/scripts\/eol\.mjs';/,
       f + ': the reader comes from the one place that knows about line endings');
