@@ -4924,7 +4924,7 @@ window.IntMapLang.define('ko', { ui: {
   "Why do people in {place} live longer than almost anywhere else?": "{place} 사람들은 왜 세계에서 손꼽히게 오래 사나요?",   /* atlas-examples.js (#R313) */
   "How much of {place} is actually online, and what is the bottleneck?": "{place}에서 실제로 인터넷에 연결된 비율은? 무엇이 병목인가요?",   /* atlas-examples.js (#R313) */
   "Where are {place}’s people concentrated, and where is that shifting?": "{place}의 인구는 어디에 몰려 있고, 어디로 이동하고 있나요?",   /* atlas-examples.js (#R313) */
-  "What happens in {capital} that matters beyond {place}?": "{capital}에서 일어나는 일 가운데 {place} 밖까지 영향을 주는 것은?",   /* atlas-examples.js (#R313) */
+  "What happens in {place}’s capital that matters beyond its borders?": "{place}, 수도에서 일어나는 일 가운데 국경 밖까지 영향을 미치는 것은 무엇인가요?",   /* atlas-examples.js (#R313) */
   "How does {place} differ from the rest of {sub}?": "{place}, {sub} 지역의 다른 나라들과 무엇이 다른가요?",   /* atlas-examples.js (#R313) */
   "What did the world look like in {year}?": "{year}년의 세계는 어떤 모습이었나요?",   /* atlas-examples.js (#R313) */
   "Where in the world are the most severe weather warnings in force right now?": "지금 세계에서 가장 심각한 기상 경보가 발효 중인 곳은 어디인가요?",   /* atlas-examples.js (#R313) */
