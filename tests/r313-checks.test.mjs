@@ -52,7 +52,9 @@ const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\
    ═══════════════════════════════════════════════════════════════════════ */
 test('R313 ① the particle switch is one published function, and the legend / Atlas dispatch / Atlas inline toggle all go through it', () => {
   const wx = code('js/weather.js');
-  const at = code('js/atlas-console.js');
+  /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const at = code('js/atlas-console.js') + '\n' + code('js/atlas-catalog-text.js');
 
   /* the module publishes exactly one door in and one door out */
   assert.match(wx, /particles\s*:\s*partsAreOn/, 'window.Wind publishes a particle READ');

@@ -4930,4 +4930,33 @@ window.IntMapLang.define('ko', { ui: {
   "Where in the world are the most severe weather warnings in force right now?": "지금 세계에서 가장 심각한 기상 경보가 발효 중인 곳은 어디인가요?",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "최근 일주일 동안 가장 활발했던 판 경계는 어디인가요?",   /* atlas-examples.js (#R313) */
   "Which submarine cable chokepoints carry the most of the world’s traffic?": "세계 통신량이 가장 많이 몰리는 해저 케이블 요충지는 어디인가요?",   /* atlas-examples.js (#R313) */
+  '{what} — done.': '{what} — 완료했습니다.',   /* atlas-results.js (#R318) atlas.result.completed.named */
+  'Still running…': '실행 중입니다…',   /* atlas-results.js (#R318) atlas.result.running */
+  'Still running — {done} of {total}.': '실행 중 — 총 {total}개 중 {done}개.',   /* atlas-results.js (#R318) atlas.result.running.progress */
+  'Partly done — {done} of {total}.': '일부만 완료 — 총 {total}개 중 {done}개.',   /* atlas-results.js (#R318) atlas.result.partial */
+  'That did not happen.': '실행되지 않았습니다.',   /* atlas-results.js (#R318) atlas.result.failed */
+  'Cancelled.': '취소했습니다.',   /* atlas-results.js (#R318) atlas.result.cancelled */
+  'Replaced by your newer request.': '더 새로운 요청으로 대체되었습니다.',   /* atlas-results.js (#R318) atlas.result.superseded */
+  'I need one more thing before I can do that.': '실행하려면 한 가지가 더 필요합니다.',   /* atlas-results.js (#R318) atlas.result.needs_input */
+  'It was calculated but nothing was drawn on the map.': '계산은 되었지만 지도에는 아무것도 그려지지 않았습니다.',   /* atlas-results.js (#R318) atlas.code.not_rendered */
+  'It is on the map but currently hidden.': '지도에는 있지만 지금은 숨겨져 있습니다.',   /* atlas-results.js (#R318) atlas.code.not_visible */
+  'Nothing on the map changed.': '지도에서 바뀐 것이 없습니다.',   /* atlas-results.js (#R318) atlas.code.no_change */
+  'That is not available right now.': '지금은 사용할 수 없습니다.',   /* atlas-results.js (#R318) atlas.code.unavailable */
+  'I do not have that operation.': '저에게는 그런 작업이 없습니다.',   /* atlas-results.js (#R318) atlas.code.unknown_capability */
+  'The values given for that operation were not usable.': '그 작업에 주어진 값을 사용할 수 없습니다.',   /* atlas-results.js (#R318) atlas.code.bad_args */
+  'Several things match — which one?': '해당하는 것이 여러 개입니다 — 어느 것인가요?',   /* atlas-results.js (#R318) atlas.code.ambiguous_target */
+  'It did not finish in time.': '제한 시간 안에 끝나지 않았습니다.',   /* atlas-results.js (#R318) atlas.code.timeout */
+  'It stopped with an error.': '오류로 중단되었습니다.',   /* atlas-results.js (#R318) atlas.code.threw */
+  'That one needs your confirmation first.': '이 작업은 먼저 확인이 필요합니다.',   /* atlas-results.js (#R318) atlas.code.needs_confirm */
+  'Tap the point on the map you mean.': '지도에서 말씀하신 지점을 탭하세요.',   /* atlas-results.js (#R318) atlas.input.point */
+  'Draw the line on the map.': '지도 위에 선을 그려 주세요.',   /* atlas-results.js (#R318) atlas.input.polyline */
+  'Draw the area on the map.': '지도 위에 범위를 그려 주세요.',   /* atlas-results.js (#R318) atlas.input.polygon */
+  'Choose one:': '하나를 선택하세요:',   /* atlas-results.js (#R318) atlas.input.choice */
+  'Tell me the value to use.': '사용할 값을 알려 주세요.',   /* atlas-results.js (#R318) atlas.input.text */
+  'Tell me the number to use.': '사용할 숫자를 알려 주세요.',   /* atlas-results.js (#R318) atlas.input.number */
+  'You asked for this on the map, and it is not on the map yet.': '지도에 표시해 달라고 하셨지만, 아직 지도에 나타나지 않았습니다.',   /* atlas-results.js (#R318) atlas.goal.map_missing */
+  'You asked for an explanation, and I only operated the map.': '요청하신 것은 설명이었는데, 지도를 조작하기만 했습니다.',   /* atlas-results.js (#R318) atlas.goal.explanation_missing */
+  'You asked me to do something, and I only wrote about it.': '요청하신 것은 조작이었는데, 글로 설명만 했습니다.',   /* atlas-results.js (#R318) atlas.goal.action_missing */
+  'Not every target was reached: {names}': '모든 대상에 도달하지는 못했습니다: {names}',   /* atlas-results.js (#R318) atlas.goal.targets_missing */
+  'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': '이 요청은 시도 횟수가 너무 많았습니다 — 일일 사용 횟수는 더 이상 차감되지 않았습니다. 표현을 바꿔 다시 시도해 주세요.',   /* ai-core.js (#R318) aiTurnCallsMsg */
 } });
