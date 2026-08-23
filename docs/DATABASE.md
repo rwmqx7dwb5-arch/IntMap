@@ -64,6 +64,22 @@ is the human explanation.
 | `monitor_reports` | The report a run generated (severity, headline, summary, grounded `changes`, metrics, change_points). | Owner. | **service_role only**; `read` flips via `monitor_mark_read`. |
 | `monitor_seen_items` *(#R144)* | Long-lived per-item ledger (one row per `dedup_key`) → "past N days" baseline + cap-proof novelty. | Owner. | **service_role only.** |
 
+### News events (#R334)
+
+The Event side of the news pipeline — see [`NEWS-EVENTS.md`](NEWS-EVENTS.md) for why each column
+exists. `current_news` above is untouched and still serves article mode.
+
+| Table | Purpose | Read | Write |
+|---|---|---|---|
+| `news_sources` | The one publisher registry. `source_family` is the unit of *independent* source counting — three Sinclair stations are one family, so "7 outlets reported it" cannot be manufactured by syndication. | Everyone. | **service_role only.** |
+| `news_source_feeds` | One row per feed of a source (a section RSS carries its own `category`), plus per-feed freshness and failure so "we could not fetch" is never drawn as "nothing happened". | Everyone. | **service_role only.** |
+| `news_articles` | One normalized article. Identity is `url_fingerprint` (the same story arrives under a Google News redirect and under the publisher's own link); `title_fingerprint` catches syndication. | Everyone — the policy returns `status = 'active'` only, so a withdrawn article disappears from clients. | **service_role only.** |
+| `news_events` | One event: representative headline / place / times, article + independent-source counts, category, confidences. A merged event **keeps its row** (`status='merged'` + `merged_into`) so saved and shared ids still resolve. | Everyone. | **service_role only.** |
+| `news_event_articles` | Event ↔ article, with the relation (`same_event` / `update` / `related_context`). A **partial** unique index on `article_id` allows only one primary event per article while leaving `related_context` unlimited. | Everyone. | **service_role only.** |
+| `news_cluster_decisions` | Why an article landed where it did: candidates, scores, deterministic evidence, the raw model response, tokens and cost. | **Admin only.** | **service_role only.** |
+| `news_event_i18n` | Server-generated translation of an event (`ja` today). Persisted, so it is readable logged out and costs no user AI quota. | Everyone. | **service_role only.** |
+| `saved_news_events` | ★ on an **Event** (`favorites` keeps holding ★ on an article link). | Owner. | Owner. |
+
 ## Relationships
 
 - `profiles.id`, `ai_usage.user_id`, `user_prefs.user_id`, `favorites.user_id`,
@@ -73,6 +89,12 @@ is the human explanation.
 - `community_comments.post_id`, `community_votes.post_id`, `community_reports.post_id` →
   `community_posts(id)`. `community_comments.parent_id` self-references (threads).
   `community_comment_votes.comment_id` → `community_comments(id)`.
+- `news_source_feeds.source_id` and `news_articles.source_id` → `news_sources(id)` (the article side
+  is **restrict**: a source cannot be deleted out from under the articles that cite it).
+  `news_event_articles`, `news_event_i18n.event_id` and `saved_news_events.event_id` cascade from
+  `news_events(id)`; `news_events.merged_into` self-references (the merge redirect).
+  `saved_news_events.user_id` → **`auth.users(id)`** (cascade), which is how `delete_account_data`
+  finds it — the purge reads the FK graph, not a list.
 
 ## Functions & triggers
 
@@ -139,7 +161,12 @@ edit `geo_pins`/`dashboard_cards`.
 
 - **A — critical, irreplaceable:** `profiles`, `ai_usage`, `user_prefs`, `favorites`,
   `donations`, `feedback`, `bug_reports`, all `community_*`. User-generated / account data.
-- **B — regenerable:** `current_news` (re-fetched every ~20 min by `refresh-news`), and
+  ⚠ **`news_events`, `news_event_articles`, `news_cluster_decisions` and `saved_news_events`
+  belong here too.** Re-fetching the feeds returns the articles; it does not return which articles
+  an operator merged or split, why the clusterer chose what it chose, or what a reader saved.
+- **B — regenerable:** `current_news` and `news_articles` (both re-fetched from the feeds),
+  `news_event_i18n` (re-translatable, at the cost of translating again), `news_sources` /
+  `news_source_feeds` (curated, but reproduced by the Source Registry seed migration), and
   largely `geo_pins` / `dashboard_cards` (curated, but reproducible from `admin.html` seeds).
 - **C — must NOT be stored here:** service_role key, DB password, access tokens, raw JWTs,
   or any plaintext production dump. See [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md).
@@ -172,7 +199,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, **RLS is enabled on all 20**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **29**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin`.
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't
@@ -181,6 +208,11 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 - **`02_functions_test.sql`** — the AI-quota RPC actually enforces the limit and refunds; every
   SECURITY DEFINER function is `security definer` with a pinned `search_path`; the RPC EXECUTE
   and the `profiles` column-UPDATE grants are exactly as intended.
+- **`06_news_events_test.sql`** *(#R334)* — the Event tables: anon can read the six public ones and
+  neither of the two private ones; no browser role holds INSERT/UPDATE/DELETE on any server-owned
+  table; a user reaches only its own `saved_news_events`; and each constraint the migration argues
+  for is attacked — the `url_fingerprint` unique, the **partial** one-primary-event index, the two
+  merge CHECKs, the four enumerated columns, and the account purge reaching the saved list.
 
 ### How the checks work (so a failure is readable)
 
