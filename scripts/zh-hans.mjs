@@ -106,6 +106,51 @@ export const WORDS = [
   ['韋伯', '韋布'], ['加薩', '加沙'], ['飛彈', '導彈'], ['日圓', '日元'],
   /* place names */
   ['玻里尼西亞', '波利尼西亞'], ['紐西蘭', '新西蘭'],
+  /* ══ (#R335) THE SAME GAP AS 紐西蘭, MEASURED OVER THE WHOLE CORPUS ═══════════════════════════
+     #R319 fixed two place names whose characters are ALREADY shared between the two orthographies,
+     so the character layer converted them to themselves and a Taiwanese word shipped verbatim to a
+     mainland reader — a defect no orthography check can see. 「社群」 (a community; the mainland
+     word is 「社區」) was the next one, found in the airplanes.live source description while a
+     parallel round was adding a second ADS-B feed beside it.
+     ⚠ THE TABLE HAD NO WAY TO SAY WHAT IT WAS MISSING, so this round asked a published table
+     instead of reading. OpenCC ships a SECOND Taiwan profile, twp→cn, which converts vocabulary as
+     well as orthography — the very one #R251 refused to run in the pipeline because it double-
+     converts this table's own output (檔案→文件→文档). Run OUTSIDE the pipeline it is not a
+     converter but an INVENTORY: applied to the finished Simplified text, every place it disagrees
+     is a word OpenCC says the two readerships write differently and this table does not mention.
+     MEASURED over all 8,321 distinct Han runs in ui.zh.js + pages.zh-hant.js: 96 distinct
+     disagreements at 615 sites. Most are that same double-conversion or plain context error and
+     were read and rejected one at a time — 指標 is an INDICATOR here and not a pointer (28 sites),
+     複製 is the Copy button and not cloning (#R322, 16), 時間序列 is a time series and not 串行
+     (11), 堆疊 is stacking windows and not a call stack (12), 行程 is an itinerary and not a
+     process (5), 簡報 is a briefing and not a slide deck (9). What survived is below: every entry
+     was checked by listing ITS OWN sites and confirming the corpus carries no other sense.
+     ⚠ THREE MORE ARE REAL AND ARE DELIBERATELY NOT HERE, because a bare word swap would be wrong:
+     擷取 is 截取 in 「螢幕擷取」 but 抓取 in 「擷取標題」 (13 sites, two senses); 向量 is 矢量 for
+     a vector tile but stays 向量 for a vector mean (4); 數位 has one bare site whose sense is not
+     decidable from the string. Those need narrower left-hand sides — the 複製羊 shape — not a row.
+     ── society & community (6 sites; 群落 and 社群媒體 both occur 0 times, so the swap is safe) */
+  ['社群', '社區'],
+  /* ── general vocabulary. Site counts as measured above, highest first. */
+  ['金鑰', '密鑰'],     ['欄位', '字段'],     ['內建', '內置'],     ['裝置', '設備'],
+  ['進階', '高級'],     ['類比', '模擬'],     ['存取', '訪問'],     ['模組', '模塊'],
+  ['快取', '緩存'],     ['位址', '地址'],     ['訊號', '信號'],     ['排程', '調度'],
+  ['執行緒', '線程'],   ['剪貼簿', '剪貼板'], ['西元', '公元'],     ['視覺化', '可視化'],
+  ['叢集', '集群'],     ['塑膠', '塑料'],     ['寬頻', '寬帶'],     ['機率', '概率'],
+  ['視訊', '視頻'],     ['行動電話', '移動電話'],
+  /* ── place names, joining the two #R319 left here. ⚠ 喬治亞 IS TWO ENTRIES: the US state is
+     佐治亞州 and the country is 格魯吉亞, and the corpus has both — the longest-first sort is what
+     keeps 「美國喬治亞州」 from being handed the country's name. */
+  ['沙烏地阿拉伯', '沙特阿拉伯'], ['幾內亞比索', '幾內亞比紹'], ['索羅門群島', '所羅門群島'],
+  ['克羅埃西亞', '克羅地亞'], ['哥斯大黎加', '哥斯達黎加'], ['厄利垂亞', '厄立特里亞'],
+  ['坦尚尼亞', '坦桑尼亞'], ['新罕布夏', '新罕布什爾'], ['麻薩諸塞', '馬薩諸塞'],
+  ['衣索比亞', '埃塞俄比亞'], ['奈及利亞', '尼日利亞'], ['史瓦濟蘭', '斯威士蘭'],
+  ['宏都拉斯', '洪都拉斯'], ['莫三比克', '莫桑比克'], ['維吉尼亞', '弗吉尼亞'],
+  ['威斯康辛', '威斯康星'], ['喬治亞州', '佐治亞州'], ['喬治亞', '格魯吉亞'],
+  ['義大利', '意大利'], ['甘比亞', '岡比亞'], ['吐瓦魯', '圖瓦盧'],
+  ['葉門', '也門'], ['諾魯', '瑙魯'], ['帛琉', '帕勞'],
+  /* ── and two proper nouns of the #R322 kind: a mathematician and a disease */
+  ['傅立葉', '傅里葉'], ['愛滋', '艾滋'],
   /* the aspect marker — everything not pinned above */
   ['著', '着'],
 ];
