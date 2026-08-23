@@ -352,7 +352,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get compareSet(){ return compareSet; }, get compassDir(){ return compassDir; },
     get ensureBordersLayer(){ return ensureBordersLayer; }, get ensureLabelPill(){ return ensureLabelPill; },
     get escForReader(){ return escForReader; }, get hideCountryInfo(){ return hideCountryInfo; },
-    get hideMeasureTip(){ return hideMeasureTip; }, get loadGdpPPP(){ return loadGdpPPP; },
+    get hideMeasureTip(){ return hideMeasureTip; }, get loadGdpPPP(){ return loadGdpPPP; }, get reapplyPPP(){ return _reapplyPPP; },
     get loadNewsFromSupabase(){ return loadNewsFromSupabase; }, get newsTitleHTML(){ return newsTitleHTML; },
     get openComposeModal(){ return openComposeModal; }, get openPinPopup(){ return openPinPopup; },
     get pushCommunityFeatures(){ return pushCommunityFeatures; }, get rebuildGeoIndex(){ return rebuildGeoIndex; },
@@ -1172,8 +1172,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      NY.GDP.PCAP.PP.CD, most-recent value per country), merged into countryStats as gdpPPP (billions)
      and gdppcPPP (current international $). Cached 30 days. Used by Stats, the country popup, compare
      and the GDP-per-capita layer (its readout shows nominal + PPP). */
-  let gdpPPPLoaded=false, gdpPPPPromise=null;
-  function _mergePPP(pc,tot){ try{
+  let gdpPPPLoaded=false, gdpPPPPromise=null, _pppLast=null;
+  function _mergePPP(pc,tot){ try{ _pppLast={pc,tot};
       Object.keys(countryStats).forEach(code=>{ const s=countryStats[code];
         if(pc&&pc[code]!=null) s.gdppcPPP=pc[code];
         if(tot&&tot[code]!=null) s.gdpPPP=tot[code]/1e9; });
@@ -1182,7 +1182,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       try{ const cp=document.getElementById('country-popup'); if(cp&&cp.style.display==='block'&&window._cpCurrent){ const s=countryStats[window._cpCurrent.code]; const body=document.getElementById('cp-body'); if(s&&body) body.innerHTML=topBtns()+renderCountryDetailBody(s); } }catch(_){}
       try{ if(typeof currentMode!=='undefined'&&currentMode==='stats'&&typeof renderStats==='function') renderStats(); }catch(_){}
       try{ if(GE().layers.has('gdppc-fill')) { /* readout fmt already reads the new field */ } }catch(_){}
-    }catch(_){} }
+    }catch(_){} }  function _reapplyPPP(){ if(_pppLast) _mergePPP(_pppLast.pc,_pppLast.tot); }   /* (#R375) js/countries-ui.js adds rows to this table long after the merge ran; they need the same figures. Replays the KEPT payload — never a second copy of the merge. ⚠ ON THIS LINE because tests/r168 #8 budgets the app shell at 8,000 lines and it was at 7,999; the WHY lives at the call site, which is not in the shell. */
   function loadGdpPPP(){
     if(gdpPPPPromise) return gdpPPPPromise;
     gdpPPPPromise=(async()=>{
