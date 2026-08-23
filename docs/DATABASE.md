@@ -80,6 +80,31 @@ exists. `current_news` above is untouched and still serves article mode.
 | `news_event_i18n` | Server-generated translation of an event (`ja` today). Persisted, so it is readable logged out and costs no user AI quota. *(#R351)* `source_title_fp` is the hash of the headline that was translated, so a cached translation is reused until the headline itself changes — `updated_at` would move on every added article and re-bill the same sentence. | Everyone. | **service_role only.** |
 | `saved_news_events` | ★ on an **Event** (`favorites` keeps holding ★ on an article link). | Owner. | Owner. |
 | `news_ingest_runs` *(#R351)* | One row per `news-ingest` run: feeds reached, items fetched, articles new/seen, the **reject breakdown**, events created/updated, evictions, translations, tokens, an indicative cost, and per-stage timings. Per-feed freshness is not copied here — `news_source_feeds` holds it. | **Admin only.** | **service_role only.** |
+| `news_event_admin_actions` *(#R384)* | One row per operator (or machine) Merge / Split / Reassign / metadata override, with the **material needed to reverse it** in `before`. ⚠ `before` holds only what the action changed — restoring a whole-table snapshot would roll back every article ingested since. ⚠ No FK from `actor` / `reverted_by` to `auth.users`: this is an audit record, not an owned row (same reason as `news_events.reviewed_by`). | **Admin only.** | **service_role only** — operators write it through the RPCs below. |
+
+## Operator RPCs — News Events *(#R384)*
+
+The News Events tab in `admin.html` never UPDATEs these tables. One operator action touches four
+of them (`news_event_articles`, `news_events.merged_into`, the counts, and the audit row), so each
+is a single `SECURITY DEFINER` function that either does all of it or none of it.
+
+| Function | What it does |
+|---|---|
+| `news_event_merge(source, target, note)` | Human merge. Checks admin, then calls the one below. |
+| `news_event_merge_into(source, target, actor, note)` | The mechanism. `actor = null` means the machine (`link` stage), which is also why it does **not** set `manual_lock` — a pipeline that freezes what it just merged can never update it again. |
+| `news_event_reassign(article_ids, target, note)` | Moves articles. `target = null` creates a new event, i.e. **split is reassign with a new destination** — one implementation, not two. |
+| `news_event_update_meta(event, title, category, lng, lat, place, clear_location, lock, note)` | Overrides, **and sets the override flags** — writing the value alone lets the next ingest quietly put it back. `clear_location` exists because `null` means "leave it", so there would otherwise be no way to remove a location. |
+| `news_event_undo(action)` | Reverses one `news_event_admin_actions` row, once. |
+| `news_event_recount(event)` | Article count and **independent source count by `source_family`**. |
+| `news_embedding_candidates(article_ids, k, min_sim)` | Nearest neighbours that already belong to an event. Proposes candidates; decides nothing. |
+| `news_event_link_candidates(k, min_sim, limit)` | Event pairs whose members are semantically close. Proposes candidates; decides nothing. |
+| `news_articles_set_embeddings(jsonb)` | Bulk write-back of embeddings (three columns of existing rows). |
+
+⚠⚠⚠ **None of them calls `public.is_admin()`.** The repository baseline declares a zero-argument
+`is_admin()`, but **production has only `is_admin(uid uuid)`** (measured 2026-08-24 — the baseline
+was written after production and, as `MIGRATIONS.md` says, was never recorded there). Each function
+checks `exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin)`
+itself; `grant execute` means "may call", never "may do".
 
 ## Relationships
 
@@ -200,7 +225,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **30**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **31**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin`.
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't

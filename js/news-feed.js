@@ -200,6 +200,28 @@ window.IntMapModules.newsFeed=function(HOST){
     /* 1) Instant: show cached headlines immediately while fresh ones load. */
     if(HOST.globalData.length===0){ const cached=loadNewsCache(); if(cached&&cached.length){ HOST.globalData=cached; if(HOST.mode==='news'||HOST.mode==='saved') startNews(); } }
     if((HOST.mode==='news'||HOST.mode==='saved')&&feed&&HOST.globalData.length===0) feed.innerHTML=`<div class="empty-msg">${HOST.t('loading')}</div>`;
+    /* 1a) (#R384) EVENT MODE — 記事ではなく**出来事**の一覧。
+       ⚠ **搭載条件を先に見て、満たさないなら取りに行かない。** Event 経路が答えを持つのは
+         「既定のフィード」だけである——検索・時間旅行（過去の日付）・多言語モードは、
+         収集が英語のみ・保持が 72 時間・カテゴリが Event 単位、という前提の外にある
+         （docs/NEWS-EVENTS.md §2 の決定 2 と §8）。そこは記事モードのままにする。
+       ⚠ **落ちる先がある。** `load()` が false（DB が無い・表が空・失敗）なら下の記事経路へ。
+         黙って空の一覧を見せない——それが #R162/#R200/#R205/#R208 の「機能が静かに
+         存在しなくなる」形である。 */
+    if(HOST.NEWS_EVENT_MODE && !HOST.activeSearchQuery && !HOST.newsDate && HOST.newsLangMode!=='multi'){
+      try{
+        const okLazy = await window.IntMapLazy.need('newsEvents');
+        if(okLazy && window.IntMapNewsEvents && await window.IntMapNewsEvents.load()){
+          /* ⚠ 一覧を入れるのは**ここだけ**。`HOST.globalData` の書き手はこのファイル 1 つで、
+             出来事のモジュールは項目を**作る**だけである（#R165 の RW 契約）。 */
+          HOST.globalData = window.IntMapNewsEvents.loaded();
+          window.IntMapNewsEvents.renderChips();
+          if(HOST.mode==='news'||HOST.mode==='saved') startNews();
+          return;
+        }
+      }catch(e){ console.warn('[IntMap] event mode unavailable, using the article feed:', e&&e.message); }
+      try{ window.IntMapNewsEvents && window.IntMapNewsEvents.hideChips(); }catch(_){}
+    }
     /* 1b) FAST PATH: pre-analyzed news from Supabase. If it returns rows we're done — no client scoring.
        (#R40) TEMPORARILY DISABLED via USE_SERVER_NEWS — always fall through to the client non-AI locator. */
     if(HOST.USE_SERVER_NEWS && await loadNewsFromSupabase()) return;

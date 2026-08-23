@@ -11,7 +11,9 @@
 //
 //  段（POST の body で選べる。既定は全部）:
 //    fetch      33 フィードを取得 → 正規化 → 帰属 → 地点 → news_articles へ upsert
+//    embed      まだ埋め込みの無い記事を text-embedding-3-small で埋める（Phase C）
 //    assign     未割り当ての記事を候補 Event へ増分で載せる（総当たりしない）
+//    link       意味が近いのに別々になっている Event どうしを結ぶ（Phase C・recall）
 //    translate  Event の代表見出しを日本語へ（news_event_i18n に永続キャッシュ）
 //    prune      記事 72 時間 / Event 30 日 / ★保存 Event は無期限
 //  どの段も**壁時計の予算**を見て、足りなければそこで止めて次の run に残す。
@@ -24,6 +26,8 @@
 //           supabase secrets set AI_PROVIDER=anthropic         (anthropic | openai | gemini)
 //           supabase secrets set ANTHROPIC_API_KEY=sk-ant-...  (or OPENAI_API_KEY / GEMINI_API_KEY)
 //           supabase secrets set NEWS_TRANSLATE=off            (optional kill-switch)
+//           supabase secrets set NEWS_EMBED=off                (optional kill-switch, Phase C)
+//           supabase secrets set NEWS_EMBED_MODEL=...          (default text-embedding-3-small)
 //  (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
 //
 //  NOTE: written WITHOUT TypeScript annotations, like sv-cov / cable-geo / news-relay —
@@ -39,8 +43,9 @@ import { personaPrompt } from "../_shared/atlas-persona.js";
 import {
   buildRegistry, parseFeed, toArticleRow, buildCandidateIndex, placeArticle,
   summariseEvent, clusterConfidence, sha256Hex, retentionCutoffs, RETENTION,
+  eventsAgree, eventPairCandidates, INDEX,
 } from "../_shared/news-ingest.js";
-import { DEFAULTS } from "../_shared/news-cluster.js";
+import { DEFAULTS, buildIdf } from "../_shared/news-cluster.js";
 
 const NEWSGEO = globalThis.IntMapNewsGeo || null;
 
@@ -195,7 +200,165 @@ async function stageFetch(db, budget, runStartedAt) {
   };
 }
 
-/* ── 段 2: Event への増分割り当て ────────────────────────────────────────── */
+/* ── 段 2: 埋め込み（Phase C・docs/NEWS-EVENTS.md §5.2）────────────────────
+ *  決定論のトークン一致は「同じ語を使っているか」しか訊けない。#R351 の recall の
+ *  代表例——カナダ・米国の関税が 1 日で 5 つの Event に分かれた——は、語が違うだけで
+ *  同じ出来事だった。ここはその「言い換え」を拾うための材料を作る段である。
+ *
+ *  ⚠⚠⚠ **黙って 0 件になる AI 経路をもう一度作らない。** #R334 は
+ *    `analyzed_by='ai'` が 1,651 行中 0 件であることを測り、#R351 がその正体
+ *    （`AI_MODEL` の 403）を突き止めた。⇒ ここでは ① 鍵が無い / 切られている /
+ *    上流が拒否した、のどれなのかを **応答と `news_ingest_runs` の両方に出す**。
+ *    ② 次元が違うベクトルは採らない（列は vector(1536)）。
+ *
+ *  ⚠ 埋め込みは Event ではなく **記事**に付ける。代表見出しは記事が増えると変わるので、
+ *    Event に付けると同じ文を何度も埋め直すことになる（翻訳が `source_title_fp` で
+ *    避けているのと同じ問題）。記事の見出しは二度と変わらない。
+ * ────────────────────────────────────────────────────────────────────── */
+const EMBED_MODEL_DEFAULT = "text-embedding-3-small";
+const EMBED_DIM = 1536;
+const EMBED_VERSION = 1;
+const EMBED_CAP = 600;      /* 1 run で埋める上限（冷えた起動でも 2 run で追いつく） */
+const EMBED_BATCH = 96;
+const EMBED_PRICE_PER_MTOK = 0.02;   /* text-embedding-3-small。実額は請求が正本 */
+
+function embedConfig() {
+  if ((Deno.env.get("NEWS_EMBED") || "").toLowerCase() === "off") return { off: "NEWS_EMBED=off" };
+  const key = Deno.env.get("OPENAI_API_KEY");
+  if (!key) return { off: "no OPENAI_API_KEY (embeddings need the OpenAI endpoint)" };
+  return { key, model: Deno.env.get("NEWS_EMBED_MODEL") || EMBED_MODEL_DEFAULT };
+}
+
+/* ⚠ 見出しだけでは言い換えを見分けられないことがあるので要約の先頭も入れる。
+   ⚠ 長さを切るのは費用ではなく**一貫性**のため——同じ記事が別の run で別の長さの
+     テキストになると、埋め込みが少しずつ違う場所に落ちる。 */
+function embedText(a) {
+  const t = String(a.title || "").trim();
+  const d = String(a.description || "").replace(/\s+/g, " ").trim().slice(0, 400);
+  return d ? t + "\n" + d : t;
+}
+
+/* 上流が「そのモデルは無い」と言ったときに、**何なら在るのか**を訊く。
+ * ⚠ #R351 は `AI_MODEL=gpt-5.6-terra` の 403 を突き止めるのに 1 ラウンド使った。
+ *   この鍵は OpenAI 互換の gateway で、モデル名は普通の OpenAI の名前とは限らない
+ *   （実測: chat は `gpt-5.6-terra` / `gpt-5.6-luna`）。⇒ **一覧を訊いて名前で選ぶ。**
+ *   推測で 2 つ 3 つ試すより速く、しかも次の運用者に「何が使えるか」を残せる。 */
+async function listEmbeddingModels(key) {
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 15000);
+    let r;
+    try { r = await fetch("https://api.openai.com/v1/models", { signal: ctl.signal, headers: { Authorization: "Bearer " + key } }); }
+    finally { clearTimeout(timer); }
+    if (!r.ok) return { error: "models " + r.status, ids: [] };
+    const j = await r.json();
+    const ids = (Array.isArray(j?.data) ? j.data : []).map((m) => String(m?.id || "")).filter(Boolean);
+    return { ids: ids.filter((id) => /embed/i.test(id)).sort(), all: ids.length };
+  } catch (e) { return { error: String((e && e.message) || e), ids: [] }; }
+}
+
+async function embedBatch(key, model, inputs, dims) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 30000);
+  try {
+    const body = { model, input: inputs };
+    if (dims) body.dimensions = dims;
+    const r = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST", signal: ctl.signal,
+      headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) return { status: r.status, error: (await r.text().catch(() => "")).slice(0, 300) };
+    return { status: 200, json: await r.json() };
+  } catch (e) {
+    return { status: 0, error: String((e && e.message) || e) };
+  } finally { clearTimeout(timer); }
+}
+
+async function stageEmbed(db, budget) {
+  const t0 = Date.now();
+  const cfg = embedConfig();
+  if (cfg.off) return { ms: Date.now() - t0, embedded: 0, skipped: cfg.off };
+
+  const todo = await selectAll(() => db.from("news_articles"),
+    (q) => q.select("id,title,description").eq("status", "active").is("embedding", null)
+            .order("published_at", { ascending: false }));
+  if (!todo.length) return { ms: Date.now() - t0, embedded: 0, pending: 0, model: cfg.model };
+
+  const batchable = todo.slice(0, EMBED_CAP);
+  let wrote = 0, tokens = 0, lastError = null, badDim = 0;
+  let model = cfg.model;
+  let dims = null;              /* null = モデルの既定。1536 に切り詰める必要が分かったら立てる */
+  let available = null;         /* 403/404 のときだけ埋まる（応答に出して運用者に渡す） */
+  let triedList = false;
+
+  for (let i = 0; i < batchable.length; i += EMBED_BATCH) {
+    if (budget.left() < 20000) break;
+    const chunk = batchable.slice(i, i + EMBED_BATCH);
+    const inputs = chunk.map(embedText);
+
+    let res = await embedBatch(cfg.key, model, inputs, dims);
+
+    /* ⚠ **モデル名で落ちたときだけ**、一覧を訊いて 1 回だけ乗り換える（ai-proxy と同じ
+       「403/404 のとき 1 回だけ」の形。再帰しないよう triedList で止める）。 */
+    if ((res.status === 403 || res.status === 404) && !triedList) {
+      triedList = true;
+      available = await listEmbeddingModels(cfg.key);
+      const next = (available.ids || []).find((id) => id !== model);
+      if (next) { model = next; res = await embedBatch(cfg.key, model, inputs, dims); }
+    }
+    if (res.status !== 200) {
+      lastError = "openai embeddings " + res.status + " (" + model + "): " + (res.error || "");
+      break;
+    }
+
+    tokens += Number(res.json?.usage?.total_tokens || 0);
+    const data = Array.isArray(res.json?.data) ? res.json.data : [];
+
+    /* ⚠ 列は vector(1536)。返ってきた次元が違うなら、**捨てる前に 1 回だけ切り詰めを頼む**
+       （OpenAI の v3 系は `dimensions` を受ける）。それでも合わなければその batch は落とし、
+       理由を残す——壊れた長さのベクトルを黙って入れない。 */
+    const got = Array.isArray(data[0]?.embedding) ? data[0].embedding.length : 0;
+    if (got && got !== EMBED_DIM && dims == null) {
+      dims = EMBED_DIM;
+      const retry = await embedBatch(cfg.key, model, inputs, dims);
+      if (retry.status === 200) {
+        tokens += Number(retry.json?.usage?.total_tokens || 0);
+        res = retry;
+      } else {
+        lastError = "model " + model + " returns " + got + " dims and refused dimensions=" + EMBED_DIM +
+                    ": " + (retry.error || "");
+        break;
+      }
+    }
+
+    const rows = [];
+    for (const d of (Array.isArray(res.json?.data) ? res.json.data : [])) {
+      const k = Number(d?.index);
+      const v = d?.embedding;
+      const a = chunk[k];
+      if (!a || !Array.isArray(v)) continue;
+      if (v.length !== EMBED_DIM) { badDim++; continue; }
+      rows.push({ id: a.id, e: "[" + v.join(",") + "]", m: model, v: EMBED_VERSION });
+    }
+    if (rows.length) {
+      const { data: n, error } = await db.rpc("news_articles_set_embeddings", { p: rows });
+      if (error) { lastError = "set_embeddings: " + error.message; break; }
+      wrote += Number(n) || 0;
+    }
+  }
+  return {
+    ms: Date.now() - t0, embedded: wrote, considered: batchable.length,
+    pending: Math.max(0, todo.length - wrote),
+    model, configured_model: cfg.model, dimensions: dims || "model default",
+    available_embedding_models: available,
+    rejected_wrong_dim: badDim, tokens,
+    estimated_cost_usd: Math.round((tokens * EMBED_PRICE_PER_MTOK / 1e6) * 1e6) / 1e6,
+    error: lastError,
+  };
+}
+
+/* ── 段 3: Event への増分割り当て ────────────────────────────────────────── */
 const ARTICLE_COLS =
   "id,source_id,title,title_fingerprint,description,published_at,provider_category," +
   "subject_lng,subject_lat,subject_type,subject_name_en,subject_confidence,subject_reasons,entities," +
@@ -264,17 +427,48 @@ async function stageAssign(db, budget) {
   let temp = -1;
   const newEventId = () => temp--;
 
+  /* ── embedding の近傍（Phase C・第 2 段の候補生成）────────────────────────
+     ⚠ **これは候補を足すだけで、統合を決めない。** 決めるのは `pairVerdict` で、
+       地理と時刻の門はそのまま通る（docs/NEWS-EVENTS.md §5.2）。
+     ⚠ 埋め込みがまだ 1 本も無い（`embed` 段を回していない・鍵が無い）ときは、
+       ここは静かに 0 件を返し、割り当ては #R351 と 1 ビットも変わらない挙動になる。
+     ⚠ 冷えた起動では**この段はほとんど効かない**——その時点でどの記事も Event に
+       属していないので、近傍が返らない。そこは `link` 段の仕事である。 */
+  const unassigned = index.arts.filter((a) => !a.event_id).map((a) => a.id);
+  const neighbours = new Map();     /* article_id → [{ neighbour_id, event_id, similarity }] */
+  let embedCandidates = 0, embedError = null;
+  if (unassigned.length) {
+    for (let i = 0; i < unassigned.length; i += PAGE) {
+      const { data, error } = await db.rpc("news_embedding_candidates", {
+        p_article_ids: unassigned.slice(i, i + PAGE), p_k: 32, p_min_sim: 0.5,
+      });
+      if (error) { embedError = error.message; break; }
+      for (const r of data || []) {
+        /* ⚠ merge された Event を候補にしない——`resolve()` は #R334 が
+           「新しい記事を merge 済みの側に足してはならない」ために置いたもので、
+           近傍から来る候補にも同じことが要る。 */
+        const eid = resolve(r.event_id);
+        let list = neighbours.get(r.article_id);
+        if (!list) neighbours.set(r.article_id, (list = []));
+        list.push({ neighbour_id: r.neighbour_id, event_id: eid, similarity: r.similarity });
+        embedCandidates++;
+      }
+    }
+  }
+  const neighboursOf = (id) => neighbours.get(id) || null;
+
   const decisions = [];
-  let evictions = 0, placed = 0;
+  let evictions = 0, placed = 0, byEmbedding = 0;
   const perMs = [];
   for (const a of index.arts) {
     if (a.event_id) continue;
     if (budget.left() < 20000) break;
     const s = Date.now();
-    const p = placeArticle(a, index, store, newEventId, DEFAULTS);
+    const p = placeArticle(a, index, store, newEventId, DEFAULTS, neighboursOf);
     perMs.push(Date.now() - s);
     placed++;
     if (p.evicted) evictions++;
+    if (p.decision && p.decision.features && p.decision.features.code === "embedding") byEmbedding++;
     decisions.push({ article_id: a.id, place: p });
   }
 
@@ -339,7 +533,11 @@ async function stageAssign(db, budget) {
       event_id: eid, article_id: aid, relation: "same_event",
       assignment_score: d && d.assignment_score != null ? d.assignment_score : null,
       deterministic_features: (d && d.features) || null,
-      assigned_by: "deterministic",
+      /* ⚠ 「何が決め手だったか」を保存する。#R334 が `assigned_by` に
+         'deterministic' / 'embedding' / 'llm' / 'human' の 4 値を置いたのは
+         **後から「どの段が何件を運んだか」を数えられるようにする**ためで、
+         全部 'deterministic' で埋めるとその列は 1 ビットも情報を持たない。 */
+      assigned_by: (d && d.features && d.features.code === "embedding") ? "embedding" : "deterministic",
       decision_reason: (d && d.reasons) || (p && p.created ? "new event (no candidate matched)" : null),
       algorithm_version: ALGORITHM_VERSION,
     };
@@ -429,10 +627,171 @@ async function stageAssign(db, budget) {
     ms: Date.now() - t0, window: arts.length,
     articles_assigned: placed, events_created: created.length, events_updated: updated,
     evictions, per_article_p50: q(perMs, 0.5), per_article_p95: q(perMs, 0.95),
+    embedding_candidates: embedCandidates, joined_by_embedding: byEmbedding,
+    embedding_error: embedError,
   };
 }
 
-/* ── 段 3: 日本語訳 ──────────────────────────────────────────────────────
+/* ── 段 4: すでに分かれた Event どうしを結ぶ（Phase C・recall）─────────────
+ *  ⚠⚠⚠ **新着に候補を足すだけでは、すでに分かれた塊は永久に分かれたままである。**
+ *    #R351 が measured recall の代表例として挙げたカナダ・米国の関税（1 日で 5 つの
+ *    Event）は、どれも既存の Event なので `assign` からは触れない。
+ *
+ *  ⚠ **判定は `assign` と同じ規則を使う。** `eventsAgree` は交差する対の
+ *    `transitivity`（34%）以上が「同じ」と言うことを求める——新着 1 本を載せる条件と
+ *    同じものを、塊どうしに当てているだけである。#R351 が `findOutlier` で学んだ
+ *    「新しい定数を足さない」をここでも守る。
+ *
+ *  ⚠ 生き残るのは**記事の多いほう**（同数なら古いほう）。代表見出し・地点・分類は
+ *    次の取り込みで塊全体から選び直されるので、ここでは決めない。
+ * ────────────────────────────────────────────────────────────────────── */
+const LINK_CAP = 120;          /* 1 run で見る Event 対の上限 */
+const LINK_MEMBERS = 20;       /* 1 Event あたり照合するメンバーの上限（INDEX.maxMembers と同じ） */
+
+async function stageLink(db, budget) {
+  const t0 = Date.now();
+
+  /* 判定に要るのは「その Event のメンバー記事」と「窓全体の IDF」。
+     ⚠ IDF は**窓に実際に流れている記事**から作る。候補の周辺だけで作ると珍しさを
+       過小評価する（news-cluster.js の clusterArticles が同じ注意を書いている）。 */
+  const sources = await selectAll(() => db.from("news_sources"), (q2) => q2.select("id,source_family"));
+  const family = new Map(sources.map((x) => [x.id, x.source_family]));
+  const winArts = await selectAll(() => db.from("news_articles"),
+    (q2) => q2.select("id,source_id,title,title_fingerprint,published_at,subject_lng,subject_lat,subject_type," +
+                      "news_event_articles(event_id,relation)")
+              .eq("status", "active"));
+  const idf = buildIdf(winArts.map((a) => ({ title: a.title })));
+
+  const membersOf = new Map();
+  for (const a of winArts) {
+    const l = (a.news_event_articles || []).find((x) => x.relation === "same_event" || x.relation === "update");
+    if (!l) continue;
+    const art = { ...a, source_family: family.get(a.source_id) || a.source_id };
+    let m = membersOf.get(l.event_id);
+    if (!m) membersOf.set(l.event_id, (m = []));
+    m.push(art);
+  }
+
+  if (!membersOf.size) return { ms: Date.now() - t0, merged: 0, candidates: 0, window: winArts.length };
+
+  /* ⚠ 運用者が確定させた Event は機械が動かさない（#R351 の manual_lock と同じ扱い）。
+     語からの候補生成はここで除く（embedding 側の RPC は SQL の中で同じことをしている）。 */
+  const locked = new Set();
+  {
+    const evIds = [...membersOf.keys()];
+    for (let i = 0; i < evIds.length; i += PAGE) {
+      const { data } = await db.from("news_events")
+        .select("id,manual_lock,status,merged_into").in("id", evIds.slice(i, i + PAGE));
+      for (const e of data || []) {
+        if (e.manual_lock || e.status !== "active" || e.merged_into != null) locked.add(e.id);
+      }
+    }
+    for (const id of locked) membersOf.delete(id);
+  }
+
+  /* ── 候補の 2 つの入口 ────────────────────────────────────────────────────
+     ① 珍しい語の共有（**鍵が要らない。常に動く**）
+     ② embedding の近傍（鍵が埋め込みモデルに届くときだけ足される）
+     ⚠ ②が使えないことは①を止める理由にならない。実測 (2026-08-24): この鍵は
+       `/v1/models` に 1 件しか返さず、埋め込みモデルは含まれていない。 */
+  const byWord = eventPairCandidates(membersOf, idf, INDEX, LINK_CAP);
+  let embedPairs = [], embedError = null;
+  {
+    const { data, error } = await db.rpc("news_event_link_candidates", {
+      p_k: 8, p_min_sim: 0.80, p_limit: LINK_CAP,
+    });
+    if (error) embedError = error.message;
+    else embedPairs = (data || []).filter((r) => !locked.has(r.event_a) && !locked.has(r.event_b));
+  }
+  const seen = new Set();
+  const pairs = [];
+  for (const r of embedPairs.concat(byWord)) {
+    const a = Math.min(r.event_a, r.event_b), b = Math.max(r.event_a, r.event_b);
+    const k = a + ":" + b;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    pairs.push({ event_a: a, event_b: b, similarity: r.similarity ?? null, weight: r.weight ?? null });
+    if (pairs.length >= LINK_CAP) break;
+  }
+  if (!pairs.length) {
+    return { ms: Date.now() - t0, merged: 0, candidates: 0, window: winArts.length,
+             embedding_candidates: embedPairs.length, embedding_error: embedError };
+  }
+
+  /* 対に出てくるメンバーどうしの類似度をまとめて引く（1 往復）。
+     ⚠ 候補の代表 1 対だけの類似度で塊を結ばない——それでは推移の検算に材料が足りない。
+     ⚠ 埋め込みが 1 本も無ければここは静かに 0 件で、判定は語だけで進む。 */
+  const ids = new Set();
+  for (const p2 of pairs) {
+    for (const m of (membersOf.get(p2.event_a) || []).slice(0, LINK_MEMBERS)) ids.add(m.id);
+    for (const m of (membersOf.get(p2.event_b) || []).slice(0, LINK_MEMBERS)) ids.add(m.id);
+  }
+  const sim = new Map();       /* "a:b" → cos */
+  const key = (x, y) => (x < y ? x + ":" + y : y + ":" + x);
+  let simError = null;
+  const idList = [...ids];
+  for (let i = 0; i < idList.length; i += PAGE) {
+    const { data, error } = await db.rpc("news_embedding_candidates", {
+      p_article_ids: idList.slice(i, i + PAGE), p_k: 32, p_min_sim: 0.5,
+    });
+    if (error) { simError = error.message; break; }
+    for (const r of data || []) {
+      const k = key(r.article_id, r.neighbour_id);
+      const prev = sim.get(k);
+      if (prev == null || r.similarity > prev) sim.set(k, r.similarity);
+    }
+  }
+  const simOf = (x, y) => { const v = sim.get(key(x, y)); return Number.isFinite(v) ? v : null; };
+
+  /* 同じ run の中で連鎖して merge されないよう、行き先を辿る。 */
+  const redirect = new Map();
+  const resolveLive = (id) => { let c = id; for (let i = 0; i < 5 && redirect.has(c); i++) c = redirect.get(c); return c; };
+
+  let merged = 0, examined = 0;
+  const details = [];
+  for (const p2 of pairs) {
+    if (budget.left() < 20000) break;
+    const a = resolveLive(p2.event_a), b = resolveLive(p2.event_b);
+    if (a === b) continue;
+    const ma = (membersOf.get(a) || []).slice(0, LINK_MEMBERS);
+    const mb = (membersOf.get(b) || []).slice(0, LINK_MEMBERS);
+    if (!ma.length || !mb.length) continue;
+    examined++;
+    const verdict = eventsAgree(ma, mb, idf, DEFAULTS, simOf, LINK_MEMBERS);
+    if (!verdict.same) continue;
+    /* 記事の多いほうを残す。同数なら古いほう（first_published_at の早いほう）。 */
+    let target = a, source = b;
+    if (mb.length > ma.length) { target = b; source = a; }
+    else if (mb.length === ma.length) {
+      const ta = Math.min(...ma.map((x) => Date.parse(x.published_at) || Infinity));
+      const tb = Math.min(...mb.map((x) => Date.parse(x.published_at) || Infinity));
+      if (tb < ta) { target = b; source = a; }
+    }
+    const { error } = await db.rpc("news_event_merge_into", {
+      p_source: source, p_target: target, p_actor: null,
+      p_note: "link stage: cos " + Number(p2.similarity).toFixed(3) +
+              " · agree " + verdict.matched + "/" + verdict.pairs + " (" + verdict.share + ")",
+    });
+    if (error) { details.push({ source, target, error: error.message }); continue; }
+    redirect.set(source, target);
+    /* 統合先のメンバー表も更新する——同じ run の後続の対がこの塊を正しく見られるように。 */
+    membersOf.set(target, (membersOf.get(target) || []).concat(membersOf.get(source) || []));
+    membersOf.delete(source);
+    merged++;
+    if (details.length < 20) {
+      details.push({ source, target, cos: Number(p2.similarity), share: verdict.share,
+                     matched: verdict.matched, pairs: verdict.pairs, top: verdict.top });
+    }
+  }
+  return {
+    ms: Date.now() - t0, candidates: pairs.length, examined, merged,
+    by_word: byWord.length, by_embedding: embedPairs.length, embedding_error: embedError,
+    locked_events: locked.size,
+    window: winArts.length, sim_pairs: sim.size, error: simError, details,
+  };
+}
+
+/* ── 段 5: 日本語訳 ──────────────────────────────────────────────────────
  *  docs/NEWS-EVENTS.md §7: 一次措置は日本語のみ。サーバー側で生成して永続キャッシュ
  *  するので、クライアントの AI 枠を消費せず、未ログインでも読める。
  *  ⚠ 代表見出しは記事が増えると変わる。**変わったときだけ**払う（source_title_fp）。
@@ -626,7 +985,7 @@ async function stageTranslate(db, budget) {
   };
 }
 
-/* ── 段 4: 保持期間 ──────────────────────────────────────────────────────
+/* ── 段 6: 保持期間 ──────────────────────────────────────────────────────
  *  docs/NEWS-EVENTS.md §8 / CONSTITUTION.md §5:
  *    記事 72 時間 ／ Event 30 日 ／ ★保存した Event は無期限 ／ 判定の記録 30 日。
  *  ⚠ **消してよいのは記事だけで、出来事ではない。** Event を記事と同じ 72 時間で消すと、
@@ -689,9 +1048,14 @@ Deno.serve(async (req) => {
 
   let body = {};
   try { body = await req.json(); } catch (_) { body = {}; }
+  /* ⚠ 既定に `embed` と `link` を入れる。cron は body で段を明示しているので、
+     既定を変えても走っている 2 本の job の挙動は変わらない（`docs/NEWS-EVENTS.md` §12.1）。
+     ⚠ 順序はここが決める——`embed` は `assign` より**前**（埋め込みが無ければ第 2 段は
+     何も足せない）、`link` は `assign` より**後**（新しくできた Event も対象にする）。 */
+  const ORDER = ["fetch", "embed", "assign", "link", "translate", "prune"];
   const want = Array.isArray(body.stages) && body.stages.length
-    ? body.stages.filter((s) => ["fetch", "assign", "translate", "prune"].includes(s))
-    : ["fetch", "assign", "translate", "prune"];
+    ? ORDER.filter((s) => body.stages.includes(s))
+    : ORDER.slice();
 
   const budgetMs = Math.max(30000, Math.min(300000, Number(body.budgetMs) || DEFAULT_BUDGET_MS));
   const start = Date.now();
@@ -706,7 +1070,9 @@ Deno.serve(async (req) => {
   let ok = true;
   try {
     if (want.includes("fetch")) result.fetch = await stageFetch(db, budget, startedAt);
+    if (want.includes("embed")) result.embed = await stageEmbed(db, budget);
     if (want.includes("assign")) result.assign = await stageAssign(db, budget);
+    if (want.includes("link")) result.link = await stageLink(db, budget);
     if (want.includes("translate")) result.translate = await stageTranslate(db, budget);
     if (want.includes("prune")) result.prune = await stagePrune(db);
   } catch (e) {

@@ -304,8 +304,26 @@ test('R168 #8 index.html shrank and no module body came back inline', () => {
      eager bundle.
      Headroom is 25 lines. The debt this round did NOT pay is js/data-layers.js (5,800 lines, of
      which ~1,320 are aircraft): the original per-browser sweep is kept intact for the rollback
-     window §28 Phase G requires, and deleting it is what the next round can pay this back with. */
-  assert.ok(lines < 8_000, `index.html should be well under the pre-R168 9,709 lines; it is ${lines}`);
+     window §28 Phase G requires, and deleting it is what the next round can pay this back with.
+     ⚠ (#R384) 8,000 → 8,020, and the measurement is written down because raising a tripwire to make
+     one's own change pass is exactly the move this file exists to catch. #R384 put the News tab on
+     `news_events` — one event per card instead of one article. The IMPLEMENTATION is 590 lines in
+     js/news-events.js, which is NOT in this shell and NOT in the eager bundle (it is fetched when
+     the News tab is opened). What landed here is only the seam, and it was cut down twice before
+     this number was touched — 44 lines first written, then 12:
+
+       index.html         +1   the category chip row (one element; its prose is in docs/NEWS-EVENTS.md §9)
+       js/app-body.js    +12   the second flag (`NEWS_EVENT_MODE` — the #R40 `USE_SERVER_NEWS` path is a
+                               DIFFERENT switch and stays false), `newsSurfaceMode()` (which answers from
+                               the ITEMS, not from the flag, because Atlas and the production smoke read
+                               it), and three branches in computeFilteredNews: an event's ★ lives in
+                               `saved_news_events`, search reaches the member headlines, and the category
+                               chip filters the list and the pins through ONE predicate.
+       js/lazy-modules.js  +0   folded onto the rows that were already there.
+
+     Headroom is 8 lines. The debt this round did NOT pay is js/app-body.js itself (4,331 lines): the
+     news predicate now serves two surfaces and is the natural thing to lift out of the shell next. */
+  assert.ok(lines < 8_020, `index.html should be well under the pre-R168 9,709 lines; it is ${lines}`);
   assert.ok(!/<style>[\s\S]{4000,}?<\/style>/.test(html), 'the stylesheet stays in css/intmap.css');
   // A leftover in-page copy of a moved body would WIN over the module (a later function declaration
   // overwrites an earlier one). Probe with a line from deep inside each of the three biggest bodies,

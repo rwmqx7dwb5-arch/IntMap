@@ -1257,6 +1257,52 @@
     .nrp-loading{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:60px 16px; color:var(--text-muted); font-size:13px; }
     .nrp-spinner{ width:28px; height:28px; border:3px solid rgba(128,128,128,0.25); border-top-color:var(--primary-color); border-radius:50%; animation:nrpSpin 0.8s linear infinite; }
     @keyframes nrpSpin{ to{ transform:rotate(360deg); } }
+
+    /* ══ (#R384) NEWS EVENTS — 出来事単位の News ═══════════════════════════════════════════════
+       docs/NEWS-EVENTS.md §9「既存の視覚言語と密度を維持する。Ground News 風の独立画面や
+       巨大モーダルを作らない」。だから新しいカードは無く、`.news-item` に 3 つ足すだけで、
+       詳細は既存の `.news-reader-pane` に描く。 */
+    .news-cat-chips{ display:flex; gap:6px; margin-top:8px; overflow-x:auto; overflow-y:hidden; padding-bottom:2px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+    .news-cat-chips::-webkit-scrollbar{ height:0; }
+    .news-cat-chip{ flex:0 0 auto; display:inline-flex; align-items:center; gap:5px; background:var(--input-bg); border:none; color:var(--text-muted); font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:999px; cursor:pointer; white-space:nowrap; transition:0.18s; }
+    .news-cat-chip:hover{ color:var(--text-main); }
+    .news-cat-chip.active{ background:var(--primary-color); color:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+    .news-cat-n{ font-size:10.5px; font-weight:700; opacity:0.68; font-variant-numeric:tabular-nums; }
+
+    .news-item .ev-cat{ font-size:10.5px; font-weight:700; letter-spacing:0.2px; color:var(--text-muted); text-transform:uppercase; white-space:nowrap; }
+    .ev-badge{ font-size:10px; font-weight:700; letter-spacing:0.2px; padding:2px 7px; border-radius:999px; white-space:nowrap; }
+    .ev-badge.upd{ background:rgba(52,199,89,0.16); color:#1f8a3d; }
+    [data-theme="dark"] .ev-badge.upd{ background:rgba(52,199,89,0.2); color:#5fd67f; }
+    .ev-badge.first{ background:rgba(0,122,255,0.14); color:var(--primary-color); }
+    .ev-badge.dup{ background:rgba(128,128,128,0.16); color:var(--text-muted); }
+    .news-item .ev-sources{ flex:0 0 auto; background:var(--input-bg); border:none; color:var(--text-main); font-size:11.5px; font-weight:600; cursor:pointer; padding:4px 11px; border-radius:999px; white-space:nowrap; transition:0.15s; }
+    .news-item .ev-sources:hover{ background:var(--primary-color); color:#fff; }
+
+    /* ── 出来事の詳細（`.news-reader-pane` の中） ── */
+    .ev-detail{ padding-bottom:24px; }
+    .ev-detail .reader-bar{ position:sticky; top:0; z-index:5; display:flex; align-items:center; padding:6px 2px 12px; background:linear-gradient(var(--sidebar-bg) 75%, transparent); backdrop-filter:blur(8px); }
+    .ev-detail .btn-back{ display:inline-flex; align-items:center; gap:6px; background:var(--input-bg); border:none; color:var(--text-main); font-size:13px; font-weight:600; padding:9px 14px; border-radius:999px; cursor:pointer; transition:0.2s; }
+    .ev-detail .btn-back:hover{ background:var(--primary-color); color:#fff; }
+    .ev-d-head{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .ev-d-title{ font-size:22px; font-weight:700; line-height:1.28; letter-spacing:-0.35px; margin:0 0 8px; color:var(--text-main); }
+    .ev-d-meta{ display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--text-muted); padding-bottom:16px; margin-bottom:16px; border-bottom:1px solid rgba(128,128,128,0.15); }
+    .ev-d-sec{ margin-bottom:22px; }
+    .ev-d-sec h3{ font-size:13px; font-weight:700; letter-spacing:-0.1px; margin:0 0 10px; color:var(--text-main); }
+    .ev-d-note{ font-size:11.5px; line-height:1.55; color:var(--text-muted); margin:0 0 10px; }
+    .ev-diff-row{ display:flex; gap:10px; align-items:flex-start; background:var(--card-bg); border:1px solid rgba(128,128,128,0.1); border-radius:12px; padding:10px 12px; margin-bottom:8px; box-shadow:var(--shadow); }
+    .ev-diff-k{ flex:0 0 auto; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.2px; padding-top:2px; min-width:74px; }
+    .ev-diff-v{ flex:1 1 auto; min-width:0; font-size:12.5px; line-height:1.6; color:var(--text-main); }
+    .ev-diff-src{ color:var(--text-muted); font-size:11.5px; }
+    .ev-cov{ padding:9px 0; border-bottom:1px solid rgba(128,128,128,0.1); }
+    .ev-cov:last-child{ border-bottom:none; }
+    .ev-cov.dup{ opacity:0.62; }
+    .ev-cov-h{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-bottom:3px; }
+    .ev-cov-src{ font-size:11.5px; font-weight:700; color:var(--primary-color); }
+    .ev-cov-at{ font-size:11px; color:var(--text-muted); margin-left:auto; white-space:nowrap; }
+    .ev-cov-t{ display:block; font-size:13px; line-height:1.45; color:var(--text-main); text-decoration:none; }
+    a.ev-cov-t:hover{ text-decoration:underline; }
+    .ev-why ul{ margin:0; padding-left:18px; }
+    .ev-why li{ font-size:11.5px; line-height:1.6; color:var(--text-muted); margin-bottom:6px; }
     .nrp-orig{ display:inline-flex; align-items:center; gap:6px; align-self:flex-start; margin:20px 0 28px; padding:12px 22px; background:var(--primary-color); color:#fff; border-radius:12px; font-size:14px; font-weight:600; text-decoration:none; box-shadow:0 6px 18px rgba(0,122,255,0.3); }
     .nrp-orig:hover{ filter:brightness(1.08); }
     .nrp-note{ font-size:12px; color:var(--text-muted); margin-top:10px; line-height:1.6; }

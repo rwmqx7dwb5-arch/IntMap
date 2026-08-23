@@ -4,9 +4,14 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(76);   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
+select plan(82);   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
                    -- (#R351) +2: news_ingest_runs joins both lists too. A table missing from the
                    -- list cannot fail the list (#R280) — that is why the count moves with the table.
+                   -- (#R384) +6: news_event_admin_actions joins BOTH lists (+2), and the four operator
+                   -- RPCs the admin console calls get an existence assertion each (+4) — a console
+                   -- button wired to a function that is not deployed is the silent hole again.
+                   -- ⚠ CI counted this for me: 「planned 80 but ran 82」. 一覧を 1 つ伸ばすと
+                   --   assertion は 2 つ増える（表の存在と RLS の 2 リストに入るから）。
 
 -- 1) Every expected table exists in public.
 select has_table('public', t, 'table ' || t || ' exists')
@@ -28,8 +33,12 @@ from unnest(array[
   'news_sources','news_source_feeds','news_articles','news_events','news_event_articles',
   -- (#R351) …and the ingest telemetry beside them (docs/NEWS-EVENTS.md §13). Operational
   -- rather than public: admin reads it, service_role writes it.
-  'news_cluster_decisions','news_event_i18n','saved_news_events','news_ingest_runs'
-]) as t;                                                    -- 30 assertions
+  'news_cluster_decisions','news_event_i18n','saved_news_events','news_ingest_runs',
+  -- (#R384) the operator's audit trail (docs/NEWS-EVENTS.md §11). Admin reads it, service_role
+  -- writes it, and every Merge / Split / Reassign / override writes one row with the material
+  -- needed to undo it. ⚠ NO FK to auth.users on actor — see the migration's note.
+  'news_event_admin_actions'
+]) as t;                                                    -- 31 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -45,8 +54,16 @@ from unnest(array[
   'news_sources','news_source_feeds','news_articles','news_events','news_event_articles',
   -- (#R351) …and the ingest telemetry beside them (docs/NEWS-EVENTS.md §13). Operational
   -- rather than public: admin reads it, service_role writes it.
-  'news_cluster_decisions','news_event_i18n','saved_news_events','news_ingest_runs'
-]) as t;                                                    -- 30 assertions
+  'news_cluster_decisions','news_event_i18n','saved_news_events','news_ingest_runs',
+  'news_event_admin_actions'
+]) as t;                                                    -- 31 assertions
+
+-- (#R384) 2b) The operator RPCs exist. The admin console has buttons wired to these four names;
+--   a button that calls a function which is not there fails at the moment an operator needs it.
+select has_function('public', 'news_event_merge',       'news_event_merge() exists');
+select has_function('public', 'news_event_reassign',    'news_event_reassign() exists');
+select has_function('public', 'news_event_update_meta', 'news_event_update_meta() exists');
+select has_function('public', 'news_event_undo',        'news_event_undo() exists');
 
 -- 3) Keys / relationships that the app depends on.
 select has_pk('public', 'profiles', 'profiles has a primary key');

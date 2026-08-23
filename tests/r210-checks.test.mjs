@@ -77,8 +77,16 @@ test('R210 ④: ★ Saved is not a filter over the live feed any more', () => {
   assert.match(body, /window\.IntMapNewsSaved\.merge\(globalData,bookmarks\)/,
     'the saved view is built from feed + snapshot, not from the feed alone');
   /* the authority must stay where it was: the star is never inferred from the cache */
-  assert.match(body, /currentMode==='saved'&&!bookmarks\.includes\(it\.link\)/,
-    'membership is still decided by bookmarks (DB or localStorage), never by the snapshot');
+  /* ⚠ (#R384) ONE predicate now answers for both surfaces, and each half keeps its own authority:
+     an ARTICLE's star is `bookmarks` (the DB row or localStorage), an EVENT's star is
+     `saved_news_events` keyed by public_id. Neither is ever read out of the article SNAPSHOT — that
+     is the cache, and inferring the star from the cache is what this test exists to forbid. */
+  assert.match(body, /const starred=\(it\)=>it\._event \? !!\(EV\(\)&&EV\(\)\.isSaved\(it\._event\.publicId\)\) : bookmarks\.includes\(it\.link\);/,
+    'membership is still decided by bookmarks / saved_news_events, never by the snapshot');
+  assert.match(body, /currentMode==='saved'&&!starred\(it\)\)return false;/,
+    'and the saved view filters on exactly that predicate');
+  assert.match(body, /newsSurfaceMode\(\)!=='events'\)\?window\.IntMapNewsSaved\.merge/,
+    'the article snapshot is never merged into an event surface');
 });
 
 test('R210 ⑤: enlarging the country label did not drag every other label up with it', () => {

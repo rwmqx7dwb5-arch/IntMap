@@ -140,8 +140,18 @@ test('#R340 ⑤ #R76\'s relaxed branch no longer exists, and there is ONE groupe
   const atlas = read('js/atlas-console.js');
   const evCase = atlas.slice(atlas.indexOf("case 'events': case 'newsEvents': case 'groupNews':"));
   assert.ok(evCase.startsWith("case 'events'"), 'the events case is gone from js/atlas-console.js');
-  const body = evCase.slice(0, evCase.indexOf("case 'module':"));
+  /* ⚠ (#R384) END AT THE NEXT CASE, not at `case 'module':`. This used to slice all the way to
+     `module` because `events` happened to be the case before it; the moment another case was
+     added between them (news.category), the slice swallowed it and the size ceiling fired on
+     code this check is not about. The subject is the EVENTS case, so the boundary is its own end. */
+  const nextCase = evCase.slice(1).search(/\n\s{8}case '/);
+  const body = nextCase > 0 ? evCase.slice(0, nextCase + 1) : evCase.slice(0, evCase.indexOf("case 'module':"));
   assert.ok(body.length > 200 && body.length < 12000, 'could not isolate the events case — this check needs rewriting');
+  /* ⚠ (#R384) …and in EVENT mode it must not group at all: the server already did, over the whole
+     window, and a second grouping is a second implementation running (docs/NEWS-EVENTS.md). */
+  assert.match(body, /_evMode/, 'the events case does not branch on the surface mode');
+  assert.ok(body.indexOf('_evMode') < body.indexOf('groupNewsEvents('),
+    'the mode test must come BEFORE the grouper call, or event mode re-clusters what the server clustered');
   assert.ok(!/s3>=0\.15|d<30&&dh<=24|>=0\.06/.test(body), '#R76\'s relaxed branch is back in js/atlas-console.js');
   assert.ok(!/par\[find\(/.test(body), 'the events case grew its own union-find again');
   assert.match(body, /groupNewsEvents\(/, 'the events case no longer calls the shared grouper');

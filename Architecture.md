@@ -36,8 +36,8 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（936行・84 KB）＋ `css/`（3本）＋ `js/`（226本・10.9 MB）＋ `src/`（10本）。**
-- **本体は `index.html`（936行・84 KB）＋ `css/`（3本）＋ `js/`（195本・9.4 MB）＋ `src/`（8本）。**
+- **本体は `index.html`（937行・84 KB）＋ `css/`（3本）＋ `js/`（227本・10.9 MB）＋ `src/`（10本）。**
+- **本体は `index.html`（937行・84 KB）＋ `css/`（3本）＋ `js/`（195本・9.4 MB）＋ `src/`（8本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -371,28 +371,40 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
 
 ### 4.4 出来事 (Event) 単位の基盤
 
-記事ではなく**出来事 (Event)** を主語にする経路。DB 側は 8 表（`news_sources` /
-`news_source_feeds` / `news_articles` / `news_events` / `news_event_articles` /
-`news_cluster_decisions` / `news_event_i18n` / `saved_news_events`）＋ 取り込みの計測
-`news_ingest_runs` で、列・関係・RLS と grant の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)、
-実証は `supabase/tests/06_news_events_test.sql`（§16.1）。
+記事ではなく**出来事 (Event)** を主語にする経路で、**News タブが既定で読んでいるのはこちら**。
+DB 側は 9 表（`news_sources` / `news_source_feeds` / `news_articles` / `news_events` /
+`news_event_articles` / `news_cluster_decisions` / `news_event_i18n` / `saved_news_events` /
+運用者の監査 `news_event_admin_actions`）＋ 取り込みの計測 `news_ingest_runs` で、列・関係・
+RLS・grant・運用者 RPC の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)、実証は
+`supabase/tests/06_news_events_test.sql`（§16.1）。
 
-収集は **Edge Function `news-ingest`**（§6.2）が cron で回す。段は 4 つ——
+収集は **Edge Function `news-ingest`**（§6.2）が cron で回す。段は 6 つ——
 `fetch`（Source Registry のフィード取得・正規化・媒体の帰属・地点解析）／
+`embed`（埋め込みを付ける。現在の鍵は埋め込みモデルに到達できず、その理由を応答に出して止まる）／
 `assign`（候補 Event を引いて増分で載せる。総当たりしない）／
+`link`（すでに分かれている Event 対を、新着と**同じ規則**で結ぶ）／
 `translate`（代表見出しを ja へ。`news_event_i18n` に永続キャッシュ）／
 `prune`（記事 72 時間・Event 30 日・★保存は無期限）。判定の論理は
 `supabase/functions/_shared/news-cluster.js` と `_shared/news-ingest.js` で、**どちらも
 サーバー専用**（クライアントのバンドルに 1 バイトも入らない）。
 
-**収集元 (Source Registry)・クラスタリング・カテゴリ・翻訳・保持期間・運用者の修正経路・
-運用手順・品質と費用の実測の正本は [`docs/NEWS-EVENTS.md`](docs/NEWS-EVENTS.md)。**
-ここには書き写さない。
+表示側は **`js/news-events.js`**（`IntMapLazy` の `newsEvents`。起動経路には入らない）。
+`HOST.globalData` に**記事モードと同じ形の項目**を入れ、`_event` にだけ出来事固有の事実を足す
+ので、既存の描画・ピン・無限スクロール・期間フィルタがそのまま動く。カードは `.news-item` に
+カテゴリ・`Updated` の印・`N sources` の 3 つを足したもので、詳細は既存の `#news-reader-pane`
+に描かれる（どの媒体がいつ何と書いたか／同一系列の印／媒体間で食い違っている数量／
+この塊の組み立て方）。カテゴリ chips は `#news-cat-chips`。
+
+**収集元 (Source Registry)・クラスタリング・カテゴリ・翻訳・保持期間・UI・Atlas・
+運用者の修正経路・運用手順・品質と費用の実測の正本は
+[`docs/NEWS-EVENTS.md`](docs/NEWS-EVENTS.md)。** ここには書き写さない。
 
 ⚠ **§4.1–§4.3 の経路と `current_news` は 1 バイトも変わっていない。** Event 側は加算であって
-置き換えではない（`current_news` は article mode の fallback として生きている）。
-⚠ **Event の表はまだ UI に出ていない**（`USE_SERVER_NEWS` は false のままで、そもそも UI は
-この表を読まない）。表示への接続は Phase D。
+置き換えではない。**検索・過去の日付（時間旅行）・多言語モード**は最初から記事モードで、
+Event 経路が答えを持てないとき（DB が無い・表が空）もそこへ落ちる。
+⚠ **旗は 2 つあり、別物である**——`USE_SERVER_NEWS`（§4.2 の `current_news` の経路・
+**false**）と `NEWS_EVENT_MODE`（`news_events` の経路・**true**）。`scripts/doc-facts.mjs` §15 が
+**両方**をプライバシーポリシーと突き合わせている。
 
 ---
 
@@ -401,10 +413,21 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
 Atlas の `research.events`（「最近の出来事をまとめて」）は、読み込み済みの記事一覧ではなく
 **出来事の一覧**を返す。1つの出来事＝同じ出来事を報じているとみられる複数の記事。
 
-⚠⚠ **束ね方の実装はここには無い。** §4.4 と**同じ** `supabase/functions/_shared/news-cluster.js` を
-`import` して `clusterArticles()` を呼ぶ。この節のファイルがやるのは**適合だけ**——
-読み込み済みフィードの項目の形を入れ、返信に出す出来事オブジェクトの形で返す。
-`js/atlas-console.js` の `case 'events'` は窓と範囲を選び、描いて書くだけ。
+⚠⚠⚠ **出来事モードでは、ここで束ね直さない。** `HOST.globalData` がすでに Event
+（サーバーが窓全体を見て作ったもの）なら、`case 'events'` はそれを**そのまま**使う。
+ブラウザに載っているのは 200 件で、サーバーは窓の全記事を見ているので、再計算は必ず
+より悪い答えになる——そして「同じ出来事か」を決める場所が 2 つになる。
+
+⚠⚠ **記事モードでも束ね方の実装はここには無い。** §4.4 と**同じ**
+`supabase/functions/_shared/news-cluster.js` を `import` して `clusterArticles()` を呼ぶ。
+この節のファイルがやるのは**適合だけ**——読み込み済みフィードの項目の形を入れ、返信に出す
+出来事オブジェクトの形で返す。`js/atlas-console.js` の `case 'events'` は窓と範囲を選び、
+描いて書くだけ。
+
+Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-capabilities.js`）。
+出来事のカテゴリで News の一覧と地図を**同時に**絞る。述語は `IntMapNewsEvents.passes()`
+1 本しかないので、片方だけに効く状態を作れない。News の **state provider**（`js/atlas-state.js`
+の `news`）は、いま何件見えていて何本のピンが立ち、いくつが地点不明かを Atlas に渡す。
 
 - ⚠ **写しを作っていない。** `js/newsgeo.js` が `supabase/functions/_shared/` へ**複製**されるのは、
   Deno の Edge Function が `supabase/functions/` の外を import できないからで、この制約は
@@ -527,12 +550,12 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は、�
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](docs/DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **30 表**（`profiles` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **31 表**（`profiles` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `community_*` 5 表 / `feedback` /
 `bug_reports` / `donations` / Area Monitors の 5 表 / News Events の 8 表
 ＝`news_sources` / `news_source_feeds` / `news_articles` / `news_events` /
 `news_event_articles` / `news_cluster_decisions` / `news_event_i18n` / `saved_news_events`
-＋取り込みの計測 `news_ingest_runs`）。
+＋取り込みの計測 `news_ingest_runs` ＋運用者の監査証跡 `news_event_admin_actions`）。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
@@ -1678,7 +1701,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（12本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（13本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events）。
