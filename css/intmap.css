@@ -1006,6 +1006,19 @@
     .ntl-zonerow{ display:flex; align-items:center; gap:7px; margin-top:8px; font-size:10.5px; color:var(--text-muted); }
     .ntl-zone{ flex:1; min-width:0; padding:5px 7px; border-radius:8px; border:1px solid rgba(128,128,128,0.25);
       background:var(--input-bg); color:var(--text-main); font-size:11px; font-variant-numeric:tabular-nums; }
+    /* ══ (#R378) THE EXACT INSTANT, OUTSIDE THE TABS ════════════════════════════════════════════
+       「Chronosポップアップに、年/日付/時刻の下に置くのではなく外に、直接年月日時選ぶとこ作って。
+         （よくあるUI。独自UIを作らなくてよい。）」 It wears the zone row's metrics because it is the
+       same KIND of row — a labelled control that belongs to the panel rather than to a tab — and it
+       is a <label>, so the text beside it focuses the field without a second aria string to keep in
+       step. `color-scheme` is what makes the browser's own calendar dark in the dark theme; without
+       it the native popup is a white sheet over a dark panel (the same rule .ntl-date already has). */
+    .ntl-jumprow{ display:flex; align-items:center; gap:7px; font-size:10.5px; color:var(--text-muted); cursor:pointer; }
+    .ntl-jump{ flex:1; min-width:0; padding:5px 7px; border-radius:8px; border:1px solid rgba(128,128,128,0.25);
+      background:var(--input-bg); color:var(--text-main); font-size:11.5px; font-variant-numeric:tabular-nums;
+      outline:none; color-scheme:inherit; cursor:pointer; }
+    [data-theme="dark"] .ntl-jump{ color-scheme:dark; }
+    .ntl-jump:focus{ border-color:var(--primary-color); }
     .ntl-badge{ display:none; font-size:11px; font-weight:600; color:#bcd6ff; background:rgba(10,132,255,0.2); border:1px solid rgba(10,132,255,0.4); border-radius:999px; padding:2px 10px; letter-spacing:0.01em; white-space:nowrap; }
     [data-theme="light"] .ntl-badge{ color:var(--primary-color); }
     .news-timeline.active .ntl-badge{ display:inline-block; }
@@ -1061,6 +1074,7 @@
       .ntl-bigdate{ font-size:11px; }   /* (#R313) the body is 24px narrower here; the date line shrinks with the clock */
       .ntl-now{ font-size:11px; padding:5px 10px; }
       .ntl-date,.ntl-year{ font-size:11.5px; padding:5px 7px; }
+      .ntl-jump{ font-size:11px; padding:5px 6px; }   /* (#R378) the compact body is 24px narrower — the field keeps the whole row it needs */
       .ntl-slider{ margin:3px 0 0; }
       .ntl-scale{ font-size:9px; }
       .ntl-ticks{ height:15px; }

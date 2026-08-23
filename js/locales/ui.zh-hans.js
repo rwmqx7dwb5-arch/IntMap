@@ -2936,6 +2936,7 @@ window.IntMapLang.define('zh-hans', {
   "Loading weather…": "加载天气中…",
   "Loading FX…": "加载汇率中…",
   "Clock": "时钟",
+  "Date & time": "日期与时间",
   "FX": "汇率",
   "wind ": "风 ",
   "Weather unavailable": "无法取得天气",

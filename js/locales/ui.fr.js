@@ -2841,6 +2841,7 @@ window.IntMapLang.define('fr', { ui: {
   "Loading weather…": "Chargement de la météo…",
   "Loading FX…": "Chargement des taux de change…",
   "Clock": "Horloge",
+  "Date & time": "Date et heure",
   "FX": "Change",
   "wind ": "vent ",
   "Weather unavailable": "Météo indisponible",
