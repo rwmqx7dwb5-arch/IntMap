@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-23): the **core** tier that
 gates a push is **6 spec files / 1.0 min** against a ceiling of 1.1 min; the **whole** suite is
 **68 measured spec files / 86.3 min** of serial browser time against a ceiling of 86.3 min; and
-`npm run test:checks` runs **173 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **174 Node test files** with no browser at all (counted from
 `package.json`). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -499,6 +499,19 @@ content, not the bytes: use `readLF` / `sameText` from **`scripts/eol.mjs`**, ne
 and were red on every local run and green in CI, which is worse than no check at all — a
 failure list that is always red is a failure list nobody reads. `tests/r283-checks.test.mjs`
 holds the rule, and it fails on **both** platforms if a raw byte read comes back.
+
+**…nor on the prose around the code.** A source-level check that looks for a CALL must read
+`codeOnly(src)` from **`scripts/code-only.mjs`**, never the raw file: every file that explains why
+a call was added, removed, or built differently spells that call in its comment, so the pattern
+answers «yes» to the explanation. This repository has paid for it nine times. The eighth was
+`scripts/atlas-capability-audit.mjs`, which found `IntMapOS.exec()` in the sentence saying the
+call had been withdrawn; the ninth was `tests/helpers/fn-cors.js`, which counted
+`corsFor("x-intmap-channel")` plus one comment naming `corsFor()` as **two** CORS contracts and
+turned five tests red on a function whose contract was unambiguous. The stripper leaves string
+literals, template literals and regular expressions exactly as they are — a URL is not a comment —
+and lives in ONE module so the tenth occurrence cannot be a new copy of it.
+`tests/r345-checks.test.mjs` holds the rule and proves each clause with a fixture carrying the
+defect, in both directions.
 
 ---
 

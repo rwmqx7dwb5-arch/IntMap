@@ -465,6 +465,11 @@ scripts/
   engine-coupling.mjs             レンダラ脱依存のゲート
   i18n-*.mjs                      翻訳の被覆と形の監査（§10）
   eol.mjs                         ソース検査は**バイト列ではなく内容**を読む（改行はチェックアウトの性質）
+  code-only.mjs                   ソース検査は**散文ではなくコード**を読む。行／ブロックのコメントだけを
+                                  外し、文字列・テンプレート・正規表現リテラルは1文字も変えない。
+                                  ⚠ **写しを作らない**——`atlas-capability-audit.mjs` と
+                                  `tests/helpers/fn-cors.js` は両方ここから import する
+                                  （`tests/r345-checks ⑩` が2本目の定義を落とす）
   build-*.mjs                     data/ の生成（実行時には不要）。`build-admin1.mjs` は Natural Earth 10m
                                   admin-1 を 0.01°（≈1.1 km）で間引いて data/admin1-world.json.gz を書く
   run-tests.mjs / test-parallel.mjs / shard-plan.mjs / test-budget.mjs   テストの実行と予算
@@ -483,7 +488,10 @@ tests/
   tests/prod-smoke.spec.js              実 URL に対するスモーク（PROD_URL）
   tests/security.spec.js                実ブラウザでの無害化確認
   helpers/network.js              hermetic なルーティングと console の分類
-  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（135本）
+  helpers/fn-cors.js              Edge Function の CORS 契約を**リポジトリから**読む（node 検査と
+                                  prod-smoke の両方が使う）。⚠ 読むのは `codeOnly()` を通した
+                                  コードだけ——コメントの中の `corsFor()` は契約ではない
+  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（171本）
   *.spec.js                       ブラウザ回帰（67本）
 .github/workflows/
   ci.yml                          PR ＋ push main ＋ 手動。静的検査＋hermetic ブラウザ試験

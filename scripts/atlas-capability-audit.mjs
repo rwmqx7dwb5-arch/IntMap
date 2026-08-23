@@ -25,18 +25,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+/* ⚠ COMMENTS ARE NOT CODE, AND THIS REPOSITORY HAS PAID FOR THAT NINE TIMES (see the recurring-
+   failures memo: a check matching its own explanatory note). Three of the checks below look for a
+   CALL, and every file that explains why a call was removed contains the call's spelling in prose —
+   js/session-tabs.js says in words that `tab.monitors` is deliberately unregistered, which is the
+   opposite of the defect. So they read this, not the file.
+   (#R345) It USED to be two lines of regex right here, and tests/helpers/fn-cors.js was about to
+   become the second copy — so the stripper moved to scripts/code-only.mjs and both import it. */
+import { codeOnly } from './code-only.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const lines = (rel) => read(rel).split(/\r?\n/);
-/* ⚠ COMMENTS ARE NOT CODE, AND THIS REPOSITORY HAS PAID FOR THAT EIGHT TIMES (see the recurring-
-   failures memo: a check matching its own explanatory note). Three of the checks below look for a
-   CALL, and every file that explains why a call was removed contains the call's spelling in prose —
-   js/session-tabs.js says in words that `tab.monitors` is deliberately unregistered, which is the
-   opposite of the defect. So they read this, not the file. */
-const codeOnly = (src) => String(src)
-  .replace(/\/\*[\s\S]*?\*\//g, ' ')
-  .split(/\r?\n/).map((l) => l.replace(/(^|[^:\\'"`])\/\/.*$/, '$1')).join('\n');
 
 /* The registry and the catalogue are real modules; load them the way the browser does, with the
    one global they publish themselves onto. Nothing here touches the DOM. */
