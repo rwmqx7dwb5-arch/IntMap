@@ -79,7 +79,7 @@ window.IntMapWidgetDefsData = (function () {
   /* WMO weather codes → a phrase, in every language. The code is the source's; the words are ours. */
   function wxWord(c) {
     if (c == null) return '';
-    if (c === 0) return L('Clear', '快晴', 'Klar', 'Ясно', 'Despejado');
+    if (c === 0) return L('Clear sky', '快晴', 'Klar', 'Ясно', 'Despejado');
     if (c <= 3) return L('Partly cloudy', '晴れ時々曇り', 'Teils bewölkt', 'Переменная облачность', 'Parcialmente nublado');
     if (c <= 48) return L('Fog', '霧', 'Nebel', 'Туман', 'Niebla');
     if (c <= 57) return L('Drizzle', '霧雨', 'Nieselregen', 'Морось', 'Llovizna');
@@ -162,8 +162,8 @@ window.IntMapWidgetDefsData = (function () {
             el('div', { class: 'wgt-row gap' }, [WC.icon(wxIcon(cu.weather_code), { size: 30 }),
               R.value({ value: temp(cu.temperature_2m), caption: wxWord(cu.weather_code) })]),
             R.chips([
-              d.temperature_2m_max ? { icon: 'thermo', label: L('High', '最高', 'Max', 'Макс', 'Máx'), value: temp(d.temperature_2m_max[0]) } : null,
-              d.temperature_2m_min ? { icon: 'thermo', label: L('Low', '最低', 'Min', 'Мин', 'Mín'), value: temp(d.temperature_2m_min[0]) } : null,
+              d.temperature_2m_max ? { icon: 'thermo', label: L('Max', '最高', 'Max', 'Макс', 'Máx'), value: temp(d.temperature_2m_max[0]) } : null,
+              d.temperature_2m_min ? { icon: 'thermo', label: L('Min', '最低', 'Min', 'Мин', 'Mín'), value: temp(d.temperature_2m_min[0]) } : null,
               cu.wind_speed_10m != null ? { icon: 'wind', label: L('Wind', '風', 'Wind', 'Ветер', 'Viento'), value: Math.round(cu.wind_speed_10m) + ' km/h' } : null,
               (d.precipitation_probability_max && d.precipitation_probability_max[0] != null) ? { icon: 'cloud', label: L('Rain', '降水', 'Regen', 'Осадки', 'Lluvia'), value: d.precipitation_probability_max[0] + '%' } : null,
             ]),

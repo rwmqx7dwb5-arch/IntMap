@@ -559,7 +559,7 @@ window.IntMapWidgetDefsMap = (function () {
     multi: true,
     nm: function () { return L('Country watch', '国のウォッチ', 'Länderbeobachtung', 'Наблюдение за страной', 'Vigilancia de país'); },
     desc: function () { return L('Statistics, warnings and headlines for one country', 'ひとつの国の統計・警報・見出し', 'Statistik, Warnungen und Meldungen zu einem Land', 'Статистика, предупреждения и новости по стране', 'Estadísticas, avisos y titulares de un país'); },
-    keywords: function () { return [L('country', '国', 'Land', 'страна', 'país'), L('watch', 'ウォッチ', 'Beobachtung', 'наблюдение', 'vigilancia'), L('briefing', '概況', 'Lagebild', 'сводка', 'resumen')]; },
+    keywords: function () { return [L('country', '国', 'Land', 'страна', 'país'), L('watchlist', 'ウォッチ', 'Beobachtung', 'наблюдение', 'vigilancia'), L('briefing', '概況', 'Lagebild', 'сводка', 'resumen')]; },
     supportedSizes: ['s', 'm', 'l'], defaultSize: 'm',
     configSchema: {
       cc: { type: 'country', default: 'US', label: function () { return L('Country', '国', 'Land', 'Страна', 'País'); },

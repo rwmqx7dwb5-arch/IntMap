@@ -345,7 +345,7 @@ window.IntMapWidgetDefsMarkets = (function () {
           R.value({ small: true, value: '#' + WC.num(st.data.height), caption: L('block height', 'ブロック高', 'Blockhöhe', 'высота блока', 'altura de bloque') }),
           f ? R.facts([
             { k: L('Fast', '高速', 'Schnell', 'Быстро', 'Rápido'), v: f.fastestFee + ' sat/vB' },
-            { k: L('Economy', '低速', 'Sparsam', 'Экономно', 'Económico'), v: f.economyFee + ' sat/vB' },
+            { k: L('Economy fee', '低速', 'Sparsam', 'Экономно', 'Económico'), v: f.economyFee + ' sat/vB' },
           ], { cols: 2 }) : null,
           R.source({ source: st.source, at: st.lastSuccessfulAt }),
         ]);

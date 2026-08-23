@@ -893,7 +893,7 @@ window.IntMapModules.worldPacks=function(HOST){
                  ['oil_share_of_electricity__pct',LA('Oil','石油','Öl','Нефть','Petróleo'),'#8b5a3c'],
                  ['nuclear_share_of_electricity__pct',LA('Nuclear','原子力','Kernkraft','Атомная','Nuclear'),'#b455ff'],
                  ['hydro_share_of_electricity__pct',LA('Hydro','水力','Wasserkraft','ГЭС','Hidráulica'),'#2f7fe0'],
-                 ['wind_share_of_electricity__pct',LA('Wind','風力','Wind','Ветер','Viento'),'#3fd1c7'],
+                 ['wind_share_of_electricity__pct',LA('Wind power','風力','Wind','Ветер','Viento'),'#3fd1c7'],
                  ['solar_share_of_electricity__pct',LA('Solar','太陽光','Solarenergie','Солнечная','Solar'),'#ffd23f'],
                  ['bioenergy_share_of_electricity__pct',LA('Bioenergy','バイオ','Bioenergie','Биоэнергия','Bioenergía'),'#7cb342'],
                  ['other_renewables_excluding_bioenergy_share_of_electricity__pct',LA('Other renewables','その他再エネ','Sonstige Erneuerbare','Прочие ВИЭ','Otras renovables'),'#26a69a']],
@@ -901,7 +901,7 @@ window.IntMapModules.worldPacks=function(HOST){
         prim:{ slug:'primary-energy-source-bar', unit:'TWh',
           parts:[['coal_twh',LA('Coal','石炭','Kohle','Уголь','Carbón'),'#6b6b6b'],['oil_twh',LA('Oil','石油','Öl','Нефть','Petróleo'),'#8b5a3c'],['gas_twh',LA('Gas','ガス','Gas','Газ','Gas'),'#c78a4b'],
                  ['nuclear_twh',LA('Nuclear','原子力','Kernkraft','Атомная','Nuclear'),'#b455ff'],['hydro_twh',LA('Hydro','水力','Wasserkraft','ГЭС','Hidráulica'),'#2f7fe0'],
-                 ['wind_twh',LA('Wind','風力','Wind','Ветер','Viento'),'#3fd1c7'],['solar_twh',LA('Solar','太陽光','Solarenergie','Солнечная','Solar'),'#ffd23f'],
+                 ['wind_twh',LA('Wind power','風力','Wind','Ветер','Viento'),'#3fd1c7'],['solar_twh',LA('Solar','太陽光','Solarenergie','Солнечная','Solar'),'#ffd23f'],
                  ['other_renewables_twh',LA('Other renewables','その他再エネ','Sonstige Erneuerbare','Прочие ВИЭ','Otras renovables'),'#26a69a']],
           clean:['nuclear_twh','hydro_twh','wind_twh','solar_twh','other_renewables_twh'] } };
       let on=false, iso=null, kind='elec';
@@ -1291,9 +1291,9 @@ window.IntMapModules.worldPacks=function(HOST){
           :lv>=3?L('Orange (II)','オレンジ（II級）','Orange (Stufe II)','Оранжевый (II)','Naranja (II)')
           :lv>=2?L('Yellow (III)','黄（III級）','Gelb (III)','Жёлтый (III)','Amarillo (III)')
           :L('Blue (IV)','青（IV級）','Blau (IV)','Синий (IV)','Azul (IV)');
-        return lv>=3?L('Extreme','Extreme（最も深刻）','Extrem','Экстремальный','Extremo')
+        return lv>=3?L('Extreme','極端（最も深刻）','Extrem','Экстремальный','Extremo')
           :lv>=2?L('Severe','Severe（深刻）','Schwer','Серьёзный','Grave')
-          :L('Moderate','Moderate','Mäßig','Умеренный','Moderado'); }
+          :L('Moderate','中程度','Mäßig','Умеренный','Moderado'); }
       /* CAP's own severity words, the scale the NWS, the DWD and MeteoAlarm all publish on */
       const SEV3={Extreme:3,Severe:2,Moderate:1,Minor:1,Unknown:1};
 
@@ -6318,7 +6318,7 @@ window.IntMapModules.worldPacks=function(HOST){
         const b=panel.open(
           '<label style="'+ROW+'">'+L('Crop','作物','Feldfrucht','Культура','Cultivo')
             +'<select class="wp-crop" style="'+SEL+'">'+CROPS.map(c=>'<option value="'+esc(c[0])+'"'+(c[0]===crop?' selected':'')+'>'+esc(cropName(c[0]))+'</option>').join('')+'</select></label>'
-          +'<label style="'+ROW+'">'+L('Measure','指標','Größe','Показатель','Medida')
+          +'<label style="'+ROW+'">'+L('Metric','指標','Größe','Показатель','Medida')
             +'<select class="wp-cvar" style="'+SEL+'">'+VARS.map(v=>'<option value="'+esc(v[0])+'"'+(v[0]===variable?' selected':'')+'>'+esc(varName(v[0]))+'</option>').join('')+'</select></label>'
           +'<label style="'+ROW+'">'+L('Water supply','水供給','Wasserversorgung','Водоснабжение','Suministro de agua')
             +'<select class="wp-csup" style="'+SEL+'">'+SUPPLY.map(s=>'<option value="'+esc(s[0])+'"'+(s[0]===supply?' selected':'')+'>'+esc(supName(s[0]))+'</option>').join('')+'</select></label>'

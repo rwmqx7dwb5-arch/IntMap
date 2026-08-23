@@ -1588,7 +1588,7 @@ window.IntMapLang.define('zh', {
     'plume reach': "煙流範圍",   /* atlas-console.js */
     'Plume reach': "煙流範圍",   /* sims.js */
     'Pluto is drawn in its measured color: no global surface map is bundled for it, and the ones offered for the dwarf planets elsewhere are labeled fictional by their author. Its position and its IAU names are real.': "冥王星以其實測顏色繪製：本應用沒有內建它的全球表面圖，而其他矮行星可取得的貼圖被作者標示為虛構。它的位置與 IAU 命名則是真實的。",   /* space.js */
-    'points': "個點",   /* atlas-console.js viewshed.js */
+    'points': "分",   /* widget-defs-data.js */
     'points mapped — click a pin (or an item below) for the summary & article': "個點已標繪 — 點擊圖釘（或下方項目）可看摘要與報導",   /* atlas-console.js */
     'Polar low Earth orbit': "極地低地球軌道",   /* satellite-detail.js */
     'Polar night': "極夜",   /* widgets.js */
@@ -3130,7 +3130,7 @@ window.IntMapLang.define('zh', {
   "Dead": "死亡",
   "Recovered": "康復",
   "Vaccinated": "接種",
-  "Day": "天數",
+  "Day": "日",
   "variants": "變異株",
   "vaccine R&D": "疫苗研發",
   "Outbreak setup": "疫情設定",
@@ -4912,7 +4912,7 @@ window.IntMapLang.define('zh', {
   "warnings are in force": "有警報生效中",
   "Warnings in force": "生效中的警報",
   "Warnings in force at the places you saved or are watching": "您已儲存或追蹤地點的生效警報",
-  "watch": "追蹤",
+  "watch": "警戒",
   "Watch a place": "追蹤地點",
   "watch area": "監控地區",
   "Watch this country": "追蹤此國家",
@@ -4921,7 +4921,7 @@ window.IntMapLang.define('zh', {
   "Weather & environment": "天氣與環境",
   "Weather at the map centre": "地圖中心的天氣",
   "week": "週",
-  "Week": "本週",
+  "Week": "週",
   "week number": "週次",
   "Week progress": "本週進度",
   "West–East": "西–東",
@@ -5684,5 +5684,31 @@ window.IntMapLang.define('zh', {
   "Sea-level pressure": "海平面氣壓",
   "CAPE instability": "CAPE 不穩定度",
   "no such weather layer": "沒有這個氣象圖層",   /* ai-core.js (#R318) aiTurnCallsMsg */
+  "Aircraft type": "機型",
+  "Announcement": "發布內容",
+  "Clean air": "空氣潔淨",
+  "Days elapsed": "已過天數",
+  "Economy fee": "經濟費率",
+  "Elevation angle": "仰角",
+  "Emergency room": "急診",
+  "Highest altitude": "最高高度",
+  "map points": "個地圖點",
+  "Max": "最高",
+  "Max elevation": "最大仰角",
+  "Metric": "指標",
+  "Min": "最低",
+  "Neighbours": "鄰國",
+  "Place it": "放置",
+  "Runway use": "跑道用途",
+  "Sample points": "個取樣點",
+  "Sample spacing": "取樣間隔",
+  "Selected day": "所選日期",
+  "Shape": "圖形",
+  "Signal source": "訊號來源",
+  "Time window": "時間範圍",
+  "total eclipse": "全食",
+  "Turn all off": "全部關閉",
+  "watchlist": "關注清單",
+  "Wind power": "風力",
   }
 });

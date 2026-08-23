@@ -1154,7 +1154,7 @@ window.IntMapModules.objectList=function(HOST){
         focus:()=>GE().camera.flyTo({center:[p.lng,p.lat],zoom:Math.max(GE().camera.getZoom(),13),duration:800}), rename:v=>{ labels[p.id]=v; }, remove:()=>{ try{ removePin(p.id); }catch(_){} } })); }catch(_){}
       try{ (HOST.radiusItems||[]).forEach(c=>out.push({ id:c.id, kind:'radius', dot:c.color, color:c.color, name:labels[c.id]||(c.radiusKm+' km '+OL('radius','半径','Radius','радиус','radio')),
         focus:()=>GE().camera.flyTo({center:c.center,duration:800}), rename:v=>{ labels[c.id]=v; }, setColor:col=>{ c.color=col; try{ refreshTool(); }catch(_){} }, remove:()=>{ try{ window.removeRadiusItem(c.id); }catch(_){} } })); }catch(_){}
-      try{ const IA=window.IntMapAnnotations; ((IA&&IA._items)||[]).forEach(it=>out.push({ id:it.id, kind:'annot', dot:it.color, color:it.color, name:it.name||OL('Drawing','図形','Zeichnung','Фигура','Dibujo'),
+      try{ const IA=window.IntMapAnnotations; ((IA&&IA._items)||[]).forEach(it=>out.push({ id:it.id, kind:'annot', dot:it.color, color:it.color, name:it.name||OL('Shape','図形','Zeichnung','Фигура','Dibujo'),
         focus:()=>{ if(it.geom) fitFeats([{geometry:it.geom}]); }, rename:v=>{ it.name=v; }, setColor:col=>{ it.color=col; try{ IA.refresh&&IA.refresh(); }catch(_){} }, remove:()=>{ try{ IA.remove(it.id); }catch(_){} } })); }catch(_){}
       try{ const GU=window.GeoJSONUpload; ((GU&&GU._items)||[]).forEach(it=>{ const oid='up_'+it.n; out.push({ id:oid, kind:'upload', dot:it.col, color:it.col, name:labels[oid]||it.name||'GeoJSON', hidden:!!hiddenUp[it.sid],
         focus:()=>fitFeats(srcFeats(it.sid)), rename:v=>{ labels[oid]=v; },
