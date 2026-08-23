@@ -77,7 +77,8 @@ test('R298 ② the grey is only where there is no warning', () => {
      with it the part of that unit where nothing is in force (measured: 20.3 % of Switzerland
      unpainted). The third answer is 「emit it with the warning cut out of it」. What #R298 pinned —
      grey and colour never share a pixel — is unchanged and is why the cut has to be exact. */
-  assert.match(s, /const qg=quietGeomFor\(iso,g\);\s+if\(!qg\) return;/,
+  /* ⚠ (#R344) `quietFor` builds one country at a time, so the skip is a `continue`. */
+  assert.match(s, /const qg=quietGeomFor\(iso,g\);\s+if\(!qg\) continue;/,
     'the quiet emitter asks what is true of this unit, and skips it when nothing is');
   const i = s.indexOf('function warnMeeting(iso,g){');
   assert.ok(i > 0, 'warnMeeting must exist');
@@ -98,7 +99,7 @@ test('R298 ② the grey is only where there is no warning', () => {
   const wi = s.slice(s.indexOf('function warnIndex(){'), s.indexOf('function sameOutline'));
   assert.match(wi, /if\(!quietSet\[q\.iso\]\) return;/,
     'a country nobody is drawing grey for costs nothing');
-  assert.match(wi, /_warnIdxOf===feats&&_warnIdxSet===setSig/,
+  assert.match(wi, /_warnIdxOf===featsVer&&_warnIdxSet===setSig/,
     'and the index is rebuilt when either the warnings or the drawn set changes');
 });
 
