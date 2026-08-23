@@ -280,6 +280,36 @@ test('⑪ nothing in the volcano modules draws a modelled hazard radius', () => 
     'the card no longer asks which hazard zones exist');
 });
 
+/* ── ⑬ every zoom-driven paint value is a TOP-LEVEL interpolate ──
+   MapLibre requires it and does NOT throw when it is missing — addLayer validates, fires an
+   ErrorEvent and skips the layer, so the failure looks exactly like a layer nobody switched on.
+   `['*', 2.6, <zoom interpolate>]` cost `volc2-halo` its whole existence and every browser test
+   still passed. This is the cheap half of the guard; tests/r353.spec.js ② asks the RENDERER, which
+   is the half that actually proves it. */
+test('⑬ no volcano paint value wraps a zoom expression inside another expression', () => {
+  const block = BETA.slice(BETA.indexOf('const VL_IDS='), BETA.indexOf('function volcToggle'));
+  assert.ok(block.length > 1000, 'the volcano block moved — this check no longer reads it');
+  /* every `['zoom']` in the block must be preceded by `['interpolate',['linear'],` or `['step',` —
+     i.e. it is the INPUT of a top-level curve, never an argument of an arithmetic operator. */
+  let n = 0;
+  for (const m of block.matchAll(/\[\s*'zoom'\s*\]/g)) {
+    const before = block.slice(Math.max(0, m.index - 60), m.index).replace(/\s+/g, '');
+    assert.ok(/\['interpolate',\['linear'\],$|\['step',$/.test(before),
+      'a zoom expression is nested inside another expression: …' + before.slice(-40));
+    n++;
+  }
+  assert.ok(n >= 2, 'only ' + n + ' zoom expressions found — the radius ramps are gone');
+  /* …and the two radius ramps are their own top-level interpolates, not multiples of one another */
+  for (const name of ['volcRadius', 'volcHaloRadius']) {
+    const i = block.indexOf('const ' + name + '=');
+    assert.ok(i >= 0, name + ' is gone');
+    assert.ok(block.slice(i).replace(/\s+/g, '').startsWith('const' + name + "=['interpolate',"),
+      name + ' is not a top-level interpolate');
+  }
+  assert.equal(/circle-radius':\s*\['\*'/.test(block), false,
+    'a circle-radius multiplies a ramp instead of being one');
+});
+
 /* ── ⑫ the status ladder never merges two agencies into one number on screen ──
    ①②③ are different instruments of different agencies. `rank` exists only so the MAP can sort
    colours; the panel must print the agency's own words with the agency's name against them. */
