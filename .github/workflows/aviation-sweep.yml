@@ -64,7 +64,14 @@ jobs:
               echo "::warning::aviation-feed refresh returned $code — skipping the rest of this run"
               exit 0
             fi
-            [ "$i" = "1" ] && sleep 45
+            # ⚠ AN `&&` AS THE LAST COMMAND OF THE LOOP DECIDES THE STEP'S EXIT CODE.
+            # `[ "$i" = "1" ] && sleep 45` returns 1 on the FINAL iteration, and GitHub runs steps
+            # under `bash -e`, so the step failed with exit 1 after doing all of its work correctly:
+            # measured on the first scheduled-equivalent run — both slices HTTP 200, both
+            # `x-intmap-save: ok`, the lattice advanced to 3/980, and the run was still red (#R346).
+            # A red that means "it worked" is worse than no alarm at all, because the next real
+            # failure looks the same.
+            if [ "$i" = "1" ]; then sleep 45; fi
           done
 
       - name: Report coverage
