@@ -18,12 +18,19 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 
 ## What runs
 
-**The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-20): the **core** tier that
-gates a push is **6 spec files / 1.1 min**; the **whole** suite is **65 measured spec files /
-86.5 min** of serial browser time against a ceiling of 86.7 min; and `npm run test:checks` runs
-**165 Node test files** with no browser at all (counted from `package.json` on 2026-08-23; the
-line above it is the 2026-08-20 measurement). `npm test` runs the source half and the browser
+**The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-23): the **core** tier that
+gates a push is **6 spec files / 1.0 min** against a ceiling of 1.1 min; the **whole** suite is
+**68 measured spec files / 86.3 min** of serial browser time against a ceiling of 86.3 min; and
+`npm run test:checks` runs **166 Node test files** with no browser at all (counted from
+`package.json`). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
+
+> ⚠ **The whole-suite ceiling has zero headroom** (86.3 min measured against 86.3 min). A new
+> `.spec.js` cannot be added until the same time or more is taken out of an existing one — the
+> ceiling only moves down. Node checks (`*.test.mjs`) are **not** governed by this budget, so
+> logic that can be checked without a browser belongs there. ⚠ Only `**N Node test files**` is
+> compared against the repository by `scripts/doc-facts.mjs`; the three numbers in the paragraph
+> above are not, and they were stale by 3 spec files when #R334 re-measured them.
 
 | Layer | Command | Needs a browser? | External network? |
 |-------|---------|------------------|-------------------|
