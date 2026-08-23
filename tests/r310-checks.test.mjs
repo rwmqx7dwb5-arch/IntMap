@@ -169,7 +169,12 @@ test('R310 ⑥ a step onto the hour being read ahead joins that read instead of 
 /* ── ⑦ nothing about the picture changed ───────────────────────────────────────────────────────── */
 test('R310 ⑦ the field is the same field — same model, same band, same colours, same samples', () => {
   const s = EC(), w = WX();
-  assert.match(s, /var DOMAIN = 'ecmwf_ifs';/, 'the same model');
+  /* ⚠ (#R356) 「same model」 now means 「one model per instance, and the wind reads the instance the
+     colour raster reads」 — the literal moved into js/wx-models.js when the engine learned to hold
+     more than one. The claim this test makes is unchanged: the particles and the raster must not be
+     looking at two different fields. */
+  assert.match(s, /var DOMAIN = cfg\.id;/, 'the same model, once per instance');
+  assert.match(read('js/wx-models.js'), /id: 'ecmwf_ifs',/, '…and the default instance is still the 9 km field');
   assert.match(w, /const VAR='wind_u_component_10m';/, 'the same variable pair');
   assert.match(s, /function bandNear\(south, north\)/, 'the same first band…');
   assert.match(s, /function bandFor\(south, north\)/, '…and the same band the view covers');

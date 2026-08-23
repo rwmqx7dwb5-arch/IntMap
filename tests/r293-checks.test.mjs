@@ -298,7 +298,7 @@ test('R293 ⑨ the reanalysis source is gone, and so is everything that only ser
   assert.ok(!/wx-reanalysis/.test(codeOnly(read('src/main.js'))), 'and not imported');
   /* what must SURVIVE: the layer, its ramp and its clock */
   assert.match(w, /id:'ec-temp',\s*variable:'temperature_2m'/);
-  assert.match(w, /window\.IntMapWxPlayer\.timeUI\('ec-time-'\+cfg\.id,EC\(\),L\)/);
+  assert.match(w, /window\.IntMapWxPlayer\.timeUI\('ec-time-'\+cfg\.id,EC\(cfg\),L\)/);
 });
 
 /* ── ⑩ 「Windyと完全に同じ風速と色の対応に…高風速帯でも同じになるように」 ──────────────────
