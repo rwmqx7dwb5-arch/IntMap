@@ -486,15 +486,16 @@ window.IntMapModules.betaPack2=function(HOST){
     const PH=[
       [7.59,47.56,'Basel — Novartis / Roche HQ & plants'],[6.99,51.03,'Leverkusen — Bayer'],[8.06,49.97,'Ingelheim — Boehringer Ingelheim'],[12.45,55.76,'Copenhagen — Novo Nordisk'],[11.09,55.68,'Kalundborg — Novo Nordisk API site'],[-0.31,51.48,'London/Brentford — GSK'],[0.13,52.2,'Cambridge — AstraZeneca'],[2.35,48.86,'Paris — Sanofi'],[-86.16,39.77,'Indianapolis — Eli Lilly'],[-74.45,40.49,'New Brunswick — Johnson & Johnson'],[-73.97,40.75,'New York — Pfizer HQ'],[-74.29,40.68,'Rahway/Kenilworth — Merck & Co.'],[-87.86,42.33,'North Chicago — AbbVie'],[-118.84,34.18,'Thousand Oaks — Amgen'],[-122.4,37.65,'South San Francisco — Genentech'],[-8.47,51.9,'Cork — Irish pharma cluster'],[103.64,1.32,'Singapore Tuas — biologics plants'],[78.6,17.6,'Hyderabad — Genome Valley (vaccines)'],[72.88,19.08,'Mumbai — Sun Pharma'],[72.57,23.02,'Ahmedabad — Zydus / Torrent'],[83.3,17.69,'Visakhapatnam — API hub'],[-66.54,18.45,'Barceloneta — Puerto Rico pharma'],[139.76,35.68,'Tokyo — Takeda / Astellas'],[135.5,34.69,'Osaka — Shionogi / Takeda'],[116.4,39.9,'Beijing — Sinopharm'],[121.47,31.23,'Shanghai — Fosun Pharma'],[126.64,37.39,'Songdo — Samsung Biologics'],[34.89,32.09,'Petah Tikva — Teva'],[-46.63,-23.55,'São Paulo — EMS / Eurofarma'],[28.05,-26.2,'Johannesburg — Aspen Pharmacare']
     ];
-    /* ⚠ (#R266) 1520 AND 1524 ARE TWO GAUGES, AND THE MAP NOW SAYS SO. 「ロシア軌間 1520/1524mm の
-       この二つの軌間を区別して描画して。」 — _rail_convert.py had Finland in the 1520 list with the
-       comment «FIN 1524 ~ Russian family», i.e. the difference was known and then thrown away. They
-       are 4 mm apart, which is why through running works at all, but they are not the same standard:
-       1524 mm (5 ft) is what the Grand Duchy was built to and what Finland still maintains, and
-       1520 mm is the Soviet 1970s re-standardisation everything east of it was converted to.
-       The colour stays in the same red family so the relationship is still visible at a glance. */
-    const RAIL_COL={1435:'#3a7bd5',1520:'#e03131',1524:'#f08080',1067:'#2f9e44',1000:'#12b886',1676:'#9c36b5',1668:'#f08c00',1600:'#d6336c',0:'#868e96'};
-    const RAIL_LBL=[[1435,LA('Standard 1435 mm','標準軌 1435mm','Normalspur 1435 mm','Стандартная колея 1435 мм','Ancho estándar 1435 mm')],[1520,LA('Russian 1520 mm','ロシア軌間 1520mm','Russische Breitspur 1520 mm','Русская колея 1520 мм','Ancho ruso 1520 mm')],[1524,LA('Finnish 1524 mm','フィンランド軌間 1524mm','Finnische Breitspur 1524 mm','Финская колея 1524 мм','Ancho finlandés 1524 mm')],[1676,LA('Broad 1676 mm (India, Argentina)','広軌 1676mm（印・亜）','Breitspur 1676 mm (Indien, Argentinien)','Широкая колея 1676 мм (Индия, Аргентина)','Ancho 1676 mm (India, Argentina)')],[1668,LA('Iberian 1668 mm','イベリア軌間 1668mm','Iberische Spur 1668 mm','Иберийская колея 1668 мм','Ancho ibérico 1668 mm')],[1600,LA('Irish 1600 mm','アイルランド軌間 1600mm','Irische Spur 1600 mm','Ирландская колея 1600 мм','Ancho irlandés 1600 mm')],[1067,LA('Cape 1067 mm (Japan etc.)','狭軌 1067mm（日本など）','Kapspur 1067 mm (Japan usw.)','Капская колея 1067 мм (Япония и др.)','Ancho Cape 1067 mm (Japón, etc.)')],[1000,LA('Meter 1000 mm','メーターゲージ 1000mm','Meterspur 1000 mm','Метровая колея 1000 мм','Ancho métrico 1000 mm')],[0,LA('Unknown / other','不明・その他','Unbekannt / sonstige','Неизвестно / прочее','Desconocido / otro')]];
+    /* ══ ⚠⚠⚠ (#R388) THE GAUGE TABLES LEFT THIS FILE, AND SO DID THE GUESS THEY ENCODED ═════════
+       What stood here was a nine-entry colour map and a nine-row legend for a layer whose data had
+       never read a gauge: _rail_convert.py assigned each Natural Earth line the PREDOMINANT NATIONAL
+       gauge of the country its midpoint fell in. MEASURED against OpenStreetMap, that painted the
+       169 standard-gauge ways of the Spanish high-speed network as 1668 mm Iberian, and India's 249
+       ways at 762 mm as 1676 mm.
+       The buckets and their colours now live in js/rail-schema.js, imported by js/railways.js AND by
+       scripts/rail/build.mjs — the #R266 finding that 1520 and 1524 are two gauges is kept there, now
+       on real per-track values. Two copies of that table is what let this one drift from the Python
+       that fed it (the docstring promised a `col` property the code never emitted). */
     function fcPoints(arr,colFn){ return {type:'FeatureCollection',features:arr.map(d=>({type:'Feature',geometry:{type:'Point',coordinates:[d[0],d[1]]},properties:{n:d[2],k:d[3]||'',col:colFn(d)}}))}; }
     function load(key,cb){
       if(cache[key]){ cb(cache[key]); return; }
@@ -506,8 +507,12 @@ window.IntMapModules.betaPack2=function(HOST){
         const M=window.IntMapDataCenters; if(!M||!M.features) return;   /* (#R254) one table, in js/datacenters.js */
         cache.dc=M.features(); cb(cache.dc); }); }
       else if(key==='pharma'){ cache.pharma=fcPoints(PH,()=> '#2bb3a3'); cb(cache.pharma); }
-      else if(key==='rail'){ fetch('data/railways_gauge.json').then(r=>r.json()).then(j=>{ if(!j||!Array.isArray(j.features)) return;
-        j.features.forEach(f=>{ f.properties.col=RAIL_COL[f.properties.g]||RAIL_COL[0]; }); cache.rail=j; cb(j); }).catch(()=>{ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load railway data","鉄道データを読み込めませんでした","Eisenbahndaten konnten nicht geladen werden","Не удалось загрузить данные о железных дорогах","No se pudieron cargar los datos ferroviarios")); }catch(_){} }); }
+      /* (#R388) the SECOND door into the railway module: js/compare.js draws the world file in its
+         own map through IntMapBeta2.load('rail'), with no row and no toggle involved — so it gets the
+         module, not a private fetch, and the axis buckets are already stamped on the features. */
+      else if(key==='rail'){ window.IntMapLazy.need('railways').then(()=>{
+        const M=window.IntMapRailways; if(!M||!M.load) return;
+        M.load(fc=>{ cache.rail=fc; cb(fc); }); }); }
     }
     function clickPop(layerId){
       GE().events.onLayer('click',layerId,e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
@@ -581,29 +586,60 @@ window.IntMapModules.betaPack2=function(HOST){
             if(el&&!el.querySelector('.ph-note')){ const d=document.createElement('div'); d.className='ph-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=window.IntMapLang.t(HOST.lang,"Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.","主要な製薬企業の本社・製造クラスター（代表地点）。平均寿命レイヤーと併用を。","Zentralen und Produktionscluster großer Pharmaunternehmen (repräsentative Standorte). Passt zur Ebene Lebenserwartung.","Штаб-квартиры и производственные кластеры крупных фармкомпаний (репрезентативные точки). Хорошо сочетается со слоем ожидаемой продолжительности жизни.","Sedes y clústeres de fabricación de las grandes farmacéuticas (puntos representativos). Combina con la capa de esperanza de vida."); el.appendChild(d); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('ph2'); }catch(_){}
     }
-    function railEnsure(){ if(GE().layers.hasSource('rail-src')) return true; if(!_imCanDraw()) return false;
-      try{
-        GE().layers.addSource('rail-src',{type:'geojson',data:cache.rail||{type:'FeatureCollection',features:[]},attribution:'Natural Earth'});
-        GE().layers.add({id:'rail-ln',type:'line',source:'rail-src',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#868e96'],'line-width':['interpolate',['linear'],['zoom'],2,0.7,6,1.5,10,2.6],'line-opacity':0.9}},before());
-        return true;
-      }catch(_){ return false; } }
+    /* ══ ⚠ (#R388) THE RAILWAY LAYER MOVED OUT — THIS IS THE ROW, NOT THE LAYER ═══════════════════
+       「現在の『世界の鉄道（軌間別）』は、各線路そのものの軌間を読んでいるわけではありません。」
+       What lived here was one `line` layer over a 25,242-feature file whose only property was a
+       country-guessed gauge. The layer is now js/railways.js — OpenStreetMap's own tags on each
+       track, six switchable colour axes (gauge / electrification / line speed / tracks / traffic /
+       status), 5° detail cells above z6.5, stations above z8, and a detail card behind the click.
+       The layer id `rail-ln` and the source `rail-src` are unchanged, because the opacity
+       registration, the styledata self-heal below and js/compare.js all name them.
+       ⚠ IF THE MODULE IS ABSENT THIS SAYS SO rather than silently drawing nothing. */
     function railToggle(on){ state.rail=on;
-      const a=()=>{ if(!railEnsure()){ GE().events.once('idle',a); return; }
-        if(on) load('rail',fc=>{ try{ GE().layers.setSourceData('rail-src',fc); }catch(_){} });
-        setVis(['rail-ln'],on); };
-      a();
-      /* (#R21) phones: toggling OFF releases the ~25k-feature parsed geojson + source copy (same
-         OOM-pressure policy as ecoregions); it lazily re-fetches on the next toggle. */
-      if(!on&&typeof isMobile==='function'&&isMobile()){ try{ if(GE().layers.has('rail-ln')) GE().layers.remove('rail-ln'); if(GE().layers.hasSource('rail-src')) GE().layers.removeSource('rail-src'); }catch(_){} cache.rail=null; }
-      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('rail2',LA('World railways (by gauge)','世界の鉄道（軌間別）','Eisenbahnen weltweit (nach Spurweite)','Железные дороги мира (по колее)','Ferrocarriles del mundo (por ancho de vía)'),['rail-ln'],'beta-dl-rail');
-            if(el&&!el.querySelector('.rail-key')){ const k=document.createElement('div'); k.className='rail-key'; k.style.cssText='display:flex;flex-direction:column;gap:3px;margin-top:6px;font-size:11px;color:var(--text-main);';
-              /* ⚠ (#R251) …and the gauge rows were `[gauge, ja, en]` — ENGLISH IN SLOT 2, so the
-                 inline table (keyed by the English source string) could not have matched even after
-                 the languages were added. The tuple is English-first and resolved by pick(). */
-              k.innerHTML=RAIL_LBL.map(([g,t])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:3px;border-radius:2px;flex:none;background:'+RAIL_COL[g]+';"></span>'+LPK.arr(t)+'</div>').join('')+
-                '<div style="font-size:10px;color:var(--text-muted);margin-top:3px;">'+(window.IntMapLang.t(HOST.lang,"Classified by each country’s predominant gauge (Natural Earth 10m)","各国の主流軌間で分類（Natural Earth 10m）","Nach der vorherrschenden Spurweite je Land klassifiziert (Natural Earth 10m)","Классифицировано по преобладающей колее каждой страны (Natural Earth 10m)","Clasificado por el ancho de vía predominante de cada país (Natural Earth 10m)"))+'</div>';
-              el.appendChild(k); } }
-           else if(window._hideGenericLegend) window._hideGenericLegend('rail2'); }catch(_){}
+      window.IntMapLazy.need('railways').then(()=>_railToggle(on)); }
+    function _railToggle(on){
+      const RM=window.IntMapRailways;
+      if(!RM||!RM.toggle){ try{ console.warn('IntMapRailways is not loaded — the railway layer cannot draw'); }catch(_){} return; }
+      RM.toggle(on);
+      /* (#R21) phones: toggling OFF releases the parsed geojson + source copies. */
+      if(!on&&typeof isMobile==='function'&&isMobile()){ try{ RM.drop(); }catch(_){} cache.rail=null; }
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('rail2',LA('World railways','世界の鉄道','Eisenbahnen weltweit','Железные дороги мира','Ferrocarriles del mundo'),['rail-ln','rail-det-ln','rail-cons-ln','rail-st','rail-st-lbl'],'beta-dl-rail');
+            if(el) railLegend(el,RM); }
+         else if(window._hideGenericLegend) window._hideGenericLegend('rail2'); }catch(_){}
+    }
+    /* The legend is ASKED OF THE MODULE, so a colour cannot be right on the map and wrong in the key,
+       and the axis buttons are the layer's own switch — six questions about the same line. */
+    function railLegend(el,RM){
+      let box=el.querySelector('.rail-key');
+      if(!box){ box=document.createElement('div'); box.className='rail-key'; box.style.cssText='display:flex;flex-direction:column;gap:6px;margin-top:6px;font-size:11px;color:var(--text-main);'; el.appendChild(box); }
+      const draw=()=>{
+        const cur=RM.axis();
+        box.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:4px;">'
+          +RM.axes().map(([k,lbl])=>'<button type="button" class="rail-axis-b" data-a="'+esc(k)+'" style="border:1px solid '+(k===cur?'var(--primary-color)':'rgba(128,128,128,0.35)')+';background:'+(k===cur?'var(--primary-color)':'transparent')+';color:'+(k===cur?'#fff':'var(--text-main)')+';font:inherit;font-size:10.5px;padding:2px 7px;border-radius:999px;cursor:pointer;">'+esc(lbl)+'</button>').join('')
+          +'</div><div style="display:flex;flex-direction:column;gap:3px;">'
+          +RM.key().map(([c,l])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:3px;border-radius:2px;flex:none;background:'+esc(c)+';"></span>'+esc(l)+'</div>').join('')
+          +'</div><div style="display:flex;flex-direction:column;gap:3px;padding-top:2px;">'
+          +'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" class="rail-sw" data-s="urban"'+(RM.urban()?' checked':'')+' style="margin:0;">'
+          +esc(window.IntMapLang.t(HOST.lang,'Urban rail (metro, tram, light rail)','都市鉄道（地下鉄・路面電車・ライトレール）','Stadtverkehr (U-Bahn, Straßenbahn, Stadtbahn)','Городской транспорт (метро, трамвай)','Ferrocarril urbano (metro, tranvía)'))+'</label>'
+          +'<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" class="rail-sw" data-s="stations"'+(RM.stations()?' checked':'')+' style="margin:0;">'
+          +esc(window.IntMapLang.t(HOST.lang,'Stations and halts (from z8)','駅・停留所（z8 以上）','Bahnhöfe und Haltepunkte (ab z8)','Станции и остановочные пункты (с z8)','Estaciones y apeaderos (desde z8)'))+'</label>'
+          +'</div><div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'
+          +esc(window.IntMapLang.t(HOST.lang,
+            'Every value is the tag OpenStreetMap carries on that track. Grey means OSM does not state it — nothing is filled in from the country the line runs through. Zoom past z6.5 for full detail, z8 for stations.',
+            '各項目は、その線路そのものに付いた OpenStreetMap のタグです。灰色は「OSM に記載なし」——通っている国から補完することはしません。z6.5 以上で詳細、z8 以上で駅が出ます。',
+            'Jeder Wert ist ein OpenStreetMap-Tag dieses Gleises. Grau heißt: in OSM nicht angegeben — nichts wird aus dem durchfahrenen Land ergänzt. Ab z6.5 Detail, ab z8 Bahnhöfe.',
+            'Каждое значение — тег OpenStreetMap на этом пути. Серый означает «не указано в OSM»; ничего не подставляется по стране. Детали с z6.5, станции с z8.',
+            'Cada valor es una etiqueta de OpenStreetMap en esa vía. El gris significa que OSM no lo indica; nada se deduce del país. Detalle desde z6.5, estaciones desde z8.'))
+          +'</div>';
+        box.querySelectorAll('.rail-axis-b').forEach(b=>{ b.onclick=()=>{ try{ RM.setAxis(b.getAttribute('data-a')); }catch(_){} draw(); }; });
+        /* ⚠ the checkbox is redrawn on every draw(), so the handler is re-attached here rather than
+           delegated — and it must NOT redraw, or the click would rebuild the node it came from */
+        box.querySelectorAll('.rail-sw').forEach(b=>{ b.onchange=()=>{ try{
+          if(b.getAttribute('data-s')==='urban') RM.setUrban(b.checked); else RM.setStations(b.checked); }catch(_){} }; });
+      };
+      draw();
+      /* the key follows the language the way every other one does */
+      if(!box._langWired){ box._langWired=true; window.addEventListener('intmap-lang',()=>setTimeout(draw,20)); }
     }
     /* ---------- World-Bank-backed country choropleths (live, keyless, CORS*) ---------- */
     /* cpi: WGI "Control of Corruption" GOVERNANCE SCORE (0–100, higher = cleaner) — the WGI database
@@ -780,7 +816,7 @@ window.IntMapModules.betaPack2=function(HOST){
     }
     /* ---------- rows (swept into Others(beta) by reorganizeLayerPanel) ---------- */
     /* (#R38) [JP, EN, DE, RU] — b2Lbl() picks the active UI language (was JP/EN only → English in DE/RU). */
-    const B2LBL={dc:LA('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infraestructura de IA'),pharma:LA('Pharma manufacturing hubs','製薬・医薬品製造拠点','Pharma-Produktionszentren','Центры фармпроизводства','Centros de fabricación farmacéutica'),lifeexp:LA('Life expectancy','平均寿命','Lebenserwartung','Продолжительность жизни','Esperanza de vida'),cpi:LA('Corruption indicator','汚職・腐敗指標','Korruptionsindex','Индекс коррупции','Indicador de corrupción'),rail:LA('World railways (by gauge)','世界の鉄道（軌間別）','Welt-Eisenbahnen (nach Spurweite)','Железные дороги мира (по колее)','Ferrocarriles del mundo (por ancho de vía)'),unemp:LA('Unemployment rate','失業率','Arbeitslosenquote','Уровень безработицы','Tasa de desempleo'),internet:LA('Internet penetration','インターネット普及率','Internetverbreitung','Проникновение интернета','Penetración de internet'),precip:LA('Annual precipitation (by country)','年降水量（国別平均）','Jahresniederschlag (nach Land)','Годовое количество осадков (по странам)','Precipitación anual (por país)'),spin:LA('Auto-rotate','自動回転','Automatisch drehen','Автовращение','Rotación automática')};
+    const B2LBL={dc:LA('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infraestructura de IA'),pharma:LA('Pharma manufacturing hubs','製薬・医薬品製造拠点','Pharma-Produktionszentren','Центры фармпроизводства','Centros de fabricación farmacéutica'),lifeexp:LA('Life expectancy','平均寿命','Lebenserwartung','Продолжительность жизни','Esperanza de vida'),cpi:LA('Corruption indicator','汚職・腐敗指標','Korruptionsindex','Индекс коррупции','Indicador de corrupción'),rail:LA('World railways','世界の鉄道','Eisenbahnen weltweit','Железные дороги мира','Ferrocarriles del mundo'),unemp:LA('Unemployment rate','失業率','Arbeitslosenquote','Уровень безработицы','Tasa de desempleo'),internet:LA('Internet penetration','インターネット普及率','Internetverbreitung','Проникновение интернета','Penetración de internet'),precip:LA('Annual precipitation (by country)','年降水量（国別平均）','Jahresniederschlag (nach Land)','Годовое количество осадков (по странам)','Precipitación anual (por país)'),spin:LA('Auto-rotate','自動回転','Automatisch drehen','Автовращение','Rotación automática')};
     const b2Lbl=(k)=>LPK.arr(B2LBL[k]);
     const B2SW={dc:'#5e8bff',pharma:'#2bb3a3',lifeexp:'#74add1',cpi:'#f46d43',rail:'#3a7bd5',unemp:'#f46d43',internet:'#1a9850',precip:'#35978f',spin:'#ffd166'};
     const B2FN={dc:dcToggle,pharma:phToggle,lifeexp:(on)=>wbToggle('lifeexp',on),cpi:(on)=>wbToggle('cpi',on),rail:railToggle,unemp:(on)=>wbToggle('unemp',on),internet:(on)=>wbToggle('internet',on),precip:(on)=>wbToggle('precip',on),spin:spinToggle};
@@ -801,10 +837,11 @@ window.IntMapModules.betaPack2=function(HOST){
       /* (#R254) the data-center layer rebuilds itself — its module owns the source, the OSM half and the card */
       if(state.dc){ try{ window.IntMapDataCenters&&window.IntMapDataCenters.toggle(true); }catch(_){} }
       if(state.pharma&&ptEnsure('pharma','ph-src',['ph-pt','ph-lbl'])){ setVis(['ph-pt','ph-lbl'],true); load('pharma',fc=>{ try{ GE().layers.setSourceData('ph-src',fc); }catch(_){} }); }
-      if(state.rail&&railEnsure()){ setVis(['rail-ln'],true); if(cache.rail){ try{ GE().layers.setSourceData('rail-src',cache.rail); }catch(_){} } }
+      /* (#R388) the railway layer rebuilds itself — its module owns the sources, the cells and the card */
+      if(state.rail){ try{ window.IntMapRailways&&window.IntMapRailways.toggle(true); }catch(_){} }
       ['cpi','lifeexp','unemp','internet','precip'].forEach(k=>{ if(state[k]) wbToggle(k,true); });   /* (#R22) new WB choropleths self-heal too */
     },90); } });
-    window.addEventListener('intmap-mem-pressure',()=>{ if(!state.rail) cache.rail=null; });
+    window.addEventListener('intmap-mem-pressure',()=>{ if(!state.rail){ cache.rail=null; try{ window.IntMapRailways&&window.IntMapRailways.drop(); }catch(_){} } });
     window.IntMapBeta2={load,_state:state};
   })();
 };

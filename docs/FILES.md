@@ -56,7 +56,6 @@ TwemojiCountryFlags.woff2       国旗グリフ
 _koppen_convert.py              ケッペン TIFF → PNG（データ前処理。実行時には不要）
 _precip_convert.py              CHELSA → メルカトル PNG（同上）
 _precip_years_convert.py        GPCC → 年別 PNG（同上）
-_rail_convert.py                鉄道データ変換（同上）
 ```
 
 ### 3.2 `css/` / `src/` / `fonts/`
@@ -175,6 +174,8 @@ subcable-info.js                  海底ケーブル／陸揚げ地点のクリ�
 ocean-currents-field.js           海流——場のファイルの復号とストライド
 osm-facilities.js                 実地調査された施設 IntMapFacilities
 datacenters.js                    データセンターと AI インフラ IntMapDataCenters
+railways.js                       世界の鉄道 IntMapRailways（OSM の実タグ・6軸の塗り分け・駅・詳細カード）
+rail-schema.js                    鉄道の語彙 RailSchema。⚠ ビルド (scripts/rail/) とブラウザが同じこの1本を import する
 cameras.js                        ライブカメラ層 IntMapModules.cameras
 beta-overlays.js                  ベータのオーバーレイ IntMapModules.betaOverlays（火山レイヤー本体＝色モード4種・VEIによる大きさ・凡例・volcano.* コマンド）
 volcano-intel.js                  火山の深さ window.IntMapVolcano（遅延）——噴火履歴11,089件・警戒レベルの4段・気象庁↔GVPの結合・詳細カード
@@ -408,7 +409,11 @@ ecoregions_2017.geojson           エコリージョン（自前ホスト）。*
   └ 同内容の JS グローバル版      `ecoregions_2017.js`（#R13b の `file://` 対策・`window.__ECOREGIONS_2017`）。
                                   中身は上と**バイト同一**なので `vite.config.js` の `STATIC_EXCLUDE` で
                                   dist から外してある。リポジトリからは消していない
-railways_gauge.json               世界の鉄道（軌間別）
+railways/                         世界の鉄道（#R388 OpenStreetMap の実タグ）
+  ├ world.json.gz                 z<6.5 の全世界（幹線・支線を一般化。文字列は持たない）
+  ├ c/<lat>_<lon>.json.gz         5°セル。z≥6.5 で表示範囲ぶんだけ取得（路線名・事業者・OSM way id つき）
+  ├ st/<lat>_<lon>.json.gz        駅・停留所。5°セル（z≥8・135,238件）
+  └ index.json / st-index.json    存在するセルの一覧と gz バイト数（線／駅・404 を撃たないため）
 volcanoes_gvp.json                火山（Smithsonian GVP 完新世）
 crust1.bin.gz / .json             CRUST1.0（地殻構造）
 slab2.bin.gz / .json              Slab2（沈み込み帯のスラブ面）

@@ -496,6 +496,7 @@ window.IntMapPageI18N.define('ja', {
     "Yahoo Finance": "株価指数（下部ティッカー）と、Companies（企業）タブで時価総額をライブ算出するための株価（米国上場銘柄）",
     "Clearbit Logo API / Google favicons": "Companies（企業）タブの企業ロゴ — 企業のドメイン名を送信してロゴを取得（取得できない場合はGoogleのファビコン、さらにモノグラムへフォールバック）",
     "Wikipedia (Wikimedia REST API)": "地名ポップアップの記事有無チェック・Atlas分析の背景要約（CC BY-SA）",
+    "World railways — OpenStreetMap (railway=rail/narrow_gauge/light_rail/subway/tram/construction, Overpass API)": "世界の現役の鉄道路線を、各線路そのものに付いた OpenStreetMap のタグから描いています（ODbL 1.0）。軌間・電化方式と電圧・最高速度・線路数・旅客/貨物の別・運行会社・開業年・建設状態を way ごとに読み取り、通っている国から推定することはしません。Overpass API で全世界を掃引し、一般化した世界データと 5°ごとの詳細セルとして配信しています。OSM に記載のない項目は「記載なし」と表示し、補完しません",
     "Data centers — OpenStreetMap (telecom/man_made/building = data_center, Overpass API)": "OpenStreetMap に登録されたデータセンターを、表示中の地図範囲に応じてライブ取得（ODbL）。各地点はそのオブジェクト自身のタグ（運営者・所有者・電力・開設年）をそのまま表示し、推測は一切加えていません",
     "Diplomatic missions — OpenStreetMap (amenity=embassy / office=diplomatic, Overpass API)": "OpenStreetMap に登録された大使館・領事館などの外交公館（ODbL）。全 17,423 件の全球スナップショットをアプリに同梱しているのでどのズームでも描画され、拡大すると表示範囲を最新の内容で取得して置き換えます。各点はそのオブジェクト自身のタグを表示し、リンクします。推測は含みません",
     "Military sites — OpenStreetMap (military=*, Overpass API)": "OpenStreetMap に `military` として登録された飛行場・海軍基地・兵舎・演習場・危険区域を、表示中の地図範囲に応じてライブ取得（ODbL）。公開情報の記録のみで、画像判読による推定や欄の穴埋めは行っていません",

@@ -496,6 +496,7 @@ window.IntMapPageI18N.define('ko', {
     "Yahoo Finance": "하단 티커에 쓰는 주가지수 시세, 그리고 기업 탭에서 실시간 시가총액을 계산하는 데 쓰는 실시간 주가(미국 상장 종목)",
     "Clearbit Logo API / Google favicons": "기업 탭의 회사 로고 — 로고를 받기 위해 회사 도메인 이름을 전송합니다(실패하면 구글 파비콘, 그다음 모노그램으로 대체)",
     "Wikipedia (Wikimedia REST API)": "지명 팝업의 문서 확인과 아틀라스 분석용 배경 요약(CC BY-SA)",
+    "World railways — OpenStreetMap (railway=rail/narrow_gauge/light_rail/subway/tram/construction, Overpass API)": "전 세계에서 운행 중인 모든 철도 노선을, OpenStreetMap이 각 선로에 붙여 둔 태그 그대로 보여 줍니다(ODbL 1.0). 궤간, 전철화 방식과 전압, 최고 속도, 선로 수, 여객·화물 구분, 운영 주체, 개통 연도, 건설 상태를 way 단위로 읽으며 — 노선이 지나가는 나라에서 추론하지 않습니다. Overpass API로 전 지구를 훑어 일반화한 세계 데이터와 5° 상세 셀로 제공하고, OSM에 기재가 없는 값은 “기재 없음”으로 표시할 뿐 채워 넣지 않습니다",
     "Data centers — OpenStreetMap (telecom/man_made/building = data_center, Overpass API)": "OpenStreetMap에 등록된 모든 데이터센터를 현재 지도 범위에 따라 실시간으로 조회합니다(ODbL). 각 지점은 해당 객체 자체의 태그(운영자·소유자·전력·개설일)를 그대로 표시하며, 추정은 전혀 하지 않습니다",
     "Diplomatic missions — OpenStreetMap (amenity=embassy / office=diplomatic, Overpass API)": "OpenStreetMap에 등록된 대사관·영사관 등 외교공관(ODbL). 전 세계 17,423건의 스냅숏을 앱에 동봉해 어떤 축척에서도 그려지며, 확대하면 현재 표시 범위를 실시간으로 가져와 대체합니다. 추측은 없습니다",
     "Military sites — OpenStreetMap (military=*, Overpass API)": "OpenStreetMap에 `military`로 등록된 비행장·해군기지·병영·연습장·위험구역을 현재 범위에 맞춰 가져옵니다(ODbL). 공개된 기록만이며 영상 판독에 의한 추정이나 빈칸 채우기는 하지 않습니다",

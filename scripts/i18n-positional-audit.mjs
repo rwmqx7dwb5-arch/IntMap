@@ -221,6 +221,20 @@ const SAME_AS_EN = {
 for (const p of ['Barotse', 'Calabar', 'Futa Toro', 'Imerina', 'Kong', 'Kuba', 'Lagos', 'Lozi', 'Luba', 'Lunda', 'Mbailundu', 'Ndebele', 'Nguni', 'Ngwato', 'Opobo', 'Ovimbundu', 'Shona', 'Teke', 'Yaka', 'Yeke', 'Ruanda-Urundi', 'Karafuto', 'Inini', 'Alaska', 'Puerto Rico', 'Gaza', 'Portugal', 'Joseon', 'Trinidad', 'Rapa Nui', 'Hail']) { SAME_AS_EN.de.add(p); SAME_AS_EN.es.add(p); }
 for (const p of ['Kanem-Bornu', 'Malaya', 'Annam', 'Tonkin', 'Danzig', 'Xinjiang', 'Angola', 'Eritrea', 'Guinea-Bissau', 'Martinique', 'Guadeloupe', 'Korea', 'Saipan', 'Māori', 'Accra', 'Cotonou', 'Griqualand West', 'Ibadan', 'Papua', 'Straits Settlements', 'Aden', 'Hawaii', 'Réunion']) SAME_AS_EN.de.add(p);
 for (const p of ['Tripolitania', 'Indonesia']) SAME_AS_EN.es.add(p);
+/* ⚠ (#R388) the railway legend's numeric bands. German and Spanish both write a speed or a
+   gauge range exactly as English does — en dash, ASCII digits, the same unit abbreviation — so
+   these eight are the German and Spanish words, not eight forgotten arguments. Declared one at a
+   time against this file's own rule: a row here is a claim that the word is right.
+   ⚠ French, Korean and Chinese are NOT here: French uses the en dash too, but Korean writes the
+   ASCII tilde and Chinese the fullwidth one, and js/locales/ui.ko.js and ui.zh.js carry those
+   forms — so those three are translated rather than declared. */
+for (const p of ['750–999 mm', '600–749 mm', '250–299 km/h', '200–249 km/h', '160–199 km/h',
+  '120–159 km/h', '80–119 km/h', '40–79 km/h']) { SAME_AS_EN.de.add(p); SAME_AS_EN.es.add(p); }
+/* …and the three electrification systems German writes in the international AC/DC notation. The
+   rest of the same table IS translated in German («Sonstige AC», «Elektrifiziert, System
+   unbekannt», «1,5 kV DC» with the German decimal comma), which is what makes this a claim about
+   the notation rather than a way to quiet the gate. */
+for (const p of ['25 kV AC', '15 kV AC', '3 kV DC']) SAME_AS_EN.de.add(p);
 /* ⚠ (#R370) «Max» and «Min» are the German abbreviations of Maximum / Minimum — the same three
    characters as the English. They appear here because #R370 renamed the daily-temperature and
    top/bottom-country labels off the key `High` / `Low`: de / ru / es were ALREADY rendering them
