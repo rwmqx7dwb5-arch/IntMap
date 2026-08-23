@@ -203,6 +203,10 @@ import '../js/industry-web.js';
 import '../js/ocean-currents-field.js';
 import '../js/ocean-currents.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is */
 import '../js/precip-annual.js';   /* (#R266) 年降水量 — CHELSA 1 km normal + GPCC per-year, both bundled rasters */
+/* (#R322) the SHELL only. #R311 measured that two of this file's five factories build Layers-panel
+   buttons at boot, so it cannot be deferred whole; the five bodies live in
+   js/analysis-{timeseries,research,correlate,world-events,edu}.js and js/lazy-modules.js fetches each
+   one when its facade is first called. Adding them here would download all five at boot again. */
 import '../js/analysis-panels.js';
 import '../js/sims.js';
 import '../js/tables.js';
@@ -355,8 +359,12 @@ const MODULE_FACTORIES = [
    lands, that the factory registered AND that the global it owns was published, and records any
    failure in window.__imLazyCheck.failed — which tests/r209.spec.js asserts is empty after asking
    for every one of them. Naming them here keeps ONE list of every factory the program has, so a
-   file that is deleted or renamed still has somewhere to be missing from. (#R311) six more. */
-const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail'];
+   file that is deleted or renamed still has somewhere to be missing from. (#R311) six more.
+   ⚠ (#R322) …and five that are HALVES of a factory that is still eager. `timeSeries`, `aiResearch`,
+   `correlate`, `worldEvents` and `edu` stay in MODULE_FACTORIES above, because js/analysis-panels.js
+   still registers all five at boot — it is their BODIES that moved, into the five `analysis*` keys
+   below, and the boot guard cannot see those for the same reason it cannot see the others. */
+const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail', 'analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu'];
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};

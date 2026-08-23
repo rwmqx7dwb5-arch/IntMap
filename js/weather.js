@@ -892,8 +892,39 @@ window.IntMapModules.wind=function(HOST){
     window.addEventListener('intmap-units',()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} });
     window.addEventListener('intmap-lang',()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} });
 
+    /* ══ ⚠⚠⚠ (#R322) THE ONE THING `stop()` DELIBERATELY KEEPS, AND NOBODY EVER GAVE BACK ═══════
+       `stop()` leaves `renderer` alive on purpose — it holds two textures, two framebuffers, two
+       vertex buffers and two shader programs, and re-creating them would make every toggle of the
+       wind layer cost a WebGL rebuild. That is the right trade for SUSPEND. It is not the right
+       trade for ever: js/wx-wind.js has had a `dispose()` since #R276 that deletes exactly those
+       objects, and MEASURED this round, nothing in the repository ever called it — the whole of
+       js/weather.js does not contain the word. Switch the wind on once and the GL objects live as
+       long as the tab.
+
+       So the capability names the three states the runtime already has verbs for (js/runtime.js):
+         activate  start()                       — the layer is on
+         suspend   stop()                        — off, and the renderer is KEPT for a fast return
+         dispose   stop() + renderer.dispose()   — the GPU objects go back
+       `toggle()` is unchanged for every existing caller; it now goes through the register, so the
+       runtime — not this closure — is what knows whether the wind is running. */
+    function disposeWind(){
+      stop();
+      if(renderer){ try{ renderer.dispose(); }catch(_){} renderer=null; }
+      /* the canvas keeps its backing store until something else needs it; 1×1 releases it now */
+      try{ cv.width=1; cv.height=1; }catch(_){}
+    }
+    try{
+      const RT=window.IntMapRuntime;
+      if(RT&&RT.define) RT.define('wx.wind',{ activate:()=>start(), suspend:()=>stop(), dispose:disposeWind });
+    }catch(_){}
+
     return {
-      toggle(v){ v?start():stop(); }, on:()=>on, stop, refetch:load, setOpacity,
+      /* ⚠ the register is the owner when it is there; the direct call is the fallback for a host
+         that has no runtime (the compare pane builds one of these before app-body publishes it). */
+      toggle(v){ const RT=window.IntMapRuntime;
+        if(RT&&RT.stateOf&&RT.stateOf('wx.wind')!==null){ v?RT.activate('wx.wind'):RT.suspend('wx.wind'); return; }
+        v?start():stop(); },
+      on:()=>on, stop, dispose:disposeWind, refetch:load, setOpacity,
       /* (#R313) the streaks alone. `on()` is still the LAYER; these two are the animation inside it,
          and they are the only door — the legend switch, Atlas and the tests all come through here. */
       particles:partsAreOn, setParticles:setParts,

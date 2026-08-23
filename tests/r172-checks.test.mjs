@@ -31,6 +31,13 @@ const INDEX = appShell(new URL('../', import.meta.url));
    app-body.js this round. It is part of the page's program (see appShell), so questions asked of
    the MODULES must not be asked of it: it is the one file that is SUPPOSED to name MapLibre. */
 const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js' && f !== 'geo-engine.js');
+/* (#R322) …and the pure camera GEOMETRY is a fourth file now: js/camera-math.js. It left
+   js/geo-engine.js when the renderer-command census pushed the shell over the line ceiling
+   tests/r168 #8 holds, and the functions moved byte-identical (modulo the indentation of the
+   move). It is deliberately NOT concatenated into INDEX: r168 #8 counts the SHELL from appShell(),
+   and putting 375 lines back into that would undo the move. The two assertions below that ask
+   about the geometry ITSELF read it from here; everything else still asks INDEX. */
+const GEOM = readFileSync(new URL('../js/camera-math.js', import.meta.url), 'utf8');
 const stripComments = src => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* Real `map.<x>` member reads, via the parser — a regex cannot do this in either direction
@@ -119,7 +126,7 @@ test('the viewpoint can be read and put back, and the scale is valid at any pitc
   /* (#R177) SUPERSEDED IN MECHANISM, KEPT IN INTENT: the map scale is still the renderer's own, but
      it is now read inside gEye — the single geometry the tilt anchor shares — rather than copied
      here. The metres-per-pixel identity this used to name is the MERCATOR branch of it. */
-  const geo = INDEX.slice(INDEX.indexOf('function gEye('), INDEX.indexOf('function gEye(') + 1600);
+  const geo = GEOM.slice(GEOM.indexOf('function gEye('), GEOM.indexOf('function gEye(') + 1600);
   assert.match(geo, /const d=k\*c2c\/world, circ=GEO_CIRC\*Math\.cos\(cam\.lat\*GEO_RAD\);/,
     "metres-per-pixel comes from the renderer's own map scale (worldSize and circumferenceAtLatitude)");
 });

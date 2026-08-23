@@ -26,7 +26,14 @@ const index = readFileSync(join(ROOT, 'index.html'), 'utf8');
    this round (the renderer adapter + the IntMapGeoEngine facade, moved verbatim). Same program,
    two files, so every invariant below still asks the same question. */
 const body = [readFileSync(join(ROOT, 'js/app-body.js'), 'utf8'),
-              readFileSync(join(ROOT, 'js/geo-engine.js'), 'utf8')].join('\n');
+              readFileSync(join(ROOT, 'js/geo-engine.js'), 'utf8'),
+              /* (#R322) …and THREE now: the camera geometry moved to js/camera-math.js when the
+                 renderer-command census pushed the shell over its line ceiling (tests/r168 #8).
+                 Same program, same invariants — the functions are byte-identical to the versions
+                 that were in js/geo-engine.js, modulo the indentation of the move.
+                 ⚠ THIS JOIN, NOT appShell(): r168 #8 counts the SHELL'S LINES from appShell, and
+                 putting 375 lines back into it would undo the move this file is following. */
+              readFileSync(join(ROOT, 'js/camera-math.js'), 'utf8')].join('\n');
 const entry = readFileSync(join(ROOT, 'src/main.js'), 'utf8');
 const vendor = readFileSync(join(ROOT, 'src/vendor.js'), 'utf8');
 const panel = readFileSync(join(ROOT, 'js/aircraft-detail.js'), 'utf8');

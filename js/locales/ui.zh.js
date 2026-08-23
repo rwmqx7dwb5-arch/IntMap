@@ -5043,6 +5043,269 @@ window.IntMapLang.define('zh', {
   "Where in the world are the most severe weather warnings in force right now?": "目前全球哪裡發布了最嚴重的氣象警報？",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "過去一週最活躍的板塊邊界是哪些？",   /* atlas-examples.js (#R313) */
   "Which submarine cable chokepoints carry the most of the world’s traffic?": "全球流量最集中的海底電纜咽喉點在哪裡？",   /* atlas-examples.js (#R313) */
+  "This panel could not be loaded — check your connection and try again.": "無法載入此面板 — 請檢查網路連線後再試一次。",   /* analysis-panels.js (#R322) */
+  "Columbus reaches the Americas": "哥倫布抵達美洲",   /* analysis-world-events.js (#R322) */
+  "First Atlantic crossing opens the Columbian exchange.": "首次橫渡大西洋，開啟新舊大陸之間的哥倫布大交換。",   /* analysis-world-events.js (#R322) */
+  "Peace of Westphalia": "西發里亞和約",   /* analysis-world-events.js (#R322) */
+  "Birth of the modern sovereign-state order.": "近代主權國家體系的起點。",   /* analysis-world-events.js (#R322) */
+  "Great Lisbon Earthquake": "里斯本大地震",   /* analysis-world-events.js (#R322) */
+  "Quake+tsunami killed tens of thousands; shook European thought.": "地震與海嘯造成數萬人罹難，也撼動了歐洲思想。",   /* analysis-world-events.js (#R322) */
+  "French Revolution": "法國大革命",   /* analysis-world-events.js (#R322) */
+  "Storming of the Bastille topples the old order.": "攻陷巴士底監獄，舊制度隨之崩潰。",   /* analysis-world-events.js (#R322) */
+  "Congress of Vienna": "維也納會議",   /* analysis-world-events.js (#R322) */
+  "Post-Napoleonic balance-of-power settlement.": "拿破崙戰爭後重建歐洲的均勢體系。",   /* analysis-world-events.js (#R322) */
+  "Treaty of Nanking": "南京條約",   /* analysis-world-events.js (#R322) */
+  "Ends the First Opium War; cedes Hong Kong.": "第一次鴉片戰爭結束，香港割讓予英國。",   /* analysis-world-events.js (#R322) */
+  "Lincoln assassinated": "林肯遇刺",   /* analysis-world-events.js (#R322) */
+  "US president shot at Ford’s Theatre.": "美國總統在福特劇院中槍。",   /* analysis-world-events.js (#R322) */
+  "Meiji Restoration": "明治維新",   /* analysis-world-events.js (#R322) */
+  "Japan’s rapid modernisation begins.": "日本開始急速近代化。",   /* analysis-world-events.js (#R322) */
+  "Suez Canal opens": "蘇伊士運河通航",   /* analysis-world-events.js (#R322) */
+  "Europe–Asia sea route shortened by ~7,000 km.": "歐亞航線縮短約7,000公里。",   /* analysis-world-events.js (#R322) */
+  "Krakatoa eruption": "喀拉喀托火山大噴發",   /* analysis-world-events.js (#R322) */
+  "One of the deadliest volcanic events in history.": "史上死傷最慘重的火山災難之一。",   /* analysis-world-events.js (#R322) */
+  "Wright brothers’ first flight": "萊特兄弟首次飛行",   /* analysis-world-events.js (#R322) */
+  "Powered flight begins at Kitty Hawk.": "動力飛行在小鷹鎮成真。",   /* analysis-world-events.js (#R322) */
+  "San Francisco earthquake": "舊金山大地震",   /* analysis-world-events.js (#R322) */
+  "M7.9 quake and fires destroy the city.": "規模7.9的地震與大火摧毀全市。",   /* analysis-world-events.js (#R322) */
+  "Titanic sinks": "鐵達尼號沉沒",   /* analysis-world-events.js (#R322) */
+  "1,500+ die in the North Atlantic.": "逾1,500人葬身北大西洋。",   /* analysis-world-events.js (#R322) */
+  "Assassination in Sarajevo": "塞拉耶佛事件",   /* analysis-world-events.js (#R322) */
+  "Archduke Franz Ferdinand shot — WWI ignites.": "斐迪南大公遇刺，第一次世界大戰隨之爆發。",   /* analysis-world-events.js (#R322) */
+  "Panama Canal opens": "巴拿馬運河通航",   /* analysis-world-events.js (#R322) */
+  "Atlantic and Pacific joined.": "大西洋與太平洋自此相連。",   /* analysis-world-events.js (#R322) */
+  "Russian Revolution": "俄國革命",   /* analysis-world-events.js (#R322) */
+  "Bolsheviks seize Petrograd.": "布爾什維克奪取彼得格勒。",   /* analysis-world-events.js (#R322) */
+  "WWI Armistice": "第一次世界大戰停戰",   /* analysis-world-events.js (#R322) */
+  "Fighting ends in the Compiègne railway carriage.": "各方在康邊森林的火車車廂內簽署停戰協定。",   /* analysis-world-events.js (#R322) */
+  "1918 influenza pandemic": "1918年流感大流行",   /* analysis-world-events.js (#R322) */
+  "Tens of millions die worldwide.": "全球數千萬人死亡。",   /* analysis-world-events.js (#R322) */
+  "Treaty of Versailles": "凡爾賽條約",   /* analysis-world-events.js (#R322) */
+  "Redraws Europe; seeds future conflict.": "重劃歐洲版圖，也埋下新的衝突火種。",   /* analysis-world-events.js (#R322) */
+  "Great Kantō earthquake": "關東大地震",   /* analysis-world-events.js (#R322) */
+  "Tokyo–Yokohama devastated; ~105,000 dead.": "東京與橫濱毀於一旦，罹難者約10萬5千人。",   /* analysis-world-events.js (#R322) */
+  "Wall Street Crash": "華爾街股災",   /* analysis-world-events.js (#R322) */
+  "Black Tuesday opens the Great Depression.": "黑色星期二揭開大蕭條的序幕。",   /* analysis-world-events.js (#R322) */
+  "WWII begins": "第二次世界大戰爆發",   /* analysis-world-events.js (#R322) */
+  "Germany attacks Westerplatte, invades Poland.": "德軍砲擊西盤半島，揮軍入侵波蘭。",   /* analysis-world-events.js (#R322) */
+  "Attack on Pearl Harbor": "偷襲珍珠港",   /* analysis-world-events.js (#R322) */
+  "Japan strikes the US Pacific Fleet.": "日本突襲美國太平洋艦隊。",   /* analysis-world-events.js (#R322) */
+  "D-Day landings": "諾曼第登陸",   /* analysis-world-events.js (#R322) */
+  "Largest amphibious invasion in history.": "史上規模最大的兩棲登陸作戰。",   /* analysis-world-events.js (#R322) */
+  "Bretton Woods Conference": "布列敦森林會議",   /* analysis-world-events.js (#R322) */
+  "Dollar-centerd postwar monetary order.": "確立以美元為中心的戰後貨幣體系。",   /* analysis-world-events.js (#R322) */
+  "Trinity nuclear test": "三位一體核試驗",   /* analysis-world-events.js (#R322) */
+  "First nuclear detonation.": "人類史上第一次核爆。",   /* analysis-world-events.js (#R322) */
+  "Hiroshima": "廣島原子彈爆炸",   /* analysis-world-events.js (#R322) */
+  "First atomic bombing of a city.": "人類史上首次對城市投下原子彈。",   /* analysis-world-events.js (#R322) */
+  "United Nations founded": "聯合國成立",   /* analysis-world-events.js (#R322) */
+  "UN Charter signed in San Francisco.": "《聯合國憲章》在舊金山簽署。",   /* analysis-world-events.js (#R322) */
+  "Indian independence": "印度獨立",   /* analysis-world-events.js (#R322) */
+  "End of the British Raj; Partition follows.": "英屬印度落幕，隨後印巴分治。",   /* analysis-world-events.js (#R322) */
+  "Gandhi assassinated": "甘地遇刺",   /* analysis-world-events.js (#R322) */
+  "Shot in New Delhi.": "在新德里遭槍擊身亡。",   /* analysis-world-events.js (#R322) */
+  "People’s Republic of China founded": "中華人民共和國成立",   /* analysis-world-events.js (#R322) */
+  "Mao proclaims the PRC in Beijing.": "毛澤東在北京宣告建國。",   /* analysis-world-events.js (#R322) */
+  "NATO founded": "北約成立",   /* analysis-world-events.js (#R322) */
+  "North Atlantic Treaty signed in Washington.": "《北大西洋公約》在華盛頓簽署。",   /* analysis-world-events.js (#R322) */
+  "Korean War begins": "韓戰爆發",   /* analysis-world-events.js (#R322) */
+  "North invades across the 38th parallel.": "北方越過三十八度線南侵。",   /* analysis-world-events.js (#R322) */
+  "Suez Crisis": "蘇伊士運河危機",   /* analysis-world-events.js (#R322) */
+  "Canal nationalisation triggers war; superpowers force a halt.": "運河收歸國有引發戰爭，美蘇施壓迫使停火。",   /* analysis-world-events.js (#R322) */
+  "Sputnik 1": "史普尼克1號",   /* analysis-world-events.js (#R322) */
+  "First artificial satellite — the space age begins.": "人類第一顆人造衛星，太空時代就此展開。",   /* analysis-world-events.js (#R322) */
+  "Treaty of Rome": "羅馬條約",   /* analysis-world-events.js (#R322) */
+  "European Economic Community founded.": "歐洲經濟共同體就此成立。",   /* analysis-world-events.js (#R322) */
+  "Cuban Revolution": "古巴革命",   /* analysis-world-events.js (#R322) */
+  "Castro takes Havana.": "卡斯楚進入哈瓦那掌權。",   /* analysis-world-events.js (#R322) */
+  "Berlin Wall built": "柏林圍牆築起",   /* analysis-world-events.js (#R322) */
+  "East Germany seals the inner-Berlin border.": "東德封鎖柏林市內的邊界。",   /* analysis-world-events.js (#R322) */
+  "Gagarin orbits Earth": "加加林繞行地球",   /* analysis-world-events.js (#R322) */
+  "First human in space.": "人類首次進入太空。",   /* analysis-world-events.js (#R322) */
+  "Cuban Missile Crisis": "古巴飛彈危機",   /* analysis-world-events.js (#R322) */
+  "The Cold War’s closest brush with nuclear war.": "冷戰期間最接近核戰的一刻。",   /* analysis-world-events.js (#R322) */
+  "JFK assassinated": "甘迺迪總統遇刺",   /* analysis-world-events.js (#R322) */
+  "Shot in Dallas.": "在達拉斯遭槍擊身亡。",   /* analysis-world-events.js (#R322) */
+  "Six-Day War": "六日戰爭",   /* analysis-world-events.js (#R322) */
+  "Israel takes Sinai, Golan, West Bank, Gaza.": "以色列奪取西奈半島、戈蘭高地、約旦河西岸與加薩。",   /* analysis-world-events.js (#R322) */
+  "Martin Luther King Jr. assassinated": "金恩博士遇刺",   /* analysis-world-events.js (#R322) */
+  "Shot in Memphis.": "在曼菲斯遭槍擊身亡。",   /* analysis-world-events.js (#R322) */
+  "Apollo 11": "阿波羅11號",   /* analysis-world-events.js (#R322) */
+  "Launch of the first crewed Moon landing.": "人類首次載人登月任務發射升空。",   /* analysis-world-events.js (#R322) */
+  "Nixon shock": "尼克森震撼",   /* analysis-world-events.js (#R322) */
+  "Dollar–gold convertibility ends.": "美元停止兌換黃金。",   /* analysis-world-events.js (#R322) */
+  "1973 oil crisis": "1973年石油危機",   /* analysis-world-events.js (#R322) */
+  "OPEC embargo quadruples oil prices.": "石油輸出國組織禁運，油價暴漲四倍。",   /* analysis-world-events.js (#R322) */
+  "Fall of Saigon": "西貢陷落",   /* analysis-world-events.js (#R322) */
+  "Vietnam War ends.": "越戰就此結束。",   /* analysis-world-events.js (#R322) */
+  "Iranian Revolution": "伊朗革命",   /* analysis-world-events.js (#R322) */
+  "Shah falls; Islamic Republic founded.": "巴列維王朝垮台，伊斯蘭共和國成立。",   /* analysis-world-events.js (#R322) */
+  "Soviet invasion of Afghanistan": "蘇聯入侵阿富汗",   /* analysis-world-events.js (#R322) */
+  "A decade-long quagmire begins.": "長達十年的泥淖就此開始。",   /* analysis-world-events.js (#R322) */
+  "Bhopal gas disaster": "博帕爾毒氣外洩事故",   /* analysis-world-events.js (#R322) */
+  "World’s worst industrial accident.": "史上最嚴重的工業災難。",   /* analysis-world-events.js (#R322) */
+  "Plaza Accord": "廣場協議",   /* analysis-world-events.js (#R322) */
+  "Coordinated dollar depreciation; yen surges.": "各國協同壓低美元，日圓急速升值。",   /* analysis-world-events.js (#R322) */
+  "Chernobyl disaster": "車諾比核災",   /* analysis-world-events.js (#R322) */
+  "Worst nuclear accident in history.": "史上最嚴重的核能事故。",   /* analysis-world-events.js (#R322) */
+  "Challenger disaster": "挑戰者號太空梭失事",   /* analysis-world-events.js (#R322) */
+  "Shuttle lost 73 seconds after launch.": "太空梭於升空73秒後解體。",   /* analysis-world-events.js (#R322) */
+  "Fall of the Berlin Wall": "柏林圍牆倒塌",   /* analysis-world-events.js (#R322) */
+  "The Iron Curtain cracks open.": "鐵幕自此出現裂口。",   /* analysis-world-events.js (#R322) */
+  "Tiananmen Square crackdown": "天安門事件",   /* analysis-world-events.js (#R322) */
+  "Pro-democracy protests suppressed.": "民主運動遭到武力鎮壓。",   /* analysis-world-events.js (#R322) */
+  "Gulf War": "波斯灣戰爭",   /* analysis-world-events.js (#R322) */
+  "Coalition liberates Kuwait.": "多國聯軍解放科威特。",   /* analysis-world-events.js (#R322) */
+  "Dissolution of the USSR": "蘇聯解體",   /* analysis-world-events.js (#R322) */
+  "The Soviet flag is lowered over the Kremlin.": "蘇聯國旗自克里姆林宮降下。",   /* analysis-world-events.js (#R322) */
+  "End of apartheid": "種族隔離制度終結",   /* analysis-world-events.js (#R322) */
+  "Mandela becomes president.": "曼德拉就任總統。",   /* analysis-world-events.js (#R322) */
+  "Rabin assassinated": "拉賓總理遇刺",   /* analysis-world-events.js (#R322) */
+  "Israeli PM shot at a peace rally.": "以色列總理在和平集會上遭槍擊。",   /* analysis-world-events.js (#R322) */
+  "Hong Kong handover": "香港主權移交",   /* analysis-world-events.js (#R322) */
+  "British rule ends after 156 years.": "156年的英國統治就此告終。",   /* analysis-world-events.js (#R322) */
+  "Asian financial crisis": "亞洲金融風暴",   /* analysis-world-events.js (#R322) */
+  "Baht collapse cascades across Asia.": "泰銖崩跌，衝擊擴散至全亞洲。",   /* analysis-world-events.js (#R322) */
+  "Euro launched": "歐元誕生",   /* analysis-world-events.js (#R322) */
+  "Single currency for 11 EU states.": "歐盟11國啟用單一貨幣。",   /* analysis-world-events.js (#R322) */
+  "September 11 attacks": "九一一恐怖攻擊",   /* analysis-world-events.js (#R322) */
+  "Al-Qaeda attacks New York and Washington.": "蓋達組織攻擊紐約與華盛頓。",   /* analysis-world-events.js (#R322) */
+  "Iraq War begins": "伊拉克戰爭開打",   /* analysis-world-events.js (#R322) */
+  "US-led coalition invades Iraq.": "美國主導的聯軍入侵伊拉克。",   /* analysis-world-events.js (#R322) */
+  "Indian Ocean tsunami": "南亞大海嘯",   /* analysis-world-events.js (#R322) */
+  "~230,000 dead across 14 countries.": "14個國家約23萬人罹難。",   /* analysis-world-events.js (#R322) */
+  "Hurricane Katrina": "卡崔娜颶風",   /* analysis-world-events.js (#R322) */
+  "New Orleans flooded.": "紐奧良全城遭洪水淹沒。",   /* analysis-world-events.js (#R322) */
+  "Lehman Brothers collapse": "雷曼兄弟破產",   /* analysis-world-events.js (#R322) */
+  "Global financial crisis erupts.": "全球金融危機就此爆發。",   /* analysis-world-events.js (#R322) */
+  "Arab Spring begins": "阿拉伯之春揭幕",   /* analysis-world-events.js (#R322) */
+  "Tunisian uprising spreads across the region.": "突尼西亞的起義擴散至整個地區。",   /* analysis-world-events.js (#R322) */
+  "Greek debt crisis": "希臘債務危機",   /* analysis-world-events.js (#R322) */
+  "Eurozone sovereign-debt crisis begins.": "歐元區主權債務危機的開端。",   /* analysis-world-events.js (#R322) */
+  "Haiti earthquake": "海地大地震",   /* analysis-world-events.js (#R322) */
+  "~200,000+ dead near Port-au-Prince.": "太子港一帶逾20萬人罹難。",   /* analysis-world-events.js (#R322) */
+  "Tōhoku earthquake & tsunami": "東日本大地震與海嘯",   /* analysis-world-events.js (#R322) */
+  "M9.1 quake, tsunami and the Fukushima accident.": "規模9.1的地震、海嘯，以及福島核災。",   /* analysis-world-events.js (#R322) */
+  "Annexation of Crimea": "克里米亞遭併吞",   /* analysis-world-events.js (#R322) */
+  "Russia seizes the peninsula from Ukraine.": "俄羅斯自烏克蘭手中奪取半島。",   /* analysis-world-events.js (#R322) */
+  "First orbital booster landing": "軌道火箭第一節首次回收著陸",   /* analysis-world-events.js (#R322) */
+  "SpaceX lands Falcon 9 — reusability era.": "SpaceX成功回收獵鷹9號，開啟可重複使用的時代。",   /* analysis-world-events.js (#R322) */
+  "Brexit referendum": "英國脫歐公投",   /* analysis-world-events.js (#R322) */
+  "UK votes to leave the EU.": "英國投票決定退出歐盟。",   /* analysis-world-events.js (#R322) */
+  "COVID-19 outbreak": "COVID-19疫情爆發",   /* analysis-world-events.js (#R322) */
+  "Pandemic that reshaped the world.": "改變了整個世界的大流行。",   /* analysis-world-events.js (#R322) */
+  "Russia invades Ukraine": "俄羅斯入侵烏克蘭",   /* analysis-world-events.js (#R322) */
+  "Largest war in Europe since 1945.": "1945年以來歐洲規模最大的戰爭。",   /* analysis-world-events.js (#R322) */
+  "Abe Shinzō assassinated": "安倍晉三前首相遇刺",   /* analysis-world-events.js (#R322) */
+  "Former Japanese PM shot in Nara.": "日本前首相在奈良遭槍擊身亡。",   /* analysis-world-events.js (#R322) */
+  "Türkiye–Syria earthquakes": "土耳其與敘利亞強震",   /* analysis-world-events.js (#R322) */
+  "M7.8 doublet; 55,000+ dead.": "規模7.8的雙主震，逾5萬5千人罹難。",   /* analysis-world-events.js (#R322) */
+  "October 7 attacks / Gaza war": "十月七日攻擊與加薩戰爭",   /* analysis-world-events.js (#R322) */
+  "Hamas attack and the war that followed.": "哈瑪斯發動攻擊，隨後演變為戰爭。",   /* analysis-world-events.js (#R322) */
+  "Taiwan (Hualien) earthquake": "台灣花蓮地震",   /* analysis-world-events.js (#R322) */
+  "M7.4 quake off eastern Taiwan.": "台灣東部外海發生規模7.4的地震。",   /* analysis-world-events.js (#R322) */
+  "Fall of the Assad regime": "阿薩德政權垮台",   /* analysis-world-events.js (#R322) */
+  "Syrian government collapses; Assad flees.": "敘利亞政府崩潰，阿薩德出逃國外。",   /* analysis-world-events.js (#R322) */
+  "2024 US presidential election": "2024年美國總統大選",   /* analysis-world-events.js (#R322) */
+  "Trump wins a second, non-consecutive term.": "川普贏得非連續的第二個任期。",   /* analysis-world-events.js (#R322) */
+  "Haitian independence": "海地獨立",   /* analysis-world-events.js (#R322) */
+  "First Black-led republic; slavery abolished.": "史上第一個由黑人領導的共和國，並廢除奴隸制。",   /* analysis-world-events.js (#R322) */
+  "Penicillin discovered": "盤尼西林的發現",   /* analysis-world-events.js (#R322) */
+  "Fleming opens the antibiotic era.": "弗萊明開啟抗生素的時代。",   /* analysis-world-events.js (#R322) */
+  "Warsaw Pact formed": "華沙公約組織成立",   /* analysis-world-events.js (#R322) */
+  "Soviet-led military alliance.": "由蘇聯主導的軍事同盟。",   /* analysis-world-events.js (#R322) */
+  "Year of Africa": "非洲獨立年",   /* analysis-world-events.js (#R322) */
+  "17 African nations gain independence.": "17個非洲國家在這一年獨立。",   /* analysis-world-events.js (#R322) */
+  "German reunification": "兩德統一",   /* analysis-world-events.js (#R322) */
+  "East and West Germany reunite.": "東德與西德重新合而為一。",   /* analysis-world-events.js (#R322) */
+  "Coalition expels Iraq from Kuwait.": "多國聯軍將伊拉克逐出科威特。",   /* analysis-world-events.js (#R322) */
+  "iPhone introduced": "iPhone發表",   /* analysis-world-events.js (#R322) */
+  "The modern smartphone era begins.": "現代智慧型手機的時代就此展開。",   /* analysis-world-events.js (#R322) */
+  "Higgs boson discovered": "希格斯玻色子的發現",   /* analysis-world-events.js (#R322) */
+  "CERN confirms the Higgs boson.": "CERN證實希格斯玻色子的存在。",   /* analysis-world-events.js (#R322) */
+  "Inter-Korean summit": "兩韓領袖會談",   /* analysis-world-events.js (#R322) */
+  "Koreas meet at Panmunjom.": "南北雙方在板門店會面。",   /* analysis-world-events.js (#R322) */
+  "WHO declares COVID-19 a pandemic": "WHO宣布COVID-19為大流行",   /* analysis-world-events.js (#R322) */
+  "Global pandemic declared in March 2020.": "2020年3月正式宣告全球大流行。",   /* analysis-world-events.js (#R322) */
+  "US Capitol attack": "美國國會大廈遭闖入",   /* analysis-world-events.js (#R322) */
+  "Rioters storm the US Capitol.": "暴徒衝進國會大廈。",   /* analysis-world-events.js (#R322) */
+  "Fall of Constantinople": "君士坦丁堡陷落",   /* analysis-world-events.js (#R322) */
+  "Ottomans end the Byzantine Empire.": "鄂圖曼帝國終結了拜占庭帝國。",   /* analysis-world-events.js (#R322) */
+  "Protestant Reformation": "宗教改革",   /* analysis-world-events.js (#R322) */
+  "Luther’s 95 Theses split Western Christianity.": "路德的《九十五條論綱》使西方基督教分裂。",   /* analysis-world-events.js (#R322) */
+  "US Declaration of Independence": "美國獨立宣言",   /* analysis-world-events.js (#R322) */
+  "Thirteen colonies declare independence.": "十三個殖民地宣告獨立。",   /* analysis-world-events.js (#R322) */
+  "On the Origin of Species": "《物種起源》出版",   /* analysis-world-events.js (#R322) */
+  "Darwin sets out evolution by natural selection.": "達爾文提出以自然選擇為機制的演化論。",   /* analysis-world-events.js (#R322) */
+  "World War I begins": "第一次世界大戰爆發",   /* analysis-world-events.js (#R322) */
+  "The assassination in Sarajevo triggers global war.": "塞拉耶佛的刺殺事件引爆世界大戰。",   /* analysis-world-events.js (#R322) */
+  "Bolsheviks seize power in Petrograd.": "布爾什維克在彼得格勒奪取政權。",   /* analysis-world-events.js (#R322) */
+  "End of World War I": "第一次世界大戰結束",   /* analysis-world-events.js (#R322) */
+  "Armistice signed at Compiègne.": "各方在康邊簽署停戰協定。",   /* analysis-world-events.js (#R322) */
+  "Wall Street Crash of 1929": "1929年華爾街股災",   /* analysis-world-events.js (#R322) */
+  "Market collapse triggers the Great Depression.": "股市崩盤引爆大蕭條。",   /* analysis-world-events.js (#R322) */
+  "World War II begins": "第二次世界大戰爆發",   /* analysis-world-events.js (#R322) */
+  "Germany invades Poland.": "德國入侵波蘭。",   /* analysis-world-events.js (#R322) */
+  "End of World War II": "第二次世界大戰結束",   /* analysis-world-events.js (#R322) */
+  "Japan’s surrender ends the war.": "日本投降，大戰就此終結。",   /* analysis-world-events.js (#R322) */
+  "Partition of India": "印巴分治",   /* analysis-world-events.js (#R322) */
+  "British India splits into two states.": "英屬印度一分為二。",   /* analysis-world-events.js (#R322) */
+  "Establishment of Israel": "以色列建國",   /* analysis-world-events.js (#R322) */
+  "The State of Israel is declared.": "以色列國正式宣告成立。",   /* analysis-world-events.js (#R322) */
+  "Stonewall uprising": "石牆事件",   /* analysis-world-events.js (#R322) */
+  "Catalyst of the modern LGBT-rights movement.": "現代LGBT權利運動的起點。",   /* analysis-world-events.js (#R322) */
+  "Nixon visits China": "尼克森訪問中國",   /* analysis-world-events.js (#R322) */
+  "A turning point in US–China relations.": "美中關係的重大轉折。",   /* analysis-world-events.js (#R322) */
+  "Iraq invades Kuwait": "伊拉克入侵科威特",   /* analysis-world-events.js (#R322) */
+  "Trigger of the Gulf War.": "波斯灣戰爭的導火線。",   /* analysis-world-events.js (#R322) */
+  "Rwandan genocide": "盧安達大屠殺",   /* analysis-world-events.js (#R322) */
+  "~800,000 killed in about 100 days.": "約100天內有近80萬人遇害。",   /* analysis-world-events.js (#R322) */
+  "Deepwater Horizon oil spill": "深水地平線漏油事故",   /* analysis-world-events.js (#R322) */
+  "Largest marine oil spill in history.": "史上規模最大的海上原油外洩。",   /* analysis-world-events.js (#R322) */
+  "November 2015 Paris attacks": "2015年11月巴黎連環恐攻",   /* analysis-world-events.js (#R322) */
+  "Coordinated attacks kill 130 across Paris.": "多起同步攻擊造成130人死亡。",   /* analysis-world-events.js (#R322) */
+  "Notre-Dame fire": "巴黎聖母院大火",   /* analysis-world-events.js (#R322) */
+  "The Paris cathedral’s spire collapses in flames.": "大教堂的尖塔在烈焰中崩塌。",   /* analysis-world-events.js (#R322) */
+  "US withdrawal from Afghanistan": "美軍撤出阿富汗",   /* analysis-world-events.js (#R322) */
+  "The Taliban retake Kabul.": "塔利班重新掌控喀布爾。",   /* analysis-world-events.js (#R322) */
+  "ChatGPT launched": "ChatGPT上線",   /* analysis-world-events.js (#R322) */
+  "Generative AI reaches mass adoption.": "生成式AI就此普及。",   /* analysis-world-events.js (#R322) */
+  "JWST first images": "韋伯太空望遠鏡首批影像",   /* analysis-world-events.js (#R322) */
+  "Deepest infrared view of the universe yet.": "迄今最深遠的紅外線宇宙影像。",   /* analysis-world-events.js (#R322) */
+  "Black Death reaches Europe": "黑死病傳入歐洲",   /* analysis-world-events.js (#R322) */
+  "Plague kills roughly a third of Europe.": "鼠疫奪走歐洲約三分之一的人口。",   /* analysis-world-events.js (#R322) */
+  "Copernican heliocentrism": "哥白尼提出日心說",   /* analysis-world-events.js (#R322) */
+  "Copernicus places the Sun at the center.": "哥白尼把太陽置於宇宙的中心。",   /* analysis-world-events.js (#R322) */
+  "Newton’s Principia": "牛頓《自然哲學的數學原理》出版",   /* analysis-world-events.js (#R322) */
+  "Laws of motion and universal gravitation.": "提出運動定律與萬有引力定律。",   /* analysis-world-events.js (#R322) */
+  "Industrial Revolution": "工業革命",   /* analysis-world-events.js (#R322) */
+  "Steam power launches modern industry.": "蒸汽動力開啟了近代工業。",   /* analysis-world-events.js (#R322) */
+  "Battle of Waterloo": "滑鐵盧戰役",   /* analysis-world-events.js (#R322) */
+  "Napoleon’s final defeat.": "拿破崙最後一場敗仗。",   /* analysis-world-events.js (#R322) */
+  "DNA double helix": "DNA雙螺旋結構",   /* analysis-world-events.js (#R322) */
+  "Watson & Crick reveal the structure of DNA.": "華生與克里克解開DNA的結構。",   /* analysis-world-events.js (#R322) */
+  "First ascent of Everest": "首次登頂聖母峰",   /* analysis-world-events.js (#R322) */
+  "Hillary and Tenzing reach the summit.": "希拉瑞與丹增登上世界最高峰。",   /* analysis-world-events.js (#R322) */
+  "First human heart transplant": "全球首例人類心臟移植",   /* analysis-world-events.js (#R322) */
+  "Barnard performs the operation in Cape Town.": "巴納德在開普敦完成這場手術。",   /* analysis-world-events.js (#R322) */
+  "Munich Olympics massacre": "慕尼黑奧運慘案",   /* analysis-world-events.js (#R322) */
+  "Israeli athletes taken hostage and killed.": "以色列選手遭挾持並殺害。",   /* analysis-world-events.js (#R322) */
+  "Iran–Iraq War begins": "兩伊戰爭爆發",   /* analysis-world-events.js (#R322) */
+  "An eight-year war begins along the border.": "邊境上展開長達八年的戰爭。",   /* analysis-world-events.js (#R322) */
+  "Falklands War": "福克蘭戰爭",   /* analysis-world-events.js (#R322) */
+  "Britain and Argentina clash over the islands.": "英國與阿根廷為爭奪群島而交戰。",   /* analysis-world-events.js (#R322) */
+  "World Wide Web proposed": "全球資訊網（WWW）的提案",   /* analysis-world-events.js (#R322) */
+  "Berners-Lee invents the Web at CERN.": "柏內茲-李在CERN發明了全球資訊網。",   /* analysis-world-events.js (#R322) */
+  "Dolly the sheep cloned": "複製羊桃莉誕生",   /* analysis-world-events.js (#R322) */
+  "First mammal cloned from an adult cell.": "第一隻由成體細胞複製而成的哺乳動物。",   /* analysis-world-events.js (#R322) */
+  "Human Genome Project completed": "人類基因組計劃完成",   /* analysis-world-events.js (#R322) */
+  "The human genome is fully sequenced.": "人類基因組的定序全部完成。",   /* analysis-world-events.js (#R322) */
+  "Fall of Gaddafi": "格達費政權垮台",   /* analysis-world-events.js (#R322) */
+  "Libya’s long-time ruler is overthrown.": "統治利比亞數十年的領導人遭到推翻。",   /* analysis-world-events.js (#R322) */
+  "Paris Climate Agreement": "巴黎氣候協定",   /* analysis-world-events.js (#R322) */
+  "196 parties adopt a global climate accord.": "196個締約方通過全球氣候協定。",   /* analysis-world-events.js (#R322) */
+  "Sudan civil war": "蘇丹內戰",   /* analysis-world-events.js (#R322) */
+  "Fighting erupts between the army and the RSF.": "政府軍與快速支援部隊爆發戰鬥。",   /* analysis-world-events.js (#R322) */
   '{what} — done.': '{what} — 已完成。',   /* atlas-results.js (#R318) atlas.result.completed.named */
   'Still running…': '仍在執行中…',   /* atlas-results.js (#R318) atlas.result.running */
   'Still running — {done} of {total}.': '執行中 — {total} 項中的 {done} 項。',   /* atlas-results.js (#R318) atlas.result.running.progress */

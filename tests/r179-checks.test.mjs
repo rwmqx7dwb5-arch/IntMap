@@ -131,10 +131,18 @@ test('R179: the adapter is built per view, with its own state', () => {
                    'let _decl=null', 'let _ugShim=null', 'let _demSrc=null'])
     assert.ok(factory.includes(v), `per-view state must live INSIDE the factory: ${v}`);
   /* …and the pure geometry must stay OUT of it: it takes its arguments and remembers nothing, so
-     one copy is correct and a second would be the two-disagreeing-copies bug of #R176/#R177. */
-  const preamble = engine.slice(0, engine.indexOf('function makeMapLibreAdapter(_m){'));
-  for (const g of ['function gEye(', 'function gSolveAt(', 'function gLimitPitch(', 'function gLimitZoom('])
-    assert.ok(preamble.includes(g), `shared geometry stays above the factory: ${g}`);
+     one copy is correct and a second would be the two-disagreeing-copies bug of #R176/#R177.
+     ⚠ (#R322) IT LEFT THE FILE ENTIRELY — js/camera-math.js — which satisfies this claim more
+     strongly than sitting above the factory did, and the claim is therefore restated rather than
+     relocated: ONE copy, and it is not inside the per-view factory. Asserting that the factory does
+     not contain it is the half that matters; asserting WHICH file holds it would pin a location,
+     which is the mistake #R203 named and this round hit five times. */
+  const geom = read('js/camera-math.js');
+  for (const g of ['function gEye(', 'function gSolveAt(', 'function gLimitPitch(', 'function gLimitZoom(']) {
+    assert.ok(!factory.includes(g), `shared geometry must not be inside the per-view factory: ${g}`);
+    const copies = (engine.split(g).length - 1) + (geom.split(g).length - 1);
+    assert.equal(copies, 1, `there is exactly ONE copy of the shared geometry: ${g} (found ${copies})`);
+  }
 });
 
 test('R179: the contract is one object, handed out twice', () => {

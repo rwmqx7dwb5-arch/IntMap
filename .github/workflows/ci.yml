@@ -75,6 +75,14 @@ jobs:
       - name: Startup budget (eager bytes ratchet · async + deploy ceilings)
         run: npm run check:perf
 
+      # (#R322) …and the other half of the deploy. The budget above weighs what Rollup produced,
+      # which is 12.5 MB of a 105.7 MB tree; `data/` is copied whole by vite.config.js and never
+      # passes through the bundler, so nothing could tell that a file in it had stopped being
+      # fetched. This matches every shipped file against the strings the source actually contains
+      # and fails on one nothing names, on a payload shipped twice, and on an unexplained large file.
+      - name: Production assets (every file has a consumer · no payload shipped twice)
+        run: npm run check:assets
+
   # ══ (#R186) THE BROWSER SUITE RUNS ON TEN MACHINES, NOT TEN WORKERS ════════════════════════════
   # 360 real-browser tests on ONE runner took 70 minutes on a good day and over two hours on a bad
   # one — and the bad days are not random. `playwright.config.js` already records the mechanism from
