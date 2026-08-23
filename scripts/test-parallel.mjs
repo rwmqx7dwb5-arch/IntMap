@@ -64,6 +64,12 @@ const HALVES = [
          whether it reported a promise as a result — which is what #R268, #R291, #R302 and #R309
          each turned out to be. See scripts/atlas-capability-audit.mjs. */
       ['node', ['scripts/atlas-capability-audit.mjs', '--check']],
+      /* ⚠ (#R354) THE COMPANY-ATLAS GATE. Every other check in this list reads SOURCE; this one
+         reads the SHIPPED BYTES of data/companies/, because "the builder drops what it cannot
+         source" is a claim about code and the file is what the reader sees. It caught two real
+         classes of error while the data was being built: money with no currency or no period, and
+         a supermarket filed as a power plant because of the solar panels on its roof. */
+      ['node', ['scripts/companies-audit.mjs', '--gate']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],

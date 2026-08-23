@@ -36,6 +36,7 @@
 | [`FILES.md`](FILES.md) | 同上 | **ファイル台帳**（Architecture §3。節番号は同じ） | `js/` 等にファイルを足す・消す・改名したとき |
 | [`MAP-LAYERS.md`](MAP-LAYERS.md) | レイヤーを触る人 | **レイヤー実装の詳細**（Architecture §7.1・§7.2・§7.5–§7.10。節番号は同じ）——気象警報フィード・ラベル・地形と水・物理・ECMWF | 該当のレイヤーの挙動を変えたとき |
 | [`NEWS-EVENTS.md`](NEWS-EVENTS.md) | ニュースを触る人 | **出来事 (Event) 単位のニュース基盤** — Source Registry・データモデル・クラスタリング・カテゴリ・翻訳・保持期間・運用者の修正経路（Architecture §4 の Event 側の本体） | 収集元・クラスタリング・カテゴリ・保持・翻訳を変えたとき |
+| [`COMPANIES.md`](COMPANIES.md) | 企業を触る人 | **企業アトラス** — 企業プロフィールと世界の実在拠点のデータモデル・出典規約・生成パイプライン・カバレッジ判定（`js/companies.js` の curated 表とライブ時価総額は**そちらが正本**で、ここはその上に載る恒久データ） | 収集元・スキーマ・施設種別の語彙・カバレッジ段位を変えたとき |
 | [`AVIATION-ARCHITECTURE.md`](AVIATION-ARCHITECTURE.md) | 航空を触る人 | **航空プラットフォームの構造** — 1回だけ上流を読んで全利用者へ配る配信、IMAV/1 ワイヤ形式、Worker と typed-array ストア、GPU 描画、障害時、巻き戻し | 航空の取得・配信・描画の仕組みを変えたとき |
 | [`AVIATION-DATA-SOURCES.md`](AVIATION-DATA-SOURCES.md) | 同上 | **航空データ源の正本** — どの provider が何を返すか、ライセンスと利用条件、実測した上限、採用しなかった候補と理由、出典表記の義務 | provider を足す・変える・条件が変わったとき |
 | [`VOLCANO-INTELLIGENCE.md`](VOLCANO-INTELLIGENCE.md) | 火山を触る人 | **火山の深さの正本** — GVP の同梱データと結合鍵、現在の警戒レベルの4段（USGS／気象庁／週間報告／沈黙）、火山灰 SIGMET、公表されたハザード域だけを描く規則、SO₂、周辺人口・空港・地震 | データ源を足す・変える、段を足す、気象庁↔GVP の結合表を変えたとき |

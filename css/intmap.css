@@ -4661,3 +4661,141 @@ body.nvg-on #route-panel{ display:none !important; }
   /* the usable lane keeps a mark the OS cannot recolour away */
   .nvg-lane.on{ border:1px solid CanvasText; }
 }
+/* ══ (#R354) THE COMPANY PROFILE PANEL — js/company-panel.js ══════════════════════════════════
+   It IS a `.country-popup`: same shell, same drag, same mobile bottom sheet (the rule above at
+   `.country-popup{ position:fixed … }` inside @media(max-width:768px) is what makes it a sheet), so
+   only the company-specific parts are described here. Nothing below sets `position`, `padding` or
+   `max-height` on the shell, because those are exactly what that sheet rule owns.
+   ⚠ No new colour tokens. Everything is --text-main / --text-muted / --primary-color / --input-bg /
+   --card-bg / --info-choke, so dark mode needs no second copy of any of this. */
+.co-popup{ width:400px; z-index:2210; }
+@media(max-width:768px){ .co-popup{ width:calc(100vw - 24px); } }
+
+/* ── header: mark, names, one line of metadata ─────────────────────────────────────────────── */
+.co-popup .country-popup-header{ align-items:flex-start; }
+.co-popup .cop-head{ display:flex; align-items:flex-start; gap:12px; flex:1 1 auto; min-width:0; }
+.cop-logo-box{ display:inline-flex; align-items:center; justify-content:center; width:46px; height:46px; flex:0 0 auto; }
+.cop-logo{ width:46px; height:46px; border-radius:12px; object-fit:contain; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.16); }
+.cop-mono{ width:46px; height:46px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:22px; }
+.cop-headt{ min-width:0; flex:1 1 auto; }
+/* ⚠ `.country-popup-header h3` (0,1,1) sets 18px; two classes (0,2,0) is what it takes to trim a
+   long company name instead of letting it push the × off the card. */
+.co-popup .cop-name{ font-size:16.5px; font-weight:650; line-height:1.25; overflow-wrap:anywhere; }
+.cop-alt{ font-size:12px; color:var(--text-muted); margin-top:2px; overflow-wrap:anywhere; }
+.cop-meta{ font-size:12px; color:var(--text-muted); margin-top:3px; overflow-wrap:anywhere; }
+
+/* ── the three sections, as an iOS segmented control (.ios-segment, shared) ─────────────────── */
+.cop-tabs{ display:flex; width:100%; box-sizing:border-box; margin:2px 0 12px; }
+.cop-tabs .ios-segment-btn{ flex:1 1 0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ── rows ──────────────────────────────────────────────────────────────────────────────────── */
+.cop-desc{ font-size:12.5px; line-height:1.6; color:var(--text-main); margin:0 0 10px; }
+.cop-sec{ font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted);
+  margin:14px 0 4px; padding-top:8px; border-top:1px solid rgba(128,128,128,0.16); }
+.cop-row{ display:flex; gap:10px; align-items:baseline; justify-content:space-between; font-size:12.5px; padding:4px 0; }
+.cop-k{ color:var(--text-muted); flex:0 1 auto; }
+.cop-v{ text-align:right; flex:1 1 auto; min-width:0; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+/* the currency and the fiscal year / as-of date, which never leave a figure's side */
+.cop-stamp{ display:block; font-size:12px; color:var(--text-muted); font-variant-numeric:normal; margin-top:1px; }
+.cop-link{ color:var(--primary-color); text-decoration:none; }
+.cop-link:hover{ text-decoration:underline; }
+
+/* ── lists of names (products, brands, subsidiaries…) ───────────────────────────────────────── */
+.cop-tagrow{ padding:6px 0; }
+.cop-tagrow .cop-k{ font-size:12px; margin-bottom:5px; display:block; }
+.cop-tags{ display:flex; flex-wrap:wrap; gap:5px; }
+.cop-tag{ display:inline-flex; align-items:baseline; gap:5px; font-size:12px; color:var(--text-main);
+  background:var(--input-bg); border:1px solid rgba(128,128,128,0.16); border-radius:9px; padding:4px 9px; }
+.cop-tag small{ font-size:12px; color:var(--text-muted); }
+.cop-tag-b{ cursor:pointer; font-family:inherit; }
+.cop-tag-b:hover{ border-color:var(--primary-color); color:var(--primary-color); }
+
+/* ── the facility-group filter ─────────────────────────────────────────────────────────────── */
+.cop-chips{ display:flex; flex-wrap:wrap; gap:5px; margin:10px 0 8px; }
+.cop-chip{ display:inline-flex; align-items:center; gap:6px; font-family:inherit; font-size:12px; font-weight:600;
+  color:var(--text-muted); background:var(--input-bg); border:1px solid transparent; border-radius:999px;
+  padding:5px 11px; cursor:pointer; transition:0.18s; }
+.cop-chip:hover{ color:var(--text-main); }
+.cop-chip.on{ background:var(--primary-color); color:#fff; }
+.cop-chip-n{ font-size:12px; opacity:.72; font-variant-numeric:tabular-nums; }
+.cop-active{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:12px;
+  color:var(--text-main); background:var(--input-bg); border-radius:10px; padding:6px 8px 6px 11px; margin:0 0 8px; }
+.cop-active-x{ font-family:inherit; font-size:12px; font-weight:600; color:var(--primary-color);
+  background:transparent; border:none; border-radius:7px; padding:3px 7px; cursor:pointer; }
+.cop-active-x:hover{ background:var(--card-bg); }
+
+/* ── the facility list ─────────────────────────────────────────────────────────────────────── */
+.cop-facs{ display:flex; flex-direction:column; gap:6px; }
+.cop-fac{ display:flex; flex-direction:column; gap:2px; width:100%; box-sizing:border-box; text-align:left;
+  font-family:inherit; background:var(--input-bg); border:1px solid transparent; border-radius:12px;
+  padding:9px 11px; cursor:pointer; transition:0.18s; }
+.cop-fac:hover{ border-color:var(--primary-color); }
+/* a facility with no published coordinates is listed but cannot be flown to — no hover, no pointer */
+.cop-fac-off{ cursor:default; }
+.cop-fac-off:hover{ border-color:transparent; }
+.cop-fac-n{ font-size:12.5px; font-weight:600; color:var(--text-main); overflow-wrap:anywhere; }
+.cop-fac-s{ font-size:12px; color:var(--text-muted); overflow-wrap:anywhere; }
+.cop-fac-b{ display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+.cop-badge{ font-size:12px; font-weight:600; border-radius:999px; padding:2px 8px;
+  color:var(--text-main); background:rgba(128,128,128,0.16); }
+.cop-badge.dim{ color:var(--text-muted); }
+/* ⚠ the honest-uncertainty badge: `precision` that is not `exact`, and «no coordinates published».
+   docs/COMPANIES.md §5.2 — a city centroid presented as a factory is the invention this prevents. */
+.cop-badge.warn{ color:var(--info-choke); background:color-mix(in srgb, var(--info-choke) 15%, transparent); }
+
+/* ── countries the company is actually in ──────────────────────────────────────────────────── */
+.cop-ctry{ margin:0 0 10px; }
+.cop-ctry-sum{ display:flex; align-items:center; gap:8px; cursor:pointer; list-style:none;
+  font-size:12px; font-weight:600; color:var(--text-main); padding:7px 2px; }
+.cop-ctry-sum::-webkit-details-marker{ display:none; }
+.cop-ctry-sum b{ font-variant-numeric:tabular-nums; }
+.cop-ctry-sum::after{ content:''; width:6px; height:6px; margin-left:auto; flex:0 0 auto;
+  border-right:1.6px solid var(--text-muted); border-bottom:1.6px solid var(--text-muted);
+  transform:rotate(45deg) translate(-2px,-2px); transition:transform 0.2s; }
+.cop-ctry[open] .cop-ctry-sum::after{ transform:rotate(-135deg) translate(-2px,-2px); }
+.cop-ctry-list{ display:flex; flex-direction:column; gap:2px; max-height:190px; overflow-y:auto; padding:2px 0 4px; }
+.cop-ctry-b{ display:flex; align-items:baseline; gap:8px; width:100%; box-sizing:border-box; text-align:left;
+  font-family:inherit; font-size:12px; color:var(--text-main); background:transparent; border:none;
+  border-radius:8px; padding:5px 8px; cursor:pointer; }
+.cop-ctry-b:hover{ background:var(--input-bg); }
+.cop-ctry-b.on{ background:var(--primary-color); color:#fff; }
+.cop-ctry-b.on .cop-ctry-k, .cop-ctry-b.on .cop-ctry-c{ color:#fff; opacity:.82; }
+/* a country the facility list cannot reach is shown, but it is not a filter */
+.cop-ctry-off{ cursor:default; }
+.cop-ctry-off:hover{ background:transparent; }
+.cop-ctry-n{ flex:0 1 auto; min-width:0; overflow-wrap:anywhere; }
+.cop-ctry-k{ font-size:12px; color:var(--text-muted); flex:1 1 auto; min-width:0; }
+.cop-ctry-c{ font-size:12px; color:var(--text-muted); margin-left:auto; flex:0 0 auto; font-variant-numeric:tabular-nums; }
+
+/* ── states and sources ────────────────────────────────────────────────────────────────────── */
+.cop-empty, .cop-load{ font-size:12px; color:var(--text-muted); text-align:center; padding:26px 12px; line-height:1.6; }
+.cop-srch{ font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted);
+  margin:14px 0 4px; padding-top:8px; border-top:1px solid rgba(128,128,128,0.16); }
+.cop-srcs{ list-style:none; margin:0; padding:0; }
+.cop-srcs li{ font-size:12px; color:var(--text-muted); padding:2px 0; overflow-wrap:anywhere; }
+.cop-srcs .cop-stamp{ display:inline; margin-left:6px; }
+
+/* roomier tap targets where a finger has to hit a row rather than read it */
+@media(max-width:768px){
+  .cop-chip{ padding:8px 13px; font-size:12px; }
+  .cop-fac{ padding:11px 12px; }
+  .cop-ctry-b{ padding:9px 8px; }
+  .cop-ctry-list{ max-height:44dvh; }
+}
+/* the two states carried by hue alone need an edge when the OS owns the colours (§16/§18) */
+@media(forced-colors:active){
+  .cop-chip.on, .cop-ctry-b.on{ border:1px solid CanvasText !important; }
+  .cop-badge, .cop-tag{ border:1px solid CanvasText; }
+}
+/* (#R354) the retail-only tail of the country list — a company can sell somewhere it has no site,
+   and the two are different facts (docs/COMPANIES.md §5). */
+.cop-ctry-extra{margin-left:8px;font-size:12px;font-weight:600;color:var(--text-muted);white-space:nowrap;}
+
+/* (#R354) the door back to the market card in js/companies-ui.js — live market cap, share price and
+   the sparkline live there and are reached from the atlas header.
+   ⚠ It MUST paint its own background. Measured in dark theme with the rule missing: the browser's
+   default `buttonface` (rgb 240,240,240) under inherited white text — a button nobody could read. */
+.cop-mkt{display:inline-block;margin-top:7px;padding:4px 10px;border:1px solid rgba(128,128,128,.34);
+  border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:12px;font-weight:600;
+  line-height:1.5;cursor:pointer;-webkit-appearance:none;appearance:none;font-family:inherit;}
+.cop-mkt:hover{background:var(--card-bg);}
