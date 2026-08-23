@@ -500,6 +500,7 @@ window.IntMapPageI18N.define('zh-hans', {
     "Yahoo Finance": "底部跑马灯的股价指数报价，以及「企业」分页中用来计算实时市值的股价（美国挂牌公司）",
     "Clearbit Logo API / Google favicons": "「企业」分页中的公司标志——会送出公司网域名称以取得标志（失败时改用 Google favicon，再改用字母标记）",
     "Wikipedia (Wikimedia REST API)": "地点弹出窗口的条目检查，以及 Atlas 分析所用的背景摘要（CC BY-SA）",
+    "World railways — OpenStreetMap (railway=rail/narrow_gauge/light_rail/subway/tram/construction, Overpass API)": "全世界仍在营运的铁路路线，全部取自 OpenStreetMap 标在每一段轨道上的标签（ODbL 1.0）。轨距、电气化系统与电压、最高速度、轨道数、客货用途、营运者、启用年份与兴建状态都逐段读取——绝不从路线经过的国家推论。透过 Overpass API 全球扫描，以概化后的世界数据加上 5° 详细网格提供；OSM 未注明的数值一律显示为「未注明」，绝不自行补上",
     "Data centers — OpenStreetMap (telecom/man_made/building = data_center, Overpass API)": "所有在 OpenStreetMap 上标记的数据中心，依目前地图视野实时查询（ODbL）。每个点位皆带有该对象自身的标签（营运者、拥有者、电力、启用日期）并原样显示，不做任何推论",
     "Diplomatic missions — OpenStreetMap (amenity=embassy / office=diplomatic, Overpass API)": "OpenStreetMap 收录的大使馆、领事馆等外交公馆（ODbL）。全球 17,423 笔的快照随应用程序附带，因此任何缩放层级都会绘制；放大后会实时查询目前范围并取代之。不含推测",
     "Military sites — OpenStreetMap (military=*, Overpass API)": "依目前视野实时查询 OpenStreetMap 上标记为 `military` 的机场、海军基地、营区、靶场与危险区域（ODbL）。仅为公开纪录，未包含影像判读推估，也不替空字段填值",

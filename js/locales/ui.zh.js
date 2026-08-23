@@ -2867,7 +2867,6 @@ window.IntMapLang.define('zh', {
   "War": "戰爭",
   "Water vapor": "水氣",
   "wet": "濕潤",
-  "World railways (by gauge)": "世界鐵路（依軌距）",
   "All goods": "所有品項",
   "Animal products": "動物產品",
   "Arms": "武器",
@@ -3019,7 +3018,6 @@ window.IntMapLang.define('zh', {
   "Military spending ($B)": "國防支出（十億美元）",
   "Military spending (%GDP)": "國防支出（占 GDP %）",
   "Historical borders": "歷史國界",
-  "Railways (by gauge)": "鐵路（依軌距）",
   "Data centers / cloud": "資料中心／雲端",
   "Pharma & health": "製藥與醫療",
   "Sat": "衛星",
@@ -3076,7 +3074,6 @@ window.IntMapLang.define('zh', {
   "Could not load railway data": "無法載入鐵路資料",
   "AI superclusters": "AI 超級叢集",
   "Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.": "主要製藥企業總部與製造聚落（代表地點）。可與平均壽命圖層搭配。",
-  "Classified by each country’s predominant gauge (Natural Earth 10m)": "依各國主要軌距分類（Natural Earth 10m）",
   "World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.": "世界銀行 WGI「貪腐控制」分數（0–100，愈高愈清廉）——相當於 TI 貪腐印象指數的開放 API 指標。",
   "Life expectancy at birth (World Bank, 2022).": "出生時平均餘命（世界銀行，2022）。",
   "Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).": "失業率（占勞動力 %；ILO 推估／世界銀行，最新年度）。",
@@ -4119,12 +4116,8 @@ window.IntMapLang.define('zh', {
   "Moss and lichen": "苔蘚與地衣",
   "Standard 1435 mm": "標準軌 1435 mm",
   "Russian 1520/1524 mm": "俄羅斯軌距 1520/1524 mm",
-  "Broad 1676 mm (India, Argentina)": "寬軌 1676 mm（印度、阿根廷）",
   "Iberian 1668 mm": "伊比利軌距 1668 mm",
   "Irish 1600 mm": "愛爾蘭軌距 1600 mm",
-  "Cape 1067 mm (Japan etc.)": "窄軌 1067 mm（日本等）",
-  "Meter 1000 mm": "米軌 1000 mm",
-  "Unknown / other": "不明／其他",
   "Religion distribution": "宗教分布",
   "Language distribution": "語言分布",
   "2011 Tōhoku (Great East Japan)": "2011 東北（東日本大地震）",
@@ -5756,5 +5749,95 @@ window.IntMapLang.define('zh', {
   "Wind power": "風力",
   "Q{q} {y}": "{y}年第{q}季",
   "Routes are approximate: a few stretches are published survey positions, most are reconstructed from sea-floor terrain. A line is not the exact position of the cable. Click one for the accuracy of that stretch.": "路線為近似值：僅少數區間是公開的實測位置，多數是依海底地形重建而成。線條並非纜線的確切位置。點選可查看該區間的精確度。",
+
+  /* ══ (#R388) WORLD RAILWAYS — OpenStreetMap’s own tag on each track ════════════════════════════════
+     js/railways.js · js/layer-packs.js · js/compare.js · js/atlas-console.js. The seven rows the
+     Natural-Earth layer needed («World railways (by gauge)», «Broad 1676 mm (India, Argentina)»,
+     «Cape 1067 mm (Japan etc.)», «Meter 1000 mm», «Unknown / other», «Railways (by gauge)» and its
+     «predominant gauge» note) are DELETED above: those English source strings no longer exist, and
+     a row nothing can key into is a row nobody re-reads.
+     ⚠ Grey is «OSM does not state it», never «unknown» and never «other» — the whole layer turns on
+     that distinction, so every language spells the absence out rather than rounding it off. */
+  /* the layer row, the compare-map row and the Atlas refusal */
+  "World railways": "世界鐵路",
+  "no such railway view": "沒有這種鐵路著色方式",
+  /* the seven colour axes (js/railways.js AXIS_LABEL) */
+  "Gauge": "軌距",
+  "Electrification": "電氣化",
+  "Line speed": "最高速度",
+  "Tracks": "軌道數",
+  "Traffic": "客貨運",
+  "Line type": "鐵路類型",
+  "Not stated in OSM": "OSM 未註明",
+  /* gauge buckets */
+  "Indian 1676 mm": "印度軌距 1676 mm",
+  "Other broad gauge": "其他寬軌",
+  "Cape 1067 mm": "開普軌距 1067 mm",
+  "Metre 1000 mm": "米軌 1000 mm",
+  "750–999 mm": "750～999 mm",
+  "600–749 mm": "600～749 mm",
+  "Under 600 mm": "低於 600 mm",
+  "dual gauge": "雙軌距",
+  /* electrification buckets */
+  "25 kV AC": "交流 25 kV",
+  "15 kV AC": "交流 15 kV",
+  "Other AC": "其他交流",
+  "3 kV DC": "直流 3 kV",
+  "1.5 kV DC": "直流 1.5 kV",
+  "Other DC": "其他直流",
+  "Electrified, system not stated": "已電氣化（系統未註明）",
+  "Not electrified": "未電氣化",
+  /* line-speed buckets */
+  "300 km/h and above": "300 km/h 以上",
+  "250–299 km/h": "250～299 km/h",
+  "200–249 km/h": "200～249 km/h",
+  "160–199 km/h": "160～199 km/h",
+  "120–159 km/h": "120～159 km/h",
+  "80–119 km/h": "80～119 km/h",
+  "40–79 km/h": "40～79 km/h",
+  "Under 40 km/h": "低於 40 km/h",
+  /* track-count and traffic buckets */
+  "Single track": "單線",
+  "Double track": "雙線",
+  "Triple track": "三線",
+  "Four or more tracks": "四線以上",
+  "Passenger only": "僅客運",
+  "Freight only": "僅貨運",
+  "Passenger and freight": "客貨兼營",
+  /* line-type buckets (railway=*) and the usage words under the card title */
+  "Heavy rail": "一般鐵路",
+  "Narrow gauge": "窄軌鐵路",
+  "Light rail": "輕軌",
+  "Metro / subway": "地鐵",
+  "Main line": "幹線",
+  "Branch line": "支線",
+  "Industrial line": "專用線",
+  "Heritage / tourist line": "觀光鐵路",
+  "Military line": "軍用線",
+  "Test track": "試驗線",
+  /* the detail card and the station card */
+  "High-speed line": "高速鐵路",
+  "Line number": "路線編號",
+  "OSM way": "OSM 路徑",
+  "Halt": "招呼站",
+  "Modes": "交通方式",
+  "Network": "路網",
+  "Station code": "車站代碼",
+  "UIC reference": "UIC 代碼",
+  "Train": "火車",
+  /* the two provenance notes — the whole point of the layer */
+  "Every field above is a tag on this track in OpenStreetMap. A field OSM does not carry is left out rather than guessed — the layer never fills a gauge in from the country the line happens to run through.": "以上每個欄位都是 OpenStreetMap 標在這段軌道上的標籤。OSM 沒有的欄位一律省略，不做推測——本圖層不會用路線經過的國家去補軌距。",
+  "Every value is the tag OpenStreetMap carries on that track. Grey means OSM does not state it — nothing is filled in from the country the line runs through. Zoom past z6.5 for full detail, z8 for stations.": "每個數值都是 OpenStreetMap 標在該段軌道上的標籤。灰色代表 OSM 未註明——不會依照路線經過的國家補上。放大到 z6.5 以上顯示完整細節，z8 以上顯示車站。",
+
+  /* the two switches under the axis buttons (js/layer-packs.js railLegend) */
+  "Urban rail (metro, tram, light rail)": "城市軌道（地鐵、路面電車、輕軌）",
+  "Stations and halts (from z8)": "車站與招呼站（z8 以上）",
+
+  /* ⚠ (#R370) SPLIT OFF BY THE KEY-COLLISION GATE, so each must differ from its old neighbour:
+     «In operation» stays js/company-data.js (a plant that is running) and «Opened» stays
+     js/company-facilities.js (a site opening). A line that runs and a factory that runs are
+     one English word and two Japanese ones, which is what the gate measures. */
+  "Line in operation": "已通車",
+  "Year opened": "啟用年份",
   }
 });

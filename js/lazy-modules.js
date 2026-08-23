@@ -96,7 +96,7 @@ export function makeLazyModules(HOST) {
          The ten above are reached from a menu item. These six are the rest of what the entry pulled in
          that registers NOTHING at boot — no layer row, no DOM, no IntMapOS command, no listener — so
          there is a "before it is reached" to defer to, and every door awaits. */
-      dataCenters: 'IntMapDataCenters', aircraftDetail: 'IntMapAircraftPanel', volume3d: 'IntMapVolume3D', statsCompare: 'IntMapStatsCompare',
+      dataCenters: 'IntMapDataCenters', railways: 'IntMapRailways', aircraftDetail: 'IntMapAircraftPanel', volume3d: 'IntMapVolume3D', statsCompare: 'IntMapStatsCompare',
       /* (#R341) the live-aircraft platform: the controller, the GPU primitive it imports, and
          (through src/aviation-worker-client.js) the worker that owns the fleet. Nothing of it is
          downloaded until the aircraft layer, aircraft search, or an Atlas aviation command asks. */
@@ -152,7 +152,7 @@ export function makeLazyModules(HOST) {
         case 'nightSky': return import('./night-sky.js');
         case 'atlasConsole': return import('./atlas-console.js');
         case 'routeUi': return import('./routing-ui.js');
-        case 'dataCenters': return import('./datacenters.js');
+        case 'dataCenters': return import('./datacenters.js');   case 'railways': return import('./railways.js');
         case 'aircraftDetail': return import('./aircraft-detail.js');
         case 'volume3d': return import('./volume3d.js');
         case 'statsCompare': return import('./stats-compare.js');
@@ -188,7 +188,7 @@ export function makeLazyModules(HOST) {
         case 'streetView': window.IntMapStreetView=window.IntMapModules.streetView(IM_HOST); return true;
         case 'atlasConsole': window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST); return true;
         case 'routeUi': window.IntMapRouteUI=window.IntMapModules.routeUi(IM_HOST); return true;
-        case 'dataCenters': window.IntMapModules.dataCenters(IM_HOST); return true;
+        case 'dataCenters': window.IntMapModules.dataCenters(IM_HOST); return true;   case 'railways': window.IntMapModules.railways(IM_HOST); return true;
         case 'aircraftDetail': window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST); return true;
         case 'volume3d': window.IntMapVolume3D=window.IntMapModules.volume3d(IM_HOST); return true;
         case 'statsCompare': window.IntMapStatsCompare=window.IntMapModules.statsCompare(IM_HOST); return true;

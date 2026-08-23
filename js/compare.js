@@ -428,12 +428,15 @@ window.IntMapModules.compare=function(HOST){
           done&&done(); }catch(_){} };
         if(cur&&cur.fc){ use(cur.fc); return; }
         fetch('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+((cur&&cur.year)||1914)+'.geojson').then(r=>r.json()).then(use).catch(()=>{}); }},
-      {k:'rail', n:()=>window.IntMapLang.t(HOST.lang,"Railways (by gauge)","世界の鉄道（軌間別）","Eisenbahnen (nach Spurweite)","Железные дороги (по колее)","Ferrocarriles (por ancho de vía)"), ids:['cmp-rail'], add(done){
+      {k:'rail', n:()=>window.IntMapLang.t(HOST.lang,"World railways","世界の鉄道","Eisenbahnen","Железные дороги","Ferrocarriles"), ids:['cmp-rail'], add(done){
         if(cmap.layers.hasSource('cmp-rail')){ done&&done(); return; }
         if(!window.IntMapBeta2) return;
         window.IntMapBeta2.load('rail',fc=>{ try{ if(cmap.layers.hasSource('cmp-rail')) { done&&done(); return; }
           cmap.layers.addSource('cmp-rail',{type:'geojson',data:fc});
-          cmap.layers.add({id:'cmp-rail',type:'line',source:'cmp-rail',layout:{visibility:'none'},paint:{'line-color':['coalesce',['get','col'],'#888'],'line-width':1.3,'line-opacity':0.85}});
+          /* (#R388) the colour comes from the railway module, which owns the gauge buckets and their
+             colours — this file used to read a `col` property that the Natural Earth build stamped on
+             every feature, and the new data has no such property because the bucket is derived. */
+          cmap.layers.add({id:'cmp-rail',type:'line',source:'cmp-rail',layout:{visibility:'none'},paint:{'line-color':(window.IntMapRailways&&window.IntMapRailways.colour?window.IntMapRailways.colour():'#888'),'line-width':1.3,'line-opacity':0.85}});
           done&&done(); }catch(_){} }); }},
       {k:'dc', n:()=>window.IntMapLang.t(HOST.lang,"Data centers / cloud","データセンター","Rechenzentren / Cloud","Дата-центры / облако","Centros de datos / nube"), ids:['cmp-dc'], add(done){
         if(cmap.layers.hasSource('cmp-dc')){ done&&done(); return; }

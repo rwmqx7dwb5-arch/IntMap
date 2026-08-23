@@ -2776,7 +2776,6 @@ window.IntMapLang.define('fr', { ui: {
   "War": "Guerre",
   "Water vapor": "Vapeur d’eau",
   "wet": "mouillé",
-  "World railways (by gauge)": "Chemins de fer du monde (par écartement)",
   "All goods": "Tous les biens",
   "Animal products": "Produits animaux",
   "Arms": "Armes",
@@ -2928,7 +2927,6 @@ window.IntMapLang.define('fr', { ui: {
   "Military spending ($B)": "Dépenses militaires (Md $)",
   "Military spending (%GDP)": "Dépenses militaires (% du PIB)",
   "Historical borders": "Frontières historiques",
-  "Railways (by gauge)": "Chemins de fer (par écartement)",
   "Data centers / cloud": "Centres de données / cloud",
   "Pharma & health": "Pharmacie et santé",
   "Sat": "Sat",
@@ -2985,7 +2983,6 @@ window.IntMapLang.define('fr', { ui: {
   "Could not load railway data": "Impossible de charger les données ferroviaires",
   "AI superclusters": "Superclusters d’IA",
   "Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.": "Sièges et pôles de production des grands laboratoires pharmaceutiques (sites représentatifs). À combiner avec la couche Espérance de vie.",
-  "Classified by each country’s predominant gauge (Natural Earth 10m)": "Classé selon l’écartement dominant de chaque pays (Natural Earth 10m)",
   "World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.": "Indicateur WGI de la Banque mondiale « Contrôle de la corruption » (0–100, plus haut = plus intègre) — l’équivalent en API ouverte de l’IPC de TI.",
   "Life expectancy at birth (World Bank, 2022).": "Espérance de vie à la naissance (Banque mondiale, 2022).",
   "Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).": "Chômage total (% de la population active ; estimation modélisée OIT / Banque mondiale, dernière année).",
@@ -4028,12 +4025,8 @@ window.IntMapLang.define('fr', { ui: {
   "Moss and lichen": "Mousses et lichens",
   "Standard 1435 mm": "Écartement standard 1435 mm",
   "Russian 1520/1524 mm": "Écartement russe 1520/1524 mm",
-  "Broad 1676 mm (India, Argentina)": "Écartement large 1676 mm (Inde, Argentine)",
   "Iberian 1668 mm": "Écartement ibérique 1668 mm",
   "Irish 1600 mm": "Écartement irlandais 1600 mm",
-  "Cape 1067 mm (Japan etc.)": "Écartement du Cap 1067 mm (Japon, etc.)",
-  "Meter 1000 mm": "Voie métrique 1000 mm",
-  "Unknown / other": "Inconnu / autre",
   "Religion distribution": "Répartition des religions",
   "Language distribution": "Répartition des langues",
   "2011 Tōhoku (Great East Japan)": "Tōhoku 2011 (grand séisme de l’est du Japon)",
@@ -5665,4 +5658,94 @@ window.IntMapLang.define('fr', { ui: {
   "Wind power": "Éolien",
   "Q{q} {y}": "T{q} {y}",
   "Routes are approximate: a few stretches are published survey positions, most are reconstructed from sea-floor terrain. A line is not the exact position of the cable. Click one for the accuracy of that stretch.": "Les tracés sont approximatifs : quelques tronçons sont des positions relevées et publiées, la plupart sont reconstitués à partir du relief des fonds marins. Une ligne n’est pas la position exacte du câble. Cliquez dessus pour connaître la précision du tronçon.",
+
+  /* ══ (#R388) WORLD RAILWAYS — OpenStreetMap’s own tag on each track ════════════════════════════════
+     js/railways.js · js/layer-packs.js · js/compare.js · js/atlas-console.js. The seven rows the
+     Natural-Earth layer needed («World railways (by gauge)», «Broad 1676 mm (India, Argentina)»,
+     «Cape 1067 mm (Japan etc.)», «Meter 1000 mm», «Unknown / other», «Railways (by gauge)» and its
+     «predominant gauge» note) are DELETED above: those English source strings no longer exist, and
+     a row nothing can key into is a row nobody re-reads.
+     ⚠ Grey is «OSM does not state it», never «unknown» and never «other» — the whole layer turns on
+     that distinction, so every language spells the absence out rather than rounding it off. */
+  /* the layer row, the compare-map row and the Atlas refusal */
+  "World railways": "Chemins de fer du monde",
+  "no such railway view": "aucune vue ferroviaire de ce nom",
+  /* the seven colour axes (js/railways.js AXIS_LABEL) */
+  "Gauge": "Écartement",
+  "Electrification": "Électrification",
+  "Line speed": "Vitesse de la ligne",
+  "Tracks": "Voies",
+  "Traffic": "Trafic",
+  "Line type": "Type de ligne",
+  "Not stated in OSM": "Non indiqué dans OSM",
+  /* gauge buckets */
+  "Indian 1676 mm": "Écartement indien 1676 mm",
+  "Other broad gauge": "Autre écartement large",
+  "Cape 1067 mm": "Écartement du Cap 1067 mm",
+  "Metre 1000 mm": "Voie métrique 1000 mm",
+  "750–999 mm": "750–999 mm",
+  "600–749 mm": "600–749 mm",
+  "Under 600 mm": "Moins de 600 mm",
+  "dual gauge": "écartement mixte",
+  /* electrification buckets */
+  "25 kV AC": "25 kV CA",
+  "15 kV AC": "15 kV CA",
+  "Other AC": "Autre courant alternatif",
+  "3 kV DC": "3 kV CC",
+  "1.5 kV DC": "1,5 kV CC",
+  "Other DC": "Autre courant continu",
+  "Electrified, system not stated": "Électrifiée, système non indiqué",
+  "Not electrified": "Non électrifiée",
+  /* line-speed buckets */
+  "300 km/h and above": "300 km/h et plus",
+  "250–299 km/h": "250–299 km/h",
+  "200–249 km/h": "200–249 km/h",
+  "160–199 km/h": "160–199 km/h",
+  "120–159 km/h": "120–159 km/h",
+  "80–119 km/h": "80–119 km/h",
+  "40–79 km/h": "40–79 km/h",
+  "Under 40 km/h": "Moins de 40 km/h",
+  /* track-count and traffic buckets */
+  "Single track": "Voie unique",
+  "Double track": "Double voie",
+  "Triple track": "Triple voie",
+  "Four or more tracks": "Quatre voies ou plus",
+  "Passenger only": "Voyageurs uniquement",
+  "Freight only": "Fret uniquement",
+  "Passenger and freight": "Voyageurs et fret",
+  /* line-type buckets (railway=*) and the usage words under the card title */
+  "Heavy rail": "Chemin de fer",
+  "Narrow gauge": "Voie étroite",
+  "Light rail": "Métro léger",
+  "Metro / subway": "Métro",
+  "Main line": "Ligne principale",
+  "Branch line": "Ligne secondaire",
+  "Industrial line": "Ligne industrielle",
+  "Heritage / tourist line": "Ligne touristique / patrimoniale",
+  "Military line": "Ligne militaire",
+  "Test track": "Voie d’essai",
+  /* the detail card and the station card */
+  "High-speed line": "Ligne à grande vitesse",
+  "Line number": "Numéro de ligne",
+  "OSM way": "Chemin OSM",
+  "Halt": "Halte",
+  "Modes": "Modes de transport",
+  "Network": "Réseau",
+  "Station code": "Code de gare",
+  "UIC reference": "Référence UIC",
+  "Train": "Train",
+  /* the two provenance notes — the whole point of the layer */
+  "Every field above is a tag on this track in OpenStreetMap. A field OSM does not carry is left out rather than guessed — the layer never fills a gauge in from the country the line happens to run through.": "Chaque champ ci-dessus est une étiquette portée par cette voie dans OpenStreetMap. Un champ absent d’OSM est omis plutôt que deviné — la couche ne complète jamais un écartement à partir du pays que la ligne traverse.",
+  "Every value is the tag OpenStreetMap carries on that track. Grey means OSM does not state it — nothing is filled in from the country the line runs through. Zoom past z6.5 for full detail, z8 for stations.": "Chaque valeur est l’étiquette qu’OpenStreetMap porte sur cette voie. Le gris signifie qu’OSM ne l’indique pas — rien n’est complété à partir du pays que la ligne traverse. Zoomez au-delà de z6.5 pour le détail complet, z8 pour les gares.",
+
+  /* the two switches under the axis buttons (js/layer-packs.js railLegend) */
+  "Urban rail (metro, tram, light rail)": "Rail urbain (métro, tramway, métro léger)",
+  "Stations and halts (from z8)": "Gares et haltes (à partir de z8)",
+
+  /* ⚠ (#R370) SPLIT OFF BY THE KEY-COLLISION GATE, so each must differ from its old neighbour:
+     «In operation» stays js/company-data.js (a plant that is running) and «Opened» stays
+     js/company-facilities.js (a site opening). A line that runs and a factory that runs are
+     one English word and two Japanese ones, which is what the gate measures. */
+  "Line in operation": "Ligne en exploitation",
+  "Year opened": "Année d’ouverture",
 } });
