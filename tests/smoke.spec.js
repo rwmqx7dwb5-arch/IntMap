@@ -101,6 +101,67 @@ test('critical window.IntMap* modules are defined', async () => {
   expect(present, 'all critical globals present').toEqual(CRITICAL_GLOBALS);
 });
 
+/* ══ (#R356) THE FORECAST-MODEL PLATFORM, IN A REAL BROWSER ═══════════════════════════════════
+   Every other check on this round reads SOURCE. #R318 measured what that misses: a cross-chunk TDZ
+   passed `node --check`, 1,900 node checks and a 20-item audit while Atlas had never once mounted
+   in a production build, and one real-browser spec was what found it. So the claims asserted here
+   are the ones that stop being true if the module simply does not run: that the registry publishes,
+   that `window.IntMapECMWF` IS the default instance rather than a copy of it, and that a second
+   model is a second instance pointing at its own files.
+   ⚠ It rides the existing shared boot — no new spec file. tests/test-budget.mjs is at 80.1 of 80.1
+   minutes, so a new .spec.js would fail the budget gate rather than measure anything. */
+test('R356 the model registry published, and IntMapECMWF IS the default instance', async () => {
+  const r = await page.evaluate(() => {
+    const M = window.IntMapWxModels, E = window.IntMapWxEngine, D = window.IntMapECMWF;
+    if (!M || !E || !D) return { M: !!M, E: !!E, D: !!D };
+    const other = M.ids().find((i) => i !== M.defaultId());
+    const inst = E.model(other);
+    return {
+      M: true, E: true, D: true,
+      ids: M.ids(),
+      defaultIsSameObject: E.model(M.defaultId()) === D,   /* not a facade over a copy */
+      defaultDomain: D.DOMAIN,
+      defaultName: D.MODEL,
+      otherId: other,
+      otherIsDistinct: !!inst && inst !== D,
+      otherDomain: inst && inst.DOMAIN,
+      otherBaseIsItsOwn: !!(inst && inst.BASE !== D.BASE && inst.BASE.endsWith('/' + other)),
+      rampsShared: !!(inst && inst.WINDY_WIND === D.WINDY_WIND),
+      open: E.open().sort(),
+      unknownIsNull: E.model('no_such_model_at_all') === null,
+    };
+  });
+  expect(r.M, 'window.IntMapWxModels is published').toBe(true);
+  expect(r.E, 'window.IntMapWxEngine is published').toBe(true);
+  expect(r.D, 'window.IntMapECMWF is published').toBe(true);
+  expect(r.ids.length, 'more than one model is offered').toBeGreaterThan(1);
+  expect(r.defaultIsSameObject, 'IntMapECMWF is the default instance itself').toBe(true);
+  expect(r.defaultDomain, 'the default is still the 9 km ECMWF field').toBe('ecmwf_ifs');
+  expect(r.defaultName, 'and it names itself from its own row').toBe('ECMWF IFS HRES');
+  expect(r.otherIsDistinct, 'a second model is a second instance').toBe(true);
+  expect(r.otherDomain, 'with its own domain').toBe(r.otherId);
+  expect(r.otherBaseIsItsOwn, 'and its own directory on the host').toBe(true);
+  expect(r.rampsShared, 'while the colour ramps are built once for the page').toBe(true);
+  expect(r.unknownIsNull, 'an unknown id is null, not a broken instance').toBe(true);
+});
+
+test('R356 no weather layer is labelled with a model it may not be reading', async () => {
+  const labels = await page.evaluate(() => {
+    const W = window.IntMapWeatherEC;
+    if (!W || !W._layers) return null;
+    const L = window.IntMapLang && window.IntMapLang.pickArgs ? window.IntMapLang.pickArgs() : null;
+    return W._layers.map((l) => {
+      const row = document.querySelector('#lyrrow-' + l.id + ' .ec-lbl');
+      return row ? row.textContent : String(l.label);
+    });
+  });
+  expect(labels, 'the weather layer table is reachable').toBeTruthy();
+  expect(labels.length, 'the rows are built').toBeGreaterThan(4);
+  /* the model is stated in the legend, which is rebuilt when the model changes — never in the
+     layer's NAME, which is not */
+  for (const t of labels) expect(t, 'label does not name a model: ' + t).not.toMatch(/ECMWF|GFS|ICON/);
+});
+
 test('the map container is mounted and visible', async () => {
   const mapEl = page.locator('#map');
   await expect(mapEl).toBeVisible();

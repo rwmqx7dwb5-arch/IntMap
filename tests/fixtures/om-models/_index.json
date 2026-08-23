@@ -1,0 +1,101 @@
+{
+ "capturedAt": "2026-08-23T04:02:49.572Z",
+ "host": "https://map-tiles.open-meteo.com/data_spatial/",
+ "models": {
+  "ecmwf_ifs": {
+   "variables": 35,
+   "valid_times": 109,
+   "reference_time": "2026-08-22T18:00:00Z"
+  },
+  "ecmwf_ifs025": {
+   "variables": 119,
+   "valid_times": 49,
+   "reference_time": "2026-08-22T18:00:00Z"
+  },
+  "ncep_gfs013": {
+   "variables": 29,
+   "valid_times": 209,
+   "reference_time": "2026-08-22T18:00:00Z"
+  },
+  "ncep_gfs025": {
+   "variables": 316,
+   "valid_times": 209,
+   "reference_time": "2026-08-22T18:00:00Z"
+  },
+  "dwd_icon": {
+   "variables": 123,
+   "valid_times": 113,
+   "reference_time": "2026-08-23T00:00:00Z"
+  },
+  "dwd_icon_eu": {
+   "variables": 121,
+   "valid_times": 93,
+   "reference_time": "2026-08-23T00:00:00Z"
+  },
+  "dwd_icon_d2": {
+   "variables": 93,
+   "valid_times": 49,
+   "reference_time": "2026-08-23T00:00:00Z"
+  },
+  "jma_gsm": {
+   "variables": 78,
+   "valid_times": 23,
+   "reference_time": "2026-08-22T18:00:00Z"
+  },
+  "jma_msm": {
+   "variables": 11,
+   "valid_times": 40,
+   "reference_time": "2026-08-22T21:00:00Z"
+  },
+  "jma_msm_upper_level": {
+   "variables": 92,
+   "valid_times": 14,
+   "reference_time": "2026-08-22T21:00:00Z"
+  },
+  "ncep_hrrr_conus": {
+   "variables": 263,
+   "valid_times": 19,
+   "reference_time": "2026-08-23T02:00:00Z"
+  },
+  "meteofrance_arome_france0025": {
+   "variables": 149,
+   "valid_times": 52,
+   "reference_time": "2026-08-23T00:00:00Z"
+  },
+  "meteofrance_arpege_world025": {
+   "variables": 174,
+   "valid_times": 67,
+   "reference_time": "2026-08-23T00:00:00Z"
+  },
+  "knmi_harmonie_arome_europe": {
+   "variables": 54,
+   "valid_times": 61,
+   "reference_time": "2026-08-23T01:00:00Z"
+  },
+  "ecmwf_wam": {
+   "variables": 4,
+   "valid_times": 109,
+   "reference_time": "2026-08-22T18:00:00Z"
+  },
+  "ncep_gfswave025": {
+   "variables": 15,
+   "valid_times": 209,
+   "reference_time": "2026-08-22T18:00:00Z"
+  },
+  "meteofrance_currents": {
+   "variables": 4,
+   "valid_times": 264,
+   "reference_time": "2026-08-22T00:00:00Z"
+  },
+  "meteofrance_sea_surface_temperature": {
+   "variables": 1,
+   "valid_times": 44,
+   "reference_time": "2026-08-22T00:00:00Z"
+  },
+  "cams_global": {
+   "variables": 15,
+   "valid_times": 121,
+   "reference_time": "2026-08-22T12:00:00Z"
+  }
+ }
+}

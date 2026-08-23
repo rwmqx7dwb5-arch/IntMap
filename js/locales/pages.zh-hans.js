@@ -475,7 +475,7 @@ window.IntMapPageI18N.define('zh-hans', {
     "REST Countries": "信息页使用的国家基本数据（首都、货币、语言、接壤国）",
     "NASA FIRMS": "活跃火点与热异常",
     "RainViewer": "实时降水雷达——最近两小时，每 10 分钟一张，可播放动画",
-    "Open-Meteo": "海拔高度（含 Atlas 标示海平面上下范围所用的 Copernicus-DEM 网格）、风场、右键实时天气弹出窗口（当前实况＋5 日预报），以及小工具与 Atlas 整合分析所用的实时天气／空气质量／海温／高度数值；还有驱动 Atlas 辐射扩散模拟的时空风场、气温与降水场。动画风场与 ECMWF 气象图层改读 Open-Meteo 的 ECMWF IFS HRES 瓦片（约 9 公里）——色面、粒子与地点值全部来自同一次模式初始时刻与同一有效时刻",
+    "Open-Meteo": "海拔高度（含 Atlas 标示海平面上下范围所用的 Copernicus-DEM 网格）、风场、右键实时天气弹出窗口（当前实况＋5 日预报），以及小工具与 Atlas 整合分析所用的实时天气／空气质量／海温／高度数值；还有驱动 Atlas 辐射扩散模拟的时空风场、气温与降水场。动画风场与预报气象图层改读 Open-Meteo 的空间模式文件，而且每个图层各自选择要读哪一个模式——ECMWF IFS HRES（约 9 公里、6 天）、NOAA GFS（约 13 公里、16 天）或 DWD ICON（约 13 公里、5 天）；色面、粒子与地点值全部来自同一个模式的同一次初始时刻与同一有效时刻，而该模式未发布的变量会附上理由拒绝，不会画出空白的地图",
     "Open-Meteo Marine": "潮汐图层所用、相对平均海平面的逐时海面高度；以及 洋流图层绘制箭头与判定暖流／寒流所依据的洋流流速、流向与海表温度（温度会与同一模式在沿流上游约 110 公里处的值比较）",
     "MET Norway (Locationforecast)": "当 Open-Meteo 无法使用时，定点天气窗口自动改用的备援来源（NLOD/CC-BY 4.0）",
     "OSRM (Open Source Routing Machine)": "Atlas 的道路路线规划——在 OpenStreetMap 道路数据上计算开车／步行／单车的逐步导航路线（公开示范服务器 router.project-osrm.org 与 routing.openstreetmap.de；ODbL）",

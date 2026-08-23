@@ -41,12 +41,203 @@
  *  Source & terms: Open-Meteo map tiles (ECMWF IFS HRES 0.08°/≈9 km, CC-BY 4.0, keyless) — declared
  *  in js/reference-data.js, sources.html and js/legal.js.
  * ==========================================================================*/
+/* (#R356) the registry of WHICH models exist. Imported HERE rather than ordered in
+   src/main.js: this file cannot build an instance without it, so the dependency belongs to the
+   engine rather than to the entry file’s reading order. */
+import './wx-models.js';
+
 (function () {
   'use strict';
 
-  var BASE = 'https://map-tiles.open-meteo.com/data_spatial/ecmwf_ifs';
-  var META_URL = BASE + '/latest.json';
-  var DOMAIN = 'ecmwf_ifs';
+  /* ══ (#R356) WHAT EVERY MODEL SHARES, AND WHAT IT DOES NOT ══════════════════════════
+     This file used to BE the ECMWF model: one host, one domain, one forecast axis, one set of
+     frames, all of it in module scope. 「複数予報モデルの切替・比較」 needs more than one at a time, and
+     the rule is that the state must still exist exactly ONCE — so the model-shaped half became
+     `createModel(cfg)` below and is instantiated per model, while the things that belong to THE
+     PAGE stay here and are declared once:
+
+         sdk / sdkP / protoReg   the 340 kB bundle is fetched once and the om scheme registered
+                                 once. ⚠ `addProtocol` is global to the renderer; registering it
+                                 twice is a second handler for one scheme, not a second model.
+         readers                 the open-file pool is keyed by FILE URL, and two models are two
+                                 sets of URLs — so READER_MAX is the page's budget, not each
+                                 model's. Four open .om files in total, whoever asked for them.
+         settings                holds the ONE 32 MB block cache (#R307) and the SDK's protocol
+                                 instance, which throws if two callers disagree about `useSAB`.
+         the colour ramps        WINDY_WIND is 1,041 stops and WINDY_TEMP is 2,341. They describe
+                                 a VARIABLE, not a model; rebuilding them per model would be some
+                                 400 kB of identical objects bought for nothing (#R311).
+         _lys / _ids             the style-layer cache describes the map. A second copy would hook
+                                 `styledata` twice and answer `before()` from a stale list.
+         _dtf                    the Intl formatter memo.
+
+     ⚠ THE BODY BELOW IS NOT RE-INDENTED. Wrapping ~1,300 lines in a function and shifting every
+     one of them two spaces would be a whitespace diff nobody can review, over code whose comments
+     are load-bearing and whose measurements seventeen test files cite by substring. The nesting is
+     real; the indentation is the one this file has always had. */
+  var sdk = null, sdkP = null, protoReg = false;
+  var readers = [];              /* most-recent-first: [{url, rd}] — one open .om file each */
+  var settings = null;
+  var _lys = null, _ids = null, _idsHooked = false;
+  var _dtf = Object.create(null);
+  /* the registry that says which models exist and where their files are (js/wx-models.js). Reached
+     through a function so this file never holds a second copy of that answer. */
+  function WXM() { return window.IntMapWxModels; }
+
+  /* ── the wind palette ─────────────────────────────────────────────────────────────────────────
+     「Wind(animated)はこんな感じで。色味も同一に合わせて。」 — the reader sent a Windy screenshot.
+
+     The SDK's own `wind` scale is not that picture and cannot be made into it by a slider, because the
+     difference is not brightness: its alpha runs 0 → 1 across the first 7 m/s, so calm air is a hole
+     through which the basemap shows, and its colours start at steel blue rather than at Windy's
+     violet. MEASURED from the shipped table:
+         [70,130,180,α0] [64,137,179,α0.1] … [0,128,0,α0.73] … [240,0,28,α1] [116,5,5,α1]
+     Against the reference: violet where the air is still, blue → teal → green through the trades,
+     yellow → orange in a gale and magenta → white in a typhoon core, all of it OPAQUE.
+
+     So the protocol is registered with our own colour table for the wind family. It is a table, not a
+     post-hoc tint: the tiles are rendered from it in the SDK's worker, and `legend()` reads the SAME
+     object, so the ramp under the map and the ramp in the legend are one declaration. `wind_gusts_10m`
+     resolves to the same family, which is right — it is the same quantity in the same unit. */
+  /* ══ ⚠⚠⚠ (#R293) 「Windyと完全に同じ風速と色の対応にしてください。RGB単位で、Windyの実物もとに
+     比較し修正して。高風速帯でも同じになるように。」 — AND IT WAS NEVER WINDY'S TABLE ════════
+
+     The seventeen anchors this replaces were written from a screenshot: they borrowed Windy's
+     BREAKPOINT POSITIONS (0,1,3,5,7,9,11,13,15,17…) and invented the colours, so the two pictures
+     agreed at 0 m/s and diverged from about 2 m/s on. MEASURED against windy.com's own paint
+     function, worst channel difference:
+
+         v (m/s)    IntMap (before)   Windy (real)     Δmax
+            5        36,160,168        77,141,123        45
+           15       214,202, 60       161,108, 92        94
+           25       228, 68, 57        95,100,156       133
+           60       240,220,245       214,209,127       118
+
+     i.e. at 25 m/s this map painted RED where Windy paints slate blue, and above 45 m/s it
+     saturated to near-white while Windy goes khaki then grey. 「高風速帯でも同じに」 is the half
+     that was furthest off.
+
+     ⚠ THE GROUND TRUTH IS THE FUNCTION THE MAP IS PAINTED THROUGH, NOT THE DECLARED TABLE — the
+     same finding #R288 made for temperature, and it repeats exactly: `W.colors.wind
+     .defaultColorGradient` is twenty stops, but `RGBA(v)` (a 2048-step precomputed table over
+     0–104 m/s) does NOT equal their linear interpolation — measured, 20/255 apart at 32.25 m/s.
+     So `RGBA` was sampled every 0.1 m/s from 0 to 104 (1,041 points, alpha 255 throughout — there
+     is no calm-air hole in it) and the smallest set of stops whose LINEAR interpolation reproduces
+     that sampling was fitted: **27 stops, worst channel error 3/255**, which is the standard #R288
+     held the temperature ramp to. Above 104 m/s Windy clamps to grey and so does this table.
+     The stops at 10.0/10.5, 19.7, 25.3 and 30.6/31.9/33.2 are not noise — they are where Windy's
+     own interpolation stops being linear in RGB.
+     `rampFrom(…, 0.1)` then resamples to 1,041 entries so the map is a gradient rather than a
+     staircase, which is #R284's requirement and is unaffected by whose colours these are. */
+  var WIND_ANCHORS = {
+    unit: 'm/s',
+    breakpoints: [0, 1.1, 3, 5, 7, 9, 10, 10.5, 11, 13, 15, 17, 19, 19.7, 21, 24, 25.3, 27, 29,
+      30.6, 31.9, 33.2, 35.9, 46, 51, 76.6, 104],
+    colors: [
+      [98, 113, 184, 1], [58, 99, 160, 1], [74, 148, 170, 1], [77, 142, 124, 1],
+      [83, 165, 84, 1], [53, 160, 53, 1], [103, 164, 54, 1], [136, 161, 62, 1],
+      [166, 158, 80, 1], [160, 127, 58, 1], [162, 109, 92, 1], [130, 59, 79, 1],
+      [176, 80, 137, 1], [160, 76, 142, 1], [118, 74, 148, 1], [109, 97, 164, 1],
+      [91, 101, 158, 1], [69, 105, 142, 1], [92, 144, 153, 1], [92, 129, 167, 1],
+      [102, 111, 177, 1], [113, 95, 178, 1], [125, 69, 166, 1], [232, 216, 216, 1],
+      [220, 213, 136, 1], [206, 203, 113, 1], [129, 129, 129, 1]
+    ]
+  };
+  /* ══ ⚠⚠⚠ (#R284) A BREAKPOINT TABLE IS A STAIRCASE, AND THAT IS WHAT WAS ON THE MAP ══════════
+     「Wind(animated)は色味は段彩ではなくグラデーションに。（色はそのまま。精度も一切落とすな。」
+
+     The SDK has exactly two colour-scale types and NEITHER of them interpolates — read out of the
+     shipped bundle: `rgba` picks `colors[floor((v-min)/step)]` and `breakpoint` picks
+     `colors[binarySearch(breakpoints, v)]`. Both are nearest-bucket lookups, so the seventeen
+     anchors above painted the whole planet in SEVENTEEN FLAT BANDS. And the legend beside it was
+     built as a CSS `linear-gradient` over the same seventeen stops — which CSS interpolates — so
+     the key was already a smooth ramp while the map was a staircase: #R270's 「凡例が自分の色と
+     矛盾していた」, one round later and the other way round.
+
+     So the SAME seventeen colours are RESAMPLED onto a step fine enough that no edge survives. The
+     anchor values are unchanged and land on their own colours exactly (a bucket's colour is the one
+     at its lower breakpoint), so 「色はそのまま」 is literal rather than approximate; between
+     them the colour is linear in sRGB. Nothing about the DATA changes — same file, same 9 km
+     samples, same speeds; what is finer is the colour resolution, which goes from 17 steps to 601.
+     MEASURED on the steepest segment (0→1 m/s, ΔR = 37): 3.7 units of red per step at 0.1 m/s,
+     i.e. below the threshold at which a band edge can be seen at all. */
+  function rampFrom(a, step) {
+    var bp = a.breakpoints, cols = a.colors;
+    var lo = bp[0], hi = bp[bp.length - 1];
+    var out = { type: 'breakpoint', unit: a.unit, breakpoints: [], colors: [] };
+    var n = Math.round((hi - lo) / step), seg = 0;
+    for (var k = 0; k <= n; k++) {
+      var v = lo + k * step;
+      while (seg < bp.length - 2 && v >= bp[seg + 1]) seg++;
+      var span = (bp[seg + 1] - bp[seg]) || 1;
+      var f = (v - bp[seg]) / span; if (f < 0) f = 0; if (f > 1) f = 1;
+      var c0 = cols[seg], c1 = cols[Math.min(seg + 1, cols.length - 1)];
+      out.breakpoints.push(Math.round(v * 1000) / 1000);
+      out.colors.push([
+        Math.round(c0[0] + (c1[0] - c0[0]) * f),
+        Math.round(c0[1] + (c1[1] - c0[1]) * f),
+        Math.round(c0[2] + (c1[2] - c0[2]) * f), 1]);
+    }
+    return out;
+  }
+  var WINDY_WIND = rampFrom(WIND_ANCHORS, 0.1);
+
+  /* ══ ⚠⚠⚠ (#R288) THE TEMPERATURE RAMP IS THE REFERENCE PICTURE'S, MEASURED RATHER THAN GUESSED ══
+     「気温 2m（ECMWF）レイヤーも色を添付画像と同じ色＋グラデーションに。」
+
+     What was on the map, MEASURED: the SDK's own `temperature` scale, **46 breakpoints** — i.e. the
+     same staircase the wind had before #R284, in a palette that is not the one in the picture.
+
+     The picture is windy.com's default temperature overlay, and that overlay's colour table is a
+     value the reader can open in Windy's own 「Customize color scale」 panel. It was read from the
+     live page rather than eyeballed from the screenshot: `W.colors.temp.defaultColorGradient` is
+     thirteen stops in KELVIN, and `_precomputedGradient.RGBA(k)` is the colour the map is actually
+     painted with at any k. Sampling that function every 0.05 K from 203 K to 320 K and fitting the
+     smallest set of stops whose LINEAR interpolation reproduces it gives the table below:
+     **23 stops, worst channel error 3/255** — below the threshold at which a difference can be
+     seen, which is the same standard #R284 held the wind ramp to.
+
+     Stated in °C because that is the unit the feed publishes `temperature_2m` in (MEASURED: Tokyo
+     25.5, Riyadh 35.7, Vostok −51.1 — not Kelvin). The four stops crowded between 0.00 and 0.85 °C
+     are not noise: Windy emphasises the freezing isotherm by turning blue into green across less
+     than one degree, and that edge is visible in the reference picture wherever a plateau rises
+     through 0 °C. Dropping ONE of them (0.40) was tried and takes the worst error from 3 to 7.
+
+     ⚠ The key is `temperature`, the SDK's FAMILY name — so `temperature_2m`, `surface_temperature`
+     and the soil temperatures all move together, which is right: they are the same quantity in the
+     same unit and a legend that coloured them differently would be lying about one of them.
+     `dew_point` is its own family and is left alone. */
+  var TEMP_ANCHORS = {
+    unit: '°C',
+    breakpoints: [-70.15, -55.15, -40.15, -25.15, -22.95, -20.90, -18.00, -15.15, -8.15, -4.15,
+      0.00, 0.35, 0.40, 0.75, 0.85, 2.40, 4.50, 5.95, 9.85, 20.85, 24.50, 29.85, 46.85],
+    colors: [
+      [115, 70, 105, 1], [203, 173, 196, 1], [163, 70, 146, 1], [144, 89, 170, 1],
+      [151, 114, 194, 1], [148, 141, 214, 1], [142, 185, 218, 1], [157, 220, 218, 1],
+      [106, 192, 182, 1], [100, 167, 190, 1], [93, 134, 199, 1], [77, 132, 160, 1],
+      [77, 132, 160, 1], [68, 128, 107, 1], [68, 126, 101, 1], [70, 135, 81, 1],
+      [86, 141, 54, 1], [99, 143, 42, 1], [129, 148, 24, 1], [244, 184, 4, 1],
+      [243, 143, 7, 1], [233, 83, 25, 1], [71, 14, 0, 1]
+    ]
+  };
+  /* 0.05 °C rather than the wind's 0.1: the steepest segment here is 0.35 → 0.75 °C, where the
+     colour travels 92 units of blue in 0.4 degrees. At 0.1 °C that edge would be four visible
+     steps; at 0.05 it is eight, each below 24/255 — and the ramp is 2,341 buckets, which costs
+     nothing on the map (`legend()` thins the stops it DRAWS, see below). */
+  var WINDY_TEMP = rampFrom(TEMP_ANCHORS, 0.05);
+
+  /* ══ ONE MODEL ════════════════════════════════════════════════════════════════
+     `cfg` is one row of js/wx-models.js. Everything that was 「the model」 — the axis, the frames,
+     the stage-in ledger, the read queue, the listeners — is per instance from here down.
+     ⚠ CREATING AN INSTANCE ASKS THE NETWORK FOR NOTHING. It builds closures and subscribes to the
+     master clock; the first byte is fetched when somebody calls `meta()` or `ready()`. */
+  function createModel(cfg) {
+  /* ⚠ (#R356) THIS WAS THREE LITERALS. `var DOMAIN = 'ecmwf_ifs';` is the line every other file used
+     to mean 「which model」, and it is why the answer had to be written down again in eight layer
+     labels times nine languages. It is one row of the registry now. */
+  var DOMAIN = cfg.id;
+  var BASE = WXM().baseUrl(DOMAIN);
+  var META_URL = WXM().metaUrl(DOMAIN);
   /* the SDK is a 340 kB (compressed) third-party bundle; it is fetched the first time a weather
      layer is actually switched on, NOT at boot. The metadata below needs no SDK at all. */
   var SDK_VER = '0.0.19';
@@ -61,7 +252,8 @@
   var idxSet = false;       /* has anyone chosen a step yet? */
   var playing = false, playTimer = 0, playMs = 700;
   var listeners = [];
-  var sdk = null, sdkP = null, protoReg = false;
+  /* (#R356) sdk / sdkP / protoReg are ONE PER PAGE and are declared in the shared prelude above:
+     the bundle is fetched once and the om scheme is registered once, however many models are open. */
   var _prevValid = '';
 
   function emit(type, extra) {
@@ -319,147 +511,6 @@
     });
     return sdkP;
   }
-  /* ── the wind palette ─────────────────────────────────────────────────────────────────────────
-     「Wind(animated)はこんな感じで。色味も同一に合わせて。」 — the reader sent a Windy screenshot.
-
-     The SDK's own `wind` scale is not that picture and cannot be made into it by a slider, because the
-     difference is not brightness: its alpha runs 0 → 1 across the first 7 m/s, so calm air is a hole
-     through which the basemap shows, and its colours start at steel blue rather than at Windy's
-     violet. MEASURED from the shipped table:
-         [70,130,180,α0] [64,137,179,α0.1] … [0,128,0,α0.73] … [240,0,28,α1] [116,5,5,α1]
-     Against the reference: violet where the air is still, blue → teal → green through the trades,
-     yellow → orange in a gale and magenta → white in a typhoon core, all of it OPAQUE.
-
-     So the protocol is registered with our own colour table for the wind family. It is a table, not a
-     post-hoc tint: the tiles are rendered from it in the SDK's worker, and `legend()` reads the SAME
-     object, so the ramp under the map and the ramp in the legend are one declaration. `wind_gusts_10m`
-     resolves to the same family, which is right — it is the same quantity in the same unit. */
-  /* ══ ⚠⚠⚠ (#R293) 「Windyと完全に同じ風速と色の対応にしてください。RGB単位で、Windyの実物もとに
-     比較し修正して。高風速帯でも同じになるように。」 — AND IT WAS NEVER WINDY'S TABLE ════════
-
-     The seventeen anchors this replaces were written from a screenshot: they borrowed Windy's
-     BREAKPOINT POSITIONS (0,1,3,5,7,9,11,13,15,17…) and invented the colours, so the two pictures
-     agreed at 0 m/s and diverged from about 2 m/s on. MEASURED against windy.com's own paint
-     function, worst channel difference:
-
-         v (m/s)    IntMap (before)   Windy (real)     Δmax
-            5        36,160,168        77,141,123        45
-           15       214,202, 60       161,108, 92        94
-           25       228, 68, 57        95,100,156       133
-           60       240,220,245       214,209,127       118
-
-     i.e. at 25 m/s this map painted RED where Windy paints slate blue, and above 45 m/s it
-     saturated to near-white while Windy goes khaki then grey. 「高風速帯でも同じに」 is the half
-     that was furthest off.
-
-     ⚠ THE GROUND TRUTH IS THE FUNCTION THE MAP IS PAINTED THROUGH, NOT THE DECLARED TABLE — the
-     same finding #R288 made for temperature, and it repeats exactly: `W.colors.wind
-     .defaultColorGradient` is twenty stops, but `RGBA(v)` (a 2048-step precomputed table over
-     0–104 m/s) does NOT equal their linear interpolation — measured, 20/255 apart at 32.25 m/s.
-     So `RGBA` was sampled every 0.1 m/s from 0 to 104 (1,041 points, alpha 255 throughout — there
-     is no calm-air hole in it) and the smallest set of stops whose LINEAR interpolation reproduces
-     that sampling was fitted: **27 stops, worst channel error 3/255**, which is the standard #R288
-     held the temperature ramp to. Above 104 m/s Windy clamps to grey and so does this table.
-     The stops at 10.0/10.5, 19.7, 25.3 and 30.6/31.9/33.2 are not noise — they are where Windy's
-     own interpolation stops being linear in RGB.
-     `rampFrom(…, 0.1)` then resamples to 1,041 entries so the map is a gradient rather than a
-     staircase, which is #R284's requirement and is unaffected by whose colours these are. */
-  var WIND_ANCHORS = {
-    unit: 'm/s',
-    breakpoints: [0, 1.1, 3, 5, 7, 9, 10, 10.5, 11, 13, 15, 17, 19, 19.7, 21, 24, 25.3, 27, 29,
-      30.6, 31.9, 33.2, 35.9, 46, 51, 76.6, 104],
-    colors: [
-      [98, 113, 184, 1], [58, 99, 160, 1], [74, 148, 170, 1], [77, 142, 124, 1],
-      [83, 165, 84, 1], [53, 160, 53, 1], [103, 164, 54, 1], [136, 161, 62, 1],
-      [166, 158, 80, 1], [160, 127, 58, 1], [162, 109, 92, 1], [130, 59, 79, 1],
-      [176, 80, 137, 1], [160, 76, 142, 1], [118, 74, 148, 1], [109, 97, 164, 1],
-      [91, 101, 158, 1], [69, 105, 142, 1], [92, 144, 153, 1], [92, 129, 167, 1],
-      [102, 111, 177, 1], [113, 95, 178, 1], [125, 69, 166, 1], [232, 216, 216, 1],
-      [220, 213, 136, 1], [206, 203, 113, 1], [129, 129, 129, 1]
-    ]
-  };
-  /* ══ ⚠⚠⚠ (#R284) A BREAKPOINT TABLE IS A STAIRCASE, AND THAT IS WHAT WAS ON THE MAP ══════════
-     「Wind(animated)は色味は段彩ではなくグラデーションに。（色はそのまま。精度も一切落とすな。」
-
-     The SDK has exactly two colour-scale types and NEITHER of them interpolates — read out of the
-     shipped bundle: `rgba` picks `colors[floor((v-min)/step)]` and `breakpoint` picks
-     `colors[binarySearch(breakpoints, v)]`. Both are nearest-bucket lookups, so the seventeen
-     anchors above painted the whole planet in SEVENTEEN FLAT BANDS. And the legend beside it was
-     built as a CSS `linear-gradient` over the same seventeen stops — which CSS interpolates — so
-     the key was already a smooth ramp while the map was a staircase: #R270's 「凡例が自分の色と
-     矛盾していた」, one round later and the other way round.
-
-     So the SAME seventeen colours are RESAMPLED onto a step fine enough that no edge survives. The
-     anchor values are unchanged and land on their own colours exactly (a bucket's colour is the one
-     at its lower breakpoint), so 「色はそのまま」 is literal rather than approximate; between
-     them the colour is linear in sRGB. Nothing about the DATA changes — same file, same 9 km
-     samples, same speeds; what is finer is the colour resolution, which goes from 17 steps to 601.
-     MEASURED on the steepest segment (0→1 m/s, ΔR = 37): 3.7 units of red per step at 0.1 m/s,
-     i.e. below the threshold at which a band edge can be seen at all. */
-  function rampFrom(a, step) {
-    var bp = a.breakpoints, cols = a.colors;
-    var lo = bp[0], hi = bp[bp.length - 1];
-    var out = { type: 'breakpoint', unit: a.unit, breakpoints: [], colors: [] };
-    var n = Math.round((hi - lo) / step), seg = 0;
-    for (var k = 0; k <= n; k++) {
-      var v = lo + k * step;
-      while (seg < bp.length - 2 && v >= bp[seg + 1]) seg++;
-      var span = (bp[seg + 1] - bp[seg]) || 1;
-      var f = (v - bp[seg]) / span; if (f < 0) f = 0; if (f > 1) f = 1;
-      var c0 = cols[seg], c1 = cols[Math.min(seg + 1, cols.length - 1)];
-      out.breakpoints.push(Math.round(v * 1000) / 1000);
-      out.colors.push([
-        Math.round(c0[0] + (c1[0] - c0[0]) * f),
-        Math.round(c0[1] + (c1[1] - c0[1]) * f),
-        Math.round(c0[2] + (c1[2] - c0[2]) * f), 1]);
-    }
-    return out;
-  }
-  var WINDY_WIND = rampFrom(WIND_ANCHORS, 0.1);
-
-  /* ══ ⚠⚠⚠ (#R288) THE TEMPERATURE RAMP IS THE REFERENCE PICTURE'S, MEASURED RATHER THAN GUESSED ══
-     「気温 2m（ECMWF）レイヤーも色を添付画像と同じ色＋グラデーションに。」
-
-     What was on the map, MEASURED: the SDK's own `temperature` scale, **46 breakpoints** — i.e. the
-     same staircase the wind had before #R284, in a palette that is not the one in the picture.
-
-     The picture is windy.com's default temperature overlay, and that overlay's colour table is a
-     value the reader can open in Windy's own 「Customize color scale」 panel. It was read from the
-     live page rather than eyeballed from the screenshot: `W.colors.temp.defaultColorGradient` is
-     thirteen stops in KELVIN, and `_precomputedGradient.RGBA(k)` is the colour the map is actually
-     painted with at any k. Sampling that function every 0.05 K from 203 K to 320 K and fitting the
-     smallest set of stops whose LINEAR interpolation reproduces it gives the table below:
-     **23 stops, worst channel error 3/255** — below the threshold at which a difference can be
-     seen, which is the same standard #R284 held the wind ramp to.
-
-     Stated in °C because that is the unit the feed publishes `temperature_2m` in (MEASURED: Tokyo
-     25.5, Riyadh 35.7, Vostok −51.1 — not Kelvin). The four stops crowded between 0.00 and 0.85 °C
-     are not noise: Windy emphasises the freezing isotherm by turning blue into green across less
-     than one degree, and that edge is visible in the reference picture wherever a plateau rises
-     through 0 °C. Dropping ONE of them (0.40) was tried and takes the worst error from 3 to 7.
-
-     ⚠ The key is `temperature`, the SDK's FAMILY name — so `temperature_2m`, `surface_temperature`
-     and the soil temperatures all move together, which is right: they are the same quantity in the
-     same unit and a legend that coloured them differently would be lying about one of them.
-     `dew_point` is its own family and is left alone. */
-  var TEMP_ANCHORS = {
-    unit: '°C',
-    breakpoints: [-70.15, -55.15, -40.15, -25.15, -22.95, -20.90, -18.00, -15.15, -8.15, -4.15,
-      0.00, 0.35, 0.40, 0.75, 0.85, 2.40, 4.50, 5.95, 9.85, 20.85, 24.50, 29.85, 46.85],
-    colors: [
-      [115, 70, 105, 1], [203, 173, 196, 1], [163, 70, 146, 1], [144, 89, 170, 1],
-      [151, 114, 194, 1], [148, 141, 214, 1], [142, 185, 218, 1], [157, 220, 218, 1],
-      [106, 192, 182, 1], [100, 167, 190, 1], [93, 134, 199, 1], [77, 132, 160, 1],
-      [77, 132, 160, 1], [68, 128, 107, 1], [68, 126, 101, 1], [70, 135, 81, 1],
-      [86, 141, 54, 1], [99, 143, 42, 1], [129, 148, 24, 1], [244, 184, 4, 1],
-      [243, 143, 7, 1], [233, 83, 25, 1], [71, 14, 0, 1]
-    ]
-  };
-  /* 0.05 °C rather than the wind's 0.1: the steepest segment here is 0.35 → 0.75 °C, where the
-     colour travels 92 units of blue in 0.4 degrees. At 0.1 °C that edge would be four visible
-     steps; at 0.05 it is eight, each below 24/255 — and the ramp is 2,341 buckets, which costs
-     nothing on the map (`legend()` thins the stops it DRAWS, see below). */
-  var WINDY_TEMP = rampFrom(TEMP_ANCHORS, 0.05);
 
   /* ══ ⚠⚠⚠ (#R307) THE READ EVICTS ITS OWN BLOCKS WHILE IT IS STILL USING THEM ═══════════════════
      MEASURED by patching `fetch` and reading the Range headers of one cold band read (`nearBand`,
@@ -636,7 +687,8 @@
      reads of different files corrupted each other (#R288); with one reader each they do not touch.
      What remains in `serial` is a POLICY about bandwidth, not a rule about correctness. */
   var READER_MAX = 4;
-  var readers = [];              /* most-recent-first: [{url, rd}] — one open .om file each */
+  /* (#R356) the reader pool is in the shared prelude — it is keyed by FILE URL, and two models are
+     two sets of URLs, so READER_MAX is the whole page's budget rather than four files each. */
   function pinReader(rd) {
     /* ⚠ (#R325) NEVER THE TILE PROXY — its `setToOmFile` records which pooled reader the next
        `readVariable` belongs to, and a memo in front of it would skip that assignment. */
@@ -757,7 +809,8 @@
     inst.omFileReader = tileProxy;
     return tileProxy;
   }
-  var settings = null;
+  /* (#R356) `settings` is in the shared prelude: it carries the ONE 32 MB block cache (#R307) and
+     the SDK's protocol instance is a page singleton that throws if two callers disagree about it. */
   function omSettings() {
     if (settings || !sdk) return settings;
     var base = sdk.defaultOmProtocolSettings;
@@ -1821,7 +1874,8 @@
      not cover — between a layer being added or removed and the next render — `_hasLayer` is the
      O(1) second answer (`getLayer` is a map lookup, not a serialisation), so neither `before()` nor
      `lift()` can hand back an id the style no longer has. */
-  var _lys = null, _ids = null, _idsHooked = false;
+  /* (#R356) the style-layer cache is in the shared prelude — it describes THE MAP, not a model, and
+     a second copy would hook `styledata` twice and answer `before()` from a stale list. */
   function _idsDrop() { _lys = null; _ids = null; }
   function _styleLayers() {
     if (_lys) return _lys;
@@ -1894,7 +1948,7 @@
      ⚠ AN UNPARSEABLE INSTANT STILL PRINTS WHAT IT PRINTED. `format()` THROWS on an invalid Date
      where `toLocaleString` answers 「Invalid Date」, and that string is what a reader would have
      seen, so the invalid case is left on the old path rather than turned into something new. */
-  var _dtf = Object.create(null);
+  /* (#R356) the Intl formatter memo is in the shared prelude — one per page. */
   function _fmtOf(locale, o) {
     var k = locale + '|' + JSON.stringify(o);
     return _dtf[k] || (_dtf[k] = new Intl.DateTimeFormat(locale, o));
@@ -1913,9 +1967,9 @@
     } catch (_) { return iso; }
   }
 
-  window.IntMapECMWF = {
+  return {
     BASE: BASE, META_URL: META_URL, DOMAIN: DOMAIN,
-    MODEL: 'ECMWF IFS HRES', RESOLUTION_KM: 9,
+    MODEL: cfg.nameKey, RESOLUTION_KM: cfg.km,
     /* (#R325) the ONE tile size — `omUrl` puts it in the url, every raster source uses it as
        `tileSize`. See the note on `omUrl`: the two must agree or the map is drawn at the wrong
        resolution. */
@@ -1989,4 +2043,39 @@
        reader. It is the number the wind's speed is made of, so it is printed rather than assumed. */
     _state: function () { return { meta: meta, idx: idx, playing: playing, held: held ? held.key : null, variable: held ? held.variable : null, frames: frames.length, touched: touchN }; }
   };
+  }
+
+  /* ══ ONE INSTANCE PER MODEL, AND THE NAME THE REST OF THE APP ALREADY USES ════════════════
+     ⚠ `window.IntMapECMWF` IS NOT A FACADE OVER A COPY — it IS the default model's instance, the
+     same object with the same members. Twelve files and 64 call sites name it and every one of them
+     keeps working unchanged; what changed is that it is no longer the only one that CAN exist.
+     Instances are built on demand, so a session that never switches model builds exactly one. */
+  var instances = Object.create(null);
+  function model(id) {
+    var wxm = WXM(); if (!wxm) return null;
+    var cfg = wxm.get(id || wxm.defaultId());
+    if (!cfg) return null;
+    return instances[cfg.id] || (instances[cfg.id] = createModel(cfg));
+  }
+  window.IntMapWxEngine = {
+    model: model,
+    /* which instances have actually been built — printed rather than assumed, because 「読み込み済み
+       field に明確な LRU 上限」 is a claim about all of them together, not about each. */
+    open: function () { return Object.keys(instances); },
+    /* every frame every open model is holding, so the page-wide total is one number */
+    frames: function () {
+      var out = [];
+      Object.keys(instances).forEach(function (k) {
+        (instances[k].heldFrames() || []).forEach(function (f) {
+          out.push({ modelId: k, variable: f.variable, key: f.key, band: f.band, samples: f.samples });
+        });
+      });
+      return out;
+    },
+    /* release what a model is holding WITHOUT destroying the instance — #R322 measured what it costs
+       when dispose is read as 「never openable again」. The axis, the listeners and the stage-in
+       ledger survive, so switching back is a read rather than a rebuild. */
+    releaseAll: function (id) { var m = instances[id]; if (m) { m.release(); return true; } return false; }
+  };
+  window.IntMapECMWF = model(null);
 })();

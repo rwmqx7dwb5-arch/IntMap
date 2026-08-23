@@ -92,8 +92,18 @@ test('R337 ① the preference lives in the temperature legend, has one door, and
     'the SYS catalogue documents the argument, or the planner can never emit it');
 
   /* the two variables the streaks read are warmed on a time step in BOTH cases */
-  assert.match(wx, /W\.solo&&W\.solo\(\)[^;]*vars\.push\('wind_u_component_10m'/,
+  /* ⚠ (#R356) THE CONDITION IS #R337's; THE LIST IT PUSHES INTO IS PER MODEL. This pinned
+     `vars.push(…)`, which stopped matching when the warm-up became one call per model and `vars`
+     became `byModel[<model>]` — the two variables have to go into the bucket of the model the WIND
+     is reading, not into whichever layer's bucket was last. #R337's claim is unchanged and is what
+     is asserted: the pair is warmed when the streaks are up WITHOUT the wind layer. */
+  /* ⚠ the span is bounded but crosses ONE statement now: the bucket has to be chosen (`const wm =
+     the model the wind reads`) between the condition and the push, so `[^;]*` — which cannot cross
+     a semicolon — stopped matching for a reason that has nothing to do with the claim. */
+  assert.match(wx, /W\.solo&&W\.solo\(\)[\s\S]{0,220}?\.push\('wind_u_component_10m'/,
     'a time step warms u and v when the streaks are up without the wind layer');
+  assert.match(wx, /\(byModel\[wm\]=byModel\[wm\]\|\|\[\]\)\.push\('wind_u_component_10m'/,
+    '…into the bucket of the model the wind itself is reading');
 });
 
 

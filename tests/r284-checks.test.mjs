@@ -182,7 +182,7 @@ test('#R284 ⑥ every ECMWF layer has its own legend box and its own title', () 
   assert.ok(!/L\('ECMWF forecast time','ECMWF 予報時刻'/.test(src), 'the separate clock box is gone');
   assert.match(src, /class="ecl-when"/, '…and each legend says which instant its picture is of');
   assert.ok(!/function openClock\(\)/.test(src), 'and nothing opens Chronos on the layer’s behalf');
-  assert.match(src, /window\.IntMapWxPlayer\.timeUI\('ec-time-'\+cfg\.id,EC\(\),L\)/,
+  assert.match(src, /window\.IntMapWxPlayer\.timeUI\('ec-time-'\+cfg\.id,EC\(cfg\),L\)/,
     '…and the hour is chosen in this box, from the one shared builder');
   assert.match(src, /class="dl-op-row"/,
     '…as is the opacity, which css/intmap.css hides in the Layers panel (#R16)');
@@ -253,7 +253,7 @@ test('#R284 ⑨ a slider drag is one forecast step, and it does not blank the an
     'a time change must not erase the field the particles are reading');
   assert.match(wx, /if\(ev\.type==='index'\)\{ touchWindTime\(\); return; \}/,
     'the wind legend follows the cheap event');
-  assert.match(wx, /if\(ev\.type==='index'\)\{ touchTime\(\); return; \}/,
+  assert.match(wx, /if\(ev\.type==='index'\)\{ touchTime\(mine\); return; \}/,
     'and so does the ECMWF box');
   /* the forecast step builds the new hour beside the old one instead of removing it first */
   assert.match(wx, /function applyTime\(only\)\{[\s\S]*?dropSlot\(cfg,nu\);[\s\S]*?setOpSlot\(cfg,nu,0\);[\s\S]*?dropSlot\(cfg,old\);/,

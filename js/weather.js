@@ -1036,7 +1036,29 @@ window.IntMapModules.weatherEC=function(HOST){
     if(!GE().hasRenderer()) return { open(){}, toggle(){} };
     const L=window.IntMapLang.pick(()=>HOST.lang);
     const LA=window.IntMapLang.pickArgs();
-    const EC=()=>window.IntMapECMWF;
+    /* ══ ⚠⚠⚠ (#R356) WHICH MODEL A LAYER READS IS THE LAYER'S OWN ANSWER ═══════════════════════
+       `EC()` used to be `window.IntMapECMWF` and there was nothing else it could be. It is now
+       「the instance THIS layer is reading」, because 「モデル選択はレイヤーごとに保持」: a reader
+       comparing GFS precipitation against ECMWF pressure has two layers on two models, and one
+       shared accessor would have made that impossible to express.
+       ⚠ THE ARGUMENT IS THE LAYER, NOT THE MODEL ID. Passing the id would let a caller ask for a
+       model this layer is not on, which is precisely the state the legend must never be able to
+       describe. Called with nothing it is the default model, which is what the module-wide
+       operations (metadata, the share hook) legitimately mean.
+       ⚠ AND IT FALLS BACK TO `window.IntMapECMWF`, NOT TO null: js/wx-engine's registry is eager,
+       but if it were ever missing the layer must still draw the model it drew before. */
+    const WXM=()=>window.IntMapWxModels;
+    const ENG=()=>window.IntMapWxEngine;
+    const EC=(cfg)=>{
+      try{
+        const id=cfg&&state[cfg.id]&&state[cfg.id].model;
+        const e=ENG()&&ENG().model(id||null);
+        if(e) return e;
+      }catch(_){}
+      return window.IntMapECMWF;
+    };
+    /* the models a reader may pick for a SURFACE field, in the registry's own order */
+    const MODEL_CHOICES=()=>{ try{ return WXM().all().filter(m=>m.map&&m.roles.indexOf('surface')>=0); }catch(_){ return []; } };
     /* ⚠ EVERY VARIABLE HERE IS ONE THE FEED ACTUALLY PUBLISHES, and `mountRows` re-checks that
        against the live `latest.json` before building a row. `sea_surface_temperature` was in this
        table until #R276 and is NOT in the feed's 35-name variable list, so that layer asked the
@@ -1059,37 +1081,75 @@ window.IntMapModules.weatherEC=function(HOST){
        label:LA('Temperature','気温','Temperatur','Температура','Temperatura'),
        desc:LA('Air temperature 2 m above the ground.','地上2mの気温。','Lufttemperatur 2 m über Grund.','Температура воздуха на высоте 2 м.','Temperatura del aire a 2 m del suelo.')},
       {id:'ec-precip',  variable:'precipitation',       type:'raster', op:1,    kind:'raw',
-       label:LA('Precipitation (ECMWF)','降水量（ECMWF）','Niederschlag (ECMWF)','Осадки (ECMWF)','Precipitación (ECMWF)'),
+       label:LA('Precipitation (forecast)','降水量（予報）','Niederschlag (Vorhersage)','Осадки (прогноз)','Precipitación (pronóstico)'),
        desc:LA('Total precipitation forecast for the hour ending at the valid time.','有効時刻までの1時間降水量の予測。','Niederschlagsmenge der Stunde bis zur Gültigkeitszeit.','Осадки за час до указанного времени.','Precipitación de la hora que termina en la hora de validez.')},
       {id:'ec-wind',    variable:'wind_u_component_10m',type:'arrows', op:0.85, kind:'wind',
-       label:LA('Wind 10 m arrows (ECMWF)','風 10m 矢羽根（ECMWF）','Wind 10 m, Pfeile (ECMWF)','Ветер 10 м, стрелки (ECMWF)','Viento 10 m, flechas (ECMWF)'),
+       label:LA('Wind 10 m arrows','風 10m 矢羽根','Wind 10 m, Pfeile','Ветер 10 м, стрелки','Viento 10 m, flechas'),
        desc:LA('Wind direction arrows at 10 m, coloured by speed.','高度10mの風向を矢印で、速さで色分け。','Windrichtung in 10 m, nach Geschwindigkeit eingefärbt.','Направление ветра на 10 м, цвет по скорости.','Dirección del viento a 10 m, coloreada por velocidad.')},
       {id:'ec-gust',    variable:'wind_gusts_10m',      type:'raster', op:1,    kind:'wind',
-       label:LA('Wind gusts (ECMWF)','最大瞬間風速（ECMWF）','Windböen (ECMWF)','Порывы ветра (ECMWF)','Rachas de viento (ECMWF)'),
+       label:LA('Wind gusts','最大瞬間風速','Windböen','Порывы ветра','Rachas de viento'),
        desc:LA('Strongest gust expected in the hour ending at the valid time.','有効時刻までの1時間に予想される最大瞬間風速。','Stärkste erwartete Bö in der Stunde bis zur Gültigkeitszeit.','Максимальный ожидаемый порыв за час.','Racha máxima prevista en la hora indicada.')},
       {id:'ec-cloud',   variable:'cloud_cover',         type:'raster', op:1,    kind:'raw',
-       label:LA('Cloud cover (ECMWF)','雲量（ECMWF）','Bewölkung (ECMWF)','Облачность (ECMWF)','Nubosidad (ECMWF)'),
+       label:LA('Cloud cover','雲量','Bewölkung','Облачность','Nubosidad'),
        desc:LA('Fraction of the sky covered by cloud.','空に占める雲の割合。','Anteil des von Wolken bedeckten Himmels.','Доля неба, закрытая облаками.','Fracción del cielo cubierta por nubes.')},
       {id:'ec-dew',     variable:'dew_point_2m',        type:'raster', op:1,    kind:'temp',
-       label:LA('Dew point / humidity (ECMWF)','露点・湿度（ECMWF）','Taupunkt / Feuchte (ECMWF)','Точка росы / влажность (ECMWF)','Punto de rocío / humedad (ECMWF)'),
+       label:LA('Dew point / humidity','露点・湿度','Taupunkt / Feuchte','Точка росы / влажность','Punto de rocío / humedad'),
        desc:LA('Temperature at which the air would saturate — the moisture field.','空気が飽和する温度＝水蒸気量の指標。','Temperatur, bei der die Luft sättigt — das Feuchtefeld.','Температура насыщения воздуха — поле влажности.','Temperatura de saturación del aire — el campo de humedad.')},
       {id:'ec-isobars', variable:'pressure_msl',        type:'isobars',op:0.9,  kind:'raw',
-       label:LA('Isobars (ECMWF)','等圧線（ECMWF）','Isobaren (ECMWF)','Изобары (ECMWF)','Isobaras (ECMWF)'),
+       label:LA('Isobars','等圧線','Isobaren','Изобары','Isobaras'),
        desc:LA('Lines of equal sea-level pressure, labelled in hPa.','海面気圧が等しい線。数値は hPa。','Linien gleichen Luftdrucks, in hPa beschriftet.','Линии равного давления, подписи в гПа.','Líneas de igual presión al nivel del mar, en hPa.')},
       {id:'ec-slp',     variable:'pressure_msl',        type:'raster', op:1,    kind:'raw',
-       label:LA('Sea-level pressure (ECMWF)','海面気圧（ECMWF）','Luftdruck (Meereshöhe) (ECMWF)','Давление на уровне моря (ECMWF)','Presión al nivel del mar (ECMWF)'),
+       label:LA('Sea-level pressure','海面気圧','Luftdruck (Meereshöhe)','Давление на уровне моря','Presión al nivel del mar'),
        desc:LA('Air pressure reduced to sea level — highs, lows and the storm centre.','海面更正気圧。高気圧・低気圧・台風の中心。','Auf Meereshöhe reduzierter Luftdruck — Hoch, Tief, Sturmzentrum.','Давление, приведённое к уровню моря.','Presión reducida al nivel del mar — altas, bajas y el centro de la tormenta.')},
       {id:'ec-cape',    variable:'cape',                type:'raster', op:1,    kind:'raw',
-       label:LA('CAPE instability (ECMWF)','CAPE 不安定度（ECMWF）','CAPE-Instabilität (ECMWF)','Неустойчивость CAPE (ECMWF)','Inestabilidad CAPE (ECMWF)'),
+       label:LA('CAPE instability','CAPE 不安定度','CAPE-Instabilität','Неустойчивость CAPE','Inestabilidad CAPE'),
        desc:LA('Convective available potential energy: how much lift a thunderstorm could draw on.','対流有効位置エネルギー。積乱雲が使える浮力の量。','Konvektiv verfügbare potentielle Energie — das Gewitterpotential.','Доступная конвективная энергия — потенциал гроз.','Energía potencial convectiva disponible: el combustible de las tormentas.')}
     ];
     const ecLbl=(l)=>L.arr(l.label);
     const ecDesc=(l)=>L.arr(l.desc);
-    const state={};   /* id → {on, op, src, month} */
-    LAYERS.forEach(l=>state[l.id]={on:false, op:l.op});
+    /* ══ ⚠⚠⚠ (#R356) THREE STATES, BECAUSE A LEGEND MUST DESCRIBE THE PICTURE ══════════════════
+       「新しいGFSを読み込んでいる最中に、地図はECMWFのままなのに凡例だけGFSと表示する状態を作っては
+        いけない。」 A single `state[id].model` cannot say that: the moment a reader picks GFS the
+       field is still ECMWF, and every legend, model line, valid time and point value built from
+       「what was asked for」 is a sentence about a picture that is not on the screen — for as long as
+       the load takes, which is seconds on a cold hour.
+         model      what the reader asked for      (the <select> shows this)
+         loading    what is being built right now  (null when nothing is in flight)
+         displayed  what is actually painted       (⚠ EVERYTHING THE READER IS TOLD COMES FROM HERE)
+       `displayed` is written in ONE place — the reveal inside `applyTime`, the same moment the new
+       slot's opacity goes up and the old slot is dropped — so the words and the pixels change in the
+       same turn. Nothing else may assign it; see the note on `commit()`. */
+    const state={};   /* id → {on, op, model, loading, displayed} */
+    LAYERS.forEach(l=>state[l.id]={on:false, op:l.op,
+      model:(function(){ try{ return WXM().defaultId(); }catch(_){ return 'ecmwf_ifs'; } })(),
+      loading:null, displayed:null});
     let mounted=false, rowsMounted=false;
 
-    function omUrl(cfg,extra){ return EC().omUrl(cfg.variable,extra); }
+    /* what is on the screen for this layer, or null if nothing is. ⚠ Read this, never `state.model`,
+       when building anything a reader will read. */
+    function displayed(cfg){ return (state[cfg.id]&&state[cfg.id].displayed)||null; }
+    /* the one writer. Called from the reveal, with the model and hour the slot was BUILT from —
+       not the ones that are current by the time it fires, which a later change may already have
+       moved on from (that is what `_seq` guards). */
+    const waiters={};   /* layer id → [fn], drained by commit() — see whenCommitted */
+    function commit(cfg,prov){ if(!state[cfg.id]) return; state[cfg.id].displayed=prov; state[cfg.id].loading=null;
+      const w=waiters[cfg.id]; if(w&&w.length) w.splice(0).forEach(f=>{ try{ f(prov); }catch(_){} }); }
+    /* ⚠⚠ (#R356) 「Atlasが操作したと言いながら、実際には別モデル・別時刻・別レイヤーが表示されている
+       状態を許可しない。」 A caller that wants to REPORT the change has to wait for the picture, not
+       for the request — so `setModel` resolves from here, at the same commit the legend reads.
+       ⚠ It resolves with `null` on timeout rather than rejecting: 「まだ出ていない」 is an answer the
+       caller must be able to state, and an exception would be reported as a failure of the ACTION
+       when what actually happened is that a slow feed has not landed yet. */
+    function whenCommitted(cfg,ms){
+      return new Promise(res=>{
+        const list=waiters[cfg.id]=waiters[cfg.id]||[];
+        const f=(p)=>res(p||null);
+        list.push(f);
+        setTimeout(()=>{ const i=list.indexOf(f); if(i>=0){ list.splice(i,1); res(null); } },ms||15000);
+      });
+    }
+
+    function omUrl(cfg,extra){ return EC(cfg).omUrl(cfg.variable,extra); }
 
     /* ══ ⚠⚠ (#R284) TWO SLOTS PER LAYER, SO A FORECAST STEP NEVER SHOWS AN EMPTY MAP ═══════════
        A time step used to `removeLayer()` and then add the same ids back against the new hour's
@@ -1105,13 +1165,13 @@ window.IntMapModules.weatherEC=function(HOST){
     const curIds=(cfg)=>slotIds(cfg,cfg._s|0);
     function addSlot(cfg,s){
       const sid=cfg.id+'-'+s+'-src', lid=cfg.id+'-'+s, lbl=lid+'-lbl';
-      const before=EC().before();
+      const before=EC(cfg).before();
       /* ⚠⚠ (#R288) NO `om://` URL BEFORE THE PROTOCOL EXISTS. `state[id].on` is set synchronously
          by `toggle`, and the styledata/idle re-add hooks below fire off that flag — so a layer
          could be rebuilt while the 340 kB tile SDK was still downloading, handing MapLibre a
          scheme with no handler. It then fetches it natively, which is a CSP violation and never a
          tile. The retry ladders already re-call this, so refusing is the whole fix. */
-      if(!EC().registerProtocol()) return false;
+      if(!EC(cfg).registerProtocol()) return false;
       const url=omUrl(cfg,cfg.type==='arrows'?'&arrows=true':'');
       if(!url) return false;
       try{
@@ -1123,10 +1183,16 @@ window.IntMapModules.weatherEC=function(HOST){
           if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'vector',url:url});
           if(!GE().layers.has(lid)) GE().layers.add({id:lid,type:'line',source:sid,'source-layer':'wind-arrows',layout:{visibility:'none','line-cap':'round'},paint:{'line-width':1.8,'line-opacity':cfg.op,'line-color':['interpolate',['linear'],['to-number',['get','value'],0],0,'#5b8ff9',6,'#36cfc9',12,'#73d13d',18,'#ffd666',26,'#ff7a45',36,'#cf1322']}},before);
         } else {
-          if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'raster',url:EC().omRasterUrl(cfg.variable),maxzoom:12,tileSize:EC().TILE_PX});
+          /* ⚠ (#R356) `EC(cfg)`, NOT `EC()`. #R325 gave the raster sources their own url builder
+             while this round gave each layer its own model, and the two met in this line: with the
+             default instance here a layer set to GFS would have drawn its COLOUR from the ECMWF
+             file while its legend, its point value and its particles read GFS. That is the one
+             thing 「地図、粒子、凡例、地点値が同じ表示状態を参照」 forbids, and it survived the
+             rebase silently because both halves are correct on their own. */
+          if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'raster',url:EC(cfg).omRasterUrl(cfg.variable),maxzoom:12,tileSize:EC(cfg).TILE_PX});
           if(!GE().layers.has(lid)) GE().layers.add({id:lid,type:'raster',source:sid,layout:{visibility:'none'},paint:{'raster-opacity':cfg.op,'raster-opacity-transition':{duration:220},'raster-fade-duration':0}},before);
         }
-        slotIds(cfg,s).forEach(l=>{ try{ EC().lift(l); }catch(_){} });
+        slotIds(cfg,s).forEach(l=>{ try{ EC(cfg).lift(l); }catch(_){} });
         return true;
       }catch(e){ try{ console.warn('ECMWF add fail',cfg.id,e); }catch(_){} return false; }
     }
@@ -1181,7 +1247,7 @@ window.IntMapModules.weatherEC=function(HOST){
          ⚠ THE TEMPERATURE LAYER, NOT EVERY RASTER. The argument would fit the other eight too; the
          instruction names this one, and widening it is a change nobody asked for. */
       if(id==='ec-temp'){ try{ window._imCoastAuto&&window._imCoastAuto(); }catch(_){} }
-      EC().ready().then(()=>{
+      EC(cfg).ready().then(()=>{
         /* ⚠ (#R276 追記) A RETRY LADDER, not a single `once('idle')`. `addLayer` can refuse for two
            different reasons — the style cannot accept a layer yet, or the metadata has not arrived so
            `omUrl` is empty — and only the first of them is an idle away. Poll for ~16 s as well, and
@@ -1189,7 +1255,15 @@ window.IntMapModules.weatherEC=function(HOST){
            instruction puts it: see the note in the wind module.) */
         let n=0;
         const go=()=>{ if(!state[id].on) return;
-          if(_imCanDraw()&&addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); renderLegend(); warmReadout(); return; }
+          if(_imCanDraw()&&addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); renderLegend(); warmReadout();
+            /* (#R356) the FIRST paint commits the same way a later one does — when the source has
+               actually loaded, not when the layer was asked for. Until then `displayed` is null and
+               the legend says 「読み込み中」 rather than naming an hour nothing is showing yet. */
+            const src=EC(cfg);
+            const prov=WXM().provenance({modelId:src.DOMAIN, validTime:src.validTime(),
+              referenceTime:src.referenceTime(), variable:cfg.variable});
+            whenSourceLoaded(cfg.id+'-'+(cfg._s|0)+'-src',()=>{ if(!state[id].on) return; commit(cfg,prov); renderOne(cfg); },12000);
+            return; }
           if(n++<80) setTimeout(go,200);
         };
         go();
@@ -1202,6 +1276,84 @@ window.IntMapModules.weatherEC=function(HOST){
       });
     }
     window.toggleWeatherLayer=toggle;
+
+    /* ══ ⚠⚠⚠ (#R356) CHANGING MODEL KEEPS THE INSTANT, AND CHANGES NOTHING UNTIL IT CAN ═════════
+       Three rules, and a naive implementation gets all three wrong.
+
+       ① THE HOUR IS AN INSTANT, NOT AN INDEX. MEASURED on the live feed: ECMWF IFS HRES is 109
+          hourly steps to +6 d, GFS 0.13 is 209 to +16 d, ICON is 93 to +5 d. Index 30 is thirty
+          hours into one axis and something else entirely in another, so the new model is moved to
+          the valid time NEAREST the one the reader is looking at — the same rule js/wx-ecmwf.js
+          already applies when a new RUN re-bases an axis (#R276). A model change is that event
+          with a bigger step, and it is exactly as wrong to answer it by index.
+
+       ② A MODEL THAT CANNOT DRAW THIS LAYER IS REFUSED, WITH A REASON. MEASURED: GFS 0.13 publishes
+          no `pressure_msl`, no `cape` and no `dew_point_2m`. Switching anyway would empty the map
+          while the legend went on describing a field that is not there — the ec-sst failure of
+          #R276, which drew nothing for nine rounds, made from a different ingredient. The option is
+          disabled in the picker AND refused here, because the picker was built from metadata that
+          may have arrived since.
+
+       ③ THE OLD PICTURE STAYS UP. The new model is built into the free slot by `applyTime`, exactly
+          as a new hour is, and `displayed` moves only when that slot is uncovered. Between the click
+          and the picture the legend keeps describing what is on the map, with 「切替中」 next to it. */
+    /* ⚠ IT RESOLVES WITH WHAT HAPPENED, and it resolves LATE — after the picture, not after the
+       request. Every branch answers `{ok, code}` so a caller (Atlas, the share restore) can say
+       which of the six outcomes it got instead of inferring one from a bare boolean. */
+    function setModel(id,modelId){
+      const cfg=LAYERS.find(l=>l.id===id);
+      if(!cfg||!state[id]) return Promise.resolve({ok:false,code:'no_such_layer'});
+      if(!modelId) return Promise.resolve({ok:false,code:'no_model_given'});
+      if(modelId===state[id].model) return Promise.resolve({ok:true,code:'already',modelId});
+      const inst=ENG()&&ENG().model(modelId);
+      if(!inst) return Promise.resolve({ok:false,code:'unknown_model'});
+      const row=WXM().get(modelId), name=row?row.nameKey:modelId;
+      const back=()=>{ state[id].loading=null; renderOne(cfg);
+        const sel=document.querySelector('.ec-model[data-for="'+id+'"]'); if(sel) sel.value=state[id].model; };
+      /* what the reader is looking at right now — the DISPLAYED hour, not the requested one */
+      const d=displayed(cfg);
+      const wasAt=(d&&d.validTime)||EC(cfg).validTime()||'';
+      state[id].loading={modelId:modelId, modelName:name};
+      renderOne(cfg);
+      return inst.meta().then(()=>{
+        const a=availFor(cfg,modelId);
+        if(!a.ok){ back(); try{ satToast(name+' — '+whyNot(a.code)); }catch(_){}
+          return {ok:false,code:a.code,modelId,modelName:name}; }
+        state[id].model=modelId;
+        if(wasAt){ const ms=Date.parse(/[zZ]$/.test(wasAt)?wasAt:wasAt+'Z');
+          /* ⚠ quiet: this is not a time change the reader made, and waking every layer on the new
+             model to rebuild would be a read nobody asked for. The build below is the one read. */
+          if(isFinite(ms)) inst.setIndex(inst.nearestTo(ms),{quiet:true}); }
+        wireModel(inst);
+        if(!state[id].on){ state[id].loading=null; renderOne(cfg);
+          /* the layer is off: the model is chosen and will be used the moment it is switched on.
+             That is a true outcome and it is NOT 「表示されている」, so it says which one it is. */
+          return {ok:true,code:'chosen_layer_off',modelId,modelName:name}; }
+        applyTime(cfg);
+        return whenCommitted(cfg).then(p=>(p&&p.modelId===modelId)
+          ? {ok:true,code:'displayed',modelId,modelName:name,validTime:p.validTime,runTime:p.runTime}
+          : {ok:false,code:'not_painted_yet',modelId,modelName:name});
+      }).catch(()=>{ back();
+        try{ satToast(name+' — '+L('could not be reached','取得できませんでした','nicht erreichbar','недоступна','no se pudo obtener')); }catch(_){}
+        return {ok:false,code:'unreachable',modelId,modelName:name}; });
+    }
+
+    /* ⚠⚠ (#R356) ONE SUBSCRIPTION PER MODEL, AND IT ONLY WAKES THE LAYERS ON THAT MODEL. A single
+       `EC().on(...)` was right while there was one axis. With three, an hour change on GFS must not
+       rebuild the ECMWF rasters: that would be three reads for one click, down one shared reader,
+       and a legend that flickers through an hour nobody chose. */
+    const wired=Object.create(null);
+    function layersOn(modelId){ return activeLayers().filter(l=>state[l.id].model===modelId); }
+    function wireModel(inst){
+      if(!inst||!inst.DOMAIN||wired[inst.DOMAIN]) return; wired[inst.DOMAIN]=1;
+      inst.on(ev=>{
+        const mine=layersOn(inst.DOMAIN);
+        if(ev.type==='index'){ touchTime(mine); return; }
+        if(ev.type==='time'){ mine.forEach(c=>applyTime(c)); mine.forEach(renderOne); }
+        else if(ev.type==='play'||ev.type==='meta'){ mine.forEach(renderOne); }
+      });
+    }
+
     function anyOn(){ return LAYERS.some(l=>state[l.id].on); }
     function activeLayers(){ return LAYERS.filter(l=>state[l.id].on); }
     /* ══ ⚠⚠ (#R290) THE FIELD THE READOUT NEEDS IS WARMED WITH THE PICTURE ═══════════════════
@@ -1234,8 +1386,8 @@ window.IntMapModules.weatherEC=function(HOST){
         if(!cfg) return;
         /* ⚠ (#R290 追記) `bandNear` — this frame exists for the cursor readout, not for the picture,
            and a globe-sized request here evicts the wind's field (see FRAME_SAMPLES). */
-        let band=null; try{ const b=GE().camera.getBounds(); band=EC().bandNear(b.getSouth(),b.getNorth()); }catch(_){}
-        EC().load(cfg.variable,null,band).catch(()=>{});
+        let band=null; try{ const b=GE().camera.getBounds(); band=EC(cfg).bandNear(b.getSouth(),b.getNorth()); }catch(_){}
+        EC(cfg).load(cfg.variable,null,band).catch(()=>{});
       }catch(_){}
     }
 
@@ -1293,11 +1445,22 @@ window.IntMapModules.weatherEC=function(HOST){
         let n=0;
         const go=()=>{ if(!state[cfg.id].on||mine!==cfg._seq) return;
           if(!(_imCanDraw()&&addSlot(cfg,nu))){ if(n++<40) setTimeout(go,200); return; }
+          /* ⚠⚠⚠ (#R356) THE PROVENANCE IS TAKEN FROM THE INSTANCE THAT BUILT THIS SLOT, HERE, and
+             carried into the reveal — not read again when the reveal fires. By then the reader may
+             have changed model or hour again, and describing the new request while uncovering the
+             old picture is the exact defect the three states exist to prevent. `mine !== cfg._seq`
+             already stops a superseded build from revealing; this stops a surviving one from being
+             labelled with somebody else's answer. */
+          const src=EC(cfg);
+          const prov=WXM().provenance({modelId:src.DOMAIN, validTime:src.validTime(),
+            referenceTime:src.referenceTime(), variable:cfg.variable});
           setVisSlot(cfg,nu,true); setOpSlot(cfg,nu,0);
           const reveal=()=>{ if(!state[cfg.id].on||mine!==cfg._seq) return;
             if((cfg._s|0)!==nu){ cfg._s=nu; }
             setOpSlot(cfg,nu,state[cfg.id].op);
-            dropSlot(cfg,old); };
+            dropSlot(cfg,old);
+            /* the pixels and the words change in the same turn */
+            commit(cfg,prov); renderOne(cfg); };
           whenSourceLoaded(cfg.id+'-'+nu+'-src',reveal,12000);
         };
         go(); });
@@ -1320,15 +1483,29 @@ window.IntMapModules.weatherEC=function(HOST){
          unconditionally, so a reader with only the temperature raster up paid for u AND v — two
          more variables, the most expensive pair in the feed (the reader derives speed from both) —
          on every single time change, for a picture that is not on the map. */
-      try{ const W=window.Wind, vars=activeLayers().map(c=>c.variable);
-        /* (#R337) …or when the streaks are up over THIS layer without the wind layer: they read the
-           same two variables, so a time step needs them warmed for the same reason. */
-        if(W&&((W.on&&W.on())||(W.solo&&W.solo()))) vars.push('wind_u_component_10m','wind_v_component_10m');
-        const i=EC().index(), n=EC().count();
-        let pb=null; try{ const b=GE().camera.getBounds(); pb=EC().bandFor(b.getSouth(),b.getNorth()); }catch(_){}
-        /* ⚠ (#R290 追記2) ONE schedule survives (the call is debounced and replaces the pending one),
-           so ask for the neighbour a reader is most likely to want — the next hour. */
-        EC().prefetch(vars,Math.min(n-1,i+1),pb); }catch(_){}
+      /* ⚠⚠ (#R356) THE WARM-UP IS PER MODEL NOW, AND IT ASKS EACH MODEL ONLY FOR THE VARIABLES THE
+         LAYERS ON IT ACTUALLY USE. Asking one instance for every active layer's variable would ask
+         ECMWF for a field a GFS layer is drawing — a read of the right name against the wrong axis,
+         which decodes fine and warms nothing the reader is about to see. And the neighbour hour is
+         each model's OWN next step: +1 on a 3-hourly axis is three hours, on an hourly axis one.
+         ⚠ #R337's WIDER CONDITION IS KEPT, NOT REPLACED. The two halves met in this block during
+         the rebase and picking either one alone would have been a silent regression: #R337 widened
+         「the wind is on」 to 「the streaks are being drawn at all」 because the temperature legend can
+         ask for them without the wind LAYER, and that is orthogonal to which model each layer reads. */
+      try{ const W=window.Wind;
+        const byModel=Object.create(null);
+        activeLayers().forEach(c=>{ const m=state[c.id].model; (byModel[m]=byModel[m]||[]).push(c.variable); });
+        if(W&&((W.on&&W.on())||(W.solo&&W.solo()))){ const wm=(window.IntMapECMWF&&window.IntMapECMWF.DOMAIN)||WXM().defaultId();
+          (byModel[wm]=byModel[wm]||[]).push('wind_u_component_10m','wind_v_component_10m'); }
+        let pbS=null,pbN=null; try{ const b=GE().camera.getBounds(); pbS=b.getSouth(); pbN=b.getNorth(); }catch(_){}
+        Object.keys(byModel).forEach(m=>{
+          const inst=ENG()&&ENG().model(m); if(!inst) return;
+          const i=inst.index(), n=inst.count();
+          let pb=null; try{ if(pbS!=null) pb=inst.bandFor(pbS,pbN); }catch(_){}
+          /* ⚠ (#R290 追記2) ONE schedule survives per instance (the call is debounced and replaces
+             the pending one), so ask for the neighbour a reader is most likely to want. */
+          inst.prefetch(byModel[m],Math.min(n-1,i+1),pb);
+        }); }catch(_){}
       warmReadout();
     }
 
@@ -1367,7 +1544,7 @@ window.IntMapModules.weatherEC=function(HOST){
        its own small box — 「ECMWF 予報時刻」 — and it is up only while at least one ECMWF layer is on. */
     function barBody(cfg){
       const dark=(document.documentElement.getAttribute('data-theme')||'')!=='light';
-      const lg=EC().legend(cfg.variable,dark);
+      const lg=EC(cfg).legend(cfg.variable,dark);
       if(!lg) return '<div class="ecl-desc">'+ecDesc(cfg)+'</div>';
       const u=unitOf(cfg.kind,lg.unit);
       /* (#R297) …and the same 「+」 rule as the wind box when the ramp runs past the last tick */
@@ -1409,17 +1586,56 @@ window.IntMapModules.weatherEC=function(HOST){
        changes it is directly above it — `window.IntMapWxPlayer.timeUI`, whose steps are the
        model's own published valid times and nothing between them. `openClock()`, which used to
        open Chronos on its forecast tab, is gone with the button that called it. */
+    /* ⚠⚠⚠ (#R356) EVERY WORD BELOW IS BUILT FROM `displayed(cfg)`, NOT FROM `state.model`.
+       That is the whole difference between 「凡例は絵を説明している」 and 「凡例は要求を復唱している」.
+       Before a layer has ever painted, `displayed` is null and these say so — 「読み込み中」 is a
+       state the reader can be in, and inventing a valid time for it would be a lie with a
+       timestamp on it. */
     function whenLine(cfg){
-      const E=EC();
-      const vt=E.validTime();
-      if(!vt) return L('loading…','読み込み中…','wird geladen…','загрузка…','cargando…');
-      return L('valid','有効時刻','gültig','действ.','válido')+' '+E.fmt(vt)+' · '+relTxt(vt);
+      const d=displayed(cfg);
+      if(!d||!d.validTime) return L('loading…','読み込み中…','wird geladen…','загрузка…','cargando…');
+      return L('valid','有効時刻','gültig','действ.','válido')+' '+EC(cfg).fmt(d.validTime)+' · '+relTxt(d.validTime);
+    }
+    const esc=(s)=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    /* Why a model is not offered for THIS layer, in words a reader can act on. The codes come from
+       js/wx-models.js `availability()`; there is no default branch, because a reason nobody wrote
+       is a reason nobody can fix. */
+    function whyNot(code){
+      if(code==='no_such_variable') return L('no data for this layer','このレイヤーのデータなし','keine Daten für diese Ebene','нет данных для этого слоя','sin datos para esta capa');
+      if(code==='no_such_level') return L('level not published','この気圧面は未提供','Druckfläche nicht verfügbar','уровень не публикуется','nivel no publicado');
+      if(code==='outside_coverage') return L('outside this model’s area','このモデルの範囲外','außerhalb des Modellgebiets','вне области модели','fuera del área del modelo');
+      if(code==='no_metadata') return L('not answering','応答なし','antwortet nicht','нет ответа','sin respuesta');
+      return L('unavailable','利用できません','nicht verfügbar','недоступно','no disponible');
+    }
+    /* Can this layer be drawn from this model RIGHT NOW? The registry answers from the model's own
+       live `latest.json`, so a variable an upstream centre does not publish is refused here rather
+       than becoming an empty map — the exact failure `pruneMissing` was written for in #R276, now
+       asked once per (layer, model) pair instead of once per layer. */
+    function availFor(cfg,modelId){
+      try{
+        const inst=ENG()&&ENG().model(modelId);
+        const meta=inst&&inst.metaSync();
+        return WXM().availability({modelId:modelId, meta:meta, variable:cfg.variable, role:'surface'});
+      }catch(_){ return {ok:true}; }
     }
     function modelLine(cfg){
-      const E=EC();
-      const ref=E.referenceTime();
-      return '<div class="ecl-model">'+E.MODEL+' · '+E.RESOLUTION_KM+' km'
-        +(ref?(' · '+L('run','初期時刻','Lauf','прогон','pasada')+' '+E.fmt(ref,{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric',timeZone:'UTC'})+' UTC'):'')+'</div>';
+      const st=state[cfg.id]||{}, d=displayed(cfg);
+      const opts=MODEL_CHOICES().map(m=>{
+        const a=availFor(cfg,m.id), off=(a.ok===false&&a.code!=='no_metadata');
+        return '<option value="'+esc(m.id)+'"'+(m.id===st.model?' selected':'')+(off?' disabled':'')
+          +'>'+esc(m.nameKey)+(off?(' — '+whyNot(a.code)):'')+'</option>';
+      }).join('');
+      const sel='<div class="ecl-modelpick"><label>'+L('Model','モデル','Modell','Модель','Modelo')
+        +'<select class="ec-model" data-for="'+esc(cfg.id)+'">'+opts+'</select></label></div>';
+      /* ⚠ the LINE below describes the field on the map. While a different model is being built it
+         still describes the OLD one, and the note says which way it is going — 「切替中」 is the
+         honest sentence for the seconds between the click and the picture. */
+      if(!d) return sel+'<div class="ecl-model">'+L('loading…','読み込み中…','wird geladen…','загрузка…','cargando…')+'</div>';
+      const busy=st.loading&&st.loading.modelId&&st.loading.modelId!==d.modelId;
+      const swap=busy?(' · '+L('switching to','切替中',' wechselt zu','переключение на','cambiando a')+' '+esc(st.loading.modelName)+'…'):'';
+      return sel+'<div class="ecl-model">'+esc(d.modelName)+' · '+d.nativeResolutionKm+' km'
+        +(d.runTime?(' · '+L('run','初期時刻','Lauf','прогон','pasada')+' '+EC(cfg).fmt(d.runTime,{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric',timeZone:'UTC'})+' UTC'):'')
+        +swap+'</div>';
     }
     /* ══ ⚠⚠⚠ (#R290) THE OPACITY CONTROL WAS IN A PANEL THAT HIDES IT ═══════════════════════════
        「気温レイヤーに透明度選択がない。」 MEASURED on the built page: `#lyrrow-ec-temp` DOES contain
@@ -1454,7 +1670,7 @@ window.IntMapModules.weatherEC=function(HOST){
     }
     function renderOne(cfg){
       const el=boxFor(cfg);
-      const clock=window.IntMapWxPlayer.timeUI('ec-time-'+cfg.id,EC(),L);
+      const clock=window.IntMapWxPlayer.timeUI('ec-time-'+cfg.id,EC(cfg),L);
       el.innerHTML=dragHandle()
         +'<button class="layer-popup-x" title="'+t('close')+'">×</button>'
         +'<h4>'+ecLbl(cfg)+'</h4>'
@@ -1469,7 +1685,12 @@ window.IntMapModules.weatherEC=function(HOST){
       /* (#R337) the switch reports; the module decides — the same door the wind legend uses */
       const wp=el.querySelector('.ec-wind-parts');
       if(wp) wp.onchange=()=>{ setTempParts(wp.checked); };
-      if(clock) window.IntMapWxPlayer.wireTimeUI(el,'ec-time-'+cfg.id,EC());
+      /* ⚠ (#R356) `EC(cfg)`, not `EC()` — this legend's clock is the axis of the model THIS layer
+         reads, and with a model per layer those are different axes. */
+      if(clock) window.IntMapWxPlayer.wireTimeUI(el,'ec-time-'+cfg.id,EC(cfg));
+      /* (#R356) the model picker. One per legend, because the model belongs to the LAYER. */
+      const msel=el.querySelector('.ec-model');
+      if(msel) msel.onchange=()=>{ setModel(cfg.id,msel.value); };
     }
     function renderLegend(){
       activeLayers().forEach(renderOne);
@@ -1511,9 +1732,19 @@ window.IntMapModules.weatherEC=function(HOST){
     }
     /* A variable the feed stopped publishing takes its row with it, instead of leaving a checkbox
        that paints nothing — which is exactly how ec-sst survived nine rounds. */
+    /* ⚠ (#R356) 「THE FEED」 IS NOW MORE THAN ONE FEED. This asked the default model and removed the
+       row if THAT model had stopped publishing the variable. With a picker on every legend that is
+       the wrong question: a field ECMWF drops but ICON still publishes is a row the reader can
+       still draw, and deleting it would take the choice away without saying so. The row goes only
+       when NO model on offer has the variable — which is the condition ec-sst actually met.
+       ⚠ Only models whose metadata has ARRIVED get a vote. A model that has not answered yet is not
+       evidence of absence, so an un-fetched model never causes a row to be deleted. */
     function pruneMissing(){
       const E=EC(); if(!E.metaSync()) return;
-      LAYERS.slice().forEach(l=>{ if(E.has(l.variable)) return;
+      const metas=[];
+      MODEL_CHOICES().forEach(m=>{ try{ const i=ENG().model(m.id), md=i&&i.metaSync(); if(md) metas.push(i); }catch(_){} });
+      if(!metas.length) metas.push(E);
+      LAYERS.slice().forEach(l=>{ if(metas.some(i=>i.has(l.variable))) return;
         const row=document.getElementById('lyrrow-'+l.id); if(row) row.remove();
         const i=LAYERS.indexOf(l); if(i>=0) LAYERS.splice(i,1);
         delete state[l.id];
@@ -1522,19 +1753,19 @@ window.IntMapModules.weatherEC=function(HOST){
 
     /* re-attach after a style swap */
     GE().events.on('styledata',()=>{ if(anyOn()){ setTimeout(()=>{ if(!_imCanDraw())return; activeLayers().forEach(cfg=>{ if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } }); },80); } });
-    GE().events.on('idle',()=>{ if(!anyOn()) return; activeLayers().forEach(cfg=>curIds(cfg).forEach(l=>{ try{ EC().lift(l); }catch(_){} })); });
+    GE().events.on('idle',()=>{ if(!anyOn()) return; activeLayers().forEach(cfg=>curIds(cfg).forEach(l=>{ try{ EC(cfg).lift(l); }catch(_){} })); });
     /* ⚠ (#R284) `index` fires on EVERY slider pixel and `time` once the drag has settled — see
        IntMapECMWF.setIndex. `index` therefore updates the one thing that must feel instant, IN
        PLACE: re-rendering the box would replace the button under the reader's finger.
        ⚠ (#R288) …and that thing is each layer's own 「いつの絵か」 line, because the separate clock
        box that used to hold a copy of it is gone. */
-    function touchTime(){ try{
-      activeLayers().forEach(cfg=>{ const el=boxes[cfg.id]; if(!el) return;
+    function touchTime(only){ try{
+      (only||activeLayers()).forEach(cfg=>{ const el=boxes[cfg.id]; if(!el) return;
         const w=el.querySelector('.ecl-when'); if(w) w.textContent=whenLine(cfg); });
     }catch(_){} }
-    EC().on(ev=>{ if(ev.type==='index'){ touchTime(); return; }
-      if(ev.type==='time'){ if(anyOn()) applyTime(); renderLegend(); }
-      else if(ev.type==='play'||ev.type==='meta'){ if(anyOn()) renderLegend(); } });
+    /* (#R356) the default model is wired at start-up; every other one is wired the first time a
+       layer is actually put on it (`setModel`), so a session that never switches subscribes once. */
+    wireModel(EC());
 
     mountRows(); setTimeout(mountRows,1500);
     window.addEventListener('intmap-lang',relabelRows);
@@ -1550,10 +1781,17 @@ window.IntMapModules.weatherEC=function(HOST){
       if(window.IntMapShareState&&window.IntMapShareState.register) window.IntMapShareState.register('weatherEC',io);
       else { window._imShareEarly=window._imShareEarly||[]; window._imShareEarly.push(['weatherEC',io]); } }catch(_){}
     function shareIO(){ return {
-      get(){ const o={}; const ops={};
+      get(){ const o={}; const ops={}; const mdl={};
         LAYERS.forEach(l=>{ if(state[l.id].on&&state[l.id].op!==l.op) ops[l.id]=+state[l.id].op.toFixed(2); });
+        /* ⚠ (#R356) 「共有URLに…選択モデル」 — only where it DIFFERS from the default, so an old link
+           and a link from a reader who never touched the picker stay byte-identical to what they
+           were before this round. A key that is always present is a key that has to be parsed by
+           every reader of every old URL. */
+        try{ const def=WXM().defaultId();
+          LAYERS.forEach(l=>{ if(state[l.id].on&&state[l.id].model&&state[l.id].model!==def) mdl[l.id]=state[l.id].model; }); }catch(_){}
         const vt=EC().validTime(); if(vt&&EC().index()!==EC().nowIndex()) o.t=vt;
         if(Object.keys(ops).length) o.op=ops;
+        if(Object.keys(mdl).length) o.m=mdl;
         try{ const ws=document.getElementById('op-wind'); const wo=ws?+ws.value:1; if(isFinite(wo)&&wo!==1) o.wo=+wo.toFixed(2); }catch(_){}
         return Object.keys(o).length?o:null; },
       set(v){ if(!v) return;
@@ -1562,6 +1800,11 @@ window.IntMapModules.weatherEC=function(HOST){
           if(v.op) Object.keys(v.op).forEach(id=>{ if(!state[id]) return; state[id].op=+v.op[id];
             const sl=document.querySelector('.ec-op[data-for="'+id+'"]'); if(sl) sl.value=state[id].op;
             const cfg=LAYERS.find(l=>l.id===id); if(cfg) setOp(cfg,state[id].op); });
+          /* ⚠⚠ (#R356) A MODEL THAT NO LONGER EXISTS IS SAID OUT LOUD, not silently swapped. 「復元時に
+             データが公開終了していた場合は、最も近い時刻へ黙って変更せず、復元できなかった項目と代替候補
+             を明示」 — the same rule for models. `setModel` refuses with a reason and puts the picker
+             back on the model that IS drawing, which is the honest end state. */
+          if(v.m) Object.keys(v.m).forEach(id=>{ if(!state[id]) return; setModel(id,v.m[id]); });
           if(v.wo!=null){ const s=document.getElementById('op-wind'); if(s){ s.value=v.wo; s.dispatchEvent(new Event('input',{bubbles:true})); } }
         }).catch(()=>{});
       } }; }
@@ -1570,6 +1813,12 @@ window.IntMapModules.weatherEC=function(HOST){
       toggle, setOp:(id,op)=>{ const c=LAYERS.find(l=>l.id===id); if(c) setOp(c,op); },
       layerFor:(id)=>LAYERS.find(l=>l.id===id)||null,
       activeVariable:()=>{ const a=activeLayers().filter(l=>l.type==='raster'); return a.length?a[a.length-1]:null; },
+      /* (#R356) the model a layer reads, for Atlas and for the readout. ⚠ `modelOf` answers with
+         what is DISPLAYED, `setModel` asks for a change — they are deliberately different words for
+         the two different questions, so a caller cannot read one and mean the other. */
+      setModel, models:()=>MODEL_CHOICES().map(m=>({id:m.id,name:m.nameKey,km:m.km})),
+      modelOf:(id)=>{ const c=LAYERS.find(l=>l.id===id); const d=c&&displayed(c); return d?d.modelId:null; },
+      provenanceOf:(id)=>{ const c=LAYERS.find(l=>l.id===id); return (c&&displayed(c))||null; },
       _layers:LAYERS, _state:state };
   })();
 };

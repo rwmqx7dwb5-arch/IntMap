@@ -122,7 +122,7 @@ test('R276 ④ the weather sits above the day/night shading, and one slider is t
     'the wind field re-asserts its place every idle');
   /* (#R284) the ids are a layer's CURRENT slot now (two slots per layer, so a forecast step never
      shows an empty map) — `curIds(cfg)` is the same set of layers, named through the swap. */
-  assert.match(w, /activeLayers\(\)\.forEach\(cfg=>curIds\(cfg\)\.forEach\(l=>\{ try\{ EC\(\)\.lift\(l\)/,
+  assert.match(w, /activeLayers\(\)\.forEach\(cfg=>curIds\(cfg\)\.forEach\(l=>\{ try\{ EC\(cfg\)\.lift\(l\)/,
     '…and so does every ECMWF raster');
   /* the slider is applied ONCE, and its default is 1 */
   assert.match(DL(), /else if\(id==='wind'\)\{ try\{ window\.Wind&&window\.Wind\.setOpacity&&window\.Wind\.setOpacity\(v\); \}catch\(_\)\{\} \}/,
@@ -140,7 +140,7 @@ test('R276 ⑤ every ECMWF legend reads the colour scale the tiles were drawn wi
   assert.match(s, /function legend\(variable, dark\) \{[\s\S]{0,900}?stops\.push\(\{ v: bp\[i\]/,
     'the legend is the scale, turned into stops');
   const w = WX();
-  assert.match(w, /const lg=EC\(\)\.legend\(cfg\.variable,dark\);/, 'each layer bar reads its own variable');
+  assert.match(w, /const lg=EC\(cfg\)\.legend\(cfg\.variable,dark\);/, 'each layer bar reads its own variable');
   assert.match(w, /const ticks=\[0,0\.25,0\.5,0\.75,1\]\.map/, 'with numeric ticks…');
   assert.match(w, /const u=unitOf\(cfg\.kind,lg\.unit\);/, '…and the scale\'s own unit');
   assert.match(w, /\bdesc:LA\(/, 'and every layer carries a description');
@@ -159,7 +159,19 @@ test('R276 ⑥ nothing calls this GFS, and an unspecified model is Best match', 
   const all = WX() + DL() + EC();
   assert.ok(!/Open-Meteo GFS/.test(all), 'the "Open-Meteo GFS" label is gone');
   assert.ok(!/GFS/.test(EC() + WIND()), 'and the model modules do not mention GFS at all');
-  assert.match(EC(), /MODEL: 'ECMWF IFS HRES'/, 'the model names itself');
+  /* ⚠ (#R356) THE NAME MOVED, THE REQUIREMENT DID NOT. This used to read `MODEL: 'ECMWF IFS HRES'`
+     out of js/wx-ecmwf.js, because that file WAS the model. It is the multi-model engine now and
+     takes the name from the row js/wx-models.js holds — so the check follows the answer rather
+     than lowering the bar: the registry must still name this model, and the engine must still take
+     the name from there rather than carrying a second copy of it.
+     ⚠ AND «nothing calls this GFS» IS NOW A SHARPER CLAIM, not a weaker one. GFS is a real model
+     the reader can choose (`ncep_gfs013`); what must never happen is the ECMWF field wearing its
+     label. That is guaranteed by the name being one field of the row the instance was built from. */
+  const MDL = read('js/wx-models.js');
+  assert.match(MDL, /id: 'ecmwf_ifs',\s*nameKey: 'ECMWF IFS HRES'/, 'the registry names this model');
+  assert.match(EC(), /MODEL: cfg\.nameKey/, 'and the instance reports the name its own row carries');
+  assert.ok(!/'ECMWF IFS HRES'/.test(codeOnly(EC())),
+    'js/wx-ecmwf.js does not hold a second copy of the name');
   assert.match(WX(), /'Open-Meteo · '\+\(\(!m\|\|m==='best_match'\)\?'Best match':m\)/,
     'an unspecified Open-Meteo model is reported as Best match');
   assert.match(codeOnly(read('js/wx-source.js')), /if \(!j\.model\) j\.model = 'best_match';/,
@@ -173,10 +185,36 @@ test('R276 ⑦ a variable the feed does not publish cannot leave a dead row behi
   const w = WX();
   assert.ok(!/sea_surface_temperature/.test(w), 'the layer that asked for a missing variable is gone');
   assert.match(w, /\{id:'ec-gust',\s*variable:'wind_gusts_10m'/, 'and its row went to one that exists');
-  assert.match(w, /function pruneMissing\(\)\{[\s\S]{0,400}?if\(E\.has\(l\.variable\)\) return;/,
-    'rows are checked against the live variable list…');
+  /* ⚠⚠ (#R356) 「THE FEED」 IS MORE THAN ONE FEED NOW, AND THE CLAIM GOT BIGGER RATHER THAN SMALLER.
+     This read 「if the ONE model does not publish it, delete the row」. With a model per layer that
+     rule would delete a row the reader can still draw: a field ECMWF drops but ICON still publishes
+     is a choice, not a dead row, and removing it would take the choice away without saying so.
+     ⚠ THE DEFECT THIS TEST EXISTS FOR IS UNCHANGED AND STILL CAUGHT. `sea_surface_temperature` is
+     in NONE of the offered models, so it still meets the deletion condition. What is new is that
+     「dead」 now means 「no model on offer has it」 — and because a row can survive that a given model
+     cannot draw, the OTHER half has to be asserted too, or a reader could pick a model and get an
+     empty map. Both halves, on their own lines: */
+  assert.match(w, /function pruneMissing\(\)\{[\s\S]{0,600}?if\(metas\.some\(i=>i\.has\(l\.variable\)\)\) return;/,
+    'rows are checked against every model that has answered…');
+  assert.match(w, /if\(!metas\.length\) metas\.push\(E\);/,
+    '…and a model that has NOT answered is not evidence of absence, so it never causes a deletion');
   assert.match(w, /const row=document\.getElementById\('lyrrow-'\+l\.id\); if\(row\) row\.remove\(\);/,
-    '…and a variable that disappears upstream takes its row with it');
+    '…and a variable that disappears from all of them takes its row with it');
+  /* the second half: the row survives, but the model that cannot draw it is refused — twice, in the
+     picker (so it cannot be chosen) and in setModel (so it cannot be restored from a link either) */
+  assert.match(w, /const a=availFor\(cfg,m\.id\), off=\(a\.ok===false&&a\.code!=='no_metadata'\);/,
+    'the picker disables a model that cannot draw this layer…');
+  assert.match(w, /\+\(off\?' disabled':''\)/, '…in the option itself…');
+  /* ⚠⚠ (#R356) THIS ASSERTION PINNED ITS OWN ROUND'S DRAFT AND WAS WRONG BY ONE `return`. It was
+     written while `setModel` returned a boolean, and the shipped `setModel` returns a PROMISE that
+     resolves with `{ok, code}` — because Atlas must not report a model change until the map has
+     actually painted it. So the literal ended `return; }` and the code ends `return {ok:false,…}`.
+     The eleventh time this project has had a check hit its own code; the answer is the same one it
+     always is — assert the RELATION, not the punctuation. */
+  assert.match(w, /if\(!a\.ok\)\{ back\(\);[\s\S]{0,200}?satToast\(name\+' — '\+whyNot\(a\.code\)\);/,
+    '…and setModel refuses it with the reason, rather than switching to an empty map');
+  assert.match(w, /return \{ok:false,code:a\.code,/,
+    '…and says WHICH reason, so a caller can repeat it instead of inventing one');
 });
 
 /* ── ⑧ one time control per view, and no duplicate ids ────────────────────────────────────────
@@ -194,7 +232,7 @@ test('R276 ⑧ the two forecast players are two views of one state, with differe
   assert.equal((w.match(/function _timeUI\(/g) || []).length, 1, 'ONE builder for the time control');
   assert.equal((w.match(/function _wireTimeUI\(/g) || []).length, 1, 'ONE wirer for it');
   assert.match(w, /window\.IntMapWxPlayer\.timeUI\('wind-time',E,L\)/, 'the wind legend uses it');
-  assert.match(w, /window\.IntMapWxPlayer\.timeUI\('ec-time-'\+cfg\.id,EC\(\),L\)/,
+  assert.match(w, /window\.IntMapWxPlayer\.timeUI\('ec-time-'\+cfg\.id,EC\(cfg\),L\)/,
     'and so does every ECMWF legend, under its own layer id');
   assert.match(w, /<select class="ecl-timesel"/,
     'and it is a <select>, so only a time the model publishes can be chosen');
@@ -395,9 +433,22 @@ test('R276 ⑰ the prefetch is on the time change, not on the first load', () =>
      the third argument read as a regression, when it is the fix: without it `prefetch` fell through
      to `band=null` and warmed the variable over the WHOLE GLOBE (13.2 M samples) for a reader
      looking at one country. The relation the check is for is 「warmed from the time change」. */
-  assert.match(w, /function applyTime\(only\)\{[\s\S]{0,1600}?EC\(\)\.prefetch\(vars,Math\.min\(n-1,i\+1\)/,
-    'the ECMWF rasters warm theirs from the time change too');
-  assert.match(w, /EC\(\)\.prefetch\(vars,Math\.min\(n-1,i\+1\),\s*\w+\s*\)/,
+  /* ⚠ (#R356) …AND IT PINNED THE INSTANCE. `EC().prefetch(vars, …)` was one call because there was
+     one model. With a model per layer it is one call PER MODEL, over that model's own variables:
+     asking the ECMWF instance for a field a GFS layer is drawing is a read of the right name
+     against the wrong axis — it decodes cleanly and warms nothing the reader is about to see. The
+     three relations this check has always been for are each asserted on their own line below, so a
+     later change to the loop cannot satisfy them by accident. */
+  const at = w.indexOf('function applyTime(only)');
+  assert.ok(at > 0, 'applyTime is where it is expected');
+  const body = w.slice(at, at + 2600);
+  assert.match(body, /\.prefetch\(byModel\[m\],Math\.min\(n-1,i\+1\),pb\)/,
+    'the ECMWF rasters warm theirs from the time change too…');
+  assert.match(body, /const inst=ENG\(\)&&ENG\(\)\.model\(m\); if\(!inst\) return;/,
+    '…each from the model that will actually be asked for them…');
+  assert.match(body, /const i=inst\.index\(\), n=inst\.count\(\);/,
+    '…on that model’s OWN axis, because +1 step is one hour on one and three on another…');
+  assert.match(body, /pb=inst\.bandFor\(pbS,pbN\)/,
     '…and they warm the VIEW, not the globe — no third argument means band=null means everything');
 });
 

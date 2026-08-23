@@ -195,9 +195,18 @@ test('R299 ⑥ the wide read is a staircase gated on stillness, and it still get
 test('R299 ⑥ the coarse ECMWF domain is NOT used — its axis is a different axis', () => {
   const s = read('js/wx-ecmwf.js');
   const code = noComments(s);
+  const mdl = noComments(read('js/wx-models.js'));
   assert.ok(!/ecmwf_ifs025/.test(code),
     'ecmwf_ifs025 is 3-hourly against ecmwf_ifs’s hourly: using it would move the reader’s hour');
-  assert.ok(/var DOMAIN = 'ecmwf_ifs'/.test(code) || /DOMAIN\s*=\s*'ecmwf_ifs'/.test(code), 'one domain');
+  /* ⚠ (#R356) THE SAME REQUIREMENT, ASKED WHERE THE ANSWER NOW LIVES. `var DOMAIN = 'ecmwf_ifs'`
+     was the whole model identity; it is `cfg.id` now, and the row that supplies it is in
+     js/wx-models.js. Both halves still have to hold, and the second one is STRONGER than it was:
+     it is no longer 「this file mentions only one domain」 but 「the coarse domain is not one of the
+     models the reader can pick at all」 — which is the thing #R299 actually measured. */
+  assert.ok(!/ecmwf_ifs025/.test(mdl), 'and it is not one of the models the registry offers either');
+  assert.match(code, /var DOMAIN = cfg\.id;/, 'the instance takes its domain from exactly one place');
+  assert.match(mdl, /id: 'ecmwf_ifs',/, 'and the default model is the hourly 9 km field');
+  assert.match(mdl, /return MODELS\[0\]\.id;/, '…which is the first row, i.e. the one a session opens on');
 });
 
 /* ── ⑦ the route panel is a window, and the corner is part of it ───────────────────────────── */
