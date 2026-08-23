@@ -5042,5 +5042,34 @@ window.IntMapLang.define('zh', {
   "Where in the world are the most severe weather warnings in force right now?": "目前全球哪裡發布了最嚴重的氣象警報？",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "過去一週最活躍的板塊邊界是哪些？",   /* atlas-examples.js (#R313) */
   "Which submarine cable chokepoints carry the most of the world’s traffic?": "全球流量最集中的海底電纜咽喉點在哪裡？",   /* atlas-examples.js (#R313) */
+  '{what} — done.': '{what} — 已完成。',   /* atlas-results.js (#R318) atlas.result.completed.named */
+  'Still running…': '仍在執行中…',   /* atlas-results.js (#R318) atlas.result.running */
+  'Still running — {done} of {total}.': '執行中 — {total} 項中的 {done} 項。',   /* atlas-results.js (#R318) atlas.result.running.progress */
+  'Partly done — {done} of {total}.': '部分完成 — {total} 項中的 {done} 項。',   /* atlas-results.js (#R318) atlas.result.partial */
+  'That did not happen.': '這並未執行。',   /* atlas-results.js (#R318) atlas.result.failed */
+  'Cancelled.': '已取消。',   /* atlas-results.js (#R318) atlas.result.cancelled */
+  'Replaced by your newer request.': '已被你較新的要求取代。',   /* atlas-results.js (#R318) atlas.result.superseded */
+  'I need one more thing before I can do that.': '在執行之前，我還需要一項資訊。',   /* atlas-results.js (#R318) atlas.result.needs_input */
+  'It was calculated but nothing was drawn on the map.': '已完成計算，但地圖上沒有畫出任何東西。',   /* atlas-results.js (#R318) atlas.code.not_rendered */
+  'It is on the map but currently hidden.': '它在地圖上，但目前處於隱藏狀態。',   /* atlas-results.js (#R318) atlas.code.not_visible */
+  'Nothing on the map changed.': '地圖上沒有任何變化。',   /* atlas-results.js (#R318) atlas.code.no_change */
+  'That is not available right now.': '目前無法使用。',   /* atlas-results.js (#R318) atlas.code.unavailable */
+  'I do not have that operation.': '我沒有這項操作。',   /* atlas-results.js (#R318) atlas.code.unknown_capability */
+  'The values given for that operation were not usable.': '傳給該操作的數值無法使用。',   /* atlas-results.js (#R318) atlas.code.bad_args */
+  'Several things match — which one?': '有多個相符的項目 — 是哪一個？',   /* atlas-results.js (#R318) atlas.code.ambiguous_target */
+  'It did not finish in time.': '未能在時限內完成。',   /* atlas-results.js (#R318) atlas.code.timeout */
+  'It stopped with an error.': '因發生錯誤而停止。',   /* atlas-results.js (#R318) atlas.code.threw */
+  'That one needs your confirmation first.': '這一項需要你先確認。',   /* atlas-results.js (#R318) atlas.code.needs_confirm */
+  'Tap the point on the map you mean.': '請在地圖上點選你所指的地點。',   /* atlas-results.js (#R318) atlas.input.point */
+  'Draw the line on the map.': '請在地圖上畫出線條。',   /* atlas-results.js (#R318) atlas.input.polyline */
+  'Draw the area on the map.': '請在地圖上畫出範圍。',   /* atlas-results.js (#R318) atlas.input.polygon */
+  'Choose one:': '請選擇一項：',   /* atlas-results.js (#R318) atlas.input.choice */
+  'Tell me the value to use.': '請告訴我要使用的值。',   /* atlas-results.js (#R318) atlas.input.text */
+  'Tell me the number to use.': '請告訴我要使用的數字。',   /* atlas-results.js (#R318) atlas.input.number */
+  'You asked for this on the map, and it is not on the map yet.': '你要求把它顯示在地圖上，但它還沒有出現在地圖上。',   /* atlas-results.js (#R318) atlas.goal.map_missing */
+  'You asked for an explanation, and I only operated the map.': '你要求的是說明，但我只操作了地圖。',   /* atlas-results.js (#R318) atlas.goal.explanation_missing */
+  'You asked me to do something, and I only wrote about it.': '你要求的是操作，但我只用文字說明。',   /* atlas-results.js (#R318) atlas.goal.action_missing */
+  'Not every target was reached: {names}': '並非所有目標都達成：{names}',   /* atlas-results.js (#R318) atlas.goal.targets_missing */
+  'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': '這次請求嘗試的次數過多 — 你每日的可用次數並未再被扣除。請換個說法再試一次。',   /* ai-core.js (#R318) aiTurnCallsMsg */
   }
 });

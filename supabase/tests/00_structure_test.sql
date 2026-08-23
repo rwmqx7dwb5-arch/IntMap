@@ -4,7 +4,7 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(54);
+select plan(58);   -- (#R318) +4: ai_turns joins the has_table and RLS lists, and its two RPCs are asserted
 
 -- 1) Every expected table exists in public.
 select has_table('public', t, 'table ' || t || ' exists')
@@ -13,12 +13,15 @@ from unnest(array[
   'bug_reports','community_posts','community_comments','community_votes',
   'community_comment_votes','community_reports','geo_pins','dashboard_cards',
   'current_news',
+  -- (#R318) the AI TURN ledger: one row per (account, turn). The first call of a turn charges
+  -- ai_usage and the rest are free, so a single question no longer costs three uses.
+  'ai_turns',
   -- (#R141) area-monitoring feature. (#R280) monitor_seen_items was created by the #R144
   -- hardening migration and never reached this list, so the ONE assertion that says "RLS is on
   -- for every table we have" was measuring 19 of the 20 that exist. A table missing from the
   -- list cannot fail the list.
   'area_monitors','monitor_runs','monitor_evidence','monitor_reports','monitor_seen_items'
-]) as t;                                                    -- 20 assertions
+]) as t;                                                    -- 21 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -29,9 +32,9 @@ from unnest(array[
   'profiles','ai_usage','user_prefs','favorites','donations','feedback',
   'bug_reports','community_posts','community_comments','community_votes',
   'community_comment_votes','community_reports','geo_pins','dashboard_cards',
-  'current_news',
+  'current_news','ai_turns',
   'area_monitors','monitor_runs','monitor_evidence','monitor_reports','monitor_seen_items'
-]) as t;                                                    -- 20 assertions
+]) as t;                                                    -- 21 assertions
 
 -- 3) Keys / relationships that the app depends on.
 select has_pk('public', 'profiles', 'profiles has a primary key');
@@ -47,6 +50,8 @@ select hasnt_column('public', 'profiles_public', 'is_admin', 'profiles_public do
 -- 5) Core functions exist.
 select has_function('public','is_admin', 'is_admin() exists');
 select has_function('public','increment_ai_usage', array['uuid','integer'], 'increment_ai_usage(uuid,int) exists');
+select has_function('public','consume_ai_turn', array['uuid','integer','text','integer','integer'], 'consume_ai_turn(...) exists');   -- (#R318)
+select has_function('public','refund_ai_turn', array['uuid','text'], 'refund_ai_turn(uuid,text) exists');
 
 -- 6) (#R141) Area-monitoring keys, relationships and functions.
 select col_is_pk('public','area_monitors', array['id'], 'area_monitors PK is (id)');
