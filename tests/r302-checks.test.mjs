@@ -159,8 +159,12 @@ test('R302 ⑥ the spawn window is taken once a frame, not once a particle', () 
    components were appended whether or not the wind layer was on. */
 test('R302 ⑦ the forecast prefetch warms the view, and only the layers that are up', () => {
   const s = WX();
-  assert.match(s, /if\(W&&W\.on&&W\.on\(\)\) vars\.push\('wind_u_component_10m','wind_v_component_10m'\);/,
-    "the wind's two components belong to the warm only while the wind is on");
+  /* ⚠ (#R337) THE CONDITION WIDENED BECAUSE THE PICTURE DID, AND NOT ONE PIXEL FURTHER. #R302's
+     rule is 「u and v are warmed only when they are on the map」, and since this round they can be on
+     the map without the wind LAYER — the temperature legend can ask for the streaks alone. So this
+     still says 「only when they are being drawn」; what changed is what drawing them means. */
+  assert.match(s, /if\(W&&\(\(W\.on&&W\.on\(\)\)\|\|\(W\.solo&&W\.solo\(\)\)\)\) vars\.push\('wind_u_component_10m','wind_v_component_10m'\);/,
+    "the wind's two components belong to the warm only while they are actually being drawn");
   assert.match(s, /pb=EC\(\)\.bandFor\(b\.getSouth\(\),b\.getNorth\(\)\)/, 'the view becomes a band');
   assert.match(s, /EC\(\)\.prefetch\(vars,Math\.min\(n-1,i\+1\),pb\)/, '…and the band is passed');
 });
@@ -191,7 +195,7 @@ test('R302 ⑨ every path into addField has already asked whether the key is liv
      end of a successful build — so `addField` is never entered with `liveKey===key`. Asserting the
      guard would be asserting dead code; what has to hold is the property that made it dead. */
   assert.ok(!/liveKey===key&&liveSlot>=0/.test(s), 'the unreachable early return must not come back');
-  assert.match(s, /if\(key&&key!==liveKey\) ensureField\(key\);/, 'the load path asks first');
+  assert.match(s, /if\(on&&key&&key!==liveKey\) ensureField\(key\);/, 'the load path asks first');   /* (#R337) …and only for the wind LAYER */
   assert.match(s, /if\(!on\|\|liveKey===key\) return;/, 'the retry ladder stops the moment the slot is live');
   assert.match(s, /if\(on&&liveKey!==key\) addField\(key\)/, '…and so does the idle hook');
   assert.match(s, /liveKey=key; liveSlot=use;/, 'the slot is recorded when it is built');

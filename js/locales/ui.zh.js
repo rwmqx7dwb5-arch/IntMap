@@ -5043,6 +5043,38 @@ window.IntMapLang.define('zh', {
   "Where in the world are the most severe weather warnings in force right now?": "目前全球哪裡發布了最嚴重的氣象警報？",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "過去一週最活躍的板塊邊界是哪些？",   /* atlas-examples.js (#R313) */
   "Which submarine cable chokepoints carry the most of the world’s traffic?": "全球流量最集中的海底電纜咽喉點在哪裡？",   /* atlas-examples.js (#R313) */
+  /* ── (#R337) the widened starter-chip pool: geography, currency, language and pairs of facts ── */
+  "The equator runs through {place} — what does that do to its seasons and its rain?": "赤道橫貫{place}，這對它的季節與降雨有什麼影響？",   /* atlas-examples.js (#R337) */
+  "Part of {place} lies inside the Arctic Circle — who lives up there, and on what?": "{place}有一部分位於北極圈內。那裡住著誰？靠什麼過活？",   /* atlas-examples.js (#R337) */
+  "All of {place} lies between the tropics — how does that decide what grows and where people live?": "{place}全境都在熱帶。這決定了什麼作物長得出來、人又住在哪裡？",   /* atlas-examples.js (#R337) */
+  "{place} is scattered over far more sea than land — which piece of it lies furthest out?": "{place}的領土散布在遠比陸地更廣的海域上。最遠的一塊在哪裡？",   /* atlas-examples.js (#R337) */
+  "{place} is wealthy and tightly governed at once — what holds that arrangement together?": "{place}既富裕又治理嚴密。是什麼撐起這樣的組合？",   /* atlas-examples.js (#R337) */
+  "{place} has one of the biggest economies in the world and one of the lower incomes per head — where does the gap sit?": "{place}擁有世界級的經濟規模，人均所得卻偏低。落差出在哪裡？",   /* atlas-examples.js (#R337) */
+  "People in {place} live long lives on modest incomes — what is going right?": "{place}所得不算高，人卻長壽。哪裡做對了？",   /* atlas-examples.js (#R337) */
+  "{place} uses the US dollar instead of a currency of its own — why, and what did it give up?": "{place}使用美元而非自己的貨幣。為什麼？又放棄了什麼？",   /* atlas-examples.js (#R337) */
+  "{place} runs in {n} languages at once — how do government, school and media handle that?": "{place}同時以{n}種語言運作。行政、學校與媒體如何應付？",   /* atlas-examples.js (#R337) */
+  "{place} does not set its own interest rates — it uses the euro. What has that bought, and what has it cost?": "{place}不自訂利率——它用的是歐元。這換來了什麼，又付出了什麼？",   /* atlas-examples.js (#R337) */
+  "Fewer people live in {place} than in a mid-sized city — how does a state that small work?": "{place}的人口比一座中型城市還少。這樣的規模，國家怎麼運轉？",   /* atlas-examples.js (#R337) */
+  "{place} has one of the lowest incomes per head anywhere — where does the money that does arrive come from?": "{place}的人均所得是全球最低之列。那些確實進來的錢從哪裡來？",   /* atlas-examples.js (#R337) */
+  "Life is cut short in {place} compared with most of the world — by what, and what is changing?": "{place}的平均壽命在全球偏低。原因是什麼？又有什麼正在改變？",   /* atlas-examples.js (#R337) */
+  "Almost everyone in {place} is online — what did it take to get there?": "{place}幾乎人人上網。走到這一步需要什麼？",   /* atlas-examples.js (#R337) */
+  "{place} spends almost nothing on defence — who or what actually guarantees its security?": "{place}幾乎不花錢在國防上。實際保障它安全的是誰、是什麼？",   /* atlas-examples.js (#R337) */
+  "More than a hundred million people live in {place} — what does the state do well at that scale, and what breaks?": "{place}住著超過一億人。在這種規模下，國家做得好的是什麼？又是哪裡撐不住？",   /* atlas-examples.js (#R337) */
+  "{place}’s summer is the northern hemisphere’s winter — where does that show up in its economy?": "{place}的夏天是北半球的冬天。這在它的經濟裡體現在哪裡？",   /* atlas-examples.js (#R337) */
+  "Winter days are short in {place} — what does that do to its energy use and how people live?": "{place}冬天日照很短。這對能源使用與生活方式有什麼影響？",   /* atlas-examples.js (#R337) */
+  "What is falling over {place} right now, and where is it heading next?": "此刻{place}正在下什麼？接下來會往哪裡移動？",   /* atlas-examples.js (#R337) */
+  "How much of {place} sits low enough for the sea to reach it, and by when?": "{place}有多少土地低到海水會淹上來？到什麼時候？",   /* atlas-examples.js (#R337) */
+  "Which tectonic plates meet near {place}, and how fast are they moving?": "{place}附近有哪些板塊交會？移動速度多快？",   /* atlas-examples.js (#R337) */
+  "Which climate zones does {place} span, and which of them are shifting?": "{place}橫跨哪些氣候帶？其中哪些正在移動？",   /* atlas-examples.js (#R337) */
+  "How far do {place}’s maritime claims reach, and where are they contested?": "{place}的海域主張延伸到哪裡？哪些地方有爭議？",   /* atlas-examples.js (#R337) */
+  "What is passing over {place} in orbit right now, and what is it for?": "此刻有哪些衛星正通過{place}上空？它們是做什麼用的？",   /* atlas-examples.js (#R337) */
+  "Where do {place}’s data centres sit, and what decided those locations?": "{place}的資料中心分布在哪裡？是什麼決定了這些位置？",   /* atlas-examples.js (#R337) */
+  "What do the night lights over {place} say about where its people and money are?": "{place}的夜間燈光說明了人與錢在哪裡？",   /* atlas-examples.js (#R337) */
+  "Which coastlines does the sea reach first as it rises?": "海平面上升時，最先被淹到的海岸線是哪些？",   /* atlas-examples.js (#R337) */
+  "Where are the tectonic plates moving fastest, and what is that building?": "板塊移動最快的地方在哪裡？那裡正在形成什麼？",   /* atlas-examples.js (#R337) */
+  "How crowded is low Earth orbit now, and who owns what up there?": "現在的低地球軌道有多擁擠？上面的東西又分別屬於誰？",   /* atlas-examples.js (#R337) */
+  "Which countries host the most data centres, and what draws them there?": "哪些國家的資料中心最多？是什麼把它們吸引過去？",   /* atlas-examples.js (#R337) */
+  "Wind particles over the temperature layer": "氣溫圖層上的風場粒子",   /* atlas-console.js (#R337) */
   "This panel could not be loaded — check your connection and try again.": "無法載入此面板 — 請檢查網路連線後再試一次。",   /* analysis-panels.js (#R322) */
   "Columbus reaches the Americas": "哥倫布抵達美洲",   /* analysis-world-events.js (#R322) */
   "First Atlantic crossing opens the Columbian exchange.": "首次橫渡大西洋，開啟新舊大陸之間的哥倫布大交換。",   /* analysis-world-events.js (#R322) */

@@ -356,7 +356,9 @@ test('R276 ⑯ a weather layer that is refused keeps trying, and stops when it l
     '…and on the map\'s next idle');
   assert.match(w, /const again=\(\)=>\{ if\(!on\|\|liveKey===key\) return;/,
     'and it stops as soon as the slot is live, or the layer is off');
-  assert.match(w, /if\(key&&key!==liveKey\) ensureField\(key\);/, 'load() goes through the ladder');
+  /* (#R337) the guard gained `on&&`: the COLOUR RASTER is the wind layer's alone now that the
+     streaks can be up for the temperature legend. The ladder itself is unchanged. */
+  assert.match(w, /if\(on&&key&&key!==liveKey\) ensureField\(key\);/, 'load() goes through the ladder');
   /* the ECMWF rasters have the same shape and the same ladder */
   assert.match(w, /const go=\(\)=>\{ if\(!state\[id\]\.on\) return;\s*\n\s*if\(_imCanDraw\(\)&&addLayer\(cfg\)\)/,
     'an ECMWF layer retries too');

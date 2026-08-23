@@ -43,6 +43,7 @@ window.IntMapModules.newsTimeline=function(HOST){
     const playerEl=document.getElementById('ntl-player');
     const timePicker=document.getElementById('ntl-time');
     const scale=document.getElementById('ntl-scale'), closeX=document.getElementById('ntl-x'), title=document.getElementById('ntl-title');
+    const ticks=document.getElementById('ntl-ticks');   /* (#R337) the Time tab's ruler — see buildTicks */
     if(!tl||!slider) return;
     let pendingTimer=null, _self=false, mode='year';   /* (#R101) Year (1900→now) | Date (recent days) | (#R137) Time (time-of-day) | (#R288) Forecast (the model's own hours) */
     /* ══ ⚠⚠⚠ (#R288) THE APP HAS ONE CLOCK, AND IT NOW REACHES FORWARD ══════════════════════════
@@ -334,12 +335,46 @@ window.IntMapModules.newsTimeline=function(HOST){
       try{ localStorage.setItem(ZKEY,zone); }catch(_){}
       zoneEnsure();
       try{ refreshUI(window.IntMapTime.state()); }catch(_){} });
-    function buildScale(){ if(!scale) return; const now=L5('Now','現在','Jetzt','Сейчас','Ahora');
+    function buildScale(){ if(!scale){ buildTicks(); return; } const now=L5('Now','現在','Jetzt','Сейчас','Ahora');
       scale.innerHTML=(mode==='year')
         ? '<span>1900</span><span>1960</span><span>2000</span><span>'+now+'</span>'
         : (mode==='time')
+        /* (#R337) still written, and hidden by `buildTicks` the moment the ruler exists — a page
+           whose index.html predates `#ntl-ticks` keeps these five labels rather than nothing. */
         ? '<span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>'
-        : '<span>'+L5('−10y','10年前','−10 J','−10 л','−10 a')+'</span><span>'+L5('−5y','5年前','−5 J','−5 л','−5 a')+'</span><span>'+now+'</span>'; }
+        : '<span>'+L5('−10y','10年前','−10 J','−10 л','−10 a')+'</span><span>'+L5('−5y','5年前','−5 J','−5 л','−5 a')+'</span><span>'+now+'</span>';
+      buildTicks(); }
+    /* ══ ⚠⚠⚠ (#R337) THE TIME TAB HAD FIVE NUMBERS, NOT A SCALE ═══════════════════════════════
+       「ChronosのTimeのタイムスライダーは、目盛りを付けるように。」 What stood under the Time slider
+       was `.ntl-scale` — five labels in a flex row spaced by `justify-content:space-between`, with
+       nothing marking WHERE on the axis each one falls. Two things were wrong with using it here:
+       ⚠ IT IS ON THE FAR SIDE OF THE FORECAST PLAYER. The markup order is slider → `.ntl-player`
+       (the ECMWF transport, shown in this tab whenever a forecast is loaded) → `.ntl-scale`, so the
+       numbers sat below a row of buttons. A graduation detached from its axis is not a graduation.
+       ⚠ FLEXBOX SPACES LABELS EVENLY, WHICH IS NOT THE SAME AS PLACING THEM. It happens to be
+       nearly right for a 0–1439 axis cut into quarters and it is not right in general — the
+       position has to be COMPUTED FROM THE VALUE, or the next range that is not a round number
+       silently lies about where its own marks are.
+       → this ruler, in its own element directly under the slider (index.html `#ntl-ticks`): one
+       mark per HOUR at `(v − min) / (max − min)` of the rail, every sixth mark labelled. The Year
+       and Date tabs keep `.ntl-scale` exactly as it was — they were not part of the report.
+       ⚠ `_timeMaxMins()` IS THE ONE PLACE THE RANGE IS STATED (#R210). The last mark is drawn at
+       that value, not at a typed 1440, so a future round that shortens the axis moves the ruler
+       with it instead of leaving marks pointing at minutes the slider cannot reach. */
+    function buildTicks(){ if(!ticks) return;
+      if(mode!=='time'){ ticks.innerHTML=''; ticks.style.display='none'; if(scale) scale.style.display=''; return; }
+      const mx=_timeMaxMins()||1439;
+      let h='';
+      for(let hr=0;hr<=24;hr++){
+        const v=Math.min(hr*60,mx), p=(mx>0)?(v/mx):0, maj=(hr%6===0);
+        h+='<span class="ntl-tk'+(maj?' maj':'')+(hr===0?' first':'')+(hr===24?' last':'')
+          +'" style="--p:'+p.toFixed(4)+'"><i></i>'
+          +(maj?('<b>'+String(hr).padStart(2,'0')+':00</b>'):'')+'</span>';
+      }
+      ticks.innerHTML=h; ticks.style.display='';
+      /* the ruler carries this tab's labels, so the row on the far side of the player is not a
+         second copy of them */
+      if(scale) scale.style.display='none'; }
     function applyMode(m){ mode=m;
       if(modeYear) modeYear.classList.toggle('on',m==='year');
       if(modeDate) modeDate.classList.toggle('on',m==='date');

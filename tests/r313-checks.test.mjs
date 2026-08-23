@@ -69,7 +69,13 @@ test('R313 ① the particle switch is one published function, and the legend / A
      loop keeps running is not "off" — the reader asked for the work to stop. */
   const apply = wx.slice(wx.indexOf('function _applyParts'), wx.indexOf('function partsAreOn'));
   assert.ok(apply.length > 40, '_applyParts exists');
-  assert.match(apply, /on\s*&&\s*partsOn/, 'it draws only when the LAYER and the PARTICLES are both on');
+  /* ⚠ (#R337) the condition moved INTO a named predicate, because there is now a second way the
+     streaks can be wanted (the temperature legend — see tests/r337-checks ①). #R313's property is
+     unchanged and is asserted where it now lives: the wind LAYER still draws its streaks only when
+     both of ITS switches are on. */
+  assert.match(apply, /if\(streaksWanted\(\)\)/, 'one predicate decides whether streaks are drawn');
+  const wanted = wx.slice(wx.indexOf('function streaksWanted'), wx.indexOf('const PARTS_KEY'));
+  assert.match(wanted, /on\s*&&\s*partsOn/, 'it draws only when the LAYER and the PARTICLES are both on');
   assert.match(apply, /cancelAnimationFrame/, 'and it stops the frame loop, not just the canvas');
   assert.match(apply, /display\s*=\s*'none'/, 'and hides the canvas');
 
@@ -232,9 +238,12 @@ test('R313 ⑤ exactly one file moves the camera on a layer toggle, and it is th
     assert.match(src, /IntMapLayerHome[\s\S]{0,40}arrive\(/, f + ' goes through the one table');
   }
 
-  /* the three ids in the table are ids the app really uses, not ids somebody typed */
+  /* the ids in the table are ids the app really uses, not ids somebody typed.
+     ⚠ (#R337) 「NATO membersレイヤーをオンにしたら、自動的にNATOに行くように。」 added a fourth. The
+     list is UPDATED rather than loosened: the point of this assertion is that the exception stays a
+     NAMED set the constitution can enumerate, so it has to go red when the set changes. */
   const ids = [...home.matchAll(/HOMES\['([^']+)'\]/g)].map((m) => m[1]);
-  assert.deepEqual(ids.sort(), ['beta-dl-ukrfront', 'dl-eu', 'dl-uselect']);
+  assert.deepEqual(ids.sort(), ['beta-dl-ukrfront', 'dl-eu', 'dl-nato', 'dl-uselect']);
   const previews = read('js/layer-previews.js');
   for (const id of ids) {
     const used = previews.includes("'" + id + "'")
@@ -255,6 +264,9 @@ test('R313 ⑤ exactly one file moves the camera on a layer toggle, and it is th
   /* the EU frame is measured from the layer's own geometry, and the module that paints it publishes it */
   assert.match(home, /IntMapEuFC/, 'EU is framed from the collection the layer paints');
   assert.match(code('js/data-layers.js'), /window\.IntMapEuFC\s*=/, 'and that collection is published');
+  /* (#R337) NATO is framed the same way, from the collection the layer paints */
+  assert.match(home, /IntMapNatoFC/, 'NATO is framed from the collection the layer paints');
+  assert.match(code('js/data-layers.js'), /window\.IntMapNatoFC\s*=/, 'and that collection is published too');
   assert.match(code('js/beta-overlays.js'), /window\.IntMapUkrFrontFC\s*=/, 'as is the frontline collection');
 
   /* it has to be imported, or none of the above runs */
