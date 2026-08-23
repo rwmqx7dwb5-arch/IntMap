@@ -33,6 +33,11 @@
    declaration in js/, and this file has exactly one thing to publish. */
 window._imCldrRegion=function(a2,lang){
   try{
+    /* ⚠ (#R313 追記2) 追記1 widened this to accept M49 codes so the Atlas chips could name a
+       subregion through CLDR. MEASURED afterwards: `Intl.DisplayNames({type:'region'})` in Chromium has
+       NO M49 macro-regions (0 of 22, every language), while Node's ICU has all of them — so the widening
+       bought nothing in a browser and only made this helper look able to answer something it cannot.
+       The chips ship their own strings now (js/atlas-examples.js). Two-letter countries again. */
     if(!a2||a2.length!==2) return '';
     const tag=(window.IntMapLang&&window.IntMapLang.htmlTag)?window.IntMapLang.htmlTag(lang):'';
     if(!tag||tag==='en') return '';

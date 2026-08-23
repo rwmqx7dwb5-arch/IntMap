@@ -1272,6 +1272,7 @@ window.IntMapLang.define('ko', { ui: {
   "Continue upright": "정자세로 계속",
   "Continuous": "연속",
   "Control not found": "해당 컨트롤을 찾을 수 없습니다",
+  "Several controls match": "여러 컨트롤이 일치합니다",   /* atlas-controls.js (#R320) */
   "Controlling obstacle": "결정적 장애물",
   "Controls": "조작",
   "Coordinate grid": "좌표 격자",
@@ -4924,8 +4925,23 @@ window.IntMapLang.define('ko', { ui: {
   "Why do people in {place} live longer than almost anywhere else?": "{place} 사람들은 왜 세계에서 손꼽히게 오래 사나요?",   /* atlas-examples.js (#R313) */
   "How much of {place} is actually online, and what is the bottleneck?": "{place}에서 실제로 인터넷에 연결된 비율은? 무엇이 병목인가요?",   /* atlas-examples.js (#R313) */
   "Where are {place}’s people concentrated, and where is that shifting?": "{place}의 인구는 어디에 몰려 있고, 어디로 이동하고 있나요?",   /* atlas-examples.js (#R313) */
-  "What happens in {capital} that matters beyond {place}?": "{capital}에서 일어나는 일 가운데 {place} 밖까지 영향을 주는 것은?",   /* atlas-examples.js (#R313) */
-  "How does {place} differ from the rest of {sub}?": "{place}, {sub} 지역의 다른 나라들과 무엇이 다른가요?",   /* atlas-examples.js (#R313) */
+  "What happens in {place}’s capital that matters beyond its borders?": "{place}, 수도에서 일어나는 일 가운데 국경 밖까지 영향을 미치는 것은 무엇인가요?",   /* atlas-examples.js (#R313) */
+  /* ══ (#R313 追記2) THE UN M49 MACRO-REGION NAMES — SHIPPED STRINGS, NOT A RUNTIME LOOKUP ══════
+     `{sub}` in the chip below is one of the 22 M49 macro-regions. The browser cannot name them:
+     Intl.DisplayNames({type:'region'}) answers for 'JP' and returns undefined for '030' in V8,
+     so the names have to be here. ⚠ ONLY THE SIX THIS TABLE DID NOT ALREADY CARRY ARE LISTED —
+     Caribbean, Eastern/Middle/Northern/Southern/Western Africa, Eastern/Northern/Southern/Western
+     Europe, Northern America, South America, Western Asia, Melanesia, Micronesia and Polynesia are
+     already rows of this same table (js/atlas-console.js names the same regions from the same
+     English keys), and a second row with the same key would be a duplicate, not a translation.
+     ⚠ Bare nouns, no article: each one lands inside the parentheses of the chip. */
+  "Eastern Asia": "동아시아",   /* atlas-examples.js (#R313 追記2) */
+  "South-Eastern Asia": "동남아시아",   /* atlas-examples.js (#R313 追記2) */
+  "Southern Asia": "남아시아",   /* atlas-examples.js (#R313 追記2) */
+  "Central Asia": "중앙아시아",   /* atlas-examples.js (#R313 追記2) */
+  "Central America": "중앙아메리카",   /* atlas-examples.js (#R313 追記2) */
+  "Australia and New Zealand": "오스트레일리아·뉴질랜드",   /* atlas-examples.js (#R313 追記2) */
+  "How does {place} differ from the other countries in its region ({sub})?": "{place}, 같은 지역({sub})의 다른 나라들과 무엇이 다른가요?",   /* atlas-examples.js (#R313 追記2) */
   "What did the world look like in {year}?": "{year}년의 세계는 어떤 모습이었나요?",   /* atlas-examples.js (#R313) */
   "Where in the world are the most severe weather warnings in force right now?": "지금 세계에서 가장 심각한 기상 경보가 발효 중인 곳은 어디인가요?",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "최근 일주일 동안 가장 활발했던 판 경계는 어디인가요?",   /* atlas-examples.js (#R313) */
@@ -5193,4 +5209,33 @@ window.IntMapLang.define('ko', { ui: {
   "196 parties adopt a global climate accord.": "196개 당사국이 전 지구적 기후 협정을 채택한다.",   /* analysis-world-events.js (#R315) */
   "Sudan civil war": "수단 내전",   /* analysis-world-events.js (#R315) */
   "Fighting erupts between the army and the RSF.": "정부군과 신속지원군(RSF) 사이에 교전이 벌어진다.",   /* analysis-world-events.js (#R315) */
+  '{what} — done.': '{what} — 완료했습니다.',   /* atlas-results.js (#R318) atlas.result.completed.named */
+  'Still running…': '실행 중입니다…',   /* atlas-results.js (#R318) atlas.result.running */
+  'Still running — {done} of {total}.': '실행 중 — 총 {total}개 중 {done}개.',   /* atlas-results.js (#R318) atlas.result.running.progress */
+  'Partly done — {done} of {total}.': '일부만 완료 — 총 {total}개 중 {done}개.',   /* atlas-results.js (#R318) atlas.result.partial */
+  'That did not happen.': '실행되지 않았습니다.',   /* atlas-results.js (#R318) atlas.result.failed */
+  'Cancelled.': '취소했습니다.',   /* atlas-results.js (#R318) atlas.result.cancelled */
+  'Replaced by your newer request.': '더 새로운 요청으로 대체되었습니다.',   /* atlas-results.js (#R318) atlas.result.superseded */
+  'I need one more thing before I can do that.': '실행하려면 한 가지가 더 필요합니다.',   /* atlas-results.js (#R318) atlas.result.needs_input */
+  'It was calculated but nothing was drawn on the map.': '계산은 되었지만 지도에는 아무것도 그려지지 않았습니다.',   /* atlas-results.js (#R318) atlas.code.not_rendered */
+  'It is on the map but currently hidden.': '지도에는 있지만 지금은 숨겨져 있습니다.',   /* atlas-results.js (#R318) atlas.code.not_visible */
+  'Nothing on the map changed.': '지도에서 바뀐 것이 없습니다.',   /* atlas-results.js (#R318) atlas.code.no_change */
+  'That is not available right now.': '지금은 사용할 수 없습니다.',   /* atlas-results.js (#R318) atlas.code.unavailable */
+  'I do not have that operation.': '저에게는 그런 작업이 없습니다.',   /* atlas-results.js (#R318) atlas.code.unknown_capability */
+  'The values given for that operation were not usable.': '그 작업에 주어진 값을 사용할 수 없습니다.',   /* atlas-results.js (#R318) atlas.code.bad_args */
+  'Several things match — which one?': '해당하는 것이 여러 개입니다 — 어느 것인가요?',   /* atlas-results.js (#R318) atlas.code.ambiguous_target */
+  'It did not finish in time.': '제한 시간 안에 끝나지 않았습니다.',   /* atlas-results.js (#R318) atlas.code.timeout */
+  'It stopped with an error.': '오류로 중단되었습니다.',   /* atlas-results.js (#R318) atlas.code.threw */
+  'That one needs your confirmation first.': '이 작업은 먼저 확인이 필요합니다.',   /* atlas-results.js (#R318) atlas.code.needs_confirm */
+  'Tap the point on the map you mean.': '지도에서 말씀하신 지점을 탭하세요.',   /* atlas-results.js (#R318) atlas.input.point */
+  'Draw the line on the map.': '지도 위에 선을 그려 주세요.',   /* atlas-results.js (#R318) atlas.input.polyline */
+  'Draw the area on the map.': '지도 위에 범위를 그려 주세요.',   /* atlas-results.js (#R318) atlas.input.polygon */
+  'Choose one:': '하나를 선택하세요:',   /* atlas-results.js (#R318) atlas.input.choice */
+  'Tell me the value to use.': '사용할 값을 알려 주세요.',   /* atlas-results.js (#R318) atlas.input.text */
+  'Tell me the number to use.': '사용할 숫자를 알려 주세요.',   /* atlas-results.js (#R318) atlas.input.number */
+  'You asked for this on the map, and it is not on the map yet.': '지도에 표시해 달라고 하셨지만, 아직 지도에 나타나지 않았습니다.',   /* atlas-results.js (#R318) atlas.goal.map_missing */
+  'You asked for an explanation, and I only operated the map.': '요청하신 것은 설명이었는데, 지도를 조작하기만 했습니다.',   /* atlas-results.js (#R318) atlas.goal.explanation_missing */
+  'You asked me to do something, and I only wrote about it.': '요청하신 것은 조작이었는데, 글로 설명만 했습니다.',   /* atlas-results.js (#R318) atlas.goal.action_missing */
+  'Not every target was reached: {names}': '모든 대상에 도달하지는 못했습니다: {names}',   /* atlas-results.js (#R318) atlas.goal.targets_missing */
+  'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': '이 요청은 시도 횟수가 너무 많았습니다 — 일일 사용 횟수는 더 이상 차감되지 않았습니다. 표현을 바꿔 다시 시도해 주세요.',   /* ai-core.js (#R318) aiTurnCallsMsg */
 } });

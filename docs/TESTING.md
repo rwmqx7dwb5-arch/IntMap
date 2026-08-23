@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-20): the **core** tier that
 gates a push is **6 spec files / 1.1 min**; the **whole** suite is **65 measured spec files /
 86.5 min** of serial browser time against a ceiling of 86.7 min; and `npm run test:checks` runs
-**158 Node test files** with no browser at all (counted from `package.json` on 2026-08-23; the
+**161 Node test files** with no browser at all (counted from `package.json` on 2026-08-23; the
 line above it is the 2026-08-20 measurement). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -370,6 +370,44 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   — which only ever protected the rounds whose author was already thinking about the hazard.
 
 It deliberately does **not** reformat or style-lint existing code.
+
+## The Atlas capability audit (`scripts/atlas-capability-audit.mjs`)
+
+`scripts/atlas-catalog.mjs` asks one question — *is every dispatch case described to the planner?* —
+and it is a good one; it found six working features the planner had never been shown. It is also the
+only question anything was asking, and the diary is full of the others: an operation that ran and
+changed nothing, a route computed and never drawn, a tool that quietly used the map centre, wiring
+that was cancelled in the same millisecond it was created. Every one of those is a capability whose
+**claim** and whose **observation** disagreed.
+
+The audit asks twenty questions against `js/atlas-capabilities.js` — the one list of what IntMap can
+do — and the source of the files that implement it:
+
+| # | it fails when |
+|---|---|
+| 1 | a dispatch spelling belongs to no capability, or is shadowed by an earlier `case` and can never be entered |
+| 2–3 | a capability has no executor, or writes something without both `observe()` and `verify()` |
+| 4 | a capability that needs a target may take the map centre instead of asking |
+| 5–6 | the planner is never told a capability exists — including one whose module has not loaded yet |
+| 7 | a declared output is not something the verifier ever looks at |
+| 8 | a button and a sentence reach different code, or an `IntMapOS.exec()` names a command nothing registers |
+| 9–10 | the registry lists something unrunnable, or misses something implemented |
+| 11–12 | two capabilities claim one spelling; a withdrawal has no reason, or has quietly ended |
+| 13 | the nine languages do not reach the same capabilities, or a result message is missing from a locale |
+| 14–15 | the catalogue is truncated, or a capability can disappear for being Nth in a list |
+| 16–17 | a success is claimed on top of a swallowed error, or a promise is reported before it settles |
+| 18 | a capability promises the map and is verified without looking at it |
+| 19–20 | an operation that waits for input cannot be resumed; a state-dependent capability has nobody to ask |
+
+```bash
+node scripts/atlas-capability-audit.mjs            # the report, with the classification counts
+node scripts/atlas-capability-audit.mjs --check    # the gate (npm test, CI)
+node scripts/atlas-capability-audit.mjs --json     # machine-readable: registry + classification + checks
+```
+
+⚠ **A green gate nobody has seen go red is not evidence.** Every check takes its inputs as data, and
+`tests/r318-checks.test.mjs` feeds each one a fixture with the defect deliberately present and
+asserts that it fails. A check that cannot be made to fail is deleted, not kept.
 
 ## Internal QA harnesses (classification)
 

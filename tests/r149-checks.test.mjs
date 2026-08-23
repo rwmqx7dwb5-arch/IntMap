@@ -77,7 +77,9 @@ test('R149 #9 image paste/vision wired on the client (transport + proxy already 
   assert.match(html, /compressImage\(f,2000,0\.9\)/, 'reuses compressImage → JPEG data URL (R156 hi-fi 2000/0.9 for OCR/maths, was 1100/0.72)');
   // run() threads images to the planner call (was hardcoded null)
   assert.match(html, /async function run\(q,imgs,files\)\{/, 'run accepts images (and R158 file attachments)');
-  assert.match(html, /buildPrompt\(q,_profile\)\+_fileBlock\+\(imgs\.length\?[\s\S]*?\),SYS\(\),imgs,\{task:'atlas_plan'/, 'planner call gets imgs (not null) + R158 file text');
+  /* (#R318) SYS() takes the capability selection now — `SYS(_capSel)`, where a null selection is
+     the whole catalogue. What this line asks is unchanged: the planner call carries `imgs`. */
+  assert.match(html, /buildPrompt\(q,_profile\)\+_fileBlock\+\(imgs\.length\?[\s\S]*?\),SYS\(_capSel\),imgs,\{task:'atlas_plan'/, 'planner call gets imgs (not null) + R158 file text');
   assert.match(html, /class="atl-attach"/, 'attach button present');
   // server already supports vision
   assert.match(aiproxy, /const MAX_IMAGES = 4/, 'proxy caps images');

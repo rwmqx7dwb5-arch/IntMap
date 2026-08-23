@@ -28,20 +28,22 @@
  *  replaced — #R313's own notes name the bouncing-dot class it removed — so a check that greps the
  *  raw file proves nothing. That mistake has been made eight times; it was made once more while
  *  writing this file, and caught by the assertion below.
+ *
+ *  ⚠ AND EVERY READ GOES THROUGH `readLF()` (#R283, scripts/eol.mjs). Line endings belong to
+ *  the CHECKOUT, not to the file: js/layer-home.js is `i/lf w/crlf`, so ⑤'s lift-out pattern
+ *  `/function bboxOfFC[\s\S]*?\n  \}\n/` — which demands a BARE line break after the closing
+ *  brace — could not match on a Windows working copy and could not fail on Linux: red here,
+ *  green in CI, for a reason that has nothing to do with the camera. Third time this defect has
+ *  been paid for; the fix is the READER, never the pattern. tests/r283-checks ② names this file.
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-/* ⚠ (#R315) readLF, NOT readFileSync. Several patterns below ask for a function BODY and spell the
-   end of it as "\n  }\n"; on a Windows checkout every line ends "\r\n", so ⑤ could not lift
-   bboxOfFC out of js/layer-home.js and had been red on this machine since the day it was written,
-   while CI — which checks out LF — stayed green. That is #R283's defect exactly, and a check that
-   is red for everyone who could run it is a check nobody reads. scripts/eol.mjs exists for this. */
 const read = (p) => readLF(resolve(ROOT, p));
 const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
@@ -50,7 +52,9 @@ const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\
    ═══════════════════════════════════════════════════════════════════════ */
 test('R313 ① the particle switch is one published function, and the legend / Atlas dispatch / Atlas inline toggle all go through it', () => {
   const wx = code('js/weather.js');
-  const at = code('js/atlas-console.js');
+  /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const at = code('js/atlas-console.js') + '\n' + code('js/atlas-catalog-text.js');
 
   /* the module publishes exactly one door in and one door out */
   assert.match(wx, /particles\s*:\s*partsAreOn/, 'window.Wind publishes a particle READ');
@@ -262,7 +266,11 @@ test('R313 ⑤ exactly one file moves the camera on a layer toggle, and it is th
      one-polygon feature through, and the EU frame came out [[-109.23,10.28],[33.70,70.08]] — a view
      of the eastern Pacific. The pick has to be per COUNTRY CODE. This runs the shipped function over
      exactly that shape rather than trusting the comment beside it. */
-  const fnSrc = /function bboxOfFC[\s\S]*?\n  \}\n/.exec(read('js/layer-home.js'));
+  /* ⚠ (#R313 追記) `\n  }\n` DID NOT SURVIVE A CRLF CHECKOUT. This passed on the worktree that wrote
+     the file with LF and went red the moment git handed the same file back with CRLF — #R283's defect
+     exactly, and it would have been green in CI and red on Windows for ever. Line endings are not part
+     of the property being asserted, so the pattern must not care about them. */
+  const fnSrc = /function bboxOfFC[\s\S]*?\r?\n {2}\}\r?\n/.exec(read('js/layer-home.js'));
   assert.ok(fnSrc, 'bboxOfFC is a named function this test can lift out');
   const bboxOfFC = new Function('return (' + fnSrc[0].replace('function bboxOfFC', 'function') + ')')();
   const ring = (w, s2, e, n) => [[[w, s2], [e, s2], [e, n], [w, n], [w, s2]]];

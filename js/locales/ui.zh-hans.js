@@ -684,6 +684,7 @@ window.IntMapLang.define('zh-hans', {
     'Continue upright': "保持水平",   /* flight-sim.js */
     'Continuous': "连续",   /* terrain-water.js */
     'Control not found': "找不到该控制项",   /* atlas-controls.js */
+    'Several controls match': '多个控制项符合',   /* atlas-controls.js (#R320) */
     'Controlling obstacle': "关键障碍物",   /* viewshed.js */
     'Controls': "操作",   /* flight-sim.js */
     'Coordinate grid': "坐标格线",   /* keyboard-shortcuts.js */
@@ -1410,7 +1411,7 @@ window.IntMapLang.define('zh-hans', {
     'Nothing found — neither OpenStreetMap nor Wikidata has such facilities recorded here and the AI knows none it is sure of': "查无结果 — OpenStreetMap 与 Wikidata 都没有记录此处有这类设施，AI 也没有可确定的数据",   /* atlas-console.js */
     'Nothing found for': "查无结果：",   /* atlas-console.js */
     'Nothing in force right now.': "目前没有任何生效中的警报。",   /* world-packs.js */
-    'Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China, Australia and the Philippines are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.': "日本、美国、加拿大、巴西、德国、挪威，以及 MeteoAlarm 指名的每一个欧洲地区，都以各机关的发布单位绘制，不会整国上色——在那些国家，发布区域的形状本身就是答案。中国以省、澳洲以州、菲律宾以省为单位上色，那是其机关发布警报的区分。香港的警报涵盖全境，因此香港本身就是发布单位。GDACS 的淡色是另一套尺度、另一组颜色：它表示该等级的事件影响到该国，而不是该国境内某地正有警报生效。俄罗斯、印度、纽西兰、马来西亚、印尼、南非与墨西哥本回合都实际尝试连接，均未找到浏览器可读的公开数据源，因此只有 GDACS——GDACS 是事件的发布，并非各国的警报本身，没有事件的国家不等于没有警报。本显示仅供参考，实际请依官方机关的发布。",   /* world-packs.js (#R271) */
+    'Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China, Australia and the Philippines are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.': "日本、美国、加拿大、巴西、德国、挪威，以及 MeteoAlarm 指名的每一个欧洲地区，都以各机关的发布单位绘制，不会整国上色——在那些国家，发布区域的形状本身就是答案。中国以省、澳洲以州、菲律宾以省为单位上色，那是其机关发布警报的区分。香港的警报涵盖全境，因此香港本身就是发布单位。GDACS 的淡色是另一套尺度、另一组颜色：它表示该等级的事件影响到该国，而不是该国境内某地正有警报生效。俄罗斯、印度、新西兰、马来西亚、印尼、南非与墨西哥本回合都实际尝试连接，均未找到浏览器可读的公开数据源，因此只有 GDACS——GDACS 是事件的发布，并非各国的警报本身，没有事件的国家不等于没有警报。本显示仅供参考，实际请依官方机关的发布。",   /* world-packs.js (#R271) */
     'PAGASA (Philippines), flood advisories with their published province outlines.': "PAGASA（菲律宾）——以公布的省界绘制的洪水信息。",   /* world-packs.js (#R271) */
     'Philippines — PAGASA, by province': "菲律宾 — PAGASA（省）",   /* world-packs.js (#R271) */
     'issuing regions': "发布区域",   /* world-packs.js (#R271) */
@@ -1420,7 +1421,7 @@ window.IntMapLang.define('zh-hans', {
     'Extending the model to here…': "正在把模型延伸到这里…",   /* world-packs.js (#R271) */
     'Germany — DWD, by district': "德国 — DWD（郡）",   /* world-packs.js (#R271) */
     'Japan Meteorological Agency, at the region the warning is issued for.': "日本气象厅，以发布警报的区域为单位。",   /* world-packs.js (#R271) */
-    'Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China and Australia are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.': "日本、美国、加拿大、巴西、德国、挪威，以及 MeteoAlarm 指名的每一个欧洲地区，都以各机关的发布单位绘制，不会整国上色——在那些国家，发布区域的形状本身就是答案。中国以省、澳洲以州为单位上色，那是其机关发布警报的区分。香港的警报涵盖全境，因此香港本身就是发布单位。GDACS 的淡色是另一套尺度、另一组颜色：它表示该等级的事件影响到该国，而不是该国境内某地正有警报生效。俄罗斯、印度、纽西兰、马来西亚、印尼、南非与墨西哥本回合都实际尝试连接，均未找到浏览器可读的公开数据源，因此只有 GDACS——GDACS 是事件的发布，并非各国的警报本身，没有事件的国家不等于没有警报。本显示仅供参考，实际请依官方机关的发布。",   /* world-packs.js (#R271) */
+    'Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China and Australia are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.': "日本、美国、加拿大、巴西、德国、挪威，以及 MeteoAlarm 指名的每一个欧洲地区，都以各机关的发布单位绘制，不会整国上色——在那些国家，发布区域的形状本身就是答案。中国以省、澳洲以州为单位上色，那是其机关发布警报的区分。香港的警报涵盖全境，因此香港本身就是发布单位。GDACS 的淡色是另一套尺度、另一组颜色：它表示该等级的事件影响到该国，而不是该国境内某地正有警报生效。俄罗斯、印度、新西兰、马来西亚、印尼、南非与墨西哥本回合都实际尝试连接，均未找到浏览器可读的公开数据源，因此只有 GDACS——GDACS 是事件的发布，并非各国的警报本身，没有事件的国家不等于没有警报。本显示仅供参考，实际请依官方机关的发布。",   /* world-packs.js (#R271) */
     'MET Norway, alerts with their own polygons.': "MET Norway——以各警报自身的范围绘制。",   /* world-packs.js (#R271) */
     'Norway — MET Norway': "挪威 — MET Norway",   /* world-packs.js (#R271) */
     'Nothing is drawn — this is a failed query, not an industry with no companies.': "没有绘制任何内容 — 这是查询失败，并不代表这个产业没有企业。",   /* industry-web.js */
@@ -3554,7 +3555,7 @@ window.IntMapLang.define('zh-hans', {
   "French Guinea": "法属几内亚",
   "French Indo-China": "法属印度支那",
   "French Indochina": "法属印度支那",
-  "French Polynesia": "法属玻里尼西亚",
+  "French Polynesia": "法属波利尼西亚",
   "French Somaliland": "法属索马利兰",
   "French Sudan": "法属苏丹",
   "French Togoland": "法属多哥兰",
@@ -3860,7 +3861,7 @@ window.IntMapLang.define('zh-hans', {
   "Arid — annual precipitation below the Köppen dryness threshold": "干燥 — 年降水量低于柯本干燥门槛",
   "Armed forces": "军队人数",
   "Artificial light at night, from satellite — a proxy for urbanization and economic activity.": "卫星观测的夜间人造光 — 都市化与经济活动的替代指标。",
-  "Australia & New Zealand": "澳洲与纽西兰",
+  "Australia & New Zealand": "澳洲与新西兰",
   "Average number of children a woman would have over her lifetime; about 2.1 keeps a population stable.": "妇女一生平均生育子女数；约 2.1 可维持人口稳定。",
   "Basic sanitation %": "基本卫生设施 %",
   "Basic water access %": "基本饮用水普及率 %",
@@ -3957,7 +3958,7 @@ window.IntMapLang.define('zh-hans', {
   "Physicians per 1,000 people — a measure of healthcare capacity.": "每千人医师数 — 医疗量能的指标。",
   "PM2.5 air pollution": "PM2.5 空气污染",
   "Polar — warmest month < 10 °C": "极地 — 最暖月低于 10 °C",
-  "Polynesia": "玻里尼西亚",
+  "Polynesia": "波利尼西亚",
   "Primary language": "主要语言",
   "Projected coastline change if sea level rises by the chosen amount — areas below that height flood.": "依所选海平面上升幅度推估的海岸线变化 — 低于该高度的地区将被淹没。",
   "Prosumer quadcopter (~1 kg)": "半专业四旋翼机（约 1 公斤）",
@@ -4287,7 +4288,7 @@ window.IntMapLang.define('zh-hans', {
   "Hong Kong — HKO": "香港 — 天文台（HKO）",
   "Hong Kong Observatory — the warning signals in force.": "香港天文台 — 生效中的警告信号。",
   "INMET (Brazil), active warnings with their published areas, grouped by state.": "INMET（巴西）— 生效中的警报与其公布范围，依州分组。",
-  "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed and the tap holds the units. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "日本、美国、加拿大与巴西以各机关发布的单位绘制。欧洲、中国、澳洲与香港公布的是列表而非图形，因此以颜色标示国家，点按后显示各单位的内容。俄罗斯、印度、纽西兰、马来西亚、印尼、南非与墨西哥本回合皆实际测试过，未找到浏览器可读取的公开来源，因此仅使用 GDACS — GDACS 是事件发布，并非各国的警报本身，没有事件的国家不代表没有警报。本显示仅供参考，请以官方机关的发布为准。",
+  "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed and the tap holds the units. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "日本、美国、加拿大与巴西以各机关发布的单位绘制。欧洲、中国、澳洲与香港公布的是列表而非图形，因此以颜色标示国家，点按后显示各单位的内容。俄罗斯、印度、新西兰、马来西亚、印尼、南非与墨西哥本回合皆实际测试过，未找到浏览器可读取的公开来源，因此仅使用 GDACS — GDACS 是事件发布，并非各国的警报本身，没有事件的国家不代表没有警报。本显示仅供参考，请以官方机关的发布为准。",
   "Land cover (ESA)": "土地覆盖（ESA）",
   "Live OpenStreetMap for this view, merged with the shipped snapshot": "本视图的实时 OpenStreetMap，与随附快照合并",
   "Montenegrin": "蒙特内哥罗语",
@@ -4321,7 +4322,7 @@ window.IntMapLang.define('zh-hans', {
   "GDACS event level, over the whole country": "GDACS 事件等级（整个国家淡色标示）",
   "Warning rank, at the unit the agency issues for": "各机关的发布等级（依发布单位绘制）",
   "UNDP publishes no HDI for this year": "UNDP 未发布该年度的 HDI",
-  "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed in the agency’s own rank and the tap holds the units. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "日本、美国、加拿大与巴西依各机关的发布单位绘制，并不会整国上色——在那些国家，发布区域的形状本身就是答案。欧洲、中国、澳洲与香港以列表而非图形公开，因此以该机关的等级颜色淡涂全国，点击后显示各单位的明细。GDACS 的淡涂是另一套尺度、另一组颜色：它表示该等级的事件影响这个国家，而非国内某一地点已发布警报。俄罗斯、印度、纽西兰、马来西亚、印尼、南非与墨西哥没有浏览器可读取的公开数据源，因此仅显示 GDACS——GDACS 是事件发布，并非各国的警报本身；没有事件的国家并不等于没有警报。此为参考显示，实际请依循官方机关的发布。",
+  "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed in the agency’s own rank and the tap holds the units. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "日本、美国、加拿大与巴西依各机关的发布单位绘制，并不会整国上色——在那些国家，发布区域的形状本身就是答案。欧洲、中国、澳洲与香港以列表而非图形公开，因此以该机关的等级颜色淡涂全国，点击后显示各单位的明细。GDACS 的淡涂是另一套尺度、另一组颜色：它表示该等级的事件影响这个国家，而非国内某一地点已发布警报。俄罗斯、印度、新西兰、马来西亚、印尼、南非与墨西哥没有浏览器可读取的公开数据源，因此仅显示 GDACS——GDACS 是事件发布，并非各国的警报本身；没有事件的国家并不等于没有警报。此为参考显示，实际请依循官方机关的发布。",
   "areas": "区域",
   "Areas published but not locatable on this map: ": "已发布但本地图无法定位的区域：",
   "Blue (IV)": "蓝色（IV级）",
@@ -5025,8 +5026,23 @@ window.IntMapLang.define('zh-hans', {
   "Why do people in {place} live longer than almost anywhere else?": "{place}的人为什么比世界上几乎任何地方都长寿？",   /* atlas-examples.js (#R313) */
   "How much of {place} is actually online, and what is the bottleneck?": "{place}实际上有多少人能上网？瓶颈在哪里？",   /* atlas-examples.js (#R313) */
   "Where are {place}’s people concentrated, and where is that shifting?": "{place}的人口集中在哪里？又正往哪里移动？",   /* atlas-examples.js (#R313) */
-  "What happens in {capital} that matters beyond {place}?": "{capital}发生的事情里，有哪些影响会超出{place}？",   /* atlas-examples.js (#R313) */
-  "How does {place} differ from the rest of {sub}?": "{place}与{sub}地区的其他国家有什么不同？",   /* atlas-examples.js (#R313) */
+  "What happens in {place}’s capital that matters beyond its borders?": "{place}：首都发生的事情里，有哪些影响会超出国界？",   /* atlas-examples.js (#R313) */
+  /* ══ (#R313 追记2) THE UN M49 MACRO-REGION NAMES — SHIPPED STRINGS, NOT A RUNTIME LOOKUP ══════
+     `{sub}` in the chip below is one of the 22 M49 macro-regions. The browser cannot name them:
+     Intl.DisplayNames({type:'region'}) answers for 'JP' and returns undefined for '030' in V8,
+     so the names have to be here. ⚠ ONLY THE SIX THIS TABLE DID NOT ALREADY CARRY ARE LISTED —
+     Caribbean, Eastern/Middle/Northern/Southern/Western Africa, Eastern/Northern/Southern/Western
+     Europe, Northern America, South America, Western Asia, Melanesia, Micronesia and Polynesia are
+     already rows of this same table (js/atlas-console.js names the same regions from the same
+     English keys), and a second row with the same key would be a duplicate, not a translation.
+     ⚠ Bare nouns, no article: each one lands inside the parentheses of the chip. */
+  "Eastern Asia": "东亚",   /* atlas-examples.js (#R313 追记2) */
+  "South-Eastern Asia": "东南亚",   /* atlas-examples.js (#R313 追记2) */
+  "Southern Asia": "南亚",   /* atlas-examples.js (#R313 追记2) */
+  "Central Asia": "中亚",   /* atlas-examples.js (#R313 追记2) */
+  "Central America": "中美洲",   /* atlas-examples.js (#R313 追记2) */
+  "Australia and New Zealand": "澳洲与新西兰",   /* atlas-examples.js (#R313 追记2) */
+  "How does {place} differ from the other countries in its region ({sub})?": "{place}与同一地区（{sub}）的其他国家有什么不同？",   /* atlas-examples.js (#R313 追记2) */
   "What did the world look like in {year}?": "{year} 年的世界是什么样子？",   /* atlas-examples.js (#R313) */
   "Where in the world are the most severe weather warnings in force right now?": "目前全球哪里发布了最严重的气象警报？",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "过去一周最活跃的板块边界是哪些？",   /* atlas-examples.js (#R313) */
@@ -5294,5 +5310,34 @@ window.IntMapLang.define('zh-hans', {
   "196 parties adopt a global climate accord.": "196个缔约方通过全球气候协定。",   /* analysis-world-events.js (#R315) */
   "Sudan civil war": "苏丹内战",   /* analysis-world-events.js (#R315) */
   "Fighting erupts between the army and the RSF.": "政府军与快速支持部队爆发战斗。",   /* analysis-world-events.js (#R315) */
+  '{what} — done.': '{what} — 已完成。',   /* atlas-results.js (#R318) atlas.result.completed.named */
+  'Still running…': '仍在执行中…',   /* atlas-results.js (#R318) atlas.result.running */
+  'Still running — {done} of {total}.': '执行中 — {total} 项中的 {done} 项。',   /* atlas-results.js (#R318) atlas.result.running.progress */
+  'Partly done — {done} of {total}.': '部分完成 — {total} 项中的 {done} 项。',   /* atlas-results.js (#R318) atlas.result.partial */
+  'That did not happen.': '这并未执行。',   /* atlas-results.js (#R318) atlas.result.failed */
+  'Cancelled.': '已取消。',   /* atlas-results.js (#R318) atlas.result.cancelled */
+  'Replaced by your newer request.': '已被你较新的要求取代。',   /* atlas-results.js (#R318) atlas.result.superseded */
+  'I need one more thing before I can do that.': '在执行之前，我还需要一项信息。',   /* atlas-results.js (#R318) atlas.result.needs_input */
+  'It was calculated but nothing was drawn on the map.': '已完成计算，但地图上没有画出任何东西。',   /* atlas-results.js (#R318) atlas.code.not_rendered */
+  'It is on the map but currently hidden.': '它在地图上，但目前处于隐藏状态。',   /* atlas-results.js (#R318) atlas.code.not_visible */
+  'Nothing on the map changed.': '地图上没有任何变化。',   /* atlas-results.js (#R318) atlas.code.no_change */
+  'That is not available right now.': '目前无法使用。',   /* atlas-results.js (#R318) atlas.code.unavailable */
+  'I do not have that operation.': '我没有这项操作。',   /* atlas-results.js (#R318) atlas.code.unknown_capability */
+  'The values given for that operation were not usable.': '传给该操作的数值无法使用。',   /* atlas-results.js (#R318) atlas.code.bad_args */
+  'Several things match — which one?': '有多个相符的项目 — 是哪一个？',   /* atlas-results.js (#R318) atlas.code.ambiguous_target */
+  'It did not finish in time.': '未能在时限内完成。',   /* atlas-results.js (#R318) atlas.code.timeout */
+  'It stopped with an error.': '因发生错误而停止。',   /* atlas-results.js (#R318) atlas.code.threw */
+  'That one needs your confirmation first.': '这一项需要你先确认。',   /* atlas-results.js (#R318) atlas.code.needs_confirm */
+  'Tap the point on the map you mean.': '请在地图上点击你所指的地点。',   /* atlas-results.js (#R318) atlas.input.point */
+  'Draw the line on the map.': '请在地图上画出线条。',   /* atlas-results.js (#R318) atlas.input.polyline */
+  'Draw the area on the map.': '请在地图上画出范围。',   /* atlas-results.js (#R318) atlas.input.polygon */
+  'Choose one:': '请选择一项：',   /* atlas-results.js (#R318) atlas.input.choice */
+  'Tell me the value to use.': '请告诉我要使用的值。',   /* atlas-results.js (#R318) atlas.input.text */
+  'Tell me the number to use.': '请告诉我要使用的数字。',   /* atlas-results.js (#R318) atlas.input.number */
+  'You asked for this on the map, and it is not on the map yet.': '你要求把它显示在地图上，但它还没有出现在地图上。',   /* atlas-results.js (#R318) atlas.goal.map_missing */
+  'You asked for an explanation, and I only operated the map.': '你要求的是说明，但我只操作了地图。',   /* atlas-results.js (#R318) atlas.goal.explanation_missing */
+  'You asked me to do something, and I only wrote about it.': '你要求的是操作，但我只用文字说明。',   /* atlas-results.js (#R318) atlas.goal.action_missing */
+  'Not every target was reached: {names}': '并非所有目标都达成：{names}',   /* atlas-results.js (#R318) atlas.goal.targets_missing */
+  'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': '这次请求尝试的次数过多 — 你每日的可用次数并未再被扣除。请换个说法再试一次。',   /* ai-core.js (#R318) aiTurnCallsMsg */
   }
 });

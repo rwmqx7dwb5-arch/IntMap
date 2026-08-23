@@ -1282,6 +1282,7 @@ window.IntMapLang.define('fr', { ui: {
   "Continue upright": "Poursuivre à l'endroit",
   "Continuous": "Continu",
   "Control not found": "Commande introuvable",
+  "Several controls match": "Plusieurs commandes correspondent",   /* atlas-controls.js (#R320) */
   "Controlling obstacle": "Obstacle déterminant",
   "Controls": "Commandes",
   "Coordinate grid": "Grille de coordonnées",
@@ -4934,8 +4935,23 @@ window.IntMapLang.define('fr', { ui: {
   "Why do people in {place} live longer than almost anywhere else?": "{place} : pourquoi y vit-on plus longtemps que presque partout ailleurs ?",   /* atlas-examples.js (#R313) */
   "How much of {place} is actually online, and what is the bottleneck?": "{place} : quelle part de la population est réellement connectée, et où est le goulet d’étranglement ?",   /* atlas-examples.js (#R313) */
   "Where are {place}’s people concentrated, and where is that shifting?": "{place} : où sa population se concentre-t-elle, et vers où se déplace-t-elle ?",   /* atlas-examples.js (#R313) */
-  "What happens in {capital} that matters beyond {place}?": "{place} : que se passe-t-il à {capital} qui compte au-delà de ses frontières ?",   /* atlas-examples.js (#R313) */
-  "How does {place} differ from the rest of {sub}?": "{place} : quelles différences avec le reste de la région « {sub} » ?",   /* atlas-examples.js (#R313) */
+  "What happens in {place}’s capital that matters beyond its borders?": "{place} : que se passe-t-il dans la capitale qui compte au-delà des frontières du pays ?",   /* atlas-examples.js (#R313) */
+  /* ══ (#R313 追記2) THE UN M49 MACRO-REGION NAMES — SHIPPED STRINGS, NOT A RUNTIME LOOKUP ══════
+     `{sub}` in the chip below is one of the 22 M49 macro-regions. The browser cannot name them:
+     Intl.DisplayNames({type:'region'}) answers for 'JP' and returns undefined for '030' in V8,
+     so the names have to be here. ⚠ ONLY THE SIX THIS TABLE DID NOT ALREADY CARRY ARE LISTED —
+     Caribbean, Eastern/Middle/Northern/Southern/Western Africa, Eastern/Northern/Southern/Western
+     Europe, Northern America, South America, Western Asia, Melanesia, Micronesia and Polynesia are
+     already rows of this same table (js/atlas-console.js names the same regions from the same
+     English keys), and a second row with the same key would be a duplicate, not a translation.
+     ⚠ Bare nouns, no article: each one lands inside the parentheses of the chip. */
+  "Eastern Asia": "Asie de l’Est",   /* atlas-examples.js (#R313 追記2) */
+  "South-Eastern Asia": "Asie du Sud-Est",   /* atlas-examples.js (#R313 追記2) */
+  "Southern Asia": "Asie du Sud",   /* atlas-examples.js (#R313 追記2) */
+  "Central Asia": "Asie centrale",   /* atlas-examples.js (#R313 追記2) */
+  "Central America": "Amérique centrale",   /* atlas-examples.js (#R313 追記2) */
+  "Australia and New Zealand": "Australie et Nouvelle-Zélande",   /* atlas-examples.js (#R313 追記2) */
+  "How does {place} differ from the other countries in its region ({sub})?": "{place} : en quoi le pays se distingue-t-il des autres pays de sa région ({sub}) ?",   /* atlas-examples.js (#R313 追記2) */
   "What did the world look like in {year}?": "À quoi ressemblait le monde en {year} ?",   /* atlas-examples.js (#R313) */
   "Where in the world are the most severe weather warnings in force right now?": "Où dans le monde les alertes météo les plus graves sont-elles en vigueur en ce moment ?",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "Quelles limites de plaques tectoniques ont été les plus actives cette dernière semaine ?",   /* atlas-examples.js (#R313) */
@@ -5203,4 +5219,33 @@ window.IntMapLang.define('fr', { ui: {
   "196 parties adopt a global climate accord.": "196 parties adoptent un accord climatique mondial.",   /* analysis-world-events.js (#R315) */
   "Sudan civil war": "Guerre civile au Soudan",   /* analysis-world-events.js (#R315) */
   "Fighting erupts between the army and the RSF.": "Les combats éclatent entre l'armée et les RSF.",   /* analysis-world-events.js (#R315) */
+  '{what} — done.': '{what} — terminé.',   /* atlas-results.js (#R318) atlas.result.completed.named */
+  'Still running…': 'Toujours en cours…',   /* atlas-results.js (#R318) atlas.result.running */
+  'Still running — {done} of {total}.': 'En cours — {done} sur {total}.',   /* atlas-results.js (#R318) atlas.result.running.progress */
+  'Partly done — {done} of {total}.': 'Partiellement terminé — {done} sur {total}.',   /* atlas-results.js (#R318) atlas.result.partial */
+  'That did not happen.': 'Cela n’a pas eu lieu.',   /* atlas-results.js (#R318) atlas.result.failed */
+  'Cancelled.': 'Annulé.',   /* atlas-results.js (#R318) atlas.result.cancelled */
+  'Replaced by your newer request.': 'Remplacé par votre demande plus récente.',   /* atlas-results.js (#R318) atlas.result.superseded */
+  'I need one more thing before I can do that.': 'Il me manque encore une information pour pouvoir le faire.',   /* atlas-results.js (#R318) atlas.result.needs_input */
+  'It was calculated but nothing was drawn on the map.': 'Le calcul a été fait, mais rien n’a été dessiné sur la carte.',   /* atlas-results.js (#R318) atlas.code.not_rendered */
+  'It is on the map but currently hidden.': 'C’est sur la carte, mais actuellement masqué.',   /* atlas-results.js (#R318) atlas.code.not_visible */
+  'Nothing on the map changed.': 'Rien n’a changé sur la carte.',   /* atlas-results.js (#R318) atlas.code.no_change */
+  'That is not available right now.': 'Ce n’est pas disponible pour le moment.',   /* atlas-results.js (#R318) atlas.code.unavailable */
+  'I do not have that operation.': 'Je n’ai pas cette opération.',   /* atlas-results.js (#R318) atlas.code.unknown_capability */
+  'The values given for that operation were not usable.': 'Les valeurs fournies pour cette opération étaient inutilisables.',   /* atlas-results.js (#R318) atlas.code.bad_args */
+  'Several things match — which one?': 'Plusieurs éléments correspondent — lequel ?',   /* atlas-results.js (#R318) atlas.code.ambiguous_target */
+  'It did not finish in time.': 'Cela ne s’est pas terminé à temps.',   /* atlas-results.js (#R318) atlas.code.timeout */
+  'It stopped with an error.': 'Cela s’est arrêté sur une erreur.',   /* atlas-results.js (#R318) atlas.code.threw */
+  'That one needs your confirmation first.': 'Cela nécessite d’abord votre confirmation.',   /* atlas-results.js (#R318) atlas.code.needs_confirm */
+  'Tap the point on the map you mean.': 'Touchez sur la carte le point que vous visez.',   /* atlas-results.js (#R318) atlas.input.point */
+  'Draw the line on the map.': 'Dessinez la ligne sur la carte.',   /* atlas-results.js (#R318) atlas.input.polyline */
+  'Draw the area on the map.': 'Dessinez la zone sur la carte.',   /* atlas-results.js (#R318) atlas.input.polygon */
+  'Choose one:': 'Choisissez-en un :',   /* atlas-results.js (#R318) atlas.input.choice */
+  'Tell me the value to use.': 'Indiquez-moi la valeur à utiliser.',   /* atlas-results.js (#R318) atlas.input.text */
+  'Tell me the number to use.': 'Indiquez-moi le nombre à utiliser.',   /* atlas-results.js (#R318) atlas.input.number */
+  'You asked for this on the map, and it is not on the map yet.': 'Vous l’avez demandé sur la carte, et ce n’est pas encore sur la carte.',   /* atlas-results.js (#R318) atlas.goal.map_missing */
+  'You asked for an explanation, and I only operated the map.': 'Vous avez demandé une explication, et je n’ai fait que manipuler la carte.',   /* atlas-results.js (#R318) atlas.goal.explanation_missing */
+  'You asked me to do something, and I only wrote about it.': 'Vous avez demandé une action, et je n’ai fait qu’en parler.',   /* atlas-results.js (#R318) atlas.goal.action_missing */
+  'Not every target was reached: {names}': 'Toutes les cibles n’ont pas été atteintes : {names}',   /* atlas-results.js (#R318) atlas.goal.targets_missing */
+  'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': 'Cette demande a nécessité trop de tentatives — rien de plus n’a été prélevé sur votre quota quotidien. Reformulez-la et réessayez.',   /* ai-core.js (#R318) aiTurnCallsMsg */
 } });

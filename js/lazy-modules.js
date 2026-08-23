@@ -222,7 +222,7 @@ export function makeLazyModules(HOST) {
 
     const API = {
       need, ready, hint,
-      names: () => Object.keys(PUBLISHES),
+      names: () => Object.keys(PUBLISHES), publishes: (n) => PUBLISHES[n] || '',   /* (#R320) …and WHAT each one will be called once it arrives. js/atlas-controls.js walked Object.keys(window) to tell the planner which subsystems exist, so a module not yet fetched was a subsystem IntMap did not have — eight of them. This manifest exists from boot, so the name can be offered before the code is. */
       pending: () => Object.keys(P),
       /* what the boot guard would have said, for the modules it can no longer see at boot */
       check: () => window.__imLazyCheck || { loaded: [], failed: [] },

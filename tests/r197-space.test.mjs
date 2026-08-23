@@ -207,7 +207,9 @@ test('R197 space ⑨ the button is bound to the zoom floor, not to a guess about
   assert.match(sp, /function atFloor\(\)\{ return zoomNow\(\)<=minZoom\(\)\+0\.06; \}/, 'the predicate');
   assert.match(sp, /GE\(\)\.camera\.getMinZoom&&GE\(\)\.camera\.getMinZoom\(\)/, 'asked of the renderer');
   assert.doesNotMatch(sp, /zoomNow\(\)<=0\.0[0-9]/, 'and not compared against a literal zero');
-  const atlas = rd('js/atlas-console.js');
+  /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = rd('js/atlas-console.js') + '\n' + rd('js/atlas-catalog-text.js');
   assert.match(atlas, /case 'space': case 'solarSystem': case 'planet':/, 'Atlas can open it too (#R82)');
   assert.match(atlas, /SPACE EXPLORER \(planets as globes, and the solar system in time\)/,
     'and the SYS catalogue documents it (#R115)');

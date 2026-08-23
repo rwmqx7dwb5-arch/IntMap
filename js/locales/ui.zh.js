@@ -680,6 +680,7 @@ window.IntMapLang.define('zh', {
     'Continue upright': "保持水平",   /* flight-sim.js */
     'Continuous': "連續",   /* terrain-water.js */
     'Control not found': "找不到該控制項",   /* atlas-controls.js */
+    'Several controls match': '多個控制項符合',   /* atlas-controls.js (#R320) */
     'Controlling obstacle': "關鍵障礙物",   /* viewshed.js */
     'Controls': "操作",   /* flight-sim.js */
     'Coordinate grid': "座標格線",   /* keyboard-shortcuts.js */
@@ -5021,8 +5022,23 @@ window.IntMapLang.define('zh', {
   "Why do people in {place} live longer than almost anywhere else?": "{place}的人為什麼比世界上幾乎任何地方都長壽？",   /* atlas-examples.js (#R313) */
   "How much of {place} is actually online, and what is the bottleneck?": "{place}實際上有多少人能上網？瓶頸在哪裡？",   /* atlas-examples.js (#R313) */
   "Where are {place}’s people concentrated, and where is that shifting?": "{place}的人口集中在哪裡？又正往哪裡移動？",   /* atlas-examples.js (#R313) */
-  "What happens in {capital} that matters beyond {place}?": "{capital}發生的事情裡，有哪些影響會超出{place}？",   /* atlas-examples.js (#R313) */
-  "How does {place} differ from the rest of {sub}?": "{place}與{sub}地區的其他國家有什麼不同？",   /* atlas-examples.js (#R313) */
+  "What happens in {place}’s capital that matters beyond its borders?": "{place}：首都發生的事情裡，有哪些影響會超出國界？",   /* atlas-examples.js (#R313) */
+  /* ══ (#R313 追記2) THE UN M49 MACRO-REGION NAMES — SHIPPED STRINGS, NOT A RUNTIME LOOKUP ══════
+     `{sub}` in the chip below is one of the 22 M49 macro-regions. The browser cannot name them:
+     Intl.DisplayNames({type:'region'}) answers for 'JP' and returns undefined for '030' in V8,
+     so the names have to be here. ⚠ ONLY THE SIX THIS TABLE DID NOT ALREADY CARRY ARE LISTED —
+     Caribbean, Eastern/Middle/Northern/Southern/Western Africa, Eastern/Northern/Southern/Western
+     Europe, Northern America, South America, Western Asia, Melanesia, Micronesia and Polynesia are
+     already rows of this same table (js/atlas-console.js names the same regions from the same
+     English keys), and a second row with the same key would be a duplicate, not a translation.
+     ⚠ Bare nouns, no article: each one lands inside the parentheses of the chip. */
+  "Eastern Asia": "東亞",   /* atlas-examples.js (#R313 追記2) */
+  "South-Eastern Asia": "東南亞",   /* atlas-examples.js (#R313 追記2) */
+  "Southern Asia": "南亞",   /* atlas-examples.js (#R313 追記2) */
+  "Central Asia": "中亞",   /* atlas-examples.js (#R313 追記2) */
+  "Central America": "中美洲",   /* atlas-examples.js (#R313 追記2) */
+  "Australia and New Zealand": "澳洲與紐西蘭",   /* atlas-examples.js (#R313 追記2) */
+  "How does {place} differ from the other countries in its region ({sub})?": "{place}與同一地區（{sub}）的其他國家有什麼不同？",   /* atlas-examples.js (#R313 追記2) */
   "What did the world look like in {year}?": "{year} 年的世界是什麼樣子？",   /* atlas-examples.js (#R313) */
   "Where in the world are the most severe weather warnings in force right now?": "目前全球哪裡發布了最嚴重的氣象警報？",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "過去一週最活躍的板塊邊界是哪些？",   /* atlas-examples.js (#R313) */
@@ -5290,5 +5306,34 @@ window.IntMapLang.define('zh', {
   "196 parties adopt a global climate accord.": "196個締約方通過全球氣候協定。",   /* analysis-world-events.js (#R315) */
   "Sudan civil war": "蘇丹內戰",   /* analysis-world-events.js (#R315) */
   "Fighting erupts between the army and the RSF.": "政府軍與快速支援部隊爆發戰鬥。",   /* analysis-world-events.js (#R315) */
+  '{what} — done.': '{what} — 已完成。',   /* atlas-results.js (#R318) atlas.result.completed.named */
+  'Still running…': '仍在執行中…',   /* atlas-results.js (#R318) atlas.result.running */
+  'Still running — {done} of {total}.': '執行中 — {total} 項中的 {done} 項。',   /* atlas-results.js (#R318) atlas.result.running.progress */
+  'Partly done — {done} of {total}.': '部分完成 — {total} 項中的 {done} 項。',   /* atlas-results.js (#R318) atlas.result.partial */
+  'That did not happen.': '這並未執行。',   /* atlas-results.js (#R318) atlas.result.failed */
+  'Cancelled.': '已取消。',   /* atlas-results.js (#R318) atlas.result.cancelled */
+  'Replaced by your newer request.': '已被你較新的要求取代。',   /* atlas-results.js (#R318) atlas.result.superseded */
+  'I need one more thing before I can do that.': '在執行之前，我還需要一項資訊。',   /* atlas-results.js (#R318) atlas.result.needs_input */
+  'It was calculated but nothing was drawn on the map.': '已完成計算，但地圖上沒有畫出任何東西。',   /* atlas-results.js (#R318) atlas.code.not_rendered */
+  'It is on the map but currently hidden.': '它在地圖上，但目前處於隱藏狀態。',   /* atlas-results.js (#R318) atlas.code.not_visible */
+  'Nothing on the map changed.': '地圖上沒有任何變化。',   /* atlas-results.js (#R318) atlas.code.no_change */
+  'That is not available right now.': '目前無法使用。',   /* atlas-results.js (#R318) atlas.code.unavailable */
+  'I do not have that operation.': '我沒有這項操作。',   /* atlas-results.js (#R318) atlas.code.unknown_capability */
+  'The values given for that operation were not usable.': '傳給該操作的數值無法使用。',   /* atlas-results.js (#R318) atlas.code.bad_args */
+  'Several things match — which one?': '有多個相符的項目 — 是哪一個？',   /* atlas-results.js (#R318) atlas.code.ambiguous_target */
+  'It did not finish in time.': '未能在時限內完成。',   /* atlas-results.js (#R318) atlas.code.timeout */
+  'It stopped with an error.': '因發生錯誤而停止。',   /* atlas-results.js (#R318) atlas.code.threw */
+  'That one needs your confirmation first.': '這一項需要你先確認。',   /* atlas-results.js (#R318) atlas.code.needs_confirm */
+  'Tap the point on the map you mean.': '請在地圖上點選你所指的地點。',   /* atlas-results.js (#R318) atlas.input.point */
+  'Draw the line on the map.': '請在地圖上畫出線條。',   /* atlas-results.js (#R318) atlas.input.polyline */
+  'Draw the area on the map.': '請在地圖上畫出範圍。',   /* atlas-results.js (#R318) atlas.input.polygon */
+  'Choose one:': '請選擇一項：',   /* atlas-results.js (#R318) atlas.input.choice */
+  'Tell me the value to use.': '請告訴我要使用的值。',   /* atlas-results.js (#R318) atlas.input.text */
+  'Tell me the number to use.': '請告訴我要使用的數字。',   /* atlas-results.js (#R318) atlas.input.number */
+  'You asked for this on the map, and it is not on the map yet.': '你要求把它顯示在地圖上，但它還沒有出現在地圖上。',   /* atlas-results.js (#R318) atlas.goal.map_missing */
+  'You asked for an explanation, and I only operated the map.': '你要求的是說明，但我只操作了地圖。',   /* atlas-results.js (#R318) atlas.goal.explanation_missing */
+  'You asked me to do something, and I only wrote about it.': '你要求的是操作，但我只用文字說明。',   /* atlas-results.js (#R318) atlas.goal.action_missing */
+  'Not every target was reached: {names}': '並非所有目標都達成：{names}',   /* atlas-results.js (#R318) atlas.goal.targets_missing */
+  'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': '這次請求嘗試的次數過多 — 你每日的可用次數並未再被扣除。請換個說法再試一次。',   /* ai-core.js (#R318) aiTurnCallsMsg */
   }
 });

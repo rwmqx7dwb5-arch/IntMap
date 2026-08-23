@@ -244,18 +244,31 @@ export function makeAtlasExamples(HOST, CTX) {
                 '{place}: где сосредоточено население и куда оно смещается?',
                 '{place}: ¿dónde se concentra la población y hacia dónde se desplaza?') },
       /* ── attributes every country has, so these only ever fill the tail ─────────────────── */
+      /* ⚠⚠ (#R313 追記) THIS CHIP NAMED THE CAPITAL, AND THE APP ONLY HAS THAT NAME IN ENGLISH.
+         `CAPITAL` in js/tables.js is an English table — CLDR has no city names, and OSM's `name:xx`
+         values live inside vector tiles, not in anything this module can ask. So a Japanese reader
+         was handed 「Ulaanbaatarで起きていることのうち…」: a fully translated sentence with an
+         untranslated value dropped into the middle of it. ⚠ `npm run check:i18n` CANNOT SEE THIS —
+         the TEMPLATE is complete in all nine languages; it is the substituted value that is not.
+         Measured on production in ja: six countries, six English city names.
+         → the question keeps its subject and loses the name it could not translate. */
       { k:'capital', w:5, on:(f)=>f.st&&!!f.st.capital,
-        t:()=>L('What happens in {capital} that matters beyond {place}?',
-                '{capital}で起きていることのうち、{place}の外にまで効くのは？',
-                '{place}: Was passiert in {capital}, das über das Land hinaus zählt?',
-                '{place}: что происходит в {capital} и имеет значение за пределами страны?',
-                '{place}: ¿qué ocurre en {capital} que importe más allá del país?') },
+        t:()=>L('What happens in {place}’s capital that matters beyond its borders?',
+                '{place}の首都で起きていることのうち、国外にまで効くのは？',
+                '{place}: Was passiert in der Hauptstadt, das über das Land hinaus zählt?',
+                '{place}: что происходит в столице и имеет значение за пределами страны?',
+                '{place}: ¿qué ocurre en su capital que importe más allá del país?') },
+      /* ⚠ (#R313 追記2) `{sub}` SITS IN A PARENTHETICAL APPOSITION, for the same reason `{place}` does
+         (#R309): the value is a bare region name and the slot must not govern a case or want an
+         article. 「vom übrigen {sub}」 works for Ostasien and breaks for Karibik (feminine) and for
+         Südliches Afrika (an adjective); 「del resto de {sub}」 wants 「del Caribe」. In parentheses every
+         one of the 22 reads correctly in every language. */
       { k:'subregion', w:5, on:(f)=>f.st&&!!f.st.subregion,
-        t:()=>L('How does {place} differ from the rest of {sub}?',
-                '{place}は{sub}の他の国とどこが違う？',
-                '{place}: Worin unterscheidet es sich vom übrigen {sub}?',
-                '{place}: чем страна отличается от остальной части региона «{sub}»?',
-                '{place}: ¿en qué se diferencia del resto de {sub}?') },
+        t:()=>L('How does {place} differ from the other countries in its region ({sub})?',
+                '{place}は同じ地域（{sub}）の他の国とどこが違う？',
+                '{place}: Worin unterscheidet es sich von den anderen Ländern seiner Region ({sub})?',
+                '{place}: чем страна отличается от других стран своего региона ({sub})?',
+                '{place}: ¿en qué se diferencia de los otros países de su región ({sub})?') },
       /* ── #R309's four, kept as candidates (their nine translations are live) ────────────── */
       { k:'latest', w:4, on:(f)=>!!f.st,
         t:()=>L('Brief me on {place} — the latest','{place}でいま何が起きている？','{place}: Lagebericht — was passiert gerade?','{place} — что происходит прямо сейчас?','{place}: ¿qué está pasando ahora?') },
@@ -294,12 +307,53 @@ export function makeAtlasExamples(HOST, CTX) {
                  .sort((a,b)=>(b.w-a.w)||(a.k<b.k?-1:a.k>b.k?1:0))
                  .slice(0,4);
     }
+    /* ══ ⚠⚠⚠ (#R313 追記2) THE FIRST FIX WAS A NO-OP IN THE BROWSER, AND THE TEST COULD NOT SEE IT ═══
+       追記1 は subregion を UN M49 のコードにして `Intl.DisplayNames({type:'region'})` に訊いていた。
+       Node では 22 コード× 9 言語が全部解決する。**ブラウザでは 1 つも解決しない。**
+       MEASURED on production, three ways: `Intl.DisplayNames(['ja'],{type:'region',fallback:'none'}).of('030')`
+       returns undefined in Chromium and 「東アジア」 in Node; all 22 codes fail in ja/en/ko/de (0/22 each);
+       `of('JP')` still answers 「日本」 and `of('419')` answers 「ラテンアメリカ」. V8's region table carries
+       COUNTRIES, not the M49 macro-regions — so every reader saw 「モンゴル国はEastern Asiaの他の国と…」
+       exactly as before, while `tests/r313b` ② measured Node's ICU and stayed green for ever.
+       ⚠⚠⚠ THAT IS THE DEFECT OF 追記1 ONE LEVEL DOWN: an instrument that measures a DIFFERENT RUNTIME
+       from the one that ships. 追記1 caught a gate that measured templates instead of values; this one
+       caught a gate that measured Node instead of the browser.
+       ⇒ the names are SHIPPED STRINGS now. No runtime lookup, nothing to be present in one engine and
+       absent in another, and `scripts/i18n-report.mjs` can see all 22 because each is a literal `L()`.
+       ⚠ 22 のうち上流が実際に使うのは 20 種（177 features 中 175）。`Antarctica` と
+       `Seven seas (open ocean)` は地域名ではないので表に無く、上流の英語に落ちる。 */
+    const SUB={
+      'Eastern Asia':()=>L('Eastern Asia','東アジア','Ostasien','Восточная Азия','Asia oriental'),
+      'South-Eastern Asia':()=>L('South-Eastern Asia','東南アジア','Südostasien','Юго-Восточная Азия','Sudeste Asiático'),
+      'Southern Asia':()=>L('Southern Asia','南アジア','Südasien','Южная Азия','Asia meridional'),
+      'Central Asia':()=>L('Central Asia','中央アジア','Zentralasien','Центральная Азия','Asia central'),
+      'Western Asia':()=>L('Western Asia','西アジア','Westasien','Западная Азия','Asia occidental'),
+      'Northern Europe':()=>L('Northern Europe','北ヨーロッパ','Nordeuropa','Северная Европа','Europa septentrional'),
+      'Western Europe':()=>L('Western Europe','西ヨーロッパ','Westeuropa','Западная Европа','Europa occidental'),
+      'Southern Europe':()=>L('Southern Europe','南ヨーロッパ','Südeuropa','Южная Европа','Europa meridional'),
+      'Eastern Europe':()=>L('Eastern Europe','東ヨーロッパ','Osteuropa','Восточная Европа','Europa oriental'),
+      'Northern Africa':()=>L('Northern Africa','北アフリカ','Nordafrika','Северная Африка','África septentrional'),
+      'Western Africa':()=>L('Western Africa','西アフリカ','Westafrika','Западная Африка','África occidental'),
+      'Middle Africa':()=>L('Middle Africa','中部アフリカ','Zentralafrika','Центральная Африка','África central'),
+      'Eastern Africa':()=>L('Eastern Africa','東アフリカ','Ostafrika','Восточная Африка','África oriental'),
+      'Southern Africa':()=>L('Southern Africa','南部アフリカ','Südliches Afrika','Южная Африка','África meridional'),
+      'Northern America':()=>L('Northern America','北アメリカ','Nordamerika','Северная Америка','América del Norte'),
+      'Central America':()=>L('Central America','中央アメリカ','Mittelamerika','Центральная Америка','América Central'),
+      'Caribbean':()=>L('Caribbean','カリブ海地域','Karibik','Карибский бассейн','Caribe'),
+      'South America':()=>L('South America','南アメリカ','Südamerika','Южная Америка','América del Sur'),
+      'Australia and New Zealand':()=>L('Australia and New Zealand','オーストラリア・ニュージーランド','Australien und Neuseeland','Австралия и Новая Зеландия','Australia y Nueva Zelanda'),
+      'Melanesia':()=>L('Melanesia','メラネシア','Melanesien','Меланезия','Melanesia'),
+      'Micronesia':()=>L('Micronesia','ミクロネシア','Mikronesien','Микронезия','Micronesia'),
+      'Polynesia':()=>L('Polynesia','ポリネシア','Polynesien','Полинезия','Polinesia'),
+    };
+    function subName(st){ const s=(st&&st.subregion)||''; if(!s) return '';
+      try{ const f=SUB[s]; if(f) return f()||s; }catch(_){}
+      return s; }
     function fill(txt,f){
       const st=f&&f.st;
       return String(txt)
         .replace(/\{place\}/g,(f&&f.name)||'')
-        .replace(/\{capital\}/g,(st&&st.capital)||'')
-        .replace(/\{sub\}/g,(st&&st.subregion)||'')
+        .replace(/\{sub\}/g,subName(st))
         .replace(/\{year\}/g,String((f&&f.year)||''));
     }
     function examples(){

@@ -67,5 +67,7 @@
   "tests/smoke.spec.js": 8,
   "tests/r226-seismic.spec.js": 34,
   "tests/r251-langs.spec.js": 66,
+  "tests/r318.spec.js": 4,
+  "tests/r318-atlas.spec.js": 4,
   "tests/r315.spec.js": 4
 }
