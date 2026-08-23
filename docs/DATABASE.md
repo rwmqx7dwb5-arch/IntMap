@@ -74,11 +74,12 @@ exists. `current_news` above is untouched and still serves article mode.
 | `news_sources` | The one publisher registry. `source_family` is the unit of *independent* source counting — three Sinclair stations are one family, so "7 outlets reported it" cannot be manufactured by syndication. | Everyone. | **service_role only.** |
 | `news_source_feeds` | One row per feed of a source (a section RSS carries its own `category`), plus per-feed freshness and failure so "we could not fetch" is never drawn as "nothing happened". | Everyone. | **service_role only.** |
 | `news_articles` | One normalized article. Identity is `url_fingerprint` (the same story arrives under a Google News redirect and under the publisher's own link); `title_fingerprint` catches syndication. | Everyone — the policy returns `status = 'active'` only, so a withdrawn article disappears from clients. | **service_role only.** |
-| `news_events` | One event: representative headline / place / times, article + independent-source counts, category, confidences. A merged event **keeps its row** (`status='merged'` + `merged_into`) so saved and shared ids still resolve. | Everyone. | **service_role only.** |
+| `news_events` | One event: representative headline / place / times, article + independent-source counts, category, confidences, and *(#R351)* `category_evidence` — which tier decided the category and on what (the feed's vote / the publisher's own tags / the terms that matched). A merged event **keeps its row** (`status='merged'` + `merged_into`) so saved and shared ids still resolve. | Everyone. | **service_role only.** |
 | `news_event_articles` | Event ↔ article, with the relation (`same_event` / `update` / `related_context`). A **partial** unique index on `article_id` allows only one primary event per article while leaving `related_context` unlimited. | Everyone. | **service_role only.** |
 | `news_cluster_decisions` | Why an article landed where it did: candidates, scores, deterministic evidence, the raw model response, tokens and cost. | **Admin only.** | **service_role only.** |
-| `news_event_i18n` | Server-generated translation of an event (`ja` today). Persisted, so it is readable logged out and costs no user AI quota. | Everyone. | **service_role only.** |
+| `news_event_i18n` | Server-generated translation of an event (`ja` today). Persisted, so it is readable logged out and costs no user AI quota. *(#R351)* `source_title_fp` is the hash of the headline that was translated, so a cached translation is reused until the headline itself changes — `updated_at` would move on every added article and re-bill the same sentence. | Everyone. | **service_role only.** |
 | `saved_news_events` | ★ on an **Event** (`favorites` keeps holding ★ on an article link). | Owner. | Owner. |
+| `news_ingest_runs` *(#R351)* | One row per `news-ingest` run: feeds reached, items fetched, articles new/seen, the **reject breakdown**, events created/updated, evictions, translations, tokens, an indicative cost, and per-stage timings. Per-feed freshness is not copied here — `news_source_feeds` holds it. | **Admin only.** | **service_role only.** |
 
 ## Relationships
 
@@ -199,7 +200,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **29**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **30**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin`.
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't

@@ -116,8 +116,8 @@ gh pr merge --squash --delete-branch
 
 ## 6. deployment と本番検証
 
-Edge Function を変えたなら本番へ出す（8 本: ai-proxy / alerts-relay / cable-geo /
-delete-account / monitor-run / news-relay / refresh-news / sv-cov）:
+Edge Function を変えたなら本番へ出す（9 本: ai-proxy / alerts-relay / cable-geo /
+delete-account / monitor-run / news-ingest / news-relay / refresh-news / sv-cov）:
 
 ```bash
 supabase functions deploy <name> --project-ref vpekfwdpurzejrrmacac
