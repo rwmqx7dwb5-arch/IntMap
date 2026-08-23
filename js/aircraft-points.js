@@ -22,10 +22,18 @@
  *  THE GLYPH IS DRAWN, NOT TEXTURED
  *  --------------------------------
  *  gl_PointCoord is rotated by the aircraft's track in the fragment shader and tested against a
- *  dart-shaped signed distance field. That is why heading costs nothing: no texture atlas, no
- *  per-icon image, no icon-rotate expression, and the silhouette stays sharp at any device pixel
- *  ratio. Below a few pixels the dart is indistinguishable from a dot and the shader says so —
- *  that is the LOD, and it changes the DETAIL of an aircraft, never whether it is drawn.
+ *  signed distance field. That is why heading costs nothing: no texture atlas, no per-icon image,
+ *  no icon-rotate expression, and the silhouette stays sharp at any device pixel ratio. Below a
+ *  few pixels the silhouette is indistinguishable from a dot and the shader says so — that is the
+ *  LOD, and it changes the DETAIL of an aircraft, never whether it is drawn.
+ *
+ *  ⚠ (#R379) THE FIELD IS THE APP'S OWN AIRLINER PLAN-FORM, NOT A DART. 「航空機レイヤーの飛行機
+ *  アイコンのデザインをもとに戻して。」 #R341 wrote a notched triangle here because an SDF is
+ *  cheaper to write for three vertices than for eighteen; that is a property of the author, not of
+ *  the layer. The eighteen are in js/plane-glyph.js — ONE declaration, read here as GLSL and by
+ *  js/cesium-engine.js as a canvas path, so the two engines cannot drift apart the way #R341's two
+ *  transcriptions of the dart could have. A concave outline needs a crossing test for the sign,
+ *  which is the only thing planeSD() does that a triangle's three half-planes did not.
  *
  *  ⚠ EXTRAPOLATION IS CAPPED, AND CAPPED SHORTER THAN THE SATELLITES'. A satellite's motion is
  *  deterministic — its velocity is still right four seconds later. An aircraft's is a guess that
@@ -37,6 +45,10 @@
  *  js/solid3d.js are. Nothing outside IntMapGeoEngine's
  *  `layers.addAircraftCloud/setAircraftCloud/removeAircraftCloud` may reach for it.
  * ==========================================================================*/
+/* ⚠ THE MARK ITSELF. Imported rather than transcribed — see the header. The import is hoisted, so
+   window.IntMapPlaneGlyph exists before this module's body builds the shader source. */
+import './plane-glyph.js';
+
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.aircraftPoints = function () {
   const D2R = Math.PI / 180;
@@ -76,20 +88,43 @@ void main(){
   gl_PointSize = px;
 }`;
 
+  /* (#R379) the one declaration of the mark — see the header */
+  const GLYPH = window.IntMapPlaneGlyph;
+
   const FRAG = `
-precision mediump float;
+precision highp float;
 in vec4 v_col;
 in float v_rot;
 in float v_px;
 out vec4 fragColor;
 
-/* Signed distance to a convex triangle: negative inside. Three half-planes, max of the three. */
-float triSD(vec2 p, vec2 a, vec2 b, vec2 c){
-  vec2 e0 = b - a, e1 = c - b, e2 = a - c;
-  vec2 n0 = normalize(vec2( e0.y, -e0.x));
-  vec2 n1 = normalize(vec2( e1.y, -e1.x));
-  vec2 n2 = normalize(vec2( e2.y, -e2.x));
-  return max(max(dot(p - a, n0), dot(p - b, n1)), dot(p - c, n2));
+/* The plan-form's vertices in SPRITE space, GENERATED from js/plane-glyph.js rather than typed
+   here, so the shader and the Cesium sprite cannot disagree by a decimal point. */
+${GLYPH.glsl('PLANE')}
+const int PLANE_N = ${GLYPH.OUTLINE.length};
+/* Half the white outline, in the same units: the band reaches this far either side of the path,
+   exactly as \`ctx.stroke()\` straddles it. */
+const float HALF_STROKE = ${GLYPH.SDF_HALF_STROKE.toFixed(7)};
+
+/* Signed distance to the plan-form: negative inside. One pass over the edges for the distance —
+   each edge's nearest point, clamped to the segment — and a crossing test for the SIGN, which is
+   the part a convex shape does not need. This outline is concave in four places (either side of
+   the fuselage, and the steps between wing root and tailplane), and a max-of-half-planes reads
+   every one of them as outside. */
+float planeSD(vec2 p){
+  float d = dot(p - PLANE[0], p - PLANE[0]);
+  float s = 1.0;
+  int j = PLANE_N - 1;
+  for (int i = 0; i < PLANE_N; i++) {
+    vec2 e = PLANE[j] - PLANE[i];
+    vec2 w = p - PLANE[i];
+    vec2 b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+    d = min(d, dot(b, b));
+    bvec3 c = bvec3(p.y >= PLANE[i].y, p.y < PLANE[j].y, e.x * w.y > e.y * w.x);
+    if (all(c) || all(not(c))) s = -s;
+    j = i;
+  }
+  return s * sqrt(d);
 }
 
 void main(){
@@ -99,26 +134,32 @@ void main(){
   /* Anti-aliasing width in the same units as q: two pixels of the sprite. */
   float aa = max(0.06, 3.0 / max(v_px, 1.0));
 
-  float a;
+  vec3 pre;      /* colour, already multiplied by its own coverage — the blend is premultiplied */
+  float cov;
   if (v_px < 5.0) {
-    /* LOD: below five device pixels a rotated dart and a dot are the same picture, and the dot
-       stays legible where the dart would alias into noise. The aircraft is still drawn. */
+    /* LOD: below five device pixels an aeroplane and a dot are the same picture, and the dot stays
+       legible where the silhouette would alias into noise. The aircraft is still drawn. */
     float r = length(q);
-    a = smoothstep(1.0, 1.0 - aa * 2.0, r);
+    cov = smoothstep(1.0, 1.0 - aa * 2.0, r);
+    pre = v_col.rgb * cov;
   } else {
     float s = sin(v_rot), c = cos(v_rot);
     vec2 p = mat2(c, -s, s, c) * q;              /* rotate the SPRITE by the track */
-
-    /* A dart: a nose-up triangle with a notch cut out of its trailing edge. This is the silhouette
-       every traffic display converges on because it reads as a heading at four pixels. */
-    float body  = triSD(p, vec2(0.0, 0.98), vec2(-0.72, -0.86), vec2(0.72, -0.86));
-    float notch = triSD(p, vec2(0.0, -0.12), vec2(-0.72, -0.95), vec2(0.72, -0.95));
-    float d = max(body, -notch);
-    a = smoothstep(aa, -aa, d);
+    float d = planeSD(p);
+    /* \`ctx.fill()\` and then \`ctx.stroke()\`, which is how this mark has always been drawn: the
+       fill is everything inside the outline and the white band is painted OVER it. Composited as
+       source-over rather than as two disjoint regions, because the band's inner half is white over
+       the body colour and its outer half is white over nothing — those are not the same pixel, and
+       a two-region shortcut loses the difference at every edge. */
+    float fill = smoothstep(aa, -aa, d);
+    float band = smoothstep(aa, -aa, abs(d) - HALF_STROKE) * ${GLYPH.STROKE_ALPHA.toFixed(2)};
+    pre = vec3(band) + v_col.rgb * fill * (1.0 - band);
+    cov = band + fill * (1.0 - band);
   }
 
+  float a = cov * v_col.a;
   if (a <= 0.003) discard;
-  fragColor = vec4(v_col.rgb * v_col.a * a, v_col.a * a);
+  fragColor = vec4(pre * v_col.a, a);
 }`;
 
   function compile(gl, shaderData) {

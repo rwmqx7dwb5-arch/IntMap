@@ -33,6 +33,10 @@
    window.IntMapModules.aircraftPoints, which this import has published by the time any function
    below can run. */
 import './aircraft-points.js';
+/* (#R379) …and the mark, because SIZE_RAMP below reads its size table. It arrives through the line
+   above anyway; naming it here is what makes the dependency a fact of the module graph rather than
+   an assumption about somebody else's imports. */
+import './plane-glyph.js';
 /* ⚠ AND THE CODEC, ON THE PAGE. src/aviation-worker.js imports it too, but a worker's module graph
    is a DIFFERENT graph: nothing the worker imports exists on the main thread. Without this line
    `globalThis.IntMapAviationCodec` is undefined here, `hexOf()` returns null, and pick() answers
@@ -64,9 +68,22 @@ window.IntMapModules.aviationLive = function (HOST) {
 
   /* ── LOD (§11) ────────────────────────────────────────────────────────────
      Zoom changes how BIG and how detailed an aircraft is, never whether it is there. Below ~5 px
-     the shader draws a dot instead of a dart (js/aircraft-points.js), so these are also the
-     thresholds at which the silhouette appears. */
-  const SIZE_RAMP = [[0, 3.5], [2, 5.5], [5, 9], [8, 14], [11, 19], [14, 24]];
+     the shader draws a dot instead of the silhouette (js/aircraft-points.js), so these are also the
+     thresholds at which the aeroplane appears. The number is the SPRITE BOX in CSS pixels — the
+     mark itself reaches 92 % of it, the rest being the margin an anti-aliased edge needs.
+
+     ⚠ (#R379) THE TOP OF THIS RAMP IS THE ORIGINAL MARK'S OWN SIZE, NOT A NUMBER CHOSEN HERE.
+     Restoring the plan-form silhouette without restoring how big it was drawn would put the old
+     shape back at a third of the old size, which is a different picture again — measured, the
+     glyph was 26.8 CSS px long at z5 and 36.1 from z9 up, against this ramp's 9 and 19. So from z8
+     the box is `IntMapPlaneGlyph.boxPx(z)`, the artwork box the symbol layer's `icon-size` used to
+     produce, and above z9 it is FLAT because the original ramp's last stop is z9 — an aeroplane
+     that keeps growing to z14 was never part of the mark.
+     ⚠ …and the low end is untouched. At z0–5 the world holds tens of thousands of aircraft and the
+     old layer never had to draw them (it capped at 4,000 and switched off below z2); a 22-px mark
+     each would be a smear rather than a fleet. Zoom in and the mark becomes the one that shipped. */
+  const G = window.IntMapPlaneGlyph;
+  const SIZE_RAMP = [[0, 3.5], [2, 5.5], [5, 9], [8, G.boxPx(8)], [9, G.boxPx(9)]];
   function sizeForZoom(z) {
     if (!(z >= 0)) return 9;
     const R = SIZE_RAMP;
