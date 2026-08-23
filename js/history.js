@@ -34,7 +34,24 @@ window.IntMapModules.maddison=function(){
     };
 };
 
+/* ⚠⚠⚠ (#R380) THESE NAMES ARE TUPLES, AND TWO PLACES WERE READING THEM AS IF THEY WERE OBJECTS.
+   #R245 turned every former-state and era name in this file into `LA(en, ja, de, ru, es)` — an ARRAY,
+   held as data so it can be resolved in the reader's language later. Both writers into `countryStats`
+   were left reading `name.en` / `name.jp`, and on an array those are `undefined`; js/countries-ui.js
+   `renderStats` keeps a row only `if (s.nameEn && …)`. So the rename WROTE UNDEFINED OVER THE NAME OF
+   THE ROW IT WAS RENAMING and the row silently left the list.
+   MEASURED by loading this file with a stub window (tests/r380-checks ⑨): at 1860 `histId.apply()`
+   left FRA.nameEn and CHN.nameEn undefined, and `agg(AUH, 1875).nameEn` was undefined — so travelling
+   removed France, the United Kingdom, China, Portugal, Brazil, Persia, Siam, the Dutch East Indies and
+   Ethiopia from the Countries tab along with EVERY former state, which is the entire feature.
+   ⚠ ONE helper, read by both writers, so the two cannot drift apart again. `nameEn` stays English
+   because search, sorting and Atlas's name matching all read it; `nameJp` is the Japanese slot, which
+   is exactly what `cName` (js/app-body.js) asks for. The map LABELS are localised elsewhere, through
+   `_LTB.arr` in js/time-borders.js — the tuple itself is still carried on `name` for them. */
+window.IntMapHistName=function(n,slot){ return Array.isArray(n) ? (n[slot]||n[0]||'') : ((n&&(slot?n.jp:n.en))||''); };
+
 window.IntMapModules.histStates=function(countryStats){
+    const _nmEn=(n)=>window.IntMapHistName(n,0), _nmJp=(n)=>window.IntMapHistName(n,1);
     /* (#R245) the former-state names are tuples held as data — see IntMapLang.pickArgs(). They are
        READ through `pick()` itself in js/time-borders.js, so a language past the five positional
        slots reaches its inline table keyed by the English name rather than falling to English. */
@@ -63,6 +80,21 @@ window.IntMapModules.histStates=function(countryStats){
     const F_AUH=flag('<rect width="15" height="6.667" fill="#ED2939"/><rect y="6.667" width="15" height="6.667" fill="#ffffff"/><rect y="13.333" width="15" height="6.667" fill="#ED2939"/><rect x="15" width="15" height="6.667" fill="#CE2939"/><rect x="15" y="6.667" width="15" height="6.667" fill="#ffffff"/><rect x="15" y="13.333" width="15" height="6.667" fill="#436F4D"/>');
     const F_OTT=flag('<rect width="30" height="20" fill="#D00000"/><circle cx="12" cy="10" r="5" fill="#ffffff"/><circle cx="13.7" cy="10" r="4" fill="#D00000"/>'+STAR(18.6,10,2.1,'#ffffff'));
     const F_RUE=flag('<rect width="30" height="6.667" fill="#ffffff"/><rect y="6.667" width="30" height="6.667" fill="#0039A6"/><rect y="13.333" width="30" height="6.667" fill="#D52B1E"/>');
+    /* (#R380) the Austrian Empire's black-over-gold Habsburg bicolour. It must NOT borrow F_AUH: the
+       red-white-red / red-white-green split belongs to the Dual Monarchy, and the whole point of the AUE
+       row below is that 1850 was not the Dual Monarchy. */
+    const F_AUE=flag('<rect width="30" height="10" fill="#000000"/><rect y="10" width="30" height="10" fill="#FFDF00"/>');
+    /* (#R380) the Taegukgi, as Joseon adopted it in 1883 and the Korean Empire kept it: white field, the
+       red-over-blue taeguk, and the four trigrams — ☰ upper hoist, ☲ lower hoist, ☵ upper fly, ☷ lower fly.
+       The bars are drawn straight rather than rotated toward the centre, the same licence #R94k's empire
+       flags take ("simplified but recognisable; heraldry approximated"). */
+    const _TRI=(x,y,rows)=>rows.map((r,i)=>{ const yy=(y+i*1.7).toFixed(2);
+      return r ? '<rect x="'+x+'" y="'+yy+'" width="4.4" height="1.05" fill="#000000"/>'
+               : '<rect x="'+x+'" y="'+yy+'" width="1.85" height="1.05" fill="#000000"/><rect x="'+(x+2.55)+'" y="'+yy+'" width="1.85" height="1.05" fill="#000000"/>'; }).join('');
+    const F_KOR=flag('<rect width="30" height="20" fill="#ffffff"/>'
+      +'<circle cx="15" cy="10" r="4" fill="#0047A0"/>'
+      +'<path d="M15,6 A2,2 0 0 1 15,10 A2,2 0 0 0 15,14 A4,4 0 0 0 15,6 Z" fill="#CD2E3A"/>'
+      +_TRI(3.1,3.2,[1,1,1])+_TRI(22.5,3.2,[0,1,0])+_TRI(3.1,13.1,[1,0,1])+_TRI(22.5,13.1,[0,0,0]));
     /* (#R349) the East India Company's ensign — thirteen red-and-white stripes with the Union in the
        canton. It is NOT the Raj's flag and must not borrow it: the two are different regimes and the
        point of the EIC row is that 1850 was not the Raj. */
@@ -127,6 +159,20 @@ window.IntMapModules.histStates=function(countryStats){
          collapsed to just Austria's 6.84M). popEst = absolute persons (well-documented census figures); gdpEst =
          billions of 2011 int$ (successor GDPpc × the full population). Used by agg + the time-series when Maddison
          lacks the entity (see agg). */
+      /* ⚠⚠ (#R380) `AUH` OPENS AT THE COMPROMISE, AND THE COMPROMISE IS NOT WHEN THE STATE BEGAN.
+         #R349 caught exactly this shape one row down (the Ottoman `from` was an accession year) and left
+         its neighbour standing. Austria-Hungary was created on 1867-06-08, so with the floor at 1850 the
+         years 1850-1866 listed Austria, Hungary, Czechia, Slovakia, Slovenia, Croatia and Bosnia — THE
+         SAME SEVEN this row aggregates — as sovereign countries in a decade when none of them existed.
+         MEASURED on the shipped bundle before the fix: at 1860 the map popup already answered «Austrian
+         Empire» (js/time-borders.js `_ERA_WIKI`) while the Countries tab listed the seven, so the two
+         halves of the same app disagreed about who was there.
+         ⚠ Unlike the Ottoman case the fix is NOT a wider lifespan — the Austrian Empire (1804-1867) is a
+         different state from the Dual Monarchy, and widening AUH would put «Austria-Hungary» on 1850. It
+         gets its own row, exactly the way #R349 put the East India Company in front of the Raj. */
+      { code:'AUE', from:'1804-08-11', to:'1867-06-07', flag:F_AUE, region:'Europe', wiki:'Austrian Empire',
+        name:LA('Austrian Empire','オーストリア帝国','Kaisertum Österreich','Австрийская империя','Imperio austríaco'),
+        succ:['AUT','HUN','CZE','SVK','SVN','HRV','BIH'], popEst:37500000, gdpEst:105, estSrc:'Austrian Empire 1843 estimate (~37.5M) / Maddison GDPpc' },
       { code:'AUH', from:'1867-06-08', to:'1918-11-11', flag:F_AUH, region:'Europe', wiki:'Austria-Hungary',
         name:LA('Austria-Hungary','オーストリア＝ハンガリー帝国','Österreich-Ungarn','Австро-Венгрия','Austria-Hungría'),
         succ:['AUT','HUN','CZE','SVK','SVN','HRV','BIH'], popEst:52800000, gdpEst:190, estSrc:'A-H census 1910 (~51.4M) / Maddison GDPpc' },
@@ -153,6 +199,22 @@ window.IntMapModules.histStates=function(countryStats){
       { code:'RAJ', from:'1858-06-28', to:'1947-08-15', flag:F_RAJ, region:'South Asia', wiki:'British Raj',
         name:LA('British Raj (British India)','イギリス領インド帝国','Britisch-Indien','Британская Индия','India británica'),
         succ:['IND','PAK','BGD'], popEst:305000000, gdpEst:300, estSrc:'India census 1911 (~315M) / Maddison GDPpc' },
+      /* ⚠⚠ (#R380) …AND KOREA WAS THE SAME SHAPE, ONE STEP FURTHER ON. `IntMapHistId` already renamed KOR
+         to Joseon / the Korean Empire for these years, so the Countries tab printed 「Joseon」 and 「North
+         Korea」 in the same list — a state that would not be founded for another seventy-three years,
+         standing beside the kingdom it was eventually partitioned out of. Renaming is not enough when the
+         modern successors are TWO; aggregating them is what this registry is for. JEM below already covers
+         the annexation onwards (1910-08-29), so these two rows close the gap between it and the floor. */
+      { code:'KOJ', from:'1392-07-17', to:'1897-10-11', flag:F_KOR, region:'East Asia', wiki:'Joseon',
+        name:LA('Joseon','朝鮮（李氏朝鮮）','Joseon','Чосон','Joseon'),
+        /* ⚠ NO `madCode`. Maddison's KOR series is the SOUTHERN half's territory and it does carry a 1850
+           population row, so pointing this state at it would satisfy `M.has()`, suppress the estimate
+           override and answer «Joseon: 9.5M» — the south alone. Without it the successor sum runs, and it
+           falls back to the documented figure exactly when the sum is too incomplete to stand. */
+        succ:['KOR','PRK'], popEst:16000000, gdpEst:13, estSrc:'Joseon 1889 estimate (~16M) / Maddison GDPpc' },
+      { code:'KOE', from:'1897-10-12', to:'1910-08-28', flag:F_KOR, region:'East Asia', wiki:'Korean Empire',
+        name:LA('Korean Empire','大韓帝国','Kaiserreich Korea','Корейская империя','Imperio coreano'),
+        succ:['KOR','PRK'], popEst:17082000, gdpEst:17, estSrc:'Korean Empire 1900 estimate (~17.1M) / Maddison GDPpc' },
       { code:'JEM', from:'1910-08-29', to:'1945-09-02', flag:F_JEM, region:'East Asia', wiki:'Empire of Japan',
         name:LA('Empire of Japan','大日本帝国','Japanisches Kaiserreich','Японская империя','Imperio del Japón'),
         /* (#R128) Empire of Japan c.1940 ≈ 105M incl. colonies (Japan ~73M + Korea ~24M + Taiwan ~6M + Karafuto/
@@ -174,11 +236,14 @@ window.IntMapModules.histStates=function(countryStats){
       SDU:{capital:'Khartoum',currency:'Sudanese pound',languages:'Arabic, English'},
       ETU:{capital:'Addis Ababa',currency:'Ethiopian birr',languages:'Amharic'},
       IDU:{capital:'Jakarta',currency:'Indonesian rupiah',languages:'Indonesian'},
+      AUE:{capital:'Vienna',currency:'Austrian gulden',languages:'German, Hungarian, Czech, Polish, Italian'},
       AUH:{capital:'Vienna & Budapest',currency:'Austro-Hungarian krone',languages:'German, Hungarian'},
       OTT:{capital:'Constantinople',currency:'Ottoman lira',languages:'Ottoman Turkish'},
       RUE:{capital:'St. Petersburg',currency:'Russian ruble',languages:'Russian'},
       EIC:{capital:'Calcutta',currency:'Indian rupee',languages:'English, Persian'},
       RAJ:{capital:'Calcutta / New Delhi',currency:'Indian rupee',languages:'English, Hindi, Urdu'},
+      KOJ:{capital:'Hanseong (Seoul)',currency:'Korean mun / yang',languages:'Korean'},
+      KOE:{capital:'Hanseong (Seoul)',currency:'Korean yang / won',languages:'Korean'},
       JEM:{capital:'Tokyo',currency:'Japanese yen',languages:'Japanese'}
     };
     STATES.forEach(S=>{ const i=_STINFO[S.code]; if(i){ S.capital=i.capital; S.currency=i.currency; S.languages=i.languages; } });
@@ -210,7 +275,7 @@ window.IntMapModules.histStates=function(countryStats){
       if(S.popEst && !_hasMad && (pop==null || pop < S.popEst*0.6)){ pop=S.popEst; real=true; }
       if(S.gdpEst && !_hasMad && (gdp==null || gdp < S.gdpEst*0.6)){ gdp=S.gdpEst; real=true; }
       const nm=S.name;
-      return { code:S.code, ccn3:'', nameEn:nm.en, nameJp:nm.jp, name:nm, flag:S.flag, region:S.region, wiki:S.wiki,
+      return { code:S.code, ccn3:'', nameEn:_nmEn(nm), nameJp:_nmJp(nm), name:nm, flag:S.flag, region:S.region, wiki:S.wiki,
         sov:true, _hist:true, _histSucc:S.succ, _histHave:((real||S.popEst)?S.succ.length:have), _histN:S.succ.length, _from:S.from, _to:S.to, _real:real,
         capital:S.capital||'', currency:S.currency||'', languages:S.languages||'',   /* (#R130) real era capital / currency / languages on the historical card (were always blank) */
         pop:pop||null, gdp:gdp||null, area:area||null, milSpend:mil||null,
@@ -235,12 +300,21 @@ window.IntMapModules.histStates=function(countryStats){
     /* used by renderStats when the tab renders (countryStats already carries the applied entries + hidden flags) */
     /* (#R94h) match a former state to its polygon NAME in the aourednik era-borders data (for map colouring) */
     const HB_MATCH={ SUN:/soviet|u\.?s\.?s\.?r/i, YUG:/yugoslav/i, YGK:/yugoslav/i, SCG:/serbia and montenegro|serbia & montenegro|yugoslav/i, CSK:/czechoslovak/i, UAR:/united arab republic/i, PKU:/^pakistan$/i, SDU:/^sudan$/i, ETU:/ethiopia|abyssinia/i, IDU:/^indonesia$/i,
-      AUH:/austria.?hungary|austro.?hungar|austrian empire/i, OTT:/ottoman/i, RUE:/russian empire|^russia$/i, EIC:/east india company|company rule|british india|^india$/i, RAJ:/british raj|british india|^india$/i, JEM:/^japan$|japanese empire|empire of japan/i };
+      AUE:/austria.?hungary|austro.?hungar|austrian empire/i, AUH:/austria.?hungary|austro.?hungar|austrian empire/i,
+      OTT:/ottoman/i, RUE:/russian empire|^russia$/i, EIC:/east india company|company rule|british india|^india$/i, RAJ:/british raj|british india|^india$/i,
+      KOJ:/^korea$|joseon|chos[eo]n/i, KOE:/^korea$|korean empire|empire of korea/i, JEM:/^japan$|japanese empire|empire of japan/i };
+    /* ⚠ (#R380) AUE and AUH share a pattern, and so do KOJ and KOE — on purpose. The only frame that
+       exists below 1886 is world_1880, whose polygon is called «Austria Hungary» even for a year when the
+       state was the Austrian Empire, and «Korea» for every year of both Korean states. The lifespans are
+       disjoint, and `resolveHist` takes the first match that is ACTIVE, so exactly one of each pair can
+       ever bind — the pattern names the polygon, the lifespan names the year. */
     return { STATES, CODES, activeAt, apply, clear, agg, _applied:()=>_applied, hbRe:(code)=>HB_MATCH[code]||null };
 };
 
 window.IntMapModules.histId=function(countryStats){
-    /* (#R245) the renamed-state names are tuples held as data — see IntMapLang.pickArgs() */
+    /* (#R245) the renamed-state names are tuples held as data — see IntMapLang.pickArgs()
+       ⚠ (#R380) …and they are READ as tuples: see the note above `histStates`. */
+    const _nmEn=(n)=>window.IntMapHistName(n,0), _nmJp=(n)=>window.IntMapHistName(n,1);
     const LA=window.IntMapLang.pickArgs();
     const svgU=(inner)=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20">'+inner+'</svg>';
     const flag=(inner)=>'<img class="hist-flag" alt="" src="data:image/svg+xml,'+encodeURIComponent(svgU(inner))+'">';
@@ -318,7 +392,7 @@ window.IntMapModules.histId=function(countryStats){
     function apply(date){ clear(); const year=new Date(date).getFullYear(); const saved={};
       for(const code in ID){ const s=countryStats[code]; if(!s||s._histHidden) continue; const e=at(code,year); if(!e) continue;
         saved[code]={nameEn:s.nameEn,nameJp:s.nameJp,name:s.name,flag:s.flag,wiki:s.wiki,_hid:!!s._histId};
-        s.nameEn=e.name.en; s.nameJp=e.name.jp; s.name=e.name; s.flag=(e.flag||s.flag); s.wiki=e.wiki; s._histId=true; }   /* (#R117) an entry without an era flag keeps the country's own flag (e.g. Empire of Japan = 日章旗) */
+        s.nameEn=_nmEn(e.name); s.nameJp=_nmJp(e.name); s.name=e.name; s.flag=(e.flag||s.flag); s.wiki=e.wiki; s._histId=true; }   /* (#R117) an entry without an era flag keeps the country's own flag (e.g. Empire of Japan = 日章旗) */
       if(Object.keys(saved).length) _applied=saved; }
     return { at, apply, clear, _applied:()=>_applied };
 };

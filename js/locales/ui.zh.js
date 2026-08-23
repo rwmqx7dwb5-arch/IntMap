@@ -280,7 +280,7 @@ window.IntMapLang.define('zh', {
     "% of GDP": "佔 GDP %",
     "By accession year": "依加入年份",
     "Carbon-dioxide emissions — the country total in megatonnes a year, or the same series divided by population; switch between the two in this legend.": "二氧化碳排放量 — 全國每年的總量（百萬公噸），或同一組資料除以人口的每人排放量；可在此圖例中切換。",
-    "Chronos reaches back to 1900": "Chronos 可回溯到 1900 年",
+    "Chronos reaches back to {y}": "Chronos 可回溯到 {y} 年",
     "Coastlines": "海岸線",
     "Control IntMap’s unified time": "操作 IntMap 的統一時間",
     "Control the map’s time": "操作地圖的時間",
@@ -366,7 +366,6 @@ window.IntMapLang.define('zh', {
     '📍 Current map view': "📍 目前地圖畫面",   /* flight-sim.js */
     '📍 Last flight end point': "📍 上次飛行終點",   /* flight-sim.js */
     '1 psi — windows shatter, light injuries': "1 psi — 玻璃破碎、輕傷",   /* atlas-sims.js */
-    '1900 to present': "1900 年至今",   /* news-timeline.js */
     '20 psi — total destruction': "20 psi — 完全摧毀",   /* atlas-sims.js */
     '3-D volume': "立體體積",   /* volume3d.js */
     '3-D volume tool unavailable': "立體體積工具無法使用",   /* atlas-console.js */
@@ -1079,7 +1078,7 @@ window.IntMapLang.define('zh', {
     'Intercity Japan rail: real Shinkansen lines and stations, with times estimated from the operators’ published timetables (express pattern + service frequency) — not live times. Local segments use open GTFS (Transitous) where available; where none exists (e.g. Nagoya) they are distance-based estimates, marked as such. The line between stations is schematic.': "日本城際鐵路：真實的新幹線路線與車站，時間依營運者公布的時刻表推估（快車模式＋班次密度）— 並非即時時刻。地方路段在有開放 GTFS（Transitous）時採用之；沒有的地方（例如名古屋）則以距離推估並標示。站與站之間的連線為示意線。",   /* atlas-console.js */
     'International designator': "國際識別碼",   /* satellite-detail.js */
     'Interplanetary spacecraft, from JPL Horizons trajectories': "行星際探測器，依 JPL Horizons 軌跡",   /* space.js */
-    'IntMap is an interactive world atlas — and I (Atlas) can operate all of it in plain language. You can: turn on 100+ DATA LAYERS (climate, population, economy, live weather) from the Layers panel; read LIVE NEWS pinned where events happen; use CHRONOS (bottom-right, formerly the time machine) to travel 1900→now; open COUNTRIES to sort & compare country data; and switch to WORKSPACE mode for movable windows. Just ask me things like: "fly to Kenya", "show the population layer", "compare Japan and Germany", "highlight the top 10 by GDP per capita", "directions from Tokyo to Osaka by train", "which countries have the highest life expectancy?", or "brief me on the South China Sea". Ask "how do I …" for any specific feature.': "IntMap 是一個互動式世界地圖集 — 而我（Atlas）可以用日常語言操作它的全部功能。你可以：從圖層面板開啟 100 種以上的資料圖層（氣候、人口、經濟、即時天氣）；閱讀釘在事件發生地的即時新聞；用 Chronos（右下角，舊名時光機）從 1900 年走到現在；開啟「國家」分頁排序與比較各國資料；並切換到工作區模式使用可移動的視窗。你可以直接問我：「飛到肯亞」「顯示人口圖層」「比較日本和德國」「標出人均 GDP 前十名」「東京到大阪的鐵路路線」「哪些國家平均壽命最長？」或「幫我簡報南海情勢」。任何功能都可以問「我要怎麼…」。",   /* atlas-console.js */
+    'IntMap is an interactive world atlas — and I (Atlas) can operate all of it in plain language. You can: turn on 100+ DATA LAYERS (climate, population, economy, live weather) from the Layers panel; read LIVE NEWS pinned where events happen; use CHRONOS (bottom-right, formerly the time machine) to travel 1850→now; open COUNTRIES to sort & compare country data; and switch to WORKSPACE mode for movable windows. Just ask me things like: "fly to Kenya", "show the population layer", "compare Japan and Germany", "highlight the top 10 by GDP per capita", "directions from Tokyo to Osaka by train", "which countries have the highest life expectancy?", or "brief me on the South China Sea". Ask "how do I …" for any specific feature.': "IntMap 是一個互動式世界地圖集 — 而我（Atlas）可以用日常語言操作它的全部功能。你可以：從圖層面板開啟 100 種以上的資料圖層（氣候、人口、經濟、即時天氣）；閱讀釘在事件發生地的即時新聞；用 Chronos（右下角，舊名時光機）從 1850 年走到現在；開啟「國家」分頁排序與比較各國資料；並切換到工作區模式使用可移動的視窗。你可以直接問我：「飛到肯亞」「顯示人口圖層」「比較日本和德國」「標出人均 GDP 前十名」「東京到大阪的鐵路路線」「哪些國家平均壽命最長？」或「幫我簡報南海情勢」。任何功能都可以問「我要怎麼…」。",   /* atlas-console.js */
     'Inundated area': "淹沒範圍",   /* sims.js */
     'Invalid area': "範圍無效",   /* monitors.js */
     'isolate': "單獨顯示",   /* atlas-console.js */
@@ -2136,7 +2135,6 @@ window.IntMapLang.define('zh', {
     'the sun does not rise today': "今天太陽不會升起",   /* widgets.js */
     'the sun does not set today': "今天太陽不會落下",   /* widgets.js */
     'The tide model could not be fetched.': "無法取得潮汐模型。",   /* world-packs.js */
-    'The time machine reaches back to 1900': "時光機可回溯到 1900 年",   /* atlas-console.js */
     'The trace failed here': "此處追蹤失敗",   /* terrain-water.js */
     'The tsunami propagation simulator is not available in this build.': "此版本不提供海嘯傳播模擬器。",   /* atlas-console.js */
     'the whole map (news, countries, borders, climate era) moves with it': "整張地圖（新聞、國家、國界、氣候年代）都會隨之改變",   /* atlas-console.js */
@@ -3382,6 +3380,7 @@ window.IntMapLang.define('zh', {
   "Unsettled median line": "未確定中線",
   "Virgo cluster — the centre of our supercluster": "室女座星系團 — 本超星系團的中心",
   "Airliner A320 · jet": "A320 客機 · 噴射機",
+  "Austrian Empire": "奧地利帝國",
   "Austria-Hungary": "奧匈帝國",
   "British Raj (British India)": "英屬印度",
   "Cessna 172 · trainer": "塞斯納 172 · 教練機",
@@ -4154,7 +4153,7 @@ window.IntMapLang.define('zh', {
   "Live news map": "即時新聞地圖",
   "World headlines pinned to where they actually happen": "把世界頭條釘在真正發生的地點",
   "Globe, satellite & time machine": "地球儀、衛星與時光機",
-  "3D terrain, real imagery, and travel back to 1900": "3D 地形、實拍影像，回溯至 1900 年",
+  "3D terrain, real imagery, and travel back to 1850": "3D 地形、實拍影像，回溯至 1850 年",
   "Atlas AI & country data": "Atlas AI 與國家資料",
   "Ask in plain language, compare countries, even fly a jet": "用日常語言提問、比較國家，甚至駕駛噴射機",
   "Start exploring": "開始探索",
