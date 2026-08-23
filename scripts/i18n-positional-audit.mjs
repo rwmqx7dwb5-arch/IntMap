@@ -165,6 +165,12 @@ const SAME_AS_EN = {
          Winter  — the German season IS «Winter»; the other three at the same call site are
                    Frühling / Sommer / Herbst. */
     'Format', 'analog', 'lunar', 'Ring', 'Winter',
+    /* (#R354) …and one from the company atlas's facility vocabulary: Duden spells it «Museum, das»,
+       exactly as English does. It is one of thirty facility types at the same table, and the other
+       twenty-nine differ in German (Werk, Raffinerie, Schmelzhütte, Werft, Brauerei, Bergwerk,
+       Kraftwerk, Lager, Rechenzentrum, …) — which is what makes this a claim about the word rather
+       than a forgotten argument. */
+    'Museum',
   ]),
   ru: new Set([]),
   es: new Set([

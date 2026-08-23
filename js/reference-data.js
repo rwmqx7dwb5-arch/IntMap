@@ -201,6 +201,14 @@ window.IntMapRefData=(function(){
     {n:'GDELT Project',u:'https://www.gdeltproject.org/'},
     {n:'Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)',u:'https://fxratesapi.com/'},
     {n:'Yahoo Finance',u:'https://finance.yahoo.com/'},
+    /* (#R354) the company atlas — docs/COMPANIES.md §10. All four are read at BUILD time and
+       shipped as data/companies/; the browser calls none of them. OSM's ODbL makes the second
+       line a licence obligation rather than a courtesy. */
+    {n:"Company atlas — Wikidata (identity, headquarters, officers, subsidiaries, facilities)",u:'https://www.wikidata.org/'},
+    {n:"Company atlas — OpenStreetMap (operator / owner / brand :wikidata, Overpass API)",u:'https://www.openstreetmap.org/copyright'},
+    {n:"SEC EDGAR — XBRL company facts",u:'https://www.sec.gov/edgar/sec-api-documentation'},
+    {n:"GLEIF — Global LEI Index",u:'https://www.gleif.org/en/lei-data/gleif-golden-copy'},
+    {n:"Natural Earth (admin-0 boundaries, build time only)",u:'https://www.naturalearthdata.com/'},
     {n:'Clearbit Logo API / Google favicons',u:'https://logo.clearbit.com/'},
     {n:'Wikipedia (Wikimedia REST API)',u:'https://www.wikipedia.org/'},
     {n:'Live cameras — OpenStreetMap (Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:contact:webcam'},

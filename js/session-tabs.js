@@ -234,6 +234,13 @@ export function makeSessionTabs(HOST, CTX) {
     ['ticker.off', ()=>{ window.imTicker='off'; window.IntMapTicker&&window.IntMapTicker.apply(); }, 'Bottom ticker · off','ui'],
     ['settings.open',()=>{ const b=document.getElementById('btn-open-settings')||document.querySelector('[id*=open-settings]'); if(b) b.click(); }, 'Settings · open','ui'],
     ['isolate.exit',()=>{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }, 'Isolate · exit','map'],
+    /* (#R354) the company atlas, reachable from Atlas and the command palette. Accepts an id,
+       a ticker or a name — IntMapCompanyData.resolve() settles which. */
+    ['company.open', async(p)=>{ const key=(p&&(p.company||p.id||p.name||p.ticker))||''; if(!key) return {ok:false,err:'params.company required'};
+      try{ if(window.IntMapLazy&&window.IntMapLazy.need) await window.IntMapLazy.need('companyPanel'); }catch(_){}
+      const P=window.IntMapCompanyPanel; if(!P||!P.open) return {ok:false,err:'no module'};
+      const ok=await P.open(key); return {ok:ok!==false}; }, 'Company atlas · open a company profile and its facilities (params.company)','company'],
+    ['company.close', ()=>{ try{ window.IntMapCompanyPanel&&window.IntMapCompanyPanel.close(); }catch(_){} }, 'Company atlas · close','company'],
     ['layers.data', async(p)=>{ if(!window.IntMapLayers) return {ok:false,err:'no module'}; const c=GE().camera.getCenter&&GE().camera.getCenter(); const v=await window.IntMapLayers.sampleAt((p&&p.lng!=null)?+p.lng:(c?c.lng:0),(p&&p.lat!=null)?+p.lat:(c?c.lat:0),p&&p.layers); return {ok:true,values:v}; }, 'Layer data · sample active layers at a point','layer']
   ];
   REGL.forEach(r=>{ try{ IntMapOS.register(r[0], (ctx)=>r[1]((ctx&&ctx.params)||{}), {label:r[2], group:r[3]}); }catch(_){} }); })();

@@ -69,7 +69,7 @@ export function makeLazyModules(HOST) {
        window.IntMapTsunami directly (js/seismic.js), so asking for one means asking for both.
        (#R311) …and the satellite DETAIL CARD is the same shape — js/satellites-live.js calls
        window.IntMapSatPanel from its own click handler, and this keeps the panel first. */
-    const ALSO = { seismic: ['tsunami'], satellitesLive: ['satelliteDetail'] };
+    const ALSO = { seismic: ['tsunami'], satellitesLive: ['satelliteDetail'], companyPanel: ['companyData', 'companyFacilities'], companyFacilities: ['companyData'] };   /* (#R354) the atlas is three files that are useless apart — docs/COMPANIES.md §3 */
 
     /* Modules with NO factory — they publish at import. ⚠ (#R347) was `name !== 'nightSky'`, and a rule written as one name recorded the second such module as a failure. */
     const SELF_PUBLISHING = { nightSky: true, navigation: true, routingTraffic: true };
@@ -101,7 +101,7 @@ export function makeLazyModules(HOST) {
          (through src/aviation-worker-client.js) the worker that owns the fleet. Nothing of it is
          downloaded until the aircraft layer, aircraft search, or an Atlas aviation command asks. */
       aviationLive: 'IntMapAviation',
-      satellitesLive: 'IntMapSatellites', satelliteDetail: 'IntMapSatPanel', volcanoIntel: 'IntMapVolcano', volcanoLayers: 'IntMapVolcanoLayers',   /* (#R353) the volcano ROW is eager (js/beta-overlays.js); the 11,089-eruption history, the four status feeds and the card are not, and the three overlays are a second module so a card cannot drag them in — docs/VOLCANO-INTELLIGENCE.md */
+      satellitesLive: 'IntMapSatellites', satelliteDetail: 'IntMapSatPanel', volcanoIntel: 'IntMapVolcano', volcanoLayers: 'IntMapVolcanoLayers',   /* (#R353) the volcano ROW is eager (js/beta-overlays.js); the 11,089-eruption history, the four status feeds and the card are not, and the three overlays are a second module so a card cannot drag them in — docs/VOLCANO-INTELLIGENCE.md */ companyData: 'IntMapCompanyData', companyPanel: 'IntMapCompanyPanel', companyFacilities: 'IntMapCompanyFacilities',   /* (#R354) ~500 companies of profile and every facility they publish; nothing is fetched until one is opened, and js/companies.js keeps the curated table and its live market caps eager — docs/COMPANIES.md §3 */
       /* ══ (#R322) …AND THE FILE #R311 HAD TO LEAVE BEHIND, SPLIT INSTEAD OF DEFERRED ════════════
          js/analysis-panels.js was the biggest thing left in the entry (909 lines, 122 kB) and #R311
          measured why it could not join the six above: counting the statements each factory EXECUTES
@@ -165,7 +165,7 @@ export function makeLazyModules(HOST) {
         case 'analysisEdu': return import('./analysis-edu.js');
         case 'aviationLive': return import('./aviation-live.js');
         case 'navigation': return import('./navigation.js');
-        case 'routingTraffic': return import('./routing-traffic.js'); case 'warLayer': return import('./war-layer.js'); case 'volcanoIntel': return import('./volcano-intel.js'); case 'volcanoLayers': return import('./volcano-layers.js');   /* (#R353) */
+        case 'routingTraffic': return import('./routing-traffic.js'); case 'warLayer': return import('./war-layer.js'); case 'volcanoIntel': return import('./volcano-intel.js'); case 'volcanoLayers': return import('./volcano-layers.js');   /* (#R353) */ case 'companyData': return import('./company-data.js'); case 'companyPanel': return import('./company-panel.js'); case 'companyFacilities': return import('./company-facilities.js');   /* (#R354) */
         default: return Promise.reject(new Error('no such lazy module: ' + name));
       }
     }
@@ -200,7 +200,7 @@ export function makeLazyModules(HOST) {
         case 'analysisEvents': window.IntMapModules.analysisEvents(IM_HOST); return true;
         case 'analysisEdu': window.IntMapModules.analysisEdu(IM_HOST); return true; case 'warLayer': window.IntMapModules.warLayer(IM_HOST); return true;   /* (#R349) */
         case 'aviationLive': window.IntMapAviation=window.IntMapModules.aviationLive(IM_HOST); return true; case 'volcanoIntel': window.IntMapModules.volcanoIntel(IM_HOST); return true; case 'volcanoLayers': window.IntMapModules.volcanoLayers(IM_HOST); return true;   /* (#R353) */
-        /* publishes itself at import time, like nightSky */
+        /* publishes itself at import time, like nightSky */ case 'companyData': window.IntMapCompanyData=window.IntMapModules.companyData(IM_HOST); return true; case 'companyPanel': window.IntMapCompanyPanel=window.IntMapModules.companyPanel(IM_HOST); return true; case 'companyFacilities': window.IntMapCompanyFacilities=window.IntMapModules.companyFacilities(IM_HOST); return true;   /* (#R354) */
         default: return !!M;
       }
     }

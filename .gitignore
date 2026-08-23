@@ -85,3 +85,4 @@ __pycache__/
 # written and still read (scripts/worktree.mjs derives the free round number
 # from it); it just stops standing in the way of everyone else's merge.
 .claude/launch.json
+.cache/
