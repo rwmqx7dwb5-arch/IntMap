@@ -4935,7 +4935,22 @@ window.IntMapLang.define('fr', { ui: {
   "How much of {place} is actually online, and what is the bottleneck?": "{place} : quelle part de la population est réellement connectée, et où est le goulet d’étranglement ?",   /* atlas-examples.js (#R313) */
   "Where are {place}’s people concentrated, and where is that shifting?": "{place} : où sa population se concentre-t-elle, et vers où se déplace-t-elle ?",   /* atlas-examples.js (#R313) */
   "What happens in {place}’s capital that matters beyond its borders?": "{place} : que se passe-t-il dans la capitale qui compte au-delà des frontières du pays ?",   /* atlas-examples.js (#R313) */
-  "How does {place} differ from the rest of {sub}?": "{place} : quelles différences avec le reste de la région « {sub} » ?",   /* atlas-examples.js (#R313) */
+  /* ══ (#R313 追記2) THE UN M49 MACRO-REGION NAMES — SHIPPED STRINGS, NOT A RUNTIME LOOKUP ══════
+     `{sub}` in the chip below is one of the 22 M49 macro-regions. The browser cannot name them:
+     Intl.DisplayNames({type:'region'}) answers for 'JP' and returns undefined for '030' in V8,
+     so the names have to be here. ⚠ ONLY THE SIX THIS TABLE DID NOT ALREADY CARRY ARE LISTED —
+     Caribbean, Eastern/Middle/Northern/Southern/Western Africa, Eastern/Northern/Southern/Western
+     Europe, Northern America, South America, Western Asia, Melanesia, Micronesia and Polynesia are
+     already rows of this same table (js/atlas-console.js names the same regions from the same
+     English keys), and a second row with the same key would be a duplicate, not a translation.
+     ⚠ Bare nouns, no article: each one lands inside the parentheses of the chip. */
+  "Eastern Asia": "Asie de l’Est",   /* atlas-examples.js (#R313 追記2) */
+  "South-Eastern Asia": "Asie du Sud-Est",   /* atlas-examples.js (#R313 追記2) */
+  "Southern Asia": "Asie du Sud",   /* atlas-examples.js (#R313 追記2) */
+  "Central Asia": "Asie centrale",   /* atlas-examples.js (#R313 追記2) */
+  "Central America": "Amérique centrale",   /* atlas-examples.js (#R313 追記2) */
+  "Australia and New Zealand": "Australie et Nouvelle-Zélande",   /* atlas-examples.js (#R313 追記2) */
+  "How does {place} differ from the other countries in its region ({sub})?": "{place} : en quoi le pays se distingue-t-il des autres pays de sa région ({sub}) ?",   /* atlas-examples.js (#R313 追記2) */
   "What did the world look like in {year}?": "À quoi ressemblait le monde en {year} ?",   /* atlas-examples.js (#R313) */
   "Where in the world are the most severe weather warnings in force right now?": "Où dans le monde les alertes météo les plus graves sont-elles en vigueur en ce moment ?",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "Quelles limites de plaques tectoniques ont été les plus actives cette dernière semaine ?",   /* atlas-examples.js (#R313) */
