@@ -54,12 +54,12 @@ window.IntMapLang.define('zh-hans', {
       "ttlRemove":"移除",
       "ttlResetNorth":"回正北方",
       "ttlResetBearing":"重置方位",
-      "ttlSearchNews":"栏位有文字时搜索，否则依目前的新闻设置重新加载",
+      "ttlSearchNews":"字段有文字时搜索，否则依目前的新闻设置重新加载",
       "phPostBody":"分享观察、问题或推论…",
       "phPostTitle":"标题",
       "ttlToggleSidebar":"切换侧边栏",
       "ttlTools":"工具",
-      "phAisKey":"aisstream.io API 金钥",
+      "phAisKey":"aisstream.io API 密钥",
     "lnkTerms":"服务条款",
     "lnkPrivacy":"隐私权政策",
     "legalTabTerms":"条款",
@@ -87,7 +87,7 @@ window.IntMapLang.define('zh-hans', {
     "labelLangLocal":"当地语言（原生文字）",
     "labelLangUi":"与应用语言相同",
     "layerPanelClassic":"传统下拉菜单",
-    "layerPanelRight":"右侧边栏（视觉化，含预览）",
+    "layerPanelRight":"右侧边栏（可视化，含预览）",
     "lblAccent":"强调色",
     "lblDataSources":"数据来源",
     "lblEngine":"地图引擎",
@@ -181,7 +181,7 @@ window.IntMapLang.define('zh-hans', {
     "newsCountriesHint":"从你选择的国家媒体撷取标题（可复选）。",
     "newsCountryMultiSel":"选择国家…",
     "newsCountryOff":"仅默认数据源",
-    "newsLangHint":"所选各语言的标题会一起显示；若有 AI 金钥，标题会自动翻译。",
+    "newsLangHint":"所选各语言的标题会一起显示；若有 AI 密钥，标题会自动翻译。",
     "newsLangMultiSel":"多种语言…",
     "newsSourceAll":"所有媒体",
     "newsSourceMultiSel":"选择媒体…",
@@ -202,7 +202,7 @@ window.IntMapLang.define('zh-hans', {
     "proIntel":"🔒 俄・中在地一手来源情报",
     "proModalSub":"超越实时地图 — 深度历史文件与一手来源情报。",
     "proModalTitle":"解锁 IntMap Pro",
-    "proSection":"进阶功能",
+    "proSection":"高级功能",
     "reportBugBtn":"🐞 回报错误",
     "screenshotBtn":"地图屏幕撷取（隐藏控制项，保留图例）",
     "screenshotBusy":"撷取中…",
@@ -247,7 +247,7 @@ window.IntMapLang.define('zh-hans', {
       emptyHint:"尚未选择分页 — 地图目前是干净的。<br>请在上方选择分页以显示内容。",
       viewMap:"地图", viewSat:"卫星影像", settings:"设置", modalTitle:"设置", close:"关闭",
       tabDocked:"面板", lblDockPanels:"图例与工具窗口", dockPanelsOff:"显示于地图上（默认）", dockPanelsOn:"收进侧边栏分页", dockPanelsHint:"所有图例、读数与工具窗口都会移到左侧边栏的「面板」分页，让地图保持清爽。点击地点时出现、与地图位置相连的弹出窗口仍留在地图上。",
-      setSecAppearance:"外观", setSecLayout:"版面与面板", setSecMap:"地图操作", setSecUnits:"单位与时间", setSecNews:"新闻与跑马灯", setSecAI:"AI", setSecKeys:"整合与金钥", setSecAbout:"关于与支持",
+      setSecAppearance:"外观", setSecLayout:"版面与面板", setSecMap:"地图操作", setSecUnits:"单位与时间", setSecNews:"新闻与跑马灯", setSecAI:"AI", setSecKeys:"整合与密钥", setSecAbout:"关于与支持",
       lblTheme:"主题", lblTz:"时区设置", tzSearch:"搜索时区…", btnApply:"应用", optAuto:"系统默认", optLocal:"当地时间（系统默认）",
       dashCatMil:"军事基地", dashCatTech:"科技／网络", dashCatMar:"海运／咽喉点", dashCatGeo:"地理／气候",
       readWiki:"在维基百科阅读 ↗", measure:"测量", areaTool:"面积", radius:"半径", vol3dTool:"立体体积", points:"点", total:"合计", perimeter:"周长", area:"面积", clear:"清除", undoPt:"取消上一点",
@@ -257,17 +257,17 @@ window.IntMapLang.define('zh-hans', {
       details:"详细数据 ↗", loadingData:"正在加载国家数据…", dataNA:"无数据", noData:"查无国家数据。", sortGdp:"GDP", sortPop:"人口", sortArea:"面积", sortName:"A–Z", sortHDI:"HDI", sortMil:"军费", elev:"海拔", bearing:"方位", presetNone:"— 请选择 —", presetLbl:"距离默认", opacity:"不透明度", circumference:"圆周长", lblUnits:"度量单位", unitBoth:"公制＋英制", unitMetric:"仅公制", unitImperial:"仅英制", msPh:"搜索地球上任何地点…",
       spRunway:"跑道", spGarrison:"驻军", spOperator:"营运者", spEstd:"设立", spAircraft:"机种", spType:"类型", spCapacity:"容量", spDepth:"深度", spOutput:"产量", spReserves:"蕴藏量",
       flat:"平面", globe:"地球仪", threeD:"⛰️ 3D", gridBtn:"🌐 经纬格线", gridLayer:"🌐 格线与标注", widgetsBtn:"小工具", lblTempUnit:"温度", tempBoth:"°C＋°F", tempC:"仅 °C", tempF:"仅 °F", measureBtn:"📏 测量", measureMenuBtn:"测量", measureDistBtn:"📏 距离／面积", areaBtn:"📐 面积", drawBtn:"✏️ 绘制", vol3dBtn:"🧊 立体体积", droneBtn:"🛸 无人机", radiusBtn:"⭕ 半径", objectsBtn:"🗂 对象", mScreenshot:"地图屏幕撷取", shareMenuBtn:"分享", shareLinkBtn:"分享／复制链接", layersBtn:"图层 ▾",
-      ctxDropPin:"放置图钉", ctxMeasureFrom:"从此开始测量", ctxPostHere:"发布到社群", ctxDistFrom:"与前一个图钉的距离", ctxCopy:"复制坐标", ctxClearPins:"移除所有图钉", ctxThisPoint:"此地点", coords:"坐标", depth:"深度", climate:"气候", tlToday:"今天", tlTitle:"Chronos", tlMachine:"Chronos", tl10y:"−10年", tl5y:"−5年", tlNow:"现在",
+      ctxDropPin:"放置图钉", ctxMeasureFrom:"从此开始测量", ctxPostHere:"发布到社区", ctxDistFrom:"与前一个图钉的距离", ctxCopy:"复制坐标", ctxClearPins:"移除所有图钉", ctxThisPoint:"此地点", coords:"坐标", depth:"深度", climate:"气候", tlToday:"今天", tlTitle:"Chronos", tlMachine:"Chronos", tl10y:"−10年", tl5y:"−5年", tlNow:"现在",
       lblPinMode:"新闻图钉位置", pinModeLoc:"事件发生地", pinModePub:"媒体所在地",
-      lyrEEZ:"专属经济海域／12海里", lyrShips:"实时船舶动态", lyrPlanes:"实时航班动态", lyrSats:"实时卫星", lyrThermal:"热异常（火点）", planesZoomHint:"放大以加载实时航班", planesAreaHint:"请放大 — 实时航班只涵盖画面中央区域", poiLabels:"地点、商家与设施", shipsZoomHint:"放大以加载实时船舶", aisNoKey:"实时船舶需要免费的 AISstream.io API 金钥 — 请在设置中新增。", aisKeyLabel:"实时船舶动态（AISstream 金钥）", aisKeyHint:"在 aisstream.io 申请免费金钥并贴在此处即可看到实时船舶。金钥仅保存在这个浏览器中。",
+      lyrEEZ:"专属经济海域／12海里", lyrShips:"实时船舶动态", lyrPlanes:"实时航班动态", lyrSats:"实时卫星", lyrThermal:"热异常（火点）", planesZoomHint:"放大以加载实时航班", planesAreaHint:"请放大 — 实时航班只涵盖画面中央区域", poiLabels:"地点、商家与设施", shipsZoomHint:"放大以加载实时船舶", aisNoKey:"实时船舶需要免费的 AISstream.io API 密钥 — 请在设置中新增。", aisKeyLabel:"实时船舶动态（AISstream 密钥）", aisKeyHint:"在 aisstream.io 申请免费密钥并贴在此处即可看到实时船舶。密钥仅保存在这个浏览器中。",
       filtCiv:"民用", filtMil:"军用", filtAll:"全部", trafficFilter:"筛选", lyrTime:"图层日期", thermWin24:"过去 24 小时", thermWin48:"过去 48 小时", thermWin72:"过去 72 小时",
-      tabCommunity:"社群", commAdd:"＋ 新贴文", commAddArmed:"点击地图放置图钉", commTitle:"标题", commBody:"分享你的观察、问题或推论…", commPost:"发布", commCancel:"取消", commEmpty:"目前还没有贴文。点「＋ 新贴文」开始讨论。", commComment:"留言", commLocate:"在地图上显示", commDelete:"删除", commReply:"回复", commWrite:"写下留言…", commPostNew:"新贴文", commPlacedAt:"放置于", commSortHot:"热门", commSortNew:"最新", commSortTop:"最高分", commSearchPh:"搜索贴文…", commInView:"画面范围内", commCat:"分类", commCatAll:"全部", commEdit:"编辑", commEdited:"已编辑", commEditPost:"编辑贴文", commSaveEdit:"保存变更", commNoMatch:"没有符合筛选条件的贴文。", borders:"国界", coastline:"海岸线与湖岸线", compare:"比较", compareEmpty:"点击国家列以选取并比较。", coCompareEmpty:"点击企业列以选取并比较。", compareView:"显示比较", compareClear:"清除", back:"返回", deletePin:"删除",
-      satCtrlTitle:"卫星影像", satProvider:"提供者", satDate:"拍摄日期", satLatest:"最新可用", satMosaicSuffix:"无云镶嵌影像", satLocked:"需 API 金钥", satPrevDay:"前一天", satNextDay:"后一天", satKeysTitle:"卫星影像（自备金钥）", satKeyHint:"输入 API 金钥即可在卫星面板中使用这些提供者。金钥仅保存在这个浏览器中。", satKeyConnected:"已连接", satKeyNone:"无金钥", satErrAuth:"{provider}：验证失败 — 请检查 API 金钥", satErrTiles:"{provider}：影像无法取得 — 已切换为替代来源",
-      aiSecTitle:"AI 功能", aiSecHint:"内建 AI — 登录用户免费（每日最多 10 次），不需要 API 金钥。",
-      aiProvider:"AI 提供者", aiModel:"模型", aiApiKey:"API 金钥", aiKeyConnected:"已连接", aiKeyNone:"无金钥", aiGetKey:"取得金钥 ↗", aiOnDevice:"在 Chrome 上本机执行 — 不需要 API 金钥。",
+      tabCommunity:"社区", commAdd:"＋ 新贴文", commAddArmed:"点击地图放置图钉", commTitle:"标题", commBody:"分享你的观察、问题或推论…", commPost:"发布", commCancel:"取消", commEmpty:"目前还没有贴文。点「＋ 新贴文」开始讨论。", commComment:"留言", commLocate:"在地图上显示", commDelete:"删除", commReply:"回复", commWrite:"写下留言…", commPostNew:"新贴文", commPlacedAt:"放置于", commSortHot:"热门", commSortNew:"最新", commSortTop:"最高分", commSearchPh:"搜索贴文…", commInView:"画面范围内", commCat:"分类", commCatAll:"全部", commEdit:"编辑", commEdited:"已编辑", commEditPost:"编辑贴文", commSaveEdit:"保存变更", commNoMatch:"没有符合筛选条件的贴文。", borders:"国界", coastline:"海岸线与湖岸线", compare:"比较", compareEmpty:"点击国家列以选取并比较。", coCompareEmpty:"点击企业列以选取并比较。", compareView:"显示比较", compareClear:"清除", back:"返回", deletePin:"删除",
+      satCtrlTitle:"卫星影像", satProvider:"提供者", satDate:"拍摄日期", satLatest:"最新可用", satMosaicSuffix:"无云镶嵌影像", satLocked:"需 API 密钥", satPrevDay:"前一天", satNextDay:"后一天", satKeysTitle:"卫星影像（自备密钥）", satKeyHint:"输入 API 密钥即可在卫星面板中使用这些提供者。密钥仅保存在这个浏览器中。", satKeyConnected:"已连接", satKeyNone:"无密钥", satErrAuth:"{provider}：验证失败 — 请检查 API 密钥", satErrTiles:"{provider}：影像无法取得 — 已切换为替代来源",
+      aiSecTitle:"AI 功能", aiSecHint:"内置 AI — 登录用户免费（每日最多 10 次），不需要 API 密钥。",
+      aiProvider:"AI 提供者", aiModel:"模型", aiApiKey:"API 密钥", aiKeyConnected:"已连接", aiKeyNone:"无密钥", aiGetKey:"取得密钥 ↗", aiOnDevice:"在 Chrome 上本机执行 — 不需要 API 密钥。",
       aiTest:"测试连接", aiTesting:"测试中…", aiTestOk:"连接正常 ✓",
-      aiNoKey:"请先在「设置 → AI 功能」中新增 AI API 金钥。", aiNoVision:"这个模型无法读取影像。请改用 GPT-4o、Claude 3.5 Sonnet 或 Gemini 1.5 Pro。",
-      aiChromeUnavail:"此处无法使用 Chrome 内建 AI。请使用 Chrome 127 以上并启用本机 AI，或改选其他提供者。",
+      aiNoKey:"请先在「设置 → AI 功能」中新增 AI API 密钥。", aiNoVision:"这个模型无法读取影像。请改用 GPT-4o、Claude 3.5 Sonnet 或 Gemini 1.5 Pro。",
+      aiChromeUnavail:"此处无法使用 Chrome 内置 AI。请使用 Chrome 127 以上并启用本机 AI，或改选其他提供者。",
       aiThinking:"AI 分析中…", aiError:"AI 请求失败", aiCopy:"复制", aiCopied:"已复制 ✓", aiClose:"关闭", aiRetry:"重试",
       aiGeoBtn:"✨ 以 AI 定位所有新闻", aiGeoBtnSub:"✨ 以 AI 定位事件地", aiGeoBtnPub:"✨ 以 AI 定位媒体", aiTranslateTitles:"翻译标题", aiGeoBusy:"定位中…", aiGeoNone:"没有可定位的项目。", aiGeoDone:"已定位 {n} 则报道", aiGeoErr:"地理编码失败", aiTransBusy:"翻译中…", aiTransDone:"已翻译 {n} 则标题", aiTransNone:"标题已是你的语言。",
       lblNewsLang:"新闻语言", newsLangUi:"仅目前语言", newsLangMulti:"所有语言（自动翻译标题）", lblAiLocate:"AI 位置分析", aiLocManual:"手动（按钮）", aiLocAuto:"所有新闻自动执行",
@@ -298,7 +298,7 @@ window.IntMapLang.define('zh-hans', {
     "Total votes cast": "总投票数",
     "Where the map is centred (standard time)": "地图中心所在地的标准时间",
     "Wind from the {d} — the arrow points the way it is blowing": "{d}风 — 箭头指向风吹去的方向",
-    "Your device": "装置时间",
+    "Your device": "设备时间",
     "Your setting": "你设置的时区",
     'Air pressure reduced to sea level — highs, lows and the storm centre.': "换算至海平面的气压——高压、低压与风暴中心。",
     'Air temperature 2 m above the ground.': "地面上方 2 米处的气温。",
@@ -362,7 +362,7 @@ window.IntMapLang.define('zh-hans', {
     '▸ Show slope (steepness)': "▸ 显示坡度",   /* sims.js */
     '◎ places the epicenter · ◇ adds a place.': "◎ 放置震央・◇ 新增地点。",   /* seismic.js */
     '⚠ Capped at 600 results — zoom into a sub-region for the rest': "⚠ 已限制为 600 笔结果 — 请放大到较小区域查看其余",   /* atlas-console.js */
-    '⚠ Wikidata is community-maintained, so coverage is uneven: a company nobody has entered is simply absent, and «the largest» means «the largest Wikidata has a revenue for». An ownership graph is not a market-share or influence graph.': "⚠ Wikidata 由社群维护，因此涵盖程度并不平均：没有人建档的公司就是不存在于此，而「最大」的意思是「Wikidata 有营收数据者之中最大」。持股关系图不等于市占率或影响力图。",   /* industry-web.js */
+    '⚠ Wikidata is community-maintained, so coverage is uneven: a company nobody has entered is simply absent, and «the largest» means «the largest Wikidata has a revenue for». An ownership graph is not a market-share or influence graph.': "⚠ Wikidata 由社区维护，因此涵盖程度并不平均：没有人建档的公司就是不存在于此，而「最大」的意思是「Wikidata 有营收数据者之中最大」。持股关系图不等于市占率或影响力图。",   /* industry-web.js */
     '✓ LANDED': "✓ 已降落",   /* flight-sim.js */
     '× CRASHED': "× 坠毁",   /* flight-sim.js */
     '⬡ = approximate extent (no official boundary exists — AI-traced outline)': "⬡＝概略范围（没有官方界线 — 由 AI 描绘）",   /* atlas-console.js */
@@ -407,7 +407,7 @@ window.IntMapLang.define('zh-hans', {
     'Add on map': "在地图上新增",   /* drone-nav.js */
     'Adjusted to the terrain': "已贴合地形",   /* atlas-console.js */
     'admin borders': "行政区界",   /* atlas-console.js */
-    'Advanced — model assumptions': "进阶 — 模型假设",   /* seismic.js */
+    'Advanced — model assumptions': "高级 — 模型假设",   /* seismic.js */
     'Advisory': "注意",   /* world-packs.js */
     'Age of the elements': "元素的年龄",   /* satellite-detail.js */
     'AGL': "离地高度",   /* flight-sim.js */
@@ -573,7 +573,7 @@ window.IntMapLang.define('zh-hans', {
     'brush the ground up or down, draw a levee, drop water — the flow paths, the ponding and the breach direction follow.': "把地面刷高或刷低、画一道堤防、倒下水量 — 流路、积水与溃决方向都会随之改变。",   /* atlas-console.js */
     'Bug report': "错误回报",   /* atlas-console.js */
     'Building the 360° horizon and stepping a year…': "正在建立 360° 地平线并推进一年…",   /* sims.js */
-    'Bundled catalog': "内建目录",   /* satellites-live.js */
+    'Bundled catalog': "内置目录",   /* satellites-live.js */
     'Burnout velocity': "燃烧结束速度",   /* atlas-console.js */
     'Bus': "巴士",   /* routing.js */
     'Butter — ': "平稳落地 — ",   /* flight-sim.js */
@@ -968,7 +968,7 @@ window.IntMapLang.define('zh-hans', {
     'Fresnel': "菲涅耳",   /* viewshed.js */
     'Fresnel zone obstructed': "菲涅耳区受阻",   /* viewshed.js */
     'from': "自",   /* tool-panel.js */
-    'from bundled reference data': "取自内建参考数据",   /* stats-compare.js */
+    'from bundled reference data': "取自内置参考数据",   /* stats-compare.js */
     'From the Earth': "自地球",   /* space.js */
     'From the map center': "自地图中心",   /* aircraft-detail.js satellite-detail.js satellites-live.js */
     'From the Sun': "自太阳",   /* space.js */
@@ -985,7 +985,7 @@ window.IntMapLang.define('zh-hans', {
     'Galaxies, clusters and nebulae at their measured distances (SIMBAD)': "星系、星团与星云，依其实测距离配置（SIMBAD）",   /* space.js */
     'Galileo': "伽利略",   /* satellites-live.js */
     'Gamepad connected: ': "已连接游戏手把：",   /* flight-sim.js */
-    'gap filled from the other source / bundled reference': "缺口由另一来源／内建参考数据补齐",   /* stats-compare.js */
+    'gap filled from the other source / bundled reference': "缺口由另一来源／内置参考数据补齐",   /* stats-compare.js */
     'gaps': "缺口",   /* viewshed.js */
     'GDP & population: Maddison Project (real GDP, 2011 int$). Other indicators: World Bank aggregate of the successor states.': "GDP 与人口：Maddison Project（实质 GDP，2011 年国际元）。其他指标：世界银行对继承国的合计。",   /* countries-ui.js */
     'GEAR': "起落架",   /* flight-sim.js */
@@ -1077,7 +1077,7 @@ window.IntMapLang.define('zh-hans', {
     'Industry web': "产业关系网",   /* industry-web.js */
     'Inflow (m³/s)': "入流量（m³/s）",   /* terrain-water.js */
     'Integrated analysis': "整合分析",   /* atlas-console.js */
-    'Intensity field: bundled 0.25° Vs30 where the DEM could not reach — the ground still varies': "震度分布：DEM 无法涵盖处采用内建的 0.25° Vs30（地盘仍有变化）",   /* seismic.js */
+    'Intensity field: bundled 0.25° Vs30 where the DEM could not reach — the ground still varies': "震度分布：DEM 无法涵盖处采用内置的 0.25° Vs30（地盘仍有变化）",   /* seismic.js */
     'Intensity field: slope-based Vs30 (Wald & Allen 2007) on real DEM': "震度分布：以坡度推估 Vs30（Wald & Allen 2007），基于实测 DEM",   /* seismic.js */
     'Intensity fill opacity': "震度着色不透明度",   /* seismic.js */
     'Intensity scale': "震度阶级",   /* seismic.js */
@@ -1265,7 +1265,7 @@ window.IntMapLang.define('zh-hans', {
     'Model scale': "模型比例",   /* space.js */
     'moderate': "中等",   /* analysis-panels.js atlas-console.js seismic.js */
     'Moderate': "中等",   /* widgets.js */
-    'Module/method not found': "找不到模组或方法",   /* atlas-controls.js */
+    'Module/method not found': "找不到模块或方法",   /* atlas-controls.js */
     'Monitor created': "已建立监看",   /* atlas-console.js */
     'Monitor created.': "已建立监看。",   /* monitors.js */
     'Monitor not found.': "找不到监看。",   /* monitors.js */
@@ -1314,7 +1314,7 @@ window.IntMapLang.define('zh-hans', {
     'news': "新闻",   /* atlas-console.js */
     'News': "新闻",   /* atlas-console.js monitors.js news-timeline.js */
     'news · imagery · quakes time-traveled to this date': "新闻・影像・地震皆已时空跳跃到此日期",   /* sims.js */
-    'News / Info / Countries / Community tab': "新闻／信息／国家／社群分页",   /* keyboard-shortcuts.js */
+    'News / Info / Countries / Community tab': "新闻／信息／国家／社区分页",   /* keyboard-shortcuts.js */
     'News along the route': "沿途新闻",   /* routing.js */
     'News feed': "新闻来源",   /* atlas-console.js */
     'Next': "下一个",   /* monitors.js */
@@ -1509,7 +1509,7 @@ window.IntMapLang.define('zh-hans', {
     'Partial': "部分",   /* monitors.js */
     'partners': "伙伴",   /* world-packs.js */
     'Direction arrows': "方向箭头",   /* world-packs.js */
-    "A published cloud region or campus. The point is the location the operator publishes (a city or county), not a surveyed building; fields the operator does not publish are left out rather than estimated.": "已公布的云端区域或园区。点位是营运者公布的地点（城市或郡），并非实测建物；营运者未公布的栏位一律略过，不做估算。",   /* datacenters.js */
+    "A published cloud region or campus. The point is the location the operator publishes (a city or county), not a surveyed building; fields the operator does not publish are left out rather than estimated.": "已公布的云端区域或园区。点位是营运者公布的地点（城市或郡），并非实测建物；营运者未公布的字段一律略过，不做估算。",   /* datacenters.js */
     "AI compute": "AI 运算",   /* datacenters.js */
     "AI compute campus": "AI 运算园区",   /* datacenters.js */
   "All areas in force in this country": "此国家所有生效中的区域",   /* (#R275) */
@@ -1538,7 +1538,7 @@ window.IntMapLang.define('zh-hans', {
     "Published cloud regions, AI campuses, carrier hotels and TOP500 sites, plus every data centre mapped in OpenStreetMap for the current view (zoom in past z6). Click any point for the full record.": "已公布的云端区域、AI 园区、电信汇集点与 TOP500 设施，加上目前视野内 OpenStreetMap 上所有的数据中心（z6 以上）。点击任一点位可看完整数据。",   /* datacenters.js */
     "Region code": "区域代码",   /* datacenters.js */
     "Supercomputing": "超级电脑",   /* datacenters.js */
-    "Surveyed in OpenStreetMap. Every field above comes from that object’s own tags; nothing is inferred.": "OpenStreetMap 的实测数据。以上栏位皆为该对象自身的标签，未做任何推论。",   /* datacenters.js */
+    "Surveyed in OpenStreetMap. Every field above comes from that object’s own tags; nothing is inferred.": "OpenStreetMap 的实测数据。以上字段皆为该对象自身的标签，未做任何推论。",   /* datacenters.js */
     'Partners shown': "显示的伙伴",   /* world-packs.js */
     'Pass in progress': "通过中",   /* satellite-detail.js */
     'past 30 days': "过去 30 天",   /* monitors.js */
@@ -1587,7 +1587,7 @@ window.IntMapLang.define('zh-hans', {
     'Plume follows the live wind at the source; the time slider extends it downwind.': "烟流依源头处的实时风场移动；时间滑杆会沿下风方向延伸。",   /* sims.js */
     'plume reach': "烟流范围",   /* atlas-console.js */
     'Plume reach': "烟流范围",   /* sims.js */
-    'Pluto is drawn in its measured color: no global surface map is bundled for it, and the ones offered for the dwarf planets elsewhere are labeled fictional by their author. Its position and its IAU names are real.': "冥王星以其实测颜色绘制：本应用没有内建它的全球表面图，而其他矮行星可取得的贴图被作者标示为虚构。它的位置与 IAU 命名则是真实的。",   /* space.js */
+    'Pluto is drawn in its measured color: no global surface map is bundled for it, and the ones offered for the dwarf planets elsewhere are labeled fictional by their author. Its position and its IAU names are real.': "冥王星以其实测颜色绘制：本应用没有内置它的全球表面图，而其他矮行星可取得的贴图被作者标示为虚构。它的位置与 IAU 命名则是真实的。",   /* space.js */
     'points': "个点",   /* atlas-console.js viewshed.js */
     'points mapped — click a pin (or an item below) for the summary & article': "个点已标绘 — 点击图钉（或下方项目）可看摘要与报道",   /* atlas-console.js */
     'Polar low Earth orbit': "极地低地球轨道",   /* satellite-detail.js */
@@ -1606,7 +1606,7 @@ window.IntMapLang.define('zh-hans', {
     'Population nearby': "附近人口",   /* atlas-console.js */
     'population: ': "人口：",   /* atlas-console.js */
     'Position': "位置",   /* aircraft-detail.js */
-    'Positions: JPL approximate elements (3000 BC – 3000 AD); the Moon: truncated ELP-2000/82. Surfaces: Solar System Scope textures (CC BY 4.0) from NASA/JPL/USGS imagery — except the Earth, which is the app’s own whole-Earth basemap (NASA Blue Marble via GIBS), the same picture the map draws under its satellite tiles. Names: USGS Gazetteer of Planetary Nomenclature (IAU). Stars: Hipparcos. Satellites other than the Moon are not modeled — their phase cannot be computed faithfully from published elements alone.': "位置：JPL 近似轨道要素（西元前 3000 年 – 西元 3000 年）；月球采截断的 ELP-2000/82。表面：Solar System Scope 贴图（CC BY 4.0），源自 NASA／JPL／USGS 影像 — 地球除外，地球使用本应用自有的全球底图（NASA Blue Marble，经 GIBS），与地图在卫星瓦片下所绘的是同一张。名称：USGS 行星地名录（IAU）。恒星：Hipparcos。月球以外的卫星未建模 — 仅凭已发表的轨道要素无法忠实计算其相位。",   /* space.js */
+    'Positions: JPL approximate elements (3000 BC – 3000 AD); the Moon: truncated ELP-2000/82. Surfaces: Solar System Scope textures (CC BY 4.0) from NASA/JPL/USGS imagery — except the Earth, which is the app’s own whole-Earth basemap (NASA Blue Marble via GIBS), the same picture the map draws under its satellite tiles. Names: USGS Gazetteer of Planetary Nomenclature (IAU). Stars: Hipparcos. Satellites other than the Moon are not modeled — their phase cannot be computed faithfully from published elements alone.': "位置：JPL 近似轨道要素（公元前 3000 年 – 公元 3000 年）；月球采截断的 ELP-2000/82。表面：Solar System Scope 贴图（CC BY 4.0），源自 NASA／JPL／USGS 影像 — 地球除外，地球使用本应用自有的全球底图（NASA Blue Marble，经 GIBS），与地图在卫星瓦片下所绘的是同一张。名称：USGS 行星地名录（IAU）。恒星：Hipparcos。月球以外的卫星未建模 — 仅凭已发表的轨道要素无法忠实计算其相位。",   /* space.js */
     'positive': "正",   /* analysis-panels.js */
     'Pour': "倒水",   /* terrain-water.js */
     'Pouring': "倒水中",   /* terrain-water.js */
@@ -1760,7 +1760,7 @@ window.IntMapLang.define('zh-hans', {
     'Saved': "已保存",   /* atlas-console.js */
     'Saved routes': "已保存的路线",   /* drone-nav.js */
     'Scanning the coast in view…': "正在扫描画面中的海岸…",   /* world-packs.js */
-    'Scheduled': "已排程",   /* monitors.js */
+    'Scheduled': "已调度",   /* monitors.js */
     'Science': "科学",   /* satellites-live.js */
     'Screenshot': "屏幕撷取",   /* atlas-console.js workspace.js */
     'Sea floor near the source': "震源附近的海底地形",   /* tsunami.js */
@@ -1799,7 +1799,7 @@ window.IntMapLang.define('zh-hans', {
     "Place water on the map first": "请先在地图上放置水",   /* (#R258) */
     "OpenStreetMap did not answer — pan or zoom to try again": "OpenStreetMap 没有回应——移动或缩放地图可再试一次",   /* (#R262) */
   "The water has come to rest — press ↺ to run it again, or place more": "水已静止——按 ↺ 重新播放，或再放置更多水",   /* (#R275) */
-  "This country’s service is in the update cycle and has not been read yet.": "此国家的机关正在更新排程中，尚未取得。",   /* (#R275) */
+  "This country’s service is in the update cycle and has not been read yet.": "此国家的机关正在更新调度中，尚未取得。",   /* (#R275) */
   "Warnings at this point": "此地点的警报",   /* (#R275) */
     "across": "／",   /* (#R261) */
     "Airport / airfield": "机场／飞行场",   /* (#R261) */
@@ -1916,7 +1916,7 @@ window.IntMapLang.define('zh-hans', {
     'Shadow opacity': "阴影不透明度",   /* sims.js */
     'Shadows are cast by OSM buildings in view (zoom in past ~z15) and, with the terrain button on, by the real elevation model. Sun path from the SunCalc algorithm; 3D building faces are lit from the sun. The point analysis reads a 360° horizon off the DEM (curvature + refraction) and steps a whole year against it; the irradiance is CLEAR-SKY, not a weather forecast.': "阴影由画面中的 OSM 建筑投下（请放大至约 z15 以上），开启地形按钮后也会由实测高程模型投下。太阳轨迹采 SunCalc 算法；3D 建筑面由太阳照明。单点分析会由 DEM 读取 360° 地平线（含曲率与折射）并推算整年；辐照度为晴空值，不是天气预报。",   /* sims.js */
     'shaking': "震动",   /* seismic.js */
-    'Shallow-water long waves on a spherical staggered grid, with total-depth pressure and Manning bottom friction, solved in a background thread. Depth from the terrarium DEM; initial sea-floor displacement from Okada (1985) summed over a tapered sub-fault grid, with Wells & Coppersmith (1994) fault dimensions and the strike read off the local bathymetric gradient. Cells are tens of kilometers, so this is an open-ocean model: arrival times and deep-water amplitude are meaningful, harbor resonance and run-up are not. Coastal height is a Green’s-law estimate. Educational model — in a real emergency follow the official authorities.': "球面交错格网上的浅水长波，含全水深压力项与曼宁底床摩擦，于背景执行绪求解。水深取自 terrarium DEM；初始海底位移采 Okada（1985），并在渐缩的次断层网格上加总，断层尺寸采 Wells & Coppersmith（1994），走向由当地海底地形梯度读出。格子为数十公里，因此属开放海域模型：到达时刻与深海波幅有意义，港湾共振与溯上则否。沿岸波高为格林定律推估。教育性模型 — 实际灾害时请遵从官方指示。",   /* tsunami.js */
+    'Shallow-water long waves on a spherical staggered grid, with total-depth pressure and Manning bottom friction, solved in a background thread. Depth from the terrarium DEM; initial sea-floor displacement from Okada (1985) summed over a tapered sub-fault grid, with Wells & Coppersmith (1994) fault dimensions and the strike read off the local bathymetric gradient. Cells are tens of kilometers, so this is an open-ocean model: arrival times and deep-water amplitude are meaningful, harbor resonance and run-up are not. Coastal height is a Green’s-law estimate. Educational model — in a real emergency follow the official authorities.': "球面交错格网上的浅水长波，含全水深压力项与曼宁底床摩擦，于背景线程求解。水深取自 terrarium DEM；初始海底位移采 Okada（1985），并在渐缩的次断层网格上加总，断层尺寸采 Wells & Coppersmith（1994），走向由当地海底地形梯度读出。格子为数十公里，因此属开放海域模型：到达时刻与深海波幅有意义，港湾共振与溯上则否。沿岸波高为格林定律推估。教育性模型 — 实际灾害时请遵从官方指示。",   /* tsunami.js */
     'Shallow-water long waves over the whole ocean; the frames stream in as they are solved.': "全海域的浅水长波；画面在求解过程中实时串流进来。",   /* atlas-console.js */
     'Share of electricity generated from low-carbon sources (nuclear + renewables)': "低碳来源（核能＋再生能源）发电占比",   /* world-packs.js */
     'Share of primary energy from fossil fuels (coal + oil + gas)': "化石燃料（煤＋石油＋天然气）占一次能源比例",   /* world-packs.js */
@@ -1936,7 +1936,7 @@ window.IntMapLang.define('zh-hans', {
     'Showing the nearest available panorama — exact Street View coverage couldn\'t be verified (a network filter or browser extension may be blocking Google\'s tiles)': "显示最近可用的全景 — 无法确认确切的街景涵盖（可能有网络过滤器或浏览器扩充功能挡住了 Google 的瓦片）",   /* street-view.js */
     'Shown on the map': "已显示在地图上",   /* atlas-console.js */
     'shown on the map. I could not compile a written summary this time — try rephrasing the question.': "已显示在地图上。这次无法整理出文字摘要 — 请换个说法再问。",   /* atlas-console.js */
-    'Signal': "讯号",   /* aircraft-detail.js */
+    'Signal': "信号",   /* aircraft-detail.js */
     'Silver': "白银",   /* map-ui.js */
     'Sim window': "模拟窗口",   /* atlas-console.js */
     'Simulate': "模拟",   /* tsunami.js */
@@ -1971,7 +1971,7 @@ window.IntMapLang.define('zh-hans', {
     'Source: AI-estimated (neither OpenStreetMap nor Wikidata had matching entries here — positions are approximate, verify before relying on them)': "来源：AI 推估（此处 OpenStreetMap 与 Wikidata 都没有相符的项目 — 位置为概略值，采用前请自行查证）",   /* atlas-console.js */
     'Source: Our World in Data — Ember (electricity) and the Energy Institute Statistical Review (primary energy). The map shades the low-carbon share of electricity, and the fossil share of primary energy; the bar is the mix itself, because nine sources are not one color.': "来源：Our World in Data — Ember（电力）与 Energy Institute Statistical Review（一次能源）。地图着色为电力的低碳占比，以及一次能源的化石占比；长条则是能源结构本身，因为九种来源不能用一种颜色表示。",   /* world-packs.js */
     'Sources': "来源",   /* atlas-console.js space.js */
-    'Sources per indicator: World Bank / IMF WEO / bundled reference (shown in bar & time-series views)': "各指标的来源：世界银行／IMF WEO／内建参考数据（在长条图与时间序列检视中标示）",   /* stats-compare.js */
+    'Sources per indicator: World Bank / IMF WEO / bundled reference (shown in bar & time-series views)': "各指标的来源：世界银行／IMF WEO／内置参考数据（在长条图与时间序列检视中标示）",   /* stats-compare.js */
     'Sources: NOAA CoastWatch blended sea-surface geostrophic currents from multi-mission satellite altimetry (0.25°); NOAA NCEI blended wind stress, turned into the Ekman surface current by the drifter-fitted relation of Ralph & Niiler (1999); and NOAA OISST v2.1 sea-surface temperature. All U.S. Government works in the public domain; altimetric products generated using AVISO+. This layer is a FIXED dataset that ships with the app: a climatological mean of fields spread across the whole record, on the source\'s own 0.25° grid, with each named current traced through that measured field from a published seed on its core. Warm / cold / zonal is MEASURED, not asserted — it is the current\'s own temperature against the zonal mean at the same latitude. Because it is a mean, it does not follow the app clock: it is the climatological picture, the same every time you open it.': "来源：NOAA CoastWatch 由多任务卫星测高融合而成的海表地转流（0.25°）；NOAA NCEI 融合风应力，并依 Ralph & Niiler（1999）以漂流浮标拟合的关系换算为艾克曼表层流；以及 NOAA OISST v2.1 海面水温。以上皆为美国政府公有领域作品；测高产品使用 AVISO+ 产制。本图层是随应用一并提供的固定数据集：以整段纪录期间的场求气候平均，采用来源本身的 0.25° 网格，每一条具名海流都是从其核心上已发表的种子点，在该实测场中追踪而成。暖流／寒流／东西流是实测而非宣称 — 它是该海流自身的水温与同纬度纬向平均的比较。由于是平均值，它不随应用时钟变动：它是气候平均的样貌，每次开启都相同。",   /* ocean-currents.js */
     'Sources: OpenStreetMap (facilities, city population tags — coverage varies by region), USGS (earthquakes), IntMap country statistics. Pins are clickable; the circle marks the analysis radius.': "来源：OpenStreetMap（设施、城市人口标记 — 各地涵盖程度不一）、USGS（地震）、IntMap 国家统计。图钉可点击；圆形标示分析半径。",   /* atlas-console.js */
     'south': "南",   /* atlas-console.js */
@@ -2090,11 +2090,11 @@ window.IntMapLang.define('zh-hans', {
     'The AI structured output was invalid — please try again.': "AI 的结构化输出无效 — 请再试一次。",   /* ai-core.js */
     'The analysis returned no answer': "分析没有回传结果",   /* atlas-console.js */
     'The brief came back empty': "简报回传为空",   /* atlas-console.js */
-    'The bundled current data could not be read.': "无法读取内建的海流数据。",   /* ocean-currents.js */
+    'The bundled current data could not be read.': "无法读取内置的海流数据。",   /* ocean-currents.js */
     'the current view': "目前画面",   /* atlas-console.js */
     'The dispersion simulation could not run (map still loading)': "扩散模拟无法执行（地图仍在加载）",   /* atlas-console.js */
     'the drawn area': "所绘范围",   /* atlas-console.js */
-    'The drone operations module is unavailable': "无人机作业模组无法使用",   /* atlas-console.js */
+    'The drone operations module is unavailable': "无人机作业模块无法使用",   /* atlas-console.js */
     'The earthquake changed — recomputing the propagation.': "地震条件已改变 — 正在重新计算传播。",   /* tsunami.js */
     'The element set behind these numbers': "这些数字背后的轨道要素",   /* satellite-detail.js */
     'The elevation tiles could not be fetched — check the connection and try again.': "无法取得高程瓦片 — 请检查连接后再试。",   /* terrain-water.js */
@@ -2150,7 +2150,7 @@ window.IntMapLang.define('zh-hans', {
     'Thickness': "厚度",   /* tool-panel.js */
     'Thinking': "思考中",   /* atlas-console.js */
     'Thinking…': "思考中…",   /* analysis-panels.js */
-    'This browser cannot run the solver in a background thread, so the propagation model is unavailable here.': "这个浏览器无法在背景执行绪中执行求解器，因此此处无法使用传播模型。",   /* tsunami.js */
+    'This browser cannot run the solver in a background thread, so the propagation model is unavailable here.': "这个浏览器无法在背景线程中执行求解器，因此此处无法使用传播模型。",   /* tsunami.js */
     'This camera is momentarily offline.': "这台摄影机暂时离线。",   /* cameras.js */
     'this company on Wikidata ↗': "在 Wikidata 上查看这家公司 ↗",   /* industry-web.js */
     'This crop and variable could not be fetched from GAEZ — it will be tried again when the map moves.': "无法从 GAEZ 取得此作物与变量 — 地图移动时会再试一次。",   /* world-packs.js */
@@ -2246,7 +2246,7 @@ window.IntMapLang.define('zh-hans', {
     'Unknown action': "未知的操作",   /* atlas-console.js */
     'Unknown color': "未知的颜色",   /* atlas-console.js */
     'Unknown metric': "未知的指标",   /* atlas-console.js */
-    'Unknown module': "未知的模组",   /* atlas-controls.js */
+    'Unknown module': "未知的模块",   /* atlas-controls.js */
     'Unknown monitor operation.': "未知的监看操作。",   /* atlas-console.js */
     'Unknown ranking metric': "未知的排名指标",   /* atlas-console.js */
     'unlimited': "无限制",   /* atlas-console.js */
@@ -2420,7 +2420,7 @@ window.IntMapLang.define('zh-hans', {
     'A satellite where-am-I geography game — dropped somewhere on Earth, guess your location.': "卫星影像猜位置的地理游戏 — 被丢到地球上的某处，猜猜你在哪里。",
     'Active layers': "使用中的图层",
     'Active-fire data unavailable': "无法取得实时火点数据",
-    'Advanced — fault geometry': "进阶 — 断层几何",
+    'Advanced — fault geometry': "高级 — 断层几何",
     'Aerosol / haze': "气胶／霾",
     'AI brief': "AI 摘要",
     'AIS connect failed: ': "AIS 连接失败：",
@@ -2509,7 +2509,7 @@ window.IntMapLang.define('zh-hans', {
     'Location blocked — enable it in your browser settings.': "定位被封锁 — 请在浏览器设置中开启。",
     'Location not set.': "尚未设置位置。",
     'Location unknown': "位置不明",
-    'Log in or create an account to use AI features and sync your settings, widgets, favorites and avatar across devices.': "登录或注册账号即可使用 AI 功能，并在各装置间同步你的设置、小工具、收藏与头像。",
+    'Log in or create an account to use AI features and sync your settings, widgets, favorites and avatar across devices.': "登录或注册账号即可使用 AI 功能，并在各设备间同步你的设置、小工具、收藏与头像。",
     'Log out': "登出",
     'Log out of your account?': "要登出账号吗？",
     'Logged out': "已登出",
@@ -2598,7 +2598,7 @@ window.IntMapLang.define('zh-hans', {
     'Area monitors are not available right now.': "区域监视目前无法使用。",
     'Below are news headlines reported within a single geographic area. In about three concise lines, summarize what is happening in this region from a geopolitical perspective. Begin each line with \'- \'. Stay grounded in the given headlines and avoid over-speculation.': "以下是在同一个地理范围内报道的新闻标题。请以地缘政治的角度，用大约三行简洁的中文摘要这个地区正在发生的事。每一行以「- 」开头。只根据所给的标题陈述，避免过度推测。",
     'Compare two images of the same area (first = earlier, second = later). Report: military construction/expansion, movement of ships/aircraft/vehicles, land clearing, natural disasters (floods, fires, landslides), and urban/infrastructure change. Use bullet points, each with a confidence level (high/medium/low). If nothing changed, say so, and beware false positives from clouds, image quality, or seasonal differences.': "请比对同一地区的两张影像（第一张＝较早，第二张＝较晚）。请报告：军事设施的兴建与扩张，船舰、航空器、车辆等装备的移动，土地整地与伐除，自然灾害（洪水、火灾、山崩等），以及都市与基础设施的变化。以条列方式呈现，每一项标注信心水准（高／中／低）。若没有变化就直接说明，并注意云量、影像质量或季节差异造成的误判。",
-    'The drawn outline is the fault’s surface projection. Dip, width and depth are estimated from its length and shape (Wells & Coppersmith 1994 with the magnitude eliminated); the mean slip follows from the stress drop above (Eshelby). Leave a box empty to keep it estimated.': "所绘的轮廓是断层的地表投影。倾角、宽度与深度由其长度和形状推估（Wells & Coppersmith 1994，并消去规模项）；平均滑移量则由上方的应力降导出（Eshelby）。栏位留空即维持推估值。",
+    'The drawn outline is the fault’s surface projection. Dip, width and depth are estimated from its length and shape (Wells & Coppersmith 1994 with the magnitude eliminated); the mean slip follows from the stress drop above (Eshelby). Leave a box empty to keep it estimated.': "所绘的轮廓是断层的地表投影。倾角、宽度与深度由其长度和形状推估（Wells & Coppersmith 1994，并消去规模项）；平均滑移量则由上方的应力降导出（Eshelby）。字段留空即维持推估值。",
     "Casualties":"人员伤亡",
     "Educational model — in a real emergency follow the official authorities.":"教育用模型——实际灾害时请遵循官方机构的指示。",
     "Load a past earthquake…":"加载过去的地震…",
@@ -2616,7 +2616,7 @@ window.IntMapLang.define('zh-hans', {
   "Oceanic path, surface waves (×)": "行经海洋地壳的表面波 (×)",
   "Rupture outline": "震源域轮廓",
   "segments": "段",
-  "The wavefronts are the outer envelope of the fronts from every sampled point of the rupture — solved on the sphere, so a hand-drawn outline keeps its concavity instead of being replaced by its convex hull — and each sampled point uses the travel-time curve for its OWN depth on the dipping plane. Surface-wave group velocity is integrated along each great-circle path rather than held constant, so an oceanic path runs ahead of a continental one; the 3.5 / 4.4 km/s figures are the continental reference and the ratio is in the advanced settings.": "波前是震源域各采样点所发出波前的外包络线，并在球面上求解，因此手绘的凹形轮廓会被保留，而不会被其凸包取代；每个采样点都使用其在倾斜断层面上「自身深度」所对应的走时曲线。表面波的群速度是沿各大圆路径积分而得，而非固定值，因此行经海洋地壳的路径会领先大陆地壳的路径；3.5 / 4.4 km/s 为大陆地壳的参考值，其比值可在进阶设置中调整。",
+  "The wavefronts are the outer envelope of the fronts from every sampled point of the rupture — solved on the sphere, so a hand-drawn outline keeps its concavity instead of being replaced by its convex hull — and each sampled point uses the travel-time curve for its OWN depth on the dipping plane. Surface-wave group velocity is integrated along each great-circle path rather than held constant, so an oceanic path runs ahead of a continental one; the 3.5 / 4.4 km/s figures are the continental reference and the ratio is in the advanced settings.": "波前是震源域各采样点所发出波前的外包络线，并在球面上求解，因此手绘的凹形轮廓会被保留，而不会被其凸包取代；每个采样点都使用其在倾斜断层面上「自身深度」所对应的走时曲线。表面波的群速度是沿各大圆路径积分而得，而非固定值，因此行经海洋地壳的路径会领先大陆地壳的路径；3.5 / 4.4 km/s 为大陆地壳的参考值，其比值可在高级设置中调整。",
   "Place the hypocenter": "设置震央",
   "Tap inside the rupture area to place the hypocenter.": "请点击震源域内部以设置震央。",
   "That point is outside the rupture area — the rupture starts on the plane it happened on.": "该地点位于震源域之外——破裂是从其发生的断层面上开始的。",
@@ -2626,7 +2626,7 @@ window.IntMapLang.define('zh-hans', {
   "No list yet — press to load": "尚无列表——请按此加载",
   "Loading the recent earthquakes…": "正在加载最近的地震…",
   " events": " 件事件",
-  "this service is in the update cycle and has not been read yet, so the map is not saying anything about this country until it has.": "此机关正在更新排程中，尚未取得；在取得之前，本地图对此国家不作任何陈述。",   /* (#R275) */
+  "this service is in the update cycle and has not been read yet, so the map is not saying anything about this country until it has.": "此机关正在更新调度中，尚未取得；在取得之前，本地图对此国家不作任何陈述。",   /* (#R275) */
   "via WMO SWIC": "经 WMO SWIC",   /* (#R275) */
   "✓ Copied": "✓ 已复制",
   "📍 Places": "📍 地点",
@@ -2703,7 +2703,7 @@ window.IntMapLang.define('zh-hans', {
   "Active volcanoes": "活火山",
   "Air-defense zones (ADIZ ≈)": "防空识别区 (ADIZ ≈)",
   "Annual precipitation": "年降水量",
-  "Anomaly vs climatology (ENSO signal)": "相对气候平均的距平（ENSO 讯号）",
+  "Anomaly vs climatology (ENSO signal)": "相对气候平均的距平（ENSO 信号）",
   "Assassination": "暗杀",
   "ASTER global DEM color + shaded relief (static)": "ASTER 全球高程模型彩色分层＋阴影起伏（静态）",
   "Aurora forecast (NOAA)": "极光预报（NOAA）",
@@ -2863,7 +2863,7 @@ window.IntMapLang.define('zh-hans', {
   "Oil seeds": "油籽（合计）",
   "Olive": "橄榄",
   "Other cereals": "其他谷类",
-  "Plastics & rubber": "塑胶与橡胶",
+  "Plastics & rubber": "塑料与橡胶",
   "Potato and sweet potato": "马铃薯与甘藷",
   "Precious metals": "贵金属",
   "Production": "产量",
@@ -2888,7 +2888,7 @@ window.IntMapLang.define('zh-hans', {
   "Wheat": "小麦",
   "Yams and other roots": "山药与其他根茎作物",
   "Yield": "单位产量",
-  "Advanced settings": "进阶设置",
+  "Advanced settings": "高级设置",
   "Clear the loaded earthquake": "清除已加载的地震",
   "Depth": "深度",
   "Fault geometry": "断层形状",
@@ -2944,13 +2944,13 @@ window.IntMapLang.define('zh-hans', {
   "Weather unavailable": "无法取得天气",
   "FX unavailable": "无法取得汇率",
   "fatalities ": "死亡人数 ",
-  "Enter your email + API key (free registration at acleddata.com).": "请输入电子邮件与 API 金钥（于 acleddata.com 免费注册）。",
+  "Enter your email + API key (free registration at acleddata.com).": "请输入电子邮件与 API 密钥（于 acleddata.com 免费注册）。",
   "Error: ": "错误：",
-  "Nothing returned — check the key, email and your API quota.": "没有取得数据——请检查金钥、电子邮件与 API 用量。",
+  "Nothing returned — check the key, email and your API quota.": "没有取得数据——请检查密钥、电子邮件与 API 用量。",
   "†": "†",
   "Conflict events (ACLED)": "冲突事件（ACLED）",
   "Load last 14 days": "加载最近 14 天",
-  "Armed Conflict Location & Event Data. Needs the free-registration email + API key.": "Armed Conflict Location & Event Data。需要免费注册的电子邮件与 API 金钥。",
+  "Armed Conflict Location & Event Data. Needs the free-registration email + API key.": "Armed Conflict Location & Event Data。需要免费注册的电子邮件与 API 密钥。",
   "As of: ": "更新：",
   "Could not load — toggle again later.": "无法加载——请稍后再开启一次。",
   "Russian-occupied": "俄罗斯占领区",
@@ -3000,7 +3000,7 @@ window.IntMapLang.define('zh-hans', {
   "Open compare view": "开启比较检视",
   "Language data not found — add data/asher_languages.geojson": "找不到语言数据——请加入 data/asher_languages.geojson",
   "Family: ": "语系：",
-  "Intelligence (advanced)": "情报分析（进阶）",
+  "Intelligence (advanced)": "情报分析（高级）",
   "Disputed boundaries": "争议边界",
   "Air-defense coverage": "防空涵盖范围",
   "World languages": "世界语言分布",
@@ -3026,21 +3026,21 @@ window.IntMapLang.define('zh-hans', {
   "e.g. On mobile, tapping X causes Y…": "例：在手机上点击 X 会发生 Y…",
   "Diagnostics attached": "附加的诊断信息",
   "Submit report": "送出回报",
-  "Copy report to clipboard": "复制回报内容到剪贴簿",
+  "Copy report to clipboard": "复制回报内容到剪贴板",
   "Copied.": "已复制。",
   "Could not copy.": "无法复制。",
   "Please describe the bug.": "请描述错误内容。",
   "Report sent": "已送出回报",
   "Report saved": "已保存回报",
   "Thank you — we will look into it.": "感谢回报——我们会查看处理。",
-  "Saved on this device and copied to your clipboard (offline).": "已离线保存在此装置并复制到剪贴簿。",
+  "Saved on this device and copied to your clipboard (offline).": "已离线保存在此设备并复制到剪贴板。",
   "Aurora forecast unavailable": "无法取得极光预报",
   "(unnamed)": "（无名称）",
   "Could not load plate data": "无法取得板块数据",
   "Could not load ecoregions": "无法加载生态地区数据",
   "Biome: ": "生物群系：",
   "Could not load railway data": "无法加载铁路数据",
-  "AI superclusters": "AI 超级丛集",
+  "AI superclusters": "AI 超级集群",
   "Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.": "主要制药企业总部与制造聚落（代表地点）。可与平均寿命图层搭配。",
   "Classified by each country’s predominant gauge (Natural Earth 10m)": "依各国主要轨距分类（Natural Earth 10m）",
   "World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.": "世界银行 WGI「贪腐控制」分数（0–100，愈高愈清廉）——相当于 TI 贪腐印象指数的开放 API 指标。",
@@ -3163,8 +3163,8 @@ window.IntMapLang.define('zh-hans', {
   "latest": "最新",
   "Open-Meteo ECMWF IFS (hourly)": "Open-Meteo ECMWF IFS（每小时）",
   "Time & date": "现在时间与日期",
-  "Analog clock": "类比时钟",
-  "An analog clock face": "类比表面",
+  "Analog clock": "模拟时钟",
+  "An analog clock face": "模拟表面",
   "Weather at your location (asks for location permission when added)": "目前位置的天气（新增时会要求位置权限）",
   "FX rate": "汇率",
   "Pick any currency pair": "选择任意货币对",
@@ -3244,7 +3244,7 @@ window.IntMapLang.define('zh-hans', {
   "daylight": "日照",
   "100-px bar ≈ ": "100 像素长条 ≈ ",
   "Location needed": "需要位置信息",
-  "Allow location": "允许位置存取",
+  "Allow location": "允许位置访问",
   "Locating…": "取得位置中…",
   "FX ": "汇率 ",
   "daylight ": "白昼长度 ",
@@ -3362,7 +3362,7 @@ window.IntMapLang.define('zh-hans', {
   "Savanna": "莽原",
   "Sirius — the brightest star in the sky": "天狼星 — 全天最亮的恒星",
   "South Vietnam": "南越",
-  "South Yemen": "南叶门",
+  "South Yemen": "南也门",
   "Subarctic": "副极地",
   "Subarctic, dry winter": "副极地，冬干",
   "Subarctic, dry winter (severe)": "副极地，冬干（酷寒）",
@@ -3394,8 +3394,8 @@ window.IntMapLang.define('zh-hans', {
   "Dutch East Indies": "荷属东印度",
   "Empire of Brazil": "巴西帝国",
   "Empire of Japan": "大日本帝国",
-  "Ethiopia (incl. Eritrea)": "衣索比亚（含厄利垂亚）",
-  "Ethiopian Empire": "衣索比亚帝国",
+  "Ethiopia (incl. Eritrea)": "埃塞俄比亚（含厄立特里亚）",
+  "Ethiopian Empire": "埃塞俄比亚帝国",
   "F-16 · fighter": "F-16 · 战斗机",
   "F-35 Lightning II · stealth fighter": "F-35 闪电II · 匿踪战斗机",
   "Francoist Spain": "佛朗哥时期西班牙",
@@ -3406,7 +3406,7 @@ window.IntMapLang.define('zh-hans', {
   "Indonesia (incl. East Timor)": "印尼（含东帝汶）",
   "Kingdom of Egypt": "埃及王国",
   "Kingdom of Hungary": "匈牙利王国",
-  "Kingdom of Italy": "义大利王国",
+  "Kingdom of Italy": "意大利王国",
   "Kingdom of Portugal": "葡萄牙王国",
   "Kingdom of Yugoslavia": "南斯拉夫王国",
   "Korean Empire": "大韩帝国",
@@ -3445,7 +3445,7 @@ window.IntMapLang.define('zh-hans', {
   "Alaska": "阿拉斯加",
   "Alcohol per capita L": "人均酒精消费 L",
   "Alexandria, Egypt": "亚历山卓（埃及）",
-  "Alexandria, Virginia (USA)": "亚历山德里亚（美国维吉尼亚州）",
+  "Alexandria, Virginia (USA)": "亚历山德里亚（美国弗吉尼亚州）",
   "Algeria": "阿尔及利亚",
   "Analysis": "分析",
   "Anglo-Egyptian Sudan": "英埃苏丹",
@@ -3456,7 +3456,7 @@ window.IntMapLang.define('zh-hans', {
   "Arabia (Nejd)": "阿拉伯（内志）",
   "Armed forces personnel": "军队人数",
   "Asante": "阿散蒂",
-  "Athens, Georgia (USA)": "雅典斯（美国乔治亚州）",
+  "Athens, Georgia (USA)": "雅典斯（美国佐治亚州）",
   "Athens, Greece": "雅典（希腊）",
   "Ato Trading Confederacy": "阿托贸易联盟",
   "Australia": "澳洲",
@@ -3481,15 +3481,15 @@ window.IntMapLang.define('zh-hans', {
   "British Bechuanaland": "英属贝专纳兰",
   "British East Africa": "英属东非",
   "British Guiana": "英属圭亚那",
-  "British Honduras": "英属宏都拉斯",
+  "British Honduras": "英属洪都拉斯",
   "British Protectorate": "英国保护地",
-  "British Solomon Islands": "英属索罗门群岛",
+  "British Solomon Islands": "英属所罗门群岛",
   "British Somaliland": "英属索马利兰",
   "Buganda": "布干达",
   "Bunyoro": "布尼奥罗",
   "Burma": "缅甸",
   "Calabar": "卡拉巴尔",
-  "Cambridge, Massachusetts (USA)": "剑桥（美国麻萨诸塞州）",
+  "Cambridge, Massachusetts (USA)": "剑桥（美国马萨诸塞州）",
   "Cambridge, UK": "剑桥（英国）",
   "Canal": "运河",
   "Cape Colony": "开普殖民地",
@@ -3531,9 +3531,9 @@ window.IntMapLang.define('zh-hans', {
   "Energy use /capita": "人均能源消费",
   "Equal Earth": "等积地球投影",
   "Equirectangular": "等距圆柱投影",
-  "Eritrea": "厄利垂亚",
+  "Eritrea": "厄立特里亚",
   "Esri World Imagery": "Esri 卫星影像",
-  "Ethiopia": "衣索比亚",
+  "Ethiopia": "埃塞俄比亚",
   "Extreme poverty %": "极端贫穷 %",
   "Far Eastern Republic": "远东共和国",
   "FDI inflow % GDP": "外人直接投资流入 占GDP %",
@@ -3543,7 +3543,7 @@ window.IntMapLang.define('zh-hans', {
   "Female labor participation %": "女性劳动参与率 %",
   "Fertility rate (births/woman)": "总生育率（人/妇女）",
   "Fezzan": "费赞",
-  "Fixed broadband /100": "固网宽频 /百人",
+  "Fixed broadband /100": "固网宽带 /百人",
   "Food industry": "食品",
   "Forest area %": "森林面积 %",
   "Formosa": "福尔摩沙",
@@ -3564,11 +3564,11 @@ window.IntMapLang.define('zh-hans', {
   "Futa Toro": "富塔托罗",
   "Gaza": "加沙",
   "GDP growth %": "GDP 成长率 %",
-  "Georgia (the country)": "乔治亚（国家）",
-  "Georgia, USA (the state)": "乔治亚州（美国）",
+  "Georgia (the country)": "格鲁吉亚（国家）",
+  "Georgia, USA (the state)": "佐治亚州（美国）",
   "German East Africa": "德属东非",
   "German New Guinea": "德属新几内亚",
-  "German Solomon Islands": "德属索罗门群岛",
+  "German Solomon Islands": "德属所罗门群岛",
   "German South-West Africa": "德属西南非",
   "Germany": "德国",
   "Gilbert and Ellice Islands": "吉尔伯特及埃利斯群岛",
@@ -3580,7 +3580,7 @@ window.IntMapLang.define('zh-hans', {
   "Guadalajara, Mexico": "瓜达拉哈拉（墨西哥）",
   "Guadalajara, Spain": "瓜达拉哈拉（西班牙）",
   "Guadeloupe": "瓜地洛普",
-  "Guinea-Bissau": "几内亚比索",
+  "Guinea-Bissau": "几内亚比绍",
   "Hail": "哈伊勒",
   "Hawaii": "夏威夷",
   "Health spend %GDP": "医疗支出 占GDP %",
@@ -3607,7 +3607,7 @@ window.IntMapLang.define('zh-hans', {
   "Irish Free State": "爱尔兰自由邦",
   "Israel": "以色列",
   "Italian Somaliland": "义属索马利兰",
-  "Italy": "义大利",
+  "Italy": "意大利",
   "Jamaica": "牙买加",
   "Japan": "日本",
   "Joetsu Shinkansen": "上越新干线",
@@ -3641,14 +3641,14 @@ window.IntMapLang.define('zh-hans', {
   "Lunda": "隆达",
   "Madagascar": "马达加斯加",
   "Malaya": "马来亚",
-  "Manchester, New Hampshire (USA)": "曼彻斯特（美国新罕布夏州）",
+  "Manchester, New Hampshire (USA)": "曼彻斯特（美国新罕布什尔州）",
   "Manchester, UK": "曼彻斯特（英国）",
   "Manchu Empire": "满洲帝国",
   "Manchuria": "满洲",
   "Mandatory Palestine": "英属托管巴勒斯坦",
   "Manufacturing % GDP": "制造业 占GDP %",
   "Māori": "毛利",
-  "Mapbox access token": "Mapbox 存取权杖",
+  "Mapbox access token": "Mapbox 访问权杖",
   "Mapbox Satellite": "Mapbox 卫星影像",
   "Maritime": "海事",
   "Mars": "火星",
@@ -3659,15 +3659,15 @@ window.IntMapLang.define('zh-hans', {
   "Military spending % GDP": "军事支出 占GDP %",
   "Mining": "矿业",
   "Mirambo": "米兰博",
-  "Mobile subs /100": "行动电话门号 /百人",
+  "Mobile subs /100": "移动电话门号 /百人",
   "Mollweide": "莫尔威投影",
   "Morocco": "摩洛哥",
   "Mossi States": "莫西诸邦",
   "Motor vehicle manufacturing": "汽车制造",
-  "Mozambique": "莫三比克",
+  "Mozambique": "莫桑比克",
   "Muscat and Oman": "马斯喀特和阿曼",
   "Naples, Florida (USA)": "那不勒斯（美国佛罗里达州）",
-  "Naples, Italy": "拿坡里（义大利）",
+  "Naples, Italy": "拿坡里（意大利）",
   "NASA GIBS · MODIS Terra": "NASA GIBS · MODIS Terra",
   "NASA GIBS · VIIRS (NOAA-20)": "NASA GIBS · VIIRS (NOAA-20)",
   "NASA GIBS · VIIRS (SNPP)": "NASA GIBS · VIIRS (SNPP)",
@@ -3686,10 +3686,10 @@ window.IntMapLang.define('zh-hans', {
   "Ngwato": "恩瓦托",
   "North Borneo": "北婆罗洲",
   "North Vietnam": "北越",
-  "North Yemen": "北叶门",
+  "North Yemen": "北也门",
   "North-Eastern Rhodesia": "东北罗德西亚",
   "North-Western Rhodesia": "西北罗德西亚",
-  "Northern Nigeria": "北奈及利亚",
+  "Northern Nigeria": "北尼日利亚",
   "Northern Rhodesia": "北罗德西亚",
   "Norway": "挪威",
   "Nuclear": "核能",
@@ -3745,12 +3745,12 @@ window.IntMapLang.define('zh-hans', {
   "Saipan": "塞班",
   "Samori Empire": "萨摩里帝国",
   "San Jose, California (USA)": "圣荷西（美国加州）",
-  "San José, Costa Rica": "圣荷西（哥斯大黎加）",
+  "San José, Costa Rica": "圣荷西（哥斯达黎加）",
   "Sanitation access %": "卫生设施普及率 %",
   "Santiago de Compostela, Spain": "圣地亚哥-德孔波斯特拉（西班牙）",
   "Santiago, Chile": "圣地牙哥（智利）",
   "Saturn": "土星",
-  "Saudi Arabia": "沙乌地阿拉伯",
+  "Saudi Arabia": "沙特阿拉伯",
   "Secondary enrollment %": "中等教育就学率 %",
   "Sentinel Hub (S2 / Landsat)": "Sentinel Hub (S2 / Landsat)",
   "Sentinel Hub instance ID": "Sentinel Hub 执行个体 ID",
@@ -3764,7 +3764,7 @@ window.IntMapLang.define('zh-hans', {
   "South Russia": "南俄罗斯",
   "South West Africa": "西南非",
   "Southern Cameroons": "南喀麦隆",
-  "Southern Nigeria": "南奈及利亚",
+  "Southern Nigeria": "南尼日利亚",
   "Southern Rhodesia": "南罗德西亚",
   "Spaceport": "太空发射场",
   "Spain": "西班牙",
@@ -3777,20 +3777,20 @@ window.IntMapLang.define('zh-hans', {
   "Suicide rate /100k": "自杀率 /十万人",
   "Sultanate of Utetera": "乌泰泰拉苏丹国",
   "Sultanate of Zanzibar": "尚吉巴苏丹国",
-  "Swaziland": "史瓦济兰",
+  "Swaziland": "斯威士兰",
   "Sweden–Norway": "瑞典-挪威",
   "Sydney, Australia": "雪梨（澳洲）",
   "Sydney, Nova Scotia (Canada)": "雪梨（加拿大新斯科细亚省）",
   "Syria": "叙利亚",
   "Tanganyika": "坦干伊喀",
-  "Tanzania, United Republic of": "坦尚尼亚联合共和国",
+  "Tanzania, United Republic of": "坦桑尼亚联合共和国",
   "Tax revenue % GDP": "税收 占GDP %",
   "Tech hub": "科技枢纽",
   "Teke": "特克",
   "Telecommunications": "电信",
   "Tertiary enrollment %": "高等教育就学率 %",
   "The Bahamas": "巴哈马",
-  "The Gambia": "甘比亚",
+  "The Gambia": "冈比亚",
   "Togoland": "多哥兰",
   "Tohoku Shinkansen": "东北新干线",
   "Tokaido–Sanyo Shinkansen": "东海道・山阳新干线",
@@ -3833,7 +3833,7 @@ window.IntMapLang.define('zh-hans', {
   "XYZ URL template — use {z}/{x}/{y}": "XYZ 网址范本 — 使用 {z}/{x}/{y}",
   "Yaka": "亚卡",
   "Yeke": "耶凯",
-  "Yemen": "叶门",
+  "Yemen": "也门",
   "yesterday": "昨天",
   "Zaire": "萨伊",
   "Zululand": "祖鲁兰",
@@ -3919,7 +3919,7 @@ window.IntMapLang.define('zh-hans', {
   "Healthcare": "医疗保健",
   "Heavy-lift multirotor": "重载多旋翼机",
   "Hinduism": "印度教",
-  "HIV prevalence %": "爱滋病毒盛行率 %",
+  "HIV prevalence %": "艾滋病毒盛行率 %",
   "Hot — mean annual ≥ 18 °C": "热 — 年均温 18 °C 以上",
   "Hot summer — warmest ≥ 22 °C": "夏热 — 最暖月 22 °C 以上",
   "Human Development Index — a 0–1 blend of life expectancy, schooling and income. Higher = more developed.": "人类发展指数 — 由平均寿命、教育与所得合成的 0～1 指标。愈高愈发展。",
@@ -4196,7 +4196,7 @@ window.IntMapLang.define('zh-hans', {
     "Represents": "派遣国",   /* (#R255) */
     "Service": "所属军种",   /* (#R255) */
     "Speciality": "科别",   /* (#R255) */
-    "Surveyed in OpenStreetMap. Every field above is that object’s own tag; nothing is inferred, and a field the object does not carry is left out rather than estimated.": "OpenStreetMap 的实测数据。上述栏位皆为该对象自身的标签，未做任何推论；对象未带有的栏位一律略过，不做估算。",   /* (#R255) */
+    "Surveyed in OpenStreetMap. Every field above is that object’s own tag; nothing is inferred, and a field the object does not carry is left out rather than estimated.": "OpenStreetMap 的实测数据。上述字段皆为该对象自身的标签，未做任何推论；对象未带有的字段一律略过，不做估算。",   /* (#R255) */
     "Telecom & internet infrastructure": "电信与互联网基础设施",   /* (#R255) */
     "Telephone exchange": "电话交换局",   /* (#R255) */
     "This crop layer could not start.": "无法启动此作物图层。",   /* (#R255) */
@@ -4292,7 +4292,7 @@ window.IntMapLang.define('zh-hans', {
   "Land cover (ESA)": "土地覆盖（ESA）",
   "Live OpenStreetMap for this view, merged with the shipped snapshot": "本视图的实时 OpenStreetMap，与随附快照合并",
   "Montenegrin": "蒙特内哥罗语",
-  "Serbo-Croatian": "塞尔维亚-克罗埃西亚语",
+  "Serbo-Croatian": "塞尔维亚-克罗地亚语",
   "signals": "个",
   "Sikhism": "锡克教",
   "This product ends at": "此数据集结束于",
@@ -4304,10 +4304,10 @@ window.IntMapLang.define('zh-hans', {
   "Gilbertese": "吉尔伯特语",
   "Niuean": "纽埃语",
   "Bislama": "比斯拉马语",
-  "Nauruan": "诺鲁语",
-  "Palauan": "帛琉语",
+  "Nauruan": "瑙鲁语",
+  "Palauan": "帕劳语",
   "Marshallese": "马绍尔语",
-  "Tuvaluan": "吐瓦鲁语",
+  "Tuvaluan": "图瓦卢语",
   "Tok Pisin": "巴布亚皮钦语",
   "Greenlandic": "格陵兰语",
   "Dzongkha": "宗喀语",
@@ -4478,7 +4478,7 @@ window.IntMapLang.define('zh-hans', {
   'Station': '车站',   /* (#R291) */
   'That box is too small to keep a route out of — draw a larger one.': '此范围太小，无法排除路线 — 请画得大一些。',   /* (#R291) */
   'That request could not be understood by the routing service.': '路线服务无法解读此请求。',   /* (#R291) */
-  'The analyses did not load.': '分析模组加载失败。',   /* (#R291) */
+  'The analyses did not load.': '分析模块加载失败。',   /* (#R291) */
   'The avoid options could NOT be applied (the provider was unreachable) — this is the ordinary route.': '无法应用回避条件（无法连接至供应商）— 这是一般路线。',   /* (#R291) */
   'The keep-out area could NOT be applied (the provider was unreachable) — this route may pass through it.': '无法应用禁止通过范围（无法连接至供应商）— 此路线可能穿越该范围。',   /* (#R291) */
   'The link includes the places in this route: ': '此链接包含路线中的地点：',   /* (#R291) */
@@ -4490,7 +4490,7 @@ window.IntMapLang.define('zh-hans', {
   'The time you set shifts the arrival calculation only; the road provider has no traffic forecast to give it to.': '所设置的时间仅用于计算抵达时刻；道路供应商并无可应用的路况预测。',   /* (#R291) */
   'There is no road connection between these points.': '这两个地点之间没有道路链接。',   /* (#R291) */
   'This browser cannot provide a location.': '此浏览器无法提供位置信息。',   /* (#R291) */
-  'This device is offline.': '此装置目前离线。',   /* (#R291) */
+  'This device is offline.': '此设备目前离线。',   /* (#R291) */
   'This provider accepts at most ': '此供应商最多接受 ',   /* (#R291) */
   'Timetable': '时刻表',   /* (#R291) */
   'Timetable-based — no real-time data is published for this trip.': '以时刻表为准 — 此行程未公开实时信息。',   /* (#R291) */
@@ -4539,9 +4539,9 @@ window.IntMapLang.define('zh-hans', {
   "Already on your board": "已在您的面板上",
   "Also compare": "一并比较",
   "Alternatives": "替代路线",
-  "An analog face, with a sweeping second hand": "有秒针的类比表面",
-  "analog": "类比",
-  "Analog": "类比",
+  "An analog face, with a sweeping second hand": "有秒针的模拟表面",
+  "analog": "模拟",
+  "Analog": "模拟",
   "anniversary": "纪念日",
   "Another city’s time, and its offset from yours": "其他城市的时间与时差",
   "Another country": "换一个国家",
@@ -4865,7 +4865,7 @@ window.IntMapLang.define('zh-hans', {
   "the map is showing live data": "地图正显示实时数据",
   "The next public holiday in a country you pick": "所选国家的下一个假日",
   "The next scheduled orbital launch": "下一次预定的轨道发射",
-  "The planetary K index, and what it means for aurora": "行星 K 指数与极光机率",
+  "The planetary K index, and what it means for aurora": "行星 K 指数与极光概率",
   "The route currently on the map, and where to go next with it": "地图上的路线与后续操作",
   "The route on the map": "地图上的路线",
   "The season where the map is looking": "地图检视位置的季节",

@@ -34,7 +34,7 @@ window.IntMapPageI18N.define('zh-hans', {
         id: 'what', nav: "关于本页", h: "关于本页",
         blocks: [
           ['tagline', "IntMap 呈现的一切，都是外部机构量测并公开的数据。本页列出这些机构。"],
-          ['p', "IntMap 不自行产生任何数据。它取得气象机关、NASA、联合国组织、大学与 OpenStreetMap 社群所公开的数据，并画在同一张地图上。画面上的数字有多可信，取决于公开它的机构，而本页就是你查证那是哪个机构的地方。"],
+          ['p', "IntMap 不自行产生任何数据。它取得气象机关、NASA、联合国组织、大学与 OpenStreetMap 社区所公开的数据，并画在同一张地图上。画面上的数字有多可信，取决于公开它的机构，而本页就是你查证那是哪个机构的地方。"],
           ['p', "下方列表列出应用程序实际使用的提供机构，并随着地图成长而增加。要找特定项目，可用图层名称（&ldquo;潮汐&rdquo;、&ldquo;作物&rdquo;）或机构名称筛选。"]
         ]
       },
@@ -58,8 +58,8 @@ window.IntMapPageI18N.define('zh-hans', {
         id: 'privacy', nav: "开启图层会送出什么", h: "开启一个图层时会发生什么事",
         blocks: [
           ['tagline', "你的浏览器会直接向提供机构取得数据。"],
-          ['p', "IntMap 几乎不使用中继服务器：瓦片、天气、地震等都是由你的装置直接向提供机构请求。因此它们的存取纪录会包含<b>你的 IP 位址以及你请求了哪些地图瓦片</b>，这大致指出你当时在看哪一带。其他地图应用程序也是如此，这里明说只是为了清楚。"],
-          ['p', "你的位置只在你的装置上使用。只有当你针对某个地点提问时——例如搜索、路线或预报——坐标才会送出。账号、AI 功能与监控另见应用程序本身的隐私说明。"]
+          ['p', "IntMap 几乎不使用中继服务器：瓦片、天气、地震等都是由你的设备直接向提供机构请求。因此它们的访问纪录会包含<b>你的 IP 地址以及你请求了哪些地图瓦片</b>，这大致指出你当时在看哪一带。其他地图应用程序也是如此，这里明说只是为了清楚。"],
+          ['p', "你的位置只在你的设备上使用。只有当你针对某个地点提问时——例如搜索、路线或预报——坐标才会送出。账号、AI 功能与监控另见应用程序本身的隐私说明。"]
         ]
       },
       {
@@ -154,7 +154,7 @@ window.IntMapPageI18N.define('zh-hans', {
           ['lim', "缺漏由邻近值补上，而且<b>补值的格点数一定会显示</b>。若缺漏超过 30 %，采样器会降一个缩放层级重试；只有连最粗的层级也失败时才回报失败 — 而且指名的是网络，不是地点。"],
           ['h3', "四个采样点，以及它们来自的预算"],
           ['tex', 'h(x,y) \\;=\\; \\sum_{i,j\\in\\{0,1\\}} h_{ij}\\,\\bigl(1-|x-i|\\bigr)\\bigl(1-|y-j|\\bigr)'],
-          ['p', "一张瓦片是 256&times;256 个采样点；因此在缩放层级 14 查询一次，每 2.4 km 见方要一次 HTTP 请求，并在本次会话快取。地形运算在开始前会先说明自己的瓦片预算 &mdash; 一次震度分布最多要求 1,600 张，而手机只快取 140 张 &mdash; 所以运算期间使用的瓦片会被<b>钉住</b>，并在 <code>finally</code> 中释放。否则一个大范围的计算会把自己的输入挤掉再重新抓取，而那正是让分布变成同心圆的原因。"]
+          ['p', "一张瓦片是 256&times;256 个采样点；因此在缩放层级 14 查询一次，每 2.4 km 见方要一次 HTTP 请求，并在本次会话缓存。地形运算在开始前会先说明自己的瓦片预算 &mdash; 一次震度分布最多要求 1,600 张，而手机只缓存 140 张 &mdash; 所以运算期间使用的瓦片会被<b>钉住</b>，并在 <code>finally</code> 中释放。否则一个大范围的计算会把自己的输入挤掉再重新抓取，而那正是让分布变成同心圆的原因。"]
         ]
       },
       {
@@ -215,7 +215,7 @@ window.IntMapPageI18N.define('zh-hans', {
           ['p', "振幅是经验性的距离衰减，乘上<b>频率相关的 Q</b>（非弹性衰减），再乘上<b>场址放大</b>。场址等级不是假设来的：它来自该点以 DEM 自身采样间距量测到的坡度（陡＝岩盘，平＝冲积层）。"],
           ['lim', "超出震度阶最低一级之后，场是在<b>外推</b>，并且会这么说明。震央是用户放下的位置；绝不使用 AI 猜测的坐标。"],
           ['h3', "从频谱到画面上的数字"],
-          ['p', "傅立叶振幅频谱在 0.1&ndash;20 Hz 之间以对数间隔取 64 个频率求值。之后的一切都是上述尖峰因子积分，以梯形法在这 64 点上计算；路径延时为 T<sub>d</sub> = T<sub>震源</sub> + 0.05&thinsp;r，即标准的 Boore 形式。"],
+          ['p', "傅里叶振幅频谱在 0.1&ndash;20 Hz 之间以对数间隔取 64 个频率求值。之后的一切都是上述尖峰因子积分，以梯形法在这 64 点上计算；路径延时为 T<sub>d</sub> = T<sub>震源</sub> + 0.05&thinsp;r，即标准的 Boore 形式。"],
           ['p', "场在间距依规模决定的格网上求解 &mdash; M &lt; 6 为 512 m，以上为 1&ndash;2 km &mdash; 然后<b>仅为显示而内插</b>。没有任何东西画得比它求解所用的格网更细。"]
         ]
       },
@@ -271,7 +271,7 @@ window.IntMapPageI18N.define('zh-hans', {
           ['p', "暖或寒是<b>量测</b>出来的，不是由流向推断：它是该洋流自身的海表温度与同纬度纬向平均的比较。差距在 ±0.6 K 以内时画成灰色，因为赤道流与环极流确实沿着自己的等温线流动。"],
           ['tex', '\\overline{\\Delta T} = \\dfrac{1}{N}\\sum_{i=1}^{N}\\Bigl[T(\\mathbf{x}_i)-\\langle T\\rangle_{\\varphi_i}\\Bigr] \\quad \\begin{cases}>+0.6\\ \\text{K} & \\text{warm}\\\\ <-0.6\\ \\text{K} & \\text{cold}\\\\ \\text{otherwise} & \\text{zonal}\\end{cases}'],
           ['tagline', "一个流场，以真正在移动的水的流线画出。"],
-          ['p', "速度场来自 Open-Meteo Marine 的 <code>ocean_current_velocity</code> 与 <code>ocean_current_direction</code> — 与潮汐所用的同一个免金钥模型。涵盖画面的格网以单一请求取得，陆地格点依随附的陆域遮罩剔除，回传值再经双线性内插成连续流场。"],
+          ['p', "速度场来自 Open-Meteo Marine 的 <code>ocean_current_velocity</code> 与 <code>ocean_current_direction</code> — 与潮汐所用的同一个免密钥模型。涵盖画面的格网以单一请求取得，陆地格点依随附的陆域遮罩剔除，回传值再经双线性内插成连续流场。"],
           ['p', "接着从每个起点以四阶 Runge–Kutta 步进，在该流场中向前与向后积分出<b>流线</b>，因此一条线是水实际走过的路径，而不是各自独立的箭头。线宽代表流速；在线的箭头指出流向。"],
           ['eq', 'x<sub>n+1</sub> = x<sub>n</sub> + (h/6)(k<sub>1</sub> + 2k<sub>2</sub> + 2k<sub>3</sub> + k<sub>4</sub>), &nbsp; k<sub>i</sub> = u(x)/|u| &nbsp; (unit-speed, so the step is a distance)'],
           ['p', "暖或寒是<b>量测而非假设</b>。暖流／寒流是关于这股水带着什么的宣称，因此每条流线都会与沿其自身路径<b>上游</b>约 110 km 处的海表温度比较。上游比此处暖，表示这股流带来暖意（红色）；上游较冷，表示它带来寒意（蓝色）。"],
@@ -334,7 +334,7 @@ window.IntMapPageI18N.define('zh-hans', {
           ['p', "星表是随附的快照加上实时取得。取不到列表的分类会被<b>省略，而不是显示为空</b> — 空数组等于宣称该分类一颗卫星也没有。"],
           ['h3', "SGP4，以及轨道要素年龄为何是硬限制"],
           ['tex', 'n\'\' = n_0\\bigl[1 + \\tfrac{3}{2}k_2\\tfrac{(3\\cos^2 i-1)}{a^{2}(1-e^{2})^{3/2}}\\bigr],\\qquad \\sigma_{\\text{pos}} \\sim 1\\text{–}3\\ \\mathrm{km/day}\\ \\text{after epoch}'],
-          ['p', "TLE 不是位置：它是为某个特定解析理论拟合出来的平均轨道要素，只有 SGP4/SDP4 读得懂它。对低轨道而言，过了历元之后误差大约每天增加 1&ndash;3 km，而且是<b>安静地</b>增加 &mdash; 数据本身没有任何讯号告诉你答案已经错了。因此推算器宁可拒绝超龄的轨道要素，也不在错误的位置画上一个看似合理的点。"]
+          ['p', "TLE 不是位置：它是为某个特定解析理论拟合出来的平均轨道要素，只有 SGP4/SDP4 读得懂它。对低轨道而言，过了历元之后误差大约每天增加 1&ndash;3 km，而且是<b>安静地</b>增加 &mdash; 数据本身没有任何信号告诉你答案已经错了。因此推算器宁可拒绝超龄的轨道要素，也不在错误的位置画上一个看似合理的点。"]
         ]
       },
       {
@@ -454,7 +454,7 @@ window.IntMapPageI18N.define('zh-hans', {
     "USGS ShakeMap station lists": "真实观测站记录到的最大加速度与最大速度，用于将地震模型与观测对照评分（scripts/seismic-validate.mjs）。仅在离线执行该验证时取得，浏览器中的应用程序从不取得。",
     "CARTO basemaps": "浅色／深色向量底图瓦片",
     "MapLibre GL JS": "默认的地图描绘引擎（BSD-3-Clause）。负责绘制所有 2D/3D 地图视图、球体投影与地形网格。",
-    "CesiumJS": "可选的第二个描绘引擎（Apache-2.0），可在设置 ▸ 地图行为 ▸ 地图引擎中选择，只有选用时才会下载。完全不使用 Cesium Ion 资产与存取权杖——它绘制的是与默认引擎相同的 Esri 影像与相同的 AWS terrarium 高程数据。",
+    "CesiumJS": "可选的第二个描绘引擎（Apache-2.0），可在设置 ▸ 地图行为 ▸ 地图引擎中选择，只有选用时才会下载。完全不使用 Cesium Ion 资产与访问权杖——它绘制的是与默认引擎相同的 Esri 影像与相同的 AWS terrarium 高程数据。",
     "Twemoji (Twitter Emoji)": "自行代管的国旗网页字体（TwemojiCountryFlags.woff2），让没有原生国旗字形的平台（例如 Windows）也能显示国旗表情符号。图形采 CC-BY 4.0 授权。",
     "Esri World Imagery": "卫星影像与地名标签；World Hillshade 与 World Transportation 参考瓦片（山体阴影图层与道路图层的预览影像）",
     "OpenStreetMap": "地名搜索与地名／地区范围多边形（Nominatim）、在地图上点击河川名称时显示的实际河道，以及底图数据",
@@ -474,15 +474,15 @@ window.IntMapPageI18N.define('zh-hans', {
     "MET Norway (Locationforecast)": "当 Open-Meteo 无法使用时，定点天气窗口自动改用的备援来源（NLOD/CC-BY 4.0）",
     "OSRM (Open Source Routing Machine)": "Atlas 的道路路线规划——在 OpenStreetMap 道路数据上计算开车／步行／单车的逐步导航路线（公开示范服务器 router.project-osrm.org 与 routing.openstreetmap.de；ODbL）",
     "Transitous / MOTIS": "Atlas 的大众运输路线规划——在全球开放 GTFS 数据上进行真实的火车／地铁／轻轨／公车／渡轮路线规划（api.transitous.org，MOTIS 引擎），并回传每一条替代行程；计算行程时会送出起讫点坐标。对于没有开放时刻表的城际铁路（例如日本 JR／新干线），Atlas 会改为透过 Overpass API 在 OpenStreetMap 铁路网上规划",
-    "Valhalla (FOSSGIS)": "Atlas 的等时圈／可达范围（「开车 30 分钟」、「步行 15 分钟」）——透过免金钥的公开 FOSSGIS Valhalla /isochrone（开车／步行／单车），在 OpenStreetMap 道路网上计算时间等值多边形；计算范围时会送出起点坐标与所选分钟数",
-    "Google Street View": "内嵌的街景全景（「此处街景」面板与 Atlas 的街景动作），透过免金钥的 maps.google.com 内嵌提供；另以 Google 免金钥的涵盖范围瓦片（mts.google.com）叠加真实街景涵盖范围并支持点击吸附。影像与涵盖范围 © Google",
+    "Valhalla (FOSSGIS)": "Atlas 的等时圈／可达范围（「开车 30 分钟」、「步行 15 分钟」）——透过免密钥的公开 FOSSGIS Valhalla /isochrone（开车／步行／单车），在 OpenStreetMap 道路网上计算时间等值多边形；计算范围时会送出起点坐标与所选分钟数",
+    "Google Street View": "内嵌的街景全景（「此处街景」面板与 Atlas 的街景动作），透过免密钥的 maps.google.com 内嵌提供；另以 Google 免密钥的涵盖范围瓦片（mts.google.com）叠加真实街景涵盖范围并支持点击吸附。影像与涵盖范围 © Google",
     "Global Watersheds (mghydro.com)": "Atlas 河川流域标示所用、以 HydroSHEDS 为基础的实时集水区划分（来源标示：Global Watersheds, mghydro.com）",
     "GRDC / World Bank — Major River Basins of the World": "自行代管的主要流域多边形（236 个流域），供 Atlas 河川流域标示使用（CC BY 4.0，内含 HydroSHEDS 数据）",
     "OpenTopoMap": "作为等高线图层预览影像的一张范例瓦片（CC-BY-SA）",
     "USGS Earthquake Hazards Program": "实时与历史地震（地图图层、小工具、比较与 Atlas 整合分析），以及地震波模拟器可加载为情境的真实事件",
     "OpenStreetMap Overpass API": "Atlas 的设施／POI 地图数据——针对指定的设施类型（石油、发电厂、机场、军事设施……）实时查询指定范围；以及当 Nominatim 无法回答某条河川时，取得所点击河川标签周边的具名河道与运河线段（ODbL）",
-    "Wikidata Query Service": "Atlas 的设施／POI 地图数据——第二个独立的设施来源（带坐标的精选实体，与 OSM 结果合并；CC0）——随程序打包的世界地名词典中 ja/de/ru/es 的「名称」，在建置时以 GeoNames id（P1566）查得，因为 GeoNames 的替代名称栏位不带语言标签——以及支撑 Atlas 回答各国领导人问题的现任者（国家元首／政府首长）实时查询、产业关系网图层背后的公司与持股关系图，还有 全球洋流的「名称」与其公开坐标（CC0）",
-    "GeoNames": "随程序打包的世界地名词典 data/gazetteer-world.json.gz——242 个国家、147,924 个聚落（坐标、人口与国别取自 cities1000 导出档；18 种语言的名称取自 alternateNamesV2，与内嵌栏位不同，它为每个名称附上 ISO 语言代码），以 gzip 压缩为 3.9 MB，于浏览器端解压。由 scripts/build-gazetteer.mjs 建立。正因如此，非 AI 的新闻定位器与搜索框才能比仅用精选表格多解析十倍长尾的地名。CC BY 4.0。",
+    "Wikidata Query Service": "Atlas 的设施／POI 地图数据——第二个独立的设施来源（带坐标的精选实体，与 OSM 结果合并；CC0）——随程序打包的世界地名词典中 ja/de/ru/es 的「名称」，在建置时以 GeoNames id（P1566）查得，因为 GeoNames 的替代名称字段不带语言标签——以及支撑 Atlas 回答各国领导人问题的现任者（国家元首／政府首长）实时查询、产业关系网图层背后的公司与持股关系图，还有 全球洋流的「名称」与其公开坐标（CC0）",
+    "GeoNames": "随程序打包的世界地名词典 data/gazetteer-world.json.gz——242 个国家、147,924 个聚落（坐标、人口与国别取自 cities1000 导出档；18 种语言的名称取自 alternateNamesV2，与内嵌字段不同，它为每个名称附上 ISO 语言代码），以 gzip 压缩为 3.9 MB，于浏览器端解压。由 scripts/build-gazetteer.mjs 建立。正因如此，非 AI 的新闻定位器与搜索框才能比仅用精选表格多解析十倍长尾的地名。CC BY 4.0。",
     "geoBoundaries": "行政区界（ADM1/ADM2）——Atlas 地区组合，以及其他边界数据中没有的发布区域，由气象警报图层作为最后备援（CC BY 4.0）",
     "GDELT Project": "驱动 Atlas 摘要与整合分析的全球实时新闻搜索（最近 72 小时）",
     "Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)": "汇率、金银价格、加密货币行情与市场情绪——小工具与底部跑马灯",
@@ -491,7 +491,7 @@ window.IntMapPageI18N.define('zh-hans', {
     "Wikipedia (Wikimedia REST API)": "地点弹出窗口的条目检查，以及 Atlas 分析所用的背景摘要（CC BY-SA）",
     "Data centers — OpenStreetMap (telecom/man_made/building = data_center, Overpass API)": "所有在 OpenStreetMap 上标记的数据中心，依目前地图视野实时查询（ODbL）。每个点位皆带有该对象自身的标签（营运者、拥有者、电力、启用日期）并原样显示，不做任何推论",
     "Diplomatic missions — OpenStreetMap (amenity=embassy / office=diplomatic, Overpass API)": "OpenStreetMap 收录的大使馆、领事馆等外交公馆（ODbL）。全球 17,423 笔的快照随应用程序附带，因此任何缩放层级都会绘制；放大后会实时查询目前范围并取代之。不含推测",
-    "Military sites — OpenStreetMap (military=*, Overpass API)": "依目前视野实时查询 OpenStreetMap 上标记为 `military` 的机场、海军基地、营区、靶场与危险区域（ODbL）。仅为公开纪录，未包含影像判读推估，也不替空栏位填值",
+    "Military sites — OpenStreetMap (military=*, Overpass API)": "依目前视野实时查询 OpenStreetMap 上标记为 `military` 的机场、海军基地、营区、靶场与危险区域（ODbL）。仅为公开纪录，未包含影像判读推估，也不替空字段填值",
     "Power plants & grid — OpenStreetMap (power=plant/substation/generator, Overpass API)": "依目前视野实时查询 OpenStreetMap 上的发电厂、变电所、风力发电机与太阳能电厂（ODbL）。出力、燃料、电压与营运者直接显示该对象的标签，不做推估",
     "Mines, quarries & wells — OpenStreetMap (landuse=quarry, man_made=mineshaft/petroleum_well, Overpass API)": "依目前视野实时查询 OpenStreetMap 上的矿场、采石场、竖坑与油气井（ODbL）",
     "Airports & air infrastructure — OpenStreetMap (aeroway=aerodrome/terminal/heliport, Overpass API)": "依目前视野实时查询 OpenStreetMap 上的机场、飞行场、航厦、直升机坪与塔台（ODbL）。ICAO/IATA 代码、跑道长度与标高仅在该对象具备时显示",
@@ -508,13 +508,13 @@ window.IntMapPageI18N.define('zh-hans', {
     "Oracle Cloud — public cloud regions": "Oracle 公布的 OCI 区域列表，用于同一图层的 Oracle 点位",
     "Meta — data centers": "Meta 自家公布的数据中心厂址列表，用于同一图层的 Meta 园区点位",
     "TOP500 — supercomputer sites": "全球最快超级电脑排行 TOP500，用于同一图层的 HPC／研究运算点位",
-    "Live cameras — OpenStreetMap (Overpass API)": "全球公开网络摄影机的位置点，依地图视野实时向 OSM 查询（contact:webcam / webcam 标签，ODbL），并「筛选」出真正能在应用程序内显示实时影像者（会更新的静态影像／YouTube 直播／Roundshot·Panomax 360°／视讯；仅能外连的摄影机一律略过）；静态影像会在弹出窗口中自动更新（免 API 金钥）",
-    "Transport for London — JamCams": "约 880 具伦敦实时交通摄影机（免金钥的 TfL Unified API「JamCam」地点）——每具提供会更新的 JPEG 与短片，在实时摄影机图层中自动更新显示（Powered by TfL Open Data；内含 OS 数据 © Crown copyright）",
-    "Caltrans — California DOT CCTV": "约 3,300 具加州实时交通摄影机（涵盖全部 12 个辖区、免金钥的公开 CCTV 状态 JSON）——每具皆为可直接更新的 JPEG，在实时摄影机图层中自动更新显示（© California Department of Transportation）",
-    "Fintraffic / Digitraffic — Finland road-weather cameras": "811 座芬兰道路气象摄影站／2,272 个实时视角（免金钥且开放 CORS 的 Digitraffic API）——皆为可直接取得的固定 JPEG，在实时摄影机图层中自动更新，并附各站的视角切换器（© Fintraffic, CC BY 4.0）",
-    "OpenTrafficCamMap — US state DOT cameras": "另外 1,815 具美国实时交通摄影机（科罗拉多／印第安纳／阿拉斯加／亚利桑那州 DOT），取自 MIT 授权的开放数据集 OpenTrafficCamMap，透过 jsDelivr CDN（锁定 commit）免金钥提供；仅显示影像确实可直接外连的来源。影像 © 各州 DOT",
-    "US / Canada DOT “511” traffic cameras": "在共用的「511」地图平台上，另有约 17,000 具实时交通摄影机，涵盖 13 个美国州／加拿大省 DOT 网络（佛罗里达、乔治亚、纽约、宾夕法尼亚、北卡罗来纳、内华达、威斯康辛、爱达荷、路易斯安那、新英格兰、安大略、亚伯达、育空）。各站的摄影机列表透过公开 CORS 转送服务取得一次（这些端点不送 CORS 标头）；影像本身全部直接加载，并在实时摄影机图层中自动更新。影像 © 各州／省 DOT",
-    "Mapzen / AWS Terrain Tiles — elevation model (DEM)": "免金钥的公开「terrarium」地形 RGB 瓦片（AWS Open Data）。在用户端解码为高程采样器，用以驱动坡度／坡向分析、通视域分析、无线电涵盖、地形雕塑与水流模拟器、地形阴影与年日照时数引擎，以及洪水与海啸淹没计算。由 SRTM、ETOPO1 及各国高程数据建置——完整出处请见登录表",
+    "Live cameras — OpenStreetMap (Overpass API)": "全球公开网络摄影机的位置点，依地图视野实时向 OSM 查询（contact:webcam / webcam 标签，ODbL），并「筛选」出真正能在应用程序内显示实时影像者（会更新的静态影像／YouTube 直播／Roundshot·Panomax 360°／视频；仅能外连的摄影机一律略过）；静态影像会在弹出窗口中自动更新（免 API 密钥）",
+    "Transport for London — JamCams": "约 880 具伦敦实时交通摄影机（免密钥的 TfL Unified API「JamCam」地点）——每具提供会更新的 JPEG 与短片，在实时摄影机图层中自动更新显示（Powered by TfL Open Data；内含 OS 数据 © Crown copyright）",
+    "Caltrans — California DOT CCTV": "约 3,300 具加州实时交通摄影机（涵盖全部 12 个辖区、免密钥的公开 CCTV 状态 JSON）——每具皆为可直接更新的 JPEG，在实时摄影机图层中自动更新显示（© California Department of Transportation）",
+    "Fintraffic / Digitraffic — Finland road-weather cameras": "811 座芬兰道路气象摄影站／2,272 个实时视角（免密钥且开放 CORS 的 Digitraffic API）——皆为可直接取得的固定 JPEG，在实时摄影机图层中自动更新，并附各站的视角切换器（© Fintraffic, CC BY 4.0）",
+    "OpenTrafficCamMap — US state DOT cameras": "另外 1,815 具美国实时交通摄影机（科罗拉多／印第安纳／阿拉斯加／亚利桑那州 DOT），取自 MIT 授权的开放数据集 OpenTrafficCamMap，透过 jsDelivr CDN（锁定 commit）免密钥提供；仅显示影像确实可直接外连的来源。影像 © 各州 DOT",
+    "US / Canada DOT “511” traffic cameras": "在共用的「511」地图平台上，另有约 17,000 具实时交通摄影机，涵盖 13 个美国州／加拿大省 DOT 网络（佛罗里达、格鲁吉亚、纽约、宾夕法尼亚、北卡罗来纳、内华达、威斯康星、爱达荷、路易斯安那、新英格兰、安大略、亚伯达、育空）。各站的摄影机列表透过公开 CORS 转送服务取得一次（这些端点不送 CORS 标头）；影像本身全部直接加载，并在实时摄影机图层中自动更新。影像 © 各州／省 DOT",
+    "Mapzen / AWS Terrain Tiles — elevation model (DEM)": "免密钥的公开「terrarium」地形 RGB 瓦片（AWS Open Data）。在用户端解码为高程采样器，用以驱动坡度／坡向分析、通视域分析、无线电涵盖、地形雕塑与水流模拟器、地形阴影与年日照时数引擎，以及洪水与海啸淹没计算。由 SRTM、ETOPO1 及各国高程数据建置——完整出处请见登录表",
     "IASP91 reference Earth model — Kennett & Engdahl (1991)": "地震波模拟器据以进行射线追踪，以求得 P／S 走时、走时曲线的三分岔与核影区的径向 P、S 波速模型。已与已发表的 IASP91 表比对验证（30°／60°／90° 的 P 波误差在数秒之内）",
     "Brune (1970) source model · Hanks & Kanamori (1979) · Boore stochastic method": "地震模拟器的点震源地动计算链：由规模求地震矩、由应力降求转角频率，再以三段线性几何衰减、非弹性衰减与四分之一波长场址放大构成远场频谱，最后以随机振动理论换算为峰值",
     "Wald, Quitoriano, Heaton & Kanamori (1999) — PGV → Modified Mercalli intensity": "地震模拟器用以陈述震度的关系式（MMI = 3.47 log10 PGV + 2.35）。采 MMI 而非日本气象厅震度阶；仅在该关系式回归所涵盖的范围内显示",
@@ -530,11 +530,11 @@ window.IntMapPageI18N.define('zh-hans', {
     "TeleGeography Submarine Cable Map": "海底电信电缆路线",
     "NASA SEDAC GPW v4": "网格化人口密度",
     "UNDP / EIU / SIPRI / World Bank": "人类发展指数（1990–2022 年度序列）、民主指数、GDP、军事支出与人口统计",
-    "AISstream.io": "实时船舶 AIS 动态（需自备金钥）",
-    "airplanes.live": "实时航班动态（社群 ADS-B；航空器图层的预览影像亦采样自此）",
-    "CelesTrak": "实时卫星图层所用的轨道根数集（GP/OMM，两行式根数集的现代后继格式），依目录群组提供。免金钥、开放 CORS；非商业用途在标示出处下免费使用。位置「不会」被下载——每两小时只下载根数集，画面上的每个位置都在本机以 SGP4/SDP4 推算（satellite.js，MIT），因此平移地图或改变时间都不会产生请求。另有两项数据随程序一并提供，皆由 CI 自同一来源重新产生：data/tle/catalogue.tle，是带有真实历元的 `active` 目录真实快照，让 celestrak.org 无法连接时图层仍能绘制（程序会说明所用根数的新旧）；以及 data/tle/groups.json，记录各 CelesTrak 群组所含的 NORAD 目录编号，使针对某一「类别」的请求能以该快照作答，而非什么都不画。群组归属无法由根数集导出，也绝不从物体名称推测——无法取得列表的群组会记为「缺漏」而非「空的」",
+    "AISstream.io": "实时船舶 AIS 动态（需自备密钥）",
+    "airplanes.live": "实时航班动态（社区 ADS-B；航空器图层的预览影像亦采样自此）",
+    "CelesTrak": "实时卫星图层所用的轨道根数集（GP/OMM，两行式根数集的现代后继格式），依目录群组提供。免密钥、开放 CORS；非商业用途在标示出处下免费使用。位置「不会」被下载——每两小时只下载根数集，画面上的每个位置都在本机以 SGP4/SDP4 推算（satellite.js，MIT），因此平移地图或改变时间都不会产生请求。另有两项数据随程序一并提供，皆由 CI 自同一来源重新产生：data/tle/catalogue.tle，是带有真实历元的 `active` 目录真实快照，让 celestrak.org 无法连接时图层仍能绘制（程序会说明所用根数的新旧）；以及 data/tle/groups.json，记录各 CelesTrak 群组所含的 NORAD 目录编号，使针对某一「类别」的请求能以该快照作答，而非什么都不画。群组归属无法由根数集导出，也绝不从物体名称推测——无法取得列表的群组会记为「缺漏」而非「空的」",
     "satellite.js": "应用程序中每个卫星位置、覆盖足迹、地面轨迹、观测角与过境预报背后的 SGP4/SDP4 轨道推算器（MIT 授权）。已对照 Vallado 的标准测试向量验证至 7 微米，并与 ISS 的实时根数比对（436.6 公里、7.650 km/s、92.96 分、51.631°）",
-    "Planespotters.net": "实时航机详细卡片上该架飞机的照片，依 ADS-B 数据所报的 ICAO 24 比特位址查询。免金钥的公开照片 API，非商业用途免费使用；每张照片皆附摄影者姓名并连回原始页面——不快取、不转存任何照片，也不传送任何与您有关的信息（整个请求就只有机体的十六进位代码）",
+    "Planespotters.net": "实时航机详细卡片上该架飞机的照片，依 ADS-B 数据所报的 ICAO 24 比特地址查询。免密钥的公开照片 API，非商业用途免费使用；每张照片皆附摄影者姓名并连回原始页面——不缓存、不转存任何照片，也不传送任何与您有关的信息（整个请求就只有机体的十六进位代码）",
     "NOAA SWPC": "极光椭圆（OVATION）与行星 K 指数——极光图层及其预览影像",
     "Natural Earth": "国界与国家多边形；时区界线（时区图层）；以及 随程序打包的陆海遮罩 data/land-mask.png——由 scripts/build-land-mask.mjs 把 1:50m 的实体陆地多边形栅格化为 2048×1024 的 1 比特等距长方网格，使震度场不必查询网络即可分辨陆地与海洋（先前为此读取地形瓦片，一旦抵达的瓦片太少就会连海洋一起着色）。公有领域。",
     "AWS Terrain Tiles — the bundled global sea floor": "data/bathymetry.png——同一份公开的 terrarium 高程数据，在建置时对全球读取一次（scripts/build-bathymetry.mjs），并以 1440×720（0.25°）网格提供，记录每格海域采样的平均深度与该格的海域比例。全球海啸传播模式即在其上积分，因此在第一个时间步之前，地球上每一格都已有实测水深，而不是由程序抓取上千张瓦片、再只计算已抵达的那些。水深数据来自 ETOPO1；完整出处请见登录表。",
@@ -542,7 +542,7 @@ window.IntMapPageI18N.define('zh-hans', {
     "USGS Gazetteer of Planetary Nomenclature": "其他天体上经国际天文联合会核定的地名（data/planet-names.json）——水星、金星、月球、火星与冥王星上共 2,772 个地形，附其公布的中心坐标、直径与地形类型，使其他行星能像地球一样被标注。公有领域；命名权责属国际天文联合会。",
     "OpenRailwayMap / OpenSeaMap": "全球铁路基础设施与航海标识叠图（点阵瓦片，测试版）",
     "Wikipedia / Wikimedia": "信息卡片与图片",
-    "Public CORS relays (allorigins.win, corsproxy.io, corsfix.com, codetabs.com)": "这「不是」数据来源，而是「抵达」数据来源的手段。Google 新闻 RSS、部分「511」交通摄影机索引与少数其他来源不送 Access-Control-Allow-Origin 标头，浏览器因此无法直接读取；这些公开转送服务在服务器端取得文件，再附上标头重新提供。转送方看得到的只有被请求的网址（公开来源的位址）与连接本身；账号、坐标与个人数据一概不会经过。四者以各 8 秒的期限同时竞逐，落后者即中止，因此其中一个故障或缓慢都无法拖住页面。⚠ 它们「并非可依目标互换」，而且这是实测而非假设：在此版本中，Google 透过 corsproxy.io 于 5 毫秒内提供了 en-US 新闻版，却对「同一个」转送服务以「Sorry…」机器人拦截页（503）回应 ja-JP 版——这正是加入第四个转送服务之前日文来源一片空白的原因。凡使用转送服务之处，都会在该来源自身的条目中说明。",
+    "Public CORS relays (allorigins.win, corsproxy.io, corsfix.com, codetabs.com)": "这「不是」数据来源，而是「抵达」数据来源的手段。Google 新闻 RSS、部分「511」交通摄影机索引与少数其他来源不送 Access-Control-Allow-Origin 标头，浏览器因此无法直接读取；这些公开转送服务在服务器端取得文件，再附上标头重新提供。转送方看得到的只有被请求的网址（公开来源的地址）与连接本身；账号、坐标与个人数据一概不会经过。四者以各 8 秒的期限同时竞逐，落后者即中止，因此其中一个故障或缓慢都无法拖住页面。⚠ 它们「并非可依目标互换」，而且这是实测而非假设：在此版本中，Google 透过 corsproxy.io 于 5 毫秒内提供了 en-US 新闻版，却对「同一个」转送服务以「Sorry…」机器人拦截页（503）回应 ja-JP 版——这正是加入第四个转送服务之前日文来源一片空白的原因。凡使用转送服务之处，都会在该来源自身的条目中说明。",
     "Google News": "新闻标题（RSS）——于服务器端撷取并定位；也会自浏览器实时查询，供 Atlas 的网络搜索使用（会送出主题名称）。每则新闻的「原始媒体」由来源本身携带（Google 新闻会把它接在标题最后一个「 - 」之后），设置 ▸ 新闻媒体列表也由此而来：所列出的媒体是目前来源实际提供者的统计结果，而非在此维护的名单。选择媒体只会筛选显示内容，不会改变撷取内容，也绝不推测任何媒体名称",
     "OpenFreeMap / OpenMapTiles": "向量地名标签与 3D 建物轮廓",
     "Google Fonts (Noto Sans JP / SC / TC)": "这「不是」数据来源——而是当界面语言为日文、简体中文或繁体中文时，应用程序用来绘制文字的「字体」。Google Fonts 会把每套字体依 Unicode 范围切成约 120 个子集，因此页面只需下载自身所需的约 30 KB 字形，而非整份 5 MB 的字体档；若把三套完整打包，将在保存库中占约 25 MB，并让每位 CJK 读者下载 5–10 MB。字体服务器看得到的只有字体档请求与连接本身——没有账号、没有坐标、没有个人数据。应用程序使用的其他字体（拉丁与斯拉夫字母的 Inter、韩文的 Pretendard，以及地图标签自用的 Inter SDF 字形图集）全部由本站提供，完全不会连向第三方；详见 fonts/README.md。",
@@ -557,10 +557,10 @@ window.IntMapPageI18N.define('zh-hans', {
     "World Bank Open Data": "各国时间序列指标（时间序列图表、五国比较与时光机——整个「国家」分页、鼠标停留读数与国家面量图，皆显示主时钟所设年份的真实数字）",
     "IMF World Economic Outlook": "政府债务图层的缺漏补齐，以及国家比较中的替代经济数据来源（DataMapper API）",
     "WorldPop (University of Southampton)": "所绘范围、圆形或地名边界内的人口——透过 WorldPop 统计 API，自约 100 米的全球人口网格加总而得",
-    "AI provider — OpenAI (Anthropic / Google selectable)": "服务器端 AI（金钥保存于服务器）：Atlas 助理、新闻定位、应用程序内的 AI 功能，以及时事问题的网络搜索",
+    "AI provider — OpenAI (Anthropic / Google selectable)": "服务器端 AI（密钥保存于服务器）：Atlas 助理、新闻定位、应用程序内的 AI 功能，以及时事问题的网络搜索",
     "Annual precipitation, 1981–2010 normal — CHELSA V2.1 bio12 (30 arc-seconds, ~1 km)": "随应用程序附带：1981–2010 年年降水量常年值，分辨率 30 角秒（赤道约 1 公里），重新投影为与柯本图相同的网页麦卡托框架并仅保留陆地。16 比特保存于 6,553 公厘饱和。",
     "Annual precipitation by year, 1981–2020 — GPCC Full Data Monthly V2022, Deutscher Wetterdienst (0.5°, gauge analysis over land)": "随应用程序附带：以德国气象局陆地 0.5° 雨量计分析为底，将各年十二个月的合计相加所得的年降水量（1981–2020）。雨量计分析无法描述海上，故海域空白。",
-    "Religion and language composition by country — CIA World Factbook (US Government work, public domain)": "随应用程序附带：解析 Factbook 的「Religions」「Languages」栏位所得的各国各群体占比（宗教 202 国、语言 196 国）。出处未区分教派的国家，地图也不区分。",
+    "Religion and language composition by country — CIA World Factbook (US Government work, public domain)": "随应用程序附带：解析 Factbook 的「Religions」「Languages」字段所得的各国各群体占比（宗教 202 国、语言 196 国）。出处未区分教派的国家，地图也不区分。",
     "気象警報・注意報 — 気象庁 (Japan Meteorological Agency, bulletin list r8, by municipality)": "警报图层实时读取：气象厅自身警报页面所请求的快报列表。这是现况的快照而非历史纪录——每个官署、每种快报类别各一列（类别＝灾害系统），因此目前发布中的状态是把全部合并起来的结果。日本以气象厅的发布单位市町村（class20）着色。",
     "気象庁の警報階級と配色 (JMA warning levels 20/30/40/50 and their published colours)": "气象厅自身的等级表，以及该机关警报页面所公布的配色——注意报 #f2e700、警报 #ff2800、危险警报 #aa00aa、特别警报 #0c000c、未发布 #c8c8cb。皆自该页面读取，而非凭记忆书写。",
     "行政区域データ（市区町村界）— 国土交通省 国土数値情報 N03 (via smartnews-smri/japan-topography)": "日本的市区町村界。国土交通省「国土数值信息（行政区域）」。警报图层以 JIS X 0402 代码对应——气象厅 class20 区域代码的前五码即为该代码。以全国版为底，画面中的都道府县则换成同一发布方的各都道府县版——顶点数约为 11 倍。",
