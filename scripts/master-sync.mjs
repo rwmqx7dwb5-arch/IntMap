@@ -155,6 +155,9 @@ if (want('--sync')) {
      master dirty only in .claude/launch.json (another session's preview entry, which §6 forbids
      committing or moving) and completed its finish step by running `git merge --ff-only` by hand.
      A gate that correct work has to bypass is not protecting anything.
+     ⚠ (#R338) THAT EXAMPLE NO LONGER EXISTS: .claude/launch.json is untracked now, because a
+     machine-local file that every session edits was blocking everyone's fast-forward — and with
+     it the USB backup. The rule below is unchanged and still right for the next such file.
      `merge --ff-only` already refuses, precisely, when the incoming tree would overwrite a locally
      modified file — so run it and report ITS answer. Unrelated edits survive, which is what §6
      actually asks for. */

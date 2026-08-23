@@ -46,6 +46,7 @@ node scripts/worktree.mjs new <slug>
 - **OneDrive の外**に worktree を作る（原本は `main` の置き場であって作業場ではない）
 - `node_modules` を原本から junction で貼る
 - `.claude/launch.json` に `intmap-preview-r<N>` / ポート `42<N>` を足す
+  （⚠ #R338 以降このファイルは**追跡対象外**。commit にも PR にも出てこない）
 - 作業ディレクトリの絶対パスを印字する
 
 **以降の編集は全部その worktree の中で行う。** 原本には 1 バイトも書かない。
