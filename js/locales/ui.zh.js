@@ -5675,5 +5675,6 @@ window.IntMapLang.define('zh', {
   "Supplier": "敷設商",
   "Unknown": "不明",
   "Verified": "實測",
+  "Surveyed sections": "實測區間的來源",
   }
 });

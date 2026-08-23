@@ -98,6 +98,30 @@ test('② js/subcable-info.js never writes a paint or layout property', () => {
   assert.ok(/pointer: coarse/.test(src), 'the search radius must widen for a touch pointer (§13)');
 });
 
+/* ══ ② …AND IT NEVER LENDS ONE SEGMENT'S PROVENANCE TO ANOTHER ═════════════
+   MEASURED ON PRODUCTION: a RECONSTRUCTED length of Havfrue/AEC-2 was captioned
+   「経路の精度 再構築 / 経路の出典 NOAA Office for Coastal Management」. The cable
+   does have a NOAA-surveyed stretch — elsewhere — and the row was borrowing it.
+   Two true statements next to each other reading as one false one is precisely
+   what §11 forbids. The cable-level list must carry its own label. */
+test("② the popup never captions a reconstructed segment with another segment’s source", () => {
+  const src = read('js/subcable-info.js');
+  const i = src.indexOf('const srcName = SRC_NAME[props.src];');
+  assert.ok(i > 0, 'the per-segment provenance lookup is gone');
+  const block = src.slice(i, i + 500);
+  assert.match(block, /if \(srcName\) body \+= row\(T\.routeSource\(\), esc\(srcName\)\);/,
+    '"Route source" must name the provenance of the segment that was clicked');
+  assert.match(block, /else if \(m && m\.sources/,
+    'the cable-level list must be an ELSE — it may never stand under the same label');
+  assert.match(block, /row\(T\.verifiedElsewhere\(\)/,
+    'and it must use its own label');
+  assert.ok(!/if \(names\.length && !srcName\) body \+= row\(T\.routeSource\(\)/.test(src),
+    'the borrowed caption must be gone');
+  /* the label exists in all five positional languages, and the audit covers the rest */
+  assert.match(src, /verifiedElsewhere: \(\) => window\.IntMapLang\.t\(HOST\.lang, 'Surveyed sections', '[^']+', '[^']+', '[^']+', '[^']+'\)/,
+    'the new label must be a five-argument call so the i18n audit can see it');
+});
+
 test('② the popup is dynamically imported, so it cannot enter the eager bundle', () => {
   assert.match(DL, /import\('\.\/subcable-info\.js'\)/, 'js/data-layers.js must reach the popup through a dynamic import');
   const main = read('src/main.js');

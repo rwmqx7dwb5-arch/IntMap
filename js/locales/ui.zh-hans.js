@@ -5679,5 +5679,6 @@ window.IntMapLang.define('zh-hans', {
   "Supplier": "敷设商",
   "Unknown": "不明",
   "Verified": "实测",
+  "Surveyed sections": "实测区间的来源",
   }
 });
