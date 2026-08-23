@@ -96,15 +96,24 @@ function periodOf(c) {
   return y ? String(y) : null;
 }
 
+/* ⚠ A YEAR, OR NOTHING — AND `Number(null)` IS 0, WHICH IS A YEAR.
+   periodOf() correctly returns null for a claim with no point in time. The
+   comment below said "a claim with no period cannot win at all"; the code said
+   `Number(periodOf(c))`, and Number(null) is 0, and isFinite(0) is true, and
+   0 > -1. So a claim with NO PERIOD won, and shipped as fiscalYear "0".
+   MEASURED IN PRODUCTION after #R354: 69 rows across 57 companies printed a
+   figure stamped «USD · 0» — al Rajhi Bank's revenue, Fanuc's net income,
+   Rosneft's market cap, and 48 employee counts. The same trap this round's own
+   notes record for facility headcounts, one level up. */
+const plausibleYear = (p) => { const y = Number(p); return (Number.isFinite(y) && y >= 1000 && y <= 2200) ? y : null; };
 function moneyClaim(e, prop, curMap, srcIdx) {
   const list = claims(e, prop);
   if (!list.length) return null;
-  /* newest stated period wins; a claim with no period cannot win at all */
   let bestC = null;
   let bestY = -1;
   for (const c of list) {
-    const y = Number(periodOf(c));
-    if (!Number.isFinite(y)) continue;
+    const y = plausibleYear(periodOf(c));
+    if (y === null) continue;
     if (y > bestY) { bestY = y; bestC = c; }
   }
   if (!bestC) return null;
@@ -118,8 +127,8 @@ function countClaim(e, prop, srcIdx) {
   let bestC = null;
   let bestY = -1;
   for (const c of list) {
-    const y = Number(periodOf(c));
-    if (!Number.isFinite(y)) continue;
+    const y = plausibleYear(periodOf(c));   /* see moneyClaim: Number(null) is 0 */
+    if (y === null) continue;
     if (y > bestY) { bestY = y; bestC = c; }
   }
   if (!bestC) return null;
@@ -416,9 +425,13 @@ async function main() {
   const geoIdx = await countryIndex();
   log('    country polygons: ' + geoIdx.length);
   let osmBy = new Map();
-  if (!has('--no-osm')) {
-    log('  querying OpenStreetMap…');
-    osmBy = await osmFacilities([...new Set(coQid.values())], { log });
+  {
+    /* ⚠ --no-osm means "do not ASK", not "forget what we already have". The
+       responses on disk are facts that were fetched; skipping them would throw
+       away real facilities and mark companies pending that are not. */
+    const offline = has('--no-osm');
+    log(offline ? '  OpenStreetMap: cache only (--no-osm)' : '  querying OpenStreetMap…');
+    osmBy = await osmFacilities([...new Set(coQid.values())], { log, offline });
     let tot = 0;
     for (const v of osmBy.values()) tot += v.length;
     log('    OSM elements explicitly linked to a company: ' + tot);

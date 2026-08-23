@@ -184,14 +184,38 @@ window.IntMapModules.companyFacilities=function(HOST){
       const rs=document.getElementById('layer-sidebar-r');
       if(rs&&document.body.classList.contains('lsr-open')){
         const rr=rs.getBoundingClientRect(); if(rr.width>1) out.right=Math.max(0,(window.innerWidth||0)-rr.left); }
+      /* ⚠ AND THE PANEL ITSELF. #R354 measured the app's own sheet and not the company panel,
+         which on a phone IS the sheet — 682 px of an 812 px screen. MEASURED IN PRODUCTION:
+         the frame avoided 144 px, and 0 of Toyota's 33 sites landed in the strip the reader
+         could see; 24 of them sat under the panel. On the desktop the panel floats and the
+         reader can drag it, so only the phone's full-width sheet is counted here. */
+      const cp=document.getElementById('co-popup');
+      /* ⚠ NOT offsetParent: it is null for a position:fixed element, which is exactly what the
+         panel IS on a phone — so the test for «is it on screen» excluded the only case it was
+         written for. The rectangle answers the question directly. */
+      if(mob&&cp&&cp.style.display!=='none'){
+        const cr=cp.getBoundingClientRect();
+        if(cr.height>1&&cr.width>1) out.bottom=Math.max(out.bottom,Math.max(0,(window.innerHeight||0)-cr.top));
+      }
     }catch(_){}
     return out; }
   function _pad(base){ base=base||28;
     /* an inset pair wider than the canvas makes the fit throw and silently not happen (#R291) */
     let w=0,h=0; try{ const c=GE().render.canvas(); w=c.clientWidth||c.width||0; h=c.clientHeight||c.height||0; }catch(_){}
     const i=_insets||_measured();
-    const cap=(v,span)=>span?Math.max(base,Math.min(v+base,Math.round(span*0.42))):(v+base);
-    return { top:cap(i.top,h), bottom:cap(i.bottom,h), left:cap(i.left,w), right:cap(i.right,w) }; }
+    /* ⚠ WHAT MUST NOT HAPPEN IS A PAIR WIDER THAN THE CANVAS (#R291) — that makes the fit throw
+       and silently not happen. #R354 enforced that as «each side ≤ 42 % of the span», which is a
+       different and stricter rule: a phone sheet covering 84 % of the screen was clamped to 42 %,
+       so the frame still put the sites under it. The pair is what the renderer cares about, so
+       the pair is what is capped; one side may be large when the other is not. */
+    const pair=(a,b,span)=>{ let x=a+base, y=b+base;
+      if(!span) return [x,y];
+      const room=Math.round(span*0.85);
+      if(x+y>room){ const k=room/(x+y); x=Math.floor(x*k); y=Math.floor(y*k); }
+      return [Math.max(0,x),Math.max(0,y)]; };
+    const [t,b]=pair(i.top,i.bottom,h);
+    const [l,r]=pair(i.left,i.right,w);
+    return { top:t, bottom:b, left:l, right:r }; }
 
   /* ⚠ THE SHORTEST ARC AROUND THE PLANET, not min/max of the longitudes. A company with a plant in
      Nagoya and one in Kentucky has longitudes −85 and +137: min/max calls that 222° wide and frames
@@ -227,16 +251,28 @@ window.IntMapModules.companyFacilities=function(HOST){
      view that shows the reader nothing. 184.4° and −175.6° are the same meridian, and the second
      one is the one every projection accepts. */
   const _wrapLon=(x)=>{ let v=+x; if(!isFinite(v)) return 0; v=((v+180)%360+360)%360-180; return v; };
+  /* ⚠ THE FRAME IS COMPUTED WITH ONE PADDING AND DRAWN WITH ANOTHER, unless we say so.
+     forBounds(bb,{padding:P}) answers «centre and zoom that fit bb into the viewport minus P»,
+     but easeTo(centre,zoom) draws with whatever padding the MAP is carrying — and the app sets
+     that for its own sidebar. MEASURED IN PRODUCTION on a phone: the panel is 682 px of an
+     812 px screen, this file asked for a frame that avoided it, and the map drew with its
+     standing padding of 144 — so 0 of Toyota's 33 sites landed where the reader could see them
+     and 24 sat under the panel. The two have to be the same number, so the padding goes to the
+     camera as well, and comes back off when the layer is taken down. */
+  let _padSaved=null;
+  function _restorePad(){ if(!_padSaved) return; try{ GE().camera.setPadding(_padSaved); }catch(_){} _padSaved=null; }
   function _frame(bb,minZ,maxZ,dur){
     if(!bb) return false;
-    const o={padding:_pad(30),maxZoom:maxZ};
+    const pad=_pad(30);
+    const o={padding:pad,maxZoom:maxZ};
     try{
+      if(!_padSaved){ try{ _padSaved=GE().camera.getPadding()||null; }catch(_){ _padSaved=null; } }
       const cam=GE().camera.forBounds(bb,o);
       if(cam&&isFinite(+cam.zoom)&&cam.center){
         const z=Math.max(minZ,Math.min(maxZ,+cam.zoom));
         const lng=_wrapLon(cam.center.lng!==undefined?cam.center.lng:cam.center[0]);
         const lat=(cam.center.lat!==undefined?cam.center.lat:cam.center[1]);
-        GE().camera.easeTo({center:[lng,lat],zoom:z,duration:dur||900});
+        GE().camera.easeTo({center:[lng,lat],zoom:z,padding:pad,duration:dur||900});
         return true;
       }
       GE().camera.fitBounds(bb,Object.assign({duration:dur||900},o));
@@ -389,7 +425,13 @@ window.IntMapModules.companyFacilities=function(HOST){
   function _draw(fit){
     if(!_ensure()){ try{ GE().events.once('idle',()=>{ if(_shown) _draw(fit); }); }catch(_){} return false; }
     _wire(); _push(); _applyFilters();
-    if(fit) fitAll();
+    /* ⚠ FRAME AFTER THE PANEL EXISTS, NOT BEFORE IT. show({fit:true}) is called by
+       js/company-panel.js while it is still building its own DOM, so _pad() measured a panel
+       that had not been laid out yet and the frame avoided nothing. MEASURED on a phone: focus()
+       — which runs later, on a tap — put its site at y=89 in the 130 px strip the reader can see,
+       while the fit on open put 0 of 33 there. One beat is the whole difference.
+       ⚠ Guarded by _shown so a company closed inside that beat does not move the camera. */
+    if(fit) setTimeout(()=>{ if(_shown) fitAll(); },60);
     return true; }
 
   /** show(profile, {groups, fit}) — draws this company. A company with no located facility draws
@@ -436,6 +478,7 @@ window.IntMapModules.companyFacilities=function(HOST){
 
   /** take everything down: the card, the timers, every registration, the layers, the source. */
   function hide(){
+    _restorePad();   /* the panel is gone; give the camera its own padding back */
     _shown=false; _wired=false;
     closeCard();
     if(_focusT){ clearTimeout(_focusT); _focusT=0; }

@@ -283,3 +283,36 @@ test('⑮ this file and the company gate are actually wired into the test run', 
   assert.ok(/check:companies|companies-audit/.test(parallel + JSON.stringify(pkg.scripts)),
     'the company audit is never executed by npm test');
 });
+
+/* ── ⑯ 期間は「年」であって、0 ではない ────────────────────────────────── */
+test('⑯ a period that is not a year is the same failure as no period at all',
+  { skip: !profileFiles.length && 'data/companies not built' }, () => {
+    /* ⚠ MEASURED IN PRODUCTION after the first release: 69 figures across 57 companies printed
+       «USD · 0» — al Rajhi Bank's revenue, Fanuc's net income, Rosneft's market cap and 48
+       employee counts. The cause is the trap this file already records one level down:
+       `Number(periodOf(c))` where periodOf returns null, Number(null) is 0, isFinite(0) is true,
+       and 0 beats the -1 seed. A key that exists is not a date. */
+    let bad = 0;
+    const seen = [];
+    for (const f of profileFiles) {
+      const p = readProfile(f);
+      for (const [k, v] of Object.entries(p.scale || {})) {
+        const period = String(v.fiscalYear || v.asOf || '').replace(/^FY/, '');
+        const y = Number(period);
+        if (!Number.isFinite(y) || y < 1000 || y > 2200) { bad++; if (seen.length < 6) seen.push(p.id + '.' + k + '="' + period + '"'); }
+      }
+    }
+    assert.equal(bad, 0, bad + ' shipped figures carry a period that is not a year: ' + seen.join(', '));
+  });
+
+/* ── ⑰ フレーミングはパネルが組み上がってから ──────────────────────────── */
+test('⑰ the frame waits for the panel it is supposed to avoid', () => {
+  const src = code('js/company-facilities.js');
+  /* the fit must not run in the same tick as show(): the panel that has to be avoided is still
+     being built, so it measures 0 and the frame avoids nothing (measured on a phone: 0 of 33
+     sites in the visible strip). */
+  assert.match(src, /if\(fit\)\s*setTimeout/, 'show({fit}) frames before the panel exists again');
+  /* and the camera padding it borrows has to be given back */
+  assert.match(src, /_restorePad\(\)/, 'the camera keeps whatever padding the atlas set');
+  assert.match(src, /function hide\(\)\{[\s\S]{0,120}_restorePad\(\)/, 'hide() does not restore the padding');
+});

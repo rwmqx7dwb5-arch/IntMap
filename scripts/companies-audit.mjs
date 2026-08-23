@@ -128,7 +128,18 @@ function main() {
       if (!v || typeof v.value !== 'number' || !Number.isFinite(v.value)) { fail('⑪', 'scale.' + k + ' has no finite value', who); continue; }
       const isCount = (k === 'employees');
       if (!isCount && !v.currency) fail('⑪', 'scale.' + k + ' has no currency', who);
-      if (!v.fiscalYear && !v.asOf) fail('⑫', 'scale.' + k + ' has no fiscal year or as-of date', who);
+      const period = v.fiscalYear || v.asOf;
+      if (!period) fail('⑫', 'scale.' + k + ' has no fiscal year or as-of date', who);
+      /* ⚠ AND "0" IS NOT A DATE. #R354 shipped 69 figures stamped «USD · 0»
+         because Number(null) is 0 and 0 is a finite year. A period that does not
+         parse as a real year is the same failure as no period at all — this check
+         asks for the value, not merely for the key. */
+      else {
+        const y = Number(String(period).replace(/^FY/, ''));
+        if (!Number.isFinite(y) || y < 1000 || y > 2200) {
+          fail('⑫', 'scale.' + k + ' has a period that is not a year: "' + period + '"', who);
+        }
+      }
       if (typeof v.src !== 'number' || !(p.sources || [])[v.src]) fail('⑩', 'scale.' + k + ' points at no source', who);
     }
 
