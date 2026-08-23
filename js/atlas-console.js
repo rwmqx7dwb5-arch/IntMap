@@ -1109,6 +1109,10 @@ window.IntMapModules.atlasConsole=function(HOST){
       'night lights':'dl-nightsat','nightlights':'dl-nightsat','city lights':'dl-nightsat','夜間光':'dl-nightsat','夜景':'dl-nightsat',
       'day night':'dl-nightside','day/night':'dl-nightside','昼夜':'dl-nightside','terminator':'dl-nightside','night side':'dl-nightside','夜側':'dl-nightside',
       'volcano':'beta-dl-volc2','volcanoes':'beta-dl-volc2','火山':'beta-dl-volc2',
+      /* (#R353) …and the three Volcano Intelligence overlays, by the words a reader would use */
+      'volcanic ash':'beta-dl-volcash','ash cloud':'beta-dl-volcash','ash':'beta-dl-volcash','sigmet':'beta-dl-volcash','火山灰':'beta-dl-volcash','vulkanasche':'beta-dl-volcash','пепел':'beta-dl-volcash','ceniza volcánica':'beta-dl-volcash',
+      'volcano hazard':'beta-dl-volchaz','hazard zones':'beta-dl-volchaz','lahar':'beta-dl-volchaz','ハザード':'beta-dl-volchaz','火山ハザード':'beta-dl-volchaz','ラハール':'beta-dl-volchaz',
+      'so2':'beta-dl-volcso2','sulfur dioxide':'beta-dl-volcso2','sulphur dioxide':'beta-dl-volcso2','二酸化硫黄':'beta-dl-volcso2','火山ガス':'beta-dl-volcso2',
       'nato':'dl-nato','eu':'dl-eu','european union':'dl-eu','military spending':'dl-milSpend','defense spending':'dl-milSpend','国防費':'dl-milSpend','軍事費':'dl-milSpend',
       'former soviet union':'fsu','ussr':'fsu','soviet':'fsu','旧ソ連':'fsu',
       'historical borders':'beta-dl-histb','歴史的国境':'beta-dl-histb','ukraine frontline':'beta-dl-ukrfront','frontline':'beta-dl-ukrfront','前線':'beta-dl-ukrfront',

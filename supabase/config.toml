@@ -180,3 +180,13 @@ verify_jwt = false
 # header and the function does its own fail-closed auth, exactly like refresh-news and monitor-run.
 [functions.news-ingest]
 verify_jwt = false
+
+# volcano-feed (#R353) relays the two volcano feeds that send no CORS headers: the Smithsonian/USGS
+# Weekly Volcanic Activity Report (RSS, volcano.si.edu) and the international SIGMET set
+# (aviationweather.gov), from which it keeps only the volcanic-ash ones. Both are parsed server-side
+# so the page receives rows keyed by GVP volcano number rather than an XML scraper in the bundle.
+# The four other volcano sources (USGS HANS, JMA, USGS hazard-zone ArcGIS, USGS earthquakes) all
+# answer with Access-Control-Allow-Origin: * and are fetched DIRECTLY — a relay that is not needed
+# is one more thing to be down. Keyless & public; no user data reaches it.
+[functions.volcano-feed]
+verify_jwt = false

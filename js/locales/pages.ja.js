@@ -444,6 +444,12 @@ window.IntMapPageI18N.define('ja', {
      js/reference-data.js の `use:{en,jp}` から移設。英語版と同じ場所に置くことで
      scripts/i18n-pages-audit.mjs の測定対象（＝英語文書の全パス）に入る。 */
   sourceUse: {
+    "Smithsonian / USGS Weekly Volcanic Activity Report": "火山の状況の「世界の段」。今週どの火山について観測機関が報告し、何を述べたか。各項目が GVP 火山番号を持つので、名前ではなく番号でカタログに結び付く。volcano.si.edu は CORS ヘッダを返さないため supabase/functions/volcano-feed が中継する。",
+    "USGS Volcano Hazards Program — HANS (alert levels, aviation colour codes, VONA)": "「米国の段」。現在発効している航空カラーコードと火山警戒レベル、および直近1年間のすべての VONA（航空関係者向け火山情報）。この API は Access-Control-Allow-Origin を返すのでブラウザが直接読む。",
+    "USGS Volcano Hazards Program — published volcano hazard zones": "機械可読な火山ハザード域として見つかった唯一の公的サービス。カリフォルニアの7火山地域について、降灰・ラハール・洪水・火口近傍・溶岩流の各ポリゴンを公表している。存在する分だけを描き、それ以外の火山については「公表されていない」と明言する（推定の円は一切描かない）。",
+    "噴火警報・予報 — 気象庁 (JMA volcano warnings and eruption warning levels)": "「日本の段」。現在発表されている噴火警戒レベル（1〜5）、レベルが運用されていない火山ではその文言そのもの。気象庁は自らの単位で発表する——たとえば「桜島」であって、それを含むカルデラ「姶良」ではない——ので、カードは気象庁の単位名を示し、地図はそれを含む GVP 火山を着色する。",
+    "International SIGMET (volcanic ash) — NOAA Aviation Weather Center": "実際に効力を持っている火山灰域。VAAC の advisory を受けて飛行情報区が発出する SIGMET を、発出されたときのポリタゴンと高度帯（フライトレベル）のまま用いる。supabase/functions/volcano-feed が中継し、火山灰のものだけを残す。",
+    "NASA GIBS — OMPS SO₂, upper troposphere & stratosphere": "衛星による二酸化硫黄の全量。工業由来のもやが現れる境界層ではなく、噴煙が現れる高度帯を選んである。GVP 自身の SO₂ 放出量テーブルは WFS 上に宣言されているが上流で壊れているため、実在する観測はこちら。",
     "CRUST1.0 — global crustal model": "アプリに同梱（data/crust1.bin.gz）。1°格子の全球地殻モデル——堆積層・結晶質地殻・最上部マントルの、層ごとのS波速度・密度・層境界。地震シミュレータは各地点の深さ30 mより下の速度柱をこれで作る。堆積盆地が長周期を増幅する様子を出せるのはこのため。",
     "USGS Slab2 — subduction zone geometry": "アプリに同梱（data/slab2.bin.gz）。活動中の沈み込み帯27箇所すべてのスラブ上面の深さ・走向・傾斜。地震シミュレータはこれでプレート境界型と沈み込むスラブ内の地震を区別する——同じ問いに、地球上のどこでも同じ答え方で。",
     "Bird (2003) PB2002 plate boundaries": "アプリに同梱（data/tectonics.bin.gz）。最近接プレート境界までの距離とその種別、および広域変形帯（orogen）のポリゴン。地震のテクトニクス区分の判定に使い、その区分が適用される公表パラメータを決める。",
@@ -546,7 +552,7 @@ window.IntMapPageI18N.define('ja', {
     "Inter / Pretendard (bundled, SIL OFL 1.1)": "ラテン／キリルと韓国語の書体（同梱）。**地図の地名ラベル**用の SDF グリフも Inter から自前生成しています（Inter を配る公開グリフサーバが存在しないため）。ライセンスと帰属表示は fonts/README.md。",
     "ESA WorldCover": "土地被覆（10m）",
     "RESOLVE / WWF Ecoregions 2017": "生態地域（エコリージョン）",
-    "Smithsonian GVP": "火山（完新世）",
+    "Smithsonian GVP": "アプリに同梱（data/volcanoes_gvp.json ＋ data/volcano-detail.json.gz。scripts/build-volcanoes.mjs が GVP の WFS から生成）。完新世カタログ全件を結合キー付きで持ち、その背後に 11,089 件の噴火（VEI と日付）、火山型・地形区分・構造区分・主要岩石、地質の概要、写真、半径 5・10・30・100 km の人口を持つ。火山カードが過去について述べることは、すべてこのファイルからオフラインで読んでいる。",
     "DeepStateMap": "ウクライナ前線（ベータ）",
     "historical-basemaps (aourednik)": "過去の国境 — ベータのオーバーレイと、タイムマシン用年次国境が読めない場合の自動フォールバック（最寄りのスナップショット）",
     "CShapes 2.0 (Schvitz et al., ETH Zürich)": "タイムマシンの年次国境（1886–2019年、国境変更を年単位で反映。簡略化した複製を自己ホスト）。1945–2019年の東西/統一ドイツ国境は、現代の権威ある州境（deutschlandGeoJSON、© GeoBasis-DE / BKG）から作り直し、内独国境が実際と一致するようにした。 両大戦レイヤーが戦線で切り出す国の輪郭も、これです。",
