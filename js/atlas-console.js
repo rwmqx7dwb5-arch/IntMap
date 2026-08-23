@@ -3810,6 +3810,14 @@ window.IntMapModules.atlasConsole=function(HOST){
           it decides nothing about what counts as one event. ⚠ Do not re-inline a copy of it here. */
           await ensureData();
           if(typeof HOST.globalData==='undefined'||!HOST.globalData||!HOST.globalData.length){ try{ if(typeof fetchData==='function') await fetchData(); }catch(_){} }
+          /* ══ (#R366) 出来事モードでは、**ここでもう一度束ねない** ═══════════════════════════
+             `HOST.globalData` がすでに Event（サーバー側の `_shared/news-cluster.js` が本番の
+             窓全体を見て作ったもの）なら、それを**そのまま**使う。ここで再クラスタリングすると
+             「同じ出来事か」を決める場所が 2 つになり、docs/NEWS-EVENTS.md の
+             「第二のクラスタリング実装を残さない」を、実装ではなく**実行**で破ることになる。
+             ⚠ しかもこちらの窓はブラウザに載っている 200 件だけで、サーバーは 1,163 件を
+               見ている。再計算は必ず**より悪い**答えを出す。 */
+          const _evMode=(typeof HOST.newsSurfaceMode==='function')&&HOST.newsSurfaceMode()==='events';
           let items=(typeof HOST.globalData!=='undefined'&&HOST.globalData)?HOST.globalData.filter(it=>it&&it.analysis&&Array.isArray(it.analysis.loc)&&it.title):[];
           const hrs=Math.max(6,Math.min(168,(+a.hours||96)));
           items=items.filter(it=>{ const h=_agoH(it.pubDate); return h==null||h<=hrs; });
@@ -3822,7 +3830,15 @@ window.IntMapModules.atlasConsole=function(HOST){
             if(ctx.box&&_bboxOK(ctx.box)){ const w=ctx.box[0][0],s2=ctx.box[0][1],e=ctx.box[1][0],n2=ctx.box[1][1]; items=items.filter(it=>{ const sj=newsSubject(it.analysis); return sj&&sj.loc[0]>=w&&sj.loc[0]<=e&&sj.loc[1]>=s2&&sj.loc[1]<=n2; }); }
             else if(isFinite(+ctx.lng)) items=items.filter(it=>{ const sj=newsSubject(it.analysis); return sj&&_havKm({lng:sj.loc[0],lat:sj.loc[1]},ctx)<=800; }); }
           if(items.length<1) return R(true, note('◌ '+L('No geolocated articles in the loaded news for this window/area','この期間・範囲に地点解析済みの記事がありません','Keine georeferenzierten Artikel','Нет геолоцированных статей','Sin artículos geolocalizados')+' ('+hrs+' h'+(ctx&&ctx.name?(' · '+esc(ctx.name)):'')+')'), {meta:{code:'NO_ARTICLES',category:'evidence',retryable:true,semanticTarget:(ctx&&ctx.name)||'',temporalMode:'current',produced:[],userGoalSatisfied:false}});
-          const evs=groupNewsEvents(items,{agoH:_agoH,fallbackH:hrs});   /* (#R340) ↳ js/news-cluster.js — the rules, the constants and the measurements that set them */
+          /* (#R366) サーバーが作った Event を、この case が使う形（`g` = 新しい順の記事、
+             `outlets`、`cx/cy`、`oldest/newest`、`pname`）へ**翻訳するだけ**。判定はしない。 */
+          const evs=_evMode
+            ? items.map(it=>{ const e=it._event; const mem=(e.members||[]).slice().sort((x,y)=>Date.parse(y.publishedAt||0)-Date.parse(x.publishedAt||0));
+                const g=mem.length?mem.map(m=>({it:{title:m.title,link:m.url,pubDate:m.publishedAt}})):[{it:{title:e.titleShown||e.title,link:it.link,pubDate:e.lastAt}}];
+                return { g, outlets:e.outlets||[], cx:it.analysis.loc[0], cy:it.analysis.loc[1], pname:e.place||'',
+                         oldest:_agoH(e.firstAt), newest:_agoH(e.lastAt), _srcCount:e.sourceCount }; })
+                .sort((a2,b2)=>(b2.g.length-a2.g.length)||((b2._srcCount||0)-(a2._srcCount||0)))
+            : groupNewsEvents(items,{agoH:_agoH,fallbackH:hrs});   /* (#R340) ↳ js/news-cluster.js — the rules, the constants and the measurements that set them */
           const N=Math.max(3,Math.min(12,(+a.n||8)));
           const top=evs.slice(0,N);
           /* one pin per EVENT (not per article) */
@@ -3851,13 +3867,50 @@ window.IntMapModules.atlasConsole=function(HOST){
           html+=linkCards(top.filter(e=>e.g[0].it.link).slice(0,4).map(e=>({url:e.g[0].it.link,title:e.g[0].it.title,src:e.outlets[0]})));
           /* (#R340) the numbers in this sentence are READ from the grouper, so the explanation cannot describe
              a rule the code no longer applies (#R76's copy still said «place ≤150 km» after the rule changed). */
-          const _evR=L('place','位置','Ort','место','lugar')+' × ≤'+EVENT_RULES.HOURS+' h × '+L('headline similarity','見出し類似','Titelähnlichkeit','сходство заголовков','similitud de titulares')+' '+Math.round(EVENT_RULES.SIM_MIN*100)+'–'+Math.round(EVENT_RULES.SIM_MAX*100)+'%';
+          /* (#R366) 出来事モードでは「どこで束ねたか」も違うので、説明もそう言う。
+             ⚠ 実行時に**実際に通った経路**を印字する——「サーバー側で束ねた」と書いた説明が
+               ブラウザ側の再計算に付いていたら、それは #R340 が直した「規則が変わったのに
+               説明が古いまま」の再発である。 */
+          const _evR=_evMode
+            ? L('server-side clustering over the full 72-hour window','サーバー側で72時間の窓全体を見たクラスタリング','serverseitiges Clustering über das gesamte 72-Stunden-Fenster','серверная кластеризация по всему 72-часовому окну','agrupación en el servidor sobre toda la ventana de 72 horas')
+            : L('place','位置','Ort','место','lugar')+' × ≤'+EVENT_RULES.HOURS+' h × '+L('headline similarity','見出し類似','Titelähnlichkeit','сходство заголовков','similitud de titulares')+' '+Math.round(EVENT_RULES.SIM_MIN*100)+'–'+Math.round(EVENT_RULES.SIM_MAX*100)+'%';
           html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'+L('Grouping is mechanical on the loaded IntMap feed ('+_evR+'). A country-level reference point is not a place, so articles that merely file under the same country face a HIGHER wording bar, not a lower one. One group = reports that likely cover the same occurrence; "first report → latest" shows how coverage moved. For source disagreements or deeper analysis, ask e.g. "analyze event 2".','グループ化は読み込み済みニュースに対する機械的クラスタリング（'+_evR+'）です。国レベルの代表点は「同じ場所」とは見なさないので、同じ国に分類されただけの記事には見出しの一致を<b>より強く</b>求めます。1グループ=同一の出来事を扱うとみられる報道で、「最初の報道→最新」で経過が分かります。報道間の相違や深掘りは「2番の出来事を分析して」のように聞いてください。','Mechanische Gruppierung ('+_evR+'); ein Länder-Referenzpunkt gilt nicht als Ort. Für Analysen: "analysiere Ereignis 2".','Механическая группировка ('+_evR+'); точка-представитель страны местом не считается. Для анализа: «проанализируй событие 2».','Agrupación mecánica ('+_evR+'); un punto representativo de país no cuenta como lugar. Para análisis: "analiza el evento 2".')+'</div>';
           if(!okE&&_pois.length) html+=warn('⚠ '+L('Could not draw the pins (map still loading)','ピンを描画できませんでした（地図読込中）','Pins nicht gezeichnet','Метки не отрисованы','Pines no dibujados'));
           /* (#R340) …and the structured half of the same honesty: research.events declares produces='map,explanation',
              so the result says which of the two actually happened rather than letting the executor assume both. */
           const _evMapped=!!(okE&&_pois.length);
           return R(true, html, {meta:{code:'OK',category:'ok',retryable:false,produced:(_evMapped?['map','explanation']:['explanation']),userGoalSatisfied:true,partial:!_evMapped}}); }
+        /* ══ (#R366) news.category — 出来事のカテゴリで一覧と地図を同時に絞る ═══════════════
+           docs/NEWS-EVENTS.md §9「一覧と地図へ同時に適用する」。⚠ 述語は
+           js/news-events.js の `passes()` 1 本しかないので、片方だけに効く状態が作れない。
+           ⚠ **観測してから名乗る**（produces='panel,map'）——絞った結果が実際に何件になり、
+             ピンが何本になったかを state provider から読み、0 件なら `partial` にする。 */
+        case 'newsCategory': case 'newsFilter': case 'eventCategory': {
+          const want=String(a.text||a.category||a.q||'').trim();
+          if(!want) return R(false, warn('⚠ '+L('Name a category','カテゴリ名を指定してください','Kategorie angeben','Укажите категорию','Indique una categoría')), {meta:{code:'NEEDS_INPUT',category:'input',retryable:true,produced:[],userGoalSatisfied:false}});
+          const okLazy=await window.IntMapLazy.need('newsEvents');
+          const E=okLazy&&window.IntMapNewsEvents;
+          if(!E) return R(false, warn('⚠ '+L('The events surface is not available','出来事の一覧が利用できません','Die Ereignisansicht ist nicht verfügbar','Лента событий недоступна','La vista de sucesos no está disponible')), {meta:{code:'MODULE_UNAVAILABLE',category:'capability',retryable:false,produced:[],userGoalSatisfied:false}});
+          if(!(typeof HOST.newsSurfaceMode==='function'&&HOST.newsSurfaceMode()==='events')){ try{ if(typeof fetchData==='function') await fetchData(); }catch(_){} }
+          const cats=E.categories();
+          const norm=(x)=>String(x).toLowerCase().replace(/[^a-z0-9]+/g,'');
+          const hit=(norm(want)==='all'||norm(want)===norm(L('All','すべて','Alle','Все','Todas')))
+            ? {key:'all',label:L('All','すべて','Alle','Все','Todas')}
+            : cats.find(c=>norm(c.key)===norm(want)||norm(c.label)===norm(want))
+              || cats.find(c=>norm(c.key).indexOf(norm(want))>=0||norm(c.label).indexOf(norm(want))>=0);
+          if(!hit) return R(false, warn('⚠ '+L('No such event category','そのカテゴリはありません','Keine solche Kategorie','Такой категории нет','No existe esa categoría')+': '+esc(want)+' — '+cats.map(c=>esc(c.label)).join(' · ')), {meta:{code:'NOT_FOUND',category:'input',retryable:true,semanticTarget:want,produced:[],userGoalSatisfied:false}});
+          E.setCategory(hit.key);
+          const st=E.state()||{};
+          const n=st.visibleEventCount||0, pins=st.visiblePinCount||0;
+          let html='<div style="font-weight:600;margin:2px 0 4px;">'+esc(hit.label)+'</div>';
+          html+='<div style="font-size:11px;color:var(--text-muted);line-height:1.55;">'
+            +n+' '+L('events','件の出来事','Ereignisse','событий','sucesos')+' · '+pins+' '+L('pins','ピン','Pins','меток','pines')
+            +(st.unplacedCount?(' · '+st.unplacedCount+' '+L('with no location','地点不明','ohne Ort','без места','sin ubicación')):'')
+            +(st.multiSourceCount?(' · '+st.multiSourceCount+' '+L('reported by 2+ independent outlets','は独立2媒体以上が報道','von 2+ unabhängigen Quellen','сообщили 2+ независимых источника','con 2+ medios independientes')):'')
+            +'</div>';
+          const produced=[]; if(n) produced.push('panel'); if(pins) produced.push('map');
+          return R(true, html, {meta:{code:n?'OK':'NO_RESULTS',category:n?'ok':'evidence',retryable:!n,semanticTarget:hit.key,
+            produced,userGoalSatisfied:!!n,partial:!(n&&pins)}}); }
         case 'module': return doModule(a);
         /* (#R231) 「Monitorsは…一旦撤去」 — the ~120-line body is deleted (it is in git; the file has
            a line ceiling). It ended in IntMapOS.exec('tab.monitors'), which is no longer registered,

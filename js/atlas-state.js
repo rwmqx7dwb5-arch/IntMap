@@ -88,6 +88,28 @@ export function makeAtlasState(HOST) {
 
       /* The contract's `getBounds()` returns the renderer's bounds object (MapLibre's LngLatBounds, or
          the Cesium adapter's stand-in for it) — never a plain box, so it is unpacked here. */
+      /* ══ (#R366) THE NEWS SURFACE — docs/NEWS-EVENTS.md §10 ═══════════════════════════════════
+         「news feed の state provider は現在0件」。それは Atlas が News について**何ひとつ
+         観測していなかった**という意味で、`research.events` は自分が描いた結果しか見ていなかった。
+         ⚠ **答えは 3 通りある。** 出来事モード（`IntMapNewsEvents` が読み込まれている）／
+           記事モード（一覧は在るが出来事ではない）／そもそも一覧が無い。3 つ目だけが `null`
+           であり、2 つ目を `null` にすると「News が存在しない」と「News が記事単位である」が
+           見分けられなくなる（このファイルの冒頭が禁じている混同そのもの）。 */
+      reg('news', function () {
+        var E = GLOBAL('IntMapNewsEvents');
+        if (E && typeof E.state === 'function') { var st = E.state(); if (st) return st; }
+        var g = null;
+        try { g = host && host.globalData; } catch (_) { g = null; }
+        if (!g || !g.length) return null;
+        var vis = 0;
+        try { vis = (host.computeFilteredNews && host.computeFilteredNews().length) || 0; } catch (_) { vis = 0; }
+        var pins = 0;
+        try { pins = (host.newsFeatures && host.newsFeatures.length) || 0; } catch (_) { }
+        return { mode: 'articles', loadedArticleCount: g.length, visibleArticleCount: vis, visiblePinCount: pins,
+                 selectedEventId: null, selectedCategory: null,
+                 eventsAvailable: !!GLOBAL('__IM_NEWS_EVENT_MODE') };
+      });
+
       reg('viewport', function () {
         var E = GE(); var cam = E && E.camera; if (!cam || typeof cam.getBounds !== 'function') return null;
         var b = cam.getBounds(); if (!b || typeof b.getWest !== 'function') return null;

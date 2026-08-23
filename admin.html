@@ -99,6 +99,7 @@
       <button class="tab" data-tab="dash">Dashboard Cards</button>
       <button class="tab" data-tab="comm">Community</button>
       <button class="tab" data-tab="fb">Feedback</button>
+      <button class="tab" data-tab="nev">News Events</button>
     </div>
 
     <!-- GEO PINS -->
@@ -153,6 +154,41 @@
         <div style="overflow:auto;"><table id="fb-table"><thead><tr>
           <th>When</th><th>★</th><th>Comment</th><th>Lang</th><th>Email</th><th>User ID</th><th></th>
         </tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- NEWS EVENTS (#R366 · docs/NEWS-EVENTS.md §11)
+         運用者が直すのは「どの記事がどの Event に属するか」であって、記事そのものではない。
+         ⚠ `news_articles` と `news_cluster_decisions` は admin にも書かせない — 上流が何と
+           言ったかと、機械が何を根拠に判定したかは、後から書き換えてよい記録ではない。
+         ⚠ 4 つの操作はどれも SECURITY DEFINER の RPC 1 本を呼ぶ。表を直接 UPDATE しない
+           （1 操作が 4 つの表に分かれるので、途中で失敗するとどの表も嘘をつく）。 -->
+    <section id="tab-nev" class="hide">
+      <div class="card">
+        <div class="bar">
+          <h2>News events <span class="count" id="nev-count"></span></h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input id="nev-q" placeholder="filter by headline…" style="padding:7px 10px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--in);color:var(--text);font-size:13px;">
+            <button class="btn sec sm" id="nev-refresh">Refresh</button>
+          </div>
+        </div>
+        <div class="seg" style="max-width:640px;">
+          <button id="nev-seg-queue" class="active">Review queue</button>
+          <button id="nev-seg-all">All events</button>
+          <button id="nev-seg-audit">Operator log</button>
+        </div>
+        <p class="muted" id="nev-note" style="margin:0 0 10px;">
+          The queue is what the machine is least sure about: two or more articles with the lowest cluster confidence,
+          and anything no operator has reviewed. Tick two events and press Merge, or tick articles inside one event and
+          press Split / Reassign. Every action is reversible from the Operator log.
+        </p>
+        <div id="nev-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;">
+          <button class="btn sm" id="nev-merge" disabled>Merge selected events</button>
+          <button class="btn sm" id="nev-split" disabled>Split selected articles into a new event</button>
+          <button class="btn sm" id="nev-reassign" disabled>Reassign selected articles…</button>
+          <span class="muted" id="nev-sel" style="align-self:center;font-size:12px;"></span>
+        </div>
+        <div id="nev-list"></div>
       </div>
     </section>
   </div>
@@ -257,9 +293,215 @@
     $('tab-dash').classList.toggle('hide',b.dataset.tab!=='dash');
     $('tab-comm').classList.toggle('hide',b.dataset.tab!=='comm');
     $('tab-fb').classList.toggle('hide',b.dataset.tab!=='fb');
+    $('tab-nev').classList.toggle('hide',b.dataset.tab!=='nev');
     if(b.dataset.tab==='comm') loadComm();
     if(b.dataset.tab==='fb') loadFb();
+    if(b.dataset.tab==='nev') loadNev();
   });
+
+  /* ---------------- NEWS EVENTS (#R366 · docs/NEWS-EVENTS.md §11) ----------------
+     運用者の Merge / Split / Reassign / 上書き / undo。
+     ⚠ どれも SECURITY DEFINER の RPC を呼ぶ。表を直接 UPDATE しない——1 回の操作が
+       `news_event_articles` の付け替え・`merged_into`・件数の再計算・監査の書き出しの
+       4 つに分かれるので、途中で失敗すると**どの表も嘘をつく**。
+     ⚠ RPC の中でも `profiles.is_admin` を見ている。ここでボタンを隠すのは UI の親切で
+       あって、権限の門ではない。 */
+  let nevView='queue', nevRows=[], nevSelEvents=new Set(), nevSelArticles=new Map();
+  $('nev-refresh').onclick=()=>loadNev();
+  $('nev-q').addEventListener('input',()=>renderNev());
+  ['queue','all','audit'].forEach(v=>{ $('nev-seg-'+v).onclick=()=>{
+    nevView=v;
+    ['queue','all','audit'].forEach(x=>$('nev-seg-'+x).classList.toggle('active',x===v));
+    $('nev-actions').style.display=(v==='audit')?'none':'flex';
+    loadNev();
+  }; });
+
+  function nevClearSel(){ nevSelEvents.clear(); nevSelArticles.clear(); nevSyncButtons(); }
+  function nevSyncButtons(){
+    const e=nevSelEvents.size, a=nevSelArticles.size;
+    $('nev-merge').disabled=(e!==2);
+    $('nev-split').disabled=(a<1);
+    $('nev-reassign').disabled=(a<1);
+    $('nev-sel').textContent=(e||a)?(e+' event(s), '+a+' article(s) selected'):'';
+  }
+
+  async function loadNev(){
+    const box=$('nev-list');
+    box.innerHTML='<p class="muted">Loading…</p>';
+    nevClearSel();
+    try{
+      if(nevView==='audit'){
+        const {data,error}=await sb.from('news_event_admin_actions')
+          .select('*').order('created_at',{ascending:false}).limit(200);
+        if(error) throw error;
+        nevRows=data||[];
+      }else{
+        let q=sb.from('news_events')
+          .select('id,public_id,representative_title,primary_category,category_override,rep_place_name_en,'+
+                  'article_count,independent_source_count,cluster_confidence,manual_lock,reviewed_at,'+
+                  'first_published_at,last_article_at,'+
+                  'news_event_articles(relation,assigned_by,assignment_score,news_articles(id,title,canonical_url,source_id,published_at))')
+          .eq('status','active').is('merged_into',null);
+        /* ⚠ 待ち行列は「機械が最も自信の無いもの」。単独記事の Event は判定が 1 本も
+           走っていないので、確度を並べても意味が無い——2 本以上に絞る。 */
+        q=(nevView==='queue')
+          ? q.gte('article_count',2).is('reviewed_at',null).order('cluster_confidence',{ascending:true,nullsFirst:true}).limit(60)
+          : q.order('materially_updated_at',{ascending:false}).limit(120);
+        const {data,error}=await q;
+        if(error) throw error;
+        nevRows=data||[];
+      }
+      $('nev-count').textContent=nevRows.length;
+      renderNev();
+    }catch(e){
+      box.innerHTML='<p class="muted">'+esc((e&&e.message)||String(e))+'</p>';
+      toast('Could not load: '+((e&&e.message)||''),'bad');
+    }
+  }
+
+  function renderNev(){
+    const box=$('nev-list'), q=$('nev-q').value.trim().toLowerCase();
+    if(nevView==='audit'){
+      if(!nevRows.length){ box.innerHTML='<p class="muted">No operator actions yet.</p>'; return; }
+      let h='<div style="overflow:auto;"><table><thead><tr><th>When</th><th>Action</th><th>By</th><th>Event</th><th>→</th><th>Articles</th><th>Note</th><th></th></tr></thead><tbody>';
+      for(const r of nevRows){
+        h+='<tr'+(r.reverted_at?' style="opacity:.5;"':'')+'>'
+          +'<td>'+esc(new Date(r.created_at).toLocaleString())+'</td>'
+          +'<td>'+esc(r.action)+'</td>'
+          +'<td>'+esc(r.actor?String(r.actor).slice(0,8):'machine')+'</td>'
+          +'<td>'+esc(r.event_id)+'</td><td>'+esc(r.target_id==null?'':r.target_id)+'</td>'
+          +'<td>'+((r.article_ids||[]).length)+'</td>'
+          +'<td>'+esc(String(r.note||'').slice(0,90))+'</td>'
+          +'<td>'+(r.reverted_at?'<span class="muted">reverted</span>'
+                   :(r.action==='undo'?'':'<button class="btn sec sm" data-undo="'+esc(r.id)+'">Undo</button>'))+'</td></tr>';
+      }
+      box.innerHTML=h+'</tbody></table></div>';
+      box.querySelectorAll('[data-undo]').forEach(b=>b.onclick=()=>nevUndo(+b.dataset.undo));
+      return;
+    }
+    const rows=nevRows.filter(r=>!q||String(r.representative_title||'').toLowerCase().includes(q));
+    if(!rows.length){ box.innerHTML='<p class="muted">Nothing here.</p>'; return; }
+    let h='';
+    for(const e of rows){
+      const mem=(e.news_event_articles||[])
+        .filter(l=>l.relation==='same_event'||l.relation==='update')
+        .map(l=>({...l.news_articles,_by:l.assigned_by,_score:l.assignment_score}))
+        .filter(Boolean)
+        .sort((a,b)=>Date.parse(a.published_at||0)-Date.parse(b.published_at||0));
+      h+='<div class="card" style="margin:0 0 10px;padding:12px 14px;">'
+        +'<div style="display:flex;gap:10px;align-items:flex-start;">'
+        +'<input type="checkbox" data-ev="'+esc(e.id)+'" style="margin-top:3px;">'
+        +'<div style="flex:1;min-width:0;">'
+        +'<div style="font-weight:600;font-size:13px;line-height:1.4;">'+esc(e.representative_title)+'</div>'
+        +'<div class="muted" style="font-size:11.5px;margin-top:3px;">#'+esc(e.id)+' · '+esc(e.public_id)
+        +' · '+esc(e.primary_category)+(e.category_override?' (override)':'')
+        +' · '+esc(e.rep_place_name_en||'no location')
+        +' · '+e.article_count+' articles / '+e.independent_source_count+' independent'
+        +' · confidence '+(e.cluster_confidence==null?'—':e.cluster_confidence)
+        +(e.manual_lock?' · LOCKED':'')+(e.reviewed_at?' · reviewed':'')+'</div>'
+        +'<div style="margin-top:7px;">';
+      for(const m of mem){
+        const u=safeUrl(m.canonical_url);
+        h+='<label style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:12px;">'
+          +'<input type="checkbox" data-art="'+esc(m.id)+'" data-from="'+esc(e.id)+'" style="margin-top:2px;">'
+          +'<span style="flex:1;min-width:0;"><b>'+esc(m.source_id)+'</b> · '+esc(m.title)
+          +' <span class="muted">('+esc(m._by||'?')+(m._score==null?'':(' '+m._score))+')</span>'
+          +(u?(' <a href="'+esc(u)+'" target="_blank" rel="noopener">↗</a>'):'')+'</span></label>';
+      }
+      h+='</div>'
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">'
+        +'<button class="btn sec sm" data-edit="'+esc(e.id)+'">Edit title / category / location</button>'
+        +'<button class="btn sec sm" data-lock="'+esc(e.id)+'">'+(e.manual_lock?'Unlock':'Lock')+'</button>'
+        +'</div></div></div></div>';
+    }
+    box.innerHTML=h;
+    box.querySelectorAll('[data-ev]').forEach(cb=>cb.onchange=()=>{
+      const id=+cb.dataset.ev;
+      if(cb.checked) nevSelEvents.add(id); else nevSelEvents.delete(id);
+      nevSyncButtons();
+    });
+    box.querySelectorAll('[data-art]').forEach(cb=>cb.onchange=()=>{
+      const id=+cb.dataset.art;
+      if(cb.checked) nevSelArticles.set(id,+cb.dataset.from); else nevSelArticles.delete(id);
+      nevSyncButtons();
+    });
+    box.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>nevEdit(+b.dataset.edit));
+    box.querySelectorAll('[data-lock]').forEach(b=>b.onclick=()=>nevLock(+b.dataset.lock));
+  }
+
+  async function nevRpc(fn,args,okMsg){
+    try{
+      const {error}=await sb.rpc(fn,args);
+      if(error) throw error;
+      toast(okMsg,'ok');
+      await loadNev();
+      return true;
+    }catch(e){ toast(((e&&e.message)||String(e)),'bad'); return false; }
+  }
+
+  $('nev-merge').onclick=async()=>{
+    const ids=[...nevSelEvents];
+    if(ids.length!==2) return;
+    /* 生き残る側は運用者が決める。⚠ 既定は「記事の多いほう」だが、確認の文で
+       どちらが消えるのかを**はっきり書く**——merge は元に戻せるが、戻せることと
+       意図しない操作をしてよいことは別である。 */
+    const a=nevRows.find(x=>x.id===ids[0]), b=nevRows.find(x=>x.id===ids[1]);
+    const keep=((b&&b.article_count)||0)>((a&&a.article_count)||0)?b:a;
+    const drop=(keep===a)?b:a;
+    if(!keep||!drop) return;
+    if(!confirm('Merge #'+drop.id+' INTO #'+keep.id+'?\n\nkeep:  '+keep.representative_title+'\ndrop:  '+drop.representative_title+
+                '\n\nThe dropped event keeps its id and redirects to the kept one, so saved stars and shared links survive.')) return;
+    await nevRpc('news_event_merge',{p_source:drop.id,p_target:keep.id,p_note:'admin console'},'Merged.');
+  };
+
+  $('nev-split').onclick=async()=>{
+    const ids=[...nevSelArticles.keys()];
+    if(!ids.length) return;
+    if(!confirm('Move '+ids.length+' article(s) into a NEW event?')) return;
+    await nevRpc('news_event_reassign',{p_article_ids:ids,p_target:null,p_note:'admin console split'},'Split.');
+  };
+
+  $('nev-reassign').onclick=async()=>{
+    const ids=[...nevSelArticles.keys()];
+    if(!ids.length) return;
+    const to=prompt('Move '+ids.length+' article(s) to which event id?');
+    if(!to||!/^\d+$/.test(to.trim())) return;
+    await nevRpc('news_event_reassign',{p_article_ids:ids,p_target:+to.trim(),p_note:'admin console reassign'},'Reassigned.');
+  };
+
+  async function nevLock(id){
+    const e=nevRows.find(x=>x.id===id); if(!e) return;
+    await nevRpc('news_event_update_meta',{p_event:id,p_lock:!e.manual_lock,p_note:'admin console lock'},
+                 e.manual_lock?'Unlocked.':'Locked.');
+  }
+
+  async function nevEdit(id){
+    const e=nevRows.find(x=>x.id===id); if(!e) return;
+    const title=prompt('Representative headline (blank = leave as is):',e.representative_title||'');
+    if(title===null) return;
+    const cat=prompt('Category — one of world, politics, business, technology, science_health, climate_weather, disasters, society (blank = leave as is):',e.primary_category||'');
+    if(cat===null) return;
+    const loc=prompt('Location as "lng,lat" — blank leaves it, the word "clear" removes it:',
+                     (e.rep_place_name_en||''));
+    if(loc===null) return;
+    const args={p_event:id,p_note:'admin console edit'};
+    if(title.trim()&&title.trim()!==e.representative_title) args.p_title=title.trim();
+    if(cat.trim()&&cat.trim()!==e.primary_category) args.p_category=cat.trim();
+    const t=loc.trim().toLowerCase();
+    if(t==='clear'){ args.p_clear_location=true; }
+    else if(/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(loc.trim())){
+      const [x,y]=loc.trim().split(',').map(v=>parseFloat(v));
+      args.p_lng=x; args.p_lat=y;
+      const name=prompt('Place name for that point (English):','');
+      if(name&&name.trim()) args.p_place=name.trim();
+    }
+    await nevRpc('news_event_update_meta',args,'Updated.');
+  }
+
+  async function nevUndo(actionId){
+    if(!confirm('Undo operator action #'+actionId+'?')) return;
+    await nevRpc('news_event_undo',{p_action:actionId},'Reverted.');
+  }
 
   /* ---------------- FEEDBACK (#R20) ---------------- */
   $('fb-refresh').onclick=()=>loadFb();
