@@ -2,8 +2,8 @@
   "solo": [
     "-cesium.*.spec.js$"
   ],
-  "tests/internal-qa.spec.js": 10,
-  "tests/monitors.spec.js": 14,
+  "tests/internal-qa.spec.js": 5,
+  "tests/monitors.spec.js": 10,
   "tests/r142.spec.js": 13,
   "tests/r143.spec.js": 9,
   "tests/r145.spec.js": 19,
@@ -78,6 +78,8 @@
   "tests/r353.spec.js": 5,
   "tests/r354.spec.js": 4,
   "tests/r355-cables.spec.js": 31,
+  "tests/r379.spec.js": 2,
+  "tests/r379-cesium.spec.js": 7,
   "tests/r355.spec.js": 8,
   "tests/security.spec.js": 9,
   "tests/smoke.spec.js": 8

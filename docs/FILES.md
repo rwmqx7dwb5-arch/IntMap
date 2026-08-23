@@ -352,6 +352,7 @@ orbit-points.js                   衛星が実際にいる場所——軌道上�
 aircraft-detail.js                ライブ航空機——クリックの先の詳細カード
 aviation-live.js                  ライブ航空機レイヤーの制御役 window.IntMapAviation——取得・LOD・picking・選択
 aircraft-points.js                航空機が実際にいる場所——数万機を1描画呼び出しで描く GPU 点群
+plane-glyph.js                    飛行機マークの正本——頂点18のプランフォームを両エンジンが読む
 aviation-codec.js                 IMAV/1 バイナリ形式の正本（encode/decode）。_shared/ へ写して server と共有
 aviation-model.js                 provider 正規化・出典・タイル格子の正本。同じく _shared/ へ写す
 ```
