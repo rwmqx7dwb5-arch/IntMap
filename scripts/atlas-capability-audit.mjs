@@ -273,8 +273,19 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
   /* ⑮ no capability can be lost to an order- or count-cap */
   {
     const bad = [];
-    if (/controlCatalog[\s\S]{0,400}?slice\(0,\s*\d+\)/.test(controls) && !/coverage is NOT a capability list/i.test(controls)) {
-      bad.push('js/atlas-controls.js still caps controlCatalog() without saying that the cap is not a capability list');
+    /* ⚠ (#R320) THIS USED TO BE A PROXIMITY REGEX AND IT LANDED ON ITS OWN AUTHOR'S CODE — the tenth
+       time in this diary. `controlCatalog … slice(0, <digits>)` within 400 characters matched
+       `controlCandidates`' unrelated `slice(0, 6)`. The question was never "is there a slice"; it is
+       whether a control can disappear WITHOUT ANYONE BEING TOLD. So: the catalogue may cap (the
+       prompt has a byte budget), and if it does it must SAY what it left out, and the population it
+       ranks must be the whole one. */
+    const cat = (controls.match(/function controlCatalog\([\s\S]*?\n    \}/) || [''])[0];
+    if (!cat) bad.push('js/atlas-controls.js: controlCatalog() was not found — this check reads nothing');
+    else {
+      const caps2 = /slice\(0,\s*(\d+|CTL_MAX)\)/.test(cat);
+      const admits = /not listed here|more on-screen control/i.test(cat);
+      if (caps2 && !admits) bad.push('controlCatalog() caps its output and does not say what it dropped — a silently truncated list reads as a complete one');
+      if (caps2 && !/_ctlRelevance|forRequest/.test(cat)) bad.push('controlCatalog() caps in DOM order — which controls exist must not depend on where they sit in the document');
     }
     /* ⚠ THE RULE IS ABOUT THE POPULATION, NOT ABOUT EVERY BOUNDED LIST. Capping how many NEAR-MISS
        suggestions ride along in a prompt is a budget; capping the set that is SCORED is how a

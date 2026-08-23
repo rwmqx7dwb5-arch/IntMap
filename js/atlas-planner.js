@@ -441,11 +441,11 @@ export function makeAtlasPlanner(HOST, CTX) {
          全能力を送るfallbackも残してください。」 Three settings, and the widest is everything. */
     function selectCapabilities(q, ctx) {
       var r = Caps.search(q, { context: ctx, want: 3, min: 8 });
-      if (!r.ranked.length) return { ids: null, mode: 'all', reason: 'no-signal' };
+      if (!r.ranked.length) return { ids: null, mode: 'all', reason: 'no-signal', q: q };
       if (!r.confident) {
         var wide = r.ranked.slice(0, 40).map(function (x) { return x.id; });
-        if (wide.length < 12) return { ids: null, mode: 'all', reason: 'low-confidence' };
-        return { ids: wide, mode: 'wide', reason: 'low-confidence' };
+        if (wide.length < 12) return { ids: null, mode: 'all', reason: 'low-confidence', q: q };
+        return { ids: wide, mode: 'wide', reason: 'low-confidence', q: q };
       }
       var ids = r.strong.map(function (x) { return x.id; });
       /* the near misses come too — a ranking is a hypothesis, and the cost of one more block is a
@@ -453,7 +453,7 @@ export function makeAtlasPlanner(HOST, CTX) {
       r.ranked.slice(0, 24).forEach(function (x) { if (ids.indexOf(x.id) < 0) ids.push(x.id); });
       /* the fallbacks are always available, or "anything not listed" stops being reachable */
       ['system.control', 'system.module', 'dialog.answer', 'ui.inlineControls'].forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id); });
-      return { ids: ids, mode: 'relevant', reason: 'confident' };
+      return { ids: ids, mode: 'relevant', reason: 'confident', q: q };
     }
 
     return {
