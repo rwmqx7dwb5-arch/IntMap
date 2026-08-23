@@ -92,7 +92,11 @@ test('R276 ③ the wind field is the model\'s own data, sampled directly', () =>
      module loaded, not a second source of numbers. */
   assert.match(w, /const sf=EC\(\)\.sampler\(VAR\);[\s\S]{0,120}renderer\.setField\(sf\);/,
     '…and hands THAT to the particles');
-  assert.match(w, /url=EC\(\)\.omUrl\(VAR\)/, 'while the colour raster is the same variable');
+  /* ⚠ (#R325) THE RULE IS 「the same variable」, NOT the name of the function that spells the url.
+     The raster sources now ask for `omRasterUrl`, which is `omUrl` plus `tile_size` — the vector
+     sources (isobars, wind arrows) still use `omUrl`, because for an MVT that parameter is the
+     layer extent rather than a pixel count. Both carry `VAR`, which is what #R276 pinned. */
+  assert.match(w, /url=EC\(\)\.omR?a?s?t?e?r?Url\(VAR\)/, 'while the colour raster is the same variable');
   /* the sampler reads the decoded field itself — no lattice, no resample, no point API */
   const s = EC();
   assert.match(s, /uv: function \(lat, lon, out\)/, 'the sampler answers u,v …');
