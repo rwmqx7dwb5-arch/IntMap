@@ -149,7 +149,7 @@ export function makeAtlasCapabilities(HOST) {
       ['data.runways',               'runway',         'airports',                                                    'data',    'panel',   'panel.runway',           'panel',               'read',    'none',   'place',    ''],
       ['panel.education',            'edu',            'learn',                                                       'panel',   'panel',   'panel.edu',              'panel',               'session', 'none',   '',         ''],
       ['panel.ecmwf',                'ecmwf',          'weatherLayers',                                               'panel',   'panel',   'panel.ecmwf',            'panel',               'session', 'none',   '',         ''],
-      ['data.wxModel',               'wxModel',        'weatherModel,forecastModel',                                  'data',    'paint',   'map.layer',              'map,explanation',     'session', 'none',   '',         ''],
+      ['data.wxModel',               'wxModel',        'weatherModel,forecastModel',                                  'data',    'wxModel', 'map.layer',              'map,explanation',     'session', 'none',   '',         ''],
       ['panel.widgets',              'widgets',        '',                                                            'panel',   'panel',   'panel.widgets',          'panel',               'session', 'none',   '',         ''],
       ['panel.screenshot',           'screenshot',     '',                                                            'panel',   'panel',   'panel.screenshot',       'panel,file',          'session', 'none',   '',         ''],
       ['panel.share',                'share',          '',                                                            'panel',   'panel',   'panel.share',            'panel',               'session', 'none',   '',         ''],
@@ -407,6 +407,47 @@ export function makeAtlasCapabilities(HOST) {
           if (!before || !after) return { status: 'completed', code: legacyCode(raw) || 'ok', html: (raw && raw.html) || '' };
           if (changed(before, after)) return { status: 'completed', code: 'ok', observed: { paint: after }, html: (raw && raw.html) || '' };
           return { status: 'partial', code: 'not_rendered', observed: { paint: after }, html: (raw && raw.html) || '' };
+        }
+      },
+      /* ══ ⚠⚠⚠ (#R376) A RASTER SOURCE SWAP DRAWS THE SAME NUMBER OF FEATURES IT DREW BEFORE ══════
+         `data.wxModel` was declared `paint`, and `paintNow()` counts Atlas's own query sources plus
+         the visible-layer and object tallies. Changing WHICH forecast model a weather layer reads
+         moves none of them: same layer count, same object count, and the tiles are raster.
+         MEASURED on production, three times, all three models: the switch SUCCEEDED — legend,
+         picker, `modelOf()` and the style's source url all became DWD ICON — and the capability
+         answered `status:"partial" code:"not_rendered" ok:false`, with `observed.paint.visible = 0`.
+         ⚠ THAT IS THE SAME DEFECT AS CLAIMING A SUCCESS THAT DID NOT HAPPEN, pointed the other way:
+         a caller who believes the answer stops trusting a feature that works. #R318's rule — `ok` is
+         DERIVED from `status`, never asserted — is what made it show up as a lie instead of hiding,
+         and the fix belongs where the lie is: the observer has to watch what this capability
+         actually changes.
+         ⚠ AND IT IS NOT 「trust what the dispatch case returned」. `setModel` resolves only at
+         `commit()`, i.e. when the new slot has been revealed — but a verifier that reads only `raw`
+         is the shape the audit's ⑰ forbids. This reads the DISPLAYED model back out of the module,
+         which is a different source of truth from the one that reported. */
+      wxModel: {
+        observe: function () {
+          try {
+            var W = window.IntMapWeatherEC;
+            if (!W || !W._layers || !W.modelOf) return null;
+            var o = {};
+            W._layers.forEach(function (l) { var m = W.modelOf(l.id); if (m) o[l.id] = m; });
+            return o;
+          } catch (_) { return null; }
+        },
+        verify: function (ctx, args, before, after, raw) {
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
+          var want = (args && String(args.model || '')) || '';
+          var lid = (args && String(args.layer || args.name || '')) || '';
+          var alt = 'ec-' + lid.replace(/^(dl-)?(ec-)?/, '');
+          var got = after && (after[lid] || after[alt]);
+          /* the layer this call named is displaying the model this call asked for */
+          if (want && got === want) return { status: 'completed', code: 'ok', observed: { wxModel: after }, html: (raw && raw.html) || '' };
+          /* something moved, even if the arguments did not name it in a way we could resolve here */
+          if (before && after && changed(before, after)) return { status: 'completed', code: 'ok', observed: { wxModel: after }, html: (raw && raw.html) || '' };
+          /* ⚠ 「まだ出ていない」 is a real state and gets its own code — the map may still be building
+             the new slot, and `not_rendered` would be a claim about painting we cannot make. */
+          return { status: 'partial', code: 'not_displayed', observed: { wxModel: after }, html: (raw && raw.html) || '' };
         }
       },
       panel: {

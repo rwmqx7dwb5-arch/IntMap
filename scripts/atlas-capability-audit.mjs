@@ -142,6 +142,11 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
     const OBSERVABLE = { camera: ['camera', 'map'], layer: ['map'], paint: ['map', 'object'], panel: ['panel', 'file'],
       route: ['route', 'map', 'panel'], object: ['object', 'map'], setting: ['setting'], time: ['map', 'time'],
       panelPaint: ['panel', 'map', 'object'],
+      /* (#R376) the "wxModel" observer reads which forecast model each weather MAP LAYER is
+         displaying — an observation OF the map, just not one made by counting features. A raster
+         source swap draws exactly as many features as it drew before, which is why "paint" could
+         not see it and reported a working switch as not_rendered. */
+      wxModel: ['map', 'explanation'],
       sim: ['map', 'camera'], control: ['panel'], none: ['explanation', 'panel', 'view', 'camera', 'map'] };
     const bad = [];
     J.capabilities.forEach((c) => {
@@ -336,7 +341,8 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
 
   /* ⑱ a map-producing capability is verified by looking at the map */
   {
-    const MAP_OBS = ['paint', 'camera', 'layer', 'sim', 'route', 'object', 'time', 'panelPaint'];
+    /* (#R376) …and "wxModel", which reads the map layers' displayed model back out of the module */
+    const MAP_OBS = ['paint', 'camera', 'layer', 'sim', 'route', 'object', 'time', 'panelPaint', 'wxModel'];
     add('map-verified', 'a capability that promises the map is checked against the map',
       J.capabilities.filter((c) => c.produces.includes('map') && !MAP_OBS.includes(c.observerKind))
         .map((c) => `${c.id}: promises "map" but its observer is "${c.observerKind}"`));

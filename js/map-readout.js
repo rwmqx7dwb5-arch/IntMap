@@ -784,9 +784,22 @@ window.IntMapModules.mapReadout=function(HOST){
      reads closure state in the #R167 dead zone. The hook is attached the first time a reader
      hovers over an ECMWF layer, which is the first moment it can matter. */
   let _fieldAsk='', _fieldSub=false;
+  /* ⚠⚠⚠ (#R376) THE INSTANCE THIS LAYER READS — NOT THE DEFAULT ONE. #R356 gave every weather layer
+     its own forecast model, and both functions below still asked `window.IntMapECMWF`. MEASURED in
+     production: a layer switched to DWD ICON drew ICON tiles while the cursor printed ECMWF's number
+     and ECMWF's valid time. Nothing looked broken — a plausible temperature is not a visibly wrong
+     one — which is exactly why 「地図・粒子・凡例・地点値が同じ表示状態を参照」 is a rule and not a
+     preference. ⚠ It falls back to the default instance: a layer id that is not a weather layer, or
+     a build where the multi-model engine is missing, must still read the field it read before. */
+  function ecFor(cfg){
+    try{ const W=window.IntMapWeatherEC;
+      if(W&&W.engineFor&&cfg&&cfg.id){ const e=W.engineFor(cfg.id); if(e) return e; }
+    }catch(_){}
+    return window.IntMapECMWF;
+  }
   function askEcField(cfg){
     try{
-      const EC=window.IntMapECMWF; if(!EC) return;
+      const EC=ecFor(cfg); if(!EC) return;
       if(!_fieldSub){ _fieldSub=true;
         try{ EC.on(ev=>{ if(ev&&ev.type==='field'){ try{ window.renderCoordReadout&&window.renderCoordReadout(); }catch(_){} } }); }catch(_){} }
       /* ⚠ (#R290 追記) `bandNear`, not `bandFor` — a POINT value must never ask for the planet, or
@@ -804,9 +817,10 @@ window.IntMapModules.mapReadout=function(HOST){
   }
   function ecmwfReadout(lng,lat){
     try{
-      const EC=window.IntMapECMWF, W=window.IntMapWeatherEC;
-      if(!EC||!W||!W.activeVariable) return null;
+      const W=window.IntMapWeatherEC;
+      if(!W||!W.activeVariable) return null;
       const cfg=W.activeVariable(); if(!cfg) return null;
+      const EC=ecFor(cfg); if(!EC) return null;
       const v=EC.valueNow(cfg.variable,lat,lng);
       if(v==null){ askEcField(cfg); return null; }
       const lg=EC.legend(cfg.variable,true);
