@@ -5580,7 +5580,7 @@ window.IntMapLang.define('fr', { ui: {
   "Supplier": "Fournisseur",
   "Unknown": "Inconnu",
   "Verified": "Vérifié",
-  "Surveyed sections": "Tron�ons relev�s",
+  "Surveyed sections": "Tronçons relevés",
   "Model": "Modèle",
   "switching to": "passage à",
   "could not be reached": "inaccessible",
@@ -5623,4 +5623,6 @@ window.IntMapLang.define('fr', { ui: {
   "Turn all off": "Tout désactiver",
   "watchlist": "liste de suivi",
   "Wind power": "Éolien",
+  "Q{q} {y}": "T{q} {y}",
+  "Routes are approximate: a few stretches are published survey positions, most are reconstructed from sea-floor terrain. A line is not the exact position of the cable. Click one for the accuracy of that stretch.": "Les tracés sont approximatifs : quelques tronçons sont des positions relevées et publiées, la plupart sont reconstitués à partir du relief des fonds marins. Une ligne n’est pas la position exacte du câble. Cliquez dessus pour connaître la précision du tronçon.",
 } });

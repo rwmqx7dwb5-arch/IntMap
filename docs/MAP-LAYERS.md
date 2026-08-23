@@ -830,6 +830,14 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   実測できた区間は各国政府・水路機関の公開経路（NOAA Marine Cadastre / EMODnet BSH・
   Rijkswaterstaat・Malta・SIG / ACMA）、残りは 1/12°（9.26 km）の海底格子上の最小コスト経路。
   区間ごとに `quality`（`verified` / `reconstructed` / `estimated`）と `src` を持つ。
+  ⚠⚠ **格子は入り江・フィヨルド・河口を「池」にする。** 9.26 km のセルでは、その水域が
+  外洋とセル同士で繋がらないことがあり、`snapToSea` が見つけるのは**出られない数セル**である。
+  ⇒ ルータは**連結成分**を持ち、両端が**同じ水域**に落ちる組を選ぶ（`sharedSnap`。
+  #R355 が置いた 60 km の上限はそのまま——**遠くへ動かすのではなく、別の水を選ぶ**）。
+  ⚠⚠ **ケーブルが川に敷かれていることがある**（ブラジルの Norte Conectado / Projeto Amazônia
+  Conectada）。標高格子に川は無いので、`data/subcable-overrides.json` の `rivers` が
+  **名前と bbox で** Natural Earth 1:10m の川の中心線を選び、運河と同じ機構で掘る
+  （名前だけでは足りない——`Negro` はこのデータで4本あり、うち3本はアルゼンチンとウルグアイ）。
   ⚠ **`quality` で色や太さを変えない**——線のグラフィックは1つで、`color` は
   TeleGeography 由来のケーブル色のまま（`['coalesce',['get','color'],'#30b0c7']`）。
   ⚠ **取得は4段**（自オリジンの `data/subcables.json` → その Cache API の写し →
@@ -837,6 +845,20 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   ⚠ **クリックの当たり判定は箱**（マウス ±8px・タッチ ±16px）で、**線は太くしない**。
   情報ポップアップは `js/subcable-info.js`（動的 import・`.plc-popup .subc-popup`）で、
   ケーブル線と陸揚げ点の両方に付く。重なっている場合は同じポップアップ内で選べる。
+  ⚠⚠ **カードは「見出し」だけでなく「答え」も9言語で出す。** TeleGeography が持つのは
+  **英語の国名**（`Cyprus`・`Indonesia`）と**散文の日付**（`2000 August`・`2026 Q4`）で、
+  どちらも読む場所では翻訳できない。⇒ `scripts/build-subcables.mjs` が**結合鍵**を作る——
+  国名は ISO 3166-1 alpha-2（`countryCodes` / 陸揚げ点の `cc`。`scripts/subcables/regions.mjs` が
+  **CLDR の英語名から逆引き**し、CLDR と綴りが違う 8 件だけ `data/subcable-overrides.json` の
+  `countryCodes` にある）、日付は `rfsYear` ＋ `rfsMonth` / `rfsQuarter`、総延長は `lengthKm`。
+  ブラウザ側は `window._imCldrRegion`（`js/countries-ui.js`）と `Intl.DateTimeFormat` /
+  `Intl.NumberFormat` に訊く。⚠ **表を書かない**——186 × 9 の国名表は CLDR がすでに持っている。
+  ⚠ **コードが取れなかった綴りは英語のまま**で、`data/subcables.build.json` の `regions` が
+  未解決の綴りを列挙する（推測しない）。
+  ⚠ **凡例に精度の但し書きがある**（`.dl-caveat`・9言語）——「経路は近似で、線は正確な敷設位置を
+  示すものではない」。`LEGEND_NOTE`（`js/data-layers.js`）が `.dl-desc` の**中**に描く
+  （`ensureGenericLegend()` は言語切替のたびに `.dl-desc` を消して作り直すので、**兄弟に置くと増える**）。
+  ⚠ クラス名は `dl-caveat`。**`dl-note` はレイヤー行の日付注記が既に使っており `display:none`** である。
 - **貿易フロー**の矢印は軸（`wp-trade-arc`）・頭（`wp-trade-tip`）・相手国名を**一式**で切り替える。
   軸は頭の base で終わる（`trimEnd` / `line-cap:'butt'` / `icon-anchor:'top'`）。
   ⚠ 切る長さは**画素**なので**レンダラの投影に訊く**（`GE().coords.project`）。メルカトルのメートルは

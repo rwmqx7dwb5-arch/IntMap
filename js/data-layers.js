@@ -166,6 +166,17 @@ window.IntMapModules.dataLayers=function(HOST){
       .data-legend .dl-hint{ color:var(--text-muted); margin-top:5px; font-size:9.5px; }
       /* (#R39) Short "what is this data" explanation for the non-obvious metrics. */
       .data-legend .dl-desc{ color:var(--text-main); opacity:0.82; margin-top:5px; font-size:9.5px; line-height:1.45; border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); padding-top:5px; }
+      /* ⚠⚠⚠ (#R384) THE CLASS IS dl-caveat, AND THE FIRST NAME I GAVE IT WAS ALREADY TAKEN.
+         .dl-note[data-dl] is the LAYER ROW's date note (line ~1078), and it is display:none
+         until a date is set — so the accuracy caveat below was in the DOM, carried its nine
+         translations, and RENDERED NOTHING. It survived the browser test too, because that
+         test read textContent, and textContent walks hidden nodes.
+         The caveat sits under a layer's description: same column, its own paragraph, muted,
+         so it reads as a qualification of the picture rather than more of the description.
+         ⚠⚠ AND NO BACKTICK MAY APPEAR IN THIS COMMENT — it is inside a template literal, and
+         one backtick here ends the CSS string and blanks the site. The first draft of this
+         very comment quoted the class names in backticks and failed the build. */
+      .data-legend .dl-caveat{ display:block; color:var(--text-muted); margin-top:5px; }
       /* (#R298) A dated layer's calendar and its two one-frame steps. NOT scoped under .data-legend —
          the same box is built twice, once in the legend and once in the Layers-panel row, and a reader
          who moves the day in one must see the other move with it. Sized from the radar/ECMWF player
@@ -361,7 +372,33 @@ window.IntMapModules.dataLayers=function(HOST){
        legend description was ENGLISH in fr / ko / zh / zh-Hans however complete the locale file was
        — there is no inline-table fallback down this path. `LDL.arr()` IS `pick()` applied to the
        array, which is the one rule the rest of the app resolves by. */
-    function _legendDesc(id){ const d=LEGEND_DESC[id]; if(!d||!d[0]) return ''; return '<div class="dl-desc">'+LDL.arr(d)+'</div>'; }
+    /* ══ ⚠ (#R384) A CAVEAT IS NOT A DESCRIPTION, AND IT BELONGS IN THE LEGEND ═══
+       「凡例に、正確な位置を示しているわけではないという趣旨の文言を書いておいて。」
+       LEGEND_DESC says WHAT the data is; this says HOW MUCH OF IT TO BELIEVE, and
+       the two must not be run into one sentence — a reader who skips the second
+       half of a paragraph has still been told what the layer is. #R355 rebuilt
+       every cable route from published surveys and sea-floor terrain and gave
+       each stretch a `quality`, but the only place that number was legible was
+       the click card: the legend, which is what a reader looks at while deciding
+       whether to trust the picture, said nothing at all.
+       ⚠ IT NAMES THE PROPORTION RATHER THAN HEDGING. 「ほとんど」 is what
+       data/subcables.build.json measures (verified 3.8 %, reconstructed 93.9 %,
+       estimated 2.3 %) and 「クリックで区間ごとの精度」 is true because the card
+       really does report the quality of the stretch that was clicked (#R355 追記). */
+    const LEGEND_NOTE={
+      subcables:LA('Routes are approximate: a few stretches are published survey positions, most are reconstructed from sea-floor terrain. A line is not the exact position of the cable. Click one for the accuracy of that stretch.','経路は近似です。公表された実測位置の区間はごく一部で、大半は海底地形から再構築したものです。線は正確な敷設位置を示すものではありません。区間ごとの精度はクリックで確認できます。','Die Verläufe sind Näherungen: nur wenige Abschnitte sind veröffentlichte Vermessungspositionen, die meisten wurden aus der Meeresbodentopografie rekonstruiert. Eine Linie ist nicht die genaue Lage des Kabels. Zum Anklicken für die Genauigkeit des Abschnitts.','Трассы приблизительные: лишь отдельные участки — опубликованные результаты съёмки, большинство восстановлено по рельефу дна. Линия не является точным положением кабеля. Нажмите, чтобы увидеть точность участка.','Las rutas son aproximadas: solo algunos tramos son posiciones levantadas y publicadas, la mayoría se ha reconstruido a partir del relieve del fondo marino. Una línea no es la posición exacta del cable. Haz clic para ver la precisión del tramo.')
+    };
+    function _legendDesc(id){
+      const d=LEGEND_DESC[id], n=LEGEND_NOTE[id];
+      const desc=(d&&d[0])?LDL.arr(d):'';
+      const note=(n&&n[0])?('<div class="dl-caveat">'+LDL.arr(n)+'</div>'):'';
+      if(!desc&&!note) return '';
+      /* ⚠ ONE `.dl-desc` WRAPPER, note inside it. ensureGenericLegend() refreshes
+         this block on every language change by removing `.dl-desc` and re-adding —
+         two siblings would leave the old note behind and the box would grow a
+         duplicate paragraph per switch. */
+      return '<div class="dl-desc">'+desc+note+'</div>';
+    }
     window._legendDescHTML=_legendDesc;
     function makeLegend(id,bottomPx,title,gradient,labels,hint){
       const el=document.createElement('div'); el.className='data-legend'; el.id='data-legend-'+id;

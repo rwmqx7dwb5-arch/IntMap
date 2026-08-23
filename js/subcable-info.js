@@ -98,6 +98,65 @@ window.IntMapSubcableInfo = function (HOST) {
 
   const QUALITY = { verified: T.verified, reconstructed: T.reconstructed, estimated: T.estimated };
 
+  /* ══ ⚠⚠⚠ (#R384) THE LABELS WERE TRANSLATED AND THE ANSWERS WERE NOT ═══════
+     「クリックしたら出てくるカードの情報が翻訳されていない。」 MEASURED on the
+     shipped build, in Japanese:
+
+         接続国・地域   Cyprus · Syria
+         陸揚げ地点     Pentaskhinos, Cyprus · Tartous, Syria
+         運用開始       2000 August
+         国・地域       Indonesia            ← every one of the 1,922 landing points
+
+     Twenty strings above go through the nine-language table, so every instrument
+     read 100 %: what an audit of CALL SITES cannot see is a row whose VALUE is
+     English data. TeleGeography carries country NAMES and the ready-for-service
+     date AS PROSE, and neither can be translated where it is read.
+     ⚠ AND THE ANSWER IS NOT A TABLE OF 186 × 9 COUNTRY NAMES — that is #R240's
+     rule for the Countries tab, and CLDR already ships every ISO region in every
+     language this app has. scripts/build-subcables.mjs resolves the spellings to
+     ISO 3166-1 codes (178 of 186 straight from CLDR, 8 in the corrections file)
+     and the date to (year, month | quarter); this end asks the browser.
+     ⚠ A ROW NEVER LOSES ITS FACT. Where no code was proved the English name the
+     data actually carries is printed unchanged — §11 again: not knowing the
+     translation is not permission to show something else. */
+  function langTag() {
+    try { return (window.IntMapLang && window.IntMapLang.htmlTag) ? window.IntMapLang.htmlTag(HOST.lang) : 'en'; }
+    catch (_) { return 'en'; }
+  }
+  /* the reader's own word for an ISO region, or the English name we were given */
+  function regionName(cc, english) {
+    try { if (cc && window._imCldrRegion) { const n = window._imCldrRegion(cc, HOST.lang); if (n) return n; } } catch (_) {}
+    return english || '';
+  }
+  /* ⚠ THE LANDING POINT'S NAME ENDS IN ITS COUNTRY, IN ENGLISH — 「Sangata,
+     Indonesia」, 「Miramar, PR, United States」. The place itself is a proper
+     noun and stays; only the country tail is swapped, and only when it is
+     exactly the country the record already names, so nothing is guessed at. */
+  function landingName(rec, fallback) {
+    const name = (rec && rec.name) || fallback || '';
+    if (!rec || !rec.country || !rec.cc) return name;
+    const localised = regionName(rec.cc, rec.country);
+    if (!localised || localised === rec.country) return name;
+    const tail = ', ' + rec.country;
+    return name.slice(-tail.length) === tail ? name.slice(0, -tail.length) + ', ' + localised : name;
+  }
+  /* 「2000 August」→ 2000年8月 · 「2026 Q4」→ 2026年 第4四半期 · 「2028」→ 2028年 */
+  function rfsText(m) {
+    const y = m.rfsYear;
+    try {
+      if (y && m.rfsMonth) return new Intl.DateTimeFormat(langTag(), { year: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(y, m.rfsMonth - 1, 1)));
+      if (y && m.rfsQuarter) return window.IntMapLang.t(HOST.lang, 'Q{q} {y}', '{y}年 第{q}四半期', '{q}. Quartal {y}', '{q} кв. {y}', 'T{q} {y}').replace('{q}', String(m.rfsQuarter)).replace('{y}', String(y));
+      if (y && String(m.rfs).trim() === String(y)) return new Intl.DateTimeFormat(langTag(), { year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(y, 0, 1)));
+    } catch (_) {}
+    return m.rfs;
+  }
+  /* 1,041 km in English and Japanese, 1.041 km in German — the separator is the
+     reader's, and the number is the same number */
+  function lengthText(m) {
+    if (m.lengthKm == null) return m.length;
+    try { return new Intl.NumberFormat(langTag()).format(m.lengthKm) + ' km'; } catch (_) { return m.length; }
+  }
+
   /* the human name of each provenance key — the dataset stores the key, the popup
      shows the organisation, and both come from the build manifest's licence table */
   const SRC_NAME = {
@@ -123,15 +182,18 @@ window.IntMapSubcableInfo = function (HOST) {
     let body = '';
     if (m) {
       body += row(T.status(), m.isPlanned ? esc(T.planned()) : esc(T.inService()));
-      if (m.rfs) body += row(T.rfs(), esc(m.rfs));
+      if (m.rfs) body += row(T.rfs(), esc(rfsText(m)));
       if (m.owners) body += row(T.owners(), esc(m.owners));
       if (m.suppliers) body += row(T.supplier(), esc(m.suppliers));
-      if (m.length) body += row(T.length(), esc(m.length));
+      if (m.length) body += row(T.length(), esc(lengthText(m)));
       if (m.landingPoints && m.landingPoints.length) {
-        const names = m.landingPoints.map(id => (meta.landingPoints[id] && meta.landingPoints[id].name) || id);
+        const names = m.landingPoints.map(id => landingName(meta.landingPoints[id], id));
         body += row(T.landings(), esc(names.join(' · ')));
       }
-      if (m.countries && m.countries.length) body += row(T.countries(), esc(m.countries.join(' · ')));
+      if (m.countries && m.countries.length) {
+        const cc = m.countryCodes || [];
+        body += row(T.countries(), esc(m.countries.map((n, i) => regionName(cc[i], n)).join(' · ')));
+      }
     }
     body += row(T.routeQuality(), esc(q || T.unknown()));
     /* ⚠ (#R355 追記) "ROUTE SOURCE" IS ABOUT THE PIECE THAT WAS CLICKED, AND ONLY
@@ -164,9 +226,9 @@ window.IntMapSubcableInfo = function (HOST) {
   /* ── the landing-point card ───────────────────────────────────────────────── */
   function landingHtml(props, lngLat) {
     const m = (meta && meta.landingPoints && meta.landingPoints[props.id]) || null;
-    const name = (m && m.name) || props.name || props.id;
+    const name = m ? landingName(m, props.name || props.id) : (props.name || props.id);
     let body = '';
-    if (m && m.country) body += row(window.IntMapLang.t(HOST.lang, 'Country', '国・地域', 'Land', 'Страна', 'País'), esc(m.country));
+    if (m && m.country) body += row(window.IntMapLang.t(HOST.lang, 'Country', '国・地域', 'Land', 'Страна', 'País'), esc(regionName(m.cc, m.country)));
     const lat = lngLat.lat, lon = lngLat.lng;
     body += row(T.coords(), esc(Math.abs(lat).toFixed(4) + '°' + (lat >= 0 ? 'N' : 'S') + ' ' + Math.abs(lon).toFixed(4) + '°' + (lon >= 0 ? 'E' : 'W')));
     if (m && m.cables && m.cables.length) {

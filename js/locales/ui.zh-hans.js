@@ -5718,5 +5718,7 @@ window.IntMapLang.define('zh-hans', {
   "Turn all off": "全部关闭",
   "watchlist": "关注列表",
   "Wind power": "风力",
+  "Q{q} {y}": "{y}年第{q}季",
+  "Routes are approximate: a few stretches are published survey positions, most are reconstructed from sea-floor terrain. A line is not the exact position of the cable. Click one for the accuracy of that stretch.": "路线为近似值：仅少数区间是公开的实测位置，多数是依海底地形重建而成。线条并非缆线的确切位置。点击可查看该区间的精度。",
   }
 });

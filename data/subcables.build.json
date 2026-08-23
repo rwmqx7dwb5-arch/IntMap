@@ -1,5 +1,5 @@
 {
-  "built": "2026-08-23T08:40:53.005Z",
+  "built": "2026-08-23T18:59:46.074Z",
   "generator": "scripts/build-subcables.mjs",
   "grid": {
     "width": 4320,
@@ -18,15 +18,15 @@
     "candidatePieces": 625
   },
   "lengthKm": {
-    "total": 2069686,
+    "total": 2067525,
     "verified": 78690,
-    "reconstructed": 1943815,
-    "estimated": 47181
+    "reconstructed": 1983142,
+    "estimated": 5692
   },
   "cablesByQuality": {
     "verified": 22,
-    "reconstructed": 657,
-    "estimated": 23
+    "reconstructed": 675,
+    "estimated": 5
   },
   "sources": {
     "noaa-mc": {
@@ -168,7 +168,18 @@
       "url": "https://www.naturalearthdata.com/",
       "licence": "Public domain",
       "use": "inland water the elevation grid reads as land (the Great Lakes and similar)"
+    },
+    "ne-rivers": {
+      "name": "Natural Earth 1:10m physical — river centre lines",
+      "url": "https://www.naturalearthdata.com/",
+      "licence": "Public domain",
+      "use": "the courses of the rivers that named cable systems are laid in (the Amazon basin)"
     }
+  },
+  "regions": {
+    "spellings": 186,
+    "resolved": 186,
+    "unresolved": []
   },
   "channels": [
     {
@@ -180,85 +191,61 @@
       "cellsOpened": 9
     }
   ],
+  "rivers": [
+    {
+      "name": "Amazonas",
+      "features": 3,
+      "cellsOpened": 615
+    },
+    {
+      "name": "Negro",
+      "features": 1,
+      "cellsOpened": 368
+    },
+    {
+      "name": "Branco",
+      "features": 1,
+      "cellsOpened": 238
+    },
+    {
+      "name": "Madeira",
+      "features": 1,
+      "cellsOpened": 280
+    },
+    {
+      "name": "Juruá",
+      "features": 1,
+      "cellsOpened": 335
+    }
+  ],
   "lakeCells": 45099,
+  "waterBodies": 2319,
   "router": {
-    "runs": 3252,
-    "expanded": 278919310,
+    "runs": 2948,
+    "expanded": 40566129,
     "retries": 17,
-    "failures": 375
+    "failures": 68,
+    "reSnapped": 45,
+    "noSharedWater": 12
   },
   "qa": {
     "cablesIn": 702,
     "cablesOut": 702,
     "cablesMissing": [],
-    "vertices": 62005,
+    "vertices": 61055,
     "nonFinite": 0,
     "lonOutOfRange": 0,
     "latOutOfRange": 0,
     "featuresWithFewerThanTwoPoints": 0,
     "zeroLengthFeatures": 2,
     "antimeridianBreaks": 0,
-    "landCrossingFeatures": 259,
-    "landCrossingSamples": 4085,
+    "landCrossingFeatures": 244,
+    "landCrossingSamples": 1262,
     "landCrossingWorst": [
       {
         "id": "norte-conectado-infovia-06-0",
         "cable": "norte-conectado-infovia-06",
-        "hits": 411,
-        "quality": "estimated"
-      },
-      {
-        "id": "norte-conectado-infovia-08-0",
-        "cable": "norte-conectado-infovia-08",
-        "hits": 321,
-        "quality": "estimated"
-      },
-      {
-        "id": "norte-conectado-infovia-05-0",
-        "cable": "norte-conectado-infovia-05",
-        "hits": 273,
-        "quality": "estimated"
-      },
-      {
-        "id": "norte-conectado-infovia-02-0",
-        "cable": "norte-conectado-infovia-02",
-        "hits": 256,
-        "quality": "estimated"
-      },
-      {
-        "id": "projeto-amaznia-conectada-pac-02-0",
-        "cable": "projeto-amaznia-conectada-pac-02",
-        "hits": 250,
-        "quality": "estimated"
-      },
-      {
-        "id": "projeto-amaznia-conectada-pac-01-0",
-        "cable": "projeto-amaznia-conectada-pac-01",
-        "hits": 225,
-        "quality": "estimated"
-      },
-      {
-        "id": "norte-conectado-infovia-01-0",
-        "cable": "norte-conectado-infovia-01",
-        "hits": 221,
-        "quality": "estimated"
-      },
-      {
-        "id": "norte-conectado-infovia-04-0",
-        "cable": "norte-conectado-infovia-04",
-        "hits": 160,
-        "quality": "estimated"
-      },
-      {
-        "id": "norte-conectado-infovia-00-0",
-        "cable": "norte-conectado-infovia-00",
-        "hits": 123,
-        "quality": "estimated"
-      },
-      {
-        "id": "norte-conectado-infovia-05-1",
-        "cable": "norte-conectado-infovia-05",
-        "hits": 112,
+        "hits": 391,
         "quality": "estimated"
       },
       {
@@ -268,39 +255,15 @@
         "quality": "estimated"
       },
       {
-        "id": "norte-conectado-infovia-02-2",
-        "cable": "norte-conectado-infovia-02",
-        "hits": 76,
-        "quality": "estimated"
-      },
-      {
-        "id": "projeto-amaznia-conectada-pac-02-1",
-        "cable": "projeto-amaznia-conectada-pac-02",
-        "hits": 76,
-        "quality": "estimated"
-      },
-      {
-        "id": "connected-coast-43",
-        "cable": "connected-coast",
-        "hits": 70,
-        "quality": "estimated"
-      },
-      {
         "id": "norte-conectado-infovia-00-1",
         "cable": "norte-conectado-infovia-00",
         "hits": 64,
         "quality": "estimated"
       },
       {
-        "id": "projeto-amaznia-conectada-pac-02-3",
-        "cable": "projeto-amaznia-conectada-pac-02",
-        "hits": 64,
-        "quality": "estimated"
-      },
-      {
-        "id": "projeto-amaznia-conectada-pac-01-1",
-        "cable": "projeto-amaznia-conectada-pac-01",
-        "hits": 55,
+        "id": "norte-conectado-infovia-00-0",
+        "cable": "norte-conectado-infovia-00",
+        "hits": 60,
         "quality": "estimated"
       },
       {
@@ -310,16 +273,94 @@
         "quality": "estimated"
       },
       {
-        "id": "norte-conectado-infovia-02-5",
-        "cable": "norte-conectado-infovia-02",
-        "hits": 40,
+        "id": "northstar-1",
+        "cable": "northstar",
+        "hits": 24,
         "quality": "estimated"
       },
       {
-        "id": "projeto-amaznia-conectada-pac-02-2",
-        "cable": "projeto-amaznia-conectada-pac-02",
-        "hits": 40,
+        "id": "tata-tgn-pacific-8",
+        "cable": "tata-tgn-pacific",
+        "hits": 24,
         "quality": "estimated"
+      },
+      {
+        "id": "hawaiki-7",
+        "cable": "hawaiki",
+        "hits": 22,
+        "quality": "estimated"
+      },
+      {
+        "id": "alaska-united-southeast-au-se-1",
+        "cable": "alaska-united-southeast-au-se",
+        "hits": 22,
+        "quality": "verified"
+      },
+      {
+        "id": "sumatera-bangka-cable-system-sbcs-0",
+        "cable": "sumatera-bangka-cable-system-sbcs",
+        "hits": 21,
+        "quality": "estimated"
+      },
+      {
+        "id": "southern-cross-cable-network-sccn-1",
+        "cable": "southern-cross-cable-network-sccn",
+        "hits": 20,
+        "quality": "estimated"
+      },
+      {
+        "id": "fea-5",
+        "cable": "fea",
+        "hits": 15,
+        "quality": "estimated"
+      },
+      {
+        "id": "au-aleutian-20",
+        "cable": "au-aleutian",
+        "hits": 15,
+        "quality": "verified"
+      },
+      {
+        "id": "asia-africa-europe-1-aae-1-3",
+        "cable": "asia-africa-europe-1-aae-1",
+        "hits": 14,
+        "quality": "estimated"
+      },
+      {
+        "id": "fibra-optica-austral-1",
+        "cable": "fibra-optica-austral",
+        "hits": 13,
+        "quality": "reconstructed"
+      },
+      {
+        "id": "alaska-united-east-au-east-1",
+        "cable": "alaska-united-east-au-east",
+        "hits": 8,
+        "quality": "verified"
+      },
+      {
+        "id": "connected-coast-1",
+        "cable": "connected-coast",
+        "hits": 7,
+        "quality": "reconstructed"
+      },
+      {
+        "id": "antillas-1-0",
+        "cable": "antillas-1",
+        "hits": 7,
+        "quality": "reconstructed"
+      },
+      {
+        "id": "tverrlinken-0",
+        "cable": "tverrlinken",
+        "hits": 6,
+        "quality": "reconstructed"
+      },
+      {
+        "id": "antillas-1-1",
+        "cable": "antillas-1",
+        "hits": 6,
+        "quality": "reconstructed"
       }
     ],
     "terminalsChecked": 2494,
@@ -389,9 +430,9 @@
     "lengthComparedCables": 611,
     "lengthRatio": {
       "p05": 0.582,
-      "p25": 0.903,
-      "p50": 0.989,
-      "p75": 1.109,
+      "p25": 0.902,
+      "p50": 0.988,
+      "p75": 1.101,
       "p95": 1.664
     },
     "lengthOutliers": 60,
@@ -427,16 +468,16 @@
         "ratio": 0.37746042026258647
       },
       {
-        "id": "norte-conectado-infovia-08",
-        "published": 2766,
-        "built": 1044,
-        "ratio": 0.37761612271496015
-      },
-      {
         "id": "sto-hel-one",
         "published": 560,
         "built": 215,
         "ratio": 0.3836282095474172
+      },
+      {
+        "id": "norte-conectado-infovia-08",
+        "published": 2766,
+        "built": 1095,
+        "ratio": 0.39577993434268566
       },
       {
         "id": "tampnet-south",
@@ -457,16 +498,16 @@
         "ratio": 0.45475363037033195
       },
       {
-        "id": "norte-conectado-infovia-06",
-        "published": 2847,
-        "built": 1300,
-        "ratio": 0.45663398292196056
-      },
-      {
         "id": "russia-japan-cable-network-rjcn",
         "published": 1800,
         "built": 841,
         "ratio": 0.4672316189748541
+      },
+      {
+        "id": "persona",
+        "published": 800,
+        "built": 375,
+        "ratio": 0.4689032373012537
       }
     ],
     "lengthWorstLong": [
@@ -543,12 +584,12 @@
         "ratio": 2.1839900352785744
       }
     ],
-    "selfIntersectingFeatures": 8,
-    "selfIntersections": 18,
+    "selfIntersectingFeatures": 1,
+    "selfIntersections": 3,
     "detour": {
       "p50": 1.084,
-      "p90": 1.265,
-      "p99": 1.902,
+      "p90": 1.264,
+      "p99": 1.882,
       "max": 9.64
     },
     "detourWorst": [
@@ -666,8 +707,8 @@
       }
     ],
     "featuresByQuality": {
-      "reconstructed": 3191,
-      "estimated": 98,
+      "reconstructed": 3276,
+      "estimated": 13,
       "verified": 202
     }
   }
