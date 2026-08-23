@@ -319,8 +319,8 @@ What is **Chromium-only**, and printed as `—` rather than 0: heap / nodes / li
 `HeapProfiler` + `Performance.getMetrics`), CPU and network throttling, the `longtask` observer, and
 the sampling profiler. **GC time is unavailable to page script in both engines**, so it is not in any
 bucket and is not folded into `other`. **Worker-side work is also outside every bucket** —
-`addInitScript` does not reach a dedicated worker's global scope, so the decode `js/sat-worker.js`
-does and everything MapLibre's own workers do is invisible; what is measured is the main thread's
+`addInitScript` does not reach a dedicated worker's global scope, so the decode that
+`js/sat-worker.js` does, and everything MapLibre's own workers do, is invisible; what is measured is the main thread's
 half of the exchange (`workerPost` is the structured clone, paid synchronously by the caller).
 
 ⚠⚠ **THE WEBKIT ARM IS NOT YET USABLE, AND THE REASON IS NOT KNOWN.** MEASURED, same page, same
@@ -331,9 +331,9 @@ protocol entirely**: a bare `page.evaluate(() => 'yes')` never returns.
 
 Two explanations were tried and both were **wrong**: `context.route()` interception is not it (the
 intercepted arm is the one that completed), and blocked uncached requests are not it either (the
-last failing run recorded **18 replayed / 0 missed / 0 blocked**). So: the Chromium table below is
-real, the WebKit twelve-phase table does not exist yet, and **nobody should write down a cause for
-this until one is measured.** What is established is that WebKit finishes the boot in ~27 s when
+last failing run recorded **18 replayed / 0 missed / 0 blocked**). So: the Chromium numbers (recorded
+in `DEV-NOTES.md` under #R387) are real, the WebKit twelve-phase table does not exist yet, and
+**nobody should write down a cause for this until one is measured.** What is established is that WebKit finishes the boot in ~27 s when
 every request is answered — about **2× Chromium** on the same machine in the same minute.
 
 ⚠ The harness no longer waits in silence for it: `--phase-timeout` (default 150 s) covers every
