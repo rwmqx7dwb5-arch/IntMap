@@ -153,4 +153,10 @@ verify_jwt = false
 # public map layer would break it for everyone signed out. The provider keys, when a provider needs
 # any, live in this function's environment and never reach the browser.
 [functions.aviation-feed]
+# routing-relay (#R347) holds the Mapbox Directions key so the page never sees it, and relays the
+# traffic-aware routes and their refreshes. verify_jwt is OFF because routing is offered to signed-out
+# readers exactly as it is to signed-in ones — requiring a login would break the panel for everyone
+# who is not. What stands in front of it instead is the allow-list plus a per-IP rate limit, which is
+# the only spend ceiling Mapbox itself does not provide (see the function's own header).
+[functions.routing-relay]
 verify_jwt = false

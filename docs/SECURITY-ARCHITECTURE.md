@@ -162,6 +162,7 @@ functions that import it.
 | `alerts-relay` | false | none — keyless public relay of official warning feeds | — | — |
 | `cable-geo` | false | none — keyless public relay of two TeleGeography GeoJSON URLs | — | — |
 | `news-relay` | false | none — keyless public relay of Google News RSS | — | — |
+| `routing-relay` | false | none — public, but **keyed upstream**: it is the only relay that holds a provider token | — | `MAPBOX_TOKEN`, server env only, never returned |
 | `sv-cov` | false | none — keyless public relay of Google Street-View coverage tiles | — | — |
 | `aviation-feed` | false | none — keyless; serves live ADS-B to signed-out readers | — | provider key (when a provider needs one) + `AVIATION_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** |
 
@@ -173,6 +174,23 @@ and there is no allow-list to get wrong. It takes the rest of `relay-guard.js` u
 only, a deadline, a byte ceiling, a content-type check, and errors that name a bound and never an
 exception. Its `?meta=1` channel reports the PRESENCE of its credentials as booleans and never
 their values.
+
+⚠ **(#R347) `routing-relay` is the first relay that is not keyless, and it differs in three ways.**
+(1) It holds `MAPBOX_TOKEN`, so it is the one relay a caller could try to use as a **general Mapbox
+proxy**: the profile is an allow-list of four, the query parameters are an allow-list of twenty-one
+and everything else is **dropped in silence**, the coordinate list is validated to range and count,
+and a caller-supplied `access_token` is **deleted before the upstream URL is built** — it is in no
+list, and our own token is set afterwards.
+(2) It is the only relay that **must not cache**. Mapbox Product Terms §2.10.1 forbids caching or
+storing Navigation API results, so every response — including the failures — carries
+`Cache-Control: no-store` where the other four set `s-maxage`. `js/routing-traffic.js` honours the
+same rule on the client by reading `IntMapRouteProviders.noStore('mapbox')` rather than hardcoding it.
+(3) It is the only relay with its own **rate limit** (60 requests per minute per `x-forwarded-for`),
+because Mapbox has no hard spend cap — this is the only ceiling. ⚠ It is **per-isolate and
+best-effort**, and the function says so in its own header rather than implying an accounting
+boundary; the real ceiling remains the provider account's usage alerts.
+⚠ **With no key set the function is inert**: `?probe=1` answers `{"mapbox":false}` and every route
+request returns `provider_unavailable`, so the app falls back to the open routers and says so.
 
 **The four keyless relays are not protected by a login and must not be** — they serve map
 layers to signed-out readers. What stands in front of them is `_shared/relay-guard.js`, shared

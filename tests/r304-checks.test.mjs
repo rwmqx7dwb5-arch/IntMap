@@ -69,9 +69,20 @@ test('R304 ② the boot guard names every deferred factory, and only those', () 
   assert.ok(m, 'src/main.js declares LAZY_FACTORIES');
   const got = [...m[1].matchAll(/'([A-Za-z0-9_]+)'/g)].map((x) => x[1]).sort();
   assert.deepEqual(got, want, 'src/main.js\'s LAZY_FACTORIES equals the loader\'s factory-backed modules');
-  /* the exception is one module and it is a fact about the loader, not a favourite */
-  const noFactory = L.filter((x) => !x.factory).map((x) => x.name);
-  assert.deepEqual(noFactory, ['nightSky'], 'nightSky is the only module that publishes itself at import');
+  /* ⚠ (#R347) THE EXCEPTION IS A TABLE NOW, NOT A NAME. This asserted `['nightSky']`, which was a
+     copy of a rule js/lazy-modules.js wrote as `name !== 'nightSky'` — and the second module that
+     publishes itself at import (js/navigation.js) loaded correctly, published all eight of its
+     globals, and was still recorded as a FAILURE, because a rule written as one name can only ever
+     describe one file. The loader now declares SELF_PUBLISHING, so this reads that instead of
+     naming the members: the fact under test is «the two lists agree», not «there is exactly one».
+     ⚠ Derived from the loader, not typed here — a count is a copy (this file's own ① says so). */
+  const noFactory = L.filter((x) => !x.factory).map((x) => x.name).sort();
+  const sp = /const SELF_PUBLISHING\s*=\s*\{([^}]*)\}/.exec(read('js/lazy-modules.js'));
+  assert.ok(sp, 'js/lazy-modules.js declares SELF_PUBLISHING');
+  const declared = [...sp[1].matchAll(/([A-Za-z0-9_]+)\s*:\s*true/g)].map((x) => x[1]).sort();
+  assert.deepEqual(noFactory, declared,
+    'the modules with no factory are exactly the ones the loader exempts from having one');
+  assert.ok(declared.includes('nightSky'), 'and the original one is still among them');
 });
 
 /* ── ③ THE MOVED-BLOCK GLOBALS FOLLOW THE SOURCE, INCLUDING WHEN A FEATURE IS DELETED ─────────

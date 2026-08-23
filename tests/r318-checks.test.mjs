@@ -508,7 +508,14 @@ test('R318 ⑧c: a deterministic operation needs no AI at all', async () => {
 test('R318 ⑨a: the 58 kB catalogue moved byte-for-byte and is still whole', () => {
   const all = DOCS.text(null);
   assert.ok(all.length > 50_000, `the catalogue is ${all.length} bytes — most of it did not survive the move`);
-  assert.equal(DOCS.count(), 38, 'the 38 topical blocks of the old SYS() body');
+  /* ⚠ (#R347) THIS NUMBER IS A FLOOR, NOT AN EQUALITY. #R318's move had to be byte-for-byte, so an
+     exact count was right ON THE DAY OF THE MOVE. It is wrong afterwards: the catalogue is where a
+     new capability becomes visible to the planner, and scripts/atlas-catalog.mjs FAILS the build if
+     a dispatch case has no block — so «the catalogue grew» is the system working, and an equality
+     here turns every future capability into a red test in a file about a past refactor.
+     What must not happen is the catalogue SHRINKING (that is a capability going invisible), and
+     that is what a floor says. #R347 added one block and made it 39. */
+  assert.ok(DOCS.count() >= 38, `the catalogue has ${DOCS.count()} blocks; #R318 moved 38 and none may be lost`);
   DOCS.blocks().forEach((b, i) => {
     assert.ok(b.bytes > 100, `block ${i} is ${b.bytes} bytes`);
     assert.ok(b.ids.length > 0, `block ${i} documents no capability — the tag is what makes selection possible`);

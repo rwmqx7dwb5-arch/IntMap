@@ -195,6 +195,11 @@ const MEMBER = {
   analysisEvents: ['__imAnalysisEvents', 'render'],
   analysisEdu: ['__imAnalysisEdu', 'open'],
   aviationLive: ['IntMapAviation', 'stats'],
+  /* (#R347) and the two this round deferred — navigation publishes itself at import, so its
+     member is the door js/map-ui.js and Atlas both call; routingTraffic's is the one js/routing.js
+     calls on the first route request. */
+  navigation: ['IntMapNavigation', 'start'],
+  routingTraffic: ['IntMapRouteTraffic', 'route'],
 };
 
 test('R209 ③: every deferred module actually arrives, registers and publishes', async ({ app }) => {

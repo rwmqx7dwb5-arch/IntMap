@@ -4417,3 +4417,196 @@ select.wgt-input[multiple]{ min-height:88px; }
 /* ⚠ AND WHEN THE READER'S TYPE IS LARGER, THE ROW GROWS WITH IT — otherwise a large card clips its
    own content at 200 % zoom. `em` here is the reader's own font size. */
 .wgt-grid{ --widget-row:max(112px,8.2em); }
+
+/* ===== (#R347) NAVIGATION UI — window.IntMapNavUI ===== */
+/* ══ ⚠⚠ TWO BARS, AND THE MAP BETWEEN THEM (§37) ═══════════════════════════════════════════════
+   「上＝guidance card、中央＝地図、下＝ステータスバー」. So the root is a full-size box that draws
+   NOTHING and takes NO pointer — `pointer-events:none` on `.nvg`, `auto` on the four surfaces —
+   with `justify-content:space-between` putting one child at each end. A driver panning the map is
+   touching the map, not a transparent overlay lying across it.
+   ⚠ ABSOLUTE INSIDE #map-container, WHICH IS `position:relative` ON THE DESKTOP AND
+   `position:fixed; inset:0` ON A PHONE — so the same `inset:0` is «the map» on one and «the
+   viewport» on the other, and the desktop bars stay clear of the sidebar without measuring it.
+   ⚠ ONE BACKDROP-FILTER PER SURFACE, NEVER NESTED. `.nvg-lanes`, `.nvg-stats`, `.nvg-more` and the
+   buttons all live INSIDE a card or the panel and declare none of their own — stacking two blurs is
+   what produced the muddy double-glass this app has had to undo before.
+   ⚠ AND IT IS NOT TRANSLUCENT UNCONDITIONALLY (#R296's rule): glass only when the reader chose
+   glass in Settings ▸ サイドバーの質感, opaque otherwise, which is the default. */
+.nvg{
+  position:absolute; inset:0; z-index:1402;
+  display:flex; flex-direction:column; justify-content:space-between; align-items:flex-start;
+  pointer-events:none;
+  color:var(--text-main); font-size:14px; line-height:1.4;
+}
+.nvg[hidden]{ display:none; }
+.nvg-top{ box-sizing:border-box; width:clamp(320px,30vw,420px); max-width:100%; padding:74px 14px 0; display:flex; flex-direction:column; gap:8px; }
+.nvg-bar{ box-sizing:border-box; width:clamp(320px,30vw,420px); max-width:100%; padding:0 14px 14px; }
+.nvg-card, .nvg-banner, .nvg-offer, .nvg-panel{
+  pointer-events:auto; box-sizing:border-box;
+  background:var(--popup-bg); color:var(--text-main);
+  border:1px solid var(--glass-border,rgba(128,128,128,0.24));
+  border-radius:18px; box-shadow:var(--shadow);
+  backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px);
+}
+body:not(.sidebar-translucent):not(.sidebar-glass2) .nvg-card,
+body:not(.sidebar-translucent):not(.sidebar-glass2) .nvg-banner,
+body:not(.sidebar-translucent):not(.sidebar-glass2) .nvg-offer,
+body:not(.sidebar-translucent):not(.sidebar-glass2) .nvg-panel{
+  background:var(--panel-bg,var(--card-bg)); backdrop-filter:none; -webkit-backdrop-filter:none; }
+
+/* ══ THE GUIDANCE CARD (§11) ═══════════════════════════════════════════════════════════════════
+   ⚠ `tabular-nums` ON THE NUMBERS THAT MOVE. The distance to the maneuver and the three totals are
+   rewritten once a second; with proportional digits the text reflows on every change and the arrow
+   beside it visibly twitches. Tabular figures make 「300 m」 and 「250 m」 the same width. */
+.nvg-card{ padding:12px 14px 13px; display:flex; flex-direction:column; gap:9px; }
+.nvg-man{ display:flex; align-items:center; gap:12px; min-width:0; }
+.nvg-arrow{ flex:0 0 auto; display:inline-flex; color:var(--primary-color); }
+.nvg-dist{ flex:1 1 auto; min-width:0; font-size:30px; font-weight:700; letter-spacing:-0.6px;
+  font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.nvg-arr-hd{ flex:1 1 auto; min-width:0; font-size:20px; font-weight:700; letter-spacing:-0.3px; }
+.nvg-say{ margin:0; font-size:16px; font-weight:600; line-height:1.35; }
+.nvg-arr-acts{ display:flex; }
+
+/* the signposts, and only when the road authority put them on a real sign (§11) */
+.nvg-signs{ display:flex; flex-wrap:wrap; gap:6px; }
+.nvg-exit, .nvg-toward{ display:inline-flex; align-items:baseline; gap:5px; max-width:100%;
+  padding:4px 9px; border-radius:9px; background:var(--input-bg); font-size:13px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.nvg-exit{ font-weight:650; }
+.nvg-exit-k, .nvg-toward-k{ flex:0 0 auto; font-size:12px; font-weight:600; color:var(--text-muted); letter-spacing:0.3px; }
+
+/* ══ LANES (§12) ═══════════════════════════════════════════════════════════════════════════════
+   ⚠ THE USABLE LANE IS NOT MARKED BY COLOUR ALONE (§19): full opacity, the accent colour, a raised
+   background AND an underline, against a dimmed unusable one. The bar as a whole carries
+   js/routing-cards.js's own 「車線: 2, 3 ／ 4」 as its accessible name. */
+.nvg-lanes{ display:flex; justify-content:center; flex-wrap:wrap; gap:4px; padding:7px 8px; border-radius:12px; background:var(--input-bg); }
+.nvg-lane{ display:inline-flex; align-items:center; justify-content:center; gap:1px;
+  min-width:30px; min-height:30px; padding:0 3px; border-radius:8px; color:var(--text-muted); opacity:0.34; }
+.nvg-lane.on{ opacity:1; color:var(--primary-color); background:var(--card-bg); box-shadow:inset 0 -2px 0 currentColor; }
+
+/* the operation AFTER the one being announced — a footnote, never competing with it */
+.nvg-then{ display:flex; align-items:center; gap:7px; margin-top:1px; padding-top:8px;
+  border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); color:var(--text-muted); }
+.nvg-then-ic{ flex:0 0 auto; display:inline-flex; }
+.nvg-then-tx{ min-width:0; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.nvg-then-k{ font-weight:650; }
+
+/* ══ THE STATE BANNER (§7) — and the spinner is CSS, so nothing runs on the tick's thread ══════ */
+.nvg-banner{ display:flex; align-items:center; gap:9px; padding:10px 12px; font-size:14.5px; font-weight:600; }
+.nvg-banner-tx{ flex:1 1 auto; min-width:0; }
+.nvg-s-offroute, .nvg-s-error{ color:#c5221f; }
+.nvg-s-arriving{ color:#1e8e3e; }
+[data-theme="dark"] .nvg-s-offroute, [data-theme="dark"] .nvg-s-error{ color:#ff6b60; }
+[data-theme="dark"] .nvg-s-arriving{ color:#34c759; }
+.nvg-spin{ flex:0 0 auto; width:16px; height:16px; border-radius:50%; opacity:0.75;
+  border:2px solid currentColor; border-top-color:transparent; animation:nvgSpin 0.9s linear infinite; }
+@keyframes nvgSpin{ to{ transform:rotate(360deg); } }
+
+/* the faster-route offer (§16) — presented, never taken on the reader's behalf */
+.nvg-offer{ display:flex; align-items:center; gap:10px; padding:9px 10px 9px 13px; }
+.nvg-offer-tx{ flex:1 1 auto; min-width:0; font-size:14px; font-weight:600; }
+
+/* ══ THE STATUS BAR (§10) ══════════════════════════════════════════════════════════════════════ */
+.nvg-panel{ display:flex; flex-direction:column; gap:9px; padding:4px 13px 12px; }
+/* ⚠ THE GRIP IS FULL WIDTH. Its own height is short, but the pressable area spans the whole bar,
+   so the target is far larger than 44 px in the direction a thumb misses in. */
+.nvg-grip{ display:flex; align-items:center; justify-content:center; width:100%; min-height:30px;
+  padding:0; border:none; background:transparent; cursor:pointer; touch-action:manipulation; }
+.nvg-grip-bar{ width:40px; height:5px; border-radius:3px; background:rgba(128,128,128,0.42); transition:background .13s ease; }
+.nvg-grip:hover .nvg-grip-bar{ background:rgba(128,128,128,0.62); }
+.nvg-stats{ display:flex; align-items:flex-end; gap:10px; }
+.nvg-stat{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.nvg-stat b{ font-size:20px; font-weight:700; letter-spacing:-0.4px; font-variant-numeric:tabular-nums;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.nvg-cap{ font-size:12.5px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* §6 — the line that says where the number came from, including when the answer is 「nowhere」 */
+.nvg-traffic{ margin:0; font-size:12.5px; color:var(--text-muted); }
+.nvg-traffic.nvg-late{ color:#c5221f; font-weight:600; }
+[data-theme="dark"] .nvg-traffic.nvg-late{ color:#ff6b60; }
+
+.nvg-acts{ display:flex; gap:8px; }
+.nvg-btn{ flex:1 1 0; min-width:44px; min-height:44px; box-sizing:border-box;
+  display:inline-flex; align-items:center; justify-content:center;
+  border:none; border-radius:13px; background:var(--input-bg); color:var(--text-main);
+  font:inherit; font-size:14px; font-weight:600; cursor:pointer; touch-action:manipulation;
+  transition:background .13s ease, color .13s ease, filter .13s ease; }
+.nvg-btn:hover{ filter:brightness(1.07); }
+.nvg-btn:active{ filter:brightness(0.94); }
+.nvg-btn.on, .nvg-btn.nvg-primary{ background:var(--primary-color); color:#fff; }
+.nvg-btn.nvg-end{ background:rgba(217,48,37,0.12); color:#c5221f; }
+[data-theme="dark"] .nvg-btn.nvg-end{ background:rgba(255,69,58,0.18); color:#ff6b60; }
+/* a labelled button sizes to its words instead of sharing the icon row's equal columns */
+.nvg-btn-tx{ flex:0 0 auto; padding:0 15px; }
+.nvg-btn:focus-visible, .nvg-grip:focus-visible{ outline:2px solid var(--primary-color); outline-offset:2px; }
+
+/* pulled up: read-only facts, never a settings panel while driving (§37) */
+.nvg-more{ display:flex; flex-direction:column; gap:5px; padding-top:9px;
+  border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); }
+.nvg-row{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; font-size:13px; }
+.nvg-row b{ min-width:0; font-weight:650; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.nvg-sim{ margin:2px 0 0; font-size:12.5px; font-weight:650; color:var(--primary-color); }
+
+/* ══ ⚠⚠ §38 「案内開始後はRoute Planning UIをそのまま残さないでください。」 ═══════════════════════
+   HIDDEN, NOT CLOSED — see the header of js/navigation-ui.js. `IntMapRouteUI.close()` also deletes
+   the drawn route (#R296 made that deliberate) and the route is the one thing navigation may not
+   lose, so §38 is kept with a class on <body>: the panel leaves the screen with every byte of its
+   state intact, and ending navigation puts it back exactly as the reader left it. */
+body.nvg-on #route-panel{ display:none !important; }
+
+/* ══ THE PHONE (§37) — the guidance card owns the top, the status bar owns the bottom ══════════ */
+@media (max-width:767px){
+  /* fixed for the same reason .rtp is: a bar anchored to the viewport must not ride the map */
+  .nvg{ position:fixed; z-index:1802; }
+  .nvg-top{ width:100%; padding:max(10px,calc(env(safe-area-inset-top) + 4px)) 10px 0; gap:7px; }
+  .nvg-bar{ width:100%; padding:0; }
+  .nvg-panel{ border-radius:20px 20px 0 0; border-left:none; border-right:none; border-bottom:none;
+    padding:2px 12px calc(11px + env(safe-area-inset-bottom,0px)); }
+  .nvg-grip{ min-height:44px; }
+  .nvg-dist{ font-size:32px; }
+  .nvg-stat b{ font-size:21px; }
+  .nvg-btn{ min-height:48px; }
+  .nvg-lane{ min-width:34px; min-height:34px; }
+  /* ⚠ 「10〜11pxの主要文字を使わない」 — the two signpost KEYS are the smallest type on this
+     surface (11.5 px on the desktop, beside a full-size value); on a phone they take 12. */
+  .nvg-exit-k, .nvg-toward-k{ font-size:12px; }
+  /* ⚠ TWO PANELS CANNOT BOTH OWN THE EDGES OF A PHONE SCREEN — the same rule and the same set
+     `body.rtp-open` uses (#R291), keyed on this HUD instead so ending navigation restores all of it
+     with no state to keep in step. The FAB column and the search pill sit at the TOP on a phone,
+     which is exactly where the guidance card goes. */
+  body.nvg-on .m-fab-stack, body.nvg-on .map-search{ opacity:0; pointer-events:none; }
+  body.nvg-on .ai-view-summary-btn, body.nvg-on #iol-fab,
+  body.nvg-on .news-timeline, body.nvg-on .data-legend{ display:none !important; }
+  /* ⚠ (#R347) THE BASEMAP SWITCHER SITS ON TOP OF THE TURN INSTRUCTION. Measured at 390×844:
+     `document.elementFromPoint(40, 95)` returned `#bm-square`, over the second line of
+     `.nvg-card` — 「At th[e] end of the road, turn left onto 日比谷通り」 with the first words
+     hidden behind a map thumbnail. It is hidden for the duration of the guidance and comes back
+     the moment navigation stops, exactly as #route-panel does above: nothing is removed, and the
+     one thing a driver must be able to read is readable. */
+  body.nvg-on #bm-square{ display:none !important; }
+}
+/* 320 px is the narrowest phone this app supports — nothing may reach past the viewport there */
+@media (max-width:359px){
+  .nvg-dist{ font-size:27px; }
+  .nvg-arr-hd{ font-size:18px; }
+  .nvg-stat b{ font-size:18px; }
+  .nvg-btn{ min-height:44px; }
+  .nvg-lane{ min-width:30px; min-height:30px; }
+  .nvg-acts{ gap:6px; }
+}
+@media (prefers-reduced-motion:reduce){
+  .nvg-spin{ animation:none; }
+  .nvg-btn, .nvg-grip-bar{ transition:none; }
+}
+@media (prefers-reduced-transparency:reduce){
+  .nvg-card, .nvg-banner, .nvg-offer, .nvg-panel{
+    background:var(--card-bg); backdrop-filter:none; -webkit-backdrop-filter:none; }
+}
+@media (forced-colors:active){
+  .nvg-card, .nvg-banner, .nvg-offer, .nvg-panel{
+    background:Canvas !important; border:1px solid CanvasText !important; box-shadow:none !important;
+    backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+  .nvg-btn{ border:1px solid CanvasText !important; background:ButtonFace !important; color:ButtonText !important; }
+  .nvg-btn.on, .nvg-btn.nvg-primary{ background:Highlight !important; color:HighlightText !important; }
+  /* the usable lane keeps a mark the OS cannot recolour away */
+  .nvg-lane.on{ border:1px solid CanvasText; }
+}
