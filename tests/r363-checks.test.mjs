@@ -121,6 +121,29 @@ test('⑤ no Japanese argument is the English word, and the dead `ago` helper is
     'monitors.js: the Russian relative time is missing its number again');
 });
 
+/* ── ⑤b ⚠⚠ WHEN A MEANING LEAVES, THE ROW IT WAS TRANSLATED FOR STAYS ─────────────────────────
+   Moving the outlier to its own key fixes the outlier. It does NOT fix the key it left behind,
+   whose row may have been written for the meaning that just departed — and if only one site now
+   remains, the collision audit cannot see it, because one site is not a collision.
+   `'Emergency'` was exactly that: two sites (救急 the hospital ER, 緊急（最高階級）the top class of
+   the alert ladder) and a row that said «emergency room». The ER moved to `'Emergency room'`, and
+   the alert ladder was left calling its most severe class «Urgences / 응급 / 急診» — a hospital
+   department. The four rows must stay on the ALERT sense, and distinct from the three steps below
+   them (Advisory < Warning < Danger < Emergency). */
+test('⑤b the alert ladder is four distinct steps, and its top is not a hospital department', () => {
+  const ER = { fr: 'Urgences', ko: '응급', zh: '急診', 'zh-hans': '急诊' };
+  for (const code of ['fr', 'ko', 'zh', 'zh-hans']) {
+    const src = read(`js/locales/ui.${code}.js`);
+    const row = (k) => (src.match(new RegExp(`["']${k}["']\\s*:\\s*"([^"]*)"`)) || [])[1];
+    const steps = ['Advisory', 'Warning', 'Danger', 'Emergency'].map(row);
+    assert.ok(steps.every(Boolean), `ui.${code}.js: the alert ladder is missing a row — ${steps.join(' / ')}`);
+    assert.notEqual(row('Emergency'), ER[code],
+      `ui.${code}.js: 'Emergency' is back to the hospital-ER word, but its only call site is the TOP CLASS of the alert ladder (js/world-packs.js NORM_NAME)`);
+    assert.equal(new Set(steps).size, 4,
+      `ui.${code}.js: the four alert steps collapse to ${new Set(steps).size} distinct words — ${steps.join(' / ')}`);
+  }
+});
+
 /* ── ⑥ the surface is actually RUN ─────────────────────────────────────────────────────────────
    #R301: a check that no list names never executes, and is therefore not a weaker check — it is
    not a check. This one has two registries to be in. */

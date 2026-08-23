@@ -4072,7 +4072,7 @@ window.IntMapLang.define('ko', { ui: {
   "Doctors": "개인 의원",   /* (#R255) */
   "Embassies, consulates and other diplomatic missions mapped in OpenStreetMap for the current view. Click any point for the record.": "현재 화면 범위에 대해 OpenStreetMap에 등록된 대사관·영사관 등 외교 공관입니다. 점을 클릭하면 내용이 표시됩니다.",   /* (#R255) */
   "Embassy": "대사관",   /* (#R255) */
-  "Emergency": "응급",   /* (#R255) */
+  "Emergency": "긴급",   /* (#R255) */
   "Health facilities": "의료기관",   /* (#R255) */
   "Height": "높이",   /* (#R255) */
   "Hospital": "병원",   /* (#R255) */

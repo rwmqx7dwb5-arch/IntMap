@@ -4082,7 +4082,7 @@ window.IntMapLang.define('fr', { ui: {
   "Doctors": "Cabinet médical",   /* (#R255) */
   "Embassies, consulates and other diplomatic missions mapped in OpenStreetMap for the current view. Click any point for the record.": "Ambassades, consulats et autres missions diplomatiques cartographiés dans OpenStreetMap pour la vue actuelle. Cliquez sur un point pour voir la fiche.",   /* (#R255) */
   "Embassy": "Ambassade",   /* (#R255) */
-  "Emergency": "Urgences",   /* (#R255) */
+  "Emergency": "Urgence",   /* (#R255) */
   "Health facilities": "Établissements de santé",   /* (#R255) */
   "Height": "Hauteur",   /* (#R255) */
   "Hospital": "Hôpital",   /* (#R255) */

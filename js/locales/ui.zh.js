@@ -4173,7 +4173,7 @@ window.IntMapLang.define('zh', {
     "Doctors": "醫師診間",   /* (#R255) */
     "Embassies, consulates and other diplomatic missions mapped in OpenStreetMap for the current view. Click any point for the record.": "目前視野範圍內 OpenStreetMap 上的大使館、領事館等外交館舍。點選任一點位可查看紀錄。",   /* (#R255) */
     "Embassy": "大使館",   /* (#R255) */
-    "Emergency": "急診",   /* (#R255) */
+    "Emergency": "緊急",   /* (#R255) */
     "Health facilities": "醫療機構",   /* (#R255) */
     "Height": "高度",   /* (#R255) */
     "Hospital": "醫院",   /* (#R255) */

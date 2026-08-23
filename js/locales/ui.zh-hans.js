@@ -4177,7 +4177,7 @@ window.IntMapLang.define('zh-hans', {
     "Doctors": "医师诊间",   /* (#R255) */
     "Embassies, consulates and other diplomatic missions mapped in OpenStreetMap for the current view. Click any point for the record.": "目前视野范围内 OpenStreetMap 上的大使馆、领事馆等外交馆舍。点击任一点位可查看纪录。",   /* (#R255) */
     "Embassy": "大使馆",   /* (#R255) */
-    "Emergency": "急诊",   /* (#R255) */
+    "Emergency": "紧急",   /* (#R255) */
     "Health facilities": "医疗机构",   /* (#R255) */
     "Height": "高度",   /* (#R255) */
     "Hospital": "医院",   /* (#R255) */
