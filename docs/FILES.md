@@ -520,6 +520,22 @@ scripts/
                                   async chunk と dist の合計は**天井だけ**（縮むのは自由）。
                                   ⚠ `requests` と `modules` は**バイトではなく個数**なので完全一致で見る。
                                   基準は `tests/perf-baseline.json`（追跡対象）。`--update` で更新。
+  mobile-trace.mjs                **2つのエンジンで1本のトレースを取る計器**（ゲートではない）。
+                                  起動→最初のpan→最初のzoom→暖機→気象ON→警報ON を 1 本で走らせ、
+                                  Chromium と **WebKit**（＝iOS Safari と同じ JavaScriptCore＋WebCore）
+                                  を同じ機械・同じ再生バイトで並べる。⚠ **CPU スロットルは CDP のみ**
+                                  なので既定は `--cpu 1`＝**両腕とも素**（片方だけ絞ると比較が壊れる）。
+                                  ⚠ これは**エンジンの比較であって携帯の数字ではない**。
+                                  サーバは自分で起動・停止し、`.frame-cache/` は
+                                  `frame-profile.mjs` と**共有**する（別々に育てると腕がキャッシュの分だけ違う）。
+  trace-probe.js                  上の**ページ側の計器**（`addInitScript` で最初のスクリプトより前に入る）。
+                                  ⚠ **アプリではない**——`js/` も `src/` も import しない
+                                  （`tests/r387-checks ⑤` が出荷経路への混入を落とす）。
+                                  入れ子を差し引いた **self time** で placement / render / mapRender /
+                                  texUpload / bufUpload / decode / workerPost / workerRecv を数え、
+                                  **MessageChannel の ping ループ**で `longtask` 観測器を持たない
+                                  WebKit でも主スレッドの詰まりを測る。
+                                  ⚠ **付かなかったフックは 0 ではなく「不在」**として報告する。
   engine-coupling.mjs             レンダラ脱依存のゲート
   i18n-*.mjs                      翻訳の被覆と形の監査（§10）
   eol.mjs                         ソース検査は**バイト列ではなく内容**を読む（改行はチェックアウトの性質）

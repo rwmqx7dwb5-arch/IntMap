@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-23): the **core** tier that
 gates a push is **6 spec files / 1.0 min** against a ceiling of 1.1 min; the **whole** suite is
 **68 measured spec files / 86.3 min** of serial browser time against a ceiling of 86.3 min; and
-`npm run test:checks` runs **194 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **195 Node test files** with no browser at all (counted from
 `package.json`). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -256,6 +256,119 @@ at 20.8, which is larger than most of the effects being looked for.
   URL, which is what turns a sample into a file name. That makes it an ATTRIBUTION instrument, not
   a timing one: dev is unbundled and unminified, so the RANKING transfers and the milliseconds do
   not, and must not be quoted as production numbers.
+
+### Measuring the ENGINE, not the phone: `scripts/mobile-trace.mjs` (#R387)
+
+Everything above is Chromium. `frame-profile.mjs` sets an iPhone 13 user-agent, a 390×844 viewport
+and DPR 3, and throttles the CPU 4× — an **iPhone-shaped Chromium**, which is not an iPhone. The two
+costs the mobile corpus keeps landing on (MapLibre label placement, and native image decode + GPU
+upload) are exactly the two whose implementations differ most between Blink and WebKit, so "the
+engine is not the variable" was the one assumption never tested.
+
+A real iPhone cannot be reached from this machine (Windows, no Safari, no device bridge). What can
+be held constant is everything except the engine:
+
+```bash
+node scripts/mobile-trace.mjs --engine chromium --record   # once, CHROMIUM ONLY: fill the replay cache
+node scripts/mobile-trace.mjs                      # chromium + webkit, 3 reps each
+node scripts/mobile-trace.mjs --engine webkit --reps 1
+node scripts/mobile-trace.mjs --cpu 4 --engine chromium   # the historical throttled profile
+node scripts/mobile-trace.mjs --verify             # + the CDP sampler cross-check
+```
+
+One continuous trace per rep — **boot → settle → pan-first → zoom-first → warm-up → pan-warm →
+zoom-warm → zoom-back → weather-on → pan-weather → alerts-on → pan-alerts** — with main-thread SELF
+time in eight buckets: `placement` (`Style._updatePlacement`), `render` (`Painter.render`),
+`mapRender` (`Map._render`), `texUpload`, `bufUpload`, `decode`, `workerPost`, `workerRecv`.
+
+⚠ **`--cpu` defaults to 1 here, and that is not an oversight.** CPU throttling is CDP, and CDP does
+not exist in WebKit; throttling one arm and not the other would compare two different machines. The
+historical ×4 Chromium numbers stay where they were measured. **A number from this script is an
+engine comparison on desktop silicon, not a phone number.**
+
+Four things it does that no earlier instrument here did:
+
+* **Self time, not inclusive time.** `Map._render` calls `Painter.render`, which calls `texImage2D`.
+  A one-entry-per-nesting-level stack pauses the parent's accumulator on enter, so the buckets are a
+  real decomposition and can be compared against the total. `tests/r387-checks ①` pins every bucket
+  of a synthetic frame to the millisecond.
+* **A long-task equivalent that exists in WebKit.** Safari has never shipped the `longtask` entry
+  type — `frame-profile.mjs`'s observer is inside a `catch` that silently produces no number there.
+  A `MessageChannel` ping loop re-posts to itself as fast as the task queue allows, so the gap
+  between two ticks IS the block. MEASURED — both engines, 390×844, each primitive driven in a
+  continuous loop for 800 ms — `MessageChannel` does a round trip in **0.008 ms** (Chromium) and
+  **1.167 ms** (WebKit); `setTimeout(0)` takes 6.2 / 15.1 ms and `rAF` 16.3 / 16.6 ms. It is the
+  right primitive in both, by two orders of magnitude.
+* ⚠ **`busy` is accumulated, never inferred — and both attempts to infer it were wrong by the whole
+  column.** The idea was `busy = wall − pings × tick0`, with `tick0` the loop's own idle cost.
+  Estimating `tick0` from a quiet `about:blank` gives 0.011 ms in Chromium and **50 ms** in WebKit
+  (a page Playwright is not driving gets throttled), and 50× too large drives busy to zero.
+  Estimating it from the run's own smallest gap gives Chromium **0.100 ms against a 0.013 ms mean**
+  — `performance.now()` is quantised to 0.1 ms there, so the "floor" is the *clock's* resolution,
+  not the queue's; that charged 7,011,938 × 0.1 ms = **701 s** of instrument overhead against a 90 s
+  run. So the probe adds up the time spent in gaps **longer than 2 ms**, which clears both engines'
+  floor and needs no calibration. ⚠ That makes `busy>2` a **floor**: work finishing inside 2 ms is
+  invisible to it, and the buckets may legitimately exceed it (reported as `overAttributed`, never
+  clamped silently). **The bucket columns have no such limit** — they are wrapper measurements.
+* **A hook that did not attach is reported ABSENT, never as 0.** Every wrapper records itself only
+  when the property was really replaced, and `attachMap()` returns which of the three MapLibre hooks
+  took. A minifier that started mangling `_updatePlacement` must show up as a missing hook, not as
+  label placement costing nothing.
+
+What is **Chromium-only**, and printed as `—` rather than 0: heap / nodes / listeners (CDP
+`HeapProfiler` + `Performance.getMetrics`), CPU and network throttling, the `longtask` observer, and
+the sampling profiler. **GC time is unavailable to page script in both engines**, so it is not in any
+bucket and is not folded into `other`. **Worker-side work is also outside every bucket** —
+`addInitScript` does not reach a dedicated worker's global scope, so the decode that
+`js/sat-worker.js` does, and everything MapLibre's own workers do, is invisible; what is measured is the main thread's
+half of the exchange (`workerPost` is the structured clone, paid synchronously by the caller).
+
+⚠⚠ **THE WEBKIT ARM IS NOT YET USABLE, AND THE REASON IS NOT KNOWN.** MEASURED, same page, same
+viewport, same UA, over seven runs: WebKit reached `ready` **twice** — 25,226 ms and 27,060 ms, both
+with `--record` on — against **13,283 ms for Chromium under the identical script**. The other five
+runs never reached `ready` (108,556–144,087 ms) and afterwards **the page stopped answering the
+protocol entirely**: a bare `page.evaluate(() => 'yes')` never returns.
+
+Two explanations were tried and both were **wrong**: `context.route()` interception is not it (the
+intercepted arm is the one that completed), and blocked uncached requests are not it either (the
+last failing run recorded **18 replayed / 0 missed / 0 blocked**). So: the Chromium numbers (recorded
+in `DEV-NOTES.md` under #R387) are real, the WebKit twelve-phase table does not exist yet, and
+**nobody should write down a cause for this until one is measured.** What is established is that WebKit finishes the boot in ~27 s when
+every request is answered — about **2× Chromium** on the same machine in the same minute.
+
+⚠ The harness no longer waits in silence for it: `--phase-timeout` (default 150 s) covers every
+protocol call in a rep, a tripped deadline ends that rep with a named error, and the run reports
+`N rep(s) lost` and tabulates whatever survived.
+
+⚠ **Playwright's `waitForFunction` polls with `requestAnimationFrame` by default, and rAF is the one
+primitive that effectively stops in a WebKit page nobody is driving** — one frame in 600 ms, against
+60 fps in Chromium. A six-second settle sat there for eleven minutes before this was found. Every
+waiter in this harness uses `polling: 500` and a hard `Promise.race` deadline on top.
+
+⚠⚠ **`weather-on` measures switching the wind layer on — NOT the ECMWF field decode, and the run
+says so.** The field is a set of large HTTP Range requests against Open-Meteo's `.om` files;
+`route.fetch()` gives up on them at 20 s and writes the failure into the replay cache, so every
+later run replays *that*. MEASURED: two recording passes, the second after purging every failure the
+cache had memorised, both waited **187 s** and both ended `field:false`. The wait is therefore capped
+at a bounded 25 s, identical in both engines, and the phase reports **`field`** (is the sampler
+there) and **`windLayers`** (does the renderer actually hold wind layers) separately. The downstream
+taint is keyed on `windLayers`, not on `field` — #R353's rule that the question is what the renderer
+has, not what the source intended. #R325's 1,190 ms colour-raster step is a different measurement,
+taken against a live network.
+
+⚠ **A cached failure is sticky.** `blocked` in the summary line counts requests answered by a
+`{"failed":true}` cache entry as well as ones aborted for being uncached — one run showed
+**422 blocked over 15 distinct poisoned URLs**. If a run's `blocked` count is large, delete the
+failed entries from `.frame-cache/` and re-record; nothing in the harness retries them on its own.
+
+⚠ **Driving a layer on is three routes, and the result says which one it took.** `el.click()` is the
+reader's own path and is tried first, but the layer rows cancel the click, so the run falls back to
+`IntMapOS.exec('layer.on')` **without awaiting it** — awaiting hangs the harness, because the alert
+layer's command never settles when a request it starts cannot be answered — and finally to setting
+`checked` and firing `change`. Each route is followed by a bounded poll, and **a layer that never
+went on is reported `ran:false`, not as a phase that cost nothing** (#R322's rule). The first run of
+this instrument drove `dl-ec-wind`, which is the id of a preview *canvas*, and `dl-alerts`, which
+does not exist; the real ids are `dl-wind` and `wp-dl-alerts`.
 
 ### On-demand modules (#R209)
 
