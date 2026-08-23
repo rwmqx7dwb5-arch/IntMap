@@ -301,6 +301,15 @@ window.IntMapModules.betaOverlays=function(HOST){
     const VOLC_SIZE=['+',0.65,['*',0.14,['max',0,['coalesce',['get','x'],1]]]];
     const volcRadius=['interpolate',['linear'],['zoom'],
       1,['*',2.2,VOLC_SIZE], 5,['*',4.6,VOLC_SIZE], 9,['*',8,VOLC_SIZE]];
+    /* ⚠ THE HALO NEEDS ITS OWN TOP-LEVEL `interpolate`, NOT `['*', 2.6, volcRadius]`.
+       MapLibre requires a `zoom` expression to be the OUTERMOST expression of a paint property, and
+       it does not THROW when it is not: `addLayer` validates, fires an ErrorEvent and skips the
+       layer. So the multiplied form left `volc2-halo` silently absent — the layer file loaded, the
+       points drew, the colour modes worked, and the one thing that marks the volcanoes an
+       observatory is speaking about today was simply not on the map. Found in production
+       verification, in the console, after every local test had passed (#R353 追記). */
+    const volcHaloRadius=['interpolate',['linear'],['zoom'],
+      1,['*',5.72,VOLC_SIZE], 5,['*',11.96,VOLC_SIZE], 9,['*',20.8,VOLC_SIZE]];
 
     function volcColor(mode){
       const y=['coalesce',['get','y'],-99999];
@@ -324,7 +333,7 @@ window.IntMapModules.betaOverlays=function(HOST){
         /* the halo goes UNDER the points: it is a second claim about the same dot, not a bigger dot */
         GE().layers.add({id:'volc2-halo',type:'circle',source:'volc2-src',layout:{visibility:'none'},
           filter:['>=',['coalesce',['get','st'],-1],2],
-          paint:{'circle-radius':['*',2.6,volcRadius],'circle-color':['step',['coalesce',['get','st'],-1],'#6b7280',2,'#e8c53a',3,'#f08a2d',4,'#e0332f'],
+          paint:{'circle-radius':volcHaloRadius,'circle-color':['step',['coalesce',['get','st'],-1],'#6b7280',2,'#e8c53a',3,'#f08a2d',4,'#e0332f'],
                  'circle-opacity':0.24,'circle-blur':0.55}},before);
         GE().layers.add({id:'volc2-pt',type:'circle',source:'volc2-src',layout:{visibility:'none'},paint:{
           'circle-radius':volcRadius,

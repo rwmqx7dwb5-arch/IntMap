@@ -125,6 +125,18 @@ test('R353 ② four colour modes, and "nothing published" is its own colour', as
   const page = app.page;
   await volcanoLayerOn(page);
 
+  /* ⚠⚠⚠ ALL THREE OF THE LAYER'S RENDERINGS MUST BE ON THE RENDERER, AND THIS IS WHY.
+     `volc2-halo` had `['*', 2.6, <zoom interpolate>]` as its radius. MapLibre requires a `zoom`
+     expression to be the OUTERMOST expression of a paint property — and it does not throw when it is
+     not: addLayer validates, fires an ErrorEvent, and SKIPS THE LAYER. So the layer file loaded, the
+     points drew, all four colour modes worked, every test here passed, and the one rendering that
+     marks the volcanoes an observatory is speaking about today was simply not on the map. It was
+     found by reading the console in production. Asking the renderer which layers it HAS is the
+     question that catches it; asking the source what it MEANT is not (#R353 追記). */
+  const present = await page.evaluate(() => ['volc2-halo', 'volc2-pt', 'volc2-lbl']
+    .map((id) => [id, window.IntMapGeoEngine.layers.has(id)]));
+  for (const [id, has] of present) expect(has, id + ' was rejected by the renderer').toBe(true);
+
   const modes = await page.evaluate(() => window.__imVolcLayer.modes());
   expect(modes).toEqual(['recency', 'vei', 'status', 'people']);
 
