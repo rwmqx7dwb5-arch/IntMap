@@ -3613,7 +3613,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      elections 1789–2024, states coloured by who took their electoral votes, with the year picker
      and the electoral-vote / popular-vote bar chart in the layer's own legend. See
      js/us-elections.js and scripts/build-us-elections.mjs. ===== */
-  window.IntMapModules.usElections(IM_HOST);
+  window.IntMapModules.usElections(IM_HOST); window.IntMapModules.warFronts(IM_HOST);   /* (#R349) the two world wars' Layers row — ON THIS LINE for the shell budget, the same reason #R255 gives above; the layer it fetches (js/war-layer.js) is lazy */
 
   /* ===== (#R22) Religion & language distribution — categorical country choropleths (beta). Each
      country is shaded by its DOMINANT religion / PRIMARY official language (well-established facts;

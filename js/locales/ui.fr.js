@@ -5351,4 +5351,12 @@ window.IntMapLang.define('fr', { ui: {
   'Times come from the map’s clock ({year}), not from today — live timetables do not cover it.': 'Les horaires proviennent de l’horloge de la carte ({year}), pas d’aujourd’hui — les horaires en direct ne la couvrent pas.',   /* routing-time.js (#R347) */
   'Times are calculated from the map’s clock ({year}), not from today.': 'Les horaires sont calculés depuis l’horloge de la carte ({year}), pas depuis aujourd’hui.',   /* routing-time.js (#R347) */
   'Traffic data was unavailable — this is the standard travel time.': 'Données de trafic indisponibles — voici le temps de trajet standard.',   /* routing-cards.js (#R347) */
+  'Company rule in India': 'Domination de la Compagnie des Indes en Inde',   /* war-fronts.js / history.js (#R349) */
+  'Could not load the war data': 'Impossible de charger les données de guerre',   /* war-fronts.js / history.js (#R349) */
+  'Front lines': 'Lignes de front',   /* war-fronts.js / history.js (#R349) */
+  'Front lines are shown for the dates the record gives a position for, and hold until the next one — the date beside each line is the date it is from. Country outlines: CShapes 2.0.': 'Les lignes de front sont affichées pour les dates dont les sources donnent une position, et tiennent jusqu’à la suivante — la date à côté de chaque ligne est sa date. Frontières : CShapes 2.0.',   /* war-fronts.js / history.js (#R349) */
+  'line of': 'ligne du',   /* war-fronts.js / history.js (#R349) */
+  'Second French Empire': 'Second Empire français',   /* war-fronts.js / history.js (#R349) */
+  'The clock is not inside either war. Move Chronos to a date between 1914 and 1945, or jump straight in:': 'L’horloge n’est dans aucune des deux guerres. Placez Chronos à une date entre 1914 et 1945, ou allez-y directement :',   /* war-fronts.js / history.js (#R349) */
+  'World wars (day by day)': 'Guerres mondiales (jour par jour)',   /* war-fronts.js / history.js (#R349) */
 } });
