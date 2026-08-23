@@ -1208,7 +1208,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       let html='<div style="font-weight:600;margin:2px 0 5px;">'+esc(lx(m.label))+' — '+L('map shading','地図の濃淡','Kartenfärbung','окраска карты','sombreado del mapa')+'</div>';
       html+='<div style="height:12px;border-radius:6px;background:'+grad+';margin:4px 0;"></div>';
       html+='<div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-muted);"><span>'+(bottom?hiTxt:loTxt)+'</span><span>'+(bottom?loTxt:hiTxt)+'</span></div>';
-      html+='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">'+L('High','最高','Höchster','Макс.','Máx.')+': '+esc(nm(countryStats[top.code]))+' ('+esc(fmtVal(metricKey,top.raw))+') · '+L('Low','最低','Niedrigster','Мин.','Mín.')+': '+esc(nm(countryStats[bot.code]))+' ('+esc(fmtVal(metricKey,bot.raw))+')</div>';
+      html+='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">'+L('Max','最高','Höchster','Макс.','Máx.')+': '+esc(nm(countryStats[top.code]))+' ('+esc(fmtVal(metricKey,top.raw))+') · '+L('Min','最低','Niedrigster','Мин.','Mín.')+': '+esc(nm(countryStats[bot.code]))+' ('+esc(fmtVal(metricKey,bot.raw))+')</div>';
       return R(true, note(html)+cWarn); }
     /* ==== (#R75) vision §10/§13 groundwork — metric series shared by explore & scoreMap ==== */
     /* (#R75) hoisted from localPlan so _metSpec can translate metric names too */
@@ -2243,7 +2243,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           const _step=(key,val,delta,min,max,unit,label)=>'<div class="atl-rad-ctl"><span>'+label+'</span><button class="atl-traj-btn atl-rad-mini" data-rad=\''+esc(JSON.stringify({[key]:Math.max(min,val-delta)}))+'\'>−</button><b>'+val+unit+'</b><button class="atl-traj-btn atl-rad-mini" data-rad=\''+esc(JSON.stringify({[key]:Math.min(max,val+delta)}))+'\'>＋</button></div>';
           h+='<div class="atl-rad-cfg">'
             +'<div class="atl-rad-ctl"><span>'+L('Isotope','核種','Isotop','Изотоп','Isótopo')+'</span>'+_sel('isotope',[['cs137','Cs-137 (30y)'],['i131','I-131 (8d)'],['cs134','Cs-134 (2y)'],['sr90','Sr-90 (29y)']],cur.isotope)+'</div>'
-            +'<div class="atl-rad-ctl"><span>'+L('Source','放出量','Quelle','Выброс','Fuente')+'</span>'+_sel('bq',[[8.5e16,'Chernobyl · 85 PBq'],[1.5e16,'Fukushima · 15 PBq'],[1e15,'1 PBq'],[3.7e13,'Dirty bomb · 37 TBq'],[1e12,'1 TBq']],cur.bq)+'</div>'
+            +'<div class="atl-rad-ctl"><span>'+L('Source term','放出量','Quellterm','Выброс','Término fuente')+'</span>'+_sel('bq',[[8.5e16,'Chernobyl · 85 PBq'],[1.5e16,'Fukushima · 15 PBq'],[1e15,'1 PBq'],[3.7e13,'Dirty bomb · 37 TBq'],[1e12,'1 TBq']],cur.bq)+'</div>'
             +_step('emitHours',cur.emitHours,2,0.5,72,'h',L('Emission','放出時間','Freisetzung','Выброс','Emisión'))
             +_step('hours',cur.hours,12,6,80,'h',L('Sim window','計算時間','Zeitfenster','Окно','Ventana'))
             +'</div>';
@@ -3251,7 +3251,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(!cnt) return R(false, warn('⚠ '+L('No sampled points '+(above?'above':'below')+' '+thr+' m in this area','この範囲に'+thr+'m'+(above?'以上':'以下')+'の地点は見つかりませんでした','Keine Punkte '+(above?'über':'unter')+' '+thr+' m in diesem Gebiet','Нет точек '+(above?'выше':'ниже')+' '+thr+' м в этой области','Sin puntos '+(above?'sobre':'bajo')+' '+thr+' m')));
           ensureElevLayers(); try{ GE().layers.setSourceData('nlq-elev-src',{type:'FeatureCollection',features:feats}); }catch(_){}
           try{ GE().camera.fitBounds(box,{padding:50,duration:900}); }catch(_){}
-          return R(true, note('🌊 '+esc((ext&&ext.name)||place||L('current view','現在の表示','aktuelle Ansicht','текущий вид','vista actual'))+' — '+cnt+' '+L('points','地点','Punkte','точек','puntos')+' '+(above?'≥':'≤')+' '+thr+' m · '+L('lowest','最低','tiefster','минимум','mínimo')+' '+Math.round(mn)+' m'+(above?(' · '+L('highest','最高','höchster','максимум','máximo')+' '+Math.round(mx)+' m'):''))
+          return R(true, note('🌊 '+esc((ext&&ext.name)||place||L('current view','現在の表示','aktuelle Ansicht','текущий вид','vista actual'))+' — '+cnt+' '+L('map points','地点','Kartenpunkte','точек карты','puntos del mapa')+' '+(above?'≥':'≤')+' '+thr+' m · '+L('lowest','最低','tiefster','минимум','mínimo')+' '+Math.round(mn)+' m'+(above?(' · '+L('highest','最高','höchster','максимум','máximo')+' '+Math.round(mx)+' m'):''))
             +note(L('Elevation sampled live on a grid from the Copernicus DEM (Open-Meteo) — cells are graduated by depth/height.','標高はCopernicus DEM（Open-Meteo）からグリッド状にライブ取得。セルの濃淡は深さ・高さに応じた段階表示です。','Höhen live vom Copernicus-DEM (Open-Meteo) im Raster.','Высоты в реальном времени из Copernicus DEM (Open-Meteo) по сетке.','Elevación en vivo del DEM Copernicus (Open-Meteo).'))); }
         case 'historicalMap': case 'historical': case 'powerMap': case 'allianceMap': {
           clearFac();

@@ -157,7 +157,7 @@ window.IntMapModules.facilities=function(HOST){
         nuclear:['#af52de',LA('Nuclear','原子力','Kernkraft','АЭС','Nuclear')],
         fossil:['#ff9f0a',LA('Coal / oil / gas','石炭・石油・ガス','Kohle / Öl / Gas','Уголь / нефть / газ','Carbón / petróleo / gas')],
         hydro:['#0a84ff',LA('Hydro','水力','Wasserkraft','ГЭС','Hidroeléctrica')],
-        wind:['#64d2ff',LA('Wind','風力','Wind','Ветер','Eólica')],
+        wind:['#64d2ff',LA('Wind power','風力','Wind','Ветер','Eólica')],
         solar:['#ffd60a',LA('Solar','太陽光','Solarenergie','Солнечная','Solar')],
         grid:['#8e8e93',LA('Substation','変電所','Umspannwerk','Подстанция','Subestación')],
         other:['#30d158',LA('Other / biomass','その他・バイオマス','Sonstige / Biomasse','Прочие / биомасса','Otras / biomasa')] },
@@ -380,7 +380,7 @@ window.IntMapModules.facilities=function(HOST){
     hours:()=>L('Opening hours','診療時間','Öffnungszeiten','Часы работы','Horario'),
     beds:()=>L('Beds','病床数','Betten','Койки','Camas'),
     speciality:()=>L('Speciality','診療科','Fachrichtung','Специализация','Especialidad'),
-    emergency:()=>L('Emergency','救急','Notaufnahme','Неотложная помощь','Urgencias'),
+    emergency:()=>L('Emergency room','救急','Notaufnahme','Неотложная помощь','Urgencias'),
     height:()=>L('Height','高さ','Höhe','Высота','Altura'),
     /* (#R258) the energy / extraction fields */
     output:()=>L('Output','出力','Leistung','Мощность','Potencia'),

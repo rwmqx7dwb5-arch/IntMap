@@ -4082,7 +4082,7 @@ window.IntMapLang.define('fr', { ui: {
   "Doctors": "Cabinet médical",   /* (#R255) */
   "Embassies, consulates and other diplomatic missions mapped in OpenStreetMap for the current view. Click any point for the record.": "Ambassades, consulats et autres missions diplomatiques cartographiés dans OpenStreetMap pour la vue actuelle. Cliquez sur un point pour voir la fiche.",   /* (#R255) */
   "Embassy": "Ambassade",   /* (#R255) */
-  "Emergency": "Urgences",   /* (#R255) */
+  "Emergency": "Urgence",   /* (#R255) */
   "Health facilities": "Établissements de santé",   /* (#R255) */
   "Height": "Hauteur",   /* (#R255) */
   "Hospital": "Hôpital",   /* (#R255) */
@@ -4821,7 +4821,7 @@ window.IntMapLang.define('fr', { ui: {
   "warnings are in force": "des alertes sont en vigueur",
   "Warnings in force": "Alertes en vigueur",
   "Warnings in force at the places you saved or are watching": "Alertes en vigueur aux lieux enregistrés ou suivis",
-  "watch": "suivi",
+  "watch": "veille",
   "Watch a place": "Suivre un lieu",
   "watch area": "zone surveillée",
   "Watch this country": "Suivre ce pays",
@@ -5593,4 +5593,30 @@ window.IntMapLang.define('fr', { ui: {
   "Sea-level pressure": "Pression au niveau de la mer",
   "CAPE instability": "Instabilité CAPE",
   "no such weather layer": "aucune couche météo de ce nom",   /* ai-core.js (#R318) aiTurnCallsMsg */
+  "Aircraft type": "Type d'aéronef",
+  "Announcement": "Communiqué",
+  "Clean air": "Air pur",
+  "Days elapsed": "Jours écoulés",
+  "Economy fee": "Frais économiques",
+  "Elevation angle": "Élévation",
+  "Emergency room": "Urgences",
+  "Highest altitude": "Altitude maximale",
+  "map points": "points de carte",
+  "Max": "Max.",
+  "Max elevation": "Élévation max.",
+  "Metric": "Indicateur",
+  "Min": "Min.",
+  "Neighbours": "Pays voisins",
+  "Place it": "Placer",
+  "Runway use": "Usage de la piste",
+  "Sample points": "points d'échantillonnage",
+  "Sample spacing": "d'espacement",
+  "Selected day": "Jour sélectionné",
+  "Shape": "Forme",
+  "Signal source": "Source du signal",
+  "Time window": "Fenêtre temporelle",
+  "total eclipse": "totale",
+  "Turn all off": "Tout désactiver",
+  "watchlist": "liste de suivi",
+  "Wind power": "Éolien",
 } });

@@ -137,7 +137,7 @@ window.IntMapModules.satelliteDetail=function(HOST){
       else passHTML=row(pass.inProgress?L('Pass in progress','通過中','Überflug läuft','Пролёт идёт','Paso en curso')
                                        :L('Rises','出現','Aufgang','Восход','Sale'),
                         pass.inProgress?L('now','現在','jetzt','сейчас','ahora'):(clock(pass.riseMs)+' · '+inTxt(pass.riseMs)))
-        +row(L('Highest point','最大仰角','Höchststand','Максимум','Punto más alto'), (pass.maxEl==null?'':pass.maxEl.toFixed(1)+'° · '+clock(pass.maxMs)))
+        +row(L('Max elevation','最大仰角','Höchststand','Максимум','Punto más alto'), (pass.maxEl==null?'':pass.maxEl.toFixed(1)+'° · '+clock(pass.maxMs)))
         +row(L('Sets','消失','Untergang','Заход','Se pone'), pass.setMs?clock(pass.setMs):'')
         +row(L('Duration','継続時間','Dauer','Длительность','Duración'), pass.durationS?(Math.floor(pass.durationS/60)+(window.IntMapLang.t(HOST.lang,' min ',' 分 ',' Min ',' мин ',' min '))+String(pass.durationS%60).padStart(2,'0')+(window.IntMapLang.t(HOST.lang,' s',' 秒',' Sek',' с',' s'))):'');
     } else passHTML='<button type="button" class="acp-mini" data-satp="pass">'+S(L('Compute the next pass from here','ここからの次回通過を計算','Nächsten Überflug berechnen','Рассчитать следующий пролёт','Calcular el próximo paso'))+'</button>';
@@ -162,7 +162,7 @@ window.IntMapModules.satelliteDetail=function(HOST){
       +row(L('Revolution at epoch','元期での周回数','Umlauf bei Epoche','Виток на эпоху','Revolución en la época'), f.revNum==null?'':n0(f.revNum))
       +row(L('Drag term (B*)','大気抵抗係数 (B*)','Widerstandsterm (B*)','Баллистический коэффициент (B*)','Término de arrastre (B*)'), (f.bstar==null||!isFinite(f.bstar))?'':f.bstar.toExponential(4))
       +sec(L('From the map center','地図中心から見て','Von der Kartenmitte','От центра карты','Desde el centro del mapa'))
-      +row(L('Elevation','仰角','Elevation','Угол места','Elevación'), la?(la.elDeg.toFixed(2)+'°'):'')
+      +row(L('Elevation angle','仰角','Elevation','Угол места','Elevación'), la?(la.elDeg.toFixed(2)+'°'):'')
       +row(L('Azimuth','方位角','Azimut','Азимут','Acimut'), la?(la.azDeg.toFixed(1)+'°'):'')
       +row(L('Slant range','斜距離','Schrägentfernung','Наклонная дальность','Distancia oblicua'), la?KM(la.rangeKm):'')
       +row(L('Doppler factor','ドップラー係数','Dopplerfaktor','Доплеровский коэффициент','Factor Doppler'), (la&&la.doppler!=null)?la.doppler.toFixed(7):'')

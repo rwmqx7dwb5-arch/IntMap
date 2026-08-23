@@ -4000,7 +4000,7 @@ window.IntMapModules.seismic=function(HOST){
           /* ② the hypocentre */
           const s2btn='<button class="sq-cm-epi sq-stbtn'+(clickMode==='epi'?' on':'')+'">'+(clickMode==='epi'
               ?L('Cancel','解除','Abbrechen','Отмена','Cancelar')
-              :(epi?L('Move','動かす','Verschieben','Переместить','Mover'):L('Place','置く','Setzen','Указать','Colocar')))+'</button>';
+              :(epi?L('Move','動かす','Verschieben','Переместить','Mover'):L('Place it','置く','Setzen','Указать','Colocar')))+'</button>';
           const s2val=epi
             ?(epi[1].toFixed(3)+'°, '+epi[0].toFixed(3)+'° · '+L('depth','深さ','Tiefe','глубина','prof.')+' '+depthKm+' km')
             :L('Not set','未設定','Nicht gesetzt','Не задано','Sin definir');

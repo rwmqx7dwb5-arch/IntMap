@@ -1729,7 +1729,7 @@ window.IntMapModules.space=function(HOST){
     }
     function evLabel(x){
       const B=(id)=>bodyName(id);
-      const kindL=(k)=>k==='total'?L('total','皆既','total','полное','total')
+      const kindL=(k)=>k==='total'?L('total eclipse','皆既','total','полное','total')
         :k==='partial'?L('partial','部分','partiell','частное','parcial')
         :k==='annular'?L('annular','金環','ringförmig','кольцеобразное','anular')
         :L('penumbral','半影','Halbschatten','полутеневое','penumbral');

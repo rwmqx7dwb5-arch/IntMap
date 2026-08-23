@@ -762,7 +762,7 @@ window.IntMapModules.sun=function(HOST){
           +(a.zeroSunDays?('<br><b>'+a.zeroSunDays+'</b> '+SN('days a year with no sun at all','日は終日日が当たりません','Tage ohne Sonne','дней без солнца','días sin sol')):'')
           +'<br>'+SN('Usable for PV','発電可能時間','PV-nutzbar','Пригодно для СЭС','Útil para FV')+' (>'+10+'°): <b>'+nf(a.pvHours)+' h</b> · '
           +SN('clear-sky beam','快晴時の直達日射','klarer Himmel','ясное небо','cielo despejado')+' '+nf(a.beamKWhM2)+' kWh/m²'
-          +'<br>'+SN('Today','この日','Heute','Сегодня','Hoy')+': '+hhmm(d.first)+' → '+hhmm(d.last)+' ('+nf(d.hours,1)+' h) · '
+          +'<br>'+SN('Selected day','この日','Heute','Сегодня','Hoy')+': '+hhmm(d.first)+' → '+hhmm(d.last)+' ('+nf(d.hours,1)+' h) · '
           +SN('highest ridge','最も高い稜線','höchster Grat','высший гребень','cresta más alta')+' '+nf(a.maxHorizonDeg.deg,1)+'° @ '+nf(a.maxHorizonDeg.azimuth)+'°'
           +'<br><span style="opacity:0.72;">'+SN('horizon scanned to','地平線の探索半径','Horizont bis','горизонт до','horizonte hasta')+' '+nf(a.radiusKm)+' km · DEM z'+a.demZ+' · '+a.year+'</span>');
       }catch(_){ engSay(SN('Could not read enough terrain here.','この地点の地形データを取得できませんでした。','Zu wenig Geländedaten.','Недостаточно данных рельефа.','Terreno insuficiente aquí.')); }

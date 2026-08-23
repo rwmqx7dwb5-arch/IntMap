@@ -614,7 +614,7 @@ window.IntMapModules.droneNav=function(HOST){
       : row(L('Ground distance','水平距離','Grundstrecke','Дистанция по земле','Distancia en tierra'), fmtKm(st.groundDistM))
         +row(L('Path length (3-D)','経路長（立体）','Streckenlänge (3-D)','Длина маршрута (3-D)','Longitud (3-D)'), fmtKm(st.dist3DM))
         +row(L('Estimated time','予想飛行時間','Geschätzte Dauer','Расчётное время','Tiempo estimado'), fmtT(st.timeS))
-        +row(L('Highest point','最高高度','Höchster Punkt','Наивысшая точка','Punto más alto'), fmtM(st.maxAmsl)+' AMSL · '+fmtM(st.maxAgl)+' AGL')
+        +row(L('Highest altitude','最高高度','Höchster Punkt','Наивысшая точка','Punto más alto'), fmtM(st.maxAmsl)+' AMSL · '+fmtM(st.maxAgl)+' AGL')
         +row(L('Lowest clearance','最小地上高','Geringster Bodenabstand','Мин. высота над землёй','Menor altura sobre el suelo'), fmtM(st.minClearance)+' AGL')
         +row(L('Total climb','総上昇量','Gesamtsteigen','Общий набор','Ascenso total'), fmtM(st.climbM))
         +row(L('Battery','バッテリー消費','Akku','Батарея','Batería'), st.energyWh.toFixed(1)+' Wh · '+Math.round(st.batteryPct)+' %');

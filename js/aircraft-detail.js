@@ -233,7 +233,7 @@ window.IntMapModules.aircraftDetail=function(HOST){
     return photoHTML
       +'<div class="acp-badges">'+badge+emerg+'</div>'
       +sec(L('Identity','機体','Kennung','Идентификация','Identidad'))
-      +row(L('Aircraft','機種','Muster','Тип ВС','Aeronave'), p.desc||p.acType||'')
+      +row(L('Aircraft type','機種','Muster','Тип ВС','Aeronave'), p.desc||p.acType||'')
       +row(L('Type code','型式コード','Musterkürzel','Код типа','Código de tipo'), p.acType||'')
       +row(L('Registration','登録記号','Kennzeichen','Регистрация','Matrícula'), p.reg||'')
       +row('ICAO24', p.icao24?p.icao24.toUpperCase():'')
@@ -264,7 +264,7 @@ window.IntMapModules.aircraftDetail=function(HOST){
       +row(L('Last seen','最終受信','Zuletzt gesehen','Последний приём','Última recepción'), p.lastContact?agoStr(p.lastContact):'')
       +row(L('Signal','信号強度','Signal','Сигнал','Señal'), p.rssi==null?'':(p.rssi.toFixed(1)+' dBFS'))
       +row(L('Messages','メッセージ数','Nachrichten','Сообщений','Mensajes'), p.messages==null?'':n0(p.messages))
-      +row(L('Source','信号種別','Quelle','Источник','Fuente'), p.src||'')
+      +row(L('Signal source','信号種別','Quelle','Источник','Fuente'), p.src||'')
       +'<button type="button" class="acp-fly" data-acp="fly">'
         +'<span class="acp-fly-h">'+S(L('Fly from these conditions','この初期条件でフライトを開始','Mit diesen Bedingungen fliegen','Взлететь с этими условиями','Volar con estas condiciones'))+'</span>'
         +'<span class="acp-fly-s">'+S((ic.spec&&ic.spec.icon?ic.spec.icon+' ':'')+simName+' · '+altTxt(ic.alt)+' · '+degTxt(ic.hdg)+' · '+n0(ic.speed/KT)+' kn')+'</span>'
