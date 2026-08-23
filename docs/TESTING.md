@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-20): the **core** tier that
 gates a push is **6 spec files / 1.1 min**; the **whole** suite is **65 measured spec files /
 86.5 min** of serial browser time against a ceiling of 86.7 min; and `npm run test:checks` runs
-**164 Node test files** with no browser at all (counted from `package.json` on 2026-08-23; the
+**165 Node test files** with no browser at all (counted from `package.json` on 2026-08-23; the
 line above it is the 2026-08-20 measurement). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -438,6 +438,30 @@ upstream data API is rate-limited or down.
 The only test that talks to the real internet is the **production smoke** (`prod-smoke`),
 which runs against the deployed URL after a deploy and on the uptime schedule. It tolerates
 transient upstream failures via retries and the same benign-error classification.
+
+### What only production can answer (#R333)
+
+`prod-smoke` is also the only place that can catch **half a commit reaching production**. The
+front end is published by pushing to `main` (`deploy.yml` -> Pages); an Edge Function is published
+only when someone runs `supabase functions deploy`. Nothing else compares the two.
+
+#R318 shipped the `x-intmap-turn` request header on both sides of that line and only the front end
+arrived, so every Atlas question failed the browser's CORS **preflight** — the POST was never sent
+and `fetch()` rejected with a bare `Failed to fetch`, carrying no HTTP status to explain itself.
+**Every check in this repository stayed green, correctly**: `js/` sent the header and
+`supabase/functions/ai-proxy/index.ts` allowed it, so comparing the repo against itself reproduces
+the green while Atlas is down.
+
+The test reads the CORS contract each `index.ts` declares — resolving `_shared/relay-guard.js`'s
+`corsFor(extra)` for the four functions that build theirs that way — and requires every declared
+header to be present in the live `OPTIONS` response, for **every** function. It is deliberately
+one-way: production allowing *more* than the current commit declares is a function deployed from a
+branch that has not merged yet, which is normal while a parallel round is in flight.
+
+The half that needs no network lives in `tests/r333-checks.test.mjs` (a header `js/` sends that no
+function allows; the ambiguity guard; `_shared` never counted as a function), including an
+assertion that the production-side test still exists — a check that deletes itself is
+indistinguishable from one that passes.
 
 ## Determinism
 

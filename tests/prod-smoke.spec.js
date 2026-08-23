@@ -6,8 +6,15 @@ import { test, expect } from '@playwright/test';
 import { collectPageDiagnostics, ensureAtlasOnDemand } from './helpers/network.js';
 import { loadLazyModules } from './helpers/app.js';
 import { readPixel, explain, colourFor } from './helpers/wind-ramp.js';
+import { fileURLToPath } from 'node:url';
+import { repoCorsContract, parseAllowHeaders } from './helpers/fn-cors.js';
 
 const PROD_URL = process.env.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntMap/';
+
+/* (#R333) Where the Edge Functions answer from. The project ref is a public identifier (it is in
+   every request the site already makes), so naming it here reveals nothing a visitor cannot see. */
+const FN_BASE = process.env.SUPABASE_FN_URL || 'https://vpekfwdpurzejrrmacac.supabase.co/functions/v1';
+const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 /* The boot signal. ⚠ (#R209) EVERY NAME HERE HAS TO BE IN THE BOOT BUNDLE. Eight feature globals are
    now fetched on demand (js/lazy-modules.js), and one of those in this list would silently redefine
@@ -831,4 +838,48 @@ test('(#R276) prod offers the whole forecast, and stepping it changes the file A
   expect(r.b.vt, 'the valid time moved with it').not.toBe(r.a.vt);
   expect(typeof r.a.v, 'and both hours answer for a point').toBe('number');
   expect(typeof r.b.v).toBe('number');
+});
+
+
+/* (#R333) THE TWO HALVES OF ONE COMMIT, DEPLOYED BY DIFFERENT MEANS.
+   js/ reaches production by pushing to main (deploy.yml → Pages). An Edge Function reaches it only
+   when a human runs `supabase functions deploy`. Nothing compared the two.
+
+   #R318 shipped the `x-intmap-turn` header on both sides of that line — and only one side arrived.
+   A custom request header the server does not list in Access-Control-Allow-Headers fails the
+   browser's PREFLIGHT, so the POST is never sent: fetch() rejects with a bare "Failed to fetch" and
+   no HTTP status ever reaches the client. Atlas answered every question that way, and every
+   check in this repository stayed green, because the repository was self-consistent — js/ sent the
+   header and ai-proxy's source allowed it. Only production disagreed.
+
+   ⚠ THIS ASSERTION CANNOT MOVE INTO THE HERMETIC SUITE. Comparing the repo against itself is what
+   was already true while Atlas was down. It has to ask production what it actually allows. */
+test('(#R333) prod deployed the CORS contract this commit declares — every Edge Function', async ({ request }) => {
+  const contract = repoCorsContract(REPO_ROOT);
+  const unreadable = [...contract].filter(([, v]) => v.via === 'unknown').map(([n]) => n);
+  /* A function whose contract cannot be read is NOT quietly skipped: a shortened list reads as a
+     complete one (#R320), and "every function" is the whole claim this test makes. */
+  expect(unreadable, 'every shipped function declares a CORS table this check can read').toEqual([]);
+  expect(contract.size, 'and the repository ships functions to check').toBeGreaterThan(0);
+
+  const origin = new URL(PROD_URL).origin;
+  const behind = [];
+  for (const [name, { headers: want }] of contract) {
+    const res = await request.fetch(`${FN_BASE}/${name}`, {
+      method: 'OPTIONS',
+      headers: { origin, 'access-control-request-method': 'POST',
+                 'access-control-request-headers': [...want].join(', ') },
+      failOnStatusCode: false,
+    });
+    const got = parseAllowHeaders(res.headers()['access-control-allow-headers']);
+    const missing = [...want].filter((h) => !got.has(h));
+    if (missing.length) {
+      behind.push(`${name}: production allows [${[...got].join(', ') || '—'}] and is missing ` +
+        `[${missing.join(', ')}] — deploy it: supabase functions deploy ${name} --project-ref <ref>`);
+    }
+  }
+  /* ⚠ ONE-WAY on purpose. Production allowing MORE than this commit declares is a function deployed
+     from a branch that has not merged yet — normal while a parallel round is in flight, and not a
+     defect. Only the other direction means a user is being refused something this commit promised. */
+  expect(behind, 'production runs the CORS contract this commit declares').toEqual([]);
 });
