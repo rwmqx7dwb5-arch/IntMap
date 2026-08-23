@@ -33,24 +33,45 @@ const toggleRow = (page, id) => page.evaluate((cbId) => {
   ['pointerdown', 'pointerup'].forEach(t => row.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 1 })));
 }, id);
 
+/* ⚠ CI HAS NO GPU AND THIS LAYER IS THE EXPENSIVE ONE. #R186 measured a boot at
+   9.2 s on a runner against 2.4 s on the development machine, and switching the
+   cables on adds a 2.1 MB source that the worker has to tile. MEASURED: 7.7 s
+   locally and a 60 s timeout on the runner — so the budget is the runner's, and
+   each wait says which stage it is, because "page.waitForFunction timed out" on
+   its own does not name one. */
 test('R354 the cable layer draws real routes, with the graphic it always had', async ({ page }) => {
+  test.setTimeout(180000);
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
-  await page.waitForFunction(() => document.querySelectorAll('.lyr-row').length > 100, null, { timeout: 60000 });
+  await page.waitForFunction(() => !!window.__imap, null, { timeout: 90000 })
+    .catch(() => { throw new Error('stage 1: window.__imap never appeared'); });
+  await page.waitForFunction(() => document.querySelectorAll('.lyr-row').length > 100, null, { timeout: 90000 })
+    .catch(() => { throw new Error('stage 2: the layer rows were never built'); });
 
   await toggleRow(page, 'dl-subcables');
-  /* ⚠ WAIT FOR A DRAWN FEATURE, NOT FOR `visibility: visible`. The layout
-     property flips the moment the layer is added; the source is still tiling
-     2.1 MB of routes in the worker behind it. Measured: visible, and
-     `queryRenderedFeatures` returning 0. */
+  await page.waitForFunction(() => {
+    try { const E = window.IntMapGeoEngine; return E.layers.has('lyr-subcables') && E.layers.getLayout('lyr-subcables', 'visibility') === 'visible'; }
+    catch (_) { return false; }
+  }, null, { timeout: 90000 }).catch(async () => {
+    const st = await page.evaluate(() => { const cb = document.getElementById('dl-subcables'); return { box: cb && cb.checked, autoOff: cb && cb.dataset ? cb.dataset.imAutoOff : null }; });
+    throw new Error('stage 3: the layer never became visible — ' + JSON.stringify(st));
+  });
+  /* ⚠ AND THEN WAIT FOR A DRAWN FEATURE. `visibility` flips the moment the layer
+     is added; the source is still tiling 2.1 MB of routes in the worker behind
+     it. Measured locally: visible, and `queryRenderedFeatures` returning 0. */
   await page.waitForFunction(() => {
     try {
       const E = window.IntMapGeoEngine;
-      if (!E.layers.has('lyr-subcables') || E.layers.getLayout('lyr-subcables', 'visibility') !== 'visible') return false;
       const sz = E.render.size();
       return (E.coords.queryRenderedFeatures([[0, 0], [sz.width, sz.height]], { layers: ['lyr-subcables'] }) || []).length > 20;
     } catch (_) { return false; }
-  }, null, { timeout: 60000 });
+  }, null, { timeout: 90000 }).catch(async () => {
+    const st = await page.evaluate(() => {
+      const E = window.IntMapGeoEngine;
+      let src = -1; try { src = (E.coords.querySourceFeatures('src-subcables') || []).length; } catch (_) {}
+      return { sourceFeatures: src, size: E.render.size(), zoom: (() => { try { return E.camera.get().zoom; } catch (_) { return null; } })() };
+    });
+    throw new Error('stage 4: nothing rendered — ' + JSON.stringify(st));
+  });
 
   const s = await page.evaluate((ids) => {
     const E = window.IntMapGeoEngine;
