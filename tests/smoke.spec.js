@@ -700,6 +700,67 @@ test('R289 ㉒ Chronos names itself, offers a clock, and reads the time back in 
   expect(r.localHM, 'with the device chosen, 09:15 means the device 09:15').toBe('09:15');
 });
 
+/* ══ (#R378) 「年/日付/時刻の下に置くのではなく外に、直接年月日時選ぶとこ作って。」 ══════════════
+   ⚠ THE ASSERTION IS 「OUTSIDE」, NOT 「PRESENT」. A picker that only appears in one tab would pass
+   any check that merely finds the element, so the row is measured in ALL THREE tabs and the instant
+   is written from the YEAR tab — the tab that on its own can name nothing smaller than a year.
+   ⚠ It is added to this spec rather than to one of its own: #R207 measured that the boot is the
+   whole price of a browser file and the assertions are free (tests/durations.json is unchanged). */
+test('R378 ① Chronos has a direct year-month-day-hour picker outside the Year/Date/Time tabs, and it writes the master clock', async () => {
+  const r = await page.evaluate(async () => {
+    const out = {};
+    const wait = (ms) => new Promise((s) => setTimeout(s, ms));
+    const tl = document.getElementById('news-timeline');
+    const jump = document.getElementById('ntl-jump');
+    out.exists = !!jump;
+    out.type = jump ? jump.type : null;
+    out.label = (document.getElementById('ntl-jump-lbl') || {}).textContent;
+    out.inModes = jump ? !!jump.closest('#ntl-modes') : null;
+    if (tl.classList.contains('collapsed')) document.getElementById('ntl-toggle').click();
+    out.shownIn = {};
+    for (const m of ['year', 'date', 'time']) {
+      document.getElementById('ntl-mode-' + m).click();
+      await wait(80);
+      out.shownIn[m] = !!jump.offsetParent && getComputedStyle(jump).display !== 'none';
+    }
+    out.min = jump.min;
+    /* WRITE — the whole instant, named from the tab that can only name a year */
+    const z = document.getElementById('ntl-zone');
+    z.value = 'UTC'; z.dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('ntl-mode-year').click();
+    jump.value = '1943-08-05T14:30';
+    jump.dispatchEvent(new Event('change', { bubbles: true }));
+    await wait(700);
+    out.setISO = window.IntMapTime.when().toISOString().slice(0, 16);
+    out.live = window.IntMapTime.isLive();
+    /* READ — a clock moved from anywhere else is reflected back into the field */
+    window.IntMapTime.setYear(1972, { source: 'test' });
+    await wait(300);
+    out.readBack = jump.value;
+    /* a year still being typed ("0019") is the floor, NOT `new Date(19,…)` = 1919 */
+    jump.value = '0019-03-02T00:00';
+    jump.dispatchEvent(new Event('change', { bubbles: true }));
+    await wait(700);
+    out.clampedMs = window.IntMapTime.when().getTime();
+    out.floorMs = Date.UTC(window.IntMapTime.min, 0, 1);
+    window.IntMapTime.setNow({ source: 'test' });
+    z.value = 'user'; z.dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('ntl-mode-year').click();
+    document.getElementById('ntl-x').click();
+    return out;
+  });
+  expect(r.exists, 'the panel has a direct picker').toBe(true);
+  expect(r.type, '「独自UIを作らなくてよい」 — it is the browser’s own control').toBe('datetime-local');
+  expect(r.label, 'and the row says what it is').toBeTruthy();
+  expect(r.inModes, 'it is not one of the tabs').toBe(false);
+  expect(r.shownIn, '「外に」 — every tab can reach it').toEqual({ year: true, date: true, time: true });
+  expect(r.min, 'it reaches the kernel’s floor').toMatch(/^18(49|50)-/);
+  expect(r.setISO, 'with UTC chosen, 1943-08-05 14:30 is that instant').toBe('1943-08-05T14:30');
+  expect(r.live, '…and the clock is no longer live').toBe(false);
+  expect(r.readBack, 'a clock moved elsewhere is reflected back into the field').toMatch(/^1972-/);
+  expect(r.clampedMs, 'a half-typed year is the floor, never 1919').toBe(r.floorMs);
+});
+
 test('R289 ㉓ the merged rows really repaint, and the year colouring really changes the fill', async () => {
   const r = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine;

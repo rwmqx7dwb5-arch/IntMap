@@ -2932,6 +2932,7 @@ window.IntMapLang.define('zh', {
   "Loading weather…": "載入天氣中…",
   "Loading FX…": "載入匯率中…",
   "Clock": "時鐘",
+  "Date & time": "日期與時間",
   "FX": "匯率",
   "wind ": "風 ",
   "Weather unavailable": "無法取得天氣",

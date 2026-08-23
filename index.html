@@ -527,7 +527,7 @@ window.__imBuild='R381';/* (#R121) build marker — bump when verifying that a r
           <button class="ntl-mode" id="ntl-mode-time" type="button" data-mode="time"></button><!-- (#R137) time-of-day · (#R293) 「時刻と予報タブを分けるな」: the model's transport is inside this tab, and both write the master clock -->
         </div>
         <!-- (#R289) 「どこの時刻を採用するかのプルダウン」 — the clock Chronos reads and writes wall-clock time in. -->
-        <div class="ntl-zonerow"><span id="ntl-zone-lbl"></span><select class="ntl-zone" id="ntl-zone"></select></div>
+        <div class="ntl-zonerow"><span id="ntl-zone-lbl"></span><select class="ntl-zone" id="ntl-zone"></select></div><label class="ntl-jumprow" for="ntl-jump"><span id="ntl-jump-lbl"></span><input type="datetime-local" id="ntl-jump" class="ntl-jump"></label><!-- (#R378) 「年/日付/時刻の下に置くのではなく外に、直接年月日時選ぶとこ」 — ONE native datetime control for the exact instant, OUTSIDE the Year/Date/Time tabs (it shares this source line with the zone row because the shell is at its line budget — tests/r168 #8). Wired in js/news-timeline.js. -->
         <div class="ntl-valrow">   <!-- (#R313) the Time tab's date sits UNDER the clock: .ntl-bigval is 26px with `text-overflow:ellipsis` in a fixed-width body, so one line would truncate it silently. DEV-NOTES #R313 §5. -->
           <div class="ntl-valcol"><div class="ntl-bigval" id="ntl-bigval">—</div><div class="ntl-bigdate" id="ntl-bigdate"></div></div>
           <button class="ntl-now" id="ntl-today" type="button"></button>

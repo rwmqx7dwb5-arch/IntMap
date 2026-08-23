@@ -2831,6 +2831,7 @@ window.IntMapLang.define('ko', { ui: {
   "Loading weather…": "날씨를 불러오는 중…",
   "Loading FX…": "환율을 불러오는 중…",
   "Clock": "시계",
+  "Date & time": "날짜 및 시간",
   "FX": "환율",
   "wind ": "바람 ",
   "Weather unavailable": "날씨를 가져올 수 없습니다",
