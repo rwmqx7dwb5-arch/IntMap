@@ -72,3 +72,16 @@ __pycache__/
 # (which chunks are eager, what each costs raw/gzip/brotli), not the repository.
 # The committed side is tests/perf-baseline.json — the numbers the gate ratchets.
 .perf/
+
+# ── (#R338) the preview config is MACHINE-LOCAL, not shared ──────────────────
+# .claude/launch.json holds absolute paths into this machine's worktrees
+# (C:/Users/.../Temp/intmap-worktrees/wt-r330/dist). Nothing outside this
+# machine can use them, and tracking them cost something real: the preview tool
+# writes into the MASTER's copy, so while any concurrent session had a preview
+# open the master's fast-forward was refused — correctly, because §6 forbids
+# touching another session's uncommitted work — and with it the USB backup
+# (`skipped master-not-synced`). MEASURED at #R334: 19 sessions running at once,
+# the master 3 commits behind, the backup skipped. Untracked, the file is still
+# written and still read (scripts/worktree.mjs derives the free round number
+# from it); it just stops standing in the way of everyone else's merge.
+.claude/launch.json
