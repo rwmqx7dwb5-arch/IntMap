@@ -80,9 +80,8 @@ window.IntMapModules.monitors=function(HOST){
 
     /* ---- small helpers ---- */
     function _fmtWhen(iso){ if(!iso) return '—'; try{ const d=new Date(iso), now=Date.now(), diff=(now-d.getTime())/1000;
-      const rel=(n,u1,uj)=>{ const l=(HOST.lang||'en'); return l==='jp'?(Math.round(n)+uj):(Math.round(n)+' '+u1+(Math.round(n)===1?'':'s')+' '+ML('ago','','','','')); };
       if(Math.abs(diff)<60) return ML('just now','たった今','gerade eben','только что','ahora mismo');
-      if(diff<3600) return ML(Math.round(diff/60)+' min ago',Math.round(diff/60)+'分前','vor '+Math.round(diff/60)+' Min','мин назад',Math.round(diff/60)+' min');
+      if(diff<3600) return ML(Math.round(diff/60)+' min ago',Math.round(diff/60)+'分前','vor '+Math.round(diff/60)+' Min',Math.round(diff/60)+' мин назад','hace '+Math.round(diff/60)+' min');
       if(diff<86400) return ML(Math.round(diff/3600)+'h ago',Math.round(diff/3600)+'時間前','vor '+Math.round(diff/3600)+' Std',Math.round(diff/3600)+'ч назад','hace '+Math.round(diff/3600)+' h');
       return d.toLocaleDateString();
     }catch(_){ return '—'; } }

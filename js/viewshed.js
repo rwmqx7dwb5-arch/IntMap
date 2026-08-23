@@ -683,7 +683,7 @@ window.IntMapModules.los=function(HOST){
                        'El obstáculo está cerca del otro extremo: subir esta antena apenas ayuda; suba la otra.')):'')
              +'</div>'):''))
         +'<div style="margin-top:6px;opacity:0.85;">'+L('Precision','精度','Genauigkeit','Точность','Precisión')+': '
-        +num(r.stepM,1)+' m '+L('samples','間隔','Abstand','шаг','muestreo')+' · '+num(r.samples)+' '+L('points','点','Punkte','точек','puntos')
+        +num(r.stepM,1)+' m '+L('Sample spacing','間隔','Abstand','шаг','muestreo')+' · '+num(r.samples)+' '+L('Sample points','点','Punkte','точек','puntos')
         +' · DEM z'+r.demZ+(r.missing?(' · '+num(r.missing)+' '+L('gaps','欠測','Lücken','пропусков','huecos')):'')+'</div>'
         +'<div style="margin-top:5px;opacity:0.7;">'+L('Gray = terrain (curvature applied) · dashed = 60% Fresnel zone.','灰＝地形（地球の曲率込み）・破線＝フレネルゾーン60%。','Grau = Gelände (mit Erdkrümmung) · gestrichelt = 60 % Fresnelzone.','Серый = рельеф (с кривизной) · пунктир = 60 % зоны Френеля.','Gris = terreno (con curvatura) · discontinua = 60 % de Fresnel.')+'</div>';
       try{ const cv=body.querySelector('#los-prof');

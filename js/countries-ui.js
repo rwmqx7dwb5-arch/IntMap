@@ -379,7 +379,7 @@ window.IntMapModules.countriesUi=function(HOST){
       [HOST.t('statCapital'),s.capital||'—'],
       [HOST.t('statArea'),fmtArea(s.area)],
       [HOST.t('statDensity'),s.density?fmtNum(Math.round(s.density))+' /km²':'—'],
-      (s.borders&&s.borders.length)?[TR('Borders','隣接','Nachbarländer','Соседи','Fronteras'),s.borders.join(', ')]:null,
+      (s.borders&&s.borders.length)?[TR('Neighbours','隣接','Nachbarländer','Соседи','Fronteras'),s.borders.join(', ')]:null,
       (s.timezones&&s.timezones.length)?[TR('Timezones','時間帯','Zeitzonen','Часовые пояса','Zonas horarias'),s.timezones.slice(0,3).join(', ')+(s.timezones.length>3?'…':'')]:null
     ]);
     /* (#R94) when the master clock has travelled to a past year, the WB-synced rows carry THAT year;

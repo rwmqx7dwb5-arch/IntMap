@@ -953,7 +953,7 @@ window.IntMapLang.define('ko', { ui: {
   "Min-energy": "최소 에너지",
   "Which area should I scan?": "어느 영역을 살펴볼까요?",
   "current view": "현재 화면",
-  "points": "지점",
+  "points": "점",
   "lowest": "최저",
   " · right-drag to rotate": " · 오른쪽 버튼 드래그로 회전",
   " · Shift afterburner": " · Shift 애프터버너",
@@ -3029,7 +3029,7 @@ window.IntMapLang.define('ko', { ui: {
   "Dead": "사망",
   "Recovered": "회복",
   "Vaccinated": "접종",
-  "Day": "경과",
+  "Day": "일",
   "variants": "변이",
   "vaccine R&D": "백신 개발",
   "Outbreak setup": "유행 설정",
@@ -4072,7 +4072,7 @@ window.IntMapLang.define('ko', { ui: {
   "Doctors": "개인 의원",   /* (#R255) */
   "Embassies, consulates and other diplomatic missions mapped in OpenStreetMap for the current view. Click any point for the record.": "현재 화면 범위에 대해 OpenStreetMap에 등록된 대사관·영사관 등 외교 공관입니다. 점을 클릭하면 내용이 표시됩니다.",   /* (#R255) */
   "Embassy": "대사관",   /* (#R255) */
-  "Emergency": "응급",   /* (#R255) */
+  "Emergency": "긴급",   /* (#R255) */
   "Health facilities": "의료기관",   /* (#R255) */
   "Height": "높이",   /* (#R255) */
   "Hospital": "병원",   /* (#R255) */
@@ -4811,7 +4811,7 @@ window.IntMapLang.define('ko', { ui: {
   "warnings are in force": "경보가 발령 중이기 때문",
   "Warnings in force": "발령 중인 경보",
   "Warnings in force at the places you saved or are watching": "저장·감시 중인 지점에서 발령 중인 경보",
-  "watch": "관찰",
+  "watch": "경계",
   "Watch a place": "지점을 감시",
   "watch area": "감시 지역",
   "Watch this country": "이 국가를 관찰",
@@ -4820,7 +4820,7 @@ window.IntMapLang.define('ko', { ui: {
   "Weather & environment": "날씨·환경",
   "Weather at the map centre": "지도 중심의 날씨",
   "week": "주",
-  "Week": "이번 주",
+  "Week": "주",
   "week number": "주 번호",
   "Week progress": "이번 주의 진척",
   "West–East": "서–동",
@@ -5583,4 +5583,30 @@ window.IntMapLang.define('ko', { ui: {
   "Sea-level pressure": "해면기압",
   "CAPE instability": "CAPE 불안정도",
   "no such weather layer": "그런 기상 레이어 없음",   /* ai-core.js (#R318) aiTurnCallsMsg */
+  "Aircraft type": "기종",
+  "Announcement": "발표 내용",
+  "Clean air": "청정",
+  "Days elapsed": "경과 일수",
+  "Economy fee": "저속 수수료",
+  "Elevation angle": "고도각",
+  "Emergency room": "응급실",
+  "Highest altitude": "최고 고도",
+  "map points": "개 지점",
+  "Max": "최고",
+  "Max elevation": "최대 고도각",
+  "Metric": "지표",
+  "Min": "최저",
+  "Neighbours": "인접국",
+  "Place it": "배치",
+  "Runway use": "활주로 용도",
+  "Sample points": "개 표본점",
+  "Sample spacing": "간격",
+  "Selected day": "선택한 날",
+  "Shape": "도형",
+  "Signal source": "신호 출처",
+  "Time window": "시간 범위",
+  "total eclipse": "개기",
+  "Turn all off": "모두 끄기",
+  "watchlist": "관심 목록",
+  "Wind power": "풍력",
 } });

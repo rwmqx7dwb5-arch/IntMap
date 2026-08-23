@@ -448,7 +448,7 @@ window.IntMapModules.volcanoIntel=function(HOST){
     if(j){
       h+=sec(L('Japan — JMA eruption warning','日本 — 気象庁 噴火警報・予報','Japan — JMA-Ausbruchswarnung','Япония — предупреждение JMA','Japón — aviso de erupción de la JMA'))
         +row(L('Warning unit','対象火山（気象庁の単位）','Warngebiet','Единица предупреждения','Unidad de aviso'),j.unit)
-        +row(L('Warning','発表内容','Warnung','Предупреждение','Aviso'),j.text)
+        +row(L('Announcement','発表内容','Warnung','Предупреждение','Aviso'),j.text)
         +(j.level!=null?row(L('Eruption warning level','噴火警戒レベル','Ausbruchswarnstufe','Уровень предупреждения','Nivel de alerta'),String(j.level)+' / 5'):'')
         +row(L('Change','変化','Änderung','Изменение','Cambio'),j.condition)
         +row(L('Issued','発表','Ausgegeben','Выпущено','Emitido'),String(j.at||'').replace('T',' ').slice(0,16));

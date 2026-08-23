@@ -503,7 +503,7 @@ window.IntMapWidgetDefsTime = (function () {
       var y = yearProgress(now, tz);
       return { pct: y.pct, title: String(y.year),
         facts: [
-          { k: L('Day', '経過日', 'Tag', 'День', 'Día'), v: y.day + ' / ' + y.days },
+          { k: L('Days elapsed', '経過日', 'Tag', 'День', 'Día'), v: y.day + ' / ' + y.days },
           { k: L('Remaining', '残り', 'Verbleibend', 'Осталось', 'Restante'), v: (y.days - y.day) + L(' d', '日', ' T', ' дн', ' d') },
         ] };
     },

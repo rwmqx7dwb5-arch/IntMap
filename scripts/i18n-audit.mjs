@@ -139,6 +139,15 @@ const pairs = run('i18n-pair-audit.mjs');
    fields each. See scripts/i18n-doc-audit.mjs for what is measured and what is excluded on
    purpose (og:/twitter: cards, admin.html). */
 const docs = run('i18n-doc-audit.mjs');
+/* ══ ⚠⚠⚠ (#R370) THE SEVENTEENTH SURFACE — «does this English key mean ONE thing» ═══════════════
+   Every surface above asks whether a string HAS a translation. This asks whether the translation
+   it has can possibly be right, and it is the first one whose answer can be «no» while the row is
+   present and the percentage is 100. fr / ko / zh-Hant / zh-Hans resolve a call site by its
+   ENGLISH string (`inline[code][arguments[0]]`), so two sites that share a key share one row
+   whatever they mean — while the positional five carry their own arguments and cannot collide.
+   MEASURED: `'Clear'` was one row over five meanings and ten sites, so the weather widget said
+   «erase» for a clear sky in four languages. See scripts/i18n-key-collision-audit.mjs. */
+const collide = run('i18n-key-collision-audit.mjs');
 const orphanKeys = keyed.undeclared;
 
 const keyedBy = new Map(keyed.rows.map((r) => [r.code, r]));
@@ -254,6 +263,13 @@ console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.tot
   /* (#R249) the fifteenth surface — see the note by `docs` above */
   + `\nreader-facing documents whose <title>/<meta description> are NOT localised: ${docs.bad.length}`
   + (docs.bad.length ? '\n    ' + docs.bad.join('\n    ') + '\n    (node scripts/i18n-doc-audit.mjs)' : '')
+  /* (#R370) the seventeenth surface — see the note by `collide` above. The benign count is printed
+     beside the failing one because it IS the judgement: 177 keys where one row genuinely serves
+     every site, re-derived on every run so the list cannot quietly grow stale. */
+  + `\nEnglish keys carrying MORE THAN ONE meaning (fr/ko/zh resolve by the English string): ${collide.unlisted.length}`
+    + ` unlisted, ${collide.listed} judged benign, of ${collide.keys} keys`
+  + (collide.unlisted.length ? '\n    ' + collide.unlisted.map((u) => JSON.stringify(u.en) + ' — ' + u.meanings.join(' / ')).join('\n    ')
+      + '\n    (node scripts/i18n-key-collision-audit.mjs --list)' : '')
   /* (#R246) the twelfth shape — see the note by `pairs` above. OPEN GAP: printed, not counted. */
   /* ⚠⚠⚠ (#R249) THE EXEMPTION IS PRINTED ON EVERY RUN. 「固有名詞は構造的に除外し、UI文だけ全言語化」
      — and an exemption nobody can see is an exemption nobody re-examines. #R248's matcher rule
@@ -299,6 +315,11 @@ if (process.argv.includes('--gate')) {
      against the row's coordinate / ISO code / ticker / domain; this makes a failed validation stop
      the build rather than print a line nobody reads. */
   if (pairs.badMarkers && pairs.badMarkers.length) problems.push(`${pairs.badMarkers.length} misapplied @i18n-entity-data marker(s) — run scripts/i18n-pair-audit.mjs`);
+  /* (#R370) the seventeenth surface — a gate from the day it was added, in BOTH directions: an
+     unlisted collision is a live mistranslation in fr/ko/zh-Hant/zh-Hans, and a BENIGN entry that
+     no longer collides has stopped asserting anything (see the header of the audit). */
+  if (collide.unlisted.length) problems.push(`${collide.unlisted.length} English key(s) carrying more than one meaning — one inline row cannot serve both, so fr/ko/zh-Hant/zh-Hans are wrong at one of the sites. Run scripts/i18n-key-collision-audit.mjs --list`);
+  if (collide.stale.length) problems.push(`${collide.stale.length} stale BENIGN entr(ies) in scripts/i18n-key-collision-audit.mjs — delete them, or the allowlist becomes a place a real collision can hide`);
 
   /* ══ ⚠ (#R311) …AND THE OPEN GAP IS A RATCHET NOW, WHICH IS NOT THE SAME AS A GATE ═════════════
      「性能改善でUI生成方法やdescriptor構造を変える前に、この領域も品質gateへ含めてください…
