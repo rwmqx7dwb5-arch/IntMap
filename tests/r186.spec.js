@@ -252,7 +252,14 @@ test('R186 sea level: the number applies as it is typed, and 100 % is opaque', a
 
 test('R186 aircraft: the sweep covers the viewport with tiled circles, not one', async ({ page }) => {
   test.setTimeout(180_000);
-  await page.goto('/');
+  /* ⚠ (#R341) ?aviation=v1 — THE SWEEP IS THE SUBJECT, so the path that plans one is named rather
+     than assumed. The aircraft layer has two renderings now, and the GPU cloud that became the
+     default asks one server for the whole world: it has no circles, no budget and no zoom floor, so
+     `state().cover` is null and there is nothing here to measure (measured, #R341). Nothing below is
+     changed. ⚠ This is the ONLY test in this file that is about aircraft — the launch screen, the
+     default layers, the sky, the atmosphere, the POI labels, the sea level, the water tools and the
+     Cesium sky all boot exactly as they did. */
+  await page.goto('/?aviation=v1');
   await ready(page);
   /* No network here — the PLAN is the thing this pins. One 250 nm circle is 615 km across; a wide
      view now asks for a grid of them, and the poll interval grows with the grid so the long-run

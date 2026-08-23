@@ -1,0 +1,77 @@
+# (#R341) Keep the shared world-aircraft snapshot advancing without a reader paying for it.
+#
+# supabase/functions/aviation-feed serves every IntMap browser from ONE snapshot in Supabase
+# Storage. Something has to advance that snapshot, and the two obvious candidates do not work here:
+#
+#   · A BACKGROUND TASK INSIDE THE FUNCTION. Measured: a promise handed to EdgeRuntime.waitUntil did
+#     not survive the response — six consecutive world requests answered from the snapshot and the
+#     world stayed at 27 aircraft and 0/980 tiles, with no write attempted. A design resting on that
+#     looks correct in every single-request test and never advances in production.
+#   · pg_cron + pg_net. The right tool, and it needs the database password to install
+#     (docs/MIGRATIONS.md explains why `db push` is not usable in this project). Left as the upgrade
+#     path rather than as a blocker.
+#
+# So the sweeper is a scheduled HTTP call. `?refresh=1` is the only caller that pays for a lattice
+# slice; every browser answers from the snapshot instantly and is told its age.
+#
+# ⚠ THE CADENCE IS SET BY THE PROVIDER, NOT BY TASTE. api.adsb.lol was measured at roughly FOUR
+# requests per burst from one address, refilling slowly, regardless of the gap between them (see the
+# bounds block in the function). WORLD_SLICE_TILES is 3 for that reason, and asking more often than
+# the budget refills would get the address blocked — which is the one outcome that takes the layer
+# down for everybody. Five minutes is the shortest interval GitHub schedules anyway.
+#
+# ⚠ A GLOBAL SWEEP IS NOT WHAT THIS BUYS. 980 tiles at 3 per run is days, and that is an honest
+# statement about adsb.lol rather than a tuning problem: it has no all-aircraft endpoint. The
+# function reports `coveragePct` so the UI can say so. A provider that answers the whole planet in
+# ONE request (OpenSky /states/all — measured 6,838 aircraft, 900 kB, 2.7 s) turns this job into a
+# single call that refreshes everything; that is what AVIATION_PROVIDER=opensky switches on, and it
+# needs the written agreement OpenSky's terms require for operational use.
+name: Aviation sweep
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+# Nothing here reads or writes the repository.
+permissions:
+  contents: read
+
+# Two sweepers at once would spend the provider's burst budget twice as fast for no extra coverage.
+concurrency:
+  group: aviation-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Advance the world snapshot
+        run: |
+          set -uo pipefail
+          EP="https://vpekfwdpurzejrrmacac.supabase.co/functions/v1/aviation-feed"
+
+          # Two slices per run, spaced, so a run advances 6 tiles without ever asking in a burst.
+          for i in 1 2; do
+            code=$(curl -sS --max-time 120 -o /tmp/sweep.bin -D /tmp/sweep.hdr \
+                        -w '%{http_code}' "$EP?ch=world&refresh=1" || echo "000")
+            echo "--- slice $i: HTTP $code, $(wc -c < /tmp/sweep.bin) bytes"
+            grep -i '^x-intmap-' /tmp/sweep.hdr | tr -d '\r' || true
+            # A non-2xx is reported, not retried: the provider asked us to stop, or the function is
+            # down, and hammering either is worse than skipping a slice.
+            if [ "$code" != "200" ]; then
+              echo "::warning::aviation-feed refresh returned $code — skipping the rest of this run"
+              exit 0
+            fi
+            [ "$i" = "1" ] && sleep 45
+          done
+
+      - name: Report coverage
+        if: always()
+        run: |
+          set -uo pipefail
+          curl -sS --max-time 60 \
+            "https://vpekfwdpurzejrrmacac.supabase.co/functions/v1/aviation-feed?meta=1" \
+            | head -c 1200 || true
+          echo ""

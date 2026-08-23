@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import * as acorn from 'acorn';
 import { appSource } from './app-source.mjs';
+import { jsReachability } from '../scripts/js-reachability.mjs';
 
 const root = new URL('../', import.meta.url);
 const ROOT = fileURLToPath(root);
@@ -178,7 +179,7 @@ test('R175 ②: the card speaks all five languages and credits the photographer'
 
 /* ── ③ the Vite migration's invariants ───────────────────────────────────────────────────── */
 test('R175 ③: every js/ module is imported by the entry, in index.html’s old order', () => {
-  const imported = [...entry.matchAll(/import '\.\.\/(js\/[^']+)';/g)].map((m) => m[1]);
+  const { imported, dyn, sib, isReachable } = jsReachability(ROOT, jsFiles);
   /* (#R180) …plus the ones a reachable module imports DYNAMICALLY. The claim this test makes —
      no js/ module is unreachable, i.e. no feature silently does not exist — is unchanged. What
      changed is that a module can be reachable on purpose without being in the static graph:
@@ -186,34 +187,15 @@ test('R175 ③: every js/ module is imported by the entry, in index.html’s old
      js/engine-select.js precisely so a MapLibre session (the default) transfers none of its
      4.8 MB, and putting it in src/main.js would undo that. A file nothing imports at all still
      fails, which is the case worth catching. */
-  const dyn = new Set();
-  /* (#R199) …and the third form: a STATIC sibling import from another js/ file. The six subsystems the
-     Atlas kernel shed this round are named ES exports — `import { makeAtlasReply } from './atlas-reply.js'`
-     — rather than window.IntMapModules registrations, because 「読み込み順序にも依存しています」 was the
-     complaint and a named binding answers it: the bundler resolves it, a typo is a build error, and the
-     import graph (not this list) fixes the order. Reachability is what this test asserts, and a named
-     import is the strongest evidence of it, not the weakest. */
-  const sib = new Set();
-  for (const f of jsFiles) {
-    const t = readFileSync(join(ROOT, 'js', f), 'utf8');
-    for (const m of t.matchAll(/import\(\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*\)/g)) dyn.add('js/' + m[1]);
-    for (const m of t.matchAll(/^\s*import\s[^;]*?from\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)) sib.add('js/' + m[1]);
-    for (const m of t.matchAll(/^\s*import\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)) sib.add('js/' + m[1]);
-  }
-  /* (#R218) …and the fourth form of reachability: a <script src> from one of the STANDALONE PAGES.
-     index.html is not the only entry point this repo ships — sources.html and science.html are
-     their own documents, and since #R218 they pull two js/ modules directly. Reading the pages
-     rather than exempting two filenames keeps the question the same one: is this module dead code?
-     Delete the <script> tag and the module goes back to failing, here and in static-checks.mjs. */
-  /* (#R280) …and the two legal pages, which are the same kind of document: served verbatim,
-     loading js/legal-text.js and js/legal-page.js with a plain <script src>. */
-  for (const page of ['sources.html', 'science.html', 'admin.html', 'privacy.html', 'terms.html']) {
-    const p = join(ROOT, page);
-    if (!existsSync(p)) continue;
-    for (const m of readFileSync(p, 'utf8').matchAll(/<script[^>]*\ssrc=["']\.\/(js\/[A-Za-z0-9_.-]+\.js)["']/g)) sib.add(m[1]);
-  }
-  for (const f of jsFiles) assert.ok(imported.includes('js/' + f) || dyn.has('js/' + f) || sib.has('js/' + f),
-    `js/${f} is never imported by src/main.js, and no reachable module import()s it either`);
+  /* (#R341) THE FIVE FORMS OF REACHABILITY ARE DERIVED IN ONE PLACE NOW.
+     This test and scripts/static-checks.mjs §8 ask the same question — is this js/ module dead
+     code? — and each used to carry its own copy of the answer. The copies drifted the moment a new
+     FORM appeared: #R341 added a worker in src/ that imports js/ modules, taught static-checks
+     about it, and this test went red on two files that are demonstrably alive. That is the #R318
+     shape, one level down. scripts/js-reachability.mjs is the single derivation; adding a sixth
+     form is now one edit rather than two that must be kept identical. */
+  for (const f of jsFiles) assert.ok(isReachable('js/' + f),
+    `js/${f} is never imported by src/main.js, no reachable module import()s it, no page loads it, and no src/ worker imports it`);
   for (const rel of imported) assert.ok(existsSync(join(ROOT, rel)), `src/main.js imports ${rel}, which does not exist`);
   for (const rel of dyn) assert.ok(existsSync(join(ROOT, rel)), `a js/ module dynamically imports ${rel}, which does not exist`);
   for (const rel of sib) assert.ok(existsSync(join(ROOT, rel)), `a js/ module imports ${rel}, which does not exist`);

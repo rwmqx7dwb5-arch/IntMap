@@ -27,9 +27,14 @@ const clearDefaultLayers = async (page) => {
   });
 };
 
-const boot = async page => {
+/* (#R341) `query` pins WHICH aviation path the page boots with. The aircraft layer has two now: the
+   original per-browser sweep that draws `lyr-planes-3d` / `lyr-plane-track-3d` / `lyr-planes-post`,
+   and the GPU cloud that replaced it as the default. ③ below picks an aircraft out of those layers
+   and reads its track off them, so it names the path that draws them rather than depending on which
+   one happens to be the default. ① and ② are the cockpit and the volume, and pass either way. */
+const boot = async (page, query) => {
   await clearDefaultLayers(page);
-  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  await page.goto('/index.html' + (query || ''), { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(600);   /* (#R212) the style is already loaded — this tail was 1.5 s in 20 specs */
@@ -164,7 +169,12 @@ test('a lifted aircraft can be hovered and clicked where it is drawn, and its tr
       body: JSON.stringify({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'TEST123 ', r: 'JA123X', t: 'B788',
         lat: 35.60 + t * 0.02, lon: 139.60 + t * 0.03, alt_baro: 36000, alt_geom: 36100,
         gs: 480, track: 55, seen: 1, dbFlags: 0 }] }) }); });
-  await boot(page);
+  /* ⚠ ?aviation=v1 — see the note on boot(). Every reading below comes out of `lyr-planes-3d`,
+     `lyr-plane-track-3d` and `lyr-planes-post`, which the default rendering ships at
+     visibility:'none'; without the pin `state().lifted` is 0 where 1 is expected (measured, #R341).
+     Nothing it checks is changed, and the behaviour it stands for — an aircraft picked WHERE IT IS
+     DRAWN — is asserted on the shipping path by tests/r341-live.spec.js ②. */
+  await boot(page, '?aviation=v1');
   await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
   await page.evaluate(() => window.__imap.jumpTo({ center: [139.72, 35.68], zoom: 9.5, pitch: 60, bearing: 0 }));
   await page.evaluate(() => { const cb = document.getElementById('dl-planes'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); });
@@ -228,7 +238,25 @@ test('a lifted aircraft can be hovered and clicked where it is drawn, and its tr
     if (pf) { const r = pf.geometry.coordinates[0].slice(0, 4);
       const c = r.reduce((a, p2) => [a[0] + p2[0], a[1] + p2[1]], [0, 0]);
       ll = [c[0] / r.length, c[1] / r.length];
-    } else { ll = [139.72, 35.68]; }   /* the stub's final position, after its four fixes */
+    } else {
+      /* ⚠ (#R341) ASK THE LAYER WHERE THE AIRCRAFT IS, rather than naming a coordinate.
+         This was the literal [139.72, 35.68] — the stub's position at t=4, which it only reaches
+         after its FIFTH request, because `tick++` advances one step per request. Two of those five
+         used to come from somewhere else entirely: js/layer-previews.js fetched
+         api.airplanes.live on every page load for its thumbnail, that fetch went through this same
+         page.route stub, and it was quietly advancing the counter. #R341 stopped the preview
+         fetching a provider that answers 403 to everything, the stub reached only t=3, and the
+         click landed ~34 px west of the aeroplane (measured: branch 4 requests, main 5).
+         The paragraph above already says what this line MEANS — "the position the test means is
+         the aircraft's own lng/lat" — so it now reads that instead of a number that happened to
+         equal it, and no longer depends on how many unrelated requests reach the stub. */
+      const sd = window.IntMapGeoEngine.layers.sourceData('src-planes-3d');
+      const sf = ((sd && sd.features) || []).find(x => (x.properties || {}).post === 1);
+      if (sf) { const r2 = sf.geometry.coordinates[0].slice(0, 4);
+        const c2 = r2.reduce((a, p2) => [a[0] + p2[0], a[1] + p2[1]], [0, 0]);
+        ll = [c2[0] / r2.length, c2[1] / r2.length];
+      } else { ll = [139.72, 35.68]; }
+    }
     const g = m.project(ll); return { x: Math.round(g.x), y: Math.round(g.y) }; });
   await page.mouse.click(post.x, post.y); await page.waitForTimeout(1200);
   expect(await page.evaluate(() => window.IntMapPlanes3D.selected()), 'the post under an aircraft selects it').toBe('ABC123');

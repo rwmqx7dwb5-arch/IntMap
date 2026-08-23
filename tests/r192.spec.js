@@ -22,7 +22,16 @@ test.describe.configure({ mode: 'serial' });
 let page;
 test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  /* ⚠ (#R341) ?aviation=v1 — ① IS ABOUT THE LIFTED MARK'S OWN PIXELS, and the aircraft layer has two
+     renderings now: the original sweep, which is where `halfPx` / `glyphHalfPx` / `thickPx` come
+     from, and the GPU cloud that replaced it as the default and reports none of them. On the default
+     path `state().aircraft` never leaves 0, so ① waited out its 90 s and then `test.skip`'d — 95 s of
+     a green run asserting nothing (measured, #R341).
+     ⚠ IT IS THE FILE'S BOOT because the file HAS one boot: #R206 removed the other three on purpose
+     (see the note above), and giving ① a page of its own would put one straight back. The other
+     three tests never look at aircraft — they are the seismic field (②③), the tsunami model (④) and
+     the satellite tile worker (⑤) — so which aviation path is armed is nothing to them. */
+  await page.goto('/?aviation=v1', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.IntMapCanDraw && window.IntMapCanDraw(), null, { timeout: 60000 });
   /* ⚠ (#R209) …AND THEN ASK FOR THE ON-DEMAND MODULES, THE WAY A CLICK DOES. `IntMapSeismic` (②③)
      and `IntMapTsunami` (④) left the boot bundle for js/lazy-modules.js, so they no longer exist

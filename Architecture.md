@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（936行・84 KB）＋ `css/`（3本）＋ `js/`（195本・9.4 MB）＋ `src/`（8本）。**
+- **本体は `index.html`（936行・84 KB）＋ `css/`（3本）＋ `js/`（199本・9.4 MB）＋ `src/`（10本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -469,9 +469,9 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は、�
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
-### 6.2 Edge Functions — **8本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **9本**（`_shared/` は関数ではない）
 
-> ⚠ **8本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
+> ⚠ **9本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
 > ファイルのヘッダコメントに書いた deploy フラグは設定ではない。
 > `supabase/functions/_shared/` は `newsgeo.js` と `relay-guard.js` を置くライブラリ用ディレクトリで、
 > import した関数の中に CLI がバンドルする。`[functions._shared]` は書かない。
@@ -504,6 +504,15 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は、�
 - **`cable-geo`** … TeleGeography 海底ケーブル GeoJSON（2 URL 固定 allowlist）の ACAO 付与中継。
 - **`news-relay`** … Google News RSS の ACAO 付与中継。`news.google.com` の `/rss/search` と
   `/rss/headlines/section/topic/<TOPIC>` の**2エンドポイントだけ**。
+- **`aviation-feed`** … ライブ航空機の**唯一の上流読み取り役**（`--no-verify-jwt`・秘密なし）。
+  provider（既定 adsb.lol・ODbL 1.0。`AVIATION_PROVIDER` で切替。OpenSky は事前の書面合意が要るので
+  `OPENSKY_AGREEMENT=1` のときだけ）を**サーバー側で TTL ごとに1回だけ**読み、全利用者へ同じ
+  IMAV/1 バイナリを配る。⚠ **上流の負荷が利用者数に比例する構造をやめるための関数である**——
+  以前はブラウザが1掃引あたり最大 128 本の点問い合わせを自分で出していた。
+  呼び出し側が選べるのは**チャンネル（`world` / `view` / `meta`）だけ**で、URL は渡せない
+  （相手先 URL を allowlist で見る4本の中継とはそこが違う）。正規化と wire format の正本は
+  `js/aviation-model.js` / `js/aviation-codec.js` で、`_shared/` の写しとの一致は `npm run check:static`
+  が検査する。冷えた isolate でも即答できるよう、共有スナップショットは Storage の `aviation` bucket に置く。
 
 ⚠ **4本の無認証中継（`alerts-relay` / `cable-geo` / `news-relay` / `sv-cov`）は
 `_shared/relay-guard.js` を共有する。** URL allowlist、**GET 限定**、**期限**（`AbortSignal.timeout`）、
@@ -1267,10 +1276,10 @@ Atlas の自然言語も同じ経路計算を呼ぶ補助的な入口で、**両
    supabase db diff --schema public # drift がゼロであることを確認
    ```
    ローカル検証は `supabase start && supabase db reset`（migrations ＋ `supabase/seed.sql`）。
-4. **Edge Functions を8本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
+4. **Edge Functions を9本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
    for f in ai-proxy delete-account; do supabase functions deploy $f --project-ref <REF>; done
-   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay; do \
+   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed; do \
      supabase functions deploy $f --no-verify-jwt --project-ref <REF>; done
    ```
 5. **Secrets を設定する**（§6.3）。最低限：
@@ -1379,7 +1388,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（10本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（11本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events）。

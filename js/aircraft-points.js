@@ -1,0 +1,287 @@
+/* ============================================================================
+ *  IntMap · aircraft-points — tens of thousands of aircraft as ONE draw call  (#R341)
+ * ----------------------------------------------------------------------------
+ *  WHAT THIS REPLACES
+ *  ------------------
+ *  The layer this supersedes rebuilt, on every publish:
+ *    · a GeoJSON FeatureCollection with one Feature per aircraft, handed to setSourceData; and
+ *    · in 3-D, up to THREE fill-extrusion polygons per aircraft (body, rim, ground post), capped at
+ *      4,000 aircraft with the rest culled by distance from the map centre.
+ *  Both are per-aircraft CPU work on the main thread, four times a minute. That cap of 4,000 — and
+ *  the zoom floor that switched the whole layer off below z2 — are not tuning; they are what a
+ *  CPU-side representation costs. Neither exists here.
+ *
+ *  HOW
+ *  ---
+ *  One `gl.POINTS` draw call over seven Float32Arrays, the shape js/orbit-points.js has used for
+ *  ~11,000 satellites since #R202. Per aircraft: 1 vertex. Per frame: 7 buffer binds, 6 uniforms,
+ *  one drawArrays. The CPU touches no aircraft between publishes — position is EXTRAPOLATED in the
+ *  vertex shader from the velocity the packer computed, so motion is continuous at display rate
+ *  while data arrives every few seconds.
+ *
+ *  THE GLYPH IS DRAWN, NOT TEXTURED
+ *  --------------------------------
+ *  gl_PointCoord is rotated by the aircraft's track in the fragment shader and tested against a
+ *  dart-shaped signed distance field. That is why heading costs nothing: no texture atlas, no
+ *  per-icon image, no icon-rotate expression, and the silhouette stays sharp at any device pixel
+ *  ratio. Below a few pixels the dart is indistinguishable from a dot and the shader says so —
+ *  that is the LOD, and it changes the DETAIL of an aircraft, never whether it is drawn.
+ *
+ *  ⚠ EXTRAPOLATION IS CAPPED, AND CAPPED SHORTER THAN THE SATELLITES'. A satellite's motion is
+ *  deterministic — its velocity is still right four seconds later. An aircraft's is a guess that
+ *  ages badly: it turns, it levels off, it lands. Past EXTRAP_MAX_S the glyph HOLDS rather than
+ *  flying on, because a smooth line into a place the aircraft never went is a worse answer than a
+ *  glyph that stops. §10.5 requires the cap; the client marks anything past it as estimated.
+ *
+ *  This file is the MapLibre ADAPTER's implementation detail, exactly as js/orbit-points.js and
+ *  js/solid3d.js are. Nothing outside IntMapGeoEngine's
+ *  `layers.addAircraftCloud/setAircraftCloud/removeAircraftCloud` may reach for it.
+ * ==========================================================================*/
+window.IntMapModules = window.IntMapModules || {};
+window.IntMapModules.aircraftPoints = function () {
+  const D2R = Math.PI / 180;
+  /* the WGS84 equatorial circumference MapLibre's mercator is built on — one mercator unit of
+     altitude at latitude φ is MERC_CIRC·cos φ metres (the #R174 lesson, from js/solid3d.js) */
+  const MERC_CIRC = 2 * Math.PI * 6378137;
+
+  /* Seconds of dead reckoning before a glyph stops moving. Four is right for a satellite; an
+     aircraft that has not been heard from for four seconds may already have begun a turn. */
+  const EXTRAP_MAX_S = 3;
+
+  const VERT = `
+in vec2 a_pos;        /* mercator [0..1] at the observation */
+in vec2 a_vel;        /* d(mercator)/dt, per second */
+in float a_alt;       /* metres above the ellipsoid (0 when the layer is not lifting aircraft) */
+in float a_altv;      /* d(altitude)/dt, metres per second */
+in float a_mscale;    /* metres → mercator units at THIS aircraft's latitude */
+in vec4 a_col;        /* rgba, 0..1 */
+in vec2 a_form;       /* x = relative size (1 = ordinary), y = track in radians */
+uniform float u_dt;         /* seconds since the observation the buffers hold */
+uniform float u_altScale;   /* 0 = the prelude wants metres (globe), 1 = mercator units */
+uniform float u_pxRatio;
+uniform float u_sizePx;     /* the zoom-dependent base size, so a zoom change needs no repack */
+uniform float u_opacity;
+out vec4 v_col;
+out float v_rot;
+out float v_px;
+void main(){
+  v_col = vec4(a_col.rgb, a_col.a * u_opacity);
+  v_rot = a_form.y;
+  vec2 p = a_pos + a_vel * u_dt;
+  float alt = a_alt + a_altv * u_dt;
+  float e = mix(alt, alt * a_mscale, u_altScale);
+  gl_Position = projectTileFor3D(p, e);
+  float px = a_form.x * u_sizePx * u_pxRatio;
+  v_px = px;
+  gl_PointSize = px;
+}`;
+
+  const FRAG = `
+precision mediump float;
+in vec4 v_col;
+in float v_rot;
+in float v_px;
+out vec4 fragColor;
+
+/* Signed distance to a convex triangle: negative inside. Three half-planes, max of the three. */
+float triSD(vec2 p, vec2 a, vec2 b, vec2 c){
+  vec2 e0 = b - a, e1 = c - b, e2 = a - c;
+  vec2 n0 = normalize(vec2( e0.y, -e0.x));
+  vec2 n1 = normalize(vec2( e1.y, -e1.x));
+  vec2 n2 = normalize(vec2( e2.y, -e2.x));
+  return max(max(dot(p - a, n0), dot(p - b, n1)), dot(p - c, n2));
+}
+
+void main(){
+  vec2 q = (gl_PointCoord - vec2(0.5)) * 2.0;   /* [-1,1], +y DOWN in point-coord space */
+  q.y = -q.y;                                    /* make +y up, so 0 rad points north */
+
+  /* Anti-aliasing width in the same units as q: two pixels of the sprite. */
+  float aa = max(0.06, 3.0 / max(v_px, 1.0));
+
+  float a;
+  if (v_px < 5.0) {
+    /* LOD: below five device pixels a rotated dart and a dot are the same picture, and the dot
+       stays legible where the dart would alias into noise. The aircraft is still drawn. */
+    float r = length(q);
+    a = smoothstep(1.0, 1.0 - aa * 2.0, r);
+  } else {
+    float s = sin(v_rot), c = cos(v_rot);
+    vec2 p = mat2(c, -s, s, c) * q;              /* rotate the SPRITE by the track */
+
+    /* A dart: a nose-up triangle with a notch cut out of its trailing edge. This is the silhouette
+       every traffic display converges on because it reads as a heading at four pixels. */
+    float body  = triSD(p, vec2(0.0, 0.98), vec2(-0.72, -0.86), vec2(0.72, -0.86));
+    float notch = triSD(p, vec2(0.0, -0.12), vec2(-0.72, -0.95), vec2(0.72, -0.95));
+    float d = max(body, -notch);
+    a = smoothstep(aa, -aa, d);
+  }
+
+  if (a <= 0.003) discard;
+  fragColor = vec4(v_col.rgb * v_col.a * a, v_col.a * a);
+}`;
+
+  function compile(gl, shaderData) {
+    const pre = (shaderData && shaderData.vertexShaderPrelude) ||
+      'uniform mat4 u_projection_matrix;\nvec4 projectTileFor3D(vec2 p,float e){return u_projection_matrix*vec4(p,e,1.0);}';
+    const def = (shaderData && shaderData.define) || '';
+    const mk = (type, src) => {
+      const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'shader');
+      return s;
+    };
+    const v = mk(gl.VERTEX_SHADER, '#version 300 es\n' + def + '\n' + pre + '\n' + VERT);
+    const f = mk(gl.FRAGMENT_SHADER, '#version 300 es\n' + def + '\n' + FRAG);
+    const p = gl.createProgram(); gl.attachShader(p, v); gl.attachShader(p, f); gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'link');
+    gl.deleteShader(v); gl.deleteShader(f);
+    const loc = (n) => gl.getUniformLocation(p, n);
+    return {
+      p,
+      a: {
+        pos: gl.getAttribLocation(p, 'a_pos'), vel: gl.getAttribLocation(p, 'a_vel'),
+        alt: gl.getAttribLocation(p, 'a_alt'), altv: gl.getAttribLocation(p, 'a_altv'),
+        mscale: gl.getAttribLocation(p, 'a_mscale'), col: gl.getAttribLocation(p, 'a_col'),
+        form: gl.getAttribLocation(p, 'a_form'),
+      },
+      u: {
+        dt: loc('u_dt'), altScale: loc('u_altScale'), pxRatio: loc('u_pxRatio'),
+        sizePx: loc('u_sizePx'), opacity: loc('u_opacity'),
+        mat: loc('u_projection_matrix'), fallback: loc('u_projection_fallback_matrix'),
+        tileCoords: loc('u_projection_tile_mercator_coords'), clip: loc('u_projection_clipping_plane'),
+        transition: loc('u_projection_transition'),
+      },
+    };
+  }
+
+  /** mercator [0..1] from lng/lat — UNCLAMPED in y, as js/orbit-points.js is, so a high-latitude
+      aircraft is off the top of a flat map rather than pinned to its edge. */
+  function merc(lng, lat) {
+    const x = (180 + lng) / 360;
+    const p = Math.max(-89.9999, Math.min(89.9999, lat)) * D2R;
+    const y = (180 - (180 / Math.PI) * Math.log(Math.tan(Math.PI / 4 + p / 2))) / 360;
+    return [x, y];
+  }
+
+  /** metres → mercator units at this latitude; the reciprocal the shader multiplies altitude by */
+  function metreScale(lat) {
+    return 1 / Math.max(1, MERC_CIRC * Math.cos(lat * D2R));
+  }
+
+  function makeLayer(id) {
+    const S = { n: 0, t0: 0, visible: true, opacity: 1, sizePx: 11 };
+    let gl = null, prog = null, variant = null, mapRef = null, dirty = false;
+    let bPos = null, bVel = null, bAlt = null, bAltV = null, bMs = null, bCol = null, bForm = null;
+    let aPos = null, aVel = null, aAlt = null, aAltV = null, aMs = null, aCol = null, aForm = null;
+
+    function upload() {
+      dirty = false;
+      const put = (buf, arr) => {
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
+      };
+      put(bPos, aPos); put(bVel, aVel); put(bAlt, aAlt); put(bAltV, aAltV);
+      put(bMs, aMs); put(bCol, aCol); put(bForm, aForm);
+    }
+
+    return {
+      id, type: 'custom', renderingMode: '3d',
+      _state: S,
+
+      /*  o.buffers — ALREADY IN GPU LAYOUT. This is the difference from orbit-points, which takes a
+       *  list of objects and packs it here: at 50,000 aircraft the pack loop is the cost, so the
+       *  Worker does it once and TRANSFERS the arrays. This method must stay O(1) in aircraft.
+       *      pos  Float32Array(n*2)   mercator
+       *      vel  Float32Array(n*2)   mercator/second
+       *      alt  Float32Array(n)     metres      altv Float32Array(n)  metres/second
+       *      ms   Float32Array(n)     metre scale
+       *      col  Float32Array(n*4)   rgba 0..1
+       *      form Float32Array(n*2)   [relative size, track radians]
+       *  o.t0 — performance.now() the observation is valid at.
+       */
+      _set(o) {
+        if (!o) return;
+        if (o.buffers) {
+          const b = o.buffers;
+          aPos = b.pos; aVel = b.vel; aAlt = b.alt; aAltV = b.altv;
+          aMs = b.ms; aCol = b.col; aForm = b.form;
+          S.n = (aPos ? aPos.length >> 1 : 0);
+          S.t0 = (o.t0 != null) ? o.t0 : ((typeof performance !== 'undefined') ? performance.now() : Date.now());
+          dirty = true;
+        }
+        if (o.visible != null) S.visible = !!o.visible;
+        if (o.opacity != null && isFinite(o.opacity)) S.opacity = Math.max(0, Math.min(1, +o.opacity));
+        if (o.sizePx != null && isFinite(o.sizePx)) S.sizePx = Math.max(1, Math.min(64, +o.sizePx));
+        try { if (mapRef && mapRef.triggerRepaint) mapRef.triggerRepaint(); } catch (_) { }
+      },
+
+      onAdd(map, ctx) {
+        mapRef = map; gl = ctx;
+        bPos = gl.createBuffer(); bVel = gl.createBuffer(); bAlt = gl.createBuffer();
+        bAltV = gl.createBuffer(); bMs = gl.createBuffer(); bCol = gl.createBuffer();
+        bForm = gl.createBuffer();
+        dirty = !!aPos;
+      },
+
+      onRemove(map, ctx) {
+        const g = ctx || gl; if (!g) return;
+        try { [bPos, bVel, bAlt, bAltV, bMs, bCol, bForm].forEach((b) => b && g.deleteBuffer(b)); } catch (_) { }
+        try { if (prog) g.deleteProgram(prog.p); } catch (_) { }
+        prog = null; variant = null; gl = null;
+      },
+
+      render(ctx, args) {
+        gl = ctx;
+        if (!S.visible || !S.n || !aPos) return;
+        const sd = args && args.shaderData, vname = (sd && sd.variantName) || 'mercator';
+        if (!prog || variant !== vname) {
+          try { if (prog) gl.deleteProgram(prog.p); prog = compile(gl, sd); variant = vname; }
+          catch (e) { prog = null; try { console.warn('[IntMap aircraftPoints]', e && e.message); } catch (_) { } return; }
+        }
+        if (dirty) upload();
+        if (!prog) return;
+
+        const P = args && args.defaultProjectionData;
+        gl.useProgram(prog.p);
+        try {
+          if (prog.u.mat && P && P.mainMatrix) gl.uniformMatrix4fv(prog.u.mat, false, new Float32Array(P.mainMatrix));
+          if (prog.u.fallback && P && P.fallbackMatrix) gl.uniformMatrix4fv(prog.u.fallback, false, new Float32Array(P.fallbackMatrix));
+          if (prog.u.tileCoords && P && P.tileMercatorCoords) gl.uniform4fv(prog.u.tileCoords, new Float32Array(P.tileMercatorCoords));
+          if (prog.u.clip && P && P.clippingPlane) gl.uniform4fv(prog.u.clip, new Float32Array(P.clippingPlane));
+          if (prog.u.transition) gl.uniform1f(prog.u.transition, (P && typeof P.projectionTransition === 'number') ? P.projectionTransition : 0);
+        } catch (_) { }
+
+        const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        /* ⚠ CAPPED — see the header. Past EXTRAP_MAX_S the glyph holds where it was rather than
+           continuing along a velocity that is no longer evidence of anything. */
+        gl.uniform1f(prog.u.dt, Math.max(0, Math.min(EXTRAP_MAX_S, (now - S.t0) / 1000)));
+        gl.uniform1f(prog.u.altScale, (vname === 'mercator') ? 1 : 0);
+        gl.uniform1f(prog.u.sizePx, S.sizePx);
+        gl.uniform1f(prog.u.opacity, S.opacity);
+        let pr = 1; try { pr = Math.max(1, Math.min(3, window.devicePixelRatio || 1)); } catch (_) { }
+        gl.uniform1f(prog.u.pxRatio, pr);
+
+        const bind = (buf, loc, size) => {
+          if (loc < 0) return;
+          gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+          gl.enableVertexAttribArray(loc);
+          gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+        };
+        bind(bPos, prog.a.pos, 2); bind(bVel, prog.a.vel, 2); bind(bAlt, prog.a.alt, 1);
+        bind(bAltV, prog.a.altv, 1); bind(bMs, prog.a.mscale, 1); bind(bCol, prog.a.col, 4);
+        bind(bForm, prog.a.form, 2);
+
+        gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        /* ⚠ DEPTH TESTED, NOT DEPTH WRITTEN — the same rule js/orbit-points.js states. The globe's
+           surface is drawn first and writes depth, so an aircraft on the far side of the planet is
+           discarded by the test (§27.2 item 8). Writing depth would make the sprites occlude each
+           other's anti-aliased edges. */
+        gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false);
+        gl.drawArrays(gl.POINTS, 0, S.n);
+        gl.depthMask(true);
+      },
+    };
+  }
+
+  return { makeLayer, merc, metreScale, EXTRAP_MAX_S, MERC_CIRC };
+};

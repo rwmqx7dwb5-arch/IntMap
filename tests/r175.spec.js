@@ -26,8 +26,13 @@ const EAGER_GLOBALS = (() => {
     .filter((g) => /^IntMap/.test(g)).sort();
 })();
 
-const boot = async page => {
-  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+/* (#R341) `query` pins WHICH aviation path the page boots with. The aircraft layer has two now: the
+   original per-browser sweep, which owns `window.IntMapPlanes3D` and its screen positions, and the
+   GPU cloud that replaced it as the default. ③ below clicks an aircraft where `IntMapPlanes3D` says
+   it is drawn, so it names the path that fills that model rather than depending on which one happens
+   to be the default. ① ② ④ are the tilt dolly, the tooltip and the bundle, and pass either way. */
+const boot = async (page, query) => {
+  await page.goto('/index.html' + (query || ''), { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(600);   /* (#R212) the style is already loaded — this tail was 1.5 s in 20 specs */
@@ -131,7 +136,11 @@ test('clicking an aircraft opens its card, and the card flies from its own condi
   await page.route('**/api.planespotters.net/**', route => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({ photos: [] }),
   }));
-  await boot(page);
+  /* ⚠ ?aviation=v1 — see the note on boot(). The stubbed feed above is api.airplanes.live, which is
+     the sweep's provider and nobody else's: on the default path nothing fetches it, `state().planes`
+     stays 0 and the wait below times out at 60 s (measured, #R341). What the card is asserted to
+     contain, and what the flight is asserted to start FROM, are untouched. */
+  await boot(page, '?aviation=v1');
   /* (#R209) the card's Fly button hands over to `window.IntMapFlightSim`, and js/flight-sim.js is no
      longer in the boot bundle — it arrives when a door asks for it. js/aircraft-detail.js awaits
      `IntMapLazy.need('flightSim')` on the click; this test reads `FS._st()` straight afterwards, so

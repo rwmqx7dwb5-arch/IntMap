@@ -42,7 +42,7 @@
   "tests/r181-cesium.spec.js": 143,
   "tests/r182-cesium.spec.js": 639,
   "tests/r184-cesium-fs.spec.js": 234,
-  "tests/r184-drone.spec.js": 145,
+  "tests/r184-drone.spec.js": 40,
   "tests/r184-imagery.spec.js": 76,
   "tests/r184-routing.spec.js": 40,
   "tests/r184-satellites.spec.js": 166,
@@ -71,5 +71,7 @@
   "tests/r337-atlas.spec.js": 24,
   "tests/r337.spec.js": 6,
   "tests/security.spec.js": 9,
-  "tests/smoke.spec.js": 8
+  "tests/smoke.spec.js": 8,
+  "tests/r341.spec.js": 4,
+  "tests/r341-live.spec.js": 6
 }

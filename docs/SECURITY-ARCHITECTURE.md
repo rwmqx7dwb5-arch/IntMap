@@ -146,11 +146,12 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are EIGHT, and this table used to list two.** `supabase/config.toml` used to declare
+**There are NINE, and this table used to list two.** `supabase/config.toml` used to declare
 five and the other three carried their deploy flag only in a header comment — a deploy flag
-that lives in a comment is not configuration. All eight are declared there now.
+that lives in a comment is not configuration. All nine are declared there now.
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`newsgeo.js`,
-`relay-guard.js`) that the CLI bundles into the functions that import it.
+`relay-guard.js`, `aviation-codec.js`, `aviation-model.js`) that the CLI bundles into the
+functions that import it.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
@@ -162,6 +163,16 @@ that lives in a comment is not configuration. All eight are declared there now.
 | `cable-geo` | false | none — keyless public relay of two TeleGeography GeoJSON URLs | — | — |
 | `news-relay` | false | none — keyless public relay of Google News RSS | — | — |
 | `sv-cov` | false | none — keyless public relay of Google Street-View coverage tiles | — | — |
+| `aviation-feed` | false | none — keyless; serves live ADS-B to signed-out readers | — | provider key (when a provider needs one) + `AVIATION_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** |
+
+**`aviation-feed` is keyless but is NOT a fifth relay**, and the distinction is a security
+property rather than a naming one. A relay forwards a URL **the caller named**, which is why the
+four below need an allow-list. `aviation-feed` names its own upstreams — the caller may choose
+only a channel (`world` / `view` / `meta`) — so no caller-supplied string ever reaches `fetch()`
+and there is no allow-list to get wrong. It takes the rest of `relay-guard.js` unchanged: GET
+only, a deadline, a byte ceiling, a content-type check, and errors that name a bound and never an
+exception. Its `?meta=1` channel reports the PRESENCE of its credentials as booleans and never
+their values.
 
 **The four keyless relays are not protected by a login and must not be** — they serve map
 layers to signed-out readers. What stands in front of them is `_shared/relay-guard.js`, shared

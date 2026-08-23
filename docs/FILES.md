@@ -72,6 +72,7 @@ src/
   locale-boot.js                    import.meta.glob('../js/locales/ui.*.js') で言語をディレクトリから読む（lazy）
   sat-worker.js / sat-worker-client.js      衛星の軌道計算（SGP4/SDP4）をワーカーで回す
   tsunami-worker.js / tsunami-worker-client.js  津波の伝播計算をワーカーで回す
+  aviation-worker.js / aviation-worker-client.js  ライブ航空機の在庫（デコード・格納・時効・フィルタ・GPU バッファの pack）をワーカーで回す
   satellite-wasm-stub.js            satellite.js の wasm 経路を使わないためのスタブ
 fonts/                              Inter（サブセット woff2 ＋ MapLibre 用 pbf グリフ）と Pretendard
 ```
@@ -317,6 +318,10 @@ satellites-live.js                ライブ衛星 window.IntMapSatellites
 satellite-detail.js               ライブ衛星——クリックの先の詳細カード
 orbit-points.js                   衛星が実際にいる場所——軌道上の点
 aircraft-detail.js                ライブ航空機——クリックの先の詳細カード
+aviation-live.js                  ライブ航空機レイヤーの制御役 window.IntMapAviation——取得・LOD・picking・選択
+aircraft-points.js                航空機が実際にいる場所——数万機を1描画呼び出しで描く GPU 点群
+aviation-codec.js                 IMAV/1 バイナリ形式の正本（encode/decode）。_shared/ へ写して server と共有
+aviation-model.js                 provider 正規化・出典・タイル格子の正本。同じく _shared/ へ写す
 ```
 
 ### 3.10 `js/` — シェル・アカウント・その他
@@ -396,7 +401,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全8本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（10本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（11本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数。7本）
   functions/<name>/index.ts       Edge Functions（8本。§6.2）

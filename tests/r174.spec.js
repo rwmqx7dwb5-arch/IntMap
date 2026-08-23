@@ -9,14 +9,21 @@
 import { test, expect } from '@playwright/test';
 import { loadLazyModules } from './helpers/app.js';
 
-const boot = async page => {
+/* (#R341) `query` pins WHICH aviation path the page boots with. The aircraft layer has two now: the
+   original per-browser sweep, whose track is `src-plane-track` / `lyr-plane-track-3d` over
+   `src-planes-3d`, and the GPU cloud that replaced it as the default. The two aircraft tests below
+   are about THAT track — the legs it hands the renderer over high ground, and its survival across a
+   double-click zoom — so they name the path that draws it rather than depending on which one happens
+   to be the default. The flight simulator, the tilt ceiling, the volume and the drone planner are
+   nothing to do with the live-aircraft layer and pass either way. */
+const boot = async (page, query) => {
   /* (#R224) the Atlas kernel is fetched on demand — reach for it the way a reader's first click
      does, so a spec that drives an Atlas action finds `window.IntMapConsole` where it expects it. */
   await page.addInitScript(() => { try {
     const t = setInterval(() => { try { if (window.IntMapAtlas) { clearInterval(t); window.IntMapAtlas.ensure(); } } catch (_) { } }, 50);
     setTimeout(() => { try { clearInterval(t); } catch (_) { } }, 30000);
   } catch (_) { } });
-  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  await page.goto('/index.html' + (query || ''), { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(600);   /* (#R212) the style is already loaded — this tail was 1.5 s in 20 specs */
@@ -128,7 +135,10 @@ test('the track survives zooming in over high ground with 3-D terrain on', async
       body: JSON.stringify({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'TEST123 ', r: 'JA123X', t: 'B788',
         lat: 35.36 + t * 0.004, lon: 138.68 + t * 0.006, alt_baro: 5000, alt_geom: 5000,
         gs: 200, track: 55, seen: 1, dbFlags: 0 }] }) }); });
-  await boot(page);
+  /* ⚠ ?aviation=v1 — see the note on boot(). What is captured below is what `src-plane-track` and
+     `src-planes-3d` are handed, and the default rendering feeds neither: without the pin the sources
+     do not exist and `getSource(…)` answers null (measured, #R341). The assertions are unchanged. */
+  await boot(page, '?aviation=v1');
   await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
   await page.evaluate(() => { const b = document.getElementById('btn-view-3d'); if (b && !b.classList.contains('active')) b.click(); });
   await page.evaluate(() => window.__imap.jumpTo({ center: [138.72, 35.38], zoom: 10.5, pitch: 45, bearing: 0 }));
@@ -178,7 +188,9 @@ test('a double-click zoom keeps the aircraft track on screen', async ({ page }) 
       body: JSON.stringify({ now: Date.now(), ac: [{ hex: 'abc123', flight: 'TEST123 ', r: 'JA123X', t: 'B788',
         lat: 35.660 + t * 0.004, lon: 139.700 + t * 0.006, alt_baro: 4000, alt_geom: 4000,
         gs: 200, track: 55, seen: 1, dbFlags: 0 }] }) }); });
-  await boot(page);
+  /* ⚠ ?aviation=v1 — see the note on boot(). This one queries `lyr-plane-track-3d` directly, which
+     the default rendering ships at visibility:'none' (measured, #R341). Unchanged otherwise. */
+  await boot(page, '?aviation=v1');
   await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
   await page.evaluate(() => window.__imap.jumpTo({ center: [139.71, 35.67], zoom: 11, pitch: 45, bearing: 0 }));
   await page.evaluate(() => { const cb = document.getElementById('dl-planes'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); });

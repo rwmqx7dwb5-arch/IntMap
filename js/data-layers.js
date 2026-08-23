@@ -3406,9 +3406,129 @@ window.IntMapModules.dataLayers=function(HOST){
     /* (#R172) "is the aircraft layer on?" — it has two renderings now, so asking after one of them by name
        (as every call site used to) reports the layer as OFF whenever the other one is the visible one. */
     function planesLayerOn(){ try{
+      /* (#R341) THREE renderings now, not two. Asking after one of them by name is exactly the
+         defect this function was written for in #R172 - and adding a third without adding it here
+         would recreate it. */
+      if(_av2&&_av2.isOn()) return true;
       const a=GE().layers.get('lyr-planes')&&GE().layers.getLayout('lyr-planes','visibility')==='visible';
       const b=GE().layers.get(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible';
       return !!(a||b); }catch(_){ return false; } }
+    /* (#R341) the v1-shaped record the detail card, the tooltip and the flight simulator already
+       speak, built from the worker's normalised one. Nothing is invented: a field the provider did
+       not report stays null, which the card renders as an em dash rather than as a number. */
+    function _av2Plane(d){
+      if(!d) return null;
+      const FT=0.3048, KT=0.514444, FPM=0.00508;
+      return { icao24:(d.hex||'').toUpperCase(), callsign:d.callsign||'', reg:d.registration||'',
+        acType:d.type||'', desc:'', lng:d.lon, lat:d.lat,
+        baroAlt:(d.altFt==null||d.geometric)?null:d.altFt*FT,
+        geoAlt:(d.altFt!=null&&d.geometric)?d.altFt*FT:null,
+        vel:(d.gsKt!=null?d.gsKt*KT:null), heading:(d.track!=null?d.track:0),
+        vrate:(d.vrFpm!=null?d.vrFpm*FPM:null), squawk:'', onGround:!!d.onGround,
+        category:(d.category?('A'+d.category):null),
+        lastContact:Math.floor((d.observedAt||Date.now())/1000),
+        type:d.military?'military':'civilian',
+        ias:null, tas:null, mach:null, oat:null, navAlt:null, navQnh:null, roll:null,
+        trueHdg:null, magHdg:null, windDir:null, windSpd:null, rssi:null, messages:null,
+        src:d.provider||'', emergency:(d.emergency?'emergency':''),
+        _v2:true, _freshness:d.freshness, _ageS:d.ageS, _categoryName:d.categoryName };
+    }
+    /* (#R341) THE SOURCE LINE NAMES THE SOURCE THAT ACTUALLY ANSWERED.
+       It used to be the literal "airplanes.live · ADS-B", printed under every aircraft — including
+       under the 270 SYNTHETIC ones production was drawing after that provider began refusing every
+       request. Attribution is not decoration here: the default provider is adsb.lol, whose data is
+       ODbL 1.0, and ODbL REQUIRES the source to be named. Naming the wrong one is worse than naming
+       none. The name travels from the server in the x-intmap-attribution header, so a change of
+       provider changes this line with no code change at all. */
+    function _planeSourceLine(){
+      if(!AVIATION_V2) return 'airplanes.live · ADS-B';
+      try{
+        const st=_av2&&_av2.stats();
+        const who=(st&&(st.attribution||st.provider))||'';
+        /* IntMapSafe.html — the project's escaper. .escape() does not exist, and calling it would
+           throw into the catch below and silently drop the attribution ODbL requires. */
+        if(who) return (window.IntMapSafe?window.IntMapSafe.html(who):who)+' · ADS-B';
+      }catch(_){}
+      return 'ADS-B';
+    }
+    async function _av2Detail(hex){
+      if(!_av2||!hex) return null;
+      const r=await _av2.detail(hex);
+      const rec=_av2Plane(r);
+      if(rec) _av2Cache.set(hex,rec);
+      return rec;
+    }
+    /* (#R341) The click, on the v2 path. Same three promises the v1 click makes:
+         . the tap belongs to the aircraft, not to the city name beneath it (claimClick, #R210)
+         . a second tap on the same aircraft deselects
+         . a tap on empty sky deselects, but only after MapLibre's double-click window (#R174)
+       What differs is only WHERE the aircraft comes from: a GPU-side pick and one worker round
+       trip, instead of a linear scan of a main-thread array. */
+    function _av2Click(e){
+      let hex=null;
+      try{ hex=_av2&&_av2.pick(e.point); }catch(_){ hex=null; }
+      if(hex){
+        try{ if(GE().events.claimClick) GE().events.claimClick(e); }catch(_){}
+        if(_planesClearT){ clearTimeout(_planesClearT); _planesClearT=null; }
+        const already=(selectedPlane===hex.toUpperCase());
+        selectPlane(already?null:hex.toUpperCase());
+        try{ if(_av2) _av2.select(already?'':hex); }catch(_){}
+        if(already) return;
+        window.IntMapLazy.need('aircraftDetail').then(async()=>{
+          const d=await _av2Detail(hex);
+          if(!d) return;
+          if(openPlaneCard(d)){ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; }
+          else { const el=ensureMapTooltip(); el.style.display='block';
+            el.innerHTML=trafficTooltipHTML('planes',Object.assign({sel:1},d));
+            positionTooltip(e.point); }
+        });
+        return;
+      }
+      if(selectedPlane&&!_planesClearT) _planesClearT=setTimeout(()=>{ _planesClearT=null;
+        if(selectedPlane){ selectPlane(null); try{ if(_av2) _av2.select(''); }catch(_){} } },320);
+    }
+    /* Hover, throttled to one pick per frame exactly as the v1 path is. The worker round trip is
+       only made when the aircraft under the pointer CHANGES, so moving across a busy sky costs one
+       message per aircraft entered, not one per pointer event. */
+    let _av2HoverHex=null, _av2HoverPend=false;
+    function _av2Hover(e){
+      if(_av2HoverPend) return;
+      _av2HoverPend=true;
+      requestAnimationFrame(()=>{
+        _av2HoverPend=false;
+        let hex=null;
+        try{ hex=_av2&&_av2.pick(e.point); }catch(_){ hex=null; }
+        const el=HOST.mapTooltipEl;
+        if(!hex){ _av2HoverHex=null; if(el&&!selectedPlane) el.style.display='none'; return; }
+        if(hex===_av2HoverHex){ positionTooltip(e.point); return; }
+        _av2HoverHex=hex;
+        const cached=_av2Cache.get(hex);
+        const show=(rec)=>{ if(!rec||_av2HoverHex!==hex) return;
+          const t=ensureMapTooltip(); t.style.display='block';
+          t.innerHTML=trafficTooltipHTML('planes',rec); positionTooltip(e.point); };
+        if(cached) show(cached); else _av2Detail(hex).then(show);
+      });
+    }
+    async function _av2Start(){
+      if(_av2Starting) return _av2;
+      _av2Starting=true;
+      try{
+        await window.IntMapLazy.need('aviationLive');
+        _av2=window.IntMapAviation||null;
+        if(_av2){
+          const ok=await _av2.start({ endpoint:AVIATION_ENDPOINT,
+            opacity:(opacities.planes!=null?opacities.planes:0.9), lift:planes3D });
+          if(!ok) _av2=null;
+          else {
+            const f=trafficFilters.planes;
+            _av2.setFilter({ kind:(f==='military'?'military':(f==='civilian'?'civil':'all')) });
+            if(!_av2Zoom){ _av2Zoom=()=>{ try{ _av2&&_av2.onZoom(); }catch(_){} }; GE().events.on('zoom',_av2Zoom); }
+          }
+        }
+      }catch(_){ _av2=null; }
+      _av2Starting=false;
+      return _av2;
+    }
     /* Aircraft military operator hints (very rough — based on callsign prefixes) */
     const MILITARY_CALLSIGN_PREFIXES=['RCH','REACH','SAM','EVAC','MUSCLE','HOMR','BLUE','RNGR','NATO','PAT','RFR','SPAR','THUG','SHELL','GRZLY','CLAMP','POPS','HAWG','SLAY','DUKE','LOBO','GUMP','HUSKY','HUNTR','BAND','TYRN','MAGMA','KING','CAMEL'];
     function classifyAircraft(callsign){
@@ -3520,6 +3640,40 @@ window.IntMapModules.dataLayers=function(HOST){
        prompt is still the honest answer. It used to be z5, then z3; a 48-circle sweep covers roughly
        4,900 × 3,700 km, which is a real region at z2. */
     const PLANES_MIN_ZOOM=2, SHIPS_MIN_ZOOM=6;
+    /* == (#R341) THE LIVE-AIRCRAFT PLATFORM, AND THE SWITCH BACK ==================================
+       Everything above this line describes the ORIGINAL path: a per-browser sweep of up to 128
+       point queries against api.airplanes.live. That endpoint now answers HTTP 403 to every
+       request, with no CORS header, so in production not one of those fetches has resolved - they
+       reject, the sweep reports total failure, and genSyntheticPlanes() puts 270 INVENTED aircraft
+       on the map under an "airplanes.live . ADS-B" source line (measured, #R341).
+
+       The replacement asks ONE server (supabase/functions/aviation-feed) which asks ONE provider
+       for everybody, and draws the answer on the GPU with no zoom floor and no aircraft cap. The
+       old path is kept, unmodified, for the rollback window SS28 Phase G requires - but it is not
+       the default, because its provider is gone.
+
+           ?aviation=v1   force the original sweep      ?aviation=v2   force the new platform
+           localStorage 'intmap_aviation_v2' = '0' | '1'   the same choice, remembered
+
+       WARNING: WHEN V2 IS ACTIVE, NOTHING BELOW FETCHES. fetchPlanes / _sweep / planeCircles /
+       genSyntheticPlanes are never entered - see startTraffic. */
+    const AVIATION_V2=(function(){
+      try{ const q=new URLSearchParams(location.search).get('aviation');
+        if(q==='v1') return false;
+        if(q==='v2') return true;
+        const v=localStorage.getItem('intmap_aviation_v2');
+        if(v==='0') return false;
+        if(v==='1') return true;
+      }catch(_){}
+      return true;
+    })();
+    const AVIATION_ENDPOINT=(function(){ try{ const b=String(window.SUPABASE_URL||'').replace(/\/$/,'');
+      return b?(b+'/functions/v1/aviation-feed'):''; }catch(_){ return ''; } })();
+    let _av2=null;                 /* the IntMapAviation controller, once the lazy module has landed */
+    let _av2Starting=false;
+    let _av2Zoom=null;
+    const _av2Cache=new Map();     /* hex -> the v1-shaped record the card and tooltip already speak */
+
     function zoomHintEl(id,onClickZoom){
       let el=document.getElementById(id);
       if(!el){ el=document.createElement('button'); el.id=id; el.type='button';
@@ -3533,6 +3687,10 @@ window.IntMapModules.dataLayers=function(HOST){
       const on=!!(planesLayerOn());   /* (#R172) either rendering counts as "the layer is on" */
       const el=zoomHintEl('planes-zoom-hint',PLANES_MIN_ZOOM+2);
       if(!on){ el.style.display='none'; return; }
+      /* (#R341) V2 HAS NO ZOOM FLOOR AND NO PARTIAL COVER, so it has nothing to prompt about.
+         Production was measured showing "Zoom in to load live aircraft" at z1 WHILE 270 aircraft
+         were drawn - a hint and a picture disagreeing about the same fact. */
+      if(AVIATION_V2){ el.style.display='none'; return; }
       if(GE().camera.getZoom()<PLANES_MIN_ZOOM){ el.textContent=t('planesZoomHint'); el.style.display='block'; return; }
       /* (#R186) …and when the budget covers only part of a very wide view, SAY SO rather than letting
          a partly-filled sky read as an empty one.
@@ -4473,6 +4631,9 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     function planes3DOn(){ return planes3D; }
     function setPlanes3D(v){ planes3D=!!v; try{ localStorage.setItem(PLANES3D_KEY,planes3D?'1':'0'); }catch(_){}
+      /* (#R341) SAME SETTING, SAME KEY, THIRD RENDERING. The saved preference is untouched, so a
+         reader who turned real altitude off keeps it off across the change of engine. */
+      try{ if(_av2) _av2.setLift(planes3D); }catch(_){}
       try{ const on=GE().layers.get('lyr-planes')&&GE().layers.getLayout('lyr-planes','visibility')==='visible';
         const on3=GE().layers.get(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible';
         if(on||on3) applyPlanesMode(true); }catch(_){}
@@ -4488,6 +4649,14 @@ window.IntMapModules.dataLayers=function(HOST){
       if(visible&&planes3D) refreshTrafficLayer('planes');
     }
     function refreshTrafficLayer(id){
+      /* (#R341) Both filter controls (the Layers panel select and the legend select) call this, so
+         hooking it here means neither call site has to learn about the cloud - and the two cannot
+         drift apart, which is how they got out of step before. */
+      if(id==='planes'&&AVIATION_V2){
+        try{ if(_av2){ const f=trafficFilters.planes;
+          _av2.setFilter({ kind:(f==='military'?'military':(f==='civilian'?'civil':'all')) }); } }catch(_){}
+        return;
+      }
       if(!GE().hasRenderer()) return;
       const filt=trafficFilters[id];
       if(!GE().layers.hasSource('src-'+id)) return;
@@ -4612,7 +4781,7 @@ window.IntMapModules.dataLayers=function(HOST){
             ? (window.IntMapLang.t(HOST.lang,'Click to hide','クリックで軌跡を消す','Klicken zum Ausblenden','Нажмите, чтобы скрыть','Clic para ocultar'))
             : (window.IntMapLang.t(HOST.lang,'Click to show','クリックで軌跡を表示','Klicken für die Spur','Нажмите, чтобы показать','Clic para mostrar'));
           return st.fixes>=2?`<div style="font-size:11px;margin-top:3px;color:#ffd23f;">${lbl} — ${tip}</div>`:''; })()+
-        `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${planesSynthetic?(window.IntMapLang.t(HOST.lang,'Simulated placeholder (live feed unavailable)','※デモ用合成データ（実データ取得不可）','Simulierte Platzhalterdaten (kein Live-Feed)','Демонстрационные данные (живой поток недоступен)','Datos simulados de muestra (sin flujo en vivo)')):(window.IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(p.lastContact)+' · '+fmtClock(planesTime)}<br>airplanes.live · ADS-B</div>`;
+        `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${planesSynthetic?(window.IntMapLang.t(HOST.lang,'Simulated placeholder (live feed unavailable)','※デモ用合成データ（実データ取得不可）','Simulierte Platzhalterdaten (kein Live-Feed)','Демонстрационные данные (живой поток недоступен)','Datos simulados de muestra (sin flujo en vivo)')):(window.IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(p.lastContact)+' · '+fmtClock(planesTime)}<br>${_planeSourceLine()}</div>`;
     }
     function setupTrafficLayer(id){
       if(GE().layers.hasSource('src-'+id)) return;
@@ -4702,6 +4871,11 @@ window.IntMapModules.dataLayers=function(HOST){
            the footprint clears the selection — asked of the renderer rather than of a flag set by the layer
            handlers, so it does not depend on which listener MapLibre calls first. */
         if(!_planesHover){ _planesHover=(e)=>{
+          /* (#R341) On the v2 path the hover has no 3-D precondition: the cloud is ONE rendering
+             that carries both the flat glyph and the lifted body, so an aircraft is hoverable
+             whether or not real altitude is switched on. The v1 guard below is kept exactly as it
+             was for the rollback path. */
+          if(AVIATION_V2){ if(planesLayerOn()) _av2Hover(e); return; }
           if(!planes3D||!(GE().layers.has(PLANE3D_LYR)&&GE().layers.getLayout(PLANE3D_LYR,'visibility')==='visible')) return;
           /* one pick per frame at most: a pointer emits far more moves than the screen has frames, and the
              pick walks every aircraft in the viewport (hundreds over a busy sky). */
@@ -4739,6 +4913,7 @@ window.IntMapModules.dataLayers=function(HOST){
           GE().events.on('dblclick',_planesDbl); }
         if(!_planesClear){ _planesClear=(e)=>{
           try{ if(e&&e.originalEvent&&(e.originalEvent.detail|0)>=2) return; }catch(_){}
+          if(AVIATION_V2){ _av2Click(e); return; }
           let d=pickPlane(e.point), props=null;
           if(!d){ try{ const ls=['lyr-planes',PLANE3D_LYR,PLANE3D_POST].filter(l=>GE().layers.get(l));
               const f=ls.length?GE().coords.queryRenderedFeatures(e.point,{layers:ls}):[];
@@ -4770,7 +4945,17 @@ window.IntMapModules.dataLayers=function(HOST){
     function startTraffic(id){
       setupTrafficLayer(id);
       setVis('lyr-'+id,true);
-      if(id==='planes'){
+      if(id==='planes'&&AVIATION_V2){
+        /* (#R341) The GPU cloud replaces BOTH old renderings, so neither is made visible and no
+           sweep is started. Everything else about the layer - legend, filter, opacity, the real
+           altitude switch, the detail card, the track, the flight simulator - is unchanged and
+           reaches the same places through the controller. */
+        try{ if(GE().layers.has('lyr-planes')) GE().layers.setLayout('lyr-planes','visibility','none');
+          if(GE().layers.has(PLANE3D_LYR)) GE().layers.setLayout(PLANE3D_LYR,'visibility','none');
+          if(GE().layers.has(PLANE3D_POST)) GE().layers.setLayout(PLANE3D_POST,'visibility','none'); }catch(_){}
+        _av2Start();
+        updatePlanesZoomHint();
+      } else if(id==='planes'){
         applyPlanesMode(true);   /* (#R172) flat glyphs OR lifted bodies — never both */
         /* (#R186) a self-re-arming TIMEOUT, not an interval: one sweep is now several requests over a
            second or two, and the gap to the next one is chosen from how big that sweep was
@@ -4803,7 +4988,8 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     function stopTraffic(id){
       setVis('lyr-'+id,false);
-      if(id==='planes'){ applyPlanesMode(false); if(planesTimer){ clearInterval(planesTimer); clearTimeout(planesTimer); planesTimer=null; } _planeSweep++; updatePlanesZoomHint(); }   /* (#R186) bump the token so an in-flight sweep cannot publish into a layer that is now off */
+      if(id==='planes'&&AVIATION_V2){ try{ if(_av2) _av2.stop(); }catch(_){} selectPlane(null); updatePlanesZoomHint(); }
+      else if(id==='planes'){ applyPlanesMode(false); if(planesTimer){ clearInterval(planesTimer); clearTimeout(planesTimer); planesTimer=null; } _planeSweep++; updatePlanesZoomHint(); }   /* (#R186) bump the token so an in-flight sweep cannot publish into a layer that is now off */
       if(id==='ships'){ if(shipsTimer){ clearInterval(shipsTimer); shipsTimer=null; } stopAIS(); updateShipsZoomHint(); }
     }
     /* === (#R184) LIVE SATELLITES ============================================================
@@ -5438,7 +5624,14 @@ window.IntMapModules.dataLayers=function(HOST){
     window.refreshDatedLayer=refreshDatedLayer;
     window.refreshTrafficLayer=refreshTrafficLayer;
     /* (#R172) aircraft altitude rendering — Atlas + the tests drive it through this, never through the layer ids */
+    /* (#R341) The v2 platform publishes its own measurement surface (window.IntMapAviation, §24).
+       IntMapPlanes3D stays exactly as it was so nothing that reads it breaks - and gains one key
+       that says which path is actually running, because a diagnostic that reports the OLD sweep's
+       counters while the NEW one is drawing is the two-lists-disagree defect in miniature. */
     window.IntMapPlanes3D={ isOn:planes3DOn, set:setPlanes3D,
+      aviation:()=>({ v2:AVIATION_V2, endpoint:AVIATION_ENDPOINT,
+        started:!!_av2, live:(function(){ try{ return !!(_av2&&_av2.isOn()); }catch(_){ return false; } })(),
+        status:(function(){ try{ return _av2?_av2.stats():null; }catch(_){ return null; } })() }),
       /* (#R173) the clicked aircraft's track, also reachable by callsign / registration / ICAO24 so Atlas
          and the tests drive exactly what a click drives (#R82: everything is operable from Atlas). */
       select:selectPlane, selected:()=>selectedPlane, track:k=>((planeTracks[k||selectedPlane]||[]).slice()),
@@ -5507,6 +5700,8 @@ window.IntMapModules.dataLayers=function(HOST){
       else if(id==='eu'){ if(GE().layers.has('eu-fill'))GE().layers.setPaint('eu-fill','fill-opacity',v); }
       /* (#R232) the 'night' opacity branch went with the layer — the day/night shading has no opacity knob. */
       else if(id==='planes'){ if(GE().layers.has('lyr-planes'))GE().layers.setPaint('lyr-planes','icon-opacity',v);
+        /* (#R341) the GPU cloud is a third rendering of the same layer and follows the same slider */
+        try{ if(_av2) _av2.setOpacity(v); }catch(_){}
         /* (#R172) the lifted bodies follow the same opacity slider; the posts stay fainter than the aircraft */
         try{ if(GE().layers.has(PLANE3D_LYR))GE().layers.setPaint(PLANE3D_LYR,'fill-extrusion-opacity',v);
           if(GE().layers.has(PLANE3D_POST))GE().layers.setPaint(PLANE3D_POST,'fill-extrusion-opacity',Math.min(0.5,v*0.5)); }catch(_){} }

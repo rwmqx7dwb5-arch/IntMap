@@ -81,6 +81,11 @@ function _m(){ return window.__imap||null; }
        projectTileFor3D(mercatorXY, metres) and it is correct on the globe as well as on the flat map
        (js/orbit-points.js). An engine that cannot must say so rather than draw the ground point. */
     orbit3d:true,
+    /* (#R341) TENS OF THOUSANDS of oriented, self-animating glyphs, from buffers the caller already
+       holds in GPU layout. Distinct from orbit3d (which takes a LIST and packs it per tick — the
+       pack loop is the cost at 50,000) and from `markers` (one DOM node each). Why, and the buffer
+       shape: js/aircraft-points.js. */
+    aircraftCloud:true,
     /* (#R171) A CURVED EARTH AT EVERY ZOOM. Declared separately from `globe` because in MapLibre they are
        NOT the same thing: its `globe` projection is DEFINED as vertical-perspective at low zoom and plain
        MERCATOR from z≈12 up. Measured on this app (bow of the ±60° parallel, px): z10 741 → z11 753 →
@@ -212,6 +217,7 @@ function _m(){ return window.__imap||null; }
   const _cmd=makeCommandLog(), _sd=makeSourceMemory();
   /* (#R202) …and the same, for layers.addOrbit (js/orbit-points.js) */
   const _orbits={};
+  const _aircraft={};   /* (#R341) id → the custom aircraft-cloud layer object */
   /* (#R227) …and for layers.addLimb (js/limb-layer.js), plus whether each is switched on.
      (#R237) `_limbDisc` is the second strength — the air in FRONT of the planet, which is a separate
      question from the ring beside it and carries #R187/#R205's per-basemap numbers. */
@@ -1364,6 +1370,20 @@ function _m(){ return window.__imap||null; }
     setOrbit(id,o){ const L=_orbits[id]; if(!L) return false;
       try{ L._set(o); return true; }catch(_){ return false; } },
     removeOrbit(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _orbits[id]; return true; },
+    /* ══ (#R341) A CLOUD OF AIRCRAFT — oriented glyphs, animated by the GPU ════════════════════════
+       An intent, for the same reason addOrbit is: MapLibre answers with a custom GL layer
+       (js/aircraft-points.js), a Cesium-class engine with primitive collections. The caller supplies
+       buffers ALREADY IN GPU LAYOUT plus their rate of change, so neither engine walks 50,000
+       aircraft on the main thread. ⚠ WebGL2 absent ⇒ false, never a broken layer. */
+    addAircraftCloud(id,before){ const m=_m(); if(!m||m.getLayer(id)) return false;
+      try{ if(!(window.IntMapModules&&window.IntMapModules.aircraftPoints)) return false;
+        const cv=m.getCanvas&&m.getCanvas(); if(!(cv&&cv.getContext('webgl2'))) return false;
+        const L=(_aircraft[id]||(_aircraft[id]=window.IntMapModules.aircraftPoints().makeLayer(id)));
+        m.addLayer(L,(before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
+    setAircraftCloud(id,o){ const L=_aircraft[id]; if(!L) return false;
+      try{ L._set(o); return true; }catch(_){ return false; } },
+    removeAircraftCloud(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} delete _aircraft[id]; return true; },
+    hasAircraftCloud(id){ const m=_m(); try{ return !!(m&&m.getLayer(id)); }catch(_){ return false; } },
     /* …and the SAME projection, on the CPU, for a whole array at once. `projectAltitude` above is the
        one-point form and builds a model matrix per call, which a hover over eleven thousand objects
        cannot afford. This takes the mercator/altitude triples the layer already holds and multiplies
@@ -1698,6 +1718,11 @@ function _m(){ return window.__imap||null; }
        own, and knows its camera's altitude natively — the three things this round had to ask MapLibre for.
        (#R172) …and its camera is positional to begin with (position + orientation), so eyeControl is free. */
     globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true, solid3d:false, orbit3d:true,
+    /* (#R341) primitive collections carry it — see the adapter in js/cesium-engine.js. Declared in
+       BOTH Cesium tables from the outset because #R323 (one round earlier) built the gate that
+       compares them, and a capability that exists in one table and not the other is exactly what
+       that gate now refuses. */
+    aircraftCloud:true,
     /* (#R184) …and TRUE here: Cesium's camera is a position and an orientation, full stop. See the
        MapLibre declaration above for why the distinction matters to the flight simulator. */
     eyeIsPosition:true } };
@@ -1792,6 +1817,11 @@ function _m(){ return window.__imap||null; }
       /* (#R202) objects at their own altitudes, and the batched projection that makes them clickable */
       addOrbit:(id,b)=>A().addOrbit?A().addOrbit(id,b):false, setOrbit:(id,o)=>A().setOrbit?A().setOrbit(id,o):false,
       removeOrbit:id=>A().removeOrbit?A().removeOrbit(id):false,
+      /* (#R341) tens of thousands of oriented aircraft from caller-owned GPU buffers */
+      addAircraftCloud:(id,b)=>A().addAircraftCloud?A().addAircraftCloud(id,b):false,
+      setAircraftCloud:(id,o)=>A().setAircraftCloud?A().setAircraftCloud(id,o):false,
+      removeAircraftCloud:id=>A().removeAircraftCloud?A().removeAircraftCloud(id):false,
+      hasAircraftCloud:id=>A().hasAircraftCloud?A().hasAircraftCloud(id):false,
       projectMercAlt:(a)=>A().projectMercAlt?A().projectMercAlt(a):null,
       /* (#R160) feature-state (hover/selection highlighting) through the engine */
       setFeatureState:(f,s)=>A().setFeatureState(f,s), removeFeatureState:(f,k)=>A().removeFeatureState(f,k),

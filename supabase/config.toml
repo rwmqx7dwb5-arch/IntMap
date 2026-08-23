@@ -85,7 +85,7 @@ enabled = false
 #  no route and no verify_jwt, and giving it a [functions.*] block here would try to deploy it as an
 #  endpoint. It is listed nowhere on purpose — this note is so that stays deliberate.
 #
-#  THE EIGHT, and why each is where it is:
+#  THE NINE, and why each is where it is:
 #    ai-proxy        JWT   the caller's identity IS the quota; anonymous use is the whole thing to stop
 #    delete-account  JWT   deletes the CALLER's own account; it also re-verifies the user explicitly
 #    monitor-run     no    two callers, two credentials: pg_cron with x-monitor-secret and the "Run
@@ -95,9 +95,20 @@ enabled = false
 #    cable-geo       no    keyless public relay of two TeleGeography GeoJSON URLs
 #    news-relay      no    keyless public relay of Google News RSS
 #    sv-cov          no    keyless public relay of Google's Street-View coverage tiles
-#  The four keyless relays share the bounds in _shared/relay-guard.js (allow-list, deadline, byte
-#  ceiling, content-type, generic errors) — that, not a JWT, is what stands in front of them, because
-#  requiring a login for a public map layer would break the layer for everyone who is not signed in.
+#    aviation-feed   no    (#R341) the ONE upstream reader for live air traffic. Keyless, no user
+#                          data. Unlike the four relays above it does not forward a caller-named URL
+#                          — it owns the provider list, and the caller may only choose a CHANNEL
+#                          (world / view / meta). That is the point: the browser used to issue up to
+#                          128 upstream requests per sweep per user, and now issues none.
+#  The FOUR keyless relays — alerts-relay, cable-geo, news-relay, sv-cov — share the bounds in
+#  _shared/relay-guard.js (allow-list, deadline, byte ceiling, content-type, generic errors); that,
+#  not a JWT, is what stands in front of them, because requiring a login for a public map layer would
+#  break it for everyone who is not signed in.
+#  ⚠ aviation-feed is keyless too but is NOT a fifth relay, and the distinction is the security
+#  property: a relay forwards a URL the CALLER named (hence the allow-list), while aviation-feed
+#  names its own upstreams and the caller may only pick a channel. It uses the same deadline, byte
+#  ceiling, content-type check and generic errors from relay-guard, and needs no allow-list because
+#  no caller-supplied URL ever reaches fetch().
 # ============================================================================
 [functions.ai-proxy]
 verify_jwt = true
@@ -134,4 +145,12 @@ verify_jwt = false
 # news-relay (#R216) relays Google News RSS (news.google.com sends no ACAO). Keyless,
 # no user data — deployed --no-verify-jwt.
 [functions.news-relay]
+verify_jwt = false
+
+# aviation-feed (#R341) is the single upstream reader for live air traffic: it polls the configured
+# provider (adsb.lol by default; OpenSky when OPENSKY_AGREEMENT=1) and hands every IntMap browser
+# the same IMAV/1 binary snapshot. Keyless and no user data, so --no-verify-jwt — a login for a
+# public map layer would break it for everyone signed out. The provider keys, when a provider needs
+# any, live in this function's environment and never reach the browser.
+[functions.aviation-feed]
 verify_jwt = false

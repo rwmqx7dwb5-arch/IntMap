@@ -94,6 +94,10 @@ export function makeLazyModules(HOST) {
          that registers NOTHING at boot — no layer row, no DOM, no IntMapOS command, no listener — so
          there is a "before it is reached" to defer to, and every door awaits. */
       dataCenters: 'IntMapDataCenters', aircraftDetail: 'IntMapAircraftPanel', volume3d: 'IntMapVolume3D', statsCompare: 'IntMapStatsCompare',
+      /* (#R341) the live-aircraft platform: the controller, the GPU primitive it imports, and
+         (through src/aviation-worker-client.js) the worker that owns the fleet. Nothing of it is
+         downloaded until the aircraft layer, aircraft search, or an Atlas aviation command asks. */
+      aviationLive: 'IntMapAviation',
       satellitesLive: 'IntMapSatellites', satelliteDetail: 'IntMapSatPanel',
       /* ══ (#R322) …AND THE FILE #R311 HAD TO LEAVE BEHIND, SPLIT INSTEAD OF DEFERRED ════════════
          js/analysis-panels.js was the biggest thing left in the entry (909 lines, 122 kB) and #R311
@@ -153,6 +157,7 @@ export function makeLazyModules(HOST) {
         case 'analysisCorrelate': return import('./analysis-correlate.js');
         case 'analysisEvents': return import('./analysis-world-events.js');
         case 'analysisEdu': return import('./analysis-edu.js');
+        case 'aviationLive': return import('./aviation-live.js');
         default: return Promise.reject(new Error('no such lazy module: ' + name));
       }
     }
@@ -185,6 +190,7 @@ export function makeLazyModules(HOST) {
         case 'analysisCorrelate': window.IntMapModules.analysisCorrelate(IM_HOST); return true;
         case 'analysisEvents': window.IntMapModules.analysisEvents(IM_HOST); return true;
         case 'analysisEdu': window.IntMapModules.analysisEdu(IM_HOST); return true;
+        case 'aviationLive': window.IntMapAviation=window.IntMapModules.aviationLive(IM_HOST); return true;
         default: return !!M;
       }
     }

@@ -110,6 +110,79 @@ window.IntMapCesiumEngine=(function(){
   const R_EARTH=6371008.8, TILE=512, D2R=Math.PI/180;
   const ML_FOVY=0.6435011087932844;                 /* MapLibre Transform's default _fov */
 
+  /* ══ (#R341) THE AIRCRAFT CLOUD'S NUMBERS, IN ONE PLACE ═══════════════════════════════════
+     The contract (js/geo-engine.js layers.addAircraftCloud) hands over Float32Arrays for tens of
+     thousands of aircraft plus the rate of change, and asks the engine to carry the motion. Where
+     MapLibre answers with one gl.POINTS draw whose vertex shader integrates (js/aircraft-points.js),
+     Cesium has no per-frame uniform to integrate with: its collections take POSITIONS. So the
+     integration happens here, on the CPU, and every number below exists to bound what that costs
+     WITHOUT ever bounding the fleet.
+       ⚠ THE ONE RULE THIS BLOCK MUST NOT BREAK: no aircraft is ever dropped for zoom or for count.
+     The old fill-extrusion layer capped the FLEET at 4,000 and switched itself off below z2; the
+     caps here change the DETAIL of an aircraft (a dart becomes a dot, a dot's position is refreshed
+     one tick later) and never whether it is drawn at all. */
+  const AIR_EXTRAP_MAX_S=3;      /* seconds of dead reckoning — the SAME cap, and the same reason,
+                                    as js/aircraft-points.js: an aircraft's velocity ages badly
+                                    (it turns, it levels off, it lands), so past this the glyph
+                                    HOLDS rather than flying smoothly into a place it never went.
+                                    NOT the satellites' 4 s — orbital motion is deterministic. */
+  const AIR_TICK_MS=100;         /* 10 Hz. The satellites' _orbStep runs on scene.preRender, i.e.
+                                    every frame over 11,000 objects; at 50,000 aircraft that is not
+                                    available. A tick also has to be a TIMER rather than a render
+                                    hook because requestRenderMode is on (see the widget options) —
+                                    a preRender listener that never asks for the next frame stops
+                                    the moment nothing else is drawing. */
+  const AIR_DART_MAX=4000;       /* how many aircraft may be an ORIENTED dart at once. Cesium's
+                                    PointPrimitiveCollection cannot rotate, so heading needs a
+                                    BillboardCollection, which costs a rewrite of its vertex buffer
+                                    whenever more than a tenth of it is dirty — i.e. one full 4,000
+                                    billboard rewrite per tick at this budget. Everything outside
+                                    the set is still drawn, as a dot. */
+  const AIR_POINT_BUDGET=12000;  /* how many point positions one tick may re-integrate. At or below
+                                    this the whole fleet moves at 10 Hz; at 50,000 the sweep takes
+                                    five ticks (500 ms), in which a 250 m/s airliner moves ~125 m —
+                                    a fifth of a pixel at the zooms that hold fifty thousand
+                                    aircraft (z8 ≈ 611 m/px at the equator). What the eye can
+                                    actually resolve is the dart set, and that is refreshed EVERY
+                                    tick, so freshness follows the camera exactly as detail does. */
+  const AIR_PICK_MS=500;         /* the FLOOR between two dart selections (a 3-pass O(n) scan). One
+                                    is only wanted when the camera has moved or the fleet changed —
+                                    a still view keeps the set it has and costs nothing. */
+  const AIR_HIST=128;            /* buckets that scan uses to find "the nearest AIR_DART_MAX" without
+                                    sorting fifty thousand distances — see _airSelect */
+  const AIR_DART_MIN_PX=5;       /* device pixels below which js/aircraft-points.js's fragment shader
+                                    itself stops drawing a dart and draws a dot — "a rotated dart and
+                                    a dot are the same picture". Same threshold here, so the two
+                                    engines change appearance at the same size rather than at two. */
+  const AIR_SPRITE=64, AIR_SPRITE_PAD=1.5;   /* the dart canvas, and the margin that keeps its nose
+                                    off the atlas edge (a texture-atlas entry bleeds at its border) */
+  const AIR_GLYPH=AIR_SPRITE-2*AIR_SPRITE_PAD;   /* …so the glyph itself is this many image pixels */
+  const AIR_SPRITE_ID='intmap-aircraft-dart';    /* ⚠ ONE id for every billboard — Billboard's own
+                                    `image` setter mints a fresh GUID for a canvas, which would put
+                                    4,000 copies of the same 64×64 sprite in the atlas. `imageId`
+                                    is what makes TextureAtlas.addImage return the SAME index. */
+  let _dartCv=null, _airP=null, _airC=null, _airHist=null;   /* scratch — built once Cesium is in */
+  /* The dart, drawn once. This is the silhouette js/aircraft-points.js's fragment shader evaluates
+     as a signed distance field — a nose-up triangle with a notch cut out of its trailing edge —
+     transcribed vertex for vertex so the two engines draw the same shape rather than two shapes
+     that were each described as "a dart". q is the shader's own [-1,1] sprite space, +y up. */
+  function dartSprite(){
+    if(_dartCv) return _dartCv;
+    const S=AIR_SPRITE, h=AIR_GLYPH/2;
+    const c=document.createElement('canvas'); c.width=S; c.height=S;
+    const g=c.getContext('2d');
+    const tri=(a,b,d)=>{ const X=q=>S/2+q*h, Y=q=>S/2-q*h;
+      g.beginPath(); g.moveTo(X(a[0]),Y(a[1])); g.lineTo(X(b[0]),Y(b[1])); g.lineTo(X(d[0]),Y(d[1]));
+      g.closePath(); g.fill(); };
+    /* WHITE, because a billboard's texel is MULTIPLIED by its colour — the aircraft's own rgba then
+       tints one shared sprite, which is what makes 4,000 differently-coloured darts one draw call. */
+    g.fillStyle='#fff';
+    tri([0,0.98],[-0.72,-0.86],[0.72,-0.86]);          /* body  — triSD(p, …) in the shader */
+    g.globalCompositeOperation='destination-out';
+    tri([0,-0.12],[-0.72,-0.95],[0.72,-0.95]);         /* notch — the shader's max(body,-notch) */
+    _dartCv=c; return c;
+  }
+
   function viewFactory(){
 
   class CesiumView {
@@ -1753,6 +1826,352 @@ window.IntMapCesiumEngine=(function(){
       try{ const O=this._orb&&this._orb[id]; if(!O) return true;
         this._scene.primitives.remove(O.col); delete this._orb[id]; return true; }catch(_){ return false; }
     }
+    /* ══ (#R341) A CLOUD OF AIRCRAFT — TWO COLLECTIONS, ONE FLEET ═══════════════════════════════
+       addOrbit above is the nearest relative and it is NOT the model, for two reasons that are
+       facts about this engine rather than preferences:
+
+         1. _orbStep runs on scene.preRender over EVERY object, every frame. Eleven thousand
+            satellites can be walked at 60 Hz; fifty thousand aircraft cannot. So the integration
+            here is a 10 Hz TIMER with a per-tick work budget, and the budget is spent where the
+            camera is looking.
+         2. A PointPrimitive cannot be rotated, and an aircraft that does not point along its track
+            is not an aircraft — it is a dot. Heading needs a BillboardCollection.
+
+       Hence two collections over the same fleet, and one aircraft is in exactly one of them:
+         · pts — EVERY aircraft, no ceiling. A dot, the same picture js/aircraft-points.js's shader
+                 draws below AIR_DART_MIN_PX.
+         · bbs — the nearest AIR_DART_MAX, as an oriented dart. Its point is hidden (show=false)
+                 rather than left underneath: the dot's radius is half the sprite box and the dart
+                 is a thin triangle inside the same box, so the dot would stick out of its flanks.
+
+       ⚠ WHY THE HEADING IS A `rotation` AND NOT AN `alignedAxis`. Cesium's aligned-axis path is the
+       obvious answer and it is measurably wrong. BillboardCollectionVS computes
+           angle += sign(-x) * acos(sign(y) * (y*y) / (x*x + y*y))
+       from the projected axis — that is acos(cos²θ), not acos(cosθ). It is exact only at the four
+       cardinal directions and drifts in between: an axis 45° off screen-up is drawn at 60°, and the
+       worst case over a full turn is 15.8°. A traffic display whose glyph can be sixteen degrees off
+       its own track is not telling the truth, so the screen angle is computed here instead (see
+       _airHeading) and handed over as `rotation`, with alignedAxis left at ZERO so the shader adds
+       nothing to it. What is computed is Cesium's OWN quantity — the axis projected through the
+       camera basis — with an exact atan2 in place of the approximation, plus the perspective term
+       the approximation drops.
+
+       ⚠ DEPTH: nothing is set here on purpose. The engine already runs with
+       globe.depthTestAgainstTerrain=false ("markers must not sink into a hill"), which is exactly
+       the pair of answers this layer needs — the far side of the planet occludes an aircraft
+       (§27.2 item 8, and the same rule js/aircraft-points.js states) while a mountain in front of
+       it does not. */
+    addAircraftCloud(id){
+      try{
+        this._air=this._air||{};
+        if(this._air[id]) return true;
+        if(!_airP){ _airP=new Cesium.Cartesian3(); _airC=new Cesium.Color(1,1,1,1); _airHist=new Int32Array(AIR_HIST); }
+        const pts=this._scene.primitives.add(new Cesium.PointPrimitiveCollection());
+        const bbs=this._scene.primitives.add(new Cesium.BillboardCollection());
+        this._air[id]={ pts, bbs, n:0, t0:0, lastDt:-1, visible:true, opacity:1, sizePx:11, maxSize:1,
+          lng:null, lat:null, dlng:null, dlat:null, alt:null, altv:null, col:null, form:null,
+          dart:new Int32Array(AIR_DART_MAX), dartN:0, cursor:0, pickAt:0, pickDue:true,
+          pickWanted:false, styleDirty:false, fresh:false };
+        return true;
+      }catch(_){ return false; }
+    }
+    setAircraftCloud(id,o){
+      try{
+        const A=this._air&&this._air[id]; if(!A||!o) return false;
+        if(o.visible!=null) A.visible=!!o.visible;
+        if(o.opacity!=null&&isFinite(o.opacity)){ A.opacity=Math.max(0,Math.min(1,+o.opacity)); A.styleDirty=true; }
+        if(o.sizePx!=null&&isFinite(o.sizePx)){ A.sizePx=Math.max(1,Math.min(64,+o.sizePx)); A.styleDirty=true; A.pickDue=true; }
+        if(o.buffers) this._airPublish(A,o.buffers,o.t0);
+        /* A publish (or an opacity/size change) is answered in THIS call rather than left to the
+           next tick, so the frame the caller's own requestRender produces is already correct —
+           otherwise a fleet that has just grown would show its new aircraft at the ellipsoid's
+           centre for up to one tick. */
+        this._airStep();
+        if(A.visible&&A.n) this._airPump();
+        try{ this._scene.requestRender&&this._scene.requestRender(); }catch(_){}
+        return true;
+      }catch(_){ return false; }
+    }
+    removeAircraftCloud(id){
+      try{
+        const A=this._air&&this._air[id]; if(!A) return true;
+        try{ this._scene.primitives.remove(A.pts); }catch(_){}
+        try{ this._scene.primitives.remove(A.bbs); }catch(_){}
+        delete this._air[id];
+        /* the timer is shared by every cloud, so it comes off with the LAST one — a tick left
+           running against a removed collection is the leak this method exists to prevent */
+        if(!Object.keys(this._air).length) this._airHalt();
+        try{ this._scene.requestRender&&this._scene.requestRender(); }catch(_){}
+        return true;
+      }catch(_){ return false; }
+    }
+    hasAircraftCloud(id){ return !!(this._air&&this._air[id]); }
+    /* ── the publish: everything that is O(n) happens HERE, once per frame of DATA ─────────────
+       The caller's buffers are mercator, because that is the space the MapLibre layer's shader
+       works in; Cesium speaks lng/lat, so the inverse runs once per aircraft per publish (every
+       few seconds) rather than once per aircraft per tick.
+         lng = x·360 − 180
+         lat = (2·atan(e^((0.5−y)·2π)) − π/2) / D2R          — the inverse of merc() in
+                                                               js/aircraft-points.js, exact to
+                                                               4.5e-14° over a 20,001-point sweep
+       …and the RATE with it. d(lat°)/d(mercatorY) = −360·cos(lat) exactly (Mercator's own
+       derivative: dφ/dy = sech = cos φ), verified against a central difference to 1.4e-9 relative.
+       Carrying degrees-per-second instead of re-inverting every tick costs a second-order term
+       that is under 3 cm over the whole AIR_EXTRAP_MAX_S window. */
+    _airPublish(A,b,t0){
+      const pos=b.pos, vel=b.vel;
+      const n=A.n=pos?(pos.length>>1):0;
+      A.t0=(t0!=null)?t0:((typeof performance!=='undefined'&&performance.now)?performance.now():Date.now());
+      A.lastDt=-1; A.pickDue=true; A.styleDirty=true; A.cursor=0; A.fresh=true;
+      A.alt=b.alt; A.altv=b.altv; A.col=b.col; A.form=b.form;
+      /* the largest RELATIVE size in this frame (1 ordinary, 1.75 selected) — read once here so the
+         dart scan can answer "nobody is big enough to be a dart" without a pass of its own */
+      let big=0; if(b.form){ for(let i=0;i<n;i++){ const s=b.form[i*2]; if(s>big) big=s; } }
+      A.maxSize=big||1;
+      /* grown with headroom so a fleet that breathes by a few hundred aircraft does not reallocate
+         four arrays every publish */
+      if(!A.lng||A.lng.length<n){
+        const cap=n+(n>>3)+16;
+        A.lng=new Float64Array(cap); A.lat=new Float64Array(cap);
+        A.dlng=new Float32Array(cap); A.dlat=new Float32Array(cap);
+      }
+      const lng=A.lng, lat=A.lat, dlng=A.dlng, dlat=A.dlat;
+      for(let i=0;i<n;i++){
+        const y=pos[i*2+1];
+        const la=(Math.atan(Math.exp((0.5-y)*2*Math.PI))*2-Math.PI/2)/D2R;
+        lng[i]=pos[i*2]*360-180; lat[i]=la;
+        dlng[i]=vel[i*2]*360;
+        dlat[i]=-360*Math.cos(la*D2R)*vel[i*2+1];
+      }
+      this._airEnsure(A,n);
+    }
+    /* the point pool. It only ever GROWS: a publish with fewer aircraft hides the surplus rather
+       than removing it, because add() builds an object per point and a fleet oscillates. */
+    _airEnsure(A,n){
+      const P=A.pts;
+      while(P.length<n) P.add({ position:Cesium.Cartesian3.ZERO, pixelSize:1, color:Cesium.Color.WHITE });
+      for(let i=0,L=P.length;i<L;i++){ const pt=P.get(i); if(pt) pt.show=(i<n); }
+    }
+    /* colour and size, which change on a publish, on an opacity change and on every zoom step.
+       Coalesced into the tick (styleDirty) so a slider drag or a pinch cannot ask for more than
+       ten sweeps a second. */
+    _airStyle(A){
+      A.styleDirty=false;
+      const n=A.n, col=A.col, form=A.form, P=A.pts, op=A.opacity, base=A.sizePx, C=_airC;
+      if(!col||!form) return;
+      for(let i=0;i<n;i++){
+        const pt=P.get(i); if(!pt) continue;
+        C.red=col[i*4]; C.green=col[i*4+1]; C.blue=col[i*4+2]; C.alpha=col[i*4+3]*op;
+        pt.color=C;
+        pt.pixelSize=Math.max(1,form[i*2]*base);
+      }
+      for(let k=0;k<A.dartN;k++){
+        const i=A.dart[k], bb=A.bbs.get(k); if(!bb) continue;
+        C.red=col[i*4]; C.green=col[i*4+1]; C.blue=col[i*4+2]; C.alpha=col[i*4+3]*op;
+        bb.color=C;
+        bb.scale=Math.max(1,form[i*2]*base)/AIR_GLYPH;
+      }
+    }
+    /* ── who gets a dart ──────────────────────────────────────────────────────────────────────
+       "The nearest AIR_DART_MAX to the camera", without sorting fifty thousand distances. Three
+       linear passes: the farthest distance, a histogram of the rest against it, then the cut where
+       the cumulative count crosses the budget. The answer is exact to one bucket, costs no
+       allocation and no comparator sort, and is recomputed twice a second (or immediately after a
+       publish, because a publish renumbers every index).
+       Distance is measured on the ground from the camera's own sub-point — `positionCartographic`
+       rather than an ellipsoid solve, because Cesium maintains it in Columbus View too. */
+    _airSelect(A,dt,now){
+      A.pickAt=now; A.pickDue=false;
+      const n=A.n, lng=A.lng, lat=A.lat, form=A.form, col=A.col, P=A.pts, B=A.bbs;
+      if(!lng||!form||!col) return;
+      /* release the previous set — and put its points back where they should be NOW, so an aircraft
+         that has just stopped being a dart does not wait for its turn in the rolling sweep */
+      for(let k=0;k<A.dartN;k++){
+        const i=A.dart[k]; if(i>=n) continue;
+        const pt=P.get(i); if(!pt) continue;
+        pt.show=true; pt.position=this._airPos(A,i,dt);
+      }
+      A.dartN=0;
+      const pr=this._airPixelRatio(), base=A.sizePx;
+      /* the whole set can be answered without a scan: if even the largest relative size (1.75, the
+         selected aircraft) is under the threshold, nobody is a dart — this is the low-zoom regime
+         where the other engine draws dots too */
+      if(!((A.maxSize||1)*base*pr>=AIR_DART_MIN_PX)){
+        for(let k=0,L=B.length;k<L;k++){ const bb=B.get(k); if(bb) bb.show=false; } return; }
+      let cl=0,cp=0;
+      try{ const c=this._camera.positionCartographic;
+           cl=Cesium.Math.toDegrees(c.longitude); cp=Cesium.Math.toDegrees(c.latitude); }catch(_){}
+      const kx=Math.max(0.05,Math.cos(cp*D2R));   /* a degree of longitude is shorter off the equator */
+      const d2of=(i)=>{ let dx=lng[i]-cl; if(dx>180) dx-=360; else if(dx<-180) dx+=360;
+                        dx*=kx; const dy=lat[i]-cp; return dx*dx+dy*dy; };
+      const want=Math.min(AIR_DART_MAX,n);
+      let thr2=Infinity;
+      if(n>want){
+        let maxD2=0;
+        for(let i=0;i<n;i++){ const d=d2of(i); if(d>maxD2) maxD2=d; }
+        const sc=(AIR_HIST-1)/Math.sqrt(maxD2||1);
+        _airHist.fill(0);
+        for(let i=0;i<n;i++){ let k=(Math.sqrt(d2of(i))*sc)|0; if(k>AIR_HIST-1) k=AIR_HIST-1; _airHist[k]++; }
+        let cum=0,kt=0;
+        for(;kt<AIR_HIST;kt++){ cum+=_airHist[kt]; if(cum>=want) break; }
+        const thr=(Math.min(kt,AIR_HIST-1)+1)/sc; thr2=thr*thr;
+      }
+      let m=0;
+      for(let i=0;i<n&&m<want;i++){
+        if(d2of(i)>thr2) continue;
+        if(!(form[i*2]*base*pr>=AIR_DART_MIN_PX)) continue;
+        A.dart[m++]=i;
+      }
+      A.dartN=m;
+      while(B.length<m) B.add({ position:Cesium.Cartesian3.ZERO, image:dartSprite(), imageId:AIR_SPRITE_ID,
+                                color:Cesium.Color.WHITE, rotation:0 });
+      const C=_airC, op=A.opacity;
+      for(let k=0;k<m;k++){
+        const i=A.dart[k], bb=B.get(k); if(!bb) continue;
+        bb.show=true;
+        C.red=col[i*4]; C.green=col[i*4+1]; C.blue=col[i*4+2]; C.alpha=col[i*4+3]*op;
+        bb.color=C;
+        bb.scale=Math.max(1,form[i*2]*base)/AIR_GLYPH;
+        const pt=P.get(i); if(pt) pt.show=false;    /* one aircraft, one glyph */
+      }
+      for(let k=m,L=B.length;k<L;k++){ const bb=B.get(k); if(bb) bb.show=false; }
+    }
+    /* the extrapolated position of one aircraft, in the scratch Cartesian the caller must not keep */
+    _airPos(A,i,dt){
+      const alt=A.alt?A.alt[i]+(A.altv?A.altv[i]*dt:0):0;
+      return Cesium.Cartesian3.fromDegrees(A.lng[i]+A.dlng[i]*dt, A.lat[i]+A.dlat[i]*dt, alt,
+                                           this._globe.ellipsoid, _airP);
+    }
+    /* ── the screen angle of a track, in radians, the way Cesium's own rotation means it ───────
+       The sprite's top is drawn at (−sin angle, cos angle) in eye space, so `angle` is atan2 of the
+       track's SCREEN direction. That direction is exact for a pinhole camera: with the eye-space
+       coordinates a = v·right, b = v·up, f = v·direction of the aircraft, and da/db/df the same
+       dots for the track direction, the screen derivative is (da·f − a·df, db·f − b·df) — the
+       quotient rule on (a/f, b/f). Dropping the second term is the orthographic shortcut, and it
+       is wrong by up to eighteen degrees for a track that points along the view at the edge of a
+       tilted frame, which is precisely the flight-simulator view.
+       In SCENE3D the track direction is built from the aircraft's own local horizontal frame
+       (up = p̂, east = ẑ×p̂, north = up×east). In Columbus View the scene is a conformal Mercator
+       plane whose axes are (height, easting, northing), and conformality is what makes the answer
+       there simply (0, sin track, cos track) with no latitude term; the aircraft's position in THAT
+       space is Cesium's to compute, not ours, so that branch uses the orthographic form. */
+    _airHeading(p,track){
+      const cam=this._camera, R=cam.rightWC, U=cam.upWC, F=cam.directionWC, E=cam.positionWC;
+      const s=Math.sin(track), c=Math.cos(track);
+      const mode=this._scene.mode;
+      let dx,dy,dz,persp=true;
+      if(mode===Cesium.SceneMode.SCENE2D||mode===Cesium.SceneMode.COLUMBUS_VIEW){
+        dx=0; dy=s; dz=c; persp=false;
+      }else{
+        const m=Math.sqrt(p.x*p.x+p.y*p.y+p.z*p.z)||1;
+        const ux=p.x/m, uy=p.y/m, uz=p.z/m;
+        let ex=-uy, ey=ux; const eh=Math.sqrt(ex*ex+ey*ey);
+        if(eh<1e-9){ ex=1; ey=0; }else{ ex/=eh; ey/=eh; }
+        const nx=-uz*ey, ny=uz*ex, nz=ux*ey-uy*ex;
+        dx=ex*s+nx*c; dy=ey*s+ny*c; dz=nz*c;
+      }
+      const da=dx*R.x+dy*R.y+dz*R.z, db=dx*U.x+dy*U.y+dz*U.z;
+      if(!persp) return Math.atan2(-da,db);
+      const vx=p.x-E.x, vy=p.y-E.y, vz=p.z-E.z;
+      const a=vx*R.x+vy*R.y+vz*R.z, b=vx*U.x+vy*U.y+vz*U.z, f=vx*F.x+vy*F.y+vz*F.z;
+      const df=dx*F.x+dy*F.y+dz*F.z;
+      return Math.atan2(-(da*f-a*df), db*f-b*df);
+    }
+    /* Cesium scales pixelSize and billboard size by czm_pixelRatio, exactly as the MapLibre layer
+       multiplies by u_pxRatio — so the SAME sizePx means the same device pixels on both engines,
+       and the AIR_DART_MIN_PX comparison is against the same number the other engine's shader uses.
+       `scene.pixelRatio` IS czm_pixelRatio (it reads frameState.pixelRatio), but it is marked
+       private in Cesium's own docs; the fallback is what keeps a rename from silently turning the
+       threshold into nonsense, and devicePixelRatio is what this engine's resolutionScale is
+       derived from anyway. */
+    _airPixelRatio(){
+      let pr=0; try{ pr=this._scene.pixelRatio; }catch(_){}
+      if(!(pr>0)){ try{ pr=window.devicePixelRatio||1; }catch(_){ pr=1; } }
+      return Math.max(1,Math.min(3,pr));
+    }
+    /* ── one tick of motion ───────────────────────────────────────────────────────────────────
+       `full` (a publish) sweeps every aircraft; an ordinary tick spends AIR_POINT_BUDGET on a
+       rolling window of the points and refreshes ALL of the darts. */
+    _airMove(A,dt,full){
+      const P=A.pts, B=A.bbs, n=A.n, form=A.form;
+      for(let k=0;k<A.dartN;k++){
+        const i=A.dart[k], bb=B.get(k); if(!bb) continue;
+        const p=this._airPos(A,i,dt);
+        bb.position=p;
+        bb.rotation=this._airHeading(p,form?form[i*2+1]:0);
+      }
+      const take=full?n:Math.min(n,AIR_POINT_BUDGET);
+      let c=full?0:A.cursor;
+      for(let k=0;k<take;k++){
+        if(c>=n) c=0;
+        const i=c++;
+        const pt=P.get(i); if(!pt) continue;
+        /* ⚠ the full sweep positions HIDDEN points too. A point under a dart is not drawn, but it
+           is one reselection away from being drawn, and a point that has never been positioned
+           sits at the ellipsoid's centre — so "hidden" must never mean "stale". Between publishes
+           the budget skips them (they cannot be seen) and _airSelect refreshes them at the moment
+           it hands them back. */
+        if(!full&&!pt.show) continue;
+        pt.position=this._airPos(A,i,dt);
+      }
+      A.cursor=(c>=n)?0:c;
+    }
+    _airStep(){
+      const all=this._air; if(!all) return;
+      const sc=this._scene;
+      if(!sc||(sc.isDestroyed&&sc.isDestroyed())){ this._airHalt(); return; }
+      const now=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+      const camMoved=this._airCamMoved();
+      let live=false, moved=false;
+      for(const id of Object.keys(all)){
+        const A=all[id]; if(!A.pts) continue;
+        const on=!!(A.visible&&A.n);
+        A.pts.show=on; A.bbs.show=on;
+        const full=A.fresh; A.fresh=false;
+        if(!on) continue;
+        live=true;
+        if(A.styleDirty) this._airStyle(A);
+        /* ⚠ CAPPED — the same three seconds js/aircraft-points.js's u_dt is clamped to, and once
+           it is reached dt stops changing, which is also how this loop knows nothing moved. */
+        const dt=Math.max(0,Math.min(AIR_EXTRAP_MAX_S,(now-A.t0)/1000));
+        /* ⚠ THE THROTTLE DELAYS A RESELECTION, IT DOES NOT CANCEL ONE. Asking "did the camera move
+           THIS tick" alone loses the last half second of a fly-to: the camera stops, the flag goes
+           false for good, and the dart set stays the one that was right 500 ms before the move
+           ended. So motion ARMS the reselection and the throttle only decides when it runs. */
+        if(camMoved) A.pickWanted=true;
+        if(A.pickDue||(A.pickWanted&&(now-A.pickAt)>AIR_PICK_MS)){
+          A.pickWanted=false; this._airSelect(A,dt,now); moved=true; }
+        /* ⚠ …AND WHEN THE CAMERA TURNS. A dart's `rotation` is a SCREEN angle, so it is a function
+           of the view as much as of the track. Once dt has hit its cap, dt stops being a reason to
+           re-walk the fleet — and without this clause a camera turned after that would leave every
+           dart pointing where its track pointed at the moment the data arrived. */
+        if(full||dt!==A.lastDt||camMoved){ A.lastDt=dt; this._airMove(A,dt,full); moved=true; }
+      }
+      if(!live){ this._airHalt(); return; }
+      if(moved) try{ sc.requestRender&&sc.requestRender(); }catch(_){}
+    }
+    /* Has the VIEW changed since the last tick? Asked once per tick rather than once per cloud,
+       and answered from the camera's own vectors so a rotation in place counts as a change and a
+       zoom that only rescales does not go unnoticed either (the eye moves). A still camera is the
+       ordinary case, and this is what lets it skip both the reselection and the sweep. */
+    _airCamMoved(){
+      const c=this._camera, p=c.positionWC, r=c.rightWC, d=c.directionWC;
+      let s=this._airCam;
+      if(!s){ s=this._airCam=new Float64Array(9); s[0]=NaN; }
+      if(s[0]===p.x&&s[1]===p.y&&s[2]===p.z&&s[3]===r.x&&s[4]===r.y&&s[5]===r.z&&
+         s[6]===d.x&&s[7]===d.y&&s[8]===d.z) return false;
+      s[0]=p.x; s[1]=p.y; s[2]=p.z; s[3]=r.x; s[4]=r.y; s[5]=r.z; s[6]=d.x; s[7]=d.y; s[8]=d.z;
+      return true;
+    }
+    /* ⚠ A TIMER, NOT scene.preRender. requestRenderMode is on, so preRender fires only when a frame
+       is actually drawn — a listener that animates without asking for the next frame would stop the
+       instant nothing else was rendering, and one that always asks would defeat the mode entirely.
+       The timer asks for a frame only when something moved, so an idle fleet costs nothing. */
+    _airPump(){
+      if(this._airTimer) return;
+      this._airTimer=setInterval(()=>{ try{ this._airStep(); }catch(_){} },AIR_TICK_MS);
+    }
+    _airHalt(){ if(this._airTimer){ clearInterval(this._airTimer); this._airTimer=0; } }
     /* the batched pick projection. The contract speaks mercator + metres because that is what the
        MapLibre layer holds; here it is turned back into lng/lat, which is what Cesium speaks. */
     projectMercAlt(xy){
@@ -2083,6 +2502,11 @@ window.IntMapCesiumEngine=(function(){
   const CESIUM_CAPS={ engine:'cesium', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true,
     rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true,
     projection:true, extrusion3d:true, solid3d:false, orbit3d:true,
+    /* (#R341) tens of thousands of oriented, self-animating glyphs from buffers the caller already
+       holds. TRUE because the two collections in addAircraftCloud draw the WHOLE fleet — the LOD
+       here changes a dart into a dot, never the count. An engine that could only draw a fraction
+       would have to say false and let the caller keep its own path. */
+    aircraftCloud:true,
     /* the three things #R171/#R172 had to ask MapLibre for, and which a positional
        camera on a real ellipsoid simply has */
     globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true,
@@ -2284,6 +2708,16 @@ window.IntMapCesiumEngine=(function(){
       addOrbit(id,b){ const v=V(); return v&&v.addOrbit?v.addOrbit(id,b):false; },
       setOrbit(id,o){ const v=V(); return v&&v.setOrbit?v.setOrbit(id,o):false; },
       removeOrbit(id){ const v=V(); return v&&v.removeOrbit?v.removeOrbit(id):false; },
+      /* (#R341) …and the same intent for fifty thousand AIRCRAFT, which differ from satellites in
+         two ways the engine has to answer for: they need a heading (a point primitive cannot be
+         rotated, so the near ones become billboards) and there are five times as many of them (so
+         the integration is a budgeted timer rather than a per-frame walk). See the view's
+         addAircraftCloud for both. `before` is accepted and ignored, exactly as addOrbit's is:
+         primitives are not style layers and have no insertion point to name. */
+      addAircraftCloud(id,b){ const v=V(); return v&&v.addAircraftCloud?v.addAircraftCloud(id,b):false; },
+      setAircraftCloud(id,o){ const v=V(); return v&&v.setAircraftCloud?v.setAircraftCloud(id,o):false; },
+      removeAircraftCloud(id){ const v=V(); return v&&v.removeAircraftCloud?v.removeAircraftCloud(id):false; },
+      hasAircraftCloud(id){ const v=V(); return v&&v.hasAircraftCloud?v.hasAircraftCloud(id):false; },
       projectMercAlt(a){ const v=V(); return v&&v.projectMercAlt?v.projectMercAlt(a):null; },
       /* scene */
       getStyle(){ const v=V(); return v?v.getStyle():null; },
