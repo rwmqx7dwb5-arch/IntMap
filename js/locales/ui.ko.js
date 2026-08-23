@@ -4925,7 +4925,22 @@ window.IntMapLang.define('ko', { ui: {
   "How much of {place} is actually online, and what is the bottleneck?": "{place}에서 실제로 인터넷에 연결된 비율은? 무엇이 병목인가요?",   /* atlas-examples.js (#R313) */
   "Where are {place}’s people concentrated, and where is that shifting?": "{place}의 인구는 어디에 몰려 있고, 어디로 이동하고 있나요?",   /* atlas-examples.js (#R313) */
   "What happens in {place}’s capital that matters beyond its borders?": "{place}, 수도에서 일어나는 일 가운데 국경 밖까지 영향을 미치는 것은 무엇인가요?",   /* atlas-examples.js (#R313) */
-  "How does {place} differ from the rest of {sub}?": "{place}, {sub} 지역의 다른 나라들과 무엇이 다른가요?",   /* atlas-examples.js (#R313) */
+  /* ══ (#R313 追記2) THE UN M49 MACRO-REGION NAMES — SHIPPED STRINGS, NOT A RUNTIME LOOKUP ══════
+     `{sub}` in the chip below is one of the 22 M49 macro-regions. The browser cannot name them:
+     Intl.DisplayNames({type:'region'}) answers for 'JP' and returns undefined for '030' in V8,
+     so the names have to be here. ⚠ ONLY THE SIX THIS TABLE DID NOT ALREADY CARRY ARE LISTED —
+     Caribbean, Eastern/Middle/Northern/Southern/Western Africa, Eastern/Northern/Southern/Western
+     Europe, Northern America, South America, Western Asia, Melanesia, Micronesia and Polynesia are
+     already rows of this same table (js/atlas-console.js names the same regions from the same
+     English keys), and a second row with the same key would be a duplicate, not a translation.
+     ⚠ Bare nouns, no article: each one lands inside the parentheses of the chip. */
+  "Eastern Asia": "동아시아",   /* atlas-examples.js (#R313 追記2) */
+  "South-Eastern Asia": "동남아시아",   /* atlas-examples.js (#R313 追記2) */
+  "Southern Asia": "남아시아",   /* atlas-examples.js (#R313 追記2) */
+  "Central Asia": "중앙아시아",   /* atlas-examples.js (#R313 追記2) */
+  "Central America": "중앙아메리카",   /* atlas-examples.js (#R313 追記2) */
+  "Australia and New Zealand": "오스트레일리아·뉴질랜드",   /* atlas-examples.js (#R313 追記2) */
+  "How does {place} differ from the other countries in its region ({sub})?": "{place}, 같은 지역({sub})의 다른 나라들과 무엇이 다른가요?",   /* atlas-examples.js (#R313 追記2) */
   "What did the world look like in {year}?": "{year}년의 세계는 어떤 모습이었나요?",   /* atlas-examples.js (#R313) */
   "Where in the world are the most severe weather warnings in force right now?": "지금 세계에서 가장 심각한 기상 경보가 발효 중인 곳은 어디인가요?",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "최근 일주일 동안 가장 활발했던 판 경계는 어디인가요?",   /* atlas-examples.js (#R313) */
