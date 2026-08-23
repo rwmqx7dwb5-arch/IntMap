@@ -226,11 +226,16 @@ function makeNew(slug) {
     console.log('  ⚠ 原本に node_modules が無い → その worktree で npm ci');
   }
 
-  /* The preview entry is RELATIVE (`dist`), because this copy gets committed. ⚠ The Browser
-     preview tool reads the MASTER's .claude/launch.json and caches by name (#R289) — if a preview
-     is needed before the merge, add a temporary ABSOLUTE entry there and take it out again. */
+  /* The preview entry is RELATIVE (`dist`) so it means the same thing from any checkout.
+     ⚠ (#R338) this file is NO LONGER TRACKED — it holds absolute paths into this machine's
+     worktrees, and while it was tracked the preview tool's writes into the MASTER's copy blocked
+     every fast-forward there (and with it the USB backup). It is still written and still read.
+     ⚠ The Browser preview tool reads the MASTER's .claude/launch.json and caches by name (#R289),
+     so a preview wanted before the merge still needs an absolute entry over there. */
   const ljPath = join(dir, '.claude', 'launch.json');
   try {
+    /* a fresh clone has no copy at all now that it is ignored — start one rather than warn */
+    if (!existsSync(ljPath)) writeFileSync(ljPath, JSON.stringify({ version: '0.0.1', configurations: [] }, null, 2) + '\n');
     const lj = JSON.parse(readFileSync(ljPath, 'utf8'));
     const name = `intmap-preview-r${n}`;
     if (!lj.configurations.some((c) => c.name === name)) {

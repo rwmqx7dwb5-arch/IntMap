@@ -84,7 +84,8 @@ const scenario = () => {
   gitIn(worka, 'checkout', '--quiet', '-B', 'main');
   writeFileSync(join(worka, 'a.txt'), 'one\n');
   /* a second tracked file that NO later commit touches — the stand-in for .claude/launch.json,
-     which every concurrent session edits and §6 forbids committing or moving on their behalf */
+     which every concurrent session edited and §6 forbids committing or moving on their behalf
+     (⚠ #R338 untracked that particular file; the invariant this test measures is unchanged) */
   writeFileSync(join(worka, 'keep.txt'), 'untouched by any later commit\n');
   gitIn(worka, 'add', '-A'); gitIn(worka, 'commit', '--quiet', '-m', 'one');
   gitIn(worka, 'push', '--quiet', '-u', 'origin', 'main');
@@ -169,7 +170,7 @@ test('R282 (4) --sync never changes the branch the master is on, merged or not',
 /* ── ④c AN UNCOMMITTED CHANGE BLOCKS ONLY WHAT GIT SAYS IT BLOCKS ───────────────────────────────
    ⚠ THE SECOND HALF OF THIS TEST IS THE ONE THAT MATTERS. The first --sync refused on ANY dirty
    file, which sounds like caution and is how a tool gets bypassed: MEASURED, the day it shipped, a
-   concurrent session found the master dirty only in .claude/launch.json — another session's preview
+   concurrent session found the master dirty only in .claude/launch.json (#R338 untracked it) — another session's preview
    entry, which §6 forbids committing or moving — and completed its finish step by running
    `git merge --ff-only` by hand. Correct work should not have to go around the gate. */
 test('R282 (4c) an unrelated edit does not block the sync; one in the way does', () => {
