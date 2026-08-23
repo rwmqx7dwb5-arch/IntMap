@@ -3023,36 +3023,198 @@ window.IntMapModules.worldPacks=function(HOST){
         throw new Error('jma: no issuing-unit geometry could be read');
       }
 
+      /* ══ ⚠⚠⚠ (#R383) THE NWS FILES AGAINST ZONE CODES, AND THIS MAP DREW ALMOST NONE OF IT ═════
+         MEASURED on `api.weather.gov/alerts/active` this round: **127 alerts in force and FOUR of
+         them carried a geometry.** The other 123 — 96.9 % — are filed against UGC zone codes with
+         `geometry: null`, which is how the NWS files everything that is not a storm-based polygon:
+         6 Extreme Heat Warnings, 14 Heat Advisories, 11 Gale Warnings, 9 Air Quality Alerts, 68
+         Small Craft Advisories, 3 Fire Weather Watches, a Red Flag Warning. MEASURED on production
+         the same minute: `PLACED.USA = [11, 135]`.
+         #R302 measured the same defect at 201 of 281 (71.5 %) and wrote 「THIS DOES NOT DRAW THEM.
+         Turning a UGC code into a shape needs the NWS zone index」 — so the counter stopped lying
+         and the map stayed blank. The share has since gone from 71.5 % to 96.9 %, i.e. the United
+         States was effectively an unmapped country with a green feed light over it.
+
+         ⚠ THE INDEX IS THE NWS'S OWN, AND IT IS AN INDEX — the same standing this file already
+         gives Eurostat NUTS, 国土数値情報, DataV and the shipped world ADM1 (「地図が読む索引であって、
+         気象についての第2の意見ではない」). `nws_reference_map` is NOAA's published reference service:
+         layer 8 public forecast zones (4,080), 9 fire weather zones (3,603), 5 coastal marine (569),
+         6 offshore (130), 2 counties (3,284). WHAT is in force, its rank and its wording still come
+         from `api.weather.gov` and nowhere else. 「ソースは一国一ソース」 holds — this is the same
+         agency, and its own drawing of the unit it named.
+         ⚠ MEASURED end to end against the live alert set: 319 zone codes and 14 county codes,
+         **333 of 333 resolved** (public 269 · fire 246 · coastal 46 · offshore 2 · county 14).
+         ⚠ THE KIND IS PART OF THE KEY. Fire zones and public zones share the UGC namespace — both
+         answer to `state_zone = 'AK317'` — so a lookup that ignored `/zones/fire/` vs
+         `/zones/forecast/` would hand a Red Flag Warning the public zone's outline.
+         ⚠ SERVER-SIDE GENERALISATION, STATED: `maxAllowableOffset` 0.004° ≈ 440 m, finer than this
+         map's own world ADM1 index (0.01°). MEASURED, 116 zones: 1,099,442 B raw → **80,503 B**.
+         ⚠ AND IT IS KEPT. A zone boundary is revised about twice a year, so the answers live in the
+         Cache API like every other boundary set here (`bndJSON`, `swicGeoCached`) — the first
+         session pays for the shapes and the ones after it pay for nothing. */
+      const NWS_REF='https://mapservices.weather.noaa.gov/static/rest/services/nws_reference_maps/nws_reference_map/MapServer/';
+      const NWS_OFF=0.004;                  /* ≈440 m, stated rather than silent */
+      const NWS_BATCH=110;                  /* ids per query — the service's own maxRecordCount is 2000 */
+      const NWS_GEO_CACHE='intmap-nwszone-v1';
+      const NWS_GEO_TTL=180*24*3600e3;      /* the NWS revises the zone set about twice a year */
+      const nwsGeo=Object.create(null);     /* 'z|f|c:UGC' → {g,n}, or 0 once the register has answered without it */
+      let nwsGeoWarm=false, nwsGeoBusy=false, nwsGeoDirty=false, nwsGeoFailAt=0;
+      let nwsZoneWant=0, nwsZoneKnown=0;
+      const NWS_RETRY_MS=120000;            /* a batch that could not be read is retried, not written off */
+      async function nwsGeoLoad(){ if(nwsGeoWarm) return; nwsGeoWarm=true;
+        try{ if(!self.caches) return;
+          const c=await caches.open(NWS_GEO_CACHE); const r=await c.match('nwszone/all'); if(!r) return;
+          const j=await r.json();
+          if(!j||!j.at||Date.now()-j.at>NWS_GEO_TTL||!j.by) return;
+          Object.keys(j.by).forEach(k=>{ if(nwsGeo[k]===undefined&&j.by[k]&&j.by[k].g) nwsGeo[k]=j.by[k]; });
+        }catch(_){} }
+      async function nwsGeoSave(){ try{ if(!self.caches||!nwsGeoDirty) return; nwsGeoDirty=false;
+        const by=Object.create(null);
+        Object.keys(nwsGeo).forEach(k=>{ const v=nwsGeo[k]; if(v&&v.g) by[k]=v; });
+        const c=await caches.open(NWS_GEO_CACHE);
+        await c.put('nwszone/all',new Response(JSON.stringify({at:Date.now(),by:by}),
+          {headers:{'content-type':'application/json'}}));
+      }catch(_){} }
+      const _sq=(v)=>"'"+String(v).replace(/[^A-Za-z0-9]/g,'')+"'";
+      const _sIn=(f,vals)=>f+' IN ('+vals.map(_sq).join(',')+')';
+      function nwsQuery(layer,where,fields){
+        const u=NWS_REF+layer+'/query?f=geojson&outSR=4326&returnGeometry=true'
+          +'&maxAllowableOffset='+NWS_OFF+'&outFields='+encodeURIComponent(fields)
+          +'&where='+encodeURIComponent(where);
+        return fetchJSON(u).then(j=>(j&&j.features)||[]); }
+      /* UGC 「ARZ074」 → the register's `state_zone` 「AR074」 */
+      const nwsSZ=(u)=>String(u).slice(0,2)+String(u).slice(3);
+      const nwsUGCofSZ=(k,sz)=>k+':'+String(sz||'').slice(0,2)+'Z'+String(sz||'').slice(2);
+      /* one batch: fire zones, then public/marine (8 → 5 → 6), then counties. Every query is the
+         SAME question asked of a different published layer, so the leftovers walk down the list. */
+      async function nwsZoneBatch(keys){
+        const take=(feats,keyOf)=>{ (feats||[]).forEach(f=>{
+          const q=f.properties||{}; const k=keyOf(q); if(!k||!f.geometry) return;
+          const v=nwsGeo[k]; if(v&&v.g) return;
+          nwsGeo[k]={g:f.geometry,n:String(q.name||q.countyname||'')}; nwsGeoDirty=true; }); };
+        const left=(c)=>keys.filter(k=>k.charAt(0)===c&&!(nwsGeo[k]&&nwsGeo[k].g)).map(k=>k.slice(2));
+        const fire=left('f');
+        if(fire.length) take(await nwsQuery(9,_sIn('state_zone',fire.map(nwsSZ)),'state_zone,name'),
+          q=>nwsUGCofSZ('f',q.state_zone));
+        let zone=left('z');
+        if(zone.length) take(await nwsQuery(8,_sIn('state_zone',zone.map(nwsSZ)),'state_zone,name'),
+          q=>nwsUGCofSZ('z',q.state_zone));
+        zone=left('z');
+        if(zone.length) take(await nwsQuery(5,_sIn('id',zone),'id,name'),q=>'z:'+String(q.id||''));
+        zone=left('z');
+        if(zone.length) take(await nwsQuery(6,_sIn('id',zone),'id,name'),q=>'z:'+String(q.id||''));
+        /* ⚠⚠ (#R383) …AND THE FIRE-WEATHER LAYER IS THE LAST RUNG FOR A PLAIN ZONE CODE, because a
+           bulletin that carries no `affectedZones` links names its zones only as bare UGC and the
+           UGC namespace does not say which register holds them. MEASURED with this resolver against
+           the live feed: 10 of 110 codes came back unresolved — CAZ280/281, ORZ621-623, ORZ670-672,
+           IDZ423/426 — and `api.weather.gov/zones?id=ORZ621` calls it `fire/Siskiyou Mountains`.
+           Asking layer 9 for the leftovers takes it to 110/110. It is the LAST rung, so a code that
+           exists in both registers still gets the public zone the forecast product was issued on. */
+        zone=left('z');
+        if(zone.length) take(await nwsQuery(9,_sIn('state_zone',zone.map(nwsSZ)),'state_zone,name'),
+          q=>nwsUGCofSZ('z',q.state_zone));
+        const cty=left('c');
+        if(cty.length){
+          /* the UGC county code is the STATE plus the last three digits of the FIPS, and the
+             register publishes the whole FIPS — so it is asked per state, where those digits
+             are unique, rather than through a hand-written state → FIPS table */
+          const g=Object.create(null);
+          cty.forEach(u=>{ const st=String(u).slice(0,2); (g[st]=g[st]||[]).push(String(u).slice(3)); });
+          const where=Object.keys(g).map(st=>'(state='+_sq(st)+' AND ('
+            +g[st].map(n=>"fips LIKE '%"+String(n).replace(/[^0-9]/g,'')+"'").join(' OR ')+'))').join(' OR ');
+          take(await nwsQuery(2,where,'state,fips,countyname'),
+            q=>'c:'+String(q.state||'')+'C'+String(q.fips||'').slice(-3)); }
+        /* the pass completed, so anything still absent is absent from the register — recorded, so
+           it is not asked again every ten seconds, and COUNTED, because 「置けなかった」 is an answer */
+        keys.forEach(k=>{ if(nwsGeo[k]===undefined) nwsGeo[k]=0; });
+        nwsGeoSave(); }
+      /* ⚠⚠ (#R383) A COLD INDEX SPRINTS — the same shape #R284 gave the MeteoAlarm rotation.
+         MEASURED on the live feed: 339 distinct zone codes are in force at once, and a batch is 110,
+         so a per-tick floor would have taken three ticks (or, with a two-minute retry guard, six
+         minutes) to finish drawing the United States for a reader who is looking at it NOW. Nothing
+         is cached upstream to protect: a code this browser has never asked about costs the register
+         one row whenever it asks. So the batches CHAIN, and the floor applies only to a sweep that
+         FAILED — which is the case where asking again immediately would be hammering. */
+      function askNwsZones(keys){
+        if(nwsGeoBusy||!keys.length) return;
+        if(Date.now()-nwsGeoFailAt<NWS_RETRY_MS) return;
+        nwsGeoBusy=true;
+        const run=(list)=>nwsZoneBatch(list.slice(0,NWS_BATCH))
+          .then(()=>{ if(on) publish();
+            const rest=list.slice(NWS_BATCH);
+            if(rest.length) return run(rest); });
+        run(keys)
+          .catch(e=>{ nwsGeoFailAt=Date.now(); console.warn('NWS zone geometry',e); })
+          .then(()=>{ nwsGeoBusy=false; }); }
+      /* the zones an alert names, with the kind the NWS itself declares in the URL — `affectedZones`
+         is authoritative about which register layer answers for it; the bare UGC list is the
+         fallback for a bulletin that carries no zone links. */
+      function nwsZonesOf(p){
+        const out=[], seen=Object.create(null), ugcSeen=Object.create(null);
+        const add=(kind,ugc)=>{ ugc=String(ugc||'').toUpperCase();
+          if(!/^[A-Z]{2}[ZC][0-9]{3}$/.test(ugc)) return;
+          const k=(ugc.charAt(2)==='C'?'c':(kind==='fire'?'f':'z'))+':'+ugc;
+          ugcSeen[ugc]=1;
+          if(seen[k]) return; seen[k]=1; out.push({key:k,ugc:ugc}); };
+        (p.affectedZones||[]).forEach(u=>{ const m=/\/zones\/([a-z]+)\/([A-Z0-9]+)$/.exec(String(u||''));
+          if(m) add(m[1],m[2]); });
+        /* ⚠⚠ (#R383) THE BARE UGC LIST IS A FALLBACK, NOT A SECOND ENTRY. A fire-weather bulletin
+           names its zones BOTH ways — `/zones/fire/ORZ621` in `affectedZones` and `ORZ621` in
+           `geocode.UGC` — and adding the second unconditionally created a `z:` key beside the `f:`
+           one, i.e. THE SAME GROUND CLAIMED TWICE, once as a zone the register cannot answer for.
+           MEASURED before this line: 10 phantom `z:` keys out of 110, all of them fire zones the
+           bulletin had already declared as such. */
+        try{ ((p.geocode&&p.geocode.UGC)||[]).forEach(u=>{
+          if(!ugcSeen[String(u||'').toUpperCase()]) add('',u); }); }catch(_){}
+        return out; }
+
       async function loadNWS(){
+        await nwsGeoLoad();
         const r=await fetch('https://api.weather.gov/alerts/active?status=actual&message_type=alert',{cache:'no-store'});
         if(!r.ok) throw new Error('nws '+r.status);
         const j=await r.json();
         const out=[];
         /* ══ ⚠⚠⚠ (#R302) 71.5 % OF THE FEED HAS NO GEOMETRY, AND THE COUNTER SAID 「all placed」 ══
-           MEASURED on the live feed: **281 alerts in force, 201 of them `geometry: null`** — the NWS
-           files those against UGC zone codes and leaves the shape to the client. They were dropped
-           one line below, and then `PLACED.USA=[out.length,out.length]` reported 80 of 80 with
-           `UNPL.USA=0`, so nothing anywhere said a word about the other 201.
-           The visible cost is the opposite of the rest of this round: **twelve jurisdictions with a
-           warning in force and no drawable shape** — WA(16) · OR(9) · AR(5) · CA(3) · TN · MT · MA ·
-           HI, plus Guam, the Northern Marianas, Palau and Micronesia, all of which the 「発表なし」
-           grey then covered, because the grey is drawn per unit and knows only about what was PLACED.
+           MEASURED then: **281 alerts in force, 201 of them `geometry: null`**, dropped one line
+           below — and then `PLACED.USA=[out.length,out.length]` reported 80 of 80 with `UNPL.USA=0`,
+           so nothing anywhere said a word about the other 201.
            → the denominator is what the agency published. `UNPL` is the worst rank among the ones
            this map could not draw, so the country wash and the panel both stop claiming success.
-           ⚠ THIS DOES NOT DRAW THEM. Turning a UGC code into a shape needs the NWS zone index; what
-           it stops is the map saying 「nothing in force」 where the answer is 「we could not place it」. */
-        let noGeom=0, worstNG=0;
-        (j.features||[]).forEach(f=>{ if(!f.geometry){ noGeom++;
-            try{ const n=normOf('nws',SEV3[(f.properties||{}).severity]||1); if(n>worstNG) worstNG=n; }catch(_){}
-            return; }
+           ⚠ (#R383) …and now they ARE drawn — the zone codes are resolved against the NWS's own
+           reference layers above. What survives here is the counting rule: a zone the register
+           cannot answer for is still a shortfall and still says so. */
+        let noGeom=0, worstNG=0, own=0;
+        const byZone=new Map(); const want=[];
+        (j.features||[]).forEach(f=>{
           const p=f.properties||{}; const lv=SEV3[p.severity]||1;
           let st=''; try{ const u=(p.geocode&&(p.geocode.UGC||p.geocode.SAME))||[]; st=String(u[0]||'').slice(0,2).toUpperCase(); }catch(_){}
           if(!/^[A-Z]{2}$/.test(st)) st=String(p.areaDesc||'').split(',').pop().trim().slice(-2).toUpperCase();
           seenAt('nws',p.sent);
-          const ft=unitFeature('USA','nws',f.geometry,'zone',p.areaDesc||p.event||'',
-            [{area:p.areaDesc||'',adm:st,unit:'zone',lv,tier:normOf('nws',lv),kind:p.event||'',status:p.severity||''}],p.sent||'');
+          if(f.geometry){ own++;
+            const ft=unitFeature('USA','nws',f.geometry,'zone',p.areaDesc||p.event||'',
+              [{area:p.areaDesc||'',adm:st,unit:'zone',lv,tier:normOf('nws',lv),kind:p.event||'',status:p.severity||''}],p.sent||'');
+            if(ft) out.push(ft); return; }
+          const zs=nwsZonesOf(p);
+          if(!zs.length){ noGeom++; const n=normOf('nws',lv); if(n>worstNG) worstNG=n; return; }
+          /* one feature per ZONE, not per bulletin: the zone is the unit the NWS issued for, and two
+             products over the same zone are two rows on one shape — the same treatment the JMA's
+             municipalities and the DWD's districts already get. */
+          zs.forEach(z=>{ const g=byZone.get(z.key)||{ugc:z.ugc,lv:0,rows:[],at:''};
+            byZone.set(z.key,g);
+            if(lv>g.lv) g.lv=lv;
+            if(String(p.sent||'')>g.at) g.at=String(p.sent||'');
+            g.rows.push({area:p.areaDesc||'',adm:z.ugc.slice(0,2),unit:'zone',lv,
+              tier:normOf('nws',lv),kind:p.event||'',status:p.severity||''}); }); });
+        let placed=0;
+        byZone.forEach((g,key)=>{ const rec=nwsGeo[key];
+          if(!rec||!rec.g){ noGeom++; if(nwsGeo[key]===undefined) want.push(key);
+            const n=normOf('nws',g.lv); if(n>worstNG) worstNG=n; return; }
+          placed++;
+          const ft=unitFeature('USA','nws',rec.g,'zone',rec.n||g.ugc,g.rows,g.at);
           if(ft) out.push(ft); });
-        PLACED.USA=[out.length,out.length+noGeom]; UNPL.USA=noGeom?worstNG:0;
+        askNwsZones(want);
+        nwsZoneWant=want.length; nwsZoneKnown=Object.keys(nwsGeo).length;
+        PLACED.USA=[own+placed,own+placed+noGeom]; UNPL.USA=noGeom?worstNG:0;
         return out; }
 
       /* ── Canada: Environment and Climate Change Canada, alert polygons, grouped by province ── */
@@ -3088,7 +3250,13 @@ window.IntMapModules.worldPacks=function(HOST){
           if(ft) out.push(ft); });
         /* (#R302) the denominator is what the feed OFFERED that is still in force, so a shape this
            map could not draw shows up as a shortfall instead of as 「all of them, placed」 */
-        PLACED.CAN=[out.length,Math.max(out.length,(j.features||[]).length-caEnded)]; UNPL.CAN=0;
+        /* ⚠ (#R383) …AND THE PAGE IS NOT THE FEED. This read asks for `limit=500` and the collection
+           answers with `numberMatched`, which is how many items exist — MEASURED 238 today, so the
+           cap is not binding now, and 「not binding now」 is exactly the state a silent truncation
+           hides in (#R320). Counting the page as the denominator would report 「500 of 500」 on the
+           day Canada has more, so the denominator is whichever number is larger. */
+        const caMatched=+((j&&j.numberMatched))||0;
+        PLACED.CAN=[out.length,Math.max(out.length,caMatched-caEnded,(j.features||[]).length-caEnded)]; UNPL.CAN=0;
         return out; }
 
       /* ══ ONE PLACE TURNS «THE AGENCY SAID THIS UNIT» INTO A SHAPE (#R271) ═══════════════════════
@@ -3215,7 +3383,10 @@ window.IntMapModules.worldPacks=function(HOST){
             (g.rec.level==='province'?'province':g.rec.level==='city'?'city':'district'),
             g.rec.name,g.items,(g.items[0]&&g.items[0].status)||'');
           if(ft) out.push(ft); });
-        PLACED.CHN=[items.length-lost,items.length]; UNPL.CHN=worst;
+        /* ⚠ (#R383) the CMA's own `count` is what it has in force; `items` is what these two pages
+           carried. MEASURED 1,202 against a 2,000-row ceiling — not binding today, and stated so
+           that the day it binds is visible rather than rounded away (#R320). */
+        PLACED.CHN=[items.length-lost,Math.max(items.length,cnTotal)]; UNPL.CHN=worst;
         return out; }
 
       /* ── Australia: the Bureau of Meteorology's own warning list, at the state it files by ── */
@@ -3273,30 +3444,28 @@ window.IntMapModules.worldPacks=function(HOST){
       /* ══ GERMANY, AT THE DISTRICT THE DWD ISSUES FOR (#R271) ════════════════════════════════════
          The DWD runs a public GeoServer and its `Warnungen_Landkreise` layer IS the warning set with
          the district polygons attached. MeteoAlarm relays the same warnings without geometry, so the
-         issuing service is read directly. The Bundesland comes from the DWD too. */
+         issuing service is read directly. The Bundesland comes from the DWD too — out of the SAME
+         response, see below. */
       const DWD_WFS='https://maps.dwd.de/geoserver/dwd/ows?service=WFS&version=2.0.0&request=GetFeature'
         +'&typeName=dwd:Warnungen_Landkreise&outputFormat=application/json&count=2000';
-      async function dwdStates(){
-        const r=await fetch('https://www.dwd.de/DWD/warnungen/warnapp/json/warnings.json',{cache:'no-store'});
-        if(!r.ok) throw new Error('dwd states '+r.status);
-        let t=await r.text();
-        const a=t.indexOf('('), b=t.lastIndexOf(')');
-        if(a<0||b<a) throw new Error('dwd states: not the callback shape');
-        const j=JSON.parse(t.slice(a+1,b));
-        const by=Object.create(null);
-        Object.keys(j.warnings||{}).forEach(k=>{ const w=(j.warnings[k]||[])[0]; if(w&&w.state) by[String(k)]=String(w.state); });
-        Object.keys(j.vorabInformation||{}).forEach(k=>{ const w=(j.vorabInformation[k]||[])[0]; if(w&&w.state&&!by[String(k)]) by[String(k)]=String(w.state); });
-        return by; }
       async function loadDWD(){
-        const [j,st]=await Promise.all([
-          fetch(DWD_WFS,{cache:'no-store'}).then(r=>{ if(!r.ok) throw new Error('dwd '+r.status); return r.json(); }),
-          dwdStates().catch(()=>({}))]);
+        const j=await fetch(DWD_WFS,{cache:'no-store'}).then(r=>{ if(!r.ok) throw new Error('dwd '+r.status); return r.json(); });
         const out=[]; let n=0;
         (j.features||[]).forEach(f=>{ if(!f.geometry) return; const p=f.properties||{}; n++;
           const lv=SEV3[String(p.SEVERITY||'')]||1;
           seenAt('dwd',p.SENT||p.EFFECTIVE);
           const areaN=String(p.NAME||p.AREADESC||'');
-          const adm=st[String(p.WARNCELLID||'')]||areaN;
+          /* ══ ⚠⚠⚠ (#R383) A SECOND REQUEST, EVERY REFRESH, WHOSE ANSWER COULD NEVER BE READ ═════
+             This line was `st[String(p.WARNCELLID||'')]`, filled by a `dwdStates()` fetch of
+             `dwd.de/DWD/warnungen/warnapp/json/warnings.json` running in parallel with the WFS.
+             MEASURED against the live WFS: the property is **`GC_WARNCELLID`**, and there is no
+             bare `WARNCELLID` on any feature — so the lookup was `st['undefined']` on every row,
+             the Bundesland never resolved, and `adm` silently fell back to the district name, which
+             is what the tap card printed twice. The extra fetch was pure cost: an upstream request
+             per refresh, at the 10-second tick, for a table nothing could index into.
+             → the WFS already carries **`GC_STATE`** on the same feature (measured: 「MV」). One
+             response, one truth, and the request is gone. */
+          const adm=String(p.GC_STATE||'')||areaN;
           const ft=unitFeature('DEU','dwd',f.geometry,'district',areaN,
             [{ area:areaN, adm, sub:String(p.EVENT||''), unit:'district', lv, tier:normOf('dwd',lv),
                kind:String(p.EVENT||''), status:String(p.HEADLINE||p.SEVERITY||'') }],String(p.SENT||''));
@@ -3649,7 +3818,9 @@ window.IntMapModules.worldPacks=function(HOST){
             const ft=unitFeature(iso,'meteoalarm',g,'region',String(a.name||''),rows,String(a.sent||''),String(d.fetchedAt||''));
             if(ft){ out.push(ft); mine.push(ft); } });
           _maFeat[iso]={k:fkey,f:mine};
-          PLACED[iso]=[placed,(d.areas||[]).length];
+          /* (#R383) the denominator is what the SERVICE published. `areas` is capped at the relay's
+             `AREA_CAP`, so counting it made a truncated list look like a complete one (#R320). */
+          PLACED[iso]=[placed,Math.max(+d.areaTotal||0,(d.areas||[]).length)];
           let u=0; (d.areas||[]).forEach(a=>{ if(!shapeOf(a)){ const n=normOf('meteoalarm',a.tier||1); if(n>u) u=n; } });
           UNPL[iso]=u;
           /* a country that could not place everything asks the register for that service’s shapes,
@@ -3666,7 +3837,16 @@ window.IntMapModules.worldPacks=function(HOST){
         const j=await r.json();
         list.forEach(k=>{ const n=MA[k]; const d=(j.countries||{})[n]; if(d){ maData[k]=d;
           maAt[k]=Date.now();                       /* (#R275) the rotation orders by this */
-          seenAt('meteoalarm',d.fetchedAt); } });
+          /* ⚠⚠⚠ (#R383) THE AGENCY'S CLOCK, NOT THE RELAY'S. This was `d.fetchedAt` — the moment
+             the relay read MeteoAlarm, i.e. always now — so `FEED_AT.meteoalarm` was pinned to the
+             present and the frozen-feed instrument #R269 built (「A FEED THAT STOPPED IS NOT A FEED
+             THAT FAILED」) was structurally blind over the thirty-five countries MeteoAlarm carries.
+             MEASURED on production: `feedAgeH.meteoalarm = 0` while Luxembourg had published nothing
+             for 104 h, Belgium 94 h, the United Kingdom 82 h, Cyprus 78 h and Ireland 66 h.
+             `newest` is the newest CAP `sent` in that member's own feed.
+             ⚠ A member with an EMPTY feed reports no clock at all, and `seenAt` ignores the empty
+             string — 「発表がない」 must not be printed as 「取得できていない」. */
+          seenAt('meteoalarm',d.newest); } });
         await maFeatures();
       }
 
@@ -3707,7 +3887,7 @@ window.IntMapModules.worldPacks=function(HOST){
         const j=await fetchJSON(u,{cache:'no-store'});
         swicScan.by=(j&&j.members)||Object.create(null);
         swicScan.at=Date.now();
-        seenAt('swic',j&&(j.newest||j.fetchedAt));
+        seenAt('swic',j&&j.newest);       /* (#R383) the register's own clock — never the relay's */
         /* every wired member the scan does NOT list has been read and has nothing in force */
         const now=Date.now();
         swicISO().forEach(c=>{ const m=swicMeta.mid[c];
@@ -3725,7 +3905,9 @@ window.IntMapModules.worldPacks=function(HOST){
         const u=relay('swic='+encodeURIComponent(mids.join(','))); if(!u) throw new Error('no relay');
         const j=await fetchJSON(u,{cache:'no-store'});
         isos.forEach(c=>{ const d=(j.members||{})[swicMeta.mid[c]];
-          if(d&&!d.error){ swicData[c]=d; swicAt[c]=Date.now(); seenAt('swic',d.fetchedAt); } });
+          /* (#R383) the member's own newest bulletin. `fetchedAt` is the relay's clock and always
+             now, so it overwrote the honest number `loadSWICScan` already had — see loadMA */
+          if(d&&!d.error){ swicData[c]=d; swicAt[c]=Date.now(); seenAt('swic',d.newest); } });
         swicFeatures(); }
       /* (#R297) …and the register's members are rebuilt the same way — see the note on maFeatures */
       const _swFeat=Object.create(null);
@@ -3761,7 +3943,7 @@ window.IntMapModules.worldPacks=function(HOST){
             const ft=unitFeature(iso,'swic',a.geom,'area',String(a.name||''),rows,String(a.sent||''),String(d.fetchedAt||''));
             if(ft){ out.push(ft); mine.push(ft); } });
           _swFeat[iso]={k:fkey,f:mine,missed:missed};
-          PLACED[iso]=[placed,(d.areas||[]).length];
+          PLACED[iso]=[placed,Math.max(+d.areaTotal||0,(d.areas||[]).length)];   /* (#R383) see maFeatures */
           UNPL[iso]=u; });
         if(anyMissed) askWorldAdm1();
         SIDE.swic=out; }
@@ -3824,15 +4006,22 @@ window.IntMapModules.worldPacks=function(HOST){
         areas.forEach(a=>{ const g=shapeOf(a); if(!g) return;
           const lv=a.tier||1;
           const ev=(a.events&&a.events.length)?a.events:[{event:'',severity:'',tier:lv}];
-          const rows=ev.slice(0,20).map(e=>({ area:String(a.name||''), adm:String(a.name||''),
+          /* (#R383) `adm` is what the card groups by, and for an aggregator the useful grouping is
+             WHO ISSUED IT — the relay now carries that per row (`by`). A feed with one authority
+             falls back to the area name, which is what every CAP feed did before. */
+          const rows=ev.slice(0,20).map(e=>({ area:String(a.name||''),
+            adm:String(e.by||(a.by&&a.by[0])||'')||String(a.name||''),
             sub:String(e.event||''), unit:cfg.unit, lv:(e.tier||lv), tier:normOf(feed,e.tier||lv),
             kind:String(e.event||''), status:String(e.severity||a.acol||'') }));
           const ft=unitFeature(cfg.iso,feed,g,cfg.unit,String(a.name||''),rows,String(a.sent||''),String(j.fetchedAt||''));
           if(ft) out.push(ft); });
-        PLACED[cfg.iso]=[out.length,areas.length];
+        /* (#R383) MEASURED on the CWA through the relay: `areaTotal` 694 against `areas` 400, so the
+           panel read 「286 / 400」 for a service that had published 694 areas. The cap is the relay's
+           and it is stated; the denominator has to be the agency's own number (#R320). */
+        PLACED[cfg.iso]=[out.length,Math.max(+((j&&j.areaTotal)||0),areas.length)];
         let u2=0; areas.forEach(a=>{ if(!shapeOf(a)){ const n=normOf(feed,a.tier||1); if(n>u2) u2=n; } });
         UNPL[cfg.iso]=u2;
-        seenAt(feed,j&&j.fetchedAt);
+        seenAt(feed,j&&j.newest);         /* (#R383) the agency's own issue time — see loadMA */
         capRec[feed]=j;
         SIDE[cfg.side]=out;
         return j; }
@@ -4835,7 +5024,7 @@ window.IntMapModules.worldPacks=function(HOST){
       /* ── the per-country legend a tap opens ────────────────────────────────────────────────────── */
       const AGENCY_NAME={ jma:'気象庁 JMA', nws:'US National Weather Service', eccc:'ECCC', cma:'中国气象局 CMA',
         bom:'Bureau of Meteorology', inmet:'INMET', hko:'香港天文台 HKO', dwd:'Deutscher Wetterdienst',
-        metno:'MET Norway', pagasa:'PAGASA', cwa:'中央氣象署 CWA', metservice:'MetService',
+        metno:'MET Norway', pagasa:'PAGASA', cwa:'中央氣象署 CWA · 農業部水土保持署', metservice:'MetService',
         meteoalarm:'MeteoAlarm (EUMETNET)', swic:'WMO Severe Weather Information Centre' };
       /* ⚠ (#R275) FOR A WMO-REGISTER COUNTRY THE AUTHOR IS THE MEMBER'S OWN SERVICE, and that is the
          name the reader is given — 「各国の気象台やその他それに相当する機関の情報をもとにしろ」. The WMO
@@ -4843,6 +5032,12 @@ window.IntMapModules.worldPacks=function(HOST){
       function agencyFor(feed,iso3){
         if(feed==='swic'){ const d=swicMeta.dept[iso3]||'';
           return d?(d+' · '+L('via WMO SWIC','WMO SWIC 経由','über WMO SWIC','через WMO SWIC','vía WMO SWIC')):AGENCY_NAME.swic; }
+        /* ⚠⚠ (#R383) A CAP AGGREGATOR CARRIES SEVERAL AUTHORITIES, AND IT SAYS WHICH — so the name
+           the reader is given comes from the data rather than from a constant that guessed. MEASURED
+           on the NCDR feed labelled 「CWA (Taiwan)」: four different bodies wrote the bulletins in it
+           (see CAPSRC in supabase/functions/alerts-relay). #R352 is the round that paid for a card
+           naming a provider that supplied none of what it was printed beside. */
+        if(CAPFEED[feed]&&capRec[feed]&&capRec[feed].source) return String(capRec[feed].source);
         return AGENCY_NAME[feed]||feed; }
       function legendFor(iso3){
         const feed=FEEDS[iso3]||LEARNED[iso3];   /* (#R288) — a learned territory names the service that covers it */
@@ -4904,6 +5099,36 @@ window.IntMapModules.worldPacks=function(HOST){
         const p=PLACED[iso3];
         if(p&&p[1]>p[0]) h+='<div style="margin-top:6px;font-size:10px;color:var(--text-muted);">'
           +esc(L('Areas published but not locatable on this map: ','発表されたが地図上に位置を特定できなかった区域: ','Gebiete ohne auflösbare Geometrie: ','Зоны без найденной геометрии: ','Zonas sin geometría resuelta: '))+(p[1]-p[0])+'/'+p[1]+'</div>';
+        h+=notInForceLine(iso3,feed);
+        return h; }
+      /* ══ ⚠⚠⚠ (#R383) WHAT WAS READ AND **NOT** PAINTED, IN WORDS ═══════════════════════════════
+         The relay now drops a bulletin whose validity window has closed or has not opened, which is
+         the difference between 「発令中」 and 「発令された」 — and #R320's rule is that a list which
+         quietly cut something looks exactly like a complete one. MEASURED against MeteoAlarm the
+         minute this was written, Austria published 781 non-green bulletins and NOT ONE of them was
+         in force; without this line the country reads 「Nothing in force right now」 with no way to
+         tell that from a service that had published nothing at all.
+         ⚠ 「Starting later」 IS NOT A WARNING AND NOT A SILENCE. It is a third thing, and it is the
+         one the reader is most likely to want next, so the regions are NAMED rather than counted. */
+      function notInForceCounts(iso3,feed){
+        const d=(feed==='meteoalarm')?maData[iso3]
+          :(feed==='swic')?swicData[iso3]
+          :(CAPFEED[feed]&&CAPFEED[feed].iso===iso3)?capRec[feed]:null;
+        if(!d||d.error) return null;
+        const ex=+d.expired||0, up=+d.upcoming||0;
+        if(!ex&&!up) return null;
+        return {expired:ex,upcoming:up,areas:(d.upcomingAreas||[]).slice(0,8)}; }
+      function notInForceLine(iso3,feed){
+        const c=notInForceCounts(iso3,feed); if(!c) return '';
+        const bits=[];
+        if(c.expired) bits.push(esc(L('expired','期限切れ','abgelaufen','истёкшие','vencidos'))+' '+c.expired);
+        if(c.upcoming) bits.push(esc(L('starting later','これから発効','beginnen später','начнутся позже','comienzan después'))+' '+c.upcoming);
+        let h='<div style="margin-top:6px;font-size:10px;color:var(--text-muted);">'
+          +esc(L('Read from this service but not in force now: ','この機関から取得したが、現在は発令中でないもの: ','Gelesen, aber derzeit nicht in Kraft: ','Прочитано, но сейчас не действует: ','Leídos pero no vigentes ahora: '))
+          +bits.join(' · ')+'</div>';
+        if(c.areas.length) h+='<div style="margin-top:3px;font-size:10px;color:var(--text-muted);">'
+          +esc(L('Starting later in: ','これから発効する区域: ','Beginnt später in: ','Начнётся позже: ','Comienza después en: '))
+          +esc(c.areas.join(', '))+'</div>';
         return h; }
       function unitWord(feed){
         return feed==='jma'?(jmaUnit==='muni'?L('by municipality','市町村単位','nach Gemeinde','по муниципалитетам','por municipio'):L('by issuing region','発令区域単位','nach Warnregion','по районам выпуска','por región de emisión'))
@@ -5519,6 +5744,18 @@ window.IntMapModules.worldPacks=function(HOST){
             const c=String(f.id||''); if(supported(c)&&readState(c)==='error') n++; }); }catch(_){} return n; })(),
         pending:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
             const c=String(f.id||''); const st=readState(c); if(supported(c)&&st!=='ok'&&st!=='error') n++; }); }catch(_){} return n; })(),
+        /* ⚠ (#R383) THE ZONE INDEX — `want` must fall to zero, `placed` must be the whole feed.
+           MEASURED before this round: 11 placed of 135 (`api.weather.gov` files 96.9 % of its
+           bulletins against UGC codes with no geometry). */
+        nwsZones:{ want:nwsZoneWant, known:nwsZoneKnown,
+          drawn:feats.filter(f=>f.properties.feed==='nws'&&(f.properties.norm||0)>0).length },
+        /* ⚠ (#R383) READ AND NOT PAINTED, because the validity window is closed or not yet open.
+           A number the panel prints per country — 「黙って切った一覧は完全な一覧に見える」 (#R320). */
+        notInForce:(function(){ let ex=0,up=0;
+          Object.keys(maData).forEach(k=>{ const d=maData[k]||{}; ex+=+d.expired||0; up+=+d.upcoming||0; });
+          Object.keys(swicData).forEach(k=>{ ex+=+((swicData[k]||{}).expired)||0; });
+          Object.keys(capRec).forEach(k=>{ const d=capRec[k]||{}; ex+=+d.expired||0; up+=+d.upcoming||0; });
+          return {expired:ex,upcoming:up}; })(),
         /* (#R288) 「発令なし」 is drawn at the unit for these, and country-wide for the rest — the
            difference is a fact about this map, so it is counted rather than assumed */
         learned:Object.assign({},LEARNED),

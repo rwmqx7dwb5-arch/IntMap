@@ -244,6 +244,9 @@ window.IntMapRefData=(function(){
     {n:'気象庁の警報階級と配色 (JMA warning levels 20/30/40/50 and their published colours)',u:'https://www.jma.go.jp/bosai/warning/'},
     {n:'行政区域データ（市区町村界）— 国土交通省 国土数値情報 N03 (via smartnews-smri/japan-topography)',u:'https://nlftp.mlit.go.jp/ksj/'},
     {n:'Weather warnings, United States — NOAA National Weather Service (api.weather.gov, CAP)',u:'https://api.weather.gov/alerts/active'},
+    /* (#R383) the SHAPES for the zone codes those alerts are filed against — NOAA's own published
+       reference layers, read as an index. What is in force still comes from api.weather.gov. */
+    {n:'US public forecast, fire weather, marine and county zone boundaries — NOAA nws_reference_map',u:'https://mapservices.weather.noaa.gov/static/rest/services/nws_reference_maps/nws_reference_map/MapServer'},
     {n:'Warnungen — Deutscher Wetterdienst GeoServer (Warnungen_Landkreise, WFS)',u:'https://maps.dwd.de/geoserver/dwd/ows'},
     {n:'Farevarsler — MET Norway MetAlerts 2.0',u:'https://api.met.no/weatherapi/metalerts/2.0/'},
     {n:'Avisos meteorológicos — INMET (Instituto Nacional de Meteorologia, Brazil)',u:'https://apiprevmet3.inmet.gov.br/avisos/ativos'},

@@ -130,7 +130,13 @@ test('R271 ② the Philippines is read from PAGASA, at its provinces', () => {
   const r = read('supabase/functions/alerts-relay/index.ts');
   assert.match(r, /publicalert\.pagasa\.dost\.gov\.ph/, 'the relay must reach PAGASA');
   assert.match(r, /PH_PAR/, 'the area-of-responsibility box must be dropped by name, not drawn');
-  assert.match(r, /Date\.parse\(expires\)/, 'an expired bulletin is not in force');
+  /* (#R383) …and the test moved into the one predicate every summariser in that file now shares.
+     It answers more than 「expired」 — a bulletin whose window has not OPENED is not in force either
+     — and it fails open when a feed publishes no clock at all (see tests/r383-checks ①). */
+  assert.match(r, /const fs = forceState\(\{ expires, onset: xmlOne\(cap, "onset"\)/,
+    'an expired bulletin is not in force');
+  assert.match(r, /if \(Number\.isFinite\(exp\) && exp < now\) return "expired";/,
+    '…and that is what the predicate tests');
 });
 
 /* ── ③ one swatch, one category ─────────────────────────────────────────────────────────────── */
