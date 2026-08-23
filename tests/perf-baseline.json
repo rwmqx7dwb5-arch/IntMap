@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4485055,
-    "gzip": 1495162,
-    "brotli": 1139224,
+    "raw": 4499593,
+    "gzip": 1500328,
+    "brotli": 1143472,
     "requests": 6,
     "modules": 279,
-    "cssRaw": 320931,
-    "cssGzip": 54180
+    "cssRaw": 325176,
+    "cssGzip": 54713
   },
   "async": {
-    "raw": 9357881,
-    "gzip": 3011355,
+    "raw": 9394588,
+    "gzip": 3027212,
     "chunks": {
       "aircraft-detail": 17245,
       "analysis-correlate": 24153,
@@ -18,8 +18,8 @@
       "analysis-research": 17766,
       "analysis-timeseries": 8142,
       "analysis-world-events": 68202,
-      "atlas-console": 827142,
-      "atlas-executor": 38489,
+      "atlas-console": 831967,
+      "atlas-executor": 39000,
       "aviation-live": 20078,
       "cesium": 4840127,
       "cesium-engine": 65488,
@@ -37,6 +37,7 @@
       "katex": 263874,
       "katex.min": 1,
       "navigation": 61617,
+      "news-events": 18406,
       "night-sky": 26005,
       "plane-glyph": 887,
       "playground": 42856,
@@ -46,19 +47,19 @@
       "satellite-wasm-stub": 199,
       "satellites-live": 23391,
       "seismic": 162913,
-      "stats-compare": 63837,
+      "stats-compare": 63943,
       "street-view": 15377,
-      "subcable-info": 8467,
+      "subcable-info": 9648,
       "terrain-water": 85308,
       "tsunami": 37658,
-      "ui.de": 18958,
-      "ui.es": 19189,
-      "ui.fr": 387972,
-      "ui.jp": 20669,
-      "ui.ko": 383759,
-      "ui.ru": 27458,
-      "ui.zh": 345152,
-      "ui.zh-hans": 345155,
+      "ui.de": 18990,
+      "ui.es": 19225,
+      "ui.fr": 391050,
+      "ui.jp": 20707,
+      "ui.ko": 386727,
+      "ui.ru": 27505,
+      "ui.zh": 347893,
+      "ui.zh-hans": 347893,
       "viewshed": 32683,
       "volcano-intel": 43300,
       "volcano-layers": 14342,
@@ -67,8 +68,8 @@
     }
   },
   "dist": {
-    "total": 127443891,
-    "data": 73956958,
-    "assets": 16506506
+    "total": 127876502,
+    "data": 74294380,
+    "assets": 16561982
   }
 }

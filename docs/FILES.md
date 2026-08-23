@@ -197,6 +197,9 @@ gazetteer.js                      ニュース地点解析の内蔵ガゼッテ�
 ### 3.6 `js/` — ニュース
 
 ```
+news-events.js                    出来事単位の News（一覧・カテゴリ chips・詳細・媒体間の相違・★）。
+                                  遅延取得（IntMapLazy の newsEvents）で、束ね方は決めずにサーバーの
+                                  結果を読む。正本は docs/NEWS-EVENTS.md
 news-feed.js                      ニュースの取得・キャッシュ・見出しの翻訳
 news-ui.js                        ニュース一覧・ピン・リーダー
 news-context.js                   記事 → 場所／媒体の解決
@@ -451,7 +454,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全11本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（12本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（13本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数。7本）
   functions/<name>/index.ts       Edge Functions（9本。§6.2）

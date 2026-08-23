@@ -58,7 +58,7 @@ window.IntMapLang.define('ru', { ui: {
       phAisKey:"Ключ API aisstream.io",
       lnkTerms:"Условия использования", lnkPrivacy:"Политика конфиденциальности", legalTabTerms:"Условия", legalTabPrivacy:"Конфиденциальность", commAddImage:"Добавить изображение",
       tabNews:"Новости", tabSaved:"★ Сохранённое", tabInfo:"Информация", tabCompanies:"Компании", tabStats:"Страны", tabCommunity:"Сообщество",
-      searchPh:"Поиск новостей / мест...", filterCountriesPh:"Фильтр стран...", filterCompaniesPh:"Фильтр компаний...", pickCountryMap:"Выбрать страну на карте", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
+      searchPh:"Поиск новостей / мест...", filterCountriesPh:"Фильтр стран...", filterCompaniesPh:"Фильтр компаний...", evCatsAria:"Категории событий", pickCountryMap:"Выбрать страну на карте", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
       viewMap:"Карта", viewSat:"Спутник", flat:"Плоская", globe:"Глобус", threeD:"⛰️ 3D", gridBtn:"🌐 Сетка", gridLayer:"🌐 Сетка и подписи",
       settings:"Настройки", modalTitle:"Настройки", close:"Закрыть", btnApply:"Применить", lblLang:"Язык",
       setSecAppearance:"Внешний вид", setSecLayout:"Макет и панели", setSecMap:"Поведение карты", setSecUnits:"Единицы и время", setSecNews:"Новости и лента", setSecAI:"ИИ", setSecKeys:"Интеграции и ключи", setSecAbout:"О приложении и поддержка",
