@@ -83,8 +83,8 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', a
       from: '- ⚠ **`index.html` の `script-src` には現在 `\'unsafe-eval\'` と 8 つの CDN ホストが入っている**',
       to: '- ⚠ `\'unsafe-eval\'` と CDN ホスト（どちらも現在は入っていない）' },
     { rule: 'db-tables', file: 'supabase/tests/00_structure_test.sql',
-      from: "'area_monitors','monitor_runs','monitor_evidence','monitor_reports','monitor_seen_items'\n]) as t;                                                    -- 21 assertions\n\n-- 2)",
-      to: "'area_monitors','monitor_runs','monitor_evidence','monitor_reports'\n]) as t;                                                    -- 21 assertions\n\n-- 2)" },
+      from: "'news_cluster_decisions','news_event_i18n','saved_news_events'\n]) as t;                                                    -- 29 assertions\n\n-- 2)",
+      to: "'news_cluster_decisions','news_event_i18n'\n]) as t;                                                    -- 29 assertions\n\n-- 2)" },
     { rule: 'node-tests', file: 'docs/TESTING.md',
       from: 'Node test files** with no browser at all',
       to: 'Node test files** with no browser at all' },   /* rewritten below to a wrong number */

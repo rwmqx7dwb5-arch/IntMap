@@ -314,6 +314,20 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
 ⚠ 運用者データは内蔵辞書と**同じ場所**を重複登録しうるので、候補が全て 50 km 以内なら「曖昧」ではなく
 **重複**として1つに畳む（畳まないと国の文脈シードが消える）。
 
+### 4.4 出来事 (Event) 単位の基盤 — 入口
+
+記事ではなく**出来事 (Event)** を主語にする経路。DB 側は 8 表（`news_sources` /
+`news_source_feeds` / `news_articles` / `news_events` / `news_event_articles` /
+`news_cluster_decisions` / `news_event_i18n` / `saved_news_events`）で、列・関係・RLS と
+grant の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)、実証は
+`supabase/tests/06_news_events_test.sql`（§16.1）。
+
+**収集元 (Source Registry)・クラスタリング・カテゴリ・翻訳・保持期間・運用者の修正経路の正本は
+[`docs/NEWS-EVENTS.md`](docs/NEWS-EVENTS.md)。** ここには書き写さない。
+
+⚠ **§4.1–§4.3 の経路と `current_news` は 1 バイトも変わっていない。** Event 側は加算であって
+置き換えではない（`current_news` は article mode の fallback として生きている）。
+
 ---
 
 ## 5. AI APIの使い方と鍵管理 (AI usage & key policy)
@@ -401,9 +415,11 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](docs/DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **21 表**（`profiles` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **29 表**（`profiles` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `community_*` 5 表 / `feedback` /
-`bug_reports` / `donations` / Area Monitors の 5 表）。
+`bug_reports` / `donations` / Area Monitors の 5 表 / News Events の 8 表
+＝`news_sources` / `news_source_feeds` / `news_articles` / `news_events` /
+`news_event_articles` / `news_cluster_decisions` / `news_event_i18n` / `saved_news_events`）。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
@@ -1281,10 +1297,10 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（8本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（10本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
-- `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格）。
+- `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events）。
 
 ### 16.2 RLS の3大保証（テストで実証）
 

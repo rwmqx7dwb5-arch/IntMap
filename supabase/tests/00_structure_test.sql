@@ -4,7 +4,7 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(58);   -- (#R318) +4: ai_turns joins the has_table and RLS lists, and its two RPCs are asserted
+select plan(74);   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
 
 -- 1) Every expected table exists in public.
 select has_table('public', t, 'table ' || t || ' exists')
@@ -20,8 +20,12 @@ from unnest(array[
   -- hardening migration and never reached this list, so the ONE assertion that says "RLS is on
   -- for every table we have" was measuring 19 of the 20 that exist. A table missing from the
   -- list cannot fail the list.
-  'area_monitors','monitor_runs','monitor_evidence','monitor_reports','monitor_seen_items'
-]) as t;                                                    -- 21 assertions
+  'area_monitors','monitor_runs','monitor_evidence','monitor_reports','monitor_seen_items',
+  -- (#R334) the Event tables. The map's subject becomes the EVENT rather than the article;
+  -- current_news is untouched above, still serving article mode.
+  'news_sources','news_source_feeds','news_articles','news_events','news_event_articles',
+  'news_cluster_decisions','news_event_i18n','saved_news_events'
+]) as t;                                                    -- 29 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -33,8 +37,10 @@ from unnest(array[
   'bug_reports','community_posts','community_comments','community_votes',
   'community_comment_votes','community_reports','geo_pins','dashboard_cards',
   'current_news','ai_turns',
-  'area_monitors','monitor_runs','monitor_evidence','monitor_reports','monitor_seen_items'
-]) as t;                                                    -- 21 assertions
+  'area_monitors','monitor_runs','monitor_evidence','monitor_reports','monitor_seen_items',
+  'news_sources','news_source_feeds','news_articles','news_events','news_event_articles',
+  'news_cluster_decisions','news_event_i18n','saved_news_events'
+]) as t;                                                    -- 29 assertions
 
 -- 3) Keys / relationships that the app depends on.
 select has_pk('public', 'profiles', 'profiles has a primary key');
