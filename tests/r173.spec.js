@@ -121,6 +121,48 @@ test('the cockpit contains a real world, with the viewpoint at the aeroplane (#R
   expect(low.globeness, 'on approach the curvature is invisible and the detail is what matters').toBeLessThan(0.5);
   expect(Math.abs(low.eyeAlt - low.alt), 'and the viewpoint is still at the aircraft').toBeLessThan(120);
   expect(low.zoom, 'still at working zoom on the descent').toBeGreaterThan(11.1);
+
+  /* ══ (#R377) …AND THE WORLD UNDER IT IS THE SEA, NOT A KILOMETRE OF BATHYMETRY ══════════════
+     This spawn is over SURUGA BAY, and that is why the assertion above went red on main. The
+     descent leg asks for "the ground + 250 m"; the ground came from the DEM, which carries water
+     DEPTH at low zoom (measured −994 m here, 0 m from z12 up), so the target was −144 m — below
+     the sea surface. The aeroplane was flown under water, the ground rose back to 0 m under it,
+     the sim registered contact, `showResult()` set `paused = true`, and the loop stopped writing
+     the camera while this test went on writing `st.alt`. The frozen eye was 248 m from the
+     aircraft, and the viewpoint had never left it.
+     #R152 floors the physics ground at the sea surface over open water, and the discriminator is
+     `window.countryGeo` — but js/countries-ui.js REPLACES that object a few seconds after boot
+     (Natural Earth 110 m → 10 m), and the per-cell answer was cached with no record of which
+     outline produced it. Measured at 138.66°E 35.05°N: 110 m (177 features) says Japan, 10 m
+     (258 features) says ocean.
+     ⚠ ASKED WITH SYNTHETIC OUTLINES, IN BOTH DIRECTIONS, so it depends on neither Natural Earth
+     being reachable nor on which scale won the race — and on the aeroplane THIS TEST IS ALREADY
+     FLYING, so it costs no boot and no second flight (scripts/test-budget.mjs). */
+  const box = (w, s, e, n) => ({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: { ADMIN: 'TESTLAND' },
+    geometry: { type: 'Polygon', coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] } }] });
+  const swap = async (poly, want) => {
+    await page.evaluate((g) => { window.__r377set(g); }, poly);
+    await page.waitForFunction((w) => window.IntMapFlightSim._st()._overOcean === w, want, { timeout: 8000 }).catch(() => { });
+    return page.evaluate(() => window.IntMapFlightSim._st()._overOcean);
+  };
+  await page.evaluate(() => {
+    window.__r377 = { prev: window.countryGeo, held: window.countryGeo };
+    Object.defineProperty(window, 'countryGeo', { configurable: true, get: () => window.__r377.held, set: () => { } });
+    window.__r377set = (v) => { window.__r377.held = v; };
+  });
+  const ac = await page.evaluate(() => { const S = window.IntMapFlightSim._st(); return [S.lng, S.lat]; });
+  const LAND = box(ac[0] - 0.75, ac[1] - 0.5, ac[0] + 0.75, ac[1] + 0.5);
+  const SEA = box(ac[0] + 1.5, ac[1] - 0.5, ac[0] + 2.5, ac[1] + 0.5);
+  expect(await swap(LAND, false), 'inside the outline it is given, the aircraft is over land').toBe(false);
+  expect(await swap(SEA, true), 'and the moment an outline that excludes it replaces that one, it is over the sea').toBe(true);
+  /* the answer is load-bearing, not an opinion: #R152's floor pulls the physics ground back up */
+  await page.evaluate(() => { window.IntMapFlightSim._st()._terrF = -900; });
+  await page.waitForFunction(() => window.IntMapFlightSim._st()._terrF >= -1, null, { timeout: 8000 }).catch(() => { });
+  expect(await page.evaluate(() => window.IntMapFlightSim._st()._terrF),
+    'over open sea the physics ground is the surface, never the sea floor').toBeGreaterThanOrEqual(-1);
+  await page.evaluate(() => { try { const p = (window.__r377 || {}).prev; delete window.countryGeo; window.countryGeo = p; } catch (_) { }
+    try { delete window.__r377set; delete window.__r377; } catch (_) { } });
+
   await page.evaluate(() => window.IntMapFlightSim.stop());
 });
 

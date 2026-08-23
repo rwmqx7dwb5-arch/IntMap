@@ -1722,11 +1722,25 @@ window.IntMapModules.flightSim=function(HOST){
        ~0.25° cell + a per-feature bbox pre-filter so the 200-country point-in-polygon runs rarely — never stuttering
        the 200 Hz physics. Unknown (turf/countryGeo missing) → treated as LAND, so below-sea land is never wrongly clamped.
        (#R158) The blue water-FILL overlay this once fed was retired — this discriminator now serves the physics floor only. */
-    let _fsOceanCache=Object.create(null), _fsBBox=null;
+    /* ⚠⚠⚠ (#R377) THE CACHE IS ONLY VALID FOR THE OUTLINE IT WAS COMPUTED FROM, AND THE OUTLINE IS
+       REPLACED A FEW SECONDS AFTER BOOT. js/countries-ui.js fetches Natural Earth 110 m first and
+       swaps `window.countryGeo` for the 10 m collection once it arrives (#R195's note puts that at
+       4-10 s). The two disagree about every bay narrower than the coarse file can resolve, and the
+       answer here was decided once, on the first physics frame, and then kept for the whole flight.
+       MEASURED at 138.66°E 35.05°N — Suruga Bay, where tests/r173 spawns: 110 m (177 features) puts
+       the point INSIDE Japan, 10 m (258 features) puts it in the SEA. The simulator therefore ran
+       the entire flight believing it was over land, so #R152's sea-surface floor never engaged, the
+       physics ground stayed the DEM's BATHYMETRY (measured −994 m), and the aeroplane could be flown
+       a kilometre below the sea surface. That is exactly the state #R152 exists to prevent.
+       So the caches carry the collection they were built from, and both are dropped when it changes.
+       One identity comparison per call — the point-in-polygon sweep still runs once per ~0.25° cell. */
+    let _fsOceanCache=Object.create(null), _fsBBox=null, _fsGeoSrc=null;
+    function _fsGeoSame(cg){ if(cg===_fsGeoSrc) return true; _fsGeoSrc=cg; _fsOceanCache=Object.create(null); _fsBBox=null; return false; }
     function _fsBBoxes(){ if(_fsBBox) return _fsBBox; const cg=window.countryGeo; if(!cg||!cg.features||!window.turf) return null;
       try{ _fsBBox=cg.features.map(f=>{ try{ return turf.bbox(f); }catch(_){ return null; } }); }catch(_){ _fsBBox=null; } return _fsBBox; }
     function _isOpenOcean(lng,lat){ try{
       const cg=window.countryGeo; if(!cg||!cg.features||!window.turf||!turf.booleanPointInPolygon) return false;
+      _fsGeoSame(cg);   /* (#R377) a replaced coastline empties both caches before either is read */
       const key=Math.round(lng*4)+','+Math.round(lat*4); const c=_fsOceanCache[key]; if(c!==undefined) return c;
       const bb=_fsBBoxes(); const pt=turf.point([lng,lat]); let land=false;
       for(let i=0;i<cg.features.length;i++){ const b=bb&&bb[i]; if(b&&(lng<b[0]||lng>b[2]||lat<b[1]||lat>b[3])) continue;
