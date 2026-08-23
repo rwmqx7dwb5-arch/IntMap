@@ -177,12 +177,12 @@ node scripts/master-sync.mjs --check   # 原本が merge 後の状態でなけ�
 supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac
 ```
 
-**Edge Functions は 10 本**（`ai-proxy` / `alerts-relay` / `aviation-feed` / `cable-geo` /
-`delete-account` / `monitor-run` / `news-relay` / `refresh-news` / `routing-relay` / `sv-cov`）。
-10 本すべてが
+**Edge Functions は 11 本**（`ai-proxy` / `alerts-relay` / `aviation-feed` / `cable-geo` /
+`delete-account` / `monitor-run` / `news-ingest` / `news-relay` / `refresh-news` /
+`routing-relay` / `sv-cov`）。11 本すべてが
 `supabase/config.toml` に `[functions.*]` として宣言されている。
 ⚠ **`_shared/` は関数ではない**——`newsgeo.js`・`relay-guard.js`・`aviation-codec.js`・
-`aviation-model.js` を置くライブラリ用ディレクトリで、
+`aviation-model.js`・`news-cluster.js`・`news-ingest.js` を置くライブラリ用ディレクトリで、
 import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
 
 **非破壊的な migration、設定変更、deployment、commit、push、PR 作成、merge その他通常の完了工程に

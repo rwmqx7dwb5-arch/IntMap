@@ -4,7 +4,9 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(74);   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
+select plan(76);   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
+                   -- (#R351) +2: news_ingest_runs joins both lists too. A table missing from the
+                   -- list cannot fail the list (#R280) — that is why the count moves with the table.
 
 -- 1) Every expected table exists in public.
 select has_table('public', t, 'table ' || t || ' exists')
@@ -24,8 +26,10 @@ from unnest(array[
   -- (#R334) the Event tables. The map's subject becomes the EVENT rather than the article;
   -- current_news is untouched above, still serving article mode.
   'news_sources','news_source_feeds','news_articles','news_events','news_event_articles',
-  'news_cluster_decisions','news_event_i18n','saved_news_events'
-]) as t;                                                    -- 29 assertions
+  -- (#R351) …and the ingest telemetry beside them (docs/NEWS-EVENTS.md §13). Operational
+  -- rather than public: admin reads it, service_role writes it.
+  'news_cluster_decisions','news_event_i18n','saved_news_events','news_ingest_runs'
+]) as t;                                                    -- 30 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -39,8 +43,10 @@ from unnest(array[
   'current_news','ai_turns',
   'area_monitors','monitor_runs','monitor_evidence','monitor_reports','monitor_seen_items',
   'news_sources','news_source_feeds','news_articles','news_events','news_event_articles',
-  'news_cluster_decisions','news_event_i18n','saved_news_events'
-]) as t;                                                    -- 29 assertions
+  -- (#R351) …and the ingest telemetry beside them (docs/NEWS-EVENTS.md §13). Operational
+  -- rather than public: admin reads it, service_role writes it.
+  'news_cluster_decisions','news_event_i18n','saved_news_events','news_ingest_runs'
+]) as t;                                                    -- 30 assertions
 
 -- 3) Keys / relationships that the app depends on.
 select has_pk('public', 'profiles', 'profiles has a primary key');

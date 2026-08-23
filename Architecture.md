@@ -368,19 +368,30 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
 ⚠ 運用者データは内蔵辞書と**同じ場所**を重複登録しうるので、候補が全て 50 km 以内なら「曖昧」ではなく
 **重複**として1つに畳む（畳まないと国の文脈シードが消える）。
 
-### 4.4 出来事 (Event) 単位の基盤 — 入口
+### 4.4 出来事 (Event) 単位の基盤
 
 記事ではなく**出来事 (Event)** を主語にする経路。DB 側は 8 表（`news_sources` /
 `news_source_feeds` / `news_articles` / `news_events` / `news_event_articles` /
-`news_cluster_decisions` / `news_event_i18n` / `saved_news_events`）で、列・関係・RLS と
-grant の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)、実証は
-`supabase/tests/06_news_events_test.sql`（§16.1）。
+`news_cluster_decisions` / `news_event_i18n` / `saved_news_events`）＋ 取り込みの計測
+`news_ingest_runs` で、列・関係・RLS と grant の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)、
+実証は `supabase/tests/06_news_events_test.sql`（§16.1）。
 
-**収集元 (Source Registry)・クラスタリング・カテゴリ・翻訳・保持期間・運用者の修正経路の正本は
-[`docs/NEWS-EVENTS.md`](docs/NEWS-EVENTS.md)。** ここには書き写さない。
+収集は **Edge Function `news-ingest`**（§6.2）が cron で回す。段は 4 つ——
+`fetch`（Source Registry のフィード取得・正規化・媒体の帰属・地点解析）／
+`assign`（候補 Event を引いて増分で載せる。総当たりしない）／
+`translate`（代表見出しを ja へ。`news_event_i18n` に永続キャッシュ）／
+`prune`（記事 72 時間・Event 30 日・★保存は無期限）。判定の論理は
+`supabase/functions/_shared/news-cluster.js` と `_shared/news-ingest.js` で、**どちらも
+サーバー専用**（クライアントのバンドルに 1 バイトも入らない）。
+
+**収集元 (Source Registry)・クラスタリング・カテゴリ・翻訳・保持期間・運用者の修正経路・
+運用手順・品質と費用の実測の正本は [`docs/NEWS-EVENTS.md`](docs/NEWS-EVENTS.md)。**
+ここには書き写さない。
 
 ⚠ **§4.1–§4.3 の経路と `current_news` は 1 バイトも変わっていない。** Event 側は加算であって
 置き換えではない（`current_news` は article mode の fallback として生きている）。
+⚠ **Event の表はまだ UI に出ていない**（`USE_SERVER_NEWS` は false のままで、そもそも UI は
+この表を読まない）。表示への接続は Phase D。
 
 ---
 
@@ -515,17 +526,18 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は、�
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](docs/DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **29 表**（`profiles` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **30 表**（`profiles` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `community_*` 5 表 / `feedback` /
 `bug_reports` / `donations` / Area Monitors の 5 表 / News Events の 8 表
 ＝`news_sources` / `news_source_feeds` / `news_articles` / `news_events` /
-`news_event_articles` / `news_cluster_decisions` / `news_event_i18n` / `saved_news_events`）。
+`news_event_articles` / `news_cluster_decisions` / `news_event_i18n` / `saved_news_events`
+＋取り込みの計測 `news_ingest_runs`）。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
-### 6.2 Edge Functions — **10本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **11本**（`_shared/` は関数ではない）
 
-> ⚠ **10本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
+> ⚠ **11本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
 > ファイルのヘッダコメントに書いた deploy フラグは設定ではない。
 > `supabase/functions/_shared/` は `newsgeo.js` と `relay-guard.js` を置くライブラリ用ディレクトリで、
 > import した関数の中に CLI がバンドルする。`[functions._shared]` は書かない。
@@ -534,6 +546,11 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は、�
 - **`refresh-news`** … ニュース取得＋AI地点解析＋書き込み（§4.1）。`--no-verify-jwt` で公開だが
   **fail-closed**：`REFRESH_SECRET` 未設定なら全リクエストを拒否する。秘密は `x-refresh-secret`
   **ヘッダのみ**（クエリ文字列不可）・**定数時間比較**・POST のみ。
+- **`news-ingest`** … 出来事 (Event) 側の収集（§4.4）。Source Registry の全フィードを取得し、
+  正規化・媒体の帰属・地点解析・Event への増分割り当て・日本語訳・計測・保持を行う。
+  `--no-verify-jwt` で公開だが **fail-closed**：`NEWS_INGEST_SECRET` 未設定なら全リクエストを拒否する。
+  秘密は `x-news-ingest-secret` **ヘッダのみ**・**定数時間比較**・POST のみ。
+  ⚠ `current_news` と `refresh-news` には触れない（別の表に書く）。
 - **`monitor-run`** … Area Monitors の定期実行（`--no-verify-jwt` ＋ 自前の fail-closed 認証、
   `MONITOR_SECRET`）。
 - **`delete-account`** … 呼出ユーザ自身のアカウントと全データを**ハード削除**する
@@ -1415,18 +1432,21 @@ UI・Atlas・要求組み立ての3つが**同じ表**を読むので、「押�
 4. **Edge Functions を9本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
    for f in ai-proxy delete-account; do supabase functions deploy $f --project-ref <REF>; done
-   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed; do \
+   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed news-ingest; do \
      supabase functions deploy $f --no-verify-jwt --project-ref <REF>; done
    ```
 5. **Secrets を設定する**（§6.3）。最低限：
    ```bash
    supabase secrets set AI_PROVIDER=anthropic ANTHROPIC_API_KEY=... \
-     REFRESH_SECRET=... MONITOR_SECRET=...
+     REFRESH_SECRET=... MONITOR_SECRET=... NEWS_INGEST_SECRET=...
    ```
    ⚠ `REFRESH_SECRET` は**必須**（未設定だと `refresh-news` は全リクエストを拒否する）。
+   `NEWS_INGEST_SECRET` も同じく必須（未設定だと `news-ingest` が全リクエストを拒否する）。
 6. **cron を設定する**（pg_cron ＋ `net.http_post`。秘密は**ヘッダ**で送る）：
    - `refresh-news` を約20分ごと（`x-refresh-secret`）。初回は手動で1回叩いて `current_news` を埋める。
    - `monitor-run` を定期実行（`x-monitor-secret`）。SQL は `docs/AREA-MONITORS.md`。
+   - `news-ingest` を約20分ごと（`x-news-ingest-secret`）。手順は
+     [`docs/NEWS-EVENTS.md`](docs/NEWS-EVENTS.md) §12。
 7. **静的ホスティング**——**配信するのは `dist/`**（リポジトリのソースツリーではない）。
    ```bash
    npm run build     # → dist/
@@ -1524,7 +1544,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（11本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（12本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events）。

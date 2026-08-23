@@ -1,0 +1,6 @@
+{
+  "//": "IntMap - this function's dependencies, pinned, exactly as refresh-news / monitor-run / delete-account / ai-proxy pin theirs. `npm:` resolves from the registry the package is published to, at an exact version, instead of a third-party CDN transpiling it at deploy time.",
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.45.4"
+  }
+}
