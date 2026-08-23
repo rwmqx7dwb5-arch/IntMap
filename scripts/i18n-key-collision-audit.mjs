@@ -52,6 +52,9 @@ import { parseAll, context, shapeOf } from './i18n-helpers.mjs';
    but «can ONE fr/ko/zh row be right at every site». If the answer is no, the fix is a distinct
    English key at the outlier site — see DEV-NOTES.md #R370 for the twenty-eight done that way. */
 const BENIGN = new Set([
+  /* (#R386) 'World' — 地球のウィジェット（世界）と、ニュースの節（国際）。fr『Monde』/ zh『世界』/ ko『세계』は**どちらの意味でも読める**ので、1 行で務まる。 ⚠ 同じ組の 'Business' / 'Latest' / 'Updated' / 'events' はここに入れていない——あれは一行では務まらないので、英語のほうを変えた。 */
+  'World',
+
   ' d', ' h', ' min', ' s', ' yr', 'active', 'Address', 'Advisory', 'Aerosol / haze',
   'Agricultural land %', 'Aircraft', 'Aircraft at real altitude', 'Altitude', 'Area', 'articles',
   'Austria-Hungary', 'Azimuth', 'Back to now', 'Battery', 'briefing', 'British Guiana', 'Call sign',

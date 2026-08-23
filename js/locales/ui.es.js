@@ -58,7 +58,7 @@ window.IntMapLang.define('es', { ui: {
       phAisKey:"Clave de API de aisstream.io",
       lnkTerms:"Términos del servicio", lnkPrivacy:"Política de privacidad", legalTabTerms:"Términos", legalTabPrivacy:"Privacidad", commAddImage:"Añadir imagen",
       tabNews:"Noticias", tabSaved:"★ Guardado", tabInfo:"Información", tabCompanies:"Empresas", tabStats:"Países", tabCommunity:"Comunidad",
-      searchPh:"Buscar noticias / lugares...", filterCountriesPh:"Filtrar países...", filterCompaniesPh:"Filtrar empresas...", pickCountryMap:"Elegir país en el mapa", searchBtn:"Buscar", searchLoadBtn:"Buscar / Cargar", msPh:"Buscar cualquier lugar de la Tierra...",
+      searchPh:"Buscar noticias / lugares...", filterCountriesPh:"Filtrar países...", filterCompaniesPh:"Filtrar empresas...", evCatsAria:"Categorías de sucesos", pickCountryMap:"Elegir país en el mapa", searchBtn:"Buscar", searchLoadBtn:"Buscar / Cargar", msPh:"Buscar cualquier lugar de la Tierra...",
       viewMap:"Mapa", viewSat:"Satélite", flat:"Plano", globe:"Globo", threeD:"⛰️ 3D", gridBtn:"🌐 Cuadrícula", gridLayer:"🌐 Cuadrícula y etiquetas",
       settings:"Ajustes", modalTitle:"Ajustes", close:"Cerrar", btnApply:"Aplicar", lblLang:"Idioma",
       setSecAppearance:"Apariencia", setSecLayout:"Diseño y paneles", setSecMap:"Comportamiento del mapa", setSecUnits:"Unidades y hora", setSecNews:"Noticias y cinta", setSecAI:"IA", setSecKeys:"Integraciones y claves", setSecAbout:"Información y soporte",

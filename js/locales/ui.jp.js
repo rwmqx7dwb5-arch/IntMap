@@ -58,7 +58,7 @@ window.IntMapLang.define('jp', { ui: {
       phAisKey:"aisstream.io の APIキー",
       lnkTerms:"利用規約", lnkPrivacy:"プライバシーポリシー", legalTabTerms:"規約", legalTabPrivacy:"プライバシー", commAddImage:"画像を追加",
       tabNews:"ニュース", tabSaved:"★ 保存済", tabInfo:"情報", tabCompanies:"企業", tabStats:"国別統計",
-      searchPh:"ニュース・地域を検索...", filterCountriesPh:"国を絞り込み...", filterCompaniesPh:"企業を絞り込み...", pickCountryMap:"地図で国をクリックして追加", searchBtn:"検索", searchLoadBtn:"検索 / 再読込", loading:"記事を読み込み中...",
+      searchPh:"ニュース・地域を検索...", filterCountriesPh:"国を絞り込み...", filterCompaniesPh:"企業を絞り込み...", evCatsAria:"出来事のカテゴリ", pickCountryMap:"地図で国をクリックして追加", searchBtn:"検索", searchLoadBtn:"検索 / 再読込", loading:"記事を読み込み中...",
       noMatch:"該当する情報がありません", networkError:"ニュースを読み込めませんでした。再試行します…",
       emptyHint:"未選択です。地図には何も表示されていません。<br>上のタブを選ぶと情報が表示されます。",
       viewMap:"標準マップ", viewSat:"衛星写真", settings:"設定", modalTitle:"設定", close:"閉じる",
