@@ -213,7 +213,8 @@ test('R297 ⑬ the style-swap recovery runs on a swap, not on every mutation it 
      signal — not a flag somebody has to remember to set. */
   assert.match(s, /const fresh=\(featsSig===''\);/);
   assert.match(s, /if\(fresh\)\{ const shown=quietFeatures\(\)\.concat\(feats\);/);
-  assert.match(s, /featsSig=featSig\(shown\); GE\(\)\.layers\.setSourceData\(SRC,/);
+  /* ⚠ (#R344) …through the one function that owns the upload — see tests/r290 ⑤② and r344. */
+  assert.match(s, /uploadShown\(shown,featSig\(shown\)\);/);
   /* ⚠ (#R298) the quiet units ride in that one upload now, so what has to go with the recovery is
      the SET (`washTier` reads it) and the forced 258-country repaint — not a second upload. */
   assert.match(s, /refreshQuietLayer\(\);/);

@@ -1005,6 +1005,13 @@ function _m(){ return window.__imap||null; }
     setSourceData(id,data,opts){ const m=_m(); const s=m&&m.getSource(id);
       if(!(s&&s.setData)) return absent(_cmd,'sourceData',id);
       if((CMD.on||CMD.skip.sourceData)&&skipData(_cmd,id,s,data,opts,_sd)) return;
+      /* ⚠⚠ (#R344) {add,remove} INSTEAD OF THE WHOLE COLLECTION, when the caller can identify its
+         own features. `data` stays the truth — a source that never took a `diffable` whole write, an
+         adapter without `updateData`, or a throw all fall back to it. See tests/r344-checks.mjs. */
+      const _d=(opts&&opts.diff&&_sd.diff[id]&&s.updateData
+        &&((opts.diff.add?opts.diff.add.length:0)+(opts.diff.remove?opts.diff.remove.length:0)))?opts.diff:null;
+      if(_d){ const _td=t0(); try{ s.updateData(_d); _cmd.diffed('sourceData'); t1(_cmd,'sourceData',_td); return; }catch(_){} }
+      _sd.diff[id]=!!(opts&&(opts.diffable||opts.diff));   /* a diff that had to fall back keeps the permission */
       const _t=t0(); s.setData(data); t1(_cmd,'sourceData',_t); }, removeSource(id){ const m=_m(); _sd.forget(id); try{ if(m&&m.getSource(id)) m.removeSource(id); }catch(_){} },
     /* ══ (#R193) A PICTURE OVER A GEOGRAPHIC QUAD THAT CHANGES EVERY FRAME ══════════════════════
        The app had exactly one way to put a computed field on the map: an `image` source holding a
@@ -1553,6 +1560,7 @@ function _m(){ return window.__imap||null; }
     setSourceTiles(id,tiles){ const m=_m(); try{ const s=m&&m.getSource(id); if(s&&s.setTiles){ s.setTiles(tiles); return true; } }catch(_){} return false; },
     sourceData(id){ const m=_m(); try{ const s=m&&m.getSource(id); if(!s) return null;
       let d=s._data; if(d&&d.geojson) d=d.geojson;
+      if(d&&d.updateable&&typeof d.updateable.values==='function') d={type:'FeatureCollection',features:Array.from(d.updateable.values())};   /* (#R344) after a diff the source holds a map of features, not a collection */
       if(!d&&s.serialize){ const ser=s.serialize(); if(ser&&ser.type!=='geojson') return null; d=ser&&ser.data; }
       return (d&&typeof d==='object')?d:null; }catch(_){ return null; } },
     /* STYLE-LEVEL FURNITURE — the sky, the light, the terrain attachment and the sprite atlas.
@@ -1802,7 +1810,7 @@ function _m(){ return window.__imap||null; }
     hasRenderer:()=>{ try{ return !!A().raw(); }catch(_){ return false; } },
     ready:()=>A().styleReady(),
     canDraw:()=>A().canDraw(),
-    layers:{ hasSource:id=>A().hasSource(id), addSource:(id,d)=>A().addSource(id,d), setSourceData:(id,d)=>A().setSourceData(id,d), removeSource:id=>A().removeSource(id), has:id=>A().hasLayer(id), add:(d,b)=>A().addLayer(d,b), remove:id=>A().removeLayer(id), setVisible:(id,v)=>A().setVisible(id,v), isVisible:id=>A().isVisible(id), setPaint:(id,p,v)=>A().setPaint(id,p,v), setLayout:(id,p,v)=>A().setLayout(id,p,v), setOpacity:(id,v)=>A().setOpacity(id,v),
+    layers:{ hasSource:id=>A().hasSource(id), addSource:(id,d)=>A().addSource(id,d), setSourceData:(id,d,o)=>A().setSourceData(id,d,o), removeSource:id=>A().removeSource(id), has:id=>A().hasLayer(id), add:(d,b)=>A().addLayer(d,b), remove:id=>A().removeLayer(id), setVisible:(id,v)=>A().setVisible(id,v), isVisible:id=>A().isVisible(id), setPaint:(id,p,v)=>A().setPaint(id,p,v), setLayout:(id,p,v)=>A().setLayout(id,p,v), setOpacity:(id,v)=>A().setOpacity(id,v),
       /* (#R170) real-scale 3-D volumes (metres above ground) */
       addExtrusion:(d,b)=>A().addExtrusion(d,b), setExtrusionRange:(id,a,b)=>A().setExtrusionRange(id,a,b),
       /* (#R173) a CLOSED body (floor + filled interior), which an extrusion cannot be */
