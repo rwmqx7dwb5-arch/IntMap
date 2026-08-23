@@ -3471,7 +3471,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     try{ if(typeof window.setGlobalLayerDate==='function') window.setGlobalLayerDate(iso); }catch(_){}
     try{ if(typeof pushCommunityFeatures==='function') pushCommunityFeatures(); }catch(_){}
     try{ if(currentMode==='community' && typeof renderCommunity==='function') renderCommunity(); }catch(_){}
-    /* update the slider gradient fill (#R101: min-aware — the slider is now year-based [min 1900], not 0-based) */
+    /* update the slider gradient fill (#R101: min-aware — the slider is year-based and its min is the kernel's own floor `IntMapTime.min`, never a number written down here) */
     const sl=document.getElementById('ntl-slider'); if(sl){ const mn=+sl.min||0, mx=+sl.max||1; const pct=(mx>mn?((+sl.value-mn)/(mx-mn)*100):0); sl.style.setProperty('--ntl-fill',pct+'%'); }
   };
   /* (#R94) news + dated-raster + community core now runs on EVERY kernel change (the slider used to call it
@@ -3479,7 +3479,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   try{ window.IntMapTime.on(()=>{ try{ applyGlobalDate(); }catch(_){} }); }catch(_){}
 
   /* ============================================================================
-   *  (#R94e) MADDISON PROJECT — authoritative HISTORICAL GDP & population back to 1900 (real GDP in constant
+   *  (#R94e) MADDISON PROJECT — authoritative HISTORICAL GDP & population back to 1850 (real GDP in constant
    *  2011 international dollars; Bolt & van Zanden 2020). World Bank annual series only start in 1960 and give
    *  no figure at all for dissolved states, so the deep past & the former states (Former USSR / Yugoslavia /
    *  Czechoslovakia are first-class Maddison entities) come from here. Bundled as data/maddison.json =
@@ -3595,7 +3595,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* ===== (#R19) Beta layers — Ukraine frontline (LIVE, DeepState API) · 3D city buildings
      (OpenFreeMap vector building footprints, fill-extrusion) · Historical borders time slider
-     (aourednik/historical-basemaps, 1900→2010 — ≥100 years back as requested).
+     (aourednik/historical-basemaps, 1815→2010 — ≥100 years back as requested).
      All three rows are swept into "Others (beta)" by reorganizeLayerPanel. Each registers an
      opacity legend via _registerLayerOpacity. Everything lazy-loads on first toggle. ===== */
   /* (#R164) moved to js/beta-overlays.js — see Architecture.md §3.1. */

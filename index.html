@@ -29,7 +29,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R379';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R380';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -44,7 +44,7 @@ window.__imBuild='R379';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-24-R379';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-24-R380';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -506,7 +506,7 @@ window.__imBuild='R379';/* (#R121) build marker — bump when verifying that a r
          a Year/Date mode toggle, a big current-value readout + "Back to now", a year (or recent-date) slider with
          era marks, and a "What's applied" chip row. Closes when the user operates elsewhere on the map. -->
     <div id="news-timeline" class="news-timeline collapsed">
-      <!-- (#R102/#27) collapsed = the labeled "See the past world / 1900 to present" button (per the attached mock) -->
+      <!-- (#R102/#27) collapsed = the labeled entry point (per the attached mock). ⚠ (#R289) renamed it to 「Chronos / Control the map's time」: it names no year, so nothing here follows the clock's floor. -->
       <button class="ntl-open" id="ntl-toggle" type="button" title="Chronos" data-i18n-title="tlMachine">
         <span class="ntl-open-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l2.5 1.7"/></svg></span>
         <span class="ntl-open-txt"><b id="ntl-open-t">Chronos</b><small id="ntl-open-s">Control the map’s time</small></span>

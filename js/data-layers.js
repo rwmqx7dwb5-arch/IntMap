@@ -450,11 +450,12 @@ window.IntMapModules.dataLayers=function(HOST){
        until now nothing on them said it: the year lives on the legend as well, as one control that
        moves the one clock (see legendClockYear). The floors are each source's own — the World Bank's
        annual series start in 1960 (js/time-countries.js WB_FLOOR), Maddison carries GDP and
-       population back to 1900 which is `IntMapTime.min`, and HDI is exactly UNDP's 1990–2022. */
+       population back to the clock's own floor `IntMapTime.min` (1850 since #R349), and HDI is exactly
+       UNDP's 1990–2022. */
     try{
       const WBF=(window.IntMapTimeCountries&&window.IntMapTimeCountries.floor)||1960;
-      const MAD=(window.IntMapTime&&window.IntMapTime.min)||1900;
-      legendClockYear(lgdGdppc,{min:MAD});                    /* Maddison real GDP pc back to 1900 */
+      const MAD=(window.IntMapTime&&window.IntMapTime.min)||1850;
+      legendClockYear(lgdGdppc,{min:MAD});                    /* Maddison real GDP pc back to the clock's floor */
       legendClockYear(lgdPop,{min:MAD});                      /* population → density, same source */
       legendClockYear(lgdTfr,{min:WBF});
       legendClockYear(lgdMil,{min:WBF});

@@ -567,7 +567,7 @@ window.IntMapPageI18N.define('zh-hans', {
     "RESOLVE / WWF Ecoregions 2017": "陆域生态区",
     "Smithsonian GVP": "随应用程序一并附上（data/volcanoes_gvp.json 与 data/volcano-detail.json.gz，由 scripts/build-volcanoes.mjs 从 GVP 的 WFS 产生）：完整的全新世目录并带有链接键，其后还有 11,089 笔喷发及其 VEI 与日期、火山类型、地形分类、构造环境与主要岩石、地质概要、照片，以及半径 5、10、30、100 公里内的人口。火山信息卡关于过去的一切，都是离线从这个文件读取的。",
     "DeepStateMap": "乌克兰前线（测试版图层）",
-    "historical-basemaps (aourednik)": "历史国界——测试版叠图图层，同时也是地图本身历史年份国界的自动备援（取最接近的快照）",
+    "historical-basemaps (aourednik)": "历史国界——测试版叠图图层，也是地图本身历史年份国界的自动备援（取最接近的快照），而在 CShapes 的下限 1886 年之前更是唯一的国界来源。上游只有 1815 与 1880 两张 1900 年以前的快照，因此 1850–1885 年全部以 1880 年的国界绘制",
     "CShapes 2.0 (Schvitz et al., ETH Zürich)": "供时光机使用的 1886–2019 年逐年国际疆界（每次疆界变动皆标注年份；自行代管的简化副本）。1945–2019 年东德、西德与统一后德国的疆界，已依权威的现代邦界数据（deutschlandGeoJSON, © GeoBasis-DE / BKG）重建，使两德边界符合实情。 两次世界大战图层沿战线切割的国家轮廓，用的也是这份数据。",
     "Maddison Project Database 2020 (Bolt & van Zanden)": "供时光机使用的权威「历史」实质 GDP（2011 年不变价国际美元）与可回溯至 1850 年的人口——当时间早于世界银行的 1960 年下限，或涉及已解体国家时，「国家」分页、面量图与国家比较均采用之（前苏联、南斯拉夫、捷克斯洛伐克在 Maddison 中皆为正式条目）",
     "World Bank Open Data": "各国时间序列指标（时间序列图表、五国比较与时光机——整个「国家」分页、鼠标停留读数与国家面量图，皆显示主时钟所设年份的真实数字）",

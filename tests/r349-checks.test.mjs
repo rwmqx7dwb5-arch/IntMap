@@ -94,9 +94,21 @@ test('R349 ③: Maddison reaches 1850 and every cell is a real pair', () => {
 test('R349 ④: no era span still opens at 1900 just because the window used to', () => {
   const src = R('js/time-borders.js');
   const tbl = src.slice(src.indexOf('const _ERA_WIKI'), src.indexOf('};', src.indexOf('const _ERA_WIKI')));
+  /* ⚠⚠ (#R380) THIS CHECK USED TO BE A LIST OF TWENTY CODES WRITTEN OUT BY HAND, AND IT WAS GREEN
+     WHILE FIFTEEN ROWS OF THE TABLE STILL OPENED AT 1900 — a check answering its own prose instead of
+     the artefact it names. It reads the TABLE now: every row is parsed, and a row may open at exactly
+     1900 only if 1900 really is that polity's start, which has to be said out loud in ALLOW below.
+     The named cases stay underneath as evidence, not as the population. */
+  const rows = [...tbl.matchAll(/\b([A-Z]{3}):\[(\[[^\]]*\](?:,\[[^\]]*\])*)\]/g)];
+  assert.ok(rows.length >= 100, `only ${rows.length} rows parsed out of the era table — the parser, not the table, is what failed`);
+  const ALLOW = { NER: 'the Third Military Territory of Niger was created in 1900 — there was no «Niger» to name before it' };
+  const stillOpen = rows.map((m) => [m[1], +/^\[\s*(\d{4})/.exec(m[2])[1]])
+    .filter(([code, first]) => first === 1900 && !ALLOW[code]).map(([code]) => code);
+  assert.deepEqual(stillOpen, [], `these era spans still open at the old window bound: ${stillOpen.join(', ')}`);
   /* the states that certainly existed before 1900 — each must now say when it began */
   for (const [code, want] of [['CHN', 1850], ['RUS', 1850], ['GBR', 1850], ['TUR', 1850], ['GRC', 1850],
-    ['IRN', 1850], ['THA', 1850], ['ETH', 1850], ['PRT', 1850], ['IDN', 1850]]) {
+    ['IRN', 1850], ['THA', 1850], ['ETH', 1850], ['PRT', 1850], ['IDN', 1850],
+    ['GUY', 1850], ['SUR', 1850], ['KWT', 1899], ['FJI', 1874], ['SLB', 1893], ['LAO', 1893]]) {
     const m = tbl.match(new RegExp(code + ':\\[\\[(\\d{4}),'));
     assert.ok(m, `${code} is missing from the era table`);
     assert.equal(+m[1], want, `${code} still opens at ${m[1]}`);

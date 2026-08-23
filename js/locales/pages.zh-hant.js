@@ -562,7 +562,7 @@ window.IntMapPageI18N.define('zh-hant', {
     "RESOLVE / WWF Ecoregions 2017": "陸域生態區",
     "Smithsonian GVP": "隨應用程式一併附上（data/volcanoes_gvp.json 與 data/volcano-detail.json.gz，由 scripts/build-volcanoes.mjs 從 GVP 的 WFS 產生）：完整的全新世目錄並帶有連結鍵，其後還有 11,089 筆噴發及其 VEI 與日期、火山類型、地形分類、構造環境與主要岩石、地質概要、照片，以及半徑 5、10、30、100 公里內的人口。火山資訊卡關於過去的一切，都是離線從這個檔案讀取的。",
     "DeepStateMap": "烏克蘭前線（測試版圖層）",
-    "historical-basemaps (aourednik)": "歷史國界——測試版疊圖圖層，同時也是地圖本身歷史年份國界的自動備援（取最接近的快照）",
+    "historical-basemaps (aourednik)": "歷史國界——測試版疊圖圖層，也是地圖本身歷史年份國界的自動備援（取最接近的快照），而在 CShapes 的下限 1886 年之前更是唯一的國界來源。上游只有 1815 與 1880 兩張 1900 年以前的快照，因此 1850–1885 年全部以 1880 年的國界繪製",
     "CShapes 2.0 (Schvitz et al., ETH Zürich)": "供時光機使用的 1886–2019 年逐年國際疆界（每次疆界變動皆標註年份；自行代管的簡化副本）。1945–2019 年東德、西德與統一後德國的疆界，已依權威的現代邦界資料（deutschlandGeoJSON, © GeoBasis-DE / BKG）重建，使兩德邊界符合實情。 兩次世界大戰圖層沿戰線切割的國家輪廓，用的也是這份資料。",
     "Maddison Project Database 2020 (Bolt & van Zanden)": "供時光機使用的權威「歷史」實質 GDP（2011 年不變價國際美元）與可回溯至 1850 年的人口——當時間早於世界銀行的 1960 年下限，或涉及已解體國家時，「國家」分頁、面量圖與國家比較均採用之（前蘇聯、南斯拉夫、捷克斯洛伐克在 Maddison 中皆為正式條目）",
     "World Bank Open Data": "各國時間序列指標（時間序列圖表、五國比較與時光機——整個「國家」分頁、滑鼠停留讀數與國家面量圖，皆顯示主時鐘所設年份的真實數字）",
