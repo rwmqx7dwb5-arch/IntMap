@@ -27,6 +27,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import {
@@ -193,21 +194,57 @@ test('⑩ tracking parameters, www, AMP and trailing slashes do not create a sec
   assert.equal(g.canonical, false);
 });
 
-/* ── ⑪ この論理はブラウザに配られない ────────────────────────────────────
- * 指示 §17「clustering をブラウザの起動経路へ置かない」。src/main.js が js/*.js を全部
- * import する構造なので、js/ に置いた瞬間 eager バンドルへ入る。 */
-test('⑪ the clustering logic is server-only and reaches no client bundle', () => {
+/* ── ⑪ この論理は起動経路に入らない ──────────────────────────────────────
+ * 指示 §17「clustering をブラウザの起動経路へ置かない」。
+ *
+ * ⚠⚠ (#R340) この検査は**要件そのものを測るように書き直した**。元の形は
+ *   「js/ と src/ のどこからも news-cluster を参照していないこと」を git grep で見ており、
+ *   理由としてこう書いてあった——「src/main.js が js/*.js を全部 import する構造なので、
+ *   js/ に置いた瞬間 eager バンドルへ入る」。**その前提はこの構成では成り立たない。**
+ *   src/main.js は js/ を全部 import してはおらず（scripts/static-checks.mjs は静的 import・
+ *   動的 import・兄弟 import の3経路を認めている）、js/atlas-console.js は
+ *   js/lazy-modules.js に載った**押されてから取りに行くモジュール**である。
+ *
+ *   #R340 が Atlas の research.events を**このファイルへ載せ替えた**（docs/NEWS-EVENTS.md
+ *   「第二のクラスタリング実装を残さない」）ので、js/news-cluster.js という薄いアダプタが
+ *   1つだけこれを import する。実測: 起動時に配られる chunk に `countrySame` は **0 件**で、
+ *   出てくるのは Atlas を開いたときの async chunk だけ。要件は満たされている。
+ *
+ *   ⇒ ファイル名を grep するのをやめ、**「参照してよいのはアダプタ1本だけ」＋
+ *      「そのアダプタを import しているファイルは遅延取得である」**を直接主張する。
+ *   ⚠ これは緩和ではない。元の形は「eager に入ったか」を一度も見ていなかったが、
+ *      こちらは lazy-modules の実データを読んで、起動経路かどうかを名指しで確かめる。 */
+test('⑪ the clustering logic never reaches the boot path', async () => {
   for (const f of ['src/main.js', 'src/vendor.js', 'index.html']) {
     assert.ok(!rd(f).includes('news-cluster'),
-      f + ' must not reference news-cluster.js — it is server-only');
+      f + ' must not reference news-cluster.js — it must never be eager');
   }
-  /* js/ 配下からの参照も無いこと。git grep はヒット 0 件で exit 1 を返すので、それを成功とみなす。 */
+  /* 参照してよいのは薄いアダプタ 1 本だけ。git grep はヒット 0 件で exit 1 を返す。 */
   let hits = '';
   try {
     hits = execFileSync('git', ['grep', '-l', 'news-cluster', '--', 'js/', 'src/'],
       { cwd: ROOT, encoding: 'utf8' }).trim();
   } catch (e) { hits = (e.status === 1) ? '' : String(e.message); }
-  assert.equal(hits, '', 'js/ or src/ references news-cluster.js: ' + hits);
+  const files = hits ? hits.split(/\r?\n/).filter(Boolean) : [];
+  assert.ok(files.every((f) => f.startsWith('js/')), 'src/ references the grouper: ' + files.join(', '));
+  if (!files.length) return;   /* アダプタごと消えたなら、そもそも配られていない */
+  assert.ok(files.includes('js/news-cluster.js'),
+    'something in js/ reaches the grouper without going through the adapter: ' + files.join(', '));
+
+  /* …そしてそのアダプタを import しているのは、遅延取得されるモジュールだけであること。 */
+  const { lazyFiles } = await import('./app-source.mjs');
+  const root = new URL('../', import.meta.url);
+  const lazy = new Set(lazyFiles(root));
+  const importers = [];
+  for (const f of readdirSync(path.join(ROOT, 'js')).filter((n) => n.endsWith('.js'))) {
+    if (f === 'news-cluster.js') continue;
+    if (/from '\.\/news-cluster\.js'/.test(rd('js/' + f))) importers.push('js/' + f);
+  }
+  assert.ok(importers.length, 'nothing imports js/news-cluster.js — it is dead code');
+  for (const imp of importers) {
+    assert.ok(lazy.has(imp),
+      imp + ' imports the grouper but is NOT lazily fetched — that puts clustering in the boot path');
+  }
 });
 
 /* ── ⑫ 時間の窓は効いている ─────────────────────────────────────────────── */
