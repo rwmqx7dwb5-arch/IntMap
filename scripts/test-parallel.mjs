@@ -70,6 +70,15 @@ const HALVES = [
          classes of error while the data was being built: money with no currency or no period, and
          a supermarket filed as a power plant because of the solar panels on its roof. */
       ['node', ['scripts/companies-audit.mjs', '--gate']],
+      /* ⚠ (#R381) THE WAR-RECORD GATE, AND THE SECOND ONE HERE THAT READS SHIPPED BYTES. #R349 wrote
+         scripts/build-wars.mjs with a `--check` mode and never gave it a caller, so for fifteen rounds
+         data/wars.json could have said anything the source did not. It re-derives the file and compares
+         it byte for byte — and on the way it runs the whole self-audit: every anchor against the bundled
+         gazetteer, every gwcode against CShapes ON ITS DATE, every line against the country it claims to
+         divide, every one of 235 named cities against the army the record says held it, and every name
+         in the gazetteer against something that quotes it. That last one is what #R349 needed: it had
+         178 anchors nothing reached, one per theatre it never wrote. */
+      ['node', ['scripts/build-wars.mjs', '--check']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],
