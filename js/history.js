@@ -11,12 +11,22 @@
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.maddison=function(){
     let data=null, promise=null;
+    /* ⚠ (#R349) THE FLOOR IS MEASURED FROM THE FILE, NOT DECLARED BESIDE IT. `minYear` was the literal
+       1900 and it was right only because the bundle happened to start there; scripts/build-maddison.mjs
+       now carries the series back to 1850, and a hard-coded floor would have gone on telling the
+       time-series and the country card that 1875 is out of range while the number for 1875 sat in the
+       object they were about to read. It is the smallest year that is actually present, so the two
+       cannot disagree. The literal below is only what is answered BEFORE the file arrives. */
+    let _minY=1850;
     function load(){ if(data) return Promise.resolve(data); if(promise) return promise;
-      promise=fetch('data/maddison.json').then(r=>r.ok?r.json():null).then(j=>{ data=j||{}; return data; }).catch(()=>{ data={}; return data; });
+      promise=fetch('data/maddison.json').then(r=>r.ok?r.json():null).then(j=>{ data=j||{};
+        try{ let lo=Infinity; for(const c of Object.keys(data)) for(const y of Object.keys(data[c])){ const n=+y; if(n<lo) lo=n; }
+             if(isFinite(lo)) _minY=lo; }catch(_){}
+        return data; }).catch(()=>{ data={}; return data; });
       return promise; }
     function rec(code,year){ if(!data||!code) return null; const c=data[code]; if(!c) return null; return c[year]||c[String(year)]||null; }
     return {
-      load, ready:()=>!!data, minYear:1900, maxYear:2018,
+      load, ready:()=>!!data, get minYear(){ return _minY; }, maxYear:2018,
       has:(code,year)=>{ const r=rec(code,year); return !!(r&&(r[0]!=null||r[1]!=null)); },
       gdppc:(code,year)=>{ const r=rec(code,year); return (r&&r[0]!=null)?r[0]:null; },                 /* real 2011 int$ per capita */
       popN:(code,year)=>{ const r=rec(code,year); return (r&&r[1]!=null)?r[1]*1000:null; },              /* absolute persons */
@@ -53,6 +63,16 @@ window.IntMapModules.histStates=function(countryStats){
     const F_AUH=flag('<rect width="15" height="6.667" fill="#ED2939"/><rect y="6.667" width="15" height="6.667" fill="#ffffff"/><rect y="13.333" width="15" height="6.667" fill="#ED2939"/><rect x="15" width="15" height="6.667" fill="#CE2939"/><rect x="15" y="6.667" width="15" height="6.667" fill="#ffffff"/><rect x="15" y="13.333" width="15" height="6.667" fill="#436F4D"/>');
     const F_OTT=flag('<rect width="30" height="20" fill="#D00000"/><circle cx="12" cy="10" r="5" fill="#ffffff"/><circle cx="13.7" cy="10" r="4" fill="#D00000"/>'+STAR(18.6,10,2.1,'#ffffff'));
     const F_RUE=flag('<rect width="30" height="6.667" fill="#ffffff"/><rect y="6.667" width="30" height="6.667" fill="#0039A6"/><rect y="13.333" width="30" height="6.667" fill="#D52B1E"/>');
+    /* (#R349) the East India Company's ensign — thirteen red-and-white stripes with the Union in the
+       canton. It is NOT the Raj's flag and must not borrow it: the two are different regimes and the
+       point of the EIC row is that 1850 was not the Raj. */
+    const F_EIC=flag('<rect width="30" height="20" fill="#ffffff"/>'
+      +[0,2,4,6,8,10].map(i=>'<rect y="'+(i*20/13).toFixed(3)+'" width="30" height="'+(20/13).toFixed(3)+'" fill="#B22234"/>').join('')
+      +'<rect y="'+(12*20/13).toFixed(3)+'" width="30" height="'+(20/13).toFixed(3)+'" fill="#B22234"/>'
+      +'<rect width="13" height="9" fill="#012169"/><path d="M0,0 13,9 M13,0 0,9" stroke="#ffffff" stroke-width="1.9"/>'
+      +'<path d="M0,0 13,9 M13,0 0,9" stroke="#C8102E" stroke-width="0.8"/>'
+      +'<rect x="4.9" width="3.2" height="9" fill="#ffffff"/><rect y="2.9" width="13" height="3.2" fill="#ffffff"/>'
+      +'<rect x="5.5" width="2" height="9" fill="#C8102E"/><rect y="3.5" width="13" height="2" fill="#C8102E"/>');
     const F_RAJ=flag('<rect width="30" height="20" fill="#012169"/><path d="M0,0 30,20 M30,0 0,20" stroke="#ffffff" stroke-width="3.4"/><path d="M0,0 30,20 M30,0 0,20" stroke="#C8102E" stroke-width="1.6"/><path d="M15,0 V20 M0,10 H30" stroke="#ffffff" stroke-width="5"/><path d="M15,0 V20 M0,10 H30" stroke="#C8102E" stroke-width="3"/>');
     const F_JEM=flag('<rect width="30" height="20" fill="#ffffff"/><circle cx="15" cy="10" r="6" fill="#BC002D"/>');
     /* code = synthetic ISO-like id · from/to = real lifespan · succ = modern ISO3 successors to aggregate & hide */
@@ -110,12 +130,26 @@ window.IntMapModules.histStates=function(countryStats){
       { code:'AUH', from:'1867-06-08', to:'1918-11-11', flag:F_AUH, region:'Europe', wiki:'Austria-Hungary',
         name:LA('Austria-Hungary','オーストリア＝ハンガリー帝国','Österreich-Ungarn','Австро-Венгрия','Austria-Hungría'),
         succ:['AUT','HUN','CZE','SVK','SVN','HRV','BIH'], popEst:52800000, gdpEst:190, estSrc:'A-H census 1910 (~51.4M) / Maddison GDPpc' },
-      { code:'OTT', from:'1876-01-01', to:'1922-11-01', flag:F_OTT, region:'Middle East', wiki:'Ottoman Empire',
+      /* ⚠ (#R349) `from` WAS 1876 AND THAT IS NOT WHEN THE OTTOMAN EMPIRE BEGAN. It is Abdul Hamid II's
+         accession, and it was harmless only while the clock stopped at 1900. With the floor at 1850 it
+         became a claim: 1850-1875 would have hidden the empire and shown seven modern successors —
+         Turkey, Syria, Lebanon, Iraq, Jordan, Israel and Palestine — as separate sovereign countries in
+         a decade when none of them existed. `activeAt()` reads this as the state's LIFESPAN, so it is
+         the lifespan: the empire was founded in 1299. */
+      { code:'OTT', from:'1299-01-01', to:'1922-11-01', flag:F_OTT, region:'Middle East', wiki:'Ottoman Empire',
         name:LA('Ottoman Empire','オスマン帝国','Osmanisches Reich','Османская империя','Imperio otomano'),
         succ:['TUR','SYR','LBN','IRQ','JOR','ISR','PSE'], popEst:23000000, gdpEst:35, estSrc:'Ottoman census ~1914 / Maddison GDPpc' },
       { code:'RUE', from:'1800-01-01', to:'1917-11-07', flag:F_RUE, region:'Eurasia', wiki:'Russian Empire',
         name:LA('Russian Empire','ロシア帝国','Russisches Kaiserreich','Российская империя','Imperio ruso'),
         succ:['RUS','UKR','BLR','LTU','LVA','EST','MDA','GEO','ARM','AZE','KAZ','UZB','TKM','KGZ','TJK','FIN','POL'], popEst:166000000, gdpEst:435, estSrc:'Russian Empire census 1897/1914 (~166M) / Maddison GDPpc' },
+      /* (#R349) the Raj's predecessor. The Crown took over on 1858-06-28; before that the SAME territory
+         — and the same three modern successors — was administered by the East India Company, so a year
+         between 1850 and 1857 would otherwise have shown India, Pakistan and Bangladesh as three
+         sovereign states. Maddison has no Company entity either, so it carries the documented estimate
+         the same way AUH/OTT/RUE/RAJ do. */
+      { code:'EIC', madCode:'IND', from:'1773-01-01', to:'1858-06-27', flag:F_EIC, region:'South Asia', wiki:'Company rule in India',
+        name:LA('Company rule in India','東インド会社統治下のインド','Herrschaft der Ostindien-Kompanie','Правление Ост-Индской компании','India bajo la Compañía de las Indias'),
+        succ:['IND','PAK','BGD'], popEst:205000000, gdpEst:110, estSrc:'British India c.1850 (~205M) / Maddison GDPpc' },
       { code:'RAJ', from:'1858-06-28', to:'1947-08-15', flag:F_RAJ, region:'South Asia', wiki:'British Raj',
         name:LA('British Raj (British India)','イギリス領インド帝国','Britisch-Indien','Британская Индия','India británica'),
         succ:['IND','PAK','BGD'], popEst:305000000, gdpEst:300, estSrc:'India census 1911 (~315M) / Maddison GDPpc' },
@@ -143,6 +177,7 @@ window.IntMapModules.histStates=function(countryStats){
       AUH:{capital:'Vienna & Budapest',currency:'Austro-Hungarian krone',languages:'German, Hungarian'},
       OTT:{capital:'Constantinople',currency:'Ottoman lira',languages:'Ottoman Turkish'},
       RUE:{capital:'St. Petersburg',currency:'Russian ruble',languages:'Russian'},
+      EIC:{capital:'Calcutta',currency:'Indian rupee',languages:'English, Persian'},
       RAJ:{capital:'Calcutta / New Delhi',currency:'Indian rupee',languages:'English, Hindi, Urdu'},
       JEM:{capital:'Tokyo',currency:'Japanese yen',languages:'Japanese'}
     };
@@ -200,7 +235,7 @@ window.IntMapModules.histStates=function(countryStats){
     /* used by renderStats when the tab renders (countryStats already carries the applied entries + hidden flags) */
     /* (#R94h) match a former state to its polygon NAME in the aourednik era-borders data (for map colouring) */
     const HB_MATCH={ SUN:/soviet|u\.?s\.?s\.?r/i, YUG:/yugoslav/i, YGK:/yugoslav/i, SCG:/serbia and montenegro|serbia & montenegro|yugoslav/i, CSK:/czechoslovak/i, UAR:/united arab republic/i, PKU:/^pakistan$/i, SDU:/^sudan$/i, ETU:/ethiopia|abyssinia/i, IDU:/^indonesia$/i,
-      AUH:/austria.?hungary|austro.?hungar|austrian empire/i, OTT:/ottoman/i, RUE:/russian empire|^russia$/i, RAJ:/british raj|british india|^india$/i, JEM:/^japan$|japanese empire|empire of japan/i };
+      AUH:/austria.?hungary|austro.?hungar|austrian empire/i, OTT:/ottoman/i, RUE:/russian empire|^russia$/i, EIC:/east india company|company rule|british india|^india$/i, RAJ:/british raj|british india|^india$/i, JEM:/^japan$|japanese empire|empire of japan/i };
     return { STATES, CODES, activeAt, apply, clear, agg, _applied:()=>_applied, hbRe:(code)=>HB_MATCH[code]||null };
 };
 
@@ -265,11 +300,15 @@ window.IntMapModules.histId=function(countryStats){
       BRA:[{from:1822,to:1889,name:LA('Empire of Brazil','ブラジル帝国','Kaiserreich Brasilien','Бразильская империя','Imperio del Brasil'),flag:F_BRE,wiki:'Empire of Brazil'}],
       EGY:[{from:1922,to:1952,name:LA('Kingdom of Egypt','エジプト王国','Königreich Ägypten','Королевство Египет','Reino de Egipto'),flag:F_EGYK,wiki:'Kingdom of Egypt'}],
       /* (#R118) further era identities — era Wikipedia + era name (flags unchanged where the flag was the same) */
-      FRA:[{from:1870,to:1940,name:LA('French Third Republic','フランス第三共和政','Dritte Französische Republik','Третья французская республика','Tercera República Francesa'),wiki:'French Third Republic'}],
+      /* (#R349) 1852-1870 is inside the clock's reach now, and it was the Second Empire — the Third
+         Republic entry beside it began in 1870 and cannot answer for it. */
+      FRA:[{from:1852,to:1870,name:LA('Second French Empire','フランス第二帝政','Zweites Französisches Kaiserreich','Вторая французская империя','Segundo Imperio francés'),wiki:'Second French Empire'},
+           {from:1870,to:1940,name:LA('French Third Republic','フランス第三共和政','Dritte Französische Republik','Третья французская республика','Tercera República Francesa'),wiki:'French Third Republic'}],
       HUN:[{from:1920,to:1946,name:LA('Kingdom of Hungary','ハンガリー王国','Königreich Ungarn','Королевство Венгрия','Reino de Hungría'),flag:F_HUNK,wiki:'Kingdom of Hungary (1920–1946)'}],
       /* (#R128) more per-era identities so the card shows the era name/flag (not the modern "South Korea"/"Ethiopia").
          KOR keeps the Taegukgi (historically continuous); imperial Ethiopia uses the plain tricolor (F_ETHIMP). */
-      KOR:[{from:1897,to:1910,name:LA('Korean Empire','大韓帝国','Kaiserreich Korea','Корейская империя','Imperio coreano'),wiki:'Korean Empire'}],
+      KOR:[{from:1392,to:1897,name:LA('Joseon','朝鮮（李氏朝鮮）','Joseon','Чосон','Joseon'),wiki:'Joseon'},
+           {from:1897,to:1910,name:LA('Korean Empire','大韓帝国','Kaiserreich Korea','Корейская империя','Imperio coreano'),wiki:'Korean Empire'}],
       ETH:[{from:1855,to:1974,name:LA('Ethiopian Empire','エチオピア帝国','Kaiserreich Abessinien','Эфиопская империя','Imperio etíope'),flag:F_ETHIMP,wiki:'Ethiopian Empire'}]
     };
     function at(code,year){ const arr=ID[code]; if(!arr||!year) return null; for(const e of arr){ if(year>=e.from&&year<=e.to) return e; } return null; }

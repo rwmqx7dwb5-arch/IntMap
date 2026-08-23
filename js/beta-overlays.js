@@ -168,7 +168,12 @@ window.IntMapModules.betaOverlays=function(HOST){
        has no world_1970/1980.geojson), so those years silently showed nothing ("1970,1980が機能していない").
        Mapping them to a nearby year would misrepresent the borders, so we drop the two dead years and add
        1930 (which exists) — every offered year now actually loads. */
-    const HB_YEARS=[1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
+    /* (#R349) 1815 and 1880 join the picker for the same reason js/time-borders.js gained them: the
+       clock now reaches 1850 and those are the only two snapshots the upstream repo has below 1900.
+       Both were verified to load (world_1815.geojson / world_1880.geojson exist) — the rule this list
+       has carried since #R23 is that every year OFFERED here actually resolves, and a year that 404s
+       is worse than an absent one because it shows an empty map and says nothing. */
+    const HB_YEARS=[1815,1880,1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
     let hbYear=1920; const hbCache=new Map();
     const HB_PAL=['#e6a176','#7eb6e8','#9fd29a','#e8a4c2','#cbb1e6','#ffd78a','#9adfd2','#e8938c','#b9c98a','#a7b8d9','#dcc4a1','#90c7e0'];
     function hbEnsure(){ if(GE().layers.hasSource('hb-src')) return true; if(!_imCanDraw()) return false;

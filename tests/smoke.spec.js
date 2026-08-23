@@ -1566,3 +1566,119 @@ test('#R296 the widget board scrolls, and the cards tile without a fillable hole
   /* at most ONE lone s may remain: the last one, with nothing 1-wide left to pair it with */
   expect(r.loneS, 'no S card is left alone while another S came after it').toBeLessThanOrEqual(1);
 });
+
+/* ══ #R349 — the clock reaches 1850, and the war layer paints the day it is given ══════════════
+   These two ran as tests/r349.spec.js first and were folded in here for the reason #R207 gives:
+   the suite's total is a ratchet, a new spec file costs a whole boot, and the assertions
+   themselves cost almost nothing on a page that is already up. Nothing about what they assert
+   changed in the move. */
+
+test('#R349 the clock reaches 1850 — the slider drags there, and the deep past answers', async () => {
+  const r = await page.evaluate(async () => {
+    const tl = document.getElementById('news-timeline');
+    tl.classList.remove('collapsed');
+    document.getElementById('ntl-mode-year').click();
+    await new Promise((res) => setTimeout(res, 60));
+    const sl = document.getElementById('ntl-slider');
+    const min = sl.min;
+    sl.value = '1850';
+    sl.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((res) => setTimeout(res, 120));
+    const ticks = [...document.querySelectorAll('#ntl-scale span')].map((s) => s.textContent);
+    /* the shipped snapshot resolver, run in the shipped bundle */
+    const N = window.IntMapTimeBorders._nearest;
+    const nearest = { y1875: N(1875), y1850: N(1850), y1830: N(1830), y1980: N(1980) };
+    /* …and a figure the bundle did not carry before this round */
+    const M = window.IntMapMaddison;
+    await M.load();
+    const mad = { min: M.minYear, deu1875: M.gdppc('DEU', 1875), gbr1850: M.gdppc('GBR', 1850) };
+    return { min, settled: sl.value, applied: window.IntMapTime.year(), ticks, nearest, mad, kernelMin: window.IntMapTime.min };
+  });
+  /* tests/r349-checks proves the kernel's floor and that the panel READS it. None of that proves a
+     reader can drag to 1850: `applyMode` rewrites the attribute at runtime and a range input
+     silently clamps a value below its own `min`. */
+  expect(r.kernelMin).toBe(1850);
+  expect(r.min).toBe('1850');
+  expect(r.settled).toBe('1850');
+  expect(r.applied).toBe(1850);
+  expect(r.ticks[0]).toBe('1850');
+  /* 1886 is where the yearly source starts; below it the only frames that exist are 1815 and 1880 */
+  expect(r.nearest.y1875).toBe(1880);
+  expect(r.nearest.y1850).toBe(1880);      /* the midpoint of that 65-year gap is 1847.5 */
+  expect(r.nearest.y1830).toBe(1815);
+  expect(r.nearest.y1980).toBe(1960);      /* …and the guard still holds ABOVE CShapes */
+  expect(r.mad.min).toBe(1850);
+  expect(r.mad.deu1875).toBeGreaterThan(0);
+  expect(r.mad.gbr1850).toBeGreaterThan(0);
+});
+
+test('#R349 the war layer draws nothing until it is asked, then paints the day it is given', async () => {
+  const before = await page.evaluate(() => ({
+    checked: document.getElementById('dl-wars').checked,
+    on: window.IntMapWarFronts.isOn(),
+    hasSource: window.IntMapGeoEngine.layers.hasSource('wars-src'),
+  }));
+  /* the round promised a session that never asks for it is unchanged */
+  expect(before.checked).toBe(false);
+  expect(before.on).toBe(false);
+  expect(before.hasSource).toBe(false);
+
+  const r = await page.evaluate(async () => {
+    const el = document.getElementById('dl-wars');
+    el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true }));
+    window.IntMapTime.set(new Date('1941-12-05T12:00:00Z'), { source: 'test' });
+    const GE = window.IntMapGeoEngine;
+    GE.camera.jumpTo({ center: [32, 54], zoom: 3.6, pitch: 0, bearing: 0 });
+    const at = (ll) => {
+      const p = GE.coords.project(ll);
+      const f = GE.coords.queryRenderedFeatures([p.x, p.y], { layers: ['wars-fill'] })[0];
+      return f ? { fac: f.properties.fac, nm: f.properties.nm } : null;
+    };
+    const c = GE.render.canvas();
+    const drawnFronts = () => GE.coords.queryRenderedFeatures([[0, 0], [c.clientWidth, c.clientHeight]], { layers: ['wars-front'] }).length;
+    /* ⚠ WAIT FOR THE RENDERER, NOT FOR THE DATA, AND FOR EVERY THING THIS TEST ASKS ABOUT.
+       `setSourceData` returns long before MapLibre has drawn a tile, and `queryRenderedFeatures`
+       answers about what is DRAWN. A fixed sleep passed on a quiet page and failed on a busy one —
+       the assertion was right and the wait was measuring the wrong thing. */
+    const t0 = Date.now();
+    while (Date.now() - t0 < 25000) {
+      await new Promise((res) => setTimeout(res, 250));
+      if (window.IntMapWarFronts.date() === '1941-12-05' && at([13.405, 52.520]) && drawnFronts()) break;
+    }
+    return {
+      date: window.IntMapWarFronts.date(),
+      war: window.IntMapWarFronts.war(),
+      fronts: drawnFronts(),
+      frontsBuilt: window.IntMapWarFronts._build('1941-12-05').lines.features.length,
+      minsk: at([27.567, 53.902]), moscow: at([37.618, 55.756]), berlin: at([13.405, 52.520]),
+    };
+  });
+  expect(r.war).toBe('ww2');
+  expect(r.date).toBe('1941-12-05');
+  /* ⚠ THE POINT OF THIS TEST. Minsk and Moscow are inside the SAME CShapes polygon — the Soviet
+     Union — and they are on opposite sides of the front, so the only thing that can tell them apart
+     is the cut. A layer that failed to cut answers both the same; one cut the wrong way round
+     answers both, swapped. */
+  expect(r.minsk && r.minsk.fac).toBe('AXIS');
+  expect(r.moscow && r.moscow.fac).toBe('ALLIED');
+  expect(r.minsk.nm).toBe(r.moscow.nm);
+  expect(r.berlin && r.berlin.fac).toBe('AXIS');
+  expect(r.frontsBuilt).toBeGreaterThan(0);
+  expect(r.fronts, 'front lines built=' + r.frontsBuilt).toBeGreaterThan(0);
+
+  const after = await page.evaluate(async () => {
+    const el = document.getElementById('dl-wars');
+    el.checked = false; el.dispatchEvent(new Event('change', { bubbles: true }));
+    const GE = window.IntMapGeoEngine;
+    const drawn = () => GE.coords.queryRenderedFeatures(undefined, { layers: ['wars-fill'] }).length;
+    /* hiding a layer is a style change, so «switched off» and «no longer drawn» are a repaint apart */
+    const t0 = Date.now();
+    while (Date.now() - t0 < 15000) {
+      await new Promise((res) => setTimeout(res, 200));
+      if (!window.IntMapWarFronts.isOn() && !drawn()) break;
+    }
+    return { on: window.IntMapWarFronts.isOn(), drawn: drawn() };
+  });
+  expect(after.on).toBe(false);
+  expect(after.drawn).toBe(0);
+});

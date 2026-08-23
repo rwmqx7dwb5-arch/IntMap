@@ -31,13 +31,24 @@
  *  climate era and the day/night terminator) SUBSCRIBES to it (IntMapTime.on) and
  *  reconstructs itself for the chosen instant. `newsDate` stays the recent-archive
  *  facet (kept in lock-step) so every existing news/raster reader is untouched; the
- *  kernel adds deep-time reach (back to 1900) for the subsystems that carry a real
+ *  kernel adds deep-time reach (back to 1850 — #R349; it was 1900) for the subsystems that carry a real
  *  historical series. Single source of truth = _when (a Date, or null = LIVE/now).
  *  When LIVE, every subsystem holds its own independent default; the moment you travel
  *  to a past instant they all sync to it, and returning to "Now" releases them. ====== */
 window.IntMapTime=(function(){
   function ymdISO(d){ return d.toISOString().slice(0,10); }
-  const subs=[]; let _when=null; let _bcast=false; const YMIN=1900;
+  const subs=[]; let _when=null; let _bcast=false; const YMIN=1850;
+  /* ⚠ (#R349) THE FLOOR IS THE CLOCK'S, NOT ANY ONE SUBSYSTEM'S. 「1850年までさかのぼれるように。
+     （1900までと完全に同様に。単に対応年を延長するだけです。）」 Every subsystem below reaches as far
+     back as ITS OWN SOURCE reaches and says so where it stops — the kernel does not pretend they all
+     stop together, and it never clamps a reader to the shortest of them:
+       · borders      CShapes 2.0 is yearly 1886-2019; 1850-1885 falls to the historical-basemaps
+                      snapshots (1815 / 1880), which is the SAME fallback 1900 already used.
+       · GDP / pop    Maddison Project 2020, now carried back to 1820 (data/maddison.json).
+       · climate era  the oldest Köppen period that exists is 1901-1930; earlier years show it and
+                      are labelled with the period, so nobody reads 1850 weather off a 1901 raster.
+     Lowering this number is therefore the whole of «extend the supported years» for the kernel; what
+     each subsystem does with a year it cannot source is that subsystem's own answer. */
   const now=()=>new Date();
   function ev(source){ const w=_when, live=(w==null); const d=live?now():new Date(w);
     return { date: live?null:new Date(w), when:d, iso: ymdISO(d), year:d.getFullYear(), isLive:live, source:source||'api' }; }

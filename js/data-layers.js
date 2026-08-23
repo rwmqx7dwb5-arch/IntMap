@@ -1593,7 +1593,9 @@ window.IntMapModules.dataLayers=function(HOST){
              the word and they move. */
           /* (#R273) +maritime EEZ / 12 nm (← Oceans): an exclusive economic zone is a JURISDICTION
              drawn on water, not a property of the water — it belongs with the other borders. */
-          ['lyrGrpPolitics',['uselect','eu','dem','cpi','eez','wbwomparl','osmdiplo']],
+          /* (#R349) +wars: who held what in the two world wars is the same kind of fact as who won
+             a state's electoral votes — a political map that moves with the clock. */
+          ['lyrGrpPolitics',['uselect','wars','eu','dem','cpi','eez','wbwomparl','osmdiplo']],
           /* ══ ⚠ (#R270) THREE ROWS WERE ON THE WRONG SHELF, AND ONLY THREE ═════════════════════════
              「レイヤーのカテゴリ分類があきらかに不適切なレイヤーがいくつかある。任せる。」
 

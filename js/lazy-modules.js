@@ -117,7 +117,7 @@ export function makeLazyModules(HOST) {
          IntMap-named object per panel would offer the planner five capabilities nothing dispatches. */
       analysisTimeSeries: '__imAnalysisTimeSeries', analysisResearch: '__imAnalysisResearch',
       analysisCorrelate: '__imAnalysisCorrelate', analysisEvents: '__imAnalysisEvents',
-      analysisEdu: '__imAnalysisEdu',
+      analysisEdu: '__imAnalysisEdu', warLayer: '__imWarFronts',   /* (#R349) the war layer's BODY — its Layers row (js/war-fronts.js) is eager, this is not */
       /* (#R347) navigation's eight files ride in ONE chunk (all are needed within the same tick of starting); routingTraffic is first called by js/routing.js's `_kickProbe()`. DEV-NOTES #R347. */
       navigation: 'IntMapNavigation',
       routingTraffic: 'IntMapRouteTraffic',
@@ -165,7 +165,7 @@ export function makeLazyModules(HOST) {
         case 'analysisEdu': return import('./analysis-edu.js');
         case 'aviationLive': return import('./aviation-live.js');
         case 'navigation': return import('./navigation.js');
-        case 'routingTraffic': return import('./routing-traffic.js');
+        case 'routingTraffic': return import('./routing-traffic.js'); case 'warLayer': return import('./war-layer.js');
         default: return Promise.reject(new Error('no such lazy module: ' + name));
       }
     }
@@ -198,7 +198,7 @@ export function makeLazyModules(HOST) {
         case 'analysisResearch': window.IntMapModules.analysisResearch(IM_HOST); return true;
         case 'analysisCorrelate': window.IntMapModules.analysisCorrelate(IM_HOST); return true;
         case 'analysisEvents': window.IntMapModules.analysisEvents(IM_HOST); return true;
-        case 'analysisEdu': window.IntMapModules.analysisEdu(IM_HOST); return true;
+        case 'analysisEdu': window.IntMapModules.analysisEdu(IM_HOST); return true; case 'warLayer': window.IntMapModules.warLayer(IM_HOST); return true;   /* (#R349) */
         case 'aviationLive': window.IntMapAviation=window.IntMapModules.aviationLive(IM_HOST); return true;
         /* publishes itself at import time, like nightSky */
         default: return !!M;

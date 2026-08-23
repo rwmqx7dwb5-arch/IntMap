@@ -5442,5 +5442,13 @@ window.IntMapLang.define('zh-hans', {
   'Times come from the map’s clock ({year}), not from today — live timetables do not cover it.': '时刻依地图的时钟（{year}年），而非今天 — 实时时刻表并未涵盖该时间。',   /* routing-time.js (#R347) */
   'Times are calculated from the map’s clock ({year}), not from today.': '时刻以地图的时钟（{year}年）为基准计算，而非今天。',   /* routing-time.js (#R347) */
   'Traffic data was unavailable — this is the standard travel time.': '无法取得路况数据 — 这是标准所需时间。',   /* routing-cards.js (#R347) */
+  'Company rule in India': '东印度公司统治下的印度',   /* war-fronts.js / history.js (#R349) */
+  'Could not load the war data': '无法加载战争数据',   /* war-fronts.js / history.js (#R349) */
+  'Front lines': '战线',   /* war-fronts.js / history.js (#R349) */
+  'Front lines are shown for the dates the record gives a position for, and hold until the next one — the date beside each line is the date it is from. Country outlines: CShapes 2.0.': '战线只在记录给出位置的日期上绘制，并保持到下一个日期——线旁的日期就是该线的日期。国界：CShapes 2.0。',   /* war-fronts.js / history.js (#R349) */
+  'line of': '战线日期',   /* war-fronts.js / history.js (#R349) */
+  'Second French Empire': '法兰西第二帝国',   /* war-fronts.js / history.js (#R349) */
+  'The clock is not inside either war. Move Chronos to a date between 1914 and 1945, or jump straight in:': '目前的时间不在两次大战的期间内。请把 Chronos 移到 1914–1945 年之间的日期，或直接前往：',   /* war-fronts.js / history.js (#R349) */
+  'World wars (day by day)': '两次世界大战（逐日）',   /* war-fronts.js / history.js (#R349) */
   }
 });

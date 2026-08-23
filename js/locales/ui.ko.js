@@ -5341,4 +5341,12 @@ window.IntMapLang.define('ko', { ui: {
   'Times come from the map’s clock ({year}), not from today — live timetables do not cover it.': '시각은 오늘이 아니라 지도의 시계({year}년)를 따릅니다 — 실시간 시간표는 그 시점을 다루지 않습니다.',   /* routing-time.js (#R347) */
   'Times are calculated from the map’s clock ({year}), not from today.': '시각은 오늘이 아니라 지도의 시계({year}년)를 기준으로 계산합니다.',   /* routing-time.js (#R347) */
   'Traffic data was unavailable — this is the standard travel time.': '교통 정보를 가져올 수 없어 표준 소요 시간을 표시합니다.',   /* routing-cards.js (#R347) */
+  'Company rule in India': '동인도 회사 통치하의 인도',   /* war-fronts.js / history.js (#R349) */
+  'Could not load the war data': '전쟁 데이터를 불러오지 못했습니다',   /* war-fronts.js / history.js (#R349) */
+  'Front lines': '전선',   /* war-fronts.js / history.js (#R349) */
+  'Front lines are shown for the dates the record gives a position for, and hold until the next one — the date beside each line is the date it is from. Country outlines: CShapes 2.0.': '전선은 기록이 위치를 전하는 날짜에 대해서만 표시하며, 다음 날짜까지 유지됩니다 — 선 옆의 날짜가 그 선의 날짜입니다. 국경: CShapes 2.0.',   /* war-fronts.js / history.js (#R349) */
+  'line of': '전선 날짜',   /* war-fronts.js / history.js (#R349) */
+  'Second French Empire': '프랑스 제2제국',   /* war-fronts.js / history.js (#R349) */
+  'The clock is not inside either war. Move Chronos to a date between 1914 and 1945, or jump straight in:': '현재 시각은 두 대전의 기간 안에 있지 않습니다. Chronos를 1914–1945년의 날짜로 옮기거나, 아래에서 바로 이동하세요:',   /* war-fronts.js / history.js (#R349) */
+  'World wars (day by day)': '양차 세계 대전(일별)',   /* war-fronts.js / history.js (#R349) */
 } });

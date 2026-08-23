@@ -25,6 +25,13 @@ window.IntMapModules.newsTimeline=function(HOST){
   (function(){
     const tl=document.getElementById('news-timeline'), tg=document.getElementById('ntl-toggle');
     const slider=document.getElementById('ntl-slider'), datePicker=document.getElementById('ntl-date');
+    /* ⚠ (#R349) THE FLOOR IS READ FROM THE KERNEL, NEVER WRITTEN DOWN HERE. This file held `1900` in
+       four places — the slider's `min`, the guard on the slider's own input, the clamp that reflects
+       the kernel back into the slider, and the ruler's first tick. `IntMapTime.min` is the one that
+       decides (js/chronos.js), so a copy here is a second list that can disagree with it, and the way
+       it disagrees is silent: a slider that stops at 1900 over a kernel that reaches 1850 simply
+       cannot be dragged to 1850, and nothing anywhere reports a fault. Read it live. */
+    const YMIN=()=>{ try{ const m=+window.IntMapTime.min; return isFinite(m)?m:1850; }catch(_){ return 1850; } };
     const bigval=document.getElementById('ntl-bigval');
     /* (#R313) the Time tab's date line — a SECOND element beside the big value, not a longer
        string inside it: #ntl-bigval is what tests/smoke.spec.js reads to prove the panel prints the
@@ -336,8 +343,13 @@ window.IntMapModules.newsTimeline=function(HOST){
       zoneEnsure();
       try{ refreshUI(window.IntMapTime.state()); }catch(_){} });
     function buildScale(){ if(!scale){ buildTicks(); return; } const now=L5('Now','現在','Jetzt','Сейчас','Ahora');
+      /* (#R349) the year ruler starts at the kernel's floor and steps in even fifties to the end of
+         the last full century, so extending the clock moves the ticks with it instead of leaving a
+         first tick that stands fifty years inside the track. */
+      const yTicks=()=>{ const a=YMIN(); const out=[]; for(let y=Math.ceil(a/50)*50; y<=2000; y+=50) out.push(y);
+        if(out[0]!==a) out.unshift(a); return out.map(y=>'<span>'+y+'</span>').join(''); };
       scale.innerHTML=(mode==='year')
-        ? '<span>1900</span><span>1960</span><span>2000</span><span>'+now+'</span>'
+        ? yTicks()+'<span>'+now+'</span>'
         : (mode==='time')
         /* (#R337) still written, and hidden by `buildTicks` the moment the ruler exists — a page
            whose index.html predates `#ntl-ticks` keeps these five labels rather than nothing. */
@@ -381,7 +393,7 @@ window.IntMapModules.newsTimeline=function(HOST){
       if(modeTime) modeTime.classList.toggle('on',m==='time');
       if(datePicker) datePicker.style.display=(m==='date')?'':'none';
       if(timePicker) timePicker.style.display=(m==='time')?'':'none';
-      if(m==='year'){ slider.min='1900'; slider.max=String(curY); slider.step='1'; }
+      if(m==='year'){ slider.min=String(YMIN()); slider.max=String(curY); slider.step='1'; }
       else if(m==='time'){ slider.min='0'; slider.max=String(_timeMaxMins()); slider.step='1'; _updTimeMax(); }   /* (#R137) minutes-of-day; (#R210) the whole day, today included */
       else { slider.min='0'; slider.max='3650'; slider.step='1'; }
       if(m!=='time') _tmTerminator(false);   /* (#R137) leaving Time mode clears the day/night overlay */
@@ -403,7 +415,7 @@ window.IntMapModules.newsTimeline=function(HOST){
        「時刻」 tab, which is where the model's transport now lives (「わざわざ分けるな」, twice over) */
     window._imTimeMachineForecast=()=>{ try{ tl.classList.remove('collapsed'); localizeChrome(); applyMode('time'); }catch(_){} };
     slider.addEventListener('input',()=>{ if(_self) return;
-      if(mode==='year'){ const y=parseInt(slider.value,10); if(y>=curY) window.IntMapTime.setNow({source:'ui'}); else if(y>=1900) window.IntMapTime.setYear(y,{source:'ui'}); }
+      if(mode==='year'){ const y=parseInt(slider.value,10); if(y>=curY) window.IntMapTime.setNow({source:'ui'}); else if(y>=YMIN()) window.IntMapTime.setYear(y,{source:'ui'}); }
       else if(mode==='time'){ _applyTimeOfDay(parseInt(slider.value,10)||0); }   /* (#R137) minutes-of-day → clock */
       else { window.IntMapTime.setDaysAgo(3650-parseInt(slider.value,10),{source:'ui'}); } });
     if(datePicker) datePicker.addEventListener('change',()=>{ if(_self) return; if(!datePicker.value){ window.IntMapTime.setNow({source:'ui'}); } else { const d=new Date(datePicker.value+'T00:00:00'); if(!isNaN(d.getTime())) window.IntMapTime.set(d,{source:'ui'}); } });
@@ -438,7 +450,7 @@ window.IntMapModules.newsTimeline=function(HOST){
       else { tl.classList.add('active');
         if(bigdate) bigdate.textContent='';   /* (#R313) — as above */
         const today=new Date(); today.setHours(0,0,0,0); const t=new Date(e.when); t.setHours(0,0,0,0); const da=Math.round((today-t)/864e5);
-        if(mode==='year'){ bigval.textContent=yLabel(e.year); const sv=Math.max(1900,Math.min(curY,e.year)); if(+slider.value!==sv) slider.value=sv; }
+        if(mode==='year'){ bigval.textContent=yLabel(e.year); const sv=Math.max(YMIN(),Math.min(curY,e.year)); if(+slider.value!==sv) slider.value=sv; }
         else { bigval.textContent=_dateText(e.when);   /* (#R289) in the chosen zone */
           const sv=Math.max(0,Math.min(3650,3650-da)); if(+slider.value!==sv) slider.value=sv; }
         if(datePicker) datePicker.value=(da>=0&&da<=3650)?ymdISO(e.when):'';   /* deep-past has no valid recent-picker value */

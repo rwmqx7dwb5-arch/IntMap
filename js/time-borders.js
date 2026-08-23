@@ -33,7 +33,13 @@ window.IntMapModules.timeBorders=function(HOST){
   const applyTheme=HOST.applyTheme, countryStats=HOST.countryStats, showCountryDetail=HOST.showCountryDetail;
   return (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()||!window.IntMapTime) return {};
-    const YEARS=[1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
+    /* (#R349) 1815 and 1880 are new. The clock's floor moved to 1850 (js/chronos.js) and CShapes —
+       the YEARLY source below — starts at 1886, so without these two the whole of 1850-1885 had no
+       era polygons at all and would have rendered the PRESENT-DAY world under a 19th-century year.
+       They are the only two the upstream repo has in that reach: world_1815 and world_1880 exist,
+       nothing between them does, so 1850-1885 is honestly a two-frame range and the Sources page
+       says so. */
+    const YEARS=[1815,1880,1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
     const cache=new Map(); let active=false, shownY=null, seq=0, shownCorr=false;   /* (#R106) shownCorr = the Tibet display-year merge state (see _eraCorrect) */
     /* (#R94o) CLOSEST snapshot, not just the closest ≤ year — so a mid-gap year like 1910 shows the 1914 borders
@@ -45,7 +51,15 @@ window.IntMapModules.timeBorders=function(HOST){
     const nearest=y=>{ let prev=null,next=null; for(const yy of YEARS){ if(yy<=y){ if(prev===null||yy>prev) prev=yy; } else if(next===null||yy<next) next=yy; }
       if(prev===null) return next!=null?next:YEARS[0];
       if(next===null) return prev;
-      return ((next-y)<(y-prev) && (next-prev)<=MAXGAP) ? next : prev; };
+      if((next-y)>=(y-prev)) return prev;
+      /* ⚠ (#R349) MAXGAP GUARDS A FALLBACK, NOT A SOURCE — so it does not apply below CShapes.
+         Above CS_MIN these snapshots only run when data/cshapes.js failed to load, and the guard is
+         there so that degraded mode never answers 1980 with the post-Soviet 1994 map. BELOW CS_MIN
+         they are not a fallback: they are the only borders that exist, so the nearer of the two
+         neighbours is simply the best available answer and refusing it would answer 1875 with the
+         Congress-of-Vienna map — sixty years stale — for no gain. The 1815/1880 gap is 65 years
+         wide, which is exactly what would have tripped the guard. */
+      return (y<CS_MIN || (next-prev)<=MAXGAP) ? next : prev; };
     /* ===== (#R117) YEARLY borders 1886–2019 from CShapes 2.0 (Schvitz et al. 2022, ETH Zürich — international
        borders with per-feature validity DATES, so the map changes in the exact year a border changed: no more
        "nearest of 10 snapshots"). Self-hosted simplified copy (data/cshapes.js, ring-pooled). aourednik snapshots
@@ -924,98 +938,104 @@ window.IntMapModules.timeBorders=function(HOST){
          passed name+wiki before, so historical flags never appeared on the map ("国旗…まだ詰められる箇所が大量にある"). */
       try{ if(!out.flag&&out.code&&countryStats[out.code]&&countryStats[out.code].flag) out.flag=countryStats[out.code].flag; }catch(_){}
       return out; }
-    /* (#R116) curated era→article table (1900+ window of the time machine; en.wikipedia titles). Ranges are the
+    /* (#R116) curated era→article table (the time machine's whole window; en.wikipedia titles). Ranges are the
        state-form's lifespan; anything outside every range keeps the modern article. Kept to well-established,
-       uncontroversial titles. */
+       uncontroversial titles.
+       ⚠ (#R349) THE LOWER BOUNDS USED TO BE THE WINDOW, NOT THE HISTORY. Every span below opened at 1900
+       because that is where the clock stopped — so `1900` meant «as early as anyone can ask», not «this is
+       when the state began». Moving the floor to 1850 turned each of those into a claim that was newly
+       reachable and newly wrong: 1875 France resolved to the Third Republic five years before it existed
+       only because nothing was asked before 1900. Each bound below is now the polity's OWN start date (or
+       1850 where it began earlier), and the eras that ran between 1850 and 1900 are spans of their own. */
     const _ERA_WIKI={
-      FRA:[[1900,1940,'French_Third_Republic'],[1940,1944,'Vichy_France'],[1944,1946,'Provisional_Government_of_the_French_Republic'],[1946,1958,'French_Fourth_Republic']],
-      DEU:[[1900,1918,'German_Empire'],[1919,1933,'Weimar_Republic'],[1933,1945,'Nazi_Germany'],[1945,1949,'Allied-occupied_Germany'],[1949,1990,'West_Germany']],
-      CHN:[[1900,1911,'Qing_dynasty'],[1912,1949,'Republic_of_China_(1912%E2%80%931949)']],
-      JPN:[[1900,1947,'Empire_of_Japan']],
-      RUS:[[1900,1917,'Russian_Empire'],[1917,1922,'Russian_Soviet_Federative_Socialist_Republic'],[1922,1991,'Soviet_Union']],
-      ITA:[[1900,1946,'Kingdom_of_Italy']],
-      GBR:[[1900,1922,'United_Kingdom_of_Great_Britain_and_Ireland']],
-      TUR:[[1900,1922,'Ottoman_Empire']],
-      ESP:[[1900,1931,'Restoration_(Spain)'],[1931,1939,'Second_Spanish_Republic'],[1939,1975,'Francoist_Spain']],
-      PRT:[[1900,1910,'Kingdom_of_Portugal'],[1910,1926,'First_Portuguese_Republic'],[1933,1974,'Estado_Novo_(Portugal)']],
-      AUT:[[1900,1918,'Austria-Hungary'],[1919,1938,'First_Austrian_Republic'],[1945,1955,'Allied-occupied_Austria']],
-      HUN:[[1920,1946,'Kingdom_of_Hungary_(1920%E2%80%931946)'],[1949,1989,'Hungarian_People%27s_Republic']],
+      FRA:[[1850,1852,'French_Second_Republic'],[1852,1870,'Second_French_Empire'],[1870,1940,'French_Third_Republic'],[1940,1944,'Vichy_France'],[1944,1946,'Provisional_Government_of_the_French_Republic'],[1946,1958,'French_Fourth_Republic']],
+      DEU:[[1850,1866,'German_Confederation'],[1867,1871,'North_German_Confederation'],[1871,1918,'German_Empire'],[1919,1933,'Weimar_Republic'],[1933,1945,'Nazi_Germany'],[1945,1949,'Allied-occupied_Germany'],[1949,1990,'West_Germany']],
+      CHN:[[1850,1911,'Qing_dynasty'],[1912,1949,'Republic_of_China_(1912%E2%80%931949)']],
+      JPN:[[1850,1868,'Tokugawa_shogunate'],[1868,1947,'Empire_of_Japan']],
+      RUS:[[1850,1917,'Russian_Empire'],[1917,1922,'Russian_Soviet_Federative_Socialist_Republic'],[1922,1991,'Soviet_Union']],
+      ITA:[[1850,1861,'Kingdom_of_Sardinia'],[1861,1946,'Kingdom_of_Italy']],
+      GBR:[[1850,1922,'United_Kingdom_of_Great_Britain_and_Ireland']],
+      TUR:[[1850,1922,'Ottoman_Empire']],
+      ESP:[[1874,1931,'Restoration_(Spain)'],[1931,1939,'Second_Spanish_Republic'],[1939,1975,'Francoist_Spain']],
+      PRT:[[1850,1910,'Kingdom_of_Portugal'],[1910,1926,'First_Portuguese_Republic'],[1933,1974,'Estado_Novo_(Portugal)']],
+      AUT:[[1850,1867,'Austrian_Empire'],[1867,1918,'Austria-Hungary'],[1919,1938,'First_Austrian_Republic'],[1945,1955,'Allied-occupied_Austria']],
+      HUN:[[1850,1867,'Austrian_Empire'],[1867,1918,'Austria-Hungary'],[1920,1946,'Kingdom_of_Hungary_(1920%E2%80%931946)'],[1949,1989,'Hungarian_People%27s_Republic']],
       POL:[[1918,1939,'Second_Polish_Republic'],[1947,1989,'Polish_People%27s_Republic']],
-      GRC:[[1900,1924,'Kingdom_of_Greece'],[1935,1973,'Kingdom_of_Greece']],
-      ROU:[[1900,1947,'Kingdom_of_Romania'],[1947,1989,'Socialist_Republic_of_Romania']],
-      BGR:[[1908,1946,'Kingdom_of_Bulgaria'],[1946,1990,'People%27s_Republic_of_Bulgaria']],
-      SRB:[[1900,1918,'Kingdom_of_Serbia']],
-      IRN:[[1900,1925,'Qajar_Iran'],[1925,1979,'Pahlavi_Iran']],
-      THA:[[1900,1932,'Rattanakosin_Kingdom_(1782%E2%80%931932)']],
-      EGY:[[1900,1914,'Khedivate_of_Egypt'],[1914,1922,'Sultanate_of_Egypt'],[1922,1953,'Kingdom_of_Egypt'],[1958,1971,'United_Arab_Republic']],
-      ETH:[[1900,1974,'Ethiopian_Empire'],[1974,1987,'Derg']],
-      IND:[[1900,1947,'British_Raj'],[1947,1950,'Dominion_of_India']],
-      KOR:[[1900,1910,'Korean_Empire'],[1910,1945,'Korea_under_Japanese_rule']],
+      GRC:[[1850,1924,'Kingdom_of_Greece'],[1935,1973,'Kingdom_of_Greece']],
+      ROU:[[1859,1881,'United_Principalities_of_Moldavia_and_Wallachia'],[1881,1947,'Kingdom_of_Romania'],[1947,1989,'Socialist_Republic_of_Romania']],
+      BGR:[[1878,1908,'Principality_of_Bulgaria'],[1908,1946,'Kingdom_of_Bulgaria'],[1946,1990,'People%27s_Republic_of_Bulgaria']],
+      SRB:[[1850,1882,'Principality_of_Serbia'],[1882,1918,'Kingdom_of_Serbia']],
+      IRN:[[1850,1925,'Qajar_Iran'],[1925,1979,'Pahlavi_Iran']],
+      THA:[[1850,1932,'Rattanakosin_Kingdom_(1782%E2%80%931932)']],
+      EGY:[[1850,1867,'Ottoman_Egypt'],[1867,1914,'Khedivate_of_Egypt'],[1914,1922,'Sultanate_of_Egypt'],[1922,1953,'Kingdom_of_Egypt'],[1958,1971,'United_Arab_Republic']],
+      ETH:[[1850,1974,'Ethiopian_Empire'],[1974,1987,'Derg']],
+      IND:[[1850,1858,'Company_rule_in_India'],[1858,1947,'British_Raj'],[1947,1950,'Dominion_of_India']],
+      KOR:[[1850,1897,'Joseon'],[1897,1910,'Korean_Empire'],[1910,1945,'Korea_under_Japanese_rule']],
       PRK:[[1910,1945,'Korea_under_Japanese_rule']],
-      VNM:[[1900,1945,'French_Indochina'],[1954,1976,'North_Vietnam']],
-      BRA:[[1900,1930,'First_Brazilian_Republic'],[1937,1946,'Estado_Novo_(Brazil)']],
-      MEX:[[1900,1911,'Porfiriato']],
+      VNM:[[1850,1883,'Nguyen_dynasty'],[1883,1945,'French_Indochina'],[1954,1976,'North_Vietnam']],
+      BRA:[[1850,1889,'Empire_of_Brazil'],[1889,1930,'First_Brazilian_Republic'],[1937,1946,'Estado_Novo_(Brazil)']],
+      MEX:[[1864,1867,'Second_Mexican_Empire'],[1876,1911,'Porfiriato']],
       CZE:[[1918,1992,'Czechoslovakia']],
       SVK:[[1939,1945,'Slovak_Republic_(1939%E2%80%931945)']],
       IRL:[[1922,1937,'Irish_Free_State']],
       ISR:[[1920,1948,'Mandatory_Palestine']],
-      SAU:[[1900,1932,'Emirate_of_Nejd_and_Hasa']],
+      SAU:[[1850,1891,'Second_Saudi_State'],[1902,1932,'Emirate_of_Nejd_and_Hasa']],
       IRQ:[[1921,1932,'Mandatory_Iraq'],[1932,1958,'Kingdom_of_Iraq']],
       SYR:[[1923,1946,'Mandate_for_Syria_and_the_Lebanon']],
-      LBY:[[1911,1943,'Italian_Libya'],[1951,1969,'Kingdom_of_Libya']],
-      IDN:[[1900,1949,'Dutch_East_Indies']],
-      PHL:[[1902,1935,'Insular_Government_of_the_Philippine_Islands'],[1935,1946,'Commonwealth_of_the_Philippines']],
-      COD:[[1908,1960,'Belgian_Congo'],[1971,1997,'Zaire']],
+      LBY:[[1850,1911,'Ottoman_Tripolitania'],[1911,1943,'Italian_Libya'],[1951,1969,'Kingdom_of_Libya']],
+      IDN:[[1850,1949,'Dutch_East_Indies']],
+      PHL:[[1850,1898,'Captaincy_General_of_the_Philippines'],[1902,1935,'Insular_Government_of_the_Philippine_Islands'],[1935,1946,'Commonwealth_of_the_Philippines']],
+      COD:[[1885,1908,'Congo_Free_State'],[1908,1960,'Belgian_Congo'],[1971,1997,'Zaire']],
       ZAF:[[1910,1961,'Union_of_South_Africa']],
       ZWE:[[1923,1965,'Southern_Rhodesia'],[1965,1979,'Rhodesia']],
-      LKA:[[1900,1948,'British_Ceylon'],[1948,1972,'Dominion_of_Ceylon']],
-      MMR:[[1900,1948,'British_rule_in_Burma']],
-      TWN:[[1900,1945,'Taiwan_under_Japanese_rule']],
+      LKA:[[1850,1948,'British_Ceylon'],[1948,1972,'Dominion_of_Ceylon']],
+      MMR:[[1850,1885,'Konbaung_dynasty'],[1885,1948,'British_rule_in_Burma']],
+      TWN:[[1850,1895,'Taiwan_under_Qing_rule'],[1895,1945,'Taiwan_under_Japanese_rule']],
       /* (#R127) colonial-era + former-state articles for entities that previously linked to the MODERN article (or
          showed no Wikipedia button at all) — "Wikipedia…まだ詰められる箇所が大量にある". A colony resolves to its
          modern successor code via the point-in-polygon fallback, so the era-Wikipedia override picks these by year.
          Titles are established en.wikipedia articles; the popup existence-probes each, so a miss just hides the button. */
-      DZA:[[1900,1962,'French_Algeria']],
+      DZA:[[1850,1962,'French_Algeria']],
       MAR:[[1912,1956,'French_protectorate_in_Morocco']],
-      TUN:[[1881,1956,'French_protectorate_of_Tunisia']],
-      SEN:[[1900,1960,'French_West_Africa']],
-      MLI:[[1900,1960,'French_Sudan']],
-      CIV:[[1900,1960,'French_West_Africa']],
+      TUN:[[1850,1881,'Beylik_of_Tunis'],[1881,1956,'French_protectorate_of_Tunisia']],
+      SEN:[[1895,1960,'French_West_Africa']],
+      MLI:[[1890,1960,'French_Sudan']],
+      CIV:[[1895,1960,'French_West_Africa']],
       NER:[[1900,1960,'French_West_Africa']],
-      GIN:[[1900,1958,'French_West_Africa']],
+      GIN:[[1895,1958,'French_West_Africa']],
       BFA:[[1919,1960,'French_Upper_Volta']],
-      BEN:[[1900,1960,'French_Dahomey']],
+      BEN:[[1894,1960,'French_Dahomey']],
       TCD:[[1910,1960,'French_Equatorial_Africa']],
       GAB:[[1910,1960,'French_Equatorial_Africa']],
       COG:[[1910,1960,'French_Equatorial_Africa']],
       CAF:[[1910,1958,'Ubangi-Shari']],
-      MDG:[[1897,1958,'French_Madagascar']],
+      MDG:[[1850,1897,'Kingdom_of_Madagascar'],[1897,1958,'French_Madagascar']],
       CMR:[[1884,1916,'Kamerun'],[1916,1960,'French_Cameroon']],
       KEN:[[1895,1920,'East_Africa_Protectorate'],[1920,1963,'Colony_of_Kenya']],
       NGA:[[1914,1960,'Colonial_Nigeria']],
-      GHA:[[1900,1957,'Gold_Coast_(British_colony)']],
-      SDN:[[1899,1956,'Anglo-Egyptian_Sudan']],
-      TZA:[[1900,1919,'German_East_Africa'],[1919,1961,'Tanganyika_(territory)']],
-      AGO:[[1900,1975,'Portuguese_Angola']],
-      MOZ:[[1900,1975,'Portuguese_Mozambique']],
-      NAM:[[1900,1915,'German_South_West_Africa'],[1915,1990,'South_West_Africa']],
+      GHA:[[1874,1957,'Gold_Coast_(British_colony)']],
+      SDN:[[1885,1899,'Mahdist_State'],[1899,1956,'Anglo-Egyptian_Sudan']],
+      TZA:[[1885,1919,'German_East_Africa'],[1919,1961,'Tanganyika_(territory)']],
+      AGO:[[1850,1975,'Portuguese_Angola']],
+      MOZ:[[1850,1975,'Portuguese_Mozambique']],
+      NAM:[[1884,1915,'German_South_West_Africa'],[1915,1990,'South_West_Africa']],
       UKR:[[1919,1991,'Ukrainian_Soviet_Socialist_Republic']],
       BLR:[[1919,1991,'Byelorussian_Soviet_Socialist_Republic']],
       KAZ:[[1936,1991,'Kazakh_Soviet_Socialist_Republic']],
       UZB:[[1924,1991,'Uzbek_Soviet_Socialist_Republic']],
       GEO:[[1921,1991,'Georgian_Soviet_Socialist_Republic']],
-      FIN:[[1900,1917,'Grand_Duchy_of_Finland']],
+      FIN:[[1850,1917,'Grand_Duchy_of_Finland']],
       LBN:[[1920,1943,'Greater_Lebanon']],
       JOR:[[1921,1946,'Emirate_of_Transjordan']],
       PAK:[[1947,1956,'Dominion_of_Pakistan']],
       BGD:[[1947,1971,'East_Pakistan']],
-      MYS:[[1900,1946,'British_Malaya']],
+      MYS:[[1850,1946,'British_Malaya']],
       LAO:[[1900,1953,'French_Indochina'],[1953,1975,'Kingdom_of_Laos']],
       KHM:[[1863,1953,'French_protectorate_of_Cambodia'],[1970,1975,'Khmer_Republic'],[1975,1979,'Democratic_Kampuchea'],[1979,1989,'People%27s_Republic_of_Kampuchea']],
-      OMN:[[1900,1970,'Muscat_and_Oman']],
-      ARE:[[1900,1971,'Trucial_States']],
-      MNG:[[1911,1924,'Bogd_Khanate_of_Mongolia'],[1924,1992,'Mongolian_People%27s_Republic']],
-      CUB:[[1902,1959,'Republic_of_Cuba_(1902%E2%80%931959)']],
+      OMN:[[1850,1970,'Muscat_and_Oman']],
+      ARE:[[1850,1971,'Trucial_States']],
+      MNG:[[1850,1911,'Outer_Mongolia'],[1911,1924,'Bogd_Khanate_of_Mongolia'],[1924,1992,'Mongolian_People%27s_Republic']],
+      CUB:[[1850,1898,'Captaincy_General_of_Cuba'],[1902,1959,'Republic_of_Cuba_(1902%E2%80%931959)']],
       /* (#R128) further era→article coverage — the remaining Soviet republics (only 5 of 15 were covered before, so a
          click on Soviet-era Armenia/Latvia/… linked the modern article) plus Afghanistan/Yemen/Eritrea/Palestine. */
       ARM:[[1920,1991,'Armenian_Soviet_Socialist_Republic']],
@@ -1027,23 +1047,23 @@ window.IntMapModules.timeBorders=function(HOST){
       TKM:[[1925,1991,'Turkmen_Soviet_Socialist_Republic']],
       KGZ:[[1936,1991,'Kirghiz_Soviet_Socialist_Republic']],
       TJK:[[1929,1991,'Tajik_Soviet_Socialist_Republic']],
-      AFG:[[1900,1926,'Emirate_of_Afghanistan'],[1926,1973,'Kingdom_of_Afghanistan']],
+      AFG:[[1850,1926,'Emirate_of_Afghanistan'],[1926,1973,'Kingdom_of_Afghanistan']],
       YEM:[[1918,1962,'Mutawakkilite_Kingdom_of_Yemen']],
-      ERI:[[1900,1947,'Italian_Eritrea']],
+      ERI:[[1890,1947,'Italian_Eritrea']],
       PSE:[[1920,1948,'Mandatory_Palestine']],
       /* (#R129) more monarchy/former-state articles that previously fell back to the modern country page (all
          existence-verified against en.wikipedia). */
       ALB:[[1925,1928,'Albanian_Republic_(1925%E2%80%931928)'],[1928,1939,'Albanian_Kingdom_(1928%E2%80%931939)'],[1946,1991,'People%27s_Socialist_Republic_of_Albania']],
       ISL:[[1918,1944,'Kingdom_of_Iceland']],
-      MNE:[[1900,1918,'Kingdom_of_Montenegro']],
-      NPL:[[1900,2008,'Kingdom_of_Nepal']],
-      NOR:[[1900,1905,'Union_between_Sweden_and_Norway']],
+      MNE:[[1852,1910,'Principality_of_Montenegro'],[1910,1918,'Kingdom_of_Montenegro']],
+      NPL:[[1850,2008,'Kingdom_of_Nepal']],
+      NOR:[[1850,1905,'Union_between_Sweden_and_Norway']],
       /* (#R132) further era→article coverage for entities that still linked to their MODERN page: the WWII Independent
          State of Croatia, and colonial-era names for countries whose 1900-independence span had a distinct predecessor
          state. All established en.wikipedia titles; the popup existence-probes each, so any miss simply hides the button. */
       HRV:[[1941,1945,'Independent_State_of_Croatia']],
-      SGP:[[1900,1946,'Straits_Settlements'],[1946,1963,'Colony_of_Singapore']],
-      BLZ:[[1900,1981,'British_Honduras']],
+      SGP:[[1850,1946,'Straits_Settlements'],[1946,1963,'Colony_of_Singapore']],
+      BLZ:[[1862,1981,'British_Honduras']],
       GUY:[[1900,1966,'British_Guiana']],
       SUR:[[1900,1975,'Surinam_(Dutch_colony)']],
       ZMB:[[1911,1964,'Northern_Rhodesia']],
