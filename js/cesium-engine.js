@@ -33,6 +33,11 @@
  *  its own chunk and a MapLibre session — the default — transfers zero bytes of
  *  it. js/engine-select.js decides, before DOMContentLoaded, which one runs.
  * ==========================================================================*/
+/* (#R379) the aircraft mark, declared once and read by both engines — see planeSprites() below and
+   the header of js/plane-glyph.js. This is this file's only import; everything else it needs is
+   already on window by the time js/engine-select.js reaches for it. */
+import './plane-glyph.js';
+
 window.IntMapCesiumEngine=(function(){
   'use strict';
   const S=()=>window.IntMapStyle;
@@ -119,7 +124,7 @@ window.IntMapCesiumEngine=(function(){
      WITHOUT ever bounding the fleet.
        ⚠ THE ONE RULE THIS BLOCK MUST NOT BREAK: no aircraft is ever dropped for zoom or for count.
      The old fill-extrusion layer capped the FLEET at 4,000 and switched itself off below z2; the
-     caps here change the DETAIL of an aircraft (a dart becomes a dot, a dot's position is refreshed
+     caps here change the DETAIL of an aircraft (a silhouette becomes a dot, a dot's position is refreshed
      one tick later) and never whether it is drawn at all. */
   const AIR_EXTRAP_MAX_S=3;      /* seconds of dead reckoning — the SAME cap, and the same reason,
                                     as js/aircraft-points.js: an aircraft's velocity ages badly
@@ -132,55 +137,78 @@ window.IntMapCesiumEngine=(function(){
                                     hook because requestRenderMode is on (see the widget options) —
                                     a preRender listener that never asks for the next frame stops
                                     the moment nothing else is drawing. */
-  const AIR_DART_MAX=4000;       /* how many aircraft may be an ORIENTED dart at once. Cesium's
-                                    PointPrimitiveCollection cannot rotate, so heading needs a
-                                    BillboardCollection, which costs a rewrite of its vertex buffer
-                                    whenever more than a tenth of it is dirty — i.e. one full 4,000
-                                    billboard rewrite per tick at this budget. Everything outside
-                                    the set is still drawn, as a dot. */
+  const AIR_DART_MAX=4000;       /* how many aircraft may be an ORIENTED SILHOUETTE at once.
+                                    Cesium's PointPrimitiveCollection cannot rotate, so heading
+                                    needs a BillboardCollection, which costs a rewrite of its vertex
+                                    buffer whenever more than a tenth of it is dirty — i.e. one full
+                                    rewrite per tick at this budget. Everything outside the set is
+                                    still drawn, as a dot.
+                                    ⚠ (#R379) `dart` in this name and in A.dart/A.dartN is HISTORICAL:
+                                    it is what #R341's glyph was, and the set it names has always
+                                    meant "the aircraft near enough to be drawn pointing along their
+                                    track". The glyph is the app's airliner plan-form again.
+                                    ⚠ …and it is now TWO billboards per aircraft, so the buffer this
+                                    budget bounds holds 8,000 — see planeSprites(). */
   const AIR_POINT_BUDGET=12000;  /* how many point positions one tick may re-integrate. At or below
                                     this the whole fleet moves at 10 Hz; at 50,000 the sweep takes
                                     five ticks (500 ms), in which a 250 m/s airliner moves ~125 m —
                                     a fifth of a pixel at the zooms that hold fifty thousand
                                     aircraft (z8 ≈ 611 m/px at the equator). What the eye can
-                                    actually resolve is the dart set, and that is refreshed EVERY
+                                    actually resolve is the oriented set, and that is refreshed EVERY
                                     tick, so freshness follows the camera exactly as detail does. */
-  const AIR_PICK_MS=500;         /* the FLOOR between two dart selections (a 3-pass O(n) scan). One
+  const AIR_PICK_MS=500;         /* the FLOOR between two set selections (a 3-pass O(n) scan). One
                                     is only wanted when the camera has moved or the fleet changed —
                                     a still view keeps the set it has and costs nothing. */
   const AIR_HIST=128;            /* buckets that scan uses to find "the nearest AIR_DART_MAX" without
                                     sorting fifty thousand distances — see _airSelect */
   const AIR_DART_MIN_PX=5;       /* device pixels below which js/aircraft-points.js's fragment shader
-                                    itself stops drawing a dart and draws a dot — "a rotated dart and
-                                    a dot are the same picture". Same threshold here, so the two
-                                    engines change appearance at the same size rather than at two. */
-  const AIR_SPRITE=64, AIR_SPRITE_PAD=1.5;   /* the dart canvas, and the margin that keeps its nose
+                                    itself stops drawing the silhouette and draws a dot — "an
+                                    aeroplane and a dot are the same picture". Same threshold here,
+                                    so the two engines change appearance at the same size rather
+                                    than at two. */
+  const AIR_SPRITE=64, AIR_SPRITE_PAD=1.5;   /* the glyph canvas, and the margin that keeps its nose
                                     off the atlas edge (a texture-atlas entry bleeds at its border) */
-  const AIR_GLYPH=AIR_SPRITE-2*AIR_SPRITE_PAD;   /* …so the glyph itself is this many image pixels */
-  const AIR_SPRITE_ID='intmap-aircraft-dart';    /* ⚠ ONE id for every billboard — Billboard's own
-                                    `image` setter mints a fresh GUID for a canvas, which would put
-                                    4,000 copies of the same 64×64 sprite in the atlas. `imageId`
-                                    is what makes TextureAtlas.addImage return the SAME index. */
-  let _dartCv=null, _airP=null, _airC=null, _airHist=null;   /* scratch — built once Cesium is in */
-  /* The dart, drawn once. This is the silhouette js/aircraft-points.js's fragment shader evaluates
-     as a signed distance field — a nose-up triangle with a notch cut out of its trailing edge —
-     transcribed vertex for vertex so the two engines draw the same shape rather than two shapes
-     that were each described as "a dart". q is the shader's own [-1,1] sprite space, +y up. */
-  function dartSprite(){
-    if(_dartCv) return _dartCv;
-    const S=AIR_SPRITE, h=AIR_GLYPH/2;
-    const c=document.createElement('canvas'); c.width=S; c.height=S;
-    const g=c.getContext('2d');
-    const tri=(a,b,d)=>{ const X=q=>S/2+q*h, Y=q=>S/2-q*h;
-      g.beginPath(); g.moveTo(X(a[0]),Y(a[1])); g.lineTo(X(b[0]),Y(b[1])); g.lineTo(X(d[0]),Y(d[1]));
-      g.closePath(); g.fill(); };
-    /* WHITE, because a billboard's texel is MULTIPLIED by its colour — the aircraft's own rgba then
-       tints one shared sprite, which is what makes 4,000 differently-coloured darts one draw call. */
-    g.fillStyle='#fff';
-    tri([0,0.98],[-0.72,-0.86],[0.72,-0.86]);          /* body  — triSD(p, …) in the shader */
-    g.globalCompositeOperation='destination-out';
-    tri([0,-0.12],[-0.72,-0.95],[0.72,-0.95]);         /* notch — the shader's max(body,-notch) */
-    _dartCv=c; return c;
+  const AIR_GLYPH=AIR_SPRITE-2*AIR_SPRITE_PAD;   /* …so the glyph itself is this many image pixels.
+                                    ⚠ this square is the OTHER engine's [-1,1] sprite: the artwork's
+                                    44-unit box maps onto it, which is what makes one `sizePx` mean
+                                    the same screen pixels here as in the shader. */
+  /* ⚠ ONE id per sprite — Billboard's own `image` setter mints a fresh GUID for a canvas, which
+     would put thousands of copies of the same 64×64 image in the atlas. `imageId` is what makes
+     TextureAtlas.addImage return the SAME index. */
+  const AIR_CORE_ID='intmap-aircraft-core';
+  const AIR_RIM_ID='intmap-aircraft-rim';
+  const AIR_RIM_ALPHA=0.95;      /* the white outline's own alpha — IntMapPlaneGlyph.STROKE_ALPHA,
+                                    named here because the tint carries it rather than the texel */
+  let _planeCv=null, _airP=null, _airC=null, _airHist=null;   /* scratch — built once Cesium is in */
+  /* (#R379) THE MARK, DRAWN ONCE — the same eighteen vertices js/aircraft-points.js's fragment
+     shader evaluates as a signed distance field, READ from js/plane-glyph.js rather than
+     transcribed. #R341 transcribed its dart into both engines with nothing holding the two copies
+     together; one declaration and two readers is what replaces that.
+
+     ⚠ TWO SPRITES, BECAUSE A BILLBOARD'S TEXEL IS MULTIPLIED BY ITS COLOUR. One tint cannot make a
+     coloured body and a white outline out of one image, and the body's colour is a continuous ramp
+     (altitude), not a palette that could be baked. So the mark is split where `ctx.fill()` and
+     `ctx.stroke()` split it: the CORE is the outline inset by half the stroke, the RIM is the
+     annulus the stroke paints. They are DISJOINT, so the picture does not depend on which of the
+     two a collection happens to draw first — the same reason #R192 made the lifted 3-D body a ring
+     plus a core rather than two overlapping plates.
+     ⚠ …except by half an image pixel. The core is left that much wide of the exact inset so the
+     two anti-aliased edges overlap instead of meeting; without it the seam shows as a hairline of
+     background straight through the mark. */
+  function planeSprites(){
+    if(_planeCv) return _planeCv;
+    const G=window.IntMapPlaneGlyph, S=AIR_SPRITE, k=AIR_GLYPH/G.CANVAS;
+    const mk=()=>{ const c=document.createElement('canvas'); c.width=S; c.height=S;
+      const g=c.getContext('2d'); g.translate(S/2,S/2); g.lineJoin='round'; return {c,g}; };
+    /* WHITE both times — the aircraft's own rgba tints the core and a plain white tints the rim,
+       which is what keeps thousands of differently-coloured aircraft inside one draw call. */
+    const core=mk();
+    core.g.fillStyle='#fff'; G.path(core.g,k); core.g.fill();
+    core.g.globalCompositeOperation='destination-out';
+    core.g.lineWidth=G.STROKE*k-1; G.path(core.g,k); core.g.stroke();
+    const rim=mk();
+    rim.g.strokeStyle='#fff'; rim.g.lineWidth=G.STROKE*k; G.path(rim.g,k); rim.g.stroke();
+    _planeCv={ core:core.c, rim:rim.c }; return _planeCv;
   }
 
   function viewFactory(){
@@ -1840,9 +1868,11 @@ window.IntMapCesiumEngine=(function(){
        Hence two collections over the same fleet, and one aircraft is in exactly one of them:
          · pts — EVERY aircraft, no ceiling. A dot, the same picture js/aircraft-points.js's shader
                  draws below AIR_DART_MIN_PX.
-         · bbs — the nearest AIR_DART_MAX, as an oriented dart. Its point is hidden (show=false)
-                 rather than left underneath: the dot's radius is half the sprite box and the dart
-                 is a thin triangle inside the same box, so the dot would stick out of its flanks.
+         · bbs — the nearest AIR_DART_MAX, as an oriented silhouette — TWO billboards each, the
+                 white outline and the coloured body (planeSprites() says why). Its point is hidden
+                 (show=false) rather than left underneath: the dot's radius is half the sprite box
+                 and the aeroplane is a thin shape inside the same box, so the dot would stick out
+                 from under its wings.
 
        ⚠ WHY THE HEADING IS A `rotation` AND NOT AN `alignedAxis`. Cesium's aligned-axis path is the
        obvious answer and it is measurably wrong. BillboardCollectionVS computes
@@ -1965,11 +1995,16 @@ window.IntMapCesiumEngine=(function(){
         pt.color=C;
         pt.pixelSize=Math.max(1,form[i*2]*base);
       }
+      /* (#R379) two billboards per aircraft — see planeSprites(). RIM at the even index, CORE at
+         the odd one, which is the order _airSelect adds them in. */
       for(let k=0;k<A.dartN;k++){
-        const i=A.dart[k], bb=A.bbs.get(k); if(!bb) continue;
+        const i=A.dart[k], rim=A.bbs.get(k*2), core=A.bbs.get(k*2+1); if(!rim||!core) continue;
         C.red=col[i*4]; C.green=col[i*4+1]; C.blue=col[i*4+2]; C.alpha=col[i*4+3]*op;
-        bb.color=C;
-        bb.scale=Math.max(1,form[i*2]*base)/AIR_GLYPH;
+        core.color=C;
+        C.red=1; C.green=1; C.blue=1; C.alpha=col[i*4+3]*op*AIR_RIM_ALPHA;
+        rim.color=C;
+        const sc=Math.max(1,form[i*2]*base)/AIR_GLYPH;
+        core.scale=sc; rim.scale=sc;
       }
     }
     /* ── who gets a dart ──────────────────────────────────────────────────────────────────────
@@ -2023,18 +2058,28 @@ window.IntMapCesiumEngine=(function(){
         A.dart[m++]=i;
       }
       A.dartN=m;
-      while(B.length<m) B.add({ position:Cesium.Cartesian3.ZERO, image:dartSprite(), imageId:AIR_SPRITE_ID,
-                                color:Cesium.Color.WHITE, rotation:0 });
+      /* (#R379) the pool grows in PAIRS and the pairing never moves: rim first, then core, so
+         index 2k is always the white outline of the aircraft whose body is at 2k+1. */
+      const SP=planeSprites();
+      while(B.length<m*2){
+        B.add({ position:Cesium.Cartesian3.ZERO, image:SP.rim, imageId:AIR_RIM_ID,
+                color:Cesium.Color.WHITE, rotation:0 });
+        B.add({ position:Cesium.Cartesian3.ZERO, image:SP.core, imageId:AIR_CORE_ID,
+                color:Cesium.Color.WHITE, rotation:0 });
+      }
       const C=_airC, op=A.opacity;
       for(let k=0;k<m;k++){
-        const i=A.dart[k], bb=B.get(k); if(!bb) continue;
-        bb.show=true;
+        const i=A.dart[k], rim=B.get(k*2), core=B.get(k*2+1); if(!rim||!core) continue;
+        rim.show=true; core.show=true;
         C.red=col[i*4]; C.green=col[i*4+1]; C.blue=col[i*4+2]; C.alpha=col[i*4+3]*op;
-        bb.color=C;
-        bb.scale=Math.max(1,form[i*2]*base)/AIR_GLYPH;
+        core.color=C;
+        C.red=1; C.green=1; C.blue=1; C.alpha=col[i*4+3]*op*AIR_RIM_ALPHA;
+        rim.color=C;
+        const sc=Math.max(1,form[i*2]*base)/AIR_GLYPH;
+        core.scale=sc; rim.scale=sc;
         const pt=P.get(i); if(pt) pt.show=false;    /* one aircraft, one glyph */
       }
-      for(let k=m,L=B.length;k<L;k++){ const bb=B.get(k); if(bb) bb.show=false; }
+      for(let k=m*2,L=B.length;k<L;k++){ const bb=B.get(k); if(bb) bb.show=false; }
     }
     /* the extrapolated position of one aircraft, in the scratch Cartesian the caller must not keep */
     _airPos(A,i,dt){
@@ -2091,14 +2136,18 @@ window.IntMapCesiumEngine=(function(){
     }
     /* ── one tick of motion ───────────────────────────────────────────────────────────────────
        `full` (a publish) sweeps every aircraft; an ordinary tick spends AIR_POINT_BUDGET on a
-       rolling window of the points and refreshes ALL of the darts. */
+       rolling window of the points and refreshes ALL of the oriented set. */
     _airMove(A,dt,full){
       const P=A.pts, B=A.bbs, n=A.n, form=A.form;
+      /* (#R379) the rim rides the core exactly — same position, same screen angle, computed once.
+         ⚠ `_airPos` hands back a scratch Cartesian3 and `Billboard.position` CLONES it, so giving
+         the same object to both is safe (the same is true of the colour scratch in _airStyle). */
       for(let k=0;k<A.dartN;k++){
-        const i=A.dart[k], bb=B.get(k); if(!bb) continue;
+        const i=A.dart[k], rim=B.get(k*2), core=B.get(k*2+1); if(!rim||!core) continue;
         const p=this._airPos(A,i,dt);
-        bb.position=p;
-        bb.rotation=this._airHeading(p,form?form[i*2+1]:0);
+        const rot=this._airHeading(p,form?form[i*2+1]:0);
+        core.position=p; core.rotation=rot;
+        rim.position=p; rim.rotation=rot;
       }
       const take=full?n:Math.min(n,AIR_POINT_BUDGET);
       let c=full?0:A.cursor;

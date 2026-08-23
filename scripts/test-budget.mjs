@@ -101,8 +101,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    clock with the server already up. The entry is set to 150 — the WALL figure, i.e. including the
    ~45 s every invocation pays, exactly as #R209 and #R337 did — so the saving claimed is smaller
    than the one measured. Both ceilings follow the measurement down. */
-const BUDGET_S = 50;                    /* core: 0.8 min — measured 50 s over 6 files (#R355) */
-const TOTAL_BUDGET_S = 4808;            /* 80.1 min — 4,934 (#R354) + 39 (#R355's two specs) − 165 (r186 re-measured) */
+const BUDGET_S = 36;                    /* core: 0.6 min — measured 36 s over 6 files (#R379) */
+const TOTAL_BUDGET_S = 4808;            /* 80.1 min — unchanged: #R379 added 9 s of specs and took 9 s out */
 /*
    ⚠ (#R353) VOLCANO INTELLIGENCE ADDED TWO SPECS AND THE SUITE STILL WENT DOWN, and both were paid
    for out of STALE-HIGH ENTRIES rather than out of the ceiling — the shape #R209 named and #R337
@@ -153,6 +153,20 @@ const TOTAL_BUDGET_S = 4808;            /* 80.1 min — 4,934 (#R354) + 39 (#R35
    recorded as 10 s, so 5 s is that ratio. ⚠ The corpus is not this machine's wall clock — it must
    be calibrated, not copied, and a future round re-measuring on CI should correct it. */
 const HISTORY = [
+  ['#R379', 4808, "the aircraft glyph round added tests/r379.spec.js (+2 s, gate: it publishes a synthetic "
+    + 'aircraft of its own and reads the drawn pixels, so a fragment shader that will not compile cannot pass '
+    + 'as a layer nobody switched on) and tests/r379-cesium.spec.js (+7 s, nightly: the rim/body billboard '
+    + 'pairing, which needs a Cesium boot and is named so the tier rule keeps it out of the gate). '
+    + '⚠ NO STALE-HIGH ENTRY EXISTS ON THIS MACHINE, and four were measured looking for one: r174 452.6 s '
+    + 'against 651 BUT with a failing test burning 108 s of that (the exact trap #R341 and #R354 named, so it '
+    + 'is not payment), r180-cesium 156.8 against 171, r181-cesium 191.0 against 143 and r182-cesium 724.0 '
+    + 'against 639 — the last two are UNDER-recorded, not over. So the 9 s came from the two entries that '
+    + 'ARE conservative, re-measured in the SAME run as a control the way this file requires: internal-qa '
+    + '0.4 s against an entry of 10 (#R353 measured 0.5 s and set 10) → 5, and monitors 8.8 s against 14 '
+    + '→ 10. The control is r341.spec.js — the closest shape to the new gate spec, same layer and no '
+    + 'feed — which ran 7.9 s locally against its recorded 4, and r379.spec.js ran 2.3 s in that same run: '
+    + '4 × (2.3/7.9) = 1.2, entered as 2. Core 50 → 36 and the gate ceiling follows it down; the total '
+    + 'is unchanged, which is the point.'],
   ['#R355', 4808, "the submarine-cable round added tests/r355.spec.js (+8 s, gate: switch the cable row on and read the eleven paint/layout properties the brief forbids changing) and tests/r355-cables.spec.js (+31 s, nightly: the first-visit boot, OFF->ON->OFF->ON, the layer audit, the two click popups, and a load with data/subcables.json blocked). Paid for by re-measuring tests/r186.spec.js, which carried 315 s: all twelve of its tests now pass in 110.7 s of test time / 2.5 min of wall clock, and the entry is set to the conservative WALL figure of 150. Core 64 -> 50, total 4,934 -> 4,808."],
   ['#R354', 4934, 'the company atlas added tests/r354.spec.js (+4 s, the gate half: it opens a company, checks that NOTHING of data/companies/ was fetched before that, and that a second company REPLACES the first rather than stacking on it) and paid for it many times over out of tests/r171.spec.js. It carried 424 s and ran in 210 - 14 tests, all passing, nothing skipped, on a quiet machine with the server already up. 210 is scaled by the local/CI ratio this file already records (#R201: r196 61/90, r200 18/26, i.e. 0.68x) to about 309 CI seconds, and the entry is set to 330 on the conservative side, exactly as #R322 and #R337 did - the saving claimed is smaller than the one measured. ⚠ NOT USED FOR PAYMENT, and worth writing down because this file has said the opposite twice: r184-drone and r184-routing were BOTH re-measured this round and neither is stale-high. r184-drone ran 3.8 min against an entry of 40 - inflated by test 6 failing and waiting out its timeout, which is the exact trap #R341 named - and r184-routing ran 3.7 min against 30. #R337 and #R341 called both of them stale-high; on this machine, today, they are understated, not overstated.'],
   ['#R353', 5024, 'Volcano Intelligence added TWO specs and the suite still went down. tests/r353.spec.js (+5 s) is the gate half — it opens the intelligence card and switches the four colour modes with NOTHING answering on the network; the three claims that DO need USGS, the Smithsonian relay and an ArcGIS service are tests/r353-live.spec.js (+6 s, deep). ⚠ BOTH WERE PAID FOR OUT OF STALE-HIGH ENTRIES, NOT OUT OF THE CEILING: internal-qa 22 -> 10 (measured 0.5 s; it boots once for three tests now) and r184-routing 40 -> 30 (measured 16.4 s; 30 is #R210s own arithmetic before it was rounded up, and #R337 and #R341 both named this entry as stale-high and untouched). ⚠ NOT USED FOR PAYMENT: the same run measured smoke at 66.5 s against an entry of 8, which is why a single local number is never written straight into this table.'],

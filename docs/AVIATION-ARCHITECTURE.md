@@ -164,6 +164,7 @@ world を6回続けて呼んでも **27機・0/980タイルのまま**、書き�
 | [`../src/aviation-worker-client.js`](../src/aviation-worker-client.js) | main thread 側の橋。`new URL(…, import.meta.url)` で worker を名指しできる **`src/` にある唯一の理由** |
 | [`../js/aviation-live.js`](../js/aviation-live.js) | 制御役。polling・LOD・picking・選択・`stats()` |
 | [`../js/aircraft-points.js`](../js/aircraft-points.js) | MapLibre の custom WebGL layer。`gl.POINTS` 1 draw call |
+| [`../js/plane-glyph.js`](../js/plane-glyph.js) | **飛行機マークの正本**。頂点18・白縁取り幅・サイズ表を 1 箇所で宣言し、両エンジンが読む |
 | [`../js/aviation-codec.js`](../js/aviation-codec.js) / [`../js/aviation-model.js`](../js/aviation-model.js) | ワイヤ形式と正規化の**正本**（server と共有） |
 
 ### 5.1 速度は「触らないこと」から来ている
@@ -182,13 +183,24 @@ world を6回続けて呼んでも **27機・0/980タイルのまま**、書き�
 
 ### 5.3 ズームが決めるのは大きさと細かさだけ
 
-| ズーム | 大きさ | 形 |
+| ズーム | スプライトの箱 | 形 |
 |---|---|---|
-| z0–2 | 3.5 px | 点 |
-| z2–5 | 5.5–9 px | 5 px から矢羽根 |
-| z5–8 | 9–14 px | 矢羽根＋進行方向 |
-| z8–11 | 14–19 px | ＋実高度 |
-| z11+ | 19–24 px | 全部 |
+| z0–2 | 3.5 px | 点（箱が 5 device px 未満） |
+| z2–5 | 5.5–9 px | 5 device px を越えたものからシルエット |
+| z5–8 | 9–40.15 px | シルエット（進行方向を向く） |
+| z8–9 | 40.15–42.9 px | 同じマークが元の大きさへ |
+| z9+ | 42.9 px（一定） | 元のマークそのもの |
+
+⚠ **ズームが変えるのはこの2つだけ**（大きさと、点かシルエットか）。
+**実高度で浮かせるかどうかは設定**（`lift`）であってズームの段ではない。
+
+形は **旅客機のプランフォーム（胴体・後退翼・水平尾翼）＋白い縁取り**。宣言は
+[`../js/plane-glyph.js`](../js/plane-glyph.js) に1箇所だけあり、MapLibre はそれを GLSL の SDF として、
+Cesium は canvas のパスとして読む。箱の 92 % がマークで、z9 以上の機体は **全長 36.1 CSS px**。
+
+⚠ **高ズーム側の値はここで選んだ数字ではない**。`icon-size` が掛けていた元の表（44 × icon-size）を
+`IntMapPlaneGlyph.boxPx(z)` がそのまま返す。z9 で頭打ちなのも、元の表の最後の段が z9 だから。
+低ズーム側（z0–5）は意図的に従来のまま——世界表示では数万機を同時に描く。
 
 ⚠ **取得を止めるズームは存在しない。** 本番では z1 で「Zoom in to load live aircraft」が
 **270機が描かれている最中に**出ていた——ヒントと絵が同じ事実について食い違っていた。
@@ -197,8 +209,12 @@ world を6回続けて呼んでも **27機・0/980タイルのまま**、書き�
 
 ## 6. Cesium 側
 
-`PointPrimitiveCollection`（**全機**）＋ `BillboardCollection`（カメラに近い 4,000 機だけ矢羽根）。
-補間は 10 Hz のタイマで、外挿は MapLibre 側と**同じ 3 秒**。
+`PointPrimitiveCollection`（**全機**）＋ `BillboardCollection`（カメラに近い 4,000 機だけ
+向き付きのシルエット）。補間は 10 Hz のタイマで、外挿は MapLibre 側と**同じ 3 秒**。
+
+⚠ **1機に billboard は 2 枚**。billboard のテクセルは自分の色と**乗算**されるので、
+1 枚の色付けで「色のついた機体＋白い縁取り」は作れない（しかも機体色は高度の連続ランプ）。
+縁取りの環と中身を**重ならない 2 枚**に分けてあるので、どちらを先に描いても絵は変わらない。
 
 ⚠ **`billboard.alignedAxis` は使えない。** Cesium 1.143 の `BillboardCollectionVS` は
 `acos(cos²θ)` を計算しており（正しくは `acos(cosθ)`）、東西南北の4方向以外では最大 **15.79°** ずれる
