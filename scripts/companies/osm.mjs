@@ -196,6 +196,7 @@ function readElement(el, known) {
  */
 export async function osmFacilities(qids, opts = {}) {
   const log = opts.log || (() => {});
+  const offline = !!opts.offline;
   const list = [...new Set(qids)].filter(Boolean);
   const out = new Map();
   list.forEach((q) => out.set(q, []));
@@ -260,7 +261,7 @@ export async function osmFacilities(qids, opts = {}) {
       const body = query(q);
       let j = cacheGet('osm', body, 21 * 24 * 3600 * 1000);
       if (j) { asked.add(q); absorb(j); if (++done % 50 === 0) log('  overpass ' + done + '/' + list.length + ' companies'); continue; }
-      if (broken) { failed.push(q); continue; }            /* upstream is down — do not ask again */
+      if (offline || broken) { failed.push(q); continue; }   /* not asking: --no-osm, or the upstream is down */
       try { j = await overpass(body); cachePut('osm', body, j); consecutive = 0; }
       catch (_) {
         failed.push(q); done++;
@@ -282,7 +283,7 @@ export async function osmFacilities(qids, opts = {}) {
      was broken and the loop simply continued. Failures get one more try, and
      whatever still fails is REPORTED BY NAME so the build can mark those profiles
      rather than publish an absence it never established. */
-  if (failed.length && !broken) {
+  if (failed.length && !broken && !offline) {
     log('  overpass: ' + failed.length + ' companies failed — one retry each');
     const stillDead = [];
     for (const q of failed) {

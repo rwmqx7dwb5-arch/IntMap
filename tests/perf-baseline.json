@@ -1,16 +1,16 @@
 {
   "eager": {
     "raw": 4472454,
-    "gzip": 1490741,
-    "brotli": 1135219,
+    "gzip": 1490744,
+    "brotli": 1135396,
     "requests": 6,
     "modules": 278,
     "cssRaw": 320931,
     "cssGzip": 54180
   },
   "async": {
-    "raw": 9348330,
-    "gzip": 3006756,
+    "raw": 9349192,
+    "gzip": 3007116,
     "chunks": {
       "aircraft-detail": 17233,
       "analysis-correlate": 24153,
@@ -28,7 +28,7 @@
       "cesium-style": 16065,
       "cesium-vector-tiles": 3696,
       "company-data": 9458,
-      "company-facilities": 13594,
+      "company-facilities": 14101,
       "company-panel": 21812,
       "datacenters": 41619,
       "flight-sim": 117404,
@@ -47,17 +47,17 @@
       "seismic": 162910,
       "stats-compare": 63837,
       "street-view": 15377,
-      "subcable-info": 8286,
+      "subcable-info": 8467,
       "terrain-water": 85308,
       "tsunami": 37658,
       "ui.de": 18958,
       "ui.es": 19189,
-      "ui.fr": 386952,
+      "ui.fr": 386995,
       "ui.jp": 20669,
-      "ui.ko": 382786,
+      "ui.ko": 382829,
       "ui.ru": 27458,
-      "ui.zh": 344252,
-      "ui.zh-hans": 344255,
+      "ui.zh-hans": 344299,
+      "ui.zh": 344296,
       "viewshed": 32669,
       "volcano-intel": 43295,
       "volcano-layers": 14342,
@@ -66,8 +66,8 @@
     }
   },
   "dist": {
-    "total": 123113992,
-    "data": 69660190,
-    "assets": 16484271
+    "total": 127412780,
+    "data": 73956958,
+    "assets": 16485133
   }
 }
