@@ -2766,7 +2766,6 @@ window.IntMapLang.define('ko', { ui: {
   "War": "전쟁",
   "Water vapor": "수증기",
   "wet": "습윤",
-  "World railways (by gauge)": "세계 철도 (궤간별)",
   "All goods": "모든 품목",
   "Animal products": "동물성 생산품",
   "Arms": "무기",
@@ -2918,7 +2917,6 @@ window.IntMapLang.define('ko', { ui: {
   "Military spending ($B)": "국방비 (십억 달러)",
   "Military spending (%GDP)": "국방비 (GDP 대비 %)",
   "Historical borders": "과거의 국경",
-  "Railways (by gauge)": "철도 (궤간별)",
   "Data centers / cloud": "데이터센터 / 클라우드",
   "Pharma & health": "제약·의료",
   "Sat": "위성",
@@ -2975,7 +2973,6 @@ window.IntMapLang.define('ko', { ui: {
   "Could not load railway data": "철도 데이터를 불러오지 못했습니다",
   "AI superclusters": "AI 슈퍼클러스터",
   "Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.": "주요 제약사 본사·생산 클러스터(대표 지점). 기대수명 레이어와 함께 보세요.",
-  "Classified by each country’s predominant gauge (Natural Earth 10m)": "각국의 주요 궤간으로 분류 (Natural Earth 10m)",
   "World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.": "세계은행 WGI「부패 통제」 점수(0–100, 높을수록 청렴) — TI의 CPI에 해당하는 공개 API 지표.",
   "Life expectancy at birth (World Bank, 2022).": "출생 시 기대수명 (세계은행, 2022).",
   "Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).": "실업률 (경제활동인구 대비 %; ILO 추정·세계은행, 최신 연도).",
@@ -4018,12 +4015,8 @@ window.IntMapLang.define('ko', { ui: {
   "Moss and lichen": "이끼·지의류",
   "Standard 1435 mm": "표준궤 1435 mm",
   "Russian 1520/1524 mm": "러시아 광궤 1520/1524 mm",
-  "Broad 1676 mm (India, Argentina)": "광궤 1676 mm (인도·아르헨티나)",
   "Iberian 1668 mm": "이베리아 궤간 1668 mm",
   "Irish 1600 mm": "아일랜드 궤간 1600 mm",
-  "Cape 1067 mm (Japan etc.)": "협궤 1067 mm (일본 등)",
-  "Meter 1000 mm": "미터궤 1000 mm",
-  "Unknown / other": "불명·기타",
   "Religion distribution": "종교 분포",
   "Language distribution": "언어 분포",
   "2011 Tōhoku (Great East Japan)": "2011 도호쿠 (동일본 대지진)",
@@ -5655,4 +5648,94 @@ window.IntMapLang.define('ko', { ui: {
   "Wind power": "풍력",
   "Q{q} {y}": "{y}년 {q}분기",
   "Routes are approximate: a few stretches are published survey positions, most are reconstructed from sea-floor terrain. A line is not the exact position of the cable. Click one for the accuracy of that stretch.": "경로는 근사치입니다. 공개된 실측 위치인 구간은 일부이며 대부분은 해저 지형을 바탕으로 재구성한 것입니다. 선은 케이블의 정확한 부설 위치가 아닙니다. 구간별 정확도는 클릭하면 확인할 수 있습니다.",
+
+  /* ══ (#R388) WORLD RAILWAYS — OpenStreetMap’s own tag on each track ════════════════════════════════
+     js/railways.js · js/layer-packs.js · js/compare.js · js/atlas-console.js. The seven rows the
+     Natural-Earth layer needed («World railways (by gauge)», «Broad 1676 mm (India, Argentina)»,
+     «Cape 1067 mm (Japan etc.)», «Meter 1000 mm», «Unknown / other», «Railways (by gauge)» and its
+     «predominant gauge» note) are DELETED above: those English source strings no longer exist, and
+     a row nothing can key into is a row nobody re-reads.
+     ⚠ Grey is «OSM does not state it», never «unknown» and never «other» — the whole layer turns on
+     that distinction, so every language spells the absence out rather than rounding it off. */
+  /* the layer row, the compare-map row and the Atlas refusal */
+  "World railways": "세계 철도",
+  "no such railway view": "그런 철도 표시 방식 없음",
+  /* the seven colour axes (js/railways.js AXIS_LABEL) */
+  "Gauge": "궤간",
+  "Electrification": "전철화 방식",
+  "Line speed": "최고 속도",
+  "Tracks": "선로 수",
+  "Traffic": "여객·화물",
+  "Line type": "노선 종류",
+  "Not stated in OSM": "OSM에 기재 없음",
+  /* gauge buckets */
+  "Indian 1676 mm": "인도 궤간 1676 mm",
+  "Other broad gauge": "기타 광궤",
+  "Cape 1067 mm": "케이프 궤간 1067 mm",
+  "Metre 1000 mm": "미터궤 1000 mm",
+  "750–999 mm": "750~999 mm",
+  "600–749 mm": "600~749 mm",
+  "Under 600 mm": "600 mm 미만",
+  "dual gauge": "듀얼 게이지",
+  /* electrification buckets */
+  "25 kV AC": "교류 25 kV",
+  "15 kV AC": "교류 15 kV",
+  "Other AC": "기타 교류",
+  "3 kV DC": "직류 3 kV",
+  "1.5 kV DC": "직류 1.5 kV",
+  "Other DC": "기타 직류",
+  "Electrified, system not stated": "전철화(방식 기재 없음)",
+  "Not electrified": "비전철",
+  /* line-speed buckets */
+  "300 km/h and above": "300 km/h 이상",
+  "250–299 km/h": "250~299 km/h",
+  "200–249 km/h": "200~249 km/h",
+  "160–199 km/h": "160~199 km/h",
+  "120–159 km/h": "120~159 km/h",
+  "80–119 km/h": "80~119 km/h",
+  "40–79 km/h": "40~79 km/h",
+  "Under 40 km/h": "40 km/h 미만",
+  /* track-count and traffic buckets */
+  "Single track": "단선",
+  "Double track": "복선",
+  "Triple track": "3선",
+  "Four or more tracks": "4선 이상",
+  "Passenger only": "여객 전용",
+  "Freight only": "화물 전용",
+  "Passenger and freight": "여객·화물 겸용",
+  /* line-type buckets (railway=*) and the usage words under the card title */
+  "Heavy rail": "일반철도",
+  "Narrow gauge": "협궤 철도",
+  "Light rail": "경전철",
+  "Metro / subway": "지하철",
+  "Main line": "간선",
+  "Branch line": "지선",
+  "Industrial line": "산업 전용선",
+  "Heritage / tourist line": "관광·보존 철도",
+  "Military line": "군용선",
+  "Test track": "시험선",
+  /* the detail card and the station card */
+  "High-speed line": "고속선",
+  "Line number": "노선 번호",
+  "OSM way": "OSM 웨이",
+  "Halt": "간이역",
+  "Modes": "교통수단",
+  "Network": "노선망",
+  "Station code": "역 코드",
+  "UIC reference": "UIC 코드",
+  "Train": "열차",
+  /* the two provenance notes — the whole point of the layer */
+  "Every field above is a tag on this track in OpenStreetMap. A field OSM does not carry is left out rather than guessed — the layer never fills a gauge in from the country the line happens to run through.": "위 항목은 모두 이 선로 자체에 붙은 OpenStreetMap 태그입니다. OSM에 없는 항목은 추측하지 않고 생략합니다 — 이 레이어는 노선이 지나가는 나라의 궤간으로 채우지 않습니다.",
+  "Every value is the tag OpenStreetMap carries on that track. Grey means OSM does not state it — nothing is filled in from the country the line runs through. Zoom past z6.5 for full detail, z8 for stations.": "각 값은 그 선로에 붙은 OpenStreetMap 태그입니다. 회색은 OSM에 기재가 없다는 뜻이며, 노선이 지나가는 나라에서 보충하지 않습니다. z6.5를 넘기면 상세, z8부터 역이 표시됩니다.",
+
+  /* the two switches under the axis buttons (js/layer-packs.js railLegend) */
+  "Urban rail (metro, tram, light rail)": "도시철도(지하철·노면전차·경전철)",
+  "Stations and halts (from z8)": "역·간이역(z8 이상)",
+
+  /* ⚠ (#R370) SPLIT OFF BY THE KEY-COLLISION GATE, so each must differ from its old neighbour:
+     «In operation» stays js/company-data.js (a plant that is running) and «Opened» stays
+     js/company-facilities.js (a site opening). A line that runs and a factory that runs are
+     one English word and two Japanese ones, which is what the gate measures. */
+  "Line in operation": "운행 중",
+  "Year opened": "개통 연도",
 } });

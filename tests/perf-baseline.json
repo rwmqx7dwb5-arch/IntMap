@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4499593,
-    "gzip": 1500328,
-    "brotli": 1143472,
+    "raw": 4500063,
+    "gzip": 1500484,
+    "brotli": 1142934,
     "requests": 6,
     "modules": 279,
     "cssRaw": 325176,
     "cssGzip": 54713
   },
   "async": {
-    "raw": 9394588,
-    "gzip": 3027212,
+    "raw": 9434550,
+    "gzip": 3043271,
     "chunks": {
       "aircraft-detail": 17245,
       "analysis-correlate": 24153,
@@ -18,7 +18,7 @@
       "analysis-research": 17766,
       "analysis-timeseries": 8142,
       "analysis-world-events": 68202,
-      "atlas-console": 831967,
+      "atlas-console": 834219,
       "atlas-executor": 39000,
       "aviation-live": 20078,
       "cesium": 4840127,
@@ -41,6 +41,7 @@
       "night-sky": 26005,
       "plane-glyph": 887,
       "playground": 42856,
+      "railways": 27976,
       "routing-traffic": 12309,
       "routing-ui": 58153,
       "satellite-detail": 13789,
@@ -54,12 +55,12 @@
       "tsunami": 37658,
       "ui.de": 18990,
       "ui.es": 19225,
-      "ui.fr": 391050,
+      "ui.fr": 393653,
       "ui.jp": 20707,
-      "ui.ko": 386727,
+      "ui.ko": 389190,
       "ui.ru": 27505,
-      "ui.zh": 347893,
-      "ui.zh-hans": 347893,
+      "ui.zh": 350227,
+      "ui.zh-hans": 350227,
       "viewshed": 32683,
       "volcano-intel": 43300,
       "volcano-layers": 14342,
@@ -68,8 +69,8 @@
     }
   },
   "dist": {
-    "total": 127876502,
-    "data": 74294380,
-    "assets": 16561982
+    "total": 139440896,
+    "data": 85793628,
+    "assets": 16602400
   }
 }

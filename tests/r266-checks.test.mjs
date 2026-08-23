@@ -10,6 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { gunzipSync } from 'node:zlib';   /* (#R388) the railway data ships gzipped */
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -253,16 +254,34 @@ test('R266 ⑩: the long legends fold, and the developer-facing failure text is 
 });
 
 test('R266 ⑪: 1520 and 1524 are two gauges, and the three population layers are three names', () => {
-  const s = read('js/layer-packs.js');
-  assert.match(s, /1524:'#f08080'/, 'the Finnish gauge has no colour of its own');
-  assert.match(s, /\[1524,LA\('Finnish 1524 mm'/, '…and no legend row');
-  assert.ok(!s.includes("LA('Russian 1520/1524 mm'"), 'the merged label is back');
-  const rail = json('data/railways_gauge.json');
-  const g = {};
-  for (const f of rail.features) g[f.properties.g] = (g[f.properties.g] || 0) + 1;
-  assert.ok(g['1524'] > 0, 'no segment is classified 1524 mm');
-  assert.ok(g['1520'] > 0, 'the 1520 mm class was emptied');
-  assert.match(read('_rail_convert.py'), /G1524 = \['FIN'\]/, 'a rebuild would undo the split');
+  /* ⚠ (#R388) THE FINDING SURVIVED THE LAYER IT WAS WRITTEN AGAINST. #R266's claim is that 1520 mm
+     and 1524 mm are two gauges and the map must draw them apart; what it checked was a colour table
+     in js/layer-packs.js, a legend row, and a country list in _rail_convert.py — all three of which
+     were how the OLD layer expressed it. The layer now reads OpenStreetMap's own `gauge` tag per
+     track (js/rail-schema.js + js/railways.js), so the claim is re-asserted against that, and the
+     DATA half is now stronger than it was: 1524 no longer comes from a hard-coded ['FIN'], it comes
+     from Finnish track that says 1524. A gate outlives the mechanism it was written for. */
+  const schema = read('js/rail-schema.js');
+  assert.match(schema, /\['g1520', '#e03131'\]/, 'the Russian gauge has no colour of its own');
+  assert.match(schema, /\['g1524', '#f08080'\]/, 'the Finnish gauge has no colour of its own');
+  const layer = read('js/railways.js');
+  assert.match(layer, /g1524: \(\) => LA\('Finnish 1524 mm'/, '…and no legend row');
+  assert.match(layer, /g1520: \(\) => LA\('Russian 1520 mm'/);
+  assert.ok(!layer.includes("'Russian 1520/1524 mm'"), 'the merged label is back');
+  /* …and the two buckets cannot collapse into one */
+  const bucket = /function gaugeBucket[\s\S]*?\n  \}/.exec(schema);
+  assert.ok(bucket && /1520/.test(bucket[0]) && /1524/.test(bucket[0]), 'gaugeBucket stopped distinguishing them');
+
+  const worldGz = path.resolve(ROOT, 'data/railways/world.json.gz');
+  if (fs.existsSync(worldGz)) {
+    const w = JSON.parse(gunzipSync(fs.readFileSync(worldGz)).toString('utf8'));
+    const gi = w.k.indexOf('g');
+    assert.ok(gi >= 0, 'the world file no longer ships a gauge');
+    const seen = new Set();
+    for (const t of w.d) if (t[gi] != null) seen.add(t[gi]);
+    assert.ok(seen.has(1524), 'no line in the world is 1524 mm — Finland lost its own gauge');
+    assert.ok(seen.has(1520), 'the 1520 mm class was emptied');
+  }
 
   /* one is a 1 km grid, one is a country average, one is the World Bank's country average */
   const en = read('js/locales/ui.en.js');

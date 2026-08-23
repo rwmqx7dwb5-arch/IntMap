@@ -212,6 +212,10 @@ window.IntMapRefData=(function(){
     {n:'Clearbit Logo API / Google favicons',u:'https://logo.clearbit.com/'},
     {n:'Wikipedia (Wikimedia REST API)',u:'https://www.wikipedia.org/'},
     {n:'Live cameras — OpenStreetMap (Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:contact:webcam'},
+    /* (#R388) the railway atlas. ⚠ THIS REPLACED A NATURAL EARTH LAYER, SO THE TERMS CHANGED WITH IT:
+       Natural Earth is public domain and required no attribution; OpenStreetMap is ODbL 1.0 and does.
+       The credit is on the map whenever the layer is on (the source declares it) and here. */
+    {n:'World railways — OpenStreetMap (railway=rail/narrow_gauge/light_rail/subway/tram/construction, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:railway'},
     /* (#R254) the data-center layer: OSM's own surveyed buildings (ODbL) plus the operators' published region lists */
     {n:'Data centers — OpenStreetMap (telecom/man_made/building = data_center, Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Tag:telecom%3Ddata_center'},
     /* (#R255) the four surveyed-facility layers — js/osm-facilities.js. Same live Overpass path,
