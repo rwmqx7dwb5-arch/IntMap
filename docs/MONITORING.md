@@ -45,6 +45,37 @@ The post-deploy job already opens the site in a real browser after every deploy.
 this on a schedule, run `playwright.prod.config.js` from a scheduled workflow — kept **out**
 of the 6-hourly probe on purpose so the monitor stays cheap and cannot flood minutes.
 
+## 1b. The aviation feed (#R341)
+
+`supabase/functions/aviation-feed` is the ONE thing that reads an air-traffic provider on behalf of
+every reader, so it is the one aviation thing worth watching. It reports its own state, in a channel
+that returns no user data and no credentials:
+
+```bash
+curl -s 'https://vpekfwdpurzejrrmacac.supabase.co/functions/v1/aviation-feed?meta=1'
+```
+
+| Field | What a bad value means |
+|---|---|
+| `provider` | which adapter answered. Silently falling back to `adsblol` when `AVIATION_PROVIDER=opensky` means `OPENSKY_AGREEMENT` or the credentials are missing |
+| `world.aircraft` | how many aircraft the shared snapshot holds. **0 for a sustained period is the alarm** |
+| `world.ageMs` | how old that snapshot is. Growing without bound means the sweeper (below) has stopped |
+| `world.coveragePct` | how much of the tile lattice has ever been probed. ⚠ **Low is not a fault** — it is the honest state of a provider with no global endpoint (see [`AVIATION-DATA-SOURCES.md`](AVIATION-DATA-SOURCES.md) §1.1) |
+| `upstream.rateLimited` | how many times the provider said stop. Rising steadily means the cadence is too fast for its budget |
+| `upstream.saveFail` | the snapshot could not be written. The layer still serves, but every isolate starts cold again |
+| `storage.hasServiceKey` / `hasAviationKey` | **presence only, never values.** Both false means the snapshot cannot persist at all |
+| `backoffMs` | time left on a provider back-off |
+
+**The sweeper** is `.github/workflows/aviation-sweep.yml`, every 5 minutes. It is the only caller
+that pays for a lattice slice, and its "Report coverage" step prints the meta channel — so its run
+log is a time series of the table above. A run that warns `aviation-feed refresh returned <code>`
+is the provider or the function refusing; a long gap in the runs is the snapshot going stale while
+readers are still served (correctly, with `x-intmap-age-ms` telling them how old it is).
+
+⚠ **A REGION GOING TO ZERO IS NOT "NO AIRCRAFT THERE."** Separate provider failure, receiver
+coverage, the tile lattice not having reached that sky yet, and a client-side filter before
+concluding anything — that distinction is the whole reason `coveragePct` and the age headers exist.
+
 ## 2. Error monitoring
 
 ### Always on (no setup)

@@ -17,8 +17,13 @@ const DECAY_FLOOR_KM = (() => {
 
 const BOOT = { timeout: 120_000 };
 
-/* (#R201) ONE page load — see tests/helpers/engine.js */
-const boot = (page, engine) => bootEngine(page, engine, { url: '/', timeout: BOOT.timeout });
+/* (#R201) ONE page load — see tests/helpers/engine.js
+   (#R341) `query` pins WHICH aviation path the page boots with. The aircraft layer has two now: the
+   original per-browser sweep, which owns `window.IntMapPlanes3D`, and the GPU cloud that replaced it
+   as the default. Only the aircraft test below reads that model, so only it passes a query; the two
+   Cesium tests and the satellite one are nothing to do with the live-aircraft layer and boot exactly
+   as they did. */
+const boot = (page, engine, query) => bootEngine(page, engine, { url: '/' + (query || ''), timeout: BOOT.timeout });
 
 test('R185 Cesium: a pan that does not change the tile cover rebuilds no layers', async ({ page }) => {
   /* (#R186) 240 s → 360 s. This is a WALL-CLOCK budget, not the thing under test: what is asserted is
@@ -154,7 +159,11 @@ test('R185 satellites: the layer is not empty when the live feed is unreachable'
 
 test('R185 aircraft: the 3-D body carries its own outline and its altitude is its own', async ({ page }) => {
   test.setTimeout(240_000);
-  await boot(page, 'maplibre');
+  /* ⚠ ?aviation=v1 — see the note on boot(). Every number read below comes out of
+     `IntMapPlanes3D.state()`, which only the sweep fills: on the default path `state().planes` never
+     leaves 0, so the 60 s wait beneath expired and `test.skip` blamed the feed — 66 s of a green run
+     asserting nothing (measured, #R341). The assertions are unchanged. */
+  await boot(page, 'maplibre', '?aviation=v1');
   await page.evaluate(async () => {
     window.IntMapGeoEngine.camera.jumpTo({ center: [139.78, 35.55], zoom: 11, pitch: 0, bearing: 0 });
     await new Promise(r => setTimeout(r, 900));

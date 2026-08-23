@@ -289,8 +289,23 @@ test('R168 #8 index.html shrank and no module body came back inline', () => {
          could NOT go is `gGuard`, which asks MapLibre whether a camera is reachable; it stays in the
          adapter and is passed to the solvers as their `guard` argument, as it always was.
      8,199 → 8,285 → 7,923. Headroom is 27 lines, which is the point: a ceiling with room to spare
-     has stopped asserting anything (#R194). */
-  assert.ok(lines < 7_950, `index.html should be well under the pre-R168 9,709 lines; it is ${lines}`);
+     has stopped asserting anything (#R194).
+     ⚠ (#R341) 7,950 → 8,000, and the reason is stated because raising a tripwire to pass one's own
+     change is what this file exists to catch. #R341 added a RENDERER CAPABILITY — a cloud of tens of
+     thousands of oriented, self-animating aircraft glyphs — and the CONTRACT half of it has to live
+     in js/geo-engine.js because that is the one file allowed to know the renderer; the coupling gate
+     (scripts/engine-coupling.mjs) is what enforces that. Measured: +27 in geo-engine (four adapter
+     methods, four facade lines, one capability), +24 in lazy-modules and +11 in main.js for the
+     module registry and the worker client. 7,923 → 7,975.
+     #R193's own words apply unchanged — "growth of an ADAPTER when the contract grows is not the
+     regression this guards against" — and the IMPLEMENTATION deliberately did not land here:
+     js/aircraft-points.js (the WebGL layer), js/aviation-live.js (the controller),
+     src/aviation-worker.js (the store) are ~1,100 lines that are in NEITHER this shell nor the
+     eager bundle.
+     Headroom is 25 lines. The debt this round did NOT pay is js/data-layers.js (5,800 lines, of
+     which ~1,320 are aircraft): the original per-browser sweep is kept intact for the rollback
+     window §28 Phase G requires, and deleting it is what the next round can pay this back with. */
+  assert.ok(lines < 8_000, `index.html should be well under the pre-R168 9,709 lines; it is ${lines}`);
   assert.ok(!/<style>[\s\S]{4000,}?<\/style>/.test(html), 'the stylesheet stays in css/intmap.css');
   // A leftover in-page copy of a moved body would WIN over the module (a later function declaration
   // overwrites an earlier one). Probe with a line from deep inside each of the three biggest bodies,

@@ -549,14 +549,11 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
           const PI_M=3.1313;   /* mercator y at ±85.05° (the WMS world square) */
           const sy=(PI_M-_MY)/(2*PI_M)*512, sh=(_MY/PI_M)*512;
           try{ ctx.drawImage(im,0,sy,512,sh,0,0,W,H); return c.toDataURL('image/png'); }catch(_){ return null; } }); },
-      'dl-planes':()=>fetch('https://api.airplanes.live/v2/point/47/8/250').then(r=>r.json()).then(j=>{
-        const ac=(j&&Array.isArray(j.ac))?j.ac.filter(a=>a.lat!=null&&a.lon!=null):[]; if(ac.length<10) return null;
-        try{ setView([1,42.3,15,51.7]); const b=base(null,'#0c1522'); if(!b) return null; const {c,ctx}=b;
-          ac.slice(0,700).forEach(a=>{ const x=X(+a.lon),y=Y(+a.lat); if(x<-3||x>W+3||y<-3||y>H+3) return;
-            const alt=(+a.alt_baro||+a.alt_geom||0); const col=alt>30000?'#64d2ff':alt>10000?'#9bd1ff':'#ffd60a';
-            const r=((+a.track||0))*Math.PI/180; ctx.save(); ctx.translate(x,y); ctx.rotate(r);
-            ctx.beginPath(); ctx.moveTo(0,-2.6); ctx.lineTo(1.7,2.2); ctx.lineTo(-1.7,2.2); ctx.closePath(); ctx.fillStyle=col; ctx.fill(); ctx.restore(); });
-          return c.toDataURL('image/png'); } finally{ setView(null); } }).catch(()=>null),
+      /* (#R341) ⚠ THIS ENTRY IS OVERWRITTEN BELOW (`REAL['dl-planes']=` reassigns the same key) and
+         has never run. It is kept because the reassignment is easy to remove by accident, and it no
+         longer names the dead endpoint: it defers to the same "draw what the layer already holds"
+         rule. See the note on the live one. */
+      'dl-planes':()=>Promise.resolve(null),
       'bx-heat':()=>{ let pts=[]; try{ (window.newsFeatures||[]).forEach(f=>{ const c2=f&&f.geometry&&f.geometry.coordinates; if(c2&&isFinite(+c2[0])) pts.push(c2); }); }catch(_){}
         if(pts.length<5) return Promise.resolve(null);
         const b=base(null,'#0a121f'); if(!b) return Promise.resolve(null); const {c,ctx}=b;
@@ -610,7 +607,28 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
     REAL['dl-tz']=()=>_bmShot(1,0,18,false,ctx=>{ ctx.strokeStyle='rgba(90,150,230,0.55)'; ctx.lineWidth=0.8; for(let lg=-165;lg<=165;lg+=15){ const x=X(lg); ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); } ctx.font='700 8px sans-serif'; ctx.textAlign='center'; [['-9',-135],['-6',-90],['-3',-45],['0',0],['+3',45],['+6',90],['+9',135]].forEach(z2=>{ const x=X(z2[1]); ctx.fillStyle='rgba(8,16,28,0.72)'; ctx.fillRect(x-8,3,16,10); ctx.fillStyle='#cfe0ff'; ctx.fillText(z2[0],x,11); }); ctx.textAlign='left'; });
     REAL['beta-dl-histb']=()=>_bmShot(3,14,48,true,ctx=>{ drawLand(ctx,()=>'rgba(0,0,0,0)','rgba(226,184,96,0.9)'); });
     REAL['dl-sealevel']=()=>_bmShot(5,4.9,52.2,false,ctx=>{ ctx.fillStyle='rgba(46,138,236,0.4)'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#0a3d67'; ctx.font='700 11px sans-serif'; ctx.fillText('+2 m',8,16); });
-    REAL['dl-planes']=()=>fetch('https://api.airplanes.live/v2/point/47/8/250').then(r=>r.json()).then(j=>{ const ac=(j&&Array.isArray(j.ac))?j.ac.filter(a=>a.lat!=null&&a.lon!=null):[]; if(ac.length<10) return null; return _bmShot(6,8,47,true,ctx=>{ ac.slice(0,700).forEach(a=>{ const x=X(+a.lon),y=Y(+a.lat); if(x<-3||x>W+3||y<-3||y>H+3) return; const alt=(+a.alt_baro||+a.alt_geom||0); const col=alt>30000?'#64d2ff':alt>10000?'#9bd1ff':'#ffd60a'; const r=((+a.track||0))*Math.PI/180; ctx.save(); ctx.translate(x,y); ctx.rotate(r); ctx.beginPath(); ctx.moveTo(0,-2.6); ctx.lineTo(1.7,2.2); ctx.lineTo(-1.7,2.2); ctx.closePath(); ctx.fillStyle=col; ctx.fill(); ctx.restore(); }); }); }).catch(()=>null);
+    /* (#R341) THE AIRCRAFT TILE NO LONGER FETCHES, AND THE REASON IS THIS FILE'S OWN.
+       It used to poll `api.airplanes.live/v2/point/47/8/250` on EVERY page load — including the
+       loads that never open the aircraft layer. That endpoint now answers HTTP 403 with no CORS
+       header, so what the poll actually produced was two failed requests and two console errors per
+       visit, and never a tile.
+       The sibling satellite tile already states the rule that fixes it: "THIS TILE NEVER TRIGGERS A
+       LOAD — it only draws a catalogue that is ALREADY in hand … the real-data preview is a reward
+       for having used the layer, and everything else falls back to the stylised sketch". The
+       aircraft tile was the exception that note explicitly allowed, on the grounds that
+       airplanes.live was "built to be polled". It is not answering at all any more, and the
+       replacement — one shared server read, fanned out to every reader — is precisely the thing a
+       per-visit thumbnail must not multiply.
+       So: draw from what the layer already holds, or return null and let the sketch stand. */
+    function _planesInHand(limit){
+      try{
+        const A=window.IntMapAviation;
+        if(!A||!A.isOn||!A.isOn()) return null;
+        const list=A.snapshotFor&&A.snapshotFor(limit||700);
+        return (list&&list.length>=10)?list:null;
+      }catch(_){ return null; }
+    }
+    REAL['dl-planes']=()=>{ const ac=_planesInHand(700); if(!ac) return Promise.resolve(null); return Promise.resolve(_bmShot(6,8,47,true,ctx=>{ ac.forEach(a=>{ const x=X(a.lon),y=Y(a.lat); if(x<-3||x>W+3||y<-3||y>H+3) return; const alt=a.altFt||0; const col=alt>30000?'#64d2ff':alt>10000?'#9bd1ff':'#ffd60a'; const r=((a.track||0))*Math.PI/180; ctx.save(); ctx.translate(x,y); ctx.rotate(r); ctx.beginPath(); ctx.moveTo(0,-2.6); ctx.lineTo(1.7,2.2); ctx.lineTo(-1.7,2.2); ctx.closePath(); ctx.fillStyle=col; ctx.fill(); ctx.restore(); }); })); };
     /* (#R184) satellites — the REAL catalogue, propagated by the layer's own SGP4 through
        IntMapSatellites.snapshot(), so the tile shows where those objects actually are right now and
        cannot drift away from what the layer draws. Sub-satellite points over the whole world, sized

@@ -1,0 +1,221 @@
+# IntMap — 航空プラットフォームの構造 (Aviation architecture)
+
+> **「1回だけ上流を読み、全利用者へ配り、GPU で描く」**——その1本の筋を書き留めた文書。
+> provider の条件と実測値は [`AVIATION-DATA-SOURCES.md`](AVIATION-DATA-SOURCES.md)、
+> 鍵と信頼境界は [`SECURITY-ARCHITECTURE.md`](SECURITY-ARCHITECTURE.md) §5、
+> ファイルの役割は [`FILES.md`](FILES.md)、レイヤーの挙動は [`MAP-LAYERS.md`](MAP-LAYERS.md)。
+>
+> ⚠ **ここに書いてある数字は実測値。** 推定は「推定」と書いてある。
+
+---
+
+## 1. 何を変えたのか
+
+### 旧構造 —— 利用者ごとに世界を組み立て直す
+
+```
+ブラウザ A ──► api.airplanes.live へ最大128回（1.2秒間隔・逐次）
+ブラウザ B ──► api.airplanes.live へ最大128回
+ブラウザ C ──► api.airplanes.live へ最大128回
+```
+
+1回の掃引を**発行し終える**だけで約154秒。ズーム2未満では `planesData=[]` にして
+「Zoom in to load live aircraft」を出す。3D は最大4,000機で、超えたら地図中心からの距離で切る。
+**上流負荷が利用者数に比例する構造**であり、それが 403 を招いた（→ データ源の文書 §0）。
+
+### 新構造 —— 上流を読むのは1本だけ
+
+```
+                          ┌─ .github/workflows/aviation-sweep.yml （5分ごと・?refresh=1）
+                          │
+provider ◄── aviation-feed ──► Supabase Storage: aviation/world.bin （公開・CDN）
+                  ▲
+                  │ IMAV/1（バイナリ）
+                  │
+   ブラウザ ── src/aviation-worker.js ──► typed-array ストア ──► GPU バッファ（transfer）
+                                                                      │
+                                        js/aviation-live.js ──► GE().layers.setAircraftCloud()
+                                                                      │
+                                              MapLibre: js/aircraft-points.js（custom WebGL layer）
+                                              Cesium  : js/cesium-engine.js（2つの primitive collection）
+```
+
+**上流リクエスト数は時間に比例し、利用者数には比例しない。** それがこの構造の全部で、
+残りはそのための事務手続き。
+
+---
+
+## 2. 実測値（2026-08-23・本番の Edge Function に対して）
+
+| 経路 | 応答 | 内容 |
+|---|---|---|
+| `?ch=world`（スナップショットから） | **0.35 s** | 全機・age をヘッダで正直に申告 |
+| `?ch=view`（既知の空域） | **0.38 s** | 視野内の機体 |
+| `?ch=view`（未知の空域） | 6.1 s | タイルを直列で読む代金。**1空域につき1回**、全利用者で共有 |
+| `?ch=world&refresh=1`（掃引役） | 4.5 s | 格子を3タイル進めてスナップショットを書く |
+| `?meta=1` | 即時 | provider・被覆率・上流カウンタ・鍵の**有無**（値は出さない） |
+
+ワイヤ（実データ・689機）: **raw 34,982 B / gzip 22,969 B / brotli 20,116 B**
+＝ **50.8 B/機（初回・識別情報込み）**、定常は **24 B/機**。
+50,000 機への外挿: raw 1.14 MB / brotli **約 1.39 MB**（指示書 §23.5 の目標 1.5 MB 以内）。
+
+量子化誤差（実データで測定）: **位置 0.70 m ・ 高度 0.0 ft ・ 針路 0.0000°**。
+
+---
+
+## 3. IMAV/1 —— ワイヤ形式
+
+正本は [`../js/aviation-codec.js`](../js/aviation-codec.js)。
+`supabase/functions/_shared/aviation-codec.js` は `node scripts/sync-aviation.mjs` が作る
+**バイト同一の写し**で、`scripts/static-checks.mjs` が食い違いを落とす。
+
+⚠ **この写しの食い違いは newsgeo のそれより高くつく。** newsgeo が食い違うと見出しが
+違うピンに乗る。**codec が食い違うと、encoder と decoder が1バイトのずれで一致しなくなり、
+世界中の航空機が「もっともらしく間違った場所」に着地する。**
+
+- ヘッダ 40 B（magic / version / flags / seq / baseSeq / serverTimeMs / 機数 / 削除数 / テキスト長）
+- レコード **24 B 固定長** × 機数
+- 削除リスト u32 × 削除数
+- 識別情報（hex / 便名 / 型式 / 登録記号 / 運航者）—— **機体につき1回だけ**送る
+
+⚠ **「無い」と「ゼロ」は別のビット。** `AC_ALT_VALID` が落ちていれば高度は `NaN` にデコードされ、
+0 ft にはならない。旧実装はこれを混同していて、高度を報告しない機体を海面高度として 3D の地面に置いていた。
+
+---
+
+## 4. サーバー側 —— `supabase/functions/aviation-feed`
+
+### 4.1 チャンネル
+
+| `?ch=` | 誰が呼ぶか | 何を返すか |
+|---|---|---|
+| `world` | ブラウザ | 既知の全機。スナップショットから即答し、age を申告する |
+| `world&refresh=1` | **掃引役だけ** | 格子を進め、スナップショットを書き、返す |
+| `view&bbox=w,s,e,n` | ブラウザ | 視野内。空域が古ければタイルを読んでから返す |
+| `meta=1` | UI と監視 | provider・被覆率・上流カウンタ・鍵の有無 |
+
+### 4.2 スナップショットが isolate の外にある理由（実測）
+
+最初の実装は isolate のメモリをキャッシュにしていた。**同じ viewport を3回続けて呼んだ実測**:
+
+```
+call 1  200  7,140 B  5.64 s   x-intmap-age-ms: 2
+call 2  200  7,140 B  5.76 s   x-intmap-age-ms: 1
+call 3  200  7,089 B  6.39 s   x-intmap-age-ms: 1
+```
+
+**毎回 age が 1 ms** ＝ 毎回作り直している。Supabase は十分な頻度で冷えた isolate を割り当てるので、
+**isolate メモリはキャッシュではない。** 上流リクエストは利用者数に比例したままで、
+構造をブラウザからサーバーへ移しただけになっていた。
+
+⇒ スナップショットは **Supabase Storage の `aviation` bucket**（migration
+`20260823130000_aviation_snapshot_bucket.sql`）に置く。冷えた isolate はそこから復元する。
+
+### 4.3 掃引を「背景仕事」にしない理由（実測）
+
+`EdgeRuntime.waitUntil` に渡した Promise は**応答をまたいで生き残らなかった**。
+world を6回続けて呼んでも **27機・0/980タイルのまま**、書き込みも起きなかった。
+⇒ **背景仕事に依存する設計は、単発の試験では全部正しく見えて、本番では一度も前に進まない。**
+実際に前に進めているのは次の2つだけ:
+
+- 古い空域を見た `?ch=view` が、その場でタイルを直列に読む
+- `.github/workflows/aviation-sweep.yml` が5分ごとに叩く `?refresh=1`
+
+### 4.4 上流に対する作法
+
+- **直列＋1.2秒間隔。** 並列はバースト予算を一度に使い切る（→ データ源の文書 §1.1）。
+- **429 を受けたらそのスライスを止める。** 止まれと言われた後も叩き続けるのが、
+  アドレスごと遮断される道。以後 60 秒はこの関数全体が上流に触らない。
+- **429 と「そこに機体がいない」を同じ値にしない。** 前者はタイルを「未探査」のままにし、
+  後者はそのタイルの探査頻度を下げる。混同すると `coveragePct` が嘘になる。
+- 格子の巡回順は**黄金比ストライドで攪拌**してある。行優先のまま歩くと、
+  予算の小さい掃引は**緯度の1本の帯から出られない**。攪拌すると**12タイルで全緯度帯**に届く。
+
+---
+
+## 5. ブラウザ側
+
+| ファイル | 役割 |
+|---|---|
+| [`../src/aviation-worker.js`](../src/aviation-worker.js) | **機体の在庫そのもの。** デコード・スロット式 typed-array ストア（free list・容量倍増）・経年除去・フィルタ・GPU バッファの pack・観測軌跡 |
+| [`../src/aviation-worker-client.js`](../src/aviation-worker-client.js) | main thread 側の橋。`new URL(…, import.meta.url)` で worker を名指しできる **`src/` にある唯一の理由** |
+| [`../js/aviation-live.js`](../js/aviation-live.js) | 制御役。polling・LOD・picking・選択・`stats()` |
+| [`../js/aircraft-points.js`](../js/aircraft-points.js) | MapLibre の custom WebGL layer。`gl.POINTS` 1 draw call |
+| [`../js/aviation-codec.js`](../js/aviation-codec.js) / [`../js/aviation-model.js`](../js/aviation-model.js) | ワイヤ形式と正規化の**正本**（server と共有） |
+
+### 5.1 速度は「触らないこと」から来ている
+
+- **1機につき1頂点。** 1フレームあたり: バッファ束縛7回・uniform 6個・`drawArrays` 1回。
+- **publish の間、CPU は機体を1つも触らない。** 位置は頂点シェーダが速度から外挿する。
+- **バッファは転送される（コピーされない）。** worker が pack し、`postMessage` の transfer list に
+  載せてそのまま GPU へ行く。
+- 進行方向はフラグメントシェーダが `gl_PointCoord` を回して出す。**テクスチャアトラスは無い。**
+
+### 5.2 外挿は3秒で頭打ち
+
+衛星は4秒でよい（運動が決定論的だから）。**航空機は3秒。** 旋回し、水平飛行に移り、着陸する。
+頭打ちを過ぎたら glyph は**その場で止まる**——行っていない場所へ滑らかに線を引くのは、
+止まっている機影より悪い答えだから。
+
+### 5.3 ズームが決めるのは大きさと細かさだけ
+
+| ズーム | 大きさ | 形 |
+|---|---|---|
+| z0–2 | 3.5 px | 点 |
+| z2–5 | 5.5–9 px | 5 px から矢羽根 |
+| z5–8 | 9–14 px | 矢羽根＋進行方向 |
+| z8–11 | 14–19 px | ＋実高度 |
+| z11+ | 19–24 px | 全部 |
+
+⚠ **取得を止めるズームは存在しない。** 本番では z1 で「Zoom in to load live aircraft」が
+**270機が描かれている最中に**出ていた——ヒントと絵が同じ事実について食い違っていた。
+
+---
+
+## 6. Cesium 側
+
+`PointPrimitiveCollection`（**全機**）＋ `BillboardCollection`（カメラに近い 4,000 機だけ矢羽根）。
+補間は 10 Hz のタイマで、外挿は MapLibre 側と**同じ 3 秒**。
+
+⚠ **`billboard.alignedAxis` は使えない。** Cesium 1.143 の `BillboardCollectionVS` は
+`acos(cos²θ)` を計算しており（正しくは `acos(cosθ)`）、東西南北の4方向以外では最大 **15.79°** ずれる
+（45° の軸が 60° で描かれる）。機首方位が16度ずれるのは交通表示として嘘なので、
+画面角を CPU で厳密に出して `rotation` に渡している。
+
+---
+
+## 7. 障害時（§25）
+
+- **失敗しても画面は空にならない。** worker は持っている機体を保持し続け、経年で薄くなり、
+  やがて落ちる。「取得できていない」と「0機」は**別の絵**。
+- **合成データはこの経路に1機も無い。** 旧経路の `genSyntheticPlanes()` は
+  `?aviation=v1` を明示したときだけ到達できる。
+- `stats().updating` は**フィードについての主張**であって在庫についてではない。
+  2万機を持っていてフィードが死んでいる状態は、「本物の機体が古くなりつつある」。
+
+---
+
+## 8. 切り替えと巻き戻し
+
+```
+?aviation=v1     旧経路（利用者ごとの掃引）
+?aviation=v2     新経路
+localStorage 'intmap_aviation_v2' = '0' | '1'
+```
+
+既定は **v2**——v1 の provider が消えているため。旧経路は §28 Phase G の巻き戻し期間のために
+**1行も変えずに**残してある。
+
+---
+
+## 9. 本番に手で入れる設定
+
+| 変数 | 置き場所 | 何のため |
+|---|---|---|
+| `AVIATION_STORAGE_KEY` | Edge Function の secrets | 共有スナップショットを Storage に書く。**設定済み** |
+| `AVIATION_PROVIDER` | 同上 | `adsblol`（既定）/ `opensky` / `airplaneslive` |
+| `OPENSKY_CLIENT_ID` / `OPENSKY_CLIENT_SECRET` | 同上 | OpenSky の OAuth2 |
+| `OPENSKY_AGREEMENT` | 同上 | **書面合意があるという運用者の明示**。鍵の有無では代用しない |
+
+⚠ 既定の `SUPABASE_SERVICE_ROLE_KEY` は Storage への書き込みで **`AccessDenied`** を返した
+（実測）。だから `AVIATION_STORAGE_KEY` を明示的に置いてある。

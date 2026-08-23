@@ -36,6 +36,8 @@
 | [`FILES.md`](FILES.md) | 同上 | **ファイル台帳**（Architecture §3。節番号は同じ） | `js/` 等にファイルを足す・消す・改名したとき |
 | [`MAP-LAYERS.md`](MAP-LAYERS.md) | レイヤーを触る人 | **レイヤー実装の詳細**（Architecture §7.1・§7.2・§7.5–§7.10。節番号は同じ）——気象警報フィード・ラベル・地形と水・物理・ECMWF | 該当のレイヤーの挙動を変えたとき |
 | [`NEWS-EVENTS.md`](NEWS-EVENTS.md) | ニュースを触る人 | **出来事 (Event) 単位のニュース基盤** — Source Registry・データモデル・クラスタリング・カテゴリ・翻訳・保持期間・運用者の修正経路（Architecture §4 の Event 側の本体） | 収集元・クラスタリング・カテゴリ・保持・翻訳を変えたとき |
+| [`AVIATION-ARCHITECTURE.md`](AVIATION-ARCHITECTURE.md) | 航空を触る人 | **航空プラットフォームの構造** — 1回だけ上流を読んで全利用者へ配る配信、IMAV/1 ワイヤ形式、Worker と typed-array ストア、GPU 描画、障害時、巻き戻し | 航空の取得・配信・描画の仕組みを変えたとき |
+| [`AVIATION-DATA-SOURCES.md`](AVIATION-DATA-SOURCES.md) | 同上 | **航空データ源の正本** — どの provider が何を返すか、ライセンスと利用条件、実測した上限、採用しなかった候補と理由、出典表記の義務 | provider を足す・変える・条件が変わったとき |
 | [`AREA-MONITORS.md`](AREA-MONITORS.md) | 同上 | 地域監視の設計・DB・cron。⚠ **現在は利用者から到達できる入口が無い**（撤去であって削除ではない） | 監視の仕組みを変えたとき／復帰させたとき |
 
 ## 運用

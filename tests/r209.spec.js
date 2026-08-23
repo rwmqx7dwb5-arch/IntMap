@@ -177,6 +177,24 @@ const MEMBER = {
   statsCompare: ['IntMapStatsCompare', 'open'],
   satellitesLive: ['IntMapSatellites', 'start'],
   satelliteDetail: ['IntMapSatPanel', 'open'],
+  /* ⚠ (#R341) SIX MORE, AND FIVE OF THEM WERE ALREADY MISSING. This table and js/lazy-modules.js
+     are two lists of the same fact, and the assertion right below compares them — so a module added
+     to the loader without a line here turns this spec red. #R322 added the five `analysis*` keys and
+     did not add them here, which means the deep tier has been red on this test since that merge;
+     #R341's `aviationLive` would have been the sixth. Adding only the sixth would have left the
+     spec red and the round would have looked like the cause, so all six are here.
+     Each names the member its OWN doors call: the analysis panels call open() on the implementation
+     js/analysis-panels.js awaits, and the aircraft layer calls stats() on the controller it starts. */
+  analysisTimeSeries: ['__imAnalysisTimeSeries', 'open'],
+  analysisResearch: ['__imAnalysisResearch', 'open'],
+  analysisCorrelate: ['__imAnalysisCorrelate', 'open'],
+  /* ⚠ `render`, not `open`. js/analysis-world-events.js publishes { render, evYear } and has no
+     open() at all; the member named here has to be the one THAT MODULE'S OWN DOOR calls, which is
+     `I.render(dash, q)` in js/analysis-panels.js. Writing `open` because the four siblings use it
+     made this row assert nothing about the module it names. */
+  analysisEvents: ['__imAnalysisEvents', 'render'],
+  analysisEdu: ['__imAnalysisEdu', 'open'],
+  aviationLive: ['IntMapAviation', 'stats'],
 };
 
 test('R209 ③: every deferred module actually arrives, registers and publishes', async ({ app }) => {
