@@ -190,6 +190,8 @@ gazetteer.js                      ニュース地点解析の内蔵ガゼッテ�
 news-feed.js                      ニュースの取得・キャッシュ・見出しの翻訳
 news-ui.js                        ニュース一覧・ピン・リーダー
 news-context.js                   記事 → 場所／媒体の解決
+news-cluster.js                   記事 → 出来事（Event）の決定論的クラスタリング。Atlas `research.events` の
+                                  **正本**（場所・時刻・見出し類似の3条件と、その定数を決めた実測。#R336）
 news-sources.js                   どの媒体からニュースを取るか window.IntMapNewsSources
 news-timeline.js                  ニュースのタイムマシン用タイムライン帯
 newsgeo.js                        NewsGeo — 決定論的（非AI）のニュース地点解析

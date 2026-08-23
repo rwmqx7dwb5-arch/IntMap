@@ -5238,4 +5238,6 @@ window.IntMapLang.define('ko', { ui: {
   'You asked me to do something, and I only wrote about it.': '요청하신 것은 조작이었는데, 글로 설명만 했습니다.',   /* atlas-results.js (#R318) atlas.goal.action_missing */
   'Not every target was reached: {names}': '모든 대상에 도달하지는 못했습니다: {names}',   /* atlas-results.js (#R318) atlas.goal.targets_missing */
   'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': '이 요청은 시도 횟수가 너무 많았습니다 — 일일 사용 횟수는 더 이상 차감되지 않았습니다. 표현을 바꿔 다시 시도해 주세요.',   /* ai-core.js (#R318) aiTurnCallsMsg */
+  'place': '장소',   /* atlas-console.js (#R330) research.events footnote */
+  'headline similarity': '제목 유사도',   /* atlas-console.js (#R330) research.events footnote */
 } });
