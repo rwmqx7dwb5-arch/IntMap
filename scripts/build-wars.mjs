@@ -22,6 +22,8 @@
  *       computed through the SAME cut the browser will draw. This is the check that would catch a
  *       front whose two sides are the right shape and the wrong way round.
  *   ⑥  Dates are ordered, inside their war, and every faction key is one the war declares.
+ *   ⑦  EVERY name in scripts/wars/places.mjs is quoted by a line, an operation or a check —
+ *       see the note beside it for why an unused anchor is the shape a half-written record has.
  *
  *      node scripts/build-wars.mjs           # write data/wars.json
  *      node scripts/build-wars.mjs --check   # verify the committed file is what this produces
@@ -106,8 +108,143 @@ const CHECKS = [
   ['ww2', '1943-07-04', 'Kursk', 'ALLIED'], ['ww2', '1943-07-04', 'Orel', 'AXIS'],
   ['ww2', '1943-07-04', 'Poltava', 'AXIS'], ['ww2', '1943-07-04', 'Kharkiv', 'AXIS'],
   ['ww1', '1916-07-01', 'Verdun', 'ALLIED'],
-  ['ww2', '1943-09-20', 'Rome', 'CONTESTED'], ['ww2', '1945-06-01', 'Rome', 'ALLIED'],
+  /* ⚠ #R381 CHANGED THIS ROW FROM CONTESTED TO AXIS, AND KEPT A CONTESTED ROW BESIDE IT. #R349
+     had no line to quote for the three weeks after the armistice, so it painted Italy one colour;
+     the Salerno beachhead of 16 September is quotable, and from that day the front says where the
+     division ran — Rome was German from 10 September. The eight days BEFORE the beachhead still
+     have no line, and 12 September still answers CONTESTED. */
+  ['ww2', '1943-09-12', 'Rome', 'CONTESTED'], ['ww2', '1943-09-20', 'Rome', 'AXIS'],
+  ['ww2', '1945-06-01', 'Rome', 'ALLIED'],
   ['ww2', '1945-08-01', 'Berlin', 'ALLIED'], ['ww2', '1945-08-01', 'Munich', 'ALLIED'],
+
+  /* ══ #R381 — one row per new front and per newly dated year, because ⑤ is the ONLY check that can
+     tell a front drawn correctly from one drawn back to front, and every theatre added below was
+     authored from a written line rather than from a picture. ══════════════════════════════════ */
+  /* Western Front — the four years #R349 crossed in two jumps */
+  ['ww1', '1914-08-24', 'Brussels', 'CENTRAL'], ['ww1', '1914-08-24', 'Paris', 'ALLIED'],
+  ['ww1', '1914-08-24', 'Liege', 'CENTRAL'], ['ww1', '1914-08-24', 'Dunkirk', 'ALLIED'],
+  ['ww1', '1915-05-01', 'Lille', 'CENTRAL'], ['ww1', '1915-05-01', 'Amiens', 'ALLIED'],
+  ['ww1', '1918-04-10', 'Amiens', 'ALLIED'], ['ww1', '1918-04-10', 'Peronne', 'CENTRAL'],
+  ['ww1', '1918-05-15', 'Armentieres', 'CENTRAL'], ['ww1', '1918-05-15', 'Dunkirk', 'ALLIED'],
+  ['ww1', '1918-08-20', 'Amiens', 'ALLIED'], ['ww1', '1918-08-20', 'Cambrai', 'CENTRAL'],
+  ['ww1', '1918-10-25', 'Lille', 'ALLIED'], ['ww1', '1918-10-25', 'Brussels', 'CENTRAL'],
+  /* Eastern Front */
+  ['ww1', '1914-12-20', 'Warsaw', 'ALLIED'], ['ww1', '1914-12-20', 'Lodz', 'CENTRAL'],
+  ['ww1', '1915-08-20', 'Warsaw', 'CENTRAL'], ['ww1', '1915-08-20', 'Minsk', 'ALLIED'],
+  ['ww1', '1916-07-01', 'Rivne', 'ALLIED'], ['ww1', '1916-07-01', 'Lviv', 'CENTRAL'],
+  ['ww1', '1918-02-28', 'Moscow', 'ALLIED'], ['ww1', '1918-02-28', 'Minsk', 'CENTRAL'],
+  /* Serbia, 1914 — and the two dates on which the front is NOT what decides */
+  ['ww1', '1914-09-20', 'Belgrade', 'ALLIED'], ['ww1', '1914-09-20', 'Bogatic', 'CENTRAL'],
+  ['ww1', '1914-12-05', 'Valjevo', 'CENTRAL'], ['ww1', '1914-12-05', 'Kragujevac', 'ALLIED'],
+  ['ww1', '1915-02-01', 'Belgrade', 'ALLIED'],   /* the front ended on 16 Dec — Serbia is whole again */
+  ['ww1', '1915-11-01', 'Belgrade', 'CONTESTED'], ['ww1', '1916-06-01', 'Belgrade', 'CENTRAL'],
+  /* the Caucasus */
+  ['ww1', '1915-01-05', 'Kars', 'ALLIED'], ['ww1', '1915-01-05', 'Erzurum', 'CENTRAL'],
+  ['ww1', '1916-03-01', 'Erzurum', 'ALLIED'], ['ww1', '1916-03-01', 'Trabzon', 'CENTRAL'],
+  ['ww1', '1916-08-01', 'Trabzon', 'ALLIED'], ['ww1', '1916-08-01', 'Erzurum', 'ALLIED'],
+  ['ww1', '1918-04-01', 'Erzurum', 'CENTRAL'], ['ww1', '1918-04-01', 'Trabzon', 'CENTRAL'],
+  /* Mesopotamia */
+  ['ww1', '1915-01-01', 'Basra', 'ALLIED'], ['ww1', '1915-01-01', 'Baghdad', 'CENTRAL'],
+  ['ww1', '1915-10-15', 'Al Amarah', 'ALLIED'], ['ww1', '1915-10-15', 'Baghdad', 'CENTRAL'],
+  ['ww1', '1916-06-01', 'Kut', 'CENTRAL'], ['ww1', '1916-06-01', 'Basra', 'ALLIED'],
+  ['ww1', '1917-06-01', 'Kut', 'ALLIED'], ['ww1', '1917-06-01', 'Mosul', 'CENTRAL'],
+  ['ww1', '1917-06-01', 'Aleppo', 'CENTRAL'], ['ww1', '1917-06-01', 'Jerusalem', 'CENTRAL'],
+  ['ww1', '1918-01-01', 'Baghdad', 'ALLIED'], ['ww1', '1918-01-01', 'Mosul', 'CENTRAL'],
+  /* Romania — the seventeen months #R349 painted one colour */
+  ['ww1', '1916-11-15', 'Bucharest', 'ALLIED'], ['ww1', '1916-11-15', 'Iasi', 'ALLIED'],
+  ['ww1', '1917-01-15', 'Bucharest', 'CENTRAL'], ['ww1', '1917-01-15', 'Iasi', 'ALLIED'],
+  ['ww1', '1917-01-15', 'Ploiesti', 'CENTRAL'], ['ww1', '1917-01-15', 'Galati', 'ALLIED'],
+  ['ww1', '1917-01-15', 'Cernavoda', 'CENTRAL'], ['ww1', '1917-01-15', 'Craiova', 'CENTRAL'],
+  ['ww1', '1918-06-01', 'Iasi', 'CENTRAL'],
+  /* Sinai, Palestine and Syria */
+  ['ww1', '1916-09-01', 'Cairo', 'ALLIED'], ['ww1', '1916-09-01', 'El Arish', 'CENTRAL'],
+  ['ww1', '1917-01-15', 'Cairo', 'ALLIED'], ['ww1', '1917-01-15', 'Gaza', 'CENTRAL'],
+  ['ww1', '1918-09-28', 'Jerusalem', 'ALLIED'], ['ww1', '1918-09-28', 'Damascus', 'CENTRAL'],
+  ['ww1', '1918-10-28', 'Beirut', 'ALLIED'], ['ww1', '1918-10-28', 'Damascus', 'ALLIED'],
+  /* Albania, which the Macedonian front has been crossing since August 1916 */
+  ['ww1', '1917-01-01', 'Tirana', 'CENTRAL'], ['ww1', '1917-01-01', 'Gjirokaster', 'ALLIED'],
+  ['ww1', '1918-11-01', 'Tirana', 'ALLIED'],
+
+  /* ══ #R381 · WW2. Every row below is a fact a reader can look up, and eleven of them were wrong
+     on the first green build: the D-Day line quoted east-to-west (Caen and Paris Allied on 15 June),
+     the Seine line stopped at Troyes (Metz, Nancy and Strasbourg Allied in August), the winter lines
+     stopped at Colmar (Provence German all winter) and anchored ON Aachen and Strasbourg (the first
+     German city taken reading German for four months, and the first French city over the Rhine the
+     same). None of them is visible on a map; all of them are visible here. ══════════════════════ */
+  /* Poland and France, 1939–40 */
+  ['ww2', '1939-09-10', 'Katowice', 'AXIS'], ['ww2', '1939-09-10', 'Lublin', 'ALLIED'],
+  ['ww2', '1939-09-20', 'Lviv', 'ALLIED'], ['ww2', '1939-09-20', 'Warsaw', 'AXIS'],
+  ['ww2', '1940-06-11', 'Paris', 'ALLIED'], ['ww2', '1940-06-11', 'Amiens', 'AXIS'],
+  ['ww2', '1940-06-20', 'Bordeaux', 'ALLIED'], ['ww2', '1940-06-20', 'Lyon', 'ALLIED'],
+  /* Norway */
+  ['ww2', '1940-04-25', 'Oslo', 'AXIS'], ['ww2', '1940-04-25', 'Mo i Rana', 'ALLIED'],
+  ['ww2', '1940-04-25', 'Lillehammer', 'AXIS'],
+  ['ww2', '1940-05-20', 'Mo i Rana', 'ALLIED'], ['ww2', '1940-06-09', 'Mosjoen', 'AXIS'],
+  ['ww2', '1940-07-01', 'Mo i Rana', 'AXIS'],
+  /* Albania and Greece */
+  ['ww2', '1941-01-15', 'Sarande', 'ALLIED'], ['ww2', '1941-01-15', 'Tirana', 'AXIS'],
+  ['ww2', '1941-01-15', 'Berat', 'AXIS'],   ['ww2', '1940-10-01', 'Tirana', 'AXIS'], ['ww2', '1940-10-01', 'Sarande', 'AXIS'],
+  ['ww2', '1941-04-12', 'Larissa', 'ALLIED'], ['ww2', '1941-04-12', 'Thessaloniki', 'AXIS'],
+  ['ww2', '1941-04-22', 'Larissa', 'AXIS'], ['ww2', '1941-04-22', 'Athens', 'ALLIED'],
+  ['ww2', '1941-05-15', 'Athens', 'AXIS'],
+  /* the Eastern Front, year by year */
+  ['ww2', '1941-08-01', 'Vitebsk', 'AXIS'], ['ww2', '1941-08-01', 'Moscow', 'ALLIED'],
+  ['ww2', '1942-02-01', 'Smolensk', 'AXIS'], ['ww2', '1942-02-01', 'Tula', 'ALLIED'],
+  ['ww2', '1942-08-15', 'Taganrog', 'AXIS'], ['ww2', '1942-08-15', 'Stalingrad', 'ALLIED'],
+  ['ww2', '1942-10-01', 'Krasnodar', 'AXIS'], ['ww2', '1942-10-01', 'Baku', 'ALLIED'],
+  ['ww2', '1943-03-01', 'Kursk', 'ALLIED'], ['ww2', '1943-03-01', 'Orel', 'AXIS'],
+  ['ww2', '1943-04-15', 'Kharkiv', 'AXIS'], ['ww2', '1943-04-15', 'Kursk', 'ALLIED'],
+  ['ww2', '1943-09-01', 'Kharkiv', 'ALLIED'], ['ww2', '1943-09-01', 'Kyiv', 'AXIS'],
+  ['ww2', '1944-02-15', 'Leningrad', 'ALLIED'], ['ww2', '1944-02-15', 'Tallinn', 'AXIS'],
+  ['ww2', '1944-02-15', 'Kherson', 'ALLIED'], ['ww2', '1944-02-15', 'Odesa', 'AXIS'],
+  ['ww2', '1944-07-20', 'Minsk', 'ALLIED'], ['ww2', '1944-07-20', 'Kaunas', 'AXIS'],
+  ['ww2', '1944-11-15', 'Lodz', 'AXIS'], ['ww2', '1944-11-15', 'Lublin', 'ALLIED'],
+  ['ww2', '1945-01-20', 'Warsaw', 'ALLIED'], ['ww2', '1945-01-20', 'Poznan', 'AXIS'],
+  ['ww2', '1945-03-15', 'Poznan', 'ALLIED'], ['ww2', '1945-03-15', 'Berlin', 'AXIS'],
+  /* Karelia — the front #R349 drew with one line, on a chord that ran west of Petrozavodsk */
+  ['ww2', '1942-06-01', 'Petrozavodsk', 'AXIS'], ['ww2', '1942-06-01', 'Vyborg', 'AXIS'],
+  ['ww2', '1943-06-01', 'Petrozavodsk', 'AXIS'], ['ww2', '1944-08-01', 'Petrozavodsk', 'ALLIED'],
+  ['ww2', '1944-08-01', 'Vyborg', 'ALLIED'],
+  /* the desert */
+  ['ww2', '1941-01-01', 'Bardia', 'ALLIED'], ['ww2', '1941-01-01', 'Benghazi', 'AXIS'],
+  ['ww2', '1941-05-01', 'Bardia', 'AXIS'], ['ww2', '1941-05-01', 'Sidi Barrani', 'ALLIED'],
+  ['ww2', '1942-03-01', 'Benghazi', 'AXIS'], ['ww2', '1942-03-01', 'Tobruk', 'ALLIED'],
+  ['ww2', '1942-08-01', 'Mersa Matruh', 'AXIS'], ['ww2', '1942-08-01', 'Alexandria', 'ALLIED'],
+  ['ww2', '1942-11-15', 'Mersa Matruh', 'ALLIED'], ['ww2', '1943-01-01', 'Tripoli', 'AXIS'],
+  ['ww2', '1943-04-25', 'Sfax', 'ALLIED'], ['ww2', '1943-04-25', 'Tunis', 'AXIS'],
+  /* Italy */
+  ['ww2', '1943-10-15', 'Salerno', 'ALLIED'], ['ww2', '1943-10-15', 'Rome', 'AXIS'],
+  ['ww2', '1944-03-01', 'Foggia', 'ALLIED'], ['ww2', '1944-03-01', 'Rome', 'AXIS'],
+  ['ww2', '1944-07-25', 'Rome', 'ALLIED'], ['ww2', '1944-07-25', 'Florence', 'AXIS'],
+  ['ww2', '1945-01-15', 'Florence', 'ALLIED'], ['ww2', '1945-01-15', 'Bologna', 'AXIS'],
+  ['ww2', '1945-05-01', 'Bologna', 'ALLIED'],
+  /* from Normandy to the Elbe */
+  ['ww2', '1944-06-15', 'Bayeux', 'ALLIED'], ['ww2', '1944-06-15', 'Caen', 'AXIS'],
+  ['ww2', '1944-06-15', 'Paris', 'AXIS'],
+  ['ww2', '1944-08-28', 'Paris', 'ALLIED'], ['ww2', '1944-08-28', 'Nancy', 'AXIS'],
+  ['ww2', '1944-08-28', 'Metz', 'AXIS'], ['ww2', '1944-08-28', 'Marseille', 'ALLIED'],
+  ['ww2', '1944-08-28', 'Brussels', 'AXIS'],
+  ['ww2', '1944-11-01', 'Nancy', 'ALLIED'], ['ww2', '1944-11-01', 'Metz', 'AXIS'],
+  ['ww2', '1944-11-01', 'Brussels', 'ALLIED'],
+  ['ww2', '1944-12-24', 'Aachen', 'ALLIED'], ['ww2', '1944-12-24', 'Cologne', 'AXIS'],
+  ['ww2', '1944-12-24', 'Strasbourg', 'ALLIED'], ['ww2', '1944-12-24', 'Colmar', 'AXIS'],
+  ['ww2', '1944-12-24', 'Marseille', 'ALLIED'], ['ww2', '1944-12-24', 'Dinant', 'ALLIED'],
+  ['ww2', '1945-03-01', 'Colmar', 'ALLIED'], ['ww2', '1945-03-01', 'Cologne', 'AXIS'],
+  ['ww2', '1945-04-20', 'Cologne', 'ALLIED'], ['ww2', '1945-04-20', 'Munich', 'AXIS'],
+  /* Burma, and the only Indian ground the war reached */
+  ['ww2', '1943-06-01', 'Rangoon', 'AXIS'], ['ww2', '1943-06-01', 'Mandalay', 'AXIS'],
+  ['ww2', '1943-06-01', 'Tamu', 'ALLIED'], ['ww2', '1943-06-01', 'Lashio', 'AXIS'],
+  ['ww2', '1944-05-01', 'Mandalay', 'AXIS'], ['ww2', '1944-05-01', 'Dimapur', 'ALLIED'],
+  ['ww2', '1945-04-01', 'Mandalay', 'ALLIED'], ['ww2', '1945-04-01', 'Rangoon', 'AXIS'],
+  ['ww2', '1945-06-01', 'Rangoon', 'ALLIED'],
+  /* China, where the front stood still for five years and then moved twice */
+  ['ww2', '1943-01-01', 'Changsha', 'ALLIED'], ['ww2', '1943-01-01', 'Wuhan', 'AXIS'],
+  ['ww2', '1943-01-01', 'Guilin', 'ALLIED'], ['ww2', '1943-01-01', 'Nanning', 'ALLIED'],
+  ['ww2', '1944-08-01', 'Changsha', 'AXIS'], ['ww2', '1944-08-01', 'Guilin', 'ALLIED'],
+  ['ww2', '1945-01-01', 'Guilin', 'AXIS'], ['ww2', '1945-01-01', 'Kunming', 'ALLIED'],
+  ['ww2', '1945-07-05', 'Nanning', 'ALLIED'], ['ww2', '1945-07-05', 'Liuzhou', 'ALLIED'],
+  ['ww2', '1945-07-05', 'Guangzhou', 'AXIS'],
+  ['ww2', '1945-08-20', 'Beijing', 'ALLIED'],
 ];
 /* Two of the check cities are not front anchors, so they live here rather than in places.mjs. */
 const CHECK_ONLY = { Lille: [3.058, 50.629, 'FR'] };
@@ -230,6 +367,25 @@ for (const [warId, date, place, want] of CHECKS) {
   const got = factionAtPoint(war, date, [p[0], p[1]]);
   if (got !== want) bad(`check FAILED — on ${date} the map puts ${place} under ${got}, the record says ${want}`);
   else checked++;
+}
+
+/* ── ⑦ #R381 — EVERY ANCHOR IS QUOTED BY SOMETHING ──────────────────────────────────────────── */
+/* ⚠ THIS IS THE CHECK THAT WOULD HAVE CAUGHT WHAT #R349 SHIPPED. That round wrote a gazetteer for
+   all the theatres — Erzurum and Van, Basra and Kut, Belgrade and Niš, Bucharest and Iaşi, Narvik
+   and Rangoon and Saipan — and then quoted lines through less than half of it: 178 of 408 names
+   were dead weight, and each one marked a campaign the record was silent about. Nothing failed,
+   because an unused name is invisible. A name in this table now has to be quoted by a front line,
+   by an operation, or by a control check — that is, it has to be somewhere a reader can reach. */
+{
+  const quoted = new Set();
+  for (const W of WARS) {
+    for (const F of W.fronts) for (const D of F.dates) for (const n of D.pts) quoted.add(n);
+    for (const E of W.events) quoted.add(E.at);
+  }
+  for (const [, , place] of CHECKS) quoted.add(place);
+  const idle = Object.keys(PLACES).filter((n) => !quoted.has(n));
+  if (idle.length) bad(`${idle.length} place(s) in scripts/wars/places.mjs are quoted by nothing — `
+    + `a name no line, operation or check reaches is a campaign that was never written: ${idle.join(', ')}`);
 }
 
 /* ── the verdict ────────────────────────────────────────────────────────────────────────────── */
