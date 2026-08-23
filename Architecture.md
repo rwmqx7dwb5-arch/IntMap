@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（936行・84 KB）＋ `css/`（3本）＋ `js/`（223本・10.6 MB）＋ `src/`（10本）。**
+- **本体は `index.html`（936行・84 KB）＋ `css/`（3本）＋ `js/`（224本・10.9 MB）＋ `src/`（10本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -583,6 +583,9 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は、�
   ⚠ 上流の期限は 45 秒（上流の悪い日より短い制限時間は生きたフィードを落とす）。キャッシュは 15 秒。
   ⚠ カナダ ECCC は ACAO を返すので **relay を通さない**（要らない relay は落ちうるものを1つ増やすだけ）。
 - **`cable-geo`** … TeleGeography 海底ケーブル GeoJSON（2 URL 固定 allowlist）の ACAO 付与中継。
+  ⚠ 海底ケーブル層の**主系統ではない**。線と点は自オリジンの `data/subcables.json` /
+  `data/subcables-lp.json` から読み、この関数は**移行用の fallback** として残っている
+  （取得順は [`docs/MAP-LAYERS.md`](docs/MAP-LAYERS.md) §7.7）。
 - **`news-relay`** … Google News RSS の ACAO 付与中継。`news.google.com` の `/rss/search` と
   `/rss/headlines/section/topic/<TOPIC>` の**2エンドポイントだけ**。
 - **`aviation-feed`** … ライブ航空機の**唯一の上流読み取り役**（`--no-verify-jwt`・秘密なし）。
