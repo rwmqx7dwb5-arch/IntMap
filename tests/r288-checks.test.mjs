@@ -423,6 +423,9 @@ test('#R288 ⑫ the om protocol flag only goes up when the registration happened
   const w = WX();
   assert.match(w, /if\(!EC\(\)\.registerProtocol\(\)\) return false;\s*const url=omUrl\(cfg/,
     'a raster layer refuses to be built before the protocol exists');
-  assert.match(w, /if\(!EC\(\)\.registerProtocol\(\)\) return false;\s*const s=SLOT\[slot\], url=EC\(\)\.omUrl\(VAR\);/,
+  /* ⚠ (#R325) the raster sources ask for `omRasterUrl` (= `omUrl` plus `tile_size`); the vector
+     ones still ask for `omUrl`. What ⑫ pins is the ORDER — no `om://` url is spelled before
+     `registerProtocol()` has answered true — and that is unchanged either way. */
+  assert.match(w, /if\(!EC\(\)\.registerProtocol\(\)\) return false;\s*const s=SLOT\[slot\], url=EC\(\)\.omR?a?s?t?e?r?Url\(VAR\);/,
     '…and so does the animated field');
 });

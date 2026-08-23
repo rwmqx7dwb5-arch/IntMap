@@ -244,10 +244,42 @@
       if (j <= TOUCH_BACK) touch(i - j * _touchDir);
     }
   }
+  /* ══ ⚠⚠⚠ (#R325) TWELVE TILES MEANT TWELVE COPIES OF THE WHOLE FIELD ══════════════════════════
+     READ OUT OF THE SHIPPED BUNDLE: the SDK colours a tile in a worker (`requestTile` →
+     `postMessage`), and it posts the decoded field WITH the message — `const {signal, ...E} = A;
+     B.postMessage(E)`, with no transfer list. `E.data` is `{values, directions}`, two Float32Arrays
+     of every grid point, so each tile STRUCTURED-CLONES about 53 MB on the main thread. MEASURED at
+     the opening view, one step: **12 tiles and a single 1,276 ms long task** at the moment they were
+     dispatched — a second and a quarter of copying, for twelve pictures of the same field.
+
+     The clone is per TILE, so the fix is fewer of them, and the SDK already takes the size: 512 is
+     its default (`tile_size`, one of 64/128/256/512/1024/2048) and MapLibre's raster default is
+     512 too, which is why one data pixel is one CSS pixel today. Ask BOTH for 1024 and MapLibre
+     draws the same map out of tiles one zoom level lower —
+         data px per screen px = S·2^Z / (512·2^M),  Z = round(M + log2(512/S))
+         S=512, Z=M   → 1        S=1024, Z=M−1 → 1
+     — i.e. the same 1:1 density, the same colours, the same 9 km spacing, out of a QUARTER as many
+     tiles. MEASURED: 12 → 4 at the opening view.
+     ⚠ THE TWO NUMBERS ARE ONE DECISION. `tile_size` here and `tileSize` on every raster source in
+     js/weather.js must be the same, or the map is drawn at half or double resolution — which is why
+     this is exported as `TILE_PX` rather than written down twice (tests/r325-checks.test.mjs).
+     ⚠ NOT 2048: a tile is an RGBA texture, so 1024 is 4 MB of GPU memory each and 2048 would be 16.
+     ⚠ `tile_size` IS NOT PART OF THE STATE KEY (the SDK's `DATA_RELEVANT_PARAMS` is `['variable']`),
+     so this changes what is DRAWN and nothing about what is read or cached.
+     ⚠⚠ RASTER ONLY. Two ECMWF layers are VECTOR sources through this same protocol — the isobars
+     and the wind arrows — and for those the SDK writes `tile_size` into the MVT as the layer extent
+     and lays the arrows out against it. A raster's pixel count and a vector tile's coordinate space
+     are not the same decision, and this round measured only the first one, so `omUrl` stays exactly
+     as it was and the raster call sites ask for `omRasterUrl`. */
+  var TILE_PX = 1024;
   function omUrl(variable, extra, i) {
     var f = fileUrl(i);
     if (!f) return '';
     return 'om://' + f + '?variable=' + encodeURIComponent(variable) + (extra || '');
+  }
+  function omRasterUrl(variable, extra, i) {
+    var u = omUrl(variable, extra, i);
+    return u ? (u + '&tile_size=' + TILE_PX) : u;
   }
   /* The SDK's own cache key: the file plus only those query parameters it considers data-relevant
      (`DATA_RELEVANT_PARAMS`, which is `['variable']` today). Read from the SDK when it is loaded so
@@ -606,7 +638,9 @@
   var READER_MAX = 4;
   var readers = [];              /* most-recent-first: [{url, rd}] — one open .om file each */
   function pinReader(rd) {
-    if (!rd || rd._imPinned) return rd;
+    /* ⚠ (#R325) NEVER THE TILE PROXY — its `setToOmFile` records which pooled reader the next
+       `readVariable` belongs to, and a memo in front of it would skip that assignment. */
+    if (!rd || rd._imPinned || rd._imProxy) return rd;
     var orig = null;
     try { orig = rd.setToOmFile.bind(rd); } catch (_) { return rd; }
     var at = '', open = null;
@@ -645,6 +679,84 @@
     try { h.open = h.rd.setToOmFile(url); h.open.catch(function () {}); } catch (_) { return null; }
     return h;
   }
+  /* ══ ⚠⚠⚠ (#R325) OPENING THE NEXT HOUR IS NOT READING IT ═══════════════════════════════════════
+     #R276 追記's rule stands and this round does not touch it: a reader who has not moved the axis
+     is not asking for another hour, and the BYTES of one are not spent on a guess. But an open is
+     not bytes. `setToOmFile` is a HEAD, one 64 kB trailer read and a walk of the variable tree —
+     MEASURED here as **389 / 477 / 612 ms of latency and ~64 kB**, and every one of those
+     milliseconds was being paid IN FRONT of the first byte of the hour the reader had just asked
+     for, because the file was only ever opened once somebody wanted it.
+
+     ⚠ AND THE PRICE IS STATED RATHER THAN WAVED AT. This is NOT `touch`'s one byte: an open is a
+     HEAD plus the file's trailer, MEASURED at **one request of 64 kB**. A reader who switches the
+     layer on and never moves the axis pays that once — 64 kB against the 8.6 MB the hour they are
+     looking at already cost, i.e. 0.7 % — and a reader who does move the axis gets the whole of the
+     open back. What it buys, measured at z6: the step's `setToOmFile` goes from 389 ms to the
+     resolved promise the pool is already holding.
+     ⚠ ONE FILE, IN THE DIRECTION THE READER IS GOING (`_touchDir`, #R305's evidence), and only
+     while a weather layer is actually on — `sdk` is the test for that (see `setIndex`).
+     ⚠ IT IS THE POOL'S OWN `readerFor`, so the hour that is opened ahead is the very reader the
+     step will use, and `pinReader` makes the step's own open a no-op rather than a second one. */
+  function openAhead(i) {
+    if (!meta || !meta.validTimes) return;
+    var n = meta.validTimes.length, j = (i == null ? idx : i) + _touchDir;
+    if (j < 0 || j >= n) return;
+    try { openReader(fileUrl(j)); } catch (_) {}
+  }
+  /* ══ ⚠⚠⚠ (#R325) THE POOL WAS BUILT IN #R310 AND THE TILES WERE NEVER LET INTO IT ══════════════
+     `readerFor` gives every .om file its own reader so a second open of a file already open is a
+     no-op. The COLOUR TILES were left outside it: `ensureData(state, B.omFileReader, …)` is handed
+     the SDK's own singleton, which `pinReader` could make idempotent but which is still a SECOND
+     reader on the same file — so every step opened the file twice. MEASURED on the built page, one
+     step, the SDK's reader instrumented:
+
+         tileRd.setToOmFile   9 ms → +629 ms      ← a file this module opened at `setIndex`
+         tileRd.readVariable  638 ms → +1,418 ms  ← could not start until that finished
+
+     i.e. 629 ms of a 3,073 ms step spent re-doing a HEAD, a trailer read and a variable-tree walk
+     that were already done. → the instance's reader is REPLACED by a proxy onto the pool. The file
+     the tiles want is normally already open (`setIndex` opens it beside the stage-in), so
+     `setToOmFile` returns the promise that is already resolved and `readVariable` starts at once.
+
+     ⚠ THE ORDERING SEMANTICS ARE THE SDK'S OWN, UNCHANGED. Its `omFileReader` is a singleton that
+     every caller re-points, so a read whose `readVariable` runs after somebody else's
+     `setToOmFile` has always read the newer file; `cur` reproduces exactly that. What it no longer
+     does is DESTROY the other file's open state on the way (`FD.setToOmFile` begins with
+     `this.dispose()`), so the read that was re-pointed away can come back for free.
+     ⚠ `config` AND `cache` ARE FORWARDED because the SDK reaches through the reader for both:
+     `getProtocolInstance` compares `omFileReader.config.useSAB`, and `clearCache` calls
+     `omFileReader.cache.clear()`. The cache is the one 32 MB block LRU (`omSettings`), shared by
+     every reader in the pool, so nothing about what is cached changes either.
+     ⚠ IT FALLS BACK TO THE REAL READER whenever the pool cannot answer (no settings yet, a reader
+     that would not construct) — the tiles must never lose their way of reading a file. */
+  var tileProxy = null;
+  function tileReader(inst) {
+    if (!inst || !inst.omFileReader) return null;
+    if (inst.omFileReader === tileProxy) return tileProxy;
+    var real = inst.omFileReader;
+    if (real._imProxy) { tileProxy = real; return real; }
+    var cur = null;
+    tileProxy = {
+      _imProxy: 1,
+      config: real.config,
+      get cache() { return real.cache; },
+      setToOmFile: function (u) {
+        var h = null;
+        try { h = readerFor(u); } catch (_) { h = null; }
+        cur = h;
+        if (!h) return real.setToOmFile(u);
+        try { h.open = h.rd.setToOmFile(u); h.open.catch(function () {}); return h.open; }
+        catch (e) { cur = null; return real.setToOmFile(u); }
+      },
+      readVariable: function (v, r, s) { return cur ? cur.rd.readVariable(v, r, s) : real.readVariable(v, r, s); },
+      prefetchVariable: function (v, r, s) { return cur ? cur.rd.prefetchVariable(v, r, s) : real.prefetchVariable(v, r, s); },
+      /* the pool owns the lifetime of every reader in it (`READER_MAX`); disposing here would take
+         a file away from the field read that is using it */
+      dispose: function () {}
+    };
+    inst.omFileReader = tileProxy;
+    return tileProxy;
+  }
   var settings = null;
   function omSettings() {
     if (settings || !sdk) return settings;
@@ -666,6 +778,120 @@
      — which is the #R286 shape exactly: a scheme this app registers itself can only reach the
      network if the registration is missing, so the violation IS the diagnosis. `addProtocol`
      already returns a boolean; this reads it. */
+  /* ══ ⚠⚠⚠ (#R325) A PICTURE OF JAPAN WAS COSTING THE WHOLE PLANET ═══════════════════════════════
+     「風レイヤーは品質保ったまま、起動から日時変更からすべてに至るまで、爆速にしろ。」 (7回目)
+
+     Six rounds have measured the FIELD read — the band the particles fly in — and made it smaller,
+     earlier, joinable and cached. None of them measured the OTHER read. MEASURED here, on the built
+     page, with the SDK's own reader instrumented, one step of the axis zoomed in over Japan
+     (z6, 132.8,32.3 → 143.2,39.6):
+
+         the particles' band read     535,608 values          ← the latitudes on screen
+         the COLOUR TILES' read     6,599,680 values          ← THE WHOLE PLANET
+         one step, over the wire     9.76 MB, 31 requests
+         readVariable (main thread)  1,537 ms
+
+     Seven tiles of Japan, and every one of them was served out of a decode of every grid point on
+     Earth. At the opening view the same read is 1,418 ms of a 3,073 ms step. READ OUT OF THE
+     SHIPPED BUNDLE, the reason is one line: the SDK builds a tile's `dataOptions` as
+     `{domain, variable, bounds: h.currentBounds}`, and `h.currentBounds` is a module global that
+     starts `undefined` — whereupon `getRanges` answers `[{0,ny},{0,nx}]`, i.e. everything. It is
+     set by ONE exported function, `updateCurrentBounds`, and this app had never called it.
+
+     → the view is handed to the protocol on every request it makes. `snapBounds` (the SDK's own,
+     inside `updateCurrentBounds`) rounds the box OUTWARD to the tile grid at the zoom the width
+     implies, so the box always contains the tiles MapLibre is asking for; the pad below is a second
+     margin for the tiles it keeps around the edge of the viewport. Nothing about the picture
+     changes — the tiles are the same tiles, from the same file, at the same 9 km spacing, in the
+     same colours. What stops being read is the part of the grid no tile was ever going to draw.
+
+     ⚠ AT WORLD ZOOM THIS IS A NO-OP AND THAT IS CORRECT. `snapBounds` answers the whole world for
+     anything spanning 360°, so the opening view still reads the planet — because at the opening
+     view the planet IS what is on screen. The saving is every other view.
+     ⚠ IT IS RE-ASKED PER REQUEST, NOT CACHED PER MOVE. The tiles of one MapLibre update are
+     requested in one frame, so they all see one box and share ONE state and ONE read
+     (`getOrCreateState` reuses a state whose bounds CONTAIN the new ones). A pan that crosses a
+     tile boundary is a new box and a new read — which is now ~0.5 MB rather than 8.6 MB.
+     ⚠ A WRAPPED OR POLE-TO-POLE VIEW FALLS BACK TO THE WHOLE WORLD, in `snapBounds` itself. */
+  var VIEW_PAD = 0.25;                    /* of the span, on each side — the tiles beyond the edge */
+  function viewBounds() {
+    var b = null;
+    try { b = window.IntMapGeoEngine.camera.getBounds(); } catch (_) { return null; }
+    if (!b) return null;
+    try {
+      var w = b.getWest(), s = b.getSouth(), e = b.getEast(), n = b.getNorth();
+      if (!(w === w && s === s && e === e && n === n)) return null;
+      var dx = (e - w) * VIEW_PAD, dy = (n - s) * VIEW_PAD;
+      return [w - dx, Math.max(-90, s - dy), e + dx, Math.min(90, n + dy)];
+    } catch (_) { return null; }
+  }
+  /* ══ ⚠⚠⚠ (#R325) …AND AT WORLD ZOOM THE BOX MUST STAY UNSAID, OR ONE READ BECOMES TWO ══════════
+     The tiles and this module put their states in the SAME map under the SAME key — `stateKey` is
+     the SDK's `fileAndVariableKey` by construction — so a GLOBAL field read (the last rung of the
+     widening staircase, which at world zoom is the planet) has always been served out of the state
+     the colour tiles had already filled, and cost nothing. `getOrCreateState` reuses a state only
+     when both sides say `bounds: undefined` or the new box is INSIDE the old one; a box on the tile
+     side and `undefined` on the field side matches neither, and the rung would re-read and re-decode
+     all 6,599,680 points a second time.
+
+     MEASURED at the opening view: the box `snapBounds` answers covers 6,578,152 of 6,599,680 points
+     — 99.67 % of the grid. Saying it costs a whole second decode to save a third of one per cent.
+     → past `WORLD_RATIO` of the grid the box is not said at all, which is exactly the behaviour
+     every round before this one had, at exactly the view where it was the right one.
+     ⚠ IT IS THE RANGES THAT ARE COMPARED, NOT THE DEGREES. The domain is a REDUCED Gaussian grid
+     (#R299): a row holds points in proportion to cos φ, so a box that looks like half the planet in
+     degrees can hold nearly all of its points. `getRanges` is the SDK's own answer to that question.
+     ⚠ AND IT IS CACHED ON THE PADDED BOX, because this runs once per tile request. */
+  var WORLD_RATIO = 0.9;
+  /* ══ ⚠⚠⚠ (#R325) THE TILE BEING ASKED FOR IS ALWAYS INSIDE THE BOX ═════════════════════════════
+     `getBounds()` is what the reader can SEE; `coveringTiles` is what MapLibre DECIDES TO FETCH,
+     and under pitch the frustum reaches past the horizon the bounds stop at. A tile outside the box
+     would be rendered out of a grid subset that does not contain it — which is not a slower
+     picture, it is a MISSING one, and a hole in the wind field is exactly the defect #R299/#R307
+     spent two rounds chasing from the other direction.
+     → the box is the UNION of the padded view and the tile in hand, so a tile can never fall
+     outside the data its own read covers. In the ordinary case the tile is already inside the view
+     and the union IS the view, which is why one MapLibre update still shares one state and one
+     read; a tile beyond it widens the box once and the tiles behind it are then inside.
+     ⚠ `tile2lon` WRAPS: the right edge of the world comes back as −180, not +180. */
+  function tileBox(url) {
+    var m = /\/(\d+)\/(\d+)\/(\d+)$/.exec(String(url || '').replace(/[?#].*$/, ''));
+    if (!m || !sdk || !sdk.tile2lon || !sdk.tile2lat) return null;
+    var z = +m[1], x = +m[2], y = +m[3];
+    if (!(z >= 0 && z <= 24)) return null;
+    try {
+      var w = sdk.tile2lon(x, z), e = sdk.tile2lon(x + 1, z);
+      var n = sdk.tile2lat(y, z), s = sdk.tile2lat(y + 1, z);
+      if (!(w === w && e === e && n === n && s === s)) return null;
+      if (e <= w) e = 180;
+      return [w, Math.min(s, n), e, Math.max(s, n)];
+    } catch (_) { return null; }
+  }
+  var _vbKey = '', _vbUse = null;
+  function tileBounds(url) {
+    var vb = viewBounds();
+    if (!vb) return null;                       /* no camera to speak for: say nothing, read it all */
+    var t = tileBox(url);
+    if (t) vb = [Math.min(vb[0], t[0]), Math.min(vb[1], t[1]), Math.max(vb[2], t[2]), Math.max(vb[3], t[3])];
+    var k = vb[0].toFixed(2) + ',' + vb[1].toFixed(2) + ',' + vb[2].toFixed(2) + ',' + vb[3].toFixed(2);
+    if (k === _vbKey) return _vbUse;
+    _vbKey = k; _vbUse = vb;
+    try {
+      var dom = sdk.domainOptions.find(function (d) { return d.value === DOMAIN; });
+      var g = dom && dom.grid;
+      if (g && sdk.getRanges && sdk.snapBounds) {
+        var count = function (r) { var t2 = 1, i; for (i = 0; i < r.length; i++) t2 *= Math.max(0, r[i].end - r[i].start); return t2; };
+        var full = count(sdk.getRanges(g, null));
+        if (full > 0 && count(sdk.getRanges(g, sdk.snapBounds(vb))) >= full * WORLD_RATIO) _vbUse = null;
+      }
+    } catch (_) {}
+    return _vbUse;
+  }
+  function applyTileBounds(url) {
+    var tb = tileBounds(url);
+    if (tb && sdk.updateCurrentBounds) sdk.updateCurrentBounds(tb);
+    else sdk.currentBounds = undefined;
+  }
   function registerProtocol() {
     if (protoReg) return true;
     if (!sdk || !sdk.omProtocol) return false;
@@ -675,12 +901,12 @@
        so every tile state paid a HEAD and a tree walk for a file the reader already had open — and
        two tile states of the same file could `dispose()` the reader out from under each other,
        which is the collision the note on `serial` describes, on the one path `serial` never covered
-       (the tiles are called by MapLibre, not by this module). Pinning makes the second open a no-op
-       and therefore removes both. `getProtocolInstance` is the SDK's own singleton, so this pins the
-       reader the tiles actually use, once. */
+       (the tiles are called by MapLibre, not by this module). (#R325) The pin is now a PROXY onto
+       the same per-file pool the field reads through — see `tileReader`. */
     try {
       ok = !!window.IntMapGeoEngine.scene.addProtocol('om', function (params, ctl) {
-        try { pinReader(sdk.getProtocolInstance(st).omFileReader); } catch (_) {}
+        try { tileReader(sdk.getProtocolInstance(st)); } catch (_) {}
+        try { applyTileBounds(params && params.url); } catch (_) {}
         return sdk.omProtocol(params, ctl, st);
       });
     } catch (_) { ok = false; }
@@ -1027,7 +1253,7 @@
       if (!key2) return null;
       if (!ahead) loadingKey = key2;
       var inst = sdk.getProtocolInstance(omSettings());
-      try { pinReader(inst.omFileReader); } catch (_) {}   /* (#R310) the tiles re-open too — see pinReader */
+      try { tileReader(inst); } catch (_) {}   /* (#R310/#R325) the tiles read through the pool — see tileReader */
       var dom = sdk.domainOptions.find(function (d) { return d.value === DOMAIN; });
       if (!dom) return null;
       var f = fileUrl(i);
@@ -1093,6 +1319,9 @@
           else if (seq === mine) {
             keepFrame(frame); loadingKey = '';
             emit('field', { variable: variable, band: band });
+            /* (#R325) the reader is looking at this hour now, so the NEXT one's file is opened —
+               not read. This is the switch-on path: `setIndex` covers every step after it. */
+            openAhead(null);
           }
           return frame;
         });
@@ -1425,6 +1654,7 @@
          the read that needs them. MEASURED before this line existed: the two HEADs of a step landed
          at 223 and 227 ms and took 389 and 576 ms, in front of the first byte of data. */
       try { openReader(fileUrl(idx)); } catch (_) {}
+      openAhead(idx);          /* (#R325) …and the hour after it, which is the next step's open */
     }
     if (!(opt && opt.fromClock)) _pushClock();
     if (opt && opt.quiet) { clearTimeout(timeT); timeT = 0; return; }
@@ -1686,6 +1916,10 @@
   window.IntMapECMWF = {
     BASE: BASE, META_URL: META_URL, DOMAIN: DOMAIN,
     MODEL: 'ECMWF IFS HRES', RESOLUTION_KM: 9,
+    /* (#R325) the ONE tile size — `omUrl` puts it in the url, every raster source uses it as
+       `tileSize`. See the note on `omUrl`: the two must agree or the map is drawn at the wrong
+       resolution. */
+    TILE_PX: TILE_PX,
     meta: fetchMeta,
     metaSync: function () { return meta; },
     ready: ready,
@@ -1716,6 +1950,7 @@
     playInterval: function (ms) { if (ms) playMs = Math.max(120, ms | 0); return playMs; },
     fileUrl: fileUrl,
     omUrl: omUrl,
+    omRasterUrl: omRasterUrl,          /* (#R325) …with `tile_size` — raster only, see `omUrl` */
     stateKey: stateKey,
     load: load,
     release: release,
