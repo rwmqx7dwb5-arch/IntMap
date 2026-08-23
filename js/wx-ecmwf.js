@@ -2059,6 +2059,15 @@ import './wx-models.js';
   }
   window.IntMapWxEngine = {
     model: model,
+    /* ⚠ (#R376) ASKING ABOUT A MODEL IS NOT THE SAME AS OPENING IT. `model()` builds the instance if
+       it is not there, which is right for a caller that is about to READ from it and wrong for one
+       that only wants to know what is already known — the legend's picker asks every offered model
+       「can you draw this layer?」 on every render, and through `model()` that answered by building
+       all of them. MEASURED in production: `open()` returned all three at boot with no weather layer
+       on. No network followed (metadata is only fetched when somebody calls `meta()`), so the cost
+       was objects rather than bytes — but the file's own comment claimed 「a session that never
+       switches model builds exactly one」, and that had stopped being true. */
+    peek: function (id) { return instances[id] || null; },
     /* which instances have actually been built — printed rather than assumed, because 「読み込み済み
        field に明確な LRU 上限」 is a claim about all of them together, not about each. */
     open: function () { return Object.keys(instances); },

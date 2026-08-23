@@ -1133,17 +1133,31 @@ window.IntMapModules.weatherEC=function(HOST){
        moved on from (that is what `_seq` guards). */
     const waiters={};   /* layer id → [fn], drained by commit() — see whenCommitted */
     function commit(cfg,prov){ if(!state[cfg.id]) return; state[cfg.id].displayed=prov; state[cfg.id].loading=null;
-      const w=waiters[cfg.id]; if(w&&w.length) w.splice(0).forEach(f=>{ try{ f(prov); }catch(_){} }); }
+      /* (#R376) a waiter that says 「not mine」 stays in the queue — see whenCommitted */
+      const w=waiters[cfg.id];
+      if(w&&w.length) w.slice().forEach(f=>{ let done=false; try{ done=f(prov); }catch(_){ done=true; }
+        if(done){ const i=w.indexOf(f); if(i>=0) w.splice(i,1); } }); }
     /* ⚠⚠ (#R356) 「Atlasが操作したと言いながら、実際には別モデル・別時刻・別レイヤーが表示されている
        状態を許可しない。」 A caller that wants to REPORT the change has to wait for the picture, not
        for the request — so `setModel` resolves from here, at the same commit the legend reads.
        ⚠ It resolves with `null` on timeout rather than rejecting: 「まだ出ていない」 is an answer the
        caller must be able to state, and an exception would be reported as a failure of the ACTION
        when what actually happened is that a slow feed has not landed yet. */
-    function whenCommitted(cfg,ms){
+    /* ⚠⚠⚠ (#R376) A WAITER MUST ONLY BE WOKEN BY THE COMMIT IT IS WAITING FOR. The first version
+       resolved on the NEXT commit of any kind, and MEASURED in production that produced a false
+       failure: switch to GFS while a switch to ICON is still in flight, and ICON's commit resolved
+       GFS's waiter with ICON's provenance — so `setModel` compared `p.modelId !== 'ncep_gfs013'`
+       and reported `not_painted_yet` about a switch that went on to succeed four seconds later.
+       ⚠ The fix is NOT to drop the comparison. It is what stops a waiter accepting somebody else's
+       picture; what was wrong is that a non-matching commit CONSUMED the waiter instead of being
+       ignored by it. A waiter now stays in the queue until its own model lands, or it times out. */
+    function whenCommitted(cfg,wantModelId,ms){
       return new Promise(res=>{
         const list=waiters[cfg.id]=waiters[cfg.id]||[];
-        const f=(p)=>res(p||null);
+        const f=(p)=>{
+          if(wantModelId&&(!p||p.modelId!==wantModelId)) return false;   /* not mine — keep waiting */
+          res(p||null); return true;
+        };
         list.push(f);
         setTimeout(()=>{ const i=list.indexOf(f); if(i>=0){ list.splice(i,1); res(null); } },ms||15000);
       });
@@ -1330,7 +1344,7 @@ window.IntMapModules.weatherEC=function(HOST){
              That is a true outcome and it is NOT 「表示されている」, so it says which one it is. */
           return {ok:true,code:'chosen_layer_off',modelId,modelName:name}; }
         applyTime(cfg);
-        return whenCommitted(cfg).then(p=>(p&&p.modelId===modelId)
+        return whenCommitted(cfg,modelId).then(p=>(p&&p.modelId===modelId)
           ? {ok:true,code:'displayed',modelId,modelName:name,validTime:p.validTime,runTime:p.runTime}
           : {ok:false,code:'not_painted_yet',modelId,modelName:name});
       }).catch(()=>{ back();
@@ -1611,12 +1625,31 @@ window.IntMapModules.weatherEC=function(HOST){
        live `latest.json`, so a variable an upstream centre does not publish is refused here rather
        than becoming an empty map — the exact failure `pruneMissing` was written for in #R276, now
        asked once per (layer, model) pair instead of once per layer. */
+    /* ⚠ (#R376) `peek`, NOT `model`. This runs for every offered model on every legend render, and
+       through `model()` it BUILT each of them just to ask a question about metadata that may not
+       have arrived yet. A model nobody has read from has no metadata, so the honest answer is
+       `no_metadata` — which the picker already treats as 「do not disable」. */
     function availFor(cfg,modelId){
       try{
-        const inst=ENG()&&ENG().model(modelId);
+        const inst=ENG()&&(ENG().peek?ENG().peek(modelId):ENG().model(modelId));
         const meta=inst&&inst.metaSync();
         return WXM().availability({modelId:modelId, meta:meta, variable:cfg.variable, role:'surface'});
       }catch(_){ return {ok:true}; }
+    }
+    /* ⚠⚠ (#R376) …AND THE PICKER HAS TO BE ABLE TO SAY 「この変数は無い」 BEFORE IT IS CLICKED.
+       With `availFor` no longer building instances, every option would stay enabled until something
+       else happened to read that model — MEASURED in production BEFORE this fix: the GFS option on
+       the sea-level-pressure legend was only disabled because a probe had already fetched GFS
+       metadata; in a fresh session it was not. So opening a weather legend fetches the offered
+       models' `latest.json` ONCE (3 kB each, through IntMapWx's one cache) and re-renders when they
+       land. ⚠ A session that never opens a weather legend still fetches nothing. */
+    let metaWarmed=false;
+    function warmModelMeta(){
+      if(metaWarmed) return; metaWarmed=true;
+      MODEL_CHOICES().forEach(m=>{ try{
+        const inst=ENG()&&ENG().model(m.id); if(!inst||inst.metaSync()) return;
+        inst.meta().then(()=>{ if(anyOn()) renderLegend(); }).catch(()=>{});
+      }catch(_){} });
     }
     function modelLine(cfg){
       const st=state[cfg.id]||{}, d=displayed(cfg);
@@ -1693,6 +1726,7 @@ window.IntMapModules.weatherEC=function(HOST){
       if(msel) msel.onchange=()=>{ setModel(cfg.id,msel.value); };
     }
     function renderLegend(){
+      warmModelMeta();
       activeLayers().forEach(renderOne);
       try{ window._tileLegends&&window._tileLegends(); }catch(_){}
     }
@@ -1742,7 +1776,8 @@ window.IntMapModules.weatherEC=function(HOST){
     function pruneMissing(){
       const E=EC(); if(!E.metaSync()) return;
       const metas=[];
-      MODEL_CHOICES().forEach(m=>{ try{ const i=ENG().model(m.id), md=i&&i.metaSync(); if(md) metas.push(i); }catch(_){} });
+      /* (#R376) peek: a model nobody has read from is not evidence that a variable is gone */
+      MODEL_CHOICES().forEach(m=>{ try{ const i=ENG().peek?ENG().peek(m.id):ENG().model(m.id), md=i&&i.metaSync(); if(md) metas.push(i); }catch(_){} });
       if(!metas.length) metas.push(E);
       LAYERS.slice().forEach(l=>{ if(metas.some(i=>i.has(l.variable))) return;
         const row=document.getElementById('lyrrow-'+l.id); if(row) row.remove();
@@ -1817,6 +1852,12 @@ window.IntMapModules.weatherEC=function(HOST){
          what is DISPLAYED, `setModel` asks for a change — they are deliberately different words for
          the two different questions, so a caller cannot read one and mean the other. */
       setModel, models:()=>MODEL_CHOICES().map(m=>({id:m.id,name:m.nameKey,km:m.km})),
+      /* ⚠⚠ (#R376) THE INSTANCE A LAYER READS. js/map-readout.js sampled window.IntMapECMWF —
+         the DEFAULT model — so after a layer was switched to ICON the cursor still printed
+         ECMWF numbers, with ECMWF's valid time beside them, over an ICON picture. That is
+         「地図・粒子・凡例・地点値が同じ表示状態を参照」 broken at the one place it is easiest
+         not to notice, because a plausible number is not a visibly wrong one. */
+      engineFor:(id)=>{ const c=LAYERS.find(l=>l.id===id); return c?EC(c):EC(); },
       modelOf:(id)=>{ const c=LAYERS.find(l=>l.id===id); const d=c&&displayed(c); return d?d.modelId:null; },
       provenanceOf:(id)=>{ const c=LAYERS.find(l=>l.id===id); return (c&&displayed(c))||null; },
       _layers:LAYERS, _state:state };
