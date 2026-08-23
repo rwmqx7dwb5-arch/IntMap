@@ -92,11 +92,25 @@ export function makeLazyModules(HOST) {
       /* ══ (#R311) SIX MORE, PICKED BY A TEST RATHER THAN BY SIZE ═══════════════════════════════
          The ten above are reached from a menu item. These six are the rest of what the entry pulled in
          that registers NOTHING at boot — no layer row, no DOM, no IntMapOS command, no listener — so
-         there is a "before it is reached" to defer to, and every door awaits. ⚠ js/analysis-panels.js LOOKS
-         like one and is NOT: `correlate` builds #btn-correlate at boot and `edu` mounts #btn-edu and a
-         map-click listener — deferring it would delete two Layers buttons until something asked. */
+         there is a "before it is reached" to defer to, and every door awaits. */
       dataCenters: 'IntMapDataCenters', aircraftDetail: 'IntMapAircraftPanel', volume3d: 'IntMapVolume3D', statsCompare: 'IntMapStatsCompare',
       satellitesLive: 'IntMapSatellites', satelliteDetail: 'IntMapSatPanel',
+      /* ══ (#R315) …AND THE FILE #R311 HAD TO LEAVE BEHIND, SPLIT INSTEAD OF DEFERRED ════════════
+         js/analysis-panels.js was the biggest thing left in the entry (909 lines, 122 kB) and #R311
+         measured why it could not join the six above: counting the statements each factory EXECUTES
+         showed `correlate` appends #btn-correlate to the Layers panel at boot and `edu` mounts
+         #edu-mount / #btn-edu and a map-click listener. Deferring the file would have deleted two
+         Layers buttons until somebody asked for a panel they could no longer see.
+         ⚠ SO IT IS SPLIT BY WHAT RUNS AT BOOT, NOT BY FEATURE. js/analysis-panels.js stays eager and
+         keeps the five factories, that boot-time DOM, and a thin async facade on each public global
+         (window.IntMapTimeSeries / IntMapAIResearch / IntMapCorrelate / IntMapEdu / _setDashView /
+         _renderEventsArchive); the five files below hold the bodies and arrive when a facade is
+         called. The globals they publish are deliberately `__imAnalysis…` and not `IntMap…` —
+         js/atlas-controls.js's moduleCatalog() discovers `window.IntMap*` BY ENUMERATION, so a second
+         IntMap-named object per panel would offer the planner five capabilities nothing dispatches. */
+      analysisTimeSeries: '__imAnalysisTimeSeries', analysisResearch: '__imAnalysisResearch',
+      analysisCorrelate: '__imAnalysisCorrelate', analysisEvents: '__imAnalysisEvents',
+      analysisEdu: '__imAnalysisEdu',
     };
 
     function record(name, why) {
@@ -134,6 +148,11 @@ export function makeLazyModules(HOST) {
         case 'statsCompare': return import('./stats-compare.js');
         case 'satellitesLive': return import('./satellites-live.js');
         case 'satelliteDetail': return import('./satellite-detail.js');
+        case 'analysisTimeSeries': return import('./analysis-timeseries.js');
+        case 'analysisResearch': return import('./analysis-research.js');
+        case 'analysisCorrelate': return import('./analysis-correlate.js');
+        case 'analysisEvents': return import('./analysis-world-events.js');
+        case 'analysisEdu': return import('./analysis-edu.js');
         default: return Promise.reject(new Error('no such lazy module: ' + name));
       }
     }
@@ -161,6 +180,11 @@ export function makeLazyModules(HOST) {
         case 'statsCompare': window.IntMapStatsCompare=window.IntMapModules.statsCompare(IM_HOST); return true;
         case 'satellitesLive': window.IntMapModules.satellitesLive(IM_HOST); return true;
         case 'satelliteDetail': window.IntMapModules.satelliteDetail(IM_HOST); return true;
+        case 'analysisTimeSeries': window.IntMapModules.analysisTimeSeries(IM_HOST); return true;
+        case 'analysisResearch': window.IntMapModules.analysisResearch(IM_HOST); return true;
+        case 'analysisCorrelate': window.IntMapModules.analysisCorrelate(IM_HOST); return true;
+        case 'analysisEvents': window.IntMapModules.analysisEvents(IM_HOST); return true;
+        case 'analysisEdu': window.IntMapModules.analysisEdu(IM_HOST); return true;
         default: return !!M;
       }
     }

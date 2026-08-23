@@ -2,6 +2,19 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "intmap-preview-r315",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Users/gyuuk/AppData/Local/Temp/intmap-worktrees/wt-r315-r315-perf2/scripts/serve.mjs",
+        "--root",
+        "C:/Users/gyuuk/AppData/Local/Temp/intmap-worktrees/wt-r315-r315-perf2/dist",
+        "--port",
+        "4915"
+      ],
+      "port": 4915,
+      "url": "http://127.0.0.1:4915"
+    },
+    {
       "name": "intmap-preview-r311",
       "runtimeExecutable": "node",
       "runtimeArgs": [

@@ -51,8 +51,14 @@ test('R241 ① a tuple of translations is a CALL, so every existing instrument c
       'the positional audit reads the shared resolver');
 
   /* the tuple helper is actually used, in every table that used to hold a bare array */
+  /* (#R315) js/analysis-panels.js became an eager shell and five lazy implementations; the tables
+     that hold tuples went with the bodies, so the three files that now carry them are named here.
+     ⚠ THE SHELL IS NOT IN THIS LIST AND MUST NOT BE — it has no tuple table to write as a call, and
+     demanding `LA('` of a file with nothing to declare would be a check that only ever asserts that
+     somebody kept a helper alive to satisfy it. */
   for (const f of ['js/weather.js', 'js/layer-packs.js', 'js/data-layers.js',
-    'js/analysis-panels.js', 'js/stats-compare.js', 'js/atlas-console.js',
+    'js/analysis-timeseries.js', 'js/analysis-correlate.js', 'js/analysis-world-events.js',
+    'js/stats-compare.js', 'js/atlas-console.js',
     'js/world-packs.js', 'js/sims.js']) {
     assert.match(code(R(f)), /IntMapLang\.pickArgs\(\)/, `${f} declares the tuple helper`);
     assert.match(code(R(f)), /LA\('/, `${f} writes its tuples as calls`);

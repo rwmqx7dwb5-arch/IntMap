@@ -34,9 +34,15 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readLF } from '../scripts/eol.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
+/* ⚠ (#R315) readLF, NOT readFileSync. Several patterns below ask for a function BODY and spell the
+   end of it as "\n  }\n"; on a Windows checkout every line ends "\r\n", so ⑤ could not lift
+   bboxOfFC out of js/layer-home.js and had been red on this machine since the day it was written,
+   while CI — which checks out LF — stayed green. That is #R283's defect exactly, and a check that
+   is red for everyone who could run it is a check nobody reads. scripts/eol.mjs exists for this. */
+const read = (p) => readLF(resolve(ROOT, p));
 const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
 /* ══════════════════════════════════════════════════════════════════════════

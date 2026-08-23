@@ -64,6 +64,24 @@ window.IntMapTsunamiWorker=(function(){
       try{ it.postMessage({type:'abort',id}); }catch(_){}
       const j=jobs.get(id); if(j){ jobs.delete(id); try{ j.res(null); }catch(_){} }
       return true; },
+    /* ══ ⚠⚠ (#R315) GIVING THE THREAD BACK — and being able to ask for it again ═════════════════
+       `terminate()` existed only inside `onerror`, where it also set `tried=true` and left `w=null`
+       for ever: the death path deliberately never comes back, because a worker that just crashed
+       should not be respawned in a loop. Closing the panel is the OPPOSITE case, and there was no
+       verb for it at all — the thread outlived every close for the life of the tab.
+
+       So the two are separated. `tried` is cleared here (and only here), which is what makes the
+       next `available()` build a fresh worker; and every job still in flight is SETTLED before the
+       thread goes, because a promise whose worker was terminated underneath it never resolves and
+       whoever awaited it waits for ever. They settle as `null` — the same answer `abort` gives —
+       so an awaiting caller takes its existing 「the run was cancelled」 branch. */
+    dispose(){
+      const it=w;
+      jobs.forEach(j=>{ try{ j.res(null); }catch(_){} }); jobs.clear();
+      w=null; tried=false;
+      if(it){ try{ it.terminate(); }catch(_){} return true; }
+      return false;
+    },
     state:()=>({ available:!!w, running:jobs.size, runs:seq })
   };
 })();

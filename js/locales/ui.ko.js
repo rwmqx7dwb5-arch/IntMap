@@ -4930,4 +4930,267 @@ window.IntMapLang.define('ko', { ui: {
   "Where in the world are the most severe weather warnings in force right now?": "지금 세계에서 가장 심각한 기상 경보가 발효 중인 곳은 어디인가요?",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "최근 일주일 동안 가장 활발했던 판 경계는 어디인가요?",   /* atlas-examples.js (#R313) */
   "Which submarine cable chokepoints carry the most of the world’s traffic?": "세계 통신량이 가장 많이 몰리는 해저 케이블 요충지는 어디인가요?",   /* atlas-examples.js (#R313) */
+  "This panel could not be loaded — check your connection and try again.": "이 패널을 불러오지 못했습니다 — 연결 상태를 확인한 뒤 다시 시도해 주세요.",   /* analysis-panels.js (#R315) */
+  "Columbus reaches the Americas": "콜럼버스의 아메리카 도달",   /* analysis-world-events.js (#R315) */
+  "First Atlantic crossing opens the Columbian exchange.": "대서양 횡단으로 신구 대륙 사이의 콜럼버스 교환이 시작된다.",   /* analysis-world-events.js (#R315) */
+  "Peace of Westphalia": "베스트팔렌 조약",   /* analysis-world-events.js (#R315) */
+  "Birth of the modern sovereign-state order.": "근대 주권국가 체제의 출발점.",   /* analysis-world-events.js (#R315) */
+  "Great Lisbon Earthquake": "리스본 대지진",   /* analysis-world-events.js (#R315) */
+  "Quake+tsunami killed tens of thousands; shook European thought.": "지진과 해일로 수만 명이 희생되고 유럽 사상에도 충격을 주었다.",   /* analysis-world-events.js (#R315) */
+  "French Revolution": "프랑스 혁명",   /* analysis-world-events.js (#R315) */
+  "Storming of the Bastille topples the old order.": "바스티유 습격으로 구체제가 무너진다.",   /* analysis-world-events.js (#R315) */
+  "Congress of Vienna": "빈 회의",   /* analysis-world-events.js (#R315) */
+  "Post-Napoleonic balance-of-power settlement.": "나폴레옹 이후 유럽의 세력균형 체제를 세운다.",   /* analysis-world-events.js (#R315) */
+  "Treaty of Nanking": "난징 조약",   /* analysis-world-events.js (#R315) */
+  "Ends the First Opium War; cedes Hong Kong.": "제1차 아편전쟁이 끝나고 홍콩이 할양된다.",   /* analysis-world-events.js (#R315) */
+  "Lincoln assassinated": "링컨 암살",   /* analysis-world-events.js (#R315) */
+  "US president shot at Ford’s Theatre.": "미국 대통령이 포드 극장에서 총격을 받는다.",   /* analysis-world-events.js (#R315) */
+  "Meiji Restoration": "메이지 유신",   /* analysis-world-events.js (#R315) */
+  "Japan’s rapid modernisation begins.": "일본의 급속한 근대화가 시작된다.",   /* analysis-world-events.js (#R315) */
+  "Suez Canal opens": "수에즈 운하 개통",   /* analysis-world-events.js (#R315) */
+  "Europe–Asia sea route shortened by ~7,000 km.": "유럽–아시아 항로가 약 7,000km 단축된다.",   /* analysis-world-events.js (#R315) */
+  "Krakatoa eruption": "크라카타우 화산 대분화",   /* analysis-world-events.js (#R315) */
+  "One of the deadliest volcanic events in history.": "역사상 가장 많은 희생자를 낸 화산 재해 중 하나.",   /* analysis-world-events.js (#R315) */
+  "Wright brothers’ first flight": "라이트 형제의 첫 비행",   /* analysis-world-events.js (#R315) */
+  "Powered flight begins at Kitty Hawk.": "키티호크에서 동력 비행이 실현된다.",   /* analysis-world-events.js (#R315) */
+  "San Francisco earthquake": "샌프란시스코 지진",   /* analysis-world-events.js (#R315) */
+  "M7.9 quake and fires destroy the city.": "규모 7.9의 지진과 화재로 시가지가 파괴된다.",   /* analysis-world-events.js (#R315) */
+  "Titanic sinks": "타이타닉호 침몰",   /* analysis-world-events.js (#R315) */
+  "1,500+ die in the North Atlantic.": "북대서양에서 1,500명 이상이 희생된다.",   /* analysis-world-events.js (#R315) */
+  "Assassination in Sarajevo": "사라예보 사건",   /* analysis-world-events.js (#R315) */
+  "Archduke Franz Ferdinand shot — WWI ignites.": "프란츠 페르디난트 대공이 피살되어 제1차 세계대전이 촉발된다.",   /* analysis-world-events.js (#R315) */
+  "Panama Canal opens": "파나마 운하 개통",   /* analysis-world-events.js (#R315) */
+  "Atlantic and Pacific joined.": "대서양과 태평양이 이어진다.",   /* analysis-world-events.js (#R315) */
+  "Russian Revolution": "러시아 혁명",   /* analysis-world-events.js (#R315) */
+  "Bolsheviks seize Petrograd.": "볼셰비키가 페트로그라드를 장악한다.",   /* analysis-world-events.js (#R315) */
+  "WWI Armistice": "제1차 세계대전 휴전",   /* analysis-world-events.js (#R315) */
+  "Fighting ends in the Compiègne railway carriage.": "콩피에뉴 숲의 열차 객차에서 휴전 협정이 조인된다.",   /* analysis-world-events.js (#R315) */
+  "1918 influenza pandemic": "1918년 인플루엔자 대유행",   /* analysis-world-events.js (#R315) */
+  "Tens of millions die worldwide.": "전 세계에서 수천만 명이 사망한다.",   /* analysis-world-events.js (#R315) */
+  "Treaty of Versailles": "베르사유 조약",   /* analysis-world-events.js (#R315) */
+  "Redraws Europe; seeds future conflict.": "유럽 지도를 다시 그리며 다음 분쟁의 씨앗을 남긴다.",   /* analysis-world-events.js (#R315) */
+  "Great Kantō earthquake": "간토 대지진",   /* analysis-world-events.js (#R315) */
+  "Tokyo–Yokohama devastated; ~105,000 dead.": "도쿄와 요코하마가 초토화되고 약 10만 5천 명이 희생된다.",   /* analysis-world-events.js (#R315) */
+  "Wall Street Crash": "월가 대폭락",   /* analysis-world-events.js (#R315) */
+  "Black Tuesday opens the Great Depression.": "검은 화요일과 함께 대공황이 시작된다.",   /* analysis-world-events.js (#R315) */
+  "WWII begins": "제2차 세계대전 발발",   /* analysis-world-events.js (#R315) */
+  "Germany attacks Westerplatte, invades Poland.": "독일이 베스테르플라테를 포격하고 폴란드를 침공한다.",   /* analysis-world-events.js (#R315) */
+  "Attack on Pearl Harbor": "진주만 공격",   /* analysis-world-events.js (#R315) */
+  "Japan strikes the US Pacific Fleet.": "일본이 미국 태평양 함대를 기습한다.",   /* analysis-world-events.js (#R315) */
+  "D-Day landings": "노르망디 상륙",   /* analysis-world-events.js (#R315) */
+  "Largest amphibious invasion in history.": "역사상 최대 규모의 상륙 작전.",   /* analysis-world-events.js (#R315) */
+  "Bretton Woods Conference": "브레턴우즈 회의",   /* analysis-world-events.js (#R315) */
+  "Dollar-centerd postwar monetary order.": "달러를 축으로 한 전후 통화 체제를 설계한다.",   /* analysis-world-events.js (#R315) */
+  "Trinity nuclear test": "트리니티 핵실험",   /* analysis-world-events.js (#R315) */
+  "First nuclear detonation.": "인류 최초의 핵폭발.",   /* analysis-world-events.js (#R315) */
+  "Hiroshima": "히로시마 원폭 투하",   /* analysis-world-events.js (#R315) */
+  "First atomic bombing of a city.": "도시에 원자폭탄이 투하된 최초의 사례.",   /* analysis-world-events.js (#R315) */
+  "United Nations founded": "국제연합 창설",   /* analysis-world-events.js (#R315) */
+  "UN Charter signed in San Francisco.": "샌프란시스코에서 유엔 헌장이 조인된다.",   /* analysis-world-events.js (#R315) */
+  "Indian independence": "인도 독립",   /* analysis-world-events.js (#R315) */
+  "End of the British Raj; Partition follows.": "영국령 인도가 막을 내리고 분리 독립이 이어진다.",   /* analysis-world-events.js (#R315) */
+  "Gandhi assassinated": "간디 암살",   /* analysis-world-events.js (#R315) */
+  "Shot in New Delhi.": "뉴델리에서 총격으로 쓰러진다.",   /* analysis-world-events.js (#R315) */
+  "People’s Republic of China founded": "중화인민공화국 수립",   /* analysis-world-events.js (#R315) */
+  "Mao proclaims the PRC in Beijing.": "마오쩌둥이 베이징에서 건국을 선포한다.",   /* analysis-world-events.js (#R315) */
+  "NATO founded": "나토 창설",   /* analysis-world-events.js (#R315) */
+  "North Atlantic Treaty signed in Washington.": "워싱턴에서 북대서양 조약이 조인된다.",   /* analysis-world-events.js (#R315) */
+  "Korean War begins": "한국전쟁 발발",   /* analysis-world-events.js (#R315) */
+  "North invades across the 38th parallel.": "북한이 38선을 넘어 남침한다.",   /* analysis-world-events.js (#R315) */
+  "Suez Crisis": "수에즈 위기",   /* analysis-world-events.js (#R315) */
+  "Canal nationalisation triggers war; superpowers force a halt.": "운하 국유화가 전쟁으로 번지고 미소가 정전을 압박한다.",   /* analysis-world-events.js (#R315) */
+  "Sputnik 1": "스푸트니크 1호",   /* analysis-world-events.js (#R315) */
+  "First artificial satellite — the space age begins.": "인류 최초의 인공위성으로 우주 시대가 열린다.",   /* analysis-world-events.js (#R315) */
+  "Treaty of Rome": "로마 조약",   /* analysis-world-events.js (#R315) */
+  "European Economic Community founded.": "유럽경제공동체가 창설된다.",   /* analysis-world-events.js (#R315) */
+  "Cuban Revolution": "쿠바 혁명",   /* analysis-world-events.js (#R315) */
+  "Castro takes Havana.": "카스트로가 아바나를 장악한다.",   /* analysis-world-events.js (#R315) */
+  "Berlin Wall built": "베를린 장벽 건설",   /* analysis-world-events.js (#R315) */
+  "East Germany seals the inner-Berlin border.": "동독이 베를린 시내 경계를 봉쇄한다.",   /* analysis-world-events.js (#R315) */
+  "Gagarin orbits Earth": "가가린의 지구 궤도 비행",   /* analysis-world-events.js (#R315) */
+  "First human in space.": "인류 최초의 유인 우주비행.",   /* analysis-world-events.js (#R315) */
+  "Cuban Missile Crisis": "쿠바 미사일 위기",   /* analysis-world-events.js (#R315) */
+  "The Cold War’s closest brush with nuclear war.": "냉전이 핵전쟁에 가장 가까이 다가섰던 순간.",   /* analysis-world-events.js (#R315) */
+  "JFK assassinated": "케네디 대통령 암살",   /* analysis-world-events.js (#R315) */
+  "Shot in Dallas.": "댈러스에서 저격당한다.",   /* analysis-world-events.js (#R315) */
+  "Six-Day War": "6일 전쟁",   /* analysis-world-events.js (#R315) */
+  "Israel takes Sinai, Golan, West Bank, Gaza.": "이스라엘이 시나이·골란·서안·가자를 장악한다.",   /* analysis-world-events.js (#R315) */
+  "Martin Luther King Jr. assassinated": "마틴 루서 킹 목사 암살",   /* analysis-world-events.js (#R315) */
+  "Shot in Memphis.": "멤피스에서 암살된다.",   /* analysis-world-events.js (#R315) */
+  "Apollo 11": "아폴로 11호",   /* analysis-world-events.js (#R315) */
+  "Launch of the first crewed Moon landing.": "인류 최초 유인 달 착륙 임무가 발사된다.",   /* analysis-world-events.js (#R315) */
+  "Nixon shock": "닉슨 쇼크",   /* analysis-world-events.js (#R315) */
+  "Dollar–gold convertibility ends.": "달러와 금의 교환이 정지된다.",   /* analysis-world-events.js (#R315) */
+  "1973 oil crisis": "1973년 석유 파동",   /* analysis-world-events.js (#R315) */
+  "OPEC embargo quadruples oil prices.": "OPEC의 금수 조치로 유가가 네 배로 뛴다.",   /* analysis-world-events.js (#R315) */
+  "Fall of Saigon": "사이공 함락",   /* analysis-world-events.js (#R315) */
+  "Vietnam War ends.": "베트남 전쟁이 끝난다.",   /* analysis-world-events.js (#R315) */
+  "Iranian Revolution": "이란 혁명",   /* analysis-world-events.js (#R315) */
+  "Shah falls; Islamic Republic founded.": "팔레비 왕정이 무너지고 이슬람 공화국이 세워진다.",   /* analysis-world-events.js (#R315) */
+  "Soviet invasion of Afghanistan": "소련의 아프가니스탄 침공",   /* analysis-world-events.js (#R315) */
+  "A decade-long quagmire begins.": "10년에 걸친 수렁이 시작된다.",   /* analysis-world-events.js (#R315) */
+  "Bhopal gas disaster": "보팔 가스 참사",   /* analysis-world-events.js (#R315) */
+  "World’s worst industrial accident.": "역사상 최악의 산업 재해.",   /* analysis-world-events.js (#R315) */
+  "Plaza Accord": "플라자 합의",   /* analysis-world-events.js (#R315) */
+  "Coordinated dollar depreciation; yen surges.": "달러 약세를 공조하면서 엔화가 급등한다.",   /* analysis-world-events.js (#R315) */
+  "Chernobyl disaster": "체르노빌 원전 사고",   /* analysis-world-events.js (#R315) */
+  "Worst nuclear accident in history.": "역사상 최악의 원자력 사고.",   /* analysis-world-events.js (#R315) */
+  "Challenger disaster": "챌린저호 폭발",   /* analysis-world-events.js (#R315) */
+  "Shuttle lost 73 seconds after launch.": "발사 73초 만에 왕복선이 공중분해된다.",   /* analysis-world-events.js (#R315) */
+  "Fall of the Berlin Wall": "베를린 장벽 붕괴",   /* analysis-world-events.js (#R315) */
+  "The Iron Curtain cracks open.": "철의 장막에 균열이 생긴다.",   /* analysis-world-events.js (#R315) */
+  "Tiananmen Square crackdown": "톈안먼 사태",   /* analysis-world-events.js (#R315) */
+  "Pro-democracy protests suppressed.": "민주화 시위가 무력으로 진압된다.",   /* analysis-world-events.js (#R315) */
+  "Gulf War": "걸프 전쟁",   /* analysis-world-events.js (#R315) */
+  "Coalition liberates Kuwait.": "다국적군이 쿠웨이트를 해방한다.",   /* analysis-world-events.js (#R315) */
+  "Dissolution of the USSR": "소련 해체",   /* analysis-world-events.js (#R315) */
+  "The Soviet flag is lowered over the Kremlin.": "크렘린에서 소련 국기가 내려진다.",   /* analysis-world-events.js (#R315) */
+  "End of apartheid": "아파르트헤이트 종식",   /* analysis-world-events.js (#R315) */
+  "Mandela becomes president.": "만델라가 대통령에 취임한다.",   /* analysis-world-events.js (#R315) */
+  "Rabin assassinated": "라빈 총리 암살",   /* analysis-world-events.js (#R315) */
+  "Israeli PM shot at a peace rally.": "이스라엘 총리가 평화 집회에서 총격을 받는다.",   /* analysis-world-events.js (#R315) */
+  "Hong Kong handover": "홍콩 반환",   /* analysis-world-events.js (#R315) */
+  "British rule ends after 156 years.": "156년에 걸친 영국 통치가 끝난다.",   /* analysis-world-events.js (#R315) */
+  "Asian financial crisis": "아시아 금융위기",   /* analysis-world-events.js (#R315) */
+  "Baht collapse cascades across Asia.": "바트화 폭락이 아시아 전역으로 번진다.",   /* analysis-world-events.js (#R315) */
+  "Euro launched": "유로화 출범",   /* analysis-world-events.js (#R315) */
+  "Single currency for 11 EU states.": "EU 11개국이 단일 통화를 도입한다.",   /* analysis-world-events.js (#R315) */
+  "September 11 attacks": "9·11 테러",   /* analysis-world-events.js (#R315) */
+  "Al-Qaeda attacks New York and Washington.": "알카에다가 뉴욕과 워싱턴을 공격한다.",   /* analysis-world-events.js (#R315) */
+  "Iraq War begins": "이라크 전쟁 발발",   /* analysis-world-events.js (#R315) */
+  "US-led coalition invades Iraq.": "미국 주도 연합군이 이라크를 침공한다.",   /* analysis-world-events.js (#R315) */
+  "Indian Ocean tsunami": "인도양 지진해일",   /* analysis-world-events.js (#R315) */
+  "~230,000 dead across 14 countries.": "14개국에서 약 23만 명이 희생된다.",   /* analysis-world-events.js (#R315) */
+  "Hurricane Katrina": "허리케인 카트리나",   /* analysis-world-events.js (#R315) */
+  "New Orleans flooded.": "뉴올리언스가 물에 잠긴다.",   /* analysis-world-events.js (#R315) */
+  "Lehman Brothers collapse": "리먼 브러더스 파산",   /* analysis-world-events.js (#R315) */
+  "Global financial crisis erupts.": "세계 금융위기가 터진다.",   /* analysis-world-events.js (#R315) */
+  "Arab Spring begins": "아랍의 봄 시작",   /* analysis-world-events.js (#R315) */
+  "Tunisian uprising spreads across the region.": "튀니지의 봉기가 역내 전역으로 번진다.",   /* analysis-world-events.js (#R315) */
+  "Greek debt crisis": "그리스 부채 위기",   /* analysis-world-events.js (#R315) */
+  "Eurozone sovereign-debt crisis begins.": "유로존 국가채무 위기의 발단.",   /* analysis-world-events.js (#R315) */
+  "Haiti earthquake": "아이티 지진",   /* analysis-world-events.js (#R315) */
+  "~200,000+ dead near Port-au-Prince.": "포르토프랭스 일대에서 20만 명 넘게 희생된다.",   /* analysis-world-events.js (#R315) */
+  "Tōhoku earthquake & tsunami": "동일본 대지진과 지진해일",   /* analysis-world-events.js (#R315) */
+  "M9.1 quake, tsunami and the Fukushima accident.": "규모 9.1의 지진과 해일, 그리고 후쿠시마 원전 사고.",   /* analysis-world-events.js (#R315) */
+  "Annexation of Crimea": "크림반도 병합",   /* analysis-world-events.js (#R315) */
+  "Russia seizes the peninsula from Ukraine.": "러시아가 우크라이나로부터 반도를 빼앗는다.",   /* analysis-world-events.js (#R315) */
+  "First orbital booster landing": "궤도 로켓 1단 착륙 회수",   /* analysis-world-events.js (#R315) */
+  "SpaceX lands Falcon 9 — reusability era.": "스페이스X가 팰컨 9를 착륙시키며 재사용 시대를 연다.",   /* analysis-world-events.js (#R315) */
+  "Brexit referendum": "브렉시트 국민투표",   /* analysis-world-events.js (#R315) */
+  "UK votes to leave the EU.": "영국이 EU 탈퇴를 선택한다.",   /* analysis-world-events.js (#R315) */
+  "COVID-19 outbreak": "코로나19 발생",   /* analysis-world-events.js (#R315) */
+  "Pandemic that reshaped the world.": "세계를 바꿔 놓은 팬데믹.",   /* analysis-world-events.js (#R315) */
+  "Russia invades Ukraine": "러시아의 우크라이나 침공",   /* analysis-world-events.js (#R315) */
+  "Largest war in Europe since 1945.": "1945년 이후 유럽에서 벌어진 최대 규모의 전쟁.",   /* analysis-world-events.js (#R315) */
+  "Abe Shinzō assassinated": "아베 신조 전 총리 피격",   /* analysis-world-events.js (#R315) */
+  "Former Japanese PM shot in Nara.": "일본 전 총리가 나라에서 총격을 받아 숨진다.",   /* analysis-world-events.js (#R315) */
+  "Türkiye–Syria earthquakes": "튀르키예·시리아 지진",   /* analysis-world-events.js (#R315) */
+  "M7.8 doublet; 55,000+ dead.": "규모 7.8의 연속 지진으로 5만 5천 명 넘게 희생된다.",   /* analysis-world-events.js (#R315) */
+  "October 7 attacks / Gaza war": "10월 7일 공격과 가자 전쟁",   /* analysis-world-events.js (#R315) */
+  "Hamas attack and the war that followed.": "하마스의 공격과 뒤이은 전쟁.",   /* analysis-world-events.js (#R315) */
+  "Taiwan (Hualien) earthquake": "대만 화롄 지진",   /* analysis-world-events.js (#R315) */
+  "M7.4 quake off eastern Taiwan.": "대만 동부 해역에서 규모 7.4의 지진이 발생한다.",   /* analysis-world-events.js (#R315) */
+  "Fall of the Assad regime": "아사드 정권 붕괴",   /* analysis-world-events.js (#R315) */
+  "Syrian government collapses; Assad flees.": "시리아 정부가 무너지고 아사드가 국외로 달아난다.",   /* analysis-world-events.js (#R315) */
+  "2024 US presidential election": "2024년 미국 대통령 선거",   /* analysis-world-events.js (#R315) */
+  "Trump wins a second, non-consecutive term.": "트럼프가 연임이 아닌 두 번째 임기를 차지한다.",   /* analysis-world-events.js (#R315) */
+  "Haitian independence": "아이티 독립",   /* analysis-world-events.js (#R315) */
+  "First Black-led republic; slavery abolished.": "흑인이 이끄는 최초의 공화국이 서고 노예제가 폐지된다.",   /* analysis-world-events.js (#R315) */
+  "Penicillin discovered": "페니실린 발견",   /* analysis-world-events.js (#R315) */
+  "Fleming opens the antibiotic era.": "플레밍이 항생제 시대를 연다.",   /* analysis-world-events.js (#R315) */
+  "Warsaw Pact formed": "바르샤바 조약기구 결성",   /* analysis-world-events.js (#R315) */
+  "Soviet-led military alliance.": "소련이 주도하는 군사 동맹.",   /* analysis-world-events.js (#R315) */
+  "Year of Africa": "아프리카의 해",   /* analysis-world-events.js (#R315) */
+  "17 African nations gain independence.": "아프리카 17개국이 독립을 이룬다.",   /* analysis-world-events.js (#R315) */
+  "German reunification": "독일 재통일",   /* analysis-world-events.js (#R315) */
+  "East and West Germany reunite.": "동독과 서독이 다시 하나가 된다.",   /* analysis-world-events.js (#R315) */
+  "Coalition expels Iraq from Kuwait.": "다국적군이 이라크를 쿠웨이트에서 몰아낸다.",   /* analysis-world-events.js (#R315) */
+  "iPhone introduced": "아이폰 공개",   /* analysis-world-events.js (#R315) */
+  "The modern smartphone era begins.": "현대 스마트폰 시대가 열린다.",   /* analysis-world-events.js (#R315) */
+  "Higgs boson discovered": "힉스 입자 발견",   /* analysis-world-events.js (#R315) */
+  "CERN confirms the Higgs boson.": "CERN이 힉스 보손의 존재를 확인한다.",   /* analysis-world-events.js (#R315) */
+  "Inter-Korean summit": "남북정상회담",   /* analysis-world-events.js (#R315) */
+  "Koreas meet at Panmunjom.": "남과 북이 판문점에서 만난다.",   /* analysis-world-events.js (#R315) */
+  "WHO declares COVID-19 a pandemic": "WHO, 코로나19 팬데믹 선언",   /* analysis-world-events.js (#R315) */
+  "Global pandemic declared in March 2020.": "2020년 3월 세계적 대유행이 선언된다.",   /* analysis-world-events.js (#R315) */
+  "US Capitol attack": "미국 의사당 습격",   /* analysis-world-events.js (#R315) */
+  "Rioters storm the US Capitol.": "폭도들이 연방의회 의사당에 난입한다.",   /* analysis-world-events.js (#R315) */
+  "Fall of Constantinople": "콘스탄티노폴리스 함락",   /* analysis-world-events.js (#R315) */
+  "Ottomans end the Byzantine Empire.": "오스만이 비잔티움 제국을 무너뜨린다.",   /* analysis-world-events.js (#R315) */
+  "Protestant Reformation": "종교개혁",   /* analysis-world-events.js (#R315) */
+  "Luther’s 95 Theses split Western Christianity.": "루터의 95개조 반박문이 서방 기독교를 갈라놓는다.",   /* analysis-world-events.js (#R315) */
+  "US Declaration of Independence": "미국 독립선언",   /* analysis-world-events.js (#R315) */
+  "Thirteen colonies declare independence.": "13개 식민지가 독립을 선포한다.",   /* analysis-world-events.js (#R315) */
+  "On the Origin of Species": "『종의 기원』 출간",   /* analysis-world-events.js (#R315) */
+  "Darwin sets out evolution by natural selection.": "다윈이 자연선택에 의한 진화를 제시한다.",   /* analysis-world-events.js (#R315) */
+  "World War I begins": "제1차 세계대전 발발",   /* analysis-world-events.js (#R315) */
+  "The assassination in Sarajevo triggers global war.": "사라예보의 암살 사건이 세계대전을 불러온다.",   /* analysis-world-events.js (#R315) */
+  "Bolsheviks seize power in Petrograd.": "볼셰비키가 페트로그라드에서 권력을 잡는다.",   /* analysis-world-events.js (#R315) */
+  "End of World War I": "제1차 세계대전 종전",   /* analysis-world-events.js (#R315) */
+  "Armistice signed at Compiègne.": "콩피에뉴에서 휴전 협정이 조인된다.",   /* analysis-world-events.js (#R315) */
+  "Wall Street Crash of 1929": "1929년 월가 대폭락",   /* analysis-world-events.js (#R315) */
+  "Market collapse triggers the Great Depression.": "증시 붕괴가 대공황을 불러온다.",   /* analysis-world-events.js (#R315) */
+  "World War II begins": "제2차 세계대전 발발",   /* analysis-world-events.js (#R315) */
+  "Germany invades Poland.": "독일이 폴란드를 침공한다.",   /* analysis-world-events.js (#R315) */
+  "End of World War II": "제2차 세계대전 종전",   /* analysis-world-events.js (#R315) */
+  "Japan’s surrender ends the war.": "일본의 항복으로 전쟁이 끝난다.",   /* analysis-world-events.js (#R315) */
+  "Partition of India": "인도·파키스탄 분리",   /* analysis-world-events.js (#R315) */
+  "British India splits into two states.": "영국령 인도가 두 나라로 갈라진다.",   /* analysis-world-events.js (#R315) */
+  "Establishment of Israel": "이스라엘 건국",   /* analysis-world-events.js (#R315) */
+  "The State of Israel is declared.": "이스라엘 국가 수립이 선포된다.",   /* analysis-world-events.js (#R315) */
+  "Stonewall uprising": "스톤월 항쟁",   /* analysis-world-events.js (#R315) */
+  "Catalyst of the modern LGBT-rights movement.": "현대 LGBT 인권 운동의 계기.",   /* analysis-world-events.js (#R315) */
+  "Nixon visits China": "닉슨 중국 방문",   /* analysis-world-events.js (#R315) */
+  "A turning point in US–China relations.": "미중 관계의 전환점.",   /* analysis-world-events.js (#R315) */
+  "Iraq invades Kuwait": "이라크의 쿠웨이트 침공",   /* analysis-world-events.js (#R315) */
+  "Trigger of the Gulf War.": "걸프 전쟁의 도화선.",   /* analysis-world-events.js (#R315) */
+  "Rwandan genocide": "르완다 집단학살",   /* analysis-world-events.js (#R315) */
+  "~800,000 killed in about 100 days.": "약 100일 만에 80만 명가량이 희생된다.",   /* analysis-world-events.js (#R315) */
+  "Deepwater Horizon oil spill": "딥워터 허라이즌 원유 유출",   /* analysis-world-events.js (#R315) */
+  "Largest marine oil spill in history.": "역사상 최대 규모의 해양 원유 유출 사고.",   /* analysis-world-events.js (#R315) */
+  "November 2015 Paris attacks": "2015년 11월 파리 연쇄 테러",   /* analysis-world-events.js (#R315) */
+  "Coordinated attacks kill 130 across Paris.": "동시다발 공격으로 130명이 숨진다.",   /* analysis-world-events.js (#R315) */
+  "Notre-Dame fire": "노트르담 대성당 화재",   /* analysis-world-events.js (#R315) */
+  "The Paris cathedral’s spire collapses in flames.": "파리 대성당의 첨탑이 불길 속에 무너진다.",   /* analysis-world-events.js (#R315) */
+  "US withdrawal from Afghanistan": "미군 아프가니스탄 철수",   /* analysis-world-events.js (#R315) */
+  "The Taliban retake Kabul.": "탈레반이 카불을 다시 장악한다.",   /* analysis-world-events.js (#R315) */
+  "ChatGPT launched": "ChatGPT 공개",   /* analysis-world-events.js (#R315) */
+  "Generative AI reaches mass adoption.": "생성형 AI가 대중화된다.",   /* analysis-world-events.js (#R315) */
+  "JWST first images": "제임스 웹 우주망원경 첫 이미지",   /* analysis-world-events.js (#R315) */
+  "Deepest infrared view of the universe yet.": "지금까지 가장 깊은 적외선 우주 관측 영상.",   /* analysis-world-events.js (#R315) */
+  "Black Death reaches Europe": "흑사병의 유럽 상륙",   /* analysis-world-events.js (#R315) */
+  "Plague kills roughly a third of Europe.": "페스트가 유럽 인구의 약 3분의 1을 앗아간다.",   /* analysis-world-events.js (#R315) */
+  "Copernican heliocentrism": "코페르니쿠스의 지동설",   /* analysis-world-events.js (#R315) */
+  "Copernicus places the Sun at the center.": "코페르니쿠스가 태양을 중심에 놓는다.",   /* analysis-world-events.js (#R315) */
+  "Newton’s Principia": "뉴턴의 『프린키피아』",   /* analysis-world-events.js (#R315) */
+  "Laws of motion and universal gravitation.": "운동 법칙과 만유인력의 법칙을 제시한다.",   /* analysis-world-events.js (#R315) */
+  "Industrial Revolution": "산업혁명",   /* analysis-world-events.js (#R315) */
+  "Steam power launches modern industry.": "증기 동력이 근대 산업의 문을 연다.",   /* analysis-world-events.js (#R315) */
+  "Battle of Waterloo": "워털루 전투",   /* analysis-world-events.js (#R315) */
+  "Napoleon’s final defeat.": "나폴레옹의 마지막 패배.",   /* analysis-world-events.js (#R315) */
+  "DNA double helix": "DNA 이중나선",   /* analysis-world-events.js (#R315) */
+  "Watson & Crick reveal the structure of DNA.": "왓슨과 크릭이 DNA의 구조를 밝힌다.",   /* analysis-world-events.js (#R315) */
+  "First ascent of Everest": "에베레스트 초등정",   /* analysis-world-events.js (#R315) */
+  "Hillary and Tenzing reach the summit.": "힐러리와 텐징이 정상에 오른다.",   /* analysis-world-events.js (#R315) */
+  "First human heart transplant": "세계 최초의 심장 이식",   /* analysis-world-events.js (#R315) */
+  "Barnard performs the operation in Cape Town.": "버나드가 케이프타운에서 수술에 성공한다.",   /* analysis-world-events.js (#R315) */
+  "Munich Olympics massacre": "뮌헨 올림픽 참사",   /* analysis-world-events.js (#R315) */
+  "Israeli athletes taken hostage and killed.": "이스라엘 선수단이 인질로 잡혀 살해된다.",   /* analysis-world-events.js (#R315) */
+  "Iran–Iraq War begins": "이란·이라크 전쟁 발발",   /* analysis-world-events.js (#R315) */
+  "An eight-year war begins along the border.": "국경에서 8년에 걸친 전쟁이 시작된다.",   /* analysis-world-events.js (#R315) */
+  "Falklands War": "포클랜드 전쟁",   /* analysis-world-events.js (#R315) */
+  "Britain and Argentina clash over the islands.": "영국과 아르헨티나가 제도를 두고 충돌한다.",   /* analysis-world-events.js (#R315) */
+  "World Wide Web proposed": "월드 와이드 웹 제안",   /* analysis-world-events.js (#R315) */
+  "Berners-Lee invents the Web at CERN.": "버너스리가 CERN에서 웹을 발명한다.",   /* analysis-world-events.js (#R315) */
+  "Dolly the sheep cloned": "복제양 돌리",   /* analysis-world-events.js (#R315) */
+  "First mammal cloned from an adult cell.": "성체 세포로 복제된 최초의 포유류.",   /* analysis-world-events.js (#R315) */
+  "Human Genome Project completed": "인간 게놈 프로젝트 완료",   /* analysis-world-events.js (#R315) */
+  "The human genome is fully sequenced.": "인간 유전체 해독이 모두 끝난다.",   /* analysis-world-events.js (#R315) */
+  "Fall of Gaddafi": "카다피 정권 붕괴",   /* analysis-world-events.js (#R315) */
+  "Libya’s long-time ruler is overthrown.": "수십 년간 리비아를 지배한 통치자가 축출된다.",   /* analysis-world-events.js (#R315) */
+  "Paris Climate Agreement": "파리 기후협정",   /* analysis-world-events.js (#R315) */
+  "196 parties adopt a global climate accord.": "196개 당사국이 전 지구적 기후 협정을 채택한다.",   /* analysis-world-events.js (#R315) */
+  "Sudan civil war": "수단 내전",   /* analysis-world-events.js (#R315) */
+  "Fighting erupts between the army and the RSF.": "정부군과 신속지원군(RSF) 사이에 교전이 벌어진다.",   /* analysis-world-events.js (#R315) */
 } });

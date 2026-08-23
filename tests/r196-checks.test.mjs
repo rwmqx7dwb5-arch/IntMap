@@ -299,9 +299,18 @@ test('R196 ⑥ the propagation model follows the seismic panel, debounced', () =
   /* ⚠ (#R214) THE CLAIM IS «follow IS EXPORTED», NOT «the export literal starts with these bytes».
      This pinned the whole `return { … }` line, so #R214 naming that object `API` (to register its
      share state after it exists) failed a test about the seismic panel's debounce. That is exactly
-     #R203's trap. The claim is now derived from the object however it is spelled. */
-  const api = /(?:return|const\s+API\s*=)\s*\{\s*open, close, play, pause, setFrame, setTime:setTimeS, at, follow,/.exec(t);
-  assert.ok(api, 'follow is on the public API object, whatever that object is called');
+     #R203's trap. The claim is now derived from the object however it is spelled.
+     ⚠ (#R315) …and it was only half-fixed: the object's NAME stopped being pinned but its first
+     four MEMBERS did not, so when the lifecycle round routed `open`/`close` through the runtime
+     register (`open:openPublic`) a test about the seismic panel's debounce failed again, for the
+     third time, over a spelling it does not care about. Ask the actual question: is `follow` a
+     member of the object this file publishes? */
+  /* ⚠ every `return {` in the file matches the shape, so ask whether ANY published object carries
+     `follow` rather than betting on which one comes first in the source. */
+  const objects = [...t.matchAll(/(?:return|const\s+\w+\s*=)\s*\{([\s\S]{0,900})/g)].map((m) => m[1]);
+  assert.ok(objects.length, 'js/tsunami.js still publishes an object');
+  assert.ok(objects.some((o) => /(^|[{,\s])follow\s*[,:}]/.test(o)),
+    'follow is on the public API object, whatever that object is called and whatever else is on it');
   const s = rd('js/seismic.js');
   assert.match(s, /function syncTsunamiSource\(\)\{/);
   assert.match(s, /function refresh\(\)\{ draw\(\); warmEpi\(\); schedField\(\); syncTsunamiSource\(\); \}/);

@@ -1073,7 +1073,43 @@ window.IntMapModules.tsunami=function(HOST){
       try{ if(jobId&&window.IntMapTsunamiWorker) window.IntMapTsunamiWorker.abort(jobId); }catch(_){}
       busy=false; if(panel) panel.style.display='none'; clearPaint(); return true; }
 
-    const API = { open, close, play, pause, setFrame, setTime:setTimeS, at, follow,
+    /* ══ ⚠⚠ (#R315) CLOSING THE PANEL AND GIVING THE THREAD BACK ARE DIFFERENT QUESTIONS ═════════
+       `close()` aborts the running job and hides the panel — which is exactly right for SUSPEND:
+       the solver thread stays warm and re-opening costs nothing but a new `build()`. What did not
+       exist was the other end. The worker survived every close for the life of the tab, because
+       src/tsunami-worker-client.js had no verb for 「done with you」 (it does now).
+
+       Mapped onto the register (js/runtime.js) — and note that `load` is deliberately absent: this
+       file only exists because js/lazy-modules.js already fetched it, and a second loader here
+       would be #R220's two-lists defect. The register owns the RESOURCES, not the download. */
+    function disposeSim(){
+      close();
+      try{ if(window.IntMapTsunamiWorker&&window.IntMapTsunamiWorker.dispose) window.IntMapTsunamiWorker.dispose(); }catch(_){}
+      sim=null;
+      try{ if(panel&&panel.parentNode) panel.parentNode.removeChild(panel); }catch(_){}
+      panel=null;
+    }
+    try{
+      const RT=window.IntMapRuntime;
+      if(RT&&RT.define) RT.define('sim.tsunami',{ activate:(o)=>open(o||{}), suspend:close, dispose:disposeSim });
+    }catch(_){}
+
+    /* ⚠ THE PUBLIC DOOR GOES THROUGH THE REGISTER; THE DEFINITION ABOVE CALLS THE INTERNAL ONE.
+       Both names matter: if `API.open` were the same function the definition names, activate would
+       call open which would call activate. Routing it this way is what makes `stateOf` true — a
+       register that is only told about disposal knows less than the feature it is supposed to own.
+       ⚠ The synchronous `true` is kept: every existing caller reads it that way. */
+    function openPublic(o){
+      const RT=window.IntMapRuntime;
+      if(RT&&RT.stateOf&&RT.stateOf('sim.tsunami')!==null){ RT.activate('sim.tsunami',o||{}); return true; }
+      return open(o);
+    }
+    function closePublic(){
+      const RT=window.IntMapRuntime;
+      if(RT&&RT.stateOf&&RT.stateOf('sim.tsunami')!==null){ RT.suspend('sim.tsunami'); return true; }
+      return close();
+    }
+    const API = { open:openPublic, close:closePublic, dispose:disposeSim, play, pause, setFrame, setTime:setTimeS, at, follow,
       setHours(h){ hours=Math.max(1,Math.min(30,+h||6)); if(opened) render(); return true; },
       /* (#R204) the domain, so Atlas can ask for the high-resolution near-source solve by name */
       setScope(s){ scope=(String(s)==='near')?'near':'global'; hours=effHours(); if(opened) render(); return scope; },

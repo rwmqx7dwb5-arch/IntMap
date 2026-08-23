@@ -944,8 +944,46 @@ window.IntMapModules.satellitesLive=function(HOST){
       ||fixes.find(f=>(f.name||'').toUpperCase().indexOf(s)>=0)||null;
   }
 
+  /* ══ ⚠⚠ (#R315) WHAT `stop()` KEEPS ON PURPOSE, AND WHAT NOTHING EVER RELEASED ═══════════════
+     `stop()` is a good SUSPEND and always was: the interval is cleared, the three map listeners come
+     off (`unwire`), the layers go invisible and the detail panel closes. What it keeps is the
+     CATALOGUE — up to eleven thousand propagated records — and that is the right trade for a layer
+     the reader is likely to switch back on. It was also the only trade available: nothing in the
+     app could ask for the memory back.
+
+     `dispose` is that ask. The catalogue, the derived fixes and the map layers go; the next
+     `activate` re-loads exactly as a first open does (`start()` already handles `!sats.length`), so
+     nothing here can make the feature un-openable — the failure mode #R315 found in the register
+     itself, one layer up. */
+  function disposeSats(){
+    stop();
+    sats=[]; fixes=[]; selected=null; tleAt=0;
+    const E=GE(); if(E){
+      try{ ALL_LAYERS.forEach(id=>{ if(E.layers.has(id)) E.layers.remove(id); }); }catch(_){}
+      try{ E.layers.removeOrbit(ORB); }catch(_){}
+    }
+    /* the tile worker is shared with the satellite BASEMAP, so it is not this layer's to terminate */
+    return true;
+  }
+  try{
+    const RT=window.IntMapRuntime;
+    if(RT&&RT.define) RT.define('sat.live',{ activate:start, suspend:stop, dispose:disposeSats });
+  }catch(_){}
+
+  /* ⚠ see the note in js/tsunami.js: the PUBLIC door goes through the register and the definition
+     above names the INTERNAL one, or activate would call start which would call activate. */
+  function startPublic(){
+    const RT=window.IntMapRuntime;
+    if(RT&&RT.stateOf&&RT.stateOf('sat.live')!==null){ RT.activate('sat.live'); return true; }
+    return start();
+  }
+  function stopPublic(){
+    const RT=window.IntMapRuntime;
+    if(RT&&RT.stateOf&&RT.stateOf('sat.live')!==null){ RT.suspend('sat.live'); return true; }
+    return stop();
+  }
   const API={
-    start, stop, isOn:()=>on,
+    start:startPublic, stop:stopPublic, dispose:disposeSats, isOn:()=>on,
     groups:()=>GROUPS.map(g=>({ id:g.id, kb:g.kb, name:g.nm() })),
     group:()=>group, setGroup,
     setOpacity, opacity:()=>opacity,

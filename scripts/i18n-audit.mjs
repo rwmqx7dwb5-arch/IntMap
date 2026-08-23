@@ -312,8 +312,12 @@ if (process.argv.includes('--gate')) {
      ⚠ It fails in BOTH directions, like scripts/test-budget.mjs: a ceiling that keeps headroom it
      no longer needs has stopped asserting anything (#R194). Converting tuples is meant to cost one
      edit here — that edit is the record that the number moved.
-     MEASURED when this line was written: 275 = 143 js/reference-data.js + 132 js/analysis-panels.js. */
-  const PAIR_CEILING = 275;
+     MEASURED now: 143, all of them js/reference-data.js. The other 132 were the world-events archive
+     (js/analysis-world-events.js, split out of js/analysis-panels.js this round); #R315 wrote all 132
+     names and one-line descriptions in de / ru / es as positional LA(…) arguments and in fr / ko /
+     zh-Hant / zh-Hans in each locale's `inline` table, so that file is at zero and this line moved
+     with it — 275 → 143. */
+  const PAIR_CEILING = 143;
   if (pairs.total > PAIR_CEILING) problems.push(`${pairs.total - PAIR_CEILING} NEW translation tuple(s) held as adjacent data (${pairs.total} > ${PAIR_CEILING}) — every one is a fresh English fallback in fr/ko/zh-Hant/zh-Hans that no percentage above can see. Convert with pickArgs(); run scripts/i18n-pair-audit.mjs --list`);
   else if (pairs.total < PAIR_CEILING) problems.push(`the adjacent-data tuples are down to ${pairs.total} but PAIR_CEILING in scripts/i18n-audit.mjs still says ${PAIR_CEILING} — lower it, or the ratchet stops asserting anything`);
   if (problems.length) {

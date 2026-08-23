@@ -280,13 +280,29 @@ export function makeRuntime(HOST) {
       try { if (c.def.suspend) c.def.suspend(); } catch (e) { _oops('suspend:' + name, e); }
       return true;
     }
+    /* ══ ⚠⚠⚠ (#R315) DISPOSE MUST NOT MEAN 「TWICE IS IMPOSSIBLE」 ═══════════════════════════════
+       This used to end with `CAPS.delete(name)`, which reads as thorough and is not: the DEFINITION
+       went with the resources, so the next `activate(name)` rejected with 「no such capability」 and
+       a feature that had been closed once could never be opened again. Nothing caught it because
+       nothing called dispose at all — the lifecycle had zero callers until this round.
+
+       So the register keeps the definition and the STATE says what happened. `disposed` differs
+       from `defined` only in having been alive once; both re-run `def.load` on the next activate,
+       because `c.p` — the memo that made load idempotent — is dropped here. That is the whole
+       re-open path: forget what was loaded, keep how to load it.
+
+       ⚠ AND IDLE IS SWEPT TOO. The old sweep covered READ / WRITE / ONCE / TIMERS and missed IDLE,
+       while the last line deleted the capability from SUSPENDED — so a disposed capability's idle
+       task was not skipped either (`_skip` needs the name to still be suspended) and ran against
+       resources that had just been released. */
     function dispose(name) {
       const c = CAPS.get(name); if (!c) return false;
       suspend(name);
       try { if (c.def.dispose) c.def.dispose(); } catch (e) { _oops('dispose:' + name, e); }
-      for (const m of [READ, WRITE, ONCE]) for (const [k, e] of Array.from(m)) if (e.cap === name) { m.delete(k); CAM.delete(k); }
+      for (const m of [READ, WRITE, ONCE, IDLE]) for (const [k, e] of Array.from(m)) if (e.cap === name) { m.delete(k); CAM.delete(k); }
       for (const [k, t] of Array.from(TIMERS)) if (t.cap === name) TIMERS.delete(k);
-      CAPS.delete(name); SUSPENDED.delete(name);
+      c.state = 'disposed'; c.p = null;
+      SUSPENDED.delete(name);
       return true;
     }
 

@@ -114,7 +114,29 @@ test('R160 (D1) MapLibreAdapter contract broadened (camera getters, zoom, render
   ok("zoomOut(o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomOut(o); } }", 'adapter.zoomOut');
   ok('resize(){ const m=_m(); if(m&&m.resize) m.resize(); }', 'adapter.resize');
   ok('triggerRepaint(){ const m=_m(); if(m&&m.triggerRepaint) m.triggerRepaint(); }', 'adapter.triggerRepaint');
-  ok('setFeatureState(f,s){ const m=_m(); if(m&&m.setFeatureState) m.setFeatureState(f,s); }', 'adapter.setFeatureState');
+  /* (#R315) setFeatureState is no longer a BARE pass-through either, for the same kind of reason as
+     the zoom controls above: the adapter now counts what it is asked to do, and — when the census
+     says an operation repeats itself and the renderer does not deduplicate it — may decline to
+     forward a command that would change nothing. Still 1:1 in the sense #R160 meant: one contract
+     call, at most one renderer call, and the ARGUMENT is never reinterpreted.
+     ⚠ SO THE CHECK ASKS THE PROPERTY RATHER THAN THE SPELLING. Two things have to hold, and both
+     are about behaviour: the renderer call is still `m.setFeatureState(f,s)` with the caller's own
+     arguments, and the only thing that can stand in front of it is the census (`skipState`) — not
+     a rewrite, not a queue, not a merge of its own. Pinning the line verbatim, which is what this
+     did until now, made a legitimate change look like a broken contract. */
+  /* ⚠ ANCHOR ON THE MAPLIBRE ADAPTER'S OWN FORM. `appSource` concatenates every js/ file, and
+     js/cesium-engine.js declares setFeatureState twice — a bare `indexOf` finds one of those first
+     and then reports the MapLibre adapter as broken. */
+  const at = html.indexOf('setFeatureState(f,s){ const m=_m();');
+  assert.ok(at > 0, 'adapter.setFeatureState is still there');
+  const body = html.slice(at, at + 420);
+  assert.match(body, /if\(!\(m&&m\.setFeatureState\)\) return;/, 'it still answers nothing when there is no renderer');
+  assert.match(body, /\bm\.setFeatureState\(f,s\)/, 'it still forwards the CALLER\'S OWN arguments, unchanged');
+  assert.equal((body.match(/\bm\.setFeatureState\(f,s\)/g) || []).length, 1, 'and forwards them exactly once');
+  /* the only thing allowed in front of the forward is the census deciding it says nothing new */
+  const between = body.slice(body.indexOf('return;') + 7, body.indexOf('m.setFeatureState(f,s)'));
+  assert.ok(/^[\s]*(if\(\(CMD\.on\|\|CMD\.skip\.featureState\)&&skipState\([^\n]*\) return;)?[\s]*$/.test(between),
+    'nothing but the command census may stand between the guard and the renderer call — found: ' + JSON.stringify(between.trim().slice(0, 120)));
   ok('removeFeatureState(f,k){ const m=_m(); if(m&&m.removeFeatureState){', 'adapter.removeFeatureState (with/without key)');
 });
 

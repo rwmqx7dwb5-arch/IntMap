@@ -83,6 +83,12 @@ app-body.js                       アプリ本体（392 KB・最大のファイ�
                                   DOM 配線・map.on() ハンドラ・IntMapOS・セッション永続化・IM_HOST。
                                   ⚠ 新規機能はここに足さない。§3.13 の手順で別ファイルへ
 geo-engine.js                     レンダラの継ぎ目そのもの window.IntMapGeoEngine（178 KB）
+camera-math.js                    ↳ カメラ幾何。メルカトル投影・カメラから見た「目」の位置・
+                                  飽和するピッチ・球で見上げたときのズーム下限。引数を取り数を返す
+                                  だけ（状態も、レンダラの名前も持たない）。⚠ `gGuard` だけは
+                                  レンダラに直接訊くので geo-engine.js に残り、`guard` として渡る
+geo-command-log.js                ↳ レンダラ命令の集計と比較。attempted / sent / same / absent と、
+                                  「同じ値をもう一度送るか」の判定。既定では数えない（?cmdlog=1）
 runtime.js                        1つのフレームループ・1つのタイマー・1つのライフサイクル
 lazy-modules.js                   押されてから取りに行くモジュール window.IntMapLazy。⚠ 指定子はすべてリテラル
 engine-select.js                  このセッションがどのエンジンで走るかを DOMContentLoaded 前に決める
@@ -213,7 +219,16 @@ ai-core.js                        Atlas の AI 通信・利用枠・設定
 ### 3.8 `js/` — 分析・パネル・シミュレーション
 
 ```
-analysis-panels.js                分析パネル（時系列・AIリサーチ・相関・世界の出来事・学習モード）
+analysis-panels.js                分析パネルの EAGER SHELL ——「起動時に走るもの」だけ:
+                                  5つのファクトリ登録・#btn-correlate と #edu-mount/#btn-edu の生成・
+                                  言語切替の再翻訳・地図クリックの転送、そして
+                                  IntMapTimeSeries / IntMapAIResearch / IntMapCorrelate / IntMapEdu
+                                  の非同期ファサード（呼ばれてから実装を取りに行く）
+analysis-timeseries.js            ↳ 時系列チャートの実装        __imAnalysisTimeSeries（遅延）
+analysis-research.js              ↳ AI リサーチの実装           __imAnalysisResearch（遅延）
+analysis-correlate.js             ↳ 相関・散布図の実装          __imAnalysisCorrelate（遅延）
+analysis-world-events.js          ↳ 世界の出来事アーカイブの実装 __imAnalysisEvents（遅延）
+analysis-edu.js                   ↳ 学習モード・地図クイズの実装 __imAnalysisEdu（遅延）
 stats-compare.js                  多国統計比較 IntMapStatsCompare
 countries-ui.js                   Countries タブと国の詳細
 companies-ui.js                   Companies タブ・比較ビュー・ダッシュボード
