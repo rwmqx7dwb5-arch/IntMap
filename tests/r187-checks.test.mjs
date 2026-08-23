@@ -243,9 +243,17 @@ test('R187 default layers: the cables survive a style that is not ready yet', ()
      code logged it and stopped — one of the two default layers on screen, which is the report. */
   const fn = /function addSubcables\(\)\{[\s\S]*?\n    \}/.exec(src);
   assert.ok(fn, 'addSubcables must exist');
-  assert.match(fn[0], /const build=\(tries\)=>/, 'the build step must be retryable');
-  assert.match(fn[0], /setTimeout\(\(\)=>build\(tries-1\),750\)/, 'and actually retry');
-  assert.match(fn[0], /build\(12\)/, 'with a bounded number of tries');
+  /* ⚠ (#R354) THE CLAIM IS UNCHANGED AND THE SPELLING IS NOT. #R187's ladder was twelve tries at
+     750 ms — `build(tries)` counting down — and it was written against a style that was merely SLOW.
+     #R354 measured a style blocked for 22 s by a rate-limited basemap: the ladder ran out and the
+     box came off. It is bounded by a HORIZON now and woken by the renderer's own `styledata`, which
+     is strictly more persistent, not less. What this test asserts is what #R187 was about — a
+     refused add is retried, the retry is bounded, and the reader unticking the box ends it. */
+  assert.match(fn[0], /const build=\(\)=>/, 'the build step must be retryable');
+  assert.match(fn[0], /setTimeout\(\(\)=>\{ _retryT=null; build\(\); \},750\)/, 'and actually retry');
+  assert.match(fn[0], /BUILD_HORIZON_MS=\d+/, 'with a bounded horizon');
+  assert.match(fn[0], /Date\.now\(\)>_giveUpAt/, 'that is actually enforced');
+  assert.match(fn[0], /GE\(\)\.events\.on\('styledata',_styleHook\)/, 'and woken by the style itself, not only by a timer');
   assert.match(fn[0], /cb&&cb\.checked/, 'and give up the moment the user unticks the box');
 });
 

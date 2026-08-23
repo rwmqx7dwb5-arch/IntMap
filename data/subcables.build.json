@@ -1,0 +1,674 @@
+{
+  "built": "2026-08-23T08:40:53.005Z",
+  "generator": "scripts/build-subcables.mjs",
+  "grid": {
+    "width": 4320,
+    "height": 2160,
+    "degrees": 0.08333333333333333,
+    "cellMetresAtEquator": 9277,
+    "source": "AWS Terrain Tiles (terrarium) — ETOPO1 bathymetry, SRTM/GMTED/NED topography",
+    "zoom": 6
+  },
+  "counts": {
+    "cables": 702,
+    "features": 3491,
+    "landingPoints": 1922,
+    "legs": 3051,
+    "verifiedPieces": 230,
+    "candidatePieces": 625
+  },
+  "lengthKm": {
+    "total": 2069686,
+    "verified": 78690,
+    "reconstructed": 1943815,
+    "estimated": 47181
+  },
+  "cablesByQuality": {
+    "verified": 22,
+    "reconstructed": 657,
+    "estimated": 23
+  },
+  "sources": {
+    "noaa-mc": {
+      "features": 385,
+      "pieces": 357,
+      "refusedFit": 23,
+      "refusedName": 135,
+      "refusedPlace": 14,
+      "ambiguous": 0,
+      "matched": 168,
+      "km": 44971,
+      "name": "NOAA Office for Coastal Management — Marine Cadastre \"Submarine Cables\"",
+      "url": "https://marinecadastre.gov/",
+      "licence": "US Government work — not subject to copyright (17 U.S.C. §105)",
+      "use": "surveyed route corridors in US waters"
+    },
+    "emodnet-bsh": {
+      "features": 25,
+      "pieces": 31,
+      "refusedFit": 0,
+      "refusedName": 23,
+      "refusedPlace": 1,
+      "ambiguous": 0,
+      "matched": 7,
+      "km": 610,
+      "name": "EMODnet Human Activities — BSH (Germany) data cables",
+      "url": "https://emodnet.ec.europa.eu/en/human-activities",
+      "licence": "CC BY 4.0",
+      "use": "surveyed routes in German waters"
+    },
+    "emodnet-rws": {
+      "features": 98,
+      "pieces": 154,
+      "refusedFit": 0,
+      "refusedName": 114,
+      "refusedPlace": 3,
+      "ambiguous": 0,
+      "matched": 25,
+      "km": 4227,
+      "name": "EMODnet Human Activities — Rijkswaterstaat (Netherlands) cables",
+      "url": "https://emodnet.ec.europa.eu/en/human-activities",
+      "licence": "CC BY 4.0",
+      "use": "surveyed routes in Dutch waters"
+    },
+    "emodnet-mt": {
+      "features": 6,
+      "pieces": 6,
+      "refusedFit": 0,
+      "refusedName": 4,
+      "refusedPlace": 0,
+      "ambiguous": 0,
+      "matched": 2,
+      "km": 380,
+      "name": "EMODnet Human Activities — Malta cables",
+      "url": "https://emodnet.ec.europa.eu/en/human-activities",
+      "licence": "CC BY 4.0",
+      "use": "surveyed routes around Malta"
+    },
+    "emodnet-sig": {
+      "features": 60,
+      "pieces": 60,
+      "refusedFit": 0,
+      "refusedName": 43,
+      "refusedPlace": 4,
+      "ambiguous": 0,
+      "matched": 13,
+      "km": 1661,
+      "name": "EMODnet Human Activities — SIG cables",
+      "url": "https://emodnet.ec.europa.eu/en/human-activities",
+      "licence": "CC BY 4.0",
+      "use": "surveyed routes"
+    },
+    "acma": {
+      "features": 16,
+      "pieces": 17,
+      "refusedFit": 0,
+      "refusedName": 1,
+      "refusedPlace": 1,
+      "ambiguous": 0,
+      "matched": 15,
+      "km": 31766,
+      "name": "ACMA / Geoscience Australia — Australia's Submarine Telecommunication Cable locations 2021",
+      "url": "https://www.arcgis.com/home/item.html?id=bc1e7fb37fca40faa5dafbc8a5a4dc3c",
+      "licence": "CC BY 4.0 — © Commonwealth of Australia (Australian Communications and Media Authority) 2021",
+      "use": "surveyed routes in Australian waters"
+    }
+  },
+  "licences": {
+    "telegeography": {
+      "name": "TeleGeography Submarine Cable Map",
+      "url": "https://www.submarinecablemap.com/",
+      "licence": "Public API, CC BY-SA 4.0 (submarinecablemap.com)",
+      "use": "inventory, names, metadata, landing points, connection topology"
+    },
+    "noaa-mc": {
+      "name": "NOAA Office for Coastal Management — Marine Cadastre \"Submarine Cables\"",
+      "url": "https://marinecadastre.gov/",
+      "licence": "US Government work — not subject to copyright (17 U.S.C. §105)",
+      "use": "surveyed route corridors in US waters"
+    },
+    "emodnet-bsh": {
+      "name": "EMODnet Human Activities — BSH (Germany) data cables",
+      "url": "https://emodnet.ec.europa.eu/en/human-activities",
+      "licence": "CC BY 4.0",
+      "use": "surveyed routes in German waters"
+    },
+    "emodnet-rws": {
+      "name": "EMODnet Human Activities — Rijkswaterstaat (Netherlands) cables",
+      "url": "https://emodnet.ec.europa.eu/en/human-activities",
+      "licence": "CC BY 4.0",
+      "use": "surveyed routes in Dutch waters"
+    },
+    "emodnet-mt": {
+      "name": "EMODnet Human Activities — Malta cables",
+      "url": "https://emodnet.ec.europa.eu/en/human-activities",
+      "licence": "CC BY 4.0",
+      "use": "surveyed routes around Malta"
+    },
+    "emodnet-sig": {
+      "name": "EMODnet Human Activities — SIG cables",
+      "url": "https://emodnet.ec.europa.eu/en/human-activities",
+      "licence": "CC BY 4.0",
+      "use": "surveyed routes"
+    },
+    "acma": {
+      "name": "ACMA / Geoscience Australia — Australia's Submarine Telecommunication Cable locations 2021",
+      "url": "https://www.arcgis.com/home/item.html?id=bc1e7fb37fca40faa5dafbc8a5a4dc3c",
+      "licence": "CC BY 4.0 — © Commonwealth of Australia (Australian Communications and Media Authority) 2021",
+      "use": "surveyed routes in Australian waters"
+    },
+    "terrarium": {
+      "name": "AWS Terrain Tiles (terrarium) — ETOPO1 bathymetry, SRTM/GMTED/NED topography",
+      "url": "https://registry.opendata.aws/terrain-tiles/",
+      "licence": "Open data (see registry) — attributed in js/reference-data.js",
+      "use": "sea-floor depth, roughness and land mask for route reconstruction"
+    },
+    "ne-lakes": {
+      "name": "Natural Earth 1:10m physical — lakes",
+      "url": "https://www.naturalearthdata.com/",
+      "licence": "Public domain",
+      "use": "inland water the elevation grid reads as land (the Great Lakes and similar)"
+    }
+  },
+  "channels": [
+    {
+      "name": "Suez Canal",
+      "cellsOpened": 20
+    },
+    {
+      "name": "Bosphorus + Sea of Marmara + Dardanelles",
+      "cellsOpened": 9
+    }
+  ],
+  "lakeCells": 45099,
+  "router": {
+    "runs": 3252,
+    "expanded": 278919310,
+    "retries": 17,
+    "failures": 375
+  },
+  "qa": {
+    "cablesIn": 702,
+    "cablesOut": 702,
+    "cablesMissing": [],
+    "vertices": 62005,
+    "nonFinite": 0,
+    "lonOutOfRange": 0,
+    "latOutOfRange": 0,
+    "featuresWithFewerThanTwoPoints": 0,
+    "zeroLengthFeatures": 2,
+    "antimeridianBreaks": 0,
+    "landCrossingFeatures": 259,
+    "landCrossingSamples": 4085,
+    "landCrossingWorst": [
+      {
+        "id": "norte-conectado-infovia-06-0",
+        "cable": "norte-conectado-infovia-06",
+        "hits": 411,
+        "quality": "estimated"
+      },
+      {
+        "id": "norte-conectado-infovia-08-0",
+        "cable": "norte-conectado-infovia-08",
+        "hits": 321,
+        "quality": "estimated"
+      },
+      {
+        "id": "norte-conectado-infovia-05-0",
+        "cable": "norte-conectado-infovia-05",
+        "hits": 273,
+        "quality": "estimated"
+      },
+      {
+        "id": "norte-conectado-infovia-02-0",
+        "cable": "norte-conectado-infovia-02",
+        "hits": 256,
+        "quality": "estimated"
+      },
+      {
+        "id": "projeto-amaznia-conectada-pac-02-0",
+        "cable": "projeto-amaznia-conectada-pac-02",
+        "hits": 250,
+        "quality": "estimated"
+      },
+      {
+        "id": "projeto-amaznia-conectada-pac-01-0",
+        "cable": "projeto-amaznia-conectada-pac-01",
+        "hits": 225,
+        "quality": "estimated"
+      },
+      {
+        "id": "norte-conectado-infovia-01-0",
+        "cable": "norte-conectado-infovia-01",
+        "hits": 221,
+        "quality": "estimated"
+      },
+      {
+        "id": "norte-conectado-infovia-04-0",
+        "cable": "norte-conectado-infovia-04",
+        "hits": 160,
+        "quality": "estimated"
+      },
+      {
+        "id": "norte-conectado-infovia-00-0",
+        "cable": "norte-conectado-infovia-00",
+        "hits": 123,
+        "quality": "estimated"
+      },
+      {
+        "id": "norte-conectado-infovia-05-1",
+        "cable": "norte-conectado-infovia-05",
+        "hits": 112,
+        "quality": "estimated"
+      },
+      {
+        "id": "palapa-ring-east-3",
+        "cable": "palapa-ring-east",
+        "hits": 93,
+        "quality": "estimated"
+      },
+      {
+        "id": "norte-conectado-infovia-02-2",
+        "cable": "norte-conectado-infovia-02",
+        "hits": 76,
+        "quality": "estimated"
+      },
+      {
+        "id": "projeto-amaznia-conectada-pac-02-1",
+        "cable": "projeto-amaznia-conectada-pac-02",
+        "hits": 76,
+        "quality": "estimated"
+      },
+      {
+        "id": "connected-coast-43",
+        "cable": "connected-coast",
+        "hits": 70,
+        "quality": "estimated"
+      },
+      {
+        "id": "norte-conectado-infovia-00-1",
+        "cable": "norte-conectado-infovia-00",
+        "hits": 64,
+        "quality": "estimated"
+      },
+      {
+        "id": "projeto-amaznia-conectada-pac-02-3",
+        "cable": "projeto-amaznia-conectada-pac-02",
+        "hits": 64,
+        "quality": "estimated"
+      },
+      {
+        "id": "projeto-amaznia-conectada-pac-01-1",
+        "cable": "projeto-amaznia-conectada-pac-01",
+        "hits": 55,
+        "quality": "estimated"
+      },
+      {
+        "id": "norte-conectado-infovia-03-2",
+        "cable": "norte-conectado-infovia-03",
+        "hits": 54,
+        "quality": "estimated"
+      },
+      {
+        "id": "norte-conectado-infovia-02-5",
+        "cable": "norte-conectado-infovia-02",
+        "hits": 40,
+        "quality": "estimated"
+      },
+      {
+        "id": "projeto-amaznia-conectada-pac-02-2",
+        "cable": "projeto-amaznia-conectada-pac-02",
+        "hits": 40,
+        "quality": "estimated"
+      }
+    ],
+    "terminalsChecked": 2494,
+    "terminalsAtLanding": 2479,
+    "terminalsFar": [
+      {
+        "cable": "tata-tgn-intra-asia-tgn-ia",
+        "km": 1879
+      },
+      {
+        "cable": "seabras-1",
+        "km": 1226
+      },
+      {
+        "cable": "lower-indian-ocean-network-2-lion2",
+        "km": 1010
+      },
+      {
+        "cable": "darwin-jakarta-singapore-cable-djsc",
+        "km": 915
+      },
+      {
+        "cable": "bangladesh-private-cable-system-bpcs",
+        "km": 871
+      },
+      {
+        "cable": "vaka",
+        "km": 831
+      },
+      {
+        "cable": "adamasia-cable-system-1",
+        "km": 569
+      },
+      {
+        "cable": "tata-tgn-gulf",
+        "km": 518
+      },
+      {
+        "cable": "timor-leste-south-submarine-cable-tlssc",
+        "km": 345
+      },
+      {
+        "cable": "tampnet-north",
+        "km": 267
+      },
+      {
+        "cable": "africa-1",
+        "km": 250
+      },
+      {
+        "cable": "le-vasa",
+        "km": 245
+      },
+      {
+        "cable": "pukpuk-1-cable-system",
+        "km": 179
+      },
+      {
+        "cable": "bernacchi-1",
+        "km": 158
+      },
+      {
+        "cable": "iokwe",
+        "km": 58
+      }
+    ],
+    "lengthComparedCables": 611,
+    "lengthRatio": {
+      "p05": 0.582,
+      "p25": 0.903,
+      "p50": 0.989,
+      "p75": 1.109,
+      "p95": 1.664
+    },
+    "lengthOutliers": 60,
+    "lengthWorstShort": [
+      {
+        "id": "poseidon",
+        "published": 800,
+        "built": 127,
+        "ratio": 0.1587803291011425
+      },
+      {
+        "id": "pldt-domestic-fiber-optic-network-dfon",
+        "published": 11100,
+        "built": 2279,
+        "ratio": 0.20535645444929515
+      },
+      {
+        "id": "tautira-teahupoo",
+        "published": 38,
+        "built": 11,
+        "ratio": 0.3021539539088197
+      },
+      {
+        "id": "unitel-north-submarine-cable-unsc",
+        "published": 1145,
+        "built": 369,
+        "ratio": 0.3222489203712547
+      },
+      {
+        "id": "concerto",
+        "published": 550,
+        "built": 208,
+        "ratio": 0.37746042026258647
+      },
+      {
+        "id": "norte-conectado-infovia-08",
+        "published": 2766,
+        "built": 1044,
+        "ratio": 0.37761612271496015
+      },
+      {
+        "id": "sto-hel-one",
+        "published": 560,
+        "built": 215,
+        "ratio": 0.3836282095474172
+      },
+      {
+        "id": "tampnet-south",
+        "published": 1751,
+        "built": 721,
+        "ratio": 0.41155017112397235
+      },
+      {
+        "id": "svalbard-undersea-cable-system",
+        "published": 2714,
+        "built": 1157,
+        "ratio": 0.4263572869530366
+      },
+      {
+        "id": "italy-croatia",
+        "published": 230,
+        "built": 105,
+        "ratio": 0.45475363037033195
+      },
+      {
+        "id": "norte-conectado-infovia-06",
+        "published": 2847,
+        "built": 1300,
+        "ratio": 0.45663398292196056
+      },
+      {
+        "id": "russia-japan-cable-network-rjcn",
+        "published": 1800,
+        "built": 841,
+        "ratio": 0.4672316189748541
+      }
+    ],
+    "lengthWorstLong": [
+      {
+        "id": "cantat-3",
+        "published": 270,
+        "built": 2156,
+        "ratio": 7.9865598837700045
+      },
+      {
+        "id": "qatar-u-a-e-submarine-cable-system",
+        "published": 100,
+        "built": 585,
+        "ratio": 5.854189703680016
+      },
+      {
+        "id": "trans-global-cable-system-tgcs",
+        "published": 1200,
+        "built": 5214,
+        "ratio": 4.344833281342148
+      },
+      {
+        "id": "ulysses-2",
+        "published": 199,
+        "built": 849,
+        "ratio": 4.264728935538323
+      },
+      {
+        "id": "sealink-south",
+        "published": 159,
+        "built": 415,
+        "ratio": 2.6075425042434635
+      },
+      {
+        "id": "brazilian-festoon",
+        "published": 2552,
+        "built": 6502,
+        "ratio": 2.547990559715138
+      },
+      {
+        "id": "jakarta-bangka-batam-singapore-b2js",
+        "published": 759,
+        "built": 1920,
+        "ratio": 2.529574125601955
+      },
+      {
+        "id": "sumatera-bangka-cable-system-sbcs",
+        "published": 57,
+        "built": 139,
+        "ratio": 2.43037002091243
+      },
+      {
+        "id": "crosslake-fibre",
+        "published": 59,
+        "built": 140,
+        "ratio": 2.372024050569511
+      },
+      {
+        "id": "berytar",
+        "published": 134,
+        "built": 304,
+        "ratio": 2.2697970308353734
+      },
+      {
+        "id": "png-lng",
+        "published": 200,
+        "built": 437,
+        "ratio": 2.184060714349573
+      },
+      {
+        "id": "sweden-estonia-ee-s-1",
+        "published": 240,
+        "built": 524,
+        "ratio": 2.1839900352785744
+      }
+    ],
+    "selfIntersectingFeatures": 8,
+    "selfIntersections": 18,
+    "detour": {
+      "p50": 1.084,
+      "p90": 1.265,
+      "p99": 1.902,
+      "max": 9.64
+    },
+    "detourWorst": [
+      {
+        "id": "palapa-ring-east-0",
+        "r": 9.64
+      },
+      {
+        "id": "alaska-united-southeast-au-se-5",
+        "r": 4.67
+      },
+      {
+        "id": "japan-information-highway-jih-10",
+        "r": 4.47
+      },
+      {
+        "id": "kodiak-kenai-fiber-link-kkfl-0",
+        "r": 4.38
+      },
+      {
+        "id": "blue-12",
+        "r": 3.53
+      },
+      {
+        "id": "fibra-optica-austral-4",
+        "r": 3.38
+      },
+      {
+        "id": "emc-west-2-0",
+        "r": 3.38
+      },
+      {
+        "id": "sealink-south-0",
+        "r": 3.01
+      },
+      {
+        "id": "prat-7",
+        "r": 2.94
+      },
+      {
+        "id": "andromeda-2",
+        "r": 2.87
+      },
+      {
+        "id": "emc-west-1-0",
+        "r": 2.84
+      },
+      {
+        "id": "asia-africa-europe-1-aae-1-8",
+        "r": 2.67
+      }
+    ],
+    "duplicateFeatureIds": 0,
+    "disconnectedCables": 69,
+    "disconnectedWorst": [
+      {
+        "cable": "piano-isole-minori",
+        "components": 8
+      },
+      {
+        "cable": "bt-highlands-and-islands-submarine-cable-system",
+        "components": 8
+      },
+      {
+        "cable": "converge-domestic-submarine-cable-network-cdscn",
+        "components": 6
+      },
+      {
+        "cable": "r100-north",
+        "components": 5
+      },
+      {
+        "cable": "connected-coast",
+        "components": 5
+      },
+      {
+        "cable": "philippine-domestic-submarine-cable-network-pdscn",
+        "components": 5
+      },
+      {
+        "cable": "palapa-ring-middle",
+        "components": 5
+      },
+      {
+        "cable": "submarine-cable-in-the-philippines-scip",
+        "components": 4
+      },
+      {
+        "cable": "aurora",
+        "components": 4
+      },
+      {
+        "cable": "thetis",
+        "components": 4
+      },
+      {
+        "cable": "ion-cable-system-1-ics1",
+        "components": 3
+      },
+      {
+        "cable": "kunoa-north",
+        "components": 3
+      },
+      {
+        "cable": "okinawa-remote-islands",
+        "components": 3
+      },
+      {
+        "cable": "domestic-submarine-cable-of-maldives-dscom",
+        "components": 3
+      },
+      {
+        "cable": "taiwan-penghu-kinmen-matsu-no-2-tpkm2",
+        "components": 3
+      }
+    ],
+    "featuresByQuality": {
+      "reconstructed": 3191,
+      "estimated": 98,
+      "verified": 202
+    }
+  }
+}

@@ -47,7 +47,7 @@
   "tests/r184-routing.spec.js": 30,
   "tests/r184-satellites.spec.js": 166,
   "tests/r185.spec.js": 216,
-  "tests/r186.spec.js": 315,
+  "tests/r186.spec.js": 150,
   "tests/r191.spec.js": 47,
   "tests/r192.spec.js": 66,
   "tests/r193.spec.js": 46,
@@ -77,6 +77,8 @@
   "tests/r353-live.spec.js": 6,
   "tests/r353.spec.js": 5,
   "tests/r354.spec.js": 4,
+  "tests/r355-cables.spec.js": 31,
+  "tests/r355.spec.js": 8,
   "tests/security.spec.js": 9,
   "tests/smoke.spec.js": 8
 }

@@ -1,0 +1,109 @@
+{
+  "_readme": [
+    "IntMap · submarine-cable reconstruction — the CORRECTIONS, as data.",
+    "scripts/build-subcables.mjs reads this file. Nothing here may be a latitude/longitude",
+    "written into code instead: every hand-made decision about the cable dataset lives in this",
+    "one file so that re-running the pipeline reproduces it (the brief's §20).",
+    "",
+    "nameAliases      normalized source spelling -> normalized TeleGeography spelling. Applied by",
+    "                 scripts/subcables/match.mjs BEFORE any comparison. Keys and values are",
+    "                 lower-case, punctuation collapsed to single spaces.",
+    "pieceCable       '<src>|<name>' -> TeleGeography cable id, or null to refuse the piece.",
+    "                 An explicit answer for a case the name+place test cannot settle by itself.",
+    "                 A null is a DECISION, and the QA counts them, so a source route that is",
+    "                 deliberately not used cannot look like one that was never seen.",
+    "anchors          cable id -> extra waypoints the reconstruction must pass through, in order,",
+    "                 as [lon, lat]. For legs where the published route is known to go somewhere",
+    "                 the sea floor alone would not send it. Each entry MUST carry a `why`.",
+    "channels         waterways narrower than one 1/12° cell (9.26 km) that cables really transit.",
+    "                 The router carves them into its passability at `cost` (they are shallow and",
+    "                 busy, not free). Each MUST carry a `why`, and the build reports how many",
+    "                 cells each one opened so a channel that does nothing cannot hide.",
+    "excludeSources   normalized source names that are not telecom cable systems at all."
+  ],
+
+  "channels": [
+    {
+      "name": "Suez Canal",
+      "why": "The canal is ~200 m wide and the grid cell is 9.26 km, so the Red Sea and the Mediterranean are two separate oceans to the router. Measured on the raw grid: Port Said -> Suez routed 25,141 km around Africa for a 151 km leg, and that single blockage is what made Red2Med 117x, EMC West-1 13.9x, India-Europe Xpress 6.0x and MENA/GBI 7.0x their published lengths. Cables transiting Egypt (SeaMeWe-3/4/5/6, IMEWE, AAE-1, PEACE, 2Africa, FALCON, EIG, TE North, Africa-1 ...) really are laid through the canal and its terminal lakes.",
+      "width_km": 9,
+      "cost": 3.5,
+      "points": [
+        [32.31, 31.28], [32.35, 31.10], [32.32, 30.90], [32.33, 30.72],
+        [32.31, 30.55], [32.35, 30.40], [32.40, 30.25], [32.44, 30.10],
+        [32.52, 29.98], [32.56, 29.87], [32.60, 29.72]
+      ]
+    },
+    {
+      "name": "Bosphorus + Sea of Marmara + Dardanelles",
+      "why": "The Bosphorus is 0.7-3.4 km and the Dardanelles 1.2-6 km, so the Black Sea has no connection to the Mediterranean on this grid (measured: Istanbul north -> south, NO ROUTE). Cables between the Black Sea and the Aegean are laid through both straits.",
+      "width_km": 6,
+      "cost": 3.5,
+      "points": [
+        [29.14, 41.23], [29.06, 41.15], [29.02, 41.08], [28.98, 41.02],
+        [28.95, 40.97], [28.20, 40.75], [27.30, 40.55], [26.70, 40.42],
+        [26.40, 40.22], [26.20, 40.08], [26.05, 39.98], [25.90, 39.92]
+      ]
+    }
+  ],
+
+  "nameAliases": {
+    "sea me we 3": "seamewe 3",
+    "sea me we 4": "seamewe 4",
+    "sea me we 5": "seamewe 5",
+    "sea me we 6": "seamewe 6",
+    "seamewe3": "seamewe 3",
+    "seamewe4": "seamewe 4",
+    "seamewe5": "seamewe 5",
+    "seamewe6": "seamewe 6",
+    "tat14": "tat 14",
+    "tat13": "tat 13",
+    "tat12": "tat 12",
+    "tat10": "tat 10",
+    "australian japan cable": "australia japan cable",
+    "japan u s cable network": "japan us cable network",
+    "japan u s cable network jus": "japan us cable network jus",
+    "pipe pacific cable": "pipe pacific cable 1",
+    "southeast asia u s": "southeast asia united states",
+    "america movil submarine cable system": "america movil submarine cable system 1",
+    "hawaiian islands fiber network": "hawaiian islands fiber link",
+    "c lion": "c lion1",
+    "cantat 3a": "cantat 3",
+    "cantat 3b": "cantat 3",
+    "atlantic crossing 1a ac 1a": "atlantic crossing 1 ac 1",
+    "aeconnect 1 cable system": "aeconnect 1",
+    "japan guam australia cable": "japan guam australia",
+    "tata global networks pacific": "tata tgn pacific"
+  },
+
+  "pieceCable": {
+    "emodnet-rws|Onbekend": null,
+    "emodnet-rws|Tycom-kabel": null,
+    "emodnet-rws|Telecomkabel Farland North": null,
+    "noaa-mc|Possible telegraph cables": null,
+    "noaa-mc|Utility Cables": null,
+    "noaa-mc|Telephone Cable": null,
+    "noaa-mc|Power Transmission Cable": null,
+    "noaa-mc|Submarine Power Cable": null,
+    "noaa-mc|Cable 99": null,
+    "noaa-mc|SOSUS": null,
+    "noaa-mc|Undersea Warfare Training Range": null,
+    "noaa-mc|Pacific Missile Range Facility": null,
+    "noaa-mc|San Clemente Island Range Complex": null,
+    "noaa-mc|Fiber Optic Communication Undersea System": null,
+    "noaa-mc|ATOC Pioneer Seamount Cable": null,
+    "noaa-mc|Martha's Vineyard Coastal Observatory": null,
+    "noaa-mc|Monterey Accelerated Research System": null,
+    "noaa-mc|PacWave South": null,
+    "noaa-mc|Kellys Island": null,
+    "noaa-mc|Cutler": null,
+    "noaa-mc|Silver Run Project": null
+  },
+
+  "anchors": {},
+
+  "excludeSources": [
+    "onbekend",
+    "unknown"
+  ]
+}

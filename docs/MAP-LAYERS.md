@@ -761,6 +761,18 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 - **GDP 成長率は発散配色**（0 ＝ 白・負 ＝ 赤・正 ＝ 青・0 について対称）。
 - **データセンター層**は表示範囲の集計を**レイヤー自身の凡例**に出す（浮くポップアップにしない）——
   「この点は何か」は浮き、「表示範囲に何があるか」はレイヤーの答えである。
+- **海底ケーブル**（`dl-subcables` / `js/data-layers.js`）— 描くのは **`data/subcables.json`**。
+  TeleGeography の模式線ではなく、`scripts/build-subcables.mjs` がオフラインで組み直した経路である。
+  実測できた区間は各国政府・水路機関の公開経路（NOAA Marine Cadastre / EMODnet BSH・
+  Rijkswaterstaat・Malta・SIG / ACMA）、残りは 1/12°（9.26 km）の海底格子上の最小コスト経路。
+  区間ごとに `quality`（`verified` / `reconstructed` / `estimated`）と `src` を持つ。
+  ⚠ **`quality` で色や太さを変えない**——線のグラフィックは1つで、`color` は
+  TeleGeography 由来のケーブル色のまま（`['coalesce',['get','color'],'#30b0c7']`）。
+  ⚠ **取得は4段**（自オリジンの `data/subcables.json` → その Cache API の写し →
+  TeleGeography の写し → 中継。`js/data-layers.js` `fetchSubcables()`）。
+  ⚠ **クリックの当たり判定は箱**（マウス ±8px・タッチ ±16px）で、**線は太くしない**。
+  情報ポップアップは `js/subcable-info.js`（動的 import・`.plc-popup .subc-popup`）で、
+  ケーブル線と陸揚げ点の両方に付く。重なっている場合は同じポップアップ内で選べる。
 - **貿易フロー**の矢印は軸（`wp-trade-arc`）・頭（`wp-trade-tip`）・相手国名を**一式**で切り替える。
   軸は頭の base で終わる（`trimEnd` / `line-cap:'butt'` / `icon-anchor:'top'`）。
   ⚠ 切る長さは**画素**なので**レンダラの投影に訊く**（`GE().coords.project`）。メルカトルのメートルは
