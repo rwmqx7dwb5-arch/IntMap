@@ -41,7 +41,12 @@
  *  also why a run that refuses can simply be left to the next one.
  * ==========================================================================*/
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
+
+const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
 const ARGS = new Set(process.argv.slice(2));
 const want = (f) => ARGS.has(f);
@@ -110,6 +115,48 @@ const advisory = (s) => (s.dirty.length
   ? [`the master has ${s.dirty.length} uncommitted change(s) — a concurrent session may own them (CLAUDE.md §6); they are mirrored as they are.`]
   : []);
 
+/* ── MACHINE-LOCAL PATHS: THE ONE THING A FAST-FORWARD IS ALLOWED TO CARRY ACROSS ──────────────
+   A machine-local path is one whose CONTENT belongs to this machine and to no commit: absolute
+   paths into this machine's worktrees, ports this machine handed out. `.claude/launch.json` is
+   the whole list, and it earned its place by measurement (#R339).
+
+   ⚠ THE FILE THAT BLOCKED THE MERGE AND THE FILE THAT UNBLOCKS IT ARE THE SAME FILE.
+   While it was tracked, every round committed its own `intmap-preview-r<N>` entry while the
+   Browser preview tool wrote absolute paths into the MASTER's copy — so any concurrent session
+   with a preview open left the master dirty in exactly the file the next commit changed, and
+   `merge --ff-only` refused. Correctly: §6 forbids touching another session's uncommitted work.
+   MEASURED 2026-08-23: the master sat 4 commits behind (R325→R335) with three such entries
+   (`intmap-r328-pwtest`, `intmap-preview-r326`, `intmap-preview-r328`), and every finish step
+   that day reported `RESULT skipped master-not-synced` — the USB backup had silently not run.
+
+   ⚠ UNTRACKING IT (#R338) DOES NOT BY ITSELF FIX THIS — IT MAKES THE BLOCK PERMANENT.
+   A fast-forward is one checkout from HEAD's tree to the target's tree, not a replay, so the
+   commit that REMOVES the file still has to remove it here, and git refuses to remove a path that
+   is locally modified («Your local changes … would be overwritten») or untracked («The following
+   untracked working tree files would be removed»). MEASURED both ways in a synthetic repo before
+   writing this. Left alone, the master would wedge at that one commit boundary and stay there.
+
+   So the transition is done HERE, where the bytes can be kept: save them, let git remove the path,
+   put them back. Nothing is committed, nothing is discarded, and the other session's entries come
+   out the far side byte-for-byte — which is the §6 requirement, not a nicety. */
+const MACHINE_LOCAL = ['.claude/launch.json'];
+
+/* Git names the paths it refuses to clobber on their own tab-indented lines. Read THEM rather than
+   guessing from the prose, so a message this does not recognise simply rescues nothing. */
+const obstructedPaths = (why) => why.split('\n')
+  .filter((l) => /^\t/.test(l))
+  .map((l) => l.trim().replace(/\\/g, '/'))
+  .filter(Boolean);
+
+const tracked = (rev, p) => !!git(MASTER, ['ls-tree', '-r', '--name-only', rev, '--', p], { quiet: true });
+const trackedNow = (p) => !!git(MASTER, ['ls-files', '--', p], { quiet: true });
+
+/* Which machine-local paths is THIS fast-forward about to remove from the tree? Only those may be
+   carried across. ⚠ A path the target still tracks is deliberately NOT eligible: restoring bytes
+   over it would discard whatever the incoming commit had to say about it, which is the mistake
+   this whole file exists to avoid. */
+const departing = () => MACHINE_LOCAL.filter((p) => existsSync(path.join(MASTER, p)) && !tracked('origin/main', p));
+
 if (want('--check')) {
   const s = survey({ fetch: !want('--offline') });
   const bad = blocking(s);
@@ -161,10 +208,67 @@ if (want('--sync')) {
      `merge --ff-only` already refuses, precisely, when the incoming tree would overwrite a locally
      modified file — so run it and report ITS answer. Unrelated edits survive, which is what §6
      actually asks for. */
-  try {
-    execFileSync('git', ['-C', MASTER, 'merge', '--ff-only', 'origin/main'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-  } catch (e) {
-    const why = String(e.stderr || e.stdout || '').trim();
+  const ff = () => {
+    try {
+      execFileSync('git', ['-C', MASTER, 'merge', '--ff-only', 'origin/main'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      return null;
+    } catch (e) {
+      return String(e.stderr || e.stdout || '').trim() || 'git gave no reason.';
+    }
+  };
+
+  let why = ff();
+
+  /* ⚠ THE RESCUE IS NARROW ON PURPOSE, AND IT IS NOT A SECOND OPINION ABOUT GIT'S ANSWER.
+     It runs only when git named some paths AND every last one of them is a declared machine-local
+     file that origin/main has stopped tracking. One unrecognised path and nothing is touched: the
+     refusal stands and gets reported, exactly as before. This is the difference between «carry the
+     machine's own scratch file across» and «decide somebody else's edit was unimportant». */
+  if (why) {
+    const leaving = departing();
+    const blocked = obstructedPaths(why);
+    if (blocked.length && blocked.every((p) => leaving.includes(p))) {
+      const headBefore = git(MASTER, ['rev-parse', 'HEAD'], { quiet: true });
+      const stash = mkdtempSync(path.join(tmpdir(), 'intmap-machine-local-'));
+      const saved = [];
+      try {
+        for (const p of blocked) {
+          const abs = path.join(MASTER, p);
+          const keep = path.join(stash, p.replace(/[\\/]/g, '_'));
+          /* Buffers, never strings: no encoding guess, no newline rewrite, no reformatting. The
+             bytes that come out are the bytes that went in, and that is checkable — it is. */
+          const bytes = readFileSync(abs);
+          writeFileSync(keep, bytes);
+          const wasTracked = trackedNow(p);
+          saved.push({ p, abs, keep, wasTracked, sha: sha256(bytes), restored: false });
+          if (wasTracked) git(MASTER, ['rm', '--cached', '-q', '--', p], { quiet: true });
+          rmSync(abs);
+        }
+        why = ff();
+      } finally {
+        /* ⚠ IN `finally`, AND IT PUTS THE INDEX BACK TOO. If the retry failed the master must end
+           up exactly as it was found — bytes on disk AND the index entry that `rm --cached` took
+           out — or this «rescue» would be the very thing §6 forbids, just with a friendlier name. */
+        const moved = git(MASTER, ['rev-parse', 'HEAD'], { quiet: true }) !== headBefore;
+        for (const s of saved) {
+          if (!moved && s.wasTracked) git(MASTER, ['reset', '-q', '--', s.p], { quiet: true });
+          try { writeFileSync(s.abs, readFileSync(s.keep)); } catch { /* left false; reported below */ }
+          /* «Restored» is not «writeFileSync did not throw»: read it back and compare the hash. */
+          try { s.restored = existsSync(s.abs) && sha256(readFileSync(s.abs)) === s.sha; } catch { s.restored = false; }
+        }
+        try { rmSync(stash, { recursive: true, force: true }); } catch { /* a temp dir, not a result */ }
+      }
+      for (const s of saved) {
+        console.error(`master-sync: ${s.p} is machine-local — carried across the fast-forward (${s.restored ? 'restored, unchanged' : '⚠ NOT RESTORED'}).`);
+      }
+      if (saved.some((s) => !s.restored)) {
+        console.error('master-sync: a machine-local file did not come back intact — stopping rather than reporting success.');
+        process.exit(1);
+      }
+    }
+  }
+
+  if (why) {
     console.error(`master-sync: git refused the fast-forward in ${MASTER}.`);
     for (const line of why.split('\n').slice(0, 8)) console.error(`  ${line}`);
     if (before.dirty.length) {
