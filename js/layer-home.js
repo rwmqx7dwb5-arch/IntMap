@@ -4,6 +4,7 @@
  *  「EU membersレイヤーをオンにしたら、自動的にEUに行くように。」
  *  「いや、それを言ったらアメリカ大統領選挙もですよね？ EUも、ウクライナも、両方自動で行くように
  *    して。」
+ *  「NATO membersレイヤーをオンにしたら、自動的にNATOに行くように。」  (#R337)
  *
  *  ⚠⚠⚠ THIS FILE IS A NARROWING OF CONSTITUTION §3, NOT A HOLE IN IT.
  *  「レイヤーを選択しても視点を一切動かさない（1pxたりとも）」 has been the rule since #R21, and
@@ -49,6 +50,18 @@
     /* the collection the layer itself just built — mainlands only, see the header */
     try {
       const fc = window.IntMapEuFC && window.IntMapEuFC();
+      return (fc && bboxOfFC(fc, true)) || null;
+    } catch (_) { return null; }
+  };
+  HOMES['dl-nato'] = function () {
+    /* ⚠ (#R337) 「NATO membersレイヤーをオンにしたら、自動的にNATOに行くように。」 The same shape as
+       EU: the collection the layer itself just built, which is already the members who had acceded by
+       whatever year Chronos is set to AND is already clipped to the treaty area — js/data-layers.js
+       drops every polygon whose centroid is south of the Tropic of Cancer, because Article 6 defines
+       the area that way. So the frame IS the treaty area, measured, and it follows the year control:
+       set Chronos to 1949 and the box is the twelve founders, not today's thirty-two. */
+    try {
+      const fc = window.IntMapNatoFC && window.IntMapNatoFC();
       return (fc && bboxOfFC(fc, true)) || null;
     } catch (_) { return null; }
   };

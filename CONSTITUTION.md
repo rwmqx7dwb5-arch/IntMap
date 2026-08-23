@@ -59,7 +59,7 @@
   not on mobile, not on desktop, not by one pixel. No auto-scroll, no auto-fly, no list jump.
   ⚠ **例外は「そのレイヤーのデータが1つの地域にしか存在しないもの」だけ**（利用者の指示で追加）。
   他の場所でオンにしても空の地図しか出ないレイヤーは、その地域を 1 回だけ枠に収めてよい。
-  **対象の一覧は [`js/layer-home.js`](js/layer-home.js) に1か所だけある**（EU members /
+  **対象の一覧は [`js/layer-home.js`](js/layer-home.js) に1か所だけある**（EU members / NATO members /
   U.S. presidential elections / Ukraine frontline）——**各レイヤーのファイルに `fitBounds` を書かない**。
   条件は **セッション中の初回のみ**・**利用者が操作したときだけ**（セッション復元では動かない）。
   **それ以外のレイヤーは今も 1px も動かない。**

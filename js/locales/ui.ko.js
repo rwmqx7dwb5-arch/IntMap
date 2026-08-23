@@ -4946,6 +4946,38 @@ window.IntMapLang.define('ko', { ui: {
   "Where in the world are the most severe weather warnings in force right now?": "지금 세계에서 가장 심각한 기상 경보가 발효 중인 곳은 어디인가요?",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "최근 일주일 동안 가장 활발했던 판 경계는 어디인가요?",   /* atlas-examples.js (#R313) */
   "Which submarine cable chokepoints carry the most of the world’s traffic?": "세계 통신량이 가장 많이 몰리는 해저 케이블 요충지는 어디인가요?",   /* atlas-examples.js (#R313) */
+  /* ── (#R337) the widened starter-chip pool: geography, currency, language and pairs of facts ── */
+  "The equator runs through {place} — what does that do to its seasons and its rain?": "적도가 {place}를 지납니다. 계절과 비는 그로 인해 어떻게 되나요?",   /* atlas-examples.js (#R337) */
+  "Part of {place} lies inside the Arctic Circle — who lives up there, and on what?": "{place}의 일부는 북극권 안에 있습니다. 그곳에는 누가, 무엇으로 살고 있나요?",   /* atlas-examples.js (#R337) */
+  "All of {place} lies between the tropics — how does that decide what grows and where people live?": "{place}는 전역이 열대에 있습니다. 무엇이 자라고 사람들이 어디에 사는지는 그것으로 어떻게 정해지나요?",   /* atlas-examples.js (#R337) */
+  "{place} is scattered over far more sea than land — which piece of it lies furthest out?": "{place}의 영토는 육지보다 훨씬 넓은 바다에 흩어져 있습니다. 가장 멀리 있는 곳은 어디인가요?",   /* atlas-examples.js (#R337) */
+  "{place} is wealthy and tightly governed at once — what holds that arrangement together?": "{place}는 부유하면서도 통치가 강합니다. 이 조합을 떠받치는 것은 무엇인가요?",   /* atlas-examples.js (#R337) */
+  "{place} has one of the biggest economies in the world and one of the lower incomes per head — where does the gap sit?": "{place}는 세계적 규모의 경제이면서 1인당 소득은 낮은 편입니다. 그 격차는 어디에 있나요?",   /* atlas-examples.js (#R337) */
+  "People in {place} live long lives on modest incomes — what is going right?": "{place}는 소득이 높지 않은데도 오래 삽니다. 무엇이 잘 되고 있나요?",   /* atlas-examples.js (#R337) */
+  "{place} uses the US dollar instead of a currency of its own — why, and what did it give up?": "{place}는 자국 통화 대신 미국 달러를 씁니다. 왜이며, 무엇을 포기했나요?",   /* atlas-examples.js (#R337) */
+  "{place} runs in {n} languages at once — how do government, school and media handle that?": "{place}는 {n}개 언어로 동시에 굴러갑니다. 행정·학교·언론은 이를 어떻게 감당하나요?",   /* atlas-examples.js (#R337) */
+  "{place} does not set its own interest rates — it uses the euro. What has that bought, and what has it cost?": "{place}는 자국 금리를 정하지 않고 유로를 씁니다. 그로써 얻은 것과 잃은 것은 무엇인가요?",   /* atlas-examples.js (#R337) */
+  "Fewer people live in {place} than in a mid-sized city — how does a state that small work?": "{place}의 인구는 중간 규모 도시보다 적습니다. 그만한 규모로 국가는 어떻게 굴러가나요?",   /* atlas-examples.js (#R337) */
+  "{place} has one of the lowest incomes per head anywhere — where does the money that does arrive come from?": "{place}의 1인당 소득은 세계 최저 수준입니다. 그래도 들어오는 돈은 어디서 오나요?",   /* atlas-examples.js (#R337) */
+  "Life is cut short in {place} compared with most of the world — by what, and what is changing?": "{place}의 기대수명은 세계적으로 낮은 편입니다. 무엇 때문이고, 무엇이 달라지고 있나요?",   /* atlas-examples.js (#R337) */
+  "Almost everyone in {place} is online — what did it take to get there?": "{place}는 거의 모두가 인터넷에 연결되어 있습니다. 거기까지 오는 데 무엇이 필요했나요?",   /* atlas-examples.js (#R337) */
+  "{place} spends almost nothing on defence — who or what actually guarantees its security?": "{place}는 국방에 거의 지출하지 않습니다. 실제로 안전을 보장하는 것은 누구 또는 무엇인가요?",   /* atlas-examples.js (#R337) */
+  "More than a hundred million people live in {place} — what does the state do well at that scale, and what breaks?": "{place}에는 1억 명이 넘는 사람이 삽니다. 그 규모에서 국가가 잘 해내는 것과 무너지는 것은 무엇인가요?",   /* atlas-examples.js (#R337) */
+  "{place}’s summer is the northern hemisphere’s winter — where does that show up in its economy?": "{place}의 여름은 북반구의 겨울입니다. 그것은 경제의 어디에 나타나나요?",   /* atlas-examples.js (#R337) */
+  "Winter days are short in {place} — what does that do to its energy use and how people live?": "{place}의 겨울은 해가 짧습니다. 에너지 사용과 생활은 그로 인해 어떻게 되나요?",   /* atlas-examples.js (#R337) */
+  "What is falling over {place} right now, and where is it heading next?": "지금 {place}에 내리고 있는 것은 무엇이고, 앞으로 어디로 움직이나요?",   /* atlas-examples.js (#R337) */
+  "How much of {place} sits low enough for the sea to reach it, and by when?": "{place}에서 바다가 닿을 만큼 낮은 땅은 얼마나 되고, 언제쯤 그렇게 되나요?",   /* atlas-examples.js (#R337) */
+  "Which tectonic plates meet near {place}, and how fast are they moving?": "{place} 근처에서는 어떤 판이 만나고, 얼마나 빠르게 움직이나요?",   /* atlas-examples.js (#R337) */
+  "Which climate zones does {place} span, and which of them are shifting?": "{place}는 어떤 기후대에 걸쳐 있고, 그중 움직이고 있는 것은 무엇인가요?",   /* atlas-examples.js (#R337) */
+  "How far do {place}’s maritime claims reach, and where are they contested?": "{place}의 해양 관할권은 어디까지 미치고, 어디에서 다투어지고 있나요?",   /* atlas-examples.js (#R337) */
+  "What is passing over {place} in orbit right now, and what is it for?": "지금 {place} 상공을 지나는 위성은 무엇이고, 무엇을 위한 것인가요?",   /* atlas-examples.js (#R337) */
+  "Where do {place}’s data centres sit, and what decided those locations?": "{place}의 데이터센터는 어디에 있고, 그 위치는 무엇이 정했나요?",   /* atlas-examples.js (#R337) */
+  "What do the night lights over {place} say about where its people and money are?": "{place}의 야간 불빛은 사람과 돈이 어디에 있는지를 어떻게 말해 주나요?",   /* atlas-examples.js (#R337) */
+  "Which coastlines does the sea reach first as it rises?": "해수면이 오를 때 가장 먼저 잠기는 해안은 어디인가요?",   /* atlas-examples.js (#R337) */
+  "Where are the tectonic plates moving fastest, and what is that building?": "판이 가장 빠르게 움직이는 곳은 어디이고, 그곳에서 무엇이 만들어지고 있나요?",   /* atlas-examples.js (#R337) */
+  "How crowded is low Earth orbit now, and who owns what up there?": "지금 지구 저궤도는 얼마나 붐비고, 그곳의 무엇이 누구의 것인가요?",   /* atlas-examples.js (#R337) */
+  "Which countries host the most data centres, and what draws them there?": "데이터센터가 가장 많은 나라는 어디이고, 무엇이 그들을 그곳으로 끌어들이나요?",   /* atlas-examples.js (#R337) */
+  "Wind particles over the temperature layer": "기온 레이어 위의 바람 입자",   /* atlas-console.js (#R337) */
   "This panel could not be loaded — check your connection and try again.": "이 패널을 불러오지 못했습니다 — 연결 상태를 확인한 뒤 다시 시도해 주세요.",   /* analysis-panels.js (#R322) */
   "Columbus reaches the Americas": "콜럼버스의 아메리카 도달",   /* analysis-world-events.js (#R322) */
   "First Atlantic crossing opens the Columbian exchange.": "대서양 횡단으로 신구 대륙 사이의 콜럼버스 교환이 시작된다.",   /* analysis-world-events.js (#R322) */

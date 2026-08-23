@@ -24,7 +24,7 @@
   "tests/r167.spec.js": 26,
   "tests/r168.spec.js": 8,
   "tests/r169.spec.js": 14,
-  "tests/r170.spec.js": 108,
+  "tests/r170.spec.js": 77,
   "tests/r171.spec.js": 424,
   "tests/r172.spec.js": 52,
   "tests/r173.spec.js": 61,
@@ -63,11 +63,13 @@
   "tests/r209.spec.js": 10,
   "tests/r210.spec.js": 10,
   "tests/r211.spec.js": 10,
-  "tests/security.spec.js": 9,
-  "tests/smoke.spec.js": 8,
   "tests/r226-seismic.spec.js": 34,
   "tests/r251-langs.spec.js": 66,
-  "tests/r318.spec.js": 4,
   "tests/r318-atlas.spec.js": 4,
-  "tests/r322.spec.js": 4
+  "tests/r318.spec.js": 4,
+  "tests/r322.spec.js": 4,
+  "tests/r337-atlas.spec.js": 24,
+  "tests/r337.spec.js": 6,
+  "tests/security.spec.js": 9,
+  "tests/smoke.spec.js": 8
 }

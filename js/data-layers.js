@@ -2150,6 +2150,11 @@ window.IntMapModules.dataLayers=function(HOST){
       if(geom.type==='MultiPolygon'){ const polys=geom.coordinates.filter(keep); return polys.length?{type:'MultiPolygon',coordinates:polys}:null; }
       return geom;
     }
+    /* (#R337) the collection this layer paints, published so js/layer-home.js frames the geometry
+       that is actually on screen — the members who had acceded by whatever year Chronos is set to,
+       already clipped to the treaty area north of the Tropic of Cancer. Same contract as
+       window.IntMapEuFC below; see that file for why the frame takes each member's largest landmass. */
+    window.IntMapNatoFC=()=>{ try{ return buildNatoFC(); }catch(_){ return null; } };
     function buildNatoFC(){
       const feats=[];
       if(HOST.countryGeo&&HOST.countryGeo.features){
@@ -5289,7 +5294,13 @@ window.IntMapModules.dataLayers=function(HOST){
         else if(id==='nato'){
           /* NATO members fill (#14) + accession-year time-travel control (#R25/#24); accession year +
              defense %GDP also show on hover. */
-          withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setNatoVis(true); natoLegend(); }catch(e){ console.warn('nato fail',e); } });
+          withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setNatoVis(true); natoLegend();
+            /* ⚠ (#R337) 「NATO membersレイヤーをオンにしたら、自動的にNATOに行くように。」 Inside
+               `withCountries` for the same reason the EU branch below is: the frame is measured from
+               the members' own footprints and those arrive with the country table. The «may this layer
+               move the camera / has it already / did the READER ask» decision is js/layer-home.js's. */
+            try{ window.IntMapLayerHome&&window.IntMapLayerHome.arrive('dl-nato'); }catch(_){}
+          }catch(e){ console.warn('nato fail',e); } });
         }
         else if(id==='eu'){
           /* (#R26) EU members fill + accession-year time-travel control (mirrors NATO). */
