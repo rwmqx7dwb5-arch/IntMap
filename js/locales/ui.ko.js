@@ -5574,4 +5574,5 @@ window.IntMapLang.define('ko', { ui: {
   "Supplier": "부설 사업자",
   "Unknown": "알 수 없음",
   "Verified": "실측",
+  "Surveyed sections": "실측 구간 출처",
 } });
