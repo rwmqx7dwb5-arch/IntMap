@@ -79,6 +79,31 @@ export const WORDS = [
   ['圖磚', '瓦片'], ['圖資', '地圖數據'], ['取樣', '採樣'],
   ['報導', '報道'], ['觀光', '旅遊'], ['公尺', '米'], ['公分', '厘米'], ['浬', '海里'],
   ['太空人', '宇航員'],
+  /* ══ (#R322) PROPER NOUNS THE TWO READERSHIPS TRANSLITERATE DIFFERENTLY ═══════════════════════
+     A transliteration is not an orthography, so the character map cannot reach it: 西發里亞 and
+     威斯特伐利亞 are different SYLLABLE choices for «Westphalia», and converting the characters of
+     the first gives 西发里亚 — a spelling a mainland reader has never seen. OpenCC already carries
+     the common ones (拿破崙→拿破仑, 蘇伊士→苏伊士, 哥倫布→哥伦布); these are the ones it does not,
+     found by reading this round's 262 new Chinese strings against their generated Simplified.
+     ⚠ THE RIGHT-HAND SIDE IS TRADITIONAL, like every other row here — the character map runs after
+     this table, so a cell states a WORD choice and never an orthography.
+     ⚠ AND THE LEFT-HAND SIDE MUST NOT BE A WORD THE UI ALSO USES. 「複製」 is Taiwan's word for
+     cloning AND the ordinary word for «copy»: MEASURED, it is on 19 lines of ui.zh.js and 18 of
+     them are the Copy button, the copy-coordinates menu item, 「已複製」… A blanket 複製→克隆 would
+     have relabelled every one of them «clone». The entry is 複製羊 instead — Dolly, and nothing
+     else. Every other left-hand side here was checked the same way and occurs only in its event. */
+  ['西發里亞', '威斯特伐利亞'], ['布列敦森林', '布雷頓森林'], ['西盤半島', '韋斯特普拉特'],
+  ['全球資訊網', '萬維網'], ['柏內茲-李', '伯納斯-李'], ['史普尼克', '斯普特尼克'],
+  ['塞拉耶佛', '薩拉熱窩'], ['車諾比', '切爾諾貝利'], ['盤尼西林', '青黴素'],
+  ['突尼西亞', '突尼斯'], ['卡斯楚', '卡斯特羅'], ['聖母峰', '珠穆朗瑪峰'],
+  ['鐵達尼', '泰坦尼克'], ['紐奧良', '新奧爾良'], ['卡崔娜', '卡特里娜'],
+  ['甘迺迪', '肯尼迪'], ['格達費', '卡扎菲'], ['福克蘭', '馬爾維納斯'],
+  ['太空梭', '航天飛機'], ['鄂圖曼', '奧斯曼'], ['盧安達', '盧旺達'],
+  ['哈瑪斯', '哈馬斯'], ['希拉瑞', '希拉里'], ['尼克森', '尼克松'],
+  ['複製羊', '克隆羊'], ['曼菲斯', '孟菲斯'], ['韓戰', '朝鮮戰爭'],
+  ['金恩', '馬丁·路德·金'], ['蓋達', '基地'], ['華生', '沃森'],
+  ['川普', '特朗普'], ['康邊', '貢比涅'], ['桃莉', '多莉'],
+  ['韋伯', '韋布'], ['加薩', '加沙'], ['飛彈', '導彈'], ['日圓', '日元'],
   /* place names */
   ['玻里尼西亞', '波利尼西亞'], ['紐西蘭', '新西蘭'],
   /* the aspect marker — everything not pinned above */

@@ -61,6 +61,8 @@
  *    node scripts/frame-profile.mjs --boot            start-up: first draw, ready, long tasks, heap
  *    node scripts/frame-profile.mjs --sweep           frame time over a scripted zoom + hover
  *    node scripts/frame-profile.mjs --mem             heap / nodes / listeners over N open-close cycles
+ *    node scripts/frame-profile.mjs --commands       renderer commands per phase: attempted vs already-there
+ *    node scripts/frame-profile.mjs --lifecycle      activate/suspend x10 then dispose, per capability
  *    node scripts/frame-profile.mjs --attribute --base http://127.0.0.1:5173
  *                                                     self time per js/ file over the boot (dev server)
  *    …with  --desktop | --mobile (default)  --sat  --cpu N  --net fast4g|slow4g|none  --reps N
@@ -71,7 +73,7 @@
 import { createHash } from 'node:crypto';
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -402,7 +404,234 @@ function writeJson(obj) {
   console.log(`  → ${p}`);
 }
 
-if (has('--boot')) await runBoot();
-else if (has('--mem')) await runMem();
-else if (has('--attribute')) await runAttribute();
-else await runSweep();
+/* ── (#R322) --commands: HOW MANY RENDERER COMMANDS SAY NOTHING NEW ─────────
+   「MapLibreへ同じ命令を繰り返す無駄を、実測に基づいて消す」 — and the first half of that
+   sentence is a measurement, not an assumption. The adapter tallies every setSourceData /
+   setFilter / setPaint / setLayout / setFeatureState it is handed, and marks each one
+   `applied` or `same` using the SAME comparison MapLibre uses internally (js/geo-engine.js).
+   This drives the app through named phases and reads the tally after each, so a cache is
+   only ever added to an operation that was shown to repeat itself.
+
+   ⚠ The phase is DECLARED here, not inferred in the adapter: nothing inside a setPaint call
+   can know whether it is happening because the language changed or because the map moved.
+   A phase that could not be driven is reported as `ran:false` rather than as zero — a
+   scenario that did not happen is not a scenario that cost nothing. */
+async function runCommands() {
+  const browser = await chromium.launch({ args: ['--use-angle=d3d11'] });
+  const ctx = await newContext(browser);
+  const page = await ctx.newPage();
+  const SKIP = val('--skip', null);   /* e.g. --skip sourceData   → the OTHER arm of the A/B */
+  await page.goto(BASE + '/?cmdlog=1' + (SKIP ? '&cmdskip=' + SKIP : ''), { waitUntil: 'domcontentloaded', timeout: 120_000 });
+  await page.waitForFunction(() => window.IntMapGeoEngine && window.IntMapGeoEngine.canDraw && window.IntMapGeoEngine.canDraw(), null, { timeout: 120_000 });
+  await throttle(ctx, page);
+  const cfg = await page.evaluate(() => window.IntMapGeoEngine.render.commandConfig());
+  if (!cfg || !cfg.on) { await browser.close(); throw new Error('the command log did not switch on — ?cmdlog=1 was not honoured'); }
+
+  /* settle, then take the boot slice */
+  await page.waitForTimeout(6000);
+  const phases = [];
+  const take = async (name) => {
+    const r = await page.evaluate(() => {
+      const s = window.IntMapGeoEngine.render.commands();
+      window.IntMapGeoEngine.render.commandsReset();
+      return s;
+    });
+    /* top rows PER OPERATION — a single global slice sorted by `same` hides setSourceData
+       entirely, because that operation never reports `same` until a skip is switched on. */
+    const per = {};
+    for (const row of (r.byId || [])) (per[row.op] || (per[row.op] = [])).push(row);
+    const byId = [];
+    for (const op of Object.keys(per)) byId.push(...per[op].sort((x, y) => y.attempted - x.attempted).slice(0, 10));
+    return { phase: name, ran: true, totals: r.totals, byId };
+  };
+  const mark = (name) => page.evaluate((n) => window.IntMapGeoEngine.render.commandConfig({ phase: n }), name);
+
+  phases.push(await take('boot'));
+
+  const step = async (name, fn, settle = 2500) => {
+    await mark(name);
+    let ran = true;
+    try { ran = await page.evaluate(fn); } catch (e) { ran = false; }
+    await page.waitForTimeout(settle);
+    const r = await take(name);
+    r.ran = ran !== false;
+    phases.push(r);
+  };
+
+  await step('pan', async () => {
+    const E = window.IntMapGeoEngine; const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    E.camera.jumpTo({ center: [2.35, 48.86], zoom: 5, pitch: 0, bearing: 0 }); await sleep(1200);
+    for (let i = 0; i < 12; i++) { const c = E.camera.get(); E.camera.jumpTo({ center: [c.center.lng + 1.5, c.center.lat], zoom: c.zoom, pitch: c.pitch, bearing: c.bearing }); await sleep(120); }
+    return true;
+  });
+  await step('zoom', async () => {
+    const E = window.IntMapGeoEngine; const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    for (let z = 5; z <= 9; z += 0.5) { const c = E.camera.get(); E.camera.jumpTo({ center: c.center, zoom: z, pitch: c.pitch, bearing: c.bearing }); await sleep(120); }
+    for (let z = 9; z >= 5; z -= 0.5) { const c = E.camera.get(); E.camera.jumpTo({ center: c.center, zoom: z, pitch: c.pitch, bearing: c.bearing }); await sleep(120); }
+    return true;
+  });
+  await step('layerPanel', async () => {
+    const b = document.getElementById('btn-layers'); if (!b) return false; b.click();
+    await new Promise((r) => setTimeout(r, 900)); b.click(); return true;
+  });
+  await step('hover', async () => {
+    const cv = document.querySelector('#map canvas'); if (!cv) return false;
+    const r = cv.getBoundingClientRect(); const sleep = (ms) => new Promise((z) => setTimeout(z, ms));
+    for (let i = 0; i <= 30; i++) {
+      cv.dispatchEvent(new MouseEvent('mousemove', { clientX: r.left + (r.width * i) / 30, clientY: r.top + r.height * (0.35 + 0.3 * Math.sin(i / 3)), bubbles: true }));
+      await sleep(60);
+    }
+    return true;
+  }, 1500);
+  await step('chronos', async () => {
+    if (!(window.IntMapTime && window.IntMapTime.setYear)) return false;
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    window.IntMapTime.setYear(1995, { source: 'perf' }); await sleep(1500);
+    window.IntMapTime.setNow({ source: 'perf' }); return true;
+  }, 3500);
+  await step('language', async () => {
+    const s = document.getElementById('setting-lang'); if (!s) return false;
+    const was = s.value;
+    const opts = Array.from(s.options).map((o) => o.value);
+    const other = opts.find((v) => v !== was);
+    if (!other) return false;
+    s.value = other; s.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 1800));
+    s.value = was; s.dispatchEvent(new Event('change', { bubbles: true })); return true;
+  }, 3500);
+  await step('theme', async () => {
+    const s = document.getElementById('setting-theme'); if (!s) return false;
+    const was = s.value, opts = Array.from(s.options).map((o) => o.value);
+    const other = opts.find((v) => v !== was); if (!other) return false;
+    s.value = other; s.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 1800));
+    s.value = was; s.dispatchEvent(new Event('change', { bubbles: true })); return true;
+  }, 3500);
+
+  const grand = {};
+  for (const k of ['sourceData', 'filter', 'paint', 'layout', 'featureState']) grand[k] = { attempted: 0, sent: 0, applied: 0, same: 0, absent: 0, sameRef: 0, sameShape: 0, sameContent: 0, repeatBytes: 0, msCall: 0, msCmp: 0 };
+  for (const p of phases) for (const k in p.totals) for (const f in grand[k]) grand[k][f] += p.totals[k][f] || 0;
+
+  console.log('\nRENDERER COMMANDS  (attempted / sent / redundant / absent)   skip=' + JSON.stringify(cfg.skip));
+  for (const p of phases) {
+    const parts = Object.keys(p.totals).filter((k) => p.totals[k].attempted)
+      .map((k) => `${k} ${p.totals[k].attempted}/${p.totals[k].sent}/${p.totals[k].same}/${p.totals[k].absent}`);
+    console.log(`  ${p.phase.padEnd(11)}${p.ran ? '' : '(NOT DRIVEN) '}${parts.join('  ') || '—'}`);
+  }
+  console.log('  ' + '─'.repeat(70));
+  for (const k of Object.keys(grand)) {
+    const g = grand[k];
+    if (!g.attempted) { console.log(`  ${k.padEnd(13)} 0 calls`); continue; }
+    const extra = (k === 'sourceData') ? `  sameRef ${g.sameRef}  sameShape ${g.sameShape}  sameContent ${g.sameContent} (${(100 * g.sameContent / g.attempted).toFixed(1)}%, ${(g.repeatBytes / 1048576).toFixed(2)} MB re-sent)` : '';
+    console.log(`  ${k.padEnd(13)} attempted ${String(g.attempted).padStart(6)}   SENT ${String(g.sent).padStart(6)}   redundant ${String(g.same).padStart(6)} (${(100 * g.same / g.attempted).toFixed(1)}%)   absent ${g.absent}   ms call ${g.msCall.toFixed(1)} + cmp ${g.msCmp.toFixed(1)}${extra}`);
+  }
+  console.log(`cache: ${stats.hit} replayed, ${stats.miss} missed, ${stats.blocked} blocked`);
+  writeJson({ mode: 'commands', base: BASE, mobile: MOBILE, cpu: CPU, sat: SAT, cfg, phases, grand, cache: { ...stats } });
+  await browser.close();
+}
+
+/* ── (#R322) --lifecycle: DOES CLOSING IT GIVE ANYTHING BACK, AND CAN IT BE OPENED AGAIN ───
+   `--mem` (#R311) asks the same question of a pair of IntMapOS commands. The three capabilities
+   connected this round have no OS command — they are reached from the Layers panel and from
+   Atlas — but they DO have a register entry now, and the register is the public owner: the
+   panel's own `open()` goes through `activate` (see js/tsunami.js openPublic). So this drives
+   the same door the reader does, N times, and then asks for the resources back.
+
+   Three things are counted that a heap number alone cannot separate:
+     · the runtime's own registers (frame tasks, camera subscribers, timers) — a feature that
+       forgot to unsubscribe shows here one cycle after it happens, not fifty MB later;
+     · DOM nodes and listeners — a detached subtree kept alive is visible here long before the
+       heap total moves;
+     · whether `activate` works AFTER `dispose`. That is the failure this round found in the
+       register itself, and a memory test that never re-opens would have passed over it. */
+async function runLifecycle() {
+  const CYCLES = Number(val('--cycles', 10));
+  const browser = await chromium.launch({ args: ['--use-angle=d3d11'] });
+  const ctx = await newContext(browser);
+  const page = await open(ctx);
+  const cdp = await throttle(ctx, page);
+
+  /* two of the three live behind the lazy loader; nothing defines a capability it has not loaded */
+  await page.evaluate(async () => {
+    await Promise.all([window.IntMapLazy.need('tsunami'), window.IntMapLazy.need('satellitesLive')]);
+  });
+  await page.waitForTimeout(3000);
+
+  const caps = await page.evaluate(() => (window.IntMapRuntime ? window.IntMapRuntime.capabilities() : []));
+  console.log(`\nLIFECYCLE  capabilities registered: ${caps.join(', ') || '(none)'}`);
+  const want = ['wx.wind', 'sim.tsunami', 'sat.live'].filter((c) => caps.includes(c));
+  const absent = ['wx.wind', 'sim.tsunami', 'sat.live'].filter((c) => !caps.includes(c));
+  if (absent.length) console.log(`  ⚠ NOT REGISTERED, nothing was exercised for: ${absent.join(', ')}`);
+
+  const snap = async () => {
+    const h = await heap(cdp);
+    const rt = await page.evaluate(() => {
+      const s = window.IntMapRuntime.stats();
+      const E = window.IntMapGeoEngine;
+      const st = E.render.sceneStats() || {};
+      return {
+        frameReads: s.reads, frameWrites: s.writes, camera: s.camera, timers: s.timers,
+        suspended: s.suspended, layers: st.layers || 0, sources: st.sources || 0,
+        tsuWorker: !!(window.IntMapTsunamiWorker && window.IntMapTsunamiWorker.state().available),
+        tsuPending: (window.IntMapTsunamiWorker && window.IntMapTsunamiWorker.state().running) || 0,
+      };
+    });
+    return { ...h, ...rt };
+  };
+
+  const out = {};
+  for (const cap of want) {
+    const rows = [];
+    const base = await snap();
+    console.log(`\n  ${cap}`);
+    console.log(`    baseline   heap ${String(base.heapMB).padStart(7)} MB  nodes ${String(base.nodes).padStart(6)}  listeners ${String(base.listeners).padStart(5)}  timers ${base.timers}  camera ${base.camera}  layers ${base.layers}`);
+    for (let i = 0; i < CYCLES; i++) {
+      await page.evaluate(async (c) => { await window.IntMapRuntime.activate(c); }, cap);
+      await page.waitForTimeout(900);
+      await page.evaluate((c) => { window.IntMapRuntime.suspend(c); }, cap);
+      await page.waitForTimeout(500);
+      const h = await snap();
+      rows.push(h);
+      console.log(`    cycle ${String(i + 1).padStart(2)}   heap ${String(h.heapMB).padStart(7)} MB  nodes ${String(h.nodes).padStart(6)}  listeners ${String(h.listeners).padStart(5)}  timers ${h.timers}  camera ${h.camera}  layers ${h.layers}`);
+    }
+    /* the verdict is the SLOPE over the second half — the first cycles legitimately fill caches a
+       re-open is supposed to reuse, and calling that a leak is how a real one gets missed */
+    const half = rows.slice(Math.floor(rows.length / 2));
+    const slope = (f) => +((half[half.length - 1][f] - half[0][f]) / Math.max(1, half.length - 1)).toFixed(2);
+
+    /* …then ask for it all back, and then ask for it again */
+    await page.evaluate((c) => { window.IntMapRuntime.dispose(c); }, cap);
+    await page.waitForTimeout(1200);
+    const after = await snap();
+    const state = await page.evaluate((c) => window.IntMapRuntime.stateOf(c), cap);
+    const reopened = await page.evaluate(async (c) => {
+      try { await window.IntMapRuntime.activate(c); } catch (_) { return 'threw'; }
+      return window.IntMapRuntime.stateOf(c);
+    }, cap);
+    await page.evaluate((c) => { window.IntMapRuntime.suspend(c); }, cap);
+
+    console.log(`    dispose    heap ${String(after.heapMB).padStart(7)} MB  nodes ${String(after.nodes).padStart(6)}  listeners ${String(after.listeners).padStart(5)}  timers ${after.timers}  camera ${after.camera}  layers ${after.layers}  worker ${after.tsuWorker}`);
+    console.log(`    drift/cycle (2nd half): heap ${slope('heapMB')} MB · nodes ${slope('nodes')} · listeners ${slope('listeners')} · timers ${slope('timers')} · camera ${slope('camera')}`);
+    console.log(`    state after dispose: ${state}   ·   re-open: ${reopened}${reopened === 'active' ? '  ✓' : '  ✗ THE FEATURE CANNOT BE OPENED AGAIN'}`);
+    out[cap] = { baseline: base, rows, after, state, reopened, slope: { heapMB: slope('heapMB'), nodes: slope('nodes'), listeners: slope('listeners'), timers: slope('timers'), camera: slope('camera') } };
+  }
+  console.log(`cache: ${stats.hit} replayed, ${stats.miss} missed, ${stats.blocked} blocked`);
+  writeJson({ mode: 'lifecycle', cycles: CYCLES, capabilities: out, cache: { ...stats } });
+  await browser.close();
+}
+
+/* (#R322) …and the pieces a SECOND instrument needs, so an A/B runner does not grow its own
+   replay cache. A cache that two harnesses fill differently makes the two arms differ by the
+   cache as well as by the change, which is the one thing an A/B may not do. */
+export { chromium, newContext, throttle, heap, sweep, stats, BASE, CACHE, CPU, MOBILE, avg, q, val, has, writeJson };
+
+/* run only when this file IS the command; importing it must not start a browser */
+const INVOKED = process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
+if (INVOKED) {
+  if (has('--boot')) await runBoot();
+  else if (has('--mem')) await runMem();
+  else if (has('--attribute')) await runAttribute();
+  else if (has('--commands')) await runCommands();
+  else if (has('--lifecycle')) await runLifecycle();
+  else await runSweep();
+}

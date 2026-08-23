@@ -85,8 +85,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
        price them at CI's measured 9.2 s (#R186). 68 − 3×9.2 ≈ 40. It runs in 10.8 s locally, so
        40 is deliberately the conservative end; CI's `shard-plan --update` replaces it on merge. */
 const BUDGET_S = 64;                    /* core: 1.1 min — measured 64 s over 6 files (#R209) */
-const TOTAL_BUDGET_S = 5201;            /* whole suite: 86.7 min — measured 5,201 (#R209) */
+const TOTAL_BUDGET_S = 5180;            /* whole suite: 86.3 min — measured 5,180 (#R322) */
 const HISTORY = [
+  ['#R322', 5180, 'tests/r322.spec.js (+4 s) was paid for by re-measuring tests/r193.spec.js: it carried 71 s and runs in 46. MEASURED TWICE, both times while this machine was busy with another suite — so 46 is an UPPER bound and the ceiling is being lowered by less than the file actually gained. ⚠ tests/r192.spec.js (66 -> 63) and tests/r196.spec.js (90 -> 79 alone, 100 under load) were NOT changed: this machine spreads those two by more than the difference, and a ratchet fed by noise stops being a ratchet. The suite went 5,201 -> 5,180 and the ceiling followed it down, as #R195 and #R196 did for the shell.'],
   ['#R210', 5201, 'tests/r210.spec.js (+10 s, one boot for four tests — the first-visit branch was left OUT of it because a second boot cost 15.2 s of a 66 s ceiling for one expression, and is a source check instead) was paid for by re-measuring tests/r184-routing.spec.js: 104 s was a pre-#R208 figure for a file that now boots ONCE for nine tests, so 104 − 8×9.2 ≈ 30, corrected to 40 on the conservative side exactly as #R209 did for r179-engine'],
   ['#R209', 5201, 'tests/r209.spec.js (+10 s, one boot for five tests) was paid for by re-measuring tests/r179-engine.spec.js, which had carried a pre-#R208 figure of 68 s for a file that now boots once (−28 s)'],
   /* ⚠ (#R206) THE NEW SPEC WAS PAID FOR OUT OF A BOOT, WHICH IS WHERE THIS SUITE'S TIME LIVES.

@@ -41,6 +41,13 @@ const INDEX = appShell(new URL('../', import.meta.url));
    app-body.js this round. It is part of the page's program (see appShell), so questions asked of
    the MODULES must not be asked of it: it is the one file that is SUPPOSED to name MapLibre. */
 const JS_FILES = readdirSync(new URL('../js', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'app-body.js' && f !== 'geo-engine.js');
+/* (#R322) …and the pure camera GEOMETRY is a fourth file now: js/camera-math.js. It left
+   js/geo-engine.js when the renderer-command census pushed the shell over the line ceiling
+   tests/r168 #8 holds, and the functions moved byte-identical (modulo the indentation of the
+   move). It is deliberately NOT concatenated into INDEX: r168 #8 counts the SHELL from appShell(),
+   and putting 375 lines back into that would undo the move. The two assertions below that ask
+   about the geometry ITSELF read it from here; everything else still asks INDEX. */
+const GEOM = readFileSync(new URL('../js/camera-math.js', import.meta.url), 'utf8');
 
 function stripComments(src) {
   return src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
@@ -240,7 +247,7 @@ test('the eye altitude is derived from the renderer, not guessed from the zoom',
   assert.match(adapter, /return gEye\(cam,gC2C\(t,m\),tile,gSpherical\(t\),1\);/,
     'the viewpoint comes from the ONE camera geometry, not from a second copy of it');
   assert.match(adapter, /getCameraTargetElevation/, 'the terrain under the centre is carried, so the number is above SEA LEVEL');
-  const geo = INDEX.slice(INDEX.indexOf('function gEye('), INDEX.indexOf('function gEye(') + 1600);
+  const geo = GEOM.slice(GEOM.indexOf('function gEye('), GEOM.indexOf('function gEye(') + 1600);
   assert.match(geo, /const world=tile\*Math\.pow\(2,cam\.zoom\)/, "the map scale comes from the renderer's own worldSize, valid at any pitch");
   assert.match(geo, /c2c/, "the camera→centre distance comes from the renderer (fov is the renderer's business)");
   assert.ok(!/unproject/.test(geo), 'and never from unprojecting screen points — past 90° of pitch the centre row is SKY');

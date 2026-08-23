@@ -121,6 +121,39 @@ export const STATIC_EXCLUDE = [
      JSON.parse is also the faster of the two: the <script> form makes V8 parse 9.76 MB as JavaScript
      source, on the main thread, where JSON.parse has a dedicated fast path. */
   'data/ecoregions_2017.js',
+  /* ══ (#R322) THE SAME PICTURE, AND ONLY THE HASHED ONE IS REACHABLE ════════════════════════════
+     `ROOT_PNG()` below copies every PNG at the repo root, which is right for the Köppen and precip
+     rasters (fetched by name at run time) and wrong for this one. css/intmap.css is BUNDLED, so
+     Rollup rewrote its `url("../IntMap.Icon_BW-inverted.png")` to the content-hashed asset —
+     MEASURED in this build: dist/assets/main-C6BGNtdu.css names IntMap.Icon_BW-inverted-DRdX9VA0.png
+     and NOTHING names the unhashed copy. `grep -rl` over the whole of dist/ finds exactly one file
+     containing the plain spelling, dist/index.html, and it is inside the `<!-- -->` block at :212
+     that QUOTES the original request. 206,207 B that no visitor could ever fetch.
+     ⚠ IntMap.Icon.png is NOT here and must not be: the four standalone shells (privacy / science /
+     sources / terms) load `./IntMap.Icon.png` with a plain <link>, so the unhashed copy of THAT one
+     is the only one they can reach.
+     ⚠ NOTHING IS DELETED. The file stays in the repository — it is the source css/intmap.css names
+     and the input Rollup hashes; it simply stops being copied a second time. */
+  'IntMap.Icon_BW-inverted.png',
+  /* ══ (#R322) FIVE SIDECARS THE BUILD WRITES AND THE BROWSER NEVER ASKS FOR ═════════════════════
+     Each is a manifest a generator in scripts/ emits beside the payload it describes, and in every
+     case the app reads the payload directly with dimensions of its own:
+       data/bathymetry.json     js/bathymetry.js fetches only :34 data/bathymetry.png — the JSON is
+                                named in a COMMENT at :30 saying the hard-coded W/H must match it
+       data/land-mask.json      js/land-mask.js:41 builds the .png URL and nothing else
+       data/planets.json        scripts/build-planet-data.mjs's manifest; js/space.js takes its ids
+                                from the BODIES table at :111, not from a fetch
+       data/stars.json          the consumer is stars.bin (js/space-sky.js:155, js/space.js:340)
+       data/world-basemap.json  js/world-base.js / js/space.js / js/cesium-engine.js name the .jpg
+     VERIFIED against the BUILT output rather than the source, which is the only place that can
+     settle it: zero occurrences of any of the five spellings across dist/assets/, dist/index.html,
+     dist/sw.js and every manifest in dist/data/. 4,866 B — small, and the point is not the bytes:
+     an unfetchable file in the deploy is a claim about the app that is not true. */
+  'data/bathymetry.json',
+  'data/land-mask.json',
+  'data/planets.json',
+  'data/stars.json',
+  'data/world-basemap.json',
 ];
 /* …plus every root-level PNG (the four Köppen periods × two resolutions, and the layer previews). */
 const ROOT_PNG = () => readdirSync(ROOT).filter((f) => f.endsWith('.png'));

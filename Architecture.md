@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（934行・84 KB）＋ `css/`（3本）＋ `js/`（187本・9.4 MB）＋ `src/`（8本）。**
+- **本体は `index.html`（934行・84 KB）＋ `css/`（3本）＋ `js/`（194本・9.4 MB）＋ `src/`（8本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -67,6 +67,20 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   天井が残っていれば「天井が古い」として落とす。async chunk と `dist/` の合計は**天井だけ**で、
   縮むのは自由。**最大 chunk は Cesium（4.7 MB）だが既定セッションは1バイトも取らない**ので、
   「いちばん大きい chunk」を見るゲートは起動費用について何も言っていない。
+- **配られるファイルは1つ残らず「誰が読むか」を持つ。** `npm run check:assets`
+  （`scripts/asset-report.mjs`）が `dist/` の全ファイルを、**ソースが実際に含んでいる文字列**と
+  突き合わせて分類する——`exact`（`js/` `src/` `css/` `*.html` `sw.js` が名指し）／`prefix`
+  （名前が計算される。`'data/planets/'+id+'.jpg'` のような連結）／`build`（`scripts/` だけが名指し
+  ＝生成器の入力）／`test`／`doc`／**`orphan`（リポジトリのどこにも綴りが無い）**。
+  ⚠ **分類は宣言ではなく導出。** 「配るファイルの一覧」を手で持つと正本が2つになる。
+  ⚠ **`data/` の小さな JSON も走査対象。** 最大級のラスタは JavaScript から名指しされていない——
+  `js/precip-annual.js` は `data/precip-mm.json` の `mercator.file` を、`js/vs30-mask.js` は
+  `data/vs30.json` の `phone.file` を読む。マニフェストは consumer である。
+  ゲートが落ちるのは ① 誰も名指ししないファイル、② 同一 SHA-256 の payload が許可リストの外で
+  2回配られている、③ ファイル単位の天井を超えていて理由が記録されていない——の3つ。
+  許可リストは**名前ではなく理由**を持つ（Cesium SDK の実行時ツリー、繁体/簡体ページ用に
+  ハッシュ無しでも要る KaTeX と Inter の写しなど）。ビルドが要るので `npm test` の中ではなく
+  `check:perf` の隣で走る。
 - ⚠ **同じデータを2つの形で配ってはならない。** `data/` はディレクトリごと `dist/` へ複写されるので、
   1つのデータセットの2表現がどちらも入りうる。`data/ecoregions_2017.js`（`window.__ECOREGIONS_2017`）は
   隣の `.geojson` と**バイト同一**なので `STATIC_EXCLUDE` で配布から外してある——リポジトリには
@@ -91,6 +105,25 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   `ui.createSubView` が返す同じ形を使う。マーカー／ポップアップは**ビューに**付く
   （`ui.addMarker` / `ui.addPopup`）。生ハンドルを取り出す `ui.createView` は `js/app-body.js` の
   1回だけに限定されている。
+- **アダプタは自分に来た命令を数える。** `layers.setSourceData` / `setFilter` / `setPaint` /
+  `setLayout` / `setFeatureState` の5つについて、**attempted（来た）/ sent（レンダラへ渡した）/
+  same（レンダラが既に同じ値を持っていた）/ absent（対象が無い）** を集計する。既定は**数えない**
+  （ブール1つ分）。`?cmdlog=1` または `?perf=1` で集計と id 別・フェーズ別の表が出て、
+  `render.commands()` / `commandsReset()` / `commandConfig()` から読める。
+  `node scripts/frame-profile.mjs --commands` が起動・pan・zoom・レイヤー欄・ホバー・Chronos・
+  言語・テーマの各フェーズを実際に駆動して表を出す（**フェーズは宣言する**——setPaint の中から
+  「なぜ呼ばれたか」は分からない）。
+  ⚠ **省略してよいのは `setSourceData` だけで、それは MapLibre の実装がそう言っているから。**
+  MapLibre の `Style.setPaintProperty` / `setLayoutProperty` / `setFilter` は**自分で deepEqual して
+  同値を捨てる**ので、その手前にもう1つ比較を置いても**レンダラの仕事は1つも減らない**。
+  `GeoJSONSource.setData` にはその比較が無く、毎回コレクション全体が worker へ渡って再パースされる。
+  だから既定は `sourceData` だけ ON、他の4つは**数えるだけ**。
+  ⚠ **省略の可否はレンダラが今持っている payload との deep-equal で決める**（`_sourceHolds`）。
+  `s._data` を読むので**この facade は何も保持せず、陳腐化もしない**。2つの規則が安全を作っている——
+  ① **同一オブジェクトは根拠にならない**（呼び出し側がその場で書き換えたかもしれない）ので必ず適用する、
+  ② 比較には**作業量の上限**があり、上限内に等しいと**証明できなかった**ものは適用する。
+  呼び出し側が「1つのオブジェクトを書き換えて使う」場合は `setSourceData(id, data, {revision})` で
+  そう言える。
 - **Cesium は設定で選べる第2エンジン**（設定 ▸ 地図の動作 ▸ 地図エンジン。Atlas の `engine`
   アクションからも切替可）。カバー範囲はベクタタイルを含めて MapLibre と同等。
   - `js/cesium-style.js` — style 言語の**解釈器**（式・フィルタ・色・旧 stops 形式）。
@@ -284,7 +317,7 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
   **そのファイルの中の文章そのものが仕様**で、この文書はここに書き写さない
   （**同じ事実を2か所に書くと片方だけが古くなる**——`npm run check:docs`）。
 - **20 本すべての system prompt が `personaPrompt('<その呼び出しの役割>')` で始まり、
-  各呼び出し側はタスク規則しか足さない**（`atlas-console` 9・`news-ui` 3・`analysis-panels` 2・
+  各呼び出し側はタスク規則しか足さない**（`atlas-console` 9・`news-ui` 3・`analysis-research` 2・
   `app-body` 2・`atlas-geo-resolve` 2・`monitor-run` 1・`refresh-news` 1）。モードは 2 つ——
   出力が人の読む文章になる経路は全文、出力が機械可読な JSON だけの経路（地域の輪郭・
   行政単位の解決・ニュースの地点解析・記事翻訳・地名検証）は `{mode:'internal'}` で
@@ -794,7 +827,29 @@ Atlas の自然言語も同じ経路計算を呼ぶ補助的な入口で、**両
 | idle | `idle(key, fn, {timeout})` | フレームのあと、暇なとき |
 
 **ライフサイクル**: `define(name,{load,activate,suspend,dispose})`。上の登録は capability 名でタグ付け
-されるので、`suspend(name)` はその機能の毎フレーム仕事を一括で外し、`dispose(name)` は登録ごと消す。
+されるので、`suspend(name)` はその機能の毎フレーム仕事を一括で外し、`dispose(name)` は
+**camera / frame / timer / idle の4つの登録簿すべてから**その capability の仕事を消す。
+
+状態は `defined` → `loading` → `loaded` / `failed` → `active`、そして `disposed`。
+⚠ **`disposed` は「もう開けない」ではない。** 定義は登録簿に残り、消えるのは `load` のメモだけなので、
+次の `activate` は `def.load` からやり直して**同じ機能をもう一度開く**。資源を返す動詞が
+「二度と使えない」を意味する設計は、閉じたら開けない機能を作る。
+
+**今この登録簿を使っている機能**（3つとも `activate` / `suspend` / `dispose` の3動詞を持ち、
+自分の API にも `dispose` を出しているので、Atlas からも UI からも同じ口に届く）:
+
+| capability | activate | suspend（速い再開のために残すもの） | dispose（返すもの） |
+|---|---|---|---|
+| `wx.wind` | 風レイヤー ON | OFF。**WebGL のレンダラは残す**（テクスチャ2・FBO2・VBO2・プログラム2の作り直しを毎トグル払わないため） | `js/wx-wind.js` の `dispose()` ＝ GL オブジェクトを削除し、キャンバスのバッキングストアも解放 |
+| `sim.tsunami` | 津波パネルを開く | 閉じる（走っているジョブは abort、ソルバのスレッドは残す） | worker を terminate（`IntMapTsunamiWorker.dispose()`）、モデルとパネル DOM を破棄 |
+| `sat.live` | 実時間衛星 ON | OFF（interval・3つの地図リスナー・詳細パネル。**カタログは残す**） | カタログと導出位置を捨て、レイヤーと軌道を地図から削除 |
+
+⚠ **worker を返す動詞と、worker が死んだ経路は別物。** `src/tsunami-worker-client.js` と
+`src/sat-worker-client.js` の `dispose()` は、**在庫のジョブを必ず決着させてから** terminate する
+（terminate されたスレッドを待っている promise は永久に解決しない）。津波側は `null` で解決
+（`abort` と同じ答え＝呼び出し側に既存の分岐がある）、衛星タイル側は **reject**
+（タイルの promise は `{data,mode}` を約束しており、`null` は「絵が無い」を絵の位置に置くことになる）。
+`onerror` の側は `tried` を戻さない——**墜ちた worker を輪で作り直さない**のはそちらの仕事。
 
 ⚠ **なぜ「読みを全部終えてから書く」なのか**：private な rAF を各自が持つと、どれも `project()` /
 `getBoundingClientRect()` で幾何を**読み**、同じコールバックで style を**書く**ので、
@@ -841,7 +896,16 @@ Atlas の自然言語も同じ経路計算を呼ぶ補助的な入口で、**両
   KaTeX と html2canvas も動的 import。
   ⚠ **「起動時に何も作らない」は静的解析では決まらない。** `js/analysis-panels.js` は候補に見えたが、
   5 ファクトリのうち 2 つが**起動時に Layers パネルのボタンを作る**（`#btn-correlate`／`#btn-edu`）。
-  遅延化するとボタンが 2 つ消える——**ファクトリ本体の実行文を数えてから**決める。
+  ファイルごと遅延化するとボタンが 2 つ消える——**ファクトリ本体の実行文を数えてから**決める。
+  ⇒ **だから機能ではなく「起動時に走るもの」で切ってある。** `js/analysis-panels.js` は
+  5 ファクトリの登録・起動時の DOM とリスナー・4 つの公開グローバルの**非同期ファサード**だけを持つ
+  eager shell（17 KB）で、本体は `js/analysis-{timeseries,research,correlate,world-events,edu}.js`
+  の 5 本に分かれて `IntMapLazy` から取られる。
+  ⚠ **ファサードはスタブではない。** 呼ばれたらローダーを await して本物を呼ぶ。**取りに行っては
+  ならない 2 つの入口**——`IntMapEdu.close()` と地図クリックの転送——だけが `IntMapLazy.ready()` を
+  見て、まだ無ければ何もしない（＝クイズを開く前と同じ挙動）。
+  ⚠ **遅延側のグローバルは `__imAnalysis*`**。`js/atlas-controls.js` の `moduleCatalog()` は
+  `window.IntMap*` を自動発見するので、`IntMap` で始まる名前を足すと Atlas のカタログが勝手に増える。
   ⚠ **受動的な読み手は `&&` ガードのまま**にする（「まだ読んでいない」の答え方は「持っていない」と同じ）。
   取りに行くのは**入口だけ**——閉じる／状態を読むだけの経路が実装を取得してはならない。
 - **衛星タイルの先読みは「レーン」で流す**（`sw.js` の `PREFETCH_LANES` ／ `js/tile-warm.js`）。
