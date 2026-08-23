@@ -164,7 +164,14 @@ test('the three contract entries this round needed are declared, faced and answe
   assert.match(INDEX, /projectAltitude:\(ll,a\)=>A\(\)\.projectAltitude/, 'so is projectAltitude');
   assert.match(INDEX, /\n\s+solid3d:true,/, 'and solid3d is a declared capability');
   const cesium = INDEX.slice(INDEX.indexOf('const CESIUM_CONTRACT='), INDEX.indexOf('const CESIUM_CONTRACT=') + 1600);
-  assert.match(cesium, /solid3d:true/, 'a positional-camera engine answers it too — the capability is per-engine');
+  /* (#R323) …and its answer is FALSE. This line asserted `solid3d:true` from #R173 until #R323:
+     js/cesium-engine.js — written later, with the SDK actually in hand — declares `solid3d:false`
+     and refuses addSolid/setSolid/removeSolid outright, because the eye-dependent absorption
+     shading js/solid3d.js computes is not native. tests/r180 ③ has asserted THAT side since #R180.
+     Two rounds, two green tests, opposite claims about one engine — because neither compared the
+     two tables. tests/r323-checks compares them; this line now agrees with the adapter. The claim
+     worth keeping is unchanged: the contract must ANSWER for solid3d rather than omit it. */
+  assert.match(cesium, /solid3d:false/, 'the contract answers what the adapter answers, not what the engine ought to manage');
 });
 
 test('two more modules stopped touching the renderer', () => {
