@@ -49,9 +49,10 @@ import { fileURLToPath } from 'node:url';
 import { loadSeafloor, buildSeafloor, ROOT } from './subcables/seafloor.mjs';
 import { loadTeleGeography, loadNOAA, loadEMODnet, loadACMA, LICENCES } from './subcables/sources.mjs';
 import { SeafloorRouter } from './subcables/router.mjs';
-import { loadLakeMask, applyLakes, carveChannels, LAKE_LICENCE } from './subcables/water.mjs';
+import { loadLakeMask, applyLakes, carveChannels, loadRiverChannels, LAKE_LICENCE, RIVER_LICENCE } from './subcables/water.mjs';
 import { buildTopology, refPosition } from './subcables/topology.mjs';
 import { nameKeys, matchPiece } from './subcables/match.mjs';
+import { resolveRegion, unresolvedRegions } from './subcables/regions.mjs';
 import { runQA } from './subcables/qa.mjs';
 import {
   haversine, lineLength, unwrap, splitAntimeridian, simplify, dedupe, chaikin,
@@ -79,6 +80,7 @@ async function main() {
   const aliasMap = overrides.nameAliases || {};
   const pieceCable = overrides.pieceCable || {};
   const excludeSources = new Set((overrides.excludeSources || []).map(s => s.toLowerCase()));
+  const countryCodes = overrides.countryCodes || {};
 
   /* ══ 1 · SOURCES ═══════════════════════════════════════════════════════════ */
   log('· sources');
@@ -218,10 +220,27 @@ async function main() {
   if (!grid) { log('  (no cached grid — building; this downloads ~4,096 terrarium tiles)'); grid = await buildSeafloor({ log }); }
   const router = new SeafloorRouter(grid);
   const lakeCells = applyLakes(router, await loadLakeMask(grid.w, grid.h, { refresh: REFRESH, log }));
-  const channels = carveChannels(router, overrides.channels);
+  const riverChannels = await loadRiverChannels(overrides.rivers, { refresh: REFRESH, log });
+  const carved = carveChannels(router, [...(overrides.channels || []), ...riverChannels]);
+  const channels = carved.filter(c => !riverChannels.some(r => r.name === c.name));
+  /* (#R384) the river parts are reported per RIVER, not per Natural Earth
+     feature — five entries, however many centre-line pieces each one is */
+  const rivers = [];
+  for (const r of riverChannels) {
+    const opened = carved.find(c => c.name === r.name);
+    let row = rivers.find(x => x.name === r.river);
+    if (!row) rivers.push(row = { name: r.river, features: 0, cellsOpened: 0 });
+    row.features++; row.cellsOpened += opened ? opened.cellsOpened : 0;
+  }
   log('  ' + grid.w + '×' + grid.h + ' (' + (360 / grid.w).toFixed(4) + '°), ' + router.passableCells.toLocaleString() + ' passable cells'
-    + ' (+' + lakeCells.toLocaleString() + ' lake, ' + channels.map(c => c.name + ' +' + c.cellsOpened).join(', ') + ')');
-  for (const c of channels) if (c.warning) log('  ⚠ channel "' + c.name + '" ' + c.warning);
+    + ' (+' + lakeCells.toLocaleString() + ' lake, ' + channels.map(c => c.name + ' +' + c.cellsOpened).join(', ')
+    + (rivers.length ? ', rivers ' + rivers.map(r => r.name + ' +' + r.cellsOpened).join(', ') : '') + ')');
+  for (const c of carved) if (c.warning) log('  ⚠ channel "' + c.name + '" ' + c.warning);
+  {
+    const comps = router.components();
+    const big = comps.sizes.slice().sort((a, b) => b - a);
+    log('  bodies of water: ' + comps.sizes.length + ' (largest ' + big[0].toLocaleString() + ', then ' + big.slice(1, 4).map(n => n.toLocaleString()).join(' / ') + ')');
+  }
 
   log('· reconstruction');
   const outFeatures = [];
@@ -266,23 +285,41 @@ async function main() {
   log('  ' + outFeatures.length + ' features for ' + perCable.length + ' cables · router ' + JSON.stringify(router.stats));
 
   /* ══ 6 · METADATA + LANDING POINTS ═════════════════════════════════════════ */
+  /* ⚠⚠ (#R384) THE CARD IS READ IN NINE LANGUAGES AND THIS IS WHERE ITS VALUES
+     BECOME TRANSLATABLE. 「クリックしたら出てくるカードの情報が翻訳されていない。」
+     TeleGeography hands COUNTRY NAMES and a DATE AS PROSE — 「Cyprus」,
+     「Indonesia」, 「2000 August」, 「2026 Q4」 — and a string in English cannot
+     be turned into Japanese by the popup. A CODE can, and a (year, month) pair
+     can. So the join keys are computed here, once, and js/subcable-info.js asks
+     CLDR (`window._imCldrRegion`, `Intl.DateTimeFormat`) for the reader's own
+     words. Nothing is invented: a spelling that reaches no ISO code keeps the
+     English name it came with, and the build reports it below. */
+  const regionNames = [];
+  const ccOf = (name) => { if (name) regionNames.push(name); return resolveRegion(name, countryCodes); };
   const meta = { cables: {}, landingPoints: {} };
   for (const c of cableList) {
     const d = c.details || {};
     const pc = perCable.find(x => x.id === c.id);
     const srcs = [...new Set(outFeatures.filter(f => f.properties.id === c.id && f.properties.quality === 'verified').map(f => f.properties.src))];
+    const countries = [...new Set((d.landing_points || []).map(l => l.country).filter(Boolean))].sort();
+    const rfsWhen = parseRfs(d.rfs);
     meta.cables[c.id] = {
       name: c.name,
       length: d.length || null,
+      lengthKm: parseLengthKm(d.length),
       owners: d.owners || null,
       suppliers: d.suppliers || null,
       rfs: d.rfs || null,
       rfsYear: d.rfs_year ?? null,
+      rfsMonth: rfsWhen.month,
+      rfsQuarter: rfsWhen.quarter,
       isPlanned: !!d.is_planned,
       url: d.url || null,
       notes: d.notes || null,
       landingPoints: c.landingPointIds,
-      countries: [...new Set((d.landing_points || []).map(l => l.country).filter(Boolean))].sort(),
+      countries,
+      /* index-aligned with `countries`; null where no ISO code could be proved */
+      countryCodes: countries.map(ccOf),
       quality: pc ? qualityLabel(pc) : 'estimated',
       routeKm: pc ? Math.round((pc.verifiedM + pc.reconM + pc.estM) / 1000) : 0,
       verifiedKm: pc ? Math.round(pc.verifiedM / 1000) : 0,
@@ -290,8 +327,12 @@ async function main() {
     };
   }
   for (const [id, lp] of landingPoints) {
-    meta.landingPoints[id] = { name: lp.name, country: lp.country || null, coord: [round6(lp.coord[0]), round6(lp.coord[1])], cables: lp.cables.slice().sort() };
+    meta.landingPoints[id] = { name: lp.name, country: lp.country || null, cc: ccOf(lp.country), coord: [round6(lp.coord[0]), round6(lp.coord[1])], cables: lp.cables.slice().sort() };
   }
+  const regionsUnresolved = unresolvedRegions(regionNames, countryCodes);
+  const regionsTotal = new Set(regionNames).size;
+  log('  countries: ' + (regionsTotal - regionsUnresolved.length) + '/' + regionsTotal + ' spellings resolved to an ISO region'
+    + (regionsUnresolved.length ? ' · UNRESOLVED (these stay English): ' + regionsUnresolved.join(', ') : ''));
 
   const lpFC = {
     type: 'FeatureCollection',
@@ -335,9 +376,17 @@ async function main() {
     },
     cablesByQuality: { verified: totals.verified, reconstructed: totals.reconstructed, estimated: totals.estimated },
     sources: Object.fromEntries(Object.entries(srcStats).map(([k, v]) => [k, { ...v, km: Math.round(v.km), ...LICENCES[k] }])),
-    licences: { ...LICENCES, 'ne-lakes': LAKE_LICENCE },
+    licences: { ...LICENCES, 'ne-lakes': LAKE_LICENCE, ...(riverChannels.length ? { 'ne-rivers': RIVER_LICENCE } : {}) },
+    /* (#R384) how many of the inventory's country spellings became an ISO region
+       code — the join key the card translates through. The unresolved list is
+       printed, not swallowed: those rows keep their English name, and a spelling
+       TeleGeography changes tomorrow shows up here rather than as a silently
+       untranslated card. */
+    regions: { spellings: regionsTotal, resolved: regionsTotal - regionsUnresolved.length, unresolved: regionsUnresolved },
     channels,
+    rivers,
     lakeCells,
+    waterBodies: router.components().sizes.length,
     router: router.stats,
     qa: qa.report,
   };
@@ -544,6 +593,22 @@ function parseLengthKm(s) {
   if (!s) return null;
   const m = String(s).replace(/,/g, '').match(/([\d.]+)\s*km/i);
   return m ? Number(m[1]) : null;
+}
+
+/* (#R384) 「運用開始」 as data rather than as English prose. TeleGeography writes
+   the ready-for-service date three ways and only three — MEASURED over all 290
+   distinct values in the inventory: `2028`, `2026 Q4`, `2027 January`. The year
+   is already carried as `rfs_year`; this adds the part that made the card read
+   「2000 August」 to a Japanese reader. A shape that is none of the three yields
+   nothing and the card falls back to printing the string as it stands. */
+const RFS_MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+function parseRfs(s) {
+  const t = String(s || '').trim();
+  let m = t.match(/^(\d{4})\s+Q([1-4])$/i);
+  if (m) return { month: null, quarter: Number(m[2]) };
+  m = t.match(/^(\d{4})\s+([A-Za-z]+)$/);
+  if (m) { const i = RFS_MONTHS.indexOf(m[2].toLowerCase()); if (i >= 0) return { month: i + 1, quarter: null }; }
+  return { month: null, quarter: null };
 }
 
 function qualityLabel(pc) {

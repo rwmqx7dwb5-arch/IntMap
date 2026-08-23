@@ -31,6 +31,9 @@ import { haversine, densify, dLon } from './geo.mjs';
 const NE_LAKES = 'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_10m_lakes.geojson';
 export const LAKE_LICENCE = { name: 'Natural Earth 1:10m physical — lakes', url: 'https://www.naturalearthdata.com/', licence: 'Public domain', use: 'inland water the elevation grid reads as land (the Great Lakes and similar)' };
 
+const NE_RIVERS = 'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_10m_rivers_lake_centerlines.geojson';
+export const RIVER_LICENCE = { name: 'Natural Earth 1:10m physical — river centre lines', url: 'https://www.naturalearthdata.com/', licence: 'Public domain', use: 'the courses of the rivers that named cable systems are laid in (the Amazon basin)' };
+
 /* ── rasterise the lakes once, cache the bitmap ────────────────────────────── */
 export async function loadLakeMask(w, h, opts = {}) {
   const file = path.join(CACHE_DIR, `lakes-${w}x${h}.bin.gz`);
@@ -79,6 +82,58 @@ export async function loadLakeMask(w, h, opts = {}) {
   return mask;
 }
 
+/* ══ ⚠⚠⚠ (#R384) ③ RIVERS THE CABLE IS ACTUALLY LAID IN ══════════════════════
+   Brazil's Norte Conectado and Projeto Amazônia Conectada are submarine cable
+   systems laid UP THE AMAZON AND ITS TRIBUTARIES — Manaus to Tabatinga along the
+   Solimões, Porto Velho to Autazes along the Madeira, Boa Vista to Moura along
+   the Branco, Cruzeiro do Sul to Fonte Boa along the Juruá. The elevation grid
+   has no river in it at all, so #R355 could route none of them: MEASURED, ten
+   cables, 10,093 km, every metre of it a GEODESIC DRAWN OVER THE RAINFOREST, and
+   they are the whole of the QA's 「陸地横断」 top ten (411, 321, 273, 256, 250 …
+   sampled points on land per feature).
+
+   ⚠ THE COURSES ARE DATA, NOT COORDINATES IN CODE (the brief's §20). Natural
+   Earth's 1:10m river centre lines — the same public-domain source the lakes
+   already come from — pass within 1–11 km of every one of these landing points
+   (measured: Tabatinga 3 km, Tefé 7 km, Manaus 5 km, São Gabriel 2 km, Moura
+   4 km, Boa Vista 4 km, Porto Velho 2 km, Humaitá 2 km, Borba 2 km, Cruzeiro do
+   Sul 1 km). data/subcable-overrides.json names WHICH rivers, and why.
+
+   ⚠ A NAME IS NOT ENOUGH TO IDENTIFY A RIVER. 「Negro」 is four features in this
+   dataset and three of them are in Argentina and Uruguay; the entry carries a
+   bbox as well, and the build reports how many features each entry matched, so
+   an entry that silently caught the wrong continent — or nothing — cannot hide. */
+export async function loadRiverChannels(rivers, opts = {}) {
+  if (!rivers || !rivers.length) return [];
+  const gj = JSON.parse(await cachedFetch('ne_10m_rivers_lake_centerlines.geojson', NE_RIVERS, opts));
+  const out = [];
+  for (const r of rivers) {
+    if (!r || !r.name) throw new Error('river entry has no `name`');
+    if (!r.why) throw new Error('river "' + r.name + '" has no `why` — every hand-made decision must say why it is there');
+    if (!Array.isArray(r.bbox) || r.bbox.length !== 4) throw new Error('river "' + r.name + '" has no bbox — a name alone does not identify a river');
+    const [w0, s0, e0, n0] = r.bbox;
+    let matched = 0;
+    for (const f of gj.features || []) {
+      const p = f.properties || {};
+      if ((p.name || p.name_en) !== r.name) continue;
+      const g = f.geometry; if (!g) continue;
+      const parts = g.type === 'LineString' ? [g.coordinates] : g.type === 'MultiLineString' ? g.coordinates : [];
+      for (const part of parts) {
+        if (part.length < 2) continue;
+        /* the whole part must sit in the declared box — half a river is not this river */
+        let inside = true;
+        for (const q of part) if (q[0] < w0 || q[0] > e0 || q[1] < s0 || q[1] > n0) { inside = false; break; }
+        if (!inside) continue;
+        matched++;
+        out.push({ name: r.name + ' #' + matched, why: r.why, width_km: r.width_km || 9, cost: r.cost || 3.5,
+          depth_m: r.depth_m ?? 25, river: r.name, points: part.map(q => [q[0], q[1]]) });
+      }
+    }
+    if (!matched) throw new Error('river "' + r.name + '" matched no feature inside its bbox — the name or the box is wrong');
+  }
+  return out;
+}
+
 /* ── carve the declared channels into a grid ───────────────────────────────
    Returns the number of cells opened, so a channel that opens nothing (a typo,
    a moved coastline) is visible in the build report instead of silently doing
@@ -98,7 +153,16 @@ export function carveChannels(router, channels) {
         for (let dk = -kSpan; dk <= kSpan; dk++) {
           const i = router.idx(j, router.colOf(p[0]) + dk);
           if (haversine(p, router.centre(i)) > (ch.width_km || 10) * 1000) continue;
-          if (!router.passable[i]) { router.passable[i] = 1; n++; }
+          if (!router.passable[i]) {
+            router.passable[i] = 1; n++;
+            /* (#R384) a newly opened cell has the depth of the LAND it was, which
+               makes every step in or out of it a cliff to the gradient term. An
+               entry that declares `depth_m` gets a nominal one instead — the same
+               thing applyLakes() has always done for lake cells. Entries without
+               the field are untouched, so #R355's two canals carve exactly as
+               they did. */
+            if (ch.depth_m != null) router.depth[i] = ch.depth_m;
+          }
           router.mult[i] = Math.max(router.mult[i], ch.cost || 3.0);
         }
       }
@@ -106,6 +170,7 @@ export function carveChannels(router, channels) {
     opened.push({ name: ch.name, cellsOpened: n });
     if (!n && ch.expectOpen !== 0) opened[opened.length - 1].warning = 'opened no new cell';
   }
+  router.invalidateComponents();
   return opened;
 }
 
@@ -120,6 +185,7 @@ export function applyLakes(router, mask, { depthM = 60, cost = 2.2 } = {}) {
     n++;
   }
   router.passableCells += n;
+  router.invalidateComponents();
   return n;
 }
 

@@ -102,7 +102,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    ~45 s every invocation pays, exactly as #R209 and #R337 did — so the saving claimed is smaller
    than the one measured. Both ceilings follow the measurement down. */
 const BUDGET_S = 36;                    /* core: 0.6 min — measured 36 s over 6 files (#R379) */
-const TOTAL_BUDGET_S = 4808;            /* 80.1 min — unchanged: #R379 added 9 s of specs and took 9 s out */
+const TOTAL_BUDGET_S = 4545;            /* 75.8 min — 4,808 (#R379) + 58 (#R384's two specs) − 321 (r174 re-measured) */
 /*
    ⚠ (#R353) VOLCANO INTELLIGENCE ADDED TWO SPECS AND THE SUITE STILL WENT DOWN, and both were paid
    for out of STALE-HIGH ENTRIES rather than out of the ceiling — the shape #R209 named and #R337
@@ -153,6 +153,7 @@ const TOTAL_BUDGET_S = 4808;            /* 80.1 min — unchanged: #R379 added 9
    recorded as 10 s, so 5 s is that ratio. ⚠ The corpus is not this machine's wall clock — it must
    be calibrated, not copied, and a future round re-measuring on CI should correct it. */
 const HISTORY = [
+  ['#R384', 4545, "the cable round added tests/r384.spec.js (+3 s, gate: the card asked for Japanese — the country row, the RFS date and the thousands separator — and the legend's accuracy caveat RENDERED, plus a double legend refresh to prove it does not multiply) and tests/r384-legend.spec.js (+55 s, nightly: the same caveat through the language pill, jp for the positional path and fr for the inline-table one). ⚠ THE GATE HALF'S 3 s IS A LIKE-FOR-LIKE FIGURE, NOT A WALL CLOCK. Standalone it runs in 7.3 and 7.4 s — and tests/r379.spec.js, which carries an entry of 2, ran in 7.7 s in the same minute on the same machine, because about five of those seconds are the browser launch that a suite run pays once per worker. Both files use the shared page (tests/helpers/app.js), so the marginal cost really is the body; 3 is the control's 2 plus the 0.69 MB of subcables-meta.json this one also fetches. The nightly half is charged 55 against a standalone 25.1 s, i.e. over-charged on purpose. ⚠ THE 321 s CAME OUT OF A STALE-HIGH ENTRY, NOT OUT OF THE CEILING: tests/r174.spec.js carried 651 s and ran in 186 s — 9 tests, all passing, nothing skipped — WHILE this machine was running another Playwright spec, so 186 is an UPPER bound. Scaled by the local/CI ratio this file records (#R201: 0.68x) that is about 274 CI seconds and the entry is set to 330, exactly as #R354 did for r171: the saving claimed is smaller than the one measured. #R341 measured the same file at 396 s and declined to claim it because a failing test was waiting out a timeout in that run; this run had none. ⚠ NOT USED FOR PAYMENT, and worth writing down because this file keeps being asked for savings that are not there: smoke measured 102 s against an entry of 8, r176 144 s against 53, r195 59 s against 51 and r172 48 s against 52 — on this machine, today, four of the five candidates are UNDERSTATED, not overstated."],
   ['#R379', 4808, "the aircraft glyph round added tests/r379.spec.js (+2 s, gate: it publishes a synthetic "
     + 'aircraft of its own and reads the drawn pixels, so a fragment shader that will not compile cannot pass '
     + 'as a layer nobody switched on) and tests/r379-cesium.spec.js (+7 s, nightly: the rim/body billboard '

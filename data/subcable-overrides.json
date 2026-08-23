@@ -19,7 +19,20 @@
     "                 The router carves them into its passability at `cost` (they are shallow and",
     "                 busy, not free). Each MUST carry a `why`, and the build reports how many",
     "                 cells each one opened so a channel that does nothing cannot hide.",
-    "excludeSources   normalized source names that are not telecom cable systems at all."
+    "rivers           rivers that named cable systems are laid IN. The elevation grid has no river",
+    "                 in it, so these legs had no water to route over at all. The COURSE is not",
+    "                 written here: it is taken from Natural Earth's 1:10m river centre lines (the",
+    "                 public-domain source the lakes already come from), selected by name AND bbox",
+    "                 because a name alone does not identify a river ('Negro' is four rivers, three",
+    "                 of them in Argentina and Uruguay). Each MUST carry a `why`, and the build",
+    "                 reports the features matched and the cells opened.",
+    "excludeSources   normalized source names that are not telecom cable systems at all.",
+    "countryCodes     TeleGeography country spelling -> ISO 3166-1 alpha-2, for the spellings CLDR",
+    "                 does not use. The card translates COUNTRIES THROUGH THE CODE (CLDR already",
+    "                 holds every ISO region in all nine languages), so this table is the join key",
+    "                 and NOT a translation: 8 entries, not 186 x 9 strings. scripts/subcables/",
+    "                 regions.mjs resolves the other 178 from CLDR itself and the build prints any",
+    "                 spelling that reaches no code, which then stays English rather than guessed."
   ],
 
   "channels": [
@@ -44,6 +57,49 @@
         [28.95, 40.97], [28.20, 40.75], [27.30, 40.55], [26.70, 40.42],
         [26.40, 40.22], [26.20, 40.08], [26.05, 39.98], [25.90, 39.92]
       ]
+    }
+  ],
+
+  "rivers": [
+    {
+      "name": "Amazonas",
+      "why": "Norte Conectado Infovia 00/01/02/03 and Projeto Amazônia Conectada PAC-01 are laid in the Amazon and the Solimões — Macapá/Santarém/Óbidos/Parintins/Manaus/Tefé/Tabatinga are river towns, not sea ports. Measured on the 1/12° grid before this: every one of those legs was UNROUTABLE and came out as a geodesic across the rainforest (Infovia-05 alone put 273 sampled points on land). The Natural Earth centre line passes within 3-7 km of Tabatinga, Tefé and Fonte Boa.",
+      "bbox": [-76, -8, -50, 3],
+      "width_km": 9,
+      "cost": 3.5,
+      "depth_m": 25
+    },
+    {
+      "name": "Negro",
+      "why": "Projeto Amazônia Conectada PAC-02 runs Manaus - Novo Airão - Moura - Barcelos - Santa Isabel - São Gabriel da Cachoeira, which is the Rio Negro from mouth to upper reach; Norte Conectado Infovia-04 joins it at Moura. The centre line passes 2-11 km from all six. The bbox is what separates this from the Río Negro of Argentina and the Río Negro of Uruguay, which carry the same name in the same dataset.",
+      "bbox": [-72, -6, -58, 4],
+      "width_km": 9,
+      "cost": 3.5,
+      "depth_m": 25
+    },
+    {
+      "name": "Branco",
+      "why": "Norte Conectado Infovia-04 is Boa Vista - Caracaraí - Santa Maria do Boiaçu - Moura, which is the Rio Branco down to its confluence with the Negro. Centre line within 2-4 km of Boa Vista and Caracaraí.",
+      "bbox": [-66, -3, -58, 5],
+      "width_km": 9,
+      "cost": 3.5,
+      "depth_m": 25
+    },
+    {
+      "name": "Madeira",
+      "why": "Norte Conectado Infovia-05 is Porto Velho - Humaitá - Calama - Manicoré - Novo Aripuanã - Borba - Autazes, the Rio Madeira from Porto Velho to the Amazon. This is the cable #R355 measured at 6,287 km against a published 1,116 km when the snap was unbounded, and at 1,768 km of pure geodesic once it was bounded. Centre line within 2 km of Porto Velho, Humaitá and Borba.",
+      "bbox": [-68, -12, -57, -2],
+      "width_km": 9,
+      "cost": 3.5,
+      "depth_m": 25
+    },
+    {
+      "name": "Juruá",
+      "why": "Norte Conectado Infovia-08 is Cruzeiro do Sul - Fonte Boa, which is the Rio Juruá end to end. Centre line within 1 km of Cruzeiro do Sul and 4 km of Fonte Boa.",
+      "bbox": [-75, -12, -63, -1],
+      "width_km": 9,
+      "cost": 3.5,
+      "depth_m": 25
     }
   ],
 
@@ -101,6 +157,18 @@
   },
 
   "anchors": {},
+
+  "countryCodes": {
+    "_why": "The other 178 spellings the inventory uses resolve straight from CLDR's own English region names (scripts/subcables/regions.mjs). These eight do not, because CLDR spells them differently, and every one is a NAME difference and not a territory difference — checked one by one against ISO 3166-1.",
+    "Bonaire, Sint Eustatius and Saba": "BQ",
+    "Congo, Dem. Rep.": "CD",
+    "Congo, Rep.": "CG",
+    "Myanmar": "MM",
+    "Saint Helena, Ascension and Tristan da Cunha": "SH",
+    "Turkey": "TR",
+    "Virgin Islands (U.K.)": "VG",
+    "Virgin Islands (U.S.)": "VI"
+  },
 
   "excludeSources": [
     "onbekend",

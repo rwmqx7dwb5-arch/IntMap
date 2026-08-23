@@ -5613,4 +5613,6 @@ window.IntMapLang.define('ko', { ui: {
   "Turn all off": "모두 끄기",
   "watchlist": "관심 목록",
   "Wind power": "풍력",
+  "Q{q} {y}": "{y}년 {q}분기",
+  "Routes are approximate: a few stretches are published survey positions, most are reconstructed from sea-floor terrain. A line is not the exact position of the cable. Click one for the accuracy of that stretch.": "경로는 근사치입니다. 공개된 실측 위치인 구간은 일부이며 대부분은 해저 지형을 바탕으로 재구성한 것입니다. 선은 케이블의 정확한 부설 위치가 아닙니다. 구간별 정확도는 클릭하면 확인할 수 있습니다.",
 } });

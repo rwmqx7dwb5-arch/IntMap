@@ -84,7 +84,8 @@ export class SeafloorRouter {
     this.state = new Uint8Array(N);
     this.gen = 0;
     this._hk = new Float64Array(1024); this._hv = new Int32Array(1024); this._hn = 0;
-    this.stats = { runs: 0, expanded: 0, retries: 0, failures: 0 };
+    this.stats = { runs: 0, expanded: 0, retries: 0, failures: 0, reSnapped: 0, noSharedWater: 0 };
+    this._comp = null;
   }
 
   idx(j, k) { return j * this.w + ((k % this.w) + this.w) % this.w; }
@@ -115,6 +116,105 @@ export class SeafloorRouter {
       if (best >= 0) return best;
     }
     return -1;
+  }
+
+  /* ══ ⚠⚠⚠ (#R384) THE NEAREST WATER IS OFTEN NOT THE WATER THE CABLE IS IN ═══
+     A 9.26 km cell turns a fjord, an inlet, an archipelago channel or a river
+     mouth into a POND: a handful of passable cells with no cell-to-cell path to
+     the ocean. `snapToSea` finds it — it is the nearest water, and it is 5 km
+     away — and A* then searches a puddle it can never leave. The leg comes back
+     UNROUTABLE and falls all the way through to a geodesic drawn over land.
+
+     MEASURED on the shipped dataset: the grid has 2,331 disconnected bodies of
+     water. One of them is the world ocean (6,260,491 cells); the rest are ponds,
+     and the landing points sitting in them are why 46 cables carry 47,181 km of
+     `estimated` route — Halifax (c1348), Stockholm (c849), Hillsboro (c1332),
+     Valdez (c770), Whittier (c795), Milton NL (c1272), Port Alberni (c1241),
+     Thanlyin (c1731), Jacksonville (c1588), Tortel (c2125), Bima (c1942), Fauske
+     (c448), Puvirnituq (c835), Deception (c720) and 14 of Connected Coast's 105
+     British Columbia landings. exa-express drew a straight line from Halifax to
+     Cork over 4,687 km because Halifax harbour is a pond.
+
+     ⚠ THE ANSWER IS NOT A LONGER SNAP. #R355 bounded the snap at 60 km on
+     purpose, because a cable laid up the Amazon that is dragged out to the
+     Atlantic and back is a route between two places the cable is not. The bound
+     stays exactly where it is; what changes is WHICH water the two ends are
+     allowed to pick — they must pick water that is CONNECTED TO EACH OTHER's.
+     A leg whose ends share no body of water within the bound is still refused,
+     which is what keeps the Amazon honest (measured below: it still is).
+
+     The components are flood-filled once, after the lakes and channels have been
+     carved, and the fill is invalidated if anything opens a cell afterwards. */
+  invalidateComponents() { this._comp = null; }
+
+  components() {
+    if (this._comp) return this._comp;
+    const { w, h, passable } = this, N = w * h;
+    const comp = new Int32Array(N).fill(-1);
+    const stack = new Int32Array(N);
+    const sizes = [];
+    for (let s = 0; s < N; s++) {
+      if (!passable[s] || comp[s] >= 0) continue;
+      const id = sizes.length; let n = 0, sp = 0;
+      stack[sp++] = s; comp[s] = id;
+      while (sp > 0) {
+        const cur = stack[--sp]; n++;
+        const k = cur % w, j = (cur - k) / w;
+        for (let dj = -1; dj <= 1; dj++) {
+          const nj = j + dj; if (nj < 0 || nj >= h) continue;
+          for (let dk = -1; dk <= 1; dk++) {
+            if (!dj && !dk) continue;
+            const i = this.idx(nj, k + dk);
+            if (passable[i] && comp[i] < 0) { comp[i] = id; stack[sp++] = i; }
+          }
+        }
+      }
+      sizes.push(n);
+    }
+    this._comp = { comp, sizes };
+    return this._comp;
+  }
+
+  /* every body of water within `maxSnapM` of a point, with the nearest cell of
+     each — the raw material for "which one do BOTH ends have?" */
+  componentsNear(lon, lat, maxSnapM, maxRings = 40) {
+    const { comp } = this.components();
+    const out = new Map();
+    const j0 = this.rowOf(lat), k0 = this.colOf(lon);
+    for (let r = 0; r <= maxRings; r++) {
+      for (let dj = -r; dj <= r; dj++) {
+        const j = j0 + dj; if (j < 0 || j >= this.h) continue;
+        const edge = Math.abs(dj) === r;
+        const steps = edge ? 2 * r + 1 : 2;
+        for (let s = 0; s < steps; s++) {
+          const dk = edge ? (-r + s) : (s === 0 ? -r : r);
+          if (!r && s) continue;
+          const i = this.idx(j, k0 + dk);
+          if (!this.passable[i]) continue;
+          const d = haversine([lon, lat], this.centre(i));
+          if (d > maxSnapM) continue;
+          const c = comp[i];
+          const cur = out.get(c);
+          if (!cur || d < cur.d) out.set(c, { i, d });
+        }
+      }
+    }
+    return out;
+  }
+
+  /* the pair of cells, one near each end, in the SAME body of water, that costs
+     the least snapping. null when the two ends share no water within the bound. */
+  sharedSnap(from, to, maxSnapM) {
+    const A = this.componentsNear(from[0], from[1], maxSnapM);
+    if (!A.size) return null;
+    const B = this.componentsNear(to[0], to[1], maxSnapM);
+    let best = null;
+    for (const [c, a] of A) {
+      const b = B.get(c); if (!b) continue;
+      const score = Math.max(a.d, b.d);
+      if (!best || score < best.score) best = { score, si: a.i, ti: b.i, comp: c };
+    }
+    return best;
   }
 
   /* ── heap ─────────────────────────────────────────────────────────────────── */
@@ -163,10 +263,22 @@ export class SeafloorRouter {
        out to the Atlantic and back. Past the bound the leg is UNROUTABLE, which
        is the honest answer and the one the caller can fall back from. */
     const maxSnap = opts.maxSnapM ?? 60e3;
-    const si = this.snapToSea(from[0], from[1]);
-    const ti = this.snapToSea(to[0], to[1]);
+    let si = this.snapToSea(from[0], from[1]);
+    let ti = this.snapToSea(to[0], to[1]);
     if (si < 0 || ti < 0) { this.stats.failures++; return null; }
     if (haversine(from, this.centre(si)) > maxSnap || haversine(to, this.centre(ti)) > maxSnap) { this.stats.failures++; return null; }
+    /* (#R384) …and the two ends must be in the same body of water. When the
+       nearest cells are not, ask for the cheapest pair that is — still inside
+       the SAME `maxSnap`, so nothing is dragged anywhere #R355 refused to drag
+       it. `stats.reSnapped` counts the ends this moved, because a fix that
+       fires on a leg that was already fine is a fix that is doing something
+       else. */
+    const cmp = this.components().comp;
+    if (cmp[si] !== cmp[ti]) {
+      const sh = this.sharedSnap(from, to, maxSnap);
+      if (!sh) { this.stats.failures++; this.stats.noSharedWater++; return null; }
+      si = sh.si; ti = sh.ti; this.stats.reSnapped++;
+    }
     const bands = opts.bands || [Math.max(400e3, D * 0.30), Math.max(1200e3, D * 0.75), Infinity];
     for (let b = 0; b < bands.length; b++) {
       const r = this._search(from, to, bands[b], { ...opts, startCell: si, goalCell: ti });

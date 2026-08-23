@@ -420,10 +420,14 @@ subcables.json                    海底ケーブルの経路（`scripts/build-s
 subcables-lp.json                 陸揚げ地点（点）。既存の黄色い点はこれを描く
 subcables-meta.json               ケーブル単位のメタデータ（所有者・RFS・総延長・接続国・
                                   陸揚げ地点）と、陸揚げ地点ごとの「ここに来るケーブル」。
-                                  クリック時のポップアップだけが読む（線の描画は読まない）
+                                  クリック時のポップアップだけが読む（線の描画は読まない）。
+                                  ⚠ カードを9言語で出すための**結合鍵**も持つ——国名の
+                                  ISO 3166-1 alpha-2（`countryCodes` / `cc`）・`rfsMonth` /
+                                  `rfsQuarter`・`lengthKm`。国名や月名の訳語は入れない（CLDR）
 subcables.build.json              生成の記録——件数・km・出典別の採否とライセンス・QA の全数値
 subcable-overrides.json           生成の**訂正をデータとして持つ**もの（別名表・採否の明示・
-                                  1セルより狭い水路・追加の経由点）。コードに緯度経度を書かない
+                                  1セルより狭い水路・ケーブルが敷かれている川・追加の経由点・
+                                  CLDR と綴りが違う国名の ISO コード）。コードに緯度経度を書かない
 precip-mm.png / .json             年降水量の値格納ラスタ（8bit の log(mm)）と、その格子・帯・色
 precip-year.png / .json           年別の年降水量（1枚に縦積み）
 hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
