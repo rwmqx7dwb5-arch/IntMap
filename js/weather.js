@@ -296,12 +296,12 @@ window.IntMapModules.wind=function(HOST){
          ⚠ `liveKey`/`liveSlot` はそのまま——梯子が読んでおり、`removeField` が消す。 */
       slot=(shownSlot===0)?1:0;                    /* (#R298) 「free」 means 「not the one on screen」 */
       if(!EC().registerProtocol()) return false;   /* (#R288) — see the note in weatherEC.addSlot */
-      const s=SLOT[slot], url=EC().omUrl(VAR);
+      const s=SLOT[slot], url=EC().omRasterUrl(VAR);
       if(!url) return false;
       try{
         if(GE().layers.has(s.lyr)) GE().layers.remove(s.lyr);
         if(GE().layers.hasSource(s.src)) GE().layers.removeSource(s.src);
-        GE().layers.addSource(s.src,{type:'raster',url:url,maxzoom:12});
+        GE().layers.addSource(s.src,{type:'raster',url:url,maxzoom:12,tileSize:EC().TILE_PX});
         GE().layers.add({id:s.lyr,type:'raster',source:s.src,
           paint:{'raster-opacity':0,'raster-opacity-transition':{duration:260},'raster-fade-duration':0,'raster-resampling':'linear'}},EC().before());
       }catch(_){ return false; }
@@ -1066,7 +1066,7 @@ window.IntMapModules.weatherEC=function(HOST){
           if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'vector',url:url});
           if(!GE().layers.has(lid)) GE().layers.add({id:lid,type:'line',source:sid,'source-layer':'wind-arrows',layout:{visibility:'none','line-cap':'round'},paint:{'line-width':1.8,'line-opacity':cfg.op,'line-color':['interpolate',['linear'],['to-number',['get','value'],0],0,'#5b8ff9',6,'#36cfc9',12,'#73d13d',18,'#ffd666',26,'#ff7a45',36,'#cf1322']}},before);
         } else {
-          if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'raster',url:url,maxzoom:12});
+          if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'raster',url:EC().omRasterUrl(cfg.variable),maxzoom:12,tileSize:EC().TILE_PX});
           if(!GE().layers.has(lid)) GE().layers.add({id:lid,type:'raster',source:sid,layout:{visibility:'none'},paint:{'raster-opacity':cfg.op,'raster-opacity-transition':{duration:220},'raster-fade-duration':0}},before);
         }
         slotIds(cfg,s).forEach(l=>{ try{ EC().lift(l); }catch(_){} });

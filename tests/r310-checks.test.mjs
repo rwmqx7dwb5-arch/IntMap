@@ -103,13 +103,23 @@ test('R310 ③ the file is opened when the axis moves, not when the read starts'
   assert.match(fnBody(s, 'openReader'), /setToOmFile/, 'opening is what that does');
 });
 
-test('R310 ④ the colour tiles stop re-opening the file too', () => {
+/* ⚠⚠⚠ (#R325) THIS CHECK ASKED FOR THE MECHANISM, AND THE MECHANISM WAS THE HALF-MEASURE.
+   #R310 pinned the SDK's singleton so the tiles' SECOND open of a file would be a no-op, and wrote
+   that pinning 「removes both」. It did not: pinning is per reader, and the tiles were on a
+   DIFFERENT reader from the pool this same round had just built, so the file was opened twice —
+   MEASURED in #R325 on the built page, `setToOmFile` 9 ms → **+629 ms** in front of a tile read of
+   a file `setIndex` had already opened. The rule #R310 meant is the one asserted below; what it
+   pinned was one way of approximating it. (#R314 wrote the general form of this: a gate outlives
+   the reason it was built for, and the check that states the reason is the evidence.) */
+test('R310 ④ the colour tiles read a file that is already open, through the same pool', () => {
   const s = EC();
   const rp = fnBody(s, 'registerProtocol');
-  assert.match(rp, /pinReader/, 'the reader the tiles decode through is pinned as well');
-  /* it is the SDK's own singleton, so this pins the reader the tiles actually use — and it removes
-     a collision `serial()` never covered, because the tiles are called by MapLibre, not by us. */
+  /* the reader the tiles decode through is the pool's, obtained from the SDK's own instance */
+  assert.match(rp, /tileReader\(/, 'the tiles are given a reader by this module');
   assert.match(rp, /getProtocolInstance/, '…the one the protocol hands them');
+  assert.match(fnBody(s, 'tileReader'), /readerFor\(/, '…and it resolves to the per-file pool');
+  /* and the pin is still what makes a second open of one reader free */
+  assert.match(fnBody(s, 'pinReader'), /setToOmFile/, 'a second open of one reader is still a no-op');
 });
 
 /* ── ⑤ the next hour is READ, not merely warmed ────────────────────────────────────────────────── */
