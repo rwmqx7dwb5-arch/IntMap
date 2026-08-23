@@ -44,7 +44,8 @@ window.IntMapTime=(function(){
      stop together, and it never clamps a reader to the shortest of them:
        · borders      CShapes 2.0 is yearly 1886-2019; 1850-1885 falls to the historical-basemaps
                       snapshots (1815 / 1880), which is the SAME fallback 1900 already used.
-       · GDP / pop    Maddison Project 2020, now carried back to 1820 (data/maddison.json).
+       · GDP / pop    Maddison Project 2020, now carried back to 1850 (data/maddison.json — measured, not
+                      declared: js/history.js reads the smallest year in the shipped file).
        · climate era  the oldest Köppen period that exists is 1901-1930; earlier years show it and
                       are labelled with the period, so nobody reads 1850 weather off a 1901 raster.
      Lowering this number is therefore the whole of «extend the supported years» for the kernel; what

@@ -178,10 +178,17 @@ window.IntMapModules.statsCompare=function(HOST){
     async function wbLatest(id){ const ids=Array.isArray(id)?id:[id]; for(const one of ids){ const m=await _wbLatestOne(one); if(m&&Object.keys(m).length) return m; } return {}; }
     /* (#R94) TIME MACHINE: when the master clock is on a past year, the bar/table/focus show THAT year's real
        figures (World Bank date=<year>, IMF WEO at the year) — honestly, with no present-day gap-fill while
-       travelling. `_ttYear()` is the active year (≥1960, where WB annual series begin) or null when live. */
+       travelling. `_ttYear()` is the active year, or null when live. */
     /* read the year from the kernel (set synchronously on travel), NOT window._imTimeYear which the Countries
        engine only writes after its ~1 s fetch — the compare re-renders sooner, so it must not race that. */
-    function _ttYear(){ try{ const T=window.IntMapTime; if(!T||T.isLive()) return null; const y=T.year(), now=new Date().getFullYear(); return (y>=1900&&y<now)?y:null; }catch(_){ const y=window._imTimeYear; return (y&&y>=1900)?y:null; } }
+    /* ⚠⚠ (#R380) THE FLOOR HERE WAS A THIRD COPY OF THE CLOCK'S, AND IT STAYED AT 1900. Every reader of
+       `_ttYear()` treats null as «we are live», so between 1850 and 1899 — years the clock accepts, the
+       Countries tab answers and Maddison covers — the comparison panel quietly drew TODAY'S figures under
+       a nineteenth-century year, with no banner, because null means live and «too far back» produced the
+       same null. The floor is the kernel's (js/chronos.js) and is read from it. Years the sources cannot
+       reach are still answered honestly further down: Maddison decides GDP/population and the World Bank
+       series simply have no row before 1960. */
+    function _ttYear(){ try{ const T=window.IntMapTime; if(!T||T.isLive()) return null; const y=T.year(), now=new Date().getFullYear(), lo=(+T.min||1850); return (y>=lo&&y<now)?y:null; }catch(_){ const y=window._imTimeYear, lo=((window.IntMapTime&&+window.IntMapTime.min)||1850); return (y&&y>=lo)?y:null; } }
     /* (#R94e) GDP & population come from Maddison (real 2011 int$) while travelling, matching the Countries tab. */
     function _madField(ind){ return (ind&&ind.k==='gdp')?'gdp':((ind&&ind.k==='pop')?'pop':((ind&&ind.k==='gdppc')?'gdppc':null)); }
     function _madOne(M,mf,cd,year){ if(mf==='gdp'){ const g=M.gdpBil(cd,year); return g!=null?g*1e9:null; } if(mf==='pop') return M.popN(cd,year); return M.gdppc(cd,year); }   /* gdppc = real 2011 int$ per capita (unscaled) */
@@ -723,8 +730,14 @@ window.IntMapModules.statsCompare=function(HOST){
        per-indicator series load; the option lists rebuild in place so a range change never re-fetches. */
     function _tsYearList(){ return [..._tsAvailYears].filter(y=>isFinite(y)).sort((a,b)=>b-a); }   /* newest first */
     function _yoptsAvail(selV){ const ys=_tsYearList();
-      if(!ys.length){ /* before any series has loaded: fall back to a full 1900→now list so the control isn't empty */
-        let o=''; const nowY=new Date().getFullYear(); for(let y=nowY;y>=1900;y--) o+='<option value="'+y+'"'+(String(selV)===String(y)?' selected':'')+'>'+y+'</option>'; return o; }
+      /* ⚠ (#R380) …AND SO WAS THIS ONE. Before any series has loaded the control still has to list
+         something, and that placeholder was a FOURTH copy of the clock's floor, left at 1900 — so the
+         only years a reader could pick before the data landed were the years the old window allowed.
+         The real list replaces it the moment a series arrives (`_tsAvailYears`), and the series that
+         reach furthest back are the Maddison ones, which start where the clock does. */
+      if(!ys.length){ /* before any series has loaded: fall back to a full floor→now list so the control isn't empty */
+        let o=''; const nowY=new Date().getFullYear(), lo=((window.IntMapTime&&+window.IntMapTime.min)||1850);
+        for(let y=nowY;y>=lo;y--) o+='<option value="'+y+'"'+(String(selV)===String(y)?' selected':'')+'>'+y+'</option>'; return o; }
       return ys.map(y=>'<option value="'+y+'"'+(String(selV)===String(y)?' selected':'')+'>'+y+'</option>').join(''); }
     function _tsRangeHtml(){ return '<span class="scp-tsl">'+LL('Years','期間','Zeitraum','Годы','Años')+'</span>'
         +'<select id="scp-tsfrom"><option value="">'+LL('start','開始','Start','начало','inicio')+'</option>'+_yoptsAvail(tsFrom!=null?tsFrom:'')+'</select>'

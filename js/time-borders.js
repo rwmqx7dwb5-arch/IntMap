@@ -946,7 +946,18 @@ window.IntMapModules.timeBorders=function(HOST){
        when the state began». Moving the floor to 1850 turned each of those into a claim that was newly
        reachable and newly wrong: 1875 France resolved to the Third Republic five years before it existed
        only because nothing was asked before 1900. Each bound below is now the polity's OWN start date (or
-       1850 where it began earlier), and the eras that ran between 1850 and 1900 are spans of their own. */
+       1850 where it began earlier), and the eras that ran between 1850 and 1900 are spans of their own.
+       ⚠⚠ (#R380) THAT SWEEP REACHED 36 OF THE 51 ROWS, AND THE CHECK THAT NAMED IT ONLY ASKED ABOUT 20.
+       `tests/r349-checks ④` is called «no era span still opens at 1900 just because the window used to» and
+       it was green while FIFTEEN still did — because it spot-checks a hand-written list of codes instead of
+       reading the table. Measured on the shipped bundle: 1875 British Guiana, Dutch Surinam, the Gambia,
+       Sierra Leone, Mauritius, the Maldives, Fiji, Cape Verde, Portuguese Guinea, Spanish Guinea, Portuguese
+       Timor, the Solomons, Kuwait and Laos ALL answered with their MODERN country article — a colony of
+       1875 linking to a country founded a century later. Each bound below is now that polity's own start
+       (British Guiana 1831, the Gambia 1821, Sierra Leone 1808, Mauritius 1810, the Maldive sultanate 1153,
+       Cape Verde 1462, Portuguese Guinea 1588, Spanish Guinea 1778, Portuguese Timor 1702 → all clamped to
+       the clock's own floor 1850; Fiji 1874, the Solomons 1893, Laos 1893, Kuwait 1899 → their real years,
+       every one read off the article the row links to), and ④ now reads the TABLE. */
     const _ERA_WIKI={
       FRA:[[1850,1852,'French_Second_Republic'],[1852,1870,'Second_French_Empire'],[1870,1940,'French_Third_Republic'],[1940,1944,'Vichy_France'],[1944,1946,'Provisional_Government_of_the_French_Republic'],[1946,1958,'French_Fourth_Republic']],
       DEU:[[1850,1866,'German_Confederation'],[1867,1871,'North_German_Confederation'],[1871,1918,'German_Empire'],[1919,1933,'Weimar_Republic'],[1933,1945,'Nazi_Germany'],[1945,1949,'Allied-occupied_Germany'],[1949,1990,'West_Germany']],
@@ -956,7 +967,7 @@ window.IntMapModules.timeBorders=function(HOST){
       ITA:[[1850,1861,'Kingdom_of_Sardinia'],[1861,1946,'Kingdom_of_Italy']],
       GBR:[[1850,1922,'United_Kingdom_of_Great_Britain_and_Ireland']],
       TUR:[[1850,1922,'Ottoman_Empire']],
-      ESP:[[1874,1931,'Restoration_(Spain)'],[1931,1939,'Second_Spanish_Republic'],[1939,1975,'Francoist_Spain']],
+      ESP:[[1850,1868,'Reign_of_Isabella_II'],[1868,1873,'Sexenio_Democr%C3%A1tico'],[1873,1874,'First_Spanish_Republic'],[1874,1931,'Restoration_(Spain)'],[1931,1939,'Second_Spanish_Republic'],[1939,1975,'Francoist_Spain']],
       PRT:[[1850,1910,'Kingdom_of_Portugal'],[1910,1926,'First_Portuguese_Republic'],[1933,1974,'Estado_Novo_(Portugal)']],
       AUT:[[1850,1867,'Austrian_Empire'],[1867,1918,'Austria-Hungary'],[1919,1938,'First_Austrian_Republic'],[1945,1955,'Allied-occupied_Austria']],
       HUN:[[1850,1867,'Austrian_Empire'],[1867,1918,'Austria-Hungary'],[1920,1946,'Kingdom_of_Hungary_(1920%E2%80%931946)'],[1949,1989,'Hungarian_People%27s_Republic']],
@@ -1001,6 +1012,9 @@ window.IntMapModules.timeBorders=function(HOST){
       SEN:[[1895,1960,'French_West_Africa']],
       MLI:[[1890,1960,'French_Sudan']],
       CIV:[[1895,1960,'French_West_Africa']],
+      /* ⚠ (#R380) NER's 1900 is NOT the old window bound — the Third Military Territory of Niger was
+         created in 1900 and there was no «Niger» to name before it, so this row is on ④'s allow-list with
+         that reason rather than being pulled down to 1850 with the others. */
       NER:[[1900,1960,'French_West_Africa']],
       GIN:[[1895,1958,'French_West_Africa']],
       BFA:[[1919,1960,'French_Upper_Volta']],
@@ -1030,7 +1044,7 @@ window.IntMapModules.timeBorders=function(HOST){
       PAK:[[1947,1956,'Dominion_of_Pakistan']],
       BGD:[[1947,1971,'East_Pakistan']],
       MYS:[[1850,1946,'British_Malaya']],
-      LAO:[[1900,1953,'French_Indochina'],[1953,1975,'Kingdom_of_Laos']],
+      LAO:[[1893,1953,'French_protectorate_of_Laos'],[1953,1975,'Kingdom_of_Laos']],
       KHM:[[1863,1953,'French_protectorate_of_Cambodia'],[1970,1975,'Khmer_Republic'],[1975,1979,'Democratic_Kampuchea'],[1979,1989,'People%27s_Republic_of_Kampuchea']],
       OMN:[[1850,1970,'Muscat_and_Oman']],
       ARE:[[1850,1971,'Trucial_States']],
@@ -1064,8 +1078,8 @@ window.IntMapModules.timeBorders=function(HOST){
       HRV:[[1941,1945,'Independent_State_of_Croatia']],
       SGP:[[1850,1946,'Straits_Settlements'],[1946,1963,'Colony_of_Singapore']],
       BLZ:[[1862,1981,'British_Honduras']],
-      GUY:[[1900,1966,'British_Guiana']],
-      SUR:[[1900,1975,'Surinam_(Dutch_colony)']],
+      GUY:[[1850,1966,'British_Guiana']],
+      SUR:[[1850,1975,'Surinam_(Dutch_colony)']],
       ZMB:[[1911,1964,'Northern_Rhodesia']],
       MWI:[[1907,1964,'Nyasaland']],
       BWA:[[1885,1966,'Bechuanaland_Protectorate']],
@@ -1075,18 +1089,18 @@ window.IntMapModules.timeBorders=function(HOST){
       /* (#R136) further colonial-era → article coverage for colonies/protectorates that still linked to their MODERN
          country page ("Wikipedia…まだ詰められる箇所が大量にある"). All titles existence-verified against en.wikipedia
          (redirects resolved); ranges end at each territory's independence so the modern article returns afterwards. */
-      GMB:[[1900,1965,'Gambia_Colony_and_Protectorate']],
-      SLE:[[1900,1961,'Sierra_Leone_Colony_and_Protectorate']],
-      MUS:[[1900,1968,'British_Mauritius']],
-      MDV:[[1900,1965,'Sultanate_of_the_Maldive_Islands']],
-      FJI:[[1900,1970,'Colony_of_Fiji']],
-      CPV:[[1900,1975,'Portuguese_Cape_Verde']],
-      GNB:[[1900,1974,'Portuguese_Guinea']],
-      GNQ:[[1900,1968,'Spanish_Guinea']],
-      TLS:[[1900,1975,'Portuguese_Timor']],
-      SLB:[[1900,1978,'British_Solomon_Islands']],
+      GMB:[[1850,1965,'Gambia_Colony_and_Protectorate']],
+      SLE:[[1850,1961,'Sierra_Leone_Colony_and_Protectorate']],
+      MUS:[[1850,1968,'British_Mauritius']],
+      MDV:[[1850,1965,'Sultanate_of_the_Maldive_Islands']],
+      FJI:[[1874,1970,'Colony_of_Fiji']],
+      CPV:[[1850,1975,'Portuguese_Cape_Verde']],
+      GNB:[[1850,1974,'Portuguese_Guinea']],
+      GNQ:[[1850,1968,'Spanish_Guinea']],
+      TLS:[[1850,1975,'Portuguese_Timor']],
+      SLB:[[1893,1978,'British_Solomon_Islands']],
       PNG:[[1949,1975,'Territory_of_Papua_and_New_Guinea']],
-      KWT:[[1900,1961,'Emirate_of_Kuwait']]
+      KWT:[[1899,1961,'Emirate_of_Kuwait']]
     };
     /* (#R136) code → the era feature(s) that RESOLVE to that code, computed by running the SAME resolver the click
        picker uses (resolveHist: former-state identity → the feature's own CShapes _gw → base-name) over every era

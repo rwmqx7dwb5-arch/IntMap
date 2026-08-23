@@ -136,7 +136,9 @@ window.IntMapModules.onboarding=function(HOST){
       ['news',LA('Live news map','ライブニュースマップ','Live-Nachrichtenkarte','Карта новостей в реальном времени','Mapa de noticias en vivo'),
               LA('World headlines pinned to where they actually happen','世界のニュースを「発生した場所」にピン表示','Schlagzeilen dort angeheftet, wo sie wirklich geschehen','Мировые новости на том месте, где они произошли','Titulares del mundo anclados donde realmente ocurren')],
       ['globe',LA('Globe, satellite & time machine','地球儀・衛星・タイムマシン','Globus, Satellit & Zeitmaschine','Глобус, спутник и машина времени','Globo, satélite y máquina del tiempo'),
-               LA('3D terrain, real imagery, and travel back to 1900','3D地形と実写衛星画像、1900年まで遡って表示','3D-Gelände, echte Satellitenbilder, zurück bis 1900','3D-рельеф, реальные снимки и путешествие до 1900 года','Relieve 3D, imágenes reales y viaje hasta 1900')],
+               /* ⚠ (#R380) 1900 → 1850: the clock's floor moved in #R349 and this line, which is the
+                  first thing a new reader is told about the time machine, went on naming the old one. */
+               LA('3D terrain, real imagery, and travel back to 1850','3D地形と実写衛星画像、1850年まで遡って表示','3D-Gelände, echte Satellitenbilder, zurück bis 1850','3D-рельеф, реальные снимки и путешествие до 1850 года','Relieve 3D, imágenes reales y viaje hasta 1850')],
       ['chart',LA('Atlas AI & country data','Atlas AI・国データ','Atlas-KI & Länderdaten','Atlas ИИ и данные по странам','Atlas IA y datos por país'),
                LA('Ask in plain language, compare countries, even fly a jet','自然言語で操作、国どうしを比較、フライトシミュレーターも','In normaler Sprache steuern, Länder vergleichen, Flugsimulator','Спрашивайте обычным языком, сравнивайте страны и даже летайте','Pregunta en lenguaje natural, compara países e incluso pilota un avión')]
     ];

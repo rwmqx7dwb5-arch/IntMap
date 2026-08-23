@@ -52,7 +52,7 @@ window.IntMapModules.newsTimeline=function(HOST){
     const scale=document.getElementById('ntl-scale'), closeX=document.getElementById('ntl-x'), title=document.getElementById('ntl-title');
     const ticks=document.getElementById('ntl-ticks');   /* (#R337) the Time tab's ruler — see buildTicks */
     if(!tl||!slider) return;
-    let pendingTimer=null, _self=false, mode='year';   /* (#R101) Year (1900→now) | Date (recent days) | (#R137) Time (time-of-day) | (#R288) Forecast (the model's own hours) */
+    let pendingTimer=null, _self=false, mode='year';   /* (#R101) Year (the kernel's floor → now — YMIN() above) | Date (recent days) | (#R137) Time (time-of-day) | (#R288) Forecast (the model's own hours) */
     /* ══ ⚠⚠⚠ (#R288) THE APP HAS ONE CLOCK, AND IT NOW REACHES FORWARD ══════════════════════════
        「ECMWF系レイヤーを開くと勝手にECMWFの時間ポップアップが出るのを辞めろ。わざわざ分けるな。」
 

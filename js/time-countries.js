@@ -93,13 +93,14 @@ export function makeTimeCountries(HOST, CTX) {
       if(Object.keys(out.gdp).length>10||Object.keys(out.pop).length>10) yearCache[year]=out;   /* cache only a real result */
       return out; }
     function overlay(year,data){ snapshotBase();
-      /* (#R94i) Maddison covers 1900–2018; for 2019+ there is NO Maddison year → keep the World Bank NOMINAL
+      /* (#R94i) Maddison covers 1850–2018 (#R349 extended it; the floor is read from the file); for 2019+
+         there is NO Maddison year → keep the World Bank NOMINAL
          figures (and mark the basis NOT-real so the banner/labels say World Bank, not "real 2011 int$"). */
       const M=window.IntMapMaddison, useM=!!(M&&M.ready()&&year<=(M.maxYear||2018));
       try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue;
         FIELDS.forEach(F=>{ const v=data[F.f]&&data[F.f][iso]; s[F.f]=(v!=null&&isFinite(v))?v:null; });
         /* (#R94e) real GDP / GDP-per-capita / population from Maddison (2011 int$) — consistent across every
-           country back to 1900, and the only source before the World Bank's 1960 floor. WB nominal is discarded
+           country back to the Maddison floor, and the only source before the World Bank's 1960 floor. WB nominal is discarded
            for GDP while travelling so a historical ranking is on ONE basis; life-exp/fertility/internet/military
            stay World Bank. Population prefers Maddison, else keeps the WB value (head-count is basis-free). */
         if(useM){ const mpc=M.gdppc(iso,year), mp=M.popN(iso,year), mg=M.gdpBil(iso,year);

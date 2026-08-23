@@ -82,7 +82,7 @@ Some live and satellite services require a separate provider key, which is store
 
 ## Time Machine
 
-The Time Machine lets you explore changes from 1900 to the present.
+The Time Machine lets you explore changes from 1850 to the present.
 
 Depending on the selected year and available data, it can update:
 
