@@ -309,6 +309,14 @@ window.IntMapRefData=(function(){
     {n:'ESA WorldCover',u:'https://esa-worldcover.org/'},
     {n:'RESOLVE / WWF Ecoregions 2017',u:'https://ecoregions.appspot.com/'},
     {n:'Smithsonian GVP',u:'https://volcano.si.edu/'},
+    /* (#R353) Volcano Intelligence — the five live sources beside the bundled GVP catalog. Four of
+       them the browser reads directly; the two without CORS go through supabase/functions/volcano-feed. */
+    {n:'Smithsonian / USGS Weekly Volcanic Activity Report',u:'https://volcano.si.edu/reports_weekly.cfm'},
+    {n:'USGS Volcano Hazards Program — HANS (alert levels, aviation colour codes, VONA)',u:'https://volcanoes.usgs.gov/vhp/updates.html'},
+    {n:'USGS Volcano Hazards Program — published volcano hazard zones',u:'https://www.usgs.gov/programs/VHP'},
+    {n:'噴火警報・予報 — 気象庁 (JMA volcano warnings and eruption warning levels)',u:'https://www.jma.go.jp/bosai/map.html#contents=volcano'},
+    {n:'International SIGMET (volcanic ash) — NOAA Aviation Weather Center',u:'https://aviationweather.gov/'},
+    {n:'NASA GIBS — OMPS SO₂, upper troposphere & stratosphere',u:'https://www.earthdata.nasa.gov/'},
     {n:'DeepStateMap',u:'https://deepstatemap.live/'},
     {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps'},
     {n:'CShapes 2.0 (Schvitz et al., ETH Zürich)',u:'https://icr.ethz.ch/data/cshapes/'},

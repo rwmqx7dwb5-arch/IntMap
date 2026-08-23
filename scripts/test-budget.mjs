@@ -85,7 +85,27 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
        price them at CI's measured 9.2 s (#R186). 68 − 3×9.2 ≈ 40. It runs in 10.8 s locally, so
        40 is deliberately the conservative end; CI's `shard-plan --update` replaces it on merge. */
 const BUDGET_S = 64;                    /* core: 1.1 min — measured 64 s over 6 files (#R209) */
-const TOTAL_BUDGET_S = 5035;            /* 83.9 min — 5,089 (#R347) + 4 (#R352's spec) - 58 (#R352
+const TOTAL_BUDGET_S = 5024;            /* 83.7 min — 5,035 (#R352) + 11 (#R353's two specs) - 22
+                                           (#R353 corrected internal-qa 22 -> 10 and r184-routing 40 -> 30).
+   ⚠ (#R353) VOLCANO INTELLIGENCE ADDED TWO SPECS AND THE SUITE STILL WENT DOWN, and both were paid
+   for out of STALE-HIGH ENTRIES rather than out of the ceiling — the shape #R209 named and #R337
+   and #R341 both re-named without touching. tests/r353.spec.js (+5 s) is the gate half: it opens
+   the volcano card and switches the four colour modes with NOTHING answering on the network, so a
+   push cannot go red because volcano.si.edu or USGS had a bad afternoon; the three claims that DO
+   need those upstreams are tests/r353-live.spec.js (+6 s, deep).
+     · tests/internal-qa.spec.js carried 22 s, a figure from before it shared the worker-scoped
+       `app` fixture; it boots ONCE for three tests now and MEASURED 0.5 s (twice, serial, server
+       already up). Set to 10 — twenty times the measurement — because a number measured HERE is
+       not a number to write into a table CI schedules from.
+     · tests/r184-routing.spec.js carried 40 s, and #R210 wrote down how that number was made:
+       104 − 8×9.2 ≈ 30, «corrected to 40 on the conservative side». MEASURED in the deep tier,
+       serial: 16.4 s over 8 passing tests. Set to 30 — #R210's own arithmetic, still nearly twice
+       the measurement.
+   ⚠ NOT USED FOR PAYMENT, and this is why single local numbers are not written straight into the
+   table: the same core run that measured internal-qa at a fiftieth of its entry measured
+   tests/smoke.spec.js at 66.5 s against an entry of 8. A ratchet fed by noise stops being a
+   ratchet (#R322's rule), so monitors (14 -> 6) and security (9 -> 1.2) were left alone too.
+   THE OLD NOTE FOR THIS LINE FOLLOWS: 5,035 was 5,089 (#R347) + 4 (#R352's spec) - 58 (#R352
                                            corrected tests/r185.spec.js: 274 s -> 216 s).
    ⚠ (#R352) THE CORRECTION IS THE DELETION OF A WAIT, NOT A FASTER MACHINE. #R341 replaced a
    `waitForFunction(..., 60000)` in r185 that EXPIRED on every run — its own note says "66 s of a
@@ -116,6 +136,7 @@ const TOTAL_BUDGET_S = 5035;            /* 83.9 min — 5,089 (#R347) + 4 (#R352
    recorded as 10 s, so 5 s is that ratio. ⚠ The corpus is not this machine's wall clock — it must
    be calibrated, not copied, and a future round re-measuring on CI should correct it. */
 const HISTORY = [
+  ['#R353', 5024, 'Volcano Intelligence added TWO specs and the suite still went down. tests/r353.spec.js (+5 s) is the gate half — it opens the intelligence card and switches the four colour modes with NOTHING answering on the network; the three claims that DO need USGS, the Smithsonian relay and an ArcGIS service are tests/r353-live.spec.js (+6 s, deep). ⚠ BOTH WERE PAID FOR OUT OF STALE-HIGH ENTRIES, NOT OUT OF THE CEILING: internal-qa 22 -> 10 (measured 0.5 s; it boots once for three tests now) and r184-routing 40 -> 30 (measured 16.4 s; 30 is #R210s own arithmetic before it was rounded up, and #R337 and #R341 both named this entry as stale-high and untouched). ⚠ NOT USED FOR PAYMENT: the same run measured smoke at 66.5 s against an entry of 8, which is why a single local number is never written straight into this table.'],
   ['#R341', 5084, 'tests/r341.spec.js (+4 s, the gate half: it needs no live feed, so a push cannot go red because a provider had a bad afternoon) and tests/r341-live.spec.js (+6 s, deep: the claims that DO need real aircraft) were paid for by re-measuring tests/r184-drone.spec.js. It carried 145 s and ran in 35 - and 35 was measured while this machine was running eleven other specs at --workers=2, so it is an UPPER bound; the entry is set to 40 on the conservative side, exactly as #R209 and #R210 did. THE STALENESS WAS ALREADY WRITTEN DOWN: #R209 named r170, r184-drone and r184-routing as 421 s of pre-#R208 figures for files that now boot ONCE, and said in as many words that it did not touch them. r184-drone boots once for ten tests, six of which run in under a second. NOT USED FOR PAYMENT, though all four measured far below their entries: r174 (651 -> 396), r186 (315 -> 194), r185 (274 -> 178) and r175 (159 -> 155) each had a failing or self-skipping test in the run, so their totals include a 60-90 s wait that resolved into nothing rather than a file that got faster.'],
   ['#R337', 5179, 'this round added TWO spec files and paid for both. tests/r337.spec.js (6 s) is the cheap half — the temperature legend switch and the Chronos ruler — and stands in the gate as the current round’s spec; tests/r337-atlas.spec.js (24 s) holds the two claims that need the Atlas chunk and the country table, and is named so that scripts/tiers.mjs’s «r + digits» rule does NOT pull it into the gate (the same shape as r318-atlas). ⚠ THE 30 s CAME OUT OF A STALE-HIGH ENTRY, NOT OUT OF THE CEILING: tests/r170.spec.js carried 108 s, a figure measured before #R208 converted it from nine boots to one, and #R209 named it in this file as still stale and did not touch it. MEASURED TWICE on this machine, serial, with the server already up: 60.3 s and 76.5 s — the spread is another session building at the same time, so the ledger takes the UPPER bound (77) and the saving being claimed is the smaller one. 5,180 -> 5,179, and the ceiling follows the measurement down as #R322 did. r184-drone (145 s) and r184-routing (40 s) are still stale-high and still untouched.'],
   ['#R322', 5180, 'tests/r322.spec.js (+4 s) was paid for by re-measuring tests/r193.spec.js: it carried 71 s and runs in 46. MEASURED TWICE, both times while this machine was busy with another suite — so 46 is an UPPER bound and the ceiling is being lowered by less than the file actually gained. ⚠ tests/r192.spec.js (66 -> 63) and tests/r196.spec.js (90 -> 79 alone, 100 under load) were NOT changed: this machine spreads those two by more than the difference, and a ratchet fed by noise stops being a ratchet. The suite went 5,201 -> 5,180 and the ceiling followed it down, as #R195 and #R196 did for the shell.'],

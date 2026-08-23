@@ -448,6 +448,12 @@ window.IntMapPageI18N.define('zh-hans', {
      译自带有英文原文的 pages.en.js `sourceUse`。每一则以登录表（js/reference-data.js）中的
      名称为键；缺少的项目会逐键回退为英文，与上方正文的规则相同。 */
   sourceUse: {
+    "Smithsonian / USGS Weekly Volcanic Activity Report": "火山状态的「世界层级」：本周有哪些火山被观测机构通报，以及机构说了什么。每一则都带有 GVP 火山编号，因此报告是以编号而非名称与目录链接。由于 volcano.si.edu 不送出 CORS 标头，改由 supabase/functions/volcano-feed 中继。",
+    "USGS Volcano Hazards Program — HANS (alert levels, aviation colour codes, VONA)": "「美国层级」：目前生效的航空色码与火山警戒等级，以及过去一年的所有 VONA（航空用火山信息）。此服务会送出 Access-Control-Allow-Origin，因此由浏览器直接读取。",
+    "USGS Volcano Hazards Program — published volcano hazard zones": "目前找到唯一权威且机器可读的火山灾害范围服务：加州七个火山区的降灰、火山泥流、洪水、火口近旁与熔岩流多边形。有数据者才绘出；其余火山则在信息卡中明确说明没有公布数据，且绝不绘制推估的圆圈。",
+    "噴火警報・予報 — 気象庁 (JMA volcano warnings and eruption warning levels)": "「日本层级」：目前发布的喷发警戒等级（1〜5），未实施等级的火山则直接显示其文字警报。气象厅以自身的单位发布 —— 例如「樱岛」，而非包含它的「姶良」破火山口 —— 因此信息卡显示气象厅的单位名称，地图则为包含它的 GVP 火山上色。",
+    "International SIGMET (volcanic ash) — NOAA Aviation Weather Center": "实际生效中的火山灰区域：飞航情报区依 VAAC 咨询电文发布的 SIGMET，连同其发布时的多边形与高度带（飞航空层）。由 supabase/functions/volcano-feed 中继，只保留火山灰类别。",
+    "NASA GIBS — OMPS SO₂, upper troposphere & stratosphere": "卫星观测的二氧化硫总量，取的是喷烟出现的高度带，而非工业霾所在的边界层。GVP 自身的 SO₂ 排放量数据表虽在 WFS 中宣告，但上游已损坏，因此实际存在的观测是这一项。",
     "CRUST1.0 — global crustal model": "随应用程序一并提供（data/crust1.bin.gz）：1° 网格的全球地壳模型——沉积层、结晶质地壳与最上部地函，各层皆有自己的剪力波速度、密度与层界深度。地震模拟器据此建立各地点 30 米以下的速度剖面，这正是盆地能放大长周期的原因。",
     "USGS Slab2 — subduction zone geometry": "随应用程序一并提供（data/slab2.bin.gz）：全部 27 个活跃隐没带的板块上表面深度、走向与倾角。地震模拟器以此区分板块界面地震与隐没板块内部地震——在地球上任何地方都用同一套判准。",
     "Bird (2003) PB2002 plate boundaries": "随应用程序一并提供（data/tectonics.bin.gz）：到最近板块边界的距离、该边界的类型，以及广义变形带（orogen）多边形。用于判定地震的大地构造分区，并据此选用已发表的地动参数。",
@@ -550,7 +556,7 @@ window.IntMapPageI18N.define('zh-hans', {
     "Inter / Pretendard (bundled, SIL OFL 1.1)": "拉丁／斯拉夫字母与韩文字体，随网站一并提供——包含「地图」自身标签所用的 SDF 字形图集，由 scripts/build-glyphs.mjs 自 Inter 产生（没有公开字形服务器提供 Inter）。授权与出处标示请见 fonts/README.md。",
     "ESA WorldCover": "10 米分辨率的全球土地覆盖分类",
     "RESOLVE / WWF Ecoregions 2017": "陆域生态区",
-    "Smithsonian GVP": "全新世火山",
+    "Smithsonian GVP": "随应用程序一并附上（data/volcanoes_gvp.json 与 data/volcano-detail.json.gz，由 scripts/build-volcanoes.mjs 从 GVP 的 WFS 产生）：完整的全新世目录并带有链接键，其后还有 11,089 笔喷发及其 VEI 与日期、火山类型、地形分类、构造环境与主要岩石、地质概要、照片，以及半径 5、10、30、100 公里内的人口。火山信息卡关于过去的一切，都是离线从这个文件读取的。",
     "DeepStateMap": "乌克兰前线（测试版图层）",
     "historical-basemaps (aourednik)": "历史国界——测试版叠图图层，同时也是地图本身历史年份国界的自动备援（取最接近的快照）",
     "CShapes 2.0 (Schvitz et al., ETH Zürich)": "供时光机使用的 1886–2019 年逐年国际疆界（每次疆界变动皆标注年份；自行代管的简化副本）。1945–2019 年东德、西德与统一后德国的疆界，已依权威的现代邦界数据（deutschlandGeoJSON, © GeoBasis-DE / BKG）重建，使两德边界符合实情。 两次世界大战图层沿战线切割的国家轮廓，用的也是这份数据。",

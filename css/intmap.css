@@ -1098,6 +1098,57 @@
     .acp-badge.sunlit{ color:#8a6d00; background:rgba(255,210,63,0.22); }
     .acp-badge.ecl{ color:var(--text-muted); background:rgba(128,128,128,0.16); }
     @media (max-width:768px){ .sat-popup{ width:calc(100vw - 24px); } }
+    /* (#R353) VOLCANO INTELLIGENCE card (js/volcano-intel.js). Same .country-popup shell and the same
+       .acp-* row vocabulary as the aircraft and satellite cards — it reuses that vocabulary rather
+       than inventing a third one — so only the shapes neither of those cards has are described here:
+       the four tabs, the status badges, the VEI histogram and the eruption list. Every colour that is
+       not a hazard code comes from the theme tokens, so the card follows light/dark like every panel. */
+    .volc-popup{ width:372px; z-index:2210; max-height:min(78vh,760px); overflow-y:auto; }
+    .volc-popup .country-popup-header h3{ display:flex; flex-direction:column; gap:2px; }
+    .volc-sub{ font-size:11.5px; font-weight:500; color:var(--text-muted); }
+    .volc-tabs{ display:flex; gap:4px; margin:2px 0 8px; }
+    .volc-tab{ flex:1 1 0; font-size:11px; font-weight:600; padding:5px 4px; border-radius:8px; cursor:pointer; border:1px solid rgba(128,128,128,0.22); background:var(--input-bg); color:var(--text-muted); }
+    .volc-tab.on{ background:var(--primary-color); border-color:var(--primary-color); color:#fff; }
+    .volc-badges{ display:flex; flex-wrap:wrap; gap:6px; margin:0 0 6px; }
+    .volc-badge{ font-size:10.5px; font-weight:700; border-radius:999px; padding:3px 9px; }
+    .volc-badge.r{ color:#fff; background:#e0332f; }
+    .volc-badge.o{ color:#fff; background:#f08a2d; }
+    .volc-badge.y{ color:#6b4e00; background:#e8c53a; }
+    .volc-badge.g{ color:#fff; background:#3ba55d; }
+    .volc-badge.q{ color:var(--text-muted); background:rgba(128,128,128,0.16); }
+    .volc-badge.src{ color:var(--text-muted); background:rgba(128,128,128,0.12); font-weight:600; }
+    .volc-narr{ font-size:12px; line-height:1.55; color:var(--text-main); margin:4px 0 2px; }
+    .volc-vona{ border-left:2px solid var(--primary-color); padding:2px 0 2px 9px; margin:7px 0; }
+    .volc-vona-h{ font-size:10.5px; font-weight:700; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+    .volc-vona-b{ font-size:12px; line-height:1.5; color:var(--text-main); margin-top:2px; }
+    .volc-link{ display:inline-block; font-size:11.5px; color:var(--primary-color); text-decoration:none; margin-top:5px; }
+    .volc-photo{ display:block; width:100%; height:auto; border-radius:12px; margin:2px 0 5px; background:var(--input-bg); }
+    .volc-cap{ font-size:11px; line-height:1.45; color:var(--text-main); }
+    .volc-cred{ font-size:10px; color:var(--text-muted); margin-top:2px; }
+    /* the VEI histogram — this volcano's OWN eruptions, so the bars are counts and the scale is local */
+    .volc-vei{ display:flex; flex-direction:column; gap:3px; margin:4px 0 2px; }
+    .volc-vei-row{ display:flex; align-items:center; gap:8px; font-size:11px; }
+    .volc-vei-k{ flex:0 0 42px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+    .volc-vei-bar{ flex:1 1 auto; height:8px; border-radius:4px; background:rgba(128,128,128,0.16); overflow:hidden; }
+    .volc-vei-bar i{ display:block; height:100%; border-radius:4px; background:linear-gradient(90deg,#f0912d,#e0332f); }
+    .volc-vei-n{ flex:0 0 34px; text-align:right; color:var(--text-main); font-variant-numeric:tabular-nums; }
+    .volc-er{ max-height:280px; overflow-y:auto; margin-top:2px; }
+    .volc-er-row{ display:flex; align-items:baseline; gap:8px; font-size:11.5px; padding:2px 0; border-bottom:1px solid rgba(128,128,128,0.1); }
+    .volc-er-row.unc{ color:var(--text-muted); }
+    .volc-er-d{ flex:1 1 auto; font-variant-numeric:tabular-nums; }
+    .volc-er-v{ flex:0 0 62px; text-align:right; font-variant-numeric:tabular-nums; color:var(--text-muted); }
+    .volc-er-v.big{ color:#e0332f; font-weight:700; }
+    .volc-er-e{ flex:0 0 116px; text-align:right; font-size:10px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    @media (max-width:768px){ .volc-popup{ width:calc(100vw - 24px); } .volc-er-e{ display:none; } }
+    /* the layer legend: the colour-mode switch, and the key for whichever mode is on */
+    .volc-key{ display:flex; flex-direction:column; gap:4px; margin-top:6px; font-size:11px; color:var(--text-main); }
+    .volc-modes{ display:flex; gap:3px; margin-bottom:3px; }
+    .volc-mode{ flex:1 1 0; font-size:10px; font-weight:600; padding:4px 2px; border-radius:7px; cursor:pointer; border:1px solid rgba(128,128,128,0.22); background:var(--input-bg); color:var(--text-muted); }
+    .volc-mode.on{ background:var(--primary-color); border-color:var(--primary-color); color:#fff; }
+    .volc-key-row{ display:flex; align-items:center; gap:7px; }
+    .volc-dot{ width:11px; height:11px; border-radius:50%; flex:none; border:1px solid rgba(255,255,255,0.5); }
+    .volc-key-note{ font-size:10px; line-height:1.45; color:var(--text-muted); }
+    .volc-key-src{ font-size:10px; color:var(--text-muted); }
     .pin-popup{ display:none; position:absolute; z-index:1300; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); color:var(--text-main); font-size:12px; border-radius:12px; padding:10px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); min-width:200px; transform:translate(-50%,calc(-100% - 24px)); }
     .pin-popup-row{ display:flex; justify-content:space-between; gap:8px; margin:2px 0; } .pin-popup-row b{ color:var(--text-main); font-weight:600; }
     .pin-popup-close{ position:absolute; top:4px; right:6px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:2px 4px; } .pin-popup-close:hover{ color:var(--text-main); }

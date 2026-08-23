@@ -373,8 +373,8 @@ const MODULE_FACTORIES = [
    below, and the boot guard cannot see those for the same reason it cannot see the others.
    (#R341) …and `aviationLive`, which carries the whole live-aircraft platform: the controller, the
    GPU primitive it imports, and the worker that owns the fleet. Nothing of it is downloaded until
-   the aircraft layer, aircraft search or an Atlas aviation command asks for it. */
-const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail', 'analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu', 'aviationLive', 'warLayer'];
+   the aircraft layer, aircraft search or an Atlas aviation command asks for it. (#R353) …and the two volcano modules — see js/lazy-modules.js and docs/VOLCANO-INTELLIGENCE.md. */
+const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail', 'analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu', 'aviationLive', 'warLayer', 'volcanoIntel', 'volcanoLayers'];
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport', 'IntMapRouteErrors', 'IntMapRouteClock'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};

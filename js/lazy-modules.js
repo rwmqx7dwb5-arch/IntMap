@@ -101,7 +101,7 @@ export function makeLazyModules(HOST) {
          (through src/aviation-worker-client.js) the worker that owns the fleet. Nothing of it is
          downloaded until the aircraft layer, aircraft search, or an Atlas aviation command asks. */
       aviationLive: 'IntMapAviation',
-      satellitesLive: 'IntMapSatellites', satelliteDetail: 'IntMapSatPanel',
+      satellitesLive: 'IntMapSatellites', satelliteDetail: 'IntMapSatPanel', volcanoIntel: 'IntMapVolcano', volcanoLayers: 'IntMapVolcanoLayers',   /* (#R353) the volcano ROW is eager (js/beta-overlays.js); the 11,089-eruption history, the four status feeds and the card are not, and the three overlays are a second module so a card cannot drag them in — docs/VOLCANO-INTELLIGENCE.md */
       /* ══ (#R322) …AND THE FILE #R311 HAD TO LEAVE BEHIND, SPLIT INSTEAD OF DEFERRED ════════════
          js/analysis-panels.js was the biggest thing left in the entry (909 lines, 122 kB) and #R311
          measured why it could not join the six above: counting the statements each factory EXECUTES
@@ -165,7 +165,7 @@ export function makeLazyModules(HOST) {
         case 'analysisEdu': return import('./analysis-edu.js');
         case 'aviationLive': return import('./aviation-live.js');
         case 'navigation': return import('./navigation.js');
-        case 'routingTraffic': return import('./routing-traffic.js'); case 'warLayer': return import('./war-layer.js');
+        case 'routingTraffic': return import('./routing-traffic.js'); case 'warLayer': return import('./war-layer.js'); case 'volcanoIntel': return import('./volcano-intel.js'); case 'volcanoLayers': return import('./volcano-layers.js');   /* (#R353) */
         default: return Promise.reject(new Error('no such lazy module: ' + name));
       }
     }
@@ -199,7 +199,7 @@ export function makeLazyModules(HOST) {
         case 'analysisCorrelate': window.IntMapModules.analysisCorrelate(IM_HOST); return true;
         case 'analysisEvents': window.IntMapModules.analysisEvents(IM_HOST); return true;
         case 'analysisEdu': window.IntMapModules.analysisEdu(IM_HOST); return true; case 'warLayer': window.IntMapModules.warLayer(IM_HOST); return true;   /* (#R349) */
-        case 'aviationLive': window.IntMapAviation=window.IntMapModules.aviationLive(IM_HOST); return true;
+        case 'aviationLive': window.IntMapAviation=window.IntMapModules.aviationLive(IM_HOST); return true; case 'volcanoIntel': window.IntMapModules.volcanoIntel(IM_HOST); return true; case 'volcanoLayers': window.IntMapModules.volcanoLayers(IM_HOST); return true;   /* (#R353) */
         /* publishes itself at import time, like nightSky */
         default: return !!M;
       }
