@@ -253,6 +253,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get aiParseJSON(){ return aiParseJSON; },       get aiToday(){ return aiToday; },
     get aiUsage(){ return aiUsage; },               get aiUsesLeft(){ return aiUsesLeft; },
     get applyAccent(){ return applyAccent; },       get askAI(){ return askAI; },
+    /* (#R342) askAIEnvelope — the TEXT envelope, carrying one call's own meta + citations */
+    get askAIEnvelope(){ return askAIEnvelope; },
     get askAIJSON(){ return askAIJSON; },           get askAIJSONEnvelope(){ return askAIJSONEnvelope; },
     get clearAllPins(){ return clearAllPins; },     get compressImage(){ return compressImage; },
     get diskFillPolys(){ return diskFillPolys; },   get exitTool(){ return exitTool; },
@@ -1015,6 +1017,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function aiVisionReady(){ return IM_AI.aiVisionReady.apply(this,arguments); }
   function aiWaitMapIdle(){ return IM_AI.aiWaitMapIdle.apply(this,arguments); }
   function askAI(){ return IM_AI.askAI.apply(this,arguments); }
+  function askAIEnvelope(){ return IM_AI.askAIEnvelope.apply(this,arguments); }
   function askAIJSON(){ return IM_AI.askAIJSON.apply(this,arguments); }
   function askAIJSONEnvelope(){ return IM_AI.askAIJSONEnvelope.apply(this,arguments); }
   const IM_LABELS=window.IntMapModules.placeLabels(IM_HOST);
