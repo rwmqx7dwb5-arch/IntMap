@@ -62,56 +62,67 @@ test('R313 追記 ① every token the chips use is resolved by fill(), and every
   assert.match(fill, /\{place\\\}\/g,\(f&&f\.name\)/, '{place} is the CLDR name cName() resolved');
   assert.match(fill, /\{sub\\\}\/g,subName\(st\)/, '{sub} goes through a resolver, not through the raw field');
   const sub = ex.slice(ex.indexOf('function subName('), ex.indexOf('function fill('));
-  assert.match(sub, /_imCldrRegion\(c,\s*HOST\.lang\)/,
-    'and that resolver asks CLDR in the reader’s language');
-  assert.match(sub, /return s;/, '…falling back to the upstream string when CLDR has no name for it');
+  /* ⚠ (#R313 追記2) this used to require a CLDR call. The browser has no M49 names, so that call was
+     doing nothing where it mattered — the resolver reads a table this repository ships. See ②. */
+  assert.match(sub, /SUB\[s\]/, 'and that resolver reads the names this repository ships');
+  assert.match(sub, /return s;/, '…falling back to the upstream string for anything not in it');
 });
 
-/* ═════════════════════════════════════════════════════════════════════════
-   ② the M49 table is a CODE table — prove it against Intl, in all nine
-   ═══════════════════════════════════════════════════════════════════════ */
-test('R313 追記 ② every mapped subregion resolves in all nine languages, and English is the upstream string', () => {
+/* =========================================================================
+   (2) the subregion names are SHIPPED STRINGS - not something an engine may or may not have
+   ======================================================================= */
+test('R313 追記2 ② every subregion is a literal L() in the source, and nothing is looked up at runtime', () => {
   const src = read('js/atlas-examples.js');
-  const lit = /const M49=\{[\s\S]*?\};/.exec(src);
-  assert.ok(lit, 'the table is a plain object literal this test can lift out');
-  const M49 = new Function('return (' + lit[0].replace('const M49=', '').replace(/;$/, '') + ')')();
+  const ex = code('js/atlas-examples.js');
 
-  const n = Object.keys(M49).length;
-  assert.ok(n >= 20, 'the table names the UN M49 macro-regions (' + n + ')');
+  /* ⚠⚠⚠ WHY THIS TEST WAS REWRITTEN. 追記1 mapped each subregion to its UN M49 code and asked
+     `Intl.DisplayNames({type:'region'})` for the name. That resolves all 22 codes in all nine
+     languages in NODE — and NOT ONE of them in the browser. MEASURED on production: `of('030')` is
+     undefined in Chromium and 「東アジア」 in Node; 0/22 in ja, en, ko and de; `of('JP')` still answers
+     and `of('419')` answers, so it is not a stripped ICU — V8's region table holds COUNTRIES, not the
+     M49 macro-regions. Every reader kept seeing 「モンゴル国はEastern Asiaの…」 while THIS FILE'S OWN
+     CHECK stayed green, because it measured the runtime the test runs in rather than the one that
+     ships. ⚠ So the property is no longer «the platform can name it» but «the name is in our source»,
+     which is the same in every engine. */
+  const table = /const SUB=\{[\s\S]*?\r?\n {4}\};/.exec(src);
+  assert.ok(table, 'the subregion names are a table in this file');
+  const entries = [...table[0].matchAll(/'([^']+)':\(\)=>L\('([^']*)','([^']*)','([^']*)','([^']*)','([^']*)'\)/g)];
+  assert.ok(entries.length >= 20, 'it names the subregions the country table ships (' + entries.length + ')');
 
-  /* the nine tags js/lang-registry.js resolves to, read from the registry rather than written here */
-  const reg = read('js/lang-registry.js');
-  assert.match(reg, /function locale\(/, 'the registry still owns the language→tag mapping');
-  /* ⚠ EN IS NOT IN THIS LIST ON PURPOSE — see the English assertion below. */
-  const tags = ['ja-JP', 'de-DE', 'ru-RU', 'es-ES', 'fr', 'ko', 'zh-Hant', 'zh-Hans'];
-
-  const unresolved = [];
-  for (const [name, cd] of Object.entries(M49)) {
-    assert.match(cd, /^[0-9]{3}$/, name + ' maps to a three-digit M49 code, not to a translation');
-    for (const tag of tags) {
-      let got = '';
-      try { got = new Intl.DisplayNames([tag], { type: 'region', fallback: 'none' }).of(cd) || ''; } catch (_) {}
-      if (!got) unresolved.push(tag + '/' + name);
+  for (const [, key, en, ja, de, ru, es] of entries) {
+    assert.equal(en, key, key + ': the English argument IS the key the four keyed languages resolve by');
+    for (const [lang, v] of [['ja', ja], ['de', de], ['ru', ru], ['es', es]]) {
+      assert.ok(v, key + ' has a ' + lang + ' name');
     }
+    /* \u26a0 THE STRONG CHECK IS SCRIPT, NOT DIFFERENCE. 'Melanesia' really is the Spanish for Melanesia,
+       so \u00abdiffers from English\u00bb is a FALSE property for a Latin-script language and asserting it would
+       make this test wrong rather than strict. Japanese and Russian cannot coincide with English, so
+       those two are checked exactly; the Latin pair is checked in bulk below. */
+    assert.ok(/[\u3040-\u30ff\u4e00-\u9fff]/.test(ja), key + ': the Japanese name is written in Japanese');
+    assert.ok(/[\u0400-\u04ff]/.test(ru), key + ': the Russian name is written in Cyrillic');
   }
-  assert.deepEqual(unresolved, [], 'every mapped subregion has a CLDR name in every language');
 
-  /* ⚠⚠ ENGLISH IS NOT ROUTED THROUGH CLDR AT ALL, AND THAT IS DELIBERATE. `_imCldrRegion` returns ''
-     for 'en' (js/countries-ui.js), so `subName` falls back to the upstream string — which matters,
-     because CLDR's English is NOT the same wording for three of these: 035 is 'Southeast Asia' where
-     Natural Earth says 'South-Eastern Asia', 053 is 'Australasia' not 'Australia and New Zealand',
-     and 057 is 'Micronesian Region' not 'Micronesia'. Routing en through CLDR would silently reword
-     the one language that never needed translating. This asserts the short-circuit is still there. */
-  assert.match(code('js/countries-ui.js'), /tag==='en'\) return ''/,
-    "English short-circuits before CLDR, so it keeps the upstream spelling");
-  const enDiff = Object.entries(M49).filter(([n, c]) =>
-    new Intl.DisplayNames(['en'], { type: 'region' }).of(c) !== n);
-  assert.ok(enDiff.length > 0,
-    'and that short-circuit is load-bearing: CLDR en differs from the upstream spelling for '
-    + enDiff.length + ' of these');
+  /* \u2026and for the Latin-script pair, most entries must still differ \u2014 a table copied wholesale from
+     English would pass the per-row check above on the handful of genuine coincidences alone. */
+  for (const [lang, idx] of [['de', 3], ['es', 5]]) {
+    const n = entries.filter((e) => e[idx] !== e[2]).length;
+    assert.ok(n >= entries.length - 4,
+      lang + ' is a real translation, not English copied across (' + n + '/' + entries.length + ' differ)');
+  }
 
-  /* the door it goes through has to accept a three-digit code — it used to demand exactly two */
-  const cu = code('js/countries-ui.js');
-  assert.match(cu, /\[0-9\]\{3\}/, 'window._imCldrRegion accepts M49 codes as well as country codes');
-  assert.match(cu, /window\._imCldrRegion=function\(a2,lang\)/, 'and it is still the one CLDR surface');
+  /* ⚠ AND NOTHING IS ASKED OF THE PLATFORM. A runtime lookup is exactly what differed between the two
+     engines, so the resolver must not contain one. */
+  assert.ok(!/Intl\.DisplayNames/.test(ex), 'the chips do not ask Intl for a region name');
+  assert.ok(!/_imCldrRegion/.test(ex), 'nor the CLDR helper, which cannot answer for a macro-region');
+  const sub = ex.slice(ex.indexOf('function subName('), ex.indexOf('function fill('));
+  assert.match(sub, /SUB\[s\]/, 'subName reads the shipped table');
+  assert.match(sub, /return s;/, '…and falls back to the upstream string for anything not in it');
+
+  /* the helper it used to lean on is back to the codes it can actually answer for */
+  assert.match(code('js/countries-ui.js'), /a2\.length!==2/,
+    'window._imCldrRegion takes two-letter countries again — it was widened for a lookup that never worked');
+
+  /* ⚠ `{sub}` sits in a parenthetical apposition so no language governs a case over it (#R309) */
+  const chip = src.slice(src.indexOf("k:'subregion'"), src.indexOf("k:'subregion'") + 900);
+  assert.match(chip, /\(\{sub\}\)/, 'the region name is an apposition in parentheses, not a governed noun');
 });

@@ -5026,7 +5026,22 @@ window.IntMapLang.define('zh-hans', {
   "How much of {place} is actually online, and what is the bottleneck?": "{place}实际上有多少人能上网？瓶颈在哪里？",   /* atlas-examples.js (#R313) */
   "Where are {place}’s people concentrated, and where is that shifting?": "{place}的人口集中在哪里？又正往哪里移动？",   /* atlas-examples.js (#R313) */
   "What happens in {place}’s capital that matters beyond its borders?": "{place}：首都发生的事情里，有哪些影响会超出国界？",   /* atlas-examples.js (#R313) */
-  "How does {place} differ from the rest of {sub}?": "{place}与{sub}地区的其他国家有什么不同？",   /* atlas-examples.js (#R313) */
+  /* ══ (#R313 追记2) THE UN M49 MACRO-REGION NAMES — SHIPPED STRINGS, NOT A RUNTIME LOOKUP ══════
+     `{sub}` in the chip below is one of the 22 M49 macro-regions. The browser cannot name them:
+     Intl.DisplayNames({type:'region'}) answers for 'JP' and returns undefined for '030' in V8,
+     so the names have to be here. ⚠ ONLY THE SIX THIS TABLE DID NOT ALREADY CARRY ARE LISTED —
+     Caribbean, Eastern/Middle/Northern/Southern/Western Africa, Eastern/Northern/Southern/Western
+     Europe, Northern America, South America, Western Asia, Melanesia, Micronesia and Polynesia are
+     already rows of this same table (js/atlas-console.js names the same regions from the same
+     English keys), and a second row with the same key would be a duplicate, not a translation.
+     ⚠ Bare nouns, no article: each one lands inside the parentheses of the chip. */
+  "Eastern Asia": "东亚",   /* atlas-examples.js (#R313 追记2) */
+  "South-Eastern Asia": "东南亚",   /* atlas-examples.js (#R313 追记2) */
+  "Southern Asia": "南亚",   /* atlas-examples.js (#R313 追记2) */
+  "Central Asia": "中亚",   /* atlas-examples.js (#R313 追记2) */
+  "Central America": "中美洲",   /* atlas-examples.js (#R313 追记2) */
+  "Australia and New Zealand": "澳洲与纽西兰",   /* atlas-examples.js (#R313 追记2) */
+  "How does {place} differ from the other countries in its region ({sub})?": "{place}与同一地区（{sub}）的其他国家有什么不同？",   /* atlas-examples.js (#R313 追记2) */
   "What did the world look like in {year}?": "{year} 年的世界是什么样子？",   /* atlas-examples.js (#R313) */
   "Where in the world are the most severe weather warnings in force right now?": "目前全球哪里发布了最严重的气象警报？",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "过去一周最活跃的板块边界是哪些？",   /* atlas-examples.js (#R313) */
