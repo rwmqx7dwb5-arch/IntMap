@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ============================================================================
- *  IntMap · ⚠⚠⚠ ONE ENGLISH KEY, TWO MEANINGS — THE SEVENTEENTH SURFACE   (#R363)
+ *  IntMap · ⚠⚠⚠ ONE ENGLISH KEY, TWO MEANINGS — THE SEVENTEENTH SURFACE   (#R370)
  * ----------------------------------------------------------------------------
  *  ══ WHY THIS IS A SURFACE AND NOT A STYLE COMPLAINT ═══════════════════════════════════════════
  *  `js/lang-registry.js` `pick()` resolves en / ja / de / ru / es from the POSITIONAL arguments
@@ -50,7 +50,7 @@ import { parseAll, context, shapeOf } from './i18n-helpers.mjs';
    whether it is 日前 or 日後, and English says « d» at both).
    ⚠ DO NOT ADD A KEY HERE TO MAKE THE GATE GREEN. The question is not «is the difference small»
    but «can ONE fr/ko/zh row be right at every site». If the answer is no, the fix is a distinct
-   English key at the outlier site — see DEV-NOTES.md #R363 for the twenty-eight done that way. */
+   English key at the outlier site — see DEV-NOTES.md #R370 for the twenty-eight done that way. */
 const BENIGN = new Set([
   ' d', ' h', ' min', ' s', ' yr', 'active', 'Address', 'Advisory', 'Aerosol / haze',
   'Agricultural land %', 'Aircraft', 'Aircraft at real altitude', 'Altitude', 'Area', 'articles',
@@ -75,9 +75,9 @@ const BENIGN = new Set([
   'Soviet Union', 'Speed', 'spill points', 'Standing here', 'Start', 'Status', 'steps', 'stops', 'sun',
   'Sunlight hours & shade', 'sunlit', 'Thermal anomalies', 'Thunderstorm', 'Tides', 'Time',
   'Time-series', 'tolls', 'Track', 'Trade % of GDP', 'Try again', 'Tsunami propagation', 'Turn left',
-  'Turn right', 'Type', 'Under-5 mortality /1k', 'Unemployment %', 'United States', 'Unknown color',
-  'Urban population %', 'valid', 'Very high', 'View', 'Volume', 'warning', 'Warning', 'Warnings',
-  'Watching', 'Weather', 'Website', 'Week', 'Year', 'Years', 'You have arrived',
+  'Turn right', 'Type', 'unavailable', 'Under-5 mortality /1k', 'Unemployment %', 'United States',
+  'Unknown color', 'Urban population %', 'valid', 'Very high', 'View', 'Volume', 'warning', 'Warning',
+  'Warnings', 'Watching', 'Weather', 'Website', 'Week', 'Year', 'Years', 'You have arrived',
 ]);
 
 /* ── collect every strict translation call site, grouped by English key ─────────────────────── */
@@ -135,7 +135,7 @@ if (process.argv.includes('--list')) {
   }
 }
 
-console.log(`IntMap · one English key, two meanings — the inline table has ONE row per key  (#R363)\n`);
+console.log(`IntMap · one English key, two meanings — the inline table has ONE row per key  (#R370)\n`);
 console.log(`  distinct English keys       ${keys}`);
 console.log(`  keys with >1 Japanese       ${hits.length}`);
 console.log(`  …judged benign (allowlist)  ${hits.length - unlisted.length}`);

@@ -1,5 +1,5 @@
 /* ============================================================================
- *  R363 — one English key cannot carry two meanings
+ *  R370 — one English key cannot carry two meanings
  * ----------------------------------------------------------------------------
  *  「js/locales/ui.{fr,ko,zh,zh-hans}.js の `inline:` 表は英語原文をキーにするので、
  *    異なる意味の3か所が同じ行を共有している。」
@@ -96,10 +96,10 @@ const RENAMES = [
   ['js/widget-defs-map.js', `L('watchlist', 'ウォッチ'`, `L('watch', 'ウォッチ'`],
   ['js/atlas-console.js', `L('map points','地点'`, `L('points','地点'`],
 ];
-test('④ every R363 rename is present, and the key it replaced is gone from that site', () => {
+test('④ every R370 rename is present, and the key it replaced is gone from that site', () => {
   for (const [file, want, gone] of RENAMES) {
     const src = read(file);
-    assert.ok(src.includes(want), `${file}: expected ${want}…) — the R363 rename was reverted`);
+    assert.ok(src.includes(want), `${file}: expected ${want}…) — the R370 rename was reverted`);
     assert.ok(!src.includes(gone), `${file}: ${gone}…) is back — that key now carries two meanings again`);
   }
 });
@@ -157,6 +157,6 @@ test('⑥ the collision surface is wired into the one i18n gate and into test:ch
     'scripts/i18n-audit.mjs no longer fails on a stale BENIGN entry — the ratchet is one-directional');
 
   const pkg = JSON.parse(read('package.json'));
-  assert.ok(pkg.scripts['test:checks'].includes('tests/r363-checks.test.mjs'),
-    'tests/r363-checks.test.mjs is not in test:checks — it would never run');
+  assert.ok(pkg.scripts['test:checks'].includes('tests/r370-checks.test.mjs'),
+    'tests/r370-checks.test.mjs is not in test:checks — it would never run');
 });

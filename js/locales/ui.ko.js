@@ -5567,7 +5567,6 @@ window.IntMapLang.define('ko', { ui: {
   "Unknown": "알 수 없음",
   "Verified": "실측",
   "Surveyed sections": "실측 구간 출처",
-<<<<<<< HEAD
   "Model": "모델",
   "switching to": "전환 중:",
   "could not be reached": "가져올 수 없음",
@@ -5584,7 +5583,6 @@ window.IntMapLang.define('ko', { ui: {
   "Sea-level pressure": "해면기압",
   "CAPE instability": "CAPE 불안정도",
   "no such weather layer": "그런 기상 레이어 없음",   /* ai-core.js (#R318) aiTurnCallsMsg */
-=======
   "Aircraft type": "기종",
   "Announcement": "발표 내용",
   "Clean air": "청정",
@@ -5611,5 +5609,4 @@ window.IntMapLang.define('ko', { ui: {
   "Turn all off": "모두 끄기",
   "watchlist": "관심 목록",
   "Wind power": "풍력",
->>>>>>> 26f830e (R363: one English key cannot carry two meanings (wip))
 } });

@@ -5577,7 +5577,6 @@ window.IntMapLang.define('fr', { ui: {
   "Unknown": "Inconnu",
   "Verified": "Vérifié",
   "Surveyed sections": "Tron�ons relev�s",
-<<<<<<< HEAD
   "Model": "Modèle",
   "switching to": "passage à",
   "could not be reached": "inaccessible",
@@ -5594,7 +5593,6 @@ window.IntMapLang.define('fr', { ui: {
   "Sea-level pressure": "Pression au niveau de la mer",
   "CAPE instability": "Instabilité CAPE",
   "no such weather layer": "aucune couche météo de ce nom",   /* ai-core.js (#R318) aiTurnCallsMsg */
-=======
   "Aircraft type": "Type d'aéronef",
   "Announcement": "Communiqué",
   "Clean air": "Air pur",
@@ -5621,5 +5619,4 @@ window.IntMapLang.define('fr', { ui: {
   "Turn all off": "Tout désactiver",
   "watchlist": "liste de suivi",
   "Wind power": "Éolien",
->>>>>>> 26f830e (R363: one English key cannot carry two meanings (wip))
 } });

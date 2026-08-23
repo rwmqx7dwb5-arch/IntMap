@@ -221,8 +221,8 @@ const SAME_AS_EN = {
 for (const p of ['Barotse', 'Calabar', 'Futa Toro', 'Imerina', 'Kong', 'Kuba', 'Lagos', 'Lozi', 'Luba', 'Lunda', 'Mbailundu', 'Ndebele', 'Nguni', 'Ngwato', 'Opobo', 'Ovimbundu', 'Shona', 'Teke', 'Yaka', 'Yeke', 'Ruanda-Urundi', 'Karafuto', 'Inini', 'Alaska', 'Puerto Rico', 'Gaza', 'Portugal', 'Joseon', 'Trinidad', 'Rapa Nui', 'Hail']) { SAME_AS_EN.de.add(p); SAME_AS_EN.es.add(p); }
 for (const p of ['Kanem-Bornu', 'Malaya', 'Annam', 'Tonkin', 'Danzig', 'Xinjiang', 'Angola', 'Eritrea', 'Guinea-Bissau', 'Martinique', 'Guadeloupe', 'Korea', 'Saipan', 'Māori', 'Accra', 'Cotonou', 'Griqualand West', 'Ibadan', 'Papua', 'Straits Settlements', 'Aden', 'Hawaii', 'Réunion']) SAME_AS_EN.de.add(p);
 for (const p of ['Tripolitania', 'Indonesia']) SAME_AS_EN.es.add(p);
-/* ⚠ (#R363) «Max» and «Min» are the German abbreviations of Maximum / Minimum — the same three
-   characters as the English. They appear here because #R363 renamed the daily-temperature and
+/* ⚠ (#R370) «Max» and «Min» are the German abbreviations of Maximum / Minimum — the same three
+   characters as the English. They appear here because #R370 renamed the daily-temperature and
    top/bottom-country labels off the key `High` / `Low`: de / ru / es were ALREADY rendering them
    as Max / Min (that mismatch is what proved the sites meant «maximum» and not «high»), so the
    English key moved to match, and the German argument then equalled it. */
