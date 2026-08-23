@@ -67,6 +67,25 @@ window.IntMapModules.newsTimeline=function(HOST){
     const fcReady=()=>{ try{ const E=EC(); return !!(E&&E.count()>0); }catch(_){ return false; } };
     const fcCount=()=>{ try{ return EC().count(); }catch(_){ return 0; } };
     const zoneSel=document.getElementById('ntl-zone'), zoneLbl=document.getElementById('ntl-zone-lbl'), subEl=document.getElementById('ntl-sub');
+    /* ══ ⚠⚠⚠ (#R378) THE EXACT INSTANT, AND IT DOES NOT BELONG TO A TAB ═════════════════════════
+       「Chronosポップアップに、年/日付/時刻の下に置くのではなく外に、直接年月日時選ぶとこ作って。
+         （よくあるUI。独自UIを作らなくてよい。）」
+
+       ⚠ WHAT WAS MISSING WAS NOT A PICKER — IT WAS A PICKER THAT IS NOT BEHIND A TAB. Every way of
+       naming an instant in this panel was scoped to a mode: the year lives on the Year slider, the
+       day in `#ntl-date` (shown only in Date), the time of day in `#ntl-time` (shown only in Time).
+       So 「1943年8月5日の14時」 was three controls in two tabs, and neither tab could say it alone.
+       This is ONE control, outside `applyMode` entirely, and it is written on every path through
+       `refreshUI` — the tabs keep working exactly as they did and none of them owns this row.
+
+       ⚠ AND IT IS THE BROWSER'S OWN CONTROL, not a spelling of one. 「独自UIを作らなくてよい」 —
+       `<input type="datetime-local">` is the year/month/day/hour picker every platform already
+       ships, with its own calendar, its own keyboard behaviour and its own locale order. What this
+       file adds is only the two halves a native control cannot know: WHICH ZONE the wall clock it
+       shows is written in (#R289 — `zFields`/`zInstant`, the same inversion the Time tab uses), and
+       WHICH INSTANTS the kernel will accept (the floor `IntMapTime.min`, and the same forward reach
+       `#ntl-date` already declares — the model's last valid time, or now). */
+    const jumpEl=document.getElementById('ntl-jump'), jumpLbl=document.getElementById('ntl-jump-lbl');
     /* ══ ⚠⚠ (#R289) WHICH CLOCK CHRONOS SPEAKS IN ═══════════════════════════════════════════════
        「タイムマシンのUIに、どこの時刻を採用するかのプルダウンを付けて。デフォルトはユーザーが設定
          した時刻だが、UTCも選ぶことができるというように。」
@@ -132,6 +151,22 @@ window.IntMapModules.newsTimeline=function(HOST){
       let t=naive-tzOffMs(new Date(naive),sp.tz);
       t=naive-tzOffMs(new Date(t),sp.tz);            /* one correction: the offset depends on the instant */
       return new Date(t); }
+    /* ── (#R378) the direct picker's two conversions and its two bounds ──────────────────────── */
+    const _p2=(n)=>String(n).padStart(2,'0');
+    /* an instant → the wall clock `datetime-local` shows, in the zone the reader chose */
+    function jumpValue(d){ const f=zFields(d);
+      return String(f.Y).padStart(4,'0')+'-'+_p2(f.M)+'-'+_p2(f.D)+'T'+_p2(f.h)+':'+_p2(f.m); }
+    /* …and back. The string carries NO zone, so the reader's choice is what turns it into an instant.
+       ⚠ A YEAR STILL BEING TYPED IS NOT A YEAR. Typing 1990 into the year segment of a native date
+       control walks the value through 0001 → 0019 → 0199 → 1990, and `new Date(19,…)` is 1919, not
+       19 — so a half-typed year would name a real, wrong instant rather than an impossible one. Any
+       year under the kernel's floor is therefore the floor, which is also what the kernel would do
+       with it (js/chronos.js clamps to `Date.UTC(min,0,1)`). */
+    function jumpParse(v){ const m=/^(\d{4,6})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(v||''));
+      if(!m) return null;
+      const Y=+m[1]; if(Y<YMIN()) return new Date(floorMs());
+      return zInstant({Y:Y,M:+m[2],D:+m[3],h:+m[4],m:+m[5]}); }
+    const floorMs=()=>Date.UTC(YMIN(),0,1);   /* the kernel's own floor, read live (#R349) */
     /* what the reader should see this zone called */
     function zoneName(k){
       if(k==='user'){ let u=null; try{ u=HOST.userTZ; }catch(_){}
@@ -232,6 +267,9 @@ window.IntMapModules.newsTimeline=function(HOST){
       try{ const ot=document.getElementById('ntl-open-t'), os=document.getElementById('ntl-open-s');
         if(ot) ot.textContent='Chronos';
         if(os) os.textContent=L5('Control the map’s time','地図の時間を操作','Die Zeit der Karte steuern','Управление временем карты','Controla el tiempo del mapa'); }catch(_){}
+      /* (#R378) the direct picker's label — the field itself is the browser's, so this is the only
+         word this row owns, and it is a <label for> so the text focuses the field (index.html) */
+      if(jumpLbl) jumpLbl.textContent=L5('Date & time','日時','Datum & Zeit','Дата и время','Fecha y hora');
       buildZones();
       buildScale();
     }
@@ -420,6 +458,28 @@ window.IntMapModules.newsTimeline=function(HOST){
       else { window.IntMapTime.setDaysAgo(3650-parseInt(slider.value,10),{source:'ui'}); } });
     if(datePicker) datePicker.addEventListener('change',()=>{ if(_self) return; if(!datePicker.value){ window.IntMapTime.setNow({source:'ui'}); } else { const d=new Date(datePicker.value+'T00:00:00'); if(!isNaN(d.getTime())) window.IntMapTime.set(d,{source:'ui'}); } });
     if(timePicker) timePicker.addEventListener('change',()=>{ if(_self) return; const v=timePicker.value; if(!v) return; const p=String(v).split(':'); _applyTimeOfDay((+p[0]||0)*60+(+p[1]||0)); });   /* (#R137) */
+    /* ══ (#R378) the direct picker WRITES the master clock, like every other input in this panel ══
+       ⚠ IT IS DEBOUNCED, AND THE REASON IS THE CONTROL'S OWN TYPING BEHAVIOUR. A native date field
+       edited from the keyboard emits a COMPLETE value after every keystroke, so «1990» arrives as
+       four separate values (0001, 0019, 0199, 1990). Writing each of them to the kernel would send
+       every time-aware subsystem — borders, statistics, the climate era, the terminator — to three
+       instants nobody asked for on the way to the one they did. One write per burst; the calendar
+       popup, which produces a single value, is unaffected at 320 ms.
+       ⚠ AND IT MAY NAME A FUTURE INSTANT (`allowFuture`), because `fcMaxMs()` is the only thing that
+       decides how far — the same bound `#ntl-date` advertises. Without the flag the kernel turns
+       any future instant into LIVE, and a control whose own `max` reaches the model's last hour
+       would silently answer «now» for every hour it offers past this one. */
+    let jumpTimer=0;
+    function jumpCommit(){ jumpTimer=0; if(!jumpEl) return;
+      if(!jumpEl.value){ window.IntMapTime.setNow({source:'ui'}); return; }   /* cleared = live, as `#ntl-date` already means */
+      const d=jumpParse(jumpEl.value); if(!d){ try{ refreshUI(window.IntMapTime.state()); }catch(_){} return; }
+      window.IntMapTime.set(new Date(Math.min(d.getTime(),fcMaxMs())),{allowFuture:true,source:'ui'}); }
+    if(jumpEl){ const jumpQueue=()=>{ if(_self) return; clearTimeout(jumpTimer); jumpTimer=setTimeout(jumpCommit,320); };
+      jumpEl.addEventListener('input',jumpQueue);
+      jumpEl.addEventListener('change',jumpQueue);
+      /* the field is not rewritten while it has focus (see refreshUI), so leaving it is where the
+         clock's answer — clamped floor, clamped ceiling, another control's instant — is reconciled */
+      jumpEl.addEventListener('blur',()=>{ try{ refreshUI(window.IntMapTime.state()); }catch(_){} }); }
     if(btnNow) btnNow.onclick=()=>window.IntMapTime.setNow({source:'ui'});
     /* READ side: kernel → this widget's UI */
     function refreshUI(e){ _self=true; try{
@@ -456,6 +516,18 @@ window.IntMapModules.newsTimeline=function(HOST){
         if(datePicker) datePicker.value=(da>=0&&da<=3650)?ymdISO(e.when):'';   /* deep-past has no valid recent-picker value */
       }
       buildZones();
+      /* ⚠ (#R378) THE DIRECT PICKER IS WRITTEN HERE — ON EVERY PATH, NOT INSIDE ONE OF THE THREE
+         BRANCHES ABOVE. That is the whole of 「タブの下ではなく外に」 expressed in code: the row does
+         not belong to a mode, so no mode decides whether it is current.
+         ⚠ Its bounds are re-stated on every refresh rather than fixed at init, because BOTH of them
+         move — the floor is the kernel's (`IntMapTime.min`) and the ceiling is the forecast's, which
+         arrives minutes after boot. ⚠ And the VALUE is not rewritten while the field has focus: the
+         reader typing a year is walking through values the kernel clamps, and a control that is
+         reset under the caret cannot be typed into at all. `blur` reconciles it. */
+      if(jumpEl){ const lo=jumpValue(new Date(floorMs())), hi=jumpValue(new Date(fcMaxMs()));
+        if(jumpEl.min!==lo) jumpEl.min=lo;
+        if(jumpEl.max!==hi) jumpEl.max=hi;
+        if(document.activeElement!==jumpEl){ const v=jumpValue(e.when); if(jumpEl.value!==v) jumpEl.value=v; } }
       const mn=+slider.min, mx=+slider.max; slider.style.setProperty('--ntl-fill',(mx>mn?((+slider.value-mn)/(mx-mn)*100):0)+'%');
       /* (#R105) reflect the set year/date on the COLLAPSED Chronos button (it turns blue via .active) —
          same button, just its two label lines swap to the applied period; restored to the default on "Now". */
@@ -503,8 +575,12 @@ window.IntMapModules.newsTimeline=function(HOST){
     /* init */
     /* (#R293) the date picker reaches as far as the MODEL does — 「時刻」 can now name a future
        instant, and a picker that stopped at today would be the one control that could not follow */
-    function fcMaxISO(){ try{ const n=fcCount(); if(n){ const t=fcMs(n-1); if(t!=null) return ymdISO(new Date(t)); } }catch(_){}
-      return ymdISO(new Date()); }
+    /* (#R378) the reach as an INSTANT, because the direct picker names hours and `#ntl-date` names
+       days — one statement of «how far forward Chronos may be sent», so the two controls in this
+       panel cannot declare different futures. The day form is derived from it and is unchanged. */
+    function fcMaxMs(){ try{ const n=fcCount(); if(n){ const t=fcMs(n-1); if(t!=null) return t; } }catch(_){}
+      return Date.now(); }
+    function fcMaxISO(){ return ymdISO(new Date(fcMaxMs())); }
     if(datePicker){ datePicker.max=fcMaxISO(); datePicker.min=ymdISO(new Date(Date.now()-3650*864e5)); }
     tl.classList.add('collapsed'); localizeChrome(); applyMode('year');
     /* (#R293) the OTHER door into `zoneEnsure` — a preference restored from localStorage, which
