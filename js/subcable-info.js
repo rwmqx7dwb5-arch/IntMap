@@ -82,6 +82,7 @@ window.IntMapSubcableInfo = function (HOST) {
     countries: () => window.IntMapLang.t(HOST.lang, 'Countries', '接続国・地域', 'Länder', 'Страны', 'Países'),
     routeQuality: () => window.IntMapLang.t(HOST.lang, 'Route quality', '経路の精度', 'Routenqualität', 'Точность трассы', 'Calidad de la ruta'),
     routeSource: () => window.IntMapLang.t(HOST.lang, 'Route source', '経路の出典', 'Routenquelle', 'Источник трассы', 'Fuente de la ruta'),
+    verifiedElsewhere: () => window.IntMapLang.t(HOST.lang, 'Surveyed sections', '実測区間の出典', 'Vermessene Abschnitte', 'Съёмочные участки', 'Tramos levantados'),
     checked: () => window.IntMapLang.t(HOST.lang, 'Data last checked', 'データ最終確認日', 'Daten zuletzt geprüft', 'Данные проверены', 'Datos verificados'),
     coords: () => window.IntMapLang.t(HOST.lang, 'Coordinates', '座標', 'Koordinaten', 'Координаты', 'Coordenadas'),
     cablesHere: () => window.IntMapLang.t(HOST.lang, 'Cables landing here', 'ここに接続するケーブル', 'Hier anlandende Kabel', 'Кабели здесь', 'Cables que amarran aquí'),
@@ -133,11 +134,19 @@ window.IntMapSubcableInfo = function (HOST) {
       if (m.countries && m.countries.length) body += row(T.countries(), esc(m.countries.join(' · ')));
     }
     body += row(T.routeQuality(), esc(q || T.unknown()));
+    /* ⚠ (#R355 追記) "ROUTE SOURCE" IS ABOUT THE PIECE THAT WAS CLICKED, AND ONLY
+       THAT. Measured on production: a RECONSTRUCTED length of Havfrue/AEC-2 was
+       captioned 「経路の精度 再構築 / 経路の出典 NOAA Office for Coastal
+       Management」 — the cable HAS a NOAA-surveyed stretch, elsewhere, and the
+       row was quietly borrowing it. Two true statements next to each other that
+       read as one false one, which is exactly what the brief's §11 forbids: a
+       value that is not there must not be shown as though it were.
+       So the surveyed organisations of the OTHER pieces get their own label. */
     const srcName = SRC_NAME[props.src];
     if (srcName) body += row(T.routeSource(), esc(srcName));
-    if (m && m.sources && m.sources.length) {
+    else if (m && m.sources && m.sources.length) {
       const names = m.sources.map(s => SRC_NAME[s]).filter(Boolean);
-      if (names.length && !srcName) body += row(T.routeSource(), esc(names.join(' · ')));
+      if (names.length) body += row(T.verifiedElsewhere(), esc(names.join(' · ')));
     }
     if (meta && meta.built) body += row(T.checked(), esc(String(meta.built).slice(0, 10)));
 

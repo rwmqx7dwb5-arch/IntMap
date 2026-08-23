@@ -5584,4 +5584,5 @@ window.IntMapLang.define('fr', { ui: {
   "Supplier": "Fournisseur",
   "Unknown": "Inconnu",
   "Verified": "Vérifié",
+  "Surveyed sections": "Tron�ons relev�s",
 } });
