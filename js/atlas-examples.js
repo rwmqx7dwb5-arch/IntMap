@@ -153,15 +153,33 @@ export function makeAtlasExamples(HOST, CTX) {
          cannot tell 「spans the date line」 from 「spans the planet」 — and a chip that guesses is the
          defect this round exists to remove. */
       const bb=(st&&st.bbox&&st.bbox.length===4&&st.bbox.every(v=>isFinite(v)))?st.bbox:null;
+      const labLat=(st&&st.latlng&&isFinite(st.latlng[0]))?(+st.latlng[0]):null;
       const spanLon=bb?(bb[2]-bb[0]):0, spanLat=bb?(bb[3]-bb[1]):0, midLat=bb?((bb[1]+bb[3])/2):0;
       const wrapped=!bb||spanLon>=180;
       const kmLon=wrapped?0:(spanLon*111.32*Math.cos(midLat*Math.PI/180)), kmLat=spanLat*110.57;
       const boxKm2=(kmLon>0&&kmLat>0)?(kmLon*kmLat):0;
       const geo={
-        equator: !!(bb&&bb[1]<-0.2&&bb[3]>0.2),
+        /* ══ ⚠⚠⚠ (#R337 追記) AN EXTENT IS NOT A LOCATION ═══════════════════════════════════════
+           MEASURED ON PRODUCTION, on the round's own verification pass: 「The equator runs through
+           Norway — what does that do to its seasons and its rain?」 Norway's box reaches −54.4°
+           because BOUVET ISLAND is Norwegian, so a box that SPANS the equator is exactly what a
+           country with one remote southern dependency has — and it says nothing whatever about
+           where the country is. The same box makes Norway's midpoint 8.4°N, which is why the
+           「winter days are short」 chip did NOT fire for the country it was written for.
+           ⚠ THE OTHER THREE ARE SOUND AND ARE LEFT ALONE, because their failure mode is refusal:
+           `tropics` asks whether the WHOLE box is inside the tropics (a stray island can only make
+           it refuse, never fire falsely) and `arctic` asks whether the box's NORTH edge is inside
+           the Arctic Circle — an edge is attained by real geometry, so land really is up there.
+           `spread` is a claim ABOUT the far-flung pieces, which is what Bouvet makes true.
+           → the two claims that are about WHERE THE COUNTRY IS now read the country's own label
+           point (`latlng`, Natural Earth's LABEL_Y/LABEL_X — the anchor inside its main landmass),
+           and REFUSE when there is none. An extent can be stretched by one rock; a label point
+           cannot. */
+        equator: !!(bb&&bb[1]<-0.2&&bb[3]>0.2&&labLat!=null&&Math.abs(labLat)<=25),
         arctic:  !!(bb&&bb[3]>=66.56),
         tropics: !!(bb&&Math.abs(bb[1])<23.44&&Math.abs(bb[3])<23.44),
-        mid:     bb?midLat:null,
+        /* ⚠ the LABEL's latitude, not the box's middle — see above */
+        mid:     labLat,
         /* ⚠ THIS MEASURES OUTLYING TERRITORY, NOT 「is it an archipelago」, and the chip it gates is
            worded as exactly that. France scores 184 because Guiana and Réunion arrive inside its
            own feature; the Philippines scores 6.4 because its islands are packed together. */

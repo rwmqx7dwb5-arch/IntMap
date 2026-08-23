@@ -161,6 +161,11 @@ function world() {
   put('SHORTLIFE', { lifeExp: at(0.03).lifeExp });
   put('WIRED', { internet: at(0.97).internet });
   put('MILOW', { milSpend: FILLER(0.5).gdp * 0.0005 });
+  /* ⚠⚠⚠ (#R337 追記) NORWAY, AS THE TABLES ACTUALLY HOLD IT. Bouvet Island is Norwegian, so the
+     country's EXTENT reaches −54.4° — a box that spans the equator, and a box whose middle is
+     8.4°N. Production shipped 「The equator runs through Norway」 and did NOT ship the short-winter
+     question, both from the same mistake: an extent is not a location. */
+  put('REMOTEISLE', { bbox: [4.6, -54.4, 31.1, 71.2], latlng: [64.0, 10.0] });
   put('POPBIG', { pop: 3e8 });
   /* a country the pool knows FOUR things about — the fallback ordering has to leave it no tail */
   put('MULTI', { bbox: [-60, -22, 56, 51], area: 400000, latlng: [15, 0],
@@ -370,4 +375,30 @@ test('R337 ④ the Time tab has real graduations, positioned from the value rath
   assert.match(css, /\.ntl-ticks \.ntl-tk\.maj i\{/, 'the labelled marks are drawn taller than the rest');
   assert.match(css, /\.ntl-ticks \.ntl-tk\.last b\{ transform:translateX\(-100%\)/,
     'and the end labels are pulled inside the panel rather than hanging off it');
+});
+
+test('R337 追記 ②: a country whose EXTENT spans the equator is not told the equator runs through it', () => {
+  const S = world();
+  const TAIL = new Set([...qs(S, { code: 'PLAIN' }), ...qs(S, { code: 'PLAIN0' })]);
+  const own = (code) => qs(S, { code }).filter((x) => !TAIL.has(x));
+
+  /* the country that really is on the equator keeps its question */
+  const equator = own('EQUATOR');
+  assert.ok(equator.length >= 1, 'a country on the equator is still asked about it');
+
+  /* ⚠ MEASURED ON PRODUCTION: Norway was told 「The equator runs through Norway」 because Bouvet
+     Island drags its extent to −54.4°. The box spans the equator; the country does not sit on it. */
+  const remote = own('REMOTEISLE');
+  const shared = remote.filter((x) => equator.includes(x));
+  assert.equal(shared.length, 0,
+    'a northern country with one remote southern dependency is asked none of the equator questions: '
+    + JSON.stringify(shared));
+
+  /* …and the same box made its MIDPOINT 8.4°N, which is why the short-winter question did not
+     fire for the country it was written for. The label point puts it back. */
+  assert.ok(remote.length >= 1,
+    'and it IS asked the question its own latitude earns — the label point, not the box middle');
+  const north = own('REMOTEISLE');
+  assert.ok(north.some((x) => !own('TROPICS').includes(x)),
+    'the question it gets is not one a tropical country would get');
 });
