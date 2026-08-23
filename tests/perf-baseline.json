@@ -1,20 +1,20 @@
 {
   "eager": {
-    "raw": 4495698,
-    "gzip": 1503365,
-    "brotli": 1142456,
+    "raw": 4496062,
+    "gzip": 1503921,
+    "brotli": 1142381,
     "requests": 6,
     "modules": 272,
     "cssRaw": 300685,
     "cssGzip": 50666
   },
   "async": {
-    "raw": 8734631,
-    "gzip": 2752076,
+    "raw": 8740819,
+    "gzip": 2754358,
     "chunks": {
       "aircraft-detail": 17221,
-      "atlas-console": 752720,
-      "atlas-executor": 38336,
+      "atlas-console": 757452,
+      "atlas-executor": 38489,
       "cesium": 4840127,
       "cesium-engine": 57211,
       "cesium-input": 15013,
@@ -40,19 +40,19 @@
       "tsunami": 37052,
       "ui.de": 18958,
       "ui.es": 19189,
-      "ui.fr": 339908,
+      "ui.fr": 340260,
       "ui.jp": 20669,
-      "ui.ko": 335788,
+      "ui.ko": 336159,
       "ui.ru": 27458,
-      "ui.zh": 302526,
-      "ui.zh-hans": 302450,
+      "ui.zh": 302816,
+      "ui.zh-hans": 302740,
       "viewshed": 32669,
       "volume3d": 15717
     }
   },
   "dist": {
-    "total": 111224826,
+    "total": 111237591,
     "data": 58506430,
-    "assets": 15853703
+    "assets": 15860255
   }
 }

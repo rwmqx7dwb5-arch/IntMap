@@ -1272,6 +1272,7 @@ window.IntMapLang.define('ko', { ui: {
   "Continue upright": "정자세로 계속",
   "Continuous": "연속",
   "Control not found": "해당 컨트롤을 찾을 수 없습니다",
+  "Several controls match": "여러 컨트롤이 일치합니다",   /* atlas-controls.js (#R320) */
   "Controlling obstacle": "결정적 장애물",
   "Controls": "조작",
   "Coordinate grid": "좌표 격자",

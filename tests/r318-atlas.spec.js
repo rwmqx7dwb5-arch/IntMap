@@ -86,6 +86,39 @@ test('R318-atlas ③: the button and the command leave the same state', async ()
   expect(r.restored).toBe('map');
 });
 
+test('R320 ①: the control catalogue ranks against the request and says what it left out', async () => {
+  const r = await page.evaluate(() => {
+    /* IntMapOS.catalog() is where the built app publishes it — the console's own function is not
+       part of its public surface, and reading it here would test a path nothing else takes. */
+    const c = window.IntMapOS.catalog();
+    return { has: typeof c.controls === 'string', plain: c.controls || '' };
+  });
+  expect(r.has, 'IntMapOS.catalog() no longer carries the control list').toBe(true);
+  expect(r.plain.length, 'the control catalogue is empty in the built app').toBeGreaterThan(200);
+  /* a cap that drops must SAY so — the whole point of #R320 */
+  if (r.plain.includes('not listed here')) {
+    expect(r.plain).toMatch(/and \d+ more on-screen control/);
+  }
+});
+
+test('R320 ②: a module that has not loaded is still named to the planner', async () => {
+  const r = await page.evaluate(() => {
+    const cat = window.IntMapOS.catalog().modules || '';
+    return {
+      cat: cat.slice(0, 4000),
+      hasOnDemand: cat.includes('loads on demand'),
+      lazyNames: window.IntMapLazy.names(),
+      publishes: window.IntMapLazy.publishes('streetView'),
+      streetViewLoaded: !!window.IntMapStreetView,
+      streetViewNamed: cat.includes('IntMapStreetView'),
+    };
+  });
+  expect(r.publishes, 'the loader no longer exposes what each lazy module will be called').toBe('IntMapStreetView');
+  expect(r.streetViewLoaded, 'if it were already loaded this assertion would prove nothing').toBe(false);
+  expect(r.streetViewNamed, 'a subsystem that loads on demand must still be a subsystem the planner knows').toBe(true);
+  expect(r.hasOnDemand, 'and it must be marked as not-yet-loaded rather than passed off as present').toBe(true);
+});
+
 test('R318-atlas ④: Atlas loaded without console errors', async () => {
   const errors = (diag.consoleErrors || []).concat(diag.pageErrors || []);
   expect(errors, 'loading the kernel produced console errors:\n' + errors.join('\n')).toEqual([]);

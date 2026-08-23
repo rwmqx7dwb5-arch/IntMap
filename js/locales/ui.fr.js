@@ -1282,6 +1282,7 @@ window.IntMapLang.define('fr', { ui: {
   "Continue upright": "Poursuivre à l'endroit",
   "Continuous": "Continu",
   "Control not found": "Commande introuvable",
+  "Several controls match": "Plusieurs commandes correspondent",   /* atlas-controls.js (#R320) */
   "Controlling obstacle": "Obstacle déterminant",
   "Controls": "Commandes",
   "Coordinate grid": "Grille de coordonnées",
