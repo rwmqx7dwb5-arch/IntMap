@@ -1,0 +1,5218 @@
+{
+ "schema": 1,
+ "note": "Identities only. Every attribute a user sees is fetched by scripts/companies/build.mjs from the sources in docs/COMPANIES.md.",
+ "target": 540,
+ "generatedAt": "2026-08-23",
+ "companies": [
+  {
+   "id": "apple",
+   "name": "Apple",
+   "country": "USA",
+   "sector": "tech",
+   "ticker": "AAPL",
+   "domain": "apple.com",
+   "origin": "curated"
+  },
+  {
+   "id": "microsoft",
+   "name": "Microsoft",
+   "country": "USA",
+   "sector": "software",
+   "ticker": "MSFT",
+   "domain": "microsoft.com",
+   "origin": "curated"
+  },
+  {
+   "id": "nvidia",
+   "name": "NVIDIA",
+   "country": "USA",
+   "sector": "semi",
+   "ticker": "NVDA",
+   "domain": "nvidia.com",
+   "origin": "curated"
+  },
+  {
+   "id": "alphabet-google",
+   "name": "Alphabet (Google)",
+   "country": "USA",
+   "sector": "internet",
+   "ticker": "GOOGL",
+   "domain": "abc.xyz",
+   "origin": "curated"
+  },
+  {
+   "id": "amazon",
+   "name": "Amazon",
+   "country": "USA",
+   "sector": "ecommerce",
+   "ticker": "AMZN",
+   "domain": "amazon.com",
+   "origin": "curated"
+  },
+  {
+   "id": "meta-platforms",
+   "name": "Meta Platforms",
+   "country": "USA",
+   "sector": "internet",
+   "ticker": "META",
+   "domain": "meta.com",
+   "origin": "curated"
+  },
+  {
+   "id": "saudi-aramco",
+   "name": "Saudi Aramco",
+   "country": "SAU",
+   "sector": "energy",
+   "ticker": "2222.SR",
+   "domain": "aramco.com",
+   "origin": "curated"
+  },
+  {
+   "id": "broadcom",
+   "name": "Broadcom",
+   "country": "USA",
+   "sector": "semi",
+   "ticker": "AVGO",
+   "domain": "broadcom.com",
+   "origin": "curated"
+  },
+  {
+   "id": "tesla",
+   "name": "Tesla",
+   "country": "USA",
+   "sector": "auto",
+   "ticker": "TSLA",
+   "domain": "tesla.com",
+   "origin": "curated"
+  },
+  {
+   "id": "tsmc",
+   "name": "TSMC",
+   "country": "TWN",
+   "sector": "semi",
+   "ticker": "TSM",
+   "domain": "tsmc.com",
+   "origin": "curated"
+  },
+  {
+   "id": "eli-lilly",
+   "name": "Eli Lilly",
+   "country": "USA",
+   "sector": "pharma",
+   "ticker": "LLY",
+   "domain": "lilly.com",
+   "origin": "curated"
+  },
+  {
+   "id": "jpmorgan-chase",
+   "name": "JPMorgan Chase",
+   "country": "USA",
+   "sector": "bank",
+   "ticker": "JPM",
+   "domain": "jpmorganchase.com",
+   "origin": "curated"
+  },
+  {
+   "id": "walmart",
+   "name": "Walmart",
+   "country": "USA",
+   "sector": "retail",
+   "ticker": "WMT",
+   "domain": "walmart.com",
+   "origin": "curated"
+  },
+  {
+   "id": "visa",
+   "name": "Visa",
+   "country": "USA",
+   "sector": "payments",
+   "ticker": "V",
+   "domain": "visa.com",
+   "origin": "curated"
+  },
+  {
+   "id": "unitedhealth-group",
+   "name": "UnitedHealth Group",
+   "country": "USA",
+   "sector": "health",
+   "ticker": "UNH",
+   "domain": "unitedhealthgroup.com",
+   "origin": "curated"
+  },
+  {
+   "id": "exxon-mobil",
+   "name": "Exxon Mobil",
+   "country": "USA",
+   "sector": "energy",
+   "ticker": "XOM",
+   "domain": "exxonmobil.com",
+   "origin": "curated"
+  },
+  {
+   "id": "mastercard",
+   "name": "Mastercard",
+   "country": "USA",
+   "sector": "payments",
+   "ticker": "MA",
+   "domain": "mastercard.com",
+   "origin": "curated"
+  },
+  {
+   "id": "oracle",
+   "name": "Oracle",
+   "country": "USA",
+   "sector": "software",
+   "ticker": "ORCL",
+   "domain": "oracle.com",
+   "origin": "curated"
+  },
+  {
+   "id": "costco",
+   "name": "Costco",
+   "country": "USA",
+   "sector": "retail",
+   "ticker": "COST",
+   "domain": "costco.com",
+   "origin": "curated"
+  },
+  {
+   "id": "home-depot",
+   "name": "Home Depot",
+   "country": "USA",
+   "sector": "retail",
+   "ticker": "HD",
+   "domain": "homedepot.com",
+   "origin": "curated"
+  },
+  {
+   "id": "procter-and-gamble",
+   "name": "Procter & Gamble",
+   "country": "USA",
+   "sector": "staples",
+   "ticker": "PG",
+   "domain": "pg.com",
+   "origin": "curated"
+  },
+  {
+   "id": "netflix",
+   "name": "Netflix",
+   "country": "USA",
+   "sector": "media",
+   "ticker": "NFLX",
+   "domain": "netflix.com",
+   "origin": "curated"
+  },
+  {
+   "id": "johnson-and-johnson",
+   "name": "Johnson & Johnson",
+   "country": "USA",
+   "sector": "pharma",
+   "ticker": "JNJ",
+   "domain": "jnj.com",
+   "origin": "curated"
+  },
+  {
+   "id": "novo-nordisk",
+   "name": "Novo Nordisk",
+   "country": "DNK",
+   "sector": "pharma",
+   "ticker": "NVO",
+   "domain": "novonordisk.com",
+   "origin": "curated"
+  },
+  {
+   "id": "lvmh",
+   "name": "LVMH",
+   "country": "FRA",
+   "sector": "consumer",
+   "ticker": "MC.PA",
+   "domain": "lvmh.com",
+   "origin": "curated"
+  },
+  {
+   "id": "abbvie",
+   "name": "AbbVie",
+   "country": "USA",
+   "sector": "pharma",
+   "ticker": "ABBV",
+   "domain": "abbvie.com",
+   "origin": "curated"
+  },
+  {
+   "id": "bank-of-america",
+   "name": "Bank of America",
+   "country": "USA",
+   "sector": "bank",
+   "ticker": "BAC",
+   "domain": "bankofamerica.com",
+   "origin": "curated"
+  },
+  {
+   "id": "asml",
+   "name": "ASML",
+   "country": "NLD",
+   "sector": "semi",
+   "ticker": "ASML",
+   "domain": "asml.com",
+   "origin": "curated"
+  },
+  {
+   "id": "salesforce",
+   "name": "Salesforce",
+   "country": "USA",
+   "sector": "software",
+   "ticker": "CRM",
+   "domain": "salesforce.com",
+   "origin": "curated"
+  },
+  {
+   "id": "coca-cola",
+   "name": "Coca-Cola",
+   "country": "USA",
+   "sector": "staples",
+   "ticker": "KO",
+   "domain": "coca-cola.com",
+   "origin": "curated"
+  },
+  {
+   "id": "sap",
+   "name": "SAP",
+   "country": "DEU",
+   "sector": "software",
+   "ticker": "SAP",
+   "domain": "sap.com",
+   "origin": "curated"
+  },
+  {
+   "id": "chevron",
+   "name": "Chevron",
+   "country": "USA",
+   "sector": "energy",
+   "ticker": "CVX",
+   "domain": "chevron.com",
+   "origin": "curated"
+  },
+  {
+   "id": "toyota-motor",
+   "name": "Toyota Motor",
+   "country": "JPN",
+   "sector": "auto",
+   "ticker": "TM",
+   "domain": "toyota.com",
+   "origin": "curated"
+  },
+  {
+   "id": "merck",
+   "name": "Merck",
+   "country": "USA",
+   "sector": "pharma",
+   "ticker": "MRK",
+   "domain": "merck.com",
+   "origin": "curated"
+  },
+  {
+   "id": "nestle",
+   "name": "Nestlé",
+   "country": "CHE",
+   "sector": "staples",
+   "ticker": "NSRGY",
+   "domain": "nestle.com",
+   "origin": "curated"
+  },
+  {
+   "id": "t-mobile-us",
+   "name": "T-Mobile US",
+   "country": "USA",
+   "sector": "telecom",
+   "ticker": "TMUS",
+   "domain": "t-mobile.com",
+   "origin": "curated"
+  },
+  {
+   "id": "wells-fargo",
+   "name": "Wells Fargo",
+   "country": "USA",
+   "sector": "bank",
+   "ticker": "WFC",
+   "domain": "wellsfargo.com",
+   "origin": "curated"
+  },
+  {
+   "id": "amd",
+   "name": "AMD",
+   "country": "USA",
+   "sector": "semi",
+   "ticker": "AMD",
+   "domain": "amd.com",
+   "origin": "curated"
+  },
+  {
+   "id": "roche",
+   "name": "Roche",
+   "country": "CHE",
+   "sector": "pharma",
+   "ticker": "ROG.SW",
+   "domain": "roche.com",
+   "origin": "curated"
+  },
+  {
+   "id": "pepsico",
+   "name": "PepsiCo",
+   "country": "USA",
+   "sector": "staples",
+   "ticker": "PEP",
+   "domain": "pepsico.com",
+   "origin": "curated"
+  },
+  {
+   "id": "astrazeneca",
+   "name": "AstraZeneca",
+   "country": "GBR",
+   "sector": "pharma",
+   "ticker": "AZN",
+   "domain": "astrazeneca.com",
+   "origin": "curated"
+  },
+  {
+   "id": "loreal",
+   "name": "L'Oréal",
+   "country": "FRA",
+   "sector": "consumer",
+   "ticker": "OR.PA",
+   "domain": "loreal.com",
+   "origin": "curated"
+  },
+  {
+   "id": "adobe",
+   "name": "Adobe",
+   "country": "USA",
+   "sector": "software",
+   "ticker": "ADBE",
+   "domain": "adobe.com",
+   "origin": "curated"
+  },
+  {
+   "id": "novartis",
+   "name": "Novartis",
+   "country": "CHE",
+   "sector": "pharma",
+   "ticker": "NVS",
+   "domain": "novartis.com",
+   "origin": "curated"
+  },
+  {
+   "id": "shell",
+   "name": "Shell",
+   "country": "GBR",
+   "sector": "energy",
+   "ticker": "SHEL",
+   "domain": "shell.com",
+   "origin": "curated"
+  },
+  {
+   "id": "linde",
+   "name": "Linde",
+   "country": "USA",
+   "sector": "materials",
+   "ticker": "LIN",
+   "domain": "linde.com",
+   "origin": "curated"
+  },
+  {
+   "id": "mcdonalds",
+   "name": "McDonald's",
+   "country": "USA",
+   "sector": "consumer",
+   "ticker": "MCD",
+   "domain": "mcdonalds.com",
+   "origin": "curated"
+  },
+  {
+   "id": "cisco",
+   "name": "Cisco",
+   "country": "USA",
+   "sector": "tech",
+   "ticker": "CSCO",
+   "domain": "cisco.com",
+   "origin": "curated"
+  },
+  {
+   "id": "accenture",
+   "name": "Accenture",
+   "country": "IRL",
+   "sector": "tech",
+   "ticker": "ACN",
+   "domain": "accenture.com",
+   "origin": "curated"
+  },
+  {
+   "id": "ibm",
+   "name": "IBM",
+   "country": "USA",
+   "sector": "tech",
+   "ticker": "IBM",
+   "domain": "ibm.com",
+   "origin": "curated"
+  },
+  {
+   "id": "abbott",
+   "name": "Abbott",
+   "country": "USA",
+   "sector": "health",
+   "ticker": "ABT",
+   "domain": "abbott.com",
+   "origin": "curated"
+  },
+  {
+   "id": "ge-aerospace",
+   "name": "GE Aerospace",
+   "country": "USA",
+   "sector": "aerospace",
+   "ticker": "GE",
+   "domain": "geaerospace.com",
+   "origin": "curated"
+  },
+  {
+   "id": "american-express",
+   "name": "American Express",
+   "country": "USA",
+   "sector": "finance",
+   "ticker": "AXP",
+   "domain": "americanexpress.com",
+   "origin": "curated"
+  },
+  {
+   "id": "thermo-fisher",
+   "name": "Thermo Fisher",
+   "country": "USA",
+   "sector": "health",
+   "ticker": "TMO",
+   "domain": "thermofisher.com",
+   "origin": "curated"
+  },
+  {
+   "id": "walt-disney",
+   "name": "Walt Disney",
+   "country": "USA",
+   "sector": "media",
+   "ticker": "DIS",
+   "domain": "disney.com",
+   "origin": "curated"
+  },
+  {
+   "id": "qualcomm",
+   "name": "Qualcomm",
+   "country": "USA",
+   "sector": "semi",
+   "ticker": "QCOM",
+   "domain": "qualcomm.com",
+   "origin": "curated"
+  },
+  {
+   "id": "servicenow",
+   "name": "ServiceNow",
+   "country": "USA",
+   "sector": "software",
+   "ticker": "NOW",
+   "domain": "servicenow.com",
+   "origin": "curated"
+  },
+  {
+   "id": "morgan-stanley",
+   "name": "Morgan Stanley",
+   "country": "USA",
+   "sector": "bank",
+   "ticker": "MS",
+   "domain": "morganstanley.com",
+   "origin": "curated"
+  },
+  {
+   "id": "texas-instruments",
+   "name": "Texas Instruments",
+   "country": "USA",
+   "sector": "semi",
+   "ticker": "TXN",
+   "domain": "ti.com",
+   "origin": "curated"
+  },
+  {
+   "id": "philip-morris-intl",
+   "name": "Philip Morris Intl",
+   "country": "USA",
+   "sector": "staples",
+   "ticker": "PM",
+   "domain": "pmi.com",
+   "origin": "curated"
+  },
+  {
+   "id": "danaher",
+   "name": "Danaher",
+   "country": "USA",
+   "sector": "health",
+   "ticker": "DHR",
+   "domain": "danaher.com",
+   "origin": "curated"
+  },
+  {
+   "id": "alibaba",
+   "name": "Alibaba",
+   "country": "CHN",
+   "sector": "ecommerce",
+   "ticker": "9988.HK",
+   "domain": "alibaba.com",
+   "origin": "curated"
+  },
+  {
+   "id": "tencent",
+   "name": "Tencent",
+   "country": "CHN",
+   "sector": "internet",
+   "ticker": "0700.HK",
+   "domain": "tencent.com",
+   "origin": "curated"
+  },
+  {
+   "id": "samsung-electronics",
+   "name": "Samsung Electronics",
+   "country": "KOR",
+   "sector": "tech",
+   "ticker": "005930.KS",
+   "domain": "samsung.com",
+   "origin": "curated"
+  },
+  {
+   "id": "goldman-sachs",
+   "name": "Goldman Sachs",
+   "country": "USA",
+   "sector": "bank",
+   "ticker": "GS",
+   "domain": "goldmansachs.com",
+   "origin": "curated"
+  },
+  {
+   "id": "caterpillar",
+   "name": "Caterpillar",
+   "country": "USA",
+   "sector": "industrial",
+   "ticker": "CAT",
+   "domain": "caterpillar.com",
+   "origin": "curated"
+  },
+  {
+   "id": "intuitive-surgical",
+   "name": "Intuitive Surgical",
+   "country": "USA",
+   "sector": "health",
+   "ticker": "ISRG",
+   "domain": "intuitive.com",
+   "origin": "curated"
+  },
+  {
+   "id": "verizon",
+   "name": "Verizon",
+   "country": "USA",
+   "sector": "telecom",
+   "ticker": "VZ",
+   "domain": "verizon.com",
+   "origin": "curated"
+  },
+  {
+   "id": "intuit",
+   "name": "Intuit",
+   "country": "USA",
+   "sector": "software",
+   "ticker": "INTU",
+   "domain": "intuit.com",
+   "origin": "curated"
+  },
+  {
+   "id": "royal-bank-of-canada",
+   "name": "Royal Bank of Canada",
+   "country": "CAN",
+   "sector": "bank",
+   "ticker": "RY",
+   "domain": "rbc.com",
+   "origin": "curated"
+  },
+  {
+   "id": "at-and-t",
+   "name": "AT&T",
+   "country": "USA",
+   "sector": "telecom",
+   "ticker": "T",
+   "domain": "att.com",
+   "origin": "curated"
+  },
+  {
+   "id": "rtx",
+   "name": "RTX",
+   "country": "USA",
+   "sector": "aerospace",
+   "ticker": "RTX",
+   "domain": "rtx.com",
+   "origin": "curated"
+  },
+  {
+   "id": "booking-holdings",
+   "name": "Booking Holdings",
+   "country": "USA",
+   "sector": "internet",
+   "ticker": "BKNG",
+   "domain": "booking.com",
+   "origin": "curated"
+  },
+  {
+   "id": "hsbc",
+   "name": "HSBC",
+   "country": "GBR",
+   "sector": "bank",
+   "ticker": "HSBC",
+   "domain": "hsbc.com",
+   "origin": "curated"
+  },
+  {
+   "id": "pfizer",
+   "name": "Pfizer",
+   "country": "USA",
+   "sector": "pharma",
+   "ticker": "PFE",
+   "domain": "pfizer.com",
+   "origin": "curated"
+  },
+  {
+   "id": "siemens",
+   "name": "Siemens",
+   "country": "DEU",
+   "sector": "industrial",
+   "ticker": "SIE.DE",
+   "domain": "siemens.com",
+   "origin": "curated"
+  },
+  {
+   "id": "nextera-energy",
+   "name": "NextEra Energy",
+   "country": "USA",
+   "sector": "energy",
+   "ticker": "NEE",
+   "domain": "nexteraenergy.com",
+   "origin": "curated"
+  },
+  {
+   "id": "s-and-p-global",
+   "name": "S&P Global",
+   "country": "USA",
+   "sector": "finance",
+   "ticker": "SPGI",
+   "domain": "spglobal.com",
+   "origin": "curated"
+  },
+  {
+   "id": "amgen",
+   "name": "Amgen",
+   "country": "USA",
+   "sector": "pharma",
+   "ticker": "AMGN",
+   "domain": "amgen.com",
+   "origin": "curated"
+  },
+  {
+   "id": "blackrock",
+   "name": "BlackRock",
+   "country": "USA",
+   "sector": "finance",
+   "ticker": "BLK",
+   "domain": "blackrock.com",
+   "origin": "curated"
+  },
+  {
+   "id": "uber",
+   "name": "Uber",
+   "country": "USA",
+   "sector": "tech",
+   "ticker": "UBER",
+   "domain": "uber.com",
+   "origin": "curated"
+  },
+  {
+   "id": "totalenergies",
+   "name": "TotalEnergies",
+   "country": "FRA",
+   "sector": "energy",
+   "ticker": "TTE",
+   "domain": "totalenergies.com",
+   "origin": "curated"
+  },
+  {
+   "id": "honeywell",
+   "name": "Honeywell",
+   "country": "USA",
+   "sector": "industrial",
+   "ticker": "HON",
+   "domain": "honeywell.com",
+   "origin": "curated"
+  },
+  {
+   "id": "union-pacific",
+   "name": "Union Pacific",
+   "country": "USA",
+   "sector": "industrial",
+   "ticker": "UNP",
+   "domain": "up.com",
+   "origin": "curated"
+  },
+  {
+   "id": "lowes",
+   "name": "Lowe's",
+   "country": "USA",
+   "sector": "retail",
+   "ticker": "LOW",
+   "domain": "lowes.com",
+   "origin": "curated"
+  },
+  {
+   "id": "stryker",
+   "name": "Stryker",
+   "country": "USA",
+   "sector": "health",
+   "ticker": "SYK",
+   "domain": "stryker.com",
+   "origin": "curated"
+  },
+  {
+   "id": "bhp-group",
+   "name": "BHP Group",
+   "country": "AUS",
+   "sector": "materials",
+   "ticker": "BHP",
+   "domain": "bhp.com",
+   "origin": "curated"
+  },
+  {
+   "id": "spotify",
+   "name": "Spotify",
+   "country": "SWE",
+   "sector": "media",
+   "ticker": "SPOT",
+   "domain": "spotify.com",
+   "origin": "curated"
+  },
+  {
+   "id": "shopify",
+   "name": "Shopify",
+   "country": "CAN",
+   "sector": "ecommerce",
+   "ticker": "SHOP",
+   "domain": "shopify.com",
+   "origin": "curated"
+  },
+  {
+   "id": "blackstone",
+   "name": "Blackstone",
+   "country": "USA",
+   "sector": "finance",
+   "ticker": "BX",
+   "domain": "blackstone.com",
+   "origin": "curated"
+  },
+  {
+   "id": "nike",
+   "name": "Nike",
+   "country": "USA",
+   "sector": "consumer",
+   "ticker": "NKE",
+   "domain": "nike.com",
+   "origin": "curated"
+  },
+  {
+   "id": "tjx-companies",
+   "name": "TJX Companies",
+   "country": "USA",
+   "sector": "retail",
+   "ticker": "TJX",
+   "domain": "tjx.com",
+   "origin": "curated"
+  },
+  {
+   "id": "conocophillips",
+   "name": "ConocoPhillips",
+   "country": "USA",
+   "sector": "energy",
+   "ticker": "COP",
+   "domain": "conocophillips.com",
+   "origin": "curated"
+  },
+  {
+   "id": "citigroup",
+   "name": "Citigroup",
+   "country": "USA",
+   "sector": "bank",
+   "ticker": "C",
+   "domain": "citigroup.com",
+   "origin": "curated"
+  },
+  {
+   "id": "charles-schwab",
+   "name": "Charles Schwab",
+   "country": "USA",
+   "sector": "finance",
+   "ticker": "SCHW",
+   "domain": "schwab.com",
+   "origin": "curated"
+  },
+  {
+   "id": "arista-networks",
+   "name": "Arista Networks",
+   "country": "USA",
+   "sector": "tech",
+   "ticker": "ANET",
+   "domain": "arista.com",
+   "origin": "curated"
+  },
+  {
+   "id": "boston-scientific",
+   "name": "Boston Scientific",
+   "country": "USA",
+   "sector": "health",
+   "ticker": "BSX",
+   "domain": "bostonscientific.com",
+   "origin": "curated"
+  },
+  {
+   "id": "unilever",
+   "name": "Unilever",
+   "country": "GBR",
+   "sector": "staples",
+   "ticker": "UL",
+   "domain": "unilever.com",
+   "origin": "curated"
+  },
+  {
+   "id": "sony",
+   "name": "Sony",
+   "country": "JPN",
+   "sector": "tech",
+   "ticker": "SONY",
+   "domain": "sony.com",
+   "origin": "curated"
+  },
+  {
+   "id": "adp",
+   "name": "ADP",
+   "country": "USA",
+   "sector": "tech",
+   "ticker": "ADP",
+   "domain": "adp.com",
+   "origin": "curated"
+  },
+  {
+   "id": "micron",
+   "name": "Micron",
+   "country": "USA",
+   "sector": "semi",
+   "ticker": "MU",
+   "domain": "micron.com",
+   "origin": "curated"
+  },
+  {
+   "id": "palo-alto-networks",
+   "name": "Palo Alto Networks",
+   "country": "USA",
+   "sector": "software",
+   "ticker": "PANW",
+   "domain": "paloaltonetworks.com",
+   "origin": "curated"
+  },
+  {
+   "id": "vertex-pharma",
+   "name": "Vertex Pharma",
+   "country": "USA",
+   "sector": "pharma",
+   "ticker": "VRTX",
+   "domain": "vrtx.com",
+   "origin": "curated"
+  },
+  {
+   "id": "gilead-sciences",
+   "name": "Gilead Sciences",
+   "country": "USA",
+   "sector": "pharma",
+   "ticker": "GILD",
+   "domain": "gilead.com",
+   "origin": "curated"
+  },
+  {
+   "id": "medtronic",
+   "name": "Medtronic",
+   "country": "USA",
+   "sector": "health",
+   "ticker": "MDT",
+   "domain": "medtronic.com",
+   "origin": "curated"
+  },
+  {
+   "id": "lockheed-martin",
+   "name": "Lockheed Martin",
+   "country": "USA",
+   "sector": "aerospace",
+   "ticker": "LMT",
+   "domain": "lockheedmartin.com",
+   "origin": "curated"
+  },
+  {
+   "id": "starbucks",
+   "name": "Starbucks",
+   "country": "USA",
+   "sector": "consumer",
+   "ticker": "SBUX",
+   "domain": "starbucks.com",
+   "origin": "curated"
+  },
+  {
+   "id": "toronto-dominion-bank",
+   "name": "Toronto-Dominion Bank",
+   "country": "CAN",
+   "sector": "bank",
+   "ticker": "TD",
+   "domain": "td.com",
+   "origin": "curated"
+  },
+  {
+   "id": "sanofi",
+   "name": "Sanofi",
+   "country": "FRA",
+   "sector": "pharma",
+   "ticker": "SNY",
+   "domain": "sanofi.com",
+   "origin": "curated"
+  },
+  {
+   "id": "boeing",
+   "name": "Boeing",
+   "country": "USA",
+   "sector": "aerospace",
+   "ticker": "BA",
+   "domain": "boeing.com",
+   "origin": "curated"
+  },
+  {
+   "id": "lam-research",
+   "name": "Lam Research",
+   "country": "USA",
+   "sector": "semi",
+   "ticker": "LRCX",
+   "domain": "lamresearch.com",
+   "origin": "curated"
+  },
+  {
+   "id": "regeneron",
+   "name": "Regeneron",
+   "country": "USA",
+   "sector": "pharma",
+   "ticker": "REGN",
+   "domain": "regeneron.com",
+   "origin": "curated"
+  },
+  {
+   "id": "kla",
+   "name": "KLA",
+   "country": "USA",
+   "sector": "semi",
+   "ticker": "KLAC",
+   "domain": "kla.com",
+   "origin": "curated"
+  },
+  {
+   "id": "synopsys",
+   "name": "Synopsys",
+   "country": "USA",
+   "sector": "software",
+   "ticker": "SNPS",
+   "domain": "synopsys.com",
+   "origin": "curated"
+  },
+  {
+   "id": "cadence",
+   "name": "Cadence",
+   "country": "USA",
+   "sector": "software",
+   "ticker": "CDNS",
+   "domain": "cadence.com",
+   "origin": "curated"
+  },
+  {
+   "id": "marvell",
+   "name": "Marvell",
+   "country": "USA",
+   "sector": "semi",
+   "ticker": "MRVL",
+   "domain": "marvell.com",
+   "origin": "curated"
+  },
+  {
+   "id": "mondelez",
+   "name": "Mondelez",
+   "country": "USA",
+   "sector": "staples",
+   "ticker": "MDLZ",
+   "domain": "mondelezinternational.com",
+   "origin": "curated"
+  },
+  {
+   "id": "ge-vernova",
+   "name": "GE Vernova",
+   "country": "USA",
+   "sector": "energy",
+   "ticker": "GEV",
+   "domain": "gevernova.com",
+   "origin": "curated"
+  },
+  {
+   "id": "paypal",
+   "name": "PayPal",
+   "country": "USA",
+   "sector": "payments",
+   "ticker": "PYPL",
+   "domain": "paypal.com",
+   "origin": "curated"
+  },
+  {
+   "id": "cvs-health",
+   "name": "CVS Health",
+   "country": "USA",
+   "sector": "health",
+   "ticker": "CVS",
+   "domain": "cvshealth.com",
+   "origin": "curated"
+  },
+  {
+   "id": "intel",
+   "name": "Intel",
+   "country": "USA",
+   "sector": "semi",
+   "ticker": "INTC",
+   "domain": "intel.com",
+   "origin": "curated"
+  },
+  {
+   "id": "palantir",
+   "name": "Palantir",
+   "country": "USA",
+   "sector": "software",
+   "ticker": "PLTR",
+   "domain": "palantir.com",
+   "origin": "curated"
+  },
+  {
+   "id": "coinbase",
+   "name": "Coinbase",
+   "country": "USA",
+   "sector": "finance",
+   "ticker": "COIN",
+   "domain": "coinbase.com",
+   "origin": "curated"
+  },
+  {
+   "id": "arm-holdings",
+   "name": "Arm Holdings",
+   "country": "GBR",
+   "sector": "semi",
+   "ticker": "ARM",
+   "domain": "arm.com",
+   "origin": "curated"
+  },
+  {
+   "id": "dell-technologies",
+   "name": "Dell Technologies",
+   "country": "USA",
+   "sector": "tech",
+   "ticker": "DELL",
+   "domain": "dell.com",
+   "origin": "curated"
+  },
+  {
+   "id": "3m",
+   "name": "3M",
+   "country": "USA",
+   "sector": "industrial",
+   "ticker": "MMM",
+   "domain": "3m.com",
+   "origin": "curated"
+  },
+  {
+   "id": "altria",
+   "name": "Altria",
+   "country": "USA",
+   "sector": "staples",
+   "ticker": "MO",
+   "domain": "altria.com",
+   "origin": "curated"
+  },
+  {
+   "id": "deere",
+   "name": "Deere",
+   "country": "USA",
+   "sector": "industrial",
+   "ticker": "DE",
+   "domain": "deere.com",
+   "origin": "curated"
+  },
+  {
+   "id": "analog-devices",
+   "name": "Analog Devices",
+   "country": "USA",
+   "sector": "semi",
+   "ticker": "ADI",
+   "domain": "analog.com",
+   "origin": "curated"
+  },
+  {
+   "id": "chubb",
+   "name": "Chubb",
+   "country": "USA",
+   "sector": "finance",
+   "ticker": "CB",
+   "domain": "chubb.com",
+   "origin": "curated"
+  },
+  {
+   "id": "intercontinental-exchange",
+   "name": "Intercontinental Exchange",
+   "country": "USA",
+   "sector": "finance",
+   "ticker": "ICE",
+   "domain": "ice.com",
+   "origin": "curated"
+  },
+  {
+   "id": "moodys",
+   "name": "Moody's",
+   "country": "USA",
+   "sector": "finance",
+   "ticker": "MCO",
+   "domain": "moodys.com",
+   "origin": "curated"
+  },
+  {
+   "id": "sherwin-williams",
+   "name": "Sherwin-Williams",
+   "country": "USA",
+   "sector": "materials",
+   "ticker": "SHW",
+   "domain": "sherwin-williams.com",
+   "origin": "curated"
+  },
+  {
+   "id": "general-dynamics",
+   "name": "General Dynamics",
+   "country": "USA",
+   "sector": "aerospace",
+   "ticker": "GD",
+   "domain": "gd.com",
+   "origin": "curated"
+  },
+  {
+   "id": "northrop-grumman",
+   "name": "Northrop Grumman",
+   "country": "USA",
+   "sector": "aerospace",
+   "ticker": "NOC",
+   "domain": "northropgrumman.com",
+   "origin": "curated"
+  },
+  {
+   "id": "waste-management",
+   "name": "Waste Management",
+   "country": "USA",
+   "sector": "industrial",
+   "ticker": "WM",
+   "domain": "wm.com",
+   "origin": "curated"
+  },
+  {
+   "id": "fedex",
+   "name": "FedEx",
+   "country": "USA",
+   "sector": "industrial",
+   "ticker": "FDX",
+   "domain": "fedex.com",
+   "origin": "curated"
+  },
+  {
+   "id": "ups",
+   "name": "UPS",
+   "country": "USA",
+   "sector": "industrial",
+   "ticker": "UPS",
+   "domain": "ups.com",
+   "origin": "curated"
+  },
+  {
+   "id": "target",
+   "name": "Target",
+   "country": "USA",
+   "sector": "retail",
+   "ticker": "TGT",
+   "domain": "target.com",
+   "origin": "curated"
+  },
+  {
+   "id": "marriott",
+   "name": "Marriott",
+   "country": "USA",
+   "sector": "consumer",
+   "ticker": "MAR",
+   "domain": "marriott.com",
+   "origin": "curated"
+  },
+  {
+   "id": "ford",
+   "name": "Ford",
+   "country": "USA",
+   "sector": "auto",
+   "ticker": "F",
+   "domain": "ford.com",
+   "origin": "curated"
+  },
+  {
+   "id": "general-motors",
+   "name": "General Motors",
+   "country": "USA",
+   "sector": "auto",
+   "ticker": "GM",
+   "domain": "gm.com",
+   "origin": "curated"
+  },
+  {
+   "id": "colgate-palmolive",
+   "name": "Colgate-Palmolive",
+   "country": "USA",
+   "sector": "staples",
+   "ticker": "CL",
+   "domain": "colgatepalmolive.com",
+   "origin": "curated"
+  },
+  {
+   "id": "airbnb",
+   "name": "Airbnb",
+   "country": "USA",
+   "sector": "tech",
+   "ticker": "ABNB",
+   "domain": "airbnb.com",
+   "origin": "curated"
+  },
+  {
+   "id": "snowflake",
+   "name": "Snowflake",
+   "country": "USA",
+   "sector": "software",
+   "ticker": "SNOW",
+   "domain": "snowflake.com",
+   "origin": "curated"
+  },
+  {
+   "id": "workday",
+   "name": "Workday",
+   "country": "USA",
+   "sector": "software",
+   "ticker": "WDAY",
+   "domain": "workday.com",
+   "origin": "curated"
+  },
+  {
+   "id": "kraft-heinz",
+   "name": "Kraft Heinz",
+   "country": "USA",
+   "sector": "staples",
+   "ticker": "KHC",
+   "domain": "kraftheinzcompany.com",
+   "origin": "curated"
+  },
+  {
+   "id": "berkshire-hathaway",
+   "name": "Berkshire Hathaway",
+   "country": "USA",
+   "sector": "finance",
+   "ticker": "BRK-B",
+   "domain": "berkshirehathaway.com",
+   "origin": "curated"
+  },
+  {
+   "id": "comcast",
+   "name": "Comcast",
+   "country": "USA",
+   "sector": "media",
+   "ticker": "CMCSA",
+   "domain": "comcast.com",
+   "origin": "curated"
+  },
+  {
+   "id": "progressive",
+   "name": "Progressive",
+   "country": "USA",
+   "sector": "finance",
+   "ticker": "PGR",
+   "domain": "progressive.com",
+   "origin": "curated"
+  },
+  {
+   "id": "ferrari",
+   "name": "Ferrari",
+   "country": "ITA",
+   "sector": "auto",
+   "ticker": "RACE",
+   "domain": "ferrari.com",
+   "origin": "curated"
+  },
+  {
+   "id": "vale",
+   "name": "Vale",
+   "country": "BRA",
+   "sector": "materials",
+   "ticker": "VALE",
+   "domain": "vale.com",
+   "origin": "curated"
+  },
+  {
+   "id": "nu-holdings-nubank",
+   "name": "Nu Holdings (Nubank)",
+   "country": "BRA",
+   "sector": "bank",
+   "ticker": "NU",
+   "domain": "nubank.com.br",
+   "origin": "curated"
+  },
+  {
+   "id": "ambev",
+   "name": "Ambev",
+   "country": "BRA",
+   "sector": "staples",
+   "ticker": "ABEV",
+   "domain": "ambev.com.br",
+   "origin": "curated"
+  },
+  {
+   "id": "banco-santander",
+   "name": "Banco Santander",
+   "country": "ESP",
+   "sector": "bank",
+   "ticker": "SAN",
+   "domain": "santander.com",
+   "origin": "curated"
+  },
+  {
+   "id": "bbva",
+   "name": "BBVA",
+   "country": "ESP",
+   "sector": "bank",
+   "ticker": "BBVA",
+   "domain": "bbva.com",
+   "origin": "curated"
+  },
+  {
+   "id": "inditex-zara",
+   "name": "Inditex (Zara)",
+   "country": "ESP",
+   "sector": "retail",
+   "ticker": "ITX.MC",
+   "domain": "inditex.com",
+   "origin": "curated"
+  },
+  {
+   "id": "reliance-industries",
+   "name": "Reliance Industries",
+   "country": "IND",
+   "sector": "energy",
+   "ticker": "RELIANCE.NS",
+   "domain": "ril.com",
+   "origin": "curated"
+  },
+  {
+   "id": "tata-consultancy-services",
+   "name": "Tata Consultancy Services",
+   "country": "IND",
+   "sector": "software",
+   "ticker": "TCS.NS",
+   "domain": "tcs.com",
+   "origin": "curated"
+  },
+  {
+   "id": "infosys",
+   "name": "Infosys",
+   "country": "IND",
+   "sector": "software",
+   "ticker": "INFY",
+   "domain": "infosys.com",
+   "origin": "curated"
+  },
+  {
+   "id": "icici-bank",
+   "name": "ICICI Bank",
+   "country": "IND",
+   "sector": "bank",
+   "ticker": "IBN",
+   "domain": "icicibank.com",
+   "origin": "curated"
+  },
+  {
+   "id": "pdd-holdings-temu",
+   "name": "PDD Holdings (Temu)",
+   "country": "CHN",
+   "sector": "ecommerce",
+   "ticker": "PDD",
+   "domain": "pddholdings.com",
+   "origin": "curated"
+  },
+  {
+   "id": "jd-com",
+   "name": "JD.com",
+   "country": "CHN",
+   "sector": "ecommerce",
+   "ticker": "JD",
+   "domain": "jd.com",
+   "origin": "curated"
+  },
+  {
+   "id": "baidu",
+   "name": "Baidu",
+   "country": "CHN",
+   "sector": "internet",
+   "ticker": "BIDU",
+   "domain": "baidu.com",
+   "origin": "curated"
+  },
+  {
+   "id": "mercadolibre",
+   "name": "MercadoLibre",
+   "country": "ARG",
+   "sector": "ecommerce",
+   "ticker": "MELI",
+   "domain": "mercadolibre.com",
+   "origin": "curated"
+  },
+  {
+   "id": "sea-limited",
+   "name": "Sea Limited",
+   "country": "SGP",
+   "sector": "internet",
+   "ticker": "SE",
+   "domain": "sea.com",
+   "origin": "curated"
+  },
+  {
+   "id": "coupang",
+   "name": "Coupang",
+   "country": "KOR",
+   "sector": "ecommerce",
+   "ticker": "CPNG",
+   "domain": "coupang.com",
+   "origin": "curated"
+  },
+  {
+   "id": "mitsubishi-ufj-financial",
+   "name": "Mitsubishi UFJ Financial",
+   "country": "JPN",
+   "sector": "bank",
+   "ticker": "MUFG",
+   "domain": "mufg.jp",
+   "origin": "curated"
+  },
+  {
+   "id": "keyence",
+   "name": "Keyence",
+   "country": "JPN",
+   "sector": "industrial",
+   "ticker": "6861.T",
+   "domain": "keyence.com",
+   "origin": "curated"
+  },
+  {
+   "id": "nintendo",
+   "name": "Nintendo",
+   "country": "JPN",
+   "sector": "media",
+   "ticker": "7974.T",
+   "domain": "nintendo.com",
+   "origin": "curated"
+  },
+  {
+   "id": "sk-hynix",
+   "name": "SK Hynix",
+   "country": "KOR",
+   "sector": "semi",
+   "ticker": "000660.KS",
+   "domain": "skhynix.com",
+   "origin": "curated"
+  },
+  {
+   "id": "airbus",
+   "name": "Airbus",
+   "country": "FRA",
+   "sector": "aerospace",
+   "ticker": "AIR.PA",
+   "domain": "airbus.com",
+   "origin": "curated"
+  },
+  {
+   "id": "commonwealth-bank",
+   "name": "Commonwealth Bank",
+   "country": "AUS",
+   "sector": "bank",
+   "ticker": "CBA.AX",
+   "domain": "commbank.com.au",
+   "origin": "curated"
+  },
+  {
+   "id": "alibaba-baba",
+   "name": "Alibaba",
+   "country": "CHN",
+   "sector": "ecommerce",
+   "ticker": "BABA",
+   "domain": "alibaba.com",
+   "origin": "curated"
+  },
+  {
+   "id": "ab-inbev",
+   "name": "AB InBev",
+   "country": "BEL",
+   "sector": "staples",
+   "ticker": "BUD",
+   "domain": "ab-inbev.com",
+   "origin": "curated"
+  },
+  {
+   "id": "applied-materials",
+   "name": "Applied Materials",
+   "country": "USA",
+   "sector": "semi",
+   "ticker": "AMAT",
+   "domain": "appliedmaterials.com",
+   "origin": "curated"
+  },
+  {
+   "id": "nxp-semiconductors",
+   "name": "NXP Semiconductors",
+   "country": "NLD",
+   "sector": "semi",
+   "ticker": "NXPI",
+   "domain": "nxp.com",
+   "origin": "curated"
+  },
+  {
+   "id": "microchip-technology",
+   "name": "Microchip Technology",
+   "country": "USA",
+   "sector": "semi",
+   "ticker": "MCHP",
+   "domain": "microchip.com",
+   "origin": "curated"
+  },
+  {
+   "id": "eaton",
+   "name": "Eaton",
+   "country": "IRL",
+   "sector": "industrial",
+   "ticker": "ETN",
+   "domain": "eaton.com",
+   "origin": "curated"
+  },
+  {
+   "id": "elevance-health",
+   "name": "Elevance Health",
+   "country": "USA",
+   "sector": "health",
+   "ticker": "ELV",
+   "domain": "elevancehealth.com",
+   "origin": "curated"
+  },
+  {
+   "id": "cigna",
+   "name": "Cigna",
+   "country": "USA",
+   "sector": "health",
+   "ticker": "CI",
+   "domain": "cigna.com",
+   "origin": "curated"
+  },
+  {
+   "id": "zoetis",
+   "name": "Zoetis",
+   "country": "USA",
+   "sector": "pharma",
+   "ticker": "ZTS",
+   "domain": "zoetis.com",
+   "origin": "curated"
+  },
+  {
+   "id": "u-s-bancorp",
+   "name": "U.S. Bancorp",
+   "country": "USA",
+   "sector": "bank",
+   "ticker": "USB",
+   "domain": "usbank.com",
+   "origin": "curated"
+  },
+  {
+   "id": "pnc-financial",
+   "name": "PNC Financial",
+   "country": "USA",
+   "sector": "bank",
+   "ticker": "PNC",
+   "domain": "pnc.com",
+   "origin": "curated"
+  },
+  {
+   "id": "icbc",
+   "name": "ICBC",
+   "country": "CHN",
+   "sector": "bank",
+   "ticker": "1398.HK",
+   "domain": "icbc.com.cn",
+   "origin": "curated"
+  },
+  {
+   "id": "petrochina",
+   "name": "PetroChina",
+   "country": "CHN",
+   "sector": "energy",
+   "ticker": "0857.HK",
+   "domain": "petrochina.com.cn",
+   "origin": "curated"
+  },
+  {
+   "id": "china-mobile",
+   "name": "China Mobile",
+   "country": "CHN",
+   "sector": "telecom",
+   "ticker": "0941.HK",
+   "domain": "chinamobile.com",
+   "origin": "curated"
+  },
+  {
+   "id": "kweichow-moutai",
+   "name": "Kweichow Moutai",
+   "country": "CHN",
+   "sector": "staples",
+   "ticker": "600519.SS",
+   "domain": "moutaichina.com",
+   "origin": "curated"
+  },
+  {
+   "id": "byd",
+   "name": "BYD",
+   "country": "CHN",
+   "sector": "auto",
+   "ticker": "1211.HK",
+   "domain": "byd.com",
+   "origin": "curated"
+  },
+  {
+   "id": "hermes",
+   "name": "Hermès",
+   "country": "FRA",
+   "sector": "consumer",
+   "ticker": "RMS.PA",
+   "domain": "hermes.com",
+   "origin": "curated"
+  },
+  {
+   "id": "new-york-stock-exchange",
+   "name": "New York Stock Exchange",
+   "country": "USA",
+   "sector": "other",
+   "ticker": "",
+   "domain": "nyse.com",
+   "wikidata": "Q13677",
+   "origin": "discovered"
+  },
+  {
+   "id": "thomson-reuters",
+   "name": "Thomson Reuters",
+   "country": "CAN",
+   "sector": "media",
+   "ticker": "",
+   "domain": "thomsonreuters.com",
+   "wikidata": "Q1141267",
+   "origin": "discovered"
+  },
+  {
+   "id": "america-movil",
+   "name": "América Móvil",
+   "country": "MEX",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "americamovil.com",
+   "wikidata": "Q482267",
+   "origin": "discovered"
+  },
+  {
+   "id": "pemex",
+   "name": "Pemex",
+   "country": "MEX",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "pemex.com",
+   "wikidata": "Q871308",
+   "origin": "discovered"
+  },
+  {
+   "id": "desjardins-group",
+   "name": "Desjardins Group",
+   "country": "CAN",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "desjardins.com",
+   "wikidata": "Q2933350",
+   "origin": "discovered"
+  },
+  {
+   "id": "comision-federal-de-electricidad",
+   "name": "Comisión Federal de Electricidad",
+   "country": "MEX",
+   "sector": "other",
+   "ticker": "",
+   "domain": "cfe.mx",
+   "wikidata": "Q1114680",
+   "origin": "discovered"
+  },
+  {
+   "id": "wsp-global",
+   "name": "WSP Global",
+   "country": "CAN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "wspgroup.com",
+   "wikidata": "Q1333162",
+   "origin": "discovered"
+  },
+  {
+   "id": "monterrey-institute-of-technology-and-higher-edu",
+   "name": "Monterrey Institute of Technology and Higher Education",
+   "country": "MEX",
+   "sector": "other",
+   "ticker": "",
+   "domain": "tec.mx",
+   "wikidata": "Q1343885",
+   "origin": "discovered"
+  },
+  {
+   "id": "hydro-quebec",
+   "name": "Hydro-Quebec",
+   "country": "CAN",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "hydroquebec.com",
+   "wikidata": "Q167840",
+   "origin": "discovered"
+  },
+  {
+   "id": "company",
+   "name": "ロブロックス・コーポレーション",
+   "country": "USA",
+   "sector": "media",
+   "ticker": "",
+   "domain": "corp.roblox.com",
+   "wikidata": "Q67186598",
+   "origin": "discovered"
+  },
+  {
+   "id": "mastercard-foundation",
+   "name": "MasterCard Foundation",
+   "country": "CAN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "themastercardfoundation.org",
+   "wikidata": "Q7750576",
+   "origin": "discovered"
+  },
+  {
+   "id": "united-airlines",
+   "name": "United Airlines",
+   "country": "USA",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "united.com",
+   "wikidata": "Q174769",
+   "origin": "discovered"
+  },
+  {
+   "id": "alberta-health-services",
+   "name": "Alberta Health Services",
+   "country": "CAN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "albertahealthservices.ca",
+   "wikidata": "Q4711650",
+   "origin": "discovered"
+  },
+  {
+   "id": "reddit-inc",
+   "name": "Reddit Inc.",
+   "country": "USA",
+   "sector": "other",
+   "ticker": "",
+   "domain": "redditinc.com",
+   "wikidata": "Q111759432",
+   "origin": "discovered"
+  },
+  {
+   "id": "mckesson-corporation",
+   "name": "McKesson Corporation",
+   "country": "USA",
+   "sector": "other",
+   "ticker": "",
+   "domain": "mckesson.com",
+   "wikidata": "Q570473",
+   "origin": "discovered"
+  },
+  {
+   "id": "cencora",
+   "name": "Cencora",
+   "country": "USA",
+   "sector": "pharma",
+   "ticker": "",
+   "domain": "amerisourcebergen.com",
+   "wikidata": "Q470156",
+   "origin": "discovered"
+  },
+  {
+   "id": "cardinal-health",
+   "name": "Cardinal Health",
+   "country": "USA",
+   "sector": "health",
+   "ticker": "",
+   "domain": "cardinalhealth.com",
+   "wikidata": "Q902397",
+   "origin": "discovered"
+  },
+  {
+   "id": "marathon-petroleum",
+   "name": "Marathon Petroleum",
+   "country": "USA",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "marathonpetroleum.com",
+   "wikidata": "Q458363",
+   "origin": "discovered"
+  },
+  {
+   "id": "valero-energy",
+   "name": "Valero Energy",
+   "country": "USA",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "valero.com",
+   "wikidata": "Q1283291",
+   "origin": "discovered"
+  },
+  {
+   "id": "citic-limited",
+   "name": "CITIC Limited",
+   "country": "HKG",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "citic.com",
+   "wikidata": "Q1023763",
+   "origin": "discovered"
+  },
+  {
+   "id": "sinopec",
+   "name": "Sinopec",
+   "country": "CHN",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "sinopecgroup.com",
+   "wikidata": "Q831445",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-resources",
+   "name": "China Resources",
+   "country": "HKG",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "crc.com.hk",
+   "wikidata": "Q1073501",
+   "origin": "discovered"
+  },
+  {
+   "id": "contemporary-amperex-technology-co-limited",
+   "name": "Contemporary Amperex Technology Co. Limited",
+   "country": "CHN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "catl.com",
+   "wikidata": "Q18653563",
+   "origin": "discovered"
+  },
+  {
+   "id": "foxconn",
+   "name": "Foxconn",
+   "country": "TWN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "foxconn.com",
+   "wikidata": "Q463094",
+   "origin": "discovered"
+  },
+  {
+   "id": "tcl-electronics",
+   "name": "TCL Electronics",
+   "country": "CHN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "electronics.tcl.com",
+   "wikidata": "Q29468800",
+   "origin": "discovered"
+  },
+  {
+   "id": "lenovo",
+   "name": "Lenovo",
+   "country": "CHN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "lenovo.com",
+   "wikidata": "Q14799",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-national-petroleum-corporation",
+   "name": "China National Petroleum Corporation",
+   "country": "CHN",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "cnpc.com.cn",
+   "wikidata": "Q588786",
+   "origin": "discovered"
+  },
+  {
+   "id": "wistron",
+   "name": "Wistron",
+   "country": "TWN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "wistron.com",
+   "wikidata": "Q441821",
+   "origin": "discovered"
+  },
+  {
+   "id": "quanta-computer",
+   "name": "Quanta Computer",
+   "country": "TWN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "quantatw.com",
+   "wikidata": "Q696743",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-feihe",
+   "name": "China Feihe",
+   "country": "CHN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "feihe.com",
+   "wikidata": "Q97348109",
+   "origin": "discovered"
+  },
+  {
+   "id": "state-grid-corporation-of-china",
+   "name": "State Grid Corporation of China",
+   "country": "CHN",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "sgcc.com.cn",
+   "wikidata": "Q209078",
+   "origin": "discovered"
+  },
+  {
+   "id": "inventec",
+   "name": "Inventec",
+   "country": "TWN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "inventec.com",
+   "wikidata": "Q6059838",
+   "origin": "discovered"
+  },
+  {
+   "id": "cnooc-limited",
+   "name": "CNOOC Limited",
+   "country": "CHN",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "cnoocltd.com",
+   "wikidata": "Q795221",
+   "origin": "discovered"
+  },
+  {
+   "id": "mediatek",
+   "name": "MediaTek",
+   "country": "TWN",
+   "sector": "semi",
+   "ticker": "",
+   "domain": "mediatek.com",
+   "wikidata": "Q699848",
+   "origin": "discovered"
+  },
+  {
+   "id": "geely-auto",
+   "name": "Geely Auto",
+   "country": "CHN",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "geely-motors.com",
+   "wikidata": "Q55118127",
+   "origin": "discovered"
+  },
+  {
+   "id": "ping-an-insurance",
+   "name": "Ping An Insurance",
+   "country": "CHN",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "pingan.com",
+   "wikidata": "Q1256188",
+   "origin": "discovered"
+  },
+  {
+   "id": "acer",
+   "name": "Acer",
+   "country": "TWN",
+   "sector": "semi",
+   "ticker": "",
+   "domain": "acer-group.com",
+   "wikidata": "Q481778",
+   "origin": "discovered"
+  },
+  {
+   "id": "shagang-group",
+   "name": "Shagang Group",
+   "country": "CHN",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "sha-steel.com",
+   "wikidata": "Q3138458",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-state-railway-group",
+   "name": "China State Railway Group",
+   "country": "CHN",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "china-railway.com.cn",
+   "wikidata": "Q1073489",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-airlines",
+   "name": "China Airlines",
+   "country": "TWN",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "china-airlines.com",
+   "wikidata": "Q51756",
+   "origin": "discovered"
+  },
+  {
+   "id": "aviation-industry-corporation-of-china-ltd",
+   "name": "Aviation Industry Corporation of China, Ltd.",
+   "country": "CHN",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "avic.com.cn",
+   "wikidata": "Q2667719",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-construction-bank",
+   "name": "China Construction Bank",
+   "country": "CHN",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "ccb.com",
+   "wikidata": "Q26299",
+   "origin": "discovered"
+  },
+  {
+   "id": "giant-bicycles",
+   "name": "Giant Bicycles",
+   "country": "TWN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "giant-bicycles.com",
+   "wikidata": "Q703557",
+   "origin": "discovered"
+  },
+  {
+   "id": "taiwan-high-speed-rail-corporation",
+   "name": "Taiwan High Speed Rail Corporation",
+   "country": "TWN",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "thsrc.com.tw",
+   "wikidata": "Q10915767",
+   "origin": "discovered"
+  },
+  {
+   "id": "industrial-and-commercial-bank-of-china",
+   "name": "Industrial and Commercial Bank of China",
+   "country": "CHN",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "icbc-ltd.com",
+   "wikidata": "Q26463",
+   "origin": "discovered"
+  },
+  {
+   "id": "country-garden",
+   "name": "Country Garden",
+   "country": "CHN",
+   "sector": "consumer",
+   "ticker": "",
+   "domain": "countrygarden.com.cn",
+   "wikidata": "Q5177291",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-life-insurance-company",
+   "name": "China Life Insurance Company",
+   "country": "CHN",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "chinalife.com.cn",
+   "wikidata": "Q1073306",
+   "origin": "discovered"
+  },
+  {
+   "id": "saic-motor",
+   "name": "SAIC Motor",
+   "country": "CHN",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "saicmotor.com",
+   "wikidata": "Q910401",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-railway-engineering-corporation",
+   "name": "China Railway Engineering Corporation",
+   "country": "CHN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "crecg.com",
+   "wikidata": "Q20051446",
+   "origin": "discovered"
+  },
+  {
+   "id": "huawei",
+   "name": "Huawei",
+   "country": "CHN",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "huawei.com",
+   "wikidata": "Q160120",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-national-offshore-oil-corporation",
+   "name": "China National Offshore Oil Corporation",
+   "country": "CHN",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "cnooc.com.cn",
+   "wikidata": "Q795354",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-development-bank",
+   "name": "China Development Bank",
+   "country": "CHN",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "cdb.com.cn",
+   "wikidata": "Q1064065",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-railway-construction-corporation-limited",
+   "name": "China Railway Construction Corporation Limited",
+   "country": "CHN",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "crcc.cn",
+   "wikidata": "Q1073482",
+   "origin": "discovered"
+  },
+  {
+   "id": "suning-holdings-group",
+   "name": "Suning Holdings Group",
+   "country": "CHN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "suningholdings.com",
+   "wikidata": "Q24451600",
+   "origin": "discovered"
+  },
+  {
+   "id": "dongfeng-motor-corporation",
+   "name": "Dongfeng Motor Corporation",
+   "country": "CHN",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "dfmc.com.cn",
+   "wikidata": "Q1138452",
+   "origin": "discovered"
+  },
+  {
+   "id": "faw-group",
+   "name": "FAW Group",
+   "country": "CHN",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "faw.com",
+   "wikidata": "Q1124351",
+   "origin": "discovered"
+  },
+  {
+   "id": "shandong-weiqiao-pioneering-group",
+   "name": "Shandong Weiqiao Pioneering Group",
+   "country": "CHN",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "weiqiaocy.com",
+   "wikidata": "Q17036101",
+   "origin": "discovered"
+  },
+  {
+   "id": "sinochem-group",
+   "name": "Sinochem Group",
+   "country": "CHN",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "sinochem.com",
+   "wikidata": "Q4390358",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-post",
+   "name": "China Post",
+   "country": "CHN",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "chinapost.com.cn",
+   "wikidata": "Q1066476",
+   "origin": "discovered"
+  },
+  {
+   "id": "chn-energy",
+   "name": "CHN Energy",
+   "country": "CHN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "ceic.com",
+   "wikidata": "Q38180956",
+   "origin": "discovered"
+  },
+  {
+   "id": "agricultural-bank-of-china",
+   "name": "Agricultural Bank of China",
+   "country": "CHN",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "abchina.com",
+   "wikidata": "Q26298",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-southern-power-grid",
+   "name": "China Southern Power Grid",
+   "country": "CHN",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "csg.cn",
+   "wikidata": "Q209039",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-minmetals",
+   "name": "China Minmetals",
+   "country": "CHN",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "minmetals.com",
+   "wikidata": "Q846839",
+   "origin": "discovered"
+  },
+  {
+   "id": "evergrande-group",
+   "name": "Evergrande Group",
+   "country": "CHN",
+   "sector": "consumer",
+   "ticker": "",
+   "domain": "evergrande.com",
+   "wikidata": "Q5417145",
+   "origin": "discovered"
+  },
+  {
+   "id": "the-peoples-insurance-company-group-of-china-lim",
+   "name": "The People's Insurance Company (Group) of China Limited",
+   "country": "CHN",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "picc.com",
+   "wikidata": "Q1807264",
+   "origin": "discovered"
+  },
+  {
+   "id": "baic-group",
+   "name": "BAIC Group",
+   "country": "CHN",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "baicgroup.com.cn",
+   "wikidata": "Q814712",
+   "origin": "discovered"
+  },
+  {
+   "id": "chery-automobile",
+   "name": "Chery Automobile",
+   "country": "CHN",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "cheryinternational.com",
+   "wikidata": "Q591001",
+   "origin": "discovered"
+  },
+  {
+   "id": "bank-of-china",
+   "name": "Bank of China",
+   "country": "CHN",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "boc.cn",
+   "wikidata": "Q790068",
+   "origin": "discovered"
+  },
+  {
+   "id": "cofco-group",
+   "name": "COFCO Group",
+   "country": "CHN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "cofcointernational.com",
+   "wikidata": "Q4382137",
+   "origin": "discovered"
+  },
+  {
+   "id": "citic-group",
+   "name": "CITIC Group",
+   "country": "CHN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "group.citic",
+   "wikidata": "Q856322",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-north-industries-group-corporation-limited",
+   "name": "China North Industries Group Corporation Limited",
+   "country": "CHN",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "norincogroup.com.cn",
+   "wikidata": "Q1538336",
+   "origin": "discovered"
+  },
+  {
+   "id": "china-telecommunications-corporation",
+   "name": "China Telecommunications Corporation",
+   "country": "CHN",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "chinatelecom.com.cn",
+   "wikidata": "Q1073540",
+   "origin": "discovered"
+  },
+  {
+   "id": "chemchina",
+   "name": "ChemChina",
+   "country": "CHN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "chemchina.com.cn",
+   "wikidata": "Q16739781",
+   "origin": "discovered"
+  },
+  {
+   "id": "bank-of-communications",
+   "name": "Bank of Communications",
+   "country": "CHN",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "bankcomm.com",
+   "wikidata": "Q806680",
+   "origin": "discovered"
+  },
+  {
+   "id": "power-china",
+   "name": "Power China",
+   "country": "CHN",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "powerchina.cn",
+   "wikidata": "Q10873928",
+   "origin": "discovered"
+  },
+  {
+   "id": "tongrentang",
+   "name": "Tongrentang",
+   "country": "CHN",
+   "sector": "pharma",
+   "ticker": "",
+   "domain": "tongrentang.com",
+   "wikidata": "Q842099",
+   "origin": "discovered"
+  },
+  {
+   "id": "hengli-group",
+   "name": "Hengli Group",
+   "country": "CHN",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "hengli.com",
+   "wikidata": "Q70822135",
+   "origin": "discovered"
+  },
+  {
+   "id": "equinor-asa",
+   "name": "Equinor ASA",
+   "country": "NOR",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "equinor.com",
+   "wikidata": "Q1776022",
+   "origin": "discovered"
+  },
+  {
+   "id": "nokia",
+   "name": "Nokia",
+   "country": "FIN",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "nokia.com",
+   "wikidata": "Q1418",
+   "origin": "discovered"
+  },
+  {
+   "id": "maersk",
+   "name": "Maersk",
+   "country": "DNK",
+   "sector": "other",
+   "ticker": "",
+   "domain": "maersk.com",
+   "wikidata": "Q18224",
+   "origin": "discovered"
+  },
+  {
+   "id": "sparebank-1-sr-bank",
+   "name": "SpareBank 1 SR-Bank",
+   "country": "NOR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "sr-bank.no",
+   "wikidata": "Q7573553",
+   "origin": "discovered"
+  },
+  {
+   "id": "veidekke",
+   "name": "Veidekke",
+   "country": "NOR",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "veidekke.com",
+   "wikidata": "Q7918631",
+   "origin": "discovered"
+  },
+  {
+   "id": "a-p-m-ller-holding",
+   "name": "A.P. Møller Holding",
+   "country": "DNK",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "apmoller.com",
+   "wikidata": "Q26702890",
+   "origin": "discovered"
+  },
+  {
+   "id": "volvo-cars",
+   "name": "Volvo Cars",
+   "country": "SWE",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "volvocars.com",
+   "wikidata": "Q215293",
+   "origin": "discovered"
+  },
+  {
+   "id": "alliance-oil",
+   "name": "Alliance Oil",
+   "country": "SWE",
+   "sector": "other",
+   "ticker": "",
+   "domain": "allianceoilco.com",
+   "wikidata": "Q4033772",
+   "origin": "discovered"
+  },
+  {
+   "id": "salling-group",
+   "name": "Salling Group",
+   "country": "DNK",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "sallinggroup.com",
+   "wikidata": "Q492820",
+   "origin": "discovered"
+  },
+  {
+   "id": "postnord",
+   "name": "PostNord",
+   "country": "DNK",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "postnord.com",
+   "wikidata": "Q3181430",
+   "origin": "discovered"
+  },
+  {
+   "id": "dsv",
+   "name": "DSV",
+   "country": "DNK",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "dsv.com",
+   "wikidata": "Q1155771",
+   "origin": "discovered"
+  },
+  {
+   "id": "axis-communications",
+   "name": "Axis Communications",
+   "country": "SWE",
+   "sector": "other",
+   "ticker": "",
+   "domain": "axis.com",
+   "wikidata": "Q2347731",
+   "origin": "discovered"
+  },
+  {
+   "id": "vodafone-iceland",
+   "name": "Vodafone Iceland",
+   "country": "ISL",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "vodafone.is",
+   "wikidata": "Q2529835",
+   "origin": "discovered"
+  },
+  {
+   "id": "nordea",
+   "name": "Nordea",
+   "country": "FIN",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "nordea.com",
+   "wikidata": "Q1123823",
+   "origin": "discovered"
+  },
+  {
+   "id": "novo-nordisk-foundation",
+   "name": "Novo Nordisk Foundation",
+   "country": "DNK",
+   "sector": "other",
+   "ticker": "",
+   "domain": "novonordiskfonden.dk",
+   "wikidata": "Q22723716",
+   "origin": "discovered"
+  },
+  {
+   "id": "h-and-m",
+   "name": "H&M",
+   "country": "SWE",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "www2.hm.com",
+   "wikidata": "Q188326",
+   "origin": "discovered"
+  },
+  {
+   "id": "reitan-as",
+   "name": "Reitan AS",
+   "country": "NOR",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "reitan.no",
+   "wikidata": "Q3357065",
+   "origin": "discovered"
+  },
+  {
+   "id": "vestas",
+   "name": "Vestas",
+   "country": "DNK",
+   "sector": "other",
+   "ticker": "",
+   "domain": "vestas.com",
+   "wikidata": "Q868259",
+   "origin": "discovered"
+  },
+  {
+   "id": "scania",
+   "name": "Scania",
+   "country": "SWE",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "scania.com",
+   "wikidata": "Q219960",
+   "origin": "discovered"
+  },
+  {
+   "id": "telenor",
+   "name": "Telenor",
+   "country": "NOR",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "telenor.com",
+   "wikidata": "Q845632",
+   "origin": "discovered"
+  },
+  {
+   "id": "maersk-a-s",
+   "name": "Maersk A/S",
+   "country": "DNK",
+   "sector": "other",
+   "ticker": "",
+   "domain": "maerskline.com",
+   "wikidata": "Q446750",
+   "origin": "discovered"
+  },
+  {
+   "id": "norgesgruppen",
+   "name": "NorgesGruppen",
+   "country": "NOR",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "norgesgruppen.no",
+   "wikidata": "Q2575956",
+   "origin": "discovered"
+  },
+  {
+   "id": "spotify-technology",
+   "name": "Spotify Technology",
+   "country": "LUX",
+   "sector": "software",
+   "ticker": "",
+   "domain": "investors.spotify.com",
+   "wikidata": "Q60269744",
+   "origin": "discovered"
+  },
+  {
+   "id": "volkswagen-group",
+   "name": "Volkswagen Group",
+   "country": "DEU",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "volkswagenag.com",
+   "wikidata": "Q156578",
+   "origin": "discovered"
+  },
+  {
+   "id": "iberdrola",
+   "name": "Iberdrola",
+   "country": "ESP",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "iberdrola.com",
+   "wikidata": "Q1437502",
+   "origin": "discovered"
+  },
+  {
+   "id": "lloyds-banking-group",
+   "name": "Lloyds Banking Group",
+   "country": "GBR",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "lloydsbankinggroup.com",
+   "wikidata": "Q1152764",
+   "origin": "discovered"
+  },
+  {
+   "id": "james-hardie",
+   "name": "James Hardie",
+   "country": "IRL",
+   "sector": "other",
+   "ticker": "",
+   "domain": "jameshardie.com",
+   "wikidata": "Q6135535",
+   "origin": "discovered"
+  },
+  {
+   "id": "arcelormittal",
+   "name": "ArcelorMittal",
+   "country": "LUX",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "corporate.arcelormittal.com",
+   "wikidata": "Q27893",
+   "origin": "discovered"
+  },
+  {
+   "id": "evraz",
+   "name": "Evraz",
+   "country": "GBR",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "evraz.com",
+   "wikidata": "Q1382653",
+   "origin": "discovered"
+  },
+  {
+   "id": "vitol",
+   "name": "Vitol",
+   "country": "CHE",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "vitol.com",
+   "wikidata": "Q687365",
+   "origin": "discovered"
+  },
+  {
+   "id": "enel",
+   "name": "Enel",
+   "country": "ITA",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "enel.com",
+   "wikidata": "Q651222",
+   "origin": "discovered"
+  },
+  {
+   "id": "repsol",
+   "name": "Repsol",
+   "country": "ESP",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "repsol.com",
+   "wikidata": "Q174747",
+   "origin": "discovered"
+  },
+  {
+   "id": "tesco",
+   "name": "Tesco",
+   "country": "GBR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "tescoplc.com",
+   "wikidata": "Q487494",
+   "origin": "discovered"
+  },
+  {
+   "id": "red-bull-gmbh",
+   "name": "Red Bull GmbH",
+   "country": "AUT",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "redbull.com",
+   "wikidata": "Q698639",
+   "origin": "discovered"
+  },
+  {
+   "id": "health-service-executive",
+   "name": "Health Service Executive",
+   "country": "IRL",
+   "sector": "other",
+   "ticker": "",
+   "domain": "hse.ie",
+   "wikidata": "Q5690681",
+   "origin": "discovered"
+  },
+  {
+   "id": "umicore",
+   "name": "Umicore",
+   "country": "BEL",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "umicore.com",
+   "wikidata": "Q902769",
+   "origin": "discovered"
+  },
+  {
+   "id": "richemont",
+   "name": "Richemont",
+   "country": "CHE",
+   "sector": "other",
+   "ticker": "",
+   "domain": "richemont.com",
+   "wikidata": "Q689240",
+   "origin": "discovered"
+  },
+  {
+   "id": "physics-association-frankfurt-am-main-germany",
+   "name": "Physics Association (Frankfurt am Main, Germany)",
+   "country": "DEU",
+   "sector": "other",
+   "ticker": "",
+   "domain": "physikalischer-verein.de",
+   "wikidata": "Q2089433",
+   "origin": "discovered"
+  },
+  {
+   "id": "vodafone",
+   "name": "Vodafone",
+   "country": "GBR",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "vodafone.com",
+   "wikidata": "Q122141",
+   "origin": "discovered"
+  },
+  {
+   "id": "rio-tinto-group",
+   "name": "Rio Tinto Group",
+   "country": "GBR",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "riotinto.com",
+   "wikidata": "Q821293",
+   "origin": "discovered"
+  },
+  {
+   "id": "omv",
+   "name": "OMV",
+   "country": "AUT",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "omv.com",
+   "wikidata": "Q168238",
+   "origin": "discovered"
+  },
+  {
+   "id": "volkswagen",
+   "name": "Volkswagen",
+   "country": "DEU",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "vw.com",
+   "wikidata": "Q246",
+   "origin": "discovered"
+  },
+  {
+   "id": "bp",
+   "name": "BP",
+   "country": "GBR",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "bp.com",
+   "wikidata": "Q152057",
+   "origin": "discovered"
+  },
+  {
+   "id": "glencore",
+   "name": "Glencore",
+   "country": "CHE",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "glencore.com",
+   "wikidata": "Q169339",
+   "origin": "discovered"
+  },
+  {
+   "id": "axa",
+   "name": "AXA",
+   "country": "FRA",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "axa.com",
+   "wikidata": "Q160054",
+   "origin": "discovered"
+  },
+  {
+   "id": "assicurazioni-generali",
+   "name": "Assicurazioni Generali",
+   "country": "ITA",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "generali.com",
+   "wikidata": "Q670482",
+   "origin": "discovered"
+  },
+  {
+   "id": "cma-cgm",
+   "name": "CMA CGM",
+   "country": "FRA",
+   "sector": "other",
+   "ticker": "",
+   "domain": "cma-cgm.com",
+   "wikidata": "Q1023867",
+   "origin": "discovered"
+  },
+  {
+   "id": "international-airlines-group",
+   "name": "International Airlines Group",
+   "country": "GBR",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "iairgroup.com",
+   "wikidata": "Q8774",
+   "origin": "discovered"
+  },
+  {
+   "id": "solvay-s-a",
+   "name": "Solvay S.A.",
+   "country": "BEL",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "solvay.com",
+   "wikidata": "Q706184",
+   "origin": "discovered"
+  },
+  {
+   "id": "telefonica",
+   "name": "Telefónica",
+   "country": "ESP",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "telefonica.com",
+   "wikidata": "Q160229",
+   "origin": "discovered"
+  },
+  {
+   "id": "uniper",
+   "name": "Uniper",
+   "country": "DEU",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "uniper.energy",
+   "wikidata": "Q19839259",
+   "origin": "discovered"
+  },
+  {
+   "id": "carrefour-group",
+   "name": "Carrefour Group",
+   "country": "FRA",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "carrefour.com",
+   "wikidata": "Q3117359",
+   "origin": "discovered"
+  },
+  {
+   "id": "strabag",
+   "name": "Strabag",
+   "country": "AUT",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "strabag.com",
+   "wikidata": "Q681316",
+   "origin": "discovered"
+  },
+  {
+   "id": "eni",
+   "name": "Eni",
+   "country": "ITA",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "eni.com",
+   "wikidata": "Q565594",
+   "origin": "discovered"
+  },
+  {
+   "id": "zurich-insurance-group",
+   "name": "Zurich Insurance Group",
+   "country": "CHE",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "zurich.com",
+   "wikidata": "Q230426",
+   "origin": "discovered"
+  },
+  {
+   "id": "british-american-tobacco",
+   "name": "British American Tobacco",
+   "country": "GBR",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "bat.com",
+   "wikidata": "Q856411",
+   "origin": "discovered"
+  },
+  {
+   "id": "johnson-controls",
+   "name": "Johnson Controls",
+   "country": "IRL",
+   "sector": "other",
+   "ticker": "",
+   "domain": "johnsoncontrols.com",
+   "wikidata": "Q667865",
+   "origin": "discovered"
+  },
+  {
+   "id": "ineos",
+   "name": "Ineos",
+   "country": "GBR",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "ineos.com",
+   "wikidata": "Q673231",
+   "origin": "discovered"
+  },
+  {
+   "id": "chanel",
+   "name": "Chanel",
+   "country": "FRA",
+   "sector": "other",
+   "ticker": "",
+   "domain": "chanel.com",
+   "wikidata": "Q218115",
+   "origin": "discovered"
+  },
+  {
+   "id": "barry-callebaut",
+   "name": "Barry Callebaut",
+   "country": "CHE",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "barry-callebaut.com",
+   "wikidata": "Q809018",
+   "origin": "discovered"
+  },
+  {
+   "id": "mercedes-benz-group",
+   "name": "Mercedes-Benz Group",
+   "country": "DEU",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "group.mercedes-benz.com",
+   "wikidata": "Q27530",
+   "origin": "discovered"
+  },
+  {
+   "id": "engie",
+   "name": "Engie",
+   "country": "FRA",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "engie.com",
+   "wikidata": "Q13416787",
+   "origin": "discovered"
+  },
+  {
+   "id": "pricewaterhousecoopers",
+   "name": "PricewaterhouseCoopers",
+   "country": "GBR",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "pwc.com",
+   "wikidata": "Q488048",
+   "origin": "discovered"
+  },
+  {
+   "id": "sabadell-bank",
+   "name": "Sabadell Bank",
+   "country": "ESP",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "bancsabadell.com",
+   "wikidata": "Q762330",
+   "origin": "discovered"
+  },
+  {
+   "id": "jaguar-land-rover",
+   "name": "Jaguar Land Rover",
+   "country": "GBR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "jaguarlandrover.com",
+   "wikidata": "Q6122893",
+   "origin": "discovered"
+  },
+  {
+   "id": "leonardo",
+   "name": "Leonardo",
+   "country": "ITA",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "leonardo.com",
+   "wikidata": "Q910379",
+   "origin": "discovered"
+  },
+  {
+   "id": "coca-cola-europacific-partners",
+   "name": "Coca-Cola Europacific Partners",
+   "country": "GBR",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "cocacolaep.com",
+   "wikidata": "Q20811256",
+   "origin": "discovered"
+  },
+  {
+   "id": "bmw",
+   "name": "BMW",
+   "country": "DEU",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "bmwgroup.com",
+   "wikidata": "Q26678",
+   "origin": "discovered"
+  },
+  {
+   "id": "grupo-acs",
+   "name": "Grupo ACS",
+   "country": "ESP",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "grupoacs.com",
+   "wikidata": "Q1550888",
+   "origin": "discovered"
+  },
+  {
+   "id": "ubs",
+   "name": "UBS",
+   "country": "CHE",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "ubs.com",
+   "wikidata": "Q193199",
+   "origin": "discovered"
+  },
+  {
+   "id": "ernst-and-young",
+   "name": "Ernst & Young",
+   "country": "GBR",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "ey.com",
+   "wikidata": "Q489097",
+   "origin": "discovered"
+  },
+  {
+   "id": "ferrero-spa",
+   "name": "Ferrero SpA",
+   "country": "ITA",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "ferrero.com",
+   "wikidata": "Q269792",
+   "origin": "discovered"
+  },
+  {
+   "id": "bae-systems",
+   "name": "BAE Systems",
+   "country": "GBR",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "baesystems.com",
+   "wikidata": "Q739416",
+   "origin": "discovered"
+  },
+  {
+   "id": "abb-group",
+   "name": "ABB Group",
+   "country": "CHE",
+   "sector": "other",
+   "ticker": "",
+   "domain": "global.abb",
+   "wikidata": "Q52825",
+   "origin": "discovered"
+  },
+  {
+   "id": "schwarz-group",
+   "name": "Schwarz Group",
+   "country": "DEU",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "reset-plastic.com",
+   "wikidata": "Q712034",
+   "origin": "discovered"
+  },
+  {
+   "id": "ferguson-enterprises",
+   "name": "Ferguson Enterprises",
+   "country": "GBR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "fergusonplc.com",
+   "wikidata": "Q624682",
+   "origin": "discovered"
+  },
+  {
+   "id": "virgin-group",
+   "name": "Virgin Group",
+   "country": "GBR",
+   "sector": "bank",
+   "ticker": "",
+   "domain": "virgin.com",
+   "wikidata": "Q494917",
+   "origin": "discovered"
+  },
+  {
+   "id": "tim-group",
+   "name": "TIM Group",
+   "country": "ITA",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "telecomitalia.com",
+   "wikidata": "Q144617",
+   "origin": "discovered"
+  },
+  {
+   "id": "allianz-se",
+   "name": "Allianz SE",
+   "country": "DEU",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "allianz.com",
+   "wikidata": "Q487292",
+   "origin": "discovered"
+  },
+  {
+   "id": "vinci",
+   "name": "Vinci",
+   "country": "FRA",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "vinci.com",
+   "wikidata": "Q1475312",
+   "origin": "discovered"
+  },
+  {
+   "id": "diageo",
+   "name": "Diageo",
+   "country": "GBR",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "diageo.com",
+   "wikidata": "Q161140",
+   "origin": "discovered"
+  },
+  {
+   "id": "danone",
+   "name": "Danone",
+   "country": "ESP",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "danone.com",
+   "wikidata": "Q329426",
+   "origin": "discovered"
+  },
+  {
+   "id": "morrisons",
+   "name": "Morrisons",
+   "country": "GBR",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "morrisons.com",
+   "wikidata": "Q922344",
+   "origin": "discovered"
+  },
+  {
+   "id": "te-connectivity",
+   "name": "TE Connectivity",
+   "country": "CHE",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "te.com",
+   "wikidata": "Q663452",
+   "origin": "discovered"
+  },
+  {
+   "id": "webuild",
+   "name": "Webuild",
+   "country": "ITA",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "webuildgroup.com",
+   "wikidata": "Q21693482",
+   "origin": "discovered"
+  },
+  {
+   "id": "deutsche-telekom",
+   "name": "Deutsche Telekom",
+   "country": "DEU",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "telekom.com",
+   "wikidata": "Q9396",
+   "origin": "discovered"
+  },
+  {
+   "id": "endesa",
+   "name": "Endesa",
+   "country": "ESP",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "endesa.com",
+   "wikidata": "Q1275336",
+   "origin": "discovered"
+  },
+  {
+   "id": "auchan",
+   "name": "Auchan",
+   "country": "FRA",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "auchan-retail.com",
+   "wikidata": "Q758603",
+   "origin": "discovered"
+  },
+  {
+   "id": "rolls-royce",
+   "name": "Rolls-Royce",
+   "country": "GBR",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "rolls-royce.com",
+   "wikidata": "Q243278",
+   "origin": "discovered"
+  },
+  {
+   "id": "stmicroelectronics",
+   "name": "STMicroelectronics",
+   "country": "CHE",
+   "sector": "semi",
+   "ticker": "",
+   "domain": "st.com",
+   "wikidata": "Q661845",
+   "origin": "discovered"
+  },
+  {
+   "id": "renault",
+   "name": "Renault",
+   "country": "FRA",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "renaultgroup.com",
+   "wikidata": "Q6686",
+   "origin": "discovered"
+  },
+  {
+   "id": "mercedes-benz-ag",
+   "name": "Mercedes-Benz AG",
+   "country": "DEU",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "mercedes-benz.de",
+   "wikidata": "Q76754241",
+   "origin": "discovered"
+  },
+  {
+   "id": "aptiv",
+   "name": "Aptiv",
+   "country": "GBR",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "aptiv.com",
+   "wikidata": "Q643626",
+   "origin": "discovered"
+  },
+  {
+   "id": "british-airways",
+   "name": "British Airways",
+   "country": "GBR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "britishairways.com",
+   "wikidata": "Q8766",
+   "origin": "discovered"
+  },
+  {
+   "id": "mondragon-corporation",
+   "name": "Mondragon Corporation",
+   "country": "ESP",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "mondragon-corporation.com",
+   "wikidata": "Q163327",
+   "origin": "discovered"
+  },
+  {
+   "id": "prysmian-group",
+   "name": "Prysmian Group",
+   "country": "ITA",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "prysmian.com",
+   "wikidata": "Q1964784",
+   "origin": "discovered"
+  },
+  {
+   "id": "gavi",
+   "name": "GAVI",
+   "country": "CHE",
+   "sector": "other",
+   "ticker": "",
+   "domain": "gavi.org",
+   "wikidata": "Q688592",
+   "origin": "discovered"
+  },
+  {
+   "id": "robert-bosch",
+   "name": "Robert Bosch",
+   "country": "DEU",
+   "sector": "semi",
+   "ticker": "",
+   "domain": "bosch.com",
+   "wikidata": "Q234021",
+   "origin": "discovered"
+  },
+  {
+   "id": "bouygues",
+   "name": "Bouygues",
+   "country": "FRA",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "bouygues.com",
+   "wikidata": "Q895325",
+   "origin": "discovered"
+  },
+  {
+   "id": "aon-plc",
+   "name": "Aon plc",
+   "country": "GBR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "aon.com",
+   "wikidata": "Q739518",
+   "origin": "discovered"
+  },
+  {
+   "id": "bnp-paribas",
+   "name": "BNP Paribas",
+   "country": "FRA",
+   "sector": "other",
+   "ticker": "",
+   "domain": "mabanque.bnpparibas",
+   "wikidata": "Q499707",
+   "origin": "discovered"
+  },
+  {
+   "id": "aldi-sud",
+   "name": "Aldi Süd",
+   "country": "DEU",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "aldi-sued.de",
+   "wikidata": "Q41171672",
+   "origin": "discovered"
+  },
+  {
+   "id": "deutsche-post-ag",
+   "name": "Deutsche Post AG",
+   "country": "DEU",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "deutschepost.de",
+   "wikidata": "Q157645",
+   "origin": "discovered"
+  },
+  {
+   "id": "saint-gobain",
+   "name": "Saint-Gobain",
+   "country": "FRA",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "saint-gobain.com",
+   "wikidata": "Q678565",
+   "origin": "discovered"
+  },
+  {
+   "id": "veolia",
+   "name": "Veolia",
+   "country": "FRA",
+   "sector": "other",
+   "ticker": "",
+   "domain": "veolia.com",
+   "wikidata": "Q1632461",
+   "origin": "discovered"
+  },
+  {
+   "id": "edeka",
+   "name": "Edeka",
+   "country": "DEU",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "edeka.de",
+   "wikidata": "Q701755",
+   "origin": "discovered"
+  },
+  {
+   "id": "basf",
+   "name": "BASF",
+   "country": "DEU",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "basf.com",
+   "wikidata": "Q9401",
+   "origin": "discovered"
+  },
+  {
+   "id": "gazprom",
+   "name": "Gazprom",
+   "country": "RUS",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "gazprom.ru",
+   "wikidata": "Q102673",
+   "origin": "discovered"
+  },
+  {
+   "id": "cez-group",
+   "name": "ČEZ Group",
+   "country": "CZE",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "cez.cz",
+   "wikidata": "Q336735",
+   "origin": "discovered"
+  },
+  {
+   "id": "russian-national-wealth-fund",
+   "name": "Russian National Wealth Fund",
+   "country": "RUS",
+   "sector": "other",
+   "ticker": "",
+   "domain": "minfin.gov.ru",
+   "wikidata": "Q4491681",
+   "origin": "discovered"
+  },
+  {
+   "id": "mol-group",
+   "name": "MOL Group",
+   "country": "HUN",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "molgroup.info",
+   "wikidata": "Q549181",
+   "origin": "discovered"
+  },
+  {
+   "id": "orlen",
+   "name": "Orlen",
+   "country": "POL",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "orlen.pl",
+   "wikidata": "Q971649",
+   "origin": "discovered"
+  },
+  {
+   "id": "energoatom",
+   "name": "Energoatom",
+   "country": "UKR",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "energoatom.com.ua",
+   "wikidata": "Q938225",
+   "origin": "discovered"
+  },
+  {
+   "id": "metrorex",
+   "name": "Metrorex",
+   "country": "ROU",
+   "sector": "other",
+   "ticker": "",
+   "domain": "metrorex.ro",
+   "wikidata": "Q1091725",
+   "origin": "discovered"
+  },
+  {
+   "id": "skoda-auto",
+   "name": "Škoda Auto",
+   "country": "CZE",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "skoda-auto.com",
+   "wikidata": "Q29637",
+   "origin": "discovered"
+  },
+  {
+   "id": "basic-element",
+   "name": "Basic Element",
+   "country": "RUS",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "sibal.ru",
+   "wikidata": "Q809999",
+   "origin": "discovered"
+  },
+  {
+   "id": "metinvest",
+   "name": "Metinvest",
+   "country": "UKR",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "metinvestholding.com",
+   "wikidata": "Q6824111",
+   "origin": "discovered"
+  },
+  {
+   "id": "soyuz-viktan",
+   "name": "Soyuz-Viktan",
+   "country": "UKR",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "sv.ua",
+   "wikidata": "Q4430440",
+   "origin": "discovered"
+  },
+  {
+   "id": "helleniq-energy",
+   "name": "HELLENiQ ENERGY",
+   "country": "GRC",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "helpe.gr",
+   "wikidata": "Q903198",
+   "origin": "discovered"
+  },
+  {
+   "id": "rosneft",
+   "name": "Rosneft",
+   "country": "RUS",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "rosneft.com",
+   "wikidata": "Q1141123",
+   "origin": "discovered"
+  },
+  {
+   "id": "nornickel",
+   "name": "Nornickel",
+   "country": "RUS",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "nornickel.ru",
+   "wikidata": "Q1284261",
+   "origin": "discovered"
+  },
+  {
+   "id": "robert-bosch-elektronika-gyarto-kft",
+   "name": "Robert Bosch Elektronika Gyártó Kft.",
+   "country": "HUN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "bosch.hu",
+   "wikidata": "Q108169064",
+   "origin": "discovered"
+  },
+  {
+   "id": "atb-market",
+   "name": "ATB-Market",
+   "country": "UKR",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "atbmarket.com",
+   "wikidata": "Q4054103",
+   "origin": "discovered"
+  },
+  {
+   "id": "agrofert",
+   "name": "Agrofert",
+   "country": "CZE",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "agrofert.cz",
+   "wikidata": "Q5374450",
+   "origin": "discovered"
+  },
+  {
+   "id": "ep-group",
+   "name": "EP Group",
+   "country": "CZE",
+   "sector": "other",
+   "ticker": "",
+   "domain": "epgroup.eu",
+   "wikidata": "Q104245554",
+   "origin": "discovered"
+  },
+  {
+   "id": "dino-polska",
+   "name": "Dino Polska",
+   "country": "POL",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "marketdino.pl",
+   "wikidata": "Q11694239",
+   "origin": "discovered"
+  },
+  {
+   "id": "dnipro-coke-chemical-plant",
+   "name": "Dnipro Coke Chemical Plant",
+   "country": "UKR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "dkhz.com.ua",
+   "wikidata": "Q28704881",
+   "origin": "discovered"
+  },
+  {
+   "id": "oando",
+   "name": "Oando",
+   "country": "NGA",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "oandoplc.com",
+   "wikidata": "Q7074355",
+   "origin": "discovered"
+  },
+  {
+   "id": "djezzy-gsm",
+   "name": "Djezzy GSM",
+   "country": "DZA",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "djezzy.dz",
+   "wikidata": "Q836564",
+   "origin": "discovered"
+  },
+  {
+   "id": "vodacom",
+   "name": "Vodacom",
+   "country": "ZAF",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "vodacom.com",
+   "wikidata": "Q1856518",
+   "origin": "discovered"
+  },
+  {
+   "id": "caverton-offshore-support-group",
+   "name": "Caverton Offshore Support Group",
+   "country": "NGA",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "caverton-offshore.com",
+   "wikidata": "Q123487943",
+   "origin": "discovered"
+  },
+  {
+   "id": "al-mada",
+   "name": "Al Mada",
+   "country": "MAR",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "almada.ma",
+   "wikidata": "Q3488506",
+   "origin": "discovered"
+  },
+  {
+   "id": "xero-limited",
+   "name": "Xero Limited",
+   "country": "NZL",
+   "sector": "software",
+   "ticker": "",
+   "domain": "xero.com",
+   "wikidata": "Q8043794",
+   "origin": "discovered"
+  },
+  {
+   "id": "perth-mint",
+   "name": "Perth Mint",
+   "country": "AUS",
+   "sector": "other",
+   "ticker": "",
+   "domain": "perthmint.com",
+   "wikidata": "Q917524",
+   "origin": "discovered"
+  },
+  {
+   "id": "csl-limited",
+   "name": "CSL Limited",
+   "country": "AUS",
+   "sector": "pharma",
+   "ticker": "",
+   "domain": "csl.com.au",
+   "wikidata": "Q908265",
+   "origin": "discovered"
+  },
+  {
+   "id": "bluescope-steel",
+   "name": "BlueScope Steel",
+   "country": "AUS",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "tatabluescopesteel.com",
+   "wikidata": "Q885589",
+   "origin": "discovered"
+  },
+  {
+   "id": "hancock-prospecting",
+   "name": "Hancock Prospecting",
+   "country": "AUS",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "hancockprospecting.com.au",
+   "wikidata": "Q5647056",
+   "origin": "discovered"
+  },
+  {
+   "id": "national-australia-bank",
+   "name": "National Australia Bank",
+   "country": "AUS",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "nab.com.au",
+   "wikidata": "Q1430985",
+   "origin": "discovered"
+  },
+  {
+   "id": "qantas-airways",
+   "name": "Qantas Airways",
+   "country": "AUS",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "qantas.com",
+   "wikidata": "Q32491",
+   "origin": "discovered"
+  },
+  {
+   "id": "westpac",
+   "name": "Westpac",
+   "country": "AUS",
+   "sector": "bank",
+   "ticker": "",
+   "domain": "westpac.com.au",
+   "wikidata": "Q2031726",
+   "origin": "discovered"
+  },
+  {
+   "id": "telstra",
+   "name": "Telstra",
+   "country": "AUS",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "telstra.com.au",
+   "wikidata": "Q721162",
+   "origin": "discovered"
+  },
+  {
+   "id": "australia-and-new-zealand-banking-group",
+   "name": "Australia and New Zealand Banking Group",
+   "country": "AUS",
+   "sector": "bank",
+   "ticker": "",
+   "domain": "anz.com.au",
+   "wikidata": "Q714641",
+   "origin": "discovered"
+  },
+  {
+   "id": "macquarie-group",
+   "name": "Macquarie Group",
+   "country": "AUS",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "macquarie.com",
+   "wikidata": "Q1200904",
+   "origin": "discovered"
+  },
+  {
+   "id": "wesfarmers",
+   "name": "Wesfarmers",
+   "country": "AUS",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "wesfarmers.com.au",
+   "wikidata": "Q908144",
+   "origin": "discovered"
+  },
+  {
+   "id": "resmed-australia",
+   "name": "ResMed (Australia)",
+   "country": "AUS",
+   "sector": "other",
+   "ticker": "",
+   "domain": "resmed.com",
+   "wikidata": "Q29123786",
+   "origin": "discovered"
+  },
+  {
+   "id": "lg-electronics",
+   "name": "LG Electronics",
+   "country": "KOR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "lg.com",
+   "wikidata": "Q162345",
+   "origin": "discovered"
+  },
+  {
+   "id": "hyundai-mobis",
+   "name": "Hyundai Mobis",
+   "country": "KOR",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "en.mobis.co.kr",
+   "wikidata": "Q497534",
+   "origin": "discovered"
+  },
+  {
+   "id": "kg-group",
+   "name": "KG Group",
+   "country": "KOR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "kggroup.co.kr",
+   "wikidata": "Q114243585",
+   "origin": "discovered"
+  },
+  {
+   "id": "sungwoo-hitech",
+   "name": "Sungwoo Hitech",
+   "country": "KOR",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "swhitech.com",
+   "wikidata": "Q47912783",
+   "origin": "discovered"
+  },
+  {
+   "id": "nhn-kcp",
+   "name": "NHN KCP",
+   "country": "KOR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "kcp.co.kr",
+   "wikidata": "Q129167366",
+   "origin": "discovered"
+  },
+  {
+   "id": "republic-of-korea-national-red-cross",
+   "name": "Republic of Korea National Red Cross",
+   "country": "KOR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "redcross.or.kr",
+   "wikidata": "Q7314493",
+   "origin": "discovered"
+  },
+  {
+   "id": "nhn",
+   "name": "NHN",
+   "country": "KOR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "nhn.com",
+   "wikidata": "Q16171459",
+   "origin": "discovered"
+  },
+  {
+   "id": "kyongbo-pharmaceutical-co",
+   "name": "Kyongbo Pharmaceutical Co.",
+   "country": "KOR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "kbpharma.co.kr",
+   "wikidata": "Q131188554",
+   "origin": "discovered"
+  },
+  {
+   "id": "telechips",
+   "name": "Telechips",
+   "country": "KOR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "telechips.com",
+   "wikidata": "Q3517277",
+   "origin": "discovered"
+  },
+  {
+   "id": "dear-u",
+   "name": "Dear U",
+   "country": "KOR",
+   "sector": "software",
+   "ticker": "",
+   "domain": "dear-u.co",
+   "wikidata": "Q131188997",
+   "origin": "discovered"
+  },
+  {
+   "id": "icure-pharm-south-korea",
+   "name": "ICURE Pharm (South Korea)",
+   "country": "KOR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "icure.co.kr",
+   "wikidata": "Q131188949",
+   "origin": "discovered"
+  },
+  {
+   "id": "korea-electric-power-corporation",
+   "name": "Korea Electric Power Corporation",
+   "country": "KOR",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "home.kepco.co.kr",
+   "wikidata": "Q486737",
+   "origin": "discovered"
+  },
+  {
+   "id": "komipharm-international-south-korea",
+   "name": "Komipharm International (South Korea)",
+   "country": "KOR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "komipharm.co.kr",
+   "wikidata": "Q56583275",
+   "origin": "discovered"
+  },
+  {
+   "id": "iquest",
+   "name": "IQUEST",
+   "country": "KOR",
+   "sector": "software",
+   "ticker": "",
+   "domain": "iquest.co.kr",
+   "wikidata": "Q131188428",
+   "origin": "discovered"
+  },
+  {
+   "id": "lg-chem",
+   "name": "LG Chem",
+   "country": "KOR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "lgchem.com",
+   "wikidata": "Q486976",
+   "origin": "discovered"
+  },
+  {
+   "id": "studio-mir",
+   "name": "Studio Mir",
+   "country": "KOR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "studiomir.co.kr",
+   "wikidata": "Q7628201",
+   "origin": "discovered"
+  },
+  {
+   "id": "karnataka-state-road-transport-corporation",
+   "name": "Karnataka State Road Transport Corporation",
+   "country": "IND",
+   "sector": "other",
+   "ticker": "",
+   "domain": "ksrtc.in",
+   "wikidata": "Q3139469",
+   "origin": "discovered"
+  },
+  {
+   "id": "hdfc-bank",
+   "name": "HDFC Bank‬",
+   "country": "IND",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "hdfc.bank.in",
+   "wikidata": "Q631047",
+   "origin": "discovered"
+  },
+  {
+   "id": "jio-platforms",
+   "name": "Jio Platforms",
+   "country": "IND",
+   "sector": "other",
+   "ticker": "",
+   "domain": "jio.com",
+   "wikidata": "Q96418672",
+   "origin": "discovered"
+  },
+  {
+   "id": "japan-marine-united-corporation",
+   "name": "Japan Marine United Corporation",
+   "country": "JPN",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "jmuc.co.jp",
+   "wikidata": "Q11309941",
+   "origin": "discovered"
+  },
+  {
+   "id": "honda",
+   "name": "Honda",
+   "country": "JPN",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "global.honda",
+   "wikidata": "Q9584",
+   "origin": "discovered"
+  },
+  {
+   "id": "mitsubishi",
+   "name": "Mitsubishi",
+   "country": "JPN",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "mitsubishi.com",
+   "wikidata": "Q183275",
+   "origin": "discovered"
+  },
+  {
+   "id": "toyota",
+   "name": "Toyota",
+   "country": "JPN",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "global.toyota",
+   "wikidata": "Q53268",
+   "origin": "discovered"
+  },
+  {
+   "id": "japan-post-holdings",
+   "name": "Japan Post Holdings",
+   "country": "JPN",
+   "sector": "bank",
+   "ticker": "",
+   "domain": "japanpost.jp",
+   "wikidata": "Q1372049",
+   "origin": "discovered"
+  },
+  {
+   "id": "nissan",
+   "name": "Nissan",
+   "country": "JPN",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "nissan-global.com",
+   "wikidata": "Q20165",
+   "origin": "discovered"
+  },
+  {
+   "id": "itochu",
+   "name": "Itochu",
+   "country": "JPN",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "itochu.co.jp",
+   "wikidata": "Q717093",
+   "origin": "discovered"
+  },
+  {
+   "id": "seven-and-i-holdings-co",
+   "name": "Seven & I Holdings Co.",
+   "country": "JPN",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "7andi.com",
+   "wikidata": "Q639447",
+   "origin": "discovered"
+  },
+  {
+   "id": "nec",
+   "name": "NEC",
+   "country": "JPN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "nec.com",
+   "wikidata": "Q219203",
+   "origin": "discovered"
+  },
+  {
+   "id": "isuzu",
+   "name": "Isuzu",
+   "country": "JPN",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "isuzu.co.jp",
+   "wikidata": "Q29803",
+   "origin": "discovered"
+  },
+  {
+   "id": "mitsui-and-co",
+   "name": "Mitsui & Co.",
+   "country": "JPN",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "mitsui.com",
+   "wikidata": "Q904240",
+   "origin": "discovered"
+  },
+  {
+   "id": "softbank-group",
+   "name": "SoftBank Group",
+   "country": "JPN",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "group.softbank",
+   "wikidata": "Q201653",
+   "origin": "discovered"
+  },
+  {
+   "id": "panasonic-holdings-corporation",
+   "name": "Panasonic Holdings Corporation",
+   "country": "JPN",
+   "sector": "semi",
+   "ticker": "",
+   "domain": "panasonic.com",
+   "wikidata": "Q53247",
+   "origin": "discovered"
+  },
+  {
+   "id": "nippon-steel-corporation",
+   "name": "Nippon Steel Corporation",
+   "country": "JPN",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "nipponsteel.com",
+   "wikidata": "Q1151693",
+   "origin": "discovered"
+  },
+  {
+   "id": "idemitsu-kosan",
+   "name": "Idemitsu Kosan",
+   "country": "JPN",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "idemitsu.com",
+   "wikidata": "Q2216770",
+   "origin": "discovered"
+  },
+  {
+   "id": "ntt-docomo",
+   "name": "NTT DoCoMo",
+   "country": "JPN",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "docomo.ne.jp",
+   "wikidata": "Q853958",
+   "origin": "discovered"
+  },
+  {
+   "id": "mazda",
+   "name": "Mazda",
+   "country": "JPN",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "mazda.com",
+   "wikidata": "Q35996",
+   "origin": "discovered"
+  },
+  {
+   "id": "canon-inc",
+   "name": "Canon Inc.",
+   "country": "JPN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "global.canon",
+   "wikidata": "Q62621",
+   "origin": "discovered"
+  },
+  {
+   "id": "east-japan-railway-company",
+   "name": "East Japan Railway Company",
+   "country": "JPN",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "jreast.co.jp",
+   "wikidata": "Q499071",
+   "origin": "discovered"
+  },
+  {
+   "id": "fujifilm-corporation",
+   "name": "Fujifilm Corporation",
+   "country": "JPN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "fujifilm.com",
+   "wikidata": "Q164740",
+   "origin": "discovered"
+  },
+  {
+   "id": "sharp-corporation",
+   "name": "Sharp Corporation",
+   "country": "JPN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "global.sharp",
+   "wikidata": "Q53227",
+   "origin": "discovered"
+  },
+  {
+   "id": "yamaha-motor-company",
+   "name": "Yamaha Motor Company",
+   "country": "JPN",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "global.yamaha-motor.com",
+   "wikidata": "Q158888",
+   "origin": "discovered"
+  },
+  {
+   "id": "toyota-boshoku",
+   "name": "Toyota Boshoku",
+   "country": "JPN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "toyota-boshoku.co.jp",
+   "wikidata": "Q7830755",
+   "origin": "discovered"
+  },
+  {
+   "id": "central-japan-railway-company",
+   "name": "Central Japan Railway Company",
+   "country": "JPN",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "jr-central.co.jp",
+   "wikidata": "Q513679",
+   "origin": "discovered"
+  },
+  {
+   "id": "asahi-group-holdings",
+   "name": "Asahi Group Holdings",
+   "country": "JPN",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "asahigroup-holdings.com",
+   "wikidata": "Q11283168",
+   "origin": "discovered"
+  },
+  {
+   "id": "ly-corporation",
+   "name": "LY Corporation",
+   "country": "JPN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "lycorp.co.jp",
+   "wikidata": "Q86734122",
+   "origin": "discovered"
+  },
+  {
+   "id": "nomura-group",
+   "name": "Nomura Group",
+   "country": "JPN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "nomura.com",
+   "wikidata": "Q658089",
+   "origin": "discovered"
+  },
+  {
+   "id": "meiji-holdings",
+   "name": "Meiji Holdings",
+   "country": "JPN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "meiji.co.jp",
+   "wikidata": "Q11512295",
+   "origin": "discovered"
+  },
+  {
+   "id": "olympus-corporation",
+   "name": "Olympus Corporation",
+   "country": "JPN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "olympus-global.com",
+   "wikidata": "Q688619",
+   "origin": "discovered"
+  },
+  {
+   "id": "oki-electric-industry",
+   "name": "Oki Electric Industry",
+   "country": "JPN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "oki.com",
+   "wikidata": "Q786947",
+   "origin": "discovered"
+  },
+  {
+   "id": "nissin-foods-holdings",
+   "name": "Nissin Foods Holdings",
+   "country": "JPN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "nissin.com",
+   "wikidata": "Q18341667",
+   "origin": "discovered"
+  },
+  {
+   "id": "shimano",
+   "name": "Shimano",
+   "country": "JPN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "shimano.com",
+   "wikidata": "Q949610",
+   "origin": "discovered"
+  },
+  {
+   "id": "geo-holdings",
+   "name": "Geo Holdings",
+   "country": "JPN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "geonet.co.jp",
+   "wikidata": "Q11301501",
+   "origin": "discovered"
+  },
+  {
+   "id": "pioneer-corporation",
+   "name": "Pioneer Corporation",
+   "country": "JPN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "pioneer.jp",
+   "wikidata": "Q156034",
+   "origin": "discovered"
+  },
+  {
+   "id": "ezaki-glico",
+   "name": "Ezaki Glico",
+   "country": "JPN",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "glico.com",
+   "wikidata": "Q391534",
+   "origin": "discovered"
+  },
+  {
+   "id": "jvc-kenwood",
+   "name": "JVC Kenwood",
+   "country": "JPN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "it.wikipedia.org",
+   "wikidata": "Q1676719",
+   "origin": "discovered"
+  },
+  {
+   "id": "bank-of-yokohama",
+   "name": "Bank of Yokohama",
+   "country": "JPN",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "boy.co.jp",
+   "wikidata": "Q2744340",
+   "origin": "discovered"
+  },
+  {
+   "id": "calbee",
+   "name": "Calbee",
+   "country": "JPN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "calbee.co.jp",
+   "wikidata": "Q846834",
+   "origin": "discovered"
+  },
+  {
+   "id": "square-enix",
+   "name": "Square Enix",
+   "country": "JPN",
+   "sector": "media",
+   "ticker": "",
+   "domain": "square-enix.com",
+   "wikidata": "Q207784",
+   "origin": "discovered"
+  },
+  {
+   "id": "yamaha",
+   "name": "Yamaha",
+   "country": "JPN",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "yamaha.com",
+   "wikidata": "Q188454",
+   "origin": "discovered"
+  },
+  {
+   "id": "bank-leumi-le-israel-b-m",
+   "name": "Bank Leumi Le- Israel B.m.",
+   "country": "ISR",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "leumi.co.il",
+   "wikidata": "Q806641",
+   "origin": "discovered"
+  },
+  {
+   "id": "elbit-systems-ltd",
+   "name": "Elbit Systems Ltd.",
+   "country": "ISR",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "elbitsystems.com",
+   "wikidata": "Q1325369",
+   "origin": "discovered"
+  },
+  {
+   "id": "pegasus-airlines",
+   "name": "Pegasus Airlines",
+   "country": "TUR",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "flypgs.com",
+   "wikidata": "Q1100424",
+   "origin": "discovered"
+  },
+  {
+   "id": "dubai-investment-fund",
+   "name": "Dubai Investment Fund",
+   "country": "ARE",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "dif.ae",
+   "wikidata": "Q114877710",
+   "origin": "discovered"
+  },
+  {
+   "id": "emaar-properties",
+   "name": "Emaar Properties",
+   "country": "ARE",
+   "sector": "consumer",
+   "ticker": "",
+   "domain": "emaar.com",
+   "wikidata": "Q1153463",
+   "origin": "discovered"
+  },
+  {
+   "id": "bank-hapoalim-b-m",
+   "name": "Bank Hapoalim B.M.",
+   "country": "ISR",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "bankhapoalim.co.il",
+   "wikidata": "Q2666775",
+   "origin": "discovered"
+  },
+  {
+   "id": "saudi-telecom-company",
+   "name": "Saudi Telecom Company",
+   "country": "SAU",
+   "sector": "telecom",
+   "ticker": "",
+   "domain": "stc.com.sa",
+   "wikidata": "Q1535171",
+   "origin": "discovered"
+  },
+  {
+   "id": "nice-ltd",
+   "name": "Nice Ltd",
+   "country": "ISR",
+   "sector": "software",
+   "ticker": "",
+   "domain": "nice.com",
+   "wikidata": "Q2091479",
+   "origin": "discovered"
+  },
+  {
+   "id": "saudi-electricity-company",
+   "name": "Saudi Electricity Company",
+   "country": "SAU",
+   "sector": "other",
+   "ticker": "",
+   "domain": "se.com.sa",
+   "wikidata": "Q12188903",
+   "origin": "discovered"
+  },
+  {
+   "id": "icl-group-ltd",
+   "name": "Icl Group Ltd",
+   "country": "ISR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "icl-group.com",
+   "wikidata": "Q903957",
+   "origin": "discovered"
+  },
+  {
+   "id": "alrajhi-bank",
+   "name": "Alrajhi Bank",
+   "country": "SAU",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "alrajhibank.com.sa",
+   "wikidata": "Q1761176",
+   "origin": "discovered"
+  },
+  {
+   "id": "teva-pharmaceutical-industries-ltd",
+   "name": "Teva Pharmaceutical Industries Ltd.",
+   "country": "ISR",
+   "sector": "pharma",
+   "ticker": "",
+   "domain": "tevapharm.com",
+   "wikidata": "Q898750",
+   "origin": "discovered"
+  },
+  {
+   "id": "sabic",
+   "name": "SABIC",
+   "country": "SAU",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "sabic.com",
+   "wikidata": "Q903219",
+   "origin": "discovered"
+  },
+  {
+   "id": "mizrahi-tefahot-bank-ltd",
+   "name": "Mizrahi Tefahot Bank Ltd.",
+   "country": "ISR",
+   "sector": "bank",
+   "ticker": "",
+   "domain": "mizrahi-tefahot.co.il",
+   "wikidata": "Q2777129",
+   "origin": "discovered"
+  },
+  {
+   "id": "azrieli-group-ltd",
+   "name": "Azrieli Group Ltd",
+   "country": "ISR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "azrieligroup.com",
+   "wikidata": "Q7220966",
+   "origin": "discovered"
+  },
+  {
+   "id": "israel-discount-bank-ltd",
+   "name": "Israel Discount Bank Ltd.",
+   "country": "ISR",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "discountbank.co.il",
+   "wikidata": "Q250362",
+   "origin": "discovered"
+  },
+  {
+   "id": "lima-stock-exchange",
+   "name": "Lima Stock Exchange",
+   "country": "PER",
+   "sector": "other",
+   "ticker": "",
+   "domain": "bvl.com.pe",
+   "wikidata": "Q2380045",
+   "origin": "discovered"
+  },
+  {
+   "id": "grupo-arcor",
+   "name": "Grupo Arcor",
+   "country": "ARG",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "arcor.com",
+   "wikidata": "Q380022",
+   "origin": "discovered"
+  },
+  {
+   "id": "novonor",
+   "name": "Novonor",
+   "country": "BRA",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "novonor.com",
+   "wikidata": "Q94849",
+   "origin": "discovered"
+  },
+  {
+   "id": "petrobras",
+   "name": "Petrobras",
+   "country": "BRA",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "petrobras.com.br",
+   "wikidata": "Q210047",
+   "origin": "discovered"
+  },
+  {
+   "id": "ecopetrol",
+   "name": "Ecopetrol",
+   "country": "COL",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "ecopetrol.com.co",
+   "wikidata": "Q1282130",
+   "origin": "discovered"
+  },
+  {
+   "id": "techint",
+   "name": "Techint",
+   "country": "ARG",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "techint.com",
+   "wikidata": "Q2037048",
+   "origin": "discovered"
+  },
+  {
+   "id": "itau-unibanco",
+   "name": "Itaú Unibanco",
+   "country": "BRA",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "itau.com.br",
+   "wikidata": "Q1424293",
+   "origin": "discovered"
+  },
+  {
+   "id": "bursa-malaysia",
+   "name": "Bursa Malaysia",
+   "country": "MYS",
+   "sector": "other",
+   "ticker": "",
+   "domain": "bursamalaysia.com",
+   "wikidata": "Q43335",
+   "origin": "discovered"
+  },
+  {
+   "id": "perusahaan-listrik-negara",
+   "name": "Perusahaan Listrik Negara",
+   "country": "IDN",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "web.pln.co.id",
+   "wikidata": "Q4201636",
+   "origin": "discovered"
+  },
+  {
+   "id": "trafigura",
+   "name": "Trafigura",
+   "country": "SGP",
+   "sector": "energy",
+   "ticker": "",
+   "domain": "trafigura.com",
+   "wikidata": "Q687508",
+   "origin": "discovered"
+  },
+  {
+   "id": "qaf-limited",
+   "name": "QAF Limited",
+   "country": "SGP",
+   "sector": "other",
+   "ticker": "",
+   "domain": "qaf.com.sg",
+   "wikidata": "Q10887008",
+   "origin": "discovered"
+  },
+  {
+   "id": "charoen-pokphand",
+   "name": "Charoen Pokphand",
+   "country": "THA",
+   "sector": "staples",
+   "ticker": "",
+   "domain": "cpthailand.com",
+   "wikidata": "Q611064",
+   "origin": "discovered"
+  },
+  {
+   "id": "stecon-group",
+   "name": "Stecon Group",
+   "country": "THA",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "stecongroup.co.th",
+   "wikidata": "Q13014600",
+   "origin": "discovered"
+  },
+  {
+   "id": "bank-rakyat-indonesia",
+   "name": "Bank Rakyat Indonesia",
+   "country": "IDN",
+   "sector": "bank",
+   "ticker": "",
+   "domain": "bri.co.id",
+   "wikidata": "Q623042",
+   "origin": "discovered"
+  },
+  {
+   "id": "latam-airlines-group",
+   "name": "LATAM Airlines Group",
+   "country": "BRA",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "latam.com",
+   "wikidata": "Q1321868",
+   "origin": "discovered"
+  },
+  {
+   "id": "heineken-brazil",
+   "name": "Heineken Brazil",
+   "country": "BRA",
+   "sector": "other",
+   "ticker": "",
+   "domain": "heinekenbrasil.com.br",
+   "wikidata": "Q106545717",
+   "origin": "discovered"
+  },
+  {
+   "id": "banco-de-chile",
+   "name": "Banco de Chile",
+   "country": "CHL",
+   "sector": "bank",
+   "ticker": "",
+   "domain": "bancochile.cl",
+   "wikidata": "Q2882085",
+   "origin": "discovered"
+  },
+  {
+   "id": "paz-del-rio-steel-mills",
+   "name": "Paz del Río Steel Mills",
+   "country": "COL",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "pazdelrio.com.co",
+   "wikidata": "Q16487362",
+   "origin": "discovered"
+  },
+  {
+   "id": "embraer",
+   "name": "Embraer",
+   "country": "BRA",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "embraer.com",
+   "wikidata": "Q105557",
+   "origin": "discovered"
+  },
+  {
+   "id": "itausa",
+   "name": "Itaúsa",
+   "country": "BRA",
+   "sector": "other",
+   "ticker": "",
+   "domain": "itausa.com.br",
+   "wikidata": "Q1579151",
+   "origin": "discovered"
+  },
+  {
+   "id": "ormat-technologies",
+   "name": "Ormat Technologies",
+   "country": "ISR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "ormat.com",
+   "wikidata": "Q1549511",
+   "origin": "discovered"
+  },
+  {
+   "id": "mifal-hapayis",
+   "name": "Mifal HaPayis",
+   "country": "ISR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "pais.co.il",
+   "wikidata": "Q6843985",
+   "origin": "discovered"
+  },
+  {
+   "id": "bupa-arabia",
+   "name": "Bupa Arabia",
+   "country": "SAU",
+   "sector": "other",
+   "ticker": "",
+   "domain": "bupa.com.sa",
+   "wikidata": "Q17005768",
+   "origin": "discovered"
+  },
+  {
+   "id": "anglogold-ashanti",
+   "name": "AngloGold Ashanti",
+   "country": "ZAF",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "anglogoldashanti.com",
+   "wikidata": "Q541076",
+   "origin": "discovered"
+  },
+  {
+   "id": "elsewedy-electric",
+   "name": "Elsewedy Electric",
+   "country": "EGY",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "ir.elsewedyelectric.com",
+   "wikidata": "Q5367528",
+   "origin": "discovered"
+  },
+  {
+   "id": "alexbank",
+   "name": "Alexbank",
+   "country": "EGY",
+   "sector": "finance",
+   "ticker": "",
+   "domain": "alexbank.com",
+   "wikidata": "Q4856020",
+   "origin": "discovered"
+  },
+  {
+   "id": "olympic-group",
+   "name": "Olympic Group",
+   "country": "EGY",
+   "sector": "other",
+   "ticker": "",
+   "domain": "olympic-electric.com",
+   "wikidata": "Q7089088",
+   "origin": "discovered"
+  },
+  {
+   "id": "sasebo-heavy-industries",
+   "name": "Sasebo Heavy Industries",
+   "country": "JPN",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "ssk-sasebo.co.jp",
+   "wikidata": "Q11382579",
+   "origin": "discovered"
+  },
+  {
+   "id": "daihatsu",
+   "name": "Daihatsu",
+   "country": "JPN",
+   "sector": "auto",
+   "ticker": "",
+   "domain": "daihatsu.co.jp",
+   "wikidata": "Q27511",
+   "origin": "discovered"
+  },
+  {
+   "id": "tameny-inc",
+   "name": "Tameny Inc.",
+   "country": "JPN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "tameny.jp",
+   "wikidata": "Q119659534",
+   "origin": "discovered"
+  },
+  {
+   "id": "joe",
+   "name": "ＪＯＥ",
+   "country": "JPN",
+   "sector": "tech",
+   "ticker": "",
+   "domain": "joe-hr.com",
+   "wikidata": "Q69961146",
+   "origin": "discovered"
+  },
+  {
+   "id": "fanuc",
+   "name": "FANUC",
+   "country": "JPN",
+   "sector": "industrial",
+   "ticker": "",
+   "domain": "fanuc.co.jp",
+   "wikidata": "Q212116",
+   "origin": "discovered"
+  },
+  {
+   "id": "rakuten-group-inc",
+   "name": "Rakuten Group, Inc.",
+   "country": "JPN",
+   "sector": "internet",
+   "ticker": "",
+   "domain": "corp.rakuten.co.jp",
+   "wikidata": "Q973054",
+   "origin": "discovered"
+  },
+  {
+   "id": "mitsubishi-heavy-industries",
+   "name": "Mitsubishi Heavy Industries",
+   "country": "JPN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "mhi.com",
+   "wikidata": "Q648280",
+   "origin": "discovered"
+  },
+  {
+   "id": "association-for-aid-and-relief-japan",
+   "name": "Association for Aid and Relief, Japan",
+   "country": "JPN",
+   "sector": "other",
+   "ticker": "",
+   "domain": "aarjapan.gr.jp",
+   "wikidata": "Q11659511",
+   "origin": "discovered"
+  },
+  {
+   "id": "akindo-sushiro",
+   "name": "Akindo Sushiro",
+   "country": "JPN",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "akindo-sushiro.co.jp",
+   "wikidata": "Q11257037",
+   "origin": "discovered"
+  },
+  {
+   "id": "value-books",
+   "name": "VALUE BOOKS",
+   "country": "JPN",
+   "sector": "retail",
+   "ticker": "",
+   "domain": "corporate.valuebooks.jp",
+   "wikidata": "Q130741349",
+   "origin": "discovered"
+  },
+  {
+   "id": "prologis",
+   "name": "Prologis",
+   "country": "KOR",
+   "sector": "other",
+   "ticker": "",
+   "domain": "prologis.com",
+   "wikidata": "Q16983765",
+   "origin": "discovered"
+  },
+  {
+   "id": "hideep-inc",
+   "name": "HiDeep Inc",
+   "country": "KOR",
+   "sector": "semi",
+   "ticker": "",
+   "domain": "hideep.com",
+   "wikidata": "Q131188824",
+   "origin": "discovered"
+  },
+  {
+   "id": "hj-shipbuilding-and-construction",
+   "name": "HJ Shipbuilding & Construction",
+   "country": "KOR",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "hjsc.co.kr",
+   "wikidata": "Q489195",
+   "origin": "discovered"
+  },
+  {
+   "id": "akshaya-patra-foundation",
+   "name": "Akshaya Patra Foundation",
+   "country": "IND",
+   "sector": "other",
+   "ticker": "",
+   "domain": "akshayapatra.org",
+   "wikidata": "Q2721869",
+   "origin": "discovered"
+  },
+  {
+   "id": "pratham",
+   "name": "Pratham",
+   "country": "IND",
+   "sector": "other",
+   "ticker": "",
+   "domain": "pratham.org",
+   "wikidata": "Q2376803",
+   "origin": "discovered"
+  },
+  {
+   "id": "hindustan-aeronautics-limited",
+   "name": "Hindustan Aeronautics Limited",
+   "country": "IND",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "hal-india.co.in",
+   "wikidata": "Q357095",
+   "origin": "discovered"
+  },
+  {
+   "id": "india-post",
+   "name": "India Post",
+   "country": "IND",
+   "sector": "other",
+   "ticker": "",
+   "domain": "indiapost.gov.in",
+   "wikidata": "Q3519720",
+   "origin": "discovered"
+  },
+  {
+   "id": "giveindia",
+   "name": "GiveIndia",
+   "country": "IND",
+   "sector": "other",
+   "ticker": "",
+   "domain": "giveindia.org",
+   "wikidata": "Q5565604",
+   "origin": "discovered"
+  },
+  {
+   "id": "ordnance-factory-board-ofb",
+   "name": "Ordnance Factory Board (OFB)",
+   "country": "IND",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "ofb.gov.in",
+   "wikidata": "Q3150095",
+   "origin": "discovered"
+  },
+  {
+   "id": "smile-foundation",
+   "name": "Smile Foundation",
+   "country": "IND",
+   "sector": "other",
+   "ticker": "",
+   "domain": "smilefoundationindia.org",
+   "wikidata": "Q18392093",
+   "origin": "discovered"
+  },
+  {
+   "id": "aneka-tambang",
+   "name": "Aneka Tambang",
+   "country": "IDN",
+   "sector": "materials",
+   "ticker": "",
+   "domain": "antam.com",
+   "wikidata": "Q12472074",
+   "origin": "discovered"
+  },
+  {
+   "id": "gmm-grammy",
+   "name": "GMM Grammy",
+   "country": "THA",
+   "sector": "other",
+   "ticker": "",
+   "domain": "gmmgrammy.com",
+   "wikidata": "Q4923294",
+   "origin": "discovered"
+  },
+  {
+   "id": "dyson",
+   "name": "Dyson",
+   "country": "SGP",
+   "sector": "other",
+   "ticker": "",
+   "domain": "dyson.com",
+   "wikidata": "Q621429",
+   "origin": "discovered"
+  },
+  {
+   "id": "maharlika-wealth-fund",
+   "name": "Maharlika Wealth Fund",
+   "country": "PHL",
+   "sector": "other",
+   "ticker": "",
+   "domain": "mic.gov.ph",
+   "wikidata": "Q115925979",
+   "origin": "discovered"
+  },
+  {
+   "id": "nanyang-technological-university",
+   "name": "Nanyang Technological University",
+   "country": "SGP",
+   "sector": "other",
+   "ticker": "",
+   "domain": "ntu.edu.sg",
+   "wikidata": "Q721064",
+   "origin": "discovered"
+  },
+  {
+   "id": "st-engineering",
+   "name": "ST Engineering",
+   "country": "SGP",
+   "sector": "aerospace",
+   "ticker": "",
+   "domain": "stengg.com",
+   "wikidata": "Q3719328",
+   "origin": "discovered"
+  }
+ ]
+}

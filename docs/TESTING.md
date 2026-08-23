@@ -21,7 +21,8 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-23): the **core** tier that
 gates a push is **6 spec files / 1.0 min** against a ceiling of 1.1 min; the **whole** suite is
 **68 measured spec files / 86.3 min** of serial browser time against a ceiling of 86.3 min; and
-`npm run test:checks` runs **180 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **181 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **175 Node test files** with no browser at all (counted from
 `package.json`). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -606,3 +607,17 @@ javascript:alert(1) · data:text/html,… · vbscript:… · java\tscript:…   
 ```
 Each must render as inert text; and 日本語 / Zürich / Москва / España / emoji / accents /
 long place names must survive `html()` unchanged.
+
+## 企業アトラスの門 - `npm run check:companies`
+
+`scripts/companies-audit.mjs`。**他の `check:*` が source を読むのに対し、これは出荷される
+`data/companies/` のバイトを読む**——「builder は出典の無い値を落とす」はコードについての主張で、
+読者が見るのはファイルだから。検査は 20 本で、番号は [`COMPANIES.md`](COMPANIES.md) §7 と同じ。
+
+実データを作っている最中に、この門が実際に捕まえた形が 2 つある:
+
+- **通貨も年度も持たない金額**（Wikidata には単位が通貨でない時価総額と、P585 を持たない売上がある）
+- **座標 `0,0`**——「値が無い」をギニア湾の一点として書いたもの
+
+`--report` は指示書 §14 の形のカバレッジ表を出す（`--all` で全社）。
+回帰は `tests/r354-checks.test.mjs`（`test:checks` に登録済み）。

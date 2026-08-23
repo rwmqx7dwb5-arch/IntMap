@@ -108,12 +108,48 @@ function boundTo(n) {
    file that binds it would drop js/atlas-*.js and js/companies-ui.js out of every measurement —
    34 strings, silently, while the report went UP. So `exposed` is computed to a FIXED POINT: each
    pass may prove a new property name, which may prove a new local name, until nothing changes. */
+/* the expressions an IIFE hands back — its own `return`s only, never a nested function's */
+function returnsOf(fn) {
+  if (fn.body && fn.body.type !== 'BlockStatement') return [fn.body];
+  const out = [];
+  (function scan(n) {
+    if (!n || typeof n.type !== 'string') return;
+    if (n.type === 'FunctionExpression' || n.type === 'ArrowFunctionExpression' || n.type === 'FunctionDeclaration') return;
+    if (n.type === 'ReturnStatement') { if (n.argument) out.push(n.argument); return; }
+    for (const k of Object.keys(n)) {
+      if (k === 'type' || k === 'start' || k === 'end' || k === 'loc') continue;
+      const v = n[k];
+      if (Array.isArray(v)) { for (const c of v) if (c && typeof c.type === 'string') scan(c); }
+      else if (v && typeof v.type === 'string') scan(v);
+    }
+  }(fn.body));
+  return out;
+}
 const bindsHelper = (n, exposed) => {
   if (!n) return false;
   if (n.type === 'LogicalExpression') return bindsHelper(n.left, exposed) || bindsHelper(n.right, exposed);
   /* `const L = (IntMapLang && IntMapLang.pick) ? IntMapLang.pick(…) : fallback` — js/basemap-switch.js */
   if (n.type === 'ConditionalExpression') return bindsHelper(n.consequent, exposed) || bindsHelper(n.alternate, exposed);
-  if (n.type === 'CallExpression') return /IntMapLang\.pick(Args)?$/.test(boundTo(n.callee));
+  if (n.type === 'CallExpression') {
+    if (/IntMapLang\.pick(Args)?$/.test(boundTo(n.callee))) return true;
+    /* ⚠⚠⚠ (#R354) THE SEVENTEENTH WAY — AN IIFE THAT *RETURNS* THE HELPER, which is what a LAZY
+       module writes because it cannot assume the registry is on `window` yet:
+           js/company-data.js  const LA = (function(){ try { return window.IntMapLang.pickArgs(); }
+                                                       catch (_) { return (...a) => a; } }());
+       Reading that as «not a helper» reproduced #R251's three-instrument failure exactly one shape
+       later: the inline report never put that file's 42 facility / group / status labels into the
+       universe (so fr / ko / zh-Hant / zh-Hans had no row and rendered ENGLISH at 100 %), the
+       positional audit never checked their German, and the pair audit reported all 44 correct
+       `LA(…)` tuples as an OPEN GAP — 187 against a ceiling of 143. One binding, three wrong
+       answers, so it is fixed HERE once, per the note above. ⚠ Only the IIFE's OWN returns count;
+       the scan stops at a nested function, so `return (...a) => a` — the fallback — proves nothing,
+       and a factory that merely *contains* a helper somewhere is not a helper. */
+    const f = n.callee;
+    if (f && (f.type === 'FunctionExpression' || f.type === 'ArrowFunctionExpression')) {
+      return returnsOf(f).some((r) => bindsHelper(r, exposed));
+    }
+    return false;
+  }
   if (n.type === 'MemberExpression') {
     if (/IntMapLang\.(pick|pickArgs|t)$/.test(boundTo(n))) return true;
     /* `CTX.L`, `HOST._coL` — a property already proven to carry a helper somewhere in js/ */

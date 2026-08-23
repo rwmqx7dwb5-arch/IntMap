@@ -1412,3 +1412,36 @@ Open-Meteo の spatial アーカイブ（**ECMWF IFS HRES・O1280 縮約ガウ�
   （部分文字列ではない）ので、`sims.js` / `atlas-console.js` の共有ローダも自動的に通る。
 - **共有リンク**は選択中のレイヤー（`dl-*`）に加えて **ECMWF の有効時刻（瞬間）と各層の不透明度**を運ぶ
   （`IntMapShareState.register('weatherEC')`）。⚠ 添字ではなく**瞬間**——開いた人のモデルランは別かもしれない。
+
+---
+
+### 7.11 企業の拠点 (Company facilities)
+
+`js/company-facilities.js`。**選択中の 1 社ぶんだけ**を描く、レイヤー欄に行を持たない表示。
+
+| id | 種類 | 何 |
+|---|---|---|
+| `co-fac-src` | source (GeoJSON) | `IntMapCompanyData.facilityGeoJSON(profile, groups)` の出力。**`cluster:true` / `clusterRadius:46` / `clusterMaxZoom:9`** |
+| `co-fac-cluster` | circle | クラスタ円。`clusterProperties` が本社を含むかを持ち、含むときは縁が本社色になる |
+| `co-fac-count` | symbol | クラスタの件数 |
+| `co-fac-pt` | circle | 単体の拠点。色は `['match', ['get','group'], ...]` の 6 グループ |
+| `co-fac-lbl` | symbol | 名前。本社は常に、それ以外は z9.5 から |
+
+⚠ **このリポジトリで唯一クラスタリングを使うレイヤー。** `GE().layers.addSource` は記述子を
+そのまま素通しするので、クラスタ設定は `addSource` の引数に書く。第2エンジンの adapter は
+クラスタしないため `point_count` を持つ地物が生まれず、クラスタ 2 枚が何も掴まないまま
+`co-fac-pt` が全点を描く（**劣化して壊れない**）。
+
+⚠ **グループの絞り込みは filter だけでは正しくならない。** クラスタリングは source 側で
+filter より前に起きるので、filter だけで工場を隠すと「12」と書かれた円のうち 7 個が地図に無い
+状態になる。**手元のプロフィールから再導出した FeatureCollection を `setSourceData` で差し替え**、
+加えて `co-fac-pt` / `co-fac-lbl` にも filter を張る（source / layer は作り直さない）。
+
+⚠ **`GE().events.onLayer` は解除関数を返さない。** 解除は `GE().events.offLayer(type, layer, cb)` に
+**同一のコールバック識別子**を渡す。登録は全部控えておき、`hide()` が 1 件ずつ返す。
+
+⚠ **稼働していない拠点は塗りを落として縁だけにする**（完全透明にしない——クリックは通るが、
+忙しい基図の上で消える）。⚠ **`precision !== 'exact'` の施設カードには必ず注記を出す**
+（座標が市の代表点であることは、利用者が知らなければ誤解する事実）。
+
+データモデル・施設種別の語彙・出典規約は [`COMPANIES.md`](COMPANIES.md) が正本。

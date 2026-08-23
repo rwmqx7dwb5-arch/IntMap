@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（936行・84 KB）＋ `css/`（3本）＋ `js/`（220本・10.6 MB）＋ `src/`（10本）。**
+- **本体は `index.html`（936行・84 KB）＋ `css/`（3本）＋ `js/`（223本・10.6 MB）＋ `src/`（10本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -971,6 +971,27 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は、�
   ⚠ `reorganizeLayerPanel()` は DOM を大量に並べ替えるので、タップ中に走ると行がずれて誤タップの原因になる。
 - **ウィンドウの重なり順**は `bringToFront` が1か所で決める（インラインで z-index を書かない）。
 - **テキストに影を付けない**（`text-shadow:none` を徹底する）。
+
+### 8.1.1 企業アトラス (Company atlas)
+
+企業をクリックすると、その企業のプロフィールと**世界の実在拠点**が開く。3 ファイル、すべて**遅延**:
+
+| ファイル | 役割 |
+|---|---|
+| `js/company-data.js` | `data/companies/` の唯一の読み口。索引を **1 回**、プロフィールを**開いた企業のぶんだけ**取る。⚠ **施設種別30語・グループ6語・presence kind・状態・グループ色の正本**——パネルと地図レイヤーは両方ここを読む（別々に持っていた時点で綴りが割れていた） |
+| `js/company-panel.js` | `.country-popup` を継承した詳細パネル（携帯では bottom sheet）。概要・財務・事業・拠点・進出国・組織・出典 |
+| `js/company-facilities.js` | 拠点の地図表示。source 1 本・レイヤー 4 枚（`co-fac-src` / `co-fac-cluster` / `co-fac-count` / `co-fac-pt` / `co-fac-lbl`）、**このリポジトリで唯一クラスタリングを使うレイヤー** |
+
+入口は 2 つ: 既存の企業詳細カードの「プロフィールと拠点」ボタン（`js/companies-ui.js`）と、
+IntMapOS の `company.open`（`js/session-tabs.js`。id・ticker・企業名のどれでも解決する）。
+
+⚠ **カメラを動かすのは利用者が企業を選んだときと施設に寄ったときだけ**で、レイヤーの ON/OFF では
+1px も動かない（`CONSTITUTION.md` §3）。枠に収めるときは**開いているパネルの実寸**を避け、
+経度は最短の弧で囲む（min/max で囲むと太平洋をまたぐ企業が地球を 2 周する）。
+
+⚠ **既存の `js/companies.js`（curated 190 行 ＋ Yahoo のライブ時価総額）は変えていない。**
+企業アトラスはその上に載る。データモデル・出典・パイプライン・カバレッジ判定の正本は
+[`docs/COMPANIES.md`](docs/COMPANIES.md)。
 
 ### 8.2 Panels タブ（ドック）
 

@@ -396,11 +396,24 @@ window.IntMapModules.companiesUi=function(HOST){
     feed.querySelectorAll('.co-logo').forEach(_coWireLogo);   /* (#R147) shared cached-logo wiring */
     /* (#R142) single-click selects the row for comparison, double-click opens the detail overlay — mirrors Countries. */
     feed.querySelectorAll('.co-row').forEach(row=>{ let ct=null; row.onclick=()=>{ const tk=row.getAttribute('data-tk');
-      if(ct){ clearTimeout(ct); ct=null; try{ showCompanyDetail(tk); }catch(_){} return; }
+      if(ct){ clearTimeout(ct); ct=null; try{ openCompanyAtlas(tk); }catch(_){} return; }
       ct=setTimeout(()=>{ ct=null; try{ window._coToggleCompare(tk); }catch(_){} },250); }; });
     feed.style.paddingBottom='92px';   /* (#R152) reserve room for the absolute-overlay compare dock, matching Countries (was 24px for the old in-feed sticky tray) */
     try{ HOST.renderCoCompareFixed(); }catch(_){}   /* (#R142) re-attach the compare selection tray after the rebuild */
     if(!(IntMapCompanies.histYear&&IntMapCompanies.histYear())){ try{ IntMapCompanies.loadPrices(_coRerenderSoon); }catch(_){} }   /* (#R142) live prices only in the present; historical prices come from setYear; (#R147) debounced re-render kills repaint churn */
+  }
+
+  /* (#R354) Opening a company opens the ATLAS — the profile plus its facilities on the map.
+     ⚠ THE MARKET CARD IS MOVED, NOT REMOVED (CONSTITUTION §0.3): showCompanyDetail() still exists,
+     still carries the live market cap, P/E, the share-price sparkline and the compare control, and
+     the atlas panel carries a button that opens it. If the atlas cannot be reached — the three
+     modules are lazy, so this is a download that can fail — the card opens instead and the row
+     behaves exactly as it did before this round. */
+  async function openCompanyAtlas(tk){
+    try{ if(window.IntMapLazy&&window.IntMapLazy.need) await window.IntMapLazy.need('companyPanel'); }catch(_){}
+    const P=window.IntMapCompanyPanel;
+    if(P&&P.open){ try{ const ok=await P.open(tk); if(ok!==false) return; }catch(_){} }
+    try{ showCompanyDetail(tk); }catch(_){}
   }
 
   /* Company detail overlay — every indicator for one company + a link to its site (all figures honestly sourced). */
@@ -425,7 +438,11 @@ window.IntMapModules.companiesUi=function(HOST){
     ov.innerHTML=`<div class="co-detail" role="dialog" aria-modal="true"><button class="co-detail-x" type="button" aria-label="Close">×</button>`+
       `<div class="co-detail-head"><span class="co-logo-box co-logo-lg">${_coLogoInner(c.dom,nm,hue)}</span>`+
       `<div class="co-detail-title"><div class="co-detail-name">${IntMapSafe.html(nm)}</div><div class="co-detail-tk">${IntMapSafe.html(c.tk)}</div></div></div>`+
-      `<div class="co-detail-btns"><button class="co-detail-btn${HOST.coCompareSet.has(c.tk)?' on':''}" data-cmp="1" type="button">${HOST.coCompareSet.has(c.tk)?HOST._coL('In comparison','比較中','Im Vergleich','В сравнении','En comparación'):HOST._coL('Compare','比較する','Vergleichen','Сравнить','Comparar')}${HOST.coCompareSet.size?` (${HOST.coCompareSet.size}/8)`:''}</button></div>`+
+      `<div class="co-detail-btns"><button class="co-detail-btn${HOST.coCompareSet.has(c.tk)?' on':''}" data-cmp="1" type="button">${HOST.coCompareSet.has(c.tk)?HOST._coL('In comparison','比較中','Im Vergleich','В сравнении','En comparación'):HOST._coL('Compare','比較する','Vergleichen','Сравнить','Comparar')}${HOST.coCompareSet.size?` (${HOST.coCompareSet.size}/8)`:''}</button>`+
+      /* (#R354) the door to the company ATLAS — full profile plus every facility this company
+         publishes, on the map. The card above keeps every figure it already showed; this adds the
+         entrance the brief asks for and takes nothing away. */
+      `<button class="co-detail-btn co-detail-btn-primary" data-profile="1" type="button">${HOST._coL('Profile and locations','プロフィールと拠点','Profil und Standorte','Профиль и объекты','Perfil y ubicaciones')}</button></div>`+
       `<div class="co-detail-rows">${rows.map(r=>`<div class="co-drow"><span>${IntMapSafe.html(r[0])}</span><b>${IntMapSafe.html(String(r[1]))}${r[2]?_coAsOfChip(c,r[2]):''}</b></div>`).join('')}</div>`+
       (c.sh>0?`<div class="co-detail-spark" id="co-detail-spark"><div class="co-spark-note">${HOST._coL('Loading share-price history…','株価履歴を読み込み中…','Kursverlauf wird geladen…','Загрузка истории цен…','Cargando histórico…')}</div></div>`:'')+
       `<a class="co-detail-link" href="${IntMapSafe.html(IntMapSafe.url(site)||'#')}" target="_blank" rel="noopener">${IntMapSafe.html(c.dom)} ↗</a></div>`;
@@ -438,6 +455,16 @@ window.IntMapModules.companiesUi=function(HOST){
       try{ window._coToggleCompare(c.tk); }catch(_){} try{ HOST.renderCoCompareFixed(); }catch(_){}
       if(!wasIn && HOST.coCompareSet.size>=2){ close(); try{ window._coShowCompare(); }catch(_){} }
       else { close(); } };
+    /* (#R354) open the company atlas panel. The three modules are lazy, so the click is what
+        downloads them; a failure leaves this card exactly as it was rather than closing over nothing. */
+    const pb=ov.querySelector('[data-profile]');
+    if(pb) pb.onclick=async()=>{
+      pb.disabled=true;
+      try{ if(window.IntMapLazy&&window.IntMapLazy.need) await window.IntMapLazy.need('companyPanel'); }catch(_){}
+      const P=window.IntMapCompanyPanel;
+      if(P&&P.open){ close(); try{ P.open(c.tk); }catch(_){} }
+      else { pb.disabled=false; pb.textContent=HOST._coL('Profile unavailable','プロフィールを取得できません','Profil nicht verfügbar','Профиль недоступен','Perfil no disponible'); }
+    };
     const img=ov.querySelector('.co-logo'); if(img) _coWireLogo(img);   /* (#R147) shared cached-logo wiring */
     /* (#R153) real share-price SPARKLINE in the detail (Countries-parity enrichment — the detail was a static rows-only
        stub). Uses the same monthly full-history data as the compare Time-series; snapshot-only names show an honest note. */

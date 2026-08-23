@@ -185,6 +185,7 @@ war-layer.js                      両大戦の層そのもの（**on-demand**・
 war-geom.js                       戦線の線で国の輪郭を切る幾何 `WarGeom`（ビルドとブラウザが同じ1本を使う）
 industry-web.js                   産業の相関 window.IntMapIndustry
 companies.js                      企業データセットと時価総額のライブ算出 IntMapCompanies
+company-data.js                   企業アトラスの読み口（索引1枚＋1社ぶんのプロフィールを遅延取得・施設語彙の正本） IntMapCompanyData
 reference-data.js                 参照データ表
 tables.js                         参照データ表（大きい方）
 gazetteer.js                      ニュース地点解析の内蔵ガゼッティア
@@ -262,6 +263,8 @@ analysis-edu.js                   ↳ 学習モード・地図クイズの実装
 stats-compare.js                  多国統計比較 IntMapStatsCompare
 countries-ui.js                   Countries タブと国の詳細
 companies-ui.js                   Companies タブ・比較ビュー・ダッシュボード
+company-panel.js                  企業プロフィールのパネル（概要・財務・事業・拠点・進出国・組織・出典） IntMapCompanyPanel
+company-facilities.js             選択中の企業の拠点を地図に描く（クラスタリング・6グループ・施設カード） IntMapCompanyFacilities
 dash-extended.js                  ダッシュボードのキャッシュと拡張情報カード
 widgets.js                        ウィジェット板の入口 IntMapModules.widgets ——
                                   HOST との接続と window.IntMapWidgets2 の公開契約だけを持つ
