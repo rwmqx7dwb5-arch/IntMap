@@ -690,14 +690,64 @@ window.IntMapModules.routing=function(HOST){
       if(res.shapeGap) n.push('shapeGap');
       if(res.jrEstimate||res.railEstimate) n.push('jrEstimate');
       if(res.transit) n.push(res.realtime?'transitLive':'transitTimetable');
+      /* ⚠ (#R347) §43: 「fallbackで能力が落ちた場合、必ずResult metadataへ記録します。黙って品質を
+         落とさないこと。」 A traffic-aware provider that was reachable a minute ago and is not now
+         returns a duration that LOOKS identical and means something else — so the reply says which. */
+      if(res.trafficDropped) n.push('trafficDropped');
       if(res.road) n.push('roadTypical');
       return n; }
+    /* ══ (#R347) IS THERE A BETTER PROVIDER THAN THE OPEN ONES TODAY? ═════════════════════════
+       §5 asks for real traffic where a provider that carries it is usable. Two things make that safe:
+
+       ① THE PROBE FIRES HERE AND NOWHERE ELSE. `js/routing-traffic.js` can ask the relay whether a key
+         is configured, but asking at BOOT would cost every session a request for a feature most of them
+         never use (§45). Asking on the first route request costs the sessions that route, once — and
+         `probe()` shares one in-flight promise, so N simultaneous requests make one call.
+         ⚠ IT IS FIRE-AND-FORGET. This route must not wait for it; the answer arrives in time for the
+         NEXT request, and until it does `available()` is false and nothing is offered.
+
+       ② THE TABLE DECIDES, NOT THIS FUNCTION. `forRequest()` returns a chain, and the traffic provider
+         is at its head only when the probe said yes. If it fails, we fall through to exactly the code
+         that ran before — and `_trafficDropped` makes the reply say so rather than quietly handing back
+         a number that looks the same and means something else (§43). */
+    /* ⚠ THE ADAPTER IS FETCHED HERE TOO, NOT IMPORTED AT THE TOP. `check:perf` priced it at 22 kB of
+       eager JavaScript for a file whose earliest possible caller is this function, so it is a
+       deferred module. The fetch and the probe are the same fire-and-forget: by the time the answer
+       matters (`available()` on the NEXT request) both have landed, and until then `available()` is
+       false and nothing anywhere offers a traffic feature. */
+    let _probed=false;
+    function _kickProbe(){ if(_probed) return; _probed=true;
+      try{
+        const go=function(){ try{ const T=window.IntMapRouteTraffic; if(T&&T.probe) T.probe().catch(function(){}); }catch(_){} };
+        if(window.IntMapRouteTraffic) go();
+        else if(window.IntMapLazy) window.IntMapLazy.need('routingTraffic').then(go).catch(function(){});
+      }catch(_){}
+    }
+
+    async function _tryTraffic(from,to,opts,mode){
+      try{
+        const PV=window.IntMapRouteProviders, T=window.IntMapRouteTraffic;
+        if(!PV||!T||!T.available()) return null;
+        const pick=PV.forRequest({mode:mode,via:opts.via,avoid:opts.avoid,avoidAreas:opts.avoidAreas,
+                                  departAt:!!opts.time&&!opts.arriveBy,arriveBy:!!opts.arriveBy});
+        if(!pick||!pick.provider||pick.provider.id!=='mapbox') return null;
+        const r=await T.route(from,to,opts);
+        if(r&&(r.ok||r.status==='CANCELLED'||r.status==='cancelled')) return r;
+        opts._trafficDropped=true;
+        return null;
+      }catch(_){ opts._trafficDropped=true; return null; }
+    }
+
     async function route(from,to,opts){ opts=opts||{};
       if(!from||to==null||!isFinite(+from.lng)||!isFinite(+from.lat)||!isFinite(+to.lng)||!isFinite(+to.lat)) return {ok:false,status:'invalid_request'};
       const _sid=_storeBegin(from,to,opts);
       const rid=++_reqSeq; _abortInflight(); opts._rid=rid;
       const mode=String(opts.mode||'driving').toLowerCase();
+      _kickProbe();
       if(_isTransit(mode)) return _storeSettle(_sid,await transit(from,to,opts));
+      { const tr=await _tryTraffic(from,to,opts,mode);
+        if(tr) return _storeSettle(_sid,tr);
+        if(rid!==_reqSeq) return {ok:false,status:'cancelled'}; }
       /* (#R132) §7.3/§4.7: an AVOID request (driving) goes to Valhalla, which actually honours it. If Valhalla is
          unreachable, fall through to OSRM without the avoid and flag it so the reply is honest (avoid not applied). */
       if(opts.avoid&&opts.avoid.length&&/driv|car|auto/.test(mode)){ const vr=await _roadValhalla(from,to,opts);
@@ -756,7 +806,7 @@ window.IntMapModules.routing=function(HOST){
       alts.forEach((a,i)=>{ a.color=ALT_PAL[i%ALT_PAL.length]; a.roads=_majorRoads(a.steps,3); }); _labelRoad(alts,opts.avoid);
       const setId=_rsNew(alts,_ends(from,to,via)); _drawAlts(0,setId);
       const b0=alts[0];
-      return _storeSettle(_sid,{ok:true,status:'success',road:true,provider:'osrm',routeSetId:setId,sel:0,mode,avoid:opts.avoid||null,avoidDropped:!!opts._avoidDropped,
+      return _storeSettle(_sid,{ok:true,status:'success',road:true,provider:'osrm',routeSetId:setId,sel:0,mode,avoid:opts.avoid||null,avoidDropped:!!opts._avoidDropped,trafficDropped:!!opts._trafficDropped,
         avoidAreasDropped:!!opts._areaDropped, avoidAreasAsked:(Array.isArray(opts.avoidAreas)?opts.avoidAreas.length:0),
         /* ⚠ (#R291) WHY THERE IS ONLY ONE. The demo returns no alternatives once there is a via point
            (measured), and until this round the request simply stopped asking and nothing said so —

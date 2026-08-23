@@ -5373,5 +5373,74 @@ window.IntMapLang.define('zh-hans', {
   'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': '这次请求尝试的次数过多 — 你每日的可用次数并未再被扣除。请换个说法再试一次。',   /* ai-core.js (#R318) aiTurnCallsMsg */
   'place': '地点',   /* atlas-console.js (#R330) research.events footnote */
   'headline similarity': '标题相似度',   /* atlas-console.js (#R330) research.events footnote */
+  '{t} slower than usual': '比平常慢{t}',   /* navigation-ui.js (#R347) */
+  'A faster route saves {t}': '有更快的路线，可省{t}',   /* navigation-ui.js (#R347) */
+  'Alerts only': '仅重要提示',   /* navigation-ui.js (#R347) */
+  'arrive ': '抵达 ',   /* atlas-console.js (#R347) */
+  'Arriving at {n}': '即将抵达{n}',   /* navigation-voice.js (#R347) */
+  'Arriving at your destination': '即将抵达目的地',   /* navigation-voice.js (#R347) */
+  'Arriving soon': '即将抵达',   /* navigation-ui.js (#R347) */
+  'Current road': '行驶中的道路',   /* navigation-ui.js (#R347) */
+  'Distance left': '剩余距离',   /* navigation-ui.js (#R347) */
+  'End navigation': '结束导航',   /* navigation-ui.js (#R347) */
+  'Fewer details': '显示较少',   /* navigation-ui.js (#R347) */
+  'Finding a new route…': '正在寻找新路线…',   /* navigation-ui.js (#R347) */
+  'Follow my position': '跟随我的位置',   /* navigation-ui.js (#R347) */
+  'Following your position again.': '已恢复跟随你的位置。',   /* atlas-console.js (#R347) */
+  'In {d}, {a}': '前方{d}，{a}',   /* navigation-voice.js (#R347) */
+  'Location accuracy': '定位精度',   /* navigation-ui.js (#R347) */
+  'More details': '显示更多',   /* navigation-ui.js (#R347) */
+  'Mute voice guidance': '关闭语音导航',   /* navigation-ui.js (#R347) */
+  'Navigation is not running.': '没有进行中的导航。',   /* atlas-console.js (#R347) */
+  'Navigation is paused': '导航已暂停',   /* navigation-ui.js (#R347) */
+  'Navigation is unavailable in this session.': '本次会话无法使用导航。',   /* atlas-console.js (#R347) */
+  'Navigation started': '已开始导航',   /* atlas-console.js (#R347) */
+  'Navigation stopped.': '已停止导航。',   /* atlas-console.js (#R347) */
+  'New route found': '已找到新路线',   /* navigation-voice.js (#R347) */
+  'Next stop': '下一个途经点',   /* navigation-ui.js (#R347) */
+  'Off': '关闭',   /* navigation-ui.js (#R347) */
+  'Off route': '已偏离路线',   /* navigation-voice.js (#R347) */
+  'Off route.': '已偏离路线。',   /* atlas-console.js (#R347) */
+  'On': '开启',   /* navigation-ui.js (#R347) */
+  'Plan a route first — tell me where from and where to.': '请先规划路线 — 告诉我起点和终点。',   /* atlas-console.js (#R347) */
+  'Re-centre the map': '回到我的位置',   /* navigation-ui.js (#R347) */
+  'Rerouting': '正在重新规划路线',   /* navigation-voice.js (#R347) */
+  'simulated': '模拟',   /* atlas-console.js (#R347) */
+  'Simulated drive': '模拟行驶',   /* navigation-ui.js (#R347) */
+  'Standard travel time — traffic not included.': '标准所需时间 — 未纳入路况。',   /* atlas-console.js (#R347) */
+  'Stop reached': '已抵达途经点',   /* navigation-ui.js (#R347) */
+  'Switch': '切换',   /* navigation-ui.js (#R347) */
+  'then': '接着',   /* navigation-ui.js (#R347) */
+  'Time left': '剩余时间',   /* navigation-ui.js (#R347) */
+  'Traffic data is out of date': '路况数据已过期',   /* navigation-ui.js (#R347) */
+  'Traffic included': '已纳入路况',   /* navigation-ui.js (#R347) */
+  'Traffic is not included': '未纳入路况',   /* navigation-ui.js (#R347) */
+  'Traffic-aware.': '已纳入路况。',   /* atlas-console.js (#R347) */
+  'Turn voice guidance on': '开启语音导航',   /* navigation-ui.js (#R347) */
+  'Turn-by-turn navigation': '逐向导航',   /* navigation-ui.js (#R347) */
+  'Via point': '途经点',   /* navigation-ui.js navigation-voice.js (#R347) */
+  'Via point: {n}': '途经点：{n}',   /* navigation-voice.js (#R347) */
+  'Voice guidance': '语音导航',   /* navigation-ui.js (#R347) */
+  'You have arrived': '已抵达目的地',   /* navigation-ui.js navigation-voice.js (#R347) */
+  'You have arrived at {n}': '已抵达{n}',   /* navigation-voice.js (#R347) */
+  'You have left the route': '你已偏离路线',   /* navigation-ui.js (#R347) */
+  'No route found between these points.': '找不到连接这两点的路线。',   /* routing-errors.js (#R347) */
+  'Still waiting for your location.': '仍在等待你的位置。',   /* routing-errors.js (#R347) */
+  'Location permission is off. Allow it to navigate.': '定位权限已关闭，导航需要开启权限。',   /* routing-errors.js (#R347) */
+  'Your device cannot fix a position here.': '这里无法测得你的位置。',   /* routing-errors.js (#R347) */
+  'The routing server took too long.': '路线服务器等待超时。',   /* routing-errors.js (#R347) */
+  'The routing server is rate-limiting requests.': '路线服务器正在限制请求次数。',   /* routing-errors.js (#R347) */
+  'The routing server is unavailable.': '无法连接到路线服务器。',   /* routing-errors.js (#R347) */
+  'This area is outside the router’s coverage.': '这个地区不在路线服务的覆盖范围内。',   /* routing-errors.js (#R347) */
+  'That request cannot be routed as written.': '在这个条件下无法计算路线。',   /* routing-errors.js (#R347) */
+  'Traffic data is unavailable; standard routing used.': '无法取得路况数据，改用标准路线。',   /* routing-errors.js (#R347) */
+  'No public transport data for this journey.': '这段行程没有公共交通数据。',   /* routing-errors.js (#R347) */
+  'You appear to be offline.': '你目前似乎处于离线状态。',   /* routing-errors.js (#R347) */
+  'Could not find a new route from here.': '无法从这里计算新的路线。',   /* routing-errors.js (#R347) */
+  'That request was replaced by a newer one.': '这个请求已被较新的请求取代。',   /* routing-errors.js (#R347) */
+  'Routing failed for an unknown reason.': '路线计算因不明原因失败。',   /* routing-errors.js (#R347) */
+  'Times come from the map’s clock ({year}), not from today — live timetables do not cover it.': '时刻依地图的时钟（{year}年），而非今天 — 实时时刻表并未涵盖该时间。',   /* routing-time.js (#R347) */
+  'Times are calculated from the map’s clock ({year}), not from today.': '时刻以地图的时钟（{year}年）为基准计算，而非今天。',   /* routing-time.js (#R347) */
+  'Traffic data was unavailable — this is the standard travel time.': '无法取得路况数据 — 这是标准所需时间。',   /* routing-cards.js (#R347) */
   }
 });

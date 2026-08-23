@@ -2302,6 +2302,65 @@ window.IntMapModules.atlasConsole=function(HOST){
           try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),10),pitch:Math.max(GE().camera.getPitch(),55)}); }catch(_){}
           const st=V.state();
           return R(!!st.points, st.points?note('🧊 '+esc(ll.name||a.place||'')+' · '+V.fmtAlt(Math.min(base,top))+'–'+V.fmtAlt(Math.max(base,top))+' · '+V.fmtVolume()):warn('⚠')); }
+        /* ══ (#R347) ACTIVE NAVIGATION — §34 ════════════════════════════════════════════
+           「Atlasが独自 route state を持つことは禁止。RouteStore / NavigationStore を唯一の正本に。」
+           Every number below is READ from window.IntMapNavStore through IntMapNavigation.summary().
+           Atlas holds no copy, derives no distance and predicts no arrival — it phrases what the store
+           already decided. That is why 「あと何分？」 works while a reroute is in flight: the answer comes
+           from the same object the nav UI is rendering. */
+        case 'startNavigation': case 'startNav': case 'beginNavigation': case 'guideMe': case 'driveThere': {
+          let N=window.IntMapNavigation;
+          if(!N){ try{ await window.IntMapLazy.need('navigation'); N=window.IntMapNavigation; }catch(_){} }
+          if(!N) return R(false, warn('⚠ '+L('Navigation is unavailable in this session.','このセッションでは案内を使えません。','Navigation ist nicht verfügbar.','Навигация недоступна.','La navegación no está disponible.')));
+          /* ⚠ A ROUTE HAS TO EXIST FIRST, AND SAYING SO IS MORE USE THAN FAILING. #R278's lesson: a
+             capability that answers 「その機能は実行できません」 without naming what is missing is a dead end. */
+          if(!N.canStart()) return R(false, warn('⚠ '+L('Plan a route first — tell me where from and where to.','先に経路を検索してください。出発地と目的地を教えてください。','Erst eine Route planen — nenne Start und Ziel.','Сначала постройте маршрут.','Primero planifica una ruta.')));
+          const _sim=!!(a.simulate||a.sim);
+          const _started=await (_sim?N.simulate({speedMultiplier:+a.speed||5}):N.start({}));
+          if(!_started){ const _s=N.summary()||{}; const _c=(_s.error&&_s.error.code)||'NO_LOCATION';
+            return R(false, warn('⚠ '+esc(window.IntMapRouteErrors.message(_c)))); }
+          const _s0=N.summary();
+          return R(true, note(L('Navigation started','案内を開始しました','Navigation gestartet','Навигация начата','Navegación iniciada')
+            +(_s0.destination&&_s0.destination.name?(' · '+esc(_s0.destination.name)):'')
+            +(_sim?(' · '+L('simulated','シミュレーション','simuliert','симуляция','simulado')):'')));
+        }
+        case 'stopNavigation': case 'endNavigation': case 'stopNav': {
+          const N=window.IntMapNavigation;
+          if(!N||N.state()==='idle') return R(true, note(L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
+          N.stop();
+          return R(true, note(L('Navigation stopped.','案内を停止しました。','Navigation beendet.','Навигация остановлена.','Navegación detenida.')));
+        }
+        case 'navStatus': case 'howLongLeft': case 'etaNow': case 'remaining': case 'nextTurn': case 'arrivalTime': {
+          const N=window.IntMapNavigation;
+          if(!N||N.state()==='idle') return R(false, warn('⚠ '+L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
+          const _st=N.summary(), _C=window.IntMapRouteCards, _o={lang:HOST.lang};
+          const _dist=_C.distance(_st.remainingDistance,_o), _dur=_C.duration(_st.remainingDuration,_o);
+          const _eta=_st.eta?_C.clock(new Date(_st.eta),_o):'';
+          let _h=note(esc(_dur)+' · '+esc(_dist)+(_eta?(' · '+L('arrive ','到着 ','Ankunft ','прибытие ','llegada ')+esc(_eta)):''));
+          if(_st.nextManeuver) _h+=note(esc(_C.distance(_st.nextManeuver.distance,_o))+' · '+esc(_st.nextManeuver.road||_st.currentRoad||''));
+          /* ⚠ THE HONESTY LINE (§6). Without a traffic provider the duration is the router's own
+             estimate and the reply says so — 「渋滞考慮」 may never be printed on a number that has none. */
+          _h+=note((_st.etaMeta&&_st.etaMeta.traffic)
+            ? L('Traffic-aware.','交通状況を反映しています。','Verkehrsabhängig.','С учётом пробок.','Con tráfico.')
+            : L('Standard travel time — traffic not included.','標準所要時間です（交通状況未反映）。','Standardfahrzeit — ohne Verkehr.','Обычное время — без пробок.','Tiempo estándar — sin tráfico.'));
+          if(_st.offRoute) _h+=warn('⚠ '+L('Off route.','経路を外れています。','Abseits der Route.','Вне маршрута.','Fuera de ruta.'));
+          return R(true, _h);
+        }
+        case 'navCamera': case 'recenter': case 'overview': case 'followMe': case 'northUp': {
+          const N=window.IntMapNavigation;
+          if(!N||N.state()==='idle') return R(false, warn('⚠ '+L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
+          if(t==='recenter'&&!a.mode){ N.recenter(); return R(true, note(L('Following your position again.','現在地の追従を再開しました。','Folge wieder deiner Position.','Снова слежу за позицией.','Siguiendo tu posición de nuevo.'))); }
+          const _w=String(a.mode||a.camera||(t==='overview'?'overview':t==='northUp'?'north':'follow')).toLowerCase();
+          const _ok=N.setCamera(_w==='north'?'north':_w==='overview'?'overview':_w==='free'?'free':'follow');
+          return R(!!_ok, _ok?note(esc(_w)):warn('⚠'));
+        }
+        case 'navVoice': case 'mute': case 'unmute': case 'voiceGuidance': {
+          const N=window.IntMapNavigation;
+          if(!N||N.state()==='idle') return R(false, warn('⚠ '+L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
+          const _w=t==='mute'?'off':t==='unmute'?'guidance':String(a.mode||a.voice||'guidance').toLowerCase();
+          const _ok=N.setVoice(_w==='off'?'off':_w==='alerts'?'alerts':'guidance');
+          return R(!!_ok, _ok?note(esc(_w)):warn('⚠'));
+        }
         /* (#R174) DRONE NAVIGATION — the Atlas face of js/drone-nav.js. Every number in the reply comes
            from the same compute() the panel shows; Atlas never re-derives one, and it never claims a
            route is flyable when the planner said otherwise. */

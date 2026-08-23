@@ -71,6 +71,9 @@ export function makeLazyModules(HOST) {
        window.IntMapSatPanel from its own click handler, and this keeps the panel first. */
     const ALSO = { seismic: ['tsunami'], satellitesLive: ['satelliteDetail'] };
 
+    /* Modules with NO factory — they publish at import. ⚠ (#R347) was `name !== 'nightSky'`, and a rule written as one name recorded the second such module as a failure. */
+    const SELF_PUBLISHING = { nightSky: true, navigation: true, routingTraffic: true };
+
     /* The global each module must have published by the time its promise resolves. Checked, not
        assumed — see the header. `playground` publishes a bare function, so it is named too. */
     const PUBLISHES = {
@@ -115,6 +118,9 @@ export function makeLazyModules(HOST) {
       analysisTimeSeries: '__imAnalysisTimeSeries', analysisResearch: '__imAnalysisResearch',
       analysisCorrelate: '__imAnalysisCorrelate', analysisEvents: '__imAnalysisEvents',
       analysisEdu: '__imAnalysisEdu',
+      /* (#R347) navigation's eight files ride in ONE chunk (all are needed within the same tick of starting); routingTraffic is first called by js/routing.js's `_kickProbe()`. DEV-NOTES #R347. */
+      navigation: 'IntMapNavigation',
+      routingTraffic: 'IntMapRouteTraffic',
     };
 
     function record(name, why) {
@@ -158,6 +164,8 @@ export function makeLazyModules(HOST) {
         case 'analysisEvents': return import('./analysis-world-events.js');
         case 'analysisEdu': return import('./analysis-edu.js');
         case 'aviationLive': return import('./aviation-live.js');
+        case 'navigation': return import('./navigation.js');
+        case 'routingTraffic': return import('./routing-traffic.js');
         default: return Promise.reject(new Error('no such lazy module: ' + name));
       }
     }
@@ -168,6 +176,8 @@ export function makeLazyModules(HOST) {
        ⚠ These literal `window.IntMapModules.x(` strings are what gate 2 reads. */
     function mount(name) {
       const M = window.IntMapModules;
+        /* ⚠ (#R347) from the TABLE, not a case each — a case per module is the same two-lists shape SELF_PUBLISHING exists to remove. */
+        if (SELF_PUBLISHING[name]) return typeof window[PUBLISHES[name]] !== 'undefined';
       switch (name) {
         case 'flightSim': window.IntMapFlightSim=window.IntMapModules.flightSim(IM_HOST); return true;
         case 'playground': window.IntMapModules.playground(IM_HOST); return true;
@@ -176,7 +186,6 @@ export function makeLazyModules(HOST) {
         case 'terrainWater': window.IntMapModules.terrainWater(IM_HOST); return true;
         case 'los': window.IntMapModules.los(IM_HOST); return true;
         case 'streetView': window.IntMapStreetView=window.IntMapModules.streetView(IM_HOST); return true;
-        case 'nightSky': return !!window.IntMapNightSky;    /* publishes itself at import time */
         case 'atlasConsole': window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST); return true;
         case 'routeUi': window.IntMapRouteUI=window.IntMapModules.routeUi(IM_HOST); return true;
         case 'dataCenters': window.IntMapModules.dataCenters(IM_HOST); return true;
@@ -191,6 +200,7 @@ export function makeLazyModules(HOST) {
         case 'analysisEvents': window.IntMapModules.analysisEvents(IM_HOST); return true;
         case 'analysisEdu': window.IntMapModules.analysisEdu(IM_HOST); return true;
         case 'aviationLive': window.IntMapAviation=window.IntMapModules.aviationLive(IM_HOST); return true;
+        /* publishes itself at import time, like nightSky */
         default: return !!M;
       }
     }
@@ -203,7 +213,7 @@ export function makeLazyModules(HOST) {
         .then(() => {
           /* The factory must have arrived with the file. If it did not, the file loaded but did not
              register — say so rather than throwing an undefined-is-not-a-function further down. */
-          if (name !== 'nightSky' && !(window.IntMapModules && typeof window.IntMapModules[name] === 'function')) {
+          if (!SELF_PUBLISHING[name] && !(window.IntMapModules && typeof window.IntMapModules[name] === 'function')) {
             record(name, 'the file loaded but registered no IntMapModules.' + name + ' factory');
             return false;
           }

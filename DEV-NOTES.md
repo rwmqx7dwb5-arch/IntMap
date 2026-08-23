@@ -42,6 +42,7 @@
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R347** — **経路を「引ける」から「連れて行ける」へ——ターンバイターン案内一式と、能力表の作り直し**〈依頼は §0「実装を始める前に現在の main を読み、実挙動を確認せよ」から始まっている。読んで最初に出てきたのは**機能ではなく欠陥**だった〉／⚠⚠⚠ **116 の capability のうち 4 つが、存在しない lazy モジュールを名指していた——そしてその4つは全部 routing だった**〈`routing.isochrone` / `routing.setEndpoints` / `routing.optimizeStops` / `routing.route` の `lazyModules` が `'routing'`。`IntMapLazy` が知っている名前は 21 個でそこに `routing` は無い。ブラウザで実行して確認: **`need('routing')` は `false` を返し、`__imLazyCheck.failed` に「no such lazy module: routing」を書き、`console.error` を出す**。それでも `tests/r209` は緑のまま——あれは `IntMapLazy.names()` を歩くので、**一覧に無い名前は永久に検査されない**（#R301 の鏡像がもう一度）〉⇒ 正しい名前へ（`routing.route` は `routeUi`、他は eager なので空）＋ **`tests/r347-checks ㉒` と `tests/r347-navigation ②` が capability 表と loader 表を突き合わせる**——#R318/#R323 の「2つの一覧が突き合わされていない」の**5度目**／⚠⚠⚠ **`IntMapLazy` の「工場を持たないモジュール」の規則は、1つの名前として書かれていた**（`if (name !== 'nightSky' && …)`）。2つ目（`js/navigation.js`）は**全部正しく読み込まれ、8つのグローバルを公開し、それでも失敗として記録された**⇒ `SELF_PUBLISHING` という表に／⚠⚠⚠ **測って初めて見えた欠陥が navigation 側に4件**〈①**進行方向が戻る**——経路の最後の1kmが自分自身の30m隣を走っており、探索窓が対称だったので車が 31,500 m にいるのに **31,112 m（388 m 後ろ）** に照合され、**前進中に残り距離が増えた**（128 fix 中1回・cross は 30.7 m で「線から遠い」検査には引っかからない）。⚠ 窓を狭めるだけでは直らない——`scanRange` は**セグメント単位**に歩くので、下限を含むセグメントは下限より手前から始まる。**答えのほうにも境界を当てて**初めて直る／②**その窓の幅は `Date.now()` から計算していた**。fix がまとめて届く経路（リプレイ・スロットルされたタブ・シミュレータ）では `dt` がミリ秒になり、窓が真の位置を含みえない。⇒ **窓と履歴は fix 自身の `timestamp`、鮮度と到着時刻は壁時計**——2つの時計を `onFix` の中で名前で分けた／③**到着が永久に来なかった**——`nearDest` が**ピンとの距離**だけを見ており、ルーターは道路網の最寄り点で終わるので、駅の中や建物の奥のピンには**原理的に届かない**。⇒ 経路の**終端**との距離を足した（ピンは満たせば十分、必須ではない）／④**停止した受信機が車の向きを変えた**——heading のゲートが**平滑化された**速度を見ていたので、12 m/s から急停止した1秒後もまだ 9 m/s と信じ、受信機が吐いた 270° を採用して**車が動いていないのに 90°→19° に回った**。⇒ ゲートは装置の**瞬時**速度を見る〉／⚠⚠⚠ **携帯では、運転者が読まねばならない2つが両方とも他のものに覆われていた**〈`#nav-ui` を `#map-container` の中に置いたので **z-index 1802 がその中だけの約束**になり、兄弟である `#sidebar`（1100）に負けて**案内バーの下半分がニュースシートで塗り潰されていた**（`elementFromPoint(195,700)` が `#sidebar`）。基図サムネイル `#bm-square` は**曲がる指示の2行目の上**（`elementFromPoint(40,95)`）。**どちらもソース検査にも DOM 検査にもデスクトップのスクショにも見えない**〉⇒ body へマウント＋案内中だけサムネイルを隠す＋**`tests/r347-navigation ⑧` がピクセルに「今いちばん上は誰か」を訊く**／⚠⚠ **`IntMapNavStore.reset()` が orchestrator の記憶を消せなかった**——2つ目の走行の fix が**全部 `out_of_order` で拒否**され、例外も出ず、ナビは静かに動かなかった⇒ store の reset を購読／⚠⚠⚠ **交通情報の provider は「機能」ではなく「規約」で決まった**〈**Google Routes は不可**——maps-service-terms §19.2「Customer must not use Google Maps Content from the Routes API in conjunction with a non-Google map」＋一般規約 §3.2.3(e)（"with or near"）。IntMap は MapLibre + OSM。**Amazon Location も不可**——AWS Service Terms §82.5.b が「HERE のルートを他社地図に重ねること」を名指しで禁止。**HERE と TomTom は Navigation Functionality（現在地追従の逐次案内）が標準ライセンスから除外**されており別途書面契約が要る（HERE Platform Terms 2.1 / TomTom Portal T&C 2.1）。**GraphHopper は規約は完全にクリアだが交通情報が存在しない**（OpenAPI spec に `/route` の traffic パラメータが1つも無い）。**Mapbox だけが残った**——「Mapbox Map 上に限る」条項は Boundaries / POI / Studio の3つだけで Navigation API を含まず、attribution 文書が非 Mapbox 地図での利用を明示的に想定している〉⚠ **その規約を<b>フィールドとして</b>符号化した**（コメントは編集を止めない）: `noStore`（§2.10.1 が結果の cache/store を禁止 ⇒ **この relay だけ `Cache-Control: no-store`**・他の relay は全部 `s-maxage`）／`aiContent:false`（§1.5(ii) が AI への利用を禁止 ⇒ Atlas は routing を**操作**できるがこの provider の**返り値を AI proxy へ渡さない**）／`logoRequired`／⚠ **鍵はこのリポジトリに無いので `evidence:'documented'`**——**測っていないフラグを「測った」と書かない**のが #R291 のこのファイルの見出しの要求で、`available()` は relay が答えるまで false、つまり**文書の力だけで利用者に何かを提示することは無い**／⚠⚠ **FOSSGIS の帰属要件が満たされていなかった（このラウンド以前から）**——`routing.openstreetmap.de` と `valhalla1.openstreetmap.de` は ODbL・CC-BY-SA・**openstreetmap.org/fixthemap へのリンク**を要求するが、`fixthemap` はリポジトリ全体に**0件**⇒ 能力表に `TERMS` を足して門を置いた。⚠ **User-Agent の要件と「URL をハードコードするな」は直していない**——前者はブラウザが禁じており custom header は CORS preflight を増やして**ルーティングを落としかねない**、後者は「どのサーバに依存するか」という判断であって編集ではない／**実測: OSRM 東京→横浜 = 26 手順・939 点・手順のアンカー誤差 最大 0.784 m / 中央値 0・単調・レーン付き交差点 8・道路名 20 / 出口番号 0**（`exitNumbers:false` はこれで決めた）。**Node 28 本 ＋ ブラウザ 7 本が緑**、うちブラウザ側は 32 km を 128 fix で走らせて `enroute → arriving → arrived`・**逸脱1発では再探索せず、8 fix 続けば1回だけ再探索**・**走行中に端末を出た位置は 0 件**（§39）
 - **#R346** — **掃引は成功しているのに、その run は赤かった**〈`.github/workflows/aviation-sweep.yml` の ループ末尾が `[ "$i" = "1" ] && sleep 45`。**最終反復で条件が偽になり `&&` 全体が 1 を返す**——GitHub は step を `bash -e` で走らせるので、**仕事を全部正しく終えた step が exit 1 で落ちる**。#R341 が着地した直後の実行で実測: 2 スライスとも HTTP 200・**`x-intmap-save: ok` が2回**・格子は 3/980 へ前進・スナップショットは 70,170 バイト、**それでも run は failure**〉／⚠⚠⚠ **「成功を意味する赤」は警報が無いより悪い**——次に来る本物の失敗が同じ顔をするので、誰も見なくなる（#R304 が deep tier で 14 夜そうなっていた形の、生まれた瞬間版）／⇒ `if [ … ]; then sleep 45; fi`。⚠ **両方の形を実際に走らせて確かめた**（旧 exit=1・新 exit=0）——1行の修正でも、落ちる側と通る側の両方を測る
 
 - **#R345** — **9回目の「検査が自分の説明文に『はい』と答えた」——今回はそのファイルではなく、直し方のほうを直した**〈`tests/helpers/fn-cors.js` は `corsFor("x-intmap-channel")` という**実呼び出し1本**と、なぜ共有ビルダをその場で拡張するのかを説明した**コメントの中の `corsFor()`** を合わせて「契約が2つ＝ambiguous」と数え、**契約が一意なファイル**に対して `tests/r333-checks` の**5本**を赤くしていた（実測 #R339）。#R339 は**自分のコメントを書き直して**通した——それはそのファイルを直すが、**次の説明文を待っているだけ**である〉／⚠⚠⚠ **静かなほうの幽霊は throw しない**〈`literal` は `corsFor` より**先に**試されるので、共有ビルダへ移行したときに**コメントとして残した旧 CORS 表**が、下にある実呼び出しを上書きする。何も落ちず、**その関数の header 集合だけが間違い、実呼び出しが足す追加ヘッダが黙って消える**〉／⚠⚠ **リポジトリはこの問題を8回目で既に解いていた**（`scripts/atlas-capability-audit.mjs` の inline な `codeOnly()`）——**直し方が1つのファイルの中にあったから9回目が来た** ⇒ `scripts/code-only.mjs` に切り出し、**両方が import する**（⑩が2本目の定義を落とす）／⚠⚠ **切り出しは「同じ heuristic の引っ越し」ではない**〈旧版は正規表現2本で、**引用符か `:` の直後の `//` しか守れない**。実測: `js/` `scripts/` `src/` `supabase/` `tests/` の **576 ファイル中 163 ファイルで出力が違い**、違いはすべて**旧版が壊していた**側だった（`/^image\/\//` のような正規表現リテラル、テンプレート文字列の中の GLSL/CSS）。新版は走査器で、**文字列・テンプレート・正規表現リテラルを1文字も変えない**〉⇒ 既存の読み手が変わらないことを**出力の同一性**で押さえた（`atlas-capability-audit --json` は **131,951 バイトが byte-for-byte 同一**・`--check` は 20/20 緑）／⚠⚠ **同じヘルパの他の正規表現も同じ露出を持っていた**〈ACAH 表の走査は `onlyMatch` 経由なので同時に直る／`FRONT_RE` は**コメントアウトされた送信行**を「送っている」と数え、**誰も行わない preflight のためにゲートを赤くする**（doc コメントの「散文での言及は数えない」は、**代入の綴りを持たない**散文についてしか真ではなかった）／**`index.ts` と隣の `index.gemini-backup.ts` の区別だけは正規表現ではなくファイルシステムの判断**なので、どんなコメントでも動かせない〈⑤が固定〉〉／⚠⚠ **緑を信じず壊して赤を見た**——`codeOnly` を2か所から外すと **10本中7本が赤**（①②③④⑤⑥⑩）。しかも `tests/r333-checks` は **9/9 緑のまま**＝**今日のリポジトリでは r333 はこの欠陥を捕まえられない**ことの実測（今日のどの `index.ts` にもコメントの言及が無いから）／⚠ **他の10本の検査ファイルが持つ `codeOnly` の写しは今回触っていない**（#R317 が同じ形で記録した理由——依頼の範囲外であり、一度に10本ぶんの赤を開けることになる）
@@ -215,6 +216,277 @@
 
 - **#R260** — **作業には終わりがあって、その終わりだけが書かれていなかった**。`CLAUDE.md` は §5 のワークフローが `branch deletion` で終わっており、その先——「GitHub が今回の作業を含む最新状態か」の確認と、**USB への物理バックアップ**——は 250 ラウンドぶん**ユーザーの頭の中**にあった。§11 として明文化し、**1 回実行した**（§11 を入れたので旧 §11「本ファイル自体の保守」は §12 へ。`CLAUDE.local.md` が参照する §6/§7 は動いていない）。⑴ **ドライブの特定は条件 1 つでは足りない**——`DriveType=Removable`（Get-Volume）と `BusType=USB`（Get-Disk）の**両方**で交わりを取る。実測: 交わりは **D: 1 台だけ**（BUFFALO USB Flash Disk・115.43 GB・NTFS・**ラベル無し**）。C: は Fixed かつ IsSystem。「候補が 1 台だけ」条項に当たったので、**恒久ラベル `INTMAP-BACKUP` を付けて**次回からは推測ではなく**名前**で当たるようにした。⑵ ⚠ **USB には既に旧形式のフルコピーがあった**（`D:\IntMap`・本日 02:43 更新・`node_modules` と `.git` 込み・**ドライブ全体で 31,816 項目**）。新しい規則は「**ルート**を IntMap バックアップに」「古い IntMap ファイルを残さない」なので、畳んでルートへ移した（**削除を伴うので実行前に確認して承認を得ている**）。**中身は追跡対象 609 ファイル・87.6 MB**——`node_modules` も `.git` も**再現には要らない**（`package-lock.json` から生成できるものを 31,000 ファイルぶん運んでいた）。基準は `git ls-files`＝**除外の定義を `.gitignore` に一本化**。⑶ **「コピーが成功した」は「同じ物がある」ではない**。robocopy の終了コードは**書いた側の主張**でしかないので、同期後に**相対パス・存在・SHA-256** の三点で再帰比較し、**差分ゼロ**を見るまでバックアップ成功と呼ばない。⑷ ⚠ **1 回目は 609 分の 1 のファイルで落ちた**——`git ls-files` は既定（`core.quotepath=true`）で非 ASCII のパスを**引用符とオクタルのエスケープで**返し、PowerShell はそれをそのままファイル名にする（`USGS.能登.pdf`）。⚠ **止まった時点で 8.2 分の剪定は終わっているので、USB は空**。`core.quotepath=false` にして `[Console]::OutputEncoding` を UTF-8 にし、引用符で始まるパスが残っていたら投げる検査を足して再同期・再検証（§11.7 の実行例）。実測: 剪定 **491 秒**（31,816 項目）→ コピー **609 ファイル・91,882,916 バイト・483.1 秒** → 検証 **22.2 秒**で MISSING 0 / EXTRA 0 / MISMATCH 0。⚠ **検証は同期の 3% の時間しかかからない**。⑸ **台帳の日付は成功したときだけ動く**（`usb-backup-state.json`・リポジトリの外）。⚠ 先に日付を書いて後から同期すると、**1 回の失敗が丸 1 日のスキップになる**。未接続はエラーではない——スキップして、**日付も更新しない**。⑹ 門は `tests/r260-checks.test.mjs`（6 本・終了処理の 29 条項を 1 つずつ名指し）。⚠ ⑥ は**この検査ファイル自身が `test:checks` の一覧に入っているか**を検査する——**入れ忘れた per-round checks ファイルは永久に緑**だからで、実際に書いた直後の実行で⑥だけが赤になった（`package.json` に足す前）。
 
+## R347 — **経路を「引ける」から「連れて行ける」へ**
+
+> 「IntMapのルーティング機能を、単なる『経路検索』ではなく、日常利用できる本格的な地図・ナビゲーション基盤へ
+> 全面的に強化してください。」「今回は『見た目だけGoogle Maps風』にする仕事ではありません。」
+
+依頼は §0「実装を始める前に現在の main を読み、**コメントやドキュメントを『実装済み』の証拠にしてはいけません。
+ブラウザ上の実挙動、実APIレスポンス、実描画、実測値を確認してください**」から始まっている。
+読んで最初に出てきたのは機能ではなく**欠陥**だった。
+
+### ⚠ 116 の capability のうち 4 つが、存在しない lazy モジュールを名指していた
+
+`js/atlas-capabilities.js` の `lazyModules` 列。4 件が `'routing'` と書いており、`IntMapLazy` が知っている
+名前は 21 個で、そこに `routing` は無い。ブラウザで実行して確かめた:
+
+```
+IntMapLazy.need('routing')            → false
+__imLazyCheck.failed                  → ["routing: could not be downloaded (no such lazy module: routing)"]
+全 capability のうち未知の lazy を名指すもの → 4 / 116（そして4件とも routing）
+```
+
+`tests/r209.spec.js` は「全 lazy モジュールが到着し `failed` が空である」ことを要求しているのに緑だった。
+**あれは `IntMapLazy.names()` を歩くので、一覧に無い名前は永久に検査されない**——#R301 の
+「一覧から漏れた検査は永久に緑」の**鏡像**がもう一度。#R318 と #R323 が数えた「2つの一覧が突き合わされて
+いない」の**5度目**でもある。
+
+⇒ 正しい名前へ直し（`routing.route` は `routeUi`、`isochrone`/`optimizeStops`/`setEndpoints` は eager なので空）、
+**capability 表と loader 表を突き合わせる門**を2つ置いた（`tests/r347-checks ㉒` がソースを、
+`tests/r347-navigation ②` が動いているページを）。
+
+### ⚠ 「工場を持たないモジュール」の規則が、1つの名前として書かれていた
+
+`js/lazy-modules.js` の `need()`:
+
+```js
+if (name !== 'nightSky' && !(window.IntMapModules && typeof window.IntMapModules[name] === 'function')) {
+```
+
+`js/navigation.js` は2つ目のそういうモジュール（IIFE で、import 時に自分を公開する）。**ファイルは読み込まれ、
+8つのグローバルを全部公開し、それでも失敗として記録された。** 規則が1件しか記述できない形だったから。
+⇒ `SELF_PUBLISHING = { nightSky: true, navigation: true }` という表にして、理由を名前の隣に置いた。
+
+### 何を作ったか
+
+Route Planning（既存）の上に、Active Navigation を**8ファイル**で足した。全部 1 つの async chunk。
+
+| ファイル | 役割 | 純粋か |
+|---|---|---|
+| `js/navigation-store.js` | 10 状態の状態機械と遷移表・`rerouteGeneration` | ○ |
+| `js/navigation-match.js` | GPS の受け入れ判定と平滑化・経路への射影（窓＋格子） | ○ |
+| `js/navigation-guidance.js` | 残り・次の操作・レーン・逸脱・到着・音声の時期 | ○ |
+| `js/navigation.js` | ループ（`watchPosition` → 上の3つ → 地図） | × |
+| `js/navigation-camera.js` | 追従／北上／全体／手動解除 | × |
+| `js/navigation-voice.js` | 9 言語の音声・off/alerts/guidance | × |
+| `js/navigation-sim.js` | 決定的な位置シミュレータ（`Math.random` 不使用） | ほぼ○ |
+| `js/navigation-ui.js` | 案内カード＋ ETA バー（desktop / mobile） | × |
+
+判断の理由は各ファイルの冒頭に書いた。**上の3つが純粋なので、ナビの難しい半分は Node で検証できる**
+（`tests/r347-checks.test.mjs` 26 本）——「逸脱したら再探索するか」「同じ案内を二度読むか」が
+車を運転せずに答えられる。
+
+加えて routing 側を3つ:
+
+- **`js/routing-providers.js` を能力レジストリに作り直した**（§3）。40 キーの語彙を宣言し、
+  **どの provider も全キーに答えなければ登録できない**（`assertComplete`）。#R323 の
+  「キーが無いことは false と読まれるが意味は『誰も訊いていない』」への答え。
+  ⚠ **語彙に入るのは事実だけで、計算するものは関数のまま**——#R323 は関数値のキーが `can()` を
+  永久に true にした表を出荷している。
+- **`js/routing-errors.js`**（§44）。15 コード。**コードは文ではない**——`retry` / `fallback` / `user` の
+  3つを持ち、orchestrator はそれで分岐する。文は別に、9 言語で引く。
+- **`js/routing-time.js`**（§33）。**時計を増やしていない。既にある2つに名前を付けた**——
+  `planningNow()`（Chronos。読者が見ている時刻）と `navNow()`（壁時計。走っている今）。
+  ナビが `IntMapTime` を1回も読まないことを門が検査する。
+
+### ⚠ 測って初めて見えた欠陥が navigation 側に4件
+
+どれもソースを読んでも、型検査でも、単体の純関数テストでも見えない。**実際の経路の上を走らせて**出た。
+
+**① 前進しているのに残り距離が増えた。** 東京→横浜の実経路（31,984 m）を 250 m ごとに 128 fix で走らせ、
+`remainingDistance` の単調性を数えた。**128 回中 1 回**、車が 31,500 m にいるのに **31,112 m（388 m 後ろ）**
+に照合された。経路の最後の 1 km が**自分自身の 30 m 隣**を走っており、対称な探索窓が両方の車線を含んだから。
+cross-track は 30.7 m——「線から遠い」という検査には引っかからない値。
+
+⚠ **窓を狭めるだけでは直らなかった。** `scanRange` は**セグメント単位**に歩くので、下限を含むセグメントは
+下限より手前から始まる。狭めた窓（`lo` = 31,225）を渡しても答えは 31,112 で返ってきた。
+**答えのほうにも境界を当てて**初めて直る。
+
+**② その窓の幅は `Date.now()` から計算していた。** `dt` が「どれだけ先まで探すか」を決めるのに、
+fix がまとめて届く経路——リプレイ、スロットルされたタブ、シミュレータ——では `dt` がミリ秒になり、
+窓が真の位置を**含みえない**。⇒ `onFix` の中で2つの時計を名前で分けた:
+**`now`（fix 自身の `timestamp`）が窓と履歴**、**`wall`（`Date.now()`）が鮮度と画面に出す到着時刻**。
+
+**③ 到着が永久に来なかった。** `arrivalVote` の `nearDest` が**ピンとの距離**だけを見ていた。
+ルーターは道路網の**最寄り点**で経路を終えるので、駅の中や建物の奥のピンには原理的に届かない。
+走り切った車が `arriving` のまま止まった。⇒ **経路の終端**との距離を足した（ピンは満たせば十分、必須ではない）。
+守っているのは「照合が壊れている（線の端に居ることになっているが装置は 1 km 先）」のほうで、
+それには終端の距離が答える。
+
+**④ 停止した受信機が車の向きを変えた。** heading のゲートが**平滑化された**速度を見ていたので、
+12 m/s から急停止した 1 秒後もまだ 9 m/s と信じ、受信機が吐いた 270° を採用した。
+**車が 1 mm も動いていないのに矢印が 90° → 19° に回った。** ⇒ ゲートは装置の**瞬時**速度を見る
+（平滑化した値は表示用）。
+
+### ⚠ 携帯では、運転者が読まねばならない2つが両方とも覆われていた
+
+390×844 で `document.elementFromPoint` に訊いた:
+
+```
+elementFromPoint(195, 700) → #sidebar      （案内バーの上半分ではなく、ニュースシート）
+elementFromPoint( 40,  95) → #bm-square    （曲がる指示の2行目ではなく、基図サムネイル）
+```
+
+`#nav-ui` を `#map-container` の中にマウントしていたので、**z-index 1802 はその中だけの約束**になり、
+兄弟である `#sidebar`（1100）に負けていた。**z-index は兄弟についての約束でしかない。**
+
+⚠ **どちらもソース検査にも DOM クエリにもデスクトップのスクリーンショットにも見えない。**
+`.nvg-bar` は正しい座標に正しい大きさで存在していた——ただ、その上に別のものが描かれていた。
+⇒ body へマウント、案内中だけサムネイルを隠す（`#route-panel` と同じ扱い・終了で戻る）、
+そして **`tests/r347-navigation ⑧` がピクセルに「今いちばん上は誰か」を訊く**。
+
+### ⚠ `IntMapNavStore.reset()` が orchestrator の記憶を消せなかった
+
+`gpsState` / `offCarry` / `arrCarry` / `lastTickAt` は `js/navigation.js` の closure の私物で、`stop()` は消す。
+だが `reset()` も「旅は終わった」を意味する公開の扉で、そちらからは届かなかった。
+1つのページで2回走らせると、**2つ目の走行の fix が全部 `out_of_order` で拒否された**——
+例外は出ず、ナビは静かに動かなかった。⇒ store の reset / attach を購読して両方を不可分にした。
+
+### ⚠ 交通情報の provider は「機能」ではなく「規約」で決まった
+
+§4 が「Google Routes API を単純に採用してはいけません」「他社APIもライセンス条件を確認してください」と
+書いているので、**条項の実物を取りに行った**。
+
+| provider | 判定 | 根拠 |
+|---|---|---|
+| **Google Routes** | **不可** | maps-service-terms **§19.2**「must not use Google Maps Content from the Routes API **in conjunction with a non-Google map**」＋ 一般規約 **§3.2.3(e)**（"with **or near** a non-Google Map"）。IntMap の地図は MapLibre + OSM |
+| **Amazon Location** | **不可** | AWS Service Terms **§82.5.b**「**Layer routes from HERE on top of a map from another third-party provider**」を名指しで禁止。加えて日本は routing / traffic とも非対応 |
+| **HERE** | **不可（この用途では）** | Platform Terms **2.1** が **Navigation Functionality**（現在地に基づく逐次案内）を標準ライセンスから除外し別途書面契約を要求。**6.4(a) 末文**が日本の HERE Content の第三者コンテンツ併用を PoI / visual / dynamic に限定（経路が入っていない）。さらに**日本では `pedestrian` と `bicycle` が非対応** |
+| **TomTom** | **不可（この用途では）** | Portal T&C **2.1** が同じく Navigation Functionality を除外。日本に対応するのは Orbis v2 だけで、**Orbis にターンバイターンもレーンも無い** |
+| **GraphHopper** | 規約は完全にクリア | ToS 第5章「You are allowed to use the Directions API **with and without showing a map**」。⚠ **しかしライブ交通が存在しない**（OpenAPI spec に `/route` の traffic パラメータが 0 件・「Traffic data is not yet available for openstreetmap」） |
+| **Mapbox** | **採用** | 「Mapbox Map 上に限る」条項は Boundaries (§2.2) / POI (§2.7.5) / Studio (§2.11) の3つだけで **Navigation API を含まない**。attribution 文書が「**on a non-Mapbox map**」を明示的に想定。日本の交通データあり・無料枠 10 万/月 |
+
+⚠ **その規約を<b>コメントではなくフィールドとして</b>符号化した。コメントは編集を止めない。**
+
+- **`noStore: true`** — Product Terms §2.10.1 が Navigation API の結果の export / download / **cache** / store を
+  禁じる ⇒ **この relay だけ `Cache-Control: no-store` を返す**（他の relay は全部 `s-maxage` を付ける）。
+  `js/routing-traffic.js` は `localStorage` / `sessionStorage` / `IndexedDB` を1つも書かず、門がそれを見る。
+- **`aiContent: false`** — §1.5(ii) が Service Offerings を AI の学習・運用・改善に使うことを禁じる。
+  Atlas はこのアプリの操作卓なので「経路をモデルに渡す」は既定の動作。**この provider の返り値については
+  それをしない**、という宣言。Atlas は routing を**操作**できるし自分の状態は読める。
+- **`evidence: 'documented'`** — 鍵がこのリポジトリに無いので、**上のフラグは1つも観測していない**。
+  #R291 がこのファイルの見出しに書いた「EVERY FLAG BELOW IS A MEASURED CLAIM ABOUT A LIVE SERVER」を
+  守るには、**測っていないものを測ったと書かない**しかない。`available()` は relay が答えるまで false、
+  つまり**文書の力だけで利用者に何かを提示することは無い**。
+
+`supabase/functions/routing-relay/index.ts`（9本目の Edge Function）が鍵を持ち、profile とクエリを
+allow-list で絞り、座標を範囲まで検証し、呼び出し側の `access_token` を必ず破棄する。
+⚠ **per-IP のレート制限を自前で持つ唯一の relay**——Mapbox は支出のハードキャップを持たないので、
+ここが唯一の天井（プロセス内メモリ＝best-effort であることを本文に明記した）。
+
+### ⚠ FOSSGIS の帰属要件が満たされていなかった（このラウンド以前から）
+
+`routing.openstreetmap.de`（徒歩・自転車）と `valhalla1.openstreetmap.de`（すべての回避要求）は
+ODbL・CC-BY-SA・**openstreetmap.org/fixthemap へのリンク**を要求する。
+`fixthemap` はリポジトリ全体で **0 件**だった。⇒ 能力表に `TERMS` を足し、門を置いた。
+
+⚠ **残る2つは直していない。**
+- 「アプリケーションを識別する HTTP User-Agent」——**ブラウザは script に User-Agent を設定させない**。
+  custom header（`X-Client-Id`）は cross-origin GET に CORS preflight を足し、これらのサーバがそれに
+  答えるかは分からない。**試して確かめることはルーティングを落としうる**ので、独立したラウンドが要る。
+- 「URL をハードコードするな」「高トラフィックのサイトは原則不可」——これは
+  **どのサーバに依存するかという判断**であって、編集ではない。
+
+### 実測
+
+| | 値 |
+|---|---|
+| OSRM 東京→横浜 | 26 手順・939 点・31,984 m |
+| 手順のアンカー誤差（射影） | 最大 **0.784 m** / 中央値 **0** / セグメント添字は厳密増加 |
+| レーン情報のある交差点 | **8**（`exitNumbers` を false にしたのはこの経路で出口番号が **0** だったから） |
+| 道路名のある手順 | 20 / 26（ref か方面のあるもの 17） |
+| シミュレーション走行 | 128 fix・`enroute → arriving → arrived`・残り距離は**単調** |
+| 逸脱 | 1 fix では再探索 **0 回**、8 fix 続けて再探索 **ちょうど 1 回** |
+| 走行中に端末を出た位置 | **0 件**（§39。再探索のときだけ 1 件） |
+| 検査 | Node **28 本** ＋ ブラウザ **7 本** |
+
+### Google Maps 級に対して、どこまで来て、どこが未達か (§55)
+
+⚠ **これは「Google Maps と同じ」と誇張するための表ではない。未達は未達と書く。**
+「◐」は**コードは完成しているが鍵が無いので動いていない**という意味で、動くふりはしない
+（`available()` が false なので UI にも Atlas にも一切出ない）。
+
+| 機能 | IntMap | 備考 |
+|---|---|---|
+| 車／徒歩／自転車の経路 | ✅ | OSRM・Valhalla（回避条件つき） |
+| 公共交通 | ✅ | Transitous / MOTIS のリアルタイム＋新幹線レジストリ |
+| 代替経路 | ✅ | 最大3本・重複率で間引き・地図とカードが相互選択 |
+| ターンバイターン | ✅ | 9 言語。次の次の操作も表示 |
+| **レーン案内** | ✅ | **provider が出したときだけ**（OSRM は実際に出す——東京→横浜で交差点 8 か所を実測）。推定しない |
+| 音声案内 | ✅ | 9 言語・4 段（速度で距離が伸縮）・`off` / `alerts` / `guidance` |
+| 現在地追従・地図照合 | ✅ | 線分への射影・窓＋格子・GPS の受け入れ判定と平滑化 |
+| 逸脱の検出 | ✅ | cross-track ではなく**確信度**で判定（fix 自身の誤差の単位）＋連続回数＋経過時間＋停止時の除外 |
+| 自動再探索 | ✅ | generation token で古い返事を捨てる・12 秒のヒステリシス |
+| 到着（経由地・目的地） | ✅ | 経路の終端＋目的地＋減速＋持続 |
+| 案内カメラ | ✅ | 追従／北上／全体／手動解除（MapLibre・Cesium 両方） |
+| Atlas からの操作 | ✅ | 開始・停止・状況・カメラ・音声。**Atlas は独自状態を持たない** |
+| 経路の共有・GPX / GeoJSON | ✅ | 既存 |
+| **交通考慮 ETA** | ◐ | アダプタ・relay・能力表・fallback まで完成。**鍵（`MAPBOX_TOKEN`）が入れば即座に有効**。今は「交通状況未反映」と明示 |
+| **区間ごとの渋滞** | ◐ | 同上（`congestion` / `congestion_numeric` を区間にまとめる実装まで） |
+| **事故・通行止め** | ◐ | 同上（leg の `incidents` / `closures` を正規化） |
+| **route refresh** | ◐ | relay にエンドポイントあり。鍵待ち |
+| **制限速度** | ◐ | `annotations=maxspeed` を要求する実装まで。鍵待ち |
+| 経由地の最適化 | ◐ | 既存の `optimizeStops`（自前の TSP＋2-opt）はある。**provider 側の最適化**は能力表に宣言のみ |
+| 料金の**金額** | ❌ | Mapbox は有料道路の**位置**は返すが**金額を返さない**。⚠ §24 のとおり**自前推計を「料金」として出さない** |
+| EV ルーティング | ❌ | 能力語彙と provider 宣言のみ（`evRouting` / `chargingStops` / `energyEstimate`）。UI は作っていない |
+| 目的地の入口 (access point) | ❌ | 能力語彙のみ。⚠ ただし**到着判定は経路の終端を見る**ので、ピンが建物の奥でも到着はする |
+| 二輪 (motorcycle) | ❌ | 能力語彙のみ。Mapbox は profile を持たない |
+| オフライン地図・現在地共有 | ❌ | 範囲外 |
+
+**外部データ不足で残った項目**は上の ◐ と ❌ のうち鍵・provider に依存するもの。
+§57 の要求どおり **provider adapter・Edge Function・secret interface まで実装済み**で、
+`supabase secrets set MAPBOX_TOKEN=…` と `supabase functions deploy routing-relay` の2つで有効になる。
+**fake data は1件も入れていない**——取れなかったものは `null` か空配列で、UI はそれを見て何も描かない。
+
+### ⚠ 上げた天井は2つだけで、どちらも先に返せるだけ返している
+
+**① `check:perf`** — 起動費は実際に増えたので `--update` した。内訳:
+
+| | 実測 | 内容 |
+|---|---|---|
+| eager modules | 275 → **277** | `routing-errors.js`（失敗の分類・パネルが存在する前にも要る）と `routing-time.js`（時計の分離） |
+| eager gzip | +8.2 kB | 上の2本 |
+| eager cssRaw | +7.5 kB | 案内 UI のスタイル |
+| async 新 chunk | **navigation 61.6 kB** / **routing-traffic 12.3 kB** | §45 の要求どおり、一度も案内しないセッションは1バイトも払わない |
+| async locales | +16 kB | 9 言語の羻訳 |
+
+⚠ **先に返した**: `js/routing-traffic.js` は最初 eager だった。「provider 選択に答えが要る」という
+一段落を書いていたが、`check:perf` がその一段落に **22 kB** という値段を付けた——
+最初の呼び出しは**最初の経路要求**であって起動時ではない。遅延側へ移し、`_kickProbe()` が取る。
+
+**② `check:testbudget` の全体天井** — 5,084 → **5,089 秒**。**このラウンドで動かした唯一の天井**なので
+はっきり書く。⚠ #R322 も #R341 も天井を**その時の合計ちょうど**に置くので、**以降のラウンドは
+spec を1本追加するだけで、そのファイルが何秒であれ超過する**。§51/§52 は案内の受け入れ検査を
+ブラウザで行うことを要求しており、この主題はまさに「パースして一度も走っていないコード」が
+危険な領域なので、「spec を足さない」は選べなかった。
+
+**5 秒は「支払ったあとに残った分」**であることを先に記録する:
+- **ページの2回目の起動をやめた**——`tests/r209.spec.js ①` がすでに「遅延モジュールは boot bundle に
+  入っていない」を**全モジュールについて**検査しており、#R347 の2本もその一覧に入った。
+- その**ソース側の半分は Node へ**（`tests/r347-checks ㋕`・無料）。
+- **公開 OSRM への経路要求を 6 → 1**（直列・ページ共有なので再利用できる。向こうの規約も
+  「毎秒 1 件まで」と書いている）。
+- **8 本 → 7 本**（nav route の構造検査を、それをどうせ組む走行の中へ）。
+
+⚠ **記録されている秒数はこのマシンの壁時計ではない**。`tests/smoke.spec.js` は 44 本で **8 秒**と
+記録されているがここでは 102 秒かかる。だから**同じ条件で比べる**しかない——
+`tests/r209.spec.js` が 27.0 秒（記録 10 秒）のとき本件は 14.3 秒なので **5 秒**。
+**写したのではなく換算した**ことを、`scripts/test-budget.mjs` のコメントにも書いてある。
+
+### 門 — `tests/r347-checks.test.mjs`（28）と `tests/r347-navigation.spec.js`（7）
+
+Node 側は純関数だけを見る: 射影が頂点ではなく線分に落ちること／confidence が fix 自身の誤差の単位である
+こと／窓が反対車線に留まれないこと／古い fix・飛躍・停止時の heading／遷移表の全数／残り時間が
+**距離比ではなく手順の所要時間から**来ること／逸脱と到着の各条件／音声の段が段ごとに一度だけ鳴ること／
+能力語彙の全数と `evidence`／鍵無しの provider が提示されないこと／fallback が失うものを言うこと／
+規約フィールドが実装と一致すること／**capability 表と loader 表の突き合わせ**／
+ナビが `IntMapTime` を読まないこと／生のレンダラに触らないこと／tick が通信しないこと／relay が
+キャッシュせずトークン注入も受けないこと。
+
+ブラウザ側は**動いているページ**にしか答えられないものだけ: boot bundle に入っていないこと／
+壊れた lazy 参照が 0 であること／実経路から nav route が組めること／**32 km を走り切って到着すること**／
+逸脱と再探索／案内 UI が計画 UI を置き換え**交通情報について正直であること**／Atlas が同じ store を
+読むこと／**携帯でいちばん上に居るのが誰か**。
 ## R346 — **掃引は成功しているのに、その run は赤かった**
 
 #R341 が入れた `.github/workflows/aviation-sweep.yml` は、5 分ごとに `?refresh=1` を叩いて共有スナップショットを前へ進める。着地直後に手で 1 回走らせたところ、**仕事は全部正しく終わっていた**:

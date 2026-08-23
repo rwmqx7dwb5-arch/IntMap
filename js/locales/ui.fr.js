@@ -5282,4 +5282,73 @@ window.IntMapLang.define('fr', { ui: {
   'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': 'Cette demande a nécessité trop de tentatives — rien de plus n’a été prélevé sur votre quota quotidien. Reformulez-la et réessayez.',   /* ai-core.js (#R318) aiTurnCallsMsg */
   'place': 'lieu',   /* atlas-console.js (#R330) research.events footnote */
   'headline similarity': 'similarité des titres',   /* atlas-console.js (#R330) research.events footnote */
+  '{t} slower than usual': '{t} de plus que d’habitude',   /* navigation-ui.js (#R347) */
+  'A faster route saves {t}': 'Un itinéraire plus rapide fait gagner {t}',   /* navigation-ui.js (#R347) */
+  'Alerts only': 'Alertes uniquement',   /* navigation-ui.js (#R347) */
+  'arrive ': 'arrivée ',   /* atlas-console.js (#R347) */
+  'Arriving at {n}': 'Arrivée à {n}',   /* navigation-voice.js (#R347) */
+  'Arriving at your destination': 'Arrivée à destination',   /* navigation-voice.js (#R347) */
+  'Arriving soon': 'Arrivée imminente',   /* navigation-ui.js (#R347) */
+  'Current road': 'Route actuelle',   /* navigation-ui.js (#R347) */
+  'Distance left': 'Distance restante',   /* navigation-ui.js (#R347) */
+  'End navigation': 'Terminer la navigation',   /* navigation-ui.js (#R347) */
+  'Fewer details': 'Moins de détails',   /* navigation-ui.js (#R347) */
+  'Finding a new route…': 'Recherche d’un nouvel itinéraire…',   /* navigation-ui.js (#R347) */
+  'Follow my position': 'Suivre ma position',   /* navigation-ui.js (#R347) */
+  'Following your position again.': 'La carte suit de nouveau votre position.',   /* atlas-console.js (#R347) */
+  'In {d}, {a}': 'Dans {d}, {a}',   /* navigation-voice.js (#R347) */
+  'Location accuracy': 'Précision de la position',   /* navigation-ui.js (#R347) */
+  'More details': 'Plus de détails',   /* navigation-ui.js (#R347) */
+  'Mute voice guidance': 'Couper le guidage vocal',   /* navigation-ui.js (#R347) */
+  'Navigation is not running.': 'La navigation n’est pas en cours.',   /* atlas-console.js (#R347) */
+  'Navigation is paused': 'Navigation en pause',   /* navigation-ui.js (#R347) */
+  'Navigation is unavailable in this session.': 'La navigation n’est pas disponible dans cette session.',   /* atlas-console.js (#R347) */
+  'Navigation started': 'Navigation démarrée',   /* atlas-console.js (#R347) */
+  'Navigation stopped.': 'Navigation arrêtée.',   /* atlas-console.js (#R347) */
+  'New route found': 'Nouvel itinéraire trouvé',   /* navigation-voice.js (#R347) */
+  'Next stop': 'Étape suivante',   /* navigation-ui.js (#R347) */
+  'Off': 'Désactivé',   /* navigation-ui.js (#R347) */
+  'Off route': 'Hors itinéraire',   /* navigation-voice.js (#R347) */
+  'Off route.': 'Hors itinéraire.',   /* atlas-console.js (#R347) */
+  'On': 'Activé',   /* navigation-ui.js (#R347) */
+  'Plan a route first — tell me where from and where to.': 'Planifiez d’abord un itinéraire — indiquez-moi le départ et l’arrivée.',   /* atlas-console.js (#R347) */
+  'Re-centre the map': 'Recentrer la carte',   /* navigation-ui.js (#R347) */
+  'Rerouting': 'Recalcul de l’itinéraire',   /* navigation-voice.js (#R347) */
+  'simulated': 'simulé',   /* atlas-console.js (#R347) */
+  'Simulated drive': 'Trajet simulé',   /* navigation-ui.js (#R347) */
+  'Standard travel time — traffic not included.': 'Temps de trajet standard — trafic non pris en compte.',   /* atlas-console.js (#R347) */
+  'Stop reached': 'Étape atteinte',   /* navigation-ui.js (#R347) */
+  'Switch': 'Changer',   /* navigation-ui.js (#R347) */
+  'then': 'puis',   /* navigation-ui.js (#R347) */
+  'Time left': 'Temps restant',   /* navigation-ui.js (#R347) */
+  'Traffic data is out of date': 'Données de trafic obsolètes',   /* navigation-ui.js (#R347) */
+  'Traffic included': 'Trafic pris en compte',   /* navigation-ui.js (#R347) */
+  'Traffic is not included': 'Trafic non pris en compte',   /* navigation-ui.js (#R347) */
+  'Traffic-aware.': 'Trafic pris en compte.',   /* atlas-console.js (#R347) */
+  'Turn voice guidance on': 'Activer le guidage vocal',   /* navigation-ui.js (#R347) */
+  'Turn-by-turn navigation': 'Navigation pas à pas',   /* navigation-ui.js (#R347) */
+  'Via point': 'Étape',   /* navigation-ui.js navigation-voice.js (#R347) */
+  'Via point: {n}': 'Étape : {n}',   /* navigation-voice.js (#R347) */
+  'Voice guidance': 'Guidage vocal',   /* navigation-ui.js (#R347) */
+  'You have arrived': 'Vous êtes arrivé',   /* navigation-ui.js navigation-voice.js (#R347) */
+  'You have arrived at {n}': 'Vous êtes arrivé à {n}',   /* navigation-voice.js (#R347) */
+  'You have left the route': 'Vous avez quitté l’itinéraire',   /* navigation-ui.js (#R347) */
+  'No route found between these points.': 'Aucun itinéraire trouvé entre ces deux points.',   /* routing-errors.js (#R347) */
+  'Still waiting for your location.': 'En attente de votre position.',   /* routing-errors.js (#R347) */
+  'Location permission is off. Allow it to navigate.': 'L’accès à la position est désactivé. Autorisez-le pour naviguer.',   /* routing-errors.js (#R347) */
+  'Your device cannot fix a position here.': 'Votre appareil ne parvient pas à se localiser ici.',   /* routing-errors.js (#R347) */
+  'The routing server took too long.': 'Le serveur d’itinéraires a mis trop de temps.',   /* routing-errors.js (#R347) */
+  'The routing server is rate-limiting requests.': 'Le serveur d’itinéraires limite les requêtes.',   /* routing-errors.js (#R347) */
+  'The routing server is unavailable.': 'Le serveur d’itinéraires est indisponible.',   /* routing-errors.js (#R347) */
+  'This area is outside the router’s coverage.': 'Cette zone est hors de la couverture du calculateur d’itinéraires.',   /* routing-errors.js (#R347) */
+  'That request cannot be routed as written.': 'Cette demande ne peut pas être calculée telle quelle.',   /* routing-errors.js (#R347) */
+  'Traffic data is unavailable; standard routing used.': 'Données de trafic indisponibles ; itinéraire standard utilisé.',   /* routing-errors.js (#R347) */
+  'No public transport data for this journey.': 'Aucune donnée de transports en commun pour ce trajet.',   /* routing-errors.js (#R347) */
+  'You appear to be offline.': 'Vous semblez être hors ligne.',   /* routing-errors.js (#R347) */
+  'Could not find a new route from here.': 'Impossible de trouver un nouvel itinéraire depuis ici.',   /* routing-errors.js (#R347) */
+  'That request was replaced by a newer one.': 'Cette demande a été remplacée par une plus récente.',   /* routing-errors.js (#R347) */
+  'Routing failed for an unknown reason.': 'Le calcul d’itinéraire a échoué pour une raison inconnue.',   /* routing-errors.js (#R347) */
+  'Times come from the map’s clock ({year}), not from today — live timetables do not cover it.': 'Les horaires proviennent de l’horloge de la carte ({year}), pas d’aujourd’hui — les horaires en direct ne la couvrent pas.',   /* routing-time.js (#R347) */
+  'Times are calculated from the map’s clock ({year}), not from today.': 'Les horaires sont calculés depuis l’horloge de la carte ({year}), pas depuis aujourd’hui.',   /* routing-time.js (#R347) */
+  'Traffic data was unavailable — this is the standard travel time.': 'Données de trafic indisponibles — voici le temps de trajet standard.',   /* routing-cards.js (#R347) */
 } });

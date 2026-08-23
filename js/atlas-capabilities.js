@@ -139,10 +139,10 @@ export function makeAtlasCapabilities(HOST) {
       ['data.satelliteCompare',      'satelliteCompare','satCompare,satChange',                                       'data',    'panelPaint','panel.satcompare',     'panel,map',           'session', 'none',   'place',    ''],
       ['data.layerValues',           'layerData',      'layerValue,layerQuery',                                       'data',    'none',    '',                       'explanation',         'read',    'none',   'point',    ''],
       ['map.object',                 'object',         'mapObject',                                                   'map',     'object',  'map.object',             'object',              'session', 'explicit','',        ''],
-      ['routing.isochrone',          'isochrone',      'reach,reachability,reachable,catchment',                      'routing', 'paint',   'map.isochrone',          'map',                 'session', 'none',   'place',    'routing'],
-      ['routing.setEndpoints',       'route',          '',                                                            'routing', 'route',   'map.route',              'panel',               'session', 'none',   'place',    'routing'],
-      ['routing.optimizeStops',      'optimizeRoute',  'tsp,multiStop,optimize,optimizeStops',                        'routing', 'route',   'map.route',              'route,map,panel',     'session', 'none',   'points',   'routing'],
-      ['routing.route',              'directions',     'roadRoute,navigate,drivingRoute,walkingRoute,transitRoute',   'routing', 'route',   'map.route',              'route,map,panel',     'session', 'none',   'place',    'routing'],
+      ['routing.isochrone',          'isochrone',      'reach,reachability,reachable,catchment',                      'routing', 'paint',   'map.isochrone',          'map',                 'session', 'none',   'place',    ''],
+      ['routing.setEndpoints',       'route',          '',                                                            'routing', 'route',   'map.route',              'panel',               'session', 'none',   'place',    ''],
+      ['routing.optimizeStops',      'optimizeRoute',  'tsp,multiStop,optimize,optimizeStops',                        'routing', 'route',   'map.route',              'route,map,panel',     'session', 'none',   'points',   ''],
+      ['routing.route',              'directions',     'roadRoute,navigate,drivingRoute,walkingRoute,transitRoute',   'routing', 'route',   'map.route',              'route,map,panel',     'session', 'none',   'place',    'routeUi'],
       ['panel.streetView',           'streetview',     'streetView,pano',                                             'panel',   'panel',   'panel.streetview',       'panel',               'session', 'none',   'point',    'streetView'],
       ['sim.radiation',              'radiation',      'fallout,dispersion,plume,radiationSim',                       'sim',     'sim',     'map.radiation',          'map',                 'session', 'none',   'place',    ''],
       ['sim.flightSim',              'flightSim',      'flightsim,flightsimulator,flysim,pilot',                      'sim',     'sim',     'camera,map.flightsim',   'map,camera',          'session', 'none',   'place?',   'flightSim'],
@@ -161,6 +161,19 @@ export function makeAtlasCapabilities(HOST) {
       ['map.radius',                 'radius',         '',                                                            'map',     'object',  'map.object',             'object,map',          'session', 'none',   'place',    ''],
       ['map.volume3d',               'volume3d',       'volume',                                                      'map',     'object',  'map.object',             'object,map',          'session', 'none',   'place',    ''],
       ['routing.drone',              'drone',          '',                                                            'routing', 'route',   'map.drone',              'route,map,panel',     'session', 'none',   '',         ''],
+      /* ══ (#R347) ACTIVE NAVIGATION — §34 ═════════════════════════════════════════════════════
+         「「AtlasにはできるがUIからできない」「UIにはできるがAtlasにはできない」という状態を原則なくす。」
+         Five, not one, because they differ in every column that matters: starting needs the route to
+         exist and the reader to grant a permission (`external` risk — a position leaves the device);
+         asking how long is left is a pure READ; stopping is neither.
+         ⚠ `navigation.start` IS THE ONLY 'external' RISK IN THE ROUTING CATEGORY. It turns on a sensor
+         and sends one position to a router. Atlas may do it on a plain instruction, but the risk column
+         is what makes that visible in the plan rather than buried in an executor. */
+      ['navigation.start',           'startNavigation','startNav,beginNavigation,guideMe,driveThere',           'routing', 'route',   'map.route,navigation',   'route,map,panel',     'external','none',   '',         'navigation'],
+      ['navigation.stop',            'stopNavigation', 'endNavigation,stopNav',                              'routing', 'none',    'navigation',             'panel',               'session', 'none',   '',         ''],
+      ['navigation.status',          'navStatus',      'howLongLeft,etaNow,remaining,nextTurn,arrivalTime',           'routing', 'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+      ['navigation.camera',          'navCamera',      'recenter,overview,followMe,northUp',                          'routing', 'camera',  'camera',                 'map,camera',          'session', 'none',   '',         ''],
+      ['navigation.voice',           'navVoice',       'mute,unmute,voiceGuidance',                                   'routing', 'setting', 'navigation',             'setting',             'session', 'none',   '',         ''],
       /* ⚠ `measure` ARMS the tool; the line appears when the USER clicks. Declaring 'map' here made
          the verifier promise a drawing that correctly is not there yet (§6's panel rule). */
       ['map.measure',                'measure',        '',                                                            'map',     'panel',   'map.tool',               'panel',               'session', 'none',   '',         ''],
@@ -677,7 +690,13 @@ export function makeAtlasCapabilities(HOST) {
     var VERB_TERMS = {
       view: 'fly|go to|zoom|move|rotate|tilt|north|camera|locate|移動|飛んで|ズーム|回転|傾け|fliege|zoom|drehen|neigen|лететь|приблизить|повернуть|наклон|volar|acercar|girar|inclinar|飛往|缩放|旋轉|傾斜|飞往|縮放|旋转|倾斜|voler|zoomer|pivoter|incliner|이동|확대|회전|기울',
       layers: 'layer|overlay|show|hide|opacity|レイヤー|表示|非表示|不透明|ebene|anzeigen|ausblenden|deckkraft|слой|показать|скрыть|непрозрачность|capa|mostrar|ocultar|opacidad|圖層|顯示|隱藏|透明度|图层|显示|隐藏|couche|afficher|masquer|opacité|레이어|표시|숨기|불투명',
-      routing: 'route|directions|drive|walk|transit|reach|isochrone|経路|道順|徒歩|車|到達|route|wegbeschreibung|fahren|laufen|erreichbar|маршрут|проезд|пешком|доступн|ruta|indicaciones|conducir|caminar|alcance|路線|路線圖|步行|可達|路线|步行|可达|itinéraire|trajet|à pied|accessible|경로|길찾기|도보|도달',
+      routing: 'route|directions|drive|walk|transit|reach|isochrone|経路|道順|徒歩|車|到達|route|wegbeschreibung|fahren|laufen|erreichbar|маршрут|проезд|пешком|доступн|ruta|indicaciones|conducir|caminar|alcance|路線|路線圖|步行|可達|路线|步行|可达|itinéraire|trajet|à pied|accessible|경로|길찾기|도보|도달|navigate|navigation|guidance|eta|remaining|arrive|arrival|next turn|overview|recenter|mute|voice|案内|ナビ|誘導|到着|残り|曲がり|全体表示|現在地|ミュート|音声|何分|führung|ankunft|verbleib|abbieg|übersicht|stumm|sprachansage|навигац|ведение|прибыт|остал|поворот|обзор|голос|navegación|guía|llegada|restante|giro|resumen|silenciar|voz|導航|導引|抵達|剩餘|轉彎|總覽|靜音|語音|导航|导引|抵达|剩余|转弯|总览|静音|语音|guidage|arrivée|restant|virage|aperçu|muet|voix|내비|안내|도착|남은|회전|전체|음소거|음성',
+      /* ⚠ (#R347) THE NAVIGATION HALF OF ROUTING, ADDED HERE RATHER THAN AS AN ALIAS. `aliases` is a
+         list of English identifiers the planner may emit; a Japanese word in it is a translation
+         tuple held as adjacent data, which scripts/i18n-pair-audit.mjs counts (and was counting).
+         This row is the place the file already keeps match terms in every language at once, and it
+         is exempt by design — see the note above. `navigation.*` capabilities are category `routing`,
+         so they read this row. */
       sim: 'simulate|simulation|quake|tsunami|radiation|missile|sun|shadow|sky|flight|シミュ|地震|津波|放射|ミサイル|日照|影|星空|飛行|simulation|erdbeben|tsunami|strahlung|rakete|sonne|schatten|himmel|симул|землетряс|цунами|радиац|ракет|солнц|тень|небо|simulación|terremoto|tsunami|radiación|misil|sol|sombra|cielo|模擬|地震|海嘯|輻射|飛彈|陽光|陰影|星空|模拟|海啸|辐射|导弹|阳光|阴影|simulation|séisme|tsunami|radiation|missile|soleil|ombre|ciel|시뮬|지진|해일|방사|미사일|태양|그림자|하늘',
       data: 'rank|top|compare|statistic|population|value|gdp|ランキング|比較|人口|統計|値|rangliste|vergleich|bevölkerung|statistik|рейтинг|сравн|население|статистик|clasificación|comparar|población|estadística|排名|比較|人口|統計|排行|比较|统计|classement|comparer|population|statistique|순위|비교|인구|통계',
       research: 'research|analyze|explain|news|report|history|調べ|分析|説明|ニュース|歴史|recherche|analysieren|erklären|nachrichten|geschichte|исследов|анализ|объясн|новост|истори|investigar|analizar|explicar|noticias|historia|研究|分析|說明|新聞|歷史|说明|新闻|历史|recherche|analyser|expliquer|actualités|histoire|조사|분석|설명|뉴스|역사',

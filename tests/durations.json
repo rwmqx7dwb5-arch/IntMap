@@ -73,5 +73,6 @@
   "tests/security.spec.js": 9,
   "tests/smoke.spec.js": 8,
   "tests/r341.spec.js": 4,
-  "tests/r341-live.spec.js": 6
+  "tests/r341-live.spec.js": 6,
+  "tests/r347-navigation.spec.js": 5
 }

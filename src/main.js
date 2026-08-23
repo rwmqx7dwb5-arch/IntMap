@@ -96,6 +96,10 @@ import '../js/companies.js';
 import '../js/compare.js';
 /* (#R291) the routing subsystem — five pure modules then the router; the PANEL is lazy. Architecture.md §8.4. */
 import '../js/routing-store.js'; import '../js/routing-providers.js'; import '../js/routing-geocode.js'; import '../js/routing-cards.js'; import '../js/routing-export.js';
+/* (#R347) two more, eager because both are read before the panel exists (the failure taxonomy and
+   the planning/navigation clock split, §33). ⚠ js/routing-traffic.js is deliberately NOT here —
+   check:perf priced «eager for provider selection» at 22 kB of boot JS. DEV-NOTES #R347. */
+import '../js/routing-errors.js'; import '../js/routing-time.js';
 import '../js/routing.js';
 /* (#R184) the six route ANALYSES (elevation, borders, conditions along the way, the schedule,
    alternative differences, and routing on OSM's record of a historical network). The three
@@ -372,7 +376,7 @@ const MODULE_FACTORIES = [
    the aircraft layer, aircraft search or an Atlas aviation command asks for it. */
 const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail', 'analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu', 'aviationLive'];
 (function () {
-  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport'].filter((k) => !window[k]);
+  const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport', 'IntMapRouteErrors', 'IntMapRouteClock'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};
   const missFac = MODULE_FACTORIES.filter((k) => typeof M[k] !== 'function');
   if (miss.length) console.error('[IntMap] required module file(s) failed to load: ' + miss.join(', ') + ' — check the js/ directory is deployed');
