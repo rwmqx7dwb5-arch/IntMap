@@ -133,25 +133,37 @@ window.IntMapModules.countriesUi=function(HOST){
             try{ walk(feat&&feat.geometry&&feat.geometry.coordinates); }catch(_){ return null; }
             return seen?[w,s2,e,n]:null;
           };
-          gj.features.forEach(f=>{
+          /* ══ ⚠⚠⚠ (#R375) ONE CONSTRUCTOR, BECAUSE TWO LOOPS BUILD THIS RECORD ════════════════════
+             #R195 split this load in two — the 110 m file for the ATTRIBUTES at boot, the 10 m file for
+             the GEOMETRY once the browser is idle — on the premise that «the attributes are identical at
+             every Natural Earth scale». That is true of a FEATURE and false of a FILE: 110 m carries 177
+             codes, 10 m carries 252. The upgrade below was written as a pure ENRICHMENT pass
+             (`const s=HOST.countryStats[code]; if(!s) return;`), so the 75 codes only the fine file has
+             never got a row — while `countryGeo` DID become the fine collection. The table and the
+             geometry have disagreed ever since, and nothing said so.
+
+             MEASURED ON PRODUCTION (#R358's verification pass, then this round's count): `codeAtPoint`
+             answered 'SGP' over Singapore and `countryStats.SGP` was `undefined`, so `exFacts`
+             (js/atlas-examples.js) got `st=null`, `usePlace` went false and the Atlas starter chips fell
+             through to the WORLD pool — 「日本・ドイツ・インドを比較」 while the reader is looking at
+             Singapore. 29 of the 75 are sovereign states (Singapore, Malta, Monaco, Vatican City,
+             Bahrain, Maldives, Mauritius, Andorra, Liechtenstein, San Marino, Cape Verde, Comoros,
+             Seychelles, São Tomé and Príncipe and 15 small island states), 26 dependencies, 9 more
+             self-governing territories (Hong Kong, Macau, Aruba, Curaçao, Jersey …).
+
+             ⚠ THE FIX IS NOT A SPECIAL CASE FOR SINGAPORE. The upgrade now CREATES the row it cannot
+             find, and it builds it HERE — the one constructor both loops call — so the coarse pass and
+             the fine pass cannot drift apart again. Whichever file supplies a code, its row is the same
+             record built the same way. */
+          const _mkStat=(f,code,area)=>{
             const p=f.properties||{};
-            let code=(p.ISO_A3_EH&&p.ISO_A3_EH!=='-99')?p.ISO_A3_EH:((p.ISO_A3&&p.ISO_A3!=='-99')?p.ISO_A3:(p.ADM0_A3||''));
-            if(!code||code==='-99'){ f.id=undefined; return; }
-            f.id=code; if(f.properties) f.properties.__code=code;  /* used as promoteId so feature ids are stable codes */
-            let area=0; try{ area=turf.area(f)/1e6; }catch(e){}
-            /* (#R15) Natural Earth 10 m assigns minor territory polygons (Ashmore & Cartier, Coral Sea
-               Islands, Indian Ocean Territories …) the SOVEREIGN's ISO_A3_EH code. Whichever such polygon
-               came last in the file overwrote the real country's name/stats — e.g. "Australia" turned into
-               a tiny territory's name. Keep the LARGEST-area feature per code so the mainland always wins. */
-            const existing=HOST.countryStats[code];
-            if(existing && existing._area!=null && existing._area>=area) return;
             const pop=+p.POP_EST||0;
             const gdp=(GDP[code]!=null)?GDP[code]:(p.GDP_MD!=null?+p.GDP_MD/1000:(p.GDP_MD_EST!=null?+p.GDP_MD_EST/1000:null));
             const a2=(p.ISO_A2_EH&&p.ISO_A2_EH!=='-99')?p.ISO_A2_EH:p.ISO_A2;
             /* (#R23) flag non-sovereign / unrecognized features (Scarborough Shoal, Bir Tawil, Bajo Nuevo,
                ice fields …) so "Random country" + quizzes never serve them as if they were states. */
             const _nonSov=(p.TYPE==='Indeterminate')||/indetermin|unrecogn/i.test(String(p.FCLASS_TLC||p.featurecla||p.FEATURECLA||''));
-            HOST.countryStats[code]={ code, ccn3:String(p.ISO_N3||''), nameEn:p.NAME_EN||p.ADMIN||p.NAME||code, nameJp:p.NAME_JA||p.NAME_EN||p.ADMIN||code,
+            return { code, ccn3:String(p.ISO_N3||''), nameEn:p.NAME_EN||p.ADMIN||p.NAME||code, nameJp:p.NAME_JA||p.NAME_EN||p.ADMIN||code,
               sov:!_nonSov,
               pop, area:Math.round(area), _area:area, density:(pop&&area)?pop/area:null, region:p.CONTINENT||'', subregion:p.SUBREGION||'',
               /* (#R185) THE COUNTRY'S OWN FOOTPRINT, so the search can frame it instead of guessing.
@@ -170,6 +182,20 @@ window.IntMapModules.countriesUi=function(HOST){
               capital:CAPITAL[code]||'', latlng:(p.LABEL_Y!=null&&p.LABEL_X!=null)?[+p.LABEL_Y,+p.LABEL_X]:null, flag:flagFromISO2(a2),
               currency:CURRENCY[code]||'', languages:LANGS[code]||'', gdp, gdppc:(gdp&&pop)?(gdp*1e9/pop):null,
               hdi:HDI[code]||null, dem:DEM[code]||null, milSpend:MILSPEND[code]||null, lifeExp:LIFE[code]||null, internet:INTERNET[code]||null };
+          };
+          gj.features.forEach(f=>{
+            const p=f.properties||{};
+            let code=(p.ISO_A3_EH&&p.ISO_A3_EH!=='-99')?p.ISO_A3_EH:((p.ISO_A3&&p.ISO_A3!=='-99')?p.ISO_A3:(p.ADM0_A3||''));
+            if(!code||code==='-99'){ f.id=undefined; return; }
+            f.id=code; if(f.properties) f.properties.__code=code;  /* used as promoteId so feature ids are stable codes */
+            let area=0; try{ area=turf.area(f)/1e6; }catch(e){}
+            /* (#R15) Natural Earth 10 m assigns minor territory polygons (Ashmore & Cartier, Coral Sea
+               Islands, Indian Ocean Territories …) the SOVEREIGN's ISO_A3_EH code. Whichever such polygon
+               came last in the file overwrote the real country's name/stats — e.g. "Australia" turned into
+               a tiny territory's name. Keep the LARGEST-area feature per code so the mainland always wins. */
+            const existing=HOST.countryStats[code];
+            if(existing && existing._area!=null && existing._area>=area) return;
+            HOST.countryStats[code]=_mkStat(f,code,area);
           });
           /* ══ (#R195) …AND THE 10 m OUTLINE ARRIVES WHEN THE BROWSER IS FREE ═══════════════════════
              The same shape #R192 gave the CShapes bundle: eager, because the first Countries(info)
@@ -203,7 +229,16 @@ window.IntMapModules.countriesUi=function(HOST){
                 const cur=best.get(code); if(!cur||area>cur.area) best.set(code,{area,f});
                 if((i&15)===15) await new Promise(r=>setTimeout(r,0));
               }
-              best.forEach((v,code)=>{ const s=HOST.countryStats[code]; if(!s) return;
+              let added=0;
+              best.forEach((v,code)=>{ const s=HOST.countryStats[code];
+                /* ⚠⚠⚠ (#R375) A CODE THE COARSE FILE NEVER HAD GETS A ROW, NOT A `return`. This line read
+                   `if(!s) return;` — an enrichment pass over a table assumed to already hold every code.
+                   It does not (see the constructor above), and the 75 it misses are precisely the ones
+                   `codeAtPoint` starts answering the moment the line below swaps `countryGeo` to the fine
+                   collection. Creating the row here is what keeps THE TABLE AND THE GEOMETRY THE SAME SET:
+                   they change in the same pass, off the same file, or they do not change at all. */
+                if(!s){ HOST.countryStats[code]=_mkStat(v.f,code,v.area); added++; return; }
+                /* an EXISTING row is enriched IN PLACE, never replaced — see the ⚠ above `upgrade` */
                 s.area=Math.round(v.area); s._area=v.area;
                 s.density=(s.pop&&v.area)?s.pop/v.area:null;
                 s.bbox=_bboxOf(v.f)||s.bbox; });
@@ -220,6 +255,18 @@ window.IntMapModules.countriesUi=function(HOST){
               window._imCountryGeoPending=hi;
               try{ if(typeof window._imFlushCountryGeo==='function') window._imFlushCountryGeo(); }catch(_){}
               try{ HOST.rebuildGeoIndex(); }catch(_){}
+              /* ⚠ (#R375) ROWS THAT ARRIVE AFTER BOOT HAVE TO BE HANDED TO WHATEVER ALREADY READ THE TABLE.
+                 Two readers finished before this pass and cache what they saw:
+                   · `loadGdpPPP` (js/app-body.js) merges the World Bank PPP figures over `Object.keys(
+                     countryStats)` ONCE, chained off `countryDataPromise` — which resolves on the coarse
+                     file. Without a re-run these rows would carry no PPP for the life of the tab AND of
+                     every later tab, because the merge is served from a 30-day localStorage cache and
+                     would re-run against the same coarse table next time. `reapplyPPP` replays the kept
+                     payload over the whole table; it is not a second copy of the merge.
+                   · the Countries tab is the desktop default (#R170), so it is already on screen — with
+                     29 sovereign states missing from a list that claims to be all of them. */
+              if(added){ try{ HOST.reapplyPPP(); }catch(_){}
+                try{ if(HOST.mode==='stats') renderStats(HOST.searchVal()); }catch(_){} }
             };
             /* ⚠ (#R201) A PHONE TAKES THE DATA-SAVER SCHEDULE, NOT THE DESKTOP ONE. Measured on a
                390×844 session: 4.3 MB of 10 m geometry starts at t≈8 s, on the same connection the
