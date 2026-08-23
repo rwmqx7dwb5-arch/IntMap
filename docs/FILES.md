@@ -173,7 +173,9 @@ ocean-currents-field.js           海流——場のファイルの復号とス�
 osm-facilities.js                 実地調査された施設 IntMapFacilities
 datacenters.js                    データセンターと AI インフラ IntMapDataCenters
 cameras.js                        ライブカメラ層 IntMapModules.cameras
-beta-overlays.js                  ベータのオーバーレイ IntMapModules.betaOverlays
+beta-overlays.js                  ベータのオーバーレイ IntMapModules.betaOverlays（火山レイヤー本体＝色モード4種・VEIによる大きさ・凡例・volcano.* コマンド）
+volcano-intel.js                  火山の深さ window.IntMapVolcano（遅延）——噴火履歴11,089件・警戒レベルの4段・気象庁↔GVPの結合・詳細カード
+volcano-layers.js                 火山の3レイヤー window.IntMapVolcanoLayers（遅延）——火山灰SIGMET・USGSハザード域・衛星SO₂
 time-borders.js                   時間軸の上の歴史的国境 IntMapTimeBorders
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列

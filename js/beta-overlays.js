@@ -270,54 +270,237 @@ window.IntMapModules.betaOverlays=function(HOST){
       if(state.hist){ clearTimeout(hbToggle._kt); hbToggle._kt=setTimeout(()=>hbLoad(hbYear),260); }
     }); }catch(_){}
 
-    /* ---------- (#R20) Volcanoes — full Smithsonian GVP Holocene catalog (1,215), bundled locally
-       (data/volcanoes_gvp.json, slimmed from the GVP WFS). Replaces the old 42-point curated layer. ---------- */
-    const VL_IDS=['volc2-pt','volc2-lbl'];
-    let volcFC=null, volcLoading=false;
+    /* ══ (#R20 / #R353) VOLCANOES — the Smithsonian GVP Holocene catalog ══════════════════════
+       Bundled locally as data/volcanoes_gvp.json (scripts/build-volcanoes.mjs, from the GVP WFS).
+       ⚠ (#R353) THE THREE COLOURS WERE THE WHOLE OF WHAT THE FILE KNEW. Until this round the layer
+       carried six properties per volcano and no GVP volcano number, so «1950年以降 / 1500年以降 /
+       古い・不明» was not a choice about depth — it was the only question the data could answer. The
+       file now carries the join key (`v`) and four more measured numbers per volcano — largest VEI
+       in its own eruption record (`x`), confirmed eruptions (`q`), people within 30 km (`p`),
+       magma composition and tectonic setting as indices into the file's own vocabularies (`k`,`s`)
+       — and the layer draws with them:
+
+         · COLOUR is one of four questions the reader picks (last eruption / explosivity / what an
+           observatory is saying right now / how many people live around it). The legend switches it.
+         · RADIUS always encodes the largest VEI that volcano has actually produced, in every mode,
+           so «how explosive» and «the chosen question» are two independent channels rather than one.
+         · A HALO marks the volcanoes an observatory has something to say about today — drawn from
+           the live status ladder in js/volcano-intel.js, never from the catalog.
+
+       ⚠ THE COUNT IS READ FROM THE FILE, NEVER TYPED. It was «1,215» in six places and the upstream
+       catalog now holds 1,214; a number written down in six places is a number that will disagree
+       with itself the next time the Smithsonian revises the catalog. ---------- */
+    const VL_IDS=['volc2-halo','volc2-pt','volc2-lbl'];
+    let volcFC=null, volcLoading=false, volcMode='recency';
+    const VOLC_MODES=['recency','vei','status','people'];
+    const nowYear=()=>{ try{ return window.IntMapTime.year(); }catch(_){ return new Date().getFullYear(); } };
+
+    /* radius: the largest VEI this volcano has produced, on top of the zoom ramp. An undated volcano
+       with no VEI on record sits at the VEI-1 size rather than at zero — absence of a record is not
+       a record of a small eruption. */
+    const VOLC_SIZE=['+',0.65,['*',0.14,['max',0,['coalesce',['get','x'],1]]]];
+    const volcRadius=['interpolate',['linear'],['zoom'],
+      1,['*',2.2,VOLC_SIZE], 5,['*',4.6,VOLC_SIZE], 9,['*',8,VOLC_SIZE]];
+
+    function volcColor(mode){
+      const y=['coalesce',['get','y'],-99999];
+      if(mode==='vei')
+        return ['step',['coalesce',['get','x'],-1],'#6b7280', 0,'#4c8dff', 1,'#39c07c', 2,'#d8c53a',
+                3,'#f0912d', 4,'#ef5b2b', 5,'#e02f2f', 6,'#b01f6a', 7,'#7a1fb0'];
+      if(mode==='status')
+        return ['step',['coalesce',['get','st'],-1],'#6b7280', 0,'#3ba55d', 1,'#8fbf3f', 2,'#e8c53a',
+                3,'#f08a2d', 4,'#e0332f'];
+      if(mode==='people')
+        return ['step',['coalesce',['get','p'],-1],'#6b7280', 0,'#4c8dff', 1000,'#39c07c',
+                10000,'#d8c53a', 100000,'#f0912d', 1000000,'#e02f2f'];
+      /* recency — the original question, with «erupting or erupted this year» split out of «since 1950» */
+      return ['case',['>=',y,nowYear()-1],'#ff2d20',['>=',y,1950],'#ff6a3d',['>=',y,1500],'#ffab4d',
+              ['>',y,-99999],'#c98f6b','#8e8e93'];
+    }
     function volcEnsure(){ if(GE().layers.hasSource('volc2-src')) return true; if(!_imCanDraw()) return false;
       try{
         GE().layers.addSource('volc2-src',{type:'geojson',data:volcFC||{type:'FeatureCollection',features:[]},attribution:'Smithsonian GVP'});
         const before=GE().layers.has('tool-poly')?'tool-poly':undefined;
+        /* the halo goes UNDER the points: it is a second claim about the same dot, not a bigger dot */
+        GE().layers.add({id:'volc2-halo',type:'circle',source:'volc2-src',layout:{visibility:'none'},
+          filter:['>=',['coalesce',['get','st'],-1],2],
+          paint:{'circle-radius':['*',2.6,volcRadius],'circle-color':['step',['coalesce',['get','st'],-1],'#6b7280',2,'#e8c53a',3,'#f08a2d',4,'#e0332f'],
+                 'circle-opacity':0.24,'circle-blur':0.55}},before);
         GE().layers.add({id:'volc2-pt',type:'circle',source:'volc2-src',layout:{visibility:'none'},paint:{
-          'circle-radius':['interpolate',['linear'],['zoom'],1,2.2,5,4.6,9,8],
-          /* recently-erupted = hotter color (y = last eruption year; null/old = gray-orange) */
-          'circle-color':['case',['>=',['coalesce',['get','y'],-99999],1950],'#ff3b30',['>=',['coalesce',['get','y'],-99999],1500],'#ff8a3d','#c98f6b'],
+          'circle-radius':volcRadius,
+          'circle-color':volcColor(volcMode),
           'circle-stroke-color':'#fff2e0','circle-stroke-width':0.9,'circle-opacity':0.92}},before);
         GE().layers.add({id:'volc2-lbl',type:'symbol',source:'volc2-src',minzoom:5,layout:{visibility:'none','text-field':['get','n'],'text-size':window.IntMapLabelScale.sub(0.82),'text-offset':[0,1.05],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffc8ad','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before);
+        /* ⚠ (#R353) A CLICK NOW OPENS THE INTELLIGENCE CARD, and the four-line popup it replaces is
+           kept only as the answer when that module cannot be downloaded — a feature that silently
+           stops existing is this project's most expensive recurring defect. */
         GE().events.onLayer('click','volc2-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
-          const yr=(p.y==null||p.y==='null')?(window.IntMapLang.t(HOST.lang,"No dated eruption","噴火記録なし","Kein datierter Ausbruch","Датированных извержений нет","Sin erupción datada")):((p.y<0?(jp()?('紀元前'+(-p.y)):('BCE '+(-p.y))):p.y)+(window.IntMapLang.t(HOST.lang," last eruption","年に最終噴火"," letzter Ausbruch"," последнее извержение"," última erupción")));
-          const html='<div style="min-width:160px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">🌋 '+(p.n||'')+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+(p.c||'')+(p.e!=null&&p.e!=='null'?' · '+p.e+' m':'')+'<br>'+(p.t||'')+'<br>'+yr+'</div></div>';
-          try{ if(popup) popup.remove(); }catch(_){}
-          try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML(html)); }catch(_){}
+          if(p.v!=null){ try{ window.IntMapLazy.need('volcanoIntel').then(ok=>{
+              if(ok&&window.IntMapVolcano) window.IntMapVolcano.open(+p.v); else volcMiniPopup(f,p); }); return; }catch(_){} }
+          volcMiniPopup(f,p);
         });
         GE().events.onLayer('mouseenter','volc2-pt',()=>{ GE().render.canvas().style.cursor='pointer'; });
         GE().events.onLayer('mouseleave','volc2-pt',()=>{ GE().render.canvas().style.cursor=''; });
         return true;
       }catch(_){ return false; } }
     let popup=null;
+    function volcMiniPopup(f,p){
+      const yr=(p.y==null||p.y==='null')?(window.IntMapLang.t(HOST.lang,"No dated eruption","噴火記録なし","Kein datierter Ausbruch","Датированных извержений нет","Sin erupción datada")):((p.y<0?(jp()?('紀元前'+(-p.y)):('BCE '+(-p.y))):p.y)+(window.IntMapLang.t(HOST.lang," last eruption","年に最終噴火"," letzter Ausbruch"," последнее извержение"," última erupción")));
+      const html='<div style="min-width:160px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">🌋 '+(p.n||'')+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+(p.c||'')+(p.e!=null&&p.e!=='null'?' · '+p.e+' m':'')+'<br>'+(p.t||'')+'<br>'+yr+'</div></div>';
+      try{ if(popup) popup.remove(); }catch(_){}
+      try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML(html)); }catch(_){}
+    }
     async function volcLoad(){ if(volcFC){ try{ GE().layers.setSourceData('volc2-src',volcFC); }catch(_){} return; }
       if(volcLoading) return; volcLoading=true;
       try{ const r=await fetch('data/volcanoes_gvp.json'); const j=await r.json();
-        if(j&&Array.isArray(j.features)){ volcFC=j; try{ GE().layers.setSourceData('volc2-src',volcFC); }catch(_){} }
+        if(j&&Array.isArray(j.features)){ volcFC=j; try{ GE().layers.setSourceData('volc2-src',volcFC); }catch(_){} volcLegend(); }
       }catch(_){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load volcano data","火山データを読み込めませんでした","Vulkandaten konnten nicht geladen werden","Не удалось загрузить данные о вулканах","No se pudieron cargar los datos de volcanes")); }catch(_){} }
       volcLoading=false; }
+
+    /* ⚠ THE LIVE STATUS IS WRITTEN ONTO THE FEATURES, NOT LOOKED UP AT PAINT TIME. A paint
+       expression cannot call a function, and 1,214 point updates is one setSourceData. `st` is
+       ABSENT for every volcano no observatory has spoken about — which is what makes «nothing is
+       published here» a distinct colour from «an observatory says it is normal». */
+    function volcApplyStatus(){
+      if(!volcFC||!window.IntMapVolcano) return false;
+      let idx; try{ idx=window.IntMapVolcano.statusIndex(); }catch(_){ return false; }
+      let n=0;
+      for(const f of volcFC.features){
+        const st=idx.get(f.properties.v);
+        if(st&&st.rank!=null){ f.properties.st=st.rank; n++; }
+        else if('st' in f.properties) delete f.properties.st;
+      }
+      try{ GE().layers.setSourceData('volc2-src',volcFC); }catch(_){}
+      volcLegend(); return n;
+    }
+    function volcSetMode(m){
+      if(VOLC_MODES.indexOf(m)<0) return false;
+      volcMode=m;
+      try{ if(GE().layers.has('volc2-pt')) GE().layers.setPaint('volc2-pt','circle-color',volcColor(m)); }catch(_){}
+      if(m==='status'&&state.volc){ try{ window.IntMapLazy.need('volcanoIntel').then(ok=>{ if(ok&&window.IntMapVolcano) window.IntMapVolcano.warm().then(volcApplyStatus); }); }catch(_){} }
+      volcLegend(); return true;
+    }
+
+    /* the legend: the mode switch, the key for the mode that is on, and — for the status mode — the
+       three states the ladder can be in, said in words. */
+    function volcLegend(){
+      if(!state.volc){ try{ window._hideGenericLegend&&window._hideGenericLegend('volc2'); }catch(_){} return; }
+      try{
+        if(!window._registerLayerOpacity) return;
+        const el=window._registerLayerOpacity('volc2',LA('Volcanoes (GVP Holocene)','火山（GVP完新世）','Vulkane (GVP, Holozän)','Вулканы (GVP, голоцен)','Volcanes (GVP, Holoceno)'),VL_IDS,'beta-dl-volc2');
+        if(!el) return;
+        let key=el.querySelector('.volc-key');
+        if(!key){ key=document.createElement('div'); key.className='volc-key';
+          const op=el.querySelector('.dl-op-row'); if(op) el.insertBefore(key,op); else el.appendChild(key);
+          key.addEventListener('click',(ev)=>{ const b=ev.target&&ev.target.closest?ev.target.closest('[data-vmode]'):null;
+            if(b) volcSetMode(b.dataset.vmode); }); }
+        const SF=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
+        const dot=(c)=>'<span class="volc-dot" style="background:'+c+'"></span>';
+        const line=(c,t2)=>'<div class="volc-key-row">'+dot(c)+SF(t2)+'</div>';
+        const MODE_LABEL={ recency:L('Last eruption','最終噴火','Letzter Ausbruch','Последнее извержение','Última erupción'),
+          vei:L('Explosivity','爆発規模','Explosivität','Взрывная сила','Explosividad'),
+          status:L('Now','現在','Jetzt','Сейчас','Ahora'),
+          people:L('People nearby','周辺人口','Menschen in der Nähe','Население рядом','Población cercana') };
+        let body='<div class="volc-modes">'+VOLC_MODES.map(m=>'<button type="button" class="volc-mode'+(volcMode===m?' on':'')+'" data-vmode="'+m+'">'+SF(MODE_LABEL[m])+'</button>').join('')+'</div>';
+        if(volcMode==='recency'){
+          body+=line('#ff2d20',L('Erupting or erupted this year','今年噴火／噴火中','Ausbruch in diesem Jahr','Извергается или извергался в этом году','En erupción o con erupción este año'))
+            +line('#ff6a3d',L('Erupted since 1950','1950年以降に噴火','Ausbruch seit 1950','Извергался с 1950 года','Con erupción desde 1950'))
+            +line('#ffab4d',L('Erupted since 1500','1500年以降に噴火','Ausbruch seit 1500','Извергался с 1500 года','Con erupción desde 1500'))
+            +line('#c98f6b',L('Older dated eruption','それ以前の噴火記録','Älterer datierter Ausbruch','Более раннее датированное извержение','Erupción datada anterior'))
+            +line('#8e8e93',L('No dated eruption','噴火の記録なし','Kein datierter Ausbruch','Датированных извержений нет','Sin erupción datada'));
+        } else if(volcMode==='vei'){
+          body+=line('#4c8dff','VEI 0')+line('#39c07c','VEI 1')+line('#d8c53a','VEI 2')+line('#f0912d','VEI 3')
+            +line('#ef5b2b','VEI 4')+line('#e02f2f','VEI 5')+line('#b01f6a','VEI 6')+line('#7a1fb0','VEI 7')
+            +line('#6b7280',L('No VEI on record','VEIの記録なし','Kein VEI erfasst','VEI не зафиксирован','Sin VEI registrado'))
+            +'<div class="volc-key-note">'+SF(L('The largest VEI this volcano has actually produced, from its own eruption record.','その火山自身の噴火記録にある最大のVEI。','Der größte VEI, den dieser Vulkan tatsächlich erzeugt hat.','Наибольший VEI, который этот вулкан действительно производил.','El mayor VEI que este volcán ha producido realmente.'))+'</div>';
+        } else if(volcMode==='status'){
+          body+=line('#e0332f',L('Warning / RED','警報級／RED','Warnung / RED','Тревога / RED','Aviso / RED'))
+            +line('#f08a2d',L('Watch / ORANGE','警戒／ORANGE','Beobachtung / ORANGE','Внимание / ORANGE','Vigilancia / ORANGE'))
+            +line('#e8c53a',L('Advisory / YELLOW','注意／YELLOW','Hinweis / YELLOW','Предупреждение / YELLOW','Aviso / YELLOW'))
+            +line('#8fbf3f',L('Watched, at its baseline','常時観測・平常','Überwacht, Grundzustand','Наблюдается, базовый уровень','Vigilado, en su nivel base'))
+            +line('#3ba55d',L('Normal / GREEN','平常／GREEN','Normalstufe / GREEN','Норма / GREEN','Nivel normal / GREEN'))
+            +line('#6b7280',L('No observatory statement published','公表している観測機関なし','Keine Angabe eines Observatoriums','Заявлений обсерваторий нет','Sin declaración de observatorio'))
+            +'<div class="volc-key-note">'+SF(L('Grey is not “calm”. It means no volcano observatory publishes a current level for that volcano in a form a map can read — USGS covers the United States, JMA covers Japan, and the Smithsonian/USGS weekly report covers whatever was reported this week anywhere.','灰色は「静穏」ではありません。その火山について、現在の警戒レベルを地図が読める形で公表している観測機関が無いという意味です。USGS は米国、気象庁は日本、スミソニアン／USGS 週間報告は今週報告された世界中の火山を扱います。','Grau heißt nicht „ruhig“. Es heißt, dass kein Observatorium für diesen Vulkan eine maschinenlesbare aktuelle Stufe veröffentlicht — USGS deckt die USA ab, JMA Japan, der wöchentliche Bericht alles, was diese Woche gemeldet wurde.','Серый — не «спокоен». Это значит, что ни одна обсерватория не публикует машиночитаемый текущий уровень: USGS охватывает США, JMA — Японию, еженедельный отчёт — то, о чём сообщили на этой неделе.','El gris no significa «en calma». Significa que ningún observatorio publica un nivel actual legible por máquina: el USGS cubre EE. UU., la JMA cubre Japón, y el informe semanal cubre lo que se haya reportado esta semana.'))+'</div>';
+        } else {
+          body+=line('#e02f2f',L('1 million or more within 30 km','30 km 以内に100万人以上','1 Mio. oder mehr im Umkreis von 30 km','1 млн и более в радиусе 30 км','1 millón o más en 30 km'))
+            +line('#f0912d',L('100,000 – 1 million','10万〜100万人','100.000 – 1 Mio.','100 тыс. – 1 млн','100.000 – 1 millón'))
+            +line('#d8c53a',L('10,000 – 100,000','1万〜10万人','10.000 – 100.000','10 тыс. – 100 тыс.','10.000 – 100.000'))
+            +line('#39c07c',L('1,000 – 10,000','1千〜1万人','1.000 – 10.000','1 тыс. – 10 тыс.','1.000 – 10.000'))
+            +line('#4c8dff',L('Under 1,000','1千人未満','Unter 1.000','Менее 1 тыс.','Menos de 1.000'))
+            +line('#6b7280',L('No figure published','公表値なし','Keine Angabe','Нет данных','Sin cifra publicada'));
+        }
+        body+='<div class="volc-key-note">'+SF(L('Dot size is the largest VEI on record, in every mode.','点の大きさは、どのモードでも記録された最大VEIを表します。','Die Punktgröße ist in jedem Modus der größte erfasste VEI.','Размер точки во всех режимах — наибольший зафиксированный VEI.','El tamaño del punto es el mayor VEI registrado, en todos los modos.'))+'</div>';
+        const n=volcFC?volcFC.features.length:0;
+        body+='<div class="volc-key-src">'+SF('Smithsonian GVP'+(n?' · '+n.toLocaleString(window.IntMapLang.locale(HOST.lang,'en-GB'))+L(' Holocene volcanoes','座（完新世）',' holozäne Vulkane',' вулканов голоцена',' volcanes del Holoceno'):''))+'</div>';
+        key.innerHTML=body;
+      }catch(_){}
+    }
+
     function volcToggle(on){ state.volc=on;
       const a=()=>{ if(!volcEnsure()){ GE().events.once('idle',a); return; } setVis(VL_IDS,on); if(on) volcLoad(); };
       a();
-      try{ if(on&&window._registerLayerOpacity){
-            const el=window._registerLayerOpacity('volc2',LA('Volcanoes (GVP Holocene)','火山（GVP完新世）','Vulkane (GVP, Holozän)','Вулканы (GVP, голоцен)','Volcanes (GVP, Holoceno)'),VL_IDS,'beta-dl-volc2');
-            if(el&&!el.querySelector('.volc-key')){
-              const key=document.createElement('div'); key.className='volc-key'; key.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
-              const dot=(c)=>'<span style="width:11px;height:11px;border-radius:50%;flex:none;background:'+c+';border:1px solid rgba(255,255,255,0.5);"></span>';
-              key.innerHTML='<div style="display:flex;align-items:center;gap:7px;">'+dot('#ff3b30')+(window.IntMapLang.t(HOST.lang,"Erupted since 1950","1950年以降に噴火","Ausbruch seit 1950","Извергался с 1950 года","Con erupción desde 1950"))+'</div>'+
-                '<div style="display:flex;align-items:center;gap:7px;">'+dot('#ff8a3d')+(window.IntMapLang.t(HOST.lang,"Erupted since 1500","1500年以降に噴火","Ausbruch seit 1500","Извергался с 1500 года","Con erupción desde 1500"))+'</div>'+
-                '<div style="display:flex;align-items:center;gap:7px;">'+dot('#c98f6b')+(window.IntMapLang.t(HOST.lang,"Older / undated","それ以前・記録なし","Älter / undatiert","Раньше / без даты","Anterior / sin fecha"))+'</div>'+
-                '<div style="font-size:10px;color:var(--text-muted);">Smithsonian GVP · 1,215 Holocene volcanoes</div>';
-              const op=el.querySelector('.dl-op-row'); if(op) el.insertBefore(key,op); else el.appendChild(key);
-            }
-          }
-           else if(window._hideGenericLegend) window._hideGenericLegend('volc2'); }catch(_){}
+      volcLegend();
+      /* switching the layer on warms the status ladder once, so the «Now» mode is not empty the
+         first time it is picked. It is one request per feed and they are shared with the card. */
+      if(on){ try{ window.IntMapLazy.hint('volcanoIntel'); }catch(_){} }
     }
+    /* js/volcano-intel.js and Atlas reach the layer through this, deliberately NOT under an
+       `IntMap*` name: js/atlas-controls.js discovers capabilities by enumerating window.IntMap*, and
+       a second volcano-named global would offer the planner a subsystem nothing dispatches (#R320). */
+    window.__imVolcLayer={ data:()=>volcFC, mode:()=>volcMode, setMode:volcSetMode, modes:()=>VOLC_MODES.slice(),
+      applyStatus:volcApplyStatus, on:()=>state.volc, count:()=>volcFC?volcFC.features.length:0 };
+
+    /* the three overlay rows. ⚠ The checkbox is put BACK to unchecked if the module cannot be
+       downloaded — a switch that stays on while nothing is drawn is the silent-hole shape this
+       project keeps rediscovering (#R209's whole premise). */
+    function volcOverlay(which,on){
+      if(!on){ try{ if(window.IntMapVolcanoLayers) window.IntMapVolcanoLayers[which](false); }catch(_){} return; }
+      try{
+        window.IntMapLazy.need('volcanoLayers').then(ok=>{
+          if(ok&&window.IntMapVolcanoLayers){ window.IntMapVolcanoLayers[which](true); return; }
+          const cb=document.getElementById('beta-dl-volc'+(which==='hazard'?'haz':which));
+          if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); }
+          try{ imToast(window.IntMapLang.t(HOST.lang,'Could not load the volcano overlays','火山オーバーレイを読み込めませんでした','Vulkan-Overlays konnten nicht geladen werden','Не удалось загрузить слои вулканов','No se pudieron cargar las capas volcánicas')); }catch(_){}
+        });
+      }catch(_){}
+    }
+
+    /* ══ (#R353) THE KERNEL COMMANDS ═══════════════════════════════════════════════════════════
+       CONSTITUTION §: every feature is operable from Atlas, and the way that is true is that the
+       button and Atlas call the SAME registered command — not that Atlas simulates a click. Five
+       commands, registered here because this file is EAGER and the two modules behind them are not:
+       a command that only exists after its module is downloaded is a capability Atlas cannot offer.
+       `js/atlas-controls.js` enumerates window.IntMap* for the module catalog, and js/lazy-modules.js
+       publishes `IntMapVolcano` / `IntMapVolcanoLayers` in its manifest from boot, so the planner can
+       name the subsystem before the code for it exists (#R320). */
+    try{
+      const OS=window.IntMapOS;
+      if(OS&&OS.register){
+        OS.register('volcano.open',(ctx)=>{
+          const p=(ctx&&ctx.params)||{};
+          return window.IntMapLazy.need('volcanoIntel').then(ok=>{
+            if(!ok||!window.IntMapVolcano) return {ok:false,err:'volcano module unavailable'};
+            let v=p.v!=null?+p.v:null;
+            if(v==null&&p.name){ const hit=window.IntMapVolcano.byName(p.name)[0]; if(hit) v=hit.v; }
+            if(v==null) return {ok:false,err:'no volcano named'};
+            /* switching the layer on first: a card about a dot the reader cannot see is half an answer */
+            try{ const cb=document.getElementById('beta-dl-volc2'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change')); } }catch(_){}
+            return { ok:!!window.IntMapVolcano.open(v) };
+          });
+        },{label:'Volcano intelligence card',group:'volcano'});
+        OS.register('volcano.mode',(ctx)=>({ ok:volcSetMode(((ctx&&ctx.params)||{}).mode) }),
+          {label:'Volcano map colour mode',group:'volcano'});
+        [['volcano.ash','ash','Volcanic ash areas (SIGMET)','beta-dl-volcash'],
+         ['volcano.hazard','hazard','Volcano hazard zones (USGS)','beta-dl-volchaz'],
+         ['volcano.so2','so2','Satellite SO₂ column','beta-dl-volcso2']].forEach(([id,which,label,cbId])=>{
+          OS.register(id,(ctx)=>{
+            const on=((ctx&&ctx.params)||{}).on!==false;
+            try{ const cb=document.getElementById(cbId); if(cb&&cb.checked!==on){ cb.checked=on; cb.dispatchEvent(new Event('change')); return {ok:true}; } }catch(_){}
+            volcOverlay(which,on); return {ok:true};
+          },{label,group:'volcano',btn:cbId});
+        });
+      }
+    }catch(_){}
 
     /* ---------- rows in the Layers panel (histb/ukrfront now file into "Strategic geography" via
        reorganizeLayerPanel — promoted out of beta (#R20); bldg3d + volc2 stay in Others(beta)) ---------- */
@@ -325,10 +508,21 @@ window.IntMapModules.betaOverlays=function(HOST){
        `jp()?BLBL[k][0]:BLBL[k][1]` — the English string was in slot 1, so even the positional
        languages could not have been added without reversing the row, and the inline table is keyed
        by the English source string, which was not in slot 0. */
-    const BLBL={ukrfront:LA('Ukraine frontline (live)','ウクライナ前線（リアルタイム）','Ukraine-Frontlinie (live)','Линия фронта в Украине (в реальном времени)','Frente de Ucrania (en vivo)'),bldg3d:LA('3D buildings (cities)','3D建物（都市）','3D-Gebäude (Städte)','3D-здания (города)','Edificios 3D (ciudades)'),histb:LA('Historical borders','過去の国境','Historische Grenzen','Исторические границы','Fronteras históricas'),volc2:LA('Volcanoes (GVP Holocene, all 1,215)','火山（GVP完新世・全1,215座）','Vulkane (GVP, Holozän, alle 1.215)','Вулканы (GVP, голоцен, все 1215)','Volcanes (GVP, Holoceno, los 1215)')};
+    const BLBL={ukrfront:LA('Ukraine frontline (live)','ウクライナ前線（リアルタイム）','Ukraine-Frontlinie (live)','Линия фронта в Украине (в реальном времени)','Frente de Ucrania (en vivo)'),bldg3d:LA('3D buildings (cities)','3D建物（都市）','3D-Gebäude (Städte)','3D-здания (города)','Edificios 3D (ciudades)'),histb:LA('Historical borders','過去の国境','Historische Grenzen','Исторические границы','Fronteras históricas'),volc2:LA('Volcanoes — full Holocene catalog','火山 — 完新世カタログ全件','Vulkane — vollständiger Holozän-Katalog','Вулканы — полный каталог голоцена','Volcanes — catálogo completo del Holoceno'),
+      volcash:LA('Volcanic ash areas in force (SIGMET)','有効な火山灰域（SIGMET）','Gültige Vulkanasche-Gebiete (SIGMET)','Действующие зоны вулканического пепла (SIGMET)','Zonas de ceniza volcánica vigentes (SIGMET)'),
+      volchaz:LA('Volcano hazard zones (USGS)','火山ハザード域（USGS）','Vulkangefahrenzonen (USGS)','Зоны вулканической опасности (USGS)','Zonas de peligro volcánico (USGS)'),
+      volcso2:LA('Satellite SO₂ column (OMPS)','衛星 SO₂ 全量（OMPS）','Satelliten-SO₂-Säule (OMPS)','Столб SO₂ со спутника (OMPS)','Columna de SO₂ satelital (OMPS)')};
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('beta-dl-ukrfront')) return;
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
-      [['ukrfront','#d62b2b',ukrToggle],['bldg3d','#8794ad',bldgToggle],['volc2','#ff6a3d',volcToggle]].forEach(([k,sw,fn])=>{   /* (#R122) 'histb' (Historical borders overlay) removed per request — the time-machine's own past-year borders remain */
+      /* ⚠ (#R353) THE COUNT CAME OUT OF THE ROW LABEL. It read 「全1,215座」 in five languages while
+         the catalog holds 1,214 — the legend now prints the number the FILE has, so a Smithsonian
+         revision can never make the label a lie again.
+         (#R353) …and the three overlays join the same panel rather than hiding inside the card: a
+         feature reachable only from a popup is a feature most readers never learn exists. Each one
+         fetches js/volcano-layers.js on its FIRST switch-on and nothing before that. */
+      [['ukrfront','#d62b2b',ukrToggle],['bldg3d','#8794ad',bldgToggle],['volc2','#ff6a3d',volcToggle],
+       ['volcash','#7b5cff',(on)=>volcOverlay('ash',on)],['volchaz','#d1381f',(on)=>volcOverlay('hazard',on)],
+       ['volcso2','#8ad3c8',(on)=>volcOverlay('so2',on)]].forEach(([k,sw,fn])=>{   /* (#R122) 'histb' (Historical borders overlay) removed per request — the time-machine's own past-year borders remain */
         const cb=row('beta-dl-'+k, L.arr(BLBL[k]), sw);
         cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); fn(e.target.checked); });
       });

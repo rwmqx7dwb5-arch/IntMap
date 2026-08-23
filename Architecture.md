@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（936行・84 KB）＋ `css/`（3本）＋ `js/`（218本・10.6 MB）＋ `src/`（10本）。**
+- **本体は `index.html`（936行・84 KB）＋ `css/`（3本）＋ `js/`（220本・10.6 MB）＋ `src/`（10本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -535,12 +535,13 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は、�
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
-### 6.2 Edge Functions — **11本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **12本**（`_shared/` は関数ではない）
 
-> ⚠ **11本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
+> ⚠ **12本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
 > ファイルのヘッダコメントに書いた deploy フラグは設定ではない。
-> `supabase/functions/_shared/` は `newsgeo.js` と `relay-guard.js` を置くライブラリ用ディレクトリで、
-> import した関数の中に CLI がバンドルする。`[functions._shared]` は書かない。
+> `supabase/functions/_shared/` は `newsgeo.js`・`relay-guard.js`・`volcano-parse.js` などを置く
+> ライブラリ用ディレクトリで、import した関数の中に CLI がバンドルする。
+> `[functions._shared]` は書かない。
 
 - **`ai-proxy`** … アカウント制AI（§5）。`verify_jwt` あり。
 - **`refresh-news`** … ニュース取得＋AI地点解析＋書き込み（§4.1）。`--no-verify-jwt` で公開だが
@@ -594,7 +595,19 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は、�
   `js/aviation-model.js` / `js/aviation-codec.js` で、`_shared/` の写しとの一致は `npm run check:static`
   が検査する。冷えた isolate でも即答できるよう、共有スナップショットは Storage の `aviation` bucket に置く。
 
-⚠ **4本の無認証中継（`alerts-relay` / `cable-geo` / `news-relay` / `sv-cov`）は
+- **`volcano-feed`** … 火山の**ブラウザが読めない2本のフィード**の中継（`--no-verify-jwt`・秘密なし）。
+  `?feed=weekly` は Smithsonian/USGS 週間火山活動報告（`volcano.si.edu` の RSS）、
+  `?feed=ash` は国際 SIGMET（`aviationweather.gov`）のうち**火山灰（`hazard:"VA"`）だけ**。
+  ⚠ **上流の解析はサーバー側で行う**——ブラウザが受け取るのは **GVP 火山番号で引ける行**であって
+  XML ではない（RSS の `<guid>` が `#vn_282110` の形で番号を持つ。名前で突き合わせない）。
+  解析の正本は `_shared/volcano-parse.js` で、`tests/r346-checks.test.mjs` が**捕獲した実応答**で検査する。
+  ⚠ **火山灰が0件は正常な答えであって失敗ではない**——応答の `read`（読んだ SIGMET の総数）が
+  「何も出ていない」と「読めなかった」を分ける。キャッシュは灰 15 秒・週報 1 時間。
+  ⚠ **残り4本の火山データ源（USGS HANS・気象庁・USGS ハザード域 ArcGIS・USGS 地震）は
+  ACAO を返すので中継しない**（要らない relay は落ちうるものを1つ増やすだけ）。
+  詳細は [`docs/VOLCANO-INTELLIGENCE.md`](docs/VOLCANO-INTELLIGENCE.md)。
+
+⚠ **5本の無認証中継（`alerts-relay` / `cable-geo` / `news-relay` / `sv-cov` / `volcano-feed`）は
 `_shared/relay-guard.js` を共有する。** URL allowlist、**GET 限定**、**期限**（`AbortSignal.timeout`）、
 **バイト上限**（`content-length` とストリーム読み出しの両方——上流は length を返さないことがある）、
 **Content-Type** 判定、そして**外向きエラーはコード1語**（上流の例外文言・スタックは返さない）。
@@ -619,6 +632,10 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は、�
 `§7.x` 参照はそのまま通る。
 
 ここに残すのは**契約**——「レイヤーを1本足すときに必ず読むもの」だけである。
+
+⚠ **火山は主題ごとの正本を別に持つ**——同梱データと GVP 番号による結合、現在の警戒レベルの4段
+（USGS／気象庁／週間報告／沈黙）、火山灰 SIGMET、公表されたハザード域だけを描く規則、SO₂、
+周辺人口・空港・地震は [`docs/VOLCANO-INTELLIGENCE.md`](docs/VOLCANO-INTELLIGENCE.md) が正本。
 ### 7.2 レイヤー欄の分類・7.5 地図の初期化
 
 **どちらも [`docs/MAP-LAYERS.md`](docs/MAP-LAYERS.md) へ移した**（節番号は同じ）。§7.2 は 18 の棚と
@@ -1429,11 +1446,10 @@ UI・Atlas・要求組み立ての3つが**同じ表**を読むので、「押�
    supabase db diff --schema public # drift がゼロであることを確認
    ```
    ローカル検証は `supabase start && supabase db reset`（migrations ＋ `supabase/seed.sql`）。
-4. **Edge Functions を9本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
+4. **Edge Functions を10本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
    for f in ai-proxy delete-account; do supabase functions deploy $f --project-ref <REF>; done
-   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed news-ingest; do \
-     supabase functions deploy $f --no-verify-jwt --project-ref <REF>; done
+   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed news-ingest routing-relay volcano-feed; do \n     supabase functions deploy $f --no-verify-jwt --project-ref <REF>; done
    ```
 5. **Secrets を設定する**（§6.3）。最低限：
    ```bash

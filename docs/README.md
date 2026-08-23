@@ -38,6 +38,7 @@
 | [`NEWS-EVENTS.md`](NEWS-EVENTS.md) | ニュースを触る人 | **出来事 (Event) 単位のニュース基盤** — Source Registry・データモデル・クラスタリング・カテゴリ・翻訳・保持期間・運用者の修正経路（Architecture §4 の Event 側の本体） | 収集元・クラスタリング・カテゴリ・保持・翻訳を変えたとき |
 | [`AVIATION-ARCHITECTURE.md`](AVIATION-ARCHITECTURE.md) | 航空を触る人 | **航空プラットフォームの構造** — 1回だけ上流を読んで全利用者へ配る配信、IMAV/1 ワイヤ形式、Worker と typed-array ストア、GPU 描画、障害時、巻き戻し | 航空の取得・配信・描画の仕組みを変えたとき |
 | [`AVIATION-DATA-SOURCES.md`](AVIATION-DATA-SOURCES.md) | 同上 | **航空データ源の正本** — どの provider が何を返すか、ライセンスと利用条件、実測した上限、採用しなかった候補と理由、出典表記の義務 | provider を足す・変える・条件が変わったとき |
+| [`VOLCANO-INTELLIGENCE.md`](VOLCANO-INTELLIGENCE.md) | 火山を触る人 | **火山の深さの正本** — GVP の同梱データと結合鍵、現在の警戒レベルの4段（USGS／気象庁／週間報告／沈黙）、火山灰 SIGMET、公表されたハザード域だけを描く規則、SO₂、周辺人口・空港・地震 | データ源を足す・変える、段を足す、気象庁↔GVP の結合表を変えたとき |
 | [`AREA-MONITORS.md`](AREA-MONITORS.md) | 同上 | 地域監視の設計・DB・cron。⚠ **現在は利用者から到達できる入口が無い**（撤去であって削除ではない） | 監視の仕組みを変えたとき／復帰させたとき |
 
 ## 運用

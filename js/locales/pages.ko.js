@@ -444,6 +444,12 @@ window.IntMapPageI18N.define('ko', {
      (js/reference-data.js)의 이름을 키로 삼으며, 없는 항목은 위의 본문과 똑같이 키 단위로
      영어로 되돌아갑니다. */
   sourceUse: {
+    "Smithsonian / USGS Weekly Volcanic Activity Report": "화산 상황의 「세계 단계」. 이번 주에 어떤 화산에 대해 관측 기관이 보고했고 무엇을 말했는지. 각 항목이 GVP 화산 번호를 가지므로 이름이 아니라 번호로 카탈로그와 연결됩니다. volcano.si.edu는 CORS 헤더를 보내지 않으므로 supabase/functions/volcano-feed가 중계합니다.",
+    "USGS Volcano Hazards Program — HANS (alert levels, aviation colour codes, VONA)": "「미국 단계」. 현재 발효 중인 항공 색상 코드와 화산 경계 수준, 그리고 최근 1년간의 모든 VONA(항공용 화산 정보). 이 API는 Access-Control-Allow-Origin을 보내므로 브라우저가 직접 읽습니다.",
+    "USGS Volcano Hazards Program — published volcano hazard zones": "기계가 읽을 수 있는 화산 재해 구역으로 확인된 유일한 공적 서비스. 캘리포니아의 7개 화산 지역에 대해 강회·라하르·홍수·화구 근처·용암류 폴리곤을 공표합니다. 존재하는 것만 그리고, 그 밖의 화산에 대해서는 「공표되어 있지 않다」고 명시하며 추정 원은 결코 그리지 않습니다.",
+    "噴火警報・予報 — 気象庁 (JMA volcano warnings and eruption warning levels)": "「일본 단계」. 현재 발표된 분화경계레벨(1〜5), 레벨이 운용되지 않는 화산에서는 그 문구 자체. 기상청은 자체 단위로 발표합니다 — 예를 들어 「사쿠라지마」이지 그것을 포함하는 「아이라」 칼데라가 아닙니다 — 따라서 카드는 기상청의 단위명을 보여 주고 지도는 그것을 포함하는 GVP 화산을 칠합니다.",
+    "International SIGMET (volcanic ash) — NOAA Aviation Weather Center": "실제로 효력을 가진 화산재 구역. VAAC의 권고를 받아 비행정보구역이 발부하는 SIGMET을, 발부된 그대로의 폴리곤과 고도대(비행 고도)로 사용합니다. supabase/functions/volcano-feed가 중계하며 화산재 관련만 남깁니다.",
+    "NASA GIBS — OMPS SO₂, upper troposphere & stratosphere": "위성으로 관측한 이산화황 총량. 공업 기원의 연무가 나타나는 경계층이 아니라 분연이 나타나는 고도대를 택했습니다. GVP 자체의 SO₂ 배출량 테이블은 WFS에 선언되어 있으나 상류에서 고장 나 있으므로, 실제로 존재하는 관측은 이쪽입니다.",
     "CRUST1.0 — global crustal model": "앱에 포함됨(data/crust1.bin.gz). 1° 격자의 전 지구 지각 모델 — 퇴적층·결정질 지각·최상부 맨틀 각각의 S파 속도, 밀도, 층 경계. 지진 시뮬레이터는 이것으로 각 지점의 30 m 아래 속도 주상도를 만든다. 퇴적분지가 장주기를 증폭하는 모습을 낼 수 있는 이유다.",
     "USGS Slab2 — subduction zone geometry": "앱에 포함됨(data/slab2.bin.gz). 활동 중인 27개 섭입대 슬랩 상면의 깊이·주향·경사. 지진 시뮬레이터는 이것으로 판 경계형 지진과 침강하는 슬랩 내부 지진을 구분한다 — 지구 어디서나 같은 방식으로.",
     "Bird (2003) PB2002 plate boundaries": "앱에 포함됨(data/tectonics.bin.gz). 가장 가까운 판 경계까지의 거리와 그 종류, 그리고 광역 변형대(orogen) 폴리곤. 지진의 지구조 구분을 판정하고, 그 구분이 적용할 공표 파라미터를 결정한다.",
@@ -546,7 +552,7 @@ window.IntMapPageI18N.define('ko', {
     "Inter / Pretendard (bundled, SIL OFL 1.1)": "라틴·키릴 서체와 한국어 서체로, 사이트와 함께 배포합니다. 지도 자체의 라벨을 그리는 SDF 글리프 아틀라스도 포함하며, 이는 scripts/build-glyphs.mjs가 Inter에서 생성합니다(Inter를 제공하는 공개 글리프 서버는 없습니다). 라이선스와 출처 표기는 fonts/README.md를 참조하십시오.",
     "ESA WorldCover": "10 m 해상도 전 지구 토지 피복 분류",
     "RESOLVE / WWF Ecoregions 2017": "육상 생태 지역",
-    "Smithsonian GVP": "홀로세 화산",
+    "Smithsonian GVP": "앱에 동봉(data/volcanoes_gvp.json 및 data/volcano-detail.json.gz — scripts/build-volcanoes.mjs가 GVP의 WFS에서 생성). 홀로세 카탈로그 전체를 결합 키와 함께 담고, 그 뒤에 11,089건의 분화(VEI와 날짜), 화산 유형·지형 구분·구조 환경·주요 암석, 지질 개요, 사진, 반경 5·10·30·100 km 인구를 가집니다. 화산 카드가 과거에 대해 말하는 것은 모두 이 파일에서 오프라인으로 읽습니다.",
     "DeepStateMap": "우크라이나 전선(베타 레이어)",
     "historical-basemaps (aourednik)": "역사적 국경 — 베타 오버레이 레이어이자, 지도 자체의 과거 연도 국경에 대한 자동 대체 출처(가장 가까운 스냅숏)",
     "CShapes 2.0 (Schvitz et al., ETH Zürich)": "타임머신에 쓰는 1886–2019년 연도별 국제 국경(모든 국경 변화가 연 단위로 기록되어 있으며, 단순화한 사본을 자체 호스팅합니다). 1945–2019년 동·서독 및 통일 독일의 국경은 권위 있는 현대 연방주 자료(deutschlandGeoJSON, © GeoBasis-DE / BKG)로 다시 만들어, 내독 국경이 실제와 일치하도록 했습니다. 양차 세계 대전 레이어가 전선을 따라 잘라 내는 국가 윤곽도 이 데이터입니다.",
