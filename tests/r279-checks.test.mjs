@@ -31,7 +31,13 @@ const ATLAS = () => codeOnly(read('js/atlas-console.js'));
    declaration and the call that renders the model's prose. Returns that opening text, or null when
    the reply is not built this way at all (which is itself a failure). */
 const analyzeOpener = (src) => {
-  const body = src.indexOf('mdMini(String(txt).trim())');
+  /* ⚠ (#R339) THE BODY MARKER MOVED AND THE REQUIREMENT DID NOT. The analyse reply renders a
+     STRUCTURE now — `renderAnswer(_env,_reg,…)` where it used to be `mdMini(String(txt).trim())` —
+     and what #R279 asks is about whatever sits BEFORE that body, which is still nothing but the
+     prose div. Both markers are recognised so ① can go on showing the check red against the old
+     shape, which is the half that makes ② mean anything. */
+  let body = src.indexOf('renderAnswer(_env,_reg,');
+  if (body < 0) body = src.indexOf('mdMini(String(txt).trim())');
   if (body < 0) return null;
   const decl = src.lastIndexOf('let html=', body);
   if (decl < 0) return null;

@@ -91,8 +91,14 @@ test('R149 #10 mapping-quality commission: reply places get pinned + honest self
   // (#R150) the orchestrator now audits via the pure verdict (mapped/unplaced/ambiguous) + merges pins; see r150-checks.
   assert.match(html, /_atlMappingNoteHtml\(_atlMappingVerdict\(spots\)/, 'reply mapping folds into the pure verdict');
   assert.match(html, /but not placed \(couldn/, 'honest not-placed note (R150 wording)');
-  // analyze parses a PLACES: trailer (no extra AI call), answer carries a places array
-  assert.match(html, /PLACES\\s\*\[:：\]/, 'analyze strips a PLACES: trailer');
+  /* ⚠ (#R339) THE TRAILER IS GONE AND THE PROPERTY IT STOOD FOR IS NOT. #R149's requirement was
+     「no extra AI call to find the places the answer named」, and the mechanism it used was a
+     `PLACES:` JSON line glued to the end of the prose and peeled off with a regular expression.
+     #R339 replaced the whole answer with a structure, so the places are a FIELD of it — still one
+     call, now without a trailer to scrape. Asserting the old regex would pin the mechanism instead
+     of the property, and would go red for the round that improved it. */
+  assert.match(html, /_env\.places\|\|\[\]\)\.map\(p2=>\(\{n:p2\.name,c:p2\.country,k:p2\.kind\}\)\)/, 'analyze no longer maps the places the structured answer names');
+  assert.ok(!/replace\(\/\\n\?\\s\*PLACES/.test(html), 'the PLACES: trailer regex is back');
   assert.match(html, /"type":"answer","text":str,"contentClass"\?:str,"checks"\?:object\[\],"places"\?:\[\{"n":str,"c":str,"k":str\}\]/, 'answer action schema has places (R156 added contentClass + checks)');
   assert.match(html, /MAPPING MANDATE/, 'planner carries the mapping mandate');
   assert.match(html, /Self-audit before finishing/, 'self-audit instruction');

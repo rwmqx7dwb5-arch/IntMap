@@ -71,8 +71,13 @@ test('R150 #10 orchestrator: MERGES with existing pins (no skip-on-pins) and NEV
   // the old `!(_pois&&_pois.length)` skip guard is gone from BOTH call sites
   assert.ok(!/&&!\(_pois&&_pois\.length\)\)\{ try\{ html\+=await _pinReplyPlaces/.test(html), 'analyze no longer skips when pins exist');
   assert.ok(!/a\.places\.length&&!\(_pois&&_pois\.length\)/.test(html), 'answer no longer skips when pins exist');
-  // the analyze call passes the final text + citations
-  assert.match(html, /_pinReplyPlaces\(replyPlaces,\{text:String\(txt\)\.trim\(\),citations:_aCites\}\)/, 'analyze passes text + citations');
+  /* the analyze call passes the final text + citations.
+     ⚠ (#R339) THE PROPERTY IS UNCHANGED AND THE NOUNS MOVED. `txt` was the model's prose and
+     `_aCites` was `window._aiLastCitations` — a global whichever call answered LAST overwrites. The
+     reconciliation now reads the ANSWER STRUCTURE's text and the evidence registry of THIS call, so
+     the audit still sees the finished answer and its real sources; it just cannot be handed another
+     turn's. Asserting the old two variable names would pin the defect, not the requirement. */
+  assert.match(html, /_pinReplyPlaces\(\(_env\.places\|\|\[\]\)\.map\([\s\S]{0,120}?\{text:answerPlainText\(_env\),citations:_reg\.all\(\)/, 'analyze passes the answer text + its own citations');
   // no empty catch — it logs the cause and returns an honest note
   assert.match(html, /console\.warn\('reply-mapping audit failed',e\)/, 'orchestrator records the failure cause');
   assert.match(html, /Could not run the map self-check for this answer\./, 'honest fallback note (not silent)');

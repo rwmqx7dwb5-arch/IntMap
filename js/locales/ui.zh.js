@@ -2320,6 +2320,8 @@ window.IntMapLang.define('zh', {
     'web news search': "網路新聞搜尋",   /* atlas-console.js */
     'web-derived': "取自網路",   /* atlas-console.js */
     'Web-verified sources': "經網路查證的來源",   /* atlas-console.js */
+    'The map view did not change.': "地圖顯示沒有變化。",   /* atlas-console.js */
+    'Unverified statements were removed from this answer.': "未經查證的敘述已從這則回答中移除。",   /* atlas-answer-render.js */
     'Website': "網站",   /* atlas-console.js */
     'west': "西",   /* atlas-console.js */
     'Wet deposition': "濕沉降",   /* atlas-console.js */
