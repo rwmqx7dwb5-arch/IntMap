@@ -265,8 +265,11 @@ function skipData(cmd, id, s, data, opts, mem) {
   return false;
 }
 function makeSourceMemory() {
-  const mem = { sig: Object.create(null), rev: Object.create(null), hash: Object.create(null) };
-  mem.forget = (id) => { delete mem.sig[id]; delete mem.rev[id]; delete mem.hash[id]; };
+  /* (#R344) `diff` is per-source permission to send {add,remove} instead of the whole collection:
+     the whole write that declared itself `diffable` sets it and `forget` clears it, so a source that
+     was re-added (a style reload, a swap) always takes a complete write before any diff. */
+  const mem = { sig: Object.create(null), rev: Object.create(null), hash: Object.create(null), diff: Object.create(null) };
+  mem.forget = (id) => { delete mem.sig[id]; delete mem.rev[id]; delete mem.hash[id]; delete mem.diff[id]; };
   return mem;
 }
 
@@ -295,8 +298,13 @@ function makeCommandLog() {
      An A/B on these two is deterministic where a wall clock is not. DETAIL mode only — two
      performance.now() per call is exactly the kind of cost that must not ship. */
   function time(op, ms, kind) { tot[op][kind === 'cmp' ? 'msCmp' : 'msCall'] += ms; }
+  /* (#R344) …and WHICH WRITE IT WAS. `sent` cannot tell a whole collection from a {add,remove}, and
+     the difference is the whole point of the diff path: a caller that thinks it is diffing while the
+     adapter quietly falls back would look identical in every other number here. Ungated on purpose —
+     one integer per source update, readable with the census off, which is where it matters. */
+  function diffed(op) { tot[op].diffed = (tot[op].diffed || 0) + 1; }
   return {
-    note, time,
+    note, time, diffed,
     read() {
       const out = { totals: {}, byId: null, byPhase: null };
       for (const k of CMD_OPS) out.totals[k] = Object.assign({}, tot[k]);
@@ -307,7 +315,7 @@ function makeCommandLog() {
       return out;
     },
     reset() {
-      for (const k of CMD_OPS) { const t = tot[k]; t.attempted = t.sent = t.applied = t.same = t.absent = t.sameRef = t.sameShape = t.sameContent = t.repeatBytes = t.msCall = t.msCmp = 0; }
+      for (const k of CMD_OPS) { const t = tot[k]; t.attempted = t.sent = t.applied = t.same = t.absent = t.sameRef = t.sameShape = t.sameContent = t.repeatBytes = t.msCall = t.msCmp = t.diffed = 0; }
       byId = Object.create(null); byPhase = Object.create(null);
     },
   };

@@ -108,7 +108,10 @@ test('#R288 ② the quiet grey is a unit layer, under the warnings, in the same 
      ⚠ (#R305) …and a unit a warning is drawn INSIDE gets its grey with that warning cut out of it,
      rather than losing all of it. Either way the two never share a pixel, which is what this line
      is for; `quietGeomFor` is where the three answers are decided. */
-  assert.match(src, /const qg=quietGeomFor\(iso,g\);\s+if\(!qg\) return;/);
+  /* ⚠ (#R344) the emitter is per country now (`quietFor`), so the skip is a `continue` rather than
+     a `return` out of a forEach. The claim is the same one: a unit a warning is drawn on gets no
+     grey of its own, and the two never share a pixel. */
+  assert.match(src, /const qg=quietGeomFor\(iso,g\);\s+if\(!qg\) continue;/);
   assert.match(src, /function quietGeomFor\(iso,g\)\{/);
   assert.match(src, /function punchQuiet\(g,warns\)\{/, 'and the cut is a hole in the unit, not an overlap');
   /* the division is still half the answer: the outline tells norm-0 units apart from each other */

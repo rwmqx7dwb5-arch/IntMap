@@ -350,7 +350,9 @@ test('R306 ⑰ a neighbour is not something inside this unit', () => {
   assert.match(s, /_uBoxOf\[iso\]=\{of:u,set:set\};/,
     "…once per country per publish, keyed on the unit array's own identity");
   const wm = fnBody(s, 'warnMeeting');
-  assert.match(wm, /const isNeighbourUnit=\(wg\)=>\{ const k=_bboxKey\(geomBox\(wg\)\); return !!\(k&&k!==myKey&&boxes\[k\]\); \};/,
+  /* ⚠ (#R344) the key is remembered on the shape now (`geomKey`) — the same four decimals of the
+     same box, spelled once instead of once per candidate per unit per publish. */
+  assert.match(wm, /const isNeighbourUnit=\(wg\)=>\{ const k=geomKey\(wg\); return !!\(k&&k!==myKey&&boxes\[k\]\); \};/,
     'a warning whose outline IS one of this country’s units is that unit');
   assert.match(wm, /const add=\(wg\)=>\{ if\(wg!==g&&!isNeighbourUnit\(wg\)&&inside\.indexOf\(wg\)<0\) inside\.push\(wg\); \};/,
     '…so it is never collected as something inside this one');

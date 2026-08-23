@@ -1468,11 +1468,20 @@ window.IntMapModules.worldPacks=function(HOST){
         ['rain',      /rain|regen|regn|pluie|lluvia|chuva|pioggia|sade|precipita|大雨|暴雨|降雨|豪雨|雨|дожд|호우|أمطار|awareness_?type ?= ?10\b/i, ()=>L('Heavy rainfall','大雨','Starkregen','Сильный дождь','Lluvia intensa')]];
       const HAZI={}; HAZ.forEach((h,i)=>{ HAZI[h[0]]=h; h[3]=i; });
       /* the pattern that matches EARLIEST wins; list order breaks a tie (see the note above) */
+      /* ⚠ (#R344) …and it is asked about the same wording over and over — twenty-seven regular
+         expressions per call, from `hzName`, from `hotList` and from every chip of every tap card.
+         The answer is a KEY and depends on the agency's text and on nothing else (the reader's word
+         for that key is `hazardName`, which is where the language lives), so it is remembered by
+         the text. The cap is a bound on a table fed by upstream strings, not a policy. */
+      const _hkMemo=new Map();
       function hazardKey(text){ const t=String(text||''); if(!t) return '';
+        const hit=_hkMemo.get(t); if(hit!==undefined) return hit;
         let best=null, at=1e9;
         for(let i=0;i<HAZ.length;i++){ const m=HAZ[i][1].exec(t); if(!m) continue;
           if(m.index<at||(m.index===at&&best&&HAZ[i][3]<best[3])){ at=m.index; best=HAZ[i]; } }
-        return best?best[0]:''; }
+        const k=best?best[0]:'';
+        if(_hkMemo.size>=6000) _hkMemo.clear();
+        _hkMemo.set(t,k); return k; }
       const hazardName=(k)=>{ const h=HAZI[k]; return h?h[2]():''; };
       /* the reader’s word for it, or — when this table has not learned that name — the agency’s own */
       function hazardLabel(raw){ const k=hazardKey(raw); return k?hazardName(k):String(raw||'').trim(); }
@@ -1522,6 +1531,7 @@ window.IntMapModules.worldPacks=function(HOST){
         const a=ROWS[pr.rid]||[], b=MERGED[pr.rid]||[];
         return b.length?a.concat(b).slice(0,400):a; }catch(_){ return []; } };
       function unitFeature(iso,feed,geometry,unit,name,rows,at,got){
+        if(!shaped(geometry)) return null;   /* (#R344) 座標の無い図形は置けていない — see `shaped` */
         let lv=0; const kinds=[];
         (rows||[]).forEach(r=>{ const v=+r.lv||0; if(v>lv) lv=v;
           const k=String(r.kind||'').trim(); if(k&&kinds.indexOf(k)<0) kinds.push(k); });
@@ -1646,6 +1656,21 @@ window.IntMapModules.worldPacks=function(HOST){
         try{ walk(g.coordinates); }catch(_){ return null; }
         if(!(w<=e&&s<=n)) return null;
         return _stash(g,'__abb',[w,s,e,n]); }
+      /* ══ ⚠⚠⚠ (#R344) 座標を1つも持たない図形は「図形」ではない ═══════════════════════════════
+         MEASURED on the built page: **27 features of the published collection had an empty
+         geometry** — `{"type":"Polygon","coordinates":[]}` — all of them Taiwan, because the 1982
+         township file this map indexes (g0v/twgeojson) ships **19 of its 378 features with no
+         coordinates at all** (台北市中正區, 台中市中區, 高雄市鹽埕區, 連江縣東引鄉, 澎湖縣七美鄉 …).
+         `twTownGeo()` only asked whether `f.geometry` EXISTS, so those names went into the index,
+         `shapeOf` answered with them, and **8 warnings in force — five of them at 大雨特別警報 —
+         became features that can never be drawn**. Worse than invisible: `PLACED` counted them as
+         placed and `UNPL` did not rise, so the country-wide wash that exists to say 「something is in
+         force here and this map cannot say where」 was never asked for. `geomBox` already returns
+         null for such a shape (it is what makes `dedupeSameShape` skip them, which is why they
+         survived), so the predicate exists — it just was not being asked.
+         ⚠ THE FIX IS THE PREDICATE, NOT THE COUNTRY. Every unit index and every feed goes through
+         `setUnits` and `unitFeature`, so both ask it and no future boundary set can repeat this. */
+      const shaped=(g)=>(g&&geomBox(g))?g:null;
       function geomCentre(g){ if(!g) return null; if(g.__ac!==undefined) return g.__ac;
         return _stash(g,'__ac',centroidOf(g)); }
       /* ══ ⚠⚠⚠ (#R306) A CENTRE THAT IS NOT IN ITS OWN SHAPE ANSWERS SOMEBODY ELSE'S QUESTION ═════
@@ -1705,10 +1730,31 @@ window.IntMapModules.worldPacks=function(HOST){
          ⚠ **いま単位で灰色を描く国だけ**を索引に入れる。日本は 1,490 の市町村ポリゴンを毎回
          組み直す（`jpShape` は `multi(parts)` を新しく作る）ので、画面に無い国まで境界箱を歩くと
          その費用が毎 tick 付いて回る。答えは変わらない——索引を引くのは `quietList` の国だけである。 */
+      /* ══ ⚠⚠⚠ (#R344) 「警報の顔ぶれが変わったか」を、配列の同一性で訊いていた ═════════════════
+         `_qCache`, `warnIndex` and `warnedISOs` each remembered their answer under `_xxxOf===feats`.
+         `feats` is rebuilt with `concat` on EVERY publish — a new array object every window,
+         whatever the feeds said — so the three memos could hit WITHIN one publish and never across
+         two. `quietFeatures()` is called once per publish, which means its memo, the one standing in
+         front of `warnMeeting` over four thousand units and every polygon difference behind it, had
+         never once returned a cached answer.
+         → the version is the CONTENT: the country and the outline of every warned shape, hashed in
+         one pass per publish (`geomKey` is remembered on the geometry, so the pass is string work
+         over values already in hand). A feed re-read that returns the same warnings — which is most
+         of them, most ticks — leaves it unchanged and the three memos answer from last time. */
+      let featsVer=0, _featsWKey='';
+      function stampFeats(list){ let h=2166136261>>>0;
+        const mix=(s)=>{ s=String(s==null?'':s); for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } h^=124; h=Math.imul(h,16777619)>>>0; };
+        let n=0;
+        for(let i=0;i<list.length;i++){ const f=list[i], q=f&&f.properties;
+          if(!q||!q.iso||!((+q.norm||0)>0)) continue; n++; mix(q.iso); mix(geomKey(f.geometry)); }
+        const k=n+':'+h;
+        if(k!==_featsWKey){ _featsWKey=k; featsVer++; }
+        return featsVer; }
+      const _sh=(s)=>{ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h; };
       let _warnIdx=null, _warnIdxOf=null, _warnIdxSet='';
       function warnIndex(){
         const setSig=quietList.join(',');
-        if(_warnIdxOf===feats&&_warnIdxSet===setSig&&_warnIdx) return _warnIdx;
+        if(_warnIdxOf===featsVer&&_warnIdxSet===setSig&&_warnIdx) return _warnIdx;
         const byIso=Object.create(null);
         (feats||[]).forEach(f=>{ const q=f&&f.properties; if(!q||!q.iso||!((+q.norm||0)>0)) return;
           if(!quietSet[q.iso]) return;
@@ -1730,7 +1776,9 @@ window.IntMapModules.worldPacks=function(HOST){
              own units (Japan, China, Taiwan, MeteoAlarm's named regions) can hit it.
              → ask identity of the OUTLINE first. Same country and the same bbox to four decimals
              (≈11 m) is the same unit — the test `dedupeSameShape` already trusts for the same job. */
-          const bk=_bboxKey(bb); if(bk) (rec.boxes||(rec.boxes=Object.create(null)))[bk]=1;
+          const bk=geomKey(f.geometry); if(bk){ (rec.boxes||(rec.boxes=Object.create(null)))[bk]=1;
+            /* (#R344) …and the country's own fingerprint, from the same keys — see quietFor */
+            rec.h=(Math.imul((rec.h||2166136261)^_sh(bk),16777619)>>>0); }
           (rec.all||(rec.all=[])).push(f.geometry);   /* (#R307) the flat list — see `warnsNear` */
           /* ⚠ (#R298) …and its CENTRE, bucketed the same way — see `warnMeeting` */
           const wc=geomInside(f.geometry); /* (#R306) a point that is REALLY in the warning */
@@ -1739,14 +1787,14 @@ window.IntMapModules.worldPacks=function(HOST){
              used to throw the unit's grey away whole. The geometry is what lets the unit keep the
              ground that warning does NOT cover (see `punchQuiet`). */
           if(wc){ const k=Math.floor(wc[0])+':'+Math.floor(wc[1]); (rec.pts[k]||(rec.pts[k]=[])).push({c:wc,g:f.geometry}); } });
-        _warnIdxOf=feats; _warnIdxSet=setSig; return (_warnIdx=byIso); }
+        _warnIdxOf=featsVer; _warnIdxSet=setSig; return (_warnIdx=byIso); }
       /* which countries have anything in force AT ALL — asked of `feats` directly, so it is true on
          the SAME publish rather than one behind (`drawnISO` is written after the upload). */
       let _wISOof=null, _wISO=null;
-      function warnedISOs(){ if(_wISOof===feats&&_wISO) return _wISO;
+      function warnedISOs(){ if(_wISOof===featsVer&&_wISO) return _wISO;
         const s=Object.create(null);
         (feats||[]).forEach(f=>{ const q=f&&f.properties; if(q&&q.iso&&(+q.norm||0)>0) s[q.iso]=1; });
-        _wISOof=feats; return (_wISO=s); }
+        _wISOof=featsVer; return (_wISO=s); }
       /* ══ ⚠⚠⚠ (#R298) 覆っているかは<b>両方向</b>で訊く ═══════════════════════════════════════════
          MEASURED on the built page (z5 over Europe, 246 sampled points): the centre-of-the-unit test
          alone left 3 points where grey still lay under colour, and 2 of the 3 were the SAME shape of
@@ -1761,6 +1809,15 @@ window.IntMapModules.worldPacks=function(HOST){
          boundary sets overlapping slightly across a border, where the German district really does
          have nothing in force from the DWD. That one is CORRECT and is left alone. */
       const _bboxKey=(bb)=>bb?(bb[0].toFixed(4)+','+bb[1].toFixed(4)+','+bb[2].toFixed(4)+','+bb[3].toFixed(4)):'';
+      /* ⚠⚠ (#R344) …AND IT IS ASKED OF THE SAME SHAPE OVER AND OVER. `_bboxKey` is the identity this
+         layer compares units and warnings by, so it is called from `sameOutline`, `unitBoxes`,
+         `warnMeeting`, `isNeighbourUnit`, `subtractWarnings` and the hatch cut — every unit against
+         every candidate, every publish. MEASURED on the built page, 70 s with the layer on: **0.63 s
+         of main thread**, the busiest first-party function in the whole profile, and every call
+         answers with the same four `toFixed(4)` of the same shape. `geomBox` is already remembered
+         on the geometry (`__abb`); the key it spells is remembered beside it. */
+      const geomKey=(g)=>{ if(!g) return ''; if(g.__bk!==undefined) return g.__bk;
+        return _stash(g,'__bk',_bboxKey(geomBox(g))); };
       /* ① THIS UNIT **IS** SOMETHING IN FORCE, or lies inside something bigger that is ═══════════
          ⚠ (#R305) 「the unit's centre is inside a warning」 IS NOT 「the warning covers the unit」.
          MEASURED at z2 with the punch below already in: China still had 86 unpainted samples out of
@@ -1774,7 +1831,7 @@ window.IntMapModules.worldPacks=function(HOST){
         &&outer[2]>=inner[2]-1e-9&&outer[3]>=inner[3]-1e-9);
       function sameOutline(iso,g){
         const rec=warnIndex()[iso]; if(!rec||!rec.boxes) return false;
-        const bk=_bboxKey(geomBox(g)); return !!(bk&&rec.boxes[bk]); }
+        const bk=geomKey(g); return !!(bk&&rec.boxes[bk]); }
       /* every warning of this country that meets this unit at all, split into the ones that cover it
          and the ones that sit inside it */
       /* ══ ⚠⚠⚠ (#R306) A NEIGHBOUR IS NOT SOMETHING **INSIDE** THIS UNIT ═══════════════════════════
@@ -1798,14 +1855,14 @@ window.IntMapModules.worldPacks=function(HOST){
         const u=UNITS[iso]||[]; const c=_uBoxOf[iso];
         if(c&&c.of===u) return c.set;
         const set=Object.create(null);
-        for(let i=0;i<u.length;i++){ const k=_bboxKey(geomBox(u[i])); if(k) set[k]=1; }
+        for(let i=0;i<u.length;i++){ const k=geomKey(u[i]); if(k) set[k]=1; }
         _uBoxOf[iso]={of:u,set:set}; return set; }
       function warnMeeting(iso,g){
         const rec=warnIndex()[iso]; if(!rec) return null;
         const ub=geomBox(g); if(!ub) return null;
         const c=geomInside(g); /* (#R306) …and one that is really in the unit */
-        const myKey=_bboxKey(ub), boxes=unitBoxes(iso);
-        const isNeighbourUnit=(wg)=>{ const k=_bboxKey(geomBox(wg)); return !!(k&&k!==myKey&&boxes[k]); };
+        const myKey=geomKey(g), boxes=unitBoxes(iso);
+        const isNeighbourUnit=(wg)=>{ const k=geomKey(wg); return !!(k&&k!==myKey&&boxes[k]); };
         let covering=false; const inside=[];
         const add=(wg)=>{ if(wg!==g&&!isNeighbourUnit(wg)&&inside.indexOf(wg)<0) inside.push(wg); };
         /* the unit's own centre — a warning that holds it either covers the unit or is a piece of it */
@@ -1949,6 +2006,13 @@ window.IntMapModules.worldPacks=function(HOST){
          costs **129 ms** — worth paying once and remembering, not worth paying without a bound. Above
          this the unit keeps the #R305 behaviour rather than stalling a frame. */
       const CLIP_MAX_V=60000, DIFF_MAX=3000;
+      /* ⚠⚠ (#R344) A FULL TABLE USED TO BE EMPTIED, WHICH IS THE ONE THING IT MUST NOT DO. This map
+         is what makes the difference free the second time it is asked, and there are more distinct
+         (unit, warnings) pairs on this planet than the cap: Japan alone is 1,490 municipalities.
+         `clear()` at the cap means the table fills, is emptied, and every unit pays the clipper
+         again — a thrash that gets WORSE the more of the world is drawn. Evicting the oldest
+         quarter keeps the recently-asked answers, which are the ones the next publish asks for. */
+      let _diffHit=0, _diffMiss=0, _diffEvict=0;
       const _diff=new Map();
       /* ⚠ MAPLIBRE DECIDES 「ring or hole」 BY WINDING (#R305). polygon-clipping already returns the
          outer ring and its holes with opposite signs — verified on this version — but the picture
@@ -1970,12 +2034,13 @@ window.IntMapModules.worldPacks=function(HOST){
         const mine=_polysOf(g); if(!mine||!mine.length) return undefined;
         const cut=[], keys=[];
         for(let i=0;i<warns.length;i++){ const wp=_polysOf(warns[i]); if(!wp||!wp.length) continue;
-          const k=_bboxKey(geomBox(warns[i])); if(!k) continue;
+          const k=geomKey(warns[i]); if(!k) continue;
           cut.push(wp); keys.push(k); }
         if(!cut.length) return g;
         keys.sort();
-        const ck=iso+'|'+_bboxKey(geomBox(g))+'|'+keys.join(';');
-        if(_diff.has(ck)){ const hit=_diff.get(ck); return (hit==='same')?g:hit; }
+        const ck=iso+'|'+geomKey(g)+'|'+keys.join(';');
+        if(_diff.has(ck)){ _diffHit++; const hit=_diff.get(ck); return (hit==='same')?g:hit; }
+        _diffMiss++;
         let v=_vcount(mine); for(let i=0;i<cut.length;i++) v+=_vcount(cut[i]);
         if(v>CLIP_MAX_V) return undefined;
         let out=null, ok=true;
@@ -1985,7 +2050,8 @@ window.IntMapModules.worldPacks=function(HOST){
         if(!out||!out.length) res=null;
         else if(out.length===mine.length&&_vcount(out)===_vcount(mine)) res='same';
         else { const w=_wound(out); res=w.length?{type:'MultiPolygon',coordinates:w}:null; }
-        if(_diff.size>=DIFF_MAX) _diff.clear();
+        if(_diff.size>=DIFF_MAX){ _diffEvict++; let n=DIFF_MAX>>2;
+          for(const k of _diff.keys()){ _diff.delete(k); if(--n<=0) break; } }
         _diff.set(ck,res);
         return (res==='same')?g:res; }
       let _qPunched=0, _qDropped=0, _qNoPunch=0, _qCut=0, _qCleared=0;
@@ -2152,7 +2218,8 @@ window.IntMapModules.worldPacks=function(HOST){
            一番効く原因は消えている。残る 1.2 も戻す——#R297 が買っていた節約は「単位を二度
            （灰色で一度・色で一度）貼る」ことから来ていて、それも同じ変更で無くなったからである。
            ⚠ 0.375 は MapLibre の既定で、ズームごとに約 0.05 px の誤差。1.2 は約 0.15 px だった。 */
-        if(!GE().layers.hasSource(SRC)){ featsSig=''; GE().layers.addSource(SRC,{type:'geojson',tolerance:0.375,buffer:64,data:{type:'FeatureCollection',features:[]}}); }
+        if(!GE().layers.hasSource(SRC)){ featsSig=''; pubIds=null;   /* (#R344) a fresh source holds nothing to diff against */
+          GE().layers.addSource(SRC,{type:'geojson',tolerance:0.375,buffer:64,data:{type:'FeatureCollection',features:[]}}); }
         if(!GE().layers.has('wp-alert-fill')) GE().layers.add({id:'wp-alert-fill',type:'fill',source:SRC,
           layout:{visibility:'none'},paint:{'fill-color':['get',colField()],'fill-opacity':OPACITY_DEFAULT}});
         /* the rank is in the OUTLINE too, so it survives a fill you can see through */
@@ -2265,8 +2332,8 @@ window.IntMapModules.worldPacks=function(HOST){
              opacity rule, one layer above `HATCH` and still under the wash and the unit fills —
              the two hatch layers are disjoint by construction (the filter on `HATCH` names exactly
              the countries this source carries), so no ground is ever hatched twice. */
-          if(!GE().layers.hasSource(HCUT_SRC))
-            GE().layers.addSource(HCUT_SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+          if(!GE().layers.hasSource(HCUT_SRC)){ hatchCutOut='';   /* (#R344) a fresh source holds nothing — the next rebuild must upload */
+            GE().layers.addSource(HCUT_SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }
           if(!GE().layers.has(HCUT)){
             ensureHatch();
             GE().layers.add({id:HCUT,type:'fill',source:HCUT_SRC,layout:{visibility:'none'},
@@ -3729,7 +3796,7 @@ window.IntMapModules.worldPacks=function(HOST){
       function twTownGeo(){ return SUBDIV.twtown||(SUBDIV.twtown=
         fetchJSON('https://cdn.jsdelivr.net/gh/g0v/twgeojson@master/legacy/twTown1982.json').then(j=>{
           const by=Object.create(null), tn=Object.create(null), dup=Object.create(null);
-          (j.features||[]).forEach(f=>{ const n=(f.properties&&f.properties.name)||''; if(!n||!f.geometry) return;
+          (j.features||[]).forEach(f=>{ const n=(f.properties&&f.properties.name)||''; if(!n||!shaped(f.geometry)) return;   /* (#R344) 19/378 は座標が空 */
             const k=twKey(n); if(!by[k]) by[k]=f;
             const t=twTown(n); if(t){ if(tn[t]&&tn[t]!==f) dup[t]=1; else tn[t]=f; } });
           if(!Object.keys(by).length) throw new Error('tw township geometry empty');
@@ -3925,6 +3992,7 @@ window.IntMapModules.worldPacks=function(HOST){
          published resolution. It is fetched for what is on screen, at two countries at a time, and
          it is cached (see bndJSON), so the upgrade is paid once per country per browser. */
       const UNIT_SRC=Object.create(null);     /* iso3 → which index the shapes came from */
+      const UNIT_VER=Object.create(null);     /* (#R344) iso3 → how many times that index has been replaced */
       /* ⚠ (#R298) 「境界線解像度が低すぎる。」— 5 → 4. #R297 measured that the NUTS floor could not be
          lowered （20M と 10M は欧州全体のズームで同じ絵で、細かくすると再タイルの費用だけが増える）
          and that is still true; what was left is the ZOOM at which a country stops being drawn from
@@ -3945,9 +4013,9 @@ window.IntMapModules.worldPacks=function(HOST){
         return String(p.NUTS_NAME||p.NAME_LATN||p.name||p.shapeName||p.NAME||p.NAME_1||p.n||'').trim(); };
       function named(g,nm){ if(g&&nm&&!g.__nm) _stash(g,'__nm',String(nm)); return g; }
       function setUnits(iso,geoms,src){
-        const g=(geoms||[]).filter(Boolean);
+        const g=(geoms||[]).filter(x=>!!shaped(x));   /* (#R344) 座標の無い図形は単位ではない */
         if(!g.length){ NO_UNITS[iso]=1; return false; }
-        UNITS[iso]=g; UNIT_SRC[iso]=src||'?'; delete NO_UNITS[iso];
+        UNITS[iso]=g; UNIT_SRC[iso]=src||'?'; UNIT_VER[iso]=(UNIT_VER[iso]||0)+1; delete NO_UNITS[iso];
         /* (#R290) COALESCED. This fired twice per country, and the world index makes 147 countries
            land inside a second — 147 uploads of a collection that grows with each one. */
         if(on) publish();
@@ -4099,19 +4167,52 @@ window.IntMapModules.worldPacks=function(HOST){
          ⚠ 日本もこの経路を通る（`loadJMA` が自前で灰色を出すのはやめた）。 */
       /* ⚠ (#R290) の「同じものを二度組み立てない」はここでも要る。灰色は publish のたびに作り直される
          ようになったので、**視野の集合も発令中の顔ぶれも変わっていないなら**前回のものを返す。 */
+      /* ══ ⚠⚠⚠ (#R344) 一国の警報が1件変わると、地球上の全単位を作り直していた ═══════════════════
+         The grey of a unit is `unit − ∪(the warnings of ITS OWN country that meet it)` — `warnIndex`
+         is per-country and `warnMeeting` never looks at another country's rows (#R298). So what a
+         country's quiet ground looks like depends on that country's warnings and that country's
+         units, and on nothing else. It was nevertheless rebuilt for EVERY country whenever ANY feed
+         landed: one new German warning re-ran `warnMeeting` over Japan's 1,490 municipalities and
+         every polygon difference behind them. MEASURED before this: polygon-clipping was 5.6 s of
+         main thread in 70 s, second only to the renderer's own serialisation.
+         → the memo is per country, keyed by that country's own warned outlines (the fingerprint the
+         index already accumulates while it buckets them), its unit index, and whether the clipper
+         has arrived. A feed that lands rebuilds its own country and nobody else's.
+         ⚠ THE COUNTERS ARE PER COUNTRY TOO, or they would only describe the countries that happened
+         to be rebuilt this window. They are summed back up, so `quietCut` / `quietSuppressed` still
+         mean what #R305 and #R307 measured them to mean. */
       let _qCache=null, _qCacheKey='', _qCacheOf=null;
+      let _qIso=Object.create(null), _qIsoHit=0, _qIsoMiss=0;
+      function quietFor(iso){
+        const rec=warnIndex()[iso];
+        const u=UNITS[iso]||[];
+        const k=(rec&&rec.h?rec.h:0)+'|'+u.length+'|'+(UNIT_VER[iso]||0)+'|'+(PC?1:0);
+        const hit=_qIso[iso];
+        if(hit&&hit.k===k){ _qIsoHit++; return hit; }
+        _qIsoMiss++;
+        const feed=FEEDS[iso]||LEARNED[iso]||'';
+        const p0=_qPunched, d0=_qDropped, n0=_qNoPunch, c0=_qCut, l0=_qCleared;
+        const out=[];
+        for(let i=0;i<u.length;i++){ const g=u[i]; if(!g) continue;
+          const qg=quietGeomFor(iso,g);
+          if(!qg) continue;
+          out.push(quietFeature(iso,feed,qg,'unit',g.__nm||'')); }
+        return (_qIso[iso]={ k:k, out:out,
+          n:{ p:_qPunched-p0, d:_qDropped-d0, n:_qNoPunch-n0, c:_qCut-c0, l:_qCleared-l0 } }); }
       function quietFeatures(){
-        const key=quietList.map(c=>c+':'+((UNITS[c]||[]).length)).join(',');
-        if(_qCache&&_qCacheOf===feats&&_qCacheKey===key) return _qCache;
+        /* the outer cache answers 「nothing at all moved」; the per-country memo above answers
+           「only this one moved」, which is what a feed landing actually does. ⚠ the units' STAMP,
+           not only their count: a country whose index is replaced by a sharper one of the same
+           length (`askJpFine`, `askNutsFine`, `askUnitsGB`) must not answer from the coarse shapes. */
+        const key=quietList.map(c=>c+':'+((UNITS[c]||[]).length)+':'+(UNIT_VER[c]||0)).join(',')+'|'+(PC?1:0);
+        if(_qCache&&_qCacheOf===featsVer&&_qCacheKey===key) return _qCache;
         const out=[];
         _qPunched=0; _qDropped=0; _qNoPunch=0; _qCut=0; _qCleared=0;
-        quietList.forEach(iso=>{
-          const feed=FEEDS[iso]||LEARNED[iso]||'';
-          (UNITS[iso]||[]).forEach(g=>{ if(!g) return;
-            const qg=quietGeomFor(iso,g);
-            if(!qg) return;
-            out.push(quietFeature(iso,feed,qg,'unit',g.__nm||'')); }); });
-        _qCacheOf=feats; _qCacheKey=key; return (_qCache=out); }
+        for(let i=0;i<quietList.length;i++){ const r=quietFor(quietList[i]);
+          _qPunched+=r.n.p; _qDropped+=r.n.d; _qNoPunch+=r.n.n; _qCut+=r.n.c; _qCleared+=r.n.l;
+          for(let j=0;j<r.out.length;j++) out.push(r.out[j]); }
+        _qCacheOf=featsVer; _qCacheKey=key; return (_qCache=out); }
+
       /* ⚠ (#R290→#R298) the set and the SOURCE move together. `washTier` returns 2 —
          「the unit layer has this country」 — off `quietSet`, so a set that says yes while nothing
          is drawing those units would leave them painted by nobody. The upload itself now happens
@@ -4201,6 +4302,7 @@ window.IntMapModules.worldPacks=function(HOST){
          'same' 重なっていない · 'no' 引き算できなかった（clipper 未着／頂点が天井超え）· 'alone' 篩で落ちた。
          読める計器が無いと「効かなかった」と「動いていない」の区別がつかない（#R306）。 */
       let hatchCutWhy=Object.create(null), hatchCutMs=0, hatchCutLeftOver=false;
+      let hatchCutOut='';   /* (#R344) the last cut this layer actually DREW — see the note at the end of rebuildHatchCut */
       /* iso → { k:候補の指紋, g:結果（null＝全部答えられている · 'same'＝従来どおり）, why } */
       const cutMemo=Object.create(null);
       function boxHit(a,b){ return !!(a&&b&&a[0]<=b[2]&&b[0]<=a[2]&&a[1]<=b[3]&&b[1]<=a[3]); }
@@ -4293,7 +4395,7 @@ window.IntMapModules.worldPacks=function(HOST){
           if(!cand.length){ why[c]='alone'; delete cutMemo[c]; continue; }
           cand.sort((x,y)=>y.ov-x.ov);
           const near=cand.slice(0,CUT_NEAR_MAX).map(x=>x.g);
-          const ck=near.map(g=>_bboxKey(geomBox(g))||'?').sort().join(';');
+          const ck=near.map(g=>geomKey(g)||'?').sort().join(';');
           let hit=cutMemo[c];
           if(!hit||hit.k!==ck){
             if(_now()-tCut>CUT_BUDGET_MS){ spent=true; why[c]='later'; if(!hit) continue; }
@@ -4307,6 +4409,16 @@ window.IntMapModules.worldPacks=function(HOST){
         hatchCutFC={type:'FeatureCollection',features:out};
         /* 予算を使い切ったなら、この署名はまだ「済み」ではない——次の publish が続きをやる */
         hatchCutKey=spent?'':key;
+        /* ══ ⚠⚠ (#R344) 入力が変わったことは、出力が変わったことではない ═══════════════════════
+           `key` carries the whole collection's signature, so a single warning landing anywhere on
+           the planet re-runs this — and almost every re-run produces the SAME cut: the countries
+           that are hatched, and the answers they are cut against, change far more slowly than the
+           collection does. MEASURED: 18 to 40 uploads of this source in 70 s, of a payload of 19
+           features and 24,657 vertices, for a picture that had not moved. The subtraction itself is
+           memoised (`cutMemo`); what was not, was the upload and the filter behind it. */
+        const osig=isos.join(',')+'|'+out.map(f=>_vcount(_polysOf(f.geometry)||[])).join(',');
+        if(osig===hatchCutOut) return false;
+        hatchCutOut=osig;
         return true; }
       /* 1国ぶんの引き算。⚠ 束ねて引けないときは 1 つずつ引ける: 欧州の単位は #R298/#R299 以降ひとつで
          数千頂点あるので、6 つ束ねただけで `subtractWarnings` の `CLIP_MAX_V` に当たる（MEASURED:
@@ -4330,7 +4442,8 @@ window.IntMapModules.worldPacks=function(HOST){
         const a0=_absArea(geom), a1=_absArea(d), lost=a0-a1;
         if(a0>0&&lost<CUT_MIN_DEG2&&lost/a0<CUT_MIN_LOSS) return {g:'same',why:'sliver:'+near.length+':'+how};
         return {g:d,why:'cut:'+near.length+':'+how}; }
-      function applyHatchCut(){
+      let hatchCutDrew=0;   /* (#R344) how many times the cut was actually uploaded */
+      function applyHatchCut(){ hatchCutDrew++;
         try{ if(GE().layers.hasSource(HCUT_SRC)) GE().layers.setSourceData(HCUT_SRC,hatchCutFC); }catch(_){}
         try{ if(GE().layers.has(HATCH)) GE().layers.setFilter(HATCH,
           hatchCutISO.length?['!',['in',['get','__code'],['literal',hatchCutISO.slice()]]]:null); }catch(_){} }
@@ -4392,6 +4505,55 @@ window.IntMapModules.worldPacks=function(HOST){
          not wait (`toggle`), and nothing is dropped — the data is in `feats` the moment it lands. */
       const PUBLISH_MS=1500;
       let pubLast=0;
+      /* ══ ⚠⚠⚠ (#R344) 変わっていない地物まで、毎回まるごとシリアライズし直していた ═══════════════
+         MEASURED with a CPU profile of the built page, 70 s with the layer on and nothing else
+         touched: MapLibre’s own `serialize` and the `sendAsync` frame around it cost **11.5 s of
+         main thread** (5.9 + 5.6) — more than four times everything this module does put together —
+         for **26** uploads of a collection that was **13.3 MB · 5,163 features · 455,886 vertices**.
+         `setData` has no way to say 「only these three moved」: one new warning re-walks the planet.
+         #R290 and #R297 already removed the uploads that said nothing at all (the content signature,
+         and the 1.5 s window). What is left are the uploads that really do differ — and they differ
+         by a handful of features out of five thousand.
+         → the collection carries an IDENTITY per feature and the change is sent as a change.
+         `{add,remove}` goes to `GeoJSONSource.updateData`, which re-tiles only the tiles the diff
+         touches; the whole collection still travels as `data`, so an engine that cannot diff, a
+         style reload, a duplicate id or a throw all fall back to the complete write (js/geo-engine.js).
+         ⚠ THE ID IS THE ONE THIS LAYER ALREADY TREATS AS IDENTITY — 「答えか地面か」 plus the country
+         plus the outline to four decimals, which is exactly what `dedupeSameShape` (#R298 追記) and
+         `sameOutline` (#R299) compare by. A collision cannot silently drop a feature: it is given a
+         suffix, which at worst makes the diff bigger.
+         ⚠ AND IT RESYNCS. Every `RESYNC_EVERY` diffs the whole collection is written again, so no
+         amount of drift can outlive a minute even if a diff were ever refused upstream. */
+      const RESYNC_EVERY=40, DIFF_MAX_FRAC=0.35, DIFF_MIN_ROOM=64;
+      let pubIds=null, pubDiffRun=0, pubWhole=0, pubDiff=0, pubAdd=0, pubRemove=0;
+      const FID='';
+      const featId=(f)=>(((+f.properties.norm||0)>0)?'w':'q')+FID+f.properties.iso+FID+geomKey(f.geometry);
+      function featOne(f){ const q=f.properties; let h=2166136261>>>0;
+        const mix=(s)=>{ s=String(s==null?'':s); for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } h^=124; h=Math.imul(h,16777619)>>>0; };
+        mix(q.feed); mix(q.name); mix(q.norm); mix(q.lv); mix(q.colA); mix(q.colN); mix(q.hz); mix(q.hzs); mix(q.nh);
+        return h; }
+      function uploadShown(shown,sig){
+        featsSig=sig;
+        const next=new Map(); let ok=true;
+        for(let i=0;i<shown.length;i++){ const f=shown[i];
+          if(!f||!f.properties||!f.geometry){ ok=false; break; }
+          let id=featId(f);
+          if(next.has(id)){ let k=2; while(next.has(id+FID+k)) k++; id=id+FID+k; }
+          if(f.id!==id) f.id=id;
+          next.set(id,{s:featOne(f),f:f}); }
+        let diff=null;
+        if(ok&&pubIds&&pubDiffRun<RESYNC_EVERY){
+          const add=[], remove=[]; const room=Math.max(DIFF_MIN_ROOM,Math.floor(next.size*DIFF_MAX_FRAC));
+          next.forEach((v,id)=>{ const p=pubIds.get(id); if(p===undefined||p!==v.s) add.push(v.f); });
+          pubIds.forEach((_v,id)=>{ if(!next.has(id)) remove.push(id); });
+          if(add.length+remove.length<=room) diff={add:add,remove:remove};
+        }
+        if(diff){ pubDiff++; pubDiffRun++; pubAdd+=diff.add.length; pubRemove+=diff.remove.length;
+          GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:shown},{diff:diff}); }
+        else { pubWhole++; pubDiffRun=0;
+          GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:shown},{diffable:ok}); }
+        if(!ok){ pubIds=null; return; }
+        const held=new Map(); next.forEach((v,id)=>{ held.set(id,v.s); }); pubIds=held; }
       function publish(){ if(pubT) return;
         const wait=Math.max(60,PUBLISH_MS-(Date.now()-pubLast));
         pubT=setTimeout(()=>{ pubT=0; publishNow(); },wait); }
@@ -4399,6 +4561,7 @@ window.IntMapModules.worldPacks=function(HOST){
         clearTimeout(pubT); pubT=0; pubLast=Date.now();
         feats=baseFeats.concat(SIDE.cma,SIDE.bom,SIDE.ma,SIDE.phl,SIDE.cwa,SIDE.nzl,SIDE.swic);
         feats=dedupeSameShape(feats);    /* (#R298 追記) 同じ形を二度塗らない — see below */
+        stampFeats(feats);               /* (#R344) 「顔ぶれが変わったか」を内容で決める — see stampFeats */
         learnCoverage(feats);            /* (#R288) the polygons are the evidence — see learnCoverage */
         drawnISO=Object.create(null);
         feats.forEach(f=>{ const g=f.geometry; if(g&&f.properties&&f.properties.iso&&(f.properties.norm||0)>0) drawnISO[f.properties.iso]=1; });
@@ -4418,7 +4581,7 @@ window.IntMapModules.worldPacks=function(HOST){
            `washTier` を読むので `refreshQuietLayer()` と `drawnISO` の後、`paintCountries()` と同じ段。 */
         let cutChanged=false; try{ cutChanged=rebuildHatchCut(shown,sig); }catch(_){}
         whenDrawable(()=>{ if(!ensureLayers()) return;
-          if(sig!==featsSig){ featsSig=sig; GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:shown}); }
+          if(sig!==featsSig) uploadShown(shown,sig);   /* (#R344) …as a change, when it is one */
           if(cutChanged) applyHatchCut();
           applyAlertVis(); });
         paintCountries();
@@ -4448,8 +4611,8 @@ window.IntMapModules.worldPacks=function(HOST){
         const key=new Map(), win=new Map();
         (list||[]).forEach(f=>{ const q=f&&f.properties;
           if(!q||!q.iso||!((+q.norm||0)>0)||!f.geometry) return;
-          const bb=geomBox(f.geometry); if(!bb) return;
-          const k=q.iso+'|'+bb[0].toFixed(4)+','+bb[1].toFixed(4)+','+bb[2].toFixed(4)+','+bb[3].toFixed(4);
+          const bk=geomKey(f.geometry); if(!bk) return;
+          const k=q.iso+'|'+bk;
           key.set(f,k);
           const p=win.get(k);
           if(!p||(+q.norm||0)>(+((p.properties||{}).norm)||0)) win.set(k,f); });
@@ -4472,7 +4635,7 @@ window.IntMapModules.worldPacks=function(HOST){
         try{ feats.forEach(f=>{ const q=f&&f.properties; if(!q||!q.hzr) return;
           const x=hzFields(q.hzr,q.feed,q.lv); q.hz=x.hz; q.hzs=x.hzs; q.nh=x.nh; }); }catch(_){}
         whenDrawable(()=>{ if(ensureLayers()){ const shown=quietFeatures().concat(feats);
-          featsSig=featSig(shown); GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:shown}); } });
+          uploadShown(shown,featSig(shown)); } });
         if(on&&panel.shown()) showPanel(); }
       try{ window.addEventListener('intmap-lang',()=>{ if(on) relabel(); }); }catch(_){}
 
@@ -4853,8 +5016,19 @@ window.IntMapModules.worldPacks=function(HOST){
 
       /* how many units of a country are DRAWN with something in force — one unit for every source,
          so the numbers in the list can be compared with one another (「左の数字が比較不能」) */
-      const drawnCount=(iso)=>feats.filter(f=>f.properties.iso===iso&&(f.properties.norm||0)>0).length;
-      const feedCount=(feed)=>{ let n=0; Object.keys(FEEDS).forEach(c=>{ if(FEEDS[c]===feed) n+=drawnCount(c); }); return n; };
+      /* ══ ⚠⚠ (#R344) 「この国はいくつ描いているか」を、国ごとに全件走査で数えていた ═════════════
+         `drawnCount` filtered the whole collection and `feedCount` called it once per country of a
+         service — 258 walks of three thousand features per service, and the panel lists fourteen of
+         them. MEASURED: 0.28 s of main thread in 70 s, with the panel CLOSED (the diagnostics ask
+         for it too). It is one pass over the same collection the version already stamps. */
+      let _cntOf=-1, _cnt=null;
+      function drawnCounts(){ if(_cntOf===featsVer&&_cnt) return _cnt;
+        const o=Object.create(null);
+        for(let i=0;i<feats.length;i++){ const q=feats[i]&&feats[i].properties;
+          if(q&&q.iso&&(+q.norm||0)>0) o[q.iso]=(o[q.iso]||0)+1; }
+        _cntOf=featsVer; return (_cnt=o); }
+      const drawnCount=(iso)=>drawnCounts()[iso]||0;
+      const feedCount=(feed)=>{ const c=drawnCounts(); let n=0; Object.keys(FEEDS).forEach(k=>{ if(FEEDS[k]===feed) n+=(c[k]||0); }); return n; };
 
       /* ══ ⚠⚠⚠ (#R273) THE PANEL ANSWERS THE FOUR QUESTIONS, IN THAT ORDER ═══════════════════════
          「世界警報レイヤーなのに、一覧が『取得先一覧』になっている。ユーザーが知りたいのは『どこで何が
@@ -5259,7 +5433,7 @@ window.IntMapModules.worldPacks=function(HOST){
         const fresh=(featsSig==='');
         refreshQuietLayer();
         if(fresh){ const shown=quietFeatures().concat(feats);
-          featsSig=featSig(shown); GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:shown}); }
+          uploadShown(shown,featSig(shown)); }
         applyAlertVis();
         paintCountries(fresh); }); });
       mapClick((e)=>{ if(!on) return false;
@@ -5366,7 +5540,13 @@ window.IntMapModules.worldPacks=function(HOST){
         quietClipper:(function(){ try{ return PC?'on':(_pcOut?'failed':'pending'); }catch(_){ return '?'; } })(),
         quietUnitISOs:(function(){ try{ return quietList.slice(); }catch(_){ return []; } })(),
         /* (#R308) 斜線を引き算した国と、引き算のあと残った斜線の地物の数 */
-        hatchCut:(function(){ try{ return { isos:hatchCutISO.slice(), left:hatchCutN, ms:hatchCutMs, more:hatchCutLeftOver, why:Object.assign({},hatchCutWhy) }; }catch(_){ return {isos:[],left:0,ms:0,more:false,why:{}}; } })(),
+        hatchCut:(function(){ try{ return { isos:hatchCutISO.slice(), left:hatchCutN, ms:hatchCutMs, more:hatchCutLeftOver, drew:hatchCutDrew, why:Object.assign({},hatchCutWhy) }; }catch(_){ return {isos:[],left:0,ms:0,more:false,drew:0,why:{}}; } })(),
+        /* (#R344) how the collection reached the renderer: whole writes vs {add,remove}, and how
+           big the changes were. A layer that only ever writes whole is a layer whose ids collided. */
+        upload:{ whole:pubWhole, diff:pubDiff, add:pubAdd, remove:pubRemove, ids:(pubIds?pubIds.size:0), ver:featsVer },
+        /* (#R344) how much of the geometry work was remembered rather than redone: the per-country
+           quiet memo, and the polygon-difference table behind it. */
+        memo:{ isoHit:_qIsoHit, isoMiss:_qIsoMiss, diffHit:_diffHit, diffMiss:_diffMiss, diffSize:_diff.size, diffEvict:_diffEvict },
         countryGrey:(function(){ let n=0; try{ (HOST.countryGeo&&HOST.countryGeo.features||[]).forEach(f=>{
             if(washTier(String(f.id||''))===1) n++; }); }catch(_){} return n; })() });
       STATE.alertsLegend=(iso3)=>legendFor(String(iso3||'').toUpperCase());
