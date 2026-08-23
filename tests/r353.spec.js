@@ -26,10 +26,13 @@ import { test, expect } from './helpers/app.js';
    an eruption that is still running. A volcano with every field populated is the one to open. */
 const AIRA = 282080;
 
-test('R353 ① a volcano opens an intelligence card built from the bundled record', async ({ app }) => {
-  const page = app.page;
+/* ⚠ BOTH TESTS DO THIS, AND THE SECOND ONE MUST NOT ASSUME THE FIRST ONE RAN. The `app` fixture is
+   worker-scoped, so locally the two share a page and the layer switched on by ① is still on when ②
+   starts — but CI SHARDS the suite, and a shard that gets only ② was waiting 60 s for a layer nobody
+   had asked for and then failing with «Target page has been closed». Measured on the first CI run of
+   this file. It is idempotent, so calling it twice in one page costs one `if`. */
+async function volcanoLayerOn(page) {
   await page.waitForFunction(() => document.querySelectorAll('.lyr-row').length > 100, null, { timeout: 60000 });
-
   /* ⚠ THE ROW TOGGLES ON pointerdown, NOT ON THE CHECKBOX'S click (#R37) — see tests/r341.spec.js. */
   await page.evaluate(() => {
     const cb = document.getElementById('beta-dl-volc2');
@@ -39,12 +42,16 @@ test('R353 ① a volcano opens an intelligence card built from the bundled recor
         row.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 1 })));
     }
   });
-
-  /* the layer's own file has to arrive before the card can be about anything */
+  /* the layer's own file has to arrive before anything here can be about a volcano */
   await page.waitForFunction(
     () => { try { return (window.__imVolcLayer && window.__imVolcLayer.count()) > 1000; } catch (_) { return false; } },
     null, { timeout: 60000 },
   );
+}
+
+test('R353 ① a volcano opens an intelligence card built from the bundled record', async ({ app }) => {
+  const page = app.page;
+  await volcanoLayerOn(page);
 
   /* the join key is the whole point of the rebuild — assert it is in the SHIPPED file, not just in
      the build script's intention */
@@ -116,10 +123,7 @@ test('R353 ① a volcano opens an intelligence card built from the bundled recor
 
 test('R353 ② four colour modes, and "nothing published" is its own colour', async ({ app }) => {
   const page = app.page;
-  await page.waitForFunction(
-    () => { try { return (window.__imVolcLayer && window.__imVolcLayer.count()) > 1000; } catch (_) { return false; } },
-    null, { timeout: 60000 },
-  );
+  await volcanoLayerOn(page);
 
   const modes = await page.evaluate(() => window.__imVolcLayer.modes());
   expect(modes).toEqual(['recency', 'vei', 'status', 'people']);

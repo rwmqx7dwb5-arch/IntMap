@@ -14,9 +14,27 @@
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
 
+/* ⚠ the same shard-safety note as tests/r353.spec.js: a shard that gets only one of these tests must
+   not be relying on another one having switched the layer on. Idempotent. */
+async function volcanoLayerOn(page) {
+  await page.waitForFunction(() => document.querySelectorAll('.lyr-row').length > 100, null, { timeout: 60000 });
+  await page.evaluate(() => {
+    const cb = document.getElementById('beta-dl-volc2');
+    if (cb && !cb.checked) {
+      const row = cb.closest('label') || cb.closest('.lyr-row') || cb.parentElement;
+      ['pointerdown', 'pointerup'].forEach((t) =>
+        row.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 1 })));
+    }
+  });
+  await page.waitForFunction(
+    () => { try { return (window.__imVolcLayer && window.__imVolcLayer.count()) > 1000; } catch (_) { return false; } },
+    null, { timeout: 60000 },
+  );
+}
+
 test('R353-live ① every rung of the status ladder is reachable, and each says which it is', async ({ app }) => {
   const page = app.page;
-  await page.waitForFunction(() => document.querySelectorAll('.lyr-row').length > 100, null, { timeout: 60000 });
+  await volcanoLayerOn(page);
 
   const feeds = await page.evaluate(async () => {
     const ok = await window.IntMapLazy.need('volcanoIntel');
@@ -51,10 +69,9 @@ test('R353-live ① every rung of the status ladder is reachable, and each says 
     for (const v of idx.keys()) (have.has(v) ? placed++ : unplaced++);
     return { placed, unplaced, total: idx.size };
   });
-  if (joined) {
-    expect(joined.total).toBeGreaterThan(0);
-    expect(joined.unplaced).toBe(0);
-  }
+  expect(joined, 'the layer file never arrived').not.toBeNull();
+  expect(joined.total).toBeGreaterThan(0);
+  expect(joined.unplaced, 'a feed named a volcano the bundled catalog does not have').toBe(0);
 
   /* …and every status the ladder produced names the agency that produced it */
   const sample = await page.evaluate(() => {
@@ -71,7 +88,7 @@ test('R353-live ① every rung of the status ladder is reachable, and each says 
 
 test('R353-live ② the ash layer draws the SIGMETs that are in force, and says so when there are none', async ({ app }) => {
   const page = app.page;
-  await page.waitForFunction(() => document.querySelectorAll('.lyr-row').length > 100, null, { timeout: 60000 });
+  await volcanoLayerOn(page);
 
   const ash = await page.evaluate(async () => {
     const ok = await window.IntMapLazy.need('volcanoLayers');
@@ -121,7 +138,7 @@ test('R353-live ② the ash layer draws the SIGMETs that are in force, and says 
 
 test('R353-live ③ the USGS hazard zones are the seven centres the survey publishes, and they draw', async ({ app }) => {
   const page = app.page;
-  await page.waitForFunction(() => document.querySelectorAll('.lyr-row').length > 100, null, { timeout: 60000 });
+  await volcanoLayerOn(page);
 
   const haz = await page.evaluate(async () => {
     const ok = await window.IntMapLazy.need('volcanoLayers');
