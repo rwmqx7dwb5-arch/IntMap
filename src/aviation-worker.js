@@ -64,7 +64,7 @@ const S = {
   free: [],
   index: new Map(),             // icao (number) → slot
   ident: new Map(),             // icao → {callsign,type,registration,operator}
-  seq: 0, serverTimeMs: 0, provider: '', attribution: '', coverage: '', ageMs: 0,
+  seq: 0, serverTimeMs: 0, provider: '', attribution: '', coverage: '', ageMs: 0, oldestMs: 0,
 };
 
 function grow(need) {
@@ -467,7 +467,11 @@ async function poll(channel, query) {
        provider changes what the UI credits without a code change. */
     S.attribution = r.headers.get('x-intmap-attribution') || S.attribution;
     S.coverage = r.headers.get('x-intmap-coverage') || S.coverage;
+    /* (#R352) TWO AGES, KEPT APART. `ageMs` is how old the ANSWER is; `oldestMs` is how old
+       the oldest observation in it is. They used to be one field carrying whichever the
+       channel felt like, which made both unreadable (§22.2). */
     S.ageMs = Number(r.headers.get('x-intmap-age-ms')) || 0;
+    S.oldestMs = Number(r.headers.get('x-intmap-oldest-ms')) || 0;
     const t0 = performance.now();
     const msg = CODEC.decode(buf);
     const decodeMs = performance.now() - t0;
@@ -493,7 +497,8 @@ function publish(id, nowMs, extra) {
     id, type: 'frame',
     n: p.n,
     total: S.index.size,
-    seq: S.seq, provider: S.provider, attribution: S.attribution, coverage: S.coverage, serverAgeMs: S.ageMs,
+    seq: S.seq, provider: S.provider, attribution: S.attribution, coverage: S.coverage,
+    serverAgeMs: S.ageMs, oldestObservationMs: S.oldestMs,
     packMs,
     buffers: { pos: p.pos, vel: p.vel, alt: p.alt, altv: p.altv, ms: p.ms, col: p.col, form: p.form },
     ids: p.ids,
@@ -577,7 +582,8 @@ self.onmessage = async (ev) => {
             noAltitude: noAlt, identities: S.ident.size,
             capacity: S.cap, slotsUsed: S.n, freeSlots: S.free.length,
             tracked: TRACK.slot.size, trackCapacity: TRACK.cap, trackPoints: TRACK.per,
-            seq: S.seq, provider: S.provider, attribution: S.attribution, coverage: S.coverage, serverAgeMs: S.ageMs,
+            seq: S.seq, provider: S.provider, attribution: S.attribution, coverage: S.coverage,
+            serverAgeMs: S.ageMs, oldestObservationMs: S.oldestMs,
             /* Every typed array in the slab, so §23.4's memory budget is measurable rather than
                estimated. 4 bytes per f32/u32 slot, 8 per f64, 1 per u8. */
             cpuBytes: S.cap * (4 * 10 + 8 + 1 * 3) + (TRACK.t ? TRACK.cap * TRACK.per * (8 + 4 * 3) + TRACK.cap * (4 + 2 + 2 + 8) : 0),

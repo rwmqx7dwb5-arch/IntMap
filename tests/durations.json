@@ -46,7 +46,7 @@
   "tests/r184-imagery.spec.js": 76,
   "tests/r184-routing.spec.js": 40,
   "tests/r184-satellites.spec.js": 166,
-  "tests/r185.spec.js": 274,
+  "tests/r185.spec.js": 216,
   "tests/r186.spec.js": 315,
   "tests/r191.spec.js": 47,
   "tests/r192.spec.js": 66,
@@ -74,5 +74,6 @@
   "tests/smoke.spec.js": 8,
   "tests/r341.spec.js": 4,
   "tests/r341-live.spec.js": 6,
-  "tests/r347-navigation.spec.js": 5
+  "tests/r347-navigation.spec.js": 5,
+  "tests/r352.spec.js": 4
 }

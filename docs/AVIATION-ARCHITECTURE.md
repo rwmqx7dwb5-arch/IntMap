@@ -94,6 +94,29 @@ provider ◄── aviation-feed ──► Supabase Storage: aviation/world.bin 
 | `view&bbox=w,s,e,n` | ブラウザ | 視野内。空域が古ければタイルを読んでから返す |
 | `meta=1` | UI と監視 | provider・被覆率・上流カウンタ・鍵の有無 |
 
+### 4.1b 応答ヘッダ —— **齢は2つあり、2つとも別のヘッダで返す**
+
+| ヘッダ | 意味 |
+|---|---|
+| `x-intmap-provider` / `x-intmap-attribution` | どの provider が答えたか・その表記義務の文面 |
+| `x-intmap-count` | この応答に入っている機数 |
+| **`x-intmap-age-ms`** | **この「答え」自体の齢**（world＝スナップショットを組み立ててから／view＝箱を作ってから） |
+| **`x-intmap-oldest-ms`** | **この答えに入っている「最も古い観測」の齢** |
+| `x-intmap-seq` / `x-intmap-channel` / `x-intmap-coverage` / `x-intmap-save` | 版・チャンネル・被覆率・スナップショット書き込みの結果 |
+
+⚠ **この2つは以前1つのヘッダだった。** `x-intmap-age-ms` は world では「スナップショットの齢」、
+view では「箱の中で最も古い機体の齢」を運んでいた。本番実測で **world 12.7〜13.5 s ／ view 531〜564 s**
+——同じフィールドに交互に入るので、**どちらの意味でも読めなかった**。
+指示書 §22.2 は「取得元の観測時刻・IntMap が受け取った時刻・クライアントが描画した時刻」を
+区別できることを要求している。**1つのヘッダに2つの事実を入れると、その区別が消える。**
+
+⚠ **チャンネルを足すときは両方を書くこと。** `tests/r352-checks ⑤` が `binResponse()` の呼び出しを
+すべて数え上げ、`ageMs` と `oldestMs` の**両方を名乗らない呼び出しがあれば落ちる**。
+⚠ **新しいヘッダは `Access-Control-Expose-Headers` にも足すこと**——無いとブラウザは
+エラーも警告も出さずに `null` を読む（#R341 で ODbL の表記が一度も出なかった原因）。
+
+---
+
 ### 4.2 スナップショットが isolate の外にある理由（実測）
 
 最初の実装は isolate のメモリをキャッシュにしていた。**同じ viewport を3回続けて呼んだ実測**:
