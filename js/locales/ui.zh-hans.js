@@ -5339,5 +5339,7 @@ window.IntMapLang.define('zh-hans', {
   'You asked me to do something, and I only wrote about it.': '你要求的是操作，但我只用文字说明。',   /* atlas-results.js (#R318) atlas.goal.action_missing */
   'Not every target was reached: {names}': '并非所有目标都达成：{names}',   /* atlas-results.js (#R318) atlas.goal.targets_missing */
   'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': '这次请求尝试的次数过多 — 你每日的可用次数并未再被扣除。请换个说法再试一次。',   /* ai-core.js (#R318) aiTurnCallsMsg */
+  'place': '地点',   /* atlas-console.js (#R330) research.events footnote */
+  'headline similarity': '标题相似度',   /* atlas-console.js (#R330) research.events footnote */
   }
 });
