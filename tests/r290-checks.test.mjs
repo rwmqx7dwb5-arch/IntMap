@@ -294,7 +294,7 @@ test('R290 ⑩ every weather layer has its own clock, and its steps are the mode
   assert.match(w, /const i=E\.index\(\), playing=!!E\.isPlaying\(\), times=E\.times\(\), now=E\.nowIndex\(\);/,
     'every option is one of the model’s published valid times');
   assert.match(w, /window\.IntMapWxPlayer\.timeUI\('wind-time',E,L\)/, 'the wind legend uses it');
-  assert.match(w, /window\.IntMapWxPlayer\.timeUI\('ec-time-'\+cfg\.id,EC\(\),L\)/, 'and so does each ECMWF legend');
+  assert.match(w, /window\.IntMapWxPlayer\.timeUI\('ec-time-'\+cfg\.id,EC\(cfg\),L\)/, 'and so does each ECMWF legend');
   /* and the axis is no longer wired to the app-wide clock, in either direction */
   assert.ok(!/C\.set\(new Date\(tms\(vt\)\)/.test(e), 'a step does not write window.IntMapTime');
   assert.ok(!/C\.on\(_followClock\)/.test(e), 'and window.IntMapTime does not write the axis');
@@ -363,7 +363,7 @@ test('R290 ⑬ the ECMWF legend carries the opacity and the readout can reach a 
   assert.match(e, /var c = \(south \+ north\) \/ 2, half = Math\.min\(30,/, '…which is never the planet');
   assert.match(e, /bandNear: bandNear,/, '…and it is exported');
   assert.match(r, /band=EC\.bandNear\(b\.getSouth\(\),b\.getNorth\(\)\)/, 'the readout asks with it…');
-  assert.match(w, /band=EC\(\)\.bandNear\(b\.getSouth\(\),b\.getNorth\(\)\)/, '…and so does the warm-up');
+  assert.match(w, /band=EC\(cfg\)\.bandNear\(b\.getSouth\(\),b\.getNorth\(\)\)/, '…and so does the warm-up');
   assert.ok(!/band=EC\(\)\.bandFor\(b\.getSouth\(\),b\.getNorth\(\)\);\s*$/m.test(w) || true, '');
   assert.match(e, /function keepFrame\(f(, quiet)?\) \{/);
   assert.match(e, /var fr = key \? frameFor\(key\) : null;/, 'the sampler looks the variable up');

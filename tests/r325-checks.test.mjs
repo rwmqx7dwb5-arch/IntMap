@@ -195,8 +195,15 @@ test('R325 ⑤ tile_size and tileSize are one number', () => {
   const srcs = w.match(/addSource\([^;]*type:'raster'[^;]*\)/g) || [];
   assert.ok(srcs.length >= 2, 'both om raster sources are still built here');
   for (const s of srcs) {
-    assert.match(s, /tileSize:\s*EC\(\)\.TILE_PX/,
+    /* ⚠ (#R356) `EC` TAKES AN ARGUMENT NOW, AND THE CLAIM IS UNCHANGED. This pinned `EC()` because
+       there was one model and therefore one accessor; each weather layer picks its own model since
+       #R356, so the raster sources call `EC(cfg)` — the SAME accessor, resolved to the instance
+       THIS layer is reading. What #R325 requires is that the size is READ from the module's one
+       declaration rather than written down again beside the url, and that is what is asserted:
+       any `EC(…)`, and never a numeric literal. */
+    assert.match(s, /tileSize:\s*EC\([^)]*\)\.TILE_PX/,
       'every om raster source asks for the same size the url does — half of it would draw the map at the wrong resolution');
+    assert.ok(!/tileSize:\s*\d/.test(s), '…and none of them writes the number down');
     assert.match(s, /omRasterUrl\(|url:url/, 'and it is a url that carries tile_size');
   }
   assert.match(w, /omRasterUrl\(/, 'the raster url helper is the one the raster sources use');

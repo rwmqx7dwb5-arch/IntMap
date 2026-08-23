@@ -333,7 +333,7 @@ test('#R288 ⑨ the forecast axis is the app clock, and the separate box is gone
      country statistics to that hour, and a master-clock move used to overwrite the hour the reader
      had chosen. Neither direction exists; the hour is chosen in the layer's own legend. */
   assert.ok(!/function openClock\(\)/.test(w), 'nothing opens Chronos on a layer’s behalf');
-  assert.match(w, /window\.IntMapWxPlayer\.timeUI\('ec-time-'\+cfg\.id,EC\(\),L\)/,
+  assert.match(w, /window\.IntMapWxPlayer\.timeUI\('ec-time-'\+cfg\.id,EC\(cfg\),L\)/,
     '…and the hour is chosen in that legend');
   /* the wind legend keeps its player — this is a consolidation, not a removal */
   assert.match(w, /window\.IntMapWxPlayer\.timeUI\('wind-time',E,L\)/, 'the wind legend’s own view of the clock survives');
@@ -424,7 +424,7 @@ test('#R288 ⑫ the om protocol flag only goes up when the registration happened
   assert.match(body, /protoReg = ok;/);
   assert.ok(!/protoReg = true;\s*return true;/.test(body), 'the flag must not latch outside the try');
   const w = WX();
-  assert.match(w, /if\(!EC\(\)\.registerProtocol\(\)\) return false;\s*const url=omUrl\(cfg/,
+  assert.match(w, /if\(!EC\(cfg\)\.registerProtocol\(\)\) return false;\s*const url=omUrl\(cfg/,
     'a raster layer refuses to be built before the protocol exists');
   /* ⚠ (#R325) the raster sources ask for `omRasterUrl` (= `omUrl` plus `tile_size`); the vector
      ones still ask for `omUrl`. What ⑫ pins is the ORDER — no `om://` url is spelled before

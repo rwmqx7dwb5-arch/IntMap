@@ -188,7 +188,7 @@ import '../js/tile-warm.js';
    from the same event the seismic panel is already describing. After seismic.js because that is
    what hands it an event; it registers itself and computes nothing until asked. */
 import '../js/insolation.js';               /* (#R176) terrain shadow + the annual sunlight budget */
-/* (#R276) the ECMWF IFS model (forecast axis, .om URLs, decoded field, colour scales) and the WebGL particle renderer that draws the wind from it — both publish a window global synchronously and js/weather.js reads both, so they precede it. */
+/* (#R276) the forecast model (axis, .om URLs, decoded field, colour scales) and the WebGL particle renderer that draws the wind from it — both publish a window global synchronously and js/weather.js reads both, so they precede it. (#R356) js/wx-models.js is the registry of WHICH models exist (pure data and pure functions; no network, no SDK) and js/wx-ecmwf.js is now the multi-model engine that builds its instances from it — window.IntMapECMWF is the default instance and window.IntMapWxEngine builds the rest on demand, so the registry precedes the engine. */
 import '../js/wx-ecmwf.js';
 import '../js/wx-wind.js';   /* (#R293) js/wx-reanalysis.js went with the MERRA-2 source it existed for — 「気温レイヤーで、MERRA-2 再解析は削除。」 */
 import '../js/weather.js';

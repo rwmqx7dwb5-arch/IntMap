@@ -382,6 +382,7 @@ legal-page.js                     同じ本文を privacy.html / terms.html と�
 premium-plan.js                   プレミアムの節——ただしその全機能が無料である
 monitors.js                       Area Monitors IntMapMonitors
 weather.js                        気象 IntMapModules.{wind,weatherEC,weatherPanel}
+wx-models.js                      予報モデルのレジストリ window.IntMapWxModels——提供モデル・出典・ライセンス。格子／変数／気圧面／予報期間は live metadata から導出（書き写さない）
 wx-source.js                      ガードされた唯一の気象／UV ソース window.IntMapWx
 wx-ecmwf.js                       ECMWF IFS モデル本体 window.IntMapECMWF——予報時刻軸・.om URL・復号済みの場・配色表
 wx-wind.js                        風の粒子レンダラ window.IntMapWindGL——WebGL 1描画呼び出し／実経過時間基準

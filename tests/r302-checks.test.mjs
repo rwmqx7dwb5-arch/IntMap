@@ -160,13 +160,18 @@ test('R302 ⑥ the spawn window is taken once a frame, not once a particle', () 
 test('R302 ⑦ the forecast prefetch warms the view, and only the layers that are up', () => {
   const s = WX();
   /* ⚠ (#R337) THE CONDITION WIDENED BECAUSE THE PICTURE DID, AND NOT ONE PIXEL FURTHER. #R302's
-     rule is 「u and v are warmed only when they are on the map」, and since this round they can be on
+     rule is 「u and v are warmed only when they are on the map」, and since #R337 they can be on
      the map without the wind LAYER — the temperature legend can ask for the streaks alone. So this
-     still says 「only when they are being drawn」; what changed is what drawing them means. */
-  assert.match(s, /if\(W&&\(\(W\.on&&W\.on\(\)\)\|\|\(W\.solo&&W\.solo\(\)\)\)\) vars\.push\('wind_u_component_10m','wind_v_component_10m'\);/,
+     still says 「only when they are being drawn」; what changed is what drawing them means.
+     ⚠⚠ (#R356) …AND THE LIST IT GUARDS IS PER MODEL. Both halves met in one block on the rebase and
+     keeping either alone would have been a silent regression: #R337's condition is orthogonal to
+     #R356's buckets, so both are asserted, on their own lines, against the same statement. */
+  assert.match(s, /if\(W&&\(\(W\.on&&W\.on\(\)\)\|\|\(W\.solo&&W\.solo\(\)\)\)\)\{[\s\S]{0,220}?\.push\('wind_u_component_10m','wind_v_component_10m'\);/,
     "the wind's two components belong to the warm only while they are actually being drawn");
-  assert.match(s, /pb=EC\(\)\.bandFor\(b\.getSouth\(\),b\.getNorth\(\)\)/, 'the view becomes a band');
-  assert.match(s, /EC\(\)\.prefetch\(vars,Math\.min\(n-1,i\+1\),pb\)/, '…and the band is passed');
+  assert.match(s, /\(byModel\[wm\]=byModel\[wm\]\|\|\[\]\)\.push\('wind_u_component_10m'/,
+    '…and they go to the model the WIND is reading, not to whichever layer was last in the list');
+  assert.match(s, /pb=inst\.bandFor\(pbS,pbN\)/, 'the view becomes a band');
+  assert.match(s, /inst\.prefetch\(byModel\[m\],Math\.min\(n-1,i\+1\),pb\)/, '…and the band is passed');
 });
 
 /* ── ⑧ the same text is not rebuilt from Intl on every render ────────────────────────────────
