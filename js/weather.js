@@ -163,6 +163,30 @@ window.IntMapModules.wind=function(HOST){
     const SLOT=[{src:'wind-field-a-src',lyr:'wind-field-a'},{src:'wind-field-b-src',lyr:'wind-field-b'}];
     let slot=0, shownSlot=-1, fieldSeq=0, liveKey='', liveSlot=-1;
     let on=false, raf=0, moving=false, opacity=1, renderer=null, loading=false, lastErr='';
+    /* ══ ⚠⚠⚠ (#R337) THE STREAKS CAN BE ASKED FOR BY A LAYER THAT IS NOT THIS ONE ══════════════
+       「気温レイヤーでも、風レイヤーのパーティクルをオンオフできるトグルを付けて。」
+       #R313 split the streaks from the colour raster, but both halves still hung off `on` — the
+       WIND LAYER's own switch — so the only way to see moving air over the temperature field was to
+       switch the wind layer on as well and take its colour raster with it. There is no version of
+       that which answers the request: a second switch that does nothing unless the first one is on
+       is a switch that does nothing.
+       → `soloOn` is 「something OTHER than this layer wants the streaks」 (today: the Temperature
+       legend's own box — js/weather.js's weatherEC module, which owns that preference and pushes
+       the EFFECTIVE value here). This module only has to know that someone is asking.
+       ⚠ `live()` IS 「THE FIELD IS WANTED」, AND IT IS NOT 「THE COLOUR RASTER IS WANTED」. Every use
+       of `on` below now says exactly one of the two: the u/v field, the widening ladder, the frame
+       loop and the canvas follow `live()`; `addField` / `ensureField` / the reveal — the two raster
+       SLOTS on the map — stay on `on`, because the reader asking for streaks over the temperature
+       did not ask for the wind's colours on top of it.
+       ⚠ AND THE TWO SWITCHES ARE INDEPENDENT QUESTIONS WITH DIFFERENT DEFAULTS. 「when I look at
+       the Wind layer, do I want streaks?」 is `partsOn`, default ON since #R313. 「do I want the wind
+       drawn over the Temperature layer?」 is the other legend's box, default OFF — because turning
+       it on costs a forecast read nobody with only a temperature raster up has been paying for. */
+    let soloOn=false;
+    const live=()=>on||soloOn;
+    /* the ONE predicate that says whether streaks are on screen: this layer's own switch while this
+       layer is up, or another layer asking for them while it is not. */
+    function streaksWanted(){ return (on&&partsOn)||soloOn; }
     /* ══ ⚠⚠⚠ (#R313) THE PARTICLES ARE A SECOND SWITCH, INDEPENDENT OF THE LAYER ══════════════
        「風レイヤーの凡例に、パーティクルをオンオフできるトグルを付けて。」
        This layer draws TWO things from one field — a colour raster and the animated streaks — and
@@ -210,7 +234,7 @@ window.IntMapModules.wind=function(HOST){
     const TRAVEL_MS=6000, AHEAD_MAX=2;
     let _runN=0, _runAt=0;
     function aheadMore(nx){
-      if(!on||_runN<AHEAD_MAX) return;
+      if(!live()||_runN<AHEAD_MAX) return;
       try{
         /* the reader is waiting for something right now — #R305 wrote this door and nobody had
            opened it (`foregroundBusy` had no caller until this line) */
@@ -331,7 +355,7 @@ window.IntMapModules.wind=function(HOST){
       try{ if(GE().layers.hasSource(s.src)) GE().layers.removeSource(s.src); }catch(_){} }); liveKey=''; liveSlot=-1;
       /* (#R298) nothing is on screen any more, and any reveal still in flight is superseded */
       shownSlot=-1; fieldSeq++; fieldPending=false; shownWaiters=[]; }
-    function setOpacity(v){ opacity=Math.max(0,Math.min(1,+v)); if(!on) return;
+    function setOpacity(v){ opacity=Math.max(0,Math.min(1,+v)); if(!live()) return;
       SLOT.forEach(s=>{ try{ if(GE().layers.has(s.lyr)&&GE().layers.getPaint(s.lyr,'raster-opacity')>0) GE().layers.setPaint(s.lyr,'raster-opacity',opacity); }catch(_){} });
       try{ cv.style.opacity=String(Math.max(0.25,opacity)); }catch(_){}
     }
@@ -460,7 +484,7 @@ window.IntMapModules.wind=function(HOST){
       return b[1]<a[1]-1e-6||b[3]>a[3]+1e-6;
     }
     function runWiden(gen){
-      if(!on||gen!==wideGen) return;
+      if(!live()||gen!==wideGen) return;
       const full=band();
       let have=false; try{ have=EC().heldBand(VAR); }catch(_){ return; }
       try{ if(EC().bandCovers(have,full)) return; }catch(_){ return; }
@@ -476,19 +500,19 @@ window.IntMapModules.wind=function(HOST){
          claim the reader in the meantime); it just does not take the one reader away from the
          tiles the reader is waiting to see. */
       afterFieldShown(()=>{
-        if(!on||gen!==wideGen){ widening=false; if(on) widen(); return; }
+        if(!live()||gen!==wideGen){ widening=false; if(live()) widen(); return; }
         /* (#R305) a rung is this module's own read, not the reader's — it goes in the low-priority
            lane so a time step or a pan started while it is still QUEUED is served first */
         EC().load(VAR,null,want,true).then(f=>{ widening=false;
-          if(on&&f&&renderer){ const sf=EC().sampler(VAR); if(sf){ _lastField=sf; _lastFieldAt=EC().validTime(); renderer.setField(sf); } }
+          if(live()&&f&&renderer){ const sf=EC().sampler(VAR); if(sf){ _lastField=sf; _lastFieldAt=EC().validTime(); renderer.setField(sf); } }
           /* (#R299) …and the next rung, which `widen` holds back until the map is still again */
           let now=false; try{ now=EC().heldBand(VAR); }catch(_){}
-          if(on&&wider(have,now)) widen();
+          if(live()&&wider(have,now)) widen();
         }).catch(()=>{ widening=false; });
       });
     }
     function widen(){
-      if(widening||!on) return;
+      if(widening||!live()) return;
       const want=band();
       try{ if(EC().bandCovers(EC().heldBand(VAR),want)) return; }catch(_){ return; }
       clearTimeout(widenT); widenT=0;
@@ -514,7 +538,9 @@ window.IntMapModules.wind=function(HOST){
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
       return EC().ready().then(()=>{
         const key=want();
-        if(key&&key!==liveKey) ensureField(key);
+        /* (#R337) the COLOUR RASTER, and only while this layer is the one that is on. A reader who
+           asked for streaks over the temperature field did not ask for the wind's colours over it. */
+        if(on&&key&&key!==liveKey) ensureField(key);
         /* the narrow band unless a frame that already covers the view is in hand */
         let b=band();
         try{ if(!EC().bandCovers(EC().heldBand(VAR),b)) b=nearBand()||b; }catch(_){}
@@ -523,10 +549,10 @@ window.IntMapModules.wind=function(HOST){
         loading=false;
         if(!f){ lastErr='load';
           /* (#R298) …and one rung of the ladder above is not a failure to report */
-          const again=on&&failN<FAIL_MS.length;
+          const again=live()&&failN<FAIL_MS.length;
           if(again){ loading=true;                 /* still trying, and the legend has to say so */
             const ms=FAIL_MS[failN++];
-            clearTimeout(retryT); retryT=setTimeout(()=>{ retryT=0; if(on) load(opt); },ms); }
+            clearTimeout(retryT); retryT=setTimeout(()=>{ retryT=0; if(live()) load(opt); },ms); }
           /* ⚠ THE LEGEND HAS TO BE REDRAWN ON THE FAILURE PATH TOO, or a layer that could not load
              keeps printing 「読み込み中…」 for ever — which is the silent shape this project keeps
              paying for. The toast is the notification; the legend is the standing answer. */
@@ -616,7 +642,7 @@ window.IntMapModules.wind=function(HOST){
            reader asks for; what changes is only that it stops waiting for a picture it does not
            depend on. ⚠ `widen` below stays behind the colour — a rung is a read of the SAME file
            the tiles are reading, so #R298's argument is still true of it. */
-        if(opt&&opt.step){ try{ if(on){ const n=EC().count(), nx=Math.max(0,Math.min(n-1,EC().index()+_stepDir));
+        if(opt&&opt.step){ try{ if(live()){ const n=EC().count(), nx=Math.max(0,Math.min(n-1,EC().index()+_stepDir));
           if(nx!==EC().index()) EC().readAhead(VAR,nx,nearBand()||band()).then(()=>afterFieldShown(()=>aheadMore(nx))); } }catch(_){} }
         /* (#R297) …and the rest of what is on screen, behind the picture that is already moving */
         setTimeout(widen,0);
@@ -686,7 +712,7 @@ window.IntMapModules.wind=function(HOST){
       renderer.resize(cont.clientWidth,cont.clientHeight,Math.min(2,window.devicePixelRatio||1)); }
 
     function step(ts){
-      if(!on) return;
+      if(!live()) return;
       refreshView();
       _spawnCtx=null;                            /* (#R302) the view and the band are asked once a frame */
       try{ renderer&&renderer.tick(ts||performance.now(),moving); }catch(_){}
@@ -703,10 +729,10 @@ window.IntMapModules.wind=function(HOST){
       _applyParts();   /* (#R313) the canvas and the frame loop follow the particle switch */
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
     }
-    /* the ONE place that decides whether streaks are being drawn. Both switches have to be on:
-       the layer's, and the reader's particle switch. Called from start(), and from setParts(). */
+    /* the ONE place that decides whether streaks are being drawn — `streaksWanted()` above is the
+       whole condition. Called from start(), stop(), setParts() and setSolo(). */
     function _applyParts(){
-      if(on&&partsOn){ ensureRenderer(); cv.style.display='block'; setOpacity(opacity);
+      if(streaksWanted()){ ensureRenderer(); cv.style.display='block'; setOpacity(opacity);
         cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
       else { cancelAnimationFrame(raf); raf=0;
         /* the trails are pixels already on the canvas — hiding it is not enough, they would be
@@ -724,17 +750,41 @@ window.IntMapModules.wind=function(HOST){
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
     }
     function stop(){
-      on=false; cancelAnimationFrame(raf); raf=0;
+      on=false;
+      removeField();                       /* the colour raster goes, always */
+      /* ⚠ (#R337) THE STREAKS MAY STILL BE WANTED BY ANOTHER LAYER. `_applyParts` is the one place
+         that decides whether they are drawn, and the teardown below only runs when NOTHING wants
+         the field any more — otherwise switching the wind layer off would silently stop an overlay
+         the reader turned on in a different legend. */
+      _applyParts();
+      if(!soloOn) _quiesce();
+      try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
+    }
+    /* everything this module has in flight, given up: the retry ladder, the widening staircase, the
+       trails, the canvas and this module's claim on the shared frame. Reached when the LAST thing
+       that wanted the field lets go of it — the layer switching off with no overlay asking for the
+       streaks, or the overlay letting go while the layer is already off. */
+    function _quiesce(){
+      cancelAnimationFrame(raf); raf=0;
       /* (#R298) a switched-off layer is not still trying, and it is not still widening either — the
          deferred wide read is dropped with the waiters below, so its flag has to come down with it
          or the next `start()` would find `widening` true for ever and never read the full band */
       clearTimeout(retryT); retryT=0; failN=0; loading=false; widening=false;
       /* (#R299) …and no rung of the widening staircase is still scheduled or still owed */
       clearTimeout(widenT); widenT=0; wideGen++;
-      removeField();
       if(renderer){ renderer.clearTrails(); }
       cv.style.display='none';
       try{ EC()&&EC().release(VAR); }catch(_){}   /* only OUR frame — see IntMapECMWF.release */
+    }
+    /* ⚠ (#R337) 「something other than this layer wants the streaks」. The caller pushes the
+       EFFECTIVE answer (its own box AND its own layer being on); this module does not read another
+       layer's state, it is told. Idempotent — the same value twice does nothing. */
+    function soloAreOn(){ return soloOn; }
+    function setSolo(v){ v=!!v; if(v===soloOn) return;
+      soloOn=v;
+      _applyParts();
+      if(soloOn){ if(!on){ stir(true); load(); } }   /* nothing was reading the field — start */
+      else if(!on) _quiesce();
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
     }
 
@@ -772,7 +822,7 @@ window.IntMapModules.wind=function(HOST){
         _lastIdx=i; }catch(_){} }
       if(ev.type==='index'){ touchWindTime(); return; }
       try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){}
-      if(!on) return;
+      if(!live()) return;   /* (#R337) the streaks follow the axis even when only they are up */
       if(ev.type==='time'||ev.type==='meta'){ load({step:ev.type==='time'}); } }); }catch(_){}
     /* the forecast axis exists without the tile SDK — fetch it so the legend can name the run and
        the hour the moment the layer is switched on, rather than after a 340 kB script lands */
@@ -804,7 +854,7 @@ window.IntMapModules.wind=function(HOST){
       ['pointerover','focusin'].forEach(n=>{ try{ document.addEventListener(n,_wxWarmSniff,true); }catch(_){} });
     }catch(_){}
 
-    window.addEventListener('resize',()=>{ if(on) resize(); });
+    window.addEventListener('resize',()=>{ if(live()) resize(); });
     if(GE().hasRenderer()){
       /* (#R299) a map that is moving is not 「still」, and the staircase waits for still — see widen */
       GE().events.on('movestart',()=>{ moving=true; stir(false); });
@@ -909,6 +959,9 @@ window.IntMapModules.wind=function(HOST){
        runtime — not this closure — is what knows whether the wind is running. */
     function disposeWind(){
       stop();
+      /* ⚠ (#R337) …unless the streaks are still on screen for another layer. `stop()` has already
+         given the colour raster back; these GL objects are still being drawn with. */
+      if(soloOn) return;
       if(renderer){ try{ renderer.dispose(); }catch(_){} renderer=null; }
       /* the canvas keeps its backing store until something else needs it; 1×1 releases it now */
       try{ cv.width=1; cv.height=1; }catch(_){}
@@ -928,6 +981,10 @@ window.IntMapModules.wind=function(HOST){
       /* (#R313) the streaks alone. `on()` is still the LAYER; these two are the animation inside it,
          and they are the only door — the legend switch, Atlas and the tests all come through here. */
       particles:partsAreOn, setParticles:setParts,
+      /* (#R337) 「気温レイヤーでも、風レイヤーのパーティクルをオンオフできるトグルを付けて。」 the
+         streaks WITHOUT this layer's colour raster, for a legend that is not this layer's. Same
+         shape as the pair above: one reader, one writer, and no second copy of the state. */
+      solo:soloAreOn, setSolo,
       /* (#R298) the colour slot's own signal, published because the ECMWF rasters share ONE reader
          with this layer and their cursor warm-up has to queue behind the same picture — see the
          note on `afterFieldShown` above and `warmReadout` in the weatherEC module */
@@ -1085,6 +1142,33 @@ window.IntMapModules.weatherEC=function(HOST){
     function setOp(cfg,op){ setOpSlot(cfg,cfg._s|0,op); }
     const liveLayer=(cfg)=>{ try{ return GE().layers.has(cfg.id+'-'+(cfg._s|0)); }catch(_){ return false; } };
 
+    /* ══ ⚠⚠⚠ (#R337) THE WIND'S STREAKS, ASKED FOR FROM THE TEMPERATURE LEGEND ════════════════
+       「気温レイヤーでも、風レイヤーのパーティクルをオンオフできるトグルを付けて。」
+       This module owns the PREFERENCE; js/weather.js's wind module owns the streaks. What crosses
+       between them is one effective boolean — 「this box is ticked AND the layer it belongs to is
+       on」 — pushed through `Wind.setSolo`. Neither module reads the other's state, so there is no
+       second copy of either answer to drift.
+       ⚠ DEFAULT OFF. The streaks are drawn from the wind field, which is two more variables (u AND
+       v) that a reader with only a temperature raster up has never downloaded. Nothing about this
+       layer changes for a reader who does not touch the box; an absent key reads as off.
+       ⚠ PUSHED FROM `syncLegend`, NOT FROM THE CHECKBOX HANDLER ALONE. The temperature layer can go
+       off without anyone touching this box — the reader unchecks the row, a session restore turns
+       it off, or `toggle`'s own catch turns it off because ECMWF could not be reached — and every
+       one of those paths already goes through `syncLegend`. */
+    const TPARTS_KEY='intmap_wx_temp_parts';
+    let tempParts=false; try{ tempParts=(localStorage.getItem(TPARTS_KEY)==='1'); }catch(_){}
+    function pushWindSolo(){ try{ const W=window.Wind;
+      if(W&&W.setSolo) W.setSolo(!!(tempParts&&state['ec-temp']&&state['ec-temp'].on)); }catch(_){} }
+    function setTempParts(v){ tempParts=!!v;
+      try{ localStorage.setItem(TPARTS_KEY,tempParts?'1':'0'); }catch(_){}
+      pushWindSolo();
+      /* the legend body is rebuilt whole on every render, so re-rendering is how the box catches up
+         when Atlas — not the box — was the one that answered */
+      try{ if(state['ec-temp']&&state['ec-temp'].on) renderLegend(); }catch(_){} }
+    /* ⚠ (#R337) THE ONE DOOR. The legend box, Atlas's dispatch and Atlas's inline toggle all come
+       through here, so no two of them can hold different ideas of the state — the same shape
+       `window._imNatoStyle` uses in js/data-layers.js: no argument READS, an argument WRITES. */
+    window._imWxTempParts=(v)=>{ if(v==null) return tempParts; setTempParts(v); return tempParts; };
     function toggle(id,on){ const cfg=LAYERS.find(l=>l.id===id); if(!cfg) return;
       state[id].on=on;
       syncLegend();
@@ -1237,7 +1321,9 @@ window.IntMapModules.weatherEC=function(HOST){
          more variables, the most expensive pair in the feed (the reader derives speed from both) —
          on every single time change, for a picture that is not on the map. */
       try{ const W=window.Wind, vars=activeLayers().map(c=>c.variable);
-        if(W&&W.on&&W.on()) vars.push('wind_u_component_10m','wind_v_component_10m');
+        /* (#R337) …or when the streaks are up over THIS layer without the wind layer: they read the
+           same two variables, so a time step needs them warmed for the same reason. */
+        if(W&&((W.on&&W.on())||(W.solo&&W.solo()))) vars.push('wind_u_component_10m','wind_v_component_10m');
         const i=EC().index(), n=EC().count();
         let pb=null; try{ const b=GE().camera.getBounds(); pb=EC().bandFor(b.getSouth(),b.getNorth()); }catch(_){}
         /* ⚠ (#R290 追記2) ONE schedule survives (the call is debounced and replaces the pending one),
@@ -1351,13 +1437,28 @@ window.IntMapModules.weatherEC=function(HOST){
         +'<input type="range" class="ec-oplg" data-for="'+cfg.id+'" min="0" max="1" step="0.05" value="'+v+'">'
         +'<span class="dl-op-val">'+Math.round(v*100)+'%</span></div>';
     }
+    /* ⚠ (#R337) the wind's streaks over THIS layer — the switch belongs in this legend by #R16's
+       rule (docs/MAP-LAYERS.md §7.10: a control that belongs to one layer lives in that layer's
+       legend, never in the Layers panel), and it is a different question from the wind legend's own
+       「パーティクル」 box: that one is 「does the Wind layer animate」, this one is 「draw the wind over
+       what I am looking at」. Same markup as the wind's, so the two read as one kind of control.
+       ⚠ THE BOX NEVER HOLDS THE ANSWER. This body is replaced whole by innerHTML on every render,
+       so `checked` is read from the module on each pass — the same rule the wind legend follows. */
+    function windPartsRow(cfg){
+      if(cfg.id!=='ec-temp') return '';
+      return '<label class="kl-period wind-parts-row" style="margin:7px 0 2px;cursor:pointer;">'
+        +'<input type="checkbox" class="ec-wind-parts"'+(tempParts?' checked':'')+' style="accent-color:var(--primary-color);margin:0;cursor:pointer;">'
+        +'<span style="font-size:11px;color:var(--text-muted);">'
+        +L('Wind particles','風のパーティクル','Wind-Partikel','Частицы ветра','Partículas de viento')
+        +'</span></label>';
+    }
     function renderOne(cfg){
       const el=boxFor(cfg);
       const clock=window.IntMapWxPlayer.timeUI('ec-time-'+cfg.id,EC(),L);
       el.innerHTML=dragHandle()
         +'<button class="layer-popup-x" title="'+t('close')+'">×</button>'
         +'<h4>'+ecLbl(cfg)+'</h4>'
-        +'<div class="ecl-one">'+barBody(cfg)+opRow(cfg)+modelLine(cfg)+clock
+        +'<div class="ecl-one">'+barBody(cfg)+opRow(cfg)+windPartsRow(cfg)+modelLine(cfg)+clock
         +'<div class="ecl-when" data-for="'+cfg.id+'">'+whenLine(cfg)+'</div>'
         +'</div>';
       closeBtn(el);
@@ -1365,6 +1466,9 @@ window.IntMapModules.weatherEC=function(HOST){
       if(op) op.oninput=()=>{ const v=+op.value; state[cfg.id].op=v; setOp(cfg,v);
         const lbl=el.querySelector('.dl-op-val'); if(lbl) lbl.textContent=Math.round(v*100)+'%';
         const row=document.querySelector('.ec-op[data-for="'+cfg.id+'"]'); if(row) row.value=String(v); };
+      /* (#R337) the switch reports; the module decides — the same door the wind legend uses */
+      const wp=el.querySelector('.ec-wind-parts');
+      if(wp) wp.onchange=()=>{ setTempParts(wp.checked); };
       if(clock) window.IntMapWxPlayer.wireTimeUI(el,'ec-time-'+cfg.id,EC());
     }
     function renderLegend(){
@@ -1372,6 +1476,7 @@ window.IntMapModules.weatherEC=function(HOST){
       try{ window._tileLegends&&window._tileLegends(); }catch(_){}
     }
     function syncLegend(){ const show=anyOn();
+      pushWindSolo();   /* (#R337) every path that changes a layer's on-state comes through here */
       LAYERS.forEach(l=>{ const el=boxes[l.id]; if(el&&!(state[l.id]&&state[l.id].on)) el.style.display='none'; });
       if(show){ activeLayers().forEach(l=>{ boxFor(l).style.display='block'; }); renderLegend(); }
       /* the tiler owns where the legends sit; opening or closing one moves every box below it */

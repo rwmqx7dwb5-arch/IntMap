@@ -3476,6 +3476,14 @@ window.IntMapModules.atlasConsole=function(HOST){
            `_FEAT_TOG` so a reply can carry the switch. All three call window.Wind.setParticles — the
            legend box calls it too, so no two of them can hold different ideas of the state. */
         case 'windParticles': case 'windAnimation': { const want=!(a.on===false||/^(off|hide|none|static)$/i.test(String(a.mode||''))); let ok=false;
+          /* ⚠ (#R337) 「気温レイヤーでも、風レイヤーのパーティクルをオンオフできるトグルを付けて。」
+             `over` names the layer the streaks are wanted OVER. The two switches are two questions
+             (js/weather.js): 「does the Wind layer animate」 and 「is the wind drawn over the
+             temperature field」, so this branch writes the one the reader named and never both. */
+          const over=String(a.over||a.layer||a.on_layer||'').toLowerCase();
+          if(/temp|気温|気溫|temperatur|температ/.test(over)){
+            try{ if(window._imWxTempParts){ window._imWxTempParts(want); ok=true; } }catch(_){}
+            return R(ok, ok?note('✓ '+L('Wind particles over the temperature layer','気温レイヤー上の風のパーティクル','Wind-Partikel über der Temperaturschicht','Частицы ветра поверх слоя температуры','Partículas de viento sobre la capa de temperatura')+': '+(want?'on':'off'))+_featTogHtml('tempWindParticles'):warn('⚠')); }
           try{ if(window.Wind&&window.Wind.setParticles){ window.Wind.setParticles(want); ok=true; } }catch(_){}
           return R(ok, ok?note('✓ '+L('Wind particles','風のパーティクル','Wind-Partikel','Частицы ветра','Partículas de viento')+': '+(want?'on':'off'))+_featTogHtml('windParticles'):warn('⚠')); }
         case 'planeAltitude': case 'aircraftAltitude': { const want=!(a.on===false||/^(off|flat|2d)$/i.test(String(a.mode||''))); let ok=false;
@@ -4322,6 +4330,10 @@ window.IntMapModules.atlasConsole=function(HOST){
       nightSide:{ lbl:()=>L('Night side of the Earth','地球の夜側','Nachtseite der Erde','Ночная сторона Земли','Lado nocturno de la Tierra'), on:()=>{ try{ const s2=window.IntMapNightSide&&window.IntMapNightSide.state(); return !!(s2&&s2.enabled); }catch(_){ return false; } }, set:v=>{ try{ window.IntMapNightSide&&window.IntMapNightSide.setEnabled(!!v); }catch(_){} } },
       /* (#R172) live aircraft standing at their reported altitude instead of flat on the map */
       windParticles:{ lbl:()=>L('Wind particles','風のパーティクル','Wind-Partikel','Частицы ветра','Partículas de viento'), on:()=>{ try{ return !!(window.Wind&&window.Wind.particles&&window.Wind.particles()); }catch(_){ return false; } }, set:v=>{ try{ window.Wind&&window.Wind.setParticles&&window.Wind.setParticles(!!v); }catch(_){} } },
+      /* (#R337) the same streaks over the TEMPERATURE layer — a different question with a different
+         default (js/weather.js). `on()` reads the preference through the one published door, so this
+         switch, the legend box and the dispatch above cannot disagree about the state. */
+      tempWindParticles:{ lbl:()=>L('Wind particles over the temperature layer','気温レイヤー上の風のパーティクル','Wind-Partikel über der Temperaturschicht','Частицы ветра поверх слоя температуры','Partículas de viento sobre la capa de temperatura'), on:()=>{ try{ return !!(window._imWxTempParts&&window._imWxTempParts()); }catch(_){ return false; } }, set:v=>{ try{ window._imWxTempParts&&window._imWxTempParts(!!v); }catch(_){} } },
       planeAltitude:{ lbl:()=>L('Aircraft at real altitude','航空機を実際の高度で','Flugzeuge in echter Höhe','Самолёты на реальной высоте','Aviones a su altitud real'), on:()=>{ try{ return !!(window.IntMapPlanes3D&&window.IntMapPlanes3D.isOn()); }catch(_){ return false; } }, set:v=>{ try{ window.IntMapPlanes3D&&window.IntMapPlanes3D.set(!!v); }catch(_){} } }
     };
     /* (#R152) GENERIC on/off toggle for ANY checkbox reached through the universal "control" action — so

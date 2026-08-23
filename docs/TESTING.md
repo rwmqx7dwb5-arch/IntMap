@@ -19,10 +19,10 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 ## What runs
 
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-23): the **core** tier that
-gates a push is **6 spec files / 1.0 min** against a ceiling of 1.1 min; the **whole** suite is
-**68 measured spec files / 86.3 min** of serial browser time against a ceiling of 86.3 min; and
-`npm run test:checks` runs **167 Node test files** with no browser at all (counted from
-`package.json`). `npm test` runs the source half and the browser
+gates a push is **6 spec files / 1.0 min**; the **whole** suite is **70 measured spec files /
+86.3 min** of serial browser time against a ceiling of 86.3 min; and `npm run test:checks` runs
+**168 Node test files** with no browser at all (counted from `package.json` on 2026-08-23; the
+line above it is the 2026-08-20 measurement). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
 > ⚠ **The whole-suite ceiling has zero headroom** (86.3 min measured against 86.3 min). A new
@@ -297,7 +297,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **59 spec files** against core's 6, because #R204/#R207 turned the split
+tier: `npm run test:deep`, **64 spec files** against core's 6, because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
 deep. Nothing is deleted by being deep — every assertion still runs.

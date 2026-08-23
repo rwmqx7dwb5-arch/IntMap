@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · Atlas — the starter chips  (#R309 · rewritten #R313)
+ *  IntMap · Atlas — the starter chips  (#R309 · rewritten #R313 · widened #R337)
  * ----------------------------------------------------------------------------
  *  The four example questions the Atlas panel offers before a conversation starts, and the rule
  *  that decides WHICH four.
@@ -39,6 +39,35 @@
  *  first as an APPOSITIVE (`{place}: …`), never in a slot that governs a case or wants an article.
  *  ⚠ The ENGLISH string is the KEY the four keyed languages are resolved by. Do not reword one for
  *  grammar: the locale tables are indexed on it.
+ *
+ *  ══ ⚠⚠⚠ (#R337) 「まだほぼ定型文みたいなものしかない。もっとその場所にあったものに。」 ═══════════
+ *  #R313 built the pool and it was still not enough, for a reason that is countable rather than a
+ *  matter of taste: EVERY specific candidate it wrote was gated on a WORLD EXTREME — top ten on
+ *  density, top eight on area, top twelve on defence share — and an extreme admits ten countries.
+ *  For the ~150 states that are extreme in nothing, the eligible set was the always-true tail
+ *  (`capital` / `subregion` / `latest` / `neighbours` / `since1990` / `wx`), which is #R309's mail
+ *  merge with two more sentences in it. The chips were a pool; the QUESTIONS were still four.
+ *
+ *  So the pool grew by 26 candidates along three axes that partition the whole world instead of
+ *  skimming its ends, and every one of them reads data `countryStats` ALREADY holds:
+ *    · WHERE THE COUNTRY IS — measured from its own footprint (#R185's `bbox`). The equator inside
+ *      the box, the Arctic Circle inside the box, the whole box between the tropics, and how much
+ *      sea the territory is spread over per km² of land. These are true BY CONSTRUCTION of a
+ *      measurement, not by a list of country codes somebody typed.
+ *    · WHAT IT RUNS ON — how many languages (`LANGS`), whose money (`CURRENCY`). 「{place} uses the
+ *      US dollar instead of a currency of its own」 is a question about eight countries and about
+ *      no others.
+ *    · TWO FACTS AT ONCE — rich AND tightly governed, a big economy AND a low income per head, long
+ *      lives AND modest means. A pair separates countries that no single rank can: Qatar and Norway
+ *      are both in the top ten on income per head and only one of them is in the first pair.
+ *  …and by eight more LAYER-gated candidates, because #R313 covered seven of the hundred-odd rows in
+ *  the panel and a chip about the layer under the reader's cursor is the most specific one there is.
+ *
+ *  ⚠ THE TAIL IS NOT DELETED. It is what a country the tables know almost nothing about still gets,
+ *  and its four sentences are real questions with live translations. What changed is that it can no
+ *  longer take three of the four slots from a country the tables DO know something about — which is
+ *  the property tests/r337-checks.test.mjs measures, by running this module's own chooser over a
+ *  synthetic world rather than by reading the wording back out of this file.
  *
  *  Lifted out of js/atlas-console.js in #R309 because that file is at #R199's 5,300-line ceiling and
  *  the ceiling is never raised — a subject moves out instead.
@@ -103,8 +132,50 @@ export function makeAtlasExamples(HOST, CTX) {
       const ly=onLayers(), ids=new Set(ly.map(x=>x.id));
       let year=null, live=true;
       try{ const t=window.IntMapTime.state(); live=!!t.isLive; year=t.year; }catch(_){}
+      /* ══ ⚠⚠⚠ (#R337) 「まだほぼ定型文みたいなものしかない。もっとその場所にあったものに。」 ═══════
+         #R313's pool asks about EXTREMES — top ten on density, top eight on area — so a country
+         that is extreme in nothing had three of its four chips filled from the always-eligible
+         tail. That tail is the mail merge the reader is still looking at, and no wording fixes it:
+         what has to change is HOW MANY facts the pool can tell two countries apart by. So three new
+         families of fact, all of them already in `countryStats`, and none of them a threshold about
+         the WORLD that only ten countries can ever cross:
+           · the country's own FOOTPRINT (#R185's `bbox`, [w,s,e,n]). Three of the four facts below
+             are true BY CONSTRUCTION of that box — the equator is inside it, the Arctic Circle is
+             inside it, the whole box lies between the tropics. The fourth is a ratio of two
+             measurements: how much sea the territory is spread over, per km² of land.
+           · what the country RUNS ON — how many languages (`LANGS`), whose money (`CURRENCY`).
+           · COMBINATIONS, which are the most distinctive facts there are: rich AND tightly
+             governed, a big economy AND a low income per head, long lives AND modest means. No
+             single rank separates Qatar from Norway; the pair of them does.
+         ⚠ THE ANTIMERIDIAN IS EXCLUDED, NOT WORKED AROUND. Russia, the USA, Fiji, New Zealand and
+         Kiribati arrive as rings that cross ±180, so a plain extent gives them a 360° span. Every
+         longitudinal claim is refused for a box wider than 180°, because this module genuinely
+         cannot tell 「spans the date line」 from 「spans the planet」 — and a chip that guesses is the
+         defect this round exists to remove. */
+      const bb=(st&&st.bbox&&st.bbox.length===4&&st.bbox.every(v=>isFinite(v)))?st.bbox:null;
+      const spanLon=bb?(bb[2]-bb[0]):0, spanLat=bb?(bb[3]-bb[1]):0, midLat=bb?((bb[1]+bb[3])/2):0;
+      const wrapped=!bb||spanLon>=180;
+      const kmLon=wrapped?0:(spanLon*111.32*Math.cos(midLat*Math.PI/180)), kmLat=spanLat*110.57;
+      const boxKm2=(kmLon>0&&kmLat>0)?(kmLon*kmLat):0;
+      const geo={
+        equator: !!(bb&&bb[1]<-0.2&&bb[3]>0.2),
+        arctic:  !!(bb&&bb[3]>=66.56),
+        tropics: !!(bb&&Math.abs(bb[1])<23.44&&Math.abs(bb[3])<23.44),
+        mid:     bb?midLat:null,
+        /* ⚠ THIS MEASURES OUTLYING TERRITORY, NOT 「is it an archipelago」, and the chip it gates is
+           worded as exactly that. France scores 184 because Guiana and Réunion arrive inside its
+           own feature; the Philippines scores 6.4 because its islands are packed together. */
+        spread:  (boxKm2>0&&st&&st.area>0)?(boxKm2/st.area):0
+      };
+      /* 「11 official langs」 is a real value in that table, so the count reads a leading number when
+         the string carries one rather than answering 1 for a country with eleven */
+      const langN=(()=>{ const s2=String((st&&st.languages)||''); if(!s2) return 0;
+        const m=/(\d+)\s*official/i.exec(s2); if(m) return +m[1];
+        return s2.split(',').filter(x=>x.trim()).length; })();
+      const cur=String((st&&st.currency)||'').toUpperCase();
       return { code:(st&&nm)?near:'', name:nm||'', st:st||null,
-               layers:ly, has:(id)=>ids.has(id), year:year, live:live, zoom:z };
+               layers:ly, has:(id)=>ids.has(id), year:year, live:live, zoom:z,
+               geo:geo, langN:langN, cur:cur };
     }catch(_){ return null; } }
 
     /* ══ the pool ═════════════════════════════════════════════════════════════════════════════
@@ -157,6 +228,57 @@ export function makeAtlasExamples(HOST, CTX) {
                 '{place}: Was fährt gerade durch die Gewässer, und was hat es geladen?',
                 '{place}: что сейчас идёт через её воды и что везёт?',
                 '{place}: ¿qué navega ahora por sus aguas y qué transporta?') },
+      /* (#R337) …and eight more of the layers a reader actually switches on. #R313 covered seven
+         of the hundred-odd rows in the panel, so 「a chip about the layer under the cursor」 — the
+         most specific question there is — was reachable for seven of them. */
+      { k:'radar', w:9, on:(f)=>f.st&&f.has('dl-radar'),
+        t:()=>L('What is falling over {place} right now, and where is it heading next?',
+                'いま{place}に降っているのは？ この先どこへ動く？',
+                '{place}: Was fällt dort gerade, und wohin zieht es als Nächstes?',
+                '{place}: что сейчас выпадает над страной и куда это сместится дальше?',
+                '{place}: ¿qué está cayendo ahora y hacia dónde se dirige?') },
+      { k:'sealevel', w:9, on:(f)=>f.st&&f.has('dl-sealevel'),
+        t:()=>L('How much of {place} sits low enough for the sea to reach it, and by when?',
+                '{place}のうち海面上昇が届く低さの土地はどれくらい？ いつまでに？',
+                '{place}: Wie viel davon liegt tief genug, dass das Meer es erreicht — und bis wann?',
+                '{place}: какая часть страны лежит достаточно низко, чтобы её достигло море, и к какому сроку?',
+                '{place}: ¿cuánto territorio está lo bastante bajo para que lo alcance el mar, y para cuándo?') },
+      { k:'plates', w:9, on:(f)=>f.st&&f.has('eco-dl-plates'),
+        t:()=>L('Which tectonic plates meet near {place}, and how fast are they moving?',
+                '{place}の近くではどのプレートが接している？ 動く速さは？',
+                '{place}: Welche Erdplatten treffen in der Nähe aufeinander, und wie schnell bewegen sie sich?',
+                '{place}: какие тектонические плиты сходятся рядом и с какой скоростью движутся?',
+                '{place}: ¿qué placas tectónicas se encuentran cerca y a qué velocidad se mueven?') },
+      { k:'climate', w:8, on:(f)=>f.st&&f.has('dl-climate'),
+        t:()=>L('Which climate zones does {place} span, and which of them are shifting?',
+                '{place}はどの気候帯にまたがっている？ そのうち動いているのは？',
+                '{place}: Welche Klimazonen umfasst das Land, und welche davon verschieben sich?',
+                '{place}: какие климатические пояса охватывает страна и какие из них смещаются?',
+                '{place}: ¿qué zonas climáticas abarca y cuáles se están desplazando?') },
+      { k:'eez', w:8, on:(f)=>f.st&&f.has('dl-eez'),
+        t:()=>L('How far do {place}’s maritime claims reach, and where are they contested?',
+                '{place}の海洋権益はどこまで及ぶ？ 争いがあるのはどこ？',
+                '{place}: Wie weit reichen die Seegebietsansprüche, und wo sind sie umstritten?',
+                '{place}: как далеко простираются её морские притязания и где они оспариваются?',
+                '{place}: ¿hasta dónde llegan sus reivindicaciones marítimas y dónde se disputan?') },
+      { k:'sats', w:8, on:(f)=>f.st&&f.has('dl-sats'),
+        t:()=>L('What is passing over {place} in orbit right now, and what is it for?',
+                'いま{place}の上空を通っている衛星は？ 何のための衛星？',
+                '{place}: Was zieht gerade im Orbit darüber hinweg, und wozu?',
+                '{place}: что сейчас проходит над страной по орбите и для чего оно нужно?',
+                '{place}: ¿qué pasa ahora en órbita por encima y para qué sirve?') },
+      { k:'datacentres', w:8, on:(f)=>f.st&&f.has('beta-dl-dc'),
+        t:()=>L('Where do {place}’s data centres sit, and what decided those locations?',
+                '{place}のデータセンターはどこにある？ その場所が選ばれた理由は？',
+                '{place}: Wo stehen die Rechenzentren, und was hat diese Standorte entschieden?',
+                '{place}: где стоят её дата-центры и что определило эти места?',
+                '{place}: ¿dónde están sus centros de datos y qué decidió esas ubicaciones?') },
+      { k:'nightlights', w:7, on:(f)=>f.st&&(f.has('dl-nightsat')||f.has('dl-night')),
+        t:()=>L('What do the night lights over {place} say about where its people and money are?',
+                '{place}の夜間光は、人と金がどこにあることを示している？',
+                '{place}: Was verraten die Nachtlichter darüber, wo Menschen und Geld sind?',
+                '{place}: что ночные огни говорят о том, где там люди и деньги?',
+                '{place}: ¿qué dicen las luces nocturnas sobre dónde están su gente y su dinero?') },
       /* ── where Chronos is ────────────────────────────────────────────────────────────────── */
       { k:'year', w:9, on:(f)=>f.st&&!f.live&&f.year&&f.year<new Date().getFullYear(),
         t:()=>L('What was happening in {place} in {year}?',
@@ -243,6 +365,119 @@ export function makeAtlasExamples(HOST, CTX) {
                 '{place}: Wo konzentrieren sich die Menschen, und wohin verschiebt sich das?',
                 '{place}: где сосредоточено население и куда оно смещается?',
                 '{place}: ¿dónde se concentra la población y hacia dónde se desplaza?') },
+      /* ── where the country IS, measured from its own footprint (#R337) ───────────────────── */
+      { k:'equator', w:9, on:(f)=>f.st&&f.geo&&f.geo.equator,
+        t:()=>L('The equator runs through {place} — what does that do to its seasons and its rain?',
+                '赤道が{place}を通っている。季節と雨はそれでどうなる？',
+                '{place}: Der Äquator verläuft mitten hindurch — was macht das mit Jahreszeiten und Regen?',
+                '{place}: через страну проходит экватор. Что это делает с её сезонами и дождями?',
+                '{place}: el ecuador la atraviesa. ¿Qué hace eso con sus estaciones y sus lluvias?') },
+      { k:'arctic', w:9, on:(f)=>f.st&&f.geo&&f.geo.arctic,
+        t:()=>L('Part of {place} lies inside the Arctic Circle — who lives up there, and on what?',
+                '{place}の一部は北極圏の中にある。そこには誰が、何で暮らしている？',
+                '{place}: Ein Teil liegt im Polarkreis — wer lebt dort oben, und wovon?',
+                '{place}: часть страны лежит за полярным кругом. Кто там живёт и чем?',
+                '{place}: parte del país está dentro del Círculo Polar Ártico. ¿Quién vive allí y de qué?') },
+      { k:'farflung', w:8, on:(f)=>f.st&&f.geo&&f.geo.spread>=12,
+        t:()=>L('{place} is scattered over far more sea than land — which piece of it lies furthest out?',
+                '{place}の領土は陸よりはるかに広い海に散らばっている。いちばん遠いのはどこ？',
+                '{place}: Das Staatsgebiet verteilt sich über weit mehr Meer als Land — welcher Teil liegt am weitesten draußen?',
+                '{place}: территория разбросана по морю, которого куда больше, чем суши. Какая её часть лежит дальше всех?',
+                '{place}: su territorio se reparte por mucho más mar que tierra. ¿Qué parte queda más lejos?') },
+      { k:'tropics', w:6, on:(f)=>f.st&&f.geo&&f.geo.tropics&&f.st.area>50000,
+        t:()=>L('All of {place} lies between the tropics — how does that decide what grows and where people live?',
+                '{place}は全域が熱帯にある。何が育ち、人がどこに住むかはそれでどう決まる？',
+                '{place}: Das ganze Land liegt zwischen den Wendekreisen — was wächst dort, und wo leben die Menschen?',
+                '{place}: вся страна лежит между тропиками. Как это определяет, что растёт и где живут люди?',
+                '{place}: todo el país está entre los trópicos. ¿Cómo decide eso qué crece y dónde vive la gente?') },
+      /* ── two facts at once, which is what actually separates one country from the next (#R337) ─ */
+      { k:'richnotfree', w:9, on:(f)=>f.st&&hi('gdppc',f.code,35)&&f.st.dem!=null&&f.st.dem<5,
+        t:()=>L('{place} is wealthy and tightly governed at once — what holds that arrangement together?',
+                '{place}は豊かでありながら統治は強い。この組み合わせは何で成り立っている？',
+                '{place}: wohlhabend und zugleich streng regiert — was hält diese Konstruktion zusammen?',
+                '{place}: богатая и при этом жёстко управляемая страна. На чём держится такая конструкция?',
+                '{place} es próspero y a la vez está férreamente gobernado: ¿qué sostiene esa combinación?') },
+      { k:'bigpoor', w:9, on:(f)=>f.st&&hi('gdp',f.code,25)&&lo('gdppc',f.code,80),
+        t:()=>L('{place} has one of the biggest economies in the world and one of the lower incomes per head — where does the gap sit?',
+                '{place}は経済規模は世界有数、1人あたりは低い。その差はどこにある？',
+                '{place}: eine der größten Volkswirtschaften und zugleich ein niedriges Pro-Kopf-Einkommen — wo klafft die Lücke?',
+                '{place}: одна из крупнейших экономик мира и низкий доход на душу. Где именно этот разрыв?',
+                '{place} tiene una de las mayores economías y a la vez una renta por habitante baja: ¿dónde está la brecha?') },
+      { k:'longlife', w:8, on:(f)=>f.st&&hi('life',f.code,45)&&lo('gdppc',f.code,90),
+        t:()=>L('People in {place} live long lives on modest incomes — what is going right?',
+                '{place}は所得が高くないのに長寿。何がうまくいっている？',
+                '{place}: lange Leben bei bescheidenem Einkommen — was läuft dort richtig?',
+                '{place}: долгая жизнь при скромных доходах. Что там работает как надо?',
+                '{place}: vidas largas con ingresos modestos. ¿Qué está funcionando bien?') },
+      /* ⚠ (#R337) the currency column carries compounds — Panama's reads 「PAB / USD」 — so the test
+         is over the SEPARATED codes, not a substring: 「AUD」 must not answer to 「USD」. */
+      { k:'dollarized', w:9, on:(f)=>f.st&&f.code!=='USA'&&String(f.cur||'').split('/').map(s=>s.trim()).indexOf('USD')>=0,
+        t:()=>L('{place} uses the US dollar instead of a currency of its own — why, and what did it give up?',
+                '{place}は自国通貨ではなく米ドルを使っている。なぜ？ 何を手放した？',
+                '{place} nutzt den US-Dollar statt einer eigenen Währung — warum, und was hat es dafür aufgegeben?',
+                '{place} использует доллар США вместо собственной валюты — почему и от чего она отказалась?',
+                '{place} usa el dólar estadounidense en lugar de una moneda propia: ¿por qué y a qué renunció?') },
+      { k:'manylangs', w:8, on:(f)=>f.st&&(f.langN|0)>=3,
+        t:()=>L('{place} runs in {n} languages at once — how do government, school and media handle that?',
+                '{place}は{n}つの言語で同時に動いている。行政・学校・報道はどう回している？',
+                '{place}: {n} Sprachen gleichzeitig — wie bewältigen Verwaltung, Schule und Medien das?',
+                '{place}: страна живёт сразу на {n} языках. Как с этим справляются власть, школа и СМИ?',
+                '{place} funciona en {n} idiomas a la vez: ¿cómo lo gestionan la administración, la escuela y los medios?') },
+      { k:'euro', w:7, on:(f)=>f.st&&f.cur==='EUR',
+        t:()=>L('{place} does not set its own interest rates — it uses the euro. What has that bought, and what has it cost?',
+                '{place}は自国で金利を決めていない——通貨はユーロ。それで得たものと失ったものは？',
+                '{place} setzt seine Zinsen nicht selbst — es hat den Euro. Was hat das gebracht, und was gekostet?',
+                '{place} не устанавливает собственные ставки — у страны евро. Что это дало и чего стоило?',
+                '{place} no fija sus propios tipos de interés: usa el euro. ¿Qué ha ganado y qué le ha costado?') },
+      /* ── the ends of the distributions, in BANDS rather than a top ten (#R337) ─────────────── */
+      { k:'tinypop', w:8, on:(f)=>f.st&&f.st.pop>0&&lo('pop',f.code,20),
+        t:()=>L('Fewer people live in {place} than in a mid-sized city — how does a state that small work?',
+                '{place}の人口は中規模都市より少ない。それだけの規模で国はどう回っている？',
+                '{place} hat weniger Einwohner als eine mittelgroße Stadt — wie funktioniert ein so kleiner Staat?',
+                '{place}: жителей меньше, чем в среднем городе. Как работает такое маленькое государство?',
+                'En {place} vive menos gente que en una ciudad mediana: ¿cómo funciona un Estado tan pequeño?') },
+      { k:'poor', w:8, on:(f)=>f.st&&lo('gdppc',f.code,25),
+        t:()=>L('{place} has one of the lowest incomes per head anywhere — where does the money that does arrive come from?',
+                '{place}の1人あたり所得は世界最低水準。入ってくる金はどこから来ている？',
+                '{place} hat eines der niedrigsten Pro-Kopf-Einkommen überhaupt — woher kommt das Geld, das ankommt?',
+                '{place}: один из самых низких доходов на душу в мире. Откуда берутся те деньги, что всё же приходят?',
+                '{place} tiene una de las rentas por habitante más bajas del mundo: ¿de dónde sale el dinero que sí entra?') },
+      { k:'lifelow', w:8, on:(f)=>f.st&&lo('life',f.code,20),
+        t:()=>L('Life is cut short in {place} compared with most of the world — by what, and what is changing?',
+                '{place}の平均寿命は世界的に見て短い。原因は？ 変わりつつあるものは？',
+                '{place}: Die Lebenserwartung ist im Weltvergleich niedrig — woran liegt das, und was ändert sich?',
+                '{place}: продолжительность жизни ниже, чем в большинстве стран. Из-за чего и что меняется?',
+                '{place}: la esperanza de vida es baja frente a casi todo el mundo. ¿Por qué, y qué está cambiando?') },
+      { k:'nethigh', w:6, on:(f)=>f.st&&hi('net',f.code,20),
+        t:()=>L('Almost everyone in {place} is online — what did it take to get there?',
+                '{place}はほぼ全員がネットにつながっている。そこまで来るのに何が要った？',
+                '{place}: fast alle sind online — was hat das gebraucht?',
+                '{place}: в сети почти все. Что для этого потребовалось?',
+                'En {place} casi todo el mundo está conectado: ¿qué hizo falta para llegar ahí?') },
+      { k:'milow', w:7, on:(f)=>f.st&&lo('milShare',f.code,30),
+        t:()=>L('{place} spends almost nothing on defence — who or what actually guarantees its security?',
+                '{place}は国防にほとんど使っていない。安全を実際に担保しているのは誰・何？',
+                '{place} gibt fast nichts für Verteidigung aus — wer oder was garantiert die Sicherheit tatsächlich?',
+                '{place}: на оборону не тратится почти ничего. Кто или что на деле обеспечивает безопасность?',
+                '{place} apenas gasta en defensa: ¿quién o qué garantiza realmente su seguridad?') },
+      { k:'popbig', w:7, on:(f)=>f.st&&f.st.pop>=1e8,
+        t:()=>L('More than a hundred million people live in {place} — what does the state do well at that scale, and what breaks?',
+                '{place}には1億人以上が住んでいる。その規模で国家がうまくできていることと、壊れているものは？',
+                'In {place} leben über hundert Millionen Menschen — was gelingt dem Staat in dieser Größe, und was bricht?',
+                '{place}: в стране больше ста миллионов жителей. Что государство в таком масштабе делает хорошо, а что ломается?',
+                'En {place} viven más de cien millones de personas: ¿qué hace bien el Estado a esa escala y qué se rompe?') },
+      { k:'farsouth', w:6, on:(f)=>f.st&&f.geo&&f.geo.mid!=null&&f.geo.mid<=-20,
+        t:()=>L('{place}’s summer is the northern hemisphere’s winter — where does that show up in its economy?',
+                '{place}の夏は北半球の冬。それは経済のどこに現れる？',
+                '{place}: Sommer dort ist Winter auf der Nordhalbkugel — wo zeigt sich das in der Wirtschaft?',
+                '{place}: лето там — зима в Северном полушарии. Где это видно в экономике?',
+                'El verano de {place} es el invierno del hemisferio norte: ¿dónde se nota eso en su economía?') },
+      { k:'highnorth', w:6, on:(f)=>f.st&&f.geo&&f.geo.mid!=null&&f.geo.mid>=50,
+        t:()=>L('Winter days are short in {place} — what does that do to its energy use and how people live?',
+                '{place}の冬は日が短い。エネルギーの使い方と暮らしはそれでどうなる？',
+                '{place}: Die Wintertage sind kurz — was macht das mit Energieverbrauch und Alltag?',
+                '{place}: зимой день короткий. Как это сказывается на энергопотреблении и на быте?',
+                'En {place} los días de invierno son cortos: ¿qué hace eso con su consumo de energía y su vida diaria?') },
       /* ── attributes every country has, so these only ever fill the tail ─────────────────── */
       /* ⚠⚠ (#R313 追記) THIS CHIP NAMED THE CAPITAL, AND THE APP ONLY HAS THAT NAME IN ENGLISH.
          `CAPITAL` in js/tables.js is an English table — CLDR has no city names, and OSM's `name:xx`
@@ -252,7 +487,7 @@ export function makeAtlasExamples(HOST, CTX) {
          the TEMPLATE is complete in all nine languages; it is the substituted value that is not.
          Measured on production in ja: six countries, six English city names.
          → the question keeps its subject and loses the name it could not translate. */
-      { k:'capital', w:5, on:(f)=>f.st&&!!f.st.capital,
+      { k:'capital', w:5, on:(f)=>f.st&&!!f.st.capital, tail:1,
         t:()=>L('What happens in {place}’s capital that matters beyond its borders?',
                 '{place}の首都で起きていることのうち、国外にまで効くのは？',
                 '{place}: Was passiert in der Hauptstadt, das über das Land hinaus zählt?',
@@ -263,20 +498,20 @@ export function makeAtlasExamples(HOST, CTX) {
          article. 「vom übrigen {sub}」 works for Ostasien and breaks for Karibik (feminine) and for
          Südliches Afrika (an adjective); 「del resto de {sub}」 wants 「del Caribe」. In parentheses every
          one of the 22 reads correctly in every language. */
-      { k:'subregion', w:5, on:(f)=>f.st&&!!f.st.subregion,
+      { k:'subregion', w:5, on:(f)=>f.st&&!!f.st.subregion, tail:1,
         t:()=>L('How does {place} differ from the other countries in its region ({sub})?',
                 '{place}は同じ地域（{sub}）の他の国とどこが違う？',
                 '{place}: Worin unterscheidet es sich von den anderen Ländern seiner Region ({sub})?',
                 '{place}: чем страна отличается от других стран своего региона ({sub})?',
                 '{place}: ¿en qué se diferencia de los otros países de su región ({sub})?') },
       /* ── #R309's four, kept as candidates (their nine translations are live) ────────────── */
-      { k:'latest', w:4, on:(f)=>!!f.st,
+      { k:'latest', w:4, on:(f)=>!!f.st, tail:1,
         t:()=>L('Brief me on {place} — the latest','{place}でいま何が起きている？','{place}: Lagebericht — was passiert gerade?','{place} — что происходит прямо сейчас?','{place}: ¿qué está pasando ahora?') },
-      { k:'neighbours', w:3, on:(f)=>!!f.st,
+      { k:'neighbours', w:3, on:(f)=>!!f.st, tail:1,
         t:()=>L('Compare {place} with its neighbours — GDP, defense and population','{place}と周辺国を比較（GDP・国防費・人口）','{place} und seine Nachbarländer — BIP, Militär, Bevölkerung vergleichen','{place} и соседние страны — сравнить ВВП, оборону и население','{place} y sus países vecinos: comparar PIB, defensa y población') },
-      { k:'since1990', w:3, on:(f)=>!!f.st,
+      { k:'since1990', w:3, on:(f)=>!!f.st, tail:1,
         t:()=>L("How has {place}'s economy changed since 1990?",'{place}の経済は1990年からどう変わった？','{place}: Wie hat sich die Wirtschaft seit 1990 entwickelt?','{place}: как изменилась экономика с 1990 года?','{place}: ¿cómo ha cambiado la economía desde 1990?') },
-      { k:'wx', w:2, on:(f)=>!!f.st,
+      { k:'wx', w:2, on:(f)=>!!f.st, tail:1,
         t:()=>L('What is the weather and any active warnings in {place}?','{place}の天気と発表中の警報は？','{place}: Wetter und aktive Warnungen?','{place}: погода и действующие предупреждения?','{place}: ¿qué tiempo hace y qué avisos hay activos?') }
     ];
 
@@ -290,6 +525,16 @@ export function makeAtlasExamples(HOST, CTX) {
         t:()=>L('Which plate boundaries have been most active in the past week?','この1週間で最も活動的だったプレート境界は？','Welche Plattengrenzen waren in der vergangenen Woche am aktivsten?','Какие границы плит были активнее всего за последнюю неделю?','¿Qué límites de placas han estado más activos esta semana?') },
       { k:'w-cables', w:8, on:(f)=>f&&f.has('dl-subcables'),
         t:()=>L('Which submarine cable chokepoints carry the most of the world’s traffic?','世界の通信量が最も集中している海底ケーブルの隘路はどこ？','Welche Seekabel-Nadelöhre tragen den größten Teil des Weltverkehrs?','Какие узкие места подводных кабелей несут наибольшую часть мирового трафика?','¿Qué cuellos de botella de cables submarinos llevan la mayor parte del tráfico mundial?') },
+      /* (#R337) …and the same widening the country pool got: what the reader has switched on is
+         the most specific thing a whole-world view can be asked about. */
+      { k:'w-sealevel', w:8, on:(f)=>f&&f.has('dl-sealevel'),
+        t:()=>L('Which coastlines does the sea reach first as it rises?','海面が上がったとき、最初に届く海岸はどこ？','Welche Küsten erreicht das steigende Meer zuerst?','Каких берегов поднимающееся море достигнет первыми?','¿A qué costas llega antes el mar cuando sube?') },
+      { k:'w-plates', w:8, on:(f)=>f&&f.has('eco-dl-plates'),
+        t:()=>L('Where are the tectonic plates moving fastest, and what is that building?','プレートが最も速く動いているのはどこ？ そこで何ができつつある？','Wo bewegen sich die Erdplatten am schnellsten, und was entsteht dabei?','Где тектонические плиты движутся быстрее всего и что при этом создаётся?','¿Dónde se mueven más rápido las placas tectónicas y qué están formando?') },
+      { k:'w-sats', w:7, on:(f)=>f&&f.has('dl-sats'),
+        t:()=>L('How crowded is low Earth orbit now, and who owns what up there?','低軌道はいまどれくらい混んでいる？ 何が誰のもの？','Wie voll ist der niedrige Erdorbit inzwischen, und wem gehört dort was?','Насколько сейчас тесно на низкой орбите и кому там что принадлежит?','¿Cuán saturada está hoy la órbita baja y de quién es cada cosa allí?') },
+      { k:'w-dc', w:7, on:(f)=>f&&f.has('beta-dl-dc'),
+        t:()=>L('Which countries host the most data centres, and what draws them there?','データセンターが最も多い国は？ 何がそこへ引き寄せている？','Welche Länder beherbergen die meisten Rechenzentren, und was zieht sie dorthin?','В каких странах больше всего центров обработки данных и что их туда тянет?','¿Qué países albergan más centros de datos y qué los atrae allí?') },
       { k:'w-compare', w:4, on:()=>true,
         t:()=>L('Compare the USA, China and India — GDP, defense and population','日本・ドイツ・インドを比較（GDP・国防費・人口）','USA, China und Indien vergleichen — BIP, Militär, Bevölkerung','Сравнить США, Китай и Индию — ВВП, оборона, население','Comparar EE. UU., China e India — PIB, defensa y población') },
       { k:'w-mil', w:4, on:()=>true,
@@ -302,10 +547,21 @@ export function makeAtlasExamples(HOST, CTX) {
 
     /* ⚠ DETERMINISTIC. Same facts → same four, in the same order, so a redraw that changes nothing
        cannot reshuffle the row under the reader's finger. Weight first, then the key, alphabetically. */
+    /* ══ ⚠⚠⚠ (#R337) THE TAIL IS A FALLBACK, NOT A COMPETITOR ═══════════════════════════════════
+       #R313 ranked every candidate by one weight and took the top four, and gave the six
+       always-true questions weights of 2 to 5. That is low enough to lose to a WORLD EXTREME and
+       not low enough to lose to an ordinary fact — so a country with one distinguishing feature
+       was handed one question about it and three about nothing in particular. Measured on the
+       synthetic world in tests/r337-checks: every single-fact shape took THREE of its four from
+       the tail, which is 「まだほぼ定型文みたいなものしかない」 with a number on it.
+       → the tail can no longer displace an eligible specific candidate, whatever the weights say.
+       It fills what is left, in its own order, and for a country the pool knows four real things
+       about it does not appear at all. Weight still decides the order INSIDE each group, so
+       #R313's 「a measured extreme outranks an attribute every country has」 is unchanged. */
     function choose(pool,f){
-      return pool.filter(x=>{ try{ return !!x.on(f); }catch(_){ return false; } })
-                 .sort((a,b)=>(b.w-a.w)||(a.k<b.k?-1:a.k>b.k?1:0))
-                 .slice(0,4);
+      const ok=pool.filter(x=>{ try{ return !!x.on(f); }catch(_){ return false; } })
+                   .sort((a,b)=>(b.w-a.w)||(a.k<b.k?-1:a.k>b.k?1:0));
+      return ok.filter(x=>!x.tail).concat(ok.filter(x=>x.tail)).slice(0,4);
     }
     /* ══ ⚠⚠⚠ (#R313 追記2) THE FIRST FIX WAS A NO-OP IN THE BROWSER, AND THE TEST COULD NOT SEE IT ═══
        追記1 は subregion を UN M49 のコードにして `Intl.DisplayNames({type:'region'})` に訊いていた。
@@ -354,6 +610,9 @@ export function makeAtlasExamples(HOST, CTX) {
       return String(txt)
         .replace(/\{place\}/g,(f&&f.name)||'')
         .replace(/\{sub\}/g,subName(st))
+        /* (#R337) how many languages the country runs in — a NUMBER, so it reads the same in all
+           nine languages and cannot become #R313 追記's untranslated value in a translated sentence */
+        .replace(/\{n\}/g,String((f&&f.langN)||''))
         .replace(/\{year\}/g,String((f&&f.year)||''));
     }
     function examples(){
@@ -403,5 +662,11 @@ export function makeAtlasExamples(HOST, CTX) {
         if(t&&t.type==='checkbox'&&t.id&&/^(dl-|wp-dl-|beta-dl-|bx-|eco-dl-|l9-dl-)/.test(t.id)) bump(); },true); }catch(_){}
       try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>bump()); }catch(_){}
     }
-  return { renderExamples, wireExamples: _wireExampleCamera };
+  /* ⚠ (#R337) `examples` and `facts` are PUBLISHED so this round's check can run the SHIPPED chooser
+     over a synthetic world rather than grepping this file for wording. That is #R313 追記2's lesson
+     one level up: a gate that reads the source proves the source, and what has to be proved here is
+     the SET of four that a given set of facts produces — 「two different countries share no chip」 is
+     not a property any regular expression over this file can see. Both are read-only: neither
+     touches the DOM nor this module's state. */
+  return { renderExamples, wireExamples: _wireExampleCamera, examples, facts: exFacts };
 }
