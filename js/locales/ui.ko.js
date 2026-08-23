@@ -4219,6 +4219,10 @@ window.IntMapLang.define('ko', { ui: {
   "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed in the agency’s own rank and the tap holds the units. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "일본·미국·캐나다·브라질은 각 기관의 발령 단위로 그리며, 국가 전체를 칠하지 않습니다 — 그 나라에서는 발령 구역의 형태 자체가 답입니다. 유럽·중국·호주·홍콩은 도형이 아닌 목록으로 공개하므로 해당 기관의 등급 색으로 국가를 엷게 칠하고, 탭하면 단위별 내역이 나옵니다. GDACS 색칠은 다른 척도·다른 색입니다 — 그 등급의 사건이 해당 국가에 영향을 준다는 뜻이지, 국가 내 어느 지점에 경보가 발령됐다는 뜻이 아닙니다. 러시아·인도·뉴질랜드·말레이시아·인도네시아·남아프리카·멕시코는 브라우저에서 읽을 수 있는 공개 피드가 없어 GDACS만 표시됩니다 — GDACS는 사건 배포이지 각국의 경보 그 자체가 아니며, 사건이 없는 나라가 경보가 없는 나라는 아닙니다. 참고용 표시입니다. 실제로는 공식 기관의 발표를 따르십시오.",
   "areas": "구역",
   "Areas published but not locatable on this map: ": "발표되었으나 이 지도에서 위치를 특정할 수 없는 구역: ",
+  "Read from this service but not in force now: ": "이 기관에서 읽었으나 현재 발효 중이 아닌 것: ",   /* world-packs.js (#R383) */
+  "expired": "기간 만료",   /* world-packs.js (#R383) */
+  "starting later": "추후 발효",   /* world-packs.js (#R383) */
+  "Starting later in: ": "추후 발효되는 구역: ",   /* world-packs.js (#R383) */
   "Blue (IV)": "파랑(IV급)",
   "by district": "군(郡) 단위",
   "by issuing region": "발표 구역 단위",

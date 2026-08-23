@@ -371,7 +371,10 @@ test('R302 ⑯ an ended warning is not a warning', () => {
     'both language fields are read, because either may be the one that says ended');
   assert.match(s, /\(ended\|termin\)/,
     'and 「ended」 is what is dropped — as a stem, because the French agrees in gender (terminé/terminée)');
-  assert.match(s, /PLACED\.CAN=\[out\.length,Math\.max\(out\.length,\(j\.features\|\|\[\]\)\.length-caEnded\)\]/,
+  /* ⚠ (#R383) …and the PAGE is not the FEED. This read asks for `limit=500` and the collection
+     answers with `numberMatched` — 238 today, so the cap is not binding, and that is the state a
+     silent truncation hides in (#R320). The denominator is whichever number is larger. */
+  assert.match(s, /PLACED\.CAN=\[out\.length,Math\.max\(out\.length,caMatched-caEnded,\(j\.features\|\|\[\]\)\.length-caEnded\)\]/,
     'the denominator is what is still in force, so a shape that could not be drawn shows as a shortfall');
 });
 
@@ -383,7 +386,11 @@ test('R302 ⑯ an ended warning is not a warning', () => {
    was reporting `[1,1]`. */
 test('R302 ⑰ what could not be drawn is counted, in every loader', () => {
   const s = WP();
-  assert.match(s, /PLACED\.USA=\[out\.length,out\.length\+noGeom\]; UNPL\.USA=noGeom\?worstNG:0;/,
+  /* ⚠ (#R383) THE COUNTING RULE IS THE SAME; THE NUMERATOR FINALLY MOVES. This round resolves the
+     UGC zone codes against the NWS's own reference layers, so `placed` is no longer always zero —
+     MEASURED, `PLACED.USA` went from [11, 135] to [403, 403]. What #R302 wrote survives verbatim:
+     a zone this map still cannot draw is in the denominator and raises `UNPL`. */
+  assert.match(s, /PLACED\.USA=\[own\+placed,own\+placed\+noGeom\]; UNPL\.USA=noGeom\?worstNG:0;/,
     'the NWS shapes it could not draw are in the denominator and in UNPL');
   assert.match(s, /PLACED\.HKG=\[0,items\.length\?1:0\];/,
     'Hong Kong places no geometry at all and now says so');

@@ -210,7 +210,12 @@ test('R275 ⑧ the relay reads MeteoAlarm’s awareness level, and level 1 is no
   assert.match(t, /if \(aw === 1\) \{ green\+\+; continue; \}/, 'green is dropped');
   assert.match(t, /const tier = aw \? Math\.max\(1, aw - 1\) : \(SEV\[String\(pick\.severity\)\] \|\| 1\)/,
     'and 2–4 become the CAP ladder, with severity as the fallback for a feed without the parameter');
-  assert.match(t, /areaTotal: areaMap\.size, green \}/, 'what was dropped is reported, never silent');
+  assert.match(t, /areaTotal: areaMap\.size, green,/, 'what was dropped is reported, never silent');
+  /* ⚠ (#R383) …and 「what was dropped」 grew: green is not the only thing this summary now declines
+     to paint. A bulletin whose validity window has closed or has not opened is dropped here too,
+     and it is counted for exactly the reason green is (see tests/r383-checks ①). */
+  assert.match(t, /expired, upcoming, noExpires, upcomingAreas: /,
+    'and so is everything the validity window dropped');
 });
 
 /* ── ⑨ 「対応国も増やせ。ソースは一国一ソース。」 ─────────────────────────────────────────────────

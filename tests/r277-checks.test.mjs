@@ -182,7 +182,13 @@ test('R277 ⑥ China is drawn at the division its alert id names, not at the pro
     '…in that order, and neither rung may resolve to a province');
   assert.match(u, /if\(idx\[c\]&&idx\[c\]\.level!=='province'\) return \{code:c,rec:idx\[c\]\};/,
     'the city rung refuses a province too — some province codes ARE city codes (the four 直轄市)');
-  assert.match(s, /PLACED\.CHN=\[items\.length-lost,items\.length\];/, 'and what could not be placed is counted');
+  /* ⚠ (#R383) THE DENOMINATOR IS THE CMA'S OWN COUNT, NOT THE PAGES THIS MAP READ. `items` is what
+     two pages of `findAlarm` carried; `cnTotal` is the number the service states it has in force.
+     MEASURED 1,202 against a 2,000-row ceiling — not binding today, which is precisely the state a
+     silent truncation hides in (#R320). What #R277 wrote is unchanged: an id this map cannot place
+     is still counted as a shortfall. */
+  assert.match(s, /PLACED\.CHN=\[items\.length-lost,Math\.max\(items\.length,cnTotal\)\];/,
+    'and what could not be placed is counted');
 });
 
 /* ── ⑦ 「警報名は設定言語で書け」 ────────────────────────────────────────────────────────────────
