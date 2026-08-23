@@ -280,15 +280,15 @@ test('R168 #8 index.html shrank and no module body came back inline', () => {
      for the same reason #R193's dynamic-image primitive did — js/geo-engine.js is the one file
      allowed to know the renderer — and the shell went to 8,285. This paragraph is where a round
      would normally argue for 8,300. Instead the two things this file has been asking for happened:
-       · js/geo-command-log.js took the census's comparisons, switches and tally (223 lines). It
+       · js/geo-command-log.js took the census's comparisons, switches and tally (316 lines). It
          names no renderer, so the coupling gate does not care where it lives, and the five adapter
          methods went back to being one-liners that ask it a question.
-       · js/camera-math.js took the camera geometry whole (375 lines) — the mercator projection, the
+       · js/camera-math.js took the camera geometry whole (407 lines) — the mercator projection, the
          eye position for a camera, the pitch that saturates, the zoom floor on a sphere. It is pure
          (arguments in, numbers out) and #R179's own note already said so. The single piece that
          could NOT go is `gGuard`, which asks MapLibre whether a camera is reachable; it stays in the
          adapter and is passed to the solvers as their `guard` argument, as it always was.
-     8,199 → 8,285 → 7,916. Headroom is 34 lines, which is the point: a ceiling with room to spare
+     8,199 → 8,285 → 7,923. Headroom is 27 lines, which is the point: a ceiling with room to spare
      has stopped asserting anything (#R194). */
   assert.ok(lines < 7_950, `index.html should be well under the pre-R168 9,709 lines; it is ${lines}`);
   assert.ok(!/<style>[\s\S]{4000,}?<\/style>/.test(html), 'the stylesheet stays in css/intmap.css');
