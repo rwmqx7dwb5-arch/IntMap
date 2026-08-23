@@ -88,7 +88,7 @@ export function makeAtlasState(HOST) {
 
       /* The contract's `getBounds()` returns the renderer's bounds object (MapLibre's LngLatBounds, or
          the Cesium adapter's stand-in for it) — never a plain box, so it is unpacked here. */
-      /* ══ (#R366) THE NEWS SURFACE — docs/NEWS-EVENTS.md §10 ═══════════════════════════════════
+      /* ══ (#R382) THE NEWS SURFACE — docs/NEWS-EVENTS.md §10 ═══════════════════════════════════
          「news feed の state provider は現在0件」。それは Atlas が News について**何ひとつ
          観測していなかった**という意味で、`research.events` は自分が描いた結果しか見ていなかった。
          ⚠ **答えは 3 通りある。** 出来事モード（`IntMapNewsEvents` が読み込まれている）／

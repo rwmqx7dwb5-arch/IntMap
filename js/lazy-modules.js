@@ -120,10 +120,7 @@ export function makeLazyModules(HOST) {
       analysisEdu: '__imAnalysisEdu', warLayer: '__imWarFronts',   /* (#R349) the war layer's BODY — its Layers row (js/war-fronts.js) is eager, this is not */
       /* (#R347) navigation's eight files ride in ONE chunk (all are needed within the same tick of starting); routingTraffic is first called by js/routing.js's `_kickProbe()`. DEV-NOTES #R347. */
       navigation: 'IntMapNavigation',
-      routingTraffic: 'IntMapRouteTraffic',
-      /* (#R366) 出来事単位の News。News タブは既定のタブではない（起動時はウィジェット
-         ボード）ので、**News を開くまで 1 バイトも降ってこない**。docs/NEWS-EVENTS.md §12 */
-      newsEvents: 'IntMapNewsEvents',
+      routingTraffic: 'IntMapRouteTraffic', newsEvents: 'IntMapNewsEvents',   /* (#R382) 出来事単位の News — News タブを開くまで 1 バイトも降ってこない（docs/NEWS-EVENTS.md §12） */
     };
 
     function record(name, why) {
@@ -168,8 +165,7 @@ export function makeLazyModules(HOST) {
         case 'analysisEdu': return import('./analysis-edu.js');
         case 'aviationLive': return import('./aviation-live.js');
         case 'navigation': return import('./navigation.js');
-        case 'newsEvents': return import('./news-events.js');
-        case 'routingTraffic': return import('./routing-traffic.js'); case 'warLayer': return import('./war-layer.js'); case 'volcanoIntel': return import('./volcano-intel.js'); case 'volcanoLayers': return import('./volcano-layers.js');   /* (#R353) */ case 'companyData': return import('./company-data.js'); case 'companyPanel': return import('./company-panel.js'); case 'companyFacilities': return import('./company-facilities.js');   /* (#R354) */
+        case 'newsEvents': return import('./news-events.js'); case 'routingTraffic': return import('./routing-traffic.js'); case 'warLayer': return import('./war-layer.js'); case 'volcanoIntel': return import('./volcano-intel.js'); case 'volcanoLayers': return import('./volcano-layers.js');   /* (#R353) */ case 'companyData': return import('./company-data.js'); case 'companyPanel': return import('./company-panel.js'); case 'companyFacilities': return import('./company-facilities.js');   /* (#R354) */
         default: return Promise.reject(new Error('no such lazy module: ' + name));
       }
     }
@@ -203,8 +199,7 @@ export function makeLazyModules(HOST) {
         case 'analysisCorrelate': window.IntMapModules.analysisCorrelate(IM_HOST); return true;
         case 'analysisEvents': window.IntMapModules.analysisEvents(IM_HOST); return true;
         case 'analysisEdu': window.IntMapModules.analysisEdu(IM_HOST); return true; case 'warLayer': window.IntMapModules.warLayer(IM_HOST); return true;   /* (#R349) */
-        case 'newsEvents': window.IntMapNewsEvents=window.IntMapModules.newsEvents(IM_HOST); return true;   /* (#R366) */
-        case 'aviationLive': window.IntMapAviation=window.IntMapModules.aviationLive(IM_HOST); return true; case 'volcanoIntel': window.IntMapModules.volcanoIntel(IM_HOST); return true; case 'volcanoLayers': window.IntMapModules.volcanoLayers(IM_HOST); return true;   /* (#R353) */
+        case 'newsEvents': window.IntMapNewsEvents=window.IntMapModules.newsEvents(IM_HOST); return true;   /* (#R382) */ case 'aviationLive': window.IntMapAviation=window.IntMapModules.aviationLive(IM_HOST); return true; case 'volcanoIntel': window.IntMapModules.volcanoIntel(IM_HOST); return true; case 'volcanoLayers': window.IntMapModules.volcanoLayers(IM_HOST); return true;   /* (#R353) */
         /* publishes itself at import time, like nightSky */ case 'companyData': window.IntMapCompanyData=window.IntMapModules.companyData(IM_HOST); return true; case 'companyPanel': window.IntMapCompanyPanel=window.IntMapModules.companyPanel(IM_HOST); return true; case 'companyFacilities': window.IntMapCompanyFacilities=window.IntMapModules.companyFacilities(IM_HOST); return true;   /* (#R354) */
         default: return !!M;
       }

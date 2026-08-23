@@ -80,9 +80,9 @@ exists. `current_news` above is untouched and still serves article mode.
 | `news_event_i18n` | Server-generated translation of an event (`ja` today). Persisted, so it is readable logged out and costs no user AI quota. *(#R351)* `source_title_fp` is the hash of the headline that was translated, so a cached translation is reused until the headline itself changes — `updated_at` would move on every added article and re-bill the same sentence. | Everyone. | **service_role only.** |
 | `saved_news_events` | ★ on an **Event** (`favorites` keeps holding ★ on an article link). | Owner. | Owner. |
 | `news_ingest_runs` *(#R351)* | One row per `news-ingest` run: feeds reached, items fetched, articles new/seen, the **reject breakdown**, events created/updated, evictions, translations, tokens, an indicative cost, and per-stage timings. Per-feed freshness is not copied here — `news_source_feeds` holds it. | **Admin only.** | **service_role only.** |
-| `news_event_admin_actions` *(#R366)* | One row per operator (or machine) Merge / Split / Reassign / metadata override, with the **material needed to reverse it** in `before`. ⚠ `before` holds only what the action changed — restoring a whole-table snapshot would roll back every article ingested since. ⚠ No FK from `actor` / `reverted_by` to `auth.users`: this is an audit record, not an owned row (same reason as `news_events.reviewed_by`). | **Admin only.** | **service_role only** — operators write it through the RPCs below. |
+| `news_event_admin_actions` *(#R382)* | One row per operator (or machine) Merge / Split / Reassign / metadata override, with the **material needed to reverse it** in `before`. ⚠ `before` holds only what the action changed — restoring a whole-table snapshot would roll back every article ingested since. ⚠ No FK from `actor` / `reverted_by` to `auth.users`: this is an audit record, not an owned row (same reason as `news_events.reviewed_by`). | **Admin only.** | **service_role only** — operators write it through the RPCs below. |
 
-## Operator RPCs — News Events *(#R366)*
+## Operator RPCs — News Events *(#R382)*
 
 The News Events tab in `admin.html` never UPDATEs these tables. One operator action touches four
 of them (`news_event_articles`, `news_events.merged_into`, the counts, and the audit row), so each

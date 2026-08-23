@@ -157,7 +157,7 @@
       </div>
     </section>
 
-    <!-- NEWS EVENTS (#R366 · docs/NEWS-EVENTS.md §11)
+    <!-- NEWS EVENTS (#R382 · docs/NEWS-EVENTS.md §11)
          運用者が直すのは「どの記事がどの Event に属するか」であって、記事そのものではない。
          ⚠ `news_articles` と `news_cluster_decisions` は admin にも書かせない — 上流が何と
            言ったかと、機械が何を根拠に判定したかは、後から書き換えてよい記録ではない。
@@ -168,7 +168,7 @@
         <div class="bar">
           <h2>News events <span class="count" id="nev-count"></span></h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <input id="nev-q" placeholder="filter by headline…" style="padding:7px 10px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--in);color:var(--text);font-size:13px;">
+            <label for="nev-q" class="muted" style="font-size:12px;">Filter</label><input id="nev-q" style="padding:7px 10px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--in);color:var(--text);font-size:13px;">
             <button class="btn sec sm" id="nev-refresh">Refresh</button>
           </div>
         </div>
@@ -299,7 +299,7 @@
     if(b.dataset.tab==='nev') loadNev();
   });
 
-  /* ---------------- NEWS EVENTS (#R366 · docs/NEWS-EVENTS.md §11) ----------------
+  /* ---------------- NEWS EVENTS (#R382 · docs/NEWS-EVENTS.md §11) ----------------
      運用者の Merge / Split / Reassign / 上書き / undo。
      ⚠ どれも SECURITY DEFINER の RPC を呼ぶ。表を直接 UPDATE しない——1 回の操作が
        `news_event_articles` の付け替え・`merged_into`・件数の再計算・監査の書き出しの

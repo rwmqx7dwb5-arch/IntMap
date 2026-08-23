@@ -7,7 +7,7 @@ begin;
 select plan(80);   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
                    -- (#R351) +2: news_ingest_runs joins both lists too. A table missing from the
                    -- list cannot fail the list (#R280) — that is why the count moves with the table.
-                   -- (#R366) +4: news_event_admin_actions joins both lists, and the two operator
+                   -- (#R382) +4: news_event_admin_actions joins both lists, and the two operator
                    -- RPCs that the admin console calls get an existence assertion each — a console
                    -- button wired to a function that is not deployed is the silent hole again.
 
@@ -32,7 +32,7 @@ from unnest(array[
   -- (#R351) …and the ingest telemetry beside them (docs/NEWS-EVENTS.md §13). Operational
   -- rather than public: admin reads it, service_role writes it.
   'news_cluster_decisions','news_event_i18n','saved_news_events','news_ingest_runs',
-  -- (#R366) the operator's audit trail (docs/NEWS-EVENTS.md §11). Admin reads it, service_role
+  -- (#R382) the operator's audit trail (docs/NEWS-EVENTS.md §11). Admin reads it, service_role
   -- writes it, and every Merge / Split / Reassign / override writes one row with the material
   -- needed to undo it. ⚠ NO FK to auth.users on actor — see the migration's note.
   'news_event_admin_actions'
@@ -56,7 +56,7 @@ from unnest(array[
   'news_event_admin_actions'
 ]) as t;                                                    -- 31 assertions
 
--- (#R366) 2b) The operator RPCs exist. The admin console has buttons wired to these four names;
+-- (#R382) 2b) The operator RPCs exist. The admin console has buttons wired to these four names;
 --   a button that calls a function which is not there fails at the moment an operator needs it.
 select has_function('public', 'news_event_merge',       'news_event_merge() exists');
 select has_function('public', 'news_event_reassign',    'news_event_reassign() exists');

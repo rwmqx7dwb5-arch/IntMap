@@ -277,7 +277,17 @@ window.IntMapLang.define('zh', {
   /* ② the inline strings — every L(…) call site in js/*.js, keyed by its English text.
      1882 of them. A key left untranslated renders in English. */
   inline: {
-    /* (#R366) 出来事単位の News — js/news-events.js。この4言語は位置引数の5つ目より後なので、英語の原文を鍵にここで引く。 */
+    'Name a category': '請指定分類',
+    'No such event category': '沒有這個事件分類',
+    'reported by 2+ independent outlets': '由 2 家以上獨立媒體報導',
+    'server-side clustering over the full 72-hour window': '在伺服器端針對完整 72 小時視窗做的分群',
+    'The events surface is not available': '目前無法使用事件清單',
+    'with no location': '地點不明',
+    'Business & Economy': '財經',
+    'Latest article': '最新報導',
+    'Follow-up': '後續報導',
+    'matching events': '則符合的事件',
+    /* (#R382) 出来事単位の News — js/news-events.js。この4言語は位置引数の5つ目より後なので、英語の原文を鍵にここで引く。 */
     '(translated from English)': '（譯自英文）',
     '1 source': '1 家媒體',
     'Category decided by: {by}.': '分類的決定來源：{by}。',

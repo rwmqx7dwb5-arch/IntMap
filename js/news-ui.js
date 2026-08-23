@@ -618,14 +618,14 @@ window.IntMapModules.newsUi=function(HOST){
         <div class="news-head"><span class="${chipCls}">${IntMapSafe.html(item.analysis.name)||(window.IntMapLang.t(HOST.lang,'Location unknown','場所不明','Ort unbekannt','Место неизвестно','Ubicación desconocida'))}</span><small class="news-date">${formatCustomDate(item.pubDate)}</small></div>
         <div class="news-title">${HOST.newsTitleHTML(item)}</div>
         <div class="news-foot"><small class="news-pub"${item.publisher?' role="link" tabindex="0" title="'+IntMapSafe.html(item.publisher+' — Wikipedia ↗')+'"':''}>${IntMapSafe.html(item.publisher)}</small><button class="btn-read">${readLabel}</button></div>`;   /* (#R138 SEC) name/publisher from external RSS → escape (newsTitleHTML self-escapes) */
-      /* (#R366) 出来事のカードは `.news-item` を**発展させたもの**で、別のカードではない
+      /* (#R382) 出来事のカードは `.news-item` を**発展させたもの**で、別のカードではない
          （docs/NEWS-EVENTS.md §9）。足すのは カテゴリ・続報の印・`N sources` の 3 つだけ。 */
       if(item._event){ try{ window.IntMapNewsEvents && window.IntMapNewsEvents.decorate(card,item); }catch(_){} }
       card.querySelector('.btn-bookmark').onclick=async(e)=>{ e.stopPropagation();
         /* (#R210) the snapshot is written from the item that is ON SCREEN — the only moment the app
            is holding everything a saved card needs. Written before the await so a slow round-trip
            cannot lose it, and rolled back if the toggle turns out to have been an UN-save. */
-        /* (#R366) 出来事の★は Event の identity（public_id）で保存する。記事の★
+        /* (#R382) 出来事の★は Event の identity（public_id）で保存する。記事の★
            （`favorites` / `intmap_bookmarks` / スナップショット）は 1 バイトも触らない
            ——記事モードは fallback として動き続ける（docs/NEWS-EVENTS.md §2 の決定 7）。 */
         if(item._event){ const E=window.IntMapNewsEvents; if(!E) return;

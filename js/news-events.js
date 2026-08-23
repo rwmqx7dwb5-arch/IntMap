@@ -38,7 +38,7 @@ window.IntMapModules.newsEvents = function (HOST) {
   const CATS = [
     ['world', LA('World', '国際', 'International', 'В мире', 'Internacional')],
     ['politics', LA('Politics & Conflict', '政治・紛争', 'Politik & Konflikte', 'Политика и конфликты', 'Política y conflictos')],
-    ['business', LA('Business', '経済', 'Wirtschaft', 'Экономика', 'Economía')],
+    ['business', LA('Business & Economy', '経済', 'Wirtschaft', 'Экономика', 'Economía')],
     ['technology', LA('Technology', 'テクノロジー', 'Technologie', 'Технологии', 'Tecnología')],
     ['science_health', LA('Science & Health', '科学・医療', 'Wissenschaft & Gesundheit', 'Наука и здоровье', 'Ciencia y salud')],
     ['climate_weather', LA('Climate & Weather', '気候・気象', 'Klima & Wetter', 'Климат и погода', 'Clima y meteorología')],
@@ -65,6 +65,7 @@ window.IntMapModules.newsEvents = function (HOST) {
   let lastLoadedAt = 0;
   let lastError = null;
   let selected = null;         /* 詳細を開いている Event の public_id */
+  let items = [];              /* 直近の load() が作った一覧の項目（HOST.globalData へ入れるのは呼び出し側） */
   let category = 'all';
 
   async function loadSources(force) {
@@ -96,7 +97,7 @@ window.IntMapModules.newsEvents = function (HOST) {
   /* ── 時刻の文言 ─────────────────────────────────────────────────────────
      ⚠ **1 つの時計に訊く。** 「n 分前」は端末のいまではなく IntMap のマスタークロックで
        決まる（window.IntMapTime。#R288 以降の全レイヤーの規則）。 */
-  const nowMs = () => { try { return window.IntMapTime.now().getTime(); } catch (_) { return Date.now(); } };
+  const nowMs = () => { try { const st = window.IntMapTime.state(); return (st.isLive ? new Date() : st.when).getTime(); } catch (_) { return Date.now(); } };
   function ago(iso) {
     const t = Date.parse(iso);
     if (!isFinite(t)) return '';
@@ -315,7 +316,11 @@ window.IntMapModules.newsEvents = function (HOST) {
         for (const e of data) if (dbSaved.has(e.id)) savedIds.add(e.public_id);
         saveLocal([...savedIds]);
       }
-      HOST.globalData = data.map((row) => toItem(row, i18n));
+      /* ⚠ **`HOST.globalData` をここから書かない。** そのメンバの書き手は
+         js/news-feed.js だけであり（#R165 の RW 契約：1 メンバに書き手は 1 つ）、
+         2 つ目の書き手ができた瞬間に「いま一覧に何が入っているか」の
+         責任が 2 か所に分かれる。ここは**項目を作って渡すだけ**で、入れるのは呼び出し側。 */
+      items = data.map((row) => toItem(row, i18n));
       lastLoadedAt = nowMs();
       lastError = null;
       return true;
@@ -378,7 +383,7 @@ window.IntMapModules.newsEvents = function (HOST) {
     if (!foot) return;
     const isUpd = ev.articleCount > 1 && Date.parse(ev.lastAt) - Date.parse(ev.firstAt) > 3600e3;
     const badge = isUpd
-      ? '<span class="ev-badge upd">' + S(L('Updated', '続報', 'Aktualisiert', 'Обновлено', 'Actualizado')) + '</span>'
+      ? '<span class="ev-badge upd">' + S(L('Follow-up', '続報', 'Aktualisiert', 'Обновлено', 'Actualizado')) + '</span>'
       : '';
     const head = card.querySelector('.news-head');
     if (head && badge) head.insertAdjacentHTML('beforeend', badge);
@@ -434,7 +439,7 @@ window.IntMapModules.newsEvents = function (HOST) {
     /* ── 時刻 ── 初出と最新。「いつから続いているか」は出来事の基本的な事実である。 */
     html += '<div class="ev-d-meta">' +
       '<span>' + S(L('First reported', '初出', 'Zuerst gemeldet', 'Первое сообщение', 'Primer informe')) + ': ' + S(fmt(ev.firstAt)) + '</span>' +
-      '<span>' + S(L('Latest', '最新', 'Neueste', 'Последнее', 'Más reciente')) + ': ' + S(fmt(ev.lastAt)) + ' · ' + S(ago(ev.lastAt)) + '</span>' +
+      '<span>' + S(L('Latest article', '最新', 'Neueste', 'Последнее', 'Más reciente')) + ': ' + S(fmt(ev.lastAt)) + ' · ' + S(ago(ev.lastAt)) + '</span>' +
       '<span>' + S(String(L('{a} articles · {b} independent outlets', '記事{a}本・独立{b}媒体', '{a} Artikel · {b} unabhängige Quellen', '{a} статей · {b} независимых источников', '{a} artículos · {b} medios independientes')).replace('{a}', ev.articleCount).replace('{b}', ev.sourceCount)) + '</span>' +
       '</div>';
 
@@ -527,9 +532,11 @@ window.IntMapModules.newsEvents = function (HOST) {
 
   /* Atlas と本番検証が「いま何が読めるか」を数えるための、DOM に依らない読み口。 */
   function events() { return (HOST.globalData || []).filter((x) => x && x._event).map((x) => x._event); }
+  /* 直近の load() が作った項目。⚠ これを HOST.globalData に入れるのは js/news-feed.js である。 */
+  function loaded() { return items.slice(); }
 
   const API = {
-    load, state, events, passes, renderChips, hideChips, decorate, openDetail,
+    load, loaded, state, events, passes, renderChips, hideChips, decorate, openDetail,
     toggleStar, isSaved, differences, quantities,
     categories: () => CATS.map(([k, v]) => ({ key: k, label: L.arr(v) })),
     category: () => category,

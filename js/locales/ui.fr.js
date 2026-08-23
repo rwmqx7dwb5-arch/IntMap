@@ -276,7 +276,17 @@ window.IntMapLang.define('fr', { ui: {
       wsOff:"Désactivé (par défaut)",
       wsOn:"Activé — fenêtres flottantes et redimensionnables",
     }, inline: {
-    /* (#R366) 出来事単位の News — js/news-events.js。この4言語は位置引数の5つ目より後なので、英語の原文を鍵にここで引く。 */
+    'Name a category': 'Indiquez une catégorie',
+    'No such event category': 'Cette catégorie d’événements n’existe pas',
+    'reported by 2+ independent outlets': 'rapportés par 2 médias indépendants ou plus',
+    'server-side clustering over the full 72-hour window': 'regroupement côté serveur sur la totalité de la fenêtre de 72 heures',
+    'The events surface is not available': 'La vue des événements n’est pas disponible',
+    'with no location': 'sans localisation',
+    'Business & Economy': 'Économie',
+    'Latest article': 'Dernier article',
+    'Follow-up': 'Suivi',
+    'matching events': 'événements correspondants',
+    /* (#R382) 出来事単位の News — js/news-events.js。この4言語は位置引数の5つ目より後なので、英語の原文を鍵にここで引く。 */
     '(translated from English)': '(traduit de l’anglais)',
     '1 source': '1 source',
     'Category decided by: {by}.': 'Catégorie décidée par : {by}.',

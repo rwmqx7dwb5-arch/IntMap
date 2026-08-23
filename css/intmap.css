@@ -1258,7 +1258,7 @@
     .nrp-spinner{ width:28px; height:28px; border:3px solid rgba(128,128,128,0.25); border-top-color:var(--primary-color); border-radius:50%; animation:nrpSpin 0.8s linear infinite; }
     @keyframes nrpSpin{ to{ transform:rotate(360deg); } }
 
-    /* ══ (#R366) NEWS EVENTS — 出来事単位の News ═══════════════════════════════════════════════
+    /* ══ (#R382) NEWS EVENTS — 出来事単位の News ═══════════════════════════════════════════════
        docs/NEWS-EVENTS.md §9「既存の視覚言語と密度を維持する。Ground News 風の独立画面や
        巨大モーダルを作らない」。だから新しいカードは無く、`.news-item` に 3 つ足すだけで、
        詳細は既存の `.news-reader-pane` に描く。 */

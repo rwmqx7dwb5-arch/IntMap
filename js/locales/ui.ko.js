@@ -268,7 +268,17 @@ window.IntMapLang.define('ko', { ui: {
       wsOff:"끔 (기본값)",
       wsOn:"켬 — 자유롭게 움직이는 크기 조절 가능한 창",
     }, inline: {
-    /* (#R366) 出来事単位の News — js/news-events.js。この4言語は位置引数の5つ目より後なので、英語の原文を鍵にここで引く。 */
+    'Name a category': '분류를 지정하세요',
+    'No such event category': '그런 사건 분류는 없습니다',
+    'reported by 2+ independent outlets': '독립 매체 2곳 이상이 보도',
+    'server-side clustering over the full 72-hour window': '서버 측에서 72시간 창 전체를 보고 수행한 군집화',
+    'The events surface is not available': '사건 목록을 사용할 수 없습니다',
+    'with no location': '지점 불명',
+    'Business & Economy': '경제',
+    'Latest article': '최신 기사',
+    'Follow-up': '후속 보도',
+    'matching events': '건의 해당 사건',
+    /* (#R382) 出来事単位の News — js/news-events.js。この4言語は位置引数の5つ目より後なので、英語の原文を鍵にここで引く。 */
     '(translated from English)': '(영어에서 번역)',
     '1 source': '1개 매체',
     'Category decided by: {by}.': '분류를 정한 근거: {by}.',

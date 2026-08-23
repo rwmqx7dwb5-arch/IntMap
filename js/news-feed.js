@@ -200,7 +200,7 @@ window.IntMapModules.newsFeed=function(HOST){
     /* 1) Instant: show cached headlines immediately while fresh ones load. */
     if(HOST.globalData.length===0){ const cached=loadNewsCache(); if(cached&&cached.length){ HOST.globalData=cached; if(HOST.mode==='news'||HOST.mode==='saved') startNews(); } }
     if((HOST.mode==='news'||HOST.mode==='saved')&&feed&&HOST.globalData.length===0) feed.innerHTML=`<div class="empty-msg">${HOST.t('loading')}</div>`;
-    /* 1a) (#R366) EVENT MODE — 記事ではなく**出来事**の一覧。
+    /* 1a) (#R382) EVENT MODE — 記事ではなく**出来事**の一覧。
        ⚠ **搭載条件を先に見て、満たさないなら取りに行かない。** Event 経路が答えを持つのは
          「既定のフィード」だけである——検索・時間旅行（過去の日付）・多言語モードは、
          収集が英語のみ・保持が 72 時間・カテゴリが Event 単位、という前提の外にある
@@ -212,6 +212,9 @@ window.IntMapModules.newsFeed=function(HOST){
       try{
         const okLazy = await window.IntMapLazy.need('newsEvents');
         if(okLazy && window.IntMapNewsEvents && await window.IntMapNewsEvents.load()){
+          /* ⚠ 一覧を入れるのは**ここだけ**。`HOST.globalData` の書き手はこのファイル 1 つで、
+             出来事のモジュールは項目を**作る**だけである（#R165 の RW 契約）。 */
+          HOST.globalData = window.IntMapNewsEvents.loaded();
           window.IntMapNewsEvents.renderChips();
           if(HOST.mode==='news'||HOST.mode==='saved') startNews();
           return;

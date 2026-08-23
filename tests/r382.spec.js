@@ -1,5 +1,5 @@
 /* ============================================================================
- *  R366 — 出来事が本当に画面に出るか、本物のブラウザで
+ *  R382 — 出来事が本当に画面に出るか、本物のブラウザで
  * ----------------------------------------------------------------------------
  *  #R351 の本番検証はこう書いている——「配信バンドルを grep して `news_events*` への
  *  参照 0 件（表に 640 行あるのに、フロントにそこへ到達する経路が 1 本も無い）」。
@@ -81,24 +81,48 @@ async function stub(page) {
     r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
 }
 
-test('R366 ① 出来事が読み込まれ、記事ではなく出来事が一覧の項目になる', async ({ app }) => {
-  const page = app.page;
-  const seen = [];
-  page.on('request', (r) => { if (/\/rest\/v1\//.test(r.url())) seen.push(r.url().slice(0, 120)); });
+/* ⚠⚠ **アプリに読ませる。モジュールを直接叩かない。** `IntMapNewsEvents.load()` を呼ぶだけでは
+   `HOST.globalData` は変わらない——一覧を入れるのは js/news-feed.js だけだからである（#R165 の
+   RW 契約）。そこで検査は**利用者と同じ経路**を通す: News タブ →「Search / Load」。これは
+   `fetchData()` を回すので、route で差し替えた応答がそのまま一覧になる。
+   ⚠ 起動時の取り込みは route を張る前に走っているので、**張ってから読み直させる**必要がある。 */
+async function loadEvents(page) {
   await stub(page);
+  await page.evaluate(async () => {
+    await window.IntMapLazy.need('newsEvents');
+    document.getElementById('btn-news').click();
+    const q = document.getElementById('search-input');
+    if (q) q.value = '';
+    document.getElementById('btn-search').click();
+  });
+  await page.waitForFunction(() => {
+    try {
+      const E = window.IntMapNewsEvents;
+      return window.__IM_NEWS_SURFACE && window.__IM_NEWS_SURFACE() === 'events'
+        && E && E.events().length === 3;
+    } catch (_) { return false; }
+  }, null, { timeout: 30000 });
+}
+
+
+/* ⚠ (#R382) THIS FILE IS THE ROUND'S GATE SPEC, so it carries only the two claims that must hold
+   before anything is pushed: the events path is reachable and the list is made of events, and the
+   category filter narrows list and map through one predicate. The other three claims — the outlet
+   differences, the detail view, and the Atlas state provider — are in tests/r382-detail.spec.js,
+   which the whole suite runs and the gate does not (scripts/tiers.mjs · #R337's shape). */
+test('R382 ① 出来事が読み込まれ、記事ではなく出来事が一覧の項目になる', async ({ app }) => {
+  const page = app.page;
+  await loadEvents(page);
 
   const out = await page.evaluate(async () => {
-    const okLazy = await window.IntMapLazy.need('newsEvents');
-    if (!okLazy) return { fail: 'the lazy module did not arrive: ' + JSON.stringify(window.IntMapLazy.check()) };
-    const loaded = await window.IntMapNewsEvents.load();
     const evs = window.IntMapNewsEvents.events();
-    return { loaded, n: evs.length, first: evs[0], surface: window.__IM_NEWS_SURFACE && window.__IM_NEWS_SURFACE() };
+    return { loaded: true, n: evs.length, first: evs[0], surface: window.__IM_NEWS_SURFACE() };
   });
   expect(out.fail, out.fail || '').toBeFalsy();
-  /* ⚠ 起動時にアプリ自身が本物の `news_events` / `news_sources` を読んでいる（＝経路は
-     本当に通っている）。この検査の 3 件は route で差し替えたものなので、**知らない媒体が
-     混ざったときに登録簿を取り直す**規則が効いていないと、ここは本番の名前を出す。 */
-  expect(seen.some((u) => /news_sources/.test(u)), 'the registry must be re-read when an unknown outlet appears: ' + JSON.stringify(seen)).toBe(true);
+  /* ⚠⚠ **この 3 行が、登録簿を取り直す規則を測っている。** アプリは起動時に本物の
+     `news_sources` を読んでキャッシュしており、この検査の媒体（`sinclair1` / `sinclair2`）は
+     そこに居ない。取り直さなければ、名前ではなく **id** が出て、`source_family` が引けないので
+     独立媒体の数も 4 になる——出荷後に媒体が 1 つ増えた日に起きるのと同じことである。 */
   expect(out.loaded).toBe(true);
   expect(out.n).toBe(3);
   /* ⚠ 一覧が「出来事である」ことは旗ではなく**中身**に訊く。 */
@@ -109,14 +133,12 @@ test('R366 ① 出来事が読み込まれ、記事ではなく出来事が一�
   expect(out.first.outlets).toEqual(['BBC', 'AP', 'WJLA']);
 });
 
-test('R366 ② カテゴリは一覧と地図の両方に効く（述語が 1 本しかないので）', async ({ app }) => {
+test('R382 ② カテゴリは一覧と地図の両方に効く（述語が 1 本しかないので）', async ({ app }) => {
   const page = app.page;
-  await stub(page);
+  await loadEvents(page);
 
   const out = await page.evaluate(async () => {
-    await window.IntMapLazy.need('newsEvents');
     const E = window.IntMapNewsEvents;
-    await E.load();
     const all = E.events().length;
     E.setCategory('business');
     const afterList = E.state().visibleEventCount;
@@ -133,96 +155,4 @@ test('R366 ② カテゴリは一覧と地図の両方に効く（述語が 1 �
   expect(out.back).toBe(3);
   /* chips は実データから作られ、0 件のカテゴリは出さない: All ＋ 3 カテゴリ。 */
   expect(out.chipCount).toBe(4);
-});
-
-test('R366 ③ 媒体ごとの相違は、別々の系列が違う数を言ったときだけ出る', async ({ app }) => {
-  const page = app.page;
-  await stub(page);
-
-  const out = await page.evaluate(async () => {
-    await window.IntMapLazy.need('newsEvents');
-    const E = window.IntMapNewsEvents;
-    await E.load();
-    const evs = E.events();
-    const fire = evs.find((e) => e.publicId === 'etest001');
-    const tariff = evs.find((e) => e.publicId === 'etest002');
-    const oneVoice = evs.find((e) => e.publicId === 'etest003');
-    return {
-      fire: E.differences(fire).map((d) => ({ kind: d.kind, values: d.claims.map((c) => c.value), srcs: d.claims.map((c) => c.source) })),
-      tariff: E.differences(tariff).length,
-      oneVoice: E.differences(oneVoice).length,
-      quantities: E.quantities('At least 5 people injured overnight.').map((q) => [q.kind, q.value]),
-    };
-  });
-  /* BBC「3 injured」と AP「5 injured」は別の系列 ⇒ 相違。 */
-  expect(out.fire).toHaveLength(1);
-  expect(out.fire[0].kind).toBe('injured');
-  expect(out.fire[0].values).toEqual([3, 5]);
-  expect(out.fire[0].srcs).toEqual(['BBC', 'AP']);
-  /* ⚠⚠ **同じ系列だけが 3 → 6 と変えた出来事は、相違 0 件。** 1 つの声の更新であって、
-     媒体間の食い違いではない——ここが 1 になったら、続報のたびに「媒体が対立している」と
-     読者に見せることになる。 */
-  expect(out.oneVoice).toBe(0);
-  /* 数量が 1 つも無い出来事に、相違をでっち上げない。 */
-  expect(out.tariff).toBe(0);
-  expect(out.quantities).toEqual([['injured', 5]]);
-});
-
-test('R366 ④ 詳細は、誰がいつ報じたか・同系列・初報・組み立て方を出す', async ({ app }) => {
-  const page = app.page;
-  await stub(page);
-
-  const detail = await page.evaluate(async () => {
-    await window.IntMapLazy.need('newsEvents');
-    const E = window.IntMapNewsEvents;
-    await E.load();
-    const evs = E.events();
-    const fire = evs.find((e) => e.publicId === 'etest001');
-    /* openDetail は一覧の項目を受け取るので、同じ形を組み立てて渡す
-       （`analysis.loc` が無くても詳細は開ける——地図へ寄るのは任意の副作用）。 */
-    E.openDetail({ _event: fire, analysis: { loc: [fire ? -119.81 : 0, 39.53] } });
-    const pane = document.getElementById('news-reader-pane');
-    const cov = pane.querySelectorAll('.ev-cov');
-    return {
-      open: pane.style.display !== 'none',
-      coverage: cov.length,
-      first: pane.querySelectorAll('.ev-badge.first').length,
-      dup: pane.querySelectorAll('.ev-cov.dup').length,
-      diffRows: pane.querySelectorAll('.ev-diff-row').length,
-      why: pane.querySelectorAll('.ev-why li').length,
-      html: pane.innerHTML.length,
-    };
-  });
-  expect(detail.open).toBe(true);
-  expect(detail.coverage).toBe(4);            /* 記事 4 本すべてを出す */
-  expect(detail.first).toBe(1);               /* 初報の印は 1 つだけ */
-  expect(detail.dup).toBe(1);                 /* Sinclair の 2 本目が「同系列」 */
-  expect(detail.diffRows).toBe(1);            /* injured の食い違い */
-  expect(detail.why).toBeGreaterThanOrEqual(3);
-  /* 戻れる。 */
-  const closed = await page.evaluate(() => {
-    document.getElementById('ev-back').click();
-    return document.getElementById('news-reader-pane').style.display === 'none';
-  });
-  expect(closed).toBe(true);
-});
-
-test('R366 ⑤ Atlas は News について観測した事実を持つ（state provider）', async ({ app }) => {
-  const page = app.page;
-  await stub(page);
-
-  const snap = await page.evaluate(async () => {
-    await window.IntMapLazy.need('newsEvents');
-    await window.IntMapNewsEvents.load();
-    window.IntMapNewsEvents.setCategory('all');
-    const s = window.IntMapAtlasState.snapshot({ only: ['news'] });
-    return s.news;
-  });
-  expect(snap).toBeTruthy();
-  expect(snap.mode).toBe('events');
-  expect(snap.loadedEventCount).toBe(3);
-  /* ⚠ 「地点が無い」を隠さない（docs/NEWS-EVENTS.md §9「正直に出すもの」）。 */
-  expect(snap.unplacedCount).toBe(1);
-  expect(snap.multiSourceCount).toBe(2);
-  expect(snap.selectedCategory).toBe('all');
 });

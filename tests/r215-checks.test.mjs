@@ -180,7 +180,10 @@ test('R215 ⑥: a snapshot always carries an analysis object, and the renderer d
   /* merge() must normalise records written by an OLDER build, or the fix never reaches existing stars */
   const merge = nu.slice(nu.indexOf('merge(feed,links)'), nu.indexOf('merge(feed,links)') + 700);
   assert.match(merge, /snapAnalysis/, 'records already on disk are normalised on the way out');
-  const batch = nu.slice(nu.indexOf('function appendNewsBatch'), nu.indexOf('function appendNewsBatch') + 900);
+  /* ⚠ (#R382) the window is 1600, not 900: the renderer gained the EVENT branch of the star
+     (an event's ★ is keyed by its public_id, not by a link), which sits above this guard. The
+     guard itself has not moved relative to the card — only its byte offset has. */
+  const batch = nu.slice(nu.indexOf('function appendNewsBatch'), nu.indexOf('function appendNewsBatch') + 1600);
   assert.match(batch, /if\(!item\.analysis\|\|typeof item\.analysis!=='object'\)/,
     'and the card renderer guards, because one throw inside forEach ends the whole batch');
 });

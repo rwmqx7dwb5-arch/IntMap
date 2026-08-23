@@ -398,9 +398,9 @@ const FILES = BODY.get('docs/FILES.md') || '';
         }
       });
     }
-    /* ══ (#R366) …AND THE SECOND SWITCH, WHICH IS THE ONE THAT IS ON ═══════════════════════════
+    /* ══ (#R382) …AND THE SECOND SWITCH, WHICH IS THE ONE THAT IS ON ═══════════════════════════
        `USE_SERVER_NEWS` is the #R40 path (current_news, article-level) and it is still false.
-       `NEWS_EVENT_MODE` is the #R334/#R351/#R366 path (news_events, event-level) and it is TRUE —
+       `NEWS_EVENT_MODE` is the #R334/#R351/#R382 path (news_events, event-level) and it is TRUE —
        the browser really does read a server-collected, server-stored news database now. A rule that
        only knew about the first switch would go on saying "the policy describes that path" while
        the policy said nothing about the path the reader is actually on. */

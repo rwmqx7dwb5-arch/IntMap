@@ -407,8 +407,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      * would be the pre-#R198 table forever. */
     get AI_FREE_DAILY(){ return AI_FREE_DAILY; }, get BUILTIN_GAZETTEER(){ return window.IntMapGazetteer.index(); },
     get SAT_PROVIDERS(){ return SAT_PROVIDERS; },
-    get SNAP_PX(){ return SNAP_PX; }, get USE_SERVER_NEWS(){ return USE_SERVER_NEWS; },
-    get NEWS_EVENT_MODE(){ return NEWS_EVENT_MODE; }, get newsSurfaceMode(){ return newsSurfaceMode; },
+    get SNAP_PX(){ return SNAP_PX; }, get USE_SERVER_NEWS(){ return USE_SERVER_NEWS; }, get NEWS_EVENT_MODE(){ return NEWS_EVENT_MODE; }, get newsSurfaceMode(){ return newsSurfaceMode; },
     get _DEMONYM_GZ(){ return _DEMONYM_GZ; }, get _DEM_CACHE_MAX(){ return _DEM_CACHE_MAX; },
     get _ORG_GZ(){ return _ORG_GZ; }, get _pubMatchers(){ return _pubMatchers; },
     get _spreadDupNewsPins(){ return _spreadDupNewsPins; }, get _stabIdx(){ return _stabIdx; },
@@ -2162,28 +2161,17 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function computeFilteredNews(){ const q=searchVal(), at=window._newsAreaTest;
     const ageCut=(currentMode==='saved'||newsDate)?0:(Date.now()-NEWS_MAX_AGE_MS);
     /* (#R210) ★ Saved is no longer only what the LIVE feed still carries — see js/news-ui.js
-       ⚠ (#R366) …but the article SNAPSHOT store must not be poured into an EVENT surface. Those
-         records are shaped like articles (link-keyed, no `_event`), so merging them into a list of
-         events would print article cards inside 出来事 mode and count them as events everywhere
-         `_event` is optional. Event ★ lives in `saved_news_events` and is filtered below. */
+       ⚠ (#R382) …and the article snapshot is never poured into an EVENT surface (link-keyed, no `_event`).
+       ⚠ (#R382) Event mode の違いは★の在り処・検索の当たる範囲・カテゴリの3つだけで、記事モードの述語は1ビットも変わらない。 */
     const base=(currentMode==='saved'&&window.IntMapNewsSaved&&newsSurfaceMode()!=='events')?window.IntMapNewsSaved.merge(globalData,bookmarks):globalData;
-    /* (#R366) Event mode の 3 つの違い。⚠ 記事モードの述語は 1 ビットも変えない
-       ——`it._event` を持たない項目に対しては、下の 3 行はどれも従来どおりに答える。
-         ・★ は `saved_news_events`（記事の link ではなく Event の public_id）
-         ・検索は代表見出しだけでなく**構成記事の見出しにも**当てる（`_search`）
-         ・カテゴリ chip は一覧と地図の**両方**に効く（述語が 1 つしかないから両方に効く） */
     const EV=()=>{ try{ return window.IntMapNewsEvents; }catch(_){ return null; } };
-    return base.filter(it=>{
-      if(currentMode==='saved'){
-        if(it._event){ const E=EV(); if(!E||!E.isSaved(it._event.publicId)) return false; }
-        else if(!bookmarks.includes(it.link)) return false;
-      }
+    const starred=(it)=>it._event ? !!(EV()&&EV().isSaved(it._event.publicId)) : bookmarks.includes(it.link);
+    return base.filter(it=>{ if(currentMode==='saved'&&!starred(it))return false;
       if(ageCut&&it.pubDate){ const pd=parseDate(it.pubDate).getTime(); if(pd&&pd<ageCut) return false; }
       /* (#R207) …except in Saved: the user kept that item deliberately (as with the age cut). */
       if(currentMode!=='saved'&&!it._event&&!newsSourceAllows(it.publisher)) return false;
-      if(it._event){ const E=EV(); if(E&&!E.passes(it)) return false; }
-      if(q){ const hay=it._search||it.title.toLowerCase(); if(!hay.includes(q)) return false; }
-      if(at){ const a=it.analysis, c=a&&a.loc; if(!c||!at(c[0],c[1])) return false; } return true; }); }
+      if(it._event&&EV()&&!EV().passes(it)) return false;
+      if(q&&!(it._search||it.title.toLowerCase()).includes(q))return false; if(at){ const a=it.analysis, c=a&&a.loc; if(!c||!at(c[0],c[1])) return false; } return true; }); }
   /* Title shown on a news card. When the translation pass (Settings → multi-language) has
      produced a translated title in the current UI language, show it plus a '(原文: …)' note. */
   function newsTitleHTML(item){
@@ -2480,20 +2468,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      re-enable the pre-analysed server feed. The realtime current_news subscription is gated on the same flag. */
   const USE_SERVER_NEWS = false;
   window.__IM_USE_SERVER_NEWS = USE_SERVER_NEWS;
-  /* ══ (#R366) EVENT MODE — 記事ではなく出来事を主語にする News ══════════════════════════════
-     ⚠ **`USE_SERVER_NEWS` とは別のスイッチである。** あれは #R40 で止めた `current_news`
-       （記事単位・AI 地点解析済み・出来事の概念なし）の経路で、いまも false のまま fallback
-       として生きている。こちらは #R334/#R351/Phase C が作った `news_events` の経路
-       ——永続 Event・カテゴリ・Source Registry・増分更新・merge/split・品質指標を持つ。
-       docs/NEWS-EVENTS.md §12 が「`USE_SERVER_NEWS=true` に切り替えて完了としてはならない」
-       と書いているのは、まさにこの 2 つが別物だからである。
-     ⚠ **落ちる先がある。** `IntMapNewsEvents.load()` が false を返したら（DB が無い・
-       表が空・検索や時間旅行や多言語モードで Event 経路が答えを持たない）、この経路は
-       黙って空を見せずに**記事モードへ落ちる**。 */
-  const NEWS_EVENT_MODE = true;
-  window.__IM_NEWS_EVENT_MODE = NEWS_EVENT_MODE;
-  /* いまこの瞬間、一覧に出ているのが Event か記事か。⚠ 「そのつもり」ではなく
-     「実際に何が入っているか」で答える——Atlas と本番検証はこれを読む。 */
+  /* (#R382) EVENT MODE — `news_events` の経路。⚠ すぐ上の `USE_SERVER_NEWS` とは**別のスイッチ**で、
+     二つが別物である理由と記事モードへ落ちる条件は docs/NEWS-EVENTS.md §12。`newsSurfaceMode()` は
+     旗ではなく**中身**に訊く（「そのつもり」ではなく実際に何が入っているか。Atlas と本番検証が読む）。 */
+  const NEWS_EVENT_MODE = true; window.__IM_NEWS_EVENT_MODE = NEWS_EVENT_MODE;
   function newsSurfaceMode(){ try{ return (globalData||[]).some(x=>x&&x._event) ? 'events' : 'articles'; }catch(_){ return 'articles'; } }
   window.__IM_NEWS_SURFACE = newsSurfaceMode;
   /* (#R169) moved verbatim to js/news-feed.js — see Architecture.md §3.1. */

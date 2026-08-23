@@ -281,7 +281,17 @@ window.IntMapLang.define('zh-hans', {
   /* ② the inline strings — every L(…) call site in js/*.js, keyed by its English text.
      1882 of them. A key left untranslated renders in English. */
   inline: {
-    /* (#R366) 出来事単位の News — js/news-events.js。この4言語は位置引数の5つ目より後なので、英語の原文を鍵にここで引く。 */
+    'Name a category': '请指定分类',
+    'No such event category': '没有这个事件分类',
+    'reported by 2+ independent outlets': '由 2 家以上独立媒体报道',
+    'server-side clustering over the full 72-hour window': '在服务器端针对完整 72 小时窗口做的分群',
+    'The events surface is not available': '目前无法使用事件列表',
+    'with no location': '地点不明',
+    'Business & Economy': '财经',
+    'Latest article': '最新报道',
+    'Follow-up': '后续报道',
+    'matching events': '则符合的事件',
+    /* (#R382) 出来事単位の News — js/news-events.js。この4言语は位置引数の5つ目より后なので、英语の原文を键にここで引く。 */
     '(translated from English)': '（译自英文）',
     '1 source': '1 家媒体',
     'Category decided by: {by}.': '分类的决定来源：{by}。',
@@ -291,13 +301,13 @@ window.IntMapLang.define('zh-hans', {
     'Event category': '事件分类',
     'First': '首报',
     'First reported': '首次报道',
-    'Grouped from published headlines by a deterministic rule (time, place, shared rare words) — not by an AI summary.': '依时间、地点与罕见词汇的确定性规则，从已发布的标题分群，而非由 AI 摘要。',
+    'Grouped from published headlines by a deterministic rule (time, place, shared rare words) — not by an AI summary.': '依时间、地点与罕见词汇的决定性规则，从已发布的标题分群，而非由 AI 摘要。',
     'How this event was assembled': '这则事件如何组成',
     'Independent outlets are counted by ownership group, so syndicated copies of one story count once. Here: {a} articles, {b} independent.': '独立媒体以资本集团计算，同稿转载仅计一次。此处：{a} 篇报道、{b} 家独立媒体。',
     'IntMap does not judge which is right. These are the figures each outlet actually printed.': 'IntMap 不判断孰是孰非，这里呈现的是各家媒体实际刊出的数字。',
     'No location could be resolved for this event.': '无法判定这则事件的地点。',
     'Politics & Conflict': '政治与冲突',
-    'Reviewed and locked by an operator.': '已由运维者确认并锁定。',
+    'Reviewed and locked by an operator.': '已由维运者确认并锁定。',
     'Same group': '同一集团',
     'Science & Health': '科学与健康',
     'Where outlets differ': '媒体之间的分歧',
@@ -310,7 +320,7 @@ window.IntMapLang.define('zh-hans', {
     '{n} sources': '{n} 家媒体',
     '{n}d ago': '{n} 天前',
     '{n}h ago': '{n} 小时前',
-    '{n}m ago': '{n} 分钟前',
+    '{n}m ago': '{n} 分前',
     "% of GDP": "占 GDP %",
     "By accession year": "依加入年份",
     "Carbon-dioxide emissions — the country total in megatonnes a year, or the same series divided by population; switch between the two in this legend.": "二氧化碳排放量 — 全国每年的总量（百万公吨），或同一组数据除以人口的每人排放量；可在此图例中切换。",
