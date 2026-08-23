@@ -81,6 +81,27 @@ world 16 / business 5 / science_health 5 / technology 4 / climate_weather 2 / po
 **この 2 カテゴリは分類器だけが埋める**——「6 つはフィードが決める」の残り 2 つがここ。
 ⚠ The Washington Post の World は 3 件しか返さない（空ではないが薄い）。
 
+⚠⚠⚠ **そして「その媒体が書いた」は「それは記事である」を意味しない**（#R351 実測）。
+`google_news_site` の `site:` 検索は**そのホストで索引されている何か**を返すので、記者ページ・
+タグページ・節見出し・企業データベースのページ・銘柄ページが記事として届く。直接 RSS にも
+ポッドキャストの回・定期物の索引が混ざる。取り込み 1,367 件に対する内訳（2026-08-23）:
+
+| 落とした形 | 実測 | 例 |
+|---|---|---|
+| 語数 5 未満（要約 8 語以上＋canonical URL があれば通す） | 34 | `HILLEL ITALIE` / `Tech Life` / `Yonhap News Summary` / `FEIA.DE` |
+| 定型の非記事表題 | 60 | `…: Profile and Biography`（Bloomberg 人物 DB）/ `About … (HBF.TO)`（Reuters 銘柄）/ `(EDITORIAL from …)` |
+| **多主題のまとめ記事** | 5〜6 | `PODCAST: …` / `…, Trump's Ballroom, More` / `…, and other Middle East developments` / 要約が `The following is …` |
+| 登録外のホスト（帰属できない） | 91 | CNN の World RSS に混ざった `fool.com` 広告 6 件を含む |
+
+⚠⚠ **まとめ記事は「惜しいから残す」ではなく「橋になるから落とす」。** 実測: Reuters の
+«PODCAST: Trump tariffs hit Canada, ballroom reprieve, … and Somali piracy» が**カナダ関税**と
+**ソマリア海賊**という無関係な 2 つの塊をつなぎ、NYT の海賊の記事が Quebec 分離独立の記事と
+同じ Event に入った。#R334 が閾値 ×0.70 で観測した「両方に触れた 1 本が橋になる」の、
+閾値ではなく**入力側**の形である。
+
+⚠ **この門は近似である。** だから落とした数と理由を `news_ingest_runs.rejects` に必ず出す
+（§13）。効きすぎたときも、効かなくなったときも、次のラウンドが数字で見られるように。
+
 Registry が持つ列は §4 の `news_sources` を見ること。**`independent_source_count` は
 `source_family` 単位で数える**——実測で Sinclair 3局・Hearst 4局が同一タイトルを配信しており、
 媒体名で数えると1つの出来事が「7媒体が報じた」に化ける。
@@ -155,6 +176,15 @@ Registry が持つ列は §4 の `news_sources` を見ること。**`independent
 `d<30km && dh≤24h` が常に真になり、**Jaccard 0.06 だけが最後の関門**になる。
 ⇒ **緩和規則は使わない。国の代表点を「近い」として扱わない。**
 
+⚠⚠⚠ **同じ穴が「国」以外にも開いていた（#R351 実測）。** `IntMapNewsGeo` が
+`kind:'org'` に解決した subject は**その組織の本部座標**なので、同じ会社の無関係な 2 件は
+やはり距離ゼロになる。実データで «Samsung Electronics が株主還元に最大 110 兆ウォン» と
+«Samsung SDI が Samsung Display 株を 4.45 兆ウォンで売却» が 1 件に融合していた。
+⇒ **代表点しか持たない解決は 3 種類**——`country` / `admin1`（州県省）/ `org`。
+`news-cluster.js` の `DEFAULTS.representativeKinds` がその一覧で、そこに入る種類は
+閾値を**下げるのではなく上げる**。`city` / `seat` / `flashpoint` / `feature` は
+「出来事が起きた場所」なので入れない。
+
 ### 5.2 3段で判定する
 
 1. **決定論の候補生成** — 時間窓・地理・共有 entity・event/action 語・`title_fingerprint`。
@@ -171,6 +201,40 @@ Registry が持つ列は §4 の `news_sources` を見ること。**`independent
 A–B と B–C が近くても A–C が別事件のことがある。edge を結んだ後に **cluster 全体**で
 時間幅・地理範囲・主要人物・組織・event type を再検証する。
 
+⚠⚠⚠ **増分の側では「最初の 1 本」が誰にも検算されていない（#R351 実測）。**
+新着を候補 Event へ載せる条件は「メンバーの `transitivity`（34%）以上と一致すること」だが、
+**メンバーが 1 件の Event ではその条件が 1 本の辺で必ず満たされる**——推移の検算が効かない。
+実データの決定履歴がそのまま原因を言っている:
+
+```
+592 Samsung SDI（別の発表）→ 新規 Event（メンバー 1）
+591 URGENT             → SDI と一致 1/1 = 100%  ⇒ 参加
+590 LEAD               → 2 件中 1 件と一致 50%   ⇒ 参加
+588 2nd LD             → 3 件中 2 件と一致 67%   ⇒ 参加
+```
+
+⇒ **新しい定数は足さない。同じ `transitivity` を、育ったあとの塊の全員に当てる。**
+他のメンバーの 34% 未満としか合わない者はその塊の一員ではないので、`news_event_articles`
+から外して自分の Event へ移す（`findOutlier` / `placeArticle`）。実測: 上の例では
+**SDI が外れ、残る 3 本は残った**。1 回の取り込みで外れるのは 3〜4 件。
+⚠ 一度に 1 人だけ、かつ残りが 2 件を下回るなら外さない——全員が弱く結ばれた塊は
+「誰が余計か」を言えないので、判断は Phase C の review queue に残す。
+
+### 5.4 増分の候補生成（本番が通る経路）
+
+窓 = 直近 48 時間（記事の保持は 72 時間なので、実際には表の全部）。その窓から
+**転置索引**を作り、`df` が窓の 4%（上限 40）を超える語は投稿リストに入れない
+——頻出語の投稿リストは窓の大半になり、「候補を絞る」という索引の仕事を止める。
+新着 1 本につき、語を共有する記事が属する Event を **IDF 質量の大きい順に最大 12 件**だけ
+見て、各 Event のメンバー最大 20 件と `pairVerdict` を撃つ。
+⚠ `clusterArticles()` は評価と backfill 用の総当たりで、**本番はこれを通らない**。
+⚠ 評価スクリプト（`scripts/news-events-eval.mjs`）も**同じ関数**を通る——測るものと
+動くものが別の実装になると、#R334 の「fixture の精度は精度の測定になっていない」を
+もう一度踏む。
+
+実測 (2026-08-23・本番): 冷えた状態で 779 本 → 620 Event が **1,005 ms**、
+1 本あたり p50 0 ms / p95 1 ms。定常状態（新着 4 本）で **519 ms**。
+
 ---
 
 ## 6. カテゴリ
@@ -182,8 +246,30 @@ A–B と B–C が近くても A–C が別事件のことがある。edge を�
 **15/15 稼働**し Business / Climate & Weather / Politics & Conflict / Science & Health /
 Technology / World の6つを**フィード自体が持つ**。⇒ 分類器が要るのは **Disasters と Society だけ**。
 
+⚠ **段はもう 1 つある（#R351）。** フィード全体の `category` と見出しキーワードの**あいだ**に、
+**媒体自身がその 1 本に付けたタグ**（RSS の項目内 `<category>`）が入る。実測 (2026-08-23):
+Guardian は `domain="…/world/africa"` 付きの slug、NYT は `des`/`nyt_geo`/`nyt_per`/`nyt_org` の
+4 taxonomy、The Japan Times は `SOCCER` / `CULTURE` の素の節名、France 24 は `Africa`。
+BBC・Yonhap・Google News は 1 つも出さない。**出す媒体からは受け取り、出さない媒体のために
+捨てない。**
+⚠⚠ **実体のタグは節のタグではない。** 実測で外した 1 件はこれが原因だった——
+«Turkey Requests Netanyahu's Arrest» に付いた NYT の `nyt_org` タグが
+`Interpol (International Criminal Police Organization)` で、その中の `police` を節名として
+読んで政治の記事を society にしていた。⇒ **実体を名指す taxonomy は分類に使わない**
+（保存はする。§5.2 の「共有 entity」の材料であり、`news_articles.entities` に入る）。
+
+⚠ **上書きしてよいのは `world` と空だけ。** business / technology / science_health /
+climate_weather / politics のフィードは「編集部がそう分類した」という強い証拠で、見出しの
+単語より強い。`world` は「国際面」であって主題ではないので、そこだけ譲る。
+
+⚠ **同じ語をもう一度数えるのは、証拠が増えることではない。** 実測で外した 1 件——
+«Indiana **residents** endure 11th day without power after storms» は `residents` 1 語が
+見出しと要約に出ただけで発火点に届いていた。⇒ 発火の条件は「4 点以上・相手に 2 点差以上」に
+加えて **強い語 1 つ、または別々の語 2 つ**。
+
 内部は multi-label を許し、UI には primary を1つ出す。`primary_category` /
-`secondary_categories` / `confidence` / `classifier_version` / `manual_override` を保存する。
+`secondary_categories` / `confidence` / `classifier_version` / `manual_override`、そして
+**どの段が何を根拠に決めたか**（`category_evidence`）を保存する。
 
 ---
 
@@ -198,6 +284,27 @@ Technology / World の6つを**フィード自体が持つ**。⇒ 分類器が�
   他の7言語では地点ピルが英語になる（#R313 追記2 と同じ形の穴）。Phase D で扱う。
 - ⚠ 既存の「Translate titles」ボタン（`#ai-translate-btn` → `aiTranslateTitles()`）は
   **article mode のものとして残す**。Event mode の翻訳は事前生成なのでボタンを出さない。
+
+**実装 (#R351)**
+
+- 訳す相手は Event の代表見出し。代表見出しは記事が増えると変わる（medoid で選び直す）ので、
+  `news_event_i18n.source_title_fp` に**訳した見出しそのものの SHA-256** を持ち、
+  **見出しが変わったときだけ**払う。⚠ `news_events.updated_at` で判定すると、記事が 1 本
+  増えるたびに同じ文を翻訳し直して課金される。
+- 1 回の run で最大 80 件・20 件ずつ。返答は **id が今回渡したものであること・文字列であること・
+  空でないこと・400 文字以内であること**をサーバー側で確かめてから採る。
+- ⚠⚠ **書記体系が混ざった訳は採らない。** 実測 (79 件中 1 件): «101 **रन** のリード» ——
+  `run` がデーヴァナーガリーで返っていた。日本語の見出しにデーヴァナーガリー・アラビア・
+  ヘブライ・タイ・ベンガル・タミル・テルグが出ることは無いので、機械的に落とせる。
+  落とした Event は次の run で再び候補になる（英語の見出しが出るだけで、壊れた訳は残らない）。
+- ⚠⚠⚠ **`AI_MODEL` を無条件に信じてはならない。** これは Atlas 用の secret 1 つを 9 本の
+  Function が読む形で、実測 (2026-08-23) では `AI_MODEL=gpt-5.6-terra` がこのプロジェクトの鍵で
+  **403** を返す。`ai-proxy` はそれを知っていて 403/404 のとき `gpt-5.6-luna` へ 1 回だけ
+  retry する (#R148/#R150)。**`refresh-news` にはその retry が無い**——#R334 が測った
+  「`analyzed_by='ai'` が 1,651 行中 0 件」はこれである。⇒ `news-ingest` は
+  ① `NEWS_TRANSLATE_MODEL` で翻訳のモデルを**独立に**選べるようにし、② それでも 403/404 なら
+  同じ既知の代替へ 1 回だけ落ち、③ **失敗した理由を応答と `news_ingest_runs` の両方に出す**。
+  黙って 0 件になる AI 経路をもう一度作らない。
 
 ---
 
@@ -214,6 +321,12 @@ Event は構成記事が表示窓を越えても残せる。**hard delete と ar
 merge redirect と split 履歴は消さない。
 
 ⚠ この表は `CONSTITUTION.md` §5 の改訂を伴う。改訂の理由は `DECISIONS.md` に記録する。
+
+**実装 (#R351)**: `news-ingest` の `prune` 段。数字の正本は
+`supabase/functions/_shared/news-ingest.js` の `RETENTION`（`tests/r351-checks ⑭` が
+この表と突き合わせる）。⚠ Event が消えるのは **3 つとも当てはまらないとき**だけ——
+★保存されている / merge の行き先である / 自身が merged。**merge の redirect を消すと、
+古い ID から新しい ID へ辿る道が無くなる。**
 
 ---
 
@@ -263,6 +376,12 @@ reviewed Event の自動更新ロック / undo / 監査証跡 / 分類器の再�
 運用者には **score・共有 entity・相違 entity・地理距離・時間差・トークン類似・embedding 類似・
 モデルの判断・source family・記事の時刻**を見せる。自動化が間違った理由を隠さない。
 
+⚠ **書き込み権限はまだ配っていない**（#R351 時点でも service_role だけ）。使う相手が無いうちに
+配ると、誰も試していない権限が本番に居座る。⇒ 権限は §11 の UI と**同じ変更で**足す。
+⚠ ただし**尊重する側はもう実装されている**——`news-ingest` は `manual_lock` が立つ Event の
+代表・分類・地点を上書きせず、観測された事実（件数・時刻）だけを更新する。
+`category_override` / `location_override` も個別に効く。
+
 ---
 
 ## 12. 段階導入
@@ -270,7 +389,7 @@ reviewed Event の自動更新ロック / undo / 監査証跡 / 分類器の再�
 | Phase | 中身 | UI への影響 |
 |---|---|---|
 | **A** | 現状監査・#R76 検証・source matrix・設計文書・費用見積 | 無し（完了） |
-| **B** | migrations・Source Registry・記事の正規化・Event パイプライン・カテゴリ・計測 | **無し**（article mode のまま・shadow) |
+| **B** | migrations・Source Registry・記事の正規化・Event パイプライン・カテゴリ・翻訳・計測・保持 | **無し**（article mode のまま・shadow・**完了**） |
 | **C** | ラベル付き corpus・admin 待ち行列・merge/split・閾値調整・保持と費用の実測 | 無し |
 | **D** | `articles / events` の dual-read フラグ・Event card・chips・ピン・detail・検索・保存 | **フラグの裏** |
 | **E** | Capability・state provider・observer/verifier・research 証拠・本番 smoke → 既定へ | 既定切替 |
@@ -279,6 +398,32 @@ reviewed Event の自動更新ロック / undo / 監査証跡 / 分類器の再�
 永続 Event・カテゴリ・Source Registry・増分更新・merge/split・品質指標・費用指標を持たない。
 ⚠ **経路を変えたら同じ変更でプライバシーポリシー（`js/legal-text.js`）を直す。**
 `scripts/doc-facts.mjs` §15 がこの一致を機械的に検査している。
+⚠ #R351 でポリシー §4 を直した——**UI の経路は変わっていないが、サーバーが記事を保存する
+事実が増えた**。`USE_SERVER_NEWS` は false のままである（＝閲覧者が見るのは今もブラウザ経路）。
+
+---
+
+## 12.1 運用 — `news-ingest` (#R351)
+
+**Edge Function 1 本**（`supabase/functions/news-ingest/`。9 本目）。論理は
+`_shared/news-ingest.js`（サーバー専用。`tests/r351-checks ⑮` が `js/` と `src/` からの参照を禁じる）。
+
+| 段 | すること | 実測 (2026-08-23・本番) |
+|---|---|---|
+| `fetch` | 32 フィード取得 → 正規化 → 媒体の帰属 → 地点 → `news_articles` へ upsert | 3.5〜3.8 s・32/32 稼働・1,367 件 → 779 行 |
+| `assign` | 未割り当ての記事を候補 Event へ増分で載せる（§5.4） | 冷 1.0 s / 779 本、定常 0.5 s / 4 本 |
+| `translate` | 代表見出しを ja へ（§7） | 80 件 / 約 27 s / 約 $0.019 |
+| `prune` | 記事 72 h・Event 30 d・判定 30 d・★は無期限（§8） | 0.1 s |
+
+- **POST のみ・`x-news-ingest-secret` ヘッダのみ・定数時間比較・fail-closed**
+  （secret 未設定なら 503。実測で確認: 未設定 503 / 誤り 401 / GET 405）。
+- 上流の取得は `_shared/relay-guard.js` の `fetchGuarded`（期限 15 s・6 MB・content-type）。
+  ⚠ `refresh-news` は `AbortSignal` を 1 つも持っていない。同じ形を新しく作らない。
+- **壁時計の予算**を見て、足りなければその段で止めて次の run に残す（既定 240 s）。
+- cron: `news-ingest-tick`（`*/20 * * * *`）。SQL の形は `docs/AREA-MONITORS.md` §4 と同じで、
+  秘密は**ヘッダ**で送る。body で段を選ぶ:
+  `{"stages":["fetch","assign","prune"]}`。
+- ⚠ `current_news` と `refresh-news` には触れない（`tests/r351-checks ⑯` が押さえる）。
 
 ---
 
@@ -297,6 +442,40 @@ Phase A で確認済みの誤り例（実データ）:
 - **不足統合**: 恒大の創業者判決が en(7件) と jp(6件) に分割（言語の違い・英語のみ収集で解消）
 - **転載の水増し**: 「Mount Fuji」6件のうち3件は Sinclair 系列の同一タイトル
 
+### 13.1 Phase B の実測 (#R351・2026-08-23)
+
+**測り方**: 本番の `news_events` / `news_articles` をそのまま読み（`--from-db`）、
+**n≥2 の Event を 1 件ずつ人が読んで**「1 つの出来事か」を判定した。
+⚠ ラベル付き fixture の上の数字は精度の測定になっていない（#R334 の教訓）。
+
+| 指標 | 実測 | 母数 |
+|---|---|---|
+| **pairwise precision** | **98.1%** | Event 内の 267 対のうち誤りは 5 対 |
+| Event 単位（n≥2 が単一の出来事か） | 95.9% | 93 / 97 |
+| n≥3 の Event | 97.2% | 35 / 36 |
+| 圧縮率 | 1.25 倍 | 775 記事 → 618 Event |
+| 独立 2 媒体以上 / 3 媒体以上 | 53 / 17 件 | 618 中 |
+| **location** — Event に代表地点がある | 73.1% | 618 中（記事側は 76.6%） |
+| **category** — 目視した n≥3 の 36 件のうち妥当 | 34 / 36 | 誤り 2 = 西岸入植（society ではなく world）・オランダ GP（sport が world のまま） |
+| **source count** — 独立媒体数が家族単位で正しい | 実測 誤り 0 | 同一タイトルの転載 3 例すべてが 1 票に畳まれた |
+| 割り当て遅延 | p50 0 ms / p95 1 ms | 779 本 |
+| translation coverage | 618 / 618 | |
+
+**残った 5 対（誤統合）の内訳** — どれも「話題は近いが別の出来事」で、決定論の段の限界:
+
+1. 米国債利回りの解説（NYT）と韓国政府の国債監視（Yonhap）
+2. 与党の昼食会と与党の野党批判（Yonhap・同日）
+3. ドイツ外相のキーウ訪問とインド外相のロシア訪問（`foreign minister visits` の型）
+4–5. プレミアリーグ開幕節の Hull の試合と Ipswich の試合（`Premier League return` の型）
+
+**不足統合（recall）の代表例**: カナダ・米国の関税は 1 日で **5 つの Event** に分かれた
+（交渉決裂 / 50% 発動 / dollar-for-dollar / 報復開始 / 経済への影響）。言い換えを結ぶのは
+embedding の仕事で、**Phase C**（§5.2 の第 2 段）。⚠ **ANN index はデータが入ってから作る**
+——空の表に張った ivfflat はリストを学習できない。
+
+⚠ **この数字は 1 日分の窓（72 時間）で測った 1 回の観測である。** 同じ測り方を繰り返せる
+ように、測定器は `scripts/news-events-eval.mjs` として残してある。
+
 ---
 
 ## 14. 費用（実測ベース）
@@ -308,6 +487,21 @@ Phase A で確認済みの誤り例（実データ）:
 | **日本語翻訳**（Event 600〜1,000件/日・1言語） | — | **$3〜4** |
 | Supabase storage（記事 0.71MB/日・embedding 1536次元30日で 97MB） | 0.25 GB/年 | 1〜1.2 GB/年 |
 | **合計** | — | **月 $10〜15**（上限 $50） |
+
+### 14.1 実測 (#R351・2026-08-23)
+
+| 項目 | 実測 | 1 か月換算（見込み） |
+|---|---|---|
+| 日本語訳 | **620 Event で $0.154**（37,000 in / 27,000 out tok・$0.00025/Event） | **約 $4.6** |
+| embedding | 0（Phase C） | — |
+| LLM 判定 | 0（Phase C） | — |
+| 収集・割り当て・保持 | Supabase の実行時間だけ（外部課金なし） | — |
+| **合計（現状）** | | **約 $5**（上限 $50） |
+
+⚠ **単価は推定であって請求ではない。** `news_ingest_runs.notes.cost_rate_usd_per_mtok` に
+**使った単価**を一緒に残してあるので、あとから「どの数字を信じていいか」を言える。
+⚠ **`translate` を cron に入れると、そこで初めて継続課金が確定する。** #R351 の cron は
+`fetch` / `assign` / `prune` の 3 段だけで、翻訳は手動で回して上の数字を測った。
 
 ⚠ 既製の Event API（NewsAPI.ai $90/月〜・NewsAPI.org $449/月）は**買わない**。
 媒体選定もクラスタリングも他社のものになり、Source Registry と「主要媒体に限定」の方針が成り立たない。

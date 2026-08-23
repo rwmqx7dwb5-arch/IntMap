@@ -81,6 +81,18 @@ export const DEFAULTS = {
    * ⚠ A-B と B-C が近くても A-C が別事件のことがある。#R76 は素の Union-Find で推移を
    *   無条件に信じたので、43 件の塊ができた。 */
   transitivity: 0.34,
+  /* ⚠⚠⚠ **代表点しか持たない解決の一覧** (#R351)。
+   *   #R334 はこれを `country` だけだと思っていた。実データで動かしたら、同じ穴が
+   *   **組織**で開いていた——IntMapNewsGeo が `kind:'org'` に解決した subject は
+   *   その組織の本部座標なので、**同じ会社の 2 件は常に距離ゼロ**になる。実測
+   *   （2026-08-23・直接 RSS 709 本）: 「Samsung Electronics が株主還元に最大 110 兆
+   *   ウォン」と「Samsung SDI が Samsung Display 株を 4.45 兆ウォン売却」が **1 件に融合**
+   *   していた。両方 `org:Samsung` ＝ `tight`（閾値が最も低い段）に入っていたからである。
+   *   ⇒ **距離ゼロは「同じ場所」の証拠ではない。** 国のときと同じく、下げるのではなく上げる。
+   *   `admin1`（州・県・省）も同じ性質を持つ（テキサスの無関係な 2 件は距離ゼロ）。
+   *   ⚠ `city` / `seat` / `flashpoint` / `feature` はここに入れない——あれは
+   *     「出来事が起きた場所」であって、実体の代表点ではない。 */
+  representativeKinds: ['country', 'admin1', 'org'],
 };
 
 /* ── 見出しのトークン化 ─────────────────────────────────────────────────────
@@ -238,7 +250,11 @@ export function geoClass(a, b, opt = DEFAULTS) {
   const hasB = Number.isFinite(bLng) && Number.isFinite(bLat);
   if (!hasA || !hasB) return { cls: 'unknown', km: null };
   const km = haversineKm(aLng, aLat, bLng, bLat);
-  const countryish = kindOf(a) === 'country' || kindOf(b) === 'country';
+  /* ⚠ 「代表点しか持たない解決」= 国・州県省・組織。名前は countrySame/countryNear のままに
+   *   してある（閾値の表の鍵であり、#R76 が壊した箇所の名前でもある）が、判定する対象は
+   *   opt.representativeKinds が決める。 */
+  const repK = opt.representativeKinds || DEFAULTS.representativeKinds;
+  const countryish = repK.indexOf(kindOf(a)) >= 0 || repK.indexOf(kindOf(b)) >= 0;
   if (countryish) {
     if (km <= 1) return { cls: 'countrySame', km };
     if (km <= opt.nearKm) return { cls: 'countryNear', km };

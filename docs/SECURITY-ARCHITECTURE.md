@@ -60,6 +60,9 @@ flowchart LR
   AIP -- "server key" --> Providers
   AIP -- "service_role: quota RPC" --> PG
   cron["pg_cron"] -- "x-refresh-secret header" --> RN
+  cron -- "x-news-ingest-secret header" --> NI["news-ingest<br/>(Edge Function)"]
+  NI -- "service_role: write news_* Event tables" --> PG
+  NI -- "server key (ja translation only)" --> Providers
   RN -- "server key" --> Providers
   RN -- "service_role: write news" --> PG
   Untrusted -. "HOSTILE bytes rendered by UI" .-> UI
@@ -146,12 +149,13 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are NINE, and this table used to list two.** `supabase/config.toml` used to declare
+**There are ELEVEN, and this table used to list two.** `supabase/config.toml` used to declare
 five and the other three carried their deploy flag only in a header comment — a deploy flag
-that lives in a comment is not configuration. All nine are declared there now.
+that lives in a comment is not configuration. All eleven are declared there now
+(`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`newsgeo.js`,
-`relay-guard.js`, `aviation-codec.js`, `aviation-model.js`) that the CLI bundles into the
-functions that import it.
+`relay-guard.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`, `news-ingest.js`,
+`atlas-persona.js`) that the CLI bundles into the functions that import it.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
@@ -159,6 +163,7 @@ functions that import it.
 | `delete-account` | **true** | Supabase JWT **and** an explicit re-check; body must be `{"confirm":"DELETE"}` | `delete_account_data(uuid)` then `auth.admin.deleteUser` | — |
 | `monitor-run` | false | two callers, two credentials: pg_cron's `x-monitor-secret` (from Vault) or a user JWT; fail-closed on the secret | claim/finalize monitor runs | server env only |
 | `refresh-news` | false (by design) | **fail-closed shared secret** (`x-refresh-secret` header, constant-time) | write `current_news`, read `geo_pins` | server env only |
+| `news-ingest` | false (by design) | **fail-closed shared secret** (`x-news-ingest-secret` header, constant-time, POST only) | write the `news_*` Event tables; read `news_sources` / `news_source_feeds` | server env only |
 | `alerts-relay` | false | none — keyless public relay of official warning feeds | — | — |
 | `cable-geo` | false | none — keyless public relay of two TeleGeography GeoJSON URLs | — | — |
 | `news-relay` | false | none — keyless public relay of Google News RSS | — | — |
