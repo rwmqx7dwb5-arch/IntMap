@@ -37,8 +37,16 @@ test('R159 #2 redundant "その他の収集記事" source pile removed; never-ze
   // the rest-links block now renders ONLY as the never-zero "Related articles" fallback when nothing was cited/verified
   /* (#R232) linkCards gained a `topic` argument — the relevance gate now judges against what the
      articles were FETCHED FOR, not only against the finished reply. The guard is unchanged. */
-  ok("if(rest.length && !haveBasis){ const rc=linkCards(rest,txt,placeStr);", 'rest links show only when there is no cited/web-verified source');
-  ok("L('Related articles','関連記事','Verwandte Artikel','Похожие статьи','Artículos relacionados')", 'never-zero "Related articles" fallback kept');
+  /* ⚠ (#R348) THE NEVER-ZERO FALLBACK IS GONE FROM THE ANALYSE PATH, AND THE COMPLAINT IT ANSWERED
+     IS ANSWERED BETTER. #R159 kept a 「Related articles」 bucket so a reply that cited nothing still
+     showed something — which is, precisely, attaching articles to statements they do not support.
+     #R348 forbids that and makes the opposite true instead: js/atlas-answer-audit.js fails an answer
+     whose primary claims carry no evidence id, so when IntMap HAS sources the answer must cite them,
+     and when it has none the honest outcome is a shorter answer rather than a pile of links. What
+     survives from #R159 is the rule this test was really about — one answer per goal, no duplicate
+     source piles — which is asserted above and by tests/r334-checks ⑦b. */
+  gone("if(rest.length && !haveBasis){ const rc=linkCards(rest,txt,placeStr);", 'the un-cited "rest" bucket is back in the analyse reply');
+  ok("class=\"atl-src-h\"", 'the source-card heading machinery is still there');
 });
 
 test('R159 #3 right sidebar default width smaller (R160 superseded: 340 → 300)', () => {

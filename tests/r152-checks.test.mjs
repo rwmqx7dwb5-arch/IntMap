@@ -59,8 +59,15 @@ test('R152 #4 Atlas sources — broadened blocklist (not medium/substack), relev
   /* (#R232) the gate gained a `topic` argument — pin that it EXISTS and that the analyze bucket runs
      through it, not how many parameters it happens to take this round. */
   assert.match(html, /function _atlRelevantCards\(cards, refText(?:, topic)?\)\{/, 'relevance gate exists');
-  assert.match(html, /linkCards\(rest,txt(?:,\s*[A-Za-z_$][\w$]*)?\)/, 'analyze rest bucket relevance-filtered (R153: relevance runs inside linkCards after host-clean)');
-  assert.match(html, /L\('Related articles','関連記事'/, 'no-basis links honestly labelled "Related articles" (not "Sources")');
+  /* ⚠ (#R348) THE ANALYZE 「その他」 BUCKET NO LONGER EXISTS, ON PURPOSE. #R152/#R153/#R159 built a
+     never-zero fallback that showed the articles IntMap had gathered when the model cited none, so a
+     reply was never source-less. #R348's instruction forbids it in exactly those words — 「citation
+     がない回答へ無関係な関連記事を付ける」 — and replaces it with something stronger: a primary claim
+     with no evidence id now FAILS the answer audit, so an answer that has evidence must cite it
+     rather than have unrelated articles stapled underneath. The relevance gate itself is unchanged
+     and still guards the brief's own source cards, which is what is asserted here. */
+  assert.match(html, /linkCards\(srcSink,txtB,/, 'the brief still relevance-filters its gathered source cards');
+  assert.ok(!/L\('Other gathered articles'/.test(html), 'the 「その他の収集記事」 pile is back');
 });
 
 test('R152 #5 Atlas toggles — fullscreen switch + generic on/off control switch', () => {
