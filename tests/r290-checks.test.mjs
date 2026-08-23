@@ -161,13 +161,19 @@ test('R290 ⑤ the publish path does each piece of work once', () => {
   assert.match(src, /function publishNow\(\)\{/, 'the real work has a name of its own');
   /* ② a collection identical to the one on the map is not uploaded again */
   assert.match(src, /function featSig\(list\)\{/, 'the warning collection has a content signature');
-  assert.match(src, /if\(sig!==featsSig\)\{ featsSig=sig; GE\(\)\.layers\.setSourceData\(SRC,/);
+  /* ⚠ (#R344) the guard is unchanged; what it guards is now ONE function, because three callers
+     (the publish, the relabel and the style-swap recovery) all had to keep the signature in step by
+     hand and only one of them can also carry the {add,remove} diff. `uploadShown` sets `featsSig`. */
+  assert.match(src, /if\(sig!==featsSig\) uploadShown\(shown,sig\);/);
+  assert.match(src, /function uploadShown\(shown,sig\)\{[\s\S]{0,40}?featsSig=sig;/);
+  assert.match(src, /GE\(\)\.layers\.setSourceData\(SRC,\{type:'FeatureCollection',features:shown\},\{diff:diff\}\);/);
+  assert.match(src, /GE\(\)\.layers\.setSourceData\(SRC,\{type:'FeatureCollection',features:shown\},\{diffable:ok\}\);/);
   /* ⚠ (#R298) the quiet units are IN that collection now, so its signature covers them too —
      there is no second signature to keep in step, which is one fewer thing that can disagree. */
   assert.match(src, /const shown=quietFeatures\(\)\.concat\(feats\);/);
   assert.match(src, /const sig=featSig\(shown\);/);
   /* ⚠ …and a fresh source resets both signatures, or a style reload would leave an empty map */
-  assert.match(src, /if\(!GE\(\)\.layers\.hasSource\(SRC\)\)\{ featsSig=''; /);
+  assert.match(src, /if\(!GE\(\)\.layers\.hasSource\(SRC\)\)\{ featsSig=''; pubIds=null;/);
   assert.ok(!/quietSig/.test(src), 'and there is no second signature left to reset');
   /* ③ a feature state is written only where the tier changed */
   assert.match(src, /const t=washTier\(c\); if\(tierWritten\[c\]===t\) return; tierWritten\[c\]=t;/);
