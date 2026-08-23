@@ -85,7 +85,17 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
        price them at CI's measured 9.2 s (#R186). 68 − 3×9.2 ≈ 40. It runs in 10.8 s locally, so
        40 is deliberately the conservative end; CI's `shard-plan --update` replaces it on merge. */
 const BUDGET_S = 64;                    /* core: 1.1 min — measured 64 s over 6 files (#R209) */
-const TOTAL_BUDGET_S = 5089;            /* 84.8 min — 5,084 (#R341) + 5 (#R347) */
+const TOTAL_BUDGET_S = 5035;            /* 83.9 min — 5,089 (#R347) + 4 (#R352's spec) - 58 (#R352
+                                           corrected tests/r185.spec.js: 274 s -> 216 s).
+   ⚠ (#R352) THE CORRECTION IS THE DELETION OF A WAIT, NOT A FASTER MACHINE. #R341 replaced a
+   `waitForFunction(..., 60000)` in r185 that EXPIRED on every run — its own note says "66 s of a
+   green run asserting nothing" — and the test it guards now measures 8.1 s. An expired wall-clock
+   wait costs the same on any machine, so 66 - 8.1 comes off the recorded figure with no assumption
+   about where it was measured. Nothing else was claimed: the same file measures 88 s locally, but
+   three control specs #R341 never touched measured 0.57x, 0.67x and 1.80x their recorded times, so
+   a single local run cannot be compared with this table and was not used to set this number.
+   ⚠ tests/r192.spec.js holds the same kind of stale figure (#R341 measured a 95 s skip there) and
+   is deliberately NOT claimed here — a ceiling should only ever fall by what has been shown. */
 /* ⚠⚠ (#R347) THE ONE CEILING THIS ROUND MOVED, AND IT MOVED BY THE MEASURED AMOUNT — 5 SECONDS.
    Saying so plainly, because this file's own message says «do not raise the ceiling».
    #R322, and #R341 after it, set TOTAL_BUDGET_S to EXACTLY the total measured, which leaves zero slack: after it,

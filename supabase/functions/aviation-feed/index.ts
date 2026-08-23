@@ -77,6 +77,7 @@ const CORS = {
   ...corsFor("x-intmap-channel"),
   "Access-Control-Expose-Headers":
     "x-intmap-provider, x-intmap-attribution, x-intmap-count, x-intmap-age-ms, " +
+    "x-intmap-oldest-ms, " +
     "x-intmap-seq, x-intmap-channel, x-intmap-coverage, x-intmap-save",
 };
 
@@ -165,6 +166,9 @@ const STATE = {
   world: new Map(),        // hex → normalised AircraftState
   worldSeq: 0,
   worldAt: 0,
+  /* (#R352) the earliest `seenAt` in `world`, so "how old is the oldest thing in this answer"
+     is a field rather than a scan. 0 = nothing observed yet. */
+  worldOldestAt: 0,
   worldBuilt: null,        // encoded Uint8Array
   views: new Map(),        // bboxKey → { at, bytes, count, seq }
   inflight: new Map(),     // key → Promise, so N concurrent callers make ONE upstream read
@@ -280,6 +284,17 @@ async function saveSnapshot(bytes) {
 //  identity on purpose (it is sent once per aircraft, not per refresh), so an aircraft whose
 //  identity line was in an earlier message hydrates with empty strings — which is correct: empty
 //  means "not known here", and the next viewport read that sees it fills it in.
+/* (#R352) One pass over the world set recording the EARLIEST observation in it. Called from the
+   three places that change the set (build, hydrate, prune) so `x-intmap-oldest-ms` costs nothing
+   per request. */
+function noteOldest() {
+  let min = 0;
+  for (const rec of STATE.world.values()) {
+    if (!min || rec.seenAt < min) min = rec.seenAt;
+  }
+  STATE.worldOldestAt = min;
+}
+
 function hydrate(msg) {
   if (!msg || !msg.count) return 0;
   const nowMs = Date.now();
@@ -315,6 +330,7 @@ function hydrate(msg) {
   STATE.worldSeq = Math.max(STATE.worldSeq, msg.seq || 0);
   STATE.worldAt = msg.serverTimeMs || nowMs;
   STATE.hydrated = true;
+  noteOldest();
   return n;
 }
 
@@ -522,6 +538,7 @@ function mergeIntoWorld(records, nowMs) {
   for (const [hex, rec] of STATE.world) {
     if ((nowMs - rec.seenAt) / 1000 > STALE_DROP_S) STATE.world.delete(hex);
   }
+  noteOldest();
 }
 
 async function refreshWorld() {
@@ -638,7 +655,14 @@ function binResponse(bytes, meta) {
     "x-intmap-count": String(meta.count | 0),
     /* Infinity is what `now - 0` gives before the first refresh, and String(Infinity) is a header
        value no client can parse as a number. */
+    /* ⚠ (#R352) ONE HEADER, ONE MEANING. `x-intmap-age-ms` used to carry the snapshot's age on the
+       world channel and the OLDEST AIRCRAFT IN THE BOX on the view channel — two different facts
+       alternating in one field, so a client could not read either. Measured in production: world
+       reported 12.7-13.5 s and view 531-564 s, and neither number meant what the other did.
+       §22.2 is explicit that the age of the ANSWER and the age of an OBSERVATION are separate
+       things the UI has to be able to tell apart, so they are separate headers. */
     "x-intmap-age-ms": String(isFinite(meta.ageMs) ? Math.max(0, Math.round(meta.ageMs)) : 0),
+    "x-intmap-oldest-ms": String(isFinite(meta.oldestMs) ? Math.max(0, Math.round(meta.oldestMs)) : 0),
     "x-intmap-seq": String(meta.seq | 0),
     "x-intmap-channel": hdr(meta.channel),
     "x-intmap-coverage": hdr(meta.coverage),
@@ -718,7 +742,7 @@ Deno.serve(async (req) => {
       if (hit && now - hit.at < VIEW_TTL_MS) {
         STATE.stats.served++;
         return binResponse(hit.bytes, {
-          provider, count: hit.count, ageMs: now - hit.at, seq: hit.seq,
+          provider, count: hit.count, ageMs: now - hit.at, oldestMs: 0, seq: hit.seq,
           channel: "view", ttlMs: VIEW_TTL_MS, coverage: coverageLine(provider),
         });
       }
@@ -786,7 +810,7 @@ Deno.serve(async (req) => {
       let oldest = 0;
       for (const rec of inBox) { const a = at - rec.seenAt; if (a > oldest) oldest = a; }
       return binResponse(encodeSet(inBox, seq, at, true), {
-        provider, count: inBox.length, ageMs: oldest, seq,
+        provider, count: inBox.length, ageMs: Date.now() - at, oldestMs: oldest, seq,
         channel: "view", ttlMs: VIEW_TTL_MS, coverage: coverageLine(provider),
       });
     }
@@ -811,8 +835,12 @@ Deno.serve(async (req) => {
         after(once("world", refreshWorld));
       }
       STATE.stats.served++;
+      /* O(1): the oldest observation is recorded where the set is already being walked (build,
+         hydrate, prune), not re-derived on every request. The cached path serves the SAME bytes
+         to everyone, so a per-request scan of up to 50,000 records would buy nothing. */
+      const worldOldest = STATE.worldOldestAt ? Date.now() - STATE.worldOldestAt : 0;
       return binResponse(bytes || CODEC.encode({ seq: 0, serverTimeMs: now, aircraft: [] }), {
-        provider, count: STATE.world.size, ageMs: age, seq: STATE.worldSeq,
+        provider, count: STATE.world.size, ageMs: age, oldestMs: worldOldest, seq: STATE.worldSeq,
         channel: "world", ttlMs: WORLD_TTL_MS, coverage: coverageLine(provider),
       });
     }
