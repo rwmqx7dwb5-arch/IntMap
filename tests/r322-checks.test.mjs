@@ -8,7 +8,7 @@
  *       renderer does NOT deduplicate is the one this app skips; the three it DOES are left alone.
  *       Both halves are read from the two files at test time, so if a MapLibre upgrade adds a
  *       comparison to setData — or drops the one in setPaintProperty — this goes red and says which.
- *    ②–④ the three comparisons are EXECUTED, not grepped. They are lifted out of js/geo-engine.js
+ *    ②–④ the three comparisons are EXECUTED, not grepped. They are lifted out of js/geo-command-log.js
  *       and driven with real values, including the two cases that make a skip unsafe: an object the
  *       caller may have mutated in place, and a payload too large to prove equal.
  *    ⑤–⑥ the lifecycle is EXECUTED too — js/runtime.js is a real ES module, so `dispose` followed
@@ -51,8 +51,16 @@ function lift(src, name, deps = '') {
   return new Function(`${deps}\n${body}\nreturn ${name};`)();
 }
 
+/* ⚠ (#R322) TWO FILES, AND THE SPLIT IS THE REASON THIS FILE ONCE ASSERTED NOTHING. The comparisons
+   and the switch table moved to js/geo-command-log.js when js/geo-engine.js went over the shell's
+   line ceiling — and this file went on reading js/geo-engine.js for them, so `lift()` threw at
+   MODULE scope and node --test skipped every test in it. Green because it never ran: #R301's defect
+   exactly, in the round that cites #R301. The two reads are named separately now, so a future move
+   fails one lift with a message instead of silencing the file. */
 const GEO = read('js/geo-engine.js');
+const CENSUS = read('js/geo-command-log.js');
 const GEOC = code(GEO);
+const CENSUSC = code(CENSUS);
 
 /* ── ① the switch table is a consequence of MapLibre's behaviour, not an opinion ─────────────── */
 test('R322 ① every operation the renderer already deduplicates is left alone; the one it does not is skipped', () => {
@@ -85,8 +93,8 @@ test('R322 ① every operation the renderer already deduplicates is left alone; 
     'GeoJSONSource.setData now compares its argument — the skip in js/geo-engine.js became a second mechanism for a job the renderer does, and must be switched off');
 
   /* what this app does: the declared table */
-  const m = /skip:\s*\{([^}]*)\}/.exec(GEOC);
-  assert.ok(m, 'the skip table is gone from js/geo-engine.js');
+  const m = /skip:\s*\{([^}]*)\}/.exec(CENSUSC);
+  assert.ok(m, 'the skip table is gone from js/geo-command-log.js');
   const table = {};
   for (const part of m[1].split(',')) {
     const kv = /(\w+)\s*:\s*(true|false)/.exec(part);
@@ -101,9 +109,9 @@ test('R322 ① every operation the renderer already deduplicates is left alone; 
 });
 
 /* ── ②–④ the comparisons, executed ──────────────────────────────────────────── */
-const deepEq = lift(GEO, '_deepEq');
-const subsetEq = lift(GEO, '_stateSubsetEq', 'const _deepEq=' + lift(GEO, '_deepEq').toString() + ';');
-const eqBudget = lift(GEO, '_eqBudget');
+const deepEq = lift(CENSUS, '_deepEq');
+const subsetEq = lift(CENSUS, '_stateSubsetEq', 'const _deepEq=' + lift(CENSUS, '_deepEq').toString() + ';');
+const eqBudget = lift(CENSUS, '_eqBudget');
 
 test('R322 ② the value comparison behaves the way the renderer\'s own does', () => {
   assert.equal(deepEq(1, 1), true);
@@ -142,7 +150,7 @@ test('R322 ④ a source payload may be skipped only when a FRESH object proves e
 
   /* …and the identity rule, read off _sourceHolds: the same object the source already holds may
      have been mutated in place since, so identity is an APPLY, never a skip. */
-  const holds = GEOC.slice(GEOC.indexOf('function _sourceHolds('));
+  const holds = CENSUSC.slice(CENSUSC.indexOf('function _sourceHolds('));
   assert.ok(/cur\.geojson\s*===\s*data\s*\)\s*return false/.test(holds.slice(0, 700)),
     'identity no longer forces an apply — a caller that edits one collection in place would have its edit dropped');
 });
@@ -258,17 +266,27 @@ test('R322 ⑧ every capability defined in js/ supplies all three verbs and a pu
 
 /* ── ⑨ the instrument does not ship switched on ─────────────────────────────── */
 test('R322 ⑨ the command census is off unless it is asked for', () => {
-  const m = /const CMD\s*=\s*\{([\s\S]*?)\n  \};/.exec(GEOC);
+  const m = /const CMD\s*=\s*\{([\s\S]*?)\n  \};/.exec(CENSUSC);
   assert.ok(m, 'the census configuration is gone');
   assert.ok(/\bon:\s*false/.test(m[1]), 'counting must be off by default — it is an instrument, not a feature');
   assert.ok(/\bdetail:\s*false/.test(m[1]), 'the per-id string tables must be off by default');
-  assert.ok(/cmdlog\|perf/.test(GEOC), 'nothing turns the census on any more');
+  assert.ok(/cmdlog\|perf/.test(CENSUSC), 'nothing turns the census on any more');
   /* the timing probes are the expensive part and must be behind DETAIL, never behind `on` alone */
-  const probes = GEOC.match(/performance\.now\(\)/g) || [];
+  const probes = CENSUSC.match(/performance\.now\(\)/g) || [];
   assert.ok(probes.length > 0, 'the timing probes are gone — the round could not be re-measured');
-  for (const line of GEOC.split('\n')) {
+  for (const line of CENSUSC.split('\n')) {
     if (!line.includes('performance.now()') || !line.includes('_cmd.time')) continue;
     assert.ok(/CMD\.detail/.test(line),
       `a timing probe is not gated on detail mode: ${line.trim().slice(0, 110)}`);
+  }
+
+  /* ⚠ AND THE ADAPTER'S SIDE OF THE SAME PROMISE. The census is only free when the five call sites
+     ask for it before doing anything: `(CMD.on || CMD.skip.<op>) && skipX(…)`. A call site that
+     dropped the guard would run the comparison on every command in every session, which is exactly
+     the cost this round measured and decided not to pay for four of the five operations. */
+  for (const [op, fn] of [['sourceData', 'skipData'], ['paint', 'skipProp'], ['layout', 'skipProp'],
+    ['filter', 'skipProp'], ['featureState', 'skipState']]) {
+    const re = new RegExp('\\(CMD\\.on\\|\\|CMD\\.skip\\.' + op + '\\)&&' + fn + '\\(');
+    assert.match(GEOC, re, `the ${op} call site must not run the comparison unless the census or its own skip asked for it`);
   }
 });

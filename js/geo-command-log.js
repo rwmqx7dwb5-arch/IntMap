@@ -17,6 +17,12 @@
  *  tables and the timing probes are behind `CMD.detail`. What ships switched ON is one entry of
  *  `CMD.skip`, and the measurement that decided it is written where it is decided.
  * ==========================================================================*/
+/* ⚠ ONE EXPORTED DECLARATION — see the same note in js/camera-math.js. `_deepEq`, `_eqBudget`, */
+/*    `_shapeSig` and `_contentSig` are private to the census and must not be top-level. */
+/*    ⚠ AND CALLING IT ONCE IS PART OF THE CONTRACT: `CMD` is the ONE policy every view shares, so */
+/*    the adapter destructures a single call rather than making a census per view. The TALLIES are */
+/*    per view (makeCommandLog), which is the half that must not be shared. */
+export function makeCommandCensus() {
 /* ══ (#R322) THE SAME COMMAND, SENT AGAIN — counted BEFORE anything is skipped ═══════════════
    ---------------------------------------------------------------------------------------
    「MapLibreへ同じ命令を繰り返す無駄を、実測に基づいて消す」. The instrument comes first, because
@@ -46,8 +52,8 @@
 
    ⚠ COUNTING AND SKIPPING ARE SEPARATE SWITCHES. The instrument may run without changing a single
    call, which is what makes an A/B possible at all: one build measures both arms. */
-export const CMD_OPS = ['sourceData', 'filter', 'paint', 'layout', 'featureState'];
-export const CMD = {
+const CMD_OPS = ['sourceData', 'filter', 'paint', 'layout', 'featureState'];
+const CMD = {
   /* on:      tally every call (cost when off: one boolean test per call)
      detail:  also build the per-id / per-phase string tables (debug only)
      skip:    per-operation permission to RETURN EARLY when the value is already there
@@ -99,7 +105,7 @@ try {
 
 /* MapLibre's own deepEqual, restated — it is not exported, and the comparison has to be the SAME
    one on both sides of the call or "already holds this" would mean two different things. */
-export function _deepEq(a, b) {
+function _deepEq(a, b) {
   if (Array.isArray(a)) {
     if (!Array.isArray(b) || a.length !== b.length) return false;
     for (let i = 0; i < a.length; i++) if (!_deepEq(a[i], b[i])) return false;
@@ -116,7 +122,7 @@ export function _deepEq(a, b) {
 }
 /* feature state MERGES, so "no change" is not "the whole object is equal" — it is "every key this
    call names is already equal". Anything else has to be applied. */
-export function _stateSubsetEq(cur, next) {
+function _stateSubsetEq(cur, next) {
   if (!next || typeof next !== 'object') return false;
   if (!cur || typeof cur !== 'object') return false;
   for (const k in next) if (!_deepEq(cur[k], next[k])) return false;
@@ -126,7 +132,7 @@ export function _stateSubsetEq(cur, next) {
    geometry: the feature count plus a fingerprint of the first and last feature. It can say
    "definitely different"; it can never prove "the same". The instrument reports it as what it is
    — an UPPER BOUND on what a content-addressed cache could ever skip. */
-export function _shapeSig(d) {
+function _shapeSig(d) {
   try {
     if (typeof d === 'string') return 'url:' + d;
     if (!d || typeof d !== 'object') return typeof d + ':' + String(d);
@@ -173,7 +179,7 @@ function _eqBudget(a, b, st) {
   }
   return a === b;
 }
-export function _sourceHolds(s, data) {
+function _sourceHolds(s, data) {
   const cur = s && s._data;
   if (!cur) return false;
   if (typeof data === 'string') return cur.url === data;
@@ -188,7 +194,7 @@ export function _sourceHolds(s, data) {
    O(n) per call, so it runs in DETAIL mode only — but it is the number that decides whether a
    content-addressed skip is worth building, and «113 of 123 had the same feature count» is not
    that number. Returns `len:hash` so the repeated BYTES can be added up as well as the calls. */
-export function _contentSig(d) {
+function _contentSig(d) {
   try {
     const s = (typeof d === 'string') ? d : JSON.stringify(d);
     if (typeof s !== 'string') return null;
@@ -208,10 +214,10 @@ export function _contentSig(d) {
    the one MapLibre would make (see the header) and no state is kept anywhere.
    `t0`/`t1` bracket the renderer call itself. Two performance.now() per command is exactly the kind
    of cost that must not ship, so both are no-ops unless DETAIL mode asked for the timing. */
-export function absent(cmd, op, id) { if (CMD.on) cmd.note(op, id, 'absent'); }
-export function t0() { return CMD.detail ? performance.now() : 0; }
-export function t1(cmd, op, started) { if (CMD.detail) cmd.time(op, performance.now() - started); }
-export function skipProp(cmd, op, id, cur, next) {
+function absent(cmd, op, id) { if (CMD.on) cmd.note(op, id, 'absent'); }
+function t0() { return CMD.detail ? performance.now() : 0; }
+function t1(cmd, op, started) { if (CMD.detail) cmd.time(op, performance.now() - started); }
+function skipProp(cmd, op, id, cur, next) {
   let same = false;
   const started = CMD.detail ? performance.now() : 0;
   try { same = _deepEq(cur, next); } catch (_) { }
@@ -222,7 +228,7 @@ export function skipProp(cmd, op, id, cur, next) {
 /* feature state is the one that does NOT use the value comparison: it MERGES, so «no change» is
    «every key this call names is already equal», not «the whole object is equal». Its own comparator
    is above; the tally and the switch are the same as every other operation's. */
-export function skipState(cmd, id, cur, next) {
+function skipState(cmd, id, cur, next) {
   let same = false;
   try { same = _stateSubsetEq(cur, next); } catch (_) { }
   if (CMD.on) cmd.note('featureState', id, same ? 'same' : 'applied', { skipped: same && CMD.skip.featureState });
@@ -233,7 +239,7 @@ export function skipState(cmd, id, cur, next) {
    caller's optional revision, the shape signature and the content hash the measurement reports, and
    the per-adapter memory those two are compared against. `mem` is that memory — one object per
    adapter, so two views never answer for each other. */
-export function skipData(cmd, id, s, data, opts, mem) {
+function skipData(cmd, id, s, data, opts, mem) {
   const started = CMD.detail ? performance.now() : 0;
   let held = false;
   try { held = _sourceHolds(s, data) === true; } catch (_) { held = false; }
@@ -258,7 +264,7 @@ export function skipData(cmd, id, s, data, opts, mem) {
   if (opts && opts.revision !== undefined) mem.rev[id] = opts.revision; else delete mem.rev[id];
   return false;
 }
-export function makeSourceMemory() {
+function makeSourceMemory() {
   const mem = { sig: Object.create(null), rev: Object.create(null), hash: Object.create(null) };
   mem.forget = (id) => { delete mem.sig[id]; delete mem.rev[id]; delete mem.hash[id]; };
   return mem;
@@ -266,7 +272,7 @@ export function makeSourceMemory() {
 
 /* One tally per adapter — the compare pane and the flight simulator's minimap each get their own,
    for the same reason every other piece of adapter state is per-adapter (#R179). */
-export function makeCommandLog() {
+function makeCommandLog() {
   const tot = Object.create(null);
   for (const k of CMD_OPS) tot[k] = { attempted: 0, sent: 0, applied: 0, same: 0, absent: 0, sameRef: 0, sameShape: 0, sameContent: 0, repeatBytes: 0, msCall: 0, msCmp: 0 };
   let byId = Object.create(null), byPhase = Object.create(null);
@@ -305,4 +311,6 @@ export function makeCommandLog() {
       byId = Object.create(null); byPhase = Object.create(null);
     },
   };
+}
+  return { CMD, CMD_OPS, makeCommandLog, makeSourceMemory, absent, t0, t1, skipProp, skipState, skipData };
 }

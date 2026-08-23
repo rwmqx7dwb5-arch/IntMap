@@ -21,6 +21,12 @@
  *  itself whether a camera is reachable (`maplibregl.LngLat` + `applyConstrain`) — it stays in the
  *  adapter and is passed in here as the `guard` argument, exactly as it was before.
  * ==========================================================================*/
+/* ⚠ ONE EXPORTED DECLARATION, AND EVERYTHING ELSE INSIDE IT. tests/r175-checks ③ fails an */
+/*    unexported top-level declaration in js/ (it would have been a global in a classic script) and */
+/*    equally fails an export nothing imports by name. The projection helpers here — gmX, glatOf, */
+/*    grotY, GEO_YLO … — are neither: they are private to this geometry. A factory answers both, */
+/*    and the caller destructures it once, so no call site inside the adapter changed. */
+export function makeCameraMath() {
 /* ═══════════════════════════════════════════════════════════════════════════════════════
    (#R177) WHERE THE CAMERA IS — ONE transcription of the renderer's own geometry.
    ---------------------------------------------------------------------------------------
@@ -56,7 +62,7 @@
                 the Earth's centre is sqrt(1 + dg² + 2·dg·cos p) wherever the centre is.
                 A mercator plane cannot describe this at all, which is the 7,115 km at z3.
    ═══════════════════════════════════════════════════════════════════════════════════════ */
-export const GEO_R=6371008.8, GEO_RAD=Math.PI/180, GEO_CIRC=2*Math.PI*GEO_R;
+const GEO_R=6371008.8, GEO_RAD=Math.PI/180, GEO_CIRC=2*Math.PI*GEO_R;
 const gmX=lng=>(180+lng)/360;
 const gmY=lat=>(180-(180/Math.PI)*Math.log(Math.tan(Math.PI/4+lat*GEO_RAD/2)))/360;
 const glngOf=x=>{ const v=x*360-180; return ((v+180)%360+360)%360-180; };
@@ -70,9 +76,9 @@ const grotY=(v,a)=>{ const c=Math.cos(a),s=Math.sin(a); return [v[2]*s+v[0]*c, v
    transform AND a mercator one, swapping by zoom; `isGlobeRendering` is its own name for
    which is drawing, and the clone handed to transformCameraUpdate carries it. A plain
    mercator transform has no such property, which reads false — correctly. */
-export const gSpherical=t=>{ try{ return !!(t&&t.isGlobeRendering); }catch(_){ return false; } };
+const gSpherical=t=>{ try{ return !!(t&&t.isGlobeRendering); }catch(_){ return false; } };
 /* the canvas-and-fov constant, in pixels; never latitude- or zoom-dependent */
-export function gC2C(t,m){ let v; try{ v=t&&t.cameraToCenterDistance; }catch(_){}
+function gC2C(t,m){ let v; try{ v=t&&t.cameraToCenterDistance; }catch(_){}
   if(isFinite(v)&&v>0) return v;
   try{ const w=m&&m.transform&&m.transform.cameraToCenterDistance; if(isFinite(w)&&w>0) return w; }catch(_){}
   return 1050; }
@@ -87,7 +93,7 @@ export function gC2C(t,m){ let v; try{ v=t&&t.cameraToCenterDistance; }catch(_){
    14,099 m, the eye CONVERGED on it (8,373 → 12,955 m — it climbed while zooming in, which
    is #R174's bug exactly). So the altitude scales by k here too, not just the look distance;
    for a pure zoom the solve then returns elevation·k and the eye descends by exactly k. */
-export function gEye(cam,c2c,tile,sphere,k){
+function gEye(cam,c2c,tile,sphere,k){
   k=(isFinite(k)&&k>0)?k:1;
   const p=(cam.pitch||0)*GEO_RAD, b=(cam.bearing||0)*GEO_RAD;
   const world=tile*Math.pow(2,cam.zoom);
@@ -148,7 +154,7 @@ const GEO_LATMAX=85.051129*GEO_RAD;
 
 /* one attempt at one pitch. `ok` is the whole feasibility question: does this pitch resolve to
    a camera the renderer can actually hold, with the eye exactly where it was? */
-export function gSolveAt(anchor,pitch,bearing,c2c,tile,zoom,sphere,hint,guard){
+function gSolveAt(anchor,pitch,bearing,c2c,tile,zoom,sphere,hint,guard){
   const p=(pitch||0)*GEO_RAD, b=(bearing||0)*GEO_RAD, cp=Math.cos(p);
   if(sphere){
     const r=1+anchor.alt/GEO_R; if(!(isFinite(r)&&r>0.2)) return null;
@@ -266,7 +272,7 @@ export function gSolveAt(anchor,pitch,bearing,c2c,tile,zoom,sphere,hint,guard){
    frame after a jumpTo, or the flight simulator handing the camera back) the search falls
    back to 0, which always resolves: at pitch 0 the look-at point is directly under the eye
    and the zoom is the one already applied. */
-export function gLimitPitch(anchor,pitch,bearing,c2c,tile,zoom,sphere,hint,guard,floorDeg){
+function gLimitPitch(anchor,pitch,bearing,c2c,tile,zoom,sphere,hint,guard,floorDeg){
   const at=pd=>gSolveAt(anchor,pd,bearing,c2c,tile,zoom,sphere,hint,guard);
   const want=(isFinite(pitch)?pitch:0);
   let lo=(isFinite(floorDeg)?Math.max(0,Math.min(floorDeg,want)):0), best=at(lo);
@@ -364,7 +370,7 @@ export function gLimitPitch(anchor,pitch,bearing,c2c,tile,zoom,sphere,hint,guard
    gLimitPitch walks from the pitch on screen. Returns null when there is nothing to limit,
    which is every ordinary zoom: this can only ever bind while cos p < 0 on a sphere, so
    #R175's 「unlimited tiltだとズームインできない」 cannot come back through it. */
-export function gLimitZoom(cam,c2c,tile,heldZoom){
+function gLimitZoom(cam,c2c,tile,heldZoom){
   /* the eye's altitude for the same camera at zoom z. `elevation` is passed as 0 deliberately:
      on the sphere the target's height is INERT (gEye's sphere branch never reads it — the pivot
      is the surface point), so this is the whole truth about where that camera's eye would be. */
@@ -396,4 +402,6 @@ export function gLimitZoom(cam,c2c,tile,heldZoom){
     if(lo<lowest) lo=lowest;
   }
   return (lo<cam.zoom)?lo:null;
+}
+  return { GEO_RAD, GEO_CIRC, gSpherical, gC2C, gEye, gSolveAt, gLimitPitch, gLimitZoom };
 }

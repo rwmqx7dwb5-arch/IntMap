@@ -25,8 +25,8 @@
  *  MOVED VERBATIM out of app-body.js — de-indented by six spaces, nothing else.
  * ==========================================================================*/
 /* (#R322) the renderer command census — see the note above makeMapLibreAdapter */
-import { GEO_RAD, GEO_CIRC, gSpherical, gC2C, gEye, gSolveAt, gLimitPitch, gLimitZoom } from './camera-math.js';
-import { CMD, CMD_OPS, makeCommandLog, makeSourceMemory, absent, skipProp, skipState, skipData, t0, t1 } from './geo-command-log.js';
+import { makeCameraMath } from './camera-math.js';
+import { makeCommandCensus } from './geo-command-log.js';
 /* ===== (#R152) IntMapGeoEngine — Phase 1 renderer-abstraction (業務委託: 地図エンジン交換可能化・第1段階).
    A THIN facade over a swappable renderer adapter, so a future Google-Earth-class "Earth Mode" can be dropped in
    later without touching every call site. Phase 1 ships the MapLibre adapter ONLY and moves just the SAFE common
@@ -36,6 +36,13 @@ import { CMD, CMD_OPS, makeCommandLog, makeSourceMemory, absent, skipProp, skipS
    `map` directly. A Cesium CONTRACT (capabilities only, NO SDK, NO keys) is declared for the next phase. The raw()
    escape hatch returns the live MapLibre map for the many features not yet generalised (deliberately not forced). ===== */
 window.IntMapGeoEngine=(function(){
+  /* (#R322) the two modules this file was split into are FACTORIES, so nothing sits at the top
+     level of either (tests/r175-checks ③). Destructured once, here, so every call site below reads
+     exactly as it did when the code lived in this file.
+     ⚠ ONE census for the whole engine — CMD is the single policy every view shares. The TALLIES
+     are per adapter (makeCommandLog, below), which is the half that must not be shared. */
+  const { GEO_RAD, GEO_CIRC, gSpherical, gC2C, gEye, gSolveAt, gLimitPitch, gLimitZoom } = makeCameraMath();
+  const { CMD, CMD_OPS, makeCommandLog, makeSourceMemory, absent, t0, t1, skipProp, skipState, skipData } = makeCommandCensus();
   /* (#R178) …and ONLY window.__imap now. The `typeof map!=='undefined'` half was reaching for
    app-body.js's closure variable, which this file no longer shares — app-body publishes the
    handle the moment the map is constructed, so the fallback had nothing left to catch. */

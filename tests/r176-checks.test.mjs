@@ -29,7 +29,11 @@ const index = R('index.html');
    had been created inside map.on('load') and therefore did not exist when the modules — now written
    against it — run their factories. Every invariant below is about the same program, so `body` is
    still that program; it just spans both files. */
-const body = [R('js/app-body.js'), R('js/geo-engine.js')].join('\n');
+/* (#R322) …and THREE now: the camera geometry moved to js/camera-math.js when the renderer-command
+   census pushed the shell over its line ceiling (tests/r168 #8). The functions are byte-identical to
+   the versions that were in js/geo-engine.js, modulo the indentation of the move, so every invariant
+   below asks the same question of the same program. */
+const body = [R('js/app-body.js'), R('js/geo-engine.js'), R('js/camera-math.js')].join('\n');
 const entry = R('src/main.js');
 /* (#R209) …or fetched on demand. Every assertion below that reads the entry is asking one thing:
    "is this file REACHED — does the feature it carries exist at all?" Eight modules left the entry's
