@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（936行・84 KB）＋ `css/`（3本）＋ `js/`（199本・9.4 MB）＋ `src/`（10本）。**
+- **本体は `index.html`（936行・84 KB）＋ `css/`（3本）＋ `js/`（210本・9.4 MB）＋ `src/`（10本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -478,9 +478,9 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は、�
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
-### 6.2 Edge Functions — **9本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **10本**（`_shared/` は関数ではない）
 
-> ⚠ **9本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
+> ⚠ **10本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
 > ファイルのヘッダコメントに書いた deploy フラグは設定ではない。
 > `supabase/functions/_shared/` は `newsgeo.js` と `relay-guard.js` を置くライブラリ用ディレクトリで、
 > import した関数の中に CLI がバンドルする。`[functions._shared]` は書かない。
@@ -495,6 +495,15 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は、�
   （`verify_jwt` あり＋関数内でも検証・`confirm:"DELETE"` 必須）。所有テーブルを**外部キーから発見**し、
   **1トランザクション**で削除し、**削除後に数え直して**から Auth ユーザーを消す。
   ⚠ **どれか1つでも失敗したらアカウントは消さない**（fail-closed）。
+- **`routing-relay`** … 交通情報つきルーティング provider（Mapbox Directions）への**鍵付き
+  パススルー**。鍵 `MAPBOX_TOKEN` はサーバにだけ置き、ブラウザには一度も出ない。
+  `?probe=1` は**鍵が設定されているかだけ**を真偽で答え、フロントの能力表（`js/routing-providers.js`）が
+  それを読むまで交通機能は一切提示されない。profile とクエリは allow-list、座標は範囲まで検証、
+  呼び出し側の `access_token` は必ず破棄する。
+  ⚠ **この関数だけ `Cache-Control: no-store` を返す**（他の relay は `s-maxage` を付ける）。
+  Mapbox Product Terms §2.10.1 が Navigation API の結果の cache / store を禁じているため。
+  ⚠ **per-IP のレート制限を自前で持つ唯一の relay**。Mapbox は支出のハードキャップを持たないので、
+  ここが唯一の天井になる（プロセス内メモリのトークンバケツ＝best-effort）。
 - **`sv-cov`** … ストリートビュー・カバレッジ svv タイルの **ACAO 付与プロキシ**（秘密なし）。
   **厳格 allowlist**（`mts0-3.google.com/vt?…lyrs=svv` ＋ 整数 x/y/z のみ・空タイルは透明 PNG）
   ＝オープンプロキシではない。
@@ -924,6 +933,32 @@ Atlas の自然言語も同じ経路計算を呼ぶ補助的な入口で、**両
 | `js/routing.js` | 実際の経路計算、地図への描画、`window.IntMapRouting` の公開契約 |
 | `js/routing-ui.js` | パネル本体。**遅延取得**（`IntMapLazy.need('routeUi')`）。CSS は `css/intmap.css` の `.rtp-*` |
 | `js/routing-ops.js` | 既存の経路についての分析（標高・国境・沿道・到着時刻・経路差・過去の路線網） |
+| `js/routing-errors.js` | 失敗の分類 `window.IntMapRouteErrors`。15 コード。各コードは**文ではなく判断**を運ぶ（再試行してよいか・別 provider に投げてよいか・利用者が直せるか）。文は別に 9 言語で引く |
+| `js/routing-time.js` | **どちらの「今」か** `window.IntMapRouteClock`。`planningNow()`＝Chronos（読者が見ている時刻・depart at / arrive by / 沿道天候）、`navNow()`＝壁時計（案内中）。**時計を増やしていない。既にある2つに名前を付けただけ** |
+| `js/routing-traffic.js` | 交通情報つき provider のアダプタ `window.IntMapRouteTraffic`。`routing-relay` 経由でのみ通信し、**結果を一切保存しない**（provider の規約） |
+
+**能力レジストリ (§3)** — `js/routing-providers.js` は 40 キーの語彙を宣言し、**どの provider も
+全キーに答えなければ登録できない**（`assertComplete` が throw する）。キーが無いことは `false` と
+読まれてしまうが、意味は「誰も訊いていない」なので、その2つを区別しないための仕組み。
+UI・Atlas・要求組み立ての3つが**同じ表**を読むので、「押しても何も起きないボタン」が構造上作れない。
+⚠ 語彙に入るのは**事実**だけ（yes/no か数）。**計算するもの**（どの provider がこの要求に答えるか、
+それを選ぶと何を失うか）は関数のままで、語彙には入れない。
+⚠ 各 provider は `evidence` を持つ——`'measured'`（実サーバに訊いた）か `'documented'`（提供元の
+文書を読んだだけ）。`documented` の provider は `available()` が relay の答えを得るまで false なので、
+**文書の力だけで利用者に何かを提示することは無い**。
+| `js/routing-errors.js` | 失敗の分類 `window.IntMapRouteErrors`。15 コード。各コードは**文ではなく判断**を運ぶ（再試行してよいか・別 provider に投げてよいか・利用者が直せるか）。文は別に 9 言語で引く |
+| `js/routing-time.js` | **どちらの「今」か** `window.IntMapRouteClock`。`planningNow()`＝Chronos（読者が見ている時刻・depart at / arrive by / 沿道天候）、`navNow()`＝壁時計（案内中）。**時計を増やしていない。既にある2つに名前を付けただけ** |
+| `js/routing-traffic.js` | 交通情報つき provider のアダプタ `window.IntMapRouteTraffic`。`routing-relay` 経由でのみ通信し、**結果を一切保存しない**（provider の規約） |
+
+**能力レジストリ (§3)** — `js/routing-providers.js` は 40 キーの語彙を宣言し、**どの provider も
+全キーに答えなければ登録できない**（`assertComplete` が throw する）。キーが無いことは `false` と
+読まれてしまうが、意味は「誰も訊いていない」なので、その2つを区別しないための仕組み。
+UI・Atlas・要求組み立ての3つが**同じ表**を読むので、「押しても何も起きないボタン」が構造上作れない。
+⚠ 語彙に入るのは**事実**だけ（yes/no か数）。**計算するもの**（どの provider がこの要求に答えるか、
+それを選ぶと何を失うか）は関数のままで、語彙には入れない。
+⚠ 各 provider は `evidence` を持つ——`'measured'`（実サーバに訊いた）か `'documented'`（提供元の
+文書を読んだだけ）。`documented` の provider は `available()` が relay の答えを得るまで false なので、
+**文書の力だけで利用者に何かを提示することは無い**。
 
 **不変条件**
 
@@ -958,6 +993,37 @@ Atlas の自然言語も同じ経路計算を呼ぶ補助的な入口で、**両
 - **カメラは開いているパネルの実寸を避ける**（`IntMapRouting.setInsets()`）。
 
 ---
+
+### 8.4b 案内 (Active Navigation)
+
+経路を**引く**のが §8.4、引いた経路に沿って**連れて行く**のがこちら。計画の状態
+（`IntMapRouteStore`）とは**別の store** を持つ——計画の状態は読者が入力したときに変わり、
+案内の状態は誰も触らなくても毎秒変わるので、混ぜると経路パネルの購読者全員が走行中ずっと
+1 Hz で再描画される。
+
+**8 ファイルすべてが1つの async chunk**（`IntMapLazy.need('navigation')`）。一度も案内しない
+セッションは 1 バイトも払わない。
+
+| ファイル | 役割 | 純粋か |
+|---|---|---|
+| `js/navigation-store.js` | `window.IntMapNavStore`。10 状態の状態機械（`idle / acquiring_location / ready / enroute / offroute / rerouting / arriving / arrived / paused / error`）と**遷移表**。表に無い遷移は throw する。`rerouteGeneration` が古い再探索の返事を捨てる | ○ |
+| `js/navigation-match.js` | `window.IntMapNavMatch`。GPS の受け入れ判定（古い・飛躍・順序違い）と平滑化（速度・**円形**の方位）、経路への射影（**頂点ではなく線分**へ。前回位置の窓＋一様格子で、毎 tick に全 polyline を歩かない） | ○ |
+| `js/navigation-guidance.js` | `window.IntMapNavGuide`。残り距離・**手順の所要時間から積む**残り時間・次と次の次の操作・レーン・逸脱の投票・到着の投票・音声の段 | ○ |
+| `js/navigation.js` | `window.IntMapNavigation`。ループだけ。`watchPosition` → 上の3つ → 地図。**再探索は `js/routing.js` の同じ扉を通る** | × |
+| `js/navigation-camera.js` | 追従（進行方向を上・現在地を画面の下寄り）／北上／全体／手動パンで一時解除 | × |
+| `js/navigation-voice.js` | 9 言語の音声。`off` / `alerts` / `guidance` | × |
+| `js/navigation-sim.js` | 決定的な位置シミュレータ（`Math.random` を使わない）。逸脱・飛躍・精度劣化・停止・到着を注入できる | ほぼ○ |
+| `js/navigation-ui.js` | 案内カード（上）と ETA バー（下）。`.nvg-*`。**案内中は経路パネルを隠す**（`body.nvg-on`） | × |
+
+**不変条件**
+
+- **位置が端末を出るのは経路を要求するときだけ。** 照合・進捗・案内・到着はすべて手元で計算する。
+  `_sent()` が回数を数えており、検査がその数を見る。
+- **案内は `IntMapTime`（歴史時計）を1回も読まない。** 地図を 1950 年にした読者も今日帰宅する。
+- **交通情報を持たない所要時間に「渋滞考慮」と書かない。** 能力表が false のとき、UI は
+  「交通状況未反映」と明示する。
+- **provider が出さなかったレーンを推定しない。** `lanes` が null なら何も描かない。
+- **地図には `IntMapGeoEngine` を通してのみ触る**（MapLibre / Cesium の両方で成立する）。
 
 ## 9. モバイル対応の構造
 

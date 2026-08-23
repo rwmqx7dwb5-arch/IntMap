@@ -5369,5 +5369,74 @@ window.IntMapLang.define('zh', {
   'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': '這次請求嘗試的次數過多 — 你每日的可用次數並未再被扣除。請換個說法再試一次。',   /* ai-core.js (#R318) aiTurnCallsMsg */
   'place': '地點',   /* atlas-console.js (#R330) research.events footnote */
   'headline similarity': '標題相似度',   /* atlas-console.js (#R330) research.events footnote */
+  '{t} slower than usual': '比平常慢{t}',   /* navigation-ui.js (#R347) */
+  'A faster route saves {t}': '有更快的路線，可省{t}',   /* navigation-ui.js (#R347) */
+  'Alerts only': '僅重要提示',   /* navigation-ui.js (#R347) */
+  'arrive ': '抵達 ',   /* atlas-console.js (#R347) */
+  'Arriving at {n}': '即將抵達{n}',   /* navigation-voice.js (#R347) */
+  'Arriving at your destination': '即將抵達目的地',   /* navigation-voice.js (#R347) */
+  'Arriving soon': '即將抵達',   /* navigation-ui.js (#R347) */
+  'Current road': '行駛中的道路',   /* navigation-ui.js (#R347) */
+  'Distance left': '剩餘距離',   /* navigation-ui.js (#R347) */
+  'End navigation': '結束導航',   /* navigation-ui.js (#R347) */
+  'Fewer details': '顯示較少',   /* navigation-ui.js (#R347) */
+  'Finding a new route…': '正在尋找新路線…',   /* navigation-ui.js (#R347) */
+  'Follow my position': '跟隨我的位置',   /* navigation-ui.js (#R347) */
+  'Following your position again.': '已恢復跟隨你的位置。',   /* atlas-console.js (#R347) */
+  'In {d}, {a}': '前方{d}，{a}',   /* navigation-voice.js (#R347) */
+  'Location accuracy': '定位精確度',   /* navigation-ui.js (#R347) */
+  'More details': '顯示更多',   /* navigation-ui.js (#R347) */
+  'Mute voice guidance': '關閉語音導航',   /* navigation-ui.js (#R347) */
+  'Navigation is not running.': '沒有進行中的導航。',   /* atlas-console.js (#R347) */
+  'Navigation is paused': '導航已暫停',   /* navigation-ui.js (#R347) */
+  'Navigation is unavailable in this session.': '本次工作階段無法使用導航。',   /* atlas-console.js (#R347) */
+  'Navigation started': '已開始導航',   /* atlas-console.js (#R347) */
+  'Navigation stopped.': '已停止導航。',   /* atlas-console.js (#R347) */
+  'New route found': '已找到新路線',   /* navigation-voice.js (#R347) */
+  'Next stop': '下一個途經點',   /* navigation-ui.js (#R347) */
+  'Off': '關閉',   /* navigation-ui.js (#R347) */
+  'Off route': '已偏離路線',   /* navigation-voice.js (#R347) */
+  'Off route.': '已偏離路線。',   /* atlas-console.js (#R347) */
+  'On': '開啟',   /* navigation-ui.js (#R347) */
+  'Plan a route first — tell me where from and where to.': '請先規劃路線 — 告訴我起點和終點。',   /* atlas-console.js (#R347) */
+  'Re-centre the map': '回到我的位置',   /* navigation-ui.js (#R347) */
+  'Rerouting': '正在重新規劃路線',   /* navigation-voice.js (#R347) */
+  'simulated': '模擬',   /* atlas-console.js (#R347) */
+  'Simulated drive': '模擬行駛',   /* navigation-ui.js (#R347) */
+  'Standard travel time — traffic not included.': '標準所需時間 — 未納入路況。',   /* atlas-console.js (#R347) */
+  'Stop reached': '已抵達途經點',   /* navigation-ui.js (#R347) */
+  'Switch': '切換',   /* navigation-ui.js (#R347) */
+  'then': '接著',   /* navigation-ui.js (#R347) */
+  'Time left': '剩餘時間',   /* navigation-ui.js (#R347) */
+  'Traffic data is out of date': '路況資料已過期',   /* navigation-ui.js (#R347) */
+  'Traffic included': '已納入路況',   /* navigation-ui.js (#R347) */
+  'Traffic is not included': '未納入路況',   /* navigation-ui.js (#R347) */
+  'Traffic-aware.': '已納入路況。',   /* atlas-console.js (#R347) */
+  'Turn voice guidance on': '開啟語音導航',   /* navigation-ui.js (#R347) */
+  'Turn-by-turn navigation': '逐向導航',   /* navigation-ui.js (#R347) */
+  'Via point': '途經點',   /* navigation-ui.js navigation-voice.js (#R347) */
+  'Via point: {n}': '途經點：{n}',   /* navigation-voice.js (#R347) */
+  'Voice guidance': '語音導航',   /* navigation-ui.js (#R347) */
+  'You have arrived': '已抵達目的地',   /* navigation-ui.js navigation-voice.js (#R347) */
+  'You have arrived at {n}': '已抵達{n}',   /* navigation-voice.js (#R347) */
+  'You have left the route': '你已偏離路線',   /* navigation-ui.js (#R347) */
+  'No route found between these points.': '找不到連接這兩點的路線。',   /* routing-errors.js (#R347) */
+  'Still waiting for your location.': '仍在等待你的位置。',   /* routing-errors.js (#R347) */
+  'Location permission is off. Allow it to navigate.': '定位權限已關閉，導航需要開啟權限。',   /* routing-errors.js (#R347) */
+  'Your device cannot fix a position here.': '這裡無法測得你的位置。',   /* routing-errors.js (#R347) */
+  'The routing server took too long.': '路線伺服器等待超時。',   /* routing-errors.js (#R347) */
+  'The routing server is rate-limiting requests.': '路線伺服器正在限制請求次數。',   /* routing-errors.js (#R347) */
+  'The routing server is unavailable.': '無法連線到路線伺服器。',   /* routing-errors.js (#R347) */
+  'This area is outside the router’s coverage.': '這個地區不在路線服務的覆蓋範圍內。',   /* routing-errors.js (#R347) */
+  'That request cannot be routed as written.': '在這個條件下無法計算路線。',   /* routing-errors.js (#R347) */
+  'Traffic data is unavailable; standard routing used.': '無法取得路況資料，改用標準路線。',   /* routing-errors.js (#R347) */
+  'No public transport data for this journey.': '這段行程沒有公共交通資料。',   /* routing-errors.js (#R347) */
+  'You appear to be offline.': '你目前似乎處於離線狀態。',   /* routing-errors.js (#R347) */
+  'Could not find a new route from here.': '無法從這裡計算新的路線。',   /* routing-errors.js (#R347) */
+  'That request was replaced by a newer one.': '這個請求已被較新的請求取代。',   /* routing-errors.js (#R347) */
+  'Routing failed for an unknown reason.': '路線計算因不明原因失敗。',   /* routing-errors.js (#R347) */
+  'Times come from the map’s clock ({year}), not from today — live timetables do not cover it.': '時刻依地圖的時鐘（{year}年），而非今天 — 即時時刻表並未涵蓋該時間。',   /* routing-time.js (#R347) */
+  'Times are calculated from the map’s clock ({year}), not from today.': '時刻以地圖的時鐘（{year}年）為基準計算，而非今天。',   /* routing-time.js (#R347) */
+  'Traffic data was unavailable — this is the standard travel time.': '無法取得路況資料 — 這是標準所需時間。',   /* routing-cards.js (#R347) */
   }
 });

@@ -5272,4 +5272,73 @@ window.IntMapLang.define('ko', { ui: {
   'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': '이 요청은 시도 횟수가 너무 많았습니다 — 일일 사용 횟수는 더 이상 차감되지 않았습니다. 표현을 바꿔 다시 시도해 주세요.',   /* ai-core.js (#R318) aiTurnCallsMsg */
   'place': '장소',   /* atlas-console.js (#R330) research.events footnote */
   'headline similarity': '제목 유사도',   /* atlas-console.js (#R330) research.events footnote */
+  '{t} slower than usual': '평소보다 {t} 느림',   /* navigation-ui.js (#R347) */
+  'A faster route saves {t}': '더 빠른 경로로 {t} 단축',   /* navigation-ui.js (#R347) */
+  'Alerts only': '중요 안내만',   /* navigation-ui.js (#R347) */
+  'arrive ': '도착 ',   /* atlas-console.js (#R347) */
+  'Arriving at {n}': '곧 {n}에 도착합니다',   /* navigation-voice.js (#R347) */
+  'Arriving at your destination': '곧 목적지에 도착합니다',   /* navigation-voice.js (#R347) */
+  'Arriving soon': '곧 도착',   /* navigation-ui.js (#R347) */
+  'Current road': '현재 도로',   /* navigation-ui.js (#R347) */
+  'Distance left': '남은 거리',   /* navigation-ui.js (#R347) */
+  'End navigation': '안내 종료',   /* navigation-ui.js (#R347) */
+  'Fewer details': '간략히',   /* navigation-ui.js (#R347) */
+  'Finding a new route…': '새 경로를 찾는 중…',   /* navigation-ui.js (#R347) */
+  'Follow my position': '내 위치 따라가기',   /* navigation-ui.js (#R347) */
+  'Following your position again.': '다시 현재 위치를 따라갑니다.',   /* atlas-console.js (#R347) */
+  'In {d}, {a}': '{d} 앞에서 {a}',   /* navigation-voice.js (#R347) */
+  'Location accuracy': '위치 정확도',   /* navigation-ui.js (#R347) */
+  'More details': '자세히',   /* navigation-ui.js (#R347) */
+  'Mute voice guidance': '음성 안내 끄기',   /* navigation-ui.js (#R347) */
+  'Navigation is not running.': '안내가 실행 중이 아닙니다.',   /* atlas-console.js (#R347) */
+  'Navigation is paused': '안내 일시정지',   /* navigation-ui.js (#R347) */
+  'Navigation is unavailable in this session.': '이번 세션에서는 안내를 사용할 수 없습니다.',   /* atlas-console.js (#R347) */
+  'Navigation started': '안내를 시작했습니다',   /* atlas-console.js (#R347) */
+  'Navigation stopped.': '안내를 중지했습니다.',   /* atlas-console.js (#R347) */
+  'New route found': '새 경로를 찾았습니다',   /* navigation-voice.js (#R347) */
+  'Next stop': '다음 경유지',   /* navigation-ui.js (#R347) */
+  'Off': '끔',   /* navigation-ui.js (#R347) */
+  'Off route': '경로를 이탈했습니다',   /* navigation-voice.js (#R347) */
+  'Off route.': '경로를 이탈했습니다.',   /* atlas-console.js (#R347) */
+  'On': '켬',   /* navigation-ui.js (#R347) */
+  'Plan a route first — tell me where from and where to.': '먼저 경로를 검색해 주세요 — 출발지와 목적지를 알려 주세요.',   /* atlas-console.js (#R347) */
+  'Re-centre the map': '지도를 현재 위치로',   /* navigation-ui.js (#R347) */
+  'Rerouting': '경로를 다시 탐색합니다',   /* navigation-voice.js (#R347) */
+  'simulated': '시뮬레이션',   /* atlas-console.js (#R347) */
+  'Simulated drive': '시뮬레이션 주행',   /* navigation-ui.js (#R347) */
+  'Standard travel time — traffic not included.': '표준 소요 시간 — 교통 상황은 반영되지 않았습니다.',   /* atlas-console.js (#R347) */
+  'Stop reached': '경유지 도착',   /* navigation-ui.js (#R347) */
+  'Switch': '변경',   /* navigation-ui.js (#R347) */
+  'then': '그다음',   /* navigation-ui.js (#R347) */
+  'Time left': '남은 시간',   /* navigation-ui.js (#R347) */
+  'Traffic data is out of date': '교통 정보가 오래되었습니다',   /* navigation-ui.js (#R347) */
+  'Traffic included': '교통 상황 반영',   /* navigation-ui.js (#R347) */
+  'Traffic is not included': '교통 상황 미반영',   /* navigation-ui.js (#R347) */
+  'Traffic-aware.': '교통 상황을 반영했습니다.',   /* atlas-console.js (#R347) */
+  'Turn voice guidance on': '음성 안내 켜기',   /* navigation-ui.js (#R347) */
+  'Turn-by-turn navigation': '경로 안내',   /* navigation-ui.js (#R347) */
+  'Via point': '경유지',   /* navigation-ui.js navigation-voice.js (#R347) */
+  'Via point: {n}': '경유지: {n}',   /* navigation-voice.js (#R347) */
+  'Voice guidance': '음성 안내',   /* navigation-ui.js (#R347) */
+  'You have arrived': '목적지에 도착했습니다',   /* navigation-ui.js navigation-voice.js (#R347) */
+  'You have arrived at {n}': '{n}에 도착했습니다',   /* navigation-voice.js (#R347) */
+  'You have left the route': '경로를 벗어났습니다',   /* navigation-ui.js (#R347) */
+  'No route found between these points.': '두 지점을 잇는 경로를 찾지 못했습니다.',   /* routing-errors.js (#R347) */
+  'Still waiting for your location.': '현재 위치를 아직 가져오지 못했습니다.',   /* routing-errors.js (#R347) */
+  'Location permission is off. Allow it to navigate.': '위치 권한이 꺼져 있습니다. 안내하려면 허용해 주세요.',   /* routing-errors.js (#R347) */
+  'Your device cannot fix a position here.': '이 위치에서는 기기가 위치를 측정할 수 없습니다.',   /* routing-errors.js (#R347) */
+  'The routing server took too long.': '경로 서버 응답이 너무 늦습니다.',   /* routing-errors.js (#R347) */
+  'The routing server is rate-limiting requests.': '경로 서버가 요청을 제한하고 있습니다.',   /* routing-errors.js (#R347) */
+  'The routing server is unavailable.': '경로 서버에 연결할 수 없습니다.',   /* routing-errors.js (#R347) */
+  'This area is outside the router’s coverage.': '이 지역은 경로 제공자의 지원 범위 밖입니다.',   /* routing-errors.js (#R347) */
+  'That request cannot be routed as written.': '이 조건으로는 경로를 계산할 수 없습니다.',   /* routing-errors.js (#R347) */
+  'Traffic data is unavailable; standard routing used.': '교통 정보를 가져올 수 없어 표준 경로를 사용했습니다.',   /* routing-errors.js (#R347) */
+  'No public transport data for this journey.': '이 구간의 대중교통 데이터가 없습니다.',   /* routing-errors.js (#R347) */
+  'You appear to be offline.': '오프라인 상태인 것 같습니다.',   /* routing-errors.js (#R347) */
+  'Could not find a new route from here.': '여기서 새 경로를 계산하지 못했습니다.',   /* routing-errors.js (#R347) */
+  'That request was replaced by a newer one.': '이 요청은 더 새로운 요청으로 대체되었습니다.',   /* routing-errors.js (#R347) */
+  'Routing failed for an unknown reason.': '알 수 없는 이유로 경로 계산에 실패했습니다.',   /* routing-errors.js (#R347) */
+  'Times come from the map’s clock ({year}), not from today — live timetables do not cover it.': '시각은 오늘이 아니라 지도의 시계({year}년)를 따릅니다 — 실시간 시간표는 그 시점을 다루지 않습니다.',   /* routing-time.js (#R347) */
+  'Times are calculated from the map’s clock ({year}), not from today.': '시각은 오늘이 아니라 지도의 시계({year}년)를 기준으로 계산합니다.',   /* routing-time.js (#R347) */
+  'Traffic data was unavailable — this is the standard travel time.': '교통 정보를 가져올 수 없어 표준 소요 시간을 표시합니다.',   /* routing-cards.js (#R347) */
 } });

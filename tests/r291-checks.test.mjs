@@ -189,8 +189,20 @@ test('R291 ⑧ provider capabilities decide what may be offered, and none of the
   const w = fresh(); const P = w.IntMapRouteProviders;
   assert.equal(P.supports('driving', 'liveTraffic'), false);
   assert.equal(P.supports('transit', 'liveTraffic'), false);
-  assert.ok(P.list().every((p) => p.liveTraffic === false),
-    'a provider that claims live traffic must actually have it — none of these does');
+  /* ⚠ (#R347) THIS ASSERTION MOVED FROM A SPELLING TO A PROPERTY. It used to read
+     `p.liveTraffic === false` on every provider, which asserted BOTH «nobody has traffic» and
+     «the flag is spelled liveTraffic on the provider object». #R347 added a provider that does have
+     traffic, behind a key this repository does not hold — so the first half is now a claim about
+     AVAILABILITY, not about the table, and pinning the second half would have made a correct
+     implementation fail. The property that must survive is: nothing may offer traffic to a reader
+     unless a provider that really carries it is usable RIGHT NOW. */
+  P.list().forEach((p) => {
+    if (p.caps.traffic) {
+      assert.equal(p.keyed, true, `${p.id} claims traffic, so it must need a key — no open router has it`);
+      assert.notEqual(P.availability(p.id), true,
+        `${p.id} may not be available until a probe says its key is configured`);
+    }
+  });
   assert.equal(P.supports('driving', 'avoid'), true);
   assert.equal(P.supports('walking', 'avoid'), false, 'the toll/highway/ferry chips are driving-only');
   assert.equal(P.supports('walking', 'avoidAreas'), true, 'a drawn keep-out area works on foot too');
@@ -478,9 +490,27 @@ test('R291 ㉓ an option that could not be applied is reported, not swallowed', 
   /* the fabrications the standing rules forbid, still forbidden */
   assert.match(r, /a broken\/absent TRANSIT leg shape is NEVER replaced by a station-to-\n[\s\S]{0,120}station straight line/,
     'the #R126 rule against a fake ride geometry must still be in force');
-  const cards = read('js/routing-cards.js');
-  assert.equal(/渋滞|traffic-aware|with live traffic/.test(cards.replace(/live traffic is not included[^']*/g, '')), false,
-    'nothing may claim traffic awareness while no provider has traffic');
+  /* ⚠ (#R347) THIS ASSERTION MOVED FROM «NOBODY HAS TRAFFIC» TO «NOBODY CLAIMS WHAT THEY DO NOT
+     HAVE», for two independent reasons, both of which made the old form wrong rather than strict.
+       · IT WAS READING A COMMENT. `bare()` exists in this file for exactly this, and this one line
+         did not use it — so #R347's explanatory note in js/routing-cards.js («a duration that looks
+         exactly like a traffic-aware one and is not») satisfied the pattern it was written to
+         forbid. That is the shape this file's own header warns about, on its nineteenth occurrence.
+       · THE PREMISE EXPIRED. #R347 added a provider that really does carry traffic. «No provider
+         has traffic» is no longer a fact about this app, so a check that encodes it would have to be
+         deleted the day the key is set — and a check that gets deleted was never guarding anything.
+     What must stay true is the PROPERTY: a claim about traffic may only be printed when a provider
+     that carries traffic is USABLE. That is a question about the table, not about the strings. */
+  const cards = bare('js/routing-cards.js');
+  const claims = /渋滞考慮|traffic-aware|with live traffic/.test(cards);
+  const w2 = fresh();
+  assert.equal(w2.IntMapRouteProviders.supports('driving', 'traffic'), false,
+    'no traffic provider is usable in this checkout (none is configured)');
+  assert.equal(claims, false,
+    'nothing may claim traffic awareness while no provider that carries traffic is usable');
+  /* …and the honest half: there IS a sentence for the case where traffic was wanted and not had */
+  assert.match(cards, /trafficDropped/,
+    'a route that could not get traffic says so — silence would read as «traffic was considered»');
 });
 
 /* ⚠ ㉔ THE HISTORICAL YEAR CEILING IS DERIVED, NOT TYPED (§15.6) ─────────────────────────────── */

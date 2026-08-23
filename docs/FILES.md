@@ -302,6 +302,17 @@ routing-cards.js                  経路候補カード／手順／区間の共�
 routing-export.js                 GPX・GeoJSON・共有状態 window.IntMapRouteExport
 routing-ui.js                     経路パネル（Layers ▸ Tools ▸ Directions・遅延取得）window.IntMapRouteUI
 routing-ops.js                    経路の分析 window.IntMapRoutingOps
+routing-errors.js                 経路の失敗の分類（15コード・再試行可否・fallback可否）window.IntMapRouteErrors
+routing-time.js                   計画の時刻（Chronos）と案内の時刻（壁時計）の区別 window.IntMapRouteClock
+routing-traffic.js                交通情報つき provider のアダプタ（routing-relay 経由）window.IntMapRouteTraffic
+navigation.js                     案内の進行役（GPS→照合→進捗→再探索）window.IntMapNavigation
+navigation-store.js               案内の状態機械（10状態・遷移表）window.IntMapNavStore
+navigation-match.js               GPS の受け入れ判定と経路への射影 window.IntMapNavMatch
+navigation-guidance.js            残り・次の操作・逸脱・到着・音声の時期 window.IntMapNavGuide
+navigation-camera.js              案内中のカメラ（追従・北上・全体・手動解除）window.IntMapNavCamera
+navigation-voice.js               音声案内（9言語・off/alerts/guidance）window.IntMapNavVoice
+navigation-sim.js                 位置シミュレータ（検証用・決定的）window.IntMapNavSim
+navigation-ui.js                  案内専用 UI（上の指示カードと下の ETA バー）window.IntMapNavUI
 ```
 
 ### 3.9 `js/` — 宇宙・空

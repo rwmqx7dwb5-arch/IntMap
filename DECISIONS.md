@@ -83,3 +83,32 @@
 | **規則を文章で書いたら、その規則を測る検査を同じ変更の中で書く** | 書いただけの規則は守られない。この文書の項目のほとんどは、**書いてあったのに誰も突き合わせていなかった**ものが実際に嘘になってから検査を得ている。 |
 | **テスト時間には天井があり、下げる方向にしか動かさない** | 試験を足すたびに待ち時間が伸びる設計は、いつか「今回は流さない」で終わる。 |
 | **文書は事実ごとに正本を1つに決め、`npm run check:docs` が実装と突き合わせる** | 同じ事実を2か所に書くと、片方だけが古くなる。どちらが古いかは、読んだ人には分からない。 |
+
+## 交通情報つきルーティングの provider は、機能ではなく規約で決まった
+
+「リアルタイム交通量を反映する」には外部 provider が要る。候補を**条項の実物**で判定した結果、
+IntMap の構成（**MapLibre + OpenStreetMap のベースマップ**・静的配信・現在地追従の逐次案内）で
+使えるものは1つしか残らなかった。
+
+| provider | 判定 | 決め手 |
+|---|---|---|
+| Google Routes | **不可** | maps-service-terms §19.2「must not use Google Maps Content from the Routes API in conjunction with a **non-Google map**」／一般規約 §3.2.3(e) は "with **or near**" なので、地図の隣に文字だけ出す回避も塞がれている |
+| Amazon Location | **不可** | AWS Service Terms §82.5.b が「HERE のルートを他社地図に重ねること」を名指しで禁止。加えて日本は routing / traffic とも非対応 |
+| HERE | **不可（この用途では）** | Platform Terms 2.1 が **Navigation Functionality**（現在地に基づく逐次案内）を標準ライセンスから除外し別途書面契約を要求。6.4(a) 末文が日本の Content の第三者コンテンツ併用を PoI / visual / dynamic に限定。日本では `pedestrian` / `bicycle` 自体が非対応 |
+| TomTom | **不可（この用途では）** | Portal T&C 2.1 が同じく Navigation Functionality を除外。日本に対応するのは Orbis v2 のみで、**Orbis にはターンバイターンもレーンも無い** |
+| GraphHopper | 規約はクリア・**交通が無い** | ToS 第5章「with and without showing a map」で明確に可。だが OpenAPI spec に `/route` の traffic パラメータが 0 件（「not yet available for openstreetmap」） |
+| **Mapbox** | **採用** | 「Mapbox Map 上に限る」条項は Boundaries / POI / Studio の3つで **Navigation API を含まない**。attribution 文書が「on a non-Mapbox map」を明示的に想定。日本の交通データあり |
+
+**その規約はコメントではなくフィールドとして符号化してある**（`js/routing-providers.js`）。
+コメントは編集を止めないため:
+
+- `noStore: true` — Product Terms §2.10.1 が結果の cache / store を禁じる。⇒ `routing-relay` **だけ**が
+  `Cache-Control: no-store` を返し（他の relay は `s-maxage`）、アダプタは storage API を1つも使わない。
+- `aiContent: false` — §1.5(ii) が AI への利用を禁じる。Atlas はこのアプリの操作卓なので
+  「経路をモデルに渡す」が既定の動作になりうる。**この provider の返り値についてはそれをしない。**
+- `evidence: 'documented'` — 鍵がリポジトリに無いので、これらのフラグは**1つも観測していない**。
+  `available()` は relay が答えるまで false ＝ **文書の力だけで利用者に機能を提示しない**。
+
+⚠ **鍵が入るまで、交通に関するものは1つも UI に出ない。** 出ないことが正しい状態であって、
+「準備中」のボタンを置くことではない。
+
