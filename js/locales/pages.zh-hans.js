@@ -572,7 +572,7 @@ window.IntMapPageI18N.define('zh-hans', {
     "Weather warnings, Hong Kong — Hong Kong Observatory Open Data (warnsum)": "警报图层实时读取：香港天文台目前生效中的警报信号。香港的警报以全境为对象，因此香港本身即为发布单位。",
     "Weather advisories, the Philippines — PAGASA-DOST public alert feed (CAP)": "警报图层实时读取：菲律宾气象局（PAGASA）的公开 CAP 索引。其洪水信息以省为单位标示区域并附有实际多边形，故菲律宾以省为单位绘制。",
     "災害告警 — 中央氣象署 CWA (Taiwan), via the NCDR CAP aggregator": "警报图层实时读取：自台湾 NCDR 的 CAP 汇整中筛出中央气象署的发布内容。附有多边形的区域照原样绘制，其余则标示乡镇市区名称，即该署的发布单位。",
-    "Weather warnings, New Zealand — MetService public CAP alerts": "警报图层实时读取：纽西兰 MetService 的公开 CAP 索引。接上时内容为空——那是一种状态，而非故障，面板亦如实显示。",
+    "Weather warnings, New Zealand — MetService public CAP alerts": "警报图层实时读取：新西兰 MetService 的公开 CAP 索引。接上时内容为空——那是一种状态，而非故障，面板亦如实显示。",
     "Weather warnings, Canada — Environment and Climate Change Canada (OGC API — Features)": "警报图层实时读取：加拿大环境及气候变化部目前发布中的警报，以机关自身的多边形绘制，点击时依省份汇整。此服务自带 CORS 标头，因此由浏览器直接读取。",
     "Weather warnings, Europe — MeteoAlarm (EUMETNET), 35 national services": "警报图层实时读取：欧洲各国气象机关发布中的警报，依 MeteoAlarm 公开的形式读取，点击时依地区汇整。MeteoAlarm 不回传 CORS 标头，且单一国家的数据源约十 MB，因此由应用程序自有的中继函数在服务器端取得并摘要。",
     "Weather warnings, China — China Meteorological Administration public warning list": "警报图层实时读取：中国气象局公开的发布中警报列表。其中不含图形，因此国家以发布中的最高等级上色，点击后依省份汇整列出。因该服务不回传 CORS 标头，透过应用程序自有的中继函数取得。",
