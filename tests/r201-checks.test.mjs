@@ -191,13 +191,26 @@ test('r201 ④b the seed the suite boots with lives in exactly one place', () =>
   const gen = Number((read('js/app-body.js').match(/defv\s*[:=]\s*(\d+)/) || [])[1]);
   assert.ok(Number.isFinite(defv), 'the seed carries a generation stamp');
   if (Number.isFinite(gen)) assert.equal(defv, gen, '#R189: an unstamped session gets healed back on');
-  /* every spec that opens its OWN context must carry it, or it silently boots the slow way */
+  /* every spec that opens its OWN context must carry it, or it silently boots the slow way.
+     ⚠ (#R354) …OR SAY, IN THE CALL ITSELF, THAT THE SLOW BOOT IS THE SUBJECT. The failure this
+     guards against is a spec that gets the unseeded boot BY ACCIDENT — it omits `storageState`, the
+     two thematic default layers come on, and it pays #R186's 9,160 ms without anyone deciding to.
+     A spec about the first visit has to have the opposite, and tests/r186.spec.js already does it
+     with `test.use({ storageState: { cookies: [], origins: [] } })`. The distinction is not a list
+     of blessed filenames: it is whether the call PASSES an explicit empty state or passes nothing.
+     tests/r354-cables.spec.js is the first to need it through `browser.newContext`, because a route
+     that must be blocked before the first request cannot be installed on an already-booted page. */
   const specs = readdirSync(join(ROOT, 'tests')).filter((f) => f.endsWith('.spec.js'));
+  const FIRST_VISIT = /storageState:\s*(\{\s*cookies:\s*\[\]\s*,\s*origins:\s*\[\]\s*\}|[A-Z_]+)/;
   for (const f of specs) {
     const s = read('tests/' + f);
     if (f === 'prod-smoke.spec.js') continue;     /* runs against the DEPLOYED site, a different origin */
     if (!/browser\.newContext\(/.test(s)) continue;
-    assert.ok(/seededStorageState/.test(s), `tests/${f} opens a context without the session seed`);
+    if (/seededStorageState/.test(s)) continue;
+    assert.ok(FIRST_VISIT.test(s),
+      `tests/${f} opens a context without the session seed and without saying it wants a first-visit profile`);
+    assert.match(s, /cookies:\s*\[\]\s*,\s*origins:\s*\[\]/,
+      `tests/${f} must spell the empty storage state out, so "the slow boot is the subject" is visible`);
   }
 });
 
