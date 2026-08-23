@@ -316,3 +316,18 @@ test('⑰ the frame waits for the panel it is supposed to avoid', () => {
   assert.match(src, /_restorePad\(\)/, 'the camera keeps whatever padding the atlas set');
   assert.match(src, /function hide\(\)\{[\s\S]{0,120}_restorePad\(\)/, 'hide() does not restore the padding');
 });
+
+/* ── ⑱ フレーミングは、断られたら降りる。黙って止まらない ──────────────── */
+test('⑱ a padding the renderer refuses backs off instead of cancelling the frame', () => {
+  const src = code('js/company-facilities.js');
+  /* ⚠ forBounds answers NULL for a padding it cannot satisfy — not an exception, not a warning —
+     and the fitBounds fallback then throws into a catch. MEASURED IN PRODUCTION: the camera did
+     not move for 24 s and 19 of 33 sites sat on the far side of the globe. */
+  assert.ok(src.includes('[1,0.75,0.5,0.25,0]'),
+    'the frame no longer backs off when the renderer refuses a padding');
+  /* and a frame that is not looking at its own subject is a refusal too: heavy one-sided padding
+     is honoured by MOVING THE CENTRE, which on a globe puts the sites past the limb. */
+  assert.ok(src.includes('Math.abs(lat-bbLat)>30'),
+    'a frame centred far from the sites is accepted again');
+  assert.ok(src.includes('const bbLat='), 'the bounds centre is not computed');
+});
