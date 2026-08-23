@@ -33,6 +33,7 @@ import { installAtlasKernel } from './atlas-executor.js';   /* (#R318) the execu
 import { makeAtlasPlanner } from './atlas-planner.js';   /* (#R318) the plan — schema, validation, GoalSpec, dependency execution (holds #R135's block) */
 import { makeAtlasCatalogText } from './atlas-catalog-text.js';   /* (#R318) the 58 kB action catalogue that used to be inline in SYS() */
 import { makeAtlasExamples } from './atlas-examples.js';   /* (#R309) the starter chips — see the ceiling note there */
+import { makeNewsCluster } from './news-cluster.js';   /* (#R340) research.events — the ONE deterministic article→event grouper, with the measurements behind every constant */
 
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.atlasConsole=function(HOST){
@@ -1036,6 +1037,8 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R199) ↳ js/atlas-reply.js — reply rendering — safe markdown, code/math, GFM tables, source cards.
        Moved whole; the 7 names below are what the rest of this file still calls. */
     const { _atlBadSourceHost, _atlCleanUrl, _atlRelevantCards, _atlStanza, dropLeadTitle, linkCards, listHtml, mdMini } = makeAtlasReply(HOST, { L, esc, fitTo, fmtVal, highlight, note, warn });
+    /* (#R340) ↳ js/news-cluster.js — article→EVENT grouping for research.events. No HOST and no deps: it is pure, which is what lets tests/r340-checks run the shipped function over a fixture. */
+    const { EVENT_RULES, groupNewsEvents, newsSubject } = makeNewsCluster();
     /* ---- (#R43) PRECISE layer resolution. The user reported "レイヤーによっては混同している" — the old matcher
        fuzzy-matched loosely AND the model never saw the real layer names, so it guessed a name and the matcher
        guessed a layer (double-guess). Now: (a) the LIVE layer list is injected into the prompt (layerCatalogText)
@@ -3724,8 +3727,9 @@ window.IntMapModules.atlasConsole=function(HOST){
           return R(true, html); }
         case 'events': case 'newsEvents': case 'groupNews': { /* (#R76) vision §6 / stage 4 — the loaded news
           grouped into EVENTS (one real-world occurrence, many articles) instead of a flat article list.
-          Deterministic clustering: same place (≤150 km) + same time window (≤48 h) + headline-token overlap
-          (CJK bigrams so Japanese titles cluster too); tight geo+time pairs need less text similarity. */
+          (#R340) THE GROUPING ITSELF IS js/news-cluster.js — the one implementation, with the production
+          measurement behind every constant. This case picks the window and the area, draws and writes;
+          it decides nothing about what counts as one event. ⚠ Do not re-inline a copy of it here. */
           await ensureData();
           if(typeof HOST.globalData==='undefined'||!HOST.globalData||!HOST.globalData.length){ try{ if(typeof fetchData==='function') await fetchData(); }catch(_){} }
           let items=(typeof HOST.globalData!=='undefined'&&HOST.globalData)?HOST.globalData.filter(it=>it&&it.analysis&&Array.isArray(it.analysis.loc)&&it.title):[];
@@ -3734,27 +3738,13 @@ window.IntMapModules.atlasConsole=function(HOST){
           /* optional place focus */
           let ctx=null; const plc=String(a.place||'').trim();
           if(plc&&!WORLD_RE.test(plc)){ if(DEIXIS_RE.test(plc)) ctx=await geocode(plc); else { try{ ctx=await placeExtent(plc); }catch(_){} if(!ctx){ try{ ctx=await geocode(plc); }catch(_){} } }
-            if(!ctx) return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(plc)));
-            if(ctx.box&&_bboxOK(ctx.box)){ const w=ctx.box[0][0],s2=ctx.box[0][1],e=ctx.box[1][0],n2=ctx.box[1][1]; items=items.filter(it=>{ const l=it.analysis.loc; return l[0]>=w&&l[0]<=e&&l[1]>=s2&&l[1]<=n2; }); }
-            else if(isFinite(+ctx.lng)) items=items.filter(it=>_havKm({lng:it.analysis.loc[0],lat:it.analysis.loc[1]},ctx)<=800); }
-          if(items.length<1) return R(true, note('◌ '+L('No geolocated articles in the loaded news for this window/area','この期間・範囲に地点解析済みの記事がありません','Keine georeferenzierten Artikel','Нет геолоцированных статей','Sin artículos geolocalizados')+' ('+hrs+' h'+(ctx&&ctx.name?(' · '+esc(ctx.name)):'')+')'));
-          const tok=t=>{ let w2; const s=String(t||''); try{ w2=s.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(x=>x.length>=3); }catch(_){ w2=s.toLowerCase().split(/[^a-z0-9]+/).filter(x=>x.length>=3); }
-            (s.match(/[一-鿿぀-ヿ가-힯]{2,}/g)||[]).forEach(seq=>{ for(let i2=0;i2<seq.length-1;i2++) w2.push(seq.slice(i2,i2+2)); });
-            return new Set(w2); };
-          const arr=items.slice(0,600).map(it=>({it,loc:it.analysis.loc,h:(_agoH(it.pubDate)!=null?_agoH(it.pubDate):hrs),tk:tok(it.title)}));
-          const sim=(A,B)=>{ let inter=0; A.forEach(x=>{ if(B.has(x)) inter++; }); const u=A.size+B.size-inter; return u?inter/u:0; };
-          const par=arr.map((_,i2)=>i2); const find=i2=>par[i2]===i2?i2:(par[i2]=find(par[i2]));
-          for(let i2=0;i2<arr.length;i2++) for(let j2=i2+1;j2<arr.length;j2++){
-            const d=_havKm({lng:arr[i2].loc[0],lat:arr[i2].loc[1]},{lng:arr[j2].loc[0],lat:arr[j2].loc[1]}); if(d>150) continue;
-            const dh=Math.abs(arr[i2].h-arr[j2].h); if(dh>48) continue;
-            const s3=sim(arr[i2].tk,arr[j2].tk);
-            if(s3>=0.15||(d<30&&dh<=24&&s3>=0.06)){ par[find(i2)]=find(j2); } }
-          const cl={}; arr.forEach((x,i2)=>{ const r2=find(i2); (cl[r2]=cl[r2]||[]).push(x); });
-          let evs=Object.keys(cl).map(k=>{ const g=cl[k].slice().sort((x,y)=>x.h-y.h);   /* newest (fewest hours ago) first */
-            const outlets=[]; g.forEach(x=>{ const p2=x.it.publisher||'?'; if(outlets.indexOf(p2)<0) outlets.push(p2); });
-            const cx=g.reduce((s3,x)=>s3+x.loc[0],0)/g.length, cy=g.reduce((s3,x)=>s3+x.loc[1],0)/g.length;
-            return {g,outlets,cx,cy,newest:g[0].h,oldest:g[g.length-1].h,pname:(g[0].it.analysis&&g[0].it.analysis.name)||''}; });
-          evs.sort((x,y)=>(y.g.length-x.g.length)||(x.newest-y.newest));
+            if(!ctx) return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(plc)), {meta:{code:'PLACE_NOT_FOUND',category:'input',retryable:false,semanticTarget:plc,produced:[],userGoalSatisfied:false}});
+            /* (#R340) the area filter asks the SAME question the grouper does — where the story IS, not where
+               the pin currently sits (Publisher pin mode moves the pin to the newsroom; see newsSubject). */
+            if(ctx.box&&_bboxOK(ctx.box)){ const w=ctx.box[0][0],s2=ctx.box[0][1],e=ctx.box[1][0],n2=ctx.box[1][1]; items=items.filter(it=>{ const sj=newsSubject(it.analysis); return sj&&sj.loc[0]>=w&&sj.loc[0]<=e&&sj.loc[1]>=s2&&sj.loc[1]<=n2; }); }
+            else if(isFinite(+ctx.lng)) items=items.filter(it=>{ const sj=newsSubject(it.analysis); return sj&&_havKm({lng:sj.loc[0],lat:sj.loc[1]},ctx)<=800; }); }
+          if(items.length<1) return R(true, note('◌ '+L('No geolocated articles in the loaded news for this window/area','この期間・範囲に地点解析済みの記事がありません','Keine georeferenzierten Artikel','Нет геолоцированных статей','Sin artículos geolocalizados')+' ('+hrs+' h'+(ctx&&ctx.name?(' · '+esc(ctx.name)):'')+')'), {meta:{code:'NO_ARTICLES',category:'evidence',retryable:true,semanticTarget:(ctx&&ctx.name)||'',temporalMode:'current',produced:[],userGoalSatisfied:false}});
+          const evs=groupNewsEvents(items,{agoH:_agoH,fallbackH:hrs});   /* (#R340) ↳ js/news-cluster.js — the rules, the constants and the measurements that set them */
           const N=Math.max(3,Math.min(12,(+a.n||8)));
           const top=evs.slice(0,N);
           /* one pin per EVENT (not per article) */
@@ -3768,7 +3758,11 @@ window.IntMapModules.atlasConsole=function(HOST){
             if(_pois.length&&c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:90,maxZoom:8,duration:1100}); }catch(_){}
           const fmtH=h=>h<1?L('<1h ago','1時間以内','<1 h','<1 ч','<1 h'):Math.round(h)+L('h ago','時間前','h','ч назад','h');
           let html='<div style="font-weight:600;margin:2px 0 4px;">🗞 '+L('Events (grouped news, last ','出来事（ニュースをイベント単位に集約・過去','Ereignisse (letzte ','События (за ','Eventos (últimas ')+hrs+'h'+(window.IntMapLang.t(HOST.lang,')','）'))+(ctx&&ctx.name?(' — '+esc(ctx.name)):'')+'</div>';
-          html+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+items.length+' '+L('articles → ','記事 → ','Artikel → ','статей → ','artículos → ')+evs.length+' '+L('events; the ','イベント。上位','Ereignisse; Top ','событий; топ-','eventos; los ')+top.length+L(' biggest shown — click an item or pin to fly','件を表示 — 項目/ピンをクリックで移動',' angezeigt',' показаны',' mayores mostrados')+'</div>';
+          /* (#R340) the count is the number of articles the events are ACTUALLY built from, not the number
+             loaded: the grouper caps the comparison at 600 (pairs are O(n²)) and skips an article whose
+             subject will not resolve. Printing items.length would claim a coverage nobody delivered (#R320). */
+          const graded=evs.reduce((n2,e)=>n2+e.g.length,0);
+          html+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+graded+' '+L('articles → ','記事 → ','Artikel → ','статей → ','artículos → ')+evs.length+' '+L('events; the ','イベント。上位','Ereignisse; Top ','событий; топ-','eventos; los ')+top.length+L(' biggest shown — click an item or pin to fly','件を表示 — 項目/ピンをクリックで移動',' angezeigt',' показаны',' mayores mostrados')+'</div>';
           top.forEach((e,i2)=>{ const first=e.g[e.g.length-1], latest=e.g[0]; const eu=_atlCleanUrl(latest.it.link);
             html+='<div class="atl-rp-item" data-i="'+i2+'" style="padding:5px 0;border-top:1px solid rgba(128,128,128,0.14);cursor:pointer;">'
               +'<div style="font-size:12px;font-weight:600;line-height:1.45;">'+(i2+1)+'. '+esc(String(latest.it.title).slice(0,110))+'</div>'
@@ -3777,9 +3771,15 @@ window.IntMapModules.atlasConsole=function(HOST){
               +(eu?(' <a href="'+esc(eu.url)+'" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--primary-color);text-decoration:none;">'+L('article','記事','Artikel','статья','artículo')+' ↗</a>'):'')   /* (#R153) inline event link via _atlCleanUrl (real article, no aggregator/SNS) */
               +'</div>'; });
           html+=linkCards(top.filter(e=>e.g[0].it.link).slice(0,4).map(e=>({url:e.g[0].it.link,title:e.g[0].it.title,src:e.outlets[0]})));
-          html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'+L('Grouping is mechanical (place ≤150 km × time ≤48 h × headline similarity) on the loaded IntMap feed — one group = reports that likely cover the same occurrence; "first report → latest" shows how coverage moved. For source disagreements or deeper analysis, ask e.g. "analyze event 2".','グループ化は読み込み済みニュースに対する機械的クラスタリング（位置≤150km×時間≤48h×見出し類似）です。1グループ=同一の出来事を扱うとみられる報道で、「最初の報道→最新」で経過が分かります。報道間の相違や深掘りは「2番の出来事を分析して」のように聞いてください。','Mechanische Gruppierung (Ort×Zeit×Titel). Für Analysen: "analysiere Ereignis 2".','Механическая группировка. Для анализа: «проанализируй событие 2».','Agrupación mecánica. Para análisis: "analiza el evento 2".')+'</div>';
+          /* (#R340) the numbers in this sentence are READ from the grouper, so the explanation cannot describe
+             a rule the code no longer applies (#R76's copy still said «place ≤150 km» after the rule changed). */
+          const _evR=L('place','位置','Ort','место','lugar')+' × ≤'+EVENT_RULES.HOURS+' h × '+L('headline similarity','見出し類似','Titelähnlichkeit','сходство заголовков','similitud de titulares')+' '+Math.round(EVENT_RULES.SIM_MIN*100)+'–'+Math.round(EVENT_RULES.SIM_MAX*100)+'%';
+          html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'+L('Grouping is mechanical on the loaded IntMap feed ('+_evR+'). A country-level reference point is not a place, so articles that merely file under the same country face a HIGHER wording bar, not a lower one. One group = reports that likely cover the same occurrence; "first report → latest" shows how coverage moved. For source disagreements or deeper analysis, ask e.g. "analyze event 2".','グループ化は読み込み済みニュースに対する機械的クラスタリング（'+_evR+'）です。国レベルの代表点は「同じ場所」とは見なさないので、同じ国に分類されただけの記事には見出しの一致を<b>より強く</b>求めます。1グループ=同一の出来事を扱うとみられる報道で、「最初の報道→最新」で経過が分かります。報道間の相違や深掘りは「2番の出来事を分析して」のように聞いてください。','Mechanische Gruppierung ('+_evR+'); ein Länder-Referenzpunkt gilt nicht als Ort. Für Analysen: "analysiere Ereignis 2".','Механическая группировка ('+_evR+'); точка-представитель страны местом не считается. Для анализа: «проанализируй событие 2».','Agrupación mecánica ('+_evR+'); un punto representativo de país no cuenta como lugar. Para análisis: "analiza el evento 2".')+'</div>';
           if(!okE&&_pois.length) html+=warn('⚠ '+L('Could not draw the pins (map still loading)','ピンを描画できませんでした（地図読込中）','Pins nicht gezeichnet','Метки не отрисованы','Pines no dibujados'));
-          return R(true, html); }
+          /* (#R340) …and the structured half of the same honesty: research.events declares produces='map,explanation',
+             so the result says which of the two actually happened rather than letting the executor assume both. */
+          const _evMapped=!!(okE&&_pois.length);
+          return R(true, html, {meta:{code:'OK',category:'ok',retryable:false,produced:(_evMapped?['map','explanation']:['explanation']),userGoalSatisfied:true,partial:!_evMapped}}); }
         case 'module': return doModule(a);
         /* (#R231) 「Monitorsは…一旦撤去」 — the ~120-line body is deleted (it is in git; the file has
            a line ceiling). It ended in IntMapOS.exec('tab.monitors'), which is no longer registered,
