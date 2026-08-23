@@ -8,7 +8,7 @@
  *  interface (Architecture.md §3.1): countryGeo → HOST.countryGeo, currentLang → HOST.lang,
  *  globalData → HOST.globalData, toolMode → HOST.toolMode.
  *
- *  ══ (#R315) WHAT IS STILL HERE, AND WHY IT IS NOT ALL OF IT ═══════════════════════════════════
+ *  ══ (#R322) WHAT IS STILL HERE, AND WHY IT IS NOT ALL OF IT ═══════════════════════════════════
  *  This file was 909 lines / 122 kB of the boot bundle, and #R311 measured why it could not simply
  *  be deferred like the other six: counting the statements a factory EXECUTES (rather than the code
  *  it defines) showed two of the five build UI at boot — `correlate` appends #btn-correlate to the
@@ -36,7 +36,7 @@ window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.timeSeries=function(HOST){
   window.IntMapTimeSeries=(function(){
-    /* ⚠ (#R315) A LOAD FAILURE IS NEVER SILENT. This project's most expensive recurring defect is a
+    /* ⚠ (#R322) A LOAD FAILURE IS NEVER SILENT. This project's most expensive recurring defect is a
        feature that quietly stops existing (#R162, #R200, #R205, #R208), and "the file is not here
        yet" is a machine for producing it. js/lazy-modules.js records and console.errors every
        failure; this says it on the screen the user is looking at, because a button that does
@@ -87,7 +87,7 @@ window.IntMapModules.correlate=function(HOST){
     /* the overlay, the 62 metrics, the regression and the residual map are in js/analysis-correlate.js */
     function open(){ _impl().then(I=>{ if(I) I.open(); }); }
     window.IntMapCorrelate={open};
-    /* (#R315) the residual-colour refresh is a READER, not a door: it repaints only when the residual
+    /* (#R322) the residual-colour refresh is a READER, not a door: it repaints only when the residual
        fill is ALREADY on the map, which cannot be true before js/analysis-correlate.js has run — and
        that module replaces this global with its own the moment it does. Keeping the name here means it
        never disappears from window, and "there is nothing to repaint" is the same answer it gave
@@ -98,7 +98,7 @@ window.IntMapModules.correlate=function(HOST){
        and js/data-layers.js's reorganizeLayerPanel() MOVES it rather than creating it. Deferring this
        would delete a Layers button until somebody asked for the panel it opens (#R311 measured it). */
     (function mkBtn(){ if(document.getElementById('btn-correlate'))return; const b=document.createElement('button'); b.id='btn-correlate'; b.type='button'; b.className='ai-test-btn'; b.style.cssText='width:100%;text-align:center;'; b.innerHTML='📊 <span>'+esc(btnLbl())+'</span>'; b.onclick=open; (document.getElementById('layer-tools')||document.body).appendChild(b); try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} })();
-    /* (#R315) the other half of what this listener always did — relabelling the two metric <select>s
+    /* (#R322) the other half of what this listener always did — relabelling the two metric <select>s
        and re-rendering an open overlay — needs the overlay, so it is in js/analysis-correlate.js and is
        forwarded only when the loader says that file is here. A language switch must never be the thing
        that downloads a panel nobody opened; before the module has run there is no overlay to relabel,

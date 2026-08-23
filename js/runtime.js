@@ -280,7 +280,7 @@ export function makeRuntime(HOST) {
       try { if (c.def.suspend) c.def.suspend(); } catch (e) { _oops('suspend:' + name, e); }
       return true;
     }
-    /* ══ ⚠⚠⚠ (#R315) DISPOSE MUST NOT MEAN 「TWICE IS IMPOSSIBLE」 ═══════════════════════════════
+    /* ══ ⚠⚠⚠ (#R322) DISPOSE MUST NOT MEAN 「TWICE IS IMPOSSIBLE」 ═══════════════════════════════
        This used to end with `CAPS.delete(name)`, which reads as thorough and is not: the DEFINITION
        went with the resources, so the next `activate(name)` rejected with 「no such capability」 and
        a feature that had been closed once could never be opened again. Nothing caught it because

@@ -79,7 +79,7 @@ export const WORDS = [
   ['圖磚', '瓦片'], ['圖資', '地圖數據'], ['取樣', '採樣'],
   ['報導', '報道'], ['觀光', '旅遊'], ['公尺', '米'], ['公分', '厘米'], ['浬', '海里'],
   ['太空人', '宇航員'],
-  /* ══ (#R315) PROPER NOUNS THE TWO READERSHIPS TRANSLITERATE DIFFERENTLY ═══════════════════════
+  /* ══ (#R322) PROPER NOUNS THE TWO READERSHIPS TRANSLITERATE DIFFERENTLY ═══════════════════════
      A transliteration is not an orthography, so the character map cannot reach it: 西發里亞 and
      威斯特伐利亞 are different SYLLABLE choices for «Westphalia», and converting the characters of
      the first gives 西发里亚 — a spelling a mainland reader has never seen. OpenCC already carries

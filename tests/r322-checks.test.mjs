@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · #R315 — source-level checks
+ *  IntMap · #R322 — source-level checks
  * ----------------------------------------------------------------------------
  *  This round's brief was 「実測に基づいて消す」 — measure first, and only then remove. So the
  *  checks below are about the RELATION between a measurement and a switch, not about spellings:
@@ -12,7 +12,7 @@
  *       and driven with real values, including the two cases that make a skip unsafe: an object the
  *       caller may have mutated in place, and a payload too large to prove equal.
  *    ⑤–⑥ the lifecycle is EXECUTED too — js/runtime.js is a real ES module, so `dispose` followed
- *       by `activate` can simply be run. #R315 found that pair broken (the register deleted the
+ *       by `activate` can simply be run. #R322 found that pair broken (the register deleted the
  *       definition), and a check that reads the source would have been satisfied by the old code.
  *    ⑦–⑧ every capability that was connected this round can be given back AND asked for again.
  *    ⑨ the instrument is off unless it is asked for.
@@ -55,7 +55,7 @@ const GEO = read('js/geo-engine.js');
 const GEOC = code(GEO);
 
 /* ── ① the switch table is a consequence of MapLibre's behaviour, not an opinion ─────────────── */
-test('R315 ① every operation the renderer already deduplicates is left alone; the one it does not is skipped', () => {
+test('R322 ① every operation the renderer already deduplicates is left alone; the one it does not is skipped', () => {
   const ML = join(ROOT, 'node_modules', 'maplibre-gl', 'dist', 'maplibre-gl-dev.js');
   if (!existsSync(ML)) { assert.ok(true, 'maplibre-gl is not installed — nothing to compare against'); return; }
   const ml = readFileSync(ML, 'utf8');
@@ -105,7 +105,7 @@ const deepEq = lift(GEO, '_deepEq');
 const subsetEq = lift(GEO, '_stateSubsetEq', 'const _deepEq=' + lift(GEO, '_deepEq').toString() + ';');
 const eqBudget = lift(GEO, '_eqBudget');
 
-test('R315 ② the value comparison behaves the way the renderer\'s own does', () => {
+test('R322 ② the value comparison behaves the way the renderer\'s own does', () => {
   assert.equal(deepEq(1, 1), true);
   assert.equal(deepEq('a', 'a'), true);
   assert.equal(deepEq(1, '1'), false);
@@ -119,7 +119,7 @@ test('R315 ② the value comparison behaves the way the renderer\'s own does', (
   assert.equal(deepEq([1, 2], [1, 2, 3]), false);
 });
 
-test('R315 ③ feature state MERGES, so "no change" means every key this call names is already equal', () => {
+test('R322 ③ feature state MERGES, so "no change" means every key this call names is already equal', () => {
   assert.equal(subsetEq({ hover: true, sel: 1 }, { hover: true }), true, 'the call names one key and it already holds that value');
   assert.equal(subsetEq({ hover: true }, { hover: true, sel: 1 }), false, 'the call names a key the state does not hold');
   assert.equal(subsetEq({ hover: true }, { hover: false }), false);
@@ -127,7 +127,7 @@ test('R315 ③ feature state MERGES, so "no change" means every key this call na
   assert.equal(subsetEq({ hover: true }, null), false);
 });
 
-test('R315 ④ a source payload may be skipped only when a FRESH object proves equal, and only within a budget', () => {
+test('R322 ④ a source payload may be skipped only when a FRESH object proves equal, and only within a budget', () => {
   /* the budgeted walk: true / false / "did not finish" */
   const run = (a, b, n) => { const st = { n, out: false }; const eq = eqBudget(a, b, st); return st.out ? null : eq; };
   assert.equal(run({ x: 1 }, { x: 1 }, 1000), true);
@@ -162,7 +162,7 @@ async function freshRuntime() {
   return { rt, restore() { g.window = had.w; g.document = had.d; g.requestAnimationFrame = had.r; g.cancelAnimationFrame = had.c; g.requestIdleCallback = had.i; } };
 }
 
-test('R315 ⑤ a capability that has been disposed can be opened again', async () => {
+test('R322 ⑤ a capability that has been disposed can be opened again', async () => {
   const { rt, restore } = await freshRuntime();
   try {
     const seen = [];
@@ -186,7 +186,7 @@ test('R315 ⑤ a capability that has been disposed can be opened again', async (
   } finally { restore(); }
 });
 
-test('R315 ⑥ dispose sweeps every register a capability can have put work into — idle included', async () => {
+test('R322 ⑥ dispose sweeps every register a capability can have put work into — idle included', async () => {
   const { rt, restore } = await freshRuntime();
   try {
     let ran = 0;
@@ -209,7 +209,7 @@ test('R315 ⑥ dispose sweeps every register a capability can have put work into
 
 /* ── ⑦ the two worker clients can give the thread back, and be asked again ───── */
 for (const [file, what] of [['src/tsunami-worker-client.js', 'tsunami'], ['src/sat-worker-client.js', 'satellite tiles']]) {
-  test(`R315 ⑦ the ${what} worker client has a public way to give the thread back`, () => {
+  test(`R322 ⑦ the ${what} worker client has a public way to give the thread back`, () => {
     const src = code(read(file));
     assert.ok(/\bdispose\s*\(\s*\)\s*\{/.test(src), `${file} has no public dispose — the worker outlives every close`);
     const at = src.indexOf('dispose()');
@@ -224,7 +224,7 @@ for (const [file, what] of [['src/tsunami-worker-client.js', 'tsunami'], ['src/s
 }
 
 /* ── ⑧ every capability connected this round can be suspended AND given back ─── */
-test('R315 ⑧ every capability defined in js/ supplies all three verbs and a public dispose', () => {
+test('R322 ⑧ every capability defined in js/ supplies all three verbs and a public dispose', () => {
   const files = ['js/weather.js', 'js/tsunami.js', 'js/satellites-live.js'];
   const found = [];
   for (const f of files) {
@@ -257,7 +257,7 @@ test('R315 ⑧ every capability defined in js/ supplies all three verbs and a pu
 });
 
 /* ── ⑨ the instrument does not ship switched on ─────────────────────────────── */
-test('R315 ⑨ the command census is off unless it is asked for', () => {
+test('R322 ⑨ the command census is off unless it is asked for', () => {
   const m = /const CMD\s*=\s*\{([\s\S]*?)\n  \};/.exec(GEOC);
   assert.ok(m, 'the census configuration is gone');
   assert.ok(/\bon:\s*false/.test(m[1]), 'counting must be off by default — it is an instrument, not a feature');

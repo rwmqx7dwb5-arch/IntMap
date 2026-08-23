@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * IntMap · asset-report — WHAT IS IN dist/, AND WHO ASKED FOR IT  (#R315)
+ * IntMap · asset-report — WHAT IS IN dist/, AND WHO ASKED FOR IT  (#R322)
  * =============================================================================================
  *  scripts/build-report.mjs weighs what Rollup produced. That is the smaller half: MEASURED on this
  *  build, JavaScript is 12.5 MB of a 106 MB deploy and `data/` alone is 55.8 MB, none of which
@@ -48,7 +48,7 @@ const SOURCE_DIRS = [
 ];
 const ROOT_SOURCES = ['index.html', 'admin.html', 'science.html', 'sources.html', 'privacy.html', 'terms.html', 'sw.js'];
 
-/* ⚠ (#R315) THE ALLOWLIST IS FOR REASONS, NOT FOR NAMES. Every entry says why the tree is allowed
+/* ⚠ (#R322) THE ALLOWLIST IS FOR REASONS, NOT FOR NAMES. Every entry says why the tree is allowed
    to carry the thing, and a name with no reason is not an entry. */
 const ALLOW = {
   /* Rollup emits the same helper into more than one entry; the duplicate is the bundler's, and
@@ -119,7 +119,7 @@ function sourceCorpus() {
   for (const f of walk(ROOT).filter((x) => /^[^/]+\.md$/.test(x))) {
     corpus.push({ path: f, role: 'doc', text: readFileSync(join(ROOT, f), 'utf8') });
   }
-  /* ⚠ (#R315) A MANIFEST IS A CONSUMER. Several of the largest rasters are never named in
+  /* ⚠ (#R322) A MANIFEST IS A CONSUMER. Several of the largest rasters are never named in
      JavaScript at all — js/precip-annual.js:62 reads `mercator.file` out of data/precip-mm.json,
      js/vs30-mask.js:66 reads `phone.file` out of data/vs30.json. Without the small JSON files in
      the corpus, precip_mercator_1981-2010.png (3.82 MB) is attributed to whichever TEST happens to

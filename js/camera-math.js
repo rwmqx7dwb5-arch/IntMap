@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · CAMERA GEOMETRY — where the eye is, and how far it may look  (#R177, moved #R315)
+ *  IntMap · CAMERA GEOMETRY — where the eye is, and how far it may look  (#R177, moved #R322)
  * ----------------------------------------------------------------------------
  *  ONE transcription of the renderer's own geometry: the mercator projection, the eye position
  *  for a camera, the pitch that saturates, and how far in a zoom may go while looking up on a
@@ -8,7 +8,7 @@
  *  renderer. The header inside the first block is that story; it moved here with the code.
  *
  *  ⚠ WHY IT IS ITS OWN FILE NOW. Not tidiness: js/geo-engine.js is part of the SHELL, and
- *  tests/r168-checks.test.mjs holds the shell under a line ceiling that only ever goes DOWN. #R315
+ *  tests/r168-checks.test.mjs holds the shell under a line ceiling that only ever goes DOWN. #R322
  *  added the renderer-command census to the adapter and put the shell over. That check states the
  *  remedy in its own words — 「a subject moves out instead」 — and names the precedents: #R195 took
  *  the satellite protocol out (259 lines), #R196 the antimeridian geodesy (111) and the tile

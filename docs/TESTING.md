@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-20): the **core** tier that
 gates a push is **6 spec files / 1.1 min**; the **whole** suite is **65 measured spec files /
 86.5 min** of serial browser time against a ceiling of 86.7 min; and `npm run test:checks` runs
-**161 Node test files** with no browser at all (counted from `package.json` on 2026-08-23; the
+**162 Node test files** with no browser at all (counted from `package.json` on 2026-08-23; the
 line above it is the 2026-08-20 measurement). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -154,7 +154,7 @@ instrument below. ⚠ That instrument needs `.frame-cache/`, which is gitignored
 third-party tiles, so it is a LOCAL measurement: a CI runner with an empty cache would block every
 external request and measure a map that never drew.
 
-### Gating: the other half of the deploy — `npm run check:assets` (#R315)
+### Gating: the other half of the deploy — `npm run check:assets` (#R322)
 
 The budget above weighs what Rollup produced. That is the smaller half: JavaScript is 12.5 MB of a
 105.7 MB deploy and `data/` alone is 55.8 MB, copied whole by `vite.config.js` and never seen by the
@@ -194,7 +194,7 @@ node scripts/frame-profile.mjs --boot --net fast4g             # start-up, iPhon
 node scripts/frame-profile.mjs --sweep --sat                   # frame time over a zoom + hover sweep
 node scripts/frame-profile.mjs --boot --desktop --cpu 1        # …or the desktop profile
 node scripts/frame-profile.mjs --mem --cycles 10               # heap/nodes/listeners over open-close cycles
-node scripts/frame-profile.mjs --commands                      # (#R315) renderer commands per phase
+node scripts/frame-profile.mjs --commands                      # (#R322) renderer commands per phase
 node scripts/frame-profile.mjs --commands --skip sourceData    # …the other arm of the same build
 npx vite --port 5311 --strictPort &                            # …and attribution needs the DEV server
 node scripts/frame-profile.mjs --attribute --base http://localhost:5311
@@ -247,7 +247,7 @@ the user reaches for the feature. Two suites guard that, and they guard differen
 data centres, the aircraft card, the 3-D volume tool, the country comparison, live satellites and
 the satellite panel. ⚠ `js/analysis-panels.js` was a candidate and could not be one of them AS A
 FILE: measured, two of its five factories build Layers-panel buttons — `#btn-correlate` and
-`#btn-edu` — at boot, so deferring the file would take two buttons off the panel. #R315 split it by
+`#btn-edu` — at boot, so deferring the file would take two buttons off the panel. #R322 split it by
 what RUNS at boot instead of by feature: the shell keeps the registrations, the buttons and the
 listeners, five implementations went behind the loader, and the rule is intact — a module may be
 deferred only when nothing a reader can see depends on it having run.)

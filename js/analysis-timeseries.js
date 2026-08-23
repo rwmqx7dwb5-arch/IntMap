@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · Time-series chart — the implementation behind window.IntMapTimeSeries  (#R315)
+ *  IntMap · Time-series chart — the implementation behind window.IntMapTimeSeries  (#R322)
  * ----------------------------------------------------------------------------
  *  Fetched by js/lazy-modules.js the first time something opens the chart. js/analysis-panels.js
  *  keeps the eager SHELL — it publishes window.IntMapTimeSeries at boot and every entry point

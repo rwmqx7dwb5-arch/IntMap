@@ -4956,269 +4956,269 @@ window.IntMapLang.define('fr', { ui: {
   "Where in the world are the most severe weather warnings in force right now?": "Où dans le monde les alertes météo les plus graves sont-elles en vigueur en ce moment ?",   /* atlas-examples.js (#R313) */
   "Which plate boundaries have been most active in the past week?": "Quelles limites de plaques tectoniques ont été les plus actives cette dernière semaine ?",   /* atlas-examples.js (#R313) */
   "Which submarine cable chokepoints carry the most of the world’s traffic?": "Quels points de passage obligés des câbles sous-marins portent la plus grande part du trafic mondial ?",   /* atlas-examples.js (#R313) */
-  "This panel could not be loaded — check your connection and try again.": "Ce panneau n'a pas pu être chargé — vérifiez votre connexion et réessayez.",   /* analysis-panels.js (#R315) */
-  "Columbus reaches the Americas": "Colomb atteint l'Amérique",   /* analysis-world-events.js (#R315) */
-  "First Atlantic crossing opens the Columbian exchange.": "La première traversée de l'Atlantique ouvre l'échange colombien.",   /* analysis-world-events.js (#R315) */
-  "Peace of Westphalia": "Traités de Westphalie",   /* analysis-world-events.js (#R315) */
-  "Birth of the modern sovereign-state order.": "Naissance de l'ordre moderne des États souverains.",   /* analysis-world-events.js (#R315) */
-  "Great Lisbon Earthquake": "Tremblement de terre de Lisbonne",   /* analysis-world-events.js (#R315) */
-  "Quake+tsunami killed tens of thousands; shook European thought.": "Le séisme et le tsunami font des dizaines de milliers de morts et ébranlent la pensée européenne.",   /* analysis-world-events.js (#R315) */
-  "French Revolution": "Révolution française",   /* analysis-world-events.js (#R315) */
-  "Storming of the Bastille topples the old order.": "La prise de la Bastille renverse l'Ancien Régime.",   /* analysis-world-events.js (#R315) */
-  "Congress of Vienna": "Congrès de Vienne",   /* analysis-world-events.js (#R315) */
-  "Post-Napoleonic balance-of-power settlement.": "Réorganisation de l'Europe selon l'équilibre des puissances après Napoléon.",   /* analysis-world-events.js (#R315) */
-  "Treaty of Nanking": "Traité de Nankin",   /* analysis-world-events.js (#R315) */
-  "Ends the First Opium War; cedes Hong Kong.": "Fin de la première guerre de l'opium ; Hong Kong est cédée.",   /* analysis-world-events.js (#R315) */
-  "Lincoln assassinated": "Assassinat d'Abraham Lincoln",   /* analysis-world-events.js (#R315) */
-  "US president shot at Ford’s Theatre.": "Le président américain est abattu au Ford’s Theatre.",   /* analysis-world-events.js (#R315) */
-  "Meiji Restoration": "Restauration de Meiji",   /* analysis-world-events.js (#R315) */
-  "Japan’s rapid modernisation begins.": "La modernisation rapide du Japon s'engage.",   /* analysis-world-events.js (#R315) */
-  "Suez Canal opens": "Ouverture du canal de Suez",   /* analysis-world-events.js (#R315) */
-  "Europe–Asia sea route shortened by ~7,000 km.": "La route maritime Europe–Asie raccourcit d'environ 7 000 km.",   /* analysis-world-events.js (#R315) */
-  "Krakatoa eruption": "Éruption du Krakatoa",   /* analysis-world-events.js (#R315) */
-  "One of the deadliest volcanic events in history.": "L'une des éruptions volcaniques les plus meurtrières de l'histoire.",   /* analysis-world-events.js (#R315) */
-  "Wright brothers’ first flight": "Premier vol des frères Wright",   /* analysis-world-events.js (#R315) */
-  "Powered flight begins at Kitty Hawk.": "Le vol motorisé débute à Kitty Hawk.",   /* analysis-world-events.js (#R315) */
-  "San Francisco earthquake": "Séisme de San Francisco",   /* analysis-world-events.js (#R315) */
-  "M7.9 quake and fires destroy the city.": "Un séisme de M7,9 et les incendies détruisent la ville.",   /* analysis-world-events.js (#R315) */
-  "Titanic sinks": "Naufrage du Titanic",   /* analysis-world-events.js (#R315) */
-  "1,500+ die in the North Atlantic.": "Plus de 1 500 personnes périssent dans l'Atlantique Nord.",   /* analysis-world-events.js (#R315) */
-  "Assassination in Sarajevo": "Attentat de Sarajevo",   /* analysis-world-events.js (#R315) */
-  "Archduke Franz Ferdinand shot — WWI ignites.": "L'archiduc François-Ferdinand est abattu : la Première Guerre mondiale éclate.",   /* analysis-world-events.js (#R315) */
-  "Panama Canal opens": "Ouverture du canal de Panama",   /* analysis-world-events.js (#R315) */
-  "Atlantic and Pacific joined.": "L'Atlantique et le Pacifique sont reliés.",   /* analysis-world-events.js (#R315) */
-  "Russian Revolution": "Révolution russe",   /* analysis-world-events.js (#R315) */
-  "Bolsheviks seize Petrograd.": "Les bolcheviks s'emparent de Petrograd.",   /* analysis-world-events.js (#R315) */
-  "WWI Armistice": "Armistice de 1918",   /* analysis-world-events.js (#R315) */
-  "Fighting ends in the Compiègne railway carriage.": "Les combats cessent dans le wagon de Compiègne.",   /* analysis-world-events.js (#R315) */
-  "1918 influenza pandemic": "Pandémie de grippe de 1918",   /* analysis-world-events.js (#R315) */
-  "Tens of millions die worldwide.": "Des dizaines de millions de morts dans le monde entier.",   /* analysis-world-events.js (#R315) */
-  "Treaty of Versailles": "Traité de Versailles",   /* analysis-world-events.js (#R315) */
-  "Redraws Europe; seeds future conflict.": "Il redessine l'Europe et sème le conflit suivant.",   /* analysis-world-events.js (#R315) */
-  "Great Kantō earthquake": "Séisme du Kantō",   /* analysis-world-events.js (#R315) */
-  "Tokyo–Yokohama devastated; ~105,000 dead.": "Tokyo et Yokohama sont dévastées ; environ 105 000 morts.",   /* analysis-world-events.js (#R315) */
-  "Wall Street Crash": "Krach de Wall Street",   /* analysis-world-events.js (#R315) */
-  "Black Tuesday opens the Great Depression.": "Le Mardi noir ouvre la Grande Dépression.",   /* analysis-world-events.js (#R315) */
-  "WWII begins": "Début de la Seconde Guerre mondiale",   /* analysis-world-events.js (#R315) */
-  "Germany attacks Westerplatte, invades Poland.": "L'Allemagne bombarde la Westerplatte et envahit la Pologne.",   /* analysis-world-events.js (#R315) */
-  "Attack on Pearl Harbor": "Attaque de Pearl Harbor",   /* analysis-world-events.js (#R315) */
-  "Japan strikes the US Pacific Fleet.": "Le Japon frappe la flotte américaine du Pacifique.",   /* analysis-world-events.js (#R315) */
-  "D-Day landings": "Débarquement de Normandie",   /* analysis-world-events.js (#R315) */
-  "Largest amphibious invasion in history.": "La plus vaste opération amphibie de l'histoire.",   /* analysis-world-events.js (#R315) */
-  "Bretton Woods Conference": "Conférence de Bretton Woods",   /* analysis-world-events.js (#R315) */
-  "Dollar-centerd postwar monetary order.": "Un ordre monétaire d'après-guerre centré sur le dollar.",   /* analysis-world-events.js (#R315) */
-  "Trinity nuclear test": "Essai nucléaire Trinity",   /* analysis-world-events.js (#R315) */
-  "First nuclear detonation.": "La première explosion nucléaire de l'histoire.",   /* analysis-world-events.js (#R315) */
-  "Hiroshima": "Bombardement atomique d'Hiroshima",   /* analysis-world-events.js (#R315) */
-  "First atomic bombing of a city.": "Le premier bombardement atomique d'une ville.",   /* analysis-world-events.js (#R315) */
-  "United Nations founded": "Fondation des Nations unies",   /* analysis-world-events.js (#R315) */
-  "UN Charter signed in San Francisco.": "La Charte des Nations unies est signée à San Francisco.",   /* analysis-world-events.js (#R315) */
-  "Indian independence": "Indépendance de l'Inde",   /* analysis-world-events.js (#R315) */
-  "End of the British Raj; Partition follows.": "Fin du Raj britannique, suivie de la partition.",   /* analysis-world-events.js (#R315) */
-  "Gandhi assassinated": "Assassinat de Gandhi",   /* analysis-world-events.js (#R315) */
-  "Shot in New Delhi.": "Abattu à New Delhi.",   /* analysis-world-events.js (#R315) */
-  "People’s Republic of China founded": "Fondation de la République populaire de Chine",   /* analysis-world-events.js (#R315) */
-  "Mao proclaims the PRC in Beijing.": "Mao proclame la RPC à Pékin.",   /* analysis-world-events.js (#R315) */
-  "NATO founded": "Création de l'OTAN",   /* analysis-world-events.js (#R315) */
-  "North Atlantic Treaty signed in Washington.": "Le traité de l'Atlantique Nord est signé à Washington.",   /* analysis-world-events.js (#R315) */
-  "Korean War begins": "Début de la guerre de Corée",   /* analysis-world-events.js (#R315) */
-  "North invades across the 38th parallel.": "Le Nord franchit le 38e parallèle.",   /* analysis-world-events.js (#R315) */
-  "Suez Crisis": "Crise de Suez",   /* analysis-world-events.js (#R315) */
-  "Canal nationalisation triggers war; superpowers force a halt.": "La nationalisation du canal déclenche la guerre ; les superpuissances imposent l'arrêt.",   /* analysis-world-events.js (#R315) */
-  "Sputnik 1": "Spoutnik 1",   /* analysis-world-events.js (#R315) */
-  "First artificial satellite — the space age begins.": "Le premier satellite artificiel : l'ère spatiale commence.",   /* analysis-world-events.js (#R315) */
-  "Treaty of Rome": "Traité de Rome",   /* analysis-world-events.js (#R315) */
-  "European Economic Community founded.": "La Communauté économique européenne est fondée.",   /* analysis-world-events.js (#R315) */
-  "Cuban Revolution": "Révolution cubaine",   /* analysis-world-events.js (#R315) */
-  "Castro takes Havana.": "Castro prend La Havane.",   /* analysis-world-events.js (#R315) */
-  "Berlin Wall built": "Construction du mur de Berlin",   /* analysis-world-events.js (#R315) */
-  "East Germany seals the inner-Berlin border.": "La RDA verrouille la frontière intérieure de Berlin.",   /* analysis-world-events.js (#R315) */
-  "Gagarin orbits Earth": "Gagarine en orbite autour de la Terre",   /* analysis-world-events.js (#R315) */
-  "First human in space.": "Le premier être humain dans l'espace.",   /* analysis-world-events.js (#R315) */
-  "Cuban Missile Crisis": "Crise des missiles de Cuba",   /* analysis-world-events.js (#R315) */
-  "The Cold War’s closest brush with nuclear war.": "Le moment où la guerre froide a frôlé le conflit nucléaire.",   /* analysis-world-events.js (#R315) */
-  "JFK assassinated": "Assassinat de John F. Kennedy",   /* analysis-world-events.js (#R315) */
-  "Shot in Dallas.": "Abattu à Dallas.",   /* analysis-world-events.js (#R315) */
-  "Six-Day War": "Guerre des Six Jours",   /* analysis-world-events.js (#R315) */
-  "Israel takes Sinai, Golan, West Bank, Gaza.": "Israël prend le Sinaï, le Golan, la Cisjordanie et Gaza.",   /* analysis-world-events.js (#R315) */
-  "Martin Luther King Jr. assassinated": "Assassinat de Martin Luther King Jr.",   /* analysis-world-events.js (#R315) */
-  "Shot in Memphis.": "Abattu à Memphis.",   /* analysis-world-events.js (#R315) */
-  "Apollo 11": "Apollo 11",   /* analysis-world-events.js (#R315) */
-  "Launch of the first crewed Moon landing.": "Lancement du premier alunissage habité.",   /* analysis-world-events.js (#R315) */
-  "Nixon shock": "Choc Nixon",   /* analysis-world-events.js (#R315) */
-  "Dollar–gold convertibility ends.": "La convertibilité du dollar en or prend fin.",   /* analysis-world-events.js (#R315) */
-  "1973 oil crisis": "Choc pétrolier de 1973",   /* analysis-world-events.js (#R315) */
-  "OPEC embargo quadruples oil prices.": "L'embargo de l'OPEP quadruple le prix du pétrole.",   /* analysis-world-events.js (#R315) */
-  "Fall of Saigon": "Chute de Saïgon",   /* analysis-world-events.js (#R315) */
-  "Vietnam War ends.": "La guerre du Viêt Nam prend fin.",   /* analysis-world-events.js (#R315) */
-  "Iranian Revolution": "Révolution iranienne",   /* analysis-world-events.js (#R315) */
-  "Shah falls; Islamic Republic founded.": "Le chah tombe ; la République islamique est proclamée.",   /* analysis-world-events.js (#R315) */
-  "Soviet invasion of Afghanistan": "Invasion soviétique de l'Afghanistan",   /* analysis-world-events.js (#R315) */
-  "A decade-long quagmire begins.": "Le début d'un bourbier de dix ans.",   /* analysis-world-events.js (#R315) */
-  "Bhopal gas disaster": "Catastrophe de Bhopal",   /* analysis-world-events.js (#R315) */
-  "World’s worst industrial accident.": "Le pire accident industriel du monde.",   /* analysis-world-events.js (#R315) */
-  "Plaza Accord": "Accords du Plaza",   /* analysis-world-events.js (#R315) */
-  "Coordinated dollar depreciation; yen surges.": "Dépréciation concertée du dollar ; le yen s'envole.",   /* analysis-world-events.js (#R315) */
-  "Chernobyl disaster": "Catastrophe de Tchernobyl",   /* analysis-world-events.js (#R315) */
-  "Worst nuclear accident in history.": "Le pire accident nucléaire de l'histoire.",   /* analysis-world-events.js (#R315) */
-  "Challenger disaster": "Catastrophe de Challenger",   /* analysis-world-events.js (#R315) */
-  "Shuttle lost 73 seconds after launch.": "La navette se désintègre 73 secondes après le décollage.",   /* analysis-world-events.js (#R315) */
-  "Fall of the Berlin Wall": "Chute du mur de Berlin",   /* analysis-world-events.js (#R315) */
-  "The Iron Curtain cracks open.": "Le rideau de fer se fissure.",   /* analysis-world-events.js (#R315) */
-  "Tiananmen Square crackdown": "Répression de Tiananmen",   /* analysis-world-events.js (#R315) */
-  "Pro-democracy protests suppressed.": "Le mouvement pour la démocratie est écrasé.",   /* analysis-world-events.js (#R315) */
-  "Gulf War": "Guerre du Golfe",   /* analysis-world-events.js (#R315) */
-  "Coalition liberates Kuwait.": "La coalition libère le Koweït.",   /* analysis-world-events.js (#R315) */
-  "Dissolution of the USSR": "Dissolution de l'URSS",   /* analysis-world-events.js (#R315) */
-  "The Soviet flag is lowered over the Kremlin.": "Le drapeau soviétique est amené au-dessus du Kremlin.",   /* analysis-world-events.js (#R315) */
-  "End of apartheid": "Fin de l'apartheid",   /* analysis-world-events.js (#R315) */
-  "Mandela becomes president.": "Mandela devient président.",   /* analysis-world-events.js (#R315) */
-  "Rabin assassinated": "Assassinat d'Yitzhak Rabin",   /* analysis-world-events.js (#R315) */
-  "Israeli PM shot at a peace rally.": "Le Premier ministre israélien est abattu lors d'un rassemblement pour la paix.",   /* analysis-world-events.js (#R315) */
-  "Hong Kong handover": "Rétrocession de Hong Kong",   /* analysis-world-events.js (#R315) */
-  "British rule ends after 156 years.": "La domination britannique s'achève après 156 ans.",   /* analysis-world-events.js (#R315) */
-  "Asian financial crisis": "Crise financière asiatique",   /* analysis-world-events.js (#R315) */
-  "Baht collapse cascades across Asia.": "L'effondrement du baht se propage à toute l'Asie.",   /* analysis-world-events.js (#R315) */
-  "Euro launched": "Naissance de l'euro",   /* analysis-world-events.js (#R315) */
-  "Single currency for 11 EU states.": "Une monnaie unique pour onze États de l'UE.",   /* analysis-world-events.js (#R315) */
-  "September 11 attacks": "Attentats du 11 septembre",   /* analysis-world-events.js (#R315) */
-  "Al-Qaeda attacks New York and Washington.": "Al-Qaïda frappe New York et Washington.",   /* analysis-world-events.js (#R315) */
-  "Iraq War begins": "Début de la guerre d'Irak",   /* analysis-world-events.js (#R315) */
-  "US-led coalition invades Iraq.": "Une coalition menée par les États-Unis envahit l'Irak.",   /* analysis-world-events.js (#R315) */
-  "Indian Ocean tsunami": "Tsunami de l'océan Indien",   /* analysis-world-events.js (#R315) */
-  "~230,000 dead across 14 countries.": "Environ 230 000 morts dans 14 pays.",   /* analysis-world-events.js (#R315) */
-  "Hurricane Katrina": "Ouragan Katrina",   /* analysis-world-events.js (#R315) */
-  "New Orleans flooded.": "La Nouvelle-Orléans est inondée.",   /* analysis-world-events.js (#R315) */
-  "Lehman Brothers collapse": "Faillite de Lehman Brothers",   /* analysis-world-events.js (#R315) */
-  "Global financial crisis erupts.": "La crise financière mondiale éclate.",   /* analysis-world-events.js (#R315) */
-  "Arab Spring begins": "Début du Printemps arabe",   /* analysis-world-events.js (#R315) */
-  "Tunisian uprising spreads across the region.": "Le soulèvement tunisien gagne toute la région.",   /* analysis-world-events.js (#R315) */
-  "Greek debt crisis": "Crise de la dette grecque",   /* analysis-world-events.js (#R315) */
-  "Eurozone sovereign-debt crisis begins.": "Début de la crise des dettes souveraines de la zone euro.",   /* analysis-world-events.js (#R315) */
-  "Haiti earthquake": "Séisme d'Haïti",   /* analysis-world-events.js (#R315) */
-  "~200,000+ dead near Port-au-Prince.": "Plus de 200 000 morts autour de Port-au-Prince.",   /* analysis-world-events.js (#R315) */
-  "Tōhoku earthquake & tsunami": "Séisme et tsunami du Tōhoku",   /* analysis-world-events.js (#R315) */
-  "M9.1 quake, tsunami and the Fukushima accident.": "Un séisme de M9,1, le tsunami et l'accident de Fukushima.",   /* analysis-world-events.js (#R315) */
-  "Annexation of Crimea": "Annexion de la Crimée",   /* analysis-world-events.js (#R315) */
-  "Russia seizes the peninsula from Ukraine.": "La Russie s'empare de la péninsule ukrainienne.",   /* analysis-world-events.js (#R315) */
-  "First orbital booster landing": "Premier atterrissage d'un lanceur orbital",   /* analysis-world-events.js (#R315) */
-  "SpaceX lands Falcon 9 — reusability era.": "SpaceX pose un Falcon 9 : l'ère de la réutilisation commence.",   /* analysis-world-events.js (#R315) */
-  "Brexit referendum": "Référendum sur le Brexit",   /* analysis-world-events.js (#R315) */
-  "UK votes to leave the EU.": "Le Royaume-Uni vote la sortie de l'UE.",   /* analysis-world-events.js (#R315) */
-  "COVID-19 outbreak": "Apparition de la COVID-19",   /* analysis-world-events.js (#R315) */
-  "Pandemic that reshaped the world.": "Une pandémie qui a transformé le monde.",   /* analysis-world-events.js (#R315) */
-  "Russia invades Ukraine": "La Russie envahit l'Ukraine",   /* analysis-world-events.js (#R315) */
-  "Largest war in Europe since 1945.": "La plus grande guerre en Europe depuis 1945.",   /* analysis-world-events.js (#R315) */
-  "Abe Shinzō assassinated": "Assassinat de Shinzō Abe",   /* analysis-world-events.js (#R315) */
-  "Former Japanese PM shot in Nara.": "L'ancien Premier ministre japonais est abattu à Nara.",   /* analysis-world-events.js (#R315) */
-  "Türkiye–Syria earthquakes": "Séismes en Turquie et en Syrie",   /* analysis-world-events.js (#R315) */
-  "M7.8 doublet; 55,000+ dead.": "Un doublet de M7,8 ; plus de 55 000 morts.",   /* analysis-world-events.js (#R315) */
-  "October 7 attacks / Gaza war": "Attaques du 7 octobre et guerre de Gaza",   /* analysis-world-events.js (#R315) */
-  "Hamas attack and the war that followed.": "L'attaque du Hamas et la guerre qui a suivi.",   /* analysis-world-events.js (#R315) */
-  "Taiwan (Hualien) earthquake": "Séisme de Taïwan (Hualien)",   /* analysis-world-events.js (#R315) */
-  "M7.4 quake off eastern Taiwan.": "Un séisme de M7,4 au large de l'est de Taïwan.",   /* analysis-world-events.js (#R315) */
-  "Fall of the Assad regime": "Chute du régime d'Assad",   /* analysis-world-events.js (#R315) */
-  "Syrian government collapses; Assad flees.": "Le gouvernement syrien s'effondre et Assad fuit le pays.",   /* analysis-world-events.js (#R315) */
-  "2024 US presidential election": "Élection présidentielle américaine de 2024",   /* analysis-world-events.js (#R315) */
-  "Trump wins a second, non-consecutive term.": "Trump remporte un second mandat non consécutif.",   /* analysis-world-events.js (#R315) */
-  "Haitian independence": "Indépendance d'Haïti",   /* analysis-world-events.js (#R315) */
-  "First Black-led republic; slavery abolished.": "La première république dirigée par des Noirs ; l'esclavage est aboli.",   /* analysis-world-events.js (#R315) */
-  "Penicillin discovered": "Découverte de la pénicilline",   /* analysis-world-events.js (#R315) */
-  "Fleming opens the antibiotic era.": "Fleming ouvre l'ère des antibiotiques.",   /* analysis-world-events.js (#R315) */
-  "Warsaw Pact formed": "Création du pacte de Varsovie",   /* analysis-world-events.js (#R315) */
-  "Soviet-led military alliance.": "Une alliance militaire dirigée par l'Union soviétique.",   /* analysis-world-events.js (#R315) */
-  "Year of Africa": "Année de l'Afrique",   /* analysis-world-events.js (#R315) */
-  "17 African nations gain independence.": "Dix-sept nations africaines accèdent à l'indépendance.",   /* analysis-world-events.js (#R315) */
-  "German reunification": "Réunification allemande",   /* analysis-world-events.js (#R315) */
-  "East and West Germany reunite.": "Les deux Allemagnes n'en forment plus qu'une.",   /* analysis-world-events.js (#R315) */
-  "Coalition expels Iraq from Kuwait.": "La coalition chasse l'Irak du Koweït.",   /* analysis-world-events.js (#R315) */
-  "iPhone introduced": "Présentation de l'iPhone",   /* analysis-world-events.js (#R315) */
-  "The modern smartphone era begins.": "L'ère du smartphone moderne commence.",   /* analysis-world-events.js (#R315) */
-  "Higgs boson discovered": "Découverte du boson de Higgs",   /* analysis-world-events.js (#R315) */
-  "CERN confirms the Higgs boson.": "Le CERN confirme l'existence du boson de Higgs.",   /* analysis-world-events.js (#R315) */
-  "Inter-Korean summit": "Sommet intercoréen",   /* analysis-world-events.js (#R315) */
-  "Koreas meet at Panmunjom.": "Les deux Corées se rencontrent à Panmunjom.",   /* analysis-world-events.js (#R315) */
-  "WHO declares COVID-19 a pandemic": "L'OMS déclare la COVID-19 pandémie",   /* analysis-world-events.js (#R315) */
-  "Global pandemic declared in March 2020.": "La pandémie mondiale est déclarée en mars 2020.",   /* analysis-world-events.js (#R315) */
-  "US Capitol attack": "Assaut du Capitole des États-Unis",   /* analysis-world-events.js (#R315) */
-  "Rioters storm the US Capitol.": "Des émeutiers envahissent le Capitole.",   /* analysis-world-events.js (#R315) */
-  "Fall of Constantinople": "Chute de Constantinople",   /* analysis-world-events.js (#R315) */
-  "Ottomans end the Byzantine Empire.": "Les Ottomans mettent fin à l'Empire byzantin.",   /* analysis-world-events.js (#R315) */
-  "Protestant Reformation": "Réforme protestante",   /* analysis-world-events.js (#R315) */
-  "Luther’s 95 Theses split Western Christianity.": "Les 95 thèses de Luther divisent la chrétienté occidentale.",   /* analysis-world-events.js (#R315) */
-  "US Declaration of Independence": "Déclaration d'indépendance des États-Unis",   /* analysis-world-events.js (#R315) */
-  "Thirteen colonies declare independence.": "Treize colonies proclament leur indépendance.",   /* analysis-world-events.js (#R315) */
-  "On the Origin of Species": "De l'origine des espèces",   /* analysis-world-events.js (#R315) */
-  "Darwin sets out evolution by natural selection.": "Darwin expose l'évolution par sélection naturelle.",   /* analysis-world-events.js (#R315) */
-  "World War I begins": "Début de la Première Guerre mondiale",   /* analysis-world-events.js (#R315) */
-  "The assassination in Sarajevo triggers global war.": "L'attentat de Sarajevo déclenche une guerre mondiale.",   /* analysis-world-events.js (#R315) */
-  "Bolsheviks seize power in Petrograd.": "Les bolcheviks prennent le pouvoir à Petrograd.",   /* analysis-world-events.js (#R315) */
-  "End of World War I": "Fin de la Première Guerre mondiale",   /* analysis-world-events.js (#R315) */
-  "Armistice signed at Compiègne.": "L'armistice est signé à Compiègne.",   /* analysis-world-events.js (#R315) */
-  "Wall Street Crash of 1929": "Krach de Wall Street de 1929",   /* analysis-world-events.js (#R315) */
-  "Market collapse triggers the Great Depression.": "L'effondrement boursier déclenche la Grande Dépression.",   /* analysis-world-events.js (#R315) */
-  "World War II begins": "Début de la Seconde Guerre mondiale",   /* analysis-world-events.js (#R315) */
-  "Germany invades Poland.": "L'Allemagne envahit la Pologne.",   /* analysis-world-events.js (#R315) */
-  "End of World War II": "Fin de la Seconde Guerre mondiale",   /* analysis-world-events.js (#R315) */
-  "Japan’s surrender ends the war.": "La capitulation du Japon met fin à la guerre.",   /* analysis-world-events.js (#R315) */
-  "Partition of India": "Partition des Indes",   /* analysis-world-events.js (#R315) */
-  "British India splits into two states.": "L'Inde britannique se scinde en deux États.",   /* analysis-world-events.js (#R315) */
-  "Establishment of Israel": "Création de l'État d'Israël",   /* analysis-world-events.js (#R315) */
-  "The State of Israel is declared.": "L'État d'Israël est proclamé.",   /* analysis-world-events.js (#R315) */
-  "Stonewall uprising": "Émeutes de Stonewall",   /* analysis-world-events.js (#R315) */
-  "Catalyst of the modern LGBT-rights movement.": "Déclencheur du mouvement moderne pour les droits LGBT.",   /* analysis-world-events.js (#R315) */
-  "Nixon visits China": "Nixon en visite en Chine",   /* analysis-world-events.js (#R315) */
-  "A turning point in US–China relations.": "Un tournant dans les relations sino-américaines.",   /* analysis-world-events.js (#R315) */
-  "Iraq invades Kuwait": "L'Irak envahit le Koweït",   /* analysis-world-events.js (#R315) */
-  "Trigger of the Gulf War.": "Le déclencheur de la guerre du Golfe.",   /* analysis-world-events.js (#R315) */
-  "Rwandan genocide": "Génocide des Tutsis au Rwanda",   /* analysis-world-events.js (#R315) */
-  "~800,000 killed in about 100 days.": "Environ 800 000 personnes tuées en une centaine de jours.",   /* analysis-world-events.js (#R315) */
-  "Deepwater Horizon oil spill": "Marée noire de Deepwater Horizon",   /* analysis-world-events.js (#R315) */
-  "Largest marine oil spill in history.": "La plus importante marée noire de l'histoire.",   /* analysis-world-events.js (#R315) */
-  "November 2015 Paris attacks": "Attentats du 13 novembre 2015 à Paris",   /* analysis-world-events.js (#R315) */
-  "Coordinated attacks kill 130 across Paris.": "Des attaques coordonnées font 130 morts dans Paris.",   /* analysis-world-events.js (#R315) */
-  "Notre-Dame fire": "Incendie de Notre-Dame",   /* analysis-world-events.js (#R315) */
-  "The Paris cathedral’s spire collapses in flames.": "La flèche de la cathédrale parisienne s'effondre dans les flammes.",   /* analysis-world-events.js (#R315) */
-  "US withdrawal from Afghanistan": "Retrait américain d'Afghanistan",   /* analysis-world-events.js (#R315) */
-  "The Taliban retake Kabul.": "Les talibans reprennent Kaboul.",   /* analysis-world-events.js (#R315) */
-  "ChatGPT launched": "Lancement de ChatGPT",   /* analysis-world-events.js (#R315) */
-  "Generative AI reaches mass adoption.": "L'IA générative se diffuse massivement.",   /* analysis-world-events.js (#R315) */
-  "JWST first images": "Premières images du télescope James-Webb",   /* analysis-world-events.js (#R315) */
-  "Deepest infrared view of the universe yet.": "La vue infrarouge la plus profonde de l'Univers à ce jour.",   /* analysis-world-events.js (#R315) */
-  "Black Death reaches Europe": "La peste noire atteint l'Europe",   /* analysis-world-events.js (#R315) */
-  "Plague kills roughly a third of Europe.": "La peste emporte environ un tiers de l'Europe.",   /* analysis-world-events.js (#R315) */
-  "Copernican heliocentrism": "Héliocentrisme de Copernic",   /* analysis-world-events.js (#R315) */
-  "Copernicus places the Sun at the center.": "Copernic place le Soleil au centre.",   /* analysis-world-events.js (#R315) */
-  "Newton’s Principia": "Les Principia de Newton",   /* analysis-world-events.js (#R315) */
-  "Laws of motion and universal gravitation.": "Les lois du mouvement et la gravitation universelle.",   /* analysis-world-events.js (#R315) */
-  "Industrial Revolution": "Révolution industrielle",   /* analysis-world-events.js (#R315) */
-  "Steam power launches modern industry.": "La vapeur donne naissance à l'industrie moderne.",   /* analysis-world-events.js (#R315) */
-  "Battle of Waterloo": "Bataille de Waterloo",   /* analysis-world-events.js (#R315) */
-  "Napoleon’s final defeat.": "La défaite finale de Napoléon.",   /* analysis-world-events.js (#R315) */
-  "DNA double helix": "Double hélice de l'ADN",   /* analysis-world-events.js (#R315) */
-  "Watson & Crick reveal the structure of DNA.": "Watson et Crick révèlent la structure de l'ADN.",   /* analysis-world-events.js (#R315) */
-  "First ascent of Everest": "Première ascension de l'Everest",   /* analysis-world-events.js (#R315) */
-  "Hillary and Tenzing reach the summit.": "Hillary et Tenzing atteignent le sommet.",   /* analysis-world-events.js (#R315) */
-  "First human heart transplant": "Première greffe de cœur humain",   /* analysis-world-events.js (#R315) */
-  "Barnard performs the operation in Cape Town.": "Barnard réalise l'opération au Cap.",   /* analysis-world-events.js (#R315) */
-  "Munich Olympics massacre": "Prise d'otages des Jeux de Munich",   /* analysis-world-events.js (#R315) */
-  "Israeli athletes taken hostage and killed.": "Des athlètes israéliens sont pris en otage puis tués.",   /* analysis-world-events.js (#R315) */
-  "Iran–Iraq War begins": "Début de la guerre Iran-Irak",   /* analysis-world-events.js (#R315) */
-  "An eight-year war begins along the border.": "Une guerre de huit ans s'engage le long de la frontière.",   /* analysis-world-events.js (#R315) */
-  "Falklands War": "Guerre des Malouines",   /* analysis-world-events.js (#R315) */
-  "Britain and Argentina clash over the islands.": "Le Royaume-Uni et l'Argentine s'affrontent pour les îles.",   /* analysis-world-events.js (#R315) */
-  "World Wide Web proposed": "Proposition du World Wide Web",   /* analysis-world-events.js (#R315) */
-  "Berners-Lee invents the Web at CERN.": "Berners-Lee invente le Web au CERN.",   /* analysis-world-events.js (#R315) */
-  "Dolly the sheep cloned": "Clonage de la brebis Dolly",   /* analysis-world-events.js (#R315) */
-  "First mammal cloned from an adult cell.": "Le premier mammifère cloné à partir d'une cellule adulte.",   /* analysis-world-events.js (#R315) */
-  "Human Genome Project completed": "Achèvement du Projet génome humain",   /* analysis-world-events.js (#R315) */
-  "The human genome is fully sequenced.": "Le génome humain est entièrement séquencé.",   /* analysis-world-events.js (#R315) */
-  "Fall of Gaddafi": "Chute de Kadhafi",   /* analysis-world-events.js (#R315) */
-  "Libya’s long-time ruler is overthrown.": "Le dirigeant libyen au pouvoir depuis des décennies est renversé.",   /* analysis-world-events.js (#R315) */
-  "Paris Climate Agreement": "Accord de Paris sur le climat",   /* analysis-world-events.js (#R315) */
-  "196 parties adopt a global climate accord.": "196 parties adoptent un accord climatique mondial.",   /* analysis-world-events.js (#R315) */
-  "Sudan civil war": "Guerre civile au Soudan",   /* analysis-world-events.js (#R315) */
-  "Fighting erupts between the army and the RSF.": "Les combats éclatent entre l'armée et les RSF.",   /* analysis-world-events.js (#R315) */
+  "This panel could not be loaded — check your connection and try again.": "Ce panneau n'a pas pu être chargé — vérifiez votre connexion et réessayez.",   /* analysis-panels.js (#R322) */
+  "Columbus reaches the Americas": "Colomb atteint l'Amérique",   /* analysis-world-events.js (#R322) */
+  "First Atlantic crossing opens the Columbian exchange.": "La première traversée de l'Atlantique ouvre l'échange colombien.",   /* analysis-world-events.js (#R322) */
+  "Peace of Westphalia": "Traités de Westphalie",   /* analysis-world-events.js (#R322) */
+  "Birth of the modern sovereign-state order.": "Naissance de l'ordre moderne des États souverains.",   /* analysis-world-events.js (#R322) */
+  "Great Lisbon Earthquake": "Tremblement de terre de Lisbonne",   /* analysis-world-events.js (#R322) */
+  "Quake+tsunami killed tens of thousands; shook European thought.": "Le séisme et le tsunami font des dizaines de milliers de morts et ébranlent la pensée européenne.",   /* analysis-world-events.js (#R322) */
+  "French Revolution": "Révolution française",   /* analysis-world-events.js (#R322) */
+  "Storming of the Bastille topples the old order.": "La prise de la Bastille renverse l'Ancien Régime.",   /* analysis-world-events.js (#R322) */
+  "Congress of Vienna": "Congrès de Vienne",   /* analysis-world-events.js (#R322) */
+  "Post-Napoleonic balance-of-power settlement.": "Réorganisation de l'Europe selon l'équilibre des puissances après Napoléon.",   /* analysis-world-events.js (#R322) */
+  "Treaty of Nanking": "Traité de Nankin",   /* analysis-world-events.js (#R322) */
+  "Ends the First Opium War; cedes Hong Kong.": "Fin de la première guerre de l'opium ; Hong Kong est cédée.",   /* analysis-world-events.js (#R322) */
+  "Lincoln assassinated": "Assassinat d'Abraham Lincoln",   /* analysis-world-events.js (#R322) */
+  "US president shot at Ford’s Theatre.": "Le président américain est abattu au Ford’s Theatre.",   /* analysis-world-events.js (#R322) */
+  "Meiji Restoration": "Restauration de Meiji",   /* analysis-world-events.js (#R322) */
+  "Japan’s rapid modernisation begins.": "La modernisation rapide du Japon s'engage.",   /* analysis-world-events.js (#R322) */
+  "Suez Canal opens": "Ouverture du canal de Suez",   /* analysis-world-events.js (#R322) */
+  "Europe–Asia sea route shortened by ~7,000 km.": "La route maritime Europe–Asie raccourcit d'environ 7 000 km.",   /* analysis-world-events.js (#R322) */
+  "Krakatoa eruption": "Éruption du Krakatoa",   /* analysis-world-events.js (#R322) */
+  "One of the deadliest volcanic events in history.": "L'une des éruptions volcaniques les plus meurtrières de l'histoire.",   /* analysis-world-events.js (#R322) */
+  "Wright brothers’ first flight": "Premier vol des frères Wright",   /* analysis-world-events.js (#R322) */
+  "Powered flight begins at Kitty Hawk.": "Le vol motorisé débute à Kitty Hawk.",   /* analysis-world-events.js (#R322) */
+  "San Francisco earthquake": "Séisme de San Francisco",   /* analysis-world-events.js (#R322) */
+  "M7.9 quake and fires destroy the city.": "Un séisme de M7,9 et les incendies détruisent la ville.",   /* analysis-world-events.js (#R322) */
+  "Titanic sinks": "Naufrage du Titanic",   /* analysis-world-events.js (#R322) */
+  "1,500+ die in the North Atlantic.": "Plus de 1 500 personnes périssent dans l'Atlantique Nord.",   /* analysis-world-events.js (#R322) */
+  "Assassination in Sarajevo": "Attentat de Sarajevo",   /* analysis-world-events.js (#R322) */
+  "Archduke Franz Ferdinand shot — WWI ignites.": "L'archiduc François-Ferdinand est abattu : la Première Guerre mondiale éclate.",   /* analysis-world-events.js (#R322) */
+  "Panama Canal opens": "Ouverture du canal de Panama",   /* analysis-world-events.js (#R322) */
+  "Atlantic and Pacific joined.": "L'Atlantique et le Pacifique sont reliés.",   /* analysis-world-events.js (#R322) */
+  "Russian Revolution": "Révolution russe",   /* analysis-world-events.js (#R322) */
+  "Bolsheviks seize Petrograd.": "Les bolcheviks s'emparent de Petrograd.",   /* analysis-world-events.js (#R322) */
+  "WWI Armistice": "Armistice de 1918",   /* analysis-world-events.js (#R322) */
+  "Fighting ends in the Compiègne railway carriage.": "Les combats cessent dans le wagon de Compiègne.",   /* analysis-world-events.js (#R322) */
+  "1918 influenza pandemic": "Pandémie de grippe de 1918",   /* analysis-world-events.js (#R322) */
+  "Tens of millions die worldwide.": "Des dizaines de millions de morts dans le monde entier.",   /* analysis-world-events.js (#R322) */
+  "Treaty of Versailles": "Traité de Versailles",   /* analysis-world-events.js (#R322) */
+  "Redraws Europe; seeds future conflict.": "Il redessine l'Europe et sème le conflit suivant.",   /* analysis-world-events.js (#R322) */
+  "Great Kantō earthquake": "Séisme du Kantō",   /* analysis-world-events.js (#R322) */
+  "Tokyo–Yokohama devastated; ~105,000 dead.": "Tokyo et Yokohama sont dévastées ; environ 105 000 morts.",   /* analysis-world-events.js (#R322) */
+  "Wall Street Crash": "Krach de Wall Street",   /* analysis-world-events.js (#R322) */
+  "Black Tuesday opens the Great Depression.": "Le Mardi noir ouvre la Grande Dépression.",   /* analysis-world-events.js (#R322) */
+  "WWII begins": "Début de la Seconde Guerre mondiale",   /* analysis-world-events.js (#R322) */
+  "Germany attacks Westerplatte, invades Poland.": "L'Allemagne bombarde la Westerplatte et envahit la Pologne.",   /* analysis-world-events.js (#R322) */
+  "Attack on Pearl Harbor": "Attaque de Pearl Harbor",   /* analysis-world-events.js (#R322) */
+  "Japan strikes the US Pacific Fleet.": "Le Japon frappe la flotte américaine du Pacifique.",   /* analysis-world-events.js (#R322) */
+  "D-Day landings": "Débarquement de Normandie",   /* analysis-world-events.js (#R322) */
+  "Largest amphibious invasion in history.": "La plus vaste opération amphibie de l'histoire.",   /* analysis-world-events.js (#R322) */
+  "Bretton Woods Conference": "Conférence de Bretton Woods",   /* analysis-world-events.js (#R322) */
+  "Dollar-centerd postwar monetary order.": "Un ordre monétaire d'après-guerre centré sur le dollar.",   /* analysis-world-events.js (#R322) */
+  "Trinity nuclear test": "Essai nucléaire Trinity",   /* analysis-world-events.js (#R322) */
+  "First nuclear detonation.": "La première explosion nucléaire de l'histoire.",   /* analysis-world-events.js (#R322) */
+  "Hiroshima": "Bombardement atomique d'Hiroshima",   /* analysis-world-events.js (#R322) */
+  "First atomic bombing of a city.": "Le premier bombardement atomique d'une ville.",   /* analysis-world-events.js (#R322) */
+  "United Nations founded": "Fondation des Nations unies",   /* analysis-world-events.js (#R322) */
+  "UN Charter signed in San Francisco.": "La Charte des Nations unies est signée à San Francisco.",   /* analysis-world-events.js (#R322) */
+  "Indian independence": "Indépendance de l'Inde",   /* analysis-world-events.js (#R322) */
+  "End of the British Raj; Partition follows.": "Fin du Raj britannique, suivie de la partition.",   /* analysis-world-events.js (#R322) */
+  "Gandhi assassinated": "Assassinat de Gandhi",   /* analysis-world-events.js (#R322) */
+  "Shot in New Delhi.": "Abattu à New Delhi.",   /* analysis-world-events.js (#R322) */
+  "People’s Republic of China founded": "Fondation de la République populaire de Chine",   /* analysis-world-events.js (#R322) */
+  "Mao proclaims the PRC in Beijing.": "Mao proclame la RPC à Pékin.",   /* analysis-world-events.js (#R322) */
+  "NATO founded": "Création de l'OTAN",   /* analysis-world-events.js (#R322) */
+  "North Atlantic Treaty signed in Washington.": "Le traité de l'Atlantique Nord est signé à Washington.",   /* analysis-world-events.js (#R322) */
+  "Korean War begins": "Début de la guerre de Corée",   /* analysis-world-events.js (#R322) */
+  "North invades across the 38th parallel.": "Le Nord franchit le 38e parallèle.",   /* analysis-world-events.js (#R322) */
+  "Suez Crisis": "Crise de Suez",   /* analysis-world-events.js (#R322) */
+  "Canal nationalisation triggers war; superpowers force a halt.": "La nationalisation du canal déclenche la guerre ; les superpuissances imposent l'arrêt.",   /* analysis-world-events.js (#R322) */
+  "Sputnik 1": "Spoutnik 1",   /* analysis-world-events.js (#R322) */
+  "First artificial satellite — the space age begins.": "Le premier satellite artificiel : l'ère spatiale commence.",   /* analysis-world-events.js (#R322) */
+  "Treaty of Rome": "Traité de Rome",   /* analysis-world-events.js (#R322) */
+  "European Economic Community founded.": "La Communauté économique européenne est fondée.",   /* analysis-world-events.js (#R322) */
+  "Cuban Revolution": "Révolution cubaine",   /* analysis-world-events.js (#R322) */
+  "Castro takes Havana.": "Castro prend La Havane.",   /* analysis-world-events.js (#R322) */
+  "Berlin Wall built": "Construction du mur de Berlin",   /* analysis-world-events.js (#R322) */
+  "East Germany seals the inner-Berlin border.": "La RDA verrouille la frontière intérieure de Berlin.",   /* analysis-world-events.js (#R322) */
+  "Gagarin orbits Earth": "Gagarine en orbite autour de la Terre",   /* analysis-world-events.js (#R322) */
+  "First human in space.": "Le premier être humain dans l'espace.",   /* analysis-world-events.js (#R322) */
+  "Cuban Missile Crisis": "Crise des missiles de Cuba",   /* analysis-world-events.js (#R322) */
+  "The Cold War’s closest brush with nuclear war.": "Le moment où la guerre froide a frôlé le conflit nucléaire.",   /* analysis-world-events.js (#R322) */
+  "JFK assassinated": "Assassinat de John F. Kennedy",   /* analysis-world-events.js (#R322) */
+  "Shot in Dallas.": "Abattu à Dallas.",   /* analysis-world-events.js (#R322) */
+  "Six-Day War": "Guerre des Six Jours",   /* analysis-world-events.js (#R322) */
+  "Israel takes Sinai, Golan, West Bank, Gaza.": "Israël prend le Sinaï, le Golan, la Cisjordanie et Gaza.",   /* analysis-world-events.js (#R322) */
+  "Martin Luther King Jr. assassinated": "Assassinat de Martin Luther King Jr.",   /* analysis-world-events.js (#R322) */
+  "Shot in Memphis.": "Abattu à Memphis.",   /* analysis-world-events.js (#R322) */
+  "Apollo 11": "Apollo 11",   /* analysis-world-events.js (#R322) */
+  "Launch of the first crewed Moon landing.": "Lancement du premier alunissage habité.",   /* analysis-world-events.js (#R322) */
+  "Nixon shock": "Choc Nixon",   /* analysis-world-events.js (#R322) */
+  "Dollar–gold convertibility ends.": "La convertibilité du dollar en or prend fin.",   /* analysis-world-events.js (#R322) */
+  "1973 oil crisis": "Choc pétrolier de 1973",   /* analysis-world-events.js (#R322) */
+  "OPEC embargo quadruples oil prices.": "L'embargo de l'OPEP quadruple le prix du pétrole.",   /* analysis-world-events.js (#R322) */
+  "Fall of Saigon": "Chute de Saïgon",   /* analysis-world-events.js (#R322) */
+  "Vietnam War ends.": "La guerre du Viêt Nam prend fin.",   /* analysis-world-events.js (#R322) */
+  "Iranian Revolution": "Révolution iranienne",   /* analysis-world-events.js (#R322) */
+  "Shah falls; Islamic Republic founded.": "Le chah tombe ; la République islamique est proclamée.",   /* analysis-world-events.js (#R322) */
+  "Soviet invasion of Afghanistan": "Invasion soviétique de l'Afghanistan",   /* analysis-world-events.js (#R322) */
+  "A decade-long quagmire begins.": "Le début d'un bourbier de dix ans.",   /* analysis-world-events.js (#R322) */
+  "Bhopal gas disaster": "Catastrophe de Bhopal",   /* analysis-world-events.js (#R322) */
+  "World’s worst industrial accident.": "Le pire accident industriel du monde.",   /* analysis-world-events.js (#R322) */
+  "Plaza Accord": "Accords du Plaza",   /* analysis-world-events.js (#R322) */
+  "Coordinated dollar depreciation; yen surges.": "Dépréciation concertée du dollar ; le yen s'envole.",   /* analysis-world-events.js (#R322) */
+  "Chernobyl disaster": "Catastrophe de Tchernobyl",   /* analysis-world-events.js (#R322) */
+  "Worst nuclear accident in history.": "Le pire accident nucléaire de l'histoire.",   /* analysis-world-events.js (#R322) */
+  "Challenger disaster": "Catastrophe de Challenger",   /* analysis-world-events.js (#R322) */
+  "Shuttle lost 73 seconds after launch.": "La navette se désintègre 73 secondes après le décollage.",   /* analysis-world-events.js (#R322) */
+  "Fall of the Berlin Wall": "Chute du mur de Berlin",   /* analysis-world-events.js (#R322) */
+  "The Iron Curtain cracks open.": "Le rideau de fer se fissure.",   /* analysis-world-events.js (#R322) */
+  "Tiananmen Square crackdown": "Répression de Tiananmen",   /* analysis-world-events.js (#R322) */
+  "Pro-democracy protests suppressed.": "Le mouvement pour la démocratie est écrasé.",   /* analysis-world-events.js (#R322) */
+  "Gulf War": "Guerre du Golfe",   /* analysis-world-events.js (#R322) */
+  "Coalition liberates Kuwait.": "La coalition libère le Koweït.",   /* analysis-world-events.js (#R322) */
+  "Dissolution of the USSR": "Dissolution de l'URSS",   /* analysis-world-events.js (#R322) */
+  "The Soviet flag is lowered over the Kremlin.": "Le drapeau soviétique est amené au-dessus du Kremlin.",   /* analysis-world-events.js (#R322) */
+  "End of apartheid": "Fin de l'apartheid",   /* analysis-world-events.js (#R322) */
+  "Mandela becomes president.": "Mandela devient président.",   /* analysis-world-events.js (#R322) */
+  "Rabin assassinated": "Assassinat d'Yitzhak Rabin",   /* analysis-world-events.js (#R322) */
+  "Israeli PM shot at a peace rally.": "Le Premier ministre israélien est abattu lors d'un rassemblement pour la paix.",   /* analysis-world-events.js (#R322) */
+  "Hong Kong handover": "Rétrocession de Hong Kong",   /* analysis-world-events.js (#R322) */
+  "British rule ends after 156 years.": "La domination britannique s'achève après 156 ans.",   /* analysis-world-events.js (#R322) */
+  "Asian financial crisis": "Crise financière asiatique",   /* analysis-world-events.js (#R322) */
+  "Baht collapse cascades across Asia.": "L'effondrement du baht se propage à toute l'Asie.",   /* analysis-world-events.js (#R322) */
+  "Euro launched": "Naissance de l'euro",   /* analysis-world-events.js (#R322) */
+  "Single currency for 11 EU states.": "Une monnaie unique pour onze États de l'UE.",   /* analysis-world-events.js (#R322) */
+  "September 11 attacks": "Attentats du 11 septembre",   /* analysis-world-events.js (#R322) */
+  "Al-Qaeda attacks New York and Washington.": "Al-Qaïda frappe New York et Washington.",   /* analysis-world-events.js (#R322) */
+  "Iraq War begins": "Début de la guerre d'Irak",   /* analysis-world-events.js (#R322) */
+  "US-led coalition invades Iraq.": "Une coalition menée par les États-Unis envahit l'Irak.",   /* analysis-world-events.js (#R322) */
+  "Indian Ocean tsunami": "Tsunami de l'océan Indien",   /* analysis-world-events.js (#R322) */
+  "~230,000 dead across 14 countries.": "Environ 230 000 morts dans 14 pays.",   /* analysis-world-events.js (#R322) */
+  "Hurricane Katrina": "Ouragan Katrina",   /* analysis-world-events.js (#R322) */
+  "New Orleans flooded.": "La Nouvelle-Orléans est inondée.",   /* analysis-world-events.js (#R322) */
+  "Lehman Brothers collapse": "Faillite de Lehman Brothers",   /* analysis-world-events.js (#R322) */
+  "Global financial crisis erupts.": "La crise financière mondiale éclate.",   /* analysis-world-events.js (#R322) */
+  "Arab Spring begins": "Début du Printemps arabe",   /* analysis-world-events.js (#R322) */
+  "Tunisian uprising spreads across the region.": "Le soulèvement tunisien gagne toute la région.",   /* analysis-world-events.js (#R322) */
+  "Greek debt crisis": "Crise de la dette grecque",   /* analysis-world-events.js (#R322) */
+  "Eurozone sovereign-debt crisis begins.": "Début de la crise des dettes souveraines de la zone euro.",   /* analysis-world-events.js (#R322) */
+  "Haiti earthquake": "Séisme d'Haïti",   /* analysis-world-events.js (#R322) */
+  "~200,000+ dead near Port-au-Prince.": "Plus de 200 000 morts autour de Port-au-Prince.",   /* analysis-world-events.js (#R322) */
+  "Tōhoku earthquake & tsunami": "Séisme et tsunami du Tōhoku",   /* analysis-world-events.js (#R322) */
+  "M9.1 quake, tsunami and the Fukushima accident.": "Un séisme de M9,1, le tsunami et l'accident de Fukushima.",   /* analysis-world-events.js (#R322) */
+  "Annexation of Crimea": "Annexion de la Crimée",   /* analysis-world-events.js (#R322) */
+  "Russia seizes the peninsula from Ukraine.": "La Russie s'empare de la péninsule ukrainienne.",   /* analysis-world-events.js (#R322) */
+  "First orbital booster landing": "Premier atterrissage d'un lanceur orbital",   /* analysis-world-events.js (#R322) */
+  "SpaceX lands Falcon 9 — reusability era.": "SpaceX pose un Falcon 9 : l'ère de la réutilisation commence.",   /* analysis-world-events.js (#R322) */
+  "Brexit referendum": "Référendum sur le Brexit",   /* analysis-world-events.js (#R322) */
+  "UK votes to leave the EU.": "Le Royaume-Uni vote la sortie de l'UE.",   /* analysis-world-events.js (#R322) */
+  "COVID-19 outbreak": "Apparition de la COVID-19",   /* analysis-world-events.js (#R322) */
+  "Pandemic that reshaped the world.": "Une pandémie qui a transformé le monde.",   /* analysis-world-events.js (#R322) */
+  "Russia invades Ukraine": "La Russie envahit l'Ukraine",   /* analysis-world-events.js (#R322) */
+  "Largest war in Europe since 1945.": "La plus grande guerre en Europe depuis 1945.",   /* analysis-world-events.js (#R322) */
+  "Abe Shinzō assassinated": "Assassinat de Shinzō Abe",   /* analysis-world-events.js (#R322) */
+  "Former Japanese PM shot in Nara.": "L'ancien Premier ministre japonais est abattu à Nara.",   /* analysis-world-events.js (#R322) */
+  "Türkiye–Syria earthquakes": "Séismes en Turquie et en Syrie",   /* analysis-world-events.js (#R322) */
+  "M7.8 doublet; 55,000+ dead.": "Un doublet de M7,8 ; plus de 55 000 morts.",   /* analysis-world-events.js (#R322) */
+  "October 7 attacks / Gaza war": "Attaques du 7 octobre et guerre de Gaza",   /* analysis-world-events.js (#R322) */
+  "Hamas attack and the war that followed.": "L'attaque du Hamas et la guerre qui a suivi.",   /* analysis-world-events.js (#R322) */
+  "Taiwan (Hualien) earthquake": "Séisme de Taïwan (Hualien)",   /* analysis-world-events.js (#R322) */
+  "M7.4 quake off eastern Taiwan.": "Un séisme de M7,4 au large de l'est de Taïwan.",   /* analysis-world-events.js (#R322) */
+  "Fall of the Assad regime": "Chute du régime d'Assad",   /* analysis-world-events.js (#R322) */
+  "Syrian government collapses; Assad flees.": "Le gouvernement syrien s'effondre et Assad fuit le pays.",   /* analysis-world-events.js (#R322) */
+  "2024 US presidential election": "Élection présidentielle américaine de 2024",   /* analysis-world-events.js (#R322) */
+  "Trump wins a second, non-consecutive term.": "Trump remporte un second mandat non consécutif.",   /* analysis-world-events.js (#R322) */
+  "Haitian independence": "Indépendance d'Haïti",   /* analysis-world-events.js (#R322) */
+  "First Black-led republic; slavery abolished.": "La première république dirigée par des Noirs ; l'esclavage est aboli.",   /* analysis-world-events.js (#R322) */
+  "Penicillin discovered": "Découverte de la pénicilline",   /* analysis-world-events.js (#R322) */
+  "Fleming opens the antibiotic era.": "Fleming ouvre l'ère des antibiotiques.",   /* analysis-world-events.js (#R322) */
+  "Warsaw Pact formed": "Création du pacte de Varsovie",   /* analysis-world-events.js (#R322) */
+  "Soviet-led military alliance.": "Une alliance militaire dirigée par l'Union soviétique.",   /* analysis-world-events.js (#R322) */
+  "Year of Africa": "Année de l'Afrique",   /* analysis-world-events.js (#R322) */
+  "17 African nations gain independence.": "Dix-sept nations africaines accèdent à l'indépendance.",   /* analysis-world-events.js (#R322) */
+  "German reunification": "Réunification allemande",   /* analysis-world-events.js (#R322) */
+  "East and West Germany reunite.": "Les deux Allemagnes n'en forment plus qu'une.",   /* analysis-world-events.js (#R322) */
+  "Coalition expels Iraq from Kuwait.": "La coalition chasse l'Irak du Koweït.",   /* analysis-world-events.js (#R322) */
+  "iPhone introduced": "Présentation de l'iPhone",   /* analysis-world-events.js (#R322) */
+  "The modern smartphone era begins.": "L'ère du smartphone moderne commence.",   /* analysis-world-events.js (#R322) */
+  "Higgs boson discovered": "Découverte du boson de Higgs",   /* analysis-world-events.js (#R322) */
+  "CERN confirms the Higgs boson.": "Le CERN confirme l'existence du boson de Higgs.",   /* analysis-world-events.js (#R322) */
+  "Inter-Korean summit": "Sommet intercoréen",   /* analysis-world-events.js (#R322) */
+  "Koreas meet at Panmunjom.": "Les deux Corées se rencontrent à Panmunjom.",   /* analysis-world-events.js (#R322) */
+  "WHO declares COVID-19 a pandemic": "L'OMS déclare la COVID-19 pandémie",   /* analysis-world-events.js (#R322) */
+  "Global pandemic declared in March 2020.": "La pandémie mondiale est déclarée en mars 2020.",   /* analysis-world-events.js (#R322) */
+  "US Capitol attack": "Assaut du Capitole des États-Unis",   /* analysis-world-events.js (#R322) */
+  "Rioters storm the US Capitol.": "Des émeutiers envahissent le Capitole.",   /* analysis-world-events.js (#R322) */
+  "Fall of Constantinople": "Chute de Constantinople",   /* analysis-world-events.js (#R322) */
+  "Ottomans end the Byzantine Empire.": "Les Ottomans mettent fin à l'Empire byzantin.",   /* analysis-world-events.js (#R322) */
+  "Protestant Reformation": "Réforme protestante",   /* analysis-world-events.js (#R322) */
+  "Luther’s 95 Theses split Western Christianity.": "Les 95 thèses de Luther divisent la chrétienté occidentale.",   /* analysis-world-events.js (#R322) */
+  "US Declaration of Independence": "Déclaration d'indépendance des États-Unis",   /* analysis-world-events.js (#R322) */
+  "Thirteen colonies declare independence.": "Treize colonies proclament leur indépendance.",   /* analysis-world-events.js (#R322) */
+  "On the Origin of Species": "De l'origine des espèces",   /* analysis-world-events.js (#R322) */
+  "Darwin sets out evolution by natural selection.": "Darwin expose l'évolution par sélection naturelle.",   /* analysis-world-events.js (#R322) */
+  "World War I begins": "Début de la Première Guerre mondiale",   /* analysis-world-events.js (#R322) */
+  "The assassination in Sarajevo triggers global war.": "L'attentat de Sarajevo déclenche une guerre mondiale.",   /* analysis-world-events.js (#R322) */
+  "Bolsheviks seize power in Petrograd.": "Les bolcheviks prennent le pouvoir à Petrograd.",   /* analysis-world-events.js (#R322) */
+  "End of World War I": "Fin de la Première Guerre mondiale",   /* analysis-world-events.js (#R322) */
+  "Armistice signed at Compiègne.": "L'armistice est signé à Compiègne.",   /* analysis-world-events.js (#R322) */
+  "Wall Street Crash of 1929": "Krach de Wall Street de 1929",   /* analysis-world-events.js (#R322) */
+  "Market collapse triggers the Great Depression.": "L'effondrement boursier déclenche la Grande Dépression.",   /* analysis-world-events.js (#R322) */
+  "World War II begins": "Début de la Seconde Guerre mondiale",   /* analysis-world-events.js (#R322) */
+  "Germany invades Poland.": "L'Allemagne envahit la Pologne.",   /* analysis-world-events.js (#R322) */
+  "End of World War II": "Fin de la Seconde Guerre mondiale",   /* analysis-world-events.js (#R322) */
+  "Japan’s surrender ends the war.": "La capitulation du Japon met fin à la guerre.",   /* analysis-world-events.js (#R322) */
+  "Partition of India": "Partition des Indes",   /* analysis-world-events.js (#R322) */
+  "British India splits into two states.": "L'Inde britannique se scinde en deux États.",   /* analysis-world-events.js (#R322) */
+  "Establishment of Israel": "Création de l'État d'Israël",   /* analysis-world-events.js (#R322) */
+  "The State of Israel is declared.": "L'État d'Israël est proclamé.",   /* analysis-world-events.js (#R322) */
+  "Stonewall uprising": "Émeutes de Stonewall",   /* analysis-world-events.js (#R322) */
+  "Catalyst of the modern LGBT-rights movement.": "Déclencheur du mouvement moderne pour les droits LGBT.",   /* analysis-world-events.js (#R322) */
+  "Nixon visits China": "Nixon en visite en Chine",   /* analysis-world-events.js (#R322) */
+  "A turning point in US–China relations.": "Un tournant dans les relations sino-américaines.",   /* analysis-world-events.js (#R322) */
+  "Iraq invades Kuwait": "L'Irak envahit le Koweït",   /* analysis-world-events.js (#R322) */
+  "Trigger of the Gulf War.": "Le déclencheur de la guerre du Golfe.",   /* analysis-world-events.js (#R322) */
+  "Rwandan genocide": "Génocide des Tutsis au Rwanda",   /* analysis-world-events.js (#R322) */
+  "~800,000 killed in about 100 days.": "Environ 800 000 personnes tuées en une centaine de jours.",   /* analysis-world-events.js (#R322) */
+  "Deepwater Horizon oil spill": "Marée noire de Deepwater Horizon",   /* analysis-world-events.js (#R322) */
+  "Largest marine oil spill in history.": "La plus importante marée noire de l'histoire.",   /* analysis-world-events.js (#R322) */
+  "November 2015 Paris attacks": "Attentats du 13 novembre 2015 à Paris",   /* analysis-world-events.js (#R322) */
+  "Coordinated attacks kill 130 across Paris.": "Des attaques coordonnées font 130 morts dans Paris.",   /* analysis-world-events.js (#R322) */
+  "Notre-Dame fire": "Incendie de Notre-Dame",   /* analysis-world-events.js (#R322) */
+  "The Paris cathedral’s spire collapses in flames.": "La flèche de la cathédrale parisienne s'effondre dans les flammes.",   /* analysis-world-events.js (#R322) */
+  "US withdrawal from Afghanistan": "Retrait américain d'Afghanistan",   /* analysis-world-events.js (#R322) */
+  "The Taliban retake Kabul.": "Les talibans reprennent Kaboul.",   /* analysis-world-events.js (#R322) */
+  "ChatGPT launched": "Lancement de ChatGPT",   /* analysis-world-events.js (#R322) */
+  "Generative AI reaches mass adoption.": "L'IA générative se diffuse massivement.",   /* analysis-world-events.js (#R322) */
+  "JWST first images": "Premières images du télescope James-Webb",   /* analysis-world-events.js (#R322) */
+  "Deepest infrared view of the universe yet.": "La vue infrarouge la plus profonde de l'Univers à ce jour.",   /* analysis-world-events.js (#R322) */
+  "Black Death reaches Europe": "La peste noire atteint l'Europe",   /* analysis-world-events.js (#R322) */
+  "Plague kills roughly a third of Europe.": "La peste emporte environ un tiers de l'Europe.",   /* analysis-world-events.js (#R322) */
+  "Copernican heliocentrism": "Héliocentrisme de Copernic",   /* analysis-world-events.js (#R322) */
+  "Copernicus places the Sun at the center.": "Copernic place le Soleil au centre.",   /* analysis-world-events.js (#R322) */
+  "Newton’s Principia": "Les Principia de Newton",   /* analysis-world-events.js (#R322) */
+  "Laws of motion and universal gravitation.": "Les lois du mouvement et la gravitation universelle.",   /* analysis-world-events.js (#R322) */
+  "Industrial Revolution": "Révolution industrielle",   /* analysis-world-events.js (#R322) */
+  "Steam power launches modern industry.": "La vapeur donne naissance à l'industrie moderne.",   /* analysis-world-events.js (#R322) */
+  "Battle of Waterloo": "Bataille de Waterloo",   /* analysis-world-events.js (#R322) */
+  "Napoleon’s final defeat.": "La défaite finale de Napoléon.",   /* analysis-world-events.js (#R322) */
+  "DNA double helix": "Double hélice de l'ADN",   /* analysis-world-events.js (#R322) */
+  "Watson & Crick reveal the structure of DNA.": "Watson et Crick révèlent la structure de l'ADN.",   /* analysis-world-events.js (#R322) */
+  "First ascent of Everest": "Première ascension de l'Everest",   /* analysis-world-events.js (#R322) */
+  "Hillary and Tenzing reach the summit.": "Hillary et Tenzing atteignent le sommet.",   /* analysis-world-events.js (#R322) */
+  "First human heart transplant": "Première greffe de cœur humain",   /* analysis-world-events.js (#R322) */
+  "Barnard performs the operation in Cape Town.": "Barnard réalise l'opération au Cap.",   /* analysis-world-events.js (#R322) */
+  "Munich Olympics massacre": "Prise d'otages des Jeux de Munich",   /* analysis-world-events.js (#R322) */
+  "Israeli athletes taken hostage and killed.": "Des athlètes israéliens sont pris en otage puis tués.",   /* analysis-world-events.js (#R322) */
+  "Iran–Iraq War begins": "Début de la guerre Iran-Irak",   /* analysis-world-events.js (#R322) */
+  "An eight-year war begins along the border.": "Une guerre de huit ans s'engage le long de la frontière.",   /* analysis-world-events.js (#R322) */
+  "Falklands War": "Guerre des Malouines",   /* analysis-world-events.js (#R322) */
+  "Britain and Argentina clash over the islands.": "Le Royaume-Uni et l'Argentine s'affrontent pour les îles.",   /* analysis-world-events.js (#R322) */
+  "World Wide Web proposed": "Proposition du World Wide Web",   /* analysis-world-events.js (#R322) */
+  "Berners-Lee invents the Web at CERN.": "Berners-Lee invente le Web au CERN.",   /* analysis-world-events.js (#R322) */
+  "Dolly the sheep cloned": "Clonage de la brebis Dolly",   /* analysis-world-events.js (#R322) */
+  "First mammal cloned from an adult cell.": "Le premier mammifère cloné à partir d'une cellule adulte.",   /* analysis-world-events.js (#R322) */
+  "Human Genome Project completed": "Achèvement du Projet génome humain",   /* analysis-world-events.js (#R322) */
+  "The human genome is fully sequenced.": "Le génome humain est entièrement séquencé.",   /* analysis-world-events.js (#R322) */
+  "Fall of Gaddafi": "Chute de Kadhafi",   /* analysis-world-events.js (#R322) */
+  "Libya’s long-time ruler is overthrown.": "Le dirigeant libyen au pouvoir depuis des décennies est renversé.",   /* analysis-world-events.js (#R322) */
+  "Paris Climate Agreement": "Accord de Paris sur le climat",   /* analysis-world-events.js (#R322) */
+  "196 parties adopt a global climate accord.": "196 parties adoptent un accord climatique mondial.",   /* analysis-world-events.js (#R322) */
+  "Sudan civil war": "Guerre civile au Soudan",   /* analysis-world-events.js (#R322) */
+  "Fighting erupts between the army and the RSF.": "Les combats éclatent entre l'armée et les RSF.",   /* analysis-world-events.js (#R322) */
   '{what} — done.': '{what} — terminé.',   /* atlas-results.js (#R318) atlas.result.completed.named */
   'Still running…': 'Toujours en cours…',   /* atlas-results.js (#R318) atlas.result.running */
   'Still running — {done} of {total}.': 'En cours — {done} sur {total}.',   /* atlas-results.js (#R318) atlas.result.running.progress */

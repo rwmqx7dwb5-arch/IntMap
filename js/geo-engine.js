@@ -24,7 +24,7 @@
  *
  *  MOVED VERBATIM out of app-body.js — de-indented by six spaces, nothing else.
  * ==========================================================================*/
-/* (#R315) the renderer command census — see the note above makeMapLibreAdapter */
+/* (#R322) the renderer command census — see the note above makeMapLibreAdapter */
 import { GEO_RAD, GEO_CIRC, gSpherical, gC2C, gEye, gSolveAt, gLimitPitch, gLimitZoom } from './camera-math.js';
 import { CMD, CMD_OPS, makeCommandLog, makeSourceMemory, absent, skipProp, skipState, skipData, t0, t1 } from './geo-command-log.js';
 /* ===== (#R152) IntMapGeoEngine — Phase 1 renderer-abstraction (業務委託: 地図エンジン交換可能化・第1段階).
@@ -192,14 +192,14 @@ function _m(){ return window.__imap||null; }
      pure geometry above stays shared: it takes its arguments and remembers nothing.
      `_m` is the parameter now, so every method body below is UNCHANGED — it already asked a
      getter for its map rather than closing over one. */
-  /* (#R315) the renderer command census — the comparisons, the switches and the tally live in
+  /* (#R322) the renderer command census — the comparisons, the switches and the tally live in
      js/geo-command-log.js. They moved there because the shell has a line ceiling and this file is
      part of it (tests/r168-checks.test.mjs); nothing in that module names the renderer, so the
      coupling gate is untouched. See its header for what is measured and what ships switched on. */
   function makeMapLibreAdapter(_m){
   /* (#R173) the live custom-layer objects behind layers.addSolid — keyed by layer id */
   const _solids={};
-  /* (#R315) this view's renderer-command tally and its per-source memory — both PER ADAPTER, for the
+  /* (#R322) this view's renderer-command tally and its per-source memory — both PER ADAPTER, for the
      same reason everything else here is (#R179): the compare pane must not answer for the main map.
      What they hold and why is in js/geo-command-log.js. */
   const _cmd=makeCommandLog(), _sd=makeSourceMemory();
@@ -986,7 +986,7 @@ function _m(){ return window.__imap||null; }
     terrainElevation(ll,o){ const m=_m(); return (m&&m.queryTerrainElevation)?m.queryTerrainElevation(ll,o):null; },
     queryRenderedFeatures(g,o){ const m=_m(); return (m&&m.queryRenderedFeatures)?m.queryRenderedFeatures(g,o):[]; },
     hasSource(id){ const m=_m(); return !!(m&&m.getSource(id)); }, addSource(id,d){ const m=_m(); if(m&&!m.getSource(id)){ _sd.forget(id); m.addSource(id,d); } },
-    /* (#R315) the one operation MapLibre does NOT deduplicate: setData posts the whole collection
+    /* (#R322) the one operation MapLibre does NOT deduplicate: setData posts the whole collection
        to the worker for a full reparse, with no comparison anywhere. The decision is skipData in
        js/geo-command-log.js; `opts.revision` is how a caller says it reuses one object. */
     setSourceData(id,data,opts){ const m=_m(); const s=m&&m.getSource(id);
@@ -1101,7 +1101,7 @@ function _m(){ return window.__imap||null; }
     },
     hasLayer(id){ const m=_m(); return !!(m&&m.getLayer(id)); }, addLayer(d,b){ const m=_m(); if(m&&!m.getLayer(d.id)) m.addLayer(d,b); }, removeLayer(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} },
     setVisible(id,v){ const m=_m(); if(m&&m.getLayer(id)) m.setLayoutProperty(id,'visibility',v?'visible':'none'); }, isVisible(id){ const m=_m(); if(!(m&&m.getLayer(id))) return false; try{ return m.getLayoutProperty(id,'visibility')!=='none'; }catch(_){ return true; } },
-    /* (#R315) the existence check already has the StyleLayer in hand, so "does the renderer
+    /* (#R322) the existence check already has the StyleLayer in hand, so "does the renderer
        already hold this?" costs one property read off an object we fetched anyway — no clone,
        no second lookup. MapLibre would refuse the repeat one frame later regardless (see the
        header); the tally is what says whether getting there first is worth anything. */
@@ -1166,7 +1166,7 @@ function _m(){ return window.__imap||null; }
       }catch(_){ return false; } },
     /* what the renderer is being asked to draw, as counts — layers, how many are visible, sources,
        and the tiles resident across every source cache. The HUD's «is the scene the cost?» column. */
-    /* (#R315) the tally, and the two switches over it. `commandConfig()` with no argument reads;
+    /* (#R322) the tally, and the two switches over it. `commandConfig()` with no argument reads;
        with a patch it writes — {on, detail, phase, skip:{…}} — and returns the result either way. */
     commandStats(){ return _cmd.read(); },
     commandsReset(){ _cmd.reset(); return true; },
@@ -1189,7 +1189,7 @@ function _m(){ return window.__imap||null; }
                  sources:Object.keys(st.sources).length, tiles,
                  ids:st.layers.filter(l=>!l.layout||l.layout.visibility!=='none').map(l=>l.id) };
       }catch(_){ return null; } },
-    /* (#R315) the second operation with no guard of its own — and the one whose comparison is not a
+    /* (#R322) the second operation with no guard of its own — and the one whose comparison is not a
        value comparison, because feature state MERGES (skipState, js/geo-command-log.js). */
     setFeatureState(f,s){ const m=_m(); if(!(m&&m.setFeatureState)) return;
       if((CMD.on||CMD.skip.featureState)&&skipState(_cmd,(f&&f.source)||'?',m.getFeatureState(f),s)) return;
@@ -1504,7 +1504,7 @@ function _m(){ return window.__imap||null; }
     getLayer(id){ const m=_m(); try{ return (m&&m.getLayer)?m.getLayer(id):null; }catch(_){ return null; } },
     getLayout(id,p){ const m=_m(); try{ return (m&&m.getLayer(id))?m.getLayoutProperty(id,p):undefined; }catch(_){ return undefined; } },
     moveLayer(id,before){ const m=_m(); try{ if(m&&m.getLayer(id)) m.moveLayer(id,(before&&m.getLayer(before))?before:undefined); }catch(_){} },
-    /* (#R315) `L.filter` is the raw stored filter — map.getFilter() CLONES it (Style.getFilter
+    /* (#R322) `L.filter` is the raw stored filter — map.getFilter() CLONES it (Style.getFilter
        :60697), which is exactly the cost this is trying to count, so it is read off the layer. */
     setFilter(id,f){ const m=_m(); try{ if(!m) return; const Y=m.getLayer(id);
       if(!Y) return absent(_cmd,'filter',id);
@@ -1840,7 +1840,7 @@ function _m(){ return window.__imap||null; }
       /* (#R225) the on-device instrument's two readings — see the adapter for why they live here */
       instrumentFrames:cb=>A().instrumentFrames?A().instrumentFrames(cb):false,
       sceneStats:()=>A().sceneStats?A().sceneStats():null,
-      /* (#R315) how many renderer commands this view sent, and how many of them said nothing new */
+      /* (#R322) how many renderer commands this view sent, and how many of them said nothing new */
       commands:()=>A().commandStats?A().commandStats():null,
       commandsReset:()=>A().commandsReset?A().commandsReset():false,
       /* the switches are GLOBAL (one policy, every view) while the tallies are per view */

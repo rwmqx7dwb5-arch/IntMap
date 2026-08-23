@@ -451,7 +451,7 @@ try {
       ["'IND NPL MUS'", 'js/layer-packs.js'],
       ["'Time zones'", 'js/layer-packs.js'],
       ["'gxndvi'", 'js/layer-packs.js'],
-      // (#R315) js/analysis-panels.js was split into an eager shell and five on-demand bodies. The three
+      // (#R322) js/analysis-panels.js was split into an eager shell and five on-demand bodies. The three
       // IIFE heads still belong to the shell — it is what publishes those globals at boot — but the two
       // interior needles travelled with the code they name, so they are asked of their new files.
       ['window.IntMapTimeSeries=(function(){', 'js/analysis-panels.js'],

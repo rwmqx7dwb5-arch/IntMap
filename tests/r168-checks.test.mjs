@@ -275,7 +275,7 @@ test('R168 #8 index.html shrank and no module body came back inline', () => {
      way. Headroom is 29 lines.
      The next surface named by 「中心部がまだ巨大」 is still js/atlas-console.js (6,571 lines), which
      is not in this shell and needs a split of its own.
-     ⚠ (#R315) 8,200 → 7,950, and the round that lowered it is the round that first went OVER. The
+     ⚠ (#R322) 8,200 → 7,950, and the round that lowered it is the round that first went OVER. The
      renderer-command census (「同じ命令を繰り返す無駄を実測に基づいて消す」) had to be in the adapter
      for the same reason #R193's dynamic-image primitive did — js/geo-engine.js is the one file
      allowed to know the renderer — and the shell went to 8,285. This paragraph is where a round

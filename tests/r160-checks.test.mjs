@@ -114,7 +114,7 @@ test('R160 (D1) MapLibreAdapter contract broadened (camera getters, zoom, render
   ok("zoomOut(o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomOut(o); } }", 'adapter.zoomOut');
   ok('resize(){ const m=_m(); if(m&&m.resize) m.resize(); }', 'adapter.resize');
   ok('triggerRepaint(){ const m=_m(); if(m&&m.triggerRepaint) m.triggerRepaint(); }', 'adapter.triggerRepaint');
-  /* (#R315) setFeatureState is no longer a BARE pass-through either, for the same kind of reason as
+  /* (#R322) setFeatureState is no longer a BARE pass-through either, for the same kind of reason as
      the zoom controls above: the adapter now counts what it is asked to do, and — when the census
      says an operation repeats itself and the renderer does not deduplicate it — may decline to
      forward a command that would change nothing. Still 1:1 in the sense #R160 meant: one contract

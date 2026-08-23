@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · Quiz mode — the implementation behind window.IntMapEdu  (#R315)
+ *  IntMap · Quiz mode — the implementation behind window.IntMapEdu  (#R322)
  * ----------------------------------------------------------------------------
  *  Fetched by js/lazy-modules.js when the quiz is opened (Playground → Quiz, or Atlas's `edu`
  *  action). ⚠ TWO THINGS DID NOT MOVE, because they exist before anybody asks for the quiz:
@@ -158,7 +158,7 @@ window.IntMapModules.analysisEdu=function(HOST){
     }
     function closeP(){ if(panel) panel.style.display='none'; mapQuizArmed=false; }
     function openP(){ score=0; streak=0; total=0; menu(); }
-    /* (#R315) `onMapClick` is exported too: the shell owns the map subscription (it is made at boot,
+    /* (#R322) `onMapClick` is exported too: the shell owns the map subscription (it is made at boot,
        before this file exists) and forwards to this one once the loader has fetched it. */
     return { open:openP, close:closeP, onMapClick };
   })();

@@ -404,7 +404,7 @@ function writeJson(obj) {
   console.log(`  → ${p}`);
 }
 
-/* ── (#R315) --commands: HOW MANY RENDERER COMMANDS SAY NOTHING NEW ─────────
+/* ── (#R322) --commands: HOW MANY RENDERER COMMANDS SAY NOTHING NEW ─────────
    「MapLibreへ同じ命令を繰り返す無駄を、実測に基づいて消す」 — and the first half of that
    sentence is a measurement, not an assumption. The adapter tallies every setSourceData /
    setFilter / setPaint / setLayout / setFeatureState it is handed, and marks each one
@@ -530,7 +530,7 @@ async function runCommands() {
   await browser.close();
 }
 
-/* ── (#R315) --lifecycle: DOES CLOSING IT GIVE ANYTHING BACK, AND CAN IT BE OPENED AGAIN ───
+/* ── (#R322) --lifecycle: DOES CLOSING IT GIVE ANYTHING BACK, AND CAN IT BE OPENED AGAIN ───
    `--mem` (#R311) asks the same question of a pair of IntMapOS commands. The three capabilities
    connected this round have no OS command — they are reached from the Layers panel and from
    Atlas — but they DO have a register entry now, and the register is the public owner: the
@@ -620,7 +620,7 @@ async function runLifecycle() {
   await browser.close();
 }
 
-/* (#R315) …and the pieces a SECOND instrument needs, so an A/B runner does not grow its own
+/* (#R322) …and the pieces a SECOND instrument needs, so an A/B runner does not grow its own
    replay cache. A cache that two harnesses fill differently makes the two arms differ by the
    cache as well as by the change, which is the one thing an A/B may not do. */
 export { chromium, newContext, throttle, heap, sweep, stats, BASE, CACHE, CPU, MOBILE, avg, q, val, has, writeJson };

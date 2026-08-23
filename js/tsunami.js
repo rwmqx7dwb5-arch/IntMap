@@ -1073,7 +1073,7 @@ window.IntMapModules.tsunami=function(HOST){
       try{ if(jobId&&window.IntMapTsunamiWorker) window.IntMapTsunamiWorker.abort(jobId); }catch(_){}
       busy=false; if(panel) panel.style.display='none'; clearPaint(); return true; }
 
-    /* ══ ⚠⚠ (#R315) CLOSING THE PANEL AND GIVING THE THREAD BACK ARE DIFFERENT QUESTIONS ═════════
+    /* ══ ⚠⚠ (#R322) CLOSING THE PANEL AND GIVING THE THREAD BACK ARE DIFFERENT QUESTIONS ═════════
        `close()` aborts the running job and hides the panel — which is exactly right for SUSPEND:
        the solver thread stays warm and re-opening costs nothing but a new `build()`. What did not
        exist was the other end. The worker survived every close for the life of the tab, because

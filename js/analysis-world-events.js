@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · World-events archive — the implementation behind the Events dashboard view  (#R315)
+ *  IntMap · World-events archive — the implementation behind the Events dashboard view  (#R322)
  * ----------------------------------------------------------------------------
  *  Fetched by js/lazy-modules.js when the Information dashboard switches to the Events view.
  *  js/analysis-panels.js keeps the eager SHELL: `window._dashView` (which js/companies-ui.js reads
@@ -24,7 +24,7 @@ window.IntMapModules.analysisEvents=function(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const renderDashboard=HOST.renderDashboard, setupIntelLayers=HOST.setupIntelLayers;
   (function(){
-    /* (#R315) THE NAME AND THE ONE-LINE DESCRIPTION ARE `LA(…)` CALLS, NOT ADJACENT SLOTS. They used to
+    /* (#R322) THE NAME AND THE ONE-LINE DESCRIPTION ARE `LA(…)` CALLS, NOT ADJACENT SLOTS. They used to
        be four arguments — en / jpn / den / djp — which is scripts/i18n-pair-audit.mjs's twelfth shape:
        a tuple indexed by nothing at all, so de / ru / es / fr / ko / zh-Hant / zh-Hans all read the
        English for ever and no percentage in the i18n gate could see it. `LA` is pickArgs(), so the row
@@ -608,7 +608,7 @@ window.IntMapModules.analysisEvents=function(HOST){
           const ll=String(c.getAttribute('data-evfly')||'').split(','); window.flyToLoc(+ll[0],+ll[1]); });
       }
     };
-    /* (#R315) the shell's facades hand over to these once the loader says the file arrived. The two
+    /* (#R322) the shell's facades hand over to these once the loader says the file arrived. The two
        assignments above are the same globals the block always published; this is the handle the
        shell holds, so a facade never calls itself back. */
     window.__imAnalysisEvents={ render:window._renderEventsArchive, evYear:window._evYear };

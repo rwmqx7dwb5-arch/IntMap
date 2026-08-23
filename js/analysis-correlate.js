@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · Correlation / scatter — the implementation behind window.IntMapCorrelate  (#R315)
+ *  IntMap · Correlation / scatter — the implementation behind window.IntMapCorrelate  (#R322)
  * ----------------------------------------------------------------------------
  *  Fetched by js/lazy-modules.js when the Layers → Tools «Correlation / scatter» button is
  *  pressed (or Atlas dispatches `correlate`). ⚠ THE BUTTON ITSELF DID NOT MOVE: #btn-correlate is
@@ -218,7 +218,7 @@ window.IntMapModules.analysisCorrelate=function(HOST){
       if(window.countryGeo&&Object.keys(countryStats||{}).length) go();
       else if(typeof loadCountryData==='function'){ ov.querySelector('.corr-svg-wrap').innerHTML='<div style="padding:46px;text-align:center;color:var(--text-muted);">'+t('loadingData')+'</div>'; loadCountryData().then(go); }
       else go(); }
-    /* (#R315) the half of the boot-time `intmap-lang` handler that needs the overlay. The listener
+    /* (#R322) the half of the boot-time `intmap-lang` handler that needs the overlay. The listener
        itself stays in the shell — it has to relabel #btn-correlate whether or not this file was ever
        fetched — and this is the branch it guarded with `if(ov)`, which could only ever do anything
        once this file had run. The shell calls it only when the loader says this module is ready. */

@@ -64,7 +64,7 @@ window.IntMapTsunamiWorker=(function(){
       try{ it.postMessage({type:'abort',id}); }catch(_){}
       const j=jobs.get(id); if(j){ jobs.delete(id); try{ j.res(null); }catch(_){} }
       return true; },
-    /* ══ ⚠⚠ (#R315) GIVING THE THREAD BACK — and being able to ask for it again ═════════════════
+    /* ══ ⚠⚠ (#R322) GIVING THE THREAD BACK — and being able to ask for it again ═════════════════
        `terminate()` existed only inside `onerror`, where it also set `tried=true` and left `w=null`
        for ever: the death path deliberately never comes back, because a worker that just crashed
        should not be respawned in a loop. Closing the panel is the OPPOSITE case, and there was no

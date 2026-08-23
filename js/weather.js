@@ -892,7 +892,7 @@ window.IntMapModules.wind=function(HOST){
     window.addEventListener('intmap-units',()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} });
     window.addEventListener('intmap-lang',()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} });
 
-    /* ══ ⚠⚠⚠ (#R315) THE ONE THING `stop()` DELIBERATELY KEEPS, AND NOBODY EVER GAVE BACK ═══════
+    /* ══ ⚠⚠⚠ (#R322) THE ONE THING `stop()` DELIBERATELY KEEPS, AND NOBODY EVER GAVE BACK ═══════
        `stop()` leaves `renderer` alive on purpose — it holds two textures, two framebuffers, two
        vertex buffers and two shader programs, and re-creating them would make every toggle of the
        wind layer cost a WebGL rebuild. That is the right trade for SUSPEND. It is not the right

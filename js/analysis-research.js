@@ -1,6 +1,6 @@
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
 /* ============================================================================
- *  IntMap · Research brief — the implementation behind window.IntMapAIResearch  (#R315)
+ *  IntMap · Research brief — the implementation behind window.IntMapAIResearch  (#R322)
  * ----------------------------------------------------------------------------
  *  Fetched by js/lazy-modules.js the first time a place asks for a brief or for «ask AI about
  *  here». js/analysis-panels.js keeps the eager SHELL, which publishes window.IntMapAIResearch at

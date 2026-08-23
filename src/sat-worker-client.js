@@ -60,7 +60,7 @@ window.IntMapSatWorker=(function(){
       if(signal){ try{ signal.addEventListener('abort',()=>{ try{ it.postMessage({type:'abort',id}); }catch(_){} },{once:true}); }catch(_){} }
       return p;
     },
-    /* ══ ⚠⚠ (#R315) GIVING THE THREAD BACK — see the same note in tsunami-worker-client.js ═══════
+    /* ══ ⚠⚠ (#R322) GIVING THE THREAD BACK — see the same note in tsunami-worker-client.js ═══════
        ⚠ THE PENDING TILES ARE REJECTED, NOT RESOLVED, and that is the difference from the tsunami
        client: a tile promise resolves to {data, mode} and js/sat-proto.js hands that straight to
        MapLibre's addProtocol. Resolving with null there would put «no data» where a bitmap belongs;

@@ -338,7 +338,7 @@ test('R231 Atlas: the image row is its own element, the text keeps the bubble', 
 
 /* ── ⑩ the AI research reply does not open by naming the place ──────────────────────────────── */
 test('R231 AI research: the leading place-name line is asked against AND removed', () => {
-  /* (#R315) the AI-research body lives in its own file since the analysis panels were split into an
+  /* (#R322) the AI-research body lives in its own file since the analysis panels were split into an
      eager shell and five lazy implementations. The claim is unchanged — this is where it is now. */
   const ap = read('js/analysis-research.js');
   assert.match(ap, /function _dropLeadTitle\(text,name\)/, 'the defensive strip exists');

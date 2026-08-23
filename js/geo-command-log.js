@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · THE RENDERER COMMAND CENSUS — how many of them say nothing new  (#R315)
+ *  IntMap · THE RENDERER COMMAND CENSUS — how many of them say nothing new  (#R322)
  * ----------------------------------------------------------------------------
  *  Lifted out of js/geo-engine.js, and the reason is a ceiling rather than tidiness:
  *  tests/r168-checks.test.mjs holds the SHELL — index.html plus the five files the whole program
@@ -17,7 +17,7 @@
  *  tables and the timing probes are behind `CMD.detail`. What ships switched ON is one entry of
  *  `CMD.skip`, and the measurement that decided it is written where it is decided.
  * ==========================================================================*/
-/* ══ (#R315) THE SAME COMMAND, SENT AGAIN — counted BEFORE anything is skipped ═══════════════
+/* ══ (#R322) THE SAME COMMAND, SENT AGAIN — counted BEFORE anything is skipped ═══════════════
    ---------------------------------------------------------------------------------------
    「MapLibreへ同じ命令を繰り返す無駄を、実測に基づいて消す」. The instrument comes first, because
    three of the five candidate operations turn out not to be waste at all and a cache in front of
@@ -54,7 +54,7 @@ export const CMD = {
      phase:   a label the harness sets — boot / pan / zoom / chronos / language / theme. It is
               DECLARED rather than guessed; the adapter cannot know why it was called. */
   on: false, detail: false, phase: 'boot',
-  /* ══ ⚠⚠⚠ (#R315) ONLY ONE OF THE FIVE IS ON, AND THE MEASUREMENT IS WHY ═════════════════════
+  /* ══ ⚠⚠⚠ (#R322) ONLY ONE OF THE FIVE IS ON, AND THE MEASUREMENT IS WHY ═════════════════════
      MEASURED over boot + pan + zoom + layer panel + hover + Chronos + language + theme, desktop,
      one build, both arms (scripts/frame-profile.mjs --commands):
 
@@ -144,7 +144,7 @@ export function _shapeSig(d) {
   } catch (_) { return '?'; }
 }
 
-/* ── (#R315) the comparison a SOURCE payload is allowed to be skipped on ──────────────────────
+/* ── (#R322) the comparison a SOURCE payload is allowed to be skipped on ──────────────────────
    Deep-equal against what the renderer is already holding — MapLibre keeps the payload verbatim
    (GeoJSONSource.setData :48755 `this._data = typeof data === 'string' ? {url:data} : {geojson:data}`),
    so nothing has to be retained here and nothing can go stale.
@@ -284,7 +284,7 @@ export function makeCommandLog() {
     const q = byPhase[kp] || (byPhase[kp] = { phase: CMD.phase, op, attempted: 0, applied: 0, same: 0, absent: 0 });
     q.attempted++; q[outcome]++;
   }
-  /* (#R315) the number a boot clock is too noisy to show: main-thread milliseconds actually spent
+  /* (#R322) the number a boot clock is too noisy to show: main-thread milliseconds actually spent
      inside the renderer call (msCall), and inside the comparison that may replace it (msCmp).
      An A/B on these two is deterministic where a wall clock is not. DETAIL mode only — two
      performance.now() per call is exactly the kind of cost that must not ship. */

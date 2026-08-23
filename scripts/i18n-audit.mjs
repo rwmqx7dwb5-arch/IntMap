@@ -313,7 +313,7 @@ if (process.argv.includes('--gate')) {
      no longer needs has stopped asserting anything (#R194). Converting tuples is meant to cost one
      edit here — that edit is the record that the number moved.
      MEASURED now: 143, all of them js/reference-data.js. The other 132 were the world-events archive
-     (js/analysis-world-events.js, split out of js/analysis-panels.js this round); #R315 wrote all 132
+     (js/analysis-world-events.js, split out of js/analysis-panels.js this round); #R322 wrote all 132
      names and one-line descriptions in de / ru / es as positional LA(…) arguments and in fr / ko /
      zh-Hant / zh-Hans in each locale's `inline` table, so that file is at zero and this line moved
      with it — 275 → 143. */

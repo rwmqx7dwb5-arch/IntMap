@@ -51,7 +51,7 @@ test('R241 ① a tuple of translations is a CALL, so every existing instrument c
       'the positional audit reads the shared resolver');
 
   /* the tuple helper is actually used, in every table that used to hold a bare array */
-  /* (#R315) js/analysis-panels.js became an eager shell and five lazy implementations; the tables
+  /* (#R322) js/analysis-panels.js became an eager shell and five lazy implementations; the tables
      that hold tuples went with the bodies, so the three files that now carry them are named here.
      ⚠ THE SHELL IS NOT IN THIS LIST AND MUST NOT BE — it has no tuple table to write as a call, and
      demanding `LA('` of a file with nothing to declare would be a check that only ever asserts that

@@ -1,5 +1,5 @@
 /* ============================================================================
- *  #R315 — the browser half: the split kept every door, and the skip kept every pixel
+ *  #R322 — the browser half: the split kept every door, and the skip kept every pixel
  * ----------------------------------------------------------------------------
  *  Two claims this round makes that no source-level check can settle:
  *
@@ -38,7 +38,7 @@ const GLOBALS = {
   analysisEdu: '__imAnalysisEdu',
 };
 
-test('R315 ①: the analysis buttons are built at boot and their implementations are not fetched by it', async ({ app }) => {
+test('R322 ①: the analysis buttons are built at boot and their implementations are not fetched by it', async ({ app }) => {
   const s = await app.page.evaluate(({ keys, globals }) => {
     const marks = (window.__imBoot && window.__imBoot.marks()) || {};
     /* ⚠ THE BOUNDARY IS `renderer`, NOT `idle`, AND THE TEST HARNESS IS WHY. `__imBoot.isDone()` is
@@ -82,7 +82,7 @@ test('R315 ①: the analysis buttons are built at boot and their implementations
   expect(s.failed, 'nothing may have failed to load').toEqual([]);
 });
 
-test('R315 ②: a passive close does not fetch, and asking twice mounts once', async ({ app }) => {
+test('R322 ②: a passive close does not fetch, and asking twice mounts once', async ({ app }) => {
   const page = app.page;
 
   /* ⚠ CLOSING SOMETHING THAT WAS NEVER OPENED MUST NOT DOWNLOAD IT. An Atlas 「close everything」
@@ -123,7 +123,7 @@ test('R315 ②: a passive close does not fetch, and asking twice mounts once', a
   expect(twice.overlays, 'a double click must not mount the panel twice').toBeLessThanOrEqual(1);
 });
 
-test('R315 ③: the renderer skip is live, and nothing it skipped was needed', async ({ app }) => {
+test('R322 ③: the renderer skip is live, and nothing it skipped was needed', async ({ app }) => {
   const page = app.page;
   const s = await page.evaluate(() => {
     const E = window.IntMapGeoEngine;
@@ -150,7 +150,7 @@ test('R315 ③: the renderer skip is live, and nothing it skipped was needed', a
     const E = window.IntMapGeoEngine;
     E.render.commandConfig({ on: true });
     E.render.commandsReset();
-    const id = 'r315-probe-src';
+    const id = 'r322-probe-src';
     const fc = () => ({ type: 'FeatureCollection', features: [{ type: 'Feature', id: 1, properties: { a: 1 }, geometry: { type: 'Point', coordinates: [0, 0] } }] });
     E.layers.addSource(id, { type: 'geojson', data: fc() });
     E.layers.setSourceData(id, fc());          /* same content, a FRESH object → skippable */

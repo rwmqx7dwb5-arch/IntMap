@@ -47,7 +47,7 @@ const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\
    is the one that found the rest, and it is the one that keeps them found. */
 const EXPECTED_CALLS = {
   'js/atlas-console.js': 9,          /* analyze, researchMap, brief, mapReport, historical, planner, vision, region outline, region units */
-  /* (#R315) the two prompts moved with the AI-research body when js/analysis-panels.js was split
+  /* (#R322) the two prompts moved with the AI-research body when js/analysis-panels.js was split
      into an eager shell and five lazy implementations. Same two calls, same file's worth of code —
      only the file name changed, and the count is what this table is actually about. */
   'js/analysis-research.js': 2,      /* place brief, ask-about-this-point */

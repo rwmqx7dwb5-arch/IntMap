@@ -75,7 +75,7 @@ jobs:
       - name: Startup budget (eager bytes ratchet · async + deploy ceilings)
         run: npm run check:perf
 
-      # (#R315) …and the other half of the deploy. The budget above weighs what Rollup produced,
+      # (#R322) …and the other half of the deploy. The budget above weighs what Rollup produced,
       # which is 12.5 MB of a 105.7 MB tree; `data/` is copied whole by vite.config.js and never
       # passes through the bundler, so nothing could tell that a file in it had stopped being
       # fetched. This matches every shipped file against the strings the source actually contains

@@ -944,7 +944,7 @@ window.IntMapModules.satellitesLive=function(HOST){
       ||fixes.find(f=>(f.name||'').toUpperCase().indexOf(s)>=0)||null;
   }
 
-  /* ══ ⚠⚠ (#R315) WHAT `stop()` KEEPS ON PURPOSE, AND WHAT NOTHING EVER RELEASED ═══════════════
+  /* ══ ⚠⚠ (#R322) WHAT `stop()` KEEPS ON PURPOSE, AND WHAT NOTHING EVER RELEASED ═══════════════
      `stop()` is a good SUSPEND and always was: the interval is cleared, the three map listeners come
      off (`unwire`), the layers go invisible and the detail panel closes. What it keeps is the
      CATALOGUE — up to eleven thousand propagated records — and that is the right trade for a layer
@@ -953,7 +953,7 @@ window.IntMapModules.satellitesLive=function(HOST){
 
      `dispose` is that ask. The catalogue, the derived fixes and the map layers go; the next
      `activate` re-loads exactly as a first open does (`start()` already handles `!sats.length`), so
-     nothing here can make the feature un-openable — the failure mode #R315 found in the register
+     nothing here can make the feature un-openable — the failure mode #R322 found in the register
      itself, one layer up. */
   function disposeSats(){
     stop();

@@ -121,7 +121,7 @@ export const STATIC_EXCLUDE = [
      JSON.parse is also the faster of the two: the <script> form makes V8 parse 9.76 MB as JavaScript
      source, on the main thread, where JSON.parse has a dedicated fast path. */
   'data/ecoregions_2017.js',
-  /* ══ (#R315) THE SAME PICTURE, AND ONLY THE HASHED ONE IS REACHABLE ════════════════════════════
+  /* ══ (#R322) THE SAME PICTURE, AND ONLY THE HASHED ONE IS REACHABLE ════════════════════════════
      `ROOT_PNG()` below copies every PNG at the repo root, which is right for the Köppen and precip
      rasters (fetched by name at run time) and wrong for this one. css/intmap.css is BUNDLED, so
      Rollup rewrote its `url("../IntMap.Icon_BW-inverted.png")` to the content-hashed asset —
@@ -135,7 +135,7 @@ export const STATIC_EXCLUDE = [
      ⚠ NOTHING IS DELETED. The file stays in the repository — it is the source css/intmap.css names
      and the input Rollup hashes; it simply stops being copied a second time. */
   'IntMap.Icon_BW-inverted.png',
-  /* ══ (#R315) FIVE SIDECARS THE BUILD WRITES AND THE BROWSER NEVER ASKS FOR ═════════════════════
+  /* ══ (#R322) FIVE SIDECARS THE BUILD WRITES AND THE BROWSER NEVER ASKS FOR ═════════════════════
      Each is a manifest a generator in scripts/ emits beside the payload it describes, and in every
      case the app reads the payload directly with dimensions of its own:
        data/bathymetry.json     js/bathymetry.js fetches only :34 data/bathymetry.png — the JSON is

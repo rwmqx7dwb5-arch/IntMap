@@ -95,7 +95,7 @@ export function makeLazyModules(HOST) {
          there is a "before it is reached" to defer to, and every door awaits. */
       dataCenters: 'IntMapDataCenters', aircraftDetail: 'IntMapAircraftPanel', volume3d: 'IntMapVolume3D', statsCompare: 'IntMapStatsCompare',
       satellitesLive: 'IntMapSatellites', satelliteDetail: 'IntMapSatPanel',
-      /* ══ (#R315) …AND THE FILE #R311 HAD TO LEAVE BEHIND, SPLIT INSTEAD OF DEFERRED ════════════
+      /* ══ (#R322) …AND THE FILE #R311 HAD TO LEAVE BEHIND, SPLIT INSTEAD OF DEFERRED ════════════
          js/analysis-panels.js was the biggest thing left in the entry (909 lines, 122 kB) and #R311
          measured why it could not join the six above: counting the statements each factory EXECUTES
          showed `correlate` appends #btn-correlate to the Layers panel at boot and `edu` mounts

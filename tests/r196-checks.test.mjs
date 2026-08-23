@@ -301,7 +301,7 @@ test('R196 ⑥ the propagation model follows the seismic panel, debounced', () =
      This pinned the whole `return { … }` line, so #R214 naming that object `API` (to register its
      share state after it exists) failed a test about the seismic panel's debounce. That is exactly
      #R203's trap. The claim is now derived from the object however it is spelled.
-     ⚠ (#R315) …and it was only half-fixed: the object's NAME stopped being pinned but its first
+     ⚠ (#R322) …and it was only half-fixed: the object's NAME stopped being pinned but its first
      four MEMBERS did not, so when the lifecycle round routed `open`/`close` through the runtime
      register (`open:openPublic`) a test about the seismic panel's debounce failed again, for the
      third time, over a spelling it does not care about. Ask the actual question: is `follow` a
