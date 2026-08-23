@@ -3433,6 +3433,9 @@ window.IntMapModules.dataLayers=function(HOST){
         ias:null, tas:null, mach:null, oat:null, navAlt:null, navQnh:null, roll:null,
         trueHdg:null, magHdg:null, windDir:null, windSpd:null, rssi:null, messages:null,
         src:d.provider||'', emergency:(d.emergency?'emergency':''),
+        /* (#R352) the SAME line the tooltip shows, carried on the record so the detail card
+           renders what it was given instead of a literal. */
+        _srcLine:_planeSourceLine(),
         _v2:true, _freshness:d.freshness, _ageS:d.ageS, _categoryName:d.categoryName };
     }
     /* (#R341) THE SOURCE LINE NAMES THE SOURCE THAT ACTUALLY ANSWERED.

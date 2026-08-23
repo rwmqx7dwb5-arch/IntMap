@@ -270,7 +270,16 @@ window.IntMapModules.aircraftDetail=function(HOST){
         +'<span class="acp-fly-s">'+S((ic.spec&&ic.spec.icon?ic.spec.icon+' ':'')+simName+' · '+altTxt(ic.alt)+' · '+degTxt(ic.hdg)+' · '+n0(ic.speed/KT)+' kn')+'</span>'
       +'</button>'
       +notes
-      +'<div class="acp-src">'+S('airplanes.live · ADS-B')+(photo?S(' · planespotters.net'):'')+'</div>';
+      /* ⚠ (#R352) THE CARD NAMES THE SOURCE THAT ACTUALLY SUPPLIED THE AIRCRAFT.
+         This was the literal 'airplanes.live · ADS-B'. #R341 moved the live feed to adsb.lol
+         (ODbL 1.0, which REQUIRES the source to be named) and made the hover tooltip say so —
+         and missed this line, so production verification found the card crediting the wrong
+         provider on 10 cards out of 10, for data that provider supplied none of. Naming the
+         wrong source is worse than naming none.
+         `p._srcLine` is set by whichever path built the record; the literal remains the
+         fallback so the v1 rollback path (?aviation=v1), whose records carry no _srcLine,
+         still credits the provider it really used. */
+      +'<div class="acp-src">'+S(p._srcLine||'airplanes.live · ADS-B')+(photo?S(' · planespotters.net'):'')+'</div>';
   }
 
   function agoStr(sec){ const s=Math.max(0,Math.round(Date.now()/1000-sec));

@@ -95,7 +95,7 @@ window.IntMapModules.aviationLive = function (HOST) {
     lastFrameAt: 0,
     worldTimer: 0, viewTimer: 0,
     status: {
-      provider: '', attribution: '', coverage: '', serverAgeMs: 0, seq: 0,
+      provider: '', attribution: '', coverage: '', serverAgeMs: 0, oldestObservationMs: 0, seq: 0,
       total: 0, rendered: 0, lastPollAt: 0, lastOkAt: 0,
       failures: 0, lastError: '', decodeMs: 0, applyMs: 0, packMs: 0, bytes: 0,
     },
@@ -122,6 +122,7 @@ window.IntMapModules.aviationLive = function (HOST) {
     if (m.attribution) ST.status.attribution = m.attribution;
     if (m.coverage) ST.status.coverage = m.coverage;
     if (m.serverAgeMs != null) ST.status.serverAgeMs = m.serverAgeMs;
+    if (m.oldestObservationMs != null) ST.status.oldestObservationMs = m.oldestObservationMs;
     if (m.packMs != null) ST.status.packMs = m.packMs;
     if (m.stat) {
       ST.status.decodeMs = m.stat.decodeMs;
@@ -354,6 +355,12 @@ window.IntMapModules.aviationLive = function (HOST) {
       const mx = B.pos[i * 2], my = B.pos[i * 2 + 1];
       if (!(mx === mx) || !(my === my)) continue;
       out.push({
+        /* ⚠ (#R352) THE HEX WAS MISSING, and the caller could not tell. Production verification
+           asked this API for aircraft identities and got back four geometry fields, so it had to
+           fall back to firing pick() at a screen grid to obtain any. The store has the hex in
+           ST.ids[i] — withholding it made the method look like it answered while answering
+           something else. */
+        hex: hexOf(ST.ids[i]),
         lon: mx * 360 - 180,
         lat: (Math.atan(Math.exp((0.5 - my) * 2 * Math.PI)) * 2 - Math.PI / 2) * 180 / Math.PI,
         altFt: B.alt[i] ? B.alt[i] / 0.3048 : 0,
@@ -376,7 +383,10 @@ window.IntMapModules.aviationLive = function (HOST) {
       aircraftReceived: s.total,
       aircraftRendered: s.rendered,
       /* Three different ages, kept apart because §22.2 says they are three different facts. */
+      /* how old the ANSWER is … */
       serverAgeMs: s.serverAgeMs,
+      /* … and how old the OLDEST OBSERVATION in it is. Two facts, two fields (§22.2). */
+      oldestObservationMs: s.oldestObservationMs,
       sinceLastPollMs: s.lastPollAt ? now - s.lastPollAt : null,
       sinceLastOkMs: s.lastOkAt ? now - s.lastOkAt : null,
       decodeMs: s.decodeMs, applyMs: s.applyMs, packMs: s.packMs,
