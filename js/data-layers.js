@@ -5124,17 +5124,61 @@ window.IntMapModules.dataLayers=function(HOST){
         x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}`,
         x=>`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(x)}` ]; })();
     async function _cableNet(u){ for(const mk of _cableProxies){ try{ const r=await fetch(mk(u)); if(!r.ok) continue; const j=await r.json(); if(j&&j.features){ _cableStore(u,j); return j; } }catch(_){} } return null; }
+    /* ══ (#R354) THE ROUTES COME FROM THIS APP'S OWN ORIGIN NOW ═══════════════════════════════════
+       「世界中の全海底ケーブルが…実際に海底を通っていると考えられる場所に描画され」
+
+       What used to be drawn here was TeleGeography's SCHEMATIC geometry — 702 cables in 1,933 rings
+       and 14,103 vertices, a median of FOUR points per leg — fetched live, through a relay, from an
+       origin that sends no ACAO. scripts/build-subcables.mjs now rebuilds every route offline from
+       surveyed government route data where it exists and a least-cost path over the sea floor where
+       it does not, and the result SHIPS WITH THE APP as data/subcables*.json.
+
+       ⚠ THAT MAKES THE LAYER MORE ROBUST, NOT LESS, AND THE ORDER IS WHY. The brief's §3 forbids
+       trading display reliability for route accuracy, so the four sources are tried strictly in
+       order of how little can go wrong with them:
+
+         1. data/subcables.json — the app's own origin, same deploy, no CORS, no third party. If the
+            page loaded, this loads.
+         2. the Cache API copy of (1) — written on every success, so a second visit paints with no
+            network at all, and an offline start still paints. (The service worker deliberately
+            keeps `intmap-subcables-*` across deploys; see sw.js.)
+         3. the Cache API copy of the TeleGeography answer — what #R188 put there. Every browser that
+            has ever shown this layer still has one.
+         4. the TeleGeography relay chain — #R190's Edge Function, then the volunteer proxies.
+
+       Steps 3 and 4 are the MIGRATION path the brief's §3 asks to be kept: a build that somehow
+       shipped without the dataset still draws cables, exactly as it did before this round. Nothing
+       below touches the layer's paint, its layout, its order or its default state. */
+    const CABLE_LOCAL=(p)=>{ try{ return new URL(p,document.baseURI).toString(); }catch(_){ return p; } };
+    const CABLE_LOCAL_URL=CABLE_LOCAL('data/subcables.json');
+    const CABLE_LOCAL_LP_URL=CABLE_LOCAL('data/subcables-lp.json');
+    async function _cableLocal(u){
+      try{ const r=await fetch(u,{cache:'default'}); if(!r.ok) return null;
+        const j=await r.json();
+        /* a truncated or half-written answer is not data — the layer must fall through, not draw a
+           fragment and call it the world's cables */
+        if(!j||!Array.isArray(j.features)||!j.features.length) return null;
+        _cableStore(u,j); return j; }catch(_){ return null; }
+    }
     async function fetchSubcables(){
+      /* 1 · this app's own dataset */
+      const [cab,lp]=await Promise.all([_cableLocal(CABLE_LOCAL_URL),_cableLocal(CABLE_LOCAL_LP_URL)]);
+      if(cab&&lp) return {cab,lp,from:'local'};
+      /* 2 · the kept copy of it */
+      const [cKept,lKept]=await Promise.all([_cableCached(CABLE_LOCAL_URL),_cableCached(CABLE_LOCAL_LP_URL)]);
+      if(cKept&&lKept) return {cab:cKept,lp:lKept,from:'local-cache',fromCache:true};
+      /* 3 · the kept TeleGeography copy, refreshed behind the drawing */
       const [cCache,lCache]=await Promise.all([_cableCached(CABLE_URL),_cableCached(CABLE_LP_URL)]);
-      if(cCache){ /* draw from the kept copy now, and refresh behind it */
+      if(cCache){
         Promise.all([_cableNet(CABLE_URL),_cableNet(CABLE_LP_URL)]).then(([c2,l2])=>{
           try{ if(c2&&GE().layers.hasSource('src-subcables')) GE().layers.setSourceData('src-subcables',c2); }catch(_){}
           try{ if(l2&&GE().layers.hasSource('src-subcables-lp')) GE().layers.setSourceData('src-subcables-lp',l2); }catch(_){}
         });
-        return {cab:cCache,lp:lCache,fromCache:true};
+        return {cab:cCache,lp:lCache,from:'telegeography-cache',fromCache:true};
       }
-      const [cab,lp]=await Promise.all([_cableNet(CABLE_URL),_cableNet(CABLE_LP_URL)]);
-      return {cab,lp,fromCache:false};
+      /* 4 · the relay chain */
+      const [cNet,lNet]=await Promise.all([_cableNet(CABLE_URL),_cableNet(CABLE_LP_URL)]);
+      return {cab:cNet,lp:lNet,from:'telegeography',fromCache:false};
     }
     /* The app — not the user — is switching this box off. Recorded on the element so the session
        snapshot can tell the two apart (js/app-body.js reads `imAutoOff`). */
@@ -5154,8 +5198,21 @@ window.IntMapModules.dataLayers=function(HOST){
        `wp-dl-currents` under World data, and js/session-tabs.js migrates a saved `dl-oceancur` to it.
        ⚠ `data/ocean-currents.json` and `data/ocean-currents-field.bin.gz` are UNCHANGED and still
        shipped — they were always the plate's data; this file was the second reader. */
+    /* ── (#R354) the click/tap info popup, in its OWN chunk ────────────────────────────────────
+       js/subcable-info.js draws nothing on the map: it reads the feature the reader clicked and
+       opens the same `.plc-popup` every other place card uses. It is imported dynamically so a
+       session that never switches this layer on never downloads it, and so that it cannot enter the
+       eager bundle (scripts/perf-budget.mjs). A failed import costs the popup, never the layer. */
+    let _subcInfo=null,_subcInfoP=null;
+    function _wireSubcableInfo(){
+      if(_subcInfo){ try{ _subcInfo.attach(); }catch(_){} return; }
+      if(_subcInfoP) return;
+      _subcInfoP=import('./subcable-info.js').then(()=>{
+        try{ _subcInfo=window.IntMapSubcableInfo(HOST); _subcInfo.attach(); }catch(e){ console.warn('subcable info',e); }
+      }).catch(e=>{ console.warn('subcable info',e); });
+    }
     function addSubcables(){
-      if(GE().layers.has('lyr-subcables')){ setVis('lyr-subcables',true); setVis('lyr-subcables-glow',true); setVis('lyr-subcables-pts',true); return; }
+      if(GE().layers.has('lyr-subcables')){ setVis('lyr-subcables',true); setVis('lyr-subcables-glow',true); setVis('lyr-subcables-pts',true); _wireSubcableInfo(); return; }
       if(_subcablesLoading) return; _subcablesLoading=true;
       fetchSubcables().then(({cab,lp})=>{
         _subcablesLoading=false;
@@ -5187,7 +5244,39 @@ window.IntMapModules.dataLayers=function(HOST){
            actually failed: build, and if the style refused, wait and build again. Bounded (12 tries
            over ~9 s), abandoned the moment the user unticks the box, and a no-op once the layers are
            there — so the successful path is byte-for-byte what it was. */
-        const build=(tries)=>{
+        /* ══ (#R354) THE LADDER IS TIED TO THE STYLE, NOT TO A STOPWATCH ═══════════════════════════
+           #R187's ladder is twelve tries at 750 ms — about nine seconds — and it was measured
+           against a style that was merely SLOW. Measured this round on a machine whose basemap host
+           was answering 429/503: `isStyleLoaded()` was still false at 22 s, every addSource threw
+           "Style is not done loading.", the ladder ran out, and the box was unticked with
+           `imAutoOff` — correct bookkeeping for the wrong outcome.
+
+           ⚠ AND THIS ROUND MADE THAT RACE TIGHTER, WHICH IS WHY IT IS FIXED HERE. The routes now
+           come from this app's own origin: measured, `data/subcables.json` answers in 12 ms where
+           the relay took seconds. Arriving earlier means arriving while the style is less ready.
+
+           So the ladder keeps its 750 ms rhythm and stops asking a clock whether to continue: it
+           continues while the box is ticked and the horizon has not passed, and — the part that
+           actually matters — it retries THE MOMENT the renderer says the style changed, instead of
+           waiting out the next tick. A style that becomes usable at 40 s now paints at 40 s.
+           ⚠ `on`, not `once`: a `styledata` that has already fired never fires again for a listener
+           registered afterwards, and this listener is registered after the first refusal by
+           construction. It is removed on success, on giving up, and when the box is unticked. */
+        const BUILD_HORIZON_MS=90000;
+        const _giveUpAt=Date.now()+BUILD_HORIZON_MS;
+        let _styleHook=null, _retryT=null;
+        const stopHook=()=>{ if(_styleHook){ try{ GE().events.off('styledata',_styleHook); }catch(_){} _styleHook=null; }
+          if(_retryT){ clearTimeout(_retryT); _retryT=null; } };
+        const again=()=>{
+          const cb=document.getElementById('dl-subcables');
+          if(!cb||!cb.checked||Date.now()>_giveUpAt) return false;
+          if(!_styleHook){ _styleHook=()=>{ if(_retryT){ clearTimeout(_retryT); _retryT=null; } build(); };
+            try{ GE().events.on('styledata',_styleHook); }catch(_){} }
+          if(!_retryT) _retryT=setTimeout(()=>{ _retryT=null; build(); },750);
+          return true;
+        };
+        const build=()=>{
+          if(_retryT){ clearTimeout(_retryT); _retryT=null; }
           try{
             if(!GE().layers.hasSource('src-subcables')) GE().layers.addSource('src-subcables',{type:'geojson',data:cab});
             if(!GE().layers.has('lyr-subcables-glow')) GE().layers.add({id:'lyr-subcables-glow',type:'line',source:'src-subcables',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#30b0c7'],'line-width':3.2,'line-opacity':0.20,'line-blur':3}},beforeId);
@@ -5196,8 +5285,8 @@ window.IntMapModules.dataLayers=function(HOST){
               if(!GE().layers.has('lyr-subcables-pts')) GE().layers.add({id:'lyr-subcables-pts',type:'circle',source:'src-subcables-lp',minzoom:3,layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],3,1.6,8,3.5],'circle-color':'#ffd23f','circle-stroke-color':'#1a1a1a','circle-stroke-width':0.6,'circle-opacity':0.9}},beforeId); }
           }catch(e){
             /* the style refused this add — it is not parsed yet however hard whenStyleReady insisted */
-            const cb=document.getElementById('dl-subcables');
-            if(tries>0&&cb&&cb.checked){ setTimeout(()=>build(tries-1),750); return; }
+            if(again()) return;
+            stopHook();
             /* (#R189) giving up QUIETLY here left the one state #R187 was hunting: box ticked, layer
                absent. Say so the same way the download path does — imAutoOff, so the session still
                wants the layer, and a toast, so the screen is not silently missing what the row claims. */
@@ -5205,16 +5294,18 @@ window.IntMapModules.dataLayers=function(HOST){
             try{ satToast(window.IntMapLang.t(HOST.lang,'Could not add the submarine-cable layer','海底ケーブルレイヤーを追加できませんでした','Seekabel-Ebene konnte nicht hinzugefügt werden','Не удалось добавить слой подводных кабелей','No se pudo añadir la capa de cables submarinos')); }catch(_){} return;
           }
           if(!GE().layers.has('lyr-subcables')){                 /* refused without throwing */
-            const cb=document.getElementById('dl-subcables');
-            if(tries>0&&cb&&cb.checked){ setTimeout(()=>build(tries-1),750); return; }
+            if(again()) return;
+            stopHook();
             console.warn('addSubcables: the style never accepted the cable layers'); autoUncheck('dl-subcables');
             try{ satToast(window.IntMapLang.t(HOST.lang,'Could not add the submarine-cable layer','海底ケーブルレイヤーを追加できませんでした','Seekabel-Ebene konnte nicht hinzugefügt werden','Не удалось добавить слой подводных кабелей','No se pudo añadir la capa de cables submarinos')); }catch(_){} return;
           }
+          stopHook();
           setVis('lyr-subcables-glow',true); setVis('lyr-subcables',true); if(GE().layers.has('lyr-subcables-pts')) setVis('lyr-subcables-pts',true);
           /* the layer is up — whatever an earlier failure recorded is settled (#R188) */
           try{ const cb=document.getElementById('dl-subcables'); if(cb&&cb.dataset) delete cb.dataset.imAutoOff; }catch(_){}
+          _wireSubcableInfo();
         };
-        build(12);
+        build();
       });
     }
     /* === Contour lines — generated on the fly from the terrarium DEM ===

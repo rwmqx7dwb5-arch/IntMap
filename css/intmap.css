@@ -607,6 +607,28 @@
       /* Keep the close × aligned to the buttons' right edge on mobile too; only the top needs clearing. */
       .plc-popup .maplibregl-popup-content{ padding-top:14px !important; }
       .plc-popup .maplibregl-popup-close-button{ width:30px; height:30px; top:9px; right:12px; } }
+    /* ══ (#R354) Submarine-cable / landing-point info popup ═══════════════════════════════════════
+       It is `.plc-popup .subc-popup` — the SAME surface, radius, shadow, close button, dark-mode
+       inversion and mobile padding as every other place card, because the brief's §15 asks for the
+       popup to belong to IntMap rather than look like a second application. Only the inside of the
+       card is new: a label/value list narrow enough for a phone, and chips for the other cables in
+       the same corridor. Nothing here touches the cable LINES (§2). */
+    .subc-popup .subc-card{ min-width:184px; max-width:262px; }
+    .subc-popup .subc-kind{ font-size:10px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; color:var(--text-muted); }
+    .subc-popup .subc-title{ font-weight:700; font-size:13.5px; line-height:1.3; color:var(--text-main); margin:1px 0 2px; padding-right:26px; }
+    .subc-popup .subc-id{ font-size:10.5px; color:var(--text-muted); margin-bottom:7px; word-break:break-all; }
+    .subc-popup .subc-row{ display:flex; gap:8px; align-items:baseline; padding:2.5px 0; border-top:1px solid rgba(128,128,128,0.16); font-size:11.5px; }
+    .subc-popup .subc-row.subc-col{ display:block; }
+    .subc-popup .subc-k{ flex:0 0 88px; color:var(--text-muted); }
+    .subc-popup .subc-v{ flex:1 1 auto; color:var(--text-main); min-width:0; overflow-wrap:anywhere; }
+    .subc-popup .subc-chips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+    .subc-popup .subc-more{ margin-top:7px; padding-top:6px; border-top:1px solid rgba(128,128,128,0.16); display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
+    .subc-popup .subc-more-n{ font-size:10.5px; font-weight:600; color:var(--text-muted); width:100%; }
+    .subc-popup .subc-chip{ border:none; background:var(--input-bg); color:var(--text-main); border-radius:7px; padding:4px 7px; font-size:10.5px; font-weight:600; cursor:pointer; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .subc-popup .subc-chip:hover{ background:rgba(128,128,128,0.26); }
+    @media(max-width:768px){ .subc-popup .subc-card{ min-width:0; }
+      .subc-popup .subc-row{ font-size:12px; } .subc-popup .subc-k{ flex-basis:80px; }
+      .subc-popup .subc-chip{ padding:6px 9px; font-size:11px; } }
     /* (#R41) Webcam popup — inherits .plc-popup dark-mode theming; just give the embedded live player room and
        keep the × clear of the title ("ポップアップのデザインがダークモードで死んでいる"). */
     .webcam-popup .maplibregl-popup-content{ padding:11px 12px 12px !important; }

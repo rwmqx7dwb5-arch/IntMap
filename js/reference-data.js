@@ -274,7 +274,20 @@ window.IntMapRefData=(function(){
     {n:'AWS Terrain Tiles',u:'https://registry.opendata.aws/terrain-tiles/'},
     {n:'Beck et al. Köppen-Geiger (2018)',u:'https://www.nature.com/articles/sdata2018214'},
     {n:'MarineRegions',u:'https://www.marineregions.org/'},
+    /* ══ (#R347) THE SUBMARINE-CABLE LAYER IS NOW SIX SOURCES, NOT ONE ═══════════════════════════
+       Up to this round the layer drew TeleGeography's schematic geometry directly. It still supplies
+       the inventory — which cables exist, their names, owners, landing points and the connection
+       structure — but the ROUTES are rebuilt offline by scripts/build-subcables.mjs: surveyed
+       positions from the government datasets below wherever a cable can be identified in one by name
+       AND place, and a least-cost path over the sea floor everywhere else. Every one of these is
+       named here because the map now carries their data. */
+    /* ⚠ THE NAME IS THE KEY. `js/locales/pages.<code>.js` describes every row by its `n`, and
+       tests/r218-checks ⑤ requires all nine — so renaming a row is renaming it in nine files. */
     {n:'TeleGeography Submarine Cable Map',u:'https://www.submarinecablemap.com/'},
+    {n:'NOAA Office for Coastal Management — Marine Cadastre',u:'https://marinecadastre.gov/'},
+    {n:'EMODnet Human Activities — submarine cables',u:'https://emodnet.ec.europa.eu/en/human-activities'},
+    {n:'ACMA / Geoscience Australia — Australian submarine cable locations',u:'https://www.arcgis.com/home/item.html?id=bc1e7fb37fca40faa5dafbc8a5a4dc3c'},
+    {n:'Natural Earth 1:10m physical — lakes',u:'https://www.naturalearthdata.com/'},
     {n:'NASA SEDAC GPW v4',u:'https://sedac.ciesin.columbia.edu/'},
     {n:'UNDP / EIU / SIPRI / World Bank',u:'https://hdr.undp.org/'},
     {n:'AISstream.io',u:'https://aisstream.io/'},

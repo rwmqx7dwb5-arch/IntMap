@@ -169,6 +169,9 @@ wb-layers.js                      世界銀行指標の塗り分けと最新統�
 world-packs.js                    世界データ層——貿易・エネルギー・気象警報・潮汐・作物（282 KB）
 precip-annual.js                  年降水量——国別平均ではなく実測グリッド
 ocean-currents.js                 海流——同梱のアトラス盤
+subcable-info.js                  海底ケーブル／陸揚げ地点のクリック情報ポップアップ。
+                                  **地図には一切描かない**（線の paint/layout を読み書きしない）。
+                                  `js/data-layers.js` から動的 import されるので eager には入らない
 ocean-currents-field.js           海流——場のファイルの復号とストライド
 osm-facilities.js                 実地調査された施設 IntMapFacilities
 datacenters.js                    データセンターと AI インフラ IntMapDataCenters
@@ -405,6 +408,17 @@ tectonics.bin.gz / .json          PB2002（プレート境界）
 vs30.png / vs30-phone.png / .json 場址項 Vs30 のラスタ
 bathymetry.png / .json            海底地形
 land-mask.png / .json             陸／海マスク
+subcables.json                    海底ケーブルの経路（`scripts/build-subcables.mjs` が生成）。
+                                  1本の Feature ＝ 1区間で、`quality` が verified / reconstructed /
+                                  estimated、`src` がその出典。⚠ これが表示の主系統で、
+                                  TeleGeography からの取得は移行用の fallback として残っている
+subcables-lp.json                 陸揚げ地点（点）。既存の黄色い点はこれを描く
+subcables-meta.json               ケーブル単位のメタデータ（所有者・RFS・総延長・接続国・
+                                  陸揚げ地点）と、陸揚げ地点ごとの「ここに来るケーブル」。
+                                  クリック時のポップアップだけが読む（線の描画は読まない）
+subcables.build.json              生成の記録——件数・km・出典別の採否とライセンス・QA の全数値
+subcable-overrides.json           生成の**訂正をデータとして持つ**もの（別名表・採否の明示・
+                                  1セルより狭い水路・追加の経由点）。コードに緯度経度を書かない
 precip-mm.png / .json             年降水量の値格納ラスタ（8bit の log(mm)）と、その格子・帯・色
 precip-year.png / .json           年別の年降水量（1枚に縦積み）
 hdi-series.json                   HDI（UNDP）193か国 × 1990–2022

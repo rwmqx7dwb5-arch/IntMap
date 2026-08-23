@@ -5581,5 +5581,21 @@ window.IntMapLang.define('zh-hans', {
   "Within 30 km": "半径 30 公里内",
   "Within 5 km": "半径 5 公里内",
   "Zones published": "已公布的范围",   /* war-fronts.js / history.js (#R349) */
+  "{n} cables here": "此处有 {n} 条",
+  "Cables landing here": "在此登陆的电缆",
+  "Data last checked": "数据最后确认日",
+  "Estimated": "推估",
+  "Landing point": "登陆点",
+  "Landing points": "登陆点",
+  "Owners": "所有者",
+  "Planned": "规划中",
+  "Ready for service": "启用时间",
+  "Reconstructed": "重建",
+  "Route quality": "路径精度",
+  "Route source": "路径来源",
+  "Submarine cable": "海底电缆",
+  "Supplier": "敷设商",
+  "Unknown": "不明",
+  "Verified": "实测",
   }
 });
