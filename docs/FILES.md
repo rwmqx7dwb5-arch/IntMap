@@ -190,6 +190,9 @@ gazetteer.js                      ニュース地点解析の内蔵ガゼッテ�
 news-feed.js                      ニュースの取得・キャッシュ・見出しの翻訳
 news-ui.js                        ニュース一覧・ピン・リーダー
 news-context.js                   記事 → 場所／媒体の解決
+news-cluster.js                   Atlas `research.events` の**ブラウザ側アダプタ**。判定は共有の
+                                  `supabase/functions/_shared/news-cluster.js`（#R334）が行う。ここは記事の形の
+                                  適合と、主題の点の選び方だけ（#R340）
 news-sources.js                   どの媒体からニュースを取るか window.IntMapNewsSources
 news-timeline.js                  ニュースのタイムマシン用タイムライン帯
 newsgeo.js                        NewsGeo — 決定論的（非AI）のニュース地点解析

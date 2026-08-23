@@ -5280,4 +5280,6 @@ window.IntMapLang.define('fr', { ui: {
   'You asked me to do something, and I only wrote about it.': 'Vous avez demandé une action, et je n’ai fait qu’en parler.',   /* atlas-results.js (#R318) atlas.goal.action_missing */
   'Not every target was reached: {names}': 'Toutes les cibles n’ont pas été atteintes : {names}',   /* atlas-results.js (#R318) atlas.goal.targets_missing */
   'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.': 'Cette demande a nécessité trop de tentatives — rien de plus n’a été prélevé sur votre quota quotidien. Reformulez-la et réessayez.',   /* ai-core.js (#R318) aiTurnCallsMsg */
+  'place': 'lieu',   /* atlas-console.js (#R330) research.events footnote */
+  'headline similarity': 'similarité des titres',   /* atlas-console.js (#R330) research.events footnote */
 } });
