@@ -109,6 +109,9 @@ import './sat-worker-client.js';
 /* (#R193) …and the tsunami solver's, which publishes window.IntMapTsunamiWorker and starts nothing
    until the propagation panel asks for a run (src/tsunami-worker.js). */
 import './tsunami-worker-client.js';
+/* (#R341) …and the aviation worker's, which publishes window.IntMapAviationWorker and starts
+   nothing until the aircraft layer asks for a poll (src/aviation-worker.js). */
+import './aviation-worker-client.js';
 import '../js/data-layers.js';
 import '../js/workspace.js';
 import '../js/widgets.js';   /* (#R292) …and with it the ten js/widget-*.js modules it imports itself: the platform's load order is the PLATFORM's business, so the entry keeps the one line it had before the board was split. Roles: docs/FILES.md §3; structure: Architecture.md §7.5 */
@@ -363,8 +366,11 @@ const MODULE_FACTORIES = [
    ⚠ (#R322) …and five that are HALVES of a factory that is still eager. `timeSeries`, `aiResearch`,
    `correlate`, `worldEvents` and `edu` stay in MODULE_FACTORIES above, because js/analysis-panels.js
    still registers all five at boot — it is their BODIES that moved, into the five `analysis*` keys
-   below, and the boot guard cannot see those for the same reason it cannot see the others. */
-const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail', 'analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu'];
+   below, and the boot guard cannot see those for the same reason it cannot see the others.
+   (#R341) …and `aviationLive`, which carries the whole live-aircraft platform: the controller, the
+   GPU primitive it imports, and the worker that owns the fleet. Nothing of it is downloaded until
+   the aircraft layer, aircraft search or an Atlas aviation command asks for it. */
+const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail', 'analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu', 'aviationLive'];
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};

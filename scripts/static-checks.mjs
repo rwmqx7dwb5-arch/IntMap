@@ -13,6 +13,7 @@ import { execFile } from 'node:child_process';
 import { cpus } from 'node:os';
 import { join, extname, relative, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { jsReachability } from './js-reachability.mjs';
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
 const rel = (p) => relative(ROOT, p).replace(/\\/g, '/');
@@ -288,6 +289,20 @@ try {
   err('newsgeo-mirror', 'could not verify the newsgeo mirror: ' + (e && e.message));
 }
 
+// ── 7a. (#R341) aviation codec + model mirrors are in sync ───────────────────
+// js/aviation-codec.js and js/aviation-model.js are the single source of truth for the IMAV/1 wire
+// format and for what a normalised aircraft record IS; supabase/functions/_shared/ holds generated
+// byte-identical copies (an Edge Function cannot import outside supabase/functions/).
+// ⚠ This one is sharper than the newsgeo mirror it copies: a drifted codec makes the encoder and
+// the decoder disagree about a byte offset, and every aircraft in the world lands somewhere
+// plausible and wrong.
+try {
+  const { inSync, outOfSync } = await import('./sync-aviation.mjs');
+  if (!inSync()) err('aviation-mirror', 'out of sync with js/: ' + outOfSync().join(', ') + ' — run: node scripts/sync-aviation.mjs');
+} catch (e) {
+  err('aviation-mirror', 'could not verify the aviation mirrors: ' + (e && e.message));
+}
+
 // ── 7b. (#R285) Atlas persona mirror is in sync ──────────────────────────────
 // js/atlas-persona.js is the single source of truth for WHO ATLAS IS; the two Edge Functions that
 // also speak as Atlas read the generated copy at supabase/functions/_shared/atlas-persona.js.
@@ -362,20 +377,21 @@ try {
       if (!existsSync(p)) continue;
       for (const m of readFileSync(p, 'utf8').matchAll(/<script[^>]*\ssrc=["']\.\/(js\/[A-Za-z0-9_.-]+\.js)["']/g)) sib.add(m[1]);
     }
-    for (const f of ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel))) {
-      const t = read(f);
-      for (const m of t.matchAll(/import\(\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*\)/g)) dyn.add('js/' + m[1]);
-      for (const m of t.matchAll(/^\s*import\s[^;]*?from\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)) sib.add('js/' + m[1]);
-      for (const m of t.matchAll(/^\s*import\s*'\.\/([A-Za-z0-9_.-]+\.js)'\s*;/gm)) sib.add('js/' + m[1]);
-    }
-    for (const rel of dyn) {
+    /* (#R341) …and the FIFTH: a WORKER in src/ importing a js/ module — reached by
+       `new Worker(new URL(…, import.meta.url))` rather than by an import statement, so it is not in
+       src/main.js's graph, while what IT imports is every bit as alive as what main.js imports.
+       ⚠ ALL FIVE FORMS NOW COME FROM scripts/js-reachability.mjs, which tests/r175-checks.test.mjs
+       reads too. They used to be written out twice and the copies drifted the moment this fifth
+       form appeared — the #R318 shape. */
+    const REACH = jsReachability(ROOT, ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel)).map((x) => x.rel.slice(3)));
+    for (const rel of REACH.dyn) {
       if (!ALL.some((x) => x.rel === rel)) err('split', `a js/ module dynamically imports ${rel}, which does not exist`);
     }
-    for (const rel of sib) {
+    for (const rel of REACH.sib) {
       if (!ALL.some((x) => x.rel === rel)) err('split', `a js/ module imports ${rel}, which does not exist`);
     }
     for (const f of ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel))) {
-      if (!imported.has(f.rel) && !dyn.has(f.rel) && !sib.has(f.rel)) err('split', `${f.rel} exists but nothing imports it (add import '../${f.rel}'; to src/main.js, or import() it from a module that is imported)`);
+      if (!REACH.isReachable(f.rel)) err('split', `${f.rel} exists but nothing imports it (add import '../${f.rel}'; to src/main.js, import() it from a module that is imported, or import it from a src/ worker)`);
     }
     // …and nothing may be imported that no longer exists (a dangling import breaks the whole bundle).
     for (const rel of imported) {

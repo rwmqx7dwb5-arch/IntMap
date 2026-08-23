@@ -36,9 +36,15 @@ const clearDefaultLayers = async (page) => {
   });
 };
 
-const boot = async page => {
+/* (#R341) `query` pins WHICH aviation path the page boots with. The aircraft layer now has two:
+   the original per-browser sweep that draws `lyr-planes` / `lyr-planes-3d`, and the GPU cloud that
+   replaced it as the default. This file's aircraft test is about the FILL-EXTRUSION geometry — the
+   parts each body is drawn from, the post under an airborne one, the exclusivity of flat vs lifted
+   — so it must boot the path that draws those, and say so rather than depending on which one
+   happens to be the default. The other tests in this file are about volume3d and pass either way. */
+const boot = async (page, query) => {
   await clearDefaultLayers(page);
-  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  await page.goto('/index.html' + (query || ''), { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
   await page.waitForTimeout(600);   /* (#R212) the style is already loaded — this tail was 1.5 s in 20 specs */
@@ -201,7 +207,12 @@ test('live aircraft stand at their reported altitude', async ({ page }) => {
       { hex: 'ccc333', flight: 'TEST003 ', lat: 50.05, lon: 8.50, alt_baro: 'ground', gs: 12, track: 0, t: 'E190' },
     ] }),
   }));
-  await boot(page);
+  /* ⚠ ?aviation=v1 — see the note on boot(). This test asserts the extrusion geometry, which only
+     the v1 rendering produces; without the pin it waits 30 s for `state().features > 0` on a layer
+     the default no longer draws and times out (measured, #R341). What it checks is unchanged, and
+     the behaviour it stands for — aircraft at their REPORTED altitude — is asserted on the shipping
+     path by tests/r341-live.spec.js ③. */
+  await boot(page, '?aviation=v1');
   await page.evaluate(() => window.__imap.jumpTo({ center: [8.57, 50.03], zoom: 9, pitch: 70, bearing: 0 }));
   await page.waitForTimeout(1200);
   const enabled = await page.evaluate(() => {

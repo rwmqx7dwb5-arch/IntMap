@@ -21,9 +21,21 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-23): the **core** tier that
 gates a push is **6 spec files / 1.0 min** against a ceiling of 1.1 min; the **whole** suite is
 **68 measured spec files / 86.3 min** of serial browser time against a ceiling of 86.3 min; and
-`npm run test:checks` runs **171 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **172 Node test files** with no browser at all (counted from
 `package.json`). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
+
+⚠ **A NETWORK-DEPENDENT ASSERTION DOES NOT BELONG IN THE GATE.** #R341 split its browser coverage in
+two for this reason: `tests/r341.spec.js` is in the gate and asserts only what is true whether or not
+a provider answered this minute (the browser contacts no upstream; the GPU cloud is what draws; there
+is no zoom prompt at any zoom), while `tests/r341-live.spec.js` holds the claims that need real
+aircraft and runs nightly. A gate that goes red because a third party had a bad afternoon is a gate
+people learn to ignore.
+
+⚠ **AND A SPEC THAT `test.skip`s ITSELF IS GREEN WITHOUT ASSERTING ANYTHING.** Two aviation specs were
+measured waiting 66 s and 95 s for a feed and then skipping — passing in CI, proving nothing. When the
+thing a spec is about has two implementations, the spec must NAME the one it means (`?aviation=v1`)
+rather than depend on which is currently the default.
 
 > ⚠ **The whole-suite ceiling has zero headroom** (86.3 min measured against 86.3 min). A new
 > `.spec.js` cannot be added until the same time or more is taken out of an existing one — the
