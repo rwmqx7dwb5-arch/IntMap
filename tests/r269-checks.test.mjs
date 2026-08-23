@@ -172,10 +172,26 @@ test('R269 ④ a timestamp in the future is refused as evidence of freshness', (
   const s = WP();
   assert.match(s, /if\(v>Date\.now\(\)\+60000\) return;/,
     'a validity window that ends tomorrow must not make a feed look newer than now');
-  /* MeteoAlarm's rows carry onset/expires — a WINDOW — so its clock is the relay's own read time */
-  assert.match(s, /seenAt\('meteoalarm',d\.fetchedAt\)/, 'MeteoAlarm uses the relay’s fetchedAt');
-  assert.match(codeOnly(read('supabase/functions/alerts-relay/index.ts')), /fetchedAt: new Date\(\)\.toISOString\(\)/,
+  /* ⚠⚠⚠ (#R383) THE RELAY'S OWN READ TIME IS NOT A CLOCK THIS INSTRUMENT CAN USE.
+     This round asserted `seenAt('meteoalarm', d.fetchedAt)`, on the reasoning that MeteoAlarm's rows
+     carry `onset`/`expires` — a validity WINDOW, normally in the future — so the only timestamp the
+     relay could vouch for was its own. The reasoning about the window is right; the conclusion made
+     `FEED_AT.meteoalarm` equal to `Date.now()` on every read, which is exactly the blind spot #R269
+     exists for (「A FEED THAT STOPPED IS NOT A FEED THAT FAILED」). MEASURED on production:
+     `feedAgeH.meteoalarm = 0` while Luxembourg had published nothing for 104 h, Belgium 94 h, the
+     United Kingdom 82 h, Cyprus 78 h and Ireland 66 h.
+     There IS a third timestamp and it is neither of those two: the CAP bulletin's own `sent`, which
+     is what every other feed here reports. The relay now folds it to `newest` per member. */
+  assert.match(s, /seenAt\('meteoalarm',d\.newest\)/, 'MeteoAlarm reports the agency’s own issue time');
+  assert.match(s, /seenAt\('swic',d\.newest\)/, '…and so does the WMO register');
+  assert.equal((codeOnly(s).match(/seenAt\([^)]*fetchedAt/g) || []).length, 0,
+    'and nothing feeds the relay’s read time to the agency-age instrument');
+  assert.match(codeOnly(read('supabase/functions/alerts-relay/index.ts')), /if \(asent > newest\) newest = asent;/,
     '…which the relay must actually send');
+  /* `fetchedAt` is still shipped — it answers a different question (「IntMap はいつ取得したか」, #R293)
+     and the tap card prints both. What changed is which one the freshness grade reads. */
+  assert.match(codeOnly(read('supabase/functions/alerts-relay/index.ts')), /fetchedAt: new Date\(\)\.toISOString\(\)/,
+    'and the relay still states when IT read the service');
 });
 
 test('R269 ④ the two relay-backed loaders run one call at a time', () => {

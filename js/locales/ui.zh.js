@@ -4320,6 +4320,10 @@ window.IntMapLang.define('zh', {
   "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed in the agency’s own rank and the tap holds the units. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "日本、美國、加拿大與巴西依各機關的發布單位繪製，並不會整國上色——在那些國家，發布區域的形狀本身就是答案。歐洲、中國、澳洲與香港以清單而非圖形公開，因此以該機關的等級顏色淡塗全國，點選後顯示各單位的明細。GDACS 的淡塗是另一套尺度、另一組顏色：它表示該等級的事件影響這個國家，而非國內某一地點已發布警報。俄羅斯、印度、紐西蘭、馬來西亞、印尼、南非與墨西哥沒有瀏覽器可讀取的公開資料源，因此僅顯示 GDACS——GDACS 是事件發布，並非各國的警報本身；沒有事件的國家並不等於沒有警報。此為參考顯示，實際請依循官方機關的發布。",
   "areas": "區域",
   "Areas published but not locatable on this map: ": "已發布但本地圖無法定位的區域：",
+  "Read from this service but not in force now: ": "已自該機關讀取、但目前未生效者：",   /* world-packs.js (#R383) */
+  "expired": "已過期",   /* world-packs.js (#R383) */
+  "starting later": "將於稍後生效",   /* world-packs.js (#R383) */
+  "Starting later in: ": "將於稍後生效的區域：",   /* world-packs.js (#R383) */
   "Blue (IV)": "藍色（IV級）",
   "by district": "以郡為單位",
   "by issuing region": "以發布區域為單位",

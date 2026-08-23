@@ -102,6 +102,40 @@ function allowed(raw) {
    being small — every warning in the feed produces a row. */
 const SEV = { Extreme: 3, Severe: 2, Moderate: 1, Minor: 1, Unknown: 1 };
 
+/* ══ ⚠⚠⚠ (#R383) A BULLETIN THAT WAS ISSUED IS NOT A BULLETIN THAT IS IN FORCE ═════════════════
+   MEASURED against feeds.meteoalarm.org, all 34 reachable members, one minute:
+   **2,990 non-green bulletins, of which 2,546 had already EXPIRED and 327 had not STARTED —
+   117 were in force.** At the region level, the projection below offered **1,158 areas and only
+   183 of them were under anything**: Austria 116 → 0 (every one a thunderstorm warning that
+   expired on 2026-08-18, five days before it was measured), Poland 319 → 1, Switzerland 107 → 0,
+   Czechia 25 → 0, Greece 16 → 0, France 96 → 15. MEASURED on production the same minute, the map
+   drew 1,015 of those areas — **56 % of every unit this layer paints anywhere in the world was a
+   European region whose warning had been lifted or had not begun.**
+
+   `feeds-<country>` is a ROLLING LOG of what that member has issued, not a list of what is in
+   force; every OTHER summariser in this file already knew that and tested the same field
+   (`summariseCAP`, `summarisePAGASA`, `summariseSWIC` all drop `expires < now`). This one never
+   looked, so Europe — the part of this map with the most feeds behind it — was the part with the
+   least truth in it.
+
+   ⚠ THE TEST FAILS OPEN. A bulletin with no `expires` is NOT dropped and one with no `onset` is
+   NOT dropped: a feed that stops publishing its clock must not silently empty the map (MEASURED
+   the same minute: `noExpires = 0` across all 34 members, so this is a guard, not a path).
+   ⚠ AND NOTHING IS HIDDEN. The two counts come back with the summary beside `green`, the app
+   prints them, and `tests/r383` holds the relay to reporting them — 「黙って切った一覧は完全な一覧
+   に見える」 (#R320) is the rule this obeys.
+   ⚠ 「NOT YET IN FORCE」 IS ITS OWN ANSWER, NOT A WARNING. MeteoAlarm's own site has a 「tomorrow」
+   tab; this map has one present tense, shared with the JMA, the NWS, the ECCC and the CMA, all of
+   which publish only what is active NOW. Painting Europe on a different clock from the rest of the
+   world is the class of defect #R288 and #R298 already paid for twice. */
+function forceState(info, sent, now) {
+  const exp = Date.parse(String((info && info.expires) || ""));
+  if (Number.isFinite(exp) && exp < now) return "expired";
+  const on = Date.parse(String((info && (info.onset || info.effective)) || sent || ""));
+  if (Number.isFinite(on) && on > now) return "upcoming";
+  return "live";
+}
+
 /* ══ ⚠⚠⚠ GREEN IS NOT A WARNING, AND THE MAP WAS PAINTING IT AS ONE ═══════════════════════════
    「発令されていないだけの地域は灰色に。」「正確にリアルタイムな情報に基づき正確で忠実な色分けを。」
 
@@ -156,10 +190,21 @@ function summariseMeteoAlarm(raw, lang) {
   const j = JSON.parse(raw);
   const rows = [];
   const areaMap = new Map();
-  let green = 0;
+  const upMap = new Map();
+  let green = 0, expired = 0, upcoming = 0, noExpires = 0, newest = "";
+  const now = Date.now();
   for (const w of (j.warnings || [])) {
     const infos = (w?.alert?.info) || [];
     if (!infos.length) continue;
+    /* ⚠⚠⚠ (#R383) THE AGENCY'S OWN CLOCK, WHICH THIS SUMMARY NEVER SHIPPED. `fetchedAt` below is
+       when the RELAY read the feed, i.e. always now — and it is the only timestamp the app had, so
+       `FEED_AT.meteoalarm` was pinned to the present and the frozen-feed instrument #R269 exists
+       for (「A FEED THAT STOPPED IS NOT A FEED THAT FAILED」) was structurally blind over the
+       thirty-five countries MeteoAlarm carries. MEASURED on production: `feedAgeH.meteoalarm = 0`
+       while five members had published nothing for 66–104 hours. `sent` is the CAP bulletin's own
+       issue time and it is what every other feed here reports. */
+    const asent = String((w?.alert?.sent) || "");
+    if (asent > newest) newest = asent;
     const pick = infos.find((i) => String(i.language || "").toLowerCase().startsWith(lang))
       || infos.find((i) => String(i.language || "").toLowerCase().startsWith("en"))
       || infos[0];
@@ -168,6 +213,22 @@ function summariseMeteoAlarm(raw, lang) {
        see the note on `awarenessOf`. Level 1 is green: the service is saying nothing is needed. */
     const aw = awarenessOf(pick);
     if (aw === 1) { green++; continue; }
+    if (!String(pick.expires || "")) noExpires++;
+    /* (#R383) issued ≠ in force — see `forceState` */
+    const fs = forceState(pick, asent, now);
+    if (fs !== "live") {
+      if (fs === "expired") expired++; else upcoming++;
+      /* an area whose ONLY warnings start later is not painted, but it is not forgotten either:
+         it comes back as `upcomingAreas` so the panel and the tap card can name it */
+      if (fs === "upcoming") {
+        for (const a of (pick.area || [])) {
+          const nm = String(a.areaDesc || "").trim(); if (!nm) continue;
+          const em = ((a.geocode || []).find((g) => String(g.valueName || "") === "EMMA_ID") || {}).value || "";
+          upMap.set(String(em || nm), nm);
+        }
+      }
+      continue;
+    }
     const tier = aw ? Math.max(1, aw - 1) : (SEV[String(pick.severity)] || 1);
     for (const a of (pick.area || [])) {
       const name = String(a.areaDesc || "").trim();
@@ -202,6 +263,8 @@ function summariseMeteoAlarm(raw, lang) {
     });
   }
   const areas = [...areaMap.values()].sort((a, b) => b.tier - a.tier).slice(0, AREA_CAP);
+  /* (#R383) a region is only 「upcoming」 if nothing is in force there NOW */
+  for (const k of areaMap.keys()) upMap.delete(k);
   /* `green` is printed rather than hidden: 「nothing in force」 for a country whose feed is all
      green is a STATEMENT, and the number is the evidence for it (no silent filtering). */
   /* ⚠ (#R269) `fetchedAt` — WHEN THIS SUMMARY WAS READ FROM MeteoAlarm. The rows carry `onset` and
@@ -210,7 +273,9 @@ function summariseMeteoAlarm(raw, lang) {
      not an issue time, and a feed with no clock at all is the blind spot the instrument exists for,
      so the relay states the one timestamp it can actually vouch for. */
   return { source: "MeteoAlarm (EUMETNET)", fetchedAt: new Date().toISOString(), count: rows.length,
-    warnings: rows, areas, areaTotal: areaMap.size, green };
+    warnings: rows, areas, areaTotal: areaMap.size, green,
+    /* (#R383) what was read and NOT painted, and why — plus the agency's own newest issue time */
+    expired, upcoming, noExpires, upcomingAreas: [...upMap.values()].slice(0, AREA_CAP), newest };
 }
 
 /* ══ ⚠⚠ (#R271 追記2) THE PHILIPPINES — A NEW COUNTRY, AND ITS OWN PROVINCE POLYGONS ══════════
@@ -274,6 +339,9 @@ async function summarisePAGASA() {
   const now = Date.now();
   const areas = new Map();
   const rows = [];
+  /* (#R383) the same three numbers every summariser in this file now reports — see `forceState` */
+  const drop = { expired: 0, upcoming: 0 };
+  let newestSent = "";
   await Promise.all(picks.slice(0, PH_MAX).map(async (pk) => {
     try {
       const rr = await fetch(pk.href, {
@@ -287,7 +355,10 @@ async function summarisePAGASA() {
       const severity = unesc(xmlOne(cap, "severity"));
       const expires = xmlOne(cap, "expires");
       const sent = xmlOne(cap, "sent");
-      if (expires) { const t = Date.parse(expires); if (isFinite(t) && t < now) return; }
+      if (sent > newestSent) newestSent = sent;
+      /* (#R383) 「発令中」 is a window, not an issue time — the same test MeteoAlarm now gets */
+      const fs = forceState({ expires, onset: xmlOne(cap, "onset"), effective: xmlOne(cap, "effective") }, sent, now);
+      if (fs !== "live") { drop[fs]++; return; }
       const tier = SEV[severity] || 1;
       for (const a of xmlAll(cap, "area")) {
         const name = unesc(xmlOne(a, "areaDesc"));
@@ -307,7 +378,8 @@ async function summarisePAGASA() {
   return { source: "PAGASA-DOST (Philippines)", fetchedAt: new Date().toISOString(),
     count: rows.length, warnings: rows.slice(0, 400),
     areas: [...areas.values()].sort((a, b) => b.tier - a.tier).slice(0, AREA_CAP),
-    areaTotal: areas.size, capTotal, capRead: Math.min(PH_MAX, capTotal) };
+    areaTotal: areas.size, capTotal, capRead: Math.min(PH_MAX, capTotal),
+    expired: drop.expired, upcoming: drop.upcoming, newest: newestSent };
 }
 
 /* == (#R273) ONE READER FOR EVERY "CAP INDEX + CAP FILES" SERVICE =============================
@@ -338,11 +410,32 @@ async function summarisePAGASA() {
    the app maps it to that agency's published palette, which is the whole point of the
    "each agency's official colours" mode. Nothing is inferred from the text of a headline. */
 const CAPSRC = {
+  /* ⚠⚠⚠ (#R383) THE AGGREGATOR IS NOT ONE AGENCY, AND THE LABEL SAID IT WAS. MEASURED through
+     this relay, the bulletins it returned for 「Taiwan」 were written by FOUR bodies:
+       農業部農村發展及水土保持署 ×31 · 中央氣象署 ×17 · 交通部公路局 ×10 · 高雄市政府 ×1
+     and every one of them was labelled 「CWA (Taiwan)」 — the defect #R352 named:
+     「間違った出典を名乗るのは、名乗らないより悪い」. The Soil and Water Conservation Agency IS
+     Taiwan’s debris-flow warning authority and belongs here; the Highway Bureau’s road closures and
+     Kaohsiung City’s 「temporary car parks opened」 are RESPONSES to a warning, not warnings, and they
+     arrived with `<areaDesc>` values like 「苓雅區福東國小」 — a primary school — at 「Extreme」.
+     → the source names the aggregator, every row carries the agency that actually wrote it, and the
+     two CAP-standard fields below decide what is a hazard warning at all. */
   tw: { url: "https://alerts.ncdr.nat.gov.tw/RssAtomFeed.ashx", kind: "atom",
-        only: /\u4e2d\u592e\u6c23\u8c61\u7f72/, source: "CWA (Taiwan), via NCDR", max: 60 },
+        only: /\u4e2d\u592e\u6c23\u8c61\u7f72|\u6c34\u571f\u4fdd\u6301\u7f72/,
+        source: "NCDR (Taiwan) — CWA and the Soil & Water Conservation Agency", max: 90 },
   nz: { url: "https://alerts.metservice.com/cap/rss", kind: "rss",
         source: "MetService (New Zealand)", max: 40 },
 };
+/* ⚠⚠ (#R383) WHAT COUNTS AS A HAZARD WARNING, IN CAP’S OWN VOCABULARY RATHER THAN IN A LIST OF
+   AGENCIES. `<category>` is the standard’s field for exactly this question, so a road closure files
+   itself as `Transport` and a weather warning as `Met` — no table of Taiwanese bodies to go stale
+   (#R271: 「手書きの対象一覧は、その一覧に増える日に嘘になる」). MEASURED on the live feed:
+   Geo 196, Met 43, Transport 10.
+   ⚠ AND A BULLETIN THE ISSUER DID NOT GRADE IS NOT A RANK. `severity: Unknown` is CAP for 「no
+   severity assigned」, and every pixel this layer paints is a graded colour — the one bulletin that
+   mis-filed a car-park notice as `Geo` carried `Unknown`, and its 45 「areas」 were school names.
+   Both counts come back in the summary, so neither filter is silent. */
+const CAP_HAZARD = /^(Met|Geo|Fire|Env|Health)$/i;
 /* an <area> that is the whole area of responsibility is not an issuing unit (#R271 tsuiki2) */
 const AREA_SKIP = /area of responsibility|whole country|nationwide/i;
 
@@ -360,6 +453,27 @@ function capLinks(feed, kind) {
   return out;
 }
 
+/* ══ ⚠⚠⚠ (#R383) ONE CAP FILE IS NOT ONE WARNING — IT IS ONE PER `<info>` ═══════════════════════
+   `xmlOne(cap, "event")` is the FIRST `<event>` in the document and `xmlAll(cap, "area")` is EVERY
+   `<area>` in it, including the ones belonging to the second, third and fourth `<info>` block. CAP
+   uses those blocks for two different things and this file collapsed both: a translation of the
+   same warning, and a DIFFERENT BAND of the same bulletin with its own severity, its own validity
+   window and its own areas. So every area in a multi-band bulletin was painted at the FIRST band's
+   rank and expiry, and every area in a multilingual bulletin was counted twice under two names.
+   → the unit of work is the `<info>` block. Where a bulletin carries several languages, the blocks
+   of ONE language are used (the service's own first language, so `areaDesc` stays the name the
+   boundary index knows); where it carries several bands, every band is read at its own rank.
+   ⚠ A bulletin with no `<info>` at all is still read, as one — the old behaviour, so a service that
+   files a flat CAP does not silently vanish. */
+function capInfos(cap) {
+  const all = xmlAll(cap, "info");
+  if (!all.length) return [cap];
+  const langs = all.map((i) => unesc(xmlOne(i, "language")).toLowerCase());
+  const first = langs.find((l) => !!l) || "";
+  if (!first) return all;
+  return all.filter((_i, ix) => !langs[ix] || langs[ix] === first);
+}
+
 async function summariseCAP(key) {
   const cfg = CAPSRC[key];
   const r = await fetch(cfg.url, {
@@ -369,6 +483,7 @@ async function summariseCAP(key) {
   if (!r.ok) throw new Error(key + " " + r.status);
   const feed = await r.text();
   let picks = capLinks(feed, cfg.kind);
+  const indexTotal = picks.length;
   if (cfg.only) picks = picks.filter((p) => cfg.only.test(p.block));
   const capTotal = picks.length;
   /* newest first, so a cap on how many files are read drops the OLDEST rather than a random set */
@@ -376,6 +491,10 @@ async function summariseCAP(key) {
   const now = Date.now();
   const areas = new Map();
   const rows = [];
+  const drop = { expired: 0, upcoming: 0, sender: 0, category: 0, ungraded: 0 };
+  const senders = new Map();
+  const cats = new Map();
+  let newestSent = "";
   await Promise.all(picks.slice(0, cfg.max).map(async (pk) => {
     try {
       const rr = await fetch(pk.href, {
@@ -389,38 +508,66 @@ async function summariseCAP(key) {
       const msgType = unesc(xmlOne(cap, "msgType"));
       if (status && !/actual/i.test(status)) return;
       if (/cancel/i.test(msgType)) return;
-      const event = unesc(xmlOne(cap, "event")) || pk.title;
-      const severity = unesc(xmlOne(cap, "severity"));
-      const expires = xmlOne(cap, "expires");
       const sent = xmlOne(cap, "sent");
-      if (expires) { const t = Date.parse(expires); if (isFinite(t) && t < now) return; }
-      const tier = SEV[severity] || 1;
-      /* the agency's own word for the rank, where it publishes one as a CAP <parameter> */
-      let acol = "";
-      for (const pm of xmlAll(cap, "parameter")) {
-        if (/alert_color|awareness_level|colour|color/i.test(xmlOne(pm, "valueName"))) {
-          acol = unesc(xmlOne(pm, "value")).slice(0, 40); break;
+      if (sent > newestSent) newestSent = sent;
+      /* ══ ⚠⚠⚠ (#R383) THE INDEX SAYS WHO **MENTIONED** THE AGENCY; THE BULLETIN SAYS WHO WROTE IT ══
+         `cfg.only` tests the aggregator's `<entry>` block, and MEASURED through the relay this
+         round the CWA feed came back carrying 「道路封閉」 (road closure) at Extreme and 「開放臨時
+         停車」 (temporary car parks opened) — municipal notices issued BECAUSE of a CWA warning and
+         therefore naming it — with `<areaDesc>` values like 「苓雅區福東國小」, a primary school. A
+         road closure is not a weather warning and a school is not an issuing unit; painting one at
+          「Extreme」 is the kind of claim this layer exists not to make.
+         → the sender is read from the bulletin itself. `senders` reports every distinct one so the
+         filter is a MEASUREMENT rather than a guess (#R320: a list that quietly cut something looks
+         exactly like a complete one). */
+      const sender = unesc(xmlOne(cap, "senderName")) || unesc(xmlOne(cap, "sender"));
+      senders.set(sender, (senders.get(sender) || 0) + 1);
+      if (cfg.sender && !cfg.sender.test(sender)) { drop.sender++; return; }
+      for (const info of capInfos(cap)) {
+        const cat = unesc(xmlOne(info, "category"));
+        cats.set(cat, (cats.get(cat) || 0) + 1);
+        const event = unesc(xmlOne(info, "event")) || pk.title;
+        const severity = unesc(xmlOne(info, "severity"));
+        if (cat && !CAP_HAZARD.test(cat)) { drop.category++; continue; }
+        if (/^unknown$/i.test(severity)) { drop.ungraded++; continue; }
+        const expires = xmlOne(info, "expires");
+        /* (#R383) issued ≠ in force — see `forceState`, and it is asked PER BAND */
+        const fs = forceState({ expires, onset: xmlOne(info, "onset"), effective: xmlOne(info, "effective") }, sent, now);
+        if (fs !== "live") { drop[fs]++; continue; }
+        const tier = SEV[severity] || 1;
+        /* the agency's own word for the rank, where it publishes one as a CAP <parameter> */
+        let acol = "";
+        for (const pm of xmlAll(info, "parameter")) {
+          if (/alert_color|awareness_level|colour|color/i.test(xmlOne(pm, "valueName"))) {
+            acol = unesc(xmlOne(pm, "value")).slice(0, 40); break;
+          }
         }
-      }
-      for (const a of xmlAll(cap, "area")) {
-        const name = unesc(xmlOne(a, "areaDesc"));
-        if (!name || AREA_SKIP.test(name)) continue;
-        const poly = xmlOne(a, "polygon");
-        const b = areas.get(name) || { name, tier: 0, events: [], poly: "", acol: "", sent: "" };
-        areas.set(name, b);
-        if (sent > b.sent) b.sent = sent;      /* (#R293) the agency's own issue time — see MeteoAlarm above */
-        if (tier > b.tier) { b.tier = tier; b.acol = acol; }
-        if (!b.poly && poly) b.poly = poly.replace(/\s+/g, " ").trim().slice(0, 20000);
-        if (event && !b.events.some((x) => x.event === event)) b.events.push({ event, severity, tier, acol });
-        rows.push({ area: name, event, headline: unesc(xmlOne(cap, "headline")).slice(0, 160),
-          tier, severity, acol, onset: sent, expires });
+        for (const a of xmlAll(info, "area")) {
+          const name = unesc(xmlOne(a, "areaDesc"));
+          if (!name || AREA_SKIP.test(name)) continue;
+          const poly = xmlOne(a, "polygon");
+          const b = areas.get(name) || { name, tier: 0, events: [], poly: "", acol: "", sent: "", by: [] };
+          areas.set(name, b);
+          if (sent > b.sent) b.sent = sent;    /* (#R293) the agency's own issue time — see MeteoAlarm above */
+          if (tier > b.tier) { b.tier = tier; b.acol = acol; }
+          if (!b.poly && poly) b.poly = poly.replace(/\s+/g, " ").trim().slice(0, 20000);
+          if (sender && b.by.indexOf(sender) < 0) b.by.push(sender);
+          if (event && !b.events.some((x) => x.event === event)) b.events.push({ event, severity, tier, acol, by: sender });
+          rows.push({ area: name, event, headline: unesc(xmlOne(info, "headline")).slice(0, 160),
+            tier, severity, acol, by: sender, onset: sent, expires });
+        }
       }
     } catch (_e) { /* one unreachable bulletin is not the whole country */ }
   }));
   return { source: cfg.source, fetchedAt: new Date().toISOString(),
     count: rows.length, warnings: rows.slice(0, 400),
     areas: [...areas.values()].sort((a, b) => b.tier - a.tier).slice(0, AREA_CAP),
-    areaTotal: areas.size, capTotal, capRead: Math.min(cfg.max, capTotal) };
+    areaTotal: areas.size, capTotal, capRead: Math.min(cfg.max, capTotal),
+    expired: drop.expired, upcoming: drop.upcoming, notSender: drop.sender,
+    notHazard: drop.category, ungraded: drop.ungraded, indexTotal,
+    senders: [...senders.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map((e) => e[0] + " ×" + e[1]),
+    cats: [...cats.entries()].sort((a, b) => b[1] - a[1]).slice(0, 16).map((e) => e[0] + " ×" + e[1]),
+    newest: newestSent };
 }
 
 
@@ -591,11 +738,14 @@ function summariseSWIC(raw, mid) {
   const j = JSON.parse(raw);
   const now = Date.now();
   const areas = new Map();
-  let total = 0, expired = 0, geomBytes = 0, geomDropped = 0;
+  let total = 0, expired = 0, geomBytes = 0, geomDropped = 0, newestSent = "";
   for (const f of (j.features || [])) {
     const pr = (f && f.properties) || {};
     const name = String(pr.areadesc || "").trim();
     if (!name) continue;
+    /* (#R383) the member's own newest issue time, so the app's freshness instrument reads THIS
+       service's clock and not the moment this relay happened to run — see `summariseMeteoAlarm` */
+    if (String(pr.sent || "") > newestSent) newestSent = String(pr.sent || "");
     /* an expired bulletin is not in force — the number the panel prints has to be current */
     const exp = Date.parse(String(pr.expires || ""));
     if (Number.isFinite(exp) && exp < now) { expired++; continue; }
@@ -628,7 +778,7 @@ function summariseSWIC(raw, mid) {
   }
   return { source: "WMO Severe Weather Information Centre", mid: String(mid),
     fetchedAt: new Date().toISOString(), count: total, expired,
-    areas: out, areaTotal: areas.size, geomDropped };
+    areas: out, areaTotal: areas.size, geomDropped, newest: newestSent };
 }
 
 Deno.serve(async (req) => {
