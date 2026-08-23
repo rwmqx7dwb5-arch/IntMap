@@ -398,7 +398,38 @@ const FILES = BODY.get('docs/FILES.md') || '';
         }
       });
     }
-    if (!problems.some((x) => x.startsWith('news-path'))) ok('news-path', 'USE_SERVER_NEWS=' + m[1] + ' and every document — the privacy policy included — describes that path');
+    /* ══ (#R386) …AND THE SECOND SWITCH, WHICH IS THE ONE THAT IS ON ═══════════════════════════
+       `USE_SERVER_NEWS` is the #R40 path (current_news, article-level) and it is still false.
+       `NEWS_EVENT_MODE` is the #R334/#R351/#R386 path (news_events, event-level) and it is TRUE —
+       the browser really does read a server-collected, server-stored news database now. A rule that
+       only knew about the first switch would go on saying "the policy describes that path" while
+       the policy said nothing about the path the reader is actually on. */
+    const em = body.match(/const\s+NEWS_EVENT_MODE\s*=\s*(true|false)/);
+    if (!em) fail('news-path', 'NEWS_EVENT_MODE is gone from js/app-body.js — this rule needs rewriting');
+    else {
+      const eventPath = em[1] === 'true';
+      const legal2 = has('js/legal-text.js') ? rd('js/legal-text.js') : '';
+      const CLAIMS_EVENTS = [
+        'The News tab now reads this event database by default',
+        'Newsタブは既定でこの出来事データベースを読んでいます',
+      ];
+      const CLAIMS_HIDDEN = [
+        'This event database is not shown anywhere in the app yet.',
+        'なおこの出来事データベースは、現在アプリの画面には表示していません。',
+      ];
+      const shown = CLAIMS_EVENTS.filter((c) => legal2.includes(c));
+      const hidden = CLAIMS_HIDDEN.filter((c) => legal2.includes(c));
+      if (eventPath && !shown.length) {
+        fail('news-path', 'NEWS_EVENT_MODE is true — the News tab reads news_events — but the privacy policy never says so');
+      }
+      if (eventPath && hidden.length) {
+        fail('news-path', 'the privacy policy still says the event database is not on screen ("' + hidden[0].slice(0, 40) + '…") while NEWS_EVENT_MODE is true');
+      }
+      if (!eventPath && shown.length) {
+        fail('news-path', 'the privacy policy says the News tab reads the event database while NEWS_EVENT_MODE is false');
+      }
+    }
+    if (!problems.some((x) => x.startsWith('news-path'))) ok('news-path', 'USE_SERVER_NEWS=' + m[1] + ' · NEWS_EVENT_MODE=' + (em ? em[1] : '?') + ' and every document — the privacy policy included — describes those paths');
   }
 }
 

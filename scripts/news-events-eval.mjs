@@ -15,6 +15,7 @@
  *      node scripts/news-events-eval.mjs --cache <p> --dump 3     # n>=3 の塊を全部出す（目視用）
  *      node scripts/news-events-eval.mjs --cache <p> --json <p2>  # 全結果を JSON で
  *      node scripts/news-events-eval.mjs --from-db --dump 3       # **本番が実際に作った Event** を読む
+ *      node scripts/news-events-eval.mjs --from-db --link          # `link` 段が**何を結ぶか**を、結ぶ前に読む
  *
  *  ⚠ `--from-db` は「もう一度計算し直した結果」ではなく **本番の表そのもの**を測る。
  *    パイプラインの検算（同じ入力で同じ答えが出るか）は上の経路、**出荷されている物の
@@ -31,9 +32,9 @@ import { dirname } from 'node:path';
 import '../supabase/functions/_shared/newsgeo.js';
 import {
   parseFeed, buildRegistry, toArticleRow, buildCandidateIndex, attachEvent,
-  placeArticle, summariseEvent, clusterConfidence,
+  placeArticle, summariseEvent, clusterConfidence, eventPairCandidates, eventsAgree, INDEX,
 } from '../supabase/functions/_shared/news-ingest.js';
-import { buildIdf, tokenise } from '../supabase/functions/_shared/news-cluster.js';
+import { buildIdf, tokenise, DEFAULTS } from '../supabase/functions/_shared/news-cluster.js';
 
 const SUPA = 'https://vpekfwdpurzejrrmacac.supabase.co';
 const ANON = 'sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0';
@@ -151,6 +152,39 @@ if (flag('--from-db')) {
       line2('   代表: ' + e.representative_title);
       for (const m of e._members) line2('     · [' + m.source_id + '] ' + m.title);
     }
+    line2('');
+  }
+  /* ── `link` 段の空撃ち（Phase C）────────────────────────────────────────
+     ⚠⚠⚠ **結ぶ前に読む。** 塊どうしを結ぶ操作は、間違えると #R76 の 43 件クラスタと
+       同じ壊れ方を**本番の表の上で**作る。`docs/NEWS-EVENTS.md` §13 が「実装前に
+       baseline を測り、実装後も同じ corpus で比較する」と決めているのはこのためである。
+     ⚠ ここが呼ぶのは Edge Function が呼ぶのと**同じ 2 つの関数**
+       （`eventPairCandidates` / `eventsAgree`）。測るものと動くものを別にしない。 */
+  if (flag('--link')) {
+    const membersOf = new Map();
+    for (const e of list) if (e._members.length) membersOf.set(e.id, e._members);
+    const idf = buildIdf(articles.map((a) => ({ title: a.title })));
+    const cands = eventPairCandidates(membersOf, idf, INDEX, Number(val('--link-cap', 400)));
+    const titleOf = (id) => (byEvent.get(id) || {}).representative_title || '?';
+    let would = 0;
+    line2('── `link` 段の空撃ち — 候補 ' + cands.length + ' 対 / Event ' + membersOf.size + ' 件 ──');
+    line2('');
+    for (const c of cands) {
+      const ma = membersOf.get(c.event_a) || [], mb = membersOf.get(c.event_b) || [];
+      if (!ma.length || !mb.length) continue;
+      const v = eventsAgree(ma, mb, idf, DEFAULTS, null, INDEX.maxMembers);
+      if (!v.same) continue;
+      would++;
+      line2('MERGE  #' + c.event_a + ' (n=' + ma.length + ')  ←→  #' + c.event_b + ' (n=' + mb.length + ')' +
+            '   share ' + v.share + ' (' + v.matched + '/' + v.pairs + ')  w=' + c.weight +
+            (v.top ? '  via ' + v.top.code + ' j=' + v.top.j + ' geo=' + v.top.geo + (v.top.km == null ? '' : ' ' + v.top.km + 'km') : ''));
+      line2('   A: ' + titleOf(c.event_a));
+      for (const m of ma) line2('      · [' + m.source_id + '] ' + m.title);
+      line2('   B: ' + titleOf(c.event_b));
+      for (const m of mb) line2('      · [' + m.source_id + '] ' + m.title);
+      line2('');
+    }
+    line2('→ ' + would + ' 対が結ばれる（候補 ' + cands.length + ' 対のうち）');
     line2('');
   }
   if (JSONOUT) { mkdirSync(dirname(JSONOUT), { recursive: true }); writeFileSync(JSONOUT, JSON.stringify({ events: list, orphan }, null, 1)); line2('JSON → ' + JSONOUT); }

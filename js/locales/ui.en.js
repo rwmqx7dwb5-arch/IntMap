@@ -58,7 +58,7 @@ window.IntMapLang.define('en', { ui: {
       phAisKey:"aisstream.io API key",
       lnkTerms:"Terms of Service", lnkPrivacy:"Privacy Policy", legalTabTerms:"Terms", legalTabPrivacy:"Privacy", commAddImage:"Add image",
       tabNews:"News", tabSaved:"★ Saved", tabInfo:"Information", tabCompanies:"Companies", tabStats:"Countries",
-      searchPh:"Search news / places...", filterCountriesPh:"Filter countries...", filterCompaniesPh:"Filter companies...", pickCountryMap:"Pick a country on the map", searchBtn:"Search", searchLoadBtn:"Search / Load", loading:"Loading articles...",
+      searchPh:"Search news / places...", filterCountriesPh:"Filter countries...", filterCompaniesPh:"Filter companies...", evCatsAria:"Event categories", pickCountryMap:"Pick a country on the map", searchBtn:"Search", searchLoadBtn:"Search / Load", loading:"Loading articles...",
       noMatch:"No results found.", networkError:"Couldn't load the news. Retrying…",
       emptyHint:"No tab selected — the map is clear.<br>Pick a tab above to show content.",
       viewMap:"Map", viewSat:"Satellite", settings:"Settings", modalTitle:"Settings", close:"Close",

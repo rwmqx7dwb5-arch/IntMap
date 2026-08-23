@@ -452,12 +452,16 @@ test('⑰ the ingest migration only adds, and it grants the writer explicitly', 
 });
 
 /* ── ⑱ 段は 4 つあり、どれも名前で選べる ────────────────────────────────── */
-test('⑱ the four stages exist and are individually runnable', () => {
+test('⑱ the stages exist and are individually runnable', () => {
   const fn = rd('supabase/functions/news-ingest/index.ts');
-  for (const s of ['fetch', 'assign', 'translate', 'prune']) {
+  /* ⚠ (#R386) SIX now: `embed` (make the material for the second, semantic pass) and `link`
+     (join clusters that have already grown into each other) joined the four. The ORDER is the
+     subject of the assertion below, not just the membership — `embed` before `assign` (nothing
+     to add without embeddings) and `link` after it (so events created this run are in scope). */
+  for (const s of ['fetch', 'embed', 'assign', 'link', 'translate', 'prune']) {
     assert.ok(fn.includes('stage' + s[0].toUpperCase() + s.slice(1)), 'stage ' + s + ' is missing');
   }
-  assert.match(fn, /\["fetch", "assign", "translate", "prune"\]/);
+  assert.match(fn, /\["fetch", "embed", "assign", "link", "translate", "prune"\]/);
   /* 計測は docs/NEWS-EVENTS.md §13 の置き場へ入る。 */
   assert.match(fn, /news_ingest_runs/);
   assert.match(fn, /estimated_cost_usd/);

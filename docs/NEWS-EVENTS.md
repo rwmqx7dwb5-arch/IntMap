@@ -191,6 +191,14 @@ Registry が持つ列は §4 の `news_sources` を見ること。**`independent
    全 Event と総当たりしない（#R76 は 600件で 179,700 ペアを回していた）。
 2. **embedding** — pgvector の ANN で言い換えを拾う。決定論トークンでは
    「Walmart 決算」と「Walmart が Apple Pay 対応」を分けられても、言い換えは拾えない。
+   ⚠⚠⚠ **この段は実装されているが、現在の鍵では 1 本も動かない。** 実測 (2026-08-24):
+   `text-embedding-3-small` は **403 `model_not_found`**（"Project … does not have access to
+   model"）で、`GET /v1/models` は**このプロジェクトに 1 件しか返さず**、その 1 件は埋め込み
+   モデルではない。⇒ `news-ingest` の `embed` 段は ① 何を頼んだか (`configured_model`)、
+   ② 鍵が何に届くか (`available_embedding_models`)、③ 何が起きたか (`error`) を**応答と
+   `news_ingest_runs` の両方に**出して止まる。埋め込みモデルに届く鍵が入った日に、
+   `NEWS_EMBED_MODEL` を設定するだけで動き出す。
+   ⚠ **だから recall の段を埋め込みだけに依存させてはならない**（§5.5）。
 3. **LLM** — **中間帯だけ**。返答は JSON schema・候補IDの実在・時刻整合・地理整合を
    サーバー側で検証してから採る。モデルの返答だけで確定しない。
 
@@ -218,7 +226,42 @@ A–B と B–C が近くても A–C が別事件のことがある。edge を�
 から外して自分の Event へ移す（`findOutlier` / `placeArticle`）。実測: 上の例では
 **SDI が外れ、残る 3 本は残った**。1 回の取り込みで外れるのは 3〜4 件。
 ⚠ 一度に 1 人だけ、かつ残りが 2 件を下回るなら外さない——全員が弱く結ばれた塊は
-「誰が余計か」を言えないので、判断は Phase C の review queue に残す。
+「誰が余計か」を言えないので、判断は §11 の review queue に残す。
+
+### 5.5 塊どうしを結ぶ (`link` 段・Phase C)
+
+⚠⚠⚠ **新着に候補を足すだけでは、すでに分かれた塊は永久に分かれたままである。**
+§13.1 が recall の代表例として挙げたカナダ・米国の関税（1 日で 5 つの Event）は、
+どれも**既存の** Event なので `assign` の候補生成からは触れない。
+
+候補の入口は 2 つあり、**片方は鍵を必要としない**:
+
+| 入口 | 何を見るか | 使えるか |
+|---|---|---|
+| 珍しい語の共有（`eventPairCandidates`） | Event ごとの語の和集合を転置索引にし、IDF 質量の大きい対から見る | **常に使える** |
+| embedding の近傍（`news_event_link_candidates`） | メンバーどうしの cos が高い Event 対 | 鍵が埋め込みモデルに届くときだけ |
+
+**判定は `eventsAgree` 1 本**で、規則は `assign` と同じ——交差する対のうち
+`transitivity`（34%）以上が「同じ」と言えば同じ出来事である。**新しい推移の規則を作らない。**
+
+⚠⚠⚠ **ただし割合だけでは足りない。** 分母が小さいと 1 本の辺で満たされる——#R351 が
+`findOutlier` で踏んだ「メンバー 1 件の Event では推移の検算が必ず満たされる」の、塊どうし版
+である。実測 (2026-08-24・本番 898 Event) で空撃ちした 17 対を 1 件ずつ人が読んだ結果:
+
+| 規則 | 結ばれる対 | 誤り |
+|---|---|---|
+| `share ≥ transitivity` だけ | 17 | **2**（「インディアナ 11 日間の停電」←→「バルト海の暴風雨で 2 人死亡」／「イスラエルがヒンド・ラジャブ殺害を調査」←→「ガザ中部で 4 歳児ら 3 人殺害」） |
+| ＋ `matched ≥ linkMinMatched`（3） | **8** | **0** |
+
+⇒ `DEFAULTS.linkMinMatched = 3`。⚠ 落ちた 7 対は失われるのではない——通った 8 対が塊を
+大きくするので、**次の run では同じ相手に対する対の本数が増えて条件を満たす**。この段は
+1 回で終える仕事ではなく、run をまたいで収束する仕事である。
+
+⚠ `manual_lock` の Event は機械が動かさない。生き残るのは記事の多いほう（同数なら古いほう）で、
+代表見出し・地点・分類は次の取り込みで塊全体から選び直される。
+⚠ 統合は `news_event_merge_into(source, target, actor := null, note)` を通る——**人が呼ぶ口と
+同じ 1 本**で、`actor` が null の行が機械の操作である。だから `manual_lock` を立てない
+（機械が立てると、その Event は以後どの取り込みでも更新できなくなる）。
 
 ### 5.4 増分の候補生成（本番が通る経路）
 
@@ -343,41 +386,104 @@ merge redirect と split 履歴は消さない。
   `.news-pub` / `.btn-read`（画像・要約は無い）
 - 地図のピンは **140件**（source `news-points`、layer `news-pulse` / `news-dots` / `news-labels`）
 
-**Event card は `.news-item` を発展させる。** 上段＝代表地点＋`Updated …`、中段＝代表見出し、
-下段＝代表媒体2〜3件＋`N sources`、右上＝★。カード全体は代表地点へ fly（現行どおり）。
-`N sources` が同じ News surface 内で Event detail を開く。
+**Event card は `.news-item` を発展させた**（`js/news-events.js` の `decorate()`）。
+新しいカードは無く、既存の `.news-item` に足すのは 3 つだけ——カテゴリ・`Updated` の印・
+`N sources`。カード全体は代表地点へ fly（現行どおり）。`N sources` が
+**同じ News surface 内で**（既存の `#news-reader-pane`）Event detail を開く。
 
-**カテゴリ chips** は `All/Saved | Subject/Publisher` の**下に横スクロールの1行**として足す。
-一覧と地図へ同時に適用する。
+**カテゴリ chips** は `All/Saved | Subject/Publisher` の**下に横スクロールの1行**
+（`#news-cat-chips`）。⚠ **0 件のカテゴリは出さない**——押せない chip は嘘である。
+⚠ 一覧と地図へ同時に適用される。これは規律ではなく**構造**で、述語は
+`IntMapNewsEvents.passes()` 1 本しかなく、`computeFilteredNews()` がそれを呼び、
+ピンはその戻り値から作られる。片方だけに効く状態を作れない。
 
-**正直に出すもの**: 場所不明・低確度・処理中・stale・source failure・partial。
+**Event detail が出すもの**（すべて機械的に検証できる事実だけ）:
+
+- 代表地点・カテゴリ・代表見出し（`jp` では訳、原文も添える）
+- **初出と最新**、経過時間
+- **Coverage** — どの媒体がいつ何と書いたか。初報に印、**同一系列の 2 本目には「同系列」**の印
+- **媒体間で食い違っている数量** — §9.1
+- **この出来事の組み立て方** — 決定論で束ねたこと、独立媒体を資本系列で数えていること、
+  分類を決めた段、運用者が固定したか、地点が特定できたか
+
+**正直に出すもの**: 場所不明・低確度・stale・fallback。
 ⚠ 実測で現行は **140件中 31〜35件（22〜25%）が「場所不明」**で、海の上にばらまかれている。
+Event 側では `state().unplacedCount` がそれを数え、詳細は「地点は特定できていない」と書く。
+
+### 9.1 「媒体ごとの主張や数値が異なる場合、その相違を保持して表示できる」
+
+⚠⚠⚠ **バイアス評価はしない**（§15）。出すのは**原文にそのまま書いてある数量**だけで、
+IntMap は「どちらが正しいか」を言わない。「両者はこう言っている」だけを言う。
+
+- 取り出す種類は 5 つ——死者 / 負傷者 / 行方不明 / 金額 / 割合（`NUM_KINDS`）。
+- ⚠ **相違と呼ぶのは、別々の `source_family` が別々の値を言ったときだけ。**
+  同じ系列の速報 3 人 → 続報 5 人は**更新**であって相違ではない。
+- 表示は原文の断片そのままと出典名。要約も言い換えもしない。
 
 ---
 
 ## 10. Atlas
 
-- capability は **既存の Registry 1本**（`js/atlas-capabilities.js`）に足す。第二の表を作らない。
-- **news feed の state provider は現在0件**。Event 用に1つ登録する
-  （selected event id / selected category / visible event count / visible pin count /
-  freshness / source failure count / fallback mode / processing state）。
-- `research.events` は**新パイプラインへ載せ替える**。第二のクラスタリング実装を残さない。
-- 「表示した」「選んだ」「描いた」は**実状態を観測してから**名乗る（`produces-observed`）。
+- capability は **既存の Registry 1本**（`js/atlas-capabilities.js`）に足した:
+  **`news.category`**（`legacy: newsCategory`・target `text`・produces `panel,map`・
+  lazy `newsEvents`）。⚠ `lazy` 列は `js/lazy-modules.js` に実在する id でなければならない
+  （#R347 が 4 件の「存在しない lazy を名指した行」を測っている）。
+- **state provider `news`** を `js/atlas-state.js` に登録した。⚠ 答えは 3 通りある——
+  出来事モード / 記事モード / そもそも一覧が無い。**`null` は 3 つ目だけ**で、2 つ目を null に
+  すると「News が無い」と「News が記事単位である」が見分けられなくなる。
+  出す事実: `mode` / `selectedEventId` / `selectedCategory` / `visibleEventCount` /
+  `loadedEventCount` / `visiblePinCount` / `unplacedCount` / `multiSourceCount` /
+  `categories` / `freshestArticleAt` / `loadedAt` / `savedCount` / `lastError`。
+- `research.events` は**新パイプラインへ載せ替えた**。出来事モードでは
+  `HOST.globalData` の `_event` を**そのまま**使い、**ブラウザ側で束ね直さない**
+  ——再計算するとブラウザに載っている 200 件しか見ないので、窓全体（1,163 件）を見た
+  サーバーの答えより必ず悪くなる。記事モードの経路（`groupNewsEvents`）はそのまま残る。
+- 「表示した」「選んだ」「描いた」は**実状態を観測してから**名乗る（`produces-observed`）——
+  `news.category` は絞った結果の件数とピンの本数を state provider から読み、
+  0 件なら `NO_RESULTS`、ピンが 0 なら `partial` を立てる。
 
 ---
 
 ## 11. 運用者の修正
 
-`admin.html` に **News Events タブ**を1枚追加する。
+`admin.html` に **News Events タブ**を1枚追加した（3 つの面: Review queue / All events /
+Operator log）。
 
-low-confidence 待ち行列 / Merge / Split / Reassign / 代表見出し・地点・カテゴリの変更 /
-reviewed Event の自動更新ロック / undo / 監査証跡 / 分類器の再実行。
+- **Review queue** = 機械が最も自信の無いもの。⚠ 単独記事の Event は判定が 1 本も走って
+  いないので確度を並べても意味が無い——`article_count ≥ 2` かつ未 review に絞り、
+  `cluster_confidence` の低い順に出す。
+- **Merge**（Event を 2 つ選ぶ）/ **Split**（記事を選んで新しい Event へ）/
+  **Reassign**（記事を選んで既存の Event へ）/ **代表見出し・カテゴリ・地点の上書き** /
+  **Lock** / **Undo**。
+- 運用者には score・`assigned_by`・件数・独立媒体数・確度・地点・分類を決めた段を見せる。
 
-運用者には **score・共有 entity・相違 entity・地理距離・時間差・トークン類似・embedding 類似・
-モデルの判断・source family・記事の時刻**を見せる。自動化が間違った理由を隠さない。
+⚠⚠⚠ **どの操作も SECURITY DEFINER の RPC 1 本を通る。表を直接 UPDATE しない。**
+1 回の操作が `news_event_articles` の付け替え・`merged_into`・件数の再計算・監査の書き出しの
+4 つに分かれるので、途中で失敗すると**どの表も嘘をつく**。
 
-⚠ **書き込み権限はまだ配っていない**（#R351 時点でも service_role だけ）。使う相手が無いうちに
-配ると、誰も試していない権限が本番に居座る。⇒ 権限は §11 の UI と**同じ変更で**足す。
+| RPC | すること |
+|---|---|
+| `news_event_merge(source, target, note)` | 人の merge（`news_event_merge_into` を admin 確認のうえ呼ぶ） |
+| `news_event_merge_into(source, target, actor, note)` | 機構そのもの。`actor` が null なら機械（`link` 段） |
+| `news_event_reassign(article_ids, target, note)` | `target` が null なら split |
+| `news_event_update_meta(event, title, category, lng, lat, place, clear_location, lock, note)` | 上書き。**override の旗も立てる**（値だけ書くと次の run が黙って戻す） |
+| `news_event_undo(action)` | `news_event_admin_actions` の 1 行を、**その操作が変えたものだけ**戻す |
+| `news_event_recount(event)` | 件数と独立媒体数（`source_family` 単位）の再計算 |
+
+⚠⚠⚠ **`public.is_admin()` を呼んではならない。** リポジトリの baseline はその名前の
+**引数なし**の関数を宣言しているが、**本番に在るのは `public.is_admin(uid uuid)` だけである**
+（2026-08-24 実測）。#R334 の migration が本番に通ったのは、述語をインラインで書いていたから
+である。⇒ 上の RPC はどれも
+`exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.is_admin)`
+を自分で確かめる。grant は「呼べる」であって「やってよい」ではない。
+
+⚠ **`news_articles` と `news_cluster_decisions` は admin にも書かせない**（§4）。上の RPC は
+どちらの表も UPDATE しない。運用者が直すのは「どの記事がどの Event に属するか」だけである。
+
+⚠ 監査証跡は `news_event_admin_actions`。`before` は**元に戻すのに要るものだけ**を持つ——
+表全体の写しを復元すると、その後の取り込みで増えた記事まで巻き戻る。
+⚠ `actor` / `reverted_by` に `auth.users` への FK を張らない（`news_events.reviewed_by` と
+同じ理由。§4）。
 ⚠ ただし**尊重する側はもう実装されている**——`news-ingest` は `manual_lock` が立つ Event の
 代表・分類・地点を上書きせず、観測された事実（件数・時刻）だけを更新する。
 `category_override` / `location_override` も個別に効く。
@@ -386,20 +492,31 @@ reviewed Event の自動更新ロック / undo / 監査証跡 / 分類器の再�
 
 ## 12. 段階導入
 
-| Phase | 中身 | UI への影響 |
+| Phase | 中身 | UI への影響 | 状態 |
+|---|---|---|---|
+| **A** | 現状監査・#R76 検証・source matrix・設計文書・費用見積 | 無し | **完了** |
+| **B** | migrations・Source Registry・記事の正規化・Event パイプライン・カテゴリ・翻訳・計測・保持 | 無し（article mode のまま・shadow） | **完了** |
+| **C** | `link` 段による recall・admin 待ち行列・merge/split/reassign/undo・閾値の実測 | 無し | **完了**（embedding の段は実装済み・鍵が届かない。§5.2） |
+| **D** | `articles / events` の dual-read・Event card・chips・ピン・detail・検索・★ | 出来事の一覧になる | **完了** |
+| **E** | Capability・state provider・observed な produces・research 証拠・本番 smoke → 既定へ | 既定切替 | **完了** |
+
+⚠⚠⚠ **スイッチは 2 つあり、別物である。**
+
+| 旗 | 何の経路か | 現在 |
 |---|---|---|
-| **A** | 現状監査・#R76 検証・source matrix・設計文書・費用見積 | 無し（完了） |
-| **B** | migrations・Source Registry・記事の正規化・Event パイプライン・カテゴリ・翻訳・計測・保持 | **無し**（article mode のまま・shadow・**完了**） |
-| **C** | ラベル付き corpus・admin 待ち行列・merge/split・閾値調整・保持と費用の実測 | 無し |
-| **D** | `articles / events` の dual-read フラグ・Event card・chips・ピン・detail・検索・保存 | **フラグの裏** |
-| **E** | Capability・state provider・observer/verifier・research 証拠・本番 smoke → 既定へ | 既定切替 |
+| `USE_SERVER_NEWS` | #R40 で止めた `current_news`（記事単位・出来事の概念なし） | **false のまま** |
+| `NEWS_EVENT_MODE` | `news_events`（永続 Event・カテゴリ・Source Registry・増分・merge/split） | **true** |
 
 ⚠ **`USE_SERVER_NEWS=true` に切り替えて完了としてはならない。** 旧 server feed は記事単位で、
 永続 Event・カテゴリ・Source Registry・増分更新・merge/split・品質指標・費用指標を持たない。
 ⚠ **経路を変えたら同じ変更でプライバシーポリシー（`js/legal-text.js`）を直す。**
-`scripts/doc-facts.mjs` §15 がこの一致を機械的に検査している。
-⚠ #R351 でポリシー §4 を直した——**UI の経路は変わっていないが、サーバーが記事を保存する
-事実が増えた**。`USE_SERVER_NEWS` は false のままである（＝閲覧者が見るのは今もブラウザ経路）。
+`scripts/doc-facts.mjs` §15 がこの一致を機械的に検査しており、**2 つの旗の両方を見る**
+（`NEWS_EVENT_MODE` が true なのにポリシーが「画面には出していません」と書いていたら赤）。
+
+⚠ **落ちる先がある。** `IntMapNewsEvents.load()` が false（DB が無い・表が空・失敗）なら
+記事モードへ落ちる。そして **検索・過去の日付（時間旅行）・多言語モードは最初から記事モード**
+である——収集が英語のみ・保持が 72 時間・カテゴリが Event 単位、という前提の外にあるので、
+Event 経路はそこで答えを持たない（§2 の決定 2 と §8）。
 
 ---
 
@@ -408,12 +525,18 @@ reviewed Event の自動更新ロック / undo / 監査証跡 / 分類器の再�
 **Edge Function 1 本**（`supabase/functions/news-ingest/`。9 本目）。論理は
 `_shared/news-ingest.js`（サーバー専用。`tests/r351-checks ⑮` が `js/` と `src/` からの参照を禁じる）。
 
-| 段 | すること | 実測 (2026-08-23・本番) |
+| 段 | すること | 実測 |
 |---|---|---|
-| `fetch` | 32 フィード取得 → 正規化 → 媒体の帰属 → 地点 → `news_articles` へ upsert | 3.5〜3.8 s・32/32 稼働・1,367 件 → 779 行 |
-| `assign` | 未割り当ての記事を候補 Event へ増分で載せる（§5.4） | 冷 1.0 s / 779 本、定常 0.5 s / 4 本 |
-| `translate` | 代表見出しを ja へ（§7） | 80 件 / 約 27 s / 約 $0.019 |
-| `prune` | 記事 72 h・Event 30 d・判定 30 d・★は無期限（§8） | 0.1 s |
+| `fetch` | 32 フィード取得 → 正規化 → 媒体の帰属 → 地点 → `news_articles` へ upsert | 3.5〜3.8 s・32/32 稼働・1,367 件 → 779 行 (08-23) |
+| `embed` | 埋め込みの無い記事を埋める（§5.2） | **0 件**。鍵が埋め込みモデルに届かない (08-24)。理由は応答に出る |
+| `assign` | 未割り当ての記事を候補 Event へ増分で載せる（§5.4） | 冷 1.0 s / 779 本、定常 0.5 s / 4 本 (08-23) |
+| `link` | 意味の近い Event 対を `eventsAgree` で結ぶ（§5.5） | 2.0 s・候補 120 対 → **5 件統合**（898 → 893 Event）(08-24) |
+| `translate` | 代表見出しを ja へ（§7） | 80 件 / 約 27 s / 約 $0.019 (08-23) |
+| `prune` | 記事 72 h・Event 30 d・判定 30 d・★は無期限（§8） | 0.1 s (08-23) |
+
+⚠ 段の**順序は関数が決める**（`ORDER`）——`embed` は `assign` より前（埋め込みが無ければ
+第 2 段は何も足せない）、`link` は `assign` より後（新しくできた Event も対象にする）。
+body で並べ替えても順序は変わらない。
 
 - **POST のみ・`x-news-ingest-secret` ヘッダのみ・定数時間比較・fail-closed**
   （secret 未設定なら 503。実測で確認: 未設定 503 / 誤り 401 / GET 405）。
@@ -425,8 +548,11 @@ reviewed Event の自動更新ロック / undo / 監査証跡 / 分類器の再�
 
   | job | 間隔 | body |
   |---|---|---|
-  | `news-ingest-tick` | `*/20 * * * *` | `{"stages":["fetch","assign","prune"]}` |
+  | `news-ingest-tick` | `*/20 * * * *` | `{"stages":["fetch","assign","link","prune"]}` |
   | `news-ingest-translate` | `7 * * * *` | `{"stages":["translate"]}` |
+
+  ⚠ `embed` は cron に入れていない——**入れても 0 件で終わる**（鍵が届かない。§5.2）。
+  届く鍵が入ったら `news-ingest-tick` の body に足す。それだけで動き出す。
 
   ⚠ **翻訳だけ間隔が違うのは、そこだけが有料だからである**（利用者の判断。§14.1）。
   間隔を伸ばすと安くなるのは、**1 時間のあいだに代表見出しが 2 度変わっても 1 回しか払わない**からで、
@@ -485,6 +611,25 @@ embedding の仕事で、**Phase C**（§5.2 の第 2 段）。⚠ **ANN index �
 ⚠ **この数字は 1 日分の窓（72 時間）で測った 1 回の観測である。** 同じ測り方を繰り返せる
 ように、測定器は `scripts/news-events-eval.mjs` として残してある。
 
+### 13.2 Phase C の実測 (2026-08-24)
+
+**測り方**: `node scripts/news-events-eval.mjs --from-db --link` は、本番の表をそのまま読んで
+`link` 段が**何を結ぶか**を、**結ぶ前に**印字する。⚠ 呼ぶのは Edge Function が呼ぶのと同じ
+2 つの関数（`eventPairCandidates` / `eventsAgree`）で、測るものと動くものを別にしない。
+
+| 指標 | 実測 | 母数 |
+|---|---|---|
+| 着手時 | **記事 1,163 / Event 898**・圧縮 1.3 倍・最大 11 | — |
+| 空撃ちで出た対 | 17 | 候補 400 対 |
+| **人が読んだ判定** | **15 正 / 2 誤（88.2%）** | 17 対すべて |
+| `linkMinMatched = 3` を入れた後 | **8 対・誤り 0（100%）** | 同じ 17 対 |
+| 本番で実際に統合された | **5 件**（連鎖で 8 対が 5 操作になる） | 898 → 893 Event |
+| 米加関税の 5 分割（§13 の recall 例） | **5 → 2 Event**（n=14/8 媒体 と n=12/7 媒体） | — |
+| `embed` 段 | **0 件**・403 `model_not_found`・鍵が到達できるモデルは全部で 1 件 | 1,163 件が pending |
+
+⚠ 結んだ 5 件の中身は、カナダ・米国の貿易戦争 3 件・北京の人型ロボット競技会・
+ソウル株式市場の同日場中と引け。**どれも 1 つの出来事である。**
+
 ---
 
 ## 14. 費用（実測ベース）
@@ -502,8 +647,8 @@ embedding の仕事で、**Phase C**（§5.2 の第 2 段）。⚠ **ANN index �
 | 項目 | 実測 | 1 か月換算（見込み） |
 |---|---|---|
 | 日本語訳 | **620 Event で $0.154**（37,000 in / 27,000 out tok・$0.00025/Event） | **約 $4.6** |
-| embedding | 0（Phase C） | — |
-| LLM 判定 | 0（Phase C） | — |
+| embedding | **$0**——鍵が埋め込みモデルに届かないので 1 トークンも使っていない（§5.2） | 届く鍵が入れば $0.10〜0.20 の見込み |
+| LLM 判定 | 0（`link` 段は決定論だけで動いている。§5.5） | — |
 | 収集・割り当て・保持 | Supabase の実行時間だけ（外部課金なし） | — |
 | **合計（現状）** | | **約 $5**（上限 $50） |
 

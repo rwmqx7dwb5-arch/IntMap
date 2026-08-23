@@ -407,7 +407,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      * would be the pre-#R198 table forever. */
     get AI_FREE_DAILY(){ return AI_FREE_DAILY; }, get BUILTIN_GAZETTEER(){ return window.IntMapGazetteer.index(); },
     get SAT_PROVIDERS(){ return SAT_PROVIDERS; },
-    get SNAP_PX(){ return SNAP_PX; }, get USE_SERVER_NEWS(){ return USE_SERVER_NEWS; },
+    get SNAP_PX(){ return SNAP_PX; }, get USE_SERVER_NEWS(){ return USE_SERVER_NEWS; }, get NEWS_EVENT_MODE(){ return NEWS_EVENT_MODE; }, get newsSurfaceMode(){ return newsSurfaceMode; },
     get _DEMONYM_GZ(){ return _DEMONYM_GZ; }, get _DEM_CACHE_MAX(){ return _DEM_CACHE_MAX; },
     get _ORG_GZ(){ return _ORG_GZ; }, get _pubMatchers(){ return _pubMatchers; },
     get _spreadDupNewsPins(){ return _spreadDupNewsPins; }, get _stabIdx(){ return _stabIdx; },
@@ -2160,12 +2160,18 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }
   function computeFilteredNews(){ const q=searchVal(), at=window._newsAreaTest;
     const ageCut=(currentMode==='saved'||newsDate)?0:(Date.now()-NEWS_MAX_AGE_MS);
-    const base=(currentMode==='saved'&&window.IntMapNewsSaved)?window.IntMapNewsSaved.merge(globalData,bookmarks):globalData;   /* (#R210) ★ Saved is no longer only what the LIVE feed still carries — see js/news-ui.js */
-    return base.filter(it=>{ if(currentMode==='saved'&&!bookmarks.includes(it.link))return false;
+    /* (#R210) ★ Saved is no longer only what the LIVE feed still carries — see js/news-ui.js
+       ⚠ (#R386) …and the article snapshot is never poured into an EVENT surface (link-keyed, no `_event`).
+       ⚠ (#R386) Event mode の違いは★の在り処・検索の当たる範囲・カテゴリの3つだけで、記事モードの述語は1ビットも変わらない。 */
+    const base=(currentMode==='saved'&&window.IntMapNewsSaved&&newsSurfaceMode()!=='events')?window.IntMapNewsSaved.merge(globalData,bookmarks):globalData;
+    const EV=()=>{ try{ return window.IntMapNewsEvents; }catch(_){ return null; } };
+    const starred=(it)=>it._event ? !!(EV()&&EV().isSaved(it._event.publicId)) : bookmarks.includes(it.link);
+    return base.filter(it=>{ if(currentMode==='saved'&&!starred(it))return false;
       if(ageCut&&it.pubDate){ const pd=parseDate(it.pubDate).getTime(); if(pd&&pd<ageCut) return false; }
       /* (#R207) …except in Saved: the user kept that item deliberately (as with the age cut). */
-      if(currentMode!=='saved'&&!newsSourceAllows(it.publisher)) return false;
-      if(q&&!it.title.toLowerCase().includes(q))return false; if(at){ const a=it.analysis, c=a&&a.loc; if(!c||!at(c[0],c[1])) return false; } return true; }); }
+      if(currentMode!=='saved'&&!it._event&&!newsSourceAllows(it.publisher)) return false;
+      if(it._event&&EV()&&!EV().passes(it)) return false;
+      if(q&&!(it._search||it.title.toLowerCase()).includes(q))return false; if(at){ const a=it.analysis, c=a&&a.loc; if(!c||!at(c[0],c[1])) return false; } return true; }); }
   /* Title shown on a news card. When the translation pass (Settings → multi-language) has
      produced a translated title in the current UI language, show it plus a '(原文: …)' note. */
   function newsTitleHTML(item){
@@ -2462,6 +2468,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      re-enable the pre-analysed server feed. The realtime current_news subscription is gated on the same flag. */
   const USE_SERVER_NEWS = false;
   window.__IM_USE_SERVER_NEWS = USE_SERVER_NEWS;
+  /* (#R386) EVENT MODE — `news_events` の経路。⚠ すぐ上の `USE_SERVER_NEWS` とは**別のスイッチ**で、
+     二つが別物である理由と記事モードへ落ちる条件は docs/NEWS-EVENTS.md §12。`newsSurfaceMode()` は
+     旗ではなく**中身**に訊く（「そのつもり」ではなく実際に何が入っているか。Atlas と本番検証が読む）。 */
+  const NEWS_EVENT_MODE = true; window.__IM_NEWS_EVENT_MODE = NEWS_EVENT_MODE;
+  function newsSurfaceMode(){ try{ return (globalData||[]).some(x=>x&&x._event) ? 'events' : 'articles'; }catch(_){ return 'articles'; } }
+  window.__IM_NEWS_SURFACE = newsSurfaceMode;
   /* (#R169) moved verbatim to js/news-feed.js — see Architecture.md §3.1. */
 
   /* ===== Search =====

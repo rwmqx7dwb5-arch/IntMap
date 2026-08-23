@@ -77,10 +77,50 @@ export const DEFAULTS = {
   },
   /* 珍しさの絶対量。頻出語だけで上の率を満たしても結ばない。 */
   minInterWeight: { tight: 3.2, near: 4.0, countrySame: 4.8, countryNear: 4.8, unknown: 5.6, far: 5.6 },
+  /* ── 第4の入口: embedding の意味的類似（Phase C・docs/NEWS-EVENTS.md §5.2）─────────
+   * ⚠ これも**緩和ではない**。上の 3 つは「同じ語を使っているか」を訊いており、これは
+   *   「同じことを言っているか」を訊く**別の質問**である。#R76 の 0.06 は同じ質問の
+   *   答えを甘くしたので壊れた。
+   * ⚠ **時間の窓と geo クラスは通したまま。** 埋め込みは語の門を代替するのであって、
+   *   地理と時刻の門を代替しない——それをやると #R76 と同じ失敗に別の道から着く。
+   * ⚠ `far` は **null＝この入口を閉じる**。地理が食い違うのに意味だけが近い対は、
+   *   まさに「まとめ記事が橋になる」形（#R351 実測: PODCAST がカナダ関税とソマリア
+   *   海賊をつないだ）で、embedding はその橋を**より通しやすくする**側に働く。
+   * ⚠ 数字は実測で決めた。本番 1,150 記事に text-embedding-3-small を掛け、
+   *   すでに同じ Event にいる対（正）と、#R351 が人手で読んで誤りと判定した 5 対（負）、
+   *   および別々の Event にいる無関係な対の cos 分布を読んだ。§13.2 に表がある。 */
+  embed: {
+    tight: 0.62, near: 0.64, countrySame: 0.70, countryNear: 0.70, unknown: 0.74, far: null,
+  },
+  /* embedding の入口を通るときも、共有する実語を最低これだけ求める。
+   * ⚠ 0 にすると「同じ話題の別の出来事」（利回りの解説と国債の監視、外相の訪問 2 件）が
+   *   通る。実測でこの 2 例はどちらも共有語 1 語以下だった。 */
+  embedMinOverlap: 2,
   /* 塊どうしを結ぶとき、対の何割が「同じ」と言えば結んでよいか。
    * ⚠ A-B と B-C が近くても A-C が別事件のことがある。#R76 は素の Union-Find で推移を
    *   無条件に信じたので、43 件の塊ができた。 */
   transitivity: 0.34,
+  /* ⚠⚠⚠ **塊どうしを結ぶときは、合致した対が何本あるかも見る**（Phase C の `link` 段）。
+   *   `transitivity` は割合なので、**分母が小さいと 1 本の辺で満たされてしまう**
+   *   ——#R351 が `findOutlier` で踏んだ「メンバー 1 件の Event では推移の検算が
+   *   必ず満たされる」の、塊どうし版である。1 対 1 の塊なら share は必ず 1.00 になる。
+   *
+   *   ⚠ 数字は実測で決めた。2026-08-24 の本番（Event 898・記事 1,163）に対して
+   *   `--link` を空撃ちし、出た **17 対を 1 件ずつ人が読んだ**:
+   *
+   *     しきい無し（share だけ）  17 対中 **15 正 / 2 誤**（88.2%）
+   *       誤 ①「インディアナ 11 日間の停電」←→「バルト海の暴風雨で 2 人死亡」
+   *          （share 0.5 = **1/2**・geo=unknown・`without power` の共有）
+   *       誤 ②「イスラエルがヒンド・ラジャブ殺害を調査」←→「ガザ中部で 4 歳児ら 3 人殺害」
+   *          （share 0.667 = **2/3**・geo=countryNear 55km・別々の事件）
+   *     matched >= 3            **8 対・誤り 0**（100%）
+   *
+   *   ⚠ 落ちた 7 対は「失われる」のではない。⇒ 通った 8 対が塊を大きくするので、
+   *     **次の run では同じ相手に対する対の本数が増え、条件を満たすようになる**。
+   *     この段は 1 回で終える仕事ではなく、run をまたいで収束する仕事である。
+   *     実測: 米加関税の 5 分割（#R351 が recall の代表例に挙げたもの）は
+   *     この 1 回で {899,916,977,980,1078} が 1 件に畳まれる。 */
+  linkMinMatched: 3,
   /* ⚠⚠⚠ **代表点しか持たない解決の一覧** (#R351)。
    *   #R334 はこれを `country` だけだと思っていた。実データで動かしたら、同じ穴が
    *   **組織**で開いていた——IntMapNewsGeo が `kind:'org'` に解決した subject は
@@ -268,7 +308,7 @@ export function geoClass(a, b, opt = DEFAULTS) {
 /* ── 1 対の判定 ─────────────────────────────────────────────────────────────
  * 返すのは真偽ではなく、なぜそうなったかを含むオブジェクト。誤統合を後から説明できないと直せない
  * （news_cluster_decisions がこれを保存する）。 */
-export function pairVerdict(a, b, opt = DEFAULTS, I = null) {
+export function pairVerdict(a, b, opt = DEFAULTS, I = null, sim = null) {
   const reasons = [];
   const ta = a._tk || (a._tk = tokenise(a.title));
   const tb = b._tk || (b._tk = tokenise(b.title));
@@ -296,13 +336,22 @@ export function pairVerdict(a, b, opt = DEFAULTS, I = null) {
   reasons.push('c=' + c.toFixed(3) + '/' + overlap + ' (>=' + thrC + '/' + minO + ')');
   if (I) reasons.push('w=' + w.toFixed(3) + '/' + interWeight.toFixed(1) + ' (>=' + thrW + '/' + minW + ')');
 
+  /* ⚠ `embed[cls]` が null のクラス（far）ではこの入口は開かない。undefined も同じ扱い
+     ——古い opt（embed を持たない呼び出し側）に対して**振る舞いが変わらない**ことが要る。 */
+  const thrE = (opt.embed && opt.embed[cls] != null) ? opt.embed[cls] : null;
+  const hasSim = Number.isFinite(sim);
+  if (hasSim) reasons.push('cos=' + sim.toFixed(3) + (thrE == null ? ' (closed for ' + cls + ')' : ' (>=' + thrE + ')'));
+
   const byJ = j >= thrJ;
   const byC = c >= thrC && overlap >= minO;
   const byW = !!I && w >= thrW && interWeight >= minW;
+  const byE = hasSim && thrE != null && sim >= thrE
+    && overlap >= (opt.embedMinOverlap != null ? opt.embedMinOverlap : 2);
   return {
-    same: byJ || byC || byW,
-    code: byJ ? 'jaccard' : (byC ? 'containment' : (byW ? 'idf' : 'below_threshold')),
-    dtH, km, geo: cls, j, containment: c, overlap, weighted: w, interWeight, reasons,
+    same: byJ || byC || byW || byE,
+    code: byJ ? 'jaccard' : (byC ? 'containment' : (byW ? 'idf' : (byE ? 'embedding' : 'below_threshold'))),
+    dtH, km, geo: cls, j, containment: c, overlap, weighted: w, interWeight,
+    sim: hasSim ? sim : null, reasons,
   };
 }
 

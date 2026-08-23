@@ -619,8 +619,18 @@ export function attachEvent(index, articleId, eventId) {
   return true;
 }
 
-/** 1 本の新着に対する候補 Event（IDF 質量の大きい順）。 */
-export function candidateEvents(article, index) {
+/**
+ * 1 本の新着に対する候補 Event（IDF 質量の大きい順）。
+ *
+ * `neighbours`: embedding の近傍 [{ neighbour_id, event_id, similarity }]（Phase C・任意）。
+ * ⚠ **候補に足すだけで、統合は決めない。** 決めるのは `pairVerdict` で、地理と時刻の門は
+ *   そのまま通る（docs/NEWS-EVENTS.md §5.2）。#R76 が壊れたのは候補が多かったからではなく
+ *   「近い」の意味を緩めたからである。
+ * ⚠ 語で見つかった候補を **押しのけない**。近傍は語の質量の順の**後ろ**に足し、
+ *   maxCandidates はそのあとで切る——embedding が語より優先されると、決定論で強く
+ *   一致している Event が候補から落ちうる。
+ */
+export function candidateEvents(article, index, neighbours = null) {
   const tk = article._tk || (article._tk = tokenise(article.title));
   const mass = new Map();     /* eventId → 共有した語の IDF 合計 */
   const add = (i, w) => {
@@ -639,10 +649,24 @@ export function candidateEvents(article, index) {
   if (article.title_fingerprint) {
     for (const i of index.byFp.get(article.title_fingerprint) || []) add(i, 1e6);
   }
-  return [...mass.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, index.opt.maxCandidates)
-    .map(([event_id, weight]) => ({ event_id, weight }));
+  const byWord = [...mass.entries()].sort((a, b) => b[1] - a[1]);
+  /* embedding の近傍が指す Event のうち、語では出てこなかったものを後ろに足す。 */
+  const extra = [];
+  if (Array.isArray(neighbours) && neighbours.length) {
+    const bestSim = new Map();
+    for (const n of neighbours) {
+      if (!n || n.event_id == null || !Number.isFinite(n.similarity)) continue;
+      if (mass.has(n.event_id)) continue;
+      const prev = bestSim.get(n.event_id);
+      if (prev == null || n.similarity > prev) bestSim.set(n.event_id, n.similarity);
+    }
+    for (const [event_id, similarity] of [...bestSim.entries()].sort((a, b) => b[1] - a[1])) {
+      extra.push({ event_id, weight: 0, similarity });
+    }
+  }
+  const cap = index.opt.maxCandidates;
+  return byWord.slice(0, cap).map(([event_id, weight]) => ({ event_id, weight }))
+    .concat(extra.slice(0, cap));
 }
 
 /* 対の強さ。clusterArticles() が edge を並べるのに使う量と同じものにしてある
@@ -650,7 +674,14 @@ export function candidateEvents(article, index) {
 export function pairScore(v) {
   if (!v || !v.same) return 0;
   if (v.code === 'reprint') return 3;
-  return (v.j || 0) + (v.containment || 0) + (v.weighted || 0);
+  /* ⚠ embedding の入口で通った対は、語の一致が小さい（それがこの入口の存在理由である）。
+     3 つの語の量だけで採点すると **0 に近い強さ**になり、`assignArticle` が「最も強い
+     候補」を選ぶときに必ず負ける——正しく見つけた言い換えが、弱い語一致に押しのけられる。
+     ⇒ 意味の類似そのものを強さとして数える。⚠ **語で通った対の点は 1 ミリも変えない**
+     （`assignment_score` は DB に保存され `clusterConfidence` の材料になる。式を全体に
+     足すと、過去の行と今の行が別の尺度で比較されることになる）。 */
+  const base = (v.j || 0) + (v.containment || 0) + (v.weighted || 0);
+  return v.code === 'embedding' ? base + (v.sim || 0) : base;
 }
 
 /**
@@ -661,17 +692,31 @@ export function pairScore(v) {
  *   43 件の塊を作った。ここでは Event の**メンバーの過半**（DEFAULTS.transitivity）と
  *   合うことを要求する。
  */
-export function assignArticle(article, index, membersOf, opt = DEFAULTS) {
-  const cands = candidateEvents(article, index);
+export function assignArticle(article, index, membersOf, opt = DEFAULTS, neighboursOf = null) {
+  /* ⚠ 近傍は 1 本の関数から取り、そこから**候補の追加**と**対ごとの類似度**の両方を作る。
+     2 つの入口を別々に渡すと、片方だけを配線した呼び出し側が「候補には出るのに
+     判定には類似度が届かない」という静かな状態を作れてしまう。 */
+  const nb = (typeof neighboursOf === 'function' && neighboursOf(article.id)) || [];
+  const simByArticle = new Map();
+  for (const n of nb) {
+    if (!Number.isFinite(n.similarity)) continue;
+    const prev = simByArticle.get(n.neighbour_id);
+    if (prev == null || n.similarity > prev) simByArticle.set(n.neighbour_id, n.similarity);
+  }
+  const cands = candidateEvents(article, index, nb);
   const scores = {};
   let best = null;
+  const sim = (id) => {
+    const s = simByArticle.get(id);
+    return Number.isFinite(s) ? s : null;
+  };
   for (const c of cands) {
     const members = (membersOf(c.event_id) || []).slice(0, index.opt.maxMembers);
     if (!members.length) continue;
     let ok = 0, sum = 0, top = null;
     const evidence = [];
     for (const m of members) {
-      const v = pairVerdict(article, m, opt, index.idf);
+      const v = pairVerdict(article, m, opt, index.idf, sim(m.id));
       const sc = pairScore(v);
       if (v.same) { ok++; sum += sc; if (!top || sc > pairScore(top.v)) top = { v, m }; }
       if (evidence.length < 3) evidence.push({ article_id: m.id, same: v.same, code: v.code, j: r3(v.j), c: r3(v.containment), w: r3(v.weighted) });
@@ -754,6 +799,108 @@ export function findOutlier(members, idf, opt = DEFAULTS) {
 }
 
 /**
+ * 塊どうしの候補を、**珍しい語の共有だけ**から作る（Phase C の `link` 段）。
+ *
+ * ⚠⚠⚠ **embedding が使えなくてもこの段は動かなければならない。** 実測 (2026-08-24):
+ *   このプロジェクトの鍵は `/v1/models` に **1 件しか返さず**、その 1 件は埋め込み
+ *   モデルではない（`text-embedding-3-small` は 403 `model_not_found`）。埋め込みだけを
+ *   入口にすると、Phase C の recall の段は**鍵が変わる日まで 1 件も動かない**。
+ *
+ * ⚠ **これは `assign` のやり直しではない。** `assign` は「新着 1 本 対 その時点の塊」を
+ *   見る。ここは「育ったあとの塊 対 育ったあとの塊」を見る——同じ規則でも答えが変わる
+ *   のは、**どちらの塊もあとから増えた**場合である（§5.3 の塊全体での再検証）。
+ *
+ * membersByEvent: Map<eventId, [article]>
+ * 返す: [{ event_a, event_b, weight }]（IDF 質量の大きい順）
+ */
+export function eventPairCandidates(membersByEvent, idf, opt = INDEX, limit = 400) {
+  /* Event ごとの語集合（メンバーの見出しの和集合）。 */
+  const tokensOf = new Map();
+  for (const [eid, members] of membersByEvent) {
+    const set = new Set();
+    for (const m of members.slice(0, opt.maxMembers)) {
+      for (const t of (m._tk || (m._tk = tokenise(m.title)))) set.add(t);
+    }
+    tokensOf.set(eid, set);
+  }
+  /* 語 → その語を持つ Event。⚠ 頻出語の投稿リストは窓の大半になり、「候補を絞る」という
+     索引の仕事を止める——`buildCandidateIndex` と同じ理由で df に天井をつける。 */
+  const post = new Map();
+  for (const [eid, set] of tokensOf) {
+    for (const t of set) {
+      let p = post.get(t);
+      if (!p) post.set(t, (p = []));
+      p.push(eid);
+    }
+  }
+  const cap = Math.max(2, Math.min(opt.maxDfAbs, Math.ceil(tokensOf.size * opt.maxDfRatio)));
+  const mass = new Map();      /* "a:b" → IDF 合計 */
+  for (const [t, evs] of post) {
+    if (evs.length < 2 || evs.length > cap) continue;
+    const w = idf.idf.get(t) ?? idf.fallback;
+    for (let i = 0; i < evs.length; i++) {
+      for (let k = i + 1; k < evs.length; k++) {
+        const a = evs[i] < evs[k] ? evs[i] : evs[k];
+        const b = evs[i] < evs[k] ? evs[k] : evs[i];
+        const key = a + ':' + b;
+        mass.set(key, (mass.get(key) || 0) + w);
+      }
+    }
+  }
+  return [...mass.entries()]
+    .sort((x, y) => y[1] - x[1])
+    .slice(0, limit)
+    .map(([key, weight]) => {
+      const [a, b] = key.split(':');
+      return { event_a: Number(a), event_b: Number(b), weight: r3(weight) };
+    });
+}
+
+/**
+ * 塊どうしが同じ出来事か（Phase C の `link` 段・docs/NEWS-EVENTS.md §5.3）。
+ *
+ * ⚠⚠⚠ **新しい定数を足さない。** 新着 1 本を Event に載せる条件は「メンバーの
+ *   `transitivity`（34%）以上と一致すること」だった。塊どうしにも**同じ規則**を当てる
+ *   ——交差する対のうち `transitivity` 以上が「同じ」と言えば同じ出来事である。
+ *   #R351 が `findOutlier` で学んだのと同じ形: 別の閾値を作ると、2 つの規則が別々に
+ *   ずれていく。
+ *
+ * ⚠ **`far` の対は embedding の入口が閉じているので、地理が食い違う塊は語だけで
+ *   結ばれることになる。** それが意図である（#R351: PODCAST がカナダ関税とソマリア
+ *   海賊をつないだ形を、embedding で通しやすくしてはならない）。
+ *
+ * simOf(idA, idB) → number|null。無ければ語だけで判定する。
+ */
+export function eventsAgree(membersA, membersB, idf, opt = DEFAULTS, simOf = null, cap = 20) {
+  const A = (membersA || []).slice(0, cap), B = (membersB || []).slice(0, cap);
+  if (!A.length || !B.length) return { same: false, share: 0, pairs: 0, matched: 0 };
+  let matched = 0, best = null, sum = 0;
+  for (const a of A) {
+    for (const b of B) {
+      const s = typeof simOf === 'function' ? simOf(a.id, b.id) : null;
+      const v = pairVerdict(a, b, opt, idf, Number.isFinite(s) ? s : null);
+      if (!v.same) continue;
+      matched++;
+      const sc = pairScore(v);
+      sum += sc;
+      if (!best || sc > pairScore(best.v)) best = { v, a: a.id, b: b.id };
+    }
+  }
+  const pairs = A.length * B.length;
+  const share = matched / pairs;
+  /* ⚠ 割合だけでは足りない。分母が小さいと 1 本の辺で満たされる——`linkMinMatched` の
+     由来は news-cluster.js の DEFAULTS にある実測表を見ること。
+     ⚠ 未設定の opt（古い呼び出し側）では 1 になり、**振る舞いが変わらない**。 */
+  const minMatched = Math.max(1, opt.linkMinMatched != null ? opt.linkMinMatched : 1);
+  return {
+    same: share >= opt.transitivity && matched >= minMatched,
+    share: r3(share), pairs, matched, mean: r3(matched ? sum / matched : 0),
+    top: best ? { article_a: best.a, article_b: best.b, code: best.v.code, j: r3(best.v.j),
+                  sim: r3(best.v.sim), km: r3(best.v.km), geo: best.v.geo } : null,
+  };
+}
+
+/**
  * 1 本を置く — 候補を引き、載せるか新しい塊を作り、育った塊を検算する。
  *
  * ⚠ **本番と評価はこの 1 つの関数を通る。** #R334 は「ラベル付き fixture の精度は精度の
@@ -763,11 +910,11 @@ export function findOutlier(members, idf, opt = DEFAULTS) {
  * store: Map<eventId, { members: [article] }>（呼び出し側が持つ。DB でも memory でもよい）
  * newEventId(): 新しい Event の id を返す（DB なら insert、評価なら連番）
  */
-export function placeArticle(article, index, store, newEventId, opt = DEFAULTS) {
+export function placeArticle(article, index, store, newEventId, opt = DEFAULTS, neighboursOf = null) {
   const d = assignArticle(article, index, (id) => {
     const e = store.get(id);
     return e ? e.members.slice().reverse() : [];
-  }, opt);
+  }, opt, neighboursOf);
 
   let created = false, eid = d.event_id;
   if (eid == null) { eid = newEventId(); store.set(eid, { members: [] }); created = true; }

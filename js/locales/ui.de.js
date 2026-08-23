@@ -58,7 +58,7 @@ window.IntMapLang.define('de', { ui: {
       phAisKey:"aisstream.io-API-Schlüssel",
       lnkTerms:"Nutzungsbedingungen", lnkPrivacy:"Datenschutzerklärung", legalTabTerms:"Bedingungen", legalTabPrivacy:"Datenschutz", commAddImage:"Bild hinzufügen",
       tabNews:"Nachrichten", tabSaved:"★ Gespeichert", tabInfo:"Informationen", tabCompanies:"Unternehmen", tabStats:"Länder", tabCommunity:"Community",
-      searchPh:"Nachrichten / Orte suchen...", filterCountriesPh:"Länder filtern...", filterCompaniesPh:"Unternehmen filtern...", pickCountryMap:"Land auf der Karte wählen", searchBtn:"Suchen", searchLoadBtn:"Suchen / Laden", msPh:"Beliebigen Ort auf der Erde suchen...",
+      searchPh:"Nachrichten / Orte suchen...", filterCountriesPh:"Länder filtern...", filterCompaniesPh:"Unternehmen filtern...", evCatsAria:"Ereigniskategorien", pickCountryMap:"Land auf der Karte wählen", searchBtn:"Suchen", searchLoadBtn:"Suchen / Laden", msPh:"Beliebigen Ort auf der Erde suchen...",
       viewMap:"Karte", viewSat:"Satellit", flat:"Flach", globe:"Globus", threeD:"⛰️ 3D", gridBtn:"🌐 Gitter", gridLayer:"🌐 Gitter & Beschriftung",
       settings:"Einstellungen", modalTitle:"Einstellungen", close:"Schließen", btnApply:"Übernehmen", lblLang:"Sprache",
       setSecAppearance:"Aussehen", setSecLayout:"Layout & Panels", setSecMap:"Kartenverhalten", setSecUnits:"Einheiten & Zeit", setSecNews:"Nachrichten & Ticker", setSecAI:"KI", setSecKeys:"Integrationen & Schlüssel", setSecAbout:"Info & Support",
