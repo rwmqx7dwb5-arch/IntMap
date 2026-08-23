@@ -276,6 +276,8 @@ window.IntMapLang.define('fr', { ui: {
       wsOff:"Désactivé (par défaut)",
       wsOn:"Activé — fenêtres flottantes et redimensionnables",
     }, inline: {
+    'The map view did not change.': "La vue de la carte n’a pas changé.",   /* atlas-console.js */
+    'Unverified statements were removed from this answer.': "Les affirmations non vérifiées ont été retirées de cette réponse.",   /* atlas-answer-render.js */
     "% of GDP": "% du PIB",
     "By accession year": "Par année d'adhésion",
     "Carbon-dioxide emissions — the country total in megatonnes a year, or the same series divided by population; switch between the two in this legend.": "Émissions de dioxyde de carbone — le total du pays en mégatonnes par an, ou la même série rapportée à la population ; l'une ou l'autre au choix dans cette légende.",

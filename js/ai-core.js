@@ -105,7 +105,15 @@ window.IntMapModules.aiCore=function(HOST){
      window._aiLastMeta, which a concurrent call can overwrite) and accepts opts.signal for real AbortController
      cancellation (a timed-out / cancelled region-resolution call now aborts the underlying fetch instead of leaving
      it running in the background). aiCallServer stays a thin text-only wrapper so every existing caller is unchanged. */
+  /* ══ (#R350) EVERY CALL CARRIES ITS OWN ID ══════════════════════════════════════════════════
+     The analyse path used to read window._aiLastMeta / window._aiLastCitations AFTER awaiting its
+     answer — which is whichever call replied LAST, not this one. Two analyses in flight therefore
+     swapped citations, and nothing in the UI could tell. A callId is minted here, travels in the
+     envelope, and js/atlas-evidence.js refuses a citation stamped with a different one. */
+  let _aiCallSeq=0;
+  function aiNewCallId(){ _aiCallSeq++; let t=0; try{ t=Date.now(); }catch(_){ t=0; } return 'c'+t.toString(36)+'-'+_aiCallSeq; }
   async function aiCallServerFull(prompt, system, imgs, opts){
+    const callId=(opts&&opts.callId)?String(opts.callId):aiNewCallId();
     const cfg=window.INTMAP_AI_PROXY||{};
     const headers={'Content-Type':'application/json'};
     if(cfg.headerName && cfg.headerValue) headers[cfg.headerName]=cfg.headerValue;
@@ -154,7 +162,7 @@ window.IntMapModules.aiCore=function(HOST){
       throw new Error('AI '+r.status+': '+aiErrSnippet(await r.text().catch(()=>'')));
     }
     const j=await r.json().catch(()=>null);
-    if(j==null) return {text:'',meta:null,citations:[]};
+    if(j==null) return {text:'',meta:null,citations:[],callId,turnId:String((opts&&opts.turnId)||''),task:String((opts&&opts.task)||'free_text')};
     if(typeof j.used==='number') aiSetUsage(j.used, j.limit);
     try{ window._aiLastCharged=(j&&typeof j.charged==='boolean')?j.charged:null; }catch(_){}   /* (#R318) did THIS call consume a use */
     const meta=(j&&typeof j==='object'&&j.meta&&typeof j.meta==='object')?j.meta:null;
@@ -167,7 +175,7 @@ window.IntMapModules.aiCore=function(HOST){
     else if(typeof j.text==='string') text=j.text;
     else if(j.content&&Array.isArray(j.content)) text=j.content.map(b=>b.text||'').join('');
     else if(j.choices&&j.choices[0]) text=(j.choices[0].message&&j.choices[0].message.content)||j.choices[0].text||'';
-    return {text, meta, citations};
+    return {text, meta, citations, callId, turnId:String((opts&&opts.turnId)||''), task:String((opts&&opts.task)||'free_text')};
   }
   async function aiCallServer(prompt, system, imgs, opts){ return (await aiCallServerFull(prompt, system, imgs, opts)).text; }
   /* ---- Unified entry point used by every AI feature ---- */
@@ -193,7 +201,9 @@ window.IntMapModules.aiCore=function(HOST){
     throw new Error(aiLimitMsg()); }
   async function askAIJSONEnvelope(prompt, systemPrompt, imageDatas, opts){ opts=opts||{}; if(!opts.task) opts.task='json_extract';
     const env=await askAIEnvelope(prompt, systemPrompt, imageDatas, opts);
-    return { data:aiParseJSON(env.text), text:env.text, meta:env.meta, citations:env.citations }; }
+    /* (#R350) …and the CALL IDENTITY travels with it. Without callId the caller cannot tell its own
+       provider citations from a concurrent call's, which is what window._aiLastCitations could never do. */
+    return { data:aiParseJSON(env.text), text:env.text, meta:env.meta, citations:env.citations, callId:env.callId, turnId:env.turnId, task:env.task }; }
   function aiParseJSON(raw){
     if(raw==null) return null;
     let s=String(raw).trim();

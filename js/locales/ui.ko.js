@@ -268,6 +268,8 @@ window.IntMapLang.define('ko', { ui: {
       wsOff:"끔 (기본값)",
       wsOn:"켬 — 자유롭게 움직이는 크기 조절 가능한 창",
     }, inline: {
+    'The map view did not change.': "지도 화면은 바뀌지 않았습니다.",   /* atlas-console.js */
+    'Unverified statements were removed from this answer.': "검증되지 않은 내용은 이 답변에서 제외했습니다.",   /* atlas-answer-render.js */
     "% of GDP": "GDP 대비 %",
     "By accession year": "가입 연도별",
     "Carbon-dioxide emissions — the country total in megatonnes a year, or the same series divided by population; switch between the two in this legend.": "이산화탄소 배출량 — 국가 전체의 연간 배출량(백만 t) 또는 같은 자료를 인구로 나눈 1인당 값. 이 범례에서 둘을 전환할 수 있습니다.",

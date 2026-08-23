@@ -2324,6 +2324,8 @@ window.IntMapLang.define('zh-hans', {
     'web news search': "网络新闻搜索",   /* atlas-console.js */
     'web-derived': "取自网络",   /* atlas-console.js */
     'Web-verified sources': "经网络查证的来源",   /* atlas-console.js */
+    'The map view did not change.': "地图显示没有变化。",   /* atlas-console.js */
+    'Unverified statements were removed from this answer.': "未经查证的叙述已从这则回答中移除。",   /* atlas-answer-render.js */
     'Website': "网站",   /* atlas-console.js */
     'west': "西",   /* atlas-console.js */
     'Wet deposition': "湿沉降",   /* atlas-console.js */
