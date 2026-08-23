@@ -261,23 +261,50 @@ window.IntMapModules.companyFacilities=function(HOST){
      camera as well, and comes back off when the layer is taken down. */
   let _padSaved=null;
   function _restorePad(){ if(!_padSaved) return; try{ GE().camera.setPadding(_padSaved); }catch(_){} _padSaved=null; }
+  /* ⚠ THE RENDERER GETS A VETO, AND IT USES IT SILENTLY.
+     A padding this file considers correct can be one the renderer cannot satisfy: asking it to
+     keep 662 px of an 812 px viewport clear makes forBounds answer NULL — not throw, not warn —
+     and the fitBounds fallback then throws «Cannot read properties of undefined (reading
+     'center')» straight into the catch below. MEASURED IN PRODUCTION on a phone after the first
+     attempt at this fix: the camera did not move for 24 seconds, 19 of Toyota's 33 sites sat on
+     the far side of the globe, and nothing anywhere said so. That is worse than the frame it
+     replaced, which at least moved.
+     ⚠ So the ideal padding is an OPENING BID. If the renderer will not take it, back off toward
+     the plain one and take the best frame it WILL give — a frame that avoids less is still a
+     frame, and «no frame at all» is the one outcome the reader cannot recover from. */
   function _frame(bb,minZ,maxZ,dur){
     if(!bb) return false;
-    const pad=_pad(30);
-    const o={padding:pad,maxZoom:maxZ};
-    try{
-      if(!_padSaved){ try{ _padSaved=GE().camera.getPadding()||null; }catch(_){ _padSaved=null; } }
-      const cam=GE().camera.forBounds(bb,o);
-      if(cam&&isFinite(+cam.zoom)&&cam.center){
-        const z=Math.max(minZ,Math.min(maxZ,+cam.zoom));
-        const lng=_wrapLon(cam.center.lng!==undefined?cam.center.lng:cam.center[0]);
-        const lat=(cam.center.lat!==undefined?cam.center.lat:cam.center[1]);
-        GE().camera.easeTo({center:[lng,lat],zoom:z,padding:pad,duration:dur||900});
-        return true;
-      }
-      GE().camera.fitBounds(bb,Object.assign({duration:dur||900},o));
-      return true;
-    }catch(_){ return false; } }
+    const bbLat=(bb[0][1]+bb[1][1])/2;
+    if(!_padSaved){ try{ _padSaved=GE().camera.getPadding()||null; }catch(_){ _padSaved=null; } }
+    const ideal=_pad(30);
+    const plain={top:30,right:30,bottom:30,left:30};
+    const mix=(k)=>({ top:Math.round(plain.top+(ideal.top-plain.top)*k),
+      right:Math.round(plain.right+(ideal.right-plain.right)*k),
+      bottom:Math.round(plain.bottom+(ideal.bottom-plain.bottom)*k),
+      left:Math.round(plain.left+(ideal.left-plain.left)*k) });
+    for(const k of [1,0.75,0.5,0.25,0]){
+      const pad=mix(k);
+      let cam=null;
+      try{ cam=GE().camera.forBounds(bb,{padding:pad,maxZoom:maxZ}); }catch(_){ cam=null; }
+      if(!cam||!isFinite(+cam.zoom)||!cam.center) continue;
+      const z=Math.max(minZ,Math.min(maxZ,+cam.zoom));
+      const lng=_wrapLon(cam.center.lng!==undefined?cam.center.lng:cam.center[0]);
+      const lat=(cam.center.lat!==undefined?cam.center.lat:cam.center[1]);
+      if(!isFinite(lng)||!isFinite(lat)||Math.abs(lat)>89.5) continue;   /* a degenerate answer is a refusal too */
+      /* ⚠ AND THE FRAME MUST STILL BE LOOKING AT THE DATA. Heavy padding on ONE side is a flat-map
+         idea: forBounds honours it by moving the CENTRE away — measured, bottom 200 gave centre
+         lat −52.9, bottom 400 gave −81.3 — which on a GLOBE swings the sites past the limb. With
+         bottom 504 every one of Toyota's 33 sites came out on the far side of the planet: the
+         camera moved, the padding was honoured, and the reader saw an empty ocean. So a candidate
+         is only taken if it is still centred near the sites; otherwise back off toward the plain
+         padding, which always centres on them.
+         ⚠ 30° is about a third of a hemisphere — generous enough that a modest inset still wins,
+         tight enough that no accepted frame can put its own subject over the horizon. */
+      if(Math.abs(lat-bbLat)>30) continue;
+      try{ GE().camera.easeTo({center:[lng,lat],zoom:z,padding:pad,duration:dur||900}); return true; }catch(_){ }
+    }
+    /* every padding refused — move anyway, on the bare bounds */
+    try{ GE().camera.fitBounds(bb,{padding:30,maxZoom:maxZ,duration:dur||900}); return true; }catch(_){ return false; } }
 
   /** frame everything currently drawn. Called ONLY from show({fit:true}) — see the header. */
   function fitAll(){ const gj=_fc(); if(!gj.features.length) return false;
@@ -431,7 +458,7 @@ window.IntMapModules.companyFacilities=function(HOST){
        — which runs later, on a tap — put its site at y=89 in the 130 px strip the reader can see,
        while the fit on open put 0 of 33 there. One beat is the whole difference.
        ⚠ Guarded by _shown so a company closed inside that beat does not move the camera. */
-    if(fit) setTimeout(()=>{ if(_shown) fitAll(); },60);
+    if(fit) setTimeout(()=>{ if(_shown) fitAll(); },520);
     return true; }
 
   /** show(profile, {groups, fit}) — draws this company. A company with no located facility draws
