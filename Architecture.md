@@ -147,6 +147,13 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     パネルは**実際に描画しているエンジン**を保存値とは別に表示する（無言のフォールバックを作らない）。
   - **Cesium が答えられない物は答えないと言う**：`solid3d:false`、`demContourSource()` は null
     （maplibre-contour は MapLibre の名前空間を要求する）。呼び出し側は既存のフォールバックを取る。
+  - **能力の表は3つあり、突き合わされている**：`MAPLIBRE_CAPS`（`js/geo-engine.js`）・
+    `CESIUM_CONTRACT.capabilities`（同）・`CESIUM_CAPS`（`js/cesium-engine.js`）。
+    `tests/r323-checks.test.mjs` が3つを **AST から読んで**比べる——**3表は同じキー集合**を持ち、
+    **Cesium の2表は値まで一致**し、**宣言だけの契約はアダプタが拒む能力を主張できない**
+    （`solid3d` がその形：契約が true を返すと `js/volume3d.js` の `canSolid()` が
+    フォールバックを失う）。⚠ ファイル全体への正規表現では、同じ綴りがどちらの表にあるのか
+    区別できない——3表のうち2表は同じファイルに居る。
 
 ### 1.3 バックエンド・言語
 

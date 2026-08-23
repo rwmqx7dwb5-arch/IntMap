@@ -1683,11 +1683,21 @@ function _m(){ return window.__imap||null; }
   const MapLibreAdapter=makeMapLibreAdapter(_m);
   /* Cesium CONTRACT — declared capabilities only; no adapter/SDK/keys yet. Registering a real adapter later
      (IntMapGeoEngine.use(cesiumAdapter)) is all that Phase 2+ needs; nothing here loads Cesium. */
-  const CESIUM_CONTRACT={ id:'cesium', implemented:false, capabilities:{ engine:'cesium', globe:true, flat:false, terrain3d:true, freeCamera:true, pitchBeyond90:true, rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true, extrusion3d:true,
+  /* ══ (#R323) THREE KEYS WHERE THIS TABLE CONTRADICTED THE ADAPTER ══════════════════════════
+     Written from what a Cesium-class engine OUGHT to manage, rounds before js/cesium-engine.js
+     existed. The adapter is the authority, and on all three it was this table that was wrong:
+     `flat` is TRUE (setProjection('flat') morphs to Columbus View — a Mercator plane that still
+     tilts and still takes terrain), `solid3d` is FALSE (addSolid refuses ON PURPOSE so
+     js/volume3d.js keeps its documented fallback), and `orbit3d` was absent altogether while
+     addOrbit/setOrbit/removeOrbit have shipped since #R202 — so contracts().cesium.capabilities
+     .orbit3d read `undefined`, which a caller cannot tell apart from «this engine cannot».
+     tests/r323-checks parses all three capability tables and compares them as key sets and as
+     values; a whole-file regex cannot, because two of the three live in THIS file. */
+  const CESIUM_CONTRACT={ id:'cesium', implemented:false, capabilities:{ engine:'cesium', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true, rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true, extrusion3d:true,
     /* (#R171) a Cesium-class engine is curved at every zoom by construction, has no pitch ceiling of its
        own, and knows its camera's altitude natively — the three things this round had to ask MapLibre for.
        (#R172) …and its camera is positional to begin with (position + orientation), so eyeControl is free. */
-    globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true, solid3d:true,
+    globeAllZooms:true, tiltRange:[0,180], cameraAltitude:true, eyeControl:true, solid3d:false, orbit3d:true,
     /* (#R184) …and TRUE here: Cesium's camera is a position and an orientation, full stop. See the
        MapLibre declaration above for why the distinction matters to the flight simulator. */
     eyeIsPosition:true } };
