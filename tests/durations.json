@@ -28,7 +28,7 @@
   "tests/r171.spec.js": 330,
   "tests/r172.spec.js": 52,
   "tests/r173.spec.js": 61,
-  "tests/r174.spec.js": 651,
+  "tests/r174.spec.js": 330,
   "tests/r175.spec.js": 159,
   "tests/r176.spec.js": 53,
   "tests/r177.spec.js": 39,
@@ -78,9 +78,11 @@
   "tests/r353.spec.js": 5,
   "tests/r354.spec.js": 4,
   "tests/r355-cables.spec.js": 31,
-  "tests/r379.spec.js": 2,
-  "tests/r379-cesium.spec.js": 7,
   "tests/r355.spec.js": 8,
+  "tests/r379-cesium.spec.js": 7,
+  "tests/r379.spec.js": 2,
+  "tests/r384-legend.spec.js": 55,
+  "tests/r384.spec.js": 3,
   "tests/security.spec.js": 9,
   "tests/smoke.spec.js": 8
 }
