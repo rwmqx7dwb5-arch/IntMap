@@ -680,6 +680,7 @@ window.IntMapLang.define('zh', {
     'Continue upright': "保持水平",   /* flight-sim.js */
     'Continuous': "連續",   /* terrain-water.js */
     'Control not found': "找不到該控制項",   /* atlas-controls.js */
+    'Several controls match': '多個控制項符合',   /* atlas-controls.js (#R320) */
     'Controlling obstacle': "關鍵障礙物",   /* viewshed.js */
     'Controls': "操作",   /* flight-sim.js */
     'Coordinate grid': "座標格線",   /* keyboard-shortcuts.js */

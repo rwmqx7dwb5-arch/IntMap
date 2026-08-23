@@ -29,15 +29,39 @@ export function makeAtlasControls(HOST, CTX) {
     function _assocLabel(el){ try{ if(el.id){ const l=document.querySelector('label[for="'+el.id+'"]'); if(l) return l.textContent||''; } const grp=el.closest&&(el.closest('.setting-group')||el.closest('label')); if(grp&&grp!==el){ const l=grp.tagName==='LABEL'?grp:grp.querySelector('label'); if(l) return l.textContent||''; } let p=el.previousElementSibling; let k=0; while(p&&k++<2){ if(p.tagName==='LABEL') return p.textContent||''; p=p.previousElementSibling; } }catch(_){} return ''; }
     function _ctlLabel(el){ const opts=(el.tagName==='SELECT')?'':(el.textContent||''); return ((el.id||'')+' '+opts+' '+_assocLabel(el)+' '+(el.getAttribute&&(el.getAttribute('title')||'')||'')+' '+(el.getAttribute&&(el.getAttribute('aria-label')||'')||'')+' '+(el.getAttribute&&(el.getAttribute('data-i18n')||el.getAttribute('data-i18n-title')||'')||'')+' '+(el.placeholder||'')).toLowerCase().replace(/\s+/g,' ').trim(); }
     function _ctlEls(){ return [].slice.call(document.querySelectorAll('button, input, select, textarea, [role="button"], .view-btn, .mode-btn, .ios-segment-btn, .dash-nav-btn, .lyr-head')); }
-    function findControl(target){ const q=String(target||'').toLowerCase().trim(); if(!q) return null; let best=null,bs=0;
+    function findControl(target){ const q=String(target||'').toLowerCase().trim(); if(!q) return null; let best=null,bs=0; const all=[];
       _ctlEls().forEach(el=>{ if(el.disabled) return; if((el.type==='checkbox'||el.type==='radio')&&el.closest&&el.closest('#layer-dropdown')) return; /* layers use the `layer` action */ const id=(el.id||'').toLowerCase(); const lab=_ctlLabel(el); let sc=0;
         if(id&&id===q) sc=100; else if(lab===q) sc=96; else if(id&&q===id.replace(/^(btn-|cb-|setting-|dl-)/,'')) sc=92;
         else if(lab.indexOf(q)>=0&&q.length>1) sc=62+Math.min(22,q.length); else if(id&&id.indexOf(q)>=0&&q.length>2) sc=58;
         else { const qt=q.split(/\s+/).filter(w=>w.length>1); if(qt.length){ const hit=qt.filter(w=>lab.indexOf(w)>=0||id.indexOf(w)>=0).length; if(hit) sc=45*hit/qt.length; } }
         if(sc>0 && el.offsetParent===null) sc*=0.6; /* prefer a VISIBLE control over a hidden duplicate (e.g. desktop btn vs mobile proxy); hidden still wins if it's the only match (settings in a closed modal) */
+        if(sc>0) all.push({el:el, sc:sc});
         if(sc>bs){ bs=sc; best=el; } });
+      /* ⚠ (#R320) …AND WHAT THE RUNNER-UP SCORED. `doControl` used to take `best` whatever the
+         field looked like, so "settings" with four near-identical matches pressed one of them and
+         reported success. §14: 「複数候補が近い場合は勝手に一つを選ばない」. The THRESHOLD is a
+         ratio, not a constant: an exact id (100) next to a word match (62) is not a tie, and two
+         label matches at 62 and 61 are. Hidden duplicates are already discounted ×0.6 above, so a
+         desktop button and its mobile proxy do not read as a tie either. */
+      all.sort(function(a2,b2){ return b2.sc-a2.sc; });
+      const near=all.filter(function(c){ return c.sc>=22 && c.sc>=bs*0.92; });
+      _lastControlField={ best:best, score:bs, near:near, all:all };
       return bs>=22?best:null; }
-    function doControl(a){ const el=findControl(a.target); if(!el) return R(false, warn('⚠ '+L('Control not found','操作対象が見つかりません','Steuerung nicht gefunden','Элемент не найден','Control no encontrado')+': '+esc(a.target||'')));
+    /* the field the last findControl() saw — read by doControl to answer `ambiguous_target`, and by
+       controlCatalog to rank. Not state: it is overwritten by every call and read only right after. */
+    let _lastControlField=null;
+    function controlCandidates(target){ try{ findControl(target); const f=_lastControlField;
+      if(!f||f.near.length<2) return [];
+      return f.near.slice(0,6).map(function(c){ const el=c.el;
+        return { id:el.id||'', label:String(_assocLabel(el)||el.textContent||'').replace(/\s+/g,' ').trim().slice(0,48), score:Math.round(c.sc) }; });
+    }catch(_){ return []; } }
+    function doControl(a){ const el=findControl(a.target);
+      /* ⚠ (#R320) SEVERAL THINGS MATCH — WHICH ONE? Returning the top score was how a request for
+         one control pressed another and reported success. The candidates travel back in `meta` so
+         the kernel can answer `needs_input` with them (js/atlas-capabilities.js, `control`). */
+      if(el){ const cand=(_lastControlField&&_lastControlField.near.length>=2)?controlCandidates(a.target):[];
+        if(cand.length>=2) return R(false, warn('⚠ '+L('Several controls match','複数の操作対象が一致します','Mehrere Bedienelemente passen','Совпадает несколько элементов','Coinciden varios controles')+': '+esc(cand.map(function(c){ return c.label||c.id; }).join(' · '))), {meta:{code:'ambiguous_target', candidates:cand}}); }
+      if(!el) return R(false, warn('⚠ '+L('Control not found','操作対象が見つかりません','Steuerung nicht gefunden','Элемент не найден','Control no encontrado')+': '+esc(a.target||'')));
       const tag=el.tagName.toLowerCase(), nm=esc(a.target||el.id||(el.textContent||'').trim().slice(0,24));
       try{
         if(tag==='select'){ if(a.value!=null){ const v=String(a.value).toLowerCase(); const opts=[].slice.call(el.options); const o=opts.find(o=>String(o.value).toLowerCase()===v)||opts.find(o=>(o.textContent||'').toLowerCase().indexOf(v)>=0); if(!o) return R(false, warn('⚠ '+nm+': '+L('option not found','選択肢なし','Option fehlt','нет варианта','sin opción')+' "'+esc(a.value)+'"')); el.value=o.value; el.dispatchEvent(new Event('change',{bubbles:true})); } return R(true, note('✓ '+nm+(a.value!=null?(' = '+esc(a.value)):''))); }
@@ -53,12 +77,38 @@ export function makeAtlasControls(HOST, CTX) {
       }catch(_){ return R(false, warn('⚠ '+nm)); } }
     /* Compact catalog of the main controls (buttons + selects), fed to the AI so it can target ANY of them by
        name via {"type":"control",...}. Layer checkboxes are omitted (the `layer` action covers them). */
-    function controlCatalog(){ try{ const seen=new Set(), out=[];
+    const CTL_MAX=140;
+    /* how well one catalogue LINE answers the request. The same words `findControl` scores, so the
+       list the planner is shown and the control it would reach cannot disagree. */
+    function _ctlRelevance(line, q){ const l=String(line).toLowerCase();
+      if(l.indexOf(q)>=0) return 100;
+      let sc=0; q.split(/[\s,、。]+/).forEach(function(w){ if(w.length>1&&l.indexOf(w)>=0) sc+=20; });
+      return sc; }
+    function controlCatalog(forRequest){ try{ const seen=new Set(), out=[];
       _ctlEls().forEach(el=>{ const tag=el.tagName.toLowerCase(); if(el.type==='checkbox'||el.type==='radio') return; if(el.closest&&el.closest('#layer-dropdown')&&tag!=='select') return;
         let nm=(tag==='select'||tag==='input'||tag==='textarea')?(_assocLabel(el)||(el.getAttribute&&(el.getAttribute('title')||el.placeholder||''))||el.id||''):((el.textContent||'').replace(/\s+/g,' ').trim()||(el.getAttribute&&(el.getAttribute('title')||el.getAttribute('aria-label')||''))||el.id||''); nm=String(nm).replace(/\s+/g,' ').slice(0,28).trim(); if(!nm||nm.length<2) return;
         const key=(el.id||nm).toLowerCase(); if(seen.has(key)) return; seen.add(key);
         out.push(nm+(el.id?(' [#'+el.id+']'):'')+(tag==='select'?' (select)':'')); });
-      return out.slice(0,140).join('; '); }catch(_){ return ''; } }
+      /* ⚠⚠ (#R320) THIS USED TO BE `out.slice(0,140)` — DOM ORDER. Which controls existed for the
+         planner was decided by where they happened to sit in the document, and #R318's audit listed
+         that as one of the five disagreeing catalogues: a control at position 141 was, to Atlas, a
+         control IntMap did not have. Two things changed and both matter:
+           · when a REQUEST is given, the population is SCORED against it and the best are kept —
+             the same scorer `findControl` uses, so what is offered is what would be found;
+           · whatever is dropped is COUNTED and SAID. A silently truncated list reads to the model
+             as a complete one, which is the whole mechanism this round is removing.
+         ⚠ THE CAP ITSELF STAYS, because the prompt has a real byte budget (ai-proxy MAX_SYSTEM).
+         A cap that ADMITS what it dropped is a budget; one that does not is a hole. */
+      let kept=out, dropped=0;
+      if(out.length>CTL_MAX){
+        const q=String(forRequest||'').toLowerCase().trim();
+        if(q){ const scored=out.map(function(o){ return { o:o, sc:_ctlRelevance(o, q) }; });
+          scored.sort(function(a2,b2){ return b2.sc-a2.sc; });
+          kept=scored.slice(0,CTL_MAX).map(function(x){ return x.o; }); }
+        else kept=out.slice(0,CTL_MAX);
+        dropped=out.length-kept.length;
+      }
+      return kept.join('; ')+(dropped?('  … and '+dropped+' more on-screen control(s) not listed here — name one and it will still be found'):''); }catch(_){ return ''; } }
     /* ==== (#R77) FULL UI⇄Atlas integration ("IntMapのUIすべてとAtlasが統合されるように" / vision §1·§17·第六段階).
        Measured baseline: 538 interactive elements, 192 had NO accessible name — unreachable by any Atlas path
        (128 favourite ★ per layer row, 21 legend-close ×, per-layer date inputs, opacity sliders, unlabeled
@@ -111,13 +161,30 @@ export function makeAtlasControls(HOST, CTX) {
        moment they exist. Bounded to IntMap-prefixed names plus RunwaySearch, and a safe method allow-list. ---- */
     const MOD_METHODS=['open','toggle','close','clear','exit','refresh','render'];
     const MOD_RE=/^(IntMap[A-Za-z0-9]*|RunwaySearch)$/;
-    function moduleCatalog(){ try{ const out=[]; for(const k of Object.keys(window)){ if(!MOD_RE.test(k)) continue;
+    function moduleCatalog(){ try{ const out=[], seenMod=new Set(); for(const k of Object.keys(window)){ if(!MOD_RE.test(k)) continue;
       if(k==='IntMapAIResearch') continue;   /* (#R118) absorbed into Atlas (brief) — the legacy panel must not be offered to the planner */
-      let v; try{ v=window[k]; }catch(_){ continue; } if(!v||typeof v!=='object') continue; const ms=MOD_METHODS.filter(m=>typeof v[m]==='function'); if(ms.length) out.push(k+'('+ms.join(',')+')'); } return out.join('; '); }catch(_){ return ''; } }
+      let v; try{ v=window[k]; }catch(_){ continue; } if(!v||typeof v!=='object') continue; const ms=MOD_METHODS.filter(m=>typeof v[m]==='function'); if(ms.length){ out.push(k+'('+ms.join(',')+')'); seenMod.add(k); } }
+      /* ⚠⚠ (#R320) …AND THE ONES THAT HAVE NOT ARRIVED YET. The walk above is `Object.keys(window)`,
+         so a module fetched on demand (#R209) is, to the planner, a module IntMap does not have —
+         eight of them, measured. js/lazy-modules.js PUBLISHES the name each one will take, and that
+         manifest exists from boot, so the catalogue can name them before their code arrives. What
+         they can be asked to do is the same `MOD_METHODS` list; `doModule` fetches on demand. */
+      try{ const LZ=window.IntMapLazy; if(LZ&&LZ.names&&LZ.publishes){ LZ.names().forEach(function(n){
+        const g=LZ.publishes(n); if(!g||!MOD_RE.test(g)||seenMod.has(g)) return;
+        seenMod.add(g); out.push(g+'('+MOD_METHODS.join(',')+') [loads on demand]'); }); } }catch(_){}
+      return out.join('; '); }catch(_){ return ''; } }
     function doModule(a){ const nm0=String(a.name||'').trim(); const meth=String(a.method||'open').trim();
       if(!MOD_RE.test(nm0)) return R(false, warn('⚠ '+L('Unknown module','不明なモジュール','Unbekanntes Modul','Неизвестный модуль','Módulo desconocido')+': '+esc(nm0)));
       if(MOD_METHODS.indexOf(meth)<0) return R(false, warn('⚠ '+L('Unsupported method','非対応のメソッド','Methode nicht unterstützt','Метод не поддерживается','Método no admitido')+': '+esc(meth)));
       let m; try{ m=window[nm0]; }catch(_){ m=null; }
+      /* ⚠ (#R320) A MODULE THAT HAS NOT LOADED IS NOT A MISSING MODULE. This answered
+         「Module/method not found」 for eight on-demand subsystems that exist — the same defect one
+         layer down from the catalogue above. Ask for it, then call. The promise is returned, so the
+         kernel's completion wait covers the fetch as well as the call. */
+      if(!m){ try{ const LZ=window.IntMapLazy; const want=LZ&&LZ.names&&LZ.names().find(function(n){ return LZ.publishes&&LZ.publishes(n)===nm0; });
+        if(want) return LZ.need(want).then(function(){ const m2=window[nm0];
+          if(m2&&typeof m2[meth]==='function'){ try{ m2[meth](); return R(true, note('✓ '+esc(nm0)+'.'+esc(meth)+'()')); }catch(e2){ return R(false, warn('⚠ '+esc(nm0)+': '+esc((e2&&e2.message)||'error'))); } }
+          return R(false, warn('⚠ '+esc(nm0)+'.'+esc(meth)+'()')); }); }catch(_){} }
       if(m&&typeof m[meth]==='function'){ try{ m[meth](); return R(true, note('✓ '+esc(nm0)+'.'+esc(meth)+'()')); }catch(e){ return R(false, warn('⚠ '+esc(nm0)+': '+esc((e&&e.message)||'error'))); } }
       return R(false, warn('⚠ '+L('Module/method not found','モジュール/メソッドが見つかりません','Modul/Methode nicht gefunden','Модуль/метод не найден','Módulo/método no encontrado')+': '+esc(nm0+'.'+meth))); }
   return { clickId, controlCatalog, doControl, doModule, findControl, kexec, moduleCatalog, setSel };
