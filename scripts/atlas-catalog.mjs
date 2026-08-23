@@ -61,11 +61,25 @@ export function readAtlas() {
    of prompt text full of `{"type":…}` braces inside string literals), so the end is the first line
    that is exactly the function's closing brace at its own indentation. */
 export function catalogueText(lines) {
-  const start = lines.findIndex((l) => /^\s*function SYS\(\)\s*\{/.test(l));
+  const start = lines.findIndex((l) => /^\s*function SYS\((sel)?\)\s*\{/.test(l));
   if (start < 0) throw new Error(`${FILE}: function SYS() not found — the catalogue moved; update scripts/atlas-catalog.mjs`);
   const end = lines.findIndex((l, i) => i > start && /^    \}$/.test(l));
   if (end < 0) throw new Error(`${FILE}: the end of function SYS() was not found`);
-  return lines.slice(start, end + 1).join('\n');
+  const body = lines.slice(start, end + 1).join('\n');
+  /* ⚠ (#R318) THE CATALOGUE LEFT THIS FUNCTION AND THIS GATE HAD TO FOLLOW IT.
+     SYS() now composes its action section from the Capability Registry: the 38 topical blocks that
+     stood inline are in js/atlas-catalog-text.js, byte for byte, each tagged with the capabilities
+     it documents. The question this file asks — "is every dispatch case described to the planner?"
+     — is unchanged; WHERE the description lives is not. The blocks are read as TEXT so this stays
+     synchronous and so tests/r278 ① can keep feeding it a synthetic file: a fixture with no
+     `_DOCS.text(` call gets nothing appended and behaves exactly as it did before.
+     ⚠ The richer question — is it EXECUTABLE, OBSERVED and VERIFIED — is
+     scripts/atlas-capability-audit.mjs. This one is deliberately still the narrow one. */
+  if (!/_DOCS\.text\(/.test(body)) return body;
+  let blocks = '';
+  try { blocks = fs.readFileSync(path.join(ROOT, 'js/atlas-catalog-text.js'), 'utf8'); }
+  catch { throw new Error('js/atlas-catalog-text.js is missing — SYS() composes its catalogue from it'); }
+  return body + '\n' + blocks;
 }
 
 /* Every capability the dispatch can execute: one entry per `case` line inside switch(a.type). */

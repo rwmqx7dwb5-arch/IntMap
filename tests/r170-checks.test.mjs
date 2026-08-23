@@ -240,7 +240,9 @@ test('the volume tool compensates for 3-D terrain instead of trusting the raw nu
 });
 
 test('Atlas can drive the 3-D volume, and the action is in the SYS catalogue', () => {
-  const atlas = R('js/atlas-console.js');
+  /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = R('js/atlas-console.js') + '\n' + R('js/atlas-catalog-text.js');
   assert.match(atlas, /case 'volume3d': case 'volume': \{/, 'the dispatch action must exist');
   assert.match(atlas, /\{"type":"volume3d","place":str/, 'and be catalogued — an uncatalogued action does not exist to the planner (#R115)');
   assert.match(atlas, /"name":"measure"\|"radius"\|"draw"\|"volume"/, 'the tool action must accept the volume tool too');

@@ -170,7 +170,9 @@ test('R184 #7: the satellite layer is registered, grouped, legended and toggled'
   assert.match(dl, /opacities\.sats|sats:0\.95/, 'it has a default opacity');
   assert.match(dl, /dl-sats/, 'and it is excluded from the layer-reconcile auto-learn like the other live layers');
   /* Atlas: an alias table entry and an action, because a layer Atlas cannot drive is half a feature */
-  const atlas = rd('js/atlas-console.js');
+  /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = rd('js/atlas-console.js') + '\n' + rd('js/atlas-catalog-text.js');
   assert.match(atlas, /'satellites':'dl-sats'/, 'the Atlas layer alias table knows it');
   assert.match(atlas, /case 'satellites':/, 'and there is an action');
   assert.match(atlas, /LIVE SATELLITES: \{"type":"satellites"/,
@@ -183,7 +185,9 @@ test('R184 #7: the satellite layer is registered, grouped, legended and toggled'
 
 /* ── ⑧ THE DRONE AND ROUTE ADDITIONS ARE WIRED INTO ATLAS TOO ─────────────────────────────── */
 test('R184 #8: the new drone and routing capabilities are reachable from Atlas and documented in SYS', () => {
-  const atlas = rd('js/atlas-console.js');
+  /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
+     The question below is unchanged; the read follows the answer to where it lives now. */
+  const atlas = rd('js/atlas-console.js') + '\n' + rd('js/atlas-catalog-text.js');
   /* drone: the operational checks and the three route actions */
   for (const act of ['prepare', 'compare', 'rth', 'conflicts']) {
     assert.ok(atlas.includes(`act==='${act}'`), `the drone action "${act}" is dispatched`);

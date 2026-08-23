@@ -347,7 +347,12 @@ window.IntMapLang = (function () {
      'en-GB' and half 'en-US' — 24-hour vs 12-hour clocks, D MMM vs MMM D — and which one each panel
      chose is a decision this round was not asked to revisit. The call site keeps its own answer by
      passing it; only the languages that were falling through to it are affected. */
-  var REGION = { en: 'en-US', jp: 'ja-JP', de: 'de-DE', ru: 'ru-RU', es: 'es-ES' };
+  /* ⚠ (#R318) THE OTHER FOUR ARE HERE NOW. `locale()` fell through to the bare BCP-47 tag for them,
+     which is a legal tag but a poor one for the two callers that want a REGION: speech recognition
+     (a bare 'zh' leaves the engine to guess Traditional or Simplified) and Intl formatting. These
+     are facts a filename cannot carry, which is exactly the reason #R232 kept this table literal. */
+  var REGION = { en: 'en-US', jp: 'ja-JP', de: 'de-DE', ru: 'ru-RU', es: 'es-ES',
+                 zh: 'zh-TW', 'zh-hans': 'zh-CN', fr: 'fr-FR', ko: 'ko-KR' };
   function locale(code, enTag) {
     var c = normalise(code);
     if (c === FALLBACK) return enTag || REGION.en;
@@ -459,9 +464,47 @@ window.IntMapLang = (function () {
      absent and js/locale-boot.js does the same job from the real module graph. */
   try { if (typeof window !== 'undefined' && window.IntMapLangCodes) declare(window.IntMapLangCodes); } catch (e) {}
 
+  /* ══ (#R318) WHAT THIS LANGUAGE IS CALLED **IN ENGLISH** ═══════════════════════════════════════
+     Not for a reader — for a MODEL. Four prompts tell the model which language to answer in, and
+     they were doing it with `t(lang,'English','Japanese','German','Russian','Spanish')`. `t()` is
+     positional for five languages and falls back to the locale's inline table for the rest, and
+     js/locales/ui.zh.js quite correctly translates the string 'English' as 英文 — so a Traditional
+     Chinese reader's prompt read «Write your ENTIRE response in 英文 only», i.e. it told the model
+     to answer in ENGLISH, in Chinese. French and Korean have no such entry and fell through to the
+     English key, which said the same thing outright. Three of the nine languages could not get an
+     answer in their own language, and nothing was broken enough to notice.
+     The name is DERIVED (Intl.DisplayNames in the 'en' locale), so a tenth language is still one
+     file: the table below is only the offline fallback, and `derive()` keeps this honest by never
+     letting a code answer with itself. */
+  var EN_NAME = { en: 'English', jp: 'Japanese', de: 'German', ru: 'Russian', es: 'Spanish',
+                  zh: 'Traditional Chinese', 'zh-hans': 'Simplified Chinese', fr: 'French', ko: 'Korean' };
+  function englishName(code) {
+    var c = normalise(code);
+    try {
+      var n = new Intl.DisplayNames(['en'], { type: 'language' }).of(htmlTag(c));
+      /* Intl answers with the TAG itself when it does not know one; a prompt saying «answer in
+         zh-Hant» is not an instruction a model can follow, so that answer is refused here. */
+      if (n && !/^[a-z]{2,3}(-[A-Za-z0-9]+)*$/.test(n)) return n;
+    } catch (e) { /* no Intl.DisplayNames → the table below */ }
+    return EN_NAME[c] || EN_NAME[FALLBACK];
+  }
+  /* The inverse: a language NAME the model or a detector produced → this app's internal code.
+     Built from englishName() so the two can never disagree, plus the names a language detector
+     may return for languages IntMap does not have (they resolve to nothing, not to Japanese). */
+  function codeForEnglishName(name) {
+    var want = String(name == null ? '' : name).trim().toLowerCase();
+    if (!want) return '';
+    for (var i = 0; i < LANG_ROWS.length; i++) {
+      var c = LANG_ROWS[i].code;
+      if (englishName(c).toLowerCase() === want) return c;
+    }
+    if (want === 'chinese') return 'zh';
+    return '';
+  }
   return { LANGS: LANG_ROWS, FALLBACK: FALLBACK, list: list, codes: codes, syncChrome: syncChrome,
            define: define, pick: pick, pickArgs: pickArgs, keyed: keyed, t: t, locale: locale,
            normalise: normalise, has: has, index: index, htmlTag: htmlTag, syncDocument: syncDocument,
+           englishName: englishName, codeForEnglishName: codeForEnglishName,
            /* (#R232) discovery + lazy loading */
            declare: declare, ensure: ensure, isLoaded: isLoaded, onDefine: onDefine,
            /* for the coverage report and the tests */

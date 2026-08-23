@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（934行・84 KB）＋ `css/`（3本）＋ `js/`（181本・9.3 MB）＋ `src/`（8本）。**
+- **本体は `index.html`（934行・84 KB）＋ `css/`（3本）＋ `js/`（187本・9.4 MB）＋ `src/`（8本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -131,10 +131,51 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 目的・対象・優先順位・非目標と同じ場所に置いてある——「何のためにあるか」と「何ができるか」は
 同じ問いの両面で、離せば片方だけが古くなるため。
 
-このファイルが答えるのは**それがどう組み上がっているか**のほうで、内訳は §4（ニュース）・
-§5（AI）・§6（Supabase）・§7（地図とレイヤーの契約）・§8（UI）・§9（モバイル）・§10（多言語）と、
-[`docs/MAP-LAYERS.md`](docs/MAP-LAYERS.md)（レイヤー実装の詳細）・
+このファイルが答えるのは**それがどう組み上がっているか**のほうで、内訳は §2.1（制御カーネル）・
+§4（ニュース）・§5（AI）・§6（Supabase）・§7（地図とレイヤーの契約）・§8（UI）・§9（モバイル）・
+§10（多言語）と、[`docs/MAP-LAYERS.md`](docs/MAP-LAYERS.md)（レイヤー実装の詳細）・
 [`docs/FILES.md`](docs/FILES.md)（ファイル台帳）にある。
+
+### 2.1 制御カーネル (The control kernel)
+
+**「何ができるか」の一覧は 1 つしかない。** `js/atlas-capabilities.js` の表がそれで、
+UI のボタンも Atlas の自然文も、テストも監査も、**同じ能力 ID** を名指す。
+
+| 部品 | ファイル | 何の正本か |
+|---|---|---|
+| Capability Registry | `js/atlas-capabilities.js` | **115 能力**。ID・別名（263 綴り）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・**必要な対象**・遅延モジュール・観測器・検証器 |
+| 能力の説明文 | `js/atlas-catalog-text.js` | planner に渡す 38 ブロック。**各ブロックがどの能力を説明しているか**を持つ |
+| 実行 | `js/atlas-executor.js` | `IntMapOS.execute()` の 11 段 |
+| 結果の形 | `js/atlas-results.js` | 全操作が返す 1 つの構造。7 つの status |
+| 状態 | `js/atlas-state.js` | 15 セクションの合成スナップショットと**ターン台帳** |
+| 計画 | `js/atlas-planner.js` | Plan schema・検証・GoalSpec・依存グラフ実行 |
+
+**実行の 11 段**（`IntMapOS.execute(capabilityId, args, {source, turnId, signal})`）:
+能力の解決 → 可用性 → 引数 schema → **必要な入力の解決** → 競合キーの取得 → 前の観測 →
+実行 → **完了待ち（同期・Promise を問わず）** → 後の観測 → **事後条件の検証** → 構造化結果。
+各段は `planned / validating / waiting-input / started / progress / completed / partial /
+failed / cancelled / superseded` としてイベントバスに出る。
+
+**status は 7 つあり、`ok` はその導出である**（`status === 'completed'`。読み取り専用の
+getter なので、観測していない成功を呼び出し側が書き込むことはできない）。
+`running`＝計算が続いている。`needs_input`＝必要な入力が無い。`partial`＝一部だけ。
+`cancelled` / `superseded`＝呼び出し側が取り消した／新しい依頼が置き換えた。
+
+**⚠ 対象が要る能力は、地図の中心を勝手に使わない。** 表の「必要な対象」列が
+`required` の能力に対象が渡されなかった場合、`needs_input` と再開トークンを返す。
+
+**⚠ 能力は、そのモジュールが読み込まれる前から発見できる。** 記述子は起動バンドルにあり、
+`IntMapLazy.need()` は**実行の瞬間だけ**呼ばれる。
+
+**⚠ planner に送るカタログは、依頼に関係する能力だけに絞られる。**
+`selectCapabilities()` が**全能力を採点**して選ぶ（DOM 順でも先頭 N 件でもない）。
+確信が低ければ広げ、信号が無ければ全部送る（全部＝57 kB、経路の依頼＝約 15 kB）。
+
+**⚠ 旧 dispatch は互換アダプターとして残っている。** 115 の `case` はそのまま engine の
+仕事をしており、変わったのは**その周りの 11 段**と、`ok` が観測の結果になったこと。
+
+検査は `node scripts/atlas-capability-audit.mjs`（20 項目・`--json` で機械可読）。
+`scripts/atlas-catalog.mjs`（「planner に説明されているか」だけを問う旧ゲート）は互換入口として残る。
 
 ---
 ## 3. ファイル構成 (Files)
@@ -264,8 +305,18 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
 - **鍵はサーバー（Edge Function）だけが持つ。** ブラウザは AI プロバイダに直接アクセスしない。
   モデル選択の UI も無い（利用者はモデルを選ばない）。
 - **`ai-proxy`＝アカウント制AI。** `verify_jwt` に加えて関数内でもユーザーを検証し（未ログインは 401）、
-  プラン別の1日上限を `increment_ai_usage` で**原子的に消費**する。
+  プラン別の1日上限を `consume_ai_turn` で**原子的に消費**する。
   上限は free 10 / plus 50 / pro 200 / unlimited 実質無制限。
+- **⚠ 消費の単位は「1リクエスト」ではなく「1 user turn」。** Atlas は 1 つの依頼を planner ＋
+  最大 2 回の修復（画像なら読み取り＋自己検算の再読）で終える。以前はその全部が別々に 1 回ずつ
+  消費していたので、**1 つの質問が最大 3 回**を無言で使うことがあった。クライアントは
+  `x-intmap-turn` ヘッダにターン鍵を載せ、**その鍵の最初の 1 本だけが消費する**。
+  ⚠ **鍵は信用されない**——行の主キーが `(user_id, turn_key)` なのでアカウントを跨げず、
+  1 つの鍵が運べる回数（`TURN_MAX_CALLS`）と鍵の寿命（`TURN_TTL_S`）は Edge Function 側の
+  定数で、呼び出し側から上げられない。上限超過は 429 `{error:"turn_calls"}` で、
+  1日上限の 429 `{error:"limit"}` とは**別の文言**を出す。
+  プロバイダ失敗の払い戻しは `refund_ai_turn` が**charge とターンの両方**を解放する。
+  ⚠ **決定論的な操作（`IntMapOS.execute()` だけで終わる依頼）は AI 枠を一切使わない。**
 - **入力の上限は本文を読む前に効かせる**：prompt は 24,000 文字、**system は 160,000 文字**、
   画像は最大4枚・合計 12 MB。鍵・prompt・JWT はログに出さない。
   ⚠ **system が別枠なのは、それが利用者の文ではなくアプリ自身が組む操作カタログだから。**
@@ -306,9 +357,9 @@ admin1 約150（米50州・日本の県・中国の省・印州・独州・ウ�
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](docs/DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **20 表**（`profiles` / `current_news` / `geo_pins` / `favorites` /
-`user_prefs` / `dashboard_cards` / `ai_usage` / `community_*` 5 表 / `feedback` / `bug_reports` /
-`donations` / Area Monitors の 5 表）。
+実証手順も同じファイル）。現在 **21 表**（`profiles` / `current_news` / `geo_pins` / `favorites` /
+`user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `community_*` 5 表 / `feedback` /
+`bug_reports` / `donations` / Area Monitors の 5 表）。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
@@ -1119,7 +1170,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（7本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（8本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格）。

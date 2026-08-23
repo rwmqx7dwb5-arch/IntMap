@@ -28,6 +28,7 @@ is the human explanation.
 |---|---|---|---|
 | `profiles` | One row per user. Public columns (`display_name`, `bio`, `avatar_url`) + private (`email`, `is_admin`, `is_pro`, `plan`, `login_count`). | Owner + admin (full row). Public columns for everyone via the `profiles_public` **view**. | Owner may update only `display_name`/`bio`/`avatar_url`/`login_count` (column-level grant → **no self-escalation**). |
 | `ai_usage` | Daily AI free-use counter (`user_id`, `usage_date`, `count`). | Owner reads own rows. | **RPCs only** (`increment_ai_usage` / `refund_ai_usage`, service_role). Users cannot write it. |
+| `ai_turns` | One row per (account, AI **turn**) — `(user_id, turn_key)`, `calls`, `charged`, `started_at`. The first call of a turn charges `ai_usage`; the rest are free up to a server-set ceiling. | Owner reads own rows. | **RPCs only** (`consume_ai_turn` / `refund_ai_turn` / `sweep_ai_turns`, service_role). |
 | `user_prefs` | Per-user synced settings blob (`data` jsonb). | Owner. | Owner. |
 | `favorites` | Saved (★) article links. | Owner. | Owner. |
 
@@ -81,6 +82,9 @@ is the human explanation.
 | `public.handle_new_user()` + `on_auth_user_created` trigger on `auth.users` | SECURITY DEFINER | Creates the `profiles` row on signup (copies id/email/display_name). |
 | `public.increment_ai_usage(uuid, integer)` | SECURITY DEFINER, `search_path=''` | Atomically consumes one AI use if under the limit. Returns `(used, allowed)`. EXECUTE = service_role only. |
 | `public.refund_ai_usage(uuid)` | SECURITY DEFINER, `search_path=''` | Refunds one use after a failed provider call. EXECUTE = service_role only. |
+| `public.consume_ai_turn(uuid, integer, text, integer, integer)` | SECURITY DEFINER, `search_path=''` | The turn-aware front door to the quota. Charges once per turn key; later calls of the same key are free until `p_max_calls`, and the key expires after `p_ttl_seconds`. Returns `(used, allowed, charged, calls, reason)`. EXECUTE = service_role only. |
+| `public.refund_ai_turn(uuid, text)` | SECURITY DEFINER, `search_path=''` | Releases the charge **and** the turn together, so a retry after a provider failure is not treated as a free continuation. EXECUTE = service_role only. |
+| `public.sweep_ai_turns()` | SECURITY DEFINER, `search_path=''` | Deletes turn rows older than a day. The ledger is a scratch pad, not a history. EXECUTE = service_role only. |
 | `public.monitor_limit(uuid)` / `monitor_limit_self()` *(#R144)* | SECURITY DEFINER, `search_path=''` | Per-plan monitor cap. `(uuid)` is **service_role-only** (users can't probe another user's plan); the UI reads its own via `monitor_limit_self()`. Enforced by a BEFORE INSERT trigger. |
 | `public.monitor_claim_due(int,int)` / `monitor_claim_one(uuid,uuid,int,int)` *(#R144)* | SECURITY DEFINER, `search_path=''` | Atomic claims (cron `FOR UPDATE SKIP LOCKED`; manual `UPDATE…WHERE…RETURNING`). service_role only. |
 | `public.monitor_finalize(...)` / `monitor_commit_report(...)` *(#R144)* | SECURITY DEFINER, `search_path=''` | Finalize a run + (optionally) insert its report + update the monitor meta in one transaction. service_role only. |
@@ -93,7 +97,7 @@ so a caller cannot hijack it via their own search path.
 
 1. **PII is not world-readable.** `profiles` SELECT is owner-or-admin; the public
    `profiles_public` view exposes only `id/display_name/bio/avatar_url`. `feedback`,
-   `bug_reports`, `donations`, `community_reports`, `ai_usage` are never readable by anon or
+   `bug_reports`, `donations`, `community_reports`, `ai_usage`, `ai_turns` are never readable by anon or
    by other users.
 2. **No privilege escalation.** A user can update only the four safe profile columns (column
    grant), so they cannot set their own `is_admin`/`is_pro`/`plan`. Admin is granted only via

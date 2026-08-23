@@ -86,6 +86,8 @@ select _sel('a_own_aiusage',  'select count(*) from public.ai_usage where user_i
 select _sel('a_see_b_aiusage','select count(*) from public.ai_usage where user_id=''22222222-2222-2222-2222-222222222222''');  -- 0
 select _sel('a_exec_incr',    'select allowed from public.increment_ai_usage(''11111111-1111-1111-1111-111111111111'',30)');  -- DENIED
 select _sel('a_exec_refund',  'select public.refund_ai_usage(''11111111-1111-1111-1111-111111111111'')');                     -- DENIED
+select _sel('a_exec_turn',    'select allowed from public.consume_ai_turn(''11111111-1111-1111-1111-111111111111'',30,''t'',3,900)');   -- DENIED
+select _sel('a_sel_turns',    'select count(*) from public.ai_turns');                                                        -- 0 (own rows only)
 select _sel('a_read_feedback','select count(*) from public.feedback');                     -- 0 (RLS admin-only)
 select _sel('a_read_donations','select count(*) from public.donations');                   -- 0
 select _sel('a_read_bugs',    'select count(*) from public.bug_reports');                   -- 0
@@ -150,6 +152,8 @@ select is((select v from _cap where k='a_own_aiusage'), '1',      'A can read ow
 select is((select v from _cap where k='a_see_b_aiusage'),'0',     'A cannot read B''s ai_usage');
 select is((select v from _cap where k='a_exec_incr'),   'DENIED', 'A cannot call increment_ai_usage (quota bypass blocked)');
 select is((select v from _cap where k='a_exec_refund'), 'DENIED', 'A cannot call refund_ai_usage');
+select is((select v from _cap where k='a_exec_turn'),   'DENIED', 'A cannot call consume_ai_turn (turn-quota bypass blocked)');
+select is((select v from _cap where k='a_sel_turns'),   '0',      'A reads only its OWN turn rows');
 select is((select v from _cap where k='a_read_feedback'),'0',     'A (non-admin) sees no feedback');
 select is((select v from _cap where k='a_read_donations'),'0',    'A (non-admin) sees no donations');
 select is((select v from _cap where k='a_read_bugs'),   '0',      'A (non-admin) sees no bug reports');
