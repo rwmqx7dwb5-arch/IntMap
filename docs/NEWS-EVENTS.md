@@ -420,9 +420,18 @@ reviewed Event の自動更新ロック / undo / 監査証跡 / 分類器の再�
 - 上流の取得は `_shared/relay-guard.js` の `fetchGuarded`（期限 15 s・6 MB・content-type）。
   ⚠ `refresh-news` は `AbortSignal` を 1 つも持っていない。同じ形を新しく作らない。
 - **壁時計の予算**を見て、足りなければその段で止めて次の run に残す（既定 240 s）。
-- cron: `news-ingest-tick`（`*/20 * * * *`）。SQL の形は `docs/AREA-MONITORS.md` §4 と同じで、
-  秘密は**ヘッダ**で送る。body で段を選ぶ:
-  `{"stages":["fetch","assign","prune"]}`。
+- cron は **2 本**。SQL の形は `docs/AREA-MONITORS.md` §4 と同じで、秘密は**ヘッダ**で送り、
+  body で段を選ぶ:
+
+  | job | 間隔 | body |
+  |---|---|---|
+  | `news-ingest-tick` | `*/20 * * * *` | `{"stages":["fetch","assign","prune"]}` |
+  | `news-ingest-translate` | `7 * * * *` | `{"stages":["translate"]}` |
+
+  ⚠ **翻訳だけ間隔が違うのは、そこだけが有料だからである**（利用者の判断。§14.1）。
+  間隔を伸ばすと安くなるのは、**1 時間のあいだに代表見出しが 2 度変わっても 1 回しか払わない**からで、
+  翻訳そのものの単価が下がるわけではない。上限 80 件/run は 1 日 1,920 件分なので、
+  実測の Event 生成量（約 620 件/日）に対して backlog は残らない。
 - ⚠ `current_news` と `refresh-news` には触れない（`tests/r351-checks ⑯` が押さえる）。
 
 ---
@@ -500,8 +509,13 @@ embedding の仕事で、**Phase C**（§5.2 の第 2 段）。⚠ **ANN index �
 
 ⚠ **単価は推定であって請求ではない。** `news_ingest_runs.notes.cost_rate_usd_per_mtok` に
 **使った単価**を一緒に残してあるので、あとから「どの数字を信じていいか」を言える。
-⚠ **`translate` を cron に入れると、そこで初めて継続課金が確定する。** #R351 の cron は
-`fetch` / `assign` / `prune` の 3 段だけで、翻訳は手動で回して上の数字を測った。
+⚠ **`translate` を cron に入れた時点で継続課金が確定する。** 上の数字は手動で回して測ったもので、
+**見積・上限・送信されるもの・代替案を示したうえで、利用者が「頻度を落として cron に入れる」を選んだ**
+（#R351 追記）。⇒ `news-ingest-translate` を**1 時間ごと**に置いている（§12.1）。
+⚠ 送信されるのは**既に公表されている英語の見出しだけ**で、利用者の情報は 1 バイトも含まない。
+プロバイダは Atlas と同じサーバー保持の鍵で、プライバシーポリシーに記載済み。
+⚠ 止め方は 2 つある——`select cron.unschedule('news-ingest-translate');` か、
+`supabase secrets set NEWS_TRANSLATE=off`（後者は cron を残したまま止められる）。
 
 ⚠ 既製の Event API（NewsAPI.ai $90/月〜・NewsAPI.org $449/月）は**買わない**。
 媒体選定もクラスタリングも他社のものになり、Source Registry と「主要媒体に限定」の方針が成り立たない。
