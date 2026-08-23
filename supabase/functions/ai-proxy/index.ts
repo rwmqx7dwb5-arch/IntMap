@@ -155,7 +155,7 @@ const IMAGE_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"
    `"constructor"` read an inherited value instead of a missing one. The set below is exactly the ten
    tasks TASK_MAX_OUTPUT defines and the eight js/ actually sends; anything else is a 400. */
 const TASKS = new Set([
-  "atlas_plan", "map_report", "analysis", "free_text", "json_extract",
+  "atlas_plan", "map_report", "analysis", "analysis_structured", "free_text", "json_extract",
   "brief", "geo_verify", "geo_resolve", "research_map", "vision_read",
 ]);
 /* A caller-supplied responseSchema is forwarded to the provider verbatim, so it is an input too.
@@ -191,6 +191,7 @@ const TASK_MAX_OUTPUT: Record<string, number> = {
   atlas_plan: 2200,   // (#R115) 1800→2200: multi-action plans + "say" were clipping on complex requests
   map_report: 3200,
   analysis: 2400,
+  analysis_structured: 3400,   // (#R347) the SAME answer as `analysis`, plus the claims, their metrics and the evidence ids that make each figure checkable. The prose is not longer; the structure around it is what costs.
   free_text: 1800,
   json_extract: 1200,
   brief: 1800,
@@ -209,6 +210,7 @@ const HARD_MAX_OUTPUT = 5000;   // absolute ceiling (cost guard)
 const TASK_REASONING: Record<string, string> = {
   atlas_plan: "medium",
   analysis: "medium",
+  analysis_structured: "medium",   // (#R347) same bottleneck as `analysis`; the schema does not make the thinking easier
   map_report: "low",
   free_text: "low",
   json_extract: "low",
@@ -223,7 +225,7 @@ const TASK_REASONING: Record<string, string> = {
 // (#R113c) atlas_plan is INTENTIONALLY excluded: forcing responseMimeType on the very large planner prompt added
 // latency (feeding the 45s timeouts) and the planner worked fine before with prompt-only JSON (aiParseJSON on the
 // client strips any fence). map_report / json_extract keep structured output where it matters most.
-const JSON_TASKS = new Set(["map_report", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read"]);   /* (#R156) vision_read returns a strict JSON object (contentClass/answer/checks/places) */
+const JSON_TASKS = new Set(["map_report", "analysis_structured", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read"]);   /* (#R156) vision_read returns a strict JSON object (contentClass/answer/checks/places) · (#R347) analysis_structured returns the AnswerEnvelope */
 
 // (#R113) Gemini Structured Output schema for map_report. The model returns ONLY
 // name/locationName/country/summary/date/evidenceIds — the client fills url, source,
@@ -254,6 +256,103 @@ const MAP_REPORT_SCHEMA = {
   required: ["title", "overview", "items"],
   propertyOrdering: ["title", "overview", "items"],
 };
+
+/* ══ (#R347) THE ANSWER ENVELOPE — the shape an ANALYSIS must arrive in ═══════════════════════════
+   ⚠ THE SERVER OWNS IT, LIKE MAP_REPORT_SCHEMA, and js/atlas-answer-contract.js holds the copy the
+   client validates and renders against. Two copies of one fact is exactly what this repository does
+   not allow to drift, so tests/r334-checks.test.mjs compares them field by field and fails when they
+   disagree — the same rule #R323 applied to the three capability tables.
+
+   ⚠ THERE IS NO url FIELD ANYWHERE IN IT. That is not an omission: the model has nowhere to put a
+   URL, so it cannot supply one, and every link the reader sees is built by the client from the
+   evidence registry (js/atlas-evidence.js). */
+const ANSWER_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    directAnswer: {
+      type: "OBJECT",
+      properties: { text: { type: "STRING" }, claimIds: { type: "ARRAY", items: { type: "STRING" } } },
+      required: ["text", "claimIds"],
+    },
+    sections: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          id: { type: "STRING" },
+          heading: { type: "STRING" },
+          blocks: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                type: { type: "STRING" },
+                text: { type: "STRING" },
+                claimIds: { type: "ARRAY", items: { type: "STRING" } },
+              },
+              required: ["type", "text", "claimIds"],
+            },
+          },
+        },
+        required: ["id", "heading", "blocks"],
+      },
+    },
+    limitations: { type: "ARRAY", items: { type: "STRING" } },
+    claims: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          id: { type: "STRING" },
+          text: { type: "STRING" },
+          claimType: { type: "STRING" },
+          importance: { type: "STRING" },
+          dimension: { type: "STRING" },
+          basedOn: { type: "ARRAY", items: { type: "STRING" } },
+          metric: {
+            type: "OBJECT",
+            properties: {
+              seriesId: { type: "STRING" }, concept: { type: "STRING" },
+              value: { type: "NUMBER" }, unit: { type: "STRING" }, basis: { type: "STRING" },
+              adjustment: { type: "STRING" }, geography: { type: "STRING" }, period: { type: "STRING" },
+            },
+          },
+          evidenceIds: { type: "ARRAY", items: { type: "STRING" } },
+          confidence: { type: "STRING" },
+          qualifier: { type: "STRING" },
+        },
+        required: ["id", "text", "claimType", "importance", "dimension", "evidenceIds", "confidence"],
+      },
+    },
+    places: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          name: { type: "STRING" }, country: { type: "STRING" }, kind: { type: "STRING" },
+          claimIds: { type: "ARRAY", items: { type: "STRING" } },
+        },
+        required: ["name", "country"],
+      },
+    },
+  },
+  required: ["directAnswer", "sections", "claims"],
+};
+
+/* ⚠ A SHAPE THE CLIENT CANNOT RENDER IS A TYPED ERROR, NOT A STRING TO DISPLAY. Without this the
+   client received prose where it expected an object, could not audit it, and had to choose between
+   showing unverified text and showing nothing. `invalid_structured_output` already has its
+   nine-language message in js/ai-core.js. */
+function structuredAnswerOk(text: string): boolean {
+  let v: unknown;
+  try { v = JSON.parse(String(text || "").replace(/^\s*```(?:json)?/i, "").replace(/```\s*$/, "")); } catch (_) { return false; }
+  if (!v || typeof v !== "object" || Array.isArray(v)) return false;
+  const o = v as Record<string, unknown>;
+  const da = o.directAnswer as Record<string, unknown> | undefined;
+  if (!da || typeof da !== "object" || typeof da.text !== "string" || !da.text.trim()) return false;
+  if (!Array.isArray(o.claims)) return false;
+  return true;
+}
 
 function maxOutputFor(task: string, requestedCount?: number): number {
   let n = TASK_MAX_OUTPUT[task] ?? FALLBACK_MAX_OUTPUT;
@@ -775,6 +874,7 @@ Deno.serve(async (req) => {
   const wantJson = JSON_TASKS.has(task) || (provider === "openai" && task === "atlas_plan");
   // Server owns the map_report schema; other JSON tasks may pass their own (validated shallowly).
   const responseSchema = task === "map_report" ? MAP_REPORT_SCHEMA
+    : task === "analysis_structured" ? ANSWER_SCHEMA   // (#R347) server-owned, mirrored by js/atlas-answer-contract.js
     : (wantJson && payload.schema && typeof payload.schema === "object" && schemaOk(payload.schema) ? payload.schema : undefined);
   const searchEnabled = (Deno.env.get("GEMINI_SEARCH_ENABLED") || "").toLowerCase() === "true";
   const model = Deno.env.get("AI_MODEL") ||
@@ -787,7 +887,7 @@ Deno.serve(async (req) => {
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
       // (#R114) webMode:"required" → force the hosted web search so a latest-info task really runs it.
       let effort = TASK_REASONING[task] || "low";   // (#R116) planner/analysis think at "medium"
-      if (effortHint === "high" && (task === "atlas_plan" || task === "analysis" || task === "vision_read")) effort = "high";   // (#R117/#R156) complexity hint (vision reading small text + maths earns "high")
+      if (effortHint === "high" && (task === "atlas_plan" || task === "analysis" || task === "analysis_structured" || task === "vision_read")) effort = "high";   // (#R117/#R156/#R347) complexity hint (vision reading small text + maths earns "high")
       try {
         out = await callOpenAI(model, key, prompt, system, imgs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail);
       } catch (e) {
@@ -827,6 +927,11 @@ Deno.serve(async (req) => {
       const key = Deno.env.get("ANTHROPIC_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "ANTHROPIC_API_KEY not set", 502, false, {});
       out = await callAnthropic(model, key, prompt, system, imgs, web, maxTokens);
+    }
+    // (#R347) 5a) A structured answer that will not parse is a TYPED failure, refunded like any
+    // other provider failure — the client must never be handed prose it cannot audit.
+    if (task === "analysis_structured" && !structuredAnswerOk(out.text)) {
+      throw new ProviderError("invalid_structured_output", "The answer did not arrive in the required shape.", 502, true, {});
     }
     // 5) Success.
     return json({

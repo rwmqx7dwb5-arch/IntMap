@@ -229,6 +229,16 @@ atlas-results.js                  全操作が返す1つの形（#R318）。`ok`
 atlas-state.js                    アプリの状態をデータとして持つ（#R318）。各サブシステムが provider を登録し、
                                   モデル向けの文章はそこから派生する。ターン台帳（目標・計画・結果・objectId）
 atlas-planner.js                  計画の schema・検証・GoalSpec・依存グラフ実行（#R318。#R135 の時間軸ブロックを内包）
+atlas-evidence.js                 Atlas — 証拠レジストリ（#R347）。ソースが入ってよい唯一の入口。URL の正規化と
+                                  拒否理由、追跡パラメータの無視、重複の統合、捏造ホスト名の検出。1 回の呼び出しに
+                                  束縛されるので、同時に走る 2 つの回答が引用を取り違えられない
+atlas-answer-contract.js          Atlas — 回答の契約（#R347）。AnswerEnvelope の schema（ai-proxy と同一）・
+                                  主張の意味区分（構成比／成長寄与／供給能力…）・単位クラス・文中の数値の読み取り
+atlas-answer-audit.js             Atlas — 回答の監査（#R347）。冒頭結論と本文の矛盾、統計系列の混同、%とポイント、
+                                  裏付けのない数値、本文中の URL など 30 超のコードを構造から判定する（自己点検ではない）
+atlas-answer-pipeline.js          Atlas — 1 回の呼び出し → 監査 → 最大 1 回の修復 → 劣化（#R347）。正常経路は 1 回のまま
+atlas-answer-render.js            Atlas — 構造化回答の描画（#R347）。引用記号と出典カードはレジストリからのみ生成し、
+                                  モデルが書いた URL はリンクにしない
 ```
 
 ### 3.8 `js/` — 分析・パネル・シミュレーション

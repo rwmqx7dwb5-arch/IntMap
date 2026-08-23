@@ -84,9 +84,15 @@ export function makeAtlasPlanner(HOST, CTX) {
       const evidenceMode=temporalMode==='historical'?'historical':temporalMode==='mixed'?'mixed':temporalMode==='current'?'live':'none';
       const geoKind=_rpGeoKind(q);
       const wantMap=/地図|マップ|マッピング|地図上|地図に|地図で|on the map|\bmap\b|見せて|表示して|plot|\bpin\b|karte|карт|mapa/i.test(q);
+      /* (#R347) 「中国へ移動して」 asks for the MAP without containing the word 地図 — and `wantMap`
+         above, written for 「地図上で教えて」, does not see it. goalImpact() needs the difference
+         between a map move the user ASKED FOR and one Atlas added itself, so the navigation verbs
+         get their own signal rather than being folded into wantMap (which the planner prompt reads,
+         and which must keep meaning 「the answer must appear on the map」). */
+      const wantNav=/移動して|移動する|飛んで|飛ぶ|行って|向かって|ズーム|拡大して|寄って|中心に|中央に|映して|go to|goto|fly to|navigate|zoom|centre? on|move to|take me to|jump to|перейти|перелет|центрир|zeig mir|springe|ir a|centra en|vete a|이동|가줘/i.test(q);
       const wantCmp=cmpMk;
       const wantExpl=(/[?？]|どう|どんな|なに|何|なぜ|どうして|状況|情勢|様子|教えて|説明|について|解説|どうなって|\bwhat\b|\bwhy\b|\bhow\b|which|situation|status|tell me|explain|describe|about\b|\bwas\b|\bwer\b|\bqué\b|\bкак\b/i.test(q))||temporalMode!=='unspecified';
-      return { temporalMode, targetYear, temporalSource:tSource, geoQuery:'', geoKind, evidenceMode, outputs:{ explanation:!!wantExpl, map:!!wantMap, comparison:!!wantCmp } }; }
+      return { temporalMode, targetYear, temporalSource:tSource, geoQuery:'', geoKind, evidenceMode, outputs:{ explanation:!!wantExpl, map:!!wantMap, comparison:!!wantCmp, navigation:!!wantNav } }; }
     /* (#R135 §3) The [REQUEST PROFILE] block the planner reads (machine-parsed hints; the rules are then ENFORCED). */
     function _profileBlock(p){ if(!p) return ''; const outs=[]; if(p.outputs.explanation) outs.push('explanation'); if(p.outputs.map) outs.push('map'); if(p.outputs.comparison) outs.push('comparison');
       const yStr=(p.targetYear!=null)?p.targetYear:'null';
@@ -244,6 +250,39 @@ export function makeAtlasPlanner(HOST, CTX) {
         intent: (plan && plan.goal && plan.goal.intent) || String(q || '').slice(0, 160),
         completionRules: rules
       };
+    }
+
+    /* ══ (#R347) GOAL IMPACT — 「補助的に実行した地図移動の失敗」と「頼まれた地図が出ない」は別の事故 ══
+       Reported: an informational question was answered correctly in prose, and the reply opened with
+       「⚠ 実行できなかった操作が 1 件あります」 because a flyTo Atlas had ADDED ITSELF did not land. The
+       turn summary counted failed actions; nothing asked whose goal each action served.
+
+       ⚠ IT IS DERIVED FROM THE REQUEST, NOT FROM THE ACTION TYPE. The same `flyTo` is `primary` when
+       the user said 「中国へ移動して」 and `secondary` when they asked what supports the Chinese economy
+       and Atlas decided a map move would be a nice touch. That is why the profile — not a list of
+       important capabilities — is the input.
+
+         primary   — this action is (part of) an output the user asked for. Its failure downgrades
+                     the turn to `partial`, or to `failed` when nothing primary succeeded.
+         secondary — a courtesy Atlas added. Its failure is reported as a quiet note AFTER the
+                     answer and never changes the turn's status.
+         none      — nothing the reader is owed. */
+    function goalImpact(profile, act) {
+      if (!act || !act.type) return 'none';
+      if (act.__goalImpact) return String(act.__goalImpact);
+      var outs = (profile && profile.outputs) || {};
+      var c = null; try { c = Caps.resolve(act.type); } catch (_) { c = null; }
+      var produces = (c && Array.isArray(c.produces)) ? c.produces : [];
+      var writes = !!(c && c.effects && c.effects.writes && c.effects.writes.length);
+      var isMap = produces.indexOf('map') >= 0 || produces.indexOf('camera') >= 0;
+      var isExpl = produces.indexOf('explanation') >= 0;
+      /* An explanation is never decoration: if it fails, the reader has no answer. */
+      if (isExpl) return 'primary';
+      if (produces.indexOf('comparison') >= 0 && outs.comparison) return 'primary';
+      if (isMap) return (outs.map || outs.navigation) ? 'primary' : 'secondary';
+      /* A setting, a panel or a control is in the plan only because the request named it. */
+      if (writes || produces.length) return 'primary';
+      return 'none';
     }
 
     /* evaluateGoal(goal, results) — what is still owed, computed from OBSERVED results only.
@@ -464,7 +503,7 @@ export function makeAtlasPlanner(HOST, CTX) {
       _isWorldExpansion: _isWorldExpansion, _validatePlan: _validatePlan,
       _repairGuidance: _repairGuidance, _goalValidation: _goalValidation,
       /* ② the plan as a structure */
-      PLAN_SCHEMA: PLAN_SCHEMA, goalSpec: goalSpec, evaluateGoal: evaluateGoal,
+      PLAN_SCHEMA: PLAN_SCHEMA, goalSpec: goalSpec, evaluateGoal: evaluateGoal, goalImpact: goalImpact,
       validate: validate, normalize: normalize, toActions: toActions, resolveRefs: resolveRefs,
       runPlan: runPlan, selectCapabilities: selectCapabilities
     };

@@ -32,6 +32,11 @@ import { makeAtlasCapabilities } from './atlas-capabilities.js';   /* (#R318) no
 import { installAtlasKernel } from './atlas-executor.js';   /* (#R318) the executor, the result shape and the state ledger — fetched WITH Atlas rather than at boot; installAtlasKernel is idempotent so a UI button may have mounted it first */
 import { makeAtlasPlanner } from './atlas-planner.js';   /* (#R318) the plan — schema, validation, GoalSpec, dependency execution (holds #R135's block) */
 import { makeAtlasCatalogText } from './atlas-catalog-text.js';   /* (#R318) the 58 kB action catalogue that used to be inline in SYS() */
+import { makeAtlasAnswerPipeline } from './atlas-answer-pipeline.js';   /* (#R347) the analysis answer as a contract: evidence registry -> one call -> audit -> at most one repair -> degrade */
+import { makeAtlasAnswerRender } from './atlas-answer-render.js';   /* (#R347) every link on screen is built from the registry, never from the model's prose */
+import { makeAtlasEvidence } from './atlas-evidence.js';
+import { makeAtlasAnswerContract } from './atlas-answer-contract.js';
+import { makeAtlasAnswerAudit } from './atlas-answer-audit.js';
 import { makeAtlasExamples } from './atlas-examples.js';   /* (#R309) the starter chips — see the ceiling note there */
 import { makeNewsCluster } from './news-cluster.js';   /* (#R340) research.events — the ONE deterministic article→event grouper, with the measurements behind every constant */
 
@@ -46,7 +51,7 @@ window.IntMapModules.atlasConsole=function(HOST){
   const RESULTS=_KERNEL&&_KERNEL.results, EXEC=_KERNEL&&_KERNEL.exec, ASTATE=_KERNEL&&_KERNEL.state;
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
-  const _aiLangName=HOST._aiLangName, addEdgeResize=HOST.addEdgeResize, addPin=HOST.addPin, aiGate=HOST.aiGate, aiLimitMsg=HOST.aiLimitMsg, aiLoginMsg=HOST.aiLoginMsg, aiParseJSON=HOST.aiParseJSON, aiToast=HOST.aiToast, aiToday=HOST.aiToday, aiUsage=HOST.aiUsage, aiUsesLeft=HOST.aiUsesLeft, applyAccent=HOST.applyAccent, applyTheme=HOST.applyTheme, askAI=HOST.askAI, askAIJSON=HOST.askAIJSON, askAIJSONEnvelope=HOST.askAIJSONEnvelope, bringToFront=HOST.bringToFront, cName=HOST.cName, clearAllPins=HOST.clearAllPins, compressImage=HOST.compressImage, countryStats=HOST.countryStats, diskFillPolys=HOST.diskFillPolys, exitTool=HOST.exitTool, fetchData=HOST.fetchData, fmtPc=HOST.fmtPc, loadCountryData=HOST.loadCountryData, localFuzzyPlaces=HOST.localFuzzyPlaces, makeDraggable=HOST.makeDraggable, parseDate=HOST.parseDate, refreshTool=HOST.refreshTool, saveSettings=HOST.saveSettings, setGrid=HOST.setGrid, setLang=HOST.setLang, setMode=HOST.setMode, setTool=HOST.setTool, showCountryDetail=HOST.showCountryDetail, t=HOST.t, updateToolPanel=HOST.updateToolPanel, ymdISO=HOST.ymdISO;
+  const _aiLangName=HOST._aiLangName, addEdgeResize=HOST.addEdgeResize, addPin=HOST.addPin, aiGate=HOST.aiGate, aiLimitMsg=HOST.aiLimitMsg, aiLoginMsg=HOST.aiLoginMsg, aiParseJSON=HOST.aiParseJSON, aiToast=HOST.aiToast, aiToday=HOST.aiToday, aiUsage=HOST.aiUsage, aiUsesLeft=HOST.aiUsesLeft, applyAccent=HOST.applyAccent, applyTheme=HOST.applyTheme, askAI=HOST.askAI, askAIEnvelope=HOST.askAIEnvelope, askAIJSON=HOST.askAIJSON, askAIJSONEnvelope=HOST.askAIJSONEnvelope, bringToFront=HOST.bringToFront, cName=HOST.cName, clearAllPins=HOST.clearAllPins, compressImage=HOST.compressImage, countryStats=HOST.countryStats, diskFillPolys=HOST.diskFillPolys, exitTool=HOST.exitTool, fetchData=HOST.fetchData, fmtPc=HOST.fmtPc, loadCountryData=HOST.loadCountryData, localFuzzyPlaces=HOST.localFuzzyPlaces, makeDraggable=HOST.makeDraggable, parseDate=HOST.parseDate, refreshTool=HOST.refreshTool, saveSettings=HOST.saveSettings, setGrid=HOST.setGrid, setLang=HOST.setLang, setMode=HOST.setMode, setTool=HOST.setTool, showCountryDetail=HOST.showCountryDetail, t=HOST.t, updateToolPanel=HOST.updateToolPanel, ymdISO=HOST.ymdISO;
   return (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, run(){}, toggle(){} };
     /* (#R64) Atlas MIRRORS the language of the user's message ("別の言語で話しかけても、言語設定の言語でしか返答
@@ -170,7 +175,9 @@ window.IntMapModules.atlasConsole=function(HOST){
        BARE STRING: `s` is what the model reads, `t` is the turn that produced it — the array is capped at 16, so an
        absolute position means nothing, and an edited message must rewind history as far as it rewinds the chat. */
     let _hist=[]; let _lastPlace=null; let _lastMissileCtx=null; let _lastRadCtx=null; let _lastRouteCtx=null;   /* (#R85) last missile / radiation / route → in-message controls re-run it */
-    let _turnSeq=0, _curTurn=0;   /* (#R298) the monotone turn id: run() stamps it on the user bubble and recordTurn files the exchange under it. ⚠ its own line — tests/r199 pins `let _hist=[]; let _lastPlace=null;` verbatim to prove the kernel still owns _lastPlace, so nothing may be spliced between them */
+    let _curPlanCites=[];   /* (#R347) the citations of THIS turn's planner call. The `answer` action used to read window._aiLastCitations at render time — a second Atlas turn finishing in between handed it the other turn's sources. */
+    let _curProfile=null;   /* (#R347) the request profile of the turn in flight — read by runActions to stamp each action's goal impact */
+    let _turnSeq=0, _curTurn=0, _curTurnKey='';   /* (#R347) _curTurnKey is module-scoped because the analysis lives in dispatch(), not in run(): without it the structured answer and its one repair would each buy a daily use, undoing #R318 for exactly the path this round adds a repair to. (#R298) the monotone turn id: run() stamps it on the user bubble and recordTurn files the exchange under it. ⚠ its own line — tests/r199 pins `let _hist=[]; let _lastPlace=null;` verbatim to prove the kernel still owns _lastPlace, so nothing may be spliced between them */
     /* (#R86c) multi-stop route optimisation (TSP): order N points shortest-first via nearest-neighbour + 2-opt on
        great-circle distance (keyless, instant), keeping the first point as the fixed start; the ordered tour is then
        driven on the real OSM road network (OSRM). Good for "10地点を最短順に並べ替える". */
@@ -1039,6 +1046,14 @@ window.IntMapModules.atlasConsole=function(HOST){
     const { _atlBadSourceHost, _atlCleanUrl, _atlRelevantCards, _atlStanza, dropLeadTitle, linkCards, listHtml, mdMini } = makeAtlasReply(HOST, { L, esc, fitTo, fmtVal, highlight, note, warn });
     /* (#R340) ↳ js/news-cluster.js — article→EVENT grouping for research.events. No HOST and no deps: it is pure, which is what lets tests/r340-checks run the shipped function over a fixture. */
     const { EVENT_RULES, groupNewsEvents, newsSubject } = makeNewsCluster();
+    /* (#R347) the answer contract, in the shape tests/r175 ③ requires of every js/ module: ONE
+       exported factory per file, nothing private at a module's top level, and the API attached to
+       window so the browser spec can drive the REAL renderer rather than a Node copy of it. */
+    const { runStructuredAnswer } = makeAtlasAnswerPipeline();
+    const { renderAnswer, answerPlainText, answerCSS } = makeAtlasAnswerRender();
+    const { makeEvidenceRegistry } = makeAtlasEvidence();
+    const { normalizeAnswer } = makeAtlasAnswerContract();
+    const { auditAnswer } = makeAtlasAnswerAudit();
     /* ---- (#R43) PRECISE layer resolution. The user reported "レイヤーによっては混同している" — the old matcher
        fuzzy-matched loosely AND the model never saw the real layer names, so it guessed a name and the matcher
        guessed a layer (double-guess). Now: (a) the LIVE layer list is injected into the prompt (layerCatalogText)
@@ -1372,6 +1387,16 @@ window.IntMapModules.atlasConsole=function(HOST){
     async function _sstData(lng,lat){ const j=await _fetchJSON('https://marine-api.open-meteo.com/v1/marine?latitude='+(+lat).toFixed(3)+'&longitude='+(+lng).toFixed(3)+'&current=sea_surface_temperature'); const v=j&&j.current&&j.current.sea_surface_temperature; return (v==null)?null:('sea surface temperature '+v+'°C'); }
     async function _elevData(lng,lat){ const j=await _fetchJSON('https://api.open-meteo.com/v1/elevation?latitude='+(+lat).toFixed(4)+'&longitude='+(+lng).toFixed(4)); const v=j&&j.elevation&&j.elevation[0]; return (v==null)?null:('elevation '+Math.round(v)+' m'); }
     function _statsData(codes){ try{ const out=[]; (codes||[]).forEach(cd=>{ const s=countryStats[cd]; if(!s) return; const parts=[]; for(const k in METRICS){ const v=METRICS[k].get(s); if(v==null||isNaN(v)) continue; parts.push(lx(METRICS[k].label)+'='+fmtVal(k,v)); } if(s.capital) parts.push('capital='+s.capital); if(parts.length) out.push(nm(s)+': '+parts.join(', ')); }); return out.length?out.join('\n'):null; }catch(_){ return null; } }
+    /* ⚠ (#R347) THE SAME NUMBERS, AS EVIDENCE INSTEAD OF PROSE. `_statsData` renders the country
+       table into a block of text, and a figure quoted out of a block of text can only ever be
+       ATTRIBUTED — never checked. The same rows here become supportFacts with their own seriesId,
+       so js/atlas-answer-audit.js can ask which row a number in the answer actually came from, and
+       say so when the answer chains two of them into one sentence. */
+    function _statsFacts(codes){ try{ return (codes||[]).map(cd=>{ const s2=countryStats[cd]; if(!s2) return null;
+      const facts=[]; for(const k in METRICS){ const v=METRICS[k].get(s2); if(v==null||isNaN(v)) continue;
+        facts.push({ seriesId:'intmap.country.'+k, concept:lx(METRICS[k].label), value:+v, unit:k, basis:'reported', geography:nm(s2), period:'latest' }); }
+      return facts.length?{ title:nm(s2), publisher:'IntMap', validTime:'latest', dateType:'valid_time', supportFacts:facts }:null;
+    }).filter(Boolean); }catch(_){ return []; } }
     /* (#R74) LIVE incumbent lookup ("まだ現在の首相名等をAtlasは間違えている"): the model's memory is stale by
        definition and even a forced web search sometimes surfaces old articles. Wikidata's P6 (head of
        government) / P35 (head of state) statements are community-updated within hours of a change, are
@@ -1450,7 +1475,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       /* ---- (#R147) scope: analyse sensitive-but-legitimate questions instead of over-refusing ---- */
       s+='SCOPE: analyze sensitive but legitimate questions (defense, disasters, disease, hazards, crime statistics, cyber, critical infrastructure) from PUBLIC information at an appropriate level of generality — judge by purpose, target, precision and output, never by a sensitive-sounding word. State the uncertainty and cite public sources; decline ONLY genuinely operational harm (real-time targeting, a precise strike or kill plan, or weapon/agent synthesis instructions) and, even then, still give the safe public-information analysis you can. ';
       /* ---- length + sources ---- */
-      s+='Answer in '+lang+'.'+/* (#R285) the Japanese-politeness clause appended right here is gone: the persona above owns the register now, for every Atlas surface rather than only this one */' FORMAT FOR READABILITY — MANDATORY for any answer longer than ~2 sentences (users repeatedly report Atlas replies are a monotonous wall of same-size text; an unstructured block is unacceptable): (1) open with ONE direct plain-language sentence that answers the question; (2) break the body into sections, EACH started by a "## " heading of 2–5 words on its OWN line with a blank line before it; (3) use "- " bullets for ANY list of two or more items; (4) put the pivotal term or figure of a point in **bold**; (5) NEVER write more than ~3 sentences in a row without a "## " heading or a bullet, and never return one undivided block. IntMap renders this Markdown as real, larger headings with clear spacing between sections. A genuinely one-idea reply stays 1–3 plain sentences — do not over-structure that. Use headings that describe THIS answer\'s content; never invent a section the answer does not cover. Aim for concision (~230 words is a good target for an open-ended question) BUT never drop the user\'s required sections or a required verdict to hit a word count — their requested structure wins. SOURCE QUALITY: prefer the single most authoritative PRIMARY source per claim (official body, government, the institution itself, primary reporting) over merely-highly-ranked pages; do NOT lean the whole answer on one site or domain — corroborate across independent source types. NEVER cite social media, user-generated forums, link shorteners or video platforms (X/Twitter, Facebook, Instagram, Reddit, YouTube, TikTok, Telegram, etc.) as a source — they are not reliable factual sources and will be discarded. Then, after the answer, on its own line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs (from the NEWS EVIDENCE urls or from your web search this turn); EACH url must be a specific page that DIRECTLY supports a claim you made — never a generic homepage, a search page, or an unrelated link. Omit the line entirely if you have none; fabricating a URL is forbidden. MAP VALUE (IntMap is a MAP product, not a chatbot — every location-rich answer must put its spots ON the map): if the answer names specific, real, mappable places (cities, towns, districts, landmarks, buildings, stations, airports, ports, parks, gardens, museums, squares/plazas, stadiums, named facilities, or named natural features such as rivers/mountains/islands/straits), then on the VERY LAST line — AFTER any SOURCES line — output "PLACES: " followed by a ONE-LINE compact JSON array naming EVERY such place: [{"n":"exact place name","c":"the modern country it lies in","k":"kind"}]. IntMap resolves the coordinates from n+c and pins them — NEVER output latitude/longitude, never invent a place, exclude whole countries and vague/relative terms ("the region","the coast","downtown"), and list a place only if you actually named it in the answer. The places you name in the prose and the places in PLACES must MATCH. Omit the PLACES line only when the answer truly names no mappable place.';
+      s+='Answer in '+lang+'.'+/* (#R285) the Japanese-politeness clause appended right here is gone: the persona above owns the register now, for every Atlas surface rather than only this one */' FORMAT FOR READABILITY — MANDATORY for any answer longer than ~2 sentences (users repeatedly report Atlas replies are a monotonous wall of same-size text; an unstructured block is unacceptable): (1) open with ONE direct plain-language sentence that answers the question; (2) break the body into sections, EACH started by a "## " heading of 2–5 words on its OWN line with a blank line before it; (3) use "- " bullets for ANY list of two or more items; (4) put the pivotal term or figure of a point in **bold**; (5) NEVER write more than ~3 sentences in a row without a "## " heading or a bullet, and never return one undivided block. IntMap renders this Markdown as real, larger headings with clear spacing between sections. A genuinely one-idea reply stays 1–3 plain sentences — do not over-structure that. Use headings that describe THIS answer\'s content; never invent a section the answer does not cover. Aim for concision (~230 words is a good target for an open-ended question) BUT never drop the user\'s required sections or a required verdict to hit a word count — their requested structure wins. SOURCE QUALITY: prefer the single most authoritative PRIMARY source per claim (official body, government, the institution itself, primary reporting) over merely-highly-ranked pages; do NOT lean the whole answer on one site or domain — corroborate across independent source types. NEVER cite social media, user-generated forums, link shorteners or video platforms (X/Twitter, Facebook, Instagram, Reddit, YouTube, TikTok, Telegram, etc.) as a source — they are not reliable factual sources and will be discarded. CITATION AND PLACES ARE NOT WRITTEN AS TEXT ANY MORE (#R347): you neither emit a SOURCES line nor a PLACES line. Sources are referenced by the evidence ids given to you, and mappable places are a field of the structured answer — the ANSWER CONTRACT block below states both. A URL, a domain name or a source name written into the prose is a defect IntMap rejects, because IntMap builds every link itself from the records it actually fetched.';
       return s; }
     /* (#R131) The TIME CONTEXT + REQUESTED COVERAGE header of the analyze DATA block. Shared by the live path and
        the regression harness so the two can never drift. */
@@ -1465,6 +1490,12 @@ window.IntMapModules.atlasConsole=function(HOST){
        freshness gating, the clock/window, dated-evidence semantics, coverage and the prompt rules — which ARE
        deterministic. This pins the clock + the exact fixture headlines the report cited and asserts those inputs.
        Run in devtools: window.IntMapAtlasQA.run() → {pass, results:[{id,ok,detail}…]}. */
+    /* ⚠ (#R347) THE ANSWER PIPELINE, REACHABLE FROM THE BROWSER. #R313's addendum is the reason this
+       exists: a fix that worked perfectly in Node did not affect a single word in the browser, and
+       the check stayed green forever because it measured Node. tests/r318-atlas.spec.js drives the
+       REAL renderer — the real mdMini, the real linkCards, the real stylesheet — through this. */
+    window.IntMapAtlasAnswer={ render:(env,reg)=>renderAnswer(env,reg,{L,esc,mdMini,linkCards}), plainText:answerPlainText,
+      registry:makeEvidenceRegistry, normalize:normalizeAnswer, audit:auditAnswer };
     window.IntMapAtlasQA={
       freshness:_analyzeFreshness, nowContext:_nowContext, evidence:_analyzeEvidence, evidenceBlock:_evidenceBlock, headerBlock:_analyzeHeaderBlock, systemPrompt:_analysisSystemPrompt,
       requestProfile:_requestProfile, validatePlan:_validatePlan, actionFamily:_actionFamily, researchFamKey:_researchFamKey, semanticRetryKey:_semanticRetryKey, get capabilities(){ return ATLAS_ACTION_CAPABILITIES; }, profileBlock:_profileBlock, isWorldExpansion:_isWorldExpansion, goalValidation:_goalValidation,   /* (#R135) getter avoids the const TDZ at load */
@@ -1847,7 +1878,7 @@ window.IntMapModules.atlasConsole=function(HOST){
              headlines) and the call is webMode:'required' so the proxy forces the search. */
           const sysB=personaPrompt('working here as IntMap\'s geopolitical and area-studies research desk')/* (#R285) this opened with a DIFFERENT character from the one answering two panels away; the task role stays, the name and the character are Atlas's */+'The real current date is '+today+' (never treat it as a future date). Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. IMPORTANT: if a web-search tool is attached to this request, USE it to find and verify the most recent developments, and cite each recent event with its date and a source; if no web-search tool is attached, rely only on the supplied recent-news headlines below and do not claim to have searched. Either way, treat the supplied headlines as leads. GROUNDING (the user reported hallucinated, non-existent events): every RECENT development you list must come from your web-search results this turn OR the supplied headlines — never invent a plausible-sounding recent event from memory. If neither surfaces anything recent, say so plainly under "Recent developments" rather than fabricating one or presenting an old event as if it were current. Do NOT open with a heading or bold line that merely repeats the place name — it is already on screen above your reply. Start straight with the content. Respond in '+langB+'.';
           const pB='Write a concise intelligence brief on "'+nm3+'"'+((ll&&isFinite(ll.lat))?(' (around '+ll.lat.toFixed(2)+', '+ll.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritize the last 1-2 years; date each event)\n2-4 sentences per section, section headers translated into '+langB+'. Prefer named entities, dates and numbers over generalities.'+hl2;
-          let txtB=''; try{ txtB=await askAI(pB,sysB,null,{task:'brief',webMode:'required'}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
+          let txtB='', _envB=null; try{ _envB=await askAIEnvelope(pB,sysB,null,{task:'brief',webMode:'required',turnId:_curTurnKey}); txtB=(_envB&&_envB.text)||''; }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
           if(!String(txtB||'').trim()) return R(false, warn('⚠ '+L('The brief came back empty','ブリーフが空でした','Bericht kam leer zurück','Пустой ответ','El informe volvió vacío')));
           /* ⚠⚠ (#R232) 「返答の最初に地名だけ」 — re-sent: #R231 fixed the OTHER panel; this branch printed it itself (#R69). */
           /* (#R232) …and the TOPIC with it — resolved name AND typed string (often different scripts). */
@@ -1856,7 +1887,7 @@ window.IntMapModules.atlasConsole=function(HOST){
              now carries that disclaimer (毎メッセージに書くな). */
           /* (#R114) honest recency footer: show the as-of date, and flag when a LIVE web search actually ran
              (meta.webUsed) so a search-less brief is never mistaken for fresh "latest" intelligence. */
-          let asofB=''; try{ const _m=window._aiLastMeta||{}; asofB='<div style="font-size:10.5px;color:var(--text-muted);margin-top:7px;">'+L('As of','時点','Stand','На дату','A fecha de')+' '+today+(_m.webUsed?(' · '+L('live web search','ライブWeb検索','Live-Websuche','поиск в интернете','búsqueda web en vivo')):'')+'</div>'; }catch(_){}
+          let asofB=''; try{ const _m=(_envB&&_envB.meta)||{};   /* (#R347) THIS call's meta, not window._aiLastMeta — a concurrent Atlas turn used to decide whether this brief said 「ライブWeb検索」 */ asofB='<div style="font-size:10.5px;color:var(--text-muted);margin-top:7px;">'+L('As of','時点','Stand','На дату','A fecha de')+' '+today+(_m.webUsed?(' · '+L('live web search','ライブWeb検索','Live-Websuche','поиск в интернете','búsqueda web en vivo')):'')+'</div>'; }catch(_){}
           /* (#R232) …and the model's own version of it — dropLeadTitle is in js/atlas-reply.js. */
           const bodyB=dropLeadTitle(txtB,nm3); try{ if(window.IntMapWidgetBriefStore) window.IntMapWidgetBriefStore.remember({place:nm3,text:bodyB,at:Date.now()}); }catch(_){}   /* (#R292) the widget board is SHOWN this brief and never asks for one — see js/widget-defs-map.js. ⚠ ON THIS LINE because #R199's ceiling is never raised (#R272): the file had one line of headroom and this addition pays for itself. */
           return R(true,'<div style="font-size:14px;line-height:1.68;">'+mdMini(bodyB)+'</div>'+asofB+srcCardsB); }
@@ -3366,70 +3397,49 @@ window.IntMapModules.atlasConsole=function(HOST){
              web_search results → the "ギリシャの近況" non-answer ("特筆すべきニュースなし"). The web search is now a
              REQUIRED evidence source whenever the blocks are thin, and no-news answers without a search are banned. */
           const sys2=_analysisSystemPrompt(nowCtx, freshness, coverage, lang);
-          let txt=''; try{ txt=await askAI('[QUESTION]\n'+q+'\n\n'+block,sys2,null,{task:'analysis',webMode:analysisWebMode}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
-          if(!String(txt||'').trim()) return R(false, warn('⚠ '+L('The analysis returned no answer','分析結果が空でした','Analyse ergab keine Antwort','Анализ не дал ответа','El análisis no dio respuesta')));
-          /* (#R131) Capture the LAST call's meta + hosted-search citations immediately (the analyze call is the last
-             askAI in this path). webUsed = the hosted web search ACTUALLY ran; false when it was optional and skipped
-             OR timed out into the tool-free fallback. */
-          const _aMeta=(window._aiLastMeta&&typeof window._aiLastMeta==='object')?window._aiLastMeta:{};
-          const _aCites=(Array.isArray(window._aiLastCitations)?window._aiLastCitations:[]).filter(c=>c&&/^https?:\/\//i.test(String(c.url||'')));
-          const _webUnverified=freshness.critical&&!_aMeta.webUsed;   /* freshness-critical but live web check did not run → provisional */
-          /* (#R149) peel the PLACES trailer (mappable spots the answer named) off FIRST — it is the very last line,
-             after SOURCES — so the SOURCES strip below still matches at end-of-string. No extra AI call. */
-          let replyPlaces=[]; try{ txt=String(txt).replace(/\n?\s*PLACES\s*[:：]\s*(\[[\s\S]*?\])\s*$/i,(m,g)=>{ try{ const arr=JSON.parse(g); if(Array.isArray(arr)) replyPlaces=arr; }catch(_){} return ''; }); }catch(_){}
-          /* (#R74) peel the SOURCES line off the prose and render it as ChatGPT-style link cards */
-          let srcUrls=[]; try{ txt=String(txt).replace(/\n?\s*SOURCES?\s*[:：]\s*([^\n]+)\s*$/i,(m,g)=>{ srcUrls=g.split(/[|\s]+/).filter(u=>/^https?:\/\//i.test(u)).slice(0,4); return ''; }); }catch(_){}
-          /* (#R279) 「Atlasの回答に、「統合分析」ってつけなくていいです」 — the reply opened with a label that restated itself on every single answer; the prose starts at the top now. */
-          let html='<div style="font-size:14px;line-height:1.68;">'+mdMini(String(txt).trim())+'</div>';
-          /* (#R149 · mapping commission) pin the specific real places the analysis named (unless the plan already
-             pinned) so an integrated analysis delivers MAP value, not just prose — with an honest placed/not-placed note. */
-          /* (#R150) ALWAYS reconcile prose↔map — pass the final text (so places the model omitted from the list are
-             still checked) + the real citations (source-concentration audit); the audit MERGES with any plan pins
-             instead of being suppressed by them. Non-empty catch surfaces an honest note (never silent). */
-          try{ html+=await _pinReplyPlaces(replyPlaces,{text:String(txt).trim(),citations:_aCites}); }catch(e){ try{ console.warn('analyze map audit',e); }catch(_){} }
+          /* ══ (#R347) THE ANSWER IS A CONTRACT, NOT A STRING ══════════════════════════════════
+             What stood here: ONE askAI for prose, a regex that peeled a "PLACES:" JSON trailer off
+             the end, a second regex that peeled a "SOURCES:" line off the end, and then
+             window._aiLastMeta / window._aiLastCitations — the globals whichever call answered LAST
+             overwrites — read AFTER the await. Every defect of the reported China answer was ALLOWED
+             by that shape rather than caused by one bad generation: an opening sentence nothing could
+             compare with the body, three meanings of 「支えている」 carried by one word, two statistical
+             series chained inside one sentence, and a URL the model invented rendered as a live link.
+             The orchestration is js/atlas-answer-pipeline.js, the rules are js/atlas-answer-audit.js,
+             the drawing is js/atlas-answer-render.js. This is the CALL SITE and nothing more — the
+             kernel is under a shrink-only ceiling (tests/r199 ⑤) and new logic goes to a module. */
+          const _prof=(()=>{ try{ return _requestProfile(q); }catch(_){ return null; } })();
+          let RES=null;
+          try{ RES=await runStructuredAnswer({
+              question:q, dataBlock:block, systemPrompt:sys2, language:lang,
+              temporalMode:(_prof&&_prof.temporalMode)||'unspecified',
+              requestedOutputs:_prof?Object.keys(_prof.outputs).filter(k=>_prof.outputs[k]):[],
+              turnId:_curTurnKey, webMode:analysisWebMode, clientSources:srcSink,
+              appFacts:_statsFacts(codes), retrievedAt:nowCtx.local, answerGoal:String(q||'').slice(0,200),
+              ask:(pr,sy,o)=>askAIEnvelope(pr,sy,null,o), parseJSON:aiParseJSON }); }
+          catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
+          const _env=RES.env, _reg=RES.registry;
+          if(!String((_env.answer.directAnswer&&_env.answer.directAnswer.text)||'').trim()) return R(false, warn('⚠ '+L('The analysis returned no answer','分析結果が空でした','Analyse ergab keine Antwort','Анализ не дал ответа','El análisis no dio respuesta')));
+          /* ⚠ THE FULL TRACE IS A DEVELOPER FACILITY AND CARRIES NO PROMPT, NO TOKEN AND NO ARTICLE
+             BODY — call ids, audit codes and counts only, so turning it on in production leaks
+             nothing. window.IntMapAtlasDev is the same switch the rest of Atlas debugging uses. */
+          try{ if(window.IntMapAtlasDev) window.IntMapAtlasTrace=Object.assign({},RES.trace,{errors:RES.audit.errors.map(x=>x.code),warnings:RES.audit.warnings.map(x=>x.code)}); }catch(_){}
+          let html='<div style="font-size:14px;line-height:1.68;">'+renderAnswer(_env,_reg,{L,esc,mdMini,linkCards})+'</div>';
+          /* (#R150) prose↔map reconciliation is unchanged in intent — it now reads the STRUCTURE's
+             places instead of a JSON line scraped off the end of the prose. */
+          try{ html+=await _pinReplyPlaces((_env.places||[]).map(p2=>({n:p2.name,c:p2.country,k:p2.kind})),{text:answerPlainText(_env),citations:_reg.all().filter(r=>r.finalUrl).map(r=>({url:r.finalUrl,title:r.title}))}); }catch(e){ try{ console.warn('analyze map audit',e); }catch(_){} }
           /* (#R131) Freshness-critical question but live web verification did NOT run: label the answer a PROVISIONAL
              assessment built mainly on already-gathered headlines, so headline-only leads are never presented as
              confirmed direct evidence (the Central-Asia failure). Applies equally when the web search timed out into
              the tool-free fallback (webUsed stays false). */
-          if(_webUnverified) html+='<div style="margin-top:8px;padding:7px 10px;border:1px solid var(--warn-color,#c98a00);border-radius:8px;background:rgba(201,138,0,.09);font-size:11px;line-height:1.5;color:var(--text-main);">⚠ '+L(
+          if(freshness.critical&&!RES.webUsed) html+='<div style="margin-top:8px;padding:7px 10px;border:1px solid var(--warn-color,#c98a00);border-radius:8px;background:rgba(201,138,0,.09);font-size:11px;line-height:1.5;color:var(--text-main);">⚠ '+L(
             'Live web verification did not complete for this time-sensitive question, so this is a PROVISIONAL assessment based mainly on already-gathered headlines — treat items as leads, not confirmed direct evidence.',
             '時間依存の質問に対しライブWeb検証を完了できなかったため、これは取得済みの見出しを中心とした暫定評価です。各項目は確認済みの直接的証拠ではなく手がかりとして扱ってください。',
             'Die Live-Web-Verifizierung wurde für diese zeitkritische Frage nicht abgeschlossen — dies ist eine VORLÄUFIGE Einschätzung, überwiegend auf bereits gesammelten Schlagzeilen; als Hinweise, nicht als bestätigte Belege behandeln.',
             'Проверка в реальном времени по этому чувствительному ко времени вопросу не завершилась — это ПРЕДВАРИТЕЛЬНАЯ оценка, в основном по уже собранным заголовкам; считайте их зацепками, а не подтверждёнными доказательствами.',
             'No se completó la verificación web en vivo para esta pregunta sensible al tiempo, por lo que es una evaluación PROVISIONAL basada sobre todo en titulares ya recopilados; trátalos como indicios, no como evidencia directa confirmada.')+'</div>';
-          /* (#R79) SOLID ChatGPT-style source cards — render the REAL articles we actually fed the model
-             (srcSink: loaded news + GDELT + Google News, each with its true URL), ordered so any the model
-             explicitly cited in its SOURCES line come first, then the rest of the gathered set, then any extra
-             URL the model's own web_search surfaced. No longer a facade that only appears if the model echoes
-             a SOURCES line — the links are always there when Atlas actually used articles. */
-          try{
-            const _key=u=>String(u||'').replace(/[#?].*$/,'').replace(/\/$/,'');
-            /* (#R131) SEPARATE the sources the model actually verified/cited from the ones IntMap merely gathered
-               (the old code lumped everything under one "Sources" header, so a hosted-web-search citation could be
-               dropped and mere leads looked like the answer's basis). Order:
-                 1) hosted web-search citations (url_citation) — the URLs the model itself consulted this turn,
-                 2) client-gathered articles the model cited by URL in its SOURCES line,
-                 3) the rest we gathered & fed it but it did not cite — shown separately, NOT as "the basis". */
-            const webKeys=new Set(_aCites.map(c=>_key(c.url)));
-            const citedSet=new Set(srcUrls.map(_key));
-            const sinkClean=srcSink.filter(s=>s&&s.url&&/^https?:\/\//i.test(s.url)&&!webKeys.has(_key(s.url)));
-            const cited=sinkClean.filter(s=>citedSet.has(_key(s.url)));
-            const rest=sinkClean.filter(s=>!citedSet.has(_key(s.url)));
-            const haveBasis=_aCites.length>0||cited.length>0;
-            /* (#R85) NEVER render the model's own SOURCES-line URLs that we did not actually gather — an LLM
-               hallucinates plausible-looking article URLs that 404. The gathered set is grounded in srcSink (real
-               articles we fed the model); the hosted-search citations come from the provider's annotations. */
-            if(_aCites.length){ const wc=linkCards(_aCites.map(c=>({url:c.url,title:(c.title||c.url),src:''}))); if(wc) html+='<div class="atl-src-h">'+L('Web-verified sources','Web検証済みソース','Web-verifizierte Quellen','Проверенные в интернете источники','Fuentes verificadas en la web')+'</div>'+wc; }
-            if(cited.length){ const cc=linkCards(cited); if(cc) html+='<div class="atl-src-h">'+L('Cited sources','引用したソース','Zitierte Quellen','Цитированные источники','Fuentes citadas')+'</div>'+cc; }
-            /* (#R159) "その他の収集記事" 欄は完全に不要 — 実出典（Web検証済み/引用）が既にあるときの重複した収集記事の山は出さない。
-               ただし出典が一つも無いときの never-zero フォールバック（関連記事）は保持する。 */
-            if(rest.length && !haveBasis){ const rc=linkCards(rest,txt,placeStr); if(rc) html+='<div class="atl-src-h">'+L('Related articles','関連記事','Verwandte Artikel','Похожие статьи','Artículos relacionados')+'</div>'+rc; }   /* (#R232) topic-first relevance */
-          }catch(_){}
           const usedAll=usedNames.slice();   /* (#R113) IntMap's own gathered sources (GDELT, Google News, Wikidata, Wikipedia…) are already in usedNames. */
-          /* (#R131) Only claim a live web verification when the hosted search ACTUALLY ran this turn (webUsed) — never
-             imply an "AI web search" that did not happen. */
-          if(_aMeta.webUsed) usedAll.push(L('live web verification','ライブWeb検証','Live-Web-Verifizierung','проверка в интернете','verificación web en vivo'));
-          /* (#R108) report only the sources actually USED — no "取得不可: …" list (the user doesn't want failed sources named). */
+          if(RES.webUsed) usedAll.push(L('live web verification','ライブWeb検証','Live-Web-Verifizierung','проверка в интернете','verificación web en vivo'));
           if(usedAll.length) html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;">'+L('Data used','使用データ','Verwendete Daten','Данные','Datos usados')+': '+usedAll.join(', ')+'</div>';   /* (#R118) no data → NO empty "Data used:" line */
           return R(true, html); }
         /* (#R180) THE RENDERING ENGINE — Atlas is the control plane (STANDING RULE since #R82),
@@ -3797,7 +3807,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           const _acls=_atlContentClass(a.contentClass); try{ const _cv=_atlVerifyChecks(a.checks); _ah+=_atlChecksNoteHtml(_cv); }catch(_){}
           /* (#R150) same code-side reconciliation for the planner's direct `answer`: audit the answer text (safety net
              for an omitted places list), merge with existing pins, honest self-audit + source-concentration note. */
-          { const _acit=(Array.isArray(window._aiLastCitations)?window._aiLastCitations:[]).filter(c=>c&&/^https?:\/\//i.test(String(c.url||'')));
+          { const _acit=_curPlanCites.slice();   /* ⚠ (#R347) from the planner call that produced THIS answer. It used to be window._aiLastCitations, read at RENDER time — so a second Atlas turn finishing in between handed this reply the other turn's sources, under the heading 「Web検証済みソース」. */
             try{ if(_atlShouldMap(_acls)) _ah+=await _pinReplyPlaces(a.places||[],{text:String(a.text||''),citations:_acit,contentClass:_acls}); }catch(e){ try{ console.warn('answer map audit',e); }catch(_){} }
             /* (#R153) the planner's direct `answer` used to render ZERO sources even when the model's hosted web search
                returned citations — the dominant "出展が全くない" (no sources at all) driver. Show the web-verified cards
@@ -3911,7 +3921,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R313) the whole stylesheet is js/atlas-styles.js — the ceiling on this file is never raised,
        so a subject moves out instead (see the note there). Nothing about the CSS changed. */
     function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
-      s.textContent=atlasPanelCSS();
+      s.textContent=atlasPanelCSS()+answerCSS;   /* (#R347) citation pills, the lead line, limitations, the degraded banner */
       document.head.appendChild(s); }
     /* (#R298) the per-message tool bar and the in-place editor are js/atlas-msg-tools.js — the note at the top of
        that file says why. What cannot travel with them is bound here, LAZILY: `chatEl` is null until the panel is
@@ -4401,11 +4411,27 @@ window.IntMapModules.atlasConsole=function(HOST){
       try{ const ks=ai.__atlMappedKinds?Object.keys(ai.__atlMappedKinds):[]; if(ks.length) body+=mapToggleChip(ks); }catch(_){}   /* single deduped map-toggle chip */
       /* 4) head — the pre-written `say` (suppressed on all-failed / contradicted visual) + an honest, NAME-FREE summary */
       let head=(say&&!_allFailed&&!_visFailed)?('<div style="margin-bottom:6px;">'+mdMini(say)+'</div>'):'';   /* (#R147) render via mdMini so line breaks / headings show */
-      if(fails.length){ head+='<div style="font-size:11.5px;color:#ff9f0a;font-weight:600;margin:1px 0 6px;">⚠ '+L(fails.length+' step(s) could not be completed','実行できなかった操作が '+fails.length+' 件あります',fails.length+' Schritt(e) nicht ausgeführt','Не выполнено шагов: '+fails.length,fails.length+' paso(s) sin completar')+'</div>'; }   /* (#R159) no action-name/code leak — the per-action honest body already says what could not be found */
+      /* ══ ⚠ (#R347) A COURTESY THAT DID NOT LAND IS NOT A FAILED TURN ═══════════════════════════
+         Reported: an informational question was answered correctly and the reply OPENED with 「⚠ 実行
+         できなかった操作が 1 件あります」 — because a flyTo that ATLAS ITSELF had added to the plan did
+         not land. The count was of failed actions; nothing asked whose goal each action served.
+         PRIMARY failures still lead, because the reader is owed those. SECONDARY ones are a quiet
+         line AFTER the answer — visible, never alarming, and never at the top. ⚠ NOT HIDDEN: 「エラー
+         表示をすべて隠す」 and 「map失敗を常に無視する」 are both forbidden, so the note is always printed. */
+      const primaryFails=fails.filter(a=>a&&a.__impact!=='secondary'&&a.__impact!=='none');
+      const secondaryFails=fails.filter(a=>a&&a.__impact==='secondary');
+      if(primaryFails.length){ head+='<div style="font-size:11.5px;color:#ff9f0a;font-weight:600;margin:1px 0 6px;">⚠ '+L(primaryFails.length+' step(s) could not be completed','実行できなかった操作が '+primaryFails.length+' 件あります',primaryFails.length+' Schritt(e) nicht ausgeführt','Не выполнено шагов: '+primaryFails.length,primaryFails.length+' paso(s) sin completar')+'</div>'; }   /* (#R159) no action-name/code leak — the per-action honest body already says what could not be found */
+      /* the quiet half of the same rule: what did NOT happen is still said, after the answer. */
+      if(secondaryFails.length) body+='<div class="atl-aux">'+esc(L('The map view did not change.','地図の表示は変わりませんでした。','Die Kartenansicht hat sich nicht geändert.','Вид карты не изменился.','La vista del mapa no cambió.'))+'</div>';
       if(ai.__atlCancelled) head=_cancelledNote()+head;
       ai.innerHTML=(head+body)||esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.'));
       try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */
     }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; }catch(_){} } }
+    /* (#R347) one door for every planner call, so the citations of THIS turn are captured beside the
+       plan rather than fished out of a global at render time. */
+    async function _planCall(prompt, sys, imgs, opts){ const e=await askAIJSONEnvelope(prompt, sys, imgs, opts);
+      try{ _curPlanCites=(Array.isArray(e&&e.citations)?e.citations:[]).filter(c=>c&&_atlCleanUrl(c.url)); }catch(_){ _curPlanCites=[]; }
+      return e?e.data:null; }
     async function runActions(ai, say, acts, gen){
       const results=[]; const fails=[]; let cancelled=false;
       for(const a of acts){ if(gen!=null&&gen!==_runGen){ cancelled=true; break; }
@@ -4432,7 +4458,8 @@ window.IntMapModules.atlasConsole=function(HOST){
         if(_ar&&(_ar.status==='needs_input'||_ar.status==='running')){ r.html=(r.html||'')+RESULTS.render(_ar,{L,esc,note,warn}); }
         if(_ar&&_ar.status==='needs_input'&&_ar.inputRequest){ _pendingInput={ result:_ar, bubble:ai, at:Date.now() }; }
         if(r.ok===false&&!(_ar&&(_ar.status==='needs_input'||_ar.status==='running'))) fails.push(a);
-        results.push({act:a, ok:r.ok!==false, html:r.html||'', meta:(r&&r.meta)||null});   /* (#R159) per-action result → _atlCompose de-dupes by goal so repair REPLACES a failure instead of appending */
+        try{ a.__impact=_PLANNER.goalImpact(_curProfile,a); }catch(_){ a.__impact='primary'; }   /* (#R347) primary = an output the user asked for; secondary = a courtesy Atlas added */
+        results.push({act:a, ok:r.ok!==false, html:r.html||'', meta:(r&&r.meta)||null, impact:a.__impact});   /* (#R159) per-action result → _atlCompose de-dupes by goal so repair REPLACES a failure instead of appending */
         try{ if(r&&r.meta) a.__meta=r.meta; if(r&&r.exec) a.__exec=r.exec;   /* (#R158) mechanical execution result → fed back to Terra by the repair loop */
           if(_atlasOutcomes) _atlasOutcomes.push({type:a&&a.type,label:actLabel(a),ok:r.ok!==false,code:(r&&r.meta&&r.meta.code)||'',semanticTarget:(r&&r.meta&&r.meta.semanticTarget)||'',temporalMode:(r&&r.meta&&r.meta.temporalMode)||'',produced:(r&&r.meta&&r.meta.produced)||[],userGoalSatisfied:(r&&r.meta&&r.meta.userGoalSatisfied)}); }catch(_){}   /* (#R135) structured per-action outcome → repair + goal validation + debug */
         if(r.objectIds&&r.objectIds.length){ try{ _wctx.lastObjects=r.objectIds.concat(_wctx.lastObjects||[]).slice(0,6); }catch(_){} } }   /* (#R119) "さっき作ったやつ" resolves to these */
@@ -4835,7 +4862,7 @@ window.IntMapModules.atlasConsole=function(HOST){
          many calls one key may carry, so a client that reuses a key gains nothing.
          `supersede` is the other half of the same idea: the previous turn's unfinished operations
          are replaced rather than left to land on top of this turn's answer (§12). */
-      const _turnKey='t'+turn+'-'+Math.floor(Date.now()/1000);
+      const _turnKey=(_curTurnKey='t'+turn+'-'+Math.floor(Date.now()/1000));
       try{ EXEC.supersede(turn); }catch(_){}
       try{ ASTATE.beginTurn(turn,q); }catch(_){}   /* (#R298) the turn id every bubble and every history entry of THIS exchange carries, so an edit can rewind to exactly here */
       try{ chatEl.querySelectorAll('.atl-b.a .atl-stage').forEach(d=>{ const b=d.closest('.atl-b'); if(b) b.innerHTML=_cancelledNote(); }); }catch(_){}
@@ -4855,6 +4882,7 @@ window.IntMapModules.atlasConsole=function(HOST){
          diagnostics record; both feed the planner prompt, the pre-execution plan validation, the semantic repair
          control and window.IntMapAtlasDebug.lastPlan(). */
       let _profile=null; try{ _profile=_requestProfile(q); }catch(_){}
+      _curProfile=_profile;   /* (#R347) goalImpact() needs the REQUEST to tell a map move the user asked for from one Atlas added itself */
       _atlasDbg={ requestProfile:_profile, originalPlan:null, validatedPlan:null, rejectedActions:[], actionOutcomes:[], semanticRetries:[], scopeChanges:[], finalGoalValidation:null };
       _atlasOutcomes=_atlasDbg.actionOutcomes;
       try{ if(_profile&&_profile.targetYear!=null&&_profile.temporalMode!=='current') _wctx.year=_profile.targetYear; }catch(_){}   /* carry the year into the conversation for the next turn's profile */
@@ -4887,7 +4915,7 @@ window.IntMapModules.atlasConsole=function(HOST){
          sent. The one thing it will not do is drop a capability for being 141st in the DOM. */
       let _capSel=null; try{ _capSel=_PLANNER.selectCapabilities(q,{ recent:(ASTATE.lastTurn()&&ASTATE.lastTurn().operations||[]).map(o=>o.capabilityId), requiredOutputs:Object.keys((_profile&&_profile.outputs)||{}).filter(k=>_profile.outputs[k]) }); }catch(_){ _capSel=null; }
       try{ if(_atlasDbg){ _atlasDbg.retrievedCapabilityIds=(_capSel&&_capSel.ids)||null; _atlasDbg.capabilitySelectionMode=(_capSel&&_capSel.mode)||'all'; _atlasDbg.plannerCatalogBytes=CAPS.catalogBytes((_capSel&&_capSel.ids)||null); } }catch(_){}
-      try{ let plan=await askAIJSON(buildPrompt(q,_profile)+_fileBlock+(imgs.length?'\n\n[NOTE: '+imgs.length+' image'+(imgs.length>1?'s are':' is')+' attached to this message — analyze '+(imgs.length>1?'them':'it')+' and answer about '+(imgs.length>1?'them':'it')+' in your "answer" text; if '+(imgs.length>1?'they show':'it shows')+' or imply real places, include them in the answer\'s "places" so IntMap maps them.]':''),SYS(_capSel),imgs,{task:'atlas_plan',effortHint:_cplx?'high':undefined,schema:PLAN_SCHEMA,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)});   /* (#R113) planner → server JSON mode; (#R135) profile block attached; (#R142) Stop-button abort signal; (#R149) attached images (vision); (#R158) attached file text */
+      try{ let plan=await _planCall(buildPrompt(q,_profile)+_fileBlock+(imgs.length?'\n\n[NOTE: '+imgs.length+' image'+(imgs.length>1?'s are':' is')+' attached to this message — analyze '+(imgs.length>1?'them':'it')+' and answer about '+(imgs.length>1?'them':'it')+' in your "answer" text; if '+(imgs.length>1?'they show':'it shows')+' or imply real places, include them in the answer\'s "places" so IntMap maps them.]':''),SYS(_capSel),imgs,{task:'atlas_plan',effortHint:_cplx?'high':undefined,schema:PLAN_SCHEMA,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)});   /* (#R113) planner → server JSON mode; (#R135) profile block attached; (#R142) Stop-button abort signal; (#R149) attached images (vision); (#R158) attached file text */
         /* (#R73) a newer message arrived while the model was thinking → drop this turn's plan entirely */
         if(gen!==_runGen){ ai.innerHTML=_cancelledNote(); return; }
         /* (#R43) tolerate a bare array / single action object from a weaker model; plan===null = unparseable. */
@@ -4946,7 +4974,7 @@ window.IntMapModules.atlasConsole=function(HOST){
             const _execFb=_execFbOf(pending);
             pending.forEach(a=>{ try{ _tried.push(JSON.stringify(a)); const f=_researchFamKey(a); if(f) _triedFam.add(f); }catch(_){} });
             const fdesc=_tried.slice(-14).map(s2=>s2.slice(0,220)).join('\n');
-            const rp=await askAIJSON(buildPrompt(q,_profile)+_fileBlock+'\n\n[REPAIR '+(_rp+1)+'/2] These calls could not be completed:\n'+fdesc+_execFb+'\n'+_repairGuidance(),SYS(_capSel),imgs,{task:'atlas_plan',effortHint:'high',schema:PLAN_SCHEMA,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)});
+            const rp=await _planCall(buildPrompt(q,_profile)+_fileBlock+'\n\n[REPAIR '+(_rp+1)+'/2] These calls could not be completed:\n'+fdesc+_execFb+'\n'+_repairGuidance(),SYS(_capSel),imgs,{task:'atlas_plan',effortHint:'high',schema:PLAN_SCHEMA,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)});
             let rplan=rp; if(Array.isArray(rplan)) rplan={actions:rplan}; else if(rplan&&rplan.type&&!rplan.actions) rplan={actions:[rplan],say:rplan.say};
             let racts=(rplan&&Array.isArray(rplan.actions))?rplan.actions.filter(a2=>a2&&a2.type):[];
             /* sanitize the repair plan through the SAME capability validation as the first plan */
