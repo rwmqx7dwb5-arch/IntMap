@@ -5,6 +5,10 @@
 //   node scripts/serve.mjs [--port 4173] [--root .]
 //   PORT=4173 node scripts/serve.mjs
 //
+//   `--port 0` (or PORT=0) asks the operating system for a free port; the ready line below names
+//   the port that was actually bound, so a caller that cannot know a free number in advance can
+//   read it back off stdout. See tests/r208-checks.test.mjs ⑩ and #R415.
+//
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -135,6 +139,14 @@ const server = createServer(async (req, res) => {
   }
 });
 
+/* ⚠ (#R415) THE READY LINE NAMES THE PORT THAT WAS BOUND, NOT THE ONE THAT WAS ASKED FOR.
+   For every caller that names a number the two are the same, so nothing about the existing
+   behaviour moves. The difference is `--port 0`: the operating system then picks a port that is
+   free AT THAT MOMENT, and the only way the caller can learn which one is for this line to say.
+   That is what lets a test start this server without inventing a number — the failure #R415 was
+   written for, where two checkouts on one machine both spawned on a port chosen when the test was
+   written and the second got EADDRINUSE. Printing `PORT` here would answer `:0/`. */
 server.listen(PORT, HOST, () => {
-  console.log(`[serve] IntMap static server on http://${HOST}:${PORT}/  (root: ${ROOT})`);
+  const bound = server.address().port;
+  console.log(`[serve] IntMap static server on http://${HOST}:${bound}/  (root: ${ROOT})`);
 });
