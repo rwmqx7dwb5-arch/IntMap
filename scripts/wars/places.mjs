@@ -11,12 +11,13 @@
  *  lines quoting «Kursk» cannot disagree about where Kursk is, and that a mistyped digit is a place
  *  in the wrong country rather than a silent kink in a front.
  *
- *  Entries are [lon, lat, ISO2] — plus a fourth field '!' on the seven names the bundled gazetteer
+ *  Entries are [lon, lat, ISO2] — plus a fourth field '!' on the eight names the bundled gazetteer
  *  knows as a DIFFERENT place. Kalinin here is the wartime name of Tver; the gazetteer's Kalinin is a
  *  town a thousand kilometres away. Midway here is the atoll; the gazetteer's Midway is a town in the
- *  United States. Zhijiang here is 芷江 in Hunan; the gazetteer's is 枝江 in Hubei. Opting those seven
- *  out by name is narrower than loosening the tolerance for all of them, and it leaves a written
- *  reason where the exception is.
+ *  United States. Zhijiang here is 芷江 in Hunan; the gazetteer's is 枝江 in Hubei. Chełmno here is the
+ *  village on the Ner the camp was named after; the gazetteer's is the town on the Vistula. Opting
+ *  those eight out by name is narrower than loosening the tolerance for all of them, and it leaves a
+ *  written reason where the exception is.
  *
  *  The ISO2 is not decoration: scripts/build-wars.mjs cross-checks
  *  every name that also exists in data/gazetteer-world.json.gz against that country's own row and
@@ -161,7 +162,7 @@ export const PLACES = {
   'Mont-de-Marsan': [-0.500, 43.890, 'FR'], 'Libourne': [-0.243, 44.913, 'FR'], 'Confolens': [0.674, 46.013, 'FR'],
   'Vierzon': [2.070, 47.222, 'FR'], 'Barneville': [-1.760, 49.380, 'FR'],
   'Carentan': [-1.245, 49.303, 'FR'], 'Ouistreham': [-0.259, 49.279, 'FR'], 'Troyes': [4.075, 48.297, 'FR'],
-  'Karlsruhe': [8.404, 49.007, 'DE'], 'Szczecin': [14.552, 53.429, 'PL'],
+  'Karlsruhe': [8.404, 49.007, 'DE'],
   'Qattara': [27.000, 29.600, 'EG'], 'Marada': [19.230, 29.230, 'LY'], 'Sumy': [34.800, 50.907, 'UA'],
   /* the two interlocking salients of July 1943: German at Orel (bulging east), Soviet at Kursk
      (bulging west). A line that misses them puts Orel under the wrong army. */
@@ -295,4 +296,43 @@ export const PLACES = {
   'Imbros': [25.900, 40.170, 'TR'],
   /* ── WW1 · the risings and the revolutions ───────────────────────────────────────────────── */
   'Dublin': [-6.260, 53.350, 'IE'], 'Tashkent': [69.240, 41.311, 'UZ'], 'Kiel': [10.135, 54.323, 'DE'],
+  /* ══ #R409 — the rooms where it was signed, and the places the record kept and never anchored ══
+     Every name below is quoted by an operation, a front position or a control check added in the
+     same round; check ⑦ of scripts/build-wars.mjs refuses an anchor that reaches nothing. */
+  /* ── WW2 · the conferences, the declarations and the surrenders ──────────────────────────── */
+  'Placentia Bay': [-53.970, 47.240, 'CA'], 'Quebec': [-71.208, 46.813, 'CA'],
+  'Bretton Woods': [-71.441, 44.258, 'US'], 'San Francisco': [-122.419, 37.775, 'US'],
+  'Yalta': [34.166, 44.495, 'UA'], 'Potsdam': [13.064, 52.396, 'DE'], 'Menton': [7.503, 43.775, 'FR'],
+  /* ── WW2 · the camps and the massacre sites ─────────────────────────────────────────────── */
+  'Katyn': [32.166, 54.775, 'RU'], 'Oswiecim': [19.221, 50.035, 'PL'], 'Majdanek': [22.606, 51.222, 'PL'],
+  'Belzec': [23.433, 50.383, 'PL'], 'Sobibor': [23.593, 51.443, 'PL'], 'Treblinka': [22.052, 52.632, 'PL'],
+  'Dachau': [11.434, 48.260, 'DE'], 'Weimar': [11.329, 50.980, 'DE'], 'Mauthausen': [14.502, 48.244, 'AT'],
+  'Bergen-Belsen': [9.907, 52.758, 'DE'], 'Lidice': [14.190, 50.144, 'CZ'], 'Jasenovac': [16.905, 45.271, 'HR'],
+  'Oradour-sur-Glane': [1.033, 45.933, 'FR'], 'Marzabotto': [11.203, 44.345, 'IT'], 'Malmedy': [6.028, 50.427, 'BE'],
+  'Argostoli': [20.489, 38.175, 'GR'], 'Kalavryta': [22.111, 38.032, 'GR'],
+  /* ⚠ THE EIGHTH OPT-OUT. Chełmno here is Chełmno nad Nerem, the village the extermination camp was
+     named after; the gazetteer's Chelmno is the town of that name on the Vistula, 135 km north. */
+  'Chelmno': [18.723, 52.153, 'PL', '!'],
+  /* ── WW2 · the sea, the air and the resistance ──────────────────────────────────────────── */
+  'Liverpool': [-2.983, 53.408, 'GB'], 'Montevideo': [-56.164, -34.901, 'UY'],
+  'Denmark Strait': [-31.500, 63.300, 'IS'], 'North Cape': [25.784, 71.170, 'NO'], 'Tromso': [18.955, 69.649, 'NO'],
+  'Saint-Nazaire': [-2.209, 47.273, 'FR'], 'Saarbrucken': [6.996, 49.234, 'DE'],
+  'Peenemunde': [13.774, 54.140, 'DE'], 'Schweinfurt': [10.221, 50.049, 'DE'], 'Osaka': [135.502, 34.694, 'JP'],
+  'Rjukan': [8.594, 59.878, 'NO'], 'Lamia': [22.435, 38.900, 'GR'], 'Milan': [9.190, 45.464, 'IT'],
+  'Banska Bystrica': [19.146, 48.736, 'SK'], 'Foca': [18.777, 43.506, 'BA'],
+  /* ── WW2 · the encirclements between the Eastern Front's famous names ───────────────────── */
+  'Vyazma': [34.298, 55.211, 'RU'], 'Prokhorovka': [36.734, 51.037, 'RU'], 'Liepaja': [21.011, 56.505, 'LV'],
+  'Seelow': [14.383, 52.533, 'DE'], 'Szekesfehervar': [18.410, 47.190, 'HU'],
+  /* ── WW2 · the Mediterranean, the Pacific and the war in China ──────────────────────────── */
+  'Cape Matapan': [22.383, 36.400, 'GR'], 'Leros': [26.850, 37.150, 'GR'],
+  'Kuantan': [103.330, 3.810, 'MY'], 'Sunda Strait': [105.870, -5.900, 'ID'],
+  'Savo Island': [159.820, -9.140, 'SB'], 'Lae': [146.990, -6.730, 'PG'], 'Munda': [157.263, -8.328, 'SB'],
+  'Yuncheng': [111.004, 35.026, 'CN'], 'Chengdu': [104.066, 30.572, 'CN'], 'Indaw': [96.133, 24.222, 'MM'],
+  /* ── WW2 · the anchors the China front's seven new positions are quoted through ─────────── */
+  /* Badong is in the gorges west of Yichang: a line quoted through Yichang itself leaves the city
+     on the line from the day it was taken, and Yichang changed hands on 12 June 1940. */
+  'Badong': [110.360, 31.042, 'CN'], 'Lingling': [111.613, 26.221, 'CN'],
+  'Hechi': [108.062, 24.693, 'CN'], 'Dushan': [107.545, 25.827, 'CN'],
+  /* ── WW2 · the Trasimene Line, the position between Rome and the Arno ───────────────────── */
+  'Cecina': [10.517, 43.306, 'IT'], 'Perugia': [12.389, 43.112, 'IT'],
 };

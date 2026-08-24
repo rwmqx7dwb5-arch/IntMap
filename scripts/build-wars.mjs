@@ -285,6 +285,7 @@ const CHECKS_UNCUT = [
   ['ww2', '1940-01-01', 'Cairo', 'ALLIED'], ['ww2', '1944-01-01', 'Cairo', 'ALLIED'],
   ['ww2', '1944-01-01', 'Benghazi', 'ALLIED'],      /* Libya, after the Axis are out of Africa */
   ['ww2', '1944-01-01', 'Sfax', 'ALLIED'],          /* …and Tunisia */
+  ['ww2', '1945-03-01', 'Athens', 'ALLIED'],        /* liberated Greece — the Balkan front leaves it in Oct 1944 */
   ['ww2', '1941-01-01', 'Rangoon', 'ALLIED'],       /* British Burma, before the Japanese arrive */
   ['ww2', '1942-01-01', 'Dimapur', 'ALLIED'], ['ww2', '1945-01-01', 'Dimapur', 'ALLIED'],
 ];
