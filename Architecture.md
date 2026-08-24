@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（940行・84 KB）＋ `css/`（3本）＋ `js/`（236本・11.3 MB）＋ `src/`（10本）。**
+- **本体は `index.html`（940行・84 KB）＋ `css/`（3本）＋ `js/`（237本・11.3 MB）＋ `src/`（10本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -447,13 +447,17 @@ DB 側は 9 表（`news_sources` / `news_source_feeds` / `news_articles` / `news
 RLS・grant・運用者 RPC の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)、実証は
 `supabase/tests/06_news_events_test.sql`（§16.1）。
 
-収集は **Edge Function `news-ingest`**（§6.2）が cron で回す。段は 7 つ——
+収集は **Edge Function `news-ingest`**（§6.2）が cron で回す。段は 8 つ——
 `fetch`（Source Registry のフィード取得・正規化・媒体の帰属・決定論エンジンによる地点の下書き）／
 **`locate`（地点解析。AI が第一手段で、決定論エンジンの答えを上書きする）**／
 `embed`（埋め込みを付ける。現在の鍵は埋め込みモデルに到達できず、その理由を応答に出して止まる）／
 `assign`（候補 Event を引いて増分で載せる。総当たりしない）／
 `link`（すでに分かれている Event 対を、新着と**同じ規則**で結ぶ）／
-`translate`（代表見出しを ja へ。`news_event_i18n` に永続キャッシュ）／
+`summarise`（**独立 2 媒体以上**が本文を持つ Event だけを LLM で 1 つの説明にまとめ、
+1 文ごとの根拠の断片が原文に実在することを**サーバー側で照合してから** `news_events.summary` /
+`summary_evidence` に保存する。1 文でも通らなければその Event の返答は丸ごと捨てる）／
+`translate`（代表見出しを ja へ。**既定で止まっている**——`NEWS_TRANSLATE=on` を明示した
+ときだけ走る）／
 `prune`（記事 72 時間・Event 30 日・★保存は無期限）。判定の論理は
 `supabase/functions/_shared/news-cluster.js` と `_shared/news-ingest.js` で、**どちらも
 サーバー専用**（クライアントのバンドルに 1 バイトも入らない）。
@@ -467,9 +471,20 @@ RLS・grant・運用者 RPC の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)�
 本物のブラウザで測る。
 `HOST.globalData` に**記事モードと同じ形の項目**を入れ、`_event` にだけ出来事固有の事実を足す
 ので、既存の描画・ピン・無限スクロール・期間フィルタがそのまま動く。カードは `.news-item` に
-カテゴリ・`Updated` の印・`N sources` の 3 つを足したもので、詳細は既存の `#news-reader-pane`
-に描かれる（どの媒体がいつ何と書いたか／同一系列の印／媒体間で食い違っている数量／
-この塊の組み立て方）。カテゴリ chips は `#news-cat-chips`。
+カテゴリ・`Updated` の印・`N sources`・**要点の 1 文（出典付き）**を足したもので、詳細は既存の
+`#news-reader-pane` に描かれる（何が起きたか／主要な数字／最新の記事で更新された点／媒体間の
+一致と相違／どの媒体がいつ何と書いたか／同一系列の印／この塊の組み立て方）。カテゴリ chips は
+`#news-cat-chips`。
+
+⚠ **「何が起きたか」を組み立てる規則は `js/news-brief.js` の 1 本だけ**で、UI と
+`scripts/news-events-eval.mjs --brief` が同じものを呼ぶ（表示の層に置くと、ブラウザの外から
+歩留まりを測れない）。決定論の抽出は**構成記事の `description` が既にブラウザに届いている**
+ので、その場で組む——保存も追加の往復も要らない。サーバーの `summarise` 段が足すのは、
+決定論では作れないもの 1 つだけ、すなわち**複数の媒体が別々に書いた文を 1 つの説明にまとめる
+こと**である。
+⚠ **上流が本文を配っていない Event は、そう書く。** 「要約が無い」を読み込み失敗に見せない。
+⚠ **Event の見出しの日本語訳は生成も表示もしていない**（News は英語）。`news_event_i18n` の行は
+削除していないので、`NEWS_TRANSLATE=on` と読み出しの復帰で再開できる。
 
 **地点解析は AI が第一手段・決定論エンジンがフォールバック。** `fetch` は届いた記事を
 `IntMapNewsGeo`（§4.3）で 1 度置き、`locate` が **まだ AI が見ていない記事**を batch で AI に送って
@@ -1991,7 +2006,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（15本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（16本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events）。

@@ -104,9 +104,24 @@ export function parseFeed(xml) {
 
     const when = pickTag(body, 'pubDate') || pickTag(body, 'published') ||
                  pickTag(body, 'dc:date') || pickTag(body, 'updated') || '';
+    /* ⚠⚠ **本文は 4 つの綴りで届くのに、2 つしか読んでいなかった。** #R351 は
+     *  `<description>` と `<summary>` だけを見ており、**RSS 2.0 で本文を運ぶ最大の口である
+     *  `<content:encoded>` と Atom の `<content>` をリポジトリ全体で一度も解析していなかった**
+     *  （実測 2026-08-24: どちらの綴りも 0 か所）。読めない綴りで届いた記事は、要約を持たない
+     *  記事として保存される——分類にも UI にも見出ししか残らない。
+     *  ⇒ 4 つとも読み、**タグを剥がして空白を畳んだあとに長いほう**を採る。既存の
+     *    description / summary の優先順はそのまま（content が無ければ挙動は 1 文字も変わらない）。
+     *  ⚠ `isLinkList()` は**どちらの側にも掛ける**。Google News がリンクの一覧を入れてくるのは
+     *    `<description>` だけとは限らず、片側だけ見ていると見出しの写しが本文として残る。 */
     const rawDesc = (body.match(/<description(?:\s[^>]*)?>([\s\S]*?)<\/description>/i) ||
                      body.match(/<summary(?:\s[^>]*)?>([\s\S]*?)<\/summary>/i) || [])[1] || '';
-    const desc = isLinkList(rawDesc) ? '' : stripHtml(rawDesc);
+    /* ⚠ `<content:encoded>` は `<content(?:\s…)?>` に当たらない（`content` の次が `:`）ので、
+       綴りごとに別に見る——閉じタグも `</content:encoded>` と `</content>` で別物である。 */
+    const rawContent = (body.match(/<content:encoded(?:\s[^>]*)?>([\s\S]*?)<\/content:encoded>/i) ||
+                        body.match(/<content(?:\s[^>]*)?>([\s\S]*?)<\/content>/i) || [])[1] || '';
+    const bodyText = (raw) => (raw && !isLinkList(raw) ? stripHtml(raw) : '');
+    const fromDesc = bodyText(rawDesc), fromContent = bodyText(rawContent);
+    const desc = fromContent.length > fromDesc.length ? fromContent : fromDesc;
     /* Google News は各 item に <source url="https://www.reuters.com">Reuters</source> を付ける。
        ⚠ 実測 (#R334): WORLD 70/70・BUSINESS 70/70 の item が持っていた。**本当の発信元は
        ここにある**ので、リダイレクト URL からは分からない媒体をこれで解決する。 */
@@ -1135,7 +1150,12 @@ export async function toArticleRow(item, feed, registry, geo) {
       url_fingerprint: urlFp,
       title,
       title_fingerprint: titleFp,
-      description: (item.description || '').slice(0, 1000) || null,
+      /* ⚠ **1,200 字は「要約に使う導入部」の上限であって、本文の保管ではない。**
+         `<content:encoded>` は記事まるごとを運んでくることがあり、そのまま保存すれば
+         `docs/NEWS-EVENTS.md` §15 が範囲外と決めた「無断の全文 warehouse」になる。
+         1,000 から上げたのは、導入部が段落の途中で切れて要約に使えない件があったため
+         （parseFeed 側の 2,000 字はそのまま——ここが最終的な保管の上限である）。 */
+      description: (item.description || '').slice(0, 1200) || null,
       language: 'en',
       published_at: published,
       provider_category: feed.category || null,
