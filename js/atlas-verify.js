@@ -165,5 +165,83 @@ export function makeAtlasVerify(HOST, CTX) {
       const cells=new Set(); matches.forEach(j=>cells.add(Math.round(+j.lat*10)+','+Math.round(+j.lon*10)));
       if(!country && cells.size>=2) return {ok:false,reason:'ambiguous',ambiguous:true};
       const b=matches[0]; return { ok:true, lng:+b.lon, lat:+b.lat, name:(b.display_name||'').split(',')[0] }; }
-  return { _atlAuditSources, _atlChecksNoteHtml, _atlContentClass, _atlExtractPlaces, _atlGeocodeStrict, _atlMappingNoteHtml, _atlMappingVerdict, _atlNameOk, _atlNorm, _atlParseRat, _atlRegDomain, _atlShouldMap, _atlVerifyChecks };
+    /* ══ (#R397) THE ORCHESTRATOR, MOVED IN FROM js/atlas-console.js ═══════════════════════════════
+       It resolves the answer's places, merges with the pins the plan already dropped, pins only the
+       confident unique hits, and returns the honest self-audit note. It came here because EIGHT of
+       its thirteen dependencies were already in this file — `_atlShouldMap`, `_atlNorm`,
+       `_atlExtractPlaces`, `_atlGeocodeStrict`, `_atlNameOk`, `_atlMappingVerdict`,
+       `_atlMappingNoteHtml`, `_atlAuditSources` — so the console was reaching back across the seam
+       for every one of them, and because js/atlas-console.js has a SHRINK-ONLY line ceiling
+       (tests/r199 ⑤ and the stricter tests/r318 ⑨b, «must stay below 5,270»). #R397 adds a subject
+       to the shell, so the shell gives one up: the same trade #R199, #R313 and #R318 each made.
+
+       The five that could not come are passed in: `geocode` (the region resolver's, not this file's
+       strict one), `paintPois` / `getPois` / `setPois` (the console owns the POI array and REPLACES
+       it, so a captured copy would go stale — #R320's lesson in js/app-body.js), `GE` and `GEOBJ`.
+
+       ⚠ WHAT CHANGED WHILE MOVING, AND WHAT DID NOT. The three #R397 fixes are here — coordinates
+       survive the mapper, `alreadyMapped` asks three ways instead of one, and an arrived point-like
+       coordinate is not re-resolved. Nothing else was touched: the #R156 content-class gate, the
+       14-pin budget, the 0.05° cell dedupe, the 5×500 ms paint retry and the fit-bounds-only-when-
+       empty rule are the lines that stood in the console, character for character. */
+    function makePinReplyPlaces(D) {
+      const geocode = D.geocode, paintPois = D.paintPois, getPois = D.getPois, setPois = D.setPois;
+      const GE = D.GE, GEOBJ = D.GEOBJ, L = D.L;
+      return async function _pinReplyPlaces(places, ctx){ ctx=ctx||{}; const text=String(ctx.text||'');
+      /* (#R156) CODE-SIDE GEO GATE — 「地図化の有無をモデルのプロンプト遵守だけに依存させず、コード側で
+         検証する / 数学・コード・文書モードでは地点抽出処理自体を呼ばない」. A non-geographic content class
+         (math/code/document/photo/language/conceptual) returns immediately: NO place extraction, NO
+         geocoding, NO pins and NO "0 places / unplaced / ambiguous" note, so a math answer containing
+         capitalised words like "Problem" or "Let U and V" can never become map candidates. */
+      if(ctx.contentClass && !_atlShouldMap(ctx.contentClass)) return '';
+      try{
+        /* ⚠⚠⚠ (#R397) THIS MAPPER USED TO DROP THE COORDINATE — it read name/country/kind/summary and
+           NOTHING ELSE, so a place that arrived already located was geocoded again and reported as
+           「未配置」 whenever the second lookup was stricter. Full account: js/atlas-geo-object.js. */
+        const struct=(Array.isArray(places)?places:[]).slice(0,16).map(p=>{
+          const g=GEOBJ.geoObject(p);
+          return { name:g.name.slice(0,90), country:g.country.slice(0,60), kind:g.kind.slice(0,40),
+            summary:g.summary.slice(0,240), lng:g.lng, lat:g.lat, provenance:g.provenance, src:'structured' };
+        }).filter(it=>it.name&&it.name.length>1);
+        const structKeys=new Set(struct.map(it=>_atlNorm(it.name)));
+        const textBudget=struct.length?4:8;   /* text extraction is the SAFETY NET — used hard only when the model under-supplied the list */
+        const textCands=_atlExtractPlaces(text).filter(s=>!structKeys.has(_atlNorm(s))).slice(0,textBudget).map(s=>({name:s,country:'',kind:'',summary:'',src:'text'}));
+        const _pois=getPois();
+        if(!struct.length && textCands.length<2 && !(Array.isArray(_pois)&&_pois.length)) return '';   /* not a place-rich answer — don't geocode incidental capitalized words */
+        const pre=(Array.isArray(_pois)?_pois:[]).map(p=>({lng:+p.lng,lat:+p.lat,name:String(p.name||''),kind:String(p.kind||''),sum:String(p.sum||''),url:String(p.url||''),src:String(p.src||'')})).filter(p=>isFinite(p.lng));
+        const preKeys=new Set(pre.map(p=>_atlNorm(p.name)).filter(Boolean));
+        const seenCell=new Set(pre.map(p=>Math.round(p.lng*20)+','+Math.round(p.lat*20)));
+        /* (#R397) «already on the map?» asked THREE ways, not one: exact name alone left a pin reading
+           «14 km SSW of X» unrecognised against prose saying «X», so it was geocoded again. */
+        const alreadyMapped=(it)=>{
+          const key=_atlNorm(it.name);
+          if(key&&preKeys.has(key)) return true;
+          if(GEOBJ.placed(it)&&seenCell.has(Math.round(it.lng*20)+','+Math.round(it.lat*20))) return true;
+          const n=GEOBJ.normName(it.name);
+          if(n.length>=3){ for(const p of pre){ const pn=GEOBJ.normName(p.name); if(pn.length>=3&&(pn.indexOf(n)>=0||n.indexOf(pn)>=0)) return true; } }
+          return false; };
+        const spots=[]; const newPins=[]; let infraFail=0;
+        for(const it of struct.concat(textCands)){
+          if(alreadyMapped(it)){ spots.push({name:it.name,verdict:'mapped',src:it.src}); continue; }   /* already on the map from the plan — counts as mapped, not re-pinned */
+          if(newPins.length>=14){ spots.push({name:it.name,verdict:'unplaced',src:it.src}); continue; }
+          let g=null;
+          /* ⚠⚠⚠ (#R397) A COORDINATE THAT ARRIVED IS NOT RE-RESOLVED: a second lookup can only agree
+             (wasted) or DISAGREE, and when it disagreed the correct position lost. ⚠ A centroid does
+             not qualify — `pointLike` excludes it, so an area is still reported as an area. */
+          if(GEOBJ.pointLike(it)){ g={lng:it.lng,lat:it.lat,name:it.name}; }
+          else if(it.src==='structured'){ try{ const r=await geocode([it.name,it.country].filter(Boolean).join(', ')); if(r&&isFinite(+r.lng)&&_atlNameOk(it.name,r.name)) g={lng:+r.lng,lat:+r.lat,name:r.name}; }catch(_){ infraFail++; }
+            if(!g){ const s=await _atlGeocodeStrict(it.name,it.country); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; } else if(s.reason==='network') infraFail++; } }
+          else { const s=await _atlGeocodeStrict(it.name,''); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; } else if(s.reason==='network') infraFail++; }
+          if(g){ const cell=Math.round(g.lng*20)+','+Math.round(g.lat*20); if(seenCell.has(cell)){ spots.push({name:it.name,verdict:'mapped',src:it.src}); continue; } seenCell.add(cell);
+            newPins.push({lng:g.lng,lat:g.lat,name:String(it.name).slice(0,90),kind:String(it.kind||'').slice(0,60),sum:String(it.summary||'')}); spots.push({name:it.name,verdict:'mapped',src:it.src}); }
+          else spots.push({name:it.name,verdict:'unplaced',src:it.src}); }
+        if(newPins.length){ const merged=pre.concat(newPins.map(p=>({lng:p.lng,lat:p.lat,name:p.name,kind:p.kind,sum:p.sum,url:'',src:''})));
+          try{ setPois(merged); let ok=paintPois(); for(let i=0;i<5&&!ok;i++){ await new Promise(r=>setTimeout(r,500)); ok=paintPois(); } }catch(_){}
+          if(pre.length===0){ try{ let a=180,b=90,c=-180,d=-90; newPins.forEach(p=>{a=Math.min(a,p.lng);b=Math.min(b,p.lat);c=Math.max(c,p.lng);d=Math.max(d,p.lat);}); if(isFinite(a)&&(c-a)<340){ if((c-a)<0.05&&(d-b)<0.05) GE().camera.flyTo({center:[a,b],zoom:ctx.zoom||6,duration:1000}); else GE().camera.fitBounds([[a,b],[c,d]],{padding:80,maxZoom:9,duration:1000}); } }catch(_){} } }
+        return _atlMappingNoteHtml(_atlMappingVerdict(spots), _atlAuditSources(ctx.citations||[]), {infraFail, hadNew:newPins.length>0});
+      }catch(e){ try{ console.warn('reply-mapping audit failed',e); }catch(_){}   /* (#R150) NEVER an empty catch — record the cause + surface an honest note */
+        return '<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;opacity:.85;">'+L('Could not run the map self-check for this answer.','この回答の地図セルフチェックを実行できませんでした。','Karten-Selbstprüfung nicht möglich.','Не удалось выполнить самопроверку карты.','No se pudo verificar el mapa.')+'</div>'; } };
+    }
+
+  return { _atlAuditSources, _atlChecksNoteHtml, _atlContentClass, _atlExtractPlaces, _atlGeocodeStrict, _atlMappingNoteHtml, _atlMappingVerdict, _atlNameOk, _atlNorm, _atlParseRat, _atlRegDomain, _atlShouldMap, _atlVerifyChecks, makePinReplyPlaces };
 }

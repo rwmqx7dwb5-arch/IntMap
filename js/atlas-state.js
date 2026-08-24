@@ -33,7 +33,9 @@ export function makeAtlasState(HOST) {
        different statement from `{}` — "nobody owns this" vs "owned, and currently empty". */
     var SECTIONS = ['camera', 'selection', 'pinnedPoint', 'deviceLocation', 'viewport', 'time',
       'activeLayers', 'panels', 'objects', 'routing', 'simulations', 'comparison', 'settings',
-      'pendingOperations', 'capabilityAvailability'];
+      'pendingOperations', 'capabilityAvailability',
+      /* (#R397) three subsystems Atlas could already OPERATE and could not SEE */
+      'alerts', 'monitors', 'workspace'];
     API.SECTIONS = SECTIONS.slice();
 
     var providers = Object.create(null);
@@ -248,8 +250,49 @@ export function makeAtlasState(HOST) {
       reg('settings', function () {
         var tu = '';
         try { var w = WIN(); tu = (w && (w.imUnitTemp || w.localStorage.getItem('intmap_temp_unit'))) || ''; } catch (_) { }
+        /* (#R397) Which renderer is in use. ⚠ The VALUE is read from the selector; the engine NAMES are
+           not written here — `js/geo-engine.js` is the only file allowed to spell them (npm run
+           check:engine). ⚠ And base/projection are NOT added: the `camera` provider already reports
+           both, and a second copy is how two lines about one fact start disagreeing. */
+        var eng = '';
+        try { var ES = GLOBAL('IntMapEngineSelect'); if (ES && typeof ES.active === 'function') eng = String(ES.active() || ''); } catch (_) { }
         return { lang: host.lang, theme: (typeof host.userTheme !== 'undefined') ? host.userTheme : 'auto',
-          tempUnit: tu ? String(tu).toUpperCase() : '' };
+          tempUnit: tu ? String(tu).toUpperCase() : '', engine: eng };
+      });
+
+      /* ══ (#R397) THREE SUBSYSTEMS ATLAS COULD OPERATE AND COULD NOT SEE ═══════════════════════════
+         ⚠ EVERY ACCESSOR BELOW WAS CHECKED TO EXIST BEFORE IT WAS WRITTEN, and the ones that do not
+         exist are named in the comments rather than guessed at — this round found three observers in
+         js/atlas-capabilities.js calling façade methods that were never there, each hidden by a
+         try/catch. A provider must also be CHEAP: it runs on every turn and on both sides of every
+         operation, so nothing here touches the network or the database. */
+      reg('alerts', function () {
+        var A = GLOBAL('__wpAlerts'); var d = DOC();
+        if (!A) return null;
+        var out = { layerOn: false, countriesLoaded: 0, palette: '' };
+        /* the checkbox is the layer's own switch (`'dl-'+id`, js/data-layers.js) */
+        try { var cb = d && d.getElementById('dl-alerts'); out.layerOn = !!(cb && cb.checked); } catch (_) { }
+        try { if (typeof A.maCountries === 'function') out.countriesLoaded = (A.maCountries() || []).length; } catch (_) { }
+        try { if (typeof A.palette === 'function') out.palette = String(A.palette() || ''); } catch (_) { }
+        return out;
+      });
+
+      reg('monitors', function () {
+        var M = GLOBAL('IntMapMonitors');
+        if (!M) return null;
+        /* ⚠ THE MONITOR LIST IS NOT READ HERE. `IntMapMonitors.atlas.listText()` and `_list()` are both
+           async and both hit Supabase; a state provider that awaited them would put a network round
+           trip on every turn and on every operation boundary. What is cheap and true is that the
+           subsystem is present and whether an area is currently drawn. */
+        var out = { present: true, areaActive: false };
+        try { if (typeof M.activeArea === 'function') out.areaActive = !!M.activeArea(); } catch (_) { }
+        return out;
+      });
+
+      reg('workspace', function () {
+        var W = GLOBAL('IntMapWorkspace');
+        if (!W || typeof W.active !== 'function') return null;
+        try { return { active: !!W.active() }; } catch (_) { return null; }
       });
 
       /* (#R118) the LIVE panel, not what Atlas last asked for — the user may have built it by hand. */
@@ -413,10 +456,19 @@ export function makeAtlasState(HOST) {
        ⚠ THE ORDER IS THE ORDER `stateContext()` EMITTED, line for line. The planner and its deixis rules
        were tuned against this sequence, so re-ordering it is a behaviour change, not a tidy-up.
 
-       Sections with no counterpart line — `viewport`, `routing`, `deviceLocation`, `pendingOperations`,
-       `capabilityAvailability`, `simulations` — reach the model through `toPrompt`'s JSON. They are not
-       rendered here because `stateContext()` never said anything about them, and inventing a sentence
-       for them would be a prompt change wearing a refactor's clothes. */
+       ⚠⚠⚠ (#R397) WHAT THIS COMMENT USED TO SAY WAS NOT TRUE, AND IT MATTERED. It said: «Sections with
+       no counterpart line — viewport, routing, deviceLocation, pendingOperations,
+       capabilityAvailability, simulations — reach the model through toPrompt's JSON.» They did not.
+       `toPrompt` is defined above and its ONLY callers in the whole repository are
+       tests/r318-checks.test.mjs and tests/r318.spec.js; the production path is
+       js/atlas-console.js's `stateContext()`, which calls `renderPrompt` and nothing else. So six of
+       the fifteen sections — including the route the reader is looking at and the operations still
+       running — reached the model as ZERO BYTES, while a comment here said they arrived.
+
+       The caution in the old sentence was sound: inventing a sentence per section is a prompt change.
+       So each line below is the SHORTEST true statement of what that section holds, it is emitted only
+       when the section has content (a reader with no route pays no bytes for one), and the six new
+       lines come last so the order `stateContext()` emitted is untouched above them. */
     var RENDER_LIMITS = { maxLayers: 40, maxReadable: 10, maxObjects: 12, maxTitle: 140, maxBody: 2600,
       maxSearch: 60, maxPolyNames: 4, maxObjectName: 24 };
     var PROJ_WORD = { '3d-terrain': '3D terrain', 'flat': 'flat', 'globe': 'globe' };
@@ -509,7 +561,47 @@ export function makeAtlasState(HOST) {
 
       var st = snap.settings;
       if (st) lines.push('UI language=' + st.lang + ', theme=' + ((st.theme == null) ? 'auto' : st.theme) +
-        (st.tempUnit ? (', temp unit=°' + st.tempUnit) : '') + '.');
+        (st.tempUnit ? (', temp unit=°' + st.tempUnit) : '') + (st.engine ? (', map engine=' + st.engine) : '') + '.');
+
+      /* ── (#R397) THE SIX THAT REACHED THE MODEL AS NOTHING, PLUS THE THREE THIS ROUND ADDED ──── */
+      var vp = snap.viewport;
+      if (vp && isFinite(vp.west)) lines.push('Visible bounds: W ' + (+vp.west).toFixed(2) + ', S ' + (+vp.south).toFixed(2) +
+        ', E ' + (+vp.east).toFixed(2) + ', N ' + (+vp.north).toFixed(2) + ' (this is the frame the reader can actually see).');
+
+      var rt = snap.routing;
+      if (rt && (rt.hasRoute || rt.painted || rt.mode)) lines.push('ROUTE on the map: ' +
+        (rt.hasRoute ? 'a route is drawn' : 'no route drawn') + (rt.mode ? (', travel mode=' + str(rt.mode)) : '') +
+        (rt.alts != null ? (', ' + rt.alts + ' alternative(s)') : '') + '.');
+
+      var dl = snap.deviceLocation;
+      if (dl && isFinite(dl.lat)) lines.push('The reader\'s DEVICE location is known: ' + (+dl.lat).toFixed(3) + ', ' +
+        (+dl.lng).toFixed(3) + ' — use it only for "near me"-style requests, never as the subject of a question that named a place.');
+
+      var sim = snap.simulations;
+      if (sim && Object.keys(sim).length) lines.push('Simulations open: ' + Object.keys(sim).join(', ') + '.');
+
+      var pend = snap.pendingOperations;
+      if (pend && pend.length) lines.push('Operations still RUNNING from an earlier turn: ' +
+        pend.slice(0, 6).map(function (p) { return str(p && (p.capabilityId || p.id)); }).filter(Boolean).join(', ') +
+        ' — do not re-issue these; they have not finished.');
+
+      /* Only the UNAVAILABLE ones. Listing what works would repeat the catalogue the planner already has. */
+      var av = snap.capabilityAvailability;
+      if (av) {
+        var off = Object.keys(av).filter(function (k) { return av[k] && av[k].available === false; });
+        if (off.length) lines.push('Currently UNAVAILABLE capabilities (do not plan these this turn): ' + off.slice(0, 12).join(', ') + '.');
+      }
+
+      var al = snap.alerts;
+      if (al && (al.layerOn || al.countriesLoaded)) lines.push('Official warning layer: ' + (al.layerOn ? 'ON' : 'off') +
+        (al.countriesLoaded ? (', feeds loaded for ' + al.countriesLoaded + ' country/countries') : '') +
+        (al.palette ? (', shaded by ' + str(al.palette)) : '') + '.');
+
+      var mo = snap.monitors;
+      if (mo && mo.present) lines.push('Area monitoring is available' + (mo.areaActive ? ' and a monitored area is on the map' : '') + '.');
+
+      var ws = snap.workspace;
+      if (ws && ws.active) lines.push('Workspace (free-floating windows) is ACTIVE.');
 
       return lines.join('\n');
     };

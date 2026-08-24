@@ -51,7 +51,7 @@ import { makeLayerFavs } from './layer-favs.js';
 import { makeProjection } from './map-projection.js';   /* (#R298) Globe / Flat and the flat map's free scroll — one subject, five places, see the file */
 import { makePremiumPlan } from './premium-plan.js';
 import { makeScreenshot } from './screenshot.js';
-import { installCapabilityKernel } from './atlas-capabilities.js';   /* (#R318) EAGER: the 115 capability descriptors, so a capability is discoverable before its module loads (§3/§10). The executor, the result shape and the state ledger are NOT — installCapabilityKernel installs IntMapOS.execute() as a thin await over an import(), because nothing needs the machinery until something actually runs. #R311's startup budget measured what mounting all of it eagerly costs a reader who never asks a question: +18.9 kB brotli. */
+import { installCapabilityKernel } from './atlas-capabilities.js';   /* (#R318) EAGER: the 124 capability descriptors, so a capability is discoverable before its module loads (§3/§10). The executor, the result shape and the state ledger are NOT — installCapabilityKernel installs IntMapOS.execute() as a thin await over an import(), because nothing needs the machinery until something actually runs. #R311's startup budget measured what mounting all of it eagerly costs a reader who never asks a question: +18.9 kB brotli. */
 import { makeSessionTabs } from './session-tabs.js';
 import { makeTimeCountries } from './time-countries.js';
 
