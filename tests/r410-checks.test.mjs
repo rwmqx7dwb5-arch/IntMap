@@ -91,8 +91,20 @@ test('R410 ③: tagSame is given the year and asks the table for it', () => {
   assert.deepEqual(TB.match(/_histId/g) || [], [],
     'the label is gated on the rename again — that is the defect, one listener reading another’s output');
   /* the year is taken before any early return, because `shownY` is a SNAPSHOT key and one aourednik
-     snapshot answers many years */
-  assert.ok(/async function go\(year\)\{[^\n]*shownYear=year;/.test(TB), 'shownYear is not set at the top of go()');
+     snapshot answers many years.
+     ⚠ (#R421) THE CLAIM IS UNCHANGED; ONLY ITS SPELLING IS. This was
+        /async function go\(year\)\{[^\n]*shownYear=year;/
+     — one line, and the parameter had to be named `year`. #R421 moved the historical borders from a
+     yearly sample to the CShapes validity DATES, so `go` takes the INSTANT and derives the year one
+     line above the assignment; the old regex failed on a tree where the claim is perfectly true.
+     A gate that pins the spelling of a line blocks the next honest edit and teaches people to delete
+     it, so it now checks the thing it always meant: `shownYear` is assigned in go()'s preamble,
+     BEFORE the first branch, so no early return can leave it stale. */
+  const goAt = TB.indexOf('async function go(');
+  assert.ok(goAt > 0, 'go() is gone from js/time-borders.js');
+  const goPreamble = TB.slice(goAt, TB.indexOf('if(', goAt));
+  assert.ok(/shownYear=year;/.test(goPreamble),
+    'shownYear is not assigned in go()’s preamble, before the first branch');
 });
 
 /* ── ③b the former-state correspondence table the CLICK path has always used reaches the LABELS ── */
