@@ -1802,6 +1802,34 @@ test('#R349 the war layer draws nothing until it is asked, then paints the day i
   expect(r.evtLayer, 'the operation-dot layer exists at all').toBe(true);
   expect(r.events, 'operation dots are drawn, not just their labels').toBeGreaterThan(0);
 
+  /* ⚠ (#R409 追記) CLICKING AN OPERATION OVER LAND MUST OPEN THE OPERATION, NOT THE COUNTRY UNDER IT.
+     Found on production: onLayer is a plain per-layer listener and NOT «topmost wins», so one click
+     ran both handlers and whichever popup was shown second removed the other — every operation that
+     is not at sea was unreachable, and Kursk opened the card for the Soviet Union underneath it.
+     The fix is #R210's claimClick / clickClaimed; this is the assertion that keeps it. */
+  const pop = await page.evaluate(async () => {
+    const GE = window.IntMapGeoEngine;
+    window.IntMapWarFronts.setDate('ww2', '1943-07-05');
+    GE.camera.jumpTo({ center: [36.187, 51.731], zoom: 6, pitch: 0, bearing: 0 });
+    const t0 = Date.now();
+    while (Date.now() - t0 < 20000) {
+      await new Promise((res) => setTimeout(res, 250));
+      const q = GE.coords.project([36.187, 51.731]);
+      if (GE.coords.queryRenderedFeatures([q.x, q.y], { layers: ['ww2-evt'] }).length) break;
+    }
+    const c = GE.render.canvas(), b = c.getBoundingClientRect(), q = GE.coords.project([36.187, 51.731]);
+    const at = { bubbles: true, clientX: q.x + b.left, clientY: q.y + b.top };
+    for (const type of ['mousedown', 'mouseup', 'click']) c.dispatchEvent(new MouseEvent(type, at));
+    await new Promise((res) => setTimeout(res, 900));
+    const el = document.querySelector('.plc-popup');
+    return { onDot: GE.coords.queryRenderedFeatures([q.x, q.y], { layers: ['ww2-evt'] }).length,
+      kind: !!(el && el.querySelector('.war-pop-k')), wiki: !!(el && el.querySelector('a')),
+      text: (el ? el.textContent : '').replace(/\s+/g, ' ').slice(0, 80) };
+  });
+  expect(pop.onDot, 'the click landed on an operation dot').toBeGreaterThan(0);
+  expect(pop.kind, 'the operation card opened, not the country under it: ' + pop.text).toBe(true);
+  expect(pop.wiki, 'the operation card carries its Wikipedia link').toBe(true);
+
   /* ⚠ (#R409) 「Chronosは動かすな。」 — the legend's own range moves the layer and NOTHING else. */
   const slid = await page.evaluate(async () => {
     const clockBefore = window.IntMapTime.iso();
