@@ -28,6 +28,9 @@ window.IntMapModules.newsTimeline=function(HOST){
   (function(){
     const tl=document.getElementById('news-timeline'), tg=document.getElementById('ntl-toggle');
     const slider=document.getElementById('ntl-slider'), datePicker=document.getElementById('ntl-date');
+    /* (#R421) the border-change stepper — the only control that can reach a day like 1920-10-28 */
+    const bStep=document.getElementById('ntl-bstep'), bStepPrev=document.getElementById('ntl-bstep-prev'),
+          bStepNext=document.getElementById('ntl-bstep-next'), bStepLbl=document.getElementById('ntl-bstep-lbl');
     /* ⚠ (#R349) THE FLOOR IS READ FROM THE KERNEL, NEVER WRITTEN DOWN HERE. This file held `1900` in
        four places — the slider's `min`, the guard on the slider's own input, the clamp that reflects
        the kernel back into the slider, and the ruler's first tick. `IntMapTime.min` is the one that
@@ -240,6 +243,34 @@ window.IntMapModules.newsTimeline=function(HOST){
     }catch(_){ return d.toLocaleDateString(); } }
     const L5=window.IntMapLang.pick(()=>HOST.lang);
     const yLabel=(y)=>HOST.lang==='jp'?(y+'年'):(''+y);
+    /* ══ (#R421) THE BORDER-CHANGE STEPPER ══════════════════════════════════════════════════════
+       「実際の国境変更日にスナップ」. `IntMapTimeBorders` owns the dates — they are the validity edges of
+       the very CShapes records the polygons are drawn from, so there is no second list here that could
+       drift out of step with what is on the map. This row asks three questions and writes the answer to
+       the master clock, like every other input in this panel.
+       ⚠ ASYNC, AND AN ANSWER CAN ARRIVE AFTER THE READER HAS MOVED ON. The 5.5 MB bundle is warmed at
+       idle (js/time-borders.js), so the first clicks resolve late; `_bsSeq` drops all but the newest. */
+    let _bsSeq=0;
+    const _TB=()=>window.IntMapTimeBorders;
+    const _bsWord=()=>L5('Borders','国境','Grenzen','Границы','Fronteras');
+    function _bsInRange(y){ try{ const r=_TB().range(); return y>=r.min&&y<=r.max; }catch(_){ return false; } }
+    function syncBorderStep(e){ if(!bStep) return;
+      /* shown by the INSTANT, not by the open tab: the borders are on the map whichever tab is up */
+      const show=!e.isLive&&_bsInRange(e.year); bStep.style.display=show?'':'none'; if(!show) return;
+      /* ⚠ NAME THE ROW SYNCHRONOUSLY. The date arrives from a promise, and on a phone the 5.5 MB
+         bundle is not prefetched at all (js/time-borders.js), so the answer can be seconds away —
+         measured blank for >1.5 s at 375 px. A control that appears with no label reads as broken. */
+      if(bStepLbl&&!bStepLbl.textContent) bStepLbl.textContent=_bsWord();
+      const TB=_TB(); if(!TB||!TB.changeAt) return; const my=++_bsSeq;
+      Promise.all([TB.changeAt(e.when),TB.changeBefore(e.when),TB.changeAfter(e.when)]).then(function(r){
+        if(my!==_bsSeq) return;
+        if(bStepLbl) bStepLbl.textContent=r[0]?(_bsWord()+' · '+_dateText(r[0])):_bsWord();
+        if(bStepPrev) bStepPrev.disabled=!r[1];
+        if(bStepNext) bStepNext.disabled=!r[2]; }).catch(function(){}); }
+    function _bsStep(dir){ const TB=_TB(); if(!TB||!TB.changeAfter) return;
+      let st; try{ st=window.IntMapTime.state(); }catch(_){ return; }
+      (dir<0?TB.changeBefore(st.when):TB.changeAfter(st.when)).then(function(d){
+        if(d) try{ window.IntMapTime.set(d,{source:'ui'}); }catch(_){} }).catch(function(){}); }
     /* (#R290) `on()`, `kEra()`, `HBY` and `hbAt()` lived here to fill the 「反映内容」 chips — the
        Köppen era, the historical-borders snapshot and which of the year-driven layers were on.
        That block is gone (see the note further down), and so is everything that only fed it. */
@@ -273,6 +304,12 @@ window.IntMapModules.newsTimeline=function(HOST){
       /* (#R378) the direct picker's label — the field itself is the browser's, so this is the only
          word this row owns, and it is a <label for> so the text focuses the field (index.html) */
       if(jumpLbl) jumpLbl.textContent=L5('Date & time','日時','Datum & Zeit','Дата и время','Fecha y hora');
+      /* (#R421) the stepper's arrows carry no text of their own — the whole control is two glyphs and a
+         readout, so the words live in the title/aria pair, which is also what a screen reader announces */
+      if(bStepPrev){ const t=L5('Previous border change','前の国境変更','Vorherige Grenzänderung','Предыдущее изменение границы','Cambio de frontera anterior');
+        bStepPrev.title=t; bStepPrev.setAttribute('aria-label',t); }
+      if(bStepNext){ const t=L5('Next border change','次の国境変更','Nächste Grenzänderung','Следующее изменение границы','Cambio de frontera siguiente');
+        bStepNext.title=t; bStepNext.setAttribute('aria-label',t); }
       buildZones();
       buildScale();
     }
@@ -449,6 +486,8 @@ window.IntMapModules.newsTimeline=function(HOST){
     /* WRITE side: inputs → kernel */
     tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(window.IntMapTime.state()); }catch(_){} } _tmSyncTerminator(); };
     if(closeX) closeX.onclick=()=>{ tl.classList.add('collapsed'); _tmSyncTerminator(); };
+    if(bStepPrev) bStepPrev.onclick=()=>_bsStep(-1);   /* (#R421) */
+    if(bStepNext) bStepNext.onclick=()=>_bsStep(1);
     if(modeYear) modeYear.onclick=()=>applyMode('year');
     if(modeDate) modeDate.onclick=()=>applyMode('date');
     if(modeTime) modeTime.onclick=()=>applyMode('time');   /* (#R137) · (#R293) and the forecast */
@@ -489,6 +528,7 @@ window.IntMapModules.newsTimeline=function(HOST){
       /* (#R293) the badge is a claim about the CHOSEN INSTANT, so it is written where the instant
          arrives — not once, from the localiser, in the word that happened to be true in #R105 */
       if(badge&&!e.isLive) badge.textContent=sideWord(e.when);
+      try{ syncBorderStep(e); }catch(_){}   /* (#R421) the day the borders on screen came into being */
       if(mode==='time'){ /* (#R137) Time tab: show the time-of-day of the current instant (now when live).
                            (#R139) keep the slider/picker max at "now" while the selected date is today (no future). */
         const w=e.when; const base=e.isLive?new Date():new Date(e.when); const maxM=_timeMaxMins();
