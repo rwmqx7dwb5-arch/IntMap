@@ -225,7 +225,8 @@ test('R379 ① the aircraft mark is the airliner plan-form again, and its shader
  *  it was checking and is the wrong question now. The probe sits at the CANVAS CENTRE, where a
  *  perspective frame has no shear and a globe no meridian convergence, so the mark's angle there IS
  *  the track turned by the map's bearing — one subtraction, owing nothing to the implementation it
- *  is judging. (Away from the centre the two part company by up to 16.7° at pitch 85, measured over
+ *  is judging. (Away from the centre the two part company by up to 16.7° at pitch 78 — the tilt limit
+ *  js/view-controls.js holds, and where `jumpTo({pitch: 85})` actually lands — measured over
  *  250 live aircraft; that residue is the local rotation a perspective genuinely has, which is why
  *  the probe is measured where it is zero rather than tolerated where it is not.)
  * ==========================================================================*/
@@ -242,7 +243,7 @@ const ANGLES = [
   { trk: 90, pitch: 0, bearing: 0 },
   { trk: 45, pitch: 0, bearing: 0 },
   { trk: 45, pitch: 60, bearing: 0 },   /* (#R411) tilting must NOT move the mark … */
-  { trk: 45, pitch: 85, bearing: 0 },   /* … not even at the tilt the report was made at */
+  { trk: 45, pitch: 78, bearing: 0 },   /* … not even at the tilt limit, which is where the report was */
   { trk: 45, pitch: 0, bearing: 45 },   /* …but turning the map must */
 ];
 
@@ -344,7 +345,7 @@ async function headingTable(page, rows, size, big, altM) {
            The mark is recovered by subtracting two frames, which cancels the background EXACTLY —
            but only while the background is the SAME in both. #R401 met the other case (a tile
            landing between the pair erodes one mask and not the other) and answered it with three
-           retries, which is enough while the view is a few hundred kilometres wide. At pitch 85 the
+           retries, which is enough while the view is a few hundred kilometres wide. At pitch 78 the
            view reaches the horizon, so it is loading an order of magnitude more tiles and the pair
            straddles a landing far more often than three retries can absorb: measured, the steep row
            failed its own consistency check (masks 8.6 % apart, long axes 56.5 % of a right angle
@@ -400,6 +401,8 @@ async function headingTable(page, rows, size, big, altM) {
           const nx = s2.cx - s1.cx, ny = s2.cy - s1.cy;
           out.push({
             trk: r.trk, pitch: r.pitch, bearing: r.bearing,
+            /* (#R411 addendum) what the camera ACTUALLY gave, which is not always what was asked for */
+            pitchAt: m.getPitch(), bearingAt: m.getBearing(),
             measured: Math.atan2(nx, -ny) / D2R, truth, arm: Math.hypot(nx, ny),
             px: s1.n, px2: s2.n,
             /* the nose direction as two SIGNS — which side of the mark's own centre the tail sits.
@@ -452,7 +455,7 @@ test('R411 the mark points along the aircraft\'s OWN track, turned with the map 
        centroids carries a bias, measured at up to 9.3° across these rows. That is far inside what
        this test is for: a mark that ignores bearing is 45° out on the last row, a mirrored one is
        90° or 180° out on every row, and (#R411) one that projects the track onto the ground is
-       18.4° out at pitch 60 and 31° at pitch 85. The two SIGNS below are exact, and they are what
+       18.4° out at pitch 60 and 33° at pitch 78. The two SIGNS below are exact, and they are what
        pins the mirror. */
     expect(angleGap(r.measured, r.truth),
       `${at}: drawn at ${r.measured.toFixed(1)}°, the track turned with the map is ${r.truth.toFixed(1)}° (${how})`).toBeLessThan(15);
@@ -492,14 +495,18 @@ test('R411 the mark points along the aircraft\'s OWN track, turned with the map 
      ⚠ FIFTEEN, and it is the MEASUREMENT'S bias again, not slack for the renderer: the centroid
      difference of a silhouette against itself turned round carries up to 9.3° here. The behaviour
      this separates it from is not subtle — projecting the track puts pitch 60 18.4° away and
-     pitch 85 31° away from pitch 0, both outside this. */
+     pitch 78 33° away from pitch 0, both outside this.
+     ⚠ (#R411 addendum) 78 AND NOT 85, because 78 is where the camera stops: js/view-controls.js keeps
+     the standard tilt limit there and lifting it is a setting, so a row asking for 85 was silently
+     measuring 78 and naming a number this file never reached. `pitchAt` below records what the map
+     actually gave, so a change to that ceiling shows up here rather than hiding. */
   const flat = t.rows.find((r) => r.trk === 45 && r.pitch === 0 && r.bearing === 0);
   const tilted = t.rows.find((r) => r.trk === 45 && r.pitch === 60);
-  const steep = t.rows.find((r) => r.trk === 45 && r.pitch === 85);
+  const steep = t.rows.find((r) => r.trk === 45 && r.pitch === 78);
   const turned = t.rows.find((r) => r.trk === 45 && r.bearing === 45);
   expect(angleGap(flat.measured, tilted.measured),
     `tilting the map to 60° leaves the mark alone (${flat.measured.toFixed(1)}° → ${tilted.measured.toFixed(1)}°)`).toBeLessThan(15);
   expect(angleGap(flat.measured, steep.measured),
-    `and tilting it to 85° leaves the mark alone (${flat.measured.toFixed(1)}° → ${steep.measured.toFixed(1)}°)`).toBeLessThan(15);
+    `and tilting it to ${steep.pitchAt.toFixed(0)}° leaves the mark alone (${flat.measured.toFixed(1)}° → ${steep.measured.toFixed(1)}°)`).toBeLessThan(15);
   expect(angleGap(flat.measured, turned.measured), 'turning the map moves the mark').toBeGreaterThan(25);
 });

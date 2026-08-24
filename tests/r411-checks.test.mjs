@@ -10,12 +10,15 @@
  *  tilt by drawing the direction a DECAL LYING ON THE GROUND would run, which is what a ground plane
  *  seen edge-on does to a set of bearings. Measured over Japan at z6.2, 400 aircraft:
  *
- *      pitch                         0°     30°     60°     75°     85°
+ *      pitch                         0°     30°     60°     75°     78°
  *      within 20° of horizontal     121     128     181     287     315   of 400
  *      axial concentration        0.238   0.291   0.485   0.711   0.768
  *
  *  …against a near-uniform 0.214 in the reported tracks themselves. Four in five aircraft pointing
  *  the same way, and not one of them flying that way.
+ *  ⚠ 78° is where the application stops (js/view-controls.js `STANDARD`); asking for 85 lands there
+ *  for any reader who has not switched the limit off, which is what the first version of this table
+ *  did not know when it wrote 85.
  *
  *  The other two reports were both real and neither was where it looked:
  *    · the low-zoom shortage was not the tiles, which #R401 fixed — it was the test deciding which
