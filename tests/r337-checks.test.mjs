@@ -204,7 +204,15 @@ function raw(stats, opts) {
   try {
     return makeAtlasExamples({ lang: 'en' }, {
       L: (en) => en,
-      GE: () => ({ camera: { getCenter: () => ({ lng: 0, lat: 0 }),
+      /* ⚠ (#R392) THE CAMERA SITS OVER THE FIXTURE'S OWN COUNTRIES, which it did not have to before.
+         This harness pinned the centre at (0°, 0°) — an accidental detail while the pool could only
+         read the country the centre pixel fell in. #R392 added candidates gated on the VIEW, and one
+         of them asks whether the equator crosses the frame; at (0, 0) it crosses every frame, so
+         every fixture country was handed the same view chip and this file's 「one fact changes the
+         row」 property broke for a reason that had nothing to do with the fact being varied.
+         `world()` puts every shape in bbox [10, 30, 11, 31], so the camera is put there too and the
+         view contributes nothing — which is what lets this test go on measuring the country pool. */
+      GE: () => ({ camera: { getCenter: () => ({ lng: 10.5, lat: 30.5 }),
                              getZoom: () => (o.zoom == null ? 6 : o.zoom) } }),
       codeAtPoint: () => o.code || '',
       countryStats: stats,
