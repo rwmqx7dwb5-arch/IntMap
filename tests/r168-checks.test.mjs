@@ -61,7 +61,7 @@ function code(src) {
    order the six calls must appear in — one block, right after the map is constructed. */
 const MODULES = {
   countriesUi: { file: 'js/countries-ui.js', k: 'IM_COUNTRIES_UI', exports: ['renderStats', 'showCountryDetail', 'renderCountryDetailBody', 'loadCountryData', 'addCountryLayers'] },
-  newsUi:      { file: 'js/news-ui.js',      k: 'IM_NEWS_UI',      exports: ['renderUI', 'setupIntelLayers', 'appendNewsBatch', 'renderReaderMode', 'aiGeocodeNews', '_spreadDupNewsPins'] },
+  newsUi:      { file: 'js/news-ui.js',      k: 'IM_NEWS_UI',      exports: ['renderUI', 'setupIntelLayers', 'appendNewsBatch', 'renderReaderMode', '_spreadDupNewsPins'] },
   companiesUi: { file: 'js/companies-ui.js', k: 'IM_COMPANIES_UI', exports: ['renderCompanies', 'showCompanyDetail', 'renderDashboard', '_coCmpEnsureCss', '_coCmpRender'] },
   toolPanel:   { file: 'js/tool-panel.js',   k: 'IM_TOOL_PANEL',   exports: ['updateToolPanel', 'buildToolFeatures', 'showContextMenu'] },
   authUi:      { file: 'js/auth-ui.js',      k: 'IM_AUTH_UI',      exports: ['bootSupabase', '_openSetPassword', 'openAuthModal'] },

@@ -84,11 +84,10 @@ window.IntMapLang.define('ko', { ui: {
       aiNoKey:"먼저 설정 → AI 기능에서 API 키를 추가하세요.", aiNoVision:"이 모델은 이미지를 읽을 수 없습니다. GPT-4o, Claude 3.5 Sonnet 또는 Gemini 1.5 Pro를 선택하세요.",
       aiChromeUnavail:"여기서는 Chrome 내장 AI를 사용할 수 없습니다. 기기 내 AI가 활성화된 Chrome 127 이상을 쓰거나 다른 제공처를 선택하세요.",
       aiThinking:"AI가 분석 중…", aiError:"AI 요청 실패", aiCopy:"복사", aiCopied:"복사됨 ✓", aiClose:"닫기", aiRetry:"다시 시도",
-      aiGeoBtn:"✨ 모든 뉴스를 AI로 위치 지정", aiGeoBtnSub:"✨ 사건 위치를 AI로 지정", aiTranslateTitles:"제목 번역", aiGeoBusy:"위치 지정 중…", aiGeoNone:"위치를 지정할 항목이 없습니다.", aiGeoDone:"{n}건의 기사 위치를 지정했습니다", aiGeoErr:"지오코딩 실패", aiTransBusy:"번역 중…", aiTransDone:"{n}개의 제목을 번역했습니다", aiTransNone:"제목이 이미 사용 언어입니다.",
+      aiGeoBtn:"✨ 모든 뉴스를 AI로 위치 지정", aiTranslateTitles:"제목 번역", aiTransBusy:"번역 중…", aiTransDone:"{n}개의 제목을 번역했습니다", aiTransNone:"제목이 이미 사용 언어입니다.",
       lblNewsLang:"뉴스 언어", newsLangUi:"현재 언어만", newsLangMulti:"모든 언어 (제목 자동 번역)", lblAiLocate:"AI 위치 분석", aiLocManual:"수동 (버튼)", aiLocAuto:"모든 뉴스에 자동 적용",
       aiTranslate:"번역", aiShowOriginal:"원문", aiTransNoText:"번역할 본문이 없습니다 — 웹 보기를 사용해 보세요.",
       aiSumBtn:"이 지역을 AI로 요약", popInArea:"이 지역의 인구", popCalcing:"인구 계산 중…", popFail:"인구 조회 실패 — 다시 시도하세요.", newsInArea:"이 지역의 뉴스", elevProfile:"고도 단면", finalizeMeas:"지도에 남기기", aiSumTitle:"지역 브리핑", aiSumSub:"선택 지역 내 뉴스 핀 {n}개", aiSumNoArea:"먼저 영역을 그리거나 원을 놓으세요.", aiSumNoNews:"이 지역에는 뉴스 핀이 없습니다.",
-      aiViewSumBtn:"이 화면 요약", aiViewSumTitle:"화면에서 벌어지는 일",
       aiVisHead:"AI 변화 탐지", aiVisBtn:"변화 탐지", aiVisTitle:"위성 변화 보고서", aiVisSub:"{a} → {b} 비교", aiVisBefore:"이전", aiVisAfter:"이후", aiVisCapturing:"영상 캡처 중…", aiVisPickDates:"비교할 두 날짜를 선택하세요.", aiVisNeedsDated:"위성 모드에서 날짜 선택이 가능한 제공처(MODIS / VIIRS / Sentinel-2)로 전환하세요.", aiVisCapFail:"지도 영상을 캡처하지 못했습니다."
 ,
       accentCustom:"사용자 지정 색",

@@ -82,11 +82,10 @@ window.IntMapLang.define('jp', { ui: {
       aiNoKey:"先に 設定 → AI機能 でAPIキーを登録してください。", aiNoVision:"このモデルは画像を解析できません。GPT-4o / Claude 3.5 Sonnet / Gemini 1.5 Pro を選択してください。",
       aiChromeUnavail:"このブラウザではChrome内蔵AIを利用できません。Chrome 127以降で端末内AIを有効にするか、別のプロバイダを選択してください。",
       aiThinking:"AIが解析中…", aiError:"AIリクエストに失敗しました", aiCopy:"コピー", aiCopied:"コピーしました ✓", aiClose:"閉じる", aiRetry:"再試行",
-      aiGeoBtn:"✨ 全ニュースをAIで地点解析", aiGeoBtnSub:"✨ 主題地をAI解析", aiTranslateTitles:"タイトルを翻訳", aiGeoBusy:"地点解析中…", aiGeoNone:"解析する記事がありません。", aiGeoDone:"{n}件の地点を解析しました", aiGeoErr:"地点解析に失敗しました", aiTransBusy:"翻訳中…", aiTransDone:"{n}件のタイトルを翻訳しました", aiTransNone:"すでにこの言語のタイトルです。",
+      aiGeoBtn:"✨ 全ニュースをAIで地点解析", aiTranslateTitles:"タイトルを翻訳", aiTransBusy:"翻訳中…", aiTransDone:"{n}件のタイトルを翻訳しました", aiTransNone:"すでにこの言語のタイトルです。",
       lblNewsLang:"ニュースの言語", newsLangUi:"現在の言語のみ", newsLangMulti:"全言語（タイトルを自動翻訳）", lblAiLocate:"AIによる地点解析", aiLocManual:"手動（ボタン）", aiLocAuto:"全ニュースで自動実行",
       aiTranslate:"AI翻訳", aiShowOriginal:"原文", aiTransNoText:"翻訳できる本文がありません（ページ表示をお試しください）。",
       aiSumBtn:"この範囲をAIで要約", popInArea:"この範囲の人口", popCalcing:"人口を算出中…", popFail:"人口を取得できませんでした。もう一度お試しください。", newsInArea:"この範囲のニュース", elevProfile:"標高断面", finalizeMeas:"地図に残す", aiSumTitle:"エリア地政学ブリーフィング", aiSumSub:"選択範囲内のニュース {n}件", aiSumNoArea:"先に範囲を描画するか円を配置してください。", aiSumNoNews:"この範囲内にニュースピンがありません。",
-      aiViewSumBtn:"今の表示エリアを要約", aiViewSumTitle:"画面内で起きていること",
       aiVisHead:"AI変化検出", aiVisBtn:"変化を検出", aiVisTitle:"衛星画像 変化レポート", aiVisSub:"{a} → {b} を比較", aiVisBefore:"過去", aiVisAfter:"新しい", aiVisCapturing:"画像を取得中…", aiVisPickDates:"比較する2つの日付を選択してください。", aiVisNeedsDated:"衛星モードで日付選択可能なプロバイダ（MODIS / VIIRS / Sentinel-2）に切替えてください。", aiVisCapFail:"地図画像を取得できませんでした。"
 ,
       tabMonitors:'モニター',

@@ -290,7 +290,7 @@ window.IntMapModules.dataLayers=function(HOST){
         /* (#R22) Catch-all so NO popup/panel × can stay tiny again — the satellite controller (was 26px)
            and every "Close" button get the same 32px tap target ("×が小さすぎて押せない" re-report). */
         .satc-close{ width:32px !important; height:32px !important; font-size:20px !important; display:flex !important; align-items:center; justify-content:center; }
-        button[aria-label="Close"], .ai-panel-close, .ai-x, .nrp-close, .fb-x, #fb-x{ min-width:32px !important; min-height:32px !important; }
+        button[aria-label="Close"], .ai-panel-close, .ai-x, .fb-x, #fb-x{ min-width:32px !important; min-height:32px !important; }
         /* (#R21) the last stragglers — widget board ×/⚙ and the widget-gallery × join the ONE 32px size */
         .wgt-x{ width:32px !important; height:32px !important; border-radius:9px !important; font-size:15px !important; }
         .wgt-cfg{ width:32px !important; height:32px !important; border-radius:16px !important; right:6px !important; }

@@ -88,7 +88,11 @@ window.IntMapModules.articleReader=function(HOST){
     try{ if(window.matchMedia('(max-width:768px)').matches && window.__setDetent) window.__setDetent('full'); }catch(_){}
     const cp=document.querySelector('.control-panel'); if(cp) cp.style.display='none';
     const sbBar=document.getElementById('sidebar-search-bar'); if(sbBar) sbBar.style.display='none';   /* (#R79e) by ID, not .search-bar (see renderUI note) */
-    const pt=document.getElementById('news-pin-toggle'); if(pt) pt.style.display='none';
+    /* (#R430) the line that hid #news-pin-toggle is gone with that id. The pin-mode segment was moved
+       out of its own labelled card into the shared #news-filter-toggle row back in Round 5, so this
+       lookup had been returning null ever since. ⚠ It is NOT re-pointed at #news-filter-toggle: that
+       row also carries All/★Saved, and hiding it would be a NEW behaviour invented for a chain that
+       has had no caller since #R11. Whoever re-wires this reader (#R169) decides what the row does. */
     ['live-news-feed','info-dashboard','community-feed'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; });
     const pane=document.getElementById('news-reader-pane'); pane.style.display='flex';
     const back=window.IntMapLang.t(HOST.lang,'Back to news','ニュースへ戻る','Zurück zu den News','Назад к новостям','Volver a noticias');

@@ -82,11 +82,10 @@ window.IntMapLang.define('en', { ui: {
       aiNoKey:"Add an AI API key in Settings → AI features first.", aiNoVision:"This model can't read images. Choose GPT-4o, Claude 3.5 Sonnet, or Gemini 1.5 Pro.",
       aiChromeUnavail:"Chrome Built-in AI isn't available here. Use Chrome 127+ with the on-device AI enabled, or choose another provider.",
       aiThinking:"AI is analyzing…", aiError:"AI request failed", aiCopy:"Copy", aiCopied:"Copied ✓", aiClose:"Close", aiRetry:"Retry",
-      aiGeoBtn:"✨ AI-locate all news", aiGeoBtnSub:"✨ AI-locate subject", aiTranslateTitles:"Translate titles", aiGeoBusy:"Locating…", aiGeoNone:"Nothing to locate.", aiGeoDone:"Located {n} stories", aiGeoErr:"Geocoding failed", aiTransBusy:"Translating…", aiTransDone:"Translated {n} titles", aiTransNone:"Titles already in your language.",
+      aiGeoBtn:"✨ AI-locate all news", aiTranslateTitles:"Translate titles", aiTransBusy:"Translating…", aiTransDone:"Translated {n} titles", aiTransNone:"Titles already in your language.",
       lblNewsLang:"News languages", newsLangUi:"Current language only", newsLangMulti:"All languages (auto-translate titles)", lblAiLocate:"AI location analysis", aiLocManual:"Manual (button)", aiLocAuto:"Automatic for all news",
       aiTranslate:"Translate", aiShowOriginal:"Original", aiTransNoText:"No article text to translate — try Web view.",
       aiSumBtn:"Summarize this area with AI", popInArea:"Population in this area", popCalcing:"Calculating population…", popFail:"Population lookup failed — try again.", newsInArea:"News in this area", elevProfile:"Elevation profile", finalizeMeas:"Keep on map", aiSumTitle:"Area briefing", aiSumSub:"{n} news pins in the selected area", aiSumNoArea:"Draw an area or place a circle first.", aiSumNoNews:"No news pins inside this area.",
-      aiViewSumBtn:"Summarize this view", aiViewSumTitle:"What's happening on screen",
       aiVisHead:"AI change detection", aiVisBtn:"Detect changes", aiVisTitle:"Satellite change report", aiVisSub:"Comparing {a} → {b}", aiVisBefore:"Before", aiVisAfter:"After", aiVisCapturing:"Capturing imagery…", aiVisPickDates:"Pick two dates to compare.", aiVisNeedsDated:"Switch to a date-selectable provider (MODIS / VIIRS / Sentinel-2) in Satellite mode.", aiVisCapFail:"Couldn't capture the map imagery." 
 ,
       tabMonitors:'Monitors',

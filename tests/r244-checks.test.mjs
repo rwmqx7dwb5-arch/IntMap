@@ -99,7 +99,10 @@ test('r244 ⑥ the bookmark restores from the boot hash and writes nothing befor
    because the shared glass-material rule named one and not the other. */
 test('r244 ⑦ both sidebar handles read the one glass material', () => {
   const css = read('css/intmap.css');
-  const rule = css.slice(css.indexOf('.ai-view-summary-btn,.btn-toggle-sidebar'));
+  /* (#R430) anchored on .btn-toggle-sidebar: the list used to start with the dead
+     .ai-view-summary-btn, so removing that corpse would have failed this test on an
+     indexOf(-1) — the assertion below is about the two HANDLES, not about that button. */
+  const rule = css.slice(css.indexOf('.btn-toggle-sidebar,#lsr-toggle'));
   const decl = rule.slice(0, rule.indexOf('}'));
   assert.ok(/#lsr-toggle/.test(decl), 'the right sidebar’s handle is in the material list');
   assert.ok(/\.btn-toggle-sidebar/.test(decl), '…and so is the left one');

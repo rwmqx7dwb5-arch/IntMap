@@ -63,7 +63,7 @@ const EXPECTED_CALLS = {
   'js/analysis-research.js': 2,      /* place brief, ask-about-this-point */
   'js/app-body.js': 2,               /* satellite-image comparison, area news summary */
   'js/atlas-geo-resolve.js': 2,      /* place verification, region resolution */
-  'js/news-ui.js': 2,                /* headline subject, article translation. (#R416) the third — publisher HQ — went with the Subject/Publisher pin mode */
+  'js/news-ui.js': 1,                /* article translation. (#R416) the publisher-HQ prompt went with the Subject/Publisher pin mode; (#R430) the headline-subject one went with aiGeocodeNews — CONSTITUTION §5 forbids a user-facing AI-locate button, so the browser no longer prompts for a headline's location at all */
   'supabase/functions/monitor-run/index.ts': 1,
   'supabase/functions/refresh-news/index.ts': 1,
   /* ⚠ (#R397) THIS ROW WAS MISSING FOR FORTY-ONE ROUNDS. #R351 added a `personaPrompt("translating

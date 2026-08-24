@@ -656,8 +656,39 @@ window.IntMapModules.newsEvents = function (HOST) {
     pane.innerHTML = html;
     feed.style.display = 'none';
     pane.style.display = '';
+
+    /* ── Atlas に「いま読んでいるもの」を渡す（#R430）───────────────────────────
+       js/atlas-console.js `_selectionState()` は `window._imReader` を読んで o.article を作り、
+       js/atlas-state.js の文が「この記事 / **この出来事** / それ / 詳しく・背景・なぜ」をそこへ写像する。
+       ⚠⚠⚠ **その文は最初から「この出来事」と書いてあったのに、橋を架ける側が誰も居なかった。**
+         書き手は `openArticleInSidebar()` ただ 1 つで、それは #R11 以来呼ばれていない（#R430 で実測）
+         ＝ o.article は書かれた日から undefined。#R80 の検証が `_imReader` を手で注入して読み手だけを
+         確かめたので、書き手が一度も動いていないことが 300 ラウンド気付かれなかった。
+       ⚠ **根拠のない要約を渡さない**（CONSTITUTION §5・docs/NEWS-EVENTS.md §15）。ここで積むのは
+         `synthesis`（媒体の原文と機械照合済み）と `gist`（媒体の原文そのまま）だけで、両方とも出典付き。 */
+    try {
+      const lines = [];
+      if (ev.synthesis && Array.isArray(ev.synthesis.lines)) {
+        for (const l of ev.synthesis.lines) if (l && l.text) lines.push(l.text + (l.source ? ' — ' + l.source : ''));
+      }
+      if (ev.brief && Array.isArray(ev.brief.gist)) {
+        for (const g of ev.brief.gist) if (g && g.text) lines.push(g.text + (g.source ? ' — ' + g.source : ''));
+      }
+      const firstName = rows.length ? (rows[0].sourceName || '') : '';
+      const loc = (item.analysis && item.analysis.loc && isFinite(item.analysis.loc[0]))
+        ? [item.analysis.loc[0], item.analysis.loc[1]] : null;
+      window._imReader = {
+        open: true, title: ev.titleShown || '',
+        publisher: (ev.sourceCount > 1 && firstName) ? (firstName + ' +' + (ev.sourceCount - 1)) : firstName,
+        link: rows.length ? (rows[0].url || '') : '',
+        pubDate: ev.lastAt || '', loc, place: ev.place || '',
+        body: lines.join('\n\n').slice(0, 6000),
+      };
+    } catch (_) { }
+
     const b = document.getElementById('ev-back');
-    if (b) b.onclick = () => { selected = null; pane.style.display = 'none'; pane.innerHTML = ''; feed.style.display = ''; };
+    if (b) b.onclick = () => { selected = null; pane.style.display = 'none'; pane.innerHTML = ''; feed.style.display = '';
+      try { window._imReader = null; } catch (_) { } };   /* 戻ったら「読んでいる」と名乗り続けない */
     /* 詳細を開いたら、その出来事の場所へ寄る（カードのクリックと同じ約束）。 */
     try { if (item.analysis && item.analysis.loc) window.IntMapGeoEngine.camera.flyTo({ center: item.analysis.loc, zoom: 4, speed: 1.0 }); } catch (_) { }
   }
