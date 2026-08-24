@@ -1154,6 +1154,9 @@
     .volc-badge.q{ color:var(--text-muted); background:rgba(128,128,128,0.16); }
     .volc-badge.src{ color:var(--text-muted); background:rgba(128,128,128,0.12); font-weight:600; }
     .volc-narr{ font-size:12px; line-height:1.55; color:var(--text-main); margin:4px 0 2px; }
+    /* (#R395) the line under a paragraph an institution wrote, naming the language it was published
+       in. Quieter than the prose it annotates — it is a provenance note, not part of the text. */
+    .volc-orig{ font-size:10px; line-height:1.4; color:var(--text-muted); margin:2px 0 6px; opacity:.9; }
     .volc-vona{ border-left:2px solid var(--primary-color); padding:2px 0 2px 9px; margin:7px 0; }
     .volc-vona-h{ font-size:10.5px; font-weight:700; color:var(--text-muted); font-variant-numeric:tabular-nums; }
     .volc-vona-b{ font-size:12px; line-height:1.5; color:var(--text-main); margin-top:2px; }
@@ -1181,6 +1184,11 @@
     .volc-modes{ display:flex; gap:3px; margin-bottom:3px; }
     .volc-mode{ flex:1 1 0; font-size:10px; font-weight:600; padding:4px 2px; border-radius:7px; cursor:pointer; border:1px solid rgba(128,128,128,0.22); background:var(--input-bg); color:var(--text-muted); }
     .volc-mode.on{ background:var(--primary-color); border-color:var(--primary-color); color:#fff; }
+    /* (#R395) the narrowing row — the same pill as a mode button, but they are independent toggles
+       rather than a choice of one, so they wrap instead of sharing the width equally. */
+    .volc-filters{ display:flex; flex-wrap:wrap; gap:3px; margin-bottom:4px; }
+    .volc-filter{ font-size:10px; font-weight:600; padding:3px 7px; border-radius:7px; cursor:pointer; border:1px solid rgba(128,128,128,0.22); background:var(--input-bg); color:var(--text-muted); }
+    .volc-filter.on{ background:var(--primary-color); border-color:var(--primary-color); color:#fff; }
     .volc-key-row{ display:flex; align-items:center; gap:7px; }
     .volc-dot{ width:11px; height:11px; border-radius:50%; flex:none; border:1px solid rgba(255,255,255,0.5); }
     .volc-key-note{ font-size:10px; line-height:1.45; color:var(--text-muted); }

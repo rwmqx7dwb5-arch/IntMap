@@ -151,6 +151,25 @@ export const WORDS = [
   ['葉門', '也門'], ['諾魯', '瑙魯'], ['帛琉', '帕勞'],
   /* ── and two proper nouns of the #R322 kind: a mathematician and a disease */
   ['傅立葉', '傅里葉'], ['愛滋', '艾滋'],
+  /* ══ (#R395) THE VOLCANO CATALOG'S OWN GEOGRAPHY, SWEPT THE SAME WAY ═════════════════════════
+     GVP names 19 regions and 116 subregions, and translating them added a batch of place names in
+     one go — exactly the moment #R319 and #R335 each found a Taiwanese word shipping to a mainland
+     reader with every character already shared, so no orthography check could see it. So the twp→cn
+     inventory of #R335 was run over THIS round's 256 new Simplified strings before they shipped: 9
+     disagreements, of which 6 were real (below) and 3 were the same false positive (新增 for GVP's
+     «New …», which twp maps to 添加 in its software sense and which is correct as written).
+     OpenCC's inventory is not exhaustive, so the region list was also read: 6 more of the identical
+     shape that twp did not raise are here too — 安地斯 (4 sites), 加拉巴哥 (3), 克馬得 (4),
+     民答那峨, 皮特康, 加里波底, 安地列斯 (2, one of them the pre-existing 荷屬安地列斯).
+     ⚠ EVERY LEFT-HAND SIDE WAS CHECKED AGAINST ITS OWN SITES: each has exactly one sense in this
+     corpus. ⚠ AND 東加 IS DELIBERATELY NARROWED — bare 東加 is a prefix of 東加勒比 / 東加州 /
+     東加拿大, which is the 複製羊 trap (#R322), so the row carries the em dash that only Tonga–
+     Kermadec has. ⚠ 矽 also repairs a site this table never reached: 二氧化矽 → 二氧化硅. */
+  ['索馬利亞', '索馬里'], ['維德角', '佛得角'],   ['肯亞', '肯尼亞'],
+  ['葛摩', '科摩羅'],     ['萬那杜', '瓦努阿圖'], ['安地斯', '安第斯'],
+  ['加拉巴哥', '加拉帕戈斯'], ['克馬得', '克馬德克'], ['民答那峨', '棉蘭老'],
+  ['皮特康', '皮特凱恩'], ['加里波底', '加里波第'], ['安地列斯', '安的列斯'],
+  ['東加—', '湯加—'],     ['矽', '硅'],
   /* the aspect marker — everything not pinned above */
   ['著', '着'],
 ];
@@ -229,10 +248,20 @@ function build(job) {
      rewrote those quotes, so the Simplified file's key no longer equalled the string at the call
      site and both entries were dead — a translation present in the file and never used. Keys are
      therefore lifted out before the conversion and put back after. Measured: 2 of 2,068 keys, which
-     is exactly the kind of small silent hole this project keeps paying for. */
+     is exactly the kind of small silent hole this project keeps paying for.
+     ⚠⚠⚠ (#R395) AND THE LIFT ONLY REACHED HALF THE FILE. It matched an indent of EXACTLY four
+     spaces — the `ui` table's — while the `inline` table scripts/i18n-append-inline.mjs writes is
+     indented by TWO, so no inline key has ever been protected. It went unnoticed for as long as
+     every inline key was English: the character map has nothing to do to ASCII. The volcano round
+     added the first inline keys that are not English (JMA publishes its warnings in Japanese and
+     the key IS what the agency said), and two of them came out mangled — 「レベル２（火口周辺規制）」
+     became 「…火口周辺规制）」, a key equal to no string any call site passes, so the translation
+     sat in the file and was never once used. Measured after widening the indent: exactly those two
+     keys change and nothing else in either generated file. A key is an IDENTITY; converting it
+     changes what it identifies. */
   let body = src.slice(at);
   const keys = [];
-  body = body.replace(/\n(\s{4})('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")(\s*:)/g, (m, ind, key, tail) => {
+  body = body.replace(/\n(\s{2,})('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")(\s*:)/g, (m, ind, key, tail) => {
     keys.push(key);
     return '\n' + ind + ' K' + (keys.length - 1) + ' ' + tail;
   });

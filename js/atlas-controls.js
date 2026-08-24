@@ -187,5 +187,47 @@ export function makeAtlasControls(HOST, CTX) {
           return R(false, warn('⚠ '+esc(nm0)+'.'+esc(meth)+'()')); }); }catch(_){} }
       if(m&&typeof m[meth]==='function'){ try{ m[meth](); return R(true, note('✓ '+esc(nm0)+'.'+esc(meth)+'()')); }catch(e){ return R(false, warn('⚠ '+esc(nm0)+': '+esc((e&&e.message)||'error'))); } }
       return R(false, warn('⚠ '+L('Module/method not found','モジュール/メソッドが見つかりません','Modul/Methode nicht gefunden','Модуль/метод не найден','Módulo/método no encontrado')+': '+esc(nm0+'.'+meth))); }
-  return { clickId, controlCatalog, doControl, doModule, findControl, kexec, moduleCatalog, setSel };
+  /* ══ (#R395) THE VOLCANO ANSWERS ═══════════════════════════════════════════════════════════════
+     Two capabilities, one door: `volcano` opens the record for a NAMED volcano and answers from it,
+     and `volcanoFilter` / `volcanoMode` / `volcanoTime` change WHICH volcanoes are drawn and what
+     their colour answers. `data.layerValues` cannot do the first — the GVP properties are one-letter
+     keys, so its name extractor finds nothing and it can only say «volcanoes: 12».
+     ⚠ IT LIVES HERE RATHER THAN IN THE DISPATCH because js/atlas-console.js has a line ceiling that
+     only ever comes down (#R199 5,300, #R318 5,270) and it was full: a subject that needs thirty
+     lines of answer belongs beside the other control-surface helpers, and the switch keeps the one
+     `case` line the capability audit reads.
+     ⚠ EVERY CHANGE GOES THROUGH THE KERNEL COMMAND the legend button also presses, so the sentence
+     and the button cannot drift apart (#R82). */
+  async function doVolcano(a){
+    const OSk=window.IntMapOS;
+    if(a.type==='volcano'||a.type==='volcanoCard'||a.type==='volcanoInfo'){
+      const q=String(a.name||a.text||a.query||a.place||'').trim();
+      if(!q) return R(false, warn('⚠ '+esc(L('Name a volcano.','火山名を指定してください。','Nennen Sie einen Vulkan.','Назовите вулкан.','Indique un volcán.'))));
+      const okm=await window.IntMapLazy.need('volcanoIntel'), V=window.IntMapVolcano;
+      if(!okm||!V) return R(false, warn('⚠'));
+      const hit=V.byName(q)[0];
+      if(!hit) return R(false, warn('⚠ '+esc(L('No volcano called “{q}” is in the Holocene catalog.','完新世カタログに「{q}」という火山はありません。','Kein Vulkan namens „{q}“ ist im Holozän-Katalog.','В голоценовом каталоге нет вулкана «{q}».','No hay ningún volcán llamado «{q}» en el catálogo del Holoceno.').split('{q}').join(q))));
+      try{ if(OSk&&OSk.has('volcano.open')) await OSk.exec('volcano.open',{source:'atlas',params:{v:hit.v}}); }catch(_){}
+      const rec=await V.record(hit.v); if(!rec) return R(false, warn('⚠'));
+      const st=rec.status||{}, ln=[];
+      ln.push('<b>'+esc(rec.name)+'</b> — '+esc([rec.countryL,rec.typeL,rec.elevation!=null?(rec.elevation+' m'):''].filter(Boolean).join(' · ')));
+      ln.push(esc(st.tier?((st.label||'')+' — '+(st.source||'')):L('No observatory publishes a current level for it.','現在の警戒レベルを公表している観測機関はありません。','Kein Observatorium veröffentlicht eine aktuelle Stufe.','Ни одна обсерватория не публикует текущий уровень.','Ningún observatorio publica un nivel actual.')));
+      if(rec.lastEruption!=null) ln.push(esc(L('Last eruption: {y}','最終噴火: {y}','Letzter Ausbruch: {y}','Последнее извержение: {y}','Última erupción: {y}').split('{y}').join(rec.lastEruption)));
+      if(rec.maxVei!=null) ln.push(esc(L('Largest recorded VEI: {v}, from {n} eruptions on record','記録された最大VEI: {v}（噴火の記録 {n} 回）','Größter erfasster VEI: {v}, aus {n} erfassten Ausbrüchen','Наибольший зафиксированный VEI: {v}, из {n} извержений в записи','Mayor VEI registrado: {v}, de {n} erupciones registradas')
+        .split('{v}').join(rec.maxVei).split('{n}').join(rec.eruptions||0)));
+      return R(true, note(ln.join('<br>')));
+    }
+    if(!OSk||!OSk.has('volcano.filter')) return R(false, warn('⚠'));
+    const did=[]; let shown=null;
+    if(a.mode){ await OSk.exec('volcano.mode',{source:'atlas',params:{mode:String(a.mode)}}); did.push(String(a.mode)); }
+    if(a.time!=null||a.year!=null){ const r2=await OSk.exec('volcano.time',{source:'atlas',params:{on:a.time!==false,year:a.year}}); did.push(L('map year','地図の年','Kartenjahr','год карты','año del mapa')+' '+((r2&&r2.year)||'')); }
+    const f={}; ['spoken','elevated','big','recent'].forEach(k=>{ if(a[k]!=null) f[k]=a[k]!==false; });
+    if(a.clear) f.clear=true;
+    if(Object.keys(f).length){ const r3=await OSk.exec('volcano.filter',{source:'atlas',params:f}); shown=r3&&r3.shown; did.push(Object.keys(f).join(', ')); }
+    if(!did.length) return R(false, warn('⚠ '+esc(L('Say which volcano view: a colour mode, a filter, or the map’s year.','火山レイヤーの何を変えるか指定してください（色モード・絞り込み・地図の年）。','Sagen Sie, welche Vulkanansicht: Farbmodus, Filter oder Kartenjahr.','Укажите вид: цветовой режим, фильтр или год карты.','Indique qué vista: modo de color, filtro o año del mapa.'))));
+    const tail=shown==null?'':(' — '+L('{n} volcanoes shown','{n} 座を表示','{n} Vulkane sichtbar','показано вулканов: {n}','{n} volcanes mostrados').split('{n}').join(shown));
+    return R(true, note('✓ '+esc(did.join(' · ')+tail)));
+  }
+
+  return { clickId, controlCatalog, doControl, doModule, doVolcano, findControl, kexec, moduleCatalog, setSel };
 }

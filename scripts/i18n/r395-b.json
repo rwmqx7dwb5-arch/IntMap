@@ -1,0 +1,131 @@
+{
+  "_": "(#R361) 火山カード／凡例／Atlas 応答の新規16件。de/ru/es は L() の呼び出し側から逐語で写し、fr/ko/繁體中文を新規に訳した。値の順は [de, ru, es, fr, ko, zh-Hant]。",
+  "Above normal": [
+    "Über Normal",
+    "Выше нормы",
+    "Por encima de lo normal",
+    "Au-dessus de la normale",
+    "평상시보다 높음",
+    "高於平常"
+  ],
+  "Erupting in the map’s year": [
+    "Im Kartenjahr im Ausbruch",
+    "Извергался в году карты",
+    "En erupción en el año del mapa",
+    "En éruption l’année de la carte",
+    "지도의 연도에 분화",
+    "在地圖年份噴發"
+  ],
+  "GVP records {n} volcano(es) as erupting in {y}. The clock reaches back to 1850; the card shows every eruption in the record.": [
+    "Das GVP führt {n} Vulkan(e) als im Jahr {y} ausbrechend. Die Uhr reicht bis 1850 zurück; die Karte zeigt jeden Ausbruch des Datensatzes.",
+    "По данным GVP в {y} году извергались {n} вулкан(ов). Часы доходят до 1850 года; в карточке есть все извержения записи.",
+    "El GVP registra {n} volcán(es) en erupción en {y}. El reloj llega hasta 1850; la ficha muestra todas las erupciones del registro.",
+    "Le GVP recense {n} volcan(s) en éruption en {y}. L’horloge remonte jusqu’à 1850 ; la fiche montre toutes les éruptions du registre.",
+    "GVP 기록에서 {y}년에 분화 중이던 화산은 {n}곳입니다. 시계는 1850년까지 거슬러 올라가며, 카드에는 기록에 있는 모든 분화가 나옵니다.",
+    "GVP 記錄中，{y} 年正在噴發的火山有 {n} 座。時鐘可回溯至 1850 年；卡片會顯示紀錄中的所有噴發。"
+  ],
+  "Has produced VEI 4+": [
+    "Hat VEI 4+ erzeugt",
+    "Производил VEI 4+",
+    "Ha producido VEI 4+",
+    "A produit un VEI 4+",
+    "VEI 4 이상 이력",
+    "曾達 VEI 4 以上"
+  ],
+  "Largest recorded VEI: {v}, from {n} eruptions on record": [
+    "Größter erfasster VEI: {v}, aus {n} erfassten Ausbrüchen",
+    "Наибольший зафиксированный VEI: {v}, из {n} извержений в записи",
+    "Mayor VEI registrado: {v}, de {n} erupciones registradas",
+    "VEI maximal enregistré : {v}, sur {n} éruptions consignées",
+    "기록된 최대 VEI: {v} (분화 기록 {n}회)",
+    "已記錄的最大 VEI：{v}（共 {n} 次噴發紀錄）"
+  ],
+  "Last eruption: {y}": [
+    "Letzter Ausbruch: {y}",
+    "Последнее извержение: {y}",
+    "Última erupción: {y}",
+    "Dernière éruption : {y}",
+    "최종 분화: {y}",
+    "最近噴發：{y}"
+  ],
+  "Name a volcano.": [
+    "Nennen Sie einen Vulkan.",
+    "Назовите вулкан.",
+    "Indique un volcán.",
+    "Indiquez un volcan.",
+    "화산 이름을 지정하세요.",
+    "請指定火山名稱。"
+  ],
+  "No observatory publishes a current level for it.": [
+    "Kein Observatorium veröffentlicht eine aktuelle Stufe.",
+    "Ни одна обсерватория не публикует текущий уровень.",
+    "Ningún observatorio publica un nivel actual.",
+    "Aucun observatoire ne publie de niveau actuel pour ce volcan.",
+    "현재 경계 수준을 공표하는 관측 기관이 없습니다.",
+    "沒有任何觀測機構公布此火山的現行等級。"
+  ],
+  "No volcano called “{q}” is in the Holocene catalog.": [
+    "Kein Vulkan namens „{q}“ ist im Holozän-Katalog.",
+    "В голоценовом каталоге нет вулкана «{q}».",
+    "No hay ningún volcán llamado «{q}» en el catálogo del Holoceno.",
+    "Aucun volcan nommé « {q} » ne figure au catalogue de l’Holocène.",
+    "홀로세 카탈로그에 「{q}」에 해당하는 화산은 없습니다.",
+    "全新世目錄中沒有名為「{q}」的火山。"
+  ],
+  "Published in English by the source and shown exactly as written. Descriptions written by an observatory are not machine-translated here; the classifications above are translated because they come from a fixed vocabulary.": [
+    "Von der Quelle auf Englisch veröffentlicht und unverändert wiedergegeben. Von einem Observatorium verfasste Beschreibungen werden hier nicht maschinell übersetzt; die Klassifikationen oben schon, weil sie aus einem festen Vokabular stammen.",
+    "Опубликовано источником по-английски и приведено дословно. Описания, написанные обсерваторией, здесь не переводятся машинно; классификации выше переведены, потому что взяты из фиксированного словаря.",
+    "Publicado en inglés por la fuente y mostrado tal cual. Las descripciones redactadas por un observatorio no se traducen automáticamente aquí; las clasificaciones anteriores sí, porque proceden de un vocabulario cerrado.",
+    "Publié en anglais par la source et affiché tel quel. Les descriptions rédigées par un observatoire ne sont pas traduites automatiquement ici ; les classifications ci-dessus le sont, car elles proviennent d’un vocabulaire fermé.",
+    "출처가 영어로 공표한 문장을 그대로 표시합니다. 관측 기관이 작성한 서술은 여기서 기계 번역하지 않습니다. 위의 분류어는 정해진 어휘에서 오는 것이므로 번역합니다.",
+    "由來源以英文發布，並照原文呈現。觀測機構撰寫的敘述在此不做機器翻譯；上方的分類用語則有翻譯，因為它們出自固定的詞彙表。"
+  ],
+  "Published in Japanese by the agency and shown exactly as issued — this map does not reword a warning.": [
+    "Von der Behörde auf Japanisch veröffentlicht und unverändert wiedergegeben — diese Karte formuliert eine Warnung nicht um.",
+    "Опубликовано агентством по-японски и показано дословно — карта не перефразирует предупреждение.",
+    "Publicado en japonés por la agencia y mostrado tal cual — este mapa no reformula un aviso.",
+    "Publié en japonais par l’agence et affiché tel qu’émis — cette carte ne reformule pas un avertissement.",
+    "기상청이 일본어로 발표한 문장을 그대로 표시합니다 — 이 지도는 경보의 문구를 바꿔 쓰지 않습니다.",
+    "由氣象廳以日文發布，並照原文呈現 —— 本地圖不會改寫警報的用語。"
+  ],
+  "Say which volcano view: a colour mode, a filter, or the map’s year.": [
+    "Sagen Sie, welche Vulkanansicht: Farbmodus, Filter oder Kartenjahr.",
+    "Укажите вид: цветовой режим, фильтр или год карты.",
+    "Indique qué vista: modo de color, filtro o año del mapa.",
+    "Indiquez quelle vue des volcans : un mode de couleur, un filtre ou l’année de la carte.",
+    "어떤 화산 표시를 바꿀지 지정하세요: 색상 모드, 필터, 또는 지도의 연도.",
+    "請指定火山圖層要變更的項目：色彩模式、篩選條件，或地圖年份。"
+  ],
+  "Somebody publishes a level": [
+    "Stufe wird veröffentlicht",
+    "Уровень публикуется",
+    "Alguien publica un nivel",
+    "Un niveau est publié",
+    "공표된 상황 있음",
+    "有公布的狀態"
+  ],
+  "This is a published statement, not silence: USGS monitors this volcano and its current level is the one above. The date is when that level was last issued — it stands until USGS changes it.": [
+    "Das ist eine veröffentlichte Aussage, kein Schweigen: USGS überwacht diesen Vulkan, die aktuelle Stufe steht oben. Das Datum ist die letzte Ausgabe dieser Stufe; sie gilt, bis USGS sie ändert.",
+    "Это опубликованное заявление, а не молчание: USGS ведёт наблюдение за этим вулканом, текущий уровень указан выше. Дата — когда этот уровень был выпущен в последний раз; он действует, пока USGS его не изменит.",
+    "Es una declaración publicada, no silencio: el USGS vigila este volcán y su nivel actual es el anterior. La fecha es la última emisión de ese nivel; sigue vigente hasta que el USGS lo cambie.",
+    "Il s’agit d’une déclaration publiée, pas d’un silence : l’USGS surveille ce volcan et son niveau actuel est celui indiqué ci-dessus. La date est celle de la dernière émission de ce niveau — il reste en vigueur jusqu’à ce que l’USGS le modifie.",
+    "이것은 공표된 발표이며, 침묵이 아닙니다. USGS는 이 화산을 감시하고 있으며 현재 수준은 위에 표시된 것입니다. 날짜는 그 수준이 마지막으로 발표된 날입니다 — USGS가 변경할 때까지 그대로 유효합니다.",
+    "這是已公布的聲明，而不是沉默：USGS 監測此火山，其現行等級即為上方所示。日期是該等級最後一次發布的時間 —— 在 USGS 變更之前一直有效。"
+  ],
+  "map year": [
+    "Kartenjahr",
+    "год карты",
+    "año del mapa",
+    "année de la carte",
+    "지도의 연도",
+    "地圖年份"
+  ],
+  "{n} volcanoes shown": [
+    "{n} Vulkane sichtbar",
+    "показано вулканов: {n}",
+    "{n} volcanes mostrados",
+    "{n} volcans affichés",
+    "{n}곳 표시",
+    "顯示 {n} 座"
+  ]
+}

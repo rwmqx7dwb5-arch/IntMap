@@ -171,6 +171,12 @@ const SAME_AS_EN = {
        Kraftwerk, Lager, Rechenzentrum, …) — which is what makes this a claim about the word rather
        than a forgotten argument. */
     'Museum',
+    /* (#R395) …and two from the GVP volcano-type vocabulary. «Maar» IS a German word — the Eifel
+       maars are the type locality and every other language borrowed it — and Duden spells «Caldera»
+       exactly as English does. They sit among 25 other volcano types that DO differ in German
+       (Schichtvulkan, Schildvulkan, Lavadom, Schlackenkegel, Tuffring, Spalte, Vulkanfeld, …),
+       which is what makes this a claim about the two words rather than a forgotten argument. */
+    'Maar', 'Caldera',
   ]),
   ru: new Set([]),
   es: new Set([
@@ -211,6 +217,11 @@ const SAME_AS_EN = {
                        (Oro, Plata, Actividad geomagnética, Monitores de zona, Fase lunar).
          24 h        — the Spanish abbreviation of «24 horas» is «24 h», the same three characters. */
     'Digital', 'Hexadecimal', 'metal', 'aurora', 'monitor', 'lunar', '24 h',
+    /* (#R395) …and the same two volcano types as German. «Caldera» is a SPANISH word — the RAE
+       carries it and English borrowed it from Spanish — and «maar» is the loanword Spanish
+       geology uses. The other 25 GVP types differ (Estratovolcán, Volcán en escudo, Domo de lava,
+       Cono piroclástico, Anillo de toba, Fisura, Campo volcánico, …). */
+    'Caldera', 'Maar',
   ]),
 };
 /* ⚠ …and the polity names the ERA MAP prints that carry no exonym in either language. Sub-Saharan
