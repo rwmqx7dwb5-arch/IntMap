@@ -103,6 +103,24 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    than the one measured. Both ceilings follow the measurement down. */
 const BUDGET_S = 40;                    /* core: 0.7 min — measured 40 s over 6 files (#R388) */
 const TOTAL_BUDGET_S = 4529;            /* 75.5 min — 4,545 (#R384) + 17 (#R388's two specs) − 33 (r184-imagery re-measured) */
+/* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
+   ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
+   tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum
+   shows was missing: #R372 stopped the boot fetch correctly and the News tab then said
+   「Loading articles...」 for ever, and PRODUCTION was the first detector (0 requests after the click,
+   IntMapNewsEvents undefined). tests/r372-checks ⑬⑮ hold the source shape; only a browser can hold
+   「one click and the module is there, the list is events, and cards are drawn」.
+     · MEASURED HERE, serial, one worker, server already up, both tests passing: 4.5 s + 3.6 s = 8.1 s.
+       CALIBRATED THE WAY #R347 DID rather than copied: tests/r209.spec.js measured 21.2 s in the same
+       conditions on this machine against a recorded entry of 10, so 8.1 s is ≈ 3.8 table-seconds.
+       ENTERED AS 5 — a third more than the calibration, on the conservative side.
+     · PAID OUT OF tests/r226-seismic.spec.js, 34 -> 29. MEASURED 21.1 s in that same run (one test,
+       passing, nothing skipped). Even read as if this machine were CI — the least favourable reading,
+       and the one #R322 insists on — the entry was 12.9 s high; the 5 s claimed is well inside that.
+   ⚠ NOT USED FOR PAYMENT, for #R322's reason: the same run measured tests/r203.spec.js at 33.9 s
+   against an entry of 32 and tests/r355-cables.spec.js at 21.7 s against 31 — one understated, one
+   whose margin disappears under the local/CI ratio #R201 recorded. tests/r184-drone.spec.js measured
+   28.6 s against 40, but ⑤ SKIPPED in that run, and #R384 declined a candidate for exactly that. */
 /*
    ⚠ (#R353) VOLCANO INTELLIGENCE ADDED TWO SPECS AND THE SUITE STILL WENT DOWN, and both were paid
    for out of STALE-HIGH ENTRIES rather than out of the ceiling — the shape #R209 named and #R337
