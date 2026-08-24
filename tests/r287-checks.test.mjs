@@ -253,8 +253,19 @@ test('#R287 ⑦ tests/prod-smoke.spec.js asserts both claims and drops the point
   assert.match(src, /colourFor\(m\.ramp, m\.sp\)/, 'the bucket rule is still pinned against the SDK');
   assert.match(src, /m\.ramp\.breakpoints\.length[\s\S]{0,160}\.toBeGreaterThan\(600\)/,
     'and the deployed build is still required to ship the resampled ramp');   /* (#R293) 1,041 now */
-  /* the sibling test keeps ITS form — #R276 追記3's comparison is not collateral damage */
-  assert.match(src, /the eye is painted nearer the entry for its own speed/, 'the eyewall pair is untouched');
+  /* ⚠⚠⚠ (#R382) THIS LINE USED TO PIN THE SIBLING'S OWN WORDING — 「the eye is painted nearer the
+     entry for its own speed」 — so that #R287 could prove it had not damaged #R276 追記3's eyewall
+     comparison in passing. That comparison is now GONE ON PURPOSE: it asked `getColor(valueNow())`,
+     which is the point-value question THIS FILE exists to have replaced, and on 2026-08-24 it went
+     red on a correct picture for four attempts running (the eyewall pixel read as 38.1 m/s, which
+     is nearer the EYE's colour than its own because RGB distance does not order speeds along this
+     ramp — 195 of its 1,041 entries invert it; see tests/r382-checks.test.mjs).
+     A gate outlives its reason unless somebody moves it. So what is pinned here is what the sibling
+     asserts NOW: the same verdict this file is about, taken over each pixel's own footprint. */
+  assert.match(src, /readPixel\(pic\.ramp, eyePx, pic\.eyeFoot\[0\]/, 'the eye pixel takes this verdict');
+  assert.match(src, /readPixel\(pic\.ramp, ringPx, pic\.ringFoot\[0\]/, 'and so does the eyewall');
+  assert.ok(!/the eye is painted nearer the entry for its own speed/.test(src),
+    'and the point-value distance comparison it used to make is gone');
   assert.equal((src.match(/gl\.readPixels\(/g) || []).length, 2,
     'both canvas reads survive — the wind pixel and the eye/eyewall pair');
 });

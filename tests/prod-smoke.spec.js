@@ -1,5 +1,8 @@
 // Production smoke test — drives the LIVE deployed site.
-// Used by (a) the post-deploy check in deploy.yml and (b) the scheduled uptime workflow.
+// Run by the post-deploy check in deploy.yml and by the post-rollback check in rollback.yml.
+// ⚠ (#R382) NOT by uptime.yml, which this line used to name: that workflow is a single HTTP probe
+// for the app shell and has never invoked playwright. Nothing was lost by the mistake, but it
+// made this file look watched every six hours when it is only watched on a deploy.
 // Distinguishes a real product outage from a transient upstream API failure (§6.3, §8.5):
 // it lets real network through and only fails on IntMap's own breakage.
 import { test, expect } from '@playwright/test';
@@ -725,6 +728,7 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
     const cb = document.getElementById('dl-wind');
     if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
     const b = document.getElementById('btn-view-flat'); if (b) b.click();
+    const map = window.IntMapGeoEngine.raw();
     window.IntMapGeoEngine.camera.jumpTo({ center: [e.eye.lo, e.eye.la], zoom: 5 });
     const t0 = Date.now();
     while (Date.now() - t0 < 150000) {
@@ -732,9 +736,52 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
       if (d.hasField && d.hasLyr && d.rasterOpacity > 0) break;
       await new Promise((r) => setTimeout(r, 400));
     }
-    await new Promise((r) => setTimeout(r, 6000));
+    /* ══ ⚠⚠⚠ (#R382) …AND THEN WAIT FOR THE PICTURE OF *THIS* VIEW, NOT FOR A CLOCK ═════════════
+       The line here was `setTimeout(…, 6000)`, and 6 seconds is not a fact about anything. The
+       wait above is satisfied the moment the FIELD is decoded and a raster layer exists — which it
+       already is, because the test before this one turned the wind on at z3. Nothing then asked
+       whether the tiles for the new zoom had been rendered, so this read whatever MapLibre was
+       still drawing: the z3 ancestor, stretched over z5.
+       MEASURED at the hour the 2026-08-24 deploy failed on (valid 01:00Z, run 23 Aug 18:00Z), at
+       the eyewall of the typhoon at 24.5°N 136°E where the model reads 49.61 m/s:
+           ancestor still on screen (0 – 1.2 s)   the pixel paints 42.1 m/s
+           the z5 tiles landed      (1.2 s on)    the pixel paints 46.2 m/s
+       and with the CPU throttled 10× — a shared two-core runner is in that range — the tiles do
+       not land until **11.4 s**, i.e. long after the old 6 s had passed. What production actually
+       read on the failing run was 38.1 m/s: coarser than either, an even earlier state of the same
+       settling. Nothing was wrong with the map; the test was reading it before it was drawn.
+       ⚠ THE SOURCE ID IS READ OFF THE LIVE STYLE, NOT WRITTEN DOWN HERE. js/weather.js keeps two
+       slots (`wind-field-a` / `wind-field-b`) and swaps between them as the hour changes, so
+       naming one of them would ask `isSourceLoaded` about a source that is not on the map — and
+       that answers `undefined`, which is not a wait, it is a pass. */
+    const windSources = () => {
+      try {
+        return map.getStyle().layers
+          .filter((l) => l.type === 'raster' && /^wind-field-/.test(l.id))
+          .map((l) => l.source);
+      } catch (_) { return []; }
+    };
+    /* ⚠⚠ …AND THE FIRST LOOK HAS TO COME AFTER A FRAME. MEASURED while writing this: asked
+       immediately after `jumpTo`, `isSourceLoaded` answers **true** — the source cache has not been
+       told about the new viewport yet, so it is still answering for the OLD one, and the wait
+       reported 「settled in 0.0 s」 and read exactly the frame it was meant to avoid. A wait that is
+       satisfied before anything happens is not a wait. So each look is taken after a render, and
+       two consecutive looks must agree. */
+    let settled = false, settledMs = -1, agree = 0;
+    const t1 = Date.now();
+    const frame = () => new Promise((r) => { map.once('render', () => r()); map.triggerRepaint(); });
+    while (Date.now() - t1 < 90000) {
+      await frame();
+      const ids = windSources();
+      const now = ids.length > 0 && ids.every((id) => map.isSourceLoaded(id) === true)
+        && map.areTilesLoaded();
+      agree = now ? agree + 1 : 0;
+      if (agree >= 2) { settled = true; settledMs = Date.now() - t1; break; }
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    /* js/weather.js reveals a slot through a 260 ms `raster-opacity-transition`; let it finish */
+    await new Promise((r) => setTimeout(r, 1000));
     return new Promise((res) => {
-      const map = window.IntMapGeoEngine.raw();
       map.once('render', () => {
         const c = map.getCanvas();
         const gl = c.getContext('webgl2') || c.getContext('webgl');
@@ -752,9 +799,35 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
         const eyeV = EC.valueNow('wind_u_component_10m', e.eye.la, e.eye.lo);
         const ringV = EC.valueNow('wind_u_component_10m', e.peak.la, e.peak.lo);
         const want = (v) => { try { return EC.sdk().getColor(sc, v, true).slice(0, 3).map(Math.round); } catch { return null; } };
+        /* THE SPEEDS THE MODEL ACTUALLY TAKES UNDER ONE PIXEL — the same ±1.5 px support the
+           (#R287) test above derives and measured (477 live pixels across six views; 476 of them
+           inside it, and ±2/±3/±4 no better, which is what says this is the filter's support and
+           not a fitted number). Same renderer, same `raster-resampling: linear`, so the same
+           support — it is stated here rather than shared because the two tests read different
+           views and a helper would hide which one a failure came from. */
+        const smp = EC.sampler('wind_u_component_10m');
+        const foot = (lng, lat) => {
+          const p = window.IntMapGeoEngine.coords.project([lng, lat]);
+          let lo = Infinity, hi = -Infinity;
+          for (let dx = -1.5; dx <= 1.5; dx += 0.5) {
+            for (let dy = -1.5; dy <= 1.5; dy += 0.5) {
+              const q = window.IntMapGeoEngine.coords.unproject([p.x + dx, p.y + dy]);
+              const v = smp ? smp.value(q.lat, q.lng) : NaN;
+              if (v === v && isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+            }
+          }
+          return [lo, hi];
+        };
+        /* carried out whole so tests/r382-checks.test.mjs can put the same verdict through the
+           failures this page cannot show (#R287) */
+        const ramp = sc && sc.breakpoints
+          ? { breakpoints: sc.breakpoints.slice(), colors: sc.colors.map((q) => [q[0], q[1], q[2]]) }
+          : null;
         res({
           eyePx: read(e.eye.lo, e.eye.la), ringPx: read(e.peak.lo, e.peak.la),
           eyeV, ringV, eyeWant: want(eyeV), ringWant: want(ringV),
+          eyeFoot: foot(e.eye.lo, e.eye.la), ringFoot: foot(e.peak.lo, e.peak.la),
+          ramp, settled, settledMs,
           particles: window.Wind._dbg().drawn,
         });
       });
@@ -776,6 +849,12 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
      矛盾していた」), one layer up. So both pixels are checked against `getColor` for their OWN speed,
      which is exact, and against each other, which is what "you can see the eye" means. */
   expect(pic.eyeWant, 'this SDK build exposes getColor').not.toBeNull();
+  expect(pic.settled, 'the wind raster for THIS view landed before the pixels were read — a pixel '
+    + 'read while the previous view\'s ancestor tile is still stretched over the screen belongs to '
+    + 'that coarser picture, not to this one').toBe(true);
+  console.log('[R276] cyclone raster settled in ' + (pic.settledMs / 1000).toFixed(1) + ' s');
+  expect(pic.ramp, 'and the deployed build exposes the colour table its tiles are rendered from')
+    .not.toBeNull();
   /* ⚠⚠ (#R276 追記3) EXACT EQUALITY IS THE WRONG TEST **HERE**, AND MEASURING SAID SO. The test above
      reads the middle of the map at z3 over open ocean and the pixel is byte-identical to the table
      entry — that is the invariant this round exists for and it holds. THIS pair is read at z5 across
@@ -783,18 +862,59 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
      cells and MapLibre's `raster-resampling: linear` blends them: MEASURED in production, the eye
      came out one filtered step away from the 13.2 m/s entry and the assertion failed on a picture
      that was plainly right. Tightening a number until a correct picture passes is how a test stops
-     meaning anything, so the QUESTION changes instead: each pixel must be nearer its OWN table entry
-     than the other one's. That is exactly what "you can see the eye" claims, and it survives
-     filtering because filtering moves a pixel a little, not to the other end of the ramp. */
+     meaning anything, so the QUESTION changed instead: each pixel had to be nearer its OWN table
+     entry — `getColor(valueNow(...))` — than the other one's.
+
+     ══ ⚠⚠⚠ (#R382) …AND THAT QUESTION IS STILL A POINT QUESTION ASKED OF A PATCH ═══════════════
+     It is the very comparison #R287 measured and replaced one test above, kept here because at the
+     time both readings happened to land near the same colour. They stopped. MEASURED on the deploy
+     of 2026-08-24, which failed four attempts running:
+         eyewall pixel [144,104,178] = the table's entry for 38.1 m/s
+         `valueNow` at the same point                       49.61 m/s   → entry [223,214,158]
+         the eye's entry (19.2 m/s)                                       [171,79,138]
+     …and 38.1's colour is 2,954 from the EYE's entry and 18,741 from its own, so the pixel was
+     "nearer the other one's" and the test went red on a picture that contained the storm. Read
+     back through the ramp, the failure screenshot's own pixels reach 52 m/s in a pale core at the
+     eyewall: the map was right.
+     TWO things were wrong, and both are the test's:
+       ① it read before the tiles of the new view had landed — see the wait above; and
+       ② `valueNow()` answers for a mathematical POINT while the pixel answers for the PATCH of
+          atmosphere it covers. Over open ocean those differ by a step or two. Across an eyewall
+          the ±1.5 px patch spans **45.2 … 50.7 m/s** (measured, that hour) — and RGB DISTANCE
+          ALONG THIS RAMP DOES NOT ORDER SPEEDS, which is #R276 追記's own lesson (「red − blue is
+          not monotone along this ramp」) one layer up: reading the distance out of the table
+          instead of inventing it did not make it monotone. The ramp loops through colour space,
+          so MEASURED on the shipped table **195 of its 1,041 entries are nearer the EYE's colour
+          than the EYEWALL's while being nearer the EYEWALL in speed** — and 38.1 m/s is one of
+          them. A comparison decided by that is not measuring the picture.
+     So the ambiguity is settled IN SPACE, exactly as #R287 settled it — `readPixel()` carried out
+     whole, no tolerance anywhere in it — and the structural claim is then made in the field's own
+     unit rather than in RGB: the speed the EYEWALL's pixel stands for is above everything the model
+     has under the EYE, and the eye's below everything under the eyewall. Both bounds are read off
+     the field. Nothing here is chosen. */
   const d2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
   const eyePx = pic.eyePx.slice(0, 3), ringPx = pic.ringPx.slice(0, 3);
-  expect(d2(eyePx, pic.eyeWant), 'the eye is painted nearer the entry for its own speed ('
-    + pic.eyeV.toFixed(1) + ' m/s) than the eyewall\'s: eye ' + JSON.stringify(eyePx)
-    + ' vs entries ' + JSON.stringify(pic.eyeWant) + ' / ' + JSON.stringify(pic.ringWant))
-    .toBeLessThan(d2(eyePx, pic.ringWant));
-  expect(d2(ringPx, pic.ringWant), 'and the eyewall nearer the entry for its own ('
-    + pic.ringV.toFixed(1) + ' m/s): ring ' + JSON.stringify(ringPx))
-    .toBeLessThan(d2(ringPx, pic.eyeWant));
+  const eyeRead = readPixel(pic.ramp, eyePx, pic.eyeFoot[0], pic.eyeFoot[1]);
+  const ringRead = readPixel(pic.ramp, ringPx, pic.ringFoot[0], pic.ringFoot[1]);
+  /* ① nothing was multiplied over the raster — #R276's 0.36× grey leaves this on the first channel */
+  expect(eyeRead.inRange, 'the eye is inside the band the table paints for the wind that is really '
+    + 'under it — ' + explain(eyePx, eyeRead)).toBe(true);
+  expect(ringRead.inRange, 'and so is the eyewall — ' + explain(ringPx, ringRead)).toBe(true);
+  /* ② …and it is THIS field, here, now: the speed each colour stands for is one the model has */
+  expect(eyeRead.speedInFootprint, 'the eye\'s colour stands for a speed the model really has '
+    + 'there (point value ' + pic.eyeV.toFixed(2) + ', painted as ' + eyeRead.nearest.v + ') — '
+    + explain(eyePx, eyeRead)).toBe(true);
+  expect(ringRead.speedInFootprint, 'and the eyewall\'s does too (point value '
+    + pic.ringV.toFixed(2) + ', which the table would paint ' + JSON.stringify(pic.ringWant)
+    + '; painted as ' + ringRead.nearest.v + ') — ' + explain(ringPx, ringRead)).toBe(true);
+  /* ③ 「you can see the eye」 — stated in m/s, because red − blue is not monotone along this ramp
+     (#R276 追記) and neither is distance-to-an-entry across its 35.9 → 46 m/s canyon (#R382) */
+  expect(ringRead.nearest.v, 'the eyewall pixel reads as faster than anything the model has under '
+    + 'the eye (' + ringRead.nearest.v + ' m/s vs the eye\'s footprint ' + pic.eyeFoot[0].toFixed(1)
+    + '…' + pic.eyeFoot[1].toFixed(1) + ')').toBeGreaterThan(pic.eyeFoot[1]);
+  expect(eyeRead.nearest.v, 'and the eye pixel as calmer than anything under the eyewall ('
+    + eyeRead.nearest.v + ' m/s vs ' + pic.ringFoot[0].toFixed(1) + '…'
+    + pic.ringFoot[1].toFixed(1) + ')').toBeLessThan(pic.ringFoot[0]);
   /* …and the two are far apart, which is the difference a reader actually sees */
   expect(d2(eyePx, ringPx), 'the eye and its wall are visibly different colours: '
     + JSON.stringify(eyePx) + ' vs ' + JSON.stringify(ringPx)).toBeGreaterThan(900);
