@@ -258,9 +258,9 @@ async function main() {
   /* ── what did NOT get written, and why (#R440) ────────────────────────────────────────────
      A volcano number can have eruption rows and no entry in the Holocene volcano catalog, and the
      loop above only writes the catalog. Those rows are dropped — correctly, since there is nothing
-     to hang them off — but for eight rounds the completion line below printed `E.features.length`
-     and called it «wrote … eruptions», and six shipped languages and four documents copied that
-     number as the size of the file. Print the two separately, and name the gap. */
+     to hang them off — but from #R353 until #R440 the completion line below printed
+     `E.features.length` and called it «wrote … eruptions», and six shipped languages and four
+     documents copied that number as the size of the file. Print the two separately, name the gap. */
   const catalogued = new Set(features.map((f) => f.properties.v));
   let orphanVolcanoes = 0, orphanRows = 0;
   for (const [vn, rows] of hist) if (!catalogued.has(vn)) { orphanVolcanoes++; orphanRows += rows.length; }
