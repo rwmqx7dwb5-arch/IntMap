@@ -228,9 +228,14 @@ test('⑦ relocating an article re-summarises its event — otherwise the AI ans
   assert.match(dirty.slice(0, 900), /relocated\.has\(aid\)/, 'the relocated set is never folded into dirty');
   assert.match(dirty.slice(0, 900), /for \(const \[aid, eid\] of finalOf\)/,
     'dirty must be keyed off finalOf — a temporary negative event id would update nothing');
-  /* 同じ run の中で locate → assign の順であること。 */
+  /* 同じ run の中で locate → assign の順であること。
+     ⚠ (#R405) **配列を丸ごと固定しない。** この検査が名指ししている主張は下の 2 行
+       （locate は fetch の後・assign の前）であって、段の本数ではない。丸ごと固定すると、
+       段が 1 つ増えるたびに**本題と無関係に赤くなり**、直す人は関係を読まずに配列を
+       書き換える——それは検査が守っていたものを静かに捨てることになる。
+       段の一覧そのものの正本は `tests/r351-checks ⑱`。 */
   const order = (fn.match(/const ORDER = \[([^\]]*)\]/) || [, ''])[1].replace(/["'\s]/g, '').split(',');
-  assert.deepEqual(order, ['fetch', 'locate', 'embed', 'assign', 'link', 'translate', 'prune']);
+  for (const s of ['fetch', 'locate', 'assign']) assert.ok(order.includes(s), 'stage ' + s + ' left the ORDER');
   assert.ok(order.indexOf('locate') > order.indexOf('fetch'), 'locate must see the articles fetch just wrote');
   assert.ok(order.indexOf('locate') < order.indexOf('assign'), 'events must be built on the AI coordinates');
 });
@@ -288,9 +293,13 @@ test('⑩ the locate stage can never fail silently', () => {
   assert.match(fn, /located_ai:\s*L\.located/);
   assert.match(fn, /locate_error:\s*L\.error/);
   assert.match(rd(MIGRATION), /add column if not exists located_ai\b/);
-  /* kill-switch とモデル上書きが段ごとに独立していること。 */
-  assert.match(fn, /providerConfig\("NEWS_GEO_AI",\s*"NEWS_GEO_MODEL"\)/);
-  assert.match(fn, /providerConfig\("NEWS_TRANSLATE",\s*"NEWS_TRANSLATE_MODEL"\)/);
+  /* kill-switch とモデル上書きが段ごとに独立していること。
+     ⚠ (#R405) 3 つ目の引数 `defaultOn` が足された（**既定で止まっている段**を表す）ので、
+       ここは「この段の旗が自分の env 名で引かれていること」だけを見る。引数の**数**を
+       固定すると、段が 1 つ増えるたびにこの検査が本題と無関係に赤くなる。
+       ⚠ 既定が on か off かの正本は `tests/r405-checks ⑭` で、そちらは 3 引数を綴りで見る。 */
+  assert.match(fn, /providerConfig\("NEWS_GEO_AI",\s*"NEWS_GEO_MODEL"[,)]/);
+  assert.match(fn, /providerConfig\("NEWS_TRANSLATE",\s*"NEWS_TRANSLATE_MODEL"[,)]/);
 });
 
 /* ── ⑪ 出どころの列は「見た」と「置いた」を分ける ─────────────────────── */

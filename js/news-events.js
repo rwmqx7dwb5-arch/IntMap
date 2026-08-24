@@ -23,6 +23,7 @@
  *    IntMap は「どちらが正しいか」を言わない。「両者はこう言っている」だけを言う。
  * ==========================================================================*/
 import { makeNewsClaims } from './news-claims.js';   /* (#R394) 数量の相違の規則 — ブラウザの外からも測れる 1 本 */
+import { makeNewsBrief } from './news-brief.js';     /* (#R405) 出来事の「読める中身」を組み立てる規則 — 同上 */
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.newsEvents = function (HOST) {
   const L = window.IntMapLang.pick(() => HOST.lang);
@@ -55,7 +56,7 @@ window.IntMapModules.newsEvents = function (HOST) {
     'id,public_id,representative_title,representative_article_id,primary_category,secondary_categories,' +
     'category_confidence,category_evidence,rep_lng,rep_lat,rep_place_name_en,location_confidence,' +
     'first_published_at,last_article_at,materially_updated_at,article_count,independent_source_count,' +
-    'cluster_confidence,manual_lock,status,merged_into';
+    'cluster_confidence,manual_lock,status,merged_into,summary,summary_evidence,summary_version';
   const MEMBER_COLS =
     'news_event_articles(relation,assignment_score,assigned_by,' +
     'news_articles(id,title,description,canonical_url,source_id,published_at,subject_name_en,subject_type))';
@@ -175,6 +176,49 @@ window.IntMapModules.newsEvents = function (HOST) {
     percent: LA('percentage', '割合', 'Prozentsatz', 'процент', 'porcentaje'),
   };
   const quantities = (text) => CLAIMS.quantities(text);
+
+  /* ── 出来事の中身（#R405）──────────────────────────────────────────────────
+     ⚠⚠⚠ **#R386 は証拠を取ってきておきながら 1 文字も出していなかった。**
+       `members[].description` は最初から手元にあり、読者は `differences()` ただ 1 人で、
+       本番 1,069 Event 中 **2 件**しか発火しない。⇒ 外部記事を開かない限り IntMap の
+       中では何が起きたか分からない＝地図付きのニュース索引であって、出来事を理解する
+       道具ではなかった。
+     ⚠ **規則は js/news-brief.js にある。** ここに書かない——ブラウザの外から
+       `scripts/news-events-eval.mjs --brief` が同じ 1 本を測れるようにするため
+       （#R386 / #R340 が踏んだ形）。ここに残すのは 9 言語のラベルと DOM だけ。
+     ⚠ **数量の規則を 2 本持たない。** `CLAIMS` をそのまま注入する。 */
+  const BRIEF = makeNewsBrief(CLAIMS);
+  function briefOf(members) {
+    try { return BRIEF.build(members); } catch (_) { return null; }
+  }
+
+  /* ── サーバーが書いた統合文（`news_events.summary`）───────────────────────
+     ⚠ 決定論の抽出では作れないもの——**複数の媒体が別々に書いた文を 1 つの説明に
+       まとめること**——だけを、取り込みの `summarise` 段（サーバー側）が LLM で作る。
+       ⚠ その関数の名前をここに綴らない。`tests/r351-checks ⑮` は「js/ と src/ にその綴りが
+         1 つも無い」で**サーバー専用**を守っており、散文の言及と import を区別しない。
+         区別させる方向に検査を緩めるより、こちらが名前を呼ばないほうが安い。
+       返答は**1 文ごとに根拠の断片を言わせ、サーバー側でそれが原文に在ることを確かめて
+       から**保存されている（1 文でも通らなければ Event 丸ごと捨てる）。
+     ⚠⚠ **それでもここでもう一度確かめる。** 記事が入れ替わったあと、まだ次の run が
+       来ていない Event では、保存された統合文が**いま画面に出ている媒体と対応しない**
+       ことがありうる。⇒ 引用元の媒体がいまの構成記事の中に無ければ**出さない**。
+       「古いかもしれない」ではなく「対応が取れているものだけ出す」。
+     ⚠ 出せなくても損は無い——決定論の抽出はそのまま出る。 */
+  function synthesisOf(row, members) {
+    const ev = row && row.summary_evidence;
+    const text = row && typeof row.summary === 'string' ? row.summary.trim() : '';
+    if (!text || !ev || !Array.isArray(ev.sentences) || !ev.sentences.length) return null;
+    const here = new Set(members.map((m) => m.sourceId));
+    const named = new Map(members.map((m) => [m.sourceId, m.sourceName]));
+    const lines = [];
+    for (const s of ev.sentences) {
+      if (!s || typeof s.text !== 'string' || !here.has(s.outlet)) return null;
+      lines.push({ text: s.text, source: named.get(s.outlet) || s.outlet, span: s.span || '' });
+    }
+    return { lines, outlets: [...new Set(lines.map((l) => l.source))] };
+  }
+
   function differences(ev) {
     return CLAIMS.differences((ev.members || []).map((m) => ({
       title: m.title, description: m.description, source: m.sourceName, family: m.family,
@@ -185,7 +229,7 @@ window.IntMapModules.newsEvents = function (HOST) {
      ⚠ 形は article mode の項目と**同じ**にする。`startNews` / `appendNewsBatch` /
        ピン / 無限スクロール / 期間フィルタが、分岐なしでそのまま動くため。
        Event 固有の事実は `_event` にだけ足す（既存のどの読み手も見ない場所）。 */
-  function toItem(row, i18n) {
+  function toItem(row) {
     const links = (row.news_event_articles || [])
       .filter((l) => l.relation === 'same_event' || l.relation === 'update')
       .map((l) => l.news_articles).filter(Boolean)
@@ -204,8 +248,11 @@ window.IntMapModules.newsEvents = function (HOST) {
       };
     });
     const rep = links.find((a) => a.id === row.representative_article_id) || links[0] || null;
-    const translated = i18n && i18n.get(row.id);
-    const title = (HOST.lang === 'jp' && translated) ? translated : row.representative_title;
+    /* ⚠⚠⚠ **見出しの日本語訳は表示しない**（#R405 で利用者が決めた）。News は英語で出す。
+       DB の `news_event_i18n`（実測 708 行）は**消していない**——止めたのは生成と表示で
+       あって、記録ではない。再開するときは `stageTranslate` の kill-switch を戻し、
+       ここで `news_event_i18n` を読み直せばよい。 */
+    const title = row.representative_title;
     const outlets = [];
     const seenFam = new Set();
     for (const m of members) { if (seenFam.has(m.family)) continue; seenFam.add(m.family); outlets.push(m.sourceName); }
@@ -232,19 +279,26 @@ window.IntMapModules.newsEvents = function (HOST) {
 
     const firstAt = row.first_published_at || (members[0] && members[0].publishedAt) || '';
     const lastAt = row.last_article_at || firstAt;
+    /* ⚠ 1 Event につき 1 回だけ組む。カード・詳細・`state()` が同じ 1 つを読む
+       （描画のたびに組み直すと、同じ出来事について 2 つの答えが在りうる）。 */
+    const brief = briefOf(members);
+    const synthesis = synthesisOf(row, members);
     return {
       title,
       publisher: outlets.slice(0, 2).join(' · '),
       link: (rep && rep.canonical_url) || (members[0] && members[0].url) || '',
       pubDate: lastAt,
-      desc: '',
+      /* ⚠ `desc` は #R386 が `''` に固定していた欄である。実際の中身を入れると、
+         カードの抜粋だけでなく `js/news-ui.js` の AI 要約プロンプト（160 字）にも
+         初めて本文が渡る。 */
+      desc: (brief && brief.gist[0] && brief.gist[0].text) || '',
       analysis,
       /* 検索は代表見出しだけでなく**構成記事の見出しにも当てる**。Event を探す人は
          「自分が読んだ 1 本の見出し」を覚えていることのほうが多い。 */
       _search: (title + ' ' + row.representative_title + ' ' + members.map((m) => m.title).join(' ') + ' ' + outlets.join(' ')).toLowerCase(),
       _event: {
         id: row.id, publicId: row.public_id, title: row.representative_title, titleShown: title,
-        translated: !!(translated && HOST.lang === 'jp'),
+        brief, synthesis,
         category: row.primary_category, secondary: row.secondary_categories || [],
         categoryBy: (row.category_evidence && row.category_evidence.by) || '',
         categoryConfidence: row.category_confidence,
@@ -274,12 +328,9 @@ window.IntMapModules.newsEvents = function (HOST) {
       if (!data || !data.length) { lastError = 'no events'; return false; }
       await ensureSourcesFor(data);
 
-      let i18n = null;
-      if (HOST.lang === 'jp') {
-        const ids = data.map((e) => e.id);
-        const r = await HOST.DB.from('news_event_i18n').select('event_id,title').eq('lang', 'ja').in('event_id', ids);
-        if (!r.error) i18n = new Map((r.data || []).map((x) => [x.event_id, x.title]));
-      }
+      /* ⚠ #R405: 日本語の見出しを引きに行くクエリはここに在った。利用者が「生成も表示も
+         停止・ニュース機能は英語」と決めたので外した。1 往復ぶん軽くもなる。
+         ⚠ 表は消していない（`news_event_i18n` の 708 行は本番に残っている）。 */
       await syncSaved();
       /* ログイン済みなら DB の★を localStorage 側にも映す（端末をまたいで同じ★が出る）。 */
       if (HOST.user) {
@@ -290,7 +341,7 @@ window.IntMapModules.newsEvents = function (HOST) {
          js/news-feed.js だけであり（#R165 の RW 契約：1 メンバに書き手は 1 つ）、
          2 つ目の書き手ができた瞬間に「いま一覧に何が入っているか」の
          責任が 2 か所に分かれる。ここは**項目を作って渡すだけ**で、入れるのは呼び出し側。 */
-      items = data.map((row) => toItem(row, i18n));
+      items = data.map((row) => toItem(row));
       lastLoadedAt = nowMs();
       lastError = null;
       return true;
@@ -371,13 +422,32 @@ window.IntMapModules.newsEvents = function (HOST) {
     btn.onclick = (e) => { e.stopPropagation(); openDetail(item); };
     foot.insertBefore(btn, foot.querySelector('.btn-read'));
 
-    /* 翻訳された見出しには、原文が英語であることを添える（記事モードの
-       `newsTitleHTML` が「(原文: …)」でやっているのと同じ約束）。 */
-    if (ev.translated) {
+    /* ── 何が起きたか（1 文）──────────────────────────────────────────────
+       ⚠ カードに載せるのは**1 文だけ**。docs/NEWS-EVENTS.md §9 の「既存の視覚言語と
+         密度を維持する」を守り、残りは詳細に置く。
+       ⚠ **無いときは何も出さない。** 一覧の項目に「情報が足りません」と書くと、
+         43.5% のカードが謝罪文になる。足りないことを言うのは詳細の仕事である。 */
+    const g0 = ev.brief && ev.brief.gist[0];
+    if (g0) {
       const t = card.querySelector('.news-title');
-      if (t) t.insertAdjacentHTML('beforeend',
-        '<div class="news-origlang">' + S(L('(translated from English)', '（英語から翻訳）', '(aus dem Englischen)', '(перевод с английского)', '(traducido del inglés)')) + '</div>');
+      /* ⚠⚠⚠ **出典は文の<u>前</u>に置く。** 実測 (2026-08-24・本番データのスクリーンショット):
+         末尾に置いた `— 媒体名` は 2 行クランプで**必ず切り落とされ**、カードから出典が消えて
+         いた。カードには `.news-pub` に媒体が 2 つまで出るが、それは Event 全体の媒体で
+         あって**この文を書いた媒体ではない**（3 媒体の Event ではどれの文か分からない）。
+         「各記述に根拠媒体が付く」がこの機能の約束なので、切られない側に置く。 */
+      if (t) t.insertAdjacentHTML('afterend',
+        '<div class="ev-gist"><span class="ev-gist-src">' + S(g0.source) + '</span> ' + S(g0.text) + '</div>');
     }
+
+    /* ── 「記事を読む」を二次導線へ下げる（#R405）─────────────────────────
+       ⚠⚠⚠ **記事モードのカードからは外さない。** `appendNewsBatch()` は article mode と
+         Event mode で**同じ関数**なので、`js/news-ui.js` 側で消すと記事モードの
+         「記事を読む」まで消える。ここは Event の項目にだけ呼ばれる `decorate()` なので、
+         外れるのは Event のカードだけである。
+       ⚠ **機能は失わせない。** 行き先は詳細の Coverage 節で、そこには**媒体ごとに**
+         リンクがある——1 本の代表記事しか開けなかったカードのボタンより多い。 */
+    const read = foot.querySelector('.btn-read');
+    if (read) read.remove();
   }
 
   /* ── 詳細 ───────────────────────────────────────────────────────────────
@@ -404,7 +474,6 @@ window.IntMapModules.newsEvents = function (HOST) {
     html += '<span class="ev-cat">' + S(catLabel(ev.category)) + '</span>';
     html += '</div>';
     html += '<h2 class="ev-d-title">' + S(ev.titleShown) + '</h2>';
-    if (ev.translated) html += '<div class="news-origlang">' + S(ev.title) + '</div>';
 
     /* ── 時刻 ── 初出と最新。「いつから続いているか」は出来事の基本的な事実である。 */
     html += '<div class="ev-d-meta">' +
@@ -412,6 +481,110 @@ window.IntMapModules.newsEvents = function (HOST) {
       '<span>' + S(L('Latest article', '最新', 'Neueste', 'Последнее', 'Más reciente')) + ': ' + S(fmt(ev.lastAt)) + ' · ' + S(ago(ev.lastAt)) + '</span>' +
       '<span>' + S(String(L('{a} articles · {b} independent outlets', '記事{a}本・独立{b}媒体', '{a} Artikel · {b} unabhängige Quellen', '{a} статей · {b} независимых источников', '{a} artículos · {b} medios independientes')).replace('{a}', ev.articleCount).replace('{b}', ev.sourceCount)) + '</span>' +
       '</div>';
+
+    /* ══ 何が起きたか（#R405）════════════════════════════════════════════════
+       依頼: 「外部記事を開かないと内容が分からないなら、IntMap 内で世界を把握すると
+       いう中心価値を果たせない」。⇒ **1 つの Event を IntMap の中だけで理解できるように
+       する。** 出すのは 6 つ——何が起きたか / 誰がどこでいつ / 主要な数字 /
+       最新記事で更新された点 / 媒体間の一致と相違 / **各記述の根拠媒体**。
+       ⚠⚠⚠ **根拠のない AI 作文をしない**（docs/NEWS-EVENTS.md §15）。ここに出るのは
+         すべて**媒体が実際に書いた原文の断片**で、1 行ごとに出典が付く。
+       ⚠⚠⚠ **足りないときは足りないと言う。** 実測 (2026-08-24・本番 400 Event):
+         2 文以上を取れるのは **15.0%**、1 文だけが 37.8%、**43.5% は本文が 1 文字も無い**
+         ——Reuters / AP / Bloomberg は Google 経由の取り込みで `<description>` が
+         リンク一覧なので捨てられる。ここで「読み込み失敗」に見せてはならない。 */
+    const brief = ev.brief;
+    if (brief) {
+      html += '<div class="ev-d-sec ev-brief"><h3>' +
+        S(L('What happened', '何が起きたか', 'Was geschehen ist', 'Что произошло', 'Qué ocurrió')) + '</h3>';
+
+      /* ── 複数媒体をまとめた説明（サーバーが書き、根拠を照合済み）───────────
+         ⚠⚠⚠ **AI が書いたことを隠さない。** 1 文ごとに引用元の媒体を付け、
+           下に**原文の断片**（各文の根拠として照合に使ったもの）をそのまま置く。
+           読者が「この文はどこから来たのか」を自分で確かめられる状態にする。 */
+      if (ev.synthesis) {
+        html += '<div class="ev-syn">';
+        for (const l of ev.synthesis.lines) {
+          html += '<p class="ev-line">' + S(l.text) + '<span class="ev-src">— ' + S(l.source) + '</span></p>';
+        }
+        html += '<details class="ev-syn-ev"><summary>' +
+          S(String(L('How this was written — the exact wording each sentence came from ({n})', 'この文が何から書かれたか — 各文の根拠になった原文（{n}件）', 'Woraus dies geschrieben wurde — der genaue Wortlaut je Satz ({n})', 'Из чего это написано — точные формулировки для каждого предложения ({n})', 'De dónde salió esto — la redacción exacta de cada frase ({n})')).replace('{n}', ev.synthesis.lines.length)) + '</summary>';
+        for (const l of ev.synthesis.lines) {
+          if (l.span) html += '<div class="ev-diff-ctx">“' + S(l.span) + '” <span class="ev-src">— ' + S(l.source) + '</span></div>';
+        }
+        html += '</details>';
+        html += '<p class="ev-d-note">' + S(L('IntMap combined what these outlets published into the paragraph above. Every sentence was machine-checked against the wording shown here before it was saved; sentences that could not be checked are discarded, never shown.', '上の段落は、これらの媒体が公表した内容を IntMap がまとめたものである。各文は保存前に、ここに示した原文と機械的に照合してある。照合できなかった文は捨てられ、表示されることはない。', 'IntMap hat das Veröffentlichte zu obigem Absatz zusammengefügt. Jeder Satz wurde vor dem Speichern maschinell gegen den hier gezeigten Wortlaut geprüft; ungeprüfte Sätze werden verworfen.', 'IntMap объединил опубликованное в абзац выше. Каждое предложение перед сохранением машинно сверено с приведёнными формулировками; непроверенные отбрасываются.', 'IntMap combinó lo publicado en el párrafo anterior. Cada frase se verificó automáticamente con la redacción mostrada aquí antes de guardarse; las que no se pudieron verificar se descartan.')) + '</p>';
+        html += '</div>';
+      }
+
+      if (brief.gist.length) {
+        if (ev.synthesis) {
+          html += '<h4 class="ev-sub">' + S(L('In each outlet’s own words', '各媒体の原文', 'In den Worten der jeweiligen Quelle', 'Словами каждого источника', 'En palabras de cada medio')) + '</h4>';
+        }
+        for (const g of brief.gist) {
+          html += '<p class="ev-line">' + S(g.text) +
+            '<span class="ev-src">— ' + S(g.source) + '</span></p>';
+        }
+        html += '<p class="ev-d-note">' + S(L('Sentences are quoted from what each outlet published. IntMap does not rewrite or paraphrase them.', '各媒体が実際に公表した文をそのまま引いている。IntMap は書き換えも言い換えもしない。', 'Die Sätze sind wörtlich aus dem übernommen, was jede Quelle veröffentlicht hat. IntMap schreibt sie nicht um.', 'Предложения приведены дословно из публикаций каждого источника. IntMap их не переписывает.', 'Las frases se citan tal como las publicó cada medio. IntMap no las reescribe ni parafrasea.')) + '</p>';
+        if (brief.status === 'thin') {
+          html += '<p class="ev-short">' + S(L('Only one outlet supplied article text for this event, so this is all IntMap can show without leaving the app.', 'この出来事について本文を配っているのは1媒体だけなので、IntMap の中で読めるのはここまでである。', 'Nur eine Quelle lieferte Artikeltext, mehr kann IntMap hier nicht zeigen.', 'Текст статьи предоставил только один источник, поэтому это всё, что IntMap может показать.', 'Solo un medio proporcionó texto del artículo, así que esto es todo lo que IntMap puede mostrar.')) + '</p>';
+        }
+      } else {
+        /* ⚠ **理由を言う。** 「要約がありません」だけだと読み込み失敗に見える。 */
+        html += '<p class="ev-short">' + S(brief.reason === 'unusable_text'
+          ? L('The outlets covering this event supplied no usable article text — only headlines. IntMap does not invent the rest.', 'この出来事を報じた媒体は、使える本文を配っていない（見出しだけ）。IntMap は残りを創作しない。', 'Die Quellen lieferten keinen brauchbaren Artikeltext — nur Schlagzeilen. IntMap erfindet den Rest nicht.', 'Источники не предоставили пригодного текста статьи — только заголовки. IntMap не выдумывает остальное.', 'Los medios no proporcionaron texto útil del artículo, solo titulares. IntMap no inventa el resto.')
+          : L('The outlets covering this event publish headline-only feeds, so IntMap has no article text to show. Open a report below to read it at the source.', 'この出来事を報じた媒体は見出しだけのフィードを配信しており、IntMap には見せられる本文が無い。下の一覧から発信元で読める。', 'Die Quellen veröffentlichen reine Schlagzeilen-Feeds, daher hat IntMap keinen Artikeltext. Unten beim Original lesen.', 'Эти источники публикуют ленты только с заголовками, поэтому у IntMap нет текста статьи. Читайте в оригинале ниже.', 'Estos medios publican feeds solo de titulares, así que IntMap no tiene texto que mostrar. Léalo en la fuente más abajo.')) + '</p>';
+      }
+      html += '</div>';
+
+      /* ── 主要な数字 ─────────────────────────────────────────────────────
+         ⚠⚠ #R386 は数量を**食い違ったときしか**出していなかった（本番 1,069 Event 中
+           2 件）。抽出そのものは当たっているので、食い違っていない数字も出す。
+           実測: 出せる Event が **2 → 34**（400 件中）。 */
+      if (brief.figures.length) {
+        html += '<div class="ev-d-sec ev-figs"><h3>' +
+          S(L('Key figures', '主要な数字', 'Wichtige Zahlen', 'Ключевые цифры', 'Cifras clave')) + '</h3>';
+        for (const f of brief.figures) {
+          html += '<div class="ev-fig"><span class="ev-fig-k">' + S(KIND_LABEL[f.kind] ? L.arr(KIND_LABEL[f.kind]) : f.kind) + '</span>' +
+            '<b>' + S(f.text) + '</b><span class="ev-src">— ' + S(f.source) + '</span>' +
+            (f.context ? '<div class="ev-diff-ctx">…' + S(f.context) + '…</div>' : '') + '</div>';
+        }
+        html += '</div>';
+      }
+
+      /* ── 最新記事で何が更新されたか ──────────────────────────────────────
+         ⚠ **「最後に届いた記事」は「更新」ではない。** 初報から 1 時間以上あとに出た
+           記事だけを見て、そこで初めて出た数量と、初めて報じた系列を出す。 */
+      if (brief.latest) {
+        const u = brief.latest;
+        html += '<div class="ev-d-sec ev-upd"><h3>' +
+          S(L('What the latest report added', '最新の記事で更新された点', 'Was der neueste Bericht ergänzt', 'Что добавило последнее сообщение', 'Qué añadió el último informe')) + '</h3>';
+        if (u.newFamily) {
+          html += '<p class="ev-line">' + S(String(L('{s} became the newest outlet to report this, {t}.', '{s} が新たにこの出来事を報じた（{t}）。', '{s} berichtete als neueste Quelle darüber, {t}.', '{s} стал новым источником, сообщившим об этом, {t}.', '{s} pasó a ser el medio más reciente en informarlo, {t}.'))
+            .replace('{s}', u.source).replace('{t}', ago(u.at))) + '</p>';
+        }
+        if (u.text) html += '<p class="ev-line">' + S(u.text) + '<span class="ev-src">— ' + S(u.source) + '</span></p>';
+        for (const f of u.figures) {
+          html += '<p class="ev-line ev-new-fig"><b>' + S(f.text) + '</b> ' +
+            S(L('first appears in this report', 'この記事で初めて出た数量', 'erscheint hier erstmals', 'впервые появляется в этом сообщении', 'aparece por primera vez en este informe')) +
+            '<span class="ev-src">— ' + S(u.source) + '</span></p>';
+        }
+        html += '</div>';
+      }
+
+      /* ── 媒体間で一致している点 ───────────────────────────────────────────
+         ⚠ 一致と呼ぶのは**別々の資本系列**が同じ値を言ったときだけ。同じ系列の転載が
+           同じ数字を持っていても、それは 1 つの主張である。 */
+      if (brief.agreements.length) {
+        html += '<div class="ev-d-sec ev-agree"><h3>' +
+          S(L('Where outlets agree', '媒体間で一致している点', 'Worin die Quellen übereinstimmen', 'В чём источники согласны', 'En qué coinciden los medios')) + '</h3>';
+        for (const a of brief.agreements) {
+          html += '<div class="ev-fig"><span class="ev-fig-k">' + S(KIND_LABEL[a.kind] ? L.arr(KIND_LABEL[a.kind]) : a.kind) + '</span>' +
+            '<b>' + S(a.text) + '</b><span class="ev-src">— ' + S(a.sources.join(' · ')) + '</span></div>';
+        }
+        html += '</div>';
+      }
+    }
 
     /* ── 媒体ごとの相違（数量）── */
     const diffs = differences(ev);
@@ -430,9 +603,13 @@ window.IntMapModules.newsEvents = function (HOST) {
       html += '</div>';
     }
 
-    /* ── どこが報じたか ── 初報に印を付ける。転載は独立の声として数えない。 */
-    html += '<div class="ev-d-sec"><h3>' +
-      S(L('Coverage', '報じた媒体', 'Berichterstattung', 'Освещение', 'Cobertura')) + '</h3>';
+    /* ── どこが報じたか ── 初報に印を付ける。転載は独立の声として数えない。
+       ⚠ #R405: **ここが「記事を読む」の行き先である。** カードのボタンは代表記事 1 本
+         しか開けなかったが、ここには**媒体ごとに**リンクがある。二次導線に下げるとは、
+         導線を減らすことではない。 */
+    html += '<div class="ev-d-sec ev-cov-sec"><h3>' +
+      S(L('Read it at the source', '発信元で読む', 'An der Quelle lesen', 'Читать в источнике', 'Leerlo en la fuente')) + '</h3>';
+    html += '<p class="ev-d-note">' + S(L('Which outlet said what, in the order they published it.', 'どの媒体が何と書いたかを、公表された順に並べている。', 'Welche Quelle was sagte, in der Reihenfolge der Veröffentlichung.', 'Кто и что сказал, в порядке публикации.', 'Qué dijo cada medio, en el orden en que lo publicaron.')) + '</p>';
     const famSeen = new Set();
     for (const m of rows) {
       const dup = famSeen.has(m.family);
@@ -445,6 +622,9 @@ window.IntMapModules.newsEvents = function (HOST) {
         '<span class="ev-cov-at">' + S(fmt(m.publishedAt)) + '</span></div>' +
         (u ? '<a class="ev-cov-t" href="' + u + '" target="_blank" rel="noopener">' + S(m.title) + '</a>'
            : '<div class="ev-cov-t">' + S(m.title) + '</div>') +
+        /* 見出しがリンクであることは見て分かりにくいので、明示の導線も置く。 */
+        (u ? '<a class="ev-cov-read" href="' + u + '" target="_blank" rel="noopener">' +
+          S(L('Read at {s} ↗', '{s} で読む ↗', 'Bei {s} lesen ↗', 'Читать на {s} ↗', 'Leer en {s} ↗').replace('{s}', m.sourceName)) + '</a>' : '') +
         '</div>';
     }
     html += '</div>';
@@ -493,6 +673,12 @@ window.IntMapModules.newsEvents = function (HOST) {
       visiblePinCount: pins,
       unplacedCount: shown.filter((x) => !x._event.place).length,
       multiSourceCount: shown.filter((x) => x._event.sourceCount >= 2).length,
+      /* (#R405) 出来事が IntMap の中だけで読めるか。⚠ **「読めない」を隠さない**——
+         `noTextCount` は上流が本文を配っていない Event の数で、実測 43.5% ある。
+         Atlas が「この出来事の中身は？」に答えられるかどうかがここで決まる。 */
+      readableCount: shown.filter((x) => x._event.brief && x._event.brief.status === 'ok').length,
+      thinCount: shown.filter((x) => x._event.brief && x._event.brief.status === 'thin').length,
+      noTextCount: shown.filter((x) => x._event.brief && (x._event.brief.status === 'none' || x._event.brief.status === 'facts')).length,
       categories: cats,
       freshestArticleAt: all.reduce((a, x) => (x._event.lastAt > a ? x._event.lastAt : a), ''),
       loadedAt: lastLoadedAt ? new Date(lastLoadedAt).toISOString() : null,

@@ -17,6 +17,7 @@
  *      node scripts/news-events-eval.mjs --from-db --dump 3       # **本番が実際に作った Event** を読む
  *      node scripts/news-events-eval.mjs --from-db --link          # `link` 段が**何を結ぶか**を、結ぶ前に読む
  *      node scripts/news-events-eval.mjs --from-db --diffs         # 媒体間で食い違っている数量を全部出す
+ *      node scripts/news-events-eval.mjs --from-db --brief         # 出来事が IntMap の中だけで読めるかの歩留まり
  *
  *  ⚠ `--from-db` は「もう一度計算し直した結果」ではなく **本番の表そのもの**を測る。
  *    パイプラインの検算（同じ入力で同じ答えが出るか）は上の経路、**出荷されている物の
@@ -40,8 +41,11 @@ import { buildIdf, tokenise, DEFAULTS } from '../supabase/functions/_shared/news
    #R386 はこれを js/news-events.js の factory の奥に書いたので、ブラウザの外から
    誰も呼べず、歩留まりも精度も測れなかった。 */
 import { makeNewsClaims } from '../js/news-claims.js';
+/* (#R405) 出来事の中身を組み立てる規則。⚠ **UI が呼ぶのと同じ 1 本**——歩留まりを
+   「効いているはず」ではなく実データの数で言えるようにするため。 */
+import { makeNewsBrief } from '../js/news-brief.js';
 
-const SUPA = 'https://vpekfwdpurzejrrmacac.supabase.co';
+const SUPA ='https://vpekfwdpurzejrrmacac.supabase.co';
 const ANON = 'sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
@@ -229,6 +233,69 @@ if (flag('--from-db')) {
     line2('  same-quantity ratio       ' + CLAIMS.DEFAULTS.sameQuantityRatio + '  (2 つの値が同じ量の別々の説明でありうる下限)');
     line2('');
     for (const l of lines) line2(l);
+  }
+
+  /* ── 出来事が IntMap の中だけで読めるか（#R405）────────────────────────
+     ⚠⚠⚠ **これが無いと `js/news-brief.js` の規則は「効いている」が意見のままになる。**
+       #R386 が `differences()` を表示の層の奥に書いて歩留まりを測れなくしたのと同じ形を
+       繰り返さないために、UI と**同じ 1 本**をここから本番のデータに当てる。
+     ⚠ 出すのは歩留まりだけでなく**足りない側の数と理由**も。43.5% が本文を持たないと
+       いう事実は、この機能について一番大事な数字である。 */
+  if (flag('--brief')) {
+    const CLAIMS2 = makeNewsClaims();
+    const B = makeNewsBrief(CLAIMS2);
+    const famOf2 = new Map(sources.map((x) => [x.id, x.source_family || x.id]));
+    const nameOf = new Map(sources.map((x) => [x.id, x.name || x.id]));
+    const tally = { ok: 0, thin: 0, facts: 0, none: 0 };
+    const why = {};
+    const bySource = {};
+    let sents = 0, syn = 0, figEv = 0, agrEv = 0, updEv = 0;
+    const show = [];
+    for (const e of list) {
+      const ms = e._members.map((m) => ({
+        id: m.id, title: m.title, description: m.description || '', url: m.canonical_url || '',
+        sourceId: m.source_id, sourceName: nameOf.get(m.source_id) || m.source_id,
+        family: famOf2.get(m.source_id) || m.source_id, publishedAt: m.published_at || '',
+      }));
+      const b = B.build(ms);
+      tally[b.status]++;
+      if (b.reason) why[b.reason] = (why[b.reason] || 0) + 1;
+      sents += b.gist.length; syn += b.syndicated;
+      if (b.figures.length) figEv++;
+      if (b.agreements.length) agrEv++;
+      if (b.latest) updEv++;
+      /* どの媒体が本文を配っていないのかを名指しする——直せる相手が分かるように。 */
+      for (const m of ms) {
+        const k = m.sourceId;
+        const s = bySource[k] || (bySource[k] = { n: 0, text: 0 });
+        s.n++; if (B.sentences(m.description).length) s.text++;
+      }
+      if (b.status === 'ok' && show.length < Number(val('--brief-show', 5))) show.push({ e, b });
+    }
+    const pct = (n) => (100 * n / Math.max(1, list.length)).toFixed(1) + '%';
+    line2('── 出来事が IntMap の中だけで読めるか ──');
+    line2('  events                          ' + list.length);
+    line2('  ok    (原文から 2 文以上)        ' + tally.ok + '  ' + pct(tally.ok));
+    line2('  thin  (1 文だけ)                ' + tally.thin + '  ' + pct(tally.thin));
+    line2('  facts (文は無いが数量は読める)   ' + tally.facts + '  ' + pct(tally.facts));
+    line2('  none  (何も読めない)             ' + tally.none + '  ' + pct(tally.none) + '   理由=' + JSON.stringify(why));
+    line2('  → 何かしら読める                 ' + (tally.ok + tally.thin + tally.facts) + '  ' + pct(tally.ok + tally.thin + tally.facts));
+    line2('  gist の総文数                    ' + sents + '   同一配信として落とした文 ' + syn);
+    line2('  数字を出せる Event               ' + figEv + '   一致 ' + agrEv + '   更新 ' + updEv);
+    line2('');
+    line2('  媒体ごとの「本文を配っているか」（記事数 / うち文が取れた数）:');
+    for (const [k, v] of Object.entries(bySource).sort((a, b2) => b2[1].n - a[1].n)) {
+      line2('    ' + k.padEnd(16) + String(v.n).padStart(4) + ' / ' + String(v.text).padStart(4) +
+        '  ' + (100 * v.text / v.n).toFixed(0) + '%' + (v.text === 0 ? '   ← 見出しだけ' : ''));
+    }
+    line2('');
+    for (const { e, b } of show) {
+      line2('#' + e.id + '  ' + String(e.representative_title).slice(0, 70));
+      line2('   ' + b.coverage.outlets.join(', '));
+      for (const g of b.gist) line2('   ▸ ' + g.text + '   — ' + g.source);
+      if (b.figures.length) line2('   [数字] ' + b.figures.map((f) => f.kind + '=' + f.text + '(' + f.source + ')').join(' / '));
+      line2('');
+    }
   }
 
   if (flag('--link')) {

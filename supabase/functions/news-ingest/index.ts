@@ -1013,8 +1013,13 @@ const WRONG_SCRIPT = /[ऀ-ॿ؀-ۿ֐-׿฀-๿ঀ-৿஀-௿ఀ-౿]/;
 /* ⚠ (#R404) **段ごとに切れる必要がある。** 翻訳と地点解析は別の仕事で、別の値段で、
    片方だけ止めたい日がある。⇒ 選ぶ規約（provider の推測・`AI_MODEL` の既定・代替モデル）は
    1 本にし、**kill-switch とモデル上書きの env 名だけ**を段が渡す。 */
-function providerConfig(offEnv, modelEnv) {
-  if ((Deno.env.get(offEnv) || "").toLowerCase() === "off") return null;
+/* ⚠ (#R405) 3 つ目の引数 `defaultOn`。**既定で止まっている段**を、環境変数の不在で表せる
+   ようにする——「設定していないから動く」と「設定していないから止まっている」は別の意味で、
+   コードの側に書いておかないと次に読む人には見分けられない。 */
+function providerConfig(offEnv, modelEnv, defaultOn) {
+  const flag = (Deno.env.get(offEnv) || "").toLowerCase();
+  if (flag === "off") return null;
+  if (defaultOn === false && flag !== "on") return null;
   let provider = (Deno.env.get("AI_PROVIDER") || "").toLowerCase();
   if (!provider) {
     if (Deno.env.get("ANTHROPIC_API_KEY")) provider = "anthropic";
@@ -1028,9 +1033,14 @@ function providerConfig(offEnv, modelEnv) {
   return null;
 }
 
-function aiConfig() { return providerConfig("NEWS_TRANSLATE", "NEWS_TRANSLATE_MODEL"); }
+/** 代表見出しの日本語訳。⚠⚠⚠ **#R405 で既定 off にした**——利用者が「日本語翻訳は生成も
+ *  表示も停止・ニュース機能は英語」と決めたため。`NEWS_TRANSLATE=on` を**明示**した run
+ *  だけ走る。⚠ 実装は 1 行も消していない。消したのは既定であって能力ではない。 */
+function aiConfig() { return providerConfig("NEWS_TRANSLATE", "NEWS_TRANSLATE_MODEL", false); }
 /** 地点解析 (#R404)。`NEWS_GEO_AI=off` で止まり、`NEWS_GEO_MODEL` で独立に選べる。 */
 function geoConfig() { return providerConfig("NEWS_GEO_AI", "NEWS_GEO_MODEL"); }
+/** 出来事の統合要約 (#R405)。`NEWS_SUMMARY=off` で止まり、`NEWS_SUMMARY_MODEL` で選べる。 */
+function summaryConfig() { return providerConfig("NEWS_SUMMARY", "NEWS_SUMMARY_MODEL"); }
 
 /* (#R285) 人格の正本は js/atlas-persona.js の 1 本だけ。ここでも書き足さない。
    この呼び出しは利用者に読まれる文（見出しの訳）を作るが、対話ではないので internal。 */
@@ -1100,8 +1110,16 @@ const PRICE = { in: 1.0, out: 5.0 };
 
 async function stageTranslate(db, budget) {
   const t0 = Date.now();
+  /* ⚠⚠⚠ **#R405: 既定を off にした。** 利用者が「日本語翻訳は生成も表示も停止・
+     ニュース機能は英語」と決めたので、`NEWS_TRANSLATE=on` を**明示したときだけ**走る。
+     ⚠ **実装は 1 行も消していない。** 消したのは既定であって能力ではない——`on` を
+     置けば翌 run から元どおり動く。`js/news-events.js` 側の読み出しも同じ扱いで、
+     `news_event_i18n` の実測 708 行は本番に残してある。
+     ⚠ 止めても cron（`news-ingest-translate`）は残りうるので、その run はここで
+     `skipped` を返して `news_ingest_runs` に残る——**黙って 0 件になる AI 経路を
+     もう一度作らない**（#R334）。 */
   const cfg = aiConfig();
-  if (!cfg) return { ms: Date.now() - t0, translations: 0, skipped: "not_configured" };
+  if (!cfg) return { ms: Date.now() - t0, translations: 0, skipped: "off_by_default_r405" };
 
   /* ⚠ ここは selectAll を使わない（range と limit を同時に掛けると矛盾する）。
      新しく動いた Event から順に、1 ページぶんだけ見れば TRANSLATE_CAP には十分足りる。 */
@@ -1189,6 +1207,179 @@ async function stageTranslate(db, budget) {
   };
 }
 
+/* ── 段 5b: 要約 (#R405) ─────────────────────────────────────────────────
+ *  依頼: 「1 つの Event を IntMap 内だけで理解可能にする」。
+ *
+ *  ⚠⚠⚠ **決定論の抽出はここでやらない。** 構成記事の `description` は**すでに
+ *    ブラウザに届いている**（`js/news-events.js` の `MEMBER_COLS` が取っている）ので、
+ *    `js/news-brief.js` がその場で組む——ネットワークも保存も要らず、**全 Event に
+ *    即座に効く**。ここが足すのは、決定論では作れないもの 1 つだけである:
+ *    **複数の媒体が別々に書いた文を、1 つの説明にまとめること。**
+ *
+ *  ⚠⚠⚠ **だから単独媒体の Event には 1 トークンも払わない。** 実測 (2026-08-24・
+ *    本番 400 Event): 複数記事の Event は 110 件（27.5%）、独立 2 系列以上はさらに少ない。
+ *    単独記事の Event に LLM を通しても、`description` を言い換えるだけで**新しい事実は
+ *    1 つも増えない**——それは `docs/NEWS-EVENTS.md` §15 が禁じている「根拠のない AI 要約」
+ *    に一歩近づくだけである。
+ *
+ *  ══ ⚠⚠⚠ モデルの答えをそのまま採らない ═══════════════════════════════════
+ *  返答の 1 文ごとに ①どの媒体の ②**原文のどの断片**を根拠にしたかを言わせ、
+ *  **サーバー側でその断片が実際にその媒体の文に在ることを確かめる**。1 文でも
+ *  確かめられなければ**その Event の返答を丸ごと捨てる**（部分採用しない——
+ *  検証を通らなかった文が混ざった要約は、検証していない要約と同じである）。
+ *  捨てても損は無い: ブラウザは決定論の抽出を出し続ける。
+ *
+ *  ⚠ `summary_evidence.fp` が証拠の指紋。構成記事が変わらない限り払い直さない
+ *    （翻訳の `source_title_fp` と同じ約束）。
+ * ────────────────────────────────────────────────────────────────────── */
+const SUMMARY_VERSION = 1;
+/* 1 run に要約する Event の上限（費用の天井。docs/NEWS-EVENTS.md §14）。 */
+const SUMMARY_CAP = 30;
+/* 根拠として認める断片の最短。これより短いと「the」のような語でも一致してしまう。 */
+const SPAN_MIN = 25;
+
+const SUMMARY_SYS = personaPrompt("summarising a multi-source news event for IntMap", { mode: "internal" }) +
+  "You are given several reports of ONE news event from DIFFERENT outlets. " +
+  "Write 2 to 4 sentences saying what happened, in plain English. " +
+  "RULES: (1) Every sentence must be supported by the supplied text. Do NOT add background, " +
+  "context, analysis, prediction, or anything you know from elsewhere. " +
+  "(2) For each sentence give the outlet id it came from and a VERBATIM span of at least 25 " +
+  "characters copied EXACTLY from that outlet's supplied text — character for character. " +
+  "(3) Prefer sentences that combine what different outlets add. Do not repeat the same fact twice. " +
+  "(4) Do not name IntMap, do not address the reader, do not say 'according to reports'. " +
+  "Reply with ONLY a JSON object: " +
+  "{\"sentences\":[{\"text\":\"<sentence>\",\"outlet\":\"<outlet id>\",\"span\":\"<verbatim quote>\"}]}. " +
+  "No commentary, no code fences.";
+
+/* 照合用の正規化。⚠ **意味を変える正規化をしない**——大小・空白・引用符の異体だけ。
+   モデルは curly quote を straight quote に書き換えて返すことがあるが、それは
+   「原文に在る」を否定する理由にならない。 */
+const normSpan = (s) => String(s || "")
+  .replace(/[\u00AD\u200B-\u200F\u2060-\u2064\uFEFF]/g, "")
+  .replace(/[\u2018\u2019\u201B]/g, "'")
+  .replace(/[\u201C\u201D]/g, '"')
+  .replace(/[\u2010-\u2015]/g, "-")
+  .replace(/\s+/g, " ")
+  .trim()
+  .toLowerCase();
+
+async function stageSummarise(db, budget) {
+  const t0 = Date.now();
+  const cfg = summaryConfig();
+  if (!cfg) return { ms: Date.now() - t0, summaries: 0, skipped: "not_configured" };
+
+  const { data: events, error: evErr } = await db.from("news_events")
+    .select("id,representative_title,summary_evidence,independent_source_count," +
+      "news_event_articles(relation,news_articles(id,title,description,source_id))")
+    .eq("status", "active").is("merged_into", null)
+    .gte("independent_source_count", 2)
+    .order("materially_updated_at", { ascending: false, nullsFirst: false })
+    .range(0, PAGE - 1);
+  if (evErr) throw new Error("news_events: " + evErr.message);
+
+  const todo = [];
+  for (const e of events || []) {
+    const members = (e.news_event_articles || [])
+      .filter((l) => l.relation === "same_event" || l.relation === "update")
+      .map((l) => l.news_articles).filter(Boolean)
+      .filter((a) => String(a.description || "").trim().length >= 40);
+    /* 別々の媒体が本文を持っていて初めて、まとめる仕事が存在する。 */
+    const outlets = new Set(members.map((a) => a.source_id));
+    if (outlets.size < 2) continue;
+    const fp = await sha256Hex(members.map((a) => a.id + ":" + (a.description || "").length).sort().join("|"));
+    if (e.summary_evidence && e.summary_evidence.fp === fp && e.summary_evidence.v === SUMMARY_VERSION) continue;
+    todo.push({ id: e.id, title: e.representative_title, members, fp });
+    if (todo.length >= SUMMARY_CAP) break;
+  }
+  if (!todo.length) return { ms: Date.now() - t0, summaries: 0, considered: 0 };
+
+  let tin = 0, tout = 0, usedModel = cfg.model;
+  let written = 0, rejected = 0;
+  const rejectReasons = {};
+  let lastError = null;
+  const note = (why) => { rejectReasons[why] = (rejectReasons[why] || 0) + 1; };
+
+  for (const ev of todo) {
+    if (budget.left() < 40000) break;
+    /* 1 媒体ぶんの証拠を 1 ブロックに。⚠ **記事全文は送らない**——手元にあるのは
+       RSS の要約だけで、それがそのまま上限である（§15 の「無断の全文 warehouse」を
+       しないというのは、送らないことでもある）。 */
+    const byOutlet = new Map();
+    for (const a of ev.members) {
+      const prev = byOutlet.get(a.source_id) || [];
+      prev.push(String(a.title || "") + ". " + String(a.description || ""));
+      byOutlet.set(a.source_id, prev);
+    }
+    const user = "Event: " + ev.title + "\n\n" +
+      [...byOutlet.entries()].map(([id, texts]) => "[" + id + "]\n" + texts.join("\n")).join("\n\n");
+
+    let out;
+    try {
+      out = await callProvider(cfg, SUMMARY_SYS, user, AbortSignal.timeout(Math.min(60000, budget.left())));
+    } catch (e) {
+      lastError = String((e && e.message) || e).slice(0, 200);
+      console.warn("[news-ingest] summarise:", lastError);
+      continue;
+    }
+    tin += out.usage.in; tout += out.usage.out;
+    usedModel = out.model || cfg.model;
+
+    let parsed = null;
+    try {
+      const txt = (out.text || "").replace(/```json/gi, "").replace(/```/g, "");
+      const lo = txt.indexOf("{"), hi = txt.lastIndexOf("}");
+      if (lo < 0 || hi < lo) { note("no_json"); rejected++; continue; }
+      parsed = JSON.parse(txt.slice(lo, hi + 1));
+    } catch (_) { note("unparsable"); rejected++; continue; }
+
+    const arr = Array.isArray(parsed && parsed.sentences) ? parsed.sentences : [];
+    if (arr.length < 2 || arr.length > 4) { note("sentence_count"); rejected++; continue; }
+
+    /* ⚠⚠⚠ **ここが門である。** 1 文でも根拠を確かめられなければ、この Event の返答は
+       丸ごと捨てる。部分採用しない。 */
+    const haystack = new Map();
+    for (const [id, texts] of byOutlet) haystack.set(id, normSpan(texts.join(" ")));
+    const kept = [];
+    let bad = "";
+    for (const s of arr) {
+      const text = typeof (s && s.text) === "string" ? s.text.trim() : "";
+      const outlet = typeof (s && s.outlet) === "string" ? s.outlet.trim() : "";
+      const span = typeof (s && s.span) === "string" ? s.span.trim() : "";
+      if (!text || text.length > 400) { bad = "bad_text"; break; }
+      if (!haystack.has(outlet)) { bad = "unknown_outlet"; break; }
+      if (normSpan(span).length < SPAN_MIN) { bad = "span_too_short"; break; }
+      if (!haystack.get(outlet).includes(normSpan(span))) { bad = "span_not_found"; break; }
+      kept.push({ text, outlet, span });
+    }
+    if (bad) { note(bad); rejected++; continue; }
+    /* 4 文すべてが同じ 1 媒体から来たなら、それは「まとめ」ではない。 */
+    if (new Set(kept.map((k) => k.outlet)).size < 2) { note("single_outlet"); rejected++; continue; }
+
+    const { error: upErr } = await db.from("news_events").update({
+      summary: kept.map((k) => k.text).join(" "),
+      summary_version: SUMMARY_VERSION,
+      summary_evidence: {
+        v: SUMMARY_VERSION, fp: ev.fp, by: "llm",
+        provider: cfg.provider, model: usedModel,
+        sentences: kept,
+        outlets: [...byOutlet.keys()],
+        built_at: new Date().toISOString(),
+      },
+    }).eq("id", ev.id);
+    if (upErr) { lastError = "update: " + upErr.message; note("db_update"); continue; }
+    written++;
+  }
+
+  return {
+    ms: Date.now() - t0, summaries: written, considered: todo.length,
+    rejected, reject_reasons: rejectReasons, error: lastError,
+    llm_tokens_in: tin, llm_tokens_out: tout,
+    estimated_cost_usd: Math.round(((tin * PRICE.in + tout * PRICE.out) / 1e6) * 1e6) / 1e6,
+    provider: cfg.provider, model: usedModel, configured_model: cfg.model,
+  };
+}
+
+/* ── 段 6: 保持期間 ──────────────────────────────────────────────────────
 /* ── 段 7: 保持期間 ──────────────────────────────────────────────────────
  *  docs/NEWS-EVENTS.md §8 / CONSTITUTION.md §5:
  *    記事 72 時間 ／ Event 30 日 ／ ★保存した Event は無期限 ／ 判定の記録 30 日。
@@ -1257,8 +1448,9 @@ Deno.serve(async (req) => {
      ⚠ 順序はここが決める——`locate` は `fetch` の**後**（この run で届いた記事も AI に
      掛ける）で `assign` の**前**（Event は AI の座標で組まれ、代表地点もそれで決まる）、
      `embed` は `assign` より**前**（埋め込みが無ければ第 2 段は何も足せない）、
-     `link` は `assign` より**後**（新しくできた Event も対象にする）。 */
-  const ORDER = ["fetch", "locate", "embed", "assign", "link", "translate", "prune"];
+     `link` は `assign` より**後**（新しくできた Event も対象にする）、
+     `summarise` は `link` より**後**（結ばれる直前の Event を半分の記事で要約しない）。 */
+  const ORDER = ["fetch", "locate", "embed", "assign", "link", "summarise", "translate", "prune"];
   const want = Array.isArray(body.stages) && body.stages.length
     ? ORDER.filter((s) => body.stages.includes(s))
     : ORDER.slice();
@@ -1283,6 +1475,7 @@ Deno.serve(async (req) => {
     if (want.includes("embed")) result.embed = await stageEmbed(db, budget);
     if (want.includes("assign")) result.assign = await stageAssign(db, budget, relocated);
     if (want.includes("link")) result.link = await stageLink(db, budget);
+    if (want.includes("summarise")) result.summarise = await stageSummarise(db, budget);
     if (want.includes("translate")) result.translate = await stageTranslate(db, budget);
     if (want.includes("prune")) result.prune = await stagePrune(db);
   } catch (e) {
@@ -1294,6 +1487,7 @@ Deno.serve(async (req) => {
   /* ── 計測 (docs/NEWS-EVENTS.md §13) ── */
   const f = result.fetch || {}, g = result.assign || {}, t = result.translate || {}, p = result.prune || {};
   const L = result.locate || {};
+  const sm = result.summarise || {};
   try {
     await db.from("news_ingest_runs").insert({
       started_at: startedAt, finished_at: new Date().toISOString(), stages: want, ok,
@@ -1306,10 +1500,11 @@ Deno.serve(async (req) => {
          `notes.locate_omitted` が持つ。 */
       located_ai: L.located || 0, located_considered: L.considered || 0,
       translations: t.translations || 0,
-      /* ⚠ LLM の 3 列は**この run の合計**である（翻訳＋地点解析）。段ごとの内訳は notes。 */
-      llm_tokens_in: (t.llm_tokens_in || 0) + (L.llm_tokens_in || 0),
-      llm_tokens_out: (t.llm_tokens_out || 0) + (L.llm_tokens_out || 0),
-      estimated_cost_usd: Math.round(((t.estimated_cost_usd || 0) + (L.estimated_cost_usd || 0)) * 1e6) / 1e6,
+      /* ⚠ LLM の 3 列は**この run の合計**である（翻訳＋地点解析＋要約 (#R405)）。
+         段ごとの内訳は notes。片方だけを入れると「今日いくら使ったか」の計器が半分を見落とす。 */
+      llm_tokens_in: (t.llm_tokens_in || 0) + (L.llm_tokens_in || 0) + (sm.llm_tokens_in || 0),
+      llm_tokens_out: (t.llm_tokens_out || 0) + (L.llm_tokens_out || 0) + (sm.llm_tokens_out || 0),
+      estimated_cost_usd: Math.round(((t.estimated_cost_usd || 0) + (L.estimated_cost_usd || 0) + (sm.estimated_cost_usd || 0)) * 1e6) / 1e6,
       pruned_articles: p.pruned_articles || 0, pruned_events: p.pruned_events || 0,
       pruned_decisions: p.pruned_decisions || 0,
       timings: {
@@ -1332,6 +1527,13 @@ Deno.serve(async (req) => {
         resummarised_after_locate: g.resummarised_after_locate || 0,
         translate_skipped: t.skipped || null, translate_error: t.error || null,
         translate_rejected_wrong_script: t.rejected_wrong_script || 0,
+        /* ⚠⚠⚠ **捨てた数と理由を必ず残す。** 検証を通らなかった返答は無かったことに
+           なるので、ここに出さないと「要約が付かない」が「モデルが呼ばれていない」と
+           見分けられなくなる（#R334 の「黙って 0 件になる AI 経路」の形）。 */
+        summaries: sm.summaries || 0, summarise_considered: sm.considered || 0,
+        summarise_skipped: sm.skipped || null, summarise_error: sm.error || null,
+        summarise_rejected: sm.rejected || 0, summarise_reject_reasons: sm.reject_reasons || {},
+        summarise_ms: sm.ms || 0, summarise_model: sm.model || null,
         /* ⚙ 単価は推定であって請求ではない。使った単価を一緒に残すと、
            あとから「どの数字を信じていいか」を言える。 */
         cost_rate_usd_per_mtok: PRICE,

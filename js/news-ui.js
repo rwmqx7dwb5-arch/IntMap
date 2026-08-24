@@ -636,7 +636,15 @@ window.IntMapModules.newsUi=function(HOST){
         else { /* guest: keep a local list until they log in */ if(HOST.bookmarks.includes(item.link)){ HOST.bookmarks=HOST.bookmarks.filter(b=>b!==item.link); snapForget(item.link); } else { HOST.bookmarks.push(item.link); snapPut(item); } saveBookmarks(); if(HOST.mode==='saved')HOST.startNews(); else card.querySelector('.btn-bookmark').classList.toggle('active'); }
       };
       /* (#R11) Read article → open directly in the device's browser (reverted per request). */
-      card.querySelector('.btn-read').onclick=(e)=>{ e.stopPropagation(); const _u=IntMapSafe.url(item.link); if(_u) window.open(_u,'_blank','noopener'); };   /* (#R138 SEC) http(s)-only */
+      /* ⚠⚠⚠ (#R405) **この行は decorate() の**後**に走る。** 出来事のカードは「記事を読む」を
+         詳細の Coverage 節へ移すためにこのボタンを外すので、ここで無防備に `.onclick` を
+         書くと **null に代入して TypeError** になり、`appendNewsBatch` の forEach ごと落ちて
+         **News が丸ごと記事フィードへフォールバックする**（実測 2026-08-24: 画面には記事が
+         30 件並び、コンソールに «event mode unavailable … Cannot set properties of null» が
+         1 行出るだけ）。⚠ ソースの形を見る検査は全部緑だった——「外す行が在る」は
+         「外したあとも動く」ではない。⇒ 取れる保証が無い要素は、取れたときだけ配線する。 */
+      { const rb=card.querySelector('.btn-read');
+        if(rb) rb.onclick=(e)=>{ e.stopPropagation(); const _u=IntMapSafe.url(item.link); if(_u) window.open(_u,'_blank','noopener'); }; }   /* (#R138 SEC) http(s)-only */
       /* (#R142) Clicking the OUTLET NAME opens that outlet's Wikipedia page in the UI language (jp→ja subdomain). Uses
          Special:Search&go=Go so an exact title jumps straight to the article and a near-miss lands on search results
          instead of a 404 (publisher strings from RSS don't always match a Wikipedia title exactly). stopPropagation so
