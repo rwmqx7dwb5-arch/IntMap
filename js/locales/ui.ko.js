@@ -42,7 +42,6 @@ window.IntMapLang.define('ko', { ui: {
       ttlGridLabels:"격자와 라벨",
       ttlMapLayers:"지도와 레이어",
       ttlMapOptions:"지도 옵션",
-      ttlPinPos:"지도 핀 위치",
       ttlMapTools:"지도 도구",
       ttlMeasureDA:"거리·면적 측정",
       ttlMeasureTools:"측정 도구",
@@ -75,7 +74,6 @@ window.IntMapLang.define('ko', { ui: {
       spRunway:"활주로", spGarrison:"주둔 부대", spOperator:"운영자", spEstd:"설립", spAircraft:"항공기", spType:"종류", spCapacity:"수용력", spDepth:"수심", spOutput:"생산량", spReserves:"매장량",
       flat:"평면", globe:"지구본", threeD:"⛰️ 3D", gridBtn:"🌐 격자", gridLayer:"🌐 격자 및 좌표", widgetsBtn:"위젯", lblTempUnit:"온도", tempBoth:"°C + °F", tempC:"°C만", tempF:"°F만", measureBtn:"📏 측정", measureMenuBtn:"측정", measureDistBtn:"📏 거리 / 면적", areaBtn:"📐 면적", drawBtn:"✏️ 그리기", vol3dBtn:"🧊 3D 부피", droneBtn:"🛸 드론", radiusBtn:"⭕ 반경", objectsBtn:"🗂 객체", mScreenshot:"지도 스크린샷", shareMenuBtn:"공유", shareLinkBtn:"공유 / 링크 복사", layersBtn:"레이어 ▾",
       ctxDropPin:"핀 놓기", ctxMeasureFrom:"측정 시작", ctxPostHere:"커뮤니티에 게시", ctxDistFrom:"이전 핀으로부터의 거리", ctxCopy:"좌표 복사", ctxClearPins:"모든 핀 삭제", ctxThisPoint:"이 지점", coords:"좌표", depth:"수심", climate:"기후", tlToday:"오늘", tlTitle:"Chronos", tlMachine:"Chronos", tl10y:"−10년", tl5y:"−5년", tlNow:"현재",
-      lblPinMode:"뉴스 핀 위치", pinModeLoc:"사건 발생지", pinModePub:"언론사 소재지",
       lyrEEZ:"배타적 경제수역 / 12해리", lyrShips:"실시간 선박", lyrPlanes:"실시간 항공기", lyrSats:"실시간 위성", lyrThermal:"열 이상 (산불)", planesZoomHint:"확대하면 실시간 항공기를 불러옵니다", planesAreaHint:"확대하세요 — 실시간 항공기는 화면 중앙 영역만 표시됩니다", poiLabels:"장소, 상점 및 시설", shipsZoomHint:"확대하면 실시간 선박을 불러옵니다", aisNoKey:"실시간 선박에는 무료 AISstream.io API 키가 필요합니다 — 설정에서 추가하세요.", aisKeyLabel:"실시간 선박 (AISstream 키)", aisKeyHint:"aisstream.io에서 무료 키를 받아 여기에 붙여넣으면 실시간 선박이 표시됩니다. 이 브라우저에만 저장됩니다.",
       filtCiv:"민간", filtMil:"군용", filtAll:"전체", trafficFilter:"필터", lyrTime:"레이어 날짜", thermWin24:"최근 24시간", thermWin48:"최근 48시간", thermWin72:"최근 72시간",
       commAdd:"+ 새 글", commAddArmed:"지도를 클릭해 핀을 놓으세요", commTitle:"제목", commBody:"관찰, 질문 또는 견해를 공유하세요...", commPost:"게시", commCancel:"취소", commEmpty:"아직 글이 없습니다. 「+ 새 글」을 눌러 대화를 시작하세요.", commComment:"댓글", commLocate:"지도에서 보기", commDelete:"삭제", commReply:"답글", commWrite:"댓글 작성...", commPostNew:"새 글", commPlacedAt:"위치", commSortHot:"인기", commSortNew:"최신", commSortTop:"베스트", commSearchPh:"글 검색…", commInView:"화면 내", commCat:"분류", commCatAll:"전체", commEdit:"수정", commEdited:"수정됨", commEditPost:"글 수정", commSaveEdit:"변경 사항 저장", commNoMatch:"필터와 일치하는 글이 없습니다.", borders:"국경", coastline:"해안선·호안선", compare:"비교", compareEmpty:"국가 행을 탭해 선택하고 비교하세요.", coCompareEmpty:"기업 행을 탭해 선택하고 비교하세요.", compareView:"비교 보기", compareClear:"지우기", back:"뒤로", deletePin:"삭제",
@@ -86,7 +84,7 @@ window.IntMapLang.define('ko', { ui: {
       aiNoKey:"먼저 설정 → AI 기능에서 API 키를 추가하세요.", aiNoVision:"이 모델은 이미지를 읽을 수 없습니다. GPT-4o, Claude 3.5 Sonnet 또는 Gemini 1.5 Pro를 선택하세요.",
       aiChromeUnavail:"여기서는 Chrome 내장 AI를 사용할 수 없습니다. 기기 내 AI가 활성화된 Chrome 127 이상을 쓰거나 다른 제공처를 선택하세요.",
       aiThinking:"AI가 분석 중…", aiError:"AI 요청 실패", aiCopy:"복사", aiCopied:"복사됨 ✓", aiClose:"닫기", aiRetry:"다시 시도",
-      aiGeoBtn:"✨ 모든 뉴스를 AI로 위치 지정", aiGeoBtnSub:"✨ 사건 위치를 AI로 지정", aiGeoBtnPub:"✨ 언론사 위치를 AI로 지정", aiTranslateTitles:"제목 번역", aiGeoBusy:"위치 지정 중…", aiGeoNone:"위치를 지정할 항목이 없습니다.", aiGeoDone:"{n}건의 기사 위치를 지정했습니다", aiGeoErr:"지오코딩 실패", aiTransBusy:"번역 중…", aiTransDone:"{n}개의 제목을 번역했습니다", aiTransNone:"제목이 이미 사용 언어입니다.",
+      aiGeoBtn:"✨ 모든 뉴스를 AI로 위치 지정", aiGeoBtnSub:"✨ 사건 위치를 AI로 지정", aiTranslateTitles:"제목 번역", aiGeoBusy:"위치 지정 중…", aiGeoNone:"위치를 지정할 항목이 없습니다.", aiGeoDone:"{n}건의 기사 위치를 지정했습니다", aiGeoErr:"지오코딩 실패", aiTransBusy:"번역 중…", aiTransDone:"{n}개의 제목을 번역했습니다", aiTransNone:"제목이 이미 사용 언어입니다.",
       lblNewsLang:"뉴스 언어", newsLangUi:"현재 언어만", newsLangMulti:"모든 언어 (제목 자동 번역)", lblAiLocate:"AI 위치 분석", aiLocManual:"수동 (버튼)", aiLocAuto:"모든 뉴스에 자동 적용",
       aiTranslate:"번역", aiShowOriginal:"원문", aiTransNoText:"번역할 본문이 없습니다 — 웹 보기를 사용해 보세요.",
       aiSumBtn:"이 지역을 AI로 요약", popInArea:"이 지역의 인구", popCalcing:"인구 계산 중…", popFail:"인구 조회 실패 — 다시 시도하세요.", newsInArea:"이 지역의 뉴스", elevProfile:"고도 단면", finalizeMeas:"지도에 남기기", aiSumTitle:"지역 브리핑", aiSumSub:"선택 지역 내 뉴스 핀 {n}개", aiSumNoArea:"먼저 영역을 그리거나 원을 놓으세요.", aiSumNoNews:"이 지역에는 뉴스 핀이 없습니다.",
@@ -6073,4 +6071,10 @@ window.IntMapLang.define('ko', { ui: {
   "This is a published statement, not silence: USGS monitors this volcano and its current level is the one above. The date is when that level was last issued — it stands until USGS changes it.": "이것은 공표된 발표이며, 침묵이 아닙니다. USGS는 이 화산을 감시하고 있으며 현재 수준은 위에 표시된 것입니다. 날짜는 그 수준이 마지막으로 발표된 날입니다 — USGS가 변경할 때까지 그대로 유효합니다.",
   "map year": "지도의 연도",
   "{n} volcanoes shown": "{n}곳 표시",
+  /* (#R416) News UI — js/news-ui.js (the mobile pin sheet) and js/news-events.js
+     (the category chips). ⚠ "All topics" is the CATEGORY axis: the scope chip sitting
+     beside it on the same row is "All" = 「전체」, so this one must NOT be that word.
+     One row, two controls, one word would read as one control. */
+  "All topics": "모든 분류",
+  "Open event": "사건 열기",
 } });

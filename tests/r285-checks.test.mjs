@@ -63,7 +63,7 @@ const EXPECTED_CALLS = {
   'js/analysis-research.js': 2,      /* place brief, ask-about-this-point */
   'js/app-body.js': 2,               /* satellite-image comparison, area news summary */
   'js/atlas-geo-resolve.js': 2,      /* place verification, region resolution */
-  'js/news-ui.js': 3,                /* publisher HQ, headline subject, article translation */
+  'js/news-ui.js': 2,                /* headline subject, article translation. (#R416) the third — publisher HQ — went with the Subject/Publisher pin mode */
   'supabase/functions/monitor-run/index.ts': 1,
   'supabase/functions/refresh-news/index.ts': 1,
   /* ⚠ (#R397) THIS ROW WAS MISSING FOR FORTY-ONE ROUNDS. #R351 added a `personaPrompt("translating
