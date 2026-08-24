@@ -526,10 +526,19 @@ window.IntMapModules.placeLabels=function(HOST){
        it follows the same "Place names" switch, the same language expression and the same light/dark
        rule. It also hides while the time machine is on a past year, for the reason ofm-country does
        (#R103): today's prefectures over a 1900 map are the modern claim the era labels replace. */
+    /* ══ ⚠ (#R427) …AND THE SETTLEMENT NAMES TRAVEL IN TIME TOO ══════════════════════════════════
+       「都市名ラベルも同じ要領で（Chronos に）対応するように。」 The era name is not a second layer:
+       js/hist-cities.js wraps THIS expression in a `match` whose default is this expression, so a
+       city in the record is drawn with the name it carried in the year on the clock, at the tile's
+       own position, and every other label on Earth comes out byte-identical.
+       ⚠ `ofm-city` ONLY — the record's collision reasons are written against that layer's
+       `class in [city, town]` filter; see the header of js/hist-cities.js. */
     ['ofm-country','ofm-admin1','ofm-city','ofm-other'].forEach(id=>{ if(!GE().layers.has(id)) return;
       const _showThis=((id==='ofm-country'||id==='ofm-admin1')&&_travelingLbl)?false:show;
       GE().layers.setLayout(id,'visibility',_showThis?'visible':'none');
-      GE().layers.setLayout(id,'text-field',nameExpr);
+      let _fld=nameExpr;
+      if(id==='ofm-city'){ try{ const HC=window.IntMapHistCities; if(HC) _fld=HC.textField(nameExpr,HOST.lang,mode); }catch(_){ _fld=nameExpr; } }
+      GE().layers.setLayout(id,'text-field',_fld);
       GE().layers.setLayout(id,'text-font',fontExpr);   /* (#R253) the face follows the label's own language */
       /* dark map / satellite → light text; light map → dark text. */
       const lightText = sat || isDark;
