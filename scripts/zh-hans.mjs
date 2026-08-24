@@ -263,9 +263,9 @@ function build(job) {
   const keys = [];
   body = body.replace(/\n(\s{2,})('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")(\s*:)/g, (m, ind, key, tail) => {
     keys.push(key);
-    return '\n' + ind + ' K' + (keys.length - 1) + ' ' + tail;
+    return '\n' + ind + '\u0000K' + (keys.length - 1) + '\u0000' + tail;
   });
-  body = toHans(body).replace(/ K(\d+) /g, (m, i) => keys[+i]);
+  body = toHans(body).replace(/\u0000K(\d+)\u0000/g, (m, i) => keys[+i]);
   body = body.replace(job.from, job.to);
   return HEAD.split('UI STRINGS').join(job.what)
     .split('js/locales/ui.zh.js').join(job.src)

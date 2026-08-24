@@ -1301,6 +1301,8 @@
     .ev-diff-k{ flex:0 0 auto; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.2px; padding-top:2px; min-width:74px; }
     .ev-diff-v{ flex:1 1 auto; min-width:0; font-size:12.5px; line-height:1.6; color:var(--text-main); }
     .ev-diff-src{ color:var(--text-muted); font-size:11.5px; }
+    /* (#R394) 何についての数かは、原文の前後の語で示す——要約も言い換えもしない。 */
+    .ev-diff-ctx{ font-size:11px; line-height:1.5; color:var(--text-muted); margin:1px 0 5px; }
     .ev-cov{ padding:9px 0; border-bottom:1px solid rgba(128,128,128,0.1); }
     .ev-cov:last-child{ border-bottom:none; }
     .ev-cov.dup{ opacity:0.62; }

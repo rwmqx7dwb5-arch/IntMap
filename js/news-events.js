@@ -22,6 +22,7 @@
  *    媒体間で食い違っているとき、その**原文の断片をそのまま**並べて出典を付ける。
  *    IntMap は「どちらが正しいか」を言わない。「両者はこう言っている」だけを言う。
  * ==========================================================================*/
+import { makeNewsClaims } from './news-claims.js';   /* (#R394) 数量の相違の規則 — ブラウザの外からも測れる 1 本 */
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.newsEvents = function (HOST) {
   const L = window.IntMapLang.pick(() => HOST.lang);
@@ -160,66 +161,24 @@ window.IntMapModules.newsEvents = function (HOST) {
   }
 
   /* ── 数量の相違 ─────────────────────────────────────────────────────────
-     ⚠ **「主張が違う」を推定しない。** 取り出すのは、原文に**そのまま書いてある数量**だけ。
-       死者数・負傷者数・金額・割合・期間——同じ種類の数量に 2 つ以上の値があり、それを
-       言っているのが**別の媒体系列**のときにだけ「相違」と呼ぶ。
-     ⚠ 同じ媒体の続報どうしの食い違い（速報 3 人 → 続報 5 人）は相違ではなく**更新**なので、
-       系列が同じ組は落とす。 */
-  const NUM_KINDS = [
-    ['dead', /\b(?:at least|more than|over|about|around|nearly|up to)?\s*([\d][\d,]*)\s+(?:people\s+)?(?:killed|dead|died|deaths?|fatalities)\b/i,
-      LA('killed', '死者', 'Todesopfer', 'погибших', 'muertos')],
-    ['injured', /\b(?:at least|more than|over|about|around|nearly|up to)?\s*([\d][\d,]*)\s+(?:people\s+)?(?:injured|wounded|hurt)\b/i,
-      LA('injured', '負傷者', 'Verletzte', 'раненых', 'heridos')],
-    ['missing', /\b(?:at least|more than|over|about|around|nearly|up to)?\s*([\d][\d,]*)\s+(?:people\s+)?missing\b/i,
-      LA('missing', '行方不明', 'Vermisste', 'пропавших', 'desaparecidos')],
-    ['money', /([$€£¥])\s?([\d][\d,.]*)\s*(billion|million|trillion|bn\b|tn\b)?/i,
-      LA('amount', '金額', 'Betrag', 'сумма', 'importe')],
-    ['percent', /\b([\d][\d.]*)\s?(?:%|percent|per cent)\b/i,
-      LA('percentage', '割合', 'Prozentsatz', 'процент', 'porcentaje')],
-  ];
-  const MULT = { billion: 1e9, bn: 1e9, million: 1e6, trillion: 1e12, tn: 1e12 };
-
-  function quantities(text) {
-    const out = [];
-    const t = String(text || '');
-    for (const [kind, re, label] of NUM_KINDS) {
-      const m = t.match(re);
-      if (!m) continue;
-      const raw = (m[1] || '').replace(/,/g, '');
-      let v = parseFloat(kind === 'money' ? (m[2] || '').replace(/,/g, '') : raw);
-      if (!isFinite(v)) continue;
-      if (kind === 'money' && m[3]) v *= (MULT[String(m[3]).toLowerCase().replace(/\b/g, '')] || 1);
-      out.push({ kind, label, value: v, text: m[0].trim() });
-    }
-    return out;
-  }
-
-  /* 見出し＋要約から、その Event で媒体間の食い違いになっている数量だけを返す。 */
+     ⚠⚠ **規則そのものはここに無い。** #R386 はこの factory の奥に書いており、
+       `HOST` を要求するので**ブラウザの外からは誰も呼べなかった**——「効いている」が
+       意見でしかない状態である（#R340 が `research.events` で直したのと同じ形）。
+       規則は js/news-claims.js にあり、`scripts/news-events-eval.mjs --diffs` が
+       本番のデータでそれを測る。ここに残すのは**ラベルの 9 言語**だけ。 */
+  const CLAIMS = makeNewsClaims();
+  const KIND_LABEL = {
+    dead: LA('killed', '死者', 'Todesopfer', 'погибших', 'muertos'),
+    injured: LA('injured', '負傷者', 'Verletzte', 'раненых', 'heridos'),
+    missing: LA('missing', '行方不明', 'Vermisste', 'пропавших', 'desaparecidos'),
+    money: LA('amount', '金額', 'Betrag', 'сумма', 'importe'),
+    percent: LA('percentage', '割合', 'Prozentsatz', 'процент', 'porcentaje'),
+  };
+  const quantities = (text) => CLAIMS.quantities(text);
   function differences(ev) {
-    const byKind = new Map();
-    for (const m of ev.members) {
-      for (const q of quantities((m.title || '') + ' — ' + (m.description || ''))) {
-        let g = byKind.get(q.kind);
-        if (!g) byKind.set(q.kind, (g = { label: q.label, claims: [] }));
-        g.claims.push({ value: q.value, text: q.text, source: m.sourceName, family: m.family, at: m.publishedAt });
-      }
-    }
-    const out = [];
-    for (const [kind, g] of byKind) {
-      const values = new Set(g.claims.map((c) => c.value));
-      if (values.size < 2) continue;
-      /* ⚠ 別々の媒体系列が違う値を言っているときだけ。同じ系列の 2 本は「更新」である。 */
-      const fams = new Set();
-      const byValue = new Map();
-      for (const c of g.claims) {
-        fams.add(c.family);
-        if (!byValue.has(c.value)) byValue.set(c.value, c);
-      }
-      const famOfValue = new Set([...byValue.values()].map((c) => c.family));
-      if (fams.size < 2 || famOfValue.size < 2) continue;
-      out.push({ kind, label: g.label, claims: [...byValue.values()].sort((a, b) => a.value - b.value) });
-    }
-    return out;
+    return CLAIMS.differences((ev.members || []).map((m) => ({
+      title: m.title, description: m.description, source: m.sourceName, family: m.family,
+    }))).map((d) => ({ ...d, label: KIND_LABEL[d.kind] || d.kind }));
   }
 
   /* ── DB の行 → 一覧の項目 ───────────────────────────────────────────────
@@ -259,6 +218,17 @@ window.IntMapModules.newsEvents = function (HOST) {
       _title: title, _pub: outlets[0] || '',
     };
     try { HOST.applyPinMode(analysis); } catch (_) { analysis.loc = subjectLoc; analysis.name = row.rep_place_name_en || ''; analysis.mapped = subjectLoc ? true : false; }
+    /* ⚠⚠⚠ **地点が解決していない出来事に、地点を持たせない。** `applyPinMode` は記事モード
+       のために、解決できなかった項目へ `hashLocFromString()` の**擬似座標**を与える
+       （`mapped=false`・「場所不明」の紫チップ付き）。実測 (2026-08-24・本番): active 1,069
+       件のうち **330 件（30.9%）が座標を持たない**ので、そのまま使うと地図の 3 割が
+       「そこで起きていない出来事」のピンになる。docs/NEWS-EVENTS.md §9 が
+       「正直に出すもの: 場所不明」と決めているのは、**印を付けて出す**ことであって
+       **在りもしない座標を配る**ことではない。
+       ⚠ 記事モードは 1 ビットも変えない——ここは Event の項目を作る場所だけである。
+       ⚠ 消えるのはピンだけ。カードは一覧に残り、チップは「場所不明」と言い、
+         `state().unplacedCount` が何件かを数える。 */
+    if (!subjectLoc) { analysis.loc = null; analysis.mapped = false; }
 
     const firstAt = row.first_published_at || (members[0] && members[0].publishedAt) || '';
     const lastAt = row.last_article_at || firstAt;
@@ -452,7 +422,8 @@ window.IntMapModules.newsEvents = function (HOST) {
       for (const d of diffs) {
         html += '<div class="ev-diff-row"><span class="ev-diff-k">' + S(L.arr(d.label)) + '</span><div class="ev-diff-v">';
         for (const c of d.claims) {
-          html += '<div><b>' + S(c.text) + '</b> <span class="ev-diff-src">— ' + S(c.source) + '</span></div>';
+          html += '<div><b>' + S(c.text) + '</b> <span class="ev-diff-src">— ' + S(c.source) + '</span>'
+            + (c.context ? '<div class="ev-diff-ctx">…' + S(c.context) + '…</div>' : '') + '</div>';
         }
         html += '</div></div>';
       }
