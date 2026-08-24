@@ -139,11 +139,18 @@ export function makeAtlasViewSubject(CTX) {
       const inBox = !!(box && r.lng >= box.w && r.lng <= box.e && r.lat >= box.s && r.lat <= box.n);
       const d = haversineKm(centre, r);
       if (!inBox && !(d <= Math.max(spanKm, 25)) && !(d <= reach * 0.25)) continue;
-      ok.push({ r: r, reach: reach, d: inBox ? 0 : d, inBox: inBox });
+      ok.push({ r: r, reach: reach, d: d, inBox: inBox });
     }
     if (!ok.length) return null;
-    /* nearest wins; the more specific of two equally close rows breaks the tie */
-    ok.sort((a, b) => (a.d - b.d) || (b.reach - a.reach ? a.reach - b.reach : 0));
+    /* ⚠⚠⚠ IN-BOX IS A SORT KEY, NOT A DISTANCE OF ZERO. This collapsed every row inside the frame to
+       `d = 0`, which threw away exactly the information 「nearest wins」 needs — and MEASURED on
+       production, a view of the whole of Japan at z=5 was told 「This is where Japan meets East China
+       Sea」. Both the Sea of Japan (452 km away) and the East China Sea (1,501 km) have their label
+       points inside that frame, so both scored 0, both are rank z=3 so the reach tie-break was equal
+       too, and the winner was decided by which row js/tables.js happens to list first.
+       ⇒ a row inside the frame still beats one outside it, and among either group the real distance
+       decides. The most specific of two equally close rows breaks what is left. */
+    ok.sort((a, b) => (Number(b.inBox) - Number(a.inBox)) || (a.d - b.d) || (a.reach - b.reach));
     const hit = ok[0];
     return { name: hit.r.name, kind: waterKind(hit.r.en != null ? hit.r.en : hit.r.name),
              z: hit.r.z, km: Math.round(hit.d) };
