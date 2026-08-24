@@ -451,6 +451,12 @@ RLS・grant・運用者 RPC の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)�
 サーバー専用**（クライアントのバンドルに 1 バイトも入らない）。
 
 表示側は **`js/news-events.js`**（`IntMapLazy` の `newsEvents`。起動経路には入らない）。
+**降りてくるのは News 面が開かれたときだけ**——起動時と 180 秒ごとの取得は
+`fetchData({background:true})` で、まだ誰も訊いておらず News/Saved も出ていなければ**何もせずに
+戻る**。開くと `startNews()` が掛け金付きで 1 度だけ取得を起こす。⚠ `setMode()` は `fetchData()` を
+呼ばない（`renderUI()` だけ）ので、この掛け金が無いとタブは「読み込み中」のまま止まる。
+両方の半分——起動時は降りてこない／開けば降りてきてカードになる——を `tests/r402.spec.js` が
+本物のブラウザで測る。
 `HOST.globalData` に**記事モードと同じ形の項目**を入れ、`_event` にだけ出来事固有の事実を足す
 ので、既存の描画・ピン・無限スクロール・期間フィルタがそのまま動く。カードは `.news-item` に
 カテゴリ・`Updated` の印・`N sources` の 3 つを足したもので、詳細は既存の `#news-reader-pane`
