@@ -2,7 +2,8 @@
 #  IntMap · ONE MACHINE'S SHARE OF ONE TIER OF THE BROWSER SUITE  (#R203)
 # ------------------------------------------------------------------------------------------------
 #  The recipe below used to live inline in ci.yml's `browser` job. #R203 split the suite into the
-#  CORE tier (the gate on every PR) and the DEEP tier (nightly + after every merge), which needs the
+#  CORE tier (the gate on every PR) and the DEEP tier (the nightly schedule + the dispatch button;
+#  #R203 also put it on push and #R207 took it back off), which needs the
 #  identical ten steps with a different tier, pool and shard count — and the whole reason this
 #  repository packs by measured time rather than by regex is that the moment a rule has two owners,
 #  the two disagree (#R195, #R178 lesson ⑥). So it is a composite action with the tier as an input,

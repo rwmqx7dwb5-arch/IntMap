@@ -10,7 +10,8 @@
  *  not a third-party network answered this minute. These three cannot be: they need real aircraft
  *  from a real provider. Putting them in the gate would make a push fail when adsb.lol has a bad
  *  afternoon, and a gate that fails for reasons the commit did not cause is a gate people learn to
- *  ignore. They run nightly and after every merge instead, where a red is worth reading.
+ *  ignore. They run on the nightly schedule and on the dispatch button instead — never on the
+ *  merge (#R207) — where a red is worth reading.
  *
  *  ⚠ THE TIER IS EARNED BY THE MEASUREMENT, NOT BY THE NAME. scripts/tiers.mjs treats an UNLISTED
  *  spec as core (`!(d[n] > CORE_MAX_S)` is true when d[n] is undefined), so this file's measured
