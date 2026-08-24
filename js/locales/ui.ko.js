@@ -6078,4 +6078,10 @@ window.IntMapLang.define('ko', { ui: {
      One row, two controls, one word would read as one control. */
   "All topics": "모든 분류",
   "Open event": "사건 열기",
+  "Seven seas (open ocean)": "일곱 바다(외해)",
+  "Eurasia": "유라시아",
+  "Middle East": "중동",
+  "South Asia": "남아시아",
+  "Southeast Asia": "동남아시아",
+  "East Asia": "동아시아",
 } });

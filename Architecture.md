@@ -1220,6 +1220,22 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   ⚠ **窓を持たない後継国もある**——モルドバは 1940 年までルーマニア領であって独立国では無かったので、
   窓を与えれば存在しない国が一覧に出る。窓は「この後継国はそのとき**自分の国**だった」の意であって、
   「この国家がその土地を持っていなかった」の意ではない。
+- ⚠ **国名の下のサブ行（`.stat-sub` ＝ `region / capital`）の region は、産地が2つある。**
+  一覧の行と、行をダブルクリックして開く国詳細カードの Region 行は、どちらも
+  `js/countries-ui.js` の `_regionName()`（`pickArgs()` の5引数＋4言語の inline 表）を通る。
+  表の鍵は**2つの語彙の和集合**で、片方だけでは足りない:
+    · **Natural Earth の CONTINENT ＝ 8種**。7大陸に加えて `Seven seas (open ocean)` があり、
+      これは既定の起動が読む `ne_110m` で **ATF（フランス領南方・南極地域）**が持つ実在の行の値。
+      `ne_50m` / `ne_10m` ではモルディブ・モーリシャス・セーシェル・セントヘレナ・BIOT・
+      南ジョージア・ハード島・クリッパートンも同じ値を持つ。
+    · **`js/history.js` の `STATES` が持つ準大陸の語彙** ＝ `Eurasia` / `Middle East` /
+      `South Asia` / `Southeast Asia` / `East Asia`。大陸は1つも含まない。
+  ⚠ **表に無い値は生の英語のまま9言語で出る**（`_regionName()` は引数をそのまま返す）ので、
+  `tests/r424-checks.test.mjs` ①② が「`js/history.js` が宣言する `region:` の literal 全部」と
+  「Natural Earth の8種」の両方が鍵になっていることを検査し、④ が `js/lang-registry.js` と
+  4本の inline 表を**実行して** 9言語ぶんの解決結果を確かめる。
+  ⚠ **首都は地名なので訳さない**——現代の行は `CAPITAL[code]`（«Washington, D.C.»）、歴史の行は
+  `_STINFO`（«Tokyo»）で、どちらも英語のまま出る。サブ行で訳されるのは region だけ。
 - **両大戦の日ごとの勢力**（`js/war-fronts.js`・レイヤー行は **`dl-ww1` と `dl-ww2` の2本**・
   どちらも既定 OFF）。その日の**支配（面）・戦線（線）・進行中の作戦（点と名前）**を描く。
   面は保存していない——**戦線の線で国の輪郭を切って導く**（`js/war-geom.js`）ので、線と面が

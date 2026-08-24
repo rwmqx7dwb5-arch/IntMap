@@ -6088,4 +6088,10 @@ window.IntMapLang.define('fr', { ui: {
      One row, two controls, one word would read as one control. */
   "All topics": "Toutes les catégories",
   "Open event": "Ouvrir l’événement",
+  "Seven seas (open ocean)": "Sept mers (océan ouvert)",
+  "Eurasia": "Eurasie",
+  "Middle East": "Moyen-Orient",
+  "South Asia": "Asie du Sud",
+  "Southeast Asia": "Asie du Sud-Est",
+  "East Asia": "Asie de l'Est",
 } });
