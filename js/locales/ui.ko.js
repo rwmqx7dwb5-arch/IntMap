@@ -5418,14 +5418,31 @@ window.IntMapLang.define('ko', { ui: {
   'Times come from the map’s clock ({year}), not from today — live timetables do not cover it.': '시각은 오늘이 아니라 지도의 시계({year}년)를 따릅니다 — 실시간 시간표는 그 시점을 다루지 않습니다.',   /* routing-time.js (#R347) */
   'Times are calculated from the map’s clock ({year}), not from today.': '시각은 오늘이 아니라 지도의 시계({year}년)를 기준으로 계산합니다.',   /* routing-time.js (#R347) */
   'Traffic data was unavailable — this is the standard travel time.': '교통 정보를 가져올 수 없어 표준 소요 시간을 표시합니다.',   /* routing-cards.js (#R347) */
+  '1 day': '1일',   /* war-layer.js (#R409) */
+  '15 days': '15일',   /* war-layer.js (#R409) */
+  '5 days': '5일',   /* war-layer.js (#R409) */
+  'casualties': '사상자',   /* war-layer.js (#R409) */
+  'Casualties and prisoners': '사상자·포로',   /* war-layer.js (#R409) */
+  'Commonly cited totals, both sides together.': '모두 일반적으로 인용되는 양측 합계 수치입니다.',   /* war-layer.js (#R409) */
   'Company rule in India': '동인도 회사 통치하의 인도',   /* war-fronts.js / history.js (#R349) */
   'Could not load the war data': '전쟁 데이터를 불러오지 못했습니다',   /* war-fronts.js / history.js (#R349) */
+  'First day': '첫날',   /* war-layer.js (#R409) */
+  'forces': '병력',   /* war-layer.js (#R409) */
+  'Forces engaged': '투입 병력',   /* war-layer.js (#R409) */
   'Front lines': '전선',   /* war-fronts.js / history.js (#R349) */
-  'Front lines are shown for the dates the record gives a position for, and hold until the next one — the date beside each line is the date it is from. Country outlines: CShapes 2.0.': '전선은 기록이 위치를 전하는 날짜에 대해서만 표시하며, 다음 날짜까지 유지됩니다 — 선 옆의 날짜가 그 선의 날짜입니다. 국경: CShapes 2.0.',   /* war-fronts.js / history.js (#R349) */
   'line of': '전선 날짜',   /* war-fronts.js / history.js (#R349) */
+  'Match the time machine': '타임머신에 맞추기',   /* war-layer.js (#R409) */
+  'On this day of the war': '이 날의 전황',   /* war-layer.js (#R409) */
+  'One day back': '하루 이전으로',   /* war-layer.js (#R409) */
+  'One day forward': '하루 이후로',   /* war-layer.js (#R409) */
   'Second French Empire': '프랑스 제2제국',   /* war-fronts.js / history.js (#R349) */
-  'The clock is not inside either war. Move Chronos to a date between 1914 and 1945, or jump straight in:': '현재 시각은 두 대전의 기간 안에 있지 않습니다. Chronos를 1914–1945년의 날짜로 옮기거나, 아래에서 바로 이동하세요:',   /* war-fronts.js / history.js (#R349) */
-  'World wars (day by day)': '양차 세계 대전(일별)',
+  'Step': '간격',   /* war-layer.js (#R409) */
+  'Symbols': '기호',   /* war-layer.js (#R409) */
+  'The slider moves this layer only — it never moves the time machine. Moving the time machine brings this layer with it. Front lines are shown for the dates the record gives a position for, and hold until the next one: the date beside each line is the date it is from.': '슬라이더는 이 레이어만 움직입니다 — 타임머신은 움직이지 않습니다. 반대로 타임머신을 움직이면 이 레이어도 따라옵니다. 전선은 기록이 위치를 전하는 날짜에 대해서만 표시하며, 다음 날짜까지 유지됩니다: 선 옆의 날짜가 그 선의 날짜입니다.',   /* war-layer.js (#R409) */
+  'This layer draws the days of one war. Move its slider, or jump to the first day:': '이 레이어는 한 전쟁의 나날을 그립니다. 아래 슬라이더를 움직이거나, 개전일로 이동하세요:',   /* war-layer.js (#R409) */
+  'World War I (day by day)': '제1차 세계 대전(일별)',   /* war-fronts.js war-layer.js (#R409) */
+  'World War II (day by day)': '제2차 세계 대전(일별)',   /* war-fronts.js war-layer.js (#R409) */
+  '{n} more running today': '이 밖에 {n}건이 진행 중',   /* war-layer.js (#R409) */
   "Colours are the issuing agency’s own — Japan’s are the JMA’s yellow / red / magenta / black, China’s the CMA’s four signal colours, and the rest the CAP awareness ladder. Tap a country for that agency’s exact scale.": "색상은 발표 기관 자체의 배색입니다 — 일본은 기상청의 노랑/빨강/자홍/검정, 중국은 기상국의 4색 예경보 신호, 그 밖은 CAP 등급입니다. 국가를 누르면 해당 기관의 정확한 등급이 나옵니다.",
   "Each agency’s ranks are mapped onto these four by IntMap. Two countries at the same step do NOT necessarily face the same danger — the warning systems themselves differ. Tap a country for its own agency’s scale.": "각 기관의 등급을 IntMap이 독자적으로 이 4단계로 환산한 것입니다. 같은 단계라도 두 나라의 위험도가 같다는 뜻이 아닙니다 — 경보 제도 자체가 다릅니다. 국가를 누르면 해당 기관의 등급이 나옵니다.",
   "Nothing in force in any connected service right now.": "접속 중인 어느 기관에도 현재 발표 중인 것이 없습니다.",

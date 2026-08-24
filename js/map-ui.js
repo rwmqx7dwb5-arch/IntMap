@@ -2126,6 +2126,15 @@ window.IntMapModules.viewHash=function(HOST){
       if(full){
         const lm=/[#&]l=([^&]+)/.exec(H);
         const want=lm?decodeURIComponent(lm[1]).split(','):[]; const wantSet=new Set(want);
+        /* ⚠ (#R409) A LINK THAT NAMES THE ROW THAT NO LONGER EXISTS OPENS THE TWO THAT REPLACED IT.
+           「WW1とWW2でレイヤーを分けろ。」 split `dl-wars` into `dl-ww1` and `dl-ww2`; every link
+           shared, bookmarked or restored from a session tab before that names the old id, and the
+           loop below resolves ids by getElementById — so without this it would silently open
+           nothing and then, one line further down, be treated as «not wanted» and close the rest.
+           Renaming a control is not a reason to break the links people already sent each other. */
+        if(wantSet.has('dl-wars')){ wantSet.delete('dl-wars');
+          for(const k of ['dl-ww1','dl-ww2']){ if(!wantSet.has(k)){ wantSet.add(k); want.push(k); } }
+          const i=want.indexOf('dl-wars'); if(i>=0) want.splice(i,1); }
         const DATASEL='input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, input[id^="wp-dl-"]:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked';
         const apply=()=>{
           /* ⚠ (#R225) A RETIRED KEY MUST STOP BEING READ, NOT MERELY STOP BEING WRITTEN. `activeLayers()` no
