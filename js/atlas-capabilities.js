@@ -255,7 +255,7 @@ export function makeAtlasCapabilities(HOST) {
          them — so a reader could press the buttons and Atlas could not, which is precisely the
          five-disagreeing-lists failure this file exists to end. `data.layerValues` already answers
          «how many volcanoes are on screen» and these two do not overlap it: one opens the record for
-         a NAMED volcano, the other narrows 1,214 dots to a question.
+         a NAMED volcano, the other narrows the catalog to a question.
          ⚠ THESE ROWS SIT ABOVE `dialog.answer` ON PURPOSE — tests/r347-checks ㉒ reads the `lazy`
          column with a regex that only matches rows ending in a comma, and the last row has none, so
          a row appended after it would never have its lazy module checked. */

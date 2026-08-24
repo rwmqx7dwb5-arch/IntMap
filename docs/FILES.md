@@ -457,7 +457,7 @@ railways/                         世界の鉄道（#R388 OpenStreetMap の実�
   ├ c/<lat>_<lon>.json.gz         5°セル。z≥6.5 で表示範囲ぶんだけ取得（路線名・事業者・OSM way id つき）
   ├ st/<lat>_<lon>.json.gz        駅・停留所。5°セル（z≥8・135,238件）
   └ index.json / st-index.json    存在するセルの一覧と gz バイト数（線／駅・404 を撃たないため）
-volcanoes_gvp.json                火山（Smithsonian GVP 完新世）
+volcanoes_gvp.json                火山（Smithsonian GVP 完新世＋観測機関が語っている座）
 crust1.bin.gz / .json             CRUST1.0（地殻構造）
 slab2.bin.gz / .json              Slab2（沈み込み帯のスラブ面）
 tectonics.bin.gz / .json          PB2002（プレート境界）

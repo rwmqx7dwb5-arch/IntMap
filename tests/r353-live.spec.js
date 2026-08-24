@@ -47,13 +47,20 @@ test('R353-live ① every rung of the status ladder is reachable, and each says 
 
   /* ⚠ EVERY FEED MUST HAVE REACHED A VERDICT. `loading` here means a request was started and never
      settled — which is the state the card would sit in for ever, saying "reading…". */
-  for (const k of ['usgs', 'vona', 'jma', 'weekly']) {
+  /* ⚠ (#R432) `usgsMon` IS IN THIS LIST NOW. #R395 added it as the fifth feed and this loop kept
+     naming four, so the feed that produced every one of the six unplaced volcanoes that broke this
+     test was the one nobody was watching settle. */
+  for (const k of ['usgs', 'usgsMon', 'vona', 'jma', 'weekly']) {
     expect(['ok', 'failed'], k + ' never settled: ' + feeds[k].state).toContain(feeds[k].state);
   }
   /* USGS HANS and the Smithsonian relay are the two that must answer for the ladder to mean
      anything; JMA's file is only present while Japan has a warning in force, and the VONA feed is a
      year's archive that is never empty. */
   expect(feeds.usgs.state).toBe('ok');
+  /* the monitored roster is a fixed list of the volcanoes USGS watches, not a list of events, so it
+     is never legitimately empty — and since #R432 the bundled catalog is built to cover it */
+  expect(feeds.usgsMon.state).toBe('ok');
+  expect(feeds.usgsMon.rows).toBeGreaterThan(0);
   expect(feeds.weekly.state).toBe('ok');
   expect(feeds.weekly.rows).toBeGreaterThan(0);
   expect(feeds.vona.state).toBe('ok');
@@ -66,13 +73,23 @@ test('R353-live ① every rung of the status ladder is reachable, and each says 
     if (!fc) return null;
     const have = new Set(fc.features.map((f) => f.properties.v));
     const idx = window.IntMapVolcano.statusIndex();
-    let placed = 0, unplaced = 0;
-    for (const v of idx.keys()) (have.has(v) ? placed++ : unplaced++);
-    return { placed, unplaced, total: idx.size };
+    let placed = 0, unplaced = 0; const missing = [];
+    for (const v of idx.keys()) {
+      if (have.has(v)) { placed++; continue; }
+      unplaced++; if (missing.length < 12) missing.push(v);
+    }
+    return { placed, unplaced, total: idx.size, missing, zero: idx.has(0),
+      bad: [...idx.keys()].filter((v) => !Number.isInteger(v) || v <= 0).length };
   });
   expect(joined, 'the layer file never arrived').not.toBeNull();
   expect(joined.total).toBeGreaterThan(0);
-  expect(joined.unplaced, 'a feed named a volcano the bundled catalog does not have').toBe(0);
+  /* ⚠ (#R432) A ROW THAT NAMES NO VOLCANO MUST NOT BECOME A KEY. `getMonitoredVolcanoes` carries
+     the observatory-wide bulletins («Alaskan Volcanoes», «Cascade Range») with vnum: null, and
+     `+null` is 0 — the index used to grow a volcano numbered 0 that no catalog can ever hold. */
+  expect(joined.zero, 'vnum: null became volcano number 0').toBe(false);
+  expect(joined.bad, 'the index holds a key that is not a GVP volcano number').toBe(0);
+  expect(joined.unplaced,
+    'a feed named a volcano the bundled catalog does not have: ' + joined.missing.join(', ')).toBe(0);
 
   /* …and every status the ladder produced names the agency that produced it */
   const sample = await page.evaluate(() => {
