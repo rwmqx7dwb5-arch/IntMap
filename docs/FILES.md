@@ -428,6 +428,7 @@ wx-source.js                      ガードされた唯一の気象／UV ソー�
 wx-ecmwf.js                       ECMWF IFS モデル本体 window.IntMapECMWF——予報時刻軸・.om URL・復号済みの場・配色表
 wx-wind.js                        風の粒子レンダラ window.IntMapWindGL——WebGL 1描画呼び出し／実経過時間基準
 place-framing.js                  どこまで寄るか window.IntMapPlaceFraming
+country-extent.js                 その国が「在る場所」の枠 window.IntMapCountryExtent——遠い海外領土を外し、±180 をまたぐ範囲を区間として書き下す
 proxy-fetch.js                    CORS プロキシ経由の取得（相手先ごとに効くものが違う）
 perf-hud.js                       実機の計器 `?perf=1`
 admin-literal.js                  admin.html の初期データ読み取り——**評価器ではなくパーサ**

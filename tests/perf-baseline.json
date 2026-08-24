@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4515289,
-    "gzip": 1506297,
-    "brotli": 1148035,
+    "raw": 4519579,
+    "gzip": 1508681,
+    "brotli": 1149824,
     "requests": 6,
-    "modules": 280,
-    "cssRaw": 328579,
-    "cssGzip": 55313
+    "modules": 281,
+    "cssRaw": 329594,
+    "cssGzip": 55455
   },
   "async": {
-    "raw": 9631498,
-    "gzip": 3103446,
+    "raw": 9634231,
+    "gzip": 3104751,
     "chunks": {
       "aircraft-detail": 17245,
       "analysis-correlate": 24153,
@@ -18,8 +18,8 @@
       "analysis-research": 17766,
       "analysis-timeseries": 8142,
       "analysis-world-events": 68202,
-      "atlas-console": 838800,
-      "atlas-executor": 41700,
+      "atlas-console": 842131,
+      "atlas-executor": 41782,
       "aviation-live": 21158,
       "cesium": 4840419,
       "cesium-engine": 65709,
@@ -37,7 +37,7 @@
       "katex": 265328,
       "katex.min": 1,
       "navigation": 61617,
-      "news-events": 33104,
+      "news-events": 33234,
       "night-sky": 26147,
       "plane-glyph": 887,
       "playground": 42856,
@@ -48,19 +48,19 @@
       "satellite-wasm-stub": 199,
       "satellites-live": 23457,
       "seismic": 162913,
-      "stats-compare": 63943,
+      "stats-compare": 64009,
       "street-view": 15377,
       "subcable-info": 9648,
       "terrain-water": 85453,
       "tsunami": 37658,
-      "ui.de": 18990,
-      "ui.es": 19225,
-      "ui.fr": 420250,
-      "ui.jp": 20707,
-      "ui.ko": 414433,
-      "ui.ru": 27505,
-      "ui.zh": 373071,
-      "ui.zh-hans": 373101,
+      "ui.de": 18807,
+      "ui.es": 19030,
+      "ui.fr": 420248,
+      "ui.jp": 20524,
+      "ui.ko": 414408,
+      "ui.ru": 27235,
+      "ui.zh": 373062,
+      "ui.zh-hans": 373092,
       "viewshed": 32683,
       "volcano-intel": 105525,
       "volcano-layers": 15085,
@@ -69,8 +69,8 @@
     }
   },
   "dist": {
-    "total": 140362809,
-    "data": 86372981,
-    "assets": 16819067
+    "total": 140371959,
+    "data": 86372737,
+    "assets": 16827105
   }
 }

@@ -163,7 +163,19 @@ export function makeAtlasExamples(HOST, CTX) {
          longitudinal claim is refused for a box wider than 180°, because this module genuinely
          cannot tell 「spans the date line」 from 「spans the planet」 — and a chip that guesses is the
          defect this round exists to remove. */
-      const bb=(st&&st.bbox&&st.bbox.length===4&&st.bbox.every(v=>isFinite(v)))?st.bbox:null;
+      /* ⚠⚠⚠ (#R426) THE UNION, AND ON PURPOSE — all four claims below are about the country's WHOLE
+         TERRITORY, which is why #R337 could leave three of them alone and had to move only the two
+         about WHERE THE COUNTRY IS onto the label point. `bbox` stopped being the union this round
+         (js/country-extent.js publishes the country's home extent there, so the search frames Norway
+         at 13.2° of latitude rather than 135.2°), and reading the frame here would break every one:
+         `spread` IS the measurement of outlying territory — France scores 184 precisely because
+         Guiana and Réunion are in this box — and a home extent scores it near zero; `arctic` would
+         stop firing for the United States, whose Arctic land is Alaska; `tropics` asks whether the
+         WHOLE country is between the tropics and would start answering yes for a country holding an
+         island that is not. `bboxAll` is that union under a name that says which one it is.
+         ⚠ NO FALLBACK TO `bbox`. A row without the union refuses every claim here, which is the same
+         safe direction #R337 chose; falling back to the frame would let `tropics` fire falsely. */
+      const bb=(st&&st.bboxAll&&st.bboxAll.length===4&&st.bboxAll.every(v=>isFinite(v)))?st.bboxAll:null;
       const labLat=(st&&st.latlng&&isFinite(st.latlng[0]))?(+st.latlng[0]):null;
       const spanLon=bb?(bb[2]-bb[0]):0, spanLat=bb?(bb[3]-bb[1]):0, midLat=bb?((bb[1]+bb[3])/2):0;
       const wrapped=!bb||spanLon>=180;
