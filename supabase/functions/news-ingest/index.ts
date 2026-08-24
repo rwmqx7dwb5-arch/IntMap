@@ -11,6 +11,9 @@
 //
 //  段（POST の body で選べる。既定は全部）:
 //    fetch      33 フィードを取得 → 正規化 → 帰属 → 地点 → news_articles へ upsert
+//    locate     (#R404) まだ AI が見ていない記事の地点を AI に決めさせる。
+//               **AI が第一手段・決定論エンジンがフォールバック**（#R29 の設計を、
+//               UI が実際に読む経路のほうへ戻したもの）。
 //    embed      まだ埋め込みの無い記事を text-embedding-3-small で埋める（Phase C）
 //    assign     未割り当ての記事を候補 Event へ増分で載せる（総当たりしない）
 //    link       意味が近いのに別々になっている Event どうしを結ぶ（Phase C・recall）
@@ -28,6 +31,8 @@
 //           supabase secrets set NEWS_TRANSLATE=off            (optional kill-switch)
 //           supabase secrets set NEWS_EMBED=off                (optional kill-switch, Phase C)
 //           supabase secrets set NEWS_EMBED_MODEL=...          (default text-embedding-3-small)
+//           supabase secrets set NEWS_GEO_AI=off               (optional kill-switch, #R404 地点解析)
+//           supabase secrets set NEWS_GEO_MODEL=...            (optional — 地点解析だけ別モデル)
 //  (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
 //
 //  NOTE: written WITHOUT TypeScript annotations, like sv-cov / cable-geo / news-relay —
@@ -40,10 +45,12 @@ import { fetchGuarded } from "../_shared/relay-guard.js";
 // js/newsgeo.js と 1 バイト同一で、同一性ゲートが scripts/static-checks.mjs §7 にある。
 import "../_shared/newsgeo.js";
 import { personaPrompt } from "../_shared/atlas-persona.js";
+/* (#R404) AI 地点解析の規則は refresh-news と共有する 1 本。ここが足すのは返し方だけ。 */
+import { NEWS_GEO_RULES, NEWS_GEO_KIND_LINE } from "../_shared/news-geo-prompt.js";
 import {
   buildRegistry, parseFeed, toArticleRow, buildCandidateIndex, placeArticle,
   summariseEvent, clusterConfidence, sha256Hex, retentionCutoffs, RETENTION,
-  eventsAgree, eventPairCandidates, INDEX,
+  eventsAgree, eventPairCandidates, INDEX, parseAiPlaces, GEO_AGREE_KM,
 } from "../_shared/news-ingest.js";
 import { DEFAULTS, buildIdf } from "../_shared/news-cluster.js";
 
@@ -189,18 +196,180 @@ async function stageFetch(db, budget, runStartedAt) {
   }
 
   const rows = [...byFp.values()];
-  const saved = await insertChunked(db, "news_articles", rows,
-    { onConflict: "url_fingerprint", select: "id,url_fingerprint,first_seen_at" });
+
+  /* ⚠⚠⚠ (#R404) **upsert は送った列を必ず上書きする。** 同じ記事は保持期間の 72 時間
+     ずっとフィードに居るので、毎 run 決定論エンジンの結果を送り続けると、
+     **AI が置いた地点を 20 分ごとに踏み潰す**——すぐ上の `first_seen_at` と同じ形の罠で、
+     あちらは「送らない」ことで避けている。ここも同じ手で避ける。
+     ⚠ 2 本に分けて送るのは、PostgREST の一括 insert が**鍵の揃わないオブジェクトを
+       混ぜられない**からである（欠けた鍵は既定値や NULL で埋められる＝踏み潰しが
+       名前を変えて戻ってくる）。配列ごとに列が揃っていれば、その事故は起きない。 */
+  const aiFps = new Set();
+  for (let i = 0; i < rows.length; i += PAGE) {
+    const fps = rows.slice(i, i + PAGE).map((r) => r.url_fingerprint);
+    const { data, error } = await db.from("news_articles")
+      .select("url_fingerprint").eq("subject_located_by", "ai").in("url_fingerprint", fps);
+    if (error) throw new Error("news_articles(ai fingerprints): " + error.message);
+    for (const r of data || []) aiFps.add(r.url_fingerprint);
+  }
+  const SUBJECT_COLS = ["subject_lng", "subject_lat", "subject_name_en", "subject_type",
+                        "subject_confidence", "subject_reasons", "subject_located_by"];
+  const plain = [], keepAi = [];
+  for (const r of rows) {
+    if (!aiFps.has(r.url_fingerprint)) { plain.push(r); continue; }
+    const copy = { ...r };
+    for (const c of SUBJECT_COLS) delete copy[c];
+    keepAi.push(copy);
+  }
+
+  const opts = { onConflict: "url_fingerprint", select: "id,url_fingerprint,first_seen_at" };
+  const saved = [
+    ...await insertChunked(db, "news_articles", plain, opts),
+    ...await insertChunked(db, "news_articles", keepAi, opts),
+  ];
   const fresh = saved.filter((r) => r.first_seen_at >= runStartedAt).length;
 
   return {
     ms: Date.now() - t0,
     feeds_total: use.length, feeds_ok: feedsOk, items_fetched: itemsFetched,
     articles_new: fresh, articles_seen: saved.length, rejects,
+    ai_subject_preserved: keepAi.length,
   };
 }
 
-/* ── 段 2: 埋め込み（Phase C・docs/NEWS-EVENTS.md §5.2）────────────────────
+/* ── 段 2: 地点解析 — AI が第一手段 (#R404)  ──────────────────────────────
+ *  #R29 は「AI が第一手段・辞書はフォールバック」を作り、#R40 が**読み出しのほう**を
+ *  止めた。5 か月後に測ると、止まっていたのは読み出しだけではなかった——
+ *  2026-08-24 実測: `analyzed_by='ai'` の行は本番に **0 件**（`AI_MODEL` の 403。
+ *  #R351 が特定）。そして UI が実際に読む経路（この関数 → `news_events`）は、
+ *  そもそも AI を 1 度も呼んでいなかった。⇒ **生きている経路のほうに AI を戻す。**
+ *
+ *  規律（どれも #R334/#R351/#R394 が実測した失敗から来ている）:
+ *   ⚠⚠⚠ **黙って 0 件になる AI 経路をもう一度作らない。** 最後の失敗を持ち帰り、
+ *     応答と `news_ingest_runs` の両方に出す。403/404 はモデル名の取り違えなので、
+ *     `callProvider` が既知の代替へ 1 回だけ落ちる。
+ *   ⚠⚠⚠ **何が決めたかは、決めたものが書く。** `subject_located_by` は
+ *     「いま入っている座標を誰が置いたか」であって、「AI を呼んだか」ではない。
+ *     AI が見たかどうかは `subject_ai_at` が持つ——AI が「ここは場所の無い記事だ」と
+ *     省いたときも、**見たことは記録して二度と送らない**（さもないと上限を
+ *     同じ置けない記事で使い切り、新しい記事に一生届かない）。
+ *   ⚠ **AI が省いた記事の決定論の答えを消さない。** 上書きするのは AI が場所を
+ *     返したときだけ (#R29 と同じ意味)。
+ *   ⚠ **モデルの返答をそのまま採らない。** id は今回渡したもの・座標は実在する範囲・
+ *     (0,0) は「わからない」の別名なので採らない・種別は `js/newsgeo.js` と同じ語彙。
+ * ────────────────────────────────────────────────────────────────────── */
+const LOCATE_CAP = 240;      /* 1 run で AI に送る上限（費用の天井。docs/NEWS-EVENTS.md §14） */
+const LOCATE_BATCH = 20;
+/* ⚠ この段は `assign` より**前**に走るので、予算を使い切ると後ろの段が飢える。
+   翻訳（最後から 2 番目）の 30 s より厚く取り置く——1 batch 減るだけで、代わりに
+   割り当て・link・保持が必ず自分のぶんを持てる。残りは次の run に回る。 */
+const LOCATE_RESERVE_MS = 45000;
+/* 採否と確度の判定は `_shared/news-ingest.js` の `parseAiPlaces()`——Node のテストから
+   直接呼べるので、返答の壊れ方を実データで試験できる。一致とみなす距離も
+   あちらの `GEO_AGREE_KM` が正本で、ここは値を持たない。 */
+
+/* (#R285) 人格の正本は `_shared/atlas-persona.js` の 1 本。規則の正本は
+   `_shared/news-geo-prompt.js` の 1 本。ここが足すのは**返し方**だけである。 */
+const GEO_SYS =
+  personaPrompt("locating world news on the map for IntMap", { mode: "internal" }) +
+  NEWS_GEO_RULES + NEWS_GEO_KIND_LINE +
+  "Reply with ONLY a JSON array, one object per locatable item: " +
+  "[{\"i\":<number>,\"name\":\"<short English place name>\",\"kind\":\"<one of the kinds above>\",\"lat\":<deg>,\"lng\":<deg>}]. " +
+  "No commentary, no code fences.";
+
+/** 上限 8 本の並列で 1 行ずつ更新する。PostgREST は「行ごとに違う値」の一括更新を持たない。 */
+async function updateRows(db, table, rows, lanes) {
+  let next = 0, failed = 0;
+  const lane = async () => {
+    while (next < rows.length) {
+      const { id, ...rest } = rows[next++];
+      const { error } = await db.from(table).update(rest).eq("id", id);
+      if (error) { failed++; console.warn("[news-ingest] " + table + " update:", error.message); }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(lanes, rows.length) || 1 }, lane));
+  return failed;
+}
+
+async function stageLocate(db, budget, relocated) {
+  const t0 = Date.now();
+  const cfg = geoConfig();
+  if (!cfg) return { ms: Date.now() - t0, located: 0, skipped: "not_configured (NEWS_GEO_AI=off or no key)" };
+
+  /* まだ AI が**見ていない**記事を、新しい順に上限ぶんだけ。
+     ⚠ ここは selectAll を使わない（range と上限を同時に掛けると矛盾する）。 */
+  const { data: todo, error } = await db.from("news_articles")
+    .select("id,title,description,subject_lng,subject_lat,subject_name_en,subject_type,subject_located_by")
+    .eq("status", "active").is("subject_ai_at", null)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .range(0, LOCATE_CAP - 1);
+  if (error) throw new Error("news_articles: " + error.message);
+  if (!todo || !todo.length) return { ms: Date.now() - t0, located: 0, considered: 0 };
+
+  let tin = 0, tout = 0, usedModel = cfg.model, lastError = null;
+  let agreed = 0, differed = 0, noDict = 0, omitted = 0, batches = 0, batchesOk = 0;
+  const rejected = { bad_coords: 0, null_island: 0, no_name: 0, unknown_id: 0, bad_kind: 0 };
+  const updates = [];
+
+  for (let i = 0; i < todo.length; i += LOCATE_BATCH) {
+    if (budget.left() < LOCATE_RESERVE_MS) break;
+    const chunk = todo.slice(i, i + LOCATE_BATCH);
+    batches++;
+    const user = "Headlines:\n" + chunk.map((a) =>
+      a.id + ". " + a.title + (a.description ? " — " + String(a.description).slice(0, 160) : "")).join("\n");
+
+    let out;
+    try {
+      out = await callProvider(cfg, GEO_SYS, user, AbortSignal.timeout(Math.min(60000, budget.left())));
+    } catch (e) {
+      lastError = String((e && e.message) || e).slice(0, 200);
+      console.warn("[news-ingest] locate:", lastError);
+      continue;
+    }
+    tin += out.usage.in; tout += out.usage.out;
+    usedModel = out.model || cfg.model;
+
+    /* 採るか捨てるかの判定は `_shared/news-ingest.js` の 1 本
+       （Node のテストから直接呼べる＝返答の壊れ方を実データで試験できる）。 */
+    const v = parseAiPlaces(out.text, chunk);
+    for (const k of Object.keys(rejected)) rejected[k] += v.rejected[k] || 0;
+    if (!v.ok) { lastError = v.error; continue; }
+    batchesOk++;
+    agreed += v.agreed; differed += v.differed; noDict += v.noDict;
+
+    const stamp = new Date().toISOString();
+    const locator = cfg.provider + ":" + usedModel;
+    for (const p of v.placed) {
+      updates.push({
+        id: p.id, subject_lng: p.lng, subject_lat: p.lat, subject_name_en: p.name, subject_type: p.kind,
+        subject_confidence: p.confidence, subject_reasons: p.reasons,
+        subject_located_by: "ai", subject_locator: locator, subject_ai_at: stamp,
+      });
+      relocated.add(p.id);
+    }
+    /* ⚠ **返答が届いた batch でだけ**、省かれた記事に「AI は見た」の印を押す。
+       通信や JSON が壊れた batch で押すと、一度も見られていない記事が
+       永久に候補から外れる。省かれた記事の決定論の答えは**そのまま残す**。 */
+    for (const id of v.omitted) {
+      omitted++;
+      updates.push({ id, subject_locator: locator, subject_ai_at: stamp });
+    }
+  }
+
+  const failed = updates.length ? await updateRows(db, "news_articles", updates, 8) : 0;
+  const located = updates.filter((u) => u.subject_located_by === "ai").length;
+  return {
+    ms: Date.now() - t0, located, omitted, considered: todo.length, agree_km: GEO_AGREE_KM,
+    batches, batches_ok: batchesOk, write_failures: failed,
+    agrees_with_gazetteer: agreed, differs_from_gazetteer: differed, gazetteer_had_nothing: noDict,
+    rejected, error: lastError,
+    llm_tokens_in: tin, llm_tokens_out: tout,
+    estimated_cost_usd: Math.round(((tin * PRICE.in + tout * PRICE.out) / 1e6) * 1e6) / 1e6,
+    provider: cfg.provider, model: usedModel, configured_model: cfg.model,
+  };
+}
+
+/* ── 段 3: 埋め込み（Phase C・docs/NEWS-EVENTS.md §5.2）────────────────────
  *  決定論のトークン一致は「同じ語を使っているか」しか訊けない。#R351 の recall の
  *  代表例——カナダ・米国の関税が 1 日で 5 つの Event に分かれた——は、語が違うだけで
  *  同じ出来事だった。ここはその「言い換え」を拾うための材料を作る段である。
@@ -358,13 +527,15 @@ async function stageEmbed(db, budget) {
   };
 }
 
-/* ── 段 3: Event への増分割り当て ────────────────────────────────────────── */
+/* ── 段 4: Event への増分割り当て ────────────────────────────────────────── */
 const ARTICLE_COLS =
   "id,source_id,title,title_fingerprint,description,published_at,provider_category," +
-  "subject_lng,subject_lat,subject_type,subject_name_en,subject_confidence,subject_reasons,entities," +
+  "subject_lng,subject_lat,subject_type,subject_name_en,subject_confidence,subject_reasons," +
+  /* (#R404) 代表地点を「何が置いたか」を Event の証拠に写すために要る。 */
+  "subject_located_by,entities," +
   "news_event_articles(event_id,relation,assignment_score)";
 
-async function stageAssign(db, budget) {
+async function stageAssign(db, budget, relocated) {
   const t0 = Date.now();
   const sources = await selectAll(() => db.from("news_sources"), (q) => q.select("id,source_family"));
   const family = new Map(sources.map((s) => [s.id, s.source_family]));
@@ -547,6 +718,16 @@ async function stageAssign(db, budget) {
   /* ── 触れた Event を数え直す ── */
   const dirty = new Set();
   for (const [aid, eid] of moved) { dirty.add(eid); const w = wasOf.get(aid); if (w != null) dirty.add(w); }
+  /* ⚠⚠⚠ (#R404) **所属が動かなくても、記事の地点が変われば Event の代表地点は変わる。**
+     直前の `locate` 段が置き直した記事の Event もここに入れる——入れないと、AI の答えは
+     `news_articles` の行にだけ入って、**地図には一生出ない**（代表地点を選び直すのは
+     この 1 か所しか無い）。⚠ 数え直しの対象は `finalOf`（実 ID に解決済み）で引く。 */
+  let relocatedEvents = 0;
+  if (relocated && relocated.size) {
+    for (const [aid, eid] of finalOf) {
+      if (eid != null && relocated.has(aid) && !dirty.has(eid)) { dirty.add(eid); relocatedEvents++; }
+    }
+  }
   /* ⚠ **今この run で作った Event を数え直さない。** insert が完全な要約を持って書かれており、
      そのあと 1 件も足されていない。実測 (2026-08-23・本番): 外していたら 806 本の初回取り込みで
      **638 件の無駄な UPDATE 往復**が走り、割り当ての段が 15.1 秒かかっていた。 */
@@ -629,10 +810,12 @@ async function stageAssign(db, budget) {
     evictions, per_article_p50: q(perMs, 0.5), per_article_p95: q(perMs, 0.95),
     embedding_candidates: embedCandidates, joined_by_embedding: byEmbedding,
     embedding_error: embedError,
+    /* (#R404) 所属は動いていないが、地点が変わったので数え直した Event。 */
+    resummarised_after_locate: relocatedEvents,
   };
 }
 
-/* ── 段 4: すでに分かれた Event どうしを結ぶ（Phase C・recall）─────────────
+/* ── 段 5: すでに分かれた Event どうしを結ぶ（Phase C・recall）─────────────
  *  ⚠⚠⚠ **新着に候補を足すだけでは、すでに分かれた塊は永久に分かれたままである。**
  *    #R351 が measured recall の代表例として挙げたカナダ・米国の関税（1 日で 5 つの
  *    Event）は、どれも既存の Event なので `assign` からは触れない。
@@ -803,7 +986,7 @@ async function stageLink(db, budget) {
   };
 }
 
-/* ── 段 5: 日本語訳 ──────────────────────────────────────────────────────
+/* ── 段 6: 日本語訳 ──────────────────────────────────────────────────────
  *  docs/NEWS-EVENTS.md §7: 一次措置は日本語のみ。サーバー側で生成して永続キャッシュ
  *  するので、クライアントの AI 枠を消費せず、未ログインでも読める。
  *  ⚠ 代表見出しは記事が増えると変わる。**変わったときだけ**払う（source_title_fp）。
@@ -825,20 +1008,27 @@ const OPENAI_FALLBACK_MODEL = "gpt-5.6-luna";
  * これらが混ざっているのは訳ではなく模型の事故である。 */
 const WRONG_SCRIPT = /[ऀ-ॿ؀-ۿ֐-׿฀-๿ঀ-৿஀-௿ఀ-౿]/;
 
-function aiConfig() {
-  if ((Deno.env.get("NEWS_TRANSLATE") || "").toLowerCase() === "off") return null;
+/* ⚠ (#R404) **段ごとに切れる必要がある。** 翻訳と地点解析は別の仕事で、別の値段で、
+   片方だけ止めたい日がある。⇒ 選ぶ規約（provider の推測・`AI_MODEL` の既定・代替モデル）は
+   1 本にし、**kill-switch とモデル上書きの env 名だけ**を段が渡す。 */
+function providerConfig(offEnv, modelEnv) {
+  if ((Deno.env.get(offEnv) || "").toLowerCase() === "off") return null;
   let provider = (Deno.env.get("AI_PROVIDER") || "").toLowerCase();
   if (!provider) {
     if (Deno.env.get("ANTHROPIC_API_KEY")) provider = "anthropic";
     else if (Deno.env.get("OPENAI_API_KEY")) provider = "openai";
     else if (Deno.env.get("GEMINI_API_KEY")) provider = "gemini";
   }
-  const pick = (fallback) => Deno.env.get("NEWS_TRANSLATE_MODEL") || Deno.env.get("AI_MODEL") || fallback;
+  const pick = (fallback) => Deno.env.get(modelEnv) || Deno.env.get("AI_MODEL") || fallback;
   if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: pick(OPENAI_FALLBACK_MODEL) }; }
   if (provider === "gemini") { const key = Deno.env.get("GEMINI_API_KEY"); if (key) return { provider, key, model: pick("gemini-2.0-flash") }; }
   if (provider === "anthropic") { const key = Deno.env.get("ANTHROPIC_API_KEY"); if (key) return { provider, key, model: pick("claude-3-5-haiku-latest") }; }
   return null;
 }
+
+function aiConfig() { return providerConfig("NEWS_TRANSLATE", "NEWS_TRANSLATE_MODEL"); }
+/** 地点解析 (#R404)。`NEWS_GEO_AI=off` で止まり、`NEWS_GEO_MODEL` で独立に選べる。 */
+function geoConfig() { return providerConfig("NEWS_GEO_AI", "NEWS_GEO_MODEL"); }
 
 /* (#R285) 人格の正本は js/atlas-persona.js の 1 本だけ。ここでも書き足さない。
    この呼び出しは利用者に読まれる文（見出しの訳）を作るが、対話ではないので internal。 */
@@ -997,7 +1187,7 @@ async function stageTranslate(db, budget) {
   };
 }
 
-/* ── 段 6: 保持期間 ──────────────────────────────────────────────────────
+/* ── 段 7: 保持期間 ──────────────────────────────────────────────────────
  *  docs/NEWS-EVENTS.md §8 / CONSTITUTION.md §5:
  *    記事 72 時間 ／ Event 30 日 ／ ★保存した Event は無期限 ／ 判定の記録 30 日。
  *  ⚠ **消してよいのは記事だけで、出来事ではない。** Event を記事と同じ 72 時間で消すと、
@@ -1062,9 +1252,11 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch (_) { body = {}; }
   /* ⚠ 既定に `embed` と `link` を入れる。cron は body で段を明示しているので、
      既定を変えても走っている 2 本の job の挙動は変わらない（`docs/NEWS-EVENTS.md` §12.1）。
-     ⚠ 順序はここが決める——`embed` は `assign` より**前**（埋め込みが無ければ第 2 段は
-     何も足せない）、`link` は `assign` より**後**（新しくできた Event も対象にする）。 */
-  const ORDER = ["fetch", "embed", "assign", "link", "translate", "prune"];
+     ⚠ 順序はここが決める——`locate` は `fetch` の**後**（この run で届いた記事も AI に
+     掛ける）で `assign` の**前**（Event は AI の座標で組まれ、代表地点もそれで決まる）、
+     `embed` は `assign` より**前**（埋め込みが無ければ第 2 段は何も足せない）、
+     `link` は `assign` より**後**（新しくできた Event も対象にする）。 */
+  const ORDER = ["fetch", "locate", "embed", "assign", "link", "translate", "prune"];
   const want = Array.isArray(body.stages) && body.stages.length
     ? ORDER.filter((s) => body.stages.includes(s))
     : ORDER.slice();
@@ -1079,11 +1271,15 @@ Deno.serve(async (req) => {
   const db = createClient(url, serviceKey, { auth: { persistSession: false } });
 
   const result = { stages: want, retention: RETENTION };
+  /* (#R404) `locate` が置き直した記事の id。`assign` はこれを見て、所属が動いていない
+     Event も数え直す（さもないと AI の答えが地図に出ない）。 */
+  const relocated = new Set();
   let ok = true;
   try {
     if (want.includes("fetch")) result.fetch = await stageFetch(db, budget, startedAt);
+    if (want.includes("locate")) result.locate = await stageLocate(db, budget, relocated);
     if (want.includes("embed")) result.embed = await stageEmbed(db, budget);
-    if (want.includes("assign")) result.assign = await stageAssign(db, budget);
+    if (want.includes("assign")) result.assign = await stageAssign(db, budget, relocated);
     if (want.includes("link")) result.link = await stageLink(db, budget);
     if (want.includes("translate")) result.translate = await stageTranslate(db, budget);
     if (want.includes("prune")) result.prune = await stagePrune(db);
@@ -1095,6 +1291,7 @@ Deno.serve(async (req) => {
 
   /* ── 計測 (docs/NEWS-EVENTS.md §13) ── */
   const f = result.fetch || {}, g = result.assign || {}, t = result.translate || {}, p = result.prune || {};
+  const L = result.locate || {};
   try {
     await db.from("news_ingest_runs").insert({
       started_at: startedAt, finished_at: new Date().toISOString(), stages: want, ok,
@@ -1102,17 +1299,35 @@ Deno.serve(async (req) => {
       articles_new: f.articles_new || 0, articles_seen: f.articles_seen || 0, rejects: f.rejects || {},
       articles_assigned: g.articles_assigned || 0, events_created: g.events_created || 0,
       events_updated: g.events_updated || 0, evictions: g.evictions || 0,
-      translations: t.translations || 0, llm_tokens_in: t.llm_tokens_in || 0,
-      llm_tokens_out: t.llm_tokens_out || 0, estimated_cost_usd: t.estimated_cost_usd || 0,
+      /* (#R404) 地点解析。⚠ `located_ai` は「AI が座標を置いた記事」であって
+         「AI に送った記事」ではない——送って場所が無いと判断されたぶんは
+         `notes.locate_omitted` が持つ。 */
+      located_ai: L.located || 0, located_considered: L.considered || 0,
+      translations: t.translations || 0,
+      /* ⚠ LLM の 3 列は**この run の合計**である（翻訳＋地点解析）。段ごとの内訳は notes。 */
+      llm_tokens_in: (t.llm_tokens_in || 0) + (L.llm_tokens_in || 0),
+      llm_tokens_out: (t.llm_tokens_out || 0) + (L.llm_tokens_out || 0),
+      estimated_cost_usd: Math.round(((t.estimated_cost_usd || 0) + (L.estimated_cost_usd || 0)) * 1e6) / 1e6,
       pruned_articles: p.pruned_articles || 0, pruned_events: p.pruned_events || 0,
       pruned_decisions: p.pruned_decisions || 0,
       timings: {
-        total_ms: Date.now() - start, fetch_ms: f.ms || 0, assign_ms: g.ms || 0,
+        total_ms: Date.now() - start, fetch_ms: f.ms || 0, locate_ms: L.ms || 0, assign_ms: g.ms || 0,
         translate_ms: t.ms || 0, prune_ms: p.ms || 0,
         assign_p50_ms: g.per_article_p50 || 0, assign_p95_ms: g.per_article_p95 || 0,
       },
       notes: {
         window: g.window || 0, translate_considered: t.considered || 0,
+        /* (#R404) 地点解析の内訳。⚠ **「0 件」の理由が残らない計器を作らない** (#R334)。 */
+        locate_omitted: L.omitted || 0, locate_skipped: L.skipped || null, locate_error: L.error || null,
+        locate_agrees: L.agrees_with_gazetteer || 0, locate_differs: L.differs_from_gazetteer || 0,
+        locate_gazetteer_had_nothing: L.gazetteer_had_nothing || 0,
+        locate_rejected: L.rejected || null, locate_batches: L.batches || 0,
+        locate_batches_ok: L.batches_ok || 0, locate_write_failures: L.write_failures || 0,
+        locate_model: L.model || null, locate_configured_model: L.configured_model || null,
+        locate_tokens_in: L.llm_tokens_in || 0, locate_tokens_out: L.llm_tokens_out || 0,
+        locate_cost_usd: L.estimated_cost_usd || 0,
+        ai_subject_preserved: f.ai_subject_preserved || 0,
+        resummarised_after_locate: g.resummarised_after_locate || 0,
         translate_skipped: t.skipped || null, translate_error: t.error || null,
         translate_rejected_wrong_script: t.rejected_wrong_script || 0,
         /* ⚙ 単価は推定であって請求ではない。使った単価を一緒に残すと、

@@ -497,11 +497,17 @@ const FILES = BODY.get('docs/FILES.md') || '';
       fail('news-path', 'USE_SERVER_NEWS is true again but the privacy policy no longer describes the server path');
     }
     if (!serverPath) {
+      /* ⚠ (#R404) この走査が探しているのは **`current_news` の経路**（#R40 で止めた記事単位の
+         server feed）を「今も生きている」と書いている文である。**サーバー側の AI 事前解析
+         そのものは、もう死んでいない**——`news-ingest` の `locate` 段がそれで、そちらは本当に
+         生きている。⇒ 免除語に出来事側の目印を足す。足さないと、正しい文章がこの門に
+         引っかかり、直し方は「事実を薄める」しか無くなる。 */
       eachDoc((f, s) => {
         for (const line of s.split('\n')) {
           if (!/地点解析/.test(line)) continue;
-          if (/サーバー側でAI事前解析|サーバー側で事前にAI解析/.test(line) && !/停止|止めて|残してある|かつて/.test(line)) {
-            fail('news-path', f + ' presents the server-side pre-analysis as the live path: ' + line.trim().slice(0, 90));
+          if (/サーバー側でAI事前解析|サーバー側で事前にAI解析/.test(line) &&
+              !/停止|止めて|残してある|かつて|news_events|news-ingest|出来事/.test(line)) {
+            fail('news-path', f + ' presents the current_news pre-analysis as the live path: ' + line.trim().slice(0, 90));
           }
         }
       });
@@ -536,6 +542,38 @@ const FILES = BODY.get('docs/FILES.md') || '';
       if (!eventPath && shown.length) {
         fail('news-path', 'the privacy policy says the News tab reads the event database while NEWS_EVENT_MODE is false');
       }
+    }
+
+    /* ══ (#R404) …AND THE THIRD FACT: WHAT DECIDES WHERE THE PIN GOES ════════════════════════
+       #R29 made the AI the primary locator and #R40 stopped the READING of that path. Measured
+       on 2026-08-24: `current_news` had 1,548 rows and NOT ONE `analyzed_by='ai'` — so the AI
+       locator had never once succeeded — while the path the reader is actually on (`news_events`
+       via `news-ingest`) had never called the AI at all. #R404 puts the AI back as the primary
+       locator on the LIVE path. Until then this section said, in so many words, that the stored
+       path placed its articles with a non-AI engine and that the ONLY AI call was the Japanese
+       headline translation. A privacy policy is a statement of fact about the code, so bind the
+       two: the sentence has to follow the `locate` stage, in both directions. */
+    const ingestPath = 'supabase/functions/news-ingest/index.ts';
+    const ingest = has(ingestPath) ? rd(ingestPath) : '';
+    const aiLocates = /const ORDER = \[[^\]]*["']locate["']/.test(ingest);
+    const legal3 = has('js/legal-text.js') ? rd('js/legal-text.js') : '';
+    const CLAIMS_AI_GEO = ['the AI provider first', 'AIプロバイダが第一手段'];
+    /* かつての本文そのもの。**残っていたら嘘**である。 */
+    const CLAIMS_NON_AI_GEO = [
+      'Placing those stored articles uses the same non-AI deterministic engine',
+      '地点の判定は同じ非AIの決定論エンジンで行います',
+    ];
+    const saysAi = CLAIMS_AI_GEO.filter((c) => legal3.includes(c));
+    const saysNonAi = CLAIMS_NON_AI_GEO.filter((c) => legal3.includes(c));
+    if (aiLocates && saysAi.length < CLAIMS_AI_GEO.length) {
+      fail('news-path', 'news-ingest has a `locate` stage — the AI decides where stored news is pinned — but the privacy policy does not say so in ' +
+        (saysAi.length ? 'every language it ships in' : 'any language'));
+    }
+    if (aiLocates && saysNonAi.length) {
+      fail('news-path', 'the privacy policy still says the stored path is placed by a non-AI engine ("' + saysNonAi[0].slice(0, 40) + '…") while news-ingest runs the `locate` stage');
+    }
+    if (!aiLocates && saysAi.length) {
+      fail('news-path', 'the privacy policy says the AI places stored news, but news-ingest has no `locate` stage in ORDER');
     }
     if (!problems.some((x) => x.startsWith('news-path'))) ok('news-path', 'USE_SERVER_NEWS=' + m[1] + ' · NEWS_EVENT_MODE=' + (em ? em[1] : '?') + ' and every document — the privacy policy included — describes those paths');
   }

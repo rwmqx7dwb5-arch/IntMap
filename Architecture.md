@@ -440,8 +440,9 @@ DB 側は 9 表（`news_sources` / `news_source_feeds` / `news_articles` / `news
 RLS・grant・運用者 RPC の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)、実証は
 `supabase/tests/06_news_events_test.sql`（§16.1）。
 
-収集は **Edge Function `news-ingest`**（§6.2）が cron で回す。段は 6 つ——
-`fetch`（Source Registry のフィード取得・正規化・媒体の帰属・地点解析）／
+収集は **Edge Function `news-ingest`**（§6.2）が cron で回す。段は 7 つ——
+`fetch`（Source Registry のフィード取得・正規化・媒体の帰属・決定論エンジンによる地点の下書き）／
+**`locate`（地点解析。AI が第一手段で、決定論エンジンの答えを上書きする）**／
 `embed`（埋め込みを付ける。現在の鍵は埋め込みモデルに到達できず、その理由を応答に出して止まる）／
 `assign`（候補 Event を引いて増分で載せる。総当たりしない）／
 `link`（すでに分かれている Event 対を、新着と**同じ規則**で結ぶ）／
@@ -463,7 +464,16 @@ RLS・grant・運用者 RPC の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)�
 に描かれる（どの媒体がいつ何と書いたか／同一系列の印／媒体間で食い違っている数量／
 この塊の組み立て方）。カテゴリ chips は `#news-cat-chips`。
 
-**収集元 (Source Registry)・クラスタリング・カテゴリ・翻訳・保持期間・UI・Atlas・
+**地点解析は AI が第一手段・決定論エンジンがフォールバック。** `fetch` は届いた記事を
+`IntMapNewsGeo`（§4.3）で 1 度置き、`locate` が **まだ AI が見ていない記事**を batch で AI に送って
+上書きする。AI が「場所の無い記事」と判断したものは決定論エンジンの答えがそのまま残る。
+記事の行は「いま入っている座標を誰が置いたか」(`subject_located_by`) と「AI がこの記事を見た時刻」
+(`subject_ai_at`) を**別の列**に持つ——後者が無いと、置けないと判断された記事を毎 run 送り直して
+上限を使い切る。確度は模型に自己申告させず、**決定論エンジンと一致したかを測って**入れる。
+⚠ `fetch` の upsert は、AI が置いた記事の `subject_*` を**送らない**（送ると 20 分ごとに踏み潰す）。
+⚠ 記事の座標が変われば `assign` がその Event を数え直す（代表地点を選び直すのはそこ 1 か所）。
+
+**収集元 (Source Registry)・クラスタリング・カテゴリ・地点解析・翻訳・保持期間・UI・Atlas・
 運用者の修正経路・運用手順・品質と費用の実測の正本は
 [`docs/NEWS-EVENTS.md`](docs/NEWS-EVENTS.md)。** ここには書き写さない。
 
@@ -675,7 +685,8 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   **fail-closed**：`REFRESH_SECRET` 未設定なら全リクエストを拒否する。秘密は `x-refresh-secret`
   **ヘッダのみ**（クエリ文字列不可）・**定数時間比較**・POST のみ。
 - **`news-ingest`** … 出来事 (Event) 側の収集（§4.4）。Source Registry の全フィードを取得し、
-  正規化・媒体の帰属・地点解析・Event への増分割り当て・日本語訳・計測・保持を行う。
+  正規化・媒体の帰属・**AI 地点解析（決定論エンジンはフォールバック）**・Event への増分割り当て・
+  日本語訳・計測・保持を行う。
   `--no-verify-jwt` で公開だが **fail-closed**：`NEWS_INGEST_SECRET` 未設定なら全リクエストを拒否する。
   秘密は `x-news-ingest-secret` **ヘッダのみ**・**定数時間比較**・POST のみ。
   ⚠ `current_news` と `refresh-news` には触れない（別の表に書く）。
@@ -750,6 +761,9 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   `GEMINI_API_KEY`, `AI_MODEL`（任意）
 - refresh-news: `REFRESH_SECRET`（**必須**。未設定なら関数は全リクエストを拒否する）,
   `NEWS_AI=off`（任意・AI を止めて辞書だけにする kill-switch）
+- news-ingest: `NEWS_INGEST_SECRET`（**必須**）, `NEWS_GEO_AI=off`（任意・AI 地点解析の kill-switch）,
+  `NEWS_GEO_MODEL`（任意・地点解析だけ別モデル）, `NEWS_TRANSLATE=off` / `NEWS_TRANSLATE_MODEL`,
+  `NEWS_EMBED=off` / `NEWS_EMBED_MODEL`
 - monitor-run: `MONITOR_SECRET`
 - Gemini 経路のみ: `GEMINI_SEARCH_ENABLED`（既定 OFF）
 
@@ -1928,7 +1942,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（14本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（15本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events）。
