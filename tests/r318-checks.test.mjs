@@ -446,7 +446,7 @@ test('R318 ⑨b: the kernel shrank by moving, and the ceiling came down with it'
   const atlas = n('js/atlas-console.js');
   /* #R199's rule: a ceiling raised once and never lowered stops asserting anything, so it follows
      the floor DOWN. #R311 shipped 5,299 lines against a ceiling of 5,300. */
-  assert.ok(atlas < 4_910, `js/atlas-console.js is ${atlas} lines; #R406 removed the request profile, the intent gates and localPlan, and it must stay below 4,900`);
+  assert.ok(atlas < 4_910, `js/atlas-console.js is ${atlas} lines; #R406 removed the request profile, the intent gates and localPlan, and it must stay below 4,910`);   /* (#R416) the SENTENCE said 4,900 while the assertion said 4,910 — #R407's shape, and the sentence is the half a reader acts on */
   assert.ok(n('js/app-body.js') < 4_400, 'js/app-body.js keeps #R200\'s ceiling');
   const moved = ['js/atlas-agent.js', 'js/atlas-capabilities.js', 'js/atlas-catalog-text.js',
     'js/atlas-executor.js', 'js/atlas-results.js', 'js/atlas-state.js', 'js/atlas-toolsurface.js'].reduce((a, p) => a + n(p), 0);

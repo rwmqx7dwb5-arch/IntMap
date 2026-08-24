@@ -2647,8 +2647,7 @@ window.IntMapModules.atlasConsole=function(HOST){
             else { await window.IntMapLazy.need('playground'); if(window._openPlayground){ window._openPlayground(); ok=true; } } }catch(_){}
           return R(ok, ok?note('🎮 '+esc(lbl)):warn('⚠ '+L('Playground unavailable','プレイグラウンドを開けません','Playground nicht verfügbar','Playground недоступен','Playground no disponible'))); }
         case 'news': { const m=String(a.mode||a.name||'').toLowerCase(); let id=null,lbl='';
-          /* (#R416) `pinmode-pub` / `pinmode-loc` are gone — a news pin is placed where the story
-             happened and there is no second placement to switch to. */
+          /* (#R416) `pinmode-pub` / `pinmode-loc` are gone — the pin is where the story happened. */
           if(/saved|favorit|bookmark|保存|ブックマーク|сохран|guardad/.test(m)){ id='newsfilter-saved'; lbl=L('Saved','保存','Gespeichert','Сохранённые','Guardados'); }
           else if(/all|unsaved|すべて|全部|все|todo/.test(m)){ id='newsfilter-all'; lbl=L('All','すべて','Alle','Все','Todo'); }
           else if(/translat|翻訳|перевод|traduc/.test(m)){ id='ai-translate-btn'; lbl=L('Translate','翻訳','Übersetzen','Перевод','Traducir'); }
