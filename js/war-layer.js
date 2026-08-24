@@ -186,7 +186,19 @@ window.IntMapModules.warLayer = function (HOST) {
          was the header and every control this round exists to add. The reader could see the war
          and not the slider. Desktop has no height cap on .data-legend at all (mobile has had one
          since #R215), so the bound belongs to the part that varies: the text. */
-      '.war-info{max-height:min(42vh,380px);overflow-y:auto;overscroll-behavior:contain;}',
+      /* ⚠⚠⚠ (#R409 追記) THE CAP HAS TO KNOW IT IS NOT THE ONLY LEGEND ON THE MAP, and the first
+         version did not. `min(42vh, 380px)` made this box 579 px, which fits a 1080 px window on its
+         own — and production opens the submarine-cables legend (193 px) BY DEFAULT, and legends
+         stack upward from a bottom anchor. Measured on the live site at 1440×900 the box started at
+         y = −22, at 768 it started at −98, and `#map-container` is `overflow-y:hidden`, so what fell
+         off the top — the close button, the title, the opacity row — could not be scrolled back.
+         The cap is viewport-relative now and leaves room for a second legend and for this box's own
+         ~200 px of title, transport, slider and date row. Measured after: 501 px at 900, 369 at 768.
+         ⚠ THE REMAINDER IS STATED RATHER THAN HIDDEN: two war legends AND a third still overflow a
+         900 px window. That is the framework's stacking — `.data-legend` has no desktop height cap
+         at all (mobile has had one since #R215) — and it is true of any three tall legends. What
+         this round owed was not being the layer that overflows on its own. */
+      '.war-info{max-height:min(360px,max(110px,calc(100dvh - 600px)));overflow-y:auto;overscroll-behavior:contain;}',
       /* …except on the narrow layout, where the box itself is already capped at 30dvh and scrolls —
          two nested scroll areas on a phone is a trap, not a feature */
       '@media (max-width:768px){.war-info{max-height:none;overflow:visible;}}',
@@ -450,8 +462,20 @@ window.IntMapModules.warLayer = function (HOST) {
       if (popup) { try { popup.remove(); } catch (_) { } }
       popup = GE().ui.attach(GE().ui.popup({ closeButton: true, closeOnClick: true, className: 'plc-popup', maxWidth: '300px' }).setLngLat(lngLat).setHTML(html));
     }
+    /* ⚠⚠⚠ (#R409 追記) THE OPERATION IS ON TOP OF THE COUNTRY, AND BOTH LISTENERS GET THE SAME CLICK.
+       Measured on production: clicking the dot for Kursk opened the AREA card («Russia (Soviet Union)
+       / 1943-07-05 / Allies») and not the operation. `onLayer` is a plain per-layer listener — it is
+       not «topmost wins» — so one click ran `onEvent` AND `onArea`, and whichever `show()` ran second
+       removed the other's popup. Every operation over land was therefore unreachable; only the ones
+       at sea, with no fill under them, ever opened. (Both were on screen for an instant: a
+       MutationObserver recorded two popups inserted per click.)
+       The engine already has the answer — #R210 built `claimClick` / `clickClaimed` for exactly this
+       («the label underneath gets tapped too») and this file had never used it. The claim is by DOM
+       event IDENTITY, so it cannot go stale, and it makes the outcome the same whichever order the
+       two listeners happen to run in: the operation wins. */
     function onArea(ev) {
       try {
+        if (GE().events.clickClaimed && GE().events.clickClaimed(ev)) return;
         const f = ev && ev.features && ev.features[0]; if (!f) return;
         const p = f.properties || {};
         show(ev.lngLat, '<div class="war-pop"><b class="war-pop-h">' + esc(p.nm) + '</b>'
@@ -462,6 +486,8 @@ window.IntMapModules.warLayer = function (HOST) {
     function onEvent(ev) {
       try {
         const f = ev && ev.features && ev.features[0]; if (!f) return;
+        /* this tap belongs to the operation, not to the country under it (#R210's mechanism) */
+        try { GE().events.claimClick && GE().events.claimClick(ev); } catch (_) { }
         const p = f.properties || {};
         const span = p.d2 && p.d2 !== p.d ? (p.d + ' – ' + p.d2) : p.d;
         const K = (data && data.kinds && data.kinds[p.kind]) || null;
