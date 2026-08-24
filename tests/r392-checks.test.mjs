@@ -411,6 +411,34 @@ test('R392 ④ a water body too small for the view is refused, not named', () =>
   ], { lng: 139.700, lat: 35.659 }, 150);
   assert.ok(nearLake && nearLake.kind === 'lake', '…while a 150 km view that contains it does name it');
 
+  /* ⚠⚠⚠ TWO ROWS INSIDE THE SAME FRAME MUST STILL BE ORDERED BY DISTANCE. Measured on production:
+     the whole of Japan at z=5 was told 「This is where Japan meets East China Sea」. Both the Sea of
+     Japan (452 km from that centre) and the East China Sea (1,501 km) have their label points inside
+     that frame; the first version scored every in-frame row as `d = 0`, both are rank z=3 so the
+     reach tie-break was equal too, and the winner was whichever js/tables.js listed first.
+     ⚠ THE ASSERTION IS ORDER-INDEPENDENT ON PURPOSE — a check that passes only for one array order
+     is measuring the fixture, not the rule. */
+  const JP_BOX = { w: 122.2, s: 27.1, e: 153.8, n: 46.9, lng: 138, lat: 37, spanKm: 2807 };
+  const JP_ROWS = [
+    { lng: 134.5, lat: 40, z: 3, en: 'Sea of Japan', name: 'Sea of Japan' },
+    { lng: 125, lat: 29, z: 3, en: 'East China Sea', name: 'East China Sea' }
+  ];
+  for (const rows of [JP_ROWS, JP_ROWS.slice().reverse()]) {
+    const hit = pickWater(rows, { lng: 138, lat: 37 }, 2807, JP_BOX);
+    assert.equal(hit && hit.name, 'Sea of Japan',
+      'the nearer of two in-frame seas wins, whatever order the gazetteer lists them in');
+  }
+  /* …and a row INSIDE the frame outranks a NEARER one outside it, because the chip says 「this view
+     is about {water}」 and a body that is not on screen is not what the view is about. The centre
+     sits at the frame's eastern edge so the two pull in opposite directions: `Offscreen Sea` is
+     530 km away but outside the box, `Onscreen Sea` is 2,500 km away but inside it. */
+  const inBeatsOut = pickWater([
+    { lng: 156, lat: 37, z: 3, en: 'Offscreen Sea', name: 'Offscreen Sea' },
+    { lng: 123, lat: 30, z: 3, en: 'Onscreen Sea', name: 'Onscreen Sea' }
+  ], { lng: 150, lat: 37 }, 2807, JP_BOX);
+  assert.equal(inBeatsOut && inBeatsOut.name, 'Onscreen Sea',
+    'a row inside the frame outranks a nearer one outside it');
+
   const pac = pickWater([
     { lng: -160, lat: 32, z: 0.5, en: 'North Pacific Ocean', name: 'North Pacific Ocean' },
     { lng: 0, lat: 85, z: 0.8, en: 'Arctic Ocean', name: 'Arctic Ocean' }
