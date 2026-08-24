@@ -78,7 +78,7 @@ const EXPECTED_CALLS = {
      persona (`translating world-news headlines…` / `locating world news on the map…`), which is
      exactly what CONSTITUTION.md §5 allows the caller to add. Collapsing them into one call would
      make one of the two lie about what it is doing. */
-  'supabase/functions/news-ingest/index.ts': 2,   /* headline translation, subject geolocation (both internal mode) */
+  'supabase/functions/news-ingest/index.ts': 3,   /* (#R404) 見出しの日本語訳・地点解析、(#R405) 出来事の統合要約 */   /* headline translation, subject geolocation (both internal mode) */
 };
 const PROMPT_FILES = Object.keys(EXPECTED_CALLS);
 

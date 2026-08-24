@@ -201,6 +201,10 @@ gazetteer.js                      ニュース地点解析の内蔵ガゼッテ�
 news-claims.js                    媒体間で食い違っている数量を取り出す規則（純粋なモジュール）。
                                   UI も scripts/news-events-eval.mjs --diffs も**この 1 本**を呼ぶので、
                                   ブラウザの外から歩留まりと精度を測れる
+news-brief.js                     出来事の「読める中身」を組み立てる規則（純粋なモジュール）。原文の
+                                  文の切り出し・1 系列 1 文・同一配信の除外・主要な数字・一致・
+                                  「最新で何が更新されたか」。UI も
+                                  scripts/news-events-eval.mjs --brief も**この 1 本**を呼ぶ
 news-events.js                    出来事単位の News（一覧・カテゴリ chips・詳細・媒体間の相違・★）。
                                   遅延取得（IntMapLazy の newsEvents）で、束ね方は決めずにサーバーの
                                   結果を読む。正本は docs/NEWS-EVENTS.md
@@ -485,7 +489,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全12本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（15本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（16本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数。7本）
   functions/<name>/index.ts       Edge Functions（12本。一覧と各本の役割は Architecture.md §6.2）

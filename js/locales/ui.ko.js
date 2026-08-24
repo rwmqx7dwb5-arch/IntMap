@@ -312,6 +312,23 @@ window.IntMapLang.define('ko', { ui: {
     '{n}d ago': '{n}일 전',
     '{n}h ago': '{n}시간 전',
     '{n}m ago': '{n}분 전',
+    /* (#R405) 出来事の中身（What happened / 主要な数字 / 最新記事 / 一致 / 発信元）— js/news-events.js。位置引数は5言語までなので、この4言語はここで引く。 */
+    '{s} became the newest outlet to report this, {t}.': '이 사건을 새로 보도한 매체는 {s}입니다({t}).',
+    'first appears in this report': '이 기사에서 처음 나온 수치',
+    'How this was written — the exact wording each sentence came from ({n})': '이 글이 무엇에서 쓰였는지 — 각 문장의 근거가 된 원문({n}건)',
+    'In each outlet’s own words': '각 매체의 원문 그대로',
+    'IntMap combined what these outlets published into the paragraph above. Every sentence was machine-checked against the wording shown here before it was saved; sentences that could not be checked are discarded, never shown.': '위 문단은 이 매체들이 공개한 내용을 IntMap이 하나로 합친 것입니다. 각 문장은 저장되기 전에 여기 표시된 원문과 기계적으로 대조했으며, 대조하지 못한 문장은 버려져 표시되지 않습니다.',
+    'Key figures': '주요 수치',
+    'Only one outlet supplied article text for this event, so this is all IntMap can show without leaving the app.': '이 사건의 본문을 제공한 매체는 한 곳뿐이라, 앱을 벗어나지 않고 IntMap이 보여 줄 수 있는 것은 여기까지입니다.',
+    'Read at {s} ↗': '{s}에서 읽기 ↗',
+    'Read it at the source': '발신 매체에서 읽기',
+    'Sentences are quoted from what each outlet published. IntMap does not rewrite or paraphrase them.': '문장은 각 매체가 실제로 공개한 그대로 인용했습니다. IntMap은 고쳐 쓰거나 바꿔 쓰지 않습니다.',
+    'The outlets covering this event publish headline-only feeds, so IntMap has no article text to show. Open a report below to read it at the source.': '이 사건을 보도한 매체들은 표제만 담긴 피드를 배포하므로 IntMap에는 보여 줄 본문이 없습니다. 아래 목록에서 기사를 열어 발신 매체에서 읽어 주세요.',
+    'The outlets covering this event supplied no usable article text — only headlines. IntMap does not invent the rest.': '이 사건을 보도한 매체들은 쓸 수 있는 본문을 제공하지 않았습니다 — 표제뿐입니다. IntMap은 나머지를 지어내지 않습니다.',
+    'What happened': '무슨 일이 있었나',
+    'What the latest report added': '최신 기사가 추가한 내용',
+    'Where outlets agree': '매체 간에 일치하는 점',
+    'Which outlet said what, in the order they published it.': '어느 매체가 무엇을 썼는지, 공개된 순서대로 나열했습니다.',
     'The map view did not change.': "지도 화면은 바뀌지 않았습니다.",   /* atlas-console.js */
     'Unverified statements were removed from this answer.': "검증되지 않은 내용은 이 답변에서 제외했습니다.",   /* atlas-answer-render.js */
     "% of GDP": "GDP 대비 %",

@@ -320,6 +320,23 @@ window.IntMapLang.define('fr', { ui: {
     '{n}d ago': 'il y a {n} j',
     '{n}h ago': 'il y a {n} h',
     '{n}m ago': 'il y a {n} min',
+    /* (#R405) 出来事の中身（What happened / 主要な数字 / 最新記事 / 一致 / 発信元）— js/news-events.js。位置引数は5言語までなので、この4言語はここで引く。 */
+    '{s} became the newest outlet to report this, {t}.': '{s} est le média le plus récent à avoir rapporté cet événement ({t}).',
+    'first appears in this report': 'apparaît pour la première fois dans cet article',
+    'How this was written — the exact wording each sentence came from ({n})': 'Comment ce texte a été écrit — la formulation exacte dont provient chaque phrase ({n})',
+    'In each outlet’s own words': 'Dans les mots de chaque média',
+    'IntMap combined what these outlets published into the paragraph above. Every sentence was machine-checked against the wording shown here before it was saved; sentences that could not be checked are discarded, never shown.': 'IntMap a réuni dans le paragraphe ci-dessus ce que ces médias ont publié. Chaque phrase a été vérifiée automatiquement contre la formulation montrée ici avant d’être enregistrée ; les phrases qui n’ont pas pu être vérifiées sont écartées et ne sont jamais affichées.',
+    'Key figures': 'Chiffres clés',
+    'Only one outlet supplied article text for this event, so this is all IntMap can show without leaving the app.': 'Un seul média a fourni le texte de l’article pour cet événement : c’est tout ce qu’IntMap peut montrer sans quitter l’application.',
+    'Read at {s} ↗': 'Lire sur {s} ↗',
+    'Read it at the source': 'Lire à la source',
+    'Sentences are quoted from what each outlet published. IntMap does not rewrite or paraphrase them.': 'Les phrases sont citées telles que chaque média les a publiées. IntMap ne les réécrit ni ne les reformule.',
+    'The outlets covering this event publish headline-only feeds, so IntMap has no article text to show. Open a report below to read it at the source.': 'Les médias qui couvrent cet événement diffusent des flux réduits aux titres : IntMap n’a aucun texte d’article à montrer. Ouvrez un article ci-dessous pour le lire à la source.',
+    'The outlets covering this event supplied no usable article text — only headlines. IntMap does not invent the rest.': 'Les médias qui couvrent cet événement n’ont fourni aucun texte d’article exploitable — seulement des titres. IntMap n’invente pas le reste.',
+    'What happened': 'Ce qui s’est passé',
+    'What the latest report added': 'Ce qu’a ajouté le dernier article',
+    'Where outlets agree': 'Ce sur quoi les médias s’accordent',
+    'Which outlet said what, in the order they published it.': 'Quel média a dit quoi, dans l’ordre de publication.',
     'The map view did not change.': "La vue de la carte n’a pas changé.",   /* atlas-console.js */
     'Unverified statements were removed from this answer.': "Les affirmations non vérifiées ont été retirées de cette réponse.",   /* atlas-answer-render.js */
     "% of GDP": "% du PIB",

@@ -1325,6 +1325,35 @@
     a.ev-cov-t:hover{ text-decoration:underline; }
     .ev-why ul{ margin:0; padding-left:18px; }
     .ev-why li{ font-size:11.5px; line-height:1.6; color:var(--text-muted); margin-bottom:6px; }
+    /* (#R405) 出来事の中身 — 何が起きたか / 数字 / 更新 / 一致。
+       ⚠ 既存の視覚言語のまま（docs/NEWS-EVENTS.md §9「Ground News 風の独立画面を作らない」）。
+       ⚠ 出典 `.ev-src` は本文と**同じ行の続き**に置く。別の行に落とすと、どの文の出典なのかが
+         視覚的に切れる——1 行 1 出典がこの機能の約束である。 */
+    .ev-brief .ev-line{ font-size:13.5px; line-height:1.62; color:var(--text-main); margin:0 0 10px; }
+    .ev-sub{ font-size:11px; font-weight:700; letter-spacing:0.3px; text-transform:uppercase; color:var(--text-muted); margin:18px 0 8px; }
+    .ev-syn{ background:var(--card-bg); border:1px solid rgba(128,128,128,0.12); border-radius:14px; padding:13px 15px 11px; margin-bottom:4px; box-shadow:var(--shadow); }
+    .ev-syn .ev-line:last-of-type{ margin-bottom:8px; }
+    .ev-syn-ev{ margin:0 0 8px; }
+    .ev-syn-ev > summary{ font-size:11.5px; font-weight:600; color:var(--primary-color); cursor:pointer; list-style:none; padding:3px 0; }
+    .ev-syn-ev > summary::-webkit-details-marker{ display:none; }
+    .ev-syn-ev > summary::before{ content:'▸ '; }
+    .ev-syn-ev[open] > summary::before{ content:'▾ '; }
+    .ev-syn-ev .ev-diff-ctx{ margin:5px 0 0; padding-left:9px; border-left:2px solid rgba(128,128,128,0.22); }
+    .ev-syn .ev-d-note{ margin:0; }
+    .ev-line .ev-src{ color:var(--text-muted); font-size:11.5px; font-weight:600; white-space:nowrap; margin-left:6px; }
+    .ev-short{ font-size:12.5px; line-height:1.6; color:var(--text-muted); margin:0; padding:11px 13px; background:var(--input-bg); border-radius:12px; }
+    .ev-fig{ display:flex; align-items:baseline; flex-wrap:wrap; gap:8px; font-size:13px; color:var(--text-main); padding:8px 0; border-bottom:1px solid rgba(128,128,128,0.09); }
+    .ev-fig:last-child{ border-bottom:none; }
+    .ev-fig-k{ flex:0 0 auto; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.2px; min-width:74px; }
+    .ev-fig .ev-src{ color:var(--text-muted); font-size:11.5px; font-weight:600; }
+    .ev-fig .ev-diff-ctx{ flex:1 0 100%; margin:0; }
+    .ev-upd .ev-line{ font-size:13px; line-height:1.6; color:var(--text-main); margin:0 0 8px; }
+    .ev-cov-read{ display:inline-block; margin-top:5px; font-size:11.5px; font-weight:600; color:var(--primary-color); text-decoration:none; }
+    .ev-cov-read:hover{ text-decoration:underline; }
+    /* カードの要点は 2 行まで。実測 123.6px のカードを段落で埋めない。 */
+    .news-item .ev-gist{ font-size:12.5px; line-height:1.5; color:var(--text-muted); margin-top:5px; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    /* ⚠ 出典は文の前に置く（末尾だと 2 行クランプで消える）。色で本文と分ける。 */
+    .news-item .ev-gist-src{ font-weight:700; white-space:nowrap; color:var(--primary-color); }
     .nrp-orig{ display:inline-flex; align-items:center; gap:6px; align-self:flex-start; margin:20px 0 28px; padding:12px 22px; background:var(--primary-color); color:#fff; border-radius:12px; font-size:14px; font-weight:600; text-decoration:none; box-shadow:0 6px 18px rgba(0,122,255,0.3); }
     .nrp-orig:hover{ filter:brightness(1.08); }
     .nrp-note{ font-size:12px; color:var(--text-muted); margin-top:10px; line-height:1.6; }

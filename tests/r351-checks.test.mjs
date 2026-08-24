@@ -456,20 +456,26 @@ test('⑰ the ingest migration only adds, and it grants the writer explicitly', 
   assert.ok(!/ivfflat|hnsw/i.test(sql), 'the ANN index waits until embeddings exist');
 });
 
-/* ── ⑱ 段は 4 つあり、どれも名前で選べる ────────────────────────────────── */
+/* ── ⑱ 段はすべて在り、どれも名前で選べる ──────────────────────────────── */
 test('⑱ the stages exist and are individually runnable', () => {
   const fn = rd('supabase/functions/news-ingest/index.ts');
   /* ⚠ (#R386) SIX now: `embed` (make the material for the second, semantic pass) and `link`
      (join clusters that have already grown into each other) joined the four. The ORDER is the
      subject of the assertion below, not just the membership — `embed` before `assign` (nothing
      to add without embeddings) and `link` after it (so events created this run are in scope).
-     ⚠ (#R404) SEVEN: `locate` (the AI decides the subject location) sits after `fetch` — so this
-     run's arrivals are included — and before `assign`, so the events are built on, and their
-     representative pin chosen from, the AI's coordinates rather than the gazetteer's. */
-  for (const s of ['fetch', 'locate', 'embed', 'assign', 'link', 'translate', 'prune']) {
+     ⚠ (#R405) EIGHT (with #R404 locate): `summarise` writes what an event says, and it comes AFTER `link` so that
+     an event about to absorb another one is summarised once, from all its articles, instead of
+     twice. (It would not be left stale either way — the evidence fingerprint covers the member
+     list, so absorbing articles changes it and the next run pays again. The ordering buys the
+     cheaper of two correct outcomes, not correctness itself.) */
+  for (const s of ['fetch', 'locate', 'embed', 'assign', 'link', 'summarise', 'translate', 'prune']) {
     assert.ok(fn.includes('stage' + s[0].toUpperCase() + s.slice(1)), 'stage ' + s + ' is missing');
   }
-  assert.match(fn, /\["fetch", "locate", "embed", "assign", "link", "translate", "prune"\]/);
+  /* ⚠⚠⚠ **`\\[` と書くと、これは「バックスラッシュ + 文字クラス」になって別の理由で通る。**
+     `fn` には `\s` や `\d` がいくらでもあるので、順序が何であっても緑になる（#R405 で実際に
+     1 度書いてしまい、変異させて気づいた）。⇒ `\[` は 1 本。 */
+  assert.match(fn, /\["fetch", "locate", "embed", "assign", "link", "summarise", "translate", "prune"\]/);
+
   /* 計測は docs/NEWS-EVENTS.md §13 の置き場へ入る。 */
   assert.match(fn, /news_ingest_runs/);
   assert.match(fn, /estimated_cost_usd/);
