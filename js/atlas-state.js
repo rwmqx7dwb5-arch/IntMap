@@ -185,13 +185,14 @@ export function makeAtlasState(HOST) {
           workspaceMode: !!(cl && cl.contains('ws-mode')) };
       });
 
-      /* `n` is the TOTAL; `items` is the addressable head of it. Capping the array alone would turn
-         "30 objects" into "12 objects" the moment anyone counted the list instead of reading the count. */
+      /* (#R413) `items` WAS THE ADDRESSABLE HEAD, AND THE HEAD WAS 12. An object 13th on the list had
+         an id, a name and a fly-to — and Atlas could not name it, because the provider never mentioned
+         it. `n` still carries the total; now `items` carries all of them. CONSTITUTION.md §5. */
       reg('objects', function () {
         var OB = GLOBAL('IntMapObjects');
         if (!OB || typeof OB.list !== 'function') return null;
         var list = OB.list() || [];
-        return { n: list.length, items: list.slice(0, 12).map(function (o) {
+        return { n: list.length, items: list.map(function (o) {
           return { id: String(o.id), kind: o.kind, name: String(o.name == null ? '' : o.name) }; }) };
       });
 
@@ -469,8 +470,15 @@ export function makeAtlasState(HOST) {
        So each line below is the SHORTEST true statement of what that section holds, it is emitted only
        when the section has content (a reader with no route pays no bytes for one), and the six new
        lines come last so the order `stateContext()` emitted is untouched above them. */
-    var RENDER_LIMITS = { maxLayers: 40, maxReadable: 10, maxObjects: 12, maxTitle: 140, maxBody: 2600,
-      maxSearch: 60, maxPolyNames: 4, maxObjectName: 24 };
+    /* ⚠ (#R413) SIX OF THESE ARE GONE — maxLayers 40, maxReadable 10, maxObjects 12, maxObjectName 24,
+       maxPolyNames 4, maxSearch 60. They were byte budgets on WHAT ATLAS IS ALLOWED TO KNOW ABOUT ITS
+       OWN APP: with 45 layers on, Atlas was told about 40 and the other five simply did not exist for
+       it — and nothing anywhere said a list had been cut, which is the silent truncation #R320 named.
+       These are the app's own state, bounded by the app's own size, and Atlas gets all of it.
+       What is left clips text that arrives from OUTSIDE and has no bound at all: one headline and one
+       article body. That is not a limit on Atlas; it is the reason a 200 kB news page cannot become
+       the whole prompt. 「制限を増やす方向、例外を増やす方向に持っていくな」 — CONSTITUTION.md §5. */
+    var RENDER_LIMITS = { maxTitle: 140, maxBody: 2600 };
     var PROJ_WORD = { '3d-terrain': '3D terrain', 'flat': 'flat', 'globe': 'globe' };
     API.renderPrompt = function (snap, opts) {
       snap = snap || {};
@@ -497,8 +505,8 @@ export function makeAtlasState(HOST) {
           if (typeof l.readable === 'string') { readable.push(l.readable); return; }
           on.push(str(l.label) + (l.painted === false ? ' [NOT painted on the map — data still loading or failed]' : ''));
         });
-        lines.push(on.length ? ('Layers ON (' + on.length + '): ' + on.slice(0, lim.maxLayers).join(', ') + '.') : 'No data layers are on.');
-        if (readable.length) lines.push('Readable layer data (query real values with the "layerData" action): ' + readable.slice(0, lim.maxReadable).join(' | ') + '.');
+        lines.push(on.length ? ('Layers ON (' + on.length + '): ' + on.join(', ') + '.') : 'No data layers are on.');
+        if (readable.length) lines.push('Readable layer data (query real values with the "layerData" action): ' + readable.join(' | ') + '.');
       }
 
       var at = snap.atlas || {};
@@ -523,7 +531,7 @@ export function makeAtlasState(HOST) {
       if (at.pins && at.pins.n) lines.push(at.pins.n + ' Atlas pins are on the map' +
         (at.pins.kind === 'research' ? ' (research-report pins with summaries)' : ' (facility/POI pins)') + '.');
       if (at.polygons && at.polygons.n) {
-        var pn = (at.polygons.names || []).slice(0, lim.maxPolyNames).join(', ');
+        var pn = (at.polygons.names || []).join(', ');
         lines.push(at.polygons.n + ' Atlas polygon highlight(s)' + (pn ? (': ' + pn) : '') + '.');
       }
       if (at.lines && at.lines.n) lines.push(at.lines.n + ' Atlas line(s) drawn (river courses / routes / custom lines).');
@@ -546,8 +554,8 @@ export function makeAtlasState(HOST) {
 
       var ob = snap.objects;
       if (ob && ob.n) lines.push('Map objects (' + ob.n + ') — target them with the "object" action by id: ' +
-        (ob.items || []).slice(0, lim.maxObjects).map(function (o) {
-          return o.kind + ' id=' + o.id + ' "' + str(o.name).slice(0, lim.maxObjectName) + '"'; }).join('; ') + '.');
+        (ob.items || []).map(function (o) {
+          return o.kind + ' id=' + o.id + ' "' + str(o.name) + '"'; }).join('; ') + '.');
 
       var tm = snap.time || {};
       if (tm.travelDate) lines.push('TIME TRAVEL is active — news/imagery around ' + tm.travelDate +
@@ -555,7 +563,7 @@ export function makeAtlasState(HOST) {
       if (tm.layerDates && tm.layerDates.length) lines.push('Dated raster layers showing: ' +
         tm.layerDates.map(function (d) { return d.layer + '=' + d.date; }).join(', ') + ' (changeable via control "date: <layer>").');
 
-      if (str(sel.searchBox).trim()) lines.push('Search box contains: "' + str(sel.searchBox).trim().slice(0, lim.maxSearch) + '".');
+      if (str(sel.searchBox).trim()) lines.push('Search box contains: "' + str(sel.searchBox).trim() + '".');
 
       if (pa.workspaceMode) lines.push('WORKSPACE MODE is on — the UI is free-floating windows (News / Countries / Information / Community / Map / Layers), a top menu bar (View/Tools/Window/Settings) and a fixed bottom ticker; hidden windows reopen from the Window menu; turn off via the "setting-wsmode-btn" button or IntMapWorkspace.close.');
 
@@ -573,23 +581,40 @@ export function makeAtlasState(HOST) {
         (rt.hasRoute ? 'a route is drawn' : 'no route drawn') + (rt.mode ? (', travel mode=' + str(rt.mode)) : '') +
         (rt.alts != null ? (', ' + rt.alts + ' alternative(s)') : '') + '.');
 
+      /* ══ (#R413) THIS LINE HAD NEVER BEEN EMITTED ONCE ════════════════════════════════════════
+         It read `dl.lat`. The provider above has always published `{active, last:{lng,lat,acc}}`, so
+         `dl.lat` was `undefined`, `isFinite(undefined)` was false, and the reader's position reached
+         the model as ZERO BYTES from the round the section was written. Measured, not supposed: the
+         only shape that rendered the sentence was a shape nothing produces. `Map center ≈ …` renders
+         unconditionally three lines above, which is why 「現在地から大阪駅まで」 came back as
+         「地図中央（約44.76, 50.46）しか取得できません」 — a true report of everything Atlas was given.
+         ⚠ AND THE SENTENCE ITSELF FORBADE THE REQUEST IT WAS FOR. «use it only for "near me"-style
+         requests, never as the subject of a question that named a place» — 「現在地から大阪駅まで」
+         names a place, so on the one turn the position mattered the line would have ruled it out.
+         What replaces it states the AUTHORITY: where the reader is, and that Atlas may obtain it. */
       var dl = snap.deviceLocation;
-      if (dl && isFinite(dl.lat)) lines.push('The reader\'s DEVICE location is known: ' + (+dl.lat).toFixed(3) + ', ' +
-        (+dl.lng).toFixed(3) + ' — use it only for "near me"-style requests, never as the subject of a question that named a place.');
+      if (dl && dl.last && isFinite(dl.last.lat) && isFinite(dl.last.lng)) {
+        lines.push('The reader\'s DEVICE position is known: ' + (+dl.last.lat).toFixed(4) + ', ' + (+dl.last.lng).toFixed(4) +
+          (isFinite(dl.last.acc) && dl.last.acc > 0 ? (' (±' + Math.round(dl.last.acc) + ' m)') : '') +
+          ' — this is where the reader IS. Use it whenever the request means their own position, including as the origin of a route to a named place.');
+      } else if (dl) {
+        lines.push('The reader\'s device position is not known yet — call my_location to obtain it. ' +
+          'The map centre is NOT a substitute for it, and the reader is not the one who has to type it.');
+      }
 
       var sim = snap.simulations;
       if (sim && Object.keys(sim).length) lines.push('Simulations open: ' + Object.keys(sim).join(', ') + '.');
 
       var pend = snap.pendingOperations;
       if (pend && pend.length) lines.push('Operations still RUNNING from an earlier turn: ' +
-        pend.slice(0, 6).map(function (p) { return str(p && (p.capabilityId || p.id)); }).filter(Boolean).join(', ') +
+        pend.map(function (p) { return str(p && (p.capabilityId || p.id)); }).filter(Boolean).join(', ') +
         ' — do not re-issue these; they have not finished.');
 
       /* Only the UNAVAILABLE ones. Listing what works would repeat the catalogue the planner already has. */
       var av = snap.capabilityAvailability;
       if (av) {
         var off = Object.keys(av).filter(function (k) { return av[k] && av[k].available === false; });
-        if (off.length) lines.push('Currently UNAVAILABLE capabilities (do not plan these this turn): ' + off.slice(0, 12).join(', ') + '.');
+        if (off.length) lines.push('Currently UNAVAILABLE capabilities (do not plan these this turn): ' + off.join(', ') + '.');
       }
 
       var al = snap.alerts;

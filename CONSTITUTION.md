@@ -83,6 +83,24 @@
 
 ## 5. AI・ニュース・鍵 (AI, news, keys)
 
+- ⚠⚠⚠ **Atlas には全権が委任されている。Atlas を触るとき、制限を増やす方向・例外を増やす方向へ
+  持っていってはならない。**
+  Atlas holds full authority. **Never** move Atlas in the direction of more limits or more exceptions.
+  - **自力で取れるものを利用者に投げ返さない。** Atlas が道具で取得できるものは Atlas が取得する。
+    利用者に訊いてよいのは**利用者にしか出せないもの**だけ（好み、実在する選択肢からの選択、
+    ブラウザが本人にしか出さない許可）。**地図の中心で代用しない。**
+  - **コードが Atlas の代わりに決めない。** 何を知ってよいか・どの道具に届いてよいか・
+    何手まで考えてよいかを、コード側の定数で先に削らない。上限は**暴走を止める最後の柵**であって、
+    予算配分の道具ではない。
+  - **報告された不具合に対して、条件文・除外リスト・打ち切り件数を足して塞がない。**
+    足したくなったら、それは**機構そのものが間違っている**合図である（§5 の下の
+    `js/atlas-policy.js` の注記と同じ理由）。
+  - 実測の由来（#R413）: `find_capability` は上位 **8 件**で切っており、同点は id のアルファベット順
+    だったので「現在地から大阪駅までの経路」で `routing.route` が **9 位**になり落ちていた。
+    `norm()` が camelCase を分割しないので **186 綴り中 93** が自分の言葉で引けなかった。
+    `renderPrompt` はレイヤー 40・オブジェクト 12 で切っていた。実行結果は 3,000 字で切ってから
+    Atlas に渡していた。**どれも「Atlas が知ってよいこと」をコードが決めていた。**
+
 - **Atlas の人格は正式仕様であり、正本は `js/atlas-persona.js` 1本だけ。**
   Atlas's persona is a formal specification with exactly ONE source of truth: `js/atlas-persona.js`.
   system prompt に人格を書き足さない——**呼び出し側が足してよいのはタスク規則だけ**。

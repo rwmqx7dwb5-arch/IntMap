@@ -163,7 +163,20 @@ test('R406-turn ⑥: find_capability returns a few real capabilities with their 
   }]);
   assert.equal(found.ok, true);
   assert.ok(found.matches.length > 0, 'discovery found nothing for a real IntMap feature');
-  assert.ok(found.matches.length <= 8, `discovery returned ${found.matches.length} — it must stay small`);
+  /* ⚠⚠⚠ (#R413) THIS USED TO BE `matches.length <= 8`, AND THAT CEILING WAS THE DEFECT.
+     `search()` breaks equal scores with `a.id.localeCompare(b.id)`, so cutting at eight let the
+     ALPHABET decide what Atlas was allowed to know about: measured on 「現在地から大阪駅までの経路」,
+     ten capabilities score 16 — identically, because the only signal a Japanese request produces is
+     the per-CATEGORY hint row — and sorted by id, `routing.route` lands NINTH and was dropped, while
+     the five navigation.* that arrived instead all reply «plan a route first». Atlas asked the reader
+     to type their own address because IntMap had handed it a toolkit that could not draw a route.
+     ⚠ The invariant is NOT a smaller number. It is that nothing is dropped, and that the RESULT
+     stays small because the shared catalogue blocks are de-duplicated rather than clipped — which is
+     what the byte assertion below actually measures. CONSTITUTION.md §5. */
+  assert.equal(found.matches.length, CAPS.search('isochrone reachable area', { want: 3, min: 1 }).ranked.length,
+    'every capability that scored comes back — discovery must not truncate its own ranking');
+  assert.ok(JSON.stringify(found).length < 40_000,
+    `discovery returned ${JSON.stringify(found).length} bytes — de-duplication, not truncation, is what keeps this small`);
   found.matches.forEach((m) => {
     assert.ok(CAPS.resolve(m.id), `${m.id} is not a real capability id`);
     assert.equal(m.schema.type, 'object', `${m.id} came back without a real schema`);
