@@ -209,10 +209,13 @@ test('R434 ③ b the shear a billboard cannot express is most of the shape at ti
 test('R434 ④ every completed tile read stamps the sky it asked about, wherever it came from', () => {
   assert.match(FEED, /markAsked\(tiles\[i\]\.lat, tiles\[i\]\.lon, Date\.now\(\)\);/,
     'readSerial stamps each tile it actually read');
-  /* ⚠ ONE PLACE. There are two callers — the viewport channel and the lattice sweep — and a ledger
-     only one of them writes is a ledger that lies about half the sky (the #R411 ① c shape). */
+  /* ⚠ TWO WRITERS, NAMED. Upstream reads reach the ledger through readSerial — the ONE place both
+     the viewport channel and the lattice sweep go through, so a ledger only one of them wrote
+     would lie about half the sky (the #R411 ① c shape) — and (#R434 addendum) hydration seeds it
+     from the shared snapshot. Counting the calls is what stops a third writer appearing without
+     anybody deciding it should. */
   const stamps = (FEED.match(/markAsked\(/g) || []).length;
-  assert.equal(stamps, 2, 'one declaration and one call site (found ' + stamps + ')');
+  assert.equal(stamps, 3, 'one declaration and exactly two writers (found ' + stamps + ')');
   const serials = (FEED.match(/await readSerial\(/g) || []).length;
   assert.equal(serials, 2, 'and both upstream readers go through readSerial (found ' + serials + ')');
   /* the stamp is inside the loop and AFTER the rate-limit check, because a 429 taught us nothing */
@@ -231,6 +234,31 @@ test('R434 ④ every completed tile read stamps the sky it asked about, wherever
   assert.equal(askCell(35.0, 139.0), askCell(35.6, 139.6), 'sky within one cell is one entry');
   assert.notEqual(askCell(35.0, 139.0), askCell(38.0, 139.0), 'three degrees north is different sky');
   assert.equal(askCell(0, 180), askCell(0, -180), 'and the antimeridian is not a seam');
+});
+
+/* ── ④ b …AND A COLD ISOLATE INHERITS IT FROM THE SNAPSHOT ──────────────────────────────────
+   Supabase hands out cold isolates often enough that the function treats isolate memory as not a
+   cache at all (the snapshot exists for exactly that reason). An empty ledger makes a cold isolate
+   decide the view centre is the stalest sky on the planet and spend its one read there, whatever
+   the shared snapshot already holds — measured in production immediately after this round
+   deployed, three consecutive polls of one wide view were answered by three isolates reporting
+   askedCells 3, 0 and 0. An aircraft observed in a cell at time T is proof somebody asked about
+   that cell at least at T, so hydration can seed the ledger with no new state and no new format. */
+test('R434 ④ b the hydrated snapshot seeds the ledger, so a cold isolate does not restart the walk', () => {
+  const hyd = /function hydrate\(msg\) \{([\s\S]*?)\n\}/.exec(FEED);
+  assert.ok(hyd, 'hydrate is still one function');
+  assert.match(hyd[1], /markAsked\(msg\.lat\[i\], msg\.lon\[i\], seenAt\);/,
+    'every hydrated aircraft stamps the sky it was seen in, at the time it was seen');
+  /* ⚠ THE LATEST WINS. Hydration arrives out of order — fifty aircraft in one cell carry fifty
+     observation times — so an unconditional set would leave the OLDEST of them in the ledger and
+     make well-covered sky look stale. */
+  const mk = /function markAsked\(lat, lon, at\) \{([\s\S]*?)\n\}/.exec(FEED);
+  assert.ok(mk, 'markAsked is still one function');
+  assert.match(mk[1], /if \(at > prev\) STATE\.asked\.set\(key, at\);/, 'the latest stamp wins');
+  assert.ok(!/^\s*STATE\.asked\.set\(askCell\(lat, lon\), at\);/m.test(mk[1]),
+    'and the unconditional write is gone');
+  assert.match(mk[1], /if \(!\(at > 0\) \|\| lat == null \|\| lon == null\) return;/,
+    'a record with no position and no time stamps nothing');
 });
 
 /* ── ⑤ A WIDE VIEW WALKS ACROSS ITSELF INSTEAD OF RE-READING ITS MIDDLE ──────────────────────
