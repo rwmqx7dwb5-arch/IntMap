@@ -27,6 +27,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
@@ -428,4 +429,34 @@ test('⑮ a stored summary whose cited outlet is no longer a member is not shown
      ⚠ ブラウザ側の証拠は `tests/r405.spec.js` ①。ここはその静的な裏取りである。 */
   assert.doesNotMatch(list, /card\.querySelector\('\.btn-read'\)\.onclick/,
     'decorate() が外しうる要素に、取れた確認なしで onclick を代入している');
+});
+
+/* ── ⑯ cron は API から動かせる書き方で書く ──────────────────────────────
+   ⚠⚠⚠ **実測 (2026-08-24・本番)**: migration を Management API から適用する経路
+   (`supabase db query --file … --linked`) の login role は `cron.job` に**直接
+   UPDATE できない** —— `permission denied for table job` で **migration ごと
+   ロールバックする**。適用は 1 トランザクションなので部分適用にはならないが、
+   「CI では緑・本番では 1 行も入らない」という形になる（CI に pg_cron は無いので、
+   その do-block は `to_regclass` で自分を飛ばして通ってしまう）。
+   ⇒ cron を触る migration は `cron.schedule` / `cron.unschedule` /
+     `cron.alter_job` だけを使う。⚠ #R404 の migration も同じ規則で書かれている。
+   ⚠ この検査は「本番で通るか」を測れない——測れるのは**通らないと分かっている書き方を
+     していないこと**である。そこは正直に言っておく。 */
+test('⑯ cron を触る migration は cron.job を直接 UPDATE しない（API の role には権限が無い）', () => {
+  const dir = path.join(ROOT, "supabase", "migrations");
+  const offenders = [];
+  for (const f of fs.readdirSync(dir).filter((n) => n.endsWith(".sql"))) {
+    /* ⚠ **散文に当たらせない。** stripSqlComments が外すのは行コメントだけなので、
+       この規則の理由を説明したブロックコメントの中の «update cron.job» に検査が答えて
+       しまう（このリポジトリで 13 回目の形）。⇒ ブロックコメントも先に外す。 */
+    const sql = stripSqlComments(readLF(path.join(dir, f))).replace(/\/\*[\s\S]*?\*\//g, " ");
+    /* `update cron.job …` と `insert into cron.job …` / `delete from cron.job …` */
+    if (/\b(?:update|delete\s+from|insert\s+into)\s+cron\.job\b/i.test(sql)) offenders.push(f);
+  }
+  assert.deepEqual(offenders, [],
+    "cron.job を直接書き換える migration は本番で permission denied になる: " + offenders.join(", "));
+  /* このラウンドの migration が、実際に使ってよい関数のほうを呼んでいること。 */
+  const mine = stripSqlComments(rd(MIGRATION)).replace(/\/\*[\s\S]*?\*\//g, " ");
+  assert.match(mine, /perform\s+cron\.schedule\(/, "cron.schedule を呼んでいない");
+  assert.match(mine, /perform\s+cron\.unschedule\(/, "古い job を外していない");
 });
