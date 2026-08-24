@@ -151,7 +151,11 @@ const dnum = (d) => { const p = String(d).split('-'); return (+p[0]) * 10000 + (
 const polysOf = (f) => f[8].map((poly) => poly.map((ri) => CS.rings[ri]));
 
 test('R349 ⑥: data/wars.json is shaped the way js/war-fronts.js reads it', () => {
-  assert.equal(wars.v, 1);
+  /* (#R409) v:2 — the file gained the shipped `kinds` table, a derived `span` per war, and the two
+     optional figures on an operation. Every assertion below still holds; the version is pinned
+     because a reader of this file that has not been taught the new members would drop them
+     silently, and a bump is the one thing that says «go and look». */
+  assert.equal(wars.v, 2);
   assert.deepEqual(wars.wars.map((w) => w.id), ['ww1', 'ww2'], 'both wars, in order');
   const LANGS = ['en', 'jp', 'de', 'ru', 'es', 'zh', 'zh-hans', 'fr', 'ko'];
   const full = (o, what) => { for (const k of LANGS) assert.ok(o && o[k], `${what} has no ${k}`); };

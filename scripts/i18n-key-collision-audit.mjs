@@ -69,7 +69,7 @@ const BENIGN = new Set([
   'Limitations', 'Literacy rate %', 'live', 'Loading…', 'Low', 'Lowest', 'Manufacturing % GDP',
   'Markets', 'Medium', 'Mil. spending (% GDP)', 'Military', 'Military (% GDP)', 'moderate', 'Moderate',
   'Name', 'nearby', 'Need start & destination', 'Neutral', 'News', 'No dated eruption',
-  'No layers are on', 'objects', 'Observatory', 'of the view', 'On this day', 'Operator',
+  'No layers are on', 'objects', 'Observatory', 'of the view', 'Operator',
   'Partly cloudy', 'Period', 'Pharmaceuticals', 'Play', 'Polygon', 'Population growth %', 'Pour',
   'Precipitation', 'Products', 'Rain', 'Reachable area', 'Recent earthquakes', 'Redraw',
   'Restricted areas', 'Result', 'Return to launch', 'Route', 'Rupture', 'Rural population %',

@@ -5524,14 +5524,31 @@ window.IntMapLang.define('zh-hans', {
   'Times come from the map’s clock ({year}), not from today — live timetables do not cover it.': '时刻依地图的时钟（{year}年），而非今天 — 实时时刻表并未涵盖该时间。',   /* routing-time.js (#R347) */
   'Times are calculated from the map’s clock ({year}), not from today.': '时刻以地图的时钟（{year}年）为基准计算，而非今天。',   /* routing-time.js (#R347) */
   'Traffic data was unavailable — this is the standard travel time.': '无法取得路况数据 — 这是标准所需时间。',   /* routing-cards.js (#R347) */
+  '1 day': '1 天',   /* war-layer.js (#R409) */
+  '15 days': '15 天',   /* war-layer.js (#R409) */
+  '5 days': '5 天',   /* war-layer.js (#R409) */
+  'casualties': '伤亡',   /* war-layer.js (#R409) */
+  'Casualties and prisoners': '伤亡与俘虏',   /* war-layer.js (#R409) */
+  'Commonly cited totals, both sides together.': '皆为常见引用的双方合计数字。',   /* war-layer.js (#R409) */
   'Company rule in India': '东印度公司统治下的印度',   /* war-fronts.js / history.js (#R349) */
   'Could not load the war data': '无法加载战争数据',   /* war-fronts.js / history.js (#R349) */
+  'First day': '第一天',   /* war-layer.js (#R409) */
+  'forces': '兵力',   /* war-layer.js (#R409) */
+  'Forces engaged': '投入兵力',   /* war-layer.js (#R409) */
   'Front lines': '战线',   /* war-fronts.js / history.js (#R349) */
-  'Front lines are shown for the dates the record gives a position for, and hold until the next one — the date beside each line is the date it is from. Country outlines: CShapes 2.0.': '战线只在记录给出位置的日期上绘制，并保持到下一个日期——线旁的日期就是该线的日期。国界：CShapes 2.0。',   /* war-fronts.js / history.js (#R349) */
   'line of': '战线日期',   /* war-fronts.js / history.js (#R349) */
+  'Match the time machine': '对齐时光机',   /* war-layer.js (#R409) */
+  'On this day of the war': '这一天的战况',   /* war-layer.js (#R409) */
+  'One day back': '后退一天',   /* war-layer.js (#R409) */
+  'One day forward': '前进一天',   /* war-layer.js (#R409) */
   'Second French Empire': '法兰西第二帝国',   /* war-fronts.js / history.js (#R349) */
-  'The clock is not inside either war. Move Chronos to a date between 1914 and 1945, or jump straight in:': '目前的时间不在两次大战的期间内。请把 Chronos 移到 1914–1945 年之间的日期，或直接前往：',   /* war-fronts.js / history.js (#R349) */
-  'World wars (day by day)': '两次世界大战（逐日）',
+  'Step': '步进',   /* war-layer.js (#R409) */
+  'Symbols': '符号',   /* war-layer.js (#R409) */
+  'The slider moves this layer only — it never moves the time machine. Moving the time machine brings this layer with it. Front lines are shown for the dates the record gives a position for, and hold until the next one: the date beside each line is the date it is from.': '滑杆只移动这个图层——不会移动时光机。反过来，移动时光机时这个图层也会跟着走。战线只在记录给出位置的日期上绘制，并保持到下一个日期：线旁的日期就是该线的日期。',   /* war-layer.js (#R409) */
+  'This layer draws the days of one war. Move its slider, or jump to the first day:': '这个图层描绘一场战争的每一天。请移动下方的滑杆，或跳到开战的第一天：',   /* war-layer.js (#R409) */
+  'World War I (day by day)': '第一次世界大战（逐日）',   /* war-fronts.js war-layer.js (#R409) */
+  'World War II (day by day)': '第二次世界大战（逐日）',   /* war-fronts.js war-layer.js (#R409) */
+  '{n} more running today': '另有 {n} 件在同一天进行',   /* war-layer.js (#R409) */
   "Colours are the issuing agency’s own — Japan’s are the JMA’s yellow / red / magenta / black, China’s the CMA’s four signal colours, and the rest the CAP awareness ladder. Tap a country for that agency’s exact scale.": "颜色为发布机关自身的配色——日本为气象厅的黄／红／洋红／黑，中国为气象局的四色预警信号，其余为 CAP 等级。点击国家可查看该机关的确切等级。",
   "Each agency’s ranks are mapped onto these four by IntMap. Two countries at the same step do NOT necessarily face the same danger — the warning systems themselves differ. Tap a country for its own agency’s scale.": "各机关的等级由 IntMap 自行换算为这四级。同一级并不代表两国的危险程度相同——警报制度本身不同。点击国家可查看该机关的等级。",
   "Nothing in force in any connected service right now.": "目前已连接的各机关皆无发布中的警报。",

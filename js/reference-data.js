@@ -352,6 +352,12 @@ window.IntMapRefData=(function(){
     {n:'DeepStateMap',u:'https://deepstatemap.live/'},
     {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps'},
     {n:'CShapes 2.0 (Schvitz et al., ETH Zürich)',u:'https://icr.ethz.ch/data/cshapes/'},
+    /* ⚠ (#R409) THE MAP NAMED THIS SOURCE AND THIS PAGE DID NOT LIST IT. The two world-war layers
+       credit «the documented record, compiled in scripts/wars/» in their MapLibre attribution and
+       in their legend, and until this round a reader who followed that credit to the Sources page
+       found only CShapes — the outlines, not the dates, the fronts, the operations or the figures.
+       The record is ours, it is public, and a source a layer names has to be reachable from here. */
+    {n:'IntMap war record (scripts/wars/)',u:'https://github.com/rwmqx7dwb5-arch/IntMap/tree/main/scripts/wars'},
     {n:'Maddison Project Database 2020 (Bolt & van Zanden)',u:'https://www.rug.nl/ggdc/historicaldevelopment/maddison/'},
     {n:'World Bank Open Data',u:'https://data.worldbank.org/'},
     {n:'IMF World Economic Outlook',u:'https://www.imf.org/en/Publications/WEO'},

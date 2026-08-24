@@ -57,4 +57,26 @@ const F_WW2 = {
   NEUTRAL: { col: '#9aa1a8', name: F_WW1.NEUTRAL.name },
 };
 
-export { L, F_WW1, F_WW2 };
+/* ── what KIND of thing an `events` row is ──────────────────────────────────────────────────────
+   ⚠ (#R409) THIS TABLE IS THE ONLY DEFINITION, AND IT SHIPS. scripts/build-wars.mjs copies it into
+   data/wars.json and REFUSES any event whose `kind` is not a key here, and js/war-layer.js builds
+   both the circle colour expression and the legend key OUT OF the shipped copy — so a kind cannot
+   exist in the record without a colour and a name in nine languages, and a typo cannot render as a
+   silent land battle. Before this round there were three kinds, two of them named only inside a
+   MapLibre `match` expression in the layer, and nothing checked the record against them.
+   The colours are chosen against each other rather than against the fills: these are 5-7 px circles
+   with a dark stroke sitting on top of the faction colours, and what has to be readable is which
+   dot is which. `atrocity` is deliberately the one unbright marker in the table. */
+const KINDS = {
+  battle: { col: '#ffffff', name: L('Land battle or offensive', '陸戦・攻勢', 'Landschlacht oder Offensive', 'Сухопутное сражение или наступление', 'Batalla terrestre u ofensiva', '陸戰或攻勢', '陆战或攻势', 'Bataille terrestre ou offensive', '지상전·공세') },
+  naval: { col: '#4fc3e8', name: L('Naval battle', '海戦', 'Seeschlacht', 'Морское сражение', 'Batalla naval', '海戰', '海战', 'Bataille navale', '해전') },
+  air: { col: '#b39ddb', name: L('Air campaign', '航空作戦', 'Luftkrieg', 'Воздушная операция', 'Campaña aérea', '航空作戰', '航空作战', 'Campagne aérienne', '항공 작전') },
+  siege: { col: '#ff9248', name: L('Siege or encirclement', '包囲戦', 'Belagerung oder Einkesselung', 'Осада или окружение', 'Asedio o cerco', '圍城或包圍', '围城或包围', 'Siège ou encerclement', '공성·포위') },
+  landing: { col: '#5fe0a8', name: L('Amphibious or airborne landing', '上陸・空挺作戦', 'Landung aus See oder Luft', 'Десантная операция', 'Desembarco anfibio o aerotransportado', '登陸或空降作戰', '登陆或空降作战', 'Débarquement ou opération aéroportée', '상륙·공수 작전') },
+  political: { col: '#f4d95c', name: L('Declaration, treaty or capitulation', '宣戦・条約・降伏', 'Erklärung, Vertrag oder Kapitulation', 'Объявление, договор или капитуляция', 'Declaración, tratado o capitulación', '宣戰、條約或投降', '宣战、条约或投降', 'Déclaration, traité ou capitulation', '선전포고·조약·항복') },
+  conference: { col: '#7fa8ff', name: L('Conference', '首脳会談', 'Konferenz', 'Конференция', 'Conferencia', '首腦會議', '首脑会议', 'Conférence', '정상 회담') },
+  atrocity: { col: '#7a7a88', name: L('Mass atrocity or camp', '大量虐殺・収容所', 'Massenverbrechen oder Lager', 'Массовое преступление или лагерь', 'Atrocidad masiva o campo', '大規模暴行或集中營', '大规模暴行或集中营', 'Atrocité de masse ou camp', '집단 학살·수용소') },
+  uprising: { col: '#ff7f9e', name: L('Uprising or resistance', '蜂起・抵抗', 'Aufstand oder Widerstand', 'Восстание или сопротивление', 'Levantamiento o resistencia', '起義或抵抗', '起义或抵抗', 'Soulèvement ou résistance', '봉기·저항') },
+};
+
+export { L, F_WW1, F_WW2, KINDS };

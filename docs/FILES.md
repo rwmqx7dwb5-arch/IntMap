@@ -184,8 +184,8 @@ time-borders.js                   時間軸の上の歴史的国境 IntMapTimeBo
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
 us-elections.js                   すべての米大統領選挙 IntMapUSElections（州をクリックするとその州の票と選挙人）
-war-fronts.js                     両大戦の行 IntMapWarFronts（**eager**——行と IntMapOS の2命令だけ）
-war-layer.js                      両大戦の層そのもの（**on-demand**・`__imWarFronts`・Chronos 連動）
+war-fronts.js                     両大戦の**2行**（WW1／WW2）IntMapWarFronts（**eager**——行と IntMapOS 命令だけ）
+war-layer.js                      両大戦の層そのもの（**on-demand**・`__imWarFronts`・大戦ごとに1インスタンス／凡例に日スライダーと再生）
 war-geom.js                       戦線の線で国の輪郭を切る幾何 `WarGeom`（ビルドとブラウザが同じ1本を使う）
 industry-web.js                   産業の相関 window.IntMapIndustry
 companies.js                      企業データセットと時価総額のライブ算出 IntMapCompanies
@@ -472,7 +472,7 @@ hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
 maddison.json                     マディソン・プロジェクトの歴史 GDP・人口（1850–2018・`scripts/build-maddison.mjs`）
 data/cshapes.js                   歴史的国境
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
-wars.json                         両大戦の記録（支配・戦線・作戦／`scripts/build-wars.mjs` が書き、検証する）
+wars.json                         両大戦の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
 religion.json / language.json     宗教・言語の分布
 osm-space.json / osm-diplo.json   宇宙基地・地上局／外交公館の全球スナップショット
 ocean-currents*.bin.gz / .json    海流の場
@@ -517,7 +517,7 @@ scripts/
   build-maddison.mjs              `data/maddison.json` を MPD2020 から 1850 まで**延長**する（1900 以降は一字も書き換えない）
   build-wars.mjs                  `scripts/wars/` の記録 → `data/wars.json`。⚠ **証明できないものは書かない**——
                                   地名・gwcode・戦線が切る国・都市がどちらの側に落ちるかを全部検査する
-  wars/                           両大戦の記録そのもの（`places.mjs` 座標／`lang.mjs` 語彙と規則／
+  wars/                           両大戦の記録そのもの（`places.mjs` 座標／`lang.mjs` 語彙・陣営・**種別 KINDS**と規則／
                                   `ww1.mjs` `ww2.mjs` 支配・戦線・作戦／`source.mjs` 組み立て）
   master-sync.mjs                 **原本（main worktree）が merge 後の状態か**を見る（`npm run master:check` / `master:sync`）。
                                   原本の場所はハードコードせず `git rev-parse --git-common-dir` から導出する。
