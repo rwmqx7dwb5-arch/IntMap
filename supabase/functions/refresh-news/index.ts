@@ -45,6 +45,7 @@ import "../_shared/newsgeo.js";
 /* (#R285) WHO Atlas is, from the generated mirror of js/atlas-persona.js. Editing it here is a build
    failure; edit js/atlas-persona.js and run `node scripts/sync-atlas-persona.mjs`. */
 import { personaPrompt } from "../_shared/atlas-persona.js";
+import { NEWS_GEO_RULES } from "../_shared/news-geo-prompt.js";
 // deno-lint-ignore no-explicit-any
 const NEWSGEO: any = (globalThis as any).IntMapNewsGeo || null;
 
@@ -430,14 +431,12 @@ function aiProviderConfig(): { provider: string; key: string; model: string } | 
    headline — so it takes the persona in 'internal' mode: identity, fact discipline and non-disclosure,
    and none of the register/opinion/feeling clauses a coordinate cannot have. It still says Atlas rather
    than "a precise geocoder", because there is one assistant in this product, not four. */
+/* (#R404) 規則そのものは `_shared/news-geo-prompt.js` の 1 本だけ——`news-ingest` も
+   同じ規則で地点を決める。ここが足すのは**返し方**だけである（この関数の書き込み先
+   には種別の列が無いので、種別は要求しない）。 */
 const AI_SYS =
   personaPrompt("locating world news on the map for IntMap", { mode: "internal" }) +
-  "For EACH numbered headline, return the SUBJECT LOCATION: the single specific real-world place where the main event actually happens. " +
-  "RULES: (1) NOT the news outlet's HQ or dateline. (2) NOT where someone merely SPOKE about it — if an official in Washington comments on the Middle East, return the Middle-East place the event concerns. " +
-  "(3) Be as SPECIFIC as the headline allows: prefer a city, district, landmark, port, base, or border crossing over a whole country; give the coordinates of that specific place, not the country centroid. " +
-  "(4) Resolve sports clubs, companies, airports, universities, parliaments and stadiums to their actual physical city. (5) Disambiguate same-name places using country/region cues in the headline (e.g. Springfield, Tripoli, San José, Córdoba). " +
-  "(6) For a whole country/region story with no city, return the capital (or the region's main city) and name it as the country/region. " +
-  "(7) Only OMIT an item if it is genuinely global or placeless (e.g. 'global markets', 'AI ethics', a generic explainer). Do NOT omit an item just because it is country-level — country-level is fine. Aim to locate as many items as possible. " +
+  NEWS_GEO_RULES +
   "Reply with ONLY a JSON array, one object per locatable item: [{\"i\":<number>,\"name\":\"<short English place name>\",\"lat\":<deg>,\"lng\":<deg>}]. No commentary, no code fences.";
 
 async function callProvider(cfg: { provider: string; key: string; model: string }, sys: string, user: string): Promise<string> {

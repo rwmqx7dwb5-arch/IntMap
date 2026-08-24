@@ -155,7 +155,7 @@ flag that lives in a comment is not configuration. All twelve are declared there
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`newsgeo.js`,
 `relay-guard.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
-`news-ingest.js`, `volcano-parse.js`) that the CLI bundles into the functions that import it.
+`news-geo-prompt.js`, `news-ingest.js`, `volcano-parse.js`) that the CLI bundles into the functions that import it.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|

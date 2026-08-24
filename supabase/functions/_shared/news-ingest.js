@@ -23,8 +23,9 @@
 
 import {
   normaliseTitle, normaliseUrl, tokenise, buildIdf, pairVerdict,
-  countIndependentSources, CATEGORIES, DEFAULTS, lngOf, latOf,
+  countIndependentSources, CATEGORIES, DEFAULTS, lngOf, latOf, haversineKm,
 } from './news-cluster.js';
+import { NEWS_GEO_KINDS } from './news-geo-prompt.js';
 
 /* ─────────────────────────────────────────────────────────────────────────────
  *  1. XML — フィードは3つの方言で届く
@@ -1009,9 +1010,13 @@ export function summariseEvent(members, idf) {
     const cur = places.get(key) || {
       lng, lat, name: a.subject_name_en || null, kind: a.subject_type || null,
       n: 0, conf: 0, reasons: a.subject_reasons || [],
+      /* (#R404) 何が置いた地点なのか。同じ座標に AI と辞書の両方が着いたなら 'ai'
+         ——弱いほうを名乗ると、あとで「AI はどこまで効いているか」を数えられない。 */
+      by: null,
     };
     cur.n++;
     cur.conf = Math.max(cur.conf, Number(a.subject_confidence) || 0);
+    if (a.subject_located_by === 'ai' || (!cur.by && a.subject_located_by)) cur.by = a.subject_located_by;
     places.set(key, cur);
   }
   let place = null, placeScore = -1;
@@ -1035,7 +1040,11 @@ export function summariseEvent(members, idf) {
     location_confidence: place ? Math.round(Math.min(1, place.conf) * 100) / 100 : null,
     location_evidence: place
       ? { kind: place.kind, supporting: place.n, of: arts.length, located, why: (place.reasons || []).slice(0, 8),
-          alternatives: [...places.values()].length - 1 }
+          alternatives: [...places.values()].length - 1,
+          /* (#R404) 代表地点を置いたのは AI か決定論エンジンか、そして
+             この Event の記事のうち何本が AI 解析済みか。 */
+          by: place.by || null,
+          ai_articles: arts.filter((a) => a.subject_located_by === 'ai').length }
       : { located: 0, of: arts.length },
     first_published_at: times.length ? new Date(Math.min(...times)).toISOString() : null,
     last_article_at: times.length ? new Date(Math.max(...times)).toISOString() : null,
@@ -1144,6 +1153,12 @@ export async function toArticleRow(item, feed, registry, geo) {
       /* ⚠ #R334 の実測: `analyzeContext` は why[] を受け取らずに捨てており、
          「なぜその地点か」を後から説明できなかった。ここで拾う。 */
       subject_reasons: g && Array.isArray(g.why) ? g.why.slice(0, 12) : [],
+      /* ⚠ (#R404) **何が決めたかは、決めたものが書く。** #R394 の実測:
+         `assigned_by='embedding'` が 23 本あって、埋め込みを持つ記事は 0 行だった
+         ——無条件に書いていたからである。ここは決定論エンジンの経路なので、
+         **答えが出たときだけ** 'dict'、出なければ 'none'。AI の段は別の場所で
+         'ai' に上書きする（そして `subject_locator` に答えたモデルを書く）。 */
+      subject_located_by: g ? 'dict' : 'none',
       last_seen_at: new Date().toISOString(),
       /* ⚠ first_seen_at は**送らない**。upsert は送った列だけを更新するので、
          送れば「初めて見た時刻」が毎 run 上書きされる（`current_news.fetched_at` が
@@ -1152,6 +1167,112 @@ export async function toArticleRow(item, feed, registry, geo) {
     reject: null,
     host: att.host,
     attribution: att.via,
+  };
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ *  9. AI の地点解析の返答を、採るか捨てるか (#R404)
+ * ----------------------------------------------------------------------------
+ *  ⚠ **ここは第二の地点解析ではない。** 場所を決めるのは AI（第一手段）と
+ *    `newsgeo.js`（フォールバック）の 2 つだけで、この関数がするのは
+ *    「返ってきた答えを採ってよいか」の判定と、確度の**観測**である。
+ *
+ *  ⚠⚠⚠ **模型の返答をそのまま採らない。** #R386 の実測（翻訳の段）: 79 件のうち
+ *    1 件が別の書記体系で返ってきた。座標も同じで、静かに壊れた答えのほうが
+ *    落ちた答えより高くつく——地図の上では、間違った場所は「無い」より悪い。
+ *
+ *  ⚠⚠ **確度を模型に自己申告させない。** 較正されていない数字が
+ *    `location_confidence` として UI に出てしまう。代わりに、独立に走っている
+ *    決定論エンジンと一致したかを**測る**——2 つの別々の仕組みが同じ場所を
+ *    指したことは、後から人が確かめられる本物の証拠であり、食い違った行は
+ *    そのまま運用者の待ち行列になる (docs/NEWS-EVENTS.md §11)。
+ * ────────────────────────────────────────────────────────────────────────── */
+
+const GEO_KIND_SET = new Set(NEWS_GEO_KINDS);
+
+/** 決定論エンジンと AI が「同じ場所」とみなす距離 (km)。 */
+export const GEO_AGREE_KM = 50;
+
+/**
+ * AI の 1 バッチぶんの返答を検証する。
+ * @param {string} text     模型が返した生テキスト（コードフェンス込みでよい）
+ * @param {Array}  articles このバッチで渡した記事
+ *   （`{id, subject_lng, subject_lat, subject_name_en}` を読む）
+ * @returns {{ok:boolean, error:string|null, placed:Array, omitted:Array, rejected:Object,
+ *            agreed:number, differed:number, noDict:number}}
+ *   `ok:false` のときは **omitted も空**——返答が届かなかったバッチで
+ *   「AI は見た」の印を押すと、一度も見られていない記事が永久に候補から外れる。
+ */
+export function parseAiPlaces(text, articles, opts = {}) {
+  const agreeKm = Number.isFinite(opts.agreeKm) ? opts.agreeKm : GEO_AGREE_KM;
+  const rejected = { bad_coords: 0, null_island: 0, no_name: 0, unknown_id: 0, bad_kind: 0 };
+  const fail = (error) => ({ ok: false, error, placed: [], omitted: [], rejected, agreed: 0, differed: 0, noDict: 0 });
+
+  let arr;
+  try {
+    const txt = String(text || '').replace(/```json/gi, '').replace(/```/g, '');
+    const lo = txt.indexOf('['), hi = txt.lastIndexOf(']');
+    if (lo < 0 || hi < lo) return fail('no_json_array_in_reply len=' + String(text || '').length);
+    arr = JSON.parse(txt.slice(lo, hi + 1));
+  } catch (e) {
+    return fail('unparsable_reply: ' + String((e && e.message) || e).slice(0, 120));
+  }
+  if (!Array.isArray(arr)) return fail('reply_is_not_an_array');
+
+  const want = new Map(articles.map((a) => [a.id, a]));
+  const placed = [];
+  let agreed = 0, differed = 0, noDict = 0;
+
+  for (const e of arr) {
+    const id = Number(e && e.i);
+    const a = want.get(id);
+    /* 渡していない id は捨てる。**渡した id を 2 度返してきた場合も 2 度目は捨てる**
+       （1 度目で want から抜いてあるので、ここに落ちる）。 */
+    if (!a) { rejected.unknown_id++; continue; }
+    const lat = Number(e && e.lat), lng = Number(e && e.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+      rejected.bad_coords++; continue;
+    }
+    /* ⚠ (0,0) はギニア湾の海上で、模型が「わからない」を返すときの既定値でもある。
+       本当にそこで起きた出来事はニュースにならない。 */
+    if (Math.abs(lat) < 0.01 && Math.abs(lng) < 0.01) { rejected.null_island++; continue; }
+    const name = String((e && e.name) || '').trim().slice(0, 80);
+    if (!name) { rejected.no_name++; continue; }
+
+    /* 種別の語彙は `js/newsgeo.js` の KIND_LOCAL と同じでなければならない——
+       知らない語を入れると summariseEvent の具体性が 0 になり、AI が置いた
+       都市が、決定論エンジンの置いた国に代表を譲る。 */
+    const k = String((e && e.kind) || '').trim().toLowerCase();
+    const kind = GEO_KIND_SET.has(k) ? k : null;
+    if (!kind) rejected.bad_kind++;
+
+    /* ⚠⚠ **`Number(null)` は 0 である**（#R394/#R397 が 2 度払った代金）。地点の無い記事を
+       `Number(a.subject_lng)` で読むと**ギニア湾に置いた記事**になり、AI の答えは
+       「決定論エンジンと大きく食い違った」と誤って記録される。読む口は 1 つ——
+       `lngOf`/`latOf` は変換せずにそのまま返すので、null は null のまま落ちる。 */
+    const dLng = lngOf(a), dLat = latOf(a);
+    const hadDict = Number.isFinite(dLng) && Number.isFinite(dLat);
+    const km = hadDict ? haversineKm(lng, lat, dLng, dLat) : null;
+    let confidence, reasons;
+    if (!hadDict) {
+      noDict++; confidence = 0.8; reasons = ['ai', 'gazetteer-had-no-answer'];
+    } else if (km <= agreeKm) {
+      agreed++; confidence = 0.95; reasons = ['ai', 'agrees-with-gazetteer', Math.round(km) + 'km'];
+    } else {
+      differed++; confidence = 0.7;
+      reasons = ['ai', 'differs-from-gazetteer', (a.subject_name_en || '?') + ' ' + Math.round(km) + 'km'];
+    }
+
+    placed.push({ id, lng, lat, name, kind, confidence, reasons, km });
+    want.delete(id);
+  }
+
+  /* ⚠ 残ったものは「AI が場所の無い記事だと判断した」ぶんである。
+     **決定論エンジンの答えは消さない**——上書きするのは AI が場所を返したときだけ
+     （#R29 と同じ意味）。ここが返すのは id だけで、呼び出し側は「見た」印だけを押す。 */
+  return {
+    ok: true, error: null, placed, omitted: [...want.keys()],
+    rejected, agreed, differed, noDict,
   };
 }
 
