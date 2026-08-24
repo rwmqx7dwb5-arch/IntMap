@@ -267,6 +267,11 @@ atlas-schemas.js                  **引数の schema**（#R406）— 126能力�
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
+atlas-turn-continuity.js          **早く終わったターンが残すもの**（#R419）— ①訊いた質問を会話の記録へ
+                                  1行として残す（`actLabel` は `a.question` を読んでいなかったので
+                                  `ask ""` と記録され、次のターンからは「一度も訊いていない」に見えた＝
+                                  3回訊き直した）。②中止の印は**考え中の点だけ**を置き換える
+                                  （旧: bubble ごと `innerHTML` 差し替え＝利用者がいま答えた質問が消えた）
 atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解決・可用性・引数検証・入力要求・
                                   前後の観測・完了待ち・事後条件・構造化結果・ライフサイクル・競合の直列化
 atlas-results.js                  全操作が返す1つの形（#R318）。`ok` は `status==='completed'` からの導出で書けない

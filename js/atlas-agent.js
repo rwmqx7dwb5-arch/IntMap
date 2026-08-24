@@ -275,7 +275,29 @@ export function makeAtlasAgent() {
 
         const stepResults = [];
         let executedHere = 0;
+        /* ══ ⚠⚠⚠ (#R419) A QUESTION TO THE READER IS THE END OF THE TURN ═══════════════════════
+           `ask_user` was an ordinary tool: it rendered a picker into the reader's bubble, returned
+           {ok:true}, and the loop went round again — so a turn could ask, ask a second time, and
+           then go and do the work anyway. Measured on 「ここから大阪駅まで行きたい。」 (the reported
+           transcript, reproduced in tests/r419-checks.test.mjs ①): two live question cards and a
+           finished route, all in the same bubble, the questions already moot by the time they
+           appeared. And because the card was live WHILE the turn was still running, answering one
+           superseded that turn — three answers, three 「停止しました」, three turns thrown away.
+           A question is a request for something the loop does not have. There is nothing to
+           continue with until it comes back, so the turn ends here and the reader's reply opens the
+           next one. ⚠ THIS TAKES NOTHING FROM ATLAS (CONSTITUTION.md §5): it does not decide
+           whether to ask, when to ask, or what to ask — only that having asked, the turn is over.
+           The flag lives on the TOOL, not on a name matched here, so the loop still knows nothing
+           about what any particular tool means. */
+        let ended = '';
         for (const call of calls) {
+          if (ended) {
+            stepResults.push({ id: call && call.id, name: call && call.name, ok: false,
+              error: 'turn_ended',
+              message: '"' + ended + '" put a question to the reader, which ends this turn. '
+                + 'Their reply arrives as the next message; issue this call then.' });
+            continue;
+          }
           if (trace.calls >= lim.maxToolCalls) {
             stepResults.push({ id: call && call.id, name: call && call.name, ok: false,
               error: 'call_budget_exhausted',
@@ -303,6 +325,9 @@ export function makeAtlasAgent() {
           const rec = Object.assign({ id: call.id, name: call.name }, out);
           stepResults.push(rec);
           results.push(rec);
+          /* the TOOL may declare it, or the RESULT may — the second is how a generic invoker
+             (`run_capability`) reports that the capability it reached was a turn-ending one. */
+          if (out.ok !== false && ((tools[call.name] && tools[call.name].endsTurn) || out.endsTurn === true)) ended = call.name;
         }
 
         malformedRun = executedHere ? 0 : (malformedRun + 1);
@@ -310,6 +335,10 @@ export function makeAtlasAgent() {
         transcript.push({ role: 'assistant', content: (reply && reply.text) || '', toolCalls: calls });
         transcript.push({ role: 'tool', content: stepResults });
 
+        if (ended) {
+          stopped = 'awaiting_user';
+          break;
+        }
         if (malformedRun >= lim.maxMalformed) {
           stopped = 'malformed_limit';
           break;
@@ -325,8 +354,13 @@ export function makeAtlasAgent() {
 
       /* ⚠ ONE LAST CALL WHEN TOOLS RAN AND NOTHING WAS SAID. A turn that spent its steps operating
          IntMap and never wrote a sentence would render as silence; the reader asked a person, not a
-         command line. It costs a step from the SAME turn key, so it is not a second daily use. */
-      if (!String(text || '').trim() && results.length && stopped !== 'aborted' && stopped !== 'transport') {
+         command line. It costs a step from the SAME turn key, so it is not a second daily use.
+         ⚠ (#R419) NOT AFTER A QUESTION. A turn that ended by asking has already written its message
+         — the question, in the reader's bubble, with its options. Spending a model call to add a
+         sentence under it would answer nothing and would cost the reader a call from a turn whose
+         whole point is that it is waiting. */
+      if (!String(text || '').trim() && results.length && stopped !== 'aborted' && stopped !== 'transport'
+          && stopped !== 'awaiting_user') {
         try {
           const last = await model({
             system: opts.system || '',
