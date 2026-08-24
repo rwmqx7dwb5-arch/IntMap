@@ -263,11 +263,10 @@ window.IntMapLang.define('zh', {
       aiNoKey:"請先在「設定 → AI 功能」中新增 AI API 金鑰。", aiNoVision:"這個模型無法讀取影像。請改用 GPT-4o、Claude 3.5 Sonnet 或 Gemini 1.5 Pro。",
       aiChromeUnavail:"此處無法使用 Chrome 內建 AI。請使用 Chrome 127 以上並啟用本機 AI，或改選其他提供者。",
       aiThinking:"AI 分析中…", aiError:"AI 請求失敗", aiCopy:"複製", aiCopied:"已複製 ✓", aiClose:"關閉", aiRetry:"重試",
-      aiGeoBtn:"✨ 以 AI 定位所有新聞", aiGeoBtnSub:"✨ 以 AI 定位事件地", aiTranslateTitles:"翻譯標題", aiGeoBusy:"定位中…", aiGeoNone:"沒有可定位的項目。", aiGeoDone:"已定位 {n} 則報導", aiGeoErr:"地理編碼失敗", aiTransBusy:"翻譯中…", aiTransDone:"已翻譯 {n} 則標題", aiTransNone:"標題已是你的語言。",
+      aiGeoBtn:"✨ 以 AI 定位所有新聞", aiTranslateTitles:"翻譯標題", aiTransBusy:"翻譯中…", aiTransDone:"已翻譯 {n} 則標題", aiTransNone:"標題已是你的語言。",
       lblNewsLang:"新聞語言", newsLangUi:"僅目前語言", newsLangMulti:"所有語言（自動翻譯標題）", lblAiLocate:"AI 位置分析", aiLocManual:"手動（按鈕）", aiLocAuto:"所有新聞自動執行",
       aiTranslate:"翻譯", aiShowOriginal:"原文", aiTransNoText:"沒有可翻譯的內文 — 請改用網頁檢視。",
       aiSumBtn:"以 AI 摘要這個區域", popInArea:"此區域人口", popCalcing:"正在計算人口…", popFail:"人口查詢失敗 — 請再試一次。", newsInArea:"此區域的新聞", elevProfile:"高程剖面", finalizeMeas:"保留在地圖上", aiSumTitle:"區域簡報", aiSumSub:"所選區域內有 {n} 個新聞圖釘", aiSumNoArea:"請先畫出範圍或放置圓形。", aiSumNoNews:"此區域內沒有新聞圖釘。",
-      aiViewSumBtn:"摘要目前畫面", aiViewSumTitle:"畫面上正在發生什麼",
       aiVisHead:"AI 變化偵測", aiVisBtn:"偵測變化", aiVisTitle:"衛星影像變化報告", aiVisSub:"比較 {a} → {b}", aiVisBefore:"之前", aiVisAfter:"之後", aiVisCapturing:"正在擷取影像…", aiVisPickDates:"請選擇兩個日期進行比較。", aiVisNeedsDated:"請在衛星模式中改用可選日期的提供者（MODIS／VIIRS／Sentinel-2）。", aiVisCapFail:"無法擷取地圖影像。" 
 ,
       tabMonitors:"監控",

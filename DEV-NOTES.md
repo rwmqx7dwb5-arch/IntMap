@@ -42,6 +42,7 @@
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R430** — **Atlas の「いま読んでいる記事」の橋は、読み手だけが存在し、書き手は一度も走っていなかった**〈依頼＝「コードは在るのに利用者が到達できない機構 4 件を、消すか戻すか確認して処理しろ」〉／⚠⚠⚠ **橋には書き手が居た。到達できる書き手が居なかっただけである**（`js/atlas-console.js` が `window._imReader` を読んで `o.article` を作り、`js/atlas-state.js` がそれを「この記事／**この出来事**／それ／詳しく・背景・なぜ」に写像する文にしていた。埋める代入は`openArticleInSidebar()` の中に **1 つだけ**あり、#R11 が Read ボタンを発信元へ戻して以来**その関数を呼ぶものは無い**＝`o.article` は**書かれた日から undefined**）／⚠⚠⚠ **見逃した検証は、橋を手で注入していた**——#R80 の実測は「`window._imReader` を投入→`IntMapConsole.state()` に該当行が出現」＝**読み手だけを確かめ、書き手を一度も動かしていない**。#R169 は死んだ鎖を記録し、後のラウンドは「Confirmed, no change.」と書いたが、**どちらも Atlas の記事文脈がそこにぶら下がっていることに気付いていない**／⇒ **リーダーは再配線せず、橋だけを生きた面から埋めた**（`openDetail()`＝#R386 以降の既定面と、記事カードの Read クリック。積むのは `synthesis`（機械照合済み）と `gist`（媒体の原文）だけで出典付き）／⚠⚠⚠ **依頼の前提 3 つが実測で崩れた**——(a) `#ai-geocode-btn` は「戻す」選択肢が無い（`CONSTITUTION.md` §5 が明記。`maybeAutoEnrich` は #R29 以降**空の no-op**）／(b) `#news-pin-toggle` の孤児化は #R416 ではなく **Round 5 の「改名」の残り**（セグメントが `#news-filter-toggle` へ移り、外側のカードだけが残った）——**ピンモードそのものの撤去は #R416 の別の仕事**で、着手時点では `main` に無く、**このラウンドの作業中に merge された**（⇒ rebase して両方を測り直した）／(c) `#ai-view-summary-btn` は事故ではなく、**#R101 で利用者自身が「今の表示エリアを要約ボタンはいらない」と指示して外したもの**（commit 12958ef）⇒ **自分の推奨を撤回して訊き直した**／⚠⚠ **自分の削除が他の検査の錨を壊した**——`tests/r244-checks` ⑦ はガラス素材の規則を`.ai-view-summary-btn,.btn-toggle-sidebar` という**死んだ綴りで indexOf** していた（そのボタンについては何も主張していない）⇒ 生きた綴りへ移した／⚠⚠ **`css/*.css` だけ掃くと 1 箇所残る**——`js/flight-sim.js` の**注入 CSS** の中にも同じセレクタが居た／⚠⚠ **自分で書いた門が、自分の取りこぼしを初回実行で捉まえた**（`js/article-reader.js` に残っていた`getElementById('news-pin-toggle')`。⚠ `#news-filter-toggle` へ**向け直さない**）／⚠ **「消さないもの」も門に書いた**（`#news-reader-pane`・`.nrp-*`・面積要約・`aiSum*` は生きている）／実測: 門 10 本緑・**生きた書き手 2 つを改名する変異で赤**・CSS −3,622 B・i18n 鍵 8×9言語＝72 個撤去
 
 - **#R429** — **比較パネルは、旧国家の名前を書くべき場所に「—」を書いていた——#R380 が直した欠陥の、3人目の読み手**〈`js/stats-compare.js` の `_histMini` は `IntMapHistStates.STATES` の行から `{code,nameEn,nameJp,flag}` を組むのに `S.name.en` / `S.name.jp` を読んでいた。`name` は `IntMapLang.pickArgs()` が返す**タプル（配列）**なので両方 `undefined` で、`cName()` は `undefined || undefined || '—'` を返す。実測 **19/19 の旧国家が全滅**〉／⚠⚠⚠ **#R380 はこの欠陥を `js/history.js` で見つけて共有の読み手 `IntMapHistName` を作ったのに、3人目には届かなかった**——そして**そのラウンドが書いた検査は `codeOnly(R('js/history.js'))` しか走査していなかった**（`tests/r380-checks` ⑨）。**1ファイルに向けた走査は、そのファイルだけを守る**＝この読み手は 49 ラウンド緑のまま壊れていた／⚠⚠⚠ **落ちる条件は「まれ」ではなく「毎回」だった**——`_cs()` は `countryStats[cd] || _histMini(cd)` なので、`countryStats` が旧国家を持たない瞬間に必ずこの記録が使われる。**現在へ戻った直後**（`js/time-countries.js` の `restore()` が 項目を消し、`js/stats-compare.js` の時計購読は 380 ms 後に描き直す）・**その国家が存在しない年**・**セッション復元**の3通り／⚠⚠ **ブラウザで再現してから直した**（ローカルビルド・Countries を 1960 年へ→ソ連と米国をチェック→Show comparison→年スライダーを現在へ）: チップ **「—×」**・棒グラフ **「— —」**・表の見出し **「—」**。**旗は生きていた**（`_histMini` は `flag` だけ正しく写していた）＝「名前だけが死ぬ」という見分けにくい形／⚠⚠ **直し方は #R380 と同じ 1 本の共有読み手**（`window.IntMapHistName(nm,0)` / `(nm,1)`）で、**タプル自身は `name` に載せたまま**運ぶ——`histStates.agg` が配る記録と同じ形なので、下流の言語別解決が英語の欄に落ちない／⚠⚠ **`tests/r380-checks` ⑨ を「1ファイル」から「STATES 行に届く全ファイル」へ広げた**（実測5本: `js/app-body.js`・`js/history.js`・`js/stats-compare.js`・`js/time-borders.js`・`js/time-countries.js`）。タプルをオブジェクトとして読む綴りを全部で禁じ、`{nameEn,nameJp}` を組むファイルには共有読み手を要求する／⚠ **検査は変異させて赤を実測**——`_histMini` を欠陥版へ戻すと `tests/r429-checks` ①②と `tests/r380-checks` ⑨が3本とも赤（「SUN lost its English name」「SUN still renders as 「—」 in en」「js/stats-compare.js reads a former state's name tuple as an object again」）
 - **#R428** — **#R416 の本番検証が、同じ絵に至る 2 本目の道を見つけた**〈① 帯が右上の Map/Satellite ＋ Flat/Globe/3D の卓の下に入り、角丸の箱の切れ端だけが読者に届いていた——#R416 が直した空の `text-field` とは**原因が違うのに絵が同じ**〉／⚠⚠⚠ **「見えない」より悪い: 読めない帯が場所を確保していた**（`declutterNewsBands` は他の帯としかぶつからないので卓の下の帯が衝突に勝ち、読めたはずの帯が負ける）⇒ **場所を取る前に** `elementFromPoint` で「その画素の最上位は canvas か」を訊く。⚠ **被せものの一覧は持たない**（#R399 の形）。⚠ 訊いているのは「上に載っているか」ではなく「上でポインタを取るか」——`pointer-events:none` の被せものは見えない／⚠⚠⚠ **最初に書いた主張は、修正を外しても緑だった**（spec のカメラではどの帯も卓の下に来ない）＝**発火しない検査は通った検査と見分けがつかない**⇒ spec が被せものを**探して**実在のピンをその下へ寄せる。修正を外すと **buried 3 件**で赤／⚠⚠⚠ **② 言語を切り替えると、同じ 1 行の右半分だけが 6 秒英語のまま**（本番実測 5,928 / 6,289 / 6,693 ms。`setLang()` は `intmap-lang` を投げているのに `js/news-events.js` だけが聞いていなかった。chip の語は描画時評価で、次の描画は `news_events` の再取得待ち）。⚠ **#R416 が 2 行を 1 行にしたことで初めて目に付いた**／⚠⚠⚠ **貼り替えであって再描画ではない**——`renderChips()` は件数を `HOST.globalData` から読むが言語切替が直前に空にしているので、再描画すると「全カテゴリ 0」だけになり**翻訳する代わりに行が消える**／⚠⚠ **browser のジョブを 2 本同時に走らせた瞬間に spec が落ちた**（機械が空いてから 5 連続で 5/5 緑・3,362〜4,123 ms）＝#R416 と同じ罠を同じセッションで踏みかけた／⚠ **`/tmp` を使うな**（python から MSYS のパスが見えず、続く `rm` が退避ごと消した）／検査 2 本を **4 通りの変異で全部赤**・spec は 1 通りの変異で赤／⚠ 予算: spec が 3→5 秒（実測）・core 28→30・total 4,598→4,600。**製品側の費用は別に測った**——`declutterNewsBands` は 44 ピンで**中央値 6.7 ms**
@@ -365,6 +366,142 @@
 - **#R260** — **作業には終わりがあって、その終わりだけが書かれていなかった**。`CLAUDE.md` は §5 のワークフローが `branch deletion` で終わっており、その先——「GitHub が今回の作業を含む最新状態か」の確認と、**USB への物理バックアップ**——は 250 ラウンドぶん**ユーザーの頭の中**にあった。§11 として明文化し、**1 回実行した**（§11 を入れたので旧 §11「本ファイル自体の保守」は §12 へ。`CLAUDE.local.md` が参照する §6/§7 は動いていない）。⑴ **ドライブの特定は条件 1 つでは足りない**——`DriveType=Removable`（Get-Volume）と `BusType=USB`（Get-Disk）の**両方**で交わりを取る。実測: 交わりは **D: 1 台だけ**（BUFFALO USB Flash Disk・115.43 GB・NTFS・**ラベル無し**）。C: は Fixed かつ IsSystem。「候補が 1 台だけ」条項に当たったので、**恒久ラベル `INTMAP-BACKUP` を付けて**次回からは推測ではなく**名前**で当たるようにした。⑵ ⚠ **USB には既に旧形式のフルコピーがあった**（`D:\IntMap`・本日 02:43 更新・`node_modules` と `.git` 込み・**ドライブ全体で 31,816 項目**）。新しい規則は「**ルート**を IntMap バックアップに」「古い IntMap ファイルを残さない」なので、畳んでルートへ移した（**削除を伴うので実行前に確認して承認を得ている**）。**中身は追跡対象 609 ファイル・87.6 MB**——`node_modules` も `.git` も**再現には要らない**（`package-lock.json` から生成できるものを 31,000 ファイルぶん運んでいた）。基準は `git ls-files`＝**除外の定義を `.gitignore` に一本化**。⑶ **「コピーが成功した」は「同じ物がある」ではない**。robocopy の終了コードは**書いた側の主張**でしかないので、同期後に**相対パス・存在・SHA-256** の三点で再帰比較し、**差分ゼロ**を見るまでバックアップ成功と呼ばない。⑷ ⚠ **1 回目は 609 分の 1 のファイルで落ちた**——`git ls-files` は既定（`core.quotepath=true`）で非 ASCII のパスを**引用符とオクタルのエスケープで**返し、PowerShell はそれをそのままファイル名にする（`USGS.能登.pdf`）。⚠ **止まった時点で 8.2 分の剪定は終わっているので、USB は空**。`core.quotepath=false` にして `[Console]::OutputEncoding` を UTF-8 にし、引用符で始まるパスが残っていたら投げる検査を足して再同期・再検証（§11.7 の実行例）。実測: 剪定 **491 秒**（31,816 項目）→ コピー **609 ファイル・91,882,916 バイト・483.1 秒** → 検証 **22.2 秒**で MISSING 0 / EXTRA 0 / MISMATCH 0。⚠ **検証は同期の 3% の時間しかかからない**。⑸ **台帳の日付は成功したときだけ動く**（`usb-backup-state.json`・リポジトリの外）。⚠ 先に日付を書いて後から同期すると、**1 回の失敗が丸 1 日のスキップになる**。未接続はエラーではない——スキップして、**日付も更新しない**。⑹ 門は `tests/r260-checks.test.mjs`（6 本・終了処理の 29 条項を 1 つずつ名指し）。⚠ ⑥ は**この検査ファイル自身が `test:checks` の一覧に入っているか**を検査する——**入れ忘れた per-round checks ファイルは永久に緑**だからで、実際に書いた直後の実行で⑥だけが赤になった（`package.json` に足す前）。
 
 
+## R430 — **Atlas の「いま読んでいる記事」の橋は、読み手だけが居て、書き手が一度も走っていなかった**
+
+依頼＝「ニュース UI に**コードは在るのに利用者が到達できない機構**が 4 件残っている。参照グラフを自分で数え直し、
+**消す／戻すを確認したうえで**処理しろ」。#R416 の全数調査で見つかったが、そのラウンドの範囲外だったもの。
+
+### ⚠⚠⚠ 橋には書き手が居た。到達できる書き手が居なかっただけである
+
+`js/atlas-console.js` の `_selectionState()` は `window._imReader` を読んで `o.article` を作り、
+`js/atlas-state.js` の `renderPrompt` がそれを
+
+> OPEN NEWS ARTICLE (the user is reading this right now): "…" … "This article / this event /
+> この記事 / この出来事 / それ / a bare 詳しく・背景・なぜ・translate this" refer to THIS article
+
+という文にし、`there / 現地` を記事の発生地へ写像する。**#R80（文脈）と #R118（本文 6,000 字）で出荷済み。**
+
+その橋を**埋める**代入はリポジトリ全体で 1 つだけだった——`js/article-reader.js:84`、
+`openArticleInSidebar()` の中。そして **#R11 が「revert Read→external」でニュースカードの Read ボタンを
+発信元のサイトへ戻して以来、その関数を呼ぶものは 1 つも無い**（`js/app-body.js` にあるのは shim、
+`js/article-reader.js` にあるのは export）。もう 1 つの代入は `closeArticleReader()` の `= null` ＝**消す側**。
+
+⇒ **`o.article` は書かれた日から undefined。** Atlas は「この記事について詳しく」「背景は？」に
+**記事を手に持たないまま**答えていた。`CONSTITUTION.md` §5 が禁じている「Atlas が取得できるものを
+取得させない」形そのもので、#R413 で測ったのと**同じ穴**（渡していなかったもの）である。
+
+### ⚠⚠⚠ 見逃した検証は、橋を手で注入していた
+
+#R80 の実測は `DEV-NOTES-ARCHIVE.md:4045` にこう書いてある——
+「`window._imReader` を**投入**→`IntMapConsole.state()` に該当行（タイトル・媒体・日付・地点・
+デイクシス写像）が出現」。**読み手だけを動かし、書き手を一度も動かしていない。**
+
+そして誰も気付かないまま 2 度通り過ぎている:
+
+| ラウンド | 何を書いたか | 気付かなかったこと |
+|---|---|---|
+| #R169 | 「nothing calls openArticleInSidebar()。**削除するか再配線するかは product 判断**」と `js/article-reader.js` の冒頭に記録 | Atlas の記事文脈がこの鎖にぶら下がっている |
+| 後続ラウンド | 「**Read article (#8):** already opens the external browser … `openArticleInSidebar` is dead code. **Confirmed, no change.**」 | 同上 |
+
+**死んでいることは 2 度確認され、それが何を道連れにしているかは 1 度も確認されなかった。**
+
+### 直し方——リーダーは再配線せず、橋だけを生きた面から埋めた
+
+利用者が選んだのは「Atlas ブリッジだけ戻す」。#R11 が意図して選んだ「Read は発信元で開く」を覆さない。
+
+- **`js/news-events.js` `openDetail()`** — #R386 以降の**既定の面**。積むのは `ev.synthesis.lines`
+  （サーバが書き、**媒体の原文と機械照合済み**）と `ev.brief.gist`（**媒体の原文そのまま**）だけで、
+  1 行ごとに出典が付く。⚠ **根拠のない AI 作文を渡さない**（`docs/NEWS-EVENTS.md` §15）。
+  `#ev-back` で `window._imReader = null` ＝ 閉じたら「読んでいる」と名乗り続けない。
+- **`js/news-ui.js` の `.btn-read`** — 記事モード。**開くクリックそのもの**に架ける（描画では架けない）。
+  Event のカードからは #R405 がこのボタンを外しているので、2 つの面はきれいに分かれる。
+
+**サイドバー内リーダー（`renderReaderMode` の Reader / Web 2 モード・本文の AI 翻訳・`.nrp-*`）は
+1 バイトも消していない。** #R169 が残した product 判断は、まだ誰も下していない。
+
+### ⚠⚠⚠ 依頼の前提が 3 つとも実測で崩れた
+
+着手前に自分で参照グラフを数え直したので、**手を動かす前に**分かった。
+
+1. **`#ai-geocode-btn` には「戻す」選択肢が無い。** `CONSTITUTION.md` §5 が
+   「ニュースの地点解析でブラウザが AI を呼ぶことは無い。**ユーザー向けの「AIで解析」ボタンも作らない。**」
+   と明記している。依頼は「自動経路 `maybeAutoEnrich` から呼ばれていないか必ず確認」と言っていたが、
+   **`maybeAutoEnrich` は #R29 以降まるごと空の no-op**（本文がコメントだけ）。生成側が消えたのは
+   `0c797cf`「R29: server-side AI news geolocation」＝**意図的な設計変更**。⇒ 関数ごと撤去。
+2. **`#news-pin-toggle` の孤児化は #R416 のせいではない。** その markup が消えたのは `4709f5d`
+   （Round 5）で、しかも「撤去」ではなく**入れ物の付け替え**——`Subject`/`Publisher` のセグメントは
+   共有行 `#news-filter-toggle` の中へ移り、**外側のラベル付きカードだけが孤児として残った**。
+   ⚠ **ピンモードそのものの撤去は #R416 の別の仕事である。** 着手して参照グラフを数えた時点では
+   #R416 は `main` に入っておらず（別 worktree）、`#pinmode-loc` / `#pinmode-pub` は生きていた。
+   **その後、このラウンドの作業中に #R416 が merge された**ので rebase し、両方を測り直した——
+   いま `index.html` に `pinmode-*` は 0 件で、`js/` に残るのは #R416 が置いた説明コメント 1 行だけ
+   （ガード無しの `getElementById` は残っていない＝新しいクラッシュ経路は無い）。
+   ⇒ **2 つの削除を 1 つと読むと、Round 5 の残骸を #R416 の巻き添えと誤読する。**
+3. **`#ai-view-summary-btn` は事故ではない。** `index.html` にこう書いてあった——
+   `<!-- (#R101) "Summarize this view" button removed per request (今の表示エリアを要約ボタンはいらない). -->`。
+   `git log -S` が commit `12958ef` で**要素の削除とこのコメントの追加が同じコミット**であることを示す。
+   ⇒ **「戻す（推奨）」を出した自分の推奨を撤回し、この事実を添えて訊き直した。**
+   答えは「戻さず、コードも消す」。⚠ **他の 3 件と同じ箱に入れて処理していたら、利用者自身の指示を
+   黙って覆すところだった。**
+
+### ⚠⚠ 自分の削除が、他の検査の錨を壊した
+
+`tests/r244-checks.test.mjs` ⑦「both sidebar handles read the one glass material」は、ガラス素材の規則を
+
+```js
+css.slice(css.indexOf('.ai-view-summary-btn,.btn-toggle-sidebar'))
+```
+
+で切り出していた。**主張は左右のサイドバーの持ち手についてで、このボタンについては何も主張していない**——
+死んだセレクタを**アンカー文字列として使っていただけ**。だから列の先頭からそれを外すと `indexOf` が
+`-1` を返し、`slice(-1)` が最後の 1 文字になって検査が落ちる。⇒ **生きた綴り
+（`.btn-toggle-sidebar,#lsr-toggle`）へ錨を移した。**主張は 1 文字も変えていない。
+
+> **死んだコードは、それを消そうとするまで無害に見える。** 検査が死骸を人質に取っていることは、
+> 死骸を消しにいった側にしか分からない。
+
+### ⚠⚠ `css/*.css` だけ掃いていたら 1 箇所残っていた
+
+`js/flight-sim.js` は飛行中に UI を隠す規則を**文字列として注入**しており、その中にも
+`body.fs-flying .ai-view-summary-btn` が居た。同じ形の注入 CSS は `js/data-layers.js` にもある
+（タップ寸法の規則）。⇒ **セレクタを数えるときは、JS の中に書かれた CSS も面である。**
+
+### ⚠⚠ 自分で書いた門が、自分の取りこぼしを初回実行で捉まえた
+
+`tests/r430-checks.test.mjs` ④ の初回実行が `js/article-reader.js` に残っていた
+`getElementById('news-pin-toggle')` を落とした（Round 5 以来 null を返し続けていた行）。
+⚠ **`#news-filter-toggle` へ向け直さなかった**——その行は All/★Saved も抱えているので、
+向け直すと**呼ばれない鎖のために新しい振る舞いを発明する**ことになる。消して、理由を書いた。
+
+### ⚠ 「消さないもの」も門に書いた
+
+過剰削除は、このラウンドの一番ありそうな失敗である。だから同じファイルに逆向きの主張を置いた——
+`#news-reader-pane`（#R386 の出来事詳細が描く器）・`.nrp-bar`/`.nrp-body`/`.nrp-iframe`/`.nrp-title`・
+**面積要約 `#ai-summarize-btn`（計測ツールの生きた別機能）**・それが共有する `aiSumTitle` / `aiSumNoNews`。
+`.news-reader-pane` は `.news-reader` の**接頭辞ではない**ので、正規表現は `\b` ではなく `(?![-\w])` で切る
+（`\b` はハイフンの前で成立するため、生きた綴りを死骸と読み違える。初回実行で 1 回踏んだ）。
+
+### 実測
+
+| | |
+|---|---|
+| `tests/r430-checks.test.mjs` | **10 本すべて緑** |
+| 変異（生きた書き手 2 つを `_imReaderX` に改名） | ①が**赤**・戻すと緑 |
+| `css/intmap.css` | 487,099 → 483,477 B（**−3,622 B**・13 箇所） |
+| i18n | `aiViewSumBtn` / `aiViewSumTitle` / `aiGeoBtnSub` / `aiGeoBtnPub` / `aiGeoBusy` / `aiGeoNone` / `aiGeoErr` / `aiGeoDone` ＝ **8 鍵 × 9 言語 = 72 個**撤去（9 言語で対称） |
+| `js/news-ui.js` | −59 行（`aiGeocodeNews` ＋ それだけが呼んでいた `aiRefreshNewsPins`） |
+
+### 残したもの（消さないと決めたもの）
+
+- **サイドバー内リーダー一式**（`js/article-reader.js`・`renderReaderMode`・`aiTranslateReader`・`.nrp-*`）
+  —— #R169 の product 判断は未決のまま。今回は橋だけを架けた。
+- **`aiReaffirmLoc()`**（`js/app-body.js`）—— 呼び出し元 0 を実測したが、**依頼の範囲外**なので残し、
+  その事実をコード内に書いた。
+- **`.dot-news` / `.intel-*` / `.news-ai-actions` / `.news-item .news-actions`** —— 孤児であることは
+  確定したが、利用者が選んだのは「確定分だけ消す」で、これらは別の選択肢の側にあった。
+  ⚠ `.nrp-close` と同じ注入規則の中の **`.ai-panel-close` / `.ai-x` も死んでいる**（6 セレクタ中 3）。
+- **`ntl-*` 10 クラス** —— `tests/r290-checks.test.mjs` が「要素は存在してはならない」と主張しており、
+  要素は #R290 で消えて **CSS だけが残っている**。`css/intmap.css` 全体では**確定した孤児が 67 種**ある。
 ## R429 — **#R380 が直した欠陥は、3人目の読み手にだけ 49 ラウンド残っていた**
 
 報告は 1 行の指摘だった。「`js/stats-compare.js:221` に、#R380 が `js/history.js` で直したのと同じ欠陥が

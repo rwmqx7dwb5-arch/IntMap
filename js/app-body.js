@@ -927,7 +927,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function setupIntelLayers(){ return IM_NEWS_UI.setupIntelLayers.apply(this,arguments); }
   function appendNewsBatch(){ return IM_NEWS_UI.appendNewsBatch.apply(this,arguments); }
   function renderReaderMode(){ return IM_NEWS_UI.renderReaderMode.apply(this,arguments); }
-  function aiGeocodeNews(){ return IM_NEWS_UI.aiGeocodeNews.apply(this,arguments); }
   function _spreadDupNewsPins(){ return IM_NEWS_UI._spreadDupNewsPins.apply(this,arguments); }
   const IM_COMPANIES_UI=window.IntMapModules.companiesUi(IM_HOST);
   function renderCompanies(){ return IM_COMPANIES_UI.renderCompanies.apply(this,arguments); }
@@ -1427,22 +1426,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     };
     run();
   }
-  /* AI FEATURE 3b: summarize the news pins inside the CURRENT camera viewport (always-on button,
-     no measure tool needed). Uses the rendered pins, falling back to all analyzed stories. */
-  async function aiSummarizeView(){
-    if(!aiGate()) return;
-    if(!GE().hasRenderer()) return;
-    const b=GE().camera.getBounds(); if(!b) return;
-    const seen=new Set(), picked=[];
-    const src=(newsFeatures&&newsFeatures.length)
-      ? newsFeatures.map(f=>({c:f.geometry&&f.geometry.coordinates, p:f.properties||{}}))
-      : globalData.filter(it=>it.analysis&&it.analysis.loc).map(it=>({c:it.analysis.loc, p:{name:it.analysis.name,title:it.title,publisher:it.publisher,link:it.link}}));
-    src.forEach(o=>{ const c=o.c,p=o.p; if(!c) return; let inb=false; try{ inb=b.contains(c); }catch(_){ } if(!inb) return; const k=p.link||p.title; if(seen.has(k)) return; seen.add(k); picked.push(p); });
-    const uniq=picked.slice(0,40);
-    if(!uniq.length){ aiToast(t('aiSumNoNews')); return; }
-    _aiAreaSummarize(uniq,'aiViewSumTitle');
-  }
-  { const vb=document.getElementById('ai-view-summary-btn'); if(vb) vb.onclick=aiSummarizeView; }
+  /* (#R101/#R430) "Summarize this view" is GONE, by the user's own explicit request
+     (「今の表示エリアを要約ボタンはいらない」, commit 12958ef). #R101 removed the button and left this
+     function behind null-guarded; #R430 removed the function, its CSS and its 9-language strings.
+     ⚠ The AREA summary (#ai-summarize-btn -> js/tool-panel.js) is a DIFFERENT, live feature that
+     shares _aiAreaSummarize() and the 'aiSum*' strings — do not follow this removal into those. */
   aiButtonSyncers.push(function(){ const b=document.getElementById('ai-summarize-btn'); if(!b) return; b.classList.toggle('ai-needs-key',!aiReady()); b.title=aiReady()?'':t('aiNoKey'); });
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
 
@@ -2104,16 +2092,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   })();
   function openAISettingsOrToast(){ try{ imToast(t('aiNoKey')); }catch(_){} }
 
-  /* ===== AI FEATURE 1: news geocoding =====
-     Items the local gazetteer couldn't place sit at fake hash coords (analysis.mapped===false).
-     Ask the LLM for the real {name,lat,lng}, then promote them to mapped subject pins. */
+  /* ===== News pin location =====
+     (#R430) The client-side AI locator that used to sit here is GONE along with #ai-geocode-btn.
+     CONSTITUTION §5: the browser never calls the AI to place a headline, and there is no
+     user-facing "AI-locate" button. The markup went away in #R29 when location moved server-side,
+     so this handler had been binding itself to null ever since. Event-mode locations now come from
+     news-ingest's `locate` step; article mode uses the deterministic js/newsgeo.js (no network).
+     ⚠ aiReaffirmLoc() below has had NO caller since then either (measured #R430). It is left in
+     place rather than removed, because removing it was not part of the requested change. */
   function aiReaffirmLoc(a){ applyPinMode(a); }
-  /* AI locator. `force` (the button) re-analyses EVERY filtered story incl. already-pinned ones;
-     auto mode passes force=false and only fills the gaps. (#R416) there is no publisher mode. */
-  { const gb=document.getElementById('ai-geocode-btn'); if(gb) gb.onclick=()=>aiGeocodeNews(true); }
-  aiButtonSyncers.push(function(){ const b=document.getElementById('ai-geocode-btn'); if(!b) return;
-    b.classList.toggle('ai-needs-key',!aiReady()); b.title=aiReady()?'':t('aiNoKey');
-    b.textContent = t('aiGeoBtnSub'); });
 
   /* (#R29) Hide anything older than 72h from the live feed — the server also deletes >72h rows, this is
      the matching client guard (covers the live-RSS fallback + any stale cache). Saved/bookmarked items

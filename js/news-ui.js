@@ -515,21 +515,14 @@ window.IntMapModules.newsUi=function(HOST){
     if(HOST.mode!=='stats'){ const scf=document.getElementById('stats-compare-fixed'); if(scf){ scf.classList.remove('show'); scf.innerHTML=''; } feed.style.paddingBottom=''; }
     if(HOST.mode!=='info'){ const cof=document.getElementById('co-compare-fixed'); if(cof){ cof.classList.remove('show'); cof.innerHTML=''; } }   /* (#R152) Companies compare dock only belongs on the Companies tab — mirror the Countries dock hide above so the absolute overlay never lingers over another tab */
     /* Search-bar UI per tab (#27): News keeps a Search button (matching is slow);
-       Info & Stats filter live as you type, so their button is hidden.
-       Summarize-this-view button shows only on the News tab (#20). */
+       Info & Stats filter live as you type, so their button is hidden. */
     const searchBtn=document.getElementById('btn-search');
-    const sumBtn=document.getElementById('ai-view-summary-btn');
     const isNewsTab=(HOST.mode==='news'||HOST.mode==='saved');
     if(searchBtn) searchBtn.style.display=isNewsTab?'':'none';
     /* (#R129) the Countries search bar's "pick on the map" crosshair shows only on the Countries tab (the bar is
        shared with News/Info); leaving Countries cancels an active pick so the crosshair/handler never lingers. */
     { const cpk=document.getElementById('csearch-pick'); if(cpk) cpk.classList.toggle('on-tab', HOST.mode==='stats'); }
     if(!document.body.classList.contains('ws-mode') && HOST.mode!=='stats' && window.__countryPickActive && window.__countryPickActive()){ try{ window.__countryPick(false); }catch(_){} }
-    /* (#R85) "要約ボタンがニュースウィンドウを開いてなくても表示される": in workspace mode renderUI still runs with
-       currentMode==='news' even when the News WINDOW is hidden, so the summarize-view button leaked onto the map.
-       Also require the News window to be visible in ws-mode (_wsNewsHidden() is always false outside ws-mode, so
-       the normal News-tab behaviour is unchanged). */
-    if(sumBtn) sumBtn.style.display=(isNewsTab && !(window._wsNewsHidden&&window._wsNewsHidden()))?'':'none';
     { const ip=document.getElementById('search-input'); if(ip) ip.placeholder = (HOST.mode==='stats'||HOST.mode==='info'||HOST.mode==='monitors') ? (window.IntMapLang.t(HOST.lang,'Filter…','絞り込み...','Filtern…','Фильтр…','Filtrar…')) : HOST.t('searchPh'); }
 
     /* (#R11) No tab selected → blank sidebar content (map stays prominent). News pins still load when the
@@ -581,59 +574,6 @@ window.IntMapModules.newsUi=function(HOST){
     feed.style.display='flex'; sb.style.display='none'; feed.innerHTML=`<div class="empty-msg">${HOST.t('emptyHint')}</div>`;
   }
 
-  /* Rebuild news-points from the current filter WITHOUT touching the sidebar feed (so a
-     progressive update during geocoding doesn't reset scroll). Mirrors startNews()'s shape. */
-  function aiRefreshNewsPins(){
-    if(!(GE().layers.hasSource('news-points'))) return;
-    HOST.newsFeatures=[];
-    /* (#R416) the SECOND copy of the pin builder lived here and drifted from the first; both are
-       now HOST.newsFeatureOf (js/news-feed.js). */
-    HOST.computeFilteredNews().forEach(item=>{ const f=HOST.newsFeatureOf(item); if(f) HOST.newsFeatures.push(f); });
-    _spreadDupNewsPins(HOST.newsFeatures);   /* (#R122) fan out pins sharing an anchor */
-    GE().layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST.newsFeatures}); try{HOST.scheduleNewsDeclutter();}catch(_){}
-  }
-
-  const AI_GEO_CAP=120;
-
-  async function aiGeocodeNews(force){
-    if(!HOST.aiGate()) return;
-    /* (#R416) there is one thing to locate: where the story happened. The publisher-HQ half went
-       with the Subject/Publisher toggle. */
-    const cacheKey='_aiGeo';
-    const need=it=>{ const a=it.analysis; if(!a) return false;
-      if(force) return true;
-      return !a.subjectLoc && !a[cacheKey]; };
-    const todo=HOST.computeFilteredNews().filter(need).slice(0,AI_GEO_CAP);
-    const btn=document.getElementById('ai-geocode-btn');
-    if(!todo.length){ HOST.aiToast(HOST.t('aiGeoNone')); return; }
-    HOST.aiSetBtnBusy(btn,true,HOST.t('aiGeoBusy'));
-    const sys=personaPrompt("locating world news on the map for IntMap",{mode:"internal"})+"For EACH numbered headline, return the SUBJECT LOCATION: the single specific real-world place where the main event/incident actually happens. RULES: (1) NOT the news outlet's HQ or dateline (e.g. ignore 'Reuters, London'). (2) NOT a place where someone merely SPOKE about the event — if an official at the White House in Washington comments on the Middle East, return the specific Middle-East country/city the event concerns, NOT Washington. (3) Be as SPECIFIC as possible — prefer city/landmark over country (e.g. 'Mariupol' over 'Ukraine', 'Rafah' over 'Gaza' when identifiable). Reply with ONLY a JSON array; one object per locatable item: {\"i\":<index number>,\"name\":\"<short English place name, most specific>\",\"lat\":<number>,\"lng\":<number>}. Omit any item with no clear subject location. No commentary, no code fences.";
-    const BATCH=12; let done=0, hit=0, failed=false;
-    try{
-      for(let i=0;i<todo.length;i+=BATCH){
-        const chunk=todo.slice(i,i+BATCH);
-        const list=chunk.map((it,k)=>`${k}. ${it.title}${it.desc?' — '+String(it.desc).slice(0,160):''}`).join('\n');
-        let arr=null;
-        try{ arr=await HOST.askAIJSON('Headlines:\n'+list, sys); }
-        catch(e){ HOST.aiToast((e&&e.message)||HOST.t('aiGeoErr')); failed=true; break; }
-        if(Array.isArray(arr)) arr.forEach(o=>{
-          if(!o||typeof o.lat!=='number'||typeof o.lng!=='number') return;
-          if(o.lat<-90||o.lat>90||o.lng<-180||o.lng>180) return;
-          const it=chunk[o.i]; if(!it||!it.analysis) return;
-          it.analysis.subjectLoc=[o.lng,o.lat]; it.analysis.subjectName=o.name||it.analysis.subjectName||'';
-          HOST.applyPinMode(it.analysis); hit++;
-        });
-        /* mark the whole chunk attempted so auto-mode won't re-ask stories the AI couldn't place */
-        chunk.forEach(it=>{ if(it.analysis) it.analysis[cacheKey]=true; });
-        done+=chunk.length;
-        HOST.aiSetBtnBusy(btn,true,HOST.t('aiGeoBusy')+' '+done+'/'+todo.length);
-        aiRefreshNewsPins(); /* progressive pin update */
-      }
-    } finally { HOST.aiSetBtnBusy(btn,false); }
-    if(HOST.mode==='news'||HOST.mode==='saved') HOST.startNews(); /* refresh feed chips + pins */
-    if(!failed) HOST.aiToast(hit? HOST.t('aiGeoDone').replace('{n}',hit) : HOST.t('aiGeoNone'));
-  }
-
   function appendNewsBatch(){ publishSaved();
     const feed=document.getElementById('live-news-feed');
     const next=HOST.newsFiltered.slice(HOST.renderedCount, HOST.renderedCount+HOST.NEWS_BATCH);
@@ -680,8 +620,17 @@ window.IntMapModules.newsUi=function(HOST){
          30 件並び、コンソールに «event mode unavailable … Cannot set properties of null» が
          1 行出るだけ）。⚠ ソースの形を見る検査は全部緑だった——「外す行が在る」は
          「外したあとも動く」ではない。⇒ 取れる保証が無い要素は、取れたときだけ配線する。 */
+      /* (#R430) ATLAS OPEN-ARTICLE BRIDGE. js/atlas-console.js `_selectionState()` reads window._imReader so
+         Atlas knows WHICH article the user is on — 「この記事について詳しく」/「背景は？」/"translate this"/「現地」
+         all resolve against it (js/atlas-state.js). Its only writer used to be openArticleInSidebar(), which has
+         had NO caller since #R11 pointed this button back at the publisher's own site — so o.article was undefined
+         from the day it was written (measured #R430). ⚠ The in-sidebar reader is NOT re-wired here; only the
+         bridge is fed, from the click that actually means "I am reading this one". Event mode fills the same
+         bridge from js/news-events.js openDetail() (this button is removed from Event cards by #R405). */
       { const rb=card.querySelector('.btn-read');
-        if(rb) rb.onclick=(e)=>{ e.stopPropagation(); const _u=IntMapSafe.url(item.link); if(_u) window.open(_u,'_blank','noopener'); }; }   /* (#R138 SEC) http(s)-only */
+        if(rb) rb.onclick=(e)=>{ e.stopPropagation(); const _u=IntMapSafe.url(item.link); if(!_u) return;   /* (#R138 SEC) http(s)-only */
+          try{ const _a=item.analysis||{}; window._imReader={ open:true, title:item.title||'', publisher:item.publisher||'', link:item.link||'', pubDate:item.pubDate||'', loc:(_a.loc&&isFinite(_a.loc[0]))?[_a.loc[0],_a.loc[1]]:null, place:_a.name||'' }; }catch(_){ }
+          window.open(_u,'_blank','noopener'); }; }
       /* (#R142) Clicking the OUTLET NAME opens that outlet's Wikipedia page in the UI language (jp→ja subdomain). Uses
          Special:Search&go=Go so an exact title jumps straight to the article and a near-miss lands on search results
          instead of a 404 (publisher strings from RSS don't always match a Wikipedia title exactly). stopPropagation so
@@ -768,5 +717,5 @@ window.IntMapModules.newsUi=function(HOST){
   }
 
   /* The names index.html still calls: it keeps a hoisted shim for each (#R168). */
-  return { renderUI, setupIntelLayers, appendNewsBatch, renderReaderMode, aiGeocodeNews, _spreadDupNewsPins };
+  return { renderUI, setupIntelLayers, appendNewsBatch, renderReaderMode, _spreadDupNewsPins };
 };
