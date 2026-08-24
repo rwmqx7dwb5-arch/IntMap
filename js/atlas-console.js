@@ -44,6 +44,7 @@ import { makeNewsCluster } from './news-cluster.js';   /* (#R340) research.event
 import { makeAtlasGeoObject } from './atlas-geo-object.js';   /* (#R397) one shape for a place, and WHERE its coordinate came from — so a coordinate IntMap already fetched stops being thrown away and re-geocoded */
 import { makeAtlasPolicy } from './atlas-policy.js';
 import { makeAtlasTurnContinuity } from './atlas-turn-continuity.js';   /* (#R419) what a turn leaves behind when it ends early: the question in the record, and a Stopped note that does not erase the page. ⚠ ON THIS LINE because js/atlas-console.js is AT its shrink-only ceiling (tests/r318 ⓑ) — the same reason #R278 appended inside a line. */
+import { makeAtlasTurnResults } from './atlas-turn-results.js';   /* (#R441) one operation, one block in the reply: the de-dupe that used to compare rendered HTML and lost to routing's per-set `data-rset` nonce */
 import { makeAtlasAnomalyScore } from './atlas-anomaly-score.js';   /* (#R397) one scale for an earthquake, a typhoon and a flood — see that file for why the old bias was a SAMPLING artefact */   /* (#R397) source precedence, map restraint, coordinate provenance — prompt prose, out of the shell's line ceiling (tests/r199 ⑤) */
 import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 
@@ -1078,7 +1079,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        so the model targets EXACT names; (b) resolveLayer scores by exact-id / exact-text / data-layer / prefix /
        whole-word / token-coverage with a threshold; (c) toggleLayer VERIFIES the checkbox reached the wanted state
        and returns the EXACT label it toggled so the note shows precisely what happened (no more silent confusion). */
-    const _lnorm=s=>{ try{ return String(s==null?'':s).replace(/^[^\p{L}\p{N}]+/u,'').toLowerCase().replace(/\s+/g,' ').trim(); }catch(_){ return String(s==null?'':s).toLowerCase().replace(/\s+/g,' ').trim(); } };
+    const _lnorm=s=>{ try{ return String(s==null?'':s).replace(/^[^\p{L}\p{N}]+/u,'').toLowerCase().replace(/\s+/g,' ').trim(); }catch(_){ return String(s==null?'':s).toLowerCase().replace(/\s+/g,' ').trim(); } }; const TRES = makeAtlasTurnResults({norm:_lnorm});   /* (#R441) which of this turn's results the reply is built from — js/atlas-turn-results.js. ⚠ HERE and not beside POLICY/TCONT above: `_lnorm` is a `const` on this line, so building it earlier reads it inside its own temporal dead zone. */
     function layerCatalog(){ const out=[]; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ const lab=cb.closest('label')||cb.closest('.lyr-row'); let disp=''; if(lab){ const sp=lab.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label'); disp=(sp?sp.textContent:(lab.textContent||'')); } disp=disp.replace(/\s+/g,' ').trim(); const txt=_lnorm(disp); if(!txt) return; out.push({cb, label:disp, txt, id:(cb.id||'').toLowerCase(), dl:(cb.getAttribute('data-layer')||'').toLowerCase()}); }); return out; }
     function layerCatalogText(){ try{ const seen=new Set(),out=[]; layerCatalog().forEach(c=>{ const n=c.label; if(!n||n.length<2) return; const k=c.txt; if(seen.has(k)) return; seen.add(k); out.push(n); }); return out.slice(0,170).join('; '); }catch(_){ return ''; } }
     /* (#R52) The user re-reported "レイヤーによっては混同している" (layer confusion). Verified real failures with the
@@ -2074,6 +2075,11 @@ window.IntMapModules.atlasConsole=function(HOST){
           const _tmodes=(Array.isArray(a.transitModes)?a.transitModes:[])
             .map(x=>String(x).toUpperCase()).filter(x=>_TM.indexOf(x)>=0);
           const _mw=(isFinite(+a.maxWalkM)&&+a.maxWalkM>0)?Math.min(5000,+a.maxWalkM):null;
+          /* ⚠ (#R441) THE JOURNEY'S OWN IDENTITY, FROM WHAT WAS RESOLVED — not from how it was spelled. 「ここから」 and the
+             coordinates `my_location` just returned are the same starting point, so a turn that looks the reader up and then
+             routes must not draw the same five itineraries twice under two different `data-rset` nonces. Rounded to ~11 m,
+             which is finer than any geocoder disagrees by and coarser than float noise. js/atlas-turn-results.js reads it. */
+          const _jKey='routing.route|'+mode+'|'+[[A.lng,A.lat]].concat(via.map(v=>[v.lng,v.lat]),[[B.lng,B.lat]]).map(p=>(+p[0]).toFixed(4)+','+(+p[1]).toFixed(4)).join(';')+'|'+((_avoid||[]).join(',')||'-')+'|'+(_tmodes.join(',')||'-')+'|'+(_mw||'-')+'|'+(_areas.length||'-')+'|'+String(a.time||a.datetime||a.depart||a.arrive||'-')+'|'+((a.arriveBy||a.arrive)?'arrive':'depart');
           let r=null; try{ r=await window.IntMapRouting.route({lng:A.lng,lat:A.lat},{lng:B.lng,lat:B.lat},
             Object.assign({mode,via,time:a.time||a.datetime||a.depart||a.arrive,arriveBy:!!(a.arriveBy||a.arrive),avoid:_avoid},
               _areas.length?{avoidAreas:_areas}:{},
@@ -2109,7 +2115,7 @@ window.IntMapModules.atlasConsole=function(HOST){
                 ? L('Public-transit routing (Transitous / MOTIS) — includes REAL-TIME updates for this trip (live departures / delays where the operator publishes them).','公共交通の経路検索（Transitous／MOTIS）— この旅程はリアルタイム運行情報（事業者が公開する実時刻・遅延）を含みます。','ÖPNV (Transitous/MOTIS) — mit ECHTZEIT-Daten für diese Verbindung (Live-Abfahrten/Verspätungen).','Транзит (Transitous/MOTIS) — с данными в РЕАЛЬНОМ ВРЕМЕНИ по этому маршруту (задержки/отправления).','Transporte (Transitous/MOTIS) — con datos en TIEMPO REAL para este viaje (salidas/retrasos).')
                 : L('Public-transit routing (Transitous / MOTIS) — timetable-based (no real-time data for this trip).','公共交通の経路検索（Transitous／MOTIS）— 時刻表ベース（この旅程のリアルタイム情報はありません）。','ÖPNV (Transitous/MOTIS) — fahrplanbasiert (keine Echtzeitdaten für diese Verbindung).','Транзит (Transitous/MOTIS) — по расписанию (без данных реального времени).','Transporte (Transitous/MOTIS) — según horario (sin datos en tiempo real para este viaje).'));   /* (#R103) dropped the "walk dotted / colour-coded" wording per request; (#R132) §2.4/§9.6 honest live-vs-timetable */
             if(r.shapeGap) h+=note(L('Some ride-segment shapes could not be retrieved — those legs are listed above but not drawn on the map (no straight-line substitutes).','一部の乗車区間の形状を取得できませんでした — 該当区間は行程に表示しますが、地図には描画しません（直線での代用はしません）。','Einige Fahrt-Abschnittsformen fehlen — diese Abschnitte stehen in der Liste, werden aber nicht gezeichnet (kein Geraden-Ersatz).','Форма части участков недоступна — они в списке, но не рисуются на карте (без замены прямыми).','No se pudo obtener la forma de algunos tramos — se listan pero no se dibujan (sin sustitutos en línea recta).'));
-            return R(true, h); }
+            return R(true, h, {meta:{resultKey:_jKey}}); }
           if(!r||!r.ok){ const stt=(r&&r.status)||'';
             /* (#R126) 経路10-10 §2.5/§16.8: typed statuses get their OWN honest message instead of one "not found" */
             if(stt==='cancelled') return R(true, _hdr+note(L('Superseded by a newer route request.','新しい経路リクエストに置き換えられました。','Durch eine neuere Routenanfrage ersetzt.','Заменено более новым запросом маршрута.','Sustituido por una solicitud de ruta más reciente.')));
@@ -2143,7 +2149,7 @@ window.IntMapModules.atlasConsole=function(HOST){
             ? L('Times are typical (no live traffic).','所要時間は交通状況を含まない標準値です。','Zeiten sind typisch (kein Live-Verkehr).','Время типовое (без пробок).','Los tiempos son típicos (sin tráfico).')
             : L('Times are typical (no live traffic).','所要時間は交通状況を含まない標準値です。','Zeiten sind typisch (kein Live-Verkehr).','Время типовое (без пробок).','Los tiempos son típicos (sin tráfico).'));
           if(r.avoidDropped) h+=warn('⚠ '+L('Could not apply the avoid options (routing service busy) — showing the normal route.','回避条件を適用できませんでした（経路サービス混雑）— 通常経路を表示。','Meiden-Optionen nicht anwendbar (Dienst ausgelastet) — normale Route.','Не удалось применить исключения — обычный маршрут.','No se pudieron aplicar las exclusiones — ruta normal.'));
-          return R(true, h); }
+          return R(true, h, {meta:{resultKey:_jKey}}); }
         case 'streetview': case 'streetView': case 'pano': {
           /* (#R84) coverage mode: with no place, or when explicitly asked, tint roads blue + make the map clickable */
           if(a.on===false||/^(off|hide|stop)$/i.test(String(a.mode||''))){ try{ window.IntMapStreetView&&window.IntMapStreetView.coverage&&window.IntMapStreetView.coverage(false); }catch(_){} try{ window.IntMapStreetView&&window.IntMapStreetView.close&&window.IntMapStreetView.close(); }catch(_){} return R(true, note('✓ '+L('Street View off','ストリートビューをオフ','Street View aus','Просмотр улиц выкл','Street View apagado'))+_featTogHtml('streetview')); }   /* (#R150) offer the toggle to flip it back on */
@@ -4468,26 +4474,14 @@ window.IntMapModules.atlasConsole=function(HOST){
        answer) and its answer inherits the failed original's goal key, so a successful repair REPLACES the failure
        rather than piling on. Map-only failure never fails the written analysis (the dispatch already returns ok:true
        for that), and the fail summary no longer leaks internal action names / error codes / repair counts. */
-    const _ATL_ANSWER_TYPES={mapReport:1,newsMap:1,reportMap:1,researchMap:1,research_map:1,situationMap:1,historicalMap:1,historical:1,powerMap:1,allianceMap:1,analyze:1,research:1,synthesize:1,brief:1};
-    function _atlGoalKey(act){ if(!act||!act.type) return ''; if(act.__goalKey) return act.__goalKey;   /* a repair answer inherits the original goal it is fixing */
-      if(_ATL_ANSWER_TYPES[act.type]){ let topic=''; try{ topic=_lnorm(String(act.topic||act.question||act.query||act.place||act.region||act.location||act.era||'')); }catch(_){ topic=''; } return 'answer:'+topic; }
-      return ''; }   /* '' = not a de-dupeable answer (navigate / layer / draw / control … keep all of these) */
-    function _atlGoalScore(res){ const m=(res&&res.meta)||{}; let s=0;
-      if(res&&res.ok) s+=2;
-      if(m.userGoalSatisfied) s+=5;
-      const prod=Array.isArray(m.produced)?m.produced:[];
-      if(prod.indexOf('explanation')>=0) s+=2;
-      if(prod.indexOf('map')>=0) s+=1;
-      if(m.partial||m.unverified) s-=2;
-      return s; }
     function _atlCompose(ai){ try{
       const results=(ai&&ai.__atlResults)||[]; const say=(ai&&ai.__atlSay)||'';
-      /* 1) DEDUPE BY GOAL — keep the single best result per answer family (original vs repair vs same-topic retry). */
-      const slot=Object.create(null), keep=[];
-      results.forEach(res=>{ if(!res) return; const key=_atlGoalKey(res.act);
-        if(!key){ keep.push(res); return; }
-        if(!(key in slot)){ slot[key]=keep.length; keep.push(res); }
-        else { const i=slot[key]; if(_atlGoalScore(res)>_atlGoalScore(keep[i])) keep[i]=res; } });   /* repair replaces the failure */
+      /* 1) DEDUPE BY GOAL — the single best result per answer family (original vs repair vs same-topic retry), AND
+         ⚠ (#R441) the LATEST of a REPEATED OPERATION. The second half is new and it is why the reported reply listed
+         the same five itineraries twice: the only guard an operational action had was the exact-HTML comparison in
+         step 3, and js/routing.js stamps every computed set with a fresh `rs<n>` that js/routing-cards.js writes into
+         every card, so two runs of one journey are never byte-equal. js/atlas-turn-results.js names the OPERATION. */
+      const keep=TRES.keep(results);
       /* 2) fails + honesty flags computed from the FINAL (deduped) set — a replaced failure no longer counts */
       const fails=keep.filter(r=>r&&r.ok===false).map(r=>r.act);
       const _allFailed=keep.length>0 && keep.every(r=>r&&r.ok===false);

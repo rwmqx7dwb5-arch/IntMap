@@ -9,7 +9,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { appSource } from './app-source.mjs';
+import { makeAtlasTurnResults } from '../js/atlas-turn-results.js';   /* (#R441) #7's scorer lives here now */
 
+const TURN_RESULTS = makeAtlasTurnResults();
 const root = new URL('../', import.meta.url);
 const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
 const has = (s) => html.includes(s);
@@ -76,8 +78,15 @@ test('R159 #6 news-pin band hides when its hover popup opens', () => {
 });
 
 test('R159 #7 composite answer — repair REPLACES, one goal-validated answer, no internal names leaked', () => {
-  ok('function _atlGoalKey(act){', 'per-goal key for de-duping answers');
-  ok('function _atlGoalScore(res){', 'goal-satisfaction score picks the best result');
+  /* ⚠ (#R441) THE KEY AND THE SCORE MOVED, AND THIS CHECK MOVED WITH THEM. `_atlGoalKey` /
+     `_atlGoalScore` are now `answerKey` / `score` in js/atlas-turn-results.js, which also names a
+     SECOND kind of goal — a repeated OPERATION — because the only guard those had was a comparison
+     of rendered HTML, and routing's per-set `data-rset` nonce made two runs of one journey
+     byte-unequal. #R159's guarantees are unchanged and are still what is asserted here; what this
+     check must not do is keep pointing at the file the rule left (`appSource` reads all of js/,
+     so both spellings are in range and only the true one passes). */
+  ok('function answerKey(act) {', 'per-goal key for de-duping answers');
+  ok('function score(res) {', 'goal-satisfaction score picks the best result');
   ok('function _atlCompose(ai){', 'the bubble is composed from recorded results, not blind concatenation');
   ok('ai.__atlResults=(ai.__atlResults||[]).concat(results);', 'each pass records its results on the bubble');
   /* ⚠ (#R406) THE TWO LINES THAT USED TO STAND HERE WERE REPLACED BY ONE MECHANISM THAT DOES THE
@@ -88,14 +97,15 @@ test('R159 #7 composite answer — repair REPLACES, one goal-validated answer, n
      now is a loop in which EVERY tool Atlas calls executes into that same bubble, and a retry lands
      in the same goal slot on its own, because the key IS the topic the answer is about. */
   ok("await runActions(ai,'',[action],gen);", 'every step of the turn runs into the SAME bubble (js/atlas-console.js _runOne) — no second answer, no divider');
-  ok("return 'answer:'+topic; }", 'and an answer’s goal key is its topic, so a retry REPLACES the failure it repeats instead of piling on');
+  ok("return 'answer:' + topic;", 'and an answer’s goal key is its topic, so a retry REPLACES the failure it repeats instead of piling on');
   gone("const div=document.createElement('div'); div.style.cssText='margin-top:7px;padding-top:7px;border-top:1px dashed", 'the appended divider div is gone');
   // the fail summary no longer leaks internal action names / arg values (e.g. mapReport "Taiwan")
   gone("'実行できなかった操作が '+fails.length+' 件あります',fails.length+' Schritt(e) nicht ausgeführt','Не выполнено шагов: '+fails.length,fails.length+' paso(s) sin completar')+(fl?(' — '+esc(fl)):'')", 'the action-label leak in the fail summary is removed');
   // behavioural: a successful repair outscores the failed original (so _atlCompose keeps the repair)
-  const m = html.match(/function _atlGoalScore\(res\)\{[\s\S]*?return s; \}/);
-  assert.ok(m, '_atlGoalScore extractable');
-  const _atlGoalScore = eval('(' + m[0].replace('function _atlGoalScore(res)', 'function(res)') + ')');
+  /* ⚠ (#R441) THE SHIPPED FUNCTION, NOT ONE PRISED OUT OF THE SOURCE WITH A REGULAR EXPRESSION.
+     js/atlas-turn-results.js has no DOM, no network and no globals, so the scorer the browser runs
+     can simply be imported and called. */
+  const _atlGoalScore = TURN_RESULTS.score;
   const original = { ok: false, meta: { produced: [] } };
   const repair = { ok: true, meta: { userGoalSatisfied: true, produced: ['explanation', 'map'] } };
   const partial = { ok: true, meta: { produced: ['explanation'], partial: true } };
