@@ -74,7 +74,19 @@ export function makeTimeCountries(HOST, CTX) {
     let base=null;             /* present-day snapshot of the overlaid fields (+ density) */
     let curYear=null;          /* the year currently overlaid, or null */
     let seq=0, deb=null;
-    function snapshotBase(){ if(base) return; base={}; try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue; const o={density:s.density,hdi:s.hdi}; FIELDS.forEach(F=>o[F.f]=s[F.f]); base[iso]=o; } }catch(_){} }
+    /* ⚠⚠⚠ (#R393) THE TABLE GAINS ROWS AFTER THE OVERLAY HAS ALREADY RUN, AND THIS SNAPSHOT WAS TAKEN
+       ONCE. js/countries-ui.js loads the country table in TWO passes — the 110 m file at boot for the
+       attributes, the 10 m file when the browser goes idle for the geometry — and #R375 made the second
+       pass CREATE the 75 codes the first one does not carry (Singapore, Hong Kong, Malta, Monaco, the
+       small island states…). That pass lands 3-15 s after boot, which is AFTER a travelled year has been
+       overlaid, and it builds each row straight from the file: present-day population and GDP.
+       MEASURED on production at 1860, in a list headed 「1860 · real GDP (2011 int$)」:
+         1 🇸🇬 Singapore $501B · 2 Russian Empire $435B · 3 🇭🇰 Hong Kong $382B · 4 British Raj $300B
+       Two separate things have to be true for a row that appears late. It must be brought INTO the year
+       on screen (`reapply` below), and it must have a present-day snapshot to go back to when the reader
+       returns to Now — so this is INCREMENTAL: every code gets a base the first time it is seen, and a
+       code already snapshotted is never re-snapshotted from its overlaid values. */
+    function snapshotBase(){ if(!base) base={}; try{ for(const iso in countryStats){ if(base[iso]) continue; const s=countryStats[iso]; if(!s) continue; const o={density:s.density,hdi:s.hdi}; FIELDS.forEach(F=>o[F.f]=s[F.f]); base[iso]=o; } }catch(_){} }
     function restore(){ try{ if(window.IntMapHistId) window.IntMapHistId.clear(); }catch(_){}   /* restore modern names/flags */
       try{ if(window.IntMapHistStates) window.IntMapHistStates.clear(); }catch(_){}   /* remove former-state entries */
       window._imHdiYear=null;
@@ -152,7 +164,15 @@ export function makeTimeCountries(HOST, CTX) {
         if(data){ FIELDS.forEach(F=>{ if(!data[F.f]) data[F.f]={}; }); overlay(y,data); repaint(); }
       }, 340);
     });
-    return { year:()=>curYear, floor:WB_FLOOR, _fetchYear:fetchYear, _restore:restore,
+    /* (#R393) re-run the overlay for the year ALREADY on screen. For a caller that has just added rows
+       to countryStats and has no idea what year the clock is on — it answers false when the clock is
+       live, so the caller does not have to ask. Cheap and local: the World Bank figures for the year are
+       already in `yearCache` if this year ever had any, and below the 1960 floor there are none by
+       construction, which is exactly the range where nothing else would ever repair the row. */
+    function reapply(){ try{ if(curYear==null) return false;
+      const y=curYear, empty={}; FIELDS.forEach(F=>empty[F.f]={});
+      overlay(y, yearCache[y]||empty); repaint(); return true; }catch(_){ return false; } }
+    return { year:()=>curYear, floor:WB_FLOOR, _fetchYear:fetchYear, _restore:restore, reapply,
       /* (#R270) the HDI series, as facts — the legend prints the year and the tests read the range */
       hdiLoad:loadHDI, hdiYears:()=>(hdiSeries?hdiSeries.years.slice():null), hdiYear:()=>window._imHdiYear||null };
   })();
