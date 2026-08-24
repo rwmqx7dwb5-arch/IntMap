@@ -253,6 +253,41 @@
     return out;
   }
 
+  /* ── (#R411) IS THIS LONGITUDE IN THE BOX? ───────────────────────────────────────────────────
+     「より低ズームでもより多くの航空機が表示されるように。」 reported a second time. The tiles were
+     already being chosen from the right sky — tilesForBbox works in an UNWRAPPED longitude space and
+     wraps only the tile centre, which is why #R401's fix to it held. What threw the aircraft away
+     was the test that decides which of them are IN the box, written as two ordered comparisons:
+
+         if (e < w) { if (!(lo >= w || lo <= e)) continue; }   // crosses the antimeridian
+         else if (lo < w || lo > e) continue;
+
+     That reads a bounding box as an interval of real numbers, and MapLibre's getBounds() does not
+     return one below about z4: it returns the span the camera actually covers, UNWRAPPED, so the
+     east edge runs past +180 or the west edge past −180 and neither branch fits. `e < w` is false,
+     so the antimeridian branch is skipped, and every aircraft whose own longitude is reported in
+     [−180, 180] on the far side of the seam fails `lo < w`. Measured in the running application:
+
+         view              bbox getBounds() returned            meridians the test kept
+         world  z1         −180.0 …  180.0                            72 / 72
+         Japan  z3           43.568 …  232.432                        28 / 72   ⚠
+         N.Am.  z3         −197.494 …   −2.506                        35 / 72   ⚠
+         Japan  z6          130.156 …  140.844                         2 / 72
+
+     Half of a wide view was being discarded from a set the server already held — no upstream read
+     would have fixed it. A longitude is not a real number and an east-west span is not an interval;
+     both are angles, so the containment is one modulo and one comparison, and there is no
+     antimeridian case because there is no case where the seam is special. A span of 360° or more
+     covers the planet, which is what a view zoomed out past the whole world reports. */
+  function lonInSpan(lon, w, e) {
+    if (!(isFinite(lon) && isFinite(w) && isFinite(e))) return false;
+    var span = e - w;
+    if (!(span > 0)) span += 360;                     /* e ≤ w: the span crosses the antimeridian */
+    if (span >= 360) return true;
+    var d = ((((lon - w) % 360) + 360) % 360);        /* degrees east of the west edge, in [0,360) */
+    return d <= span;
+  }
+
   /* Tiles covering a bounding box, nearest-to-centre first, capped at `max`.
      ⚠ The longitude wrap is applied to the TILE CENTRE only, after stepping. Wrapping the loop
      bound instead is how a view straddling the antimeridian produces either zero tiles or a full
@@ -352,6 +387,7 @@
     latticeStepKm: latticeStepKm,
     buildLattice: buildLattice,
     tilesForBbox: tilesForBbox,
+    lonInSpan: lonInSpan,
     freshness: freshness,
   };
 
