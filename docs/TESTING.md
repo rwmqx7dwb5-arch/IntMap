@@ -583,8 +583,14 @@ error from IntMap's **own** code fails the build. This is what lets CI stay gree
 upstream data API is rate-limited or down.
 
 The only test that talks to the real internet is the **production smoke** (`prod-smoke`),
-which runs against the deployed URL after a deploy and on the uptime schedule. It tolerates
-transient upstream failures via retries and the same benign-error classification.
+which runs against the deployed URL from `deploy.yml` (after every deploy) and from
+`rollback.yml` (after a rollback). It tolerates transient upstream failures via retries and the
+same benign-error classification.
+
+> ⚠ (#R382) It does **not** run on the uptime schedule, which this paragraph used to claim.
+> `uptime.yml` is a single HTTP probe for the app shell; it has never invoked playwright. So the
+> deployed site is checked by this suite **on a deploy and at no other time** — a red post-deploy
+> smoke therefore blocks the next round rather than being noticed by a monitor first.
 
 ### What only production can answer (#R333)
 
