@@ -578,7 +578,7 @@ Event 経路はそこで答えを持たない（§2 の決定 2 と §8）。
 
 ## 12.1 運用 — `news-ingest` (#R351)
 
-**Edge Function 1 本**（`supabase/functions/news-ingest/`。9 本目）。論理は
+**Edge Function 1 本**（`supabase/functions/news-ingest/`）。論理は
 `_shared/news-ingest.js`（サーバー専用。`tests/r351-checks ⑮` が `js/` と `src/` からの参照を禁じる）。
 
 | 段 | すること | 実測 |
