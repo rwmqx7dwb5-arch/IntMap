@@ -1873,3 +1873,62 @@ test('#R349 the war layer draws nothing until it is asked, then paints the day i
   expect(after.on).toBe(false);
   expect(after.drawn).toBe(0);
 });
+
+/* ══ (#R438) THE OBJECT COUNT IS PART OF THE BUTTON'S LINE OF TEXT ══════════════════════════════
+   「オブジェクトの数がこんな感じで位置がおかしい」 — the count on the toolbar Objects button floated
+   near the TOP of the pill like a superscript instead of standing on the label's baseline.
+
+   The cause is a formatting context, not a number: js/map-tools.js `tickFab` revealed the button
+   with `display:inline-flex`, which makes its two spans FLEX ITEMS, each with its own line box and
+   (with `align-items` unset) both TOP-aligned. The digit then rides above the label's baseline by
+   however much taller the label's line box is — which depends entirely on the font that paints it,
+   so the same build looks fine on one machine and wrong on the next (measured at 12 px, 「🗂 オブ
+   ジェクト」 vs 「1」: Noto Sans JP 16 px vs 15, Meiryo 18 vs 15, MS PGothic 19 vs 15).
+
+   ⚠ SO THIS TEST MUST NOT DEPEND ON THE FONTS THIS MACHINE HAPPENS TO HAVE. It gives the label an
+   explicitly taller line box, which separates the two layouts by ~8 px on ANY font: under inline
+   layout the spans still share one baseline (that is what inline layout IS), under flex they do
+   not. The baselines are read with an empty inline-block probe, whose bottom margin edge is the
+   line's baseline by definition — the only way to see a baseline from script. */
+test('#R438 the object count stands on the label\'s baseline, not above it', async () => {
+  const r = await page.evaluate(async () => {
+    const btn = document.getElementById('btn-tool-objects');
+    const label = btn && btn.querySelector('[data-i18n="objectsBtn"]');
+    const num = document.getElementById('tool-objects-n');
+    if (!btn || !label || !num) return { missing: true };
+    /* a REAL object through the public API — the button only exists while the map holds one */
+    const id = window.IntMapAnnotations.add(
+      { type: 'Polygon', coordinates: [[[0, 0], [0.4, 0], [0.4, 0.4], [0, 0]]] },
+      { color: '#ff3b30', name: 'R430' },
+    );
+    window.IntMapObjects.refresh();
+    const prevLH = label.style.lineHeight;
+    label.style.lineHeight = '2.6';
+    const baseline = (el) => {
+      const p = document.createElement('span');
+      p.style.cssText = 'display:inline-block;width:0;height:0;';
+      el.appendChild(p);
+      const b = p.getBoundingClientRect().bottom;
+      p.remove();
+      return b;
+    };
+    const out = {
+      missing: false,
+      shown: btn.offsetParent !== null && btn.getBoundingClientRect().width > 0,
+      display: getComputedStyle(btn).display,
+      count: num.textContent,
+      labelBase: baseline(label),
+      numBase: baseline(num),
+    };
+    label.style.lineHeight = prevLH;
+    window.IntMapAnnotations.remove(id);
+    window.IntMapObjects.refresh();
+    return out;
+  });
+  expect(r.missing, 'the toolbar Objects button and its count span exist').toBe(false);
+  /* without these two the baselines would both read 0 and the assertion below would pass blind */
+  expect(r.shown, 'one object on the map reveals the button').toBe(true);
+  expect(r.count, 'the button is painting the count').toBe('1');
+  expect(Math.abs(r.labelBase - r.numBase),
+    'count baseline vs label baseline (button display=' + r.display + ')').toBeLessThan(0.6);
+});

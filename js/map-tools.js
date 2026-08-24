@@ -1275,7 +1275,25 @@ window.IntMapModules.objectList=function(HOST){
       if(tb){ if(!tb.__wired){ tb.__wired=1; tb.onclick=()=>toggle(); tb.title=OL('Manage all map objects','地図上のオブジェクトを管理','Objekte verwalten','Управление объектами','Gestionar objetos'); }
         const tn=document.getElementById('tool-objects-n'); if(tn) tn.textContent=(n>0?n:'');
         tb.classList.toggle('tool-on', !!(openState&&panel&&panel.style.display!=='none'));
-        tb.style.display=(n>0)?'inline-flex':'none'; }
+        /* ⚠⚠ (#R438) 「オブジェクトの数がこんな感じで位置がおかしい」— the count floated near the TOP of the
+           pill, like a superscript, instead of sitting on the label's baseline. #R130 revealed this
+           button with `inline-flex`, and that one word makes it a FLEX CONTAINER: its two children —
+           the label span (data-i18n=objectsBtn) and the count span (#tool-objects-n) — stop being
+           inline text on one shared line and become flex items, each carrying its OWN line box.
+           `align-items` was never set, so the initial value (`normal` → stretch) top-aligns those two
+           boxes; the label's is the taller of the pair whenever its text paints in a font with bigger
+           metrics than the digit's Inter, and the digit then rides ABOVE the label's baseline by the
+           whole difference. Measured at this button, 12 px, 「🗂 オブジェクト」 vs 「1」: Noto Sans JP
+           16 px vs 15, Meiryo 18 vs 15, MS PGothic 19 vs 15 — i.e. the raise is 1–4 px and depends on
+           which face actually arrives (Noto Sans JP comes from Google Fonts with font-display:swap,
+           so the tall Windows fallback is what paints until it lands, and stays if it never does).
+           EVERY OTHER .view-btn is a plain inline-block — #btn-measure-menu has this same
+           emoji + <span> + <span> shape and has never had the defect — because ordinary inline layout
+           puts the two spans on one line and a shared baseline by construction. So the fix is to stop
+           overriding `display` at all and let this button lay out like its neighbours: it is a flex
+           ITEM of .map-view-group (display:flex;align-items:center) either way, so its own box, its
+           position in the row and its visibility rule are all unchanged. */
+        tb.style.display=(n>0)?'':'none'; }
       const mob=(typeof isMobile==='function'?isMobile():true);
       fab.style.display=(n>0&&!openState&&mob)?'inline-flex':'none'; }catch(_){} }
     /* (#R132) place the panel DIRECTLY BELOW the button that opened it (was hard-pinned to the top-LEFT at
