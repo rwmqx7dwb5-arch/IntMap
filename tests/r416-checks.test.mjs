@@ -140,9 +140,12 @@ test('R416 ⑥ one control row, and no two chips called the same thing', () => {
   assert.ok(/id="news-cat-chips"/.test(row[1]),
     'the category chips must share that row — they used to be a second row below it');
   /* カテゴリの先頭 chip は scope の「All」と同じ語であってはならない。 */
-  assert.ok(!/mk\('all', L\('All',/.test(events),
+  assert.ok(!/ALL_TOPICS = \(\) => L\('All',/.test(events),
     "the category chip must not be called 'All' — the scope chip beside it already is");
-  assert.match(events, /mk\('all', L\('All topics',/, "the category chip says what axis it is about");
+  assert.match(events, /ALL_TOPICS = \(\) => L\('All topics',/, 'the category chip says what axis it is about');
+  /* ⚠ (#R428) one spelling, two readers: the renderer and the relabeller must not drift apart. */
+  assert.match(events, /mk\('all', ALL_TOPICS\(\)/, 'renderChips reads the shared spelling');
+  assert.match(events, /\(key === 'all'\) \? ALL_TOPICS\(\) : catLabel\(key\)/, 'relabelChips reads the same one');
   /* 見た目でも 2 つの軸が区別できること（両方が同じ塗りだと 1 つの操作に見える）。 */
   assert.match(css, /\.news-scope-chip\.active\{[^}]*background:var\(--card-bg\)/,
     'the active scope chip must not use the same fill as an active category chip');
