@@ -21,11 +21,31 @@
  *
  *  THE GLYPH IS DRAWN, NOT TEXTURED
  *  --------------------------------
- *  gl_PointCoord is rotated by the aircraft's track in the fragment shader and tested against a
- *  signed distance field. That is why heading costs nothing: no texture atlas, no per-icon image,
- *  no icon-rotate expression, and the silhouette stays sharp at any device pixel ratio. Below a
- *  few pixels the silhouette is indistinguishable from a dot and the shader says so — that is the
- *  LOD, and it changes the DETAIL of an aircraft, never whether it is drawn.
+ *  gl_PointCoord is rotated by the aircraft's SCREEN angle in the fragment shader and tested
+ *  against a signed distance field. That is why heading costs nothing: no texture atlas, no
+ *  per-icon image, no icon-rotate expression, and the silhouette stays sharp at any device pixel
+ *  ratio. Below a few pixels the silhouette is indistinguishable from a dot and the shader says so
+ *  — that is the LOD, and it changes the DETAIL of an aircraft, never whether it is drawn.
+ *
+ *  ⚠ (#R401) A SCREEN ANGLE, NOT THE COMPASS BEARING. 「地図を傾けても、航空レイヤーの飛行機
+ *  アイコンが同じ向きなのを修正して。」 A gl.POINTS sprite is axis-aligned to the VIEWPORT: it does
+ *  not tilt with the ground and it does not turn with the map, so handing the fragment shader the
+ *  track in radians — which is what #R341 did — draws every aircraft against a compass that is no
+ *  longer on screen. Measured with a probe aircraft at the canvas centre, sprite box 64 px:
+ *
+ *      track   pitch  bearing     the mark pointed      it should have pointed
+ *        090°      0°       0°              085° W                     090° E
+ *        045°     60°       0°              046° W                     063° E
+ *        045°      0°      45°              049° W                     000°
+ *
+ *  Three faults in one number, and the middle column moves by two degrees across the whole table:
+ *  the mark ignored PITCH, it ignored BEARING, and it was MIRRORED (the mat2 in FRAG, see there).
+ *  The vertex shader now projects the aircraft AND a point one step along its track, and the
+ *  difference of those two projections is the angle. Bearing, pitch, the perspective divide and
+ *  the globe projection are all already inside `projectTileFor3D`, so none of them is re-derived
+ *  here — which is the only reason this can be right for a projection this file does not own.
+ *  js/cesium-engine.js `_airHeading` has computed the same screen angle from the camera's own
+ *  vectors since #R379; this is the MapLibre adapter finally answering the same question.
  *
  *  ⚠ (#R379) THE FIELD IS THE APP'S OWN AIRLINER PLAN-FORM, NOT A DART. 「航空機レイヤーの飛行機
  *  アイコンのデザインをもとに戻して。」 #R341 wrote a notched triangle here because an SDF is
@@ -60,6 +80,39 @@ window.IntMapModules.aircraftPoints = function () {
      aircraft that has not been heard from for four seconds may already have begun a turn. */
   const EXTRAP_MAX_S = 3;
 
+  /* ── (#R401) HOW FAR AHEAD THE HEADING IS PROBED ─────────────────────────────────────────────
+     The sprite's angle is the SCREEN direction of the track, and the only exact way to get that
+     from a projection this file does not own is to project a second point and subtract. This is
+     how far ahead that point is, in CSS pixels of ground at the current zoom — small enough that
+     the chord and the tangent agree, large enough to survive float32.
+     ⚠ AND IT HAS A FLOOR IN MERCATOR UNITS, which is the part that is not a matter of taste.
+     `a_pos` is a float32 in [0,1]; near 0.5 the spacing between representable values is 6.0e-8, so
+     a probe of 1.5e-6 is only ~25 of them and anything much smaller quantises the direction into
+     a handful of angles. At z15.3 the pixel figure falls to the floor and the floor takes over. */
+  const PROBE_PX = 32;
+  const PROBE_MERC_MIN = 1.5e-6;
+  /* MapLibre's mercator: one mercator unit is 512·2^zoom CSS pixels. */
+  const TILE_PX = 512;
+
+  /* ⚠ EVERY BYTE INSIDE THESE BACKTICKS IS SHIPPED. The minifier strips JS comments; a GLSL comment
+     is a string literal to it, so it travels to every browser that opens the layer. The reasoning
+     lives out here — the shader keeps one line pointing at it. (#R311's budget caught the first
+     draft of #R401 growing this chunk by 2.4 kB of prose.)
+
+     ── (#R401) THE ANGLE IS A SCREEN ANGLE ─────────────────────────────────────────────────────
+     A gl.POINTS sprite is axis-aligned to the VIEWPORT, so the track cannot be handed to the
+     fragment shader as a compass bearing: the map turns and tilts under it and the sprite does not.
+     The direction the aircraft is going ON SCREEN is what the mark has to point along, and that is
+     the difference of two projections — the aircraft, and a point one step ahead along its track at
+     the SAME altitude. Bearing falls out of it, tilt falls out of it, and so does the globe
+     projection, none of which this file has to know anything about.
+     ⚠ mercator y grows SOUTHWARD, which is why north is −y in the step (the same sign the packer
+     uses for a_vel in src/aviation-worker.js).
+     ⚠ w ≤ 0 means the point is at or behind the eye. The perspective divide is meaningless there
+     and the sprite is being clipped anyway, so the reported bearing is left as the fallback rather
+     than turned into a NaN that would take the whole glyph with it.
+     ⚠ u_viewport turns the projection's NDC difference into a shape with the screen's aspect ratio;
+     without it a 16:9 canvas leans every glyph. */
   const VERT = `
 in vec2 a_pos;        /* mercator [0..1] at the observation */
 in vec2 a_vel;        /* d(mercator)/dt, per second */
@@ -73,16 +126,28 @@ uniform float u_altScale;   /* 0 = the prelude wants metres (globe), 1 = mercato
 uniform float u_pxRatio;
 uniform float u_sizePx;     /* the zoom-dependent base size, so a zoom change needs no repack */
 uniform float u_opacity;
+uniform float u_probe;      /* (#R401) mercator units to look ahead along the track */
+uniform vec2 u_viewport;    /* (#R401) drawing-buffer size, so NDC becomes an on-screen shape */
 out vec4 v_col;
 out float v_rot;
 out float v_px;
 void main(){
   v_col = vec4(a_col.rgb, a_col.a * u_opacity);
-  v_rot = a_form.y;
   vec2 p = a_pos + a_vel * u_dt;
   float alt = a_alt + a_altv * u_dt;
   float e = mix(alt, alt * a_mscale, u_altScale);
-  gl_Position = projectTileFor3D(p, e);
+  vec4 here = projectTileFor3D(p, e);
+  gl_Position = here;
+
+  /* (#R401) the SCREEN angle of the track — see the note above this string */
+  float trk = a_form.y;
+  vec4 ahead = projectTileFor3D(p + vec2(sin(trk), -cos(trk)) * u_probe, e);
+  v_rot = trk;
+  if (here.w > 0.0 && ahead.w > 0.0) {
+    vec2 d = (ahead.xy / ahead.w - here.xy / here.w) * u_viewport;
+    if (dot(d, d) > 1e-14) v_rot = atan(d.x, d.y);
+  }
+
   float px = a_form.x * u_sizePx * u_pxRatio;
   v_px = px;
   gl_PointSize = px;
@@ -90,6 +155,15 @@ void main(){
 
   /* (#R379) the one declaration of the mark — see the header */
   const GLYPH = window.IntMapPlaneGlyph;
+
+  /* ⚠ (#R401) CLOCKWISE, AND IT WAS NOT — the note for the `mat2` in FRAG below, kept out here
+     because a GLSL comment ships (see the note above VERT). `v_rot` is measured clockwise from
+     screen-up, the convention the reported track itself uses, so the SAMPLING point has to turn the
+     other way for the MARK to turn clockwise — and `mat2` takes its arguments by COLUMN. #R341
+     wrote `mat2(c,-s,s,c)`, which is the transpose of the right one, i.e. the mark reflected about
+     the vertical axis: measured with a probe aircraft tracking 090°, the nose was drawn pointing
+     085° WEST. Nothing caught it because the only test of the mark drew it tracking due north,
+     where the matrix is the identity either way. */
 
   const FRAG = `
 precision highp float;
@@ -144,7 +218,7 @@ void main(){
     pre = v_col.rgb * cov;
   } else {
     float s = sin(v_rot), c = cos(v_rot);
-    vec2 p = mat2(c, -s, s, c) * q;              /* rotate the SPRITE by the track */
+    vec2 p = mat2(c, s, -s, c) * q;              /* (#R401) clockwise — see CLOCKWISE above */
     float d = planeSD(p);
     /* \`ctx.fill()\` and then \`ctx.stroke()\`, which is how this mark has always been drawn: the
        fill is everything inside the outline and the white band is painted OVER it. Composited as
@@ -188,6 +262,7 @@ void main(){
       u: {
         dt: loc('u_dt'), altScale: loc('u_altScale'), pxRatio: loc('u_pxRatio'),
         sizePx: loc('u_sizePx'), opacity: loc('u_opacity'),
+        probe: loc('u_probe'), viewport: loc('u_viewport'),
         mat: loc('u_projection_matrix'), fallback: loc('u_projection_fallback_matrix'),
         tileCoords: loc('u_projection_tile_mercator_coords'), clip: loc('u_projection_clipping_plane'),
         transition: loc('u_projection_transition'),
@@ -301,6 +376,14 @@ void main(){
         gl.uniform1f(prog.u.opacity, S.opacity);
         let pr = 1; try { pr = Math.max(1, Math.min(3, window.devicePixelRatio || 1)); } catch (_) { }
         gl.uniform1f(prog.u.pxRatio, pr);
+        /* (#R401) the two the heading probe needs. The viewport turns the projection's NDC
+           difference into a shape with the screen's aspect ratio; without it a 16:9 canvas leans
+           every glyph. Read from the drawing buffer rather than from the map, because that is the
+           buffer this draw call is writing into. */
+        gl.uniform2f(prog.u.viewport, gl.drawingBufferWidth || 1, gl.drawingBufferHeight || 1);
+        let z = 0; try { z = mapRef && mapRef.getZoom ? mapRef.getZoom() : 0; } catch (_) { }
+        if (!(z >= 0)) z = 0;
+        gl.uniform1f(prog.u.probe, Math.max(PROBE_MERC_MIN, PROBE_PX / (TILE_PX * Math.pow(2, z))));
 
         const bind = (buf, loc, size) => {
           if (loc < 0) return;

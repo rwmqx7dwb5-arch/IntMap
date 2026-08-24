@@ -231,33 +231,87 @@
     return out;
   }
 
+  /* The MIDDLE OF A MERCATOR VIEW, in degrees. ⚠ NOT the average of the two latitudes: Mercator
+     stretches away from the equator, so a viewport whose bottom edge is 58° S and whose top edge is
+     81° N is centred on 35.6° N, not on 11.6° N. Measured against the camera IntMap produced that
+     box from: 35.58° here against getCenter().lat = 35.68°, i.e. the view's own centre. */
+  function mercMidLat(s, n) {
+    var R = Math.PI / 180;
+    var cl = function (v) { return Math.max(-89.9999, Math.min(89.9999, v)); };
+    var y = function (v) { return Math.log(Math.tan(Math.PI / 4 + cl(v) * R / 2)); };
+    return (Math.atan(Math.exp((y(s) + y(n)) / 2)) * 2 - Math.PI / 2) / R;
+  }
+
+  /* Integer offsets from 0 within [lo, hi], NEAREST FIRST: 0, −1, +1, −2, +2, … Bounded by the
+     range it is given, so a caller cannot spin on it. */
+  function fanOut(lo, hi) {
+    var out = [];
+    if (!(lo <= hi)) return out;
+    var far = Math.max(Math.abs(lo), Math.abs(hi));
+    for (var k = 0; k <= far; k++) {
+      if (k === 0) { if (lo <= 0 && 0 <= hi) out.push(0); continue; }
+      if (-k >= lo && -k <= hi) out.push(-k);
+      if (k >= lo && k <= hi) out.push(k);
+    }
+    return out;
+  }
+
   /* Tiles covering a bounding box, nearest-to-centre first, capped at `max`.
      ⚠ The longitude wrap is applied to the TILE CENTRE only, after stepping. Wrapping the loop
      bound instead is how a view straddling the antimeridian produces either zero tiles or a full
-     circumnavigation — both of which this codebase has shipped before in other layers. */
+     circumnavigation — both of which this codebase has shipped before in other layers.
+
+     ⚠ (#R401) THE CANDIDATES ARE GENERATED OUTWARD FROM THE CENTRE, and that is the whole point of
+     this function rather than a refinement of it. #R341 walked rows from the SOUTH-WEST CORNER and
+     stopped at `max × 8` candidates, then sorted them by distance from the centre — so for any view
+     wider than about 40° the cap was reached on the FIRST ROW and the sort could only ever choose
+     between tiles on the box's southern edge. Measured, `max = 4`:
+
+         view                       centre        tiles it returned
+         the whole world            0.0, 11.5     four at latitude −58    (the Southern Ocean)
+         Europe at z2              10.0, 45.0     four at latitude  26    (the Sahara)
+         Japan  at z3             139.5, 31.5     four at latitude  18    (the Philippine Sea)
+
+     A cap that is applied before the selection makes the selection, which is the shape #R320 and
+     #R388 both met (「黙って切った一覧は完全な一覧のふりをする」). Fanning out from the centre means
+     the cap can only ever discard the FARTHEST candidates, which is what it was for. */
   function tilesForBbox(w, s, e, n, radiusNm, max, latLimit) {
     var stepKm = latticeStepKm(radiusNm);
     var rowKm = stepKm * Math.sqrt(3) / 2;
     var lim = latLimit == null ? 75 : latLimit;
     if (s > n) { var t = s; s = n; n = t; }
-    s = Math.max(-lim, s); n = Math.min(lim, n);
     if (e < w) e += 360;                                  /* the view crosses the antimeridian */
-    var cLat = (s + n) / 2, cLon = (w + e) / 2;
+    /* the centre of the VIEW, taken before the latitude clamp so that clipping the poles off the
+       top of a tall box does not drag the centre towards the equator with it */
+    var cLon = (w + e) / 2;
+    var cLat = mercMidLat(s, n);
+    s = Math.max(-lim, s); n = Math.min(lim, n);
+    cLat = Math.max(s, Math.min(n, cLat));
     var out = [];
+    var cap = (max || 12) * 8;
     var dLat = rowKm / 111.32;
-    for (var lat = s; lat <= n + dLat; lat += dLat) {
-      var la = Math.max(-lim, Math.min(lim, lat));
+    var rows = fanOut(Math.ceil((s - dLat - cLat) / dLat), Math.floor((n + dLat - cLat) / dLat));
+    /* Each row gets a share of the candidate budget rather than all of it, so a wide box cannot
+       spend the whole list on the centre row and leave the sort a single horizontal line to choose
+       from. √cap wide by √cap tall is a square neighbourhood around the centre. */
+    var perRow = 2 * Math.max(1, Math.ceil(Math.sqrt(cap)) >> 1) + 1;
+    for (var ri = 0; ri < rows.length && out.length < cap; ri++) {
+      var la = Math.max(-lim, Math.min(lim, cLat + rows[ri] * dLat));
       var cos = Math.max(0.08, Math.cos(la * Math.PI / 180));
       var dLon = stepKm / (111.32 * cos);
-      for (var lon = w; lon <= e + dLon; lon += dLon) {
+      var cols = fanOut(Math.ceil((w - dLon - cLon) / dLon), Math.floor((e + dLon - cLon) / dLon));
+      var take = Math.min(cols.length, perRow);
+      for (var ci = 0; ci < take && out.length < cap; ci++) {
+        var lon = cLon + cols[ci] * dLon;
         out.push({
           lat: +la.toFixed(3),
           lon: +(((lon + 540) % 360) - 180).toFixed(3),
-          d: (la - cLat) * (la - cLat) + (lon - cLon) * (lon - cLon),
+          /* ⚠ the longitude term is scaled by cos(latitude): a degree of longitude at 60° is half a
+             degree's worth of ground, and without it the sort prefers a tile four rows north over
+             one two columns east even though the second is the nearer patch of sky. */
+          d: (la - cLat) * (la - cLat) + (lon - cLon) * (lon - cLon) * cos * cos,
         });
-        if (out.length > (max || 12) * 8) break;
       }
-      if (out.length > (max || 12) * 8) break;
     }
     out.sort(function (a, b) { return a.d - b.d; });
     /* De-duplicate: near a pole successive rows collapse onto the same rounded centre. */

@@ -93,7 +93,12 @@ test('R341 ② zoom changes the detail, never the fleet — and never prompts', 
   const seen = [];
   for (const z of [0, 1, 2, 11]) {
     await page.evaluate((zz) => window.IntMapGeoEngine.camera.jumpTo({ zoom: zz }), z);
-    await page.waitForTimeout(250);
+    /* ⚠ (#R401) THE 250 ms SLEEP PER STOP IS GONE. `jumpTo` fires the map's own `zoom` event
+       synchronously, and `updatePlanesZoomHint` is a direct listener on it (js/data-layers.js), so
+       by the time this evaluate returns the hint has already been shown or hidden. Both assertions
+       read state — a style predicate and an element's display — and neither needs a painted frame.
+       One second of the four stops, spent so #R401 could add a test to tests/r379.spec.js without
+       the suite's total going up (scripts/test-budget.mjs). */
     seen.push(await page.evaluate((zz) => {
       const hint = document.getElementById('planes-zoom-hint');
       return {
