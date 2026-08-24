@@ -49,9 +49,15 @@
  *  the SHAPE never foreshortens. Squashing only the ANGLE is half a transform, and the half it
  *  keeps is the half that carries the information. Measured over Japan, 400 aircraft, z6.2:
  *
- *      pitch        0°     30°     60°     75°     85°
+ *      pitch        0°     30°     60°     75°     78°
  *      within 20° of horizontal   121     128     181     287     315   of 400
  *      axial concentration      0.238   0.291   0.485   0.711   0.768
+ *
+ *  ⚠ 78°, AND THAT IS THE APPLICATION'S OWN CEILING, NOT A ROUND NUMBER SOMEBODY LIKED. The last
+ *  column was asked for at 85 and MEASURED at 78: js/view-controls.js holds the standard tilt limit
+ *  at 78 (`STANDARD`), and lifting it is a setting a reader has to switch on, so `jumpTo({pitch:85})`
+ *  lands at 78 for anyone who has not. The first version of this table said 85 — a number this file
+ *  had not measured, on a machine that cannot reach it.
  *
  *  At the tilt the report was made at, FOUR IN FIVE aircraft pointed the same way — not because
  *  they were flying the same way (the reported tracks are near-uniform, 0.214) but because a ground
