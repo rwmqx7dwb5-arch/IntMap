@@ -36,6 +36,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { tierSpecs } from './tiers.mjs';   /* (#R372) the deep count is derived, never restated */
 
 export const TITLE = 'deep tier (nightly) is red';
 
@@ -112,13 +113,24 @@ export function failuresFrom(paths) {
   return [...seen.entries()].filter(([, f]) => f).map(([id]) => id).sort();
 }
 
+/* ⚠⚠ (#R372) A COUNT IS A COPY, AND THIS ONE ROTTED THREE TIMES. #R203 wrote 27, #R304 wrote 59,
+   docs/TESTING.md said 64, and the true figure moved from 81 to 82 DURING the round that measured
+   it — the split is a PRICE, not a list (#R204), so every spec anyone adds changes it. This issue
+   body is published to a human, so it derives the number instead of restating one.
+   ⚠ body() STAYS SYNCHRONOUS. tiers.mjs declares functions and touches nothing at import time, so a
+   static import costs nothing and keeps this a pure string builder — making it async to reach the
+   number would have made every caller await a sentence.
+   ⚠ AND A THROW MUST NOT SILENCE THE ALARM: tierSpecs() reads the disk when CALLED, so the call is
+   guarded and the sentence drops the count rather than the report. */
+function deepCount() {
+  try { return tierSpecs('deep').length; } catch { return null; }
+}
+
 export function body({ failures, runUrl, day, sawReports }) {
   const L = [];
-  /* ⚠ (#R372) THE COUNT IS MEASURED AND IT ROTS. #R203 wrote 27, #R304 wrote 59, and scripts/tiers.mjs
-     derives 81 of the 87 specs on disk today, because the split is a PRICE rather than a list (#R204).
-     `npm run test:deep` prints the true figure on its first line — 「run-tests: deep tier — N spec
-     file(s)」 — so re-measure there before editing this sentence. */
-  L.push('`npm run test:deep` — the 81 spec files that do not stand in front of a push — went red on the nightly run.');
+  const n = deepCount();
+  L.push('`npm run test:deep` — ' + (n ? `the ${n} spec files that do not stand` : 'the spec files that do not stand')
+    + ' in front of a push — went red on the nightly run.');
   L.push('');
   L.push(`* run: ${runUrl || '(unknown)'}`);
   L.push(`* when: ${day}`);
