@@ -195,8 +195,31 @@ window.IntMapModules.newsFeed=function(HOST){
       return true;
     }catch(e){ console.warn('[IntMap] current_news unavailable, using live RSS:', e&&e.message); return false; }
   }
-  async function fetchData(){
+  /* ══ ⚠⚠ (#R372) NOTHING IS FETCHED FOR A READER WHO HAS NOT ASKED FOR NEWS ═══════════════════
+     `js/lazy-modules.js` and docs/NEWS-EVENTS.md §12 both promise that the Event module does not
+     arrive until the News surface is opened. It did. `js/app-body.js` called this on boot, and the
+     branch below reached `need('newsEvents')` unconditionally, so the chunk came down on every cold
+     load — measured by tests/r209 ①, whose whole subject is «nothing is fetched without a gesture
+     except the Atlas kernel». The declaration is the one that was right, so the boot call and the
+     three-minute timer now say `{background:true}` and stop here.
+     ⚠ MOVING THE need() CALL ALONE WOULD HAVE COST MORE THAN IT SAVED. The Event branch RETURNS on
+     success, so skipping it does not skip the work — it falls through to the RSS path, which is the
+     self-relay plus four public proxies fired together, ~50 requests, for a reader who never opened
+     the News tab. The boundary that makes both true is «has anybody asked», not «which path».
+     ⚠ IT IS NOT A FEATURE FLAG. Every real entry point — setMode('news'/'saved'), the search box,
+     an Atlas news question, the bottom ticker, the workspace News window, a country/language change
+     — calls this with no argument and is therefore a gesture; the first one lifts the latch and the
+     timer resumes refreshing behind it. A reader whose saved mode IS the News surface has already
+     asked, so the surface check below covers a cold start straight into news.
+     ⚠ The cache is still restored, so the gesture that does come has something to paint at once. */
+  let _asked=false;
+  async function fetchData(opts){
     const feed=document.getElementById('live-news-feed');
+    if(opts&&opts.background&&!_asked&&HOST.mode!=='news'&&HOST.mode!=='saved'){
+      if(HOST.globalData.length===0){ const c=loadNewsCache(); if(c&&c.length) HOST.globalData=c; }
+      return;
+    }
+    _asked=true;
     /* 1) Instant: show cached headlines immediately while fresh ones load. */
     if(HOST.globalData.length===0){ const cached=loadNewsCache(); if(cached&&cached.length){ HOST.globalData=cached; if(HOST.mode==='news'||HOST.mode==='saved') startNews(); } }
     if((HOST.mode==='news'||HOST.mode==='saved')&&feed&&HOST.globalData.length===0) feed.innerHTML=`<div class="empty-msg">${HOST.t('loading')}</div>`;

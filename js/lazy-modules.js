@@ -205,10 +205,14 @@ export function makeLazyModules(HOST) {
       }
     }
 
-    function need(name) {
+    /* ⚠ (#R372) A DOWNLOAD FAILURE IS NOT A PERMANENT ANSWER, AND A PRELOAD MUST NOT DECIDE ONE — but a
+       failure AFTER the file arrived IS permanent. Why each half: Architecture.md §1.1. */
+    const FAILED = Object.create(null), RETRY_MS = 1500;   /* name → {at,hinted}, DOWNLOAD failures only */
+    function need(name) { return demand(name, false); }   /* the public door takes ONE argument, so a stray .map(need) cannot mark a real click as a preload */
+    function demand(name, hinted) {
       if (P[name]) return P[name];
-      const deps = (ALSO[name] || []).map(need);
-      P[name] = Promise.all(deps)
+      const f = FAILED[name]; if (f && Date.now() - f.at < RETRY_MS && (hinted || !f.hinted)) return Promise.resolve(false); delete FAILED[name];
+      const p = Promise.all((ALSO[name] || []).map((d) => demand(d, hinted)))   /* ⚠ not `.map(demand)` — map passes the INDEX second, which would mark every dependency as a preload */
         .then(() => fetchModule(name))
         .then(() => {
           /* The factory must have arrived with the file. If it did not, the file loaded but did not
@@ -224,8 +228,8 @@ export function makeLazyModules(HOST) {
           if (mounted) ok(name);
           return mounted;
         })
-        .catch((e) => { record(name, 'could not be downloaded (' + (e && e.message) + ')'); return false; });
-      return P[name];
+        .catch((e) => { record(name, 'could not be downloaded (' + (e && e.message) + ')'); FAILED[name] = { at: Date.now(), hinted: !!hinted }; if (P[name] === p) delete P[name]; return false; });
+      P[name] = p; return p;
     }
 
     /* Was it already asked for? Lets a caller that only READS state skip the fetch — an Atlas
@@ -234,7 +238,7 @@ export function makeLazyModules(HOST) {
 
     /* The user is hovering the item / has opened the panel that leads here. Same promise as need(),
        started early; nothing waits on it. */
-    function hint(name) { try { need(name); } catch (_) { } }
+    function hint(name) { try { demand(name, true); } catch (_) { } }
 
     const API = {
       need, ready, hint,

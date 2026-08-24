@@ -159,7 +159,10 @@ test('R168 #3 POSITION: the six calls sit together after the map is built, befor
     'window.renderCompanies=renderCompanies;',
     'window.showCompanyDetail=showCompanyDetail;',
     'window._imOpenSetPassword=_openSetPassword;',
-    'setInterval(fetchData,180000); bootSupabase();',   // boot calls it as a bare statement, near the end
+    /* boot calls it as a bare statement, near the end. ⚠ (#R372) the marker moved when the boot pass
+       became `fetchData({background:true})` — the INVARIANT (this eager use runs after the factories)
+       did not, so the string is refreshed rather than the assertion weakened. */
+    'setInterval(()=>fetchData({background:true}),180000); bootSupabase();',
   ];
   const lf = html.replace(/\r\n/g, '\n');            // index.html is CRLF in the working tree
   const lastLF = Math.max(...NAMES.map((m) => lf.indexOf(callOf(m))));

@@ -22,8 +22,25 @@ on:
 permissions:
   contents: read
 
+# A newer commit on the same branch/PR cancels the older in-flight run.
+# ⚠ (#R372) …AND THE WEEKLY SWEEP IS NOT ON ANYBODY'S BRANCH. A scheduled run's `github.ref` is the
+# default branch, so `security-Security-refs/heads/main` was shared by the weekly CodeQL run and by
+# every push to main, and `cancel-in-progress` lets whichever starts second kill the first. This is
+# the same structure ci.yml carried until #R372, where it HAD fired: three of sixteen nightlies died
+# to a late merge.
+# ⚠ SAID PLAINLY — HERE IT HAS NOT FIRED YET. All five scheduled runs on record (2026-07-27 …
+# 2026-08-24) are `success`, none cancelled. The reason is luck, not design: GitHub's cron queue is
+# under no obligation to be punctual, and the real starts came out at 06:38, 06:32, 04:51, 03:59 and
+# 04:02 UTC against a nominal 03:17, so the weekly has simply never overlapped a Monday-morning push.
+# The collision is one well-timed merge away, and the fix costs nothing, so it is made before rather
+# than after. Only the structure is being repaired; no incident is being claimed.
+# So a `schedule` goes to a group of its own and can only be superseded by the next schedule. Every
+# other event falls through to `github.ref`, so the group string a push or a PR gets is byte-for-byte
+# what it was before this line changed.
+# ⚠ `workflow_dispatch` DELIBERATELY STAYS ON `github.ref`, for ci.yml's reason: it is the button a
+#   round presses on its own branch, and a constant group would make two branches cancel each other.
 concurrency:
-  group: security-${{ github.workflow }}-${{ github.ref }}
+  group: security-${{ github.workflow }}-${{ github.event_name == 'schedule' && 'weekly' || github.ref }}
   cancel-in-progress: true
 
 jobs:

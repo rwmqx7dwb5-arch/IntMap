@@ -16,6 +16,20 @@
 # straight to main would have failed on every run that actually had an update, which is every run
 # that mattered. Checked with `gh api repos/.../rulesets`: rules = deletion, pull_request,
 # required_status_checks, non_fast_forward; bypass_actors = [].
+#
+# ⚠⚠ (#R372) …AND OPENING THE PULL REQUEST WAS NEVER THE LAST STEP. Measured: of the scheduled runs
+# from 2026-08-01 to 08-24, EVERY ONE came back `action_required` with a 0 s duration — this repo's
+# Actions setting is `fork-pr-contributor-approval = first_time_contributors`, and GitHub counts
+# `github-actions[bot]` as one, so its pull requests never start their own checks. The three that
+# ever landed (#78, #79, #110) landed because a person clicked Approve. Nobody clicked after 08-09,
+# so for fifteen days `main` shipped an element set built on 08-09 while this branch carried one
+# built that morning — SGP4 error grows with element age, so the layer's positions drifted for
+# every reader who could not reach CelesTrak. The catalogue was never broken; the LAST STEP was
+# a human clicking a button twice a day, and that is not a step a data path may contain.
+# So the job now finishes the job: it approves the checks it caused, waits for them, and merges.
+# It does NOT weaken `main` — the same ruleset, the same two required checks, the same PR. What
+# changed is who presses the button. If GitHub ever refuses the approval to `GITHUB_TOKEN`, this
+# step FAILS LOUDLY rather than leaving another silent fifteen days.
 name: TLE snapshot
 
 on:
@@ -26,6 +40,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write                 # (#R372) only for .../actions/runs/<id>/approve on this one branch
 
 concurrency:
   group: tle-snapshot
@@ -66,3 +81,58 @@ jobs:
           else
             echo "an open pull request already tracks this branch — it now carries the newer catalogue"
           fi
+      - name: Approve the checks this job caused, wait for them, and land the catalogue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: data/tle-refresh
+        run: |
+          set -u
+          PR="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')"
+          if [ -z "$PR" ]; then echo "no open pull request — the catalogue did not move"; exit 0; fi
+
+          # `main` requires the branch to be up to date (strict_required_status_checks_policy), and
+          # this repo merges often enough that a five-minute CI run can fall behind. Each attempt
+          # therefore re-syncs, re-approves whatever that created, and waits again.
+          for attempt in 1 2 3; do
+            echo "── attempt $attempt ─────────────────────────────────────────"
+            STATE="$(gh pr view "$PR" --json mergeStateStatus --jq .mergeStateStatus)"
+            if [ "$STATE" = "BEHIND" ]; then
+              echo "behind main — updating the branch"; gh pr update-branch "$PR" || true; sleep 20
+            fi
+            SHA="$(gh pr view "$PR" --json headRefOid --jq .headRefOid)"
+
+            # Approve every run GitHub parked on THIS head. Without this they stay at 0 s forever
+            # and the required checks below can never report.
+            for RUN in $(gh run list --branch "$BRANCH" --limit 20 --json databaseId,conclusion,headSha \
+                          --jq ".[]|select(.headSha==\"$SHA\" and .conclusion==\"action_required\")|.databaseId"); do
+              echo "approving run $RUN"
+              gh api -X POST "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN}/approve" \
+                || { echo "::error::GITHUB_TOKEN could not approve run ${RUN}. The catalogue cannot land unattended; see the #R372 note at the top of this file."; exit 1; }
+            done
+
+            if gh pr checks "$PR" --watch --interval 20; then
+              if gh pr merge "$PR" --squash --delete-branch=false; then
+                echo "catalogue landed on main"; exit 0
+              fi
+              echo "checks passed but the merge was refused — re-syncing and trying again"
+              continue
+            fi
+
+            # ⚠ A CANCELLED RUN IS NOT A RED ONE, and `gh pr checks` cannot tell them apart:
+            # ci.yml carries `cancel-in-progress: true`, so moving this branch kills its own
+            # in-flight run, and the aggregating job then reports `core: cancelled` as exit 1.
+            # Measured while writing this step — the first attempt read a cancellation as a
+            # failure and refused a catalogue whose checks had never actually finished. Re-run
+            # the cancelled ones on the same commit and look again.
+            CANCELLED="$(gh run list --branch "$BRANCH" --limit 20 --json databaseId,conclusion,headSha \
+                          --jq ".[]|select(.headSha==\"$SHA\" and .conclusion==\"cancelled\")|.databaseId")"
+            if [ -n "$CANCELLED" ]; then
+              for RUN in $CANCELLED; do echo "re-running cancelled run $RUN"; gh run rerun "$RUN" || true; done
+              sleep 20; continue
+            fi
+
+            echo "::error::the pull request's checks are red — NOT merging. The bundled catalogue stays as it is."
+            exit 1
+          done
+          echo "::error::could not land the catalogue in 3 attempts (main kept moving). The next scheduled run will retry."
+          exit 1

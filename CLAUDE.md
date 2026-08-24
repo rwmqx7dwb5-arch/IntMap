@@ -365,8 +365,15 @@ USB バックアップは、**依頼された作業が完了するたびに毎�
 **手順は実装されている。読んで真似せず、これを実行する:**
 
 ```bash
-pwsh -File scripts/backup-usb.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1
 ```
+
+⚠ **`pwsh` ではない。** このマシンに PowerShell 7 は**入っていない**（実測: `Get-Command pwsh` は
+CommandNotFound、`C:\Program Files\PowerShell` も `WindowsApps\pwsh.exe` も存在しない。
+`$PSVersionTable.PSVersion` は **5.1.26100.9168**）。#R372 までここは `pwsh -File …` と書いてあり、
+**その通りに実行すると `CommandNotFoundException` で終わる**——つまり終了処理の最後の1歩が、
+書いてあるとおりにやると必ず失敗する状態だった。スクリプト自身は 5.1 で完動する
+（`::new()` は 5.0 以降にあり、PS7 専用の構文は使っていない。実測 `RESULT ok 2683 files`）。
 
 最後の1行が `RESULT <status> <detail>` で、`ok` / `skipped` / `failed` のいずれかを返す。
 `skipped` は**エラーではない**（USB 未接続、または候補が複数あって一意に特定できない）。

@@ -486,7 +486,7 @@ window.IntMapPageI18N.define('zh-hant', {
     "GeoNames": "隨程式打包的世界地名詞典 data/gazetteer-world.json.gz——242 個國家、147,924 個聚落（座標、人口與國別取自 cities1000 匯出檔；18 種語言的名稱取自 alternateNamesV2，與內嵌欄位不同，它為每個名稱附上 ISO 語言代碼），以 gzip 壓縮為 3.9 MB，於瀏覽器端解壓。由 scripts/build-gazetteer.mjs 建立。正因如此，非 AI 的新聞定位器與搜尋框才能比僅用精選表格多解析十倍長尾的地名。CC BY 4.0。",
     "geoBoundaries": "行政區界（ADM1/ADM2）——Atlas 地區組合，以及其他邊界資料中沒有的發布區域，由氣象警報圖層作為最後備援（CC BY 4.0）",
     "GDELT Project": "驅動 Atlas 摘要與整合分析的全球即時新聞搜尋（最近 72 小時）",
-    "Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)": "匯率、金銀價格、加密貨幣行情與市場情緒——小工具與底部跑馬燈",
+    "Market data (ER-API / fxratesapi · gold-api · CoinGecko · alternative.me)": "匯率、金銀價格、加密貨幣行情與市場情緒——小工具與底部跑馬燈",
         "Company atlas — Wikidata (identity, headquarters, officers, subsidiaries, facilities)": "企業地圖集（Companies 分頁）：所收錄每一家企業的識別資訊，以及總部、產業、成立時間、現任經營團隊、上市市場、ISIN/LEI、母公司與子公司、主要產品，還有 Wikidata 記載其所有或營運關係的所有據點。於建置時讀取，並以 data/companies/ 發布。CC0。",
     "Company atlas — OpenStreetMap (operator / owner / brand :wikidata, Overpass API)": "企業地圖集：OpenStreetMap 有而 Wikidata 沒有的據點——工廠、研發據點、資料中心、物流中心與辦公室——僅在 OSM 物件帶有該企業的 operator:wikidata 或 owner:wikidata 時才對應。brand:wikidata 另外視為零售通路，因為它表示該地點販售該品牌，而非該企業擁有它。ODbL；© OpenStreetMap 貢獻者。",
     "SEC EDGAR — XBRL company facts": "地圖集中美國申報企業的營收、營業利益、淨利與資產總額，取自年度（10-K）數字，並沿用申報文件本身載明的會計年度與幣別。公有領域。",

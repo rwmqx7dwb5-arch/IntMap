@@ -487,7 +487,7 @@ window.IntMapPageI18N.define('ja', {
     "GeoNames": "同梱の世界地名表 data/gazetteer-world.json.gz — 242か国147,924件の居住地（座標・人口・国コードは cities1000 由来。名前は alternateNamesV2 から18言語分＝インラインの列と違い1件ごとにISO言語コードが付く）。gzipで3.9 MBにし、ブラウザ側で展開します。scripts/build-gazetteer.mjs が生成。非AIのニュース地点解析と検索ボックスが、curated 表だけの場合より10倍広い「長い尾」まで地名を解決できるのはこのデータによります。CC BY 4.0。",
     "geoBoundaries": "行政境界形状（ADM1/ADM2）— Atlasの地域ハイライトと、他の境界データに存在しない発令区域を描くための気象警報レイヤーの最終フォールバック（CC BY 4.0）",
     "GDELT Project": "Atlasのブリーフ・統合分析で使う世界ニュース横断検索（直近72時間）",
-    "Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)": "為替・金銀・暗号資産の価格と指標 — ウィジェット・下部ティッカー",
+    "Market data (ER-API / fxratesapi · gold-api · CoinGecko · alternative.me)": "為替・金銀・暗号資産の価格と指標 — ウィジェット・下部ティッカー",
         "Company atlas — Wikidata (identity, headquarters, officers, subsidiaries, facilities)": "企業アトラス（Companies タブ）：収録した全企業の識別、本社・業種・設立・現任の代表者・上場市場・ISIN/LEI・親会社と子会社・主要製品、および Wikidata が所有者／運用者の関係を記録している全拠点。ビルド時に取得し data/companies/ として配信。CC0。",
     "Company atlas — OpenStreetMap (operator / owner / brand :wikidata, Overpass API)": "企業アトラス：Wikidata に無い拠点（工場・研究開発拠点・データセンター・物流センター・事業所）。**OSM の対象物が その企業の operator:wikidata または owner:wikidata を持つ場合にのみ** 対応付ける。brand:wikidata は「その企業がそこを所有している」ではなく「そのブランドを売っている」を意味するので、小売の存在として別に扱う。ODbL・© OpenStreetMap contributors。",
     "SEC EDGAR — XBRL company facts": "企業アトラスのうち米国提出企業の売上高・営業利益・純利益・総資産。提出書類（10-K）自身が示す年度と通貨のまま、年次の値を使う。パブリックドメイン。",

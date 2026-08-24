@@ -3028,23 +3028,91 @@ window.IntMapModules.dataLayers=function(HOST){
       if(window.kSelected && window.kSelected.size>0 && window._refreshKoppenImage) window._refreshKoppenImage();
     };
 
+    /* ══ ⚠⚠ (#R372) THE ONE DEFAULT-ON LAYER WITHOUT A LADDER — AND IT WAS THE UNCAUGHT THROW ═══════
+       MEASURED on the deployed site with the renderer's own addSource wrapped so the refusals could be
+       read by NAME: two uncaught exceptions per boot, both «Style is not done loading.», both
+       addSource('src-climate'), at t=1,690 ms and t=4,933 ms. src-subcables threw FIFTY-THREE times in
+       the same load and reached nobody, because #R187/#R355 gave that layer the ladder inside
+       addSubcables() and this one never got one: js/app-body.js dispatches the default-on `change`
+       events on a timer (300/600/1600/2600 ms) instead of waiting for `load`, toggleLayer('climate')
+       called addKoppen() bare — no whenStyleReady(), no try — and the throw left the change LISTENER,
+       where app-body's own try{} around dispatchEvent cannot see it: a listener's exception is reported
+       to the global handler rather than propagated back to the dispatcher. The second one is the
+       self-heal at the foot of this file re-arming the box it found ticked-but-blank, which throws
+       exactly the same way.
+       ⚠ THE CURE IS NOT A try{}. Swallowing the refusal makes 「チェックが入っているのに描かれない」 the
+       PERMANENT state — the blank pretending to be calm that CONSTITUTION §2.1.3 forbids. This is
+       addSubcables()'s ladder applied where the exception actually is: build; if the style refused,
+       wait and build again; woken by the renderer's own `styledata`, so a style that becomes usable at
+       40 s paints at 40 s instead of waiting out the next tick; abandoned the moment the reader unticks
+       the box; a no-op once the raster is on the map.
+       ⚠ AND THE HORIZON DOES NOT RUN WHILE THE DOCUMENT IS HIDDEN — that is this round's finding, not a
+       nicety. REPRODUCED 5/5 with a control: with requestAnimationFrame firing normally the boot ends
+       with 0 exceptions and 63 layers; with rAF never firing — a background tab, a hidden pane — it
+       ends with 2 exceptions and 0 layers, because MapLibre reaches its own _load() through
+       frameAsync(), so a document that is never composited never finishes parsing its style. A
+       stopwatch would spend the whole horizon while the renderer was not running at all, and give up
+       before the reader ever looked at the tab.
+       ⚠ Giving up leaves the box TICKED, deliberately, and that is where this differs from the cables:
+       nothing here is unavailable (the era PNG is our own file) — only the style is missing, which is a
+       whole-map condition. `dl-climate` is in the reconciler's STATIC table at the foot of this file,
+       so a ticked-but-blank Köppen is re-armed there every few seconds; unticking it would silence the
+       one mechanism still able to fix it. */
+    const KOPPEN_HORIZON_MS=90000;
+    let _kStyleHook=null,_kRetryT=null,_kGiveUpAt=0;
+    function _koppenStop(){ if(_kStyleHook){ try{ GE().events.off('styledata',_kStyleHook); }catch(_){} _kStyleHook=null; }
+      if(_kRetryT){ clearTimeout(_kRetryT); _kRetryT=null; } }
+    function _koppenWanted(){ const cb=document.getElementById('dl-climate'); return !cb||!!cb.checked; }
+    /* the ONE way back into the build from a timer or from the style — so «the reader turned it off
+       while we waited» is checked once, in the place both paths pass through (#R85: never fight them) */
+    function _koppenRetry(){ if(_kRetryT){ clearTimeout(_kRetryT); _kRetryT=null; }
+      if(!_koppenWanted()){ _koppenStop(); return; }
+      _koppenBuild(); }
+    function _koppenAgain(){
+      if(!_koppenWanted()) return false;
+      if(document.hidden) _kGiveUpAt=Date.now()+KOPPEN_HORIZON_MS;   /* not composited is not failing */
+      if(Date.now()>_kGiveUpAt) return false;
+      /* ⚠ `on`, not `once`: a `styledata` that has already fired never reaches a listener registered
+         afterwards, and this one is registered after the first refusal by construction. */
+      if(!_kStyleHook){ _kStyleHook=()=>_koppenRetry(); try{ GE().events.on('styledata',_kStyleHook); }catch(_){} }
+      if(!_kRetryT) _kRetryT=setTimeout(_koppenRetry,750);
+      return true;
+    }
+    function _koppenBuild(){
+      if(_kRetryT){ clearTimeout(_kRetryT); _kRetryT=null; }
+      try{
+        if(!GE().layers.hasSource('src-climate')) GE().layers.addSource('src-climate',{type:'image',url:KURL,coordinates:KCOORDS});
+        if(!GE().layers.has('lyr-climate')){
+          /* (#R24) insert the raster BELOW the place-name / border label stack so Köppen never hides the
+             country labels ("ケッペンを重ねると国名ラベルが後ろに隠れる"); raise() still self-heals as a backstop. */
+          const _lblAnchor=['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'].find(id=>GE().layers.get(id))||beforeId;
+          GE().layers.add({id:'lyr-climate',type:'raster',source:'src-climate',layout:{visibility:'visible'},paint:{'raster-opacity':opacities.climate,'raster-fade-duration':0}},_lblAnchor);
+        }
+        setVis('lyr-climate',true);
+      }catch(e){
+        if(_koppenAgain()) return;
+        _koppenStop(); if(_koppenWanted()) console.warn('addKoppen',e); return;
+      }
+      if(!GE().layers.has('lyr-climate')){                  /* refused without throwing */
+        if(_koppenAgain()) return;
+        _koppenStop(); if(_koppenWanted()) console.warn('addKoppen: the style never accepted the climate raster'); return;
+      }
+      _koppenStop();
+      koppenUpgrade(window._koppenPeriod);     /* (#R193) the full-resolution file, once the page is idle */
+      try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){}
+      if(window.kSelected && window.kSelected.size>0 && window._refreshKoppenImage) window._refreshKoppenImage();
+    }
     function addKoppen(){
       /* (#R22) Köppen is now a PURE BACKEND-RENDERED raster ("フロントエンドではなくバックエンドに戻して").
          We add the pre-rendered era PNG straight to the map — NO in-browser canvas decode, pixel
          sampling, or client-side highlight recolor (that whole pipeline was the recurring OOM / iPhone
          crash source). The legend stays as a color key (+ era switch + right-click criteria). */
       KURL=koppenDisplayURL(window._koppenPeriod);   /* (#R23) recompute now that isMobile() is reliable → phones get the 4k texture */
-      if(!GE().layers.hasSource('src-climate')){
-        GE().layers.addSource('src-climate',{type:'image',url:KURL,coordinates:KCOORDS});
-        /* (#R24) insert the raster BELOW the place-name / border label stack so Köppen never hides the
-           country labels ("ケッペンを重ねると国名ラベルが後ろに隠れる"); raise() still self-heals as a backstop. */
-        const _lblAnchor=['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'].find(id=>GE().layers.get(id))||beforeId;
-        GE().layers.add({id:'lyr-climate',type:'raster',source:'src-climate',layout:{visibility:'visible'},paint:{'raster-opacity':opacities.climate,'raster-fade-duration':0}},_lblAnchor);
-      } else { setVis('lyr-climate',true); }
-      koppenUpgrade(window._koppenPeriod);     /* (#R193) the full-resolution file, once the page is idle */
-      try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){}
+      _kGiveUpAt=Date.now()+KOPPEN_HORIZON_MS;       /* (#R372) every fresh request gets the full horizon */
+      _koppenBuild();
+      /* the legend is DOM, not style: it is drawn whether or not the renderer took the raster, so a
+         reader waiting out a slow style still has the colour key the ticked row promises */
       buildLegend();
-      if(window.kSelected && window.kSelected.size>0 && window._refreshKoppenImage) window._refreshKoppenImage();
     }
     function buildLegend(){
       const lg=document.getElementById('koppen-legend');

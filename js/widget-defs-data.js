@@ -31,6 +31,18 @@ window.IntMapWidgetDefsData = (function () {
      ⚠ A REJECTION CARRIES ITS KIND. 429 → rateLimited (+ Retry-After when the host sends one);
      404/410 → permanent; everything else is temporary and gets the backoff ladder. Without this
      the scheduler would retry a deleted endpoint for ever and give up on a busy one too soon. */
+  /* ⚠ AND A REFUSAL IS REMEMBERED WHERE IT WAS EARNED. The retry ladder in js/widget-scheduler.js
+     only ever sees the GROUP, so it can act on a 429 the loader rethrows — but not on one a
+     fallback rescued: that group succeeded. `coolUntil` is therefore per-URL and lives beside the
+     fetch that learned the number, and `firstOf` below is what honours it. */
+  var coolUntil = {};
+  function coolingMs(url) {
+    var t = coolUntil[url];
+    if (!t) return 0;
+    var left = t - Date.now();
+    if (left <= 0) { delete coolUntil[url]; return 0; }
+    return left;
+  }
   function getJSON(url, signal, opts) {
     opts = opts || {};
     return fetch(url, { signal: signal, headers: opts.headers || undefined }).then(function (r) {
@@ -38,6 +50,7 @@ window.IntMapWidgetDefsData = (function () {
         var ra = +r.headers.get('retry-after');
         var e = new Error('rate limited'); e.rateLimited = true;
         e.retryAfterMs = isFinite(ra) && ra > 0 ? ra * 1000 : 10 * 60000;
+        coolUntil[url] = Date.now() + e.retryAfterMs;
         throw e;
       }
       if (r.status === 404 || r.status === 410) { var p = new Error('gone'); p.permanent = true; throw p; }
@@ -45,17 +58,47 @@ window.IntMapWidgetDefsData = (function () {
       return r.json();
     });
   }
+  /* ── the first source that answers — and the fact that it was not the first we asked ─────────
+     ⚠ A 429 A FALLBACK RESCUED IS STILL A 429. MEASURED in production on a plain load: the FX card
+     asked api.fxratesapi.com every 60 s, got `429 · x-ratelimit-remaining: 0`, fell through to
+     open.er-api.com, and RESOLVED — so the scheduler recorded a success, cleared `nextRetryAt`,
+     and asked again a minute later, for ever. The keyless allowance is 61 calls and the board was
+     spending every one of them on itself; the refusal never once reached the ladder that exists
+     for exactly this. Two things follow.
+       · A URL that answered 429 is NOT ASKED AGAIN until the window it named has passed. Skipping
+         costs no request, which is the whole point — this is what stops the self-inflicted limit.
+       · The resolution is an ENVELOPE, `{ value, url, limited }`, not a bare value: the caller has
+         to know WHICH source answered (a card citing the host we merely tried first is a false
+         attribution, #R352) and which ones refused.
+     When every candidate has been asked and every one failed, the last error is rethrown exactly
+     as before. When every candidate is still inside a window it named, nothing was asked at all —
+     that is a rate limit and it says so, which is how the group finally reaches the ladder. */
   function firstOf(urls, signal, pick) {
-    var i = 0;
+    var i = 0, limited = [], soonest = 0, asked = 0;
     function next() {
-      if (i >= urls.length) throw new Error('no source');
+      if (i >= urls.length) {
+        if (!asked && limited.length) {
+          var re = new Error('rate limited'); re.rateLimited = true;
+          re.retryAfterMs = Math.max(1000, soonest);
+          throw re;
+        }
+        throw new Error('no source');
+      }
       var u = urls[i++];
+      var cool = coolingMs(u);
+      if (cool) {
+        limited.push(u);
+        if (!soonest || cool < soonest) soonest = cool;
+        return next();
+      }
+      asked++;
       return getJSON(u, signal).then(function (j) {
         var v = pick ? pick(j, u) : j;
         if (v == null) throw new Error('no value');
-        return v;
+        return { value: v, url: u, limited: limited };
       }).catch(function (e) {
         if (e && (e.name === 'AbortError')) throw e;
+        if (e && e.rateLimited) limited.push(u);
         if (i < urls.length) return next();
         throw e;
       });
