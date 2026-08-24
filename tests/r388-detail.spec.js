@@ -65,6 +65,19 @@ test('R388 ① a click on a line answers for that line', async ({ app }) => {
      there, so an absent value must be ABSENT — never «—», never 0 (#R354). */
   expect(card).not.toMatch(/\b0\s*(km\/h|mm)\b/);
   expect(card).not.toMatch(/—\s*$/m);
+  /* ⚠ AND IT MUST NOT SAY THE SAME THING TWICE. Production verification read «1.5 kV DC · 1.5 kV DC»
+     off the electrification row and «Under construction · Under construction» off the subtitle: the
+     bucket LABEL and the READING are the same sentence for the four named systems, and the line
+     class already carries the status for a line under construction. Two true halves that repeat one
+     another read as a bug in the data, which is the one thing this layer must not look like. */
+  /* ⚠ WEAK HERE, AND SAID SO. Production read «1.5 kV DC · 1.5 kV DC» off the electrification row,
+     but this spec's own line is a Spanish high-speed line — 25 kV AC 50 Hz — where the reading and
+     the bucket label differ by the frequency and the defect cannot appear. MEASURED: with the join
+     deliberately put back and the build redone, this assertion still passed. It stays because it is
+     free and would catch a future case; the check that ACTUALLY bites is the source one in
+     tests/r388-checks.test.mjs ⑭, and that is where the guarantee lives. */
+  const repeat = /(\S[^·\n]{2,}?)\s·\s\1(?=\s|$)/.exec(card);
+  expect(repeat && repeat[0], 'the card says the same thing twice: ' + (repeat && repeat[0])).toBeFalsy();
 });
 
 test('R388 ② the axis is a switch, and grey means "OSM does not say"', async ({ app }) => {
