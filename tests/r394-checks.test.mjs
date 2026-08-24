@@ -140,6 +140,28 @@ test('③b 同じ系列の中の数の変化は相違ではない（更新であ
   assert.equal(same.length, 0);
 });
 
+test('③d 死者数は「動詞が先」の形も読む——そして年齢を死者数と読まない', () => {
+  const C = makeNewsClaims();
+  /* ⚠⚠⚠ 英語のニュースは死者数を「動詞が先」で書く。実測 (2026-08-24・本番の active 1,367 本):
+     «kills 30» / «killed 16» / «kill at least 10» の形が 24 件、«30 killed» は 4 件。
+     #R386 は後者だけを見ていたので、災害と紛争の数量をほとんど読めていなかった
+     （実際に発火していたのは `money` だけだった）。 */
+  const shape = (t) => C.quantities(t).map((q) => q.kind + ':' + q.value);
+  assert.deepEqual(shape('Guinea rubbish landfill collapse kills 30'), ['dead:30']);
+  assert.deepEqual(shape('Ukrainian drones kill at least 10, hit warehouse'), ['dead:10']);
+  assert.deepEqual(shape('Bus crash killed 16 in Peru'), ['dead:16']);
+  assert.deepEqual(shape('A moderate earthquake shakes Japan, injuring more than 30 people'), ['injured:30']);
+  assert.deepEqual(shape('Explosion wounds 12 in market'), ['injured:12']);
+  /* 名詞が先の形を落としていない（広げたのであって、差し替えたのではない）。 */
+  assert.deepEqual(shape('37 injured as magnitude 5.9 earthquake strikes eastern Japan'), ['injured:37']);
+  /* ⚠⚠ 年齢を死者数と読まない。«Girl, 17, killed» の 17 は年齢で、#R386 の綴りは
+     これを死者数として取り出していた（当時の 4 件中 1 件）。 */
+  assert.deepEqual(shape('Girl, 17, killed in Swedish sword attack, police say'), []);
+  assert.deepEqual(shape('Israel kills 4-year-old child in strike'), []);
+  /* そして、年齢と死者数が同じ見出しにいても、拾うのは死者数だけである。 */
+  assert.deepEqual(shape('Israel kills 3 Palestinians, including four-year-old child'), ['dead:3']);
+});
+
 test('③c 規則は 1 本で、UI も計測器も同じものを呼ぶ', () => {
   /* ⚠ #R386 はこの規則を js/news-events.js の factory の奥に書いた——**ブラウザの外から
      誰も呼べない**ので、歩留まりも精度も測れなかった（#R340 と同じ形）。 */
