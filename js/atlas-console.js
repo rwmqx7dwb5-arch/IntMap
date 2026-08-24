@@ -1181,7 +1181,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     const _setLast=h=>{ if(h&&h.lng!=null&&h.lat!=null){ _lastPlace={lng:+h.lng,lat:+h.lat,name:h.name||''}; } return h; };
     /* (#R199) ↳ js/atlas-geo-resolve.js — place / region resolution and camera framing.
        Moved whole; the 16 names below are what the rest of this file still calls. */
-    const { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, flyToBox, geoVerify, geocode, parseDirectional, placeExtent, regionBox, sliceBox } = makeAtlasGeoResolve(HOST, { GE, L, _bboxSoftPoly, _cgPoly, _clipGeoRect, _codesGeo, _expandRegionCompound, _geoArea, _hlLegendHtml, _hlPaletteColor, _lnorm, _ptInGeo, _setLast, _validGeo, askAIJSONEnvelope, codeAtPoint, composeRegion, fbbox, geo, localFuzzyPlaces, regionGroup, resolveCountrySync, lastPlace: () => _lastPlace });
+    const { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geocode, parseDirectional, placeExtent, regionBox, sliceBox } = makeAtlasGeoResolve(HOST, { GE, L, _bboxSoftPoly, _cgPoly, _clipGeoRect, _codesGeo, _expandRegionCompound, _geoArea, _hlLegendHtml, _hlPaletteColor, _lnorm, _ptInGeo, _setLast, _validGeo, askAIJSONEnvelope, codeAtPoint, composeRegion, fbbox, geo, localFuzzyPlaces, regionGroup, resolveCountrySync, lastPlace: () => _lastPlace });
     /* (#R199) ↳ js/atlas-controls.js — the full-control action surface — real UI controls and module methods.
        Moved whole; the 8 names below are what the rest of this file still calls. */
     const { clickId, controlCatalog, doControl, doModule, doVolcano, findControl, kexec, moduleCatalog, setSel } = makeAtlasControls(HOST, { L, R, _ctlTogHtml, esc, note, warn });
@@ -1367,11 +1367,11 @@ window.IntMapModules.atlasConsole=function(HOST){
     function _agentPrompt(req, q){ let p=''; const ctx=stateContext(); if(ctx) p+='[CURRENT MAP STATE]\n'+ctx+'\n\n';
       if(_herePoint&&isFinite(_herePoint.lng)) p+='[PINNED POINT] The user clicked an EXACT spot: latitude '+(+_herePoint.lat).toFixed(4)+', longitude '+(+_herePoint.lng).toFixed(4)+(_herePoint.name?(' (near '+_herePoint.name+')'):'')+'. "here / this spot / ここ / hier / здесь / aqu\u00ed" refer to THIS coordinate, and actions accept place:"there" for it.\n\n';
       const wc=wctxBlock(); if(wc) p+='[WORKING CONTEXT] (what this conversation is currently about)\n'+wc+'\n\n';
-      if(_hist.length) p+='[RECENT CONVERSATION] (oldest\u2192newest)\n'+_hist.slice(-8).map(x=>x.s).join('\n')+'\n\n';   /* (#R298) an entry is {t,s} \u2014 the model reads `s` */
+      if(_hist.length) p+='[RECENT CONVERSATION] (oldest→newest)\n'+_hist.map(x=>x.s).join('\n')+'\n\n';   /* ⚠ (#R413) NEITHER `_hist` NOR THE STEP RECORD BELOW IS CLIPPED HERE ANY MORE: one place bounds the conversation (`_remember`, 48), and the 1,200/3,000-char cuts on the record of what the calls DID were the code editing the evidence it then told Atlas to trust. (#R298) an entry is {t,s} — the model reads `s` */
       p+='[REQUEST]\n'+q+'\n\n';
       try{ const steps=[]; ((req&&req.messages)||[]).forEach(m=>{
-          if(m&&m.role==='assistant'&&m.toolCalls&&m.toolCalls.length) steps.push('you called: '+JSON.stringify(m.toolCalls).slice(0,1200));
-          else if(m&&m.role==='tool') steps.push('IntMap observed: '+JSON.stringify(m.content).slice(0,3000)); });
+          if(m&&m.role==='assistant'&&m.toolCalls&&m.toolCalls.length) steps.push('you called: '+JSON.stringify(m.toolCalls));
+          else if(m&&m.role==='tool') steps.push('IntMap observed: '+JSON.stringify(m.content)); });
         if(steps.length) p+='[THIS TURN SO FAR \u2014 IntMap\'s mechanical record. It did not correct, substitute or reinterpret anything; those decisions are yours.]\n'+steps.join('\n')+'\n\n';
       }catch(_){}
       if(req&&req.final) p+='[Answer the reader now. Do not call any more tools.]\n';
@@ -2963,7 +2963,8 @@ window.IntMapModules.atlasConsole=function(HOST){
                 /* (#R137) also drop the live accent dot + accuracy circle that follow the user */
                 try{ window.IntMapLocate&&window.IntMapLocate.start({fly:false}); }catch(_){}
                 try{ _lastPlace={lng,lat,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; }catch(_){}
-                fin(R(true, note(L('Current location','現在地','Aktueller Standort','Текущее местоположение','Ubicación actual')+' ('+lat.toFixed(3)+', '+lng.toFixed(3)+')')));
+                try{ _selfLocSeed({lng,lat,acc:+p2.coords.accuracy||0}); }catch(_){}   /* (#R413) the next 「現在地から…」 resolves from this fix instead of spending another 25 s on the GPS — ⚠⚠⚠ (#R413) `exec` IS WHY THIS WAS UNUSABLE: js/atlas-toolsurface.js forwards `res.exec` and nothing else, so the note below reaches the READER while the turn that located them learned only `ok:true`. */
+                fin(R(true, note(L('Current location','現在地','Aktueller Standort','Текущее местоположение','Ubicación actual')+' ('+lat.toFixed(3)+', '+lng.toFixed(3)+')'),{exec:{lat,lng,accuracyM:Math.round(+p2.coords.accuracy||0),provenance:'device_location'}}));
               }, err=>{ const denied=err&&err.code===1;   /* 1=PERMISSION_DENIED, 2=UNAVAILABLE, 3=TIMEOUT */
                 fin(R(false, warn('⚠ '+(denied
                   ? L('Location permission was denied. Re-enable it in your browser settings, then ask again.','位置情報の許可が拒否されました。ブラウザ設定で再度許可してから、もう一度お尋ねください。','Standortzugriff wurde verweigert. Aktiviere ihn in den Browsereinstellungen und frag erneut.','Доступ к геолокации отклонён. Включите его в настройках браузера и спросите снова.','Se denegó el permiso de ubicación. Vuelve a activarlo en el navegador y pregunta de nuevo.')
@@ -4761,7 +4762,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     function recordTurn(q, say, acts, fails){ try{ updateWctx(acts,fails); }catch(_){} try{ _parseExclusions(q); }catch(_){}
       try{ const did=(acts||[]).filter(a=>(fails||[]).indexOf(a)<0).map(actLabel).filter(Boolean);
       let a='Atlas: '+String(say||'(done)').slice(0,180); if(did.length) a+=' [did: '+did.join('; ').slice(0,260)+']'; if((fails||[]).length) a+=' [failed: '+fails.map(actLabel).join('; ').slice(0,160)+']';
-      _hist.push({t:_curTurn,s:'User: '+q.slice(0,260)}); _hist.push({t:_curTurn,s:a}); if(_hist.length>16) _hist=_hist.slice(-16); }catch(_){} }   /* (#R298) both halves are filed under whichever turn is current. The brief / runDirect entry points bump _runGen but open no turn of their own, so what they record belongs to the last one — which is right: rewinding to before that turn should drop them too */
+      _hist.push({t:_curTurn,s:'User: '+q.slice(0,4000)}); _hist.push({t:_curTurn,s:a}); if(_hist.length>48) _hist=_hist.slice(-48); }catch(_){} }   /* (#R298) both halves are filed under whichever turn is current. The brief / runDirect entry points bump _runGen but open no turn of their own, so what they record belongs to the last one — which is right: rewinding to before that turn should drop them too */
     /* (#R112) Atlas is a REAL sidebar TAB in normal + mobile mode — the console mounts, IN NORMAL FLOW, into its own
        content area (#atlas-feed) BELOW the sidebar tab bar, exactly like the News / Information / Countries tabs. The
        header + tabs stay visible; there is NO popup overlay (the old "popup forcibly pasted onto the sidebar"

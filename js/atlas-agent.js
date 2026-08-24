@@ -48,9 +48,18 @@ export function makeAtlasAgent() {
        two if its audit repairs). Four leaves that room. Going to six here would mean the reader's
        LAST step — the sentence — is the one that 429s, which is the worst possible place to run
        out. `stopped:'transport'` below is the belt to this braces. */
+    /* ⚠ (#R413) `maxSteps` WAS 4, AND IT WAS THE CLIENT BEING STRICTER THAN THE SERVER. The comment
+       above is the reasoning that produced it, and it is the reasoning this round is told not to
+       repeat: rather than raise the budget it was written against, it lowered Atlas's. Four steps
+       INCLUDING the sentence means a turn may look, act, check and speak — and no more, so
+       「現在地から大阪駅まで」 (locate → find the router → route → answer) fits with nothing left over,
+       and any repair at all runs the turn out. The budget it was rationing is TURN_MAX_CALLS in
+       supabase/functions/ai-proxy, which this round raises to 12 in the same commit. Atlas gets the
+       room; the ceiling stays only as the runaway-loop backstop it was meant to be.
+       「制限を増やす方向、例外を増やす方向に持っていくな」 — CONSTITUTION.md §5. */
     const LIMITS = {
-      maxSteps: 4,          /* model calls in one turn, the final answer included */
-      maxToolCalls: 16,     /* tool executions in one turn, across all steps */
+      maxSteps: 8,          /* model calls in one turn, the final answer included */
+      maxToolCalls: 32,     /* (#R413) 16 → 32: the step count doubled above, so the same headroom per step */
       maxPerStep: 8,        /* tool calls accepted from a single model reply */
       maxMalformed: 3,      /* consecutive steps that produced nothing but rejected calls */
     };

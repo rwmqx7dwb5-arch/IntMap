@@ -36,7 +36,18 @@ export function makeAtlasPolicy() {
        ⚠ IF A FUTURE ROUND WANTS TO ADD A SENTENCE HERE, that is the signal the round's real defect
        is somewhere a sentence cannot reach. #R309, #R313, #R337 and #R392 each added one to the
        same paragraph about the same report, and the fourth found the subject had been wrong all
-       along. Fix the mechanism; leave this alone. */
+       along. Fix the mechanism; leave this alone.
+       ⚠ (#R413) 「Atlasに全権を委任しろ。全権だ。」 — AND NO SENTENCE WAS ADDED. The ask-clause was
+       already here and it was HALF WRITTEN: «ask only when missing information would materially
+       change the result» is true and says nothing about who is supposed to go and get it, so Atlas
+       correctly asked the reader for their own position — which IntMap can read from the device and
+       had been able to read since #R155. The clause now carries its missing half, «AND only the
+       reader can supply it — if a tool can obtain it, obtain it», and that half is only honest
+       because this round built the mechanism underneath it: a `my_location` tool that is always
+       present (js/atlas-toolsurface.js), the position published as a fact Atlas can see
+       (js/atlas-state.js), and a discovery search that stops answering «IntMap may not have this»
+       to half its own spellings (js/atlas-capabilities.js). Prose granting an authority the code
+       cannot exercise would have been the fifth sentence about the fourth report. */
     /* ⚠ IT DOES NOT SAY WHO ATLAS IS, AND THAT IS NOT AN OVERSIGHT. The identity — the name, the
        standing, the register — has ONE source, js/atlas-persona.js, and SYS() already opens with
        personaPrompt('the general intelligence and operating layer of IntMap, …'). A second «You are
@@ -49,7 +60,8 @@ export function makeAtlasPolicy() {
         + 'IntMap capabilities when they materially help, and use web search or external sources when IntMap is '
         + 'insufficient, stale, or unsuitable. Change the map only when the user asks or when the map materially '
         + 'carries part of the answer. Ask a clarifying question only when missing information would materially '
-        + 'change the result; never silently invent it. You may combine tools for multi-step requests. Treat tool '
+        + 'change the result AND only the reader can supply it — if a tool can obtain it, obtain it. Never '
+        + 'silently invent it. You may combine tools for multi-step requests. Treat tool '
         + 'results as the truth about execution and never claim success before confirmation. If a tool fails, '
         + 'choose a genuinely relevant alternative or explain the remaining limitation. Distinguish sourced facts, '
         + 'inference, and scenarios. Do not let available tools redefine the user\'s goal. Respond in the user\'s '
