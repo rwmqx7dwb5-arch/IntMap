@@ -46,19 +46,27 @@ test('#R301 ② no node test file on disk is missing from the list, and no liste
 /* ── ③ the guard actually catches both failures — exercised, not grepped ──────────────────────── */
 test('#R301 ③ the guard reports a file left out of the list, and a listed file that is not there', () => {
   const script = 'node --test tests/a.test.mjs tests/helper-logic.mjs';
+  /* ⚠ (#R390) THE THIRD ARGUMENT IS THE FILE'S SOURCE, AND IT IS REQUIRED. Whether a `.mjs` under
+     tests/ is a test is no longer decided by its name alone. Everything invented in this test is a
+     plain helper, so a source that declares no tests is the honest answer for all of them. */
+  const helper = () => '/* a helper. it declares no tests. */';
   /* the shape this round was written for: on disk, never named */
-  const unlisted = checkTestList(script, ['tests/a.test.mjs', 'tests/b.test.mjs', 'tests/helper-logic.mjs']);
+  const unlisted = checkTestList(script, ['tests/a.test.mjs', 'tests/b.test.mjs', 'tests/helper-logic.mjs'], helper);
   assert.equal(unlisted.length, 1, 'exactly one problem');
   assert.equal(unlisted[0].kind, 'unlisted');
   assert.equal(unlisted[0].file, 'tests/b.test.mjs');
   /* the mirror: named, but deleted or renamed — `node --test` fails on the whole tier for that */
-  const missing = checkTestList(script, ['tests/a.test.mjs']);
+  const missing = checkTestList(script, ['tests/a.test.mjs'], helper);
   assert.deepEqual(missing.map((p) => p.kind + ' ' + p.file).sort(),
     ['missing tests/helper-logic.mjs']);
   /* ⚠ AND IT DOES NOT DEMAND WHAT IT SHOULD NOT. The fixtures, the corpora and the shared helpers
-     under tests/ are not node test files and must not be dragged into the list; the two hand-named
-     `*-logic.mjs` files that predate the convention are listed and are allowed to be. */
-  assert.deepEqual(checkTestList(script, ['tests/a.test.mjs', 'tests/helper-logic.mjs', 'tests/fixtures/x.mjs']), []);
+     under tests/ are not node test files and must not be dragged into the list.
+     ⚠ (#R390) WHAT DECIDES THAT IS NO LONGER THE NAME. This test used to license the hole in so many
+     words — 「the two hand-named `*-logic.mjs` files that predate the convention are listed **and are
+     allowed to be**」 — and #R377 then dropped one of them, tests/security-logic.mjs and its 31
+     tests, past every gate in the repository. A `*-logic.mjs` that declares no tests is still left
+     alone; one that imports node:test is demanded. That half is in tests/r390-checks.test.mjs ②. */
+  assert.deepEqual(checkTestList(script, ['tests/a.test.mjs', 'tests/helper-logic.mjs', 'tests/fixtures/x.mjs'], helper), []);
   assert.ok(!IS_NODE_TEST.test('tests/app-source.mjs'), 'a plain .mjs helper is not a node test file');
   assert.ok(IS_NODE_TEST.test('tests/r197-space.test.mjs'), '…and a name that is not `*-checks` still is one');
 });
