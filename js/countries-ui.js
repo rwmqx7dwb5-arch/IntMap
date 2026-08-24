@@ -163,8 +163,37 @@ window.IntMapModules.countriesUi=function(HOST){
             const gdp=(GDP[code]!=null)?GDP[code]:(p.GDP_MD!=null?+p.GDP_MD/1000:(p.GDP_MD_EST!=null?+p.GDP_MD_EST/1000:null));
             const a2=(p.ISO_A2_EH&&p.ISO_A2_EH!=='-99')?p.ISO_A2_EH:p.ISO_A2;
             /* (#R23) flag non-sovereign / unrecognized features (Scarborough Shoal, Bir Tawil, Bajo Nuevo,
-               ice fields …) so "Random country" + quizzes never serve them as if they were states. */
-            const _nonSov=(p.TYPE==='Indeterminate')||/indetermin|unrecogn/i.test(String(p.FCLASS_TLC||p.featurecla||p.FEATURECLA||''));
+               ice fields …) so "Random country" + quizzes never serve them as if they were states.
+               ══ ⚠⚠⚠ (#R423) …BUT NATURAL EARTH'S OWN `TYPE` OUTRANKS THE VIEWPOINT FIELDS ══════════
+               The record CONTRADICTS ITSELF for Norway — `TYPE:"Sovereign country"` and
+               `FCLASS_TLC:"Unrecognized"` on the same row — and the old predicate read only the second
+               half, so Norway came out `sov:false`. The two fields are not two opinions about one
+               question: `TYPE` says what the feature IS, while the `FCLASS_*` family classifies THIS
+               POLYGON from one point of view. Norway's own `WOE_NOTE` says why the ISO viewpoint differs
+               — «Does not include Svalbard, Jan Mayen, or Bouvet Islands» — and NE blanks its
+               ISO_A3/ISO_A2/ISO_N3 to `-99` for that same reason. Nothing on the row disputes the state.
+               ⚠ THE FCLASS FAMILY DEMONSTRABLY IS NOT A STATEHOOD FIELD: Somaliland and Northern Cyprus,
+               the two genuinely unrecognized states in the file, carry `FCLASS_ISO:"Unrecognized"` with
+               `FCLASS_TLC:"Admin-0 country"` — the opposite arrangement — and are listed today.
+
+               MEASURED. The row was BUILT and then filtered away at every site that asks `sov!==false`:
+               the Countries list (`renderStats` below — 240 rows, no Norway at ANY year, the present
+               included), the 5-country comparison picker (js/stats-compare.js `cList`), every Atlas
+               ranking (js/atlas-console.js «top N by X»), the Atlas starter chips (js/atlas-examples.js)
+               and the era-label name map (js/time-borders.js `tagSame`) — while the map drew «Norway»
+               the whole time. One `sov` flag, six readers, and nothing compared what is DRAWN with what
+               is LISTED; tests/r423-checks.test.mjs is that comparison, and the R423 step of
+               tests/r410.spec.js makes it again against the rendered DOM.
+
+               ⚠ THIS IS NOT A SPECIAL CASE FOR NORWAY AND IT DOES NOT WEAKEN #R23. Counted over both
+               shipped files, the FCLASS branch flags 4 features at 110 m and 13 at 10 m, and every one
+               of them EXCEPT Norway is already `TYPE:"Indeterminate"`; no `TYPE:"Country"` feature
+               carries such an FCLASS at all. Letting TYPE win therefore moves exactly one verdict at
+               each scale, and Scarborough Shoal, Serranilla, Bajo Nuevo, Bir Tawil, Wake, Siachen, the
+               Southern Patagonian Ice Field and the Cyprus buffer zone all stay flagged. */
+            const _neType=String(p.TYPE||'');
+            const _neCountry=/^(sovereign country|country)$/i.test(_neType);
+            const _nonSov=(_neType==='Indeterminate')||(!_neCountry&&/indetermin|unrecogn/i.test(String(p.FCLASS_TLC||p.featurecla||p.FEATURECLA||'')));
             return { code, ccn3:String(p.ISO_N3||''), nameEn:p.NAME_EN||p.ADMIN||p.NAME||code, nameJp:p.NAME_JA||p.NAME_EN||p.ADMIN||code,
               sov:!_nonSov,
               pop, area:Math.round(area), _area:area, density:(pop&&area)?pop/area:null, region:p.CONTINENT||'', subregion:p.SUBREGION||'',
