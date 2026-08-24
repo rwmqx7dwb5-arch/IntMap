@@ -63,8 +63,30 @@ export function makeAtlasToolSurface(deps) {
          fixed in js/atlas-capabilities.js; this line is the rest of it, because the reader's own
          position is not a feature to go hunting for — it is a fact about the person asking. */
       { name: 'my_location', cap: 'view.locate', desc: 'Get the reader\'s real position from their device. The result carries their coordinates. Call it yourself whenever the request depends on where the reader is — never ask them to type their own location, and never use the map centre in its place. Afterwards "my location" / "現在地" resolves to it in any place argument.' },
-      { name: 'ask_user', cap: 'dialog.ask', desc: 'Ask the reader one question with 2-4 concrete options. Only for what ONLY they can supply — a preference, or a choice between real alternatives you have already found. Never for something you could obtain with another tool.' },
+      /* ⚠ (#R419) `endsTurn` IS A FACT ABOUT THE MACHINE, NOT A RULE ABOUT ATLAS. The loop stops
+         when this tool succeeds (js/atlas-agent.js), because the thing it went to get is the
+         reader's reply and the reader has not replied yet. Whether to ask at all, when, and what,
+         is still entirely Atlas's — CONSTITUTION.md §5. The sentence is in the description because
+         a tool whose result is «the turn is over» has to say so where the caller can read it. */
+      { name: 'ask_user', cap: 'dialog.ask', endsTurn: true, desc: 'Ask the reader one question with 2-4 concrete options. Only for what ONLY they can supply — a preference, or a choice between real alternatives you have already found. Never for something you could obtain with another tool. This ENDS the turn: the question is what the reader is shown, and their reply opens the next turn — so do not ask about something you are about to do anyway in this same turn.' },
     ];
+
+    /* (#R419) the capabilities whose success ENDS the turn, derived from CORE so the fact is
+       declared once, next to the tool it belongs to. Resolved through the registry (and cached), so
+       a CORE entry written with an ALIAS still matches the canonical id the executor reports. */
+    var _endsTurn = null;
+    function ENDS_TURN(capId) {
+      if (!_endsTurn) {
+        _endsTurn = {};
+        CORE.forEach(function (c) {
+          if (!c.endsTurn) return;
+          _endsTurn[c.cap] = true;
+          var cp = capOf(c.cap);
+          if (cp && cp.id) _endsTurn[cp.id] = true;
+        });
+      }
+      return !!_endsTurn[capId];
+    }
 
     function schemaOf(capId) {
       var s = null;
@@ -97,6 +119,7 @@ export function makeAtlasToolSurface(deps) {
           name: c.name, capabilityId: cap.id, legacy: cap.legacy,
           description: c.desc,
           parameters: schemaOf(cap.id),
+          endsTurn: c.endsTurn || undefined,   /* (#R419) carried through to the loop */
         };
       });
 
@@ -239,10 +262,19 @@ export function makeAtlasToolSurface(deps) {
       var out = {
         ok: ok,
         capability: built.cap ? built.cap.id : undefined,
-        status: meta.status || (ok ? 'completed' : 'failed'),
+        /* (#R419) a tool that ran to completion but whose OUTPUT was cut down by its own audit is
+           not 「completed」 to the one deciding what to say about it. The flag comes from the case
+           itself (js/atlas-console.js's analyze), through the executor, which no longer drops it. */
+        status: (ok && meta.degraded) ? 'degraded' : (meta.status || (ok ? 'completed' : 'failed')),
+        removedClaims: (ok && meta.degraded && meta.removedClaims != null) ? meta.removedClaims : undefined,
         produced: meta.produced && meta.produced.length ? meta.produced : undefined,
         rendered: !!(res && res.html),
         unverified: meta.unverified || undefined,
+        /* ⚠ (#R419) ON THE RESULT AS WELL AS ON THE TOOL, because `run_capability` can reach
+           `dialog.ask` by id and that call's tool NAME is `run_capability`. Reading the flag off the
+           tool alone would have left the one path that names the capability instead of the tool free
+           to ask and keep going — the defect this fixes, arriving through the other door. */
+        endsTurn: (ok && built.cap && ENDS_TURN(built.cap.id)) ? true : undefined,
       };
       if (!ok) {
         out.error = meta.code || 'failed';

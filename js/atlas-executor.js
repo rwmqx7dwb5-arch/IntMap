@@ -384,12 +384,25 @@ function makeAtlasExecutor(HOST, CTX) {
           op.verification = verdict;
 
           /* 10 — the structured result */
-          var r = Results.make(Object.assign({
+          var _base = Object.assign({
             operationId: operationId, capabilityId: cap.id,
             produced: (verdict.produced || (cap.produces || [])).slice(),
             observed: Object.assign({ before: op.before, after: op.after }, verdict.observed || null),
             undoToken: (typeof cap.undo === 'function' && verdict.undoToken) ? verdict.undoToken : null
-          }, verdict));
+          }, verdict);
+          /* ══ ⚠⚠⚠ (#R419) THE DISPATCH CASE'S OWN `meta` WAS DROPPED HERE, AND ATLAS READS IT ═════
+             A verifier builds a FRESH verdict — {status, code, html, observed} — so anything the case
+             said about itself in `meta` beyond the two flags a verifier happens to look at
+             (`unverified`, `already`, `partial`) died at this line. `research.analyze` uses the
+             `none` observer, which reads none of them: an analysis whose audit had removed every
+             claim it could not source came out the far end as {ok:true, status:'completed'}, and
+             Atlas — the one thing that could have decided to answer another way — was never told.
+             ⚠ CARRIED, NOT AUTHORITATIVE. `status`, `code` and `ok` still come from the verifier
+             watching the app (#R318); js/atlas-results.js's toLegacy overwrites all three on top of
+             this. What survives is the case's own account of ITSELF, which is the part no observer
+             can re-derive from the outside. The verdict wins any key it also sets. */
+          _base.meta = Object.assign({}, (raw && typeof raw === 'object' && raw.meta) || null, _base.meta || null);
+          var r = Results.make(_base);
           return settle(r);
         } finally {
           try { releaseLock(); } catch (_) { }

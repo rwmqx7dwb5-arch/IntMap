@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（940行・84 KB）＋ `css/`（3本）＋ `js/`（237本・11.3 MB）＋ `src/`（10本）。**
+- **本体は `index.html`（940行・84 KB）＋ `css/`（3本）＋ `js/`（238本・11.3 MB）＋ `src/`（10本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -224,8 +224,9 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 | 実行 | `js/atlas-executor.js` | `IntMapOS.execute()` の 11 段 |
 | 結果の形 | `js/atlas-results.js` | 全操作が返す 1 つの構造。7 つの status |
 | 状態 | `js/atlas-state.js` | 18 セクションの合成スナップショットと**ターン台帳** |
-| ターンの進行 | `js/atlas-agent.js` | **Atlas が主体のループ**。1 手ごとに「最終回答」か「tool 呼び出し」を選び、機械的な結果を受けて次を選ぶ。ツール名の実在・引数の型・必須引数・回数の上限だけを見る |
-| 道具の面 | `js/atlas-toolsurface.js` | そのターンに渡す**中核 6 ツール**（`my_location` を含む）＋`find_capability`（全 126 を検索・**打ち切り無し**）／`run_capability`（ID 指定で起動）＝計 8 本 |
+| ターンの進行 | `js/atlas-agent.js` | **Atlas が主体のループ**。1 手ごとに「最終回答」か「tool 呼び出し」を選び、機械的な結果を受けて次を選ぶ。ツール名の実在・引数の型・必須引数・回数の上限だけを見る。**読者への質問が成功した時点でターンは終わる**（`stopped:'awaiting_user'`）——同じ返信に並んだ後続の呼びは実行せず `turn_ended` で差し戻し、締めの 1 文のためのモデル呼び出しもしない。**旗は道具（と結果）に立っているので、ループは特定の道具の意味を知らない** |
+| 道具の面 | `js/atlas-toolsurface.js` | そのターンに渡す**中核 6 ツール**（`my_location` を含む）＋`find_capability`（全 126 を検索・**打ち切り無し**）／`run_capability`（ID 指定で起動）＝計 8 本。`ask_user` は `endsTurn`＝**ターンを終える道具**で、旗は**結果にも**載る（`run_capability` が `dialog.ask` を ID で呼ぶ経路では、呼びの名前は `run_capability` だから）。監査に削られた回答は `status:'degraded'` と削除件数で返す |
+| 早く終わったターンが残すもの | `js/atlas-turn-continuity.js` | ①**訊いた質問を会話の記録へ 1 行として残す**（選択肢付き。`did:` の一覧＝260 字で切られる側には入れない）。②**中止の印は「考え中の点」だけを置き換える**——ターンが既に描いたものは残る。点まで届かなかった bubble だけを丸ごと置き換える |
 | 中核指示 | `js/atlas-policy.js` | **1 段落の中核指示**（何を Atlas が決めるか）＋ 座標ラベルの意味 ＋ ターンの終わり方 |
 | 地点の 1 つの形 | `js/atlas-geo-object.js` | `GeoObject`＝ID・名前・緯度経度・種別・日時・出典・確度と **provenance**。`placed` / `pointLike` / `describesUserPoint` / `mergeKnown` |
 | 分野横断の異常度 | `js/atlas-anomaly-score.js` | 種別ごとの固有スケール（Mw／カテゴリ／VAL／CAP 4段）＋ 影響人口・範囲・平常からの乖離・新しさ・確度・国際的重要性の**7成分**。順位の根拠を `why` に残す。**各種別の上位だけを競わせる**（偏りは標本の偏りであって選好ではない） |

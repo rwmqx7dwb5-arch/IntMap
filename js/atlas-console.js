@@ -43,6 +43,7 @@ import { makeAtlasExamples } from './atlas-examples.js';   /* (#R309) the starte
 import { makeNewsCluster } from './news-cluster.js';   /* (#R340) research.events — the ONE deterministic article→event grouper, with the measurements behind every constant */
 import { makeAtlasGeoObject } from './atlas-geo-object.js';   /* (#R397) one shape for a place, and WHERE its coordinate came from — so a coordinate IntMap already fetched stops being thrown away and re-geocoded */
 import { makeAtlasPolicy } from './atlas-policy.js';
+import { makeAtlasTurnContinuity } from './atlas-turn-continuity.js';   /* (#R419) what a turn leaves behind when it ends early: the question in the record, and a Stopped note that does not erase the page. ⚠ ON THIS LINE because js/atlas-console.js is AT its shrink-only ceiling (tests/r318 ⓑ) — the same reason #R278 appended inside a line. */
 import { makeAtlasAnomalyScore } from './atlas-anomaly-score.js';   /* (#R397) one scale for an earthquake, a typhoon and a flood — see that file for why the old bias was a SAMPLING artefact */   /* (#R397) source precedence, map restraint, coordinate provenance — prompt prose, out of the shell's line ceiling (tests/r199 ⑤) */
 import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 
@@ -1061,13 +1062,13 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R350) the answer contract, in the shape tests/r175 ③ requires of every js/ module: ONE
        exported factory per file, nothing private at a module's top level, and the API attached to
        window so the browser spec can drive the REAL renderer rather than a Node copy of it. */
-    const { runStructuredAnswer } = makeAtlasAnswerPipeline();
+    const { runStructuredAnswer, degradeMeta } = makeAtlasAnswerPipeline();
     const { renderAnswer, answerPlainText, answerCSS } = makeAtlasAnswerRender();
     const { makeEvidenceRegistry } = makeAtlasEvidence();
     const { normalizeAnswer } = makeAtlasAnswerContract();
     const GEOBJ = makeAtlasGeoObject();   /* (#R397) geoObject / placed / pointLike / describesUserPoint / mergeKnown */
     const ANOM = makeAtlasAnomalyScore();   /* (#R397) cross-domain hazard ranking with an explainable score */
-    const POLICY = makeAtlasPolicy();     /* (#R406) the core instruction \u2014 one paragraph, not nine */
+    const POLICY = makeAtlasPolicy();     /* (#R406) the core instruction \u2014 one paragraph, not nine */ const TCONT = makeAtlasTurnContinuity();   /* (#R419) actionLabel / askRecords / markCancelled */
     const AGENT = makeAtlasAgent();       /* (#R406) the turn loop */
     const SCHEMAS = makeAtlasSchemas();   /* (#R406) 126 argument schemas */
     const { auditAnswer } = makeAtlasAnswerAudit();
@@ -1297,8 +1298,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         if(sc>bs){ bs=sc; best={code, name:cName(s), ll:(s.latlng?{lng:s.latlng[1],lat:s.latlng[0]}:null)}; } }
       return bs>=58?best:null; }catch(_){ return null; } }
     async function resolveCountry(name){ const c=resolveCountrySync(name); if(c) return c; try{ const ll=await geocode(name); if(ll){ const code=codeAtPoint(ll.lng,ll.lat); if(code&&countryStats[code]){ const s=countryStats[code]; return {code, name:cName(s), ll}; } return {code:null, name:ll.name||name, ll}; } }catch(_){} return null; }
-    /* short human label for a step, used in the honest failure summary */
-    function actLabel(a){ if(!a||!a.type) return ''; const x=a.name||a.place||a.country||a.metric||a.query||a.topic||a.mode||a.lang||a.unit||a.from||a.target||''; return a.type+(x?(' "'+String(x).slice(0,26)+'"'):''); }
+    /* short human label for a step, used in the honest failure summary */ function actLabel(a){ return TCONT.actionLabel(a); }   /* (#R419) — and why `question` had to be in it: js/atlas-turn-continuity.js */
     /* (#R80) vision §17 — IntMap SELF-DIAGNOSIS. Atlas monitors whether IntMap's OWN data pipeline is healthy:
        is the news feed still updating, are the live data APIs Atlas relies on reachable, and are the layers the
        user turned on actually painting? All checks reuse data/endpoints IntMap ALREADY uses (no new external
@@ -3486,7 +3486,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           const usedAll=usedNames.slice();   /* (#R113) IntMap's own gathered sources (GDELT, Google News, Wikidata, Wikipedia…) are already in usedNames. */
           if(RES.webUsed) usedAll.push(L('live web verification','ライブWeb検証','Live-Web-Verifizierung','проверка в интернете','verificación web en vivo'));
           if(usedAll.length) html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;">'+L('Data used','使用データ','Verwendete Daten','Данные','Datos usados')+': '+usedAll.join(', ')+'</div>';   /* (#R118) no data → NO empty "Data used:" line */
-          return R(true, html); }
+          const _dm=degradeMeta(_env); return _dm?R(true,html,{meta:_dm}):R(true,html); }   /* ⚠ (#R419) AN ANSWER THE AUDIT GUTTED IS NOT `completed` TO THE ONE WRITING THE SENTENCE ABOUT IT — the 1940 Lithuania report. Why, and what the meta says: degradeMeta() in js/atlas-answer-pipeline.js. */
         /* (#R180) THE RENDERING ENGINE — Atlas is the control plane (STANDING RULE since #R82),
            so the second engine is selectable from here too. It cannot take effect on the live
            scene for the same reason the Settings panel reloads: a renderer swap is a rebuild.
@@ -4257,7 +4257,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     let _runGen=0, _abortCtl=null;
     /* (#R142) Neutral "Stopped" — covers BOTH a newer message superseding this turn AND the user pressing the Stop button;
        _stopRun paints THIS same note so an in-flight abort that repaints it stays visually identical (no flicker). */
-    function _cancelledNote(){ return '<span style="color:var(--text-muted);font-size:11.5px;">⏹ '+esc(L('Stopped','停止しました','Angehalten','Остановлено','Detenido'))+'</span>'; }
+    function _cancelledNote(){ return '<span style="color:var(--text-muted);font-size:11.5px;">⏹ '+esc(L('Stopped','停止しました','Angehalten','Остановлено','Detenido'))+'</span>'; } function _markCancelled(b){ TCONT.markCancelled(b,_cancelledNote()); }   /* ⚠ (#R419) STOPPING A TURN IS NOT ERASING WHAT IT ALREADY DREW — every cancel path below used to paint this over the WHOLE bubble, which is how the reported transcript lost the three questions the reader had just answered. js/atlas-turn-continuity.js has the measurement. */
     const _GO_SEND_SVG='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg>';
     const _GO_STOP_SVG='<svg viewBox="0 0 24 24" width="20" height="20"><rect x="4.25" y="4.25" width="15.5" height="15.5" rx="3.4" fill="currentColor"/></svg>';   /* (#R150) "四角はほんの少し小さく": rect 17.5→15.5 in a 24 viewBox (rendered ≈14.6px→12.9px) — a gentle trim, still clearly a Stop square */
     /* (#R142) send ⇄ stop: while Atlas is generating a reply, the up-arrow SEND button becomes a red STOP square. */
@@ -4267,7 +4267,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R142) STOP: supersede the running turn (bump _runGen so its late results are discarded — the existing soft-cancel)
        AND abort the in-flight request (real fetch AbortController), then paint the neutral Stopped note immediately. */
     function _stopRun(){ try{ _runGen++; }catch(_){} try{ if(_abortCtl&&_abortCtl.abort) _abortCtl.abort(); }catch(_){} _abortCtl=null;
-      try{ if(chatEl) chatEl.querySelectorAll('.atl-b.a .atl-stage').forEach(d=>{ const b=d.closest('.atl-b'); if(b) b.innerHTML=_cancelledNote(); }); }catch(_){}
+      try{ if(chatEl) chatEl.querySelectorAll('.atl-b.a .atl-stage').forEach(d=>{ const b=d.closest('.atl-b'); if(b) _markCancelled(b); }); }catch(_){}
       try{ _setGoBusy(false); }catch(_){} }
     /* (#R84) MAP-OVERLAY TOGGLE ("Atlasによって地図上にマッピングされた類のものは、Atlasのメッセージ内から
        オンオフできるように"): a reply that painted something on the map gets a live on/off switch. */
@@ -4559,7 +4559,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       ai.__atlResults=(ai.__atlResults||[]).concat(results);
       if(ai.__atlSay==null) ai.__atlSay=say||'';   /* the FIRST say leads; a later repair say never overrides it */
       if(cancelled) ai.__atlCancelled=true;
-      if(gen!=null&&gen!==_runGen){ try{ ai.innerHTML=_cancelledNote(); }catch(_){} return fails; }
+      if(gen!=null&&gen!==_runGen){ _markCancelled(ai); return fails; }
       _atlCompose(ai);
       return fails;
     }
@@ -4637,14 +4637,14 @@ window.IntMapModules.atlasConsole=function(HOST){
       try{ ai.innerHTML=stageDots('read'); }catch(_){}
       let env=null; try{ env=await askAIJSONEnvelope(_visionPrompt(q),_visionSYS(),imgs,opts); }
       catch(e){ if(gen===_runGen){ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; recordTurn(q,'',[{type:'answer'}],[{type:'answer'}]); } return; }
-      if(gen!==_runGen){ ai.innerHTML=_cancelledNote(); return; }
+      if(gen!==_runGen){ _markCancelled(ai); return; }
       let d=_visNorm(env&&env.data); let vr=_atlVerifyChecks(d.checks);
       /* ONE image RE-EXAMINATION round when a deterministic recompute failed (the work order's "検算失敗時は回答をそのまま
          返さず、転記または計算を再確認する") — the model is told exactly which check broke and to re-read that region. */
       if(vr.ran && vr.failed.length){ try{ if(gen===_runGen) ai.innerHTML=stageDots('verify');
         const guide='\n\n[SELF-CHECK FAILED] Your emitted check(s) did NOT hold when recomputed EXACTLY on the client: '+vr.failed.map(f=>f.label+' ('+f.detail+')').join('; ')+'. RE-EXAMINE the corresponding region of the image, re-transcribe those exact entries (watch 1/7, 0/O, signs and fraction bars), redo the computation, and return corrected JSON whose checks actually pass. If the image genuinely does not support a passing check, say so honestly in "answer" and omit the failing check.';
         const env2=await askAIJSONEnvelope(_visionPrompt(q)+guide,_visionSYS(),imgs,opts);
-        if(gen!==_runGen){ ai.innerHTML=_cancelledNote(); return; }
+        if(gen!==_runGen){ _markCancelled(ai); return; }
         if(env2&&env2.data){ const d2=_visNorm(env2.data); const vr2=_atlVerifyChecks(d2.checks);
           if(vr2.ran && !vr2.failed.length){ d=d2; vr=vr2; env=env2; }                               /* repaired → verified */
           else if(vr2.ran && vr2.failed.length<vr.failed.length){ d=d2; vr=vr2; env=env2; } }        /* strictly fewer failures → still an improvement */
@@ -4685,7 +4685,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       const _turnKey=(_curTurnKey='t'+turn+'-'+Math.floor(Date.now()/1000));
       try{ EXEC.supersede(turn); }catch(_){}
       try{ ASTATE.beginTurn(turn,q); }catch(_){}   /* (#R298) the turn id every bubble and every history entry of THIS exchange carries, so an edit can rewind to exactly here */
-      try{ chatEl.querySelectorAll('.atl-b.a .atl-stage').forEach(d=>{ const b=d.closest('.atl-b'); if(b) b.innerHTML=_cancelledNote(); }); }catch(_){}
+      try{ chatEl.querySelectorAll('.atl-b.a .atl-stage').forEach(d=>{ const b=d.closest('.atl-b'); if(b) _markCancelled(b); }); }catch(_){}
       /* (#R231) 「画像については…吹き出しで囲わなくてそのまま表示でいい」 — the image row is its own
          element. It keeps the `u` class (_scrollUserTop reads previousElementSibling.classList) and
          `.atl-imgrow` takes the fill/padding/radius off; the 74 px square crop is gone with it.
@@ -4745,7 +4745,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         const out=await AGENT.runTurn({ model:_model, tools:_tools, execute:TOOLS.makeExecute(_tools,AGENT),
           system:_sys, messages:[{role:'user',content:q}], signal:(_abortCtl?_abortCtl.signal:undefined),
           onStep:(s)=>{ try{ if(_atlasDbg){ _atlasDbg.steps.push(s); _atlasDbg.toolCalls=_atlasDbg.toolCalls.concat(s.calls||[]); } }catch(_){} } });
-        if(gen!==_runGen){ ai.innerHTML=_cancelledNote(); return; }
+        if(gen!==_runGen){ _markCancelled(ai); return; }
         try{ if(_atlasDbg){ _atlasDbg.rejected=(out.trace&&out.trace.rejected)||0; _atlasDbg.stopped=out.stopped; } }catch(_){}
         /* ⚠ ASSIGNED, NOT DEFAULTED. runActions seeds `__atlSay` with '' on its first pass so the
            bubble can render while tools are still running; THIS is the answer, and it arrives after. */
@@ -4754,15 +4754,15 @@ window.IntMapModules.atlasConsole=function(HOST){
         recordTurn(q,out.text||'',_ranActions,[]);
         msgTools(ai,q);
       }catch(e){
-        if(gen!==_runGen){ try{ ai.innerHTML=_cancelledNote(); }catch(_){} return; }
+        if(gen!==_runGen){ _markCancelled(ai); return; }
         ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'AI error')+'</span>'; msgTools(ai,q); }
       }finally{ try{ if(gen===_runGen){ _setGoBusy(false); _abortCtl=null; } }catch(_){} }   /* (#R142) only the LATEST turn clears the busy button — a superseding turn keeps its own Stop shown */
     }
     /* (#R44) append a compact, TRUTHFUL record of the exchange to the rolling history (capped). */
     function recordTurn(q, say, acts, fails){ try{ updateWctx(acts,fails); }catch(_){} try{ _parseExclusions(q); }catch(_){}
-      try{ const did=(acts||[]).filter(a=>(fails||[]).indexOf(a)<0).map(actLabel).filter(Boolean);
+      try{ const kept=(acts||[]).filter(a=>(fails||[]).indexOf(a)<0); const did=kept.filter(a=>!TCONT.isAsk(a)).map(actLabel).filter(Boolean);   /* ⚠ (#R419) A QUESTION IS THE TURN'S OUTPUT, NOT ONE OF ITS SIDE EFFECTS — it gets its OWN history line below, never a slot in this `did:` list, which is cut at 260 characters (js/atlas-turn-continuity.js) */
       let a='Atlas: '+String(say||'(done)').slice(0,180); if(did.length) a+=' [did: '+did.join('; ').slice(0,260)+']'; if((fails||[]).length) a+=' [failed: '+fails.map(actLabel).join('; ').slice(0,160)+']';
-      _hist.push({t:_curTurn,s:'User: '+q.slice(0,4000)}); _hist.push({t:_curTurn,s:a}); if(_hist.length>48) _hist=_hist.slice(-48); }catch(_){} }   /* (#R298) both halves are filed under whichever turn is current. The brief / runDirect entry points bump _runGen but open no turn of their own, so what they record belongs to the last one — which is right: rewinding to before that turn should drop them too */
+      _hist.push({t:_curTurn,s:'User: '+q.slice(0,4000)}); TCONT.askRecords(kept).forEach(s=>_hist.push({t:_curTurn,s:s})); _hist.push({t:_curTurn,s:a}); if(_hist.length>48) _hist=_hist.slice(-48); }catch(_){} }   /* (#R298) both halves are filed under whichever turn is current. The brief / runDirect entry points bump _runGen but open no turn of their own, so what they record belongs to the last one — which is right: rewinding to before that turn should drop them too */
     /* (#R112) Atlas is a REAL sidebar TAB in normal + mobile mode — the console mounts, IN NORMAL FLOW, into its own
        content area (#atlas-feed) BELOW the sidebar tab bar, exactly like the News / Information / Countries tabs. The
        header + tabs stay visible; there is NO popup overlay (the old "popup forcibly pasted onto the sidebar"
@@ -4865,9 +4865,9 @@ window.IntMapModules.atlasConsole=function(HOST){
       const ai=bubble('a','<span style="color:var(--text-muted);">'+L('Researching…','調査中…','Recherchiere…','Изучаю…','Investigando…')+'</span>');
       const gen=++_runGen;   /* (#R73) a newer message cancels this brief too */
       try{ const act={type:'brief',place:String(name||'')}; if(ll&&ll.lng!=null&&isFinite(+ll.lng)){ act.lng=+ll.lng; act.lat=+ll.lat; }
-        const r=await dispatch(act); if(gen!==_runGen){ ai.innerHTML=_cancelledNote(); return; }
+        const r=await dispatch(act); if(gen!==_runGen){ _markCancelled(ai); return; }
         ai.innerHTML=(r&&r.html)||''; recordTurn('Research: '+String(name||''),'',[act],(r&&r.ok)?[]:[act]);
-      }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; else { ai.innerHTML=_cancelledNote(); return; } }
+      }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; else { _markCancelled(ai); return; } }
       msgTools(ai,null); }
     /* (#R82) wire Atlas INTO the kernel: the OS's semantic dispatcher = Atlas's action layer; its state = the
        live map/UI state; its catalog = the full control/layer/module surface. After this, IntMapOS.dispatch(action)
