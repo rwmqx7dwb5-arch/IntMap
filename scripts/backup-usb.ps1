@@ -39,9 +39,17 @@
       not content and are never touched.
 
   USAGE
-      pwsh -File scripts/backup-usb.ps1            # mirror + verify
-      pwsh -File scripts/backup-usb.ps1 -VerifyOnly
-      pwsh -File scripts/backup-usb.ps1 -WhatIf    # plan only, writes nothing
+      powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1              # mirror + verify
+      powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1 -VerifyOnly
+      powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1 -WhatIf      # plan only, writes nothing
+
+      ⚠ (#R396) NOT `pwsh`. PowerShell 7 is not installed on the machine this repository is
+      developed on — `Get-Command pwsh` is a CommandNotFoundException, and neither
+      C:\Program Files\PowerShell nor WindowsApps\pwsh.exe exists; $PSVersionTable.PSVersion
+      is 5.1.26100.9168. Every line above used to say `pwsh`, so the documented way to run
+      the end-of-work backup could not be run at all. Nothing here needs 7: `::new()` has
+      been available since 5.0 and no PS7-only syntax is used (measured: RESULT ok, 2,693
+      files, zero differences, under Windows PowerShell 5.1).
 
   EXIT CODES  0 = done or skipped · 1 = failed (mirror or verification)
   The last line of stdout is always machine-readable:  RESULT <status> <detail>
