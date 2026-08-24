@@ -251,6 +251,27 @@ test('R372 ⑬ news is not fetched for a reader who has not asked for it', () =>
   assert.match(fd[1], /HOST\.mode\s*!==\s*'news'/, 'a cold start straight into News still fetches');
 });
 
+test('R372 ⑮ opening the News surface asks — the boot pass is not what the tab was living on', () => {
+  /* ⚠ THE REGRESSION ⑬ CAUSED, FOUND IN PRODUCTION. setMode() calls renderUI(), never fetchData();
+     the News tab worked only because the boot pass had already filled globalData. With ⑬ in place
+     and nothing else asking, opening News painted 「Loading articles...」 and stayed there — measured
+     on the deployed site: 0 requests to news_events / news_sources / the relay after the click, and
+     window.IntMapNewsEvents still undefined. Opening the surface IS the gesture, so startNews()
+     asks when it has nothing. */
+  const feed = code('js/news-feed.js');
+  const sn = /function startNews\(\)\s*\{([\s\S]{0,900}?)HOST\.newsFiltered/.exec(feed);
+  assert.ok(sn, 'startNews() still starts by checking what it has');
+  assert.match(sn[1], /globalData\.length\s*===\s*0/, 'it still detects the empty case');
+  assert.match(sn[1], /fetchData\(\s*\)/, '…and now asks for the data instead of only painting «loading»');
+  /* ⚠ ONE SHOT: fetchData() calls startNews() back on success, so an unguarded call is a loop. */
+  assert.match(sn[1], /!\s*_asked/, 'guarded by the same latch, so a fetch that finds nothing does not re-ask');
+  /* ⚠ AND THE LATCH IS DECLARED ABOVE BOTH READERS — a `let` below a function that reads it is a
+     TDZ waiting for the first caller that runs early (this repo has paid for that across chunks). */
+  assert.ok(feed.indexOf('let _asked') < feed.indexOf('function startNews'),
+    'the latch is declared before the first function that reads it');
+  assert.equal((feed.match(/let _asked/g) || []).length, 1, 'declared exactly once');
+});
+
 /* ── A7 the climate raster ────────────────────────────────────────────────────────────────── */
 
 test('R372 ⑭ Köppen retries the style instead of throwing past the change listener', () => {

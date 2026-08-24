@@ -93,7 +93,7 @@ jobs:
           # `main` requires the branch to be up to date (strict_required_status_checks_policy), and
           # this repo merges often enough that a five-minute CI run can fall behind. Each attempt
           # therefore re-syncs, re-approves whatever that created, and waits again.
-          for attempt in 1 2 3; do
+          for attempt in 1 2 3 4; do
             echo "── attempt $attempt ─────────────────────────────────────────"
             STATE="$(gh pr view "$PR" --json mergeStateStatus --jq .mergeStateStatus)"
             if [ "$STATE" = "BEHIND" ]; then
@@ -155,5 +155,22 @@ jobs:
             echo "::error::the pull request's checks are red — NOT merging. The bundled catalogue stays as it is."
             exit 1
           done
-          echo "::error::could not land the catalogue in 3 attempts (main kept moving). The next scheduled run will retry."
-          exit 1
+
+          # ⚠⚠ LOSING THE RACE IS NOT THE FAILURE THIS JOB EXISTS TO REPORT. Measured: the approvals
+          # work, the checks run and they pass — but CI takes ~6 minutes and this repository merges
+          # every few minutes, so `update-branch` can be overtaken before the merge button is
+          # reachable. Going red for that, twice a day, would rebuild the exact thing #R372 set out
+          # to remove: an alarm nobody reads. What actually matters is whether MAIN's catalogue has
+          # gone stale, so that is what is measured, and that is the only thing that fails the job.
+          BUILT="$(gh api "repos/${GITHUB_REPOSITORY}/contents/data/tle/catalogue.json?ref=main" \
+                    --jq .content | base64 -d | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).builtAt||"")}catch{console.log("")}})')"
+          AGE_D=-1
+          if [ -n "$BUILT" ]; then
+            AGE_D="$(node -e "console.log(Math.floor((Date.now()-Date.parse(process.argv[1]))/86400000))" "$BUILT")"
+          fi
+          echo "main's catalogue was built $BUILT (${AGE_D} day(s) ago)"
+          if [ "$AGE_D" -lt 0 ] || [ "$AGE_D" -ge 3 ]; then
+            echo "::error::could not land the catalogue, and main's copy is ${AGE_D} day(s) old. THIS is the fifteen-day silence #R372 was about — read this run's log rather than waiting for the next one."
+            exit 1
+          fi
+          echo "::notice::could not land this run's catalogue (main kept moving), but main's copy is only ${AGE_D} day(s) old. The next scheduled run will retry."
