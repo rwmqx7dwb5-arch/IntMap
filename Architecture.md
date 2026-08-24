@@ -192,8 +192,8 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 
 | 部品 | ファイル | 何の正本か |
 |---|---|---|
-| Capability Registry | `js/atlas-capabilities.js` | **122 能力**。ID・別名（290 綴り）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・**必要な対象**・遅延モジュール・観測器・検証器 |
-| 能力の説明文 | `js/atlas-catalog-text.js` | planner に渡す 38 ブロック。**各ブロックがどの能力を説明しているか**を持つ |
+| Capability Registry | `js/atlas-capabilities.js` | **126 能力**。ID・別名（302 綴り）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・**必要な対象**・遅延モジュール・観測器・検証器 |
+| 能力の説明文 | `js/atlas-catalog-text.js` | planner に渡す 41 ブロック。**各ブロックがどの能力を説明しているか**を持つ |
 | 実行 | `js/atlas-executor.js` | `IntMapOS.execute()` の 11 段 |
 | 結果の形 | `js/atlas-results.js` | 全操作が返す 1 つの構造。7 つの status |
 | 状態 | `js/atlas-state.js` | 15 セクションの合成スナップショットと**ターン台帳** |
@@ -684,7 +684,9 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 
 ⚠ **火山は主題ごとの正本を別に持つ**——同梱データと GVP 番号による結合、現在の警戒レベルの4段
 （USGS／気象庁／週間報告／沈黙）、火山灰 SIGMET、公表されたハザード域だけを描く規則、SO₂、
-周辺人口・空港・地震は [`docs/VOLCANO-INTELLIGENCE.md`](docs/VOLCANO-INTELLIGENCE.md) が正本。
+周辺人口・空港・地震、**カードの分類語を9言語で言う規則と散文を訳さない理由**、
+**カタログを問いに絞る4つの条件とマスタークロックに載せた噴火記録**は
+[`docs/VOLCANO-INTELLIGENCE.md`](docs/VOLCANO-INTELLIGENCE.md) が正本。
 ### 7.2 レイヤー欄の分類・7.5 地図の初期化
 
 **どちらも [`docs/MAP-LAYERS.md`](docs/MAP-LAYERS.md) へ移した**（節番号は同じ）。§7.2 は 18 の棚と

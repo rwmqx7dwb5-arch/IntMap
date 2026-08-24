@@ -1,0 +1,2051 @@
+{
+  "_": "(#R395) Volcano Intelligence — the CONTROLLED VOCABULARIES the card prints as values: GVP volcano types, rocks, tectonic settings, landforms, epoch, inclusion bases and dating methods; GVP regions and subregions; the USGS aviation colour codes, alert levels, threat ranking and observatory names; the Smithsonian/USGS weekly status phrases; JMA’s own warning wording (those rows are keyed in Japanese, which is what the agency publishes); and the two GVP country qualifiers. de/ru/es are arguments at the js/volcano-intel.js call sites and are copied here verbatim; fr, ko and zh-Hant are the new work. Columns: de, ru, es, fr, ko, zh-Hant.",
+  "ADVISORY": [
+    "Hinweis",
+    "Уведомление",
+    "Advertencia",
+    "Avis",
+    "주의",
+    "注意"
+  ],
+  "Aeolian Volcanic Arc": [
+    "Äolischer Vulkanbogen",
+    "Эолийская вулканическая дуга",
+    "Arco volcánico Eolio",
+    "Arc volcanique éolien",
+    "에올리에 화산호",
+    "埃奧利亞火山弧"
+  ],
+  "Afar Rift Volcanic Province": [
+    "Vulkanprovinz des Afar-Rifts",
+    "Вулканическая провинция Афарского рифта",
+    "Provincia volcánica del Rift de Afar",
+    "Province volcanique du rift de l'Afar",
+    "아파르 열곡 화산 지대",
+    "阿法爾裂谷火山省"
+  ],
+  "Alaska Peninsula Volcanic Arc": [
+    "Vulkanbogen der Alaska-Halbinsel",
+    "Вулканическая дуга полуострова Аляска",
+    "Arco volcánico de la península de Alaska",
+    "Arc volcanique de la péninsule d'Alaska",
+    "알래스카반도 화산호",
+    "阿拉斯加半島火山弧"
+  ],
+  "Alaska Volcano Observatory": [
+    "Vulkanobservatorium Alaska",
+    "Аляскинская вулканологическая обсерватория",
+    "Observatorio Vulcanológico de Alaska",
+    "Observatoire volcanologique de l’Alaska",
+    "알래스카 화산관측소",
+    "阿拉斯加火山觀測站"
+  ],
+  "Albertine Rift Volcanic Province": [
+    "Vulkanprovinz des Albertine-Grabens",
+    "Вулканическая провинция Албертинского рифта",
+    "Provincia volcánica del Rift Albertino",
+    "Province volcanique du rift Albertin",
+    "앨버틴 열곡 화산 지대",
+    "艾伯丁裂谷火山省"
+  ],
+  "Aleutian Ridge Volcanic Arc": [
+    "Vulkanbogen des Aleutenrückens",
+    "Вулканическая дуга Алеутского хребта",
+    "Arco volcánico de la dorsal de las Aleutianas",
+    "Arc volcanique de la dorsale des Aléoutiennes",
+    "알류샨 해령 화산호",
+    "阿留申海嶺火山弧"
+  ],
+  "Amsterdam-St. Paul Hotspot Volcano Group": [
+    "Vulkangruppe des Amsterdam-St.-Paul-Hotspots",
+    "Группа вулканов горячей точки Амстердам — Сен-Поль",
+    "Grupo volcánico del punto caliente de Ámsterdam-San Pablo",
+    "Groupe volcanique du point chaud Amsterdam–Saint-Paul",
+    "암스테르담-생폴 열점 화산군",
+    "阿姆斯特丹—聖保羅熱點火山群"
+  ],
+  "Andaman Volcanic Province": [
+    "Vulkanprovinz der Andamanen",
+    "Андаманская вулканическая провинция",
+    "Provincia volcánica de Andamán",
+    "Province volcanique des Andaman",
+    "안다만 화산 지대",
+    "安達曼火山省"
+  ],
+  "Andesite / Basaltic Andesite": [
+    "Andesit / Basaltischer Andesit",
+    "Андезит / Базальтовый андезит",
+    "Andesita / Andesita basáltica",
+    "Andésite / Andésite basaltique",
+    "안산암 / 현무암질 안산암",
+    "安山岩 / 玄武質安山岩"
+  ],
+  "Antarctic Peninsula Volcanic Province": [
+    "Vulkanprovinz der Antarktischen Halbinsel",
+    "Вулканическая провинция Антарктического полуострова",
+    "Provincia volcánica de la península Antártica",
+    "Province volcanique de la péninsule Antarctique",
+    "남극반도 화산 지대",
+    "南極半島火山省"
+  ],
+  "Antarctic-Scotia Volcanic Regions": [
+    "Vulkanregionen Antarktis–Scotia",
+    "Вулканические регионы Антарктики и Скоша",
+    "Regiones volcánicas de la Antártida y Scotia",
+    "Régions volcaniques Antarctique–Scotia",
+    "남극-스코샤 화산 지역",
+    "南極—斯科舍火山區"
+  ],
+  "Arabia-Central Asia Volcanic Regions": [
+    "Vulkanregionen Arabien–Zentralasien",
+    "Вулканические регионы Аравии и Центральной Азии",
+    "Regiones volcánicas de Arabia y Asia Central",
+    "Régions volcaniques Arabie–Asie centrale",
+    "아라비아-중앙아시아 화산 지역",
+    "阿拉伯—中亞火山區"
+  ],
+  "Arctic Ridge Volcanic Province": [
+    "Vulkanprovinz des Arktischen Rückens",
+    "Вулканическая провинция Арктического хребта",
+    "Provincia volcánica de la dorsal Ártica",
+    "Province volcanique de la dorsale Arctique",
+    "북극 해령 화산 지대",
+    "北極海嶺火山省"
+  ],
+  "Atlantic Ocean Volcanic Regions": [
+    "Vulkanregionen des Atlantischen Ozeans",
+    "Вулканические регионы Атлантического океана",
+    "Regiones volcánicas del océano Atlántico",
+    "Régions volcaniques de l'océan Atlantique",
+    "대서양 화산 지역",
+    "大西洋火山區"
+  ],
+  "Austral Andean Volcanic Arc": [
+    "Australer Anden-Vulkanbogen",
+    "Аустральная вулканическая дуга Анд",
+    "Arco volcánico Austral de los Andes",
+    "Arc volcanique austral des Andes",
+    "안데스 최남부 화산호",
+    "安地斯最南部火山弧"
+  ],
+  "Austral-Cook Hotspot Volcano Group": [
+    "Vulkangruppe des Austral-Cook-Hotspots",
+    "Группа вулканов горячей точки Австральных островов и островов Кука",
+    "Grupo volcánico del punto caliente de las Australes y Cook",
+    "Groupe volcanique du point chaud des Australes et des Cook",
+    "오스트랄-쿡 열점 화산군",
+    "南方群島—庫克群島熱點火山群"
+  ],
+  "Azores-Terceira Rift Volcanic Province": [
+    "Vulkanprovinz des Azoren-Terceira-Rifts",
+    "Вулканическая провинция Азорско-Терсейрского рифта",
+    "Provincia volcánica del Rift Azores-Terceira",
+    "Province volcanique du rift Açores–Terceira",
+    "아조레스-테르세이라 열곡 화산 지대",
+    "亞速爾—特塞拉裂谷火山省"
+  ],
+  "Baikal Rift Volcanic Province": [
+    "Vulkanprovinz des Baikalgrabens",
+    "Вулканическая провинция Байкальского рифта",
+    "Provincia volcánica del Rift de Baikal",
+    "Province volcanique du rift Baïkal",
+    "바이칼 열곡 화산 지대",
+    "貝加爾裂谷火山省"
+  ],
+  "Balleny Hotspot Volcano Group": [
+    "Vulkangruppe des Balleny-Hotspots",
+    "Группа вулканов горячей точки Баллени",
+    "Grupo volcánico del punto caliente de Balleny",
+    "Groupe volcanique du point chaud Balleny",
+    "밸러니 열점 화산군",
+    "巴列尼熱點火山群"
+  ],
+  "Basalt / Picro-Basalt": [
+    "Basalt / Pikrobasalt",
+    "Базальт / Пикробазальт",
+    "Basalto / Picrobasalto",
+    "Basalte / Picrobasalte",
+    "현무암 / 피크로현무암",
+    "玄武岩 / 苦橄玄武岩"
+  ],
+  "Basin and Range Volcanic Province": [
+    "Vulkanprovinz Basin and Range",
+    "Вулканическая провинция Бассейнов и хребтов",
+    "Provincia volcánica de Cuencas y Cordilleras",
+    "Province volcanique du Basin and Range",
+    "베이슨앤드레인지 화산 지대",
+    "盆嶺火山省"
+  ],
+  "Bismarck Sea Volcanic Province": [
+    "Vulkanprovinz der Bismarcksee",
+    "Вулканическая провинция моря Бисмарка",
+    "Provincia volcánica del mar de Bismarck",
+    "Province volcanique de la mer de Bismarck",
+    "비스마르크해 화산 지대",
+    "俾斯麥海火山省"
+  ],
+  "Bismarck Volcanic Arc": [
+    "Bismarck-Vulkanbogen",
+    "Вулканическая дуга Бисмарка",
+    "Arco volcánico de Bismarck",
+    "Arc volcanique de Bismarck",
+    "비스마르크 화산호",
+    "俾斯麥火山弧"
+  ],
+  "Bougainville Volcanic Arc": [
+    "Bougainville-Vulkanbogen",
+    "Вулканическая дуга Бугенвиля",
+    "Arco volcánico de Bougainville",
+    "Arc volcanique de Bougainville",
+    "부건빌 화산호",
+    "布干維爾火山弧"
+  ],
+  "Caldera": [
+    "Caldera",
+    "Кальдера",
+    "Caldera",
+    "Caldeira",
+    "칼데라",
+    "破火山口"
+  ],
+  "Caldera(s)": [
+    "Calderen",
+    "Кальдеры",
+    "Calderas",
+    "Caldeiras",
+    "칼데라군",
+    "破火山口群"
+  ],
+  "California Coast Ranges Volcano Group": [
+    "Vulkangruppe der kalifornischen Küstengebirge",
+    "Группа вулканов Береговых хребтов Калифорнии",
+    "Grupo volcánico de las cordilleras Costeras de California",
+    "Groupe volcanique des chaînes côtières de Californie",
+    "캘리포니아 해안산맥 화산군",
+    "加利福尼亞海岸山脈火山群"
+  ],
+  "California Volcano Observatory": [
+    "Vulkanobservatorium Kalifornien",
+    "Калифорнийская вулканологическая обсерватория",
+    "Observatorio Vulcanológico de California",
+    "Observatoire volcanologique de Californie",
+    "캘리포니아 화산관측소",
+    "加州火山觀測站"
+  ],
+  "Canary Volcanic Province": [
+    "Vulkanprovinz der Kanaren",
+    "Канарская вулканическая провинция",
+    "Provincia volcánica de Canarias",
+    "Province volcanique des Canaries",
+    "카나리아 화산 지대",
+    "加那利火山省"
+  ],
+  "Cape Verde Hotspot Volcano Group": [
+    "Vulkangruppe des Kapverden-Hotspots",
+    "Группа вулканов горячей точки Кабо-Верде",
+    "Grupo volcánico del punto caliente de Cabo Verde",
+    "Groupe volcanique du point chaud du Cap-Vert",
+    "카보베르데 열점 화산군",
+    "維德角熱點火山群"
+  ],
+  "Cascades Volcano Observatory": [
+    "Vulkanobservatorium Kaskaden",
+    "Вулканологическая обсерватория Каскадных гор",
+    "Observatorio Vulcanológico de las Cascadas",
+    "Observatoire volcanologique des Cascades",
+    "캐스케이드 화산관측소",
+    "喀斯開火山觀測站"
+  ],
+  "Caucasus Volcanic Province": [
+    "Vulkanprovinz des Kaukasus",
+    "Кавказская вулканическая провинция",
+    "Provincia volcánica del Cáucaso",
+    "Province volcanique du Caucase",
+    "캅카스 화산 지대",
+    "高加索火山省"
+  ],
+  "Central America Volcanic Arc": [
+    "Zentralamerikanischer Vulkanbogen",
+    "Центральноамериканская вулканическая дуга",
+    "Arco volcánico Centroamericano",
+    "Arc volcanique d'Amérique centrale",
+    "중앙아메리카 화산호",
+    "中美洲火山弧"
+  ],
+  "Central Anatolian Volcanic Province": [
+    "Zentralanatolische Vulkanprovinz",
+    "Центральноанатолийская вулканическая провинция",
+    "Provincia volcánica de Anatolia Central",
+    "Province volcanique d'Anatolie centrale",
+    "중앙아나톨리아 화산 지대",
+    "中安納托利亞火山省"
+  ],
+  "Central Andean Volcanic Arc": [
+    "Zentralanden-Vulkanbogen",
+    "Центральноандийская вулканическая дуга",
+    "Arco volcánico de los Andes Centrales",
+    "Arc volcanique des Andes centrales",
+    "중앙안데스 화산호",
+    "中安地斯火山弧"
+  ],
+  "Central East Asia Volcanic Province": [
+    "Vulkanprovinz Zentral-Ostasiens",
+    "Вулканическая провинция Центральной Восточной Азии",
+    "Provincia volcánica de Asia Oriental Central",
+    "Province volcanique d'Asie de l'Est centrale",
+    "동아시아 중부 화산 지대",
+    "東亞中部火山省"
+  ],
+  "Central European Volcanic Province": [
+    "Mitteleuropäische Vulkanprovinz",
+    "Центральноевропейская вулканическая провинция",
+    "Provincia volcánica de Europa Central",
+    "Province volcanique d'Europe centrale",
+    "중앙유럽 화산 지대",
+    "中歐火山省"
+  ],
+  "Central Kamchatka Volcanic Arc": [
+    "Vulkanbogen Zentral-Kamtschatkas",
+    "Центральнокамчатская вулканическая дуга",
+    "Arco volcánico de Kamchatka Central",
+    "Arc volcanique du Kamtchatka central",
+    "중앙 캄차카 화산호",
+    "中堪察加火山弧"
+  ],
+  "Central Mid-Atlantic Rift Volcanic Province": [
+    "Vulkanprovinz des zentralen Mittelatlantischen Rifts",
+    "Вулканическая провинция центральной части Срединно-Атлантического рифта",
+    "Provincia volcánica del Rift Medioatlántico Central",
+    "Province volcanique du rift médio-atlantique central",
+    "대서양 중앙 열곡 중부 화산 지대",
+    "大西洋中央裂谷中部火山省"
+  ],
+  "Chem/Bio: Hydration Rind": [
+    "Chem./Biol.: Hydratationsrinde",
+    "Хим./Биол.: Гидратационная кайма",
+    "Quím./Biol.: Corteza de hidratación",
+    "Chim./Biol. : Croûte d’hydratation",
+    "화학/생물: 수화층",
+    "化學/生物：水合層"
+  ],
+  "Chem/Bio: Lichenometry": [
+    "Chem./Biol.: Lichenometrie",
+    "Хим./Биол.: Лихенометрия",
+    "Quím./Biol.: Liquenometría",
+    "Chim./Biol. : Lichénométrie",
+    "화학/생물: 지의류 측정법",
+    "化學/生物：地衣測定法"
+  ],
+  "Chiapanecan Volcanic Arc": [
+    "Vulkanbogen von Chiapas",
+    "Вулканическая дуга Чьяпаса",
+    "Arco volcánico Chiapaneco",
+    "Arc volcanique du Chiapas",
+    "치아파스 화산호",
+    "恰帕斯火山弧"
+  ],
+  "Cluster": [
+    "Vulkangruppe",
+    "Группа вулканов",
+    "Agrupación volcánica",
+    "Groupe volcanique",
+    "화산군",
+    "火山群"
+  ],
+  "Complex": [
+    "Komplexvulkan",
+    "Сложный вулкан",
+    "Volcán complejo",
+    "Volcan complexe",
+    "복합화산",
+    "複合火山"
+  ],
+  "Composite": [
+    "Kompositvulkan",
+    "Композитный вулкан",
+    "Volcán compuesto (estratovolcán)",
+    "Volcan composite",
+    "복성화산",
+    "複成火山"
+  ],
+  "Compound": [
+    "Zusammengesetzter Vulkan",
+    "Составной вулкан",
+    "Volcán compuesto",
+    "Volcan composé",
+    "복식화산",
+    "複式火山"
+  ],
+  "Cone": [
+    "Vulkankegel",
+    "Вулканический конус",
+    "Cono volcánico",
+    "Cône volcanique",
+    "화산추",
+    "火山錐"
+  ],
+  "Continuing Eruptive Activity": [
+    "Fortdauernde Eruptionstätigkeit",
+    "Непрекращающаяся эруптивная активность",
+    "Actividad eruptiva continuada",
+    "Activité éruptive persistante",
+    "계속되는 분화 활동",
+    "延續的噴發活動"
+  ],
+  "Continuing Unrest": [
+    "Fortdauernde Unruhe",
+    "Непрекращающаяся активизация",
+    "Actividad anómala continuada",
+    "Activité anormale persistante",
+    "계속되는 화산 불안정",
+    "延續的火山活動異常"
+  ],
+  "Correlation: Anthropology": [
+    "Korrelation: Anthropologie",
+    "Корреляция: Антропология",
+    "Correlación: Antropología",
+    "Corrélation : Anthropologie",
+    "대비: 인류학",
+    "對比：人類學"
+  ],
+  "Correlation: Magnetism": [
+    "Korrelation: Magnetismus",
+    "Корреляция: Магнетизм",
+    "Correlación: Magnetismo",
+    "Corrélation : Magnétisme",
+    "대비: 지자기",
+    "對比：地磁"
+  ],
+  "Correlation: Tephrochronology": [
+    "Korrelation: Tephrochronologie",
+    "Корреляция: Тефрохронология",
+    "Correlación: Tefrocronología",
+    "Corrélation : Téphrochronologie",
+    "대비: 테프라연대학",
+    "對比：火山灰年代學"
+  ],
+  "Crater rows": [
+    "Kraterreihen",
+    "Цепочки кратеров",
+    "Alineaciones de cráteres",
+    "Alignements de cratères",
+    "화구열",
+    "火口列"
+  ],
+  "Crozet Hotspot Volcano Group": [
+    "Vulkangruppe des Crozet-Hotspots",
+    "Группа вулканов горячей точки Крозе",
+    "Grupo volcánico del punto caliente de Crozet",
+    "Groupe volcanique du point chaud Crozet",
+    "크로제 열점 화산군",
+    "克羅澤熱點火山群"
+  ],
+  "Dacite": [
+    "Dazit",
+    "Дацит",
+    "Dacita",
+    "Dacite",
+    "데사이트",
+    "英安岩"
+  ],
+  "East Central Sahara Volcanic Province": [
+    "Vulkanprovinz der ostzentralen Sahara",
+    "Вулканическая провинция восточной части Центральной Сахары",
+    "Provincia volcánica del Sahara centro-oriental",
+    "Province volcanique du Sahara centre-est",
+    "사하라 중동부 화산 지대",
+    "撒哈拉中東部火山省"
+  ],
+  "Eastern Africa Volcanic Regions": [
+    "Vulkanregionen Ostafrikas",
+    "Вулканические регионы Восточной Африки",
+    "Regiones volcánicas de África Oriental",
+    "Régions volcaniques d'Afrique de l'Est",
+    "동아프리카 화산 지역",
+    "東非火山區"
+  ],
+  "Eastern Asia Volcanic Regions": [
+    "Vulkanregionen Ostasiens",
+    "Вулканические регионы Восточной Азии",
+    "Regiones volcánicas de Asia Oriental",
+    "Régions volcaniques d'Asie de l'Est",
+    "동아시아 화산 지역",
+    "東亞火山區"
+  ],
+  "Eastern Australia Volcanic Regions": [
+    "Vulkanregionen Ostaustraliens",
+    "Вулканические регионы Восточной Австралии",
+    "Regiones volcánicas de Australia Oriental",
+    "Régions volcaniques de l'est de l'Australie",
+    "동오스트레일리아 화산 지역",
+    "東澳洲火山區"
+  ],
+  "Eastern Kamchatka Volcanic Arc": [
+    "Vulkanbogen Ost-Kamtschatkas",
+    "Восточно-Камчатская вулканическая дуга",
+    "Arco volcánico de Kamchatka Oriental",
+    "Arc volcanique du Kamtchatka oriental",
+    "동캄차카 화산호",
+    "東堪察加火山弧"
+  ],
+  "Eastern Pacific Volcanic Regions": [
+    "Vulkanregionen des Ostpazifiks",
+    "Вулканические регионы востока Тихого океана",
+    "Regiones volcánicas del Pacífico Oriental",
+    "Régions volcaniques du Pacifique oriental",
+    "동태평양 화산 지역",
+    "東太平洋火山區"
+  ],
+  "Eastern Philippine Volcanic Arc": [
+    "Ostphilippinischer Vulkanbogen",
+    "Восточно-Филиппинская вулканическая дуга",
+    "Arco volcánico de Filipinas Oriental",
+    "Arc volcanique des Philippines orientales",
+    "동필리핀 화산호",
+    "東菲律賓火山弧"
+  ],
+  "Eruption Dated": [
+    "Eruption datiert",
+    "Извержение датировано",
+    "Erupción datada",
+    "Éruption datée",
+    "분화 연대 측정됨",
+    "噴發已定年"
+  ],
+  "Eruption Observed": [
+    "Eruption beobachtet",
+    "Извержение наблюдалось",
+    "Erupción observada",
+    "Éruption observée",
+    "분화 관측됨",
+    "噴發經觀測"
+  ],
+  "European Volcanic Regions": [
+    "Vulkanregionen Europas",
+    "Вулканические регионы Европы",
+    "Regiones volcánicas de Europa",
+    "Régions volcaniques d'Europe",
+    "유럽 화산 지역",
+    "歐洲火山區"
+  ],
+  "Evidence Credible": [
+    "Belege glaubwürdig",
+    "Свидетельства достоверны",
+    "Evidencia creíble",
+    "Preuves crédibles",
+    "증거 신뢰 가능",
+    "證據可信"
+  ],
+  "Evidence Uncertain": [
+    "Belege unsicher",
+    "Свидетельства сомнительны",
+    "Evidencia incierta",
+    "Preuves incertaines",
+    "증거 불확실",
+    "證據不確定"
+  ],
+  "Explosion crater(s)": [
+    "Explosionskrater",
+    "Взрывные кратеры",
+    "Cráteres de explosión",
+    "Cratères d’explosion",
+    "폭발화구군",
+    "爆裂火口群"
+  ],
+  "Fiji Volcanic Arc": [
+    "Fidschi-Vulkanbogen",
+    "Вулканическая дуга Фиджи",
+    "Arco volcánico de Fiyi",
+    "Arc volcanique des Fidji",
+    "피지 화산호",
+    "斐濟火山弧"
+  ],
+  "Fissure vent": [
+    "Eruptionsspalte",
+    "Трещинное жерло",
+    "Fisura eruptiva",
+    "Fissure éruptive",
+    "열극 분출구",
+    "裂隙噴口"
+  ],
+  "Fissure vent(s)": [
+    "Eruptionsspalten",
+    "Трещинные жерла",
+    "Fisuras eruptivas",
+    "Fissures éruptives",
+    "열극 분출구군",
+    "裂隙噴口群"
+  ],
+  "Foidite": [
+    "Foidit",
+    "Фоидит",
+    "Foidita",
+    "Foïdite",
+    "포이다이트",
+    "似長石岩"
+  ],
+  "GREEN": [
+    "Grün",
+    "Зелёный",
+    "Verde",
+    "Vert",
+    "녹색",
+    "綠"
+  ],
+  "Galapagos Hotspot Volcano Group": [
+    "Vulkangruppe des Galapagos-Hotspots",
+    "Группа вулканов Галапагосской горячей точки",
+    "Grupo volcánico del punto caliente de Galápagos",
+    "Groupe volcanique du point chaud des Galápagos",
+    "갈라파고스 열점 화산군",
+    "加拉巴哥熱點火山群"
+  ],
+  "Galapagos Rift Volcanic Province": [
+    "Vulkanprovinz des Galapagos-Rifts",
+    "Вулканическая провинция Галапагосского рифта",
+    "Provincia volcánica del Rift de Galápagos",
+    "Province volcanique du rift des Galápagos",
+    "갈라파고스 열곡 화산 지대",
+    "加拉巴哥裂谷火山省"
+  ],
+  "Garibaldi Volcanic Arc": [
+    "Garibaldi-Vulkanbogen",
+    "Вулканическая дуга Гарибальди",
+    "Arco volcánico de Garibaldi",
+    "Arc volcanique Garibaldi",
+    "가리발디 화산호",
+    "加里波底火山弧"
+  ],
+  "Gulf of California Rift Volcanic Province": [
+    "Vulkanprovinz des Rifts im Golf von Kalifornien",
+    "Вулканическая провинция рифта Калифорнийского залива",
+    "Provincia volcánica del Rift del Golfo de California",
+    "Province volcanique du rift du golfe de Californie",
+    "캘리포니아만 열곡 화산 지대",
+    "加利福尼亞灣裂谷火山省"
+  ],
+  "Halmahera Volcanic Arc": [
+    "Halmahera-Vulkanbogen",
+    "Вулканическая дуга Хальмахеры",
+    "Arco volcánico de Halmahera",
+    "Arc volcanique d'Halmahera",
+    "할마헤라 화산호",
+    "哈馬黑拉火山弧"
+  ],
+  "Hawaiian Volcano Observatory": [
+    "Vulkanobservatorium Hawaii",
+    "Гавайская вулканологическая обсерватория",
+    "Observatorio Vulcanológico de Hawái",
+    "Observatoire volcanologique d’Hawaï",
+    "하와이 화산관측소",
+    "夏威夷火山觀測站"
+  ],
+  "Hawaiian-Emperor Hotspot Volcano Group": [
+    "Vulkangruppe des Hawaii-Emperor-Hotspots",
+    "Группа вулканов горячей точки Гавайско-Императорского хребта",
+    "Grupo volcánico del punto caliente de Hawái-Emperador",
+    "Groupe volcanique du point chaud Hawaï–Empereur",
+    "하와이-엠퍼러 열점 화산군",
+    "夏威夷—天皇熱點火山群"
+  ],
+  "Hellenic Volcanic Arc": [
+    "Hellenischer Vulkanbogen",
+    "Эллинская вулканическая дуга",
+    "Arco volcánico Helénico",
+    "Arc volcanique hellénique",
+    "헬레닉 화산호",
+    "希臘火山弧"
+  ],
+  "High Cascades Volcanic Arc": [
+    "Vulkanbogen der High Cascades",
+    "Вулканическая дуга Высоких Каскадных гор",
+    "Arco volcánico de las Altas Cascadas",
+    "Arc volcanique des Hautes Cascades",
+    "하이캐스케이드 화산호",
+    "高喀斯喀特火山弧"
+  ],
+  "High Lava Plains Volcanic Province": [
+    "Vulkanprovinz der High Lava Plains",
+    "Вулканическая провинция Высоких лавовых равнин",
+    "Provincia volcánica de las Altas Llanuras de Lava",
+    "Province volcanique des Hautes Plaines de lave",
+    "하이라바플레인스 화산 지대",
+    "高熔岩平原火山省"
+  ],
+  "High Threat": [
+    "Hohe Gefährdung",
+    "Высокая угроза",
+    "Amenaza alta",
+    "Menace élevée",
+    "높은 위협",
+    "威脅高"
+  ],
+  "Holocene": [
+    "Holozän",
+    "Голоцен",
+    "Holoceno",
+    "Holocène",
+    "홀로세",
+    "全新世"
+  ],
+  "Iceland Neovolcanic Rift Volcanic Province": [
+    "Vulkanprovinz der neovulkanischen Riftzone Islands",
+    "Вулканическая провинция неовулканического рифта Исландии",
+    "Provincia volcánica del Rift Neovolcánico de Islandia",
+    "Province volcanique du rift néovolcanique d'Islande",
+    "아이슬란드 신화산 열곡 화산 지대",
+    "冰島新火山裂谷火山省"
+  ],
+  "Inner Banda Volcanic Arc": [
+    "Innerer Banda-Vulkanbogen",
+    "Внутренняя Бандская вулканическая дуга",
+    "Arco volcánico de Banda Interior",
+    "Arc volcanique de Banda interne",
+    "내반다 화산호",
+    "內班達火山弧"
+  ],
+  "Interior Western Canada Volcanic Province": [
+    "Vulkanprovinz im Inneren Westkanadas",
+    "Вулканическая провинция внутренних районов Западной Канады",
+    "Provincia volcánica del interior del oeste de Canadá",
+    "Province volcanique de l'intérieur de l'Ouest canadien",
+    "캐나다 서부 내륙 화산 지대",
+    "加拿大西部內陸火山省"
+  ],
+  "Intraplate / Continental crust (> 25 km)": [
+    "Intraplatte / Kontinentale Kruste (> 25 km)",
+    "Внутриплитная обстановка / Континентальная кора (> 25 km)",
+    "Intraplaca / Corteza continental (> 25 km)",
+    "Intraplaque / Croûte continentale (> 25 km)",
+    "판 내부 / 대륙지각 (> 25 km)",
+    "板塊內部 / 大陸地殼（> 25 km）"
+  ],
+  "Intraplate / Intermediate crust (15-25 km)": [
+    "Intraplatte / Intermediäre Kruste (15-25 km)",
+    "Внутриплитная обстановка / Кора промежуточной мощности (15-25 km)",
+    "Intraplaca / Corteza intermedia (15-25 km)",
+    "Intraplaque / Croûte intermédiaire (15-25 km)",
+    "판 내부 / 중간지각 (15-25 km)",
+    "板塊內部 / 中間地殼（15-25 km）"
+  ],
+  "Intraplate / Oceanic crust (< 15 km)": [
+    "Intraplatte / Ozeanische Kruste (< 15 km)",
+    "Внутриплитная обстановка / Океаническая кора (< 15 km)",
+    "Intraplaca / Corteza oceánica (< 15 km)",
+    "Intraplaque / Croûte océanique (< 15 km)",
+    "판 내부 / 해양지각 (< 15 km)",
+    "板塊內部 / 海洋地殼（< 15 km）"
+  ],
+  "Isotopic: 14C (calibrated)": [
+    "Isotopisch: 14C (kalibriert)",
+    "Изотопный: 14C (калиброванный)",
+    "Isotópico: 14C (calibrado)",
+    "Isotopique : 14C (calibré)",
+    "동위원소: 14C (보정됨)",
+    "同位素：14C（已校正）"
+  ],
+  "Isotopic: 14C (uncalibrated)": [
+    "Isotopisch: 14C (unkalibriert)",
+    "Изотопный: 14C (некалиброванный)",
+    "Isotópico: 14C (sin calibrar)",
+    "Isotopique : 14C (non calibré)",
+    "동위원소: 14C (미보정)",
+    "同位素：14C（未校正）"
+  ],
+  "Isotopic: Ar/Ar": [
+    "Isotopisch: Ar/Ar",
+    "Изотопный: Ar/Ar",
+    "Isotópico: Ar/Ar",
+    "Isotopique : Ar/Ar",
+    "동위원소: Ar/Ar",
+    "同位素：Ar/Ar"
+  ],
+  "Isotopic: Cosmic Ray Exposure": [
+    "Isotopisch: Kosmische Strahlungsexposition",
+    "Изотопный: Космогенное облучение",
+    "Isotópico: Exposición a rayos cósmicos",
+    "Isotopique : Exposition aux rayons cosmiques",
+    "동위원소: 우주선 노출",
+    "同位素：宇宙射線曝露"
+  ],
+  "Isotopic: K/Ar": [
+    "Isotopisch: K/Ar",
+    "Изотопный: K/Ar",
+    "Isotópico: K/Ar",
+    "Isotopique : K/Ar",
+    "동위원소: K/Ar",
+    "同位素：K/Ar"
+  ],
+  "Isotopic: Po-Pb": [
+    "Isotopisch: Po-Pb",
+    "Изотопный: Po-Pb",
+    "Isotópico: Po-Pb",
+    "Isotopique : Po-Pb",
+    "동위원소: Po-Pb",
+    "同位素：Po-Pb"
+  ],
+  "Isotopic: Uranium-series": [
+    "Isotopisch: Uran-Reihen",
+    "Изотопный: Урановые ряды",
+    "Isotópico: Series del uranio",
+    "Isotopique : Séries de l’uranium",
+    "동위원소: 우라늄 계열",
+    "同位素：鈾系"
+  ],
+  "Italian Peninsula Volcanic Provinces": [
+    "Vulkanprovinzen der Italienischen Halbinsel",
+    "Вулканические провинции Апеннинского полуострова",
+    "Provincias volcánicas de la península itálica",
+    "Provinces volcaniques de la péninsule italienne",
+    "이탈리아반도 화산 지대",
+    "義大利半島火山省"
+  ],
+  "Izu Volcanic Arc": [
+    "Izu-Vulkanbogen",
+    "Вулканическая дуга Идзу",
+    "Arco volcánico de Izu",
+    "Arc volcanique d'Izu",
+    "이즈 화산호",
+    "伊豆火山弧"
+  ],
+  "Kenyan Rift Volcanic Province": [
+    "Vulkanprovinz des Kenia-Grabens",
+    "Вулканическая провинция Кенийского рифта",
+    "Provincia volcánica del Rift de Kenia",
+    "Province volcanique du rift kényan",
+    "케냐 열곡 화산 지대",
+    "肯亞裂谷火山省"
+  ],
+  "Kerguelen Hotspot Volcano Group": [
+    "Vulkangruppe des Kerguelen-Hotspots",
+    "Группа вулканов Кергеленской горячей точки",
+    "Grupo volcánico del punto caliente de Kerguelen",
+    "Groupe volcanique du point chaud Kerguelen",
+    "케르겔렌 열점 화산군",
+    "凱爾蓋朗熱點火山群"
+  ],
+  "Kuril Volcanic Arc": [
+    "Kurilen-Vulkanbogen",
+    "Курильская вулканическая дуга",
+    "Arco volcánico de las Kuriles",
+    "Arc volcanique des Kouriles",
+    "쿠릴 화산호",
+    "千島火山弧"
+  ],
+  "Lava cone": [
+    "Lavakegel",
+    "Лавовый конус",
+    "Cono de lava",
+    "Cône de lave",
+    "용암추",
+    "熔岩錐"
+  ],
+  "Lava cone(es)": [
+    "Lavakegel (mehrere)",
+    "Лавовые конусы",
+    "Conos de lava",
+    "Cônes de lave",
+    "용암추군",
+    "熔岩錐群"
+  ],
+  "Lava dome": [
+    "Lavadom",
+    "Лавовый купол",
+    "Domo de lava",
+    "Dôme de lave",
+    "용암돔",
+    "熔岩穹丘"
+  ],
+  "Lava dome(s)": [
+    "Lavadome",
+    "Лавовые купола",
+    "Domos de lava",
+    "Dômes de lave",
+    "용암돔군",
+    "熔岩穹丘群"
+  ],
+  "Lesser Antilles Volcanic Arc": [
+    "Vulkanbogen der Kleinen Antillen",
+    "Вулканическая дуга Малых Антильских островов",
+    "Arco volcánico de las Antillas Menores",
+    "Arc volcanique des Petites Antilles",
+    "소앤틸리스 화산호",
+    "小安地列斯火山弧"
+  ],
+  "Low Threat": [
+    "Geringe Gefährdung",
+    "Низкая угроза",
+    "Amenaza baja",
+    "Menace faible",
+    "낮은 위협",
+    "威脅低"
+  ],
+  "Luzon Volcanic Arc": [
+    "Luzon-Vulkanbogen",
+    "Лусонская вулканическая дуга",
+    "Arco volcánico de Luzón",
+    "Arc volcanique de Luçon",
+    "루손 화산호",
+    "呂宋火山弧"
+  ],
+  "Maar": [
+    "Maar",
+    "Маар",
+    "Maar",
+    "Maar",
+    "마르",
+    "低平火山口"
+  ],
+  "Maar(s)": [
+    "Maare",
+    "Маары",
+    "Maares",
+    "Maars",
+    "마르군",
+    "低平火山口群"
+  ],
+  "Madagascar-Comoros Volcanic Province": [
+    "Vulkanprovinz Madagaskar–Komoren",
+    "Вулканическая провинция Мадагаскара и Коморских островов",
+    "Provincia volcánica de Madagascar y Comoras",
+    "Province volcanique Madagascar–Comores",
+    "마다가스카르-코모로 화산 지대",
+    "馬達加斯加—葛摩火山省"
+  ],
+  "Madeira Hotspot Volcano Group": [
+    "Vulkangruppe des Madeira-Hotspots",
+    "Группа вулканов горячей точки Мадейра",
+    "Grupo volcánico del punto caliente de Madeira",
+    "Groupe volcanique du point chaud de Madère",
+    "마데이라 열점 화산군",
+    "馬德拉熱點火山群"
+  ],
+  "Main Ethiopian Rift Volcanic Province": [
+    "Vulkanprovinz des Hauptäthiopischen Grabens",
+    "Вулканическая провинция Главного Эфиопского рифта",
+    "Provincia volcánica del Rift Etíope Principal",
+    "Province volcanique du rift éthiopien principal",
+    "에티오피아 주열곡 화산 지대",
+    "衣索比亞主裂谷火山省"
+  ],
+  "Mariana Volcanic Arc": [
+    "Marianen-Vulkanbogen",
+    "Марианская вулканическая дуга",
+    "Arco volcánico de las Marianas",
+    "Arc volcanique des Mariannes",
+    "마리아나 화산호",
+    "馬里亞納火山弧"
+  ],
+  "Marion Hotspot Volcano Group": [
+    "Vulkangruppe des Marion-Hotspots",
+    "Группа вулканов горячей точки Марион",
+    "Grupo volcánico del punto caliente de Marion",
+    "Groupe volcanique du point chaud Marion",
+    "매리언 열점 화산군",
+    "馬里恩熱點火山群"
+  ],
+  "Mathematicians Ridge Volcanic Province": [
+    "Vulkanprovinz des Mathematiker-Rückens",
+    "Вулканическая провинция хребта Математиков",
+    "Provincia volcánica de la dorsal de los Matemáticos",
+    "Province volcanique de la dorsale des Mathématiciens",
+    "수학자 해령 화산 지대",
+    "數學家海嶺火山省"
+  ],
+  "McMurdo Volcanic Province": [
+    "Vulkanprovinz McMurdo",
+    "Вулканическая провинция Мак-Мердо",
+    "Provincia volcánica de McMurdo",
+    "Province volcanique de McMurdo",
+    "맥머도 화산 지대",
+    "麥克默多火山省"
+  ],
+  "Middle America-Caribbean Volcanic Regions": [
+    "Vulkanregionen Mittelamerikas und der Karibik",
+    "Вулканические регионы Центральной Америки и Карибского бассейна",
+    "Regiones volcánicas de América Central y el Caribe",
+    "Régions volcaniques d'Amérique centrale et des Caraïbes",
+    "중앙아메리카-카리브 화산 지역",
+    "中美洲—加勒比火山區"
+  ],
+  "Middle Kermadec Volcanic Arc": [
+    "Mittlerer Kermadec-Vulkanbogen",
+    "Средняя Кермадекская вулканическая дуга",
+    "Arco volcánico de Kermadec Central",
+    "Arc volcanique des Kermadec centrales",
+    "케르마데크 중부 화산호",
+    "克馬得中部火山弧"
+  ],
+  "Mindanao Volcanic Province": [
+    "Vulkanprovinz Mindanao",
+    "Вулканическая провинция Минданао",
+    "Provincia volcánica de Mindanao",
+    "Province volcanique de Mindanao",
+    "민다나오 화산 지대",
+    "民答那峨火山省"
+  ],
+  "Minor": [
+    "Kleinvulkan",
+    "Малый вулкан",
+    "Volcán menor",
+    "Volcan mineur",
+    "소형 화산",
+    "小型火山"
+  ],
+  "Minor (Basaltic)": [
+    "Kleinvulkan (basaltisch)",
+    "Малый вулкан (базальтовый)",
+    "Volcán menor (basáltico)",
+    "Volcan mineur (basaltique)",
+    "소형 화산(현무암질)",
+    "小型火山（玄武岩質）"
+  ],
+  "Minor (Silicic)": [
+    "Kleinvulkan (silizisch)",
+    "Малый вулкан (кислый)",
+    "Volcán menor (silícico)",
+    "Volcan mineur (silicique)",
+    "소형 화산(규질)",
+    "小型火山（矽質）"
+  ],
+  "Moderate Threat": [
+    "Mittlere Gefährdung",
+    "Умеренная угроза",
+    "Amenaza moderada",
+    "Menace modérée",
+    "보통 위협",
+    "威脅中等"
+  ],
+  "NORMAL": [
+    "Normal",
+    "Норма",
+    "Normal",
+    "Normal",
+    "평상",
+    "正常"
+  ],
+  "Nankai Volcanic Arc": [
+    "Nankai-Vulkanbogen",
+    "Вулканическая дуга Нанкай",
+    "Arco volcánico de Nankai",
+    "Arc volcanique de Nankai",
+    "난카이 화산호",
+    "南海火山弧"
+  ],
+  "Negros-Sulu Volcanic Arc": [
+    "Negros-Sulu-Vulkanbogen",
+    "Вулканическая дуга Негрос — Сулу",
+    "Arco volcánico de Negros-Sulú",
+    "Arc volcanique de Negros–Sulu",
+    "네그로스-술루 화산호",
+    "內格羅斯—蘇祿火山弧"
+  ],
+  "New Activity/Unrest": [
+    "Neue Aktivität/Unruhe",
+    "Новая активность/активизация",
+    "Nueva actividad/actividad anómala",
+    "Nouvelle activité/activité anormale",
+    "새로운 활동/화산 불안정",
+    "新增活動/火山活動異常"
+  ],
+  "New Eruptive Activity": [
+    "Neue Eruptionstätigkeit",
+    "Новая эруптивная активность",
+    "Nueva actividad eruptiva",
+    "Nouvelle activité éruptive",
+    "새로운 분화 활동",
+    "新增噴發活動"
+  ],
+  "New Unrest": [
+    "Neue Unruhe",
+    "Новая активизация",
+    "Nueva actividad anómala",
+    "Nouvelle activité anormale",
+    "새로운 화산 불안정",
+    "新增火山活動異常"
+  ],
+  "North America Volcanic Regions": [
+    "Vulkanregionen Nordamerikas",
+    "Вулканические регионы Северной Америки",
+    "Regiones volcánicas de América del Norte",
+    "Régions volcaniques d'Amérique du Nord",
+    "북아메리카 화산 지역",
+    "北美洲火山區"
+  ],
+  "Northeast Japan Volcanic Arc": [
+    "Nordost-Japan-Vulkanbogen",
+    "Северо-Восточная Японская вулканическая дуга",
+    "Arco volcánico del noreste de Japón",
+    "Arc volcanique du nord-est du Japon",
+    "일본 동북부 화산호",
+    "日本東北火山弧"
+  ],
+  "Northeast Lau Basin Volcano Group": [
+    "Vulkangruppe des nordöstlichen Lau-Beckens",
+    "Группа вулканов северо-восточной части бассейна Лау",
+    "Grupo volcánico de la cuenca de Lau nororiental",
+    "Groupe volcanique du bassin de Lau nord-est",
+    "라우 분지 북동부 화산군",
+    "勞海盆東北部火山群"
+  ],
+  "Northeast Pacific Rifts Volcanic Province": [
+    "Vulkanprovinz der Rifts im Nordostpazifik",
+    "Вулканическая провинция рифтов северо-восточной части Тихого океана",
+    "Provincia volcánica de los rifts del Pacífico nororiental",
+    "Province volcanique des rifts du Pacifique nord-est",
+    "북동태평양 열곡 화산 지대",
+    "東北太平洋裂谷火山省"
+  ],
+  "Northeastern Australia Volcanic Province": [
+    "Vulkanprovinz Nordostaustraliens",
+    "Вулканическая провинция Северо-Восточной Австралии",
+    "Provincia volcánica del noreste de Australia",
+    "Province volcanique du nord-est de l'Australie",
+    "오스트레일리아 북동부 화산 지대",
+    "澳洲東北部火山省"
+  ],
+  "Northern Africa Volcanic Regions": [
+    "Vulkanregionen Nordafrikas",
+    "Вулканические регионы Северной Африки",
+    "Regiones volcánicas del norte de África",
+    "Régions volcaniques d'Afrique du Nord",
+    "북아프리카 화산 지역",
+    "北非火山區"
+  ],
+  "Northern Alaska-Bering Sea Volcanic Province": [
+    "Vulkanprovinz Nordalaska–Beringmeer",
+    "Вулканическая провинция Северной Аляски и Берингова моря",
+    "Provincia volcánica del norte de Alaska y el mar de Bering",
+    "Province volcanique du nord de l'Alaska et de la mer de Béring",
+    "알래스카 북부-베링해 화산 지대",
+    "阿拉斯加北部—白令海火山省"
+  ],
+  "Northern Andean Volcanic Arc": [
+    "Nordanden-Vulkanbogen",
+    "Северная вулканическая дуга Анд",
+    "Arco volcánico de los Andes Septentrionales",
+    "Arc volcanique des Andes septentrionales",
+    "북안데스 화산호",
+    "北安地斯火山弧"
+  ],
+  "Northern Arabia Volcanic Province": [
+    "Vulkanprovinz Nordarabiens",
+    "Вулканическая провинция Северной Аравии",
+    "Provincia volcánica del norte de Arabia",
+    "Province volcanique du nord de l'Arabie",
+    "아라비아 북부 화산 지대",
+    "阿拉伯北部火山省"
+  ],
+  "Northern Cordilleran Volcanic Province": [
+    "Nördliche Kordilleren-Vulkanprovinz",
+    "Северная Кордильерская вулканическая провинция",
+    "Provincia volcánica de la Cordillera Septentrional",
+    "Province volcanique de la Cordillère septentrionale",
+    "북부 코르디예라 화산 지대",
+    "北科迪勒拉火山省"
+  ],
+  "Northern East Pacific Rise Volcanic Province": [
+    "Vulkanprovinz des nördlichen Ostpazifischen Rückens",
+    "Вулканическая провинция северной части Восточно-Тихоокеанского поднятия",
+    "Provincia volcánica de la dorsal del Pacífico Oriental septentrional",
+    "Province volcanique de la dorsale est-pacifique septentrionale",
+    "동태평양 해령 북부 화산 지대",
+    "東太平洋海隆北部火山省"
+  ],
+  "Northern Galapagos Volcanic Province": [
+    "Vulkanprovinz der nördlichen Galapagosinseln",
+    "Вулканическая провинция северных Галапагосских островов",
+    "Provincia volcánica de las Galápagos septentrionales",
+    "Province volcanique des Galápagos septentrionales",
+    "갈라파고스 북부 화산 지대",
+    "加拉巴哥北部火山省"
+  ],
+  "Northern Kermadec Volcanic Arc": [
+    "Nördlicher Kermadec-Vulkanbogen",
+    "Северная Кермадекская вулканическая дуга",
+    "Arco volcánico de Kermadec Septentrional",
+    "Arc volcanique des Kermadec septentrionales",
+    "케르마데크 북부 화산호",
+    "克馬得北部火山弧"
+  ],
+  "Northern Mariana Islands": [
+    "Nördliche Marianen",
+    "Северные Марианские острова",
+    "Islas Marianas del Norte",
+    "Îles Mariannes du Nord",
+    "북마리아나 제도",
+    "北馬里亞納群島"
+  ],
+  "Northern Tibetan Plateau Volcanic Province": [
+    "Vulkanprovinz des nördlichen Tibetischen Hochlands",
+    "Вулканическая провинция северной части Тибетского нагорья",
+    "Provincia volcánica de la meseta tibetana septentrional",
+    "Province volcanique du nord du plateau tibétain",
+    "티베트고원 북부 화산 지대",
+    "青藏高原北部火山省"
+  ],
+  "Northwestern Pacific Volcanic Regions": [
+    "Vulkanregionen des Nordwestpazifiks",
+    "Вулканические регионы северо-запада Тихого океана",
+    "Regiones volcánicas del Pacífico noroccidental",
+    "Régions volcaniques du Pacifique nord-ouest",
+    "북서태평양 화산 지역",
+    "西北太平洋火山區"
+  ],
+  "ORANGE": [
+    "Orange",
+    "Оранжевый",
+    "Naranja",
+    "Orange",
+    "주황색",
+    "橙"
+  ],
+  "Observations: Aviation": [
+    "Beobachtungen: Luftfahrt",
+    "Наблюдения: Авиация",
+    "Observaciones: Aviación",
+    "Observations : Aviation",
+    "관측: 항공",
+    "觀測：航空"
+  ],
+  "Observations: Hydrophonic": [
+    "Beobachtungen: Hydrophon",
+    "Наблюдения: Гидрофон",
+    "Observaciones: Hidrófono",
+    "Observations : Hydrophone",
+    "관측: 수중청음기",
+    "觀測：水下聽音器"
+  ],
+  "Observations: Photo / Video": [
+    "Beobachtungen: Foto / Video",
+    "Наблюдения: Фото / Видео",
+    "Observaciones: Foto / Vídeo",
+    "Observations : Photo / Vidéo",
+    "관측: 사진 / 영상",
+    "觀測：照片 / 影片"
+  ],
+  "Observations: Reported": [
+    "Beobachtungen: Berichtet",
+    "Наблюдения: Сообщения",
+    "Observaciones: Reportado",
+    "Observations : Signalé",
+    "관측: 보고됨",
+    "觀測：據報告"
+  ],
+  "Observations: Satellite (infrared)": [
+    "Beobachtungen: Satellit (Infrarot)",
+    "Наблюдения: Спутник (инфракрасный)",
+    "Observaciones: Satélite (infrarrojo)",
+    "Observations : Satellite (infrarouge)",
+    "관측: 위성(적외선)",
+    "觀測：衛星（紅外線）"
+  ],
+  "Observations: Satellite (visual)": [
+    "Beobachtungen: Satellit (visuell)",
+    "Наблюдения: Спутник (визуальный)",
+    "Observaciones: Satélite (visual)",
+    "Observations : Satellite (visuel)",
+    "관측: 위성(가시광)",
+    "觀測：衛星（可見光）"
+  ],
+  "Observations: Seismicity": [
+    "Beobachtungen: Seismizität",
+    "Наблюдения: Сейсмичность",
+    "Observaciones: Sismicidad",
+    "Observations : Sismicité",
+    "관측: 지진 활동",
+    "觀測：地震活動"
+  ],
+  "Ogasawara Volcanic Arc": [
+    "Ogasawara-Vulkanbogen",
+    "Вулканическая дуга Огасавара",
+    "Arco volcánico de Ogasawara",
+    "Arc volcanique d'Ogasawara",
+    "오가사와라 화산호",
+    "小笠原火山弧"
+  ],
+  "Ongoing Activity": [
+    "Anhaltende Aktivität",
+    "Продолжающаяся активность",
+    "Actividad en curso",
+    "Activité en cours",
+    "지속 중인 활동",
+    "持續中的活動"
+  ],
+  "Ongoing Unrest": [
+    "Anhaltende Unruhe",
+    "Продолжающаяся активизация",
+    "Actividad anómala en curso",
+    "Activité anormale en cours",
+    "지속 중인 화산 불안정",
+    "持續中的火山活動異常"
+  ],
+  "Pacific-Antarctic Ridge Volcanic Province": [
+    "Vulkanprovinz des Pazifisch-Antarktischen Rückens",
+    "Вулканическая провинция Тихоокеанско-Антарктического хребта",
+    "Provincia volcánica de la dorsal Pacífico-Antártica",
+    "Province volcanique de la dorsale Pacifique-Antarctique",
+    "태평양-남극 해령 화산 지대",
+    "太平洋—南極海嶺火山省"
+  ],
+  "Phono-tephrite /  Tephri-phonolite": [
+    "Phonotephrit / Tephriphonolith",
+    "Фонотефрит / Тефрифонолит",
+    "Fonotefrita / Tefrifonolita",
+    "Phonotéphrite / Téphriphonolite",
+    "포노테프라이트 / 테프리포놀라이트",
+    "響鹼玄岩 / 鹼玄響岩"
+  ],
+  "Phonolite": [
+    "Phonolith",
+    "Фонолит",
+    "Fonolita",
+    "Phonolite",
+    "포놀라이트",
+    "響岩"
+  ],
+  "Pitcairn Hotspot Volcano Group": [
+    "Vulkangruppe des Pitcairn-Hotspots",
+    "Группа вулканов горячей точки Питкэрн",
+    "Grupo volcánico del punto caliente de Pitcairn",
+    "Groupe volcanique du point chaud Pitcairn",
+    "핏케언 열점 화산군",
+    "皮特康熱點火山群"
+  ],
+  "Pyroclastic cone": [
+    "Pyroklastischer Kegel",
+    "Пирокластический конус",
+    "Cono piroclástico",
+    "Cône pyroclastique",
+    "화산쇄설구",
+    "火山碎屑錐"
+  ],
+  "Pyroclastic cone(s)": [
+    "Pyroklastische Kegel",
+    "Пирокластические конусы",
+    "Conos piroclásticos",
+    "Cônes pyroclastiques",
+    "화산쇄설구군",
+    "火山碎屑錐群"
+  ],
+  "Queen Charlotte Volcano Group": [
+    "Queen-Charlotte-Vulkangruppe",
+    "Группа вулканов Королевы Шарлотты",
+    "Grupo volcánico de la Reina Carlota",
+    "Groupe volcanique de la Reine-Charlotte",
+    "퀸샬럿 화산군",
+    "夏洛特女王火山群"
+  ],
+  "RED": [
+    "Rot",
+    "Красный",
+    "Rojo",
+    "Rouge",
+    "적색",
+    "紅"
+  ],
+  "Radiogenic: Fission track": [
+    "Radiogen: Spaltspuren",
+    "Радиогенный: Треки деления",
+    "Radiogénico: Trazas de fisión",
+    "Radiogénique : Traces de fission",
+    "방사성: 핵분열비적",
+    "放射成因：分裂徑跡"
+  ],
+  "Radiogenic: Thermoluminescence": [
+    "Radiogen: Thermolumineszenz",
+    "Радиогенный: Термолюминесценция",
+    "Radiogénico: Termoluminiscencia",
+    "Radiogénique : Thermoluminescence",
+    "방사성: 열발광",
+    "放射成因：熱釋光"
+  ],
+  "Red Sea Rift Volcanic Province": [
+    "Vulkanprovinz des Rotmeer-Grabens",
+    "Вулканическая провинция Красноморского рифта",
+    "Provincia volcánica del Rift del mar Rojo",
+    "Province volcanique du rift de la mer Rouge",
+    "홍해 열곡 화산 지대",
+    "紅海裂谷火山省"
+  ],
+  "Reunion Hotspot Volcano Group": [
+    "Vulkangruppe des Réunion-Hotspots",
+    "Группа вулканов горячей точки Реюньон",
+    "Grupo volcánico del punto caliente de Reunión",
+    "Groupe volcanique du point chaud de La Réunion",
+    "레위니옹 열점 화산군",
+    "留尼旺熱點火山群"
+  ],
+  "Rhyolite": [
+    "Rhyolith",
+    "Риолит",
+    "Riolita",
+    "Rhyolite",
+    "유문암",
+    "流紋岩"
+  ],
+  "Rift zone / Continental crust (> 25 km)": [
+    "Riftzone / Kontinentale Kruste (> 25 km)",
+    "Рифтовая зона / Континентальная кора (> 25 km)",
+    "Zona de rift / Corteza continental (> 25 km)",
+    "Zone de rift / Croûte continentale (> 25 km)",
+    "열곡대 / 대륙지각 (> 25 km)",
+    "裂谷帶 / 大陸地殼（> 25 km）"
+  ],
+  "Rift zone / Intermediate crust (15-25 km)": [
+    "Riftzone / Intermediäre Kruste (15-25 km)",
+    "Рифтовая зона / Кора промежуточной мощности (15-25 km)",
+    "Zona de rift / Corteza intermedia (15-25 km)",
+    "Zone de rift / Croûte intermédiaire (15-25 km)",
+    "열곡대 / 중간지각 (15-25 km)",
+    "裂谷帶 / 中間地殼（15-25 km）"
+  ],
+  "Rift zone / Oceanic crust (< 15 km)": [
+    "Riftzone / Ozeanische Kruste (< 15 km)",
+    "Рифтовая зона / Океаническая кора (< 15 km)",
+    "Zona de rift / Corteza oceánica (< 15 km)",
+    "Zone de rift / Croûte océanique (< 15 km)",
+    "열곡대 / 해양지각 (< 15 km)",
+    "裂谷帶 / 海洋地殼（< 15 km）"
+  ],
+  "Rukwa Rift Volcanic Province": [
+    "Vulkanprovinz des Rukwa-Grabens",
+    "Вулканическая провинция рифта Руква",
+    "Provincia volcánica del Rift de Rukwa",
+    "Province volcanique du rift de Rukwa",
+    "루콰 열곡 화산 지대",
+    "魯克瓦裂谷火山省"
+  ],
+  "Ryukyu Volcanic Arc": [
+    "Ryukyu-Vulkanbogen",
+    "Вулканическая дуга Рюкю",
+    "Arco volcánico de Ryukyu",
+    "Arc volcanique des Ryūkyū",
+    "류큐 화산호",
+    "琉球火山弧"
+  ],
+  "Salas y Gómez Ridge Volcano Group": [
+    "Vulkangruppe des Salas-y-Gómez-Rückens",
+    "Группа вулканов хребта Сала-и-Гомес",
+    "Grupo volcánico de la dorsal de Salas y Gómez",
+    "Groupe volcanique de la dorsale Salas y Gómez",
+    "살라스이고메스 해령 화산군",
+    "薩拉斯—戈梅斯海嶺火山群"
+  ],
+  "Samoan Hotspot Volcano Group": [
+    "Vulkangruppe des Samoa-Hotspots",
+    "Группа вулканов Самоанской горячей точки",
+    "Grupo volcánico del punto caliente de Samoa",
+    "Groupe volcanique du point chaud des Samoa",
+    "사모아 열점 화산군",
+    "薩摩亞熱點火山群"
+  ],
+  "Sangihe Volcanic Arc": [
+    "Sangihe-Vulkanbogen",
+    "Вулканическая дуга Сангихе",
+    "Arco volcánico de Sangihe",
+    "Arc volcanique de Sangihe",
+    "상이헤 화산호",
+    "桑義赫火山弧"
+  ],
+  "Shield": [
+    "Schildvulkan",
+    "Щитовой вулкан",
+    "Volcán en escudo",
+    "Volcan bouclier",
+    "순상화산",
+    "盾狀火山"
+  ],
+  "Shield(pyroclastic)": [
+    "Schildvulkan (pyroklastisch)",
+    "Щитовой вулкан (пирокластический)",
+    "Volcán en escudo (piroclástico)",
+    "Volcan bouclier (pyroclastique)",
+    "순상화산(화산쇄설성)",
+    "盾狀火山（火山碎屑質）"
+  ],
+  "Shield(s)": [
+    "Schildvulkane",
+    "Щитовые вулканы",
+    "Volcanes en escudo",
+    "Volcans boucliers",
+    "순상화산군",
+    "盾狀火山群"
+  ],
+  "Sicily Volcanic Province": [
+    "Vulkanprovinz Sizilien",
+    "Вулканическая провинция Сицилии",
+    "Provincia volcánica de Sicilia",
+    "Province volcanique de Sicile",
+    "시칠리아 화산 지대",
+    "西西里火山省"
+  ],
+  "Sidereal: Dendrochronology": [
+    "Siderisch: Dendrochronologie",
+    "Сидерический: Дендрохронология",
+    "Sidéreo: Dendrocronología",
+    "Sidéral : Dendrochronologie",
+    "역년: 연륜연대학",
+    "曆年：樹輪年代學"
+  ],
+  "Sidereal: Ice Core": [
+    "Siderisch: Eisbohrkern",
+    "Сидерический: Ледяной керн",
+    "Sidéreo: Testigo de hielo",
+    "Sidéral : Carotte de glace",
+    "역년: 빙하 코어",
+    "曆年：冰芯"
+  ],
+  "Sidereal: Varve Count": [
+    "Siderisch: Warvenzählung",
+    "Сидерический: Подсчёт варв",
+    "Sidéreo: Recuento de varvas",
+    "Sidéral : Comptage de varves",
+    "역년: 호상점토 계수",
+    "曆年：紋泥計數"
+  ],
+  "Society Islands Hotspot Volcano Group": [
+    "Vulkangruppe des Gesellschaftsinseln-Hotspots",
+    "Группа вулканов горячей точки Островов Общества",
+    "Grupo volcánico del punto caliente de las islas de la Sociedad",
+    "Groupe volcanique du point chaud des îles de la Société",
+    "소시에테 제도 열점 화산군",
+    "社會群島熱點火山群"
+  ],
+  "Solomon Volcanic Province": [
+    "Vulkanprovinz der Salomonen",
+    "Вулканическая провинция Соломоновых островов",
+    "Provincia volcánica de las Salomón",
+    "Province volcanique des Salomon",
+    "솔로몬 화산 지대",
+    "索羅門群島火山省"
+  ],
+  "Somalian-Antarctic Volcanic Regions": [
+    "Vulkanregionen Somalia–Antarktis",
+    "Сомалийско-Антарктические вулканические регионы",
+    "Regiones volcánicas somalí-antárticas",
+    "Régions volcaniques Somalie–Antarctique",
+    "소말리-남극 화산 지역",
+    "索馬利亞—南極火山區"
+  ],
+  "South America Volcanic Regions": [
+    "Vulkanregionen Südamerikas",
+    "Вулканические регионы Южной Америки",
+    "Regiones volcánicas de América del Sur",
+    "Régions volcaniques d'Amérique du Sud",
+    "남아메리카 화산 지역",
+    "南美洲火山區"
+  ],
+  "South Sandwich Volcanic Arc": [
+    "Vulkanbogen der Südlichen Sandwichinseln",
+    "Южно-Сандвичева вулканическая дуга",
+    "Arco volcánico de las Sandwich del Sur",
+    "Arc volcanique des Sandwich du Sud",
+    "사우스샌드위치 화산호",
+    "南桑威奇火山弧"
+  ],
+  "South Shetlands Volcanic Arc": [
+    "Vulkanbogen der Südlichen Shetlandinseln",
+    "Вулканическая дуга Южных Шетландских островов",
+    "Arco volcánico de las Shetland del Sur",
+    "Arc volcanique des Shetland du Sud",
+    "사우스셰틀랜드 화산호",
+    "南設得蘭火山弧"
+  ],
+  "Southeast Asia Volcanic Province": [
+    "Vulkanprovinz Südostasiens",
+    "Вулканическая провинция Юго-Восточной Азии",
+    "Provincia volcánica del Sudeste Asiático",
+    "Province volcanique de l'Asie du Sud-Est",
+    "동남아시아 화산 지대",
+    "東南亞火山省"
+  ],
+  "Southeast Sahara Volcanic Province": [
+    "Vulkanprovinz der südöstlichen Sahara",
+    "Вулканическая провинция юго-восточной Сахары",
+    "Provincia volcánica del Sahara sudoriental",
+    "Province volcanique du Sahara sud-est",
+    "사하라 남동부 화산 지대",
+    "撒哈拉東南部火山省"
+  ],
+  "Southeastern Australia Volcanic Province": [
+    "Vulkanprovinz Südostaustraliens",
+    "Вулканическая провинция Юго-Восточной Австралии",
+    "Provincia volcánica del sudeste de Australia",
+    "Province volcanique du sud-est de l'Australie",
+    "오스트레일리아 남동부 화산 지대",
+    "澳洲東南部火山省"
+  ],
+  "Southern Andean Volcanic Arc": [
+    "Südanden-Vulkanbogen",
+    "Южная вулканическая дуга Анд",
+    "Arco volcánico de los Andes Meridionales",
+    "Arc volcanique des Andes méridionales",
+    "남안데스 화산호",
+    "南安地斯火山弧"
+  ],
+  "Southern Atlantic Volcano Group": [
+    "Vulkangruppe des Südatlantiks",
+    "Группа вулканов южной части Атлантического океана",
+    "Grupo volcánico del Atlántico Sur",
+    "Groupe volcanique de l'Atlantique Sud",
+    "남대서양 화산군",
+    "南大西洋火山群"
+  ],
+  "Southern East Pacific Rise Volcanic Province": [
+    "Vulkanprovinz des südlichen Ostpazifischen Rückens",
+    "Вулканическая провинция южной части Восточно-Тихоокеанского поднятия",
+    "Provincia volcánica de la dorsal del Pacífico Oriental meridional",
+    "Province volcanique de la dorsale est-pacifique méridionale",
+    "동태평양 해령 남부 화산 지대",
+    "東太平洋海隆南部火山省"
+  ],
+  "Southern Kermadec Volcanic Arc": [
+    "Südlicher Kermadec-Vulkanbogen",
+    "Южная Кермадекская вулканическая дуга",
+    "Arco volcánico de Kermadec Meridional",
+    "Arc volcanique des Kermadec méridionales",
+    "케르마데크 남부 화산호",
+    "克馬得南部火山弧"
+  ],
+  "Southern Pacific Volcanic Regions": [
+    "Vulkanregionen des Südpazifiks",
+    "Вулканические регионы юга Тихого океана",
+    "Regiones volcánicas del Pacífico Sur",
+    "Régions volcaniques du Pacifique Sud",
+    "남태평양 화산 지역",
+    "南太平洋火山區"
+  ],
+  "Southwest Arabia Volcanic Province": [
+    "Vulkanprovinz Südwestarabiens",
+    "Вулканическая провинция Юго-Западной Аравии",
+    "Provincia volcánica del suroeste de Arabia",
+    "Province volcanique du sud-ouest de l'Arabie",
+    "아라비아 남서부 화산 지대",
+    "阿拉伯西南部火山省"
+  ],
+  "Southwestern Pacific Volcanic Regions": [
+    "Vulkanregionen des Südwestpazifiks",
+    "Вулканические регионы юго-запада Тихого океана",
+    "Regiones volcánicas del Pacífico suroccidental",
+    "Régions volcaniques du Pacifique sud-ouest",
+    "남서태평양 화산 지역",
+    "西南太平洋火山區"
+  ],
+  "Stratovolcano": [
+    "Schichtvulkan",
+    "Стратовулкан",
+    "Estratovolcán",
+    "Stratovolcan",
+    "성층화산",
+    "層狀火山"
+  ],
+  "Stratovolcano(es)": [
+    "Schichtvulkane",
+    "Стратовулканы",
+    "Estratovolcanes",
+    "Stratovolcans",
+    "성층화산군",
+    "層狀火山群"
+  ],
+  "Stratovolcano?": [
+    "Schichtvulkan (vermutet)",
+    "Стратовулкан (предположительно)",
+    "Estratovolcán (probable)",
+    "Stratovolcan (probable)",
+    "성층화산(추정)",
+    "層狀火山（推測）"
+  ],
+  "Subduction zone / Continental crust (> 25 km)": [
+    "Subduktionszone / Kontinentale Kruste (> 25 km)",
+    "Зона субдукции / Континентальная кора (> 25 km)",
+    "Zona de subducción / Corteza continental (> 25 km)",
+    "Zone de subduction / Croûte continentale (> 25 km)",
+    "섭입대 / 대륙지각 (> 25 km)",
+    "隱沒帶 / 大陸地殼（> 25 km）"
+  ],
+  "Subduction zone / Crustal thickness unknown": [
+    "Subduktionszone / Krustendicke unbekannt",
+    "Зона субдукции / Мощность коры неизвестна",
+    "Zona de subducción / Espesor cortical desconocido",
+    "Zone de subduction / Épaisseur crustale inconnue",
+    "섭입대 / 지각 두께 불명",
+    "隱沒帶 / 地殼厚度不明"
+  ],
+  "Subduction zone / Intermediate crust (15-25 km)": [
+    "Subduktionszone / Intermediäre Kruste (15-25 km)",
+    "Зона субдукции / Кора промежуточной мощности (15-25 km)",
+    "Zona de subducción / Corteza intermedia (15-25 km)",
+    "Zone de subduction / Croûte intermédiaire (15-25 km)",
+    "섭입대 / 중간지각 (15-25 km)",
+    "隱沒帶 / 中間地殼（15-25 km）"
+  ],
+  "Subduction zone / Oceanic crust (< 15 km)": [
+    "Subduktionszone / Ozeanische Kruste (< 15 km)",
+    "Зона субдукции / Океаническая кора (< 15 km)",
+    "Zona de subducción / Corteza oceánica (< 15 km)",
+    "Zone de subduction / Croûte océanique (< 15 km)",
+    "섭입대 / 해양지각 (< 15 km)",
+    "隱沒帶 / 海洋地殼（< 15 km）"
+  ],
+  "Sunda Volcanic Arc": [
+    "Sunda-Vulkanbogen",
+    "Зондская вулканическая дуга",
+    "Arco volcánico de la Sonda",
+    "Arc volcanique de la Sonde",
+    "순다 화산호",
+    "巽他火山弧"
+  ],
+  "Sunda-Banda Volcanic Regions": [
+    "Vulkanregionen Sunda–Banda",
+    "Зондско-Бандские вулканические регионы",
+    "Regiones volcánicas de la Sonda y Banda",
+    "Régions volcaniques Sonde–Banda",
+    "순다-반다 화산 지역",
+    "巽他—班達火山區"
+  ],
+  "Taupo Volcanic Arc": [
+    "Taupo-Vulkanbogen",
+    "Вулканическая дуга Таупо",
+    "Arco volcánico de Taupo",
+    "Arc volcanique de Taupo",
+    "타우포 화산호",
+    "陶波火山弧"
+  ],
+  "Tofua Volcanic Arc": [
+    "Tofua-Vulkanbogen",
+    "Вулканическая дуга Тофуа",
+    "Arco volcánico de Tofua",
+    "Arc volcanique de Tofua",
+    "토푸아 화산호",
+    "托富阿火山弧"
+  ],
+  "Tonga-Kermadec Volcanic Regions": [
+    "Vulkanregionen Tonga–Kermadec",
+    "Вулканические регионы Тонга и Кермадек",
+    "Regiones volcánicas de Tonga y Kermadec",
+    "Régions volcaniques Tonga–Kermadec",
+    "통가-케르마데크 화산 지역",
+    "東加—克馬得火山區"
+  ],
+  "Trachyandesite / Basaltic Trachyandesite": [
+    "Trachyandesit / Basaltischer Trachyandesit",
+    "Трахиандезит / Базальтовый трахиандезит",
+    "Traquiandesita / Traquiandesita basáltica",
+    "Trachyandésite / Trachyandésite basaltique",
+    "조면안산암 / 현무암질 조면안산암",
+    "粗面安山岩 / 玄武質粗面安山岩"
+  ],
+  "Trachybasalt / Tephrite Basanite": [
+    "Trachybasalt / Tephrit-Basanit",
+    "Трахибазальт / Тефрит-базанит",
+    "Traquibasalto / Tefrita-basanita",
+    "Trachybasalte / Téphrite-basanite",
+    "조면현무암 / 테프라이트-바사나이트",
+    "粗面玄武岩 / 鹼玄岩-碧玄岩"
+  ],
+  "Trachyte / Trachydacite": [
+    "Trachyt / Trachydazit",
+    "Трахит / Трахидацит",
+    "Traquita / Traquidacita",
+    "Trachyte / Trachydacite",
+    "조면암 / 조면데사이트",
+    "粗面岩 / 粗面英安岩"
+  ],
+  "Trans-Mexican Volcanic Arc": [
+    "Transmexikanischer Vulkanbogen",
+    "Трансмексиканская вулканическая дуга",
+    "Arco volcánico Transmexicano",
+    "Arc volcanique transmexicain",
+    "트랜스멕시코 화산호",
+    "橫貫墨西哥火山弧"
+  ],
+  "Trobriand Volcanic Province": [
+    "Vulkanprovinz der Trobriand-Inseln",
+    "Вулканическая провинция островов Тробриан",
+    "Provincia volcánica de las islas Trobriand",
+    "Province volcanique des îles Trobriand",
+    "트로브리안드 화산 지대",
+    "特羅布里恩火山省"
+  ],
+  "Tuff cone": [
+    "Tuffkegel",
+    "Туфовый конус",
+    "Cono de toba",
+    "Cône de tuf",
+    "응회구",
+    "凝灰岩錐"
+  ],
+  "Tuff cone(s)": [
+    "Tuffkegel (mehrere)",
+    "Туфовые конусы",
+    "Conos de toba",
+    "Cônes de tuf",
+    "응회구군",
+    "凝灰岩錐群"
+  ],
+  "Tuff ring(s)": [
+    "Tuffringe",
+    "Туфовые кольца",
+    "Anillos de toba",
+    "Anneaux de tuf",
+    "응회환군",
+    "凝灰岩環群"
+  ],
+  "UNASSIGNED": [
+    "Nicht zugewiesen",
+    "Не назначено",
+    "Sin asignar",
+    "Non attribué",
+    "미지정",
+    "未指定"
+  ],
+  "Uncertain": [
+    "Unsicher",
+    "Неопределённо",
+    "Incierto",
+    "Incertain",
+    "불확실",
+    "不確定"
+  ],
+  "Undersea Features": [
+    "Unterseeische Strukturen",
+    "Подводные формы рельефа",
+    "Rasgos submarinos",
+    "Reliefs sous-marins",
+    "해저 지형",
+    "海底地形"
+  ],
+  "Unrest / Holocene": [
+    "Vulkanische Unruhe / Holozän",
+    "Активизация / Голоцен",
+    "Actividad anómala / Holoceno",
+    "Activité anormale / Holocène",
+    "화산 불안정 / 홀로세",
+    "火山活動異常 / 全新世"
+  ],
+  "Vanuatu Volcanic Arc": [
+    "Vanuatu-Vulkanbogen",
+    "Вулканическая дуга Вануату",
+    "Arco volcánico de Vanuatu",
+    "Arc volcanique du Vanuatu",
+    "바누아투 화산호",
+    "萬那杜火山弧"
+  ],
+  "Very High Threat": [
+    "Sehr hohe Gefährdung",
+    "Очень высокая угроза",
+    "Amenaza muy alta",
+    "Menace très élevée",
+    "매우 높은 위협",
+    "威脅極高"
+  ],
+  "Very Low Threat": [
+    "Sehr geringe Gefährdung",
+    "Очень низкая угроза",
+    "Amenaza muy baja",
+    "Menace très faible",
+    "매우 낮은 위협",
+    "威脅極低"
+  ],
+  "Volcanic field": [
+    "Vulkanfeld",
+    "Вулканическое поле",
+    "Campo volcánico",
+    "Champ volcanique",
+    "화산지대",
+    "火山區"
+  ],
+  "WARNING": [
+    "Warnung",
+    "Предупреждение",
+    "Alerta",
+    "Alerte",
+    "경보",
+    "警報"
+  ],
+  "WATCH": [
+    "Vorwarnung",
+    "Наблюдение",
+    "Vigilancia",
+    "Vigilance",
+    "경계",
+    "戒備"
+  ],
+  "West Central Sahara Volcanic Province": [
+    "Vulkanprovinz der westzentralen Sahara",
+    "Вулканическая провинция западной части Центральной Сахары",
+    "Provincia volcánica del Sahara centro-occidental",
+    "Province volcanique du Sahara centre-ouest",
+    "사하라 중서부 화산 지대",
+    "撒哈拉中西部火山省"
+  ],
+  "Western Africa Volcanic Province": [
+    "Vulkanprovinz Westafrikas",
+    "Вулканическая провинция Западной Африки",
+    "Provincia volcánica de África Occidental",
+    "Province volcanique d'Afrique de l'Ouest",
+    "서아프리카 화산 지대",
+    "西非火山省"
+  ],
+  "Western Anatolian Volcanic Province": [
+    "Westanatolische Vulkanprovinz",
+    "Западноанатолийская вулканическая провинция",
+    "Provincia volcánica de Anatolia Occidental",
+    "Province volcanique d'Anatolie occidentale",
+    "서아나톨리아 화산 지대",
+    "西安納托利亞火山省"
+  ],
+  "Western Antarctica Volcanic Province": [
+    "Vulkanprovinz der Westantarktis",
+    "Вулканическая провинция Западной Антарктиды",
+    "Provincia volcánica de la Antártida Occidental",
+    "Province volcanique de l'Antarctique occidental",
+    "서남극 화산 지대",
+    "西南極洲火山省"
+  ],
+  "Western Arabia Volcanic Province": [
+    "Vulkanprovinz Westarabiens",
+    "Вулканическая провинция Западной Аравии",
+    "Provincia volcánica de Arabia Occidental",
+    "Province volcanique de l'Arabie occidentale",
+    "아라비아 서부 화산 지대",
+    "阿拉伯西部火山省"
+  ],
+  "Western European Volcanic Province": [
+    "Westeuropäische Vulkanprovinz",
+    "Западноевропейская вулканическая провинция",
+    "Provincia volcánica de Europa Occidental",
+    "Province volcanique d'Europe occidentale",
+    "서유럽 화산 지대",
+    "西歐火山省"
+  ],
+  "Western North Island Volcanic Province": [
+    "Vulkanprovinz der westlichen Nordinsel",
+    "Вулканическая провинция западной части Северного острова",
+    "Provincia volcánica del oeste de la Isla Norte",
+    "Province volcanique de l'ouest de l'Île du Nord",
+    "북섬 서부 화산 지대",
+    "北島西部火山省"
+  ],
+  "Western Pacific Volcanic Regions": [
+    "Vulkanregionen des Westpazifiks",
+    "Вулканические регионы запада Тихого океана",
+    "Regiones volcánicas del Pacífico Occidental",
+    "Régions volcaniques du Pacifique occidental",
+    "서태평양 화산 지역",
+    "西太平洋火山區"
+  ],
+  "Wrangell Volcanic Arc": [
+    "Wrangell-Vulkanbogen",
+    "Вулканическая дуга Врангеля",
+    "Arco volcánico de Wrangell",
+    "Arc volcanique Wrangell",
+    "랭걸 화산호",
+    "蘭格爾火山弧"
+  ],
+  "YELLOW": [
+    "Gelb",
+    "Жёлтый",
+    "Amarillo",
+    "Jaune",
+    "황색",
+    "黃"
+  ],
+  "Yellowstone Volcano Observatory": [
+    "Vulkanobservatorium Yellowstone",
+    "Йеллоустонская вулканологическая обсерватория",
+    "Observatorio Vulcanológico de Yellowstone",
+    "Observatoire volcanologique de Yellowstone",
+    "옐로스톤 화산관측소",
+    "黃石火山觀測站"
+  ],
+  "Yellowstone-Snake River Hotspot Volcano Group": [
+    "Vulkangruppe des Yellowstone-Snake-River-Hotspots",
+    "Группа вулканов горячей точки Йеллоустон — Снейк-Ривер",
+    "Grupo volcánico del punto caliente de Yellowstone-río Snake",
+    "Groupe volcanique du point chaud Yellowstone–Snake River",
+    "옐로스톤-스네이크강 열점 화산군",
+    "黃石—蛇河熱點火山群"
+  ],
+  "administered by": [
+    "Verwaltet von",
+    "Управляющая страна",
+    "Administrado por",
+    "Administré par",
+    "관리국",
+    "管理國"
+  ],
+  "claimed by": [
+    "Beansprucht von",
+    "Претендующая страна",
+    "Reclamado por",
+    "Revendiqué par",
+    "영유권 주장국",
+    "主權主張國"
+  ],
+  "レベル２（火口周辺規制）": [
+    "Stufe 2 (Krater nicht annähern)",
+    "Уровень 2 (не приближайтесь к кратеру)",
+    "Nivel 2 (no se acerque al cráter)",
+    "Niveau 2 (ne pas approcher du cratère)",
+    "레벨 2(화구에 접근 금지)",
+    "第2級（請勿接近火山口）"
+  ],
+  "レベル３（入山規制）": [
+    "Stufe 3 (Vulkan nicht betreten)",
+    "Уровень 3 (не приближайтесь к вулкану)",
+    "Nivel 3 (no se acerque al volcán)",
+    "Niveau 3 (ne pas approcher du volcan)",
+    "레벨 3(화산에 접근 금지)",
+    "第3級（請勿接近火山）"
+  ],
+  "入山危険": [
+    "Vulkan nicht betreten",
+    "Не приближайтесь к вулкану",
+    "No se acerque al volcán",
+    "Ne pas approcher du volcan",
+    "입산 위험",
+    "請勿進入火山"
+  ],
+  "周辺海域警戒": [
+    "Warnung für das umliegende Seegebiet",
+    "Предупреждение для прилегающей акватории",
+    "Alerta en la zona marítima circundante",
+    "Vigilance dans la zone maritime environnante",
+    "주변 해역 경계",
+    "周邊海域警戒"
+  ],
+  "引上げ": [
+    "Heraufgestuft",
+    "Повышен",
+    "Elevado",
+    "Relevé",
+    "상향",
+    "調升"
+  ],
+  "引下げ": [
+    "Herabgestuft",
+    "Понижен",
+    "Rebajado",
+    "Abaissé",
+    "하향",
+    "調降"
+  ],
+  "火口周辺危険": [
+    "Gefahr in Kraternähe",
+    "Опасность вблизи кратера",
+    "Peligro en las inmediaciones del cráter",
+    "Danger aux abords du cratère",
+    "화구 주변 위험",
+    "火山口周邊危險"
+  ],
+  "継続": [
+    "Unverändert",
+    "Без изменений",
+    "Sin cambios",
+    "Inchangé",
+    "유지",
+    "維持"
+  ]
+}

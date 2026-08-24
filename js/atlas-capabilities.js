@@ -247,6 +247,17 @@ export function makeAtlasCapabilities(HOST) {
       ['system.module',              'module',         '',                                                            'system',  'panel',   'panel.any',              'panel',               'session', 'none',   '',         ''],
       ['system.monitor',             'monitor',        '',                                                            'system',  'none',    '',                       '',                    'read',    'none',   '',         ''],
       ['system.control',             'control',        '',                                                            'system',  'control', 'ui.any',                 'panel',               'session', 'none',   '',         ''],
+      /* (#R395) THE VOLCANO SUBSYSTEM WAS RUNNABLE AND UNREACHABLE. js/beta-overlays.js has
+         registered volcano.* kernel commands since #R353, and the registry had no row for any of
+         them — so a reader could press the buttons and Atlas could not, which is precisely the
+         five-disagreeing-lists failure this file exists to end. `data.layerValues` already answers
+         «how many volcanoes are on screen» and these two do not overlap it: one opens the record for
+         a NAMED volcano, the other narrows 1,214 dots to a question.
+         ⚠ THESE ROWS SIT ABOVE `dialog.answer` ON PURPOSE — tests/r347-checks ㉒ reads the `lazy`
+         column with a regex that only matches rows ending in a comma, and the last row has none, so
+         a row appended after it would never have its lazy module checked. */
+      ['data.volcano',               'volcano',        'volcanoCard,volcanoInfo',                                     'data',    'panel',   'panel.volcano',          'panel',               'session', 'none',   'text',     'volcanoIntel'],
+      ['map.volcanoFilter',          'volcanoFilter',  'volcanoMode,volcanoTime',                                     'map',     'paint',   'map.volcano',            'map',                 'session', 'none',   '',         'volcanoIntel'],
       ['dialog.answer',              'answer',         '',                                                            'dialog',  'none',    '',                       'explanation',         'read',    'none',   '',         '']
     ];
 

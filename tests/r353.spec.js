@@ -106,12 +106,12 @@ test('R353 ① a volcano opens an intelligence card built from the bundled recor
   /* the eruption STYLE disclaimer — the round's honesty rule, on screen and not only in a comment */
   expect(history.body).toMatch(/Strombolian|ストロンボリ/);
 
-  /* the volcano's own properties, from the same bundled file */
-  await page.evaluate(() => document.querySelector('[data-tab="about"]').click());
-  const about = await page.evaluate(() => document.getElementById('volcp-body').textContent);
-  expect(about).toMatch(/282080/);                    /* the GVP number is shown, not hidden */
-  expect(about).toMatch(/Andesite|安山岩|Basalt/);     /* dominant magma composition */
-  expect(about).toMatch(/Subduction|沈み込み|沉隆|섭입/);
+  /* ⚠ (#R395) THE «The volcano» TAB IS ASSERTED IN tests/r395.spec.js NOW, AND HARDER. The three
+     lines that stood here read the same three rows with an `English|日本語|中文` alternation, so they
+     passed whichever language the value came out in — which is exactly the defect #R395 was reported
+     for (every label translated, every value English). That file opens the same card in Japanese and
+     asserts both halves: the Japanese IS there and the English is GONE. Two files sweeping one
+     invariant is what the test budget exists to stop (#R197), so this one gives the tab up. */
 
   /* exposure: the four population radii GVP publishes */
   await page.evaluate(() => document.querySelector('[data-tab="impact"]').click());
@@ -180,7 +180,11 @@ test('R353 ② four colour modes, and "nothing published" is its own colour', as
   for (const id of ['beta-dl-volcash', 'beta-dl-volchaz', 'beta-dl-volcso2']) {
     expect(await page.evaluate((x) => !!document.getElementById(x), id)).toBe(true);
   }
-  /* …and the kernel knows all five commands, so Atlas can drive them */
+  /* …and the kernel knows every one of the commands, so Atlas can drive them. ⚠ (#R395) THIS IS AN
+     EXACT SET on purpose — it is what caught the two this round added (volcano.filter, volcano.time)
+     and made sure they were registered where the button and Atlas reach the same code, rather than
+     wired only to the legend. Adding a command means adding it here. */
   const cmds = await page.evaluate(() => window.IntMapOS.list().filter((c) => c.startsWith('volcano.')));
-  expect(cmds.sort()).toEqual(['volcano.ash', 'volcano.hazard', 'volcano.mode', 'volcano.open', 'volcano.so2']);
+  expect(cmds.sort()).toEqual(['volcano.ash', 'volcano.filter', 'volcano.hazard', 'volcano.mode',
+    'volcano.open', 'volcano.so2', 'volcano.time']);
 });

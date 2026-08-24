@@ -332,7 +332,7 @@ window.IntMapModules.betaOverlays=function(HOST){
         const before=GE().layers.has('tool-poly')?'tool-poly':undefined;
         /* the halo goes UNDER the points: it is a second claim about the same dot, not a bigger dot */
         GE().layers.add({id:'volc2-halo',type:'circle',source:'volc2-src',layout:{visibility:'none'},
-          filter:['>=',['coalesce',['get','st'],-1],2],
+          filter:['all',HALO_BASE].concat(volcFilterTerms()),
           paint:{'circle-radius':volcHaloRadius,'circle-color':['step',['coalesce',['get','st'],-1],'#6b7280',2,'#e8c53a',3,'#f08a2d',4,'#e0332f'],
                  'circle-opacity':0.24,'circle-blur':0.55}},before);
         GE().layers.add({id:'volc2-pt',type:'circle',source:'volc2-src',layout:{visibility:'none'},paint:{
@@ -355,7 +355,13 @@ window.IntMapModules.betaOverlays=function(HOST){
     let popup=null;
     function volcMiniPopup(f,p){
       const yr=(p.y==null||p.y==='null')?(window.IntMapLang.t(HOST.lang,"No dated eruption","噴火記録なし","Kein datierter Ausbruch","Датированных извержений нет","Sin erupción datada")):((p.y<0?(jp()?('紀元前'+(-p.y)):('BCE '+(-p.y))):p.y)+(window.IntMapLang.t(HOST.lang," last eruption","年に最終噴火"," letzter Ausbruch"," последнее извержение"," última erupción")));
-      const html='<div style="min-width:160px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">🌋 '+(p.n||'')+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+(p.c||'')+(p.e!=null&&p.e!=='null'?' · '+p.e+' m':'')+'<br>'+(p.t||'')+'<br>'+yr+'</div></div>';
+      /* ⚠ (#R395) this is the module-unavailable fallback, so the vocabulary may or may not be here.
+         When it is, the country and the type are shown in the reader's language like everywhere else;
+         when it is not, the catalog's own English is a truthful answer and an empty line is not. */
+      const V=window.IntMapVolcano;
+      const cN=(V&&V.countryName)?V.countryName(p.c):(p.c||'');
+      const tN=(V&&V.term)?V.term('type',p.t):(p.t||'');
+      const html='<div style="min-width:160px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">🌋 '+(p.n||'')+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+(cN||'')+(p.e!=null&&p.e!=='null'?' · '+p.e+' m':'')+'<br>'+(tN||'')+'<br>'+yr+'</div></div>';
       try{ if(popup) popup.remove(); }catch(_){}
       try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML(html)); }catch(_){}
     }
@@ -390,6 +396,100 @@ window.IntMapModules.betaOverlays=function(HOST){
       volcLegend(); return true;
     }
 
+    /* ══ (#R395) NARROWING THE 1,214 DOWN TO A QUESTION ═══════════════════════════════════════════
+       The catalog answers four questions in colour, and colour alone cannot answer «show me only
+       the ones that matter for THIS question» — 1,214 dots stay 1,214 dots. These four predicates
+       are independent and AND together; each is a property the bundled file already carries, so
+       nothing is fetched and nothing is estimated.
+       ⚠ `spoken` IS THE ABSENCE TEST, AND IT IS THE ONE THAT NEEDED SAYING. `st` is absent for every
+       volcano no observatory has spoken about (see volcApplyStatus above), so «only where somebody
+       publishes a level» is `has st` — and the legend says that it is a statement about publishing,
+       not about the volcanoes. */
+    const VOLC_FILTERS={ spoken:false, elevated:false, big:false, recent:false };
+    const volcFilterTerms=()=>{
+      const t=[];
+      if(VOLC_FILTERS.spoken) t.push(['has','st']);
+      if(VOLC_FILTERS.elevated) t.push(['>=',['coalesce',['get','st'],-1],2]);
+      if(VOLC_FILTERS.big) t.push(['>=',['coalesce',['get','x'],-1],4]);
+      if(VOLC_FILTERS.recent) t.push(['>=',['coalesce',['get','y'],-99999],1950]);
+      if(volcTime.on) t.push(['has','ty']);
+      return t;
+    };
+    /* ⚠ THE HALO KEEPS ITS OWN CONDITION. It marks «an observatory is speaking about this one
+       today»; a reader's filter narrows WHICH volcanoes are drawn, it does not change what the ring
+       means. So the two are ANDed rather than one replacing the other. */
+    const HALO_BASE=['>=',['coalesce',['get','st'],-1],2];
+    function volcApplyFilter(){
+      const t=volcFilterTerms();
+      try{
+        if(GE().layers.has('volc2-pt')) GE().layers.setFilter('volc2-pt',t.length?['all'].concat(t):null);
+        if(GE().layers.has('volc2-lbl')) GE().layers.setFilter('volc2-lbl',t.length?['all'].concat(t):null);
+        if(GE().layers.has('volc2-halo')) GE().layers.setFilter('volc2-halo',['all',HALO_BASE].concat(t));
+      }catch(_){}
+    }
+    function volcSetFilter(k,on){
+      if(!(k in VOLC_FILTERS)) return false;
+      VOLC_FILTERS[k]=!!on;
+      if(VOLC_FILTERS.spoken||VOLC_FILTERS.elevated){ try{ window.IntMapLazy.need('volcanoIntel').then(ok=>{ if(ok&&window.IntMapVolcano) window.IntMapVolcano.warm().then(volcApplyStatus); }); }catch(_){} }
+      volcApplyFilter(); volcLegend(); return true;
+    }
+
+    /* ══ (#R395) THE ERUPTION RECORD ON THE MASTER CLOCK ══════════════════════════════════════════
+       11,089 dated eruptions were readable only one volcano at a time, in a card. On the clock they
+       answer a different question: «which volcanoes were erupting when the map is set to 1883?»
+       ⚠ THE DATES COME FROM THE BUNDLED HISTORY, so this costs one fetch of the file the card
+       already uses (data/volcano-detail.json.gz) and nothing per year afterwards.
+       ⚠ AN ERUPTION WITH NO END YEAR IS NOT AN ERUPTION THAT NEVER ENDED. GVP leaves the end blank
+       both for «still going» and for «not recorded», so a blank end counts for the start year alone
+       unless the volcano is one the catalog still lists as active — anything else would paint a
+       19th-century eruption across every year since.
+       ⚠ AND THE CLOCK'S FLOOR IS 1850 (js/chronos.js), which is stated in the legend rather than
+       silently truncating the record: the card still shows every eruption back to −10450. */
+    const volcTime={ on:false, index:null, year:null, off:null };
+    function volcTimeIndex(doc){
+      const m=new Map();
+      const vols=(doc&&doc.volcanoes)||{};
+      for(const k of Object.keys(vols)){
+        const rows=vols[k].er||[]; const spans=[];
+        for(const r of rows){
+          if(r[9]!==1||r[1]==null) continue;                  /* confirmed, dated */
+          spans.push([r[1], r[4]==null?r[1]:r[4], r[7]==null?1:r[7]]);
+        }
+        if(spans.length) m.set(+k,spans);
+      }
+      return m;
+    }
+    function volcApplyTime(){
+      if(!volcFC) return 0;
+      let n=0;
+      if(volcTime.on&&volcTime.index){
+        const y=nowYear();
+        for(const f of volcFC.features){
+          const spans=volcTime.index.get(f.properties.v); let best=null;
+          if(spans) for(const s of spans){ if(y>=s[0]&&y<=s[1]&&(best==null||s[2]>best)) best=s[2]; }
+          if(best!=null){ f.properties.ty=best; n++; }
+          else if('ty' in f.properties) delete f.properties.ty;
+        }
+        volcTime.year=y;
+      } else {
+        for(const f of volcFC.features) if('ty' in f.properties) delete f.properties.ty;
+        volcTime.year=null;
+      }
+      try{ GE().layers.setSourceData('volc2-src',volcFC); }catch(_){}
+      volcApplyFilter(); volcLegend(); return n;
+    }
+    function volcSetTime(on){
+      volcTime.on=!!on;
+      if(!volcTime.on){ if(volcTime.off){ try{ volcTime.off(); }catch(_){} volcTime.off=null; } volcApplyTime(); return true; }
+      if(!volcTime.off){ try{ volcTime.off=window.IntMapTime.on(()=>{ if(volcTime.on&&nowYear()!==volcTime.year) volcApplyTime(); }); }catch(_){} }
+      if(volcTime.index){ volcApplyTime(); return true; }
+      try{ window.IntMapLazy.need('volcanoIntel').then(ok=>{
+        if(!ok||!window.IntMapVolcano) return;
+        window.IntMapVolcano.detail().then(doc=>{ if(doc) volcTime.index=volcTimeIndex(doc); volcApplyTime(); });
+      }); }catch(_){}
+      volcLegend(); return true;
+    }
+
     /* the legend: the mode switch, the key for the mode that is on, and — for the status mode — the
        three states the ladder can be in, said in words. */
     function volcLegend(){
@@ -401,8 +501,10 @@ window.IntMapModules.betaOverlays=function(HOST){
         let key=el.querySelector('.volc-key');
         if(!key){ key=document.createElement('div'); key.className='volc-key';
           const op=el.querySelector('.dl-op-row'); if(op) el.insertBefore(key,op); else el.appendChild(key);
-          key.addEventListener('click',(ev)=>{ const b=ev.target&&ev.target.closest?ev.target.closest('[data-vmode]'):null;
-            if(b) volcSetMode(b.dataset.vmode); }); }
+          key.addEventListener('click',(ev)=>{ const t2=ev.target&&ev.target.closest?ev.target:null; if(!t2) return;
+            const m=t2.closest('[data-vmode]'); if(m){ volcSetMode(m.dataset.vmode); return; }
+            const fl=t2.closest('[data-vfilter]'); if(fl){ volcSetFilter(fl.dataset.vfilter,!VOLC_FILTERS[fl.dataset.vfilter]); return; }
+            const tm=t2.closest('[data-vtime]'); if(tm) volcSetTime(!volcTime.on); }); }
         const SF=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
         const dot=(c)=>'<span class="volc-dot" style="background:'+c+'"></span>';
         const line=(c,t2)=>'<div class="volc-key-row">'+dot(c)+SF(t2)+'</div>';
@@ -411,6 +513,27 @@ window.IntMapModules.betaOverlays=function(HOST){
           status:L('Now','現在','Jetzt','Сейчас','Ahora'),
           people:L('People nearby','周辺人口','Menschen in der Nähe','Население рядом','Población cercana') };
         let body='<div class="volc-modes">'+VOLC_MODES.map(m=>'<button type="button" class="volc-mode'+(volcMode===m?' on':'')+'" data-vmode="'+m+'">'+SF(MODE_LABEL[m])+'</button>').join('')+'</div>';
+        /* (#R395) the narrowing row, and the clock switch beside it */
+        const FILT=[['spoken',L('Somebody publishes a level','状況の発表がある','Stufe wird veröffentlicht','Уровень публикуется','Alguien publica un nivel')],
+          ['elevated',L('Above normal','平常より上','Über Normal','Выше нормы','Por encima de lo normal')],
+          ['big',L('Has produced VEI 4+','VEI 4 以上の実績','Hat VEI 4+ erzeugt','Производил VEI 4+','Ha producido VEI 4+')],
+          ['recent',L('Erupted since 1950','1950年以降に噴火','Ausbruch seit 1950','Извергался с 1950 года','Con erupción desde 1950')]];
+        body+='<div class="volc-filters">'+FILT.map(([k,lab])=>'<button type="button" class="volc-filter'+(VOLC_FILTERS[k]?' on':'')+'" data-vfilter="'+k+'">'+SF(lab)+'</button>').join('')
+          +'<button type="button" class="volc-filter'+(volcTime.on?' on':'')+'" data-vtime="1">'+SF(L('Erupting in the map’s year','地図の年に噴火中','Im Kartenjahr im Ausbruch','Извергался в году карты','En erupción en el año del mapa'))+'</button></div>';
+        if(volcTime.on){
+          /* ⚠ ONE STRING WITH PLACEHOLDERS, not five fragments concatenated round a number (#R355):
+             a sentence assembled from pieces cannot be reordered by a translator, and the pieces are
+             not literals the inline tables can hold. */
+          const shown=volcFC?volcFC.features.filter(f=>f.properties.ty!=null).length:0;
+          body+='<div class="volc-key-note">'+SF(volcTime.index
+            ?L('GVP records {n} volcano(es) as erupting in {y}. The clock reaches back to 1850; the card shows every eruption in the record.',
+              'GVP の記録で {y} 年に噴火していた火山は {n} 座です。時計は1850年までさかのぼれます（カードにはそれ以前の噴火も出ます）。',
+              'Das GVP führt {n} Vulkan(e) als im Jahr {y} ausbrechend. Die Uhr reicht bis 1850 zurück; die Karte zeigt jeden Ausbruch des Datensatzes.',
+              'По данным GVP в {y} году извергались {n} вулкан(ов). Часы доходят до 1850 года; в карточке есть все извержения записи.',
+              'El GVP registra {n} volcán(es) en erupción en {y}. El reloj llega hasta 1850; la ficha muestra todas las erupciones del registro.')
+              .split('{n}').join(shown).split('{y}').join(nowYear())
+            :L('Reading the eruption record…','噴火記録を読み込み中…','Ausbruchsdatensatz wird gelesen…','Чтение записи извержений…','Leyendo el registro de erupciones…'))+'</div>';
+        }
         if(volcMode==='recency'){
           body+=line('#ff2d20',L('Erupting or erupted this year','今年噴火／噴火中','Ausbruch in diesem Jahr','Извергается или извергался в этом году','En erupción o con erupción este año'))
             +line('#ff6a3d',L('Erupted since 1950','1950年以降に噴火','Ausbruch seit 1950','Извергался с 1950 года','Con erupción desde 1950'))
@@ -457,7 +580,18 @@ window.IntMapModules.betaOverlays=function(HOST){
        `IntMap*` name: js/atlas-controls.js discovers capabilities by enumerating window.IntMap*, and
        a second volcano-named global would offer the planner a subsystem nothing dispatches (#R320). */
     window.__imVolcLayer={ data:()=>volcFC, mode:()=>volcMode, setMode:volcSetMode, modes:()=>VOLC_MODES.slice(),
-      applyStatus:volcApplyStatus, on:()=>state.volc, count:()=>volcFC?volcFC.features.length:0 };
+      applyStatus:volcApplyStatus, on:()=>state.volc, count:()=>volcFC?volcFC.features.length:0,
+      /* (#R395) the narrowing and the clock, for Atlas and for the tests */
+      filters:()=>Object.assign({},VOLC_FILTERS), setFilter:volcSetFilter, filterKeys:()=>Object.keys(VOLC_FILTERS),
+      timeOn:()=>volcTime.on, setTime:volcSetTime, timeYear:()=>volcTime.year,
+      shown:()=>{ if(!volcFC) return 0; const t=volcFilterTerms(); if(!t.length) return volcFC.features.length;
+        return volcFC.features.filter(f=>{ const p=f.properties;
+          if(VOLC_FILTERS.spoken&&p.st==null) return false;
+          if(VOLC_FILTERS.elevated&&!(p.st>=2)) return false;
+          if(VOLC_FILTERS.big&&!(p.x>=4)) return false;
+          if(VOLC_FILTERS.recent&&!(p.y>=1950)) return false;
+          if(volcTime.on&&p.ty==null) return false;
+          return true; }).length; } };
 
     /* the three overlay rows. ⚠ The checkbox is put BACK to unchecked if the module cannot be
        downloaded — a switch that stays on while nothing is drawn is the silent-hole shape this
@@ -499,6 +633,22 @@ window.IntMapModules.betaOverlays=function(HOST){
         },{label:'Volcano intelligence card',group:'volcano'});
         OS.register('volcano.mode',(ctx)=>({ ok:volcSetMode(((ctx&&ctx.params)||{}).mode) }),
           {label:'Volcano map colour mode',group:'volcano'});
+        /* (#R395) narrowing the catalog, and putting the eruption record on the master clock. Both
+           switch the layer on first: a filter over a layer nobody can see answers nothing. */
+        OS.register('volcano.filter',(ctx)=>{
+          const p=(ctx&&ctx.params)||{};
+          try{ const cb=document.getElementById('beta-dl-volc2'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change')); } }catch(_){}
+          if(p.clear){ for(const k of Object.keys(VOLC_FILTERS)) volcSetFilter(k,false); return {ok:true,shown:window.__imVolcLayer.shown()}; }
+          let any=false;
+          for(const k of Object.keys(VOLC_FILTERS)) if(k in p){ volcSetFilter(k,p[k]!==false); any=true; }
+          return any?{ok:true,shown:window.__imVolcLayer.shown()}:{ok:false,err:'no volcano filter named'};
+        },{label:'Narrow the volcano catalog',group:'volcano'});
+        OS.register('volcano.time',(ctx)=>{
+          const p=(ctx&&ctx.params)||{};
+          try{ const cb=document.getElementById('beta-dl-volc2'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change')); } }catch(_){}
+          if(p.year!=null){ try{ window.IntMapTime.setYear(+p.year); }catch(_){} }
+          return { ok:volcSetTime(p.on!==false), year:nowYear() };
+        },{label:'Volcanoes erupting in the map’s year',group:'volcano'});
         [['volcano.ash','ash','Volcanic ash areas (SIGMET)','beta-dl-volcash'],
          ['volcano.hazard','hazard','Volcano hazard zones (USGS)','beta-dl-volchaz'],
          ['volcano.so2','so2','Satellite SO₂ column','beta-dl-volcso2']].forEach(([id,which,label,cbId])=>{
