@@ -19,10 +19,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 ## What runs
 
 
-**The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
-gates a push is **6 spec files / 0.6 min** against a ceiling of 0.6 min; the **whole** suite is
-**94 measured spec files / 76.8 min** of serial browser time against a ceiling of 76.8 min; and
-`npm run test:checks` runs **233 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **234 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier is the whole suite minus core — **88 spec files**
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
