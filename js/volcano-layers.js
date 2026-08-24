@@ -54,6 +54,36 @@ window.IntMapModules.volcanoLayers=function(HOST){
   const subs=new Set();
   const notify=()=>{ for(const fn of subs){ try{ fn(); }catch(_){} } };
 
+  /* ⚠ (#R395) THE FIVE HAZARD CLASSES ARE NAMED IN ONE PLACE NOW. The legend translated them and the
+     map popup printed USGS's raw `Hazard` value beside it, so the same polygon was «降灰（2インチ
+     以上）» in the key and «Ash (2 in. or greater)» when you clicked it. The table is hoisted here,
+     both readers use it, and js/volcano-intel.js reaches it through `hazardName` rather than keeping
+     a second copy — one behaviour, one implementation ([[intmap-recurring-lessons]] G).
+     ⚠ THE ZONE NAME IS NOT IN HERE ON PURPOSE. «Long Valley Volcanic Region» is USGS's own mapping
+     unit and is shown verbatim (§5.2); `hazardName` passes anything it does not know straight
+     through, which is what makes that possible. */
+  const HAZ_NAME={
+    'Ash (2 in. or greater)':LA('Ashfall (2 in. or more)','降灰（2インチ以上）','Ascheregen (ab 2 in.)','Пеплопад (от 2 дюймов)','Caída de ceniza (2 in o más)'),
+    'Lahars':LA('Lahars','ラハール（火山泥流）','Lahare','Лахары','Lahares'),
+    'Floods':LA('Floods','洪水','Überschwemmungen','Наводнения','Inundaciones'),
+    'Near-vent (multiple hazards)':LA('Near-vent (multiple hazards)','火口近傍（複合災害）','Kraternah (mehrere Gefahren)','Вблизи жерла (несколько опасностей)','Cerca del cráter (múltiples peligros)'),
+    'Lava flows':LA('Lava flows','溶岩流','Lavaströme','Лавовые потоки','Coladas de lava'),
+  };
+  const hazardName=(k)=>{ const t=HAZ_NAME[k]; return t?L.arr(t):String(k||''); };
+
+  /* SIGMET states the drift as an English 16-point abbreviation. js/compass.js (#R289) already holds
+     those sixteen points in all nine languages, so «SW 5kt» is not printed to a reader who writes
+     南西 — the same table the wind layer and the aviation cards use. */
+  function dirWord(abbr){
+    if(!abbr) return '';
+    try{
+      const en=window.IntMapCompass.table('en');
+      const i=en.indexOf(String(abbr).toUpperCase().trim());
+      if(i<0) return String(abbr);
+      return window.IntMapCompass.table(HOST.lang)[i]||String(abbr);
+    }catch(_){ return String(abbr); }
+  }
+
   /* ══ ① VOLCANIC-ASH AREAS ══════════════════════════════════════════════════════════════════ */
   const ASH_IDS=['volc-ash-fill','volc-ash-line','volc-ash-lbl'];
   const RELAY=(qs)=>{ let b=''; try{ b=String(window.SUPABASE_URL||'').replace(/\/$/,''); }catch(_){ b=''; }
@@ -94,6 +124,16 @@ window.IntMapModules.volcanoLayers=function(HOST){
       return true;
     }catch(_){ return false; }
   }
+  /* the label a reader sees on the polygon, kept as a FUNCTION of the fields rather than baked once:
+     the language can change while the layer is on, and a label frozen at fetch time would keep
+     saying «SW» after the reader switched to 日本語 (`relabelAsh` below re-runs this). */
+  const ashLabel=(volcano,band,dir,spd)=>[volcano||'',band,(dir&&spd)?(dirWord(dir)+' '+spd+'kt'):''].filter(Boolean).join(' · ');
+  function relabelAsh(){
+    if(!ashFC) return;
+    for(const f of ashFC.features){ const p=f.properties||{};
+      p.label=ashLabel(p.volcano,p.band,p.dir,p.spd); }
+    try{ GE().layers.setSourceData('volc-ash-src',ashFC); }catch(_){}
+  }
   function ashToFC(rows){
     const now=Date.now()/1000;
     const feats=[];
@@ -104,9 +144,9 @@ window.IntMapModules.volcanoLayers=function(HOST){
       const ring=a.coords.slice();
       if(ring.length&&(ring[0][0]!==ring[ring.length-1][0]||ring[0][1]!==ring[ring.length-1][1])) ring.push(ring[0]);
       const band=flBand(a.base,a.top);
-      const label=[a.volcano||'',band,(a.dir&&a.spd)?(a.dir+' '+a.spd+'kt'):''].filter(Boolean).join(' · ');
       feats.push({ type:'Feature', geometry:{type:'Polygon',coordinates:[ring]},
-        properties:{ volcano:a.volcano||'', fir:a.fir||'', label, band, raw:a.raw||'',
+        properties:{ volcano:a.volcano||'', fir:a.fir||'', label:ashLabel(a.volcano,band,a.dir,a.spd),
+          band, raw:a.raw||'', dir:a.dir||'', spd:a.spd==null?null:a.spd,
           base:a.base, top:a.top, to:a.to } });
     }
     return { type:'FeatureCollection', features:feats };
@@ -168,7 +208,7 @@ window.IntMapModules.volcanoLayers=function(HOST){
       GE().events.onLayer('click','volc-haz-fill',e=>{
         const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
         const html='<div style="min-width:180px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">'+S(p.Volcano||'')+'</div>'
-          +'<div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+S(p.Hazard||'')+'</div>'
+          +'<div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+S(hazardName(p.Hazard))+'</div>'
           +'<div style="font-size:10px;color:var(--text-muted);margin-top:5px;">U.S. Geological Survey</div></div>';
         try{ GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'300px'})
           .setLngLat(e.lngLat).setHTML(html)); }catch(_){}
@@ -296,12 +336,7 @@ window.IntMapModules.volcanoLayers=function(HOST){
           if(!k){ k=document.createElement('div'); k.className='volc-haz-key'; k.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
             const op=el.querySelector('.dl-op-row'); if(op) el.insertBefore(k,op); else el.appendChild(k); }
           const sw=(c)=>'<span style="width:11px;height:11px;border-radius:3px;flex:none;background:'+c+';border:1px solid rgba(255,255,255,0.45);"></span>';
-          const NAME={ 'Ash (2 in. or greater)':L('Ashfall (2 in. or more)','降灰（2インチ以上）','Ascheregen (ab 2 in.)','Пеплопад (от 2 дюймов)','Caída de ceniza (2 in o más)'),
-            'Lahars':L('Lahars','ラハール（火山泥流）','Lahare','Лахары','Lahares'),
-            'Floods':L('Floods','洪水','Überschwemmungen','Наводнения','Inundaciones'),
-            'Near-vent (multiple hazards)':L('Near-vent (multiple hazards)','火口近傍（複合災害）','Kraternah (mehrere Gefahren)','Вблизи жерла (несколько опасностей)','Cerca del cráter (múltiples peligros)'),
-            'Lava flows':L('Lava flows','溶岩流','Lavaströme','Лавовые потоки','Coladas de lava') };
-          k.innerHTML=Object.keys(HAZ_COLOR).map(key=>'<div style="display:flex;align-items:center;gap:7px;">'+sw(HAZ_COLOR[key])+S(NAME[key]||key)+'</div>').join('')
+          k.innerHTML=Object.keys(HAZ_COLOR).map(key=>'<div style="display:flex;align-items:center;gap:7px;">'+sw(HAZ_COLOR[key])+S(hazardName(key))+'</div>').join('')
             +'<div style="font-size:10px;color:var(--text-muted);">'
             +S(hazState==='failed'
               ?L('The USGS hazard service did not answer.','USGS のハザードサービスが応答しませんでした。','Der USGS-Gefahrendienst hat nicht geantwortet.','Служба USGS не ответила.','El servicio de peligros del USGS no respondió.')
@@ -325,9 +360,13 @@ window.IntMapModules.volcanoLayers=function(HOST){
     }catch(_){}
   }
 
+  /* the language can change while these three layers are on: the legend is rebuilt from its own
+     strings, and the ash labels are re-derived from the fields (#R395) */
+  try{ window.IntMapLangSwitch.bind(()=>HOST.lang,()=>{ try{ relabelAsh(); }catch(_){} try{ legend(); }catch(_){} }); }catch(_){}
+
   const API={
     ash:ashToggle, hazard:hazToggle, so2:so2Toggle,
-    hazardFor, hazardLoad:hazLoad, fitHazard, setSo2Date, so2Date:so2At,
+    hazardFor, hazardName, hazardLoad:hazLoad, fitHazard, setSo2Date, so2Date:so2At,
     state:()=>({ ash:state.ash, hazard:state.hazard, so2:state.so2,
       ashState, ashCount:ashFC?ashFC.features.length:0, ashRead, ashAt, hazState }),
     ashData:()=>ashFC, hazardData:()=>hazFC,

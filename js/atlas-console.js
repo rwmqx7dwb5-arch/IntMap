@@ -591,8 +591,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       for(let att=0;att<2;att++){
         await _nomSlot();
         try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=4&polygon_geojson=1&polygon_threshold='+thr+'&q='+encodeURIComponent(q),{headers:{Accept:'application/json'}});
-          if(!r.ok){ continue; }
-          const j=await r.json();
+          if(!r.ok){ continue; } const j=await r.json();
           if(Array.isArray(j)&&j.length){ const best=j.filter(o=>o.geojson&&/Polygon/.test((o.geojson.type||''))).sort((x,y)=>((+y.importance||0)+_classBonus(y))-((+x.importance||0)+_classBonus(x)))[0];
             if(best){ const out={geo:best.geojson,name:(best.display_name||q).split(',')[0]}; _unitPolyCache[key]=out; return out; } }
           if(Array.isArray(j)) { _unitPolyCache[key]=null; return null; }   /* real "no such polygon" answer — cache it */
@@ -1164,7 +1163,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     const { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, flyToBox, geoVerify, geocode, parseDirectional, placeExtent, regionBox, sliceBox } = makeAtlasGeoResolve(HOST, { GE, L, _bboxSoftPoly, _cgPoly, _clipGeoRect, _codesGeo, _expandRegionCompound, _geoArea, _hlLegendHtml, _hlPaletteColor, _lnorm, _ptInGeo, _setLast, _validGeo, askAIJSONEnvelope, codeAtPoint, composeRegion, fbbox, geo, localFuzzyPlaces, regionGroup, resolveCountrySync, lastPlace: () => _lastPlace });
     /* (#R199) ↳ js/atlas-controls.js — the full-control action surface — real UI controls and module methods.
        Moved whole; the 8 names below are what the rest of this file still calls. */
-    const { clickId, controlCatalog, doControl, doModule, findControl, kexec, moduleCatalog, setSel } = makeAtlasControls(HOST, { L, R, _ctlTogHtml, esc, note, warn });
+    const { clickId, controlCatalog, doControl, doModule, doVolcano, findControl, kexec, moduleCatalog, setSel } = makeAtlasControls(HOST, { L, R, _ctlTogHtml, esc, note, warn });
     /* ⚠ (#R318) THIS SITS HERE, NOT WHERE THE BLOCK IT REPLACED SAT, AND THE REASON IS A REAL
        FAILURE. `_requestProfile` and its neighbours used to be hoisted `function` declarations, so
        window.IntMapAtlasQA — an object literal built five hundred lines ABOVE them — could name
@@ -2012,6 +2011,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(vals.length) hh+=note(vals.map(v=>'<b>'+esc(v.label)+'</b>: '+esc(String(v.value))).join('<br>'));
           if(featLines.length) hh+=note(featLines.map(esc).join('<br>'));
           return R(true, hh); }
+        case 'volcano': case 'volcanoCard': case 'volcanoInfo': case 'volcanoFilter': case 'volcanoMode': case 'volcanoTime': return doVolcano(a);   /* (#R395) the answers are in js/atlas-controls.js — this file's ceiling is full (#R199/#R318) and a subject that needs thirty lines belongs beside the other control-surface helpers */
         /* (#R118) MAP-OBJECT operations by id (see IntMapObjects.list in the state context) */
         case 'object': case 'mapObject': {
           const O=window.IntMapObjects; if(!O||!O.list) return R(false, warn('⚠'));

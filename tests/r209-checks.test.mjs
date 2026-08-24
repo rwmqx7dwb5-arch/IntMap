@@ -111,6 +111,11 @@ test('R209 ④: every entry point to a lazy feature awaits the loader first', ()
     ['js/atlas-console.js', 'los'], ['js/atlas-console.js', 'streetView'], ['js/atlas-console.js', 'flightSim'],
     ['js/atlas-console.js', 'terrainWater'], ['js/atlas-console.js', 'seismic'],
     ['js/atlas-console.js', 'nightSky'], ['js/atlas-console.js', 'tsunami'], ['js/atlas-console.js', 'playground'],
+    /* (#R395) Atlas can now open a volcano's record by name, so it is a door onto volcanoIntel too.
+       ⚠ THE DOOR IS IN js/atlas-controls.js, NOT THE DISPATCH: js/atlas-console.js's line ceiling
+       only ever comes down (#R199/#R318) and it was full, so the answer moved next to the other
+       control-surface helpers and the switch kept one `case` label. */
+    ['js/atlas-controls.js', 'volcanoIntel'],
   ];
   for (const [file, name] of DOORS) {
     assert.ok(code(R(file)).includes(`IntMapLazy.need('${name}')`),
