@@ -468,8 +468,11 @@ test('R292 ⑱: the default board is five cards, and its defaults cannot be read
 /* ── ⑲ THE TICKER IS SHARED ─────────────────────────────────────────────────────────────────── */
 test('R292 ⑲: there is one ticker for the board, and it stops when nothing needs it', () => {
   const core = read('js/widget-core.js');
-  assert.ok(/tickT = setInterval\(tickRun, 1000\)/.test(core), 'one 1 Hz timer for the whole board');
-  assert.ok(/if \(!tickSubs\.length && tickT\) \{ clearInterval\(tickT\); tickT = null; \}/.test(core),
+  /* ⚠ (#R408) the board's one ticker is now an entry on js/runtime.js's one wheel — the register
+     that had existed since #R234 with zero callers. The claim is unchanged (ONE 1 Hz timer for the
+     whole board, and it stops when nothing subscribes); only the spelling that carries it moved. */
+  assert.ok(/tickT = everyTick\('widget-core:tick', 1000, tickRun\)/.test(core), 'one 1 Hz timer for the whole board');
+  assert.ok(/if \(!tickSubs\.length && tickT\) \{ stopTick\(tickT\); tickT = null; \}/.test(core),
     'the ticker stops when its last subscriber leaves');
   assert.ok(/s\.every === 'second' \|\| minuteEdge/.test(core),
     'a card that shows no seconds is called once a minute, not sixty times');

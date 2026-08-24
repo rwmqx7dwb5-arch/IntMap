@@ -7,6 +7,7 @@
  *  every catalogue) or a CLAIM the code makes about itself in prose.
  * ==========================================================================*/
 import test from 'node:test';
+import { asClassicScript } from './app-source.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -23,8 +24,8 @@ function nightSky() {
      contract is: js/night-sky.js asks window.IntMapLang for its label helper instead of hand-rolling
      a five-argument one. A sandbox that does not provide it is not the environment the file runs in,
      and the module throws on the first line that reaches for it. */
-  new Function('window', read('js/lang-registry.js'))(win);
-  new Function('window', 'document', read('js/night-sky.js'))(win, { createElement: () => ({ style: {}, appendChild() { } }) });
+  new Function('window', asClassicScript(read('js/lang-registry.js')))(win);
+  new Function('window', 'document', asClassicScript(read('js/night-sky.js')))(win, { createElement: () => ({ style: {}, appendChild() { } }) });
   return win.IntMapNightSky;
 }
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];

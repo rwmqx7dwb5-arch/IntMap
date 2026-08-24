@@ -17,6 +17,8 @@
  *  Every factory is called at the exact spot its block used to occupy, so execution order is
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+import { everyTick, stopTick, tickKey } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+
 window.IntMapModules=window.IntMapModules||{};
 /* ══ ⚠⚠⚠ (#R273) THE CLOSE MARK, ONE CHARACTER, EVERYWHERE ════════════════════════════════════════
    「複数のポップアップで、×の形がおかしくなっている。改悪をするな。元に戻せ。」
@@ -870,7 +872,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       const name=(()=>{ try{ const t=TOOLS.find(x=>x.id===id); return t?t.label():''; }catch(_){ return ''; } })();
       return new Promise(resolve=>{
         let done=false, watch=0;
-        const tidy=()=>{ if(watch){ clearInterval(watch); watch=0; } };
+        const tidy=()=>{ if(watch){ stopTick(watch); watch=0; } };
         /* (#R299) a cancelled pick opens NOTHING — not the tool at the centre, not the tool empty */
         const end=(ll)=>{ if(done) return; done=true; tidy();
           if(!ll){ resolve(false); return; }
@@ -898,7 +900,9 @@ window.IntMapModules.layerSidebar=function(HOST){
         try{ (HOST.imToast||HOST.satToast)(ask); }catch(_){}   /* (#R302) armed → the red toast that says so */
         /* the bar can also be torn down by `abort()` — a panel closing, the engine swapping — and that
            path notifies nobody, so a gesture that stopped existing is noticed by watching it. */
-        watch=setInterval(()=>{ try{ if(!P.active()) end(null); }catch(_){ end(null); } },400);
+        /* ⚠ the key carries the serial: two rows asked one after the other are two live watches, and a
+           shared key would REPLACE the first — leaving its promise waiting for ever. */
+        watch=everyTick(tickKey('map-ui:ask-point'),400,()=>{ try{ if(!P.active()) end(null); }catch(_){ end(null); } });
       });
     }
     const _lazy=(name,fn)=>(a)=>window.IntMapLazy.need(name).then(()=>{ try{ return !!fn(a); }catch(_){ return false; } });
@@ -1373,10 +1377,10 @@ window.IntMapModules.ticker=function(HOST){
       const or=document.querySelector('.operation-room');
       if(or&&or.parentNode){ or.parentNode.insertBefore(bar,or.nextSibling); } else document.body.appendChild(bar);
       track=bar.querySelector('.tk-track'); }
-    function open(){ build(); document.body.classList.add('ticker-on'); bar.style.display='flex'; refresh(); if(!timer) timer=setInterval(refresh,300000);
+    function open(){ build(); document.body.classList.add('ticker-on'); bar.style.display='flex'; refresh(); if(!timer) timer=everyTick('map-ui:ticker',300000,refresh);
       try{ GE().render.resize(); }catch(_){} setTimeout(()=>{ try{ GE().render.resize(); }catch(_){} },350);
       try{ window.IntMapWorkspace&&IntMapWorkspace.tickerReflow&&IntMapWorkspace.tickerReflow(); IntMapWorkspace.syncTicker&&IntMapWorkspace.syncTicker(); }catch(_){} }   /* (#R102) ws windows fill the vacated strip */
-    function close(){ if(bar) bar.style.display='none'; document.body.classList.remove('ticker-on'); if(timer){ clearInterval(timer); timer=0; }
+    function close(){ if(bar) bar.style.display='none'; document.body.classList.remove('ticker-on'); if(timer){ stopTick(timer); timer=0; }
       try{ GE().render.resize(); }catch(_){} setTimeout(()=>{ try{ GE().render.resize(); }catch(_){} },350);
       try{ window.IntMapWorkspace&&IntMapWorkspace.tickerReflow&&IntMapWorkspace.tickerReflow(); IntMapWorkspace.syncTicker&&IntMapWorkspace.syncTicker(); }catch(_){} }
     function toggle(){ if(document.body.classList.contains('ticker-on')){ window.imTicker='off'; close(); } else { window.imTicker='on'; open(); } try{ saveSettings&&saveSettings(); }catch(_){} }
@@ -1691,7 +1695,7 @@ window.IntMapModules.labelPopup=function(HOST){
             try{ if(window.countryGeo&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]); for(const f of window.countryGeo.features){ try{ if(turf.booleanPointInPolygon(pt,f)) return f.geometry; }catch(_){} } } }catch(_){}
             return null; };
           /* the outline may still be loading (async Nominatim for a non-country) — resolve now or poll briefly */
-          const _withGeo=(cb)=>{ let g=_placeGeo(); if(g){ cb(g); return; } let n=0; const iv=setInterval(()=>{ n++; const g2=_placeGeo(); if(g2){ clearInterval(iv); cb(g2); } else if(n>15){ clearInterval(iv); cb(null); } },200); };
+          const _withGeo=(cb)=>{ let g=_placeGeo(); if(g){ cb(g); return; } let n=0; const iv=everyTick(tickKey('map-ui:with-geo'),200,()=>{ n++; const g2=_placeGeo(); if(g2){ stopTick(iv); cb(g2); } else if(n>15){ stopTick(iv); cb(null); } }); };   /* ⚠ serial: both buttons on this popup poll, and each popup builds its own */
           const iso=document.querySelector('.plc-iso');
           if(iso) iso.onclick=()=>{ _withGeo(g=>{ try{ popup&&popup.remove(); }catch(_){}
             /* (#R106/#R122) isolate the EXACT clicked shape — era polygon, outlined sub-national region, city, or the

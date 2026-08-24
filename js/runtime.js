@@ -320,6 +320,85 @@ export function makeRuntime(HOST) {
       }),
     };
     try { window.IntMapRuntime = API; } catch (_) { }
+    /* (#R408) …and take over the timers that armed themselves before this line ran. Without this
+       they stay real `setInterval`s for the life of the tab — see the note under everyTick.
+       ⚠ inline rather than a helper: tests/r175 ③ requires every js/ export to be imported by name
+       somewhere, and a function only this file calls would be dead by that rule. */
+    try {
+      for (const [k, r] of Array.from(everyTick.pending)) {
+        try { clearInterval(r.h); } catch (_) { }
+        API.every(k, r.ms, r.fn, r.opts);
+      }
+      everyTick.pending.clear();
+    } catch (_) { }
     return API;
   })();
+}
+
+/* ══ THE TWO NAMES THE REST OF js/ CALLS ══════════════════════════════════════════════════════
+ *  The wheel above has existed since #R234 and its header promised it would replace "thirty-nine"
+ *  `setInterval`s. It had ZERO callers, and there were FORTY-THREE raw `setInterval`s in js/ — so
+ *  the register built to make hidden-tab wake-ups exact was, in practice, one more thing that was
+ *  true only on paper. (#R394 is the same shape: a column naming which mechanism decided, written
+ *  unconditionally by a mechanism that never ran.) A gate now measures it: tests/r408-checks ②.
+ *
+ *  Two exported names rather than "call window.IntMapRuntime.every yourself", for two reasons:
+ *   1. `window.IntMapRuntime` does not exist until js/app-body.js builds it, and TWO of the sites
+ *      run before that: js/perf-hud.js (`?perf=1` only) at module-evaluation time, and
+ *      js/theme-sky.js, whose factory body runs at js/app-body.js:500 — some 250 lines ABOVE the
+ *      `makeRuntime` call at :756. A caller that silently does nothing because the register was not
+ *      there yet is #R170's defect, so this arms a real interval instead of no-opping.
+ *      ⚠⚠⚠ …AND THEN IT HANDS IT OVER, WHICH IS THE HALF THAT ALMOST GOT WRITTEN WRONG. A plain
+ *      fallback leaves those two timers OFF the wheel for the life of the tab, so the gate that
+ *      counts raw `setInterval`s would read green while two of them ticked in a hidden tab exactly
+ *      as before — «the column says which mechanism decided, and that mechanism never ran» (#R394),
+ *      one round after writing that sentence down. So `makeRuntime` ADOPTS whatever armed itself
+ *      early: it clears the real interval and re-registers the same key, period and function on the
+ *      wheel. Being early costs a caller nothing but the milliseconds before the register exists.
+ *   2. `stopTick` accepts BOTH the stop function this returns and a raw numeric handle. The
+ *      dangerous state is a half-converted file — `clearInterval(fn)` is a silent no-op and leaks
+ *      the timer for the life of the tab — and accepting both makes that state impossible to write.
+ *
+ *  ⚠ KEYS ARE GLOBAL. One Map holds every timer, so a key must name its owner:
+ *  'data-layers:orphan-sweep', not 'sweep'. A second `everyTick` with the same key REPLACES the
+ *  first — which is what a restart wants, and is NOT what two concurrent instances want, so
+ *  anything that can run more than once at a time puts its instance id in the key.
+ *  ⚠ `opts.whenHidden` keeps a timer running in a hidden tab. The default is off; it is on only
+ *  where a missed tick loses something the reader would notice on return.
+ * ==========================================================================*/
+export function everyTick(key, ms, fn, opts) {
+  let R = null;
+  try { R = window.IntMapRuntime; } catch (_) { R = null; }
+  if (R && typeof R.every === 'function') return R.every(key, ms, fn, opts);
+  /* Too early for the register. Arm a real interval so the caller is not a silent no-op, and leave
+     it where `makeRuntime` will find it. ⚠ the same key twice means the first one is superseded,
+     exactly as the wheel treats it — so clear it rather than leaking a timer nobody can reach. */
+  const p = Math.max(16, +ms || 1000);
+  const prev = everyTick.pending.get(key);
+  if (prev) { try { clearInterval(prev.h); } catch (_) { } }
+  everyTick.pending.set(key, { ms: p, fn, opts: opts || undefined, h: setInterval(fn, p) });
+  return () => {
+    const rec = everyTick.pending.get(key);
+    if (rec) { try { clearInterval(rec.h); } catch (_) { } everyTick.pending.delete(key); }
+    /* …and if it was adopted between arming and stopping, the wheel is the one holding it now. */
+    let R2 = null; try { R2 = window.IntMapRuntime; } catch (_) { R2 = null; }
+    if (R2 && typeof R2.clearEvery === 'function') R2.clearEvery(key);
+  };
+}
+/* ⚠ a property rather than a top-level `const`: tests/r175 ③ forbids an unexported top-level
+   declaration in js/, because such a name would have been a global before the bundle. */
+everyTick.pending = new Map();
+
+/* A serial, for the timers that can be live MORE THAN ONCE AT A TIME — a poll per popup, a retry per
+   generation. Keys are global to the wheel and a second `everyTick` under the same key REPLACES the
+   first, so such a timer has to name its call and not only its purpose.
+   ⚠ It lives here, and on the function rather than beside it, because a module-scope `let` in js/ is
+   exactly what tests/r175 ③ forbids: before the bundle that name was a global. */
+export function tickKey(prefix) { tickKey.n = (tickKey.n || 0) + 1; return prefix + '#' + tickKey.n; }
+tickKey.n = 0;
+
+export function stopTick(stop) {
+  if (!stop) return;
+  if (typeof stop === 'function') { try { stop(); } catch (_) { } return; }
+  try { clearInterval(stop); } catch (_) { }
 }

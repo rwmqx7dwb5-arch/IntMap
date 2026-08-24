@@ -47,6 +47,8 @@
  *  Earth is surrounded by space whatever colour the app's chrome is; the vector basemap keeps its
  *  white surround, because that map is a diagram and not a photograph.
  * ==========================================================================*/
+/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
+import { everyTick, stopTick } from './runtime.js';
 window.IntMapSky=(function(){
   'use strict';
   const GE=()=>window.IntMapGeoEngine;
@@ -459,7 +461,9 @@ window.IntMapSky=(function(){
     try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(schedule); }catch(_){}
     /* The sky turns 15° an hour; a repaint every 30 s keeps it within a quarter of a degree of the
        truth without asking for a frame the camera did not ask for. */
-    if(!tick) tick=setInterval(()=>{ if(!document.hidden) schedule(); },30000);
+    /* (#R408) …on the one wheel (js/runtime.js), and the hidden tab is ITS answer now — it skips
+       a hidden task and runs it once on return, so a `!document.hidden` test here would be two. */
+    if(!tick) tick=everyTick('space-sky:sky-turn',30000,()=>{ schedule(); });
     /* A theme switch does not raise a map event, so watch the attribute that carries it. */
     try{ new MutationObserver(schedule).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']}); }catch(_){}
     schedule();

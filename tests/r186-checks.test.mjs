@@ -4,6 +4,7 @@
  * probe of a live API, a read of the bundled data — so the test states the measurement rather than
  * the code. The browser half is tests/r186.spec.js. */
 import test from 'node:test';
+import { asClassicScript } from './app-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { readdirSync } from 'node:fs';
@@ -95,7 +96,7 @@ const sky = (() => {
   const ctx = { window: {}, document: { baseURI: 'http://x/' }, requestAnimationFrame: () => 0, setInterval: () => 0 };
   ctx.window.window = ctx.window;
   vm.createContext(ctx);
-  vm.runInContext(read('js/space-sky.js'), ctx);
+  vm.runInContext(asClassicScript(read('js/space-sky.js')), ctx);
   return ctx.window.IntMapSky;
 })();
 

@@ -11,6 +11,8 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.workspace=function(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
@@ -717,7 +719,7 @@ window.IntMapModules.workspace=function(HOST){
       if(!(st.rects&&Object.keys(st.rects).length)) retile(); else buildJunctions();
       try{ ro=new ResizeObserver(()=>{ fitMap(); schedSave(); }); if(wraps.map) ro.observe(wraps.map); }catch(_){}
       document.addEventListener('pointerup',schedSave,true);
-      scanT=setInterval(scan,2500);   /* late-appearing elements (ticker) auto-join the workspace */
+      scanT=everyTick('workspace:scan',2500,scan);   /* late-appearing elements (ticker) auto-join the workspace */
       /* (#R102) ESC toggles the MAP window between fullscreen and its tiled size ("escキーを押すと、地図ウィンドウを
          全画面化/解除"). Bails when an input is focused, a modal/flight-sim overlay is open, or the flight sim is flying
          (those own ESC), so it never hijacks another ESC action. */
@@ -739,7 +741,7 @@ window.IntMapModules.workspace=function(HOST){
       return true; }
     function disable(){ if(!on) return; on=false;
       try{ ro&&ro.disconnect(); }catch(_){} ro=null;
-      clearInterval(scanT); scanT=null; hideG(); clearJunctions();
+      stopTick(scanT); scanT=null; hideG(); clearJunctions();
       try{ if(_escH) document.removeEventListener('keydown',_escH,true); }catch(_){} _escH=null;   /* (#R102) drop the ESC-fullscreen handler */
       document.removeEventListener('pointerup',schedSave,true); clearTimeout(saveT);
       for(const id in wraps){ const w=wraps[id]; if(!w) continue;

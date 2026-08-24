@@ -13,6 +13,7 @@
  *  live host through `HOST`), rebound below under the ORIGINAL names so the body stays byte-identical.
  *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
+import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 export function makeAtlasControls(HOST, CTX) {
   const L=CTX.L, R=CTX.R, _ctlTogHtml=CTX._ctlTogHtml, esc=CTX.esc, note=CTX.note, warn=CTX.warn;
     /* ---- generic UI helpers for the full-control action set ---- */
@@ -154,7 +155,7 @@ export function makeAtlasControls(HOST, CTX) {
           const lab=cands.map(x2=>String(x2).replace(/\s+/g,' ').trim()).find(x2=>x2.length>=2)||'';
           if(lab) named++; else un.push(el.tagName.toLowerCase()+(el.id?('#'+el.id):'')+'.'+String(el.className||'').split(' ')[0]); });
         return {total,named,unnamed:un.length,coverage:total?Math.round(named/total*100):100,unnamedList:un.slice(0,40)}; } };
-    setTimeout(()=>{ _uiNameSweep(); setInterval(()=>{ if(!document.hidden) _uiNameSweep(); },20000); },3500);   /* legends & future panels appear lazily — keep integrating them */
+    setTimeout(()=>{ _uiNameSweep(); everyTick('atlas-controls:ui-name-sweep',20000,_uiNameSweep); },3500);   /* legends & future panels appear lazily — keep integrating them */   /* ⚠ (#R408) the `!document.hidden` test moved INTO the wheel, which is the same predicate: it guarded this timer and nothing else (the 3.5 s sweep above is unconditional), and two copies of one policy is how they drift apart */
     /* ---- (#R45) MODULE registry so Atlas is the OS over ALL of IntMap ("IntMapのすべてを統合するOS"): EVERY
        IntMap-prefixed window subsystem (current OR future) with a standard entrypoint is auto-discovered and
        callable by name via a "module" action — no per-feature wiring needed, so new modules are reachable the

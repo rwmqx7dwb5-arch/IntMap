@@ -705,11 +705,25 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       /* nothing matched → labelled gradient stays (should be near-zero rows) */ }
     /* (#R73) bounded image-preload queue — applies each tile as soon as ITS image arrived */
     /* ══ (#R193) …AND IT MAY NOT START ON THE BOOT PATH ═══════════════════════════════════════════
-       「起動時の読み込みをもっと早く。」 Measured on a cold load: the self-hosted example tiles
-       (preview_contours / _wind / _basemap / _plates / _ecoregions / _nightlights, ~950 KB together)
-       plus a couple of dozen live GIBS and Carto tiles were fetched between 8 and 12 seconds after
-       boot, because the layer list is PREBUILT off-screen and `into()` queues every row as it is
-       built. Nobody has looked at the panel at that point.
+       「起動時の読み込みをもっと早く。」 Measured on a cold load: the self-hosted example tiles plus a
+       couple of dozen live GIBS and Carto tiles were fetched between 8 and 12 seconds after boot,
+       because the layer list is PREBUILT off-screen and `into()` queues every row as it is built.
+       Nobody has looked at the panel at that point.
+
+       ⚠ (#R408) THE SIZE THIS NOTE QUOTED WAS TWENTY-TWO PICTURES OLD. It read「~950 KB together」and
+       named six files, which is what the IMG table held when #R193 weighed it; #R268 and #R309 added
+       twenty-two more rows and nobody re-weighed it, so the note understated its own subject roughly
+       fourfold. Re-counted this round from the IMG table above and the bytes on disk — these are the
+       three numbers that say what「a panel nobody opened」actually costs, and they are what the gate
+       below (and, since this round, the SLICING of its drain) exists to keep off the boot path:
+         · self-hosted pictures — 28 distinct preview_*.png are named by IMG, 4,051,978 B of PNG in
+           total. That is the on-the-wire size of exactly the files IMG points at (PNG, already
+           compressed; not gzip, not the whole repository), i.e. what _imgPump downloads.
+         · upstream tiles — the other 16 IMG rows are live GIBS / Carto / OpenRailwayMap / OpenSeaMap
+           / Esri URLs, one request each, counted as URLs because their size is not ours to know.
+         · canvas painters — 33 jobs are released the instant this gate opens (the STAT / MEMBERS /
+           non-lazy REAL / PAINT routes in into()), and a further 38 stay behind the
+           IntersectionObserver (the World-Bank choropleths and REAL_LAZY) and are not boot cost.
 
        ⚠ The fix is NOT an IntersectionObserver. #R72 tried that and #R73 had to undo it: tiles
        registered while the panel was off-screen never got a second look and sat on their gradient
@@ -734,13 +748,84 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
     const _paintQ=[];
     function _paintJob(fn,el,id){ const job=()=>{ if(el&&id&&cache[id]){ try{ apply(el,cache[id]); }catch(_){} return; } try{ fn(); }catch(_){} };
       if(_imgOpen){ job(); return; } _paintQ.push(job); }
+    /* ══ ⚠ (#R408) DELAYING THE WORK IS NOT DIVIDING IT ═══════════════════════════════════════════
+       #R311 put the painters behind the gate and then let them through with one synchronous
+       `_paintQ.splice(0).forEach(...)`. The 904.7 ms it measured therefore did not get smaller — it
+       moved, whole, into whichever task opened the gate, and on a boot that never opens the panel
+       that task is the browser's first idle callback. One idle callback is permission to use the
+       idle period, not permission to spend the rest of the frame.
+       So the SAME queue is drained in SLICES now: at most _SLICE_MS of painting per callback, the
+       remainder handed back and re-scheduled.
+       ⚠ A SLICE MEANS «LATER», NEVER «NOT AT ALL». Three things hold that line:
+         (1) jobs are SHIFTED off the front of the one queue and never spliced away, so a job this
+             slice did not reach is still in _paintQ and is the next one taken;
+         (2) every slice runs AT LEAST ONE job before it consults the budget. Several painters are
+             individually longer than the whole budget (statChoro 85.1 ms, the dl-ec-* painters
+             52-75 ms each), and a budget test allowed to refuse every job would re-schedule for
+             ever and drain nothing. Running one unconditionally makes _paintQ strictly shorter on
+             every slice, so it reaches zero in at most N slices whatever the deadline says;
+         (3) the input pause cancels the PENDING CALLBACK and never touches the queue — and the same
+             handler that cancels it always arms the timer that schedules the next slice.
+       ⚠ The image queue is not sliced: _imgPump is already asynchronous and already bounded at four
+       in flight, so there is no main-thread burst in it to divide. */
+    const _SLICE_MS=6;            /* one slice of painting between two hand-backs to the browser */
+    const _SLICE_TIMEOUT=400;     /* ...and the ceiling, for a page that never reports an idle period */
+    const _INPUT_QUIET_MS=400;    /* resume this long after the last pointer / wheel / key event */
+    const _INPUT_EV=['pointerdown','touchstart','wheel','keydown'];
+    const _INPUT_OPT={passive:true,capture:true};   /* ONE set, on window, removed again when _paintQ empties */
+    const _now=()=>{ try{ return performance.now(); }catch(_){ return Date.now(); } };
+    let _drainPend=false, _drainH=0, _drainIdle=false, _drainHold=false, _quietH=0, _inputWired=false;
+    function _cancelDrain(){ if(!_drainPend) return; _drainPend=false;
+      try{ if(_drainIdle){ if(typeof cancelIdleCallback==='function') cancelIdleCallback(_drainH); } else clearTimeout(_drainH); }catch(_){} _drainH=0; }
+    function _scheduleDrain(){ if(_drainPend||_drainHold||!_paintQ.length) return; _drainPend=true;
+      if(typeof requestIdleCallback==='function'){ _drainIdle=true; _drainH=requestIdleCallback(_paintSlice,{timeout:_SLICE_TIMEOUT}); }
+      /* no requestIdleCallback (older WebKit): the SAME budget, measured on the clock instead of on
+         the deadline — _paintSlice is handed null and falls through to its performance.now() half. */
+      else { _drainIdle=false; _drainH=setTimeout(()=>_paintSlice(null),16); } }
+    function _paintSlice(dl){ _drainPend=false; _drainH=0;
+      if(!_drainHold){ const t0=_now(); let ran=0;
+        while(_paintQ.length){
+          if(ran){ const byClock=(_now()-t0)<_SLICE_MS;
+            const byIdle=!dl||typeof dl.timeRemaining!=='function'||dl.timeRemaining()>0;
+            if(!byClock||!byIdle) break; }
+          const job=_paintQ.shift(); ran++; try{ job(); }catch(_){} } }
+      if(_paintQ.length) _scheduleDrain(); else _wireInput(false); }
+    /* the drain yields to the reader: any of the four events stops the NEXT slice and re-arms it
+       _INPUT_QUIET_MS after the last one, so a drag, a scroll or a keystroke never shares a frame
+       with a painter. Passive and capturing, so the listeners cannot delay or alter the gesture. */
+    function _onInput(){ _drainHold=true; _cancelDrain();
+      if(_quietH) clearTimeout(_quietH);
+      _quietH=setTimeout(()=>{ _quietH=0; _drainHold=false; _scheduleDrain(); },_INPUT_QUIET_MS); }
+    function _wireInput(on){ if(on===_inputWired) return; _inputWired=on;
+      try{ _INPUT_EV.forEach(t=>{ if(on) window.addEventListener(t,_onInput,_INPUT_OPT); else window.removeEventListener(t,_onInput,_INPUT_OPT); }); }catch(_){}
+      if(!on){ if(_quietH){ clearTimeout(_quietH); _quietH=0; } _drainHold=false; } }
     function _openQueue(){ if(_imgOpen) return; _imgOpen=true; _imgPump();
       /* (#R311) the painters are held back by the same flag, so they are released by the same call -
          all three ways in (kick(), the map's idle, the 6 s ceiling) reach the gate through here.
          _imgOpen is already true above, so a job queued from inside a painter runs straight away
-         and this drain runs exactly once. */
-      const q=_paintQ.splice(0); q.forEach(fn=>{ try{ fn(); }catch(_){} }); }
+         and this drain runs exactly once.  ⚠ (#R408) «exactly once» is the LATCH on the first line
+         now, not the drain: _paintQ is emptied by _paintSlice over as many idle slices as it takes,
+         and that early return is what stops a later kick() starting a second drain over it. */
+      if(_paintQ.length){ _wireInput(true); _scheduleDrain(); } }
+    /* ⚠ (#R408) THE MOBILE TEST IS THE APP'S OWN 768 px MEDIA QUERY, WRITTEN OUT RATHER THAN CALLED.
+       js/app-body.js owns it (`MOBILE_MQ` / `isMobile()`) and IM_HOST publishes it — but IM_HOST is a
+       module-local `const` in that file and `window.IM_HOST` does not exist (#R253 measured that; the
+       header of js/map-typography.js records it), and this factory is handed (countryStats,
+       loadCountryData) and no host at all, so `IM_HOST.isMobile()` is not reachable from here. What
+       IS reachable is the query itself, and it is the SAME query string as MOBILE_MQ — which is what
+       keeps the two from disagreeing by a scrollbar width — and it is the idiom every other
+       host-less js/ module in this repository already uses for the same question. */
+    const _bootMobile=()=>{ try{ return !!(window.matchMedia&&window.matchMedia('(max-width:768px)').matches); }catch(_){ return false; } };
     (function(){ const go=()=>{ if(typeof requestIdleCallback==='function') requestIdleCallback(_openQueue,{timeout:9000}); else setTimeout(_openQueue,5000); };
+      /* ⚠ (#R408) …AND ON A PHONE THE BOOT PATH DOES NOT OPEN THE GATE AT ALL. The two automatic
+         openings below are for a panel nobody has asked for; on a phone they buy 4,051,978 B of PNG,
+         16 upstream tile requests and 33 canvas painters on the device least able to afford any of
+         them, and the layer list is behind a sheet the reader has to pull up in any case.
+         ⚠ NOTHING IS TAKEN AWAY (CONSTITUTION §0.3): kick() still calls _openQueue() when that sheet
+         is mounted and when the sidebar opens (js/map-ui.js), so a phone that opens the panel gets
+         every tile it ever got, from the same queue, in the same order. Only the opening that
+         nobody asked for is gone, and the desktop default is untouched. */
+      if(_bootMobile()) return;
       try{ const E=window.IntMapGeoEngine; if(E&&E.events&&E.events.once){ E.events.once('idle',()=>setTimeout(go,400)); } }catch(_){}
       setTimeout(go,6000); })();
     function _queueImg(el,id,url){ _imgQ.push({el,id,url}); _imgPump(); }

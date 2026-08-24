@@ -15,6 +15,8 @@
  *  Everything else arrives through CTX under its ORIGINAL name, which is what lets the body stay
  *  word-for-word what it was. A real ES module: no window.IntMapModules entry, no src/main.js order.
  * ==========================================================================*/
+import { everyTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+
 export function makeLabelOcclusion(HOST, CTX) {
   const GE=CTX.GE, isMobile=CTX.isMobile;
   /* ===== (#R19) Place names + borders ALWAYS above every data layer ("地名や国境はどのレイヤーよりも
@@ -78,14 +80,17 @@ export function makeLabelOcclusion(HOST, CTX) {
     if(!(typeof isMobile==='function'&&isMobile())) return;
     const frac=()=>{ try{ const m=performance.memory; return m?m.usedJSHeapSize/m.jsHeapSizeLimit:0; }catch(_){ return 0; } };
     let hot=0;
-    setInterval(()=>{ const f=frac(); if(!f) return;
+    /* ⚠ whenHidden: a BACKGROUND tab is the one Android discards first, and what a discard costs the
+       reader is the whole session — so this is the one timer here that has to keep looking while
+       nobody is. Everything else in this file only redraws, and a redraw nobody can see can wait. */
+    everyTick('label-occlusion:mem-pressure',8000,()=>{ const f=frac(); if(!f) return;
       if(f>0.85){ if(++hot<2) return; hot=0;
         try{ const cb=document.getElementById('dl-climate'); if(!cb||!cb.checked){
           window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
           window._koppenCodeIdx=null; window._koppenSrcData=null; window._koppenFull=null; } }catch(_){}
         try{ window.dispatchEvent(new Event('intmap-mem-pressure')); }catch(_){}
       } else hot=0;
-    },8000);
+    },{whenHidden:true});
   })();
 
   /* ══ (#R196) MOVED TO js/tile-warm.js ═════════════════════════════════════════════
