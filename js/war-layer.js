@@ -176,6 +176,17 @@ window.IntMapModules.warLayer = function (HOST) {
       '.war-ctl input[type=date],.war-ctl select{padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));'
         + 'background:var(--input-bg);color:var(--text-main);font-size:10.5px;font-variant-numeric:tabular-nums;}',
       '.war-ctl input[type=date]{flex:1 1 auto;min-width:112px;}',
+      /* ⚠⚠⚠ (#R409) THE PROSE SCROLLS AND THE CONTROLS DO NOT, AND THIS WAS MEASURED ON A
+         SCREENSHOT. A day of July 1943 has four fronts with their notes and a list of operations;
+         with the transport and the slider added on top, the box grew past the top of a 900 px
+         window — and because a .data-legend is anchored by its BOTTOM, what fell off the screen
+         was the header and every control this round exists to add. The reader could see the war
+         and not the slider. Desktop has no height cap on .data-legend at all (mobile has had one
+         since #R215), so the bound belongs to the part that varies: the text. */
+      '.war-info{max-height:min(42vh,380px);overflow-y:auto;overscroll-behavior:contain;}',
+      /* …except on the narrow layout, where the whole box already scrolls — two nested scroll
+         areas on a phone is a trap, not a feature */
+      '@media (max-width:768px){.war-info{max-height:none;overflow:visible;}}',
       '.war-pop{font-size:12px;} .war-pop-h{display:block;font-size:13px;margin-bottom:2px;}',
       '.war-pop-y{color:var(--text-muted);font-size:11px;font-variant-numeric:tabular-nums;}',
       '.war-pop-f{display:flex;align-items:center;gap:6px;margin-top:5px;}',
