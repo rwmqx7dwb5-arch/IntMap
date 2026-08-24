@@ -351,6 +351,15 @@ window.IntMapModules.workspace=function(HOST){
         /* (#R79) the news READER pane is stacked in the same window — kill its -10px scrollbar-hack margin too
            (otherwise it overflows the window's right edge when a user opens an article to read) */
         +'body.ws-mode .ws-news #news-reader-pane{flex:1 1 auto !important;width:100% !important;min-height:0 !important;margin:0 !important;padding:10px 12px !important;box-sizing:border-box !important;}'
+        /* ⚠⚠⚠ (#R435) …AND WHILE SOMETHING IS BEING READ, THE LIST IS NOT ALSO IN THE WINDOW. The rule above
+           forces #live-news-feed visible with `!important` precisely so the sidebar's tab state cannot reach in
+           here — which also overrode the reading surface's own hide, so the News window showed the list AND the
+           reader stacked. MEASURED (1280×800, ws News window open, an Event detail opened): #live-news-feed
+           35 px at y=113 and #news-reader-pane 114 px at y=148 — the same 「半分だけになる」 the sidebar had.
+           `body.im-reading` is set by `enterReaderPane()` (js/article-reader.js) and cleared by
+           `closeReaderPane()` (js/app-body.js), so workspace mode obeys the one-surface rule through the SAME
+           switch the sidebar does rather than through a second copy of the decision. */
+        +'body.ws-mode.im-reading .ws-news #live-news-feed,body.ws-mode.im-reading .ws-news #sidebar-search-bar,body.ws-mode.im-reading .ws-news #news-filter-toggle,body.ws-mode.im-reading .ws-news #ai-geocode-row{display:none !important;}'
         +'body.ws-mode .ws-news #sidebar-search-bar{box-sizing:border-box !important;width:auto !important;margin:10px 12px 4px !important;}'
         +'body.ws-mode .ws-news #news-filter-toggle,body.ws-mode .ws-news #ai-geocode-row{box-sizing:border-box !important;margin-left:12px !important;margin-right:12px !important;}'
         /* (#R79b) Countries window: its OWN search bar (top) + the compare dock (bottom) stacked in the body */

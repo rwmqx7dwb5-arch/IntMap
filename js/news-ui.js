@@ -505,6 +505,19 @@ window.IntMapModules.newsUi=function(HOST){
           sb=document.getElementById('sidebar-search-bar'),   /* (#R79e) by ID — #countries-search-bar also has class .search-bar, so querySelector('.search-bar') could grab it after a ws cycle and renderUI would leak the "Filter countries" box into the normal sidebar */
           filterToggle=document.getElementById('news-filter-toggle');
     HOST.clearMarkers();
+    /* ══ (#R435) ONE SURFACE AT A TIME ══════════════════════════════════════════════════════════
+       `#news-reader-pane` (article reader / Event detail) is a SURFACE OF THE NEWS TAB, not a panel
+       beside the feeds — but this function never knew it existed, so every re-render showed a feed
+       next to an open reader and the sidebar's flex column split its height between the two. That is
+       the reported 「半分だけになる謎の状態」, and it happens 勝手に because most callers are background
+       ones: the Supabase realtime `geo_pins` subscription and the auth refresh (js/auth-ui.js), a
+       settings save, a language change (js/app-body.js).
+         · navigated away from News → the reading surface is closed, so it cannot leak onto another tab;
+         · still on News → the reader stays and the list is refreshed UNDERNEATH it, hidden. A
+           background event must be invisible to someone who is reading. */
+    const rpane=document.getElementById('news-reader-pane');
+    let readerUp=!!(rpane && rpane.style.display!=='none' && rpane.innerHTML);
+    if(readerUp && HOST.mode!=='news' && HOST.mode!=='saved'){ try{ HOST.closeReaderPane(true); }catch(_){} readerUp=false; }
     try{ HOST.pushCommunityFeatures(); }catch(_){}   /* show community pins only on the Community tab */
     /* Hide all panels first (pin-mode toggle now lives inside #ai-geocode-row, #28) */
     feed.style.display='none'; if(cfeed) cfeed.style.display='none'; dash.style.display='none'; comm.style.display='none'; if(afeed) afeed.style.display='none'; filterToggle.style.display='none';
@@ -555,10 +568,12 @@ window.IntMapModules.newsUi=function(HOST){
     if(HOST.mode==='community'){ comm.style.display='flex'; sb.style.display='none'; HOST.loadCommunity(); HOST.updateOcclusion(); return; }
     if(HOST.mode==='stats'){ if(cfeed) cfeed.style.display='flex'; sb.style.display='flex'; HOST.renderStats(HOST.searchVal()); return; }
     if(HOST.mode==='news'||HOST.mode==='saved'){
-      feed.style.display='flex'; sb.style.display='flex';
-      filterToggle.style.display='block';
+      /* ⚠ (#R435) `readerUp` means a reading surface is open ON this tab: refresh the list and the pins
+         underneath it (below) but do not put the list's own chrome back on screen around it. The
+         hide-all block above already left all four hidden, so this branch simply does not undo that. */
+      if(!readerUp){ feed.style.display='flex'; sb.style.display='flex'; filterToggle.style.display='block'; }
       /* (#R30) Translate titles only when the news set actually carries a non-UI language. */
-      { const gr=document.getElementById('ai-geocode-row'); if(gr) gr.style.display=HOST._newsHasForeignLang()?'block':'none'; }
+      { const gr=document.getElementById('ai-geocode-row'); if(gr) gr.style.display=(!readerUp&&HOST._newsHasForeignLang())?'block':'none'; }
       try{ HOST.aiSyncFeatureButtons(); }catch(_){}
       /* sync the All / ★ Saved scope chips (Saved lives inside the News tab).
          (#R416) the saved count rides on the chip: a scope you can switch to should say how much is
@@ -680,7 +695,7 @@ window.IntMapModules.newsUi=function(HOST){
       const locEl=pane.querySelector('#nrp-loc');
       if(locEl) locEl.onclick=()=>{ if(item.analysis&&item.analysis.loc) GE().camera.flyTo({center:item.analysis.loc,zoom:4,speed:1.0}); };
     }
-    pane.querySelector('#nrp-back-btn').onclick=HOST.closeArticleReader;
+    pane.querySelector('#nrp-back-btn').onclick=HOST.closeReaderPane;
     const mb=pane.querySelector('#nrp-mode-btn');
     if(mb) mb.onclick=()=>renderReaderMode(item,res, mode==='web'?'reader':'web');
     const tb=pane.querySelector('#nrp-translate-btn'); if(tb) tb.onclick=()=>aiTranslateReader(item,res,tb);

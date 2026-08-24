@@ -346,7 +346,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get aiSetBtnBusy(){ return aiSetBtnBusy; }, get aiSyncFeatureButtons(){ return aiSyncFeatureButtons; },
     get applyCountryVisibility(){ return applyCountryVisibility; }, get applyPinMode(){ return applyPinMode; },
     get bearingDeg(){ return bearingDeg; }, get clearMarkers(){ return clearMarkers; },
-    get closeArticleReader(){ return closeArticleReader; }, get coCompareSet(){ return coCompareSet; },
+    /* (#R435) one reading surface — one way in, one way out */
+    get closeReaderPane(){ return closeReaderPane; }, get enterReaderPane(){ return enterReaderPane; },
+    get coCompareSet(){ return coCompareSet; },
     get commCatLabel(){ return commCatLabel; }, get commCollapsed(){ return commCollapsed; },
     get compareSet(){ return compareSet; }, get compassDir(){ return compassDir; },
     get ensureBordersLayer(){ return ensureBordersLayer; }, get ensureLabelPill(){ return ensureLabelPill; },
@@ -1037,6 +1039,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function newsFeatureOf(){ return IM_NEWSFEED.newsFeatureOf.apply(this,arguments); }   /* (#R416) the ONE news-pin builder */
   const IM_READER=window.IntMapModules.articleReader(IM_HOST);
   function openArticleInSidebar(){ return IM_READER.openArticleInSidebar.apply(this,arguments); }
+  function enterReaderPane(){ return IM_READER.enterReaderPane.apply(this,arguments); }   /* (#R435) the Event detail enters the same surface */
   const IM_COMMBOARD=window.IntMapModules.communityBoard(IM_HOST);
   function cmAddPost(){ return IM_COMMBOARD.cmAddPost.apply(this,arguments); }
   function cmEditPost(){ return IM_COMMBOARD.cmEditPost.apply(this,arguments); }
@@ -2162,12 +2165,20 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* ===== AI FEATURE 2: in-reader translation to Japanese =====
      Translates the extracted reader text (res.blocks); toggles original/translated and
      caches the result on `res` so flipping back and forth is instant. */
-  function closeArticleReader(){
+  /* ⚠ (#R435) THE EXIT FROM THE READING SURFACE, FOR WHATEVER IS IN IT. `#news-reader-pane` holds the
+     article reader AND the Event detail, so there is one close and it puts back what
+     `enterReaderPane()` (js/article-reader.js) hid. The rows renderUI() decides for itself every time
+     (#sidebar-search-bar, #news-filter-toggle, #ai-geocode-row, the feeds) are left to it; `.control-panel`
+     is NOT one of those, so it is restored here.
+     `quiet` is for callers that are already re-rendering — renderUI() and setMode() — so a single
+     gesture does not render the tab twice. */
+  function closeReaderPane(quiet){
     readerOpen=false; readerCurrent=null;
     try{ window._imReader=null; }catch(_){ }   /* (#R80) clear the open-article bridge (vision §2) */
     const pane=document.getElementById('news-reader-pane'); if(pane){ pane.style.display='none'; pane.innerHTML=''; }
     const cp=document.querySelector('.control-panel'); if(cp) cp.style.display='';
-    renderUI();
+    try{ document.body.classList.remove('im-reading'); }catch(_){}   /* (#R435) the pair of enterReaderPane()'s switch — workspace mode reads it */
+    if(quiet!==true) renderUI();
   }
 
   /* ===== Stats — list with multi-select country comparison ===== */
@@ -2605,6 +2616,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     {label:'Earthquake simulator', btn:'btn-seismic-sim', group:'sim'});
   const applyDockMode=IM_HOST.applyDockMode=IM_WINMGR.wireDock({ setMode, renderUI, saveSettings, clearMode:()=>{ currentMode=null; }, mode:()=>currentMode });   IM_HOST.dockRefresh=()=>{ try{ return IM_WINMGR.dockRefresh(); }catch(_){ return 0; } };   IM_HOST.dockedCount=()=>{ try{ return IM_WINMGR.dockedCount(); }catch(_){ return 0; } };   /* (#R242) the empty line is a readout of this */
   function setMode(mode,btnId){
+    /* ⚠ (#R435) A TAB OR SCOPE GESTURE LEAVES THE READING SURFACE. Without this the reader pane stayed
+       up while renderUI() showed the tab it was asked for, and the sidebar — one flex column of
+       `flex:1 1 auto` children — split its height between the two. MEASURED (390×780): #live-news-feed
+       85 px at y=339 and #news-reader-pane 356 px at y=424, i.e. the reported 「半分だけになる謎の状態」.
+       `renderUI()` guards the OTHER half (a background re-render, which is what makes it happen 勝手に). */
+    try{ closeReaderPane(true); }catch(_){}
     if(currentMode===mode){ currentMode=null; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); renderUI(); return; }
     currentMode=mode; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); document.getElementById(btnId).classList.add('active');
     if(mode==='stats'){ if(!countryDataLoaded)loadCountryData(); }

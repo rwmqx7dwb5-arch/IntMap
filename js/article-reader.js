@@ -76,29 +76,55 @@ window.IntMapModules.articleReader=function(HOST){
     }catch(_){}
     return {blocks:[], hero:'', ok:false};
   }
+  /* ══ (#R435) ENTERING THE READING SURFACE — ONE SEQUENCE, BOTH READERS ═══════════════════════
+     `#news-reader-pane` is the app's ONE reading surface: this file draws the article in it and
+     js/news-events.js draws the Event detail in it (docs/NEWS-EVENTS.md §9「同じ News surface 内で」).
+     Until this round only the article reader ran the sequence below and the Event detail ran two
+     lines of it, so the detail opened UNDERNEATH the list's own chrome — tab bar, search box,
+     scope + category chips — which is the reported 「デザインが浮いている」: a reading view wedged
+     into the strip left over by a list that is no longer there.
+     ⚠ AND ON A PHONE IT OPENED WHEREVER THE SHEET HAPPENED TO BE. MEASURED (390×780, sheet at the
+       peek detent): the detail's back button landed at y=866 in a 780-px viewport. The reported
+       「左上に出る戻るボタンが見えない」 is the button being off the bottom of the screen — not a colour.
+     ⚠ EVERY ELEMENT HIDDEN HERE IS PUT BACK BY `closeReaderPane()` (js/app-body.js). The two are a
+       pair: an element added to one has to be added to the other, or the app keeps a hidden row. */
+  /* ⚠⚠ (#R430) THE `#news-pin-toggle` HIDE IS GONE WITH THAT ID — the pin-mode segment moved into
+     the shared `#news-filter-toggle` row in Round 5, so the lookup had been returning null ever since.
+     #R430 declined to re-point it at `#news-filter-toggle` for a reason it wrote down: that row also
+     carries All/★Saved, and hiding it would have been NEW behaviour invented for a chain that had had
+     no caller since #R11.
+     ⚠⚠⚠ (#R435) THAT REASON HAS EXPIRED, AND THE ROW IS NOW HIDDEN ON PURPOSE. This pane has a live
+       caller — the Event detail — and leaving the list's scope + category chips above a reading view is
+       exactly the reported 「デザインが浮いている」: a reader wedged into the strip left over by a list
+       that is no longer on screen (measured: 42 + 44 + 27 px of list chrome still standing). It is not
+       invented behaviour any more; it is what the one reading surface has to do to be one. */
+  function enterReaderPane(){
+    /* (#R160) reveal the sidebar to show the reader. The sidebar overlays a fixed full-width map, so this
+       can't move the map — just drop `collapsed` and let the search-pill layout recompute; no anchor, no resize. */
+    try{ const _sb=document.getElementById('sidebar'); if(_sb&&_sb.classList.contains('collapsed')){ _sb.classList.remove('collapsed'); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){}
+    try{ if(window.matchMedia('(max-width:768px)').matches && window.__setDetent) window.__setDetent('full'); }catch(_){}
+    const cp=document.querySelector('.control-panel'); if(cp) cp.style.display='none';
+    /* ⚠ `sidebar-search-bar` by ID, not `.search-bar` (see the renderUI note) — #countries-search-bar shares the class. */
+    ['sidebar-search-bar','news-filter-toggle','ai-geocode-row',
+     'live-news-feed','info-dashboard','community-feed'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; });
+    const pane=document.getElementById('news-reader-pane'); if(pane) pane.style.display='flex';
+    /* ⚠ (#R435) the ONE switch that says «something is being read». Workspace mode's own layout CSS
+       (js/workspace.js) forces the News window's list visible with `!important`, so an inline
+       display:none cannot reach it — it reads this class instead of keeping a second copy of the rule. */
+    try{ document.body.classList.add('im-reading'); }catch(_){}
+    return pane;
+  }
   function openArticleInSidebar(item){
     HOST.readerOpen=true; HOST.readerCurrent=item;
     /* (#R80) vision §2 — Atlas must know the ARTICLE the user is reading right now (not just that the News tab is
        open), so follow-ups like "この記事について詳しく"/"translate this"/"背景は？"/"where did this happen" resolve.
        globalData is closure-scoped, so bridge the open article onto window (same pattern as window._imLayerDates). */
     try{ const _a=(item&&item.analysis)||{}; window._imReader={ open:true, title:item&&item.title||'', publisher:item&&item.publisher||'', link:item&&item.link||'', pubDate:item&&item.pubDate||'', loc:(_a.loc&&isFinite(_a.loc[0]))?[_a.loc[0],_a.loc[1]]:null, place:_a.name||'' }; }catch(_){ }
-    /* (#R160) reveal the sidebar to show the article reader. The sidebar overlays a fixed full-width map, so this
-       can't move the map — just drop `collapsed` and let the search-pill layout recompute; no anchor, no resize. */
-    try{ const _sb=document.getElementById('sidebar'); if(_sb&&_sb.classList.contains('collapsed')){ _sb.classList.remove('collapsed'); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){}
-    try{ if(window.matchMedia('(max-width:768px)').matches && window.__setDetent) window.__setDetent('full'); }catch(_){}
-    const cp=document.querySelector('.control-panel'); if(cp) cp.style.display='none';
-    const sbBar=document.getElementById('sidebar-search-bar'); if(sbBar) sbBar.style.display='none';   /* (#R79e) by ID, not .search-bar (see renderUI note) */
-    /* (#R430) the line that hid #news-pin-toggle is gone with that id. The pin-mode segment was moved
-       out of its own labelled card into the shared #news-filter-toggle row back in Round 5, so this
-       lookup had been returning null ever since. ⚠ It is NOT re-pointed at #news-filter-toggle: that
-       row also carries All/★Saved, and hiding it would be a NEW behaviour invented for a chain that
-       has had no caller since #R11. Whoever re-wires this reader (#R169) decides what the row does. */
-    ['live-news-feed','info-dashboard','community-feed'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; });
-    const pane=document.getElementById('news-reader-pane'); pane.style.display='flex';
+    const pane=enterReaderPane(); if(!pane) return;
     const back=window.IntMapLang.t(HOST.lang,'Back to news','ニュースへ戻る','Zurück zu den News','Назад к новостям','Volver a noticias');
     pane.innerHTML=`<div class="nrp-bar"><button class="nrp-back" id="nrp-back-btn">‹ ${back}</button><span class="nrp-src">${HOST.escForReader(item.publisher)}</span></div>
       <div class="nrp-loading"><div class="nrp-spinner"></div>${window.IntMapLang.t(HOST.lang,'Loading article…','記事を読み込み中…','Artikel lädt…','Загрузка статьи…','Cargando artículo…')}</div>`;
-    pane.querySelector('#nrp-back-btn').onclick=HOST.closeArticleReader;
+    pane.querySelector('#nrp-back-btn').onclick=HOST.closeReaderPane;
     pane.scrollTop=0;
     fetchReadable(item).then(res=>{ if(HOST.readerOpen&&HOST.readerCurrent===item) renderReader(item,res);
       /* (#R118) ARTICLE-BODY bridge: Atlas can now READ the open article's extracted text ("この記事の根拠を
@@ -113,5 +139,5 @@ window.IntMapModules.articleReader=function(HOST){
     const hasText=res.blocks&&res.blocks.length>=2;
     HOST.renderReaderMode(item,res, hasText?'reader':'web');
   }
-  return { openArticleInSidebar };
+  return { enterReaderPane, openArticleInSidebar };
 };

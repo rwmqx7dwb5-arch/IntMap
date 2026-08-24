@@ -464,14 +464,20 @@ window.IntMapModules.newsEvents = function (HOST) {
 
   /* ── 詳細 ───────────────────────────────────────────────────────────────
      既存の `#news-reader-pane` に描く（記事の reader と同じ面）。
-     ⚠ 「独立画面」を作らない。戻る動作も reader と同じものを使う。 */
+     ⚠ 「独立画面」を作らない。戻る動作も reader と同じものを使う。
+     ⚠⚠⚠ (#R435) **「同じ面」は、同じ入り方・同じ出方まで含めて初めて本当になる。** ここは
+       #R386 から `pane.style.display=''` と `feed.style.display='none'` の 2 行だけを持っていて、
+       記事 reader が入口でやっている残り——サイドバーを開く／電話ならシートを full にする／
+       一覧の外皮（タブ列・検索欄・scope と カテゴリの chips）を伏せる——を 1 つもやっていなかった。
+       だから詳細は「一覧の外皮の下に残った帯」に描かれ（＝報告の「デザインが浮いている」）、
+       電話ではシートの位置しだいで**画面の下に丸ごと落ちた**（実測 390×780・peek: 戻るボタンが
+       y=866）。⇒ 入口は `HOST.enterReaderPane()`、出口は `HOST.closeReaderPane()` の 1 本ずつ。 */
   function openDetail(item) {
     const ev = item && item._event;
     if (!ev) return;
     selected = ev.publicId;
-    const pane = document.getElementById('news-reader-pane');
-    const feed = document.getElementById('live-news-feed');
-    if (!pane || !feed) return;
+    const pane = HOST.enterReaderPane();
+    if (!pane) return;
 
     const back = L('Back', '戻る', 'Zurück', 'Назад', 'Atrás');
     const rows = ev.members.slice().sort((a, b) => Date.parse(a.publishedAt || 0) - Date.parse(b.publishedAt || 0));
@@ -479,7 +485,14 @@ window.IntMapModules.newsEvents = function (HOST) {
 
     const fmt = (iso) => { try { return new Date(iso).toLocaleString(window.IntMapLang.locale(HOST.lang), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (_) { return iso || ''; } };
 
-    let html = '<div class="reader-bar"><button class="btn-back" id="ev-back">‹ ' + S(back) + '</button></div>';
+    /* ⚠⚠⚠ (#R435) **`.nrp-bar` / `.nrp-back` — 記事 reader と同じ綴り。** ここは `.reader-bar` /
+       `.btn-back` と書いていて、css/intmap.css の規則は `.ev-detail .reader-bar` と
+       `.ev-detail .btn-back`——**帯は `.ev-detail` の兄弟であって子孫ではない**ので、その 3 規則は
+       #R386 から 1 度も当たっていなかった。当たらない CSS は「無い CSS」なので、戻るボタンは
+       ブラウザ既定の <button>（実測: 背景 #f0f0f0・角丸 0・padding 0・border 2px outset・44×20 px）
+       として描かれ、帯の `position:sticky` も効かず（実測 `static`）**スクロールで流れて二度と
+       戻らなかった**。⇒ 読む面の外皮は 1 か所（`.nrp-bar`/`.nrp-back`）だけが持つ。 */
+    let html = '<div class="nrp-bar"><button class="nrp-back" id="ev-back">‹ ' + S(back) + '</button></div>';
     html += '<div class="ev-detail">';
     html += '<div class="ev-d-head">';
     if (ev.place) html += '<span class="loc-chip">' + S(ev.place) + '</span>';
@@ -654,8 +667,7 @@ window.IntMapModules.newsEvents = function (HOST) {
     html += '</div>';
 
     pane.innerHTML = html;
-    feed.style.display = 'none';
-    pane.style.display = '';
+    pane.scrollTop = 0;
 
     /* ── Atlas に「いま読んでいるもの」を渡す（#R430）───────────────────────────
        js/atlas-console.js `_selectionState()` は `window._imReader` を読んで o.article を作り、
@@ -687,8 +699,11 @@ window.IntMapModules.newsEvents = function (HOST) {
     } catch (_) { }
 
     const b = document.getElementById('ev-back');
-    if (b) b.onclick = () => { selected = null; pane.style.display = 'none'; pane.innerHTML = ''; feed.style.display = '';
-      try { window._imReader = null; } catch (_) { } };   /* 戻ったら「読んでいる」と名乗り続けない */
+    /* ⚠ (#R435) 出口は 1 本。ここで一覧を手で出し直すと、外皮（タブ列・検索欄・chips）を伏せた
+       ままの一覧に戻る——伏せたものを戻す責任は `closeReaderPane()` と `renderUI()` にある。
+       ⚠ `window._imReader` を消すのもその 1 本の仕事である（#R430 が置いたこの手当ては、
+         タブの切り替えや背景の再描画で閉じたときには走らなかった）。 */
+    if (b) b.onclick = () => { selected = null; try { HOST.closeReaderPane(); } catch (_) { } };
     /* 詳細を開いたら、その出来事の場所へ寄る（カードのクリックと同じ約束）。 */
     try { if (item.analysis && item.analysis.loc) window.IntMapGeoEngine.camera.flyTo({ center: item.analysis.loc, zoom: 4, speed: 1.0 }); } catch (_) { }
   }
@@ -696,6 +711,16 @@ window.IntMapModules.newsEvents = function (HOST) {
   /* ── Atlas 用の状態（docs/NEWS-EVENTS.md §10）─────────────────────────────
      ⚠ **観測してから名乗る。** 「表示している」は DOM とレンダラに訊いた答えであって、
        この層が「そのつもりだった」ことではない（#R340 の produces-observed）。 */
+  /* ⚠⚠ (#R435) 「いま開いている出来事」は **DOM に訊く**。閉じる経路は戻るボタンだけではない
+     ——タブの切り替え・背景の再描画・記事 reader を開くこと——ので、この層が覚えている
+     publicId は「最後に開いたもの」であって「いま画面に出ているもの」ではない。#R340 の
+     produces-observed と同じ規律で、名乗る前に観測する。 */
+  function selectedShown() {
+    try {
+      const p = document.getElementById('news-reader-pane');
+      return (p && p.style.display !== 'none' && p.querySelector('.ev-detail')) ? selected : null;
+    } catch (_) { return null; }
+  }
   function state() {
     const all = (HOST.globalData || []).filter((x) => x && x._event);
     if (!all.length) return null;
@@ -709,7 +734,7 @@ window.IntMapModules.newsEvents = function (HOST) {
     for (const it of shown) cats[it._event.category] = (cats[it._event.category] || 0) + 1;
     return {
       mode: 'events',
-      selectedEventId: selected,
+      selectedEventId: selectedShown(),
       selectedCategory: category,
       visibleEventCount: shown.length,
       loadedEventCount: all.length,
