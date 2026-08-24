@@ -142,7 +142,7 @@ window.IntMapModules.countriesUi=function(HOST){
              never got a row — while `countryGeo` DID become the fine collection. The table and the
              geometry have disagreed ever since, and nothing said so.
 
-             MEASURED ON PRODUCTION (#R358's verification pass, then this round's count): `codeAtPoint`
+             MEASURED ON PRODUCTION (#R392's verification pass, then this round's count): `codeAtPoint`
              answered 'SGP' over Singapore and `countryStats.SGP` was `undefined`, so `exFacts`
              (js/atlas-examples.js) got `st=null`, `usePlace` went false and the Atlas starter chips fell
              through to the WORLD pool — 「日本・ドイツ・インドを比較」 while the reader is looking at

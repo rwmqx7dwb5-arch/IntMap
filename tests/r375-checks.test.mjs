@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  *  「シンガポールでは国別プールではなく世界プールの4文になる」
  *
- *  MEASURED ON PRODUCTION (#R358's verification pass): over Singapore at z=11 and z=13 the shipped
+ *  MEASURED ON PRODUCTION (#R392's verification pass): over Singapore at z=11 and z=13 the shipped
  *  `codeAtPoint(103.85, 1.29)` answered 'SGP' — the country was identified — and the Atlas starter
  *  chips were nonetheless the WORLD four (「日本・ドイツ・インドを比較」), with `redrawn=true`. The
  *  failure was therefore BELOW the identification: `exFacts()` (js/atlas-examples.js) does
