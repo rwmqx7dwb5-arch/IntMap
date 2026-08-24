@@ -102,13 +102,18 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    clock with the server already up. The entry is set to 150 — the WALL figure, i.e. including the
    ~45 s every invocation pays, exactly as #R209 and #R337 did — so the saving claimed is smaller
    than the one measured. Both ceilings follow the measurement down. */
-const BUDGET_S = 30;                    /* core: 0.5 min — measured 30 s over 6 files (#R428) */
+/* ⚠⚠ (#R424) THE CORE CEILING MOVED, BY THE MEASURED AMOUNT — 30 -> 35. Saying it here as well as
+   in the ledger because this file's own message is «never raise it»; #R388 (core, 36 -> 40) and #R428 (core, 28 -> 30) are the
+   precedents for saying so plainly. The gate is the same six files it was; five of them are the
+   always-on suites and did not move, and the sixth is `currentRoundSpec()`, which is now a spec
+   that has to travel to 1916 and switch language before it can read anything. */
+const BUDGET_S = 35;                    /* core: 0.6 min — measured 35 s over 6 files (#R424) */
 /* ⚠⚠ (#R410) THE TOTAL CEILING MOVED AGAIN, BY THE MEASURED AMOUNT — 4,536 -> 4,595 (+59 s).
    Saying it here as well as in the ledger because this file's own message is «never raise it»;
    #R388 (core) and #R405 (total, +7) are the precedents for saying so plainly. The round adds the
    two browser checks for the era-label defect and pays 8 s of it; the entry below records the eight
    files measured looking for the rest and why none of them could be claimed. */
-const TOTAL_BUDGET_S = 4600;            /* 76.7 min — 4,598 (#R416) + 2 (#R428: the same gate spec, re-measured) */
+const TOTAL_BUDGET_S = 4610;            /* 76.8 min — 4,600 (#R428) + 10 (#R424's gate spec, measured) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum
@@ -177,6 +182,37 @@ const TOTAL_BUDGET_S = 4600;            /* 76.7 min — 4,598 (#R416) + 2 (#R428
    recorded as 10 s, so 5 s is that ratio. ⚠ The corpus is not this machine's wall clock — it must
    be calibrated, not copied, and a future round re-measuring on CI should correct it. */
 const HISTORY = [
+  ['#R424', 4610, "⚠⚠ BOTH CEILINGS MOVED, EACH BY THE MEASURED AMOUNT — core 30 -> 35, total 4,600 -> 4,610. "
+    + 'Saying so plainly, as #R388 did for core and #R405 / #R410 / #R416 did for the total. The round is the '
+    + 'Countries sub-line defect: at 1916 a Japanese reader read 「大日本帝国 / East Asia / Tokyo」 while the '
+    + 'modern row beside it read 「北アメリカ」, because #R251 built the region table from ONE producer '
+    + '(Natural Earth CONTINENT) and js/history.js is a second one with a sub-continental vocabulary. '
+    + '⚠ THE CORE FIGURE IS MEASURED, NOT CHOSEN, AND THE FIVE ALWAYS-ON SUITES DID NOT MOVE: monitors 10, '
+    + 'smoke 8, security 4, internal-qa 2, r157 1 = 25, plus this round`s spec at 10 = 35. tests/r416.spec.js '
+    + 'leaves the gate by the rule that demoted tests/r405.spec.js a round ago, so the 5 s #R428 re-measured it '
+    + 'at is not headroom this round may spend — it is a file that stopped being currentRoundSpec(). '
+    + '⚠ THE 10 s IS THE SPEC`S OWN MEASUREMENT, taken the way #R405 and #R416 took theirs: serial, one '
+    + 'worker, server already up, worker-scoped page, the reporter`s own duration for the test body — and '
+    + 'NOT first in the worker, so the shared boot is not charged to it twice. 7,592 / 7,219 ms over two runs '
+    + 'of the same four-file batch; entered at 10, which is #R416`s own headroom factor applied to the upper '
+    + 'bound (it measured 2,360 ms and entered 3). '
+    + '⚠ AND CALIBRATION WAS TRIED FIRST AND DECLINED, because the table disagrees with itself. The SAME '
+    + 'batch measured tests/r416.spec.js at 1,888 / 1,734 ms against its entry of 3 and tests/r405.spec.js at '
+    + '3,764 / 2,972 ms against its entry of 7 — those two would put this spec at 12–17 — while '
+    + 'tests/r209.spec.js measured 22,743 / 20,942 ms against an entry of 10, the anchor #R402 used, which '
+    + 'would put it at 4. #R322`s rule is that a table that disagrees with the machine is not a table to take '
+    + 'a saving out of, and that cuts both ways: nothing was claimed from any of the three, and the direct '
+    + 'measurement was entered instead. '
+    + '⚠ AND IT WAS NOT PAID OUT OF THE SPEC. tests/r424.spec.js is the only thing this round wrote that can '
+    + 'see the reported screen. The source-shape gates in tests/r424-checks.test.mjs can say the table covers '
+    + 'js/history.js`s vocabulary and that the app`s own resolver answers in all nine languages — they cannot '
+    + 'say the RENDERED row uses that resolver, which is the whole of what was wrong. Both halves were '
+    + 'measured red by mutation, and each failed with the reported sentence: removing East Asia from the '
+    + 'table gave 「East Asia / Tokyo」 beside 「北アメリカ / Washington, D.C.」, and putting the country '
+    + 'card`s Region row back to raw gave 「East Asia」. The two languages it reads on screen (English and '
+    + 'the reported Japanese) are a PRICE, stated in the spec`s own header: the other seven are answered by '
+    + 'loading js/lang-registry.js and the four inline locale tables in node and asking pick(), which costs '
+    + 'the browser budget nothing.'],
   ['#R428', 4600, "⚠⚠ BOTH CEILINGS MOVED BY THE MEASURED AMOUNT — total 4,598 -> 4,600 and core 28 -> 30 — AND THE TWO SECONDS ARE THIS ROUND'S OWN SPEC GETTING MORE EXPENSIVE, NOT A NEW FILE. Saying so plainly, because this file's message is «never raise it» and #R388 / #R405 / #R416 are the precedents for saying it out loud. #R416's production verification found the reported symptom arriving by a SECOND route — a band that wins its slot and then renders under the map's own control cluster, so the reader gets a rounded box with a sliver of text, exactly the photograph that started #R416. The fix makes `declutterNewsBands` ask `elementFromPoint` whether the canvas is on top before a band may CLAIM space, and the assertion that proves it can only be made in a browser. ⚠ THE ASSERTION HAD TO BE MADE ABLE TO FAIL FIRST: with the spec's own camera no band happens to land under the chrome, so the check passed with the fix removed — #R399's shape. The spec now pans until a real pin sits under whatever is covering the map (found by scanning with `elementFromPoint`, not by naming panels), and with the fix removed it reports THREE buried bands. That aiming step, the extra query and the per-band hit-test are the cost. ⚠ MEASURED, warm server, one worker, reporter's own duration for the test body: 3,362 / 3,527 / 3,571 / 4,123 / 3,568 ms over five consecutive runs — upper bound 4,123, entered as 5 against the 3 #R416 entered from 2,270 / 2,259 / 2,356. ⚠ AND THE PRODUCT COST WAS MEASURED SEPARATELY, BECAUSE A GATE'S SECONDS ARE NOT A USER'S: `declutterNewsBands` itself runs in a MEDIAN OF 6.7 ms over 44 pins (eight runs: 10 / 19.2 / 7.7 / 6.7 / 6.4 / 6.6 / 6.3 / 6.5), and it runs on settle, not per frame. ⚠ NOT PAID OUT OF ANOTHER ENTRY, DELIBERATELY: the only figures this round measured are its own spec's and the declutter's, and #R322's rule — a table that disagrees with the machine is not a table this round may take a saving out of — leaves nothing else it is entitled to touch."],
   ['#R416', 4598, "⚠⚠ THE TOTAL CEILING MOVED BY THE MEASURED AMOUNT — 3 SECONDS (4,595 -> 4,598) — AND THE CORE CEILING FELL BY TWELVE (40 -> 28). Saying both plainly, because this file's own message says «do not raise the ceiling», and #R388 and #R405 are the precedents for saying it. ⚠ THE CORE FALL IS NOT A SAVING THIS ROUND MADE, AND IS NOT CLAIMED AS ONE: adding tests/r416.spec.js makes IT `currentRoundSpec()`, so tests/r405.spec.js loses the free pass that rule gives and, at 7 s against CORE_MAX_S = 1, leaves the gate. The gate is now the five always-on suites plus this round's 3 — smoke 8, monitors 10, security 4, internal-qa 2, r157 1, r416 3 = 28 — measured, not chosen. ⚠ PART OF THAT FALL IS #R410's, NOT THIS ROUND'S: it re-measured security and internal-qa (its own ledger says −8) and left BUDGET_S at 40. The rule in this file is that the ceiling follows the floor down, so the figure is what the table now says, whoever made it true. The ceiling follows the floor down, which is the one direction this file allows. ⚠ THE 3 s IS THE SPEC'S OWN MEASUREMENT, taken the way #R405 took r405's: serial, one worker, worker-scoped page, the reporter's own duration for the test body — 2,270 / 2,259 / 2,356 ms over three runs, upper bound 3. THE SAME METHOD ON THE SAME MACHINE MEASURED tests/r405.spec.js AT 5,369 / 5,979 ms against its entry of 7, i.e. the method is not flattering this round's file. ⚠ AND THE 3 s WAS NOT PAID OUT OF THAT 1 s OF SLACK, DELIBERATELY: one second is inside the noise this machine showed on the same pair of files (wall-clock runs of r405 alone came out 46.8 / 51.2 / 59.8 s), and #R322's rule — a table that disagrees with the machine is not a table this round may take a saving out of — applies to a disagreement of one second exactly as it applies to one of eight times. ⚠ AND IT WAS NOT PAID OUT OF THE SPEC EITHER: tests/r416.spec.js is the only thing this round wrote that can see the reported defect at all. The band layer is `icon-text-fit:'both'`, so an empty `text-field` leaves the layer present, the feature present, and `queryRenderedFeatures` returning every band — 46 of 46 on the production map — while the pill draws with nothing inside it. Source-shape gates cannot tell those two states apart; the renderer can. The spec is one test, one boot, no fixed sleeps, and its three assertions are the three things only a browser can answer: the row is one row, every band that was drawn carries text, and a click at a pin's own pixel opens THAT event's detail without opening an outlet tab."],
   ['#R410', 4595, "⚠⚠ THE TOTAL CEILING MOVED AGAIN — 4,536 -> 4,595 (+59 s) — AND 8 s OF THE 67 WAS PAID. "

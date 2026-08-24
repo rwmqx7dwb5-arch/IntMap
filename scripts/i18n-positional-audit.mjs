@@ -199,6 +199,13 @@ const SAME_AS_EN = {
     /* (#R251) …and the continent: «Asia» is the Spanish name of the continent (RAE), spelled
        exactly as in English; the other six regions differ and are translated at the same site. */
     'Asia',
+    /* (#R424) …and the supercontinent: «Eurasia» is the Spanish name too (RAE), spelled exactly as
+       in English. It joined this audit's universe when #R424 gave js/countries-ui.js's region table
+       the vocabulary js/history.js actually uses — the Soviet Union and the Russian Empire are
+       'Eurasia' there. The other four regions added with it differ in Spanish (Oriente Medio,
+       Asia del Sur, Sudeste Asiático, Asia Oriental), which is what makes this a claim about the
+       word rather than a forgotten argument. */
+    'Eurasia',
     /* (#R255) …and the building: the Spanish noun IS «hospital» (RAE), capitalised here as the
        legend row for the OSM `amenity=hospital` bucket. The other four buckets at that call site
        (Clínica, Consultorio, Farmacia, Otros) differ, which is what makes this a claim about the
