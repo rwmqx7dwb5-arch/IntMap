@@ -4195,7 +4195,7 @@ window.IntMapLang.define('zh-hans', {
   "Ukraine frontline (DeepState)": "乌克兰前线（DeepState）",
   "Ukraine frontline (live)": "乌克兰前线（实时）",
   "3D buildings (cities)": "3D 建筑（城市）",
-  "Volcanoes (GVP Holocene)": "火山（GVP 全新世）",
+  "Volcanoes (Smithsonian GVP)": "火山（史密森尼 GVP）",   /* (#R432) */
   "Volcanoes (GVP Holocene, all 1,215)": "火山（GVP 全新世，全部 1,215 座）",
   "Unchanged / not confirmed": "未变／未确认",
   "Data gaps": "数据缺口",
@@ -5557,7 +5557,8 @@ window.IntMapLang.define('zh-hans', {
   "What is in force now": "目前发布中的警报",
   " ash area(s) in force": " 个火山灰区域生效中",
   " eruptions": " 次喷发",
-  " Holocene volcanoes": " 座全新世火山",
+  "{h} Holocene volcanoes": "{h} 座全新世火山",   /* (#R432) */
+  "{h} Holocene volcanoes + {m} older ones an observatory watches": "{h} 座全新世火山 + {m} 座由观测机构监视的更古老火山",   /* (#R432) */
   " international SIGMETs": " 份国际 SIGMET",
   " years": " 年",
   "1 million or more within 30 km": "30 公里内 100 万人以上",
@@ -5649,6 +5650,7 @@ window.IntMapLang.define('zh-hans', {
   "The bundled eruption record could not be loaded.": "无法加载随附的喷发纪录。",
   "The Global Volcanism Program holds no dated eruption for this volcano. It is in the Holocene catalog on other evidence — see “The volcano”.": "GVP 未记录此火山任何有日期的喷发。它是依其他证据被收录于全新世目录中（参见「火山概貌」）。",
   "The Global Volcanism Program publishes no population figures for this volcano.": "GVP 未公布此火山的人口数值。",
+  "The Global Volcanism Program records no eruption of this volcano within the Holocene. GVP holds it in the Pleistocene catalog; it is on this map because a volcano observatory publishes a current alert level for it.": "GVP 未记录此火山在全新世期间的任何喷发。GVP 将其收录于更新世目录；它出现在本地图上，是因为有火山观测机构公布其现行警戒等级。",   /* (#R432) */
   "The largest VEI this volcano has actually produced, from its own eruption record.": "此火山自身喷发纪录中的最大 VEI。",
   "The record": "纪录总览",
   "The SIGMET feed did not answer.": "SIGMET 数据来源没有回应。",
@@ -5669,7 +5671,7 @@ window.IntMapLang.define('zh-hans', {
   "Volcanic ash areas in force (SIGMET)": "生效中的火山灰区域（SIGMET）",
   "Volcano alert level": "火山警戒等级",
   "Volcano hazard zones (USGS)": "火山灾害范围（USGS）",
-  "Volcanoes — full Holocene catalog": "火山 —— 全新世目录完整收录",
+  "Volcanoes — the Smithsonian GVP catalog": "火山 —— 史密森尼 GVP 目录",   /* (#R432) */
   "VONA — Volcano Observatory Notice for Aviation": "VONA —— 航空用火山信息",
   "Warning / RED": "警报 / RED",
   "Warning unit": "警报对象火山",
@@ -6072,6 +6074,7 @@ window.IntMapLang.define('zh-hans', {
   "Phono-tephrite /  Tephri-phonolite": "响碱玄岩 / 碱玄响岩",
   "Phonolite": "响岩",
   "Pitcairn Hotspot Volcano Group": "皮特凯恩热点火山群",
+  "Pleistocene": "更新世",   /* (#R432) */
   "Pyroclastic cone": "火山碎屑锥",
   "Pyroclastic cone(s)": "火山碎屑锥群",
   "Queen Charlotte Volcano Group": "夏洛特女王火山群",
@@ -6172,7 +6175,7 @@ window.IntMapLang.define('zh-hans', {
   "Last eruption: {y}": "最近喷发：{y}",
   "Name a volcano.": "请指定火山名称。",
   "No observatory publishes a current level for it.": "没有任何观测机构公布此火山的现行等级。",
-  "No volcano called “{q}” is in the Holocene catalog.": "全新世目录中没有名为「{q}」的火山。",
+  "No volcano called “{q}” is in the Smithsonian GVP catalog this map carries.": "本地图所收录的史密森尼 GVP 目录中没有名为「{q}」的火山。",   /* (#R432) */
   "Published in English by the source and shown exactly as written. Descriptions written by an observatory are not machine-translated here; the classifications above are translated because they come from a fixed vocabulary.": "由来源以英文发布，并照原文呈现。观测机构撰写的叙述在此不做机器翻译；上方的分类用语则有翻译，因为它们出自固定的词汇表。",
   "Published in Japanese by the agency and shown exactly as issued — this map does not reword a warning.": "由气象厅以日文发布，并照原文呈现 —— 本地图不会改写警报的用语。",
   "Say which volcano view: a colour mode, a filter, or the map’s year.": "请指定火山图层要变更的项目：色彩模式、筛选条件，或地图年份。",

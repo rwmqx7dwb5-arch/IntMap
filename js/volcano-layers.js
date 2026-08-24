@@ -184,12 +184,18 @@ window.IntMapModules.volcanoLayers=function(HOST){
   const HAZ_IDS=['volc-haz-fill','volc-haz-line'];
   const HAZ_URL='https://services.arcgis.com/v01gqwM5QqNysAAi/arcgis/rest/services/Volcano_Hazard_Zones/FeatureServer/0/query'
     +'?where=1%3D1&outFields=Volcano,Hazard&outSR=4326&f=geojson';
-  /* USGS zone name → the GVP volcano number this map places it on. Checked against
-     data/volcanoes_gvp.json by tests/r353-checks.test.mjs. */
+  /* USGS zone name → the GVP volcano number(s) this map places it on. Checked against
+     data/volcanoes_gvp.json by tests/r353-checks.test.mjs.
+     ⚠ (#R432) ONE ZONE MAY COVER MORE THAN ONE GVP VOLCANO, and «Long Valley Volcanic Region» is
+     the one that does. #R353 placed it on Mono-Inyo Craters because that was its Holocene entry —
+     GVP's own «Long Valley» (323822) is in the Pleistocene catalog and this map did not carry it.
+     It does now (js/volcano-intel.js USGS_TO_GVP note), and the USGS polygons cover the caldera and
+     the Mono-Inyo chain alike, so placing the zone on only one of the two dots would make the other
+     one say «no hazard-zone GIS is published» about a zone USGS publishes under that very name. */
   const HAZ_TO_GVP={
     'Mount Shasta':323010, 'Medicine Lake Volcano':323020, 'Lassen Volcanic Center':323080,
     'Clear Lake Volcanic Field':323100, 'Ubehebe Craters':323160, 'Salton Buttes':323200,
-    'Long Valley Volcanic Region':323120,
+    'Long Valley Volcanic Region':[323120,323822],
   };
   const HAZ_COLOR={ 'Ash (2 in. or greater)':'#c9a227', 'Lahars':'#8b5a2b', 'Floods':'#2f7fbf',
     'Near-vent (multiple hazards)':'#d1381f', 'Lava flows':'#e2622f' };
@@ -233,10 +239,10 @@ window.IntMapModules.volcanoLayers=function(HOST){
     notify(); legend(); return hazFC;
   }
   /* which hazard classes USGS publishes for a GVP volcano — answerable BEFORE the service is
-     fetched, because the name table is what decides it. Returns [] for the 1,207 volcanoes for
-     which nothing is published, which is what js/volcano-intel.js prints as an absence. */
+     fetched, because the name table is what decides it. Returns [] for every volcano for which
+     nothing is published, which is what js/volcano-intel.js prints as an absence. */
   function hazardFor(vn){
-    const names=Object.keys(HAZ_TO_GVP).filter(k=>HAZ_TO_GVP[k]===+vn);
+    const names=Object.keys(HAZ_TO_GVP).filter(k=>[].concat(HAZ_TO_GVP[k]).indexOf(+vn)>=0);
     if(!names.length) return [];
     if(!hazFC) return names;                    /* the zone name, until the classes are known */
     const out=[];

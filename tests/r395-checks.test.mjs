@@ -142,7 +142,11 @@ test('⑤ the United States rung reads every volcano USGS monitors, not only the
   assert.ok(INTEL_CODE.includes('volcano/getMonitoredVolcanoes'),
     'js/volcano-intel.js no longer reads getMonitoredVolcanoes — 65 volcanoes USGS publishes GREEN/NORMAL for fall back to «nobody publishes anything»');
   assert.ok(/warm\(\)\{[\s\S]{0,120}'usgsMon'/.test(INTEL_CODE), 'the monitored feed is not warmed with the others');
-  assert.ok(/FEEDS\.usgsMon\.rows\|\|\[\]\)\) add/.test(INTEL_CODE.replace(/\s+/g, ' ')) || INTEL_CODE.includes('for(const r of (FEEDS.usgsMon.rows||[])) add(+r.vnum,status(+r.vnum));'),
+  /* ⚠ (#R432) THE CLAIM IS «statusIndex READS THE MONITORED SET», NOT «it reads it with these exact
+     bytes». This pinned `add(+r.vnum,status(+r.vnum))`, which #R432 had to change — `+null` on the
+     two observatory-wide bulletins in that same array was minting a volcano numbered 0. What the
+     index actually MAKES of those rows is asserted by running the module: tests/r432-checks ③. */
+  assert.match(INTEL_CODE.replace(/\s+/g, ' '), /FEEDS\.usgsMon\.rows\|\|\[\]\)\)[^}]{0,120}add\(/,
     'statusIndex() does not include the monitored set, so the map cannot colour «an observatory says normal» differently from «nothing published»');
   assert.ok(INTEL_CODE.includes('function usgsMonitors('), 'the monitored/unmonitored distinction has no accessor');
 });

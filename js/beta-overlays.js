@@ -497,7 +497,11 @@ window.IntMapModules.betaOverlays=function(HOST){
       if(!state.volc){ try{ window._hideGenericLegend&&window._hideGenericLegend('volc2'); }catch(_){} return; }
       try{
         if(!window._registerLayerOpacity) return;
-        const el=window._registerLayerOpacity('volc2',LA('Volcanoes (GVP Holocene)','火山（GVP完新世）','Vulkane (GVP, Holozän)','Вулканы (GVP, голоцен)','Volcanes (GVP, Holoceno)'),VL_IDS,'beta-dl-volc2');
+        /* ⚠ (#R432) THE EPOCH CAME OUT OF THE LABEL, for the reason #R353 took the count out of it:
+           a fact written into a name cannot check itself, and this one stopped being true when the
+           catalog gained the volcanoes an observatory publishes a level for. The legend below
+           states the composition from the file. */
+        const el=window._registerLayerOpacity('volc2',LA('Volcanoes (Smithsonian GVP)','火山（スミソニアンGVP）','Vulkane (Smithsonian GVP)','Вулканы (Smithsonian GVP)','Volcanes (Smithsonian GVP)'),VL_IDS,'beta-dl-volc2');
         if(!el) return;
         let key=el.querySelector('.volc-key');
         if(!key){ key=document.createElement('div'); key.className='volc-key';
@@ -563,8 +567,28 @@ window.IntMapModules.betaOverlays=function(HOST){
             +line('#6b7280',L('No figure published','公表値なし','Keine Angabe','Нет данных','Sin cifra publicada'));
         }
         body+='<div class="volc-key-note">'+SF(L('Dot size is the largest VEI on record, in every mode.','点の大きさは、どのモードでも記録された最大VEIを表します。','Die Punktgröße ist in jedem Modus der größte erfasste VEI.','Размер точки во всех режимах — наибольший зафиксированный VEI.','El tamaño del punto es el mayor VEI registrado, en todos los modos.'))+'</div>';
+        /* ⚠ (#R432) THE WORD «HOLOCENE» WENT THE WAY THE COUNT WENT. #R353 took 「全1,215座」 out of
+           the row label because the catalog moved to 1,214 and the label could not follow; this
+           round the catalog stopped being Holocene-only — it also carries the volcanoes an
+           observatory publishes a current level for, and four of those (Yellowstone among them) are
+           older than the Holocene. Both numbers are READ FROM THE FILE, and the composition is
+           stated here rather than asserted in a label that cannot check itself.
+           ⚠ ONE STRING WITH PLACEHOLDERS (#R355), not fragments concatenated round a number. */
         const n=volcFC?volcFC.features.length:0;
-        body+='<div class="volc-key-src">'+SF('Smithsonian GVP'+(n?' · '+n.toLocaleString(window.IntMapLang.locale(HOST.lang,'en-GB'))+L(' Holocene volcanoes','座（完新世）',' holozäne Vulkane',' вулканов голоцена',' volcanes del Holoceno'):''))+'</div>';
+        const hol=(volcFC&&Number.isFinite(volcFC.holocene))?volcFC.holocene:n;
+        const extra=Math.max(0,n-hol);
+        const NUMF=(x)=>{ try{ return x.toLocaleString(window.IntMapLang.locale(HOST.lang,'en-GB')); }catch(_){ return String(x); } };
+        let cat='';
+        if(n) cat=(extra
+          ?L('{h} Holocene volcanoes + {m} older ones an observatory watches',
+             '完新世の火山 {h} 座 ＋ 観測機関が監視する、それより古い火山 {m} 座',
+             '{h} holozäne Vulkane + {m} ältere, die ein Observatorium überwacht',
+             '{h} вулканов голоцена + {m} более древних под наблюдением обсерватории',
+             '{h} volcanes del Holoceno + {m} más antiguos vigilados por un observatorio')
+          :L('{h} Holocene volcanoes','完新世の火山 {h} 座','{h} holozäne Vulkane',
+             '{h} вулканов голоцена','{h} volcanes del Holoceno')
+        ).split('{h}').join(NUMF(hol)).split('{m}').join(NUMF(extra));
+        body+='<div class="volc-key-src">'+SF('Smithsonian GVP'+(cat?' · '+cat:''))+'</div>';
         key.innerHTML=body;
       }catch(_){}
     }
@@ -668,7 +692,7 @@ window.IntMapModules.betaOverlays=function(HOST){
        `jp()?BLBL[k][0]:BLBL[k][1]` — the English string was in slot 1, so even the positional
        languages could not have been added without reversing the row, and the inline table is keyed
        by the English source string, which was not in slot 0. */
-    const BLBL={ukrfront:LA('Ukraine frontline (live)','ウクライナ前線（リアルタイム）','Ukraine-Frontlinie (live)','Линия фронта в Украине (в реальном времени)','Frente de Ucrania (en vivo)'),bldg3d:LA('3D buildings (cities)','3D建物（都市）','3D-Gebäude (Städte)','3D-здания (города)','Edificios 3D (ciudades)'),histb:LA('Historical borders','過去の国境','Historische Grenzen','Исторические границы','Fronteras históricas'),volc2:LA('Volcanoes — full Holocene catalog','火山 — 完新世カタログ全件','Vulkane — vollständiger Holozän-Katalog','Вулканы — полный каталог голоцена','Volcanes — catálogo completo del Holoceno'),
+    const BLBL={ukrfront:LA('Ukraine frontline (live)','ウクライナ前線（リアルタイム）','Ukraine-Frontlinie (live)','Линия фронта в Украине (в реальном времени)','Frente de Ucrania (en vivo)'),bldg3d:LA('3D buildings (cities)','3D建物（都市）','3D-Gebäude (Städte)','3D-здания (города)','Edificios 3D (ciudades)'),histb:LA('Historical borders','過去の国境','Historische Grenzen','Исторические границы','Fronteras históricas'),volc2:LA('Volcanoes — the Smithsonian GVP catalog','火山 — スミソニアンGVPカタログ','Vulkane — der Smithsonian-GVP-Katalog','Вулканы — каталог Смитсоновского GVP','Volcanes — el catálogo del Smithsonian GVP'),
       volcash:LA('Volcanic ash areas in force (SIGMET)','有効な火山灰域（SIGMET）','Gültige Vulkanasche-Gebiete (SIGMET)','Действующие зоны вулканического пепла (SIGMET)','Zonas de ceniza volcánica vigentes (SIGMET)'),
       volchaz:LA('Volcano hazard zones (USGS)','火山ハザード域（USGS）','Vulkangefahrenzonen (USGS)','Зоны вулканической опасности (USGS)','Zonas de peligro volcánico (USGS)'),
       volcso2:LA('Satellite SO₂ column (OMPS)','衛星 SO₂ 全量（OMPS）','Satelliten-SO₂-Säule (OMPS)','Столб SO₂ со спутника (OMPS)','Columna de SO₂ satelital (OMPS)')};
