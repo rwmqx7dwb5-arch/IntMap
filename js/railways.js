@@ -432,13 +432,22 @@ window.IntMapModules.railways = function (HOST) {
     const el = document.createElement('div');
     el.className = 'country-popup'; el.id = 'rail-detail'; el.style.display = 'block';
     const title = has(p.n) ? p.n : (has(p.r) ? p.r : L.arr(BUCKET_LABEL[p.k] ? BUCKET_LABEL[p.k]() : BUCKET_LABEL.rail()));
-    const sub = [bl(p.bk), has(p.u) ? usageWord(p.u) : '', p.x === 'construction' ? bl('construction') : ''].filter(Boolean).join(' · ');
+    /* ⚠ (#R388 追記) NOT the status again. `bk` is the LINE CLASS, and for a line under
+       construction that class IS 'construction' — MEASURED on production, the subtitle read
+       «Under construction · Under construction». The status is only worth adding when the class
+       does not already carry it. */
+    const sub = [bl(p.bk), has(p.u) ? usageWord(p.u) : '',
+      (p.x === 'construction' && p.k !== 'construction') ? bl('construction') : ''].filter(Boolean).join(' · ');
     const swatch = (AXES[state.axis].buckets.find(([id]) => id === p[AXIS_PROP[state.axis]]) || [null, UNKNOWN_COLOUR])[1];
     const volts = has(p.v) ? (p.v >= 1000 ? (p.v / 1000) + ' kV' : p.v + ' V') : '';
     const cur = p.c === 'ac' ? 'AC' : (p.c === 'dc' ? 'DC' : '');
-    const elecTxt = has(p.e)
-      ? (p.e === 'no' ? bl('no') : [bl(p.be), volts && cur ? (volts + ' ' + cur + (has(p.q) && p.q > 0 ? ' ' + p.q + ' Hz' : '')) : volts].filter(Boolean).join(' · '))
-      : '';
+    /* ⚠ (#R388 追記) THE BUCKET LABEL AND THE READING ARE THE SAME SENTENCE. Joining both printed
+       «1.5 kV DC · 1.5 kV DC» on production — and in Japanese «直流 1.5kV · 1.5 kV DC», with the
+       second half untranslated, because the reading is built from numbers and not from the table.
+       The reading is the better of the two (it carries the frequency), so the label is what stands
+       in when OSM gave a system but no voltage. */
+    const reading = volts ? (volts + (cur ? ' ' + cur : '') + (has(p.q) && p.q > 0 ? ' ' + p.q + ' Hz' : '')) : '';
+    const elecTxt = has(p.e) ? (p.e === 'no' ? bl('no') : (reading || bl(p.be))) : '';
     el.innerHTML = '<button class="country-popup-close cp-close" type="button" aria-label="' + S(L('Close', '閉じる', 'Schließen', 'Закрыть', 'Cerrar')) + '" title="' + S(L('Close', '閉じる', 'Schließen', 'Закрыть', 'Cerrar')) + '">×</button>'
       + '<div style="padding:16px 18px 18px;">'
       + '<div class="rail-drag" style="display:flex;align-items:center;gap:9px;margin-bottom:3px;padding-right:32px;cursor:move;user-select:none;">'

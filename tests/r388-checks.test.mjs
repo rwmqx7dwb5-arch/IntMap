@@ -290,6 +290,30 @@ test('R388 ⑩ Atlas can name this layer, the basemap reference keeps its own wo
   assert.match(cat, /"type":"railAxis"/);
 });
 
+/* ── ⑭ the card never says the same thing twice ───────────────────────────── */
+test('R388 ⑭ the detail card does not print one fact as two', () => {
+  /* ⚠ FOUND ON PRODUCTION, NOT BY A TEST. The electrification row read «1.5 kV DC · 1.5 kV DC» —
+     and in Japanese «直流 1.5kV · 1.5 kV DC», the second half untranslated, because the reading is
+     built from numbers while the label comes from the table. The row joined the BUCKET LABEL and
+     the READING, and for the four named systems those are the same sentence. The subtitle had the
+     same shape: `bk` is the line class, and for a line under construction that class IS
+     'construction', so appending the status repeated it.
+     ⚠ AND THIS IS THE CHECK THAT BITES. tests/r388-detail.spec.js asserts the same thing on a real
+     card, but its line is a Spanish high-speed line (25 kV AC 50 Hz) where the two differ by the
+     frequency — MEASURED, the browser assertion passed with the defect deliberately put back. */
+  const layer = code('js/railways.js');
+  const elec = /const elecTxt = [^\n]*/.exec(layer);
+  assert.ok(elec, 'the electrification row moved — this check is reading the wrong shape');
+  assert.equal(/bl\(p\.be\)[\s\S]{0,80}reading|reading[\s\S]{0,80}bl\(p\.be\)/.test(elec[0].replace(/\s+/g, ' ')) && /join|\+ ' · '/.test(elec[0]), false,
+    'the electrification row joins the bucket label with the reading again: ' + elec[0].trim());
+  assert.match(elec[0], /reading \|\| bl\(p\.be\)/, 'the reading must stand alone, with the label only as the fallback');
+
+  const sub = /const sub = [\s\S]*?join\(' · '\);/.exec(layer);
+  assert.ok(sub, 'the subtitle moved');
+  assert.match(sub[0], /p\.k !== 'construction'/,
+    "the subtitle appends the status even when the line class already is 'construction'");
+});
+
 /* ── ⑬ the wire format is lossless within its own rounding ────────────────── */
 test('R388 ⑬ encode → decode returns exactly what was encoded', () => {
   const KEYS = ['k', 'x', 'g', 'n', 'o'];
