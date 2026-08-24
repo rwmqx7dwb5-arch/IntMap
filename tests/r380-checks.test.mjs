@@ -210,7 +210,28 @@ test('R380 ⑨: travelling renames the countries in the list instead of emptying
   const src = codeOnly(R('js/history.js'));
   assert.ok(/window\.IntMapHistName\s*=\s*function/.test(src), 'the shared tuple reader is gone');
   assert.ok((src.match(/IntMapHistName\(/g) || []).length >= 4, 'one of the two writers stopped going through it — they can disagree again');
-  assert.deepEqual(src.match(/\bname\.(?:en|jp)\b/g) || [], [], 'something reads a tuple as an object again');
+  /* ⚠ (#R429) AND THE SCAN IS THE WHOLE REACH, NOT THE ONE FILE THIS ROUND HAPPENED TO FIX. Written
+     as codeOnly(R('js/history.js')) the negative below could only ever see the two writers it was aimed
+     at, so js/stats-compare.js `_histMini` — which builds the SAME {code,nameEn,nameJp,flag} record out
+     of a raw STATES row, and is the label the comparison panel falls back to whenever countryStats is
+     not carrying the state (back at Now, at a year it does not span, on a restored session) — went on
+     reading `S.name.en` and rendered the literal 「—」 for all nineteen states in five places, for
+     forty-nine rounds, with this test green the whole time. Every file that can reach a STATES row is
+     scanned now, and any file that BUILDS the record must go through the shared reader. The behaviour
+     the defect broke is asserted in tests/r429-checks.test.mjs. */
+  const HOLDERS = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js')).map((f) => 'js/' + f)
+    .filter((f) => /IntMapHistStates|\bhistStates\b/.test(codeOnly(R(f))));
+  assert.ok(HOLDERS.length >= 5, `only ${HOLDERS.length} files reach the STATES rows — the scan stopped reaching`);
+  for (const f of ['js/history.js', 'js/stats-compare.js']) {
+    assert.ok(HOLDERS.includes(f), `${f} no longer reaches the STATES rows — the scan lost a file that BUILDS the record`);
+  }
+  for (const f of HOLDERS) {
+    const one = codeOnly(R(f));
+    assert.deepEqual(one.match(/\bname\.(?:en|jp)\b/g) || [], [], `${f} reads a former state's name tuple as an object again`);
+    if (/\bnameEn\s*:/.test(one)) {
+      assert.ok(/IntMapHistName\s*\(/.test(one), `${f} builds a {nameEn,nameJp} record from a STATES row without the shared reader`);
+    }
+  }
 });
 
 /* ── ⑧ the Sources page says what the code does below CShapes ─────────────────────────────────── */
