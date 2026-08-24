@@ -1735,29 +1735,34 @@ test('#R349 the clock reaches 1850 — the slider drags there, and the deep past
 });
 
 test('#R349 the war layer draws nothing until it is asked, then paints the day it is given', async () => {
+  /* (#R409) one row became two. Everything this test proved about the cut is proved on `dl-ww2`,
+     and the two extra assertions are the split itself: switching WW2 on must not create WW1's
+     sources, and the legend's own slider must move the day WITHOUT moving Chronos. */
   const before = await page.evaluate(() => ({
-    checked: document.getElementById('dl-wars').checked,
-    on: window.IntMapWarFronts.isOn(),
-    hasSource: window.IntMapGeoEngine.layers.hasSource('wars-src'),
+    checked: document.getElementById('dl-ww2').checked,
+    checked1: document.getElementById('dl-ww1').checked,
+    on: window.IntMapWarFronts.isOn('ww2'),
+    hasSource: window.IntMapGeoEngine.layers.hasSource('ww2-src'),
   }));
   /* the round promised a session that never asks for it is unchanged */
   expect(before.checked).toBe(false);
+  expect(before.checked1).toBe(false);
   expect(before.on).toBe(false);
   expect(before.hasSource).toBe(false);
 
   const r = await page.evaluate(async () => {
-    const el = document.getElementById('dl-wars');
+    const el = document.getElementById('dl-ww2');
     el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true }));
     window.IntMapTime.set(new Date('1941-12-05T12:00:00Z'), { source: 'test' });
     const GE = window.IntMapGeoEngine;
     GE.camera.jumpTo({ center: [32, 54], zoom: 3.6, pitch: 0, bearing: 0 });
     const at = (ll) => {
       const p = GE.coords.project(ll);
-      const f = GE.coords.queryRenderedFeatures([p.x, p.y], { layers: ['wars-fill'] })[0];
+      const f = GE.coords.queryRenderedFeatures([p.x, p.y], { layers: ['ww2-fill'] })[0];
       return f ? { fac: f.properties.fac, nm: f.properties.nm } : null;
     };
     const c = GE.render.canvas();
-    const drawnFronts = () => GE.coords.queryRenderedFeatures([[0, 0], [c.clientWidth, c.clientHeight]], { layers: ['wars-front'] }).length;
+    const drawnFronts = () => GE.coords.queryRenderedFeatures([[0, 0], [c.clientWidth, c.clientHeight]], { layers: ['ww2-front'] }).length;
     /* ⚠ WAIT FOR THE RENDERER, NOT FOR THE DATA, AND FOR EVERY THING THIS TEST ASKS ABOUT.
        `setSourceData` returns long before MapLibre has drawn a tile, and `queryRenderedFeatures`
        answers about what is DRAWN. A fixed sleep passed on a quiet page and failed on a busy one —
@@ -1765,18 +1770,19 @@ test('#R349 the war layer draws nothing until it is asked, then paints the day i
     const t0 = Date.now();
     while (Date.now() - t0 < 25000) {
       await new Promise((res) => setTimeout(res, 250));
-      if (window.IntMapWarFronts.date() === '1941-12-05' && at([13.405, 52.520]) && drawnFronts()) break;
+      if (window.IntMapWarFronts.date('ww2') === '1941-12-05' && at([13.405, 52.520]) && drawnFronts()) break;
     }
     return {
-      date: window.IntMapWarFronts.date(),
-      war: window.IntMapWarFronts.war(),
+      date: window.IntMapWarFronts.date('ww2'),
+      ww1Src: GE.layers.hasSource('ww1-src'),
       fronts: drawnFronts(),
-      frontsBuilt: window.IntMapWarFronts._build('1941-12-05').lines.features.length,
+      frontsBuilt: window.IntMapWarFronts._build('ww2', '1941-12-05').lines.features.length,
       minsk: at([27.567, 53.902]), moscow: at([37.618, 55.756]), berlin: at([13.405, 52.520]),
     };
   });
-  expect(r.war).toBe('ww2');
   expect(r.date).toBe('1941-12-05');
+  /* the OTHER war has not been built: an instance is created by its own row, not by the module */
+  expect(r.ww1Src).toBe(false);
   /* ⚠ THE POINT OF THIS TEST. Minsk and Moscow are inside the SAME CShapes polygon — the Soviet
      Union — and they are on opposite sides of the front, so the only thing that can tell them apart
      is the cut. A layer that failed to cut answers both the same; one cut the wrong way round
@@ -1788,18 +1794,36 @@ test('#R349 the war layer draws nothing until it is asked, then paints the day i
   expect(r.frontsBuilt).toBeGreaterThan(0);
   expect(r.fronts, 'front lines built=' + r.frontsBuilt).toBeGreaterThan(0);
 
+  /* ⚠ (#R409) 「Chronosは動かすな。」 — the legend's own range moves the layer and NOTHING else. */
+  const slid = await page.evaluate(async () => {
+    const clockBefore = window.IntMapTime.iso();
+    const rng = document.querySelector('#data-legend-ww2 .war-range');
+    if (!rng) return { missing: true };
+    rng.value = String(Math.min(+rng.max, +rng.value + 60));
+    rng.dispatchEvent(new Event('input', { bubbles: true }));
+    const t0 = Date.now();
+    while (Date.now() - t0 < 8000) {
+      await new Promise((res) => setTimeout(res, 150));
+      if (window.IntMapWarFronts.date('ww2') !== '1941-12-05') break;
+    }
+    return { missing: false, clockBefore, clockAfter: window.IntMapTime.iso(), layerDate: window.IntMapWarFronts.date('ww2') };
+  });
+  expect(slid.missing, 'the legend has a day slider').toBe(false);
+  expect(slid.layerDate).toBe('1942-02-03');
+  expect(slid.clockAfter, 'the slider must not move the master clock').toBe(slid.clockBefore);
+
   const after = await page.evaluate(async () => {
-    const el = document.getElementById('dl-wars');
+    const el = document.getElementById('dl-ww2');
     el.checked = false; el.dispatchEvent(new Event('change', { bubbles: true }));
     const GE = window.IntMapGeoEngine;
-    const drawn = () => GE.coords.queryRenderedFeatures(undefined, { layers: ['wars-fill'] }).length;
+    const drawn = () => GE.coords.queryRenderedFeatures(undefined, { layers: ['ww2-fill'] }).length;
     /* hiding a layer is a style change, so «switched off» and «no longer drawn» are a repaint apart */
     const t0 = Date.now();
     while (Date.now() - t0 < 15000) {
       await new Promise((res) => setTimeout(res, 200));
-      if (!window.IntMapWarFronts.isOn() && !drawn()) break;
+      if (!window.IntMapWarFronts.isOn('ww2') && !drawn()) break;
     }
-    return { on: window.IntMapWarFronts.isOn(), drawn: drawn() };
+    return { on: window.IntMapWarFronts.isOn('ww2'), drawn: drawn() };
   });
   expect(after.on).toBe(false);
   expect(after.drawn).toBe(0);

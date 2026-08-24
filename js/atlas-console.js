@@ -1104,6 +1104,12 @@ window.IntMapModules.atlasConsole=function(HOST){
       'aerosol':'dl-aod','haze':'dl-aod','smog':'dl-aod','エアロゾル':'dl-aod',
       'co2':'bx-wbco2','carbon dioxide':'bx-wbco2','二酸化炭素':'bx-wbco2',
       'eez':'dl-eez','exclusive economic zone':'dl-eez','排他的経済水域':'dl-eez',
+      /* ⚠ (#R409) THE DAY-BY-DAY WAR LAYERS HAD NO ALIAS AT ALL, in any language — a reader who
+         asked for 「第二次世界大戦」 was routed to the approximate whole-world `historicalMap` while
+         the record with 300 dated operations sat one row away, unreachable by any name but its own
+         full label. Both rows are named here in the languages the request actually arrives in. */
+      'ww1':'dl-ww1','wwi':'dl-ww1','world war 1':'dl-ww1','world war i':'dl-ww1','world war one':'dl-ww1','first world war':'dl-ww1','great war':'dl-ww1','第一次世界大戦':'dl-ww1','第一次大戦':'dl-ww1','一次大戦':'dl-ww1','erster weltkrieg':'dl-ww1','первая мировая война':'dl-ww1','primera guerra mundial':'dl-ww1','première guerre mondiale':'dl-ww1','제1차 세계 대전':'dl-ww1','第一次世界大戰':'dl-ww1',
+      'ww2':'dl-ww2','wwii':'dl-ww2','world war 2':'dl-ww2','world war ii':'dl-ww2','world war two':'dl-ww2','second world war':'dl-ww2','第二次世界大戦':'dl-ww2','第二次大戦':'dl-ww2','二次大戦':'dl-ww2','太平洋戦争':'dl-ww2','zweiter weltkrieg':'dl-ww2','вторая мировая война':'dl-ww2','segunda guerra mundial':'dl-ww2','seconde guerre mondiale':'dl-ww2','제2차 세계 대전':'dl-ww2','第二次世界大戰':'dl-ww2',
       'submarine cables':'dl-subcables','sea cables':'dl-subcables','cables':'dl-subcables','海底ケーブル':'dl-subcables',
       'aircraft':'dl-planes','planes':'dl-planes','flights':'dl-planes','air traffic':'dl-planes','航空機':'dl-planes','飛行機':'dl-planes',
       'ships':'dl-ships','shipping':'dl-ships','vessels':'dl-ships','ship traffic':'dl-ships','船':'dl-ships','船舶':'dl-ships',
