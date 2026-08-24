@@ -331,7 +331,9 @@ function done() {
       }
     }
   }
-  console.log('\n  ⚠ まだなら:  node scripts/master-sync.mjs --sync  →  pwsh -File scripts/backup-usb.ps1');
+  /* ⚠ (#R396) `powershell`, not `pwsh` — PowerShell 7 is not installed here, so the hint this
+     line used to print was a command that could not run. See the USAGE block in the script. */
+  console.log('\n  ⚠ まだなら:  node scripts/master-sync.mjs --sync  →  powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1');
 }
 
 /* ── entry ──────────────────────────────────────────────────────────────────────────────────── */
