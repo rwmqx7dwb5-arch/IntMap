@@ -93,9 +93,13 @@
   AIは**サーバー側（Supabase Edge Function）**が当方の鍵で実行する（アカウント制・1日上限）。
 - **ニュースの地点解析でブラウザが AI を呼ぶことは無い。ユーザー向けの「AIで解析」ボタンも作らない。**
   The frontend never calls the AI to place a headline, and there is no user-facing "AI-locate" button.
-- ⚠ **現在の既定経路はブラウザ内の決定論エンジン `IntMapNewsGeo`**（`js/newsgeo.js`。ネットワーク無し・
-  乱数無し・同じ見出しは常に同じ地点）。サーバー側の事前AI解析（`refresh-news` → `current_news`）は
-  実装ごと残してあるが、`js/app-body.js` の `USE_SERVER_NEWS = false` で**読み出しを止めてある**。
+- ⚠ **既定の出来事経路（`news_events`）の地点は、サーバー側で AI が第一手段として決める**
+  （`news-ingest` の `locate` 段。決定論エンジン `IntMapNewsGeo` は**フォールバック**として後段に残す
+  ——どちらか一方が死んでも地点は消えない）。**記事モード**（検索・過去の日付・多言語モード、および
+  出来事経路に到達できないとき）は今もブラウザ内の `IntMapNewsGeo` だけ（`js/newsgeo.js`。ネットワーク無し・
+  乱数無し・同じ見出しは常に同じ地点）。⚠ これとは別に、#R40 で止めた記事単位の server feed
+  （`refresh-news` → `current_news`）は実装ごと残してあるが、`js/app-body.js` の `USE_SERVER_NEWS = false` で
+  **読み出しを止めたままである**（2 つの経路は別物。`docs/NEWS-EVENTS.md` §12）。
   ⚠ **この経路を切り替えたら、プライバシーポリシー（`js/legal-text.js`）の第4項も同じ変更で直すこと**
   ——「どこでニュースを取得し、どこで解析し、どこに保存するか」は利用者への説明義務がある事実である。
 - **同じURLは重複保存しない。AI解析済みは再解析しない。72時間より古い<u>記事</u>は表示せず Supabase からも削除。**

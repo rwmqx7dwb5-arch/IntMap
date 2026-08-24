@@ -394,9 +394,14 @@ test('⑮ the ingest logic is server-only and reaches no client bundle', () => {
   for (const f of ['src/main.js', 'src/vendor.js', 'index.html']) {
     assert.ok(!rd(f).includes('news-ingest'), f + ' must not reference news-ingest.js — it is server-only');
   }
+  /* ⚠ (#R404) 探しているのは **モジュールへの参照**（import / パス）であって、散文が
+     `news-ingest` という語を出したかどうかではない。素の語で引くと、プライバシーポリシーの
+     注釈が「どのコードがその挙動を行うか」を名指しただけで落ちる——**名指しをやめさせる**
+     ほうへ直したくなる圧力がかかり、それは監査可能性を下げる。パスで引けば、
+     `import … from '../supabase/functions/_shared/news-ingest.js'` は今までどおり捕まる。 */
   let hits = '';
   try {
-    hits = execFileSync('git', ['grep', '-l', 'news-ingest', '--', 'js/', 'src/'],
+    hits = execFileSync('git', ['grep', '-lE', 'news-ingest\.js|_shared/news-ingest', '--', 'js/', 'src/'],
       { cwd: ROOT, encoding: 'utf8' }).trim();
   } catch (e) { hits = (e.status === 1) ? '' : String(e.message); }
   assert.equal(hits, '', 'js/ or src/ references news-ingest.js: ' + hits);
@@ -457,11 +462,14 @@ test('⑱ the stages exist and are individually runnable', () => {
   /* ⚠ (#R386) SIX now: `embed` (make the material for the second, semantic pass) and `link`
      (join clusters that have already grown into each other) joined the four. The ORDER is the
      subject of the assertion below, not just the membership — `embed` before `assign` (nothing
-     to add without embeddings) and `link` after it (so events created this run are in scope). */
-  for (const s of ['fetch', 'embed', 'assign', 'link', 'translate', 'prune']) {
+     to add without embeddings) and `link` after it (so events created this run are in scope).
+     ⚠ (#R404) SEVEN: `locate` (the AI decides the subject location) sits after `fetch` — so this
+     run's arrivals are included — and before `assign`, so the events are built on, and their
+     representative pin chosen from, the AI's coordinates rather than the gazetteer's. */
+  for (const s of ['fetch', 'locate', 'embed', 'assign', 'link', 'translate', 'prune']) {
     assert.ok(fn.includes('stage' + s[0].toUpperCase() + s.slice(1)), 'stage ' + s + ' is missing');
   }
-  assert.match(fn, /\["fetch", "embed", "assign", "link", "translate", "prune"\]/);
+  assert.match(fn, /\["fetch", "locate", "embed", "assign", "link", "translate", "prune"\]/);
   /* 計測は docs/NEWS-EVENTS.md §13 の置き場へ入る。 */
   assert.match(fn, /news_ingest_runs/);
   assert.match(fn, /estimated_cost_usd/);

@@ -319,8 +319,9 @@ test('⑭ current_news と refresh-news には触れていない', () => {
   const fn = codeOnly(rd('supabase/functions/news-ingest/index.ts'));
   assert.ok(!fn.includes('current_news'));
   assert.ok(!fn.includes('refresh-news'));
-  /* 段は 6 つになったが、cron が body で選ぶ 2 本の形は変わっていない。 */
-  assert.match(fn, /\["fetch", "embed", "assign", "link", "translate", "prune"\]/);
+  /* 段は 7 つになった (#R404 の `locate`)。cron の tick はその段を選ぶよう migration が
+     書き換えるが、`translate` の job の形は変わっていない。 */
+  assert.match(fn, /\["fetch", "locate", "embed", "assign", "link", "translate", "prune"\]/);
 });
 
 test('⑮ 埋め込みが使えないことは、応答に必ず出る', () => {

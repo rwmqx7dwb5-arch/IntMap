@@ -69,7 +69,7 @@ const CASES = [
 
   /* ② `_shared/` の一覧から1本抜く。`_shared` は関数ではないので①の分母には入らない。 */
   { rule: 'edge-shared', file: 'docs/FILES.md', why: 'a name dropped from the _shared roster',
-    from: 'news-cluster.js / news-ingest.js / volcano-parse.js）', to: 'news-cluster.js / news-ingest.js）' },
+    from: 'news-cluster.js / news-geo-prompt.js / news-ingest.js / volcano-parse.js）', to: 'news-cluster.js / news-ingest.js）' },
 
   /* ② CLAUDE.md 側の同じ一覧。括弧の形に直したのは、この検査が読める形にするため。 */
   { rule: 'edge-shared', file: 'CLAUDE.md', why: 'the same roster in the standing instructions',
