@@ -30,6 +30,7 @@ import {
   buildCandidateIndex, candidateEvents, eventsAgree, eventPairCandidates, INDEX, pairScore,
 } from '../supabase/functions/_shared/news-ingest.js';
 import { DEFAULTS, pairVerdict, buildIdf } from '../supabase/functions/_shared/news-cluster.js';
+import { makeNewsClaims } from '../js/news-claims.js';   /* (#R394) 相違の規則は表示の層から出た */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readLF(path.join(ROOT, p));
@@ -285,16 +286,32 @@ test('⑫ fr / ko / zh / zh-hans の inline 表に、出来事画面の文字列
 
 /* ══ ⑬ 「相違」は媒体をまたいだときだけ ═══════════════════════════════════════════
    同じ媒体の速報 → 続報で数が変わるのは**更新**であって、媒体間の相違ではない。 */
-test('⑬ 同じ系列の中の数の変化は「相違」と呼ばない', async () => {
-  const src = rd('js/news-events.js');
-  /* 実装は module 全体が factory の中にあるので、規則そのものをコードで押さえる。 */
-  assert.ok(src.includes('famOfValue'), 'the rule must compare the families that state each value');
-  assert.ok(/if \(fams\.size < 2 \|\| famOfValue\.size < 2\) continue;/.test(src),
-    'a disagreement needs two different owners stating two different values');
+test('⑬ 同じ系列の中の数の変化は「相違」と呼ばない', () => {
+  /* ⚠ (#R394) **規則はもう js/news-events.js の中には無い。** そこに置いた結果、
+     ブラウザの外から誰も呼べず、歩留まりも精度も測れなかった——実測してみると
+     本番で 2 件出ており、うち 1 件は誤りだった。いまは js/news-claims.js の 1 本で、
+     この検査も**規則そのものを呼んで**確かめる（綴りを grep するのではなく）。 */
+  const C = makeNewsClaims();
+  const same = C.differences([
+    { title: 'Landslide at a landfill kills 3, government says', description: '', source: 'WJLA', family: 'sinclair' },
+    { title: 'Landslide at a landfill kills 5, officials say', description: '', source: 'KOMO', family: 'sinclair' },
+  ]);
+  assert.equal(same.length, 0, 'one voice updating its own figure is not a disagreement');
+
+  const cross = C.differences([
+    { title: 'Landslide at a landfill kills 3, government says', description: '', source: 'BBC', family: 'bbc' },
+    { title: 'Landslide at a landfill kills 5, officials say', description: '', source: 'AP News', family: 'apnews' },
+  ]);
+  assert.equal(cross.length, 1, 'two different owners stating two different values IS a disagreement');
+
   /* 数量の取り出しは「原文に書いてある形」だけ（推定しない）。 */
-  assert.ok(src.includes('const NUM_KINDS'));
-  assert.ok(!/estimate|guess|infer/i.test(codeOnly(src).replace(/[A-Za-z]*Info/g, '')),
+  const rule = rd('js/news-claims.js');
+  assert.ok(rule.includes('const KINDS'));
+  assert.ok(!/estimate|guess|infer/i.test(codeOnly(rule).replace(/[A-Za-z]*Info/g, '')),
     'the differences pass must not estimate anything');
+  /* 表示の層は規則を持たない。 */
+  assert.ok(!codeOnly(rd('js/news-events.js')).includes('famOfValue'),
+    'the view grew its own copy of the rule again');
 });
 
 /* ══ ⑭ #R351 が守っているものを壊していない ═════════════════════════════════════ */

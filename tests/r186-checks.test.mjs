@@ -181,9 +181,9 @@ test('R186 widgets: no ambient shadow around a widget card', () => {
     if (!bs) continue;
     /* an `inset` shadow is the glass edge INSIDE the card; anything else is the halo that was asked
        to go away. Split on commas OUTSIDE the rgba() parentheses — a naive split cuts the colour up. */
-    const parts = bs[1].replace(/rgba?\([^)]*\)/g, (c) => c.replace(/,/g, ''));
+    const parts = bs[1].replace(/rgba?\([^)]*\)/g, (c) => c.replace(/,/g, '\u0001'));
     for (const raw of parts.split(',')) {
-      const part = raw.replace(//g, ',').trim();
+      const part = raw.replace(/\u0001/g, ',').trim();
       if (!part) continue;
       assert.match(part, /inset/, `outer shadow still on a widget card: ${part}`);
     }

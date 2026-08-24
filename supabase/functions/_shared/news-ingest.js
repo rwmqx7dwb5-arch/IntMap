@@ -245,6 +245,18 @@ const NOT_A_HEADLINE = [
   /^about .+\([a-z0-9]{1,6}\.[a-z]{1,3}\)\s*$/i,  /* Reuters の ETF/銘柄ページ「About … (HBF.TO)」 */
   /^[a-z0-9]{1,6}\.[a-z]{1,3}\s*-\s*\|/i,        /* 同「HBF.TO - | Stock Price & Latest News」 */
   /^\(editorial from .+\)\s*$/i,             /* Yonhap が他紙の社説を指すスタブ。実測 3 本 */
+  /* ⚠⚠⚠ (#R394) **索引ページは 3 本ではなく 43 本あった。** #R351 が書いた上の 2 本は
+     «About … (HBF.TO)» と «HBF.TO - | Stock Price…» という 2 つの綴りだけを見ていたが、
+     Reuters は **«(IBX.N) | Stock Price & Latest News»**（先頭が括弧・`-` が無い）でも出す。
+     実測 (2026-08-24・本番の active 1,367 本): この形が **Reuters 33 本・AP 10 本 = 43 本
+     （3.1%）**混ざっており、8 つの Event を汚していた（#1221 は 3 本とも NBA の索引ページ）。
+     ⇒ 見るのは「最後の `|` のあとが**記事の見出し**か**配信の宣伝**か」。
+     ⚠⚠ **`|` そのものを門にしてはならない。** 実測: The Guardian は署名記事を
+       «Time has lost all meaning | Dave Schilling» の形で出す。`|` だけで落とすと
+       **本物の論説 4 本**を捨てる。だから `|` のあとに Latest / Breaking / Stock Price /
+       Scores / Stats / Live updates という**配信の語**があるときだけ落とす。
+     ⚠ 実測でこの規則は、`|` を持たない見出しに **1 本も当たらない**。 */
+  /\|[^|]*\b(latest|breaking|stock price|scores|stats|live updates)\b/i,
 ];
 
 /* ⚠⚠⚠ **1 本の記事が 3 つの出来事について書いていることがある。**
@@ -261,6 +273,11 @@ const MULTI_EVENT_DIGEST = [
   /,\s+more\s*$/i,                          /* Bloomberg のニュースレター「…, Trump's Ballroom, More」実測 3 本 */
   /^podcast:/i,                             /* Reuters の音声回。実測 1 本 */
   /,\s+and other [a-z ]{3,30} developments\s*$/i,  /* AP の地域まとめ。実測 2 本 */
+  /* (#R394) NPR の «Up First» 型——«<出来事A>. And, <出来事B>»。実測 (2026-08-24・
+     active 1,367 本) でこの綴りに当たるのは **1 本だけ**で、それが
+     «Trump declares economic warfare on Iran. And, SCOTUS to rule on White House ballroom»。
+     イランの経済制裁の塊（#708）に入り込んでいた。 */
+  /\.\s+And,\s/,
 ];
 /* ⚠ **見出しでは分からず、要約が名乗る digest がある。** 通信社の索引記事は
  *   «Yonhap News Summary» / «Top headlines in major S. Korean newspapers» のように
@@ -273,7 +290,7 @@ const MULTI_EVENT_DIGEST_DESC = [
   /* ⚠ 先頭にデートラインが付くことがある——「SEOUL, Aug. 22 (Yonhap) -- The following are…」。
      行頭に固定した最初の版は 4 本中 2 本しか当たらなかった（実測）。
      実測: 本番 777 本に対してこの形に当たるのは **2 本だけ**で、どちらも Yonhap の索引記事。 */
-  /^(?:.{0,80}?--\s*)?the following (is|are)/i,
+  /^(?:.{0,80}?--\s*)?the following (is|are)\b/i,
 ];
 export function titleWordCount(title) {
   const s = String(title || '');
