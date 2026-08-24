@@ -438,11 +438,6 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
         [[0,48,30],[95,28,24],[-70,0,30],[140,-8,22],[-130,40,26],[25,-15,18]].forEach(p=>{ const g=ctx.createRadialGradient(X(p[0]),Y(p[1]),2,X(p[0]),Y(p[1]),p[2]); g.addColorStop(0,'rgba(235,240,248,0.92)'); g.addColorStop(1,'rgba(235,240,248,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(X(p[0]),Y(p[1]),p[2],0,7); ctx.fill(); });
         return c.toDataURL('image/png'); },
       'dl-ec-dew':()=>gradField([[0,'#274a63'],[0.4,'#2e7f76'],[0.62,'#4db6a0'],[1,'#b6f0d7']]),
-      'dl-ec-isobars':()=>{ const b=base(null,'#0f1c2e'); if(!b) return null; const {c,ctx}=b; ctx.strokeStyle='rgba(255,255,255,0.7)'; ctx.lineWidth=0.9;
-        for(let r=8;r<62;r+=9){ ctx.beginPath(); ctx.ellipse(W*0.32,H*0.42,r*1.5,r,0.15,0,7); ctx.stroke(); }
-        for(let r=9;r<44;r+=9){ ctx.beginPath(); ctx.ellipse(W*0.78,H*0.6,r*1.3,r,-0.2,0,7); ctx.stroke(); }
-        ctx.fillStyle='#64d2ff'; ctx.font='700 12px sans-serif'; ctx.fillText('L',W*0.32-4,H*0.42+4); ctx.fillStyle='#ff8c8c'; ctx.fillText('H',W*0.78-4,H*0.6+4);
-        return c.toDataURL('image/png'); },
       'dl-ec-slp':()=>gradField([[0,'#3b5bd6'],[0.45,'#8fb4e8'],[0.6,'#f2e4c2'],[1,'#e0452f']]),
       'dl-ec-cape':()=>{ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx,'#1a2230'); drawLand(ctx,null);
         [[-95,35,26],[-58,-25,20],[88,24,18],[12,4,16],[135,-15,14]].forEach(p=>{ const g=ctx.createRadialGradient(X(p[0]),Y(p[1]),2,X(p[0]),Y(p[1]),p[2]); g.addColorStop(0,'rgba(255,90,30,0.9)'); g.addColorStop(0.6,'rgba(255,170,40,0.55)'); g.addColorStop(1,'rgba(255,170,40,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(X(p[0]),Y(p[1]),p[2],0,7); ctx.fill(); });
@@ -512,17 +507,11 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
           if(x<0||x>W||y<0||y>H) break; ctx.lineTo(x,y); }
         ctx.strokeStyle=spCol(sum/n); ctx.globalAlpha=0.85; ctx.lineWidth=1; ctx.stroke(); ctx.globalAlpha=1; }
       return c.toDataURL('image/png'); }
-    function omIsobars(F){ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx,'#0f1c2e'); drawLand(ctx,()=> '#182a41','rgba(0,0,0,0.3)');
-      let mn=1e9,mx=-1e9,mnP=null,mxP=null;
-      ctx.fillStyle='rgba(235,242,250,0.8)';
-      for(let px=0;px<W;px++){ const lon=px/W*360-180; for(let py=0;py<H;py+=1){ const lat=_inv(py);
-        if(lat>_OMLA[0]+4||lat<_OMLA[_OMLA.length-1]-4) continue;
-        const v=omAt(F,'p',lon,lat); if(v==null) continue;
-        if(v<mn){ mn=v; mnP=[px,py]; } if(v>mx){ mx=v; mxP=[px,py]; }
-        const d=Math.abs(v-Math.round(v/6)*6); if(d<0.14) ctx.fillRect(px,py,1,1); } }
-      if(mnP){ ctx.fillStyle='#64d2ff'; ctx.font='700 13px sans-serif'; ctx.fillText('L',mnP[0]-4,mnP[1]+5); }
-      if(mxP){ ctx.fillStyle='#ff8c8c'; ctx.font='700 13px sans-serif'; ctx.fillText('H',mxP[0]-4,mxP[1]+5); }
-      return c.toDataURL('image/png'); }
+    /* ⚠ (#R439) `omIsobars` AND ITS SKETCH ARE GONE WITH THE ROW THEY PREVIEWED. Both were keyed
+       by the checkbox id `dl-ec-isobars`, and 「等圧線レイヤーを取り込み」 moved that switch into the
+       sea-level-pressure legend — so from this round nothing could ever ask for them. An unreachable
+       painter that still looks like a feature is what CONSTITUTION forbids; the pressure row keeps
+       its own preview, which is the field the contours are drawn on. */
     const OMPAINT={
       'dl-ec-temp':F=>omField(F,'t',lerpRamp([[-30,60,80,160],[-10,79,131,201],[0,127,179,217],[10,159,208,143],[22,255,210,63],[32,255,140,66],[42,224,69,47]])),
       'dl-ec-dew':F=>omField(F,'dew',lerpRamp([[-20,39,74,99],[0,46,127,118],[12,77,182,160],[24,182,240,215]])),
@@ -530,7 +519,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       'dl-ec-precip':F=>omField(F,'pr',v=>(v==null||v<=0.05)?null:'rgba(64,156,255,'+Math.min(0.95,0.3+Math.sqrt(v)/3).toFixed(2)+')','#13233a'),
       'dl-ec-cape':F=>omField(F,'cape',v=>(v==null||v<80)?null:('rgba(255,'+Math.max(60,170-Math.round(v/25))+',30,'+Math.min(0.92,0.25+v/2600).toFixed(2)+')'),'#151d2b'),
       'dl-ec-slp':F=>omField(F,'p',lerpRamp([[985,59,91,214],[1000,143,180,232],[1013,242,228,194],[1028,224,69,47]])),
-      'dl-ec-wind':omWindPaint,'dl-wind':omWindPaint,'dl-ec-isobars':omIsobars
+      'dl-ec-wind':omWindPaint,'dl-wind':omWindPaint
     };
     /* async REAL painters (fall back to the sketch in PAINT[id] when the live source fails) */
     function imgLoad(url){ return new Promise(res=>{ try{ const im=new Image(); im.crossOrigin='anonymous';

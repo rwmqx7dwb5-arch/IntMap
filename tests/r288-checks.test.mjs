@@ -215,7 +215,12 @@ test('#R288 ⑥ the temperature ramp is 23 measured stops in °C, on the SDK’s
   assert.match(body, /\[115,\s*70,\s*105,\s*1\]/, 'the coldest colour is the reference’s');
   assert.match(body, /\[71,\s*14,\s*0,\s*1\]/, 'and the hottest');
   assert.match(src, /var WINDY_TEMP = rampFrom\(TEMP_ANCHORS, 0\.05\);/);
-  assert.match(src, /\{ wind: WINDY_WIND, temperature: WINDY_TEMP \}/,
+  /* ⚠ (#R439) the literal carries more families after this one (pressure, precipitation, dew
+     point). What is pinned is that the temperature ramp is registered on the SDK's FAMILY name,
+     beside the wind's — not that those two are the only entries. ⚠ AND `dew_point` IS NO LONGER
+     「a different family we leave alone」: it has its own measured table now, so the note above that
+     said the dew-point layer was untouched describes a state that ended in #R439. */
+  assert.match(src, /\{ wind: WINDY_WIND, temperature: WINDY_TEMP[,}]/,
     'registered on the SDK’s FAMILY name, so every temperature variable moves together');
   /* …and the wind ramp is built the same way, from its own anchors. ⚠ (#R293) it is no longer the
      seventeen #R284 measured: 「Windyと完全に同じ風速と色の対応に」 replaced them with windy.com's own

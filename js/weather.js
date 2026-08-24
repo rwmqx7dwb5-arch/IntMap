@@ -1095,7 +1095,17 @@ window.IntMapModules.weatherEC=function(HOST){
       {id:'ec-dew',     variable:'dew_point_2m',        type:'raster', op:1,    kind:'temp',
        label:LA('Dew point / humidity','露点・湿度','Taupunkt / Feuchte','Точка росы / влажность','Punto de rocío / humedad'),
        desc:LA('Temperature at which the air would saturate — the moisture field.','空気が飽和する温度＝水蒸気量の指標。','Temperatur, bei der die Luft sättigt — das Feuchtefeld.','Температура насыщения воздуха — поле влажности.','Temperatura de saturación del aire — el campo de humedad.')},
-      {id:'ec-isobars', variable:'pressure_msl',        type:'isobars',op:0.9,  kind:'raw',
+      /* ══ ⚠⚠⚠ (#R439) THE ISOBARS ARE A CONTROL ON THE PRESSURE LAYER, NOT A LAYER BESIDE IT ═════
+         「等圧線レイヤーを取り込み、トグルでオンオフできるように。」 — 取り込み, and the standalone row
+         goes with it (asked and answered: 「気圧に取り込み・独立行は廃止」).
+         `sub` is the whole of it: this row still has a state entry, a model, an opacity, two map
+         slots and a place in `activeLayers()`, so every mechanism — the two-slot swap, `applyTime`,
+         `commit`, the share hook, `pruneMissing` — goes on working on it UNCHANGED. What `sub` takes
+         away is the two things a reader sees: the Layers-panel row and the legend box. It is switched
+         by a checkbox inside `ec-slp`'s legend, follows `ec-slp`'s model, and goes off with it.
+         ⚠ THE STYLE-LAYER IDS ARE UNCHANGED (`ec-isobars-0`, `ec-isobars-1`, `…-lbl`). Nothing about
+         the map or the tiles moves in this round; what moves is where the switch lives. */
+      {id:'ec-isobars', variable:'pressure_msl',        type:'isobars',op:0.9,  kind:'raw', sub:'ec-slp',
        label:LA('Isobars','等圧線','Isobaren','Изобары','Isobaras'),
        desc:LA('Lines of equal sea-level pressure, labelled in hPa.','海面気圧が等しい線。数値は hPa。','Linien gleichen Luftdrucks, in hPa beschriftet.','Линии равного давления, подписи в гПа.','Líneas de igual presión al nivel del mar, en hPa.')},
       {id:'ec-slp',     variable:'pressure_msl',        type:'raster', op:1,    kind:'raw',
@@ -1194,7 +1204,15 @@ window.IntMapModules.weatherEC=function(HOST){
        the renderer is given) must be in the field's own unit. The second is FIELD_UNITS.
        ⚠ `stateKey` keeps only the SDK's DATA_RELEVANT_PARAMS (`variable`), so this changes what is
        DRAWN and nothing about what is read or cached — the same note `omRasterUrl` carries. */
-    const _tileExtra=(cfg)=>cfg.type==='arrows'?'&arrows=true':cfg.type==='isobars'?'&contours=true':'';
+    /* ⚠⚠⚠ (#R439) …AND THE LEVELS IT CONTOURS AT ARE NOW SAID OUT LOUD. With no `intervals` the SDK
+       contours at the BREAKPOINTS of the ramp it was given, and this round replaces the pressure
+       ramp with Windy's — resampled to 0.1 hPa, which is 1,801 breakpoints. Left alone, the colour
+       change would have asked the contourer for eighteen hundred lines over a field that spans
+       eighty: the two are one decision. `isobarIntervals()` answers 4 hPa expressed in the file's
+       own unit (js/wx-ecmwf.js ISOBAR_STEP_HPA × FIELD_UNITS.per), which is the interval a printed
+       surface chart uses and the one the reference draws. */
+    const _tileExtra=(cfg)=>cfg.type==='arrows'?'&arrows=true'
+      :cfg.type==='isobars'?('&contours=true&intervals='+EC(cfg).isobarIntervals()):'';
     /* ⚠⚠ (#R398) THE ISOBAR LABEL IS THE CONTOUR LEVEL, AND THE LEVEL IS IN THE FILE'S UNIT.
        The SDK writes `properties.value` as the value it contoured at, and it contours at the
        breakpoints of the ramp it was given — which is the ramp in FIELD units (js/wx-ecmwf.js
@@ -1252,6 +1270,23 @@ window.IntMapModules.weatherEC=function(HOST){
     }
     function dropSlot(cfg,s){ slotIds(cfg,s).forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} });
       try{ const sid=cfg.id+'-'+s+'-src'; if(GE().layers.hasSource(sid)) GE().layers.removeSource(sid); }catch(_){} }
+    /* ══ ⚠⚠⚠ (#R439) THE CONTOURS GO ON TOP OF THE FIELD THEY ARE CONTOURS OF ═══════════════════
+       Every ECMWF layer is placed at the SAME anchor (`IntMapECMWF.before()`), so between two of
+       them the order is simply 「who was added last」 — and `lift` cannot fix it, because it declines
+       to move anything that is already above the night shading (see its note).
+       MEASURED on the built page with both on: `ec-isobars-0, ec-isobars-0-lbl, ec-slp-0`, i.e. the
+       OPAQUE sea-level-pressure raster on top of 3,299 contour features that had been fetched,
+       parsed and drawn. Nothing was broken in any way a source-shape check could see — the tiles
+       were right, the levels were right, the labels were right, and not one line was visible.
+       This is the #R398 shape from the other side, and only a screenshot found it.
+       → after anything (re)builds a PARENT's slot, its live sub-layers are moved back on top, in
+       their own order (line, then labels). It runs only when a sub-layer is actually on, so a
+       reader with no contours up pays nothing. */
+    function raiseSubs(parentId){
+      try{ LAYERS.forEach(l=>{ if(!l.sub||(parentId&&l.sub!==parentId)) return;
+        if(!(state[l.id]&&state[l.id].on)) return;
+        curIds(l).forEach(id=>{ try{ EC(l).toTop(id); }catch(_){} }); }); }catch(_){}
+    }
     function addLayer(cfg){ return addSlot(cfg,cfg._s|0); }
     function removeLayer(cfg){ dropSlot(cfg,0); dropSlot(cfg,1); }
     function setVisSlot(cfg,s,on){ slotIds(cfg,s).forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); }catch(_){} }); }
@@ -1275,23 +1310,69 @@ window.IntMapModules.weatherEC=function(HOST){
        off without anyone touching this box — the reader unchecks the row, a session restore turns
        it off, or `toggle`'s own catch turns it off because ECMWF could not be reached — and every
        one of those paths already goes through `syncLegend`. */
-    const TPARTS_KEY='intmap_wx_temp_parts';
-    let tempParts=false; try{ tempParts=(localStorage.getItem(TPARTS_KEY)==='1'); }catch(_){}
+    /* ⚠⚠ (#R439) THREE LAYERS ASK FOR THE STREAKS NOW, AND EACH REMEMBERS ITS OWN ANSWER ════════
+       「最大瞬間風速レイヤーにもパーティクルをつけて」「気圧レイヤーもパーティクルつけて」
+       #R337 wrote this as one boolean because there was one layer that could ask. A single flag
+       cannot answer three: a reader who wants streaks over the pressure field and not over the
+       temperature field has to be able to say so, and 「the box is ticked」 has to survive switching
+       between them. So the preference is per LAYER — its own key, its own default — and what
+       crosses to js/weather.js's wind module is still ONE effective boolean, because that module
+       only draws one set of streaks.
+       ⚠ `ec-temp` KEEPS ITS ORIGINAL KEY. A reader who ticked that box before this round has it
+       stored under `intmap_wx_temp_parts`; renaming it would silently untick it for everybody.
+       ⚠ DEFAULT OFF for all three, for #R337's reason: the streaks are two more variables (u AND v)
+       that a reader with only a raster up has never downloaded. */
+    const PARTS_KEYS={'ec-temp':'intmap_wx_temp_parts','ec-gust':'intmap_wx_gust_parts','ec-slp':'intmap_wx_slp_parts'};
+    const PARTS_IDS=Object.keys(PARTS_KEYS);
+    const parts=Object.create(null);
+    PARTS_IDS.forEach(id=>{ let v=false; try{ v=(localStorage.getItem(PARTS_KEYS[id])==='1'); }catch(_){} parts[id]=v; });
+    const partsOn=(id)=>!!parts[id];
+    /* ⚠ THE OR OVER EVERY ASKING LAYER. `Wind.setSolo` is 「something other than the Wind layer wants
+       the streaks」 and is idempotent, so the effective answer is 「any layer whose box is ticked is
+       on」 — pushing per-layer would let the last one to change speak for all of them. */
     function pushWindSolo(){ try{ const W=window.Wind;
-      if(W&&W.setSolo) W.setSolo(!!(tempParts&&state['ec-temp']&&state['ec-temp'].on)); }catch(_){} }
-    function setTempParts(v){ tempParts=!!v;
-      try{ localStorage.setItem(TPARTS_KEY,tempParts?'1':'0'); }catch(_){}
+      if(W&&W.setSolo) W.setSolo(PARTS_IDS.some(id=>parts[id]&&state[id]&&state[id].on)); }catch(_){} }
+    function setParts(id,v){ if(!(id in PARTS_KEYS)) return;
+      parts[id]=!!v;
+      try{ localStorage.setItem(PARTS_KEYS[id],parts[id]?'1':'0'); }catch(_){}
       pushWindSolo();
       /* the legend body is rebuilt whole on every render, so re-rendering is how the box catches up
          when Atlas — not the box — was the one that answered */
-      try{ if(state['ec-temp']&&state['ec-temp'].on) renderLegend(); }catch(_){} }
+      try{ if(state[id]&&state[id].on) renderLegend(); }catch(_){} }
+    /* ══ ⚠⚠ (#R439) THE ISOBARS, AS A SWITCH ON THE PRESSURE LEGEND ══════════════════════════════
+       The preference is 「draw contours over the pressure field」; whether anything is actually on the
+       map is that AND the pressure layer being on, which is `syncSubs`. Same shape as the streaks
+       above and for the same reason — one place decides, everything else reports. */
+    const ISO_KEY='intmap_wx_isobars';
+    let isoOn=false; try{ isoOn=(localStorage.getItem(ISO_KEY)==='1'); }catch(_){}
+    const isobarsOn=()=>isoOn;
+    function setIsobars(v){ isoOn=!!v;
+      try{ localStorage.setItem(ISO_KEY,isoOn?'1':'0'); }catch(_){}
+      syncSubs();
+      try{ if(state['ec-slp']&&state['ec-slp'].on) renderLegend(); }catch(_){} }
     /* ⚠ (#R337) THE ONE DOOR. The legend box, Atlas's dispatch and Atlas's inline toggle all come
        through here, so no two of them can hold different ideas of the state — the same shape
        `window._imNatoStyle` uses in js/data-layers.js: no argument READS, an argument WRITES. */
-    window._imWxTempParts=(v)=>{ if(v==null) return tempParts; setTempParts(v); return tempParts; };
+    /* (#R439) …one door PER QUESTION. `_imWxParts` takes the layer; `_imWxTempParts` is what #R337
+       published and half a dozen callers name, so it stays as the temperature layer's door onto it
+       rather than becoming a second answer. */
+    window._imWxParts=(id,v)=>{ if(v==null) return partsOn(id); setParts(id,v); return partsOn(id); };
+    window._imWxTempParts=(v)=>{ if(v==null) return partsOn('ec-temp'); setParts('ec-temp',v); return partsOn('ec-temp'); };
+    window._imWxIsobars=(v)=>{ if(v==null) return isobarsOn(); setIsobars(v); return isobarsOn(); };
+    /* ⚠ (#R439) A SUB-LAYER IS ON ONLY WHILE ITS PARENT IS, AND ALWAYS ON ITS PARENT'S MODEL.
+       Called from every path that can change either half — the parent's toggle, the isobar box, and
+       `setModel` — so there is no state in which the contours are drawn over a raster they do not
+       belong to. It recurses no further than one step: a sub-layer's own `toggle` does not call it. */
+    function subWant(l){ if(l.id==='ec-isobars') return !!(isoOn&&state['ec-slp']&&state['ec-slp'].on); return false; }
+    function syncSubs(){ LAYERS.filter(l=>l.sub).forEach(l=>{ const st=state[l.id]; if(!st) return;
+      const want=subWant(l), p=state[l.sub];
+      if(p&&st.model!==p.model){ st.model=p.model; if(st.on&&want) applyTime(l); }
+      if(!!st.on!==want) toggle(l.id,want); }); }
     function toggle(id,on){ const cfg=LAYERS.find(l=>l.id===id); if(!cfg) return;
       state[id].on=on;
       syncLegend();
+      /* (#R439) whatever this row owns follows it — the isobars go off with the pressure raster */
+      if(!cfg.sub) syncSubs();
       if(!on){ setVis(cfg,false); return; }
       /* (#R290) 「気温レイヤーをオンにしたときも海岸線・湖岸線を自動オン。」 — the same latch the wind
          uses (js/coast-line.js `_imCoastAuto`), for the same reason: a full-planet colour field
@@ -1309,7 +1390,7 @@ window.IntMapModules.weatherEC=function(HOST){
            instruction puts it: see the note in the wind module.) */
         let n=0;
         const go=()=>{ if(!state[id].on) return;
-          if(_imCanDraw()&&addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); renderLegend(); warmReadout();
+          if(_imCanDraw()&&addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); raiseSubs(id); renderLegend(); warmReadout();
             /* (#R356) the FIRST paint commits the same way a later one does — when the source has
                actually loaded, not when the layer was asked for. Until then `displayed` is null and
                the legend says 「読み込み中」 rather than naming an hour nothing is showing yet. */
@@ -1327,6 +1408,8 @@ window.IntMapModules.weatherEC=function(HOST){
         state[id].on=false;
         const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); }
         syncLegend();
+        /* (#R439) a parent that could not be reached takes its sub-layers down with it */
+        if(!cfg.sub) syncSubs();
       });
     }
     window.toggleWeatherLayer=toggle;
@@ -1379,6 +1462,11 @@ window.IntMapModules.weatherEC=function(HOST){
              model to rebuild would be a read nobody asked for. The build below is the one read. */
           if(isFinite(ms)) inst.setIndex(inst.nearestTo(ms),{quiet:true}); }
         wireModel(inst);
+        /* ⚠ (#R439) A SUB-LAYER READS ITS PARENT'S MODEL. Without this the isobars would go on
+           contouring the model they were switched on with while the raster under them had moved to
+           another one — two models in one picture, which is exactly what 「地図、粒子、凡例、地点値が
+           同じ表示状態を参照」 forbids. `syncSubs` copies it and rebuilds the slot when it is on. */
+        syncSubs();
         if(!state[id].on){ state[id].loading=null; renderOne(cfg);
           /* the layer is off: the model is chosen and will be used the moment it is switched on.
              That is a true outcome and it is NOT 「表示されている」, so it says which one it is. */
@@ -1410,6 +1498,11 @@ window.IntMapModules.weatherEC=function(HOST){
 
     function anyOn(){ return LAYERS.some(l=>state[l.id].on); }
     function activeLayers(){ return LAYERS.filter(l=>state[l.id].on); }
+    /* ⚠ (#R439) THE MAP'S LIST AND THE READER'S LIST ARE NOT THE SAME LIST. `activeLayers` drives
+       everything that touches the map — the slots, `applyTime`, the prefetch, the model wiring —
+       and a sub-layer belongs in all of it. `legendLayers` drives everything a reader SEES, and a
+       sub-layer has no box: its switch lives inside its parent's legend. */
+    function legendLayers(){ return activeLayers().filter(l=>!l.sub); }
     /* ══ ⚠⚠ (#R290) THE FIELD THE READOUT NEEDS IS WARMED WITH THE PICTURE ═══════════════════
        The colour tiles are decoded inside the SDK; the NUMBER under the cursor comes from a
        decoded field this module has to hold (js/wx-ecmwf.js `valueNow`). Asking for it only when
@@ -1513,6 +1606,9 @@ window.IntMapModules.weatherEC=function(HOST){
             if((cfg._s|0)!==nu){ cfg._s=nu; }
             setOpSlot(cfg,nu,state[cfg.id].op);
             dropSlot(cfg,old);
+            /* (#R439) a new slot goes in at the shared anchor, i.e. on top — so the contours have to
+               be put back over the field they belong to. See `raiseSubs`. */
+            raiseSubs(cfg.id);
             /* the pixels and the words change in the same turn */
             commit(cfg,prov); renderOne(cfg); };
           whenSourceLoaded(cfg.id+'-'+nu+'-src',reveal,12000);
@@ -1733,21 +1829,37 @@ window.IntMapModules.weatherEC=function(HOST){
        what I am looking at」. Same markup as the wind's, so the two read as one kind of control.
        ⚠ THE BOX NEVER HOLDS THE ANSWER. This body is replaced whole by innerHTML on every render,
        so `checked` is read from the module on each pass — the same rule the wind legend follows. */
+    /* (#R439) …and the same box is now on the gust and the sea-level-pressure legends, because the
+       question 「draw the moving air over what I am looking at」 is the same question there. */
     function windPartsRow(cfg){
-      if(cfg.id!=='ec-temp') return '';
+      if(!(cfg.id in PARTS_KEYS)) return '';
       return '<label class="kl-period wind-parts-row" style="margin:7px 0 2px;cursor:pointer;">'
-        +'<input type="checkbox" class="ec-wind-parts"'+(tempParts?' checked':'')+' style="accent-color:var(--primary-color);margin:0;cursor:pointer;">'
+        +'<input type="checkbox" class="ec-wind-parts" data-for="'+esc(cfg.id)+'"'+(partsOn(cfg.id)?' checked':'')+' style="accent-color:var(--primary-color);margin:0;cursor:pointer;">'
         +'<span style="font-size:11px;color:var(--text-muted);">'
         +L('Wind particles','風のパーティクル','Wind-Partikel','Частицы ветра','Partículas de viento')
         +'</span></label>';
     }
+    /* ⚠ (#R439) THE ISOBARS' SWITCH, in the legend of the field they are contours OF — #R16's rule
+       again (docs/MAP-LAYERS.md §7.10). It reads the module on every render for the same reason the
+       box above does: the body is replaced whole, so the checkbox can never be the answer. */
+    function isobarRow(cfg){
+      if(cfg.id!=='ec-slp') return '';
+      const iso=LAYERS.find(l=>l.id==='ec-isobars');
+      if(!iso) return '';
+      return '<label class="kl-period wx-iso-row" style="margin:7px 0 2px;cursor:pointer;">'
+        +'<input type="checkbox" class="ec-isobars-box"'+(isobarsOn()?' checked':'')+' style="accent-color:var(--primary-color);margin:0;cursor:pointer;">'
+        +'<span style="font-size:11px;color:var(--text-muted);">'
+        +esc(ecLbl(iso))+' · '+EC(cfg).ISOBAR_STEP_HPA+' hPa'
+        +'</span></label>';
+    }
     function renderOne(cfg){
+      if(cfg.sub) return;   /* (#R439) a sub-layer has no legend box of its own — see the note on `sub` */
       const el=boxFor(cfg);
       const clock=window.IntMapWxPlayer.timeUI('ec-time-'+cfg.id,EC(cfg),L);
       el.innerHTML=dragHandle()
         +'<button class="layer-popup-x" title="'+t('close')+'">×</button>'
         +'<h4>'+ecLbl(cfg)+'</h4>'
-        +'<div class="ecl-one">'+barBody(cfg)+opRow(cfg)+windPartsRow(cfg)+modelLine(cfg)+clock
+        +'<div class="ecl-one">'+barBody(cfg)+opRow(cfg)+isobarRow(cfg)+windPartsRow(cfg)+modelLine(cfg)+clock
         +'<div class="ecl-when" data-for="'+cfg.id+'">'+whenLine(cfg)+'</div>'
         +'</div>';
       closeBtn(el);
@@ -1757,7 +1869,9 @@ window.IntMapModules.weatherEC=function(HOST){
         const row=document.querySelector('.ec-op[data-for="'+cfg.id+'"]'); if(row) row.value=String(v); };
       /* (#R337) the switch reports; the module decides — the same door the wind legend uses */
       const wp=el.querySelector('.ec-wind-parts');
-      if(wp) wp.onchange=()=>{ setTempParts(wp.checked); };
+      if(wp) wp.onchange=()=>{ setParts(cfg.id,wp.checked); };
+      const ib=el.querySelector('.ec-isobars-box');
+      if(ib) ib.onchange=()=>{ setIsobars(ib.checked); };
       /* ⚠ (#R356) `EC(cfg)`, not `EC()` — this legend's clock is the axis of the model THIS layer
          reads, and with a model per layer those are different axes. */
       if(clock) window.IntMapWxPlayer.wireTimeUI(el,'ec-time-'+cfg.id,EC(cfg));
@@ -1770,10 +1884,10 @@ window.IntMapModules.weatherEC=function(HOST){
       activeLayers().forEach(renderOne);
       try{ window._tileLegends&&window._tileLegends(); }catch(_){}
     }
-    function syncLegend(){ const show=anyOn();
+    function syncLegend(){ const show=legendLayers().length>0;
       pushWindSolo();   /* (#R337) every path that changes a layer's on-state comes through here */
       LAYERS.forEach(l=>{ const el=boxes[l.id]; if(el&&!(state[l.id]&&state[l.id].on)) el.style.display='none'; });
-      if(show){ activeLayers().forEach(l=>{ boxFor(l).style.display='block'; }); renderLegend(); }
+      if(show){ legendLayers().forEach(l=>{ boxFor(l).style.display='block'; }); renderLegend(); }
       /* the tiler owns where the legends sit; opening or closing one moves every box below it */
       try{ window._tileLegends&&window._tileLegends(); }catch(_){} }
     window._ecSyncTimeLegend=syncLegend;
@@ -1791,6 +1905,7 @@ window.IntMapModules.weatherEC=function(HOST){
       const dd=document.getElementById('layer-dropdown'); if(!dd||rowsMounted) return;
       rowsMounted=true;
       LAYERS.forEach(l=>{
+        if(l.sub) return;   /* (#R439) a sub-layer's switch lives in its parent's legend, not here */
         if(document.getElementById('lyrrow-'+l.id)) return;
         const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+l.id;
         w.innerHTML='<label class="layer-option"><input type="checkbox" id="dl-'+l.id+'"> <span class="ec-lbl">'+ecLbl(l)+'</span></label><input type="range" class="lyr-op ec-op" data-for="'+l.id+'" min="0" max="1" step="0.05" value="'+state[l.id].op+'">';
@@ -1827,8 +1942,18 @@ window.IntMapModules.weatherEC=function(HOST){
     }
 
     /* re-attach after a style swap */
-    GE().events.on('styledata',()=>{ if(anyOn()){ setTimeout(()=>{ if(!_imCanDraw())return; activeLayers().forEach(cfg=>{ if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } }); },80); } });
-    GE().events.on('idle',()=>{ if(!anyOn()) return; activeLayers().forEach(cfg=>curIds(cfg).forEach(l=>{ try{ EC(cfg).lift(l); }catch(_){} })); });
+    GE().events.on('styledata',()=>{ if(anyOn()){ setTimeout(()=>{ if(!_imCanDraw())return; let put=false;
+      activeLayers().forEach(cfg=>{ if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); put=true; } });
+      if(put) raiseSubs(); },80); } });
+    /* ⚠⚠ (#R439) `lift` FIRST — it is the rescue from under the night shading (#R299) and it moves
+       nothing that is already above it — and the sub-layers go back on top ONLY IF ONE OF THEM
+       ACTUALLY MOVED. `raiseSubs` moves layers, moving a layer makes the map draw again, and a draw
+       ends in another `idle`: raising unconditionally here is an infinite loop, at two moveLayer
+       calls a frame, for as long as the contours are on. `lift`'s own boolean is what breaks it —
+       once everything is above the shading it is false for ever and this costs nothing. */
+    GE().events.on('idle',()=>{ if(!anyOn()) return; let moved=false;
+      activeLayers().forEach(cfg=>curIds(cfg).forEach(l=>{ try{ if(EC(cfg).lift(l)) moved=true; }catch(_){} }));
+      if(moved) raiseSubs(); });
     /* ⚠ (#R284) `index` fires on EVERY slider pixel and `time` once the drag has settled — see
        IntMapECMWF.setIndex. `index` therefore updates the one thing that must feel instant, IN
        PLACE: re-rendering the box would replace the button under the reader's finger.
@@ -1867,6 +1992,14 @@ window.IntMapModules.weatherEC=function(HOST){
         const vt=EC().validTime(); if(vt&&EC().index()!==EC().nowIndex()) o.t=vt;
         if(Object.keys(ops).length) o.op=ops;
         if(Object.keys(mdl).length) o.m=mdl;
+        /* ⚠ (#R439) THE TWO SWITCHES THAT ARE NO LONGER CHECKBOXES HAVE TO TRAVEL HERE. The `l=`
+           parameter carries `dl-*` ids, and the isobars and the per-layer streaks are not rows any
+           more — so a link that showed contours over the pressure field would open without them.
+           Written only when they are ON, so an old link and a link from a reader who never touched
+           either switch stay byte-identical to what they were before this round. */
+        if(isoOn&&state['ec-slp']&&state['ec-slp'].on) o.iso=1;
+        const pr=PARTS_IDS.filter(id=>parts[id]&&state[id]&&state[id].on);
+        if(pr.length) o.wp=pr.join(',');
         try{ const ws=document.getElementById('op-wind'); const wo=ws?+ws.value:1; if(isFinite(wo)&&wo!==1) o.wo=+wo.toFixed(2); }catch(_){}
         return Object.keys(o).length?o:null; },
       set(v){ if(!v) return;
@@ -1880,11 +2013,16 @@ window.IntMapModules.weatherEC=function(HOST){
              を明示」 — the same rule for models. `setModel` refuses with a reason and puts the picker
              back on the model that IS drawing, which is the honest end state. */
           if(v.m) Object.keys(v.m).forEach(id=>{ if(!state[id]) return; setModel(id,v.m[id]); });
+          /* (#R439) …and the two that are not checkboxes. `setIsobars`/`setParts` are the same one
+             door the legend box and Atlas use, so a restore cannot leave the switch and the picture
+             disagreeing. ⚠ `l=` has already ticked the parent rows by the time this runs. */
+          if(v.iso!=null) setIsobars(!!(+v.iso));
+          if(v.wp!=null) String(v.wp).split(',').forEach(id=>{ if(id in PARTS_KEYS) setParts(id,true); });
           if(v.wo!=null){ const s=document.getElementById('op-wind'); if(s){ s.value=v.wo; s.dispatchEvent(new Event('input',{bubbles:true})); } }
         }).catch(()=>{});
       } }; }
 
-    return { open(){ if(!anyOn()) return; activeLayers().forEach(l=>{ boxFor(l).style.display='block'; }); renderLegend(); },
+    return { open(){ if(!anyOn()) return; legendLayers().forEach(l=>{ boxFor(l).style.display='block'; }); renderLegend(); },
       toggle, setOp:(id,op)=>{ const c=LAYERS.find(l=>l.id===id); if(c) setOp(c,op); },
       layerFor:(id)=>LAYERS.find(l=>l.id===id)||null,
       activeVariable:()=>{ const a=activeLayers().filter(l=>l.type==='raster'); return a.length?a[a.length-1]:null; },
@@ -1900,6 +2038,10 @@ window.IntMapModules.weatherEC=function(HOST){
       engineFor:(id)=>{ const c=LAYERS.find(l=>l.id===id); return c?EC(c):EC(); },
       modelOf:(id)=>{ const c=LAYERS.find(l=>l.id===id); const d=c&&displayed(c); return d?d.modelId:null; },
       provenanceOf:(id)=>{ const c=LAYERS.find(l=>l.id===id); return (c&&displayed(c))||null; },
+      /* (#R439) the two switches that are not rows. Same read/write shape as everything else here;
+         the published doors are `window._imWxParts` / `window._imWxIsobars`. */
+      parts:partsOn, setParts, partsLayers:()=>PARTS_IDS.slice(),
+      isobars:isobarsOn, setIsobars,
       _layers:LAYERS, _state:state };
   })();
 };

@@ -192,6 +192,35 @@ window.IntMapModules.dataLayers=function(HOST){
          Sized from the SAME declarations the rest of the legend uses (10.5px body, 9.5px hints) — a
          panel whose inner controls are twice the size of the legend beside it is #R275's report. */
       .data-legend .ecl-model{ color:var(--text-muted); font-size:9.5px; line-height:1.35; margin:0 0 5px; }
+      /* ══ ⚠⚠⚠ (#R439) THE MODEL PICKER HAD NO CSS AT ALL ═══════════════════════════════════════
+         ⚠⚠ NO BACKTICKS ANYWHERE IN THIS COMMENT — this whole block is inside a JS template
+         literal, and one backtick here ends the string and blanks the site (memory: #R? 「CSSに
+         バッククォートを入れるな」). Names below are quoted with «» for that reason.
+         「モデルの選択欄が凡例から突き出ている。」 MEASURED: «.ecl-modelpick» appears in exactly one
+         place in this repository — the string that BUILDS it in js/weather.js. It was never styled,
+         so the «select» inside it was a bare native control, and a bare native control sizes to
+         its WIDEST OPTION. The options carry the model name plus, when a model cannot draw that
+         layer, the reason («NOAA GFS 0.13° — この気圧面は未提供»), which is far wider than the
+         178 px box (158 px of content) the legend actually is — so it hung out of the panel, over
+         the map, on every weather legend. #R356 added the picker and the styling never followed.
+         → the label goes ABOVE the control and the control takes the full content width.
+         ⚠ «min-width:0» IS THE LOAD-BEARING LINE. A flex item's automatic minimum size is its
+         MIN-CONTENT width, and for a «select» that is the widest option again — so «width:100%»
+         alone does not stop it, and this is why an obvious-looking one-liner would not have fixed
+         it. «box-sizing:border-box» keeps the border and padding inside the 100%.
+         ⚠ THE NATIVE DROPDOWN ARROW IS KEPT (no «appearance:none»): it is the only affordance that
+         says this is a control rather than a line of text, and #R290 is about controls a reader
+         cannot reach. Sized from «.ecl-b», like every other control in this legend. */
+      .data-legend .ecl-modelpick{ margin:5px 0 4px; min-width:0; }
+      .data-legend .ecl-modelpick label{ display:flex; flex-direction:column; gap:2px; min-width:0; font-size:9px; color:var(--text-muted); }
+      .data-legend .ecl-modelpick select{ display:block; width:100%; max-width:100%; min-width:0; box-sizing:border-box;
+        height:20px; padding:0 4px; font-size:9.5px; line-height:1; font-family:inherit;
+        border:1px solid var(--glass-border,rgba(128,128,128,0.2)); border-radius:6px;
+        background:var(--input-bg); color:var(--text-main); cursor:pointer; }
+      .data-legend .ecl-modelpick select:hover{ border-color:var(--primary-color); }
+      /* (#R439) the isobar switch, beside the wind-particle switch it is modelled on */
+      .data-legend .wx-iso-row, .data-legend .wind-parts-row{ display:flex; align-items:center; gap:6px; min-width:0; }
+      .data-legend .wx-iso-row span, .data-legend .wind-parts-row span{ min-width:0; overflow-wrap:anywhere; }
       .data-legend .ecl-player{ display:flex; gap:3px; justify-content:center; margin:5px 0 3px; }
       .data-legend .ecl-b, .data-legend .rv-b{ flex:0 0 auto; min-width:22px; height:20px; padding:0 4px; font-size:10.5px; line-height:1; border:1px solid var(--glass-border,rgba(128,128,128,0.2)); border-radius:6px; background:var(--input-bg); color:var(--text-main); cursor:pointer; }
       .data-legend .ecl-b:hover, .data-legend .rv-b:hover{ background:var(--primary-color); color:#fff; border-color:transparent; }
@@ -213,7 +242,13 @@ window.IntMapModules.dataLayers=function(HOST){
          one shared time control rather than carrying a second copy of it. */
       /* (#R290) 「いつの絵か」 is a READING now, not a button — the hour is chosen in this same box
          (window.IntMapWxPlayer.timeUI) rather than in a control somewhere else. */
-      .data-legend .ecl-when{ display:block; width:100%; margin-top:5px; padding:4px 6px; border:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:7px; background:var(--input-bg); color:var(--text-main); font-weight:600; font-size:9.5px; text-align:center; font-variant-numeric:tabular-nums; }
+      /* ⚠ (#R439) «box-sizing:border-box». MEASURED in the browser while fixing the model picker:
+         this line is «width:100%» plus 12 px of padding and 2 px of border with the default
+         content-box sizing, so it was 4 px WIDER than the legend and hung out of the right edge on
+         every weather legend — the same 「凡例から突き出ている」 the picker was reported for, one
+         control along. The whole legend is now asserted as a rectangle (tests/r439.spec.js ①),
+         which is what found it: a per-control check would have passed. */
+      .data-legend .ecl-when{ display:block; width:100%; box-sizing:border-box; margin-top:5px; padding:4px 6px; border:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:7px; background:var(--input-bg); color:var(--text-main); font-weight:600; font-size:9.5px; text-align:center; font-variant-numeric:tabular-nums; }
       .data-legend .ecl-timesel{ font-variant-numeric:tabular-nums; }
       .data-legend #ec-validtime, .data-legend #wind-validtime{ color:var(--text-main); font-weight:600; font-size:9.5px; margin-top:3px; text-align:center; }
       .data-legend .rv-player{ margin:5px 0 2px; }
@@ -1548,7 +1583,18 @@ window.IntMapModules.dataLayers=function(HOST){
                · `wbpm25` PM2.5大気汚染 : Health → Climate & atmosphere, where the other three air
                  -composition rasters (AOD, UV aerosol index, CO) already are. Air pollution was
                  split across two shelves by whether the number came from a satellite or a table. */
-          ['lyrGrpClimate',['climate','ec-temp','annprecip','wind','radar','ec-cloud','snow','aod','wbpm25','wbco2']],   /* (#R289) the two CO₂ rows (#R261) are ONE row with a total/per-capita switch in its own legend; 紫外線エアロゾル指数・一酸化炭素・雲・赤外 are deleted */
+          /* ══ ⚠⚠ (#R439) FOUR ECMWF ROWS PROMOTED OUT OF 「その他 (beta)」 ═══════════════════════
+             「気圧レイヤー、最大瞬間風速レイヤーは気象レイヤーに昇格」, and then 「降水量、露点もWindyと
+             グラフィックをRGBレベルで対応させる作業やってから、気候・気象レイヤーに。」 — i.e. the
+             promotion is conditional on the work, and the work is this round's: all four now paint
+             from a table fitted to windy.com's own paint function (js/wx-ecmwf.js), the gust layer
+             on the wind family #R293 already fitted, and the pressure layer carries the isobars.
+             ⚠ #R273's note says no row an instruction DEMOTED is promoted back on a judgement of
+             ours — 「beta」 is a judgement about quality. This is not ours: it is four rows named by
+             name, with the reason the reader gave for each. `ec-wind` (the 10 m arrows) and
+             `ec-cape` were NOT named and stay where they are.
+             ⚠ `ec-isobars` IS NOT IN ANY LIST ANY MORE — it is not a row. See js/weather.js `sub`. */
+          ['lyrGrpClimate',['climate','ec-temp','annprecip','wind','radar','ec-cloud','ec-precip','ec-slp','ec-gust','ec-dew','snow','aod','wbpm25','wbco2']],   /* (#R289) the two CO₂ rows (#R261) are ONE row with a total/per-capita switch in its own legend; 紫外線エアロゾル指数・一酸化炭素・雲・赤外 are deleted */
           /* (#R202) `sats` moved OUT of Maritime and into its own group, second from the top — see the
              lyrGrpOrbit note above. Nothing else moved: live aircraft stay where they were. */
           ['lyrGrpOrbit',['sats','osmspace','aurora']],   /* (#R261) +spaceports and satellite ground stations — a one-row shelf is not a category */
@@ -1750,7 +1796,11 @@ window.IntMapModules.dataLayers=function(HOST){
           ['lyrGrpOthersReal',[]]
         ];
         /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */
-        const OTHERS_IDS=['ec-precip','precip','ec-wind','ec-dew','ec-isobars','ec-slp','ec-cape','ec-sst'];   /* (#R261) `ships` → Transport, `dams` → Energy & resources */   /* (#R225) the nine geopolitics keys left this list with the layers themselves */
+        /* (#R439) −ec-precip −ec-dew −ec-slp (promoted to 気候・気象, see the GROUPS note) and
+           −ec-isobars (no longer a row at all — it is a switch inside the pressure legend).
+           `ec-gust` was never in this list; it reached Beta through the safety sweep below, and it
+           now reaches 気候・気象 through the group. */
+        const OTHERS_IDS=['precip','ec-wind','ec-cape','ec-sst'];   /* (#R261) `ships` → Transport, `dams` → Energy & resources */   /* (#R225) the nine geopolitics keys left this list with the layers themselves */
         const rowFor=(id)=>{ let el=document.getElementById('lyrrow-'+id); if(el) return el;
           /* (#R20) beta-dl- so promoted ex-beta layers (histb, ukrfront) can be filed into a real group.
              (#R254) …and wp-dl- for the same reason, so a world-packs row (energy mix) can be too. */
