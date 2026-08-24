@@ -561,7 +561,7 @@ window.IntMapPageI18N.define('zh-hant', {
     "Inter / Pretendard (bundled, SIL OFL 1.1)": "拉丁／斯拉夫字母與韓文字型，隨網站一併提供——包含「地圖」自身標籤所用的 SDF 字形圖集，由 scripts/build-glyphs.mjs 自 Inter 產生（沒有公開字形伺服器提供 Inter）。授權與出處標示請見 fonts/README.md。",
     "ESA WorldCover": "10 公尺解析度的全球土地覆蓋分類",
     "RESOLVE / WWF Ecoregions 2017": "陸域生態區",
-    "Smithsonian GVP": "隨應用程式一併附上（data/volcanoes_gvp.json 與 data/volcano-detail.json.gz，由 scripts/build-volcanoes.mjs 從 GVP 的 WFS 產生）：完整的全新世目錄並帶有連結鍵，其後還有 11,089 筆噴發及其 VEI 與日期、火山類型、地形分類、構造環境與主要岩石、地質概要、照片，以及半徑 5、10、30、100 公里內的人口。火山資訊卡關於過去的一切，都是離線從這個檔案讀取的。",
+    "Smithsonian GVP": "隨應用程式一併附上（data/volcanoes_gvp.json 與 data/volcano-detail.json.gz，由 scripts/build-volcanoes.mjs 從 GVP 的 WFS 產生）：完整的全新世目錄並帶有連結鍵，其後還有 GVP 為該目錄中的火山所記錄的每一次噴發及其 VEI 與日期、火山類型、地形分類、構造環境與主要岩石、地質概要、照片，以及半徑 5、10、30、100 公里內的人口。火山資訊卡關於過去的一切，都是離線從這個檔案讀取的。",
     "DeepStateMap": "烏克蘭前線（測試版圖層）",
     "historical-basemaps (aourednik)": "歷史國界——測試版疊圖圖層，也是地圖本身歷史年份國界的自動備援（取最接近的快照），而在 CShapes 的下限 1886 年之前更是唯一的國界來源。上游只有 1815 與 1880 兩張 1900 年以前的快照，因此 1850–1885 年全部以 1880 年的國界繪製",
     "CShapes 2.0 (Schvitz et al., ETH Zürich)": "供時光機使用的 1886–2019 年逐年國際疆界（每次疆界變動皆標註年份；自行代管的簡化副本）。1945–2019 年東德、西德與統一後德國的疆界，已依權威的現代邦界資料（deutschlandGeoJSON, © GeoBasis-DE / BKG）重建，使兩德邊界符合實情。 兩次世界大戰圖層沿戰線切割的國家輪廓，用的也是這份資料。",
