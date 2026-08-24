@@ -1831,21 +1831,30 @@ test('#R349 the war layer draws nothing until it is asked, then paints the day i
   expect(pop.wiki, 'the operation card carries its Wikipedia link').toBe(true);
 
   /* ⚠ (#R409) 「Chronosは動かすな。」 — the legend's own range moves the layer and NOTHING else. */
+  /* ⚠ the expectation is RELATIVE to wherever the slider was standing, not a date written here.
+     The first spelling pinned '1942-02-03', which was only true while this block happened to run
+     first; adding the click check above it moved the starting day and the assertion failed for a
+     reason that had nothing to do with what it measures. A test that depends on the order of the
+     blocks around it measures the order. */
   const slid = await page.evaluate(async () => {
     const clockBefore = window.IntMapTime.iso();
     const rng = document.querySelector('#data-legend-ww2 .war-range');
     if (!rng) return { missing: true };
-    rng.value = String(Math.min(+rng.max, +rng.value + 60));
+    const from = window.IntMapWarFronts.date('ww2');
+    const step = Math.min(+rng.max - +rng.value, 60);
+    rng.value = String(+rng.value + step);
     rng.dispatchEvent(new Event('input', { bubbles: true }));
     const t0 = Date.now();
     while (Date.now() - t0 < 8000) {
       await new Promise((res) => setTimeout(res, 150));
-      if (window.IntMapWarFronts.date('ww2') !== '1941-12-05') break;
+      if (window.IntMapWarFronts.date('ww2') !== from) break;
     }
-    return { missing: false, clockBefore, clockAfter: window.IntMapTime.iso(), layerDate: window.IntMapWarFronts.date('ww2') };
+    const want = new Date(Date.parse(from + 'T00:00:00Z') + step * 86400000).toISOString().slice(0, 10);
+    return { missing: false, clockBefore, clockAfter: window.IntMapTime.iso(), from, step, want, layerDate: window.IntMapWarFronts.date('ww2') };
   });
   expect(slid.missing, 'the legend has a day slider').toBe(false);
-  expect(slid.layerDate).toBe('1942-02-03');
+  expect(slid.step, 'the slider had room to move').toBeGreaterThan(0);
+  expect(slid.layerDate, 'the slider moved the layer by exactly the days it was dragged, from ' + slid.from).toBe(slid.want);
   expect(slid.clockAfter, 'the slider must not move the master clock').toBe(slid.clockBefore);
 
   const after = await page.evaluate(async () => {
