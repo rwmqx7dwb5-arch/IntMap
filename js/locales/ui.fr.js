@@ -5428,14 +5428,30 @@ window.IntMapLang.define('fr', { ui: {
   'Times come from the map’s clock ({year}), not from today — live timetables do not cover it.': 'Les horaires proviennent de l’horloge de la carte ({year}), pas d’aujourd’hui — les horaires en direct ne la couvrent pas.',   /* routing-time.js (#R347) */
   'Times are calculated from the map’s clock ({year}), not from today.': 'Les horaires sont calculés depuis l’horloge de la carte ({year}), pas depuis aujourd’hui.',   /* routing-time.js (#R347) */
   'Traffic data was unavailable — this is the standard travel time.': 'Données de trafic indisponibles — voici le temps de trajet standard.',   /* routing-cards.js (#R347) */
+  '1 day': '1 jour',   /* war-layer.js (#R409) */
+  '15 days': '15 jours',   /* war-layer.js (#R409) */
+  '5 days': '5 jours',   /* war-layer.js (#R409) */
+  'casualties': 'pertes',   /* war-layer.js (#R409) */
+  'Casualties and prisoners': 'Pertes et prisonniers',   /* war-layer.js (#R409) */
+  'Commonly cited totals, both sides together.': 'Totaux couramment cités, les deux camps réunis.',   /* war-layer.js (#R409) */
   'Company rule in India': 'Domination de la Compagnie des Indes en Inde',   /* war-fronts.js / history.js (#R349) */
   'Could not load the war data': 'Impossible de charger les données de guerre',   /* war-fronts.js / history.js (#R349) */
+  'First day': 'Premier jour',   /* war-layer.js (#R409) */
+  'forces': 'effectifs',   /* war-layer.js (#R409) */
+  'Forces engaged': 'Effectifs engagés',   /* war-layer.js (#R409) */
   'Front lines': 'Lignes de front',   /* war-fronts.js / history.js (#R349) */
-  'Front lines are shown for the dates the record gives a position for, and hold until the next one — the date beside each line is the date it is from. Country outlines: CShapes 2.0.': 'Les lignes de front sont affichées pour les dates dont les sources donnent une position, et tiennent jusqu’à la suivante — la date à côté de chaque ligne est sa date. Frontières : CShapes 2.0.',   /* war-fronts.js / history.js (#R349) */
   'line of': 'ligne du',   /* war-fronts.js / history.js (#R349) */
+  'Match the time machine': 'Aligner sur la machine à remonter le temps',   /* war-layer.js (#R409) */
+  'One day back': 'Un jour en arrière',   /* war-layer.js (#R409) */
+  'One day forward': 'Un jour en avant',   /* war-layer.js (#R409) */
   'Second French Empire': 'Second Empire français',   /* war-fronts.js / history.js (#R349) */
-  'The clock is not inside either war. Move Chronos to a date between 1914 and 1945, or jump straight in:': 'L’horloge n’est dans aucune des deux guerres. Placez Chronos à une date entre 1914 et 1945, ou allez-y directement :',   /* war-fronts.js / history.js (#R349) */
-  'World wars (day by day)': 'Guerres mondiales (jour par jour)',
+  'Step': 'Pas',   /* war-layer.js (#R409) */
+  'Symbols': 'Symboles',   /* war-layer.js (#R409) */
+  'The slider moves this layer only — it never moves the time machine. Moving the time machine brings this layer with it. Front lines are shown for the dates the record gives a position for, and hold until the next one: the date beside each line is the date it is from.': 'Le curseur ne déplace que cette couche — jamais la machine à remonter le temps. À l’inverse, cette couche suit la machine à remonter le temps. Les lignes de front sont affichées pour les dates dont les sources donnent une position, et tiennent jusqu’à la suivante : la date à côté de chaque ligne est sa date.',   /* war-layer.js (#R409) */
+  'This layer draws the days of one war. Move its slider, or jump to the first day:': 'Cette couche montre les jours d’une guerre. Déplacez son curseur, ou sautez au premier jour :',   /* war-layer.js (#R409) */
+  'World War I (day by day)': 'Première Guerre mondiale (jour par jour)',   /* war-fronts.js war-layer.js (#R409) */
+  'World War II (day by day)': 'Seconde Guerre mondiale (jour par jour)',   /* war-fronts.js war-layer.js (#R409) */
+  '{n} more running today': '{n} autres ce jour-là',   /* war-layer.js (#R409) */
   "Colours are the issuing agency’s own — Japan’s are the JMA’s yellow / red / magenta / black, China’s the CMA’s four signal colours, and the rest the CAP awareness ladder. Tap a country for that agency’s exact scale.": "Les couleurs sont celles du service émetteur : au Japon le jaune / rouge / magenta / noir de la JMA, en Chine les quatre couleurs de signal du CMA, ailleurs l’échelle CAP. Touchez un pays pour son échelle exacte.",
   "Each agency’s ranks are mapped onto these four by IntMap. Two countries at the same step do NOT necessarily face the same danger — the warning systems themselves differ. Tap a country for its own agency’s scale.": "Conversion propre à IntMap : un même niveau ne signifie PAS un même danger — les systèmes d’alerte diffèrent. Touchez un pays pour l’échelle de son service.",
   "Nothing in force in any connected service right now.": "Aucune alerte en vigueur dans les services raccordés.",

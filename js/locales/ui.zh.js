@@ -5520,14 +5520,30 @@ window.IntMapLang.define('zh', {
   'Times come from the map’s clock ({year}), not from today — live timetables do not cover it.': '時刻依地圖的時鐘（{year}年），而非今天 — 即時時刻表並未涵蓋該時間。',   /* routing-time.js (#R347) */
   'Times are calculated from the map’s clock ({year}), not from today.': '時刻以地圖的時鐘（{year}年）為基準計算，而非今天。',   /* routing-time.js (#R347) */
   'Traffic data was unavailable — this is the standard travel time.': '無法取得路況資料 — 這是標準所需時間。',   /* routing-cards.js (#R347) */
+  '1 day': '1 天',   /* war-layer.js (#R409) */
+  '15 days': '15 天',   /* war-layer.js (#R409) */
+  '5 days': '5 天',   /* war-layer.js (#R409) */
+  'casualties': '傷亡',   /* war-layer.js (#R409) */
+  'Casualties and prisoners': '傷亡與俘虜',   /* war-layer.js (#R409) */
+  'Commonly cited totals, both sides together.': '皆為常見引用的雙方合計數字。',   /* war-layer.js (#R409) */
   'Company rule in India': '東印度公司統治下的印度',   /* war-fronts.js / history.js (#R349) */
   'Could not load the war data': '無法載入戰爭資料',   /* war-fronts.js / history.js (#R349) */
+  'First day': '第一天',   /* war-layer.js (#R409) */
+  'forces': '兵力',   /* war-layer.js (#R409) */
+  'Forces engaged': '投入兵力',   /* war-layer.js (#R409) */
   'Front lines': '戰線',   /* war-fronts.js / history.js (#R349) */
-  'Front lines are shown for the dates the record gives a position for, and hold until the next one — the date beside each line is the date it is from. Country outlines: CShapes 2.0.': '戰線只在記錄給出位置的日期上繪製，並保持到下一個日期——線旁的日期就是該線的日期。國界：CShapes 2.0。',   /* war-fronts.js / history.js (#R349) */
   'line of': '戰線日期',   /* war-fronts.js / history.js (#R349) */
+  'Match the time machine': '對齊時光機',   /* war-layer.js (#R409) */
+  'One day back': '後退一天',   /* war-layer.js (#R409) */
+  'One day forward': '前進一天',   /* war-layer.js (#R409) */
   'Second French Empire': '法蘭西第二帝國',   /* war-fronts.js / history.js (#R349) */
-  'The clock is not inside either war. Move Chronos to a date between 1914 and 1945, or jump straight in:': '目前的時間不在兩次大戰的期間內。請把 Chronos 移到 1914–1945 年之間的日期，或直接前往：',   /* war-fronts.js / history.js (#R349) */
-  'World wars (day by day)': '兩次世界大戰（逐日）',
+  'Step': '步進',   /* war-layer.js (#R409) */
+  'Symbols': '符號',   /* war-layer.js (#R409) */
+  'The slider moves this layer only — it never moves the time machine. Moving the time machine brings this layer with it. Front lines are shown for the dates the record gives a position for, and hold until the next one: the date beside each line is the date it is from.': '滑桿只移動這個圖層——不會移動時光機。反過來，移動時光機時這個圖層也會跟著走。戰線只在記錄給出位置的日期上繪製，並保持到下一個日期：線旁的日期就是該線的日期。',   /* war-layer.js (#R409) */
+  'This layer draws the days of one war. Move its slider, or jump to the first day:': '這個圖層描繪一場戰爭的每一天。請移動下方的滑桿，或跳到開戰的第一天：',   /* war-layer.js (#R409) */
+  'World War I (day by day)': '第一次世界大戰（逐日）',   /* war-fronts.js war-layer.js (#R409) */
+  'World War II (day by day)': '第二次世界大戰（逐日）',   /* war-fronts.js war-layer.js (#R409) */
+  '{n} more running today': '另有 {n} 件在同一天進行',   /* war-layer.js (#R409) */
   "Colours are the issuing agency’s own — Japan’s are the JMA’s yellow / red / magenta / black, China’s the CMA’s four signal colours, and the rest the CAP awareness ladder. Tap a country for that agency’s exact scale.": "顏色為發布機關自身的配色——日本為氣象廳的黃／紅／洋紅／黑，中國為氣象局的四色預警信號，其餘為 CAP 等級。點選國家可查看該機關的確切等級。",
   "Each agency’s ranks are mapped onto these four by IntMap. Two countries at the same step do NOT necessarily face the same danger — the warning systems themselves differ. Tap a country for its own agency’s scale.": "各機關的等級由 IntMap 自行換算為這四級。同一級並不代表兩國的危險程度相同——警報制度本身不同。點選國家可查看該機關的等級。",
   "Nothing in force in any connected service right now.": "目前已連線的各機關皆無發布中的警報。",

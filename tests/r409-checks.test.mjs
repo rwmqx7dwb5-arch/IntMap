@@ -250,3 +250,22 @@ test('R409 ⑫: the legend transport is built from window.IntMapWxPlayer', () =>
   assert.ok(cssBlock, 'the legend stylesheet is gone');
   assert.ok(!/ecl-b\s*\{|ecl-player\s*\{|ecl-timerange\s*\{/.test(cssBlock[0]), 'the war legend restyles the shared player — two declarations of one control is how they drift apart');
 });
+
+/* ── ⑬ the favourite chip says the layer's name, not its id ──────────────────────────────────── */
+/* ⚠ js/layer-favs.js reads a row's name from `span[data-i18n]` or `span.ec-lbl` and FALLS BACK TO
+   THE RAW ID. The row this round replaced had neither, so pinning the world wars put a chip on
+   screen labelled 「wars」 — in all nine languages. Splitting the row was the moment to fix it, and
+   this is the check that keeps it fixed: the fallback is silent, so nothing else would say. */
+test('R409 ⑬: each war row carries a label span that the favourites bar can read', () => {
+  const shell = R('js/war-fronts.js');
+  /* ⚠ read the block by OFFSET, not by a pattern anchored to a line end. This repository is checked
+     out with CRLF on Windows and LF in CI, and the first spelling of this check — `';\n` — passed
+     on the file as written and failed the moment git rewrote the endings. A check that depends on
+     which machine wrote the file is not a check. */
+  const at = shell.indexOf('w.innerHTML =');
+  assert.ok(at > 0, 'the row markup is no longer a literal — this check reads it');
+  const markup = shell.slice(at, at + 400);
+  assert.ok(/class="ec-lbl"/.test(markup), 'the label span has no class js/layer-favs.js looks for, so a pinned war row is labelled with its raw id');
+  const favs = codeOnly(R('js/layer-favs.js'));
+  assert.ok(/querySelector\('span\.ec-lbl'\)/.test(favs), 'js/layer-favs.js no longer reads span.ec-lbl — the class above now means nothing');
+});
