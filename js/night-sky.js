@@ -64,6 +64,8 @@
  *  does not move the stars: a drag re-projects ~9,000 cached unit vectors instead of re-precessing
  *  98,887 catalogue entries at pointer rate.
  * ==========================================================================*/
+/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
+import { everyTick, stopTick } from './runtime.js';
 window.IntMapNightSky = (function () {
   'use strict';
   const D2R = Math.PI / 180, R2D = 180 / Math.PI;
@@ -797,7 +799,7 @@ window.IntMapNightSky = (function () {
     let watch = 0, restored = false;
     const back = () => {
       if (restored) return; restored = true;
-      if (watch) { clearInterval(watch); watch = 0; }
+      if (watch) { stopTick(watch); watch = 0; }
       root.style.display = 'block'; open = true;
       applyChrome(); syncControls(); draw();
       if (!raf) raf = requestAnimationFrame(tick);
@@ -816,7 +818,9 @@ window.IntMapNightSky = (function () {
       onCancel: back,
     });
     if (!armed) { back(); return false; }
-    watch = setInterval(() => { try { if (!P.active()) back(); } catch (_) { back(); } }, 400);
+    /* (#R408) one gesture at a time, so this key carries no instance id: the panel is hidden for
+       the whole pick and `pickSite` is only reachable from a button inside it. */
+    watch = everyTick('night-sky:pick-watch', 400, () => { try { if (!P.active()) back(); } catch (_) { back(); } });
     return true;
   }
 

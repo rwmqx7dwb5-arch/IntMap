@@ -48,6 +48,8 @@
  *  flood wave takes. See that file's header for the scheme and for what it was validated against.
  * ==========================================================================*/
 import './water-dynamics.js';
+/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
+import { everyTick, stopTick } from './runtime.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.terrainWater=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -204,7 +206,7 @@ window.IntMapModules.terrainWater=function(HOST){
     function pourStart(){ if(pourT) return false;
       if(!canPour()) return false;
       steady=false; pourAt=Date.now();
-      pourT=setInterval(()=>{
+      pourT=everyTick('terrain-water:pour-step',220,()=>{
         if(!opened){ pourStop(); return; }
         const now=Date.now(), dt=Math.min(2,(now-pourAt)/1000); pourAt=now;
         stepSim(dt*timeScale);      /* (#R265) …which advances the clock and the taps by what it managed */
@@ -212,9 +214,9 @@ window.IntMapModules.terrainWater=function(HOST){
            rather than burning frames on a field that is not changing */
         if(!owedAny()&&!simMoving()){ pourStop(); return; }
         draw(); try{ syncFoot(); }catch(_){}   /* (#R258) the footer clock ticks with the simulation */
-      },220);
+      });
       return true; }
-    function pourStop(){ if(pourT){ clearInterval(pourT); pourT=null;
+    function pourStop(){ if(pourT){ stopTick(pourT); pourT=null;
       if(opened){ solve(); try{ syncFoot(); }catch(_){} } } return false; }
 
     /* ---- layers ------------------------------------------------------------------------------- */

@@ -149,7 +149,10 @@ test('R266 ⑥: the warnings layer covers the G7 and China with their own servic
   const ms = /const TICK_MS=(\d+)/.exec(s);
   assert.ok(ms, 'the refresh interval must be a named constant');
   assert.ok(+ms[1] > 0 && +ms[1] <= 60000, `the interval is ${ms[1]} ms — it must be a minute or better`);
-  assert.match(s, /timer=setInterval\(tick,TICK_MS\)/, '…and the timer must use it');
+  /* ⚠ (#R408) the timer moved onto js/runtime.js's one wheel — the register that had existed since
+     #R234 with zero callers. The claim here is unchanged (the refresh timer runs at TICK_MS and not
+     at some number written twice); only the spelling that carries it moved. */
+  assert.match(s, /timer=everyTick\('world-packs:alerts-tick',TICK_MS,tick\)/, '…and the timer must use it');
   assert.match(s, /addEventListener\('visibilitychange'/, 'a backgrounded tab never catches up');
   /* the slow feeds must not hold the fast ones */
   assert.ok(!/loadMA\(maAsked\)[\s\S]{0,120}\]\)/.test(s), 'MeteoAlarm is awaited inside the Promise.all again');

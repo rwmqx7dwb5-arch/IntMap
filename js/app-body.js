@@ -38,7 +38,7 @@ import { OpeningView } from './opening-view.js';
 import { makeI18nLate } from './i18n-late.js';
 import { makeKeyboardShortcuts } from './keyboard-shortcuts.js';
 import { makeLazyModules } from './lazy-modules.js';
-import { makeRuntime } from './runtime.js';
+import { makeRuntime, everyTick, stopTick } from './runtime.js';
 import { makeDemSource } from './dem-source.js';
 import { gridLayerSpecs } from './grid-style.js';
 import { BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH } from './border-style.js';
@@ -2515,18 +2515,18 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      and the (continuously-rendering globe) never fires `idle`. This keeps re-applying every 150 ms until
      layer-sat visibility == wanted (or the user switches again / a ~5 s cap), so the switch always lands. */
   function _reassertBase(mode){
-    let n=0; clearInterval(window._baseReassertT);
-    window._baseReassertT=setInterval(()=>{
+    let n=0; stopTick(window._baseReassertT);
+    window._baseReassertT=everyTick('app-body:base-reassert',150,()=>{
       n++;
       try{
-        if(typeof currentMapType==='undefined' || currentMapType!==mode){ clearInterval(window._baseReassertT); return; }
+        if(typeof currentMapType==='undefined' || currentMapType!==mode){ stopTick(window._baseReassertT); return; }
         if(canDraw() && GE().layers.has('layer-sat')){
           const wantSat=(mode==='sat'), isSat=(GE().layers.getLayout('layer-sat','visibility')==='visible');
-          if(wantSat!==isSat) applyTheme(); else { clearInterval(window._baseReassertT); }
+          if(wantSat!==isSat) applyTheme(); else { stopTick(window._baseReassertT); }
         }
       }catch(_){}
-      if(n>34){ clearInterval(window._baseReassertT); }
-    },150);
+      if(n>34){ stopTick(window._baseReassertT); }
+    });
   }
   /* ===================================================================
      (#R82) IntMap OS — the ATLAS KERNEL.  ★ Structural inversion (ATLAS-VISION 最終定義) ★
@@ -3683,7 +3683,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(cfg.weather && panel){ try{ const c=GE().hasRenderer()?GE().camera.getCenter():{lat:35.68,lng:139.76}; const j=await window.IntMapWx.guardedJSON('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m',300000); if(!j) throw new Error('wx'); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(window.IntMapLang.t(currentLang,"wind ","風 ","Wind ","ветер ","viento "))+Math.round(cu.wind_speed_10m)+' km/h · '+(window.IntMapLang.t(currentLang,"map center","地図中心","Kartenmitte","центр карты","centro del mapa"))+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=window.IntMapLang.t(currentLang,"Weather unavailable","天気を取得できません","Wetter nicht verfügbar","Погода недоступна","Tiempo no disponible"); } }
       if(cfg.fx && panel){ try{ const r=await fetch('https://open.er-api.com/v6/latest/USD'); const j=await r.json(); const rt=j.rates||{}; const el=panel.querySelector('#wdg-fx'); if(el) el.innerHTML='<b style="color:var(--text-main);">USD</b> → JPY '+fxF(rt.JPY)+' · EUR '+fxF(rt.EUR)+' · CNY '+fxF(rt.CNY)+' · GBP '+fxF(rt.GBP); }catch(_){ const el=panel.querySelector('#wdg-fx'); if(el) el.textContent=window.IntMapLang.t(currentLang,"FX unavailable","為替を取得できません","Wechselkurse nicht verfügbar","Курсы валют недоступны","Tipos de cambio no disponibles"); } }
     }
-    function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display){ render(); if(!tick) tick=setInterval(updateClock,1000); if(!dataTick) dataTick=setInterval(()=>{ if(panel&&panel.style.display!=='none') refreshData(); },300000); } else { p.style.display='none'; } }
+    function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display){ render(); if(!tick) tick=everyTick('app-body:widget-clock',1000,updateClock); if(!dataTick) dataTick=everyTick('app-body:widget-data',300000,()=>{ if(panel&&panel.style.display!=='none') refreshData(); }); } else { p.style.display='none'; } }
     function wire(){ const b=document.getElementById('btn-widgets'); if(b) b.onclick=toggle; }   /* mobile m-tool proxy clicks btn-widgets directly */
     if(document.readyState!=='loading') setTimeout(wire,0); else document.addEventListener('DOMContentLoaded',wire);
     window.addEventListener('intmap-lang',()=>{ if(panel&&panel.style.display!=='none') render(); });
@@ -4291,7 +4291,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      Settings repopulates the list). Desktop keeps the synchronous boot. */
   (function(){ const heavy=()=>{ try{ rebuildGeoIndex(); }catch(_){} try{ populateTimezones(); }catch(_){} };
     if(typeof isMobile==='function'&&isMobile()&&window.requestIdleCallback) requestIdleCallback(heavy,{timeout:3500}); else heavy(); })();
-  updateI18n(); fetchData({background:true}); setInterval(()=>fetchData({background:true}),180000); bootSupabase();   /* (#R372) background: no upstream, no chunk, until a reader asks — js/news-feed.js */
+  updateI18n(); fetchData({background:true}); everyTick('app-body:news-poll',180000,()=>fetchData({background:true})); bootSupabase();   /* (#R372) background: no upstream, no chunk, until a reader asks — js/news-feed.js */
   /* (#R17) Warm the country gazetteer shortly AFTER first paint (idle, non-blocking) so place search has
      strong LOCAL matches (countries/capitals/major places) even if the online geocoders are slow/blocked —
      the search then practically never comes back empty, without delaying initial load. */

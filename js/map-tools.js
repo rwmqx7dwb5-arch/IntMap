@@ -17,6 +17,8 @@
  *  Every factory is called at the exact spot its block used to occupy, so execution order is
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+import { everyTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.projView=function(HOST){
@@ -1308,7 +1310,7 @@ window.IntMapModules.objectList=function(HOST){
     function close(){ if(panel) panel.style.display='none'; openState=false; _unbindMapClose(); tickFab(); }
     function toggle(){ (openState&&panel&&panel.style.display!=='none')?close():open(); }
     function refresh(){ if(openState) renderList(); tickFab(); }
-    setInterval(tickFab, 2200); setTimeout(tickFab, 1500);
+    everyTick('map-tools:object-fab', 2200, tickFab); setTimeout(tickFab, 1500);
     /* (#R118) PUBLIC object API — Atlas can enumerate and operate on every map-object ("2番目の円を消して"):
        list() = sanitized inventory; get(id) = live handle (focus/rename/remove/setColor); remove/focus/rename
        are id-based conveniences. The ids also appear in Atlas's state context. */

@@ -21,6 +21,8 @@
  *  file is pure arithmetic with no DOM and no renderer, so tests/r202-checks.test.mjs runs it in Node.
  * ==========================================================================*/
 import { skyColour, limbViewElev, sunOpticalDepth, skyModelTables } from './sky-model.js';
+/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
+import { everyTick, stopTick } from './runtime.js';
 /* ⚠ (#R227) THE MODEL IS PUBLISHED, NOT COPIED. js/limb-layer.js is a `window.IntMapModules` factory
    (a MapLibre adapter implementation detail, like js/solid3d.js) and cannot `import` an ES module,
    but the whole point of that layer is that it marches THIS model — same coefficients, same ozone
@@ -1043,7 +1045,16 @@ export function makeThemeSky(HOST, CTX) {
       return true;
     }catch(_){ return false; }
   }
-  setInterval(()=>{ try{ if(!document.hidden&&_applySkyAtmosphere._on){ _aimSun(); _skyFollowCamera(); } }catch(_){} },60000);
+  /* (#R408) ⚠ THE `document.hidden` TEST STAYS ON THIS LINE, and it is NOT a second copy of the
+     wheel's. This statement is in the factory BODY — the same shape the #R200 note above is about —
+     and js/app-body.js builds window.IntMapRuntime some 250 lines after it instantiates this module,
+     so `everyTick` finds no register here and arms a real interval instead.
+     ⚠ That interval IS handed over: makeRuntime adopts every timer that armed itself early (see the
+     note under everyTick in js/runtime.js), so from :756 onward this one is on the wheel like the
+     other forty-one and the skip below is redundant with it. It stays because it is the only guard
+     over the window BEFORE the adoption, and over a boot where the register never gets built at all
+     — a minute's period against one boolean read. */
+  everyTick('theme-sky:aim-sun',60000,()=>{ try{ if(!document.hidden&&_applySkyAtmosphere._on){ _aimSun(); _skyFollowCamera(); } }catch(_){} });
   /* ⚠ (#R214) PUBLISHED FROM HERE, NOT FROM js/app-body.js. js/night-side.js is a plain window module
      with no HOST, and it has to be able to ask for the light to be re-decided when the day/night
      setting is flipped on an engine that lights its own globe — the alternative is setting the light

@@ -37,6 +37,9 @@
    the header of js/plane-glyph.js. This is this file's only import; everything else it needs is
    already on window by the time js/engine-select.js reaches for it. */
 import './plane-glyph.js';
+/* (#R408) …and the one timer wheel. It is the second import for the same reason as the first: the two
+   intervals this file used to open are per-VIEW, and a wheel key is global — see _vid below. */
+import { everyTick, stopTick } from './runtime.js';
 
 window.IntMapCesiumEngine=(function(){
   'use strict';
@@ -213,6 +216,11 @@ window.IntMapCesiumEngine=(function(){
 
   function viewFactory(){
 
+  /* (#R408) views are not a singleton — ui.createSubView builds a SECOND one for the compare window — and a
+     timer key is one global Map, so every key this class registers carries the view it belongs to. Without it
+     the compare view's clock would silently REPLACE the main view's. */
+  let _viewSeq=0;
+
   class CesiumView {
     constructor(opts){
       const o=opts||{};
@@ -234,7 +242,7 @@ window.IntMapCesiumEngine=(function(){
       this._dem=CL().makeDemCache();
       this._vec=CL().makeVectorRenderer(Cesium);
       this._dirty=new Set();                       /* layer ids whose entities need rebuilding */
-      this._raf=0; this._loaded=false; this._styleParsed=false;
+      this._raf=0; this._loaded=false; this._styleParsed=false; this._vid=++_viewSeq;
       this._gestures=Object.create(null);
       this._maxFeatures=(o.maxFeaturesPerLayer||12000);
       this._maxLabels=(o.maxLabels||320);
@@ -481,7 +489,9 @@ window.IntMapCesiumEngine=(function(){
         }catch(_){} };
         syncClock();
         try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(syncClock); }catch(_){}
-        this._skyTick=setInterval(()=>{ if(!document.hidden) syncClock(); },30000);
+        /* ⚠ (#R408) the `!document.hidden` test moved INTO the wheel, which applies the same one: it guarded this timer
+           and nothing else (syncClock's other two callers — the line above and IntMapTime — are unconditional). */
+        this._skyTick=everyTick('cesium-engine:sky-clock:'+this._vid,30000,syncClock);
       }catch(_){}
       this._globe.showGroundAtmosphere=true;
       this._globe.depthTestAgainstTerrain=false;    /* markers must not sink into a hill */
@@ -2218,9 +2228,9 @@ window.IntMapCesiumEngine=(function(){
        The timer asks for a frame only when something moved, so an idle fleet costs nothing. */
     _airPump(){
       if(this._airTimer) return;
-      this._airTimer=setInterval(()=>{ try{ this._airStep(); }catch(_){} },AIR_TICK_MS);
+      this._airTimer=everyTick('cesium-engine:air-step:'+this._vid,AIR_TICK_MS,()=>{ try{ this._airStep(); }catch(_){} });
     }
-    _airHalt(){ if(this._airTimer){ clearInterval(this._airTimer); this._airTimer=0; } }
+    _airHalt(){ if(this._airTimer){ stopTick(this._airTimer); this._airTimer=0; } }
     /* the batched pick projection. The contract speaks mercator + metres because that is what the
        MapLibre layer holds; here it is turned back into lng/lat, which is what Cesium speaks. */
     projectMercAlt(xy){

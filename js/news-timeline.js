@@ -7,6 +7,9 @@
  *  newsFeatures are read-write here (see tests/r165-checks.test.mjs for the RW contract).
  * ==========================================================================*/
 
+/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
+import { everyTick, stopTick } from './runtime.js';
+
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.newsTimeline=function(HOST){
@@ -297,11 +300,11 @@ window.IntMapModules.newsTimeline=function(HOST){
     /* (#R293) the transport plays the CLOCK, not the model's index: one interval, one writer */
     let fcTimer=0;
     const fcPlaying=()=>!!fcTimer;
-    function fcStop(){ if(fcTimer){ clearInterval(fcTimer); fcTimer=0; } }
+    function fcStop(){ if(fcTimer){ stopTick(fcTimer); fcTimer=0; } }
     function fcPlay(){ fcStop(); if(!fcReady()) return;
-      fcTimer=setInterval(()=>{ const i=fcAtClock(); const n=fcCount();
+      fcTimer=everyTick('news-timeline:forecast-play',900,()=>{ const i=fcAtClock(); const n=fcCount();
         if(i<0){ fcGo(Math.max(0,EC().nowIndex?EC().nowIndex():0)); return; }
-        fcGo(i+1>=n?0:i+1); },900); }
+        fcGo(i+1>=n?0:i+1); }); }
     function buildPlayer(){
       if(!playerEl) return;
       if(mode!=='time'||!fcReady()){ fcStop(); playerEl.style.display='none'; playerEl.innerHTML=''; return; }

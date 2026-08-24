@@ -162,7 +162,9 @@ test('R168 #3 POSITION: the six calls sit together after the map is built, befor
     /* boot calls it as a bare statement, near the end. ⚠ (#R372) the marker moved when the boot pass
        became `fetchData({background:true})` — the INVARIANT (this eager use runs after the factories)
        did not, so the string is refreshed rather than the assertion weakened. */
-    'setInterval(()=>fetchData({background:true}),180000); bootSupabase();',
+    /* ⚠ (#R408) …and it moved again when the poll went onto js/runtime.js's one timer wheel. Same
+       invariant, same treatment: refresh the marker, do not weaken the assertion. */
+    "everyTick('app-body:news-poll',180000,()=>fetchData({background:true})); bootSupabase();",
   ];
   const lf = html.replace(/\r\n/g, '\n');            // index.html is CRLF in the working tree
   const lastLF = Math.max(...NAMES.map((m) => lf.indexOf(callOf(m))));

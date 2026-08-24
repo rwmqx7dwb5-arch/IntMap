@@ -232,7 +232,10 @@ test('R372 ⑬ news is not fetched for a reader who has not asked for it', () =>
      until the News surface is opened. It arrived on every cold load, because the boot called
      fetchData() and the Event branch reached need('newsEvents') unconditionally. */
   assert.match(body, /fetchData\(\s*\{\s*background:\s*true\s*\}\s*\)/, 'the boot pass is marked background');
-  assert.match(body, /setInterval\(\s*\(\)\s*=>\s*fetchData\(\s*\{\s*background:\s*true\s*\}\s*\)/,
+  /* ⚠ (#R408) the three-minute timer is an entry on js/runtime.js's one wheel now. The claim is
+     that the TIMER's pass is marked background — not which function armed it — so the needle takes
+     the new arming and leaves the assertion alone. */
+  assert.match(body, /everyTick\([^)]*180000,\s*\(\)\s*=>\s*fetchData\(\s*\{\s*background:\s*true\s*\}\s*\)/,
     'and so is the three-minute timer');
 
   const feed = code('js/news-feed.js');

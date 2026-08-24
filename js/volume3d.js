@@ -49,6 +49,8 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
+import { everyTick, stopTick } from './runtime.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.volume3d=function(HOST){
   return (function(){
@@ -156,14 +158,14 @@ window.IntMapModules.volume3d=function(HOST){
        reads agree (settled) or the budget runs out. paint(true) suppresses re-arming so this cannot recurse. */
     let _gndTimer=null;
     function chaseGround(){ if(_gndTimer) return; let n=0, prev=groundM;
-      _gndTimer=setInterval(()=>{ n++;
-        if(!has3DTerrain()||ring.length<3||n>16){ clearInterval(_gndTimer); _gndTimer=null; return; }
+      _gndTimer=everyTick('volume3d:chase-ground',400,()=>{ n++;
+        if(!has3DTerrain()||ring.length<3||n>16){ stopTick(_gndTimer); _gndTimer=null; return; }
         const g=readGround();
         if(g==null) return;
         if(groundM==null||Math.abs(g-groundM)>1){ paint(true); }        /* moved → re-extrude at the new offset */
-        else if(prev!=null&&Math.abs(g-prev)<=1&&n>=2){ clearInterval(_gndTimer); _gndTimer=null; }   /* settled */
+        else if(prev!=null&&Math.abs(g-prev)<=1&&n>=2){ stopTick(_gndTimer); _gndTimer=null; }   /* settled */
         prev=g;
-      },400); }
+      }); }
 
     /* ---- rendering ------------------------------------------------------------------------- */
     /* (#R173) ONE CLOSED BODY, not a stack of layers.

@@ -12,6 +12,7 @@
  *  relation it is derived from both sides.
  * ==========================================================================*/
 import { test } from 'node:test';
+import { asClassicScript } from './app-source.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
@@ -263,8 +264,8 @@ function nightSky() {
      contract is: js/night-sky.js asks window.IntMapLang for its label helper instead of hand-rolling
      a five-argument one. A sandbox that does not provide it is not the environment the file runs in,
      and the module throws on the first line that reaches for it. */
-  new Function('window', read('js/lang-registry.js'))(win);
-  new Function('window', 'document', read('js/night-sky.js'))(win, { createElement: () => ({ style: {}, appendChild() { } }) });
+  new Function('window', asClassicScript(read('js/lang-registry.js')))(win);
+  new Function('window', 'document', asClassicScript(read('js/night-sky.js')))(win, { createElement: () => ({ style: {}, appendChild() { } }) });
   return win.IntMapNightSky;
 }
 

@@ -13,6 +13,8 @@
  *  Every factory is called at the exact spot its block used to occupy, so execution order is
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
+import { everyTick, stopTick } from './runtime.js';
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.radiation=function(HOST){
@@ -180,7 +182,10 @@ window.IntMapModules.radiation=function(HOST){
         try{ GE().layers.setSourceData(DEP,{type:'FeatureCollection',features:dz.feats}); }catch(_){}
         try{ if(dz.feats.length){ let a2=180,b2=90,c2=-180,d2=-90; dz.feats.forEach(f=>f.geometry.coordinates[0].forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); })); GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:70,maxZoom:8,duration:900}); } else GE().camera.flyTo({center:[src.lng,src.lat],zoom:Math.max(GE().camera.getZoom(),6),duration:800}); }catch(_){}
         animate(F,src,secs,hours,{emitHours,halfLifeHours,startHour:F.startHour}); return true; };
-      if(!paint()){ let n=0; const t=setInterval(()=>{ if(myGen!==_gen||paint()||n++>56){ clearInterval(t); } },250); try{ GE().events.once('idle',paint); }catch(_){} }
+      /* (#R408) the generation is IN THE KEY: one Map holds every timer and a second `everyTick`
+         on the same key replaces the first, so a superseded run's stop must not be able to reach
+         into the run that replaced it. */
+      if(!paint()){ let n=0; const t=everyTick('sims:radiation-paint:'+myGen,250,()=>{ if(myGen!==_gen||paint()||n++>56){ stopTick(t); } }); try{ GE().events.once('idle',paint); }catch(_){} }
       return {ok:true,reachKm:estReach,windSpeed:spd,windToward:toward,wet,hours,emitHours,bq,iso:iso.n,halfLifeHours,
         zoneKm2:dz.zoneKm2,peakKBqM2:dz.peak,peakDoseUSvH:dz.peakDoseUSvH,peakLL:dz.peakLL,startISO:F.startISO,zones:ZONES}; }
     try{ GE().events.on('styledata',()=>{ setTimeout(()=>{ try{ const d=GE().layers.sourceData(SRC); if(d&&d.features&&d.features.length) ensureLayers(); }catch(_){} },160); }); }catch(_){}
@@ -677,7 +682,7 @@ window.IntMapModules.sun=function(HOST){
         op.oninput=e=>{ setShadowOpacity((+e.target.value||30)/100); const l2=panel.querySelector('.sun-op-v'); if(l2) l2.textContent=Math.round(shadowOp*100)+'%'; }; } }   /* (#R210) */
       panel.querySelector('.sun-date').onchange=e=>{ const p=e.target.value.split('-'); const nd=new Date(when); nd.setFullYear(+p[0],+p[1]-1,+p[2]); setTime(nd); };
       panel.querySelector('.sun-slider').oninput=e=>{ const m=+e.target.value; const nd=new Date(when); nd.setHours(Math.floor(m/60),m%60,0,0); when=nd; syncInputs(); clearTimeout(moveT); moveT=setTimeout(()=>{ drawShadows(); drawTerrain(); },120); };
-      const pb=panel.querySelector('.sun-play'); pb.onclick=()=>{ if(playing){ clearInterval(playing); playing=0; pb.textContent='▶'; } else { pb.textContent='⏸'; playing=setInterval(()=>{ const nd=new Date(when.getTime()+15*60000); setTime(nd); },700); } };
+      const pb=panel.querySelector('.sun-play'); pb.onclick=()=>{ if(playing){ stopTick(playing); playing=0; pb.textContent='▶'; } else { pb.textContent='⏸'; playing=everyTick('sims:sun-play',700,()=>{ const nd=new Date(when.getTime()+15*60000); setTime(nd); }); } };
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.sun-head')); }catch(_){}
       return panel; }
     /* ===== (#R176) the terrain/annual half of the engine — thin controls over js/insolation.js ===== */
@@ -775,7 +780,7 @@ window.IntMapModules.sun=function(HOST){
        throw the panel away and let ensurePanel() rebuild it in the new language. */
     window.addEventListener('intmap-lang',()=>{ if(!panel) return;
       const wasOpen=panel.style.display!=='none';
-      if(playing){ clearInterval(playing); playing=0; }
+      if(playing){ stopTick(playing); playing=0; }
       try{ panel.remove(); }catch(_){} panel=null;
       if(wasOpen) open(); });
     /* (#R298→#R302) `at` is the point the caller was given by the reader — the tools list asks for one
@@ -785,7 +790,7 @@ window.IntMapModules.sun=function(HOST){
        language switch below rebuilds the panel through this same door and must not lose its subject. */
     function open(at){ setSite(at); ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); syncTerrBtn(); drawShadows(); if(terrainOn) drawTerrain();
       if(!hasSite()) askSite(); }
-    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } endPick();
+    function close(){ if(panel) panel.style.display='none'; if(playing){ stopTick(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } endPick();
       site=null;   /* (#R298) shutting the panel forgets its subject — the next open states its own */
       try{ ENG()&&ENG().clear(); }catch(_){} try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} try{ GE().scene.setLight&&GE().scene.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }
     return { open, close, setTime, _sunPos:sunPos, _sunTimes:sunTimes,

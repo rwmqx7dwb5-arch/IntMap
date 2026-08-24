@@ -39,6 +39,8 @@
  *  also how a back-tick blanks the whole site (CONSTITUTION §2), and it cannot be inspected by any
  *  CSS tooling. Everything the board draws is now in one section of the real stylesheet.
  * ==========================================================================*/
+import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+
 window.IntMapWidgetCore = (function () {
   'use strict';
 
@@ -569,9 +571,9 @@ window.IntMapWidgetCore = (function () {
   WC.tick = function (every, fn) {
     var s = { every: every === 'second' ? 'second' : 'minute', fn: fn };
     tickSubs.push(s);
-    if (!tickT) { lastMinute = -1; tickT = setInterval(tickRun, 1000); }
+    if (!tickT) { lastMinute = -1; tickT = everyTick('widget-core:tick', 1000, tickRun); }
     try { fn(new Date()); } catch (e) {}
-    return function () { var i = tickSubs.indexOf(s); if (i >= 0) tickSubs.splice(i, 1); if (!tickSubs.length && tickT) { clearInterval(tickT); tickT = null; } };
+    return function () { var i = tickSubs.indexOf(s); if (i >= 0) tickSubs.splice(i, 1); if (!tickSubs.length && tickT) { stopTick(tickT); tickT = null; } };
   };
   WC.tickCount = function () { return tickSubs.length; };
   WC.tickRunning = function () { return !!tickT; };

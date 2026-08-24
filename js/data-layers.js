@@ -12,6 +12,7 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
 /* ── (#R186) THE DATA LAYERS THAT ARE ON BEFORE ANYONE TOUCHES ANYTHING ──────────────────────────
    「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。」
    Three readers need this list and they must not disagree, so it is stated once, here, above the
@@ -4136,7 +4137,7 @@ window.IntMapModules.dataLayers=function(HOST){
          staying at the 0.29 requests a second #R186 measured as sustainable. */
       return Math.max(20000,Math.min(600000,Math.round(n*3500))); }
     function schedulePlanePoll(){ if(!planesTimer) return;    /* the layer is off — nothing to re-arm */
-      clearInterval(planesTimer); clearTimeout(planesTimer);
+      stopTick(planesTimer); clearTimeout(planesTimer);
       planesTimer=setTimeout(()=>{ if(planesLayerOn()) fetchPlanes(); else planesTimer=null; },planePollMs()); }
     /* Synthetic ship demo data — real-time AIS is paywalled. Distributes ships GLOBALLY along major sea lanes + chokepoints. */
     /* ===== Live ships via AISstream.io (real AIS over WebSocket) =====
@@ -5072,7 +5073,7 @@ window.IntMapModules.dataLayers=function(HOST){
            second or two, and the gap to the next one is chosen from how big that sweep was
            (planePollMs). An interval would keep firing at a fixed rate while a wide sweep was still
            running. The non-null value is also what schedulePlanePoll reads as "the layer is on". */
-        if(planesTimer){ clearInterval(planesTimer); clearTimeout(planesTimer); }
+        if(planesTimer){ stopTick(planesTimer); clearTimeout(planesTimer); }
         planesTimer=setTimeout(()=>{ if(planesLayerOn()) fetchPlanes(); else planesTimer=null; },20000);
         fetchPlanes();
         /* follow the viewport: refetch real aircraft for wherever the user pans/zooms */
@@ -5100,8 +5101,8 @@ window.IntMapModules.dataLayers=function(HOST){
     function stopTraffic(id){
       setVis('lyr-'+id,false);
       if(id==='planes'&&AVIATION_V2){ try{ if(_av2) _av2.stop(); }catch(_){} selectPlane(null); updatePlanesZoomHint(); }
-      else if(id==='planes'){ applyPlanesMode(false); if(planesTimer){ clearInterval(planesTimer); clearTimeout(planesTimer); planesTimer=null; } _planeSweep++; updatePlanesZoomHint(); }   /* (#R186) bump the token so an in-flight sweep cannot publish into a layer that is now off */
-      if(id==='ships'){ if(shipsTimer){ clearInterval(shipsTimer); shipsTimer=null; } stopAIS(); updateShipsZoomHint(); }
+      else if(id==='planes'){ applyPlanesMode(false); if(planesTimer){ stopTick(planesTimer); clearTimeout(planesTimer); planesTimer=null; } _planeSweep++; updatePlanesZoomHint(); }   /* (#R186) bump the token so an in-flight sweep cannot publish into a layer that is now off */
+      if(id==='ships'){ if(shipsTimer){ stopTick(shipsTimer); shipsTimer=null; } stopAIS(); updateShipsZoomHint(); }
     }
     /* === (#R184) LIVE SATELLITES ============================================================
        Three thin functions, because js/satellites-live.js owns the feed, the SGP4 propagation, its
@@ -5131,12 +5132,12 @@ window.IntMapModules.dataLayers=function(HOST){
       if(!A){ try{ satToast(window.IntMapLang.t(HOST.lang,'The satellite layer is unavailable','人工衛星レイヤーを読み込めませんでした','Satellitenebene nicht verfügbar','Слой спутников недоступен','La capa de satélites no está disponible')); }catch(_){}
         const cb=document.getElementById('dl-sats'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } return; }
       whenStyleReady().then(()=>{ try{ A.setOpacity(opacities.sats); A.start(); }catch(e){ console.warn('sats start fail',e); } });
-      if(_satCountT) clearInterval(_satCountT);
-      _satCountT=setInterval(_satLegendCount,1000); _satLegendCount();
+      if(_satCountT) stopTick(_satCountT);
+      _satCountT=everyTick('data-layers:sat-legend',1000,_satLegendCount); _satLegendCount();
     }
     function stopSats(){
       try{ window.IntMapSatellites&&window.IntMapSatellites.stop(); }catch(_){}
-      if(_satCountT){ clearInterval(_satCountT); _satCountT=null; }
+      if(_satCountT){ stopTick(_satCountT); _satCountT=null; }
     }
     /* === EEZ via MarineRegions WMS === */
     /* (#R79g) The MarineRegions default style colours each boundary TYPE (200 NM / 12 NM / treaty / median /
@@ -5552,12 +5553,12 @@ window.IntMapModules.dataLayers=function(HOST){
     window._rvUpdateLegend=rvUpdateLegend;
     function rvAutoRefresh(){
       if(_rvTimer) return;
-      _rvTimer=setInterval(()=>{ _rvAt=0; rvFetch().then(()=>{
+      _rvTimer=everyTick('data-layers:rainviewer-frames',240000,()=>{ _rvAt=0; rvFetch().then(()=>{
         if(GE().layers.has('lyr-radar')&&GE().layers.getLayout('lyr-radar','visibility')==='visible'){
           try{ const tiles=rvTiles(); if(!(tiles&&GE().layers.setSourceTiles('src-radar',tiles))&&tiles) addRainViewer(); }catch(_){}
           rvUpdateLegend();
         }
-      }); },240000);
+      }); });
     }
     /* === Refresh tiles for dated layers when the date selector changes === */
     function refreshDatedLayer(id){
@@ -5750,7 +5751,7 @@ window.IntMapModules.dataLayers=function(HOST){
         if(id==='aod') lgdAod.style.display='none';
         if(id==='nightsat') lgdNightsat.style.display='none';
         if(GENERIC_LEG[id]){ const gl=document.getElementById('data-legend-'+id); if(gl){ gl.style.display='none'; tileLegends(); } }   /* (#R15c) */
-        if(id==='radar'){ if(_rvTimer){ clearInterval(_rvTimer); _rvTimer=null; } try{ rvSetPlay(false); }catch(_){} }
+        if(id==='radar'){ if(_rvTimer){ stopTick(_rvTimer); _rvTimer=null; } try{ rvSetPlay(false); }catch(_){} }
         tileLegends();
         if(id==='nightside'){ _setNightSide(false); }   /* (#R232) */
       }
@@ -5808,7 +5809,7 @@ window.IntMapModules.dataLayers=function(HOST){
        buried labels persisted until a reload. Drive the SAME idempotent, drift-only self-heals on a slow
        heartbeat too so they recover without an idle and without a reload. Each only acts on real drift, so in
        steady state this does nothing. */
-    try{ if(GE().hasRenderer()){ setInterval(()=>{ try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){} try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} }, 2500); } }catch(_){}
+    try{ if(GE().hasRenderer()){ everyTick('data-layers:orphan-sweep', 2500, ()=>{ try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){} try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} }); } }catch(_){}
     /* (#R36) UNIVERSAL async-race orphan guard for EVERY layer subsystem (main dl-, eco-dl-, beta-dl-, bx-, l9-dl-).
        The dl- toggle-time guard + the dl- idle sweep only cover the MAIN system; the eco / World-Bank / hazard
        layers add+show inside THEIR OWN async callbacks, so an ON-then-quick-OFF can re-show a layer whose box is
@@ -6144,7 +6145,9 @@ window.IntMapModules.dataLayers=function(HOST){
       }catch(_){} }
       /* (#R108) periodic audit runs a bit sooner + more often (25s→12s start, 15s→10s cadence) so a checked-but-blank
          layer self-corrects faster ("選択状況と表示状況があっていない"); heal thresholds/cooldown unchanged (safe). */
-      setTimeout(()=>{ setInterval(()=>{ if(!document.hidden) audit(); },10000); },12000);
+      /* (#R408) the hidden-tab test is the WHEEL's now, not this call's: `everyTick` already skips a
+         hidden tab, and the same rule written in two places is how the two of them drift apart. */
+      setTimeout(()=>{ everyTick('data-layers:layer-audit',10000,audit); },12000);
       /* (#R109) TARGETED post-toggle heal — the moment a USER turns a layer ON, check ~2.8 s later whether its layers
          actually painted; if not (and they haven't re-toggled it), re-fire ONCE right away instead of waiting for the
          2-hit background audit. Directly attacks "選択状況と表示状況が合っていない" for a freshly-toggled layer, using

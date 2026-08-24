@@ -46,6 +46,9 @@ import './plane-glyph.js';
    stage 2 projected them correctly, and the click still did nothing. It costs ~1 kB in a chunk
    that is already downloaded, and it is what turns a found aircraft into a name. */
 import './aviation-codec.js';
+/* (#R408) …and the one timer wheel, so the two polls below are entries in it rather than two more
+   independent wake-ups in a backgrounded tab — see js/runtime.js. */
+import { everyTick, stopTick } from './runtime.js';
 
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.aviationLive = function (HOST) {
@@ -332,15 +335,15 @@ window.IntMapModules.aviationLive = function (HOST) {
     /* Ask immediately, then on a timer. The first world answer is what fills an empty map. */
     pollWorld();
     pollView();
-    ST.worldTimer = setInterval(pollWorld, WORLD_POLL_MS);
-    ST.viewTimer = setInterval(pollView, VIEW_POLL_MS);
+    ST.worldTimer = everyTick('aviation-live:poll-world', WORLD_POLL_MS, pollWorld);
+    ST.viewTimer = everyTick('aviation-live:poll-view', VIEW_POLL_MS, pollView);
     return true;
   }
 
   function stop() {
     ST.on = false;
-    if (ST.worldTimer) { clearInterval(ST.worldTimer); ST.worldTimer = 0; }
-    if (ST.viewTimer) { clearInterval(ST.viewTimer); ST.viewTimer = 0; }
+    if (ST.worldTimer) { stopTick(ST.worldTimer); ST.worldTimer = 0; }
+    if (ST.viewTimer) { stopTick(ST.viewTimer); ST.viewTimer = 0; }
     const E = GE();
     try { if (E) E.layers.setAircraftCloud(CLOUD_ID, { visible: false }); } catch (_) { }
   }

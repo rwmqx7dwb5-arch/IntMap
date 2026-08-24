@@ -7,10 +7,12 @@
  *  declaration stays in index.html as the single source of truth.
  * ==========================================================================*/
 
+import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
+
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.dashExtended=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -38,7 +40,12 @@ window.IntMapModules.dashExtended=function(HOST){
     /* Mirror Supabase intelligence (dashboard cards) into IndexedDB for an instant warm start next time. */
     try{ const _origLoadDash=(typeof loadDashFromSupabase==='function')?loadDashFromSupabase:null;
       window.IntMapCache.get('dash_cards').then(c=>{ try{ if(c&&c.length && typeof HOST.extendedDashDB!=='undefined' && (!HOST.extendedDashDB||!HOST.extendedDashDB.length)){ HOST.extendedDashDB=c; if(HOST.mode==='info'&&typeof renderDashboard==='function') renderDashboard(); } }catch(_){} });
-      setInterval(()=>{ try{ if(typeof HOST.extendedDashDB!=='undefined' && HOST.extendedDashDB && HOST.extendedDashDB.length) window.IntMapCache.set('dash_cards', HOST.extendedDashDB); }catch(_){} }, 60000);
+      /* ⚠ (#R408) NOT `whenHidden`, and the write is why the question had to be asked. What it mirrors is a copy of a
+         REMOTE list (loadDashFromSupabase), used only to paint the cards instantly on the NEXT load before the fetch
+         answers — so a tick skipped while hidden loses nothing on return (the wheel runs it once when the tab comes
+         back, and nothing reads the key until the next boot), and the worst case, hidden-then-closed, costs a colder
+         start of a cache the network refills. Nothing the reader made lives here. */
+      everyTick('dash-extended:cache-cards', 60000, ()=>{ try{ if(typeof HOST.extendedDashDB!=='undefined' && HOST.extendedDashDB && HOST.extendedDashDB.length) window.IntMapCache.set('dash_cards', HOST.extendedDashDB); }catch(_){} });
     }catch(_){}
 
     /* ---------- (B) Simulation bridge — external compute → per-frame render ----------
